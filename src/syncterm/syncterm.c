@@ -299,25 +299,25 @@ int main(int argc, char **argv)
 	USAGE:
     printf("\nusage: syncterm [options] [URL]"
         "\n\noptions:\n\n"
-        "-c  =  force color mode\r\n"
-		"-m  =  force monochrome mode\r\n"
-        "-e# =  set escape delay to #msec\r\n"
-		"-iX =  set interface mode to X (default=auto) where X is one of:\r\n"
+        "-c  =  force color mode\n"
+		"-m  =  force monochrome mode\n"
+        "-e# =  set escape delay to #msec\n"
+		"-iX =  set interface mode to X (default=auto) where X is one of:\n"
 #ifdef __unix__
-		"       X = X11 mode\r\n"
-		"       C = Curses mode\r\n"
-		"       F = Curses mode with forced IBM charset\r\n"
+		"       X = X11 mode\n"
+		"       C = Curses mode\n"
+		"       F = Curses mode with forced IBM charset\n"
 #else
-		"       W = Win32 native mode\r\n"
+		"       W = Win32 native mode\n"
 #endif
-		"       A = ANSI mode\r\n"
-        "-v# =  set video mode to # (default=auto)\r\n"
-        "-l# =  set screen lines to # (default=auto-detect)\r\n"
-		"\r\n"
-		"URL format is: (rlogin|telnet)://[user[:password]@]domainname[:port]\r\n"
-		"examples: rlogin://deuce:password@nix.synchro.net:5885\r\n"
-		"          telnet://deuce@nix.synchro.net\r\n"
-		"          telnet://nix.synchro.net\r\n"
+		"       A = ANSI mode\n"
+        "-v# =  set video mode to # (default=auto)\n"
+        "-l# =  set screen lines to # (default=auto-detect)\n"
+		"\n"
+		"URL format is: (rlogin|telnet)://[user[:password]@]domainname[:port]\n"
+		"examples: rlogin://deuce:password@nix.synchro.net:5885\n"
+		"          telnet://deuce@nix.synchro.net\n"
+		"          telnet://nix.synchro.net\n"
         );
     exit(0);
 }
