@@ -1597,7 +1597,7 @@ bool sbbs_t::guruexp(char **ptrptr, char *line)
 {
 	char	c,*cp,str[256];
 	int		nest;
-	bool	result=false,and=false,or=false;
+	bool	result=false,_and=false,_or=false;
 	uchar	*ar;
 
 	if((**ptrptr)==')') {	/* expressions of () are always result */
@@ -1616,10 +1616,10 @@ bool sbbs_t::guruexp(char **ptrptr, char *line)
 			c=chk_ar(ar,&useron);
 			if(ar[0]!=AR_NULL)
 				FREE(ar);
-			if(!c && and) {
+			if(!c && _and) {
 				result=false;
 				break; }
-			if(c && or) {
+			if(c && _or) {
 				result=true;
 				break; }
 			if(c)
@@ -1628,10 +1628,10 @@ bool sbbs_t::guruexp(char **ptrptr, char *line)
 		if((**ptrptr)=='(') {
 			(*ptrptr)++;
 			c=guruexp(&(*ptrptr),line);
-			if(!c && and) {
+			if(!c && _and) {
 				result=false;
 				break; }
-			if(c && or) {
+			if(c && _or) {
 				result=true;
 				break; }
 			if(c)
@@ -1648,13 +1648,13 @@ bool sbbs_t::guruexp(char **ptrptr, char *line)
 		if((**ptrptr)=='|') {
 			if(!c && result)
 				break;
-			and=false;
-			or=true; }
+			_and=false;
+			_or=true; }
 		else if((**ptrptr)=='&') {
 			if(!c && !result)
 				break;
-			and=true;
-			or=false; }
+			_and=true;
+			_or=false; }
 		if(!c) {				/* support ((exp)op(exp)) */
 			(*ptrptr)++;
 			continue; }
@@ -1681,10 +1681,10 @@ bool sbbs_t::guruexp(char **ptrptr, char *line)
 						cp=strstr(cp+strlen(str),str);
 					else
 						break; } }
-		if(!cp && and) {
+		if(!cp && _and) {
 			result=false;
 			break; }
-		if(cp && or) {
+		if(cp && _or) {
 			result=true;
 			break; }
 		if(cp)
