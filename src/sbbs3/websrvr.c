@@ -644,12 +644,15 @@ static void close_request(http_session_t * session)
 	linked_list	*p;
 	time_t		now;
 
-	now=time(NULL);
-	localtime_r(&now,&session->req.ld->completed);
-	pthread_mutex_lock(&log_mutex);
-	listPushNode(log_list,session->req.ld);
-	pthread_mutex_unlock(&log_mutex);
-	sem_post(&log_sem);
+	if(session->req.ld!=NULL) {
+		now=time(NULL);
+		localtime_r(&now,&session->req.ld->completed);
+		pthread_mutex_lock(&log_mutex);
+		listPushNode(log_list,session->req.ld);
+		pthread_mutex_unlock(&log_mutex);
+		sem_post(&log_sem);
+		session->req.ld=NULL;
+	}
 
 	while(session->req.dynamic_heads != NULL)  {
 		FREE_AND_NULL(session->req.dynamic_heads->val);
@@ -874,15 +877,19 @@ static void send_error(http_session_t * session, const char* message)
 	session->req.send_location=NO_LOCATION;
 	SAFECOPY(error_code,message);
 	sprintf(session->req.physical_path,"%s%s.html",error_dir,error_code);
-	session->req.ld->status=atoi(message);
+	if(session->req.ld!=NULL)
+		session->req.ld->status=atoi(message);
 	if(session->http_ver > HTTP_0_9)  {
 		session->req.mime_type=get_mime_type(strrchr(session->req.physical_path,'.'));
 		send_headers(session,message);
 	}
 	if(!stat(session->req.physical_path,&sb)) {
-		session->req.ld->size=sock_sendfile(session->socket,session->req.physical_path);
-		if(session->req.ld->size<0)
-			session->req.ld->size=0;
+		int	snt=0;
+		snt=sock_sendfile(session->socket,session->req.physical_path);
+		if(snt<0)
+			snt=0;
+		if(session->req.ld!=NULL)
+			session->req.ld->size=snt;
 	}
 	else {
 		lprintf(LOG_NOTICE,"%04d Error message file %s doesn't exist."
@@ -895,7 +902,8 @@ static void send_error(http_session_t * session, const char* message)
 			"%s</a></BODY></HTML>"
 			,error_code,error_code,error_code,scfg.sys_inetaddr,scfg.sys_op);
 		sockprint(session->socket,sbuf);
-		session->req.ld->size=strlen(sbuf);
+		if(session->req.ld!=NULL)
+			session->req.ld->size=strlen(sbuf);
 	}
 	close_request(session);
 }
@@ -963,7 +971,8 @@ static BOOL check_ars(http_session_t * session)
 			/* Should use real name if set to do so somewhere ToDo */
 			add_env(session,"REMOTE_USER",session->user.alias);
 		}
-		session->req.ld->user=strdup(username);
+		if(session->req.ld!=NULL)
+			session->req.ld->user=strdup(username);
 
 		SAFECOPY(session->username,username);
 		return(TRUE);
@@ -1268,10 +1277,12 @@ static BOOL parse_headers(http_session_t * session)
 					}
 					break;
 				case HEAD_REFERER:
-					session->req.ld->referrer=strdup(value);
+					if(session->req.ld!=NULL)
+						session->req.ld->referrer=strdup(value);
 					break;
 				case HEAD_AGENT:
-					session->req.ld->agent=strdup(value);
+					if(session->req.ld!=NULL)
+						session->req.ld->agent=strdup(value);
 					break;
 				default:
 					break;
@@ -1470,7 +1481,8 @@ static BOOL get_req(http_session_t * session, char *request_line)
 		lprintf(LOG_DEBUG,"%04d Handling Internal Redirect to: %s",session->socket,request_line);
 		SAFECOPY(req_line,request_line);
 	}
-	session->req.ld->request=strdup(req_line);
+	if(session->req.ld!=NULL)
+		session->req.ld->request=strdup(req_line);
 	if(req_line[0]) {
 		if(startup->options&WEB_OPT_DEBUG_RX)
 			lprintf(LOG_DEBUG,"%04d Got request line: %s",session->socket,req_line);
@@ -1875,8 +1887,9 @@ static BOOL exec_cgi(http_session_t *session)
 						start=time(NULL);
 						if(session->req.method!=HTTP_HEAD) {
 							snt=write(session->socket,buf,i);
-							if(snt>0)
+							if(session->req.ld!=NULL && snt>0) {
 								session->req.ld->size+=snt;
+							}
 						}
 					}
 					else
@@ -1930,7 +1943,8 @@ static BOOL exec_cgi(http_session_t *session)
 							session->req.dynamic=IS_CGI;
 							if(cgi_status[0]==0)
 								SAFECOPY(cgi_status,"200 OK");
-							session->req.ld->status=200;
+							if(session->req.ld!=NULL)
+								session->req.ld->status=200;
 							send_headers(session,cgi_status);
 						}
 						done_parsing_headers=TRUE;
@@ -2439,7 +2453,8 @@ static void respond(http_session_t * session)
 			,"%s/SBBS_SSJS.%d.html",startup->cgi_temp_dir,session->socket);
 	}
 
-	session->req.ld->status=atoi(session->req.status);
+	if(session->req.ld!=NULL)
+		session->req.ld->status=atoi(session->req.status);
 	if(session->http_ver > HTTP_0_9)  {
 		session->req.mime_type=get_mime_type(strrchr(session->req.physical_path,'.'));
 		send_file=send_headers(session,session->req.status);
@@ -2447,10 +2462,14 @@ static void respond(http_session_t * session)
 	if(session->req.method==HTTP_HEAD)
 		send_file=FALSE;
 	if(send_file)  {
+		int snt=0;
 		lprintf(LOG_INFO,"%04d Sending file: %s",session->socket, session->req.physical_path);
-		session->req.ld->size=sock_sendfile(session->socket,session->req.physical_path);
-		if(session->req.ld->size<0)
-			session->req.ld->size=0;
+		snt=sock_sendfile(session->socket,session->req.physical_path);
+		if(session->req.ld!=NULL) {
+			if(snt<0)
+				snt=0;
+			session->req.ld->size=snt;
+		}
 		lprintf(LOG_INFO,"%04d Sent file: %s",session->socket, session->req.physical_path);
 	}
 	close_request(session);
