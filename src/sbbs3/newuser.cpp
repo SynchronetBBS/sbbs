@@ -43,7 +43,7 @@
 /* Prompts user for personal information and then sends feedback to sysop.  */
 /* Called from function waitforcall											*/
 /****************************************************************************/
-void sbbs_t::newuser()
+BOOL sbbs_t::newuser()
 {
 	char	c,str[512];
 	char 	tmp[512];
@@ -60,19 +60,22 @@ void sbbs_t::newuser()
 			,cur_rate,cfg.node_minbps);
 		logline("N!",str);
 		hangup();
-		return; }
+		return(FALSE); 
+	}
 
 	getnodedat(cfg.node_num,&thisnode,0);
 	if(thisnode.misc&NODE_LOCK) {
 		bputs(text[NodeLocked]);
 		logline("N!","New user locked node logon attempt");
 		hangup();
-		return; }
+		return(FALSE); 
+	}
 
 	if(cfg.sys_misc&SM_CLOSED) {
 		bputs(text[NoNewUsers]);
 		hangup();
-		return; }
+		return(FALSE); 
+	}
 	getnodedat(cfg.node_num,&thisnode,1);
 	thisnode.status=NODE_NEWUSER;
 	thisnode.connection=0xffff;
@@ -86,13 +89,16 @@ void sbbs_t::newuser()
 			if(!strcmp(str,cfg.new_pass))
 				break;
 			sprintf(tmp,"NUP Attempted: '%s'",str);
-			logline("N!",tmp); }
+			logline("N!",tmp); 
+		}
 		if(c==4) {
 			sprintf(str,"%snupguess.msg",cfg.text_dir);
 			if(fexist(str))
 				printfile(str,P_NOABORT);
 			hangup();
-			return; } }
+			return(FALSE); 
+		} 
+	}
 
 	/* Sets defaults per sysop config */
 	useron.misc|=(cfg.new_misc&~(DELETED|INACTIVE|QUIET|NETMAIL));
@@ -100,8 +106,8 @@ void sbbs_t::newuser()
 	useron.firston=useron.laston=useron.pwmod=time(NULL);
 	if(cfg.new_expire) {
 		now=time(NULL);
-		useron.expire=now+((long)cfg.new_expire*24L*60L*60L); }
-	else
+		useron.expire=now+((long)cfg.new_expire*24L*60L*60L); 
+	} else
 		useron.expire=0;
 	useron.sex=SP;
 	useron.prot=cfg.new_prot;
@@ -118,15 +124,16 @@ void sbbs_t::newuser()
 		useron.level=99;
 		useron.exempt=useron.flags1=useron.flags2=0xffffffffUL;
 		useron.flags3=useron.flags4=0xffffffffUL;
-		useron.rest=0L; }
-	else {
+		useron.rest=0L; 
+	} else {
 		useron.level=cfg.new_level;
 		useron.flags1=cfg.new_flags1;
 		useron.flags2=cfg.new_flags2;
 		useron.flags3=cfg.new_flags3;
 		useron.flags4=cfg.new_flags4;
 		useron.rest=cfg.new_rest;
-		useron.exempt=cfg.new_exempt; }
+		useron.exempt=cfg.new_exempt; 
+	}
 
 	useron.cdt=cfg.new_cdt;
 	useron.min=cfg.new_min;
@@ -197,10 +204,12 @@ void sbbs_t::newuser()
 					|| trashcan(useron.alias,"name")
 					|| (!(cfg.uq&UQ_ALIASES) && !strchr(useron.alias,SP))) {
 					bputs(text[YouCantUseThatName]);
-					continue; }
-				break; }
+					continue; 
+				}
+				break; 
+			}
 		}
-		if(!online) return;
+		if(!online) return(FALSE);
 		if(cfg.uq&UQ_ALIASES && cfg.uq&UQ_REALNAME) {
 			while(online) {
 				bputs(text[EnterYourRealName]);
@@ -213,13 +222,16 @@ void sbbs_t::newuser()
 							,useron.name,0)))
 					bputs(text[YouCantUseThatName]);
 				else
-					break; } }
+					break; 
+			} 
+		}
 		else if(cfg.uq&UQ_COMPANY) {
 				bputs(text[EnterYourCompany]);
-				getstr(useron.name,LEN_NAME,(cfg.uq&UQ_NOEXASC)|K_EDIT|K_AUTODEL); }
+				getstr(useron.name,LEN_NAME,(cfg.uq&UQ_NOEXASC)|K_EDIT|K_AUTODEL); 
+		}
 		if(!useron.name[0])
 			strcpy(useron.name,useron.alias);
-		if(!online) return;
+		if(!online) return(FALSE);
 		if(!useron.handle[0])
 			sprintf(useron.handle,"%.*s",LEN_HANDLE,useron.alias);
 		while(cfg.uq&UQ_HANDLE && online) {
@@ -232,28 +244,32 @@ void sbbs_t::newuser()
 				|| trashcan(useron.handle,"name"))
 				bputs(text[YouCantUseThatName]);
 			else
-				break; }
-		if(!online) return;
+				break; 
+		}
+		if(!online) return(FALSE);
 		if(cfg.uq&UQ_ADDRESS)
 			while(online) { 	   /* Get address and zip code */
 				bputs(text[EnterYourAddress]);
 				if(getstr(useron.address,LEN_ADDRESS,kmode))
-					break; }
-		if(!online) return;
+					break; 
+			}
+		if(!online) return(FALSE);
 		while(cfg.uq&UQ_LOCATION && online) {
 			bputs(text[EnterYourCityState]);
 			if(getstr(useron.location,LEN_LOCATION,kmode)
 				&& (cfg.uq&UQ_NOCOMMAS || strchr(useron.location,',')))
 				break;
 			bputs("\r\nYou must include a comma between the city and state.\r\n");
-			useron.location[0]=0; }
+			useron.location[0]=0; 
+		}
 		if(cfg.uq&UQ_ADDRESS)
 			while(online) {
 				bputs(text[EnterYourZipCode]);
 				if(getstr(useron.zipcode,LEN_ZIPCODE
 					,K_UPPER|(cfg.uq&UQ_NOEXASC)|K_EDIT|K_AUTODEL))
-					break; }
-		if(!online) return;
+					break; 
+			}
+		if(!online) return(FALSE);
 		if(cfg.uq&UQ_PHONE) {
 			usa=yesno(text[CallingFromNorthAmericaQ]);
 			while(online) {
@@ -261,23 +277,29 @@ void sbbs_t::newuser()
 				if(!usa) {
 					if(getstr(useron.phone,LEN_PHONE
 						,K_UPPER|K_LINE|(cfg.uq&UQ_NOEXASC)|K_EDIT|K_AUTODEL)<5)
-						continue; }
+						continue; 
+				}
 				else {
 					if(gettmplt(useron.phone,cfg.sys_phonefmt
 						,K_LINE|(cfg.uq&UQ_NOEXASC)|K_EDIT)<strlen(cfg.sys_phonefmt))
-						continue; }
+						continue; 
+				}
 				if(!trashcan(useron.phone,"phone"))
-					break; } }
-		if(!online) return;
+					break; 
+			} 
+		}
+		if(!online) return(FALSE);
 		if(cfg.uq&UQ_SEX) {
 			bputs(text[EnterYourSex]);
-			useron.sex=(char)getkeys("MF",0); }
+			useron.sex=(char)getkeys("MF",0); 
+		}
 		while(cfg.uq&UQ_BIRTH && online) {
 			bprintf(text[EnterYourBirthday]
 				,cfg.sys_misc&SM_EURODATE ? "DD/MM/YY" : "MM/DD/YY");
 			if(gettmplt(useron.birth,"nn/nn/nn",K_EDIT)==8 && getage(&cfg,useron.birth))
-				break; }
-		if(!online) return;
+				break; 
+		}
+		if(!online) return(FALSE);
 		while(!(sys_status&SS_RLOGIN) && !(cfg.uq&UQ_NONETMAIL) && online) {
 			bputs(text[EnterNetMailAddress]);
 			if(getstr(useron.netmail,LEN_NETMAIL,K_EDIT|K_AUTODEL|K_LINE)
@@ -289,11 +311,12 @@ void sbbs_t::newuser()
 		else 
 			useron.misc&=~NETMAIL;
 		if(yesno(text[UserInfoCorrectQ]))
-			break; }
-	if(!online) return;
+			break; 
+	}
+	if(!online) return(FALSE);
 	sprintf(str,"New user: %s",useron.alias);
 	logline("N",str);
-	if(!online) return;
+	if(!online) return(FALSE);
 	CLS;
 	sprintf(str,"%ssbbs.msg",cfg.text_dir);
 	printfile(str,P_NOABORT);
@@ -318,19 +341,22 @@ void sbbs_t::newuser()
 		for(i=0;i<cfg.total_xedits;i++)
 			uselect(1,i,"External Editor",cfg.xedit[i]->name,cfg.xedit[i]->ar);
 		if((int)(i=uselect(0,useron.xedit,0,0,0))>=0)
-			useron.xedit=i+1; }
+			useron.xedit=i+1; 
+	}
 
 	if(cfg.total_shells>1 && cfg.uq&UQ_CMDSHELL) {
 		for(i=0;i<cfg.total_shells;i++)
 			uselect(1,i,"Command Shell",cfg.shell[i]->name,cfg.shell[i]->ar);
 		if((int)(i=uselect(0,useron.shell,0,0,0))>=0)
-			useron.shell=i; }
+			useron.shell=i; 
+	}
 
 	c=0;
 	while(c<LEN_PASS) { 				/* Create random password */
 		useron.pass[c]=sbbs_random(43)+'0';
 		if(isalnum(useron.pass[c]))
-			c++; }
+			c++; 
+	}
 	useron.pass[c]=0;
 
 	if(!(sys_status&SS_RLOGIN)) {
@@ -345,8 +371,10 @@ void sbbs_t::newuser()
 					strcpy(useron.pass,str);
 					CRLF;
 					bprintf(text[YourPasswordIs],useron.pass);
-					break; }
-				CRLF; }
+					break; 
+				}
+				CRLF; 
+			}
 
 		c=0;
 		while(online) {
@@ -369,12 +397,14 @@ void sbbs_t::newuser()
 			logline(nulstr,tmp);
 			if(++c==4) {
 				logline("N!","Couldn't figure out password.");
-				hangup(); }
+				hangup(); 
+			}
 			bputs(text[IncorrectPassword]);
-			bprintf(text[YourPasswordIs],useron.pass); }
+			bprintf(text[YourPasswordIs],useron.pass); 
+		}
 	}
 
-	if(!online) return;
+	if(!online) return(FALSE);
 	if(cfg.new_magic[0]) {
 		bputs(text[MagicWordPrompt]);
 		str[0]=0;
@@ -383,8 +413,10 @@ void sbbs_t::newuser()
 			bputs(text[FailedMagicWord]);
 			sprintf(tmp,"%s failed magic word: '%s'",useron.alias,str);
 			logline("N!",tmp);
-			hangup(); }
-		if(!online) return; }
+			hangup(); 
+		}
+		if(!online) return(FALSE); 
+	}
 
 	bputs(text[CheckingSlots]);
 
@@ -392,13 +424,14 @@ void sbbs_t::newuser()
 		sprintf(str,"user record #%u",useron.number);
 		errormsg(WHERE,ERR_CREATE,str,i);
 		hangup();
-		return; 
+		return(FALSE); 
 	}
 	sprintf(str,"Created user record #%u: %s",useron.number,useron.alias);
 	logline(nulstr,str);
 	if(cfg.new_sif[0]) {
 		sprintf(str,"%suser/%4.4u.dat",cfg.data_dir,useron.number);
-		create_sif_dat(cfg.new_sif,str); }
+		create_sif_dat(cfg.new_sif,str); 
+	}
 	if(!(cfg.uq&UQ_NODEF))
 		maindflts(&useron);
 
@@ -425,7 +458,7 @@ void sbbs_t::newuser()
 				putuserrec(&cfg,useron.number,U_MISC,8
 					,ultoa(useron.misc|DELETED,tmp,16));
 				putusername(&cfg,useron.number,nulstr);
-				return; 
+				return(FALSE); 
 			} 
 		} 
 	}
@@ -442,4 +475,6 @@ void sbbs_t::newuser()
 	getuserdat(&cfg,&useron);	// In case event(s) modified user data
 	logline("N+","Successful new user logon");
 	sys_status|=SS_NEWUSER;
+
+	return(TRUE);
 }

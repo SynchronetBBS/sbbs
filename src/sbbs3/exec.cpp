@@ -1569,7 +1569,10 @@ int sbbs_t::exec(csi_t *csi)
 					csi->misc&=~CS_OFFLINE_EXEC;
 					return(0);
 				case CS_NEWUSER:
-					newuser();
+					if(newuser())
+						csi->logic=LOGIC_TRUE;
+					else
+						csi->logic=LOGIC_FALSE;
 					return(0);
 				case CS_LOGON:
 					if(logon())

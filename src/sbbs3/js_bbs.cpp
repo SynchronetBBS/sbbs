@@ -1259,9 +1259,7 @@ js_newuser(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	sbbs->newuser();
-
-	*rval = JSVAL_VOID;
+	*rval = BOOLEAN_TO_JSVAL(sbbs->newuser());
 	return(JS_TRUE);
 }
 

@@ -515,7 +515,7 @@ public:
 	bool	logon(void);
 	void	logout(void);
 	void	logoff(void);
-	void	newuser(void);					/* Get new user							*/
+	BOOL	newuser(void);					/* Get new user							*/
 	void	backout(void);
 
 	/* readmsgs.cpp */
