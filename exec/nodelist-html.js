@@ -2,15 +2,15 @@
 
 // Synchronet Service for sending a periodic HTML node list
 
-const REFRESH_RATE=10	/* seconds */
+var refresh_rate=10	/* seconds */
 var start=new Date();
 
 load("nodedefs.js");
 
-// This is just an example of how you access command-line args
+// Parse arguments
 for(i=0;i<argc;i++)
-	log(format("argv[%d]=%s",i,argv[i]));
-// End of example :-)
+	if(argv[i].toLowerCase()=="-r")
+		refresh_rate=Number(argv[++i]);
 
 // Write a string to the client socket
 function write(str)
@@ -37,7 +37,7 @@ while(client.socket.data_waiting) {
 writeln("<html>");
 writeln("<head>");
 writeln(format("<title>%s BBS - Node List</title>",system.name));
-writeln(format("<meta http-equiv=refresh content=%d>",REFRESH_RATE));
+writeln(format("<meta http-equiv=refresh content=%d>",refresh_rate));
 writeln("</head>");
 
 writeln("<font face=Arial,Helvetica,sans-serif>");
@@ -102,7 +102,7 @@ writeln("</tbody>");
 writeln("</table>");
 
 writeln("<p><font color=silver><font size=-2>");
-writeln(format("Auto-refresh in %d seconds",REFRESH_RATE));
+writeln(format("Auto-refresh in %d seconds",refresh_rate));
 write(format("<br>Dynamically generated in %lu milliseconds "
 	  ,new Date().valueOf()-start.valueOf()));
 write("by <a href=http://www.synchro.net>" + system.version_notice + "</a>");
