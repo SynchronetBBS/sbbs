@@ -189,6 +189,7 @@ typedef struct  {
 
 	/* Dynamically (sever-side JS) generated HTML parameters */
 	FILE*	fp;
+	subscan_t		*subscan;
 
 } http_request_t;
 
@@ -205,7 +206,6 @@ typedef struct  {
 	time_t			logon_time;
 	char			username[LEN_NAME+1];
 	int				last_js_user_num;
-	subscan_t		*subscan;
 
 	/* JavaScript parameters */
 	JSRuntime*		js_runtime;
@@ -750,11 +750,11 @@ static void close_request(http_session_t * session)
 	if(session->js_cx!=NULL && (session->req.dynamic==IS_SSJS || session->req.dynamic==IS_JS)) {
 		JS_GC(session->js_cx);
 	}
+	if(session->req.subscan!=NULL)
+		putmsgptrs(&scfg, session->user.number, session->req.subscan);
+	FREE_AND_NULL(session->req.subscan);
 
 	memset(&session->req,0,sizeof(session->req));
-	if(session->subscan!=NULL)
-		putmsgptrs(&scfg, session->user.number, session->subscan);
-	FREE_AND_NULL(session->subscan);
 }
 
 static int get_header_type(char *header)
@@ -1011,10 +1011,10 @@ void http_logon(http_session_t * session, user_t *usr)
 		session->user=*usr;
 
 	if(session->user.number!=0) {
-		FREE_AND_NULL(session->subscan);
-		session->subscan=(subscan_t*)malloc(sizeof(subscan_t)*scfg.total_subs);
-		if(session->subscan!=NULL)
-			getmsgptrs(&scfg,session->user.number,session->subscan);
+		FREE_AND_NULL(session->req.subscan);
+		session->req.subscan=(subscan_t*)malloc(sizeof(subscan_t)*scfg.total_subs);
+		if(session->req.subscan!=NULL)
+			getmsgptrs(&scfg,session->user.number,session->req.subscan);
 	}
 
 	if(session->user.number==session->last_user_num)
@@ -1059,7 +1059,7 @@ BOOL http_checkuser(http_session_t * session)
 		lprintf(LOG_INFO,"%04d JavaScript: Initializing User Objects",session->socket);
 		if(session->user.number>0) {
 			if(!js_CreateUserObjects(session->js_cx, session->js_glob, &scfg, &session->user
-				,NULL /* ftp index file */, session->subscan /* subscan */)) {
+				,NULL /* ftp index file */, session->req.subscan /* subscan */)) {
 				lprintf(LOG_ERR,"%04d !JavaScript ERROR creating user objects",session->socket);
 				send_error(session,"500 Error initializing JavaScript User Objects");
 				return(FALSE);
@@ -2734,7 +2734,6 @@ void http_session_thread(void* arg)
 	session.last_user_num=-1;
 	session.last_js_user_num=-1;
 	session.logon_time=0;
-	session.subscan=NULL;
 
 	while(!session.finished && server_socket!=INVALID_SOCKET) {
 	    memset(&(session.req), 0, sizeof(session.req));
@@ -2789,8 +2788,6 @@ void http_session_thread(void* arg)
 		JS_DestroyRuntime(session.js_runtime);
 		session.js_runtime=NULL;
 	}
-
-	FREE_AND_NULL(session.subscan);
 
 #ifdef _WIN32
 	if(startup->hangup_sound[0] && !(startup->options&BBS_OPT_MUTE)) 
