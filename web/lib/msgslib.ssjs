@@ -38,10 +38,7 @@ function get_my_message_offsets()
 			continue;
 		if(idx.to!=user.number)
 			continue;
-		if((hdr=msgbase.get_msg_header(true,last_offset))==null)
-			continue;
 		msg=new Array;
-		msg["hdr"]=hdr;
 		msg.idx=idx;
 		msg.offset=last_offset;
 		offsets.push(msg);
@@ -58,9 +55,7 @@ function get_all_message_offsets()
 	for(last_offset=0; (idx=msgbase.get_msg_index(true,last_offset)) != null;last_offset++) {
 		if(idx.attr&MSG_DELETE)
 			continue;
-		hdr=msgbase.get_msg_header(true,last_offset);
 		msg=new Object;
-		msg.hdr=hdr;
 		msg.idx=idx;
 		msg.offset=last_offset;
 		offsets.push(msg);
