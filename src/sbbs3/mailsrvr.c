@@ -754,7 +754,7 @@ static void pop3_thread(void* arg)
 						break;
 					}
 					if(msg.idx.attr&MSG_DELETE) {
-						lprintf("%04d !POP3 Attempt to list deleted message"
+						lprintf("%04d !POP3 ATTEMPT to list deleted message"
 							,socket);
 						sockprintf(socket,"-ERR message deleted");
 						continue;
@@ -839,7 +839,7 @@ static void pop3_thread(void* arg)
 					lines=atol(p);
 				}
 				if(msgnum<1 || msgnum>msgs) {
-					lprintf("%04d !POP3 %s attempted to retrieve an INVALID message #%ld"
+					lprintf("%04d !POP3 %s ATTEMPTED to retrieve an INVALID message #%ld"
 						,socket, user.alias, msgnum);
 					sockprintf(socket,"-ERR no such message");
 					continue;
@@ -856,7 +856,7 @@ static void pop3_thread(void* arg)
 					continue;
 				}
 				if(msg.idx.attr&MSG_DELETE) {
-					lprintf("%04d !POP3 Attempt to retrieve deleted message"
+					lprintf("%04d !POP3 ATTEMPT to retrieve deleted message"
 						,socket);
 					sockprintf(socket,"-ERR message deleted");
 					continue;
@@ -892,9 +892,12 @@ static void pop3_thread(void* arg)
 						,msg.from,(char*)msg.from_net.addr,scfg.sys_inetaddr);
 				else 
 					usermailaddr(fromaddr,msg.from);	/* unresolved exception here Nov-06-2000 */
+				lprintf("%04d POP3 sending message text (%u bytes)"
+					,socket,strlen(msgtxt));
 				sockmsgtxt(socket,&msg,msgtxt,fromaddr,lines);
 				/* if(startup->options&MAIL_OPT_DEBUG_POP3) */
-				lprintf("%04d POP3 Mail transfer complete", socket);
+				lprintf("%04d POP3 message transfer complete (%u bytes)"
+					,socket, strlen(msgtxt));
 
 				msg.hdr.attr|=MSG_READ;
 				msg.idx.attr=msg.hdr.attr;
@@ -917,7 +920,7 @@ static void pop3_thread(void* arg)
 				msgnum=atol(p);
 
 				if(msgnum<1 || msgnum>msgs) {
-					lprintf("%04d !POP3 %s attempted to delete an INVALID message #%ld"
+					lprintf("%04d !POP3 %s ATTEMPTED to delete an INVALID message #%ld"
 						,socket, user.alias, msgnum);
 					sockprintf(socket,"-ERR no such message");
 					continue;
@@ -959,7 +962,7 @@ static void pop3_thread(void* arg)
 				smb_freemsgmem(&msg);
 				sockprintf(socket,"+OK");
 				if(startup->options&MAIL_OPT_DEBUG_POP3)
-					lprintf("%04d POP3 Message deleted", socket);
+					lprintf("%04d POP3 message deleted", socket);
 				continue;
 			}
 			lprintf("%04d !POP3 UNSUPPORTED COMMAND: %s", socket, buf);
@@ -1668,7 +1671,7 @@ static void smtp_thread(void* arg)
 
 					if(!trashcan(&scfg,host_name,"relay") && 
 						!trashcan(&scfg,host_ip,"relay")) {
-						lprintf("%04d !SMTP Illegal relay attempt from %s [%s] to %s"
+						lprintf("%04d !SMTP ILLEGAL RELAY ATTEMPT from %s [%s] to %s"
 							,socket, host_name, host_ip, tp+1);
 						sockprintf(socket, "550 Relay not allowed.");
 						continue;
@@ -1833,7 +1836,7 @@ BOOL bounce(smb_t* smb, smbmsg_t* msg, char* err, BOOL immediate)
 		return(FALSE);
 	}
 
-	lprintf("0000 !Delivery attempt #%u failed for message #%lu from %s to %s"
+	lprintf("0000 !Delivery attempt #%u FAILED for message #%lu from %s to %s"
 		,msg->hdr.delivery_attempts, msg->hdr.number
 		,msg->from, msg->to_net.addr);
 
@@ -2169,14 +2172,16 @@ static void sendmail_thread(void* arg)
 				bounce(&smb,&msg,err,buf[0]=='5');
 				continue;
 			}
-			lprintf("%04d SEND sending message text",sock);
+			lprintf("%04d SEND sending message text (%u bytes)"
+				,sock, strlen(msgtxt));
 			sockmsgtxt(sock,&msg,msgtxt,fromaddr,-1);
 			if(!sockgetrsp(sock,"250", buf, sizeof(buf))) {
 				sprintf(err,"%s replied with '%s' instead of 250",server,buf);
 				bounce(&smb,&msg,err,buf[0]=='5');
 				continue;
 			}
-			lprintf("%04d SEND transfer successful",sock);
+			lprintf("%04d SEND message transfer complete (%u bytes)"
+				,sock, strlen(msgtxt));
 
 			msg.hdr.attr|=MSG_DELETE;
 			msg.idx.attr=msg.hdr.attr;
@@ -2533,7 +2538,7 @@ void DLLCALL mail_server(void* arg)
 			if (client_socket == INVALID_SOCKET)
 			{
 				if(ERROR_VALUE == ENOTSOCK)
-            		lprintf("%04d SMTP Socket closed while listening",server_socket);
+            		lprintf("%04d SMTP socket closed while listening",server_socket);
 				else
 					lprintf("%04d !ERROR %d accept failed", server_socket, ERROR_VALUE);
 				break;
@@ -2581,7 +2586,7 @@ void DLLCALL mail_server(void* arg)
 			if (client_socket == INVALID_SOCKET)
 			{
 				if(ERROR_VALUE == ENOTSOCK)
-            		lprintf("%04d POP3 Socket closed while listening",pop3_socket);
+            		lprintf("%04d POP3 socket closed while listening",pop3_socket);
 				else
 					lprintf("%04d !ERROR %d accept failed", pop3_socket, ERROR_VALUE);
 				break;
