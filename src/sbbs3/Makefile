@@ -23,7 +23,8 @@ LIBFILE	=	.dll
 EXEFILE	=	.exe
 LIBODIR	=	bcc.win32.dll	# Library output directory
 EXEODIR =	bcc.win32.exe	# Executable output directory
-CFLAGS	=	-M -g1 
+XPDEV	=	..\xpdev
+CFLAGS	=	-M -I$(XPDEV)
 LFLAGS  =	-m -s -c -Tpd -Gi -I$(LIBODIR)
 DELETE	=	echo y | del 
 
@@ -37,6 +38,7 @@ LFLAGS	=	$(LFLAGS) -v
 LIBODIR	=	$(LIBODIR).debug
 EXEODIR	=	$(EXEODIR).debug
 !else
+CFLAGS	=	$(CFLAGS) -g1
 LIBODIR	=	$(LIBODIR).release
 EXEODIR	=	$(EXEODIR).release
 !endif
@@ -48,19 +50,22 @@ LIBS	=	..\mozilla\js\src\Debug\js32omf.lib
 !endif
 
 # Cross platform/compiler definitions
-!include targets.mak	# defines all targets
-!include objects.mak	# defines $(OBJS)
-!include headers.mak	# defines $(HEADERS)
-!include sbbsdefs.mak	# defines $(SBBSDEFS)
+!include targets.mk		# defines all targets
+!include objects.mk		# defines $(OBJS)
+!include headers.mk		# defines $(HEADERS)
+!include sbbsdefs.mk	# defines $(SBBSDEFS)
 
 SBBSLIB	=	$(LIBODIR)\sbbs.lib
 
+.path.c = .;$(XPDEV)
+.path.cpp = .;$(XPDEV)
+
 # Implicit C Compile Rule for SBBS.DLL
-{.}.c.$(OFILE):
+.c.$(OFILE):
 	@$(CC) $(CFLAGS) -WD -WM -n$(LIBODIR) -c $(SBBSDEFS) $<
 
 # Implicit C++ Compile Rule for SBBS.DLL
-{.}.cpp.$(OFILE):
+.cpp.$(OFILE):
 	@$(CC) $(CFLAGS) -WD -WM -n$(LIBODIR) -c $(SBBSDEFS) $<
 
 # Create output directories if they don't exist
@@ -110,19 +115,21 @@ $(NODE): node.c
 	@echo Creating $@
 	@$(CC) $(CFLAGS) -n$(EXEODIR) $** 
 
+SMBLIB = $(LIBODIR)\smblib.obj $(LIBODIR)\genwrap.obj $(LIBODIR)\filewrap.obj
+
 # FIXSMB Utility
-$(FIXSMB): fixsmb.c smblib.c smbwrap.c
+$(FIXSMB): fixsmb.c $(SMBLIB)
 	@echo Creating $@
 	@$(CC) $(CFLAGS) -n$(EXEODIR) $** 
 
 # CHKSMB Utility
-$(CHKSMB): chksmb.c smblib.c smbwrap.c
+$(CHKSMB): chksmb.c $(SMBLIB) $(XPDEV)\dirwrap.c
 	@echo Creating $@
 	@$(CC) $(CFLAGS) -n$(EXEODIR) $** 
 
 # SMB Utility
-$(SMBUTIL): smbutil.c smblib.c smbwrap.c smbtxt.c crc32.c lzh.c
+$(SMBUTIL): smbutil.c smbtxt.c crc32.c lzh.c $(SMBLIB) $(XPDEV)\dirwrap.c
 	@echo Creating $@
 	@$(CC) $(CFLAGS) -n$(EXEODIR) $** 
 
-!include depends.mak	# defines dependencies
+!include depends.mk		# defines dependencies
