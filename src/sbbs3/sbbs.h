@@ -42,19 +42,25 @@
 /* Standard library headers */
 /****************************/
 
+/***************/
+/* OS-specific */
+/***************/
 #ifdef _WIN32			/* Windows */
 
+#include <io.h>
+#include <share.h>
 #include <windows.h>
 #include <process.h>	/* _beginthread() prototype */
-#include <winsock.h>
 
+/* IP/socket stuff */
+#include <winsock.h>
 #define ENOTSOCK	WSAENOTSOCK
 #define ECONNRESET	WSAECONNRESET
 
 #define O_DENYNONE	OF_SHARE_DENY_NONE
 #define O_DENYALL	OF_SHARE_EXCLUSIVE
 
-#else					/* non-windows */
+#elif defined(__unix__)	/* Unix-variant */
 
 #include <unistd.h>		/* close */
 
@@ -69,7 +75,11 @@
 #include <sys/ioctl.h>	/* FIONBIO */
 #endif
 
+/*********************/
+/* Compiler-Specific */
+/*********************/
 #ifndef __BORLANDC__
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -81,36 +91,35 @@ int unlock(int file, long offset, int size);
 #endif /* __BORLANDC__ */
 
 #ifdef _MSC_VER			/* Visual C++ */
+
 #include <direct.h>		/* _mkdir() prototype */
 
 #define S_IWRITE	_S_IWRITE
 
-#endif	/* _MSC_VER */
-
-#ifdef __GNUC__
+#elif defined(__GNUC__)	/* GNU CC */
 
 #warning "ultoa needs to be defined or replaced"
 #define ultoa	ltoa
 
 #endif	/* __GNUC__ */
 
-#ifdef _WIN32
-#include <io.h>
-#include <share.h>
-#include <malloc.h>
-#include <process.h>	/* _beginthread */
-#endif
-
+/******************/
+/* ANSI C Library */
+/******************/
 #include <time.h>
 #include <errno.h>
 #include <stdio.h>
 #include <ctype.h>
-#include <fcntl.h>
+#include <fcntl.h>		/* open */
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
+#include <malloc.h>
 #include <sys/stat.h>
 
+/***********************/
+/* Synchronet-specific */
+/***********************/
 #include "smblib.h"
 #include "ars_defs.h"
 #include "scfgdefs.h"
