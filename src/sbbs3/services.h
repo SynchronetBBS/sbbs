@@ -38,12 +38,7 @@
 #ifndef _SERVICES_H_
 #define _SERVICES_H_
 
-#ifdef _WIN32
-#include <windows.h>
-#endif
-
-#include "client.h"
-#include "semwrap.h"			/* sem_t */
+#include "startup.h"
 
 typedef struct {
 
@@ -74,8 +69,6 @@ typedef struct {
 
 	/* Paths */
     char    ctrl_dir[128];
-    char	cfg_file[128];
-	char	ini_file[128];
 	char	answer_sound[128];
 	char	hangup_sound[128];
 
@@ -87,12 +80,37 @@ typedef struct {
 
 } services_startup_t;
 
+/* startup options that requires re-initialization/recycle when changed */
+static struct init_field services_init_fields[] = { 
+	 OFFSET_AND_SIZE(services_startup_t,interface_addr)
+	,OFFSET_AND_SIZE(services_startup_t,ctrl_dir)
+	,{ 0,0 }	/* terminator */
+};
+
 /* Option bit definitions	*/
 #define SERVICE_OPT_UDP			(1<<0)	/* UDP Socket */
 #define SERVICE_OPT_STATIC		(1<<1)	/* Static service (accepts client connectsions) */
 #define SERVICE_OPT_STATIC_LOOP (1<<2)	/* Loop static service until terminated */
 #define SERVICE_OPT_NATIVE		(1<<3)	/* non-JavaScript service */
 #define SERVICE_OPT_FULL_ACCEPT	(1<<4)	/* Accept/close connections when server is full */
+
+/* services_startup_t.options bits that require re-init/recycle when changed */
+#define SERVICE_INIT_OPTS	(BBS_OPT_LOCAL_TIMEZONE)
+
+static ini_bitdesc_t service_options[] = {
+
+	{ BBS_OPT_NO_HOST_LOOKUP		,"NO_HOST_LOOKUP"		},
+	{ BBS_OPT_GET_IDENT				,"GET_IDENT"			},
+	{ BBS_OPT_NO_RECYCLE			,"NO_RECYCLE"			},
+	{ BBS_OPT_MUTE					,"MUTE"					},
+	{ SERVICE_OPT_UDP				,"UDP"					},
+	{ SERVICE_OPT_STATIC			,"STATIC"				},
+	{ SERVICE_OPT_STATIC_LOOP		,"LOOP"					},
+	{ SERVICE_OPT_NATIVE			,"NATIVE"				},
+	{ SERVICE_OPT_FULL_ACCEPT		,"FULL_ACCEPT"			},
+	/* terminator */				
+	{ -1							,NULL					}
+};
 
 #ifdef __cplusplus
 extern "C" {

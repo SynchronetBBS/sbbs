@@ -109,21 +109,6 @@ typedef struct {
 	BOOL	terminated;
 } service_t;
 
-static ini_bitdesc_t service_options[] = {
-
-	{ BBS_OPT_NO_HOST_LOOKUP		,"NO_HOST_LOOKUP"		},
-	{ BBS_OPT_GET_IDENT				,"GET_IDENT"			},
-	{ BBS_OPT_NO_RECYCLE			,"NO_RECYCLE"			},
-	{ BBS_OPT_MUTE					,"MUTE"					},
-	{ SERVICE_OPT_UDP				,"UDP"					},
-	{ SERVICE_OPT_STATIC			,"STATIC"				},
-	{ SERVICE_OPT_STATIC_LOOP		,"LOOP"					},
-	{ SERVICE_OPT_NATIVE			,"NATIVE"				},
-	{ SERVICE_OPT_FULL_ACCEPT		,"FULL_ACCEPT"			},
-	/* terminator */				
-	{ -1							,NULL					}
-};
-
 typedef struct {
 	SOCKET			socket;
 	SOCKADDR_IN		addr;
@@ -1429,83 +1414,24 @@ void DLLCALL services_terminate(void)
 
 #define NEXT_FIELD(p)	FIND_WHITESPACE(p); SKIP_WHITESPACE(p)
 
-static service_t* read_services_cfg(service_t* service, char* services_cfg, DWORD* services)
-{
-	char*	p;
-	char*	tp;
-	char	line[1024];
-	FILE*	fp;
-	service_t*	np;
-	service_t*	serv;
-	
-	if((fp=fopen(services_cfg,"r"))==NULL)
-		return(service);
-
-	lprintf(LOG_INFO,"Reading %s",services_cfg);
-	for((*services)=0;!feof(fp) && (*services)<MAX_SERVICES;) {
-		if(!fgets(line,sizeof(line),fp))
-			break;
-		p=line;
-		SKIP_WHITESPACE(p);
-		if(*p==0 || *p==';')	/* ignore blank lines or comments */
-			continue;
-		
-		if((np=(service_t*)realloc(service,sizeof(service_t)*((*services)+1)))==NULL) {
-			lprintf(LOG_CRIT,"!MALLOC FAILURE");
-			return(service);
-		}
-		service=np;
-		serv=&service[*services];
-		memset(serv,0,sizeof(service_t));
-		serv->socket=INVALID_SOCKET;
-
-		/* These are not configurable per service when using services.cfg */
-		serv->listen_backlog=DEFAULT_LISTEN_BACKLOG;
-		serv->interface_addr=startup->interface_addr;
-
-		/* JavaScript operating parameters */
-		serv->js_max_bytes=startup->js_max_bytes;
-		serv->js_cx_stack=startup->js_cx_stack;
-		serv->js_branch_limit=startup->js_branch_limit;
-		serv->js_gc_interval=startup->js_gc_interval;
-		serv->js_yield_interval=startup->js_yield_interval;
-
-		tp=p; 
-		FIND_WHITESPACE(tp);
-		*tp=0;
-		SAFECOPY(serv->protocol,p);
-		p=tp+1;
-		SKIP_WHITESPACE(p);
-		serv->port=atoi(p);
-		NEXT_FIELD(p);
-		serv->max_clients=strtol(p,NULL,10);
-		NEXT_FIELD(p);
-		serv->options=strtol(p,NULL,16);
-		NEXT_FIELD(p);
-
-		SAFECOPY(serv->cmd,p);
-		truncsp(serv->cmd);
-
-		(*services)++;
-	}
-	fclose(fp);
-
-	return(service);
-}
-
-static service_t* read_services_ini(service_t* service, char* services_ini, DWORD* services)
+static service_t* read_services_ini(service_t* service, DWORD* services)
 {
 	uint		i,j;
 	FILE*		fp;
 	char		cmd[INI_MAX_VALUE_LEN];
 	char		host[INI_MAX_VALUE_LEN];
 	char		prot[INI_MAX_VALUE_LEN];
+	char		services_ini[MAX_PATH+1];
 	char**		sec_list;
 	service_t*	np;
 	service_t	serv;
 
-	if((fp=fopen(services_ini,"r"))==NULL)
-		return(service);
+	iniFileName(services_ini,sizeof(services_ini),scfg.ctrl_dir,"services.ini");
+
+	if((fp=fopen(services_ini,"r"))==NULL) {
+		lprintf(LOG_ERR,"!ERROR %d opening %s", errno, services_ini);
+		return(NULL);
+	}
 
 	lprintf(LOG_INFO,"Reading %s",services_ini);
 	sec_list = iniReadSectionList(fp,"");
@@ -1564,6 +1490,9 @@ static service_t* read_services_ini(service_t* service, char* services_ini, DWOR
 
 static void cleanup(int code)
 {
+	FREE_AND_NULL(service);
+	services=0;
+
 	free_cfg(&scfg);
 
 	semfile_list_free(&recycle_semfiles);
@@ -1738,21 +1667,10 @@ void DLLCALL services_thread(void* arg)
 
 		active_clients=0, update_clients();
 
-		if(startup->cfg_file[0]==0)			
-			sprintf(startup->cfg_file,"%sservices.cfg",scfg.ctrl_dir);
-		service=read_services_cfg(service, startup->cfg_file, &services);
-
-		if(startup->ini_file[0]==0)
-			iniFileName(startup->ini_file,sizeof(startup->ini_file),scfg.ctrl_dir,"services.ini");
-		service=read_services_ini(service, startup->ini_file, &services);
-
-		if(service==NULL) {
-			lprintf(LOG_ERR,"!Failure reading configuration file (%s or %s)"
-				,startup->cfg_file,startup->ini_file);
+		if((service=read_services_ini(service, &services))==NULL) {
 			cleanup(1);
 			return;
 		}
-
 
 		/* Open and Bind Listening Sockets */
 		total_sockets=0;
@@ -2151,11 +2069,6 @@ void DLLCALL services_thread(void* arg)
 			}
 			lprintf(LOG_DEBUG,"0000 Done waiting");
 		}
-
-		/* Free Service Data */
-		services=0;
-		free(service);
-		service=NULL;
 
 		cleanup(0);
 		if(!terminated) {
