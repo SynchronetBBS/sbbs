@@ -79,9 +79,11 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 				break;
 		if(k>=cfg.total_fextrs)
 			k=0;
-		i=external(cmdstr(cfg.fextr[k]->cmd,str,ALLFILES,NULL),ex);
-		if(!i)
+		p=cmdstr(cfg.fextr[k]->cmd,str,ALLFILES,NULL);
+		if((i=external(p,ex))==0)
 			preqwk=1; 
+		else 
+			errormsg(WHERE,ERR_EXEC,p,i);
 	}
 
 	if(useron.rest&FLAG('Q') && useron.qwk&QWK_RETCTLA)
