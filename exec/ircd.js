@@ -194,7 +194,7 @@ function dec_to_ip(ip) {
 function terminate_everything(terminate_reason) {
 	for(thisClient in Clients) {
 		var Client = Clients[thisClient];
-		if (Client.local)
+		if (Client && Client.local)
 			Client.quit(terminate_reason,false)
 	}
 	exit();
@@ -204,9 +204,11 @@ function searchbynick(nick) {
 	if (!nick)
 		return 0;
 	for(thisClient in Clients) {
-		Client=Clients[thisClient];
-		if ((nick.toUpperCase() == Client.nick.toUpperCase()) &&
-		    Client.conntype && !Client.server)
+		var Client=Clients[thisClient];
+		if (Client 
+			&& nick.toUpperCase() == Client.nick.toUpperCase() 
+			&& Client.conntype 
+			&& !Client.server)
 			return Client; // success!
 	}
 	return 0; // failure
