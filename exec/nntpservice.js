@@ -6,6 +6,10 @@
 
 // NNTP		119	0-unlimited	0		nntpservice.js
 
+// Tested clients:
+//					Microsoft Outlook Express 6
+//					Netscape Communicator 4.77
+
 load("sbbsdefs.js");
 
 const VERSION = "1.00 Alpha";
@@ -23,7 +27,7 @@ for(i=0;i<argc;i++)
 // Write a string to the client socket
 function write(str)
 {
-	if(0 && debug)
+	if(debug)
 		log(format("rsp: %s",str));
 	client.socket.send(str);
 }
@@ -116,6 +120,11 @@ while(client.socket.is_connected) {
 			writeln(".");	// end of list
 			break;
 
+		case "NEWGROUPS":
+			writeln("231 list of new newsgroups follows");
+			writeln(".");	// end of list
+			break;
+
 		case "GROUP":
 			found=false;
 			for(g in msg_area.grp_list) 
@@ -155,15 +164,15 @@ while(client.socket.is_connected) {
 					continue;
 				if(hdr.attr&MSG_DELETE)	/* marked for deletion */
 					continue;
-				writeln(format("%u\t%s\t%s\t%s\t%u\t%u\t%u\t%u"
+				writeln(format("%u\t%s\t%s\t%s\t%s\t%s\t%u\t%u"
 					,i
 					,hdr.subject
 					,hdr.from
 					,system.timestr(hdr.when_written_time)
-					,hdr.number			// message-id
-					,hdr.thread_orig	// references
+					,hdr.id			// message-id
+					,hdr.references	// references
 					,hdr.data_length	// byte count
-					,Math.round(hdr.data_length/79)	// line count
+					,Math.round(hdr.data_length/79)+1	// line count
 					));
 			}
 			writeln(".");	// end of list
@@ -203,13 +212,13 @@ while(client.socket.is_connected) {
 						field=system.timestr(hdr.when_written_time);
 						break;
 					case "message-id":
-						field=hdr.number;
+						field=hdr.id;
 						break;
 					case "references":
 						field=hdr.thread_orig;
 						break;
 					case "lines":
-						field=Math.round(hdr.data_length/79);
+						field=Math.round(hdr.data_length/79)+1;
 						break;
 				}
 
@@ -263,13 +272,13 @@ while(client.socket.is_connected) {
 
 			switch(cmd[0].toUpperCase()) {
 				case "ARTICLE":
-					writeln(format("220 <%u> article retrieved - head and body follow",hdr.number));
+					writeln(format("220 %s article retrieved - head and body follow",hdr.id));
 					break;
 				case "HEAD":
-					writeln(format("221 <%u> article retrieved - header follows",hdr.number));
+					writeln(format("221 %s article retrieved - header follows",hdr.id));
 					break;
 				case "BODY":
-					writeln(format("222 <%u> article retrieved - body follows",current_article));
+					writeln(format("222 %s article retrieved - body follows",hdr.id));
 					break;
 			}
 
@@ -277,13 +286,16 @@ while(client.socket.is_connected) {
 				if(hdr.from_net_type)
 					writeln(format("From: \"%s\" <%s@%s>"
 						,hdr.from,hdr.from,hdr.from_net_addr));
-				else
+				else if(hdr.from.indexOf(' ')>0)
 					writeln(format("From: \"%s\"@%s"
 						,hdr.from,system.inetaddr));
+				else
+					writeln(format("From: %s@%s"
+						,hdr.from,system.inetaddr));
 				writeln("Subject: " + hdr.subject);
-				writeln("Message-ID: " + hdr.number);
+				writeln("Message-ID: " + hdr.id);
 				writeln("Date: " + system.timestr(hdr.when_written_time));
-				writeln("References: " + hdr.thread_orig);
+				writeln("References: " + hdr.references);
 				writeln("Newsgroups: " + selected.newsgroup);
 			}
 			if(hdr!=null && body!=null)	/* both, separate with blank line */
