@@ -98,6 +98,7 @@ while(client.socket.is_connected) {
 
 	if(!logged_in) {
 		writeln("502 Authentication required");
+		log("!Authentication required");
 		continue;
 	}
 
