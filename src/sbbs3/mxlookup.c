@@ -100,8 +100,13 @@ enum {
 #define DNS_MX			15			// Mail Exchange Query Type
 #define DNS_IN			1			// Internet Query Class
 
-int mail_open_socket(int type);
-int mail_close_socket(SOCKET sock);
+#ifdef MX_LOOKUP_TEST
+	#define mail_open_socket(type)	socket(AF_INET, type, IPPROTO_IP)
+	#define mail_close_socket(sock)	closesocket(sock)
+#else
+	int mail_open_socket(int type);
+	int mail_close_socket(SOCKET sock);
+#endif
 
 int dns_name(char* name, char* srcbuf, char* p)
 {
@@ -313,7 +318,7 @@ int dns_getmx(char* name, char* mx, char* mx2
 	return(0);
 }
 
-#if 0
+#ifdef MX_LOOKUP_TEST
 void main(int argc, char **argv)
 {
 	char		mx[128],mx2[128];
@@ -331,13 +336,12 @@ void main(int argc, char **argv)
 		return;
 	}
 
-	if((result=dns_getmx(argv[1],mx,mx2,0,inet_addr(argv[2])))!=0) 
+	if((result=dns_getmx(argv[1],mx,mx2,0,inet_addr(argv[2]),FALSE,60))!=0) 
 		printf("Error %d getting mx record\n",result);
 	else {
 		printf("MX1: %s\n",mx);
 		printf("MX2: %s\n",mx2);
 	}
-	getch();
 
 	WSACleanup();
 }
