@@ -28,7 +28,7 @@ load("html_inc/html_themes.ssjs");
 function write_template(filename)  {
 	var inc=new File(system.text_dir+"html_templates"+'/'+Themes[CurrTheme].dir+'/'+filename);
 	if(!inc.open("r",true,1024)) {
-		horrible_error("Cannot open template file "+system.text_dir+"html_templates"+'/'+filename+"!");
+		horrible_error("Cannot open template file "+system.text_dir+"html_templates"+'/'+Themes[CurrTheme].dir+'/'+filename+"!");
 	}
 	var file='';
 	while(! inc.eof)  {
