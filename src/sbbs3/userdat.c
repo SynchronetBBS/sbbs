@@ -689,7 +689,8 @@ int DLLCALL getnodedat(scfg_t* cfg, uint number, node_t *node, int* fdp)
 			if(count)
 				mswait(100);
 			lseek(file,(long)number*sizeof(node_t),SEEK_SET);
-			if(lock(file,(long)number*sizeof(node_t),sizeof(node_t))!=0) 
+			if(lock(file,(long)number*sizeof(node_t),sizeof(node_t))!=0
+				&& fdp!=NULL) 
 				continue; 
 			rd=read(file,node,sizeof(node_t));
 			if(fdp==NULL || rd!=sizeof(node_t))

@@ -70,7 +70,8 @@ int sbbs_t::getnodedat(uint number, node_t *node, bool lockit)
 	for(count=0;count<LOOP_NODEDAB;count++) {
 		if(count)
 			mswait(100);
-		if(lock(nodefile,(long)number*sizeof(node_t),sizeof(node_t))!=0)
+		if(lock(nodefile,(long)number*sizeof(node_t),sizeof(node_t))!=0
+			&& lockit)
 			continue; 
 		lseek(nodefile,(long)number*sizeof(node_t),SEEK_SET);
 		rd=read(nodefile,node,sizeof(node_t));
