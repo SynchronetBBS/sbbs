@@ -17,6 +17,8 @@ CC		=	gcc
 LD		=	ld
 XSDK		=	../sdk
 
+vpath %.c $(XSDK)
+
 ifndef os
  os              =       $(shell uname)
  $(warning OS not specified on command line, setting to '$(os)'.)
@@ -37,10 +39,15 @@ endif	#! FreeBSD
 
 CFLAGS	+=	-I$(XSDK)
 
+OBJS		= xsdk.o xsdkvars.o xsdkwrap.o
+
 all: sbj sbjclean
 
-sbj: sbj.c $(XSDK)/xsdk.c $(XSDK)/xsdkvars.c $(XSDK)/xsdkwrap.c
+sbj: sbj.o $(OBJS)
 	$(CC) $(CFLAGS) $^ -o $@ $(LIBS)
 
-sbjclean: sbjclean.c $(XSDK)/xsdk.c $(XSDK)/xsdkvars.c $(XSDK)/xsdkwrap.c
+sbjclean: sbjclean.o $(OBJS)
 	$(CC) $(CFLAGS) $^ -o $@ $(LIBS)
+
+clean:
+	rm -f *.o
