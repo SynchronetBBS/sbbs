@@ -203,8 +203,8 @@ char sbbs_t::getkey(long mode)
 					outchar(toupper(ch));
 				else
 					outchar(ch);
-				while((coldkey=inkey(mode))==0 && online && !(sys_status&SS_ABORT))
-					YIELD();
+				while((coldkey=inkey(mode,1000))==0 && online && !(sys_status&SS_ABORT))
+					;
 				bputs("\b \b");
 				if(coldkey==BS || coldkey==DEL)
 					continue;
@@ -250,7 +250,7 @@ char sbbs_t::getkey(long mode)
 			}
 			else
 				bputs("\7\7");
-			while(!inkey(100) && online && now-timeout>=cfg.sec_warn) {
+			while(!inkey(K_NONE,100) && online && now-timeout>=cfg.sec_warn) {
 				now=time(NULL);
 				if(now-timeout>=cfg.sec_hangup) {
 					if(online==ON_REMOTE) {
