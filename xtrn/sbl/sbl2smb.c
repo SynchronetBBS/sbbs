@@ -145,7 +145,7 @@ int main(int argc, char **argv)
 	ushort	xlat;
 	long	length;
 	ulong	offset;
-	time_t	last,t;
+	time_t	last,now;
 	bbs_t	bbs;
 	smbmsg_t msg;
 	FILE	*stream;
@@ -157,6 +157,8 @@ int main(int argc, char **argv)
 		fprintf(stderr,"ex: sbl2smb c:\\sbbs\\xtrn\\sbl\\sbl.dab "
 			"c:\\sbbs\\data\\subs\\syncdata /s:syn\n");
 		return(1); }
+
+	now=time(NULL);
 
 	software[0]=0;
 	if(argc>3 && !strnicmp(argv[3],"/S:",3))
@@ -181,11 +183,10 @@ int main(int argc, char **argv)
 		if((file=open(tmp,O_RDWR|O_BINARY|O_CREAT,S_IWRITE|S_IREAD))==-1) {
 			printf("error opening %s\n",str);
 			return(1); }
-		t=time(NULL);
 		if(read(file,&last,sizeof(time_t))!=sizeof(time_t))
 			last=0;
 		lseek(file,0L,SEEK_SET);
-		write(file,&t,sizeof(time_t));
+		write(file,&now,sizeof(now));
 		close(file); }
 
 	sprintf(str,"%s.SHD",smb.file);
@@ -372,8 +373,8 @@ int main(int argc, char **argv)
 		memset(&msg,0,sizeof(smbmsg_t));
 		memcpy(msg.hdr.id,"SHD\x1a",4);
 		msg.hdr.version=smb_ver();
-		msg.hdr.when_written.time=time(NULL);
-		msg.hdr.when_imported.time=time(NULL);
+		msg.hdr.when_written.time=now;
+		msg.hdr.when_imported.time=now;
     
 		msg.hdr.offset=offset;
 
