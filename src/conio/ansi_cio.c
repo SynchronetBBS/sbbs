@@ -202,6 +202,7 @@ int ansi_puttext(int sx, int sy, int ex, int ey, void* buf)
 		gotoxy(ti.curx,ti.cury);
 	if(attrib!=ti.attribute)
 		textattr(ti.attribute);
+	return(1);
 }
 
 int ansi_gettext(int sx, int sy, int ex, int ey, void* buf)
@@ -235,6 +236,7 @@ int ansi_gettext(int sx, int sy, int ex, int ey, void* buf)
 			*(out++)=sch >> 8;
 		}
 	}
+	return(1);
 }
 
 void ansi_textattr(int attr)
@@ -305,6 +307,7 @@ static void ansi_keyparse(void *par)
 	int		i;
 	char	*p;
 
+	if(par);	/* Shut up BCC */
 	for(;;) {
 		while(!ansi_raw_inch
 				&& (gotesc || (!gotesc && !seq[0]))) {
@@ -376,6 +379,7 @@ static void ansi_keythread(void *params)
 {
 	_beginthread(ansi_keyparse,1024,NULL);
 
+	if(params);	/* Shut up BCC */
 	for(;;) {
 		if(!ansi_raw_inch)
 			ansi_raw_inch=fgetc(stdin);
@@ -595,6 +599,7 @@ int ansi_beep(void)
 
 void ansi_textmode(int mode)
 {
+	if(mode);	/* Shut up BCC */
 }
 
 #ifdef __unix__
@@ -608,6 +613,7 @@ int ansi_initciolib(long inmode)
 {
 	int i;
 	char *init="\033[0m\033[2J\033[1;1H";
+
 #ifdef _WIN32
 	setmode(fileno(stdout),_O_BINARY);
 	setmode(fileno(stdin),_O_BINARY);
@@ -629,5 +635,6 @@ int ansi_initciolib(long inmode)
 	for(i=0;i<ansi_rows*ansi_cols;i++)
 		vmem[i]=0x0720;
 	_beginthread(ansi_keythread,1024,NULL);
+	if(inmode);	/* Shut up BCC */
 	return(1);
 }
