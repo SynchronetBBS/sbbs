@@ -43,7 +43,7 @@
 /***************/
 /* OS-specific */
 /***************/
-#if defined _WIN32	|| defined __OS2__	/* Use WinSock */
+#if defined(_WIN32)		/* Use WinSock */
 
 #include <winsock.h>	/* socket/bind/etc. */
 
