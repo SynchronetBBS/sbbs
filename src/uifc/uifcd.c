@@ -209,7 +209,7 @@ int ulist(int mode, char left, int top, char width, int *cur, int *bar
 #endif
 		else  {
 			/* make sure we're wide enough to display the application title */
-			if(width<strlen(app_title)
+			if(width<strlen(app_title))
 				width=strlen(app_title);
             dialog_clear_norefresh();
 			scrollpos=0;
