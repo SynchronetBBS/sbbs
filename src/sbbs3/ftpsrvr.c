@@ -1726,7 +1726,7 @@ static void ctrl_thread(void* arg)
 				strcat(local_dir,"/");
 
 			if(!strnicmp(cmd, "LIST", 4) || !strnicmp(cmd, "NLST", 4)) {	
-				sprintf(fname,"%sFTP%d.TX", scfg.data_dir, sock);
+				sprintf(fname,"%sftp%d.tx", scfg.data_dir, sock);
 				if((fp=fopen(fname,"w+b"))==NULL) {
 					lprintf("%04d !ERROR %d opening %s",sock,errno,fname);
 					sockprintf(sock, "451 Insufficient system storage");
@@ -2014,7 +2014,7 @@ static void ctrl_thread(void* arg)
 
 			parsepath(&p,&user,&lib,&dir);
 
-			sprintf(fname,"%sFTP%d.TX", scfg.data_dir, sock);
+			sprintf(fname,"%sftp%d.tx", scfg.data_dir, sock);
 			if((fp=fopen(fname,"w+b"))==NULL) {
 				lprintf("%04d !ERROR %d opening %s",sock,errno,fname);
 				sockprintf(sock, "451 Insufficient system storage");
@@ -2365,7 +2365,7 @@ static void ctrl_thread(void* arg)
 			} else if(startup->options&FTP_OPT_INDEX_FILE 
 				&& !stricmp(p,startup->index_file_name)
 				&& !delecmd) {
-				sprintf(fname,"%sFTP%d.TX", scfg.data_dir, sock);
+				sprintf(fname,"%sftp%d.tx", scfg.data_dir, sock);
 				if((fp=fopen(fname,"w+b"))==NULL) {
 					lprintf("%04d !ERROR %d opening %s",sock,errno,fname);
 					sockprintf(sock, "451 Insufficient system storage");
