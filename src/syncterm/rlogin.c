@@ -97,7 +97,7 @@ int rlogin_connect(char *addr, int port, char *ruser, char *passwd)
 		rlogin_close();
 		sprintf(str,"Cannot connect to %s!",addr);
 		uifcmsg(str,	"`Unable to connect`\n\n"
-						"Cannot connect to the remost system... it is down or unreachable.");
+						"Cannot connect to the remote system... it is down or unreachable.");
 		return(-1);
 	}
 
