@@ -36,6 +36,7 @@ object MainForm: TMainForm
     Font.Color = clLime
     Font.Height = -15
     Font.Name = 'System'
+    Font.Pitch = fpFixed
     Font.Style = []
     ParentFont = False
     ReadOnly = True
@@ -56,6 +57,7 @@ object MainForm: TMainForm
     Font.Color = clGreen
     Font.Height = -15
     Font.Name = 'System'
+    Font.Pitch = fpFixed
     Font.Style = []
     HideSelection = False
     ParentFont = False
