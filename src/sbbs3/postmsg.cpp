@@ -429,7 +429,7 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, char* msg
 	BOOL	lzh=FALSE;
 	ulong	l;
 	ulong	length;
-	ulong	offset;
+	long	offset;
 	ulong	crc=0xffffffff;
 	smbmsg_t remsg;
 	smbmsg_t firstmsg;
@@ -470,8 +470,8 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, char* msg
 
 	/* Calculate CRC-32 of message text (before encoding, if any) */
 	if(smb->status.max_crcs) {
-		for(i=0;msgbuf[i];i++)
-			crc=ucrc32(msgbuf[i],crc); 
+		for(l=0;msgbuf[l];l++)
+			crc=ucrc32(msgbuf[l],crc); 
 		crc=~crc;
 	}
 
@@ -517,6 +517,12 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, char* msg
 			storage=SMB_SELFPACK; 
 		}
 		smb_close_da(smb); 
+	}
+
+	if(offset<0) {
+		smb_unlocksmbhdr(smb);
+		FREE_AND_NULL(lzhbuf);
+		return((int)offset);
 	}
 
 	smb_fseek(smb->sdt_fp,offset,SEEK_SET);
