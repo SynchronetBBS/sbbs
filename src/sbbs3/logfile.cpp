@@ -66,6 +66,32 @@ extern "C" BOOL DLLCALL hacklog(scfg_t* cfg, char* prot, char* user, char* text,
 	return(TRUE);
 }
 
+extern "C" BOOL DLLCALL spamlog(scfg_t* cfg, char* reason, char* host, char* ip_addr)
+{
+	char	hdr[512];
+	char	fname[MAX_PATH+1];
+	int		file;
+	time_t	now=time(NULL);
+
+	sprintf(fname,"%sspam.log",cfg->data_dir);
+
+	if((file=sopen(fname,O_CREAT|O_WRONLY|O_BINARY|O_APPEND,SH_DENYWR))==-1)
+		return(FALSE);
+
+	sprintf(hdr,"SUSPECTED SPAM REJECTED from %s [%s] on %.24s\r\nReason: "
+		,host
+		,ip_addr
+		,ctime(&now)
+		);
+	write(file,hdr,strlen(hdr));
+	write(file,reason,strlen(reason));
+	write(file,crlf,2);
+	write(file,crlf,2);
+	close(file);
+
+	return(TRUE);
+}
+
 void sbbs_t::logentry(char *code, char *entry)
 {
 	char str[512];
