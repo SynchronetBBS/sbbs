@@ -815,18 +815,14 @@ js_user_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval
 	JS_SetPrivate(cx, statsobj, p);
 	JS_SetPrivate(cx, securityobj, p);
 
+	js_DefineMethods(cx, obj, js_user_functions);
+
 	return(JS_TRUE);
 }
-
 
 JSObject* DLLCALL js_CreateUserClass(JSContext* cx, JSObject* parent, scfg_t* cfg)
 {
 	JSObject*	userclass;
-	JSFunctionSpec	funcs[sizeof(js_user_functions)/sizeof(jsMethodSpec)];
-
-	/* Convert from jsMethodSpec to JSFunctionSpec */
-	memset(funcs,0,sizeof(funcs));
-	js_MethodsToFunctions(js_user_functions,funcs);
 
 	scfg = cfg;
 	userclass = JS_InitClass(cx, parent, NULL
@@ -834,7 +830,7 @@ JSObject* DLLCALL js_CreateUserClass(JSContext* cx, JSObject* parent, scfg_t* cf
 		,js_user_constructor
 		,1	/* number of constructor args */
 		,js_user_properties
-		,funcs
+		,NULL /* funcs, defined in constructor */
 		,NULL,NULL);
 
 	return(userclass);
@@ -868,7 +864,12 @@ JSObject* DLLCALL js_CreateUserObject(JSContext* cx, JSObject* parent, scfg_t* c
 	JS_DefineProperties(cx, userobj, js_user_properties);
 
 #ifdef _DEBUG
-	js_CreateArrayOfStrings(cx, userobj, "_property_desc_list", user_prop_desc, JSPROP_READONLY);
+	js_DescribeObject(cx,userobj
+		,"Instance of <i>User</i> class, representing current user online");
+	js_DescribeConstructor(cx,userobj
+		,"To create a new user object: <tt>var u = new User(number)</tt>");
+	js_CreateArrayOfStrings(cx, userobj
+		,"_property_desc_list", user_prop_desc, JSPROP_READONLY);
 #endif
 
 	js_DefineMethods(cx, userobj, js_user_functions);
@@ -887,6 +888,7 @@ JSObject* DLLCALL js_CreateUserObject(JSContext* cx, JSObject* parent, scfg_t* c
 	JS_DefineProperties(cx, statsobj, js_user_stats_properties);
 
 #ifdef _DEBUG
+	js_DescribeObject(cx,statsobj,"User statistics");
 	js_CreateArrayOfStrings(cx, statsobj, "_property_desc_list", user_stats_prop_desc, JSPROP_READONLY);
 #endif
 
@@ -904,6 +906,7 @@ JSObject* DLLCALL js_CreateUserObject(JSContext* cx, JSObject* parent, scfg_t* c
 	JS_DefineProperties(cx, securityobj, js_user_security_properties);
 
 #ifdef _DEBUG
+	js_DescribeObject(cx,securityobj,"User security settings");
 	js_CreateArrayOfStrings(cx, securityobj, "_property_desc_list", user_security_prop_desc, JSPROP_READONLY);
 #endif
 

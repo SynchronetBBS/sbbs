@@ -67,56 +67,6 @@ static void dbprintf(BOOL error, private_t* p, char* fmt, ...)
 	lprintf("%04u File %s%s",p->fp ? fileno(p->fp) : 0,error ? "ERROR: ":"",sbuf);
 }
 
-/* File Constructor (creates file descriptor) */
-
-static JSBool
-js_file_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
-{
-	JSString*	str;
-	private_t*	p;
-
-	if((str = JS_ValueToString(cx, argv[0]))==NULL) {
-		dbprintf(TRUE, 0, "no filename specified");
-		return(JS_FALSE);
-	}
-
-	*rval = JSVAL_VOID;
-
-	if((p=(private_t*)calloc(1,sizeof(private_t)))==NULL) {
-		dbprintf(TRUE, 0, "open_file malloc failed");
-		return(JS_FALSE);
-	}
-
-	SAFECOPY(p->name,JS_GetStringBytes(str));
-
-	if(!JS_SetPrivate(cx, obj, p)) {
-		dbprintf(TRUE, p, "JS_SetPrivate failed");
-		return(JS_FALSE);
-	}
-
-	dbprintf(FALSE, p, "object constructed");
-	return(JS_TRUE);
-}
-
-/* File Destructor */
-
-static void js_finalize_file(JSContext *cx, JSObject *obj)
-{
-	private_t* p;
-	
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
-		return;
-
-	if(p->external==JS_FALSE && p->fp!=NULL)
-		fclose(p->fp);
-
-	dbprintf(FALSE, p, "closed: %s",p->name);
-
-	free(p);
-
-	JS_SetPrivate(cx, obj, NULL);
-}
-
 /* Converts fopen() style 'mode' string into open() style 'flags' integer */
 
 static int fopenflags(char *mode)
@@ -864,19 +814,6 @@ static struct JSPropertySpec js_file_properties[] = {
 	{0}
 };
 
-static JSClass js_file_class = {
-     "File"					/* name			*/
-    ,JSCLASS_HAS_PRIVATE	/* flags		*/
-	,JS_PropertyStub		/* addProperty	*/
-	,JS_PropertyStub		/* delProperty	*/
-	,js_file_get			/* getProperty	*/
-	,js_file_set			/* setProperty	*/
-	,JS_EnumerateStub		/* enumerate	*/
-	,JS_ResolveStub			/* resolve		*/
-	,JS_ConvertStub			/* convert		*/
-	,js_finalize_file		/* finalize		*/
-};
-
 static jsMethodSpec js_file_functions[] = {
 	{"open",			js_open,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("[string mode, boolean shareable, number buflen]")
 	,JSDOCSTR("open file (w/mode) [buffered]")
@@ -931,21 +868,89 @@ static jsMethodSpec js_file_functions[] = {
 	{0}
 };
 
+/* File Destructor */
+
+static void js_finalize_file(JSContext *cx, JSObject *obj)
+{
+	private_t* p;
+	
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+		return;
+
+	if(p->external==JS_FALSE && p->fp!=NULL)
+		fclose(p->fp);
+
+	dbprintf(FALSE, p, "closed: %s",p->name);
+
+	free(p);
+
+	JS_SetPrivate(cx, obj, NULL);
+}
+
+static JSClass js_file_class = {
+     "File"					/* name			*/
+    ,JSCLASS_HAS_PRIVATE	/* flags		*/
+	,JS_PropertyStub		/* addProperty	*/
+	,JS_PropertyStub		/* delProperty	*/
+	,js_file_get			/* getProperty	*/
+	,js_file_set			/* setProperty	*/
+	,JS_EnumerateStub		/* enumerate	*/
+	,JS_ResolveStub			/* resolve		*/
+	,JS_ConvertStub			/* convert		*/
+	,js_finalize_file		/* finalize		*/
+};
+
+/* File Constructor (creates file descriptor) */
+
+static JSBool
+js_file_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	JSString*	str;
+	private_t*	p;
+
+	if((str = JS_ValueToString(cx, argv[0]))==NULL) {
+		dbprintf(TRUE, 0, "no filename specified");
+		return(JS_FALSE);
+	}
+
+	*rval = JSVAL_VOID;
+
+	if((p=(private_t*)calloc(1,sizeof(private_t)))==NULL) {
+		dbprintf(TRUE, 0, "open_file malloc failed");
+		return(JS_FALSE);
+	}
+
+	SAFECOPY(p->name,JS_GetStringBytes(str));
+
+	if(!JS_SetPrivate(cx, obj, p)) {
+		dbprintf(TRUE, p, "JS_SetPrivate failed");
+		return(JS_FALSE);
+	}
+
+	if(!js_DefineMethods(cx, obj, js_file_functions)) {
+		dbprintf(TRUE, p, "js_DefineMethods failed");
+		return(JS_FALSE);
+	}
+
+#ifdef _DEBUG
+	js_DescribeObject(cx,obj,"Class used for opening/creating files on the system file system");
+	js_DescribeConstructor(cx,obj,"To create a new file object: <tt>var f = new File(filename)</tt>");
+#endif
+
+	dbprintf(FALSE, p, "object constructed");
+	return(JS_TRUE);
+}
 
 JSObject* DLLCALL js_CreateFileClass(JSContext* cx, JSObject* parent)
 {
 	JSObject*	sockobj;
-	JSFunctionSpec	funcs[sizeof(js_file_functions)/sizeof(jsMethodSpec)];
-
-	memset(funcs,0,sizeof(funcs));
-	js_MethodsToFunctions(js_file_functions,funcs);
 
 	sockobj = JS_InitClass(cx, parent, NULL
 		,&js_file_class
 		,js_file_constructor
 		,0	/* number of constructor args */
 		,js_file_properties
-		,funcs
+		,NULL // funcs, set in constructor
 		,NULL,NULL);
 
 	return(sockobj);

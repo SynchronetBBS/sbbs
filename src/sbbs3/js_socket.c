@@ -68,40 +68,6 @@ static void dbprintf(BOOL error, private_t* p, char* fmt, ...)
 	lprintf("%04d Socket %s%s",p->sock,error ? "ERROR: ":"",sbuf);
 }
 
-/* Socket Constructor (creates socket descriptor) */
-
-static JSBool
-js_socket_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
-{
-	int32	type=SOCK_STREAM;	/* default = TCP */
-	private_t* p;
-
-	if(argc)
-		JS_ValueToInt32(cx,argv[0],&type);
-
-	*rval = JSVAL_VOID;
-
-	if((p=(private_t*)malloc(sizeof(private_t)))==NULL) {
-		dbprintf(TRUE, 0, "open_socket malloc failed");
-		return(JS_FALSE);
-	}
-	memset(p,0,sizeof(private_t));
-
-	if((p->sock=open_socket(type))==INVALID_SOCKET) {
-		dbprintf(TRUE, 0, "open_socket failed with error %d",ERROR_VALUE);
-		return(JS_FALSE);
-	}
-	p->type = type;
-
-	if(!JS_SetPrivate(cx, obj, p)) {
-		dbprintf(TRUE, p, "JS_SetPrivate failed");
-		return(JS_FALSE);
-	}
-
-	dbprintf(FALSE, p, "object constructed");
-	return(JS_TRUE);
-}
-
 /* Socket Destructor */
 
 static void js_finalize_socket(JSContext *cx, JSObject *obj)
@@ -1036,20 +1002,55 @@ static jsMethodSpec js_socket_functions[] = {
 	{0}
 };
 
+/* Socket Constructor (creates socket descriptor) */
+
+static JSBool
+js_socket_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	int32	type=SOCK_STREAM;	/* default = TCP */
+	private_t* p;
+
+	if(argc)
+		JS_ValueToInt32(cx,argv[0],&type);
+
+	*rval = JSVAL_VOID;
+
+	if((p=(private_t*)malloc(sizeof(private_t)))==NULL) {
+		dbprintf(TRUE, 0, "open_socket malloc failed");
+		return(JS_FALSE);
+	}
+	memset(p,0,sizeof(private_t));
+
+	if((p->sock=open_socket(type))==INVALID_SOCKET) {
+		dbprintf(TRUE, 0, "open_socket failed with error %d",ERROR_VALUE);
+		return(JS_FALSE);
+	}
+	p->type = type;
+
+	if(!JS_SetPrivate(cx, obj, p)) {
+		dbprintf(TRUE, p, "JS_SetPrivate failed");
+		return(JS_FALSE);
+	}
+
+	if (!js_DefineMethods(cx, obj, js_socket_functions)) {
+		dbprintf(TRUE, p, "js_DefineMethods failed");
+		return(JS_FALSE);
+	}
+
+	dbprintf(FALSE, p, "object constructed");
+	return(JS_TRUE);
+}
+
 JSObject* DLLCALL js_CreateSocketClass(JSContext* cx, JSObject* parent)
 {
 	JSObject*	sockobj;
-	JSFunctionSpec	funcs[sizeof(js_socket_functions)/sizeof(jsMethodSpec)];
-
-	memset(funcs,0,sizeof(funcs));
-	js_MethodsToFunctions(js_socket_functions,funcs);
 
 	sockobj = JS_InitClass(cx, parent, NULL
 		,&js_socket_class
 		,js_socket_constructor
 		,0	/* number of constructor args */
 		,js_socket_properties
-		,funcs
+		,NULL /* funcs, specified in constructor */
 		,NULL,NULL);
 
 	return(sockobj);
@@ -1084,6 +1085,11 @@ JSObject* DLLCALL js_CreateSocketObject(JSContext* cx, JSObject* parent, char *n
 	}
 
 #ifdef _DEBUG
+	js_DescribeObject(cx,obj,"Instance of <i>Socket</i> class, "
+		"used for TCP/IP socket communications");
+	js_DescribeConstructor(cx,obj,"To create a new Socket object: "
+		"<tt>load('sockdefs.js'); var s = new Socket(type)</tt><br>"
+		"where type = <tt>SOCK_STREAM</tt> for TCP (default) or <tt>SOCK_DGRAM</tt> for UDP");
 	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", socket_prop_desc, JSPROP_READONLY);
 #endif
 
