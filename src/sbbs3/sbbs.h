@@ -60,6 +60,7 @@
 
 	typedef DWORD(WINAPI * GetLongPathName_t)(LPCTSTR,LPTSTR,DWORD); 
 
+	extern HINSTANCE hK32;
 	extern GetLongPathName_t Win98GetLongPathName;
 
 #elif defined(__unix__)		/* Unix-variant */
