@@ -68,10 +68,6 @@ ifdef DONT_BLAME_SYNCHRONET
  CFLAGS += -DDONT_BLAME_SYNCHRONET
 endif
 
-ifeq ($(XP_SEM),1)
- OBJS	+=	$(LIBODIR)$(SLASH)xpsem.$(OFILE)
-endif
-
 #SBBSLIB	=	$(LIBODIR)$(SLASH)libsbbs.so
 SBBSLIB	=	-lsbbs
 
