@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -114,7 +114,7 @@ void bail(int code)
 {
     if(code) {
         puts("\nHit a key...");
-        getch(); 
+        getch();
 	}
     uifc.bail();
 
@@ -209,7 +209,7 @@ int do_cmd(char *cmd)
 {
 	int i;
 
-#ifdef __unix__	
+#ifdef __unix__
 	endwin();
 #endif
 	i=system(cmd);
@@ -319,7 +319,7 @@ int edit_terminal(scfg_t *cfg, user_t *user)
 				}
 				break;
 		}
-	}	
+	}
 	return(0);
 }
 
@@ -452,6 +452,7 @@ int edit_chat(scfg_t *cfg, user_t *user)
 }
 
 /* Pick Command Shell */
+
 int edit_shell(scfg_t *cfg, user_t *user)
 {
 	int 	i,j;
@@ -513,7 +514,7 @@ int edit_cmd(scfg_t *cfg, user_t *user)
 				edit_shell(cfg,user);
 				break;
 			case 1:
-				/* Expoert Mode */
+				/* Expert Mode */
 				user->misc ^= EXPERT;
 				putuserrec(cfg,user->number,U_MISC,8,ultoa(user->misc,str,16));
 				break;
@@ -539,13 +540,16 @@ int edit_xedit(scfg_t *cfg, user_t *user)
 	}
 	opt[i]="";
 	j=user->xedit;
-	switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&j,0,"Shell",opt)) {
+	switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&j,0,"External Editor",opt)) {
 		case -1:
 			break;
 		default:
 			if(user->xedit != j) {
 				user->xedit=j;
-				putuserrec(cfg,user->number,U_XEDIT,8,cfg->xedit[j]->code);
+				if(j > 0)
+				    putuserrec(cfg,user->number,U_XEDIT,8,cfg->xedit[j-1]->code);
+				else
+				    putuserrec(cfg,user->number,U_XEDIT,8,nulstr);
 			}
 			break;
 	}
@@ -559,7 +563,7 @@ int edit_xedit(scfg_t *cfg, user_t *user)
  *       External Editor
  */
 int edit_msgopts(scfg_t *cfg, user_t *user)
-{	
+{
 	int 	i,j;
 	char 	**opt;
 	char	str[256];
@@ -763,6 +767,7 @@ int edit_qwk(scfg_t *cfg, user_t *user)
 }
 
 /* Pick Protocol */
+
 int edit_proto(scfg_t *cfg, user_t *user)
 {
 	int 	i;
@@ -856,7 +861,7 @@ int edit_fileopts(scfg_t *cfg, user_t *user)
 				putuserrec(cfg,user->number,U_MISC,8,ultoa(user->misc,str,16));
 				break;
 			case 3:
-				/* Atuo-Hangup */
+				/* Auto-Hangup */
 				user->misc ^= AUTOHANG;
 				putuserrec(cfg,user->number,U_MISC,8,ultoa(user->misc,str,16));
 				break;
@@ -873,7 +878,8 @@ int edit_fileopts(scfg_t *cfg, user_t *user)
 	return(0);
 }
 
-/* Edit "Extended comment" */
+/* Edit "Extended Comment" */
+
 int edit_comment(scfg_t *cfg, user_t *user)
 {
 	char str[1024];
@@ -1416,21 +1422,23 @@ int edit_security(scfg_t *cfg, user_t *user)
 }
 
 /*
- * Personal settings... 
+ * Personal settings...
  *     Real Name
+ *     Alias
+ *     Chat Handle
  *     Computer
  *     NetMail
- *     Phone
- *     Note
- *     Comment
  *     Gender
  *     Birthdate
- *     Connection
- *     Handle
- *     Password
  *     Address 1
- *     Address 2
- *     Postal/ZIP?
+ *     Location
+ *     Postal/ZIP
+ *     Phone
+ *     Computer
+ *     Connection
+ *     Password
+ *     Note
+ *     Comment
  */
 int edit_personal(scfg_t *cfg, user_t *user)
 {
@@ -1450,19 +1458,20 @@ int edit_personal(scfg_t *cfg, user_t *user)
 		getuserdat(cfg,user);
 		i=0;
 		sprintf(opt[i++],"Real Name   %s",user->name);
-		sprintf(opt[i++],"Computer    %s",user->comp);
+		sprintf(opt[i++],"Alias       %s",user->alias);
+		sprintf(opt[i++],"Chat Handle %s",user->handle);
 		sprintf(opt[i++],"NetMail     %s",user->netmail);
-		sprintf(opt[i++],"Phone       %s",user->phone);
-		sprintf(opt[i++],"Note        %s",user->note);
-		sprintf(opt[i++],"Comment     %s",user->comment);
 		sprintf(opt[i++],"Gender      %c",user->sex);
 		sprintf(opt[i++],"D.O.B.      %s",user->birth);
-		sprintf(opt[i++],"Connection  %s",user->modem);
-		sprintf(opt[i++],"Handle      %s",user->alias);
-		sprintf(opt[i++],"Password    %s",user->pass);
-		sprintf(opt[i++],"Location    %s",user->location);
 		sprintf(opt[i++],"Address     %s",user->address);
+		sprintf(opt[i++],"Location    %s",user->location);
 		sprintf(opt[i++],"Postal/Zip  %s",user->zipcode);
+		sprintf(opt[i++],"Phone       %s",user->phone);
+		sprintf(opt[i++],"Computer    %s",user->comp);
+		sprintf(opt[i++],"Connection  %s",user->modem);
+		sprintf(opt[i++],"Password    %s",user->pass);
+		sprintf(opt[i++],"Note        %s",user->note);
+		sprintf(opt[i++],"Comment     %s",user->comment);
 		opt[i][0]=0;
 		uifc.changes=FALSE;
 		switch(uifc.list(WIN_MID|WIN_ACT,0,0,0,&j,0,"Personal Settings",opt)) {
@@ -1477,41 +1486,28 @@ int edit_personal(scfg_t *cfg, user_t *user)
 					putuserrec(cfg,user->number,U_NAME,LEN_NAME,user->name);
 				break;
 			case 1:
-				/* Computer */
+				/* Alias */
 				getuserdat(cfg,user);
-				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Computer",user->comp,LEN_COMP,K_EDIT);
+				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Alias",user->alias,LEN_ALIAS,K_EDIT);
 				if(uifc.changes)
-					putuserrec(cfg,user->number,U_COMP,LEN_COMP,user->comp);
+					putuserrec(cfg,user->number,U_ALIAS,LEN_ALIAS,user->alias);
+					putusername(cfg,user->number,user->alias);
 				break;
 			case 2:
+				/* Handle */
+				getuserdat(cfg,user);
+				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Chat Handle",user->handle,LEN_ALIAS,K_EDIT);
+				if(uifc.changes)
+					putuserrec(cfg,user->number,U_HANDLE,LEN_HANDLE,user->handle);
+				break;
+			case 3:
 				/* NetMail */
 				getuserdat(cfg,user);
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"NetMail Address",user->netmail,LEN_NETMAIL,K_EDIT);
 				if(uifc.changes)
 					putuserrec(cfg,user->number,U_NETMAIL,LEN_NETMAIL,user->netmail);
 				break;
-			case 3:
-				/* Phone */
-				getuserdat(cfg,user);
-				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Phone",user->phone,LEN_PHONE,K_EDIT);
-				if(uifc.changes)
-					putuserrec(cfg,user->number,U_PHONE,LEN_PHONE,user->phone);
-				break;
 			case 4:
-				/* Note */
-				getuserdat(cfg,user);
-				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Note",user->note,LEN_NOTE,K_EDIT);
-				if(uifc.changes)
-					putuserrec(cfg,user->number,U_NOTE,LEN_NOTE,user->note);
-				break;
-			case 5:
-				/* Comment */
-				getuserdat(cfg,user);
-				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Comment",user->comment,LEN_COMMENT,K_EDIT);
-				if(uifc.changes)
-					putuserrec(cfg,user->number,U_COMMENT,60,user->comment);
-				break;
-			case 6:
 				/* Gender */
 				getuserdat(cfg,user);
 				sprintf(onech,"%c",user->sex);
@@ -1521,29 +1517,57 @@ int edit_personal(scfg_t *cfg, user_t *user)
 					putuserrec(cfg,user->number,U_SEX,1,onech);
 				}
 				break;
-			case 7:
-			        /* D.O.B */
+			case 5:
+			    /* D.O.B */
 				getuserdat(cfg,user);
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"D.O.B.",user->birth,LEN_BIRTH,K_EDIT);
 				if(uifc.changes)
 					putuserrec(cfg,user->number,U_BIRTH,LEN_BIRTH,user->birth);
 				break;
-
+			case 6:
+				/* Address */
+				getuserdat(cfg,user);
+				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Address",user->address,LEN_ADDRESS,K_EDIT);
+				if(uifc.changes)
+					putuserrec(cfg,user->number,U_ADDRESS,LEN_ADDRESS,user->address);
+				break;
+			case 7:
+				/* Location */
+				getuserdat(cfg,user);
+				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Location",user->location,LEN_LOCATION,K_EDIT);
+				if(uifc.changes)
+					putuserrec(cfg,user->number,U_LOCATION,LEN_LOCATION,user->location);
+				break;
 			case 8:
+				/* Postal/Zip */
+				getuserdat(cfg,user);
+				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Postal/Zip Code",user->zipcode,LEN_ZIPCODE,K_EDIT);
+				if(uifc.changes)
+					putuserrec(cfg,user->number,U_ZIPCODE,LEN_ZIPCODE,user->zipcode);
+				break;
+			case 9:
+				/* Phone */
+				getuserdat(cfg,user);
+				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Phone",user->phone,LEN_PHONE,K_EDIT);
+				if(uifc.changes)
+					putuserrec(cfg,user->number,U_PHONE,LEN_PHONE,user->phone);
+				break;
+			case 10:
+				/* Computer */
+				getuserdat(cfg,user);
+				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Computer",user->comp,LEN_COMP,K_EDIT);
+				if(uifc.changes)
+					putuserrec(cfg,user->number,U_COMP,LEN_COMP,user->comp);
+				break;
+
+            case 11:
 				/* Connection */
 				getuserdat(cfg,user);
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Connection",user->modem,LEN_MODEM,K_EDIT);
 				if(uifc.changes)
 					putuserrec(cfg,user->number,U_MODEM,LEN_MODEM,user->modem);
 				break;
-			case 9:
-				/* Handle */
-				getuserdat(cfg,user);
-				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Handle",user->alias,LEN_ALIAS,K_EDIT);
-				if(uifc.changes)
-					putuserrec(cfg,user->number,U_ALIAS,LEN_ALIAS,user->alias);
-				break;
-			case 10:
+			case 12:
 				/* Password */
 				getuserdat(cfg,user);
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Password",user->pass,LEN_PASS,K_EDIT);
@@ -1553,26 +1577,19 @@ int edit_personal(scfg_t *cfg, user_t *user)
 					putuserrec(cfg,user->number,U_PWMOD,8,ultoa(user->pwmod,str,16));
 				}
 				break;
-			case 11:
-				/* Location */
-				getuserdat(cfg,user);
-				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Location",user->location,LEN_LOCATION,K_EDIT);
-				if(uifc.changes)
-					putuserrec(cfg,user->number,U_LOCATION,LEN_LOCATION,user->location);
-				break;
-			case 12:
-				/* Address */
-				getuserdat(cfg,user);
-				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Address",user->address,LEN_ADDRESS,K_EDIT);
-				if(uifc.changes)
-					putuserrec(cfg,user->number,U_ADDRESS,LEN_ADDRESS,user->address);
-				break;
 			case 13:
-				/* Postal/Zip */
+				/* Note */
 				getuserdat(cfg,user);
-				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Postal/Zip Code",user->zipcode,LEN_ZIPCODE,K_EDIT);
+				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Note",user->note,LEN_NOTE,K_EDIT);
 				if(uifc.changes)
-					putuserrec(cfg,user->number,U_ZIPCODE,LEN_ZIPCODE,user->zipcode);
+					putuserrec(cfg,user->number,U_NOTE,LEN_NOTE,user->note);
+				break;
+			case 14:
+			    /* Comment */
+				getuserdat(cfg,user);
+				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Comment",user->comment,LEN_COMMENT,K_EDIT);
+				if(uifc.changes)
+					putuserrec(cfg,user->number,U_COMMENT,60,user->comment);
 				break;
 		}
 	}
@@ -1580,9 +1597,8 @@ int edit_personal(scfg_t *cfg, user_t *user)
 	return(0);
 }
 
-/*
- * This is where the good stuff happens
- */
+/* This is where the good stuff happens */
+
 int edit_user(scfg_t *cfg, int usernum)
 {
 	char**	opt;
@@ -1662,7 +1678,7 @@ int edit_user(scfg_t *cfg, int usernum)
 				break;
 		}
 	}
-	
+
 	return(0);
 }
 
@@ -1690,7 +1706,7 @@ int finduser(scfg_t *cfg, user_t *user)
 		for(i=1; i<=last; i++) {
 			user->number=i;
 			getuserdat(cfg,user);
-			if(strcasestr(user->alias, str)!=NULL || strcasestr(user->name, str)!=NULL || strcasestr(user->handle, str)!=NULL 
+			if(strcasestr(user->alias, str)!=NULL || strcasestr(user->name, str)!=NULL || strcasestr(user->handle, str)!=NULL
 					|| user->number==un) {
 				if((opt[j]=(struct user_list *)malloc(sizeof(struct user_list)))==NULL)
 					allocfail(sizeof(struct user_list));
@@ -1714,6 +1730,161 @@ int finduser(scfg_t *cfg, user_t *user)
 	return(0);
 }
 
+/* Get newly created Default User "New User" and set for Editing */
+/*               Adapted from finduser function                  */
+
+int getnewuser(scfg_t *cfg, user_t *user)
+{
+	int i,j,last;
+	ushort un;
+	char* str ;
+	struct user_list **opt;
+	int done=0;
+
+	if((opt=(struct user_list **)MALLOC(sizeof(struct user_list *)*(MAX_OPTS+1)))==NULL)
+		allocfail(sizeof(struct user_list *)*(MAX_OPTS+1));
+	for(i=0;i<(MAX_OPTS+1);i++)
+		opt[i]=NULL;
+
+    str="New User";
+	/* User List */
+	done=0;
+	while(!done) {
+		last=lastuser(cfg);
+		j=0;
+		for(i=1; i<=last; i++) {
+			user->number=i;
+			getuserdat(cfg,user);
+			if(strcasestr(user->alias, str)!=NULL || strcasestr(user->name, str)!=NULL || strcasestr(user->handle, str)!=NULL) {
+				if((opt[j]=(struct user_list *)malloc(sizeof(struct user_list)))==NULL)
+					allocfail(sizeof(struct user_list));
+				sprintf(opt[j]->info,"%1.1s³%1.1s³ %-25.25s ³ %-25.25s",user->misc&DELETED?"*":" ",user->misc&INACTIVE?"*":" ",user->name,user->alias);
+				opt[j++]->usernum=i;
+			}
+		}
+		if((opt[j]=(struct user_list *)malloc(sizeof(struct user_list)))==NULL)
+			allocfail(sizeof(struct user_list));
+		opt[j]->info[0]=0;
+		i=0;
+		switch(uifc.list(WIN_ORG|WIN_MID|WIN_ACT,0,0,0,&i,0,"D³I³ Real Name                 ³ Alias                    ",(char **)opt)) {
+			case -1:
+				done=1;
+				break;
+			default:
+				edit_user(cfg, opt[i]->usernum);
+				done=1;
+				break;
+		}
+	}
+	return(0);
+}
+
+/* Create a Default User: "New User" */
+/*      Adapted from makeuser.c      */
+
+int createdefaults()
+
+{
+	int		i;
+	time_t	now;
+	scfg_t cfg;
+	user_t	user;
+	char	error[512];
+	char* environ;
+
+	environ=getenv("SBBSCTRL");
+
+	memset(&cfg,0,sizeof(cfg));
+	cfg.size=sizeof(cfg);
+	SAFECOPY(cfg.ctrl_dir,environ);
+
+	if(chdir(cfg.ctrl_dir)!=0)
+		lprintf("!ERROR changing directory to: %s", cfg.ctrl_dir);
+
+	if(!load_cfg(&cfg,NULL,TRUE,error)) {
+		lprintf("!ERROR loading configuration files: %s\n",error);
+		exit(1);
+	}
+
+	if(!(cfg.sys_misc&SM_LOCAL_TZ))
+		putenv("TZ=UTC0");
+
+	now=time(NULL);
+
+	memset(&user,0,sizeof(user));
+
+    SAFECOPY(user.alias,"New Alias");
+    SAFECOPY(user.name,"New User");
+    SAFECOPY(user.handle,"New Handle");
+    SAFECOPY(user.pass,"PASSWORD");
+    SAFECOPY(user.birth,"01/01/80");
+
+    SAFECOPY(user.address,"123 My Street");
+    SAFECOPY(user.location,"City, St");
+    SAFECOPY(user.zipcode,"123456");
+
+	SAFECOPY(user.phone,"123-456-7890");
+
+    user.level=10;
+
+    SAFECOPY(user.comment," ");
+
+    SAFECOPY(user.netmail,"name@address.com");
+
+	user.level=cfg.new_level;
+	user.flags1=cfg.new_flags1;
+	user.flags2=cfg.new_flags2;
+	user.flags3=cfg.new_flags3;
+	user.flags4=cfg.new_flags4;
+	user.rest=cfg.new_rest;
+	user.exempt=cfg.new_exempt;
+
+	user.cdt=cfg.new_cdt;
+	user.min=cfg.new_min;
+	user.freecdt=cfg.level_freecdtperday[user.level];
+
+	if(cfg.total_fcomps)
+		strcpy(user.tmpext,cfg.fcomp[0]->ext);
+	else
+		strcpy(user.tmpext,"ZIP");
+	for(i=0;i<cfg.total_xedits;i++)
+		if(!stricmp(cfg.xedit[i]->code,cfg.new_xedit))
+			break;
+	if(i<cfg.total_xedits)
+		user.xedit=i+1;
+
+	user.shell=cfg.new_shell;
+	user.misc=(cfg.new_misc&~(DELETED|INACTIVE|QUIET|NETMAIL));
+    user.misc^=AUTOTERM;
+    user.misc^=ANSI;
+    user.misc^=COLOR;
+	user.qwk=QWK_DEFAULT;
+	user.firston=now;
+	user.laston=now;
+	user.pwmod=now;
+	user.logontime=now;
+	user.sex=' ';
+	user.prot=cfg.new_prot;
+	if(cfg.new_expire)
+		user.expire=now+((long)cfg.new_expire*24L*60L*60L);
+
+	if((i=matchuser(&cfg,user.alias,FALSE))!=0) {
+	    lprintf("Error!  Default User already in Userfile");
+		return(2);
+	}
+
+	if(user.handle[0]==0)
+		SAFECOPY(user.handle,user.alias);
+	if(user.name[0]==0)
+		SAFECOPY(user.name,user.alias);
+
+	if((i=newuserdat(&cfg, &user))!=0) {
+	    lprintf("%s %d", "Error creating Default User.  Error # ",i);
+		return(i);
+	}
+	return(i);
+}
+
 int main(int argc, char** argv)  {
 	char**	opt;
 	char**	mopt;
@@ -1722,10 +1893,10 @@ int main(int argc, char** argv)  {
 	char	revision[16];
 	char	str[256],ctrl_dir[41],*p;
 	char	title[256];
-	int		i,j;
+	int		i,j,result;
 	scfg_t	cfg;
 	int		done;
-	int		last;
+	int		last, newlast;
 	user_t	user;
 	int		edtuser=0;
 	/******************/
@@ -1766,11 +1937,11 @@ int main(int argc, char** argv)  {
 		printf("Reading %s\n",ini_file);
 	}
 	/* We call this function to set defaults, even if there's no .ini file */
-	sbbs_read_ini(fp, 
+	sbbs_read_ini(fp,
 		NULL,		/* global_startup */
-		NULL, &bbs_startup, 
+		NULL, &bbs_startup,
 		NULL, NULL, /* ftp_startup */
-		NULL, NULL, /* web_startup */ 
+		NULL, NULL, /* web_startup */
 		NULL, NULL, /* mail_startup */
 		NULL, NULL  /* services_startup */
 		);
@@ -1780,7 +1951,7 @@ int main(int argc, char** argv)  {
 		fclose(fp);
 
 	chdir(bbs_startup.ctrl_dir);
-	
+
 	/* Read .cfg files here */
     memset(&cfg,0,sizeof(cfg));
 	cfg.size=sizeof(cfg);
@@ -1883,7 +2054,7 @@ int main(int argc, char** argv)  {
 			/* Find User */
 			continue;
 		}
-		
+
 		if(j <= -2)
 			continue;
 
@@ -1899,8 +2070,12 @@ int main(int argc, char** argv)  {
 
 		if(j==0) {
 			/* New User */
+			    createdefaults();
+			    lprintf("Please edit defaults using next screen.");
+			    getnewuser(&cfg,&user);
 		}
 		if(j==1) {
+		    /* Find User */
 			finduser(&cfg,&user);
 		}
 		if(j==2) {
@@ -1927,3 +2102,4 @@ int main(int argc, char** argv)  {
 		}
 	}
 }
+
