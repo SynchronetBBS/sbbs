@@ -2078,14 +2078,12 @@ int DLLCALL newuserdat(scfg_t* cfg, user_t* user)
 	sprintf(tmp,"%04u.*",user->number);
 	sprintf(str,"%sfile",cfg->data_dir);
 	delfiles(str,tmp);
+	sprintf(str,"%suser",cfg->data_dir);
+	delfiles(str,tmp);
 
 	sprintf(str,"%suser/ptrs/%04u.ixb",cfg->data_dir,user->number); /* msg ptrs */
 	remove(str);
 	sprintf(str,"%smsgs/%04u.msg",cfg->data_dir,user->number); /* delete short msg */
-	remove(str);
-	sprintf(str,"%suser/%04u.msg",cfg->data_dir,user->number); /* delete ex-comment */
-	remove(str);
-	sprintf(str,"%suser/%04u.sig",cfg->data_dir,user->number); /* delete signature */
 	remove(str);
 
 	/* Update daily statistics database (for system and node) */
