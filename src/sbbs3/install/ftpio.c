@@ -550,63 +550,69 @@ cmd(FTP_t ftp, const char *fmt, ...)
     return i;
 }
 
+static u_long resolve_ip(char *addr)
+{
+	HOSTENT*	host;
+	char*		p;
+
+	if(*addr==0)
+		return(INADDR_NONE);
+
+	for(p=addr;*p;p++)
+		if(*p!='.' && !isdigit(*p))
+			break;
+	if(!(*p))
+		return(inet_addr(addr));
+	if((host=gethostbyname(addr))==NULL) 
+		return(INADDR_NONE);
+	return(*((ulong*)host->h_addr_list[0]));
+}
+
+
 static int
 ftp_login_session(FTP_t ftp, char *host, 
 		  char *user, char *passwd, int port, int verbose)
 {
     char pbuf[10];
-    struct addrinfo	hints, *res, *res0;
+	struct sockaddr addr;
+	u_long		ip_addr;
     int			err;
     int 		s;
     int			i;
 
     if (ftp->con_state != init) {
-	ftp_close(ftp);
-	ftp->error = -1;
-	return FAILURE;
-    }
-
-    if (!user)
-	user = "ftp";
-
-    if (!passwd)
-	passwd = "setup@";
-
-    if (!port)
-	port = 21;
-
-    snprintf(pbuf, sizeof(pbuf), "%d", port);
-    memset(&hints, 0, sizeof(hints));
-    hints.ai_family = AF_INET;
-    hints.ai_socktype = SOCK_STREAM;
-    hints.ai_protocol = 0;
-    err = getaddrinfo(host, pbuf, &hints, &res0);
-    if (err) {
-	ftp->error = 0;
-	return FAILURE;
-    }
-
-    s = -1;
-    for (res = res0; res; res = res->ai_next) {
-	ftp->addrtype = res->ai_family;
-
-	if ((s = socket(res->ai_family, res->ai_socktype,
-			res->ai_protocol)) < 0)
-	    continue;
-
-	if (connect(s, res->ai_addr, res->ai_addrlen) < 0) {
-	    (void)close(s);
-	    s = -1;
-	    continue;
+		ftp_close(ftp);
+		ftp->error = -1;
+		return FAILURE;
 	}
 
-	break;
-    }
-    freeaddrinfo(res0);
-    if (s < 0) {
-	ftp->error = errno;
-	return FAILURE;
-    }
+    if (!user)
+		user = "ftp";
+
+    if (!passwd)
+		passwd = "setup@";
+
+    if (!port)
+		port = 21;
+
+	if((ip_addr=resolve_ip(host))==INADDR_NONE)
+		return FAILURE;
+
+	if ((s = socket(AF_INET, SOCK_STREAM, IPPROTO_IP)) < 0) {
+		ftp->error = errno;
+		return FAILURE;
+	}
+
+	memset(&addr,0,sizeof(addr));
+	addr.sin_addr.s_addr = ip_addr;
+	addr.sin_family = AF_INET;
+	addr.sin_port   = htons(port);
+
+	if (connect(s, &addr, sizeof (addr)) < 0) {
+		ftp->error = errno;
+		close(s);
+		return FAILURE;
+	}
 
     ftp->fd_ctrl = s;
     ftp->con_state = isopen;
@@ -614,12 +620,12 @@ ftp_login_session(FTP_t ftp, char *host,
 
     i = cmd(ftp, "USER %s", user);
     if (i >= 300 && i < 400)
-	i = cmd(ftp, "PASS %s", passwd);
+		i = cmd(ftp, "PASS %s", passwd);
     if (i >= 299 || i < 0) {
-	ftp_close(ftp);
-	if (i > 0)
-	    ftp->error = i;
-	return FAILURE;
+		ftp_close(ftp);
+		if (i > 0)
+			ftp->error = i;
+		return FAILURE;
     }
     return SUCCESS;
 }
