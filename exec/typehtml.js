@@ -17,9 +17,10 @@ var BOLD			="\1H\1C\x014"
 var ITALIC			="\1H\1G\x012"
 var UNDERLINE		="\1H\1W\x016"
 var STRIKE_THROUGH	="\1N\1K\x017"
-var LIST_ITEM 		="\r\n    \1H\1Wo \1G"
+var LIST_ITEM 		="\1N\r\n    \1H\1Wo \1G"
 
 var f;
+var mono=false;
 
 for(i in argv) {
 	switch(argv[i].toLowerCase()) {
@@ -82,44 +83,30 @@ buf=buf.replace(/<br>/gi,"\r\n");				// Replace <br> with \r\n
 buf=buf.replace(/<p>/gi,"\r\n");				// Replace <p> with \r\n
 buf=buf.replace(/<tr[^<]*>/gi,"\r\n");			// Replace <tr> with \r\n
 buf=buf.replace(/<\/p>/gi,"\r\n");				// Replace </p> with \r\n
-buf=buf.replace(/<\/ul>/gi,"\r\n");				// Replace </ul> with \r\n
-buf=buf.replace(/<\/ol>/gi,"\r\n");				// Replace </ul> with \r\n
-buf=buf.replace(/<\/caption>/gi,"\r\n");		// Replace </caption> with \r\n
-buf=buf.replace(/<\/table>/gi,"\r\n");			// Replace </table> with \r\n
+buf=buf.replace(/<\/ul>/gi,"\r\n\r\n");			// Replace </ul>
+buf=buf.replace(/<\/ol>/gi,"\r\n");				// Replace </ol>
+buf=buf.replace(/<\/caption>/gi,"\r\n");		// Replace </caption>
+buf=buf.replace(/<\/table>/gi,"\r\n");			// Replace </table>
 
 buf=buf.replace(/<td[^<]*>/gi," ");
 buf=buf.replace(/<th[^<]*>/gi," ");
 
-if(1) {
 // Text attributes
-buf=buf.replace(/<b>/gi,BOLD);
-buf=buf.replace(/<\/b>/gi,NORMAL);
+buf=buf.replace(/<b>([^<]*)<\/b>/gi,BOLD				+ "$1" + NORMAL);
+buf=buf.replace(/<i>([^<]*)<\/i>/gi,ITALIC				+ "$1" + NORMAL);
+buf=buf.replace(/<u>([^<]*)<\/u>/gi,UNDERLINE			+ "$1" + NORMAL);
+buf=buf.replace(/<s>([^<]*)<\/s>/gi,STRIKE_THROUGH		+ "$1" + NORMAL);
 
-buf=buf.replace(/<i>/gi,ITALIC);
-buf=buf.replace(/<\/i>/gi,NORMAL);
+// Headings
+buf=buf.replace(/<h1>([^<]*)<\/h1>/gi,"\r\n" + HEADING1 + "*** $1 ***" + NORMAL + "\r\n\r\n");
+buf=buf.replace(/<h2>([^<]*)<\/h2>/gi,"\r\n" + HEADING2 + "%%% $1 %%%" + NORMAL + "\r\n");
+buf=buf.replace(/<h3>([^<]*)<\/h3>/gi,"\r\n" + HEADING3 + "--- $1 ---" + NORMAL + "\r\n");
+buf=buf.replace(/<h4>([^<]*)<\/h4>/gi,"\r\n" + HEADING4 + "-=< $1 >=-" + NORMAL + "\r\n");
+buf=buf.replace(/<h5>([^<]*)<\/h5>/gi,"\r\n" + HEADING5 + "... $1 ..." + NORMAL + "\r\n");
+buf=buf.replace(/<h6>([^<]*)<\/h6>/gi,"\r\n" + HEADING6 + "___ $1 ___" + NORMAL + "\r\n");
 
-buf=buf.replace(/<u>/gi,UNDERLINE);
-buf=buf.replace(/<\/u>/gi,NORMAL);
-
-buf=buf.replace(/<s>/gi,STRIKE_THROUGH);
-buf=buf.replace(/<\/s>/gi,NORMAL);
-
-buf=buf.replace(/<h1>/gi,"\r\n" + HEADING1);
-buf=buf.replace(/<\/h1>/gi,NORMAL + "\r\n");
-buf=buf.replace(/<h2>/gi,"\r\n" + HEADING2);
-buf=buf.replace(/<\/h2>/gi,NORMAL + "\r\n");
-buf=buf.replace(/<h3>/gi,"\r\n" + HEADING3);
-buf=buf.replace(/<\/h3>/gi,NORMAL + "\r\n");
-buf=buf.replace(/<h4>/gi,"\r\n" + HEADING4);
-buf=buf.replace(/<\/h4>/gi,NORMAL + "\r\n");
-buf=buf.replace(/<h5>/gi,"\r\n" + HEADING5);
-buf=buf.replace(/<\/h5>/gi,NORMAL + "\r\n");
-buf=buf.replace(/<h6>/gi,"\r\n" + HEADING6);
-buf=buf.replace(/<\/h6>/gi,NORMAL + "\r\n");
-}
 // Lists
 buf=buf.replace(/<li[^<]*>/gi,LIST_ITEM);
-
 
 // Strip unsupported tags
 buf=buf.replace(/<[^<]*>/g,"");
@@ -129,4 +116,6 @@ buf=html_decode(buf);
 
 buf=word_wrap(buf);
 
-print(buf);
+buf+="\r\n";
+
+write(buf);
