@@ -440,6 +440,8 @@ typedef struct
 	char	sys_chat_arstr[LEN_ARSTR+1];	/* chat override */
 	uchar * sys_chat_ar;
 
+	long 	file_misc;			/* File Misc Settings */
+
 	char	node_comspec[LEN_CMD+1];	/* DOS COMMAND.COM to use */
 	char	node_editor[LEN_CMD+1]; /* Local text editor command line to use */
 	char	node_viewer[LEN_CMD+1]; /* Local text viewer command line */

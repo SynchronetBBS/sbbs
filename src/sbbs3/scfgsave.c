@@ -659,8 +659,9 @@ BOOL DLLCALL write_file_cfg(scfg_t* cfg, int backup_level)
 	put_str(cmd,stream);
 	put_int(cfg->leech_pct,stream);
 	put_int(cfg->leech_sec,stream);
+	put_int(cfg->file_misc,stream);
 	n=0;
-	for(i=0;i<32;i++)
+	for(i=0;i<30;i++)
 		put_int(n,stream);
 
 	/* Extractable File Types */

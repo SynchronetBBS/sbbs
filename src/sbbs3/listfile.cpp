@@ -437,7 +437,7 @@ bool sbbs_t::listfile(char *fname, char HUGE16 *buf, uint dirnum
 
 #ifdef _WIN32
  
-	if(!(cfg.sys_misc&SM_NOLFN) && Win98GetLongPathName!=NULL) {
+	if(!(cfg.file_misc&FM_NO_LFN) && Win98GetLongPathName!=NULL) {
 
 		lfn_len=Win98GetLongPathName(path,lfn,sizeof(lfn));
 		if(lfn_len!=0 && lfn_len!=strlen(path)) {
