@@ -282,8 +282,8 @@ js_readbin(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(p->fp==NULL)
 		return(JS_TRUE);
 
-	if(argc>1) 
-		size = JSVAL_TO_INT(argv[1]);
+	if(argc) 
+		size = JSVAL_TO_INT(argv[0]);
 
 	switch(size) {
 		case sizeof(BYTE):
