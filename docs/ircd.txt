@@ -16,7 +16,7 @@ $Id$
 5   .... Technical information
 5.1 .... Limits of the Synchronet IRCd
 5.2 .... Compliance with RFC's, and established protocols
-5.3 .... Compatibility with ther IRCd's
+5.3 .... Compatibility with other IRCd's
 6   .... The Future
 7   .... Frequently Asked Questions
 7.1 .... Installation Questions
@@ -64,12 +64,12 @@ and it hasn't been covered here, then by all means tell us about it!
 	We don't intend to teach you the basics of IRC here.  While you can
 certainly still get the Synchronet IRCd up and running with a minimal amount
 of effort and IRC knowledge, your experience will be more enjoyable if you
-have at the very least a working knowledge of IRC.  To guage your knowledge
+have at the very least a working knowledge of IRC.  To gauge your knowledge
 of IRC, answer the following questions either with a 'true' or 'false':
 
 	* People chat in 'rooms' on IRC.
 	* 'IRCop' is short for 'IRC cop', the police officers of IRC.
-	* A 'ping' is something submarines use to guage distance under water.
+	* A 'ping' is something submarines use to gauge distance under water.
 	* CTCP and DCC stand for Client Tunneling Carrier Protocol and
 	  Direct Channel Cutting, respectively.
 
@@ -179,7 +179,7 @@ the Synchronet ircd.conf has been carefully engineered to be compatible with
 the Bahamut ircd.conf.  Thus, if you've already got a working Bahamut
 configuration, putting that ircd.conf in place of the stock ircd.conf should
 give you an IRCd configured exactly the way it was on Bahamut.  Configuration
-files from other IRC daemons have *not* been tested, so your milage may vary
+files from other IRC daemons have *not* been tested, so your mileage may vary
 with those (although the configuration should be very similar.)  Certainly if
 you find an ircd.conf from another daemon that works, let us know about it!
 
@@ -191,7 +191,7 @@ srvc 0007 IRC SynchronetIRCd-1.0b(1.79) started.
 srvc 0007 IRC Reading Config: /sbbs/ctrl/ircd.conf
 
 	You may have to scroll up to see the message.  Any errors should be
-self-explanitory (and usually involve not being able to read the configuration
+self-explanatory (and usually involve not being able to read the configuration
 file.)  If you get an error about not being able to bind to a socket, or that
 a socket is already in use, then you already have something running on the
 port you defined in your services configuration.  Could it be another IRC
@@ -262,12 +262,12 @@ with Synchronet 3.11.
 	To enable the dyndns module, add a timed event inside of SCFG under
 "External Programs->Timed Events" to run the command "?dyndns <pass>" every
 now and then.  Replace <pass> with your exact QWK password.  Running the
-module once per day is usually acceptible, although you may want to run it
+module once per day is usually acceptable, although you may want to run it
 more often if your IP address is prone to changing rapidly.
 
 	After the timed event has been configured, force the event to be ran.
 This can be done at the BBS itself (by using ";EXEC ?dyndns <pass>" from the
-BBS main manu.)  Then, after about 3 or 5 minutes, attempt to ping your new
+BBS main menu.)  Then, after about 3 or 5 minutes, attempt to ping your new
 hostname (qwk-id.synchro.net, where 'qwk-id' is your qwk-id.)  It is very
 important that the IP address you're connecting to the Synchronet IRC Network
 from and the IP address that your new hostname (in the form of
@@ -285,10 +285,10 @@ will look like this:
 	Remove the '#' from each line, and replace 'QWK_PASSWORD' with the
 password you were assigned (or selected) when registering for a QWK-ID.  The
 ircd.conf contains a description of what each of the lines (and fields) mean.
-It is very important that you leave the asteriks as they are, especially on
+It is very important that you leave the asterisks as they are, especially on
 the N:Line.  This is because the server you're connecting to may be randomly
 assigned, and the server will never echo your QWK password back to you, so it
-chooses to echo a '*' back instead.  An asterik in the N:Line also forbids any
+chooses to echo a '*' back instead.  An asterisk in the N:Line also forbids any
 servers from connecting *to* you, which is important, since you'll only be
 doing outbound connects with this C/N pair.
 
@@ -305,8 +305,8 @@ srvc 0008 IRC Routing: Link with rrx.synchro.net established, states: TS
 "Connection reset by peer", it's highly likely that you've mistyped your QWK
 password into the C:Line in your ircd.conf.  Double-check to make sure that
 the password is correct, and that you haven't otherwise malformed the C/N line
-pair.  In particular, make sure all the asteriks (as per the default) are where
-they should be.
+pair.  In particular, make sure all the asterisks (as per the default) are
+where they should be.
 
 	Otherwise, if you have received those messages, then you're connected!
 You should be able to join the typical busy Synchronet IRC channels, #bbs and
@@ -315,7 +315,7 @@ network administrators in #opers if you have any questions or concerns.
 
 [3.3] - Using jsexec to run the IRCd
 
-	There are times where you may wish to run the IRCd service seperately
+	There are times where you may wish to run the IRCd service separately
 from Synchronet so that whenever your BBS goes up or down, the IRCd isn't
 affected.  A special program, included with Synchronet, is called "jsexec" and
 is intended for use in this way.  By using jsexec, your IRCd will remain
@@ -384,7 +384,7 @@ the use of Javascript.
 
 [5.2] - Compliance with RFC's, and established protocols
 
-	The Synchronet IRCd has always aimed to be compiant with RFC1459, which
+	The Synchronet IRCd has always aimed to be compliant with RFC1459, which
 was the first published IRC specification.  However, it has chosen to deviate
 from the RFC where appropriate.  This might be because of errors inside the
 RFC itself (i.e. +p channels being listed as "*" instead of "Prv",) for the
@@ -441,7 +441,7 @@ to the highly dynamic nature of a Synchronet-based IRC network.  This is to
 prevent bogus messages from being injected into the network, false
 representation of authority, or otherwise harmful activity.  Since untrusted
 servers are allowed to connect to the network, leaf servers are restricted in
-the following way beyond the standard behaviour:
+the following way beyond the standard behavior:
 
 	- All timestamps received from a leaf are ignored and are instead
 	  replaced by the current time.  Thus, nickname collisions cannot be
@@ -568,8 +568,8 @@ sort of thing.
 	Q: Can I make modifications to the IRCd?
 
 	A: By all means, go for it!  If you think that you've made a
-	   particuarily useful or clever hack, please feel free to send your
-	   changes to ircd@rrx.ca (in unified diff format, preferrably) along
+	   particularly useful or clever hack, please feel free to send your
+	   changes to ircd@rrx.ca (in unified diff format, preferably) along
 	   with a description of what you've changed.
 
 	Q: I'm an IRC guru, and I'd like to talk to the author about the IRCd,
