@@ -146,10 +146,16 @@ int win32_getch(void)
 			lastch>>=8;
 			return(ch);
 		}
+		while(!PeekConsoleInput(GetStdHandle(STD_INPUT_HANDLE), &input, 1, &num)
+				&& !num && !mouse_pending()) {
+			SLEEP(1);
+		}
+
 		if(mouse_pending()) {
 			lastch=CIO_KEY_MOUSE;
 			continue;
 		}
+
 		if(!ReadConsoleInput(GetStdHandle(STD_INPUT_HANDLE), &input, 1, &num)
 			|| !num || (input.EventType!=KEY_EVENT && input.EventType!=MOUSE_EVENT))
 			continue;
