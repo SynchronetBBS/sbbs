@@ -50,6 +50,7 @@
 #define NTSVC_TIMEOUT_STARTUP	30000	/* Milliseconds */
 #define NTSVC_TIMEOUT_TERMINATE	30000	/* Milliseconds */
 
+#define STRLEN_SYNCHRONET		10		/* this number ain't change'n */
 
 static void WINAPI bbs_ctrl_handler(DWORD dwCtrlCode);
 static void WINAPI ftp_ctrl_handler(DWORD dwCtrlCode);
@@ -675,7 +676,8 @@ static int install(const char* svc_name)
 
 	for(i=0;ntsvc_list[i]!=NULL;i++)
 		if(svc_name==NULL	/* All? */
-			|| !stricmp(ntsvc_list[i]->name, svc_name))
+			|| !stricmp(ntsvc_list[i]->name, svc_name)
+			|| !stricmp(ntsvc_list[i]->name+STRLEN_SYNCHRONET, svc_name))
 			create_service(hSCMlib
 				,hSCManager
 				,ntsvc_list[i]->name
@@ -822,7 +824,8 @@ static int uninstall(const char* svc_name)
 
 	for(i=0;ntsvc_list[i]!=NULL;i++)
 		if(svc_name==NULL	/* All? */
-			|| !stricmp(ntsvc_list[i]->name, svc_name))
+			|| !stricmp(ntsvc_list[i]->name, svc_name)
+			|| !stricmp(ntsvc_list[i]->name+STRLEN_SYNCHRONET, svc_name))
 			remove_service(hSCManager
 				,ntsvc_list[i]->name
 				,ntsvc_list[i]->display_name);
@@ -936,7 +939,8 @@ static int enable(const char* svc_name, BOOL enabled)
 
 	for(i=0;ntsvc_list[i]!=NULL;i++)
 		if(svc_name==NULL	/* All? */
-			|| !stricmp(ntsvc_list[i]->name, svc_name))
+			|| !stricmp(ntsvc_list[i]->name, svc_name)
+			|| !stricmp(ntsvc_list[i]->name+STRLEN_SYNCHRONET, svc_name))
 			set_service_start_type(hSCManager
 				,ntsvc_list[i]->name
 				,ntsvc_list[i]->display_name
@@ -967,7 +971,9 @@ static int stop(const char* svc_name)
 	}
 
 	for(i=0;ntsvc_list[i]!=NULL;i++) {
-		if(svc_name!=NULL && stricmp(ntsvc_list[i]->name, svc_name))
+		if(svc_name!=NULL 
+			&& (stricmp(ntsvc_list[i]->name, svc_name)
+			||  stricmp(ntsvc_list[i]->name+STRLEN_SYNCHRONET, svc_name)))
 			continue;
 		stop_service(hSCManager,ntsvc_list[i]->name,ntsvc_list[i]->display_name);
 	}
@@ -998,7 +1004,9 @@ static int start(const char* svc_name, int argc, char** argv)
 	for(i=0;ntsvc_list[i]!=NULL;i++) {
 		if(svc_name==NULL && service_disabled(hSCManager, ntsvc_list[i]->name))
 			continue;
-		if(svc_name!=NULL && stricmp(ntsvc_list[i]->name, svc_name))
+		if(svc_name!=NULL 
+			&& (stricmp(ntsvc_list[i]->name, svc_name)
+			||  stricmp(ntsvc_list[i]->name+STRLEN_SYNCHRONET, svc_name)))
 			continue;
 		start_service(hSCManager,ntsvc_list[i]->name,ntsvc_list[i]->display_name
 				,argc,argv);
@@ -1183,7 +1191,7 @@ int main(int argc, char** argv)
 	printf("%-20s %s\n","Name","Description");
 	printf("%-20s %s\n","----","-----------");
 	for(i=0;ntsvc_list[i]!=NULL;i++)
-		printf("%-20s %s\n",ntsvc_list[i]->name,ntsvc_list[i]->display_name);
+		printf("%-20s %s\n",ntsvc_list[i]->name+STRLEN_SYNCHRONET,ntsvc_list[i]->display_name);
 
 	return(0);
 }
