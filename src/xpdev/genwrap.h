@@ -123,7 +123,7 @@ extern "C" {
 	#endif
 #endif
 
-DLLEXPORT const char*	DLLCALL	lastchar(const char* str);
+DLLEXPORT char*	DLLCALL	lastchar(const char* str);
 
 /****************************/
 /* Common Utility Functions */

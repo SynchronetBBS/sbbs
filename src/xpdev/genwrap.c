@@ -58,16 +58,16 @@
 /****************************************************************************/
 /* Return last character of string											*/
 /****************************************************************************/
-const char* DLLCALL lastchar(const char* str)
+char* DLLCALL lastchar(const char* str)
 {
 	size_t	len;
 
 	len = strlen(str);
 
 	if(len)
-		return(&str[len-1]);
+		return((char*)&str[len-1]);
 
-	return(str);
+	return((char*)str);
 }
 
 /****************************************************************************/
