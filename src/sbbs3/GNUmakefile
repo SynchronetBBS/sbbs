@@ -20,6 +20,10 @@ ifndef DEBUG
  endif
 endif
 
+ifndef VERBOSE
+ QUIET	=	@
+endif
+
 #USE_DIALOG =   1       # Dialog vesrion of UIFC
 #USE_FLTK =     1       # Use Windowed version
 USE_CURSES      =       1       # Curses version of UIFC
@@ -197,14 +201,14 @@ $(LIBODIR)/%.o : %.c $(BUILD_DEPENDS)
    ifndef bcc
 	@echo $(COMPILE_MSG) $<
    endif
-	@$(CC) $(CFLAGS) $(SBBSDEFS) -o $@ -c $<
+	$(QUIET)$(CC) $(CFLAGS) $(SBBSDEFS) -o $@ -c $<
 
 # Implicit C++ Compile Rule for SBBS
 $(LIBODIR)/%.o : %.cpp $(BUILD_DEPENDS)
    ifndef bcc
 	@echo $(COMPILE_MSG) $<
    endif
-	@$(CCPP) $(CFLAGS) $(SBBSDEFS) -o $@ -c $<
+	$(QUIET)$(CCPP) $(CFLAGS) $(SBBSDEFS) -o $@ -c $<
 
 $(LIBODIR):
 	mkdir $(LIBODIR)
@@ -234,78 +238,78 @@ FORCE$(SBBSMONO): $(MONO_OBJS) $(OBJS) $(LIBS)
 
 $(SBBSMONO): $(MONO_OBJS) $(OBJS) $(LIBS)
 	@echo Linking $@
-	@$(CCPP) -o $@ $(LFLAGS) $^
+	$(QUIET)$(CCPP) -o $@ $(LFLAGS) $^
 
 # Synchronet BBS library Link Rule
 FORCE$(SBBS): $(OBJS) $(LIBS)
 
 $(SBBS): $(OBJS) $(LIBS)
 	@echo Linking $@
-	@$(CCPP) $(LFLAGS) -o $(SBBS) $^ -shared -o $@
+	$(QUIET)$(CCPP) $(LFLAGS) -o $(SBBS) $^ -shared -o $@
 
 # FTP Server Link Rule
 FORCE$(FTPSRVR): $(LIBODIR)/ftpsrvr.o $(SBBSLIB)
 
 $(FTPSRVR): $(LIBODIR)/ftpsrvr.o $(SBBSLIB)
 	@echo Linking $@
-	@$(CC) $(LFLAGS) $^ $(LIBS) -shared -o $@ 
+	$(QUIET)$(CC) $(LFLAGS) $^ $(LIBS) -shared -o $@ 
 
 # Mail Server Link Rule
 FORCE$(MAILSRVR): $(MAIL_OBJS) $(LIBODIR)$(SLASH)$(SBBSLIB)
 
 $(MAILSRVR): $(MAIL_OBJS) $(SBBSLIB)
 	@echo Linking $@
-	@$(CC) $(LFLAGS) $^ $(LIBS) -shared -o $@
+	$(QUIET)$(CC) $(LFLAGS) $^ $(LIBS) -shared -o $@
 
 # Mail Server Link Rule
 FORCE$(WEBSRVR): $(WEB_OBJS) $(SBBSLIB)
 
 $(WEBSRVR): $(WEB_OBJS) $(SBBSLIB)
 	@echo Linking $@
-	@$(CC) $(LFLAGS) $^ $(LIBS) -shared -o $@
+	$(QUIET)$(CC) $(LFLAGS) $^ $(LIBS) -shared -o $@
 
 # Services Link Rule
 FORCE$(SERVICES): $(WEB_OBJS) $(SBBSLIB)
 
 $(SERVICES): $(SERVICE_OBJS) $(SBBSLIB)
 	@echo Linking $@
-	@$(CC) $(LFLAGS) $^ $(LIBS) -shared -o $@
+	$(QUIET)$(CC) $(LFLAGS) $^ $(LIBS) -shared -o $@
 
 # Synchronet Console Build Rule
 FORCE$(SBBSCON): $(CON_OBJS) $(SBBSLIB) $(FTP_OBJS) $(MAIL_OBJS) $(WEB_OBJS) $(SERVICE_OBJS)
 
 $(SBBSCON): $(CON_OBJS) $(SBBSLIB) $(FTPSRVR) $(WEBSRVR) $(MAILSRVR) $(SERVICES)
 	@echo Linking $@
-	@$(CC) $(CFLAGS) $(LFLAGS) $(CON_LDFLAGS) -o $@ $(CON_OBJS) $(SBBSLIB)
+	$(QUIET)$(CC) $(CFLAGS) $(LFLAGS) $(CON_LDFLAGS) -o $@ $(CON_OBJS) $(SBBSLIB)
 
 # Specifc Compile Rules
 $(LIBODIR)/ftpsrvr.o: ftpsrvr.c ftpsrvr.h $(BUILD_DEPENDS)
 	@echo $(COMPILE_MSG) $<
-	@$(CC) $(CFLAGS) -DFTPSRVR_EXPORTS -o $@ -c $<
+	$(QUIET)$(CC) $(CFLAGS) -DFTPSRVR_EXPORTS -o $@ -c $<
 
 $(LIBODIR)/mailsrvr.o: mailsrvr.c mailsrvr.h $(BUILD_DEPENDS)
 	@echo $(COMPILE_MSG) $<
-	@$(CC) $(CFLAGS) -DMAILSRVR_EXPORTS -o $@ -c $<
+	$(QUIET)$(CC) $(CFLAGS) -DMAILSRVR_EXPORTS -o $@ -c $<
 
 $(LIBODIR)/mxlookup.o: mxlookup.c $(BUILD_DEPENDS)
 	@echo $(COMPILE_MSG) $<
-	@$(CC) $(CFLAGS) -DMAILSRVR_EXPORTS -o $@ -c $<
+	$(QUIET)$(CC) $(CFLAGS) -DMAILSRVR_EXPORTS -o $@ -c $<
 
 $(LIBODIR)/mime.o: mime.c $(BUILD_DEPENDS)
 	@echo $(COMPILE_MSG) $<
-	@$(CC) $(CFLAGS) -DMAILSRVR_EXPORTS -o $@ -c $<		
+	$(QUIET)$(CC) $(CFLAGS) -DMAILSRVR_EXPORTS -o $@ -c $<		
 
 $(LIBODIR)/websrvr.o: websrvr.c websrvr.h $(BUILD_DEPENDS)
 	@echo $(COMPILE_MSG) $<
-	@$(CC) $(CFLAGS) -DWEBSRVR_EXPORTS -o $@ -c $<
+	$(QUIET)$(CC) $(CFLAGS) -DWEBSRVR_EXPORTS -o $@ -c $<
 
 $(LIBODIR)/base64.o: base64.c base64.h $(BUILD_DEPENDS)
 	@echo $(COMPILE_MSG) $<
-	@$(CC) $(CFLAGS) -DWEBSRVR_EXPORTS -o $@ -c $<
+	$(QUIET)$(CC) $(CFLAGS) -DWEBSRVR_EXPORTS -o $@ -c $<
 
 $(LIBODIR)/services.o: services.c services.h $(BUILD_DEPENDS)
 	@echo $(COMPILE_MSG) $<
-	@$(CC) $(CFLAGS) -DSERVICES_EXPORTS -o $@ -c $<
+	$(QUIET)$(CC) $(CFLAGS) -DSERVICES_EXPORTS -o $@ -c $<
 
 # Baja Utility
 BAJA_OBJS = \
@@ -318,7 +322,7 @@ FORCE$(BAJA): $(BAJA_OBJS)
 
 $(BAJA): $(BAJA_OBJS)
 	@echo Linking $@
-	@$(CC) -o $@ $^
+	$(QUIET)$(CC) -o $@ $^
 
 # Node Utility
 NODE_OBJS = \
@@ -329,7 +333,7 @@ FORCE$(NODE): $(NODE_OBJS)
 
 $(NODE): $(NODE_OBJS)
 	@echo Linking $@
-	@$(CC) -o $@ $^ 
+	$(QUIET)$(CC) -o $@ $^ 
 
 # FIXSMB Utility
 FIXSMB_OBJS = \
@@ -341,7 +345,7 @@ FORCE$(FIXSMB): $(FIXSMB_OBJS)
 	
 $(FIXSMB): $(FIXSMB_OBJS)
 	@echo Linking $@
-	@$(CC) -o $@ $^
+	$(QUIET)$(CC) -o $@ $^
 
 # CHKSMB Utility
 CHKSMB_OBJS = \
@@ -354,7 +358,7 @@ FORCE$(CHKSMB): $(CHKSMB_OBJS)
 
 $(CHKSMB): $(CHKSMB_OBJS)
 	@echo Linking $@
-	@$(CC) -o $@ $^
+	$(QUIET)$(CC) -o $@ $^
 
 # SMB Utility
 SMBUTIL_OBJS = \
@@ -372,7 +376,7 @@ FORCE$(SMBUTIL): $(SMBUTIL_OBJS)
 	
 $(SMBUTIL): $(SMBUTIL_OBJS)
 	@echo Linking $@
-	@$(CC) -o $@ $^
+	$(QUIET)$(CC) -o $@ $^
 
 # SBBSecho (FidoNet Packet Tosser)
 SBBSECHO_OBJS = \
@@ -399,7 +403,7 @@ FORCE$(SBBSECHO): $(SBBSECHO_OBJS)
 
 $(SBBSECHO): $(SBBSECHO_OBJS)
 	@echo Linking $@
-	@$(CC) -o $@ $^
+	$(QUIET)$(CC) -o $@ $^
 
 # SBBSecho Configuration Program
 ECHOCFG_OBJS = \
@@ -417,7 +421,7 @@ FORCE$(ECHOCFG): $(ECHOCFG_OBJS)
 
 $(ECHOCFG): $(ECHOCFG_OBJS)
 	@echo Linking $@
-	@$(CC) -o $@ $^ $(UIFC_LFLAGS)
+	$(QUIET)$(CC) -o $@ $^ $(UIFC_LFLAGS)
 
 # ADDFILES
 ADDFILES_OBJS = \
@@ -441,7 +445,7 @@ FORCE$(ADDFILES): $(ADDFILES_OBJS)
 
 $(ADDFILES): $(ADDFILES_OBJS)
 	@echo Linking $@
-	@$(CC) -o $@ $^
+	$(QUIET)$(CC) -o $@ $^
 
 # FILELIST
 FILELIST_OBJS = \
@@ -464,7 +468,7 @@ FORCE$(FILELIST): $(FILELIST_OBJS)
 
 $(FILELIST): $(FILELIST_OBJS)
 	@echo Linking $@
-	@$(CC) -o $@ $^
+	$(QUIET)$(CC) -o $@ $^
 
 # MAKEUSER
 MAKEUSER_OBJS = \
@@ -487,7 +491,7 @@ FORCE$(MAKEUSER): $(MAKEUSER_OBJS)
 
 $(MAKEUSER): $(MAKEUSER_OBJS)
 	@echo Linking $@
-	@$(CC) -o $@ $^
+	$(QUIET)$(CC) -o $@ $^
 
 # JSEXEC
 JSEXEC_OBJS = \
@@ -498,17 +502,17 @@ FORCE$(JSEXEC): $(JSEXEC_OBJS)
 
 $(JSEXEC): $(JSEXEC_OBJS) $(LIBS)
 	@echo Linking $@
-	@$(CCPP) -o $@ $(LFLAGS) $^
+	$(QUIET)$(CCPP) -o $@ $(LFLAGS) $^
 	
 # ANS2MSG
 $(ANS2MSG): $(LIBODIR)/ans2msg.o
 	@echo Linking $@
-	@$(CC) -o $@ $^
+	$(QUIET)$(CC) -o $@ $^
 
 # MSG2ANS
 $(MSG2ANS): $(LIBODIR)/msg2ans.o
 	@echo Linking $@
-	@$(CC) -o $@ $^
+	$(QUIET)$(CC) -o $@ $^
 
 # Single servers
 FTPCON_OBJS	= $(LIBODIR)/sbbsftp.o $(LIBODIR)/conwrap.o \
@@ -526,56 +530,56 @@ $(LIBODIR)/sbbsweb.o : sbbscon.c
    ifndef bcc
 	@echo $(COMPILE_MSG) $<
    endif
-	@$(CC) $(CFLAGS) -o $@ -c $^ -DNO_TELNET_SERVER -DNO_FTP_SERVER -DNO_MAIL_SERVER -DNO_SERVICES
+	$(QUIET)$(CC) $(CFLAGS) -o $@ -c $^ -DNO_TELNET_SERVER -DNO_FTP_SERVER -DNO_MAIL_SERVER -DNO_SERVICES
 
 $(LIBODIR)/sbbsftp.o : sbbscon.c
    ifndef bcc
 	@echo $(COMPILE_MSG) $<
    endif
-	@$(CC) $(CFLAGS) -o $@ -c $^ -DNO_TELNET_SERVER -DNO_MAIL_SERVER -DNO_SERVICES -DNO_WEB_SERVER
+	$(QUIET)$(CC) $(CFLAGS) -o $@ -c $^ -DNO_TELNET_SERVER -DNO_MAIL_SERVER -DNO_SERVICES -DNO_WEB_SERVER
 
 $(LIBODIR)/sbbsmail.o : sbbscon.c
    ifndef bcc
 	@echo $(COMPILE_MSG) $<
    endif
-	@$(CC) $(CFLAGS) -o $@ -c $^ -DNO_TELNET_SERVER -DNO_FTP_SERVER -DNO_SERVICES -DNO_WEB_SERVER
+	$(QUIET)$(CC) $(CFLAGS) -o $@ -c $^ -DNO_TELNET_SERVER -DNO_FTP_SERVER -DNO_SERVICES -DNO_WEB_SERVER
 
 $(LIBODIR)/sbbssrvc.o : sbbscon.c
    ifndef bcc
 	@echo $(COMPILE_MSG) $<
    endif
-	@$(CC) $(CFLAGS) -o $@ -c $^ -DNO_TELNET_SERVER -DNO_FTP_SERVER -DNO_MAIL_SERVER -DNO_WEB_SERVER
+	$(QUIET)$(CC) $(CFLAGS) -o $@ -c $^ -DNO_TELNET_SERVER -DNO_FTP_SERVER -DNO_MAIL_SERVER -DNO_WEB_SERVER
 
 $(LIBODIR)/sbbs_bbs.o : sbbscon.c
    ifndef bcc
 	@echo $(COMPILE_MSG) $<
    endif
-	@$(CC) $(CFLAGS) -o $@ -c $^ -DNO_FTP_SERVER -DNO_MAIL_SERVER -DNO_SERVICES -DNO_WEB_SERVER
+	$(QUIET)$(CC) $(CFLAGS) -o $@ -c $^ -DNO_FTP_SERVER -DNO_MAIL_SERVER -DNO_SERVICES -DNO_WEB_SERVER
 
 $(SBBSWEB): $(WEBCON_OBJS) $(SBBSLIB) $(WEBSRVR)
 	@echo Linking $@
-	@$(CC) $(CFLAGS) $(LFLAGS) -lwebsrvr -o $@ $(WEBCON_OBJS) $(SBBSLIB)
+	$(QUIET)$(CC) $(CFLAGS) $(LFLAGS) -lwebsrvr -o $@ $(WEBCON_OBJS) $(SBBSLIB)
 
 $(SBBSFTP): $(FTPCON_OBJS) $(SBBSLIB) $(FTPSRVR)
 	@echo Linking $@
-	@$(CC) $(CFLAGS) $(LFLAGS) -lftpsrvr -o $@ $(FTPCON_OBJS) $(SBBSLIB)
+	$(QUIET)$(CC) $(CFLAGS) $(LFLAGS) -lftpsrvr -o $@ $(FTPCON_OBJS) $(SBBSLIB)
 
 $(SBBSMAIL): $(MAILCON_OBJS) $(SBBSLIB) $(MAILSRVR)
 	@echo Linking $@
-	@$(CC) $(CFLAGS) $(LFLAGS) -lmailsrvr -o $@ $(MAILCON_OBJS) $(SBBSLIB)
+	$(QUIET)$(CC) $(CFLAGS) $(LFLAGS) -lmailsrvr -o $@ $(MAILCON_OBJS) $(SBBSLIB)
 
 $(SBBSSRVC): $(SRVCCON_OBJS) $(SBBSLIB) $(SERVICES)
 	@echo Linking $@
-	@$(CC) $(CFLAGS) $(LFLAGS) -lservices -o $@ $(SRVCCON_OBJS) $(SBBSLIB)
+	$(QUIET)$(CC) $(CFLAGS) $(LFLAGS) -lservices -o $@ $(SRVCCON_OBJS) $(SBBSLIB)
 
 $(SBBS_BBS): $(BBSCON_OBJS) $(SBBSLIB)
 	@echo Linking $@
-	@$(CC) $(CFLAGS) $(LFLAGS) -o $@ $(BBSCON_OBJS) $(SBBSLIB)
+	$(QUIET)$(CC) $(CFLAGS) $(LFLAGS) -o $@ $(BBSCON_OBJS) $(SBBSLIB)
 
 
 depend:
-	@$(DELETE) $(LIBODIR)/.depend
-	@$(DELETE) $(EXEODIR)/.depend
+	$(QUIET)$(DELETE) $(LIBODIR)/.depend
+	$(QUIET)$(DELETE) $(EXEODIR)/.depend
 	$(MAKE) BUILD_DEPENDS=FORCE
 
 FORCE:
