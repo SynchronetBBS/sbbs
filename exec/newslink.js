@@ -19,6 +19,7 @@
 // n		do not add "From Newsgroup" text to imported messages
 // t		do not add tearline to imported messages
 // a		convert extended-ASCII chars to ASCII on imported messages
+// r		remove "Newsgroups:" header field from imported messages
 
 const REVISION = "$Revision$".split(' ')[1];
 
@@ -32,6 +33,8 @@ var antispam = format(".remove-%s-this"
 					  ,random(50000).toString(36));
 
 var cfg_fname = system.ctrl_dir + "newslink.cfg";
+
+var global_flags = "";	// global flags  - area flags applied to all areas
 
 load("sbbsdefs.js");
 load("newsutil.js");	// write_news_header() and parse_news_header()
@@ -133,6 +136,9 @@ while(!cfg_file.eof) {
 		case "pass":
 			password=str[1];
 			break;
+		case "flags":
+			global_flags=str[1];
+			break;
 		case "area":
 			area.push(str);
 			break;
@@ -215,6 +221,7 @@ for(i in area) {
 	flags = area[i][3];
 	if(flags==undefined)
 		flags="";
+	flags += global_flags;
 	flags = flags.toLowerCase();
 
 	printf("sub: %s, newsgroup: %s\r\n",sub,newsgroup);
@@ -471,6 +478,8 @@ for(i in area) {
 			body = ascii_str(body);
 			hdr.subject = ascii_str(hdr.subject);
 		}
+		if(flags.indexOf('r')>=0) 	// remove "Newsgroups:" header field
+			delete hdr.newsgroups;
 
 		hdr.from_net_type=NET_INTERNET;
 //		hdr.from_net_addr=hdr.from;
