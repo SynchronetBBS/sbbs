@@ -16,9 +16,19 @@
 </tr>
 <tr>
     <td colspan="4">
-    <hr />
+        <img src="/graphics/msg_td_teal.gif" alt="Table Graphic." width="100%" height="11" border="0" />
+    </td>
+</tr>
+<tr>
+    <td bgcolor="Black" colspan="4">
+    <!-- <hr /> -->
             <pre class="leftalign">@@body@@</pre>
-    <hr />
+    <!-- <hr /> -->
+    </td>
+</tr>
+<tr>
+    <td colspan="4">
+        <img src="/graphics/msg_td_teal.gif" alt="Table Graphic." width="100%" height="11" border="0" />
     </td>
 </tr>
 </table>
