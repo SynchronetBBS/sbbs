@@ -1509,7 +1509,6 @@ js_useredit(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 static JSBool
 js_change_user(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	uint		usernumber=0;
 	sbbs_t*		sbbs;
 
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)

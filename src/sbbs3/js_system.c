@@ -694,10 +694,6 @@ js_secondstr(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	char		str[128];
 	time_t		t;
 	JSString*	js_str;
-	scfg_t*		cfg;
-
-	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
-		return(JS_FALSE);
 
 	if(argc<1)
 		t=time(NULL);	/* use current time */
