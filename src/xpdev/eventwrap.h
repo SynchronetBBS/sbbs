@@ -47,7 +47,7 @@
 #elif defined(_WIN32)	
 
 	typedef HANDLE xpevent_t;
-	#define EventForWait(event,ms)		WaitForSingleObject(event,ms)
+	#define WaitForEvent(event,ms)		WaitForSingleObject(event,ms)
 	#define CloseEvent(event)			CloseHandle(event)
 
 #else
