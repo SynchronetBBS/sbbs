@@ -1,0 +1,91 @@
+                  Domain Poker  (c) 1992 Domain Entertainment
+                                Program Changes
+
+
+09/17/92 - VERSION 1.00 Release
+
+    Finally released the DEMO version of Domain Poker and made it available
+for purchase.
+
+
+VERSION 1.01
+
+    Made a few cosmetic changes, changed the '(x)' in front of the player
+status prompts to 'Node x: '.  Corrected a spelling error in one of the menus
+('list users onliner' to 'list users online').
+    Made the game check for node to node Synchronet messages at the main menu
+prompt rather than only in the game.
+    The timer for computer play was counting time from multi-user games and the
+players would end up with less time available to play against the computer.
+Now it only counts time played against the computer.
+    Added (for non-demo versions) implementation for a sysop information file.
+If a file named "DPOKER.SYS" exists in the poker directory, it will be dis-
+played upon entering the game (right after the Domain Poker header, and right
+before the menu commands).  Useful if the SysOp wants to pass on information to
+the users who play the game, and it WILL recognize ctrl-a color codes.
+    There was a possibility that stray messages could be left over from
+previous games and read in, now the game deletes any existing stray messages
+upon entry to a table.
+    When a player hits 'P' for the player log (from the entry prompt), after
+the names are done listing, it will show the user his/her totals for the day
+(if their name appears in the log).
+    Found a non-destructive, but very annoying bug.  When in a game of > 2
+players, if the player before the dealer raised the bet, the dealer folded,
+and the player after the dealer called (in that order) the game would hang.
+
+VERSION 1.02
+
+    Minor changes to computer betting strategy (noticed some potential
+problems, not real significant but fixed them anyway).  Saved last version
+in case these changes make no improvement (DPOKER.ORG).
+    Found that the last bug fixed in v1.01 was not completely fixed, Missed
+a spot in the code that would cause the same problem in an even rarer instance.
+    The game no longer needs the node directory specified on the command line,
+it is now read from the environment.
+
+VERSION 1.03
+
+    Updated with the new XSDK version 2.03.
+    Implemented new "Beg" screens for the DEMO copy for distribution with
+Synchronet.
+
+VERSION 1.10
+
+    Updated with a major XSDK update (version 2.10).
+    Was unnecessarily creating player files before a player had actually
+gotten to a table, now the file is created only when a slot on a table has
+been found for that player.
+
+VERSION 1.11
+
+    There was a chance for garbage to sneak into the game status file and
+cause problems in single as well as multi-player games, this is now fixed.
+    Just realized that there was only one deck of cards ever created for the
+entire game, now there is one deck of cards generated for each table being
+played like there should be.
+
+VERSION 1.12
+
+    Missed a spot when fixing the "garbage" bug from version 1.11.
+    Noticed that the computer player was being disabled one table from where it
+should have been (ie: if there were no computer player allowed on tables 6 and
+above, it would actually affect tables 5 and up).
+    The "Current Table" is now initialized to zero from startup.
+    Recompiled with new XSDK (version 2.11).
+
+VERSION 1.13
+
+    Bug found for boards running > 10 nodes.  I was initializing the number
+of "hands" of cards to the number of players per table (6) and should have
+been initializing it to the number of nodes the system has (but instead, went
+ahead and initialized it to the max number of nodes).
+    The clean-up program was leaving some stray files around for some reason,
+I now have it search for the maximum possible filenames and delete them (1 thru
+250).
+
+VERSION 1.14
+
+    A previous bug fix (hanging problem in v1.01) was inserted in the wrong
+place making it so the computer did get a chance to bet on the final raise.
+    The computer was 'Calling' on the initial bet which shouldn't be allowed
+as a choice.
