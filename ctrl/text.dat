@@ -1,5 +1,5 @@
 "\1n\1cSubj : \1h%s\r\n"                                001 MsgSubj
-"\1n\1cAttr : \1h%s%s%s%s%s%s%s%s%s\r\n"                002 MsgAttr
+"\1n\1cAttr : \1h%s%s%s%s%s%s%s%s%s%s\r\n"              002 MsgAttr
 "\1n\1cTo   : \1h%s"                                    003 MsgTo
 " #%s"                                                  004 MsgToExt
 " (%s)"                                                 005 MsgToNet
@@ -29,11 +29,11 @@
 "Invalid line number\r\n"                               027 InvalidLineNumber
 "nMessage cleared.\r\n"                                028 MsgCleared
 "With line numbers"                                     029 WithLineNumbersQ
-"\r\nrhiAborted.n\r\n"                              030 AbortedMsg
+"\r\nrhiAborted.n\r\n"                              030 Aborted
 "\r\nAnonymous"                                         031 AnonymousQ
 "ANONYMOUS"                                             032 Anonymous
 "nh\r\nSaving..."                                     033 Saving
-"\rbSaved w%lub characters (w%ub lines).n\r\n"    034 SavedNBytss
+"\rbSaved w%lub characters (w%ub lines).n\r\n"    034 SavedNBytes
 "n\r\nWriting Index..."                                035 WritingIndx
 "\rnmE-mail sent to h%s nm#%d.n\r\n"              036 Emailed
 "\rnmPosted on h%snm %s.\r\n"                      037 Posted
@@ -43,7 +43,7 @@
 	"h%sn\r\n"
 "nm\r\nMail forwarded to h%s nm#%d.n\r\n"         041 Forwarded
 "bhAuto message by: c%sn\r\n\r\n"                   042 AutoMsgBy
-"\r\nAuto Message - ~Read, ~Write, or ~Quit: "          043 AutoMsgMne
+"\r\nAuto Message - ~Read, ~Write, or ~Quit: "          043 AutoMsg
 "n\r\nYou can't write to the auto-message.\r\n"        044 R_AutoMsg
 "n\r\nYou have no mail.\r\n"                           045 NoMailWaiting
 "_\r\nghMail Waiting:\r\n\r\n"                       046 MailWaitingLstHdr
@@ -55,18 +55,19 @@
 "ncRE: h%sn\r\n\r\n"                                051 Regarding
 "ncRE: h%s\r\nncBY: h%s ncon h%sn\r\n\r\n"    052 RegardingByOn
 "ncRE: h%s\r\nncBY: h%s ncto h%s ncon "\     053 RegardingByToOn
-	"h%sn\r\n\r\n"	
+	"h%sn\r\n\r\n"
 "Delete %s's mail"                                      054 DeleteMailQ
 "OK"                                                    055 OK
 "\r\n_bhForward mail to: w"                         056 ForwardMailTo
 "Save/Append messsage to another file"                  057 SaveMsgToFile
 "_yhPath/Filename to write to: n"                   058 FileToWriteTo
 "n\r\nYou have no sent messages pending.\r\n"          059 NoMailSent
-"\r\nghMail that you've sent still pending:"\         060  MailSentLstHdr
+"\r\nghMail that you've sent still pending:"\         060 MailSentLstHdr
 	"\r\n\r\nn"
 "-\r\ngReading Sent E-mail (h?ng=Menu) "\          061 ReadingSentMail
-	"(h%ung of h%ung): n" 
-"n\r\nForwarded mail is not deletable.\r\n"            062 CantDelForwardedMail
+	"(h%ung of h%ung): n"
+"hm\r\nSending Internet Mail To: w%sm\r\n"\		062 InternetMailing
+	"                    From: w%s\r\n"
 "n\r\nNo mail on system.\r\n"                          063 NoMailOnSystem
 "-\r\ngReading All E-mail (h%ung of h%ung): n" 064 ReadingAllMail
 "_\r\ngh      From                   "\              065 MailOnSystemLstHdr
@@ -78,15 +79,16 @@
 "\r\nNo messages have been posted on %s %s\r\n"         069 NoMsgsOnSub
 "\r\nncPost : [h%unc][h%unc] h%lunc/h%lu"   070 ZScanPostHdr
 "_\r\nchReading nc[h%unc] %s "\                 071 ReadingSub
-	"[h%unc] %s (h?nc=Menu) (h%lunc of h%lunc): n" 
+	"[h%unc] %s (h?nc=Menu) (h%lunc of h%lunc): n"
 "\r\nYou didn't post message #%d\r\n"                   072 YouDidntPostMsgN
 "\r\nDelete message #%lu '%s'"                          073 DeletePostQ
-"Deleting '%s'..."                                      074 DeletingPost
-"\r'%s' Deleted.      \r\n"                             075 DeletedPost
+"\1n\1hI\1n\1g) AutoLogon via IP address      : "\      074 UserDefaultsAutoLogon
+	"\1h%s\r\n"
+"<UNUSED>"                                              075 Unused75
 "_\r\nyhString to search for: "                      076 SearchStringPrompt
-"-\r\nghMessages:\r\n\r\nn"                         077 SubMsgLstHdr
+"<UNUSED>"                                              077 Unused77
 "gh%4lu:ng %-22.22s %-22.22s h%cng %.25s\r\n"    078 SubMsgLstFmt
-"\r\nMake post #%d %s"                                  079 ChangeMsgPurgeQ
+"<UNUSED>"                                              079 Unused79
 "\r\n\r\nNo text file sections available.\r\n"          080 NoTextSections
 "l_chGeneral Text File Sections:\r\n\r\n"           081 TextSectionLstHdr
 "nc<h%ldnc> %s\r\n"                                082 TextSectionLstFmt
@@ -129,19 +131,18 @@
 "riaborted.n\r\n"                                    118 MessageScanAborted
 "\r\nLog off"                                           119 LogOffQ
 "\r\nYou can't post on this sub.\r\n"                   120 CantPostOnSub
-"\r\n\r\nYou can't access the transfer "\               121 R_TransferSection
-	"section.\r\n"
-"\r\nrhNo other active nodes.\r\n"                    122 NoOtherActiveNodes
+"<UNUSED>"                                              121 Unused121
+"\r\nrhNo other active nodes.\1n\r\n"                 122 NoOtherActiveNodes
 "\r\n\r\nYou can't use the external programs.\r\n"      123 R_ExternalPrograms
 "\r\n-gUsage Statistics for h%s #%dn\r\n\r\n"       124 UserStats
 "-gSub-boards of h%-40s      ngPosts"\             125 SubLstHdr
 	"\r\n\r\nh"
 "ng[h%lung] %-40s %12s h%4u\r\n"                  126 SubLstFmt
-"\r\n_ghMessage Groupsng                    "\     127 GrpLsthdr
+"\r\n_ghMessage Groupsng                    "\     127 GrpLstHdr
 	"                        Sub-boards\r\n\r\nh"
 "ng[h%lung] %-40s %12s h%4u\r\n"                  128 GrpLstFmt
 "\r\nGroup to configure new message scan or ~Quit: "    129 NScanCfgWhichGrp
-"\r\nGroup to configure your message scan or ~Quit: "   130 SSCanCfgWhichGrp
+"\r\nGroup to configure your message scan or ~Quit: "   130 SScanCfgWhichGrp
 "l-gSub-boards of h%s:\r\n\r\nh"                   131 CfgSubLstHdr
 "ng[h%ldng] %-40.40s  h%s\r\n"                    132 CfgSubLstFmt
 "l_ghMessage Groups:\r\n\r\n"                       133 CfgGrpLstHdr
@@ -149,13 +150,13 @@
 "\r\nSub-board to toggle new message scan"\             135 NScanCfgWhichSub
 	", ~All, or ~Quit: "
 "\r\nSub-board to toggle your message scan"\            136 SScanCfgWhichSub
-	", ~All, or ~Quit: "   
+	", ~All, or ~Quit: "
 "ng[h%ldng] %-40.40s  hc%s\r\n"                  137 SubPtrLstFmt
 "\r\nSet new-scan pointer for which, ~All, or ~Quit: "  138 WhichOrAll
 "\r\nRaw message input mode is now "                    139 RawMsgInputModeIsNow
 "OFF"                                                   140 OFF
 "ON"                                                    141 ON
-"\r\nLine Status: %d\r\n"                               142 LineStatus
+"<UNUSED>"                                              142 Unused142
 "\r\n-gSystem Statistics:\r\n\r\nn"                  143 SystemStatsHdr
 "\r\n-gNode #%d Statistics:\r\n\r\nn"                144 NodeStatsHdr
 "Total Logons    : %s\r\n"                              145 StatsTotalLogons
@@ -175,9 +176,9 @@
 "\r\nNo error log exists.\r\n"                          159 NoErrorLogExists
 "\r\nClear critical error counters on all nodes"        160 ClearErrCounter
 "\r\nInvalid node.\r\n"                                 161 InvalidNode
-"\r\nRe-run this node now"                              162 RerunThisNodeNowQ
+"<UNUSED>"                                              162 Unused162
 "Delete Guru file"                                      163 DeleteGuruLogQ
-"\r\n\r\nSearch all libraries for new files"            164 NScanAllLibsQ
+"<UNUSED>"                                              164 Unused164
 "\r\n\r\nYou can't download.\r\n"                       165 R_Download
 "\r\nwhSearching all directories...\r\n"              166 SearchingAllDirs
 "whSearching all libraries...\r\n"                    167 SearchingAllLibs
@@ -190,8 +191,7 @@
 "\r\n\r\nYou can't upload.\r\n"                         173 R_Upload
 "\r\n\r\nYou can't upload here.\r\n"                    174 CantUploadHere
 "_\r\n\r\nyhFilespec: n"                            175 FileSpec
-"-\r\ngTransfer Statistics for "\                     176 UserTransferStats
-	"h%s #%dn\r\n\r\n"
+"<UNUSED>"                                              176 Unused176
 "\r\n\r\nNo sysop directory specified.\r\n"             177 NoSysopDir
 "\r\n\r\nYou can't upload to sysop.\r\n"                178 CantUploadToSysop
 "-gDirectories of h%-40.40s     "\                   179 DirLstHdr
@@ -200,10 +200,9 @@
 "\r\n_ghFile Libraries ng                   "\     181 LibLstHdr
 	"                       Directories\r\n\r\nh"
 "ng(h%ung) %-40.40s %12.12s h%4u\r\n"             182 LibLstFmt
-"\r\nBatch Download File Flagging is now %s\r\n"        183 BatDownloadFlagIsNow
+"<UNUSED>"                                              183 Unused183
 "_\r\ngh%s ngTransfer Policy\r\n\r\nn"            184 TransferPolicyHdr
-"Each credit is equal to %s byte%s in the size of "\    185 TpCreditValue
-	"the file\r\n"
+"<UNUSED>"                                              185 Unused185
 "Initial uploads are rewarded with %d%% of the "\       186 TpUpload
 	"credit value\r\n"
 "All downloads are rewarded with %d%% of the "\         187 TpDownload
@@ -217,8 +216,8 @@
 "ncFiles     : %luyh"                               194 BoxHdrFiles
 "nc(h%unc) %s "                                    195 ShortHdrLib
 "nc(h%unc) %s"                                     196 ShortHdrDir
-"rhFilenames, specs, or flags [None]: mh"           197 BatDlFlags
-"\r\n\7rhiBatch download queue is full.n\r\n"       198 BatDlQueueFull
+"rhFilenames, specs, or flags [None]: mh"           197 BatchDlFlags
+"\r\n\7rhiBatch download queue is full.n\r\n"       198 BatchDlQueueIsFull
 "_\r\nyhFilespec [*.*]: n"                          199 FileSpecStarDotStar
 "\r\n\r\nrhiNot enough free disk space.n\r\n"\      200 LowDiskSpace
 	"\r\nhThe sysop has been notified.n\r\n"
@@ -242,11 +241,11 @@
 	"download it!n\r\n\r\n"
 "\7\r\nrhiYou can't send yourself files.n\r\n\r\n"  216 CantSendYourselfFiles
 "\r\n-gAdded to destination user list: "\             217 UserAddedToDestList
-	"wh%s\r\n\r\nn"	
+	"wh%s\r\n\r\nn"
 "\r\n-gHow do you rate the content of this file "\    218 RateThisFile
 	"(hwGng, hwRng, or hwXng): n"
 "[%c] "                                                 219 Rated
-"Is this upload part of a set (multiple files)"         220 MultipleDisksQ
+"Is this upload part of a set (multiple files)"         220 MultipleDiskQ
 "_yhHow many files total: n"                        221 HowManyDisksTotal
 "_yhWhich file number is your upload: n"            222 NumberOfFile
 " [%2.2d/%2.2d]"                                        223 FileOneOfTen
@@ -255,12 +254,14 @@
 "No description given."                                 226 NoDescription
 "\r\nProtocol or ~Quit: "                               227 ProtocolOrQuit
 "\r\nProtocol, ~Batch or ~Quit: "                       228 ProtocolBatchOrQuit
-"\r\n\7rhiBatch upload queue is full.n\r\n"         229 BatUlQueueIsFull
+"\r\n\7rhiBatch upload queue is full.n\r\n"         229 BatchUlQueueIsFull
 "\r\nnmh%s nmadded to batch upload queue"\         230 FileAddedToUlQueue
 	"c - Files: h%u nc(h%unc Max)\r\n"
 "\7_whNode %2d: g%sng sent you a file.\r\n"       231 UserToUserXferNodeMsg
-"%s: ~Batch download, ~Extended info, ~View file, "\    232 FileInfoPrompt
-	"~Quit or [Next]: "			
+"\1n\1g\1h%s\1y: \1w~B\1yatch download, "\              232 FileInfoPrompt
+	"\1w~E\1yxtended info, "\
+	"\1w~V\1yiew file, "\
+	"\1w~Q\1yuit or [Next]: \1w"
 "\r\n~Quit or [Next]: "                                 233 QuitOrNext
 "~Remove, ~Move, ~Edit, ~View, ~Quit, or [Next]: "      234 RExemptRemoveFilePrompt
 "n(%d) %s\r\n"                                         235 MoveToLibLstFmt
@@ -270,7 +271,7 @@
 "%s moved to %s %s.\r\n"                                239 MovedFile
 "\r\nClose file record"                                 240 CloseFileRecordQ
 "~Remove, ~Credits only, ~File only, ~Move, ~Edit, "\   241 SysopRemoveFilePrompt
-	"~View, ~Quit, or [Next]: " 
+	"~View, ~Quit, or [Next]: "
 "~Remove, ~Edit, ~View, ~Quit, or [Next]: "             242 UserRemoveFilePrompt
 "\r\nFile not there.\r\n"                               243 FileNotThere
 "\7\r\nrhiCouldn't remove '%s'.n\r\n"               244 CouldntRemoveFile
@@ -307,7 +308,7 @@
 "\r\nDownload queue is empty.\r\n"                      273 DownloadQueueIsEmpty
 "\r\n-ghUpload Queue:ng"\                          274 UploadQueueLstHdr
 	"        Description\r\n\r\nn"
-"gh%2d: ng%s     %s\r\n"                            275 UploadQueuueLstFmt
+"gh%2d: ng%s     %s\r\n"                            275 UploadQueueLstFmt
 "\r\n-ghDownload Queue:ng"\                        276 DownloadQueueLstHdr
 	"      Credits      Bytes        Time\r\n\r\nn"
 "gh%2d: ng%s %11.11s %11.11s     %s\r\n"            277 DownloadQueueLstFmt
@@ -322,7 +323,7 @@
 "_\r\nbhDisconnecting... wHbang up or wAbbort "  284 Disconnecting
 "\rwhGood-bye!  (Time Used: @TUSED@)>"               285 Disconnected
 "rhi%s NOT SENT!n\r\n"                              286 FileNotSent
-"Deleting files in temp directory...\r\n"               287 RemovingTmpFiles
+"Deleting files in temp directory...\r\n"               287 RemovingTempFiles
 "_yhExtract from: n"                                288 ExtractFrom
 "\r\nUnextractable file type.\r\n"                      289 UnextractableFile
 "\r\nFile not found.\r\n"                               290 FileNotFound
@@ -335,7 +336,7 @@
 "\r\n%u files removed.\r\n"                             296 NFilesRemoved
 "rhiAll other nodes should NOT be in use "\          297 ResortWarning
 	"during resort/compression.n\r\n"
-"-c%-15.15s yh%-25.25s "                            298 ResortLineFmt 
+"-c%-15.15s yh%-25.25s "                            298 ResortLineFmt
 "bEmptyn\r\n"                                         299 ResortEmptyDir
 "wSorting..."                                          300 Sorting
 "\b\b\b\b\b\b\b\b\b\bbSorted    n\r\n"                301 Sorted
@@ -437,7 +438,7 @@
 "\7\r\nrhiYou must leave %s mail in order to be "\   378 NoFeedbackWarning
 	"validated!n\r\n"
 "\r\n\r\nNo external programs available.\r\n"           379 NoXtrnPrograms
-"l_ch%s ncExternal Programs:\r\n\r\n"             380 XtrnProgLstHdr
+"lnch%s ncExternal Programs:\r\n\r\n"             380 XtrnProgLstHdr
 "ncNum h³nc Name                           "       381 XtrnProgLstTitle
 "hÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ      "               382 XtrnProgLstUnderline
 "hc%3u ³ nc%-25.25sh      "                        383 XtrnProgLstFmt
@@ -447,8 +448,8 @@
 "Remove node lock"                                      386 RemoveNodeLockQ
 "The minimum modem speed for this node is %ubps."       387 MinimumModemSpeed
 "You do not have sufficient access for this node."      388 NoNodeAccess
-"nr\7\r\nSorry, this node is temporarily closed "\    389 NodeLocked
-	"for maintenance.n\r\n"
+"\1n\1r\1h\r\nSorry, this node is temporarily closed "\ 389 NodeLocked
+	"for maintenance.\1n\r\n"
 "\r\nUnknown user\r\n"                                  390 UnknownUser
 "\7Invalid Logon\r\n"                                   391 InvalidLogon
 "%2.2d/%2.2d/%2.2d T:%5lu   L:%3lu   P:%3lu   "\        392 SlogFmt
@@ -457,7 +458,7 @@
 "\r\nSort alphabetically"                               394 SortAlphaQ
 "\r\nmhChecking Slots..."                             395 CheckingSlots
 "nh%-32.32snm%-30.30sh%-8.8s nm%-8.8s\r\n"       396 UserListFmt
-"\r%d Total users.        \r\n"                         397 NTotalUsers
+"\rh%dnb Total users.        \r\n"                   397 NTotalUsers
 "%d Users with access to current sub.\r\n"              398 NUsersOnCurSub
 "%d Users with access to current dir.\r\n"              399 NUsersOnCurDir
 "\r\n-cCurrent New-Scan date/time: h"                400 NScanDate
@@ -483,17 +484,17 @@
 "rh®®® iDELETEDnrh ¯¯¯\r\n"                       419 Deleted
 "bh®®® iINACTIVEnbh ¯¯¯\r\n"                      420 Inactive
 "ncAlias     : h%-30.30s  ncPassword     : "\      421 UeditAliasPassword
-	"h%-8.8s  %s\r\n"   
+	"h%-8.8s  %s\r\n"
 "ncReal Name : h%-30.30s  ncPhone number : "\      422 UeditRealNamePhone
 	"h%s\r\n"
 "ncAddress   : h%-30.30s  ncAge/Sex/BD   : "\      423 UeditAddressBirthday
-	"h%2d %c %s\r\n"    
+	"h%2d %c %s\r\n"
 "ncLocation  : h%-30.30s  ncZip Code     : "\      424 UeditLocationZipcode
-	"h%s\r\n"           
+	"h%s\r\n"
 "ncNote      : h%-30.30s  ncHandle       : "\      425 UeditNoteHandle
-	"h%s\r\n"           
+	"h%s\r\n"
 "ncComputer  : h%-30.30s  ncModem type   : "\      426 UeditComputerModem
-	"h%s\r\n"		
+	"h%s\r\n"
 "ncComment %c : h%s\r\n"                             427 UeditComment
 "ncFirst on  : h%-8.8s  ncExpire    : h%-8.8s  "\ 428 UserDates
 	"ncLast on   : h%-8.8s  %02u:%02u\r\n"
@@ -583,7 +584,7 @@
 	"[Auto Detect]: "
 "\r\n_yhCurrent Password: w"                        498 CurrentPassword
 "\r\nForward E-mail to NetMail address"                 499 ForwardMailQ
-"\r\n_yhNetMail address "\                           500 EnterNetMailAddress
+"\r\n_yhNetMail/e-mail address "\                    500 EnterNetMailAddress
 	"(Example: name@address)\r\n: "
 "nlgSelect h%sng:\r\n\r\n"                        501 SelectItemHdr
 "gh%3d: ng%s\r\n"                                   502 SelectItemFmt
@@ -601,7 +602,7 @@
 "_whNode %2d: g%sng joined multinode chat "\      512 NodeJoinedMultiChat
 	"channel %u.\r\nn"
 "_whNode %2d: g%sng left multinode chat "\        513 NodeLeftMultiChat
-	"channel %u.\r\n"		
+	"channel %u.\r\n"
 "_yhCommand: n"                                     514 MultiChatCommandPrompt
 "%s has password protected "\                           515 PasswordProtected
 	"this channel\r\nPassword: "
@@ -668,10 +669,10 @@
 	"\r\nCtrl-T  Time Information\r\n\r\n"
 "\r\nnYou've taken too long to log on.\r\n"            557 TakenTooLongToLogon
 "\r\nnYou've been inactive too long.\r\n"              558 CallBackWhenYoureThere
-"@EXEC:YESNOBAR@"                                       559 YesNoQuestion
+"@EXEC:yesnobar@"                                       559 YesNoQuestion
 "Yes"                                                   560 Yes
 "No"                                                    561 No
-"@EXEC:NOYESBAR@"                                       562 NoYesQuestion
+"@EXEC:noyesbar@"                                       562 NoYesQuestion
 "_rh[Hit a key] "                                    563 Pause
 "_bh[WAIT]"                                          564 Wait
 "-g\r\nSystem Statistics Log:\r\n\r\nn"              565 SysStatsLogHdr
@@ -783,7 +784,7 @@
 "l_ghFile Libraries:\r\n\r\n"                       658 CfgLibLstHdr
 "ng(h%dng) %sh\r\n"                               659 CfgLibLstFmt
 "_chListing nc(h%unc) %s "\                     660 BatchFlagPrompt
-	"(h%unc) %s (h?nc=Menu) (h%lunc Filesnc): n" 
+	"(h%unc) %s (h?nc=Menu) (h%lunc Filesnc): n"
 "nl4  hy[wBy]atch Download  "\                   661
 	"[wVy]iew Content  [wEy]xtended "\
 	"Info  [wPy]revious Files  [wQy]uit  n\r\n"
@@ -843,7 +844,7 @@
 ""                                                      710 NodeActionLoggingOn
 ""                                                      711 NodeActionLocalChat
 "h%sng (%u) %u %c in multinode chat"\              712 NodeActionMultiChat
-	"%.0s%.0s%.0s channel %u at %ubps"
+	"%.0s%.0s%.0s channel %u"
 ""                                                      713 NodeActionGuruChat
 ""                                                      714 NodeActionChatSec
 ""                                                      715 NodeActionSysopAct
