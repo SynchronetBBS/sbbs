@@ -1014,22 +1014,25 @@ static void js_static_service_thread(void* arg)
 	val = BOOLEAN_TO_JSVAL(JS_FALSE);
 	JS_SetProperty(js_cx, js_glob, "logged_in", &val);
 
-	JS_ClearPendingException(js_cx);
 
-	js_script=JS_CompileFile(js_cx, js_glob, spath);
+	JS_SetBranchCallback(js_cx, js_BranchCallback);
+	do {
+	
+		JS_ClearPendingException(js_cx);
 
-	if(js_script==NULL) 
-		lprintf("%04d !JavaScript FAILED to compile script (%s)",service->socket,spath);
-	else  {
-		JS_SetBranchCallback(js_cx, js_BranchCallback);
+		js_script=JS_CompileFile(js_cx, js_glob, spath);
 
-		do {
-			JS_ExecuteScript(js_cx, js_glob, js_script, &rval);
-			JS_GC(js_cx);
-		} while(!service->terminated && service->options&SERVICE_OPT_STATIC_LOOP);
+		if(js_script==NULL)  {
+			lprintf("%04d !JavaScript FAILED to compile script (%s)",service->socket,spath);
+			break;
+		}
 
+		JS_ExecuteScript(js_cx, js_glob, js_script, &rval);
 		JS_DestroyScript(js_cx, js_script);
-	}
+
+		JS_GC(js_cx);
+	} while(!service->terminated && service->options&SERVICE_OPT_STATIC_LOOP);
+
 	JS_DestroyContext(js_cx);	/* Free Context */
 
 	JS_DestroyRuntime(js_runtime);
