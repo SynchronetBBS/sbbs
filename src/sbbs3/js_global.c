@@ -82,12 +82,11 @@ js_load(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     uintN		i;
     const char*	filename;
     JSScript*	script;
-    JSBool		ok;
     jsval		result;
 	scfg_t*		cfg;
 	JSObject*	js_argv;
 
-	*rval=JSVAL_VOID;
+	*rval=JSVAL_FALSE;
 
 	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_FALSE);
@@ -116,13 +115,15 @@ js_load(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 			sprintf(path,"%s%s",cfg->exec_dir,filename);
 	} else
 		strcpy(path,filename);
-	if((script=JS_CompileFile(cx, obj, path))==NULL)
-		return(JS_FALSE);
 
-	ok = JS_ExecuteScript(cx, obj, script, &result);
+	JS_ClearPendingException(cx);
+
+	if((script=JS_CompileFile(cx, obj, path))==NULL)
+		return(JS_TRUE);
+
+	*rval = BOOLEAN_TO_JSVAL(JS_ExecuteScript(cx, obj, script, &result));
+
 	JS_DestroyScript(cx, script);
-	if (!ok)
-		return(JS_FALSE);
 
     return(JS_TRUE);
 }
@@ -217,7 +218,9 @@ js_beep(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 static JSBool
 js_exit(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
+#if 0	/* Removed Mar-12-2003: this is now done before compiling script */
 	JS_ClearPendingException(cx);
+#endif
 	*rval = JSVAL_VOID;
 	return(JS_FALSE);
 }
@@ -1019,8 +1022,8 @@ static jsMethodSpec js_global_functions[] = {
 	{"exit",			js_exit,			0,	JSTYPE_VOID,	""
 	,JSDOCSTR("stop execution")
 	},		
-	{"load",            js_load,            1,	JSTYPE_VOID,	JSDOCSTR("string filename [,args]")
-	,JSDOCSTR("load and execute a JavaScript file")
+	{"load",            js_load,            1,	JSTYPE_BOOLEAN,	JSDOCSTR("string filename [,args]")
+	,JSDOCSTR("load and execute a JavaScript file, returns <i>true</i> if the execution was successful")
 	},		
 	{"sleep",			js_mswait,			0,	JSTYPE_ALIAS },
 	{"mswait",			js_mswait,			0,	JSTYPE_VOID,	JSDOCSTR("[number milliseconds]")
