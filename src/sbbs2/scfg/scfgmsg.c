@@ -1067,7 +1067,7 @@ QWK network nodes (Q restriction). If set to 0, no limit is imposed.
 				uinput(WIN_MID|WIN_SAV,0,0
 					,"Maximum Messages Per QWK Packet (0=No Limit)"
 					,str,6,K_NUMBER|K_EDIT);
-				max_qwkmsgs=atoi(str);
+				max_qwkmsgs=atol(str);
                 break;
 			case 4:
 				SETHELP(WHERE);
