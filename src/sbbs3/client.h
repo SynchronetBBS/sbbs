@@ -43,6 +43,7 @@
 #endif
 #include <time.h>		/* time_t */
 
+/* Used for sbbsctrl->client window */
 typedef struct {
 	size_t		size;		/* size of this struct */
 	char		addr[16];	/* IP address */
@@ -53,5 +54,26 @@ typedef struct {
 	char*		user;		/* user name */
 	char		pad[32];	/* padding for future expansion */
 } client_t;
+
+/* Used for ctrl/client.dab */
+typedef struct client_rec {
+	DWORD		local_addr;
+	DWORD		remote_addr;
+	DWORD		local_port;
+	DWORD		remote_port;
+	DWORD		socket;
+	/* 20 */
+	DWORD		time;
+	/* 24 */
+	char		protocol[16];
+	/* 40 */
+	char		user_name[32];
+	/* 72 */
+	char		local_host[64];
+	/* 136 */
+	char		remote_host[64];
+	/* 200 */
+	char		pad[512-200];
+} client_rec_t;
 
 #endif /* Don't add anything after this line */
