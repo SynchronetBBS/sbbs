@@ -12,7 +12,6 @@ var port=6667;
 var nick="nick";
 var msg;
 var join=false;
-var passed_msg=0;
 
 for(i=0;i<argc;i++) {
 	switch(argv[i]) {
@@ -33,16 +32,14 @@ for(i=0;i<argc;i++) {
 			break;
 		case "-m":
 			msg=argv[++i];
-			passed_msg=1;
 			break;
 	}
 }
 
-if(passed_msg && (msg == undefined || msg.search(/^\s*$/))) {
-	log("Cowardly refusing to send empty message");
-	exit();
-}
-log("Message: "+msg);
+msg.replace(/\t/,
+	function(str,offset,s) {
+		return('        '.substr(0,(offset % 8)));
+	});
 
 log("Using nick: " + nick);
 log("Connecting to: " +server+ " port " + port);
