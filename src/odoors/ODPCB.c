@@ -43,6 +43,7 @@
 #include <time.h>
 
 #include "OpenDoor.h"
+#include "ODStr.h"
 #include "ODCore.h"
 #include "ODGen.h"
 #include "ODScrn.h"

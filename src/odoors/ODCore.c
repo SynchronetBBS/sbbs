@@ -80,6 +80,7 @@
 #include <errno.h>
 
 #include "OpenDoor.h"
+#include "ODStr.h"
 #include "ODGen.h"
 #include "ODPlat.h"
 #include "ODCom.h"

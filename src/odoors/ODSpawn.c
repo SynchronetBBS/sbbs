@@ -58,6 +58,8 @@
 #include "OpenDoor.h"
 #ifdef ODPLAT_NIX
 #include <signal.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 #endif
 #include "ODCore.h"
 #include "ODGen.h"

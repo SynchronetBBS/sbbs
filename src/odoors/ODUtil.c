@@ -44,9 +44,7 @@
 #include <stdio.h>
 
 #include "OpenDoor.h"
-#ifdef ODPLAT_NIX
-#define stricmp 	strcasecmp
-#endif
+#include "ODStr.h"
 #include "ODUtil.h"
 #include "ODGen.h"
 

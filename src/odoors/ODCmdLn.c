@@ -52,9 +52,7 @@
 #include <ctype.h>
 
 #include "OpenDoor.h"
-#ifdef ODPLAT_NIX
-#define stricmp 	strcasecmp
-#endif
+#include "ODStr.h"
 #include "ODPlat.h"
 #include "ODCore.h"
 #include "ODInEx.h"

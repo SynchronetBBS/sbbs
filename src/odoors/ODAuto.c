@@ -42,6 +42,7 @@
 #include <ctype.h>
 
 #include "OpenDoor.h"
+#include "ODStr.h"
 #include "ODTypes.h"
 #include "ODGen.h"
 #include "ODPlat.h"

@@ -138,6 +138,7 @@ OBJECTS := ${OBJDIR}ODAuto${OBJFILE}\
          ${OBJDIR}ODSpawn${OBJFILE}\
          ${OBJDIR}ODStand${OBJFILE}\
          ${OBJDIR}ODStat${OBJFILE}\
+         ${OBJDIR}ODStr${OBJFILE}\
          ${OBJDIR}ODUtil${OBJFILE}\
          ${OBJDIR}ODWCat${OBJFILE}\
 	 ${OBJDIR}ODWin${OBJFILE}
