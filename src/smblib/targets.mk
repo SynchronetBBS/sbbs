@@ -1,2 +1,2 @@
 # smblib/targets.mk
-default: $(OBJODIR) $(LIBODIR) $(SMBLIB)
+lib: $(OBJODIR) $(LIBODIR) $(SMBLIB)
