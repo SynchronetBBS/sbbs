@@ -184,6 +184,8 @@ js_bind(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(argc)
 		port = js_port(cx,argv[0],p->type);
 	addr.sin_port = htons(port);
+	if(argc>1)
+		addr.sin_addr.s_addr = inet_addr(JS_GetStringBytes(JS_ValueToString(cx,argv[1])));
 
 	if(bind(p->sock, (struct sockaddr *) &addr, sizeof(addr))!=0) {
 		p->last_error=ERROR_VALUE;
@@ -1211,9 +1213,10 @@ static jsSyncMethodSpec js_socket_functions[] = {
 	,JSDOCSTR("close (shutdown) the socket immediately")
 	,310
 	},
-	{"bind",		js_bind,		0,	JSTYPE_BOOLEAN,	JSDOCSTR("[port]")
-	,JSDOCSTR("bind socket to a port (number or service name)")
-	,310
+	{"bind",		js_bind,		0,	JSTYPE_BOOLEAN,	JSDOCSTR("[port] [,ip_address]")
+	,JSDOCSTR("bind socket to a TCP or UDP <i>port</i> (number or service name), "
+		"optionally specifying a network interface (via <i>ip_address</i>)")
+	,311
 	},
 	{"connect",     js_connect,     2,	JSTYPE_BOOLEAN,	JSDOCSTR("host, port [,timeout]")
 	,JSDOCSTR("connect to a remote port (number or service name) on the specified host (IP address or host name)"
