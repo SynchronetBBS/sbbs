@@ -2459,17 +2459,37 @@ static char* strip_chars(uchar* str, uchar* set)
 
 /* Allocates and calculates hashes of data (based on flags)					*/
 /* Returns NULL on failure													*/
-hash_t* SMBCALL smb_hash(ulong msgnum, ulong t, unsigned source, unsigned flags, uchar* data)
+hash_t* SMBCALL smb_hash(ulong msgnum, ulong t, unsigned source, unsigned flags, uchar* data
+						 ,size_t length)
 {
-	uchar*	p=data;
-	size_t	len;
 	hash_t*	hash;
 
 	if((hash=(hash_t*)malloc(sizeof(hash_t)))==NULL)
 		return(NULL);
 
-	if(flags&~SMB_HASH_MASK) {	/* pre-processing */
-		if((p=strdup(data))==NULL)
+	hash->number=msgnum;
+	hash->time=t;
+	hash->source=source;
+	hash->flags=flags;
+	if(flags&SMB_HASH_CRC16)
+		hash->crc16=crc16(data,length);
+	if(flags&SMB_HASH_CRC32)
+		hash->crc32=crc32(data,length);
+	if(flags&SMB_HASH_MD5)
+		MD5_calc(hash->md5,data,length);
+
+	return(hash);
+}
+
+/* Allocates and calculates hashes of data (based on flags)					*/
+/* Returns NULL on failure													*/
+hash_t* SMBCALL smb_hashstr(ulong msgnum, ulong t, unsigned source, unsigned flags, uchar* str)
+{
+	uchar*	p=str;
+	hash_t*	hash;
+
+	if(flags&~SMB_HASH_MASK) {	/* string pre-processing */
+		if((p=strdup(str))==NULL)
 			return(NULL);
 		if(flags&SMB_HASH_UPPERCASE)
 			strupr(p);
@@ -2478,23 +2498,15 @@ hash_t* SMBCALL smb_hash(ulong msgnum, ulong t, unsigned source, unsigned flags,
 		if(flags&SMB_HASH_STRIP_WSP)
 			strip_chars(p," \t\r\n");
 	}
-	len=strlen(p);
-	hash->number=msgnum;
-	hash->time=t;
-	hash->source=source;
-	hash->flags=flags;
-	if(flags&SMB_HASH_CRC16)
-		hash->crc16=crc16(p,len);
-	if(flags&SMB_HASH_CRC32)
-		hash->crc32=crc32(p,len);
-	if(flags&SMB_HASH_MD5)
-		MD5_calc(hash->md5,p,len);
+	
+	hash=smb_hash(msgnum, t, source, flags, p, strlen(p));
 
-	if(p!=data)	/* duped string */
+	if(p!=str)	/* duped string */
 		free(p);
 
 	return(hash);
 }
+
 
 /* Allocatese and calculates all hashes for a single message				*/
 /* Returns NULL on failure													*/
@@ -2514,15 +2526,15 @@ hash_t** SMBCALL smb_msghashes(smb_t* smb, smbmsg_t* msg, uchar* text)
 	memset(hashes, 0, sizeof(hash_t*)*SMB_MAX_HASH_COUNT);
 
 	if(msg->id!=NULL
-		&& (hash=smb_hash(msg->hdr.number, t, RFC822MSGID, flags, msg->id))!=NULL)
+		&& (hash=smb_hashstr(msg->hdr.number, t, RFC822MSGID, flags, msg->id))!=NULL)
 		hashes[h++]=hash;
 
 	if(msg->ftn_msgid!=NULL
-		&& (hash=smb_hash(msg->hdr.number, t, FIDOMSGID, flags, msg->ftn_msgid))!=NULL)
+		&& (hash=smb_hashstr(msg->hdr.number, t, FIDOMSGID, flags, msg->ftn_msgid))!=NULL)
 		hashes[h++]=hash;
 
 	if(text!=NULL
-		&& (hash=smb_hash(msg->hdr.number, t, TEXT_BODY, flags|SMB_HASH_STRIP_WSP, text))!=NULL)
+		&& (hash=smb_hashstr(msg->hdr.number, t, TEXT_BODY, flags|SMB_HASH_STRIP_WSP, text))!=NULL)
 		hashes[h++]=hash;
 
 	return(hashes);
