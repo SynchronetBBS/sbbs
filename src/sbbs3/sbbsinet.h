@@ -84,9 +84,11 @@
 
 #define ERROR_VALUE		WSAGetLastError()
 
+#define SHUT_RDWR		2	/* for shutdown() */
+
 #else	/* BSD sockets */
 
-/* WinSockisms */
+/* WinSock-isms */
 #define HOSTENT			struct hostent
 #define SOCKADDR_IN		struct sockaddr_in
 #define LINGER			struct linger
