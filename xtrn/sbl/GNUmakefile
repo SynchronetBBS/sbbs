@@ -47,7 +47,7 @@ else	# Linux
 
 endif
 
-CFLAGS	+=	$(CFLAGS) -I../sdk
+CFLAGS	+=	-I../sdk
 
 SBL: sbl$(EXEFILE)
 

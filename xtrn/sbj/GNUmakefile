@@ -48,7 +48,7 @@ else	# Unix
 
 endif
 
-CFLAGS	+=	$(CFLAGS) -I../sdk
+CFLAGS	+=	-I../sdk
 
 SBJ: sbj$(EXEFILE)
 
