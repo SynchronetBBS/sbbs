@@ -60,6 +60,7 @@
 #include "sbbs.h"
 #include "mailsrvr.h"
 #include "mime.h"
+#include "md5.h"
 #include "crc32.h"
 #include "base64.h"
 
@@ -375,7 +376,7 @@ static int sockreadline(SOCKET socket, char* buf, int len)
 
 	if(socket==INVALID_SOCKET) {
 		lprintf("!INVALID SOCKET in call to sockreadline");
-		return(0);
+		return(-1);
 	}
 	
 	while(rd<len-1) {
@@ -397,18 +398,18 @@ static int sockreadline(SOCKET socket, char* buf, int len)
 			if(i==0) {
 				if((time(NULL)-start)>startup->max_inactivity) {
 					lprintf("%04d !SOCKET INACTIVE",socket);
-					return(0);
+					return(-1);
 				}
 				mswait(1);
 				continue;
 			}
 			recverror(socket,i,__LINE__);
-			return(i);
+			return(-1);
 		}
 		i=recv(socket, &ch, 1, 0);
 		if(i<1) {
 			recverror(socket,i,__LINE__);
-			return(i);
+			return(-1);
 		}
 		if(ch=='\n' /* && rd>=1 */ ) { /* Mar-9-2003: terminate on sole LF */
 			break;
@@ -834,7 +835,7 @@ static void pop3_thread(void* arg)
 
 		while(1) {	/* TRANSACTION STATE */
 			rd = sockreadline(socket, buf, sizeof(buf));
-			if(rd<1) 
+			if(rd<0) 
 				break;
 			truncsp(buf);
 			if(startup->options&MAIL_OPT_DEBUG_POP3)
@@ -1419,6 +1420,11 @@ static void smtp_thread(void* arg)
 	char		dnsbl[256];
 	char*		telegram_buf;
 	char*		msgbuf;
+	char		challenge[256];
+	char		response[128];
+	char		secret[64];
+	char		md5_data[384];
+	char		digest[MD5_DIGEST_SIZE];
 	char		dest_host[128];
 	ushort		dest_port;
 	socklen_t	addr_len;
@@ -2204,7 +2210,7 @@ static void smtp_thread(void* arg)
 			while(*p && *p<=' ') p++;
 			SAFECOPY(hello_name,p);
 			sockprintf(socket,"250-%s",startup->host_name);
-			sockprintf(socket,"250 AUTH LOGIN");
+			sockprintf(socket,"250 AUTH LOGIN CRAM-MD5");
 			esmtp=TRUE;
 			state=SMTP_STATE_HELO;
 			cmd=SMTP_CMD_NONE;
@@ -2215,19 +2221,23 @@ static void smtp_thread(void* arg)
 		/* This is a stupid protocol, but it's the only one Outlook Express supports */
 		if(!stricmp(buf,"AUTH LOGIN")) {	
 			sockprintf(socket,"334 VXNlcm5hbWU6");	/* Base64-encoded "Username:" */
-			rd = sockreadline(socket, buf, sizeof(buf));
-			if(rd<1) {
+			if((rd=sockreadline(socket, buf, sizeof(buf)))<0) {
 				sockprintf(socket,badauth_rsp);
 				continue;
 			}
-			b64_decode(user_name,sizeof(user_name),buf,rd);
+			if(b64_decode(user_name,sizeof(user_name),buf,rd)<1) {
+				sockprintf(socket,badauth_rsp);
+				continue;
+			}
 			sockprintf(socket,"334 UGFzc3dvcmQ6");	/* Base64-encoded "Password:" */
-			rd = sockreadline(socket, buf, sizeof(buf));
-			if(rd<1) {
+			if((rd=sockreadline(socket, buf, sizeof(buf)))<0) {
 				sockprintf(socket,badauth_rsp);
 				continue;
 			}
-			b64_decode(user_pass,sizeof(user_pass),buf,rd);
+			if(b64_decode(user_pass,sizeof(user_pass),buf,rd)<1) {
+				sockprintf(socket,badauth_rsp);
+				continue;
+			}
 			if((relay_user.number=matchuser(&scfg,user_name,FALSE))==0) {
 				if(scfg.sys_misc&SM_ECHO_PW)
 					lprintf("%04d !SMTP UNKNOWN USER: %s (password: %s)"
@@ -2242,12 +2252,14 @@ static void smtp_thread(void* arg)
 				lprintf("%04d !SMTP ERROR %d getting data on user (%s)"
 					,socket, i, user_name);
 				sockprintf(socket,badauth_rsp);
+				relay_user.number=0;
 				continue;
 			}
 			if(relay_user.misc&(DELETED|INACTIVE)) {
 				lprintf("%04d !SMTP DELETED or INACTIVE user #%u (%s)"
 					,socket, relay_user.number, user_name);
 				sockprintf(socket,badauth_rsp);
+				relay_user.number=0;
 				break;
 			}
 			if(stricmp(user_pass,relay_user.pass)) {
@@ -2258,11 +2270,89 @@ static void smtp_thread(void* arg)
 					lprintf("%04d !SMTP FAILED Password attempt for user %s"
 						,socket, user_name);
 				sockprintf(socket,badauth_rsp);
+				relay_user.number=0;
 				break;
 			}
-			lprintf("%04d SMTP %s authenticated using LOGIN protocol"
+			lprintf("%04d SMTP %s authenticated using LOGIN"
 				,socket,relay_user.alias);
 			sockprintf(socket,"235 User Authenticated");
+			continue;
+		}
+		if(!stricmp(buf,"AUTH CRAM-MD5")) {
+			sprintf(challenge,"<%u.%u@%s>",socket,clock(),startup->host_name);
+			/***
+			lprintf("%04d SMTP CRAM-MD5 challenge: %s"
+				,socket,challenge);
+			***/
+			b64_encode(str,sizeof(str),challenge,0);
+			sockprintf(socket,"334 %s",str);
+			if((rd=sockreadline(socket, buf, sizeof(buf)))<0) {
+				sockprintf(socket,badauth_rsp);
+				continue;
+			}
+			b64_decode(response,sizeof(response),buf,rd);
+			/***
+			lprintf("%04d SMTP CRAM-MD5 response: %s"
+				,socket,response);
+			***/
+			if((p=strrchr(response,' '))!=NULL)
+				*(p++)=0;
+			else
+				p=response;
+			SAFECOPY(user_name,response);
+			if((relay_user.number=matchuser(&scfg,user_name,FALSE))==0) {
+				lprintf("%04d !SMTP UNKNOWN USER: %s"
+					,socket, user_name);
+				sockprintf(socket,badauth_rsp);
+				continue;
+			}
+			if((i=getuserdat(&scfg, &relay_user))!=0) {
+				lprintf("%04d !SMTP ERROR %d getting data on user (%s)"
+					,socket, i, user_name);
+				sockprintf(socket,badauth_rsp);
+				relay_user.number=0;
+				continue;
+			}
+			if(relay_user.misc&(DELETED|INACTIVE)) {
+				lprintf("%04d !SMTP DELETED or INACTIVE user #%u (%s)"
+					,socket, relay_user.number, user_name);
+				sockprintf(socket,badauth_rsp);
+				relay_user.number=0;
+				continue;
+			}
+			/* Calculate correct response */
+			memset(secret,0,sizeof(secret));
+			SAFECOPY(secret,relay_user.pass);
+			strlwr(secret);
+			for(i=0;i<sizeof(secret);i++)
+				md5_data[i]=secret[i]^0x36;	/* ipad */
+			strcpy(md5_data+i,challenge);
+			MD5_calc(digest,md5_data,sizeof(secret)+strlen(challenge));
+			for(i=0;i<sizeof(secret);i++)
+				md5_data[i]=secret[i]^0x5c;	/* opad */
+			memcpy(md5_data+i,digest,sizeof(digest));
+			MD5_calc(digest,md5_data,sizeof(secret)+sizeof(digest));
+			MD5_hex(str,digest);
+			if(strcmp(p,str)) {
+				lprintf("%04d !SMTP %s FAILED CRAM-MD5 authentication"
+					,socket,relay_user.alias);
+				/***
+				lprintf("%04d !SMTP calc digest: %s"
+					,socket,str);
+				lprintf("%04d !SMTP resp digest: %s"
+					,socket,p);
+				***/
+				sockprintf(socket,badauth_rsp);
+				relay_user.number=0;
+				continue;
+			}
+			lprintf("%04d SMTP %s authenticated using CRAM-MD5"
+				,socket,relay_user.alias);
+			sockprintf(socket,"235 User Authenticated");
+			continue;
+		}
+		if(!strnicmp(buf,"AUTH",4)) {
+			sockprintf(socket,"504 Unrecognized authentication type.");
 			continue;
 		}
 		if(!stricmp(buf,"QUIT")) {
@@ -2462,14 +2552,19 @@ static void smtp_thread(void* arg)
 					|| dest_port!=server_addr.sin_port) {
 
 					sprintf(relay_list,"%srelay.cfg",scfg.ctrl_dir);
-					if(relay_user.number==0)
+					if(relay_user.number==0 /* not authenticated, search for IP */
+						&& startup->options&MAIL_OPT_SMTP_AUTH_VIA_IP) { 
 						relay_user.number=userdatdupe(&scfg, 0, U_NOTE, LEN_NOTE, host_ip, FALSE);
-					if(relay_user.number!=0)
+						if(relay_user.number) {
+							getuserdat(&scfg,&relay_user);
+							if(relay_user.laston < time(NULL)-(60*60))	/* logon in past hour? */
+								relay_user.number=0;
+						}
+					} else
 						getuserdat(&scfg,&relay_user);
 					if(p!=alias_buf /* forced relay by alias */ &&
 						(!(startup->options&MAIL_OPT_ALLOW_RELAY)
 							|| relay_user.number==0
-							|| relay_user.laston < time(NULL)-(60*60)
 							|| relay_user.rest&(FLAG('G')|FLAG('M'))) &&
 						!findstr(host_name,relay_list) && 
 						!findstr(host_ip,relay_list)) {
@@ -2480,7 +2575,7 @@ static void smtp_thread(void* arg)
 						if(startup->options&MAIL_OPT_ALLOW_RELAY)
 							sockprintf(socket, "553 Relaying through this server "
 							"requires authentication.  "
-							"Please authenticate with POP3 before sending.");
+							"Please authenticate before sending.");
 						else
 							sockprintf(socket, "550 Relay not allowed.");
 						break;
