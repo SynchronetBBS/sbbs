@@ -408,7 +408,7 @@ void outchar(char ch)
 		if(lncntr>1) {
 			lncntr=0;
 			CRLF;
-			pause(); 
+			bpause(); 
 		}
 		lncntr=0;
 		lbuflen=0;
@@ -426,14 +426,14 @@ void outchar(char ch)
 	}
 	if(lncntr==user_rows-1) {
 		lncntr=0;
-		pause(); 
+		bpause(); 
 	}
 }
 
 /****************************************************************************/
 /* Prints PAUSE message and waits for a key stoke							*/
 /****************************************************************************/
-int pause(void)
+void bpause(void)
 {
 	char	ch;
 	uchar	tempattrs=curatr,*msg="\1_\1r\1h[Hit a key] ";
@@ -448,8 +448,6 @@ int pause(void)
 	attr(tempattrs);
 	if(ch=='N' || ch=='Q')
 		aborted=1;
-
-	return(0);
 }
 
 /****************************************************************************/
@@ -1416,9 +1414,9 @@ void cls(void)
 	if(lncntr>1 && !tos) {
 		lncntr=0;
 		CRLF;
-		pause();
+		bpause();
 		while(lncntr && !aborted)
-			pause(); }
+			bpause(); }
 
 	if(user_misc&ANSI)
 		bprintf("\x1b[2J");
@@ -1463,7 +1461,7 @@ void ctrl_a(char x)
 			mswait(2000);
 			break;
 		case 'P':	/* Pause */
-			pause();
+			bpause();
 			break;
 		case 'Q':   /* Pause reset */
 			lncntr=0;
@@ -2318,7 +2316,7 @@ void printnodedat(int number, node_t node)
 					bputs("performing sysop activities");
 					break;
 				default:
-					bputs(itoa(node.action,tmp,10));
+					bputs(ultoa(node.action,tmp,10));
 					break;  }
 			if(!node.connection)
 				bputs(" locally");

@@ -119,7 +119,7 @@ void mnemonics(char *str);
 
 /* Pause prompt
 	- Displays [Hit a key] and waits for the user to hit a key */
-int pause(void);
+void bpause(void);
 
 /* Yes/no Question
 	- Displays a string with (Y/n) ? appended and waits for the user to hit
@@ -256,11 +256,6 @@ void ungetkey(char ch);
 
 /* Check to see if the user has hung-up */
 void checkline(void);
-
-#ifndef _WIN32
-/* Wait a specific number of milliseconds */
-void mswait(int ms);
-#endif
 
 /* Display a line (with ctrl-A codes) centered on the screen */
 void center(char *str);

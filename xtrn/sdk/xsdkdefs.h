@@ -42,9 +42,6 @@
 /* Macros */
 /**********/
 
-#ifdef _WIN32
-#define mswait	Sleep		/* Win32 equivalent */
-#endif
 									/* Control characters */
 #define STX 	0x02				/* Start of text			^B	*/
 #define ETX 	0x03				/* End of text				^C	*/
@@ -300,6 +297,8 @@ enum {								/* Node Action */
 							lbuflen=0; }
 #define RESTORELINE 	{ lbuflen=0; attr(slatr[--slcnt]); \
 							bputs(slbuf[slcnt]); }
+
+#define pause bpause	/* backwards compatibility with pre-3.1 XSDK */
 
 /************/
 /* Typedefs */
