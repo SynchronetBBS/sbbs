@@ -509,6 +509,7 @@ typedef struct {				// Message
 				*to_ext,		// To extension
 				*from,			// From name
 				*from_ext,		// From extension
+				*from_org,		// From organization
 				*replyto,		// Reply-to name
 				*replyto_ext,	// Reply-to extension */
 				*id,			// RFC822 Message-ID
