@@ -345,10 +345,13 @@ void write_makefile(void)
 	if(!params.release)
 		fprintf(makefile,"DEBUG    :=  1\n");
 
-	if(params.symlink)
-		fprintf(makefile,"INSBIN   :=	ln -s\n");
-	else
+	if(params.symlink) {
+		fprintf(makefile,"INSBIN   :=	-ln -s\n");
+		fprintf(makefile,"INSDAT   :=	-ln -s\n");
+	} else {
 		fprintf(makefile,"INSBIN   :=	install -c -s\n");
+		fprintf(makefile,"INSDAT   :=	install -c \n");
+	}
 
 	if(params.usebcc)  {
 		ccpre="bcc";
@@ -465,8 +468,8 @@ endif
 	fprintf(makefile,"\t$(INSBIN) $(SBBSDIR)/src/sbbs3/%s.%s.exe.%s/sbbsecho $(SBBSDIR)/exec/sbbsecho\n",ccpre,platform,build);
 	fprintf(makefile,"\t$(INSBIN) $(SBBSDIR)/src/sbbs3/%s.%s.exe.%s/filelist $(SBBSDIR)/exec/filelist\n",ccpre,platform,build);
 	fprintf(makefile,"\t$(INSBIN) $(SBBSDIR)/src/sbbs3/scfg/%s.%s.%s/scfg $(SBBSDIR)/exec/scfg\n",ccpre,platform,build);
-	fprintf(makefile,"\t$(INSBIN) $(SBBSDIR)/src/sbbs3/scfg/%s.%s.%s/scfghelp.ixb $(SBBSDIR)/exec/scfghelp.ixb\n",ccpre,platform,build);
-	fprintf(makefile,"\t$(INSBIN) $(SBBSDIR)/src/sbbs3/scfg/%s.%s.%s/scfghelp.dat $(SBBSDIR)/exec/scfghelp.dat\n\n",ccpre,platform,build);
+	fprintf(makefile,"\t$(INSDAT) $(SBBSDIR)/src/sbbs3/scfg/%s.%s.%s/scfghelp.ixb $(SBBSDIR)/exec/scfghelp.ixb\n",ccpre,platform,build);
+	fprintf(makefile,"\t$(INSDAT) $(SBBSDIR)/src/sbbs3/scfg/%s.%s.%s/scfghelp.dat $(SBBSDIR)/exec/scfghelp.dat\n\n",ccpre,platform,build);
 /* Not implemented
 fprintf(makefile,"\t 	chown -R $(SBBSCHOWN) $(SBBSDIR)");
 */
