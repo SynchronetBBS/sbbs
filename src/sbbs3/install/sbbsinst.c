@@ -265,20 +265,20 @@ int main(int argc, char **argv)
 
 	while(1) {
 		i=0;
-		sprintf(mopt[i++],"%-23.23s%s","Distribution",distlist[dist]->version);
-		sprintf(mopt[i++],"%-23.23s%s","Server"
+		sprintf(mopt[i++],"%-27.27s%s","Distribution",distlist[dist]->version);
+		sprintf(mopt[i++],"%-27.27s%s","Server"
 			,(distlist[dist]->type==LOCAL_FILE?"Local Files":distlist[dist]->servers[server]->desc));
-		sprintf(mopt[i++],"%-23.23s%s","Install Path",params.install_path);
-		sprintf(mopt[i++],"%-23.23s%s","Compiler",params.usebcc?"Borland":"GNU");
-		sprintf(mopt[i++],"%-23.23s%s","Compiler Flags",params.cflags);
-		sprintf(mopt[i++],"%-23.23s%s","Debug Build",params.debug?"Yes":"No");
-		sprintf(mopt[i++],"%-23.23s%s","Symlink Binaries",params.symlink?"Yes":"No");
-		sprintf(mopt[i++],"%-23.23s","Start Installation...");
+		sprintf(mopt[i++],"%-27.27s%s","Install Path",params.install_path);
+		sprintf(mopt[i++],"%-27.27s%s","Compiler",params.usebcc?"Borland":"GNU");
+		sprintf(mopt[i++],"%-27.27s%s","Compiler Flags",params.cflags);
+		sprintf(mopt[i++],"%-27.27s%s","Debug Build",params.debug?"Yes":"No");
+		sprintf(mopt[i++],"%-27.27s%s","Symlink Binaries",params.symlink?"Yes":"No");
+		sprintf(mopt[i++],"%-27.27s","Start Installation...");
 		mopt[i][0]=0;
 
 		uifc.helpbuf=	"`Synchronet Installation Settings:`\n"
 						"\nToDo: Add help.";
-		switch(uifc.list(WIN_ESC|WIN_MID|WIN_ACT,0,0,60,&main_dflt,0
+		switch(uifc.list(WIN_ESC|WIN_MID|WIN_ACT,0,0,70,&main_dflt,0
 			,"Synchronet Installation Settings",mopt)) {
 			case 0:
 				i=choose_dist((char **)distlist);
