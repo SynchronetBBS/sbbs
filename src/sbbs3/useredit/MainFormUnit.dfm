@@ -1,6 +1,6 @@
 object Form1: TForm1
-  Left = 247
-  Top = 50
+  Left = 440
+  Top = 173
   ActiveControl = ScrollBar
   BorderIcons = [biSystemMenu, biMinimize]
   BorderStyle = bsSingle
@@ -33,7 +33,7 @@ object Form1: TForm1
       Top = 94
       Width = 550
       Height = 348
-      ActivePage = SettingsTabSheet
+      ActivePage = PersonalTabSheet
       Align = alClient
       TabOrder = 0
       object PersonalTabSheet: TTabSheet
@@ -171,6 +171,7 @@ object Form1: TForm1
           Top = 128
           Width = 70
           Height = 24
+          CharCase = ecUpperCase
           PasswordChar = '*'
           TabOrder = 10
           OnChange = EditChange
