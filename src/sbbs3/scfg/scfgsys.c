@@ -971,6 +971,9 @@ user.
 								,"Force Unique Real Name"
 								,cfg.uq&UQ_DUPREAL ? "Yes":"No");
 							sprintf(opt[i++],"%-27.27s %-3.3s"
+								,"Force Upper/Lower Case"
+								,cfg.uq&UQ_NOUPRLWR ? "No":"Yes");
+							sprintf(opt[i++],"%-27.27s %-3.3s"
 								,"Company Name"
 								,cfg.uq&UQ_COMPANY ? "Yes":"No");
 							sprintf(opt[i++],"%-27.27s %-3.3s"
@@ -1001,12 +1004,6 @@ user.
 								,"Phone Number"
 								,cfg.uq&UQ_PHONE ? "Yes":"No");
 							sprintf(opt[i++],"%-27.27s %-3.3s"
-								,"Computer Type"
-								,cfg.uq&UQ_COMP ? "Yes":"No");
-							sprintf(opt[i++],"%-27.27s %-3.3s"
-								,"Multiple Choice Computer"
-								,cfg.uq&UQ_MC_COMP ? "Yes":"No");
-							sprintf(opt[i++],"%-27.27s %-3.3s"
 								,"Allow EX-ASCII in Answers"
 								,cfg.uq&UQ_NOEXASC ? "No":"Yes");
 							sprintf(opt[i++],"%-27.27s %-3.3s"
@@ -1032,51 +1029,48 @@ user.
 									cfg.uq^=UQ_DUPREAL;
 									break;
 								case 2:
+									cfg.uq^=UQ_NOUPRLWR;
+									break;
+								case 3:
 									cfg.uq^=UQ_COMPANY;
                                     break;
-								case 3:
+								case 4:
 									cfg.uq^=UQ_HANDLE;
                                     break;
-								case 4:
+								case 5:
 									cfg.uq^=UQ_DUPHAND;
 									break;
-                                case 5:
+                                case 6:
                                     cfg.uq^=UQ_NONETMAIL;
                                     break;
-								case 6:
+								case 7:
 									cfg.uq^=UQ_SEX;
 									break;
-								case 7:
+								case 8:
 									cfg.uq^=UQ_BIRTH;
 									break;
-								case 8:
+								case 9:
 									cfg.uq^=UQ_ADDRESS;
 									break;
-								case 9:
+								case 10:
 									cfg.uq^=UQ_LOCATION;
 									break;
-								case 10:
+								case 11:
 									cfg.uq^=UQ_NOCOMMAS;
 									break;
-								case 11:
+								case 12:
 									cfg.uq^=UQ_PHONE;
 									break;
-								case 12:
-									cfg.uq^=UQ_COMP;
-									break;
 								case 13:
-									cfg.uq^=UQ_MC_COMP;
-									break;
-								case 14:
 									cfg.uq^=UQ_NOEXASC;
 									break;
-								case 15:
+								case 14:
 									cfg.uq^=UQ_XEDIT;
                                     break;
-								case 16:
+								case 15:
 									cfg.uq^=UQ_CMDSHELL;
                                     break;
-								case 17:
+								case 16:
 									cfg.uq^=UQ_NODEF;
                                     break;
 									} }
@@ -1108,6 +1102,16 @@ user.
 					,cfg.sys_phonefmt);
 				sprintf(opt[i++],"%-27.27s%.40s","Sysop Chat Requirements"
 					,cfg.sys_chat_arstr);
+				if(cfg.user_backup_level)
+					sprintf(str,"%hu",cfg.user_backup_level);
+				else
+					strcpy(str,"None");
+				sprintf(opt[i++],"%-27.27s%s","User Database Backups",str);
+				if(cfg.mail_backup_level)
+					sprintf(str,"%hu",cfg.mail_backup_level);
+				else
+					strcpy(str,"None");
+				sprintf(opt[i++],"%-27.27s%s","Mail Database Backups",str);
 				opt[i][0]=0;
 				uifc.savnum=0;
 				SETHELP(WHERE);
@@ -1311,6 +1315,37 @@ format. An example for North American phone numbers is NNN-NNN-NNNN.
 					case 11:
 						getar("Sysop Chat",cfg.sys_chat_arstr);
 						break;
+					case 12:
+						SETHELP(WHERE);
+/*
+User Database Backups:
+
+Setting this option to anything but 0 will enable automatic daily
+backups of the user database. This number determines how many backups
+to keep on disk.
+*/
+						sprintf(str,"%u",cfg.user_backup_level);
+						uifc.input(WIN_MID|WIN_SAV,0,0
+							,"Number of Daily User Database Backups to Keep"
+							,str,4,K_NUMBER|K_EDIT);
+						cfg.user_backup_level=atoi(str);
+                        break;
+					case 13:
+						SETHELP(WHERE);
+/*
+Mail Database Backups:
+
+Setting this option to anything but 0 will enable automatic daily
+backups of the mail database. This number determines how many backups
+to keep on disk.
+*/
+						sprintf(str,"%u",cfg.mail_backup_level);
+						uifc.input(WIN_MID|WIN_SAV,0,0
+							,"Number of Daily Mail Database Backups to Keep)"
+							,str,4,K_NUMBER|K_EDIT);
+						cfg.mail_backup_level=atoi(str);
+                        break;
+
 						} }
 				break;
 		case 11: /* Loadable Modules */
