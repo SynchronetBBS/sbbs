@@ -203,7 +203,7 @@ tODResult ODKrnlInitialize(void)
    itv.it_value.tv_sec=0;
    itv.it_value.tv_usec=10000;
    setitimer(ITIMER_REAL,&itv,NULL);
-   
+
    /* Make stdin signal driven. */
 /*   act.sa_handler=sig_get_char;
 /*   act.sa_flags=0;
