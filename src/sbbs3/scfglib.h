@@ -47,13 +47,17 @@
 								memset(var,0,sizeof(var)); \
                               offset+=sizeof(var); }
 
+extern const char*	scfgnulstr;
+extern const uchar* nular;
+
 #define FREE_AND_NULL(x) if(x!=NULL) { FREE(x); x=NULL; }
 
-/* The FREE_ALLOC macro is used for get_alloc() buffers only */
 #ifdef SCFG
+#define FREE_AR(x)		/* static */
 #define FREE_ALLOC(x)	/* static */
 #else
-#define FREE_ALLOC(x) if(x!=NULL && x!=scfgnulstr) { FREE(x); x=NULL; }
+#define FREE_AR(x)		if(x!=NULL && x!=nular)	{ FREE(x); }		/* allocated with arstr() */	
+#define FREE_ALLOC(x)	if(x!=NULL && x!=scfgnulstr) { FREE(x); }	/* allocated with get_alloc() */
 #endif
 
 typedef struct {

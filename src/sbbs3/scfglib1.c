@@ -902,6 +902,8 @@ void free_node_cfg(scfg_t* cfg)
 {
 	int i;
 
+	FREE_AR(cfg->node_ar);
+
 	if(cfg->mdm_result!=NULL) {
 		for(i=0;i<cfg->mdm_results;i++) {
 			FREE_ALLOC(cfg->mdm_result[i].str);
@@ -921,6 +923,8 @@ void free_main_cfg(scfg_t* cfg)
 {
 	int i;
 
+	FREE_AR(cfg->sys_chat_ar);
+
 	if(cfg->node_path!=NULL) {
 		for(i=0;i<cfg->sys_nodes;i++)
 			FREE_AND_NULL(cfg->node_path[i]);
@@ -928,6 +932,7 @@ void free_main_cfg(scfg_t* cfg)
 	}
 	if(cfg->shell!=NULL) {
 		for(i=0;i<cfg->total_shells;i++) {
+			FREE_AR(cfg->shell[i]->ar);
 			FREE_ALLOC(cfg->shell[i]->name);
 			FREE_AND_NULL(cfg->shell[i]);
 		}
@@ -939,8 +944,10 @@ void free_msgs_cfg(scfg_t* cfg)
 {
 	int i;
 
+	FREE_AR(cfg->preqwk_ar);
 	if(cfg->grp!=NULL) {
 		for(i=0;i<cfg->total_grps;i++) {
+			FREE_AR(cfg->grp[i]->ar);
 			FREE_ALLOC(cfg->grp[i]->lname);
 			FREE_ALLOC(cfg->grp[i]->sname);
 			FREE_AND_NULL(cfg->grp[i]);
@@ -950,6 +957,21 @@ void free_msgs_cfg(scfg_t* cfg)
 
 	if(cfg->sub!=NULL) {
 		for(i=0;i<cfg->total_subs;i++) {
+#ifndef SCFG
+			if(cfg->sub[i]->data_dir!=cfg->data_dir_subs)
+				FREE_AND_NULL(cfg->sub[i]->data_dir);
+			if(cfg->sub[i]->tagline!=cfg->qnet_tagline)
+				FREE_AND_NULL(cfg->sub[i]->tagline);
+			if(cfg->sub[i]->origline!=cfg->origline)
+				FREE_AND_NULL(cfg->sub[i]->origline);
+			if(cfg->sub[i]->echomail_sem!=cfg->echomail_sem)
+				FREE_AND_NULL(cfg->sub[i]->echomail_sem);
+#endif
+			FREE_AR(cfg->sub[i]->ar);
+			FREE_AR(cfg->sub[i]->read_ar);
+			FREE_AR(cfg->sub[i]->post_ar);
+			FREE_AR(cfg->sub[i]->op_ar);
+			FREE_AR(cfg->sub[i]->mod_ar);
 			FREE_ALLOC(cfg->sub[i]->lname);
 			FREE_ALLOC(cfg->sub[i]->sname);
 			FREE_ALLOC(cfg->sub[i]->qwkname);

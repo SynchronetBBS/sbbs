@@ -47,8 +47,6 @@
 	#define get_alloc(o,s,l,i) s=get_alloc(o,s,l,i)
 #endif
 
-extern const char * scfgnulstr;
-
 #ifndef NO_FILE_CFG
 
 /****************************************************************************/
@@ -1099,6 +1097,7 @@ void free_file_cfg(scfg_t* cfg)
 
 	if(cfg->fextr!=NULL) {
 		for(i=0;i<cfg->total_fextrs;i++) {
+			FREE_AR(cfg->fextr[i]->ar);
 			FREE_ALLOC(cfg->fextr[i]->cmd);
 			FREE_AND_NULL(cfg->fextr[i]);
 		}
@@ -1107,6 +1106,7 @@ void free_file_cfg(scfg_t* cfg)
 
 	if(cfg->fcomp!=NULL) {
 		for(i=0;i<cfg->total_fcomps;i++) {
+			FREE_AR(cfg->fcomp[i]->ar);
 			FREE_ALLOC(cfg->fcomp[i]->cmd);
 			FREE_AND_NULL(cfg->fcomp[i]);
 		}
@@ -1115,6 +1115,7 @@ void free_file_cfg(scfg_t* cfg)
 
 	if(cfg->fview!=NULL) {
 		for(i=0;i<cfg->total_fviews;i++) {
+			FREE_AR(cfg->fview[i]->ar);
 			FREE_ALLOC(cfg->fview[i]->cmd);
 			FREE_AND_NULL(cfg->fview[i]);
 		}
@@ -1123,6 +1124,7 @@ void free_file_cfg(scfg_t* cfg)
 
 	if(cfg->ftest!=NULL) {
 		for(i=0;i<cfg->total_ftests;i++) {
+			FREE_AR(cfg->ftest[i]->ar);
 			FREE_ALLOC(cfg->ftest[i]->cmd);
 			FREE_ALLOC(cfg->ftest[i]->workstr);
 			FREE_AND_NULL(cfg->ftest[i]);
@@ -1132,6 +1134,7 @@ void free_file_cfg(scfg_t* cfg)
 
 	if(cfg->dlevent!=NULL) {
 		for(i=0;i<cfg->total_dlevents;i++) {
+			FREE_AR(cfg->dlevent[i]->ar);
 			FREE_ALLOC(cfg->dlevent[i]->cmd);
 			FREE_ALLOC(cfg->dlevent[i]->workstr);
 			FREE_AND_NULL(cfg->dlevent[i]);
@@ -1141,6 +1144,7 @@ void free_file_cfg(scfg_t* cfg)
 
 	if(cfg->prot!=NULL) {
 		for(i=0;i<cfg->total_prots;i++) {
+			FREE_AR(cfg->prot[i]->ar);
 			FREE_ALLOC(cfg->prot[i]->name);
 			FREE_ALLOC(cfg->prot[i]->ulcmd);
 			FREE_ALLOC(cfg->prot[i]->dlcmd);
@@ -1161,6 +1165,7 @@ void free_file_cfg(scfg_t* cfg)
 
 	if(cfg->lib!=NULL) {
 		for(i=0;i<cfg->total_libs;i++) {
+			FREE_AR(cfg->lib[i]->ar);
 			FREE_ALLOC(cfg->lib[i]->lname);
 			FREE_ALLOC(cfg->lib[i]->sname);
 			FREE_AND_NULL(cfg->lib[i]);
@@ -1170,6 +1175,16 @@ void free_file_cfg(scfg_t* cfg)
 
 	if(cfg->dir!=NULL) {
 		for(i=0;i<cfg->total_dirs;i++) {
+#ifndef SCFG
+			if(cfg->dir[i]->data_dir!=cfg->data_dir_dirs) 
+				FREE_AND_NULL(cfg->dir[i]->data_dir);
+			FREE_AND_NULL(cfg->dir[i]->path);
+#endif
+			FREE_AR(cfg->dir[i]->ar);
+			FREE_AR(cfg->dir[i]->ul_ar);
+			FREE_AR(cfg->dir[i]->dl_ar);
+			FREE_AR(cfg->dir[i]->op_ar);
+			FREE_AR(cfg->dir[i]->ex_ar);
 			FREE_ALLOC(cfg->dir[i]->lname);
 			FREE_ALLOC(cfg->dir[i]->sname);
 			FREE_ALLOC(cfg->dir[i]->exts);
@@ -1181,6 +1196,7 @@ void free_file_cfg(scfg_t* cfg)
 
 	if(cfg->txtsec!=NULL) {
 		for(i=0;i<cfg->total_txtsecs;i++) {
+			FREE_AR(cfg->txtsec[i]->ar);
 			FREE_ALLOC(cfg->txtsec[i]->name);
 			FREE_AND_NULL(cfg->txtsec[i]);
 		}
@@ -1211,6 +1227,7 @@ void free_chat_cfg(scfg_t* cfg)
 
 	if(cfg->chan!=NULL) {
 		for(i=0;i<cfg->total_chans;i++) {
+			FREE_AR(cfg->chan[i]->ar);
 			FREE_ALLOC(cfg->chan[i]->name);
 			FREE_AND_NULL(cfg->chan[i]);
 		}
@@ -1219,6 +1236,7 @@ void free_chat_cfg(scfg_t* cfg)
 
 	if(cfg->guru!=NULL) {
 		for(i=0;i<cfg->total_gurus;i++) {
+			FREE_AR(cfg->guru[i]->ar);
 			FREE_ALLOC(cfg->guru[i]->name);
 			FREE_AND_NULL(cfg->guru[i]);
 		}
@@ -1227,6 +1245,7 @@ void free_chat_cfg(scfg_t* cfg)
 
 	if(cfg->page!=NULL) {
 		for(i=0;i<cfg->total_pages;i++) {
+			FREE_AR(cfg->page[i]->ar);
 			FREE_ALLOC(cfg->page[i]->cmd);
 			FREE_AND_NULL(cfg->page[i]);
 		}
@@ -1249,6 +1268,7 @@ void free_xtrn_cfg(scfg_t* cfg)
 
 	if(cfg->xedit!=NULL) {
 		for(i=0;i<cfg->total_xedits;i++) {
+			FREE_AR(cfg->xedit[i]->ar);
 			FREE_ALLOC(cfg->xedit[i]->name);
 			FREE_ALLOC(cfg->xedit[i]->lcmd);
 			FREE_ALLOC(cfg->xedit[i]->rcmd);
@@ -1259,6 +1279,7 @@ void free_xtrn_cfg(scfg_t* cfg)
 
 	if(cfg->xtrnsec!=NULL) {
 		for(i=0;i<cfg->total_xtrnsecs;i++) {
+			FREE_AR(cfg->xtrnsec[i]->ar);
 			FREE_ALLOC(cfg->xtrnsec[i]->name);
 			FREE_AND_NULL(cfg->xtrnsec[i]);
 		}
@@ -1267,6 +1288,11 @@ void free_xtrn_cfg(scfg_t* cfg)
 
 	if(cfg->xtrn!=NULL) {
 		for(i=0;i<cfg->total_xtrns;i++) {
+#ifndef SCFG
+			FREE_AND_NULL(cfg->xtrn[i]->path);
+#endif
+			FREE_ALLOC(cfg->xtrn[i]->ar);
+			FREE_ALLOC(cfg->xtrn[i]->run_ar);
 			FREE_ALLOC(cfg->xtrn[i]->name);
 			FREE_ALLOC(cfg->xtrn[i]->cmd);
 			FREE_ALLOC(cfg->xtrn[i]->clean);
@@ -1277,6 +1303,9 @@ void free_xtrn_cfg(scfg_t* cfg)
 
 	if(cfg->event!=NULL) {
 		for(i=0;i<cfg->total_events;i++) {
+#ifndef SCFG
+			FREE_AND_NULL(cfg->event[i]->dir);
+#endif
 			FREE_ALLOC(cfg->event[i]->cmd);
 			FREE_AND_NULL(cfg->event[i]);
 		}
