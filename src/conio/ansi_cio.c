@@ -1,7 +1,3 @@
-#ifdef _WIN32
-#include <windows.h>
-#endif
-
 #include <fcntl.h>
 #include <stdarg.h>
 #include <stdlib.h>	/* malloc */
@@ -24,6 +20,7 @@ sem_t	got_key;
 sem_t	used_key;
 sem_t	got_input;
 sem_t	used_input;
+sem_t	initialized;
 WORD	ansi_curr_attr=0x07<<8;
 
 int ansi_rows=24;
@@ -323,6 +320,7 @@ static void ansi_keyparse(void *par)
 	int		timeout=0;
 	int		timedout;
 
+	sem_post(initialized);
 	for(;;) {
 		timedout=0;
 		if(timeout) {
@@ -402,6 +400,7 @@ static void ansi_keythread(void *params)
 {
 	_beginthread(ansi_keyparse,1024,NULL);
 
+	sem_post(initialized);
 	for(;;) {
 		sem_wait(&used_key);
 		if(fread(&ansi_raw_inch,1,1,stdin)==1)
@@ -683,11 +682,14 @@ int ansi_initciolib(long inmode)
 	sem_init(&used_key,0,1);
 	sem_init(&got_input,0,0);
 	sem_init(&used_input,0,1);
+	sem_init(&initialized,0,0);
 
 	vmem=(WORD *)malloc(ansi_rows*ansi_cols*sizeof(WORD));
 	ansi_sendstr(init,-1);
 	for(i=0;i<ansi_rows*ansi_cols;i++)
 		vmem[i]=0x0720;
 	_beginthread(ansi_keythread,1024,NULL);
+	sem_wait(&initialized);
+	sem_wait(&initialized);
 	return(1);
 }
