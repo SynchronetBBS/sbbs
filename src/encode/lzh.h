@@ -59,7 +59,11 @@
 #endif
 
 #ifndef uchar
-#define uchar unsigned char
+	#if defined(TYPEDEF_UCHAR)
+		typedef unsigned char uchar;
+	#else
+		#define uchar unsigned char
+	#endif
 #endif
 
 #ifdef __cplusplus
