@@ -68,7 +68,6 @@ void makewave(double freq, unsigned char *wave, int samples)
 				wave[i]=(pos<WAVE_PI)?255:0;
 				break;
 		}
-printf("POS: %.4f  VAL: %u\n",pos,wave[i]);
 	}
 	
 	/* Now we have a "perfect" wave... 
