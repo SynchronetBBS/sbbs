@@ -2,7 +2,11 @@
 #define _XPBEEP_H_
 
 #if defined(_WIN32)
+	#if 0
 	#define BEEP(freq,dur)	SineBeep((double)(freq),(DWORD)(dur))
+	#else
+	#define BEEP(freq,dur)	Beep((DWORD)(freq),(DWORD)(dur))
+	#endif
 #elif defined(__OS2__)
 	#define BEEP(freq,dur)	DosBeep(freq,dur)
 #elif defined(__unix__) || defined(__APPLE__)
