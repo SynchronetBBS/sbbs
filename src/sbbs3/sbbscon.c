@@ -848,7 +848,7 @@ static void handle_sigs(void)  {
 	sigaddset(&sigs,SIGTERM);
 	sigaddset(&sigs,SIGHUP);
 	sigaddset(&sigs,SIGALRM);
-	sigaddset(&sigs,SIGPIPE);
+	/* sigaddset(&sigs,SIGPIPE); */
 	pthread_sigmask(SIG_BLOCK,&sigs,NULL);
 	while(1)  {
 		sigwait(&sigs,&sig);    /* wait here until signaled */
@@ -1474,8 +1474,9 @@ int main(int argc, char** argv)
 	sigaddset(&sigs,SIGTERM);
 	sigaddset(&sigs,SIGHUP);
 	sigaddset(&sigs,SIGALRM);
-	sigaddset(&sigs,SIGPIPE);
+	/* sigaddset(&sigs,SIGPIPE); */
 	pthread_sigmask(SIG_BLOCK,&sigs,NULL);
+    signal(SIGPIPE, SIG_IGN);       /* Ignore "Broken Pipe" signal (Also used for broken socket etc.) */
     signal(SIGALRM, SIG_IGN);       /* Ignore "Alarm" signal */
 	_beginthread((void(*)(void*))handle_sigs,0,NULL);
 #endif
