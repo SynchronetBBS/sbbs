@@ -411,7 +411,7 @@ DLLCALL js_DefineMethods(JSContext* cx, JSObject* obj, jsMethodSpec *funcs, BOOL
 JSBool 
 DLLCALL js_DefineMethods(JSContext* cx, JSObject* obj, jsMethodSpec *funcs, BOOL append)
 {
-	int			i;
+	uint i;
 
 	for(i=0;funcs[i].name;i++)
 		JS_DefineFunction(cx, obj, funcs[i].name, funcs[i].call, funcs[i].nargs, 0);
@@ -419,6 +419,24 @@ DLLCALL js_DefineMethods(JSContext* cx, JSObject* obj, jsMethodSpec *funcs, BOOL
 }
 
 #endif
+
+/* This is a stream-lined version of JS_DefineConstDoubles */
+JSBool
+DLLCALL js_DefineConstIntegers(JSContext* cx, JSObject* obj, jsConstIntSpec* ints, int flags)
+{
+	uint	i;
+	jsval	val;
+
+	for(i=0;ints[i].name;i++) {
+        if(!JS_NewNumberValue(cx, ints[i].val, &val))
+			return(JS_FALSE);
+
+		if(!JS_DefineProperty(cx, obj, ints[i].name, val ,NULL, NULL, flags))
+			return(JS_FALSE);
+	}
+		
+	return(JS_TRUE);
+}
 
 static JSBool
 js_log(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)

@@ -879,6 +879,11 @@ extern "C" {
 		const char*		desc;		/* description */
 	} jsMethodSpec;
 
+	typedef struct {
+		const char*		name;
+		int				val;
+	} jsConstIntSpec;
+
 	#define JSTYPE_ARRAY JSTYPE_LIMIT
 	#define JSTYPE_ALIAS JSTYPE_LIMIT+1
 
@@ -891,7 +896,8 @@ extern "C" {
 	/* main.cpp */
 	DLLEXPORT JSBool	DLLCALL js_DescribeObject(JSContext* cx, JSObject* obj, const char*);
 	DLLEXPORT JSBool	DLLCALL js_DescribeConstructor(JSContext* cx, JSObject* obj, const char*);
-	DLLEXPORT JSBool	DLLCALL js_DefineMethods(JSContext* cx, JSObject* obj, jsMethodSpec *fs, BOOL append);
+	DLLEXPORT JSBool	DLLCALL js_DefineMethods(JSContext* cx, JSObject* obj, jsMethodSpec*, BOOL append);
+	DLLEXPORT JSBool	DLLCALL js_DefineConstIntegers(JSContext* cx, JSObject* obj, jsConstIntSpec*, int flags);
 	DLLEXPORT JSBool	DLLCALL js_CreateArrayOfStrings(JSContext* cx, JSObject* parent
 														,const char* name, char* str[], uintN flags);
 
