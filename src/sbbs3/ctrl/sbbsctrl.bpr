@@ -11,7 +11,7 @@
       emulvt.obj UserListFormUnit.obj UserMsgFormUnit.obj PropertiesDlgUnit.obj 
       EventsFormUnit.obj ConfigWizardUnit.obj ServicesFormUnit.obj 
       TelnetCfgDlgUnit.obj MailCfgDlgUnit.obj FtpCfgDlgUnit.obj 
-      ServicesCfgDlgUnit.obj ..\sbbs_ini.obj ..\..\xpdev\ini_file.obj 
+      ServicesCfgDlgUnit.obj ..\sbbs_ini.obj ..\..\xpdev\ini_file.obj ..\..\xpdev\str_list.obj 
       PreviewFormUnit.obj"/>
     <RESFILES value="sbbsctrl.res"/>
     <IDLFILES value=""/>
@@ -108,6 +108,7 @@
       <FILE FILENAME="ServicesCfgDlgUnit.cpp" FORMNAME="ServicesCfgDlg" UNITNAME="ServicesCfgDlgUnit" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="..\sbbs_ini.c" FORMNAME="" UNITNAME="sbbs_ini" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="..\..\xpdev\ini_file.c" FORMNAME="" UNITNAME="ini_file" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\..\xpdev\str_list.c" FORMNAME="" UNITNAME="str_list" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="PreviewFormUnit.cpp" FORMNAME="PreviewForm" UNITNAME="PreviewFormUnit" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
   </FILELIST>
   <BUILDTOOLS>
