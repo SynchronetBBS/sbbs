@@ -602,6 +602,11 @@ static void send_thread(void* arg)
 			if(getfileixb(&scfg,&f)==TRUE && getfiledat(&scfg,&f)==TRUE) {
 				f.timesdled++;
 				putfiledat(&scfg,&f);
+			lprintf("%04d %s downloaded: %s (%lu times total)"
+				,xfer.ctrl_sock
+				,xfer.user->alias
+				,xfer.filename
+				,f.timesdled);
 			}
 			/* Need to update datedled in index */
 		}	
@@ -2269,8 +2274,8 @@ static void ctrl_thread(void* arg)
 				credits=TRUE;	/* include in d/l stats */
 				tmpfile=FALSE;
 				delfile=FALSE;
-				lprintf("%04d %s downloading by alias: %s"
-					,sock,user.alias,p);
+				lprintf("%04d %s %.4s by alias: %s"
+					,sock,user.alias,cmd,p);
 				p=strrchr(fname,'\\');
 				if(p==NULL)
 					p=strrchr(fname,'/');
@@ -2507,8 +2512,11 @@ static void ctrl_thread(void* arg)
 						if(!getsize && !getdate)
 							lprintf("%04d %s downloading: %s (%ld bytes)"
 								,sock,user.alias,fname,flength(fname));
-					} else
+					} 
+#if 0
+					else
 						lprintf("%04d %s file not found: %s",sock,user.alias,fname);
+#endif
 				}
 			}
 			if(getsize && success) 
@@ -2529,8 +2537,10 @@ static void ctrl_thread(void* arg)
 					,&transfer_inprogress,&transfer_aborted,delfile,tmpfile
 					,&lastactive,&user,dir,FALSE,credits,FALSE,NULL);
 			}
-			else 
+			else {
 				sockprintf(sock,"550 File not found: %s",p);
+				lprintf("!%04d File not found (%s) for %.4s command",sock,p,cmd);
+			}
 			filepos=0;
 			continue;
 		}
