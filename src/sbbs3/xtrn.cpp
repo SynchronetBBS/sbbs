@@ -733,6 +733,8 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 		return(exec_bin(str,&main_csi)); 
 	}
 
+	bprintf("\r\nExternal programs are not yet supported in Synchronet for Linux\r\n");
+
 //	system(cmdline);	This is going to be a lot of work for me... :-)
 	return(0);
 }
