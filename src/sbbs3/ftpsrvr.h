@@ -130,7 +130,7 @@ static ini_bitdesc_t ftp_options[] = {
 	{ FTP_OPT_LOCAL_TIMEZONE		,"LOCAL_TIMEZONE"		},
 	{ FTP_OPT_MUTE					,"MUTE"					},
 	/* terminator */										
-	{ -1							,NULL					}
+	{ 0 							,NULL					}
 };
 
 #ifdef DLLEXPORT

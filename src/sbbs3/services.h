@@ -109,7 +109,7 @@ static ini_bitdesc_t service_options[] = {
 	{ SERVICE_OPT_NATIVE			,"NATIVE"				},
 	{ SERVICE_OPT_FULL_ACCEPT		,"FULL_ACCEPT"			},
 	/* terminator */				
-	{ -1							,NULL					}
+	{ 0 							,NULL					}
 };
 
 #ifdef __cplusplus

@@ -126,7 +126,7 @@ static ini_bitdesc_t web_options[] = {
 	{ BBS_OPT_MUTE					,"MUTE"					},
 
 	/* terminator */										
-	{ -1							,NULL					}
+	{ 0								,NULL					}
 };
 
 #define WEB_DEFAULT_ROOT_DIR		"../html"

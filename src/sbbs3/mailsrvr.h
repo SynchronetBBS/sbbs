@@ -171,7 +171,7 @@ static ini_bitdesc_t mail_options[] = {
 	{ MAIL_OPT_LOCAL_TIMEZONE		,"LOCAL_TIMEZONE"		},
 	{ MAIL_OPT_MUTE					,"MUTE"					},
 	/* terminator */
-	{ -1							,NULL					}
+	{ 0 							,NULL					}
 };
 
 #ifdef DLLEXPORT

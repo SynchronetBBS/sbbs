@@ -179,7 +179,7 @@ static ini_bitdesc_t bbs_options[] = {
 	{ BBS_OPT_LOCAL_TIMEZONE		,"LOCAL_TIMEZONE"		},
 	{ BBS_OPT_MUTE					,"MUTE"					},
 	/* terminator */										
-	{ -1							,NULL					}
+	{ 0								,NULL					}
 };
 
 static ini_bitdesc_t log_mask_bits[] = {
@@ -192,7 +192,7 @@ static ini_bitdesc_t log_mask_bits[] = {
 	{ (1<<LOG_INFO)					,"INFO"					},
 	{ (1<<LOG_DEBUG)				,"DEBUG"				},
 	/* the Gubinator */				
-	{ -1							,NULL					}
+	{ 0								,NULL					}
 };
 
 #ifdef __cplusplus
