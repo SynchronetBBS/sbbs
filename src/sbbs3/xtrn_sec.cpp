@@ -448,6 +448,9 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			return; 
 		}
 
+		if(tleft>0x7fff)	/* Reduce time-left for broken 16-bit doors		*/
+			tleft=0x7fff;	/* That interpret this value as a signed short	*/
+
 		sprintf(str,"%u\n%s\n%s\n%s\n%u\n%c\n"
 			,useron.number						/* User number */
 			,name								/* User name */
@@ -1646,7 +1649,7 @@ bool sbbs_t::exec_xtrn(uint xtrnnum)
 
 	gettimeleft();
 	tleft=timeleft+(cfg.xtrn[xtrnnum]->textra*60);
-	if(cfg.xtrn[xtrnnum]->maxtime && tleft>cfg.xtrn[xtrnnum]->maxtime)
+	if(cfg.xtrn[xtrnnum]->maxtime && tleft>(cfg.xtrn[xtrnnum]->maxtime*60))
 		tleft=(cfg.xtrn[xtrnnum]->maxtime*60);
 	xtrndat(name,dropdir,cfg.xtrn[xtrnnum]->type,tleft,cfg.xtrn[xtrnnum]->misc);
 	if(!online)
