@@ -209,7 +209,7 @@ OUTPUT		:=	-o
 LOUTPUT		:=	-o
 
 ifeq ($(os),openbsd)
- SOFILE	:=	$(SOFILE)$(VERSION)
+ SOFILE	:=	$(SOFILE).$(VERSION)
 else
  ifeq ($(os),darwin)
   SOFILE =	.dylib
