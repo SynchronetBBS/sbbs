@@ -99,7 +99,7 @@ int DLLCALL lock(int file, long offset, int len)
 }
 
 /* Removes a lock from a file record */
-int DLLCALL unlock(int file, long pos, int len)
+int DLLCALL unlock(int file, long offset, int len)
 {
 	int		i;
 	long	pos;
