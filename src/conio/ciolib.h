@@ -218,6 +218,9 @@ void ciolib_delline(void);
 void ciolib_insline(void);
 char *ciolib_getpass(const char *prompt);
 void settitle(const char *title);
+int ciolib_showmouse(void);
+int ciolib_hidemouse(void);
+void ciolib_settitle(const char *title);
 #ifdef __cplusplus
 }
 #endif
