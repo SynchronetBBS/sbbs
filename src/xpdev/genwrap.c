@@ -78,9 +78,9 @@ int DLLCALL safe_snprintf(char *dst, size_t size, const char *fmt, ...)
 	dst[size-1]=0;
 #ifdef _MSC_VER
 	if(numchars==-1)
-		nuchars=strlen(dst);
+		numchars=strlen(dst);
 #endif
-	if(numchars>=size && numchars>0)
+	if(numchars>=(int)size && numchars>0)
 		numchars=size-1;
 	return(numchars);
 }
