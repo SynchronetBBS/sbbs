@@ -313,7 +313,9 @@ for(i in area) {
 		writeln("Subject: " + hdr.subject);
 		writeln("Message-ID: " + hdr.id);
 		writeln("Date: " + hdr.date);
-		writeln("Newsgroups: " + newsgroup);
+		if(hdr.newsgroups==undefined)
+			hdr.newsgroups=newsgroup;
+		writeln("Newsgroups: " + hdr.newsgroups);
 		if(hdr.reply_id!=undefined)
 			writeln("References: " + hdr.reply_id);
 		writeln("X-Gateway: "
