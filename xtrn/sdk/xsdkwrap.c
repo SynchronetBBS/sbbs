@@ -78,13 +78,15 @@
 #define STAT		struct stat
 #endif
 
-#ifdef __unix__
-
+#if defined(__unix__)
 /****************************************************************************/
 /* Wrapper for Win32 create/begin thread function							*/
 /* Uses POSIX threads														*/
 /****************************************************************************/
-#ifdef _POSIX_THREADS
+#if defined(_POSIX_THREADS)
+#if defined(__BORLANDC__)
+        #pragma argsused
+#endif
 ulong _beginthread(void( *start_address )( void * )
 		,unsigned stack_size, void *arglist)
 {
@@ -97,10 +99,22 @@ ulong _beginthread(void( *start_address )( void * )
 	   that thread resources are freed on exit() */
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 
+	/* Default stack size in BSD is too small for JS stuff */
+#ifdef BSD
+	if(stack_size==0)
+		stack_size=1<<17;
+#endif
+	if(stack_size!=0)
+		pthread_attr_setstacksize(&attr, stack_size);
+
 	if(pthread_create(&thread
+#if defined(__BORLANDC__) /* a (hopefully temporary) work-around */
+		,NULL
+#else
 		,&attr	/* default attributes */
+#endif
 		/* POSIX defines this arg as "void *(*start_address)" */
-		,(void *) start_address
+		,(void * (*)(void *)) start_address
 		,arglist)==0)
 		return((int) thread /* thread handle */);
 
@@ -152,26 +166,52 @@ char* strrev(char* str)
     return str;
 }
 
-/* This is a bit of a hack, but it works */
-char* _fullpath(char* absPath, const char* relPath, size_t maxLength)
-{
-	char *curdir = (char *) malloc(MAX_PATH+1);
-
-	if(curdir == NULL) {
-		strcpy(absPath,relPath);
-		return(absPath);
+char * _fullpath(char *target, const char *path, size_t size)  {
+	char	*out;
+	char	*p;
+	
+	if(target==NULL)  {
+		if((target=malloc(MAX_PATH+1))==NULL) {
+			return(NULL);
+		}
 	}
+	out=target;
+	*out=0;
 
-    getcwd(curdir, MAX_PATH);
-    if(chdir(relPath)!=0) /* error, invalid dir */
-		strcpy(absPath,relPath);
-	else {
-		getcwd(absPath, maxLength);
-		chdir(curdir);
+	if(*path != '/')  {
+		p=getcwd(target,size);
+		if(p==NULL || strlen(p)+strlen(path)>=size)
+			return(NULL);
+		out=strrchr(target,'\0');
+		*(out++)='/';
+		*out=0;
+		out--;
 	}
-	free(curdir);
+	strncat(target,path,size-1);
+	
+/*	if(stat(target,&sb))
+		return(NULL);
+	if(sb.st_mode&S_IFDIR)
+		strcat(target,"/"); */
 
-    return absPath;
+	for(;*out;out++)  {
+		while(*out=='/')  {
+			if(*(out+1)=='/')
+				memmove(out,out+1,strlen(out));
+			else if(*(out+1)=='.' && (*(out+2)=='/' || *(out+2)==0))
+				memmove(out,out+2,strlen(out)-1);
+			else if(*(out+1)=='.' && *(out+2)=='.' && (*(out+3)=='/' || *(out+3)==0))  {
+				*out=0;
+				p=strrchr(target,'/');
+				memmove(p,out+3,strlen(out+3)+1);
+				out=p;
+			}
+			else  {
+				out++;
+			}
+		}
+	}
+	return(target);
 }
 
 /***************************************/
@@ -180,15 +220,14 @@ char* _fullpath(char* absPath, const char* relPath, size_t maxLength)
 
 static struct termios current;				// our current term settings
 static struct termios original;				// old termios settings
-static struct timeval timeout = {0, 0};		// passed in select() call
-static fd_set inp;							// ditto
 static int beensetup = 0;					// has _termios_setup() been called?
-								
+
 
 /* Resets the termios to its previous state */
 void _termios_reset(void)
 {
-	tcsetattr(0, TCSANOW, &original);
+	if(isatty(0))
+		tcsetattr(0, TCSANOW, &original);
 }
 
 /************************************************
@@ -207,7 +246,8 @@ void _sighandler_stop(int sig)
 void _sighandler_cont(int sig)
 {
     // restore terminal
-	tcsetattr(0, TCSANOW, &current);
+	if(isatty(0))
+		tcsetattr(0, TCSANOW, &current);
 }
 
 
@@ -216,31 +256,43 @@ void _termios_setup(void)
 {
 	beensetup = 1;
     
-	tcgetattr(0, &original);
-  
-	memcpy(&current, &original, sizeof(struct termios));
-	current.c_cc[VMIN] = 1;           // read() will return with one char
-	current.c_cc[VTIME] = 0;          // read() blocks forever
-	current.c_lflag &= ~ICANON;       // character mode
-    current.c_lflag &= ~ECHO;         // turn off echoing
-	tcsetattr(0, TCSANOW, &current);
+	if(isatty(0)) {
+		tcgetattr(0, &original);
 
-    // Let's install an exit function, also.  This way, we can reset
-    // the termios silently
-    atexit(_termios_reset);
+		memcpy(&current, &original, sizeof(struct termios));
+		current.c_cc[VMIN] = 1;           // read() will return with one char
+		current.c_cc[VTIME] = 0;          // read() blocks forever
+		current.c_lflag &= ~ICANON;       // character mode
+    	current.c_lflag &= ~ECHO;         // turn off echoing
+		tcsetattr(0, TCSANOW, &current);
 
-    // install the Ctrl-Z handler
-    signal(SIGSTOP, _sighandler_stop);
-    signal(SIGCONT, _sighandler_cont);
+    	// Let's install an exit function, also.  This way, we can reset
+    	// the termios silently
+    	atexit(_termios_reset);
+
+    	// install the Ctrl-Z handler
+    	signal(SIGSTOP, _sighandler_stop);
+    	signal(SIGCONT, _sighandler_cont);
+	}
 }
 
 
 int kbhit(void)
 {
-	if(!isatty(0))
-		return(0);
+	struct timeval timeout;		// passed in select() call
+	fd_set inp;					// ditto
 
-	// set up select() args
+	/* 
+	 * What the heck?  The ONE thing that would work properly if stdin isn't a
+	 * terminal... and IT is avoided!
+	 * 
+	 * if(!isatty(0))
+	 *	return(0);
+	 */
+
+	/* set up select() args */
+	timeout.tv_sec=0;
+	timeout.tv_usec=0;
 	FD_ZERO(&inp);
 	FD_SET(0, &inp);
 
@@ -288,12 +340,15 @@ long flength(char *filename)
 /****************************************************************************/
 BOOL fexist(char *filespec)
 {
-#ifdef _WIN32
+#if defined(_WIN32)
 
 	long	handle;
 	struct _finddata_t f;
 
-	if((handle=_findfirst(filespec,&f))==-1)
+	if(access(filespec,0)==-1 && !strchr(filespec,'*') && !strchr(filespec,'?'))
+		return(FALSE);
+
+	if((handle=_findfirst((char*)filespec,&f))==-1)
 		return(FALSE);
 
  	_findclose(handle);
@@ -303,11 +358,16 @@ BOOL fexist(char *filespec)
 
 	return(TRUE);
 
-#elif defined(__unix__)	/* portion by cmartin */
+#elif defined(__unix__)
+
+	/* portion by cmartin */
 
 	glob_t g;
     int c;
-    int l;
+	char *p;
+
+	if(access(filespec,0)==-1 && !strchr(filespec,'*') && !strchr(filespec,'?'))
+		return(FALSE);
 
     // start the search
     glob(filespec, GLOB_MARK | GLOB_NOSORT, NULL, &g);
@@ -321,13 +381,16 @@ BOOL fexist(char *filespec)
     // make sure it's not a directory
 	c = g.gl_pathc;
     while (c--) {
-    	l = strlen(g.gl_pathv[c]);
-    	if (l && g.gl_pathv[c][l-1] != '/') {
-        	globfree(&g);
-            return TRUE;
-        }
+		p=strchr(g.gl_pathv[c],0);
+		if(p!=NULL) {
+			p--;
+	    	if (*p != '/') {
+    	    	globfree(&g);
+        	    return TRUE;
+	        }
+		}
     }
-        
+
     globfree(&g);
     return FALSE;
 
@@ -421,9 +484,9 @@ int unlock(int fd, long pos, long len)
 #if !defined(__QNX__)
 int sopen(const char *fn, int access, int share, ...)
 {
-	int pmode=S_IREAD;
 	int fd;
-#if !defined(F_SANEWRLCKNO) && !defined(__QNX__) && !defined(__solaris__)
+	int pmode=S_IREAD;
+#ifndef F_SANEWRLCKNO
 	int	flock_op=LOCK_NB;	/* non-blocking */
 #endif
 #if defined(F_SANEWRLCKNO) || !defined(BSD)

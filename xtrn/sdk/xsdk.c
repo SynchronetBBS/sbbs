@@ -1686,6 +1686,10 @@ void initdata(void)
 #ifdef __SC__
     setvbuf(stdout,NULL,_IONBF,0);
 	con_fp=stdout;
+#elif defined (__unix__)
+	setvbuf(stdout,NULL,_IONBF,0);
+	setvbuf(stderr,NULL,_IONBF,0);
+	con_fp=stdout;
 #else
 	con_fp=stderr;
 #endif
