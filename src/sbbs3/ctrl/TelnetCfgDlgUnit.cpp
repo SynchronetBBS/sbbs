@@ -253,8 +253,8 @@ void __fastcall TTelnetCfgDlg::RLoginIPallowButtonClick(TObject *Sender)
 {
 	char filename[MAX_PATH+1];
 
-    sprintf(filename,"%sRLOGIN.CAN"
-    	,MainForm->cfg.text_dir);
+    sprintf(filename,"%srlogin.cfg"
+    	,MainForm->cfg.ctrl_dir);
 	Application->CreateForm(__classid(TTextFileEditForm), &TextFileEditForm);
 	TextFileEditForm->Filename=AnsiString(filename);
     TextFileEditForm->Caption="Allowed IP addresses for RLogin";
