@@ -46,6 +46,9 @@
 #ifdef RINGBUF_SEM
 	#include "semwrap.h"	/* sem_t */
 #endif
+#ifdef RINGBUF_EVENT
+	#include "eventwrap.h"	/* xpevent_t */
+#endif
 #ifdef RINGBUF_MUTEX
 	#include "threadwrap.h"	/* pthread_mutex_t */
 #endif
@@ -85,6 +88,9 @@ typedef struct {
 	sem_t	sem;			/* semaphore used to signal data waiting */
 	sem_t	highwater_sem;	/* semaphore used to signal highwater mark reached */
 	DWORD	highwater_mark;
+#endif
+#ifdef RINGBUF_EVENT
+	xpevent_t empty_event;
 #endif
 #ifdef RINGBUF_MUTEX
 	pthread_mutex_t mutex;	/* mutex used to protect ring buffer pointers */
