@@ -55,21 +55,24 @@ void		strListFree(str_list_t* list);
 /* Frees the strings in the list */
 void		strListFreeStrings(str_list_t list);
 
-/* Pass a pointer to a string list, the string to add */
+/* Pass a pointer to a string list, the string to add (append) */
 /* Returns the updated list or NULL on error */
 str_list_t	strListAdd(str_list_t* list, const char* str);
 
 /* Adds a string into the list at a specific index */
 str_list_t	strListAddAt(str_list_t* list, const char* str, size_t index);
 
-/* Append a string list onto an another string list */
+/* Append a string list onto another string list */
 str_list_t	strListAddList(str_list_t* list, const str_list_t append_list);
 
 /* Inserts a string into the list at a specific index */
 str_list_t	strListInsert(str_list_t* list, const char* str, size_t index);
 
-/* Insert a string list onto an another string list */
+/* Insert a string list into another string list */
 str_list_t	strListInsertList(str_list_t* list, const str_list_t append_list, size_t index);
+
+/* Remove a string at a specific index */
+str_list_t	strListRemove(str_list_t* list, size_t index);
 
 /* Add to an exiting or new string list by splitting specified string (str) */
 /* into multiple strings, separated by one of the delimit characters */

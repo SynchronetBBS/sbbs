@@ -85,13 +85,39 @@ static str_list_t str_list_insert(str_list_t* list, char* str, size_t index)
 	str_list_t lp;
 
 	count = strListCount(*list);
+	if(index > count)	/* invalid index, do nothing */
+		return(NULL);
+
+	count++;
 	if((lp=(str_list_t)realloc(*list,sizeof(char*)*(count+1)))==NULL)
 		return(NULL);
 
 	*list=lp;
-	for(i=index;i<=count;i++)
-		lp[i+1]=lp[i];
+	for(i=count; i>index; i--)
+		lp[i]=lp[i-1];
 	lp[index]=str;
+
+	return(lp);
+}
+
+str_list_t strListRemove(str_list_t* list, size_t index)
+{
+	size_t	i;
+	size_t	count;
+	str_list_t lp;
+
+	count = strListCount(*list);
+	if(index >= count)	/* invalid index, do nothing */
+		return(NULL);
+
+	count--;
+	if((lp=(str_list_t)realloc(*list,sizeof(char*)*(count+1)))==NULL)
+		return(NULL);
+
+	*list=lp;
+	for(i=index; i<count; i++)
+		lp[i]=lp[i+1];
+	lp[count]=NULL;
 
 	return(lp);
 }
