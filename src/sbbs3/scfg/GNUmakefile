@@ -30,6 +30,11 @@ include $(XPDEV)/Common.gmake
 include $(UIFC_SRC)/Common.gmake
 include $(SBBS_SRC)/Common.gmake
 
+ifeq ($(os),netbsd)
+ CFLAGS		+=	$(PTHREAD_CFLAGS)
+ LDFLAGS	+=	$(PTHREAD_LDFLAGS)
+endif
+
 SCFG	:=	$(EXEODIR)$(SLASH)scfg$(EXEFILE)
 
 $(MAKEHELP): makehelp.c

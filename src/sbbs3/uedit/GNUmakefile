@@ -28,6 +28,11 @@ ifeq ($(os),sunos)
  LDFLAGS	+=	-lnsl
 endif
 
+ifeq ($(os),netbsd)
+ CFLAGS		+=	$(PTHREAD_CFLAGS)
+ LDFLAGS	+=	$(PTHREAD_LDFLAGS)
+endif
+
 FORCE$(EXEODIR)/uedit: $(EXEODIR) $(OBJS) $(BUILD_DEPENDS)
 
 $(EXEODIR)/uedit: $(EXEODIR) $(OBJS) $(BUILD_DEPENDS)
