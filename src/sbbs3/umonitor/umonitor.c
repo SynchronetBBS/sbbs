@@ -412,7 +412,7 @@ int main(int argc, char** argv)  {
 			if((j=getnodedat(&cfg,i,&node,NULL)))
 				sprintf(mopt[i-1],"Error reading node data (%d)!",j);
 			else
-				nodestatus(&cfg,&node,mopt[i-1],72);
+				sprintf(mopt[i-1],"%3d: %s",i,nodestatus(&cfg,&node,str,71));
 		}
 		mopt[i-1][0]=0;
 
@@ -467,7 +467,7 @@ int main(int argc, char** argv)  {
 				continue;
 			}
 			if((node.status&NODE_INUSE) && node.useron)
-				chat(&cfg,main_dflt+1,&node,&boxch);
+				chat(&cfg,main_dflt+1,&node,&boxch,uifc.timedisplay);
 			continue;
 		}
 
@@ -577,7 +577,7 @@ int main(int argc, char** argv)  {
 					break;
 
 				case 4:
-					chat(&cfg,main_dflt+1,&node,&boxch);
+					chat(&cfg,main_dflt+1,&node,&boxch,uifc.timedisplay);
 					break;
 				
 				case -1:

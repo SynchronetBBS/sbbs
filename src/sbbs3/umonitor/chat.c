@@ -92,8 +92,8 @@ void drawchatwin(WINDOW **uwin, WINDOW **swin, box_t *boxch) {
 
 	endwin();
 	getmaxyx(stdscr,maxy,maxx);
-	*uwin=newwin(maxy/2,maxx,0,0);
-	*swin=newwin(0,maxx,maxy/2,0);
+	*uwin=newwin(maxy/2-1,maxx,1,0);
+	*swin=newwin(maxy-maxy/2-1,maxx,maxy/2,0);
 	wsetcolor(*uwin,YELLOW,BLUE);
 	wclear(*uwin);
 	wborder(*uwin,  boxch->ls, boxch->rs, boxch->ts, boxch->bs, boxch->tl, boxch->tr, boxch->bl, boxch->br);
@@ -167,7 +167,7 @@ int chatchar(WINDOW *win, int ch, box_t *boxch) {
 	return(0);
 }
 
-int chat(scfg_t *cfg, int nodenum, node_t *node, box_t *boxch) {
+int chat(scfg_t *cfg, int nodenum, node_t *node, box_t *boxch, void(*timecallback)(void)) {
 	WINDOW	*uwin;
 	WINDOW	*swin;
 	int		in,out;
@@ -211,6 +211,8 @@ int chat(scfg_t *cfg, int nodenum, node_t *node, box_t *boxch) {
 	togglechat(cfg,nodenum,node,TRUE);
 
 	while(in != -1) {
+		if(timecallback != NULL)
+			timecallback();
 		utime(outpath,NULL);
 		utime(inpath,NULL);
 		

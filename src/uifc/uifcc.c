@@ -121,6 +121,7 @@ static int cprintf(char *fmat, ...);
 static void cputs(char *str);
 static void gotoxy(int x, int y);
 static void _putch(unsigned char ch, BOOL refresh);
+static void timedisplay(void);
 #define putch(x)	_putch(x,TRUE)
 
 /* API routines */
@@ -184,6 +185,7 @@ int uifcinic(uifcapi_t* uifcapi)
 #ifdef __unix__
     api->showhelp=help;
 	api->showbuf=showbuf;
+	api->timedisplay=timedisplay;
 #endif
 
 #if defined(LOCALE)

@@ -356,6 +356,12 @@ typedef struct {
 /****************************************************************************/
 	void (*showbuf)(char *buf, char *title, BOOL markup);
 
+/****************************************************************************/
+/* Updates time in upper left corner of screen with current time in ASCII/  */
+/* Unix format																*/
+/****************************************************************************/
+	void (*timedisplay)(void);
+
 #endif
 } uifcapi_t;
 
