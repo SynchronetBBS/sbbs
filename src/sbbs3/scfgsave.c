@@ -84,6 +84,7 @@ BOOL DLLCALL fcopy(char* src, char* dest)
 	ulong	count=0;
 	FILE*	in;
 	FILE*	out;
+	BOOL	success=TRUE;
 
 	if((in=fopen(src,"rb"))==NULL)
 		return(FALSE);
@@ -93,10 +94,12 @@ BOOL DLLCALL fcopy(char* src, char* dest)
 	}
 
 	while(!feof(in)) {
-		ch=fgetc(in);
-		if(ch==EOF)
+		if((ch=fgetc(in))==EOF)
 			break;
-		fputc(ch,out);
+		if(fputc(ch,out)==EOF) {
+			success=FALSE;
+			break;
+		}
 		if(((count++)%(32*1024))==0)
 			YIELD();
 	}
@@ -104,7 +107,7 @@ BOOL DLLCALL fcopy(char* src, char* dest)
 	fclose(in);
 	fclose(out);
 
-	return(TRUE);
+	return(success);
 }
 
 /****************************************************************************/
