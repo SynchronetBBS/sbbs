@@ -1362,8 +1362,8 @@ char *process_areafix(faddr_t addr,char* inbuf,char *password)
 	add_area.tag=NULL;
 	del_area.tags=0;
 	del_area.tag=NULL;
-	for(l=0;l<m;l++) {
-		while(*(p+l) && *(p+l)<=' ') l++;
+	for(l=0;l<m;l++) { 
+		while(*(p+l) && isspace(*(p+l)) l++;
 		while(*(p+l)==1) {				/* Ignore kludge lines June-13-2004 */
 			while(*(p+l) && *(p+l)!='\r') l++;
 			continue;
