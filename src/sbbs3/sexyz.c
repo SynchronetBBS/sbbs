@@ -403,10 +403,14 @@ void send_files(char** fname, uint fnames, FILE* log)
 	memset(&xm,0,sizeof(xm));
 	xm.sock=sock;
 	xm.mode=mode;
+	xm.errfp=errfp;
+	xm.statfp=statfp;
 
 	memset(&zm,0,sizeof(zm));
 	zm.sock=sock;
 	zm.mode=mode;
+	zm.errfp=errfp;
+	zm.statfp=statfp;
 	zm.n_files_remaining = total_files;
 	zm.n_bytes_remaining = total_bytes;
 
@@ -597,7 +601,7 @@ void send_files(char** fname, uint fnames, FILE* log)
 					if(!t) t=1; 		/* t is time so far */
 					cps=(uint)((block_num*(long)block_size)/t); 	/* cps so far */
 					if(!cps) cps=1;
-					l=fsize/cps;	/* total transfer est time */
+					l=fsize/cps;		/* total transfer est time */
 					l-=t;				/* now, it's est time left */
 					if(l<0) l=0;
 					b=num_blocks(fsize,block_size);
