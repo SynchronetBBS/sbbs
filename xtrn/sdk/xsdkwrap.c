@@ -57,6 +57,7 @@
 #include <sys/stat.h>	/* struct stat */
 
 /* XSDK-specific */
+#include "xsdkdefs.h"	/* MAX_PATH */
 #include "xsdkwrap.h"	/* Verify prototypes */
 
 #ifdef _WIN32
