@@ -307,6 +307,8 @@ int telnet_connect(char *addr, int port, char *ruser, char *passwd)
 	saddr.sin_family = AF_INET;
 	saddr.sin_port   = htons(port);
 	
+	memset(telnet_local_option,0,sizeof(telnet_local_option));
+	memset(telnet_remote_option,0,sizeof(telnet_remote_option));
 	if(connect(conn_socket, (struct sockaddr *)&saddr, sizeof(saddr))) {
 		char str[LIST_ADDR_MAX+20];
 
