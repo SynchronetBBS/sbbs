@@ -35,15 +35,6 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-/******************/
-/* Layout Defines */
-/******************/
-#define UIFC_CHAR_WIDTH		8		// Width of one "Character" (Assumes 80x25)
-#define UIFC_CHAR_HEIGHT	12	// Height of one "Character"
-#define UIFC_LINE_HEIGHT	16	// Height of one "Character"
-#define UIFC_BORDER_WIDTH	2	// Width of a single border
-#define UIFC_SCROLL_WIDTH	18	// Width of the scroll bar
-
 /*********************************************/
 /* UIFC Defines specific to the FLTK version */
 /*********************************************/
@@ -59,15 +50,41 @@
  * Fast Light Includes *
  ***********************/
 #include <FL/Fl.H>
-#include <FL/Fl_Window.H>
-#include <FL/Fl_Group.H>
+#include <FL/Fl_Double_Window.H>
 #include <FL/Fl_Scroll.H>
 #include <FL/Fl_Button.H>
-#include <FL/Fl_Return_Button.H>
 #include <FL/Fl_Input_.H>
 #include <FL/Fl_Text_Display.H>
 #include <FL/Fl_Box.H>
-#include <FL/fl_ask.H>
+#include <FL/fl_ask.H>		// fl_beep(), fl_message()
+
+/******************/
+/* Layout Defines */
+/******************/
+#define UIFC_CHAR_WIDTH			8		// Width of one "Character" (Assumes 80x25)
+#define UIFC_CHAR_HEIGHT		12	// Height of one Character
+#define UIFC_LINE_HEIGHT		16	// Height of one "Line"
+#define UIFC_BORDER_WIDTH		2	// Width of a single border
+#define UIFC_SCROLL_WIDTH		18	// Width of the scroll bar
+#define UIFC_MAIN_BG_COLOR			FL_DARK_CYAN
+#define UIFC_BORDER_COLOR			FL_YELLOW
+#define UIFC_BUTTON_TEXT_COLOR		FL_WHITE
+#define UIFC_BUTTON_COLOR			FL_DARK_BLUE
+#define UIFC_BUTTON_SELECTED_COLOR  FL_BLUE
+#define UIFC_WINDOW_TITLE_COLOR		FL_YELLOW
+#define UIFC_INPUT_WIN_BG_COLOR		FL_DARK_BLUE
+#define UIFC_INPUT_TEXT_COLOR		FL_WHITE
+#define UIFC_INPUT_BOX_BG_COLOR		FL_DARK_BLUE
+#define UIFC_INPUT_PROMPT_COLOR		FL_YELLOW
+#define UIFC_HELP_PLAIN_COLOR		FL_WHITE
+#define UIFC_HELP_HIGH_COLOR		FL_YELLOW
+#define UIFC_HELP_INVERSE_COLOR		FL_CYAN
+#define UIFC_HELP_BOTH_COLOR		FL_MAGENTA
+#define UIFC_HELP_WIN_BG_COLOR		FL_DARK_BLUE
+#define UIFC_LIST_WIN_BG_COLOR		FL_DARK_BLUE
+#define UIFC_FOREGROUND				255,255,0
+#define UIFC_BACKGROUND				0,64,64
+#define UIFC_BACKGROUND2			0,0,255
 
 
 #include <sys/types.h>
@@ -75,7 +92,6 @@
 
 #ifdef __unix__
 #include <unistd.h>
-#define _snprintf	snprintf
 #else
 #include <stdio.h>
 #endif
@@ -108,10 +124,10 @@ static void upop(char *str);
 static void sethelp(int line, char* file);
 
 /* Classes */
-class UIFC_PopUp : public Fl_Window  {
+class UIFC_PopUp : public Fl_Double_Window  {
 	int handle(int);
 public:
-	UIFC_PopUp(int w,int h,const char *title) : Fl_Window(w,h,title) {
+	UIFC_PopUp(int w,int h,const char *title) : Fl_Double_Window(w,h,title) {
 		border(FALSE);
 		box(FL_UP_BOX);
 		set_modal();
@@ -123,6 +139,7 @@ class UIFC_Button : public Fl_Button  {
 public:
 	int retval;
 	int mode;
+	int handle(int);
 	UIFC_Button(int x,int y,int w,int h,const char *label) : Fl_Button(x,y,w,h,label) {
 		if(label==NULL)
 			strcpy(uifc_label,"");
@@ -132,16 +149,20 @@ public:
 		labelfont(FL_COURIER);
 		labelsize(UIFC_CHAR_HEIGHT);
 		when(FL_WHEN_RELEASE|FL_WHEN_CHANGED);
-		color(FL_DARK_BLUE,FL_BACKGROUND_COLOR);
-		labelcolor(FL_WHITE);
+		box(FL_FLAT_BOX);
+		if(!(api->mode&UIFC_MONO))  {
+			color(UIFC_BUTTON_COLOR,UIFC_BUTTON_SELECTED_COLOR);
+			labelcolor(UIFC_BUTTON_TEXT_COLOR);
+		}
 	}
 };
 
-class UIFC_Window : public Fl_Window  {
+class UIFC_Window : public Fl_Double_Window  {
 public:
-	UIFC_Window(int x,int y,int w,int h,const char *title) : Fl_Window(x,y,w,h,title) {
+	UIFC_Window(int x,int y,int w,int h,const char *title) : Fl_Double_Window(x,y,w,h,title) {
 		box(FL_UP_BOX);
-		color(FL_DARK_BLUE,FL_DARK_BLUE);
+		if(!(api->mode&UIFC_MONO))
+			color(UIFC_LIST_WIN_BG_COLOR);
 		UIFC_Button *HButton = new UIFC_Button(
 			w-(UIFC_LINE_HEIGHT*2)+UIFC_BORDER_WIDTH*3,
 			UIFC_BORDER_WIDTH,
@@ -154,8 +175,10 @@ public:
 		HButton->callback(GenCallback);
 		HButton->retval=UIFC_HELP;
 		HButton->when(FL_WHEN_CHANGED);
-		HButton->color(FL_BLUE,FL_BLUE);
-		HButton->labelcolor(FL_YELLOW);
+		if(!(api->mode&UIFC_MONO))  {
+			HButton->color(FL_BLUE,FL_BLUE);
+			HButton->labelcolor(UIFC_WINDOW_TITLE_COLOR);
+		}
 		UIFC_Button *CButton = new UIFC_Button(
 			w-(UIFC_LINE_HEIGHT)+UIFC_BORDER_WIDTH,
 			UIFC_BORDER_WIDTH,
@@ -168,8 +191,10 @@ public:
 		CButton->callback(GenCallback);
 		CButton->retval=UIFC_CANCEL;
 		CButton->when(FL_WHEN_CHANGED);
-		CButton->color(FL_BLUE,FL_BLUE);
-		CButton->labelcolor(FL_YELLOW);
+		if(!(api->mode&UIFC_MONO))  {
+			CButton->color(FL_BLUE,FL_BLUE);
+			CButton->labelcolor(UIFC_WINDOW_TITLE_COLOR);
+		}
 	}
 };
 
@@ -195,8 +220,10 @@ public:
 		SGroup->box(FL_DOWN_BOX);
 		SGroup->labelfont(FL_COURIER_BOLD);
 		SGroup->labelsize(UIFC_CHAR_HEIGHT);
-		SGroup->labelcolor(FL_YELLOW);
-		SGroup->color(FL_YELLOW);
+		if(!(api->mode&UIFC_MONO))  {
+			SGroup->labelcolor(UIFC_WINDOW_TITLE_COLOR);
+			SGroup->color(UIFC_BORDER_COLOR);
+		}
 		for(opt=0;option[opt][0];opt++)  {
 			Button=new UIFC_Button(
 					UIFC_CHAR_WIDTH+UIFC_BORDER_WIDTH,
@@ -241,9 +268,11 @@ public:
 			value("");
 		position(strlen(value()));
 		maximum_size(max);
-		labelcolor(FL_YELLOW);
-		color(FL_DARK_BLUE,FL_DARK_BLUE);
-		textcolor(FL_WHITE);
+		if(!(api->mode&UIFC_MONO))  {
+			labelcolor(UIFC_INPUT_PROMPT_COLOR);
+			color(UIFC_INPUT_BOX_BG_COLOR);
+			textcolor(UIFC_INPUT_TEXT_COLOR);
+		}
 	}
 };
 
@@ -269,7 +298,6 @@ public:
 				UIFC_LINE_HEIGHT,
 				"Ok");
 		OkButton->callback(GenCallback);
-		OkButton->shortcut(FL_Enter);
 		OkButton->retval=0;
 		UIFC_Button 	*CancelButton=new UIFC_Button(
 				button_left+UIFC_CHAR_WIDTH*10,
@@ -280,14 +308,79 @@ public:
 		CancelButton->retval=UIFC_CANCEL;
 		CancelButton->shortcut(FL_Escape);
 		CancelButton->callback(GenCallback);
+		if(inmode&K_EDIT)
+			snprintf(invalue,inmax,"%s",outval);
+		else
+			invalue[0]=0;
 	}
 };
 
 /* Globals */
-Fl_Window	*MainWin;
+Fl_Double_Window	*MainWin;
 int			GUI_RetVal;
 UIFC_Menu *Windows[MAX_WINDOWS];	// Array of windows for ulist
 int CurrWin;				// Current window in array.
+int *uifc_cur=NULL;				// Current selection.
+
+/*****************************/
+/* UIFC_Button ENTER catcher */
+/*****************************/
+int UIFC_Button::handle(int event)  {
+	if (event == FL_FOCUS)  {
+		if(uifc_cur != NULL)
+			*uifc_cur=retval&MSK_OFF;
+
+		if(!(api->mode&UIFC_MONO))
+			color(UIFC_BUTTON_SELECTED_COLOR);
+		Fl_Scroll *s=(Fl_Scroll *)parent();
+		/******************************************************************************
+		 * This works, it will always work if there is vertical room for at least one *
+		 * button in the scroll box.  For gods sake, don't touch this unless you KNOW *
+         * how it works, and can do it better.										  *
+		 ******************************************************************************/
+		if(s->type()==Fl_Scroll::BOTH)  {
+			if(y() + h() + Fl::box_dy(box()) + Fl::box_dh(box()) > s->y()+Fl::box_dy(s->box())+s->h()-Fl::box_dh(s->box()))  {
+				// Scroll Down
+				s->position(0,s->yposition()-(s->y() + Fl::box_dy(s->box()) + s->h() - Fl::box_dh(s->box()) - y() - h() - Fl::box_dy(box()) - Fl::box_dh(box())));
+			}
+			if(y() < s->y()+Fl::box_dy(s->box()))  {
+				// Scroll Up
+				s->position(0,s->yposition()-(s->y() + Fl::box_dy(s->box()) - y()));
+			}
+		}
+	}
+	else if (event == FL_UNFOCUS)  {
+		if(!(api->mode&UIFC_MONO))
+			color(UIFC_BUTTON_COLOR);
+	}
+	else if (event == FL_KEYBOARD)  {
+		int key=Fl::event_key();
+		int i;
+		if (key == FL_Enter || key == FL_KP_Enter) {
+			do_callback();
+			return 1;
+		}
+		if(key==FL_Page_Up)  {
+			for(i=0;i<parent()->children() && this!=parent()->child(i);i++)  {}
+			i=i-((parent()->h() - Fl::box_dh(parent()->box()))/UIFC_LINE_HEIGHT)+1;
+			if(i<0)
+				i=0;
+			Fl::focus(parent()->child(i));
+			parent()->child(i)->handle(FL_FOCUS);
+			return(1);
+		}
+		if(key==FL_Page_Down)  {
+			for(i=0;i<parent()->children() && this!=parent()->child(i);i++)  {}
+			i=i+((parent()->h() - Fl::box_dh(parent()->box()))/UIFC_LINE_HEIGHT)-1;
+			if(i>parent()->children()-3)
+				i=parent()->children()-3;
+			Fl::focus(parent()->child(i));
+			parent()->child(i)->handle(FL_FOCUS);
+			return(1);
+		}
+	}
+	return Fl_Button::handle(event);
+}
 
 /**********************************/
 /* right-click menu event handler */
@@ -300,9 +393,9 @@ int UIFC_PopUp::handle(int event)  {
 		return(1);
 	}
 	if(event==FL_PUSH)  {
-		for(i=0;i<this->children();i++)  {
-			if(Fl::event_inside(this->child(i)))  {
-				GUI_RetVal=((UIFC_Button *)this->child(i))->retval;
+		for(i=0;i<children();i++)  {
+			if(Fl::event_inside(child(i)))  {
+				GUI_RetVal=((UIFC_Button *)child(i))->retval;
 				return(1);
 			}
 		}
@@ -339,7 +432,7 @@ int UIFC_Input_Box::handle_key() {
 		if (mode&K_NUMBER) {
 			Fl::compose_reset(); // ignore any foreign letters...
 			// This is complex to allow "0xff12" hex to be typed:
-			if (!position() && (ascii >= '0' && ascii <= '9')) {
+			if (ascii >= '0' && ascii <= '9') {
 				if (readonly())
 					fl_beep();
 				else
@@ -486,11 +579,7 @@ int UIFC_Input_Box::handle_key() {
 			strcpy(((UIFC_Input *)parent())->invalue,value());
 			return i;
 		case ctrl('A'):
-		case ctrl('B'):
-		case ctrl('I'):
-		case ctrl('J'):
-		case ctrl('L'):
-		case ctrl('M'):
+		case ctrl('G'):
 			if (readonly()) {
 				fl_beep();
 				return 1;
@@ -581,32 +670,54 @@ int UIFC_Input_Box::handle(int event) {
 /* top level handler */
 /*********************/
 static int handle_escape(int event)  {
+	UIFC_Button *w=(UIFC_Button *)Fl::focus();
+	int i,j,key;
+
 	if(event == FL_SHORTCUT && Fl::test_shortcut(FL_Escape))  {
 		GUI_RetVal=UIFC_CANCEL;
 		return(1);
 	}
 	if(event == FL_SHORTCUT && Fl::focus()->type()==FL_NORMAL_BUTTON)  {
 		int mode=((UIFC_Button *)Fl::focus())->mode;
-		UIFC_Button *w=(UIFC_Button *)Fl::focus();
-		if(Fl::event_key()==FL_Insert && (mode&WIN_INS))  {
+		key=Fl::event_key();
+		if(key==FL_Insert && (mode&WIN_INS))  {
 			GUI_RetVal=w->retval|MSK_INS;
 			return(1);
 		}
-		if(Fl::event_key()==FL_Delete && (mode&WIN_DEL))  {
+		if(key==FL_Delete && (mode&WIN_DEL))  {
 			GUI_RetVal=w->retval|MSK_DEL;
 			return(1);
 		}
-		if(Fl::event_key()==FL_F+5 && (mode&WIN_GET))  {
+		if(key==FL_F+5 && (mode&WIN_GET))  {
 			GUI_RetVal=w->retval|MSK_GET;
 			return(1);
 		}
-		if(Fl::event_key()==FL_F+6 && (mode&WIN_PUT))  {
+		if(key==FL_F+6 && (mode&WIN_PUT))  {
 			GUI_RetVal=w->retval|MSK_PUT;
 			return(1);
 		}
-		if(Fl::event_key()==FL_F+1)  {
+		if(key==FL_F+1)  {
 			GUI_RetVal=UIFC_HELP;
 			return(1);
+		}
+		if((key>='a' && key<='z')||(key>='0' && key<='9'))  {
+			for(i=0;i<w->parent()->children() && w!=w->parent()->child(i);i++)  {}
+			if(i!=w->parent()->children())  {
+				j=i;
+				for(i++;i!=j;i++)  {
+					if(i>=w->parent()->children())
+						i=0;
+					if(w->parent()->child(i)->type()==FL_NORMAL_BUTTON
+							&& w->parent()->child(i)!=NULL
+							&& w->parent()->child(i)->label()!=NULL)  {
+						if(toupper(key)==toupper(*(char *)w->parent()->child(i)->label()))  {
+							Fl::focus(w->parent()->child(i));
+							w->parent()->child(i)->handle(FL_FOCUS);
+							return(1);
+						}
+					}
+				}
+			}
 		}
 	}
 	return(0);
@@ -635,8 +746,15 @@ int uifcinifltk(uifcapi_t* uifcapi)
     api->scrn_len=24;
 	api->mode |= UIFC_MOUSE;
 
+//	Fl::scheme("plastic");
 	Fl::add_handler(handle_escape);
 	Fl::visible_focus(TRUE);
+	Fl::visual(FL_DOUBLE|FL_INDEX);
+	if(!(api->mode&UIFC_MONO))  {
+		Fl::foreground(UIFC_FOREGROUND);
+		Fl::background(UIFC_BACKGROUND);
+		Fl::background2(UIFC_BACKGROUND2);
+	}
 	Windows[0]=NULL;
 
 	CurrWin=0;
@@ -659,28 +777,13 @@ void uifcbail(void)
 int uscrn(char *str)
 {
 	if(MainWin==NULL)  {
-		MainWin=new Fl_Window(UIFC_CHAR_WIDTH*80,UIFC_LINE_HEIGHT*25,str);
-		MainWin->color(FL_DARK_CYAN,FL_DARK_CYAN);
+		MainWin=new Fl_Double_Window(UIFC_CHAR_WIDTH*80,UIFC_LINE_HEIGHT*25,str);
+		if(!(api->mode&UIFC_MONO))
+			MainWin->color(UIFC_MAIN_BG_COLOR,UIFC_MAIN_BG_COLOR);
 	}
 	MainWin->show();
 	return(0);
 }
-
-/****************************************************************************/
-/* Convert ASCIIZ string to upper case										*/
-/****************************************************************************/
-#if defined(__unix__)
-static char* strupr(char* str)
-{
-	char*	p=str;
-
-	while(*p) {
-		*p=toupper(*p);
-		p++;
-	}
-	return(str);
-}
-#endif
 
 /**********************************/
 /* Delete window and all children */
@@ -718,8 +821,11 @@ static void doPopUp(int mode)  {
 	int width=3;
 	int curry=0;
 	Fl_Widget *w=Fl::pushed();
-	if(w->type()==FL_NORMAL_BUTTON)
+	if(w->type()==FL_NORMAL_BUTTON)  {
 		((Fl_Button *)w)->value(0);
+		if(!(api->mode&UIFC_MONO))
+			w->color(UIFC_BUTTON_SELECTED_COLOR);
+	}
 
 	// Right Click
 	if(mode&WIN_INS)  {
@@ -793,6 +899,11 @@ static void doPopUp(int mode)  {
 		PopUp->end();
 		PopUp->show();
 		PopUp->show();
+		if(w->type()==FL_NORMAL_BUTTON)  {
+			if(!(api->mode&UIFC_MONO))
+				w->color(UIFC_BUTTON_SELECTED_COLOR);
+			w->redraw();
+		}
 		Fl::grab(PopUp);
 		while(GUI_RetVal==UIFC_RCLICK)  {
 			Fl::wait();
@@ -807,7 +918,12 @@ static void doPopUp(int mode)  {
 /* List button Callback */
 /************************/
 static void LBCallback(Fl_Widget *w, void *data)  {
+	((Fl_Button *)w)->value(1);
+	if(uifc_cur != NULL)
+		*uifc_cur=((UIFC_Button *)w)->retval&MSK_OFF;
 	if(Fl::event_key()==FL_Button+3)  {
+		Fl::focus(w);
+		w->handle(FL_FOCUS);
 		GUI_RetVal=UIFC_RCLICK;
 		return;
 	}
@@ -834,7 +950,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 	CurrWin++;
 	delwin(CurrWin);
 
-	len=strlen(title)+2;
+	len=strlen(title)+6;
 	if(width<len)
 		width=len;
 	for(opts=0;option[opts][0];opts++) {
@@ -889,7 +1005,10 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 	/* This is kind of kludgy... it doesn't allow for adding of buttons to
 	   the UIFC_Window before the Scroll Group */
 	Fl::focus(((UIFC_Menu *)Windows[CurrWin]->child(2))->child(*cur));
+	if(!(api->mode&UIFC_MONO))
+		((UIFC_Menu *)Windows[CurrWin]->child(2))->child(*cur)->color(UIFC_BUTTON_SELECTED_COLOR);
 
+	uifc_cur=cur;
 	while(GUI_RetVal==UIFC_MENU)  {
 		Fl::wait();
 		if(GUI_RetVal==UIFC_HELP)  {
@@ -902,49 +1021,10 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 				GUI_RetVal=UIFC_MENU;
 		}
 	}
+	uifc_cur=NULL;
 		
 	Windows[CurrWin]->deactivate();
-	// -1 *sigh*
-	if(GUI_RetVal!=UIFC_CANCEL&&GUI_RetVal&(MSK_INS|MSK_DEL|MSK_PUT))
-		api->changes=1;
-	*cur=GUI_RetVal&MSK_OFF;
 	return GUI_RetVal;
-}
-
-/*****************/
-/* Text clean-up */
-/*****************/
-void text_clean(Fl_Widget *w, void *modes)  {
-	char str[256],str2[256];
-	int mode=((modes_t*)(modes))->mode;
-	int max=((modes_t*)(modes))->max;
-	Fl_Input_	*InputBox=((modes_t*)(modes))->InputBox;
-	size_t	len=0;
-	size_t	pos=0;
-
-	printf("Text Clean-up\n");
-	_snprintf(str,max,"%s",InputBox->value());
-	len=strlen(str);
-    if(mode&K_UPPER)	/* convert to uppercase? */
-    	strupr(str);
-    if((mode&K_ALPHA)||(mode&K_NUMBER))  {	/* Numbers only? */
-		for(len=0;str[len];len++)  {
-			if(mode&K_ALPHA)  {
-				if(isalpha(str[len]))
-					str2[pos++]=str[len];
-			}
-			if(mode&K_NUMBER)  {
-				printf("MUST BE NUMBER!\n");
-				if(isdigit(str[len]))
-					str2[pos++]=str[len];
-			}
-		}
-		str2[pos]=0;
-		len=pos;
-		strcpy(str,str2);
-	}
-	InputBox->value(str);
-	InputBox->position(len);
 }
 
 /*************************************************************************/
@@ -1015,15 +1095,27 @@ int uinput(int mode, int left, int top, char *prompt, char *outstr,
 		else if(GUI_RetVal==UIFC_RCLICK)
 			GUI_RetVal=UIFC_INPUT;
 	}
-	if((kmode&K_EDIT)&&(!strcmp(outstr,InputWin->invalue)))
-		GUI_RetVal=UIFC_CANCEL;
 	if(GUI_RetVal==0)  {
-		api->changes=TRUE;
-		_snprintf(outstr,max,"%s",InputWin->invalue);
+		printf("Pressed 'Ok'\n");
+		if(kmode&K_EDIT)  {
+			if(strcmp(outstr,InputWin->invalue))  {
+				api->changes=TRUE;
+			}
+		}
+		else {
+			if(strlen(InputWin->invalue))  {
+				api->changes=TRUE;
+			}
+		}
+		snprintf(outstr,max,"%s",InputWin->invalue);
 	}
 	MainWin->remove(InputWin);
 	delete InputWin;
 
+	if(GUI_RetVal==UIFC_CANCEL)
+		return(-1);
+
+	printf("Returning %d\n",strlen(outstr));
     return(strlen(outstr));
 }
 
@@ -1040,7 +1132,7 @@ void umsg(char *str)
 /****************************************************************************/
 void upop(char *str)
 {
-	static Fl_Window *PopUp[MAX_POPUPS];
+	static Fl_Double_Window *PopUp[MAX_POPUPS];
 	static int CurrPop=0;
 	int width=0;
 	int height=1;
@@ -1057,7 +1149,7 @@ void upop(char *str)
 		height+=1;
 		width-=78;
 	}
-	PopUp[CurrPop]=new Fl_Window((width+4)*UIFC_CHAR_WIDTH,(height+2)*UIFC_LINE_HEIGHT,NULL);
+	PopUp[CurrPop]=new Fl_Double_Window((width+4)*UIFC_CHAR_WIDTH,(height+2)*UIFC_LINE_HEIGHT,NULL);
 	PopUp[CurrPop]->border(FALSE);
 	Fl_Box *box = new Fl_Box(
 			UIFC_CHAR_WIDTH,UIFC_LINE_HEIGHT,
@@ -1098,7 +1190,7 @@ void help()
 	// Read help buffer
 	if(!api->helpbuf) {
 		if((fp=fopen(api->helpixbfile,"rb"))==NULL)
-			sprintf(hbuf," ERROR  Cannot open help index:\r\n          %s"
+			sprintf(hbuf," ERROR  Cannot open help index:\n          %s"
 				,api->helpixbfile);
 		else {
 			p=strrchr(helpfile,'/');
@@ -1114,7 +1206,7 @@ void help()
 					break;
 				str[12]=0;
 				fread(&line,2,1,fp);
-				if(stricmp(str,p) || line!=helpline) {
+				if(stricmp(str,p) || line != helpline) {
 					fseek(fp,4,SEEK_CUR);
 					continue;
 				}
@@ -1123,7 +1215,7 @@ void help()
 			}
 			fclose(fp);
 			if(l==-1L)
-				sprintf(hbuf," ERROR  Cannot locate help key (%s:%u) in:\r\n"
+				sprintf(hbuf," ERROR  Cannot locate help key (%s:%u) in:\n"
 					"         %s",p,helpline,api->helpixbfile);
 			else {
 				if((fp=fopen(api->helpdatfile,"rb"))==NULL)
@@ -1157,16 +1249,18 @@ void help()
 			"Help Window");
 	TextBox->labelfont(FL_COURIER_BOLD);
 	TextBox->labelsize(UIFC_CHAR_HEIGHT);
-	TextBox->labelcolor(FL_YELLOW);
-	TextBox->color(FL_DARK_BLUE);
+	if(!(api->mode&UIFC_MONO))  {
+		TextBox->labelcolor(UIFC_WINDOW_TITLE_COLOR);
+		TextBox->color(UIFC_HELP_WIN_BG_COLOR);
+	}
 	TextBox->textfont(FL_COURIER);
 	TextBox->textsize(UIFC_CHAR_HEIGHT);
 	TextBox->buffer(new Fl_Text_Buffer(HELPBUF_SIZE));
 	Fl_Text_Display::Style_Table_Entry styletable[] = {     // Style table
-		{ FL_WHITE,		FL_COURIER,				UIFC_CHAR_HEIGHT }, // A - Plain
-		{ FL_YELLOW,	FL_COURIER_ITALIC,		UIFC_CHAR_HEIGHT }, // B - Bold
-		{ FL_CYAN,		FL_COURIER_ITALIC,		UIFC_CHAR_HEIGHT }, // C - Inverse
-		{ FL_MAGENTA,	FL_COURIER_ITALIC,		UIFC_CHAR_HEIGHT }, // D - Both
+		{ UIFC_HELP_PLAIN_COLOR,		FL_COURIER,				UIFC_CHAR_HEIGHT }, // A - Plain
+		{ UIFC_HELP_HIGH_COLOR,	FL_COURIER_ITALIC,		UIFC_CHAR_HEIGHT }, // B - Bold
+		{ UIFC_HELP_INVERSE_COLOR,		FL_COURIER_ITALIC,		UIFC_CHAR_HEIGHT }, // C - Inverse
+		{ UIFC_HELP_BOTH_COLOR,	FL_COURIER_ITALIC,		UIFC_CHAR_HEIGHT }, // D - Both
 	};
 	Fl_Text_Buffer *StyleBuf=new Fl_Text_Buffer(HELPBUF_SIZE);
 	TextBox->highlight_data(StyleBuf, styletable,
