@@ -1089,6 +1089,9 @@ static void smtp_thread(void* arg)
 	if((i=getsockname(socket, (struct sockaddr *)&server_addr,&addr_len))!=0) {
 		lprintf("%04d !SMTP ERROR %d (%d) getting address/port"
 			,socket, i, ERROR_VALUE);
+		sockprintf(socket,"421 System error");
+		mail_close_socket(socket);
+		thread_down();
 		return;
 	} 
 
