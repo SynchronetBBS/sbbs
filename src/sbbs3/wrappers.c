@@ -352,7 +352,7 @@ ulong _beginthread(void( *start_address )( void * )
 /* Win32 implementation of POSIX sem_getvalue() function					*/
 /****************************************************************************/
 #ifdef _WIN32
-int sem_getvalue(sem_t* psem, int* val)
+int DLLCALL sem_getvalue(sem_t* psem, int* val)
 {
 	if(psem==NULL || val==NULL)
 		return(-1);
