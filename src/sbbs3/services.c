@@ -1614,7 +1614,7 @@ void DLLCALL services_thread(void* arg)
 					/* TCP */
 					if((client_socket=accept(service[i].socket
 						,(struct sockaddr *)&client_addr, &client_addr_len))==INVALID_SOCKET) {
-						if(ERROR_VALUE == ENOTSOCK)
+						if(ERROR_VALUE == ENOTSOCK || ERROR_VALUE == EINVAL)
             				lprintf("%04d %s socket closed while listening"
 								,service[i].socket, service[i].protocol);
 						else

@@ -4624,7 +4624,7 @@ void DLLCALL ftp_server(void* arg)
 
 			if(client_socket == INVALID_SOCKET)
 			{
-				if(ERROR_VALUE == ENOTSOCK || ERROR_VALUE == EINTR) 
+				if(ERROR_VALUE == ENOTSOCK || ERROR_VALUE == EINTR || ERROR_VALUE == EINVAL) 
             		lprintf("0000 FTP socket closed while listening");
 				else
 					lprintf("0000 !ERROR %d accepting connection", ERROR_VALUE);

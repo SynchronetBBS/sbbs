@@ -3427,7 +3427,7 @@ void DLLCALL mail_server(void* arg)
 
 				if(client_socket == INVALID_SOCKET)
 				{
-					if(ERROR_VALUE == ENOTSOCK)
+					if(ERROR_VALUE == ENOTSOCK || ERROR_VALUE == EINVAL)
             			lprintf("0000 SMTP socket closed while listening");
 					else
 						lprintf("%04d !ERROR %d accept failed", server_socket, ERROR_VALUE);
@@ -3477,7 +3477,7 @@ void DLLCALL mail_server(void* arg)
 
 				if(client_socket == INVALID_SOCKET)
 				{
-					if(ERROR_VALUE == ENOTSOCK)
+					if(ERROR_VALUE == ENOTSOCK || ERROR_VALUE == EINVAL)
             			lprintf("%04d POP3 socket closed while listening",pop3_socket);
 					else
 						lprintf("%04d !ERROR %d accept failed", pop3_socket, ERROR_VALUE);
