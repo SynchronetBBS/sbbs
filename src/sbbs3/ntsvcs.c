@@ -74,7 +74,9 @@ typedef struct {
 	char*					display_name;
 	char*					description;
 	void*					startup;
+	BOOL*					recycle_now;
 	void					(*thread)(void* arg);
+	void					(*terminate)(void);
 	void					(WINAPI *ctrl_handler)(DWORD);
 	HANDLE					log_handle;
 	BOOL					autostart;
@@ -89,7 +91,9 @@ sbbs_ntsvc_t bbs ={
 	"Provides support for Telnet and RLogin clients and executes timed events. " \
 		"This service provides the critical functions of your Synchronet BBS.",
 	&bbs_startup,
+	&bbs_startup.recycle_now,
 	bbs_thread,
+	bbs_terminate,
 	bbs_ctrl_handler,
 	INVALID_HANDLE_VALUE
 };
@@ -97,6 +101,8 @@ sbbs_ntsvc_t bbs ={
 /* This is not (currently) a separate service, use this for logging only */
 sbbs_ntsvc_t event ={	
 	NTSVC_NAME_EVENT,
+	NULL,
+	NULL,
 	NULL,
 	NULL,
 	NULL,
@@ -110,7 +116,9 @@ sbbs_ntsvc_t ftp = {
 	"Synchronet FTP Server",
 	"Provides support for FTP clients (including web browsers) for file transfers.",
 	&ftp_startup,
+	&ftp_startup.recycle_now,
 	ftp_server,
+	ftp_terminate,
 	ftp_ctrl_handler,
 	INVALID_HANDLE_VALUE
 };
@@ -121,7 +129,9 @@ sbbs_ntsvc_t web = {
 	"Synchronet Web Server",
 	"Provides support for Web (HTML/HTTP) clients (browsers).",
 	&web_startup,
+	&web_startup.recycle_now,
 	web_server,
+	web_terminate,
 	web_ctrl_handler,
 	INVALID_HANDLE_VALUE
 };
@@ -133,7 +143,9 @@ sbbs_ntsvc_t mail = {
 	"Sends and receives Internet e-mail (using SMTP) and allows users to remotely " \
 		"access their e-mail using an Internet mail client (using POP3).",
 	&mail_startup,
+	&mail_startup.recycle_now,
 	mail_server,
+	mail_terminate,
 	mail_ctrl_handler,
 	INVALID_HANDLE_VALUE
 };
@@ -146,7 +158,9 @@ sbbs_ntsvc_t services = {
 		"Stock services include Finger, Gopher, NNTP, and IRC. Edit your ctrl/services.ini " \
 		"file for configuration of individual Synchronet Services.",
 	&services_startup,
+	&services_startup.recycle_now,
 	services_thread,
+	services_terminate,
 	services_ctrl_handler,
 	INVALID_HANDLE_VALUE
 };
@@ -196,8 +210,12 @@ static BOOL winsock_cleanup(void)
 static void svc_ctrl_handler(sbbs_ntsvc_t* svc, DWORD dwCtrlCode)
 {
 	switch(dwCtrlCode) {
+		case SERVICE_CONTROL_RECYCLE:
+			*svc->recycle_now=TRUE;
+			break;
 		case SERVICE_CONTROL_STOP:
 		case SERVICE_CONTROL_SHUTDOWN:
+			svc->terminate();
 			svc->status.dwWaitHint=NTSVC_TIMEOUT_TERMINATE;
 			svc->status.dwCurrentState=SERVICE_STOP_PENDING;
 			break;
@@ -208,74 +226,29 @@ static void svc_ctrl_handler(sbbs_ntsvc_t* svc, DWORD dwCtrlCode)
 /* Service-specific control handler stub functions */
 static void WINAPI bbs_ctrl_handler(DWORD dwCtrlCode)
 {
-	switch(dwCtrlCode) {
-		case SERVICE_CONTROL_RECYCLE:
-			bbs_startup.recycle_now=TRUE;
-			break;
-		case SERVICE_CONTROL_STOP:
-		case SERVICE_CONTROL_SHUTDOWN:
-			bbs_terminate();
-			break;
-	}
 	svc_ctrl_handler(&bbs, dwCtrlCode);
 }
 
 static void WINAPI ftp_ctrl_handler(DWORD dwCtrlCode)
 {
-	switch(dwCtrlCode) {
-		case SERVICE_CONTROL_RECYCLE:
-			ftp_startup.recycle_now=TRUE;
-			break;
-		case SERVICE_CONTROL_STOP:
-		case SERVICE_CONTROL_SHUTDOWN:
-			ftp_terminate();
-			break;
-	}
 	svc_ctrl_handler(&ftp, dwCtrlCode);
 }
 
 #if !defined(NO_WEB_SERVER)
 static void WINAPI web_ctrl_handler(DWORD dwCtrlCode)
 {
-	switch(dwCtrlCode) {
-		case SERVICE_CONTROL_RECYCLE:
-			web_startup.recycle_now=TRUE;
-			break;
-		case SERVICE_CONTROL_STOP:
-		case SERVICE_CONTROL_SHUTDOWN:
-			web_terminate();
-			break;
-	}
 	svc_ctrl_handler(&web, dwCtrlCode);
 }
 #endif
 
 static void WINAPI mail_ctrl_handler(DWORD dwCtrlCode)
 {
-	switch(dwCtrlCode) {
-		case SERVICE_CONTROL_RECYCLE:
-			mail_startup.recycle_now=TRUE;
-			break;
-		case SERVICE_CONTROL_STOP:
-		case SERVICE_CONTROL_SHUTDOWN:
-			mail_terminate();
-			break;
-	}
 	svc_ctrl_handler(&mail, dwCtrlCode);
 }
 
 #if !defined(NO_SERVICES)
 static void WINAPI services_ctrl_handler(DWORD dwCtrlCode)
 {
-	switch(dwCtrlCode) {
-		case SERVICE_CONTROL_RECYCLE:
-			services_startup.recycle_now=TRUE;
-			break;
-		case SERVICE_CONTROL_STOP:
-		case SERVICE_CONTROL_SHUTDOWN:
-			services_terminate();
-			break;
-	}
 	svc_ctrl_handler(&services, dwCtrlCode);
 }
 #endif
@@ -283,7 +256,7 @@ static void WINAPI services_ctrl_handler(DWORD dwCtrlCode)
 /**************************************/
 /* Common Service Log Ouptut Function */
 /**************************************/
-static int svc_lputs(void* p, char* str)
+static int svc_lputs(void* p, int level, char* str)
 {
 	char	debug[1024];
 	char	fname[256];
@@ -337,9 +310,9 @@ static int svc_lputs(void* p, char* str)
 /****************************************************************************/
 /* Event thread local/log print routine										*/
 /****************************************************************************/
-static int event_lputs(char *str)
+static int event_lputs(int level, char *str)
 {
-	svc_lputs(&event,str);
+	svc_lputs(&event,level,str);
     return(0);
 }
 
@@ -392,11 +365,11 @@ static void WINAPI svc_main(sbbs_ntsvc_t* svc, DWORD argc, LPTSTR *argv)
 	}
 
 	sprintf(str,"Starting NT Service: %s",svc->display_name);
-	svc_lputs(svc,str);
+	svc_lputs(svc,LOG_INFO,str);
 
     if((svc->status_handle = RegisterServiceCtrlHandler(svc->name, svc->ctrl_handler))==0) {
 		sprintf(str,"!ERROR %d registering service control handler",GetLastError());
-		svc_lputs(NULL,str);
+		svc_lputs(NULL,LOG_ERR,str);
 		return;
 	}
 
@@ -739,7 +712,7 @@ int main(int argc, char** argv)
 	/* Read .ini file here */
 	if((fp=fopen(ini_file,"r"))!=NULL) {
 		sprintf(str,"Reading %s",ini_file);
-		svc_lputs(NULL, str);
+		svc_lputs(NULL,LOG_INFO,str);
 	}
 
 	/* We call this function to set defaults, even if there's no .ini file */
@@ -766,7 +739,7 @@ int main(int argc, char** argv)
 	ctrl_dir = bbs_startup.ctrl_dir;
 	if(chdir(ctrl_dir)!=0) {
 		sprintf(str,"!ERROR %d changing directory to: %s", errno, ctrl_dir);
-		svc_lputs(NULL,str);
+		svc_lputs(NULL,LOG_ERR,str);
 	}
 
 	for(i=1;i<argc;i++) {
