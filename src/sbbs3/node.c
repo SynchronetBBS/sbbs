@@ -49,7 +49,7 @@
 
 /* Synchronet-specific */
 #include "sbbsdefs.h"
-#include "smbwrap.h"	/* lock/unlock/sopen */
+#include "filewrap.h"	/* lock/unlock/sopen */
 
 enum {
 	 MODE_LIST
@@ -151,15 +151,15 @@ char* itoa(int val, char* str, int radix)
 
 #if defined(_WIN32)
 
-	#define mswait(x)			Sleep(x)
+	#define SLEEP(x)			Sleep(x)
 
 #elif defined(__OS2__)
 
-	#define mswait(x)			DosSleep(x)
+	#define SLEEP(x)			DosSleep(x)
 
 #elif defined(__unix__)
 
-	#define mswait(x)			usleep(x*1000)
+	#define SLEEP(x)			usleep(x*1000)
 
 #endif
 
@@ -176,7 +176,7 @@ void getnodedat(uchar number, node_t *node, char lockit)
 	number--;	/* make zero based */
 	for(count=0;count<LOOP_NODEDAB;count++) {
 		if(count)
-			mswait(100);
+			SLEEP(100);
 		lseek(nodefile,(long)number*sizeof(node_t),SEEK_SET);
 		if(lockit
 			&& lock(nodefile,(long)number*sizeof(node_t),sizeof(node_t))==-1) 
@@ -622,7 +622,7 @@ int main(int argc, char **argv)
 
 				if(!loop)
 					break;
-				mswait(1000);
+				SLEEP(1000);
 				cls();
 			} /* while(1) */
 

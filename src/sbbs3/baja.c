@@ -55,7 +55,7 @@
 #include "cmdshell.h"
 #include "ars_defs.h"
 #include "crc32.h"
-#include "smbwrap.h"	/* portability wrappers */
+#include "genwrap.h"	/* portability wrappers */
 
 #ifdef __BORLANDC__
 unsigned _stklen=20000;	/* Set stack size in code, not header */

@@ -40,7 +40,7 @@
 #include <string.h>	/* strnicmp */
 #include <ctype.h>	/* toupper */
 
-#include "smbwrap.h"
+#include "filewrap.h"
 #include "smblib.h"
 
 char *usage="usage: fixsmb [/opts] <smb_file>\n"

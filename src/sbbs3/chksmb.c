@@ -37,13 +37,16 @@
 
 /* ANSI */
 #include <stdio.h>	
+#include <stdlib.h>		/* exit */
 #include <string.h>		/* strrchr */
 #include <time.h>		/* ctime */
 
 /* SMB-specific */
-#include "smbwrap.h"
 #include "smblib.h"
+#include "genwrap.h"
 #include "conwrap.h"	/* getch */
+#include "dirwrap.h"	/* fexist */
+#include "filewrap.h"	/* filelength */
 
 /****************************************************************************/
 /* Returns in 'string' a character representation of the number in l with   */
