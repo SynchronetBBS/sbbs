@@ -516,7 +516,7 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 		ASYNC;
 		bprintf(text[ReadingSub],ugrp,cfg.grp[cfg.sub[subnum]->grp]->sname
 			,usub,cfg.sub[subnum]->sname,curpost+1,posts);
-		sprintf(str,"ABCDFILMPQRTY?<>[]{}-+.,");
+		sprintf(str,"ABCDEFILMPQRTY?<>[]{}-+.,");
 		if(sub_op(subnum))
 			strcat(str,"O");
 		reread=0;
@@ -546,11 +546,8 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 					bputs(text[CantPostOnSub]);
 					break; }
 				quotemsg(&msg,0);
-				if(post)
-					LFREE(post);
-				post=NULL;
+				FREE_AND_NULL(post);
 				postmsg(subnum,&msg,WM_QUOTE);
-	//			  post=loadposts(&posts,subnum,0,lp);
 				if(mode&SCAN_TOYOU)
 					domsg=1;
 				break;
@@ -571,23 +568,32 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 				break;
 			case 'D':       /* Delete message on sub-board */
 				domsg=0;
-				if(!sub_op(subnum) && !(cfg.sub[subnum]->misc&SUB_DEL)) {
-					bputs(text[CantDeletePosts]);
-					break; }
 				if(!sub_op(subnum)) {
+					if(!(cfg.sub[subnum]->misc&SUB_DEL)) {
+						bputs(text[CantDeletePosts]);
+						domsg=0;
+						break; 
+					}
+					if(cfg.sub[subnum]->misc&SUB_DELLAST && curpost!=(posts-1)) {
+						bputs("\1n\r\nCan only delete last message.\r\n");
+						domsg=0;
+						break;
+					}
 					if(stricmp(cfg.sub[subnum]->misc&SUB_NAME
 						? useron.name : useron.alias, msg.from)
 					&& stricmp(cfg.sub[subnum]->misc&SUB_NAME
 						? useron.name : useron.alias, msg.to)) {
 						bprintf(text[YouDidntPostMsgN],curpost+1);
-						break; } }
+						break; 
+					} 
+				}
 				if(msg.hdr.attr&MSG_PERMANENT) {
 					bputs("\1n\r\nMessage is marked permanent.\r\n");
 					domsg=0;
-					break; }
-				if(post)
-					LFREE(post);
-				post=NULL;
+					break; 
+				}
+
+				FREE_AND_NULL(post);
 
 				if(msg.total_hfields)
 					smb_freemsgmem(&msg);
@@ -617,7 +623,29 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 				if(curpost>=posts-1)
 					done=1;
 				break;
-
+			case 'E':   /* edit last post */
+				if(!sub_op(subnum)) {
+					if(!(cfg.sub[subnum]->misc&SUB_EDIT)) {
+						bputs("\1n\r\nCan't edit messages on this message base.\r\n");
+						// bputs(text[CantDeletePosts]);
+						domsg=0;
+						break; 
+					}
+					if(cfg.sub[subnum]->misc&SUB_EDITLAST && curpost!=(posts-1)) {
+						bputs("\1n\r\nCan only edit last message.\r\n");
+						domsg=0;
+						break;
+					}
+					if(stricmp(cfg.sub[subnum]->misc&SUB_NAME
+						? useron.name : useron.alias, msg.from)) {
+						bprintf(text[YouDidntPostMsgN],curpost+1);
+						domsg=0;
+						break; 
+					} 
+				}
+				FREE_AND_NULL(post);
+				editmsg(&msg,subnum);
+				break;
 			case 'F':   /* find text in messages */
 				domsg=0;
 				bprintf(text[StartWithN],curpost+2);
@@ -669,9 +697,8 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 				bputs(text[Email]);
 				if(!getstr(str,60,K_EDIT|K_AUTODEL))
 					break;
-				if(post)
-					LFREE(post);
-				post=NULL;
+
+				FREE_AND_NULL(post);
 				quotemsg(&msg,1);
 				if(msg.from_net.type==NET_INTERNET && strchr(str,'@'))
 					inetmail(str,msg.subj,WM_QUOTE|WM_NETMAIL);
@@ -687,19 +714,15 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 							else
 								i=matchuser(&cfg,str,TRUE /* sysop_alias */); }
 						email(i,str2,msg.subj,WM_EMAIL|WM_QUOTE); } }
-	//			  post=loadposts(&posts,subnum,0,lp);
 				break;
 			case 'P':   /* Post message on sub-board */
 				domsg=0;
 				if(!chk_ar(cfg.sub[subnum]->post_ar,&useron))
 					bputs(text[CantPostOnSub]);
 				else {
-					if(post)
-						LFREE(post);
-					post=NULL;
+					FREE_AND_NULL(post);
 					postmsg(subnum,0,0);
-	//				  post=loadposts(&posts,subnum,0,lp);
-					}
+				}
 				break;
 			case 'Q':   /* Quit */
 				if(msg.total_hfields)
@@ -765,11 +788,8 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 								smb_unlockmsghdr(&smb,&msg); }
 							break;
 						case 'E':   /* edit last post */
-							if(post)
-								LFREE(post);
-							post=NULL;
+							FREE_AND_NULL(post);
 							editmsg(&msg,subnum);
-	//						  post=loadposts(&posts,subnum,0,lp);
 							break;
 						case 'H':   /* View message header */
 							msghdr(&msg);
@@ -777,9 +797,7 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 							break;
 						case 'M':   /* Move message */
 							domsg=0;
-							if(post)
-								LFREE(post);
-							post=NULL;
+							FREE_AND_NULL(post);
 							if(msg.total_hfields)
 								smb_freemsgmem(&msg);
 							msg.total_hfields=0;
@@ -794,7 +812,6 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 								if((i=smb_putmsg(&smb,&msg))!=0)
 									errormsg(WHERE,ERR_WRITE,smb.file,i); }
 							smb_unlockmsghdr(&smb,&msg);
-	//						  post=loadposts(&posts,subnum,0,lp);
 							break;
 
 						case 'Q':
