@@ -638,7 +638,7 @@ js_chk_ar(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	return(JS_TRUE);
 }
 
-static JSFunctionSpec js_user_functions[] = {
+static jsMethodSpec js_user_functions[] = {
 	{"compare_ars",	js_chk_ar,			1},		/* Verify ARS */
 	{0}
 };
@@ -728,6 +728,11 @@ js_user_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval
 JSObject* DLLCALL js_CreateUserClass(JSContext* cx, JSObject* parent, scfg_t* cfg)
 {
 	JSObject*	userclass;
+	JSFunctionSpec	funcs[sizeof(js_user_functions)/sizeof(jsMethodSpec)];
+
+	/* Convert from jsMethodSpec to JSFunctionSpec */
+	memset(funcs,0,sizeof(funcs));
+	js_MethodsToFunctions(js_user_functions,funcs);
 
 	scfg = cfg;
 	userclass = JS_InitClass(cx, parent, NULL
@@ -735,7 +740,7 @@ JSObject* DLLCALL js_CreateUserClass(JSContext* cx, JSObject* parent, scfg_t* cf
 		,js_user_constructor
 		,1	/* number of constructor args */
 		,js_user_properties
-		,js_user_functions
+		,funcs
 		,NULL,NULL);
 
 	return(userclass);

@@ -918,7 +918,7 @@ js_lock_input(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 }
 
 
-static JSFunctionSpec js_console_functions[] = {
+static jsMethodSpec js_console_functions[] = {
 	{"inkey",			js_inkey,			0},		// get key - no wait 
 	{"getkey",			js_getkey,			0},		// get key - with wait 
 	{"getstr",			js_getstr,			0},		// get string 

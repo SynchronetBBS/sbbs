@@ -707,7 +707,7 @@ static JSClass js_global_class = {
 	,JS_FinalizeStub		/* finalize		*/
 };
 
-static JSFunctionSpec js_global_functions[] = {
+static jsMethodSpec js_global_functions[] = {
 	{"exit",			js_exit,			0},		/* stop execution */
 	{"load",            js_load,            1},		/* Load and execute a javascript file */
 	{"format",			js_format,			1},		/* return a formatted string (ala printf) */

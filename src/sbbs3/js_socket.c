@@ -957,40 +957,78 @@ static JSClass js_socket_class = {
 	,js_finalize_socket		/* finalize		*/
 };
 
-static JSFunctionSpec js_socket_functions[] = {
-	{"close",			js_close,			0},		/* close socket */
-	{"bind",			js_bind,			0},		/* bind to a port */
-	{"connect",         js_connect,         2},		/* connect to an IP address and port */
-	{"listen",			js_listen,			0},		/* put socket in listening state */
-	{"accept",			js_accept,			0},		/* accept an incoming connection */
-	{"send",			js_send,			1},		/* send a string */
-	{"sendto",			js_sendto,			3},		/* send a string to address and port */
-	{"sendfile",		js_sendfile,		1},		/* send a file */
-	{"write",			js_send,			1},		/* send a string */
-	{"recv",			js_recv,			0},		/* receive a string */
-	{"read",			js_recv,			0},		/* receive a string */
-	{"peek",			js_peek,			0},		/* receive a string, leave in buffer */
-	{"recvline",		js_recvline,		0},		/* receive a \n terminated string	*/
-	{"readline",		js_recvline,		0},		/* receive a \n terminated string	*/
-	{"readln",			js_recvline,		0},		/* receive a \n terminated string	*/
-	{"recvfrom",		js_recvfrom,		0},		/* receive a string, return address */
-	{"getoption",		js_getsockopt,		1},		/* getsockopt(opt)					*/
-	{"setoption",		js_setsockopt,		2},		/* setsockopt(opt,val)				*/
-	{"ioctl",			js_ioctlsocket,		1},		/* ioctl(cmd,arg)					*/
-	{"poll",			js_poll,			1},		/* poll(seconds)					*/
+static const char* send_aliases[] = { "write"	,NULL };
+static const char* recv_aliases[] = { "read"	,NULL };
+static const char* recvline_aliases[] = { "readline", "readln"	,NULL };
+
+static jsMethodSpec js_socket_functions[] = {
+	{"close",		js_close,		0,	jstype_void,		""					
+	,"close socket"		
+	},
+	{"bind",		js_bind,		0,	jstype_bool,	"[port]"			
+	,"bind socket to a port"
+	},
+	{"connect",     js_connect,     2,	jstype_bool,		"string host, port"	
+	,"connect to a specific port at the specified IP address or hostname"	
+	},
+	{"listen",		js_listen,		0,	jstype_bool,	""					
+	,"put socket in listening state (use before an accept)"
+	},
+	{"accept",		js_accept,		0,	"Socket",	""					
+	,"accept an incoming connection, returns a new Socket object"
+	},
+	{"send",		js_send,		1,	jstype_bool,	"string data"		
+	,"send a string"					,send_aliases
+	},
+	{"sendto",		js_sendto,		3,	jstype_bool,	"string data, address, port"
+	,"send a string to a specific address and port (typically used for UDP sockets)"	
+	},
+	{"sendfile",	js_sendfile,	1,	jstype_bool,	"string filename"	
+	,"send a file"
+	},
+	{"recv",		js_recv,		0,	jstype_str,	"[maxlen]"			
+	,"receive a string, default maxlen is 512 characters"	
+	, recv_aliases 
+	},
+	{"peek",		js_peek,		0,	jstype_str,	"[maxlen]"			
+	,"receive a string, default maxlen is 512 characters, leave string in receive buffer"
+	},
+	{"recvline",	js_recvline,	0,	jstype_str,	"[maxlen] [,timeout]"
+	,"receive a line-feed terminated string, default maxlen is 512 characters, default timeout is 30 seconds"
+	, recvline_aliases 
+	},
+	{"recvfrom",	js_recvfrom,	0,	"object",	"[maxlen]"			
+	,"receive a string from (typically UDP) socket, return address and port of sender"
+	},
+	{"getoption",	js_getsockopt,	1,	jstype_num,	"number option"	
+	,"get socket option value"
+	},
+	{"setoption",	js_setsockopt,	2,	jstype_bool,	"number option, value"
+	,"set socket option value"
+	},
+	{"ioctl",		js_ioctlsocket,	1,	jstype_num,	"number cmd [,arg]"	
+	,"send socket IOCTL"							
+	},
+	{"poll",		js_poll,		1,	jstype_num,	"[number timeout] [,bool write]"
+	,"poll socket for read or write ability (defaults to read), default timeout value is 0 seconds (immediate timeout)" 
+	},
 	{0}
 };
 
 JSObject* DLLCALL js_CreateSocketClass(JSContext* cx, JSObject* parent)
 {
 	JSObject*	sockobj;
+	JSFunctionSpec	funcs[sizeof(js_socket_functions)/sizeof(jsMethodSpec)];
+
+	memset(funcs,0,sizeof(funcs));
+	js_MethodsToFunctions(js_socket_functions,funcs);
 
 	sockobj = JS_InitClass(cx, parent, NULL
 		,&js_socket_class
 		,js_socket_constructor
 		,0	/* number of constructor args */
 		,js_socket_properties
-		,js_socket_functions
+		,funcs
 		,NULL,NULL);
 
 	return(sockobj);

@@ -836,7 +836,7 @@ js_put_telegram(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 }
 
 
-static JSFunctionSpec js_system_functions[] = {
+static jsMethodSpec js_system_functions[] = {
 	{"alias",			js_alias,			1},		// return user name for alias
 	{"matchuser",		js_matchuser,		1},		// exact user name matching
 	{"trashcan",		js_trashcan,		2},		// search file for pseudo-regexp
