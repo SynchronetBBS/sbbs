@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -340,21 +340,22 @@ void sbbs_t::qwk_success(ulong msgcnt, char bi, char prepack)
 			if(msgs)
 				FREE(mail);
 			smb_close(&smb);
-			errormsg(WHERE,ERR_LOCK,smb.file,i);	/* messes with the index */
+			errormsg(WHERE,ERR_LOCK,smb.file,i,smb.last_error);	/* messes with the index */
 			return; }
 
 		if((i=smb_getstatus(&smb))!=0) {
 			if(msgs)
 				FREE(mail);
 			smb_close(&smb);
-			errormsg(WHERE,ERR_READ,smb.file,i);
+			errormsg(WHERE,ERR_READ,smb.file,i,smb.last_error);
 			return; }
 
 		/* Mark as READ and DELETE */
 		for(l=0;l<msgs;l++) {
 			if(mail[l].number>qwkmail_last)
 				continue;
-			msg.idx.offset=0;
+			memset(&msg,0,sizeof(msg));
+			/* !IMPORTANT: search by number (do not initialize msg.idx.offset) */
 			if(!loadmsg(&msg,mail[l].number))
 				continue;
 			if(!(msg.hdr.attr&MSG_READ)) {
@@ -369,7 +370,7 @@ void sbbs_t::qwk_success(ulong msgcnt, char bi, char prepack)
 				msg.hdr.attr|=MSG_DELETE;
 				msg.idx.attr=msg.hdr.attr;
 				if((i=smb_putmsg(&smb,&msg))!=0)
-					errormsg(WHERE,ERR_WRITE,smb.file,i);
+					errormsg(WHERE,ERR_WRITE,smb.file,i,smb.last_error);
 				else
 					deleted++; }
 			smb_freemsgmem(&msg);
