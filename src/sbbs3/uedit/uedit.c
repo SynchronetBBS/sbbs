@@ -37,15 +37,17 @@
 
 #include "sbbs.h"
 #include "conwrap.h"	/* this has to go BEFORE curses.h so getkey() can be macroed around */
-#include <curses.h>
 #include <sys/types.h>
 #include <time.h>
-#include <sys/time.h>
 #ifdef __QNX__
 #include <string.h>
 #endif
 #include <stdio.h>
+#ifdef __unix__
 #include <unistd.h>
+#include <curses.h>
+#include <sys/time.h>
+#endif
 #include "genwrap.h"
 #include "uifc.h"
 #include "sbbsdefs.h"
