@@ -419,7 +419,7 @@ static JSBool
 js_directory(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	int			i;
-	int			flags=GLOB_MARK;
+	int32		flags=GLOB_MARK;
 	char*		p;
 	glob_t		g;
 	JSObject*	array;

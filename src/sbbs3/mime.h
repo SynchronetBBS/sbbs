@@ -37,7 +37,7 @@
 #define _MIME_H_
 
 /* mime.c */
-char *  mimegetboundary();
+char *  mimegetboundary(void);
 void    mimeheaders(SOCKET socket, char * boundary);
 void    mimeblurb(SOCKET socket, char * boundary);
 void    mimetextpartheader(SOCKET socket, char * boundary);

@@ -1071,7 +1071,7 @@ static BOOL chk_email_addr(SOCKET socket, char* p, char* host_name, char* host_i
 	return(FALSE);
 }
 
-static void signal_smtp_sem()
+static void signal_smtp_sem(void)
 {
 	int file;
 
