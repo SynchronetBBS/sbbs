@@ -1664,6 +1664,7 @@ void help()
 		,hbuf[HELPBUF_SIZE],str[256];
     char *p;
 	uint i,j,k,len;
+	ushort line;
 	long l;
 	FILE *fp;
 #ifndef __FLAT__
@@ -1757,8 +1758,8 @@ void help()
 				if(!fread(str,12,1,fp))
 					break;
 				str[12]=0;
-				fread(&k,2,1,fp);
-				if(stricmp(str,p) || k!=helpline) {
+				fread(&line,2,1,fp);
+				if(stricmp(str,p) || line!=helpline) {
 					fseek(fp,4,SEEK_CUR);
 					continue; }
 				fread(&l,4,1,fp);
