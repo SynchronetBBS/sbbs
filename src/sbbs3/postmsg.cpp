@@ -456,6 +456,16 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, client_t*
 			return(i);
 	}
 
+	/* Lock the msgbase early to preserve our message number (used in MSG-IDs) */
+	if(!smb->locked && smb_locksmbhdr(smb)!=SMB_SUCCESS)
+		return(SMB_ERR_LOCK);
+
+	if(filelength(fileno(smb->shd_fp))>0 && (i=smb_getstatus(smb))!=SMB_SUCCESS) {
+		if(smb->locked)
+			smb_unlocksmbhdr(smb);
+		return(i);
+	}
+
 	if(smb->subnum==INVALID_SUB) {	/* e-mail */
 
 		smb->status.max_crcs=cfg->mail_maxcrcs;
@@ -486,7 +496,6 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, client_t*
  			msg->hdr.attr|=MSG_PRIVATE;
  		if(cfg->sub[smb->subnum]->misc&SUB_AONLY)
  			msg->hdr.attr|=MSG_ANONYMOUS;
-
 	}
 
 	if(msg->hdr.when_imported.time==0) {
@@ -496,24 +505,28 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, client_t*
 	if(msg->hdr.when_written.time==0)	/* Uninitialized */
 		msg->hdr.when_written = msg->hdr.when_imported;
 
+	msg->idx.time=msg->hdr.when_imported.time;	/* needed for MSG-ID generation */
+	msg->idx.number=smb->status.last_msg+1;		/* needed for MSG-ID generation */
+
 	if(smb->status.max_crcs==0)	/* no CRC checking means no body text dupe checking */
 		dupechk_hashes&=~(1<<SMB_HASH_SOURCE_BODY);
 
 	if(client!=NULL)
 		msg_client_hfields(msg,client);
  
- 	if(smb_get_hfield(msg,FIDOPID,NULL)==NULL) 	/* Don't create duplicate PIDs */
+	/* Generate FidoNet Program Identifier */
+ 	if(msg->ftn_pid==NULL) 	
  		smb_hfield_str(msg,FIDOPID,program_id(pid));
  
- 	/* Generate default (RFC822) message-id  */
- 	if(smb_get_hfield(msg,RFC822MSGID,NULL)==NULL) {
+ 	/* Generate RFC-822 Message-id  */
+ 	if(msg->id==NULL) {
  		SAFECOPY(msg_id,get_msgid(cfg,smb->subnum,msg));
  		smb_hfield_str(msg,RFC822MSGID,msg_id);
  	}
  
- 	/* Generate FTN MSGID */
- 	if(smb->subnum!=INVALID_SUB && cfg->sub[smb->subnum]->misc&SUB_FIDO
- 		&& smb_get_hfield(msg,FIDOMSGID,NULL)==NULL) {
+ 	/* Generate FidoNet MSGID (for FidoNet sub-boards) */
+ 	if(smb->subnum!=INVALID_SUB && cfg->sub[smb->subnum]->misc&SUB_FIDO 
+		&& msg->ftn_msgid==NULL) {
  		SAFECOPY(msg_id,ftn_msgid(cfg->sub[smb->subnum],msg));
  		smb_hfield_str(msg,FIDOMSGID,msg_id);
  	}
