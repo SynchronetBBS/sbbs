@@ -167,10 +167,12 @@ static void client_off(SOCKET sock)
 		startup->client_on(FALSE,sock,NULL,FALSE);
 }
 
-static void thread_up(void)
+static void thread_up(BOOL setuid)
 {
 	if(startup!=NULL && startup->thread_up!=NULL)
 		startup->thread_up(TRUE);
+	if(setuid && startup!=NULL && startup->setuid!=NULL)
+		startup->setuid();
 }
 
 static void thread_down(void)
@@ -592,7 +594,7 @@ static void js_service_thread(void* arg)
 
 	lprintf("%04d %s JavaScript service thread started", socket, service->protocol);
 
-	thread_up();
+	thread_up(TRUE /* setuid */);
 
 	/* Host name lookup and filtering */
 	if(service->options&BBS_OPT_NO_HOST_LOOKUP 
@@ -762,7 +764,7 @@ static void native_service_thread(void* arg)
 
 	lprintf("%04d %s service thread started", socket, service->protocol);
 
-	thread_up();
+	thread_up(TRUE /* setuid */);
 
 	/* Host name lookup and filtering */
 	if(service->options&BBS_OPT_NO_HOST_LOOKUP 
@@ -1004,7 +1006,7 @@ void DLLCALL services_thread(void* arg)
 	/* Setup intelligent defaults */
 	if(startup->js_max_bytes==0)			startup->js_max_bytes=JAVASCRIPT_MAX_BYTES;
 
-	thread_up();
+	thread_up(FALSE /* setuid */);
 
 	status("Initializing");
 
@@ -1109,6 +1111,9 @@ void DLLCALL services_thread(void* arg)
 		}
 		service[i].socket=socket;
 	}
+
+	if(startup->setuid!=NULL)
+		startup->setuid();
 
 	/* signal caller that we've started up successfully */
     if(startup->started!=NULL)

@@ -211,11 +211,13 @@ static void client_off(SOCKET sock)
 		startup->client_on(FALSE,sock,NULL,FALSE);
 }
 
-static void thread_up(void)
+static void thread_up(BOOL setuid)
 {
 	thread_count++;
 	if(startup!=NULL && startup->thread_up!=NULL)
 		startup->thread_up(TRUE);
+	if(setuid && startup!=NULL && startup->setuid!=NULL)
+		startup->setuid();
 }
 
 static void thread_down(void)
@@ -1360,7 +1362,7 @@ static void send_thread(void* arg)
 		*xfer.inprogress=FALSE;
 		return;
 	}
-	thread_up();
+	thread_up(TRUE /* setuid */);
 
 #if defined(_DEBUG) && defined(SOCKET_DEBUG_SENDTHREAD)
 			socket_debug[xfer.ctrl_sock]|=SOCKET_DEBUG_SENDTHREAD;
@@ -1571,7 +1573,7 @@ static void receive_thread(void* arg)
 		return;
 	}
 
-	thread_up();
+	thread_up(TRUE /* setuid */);
 
 	*xfer.aborted=FALSE;
 	if(xfer.filepos || startup->options&FTP_OPT_DEBUG_DATA)
@@ -2251,7 +2253,7 @@ static void ctrl_thread(void* arg)
 	JSObject*	js_ftp;
 #endif
 
-	thread_up();
+	thread_up(TRUE /* setuid */);
 
 	lastactive=time(NULL);
 
@@ -4323,7 +4325,7 @@ void DLLCALL ftp_server(void* arg)
 	recycle_server=TRUE;
 	do {
 
-		thread_up();
+		thread_up(FALSE /* setuid */);
 
 		status("Initializing");
 
@@ -4464,6 +4466,9 @@ void DLLCALL ftp_server(void* arg)
 			cleanup(1);
 			return;
 		}
+
+		if(startup->setuid!=NULL)
+			startup->setuid();
 
 		/* signal caller that we've started up successfully */
 		if(startup->started!=NULL)

@@ -115,11 +115,13 @@ static void client_off(SOCKET sock)
 		startup->client_on(FALSE,sock,NULL,FALSE);
 }
 
-static void thread_up()
+static void thread_up(BOOL setuid)
 {
 	thread_count++;
 	if(startup!=NULL && startup->thread_up!=NULL)
 		startup->thread_up(TRUE);
+	if(setuid && startup!=NULL && startup->setuid!=NULL)
+		startup->setuid();
 }
 
 static void thread_down()
@@ -700,7 +702,7 @@ void input_thread(void *arg)
 	sbbs_t*		sbbs = (sbbs_t*) arg;
 	struct timeval	tv;
 
-	thread_up();
+	thread_up(TRUE /* setuid */);
 
 #ifdef _DEBUG
 	lprintf("Node %d input thread started",sbbs->cfg.node_num);
@@ -842,7 +844,7 @@ void output_thread(void* arg)
 	fd_set		socket_set;
 	struct timeval tv;
 
-	thread_up();
+	thread_up(TRUE /* setuid */);
 
     if(sbbs->cfg.node_num)
     	sprintf(node,"Node %d",sbbs->cfg.node_num);
@@ -975,7 +977,7 @@ void event_thread(void* arg)
 	srand(clock());		/* Seed random number generator */
 	sbbs_random(10);	/* Throw away first number */
 
-	thread_up();
+	thread_up(TRUE /* setuid */);
 
 #ifdef JAVASCRIPT
 	if(!(startup->options&BBS_OPT_NO_JAVASCRIPT)) {
@@ -2596,7 +2598,7 @@ void node_thread(void* arg)
 	sbbs_t*			sbbs = (sbbs_t*) arg;
 
 	update_clients();
-	thread_up();
+	thread_up(TRUE /* setuid */);
 
 	srand(clock());		/* Seed random number generator */
 	sbbs_random(10);	/* Throw away first number */
@@ -3008,7 +3010,7 @@ void DLLCALL bbs_thread(void* arg)
 	if(startup->js_max_bytes==0)			startup->js_max_bytes=JAVASCRIPT_MAX_BYTES;
 #endif
 
-	thread_up();
+	thread_up(FALSE /* setuid */);
 
 	status("Initializing");
 
@@ -3279,6 +3281,9 @@ void DLLCALL bbs_thread(void* arg)
 		}
 		lprintf("RLogin server listening on port %d",startup->rlogin_port);
 	}
+
+	if(startup->setuid!=NULL)
+		startup->setuid();
 
 	/* signal caller that we've started up successfully */
     if(startup->started!=NULL)
