@@ -614,7 +614,7 @@ static void js_user_finalize(JSContext *cx, JSObject *obj)
 static JSBool
 js_chk_ar(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	char*		ar;
+	uchar*		ar;
 	JSString*	js_str;
 	user_t		user;
 	private_t*	p;

@@ -262,7 +262,7 @@ static JSBool js_system_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 
 	switch(tiny) {
 		case SYS_PROP_MISC:
-			JS_ValueToInt32(cx, *vp, &cfg->sys_misc);
+			JS_ValueToInt32(cx, *vp, (int32*)&cfg->sys_misc);
 			break;
 	}
 
