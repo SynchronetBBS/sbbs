@@ -1618,8 +1618,6 @@ JSObject* DLLCALL js_CreateHttpRequestObject(JSContext* cx, JSObject* parent, ht
 	/* Return existing object if it's already been created */
 	if(JS_GetProperty(cx,parent,"http_request",&val) && val!=JSVAL_VOID)  {
 		request = JSVAL_TO_OBJECT(val);
-		/* Delete query object if re-using http_request object */
-		JS_DeleteProperty(cx,request,"query");
 	}
 	else
 		request = JS_DefineObject(cx, parent, "http_request", NULL
@@ -1672,8 +1670,10 @@ JSObject* DLLCALL js_CreateHttpRequestObject(JSContext* cx, JSObject* parent, ht
 
 	
 	/* Return existing object if it's already been created */
-	if(JS_GetProperty(cx,request,"query",&val) && val!=JSVAL_VOID)
+	if(JS_GetProperty(cx,request,"query",&val) && val!=JSVAL_VOID)  {
 		query = JSVAL_TO_OBJECT(val);
+		JS_ClearScope(cx,query);
+	}
 	else
 		query = JS_DefineObject(cx, request, "query", NULL
 									, NULL, JSPROP_ENUMERATE);
