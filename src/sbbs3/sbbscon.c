@@ -223,7 +223,7 @@ int main(int argc, char** argv)
 	/* Initialize Mail Server startup structure */
     memset(&mail_startup,0,sizeof(mail_startup));
     mail_startup.size=sizeof(mail_startup);
-    mail_startup.smtp_port=IPPORT_SMTP
+    mail_startup.smtp_port=IPPORT_SMTP;
     mail_startup.pop3_port=110;
     mail_startup.max_clients=10;
     mail_startup.max_inactivity=120;
