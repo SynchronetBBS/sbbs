@@ -1042,6 +1042,10 @@ function IRCClient(socket,new_id,local_client,do_newconn) {
 	this.do_admin=IRCClient_do_admin;
 	this.do_info=IRCClient_do_info;
 	this.do_stats=IRCClient_do_stats;
+	this.do_users=IRCClient_do_users;
+	this.do_summon=IRCClient_do_summon;
+	this.do_links=IRCClient_do_links;
+	this.do_connect=IRCClient_do_connect;
 	this.global=IRCClient_global;
 	this.services_msg=IRCClient_services_msg;
 	this.part_all=IRCClient_part_all;
@@ -1867,13 +1871,99 @@ function IRCClient_do_stats(statschar) {
 	this.numeric(219, statschar[0] + " :End of /STATS Command.");
 }
 
+function IRCClient_do_users() {
+	this.numeric(392,':UserID                    Terminal  Host');
+	var usersshown=0;
+	for(node in system.node_list) {
+		if(system.node_list[node].status == NODE_INUSE) {
+			var u=new User(system.node_list[node].useron);
+			this.numeric(393,format(':%-25s %-9s %-30s',u.alias,'Node'+node,u.host_name));
+			usersshown++;
+		}
+	}
+	if(usersshown) {
+		this.numeric(394,':End of users');
+	} else {
+		this.numeric(395,':Nobody logged in');
+	}
+}
+
+function IRCClient_do_summon(summon_user) {
+	// Check if exists.
+	var usernum = system.matchuser(summon_user);
+	if(!usernum)
+		this.numeric(444,":No such user.");
+	else {
+		// Check if logged in
+		var isonline = 0;
+		for(node in system.node_list) {
+		if(system.node_list[node].status == NODE_INUSE &&
+		   system.node_list[node].useron == usernum)
+			isonline=1;
+		}
+		if(!isonline)
+			this.numeric(444,":User not logged in.");
+		else {
+//			var summon_message=ircstring(cmdline);
+//			if(summon_message != '')
+//				var summon_message=' ('+summon_message+')';
+//			system.put_telegram('^G^G'+usernum,this.nick+' is summoning you to IRC chat'+summon_message+'\r\n');
+			system.put_telegram(usernum,''+this.nick+' is summoning you to IRC chat.\r\n');
+			this.numeric(342,summon_user+' :Summoning user to IRC');
+		}
+	}
+}
+
+function IRCClient_do_links(mask) {
+	if (!mask)
+		var mask = "*";
+	for(thisServer in Clients) {
+		var Server=Clients[thisServer];
+		if (Server && (Server.conntype == TYPE_SERVER) &&
+		    match_irc_mask(Server.nick,mask) )
+			this.numeric(364, Server.nick + " " + Server.linkparent + " :" + Server.hops + " " + Server.realname);
+	}
+	if (match_irc_mask(servername,mask))
+		this.numeric(364, servername + " " + servername + " :0 " + serverdesc);
+	this.numeric(365, mask + " :End of /LINKS list.");
+}
+
+function IRCClient_do_connect(con_server,con_port) {
+	var con_cline = "";
+	for (ccl in CLines) {
+		if (match_irc_mask(CLines[ccl].servername,con_server) ||
+		    match_irc_mask(CLines[ccl].host,con_server) ) {
+			con_cline = CLines[ccl];
+			break;
+		}
+	}
+	if (!con_cline) {
+		this.numeric402(con_server);
+		return 0;
+	}
+	if (!con_port && con_cline.port)
+		con_port = con_cline.port;
+	if (!con_port && !con_cline.port)
+		con_port = String(default_port);
+	if (!con_port.match(/^[0-9]+$/)) {
+		this.server_notice("Invalid port: " + con_port);
+		return 0;
+	}
+	var con_type = "Local";
+	if (this.parent)
+		con_type = "Remote";
+	oper_notice("Routing","from " + servername + ": " + con_type + " CONNECT " + con_cline.servername + " " + con_port + " from " + this.nick + "[" + this.uprefix + "@" + this.hostname + "]");
+	connect_to_server(con_cline,con_port);
+	return 1;
+}
+
 function IRCClient_do_join(chan_name,join_key) {
 	if((chan_name[0] != "#") && (chan_name[0] != "&") && !this.parent) {
 		this.numeric403(chan_name);
 		return 0;
 	}
 	for (theChar in chan_name) {
-		theChar_code = chan_name[theChar].charCodeAt(0);
+		var theChar_code = chan_name[theChar].charCodeAt(0);
 		if ((theChar_code <= 32) || (theChar_code == 44) ||
 		    (chan_name[theChar].charCodeAt(0) == 160)) {
 			if (!this.parent)
@@ -2574,28 +2664,17 @@ function IRCClient_registered_commands(command, cmdline) {
 				this.numeric461("CONNECT");
 				break;
 			}
-			con_cline = "";
-			for (ccl in CLines) {
-				if (match_irc_mask(CLines[ccl].servername,cmd[1]) ||
-				     match_irc_mask(CLines[ccl].host,cmd[1]) ) {
-					con_cline = CLines[ccl];
+			if (cmd[3]) {
+				var dest_server = searchbyserver(cmd[3]);
+				if (!dest_server) {
+					this.numeric402(cmd[3]);
+					break;
+				} else if (dest_server != -1) {
+					dest_server.rawout(":" + this.nick + " CONNECT " + cmd[1] + " " + cmd[2] + " " + dest_server.nick);
 					break;
 				}
 			}
-			if (!con_cline) {
-				this.numeric402(cmd[1]);
-				break;
-			}
-			if (!cmd[2] && con_cline.port)
-				cmd[2] = con_cline.port;
-			if (!cmd[2] && !con_cline.port)
-				cmd[2] = String(default_port);
-			if (!cmd[2].match(/^[0-9]+$/)) {
-				this.server_notice("Invalid port: " + cmd[2]);
-				break;
-			}
-			oper_notice("Routing","from " + servername + ": Local CONNECT " + con_cline.servername + " " + cmd[2] + " from " + this.nick + "[" + this.uprefix + "@" + this.hostname + "]");
-			connect_to_server(con_cline,cmd[2]);
+			this.do_connect(cmd[1],cmd[2]);
 			break;
 		case "DEBUG":
 			if (!((this.mode&USERMODE_OPER) &&
@@ -2847,14 +2926,23 @@ function IRCClient_registered_commands(command, cmdline) {
 			oper_notice("Notice", this.nick + " has removed the K-Line for: [" + kline_mask + "] (1 matches)");
 			break;
 		case "LINKS":
-			for(thisServer in Clients) {
-				Server=Clients[thisServer];
-				if (Server && 
-				    (Server.conntype == TYPE_SERVER) )
-					this.numeric(364, Server.nick + " " + Server.linkparent + " :" + Server.hops + " " + Server.realname);
+			if (!cmd[1]) { // *
+				this.do_links();
+				break;
+			} else if (cmd[2]) { // <remote-server> <mask>
+				var dest_server = searchbyserver(cmd[1]);
+				if (!dest_server) {
+					this.numeric402(cmd[1]);
+					break;
+				}
+				if (dest_server != -1) {
+					dest_server.rawout(":" + this.nick + " LINKS " + dest_server.nick + " " + cmd[2]);
+					break;
+				}
+			} else if (cmd[1]) { // <mask>
+				this.do_links(cmd[1]);
+				break;
 			}
-			this.numeric(364, servername + " " + servername + " :0 " + serverdesc);
-			this.numeric(365, "* :End of /LINKS list.");
 			break;
 		case "LIST":
 			// ignore args for now
@@ -2917,6 +3005,19 @@ function IRCClient_registered_commands(command, cmdline) {
 			}
 			break;
 		case "MOTD":
+			if (cmd[1]) {
+				if (cmd[1][0] == ":")
+					cmd[1] = cmd[1].slice(1);
+				var dest_server = searchbyserver(cmd[1]);
+				if (!dest_server) {
+					this.numeric402(cmd[1]);
+					break;
+				}
+				if (dest_server != -1) {
+					dest_server.rawout(":" + this.nick + " MOTD :" + dest_server.nick);
+					break;
+				}
+			}
 			this.motd();
 			break;
 		case "NAMES":
@@ -3053,13 +3154,35 @@ function IRCClient_registered_commands(command, cmdline) {
 		case "PING":
 			if (!cmd[1]) {
 				this.numeric461("PING");
-			} else {
-				if (cmd[1][0] == ":") 
-					cmd[1] = cmd[1].slice(1);
-				this.ircout("PONG " + servername + " :" + cmd[1]);
+				break;
 			}
+			if (cmd[2]) {
+				var dest_server = searchbyserver(cmd[2]);
+				if (!dest_server) {
+					this.numeric402(cmd[2]);
+					break;
+				}
+				if (dest_server != -1) {
+					dest_server.rawout(":" + this.nick + " PING " + cmd[1] + " " + dest_server.nick);
+					break;
+				}
+			}
+			if (cmd[1][0] == ":") 
+				cmd[1] = cmd[1].slice(1);
+			this.ircout("PONG " + servername + " :" + cmd[1]);
 			break;
 		case "PONG":
+			if (cmd[2]) {
+				var dest_server = searchbyserver(cmd[2]);
+				if (!dest_server) {
+					this.numeric402(cmd[2]);
+					break;
+				}
+				if (dest_server != -1) {
+					dest_server.rawout(":" + this.nick + " PONG " + cmd[1] + " " + dest_server.nick);
+					break;
+				}
+			}
 			this.pinged = false;
 			break;
 		case "QUIT":
@@ -3096,7 +3219,7 @@ function IRCClient_registered_commands(command, cmdline) {
 				break;
 			}
 			log("!ERROR! Shutting down the ircd as per " + this.ircnuh);
-			terminated = true;
+			js.terminated = true;
 			break;
 		case "REHASH":
 			if (!((this.mode&USERMODE_OPER) &&
@@ -3134,12 +3257,12 @@ function IRCClient_registered_commands(command, cmdline) {
 			}
 			if(!cmd[1])
 				break;
-			sq_server = searchbyserver(cmd[1]);
+			var sq_server = searchbyserver(cmd[1]);
 			if(!sq_server) {
 				this.numeric402(cmd[1]);
 				break;
 			}
-			reason = ircstring(cmdline);
+			var reason = ircstring(cmdline);
 			if (!reason)
 				reason = this.nick;
 			if (sq_server == -1) {
@@ -3169,32 +3292,23 @@ function IRCClient_registered_commands(command, cmdline) {
 			break;
 		case "SUMMON":
 			if(!cmd[1]) {
-				this.numeric411('SUMMON');
+				this.numeric411("SUMMON");
+				break;
 			}
-			else {
-				// Check if exists.
-				usernum=system.matchuser(cmd[1]);
-				if(!usernum)
-					this.numeric(444,":No such user.");
-				else {
-					// Check if logged in
-					isonline=0;
-					for(node in system.node_list) {
-						if(system.node_list[node].status == NODE_INUSE && system.node_list[node].useron == usernum)
-							isonline=1;
-					}
-					if(!isonline)
-						this.numeric(444,":User not logged in.");
-					else {
-						summon_message=ircstring(cmdline);
-						if(summon_message != '') {
-							summon_message=' ('+summon_message+')';
-						system.put_telegram(''+usernum,this.nick+' is summoning you to IRC chat'+summon_message+'\r\n');
-						this.numeric(342,cmd[1]+' :Summoning user to IRC');
-						}
-					}
+			if (cmd[2]) {
+				if (cmd[2][0] == ":")
+					cmd[2] = cmd[2].slice(1);
+				var dest_server = searchbyserver(cmd[1]);
+				if (!dest_server) {
+					this.numeric402(cmd[2]);
+					break;
+				}
+				if (dest_server != -1) {
+					dest_server.rawout(":" + this.nick + " SUMMON " + cmd[1] + " :" + dest_server.nick);
+					break;
 				}
 			}
+			this.do_summon(cmd[1]);
 			break;
 		case "TIME":
 			if (cmd[1]) {
@@ -3257,21 +3371,20 @@ function IRCClient_registered_commands(command, cmdline) {
 			this.numeric462();
 			break;
 		case "USERS":
-			this.numeric(392,':UserID                    Terminal  Host');
-			usersshown=0;
-			for(node in system.node_list) {
-				if(system.node_list[node].status == NODE_INUSE) {
-					var u=new User(system.node_list[node].useron);
-					this.numeric(393,format(':%-25s %-9s %-30s',u.alias,'Node'+node,u.host_name));
-					usersshown++;
+			if (cmd[1]) {
+				if (cmd[1][0] == ":")
+					cmd[1] = cmd[1].slice(1);
+				var dest_server = searchbyserver(cmd[1]);
+				if (!dest_server) {
+					this.numeric402(cmd[1]);
+					break;
+				}
+				if (dest_server != -1) {
+					dest_server.rawout(":" + this.nick + " USERS :" + dest_server.nick);
+					break;
 				}
 			}
-			if(usersshown) {
-				this.numeric(394,':End of users');
-			}
-			else {
-				this.numeric(395,':Nobody logged in');
-			}
+			this.do_users();
 			break;
 		case "USERHOST":
 			if (!cmd[1]) {
@@ -3355,9 +3468,20 @@ function IRCClient_registered_commands(command, cmdline) {
 				this.numeric(431, ":No nickname given.");
 				break;
 			}
-			wi_nicks = cmd[1].split(',');
+			if (cmd[2]) {
+				var dest_server = searchbyserver(cmd[1]);
+				if (!dest_server) {
+					this.numeric402(cmd[1]);
+					break;
+				}
+				if (dest_server != -1) {
+					dest_server.rawout(":" + this.nick + " WHOIS " + cmd[1] + " " + dest_server.nick);
+					break;
+				}
+			}
+			var wi_nicks = cmd[1].split(',');
 			for (wi_nick in wi_nicks) {
-				wi = searchbynick(wi_nicks[wi_nick]);
+				var wi = searchbynick(wi_nicks[wi_nick]);
 				if (wi)
 					this.do_whois(wi);
 				else
@@ -3519,6 +3643,18 @@ function IRCClient_server_commands(origin, command, cmdline) {
 				ThisOrigin.away = "";
 			else
 				ThisOrigin.away = ircstring(cmdline);
+			break;
+		case "CONNECT":
+			if (!cmd[3])
+				break;
+			if (match_irc_mask(servername, cmd[3])) {
+				ThisOrigin.do_connect(cmd[1],cmd[2]);
+			} else {
+				var dest_server = searchbyserver(cmd[3]);
+				if (!dest_server)
+					break;
+				dest_server.rawout(":" + ThisOrigin.nick + " CONNECT " + cmd[1] + " " + cmd[2] + " " + dest_server.nick);
+			}
 			break;
 		case "ERROR":
 			oper_notice("Notice", "ERROR from " + ThisOrigin.nick + "[(+)0@" + this.hostname + "] -- " + ircstring(cmdline));
@@ -3735,6 +3871,18 @@ function IRCClient_server_commands(origin, command, cmdline) {
 				}
 			}
 			break;
+		case "LINKS":
+			if (!cmd[2])
+				break;
+			if (match_irc_mask(servername, cmd[1])) {
+				ThisOrigin.do_links(cmd[2]);
+			} else {
+				var dest_server = searchbyserver(cmd[1]);
+				if (!dest_server)
+					break;
+				dest_server.rawout(":" + ThisOrigin.nick + " LINKS " + dest_server.nick + " " + cmd[2]);
+			}
+			break;
 		case "MODE":
 			if (!cmd[1])
 				break;
@@ -3756,6 +3904,20 @@ function IRCClient_server_commands(origin, command, cmdline) {
 				ThisOrigin.set_chanmode(chan,modeline,false);
 			} else { // assume it's for a user
 				ThisOrigin.setusermode(cmd[2]);
+			}
+			break;
+		case "MOTD":
+			if (!cmd[1])
+				break;
+			if (cmd[1][0] == ":")
+				cmd[1] = cmd[1].slice(1);
+			if (match_irc_mask(servername, cmd[1])) {
+				ThisOrigin.motd();
+			} else {
+				var dest_server = searchbyserver(cmd[1]);
+				if (!dest_server)
+					break;
+				dest_server.rawout(":" + ThisOrigin.nick + " MOTD :" + dest_server.nick);
 			}
 			break;
 		case "NICK":
@@ -3855,10 +4017,25 @@ function IRCClient_server_commands(origin, command, cmdline) {
 		case "PING":
 			if (!cmd[1])
 				break;
-			else
-				this.ircout("PONG " + servername + " :" + ircstring(cmdline));              
+			if (cmd[2] && !match_irc_mask(servername, cmd[2])) {
+				var dest_server = searchbyserver(cmd[1]);
+				if (!dest_server)
+					break;
+				dest_server.rawout(":" + ThisOrigin.nick + " PING " + cmd[1] + " " + dest_server.nick);
+				break;
+			}
+			if (cmd[1][0] == ":")
+				cmd[1] = cmd[1].slice(1);
+			this.ircout("PONG " + servername + " :" + cmd[1]);
 			break;
 		case "PONG":
+			if (cmd[2] && !match_irc_mask(servername, cmd[2])) {
+				var dest_server = searchbyserver(cmd[2]);
+				if (!dest_server)
+					break;
+				dest_server.rawout(":" + ThisOrigin.nick + " PONG " + cmd[1] + " " + dest_server.nick);
+				break;
+			}
 			this.pinged = false;
 			break;
 		case "QUIT":
@@ -3924,15 +4101,29 @@ function IRCClient_server_commands(origin, command, cmdline) {
 				dest_server.rawout(":" + ThisOrigin.nick + " TIME :" + dest_server.nick);
 			}
 			break;
+		case "SUMMON":
+			if (!cmd[2])
+				break;
+			if (cmd[2][0] == ":")
+				cmd[2] = cmd[2].slice(1);
+			if (match_irc_mask(servername, cmd[2])) {
+				ThisOrigin.do_summon(cmd[1]);
+			} else {
+				var dest_server = searchbyserver(cmd[1]);
+				if (!dest_server)
+					break;
+				dest_server.rawout(":" + ThisOrigin.nick + " SUMMON " + cmd[1] + " :" + dest_server.nick);
+			}
+			break;
 		case "TOPIC":
 			if (!cmd[4])
 				break;
 			var chan = searchbychannel(cmd[1]);
 			if (!chan)
 				break;
+			var the_topic = ircstring(cmdline);
 			if (the_topic == chan.topic)
 				break;
-			var the_topic = ircstring(cmdline);
 			chan.topic = the_topic;
 			if (this.hub)
 				chan.topictime = cmd[3];
@@ -3942,6 +4133,20 @@ function IRCClient_server_commands(origin, command, cmdline) {
 			str = "TOPIC " + chan.nam + " :" + chan.topic;
 			ThisOrigin.bcast_to_channel(chan.nam,str,false);
 			this.bcast_to_servers_raw(":" + ThisOrigin.nick + " TOPIC " + chan.nam + " " + ThisOrigin.nick + " " + chan.topictime + " :" + chan.topic);
+			break;
+		case "USERS":
+			if (!cmd[1])
+				break;
+			if (cmd[1][0] == ":")
+				cmd[1] = cmd[1].slice(1);
+			if (match_irc_mask(servername, cmd[1])) {
+				ThisOrigin.do_users();
+			} else {
+				var dest_server = searchbyserver(cmd[1]);
+				if (!dest_server)
+					break;
+				dest_server.rawout(":" + ThisOrigin.nick + " USERS :" + dest_server.nick);
+			}
 			break;
 		case "VERSION":
 			if (!cmd[1])
@@ -3959,10 +4164,32 @@ function IRCClient_server_commands(origin, command, cmdline) {
 				dest_server.rawout(":" + ThisOrigin.nick + " VERSION :" + dest_server.nick);
 			}
 			break;
+		case "WHOIS":
+			if (!cmd[2])
+				break;
+			if (cmd[2][0] == ":")
+				cmd[2] = cmd[2].slice(1);
+			if (match_irc_mask(servername, cmd[2])) {
+				var wi_nicks = cmd[1].split(',');
+				for (wi_nick in wi_nicks) {
+					var wi = searchbynick(wi_nicks[wi_nick]);
+					if (wi)
+						this.do_whois(wi);
+					else
+						this.numeric401(wi_nicks[wi_nick]);
+				}
+				this.numeric(318, wi_nicks[0]+" :End of /WHOIS list.");
+			} else {
+				var dest_server = searchbyserver(cmd[2]);
+				if (!dest_server)
+					break;
+				dest_server.rawout(":" + ThisOrigin.nick + " WHOIS " + cmd[1] + " " + dest_server.nick);
+			}
+			break;
 		case "AKILL":
 			if (!cmd[6])
 				break;
-			this_uh = cmd[2] + "@" + cmd[1];
+			var this_uh = cmd[2] + "@" + cmd[1];
 			if (isklined(this_uh))
 				break;
 			KLines.push(new KLine(this_uh,ircstring(cmdline),"A"));
