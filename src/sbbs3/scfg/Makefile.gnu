@@ -131,8 +131,18 @@ $(SBBSLIBODIR):
 $(UIFCLIBODIR):
 	mkdir $(UIFCLIBODIR)
 
+makehelp: makehelp.c
+	$(CC) makehelp.c -o makehelp
+
 # Monolithic Synchronet executable Build Rule
-$(SCFG): $(OBJS)
-	$(CC) -o $(SCFG) $^ $(LIBS)
+$(SCFG): makehelp $(OBJS)
+ifdef USE_DIALOG
+	$(MAKE) -C ../../libdialog
+endif
+	./makehelp
+	mv scfghelp.dat $(EXEODIR)
+	mv scfghelp.ixb $(EXEODIR)
+	$(CC) -o $(SCFG) $(OBJS) $(LIBS)
 
 #indlude depends.mak
+
