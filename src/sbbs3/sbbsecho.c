@@ -1071,7 +1071,7 @@ void command(char *instr,faddr_t addr)
 	area_t add_area,del_area;
 
 	node=matchnode(addr,0);
-	if(node==cfg.nodecfgs)
+	if(node>=cfg.nodecfgs)
 		return;
 	memset(&add_area,0,sizeof(area_t));
 	memset(&del_area,0,sizeof(area_t));
@@ -1143,7 +1143,7 @@ void command(char *instr,faddr_t addr)
 		p=temp;
 		while(*p && *p>SP) p++;
 		*p=0;
-		if(node==cfg.nodecfgs)		   /* Should never happen */
+		if(node>=cfg.nodecfgs)		   /* Should never happen */
 			return;
 		if(!stricmp(temp,cfg.nodecfg[node].password)) {
 			sprintf(str,"Your password was already set to %s."
@@ -1262,7 +1262,7 @@ char *process_areafix(faddr_t addr,char HUGE16 *inbuf,char *password)
 		addr=atofaddr(str); }
 
 	i=matchnode(addr,0);
-	if(i==cfg.nodecfgs) {
+	if(i>=cfg.nodecfgs) {
 		sprintf(body,"Your node is not configured for Areafix, please "
 			"contact your hub.\r\n");
 		create_netmail(0,"Areafix Request",body,addr,0);
@@ -3112,7 +3112,7 @@ for(j=0;j<area.uplinks;j++) {
 				bail(1); }
 			pkthdr.orignode=sysaddr.node;
 			fmsghdr.destnode=pkthdr.destnode=area.uplink[j].node;
-			if(cfg.nodecfg[node].pkt_type==PKT_TWO_TWO) {
+			if(node<cfg.nodecfgs && cfg.nodecfg[node].pkt_type==PKT_TWO_TWO) {
 				pkthdr.year=sysaddr.point;
 				pkthdr.month=area.uplink[j].point;
 				pkthdr.day=0;
@@ -3141,26 +3141,27 @@ for(j=0;j<area.uplinks;j++) {
 			fmsghdr.destzone=pkthdr.destzone=area.uplink[j].zone;
 			memset(pkthdr.empty,0,sizeof(two_two_t));
 
-			if(cfg.nodecfg[node].pkt_type==PKT_TWO_TWO) {
-				memset(&two,0,20);
-				strcpy(two.origdomn,"fidonet");
-				strcpy(two.destdomn,"fidonet");
-				memcpy(&pkthdr.empty,&two,20); }
-			else if(cfg.nodecfg[node].pkt_type==PKT_TWO_PLUS) {
-				memset(&two_p,0,20);
-				if(sysaddr.point) {
-					pkthdr.orignet=-1;
-					two_p.auxnet=sysaddr.net; }
-				two_p.cwcopy=0x0100;
-				two_p.prodcode=pkthdr.prodcode;
-				two_p.revision=pkthdr.sernum;
-				two_p.cword=0x0001;
-				two_p.origzone=pkthdr.origzone;
-				two_p.destzone=pkthdr.destzone;
-				two_p.origpoint=sysaddr.point;
-				two_p.destpoint=area.uplink[j].point;
-				memcpy(&pkthdr.empty,&two_p,sizeof(two_plus_t)); }
-
+			if(node<cfg.nodecfgs) {
+				if(cfg.nodecfg[node].pkt_type==PKT_TWO_TWO) {
+					memset(&two,0,20);
+					strcpy(two.origdomn,"fidonet");
+					strcpy(two.destdomn,"fidonet");
+					memcpy(&pkthdr.empty,&two,20); }
+				else if(cfg.nodecfg[node].pkt_type==PKT_TWO_PLUS) {
+					memset(&two_p,0,20);
+					if(sysaddr.point) {
+						pkthdr.orignet=-1;
+						two_p.auxnet=sysaddr.net; }
+					two_p.cwcopy=0x0100;
+					two_p.prodcode=pkthdr.prodcode;
+					two_p.revision=pkthdr.sernum;
+					two_p.cword=0x0001;
+					two_p.origzone=pkthdr.origzone;
+					two_p.destzone=pkthdr.destzone;
+					two_p.origpoint=sysaddr.point;
+					two_p.destpoint=area.uplink[j].point;
+					memcpy(&pkthdr.empty,&two_p,sizeof(two_plus_t)); }
+			}
 			fwrite(&pkthdr,sizeof(pkthdr_t),1,outpkt[totalpkts].stream);
 			putfmsg(outpkt[totalpkts].stream,fbuf,fmsghdr,area,seenbys,paths);
 			outpkt[totalpkts].curopen=1;
