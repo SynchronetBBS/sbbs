@@ -892,9 +892,8 @@ static jsMethodSpec js_file_functions[] = {
 	{"close",			js_close,			0,	JSTYPE_VOID,	""
 	,JSDOCSTR("close file")
 	},		
-	{"remove",			js_delete,			0,	JSTYPE_ALIAS },
-	{"delete",			js_delete,			0,	JSTYPE_BOOLEAN, ""
-	,JSDOCSTR("remove the file from the disk (AKA remove)")
+	{"remove",			js_delete,			0,	JSTYPE_BOOLEAN, ""
+	,JSDOCSTR("remove the file from the disk")
 	},
 	{"clearError",		js_clear_error,		0,	JSTYPE_ALIAS },
 	{"clear_error",		js_clear_error,		0,	JSTYPE_BOOLEAN, ""
