@@ -179,6 +179,7 @@ typedef struct  {
 	size_t		post_len;
 	int			dynamic;
 	struct log_data	*ld;
+	char		request_line[MAX_REQUEST_LINE+1];
 
 	/* CGI parameters */
 	char		query_str[MAX_REQUEST_LINE+1];
@@ -1378,6 +1379,16 @@ static void js_add_queryval(http_session_t * session, char *key, char *value)
 	JS_SetElement(session->js_cx, keyarray, alen, &val);
 }
 
+static void js_add_request_prop(http_session_t * session, char *key, char *value)  
+{
+	JSString*	js_str;
+
+	if((js_str=JS_NewStringCopyZ(session->js_cx, value))==NULL)
+		return;
+	JS_DefineProperty(session->js_cx, session->js_request, key, STRING_TO_JSVAL(js_str)
+		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+}
+
 static void js_add_header(http_session_t * session, char *key, char *value)  
 {
 	JSString*	js_str;
@@ -1500,6 +1511,7 @@ static BOOL parse_headers(http_session_t * session)
 				session->req.post_len=0;
 			session->req.post_data[session->req.post_len]=0;
 			if(session->req.dynamic==IS_SSJS || session->req.dynamic==IS_JS)  {
+				js_add_request_prop(session,"post_data",session->req.post_data);
 				js_parse_query(session,session->req.post_data);
 			}
 		}
@@ -1588,6 +1600,7 @@ static char *get_request(http_session_t * session, char *req_line)
 	SKIP_WHITESPACE(req_line);
 	SAFECOPY(session->req.virtual_path,req_line);
 	strtok(session->req.virtual_path," \t");
+	SAFECOPY(session->req.request_line,session->req.virtual_path);
 	retval=strtok(NULL," \t");
 	strtok(session->req.virtual_path,"?");
 	query=strtok(NULL,"");
@@ -1740,6 +1753,7 @@ static BOOL get_req(http_session_t * session, char *request_line)
 						break;
 					case IS_JS:
 					case IS_SSJS:
+						js_add_request_prop(session,"query_string",session->req.query_str);
 						js_parse_query(session,session->req.query_str);
 						break;
 				}
@@ -2304,20 +2318,9 @@ JSObject* DLLCALL js_CreateHttpRequestObject(JSContext* cx
 		request = JS_DefineObject(cx, parent, "http_request", NULL
 									, NULL, JSPROP_ENUMERATE|JSPROP_READONLY);
 
-	if((js_str=JS_NewStringCopyZ(session->js_cx, session->req.extra_path_info))==NULL)
-		return(FALSE);
-	JS_DefineProperty(session->js_cx, request, "path_info", STRING_TO_JSVAL(js_str)
-		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
-
-	if((js_str=JS_NewStringCopyZ(session->js_cx, methods[session->req.method]))==NULL)
-		return(FALSE);
-	JS_DefineProperty(session->js_cx, request, "method", STRING_TO_JSVAL(js_str)
-		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
-
-	if((js_str=JS_NewStringCopyZ(session->js_cx, session->req.virtual_path))==NULL)
-		return(FALSE);
-	JS_DefineProperty(session->js_cx, request, "virtual_path", STRING_TO_JSVAL(js_str)
-		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+	js_add_request_prop(session,"path_info",session->req.extra_path_info);
+	js_add_request_prop(session,"method",methods[session->req.method]);
+	js_add_request_prop(session,"virtual_path",session->req.virtual_path);
 
 	/* Return existing object if it's already been created */
 	if(JS_GetProperty(cx,request,"query",&val) && val!=JSVAL_VOID)  {
@@ -2556,35 +2559,13 @@ static BOOL exec_ssjs(http_session_t* session)  {
 	char		str[MAX_REQUEST_LINE+1];
 	int			i;
 
-	if((js_str=JS_NewStringCopyZ(session->js_cx, session->req.physical_path))==NULL)
-		return(FALSE);
-	JS_DefineProperty(session->js_cx, session->js_request, "real_path", STRING_TO_JSVAL(js_str)
-		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
-
-	if((js_str=JS_NewStringCopyZ(session->js_cx, session->req.ars))==NULL)
-		return(FALSE);
-	JS_DefineProperty(session->js_cx, session->js_request, "ars", STRING_TO_JSVAL(js_str)
-		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
-
-	if((js_str=JS_NewStringCopyZ(session->js_cx, session->req.host))==NULL)
-		return(FALSE);
-	JS_DefineProperty(session->js_cx, session->js_request, "host", STRING_TO_JSVAL(js_str)
-		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
-
-	if((js_str=JS_NewStringCopyZ(session->js_cx, http_vers[session->http_ver]))==NULL)
-		return(FALSE);
-	JS_DefineProperty(session->js_cx, session->js_request, "http_ver", STRING_TO_JSVAL(js_str)
-		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
-
-	if((js_str=JS_NewStringCopyZ(session->js_cx, session->host_ip))==NULL)
-		return(FALSE);
-	JS_DefineProperty(session->js_cx, session->js_request, "remote_ip", STRING_TO_JSVAL(js_str)
-		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
-
-	if((js_str=JS_NewStringCopyZ(session->js_cx, session->host_name))==NULL)
-		return(FALSE);
-	JS_DefineProperty(session->js_cx, session->js_request, "remote_host", STRING_TO_JSVAL(js_str)
-		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+	js_add_request_prop(session,"real_path",session->req.physical_path);
+	js_add_request_prop(session,"ars",session->req.ars);
+	js_add_request_prop(session,"request_string",session->req.request_line);
+	js_add_request_prop(session,"host",session->req.host);
+	js_add_request_prop(session,"http_ver",http_vers[session->http_ver]);
+	js_add_request_prop(session,"remote_ip",session->host_ip);
+	js_add_request_prop(session,"remote_host",session->host_name);
 
 	do {
 		/* RUN SCRIPT */
