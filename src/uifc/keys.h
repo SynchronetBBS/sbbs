@@ -16,3 +16,5 @@
 				   * backspace keypress and the backspace
 				   * char
 				   */
+
+#define KEY_MOUSE	0xff02

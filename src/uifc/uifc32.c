@@ -113,6 +113,14 @@ struct uifc_mouse_event {
 	int	button;
 };
 
+/* Mouse support */
+#ifdef _WIN32
+int	uifc_last_button_press=0;
+struct uifc_mouse_event	last_mouse_click;
+#define kbhit()	console_hit()
+int	console_hit(void);
+#endif
+
 static void reset_dynamic(void) {
 	last_menu_cur=NULL;
 	last_menu_bar=NULL;
@@ -137,6 +145,34 @@ int kbwait(void) {
 
 #ifdef _WIN32
 
+int console_hit(void)
+{
+	INPUT_RECORD input;
+	DWORD num=0;
+
+	while(1) {
+		if(!PeekConsoleInput(GetStdHandle(STD_INPUT_HANDLE), &input, 1, &num)
+			|| !num)
+			break;
+		if(input.EventType==KEY_EVENT && input.Event.KeyEvent.bKeyDown)
+			return(1);
+		if(input.EventType==MOUSE_EVENT) {
+			if(!input.Event.MouseEvent.dwEventFlags
+				&& (!input.Event.MouseEvent.dwButtonState
+					|| input.Event.MouseEvent.dwButtonState==FROM_LEFT_1ST_BUTTON_PRESSED
+					|| input.Event.MouseEvent.dwButtonState==RIGHTMOST_BUTTON_PRESSED))
+				return(1);
+			else
+				uifc_last_button_press=0;
+		}
+		if(ReadConsoleInput(GetStdHandle(STD_INPUT_HANDLE), &input, 1, &num)
+			&& num) {
+			continue;
+		}
+	}
+	return(0);
+}
+
 int inkey()
 {
 	char str[128];
@@ -145,30 +181,61 @@ int inkey()
 
 	while(1) {
 		if(!ReadConsoleInput(GetStdHandle(STD_INPUT_HANDLE), &input, 1, &num)
-			|| !num || input.EventType!=KEY_EVENT)
+			|| !num || (input.EventType!=KEY_EVENT && input.EventType!=MOUSE_EVENT))
 			continue;
 
-		if(!input.Event.KeyEvent.bKeyDown)
-			continue;
+		switch(input.EventType) {
+			case KEY_EVENT:
+				if(!input.Event.KeyEvent.bKeyDown)
+					continue;
 #if 0
-		sprintf(str,"keydown=%d\n",input.Event.KeyEvent.bKeyDown);
-		OutputDebugString(str);
-		sprintf(str,"repeat=%d\n",input.Event.KeyEvent.wRepeatCount);
-		OutputDebugString(str);
-		sprintf(str,"keycode=%x\n",input.Event.KeyEvent.wVirtualKeyCode);
-		OutputDebugString(str);
-		sprintf(str,"scancode=%x\n",input.Event.KeyEvent.wVirtualScanCode);
-		OutputDebugString(str);
-		sprintf(str,"ascii=%d\n",input.Event.KeyEvent.uChar.AsciiChar);
-		OutputDebugString(str);
-		sprintf(str,"dwControlKeyState=%lx\n",input.Event.KeyEvent.dwControlKeyState);
-		OutputDebugString(str);
+				sprintf(str,"keydown=%d\n",input.Event.KeyEvent.bKeyDown);
+				OutputDebugString(str);
+				sprintf(str,"repeat=%d\n",input.Event.KeyEvent.wRepeatCount);
+				OutputDebugString(str);
+				sprintf(str,"keycode=%x\n",input.Event.KeyEvent.wVirtualKeyCode);
+				OutputDebugString(str);
+				sprintf(str,"scancode=%x\n",input.Event.KeyEvent.wVirtualScanCode);
+				OutputDebugString(str);
+				sprintf(str,"ascii=%d\n",input.Event.KeyEvent.uChar.AsciiChar);
+				OutputDebugString(str);
+				sprintf(str,"dwControlKeyState=%lx\n",input.Event.KeyEvent.dwControlKeyState);
+				OutputDebugString(str);
 #endif
 
-		if(input.Event.KeyEvent.uChar.AsciiChar)
-			return(input.Event.KeyEvent.uChar.AsciiChar);
+				if(input.Event.KeyEvent.uChar.AsciiChar)
+					return(input.Event.KeyEvent.uChar.AsciiChar);
 
-		return(input.Event.KeyEvent.wVirtualScanCode<<8);
+				return(input.Event.KeyEvent.wVirtualScanCode<<8);
+				break;
+			case MOUSE_EVENT:
+				if(input.Event.MouseEvent.dwEventFlags!=0) {
+					uifc_last_button_press=0;
+					continue;
+				}
+				if(input.Event.MouseEvent.dwButtonState==0) {
+					if(uifc_last_button_press) {
+						last_mouse_click.x=input.Event.MouseEvent.dwMousePosition.X;
+						last_mouse_click.y=input.Event.MouseEvent.dwMousePosition.Y;
+						last_mouse_click.button=uifc_last_button_press;
+						uifc_last_button_press=0;
+						return(KEY_MOUSE);
+					}
+				}
+				else {
+					uifc_last_button_press=0;
+					switch(input.Event.MouseEvent.dwButtonState) {
+						case FROM_LEFT_1ST_BUTTON_PRESSED:
+							uifc_last_button_press=1;
+							break;
+						case RIGHTMOST_BUTTON_PRESSED:
+							uifc_last_button_press=2;
+							break;
+						default:
+							uifc_last_button_press=0;
+					}
+				}
+		}
 	}
 
 	return(0);
@@ -262,6 +329,7 @@ int uifcini32(uifcapi_t* uifcapi)
 
     gettextinfo(&txtinfo);
 #ifdef _WIN32
+	api->mode|=UIFC_MOUSE;
     /* unsupported mode? */
     if(txtinfo.screenheight<MIN_LINES
 /*        || txtinfo.screenheight>MAX_LINES */
@@ -271,7 +339,9 @@ int uifcini32(uifcapi_t* uifcapi)
     }
 
 	if(GetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), &conmode))
-		SetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), conmode&=~ENABLE_PROCESSED_INPUT);
+		conmode&=~ENABLE_PROCESSED_INPUT;
+		conmode|=ENABLE_MOUSE_INPUT;
+		SetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), conmode);
 #endif
 
     api->scrn_len=txtinfo.screenheight;
@@ -367,6 +437,9 @@ static int uifc_getmouse(struct uifc_mouse_event *mevent)
 	mevent->y=0;
 	mevent->button=0;
 	if(api->mode&UIFC_MOUSE) {
+		#ifdef _WIN32
+			memcpy(mevent,&last_mouse_click,sizeof(last_mouse_click));
+		#endif
 		#ifdef NCURSES_VERSION_MAJOR
 			MEVENT	mevnt;
 
