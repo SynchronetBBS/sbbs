@@ -215,6 +215,9 @@ void do_ansi(void)
 							break;
 						case 2:
 							clearscreen(term.attr);
+							term.ypos=1;
+							term.xpos=1;
+							set_cursor();
 							break;
 					}
 					break;
