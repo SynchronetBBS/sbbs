@@ -3497,7 +3497,7 @@ void __fastcall TMainForm::ServiceStatusTimerTick(TObject *Sender)
 void __fastcall TMainForm::EditFile(AnsiString filename, AnsiString Caption)
 {
    if(!UseFileAssociations
-        || (int)ShellExecute(Handle, "open", filename.c_str(), NULL,NULL,SW_SHOWDEFAULT)<=32) {
+        || (int)ShellExecute(Handle, "edit", filename.c_str(), NULL,NULL,SW_SHOWDEFAULT)<=32) {
         Application->CreateForm(__classid(TTextFileEditForm), &TextFileEditForm);
         TextFileEditForm->Filename=filename;
         TextFileEditForm->Caption=Caption;
