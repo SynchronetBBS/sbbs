@@ -357,13 +357,13 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 
 		/* Currently Open Message Base (sbbs.smb) */
 		case BBS_PROP_SMB_GROUP:
-			if(sbbs->smb.subnum==INVALID_SUB || sbbs->smb.subnum<sbbs->cfg.total_subs)
+			if(sbbs->smb.subnum==INVALID_SUB || sbbs->smb.subnum>=sbbs->cfg.total_subs)
 				p=nulstr;
 			else
 				p=sbbs->cfg.grp[sbbs->cfg.sub[sbbs->smb.subnum]->grp]->sname;
 			break;
 		case BBS_PROP_SMB_GROUP_DESC:
-			if(sbbs->smb.subnum==INVALID_SUB || sbbs->smb.subnum<sbbs->cfg.total_subs)
+			if(sbbs->smb.subnum==INVALID_SUB || sbbs->smb.subnum>=sbbs->cfg.total_subs)
 				p=nulstr;
 			else
 				p=sbbs->cfg.grp[sbbs->cfg.sub[sbbs->smb.subnum]->grp]->lname;
@@ -378,19 +378,19 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			}
 			break;
 		case BBS_PROP_SMB_SUB:
-			if(sbbs->smb.subnum==INVALID_SUB || sbbs->smb.subnum<sbbs->cfg.total_subs)
+			if(sbbs->smb.subnum==INVALID_SUB || sbbs->smb.subnum>=sbbs->cfg.total_subs)
 				p=nulstr;
 			else
 				p=sbbs->cfg.sub[sbbs->smb.subnum]->sname;
 			break;
 		case BBS_PROP_SMB_SUB_DESC:
-			if(sbbs->smb.subnum==INVALID_SUB || sbbs->smb.subnum<sbbs->cfg.total_subs)
+			if(sbbs->smb.subnum==INVALID_SUB || sbbs->smb.subnum>=sbbs->cfg.total_subs)
 				p=nulstr;
 			else
 				p=sbbs->cfg.sub[sbbs->smb.subnum]->lname;
 			break;
 		case BBS_PROP_SMB_SUB_CODE:
-			if(sbbs->smb.subnum==INVALID_SUB || sbbs->smb.subnum<sbbs->cfg.total_subs)
+			if(sbbs->smb.subnum==INVALID_SUB || sbbs->smb.subnum>=sbbs->cfg.total_subs)
 				p=nulstr;
 			else
 				p=sbbs->cfg.sub[sbbs->smb.subnum]->code;
@@ -405,7 +405,7 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 				for(usub=0;usub<sbbs->usrsubs[ugrp];usub++)
 					if(sbbs->usrsub[ugrp][usub]==sbbs->smb.subnum)
 						break;
-				val=ugrp+1;
+				val=usub+1;
 			}
 			break;
 		case BBS_PROP_SMB_ATTR:
