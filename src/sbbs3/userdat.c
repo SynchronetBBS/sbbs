@@ -610,7 +610,7 @@ char DLLCALL getage(scfg_t* cfg, char *birth)
 int DLLCALL getnodedat(scfg_t* cfg, uint number, node_t *node, int* fp)
 {
 	char	str[MAX_PATH+1];
-	int		count;
+	int		count=0;
 	int		file;
 
 	if(!number || number>cfg->sys_nodes)

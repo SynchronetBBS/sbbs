@@ -253,7 +253,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
     bool	native=false;			// DOS program by default
 	bool	nt=false;				// WinNT/2K? 
     bool	was_online=true;
-	bool	rio_abortable_save;
+	bool	rio_abortable_save=rio_abortable;
 	bool	use_pipes=false;	// NT-compatible console redirection
 	uint	i;
     time_t	hungup=0;
@@ -629,10 +629,8 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
     ReleaseMutex(exec_mutex);
 
 	/* Disable Ctrl-C checking */
-	if(!(mode&EX_OFFLINE)) {
-		rio_abortable_save=rio_abortable;
+	if(!(mode&EX_OFFLINE))
 		rio_abortable=false;
-	}
 
     // Executing app in foreground?, monitor
     retval=STILL_ACTIVE;
@@ -1069,7 +1067,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 	ulong	avail;
     ulong	output_len;
 	bool	native=false;			// DOS program by default
-	bool	rio_abortable_save;
+	bool	rio_abortable_save=rio_abortable;
 	int		i;
 	int		rd;
 	int		wr;
@@ -1276,10 +1274,8 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 	lprintf("Node %d executing external: %s",cfg.node_num,fullcmdline);
 
 	/* Disable Ctrl-C checking */
-	if(!(mode&EX_OFFLINE)) {
-		rio_abortable_save=rio_abortable;
+	if(!(mode&EX_OFFLINE))
 		rio_abortable=false;
-	}
 	
 	if(mode&EX_OUTR) {
 		if(!(mode&EX_INR))

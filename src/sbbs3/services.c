@@ -1546,6 +1546,8 @@ void DLLCALL services_thread(void* arg)
 
 				client_addr_len = sizeof(client_addr);
 
+				udp_len=0;
+
 				if(service[i].options&SERVICE_OPT_UDP) {
 					/* UDP */
 					if((udp_buf = (BYTE*)calloc(1, MAX_UDP_BUF_LEN)) == NULL) {

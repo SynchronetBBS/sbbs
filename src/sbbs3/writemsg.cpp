@@ -543,7 +543,7 @@ ulong sbbs_t::msgeditor(char *buf, char *top, char *title)
 		if((str[lines]=(char *)MALLOC(MAX_LINE_LEN))==NULL) {
 			errormsg(WHERE,ERR_ALLOC,nulstr,MAX_LINE_LEN);
 			for(i=0;i<lines;i++)
-				FREE(str[lines]);
+				FREE(str[i]);
 			FREE(str);
 			if(online==ON_REMOTE)
 				rioctl(IOSM|ABORT);
@@ -561,14 +561,17 @@ ulong sbbs_t::msgeditor(char *buf, char *top, char *title)
 				/***
 				bprintf("\r\nMessage editor: Expanded tab on line #%d",lines+1);
 				***/ }
-			else str[lines][i]=buf[l]; }
+			else str[lines][i]=buf[l]; 
+		}
 		if(i==79) {
 			if(buf[l]==CR)
 				l+=2;
 			else
-				bprintf("\r\nMessage editor: Split line #%d",lines+1); }
+				bprintf("\r\nMessage editor: Split line #%d",lines+1); 
+		}
 		str[lines][i]=0;
-		lines++; }
+		lines++; 
+	}
 	if(lines)
 		bprintf("\r\nMessage editor: Read in %d lines\r\n",lines);
 	bprintf(text[EnterMsgNow],maxlines);
@@ -577,10 +580,12 @@ ulong sbbs_t::msgeditor(char *buf, char *top, char *title)
 	if(fexist(path))
 		menu("msgtabs");
 	else {
-		for(i=0;i<79;i++)
+		for(i=0;i<79;i++) {
 			if(i%TABSIZE || !i)
 				outchar('-');
-			else outchar('+');
+			else 
+				outchar('+');
+		}
 		CRLF;
 	}
 	putmsg(top,P_SAVEATR|P_NOATCODES);
@@ -702,6 +707,8 @@ ulong sbbs_t::msgeditor(char *buf, char *top, char *title)
 					FREE(str[line]);
 				if(lines)
 					i=!noyes(text[WithLineNumbersQ]);
+				else
+					i=0;
 				CRLF;
 				attr(LIGHTGRAY);
 				putmsg(top,P_SAVEATR|P_NOATCODES);
@@ -763,12 +770,14 @@ ulong sbbs_t::msgeditor(char *buf, char *top, char *title)
 		for(i=0;i<lines;i++)
 			FREE(str[i]);
 		FREE(str);
-		return(0); }
+		return(0); 
+	}
 	strcpy(buf,top);
 	for(i=0;i<lines;i++) {
 		strcat(buf,str[i]);
 		strcat(buf,crlf);
-		FREE(str[i]); }
+		FREE(str[i]); 
+	}
 	FREE(str);
 	return(lines);
 }
