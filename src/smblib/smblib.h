@@ -44,10 +44,11 @@
 	#undef SMBEXPORT
 #endif
 
+#ifndef __FLAT__
+	#define __FLAT__	/* only supporting 32-bit targets now */
+#endif
+
 #ifdef _WIN32
-	#ifndef __FLAT__
-		#define __FLAT__
-	#endif
 	#ifdef __BORLANDC__
 		#define SMBCALL __stdcall
 	#else
