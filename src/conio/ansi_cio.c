@@ -1,3 +1,7 @@
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 #include <fcntl.h>
 #include <stdarg.h>
 #include <stdlib.h>	/* malloc */
