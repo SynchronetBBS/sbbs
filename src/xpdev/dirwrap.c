@@ -392,20 +392,18 @@ BOOL DLLCALL fexistcase(char *path)
 	char fname[MAX_PATH+1];
 	char tmp[5];
 	char *p;
-	int  i,j;
+	int  i;
 	glob_t	glb;
 	
-	strncpy(globme,path,MAX_PATH*4);
+	SAFECOPY(globme,path);
 	p=getfname(globme);
-	strncpy(fname,p,MAX_PATH);
+	SAFECOPY(fname,p);
 	*p=0;
 	for(i=0;fname[i];i++)  {
-		if(isalpha(fname[i]))  {
+		if(isalpha(fname[i]))
 			sprintf(tmp,"[%c%c]",toupper(fname[i]),tolower(fname[i]));
-		}
-		else  {
+		else
 			sprintf(tmp,"%c",fname[i]);
-		}
 		strncat(globme,tmp,MAX_PATH*4);
 	}
 	if(strcspn(path,"?*")!=strlen(path))  {
@@ -413,7 +411,7 @@ BOOL DLLCALL fexistcase(char *path)
 		return(fexist(path));
 	}
 
-	if(glob(globme,GLOB_MARK|GLOB_NOSORT,NULL,&glb))
+	if(glob(globme,GLOB_MARK,NULL,&glb) != 0)
 		return(FALSE);
 	
 	if(glb.gl_pathc>0)  {
@@ -421,25 +419,19 @@ BOOL DLLCALL fexistcase(char *path)
 		 * If multiple matches are found, return TRUE only if one *
 		 * EXACTLY matches path or all but one are directories	  *
 		 **********************************************************/
-		j=-1;
 		for(i=0;i<glb.gl_pathc;i++)  {
-			if(!strcmp(path,glb.gl_pathv[i]))  {
+			if(strcmp(path,glb.gl_pathv[i])==0)  {
 				globfree(&glb);
 				return TRUE;
 			}
-			else  {
-				if(*lastchar(glb.gl_pathv[i]) != '/')  {
-					j=i;
-				}
-			}
+			if(*lastchar(glb.gl_pathv[i]) != '/')
+				break;
 		}
-		if(j>=0)  {
-			strncpy(path,glb.gl_pathv[j],MAX_PATH);
+		if(i<glb.gl_pathc)  {
+			strncpy(path,glb.gl_pathv[i],MAX_PATH);
 			globfree(&glb);
 			return TRUE;
 		}
-		globfree(&glb);
-		return FALSE;
 	}
 
 	globfree(&glb);
