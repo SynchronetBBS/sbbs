@@ -274,6 +274,9 @@
 #define RFC822REPLYID		0xb2
 #define RFC822TO			0xb3
 
+#define USENETPATH			0xc0
+#define USENETNEWSGROUPS	0xc1
+
 #define UNKNOWN 			0xf1
 #define UNKNOWNASCII		0xf2
 #define UNUSED				0xff
@@ -497,6 +500,8 @@ typedef struct {				// Message
 				*replyto_ext,	// Reply-to extension */
 				*id,			// RFC822 Message-ID
 				*reply_id,		// RFC822 Reply-ID
+				*path,			// USENET Path
+				*newsgroups,	// USENET Newsgroups
 				*ftn_pid,		// FTN PID
 				*ftn_area,		// FTN AREA
 				*ftn_flags,		// FTN FLAGS
