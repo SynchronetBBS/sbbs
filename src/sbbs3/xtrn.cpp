@@ -1588,7 +1588,8 @@ char* sbbs_t::cmdstr(char *instr, char *fpath, char *fspec, char *outstr)
 /* Returns command line generated from instr with %c replacments            */
 /* This is the C-exported version											*/
 /****************************************************************************/
-extern "C" char* cmdstr(scfg_t* cfg, user_t* user, const char* instr, const char* fpath
+extern "C" 
+char* DLLCALL cmdstr(scfg_t* cfg, user_t* user, const char* instr, const char* fpath
 						,const char* fspec, char* cmd)
 {
 	char	str[256];
