@@ -39,7 +39,7 @@
 #ifdef _WIN32
 
 	#include <share.h>		/* SH_DENYNO */
-	#include <direct.h>		/* _mkdir/_rmdir() */
+	#include <direct.h>		/* _mkdir/rmdir() */
 	#include <process.h>	/* _beginthread */
 	#include <windows.h>	/* required for mmsystem.h */
 	#include <mmsystem.h>	/* SND_ASYNC */
@@ -2999,7 +2999,7 @@ static void ctrl_thread(void* arg)
 				else		/* relative */
 					sprintf(fname,"%s%s",local_dir,p);
 
-				if((i=_rmdir(fname))==0) {
+				if((i=rmdir(fname))==0) {
 					sockprintf(sock,"250 \"%s\" directory removed",fname);
 					lprintf("%04d %s removed directory: %s",sock,user.alias,fname);
 				} else {
