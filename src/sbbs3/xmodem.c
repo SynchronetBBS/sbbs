@@ -200,7 +200,7 @@ int xmodem_get_block(xmodem_t* xm, uchar* block, BOOL hdrblock)
 /*****************/
 /* Sends a block */
 /*****************/
-void xmodem_put_block(xmodem_t* xm, uchar* block, uint block_size, ulong block_num)
+void xmodem_put_block(xmodem_t* xm, uchar* block, unsigned block_size, unsigned block_num)
 {
 	uchar	ch,chksum;
     uint	i;
@@ -238,7 +238,8 @@ void xmodem_put_block(xmodem_t* xm, uchar* block, uint block_size, ulong block_n
 /************************************************************/
 int xmodem_get_ack(xmodem_t* xm, unsigned tries, unsigned block_num)
 {
-	int i,errors,can=0;
+	int i,can=0;
+	unsigned errors;
 
 	for(errors=0;errors<tries;errors++) {
 
