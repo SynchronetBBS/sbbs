@@ -13,7 +13,7 @@
 # $Id$
 
 # Macros
-DEBUG	=	1				# Comment out for release (non-debug) version
+#DEBUG	=	1				# Comment out for release (non-debug) version
 JS		=	1				# Comment out for non-JavaScript (v3.00) build
 CC		=	bcc32
 LD		=	ilink32
@@ -44,7 +44,7 @@ LFLAGS	=	$(LFLAGS) -v
 LIBODIR	=	$(LIBODIR).debug
 EXEODIR	=	$(EXEODIR).debug
 !else
-CFLAGS	=	$(CFLAGS) -g1
+CFLAGS	=	$(CFLAGS)
 LIBODIR	=	$(LIBODIR).release
 EXEODIR	=	$(EXEODIR).release
 !endif
@@ -170,10 +170,13 @@ $(SBBSECHO): sbbsecho.c rechocfg.c smbtxt.c crc32.c lzh.c $(SMBLIB) \
 # SBBSecho Configuration Program
 $(ECHOCFG): echocfg.c rechocfg.c \
 	$(UIFC)uifc.c \
+	$(UIFC)uifcx.c \
+	$(UIFC)uifcfltk.cpp \
 	$(LIBODIR)\nopen.obj \
-	$(LIBODIR)\str_util.obj
+	$(LIBODIR)\str_util.obj \
+	..\..\lib\fltk\win32\fltk.lib
 	@echo Creating $@
-	@$(CC) $(CFLAGS) -n$(EXEODIR) $** 
+	@$(CC) -DUSE_FLTK -I..\..\include\fltk $(CFLAGS) -n$(EXEODIR) $** 
 
 # ADDFILES
 $(ADDFILES): addfiles.c \
