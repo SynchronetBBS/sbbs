@@ -6,6 +6,12 @@
 
 !include sbbsdefs.inc
 
+compare_ars rest C
+if_true
+    print "\r\nYou can't chat.\r\n"
+    return
+    end_if
+
 # Set return point for main menu commands (via end_cmd)
 cmd_home
 
