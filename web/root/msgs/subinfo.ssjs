@@ -22,7 +22,7 @@ else {
 	}
 	else if(template.sub.settings & SUB_QNET) {
 		template.type="QWK";
-		template.tagline=ascii_str(template.sub.qwknet_tagline);
+		template.tagline=ascii_str(strip_ctrl(template.sub.qwknet_tagline));
 	}
 	else if(template.sub.settings & SUB_PNET) {
 		template.type="PostLink";
