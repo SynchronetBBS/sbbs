@@ -215,7 +215,7 @@
 "ng(h%ung) %-40.40s %12.12s h%4u\r\n"             182 LibLstFmt
 "\1n\r\nInvalid NetMail address.\r\n"                   183 InvalidNetMailAddr
 "_\r\ngh%s ngTransfer Policy\r\n\r\nn"            184 TransferPolicyHdr
-"<UNUSED185>"                                           185 Unused185
+"\1n\1h[\1y%c\1w] \1b%-25s  "                           185 TransferProtLstFmt
 "Initial uploads are rewarded with %d%% of the "\       186 TpUpload
 	"credit value\r\n"
 "All downloads are rewarded with %d%% of the "\         187 TpDownload
@@ -310,7 +310,7 @@
 "\r\nwhNot enough time left to transfer.\r\n"         263 NotEnoughTimeToDl
 "\r\nProtocol, ~Batch, ~Quit, or [Next]: "              264 ProtocolBatchQuitOrNext
 "\r\nBulk Upload %s %s Directory:\r\n"                  265 BulkUpload
-"_yh%s %6ldk:"                                       266 BulkUploadDescPrompt
+"_yh%s %7ld:"                                        266 BulkUploadDescPrompt
 "\r\nrhiNo files in batch queue.n"\                 267 NoFilesInBatchQueue
 	"\r\n\r\nmUse hDnm or hUnm to add files to the queue.\r\n"
 "_\r\nyhBatch: n"                                   268 BatchMenuPrompt
@@ -691,7 +691,7 @@
 "-g\r\nSystem Statistics Log:\r\n\r\nn"              565 SysStatsLogHdr
 "-g\r\nNode #%d Statistics Log:\r\n\r\nn"            566 NodeStatsLogHdr
 "_rhYour time has been reduced due to an "\          567 ReducedTime
-	"upcoming event on \1w%s\r\n\r\n"
+	"upcoming event.\r\n\r\n"
 "n\r\nTimed Event - Node: %d   Time: %02d:%02d   "\    568 EventInfo
 	"Last Ran: %s\r\n"
 "_rhi\r\n\r\nCarrier will be dropped in %d "\       569 UploadBeforeEvent
