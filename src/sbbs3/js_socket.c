@@ -508,7 +508,7 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			break;
 		case SOCK_PROP_NONBLOCKING:
 			p->nonblocking = JSVAL_TO_BOOLEAN(*vp);
-			ioctlsocket(p->sock,FIONBIO,&(p->nonblocking));
+			ioctlsocket(p->sock,FIONBIO,(ulong*)&(p->nonblocking));
 			break;
 	}
 
