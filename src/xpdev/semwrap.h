@@ -77,7 +77,10 @@ extern "C" {
 	#define sem_trywait(psem)			(WaitForSingleObject(*(psem),0)==WAIT_OBJECT_0?0:(errno=EAGAIN,-1))
 	#define sem_post(psem)				ReleaseSemaphore(*(psem),1,NULL)
 	#define sem_destroy(psem)			CloseHandle(*(psem))
+
 	/* No Win32 implementation for sem_getvalue() */
+	/* How about this? */
+	#define sem_getvalue(psem,val)			ReleaseSemaphore(*(psem),0,val)
 
 	/* NOT POSIX */
 	#define sem_trywait_block(psem,t)	(WaitForSingleObject(*(psem),t)==WAIT_OBJECT_0?0:(errno=EAGAIN,-1))
