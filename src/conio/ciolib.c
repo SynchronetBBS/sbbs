@@ -215,7 +215,7 @@ int initciolib(int mode)
 			break;
 	}
 	if(cio_api.mode==CIOLIB_MODE_AUTO) {
-		fprintf(stderr,"CIOLIB initialization failed!");
+		fprintf(stderr,"CIOLIB initialization failed!\n");
 		return(-1);
 	}
 
