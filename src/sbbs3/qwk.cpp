@@ -80,7 +80,7 @@ int sbbs_t::qwk_route(char *inaddr, char *fulladdr)
 	FILE *stream;
 
 	fulladdr[0]=0;
-	sprintf(str,"%.255s",inaddr);
+	SAFECOPY(str,inaddr);
 	p=strrchr(str,'/');
 	if(p) p++;
 	else p=str;

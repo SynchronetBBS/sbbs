@@ -111,7 +111,7 @@ bool sbbs_t::netmail(char *into, char *title, long mode)
 		return(false); 
 	}
 
-	sprintf(subj,"%.127s",title);
+	SAFECOPY(subj,title);
 
 	strcpy(to,into);
 
