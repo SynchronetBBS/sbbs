@@ -55,9 +55,9 @@
 #include <unistd.h>
 #include <pwd.h>
 #include <grp.h>
-#include <syslog.h>
 #include <stdarg.h>
 #include <stdlib.h>  /* Is this included from somewhere else? */
+#include <sys/syslog.h>
 
 #endif
 
