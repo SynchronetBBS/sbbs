@@ -10,15 +10,15 @@ object NodeForm: TNodeForm
   DragMode = dmAutomatic
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
-  Font.Height = -14
+  Font.Height = -11
   Font.Name = 'MS Sans Serif'
   Font.Style = []
   OldCreateOrder = False
   Position = poDefault
   OnHide = FormHide
   OnShow = FormShow
-  PixelsPerInch = 120
-  TextHeight = 16
+  PixelsPerInch = 96
+  TextHeight = 13
   object Toolbar: TToolBar
     Left = 0
     Top = 0
@@ -84,7 +84,7 @@ object NodeForm: TNodeForm
     object SpyButton: TToolButton
       Left = 161
       Top = 0
-      Hint = 'Spy on Node'
+      Hint = 'Spy on Node(s)'
       Caption = 'SpyButton'
       ImageIndex = 41
       OnClick = SpyButtonClick
@@ -94,9 +94,9 @@ object NodeForm: TNodeForm
     Left = 0
     Top = 25
     Width = 269
-    Height = 157
+    Height = 162
     Align = alClient
-    ItemHeight = 16
+    ItemHeight = 13
     MultiSelect = True
     PopupMenu = PopupMenu
     TabOrder = 1
@@ -108,7 +108,6 @@ object NodeForm: TNodeForm
     Top = 120
   end
   object PopupMenu: TPopupMenu
-    Images = MainForm.ImageList
     Left = 128
     Top = 72
     object LockMenuItem: TMenuItem
