@@ -178,6 +178,51 @@ static char* prop_desc[] = {
 };
 #endif
 
+/* Execute a string in its own context (away from Synchronet objects) */
+static JSBool
+js_eval(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		buf;
+    JSScript*	script;
+
+	*rval=JSVAL_VOID;
+
+	if(argc<1)
+		return(JS_TRUE);
+
+	if((cx=JS_NewContext(JS_GetRuntime(cx),16*1024))==NULL)
+		return(JS_FALSE);
+
+	if((obj=JS_NewObject(cx, NULL, NULL, NULL))==NULL)
+		return(JS_FALSE);
+
+	if(!JS_InitStandardClasses(cx,obj))
+		return(JS_FALSE);
+	if((buf=JS_GetStringBytes(JS_ValueToString(cx, argv[0])))==NULL)
+		return(JS_FALSE);
+
+#if 0	/* This is a security risk due to access to __parent__ */
+
+	for(i=1; i+1<argc; i+=2)
+		JS_DefineProperty(cx, obj
+			,JS_GetStringBytes(JS_ValueToString(cx,argv[i]))	/* name */
+			,argv[i+1]											/* value */
+			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+
+#endif
+
+	script=JS_CompileScript(cx, obj, buf, strlen(buf), NULL, 0);
+
+	if(script!=NULL) {
+		JS_ExecuteScript(cx, obj, script, rval);
+		JS_DestroyScript(cx, script);
+	}
+
+	JS_DestroyContext(cx);
+
+    return(JS_TRUE);
+}
+
 
 static JSClass js_internal_class = {
      "JsInternal"				/* name			*/
@@ -192,6 +237,13 @@ static JSClass js_internal_class = {
 	,JS_FinalizeStub		/* finalize		*/
 };
 
+static jsMethodSpec js_functions[] = {
+	{"eval",            js_eval,            0,	JSTYPE_STRING,	JSDOCSTR("string script")
+	,JSDOCSTR("evaluate a JavaScript string in its own (secure) context, returning the result")
+	},		
+	{0}
+};
+
 JSObject* DLLCALL js_CreateInternalJsObject(JSContext* cx, JSObject* parent, js_branch_t* branch)
 {
 	JSObject*	obj;
@@ -204,6 +256,9 @@ JSObject* DLLCALL js_CreateInternalJsObject(JSContext* cx, JSObject* parent, js_
 		return(NULL);
 
 	if(!JS_DefineProperties(cx, obj, js_properties))	/* expose them */
+		return(NULL);
+
+	if (!js_DefineMethods(cx, obj, js_functions, /* append? */ FALSE)) 
 		return(NULL);
 
 #ifdef _DEBUG
