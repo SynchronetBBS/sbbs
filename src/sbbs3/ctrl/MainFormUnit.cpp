@@ -2668,6 +2668,7 @@ void __fastcall TMainForm::BBSPreviewMenuItemClick(TObject *Sender)
 {
     TOpenDialog* dlg=new TOpenDialog((TComponent*)Sender);
 
+    dlg->Options << ofNoChangeDir;
     dlg->Filter = "ANSI/Ctrl-A files (*.asc; *.msg; *.ans)|*.ASC;*.MSG;*.ANS"
                 "|All files|*.*";
     dlg->InitialDir=cfg.text_dir;
@@ -3002,6 +3003,7 @@ void __fastcall TMainForm::FileEditTextFilesClick(TObject *Sender)
 {
 	TOpenDialog* dlg=new TOpenDialog((TComponent*)Sender);
 
+    dlg->Options << ofNoChangeDir;
     dlg->Filter = 	"Text files (*.txt)|*.TXT"
     				"|All files|*.*";
     dlg->InitialDir=cfg.text_dir;
@@ -3020,6 +3022,7 @@ void __fastcall TMainForm::BBSEditBajaMenuItemClick(TObject *Sender)
 {
 	TOpenDialog* dlg=new TOpenDialog((TComponent*)Sender);
 
+    dlg->Options << ofNoChangeDir;
     dlg->Filter = "Baja Source Code (*.src)|*.SRC";
     dlg->InitialDir=cfg.exec_dir;
     if(dlg->Execute()==true) {
@@ -3042,6 +3045,7 @@ void __fastcall TMainForm::FileEditJavaScriptClick(TObject *Sender)
 {
 	TOpenDialog* dlg=new TOpenDialog((TComponent*)Sender);
 
+    dlg->Options << ofNoChangeDir;
     dlg->Filter = "JavaScript Files (*.js)|*.JS";
     dlg->InitialDir=cfg.exec_dir;
     if(dlg->Execute()==true) {
@@ -3059,6 +3063,7 @@ void __fastcall TMainForm::FileEditConfigFilesClick(TObject *Sender)
 {
 	TOpenDialog* dlg=new TOpenDialog((TComponent*)Sender);
 
+    dlg->Options << ofNoChangeDir;
     dlg->Filter = "Configuration Files (*.cfg)|*.CFG";
     dlg->InitialDir=cfg.ctrl_dir;
     if(dlg->Execute()==true) {
@@ -3075,6 +3080,7 @@ void __fastcall TMainForm::BBSEditFileClick(TObject *Sender)
 {
    TOpenDialog* dlg=new TOpenDialog((TComponent*)Sender);
 
+   dlg->Options << ofNoChangeDir;
     dlg->Filter = "ANSI/Ctrl-A files (*.asc; *.msg; *.ans)|*.ASC;*.MSG;*.ANS"
                 "|All files|*.*";
     dlg->InitialDir=cfg.text_dir;

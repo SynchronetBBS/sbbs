@@ -1,6 +1,6 @@
 object MainForm: TMainForm
-  Left = 604
-  Top = 371
+  Left = 372
+  Top = 353
   Width = 640
   Height = 400
   Caption = 'Synchronet Control Panel'
@@ -10,7 +10,7 @@ object MainForm: TMainForm
   DragMode = dmAutomatic
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
-  Font.Height = -11
+  Font.Height = -14
   Font.Name = 'MS Sans Serif'
   Font.Style = []
   Icon.Data = {
@@ -46,11 +46,11 @@ object MainForm: TMainForm
   OnCloseQuery = FormCloseQuery
   OnCreate = FormCreate
   OnShow = FormShow
-  PixelsPerInch = 96
-  TextHeight = 13
+  PixelsPerInch = 120
+  TextHeight = 16
   object HorizontalSplitter: TSplitter
     Left = 0
-    Top = 164
+    Top = 195
     Width = 632
     Height = 1
     Cursor = crVSplit
@@ -61,9 +61,9 @@ object MainForm: TMainForm
   end
   object Logo: TImage
     Left = 0
-    Top = 165
+    Top = 196
     Width = 632
-    Height = 164
+    Height = 131
     Align = alClient
     Center = True
     IncrementalDisplay = True
@@ -1957,7 +1957,7 @@ object MainForm: TMainForm
     Left = 0
     Top = 30
     Width = 632
-    Height = 134
+    Height = 165
     Align = alTop
     BevelOuter = bvNone
     Constraints.MinHeight = 100
@@ -1965,18 +1965,18 @@ object MainForm: TMainForm
     TabOrder = 1
     Visible = False
     object TopVerticalSplitter: TSplitter
-      Left = 235
+      Left = 289
       Top = 0
-      Width = 2
-      Height = 134
+      Width = 3
+      Height = 165
       Cursor = crHSplit
       MinSize = 1
     end
     object UpperLeftPageControl: TPageControl
       Left = 0
       Top = 0
-      Width = 235
-      Height = 134
+      Width = 289
+      Height = 165
       Align = alLeft
       DockSite = True
       TabOrder = 0
@@ -1984,10 +1984,10 @@ object MainForm: TMainForm
       OnUnDock = PageControlUnDock
     end
     object UpperRightPageControl: TPageControl
-      Left = 237
+      Left = 292
       Top = 0
-      Width = 395
-      Height = 134
+      Width = 340
+      Height = 165
       Align = alClient
       DockSite = True
       TabOrder = 1
@@ -1997,26 +1997,26 @@ object MainForm: TMainForm
   end
   object BottomPanel: TPanel
     Left = 0
-    Top = 165
+    Top = 196
     Width = 632
-    Height = 164
+    Height = 131
     Align = alClient
     BevelOuter = bvNone
     TabOrder = 2
     Visible = False
     object BottomVerticalSplitter: TSplitter
-      Left = 235
+      Left = 289
       Top = 0
-      Width = 2
-      Height = 164
+      Width = 3
+      Height = 131
       Cursor = crHSplit
       MinSize = 1
     end
     object LowerLeftPageControl: TPageControl
       Left = 0
       Top = 0
-      Width = 235
-      Height = 164
+      Width = 289
+      Height = 131
       Align = alLeft
       DockSite = True
       TabOrder = 0
@@ -2024,10 +2024,10 @@ object MainForm: TMainForm
       OnUnDock = PageControlUnDock
     end
     object LowerRightPageControl: TPageControl
-      Left = 237
+      Left = 292
       Top = 0
-      Width = 395
-      Height = 164
+      Width = 340
+      Height = 131
       Align = alClient
       DockSite = True
       TabOrder = 1
@@ -2037,7 +2037,7 @@ object MainForm: TMainForm
   end
   object StatusBar: TStatusBar
     Left = 0
-    Top = 329
+    Top = 327
     Width = 632
     Height = 25
     Panels = <
@@ -2826,7 +2826,7 @@ object MainForm: TMainForm
   object ImageList: TImageList
     Left = 360
     Bitmap = {
-      494C010143004500040010001000FFFFFFFFFF00FFFFFFFFFFFFFFFF424D3600
+      494C010143004500040010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000002001000001002000000000000020
       0100000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
@@ -5206,7 +5206,8 @@ object MainForm: TMainForm
       000180010001800100019FF900019FF91FF19EF91FF19FF91DF19C791FF19C19
       1CF19C39183198191C719C19183198191C319C39183198191C719C7918319819
       1CF19CF9183198391DF19DF91FF19FF91FF19FF91FF19FF90001800100018001
-      00018003000180030001FFFF0001FFFF}
+      00018003000180030001FFFF0001FFFF00000000000000000000000000000000
+      000000000000}
   end
   object StatsTimer: TTimer
     Enabled = False
@@ -5279,6 +5280,7 @@ object MainForm: TMainForm
     end
   end
   object OpenDialog: TOpenDialog
+    Options = [ofHideReadOnly, ofNoChangeDir, ofEnableSizing]
     Left = 576
   end
   object SaveDialog: TSaveDialog
