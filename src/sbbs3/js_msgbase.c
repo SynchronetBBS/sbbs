@@ -311,6 +311,7 @@ enum {
 	,SMB_PROP_FILE		
 	,SMB_PROP_DEBUG		
 	,SMB_PROP_RETRY_TIME
+	,SMB_PROP_FIRST_MSG		// first message number
 	,SMB_PROP_LAST_MSG		// last message number
 	,SMB_PROP_TOTAL_MSGS 	// total messages
 	,SMB_PROP_MAX_CRCS		// Maximum number of CRCs to keep in history
@@ -344,6 +345,7 @@ static JSBool js_msgbase_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 static JSBool js_msgbase_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
     jsint       tiny;
+	idxrec_t	idx;
 	private_t*	p;
 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
@@ -363,6 +365,11 @@ static JSBool js_msgbase_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			break;
 		case SMB_PROP_DEBUG:
 			*vp = INT_TO_JSVAL(p->debug);
+			break;
+		case SMB_PROP_FIRST_MSG:
+			memset(&idx,0,sizeof(idx));
+			smb_getfirstidx(&(p->smb),&idx);
+			*vp = INT_TO_JSVAL(idx.number);
 			break;
 		case SMB_PROP_LAST_MSG:
 			smb_getstatus(&(p->smb));
@@ -398,12 +405,13 @@ static struct JSPropertySpec js_msgbase_properties[] = {
 	{	"file"				,SMB_PROP_FILE			,SMB_PROP_FLAGS,	NULL,NULL},
 	{	"debug"				,SMB_PROP_DEBUG			,JSPROP_ENUMERATE,	NULL,NULL},
 	{	"retry_time"		,SMB_PROP_RETRY_TIME	,JSPROP_ENUMERATE,	NULL,NULL},
-	{	"last_msg"			,SMB_PROP_LAST_MSG		,JSPROP_ENUMERATE,	NULL,NULL},
-	{	"total_msgs"		,SMB_PROP_TOTAL_MSGS	,JSPROP_ENUMERATE,	NULL,NULL},
-	{	"max_crcs"			,SMB_PROP_MAX_CRCS		,JSPROP_ENUMERATE,	NULL,NULL},
-	{	"max_msgs"			,SMB_PROP_MAX_MSGS  	,JSPROP_ENUMERATE,	NULL,NULL},
-	{	"max_age"			,SMB_PROP_MAX_AGE   	,JSPROP_ENUMERATE,	NULL,NULL},
-	{	"attributes"		,SMB_PROP_ATTR			,JSPROP_ENUMERATE,	NULL,NULL},
+	{	"first_msg"			,SMB_PROP_FIRST_MSG		,SMB_PROP_FLAGS,	NULL,NULL},
+	{	"last_msg"			,SMB_PROP_LAST_MSG		,SMB_PROP_FLAGS,	NULL,NULL},
+	{	"total_msgs"		,SMB_PROP_TOTAL_MSGS	,SMB_PROP_FLAGS,	NULL,NULL},
+	{	"max_crcs"			,SMB_PROP_MAX_CRCS		,SMB_PROP_FLAGS,	NULL,NULL},
+	{	"max_msgs"			,SMB_PROP_MAX_MSGS  	,SMB_PROP_FLAGS,	NULL,NULL},
+	{	"max_age"			,SMB_PROP_MAX_AGE   	,SMB_PROP_FLAGS,	NULL,NULL},
+	{	"attributes"		,SMB_PROP_ATTR			,SMB_PROP_FLAGS,	NULL,NULL},
 	{0}
 };
 
