@@ -235,6 +235,69 @@ u_long resolve_ip(char *addr)
 
 #ifdef JAVASCRIPT
 
+static JSClass js_method_class = {
+     "Method"				/* name			*/
+    ,0						/* flags		*/
+	,JS_PropertyStub		/* addProperty	*/
+	,JS_PropertyStub		/* delProperty	*/
+	,JS_PropertyStub		/* getProperty	*/
+	,JS_PropertyStub		/* setProperty	*/
+	,JS_EnumerateStub		/* enumerate	*/
+	,JS_ResolveStub			/* resolve		*/
+	,JS_ConvertStub			/* convert		*/
+	,JS_FinalizeStub		/* finalize		*/
+};
+
+static const char* method_array_name = "_method_list";
+
+static JSBool 
+DLLCALL js_DefineMethods(JSContext* cx, JSObject* obj, JSFunctionSpec *funcs)
+{
+	int			i;
+	jsuint		len=0;
+	jsval		val;
+	JSObject*	method;
+	JSObject*	method_array;
+
+	if(!JS_DefineFunctions(cx,obj,funcs))
+		return(JS_FALSE);
+
+	/* Return existing user object if it's already been created */
+	if(JS_GetProperty(cx,obj,method_array_name,&val) && val!=JSVAL_VOID)
+		method_array=JSVAL_TO_OBJECT(val);
+	else
+		if((method_array=JS_NewArrayObject(cx, 0, NULL))==NULL) 
+			return(JS_FALSE);
+
+	JS_GetArrayLength(cx, method_array, &len);
+
+	for(i=0;funcs[i].name;i++) {
+
+		method = JS_NewObject(cx, &js_method_class, NULL, method_array);
+
+		if(method==NULL)
+			return(JS_FALSE);
+
+		val = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,funcs[i].name));
+		if(!JS_SetProperty(cx, method, "name", &val))
+			return(JS_FALSE);
+
+		val = INT_TO_JSVAL(funcs[i].nargs);
+		if(!JS_SetProperty(cx, method, "nargs", &val))
+			return(JS_FALSE);
+
+		val=OBJECT_TO_JSVAL(method);
+		if(!JS_SetElement(cx, method_array, len+i, &val))
+			return(JS_FALSE);
+	}
+
+	if(!JS_DefineProperty(cx, obj, method_array_name, OBJECT_TO_JSVAL(method_array)
+		, NULL, NULL, 0))
+		return(JS_FALSE);
+
+	return(JS_TRUE);
+}
+
 /* 
  * @method: log
  * @syntax: log([value][,value][...])
@@ -508,7 +571,7 @@ bool sbbs_t::js_init()
 		if((js_glob=js_CreateGlobalObject(js_cx, &cfg))==NULL)
 			break;
 
-		if(!JS_DefineFunctions(js_cx, js_glob, js_global_functions))
+		if(!js_DefineMethods(js_cx, js_glob, js_global_functions))
 			break;
 
 		/* System Object */
@@ -541,7 +604,7 @@ bool sbbs_t::js_init()
 
 		/* Server Object */
 		if((server=JS_DefineObject(js_cx, js_glob, "server", &js_server_class
-			,NULL,0))==NULL)
+			,NULL,JSPROP_ENUMERATE))==NULL)
 			break;
 
 		sprintf(ver,"%s v%s%c",TELNET_SERVER,VERSION,REVISION);

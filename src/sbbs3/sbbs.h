@@ -828,6 +828,9 @@ extern "C" {
 
 #ifdef JAVASCRIPT
 
+	/* main.cpp */
+	DLLEXPORT JSBool	DLLCALL js_DefineMethods(JSContext* cx, JSObject* obj, JSFunctionSpec *fs);
+
 	/* js_global.c */
 	DLLEXPORT JSObject* DLLCALL js_CreateGlobalObject(JSContext* cx, scfg_t* cfg);
 
