@@ -438,11 +438,12 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 			break; 
 	}
 
-	sprintf(str,"Scanned %lu sub-boards for new messages",subs_scanned);
 	if(online==ON_LOCAL) /* event */
-		eprintf(str);
+		eprintf("%s scanned %lu sub-boards for new messages"
+			,useron.alias,subs_scanned);
 	else
-		lprintf(str);
+		lprintf("Node %d %s scanned %lu sub-boards for new messages"
+			,cfg.node_num,useron.alias,subs_scanned);
 
 	if((*msgcnt)+mailmsgs && time(NULL)-start) {
 		bprintf("\r\n\r\n\1n\1hPacked %lu messages (%lu bytes) in %lu seconds "
