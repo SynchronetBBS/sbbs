@@ -44,11 +44,13 @@
 
 typedef struct {
 
-	SOCKET	sock;											/* socket descriptor */
-	long*	mode;
-	FILE*	statfp;
-	FILE*	errfp;
-	uint	block_size;
+	SOCKET		sock;	/* socket descriptor */
+	long*		mode;
+	FILE*		statfp;
+	FILE*		errfp;
+	unsigned	block_size;
+	unsigned	ack_timeout;
+	unsigned	byte_timeout;
 
 } xmodem_t;
 

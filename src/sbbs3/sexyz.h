@@ -78,7 +78,7 @@
 
 #define NOINP 0x0100     	/* input buffer empty (incom only) */
 
-uint	recv_byte(SOCKET sock, int timeout, long mode);
-int		send_byte(SOCKET sock, uchar ch, int timeout, long mode);
+uint	recv_byte(SOCKET sock, unsigned timeout, long mode);
+int		send_byte(SOCKET sock, uchar ch, unsigned timeout, long mode);
 char*	chr(uchar ch);
 void	bail(int code);

@@ -45,7 +45,7 @@
 
 void xmodem_put_nak(xmodem_t* xm)
 {
-	while(getcom(1)!=NOINP)
+	while(getcom(0)!=NOINP)
 		;				/* wait for any trailing data */
 	putcom(NAK);
 }
@@ -112,7 +112,7 @@ int xmodem_get_block(xmodem_t* xm, uchar* block, BOOL hdrblock)
 				xmodem_put_nak(xm);
 				continue; 
 		}
-		i=getcom(1);
+		i=getcom(xm->byte_timeout);
 		if(i==NOINP) {
 			if(hdrblock)  /* Trying to get Ymodem header block */
 				return(-1);
@@ -120,7 +120,7 @@ int xmodem_get_block(xmodem_t* xm, uchar* block, BOOL hdrblock)
 			continue; 
 		}
 		block_num=i;
-		i=getcom(1);
+		i=getcom(xm->byte_timeout);
 		if(i==NOINP) {
 			if(hdrblock)  /* Trying to get Ymodem header block */
 				return(-1);
@@ -137,7 +137,7 @@ int xmodem_get_block(xmodem_t* xm, uchar* block, BOOL hdrblock)
 		}
 		calc_crc=calc_chksum=0;
 		for(b=0;b<xm->block_size;b++) {
-			i=getcom(1);
+			i=getcom(xm->byte_timeout);
 			if(i==NOINP)
 				break;
 			block[b]=i;
@@ -153,11 +153,11 @@ int xmodem_get_block(xmodem_t* xm, uchar* block, BOOL hdrblock)
 		}
 
 		if((*xm->mode)&CRC) {
-			crc=getcom(1)<<8;
-			crc|=getcom(1); 
+			crc=getcom(xm->byte_timeout)<<8;
+			crc|=getcom(xm->byte_timeout); 
 		}
 		else
-			chksum=getcom(1);
+			chksum=getcom(xm->byte_timeout);
 
 		if((*xm->mode)&CRC) {
 			if(crc==calc_crc)
@@ -243,7 +243,7 @@ int xmodem_get_ack(xmodem_t* xm, int tries)
 			return(1); 
 		}
 
-		i=getcom(10);
+		i=getcom(xm->ack_timeout);
 		if(can && i!=CAN)
 			can=0;
 		if(i==ACK)
