@@ -752,15 +752,15 @@ enum {							/* readmail and delmailidx which types		*/
 #define EX_WILDCARD	0
 #endif
 								
-#define OS2_POPEN	(1<<0)		/* Leave COM port open						*/
-								
-#define TG_ECHO		(1<<0)		/* Turn on telnet echo						*/
-#define TG_CRLF		(1<<1)		/* Expand sole CR to CRLF					*/
-#define TG_LINEMODE	(1<<2)		/* Send entire lines only					*/
-#define TG_NODESYNC	(1<<3)		/* Call Nodesync, get msgs, etc.			*/
-#define TG_CTRLKEYS	(1<<4)		/* Interpret ^P ^U ^T, etc locally			*/
-#define TG_PASSTHRU	(1<<5)		/* Pass-through telnet commands/responses	*/
-#define TG_RLOGIN	(1<<6)		/* Use BSD RLogin protocol					*/
+								/* telnet_gate() mode bits					*/							
+#define TG_ECHO			(1<<0)	/* Turn on telnet echo						*/
+#define TG_CRLF			(1<<1)	/* Expand sole CR to CRLF					*/
+#define TG_LINEMODE		(1<<2)	/* Send entire lines only					*/
+#define TG_NODESYNC		(1<<3)	/* Call Nodesync, get msgs, etc.			*/
+#define TG_CTRLKEYS		(1<<4)	/* Interpret ^P ^U ^T, etc locally			*/
+#define TG_PASSTHRU		(1<<5)	/* Pass-through telnet commands/responses	*/
+#define TG_RLOGIN		(1<<6)	/* Use BSD RLogin protocol					*/
+#define TG_NOCHKTIME	(1<<7)	/* Don't check time left while gated		*/
 								
 enum {							/* Values for 'mode' in listfileinfo        */
 	 FI_INFO            		/* Just list file information               */

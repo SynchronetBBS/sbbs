@@ -139,7 +139,8 @@ void sbbs_t::telnet_gate(char* destaddr, ulong mode)
 	telnet_mode&=~TELNET_MODE_BIN_RX;
 
 	while(online) {
-		gettimeleft();
+		if(!(mode&TG_NOCHKTIME))
+			gettimeleft();
 		rd=RingBufRead(&inbuf,buf,sizeof(buf));
 		if(rd) {
 			if(!(telnet_mode&TELNET_MODE_BIN_RX)) {
