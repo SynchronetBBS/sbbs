@@ -826,9 +826,6 @@ void sbbs_t::maindflts(user_t* user)
 		if(cfg.total_shells>1)
 			strcat(str,"K");
 
-		if(!user->rows && user==&useron)
-			ansi_getlines();
-
 		ch=(char)getkeys(str,0);
 		switch(ch) {
 			case 'T':
@@ -888,8 +885,13 @@ void sbbs_t::maindflts(user_t* user)
 				break;
 			case 'L':
 				bputs(text[HowManyRows]);
-				if((ch=(char)getnum(99))!=-1)
+				if((ch=(char)getnum(99))!=-1) {
 					putuserrec(&cfg,user->number,U_ROWS,2,ultoa(ch,tmp,10));
+					if(user==&useron) {
+						useron.rows=ch;
+						ansi_getlines();
+					}
+				}
 				break;
 			case 'P':
 				user->misc^=UPAUSE;
