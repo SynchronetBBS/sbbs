@@ -298,6 +298,32 @@ int uifcini32(uifcapi_t* uifcapi)
     return(0);
 }
 
+static int uifc_getmouse(struct mouse_event *mevent)
+{
+	mevent->startx=0;
+	mevent->starty=0;
+	mevent->event=0;
+	if(api->mode&UIFC_MOUSE) {
+		getmouse(mevent);
+		if(mevent->event==CIOLIB_BUTTON_3_CLICK)
+			return(ESC);
+		if(mevent->starty==api->buttony) {
+			if(mevent->startx>=api->exitstart
+					&& mevent->startx<=api->exitend
+					&& mevent->event==CIOLIB_BUTTON_1_CLICK) {
+				return(ESC);
+			}
+			if(mevent->startx>=api->helpstart
+					&& mevent->startx<=api->helpend
+					&& mevent->event==CIOLIB_BUTTON_1_CLICK) {
+				return(CIO_KEY_F(1));
+			}
+		}
+		return(0);
+	}
+	return(-1);
+}
+
 void uifcbail(void)
 {
 	_setcursortype(_NORMALCURSOR);
@@ -549,11 +575,11 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 			*(ptr++)=']';
 			*(ptr++)=hclr|(bclr<<4);
 			i=6;
-			api->buttony=s_top+top-1;
-			api->exitstart=s_left+left;
-			api->exitend=s_left+left+2;
-			api->helpstart=s_left+left+3;
-			api->helpend=s_left+left+5;
+			api->buttony=s_top+top;
+			api->exitstart=s_left+left+1;
+			api->exitend=s_left+left+3;
+			api->helpstart=s_left+left+4;
+			api->helpend=s_left+left+6;
 		}
 		else
 			i=0;
@@ -753,9 +779,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 			if(i==BS)
 				i=ESC;
 			if(i==CIO_KEY_MOUSE) {
-				if((i=getmouse(&mevnt))==0) {
-					if(mevnt.event==CIOLIB_BUTTON_3_CLICK)
-						i=ESC;
+				if((i=uifc_getmouse(&mevnt))==0) {
 					/* Clicked in menu */
 					if(mevnt.startx>=s_left+left+3
 							&& mevnt.startx<=s_left+left+width+1
@@ -1405,11 +1429,11 @@ int uinput(int mode, int left, int top, char *prompt, char *str,
 		in_win[11]=lclr|(bclr<<4);
 		in_win[12]=']';
 		in_win[13]=hclr|(bclr<<4);
-		api->buttony=SCRN_TOP+top-1;
-		api->exitstart=SCRN_LEFT+left;
-		api->exitend=SCRN_LEFT+left+2;
-		api->helpstart=SCRN_LEFT+left+3;
-		api->helpend=SCRN_LEFT+left+5;
+		api->buttony=SCRN_TOP+top;
+		api->exitstart=SCRN_LEFT+left+1;
+		api->exitend=SCRN_LEFT+left+3;
+		api->helpstart=SCRN_LEFT+left+4;
+		api->helpend=SCRN_LEFT+left+6;
 	}
 
 	in_win[i++]='»';
@@ -1557,9 +1581,7 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 #endif
 		f=inkey();
 		if(f==CIO_KEY_MOUSE) {
-			if((f=getmouse(&mevnt))==0) {
-				if(mevnt.event==CIOLIB_BUTTON_3_CLICK)
-					f=ESC;
+			if((f=uifc_getmouse(&mevnt))==0) {
 				if(mevnt.startx>=left
 						&& mevnt.startx<=left+width
 						&& mevnt.event==CIOLIB_BUTTON_1_CLICK) {
@@ -1599,9 +1621,7 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 				ch=f;
 			f=0;
 			if(ch==CIO_KEY_MOUSE) {
-				if((ch=getmouse(&mevnt))==0) {
-					if(mevnt.event==CIOLIB_BUTTON_3_CLICK)
-						ch=ESC;
+				if((ch=uifc_getmouse(&mevnt))==0) {
 					if(mevnt.startx>=left
 							&& mevnt.startx<=left+width
 							&& mevnt.event==CIOLIB_BUTTON_1_CLICK) {
@@ -2162,9 +2182,7 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 				j=inkey();
 				if(j==CIO_KEY_MOUSE) {
 					/* Ignores return value to avoid hitting help/exit hotspots */
-					if(getmouse(&mevnt)>=0) {
-						if(mevnt.event==CIOLIB_BUTTON_3_CLICK)
-							j=ESC;
+					if(uifc_getmouse(&mevnt)>=0) {
 						/* Clicked Scroll Up */
 						if(mevnt.startx>=left+pad
 								&& mevnt.startx<=left+pad+width-3
