@@ -228,7 +228,8 @@ BOOL socket_check(SOCKET sock, BOOL* rd_p)
 		return(TRUE);
 
 	rd=recv(sock,&ch,1,MSG_PEEK);
-	if(rd==1) {
+	if(rd==1 
+		|| (rd==SOCKET_ERROR && ERROR_VALUE==EMSGSIZE)) {
 		if(rd_p!=NULL)
 			*rd_p=TRUE;
 		return(TRUE);
