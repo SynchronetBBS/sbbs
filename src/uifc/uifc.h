@@ -375,6 +375,7 @@ int uifcini(uifcapi_t*);	/* Original implementation based on conio		*/
 int uifcinix(uifcapi_t*);	/* Standard I/O implementation					*/
 int uifcinic(uifcapi_t*);	/* Unix curses implementation (by Deuce)		*/
 int uifcinid(uifcapi_t*);	/* Unix libdialog implementation (by Deuce)		*/
+int uifcini32(uifcapi_t*);	/* conio/curses implementation					*/
 #ifdef __cplusplus
 extern "C"
 #endif
