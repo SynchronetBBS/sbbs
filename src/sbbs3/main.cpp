@@ -3405,7 +3405,7 @@ void DLLCALL bbs_thread(void* arg)
 			continue;
 		}
 
-   		sbbs->client_socket=client_socket;	// require for output to the user
+   		sbbs->client_socket=client_socket;	// required for output to the user
         sbbs->online=ON_REMOTE;
 
 		if(sbbs->trashcan(host_ip,"ip")) {
@@ -3457,15 +3457,16 @@ void DLLCALL bbs_thread(void* arg)
 			continue;
 		}
 
-		sbbs->bprintf("Resolving identity...");
-		identify(&client_addr, 23, str, sizeof(str)-1);
-		identity=strrchr(str,':');
-		if(identity==NULL)	/* error */
-			identity=str;
-		else
-			identity++;		/* point to user name */
-		lprintf("%04d Identity: %s",client_socket, identity);
-
+		identity=NULL;
+		if(startup->options&BBS_OPT_GET_IDENT) {
+			sbbs->bprintf("Resolving identity...");
+			identify(&client_addr, 23, str, sizeof(str)-1);
+			identity=strrchr(str,':');
+			if(identity!=NULL) {
+				identity++;		/* point to user name */
+				lprintf("%04d Identity: %s",client_socket, identity);
+			}
+		}
 		/* Initialize client display */
 		client.size=sizeof(client);
 		client.time=time(NULL);
@@ -3525,6 +3526,8 @@ void DLLCALL bbs_thread(void* arg)
 			client_off(client_socket);
 			continue;
 		}
+		if(identity!=NULL)
+			new_node->logline("@*",identity);
 
 		if(rlogin==true) {
 			new_node->connection="RLogin";
