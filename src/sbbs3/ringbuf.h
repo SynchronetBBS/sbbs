@@ -83,7 +83,6 @@ typedef struct {
     DWORD	size;
 #ifdef RINGBUF_SEM
 	sem_t	sem;			/* semaphore used to signal data waiting */
-	sem_t	empty_sem;		/* semaphore used to signal empty buffer */
 	sem_t	highwater_sem;	/* semaphore used to signal highwater mark reached */
 	DWORD	highwater_mark;
 #endif

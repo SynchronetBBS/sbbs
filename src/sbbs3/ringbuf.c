@@ -96,7 +96,6 @@ int RINGBUFCALL RingBufInit( RingBuf* rb, DWORD size
     rb->size=size;
 #ifdef RINGBUF_SEM
 	sem_init(&rb->sem,0,0);
-	sem_init(&rb->empty_sem,0,0);
 	sem_init(&rb->highwater_sem,0,0);
 #endif
 #ifdef RINGBUF_MUTEX
@@ -111,9 +110,7 @@ void RINGBUFCALL RingBufDispose( RingBuf* rb)
 		os_free(rb->pStart);
 #ifdef RINGBUF_SEM
 	sem_post(&rb->sem);			/* just incase someone's waiting */
-	sem_post(&rb->empty_sem);	/* just incase someone's waiting */
 	sem_destroy(&rb->sem);
-	sem_destroy(&rb->empty_sem);
 	sem_destroy(&rb->highwater_sem);
 #endif
 #ifdef RINGBUF_MUTEX
@@ -199,9 +196,6 @@ DWORD RINGBUFCALL RingBufWrite( RingBuf* rb, BYTE* src,  DWORD cnt )
 	sem_post(&rb->sem);
 	if(rb->highwater_mark!=0 && RingBufFull(rb)>=rb->highwater_mark)
 		sem_post(&rb->highwater_sem);
-/*	do we need this here?
-	sem_reset(&rb->empty_sem); 
-*/
 #endif
 #ifdef RINGBUF_MUTEX
 	pthread_mutex_unlock(&rb->mutex);
@@ -256,7 +250,6 @@ DWORD RINGBUFCALL RingBufRead( RingBuf* rb, BYTE* dst,  DWORD cnt )
 
 #ifdef RINGBUF_SEM		/* clear/signal semaphores, if appropriate */
 	if(len-cnt==0) {	/* empty */
-		sem_post(&rb->empty_sem);
 		sem_reset(&rb->sem);
 	}
 	if(len-cnt<rb->highwater_mark)
@@ -319,7 +312,6 @@ void RINGBUFCALL RingBufReInit(RingBuf* rb)
 	rb->pHead = rb->pTail = rb->pStart;
 #ifdef RINGBUF_SEM
 	sem_reset(&rb->sem);
-	sem_reset(&rb->empty_sem);
 	sem_reset(&rb->highwater_sem);
 #endif
 #ifdef RINGBUF_MUTEX
