@@ -48,18 +48,44 @@ ulong		js_max_bytes=JAVASCRIPT_MAX_BYTES;
 ulong		js_context_stack=JAVASCRIPT_CONTEXT_STACK;
 FILE*		confp=stdout;
 FILE*		errfp=stderr;
+char		revision[16];
+BOOL		pause_on_exit=FALSE;
+
+void banner(FILE* fp)
+{
+	fprintf(fp,"\nJSexec v%s%c-%s (rev %s) - "
+		"Execute Synchronet JavaScript Module\n"
+		,VERSION,REVISION
+		,PLATFORM_DESC
+		,revision
+		);
+}
 
 void usage(FILE* fp)
 {
+	banner(fp);
+
 	fprintf(fp,"\nusage: jsexec [-opts] [path]module[.js] [args]\n"
 		"\navailable opts:\n\n"
 		"\t-m <bytes>      set maximum heap size (default: %lu bytes)\n"
 		"\t-s <bytes>      set context stack size (default: %lu bytes)\n"
 		"\t-t <filename>   send console output to stdout and filename\n"
-		"\t-e              send error message to stdout instead of stderr\n"
+		"\t-q              send console output to %s (quiet mode)\n"
+		"\t-e              send error messages to console instead of stderr\n"
+		"\t-p              wait for keypress (pause) on exit\n"
 		,JAVASCRIPT_MAX_BYTES
 		,JAVASCRIPT_CONTEXT_STACK
+		,_PATH_DEVNULL
 		);
+}
+
+void bail(int code)
+{
+	if(pause_on_exit) {
+		fprintf(errfp,"\nHit enter to continue...");
+		getchar();
+	}
+	exit(code);
 }
 
 static JSBool
@@ -415,25 +441,17 @@ long js_exec(const char *fname, char** args)
 int main(int argc, char **argv)
 {
 	char	error[512];
-	char	revision[16];
 	char*	module=NULL;
 	char*	p;
 	int		argn;
 
 	sscanf("$Revision$", "%*s %s", revision);
 
-	fprintf(errfp,"\nJSexec v%s%c-%s (rev %s) - "
-		"Execute Synchronet JavaScript Module\n"
-		,VERSION,REVISION
-		,PLATFORM_DESC
-		,revision
-		);
-
 	p=getenv("SBBSCTRL");
 	if(p==NULL) {
 		fprintf(errfp,"\nSBBSCTRL environment variable not set.\n");
 		fprintf(errfp,"\nExample: SET SBBSCTRL=/sbbs/ctrl\n");
-		exit(1); 
+		bail(1); 
 	}
 
 	memset(&scfg,0,sizeof(scfg));
@@ -450,11 +468,17 @@ int main(int argc, char **argv)
 					js_context_stack=strtoul(argv[++argn],NULL,0);
 					break;
 				case 'e':
-					errfp=stdout;
+					errfp=confp;
+					break;
+				case 'q':
+					confp=fopen(_PATH_DEVNULL,"w");
+					break;
+				case 'p':
+					pause_on_exit=TRUE;
 					break;
 				default:
 					usage(errfp);
-					return(1);
+					bail(1);
 			}
 			continue;
 		}
@@ -463,8 +487,10 @@ int main(int argc, char **argv)
 
 	if(module==NULL) {
 		usage(errfp);
-		return(1); 
+		bail(1); 
 	}
+
+	banner(errfp);
 
 	if(chdir(scfg.ctrl_dir)!=0)
 		fprintf(errfp,"!ERROR changing directory to: %s", scfg.ctrl_dir);
@@ -472,7 +498,7 @@ int main(int argc, char **argv)
 	printf("\nLoading configuration files from %s\n",scfg.ctrl_dir);
 	if(!load_cfg(&scfg,NULL,TRUE,error)) {
 		fprintf(errfp,"!ERROR loading configuration files: %s\n",error);
-		exit(1);
+		bail(1);
 	}
 	prep_dir(scfg.data_dir, scfg.temp_dir, sizeof(scfg.temp_dir));
 
@@ -481,10 +507,12 @@ int main(int argc, char **argv)
 
 	if(!js_init()) {
 		fprintf(errfp,"!JavaScript initialization failure\n");
-		return(1);
+		bail(1);
 	}
 	printf("\n");
 
-	return(js_exec(module,&argv[argn]));
+	bail(js_exec(module,&argv[argn]));
+
+	return(-1);	/* never gets here */
 }
 
