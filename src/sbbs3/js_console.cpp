@@ -774,6 +774,45 @@ js_ansi_gotoxy(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
     return(JS_TRUE);
 }
 
+static JSClass js_screen_class = {
+     "Screen"				/* name			*/
+    ,0						/* flags		*/
+	,JS_PropertyStub		/* addProperty	*/
+	,JS_PropertyStub		/* delProperty	*/
+	,JS_PropertyStub		/* getProperty	*/
+	,JS_PropertyStub		/* setProperty	*/
+	,JS_EnumerateStub		/* enumerate	*/
+	,JS_ResolveStub			/* resolve		*/
+	,JS_ConvertStub			/* convert		*/
+	,JS_FinalizeStub		/* finalize		*/
+};
+
+
+static JSBool
+js_ansi_getxy(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	sbbs_t*		sbbs;
+	int			x,y;
+	JSObject*	screen;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+ 		return(JS_FALSE);
+ 
+	sbbs->ansi_getxy(&x,&y);
+
+	if((screen=JS_NewObject(cx,&js_screen_class,NULL,obj))==NULL)
+		return(JS_TRUE);
+
+	JS_DefineProperty(cx, screen, "x", INT_TO_JSVAL(x)
+		,NULL,NULL,JSPROP_ENUMERATE);
+	JS_DefineProperty(cx, screen, "y", INT_TO_JSVAL(y)
+		,NULL,NULL,JSPROP_ENUMERATE);
+
+	*rval = OBJECT_TO_JSVAL(screen);
+    return(JS_TRUE);
+}
+
+
 static JSBool
 js_ansi_up(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
@@ -887,6 +926,7 @@ static JSFunctionSpec js_console_functions[] = {
 	{"ansi_right",		js_ansi_right,		0},
 	{"ansi_left",		js_ansi_left,		0},
 	{"ansi_getlines",	js_ansi_getlines,	0},
+	{"ansi_getxy",		js_ansi_getxy,		0},
 	{0}
 };
 
@@ -896,8 +936,8 @@ static JSClass js_console_class = {
     ,0						/* flags		*/
 	,JS_PropertyStub		/* addProperty	*/
 	,JS_PropertyStub		/* delProperty	*/
-	,js_console_get		/* getProperty	*/
-	,js_console_set		/* setProperty	*/
+	,js_console_get			/* getProperty	*/
+	,js_console_set			/* setProperty	*/
 	,JS_EnumerateStub		/* enumerate	*/
 	,JS_ResolveStub			/* resolve		*/
 	,JS_ConvertStub			/* convert		*/
