@@ -230,3 +230,13 @@ $(MAKEUSER): makeuser.c \
 	$(LIBODIR)\scfglib2.obj
 	@echo Creating $@
 	@$(CC) $(CFLAGS) -n$(EXEODIR) $** 
+
+# ANS2MSG
+$(ANS2MSG): ans2msg.c
+	@echo Creating $@
+	@$(CC) $(CFLAGS) -n$(EXEODIR) $** 
+
+# MSG2MSG
+$(MSG2ANS): msg2ans.c
+	@echo Creating $@
+	@$(CC) $(CFLAGS) -n$(EXEODIR) $** 
