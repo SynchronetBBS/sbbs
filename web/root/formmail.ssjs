@@ -11,9 +11,12 @@ var hidden_fields = {
 	subject:1
 };
 
-http_reply.fast = true;
+var value_fmt_string = "%-10s = %s";
+if(http_request.query.value_fmt_string
+	&& strip_ctrl(http_request.query.value_fmt_string).length)
+	value_fmt_string = strip_ctrl(http_request.query.value_fmt_string);
 
-var redir = http_request.query.redirect;
+var redir = strip_ctrl(http_request.query.redirect);
 if(!redir)
 	redir = http_request.header.referer;
 
@@ -31,7 +34,7 @@ function results(level, text)
 		writeln("!ERROR: ".bold());
 	writeln(text);
 	writeln("<p>");
-	writeln(("Click here to return to " + String(redir).italics()).link(redir));
+	writeln(("Click here to return to " + redir.toString().italics()).link(redir));
 	writeln("</body>");
 	writeln("</html>");
 	exit();
@@ -41,27 +44,30 @@ var msgbase=new MsgBase("mail");
 if(!msgbase.open())
 	results(LOG_ERR,format("%s opening mail base", msgbase.error));
 
+//------------------------
+// Build the e-mail header
+//------------------------
 var hdr = { from: 'FormMail',
 			to: 'Sysop',
 			subject: 'WWW Form Submission' };
 
 // Use form-specified recipient
 if(http_request.query.recipient)	
-	hdr.to				=http_request.query.recipient[0];
+	hdr.to				=strip_ctrl(http_request.query.recipient[0]);
 
 // Use form-specified message subject
 if(http_request.query.subject)		
-	hdr.subject			=http_request.query.subject[0];
+	hdr.subject			=strip_ctrl(http_request.query.subject[0]);
 
 // Use form-specified email address
 if(http_request.query.email && http_request.query.email.toString().length) {
-	hdr.from_net_addr	=http_request.query.email;
-	hdr.from			=http_request.query.email; 
+	hdr.from_net_addr	=strip_ctrl(http_request.query.email);
+	hdr.from			=strip_ctrl(http_request.query.email);
 }
 
 // Use form-specified real name
 if(http_request.query.realname && http_request.query.realname.toString().length)
-	hdr.from			=http_request.query.realname;
+	hdr.from			=strip_ctrl(http_request.query.realname);
 
 hdr.to_net_type=netaddr_type(hdr.to);
 if(hdr.to_net_type!=NET_NONE)
@@ -73,13 +79,16 @@ else {
 	hdr.to_ext=usrnum;
 }
 
+//------------------------
+// Build the body text
+//------------------------
 var i;
 var body="Form fields follow:\r\n\r\n";
 for(i in http_request.query) {
 	if(hidden_fields[i])
 		continue;
-	if(String(http_request.query[i]).length)
-		body += format("%-10s = %s\r\n", i, http_request.query[i]);
+	if(http_request.query[i].toString().length)
+		body += format(value_fmt_string, i, http_request.query[i]) + "\r\n";
 }
 
 body+=format("\r\nvia %s\r\nat %s [%s]\r\n"
@@ -89,4 +98,4 @@ body+=format("\r\nvia %s\r\nat %s [%s]\r\n"
 if(!msgbase.save_msg(hdr,client,body))
 	results(LOG_ERR,format("%s saving message", msgbase.error));
 
-results(LOG_INFO,"E-mail sent from " + hdr.from + " to " + String(hdr.to).italics().bold() + " successfully.");
+results(LOG_INFO,"E-mail sent from " + hdr.from + " to " + hdr.to.toString().italics().bold() + " successfully.");
