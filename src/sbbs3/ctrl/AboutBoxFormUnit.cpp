@@ -6,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -41,6 +41,7 @@
 #include "emulvt.hpp"
 #include "mailsrvr.h"
 #include "ftpsrvr.h"
+#include "websrvr.h"
 #include "services.h"
 
 //---------------------------------------------------------------------------
@@ -106,6 +107,7 @@ void __fastcall TAboutBoxForm::FormShow(TObject *Sender)
     Memo->Lines->Add(bbs_ver());
     Memo->Lines->Add(mail_ver());
     Memo->Lines->Add(ftp_ver());
+    Memo->Lines->Add(web_ver());    
     Memo->Lines->Add(services_ver());
     Memo->Lines->Add(ver);
     Memo->Lines->Add("Synchronet Local Spy ANSI Terminal Emulation"
