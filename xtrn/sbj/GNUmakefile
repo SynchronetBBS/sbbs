@@ -35,8 +35,12 @@ ifeq ($(os),freebsd)	# FreeBSD
 else
  ifeq ($(os),openbsd)	# OpenBSD
   LIBS	+=	-pthread
- else					# Linux / Generic UNIX
-  LIBS	+=	-lpthread
+ else
+  ifeq ($(os),qnx)	# QNX
+   LIBS	+=	-lsocket
+  else					# Linux / Generic UNIX
+   LIBS	+=	-lpthread
+  endif #! QNX
  endif	#! OpenBSD
 endif	#! FreeBSD
 
