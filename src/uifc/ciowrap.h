@@ -92,6 +92,7 @@ extern cioapi_t cio_api;
 #define gettext(a,b,c,d,e)	cio_api.gettext(a,b,c,d,e)
 #define textattr(a)			cio_api.textattr(a)
 #define kbhit()				cio_api.kbhit()
+#define _conio_kbhit()		cio_api.kbhit()
 #define delay(a)			cio_api.delay(a)
 #define wherex()			cio_api.wherex()
 #define wherey()			cio_api.wherey()
