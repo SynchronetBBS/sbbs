@@ -80,11 +80,12 @@ ifdef JSLIB
  MKFLAGS	+=	JSLIB=$(JSLIB)
 endif
 
-all: externals binaries baja
+all: binaries baja externals
+
+binaries:	sbbs3 scfg
 
 externals:	sbj sbl
 
-binaries:	sbbs3 scfg
 
 sbbs3:	$(SBBSDIR)/src/sbbs3 $(SBBSDIR)/src/uifc $(SBBSDIR)/src/xpdev \
     $(SBBSDIR)/src/mozilla
@@ -101,7 +102,7 @@ sbj:	$(SBBSDIR)/xtrn
 	gmake -C $(SBBSDIR)/xtrn/sbj $(MKFLAGS)
 
 sbl:	$(SBBSDIR)/xtrn
-	gmake -C $(SBBSDIR)/xtrn/sbl $(MKFLAGS)
+	gmake -C $(SBBSDIR)/xtrn/sbl $(MKFLAGS) SBBS_SRC=$(SBBSDIR)/src/sbbs3 XPDEV=$(SBBSDIR)/src/xpdev
 
 install: all $(SBBSDIR)/ctrl $(SBBSDIR)/text $(SBBSDIR)/node1
 ifeq ($(INSTALL),UNIX)
