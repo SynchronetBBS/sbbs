@@ -2440,6 +2440,11 @@ BOOL bounce(smb_t* smb, smbmsg_t* msg, char* err, BOOL immediate)
 	if((i=smb_addmsghdr(smb,&newmsg,SMB_SELFPACK))!=0)
 		lprintf("0000 !BOUNCE ERROR %d (%s) adding message header"
 			,i,smb->last_error);
+	else {
+		if((i=smb_incmsg(smb,&newmsg))!=0)
+			lprintf("0000 !BOUNCE ERROR %d (%s) incrementing data allocation units"
+				,i,smb->last_error);
+	}
 
 	newmsg.dfield=NULL;				/* Don't double-free the data fields */
 	newmsg.hdr.total_dfields=0;
