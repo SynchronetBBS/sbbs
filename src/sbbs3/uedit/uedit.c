@@ -61,6 +61,11 @@
 
 #define CTRL(x) (x&037)
 
+struct user_list {
+	char	info[MAX_OPLN];
+	int		usernum;
+};
+
 /********************/
 /* Global Variables */
 /********************/
@@ -1628,6 +1633,54 @@ int edit_user(scfg_t *cfg, int usernum)
 	return(0);
 }
 
+int finduser(scfg_t *cfg, user_t *user)
+{
+	int i,j,last;
+	ushort un;
+	char str[256];
+	struct user_list **opt;
+	int done=0;
+
+	if((opt=(struct user_list **)MALLOC(sizeof(struct user_list *)*(MAX_OPTS+1)))==NULL)
+		allocfail(sizeof(struct user_list *)*(MAX_OPTS+1));
+	for(i=0;i<(MAX_OPTS+1);i++)
+		opt[i]=NULL;
+
+	str[0]=0;
+	uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Search String",str,LEN_NAME,K_EDIT);
+	un=atoi(str);
+	/* User List */
+	done=0;
+	while(!done) {
+		last=lastuser(cfg);
+		j=0;
+		for(i=1; i<=last; i++) {
+			user->number=i;
+			getuserdat(cfg,user);
+			if(strcasestr(user->alias, str)!=NULL || strcasestr(user->name, str)!=NULL || strcasestr(user->handle, str)!=NULL 
+					|| user->number==un) {
+				if((opt[j]=(struct user_list *)malloc(sizeof(struct user_list)))==NULL)
+					allocfail(sizeof(struct user_list));
+				sprintf(opt[j]->info,"%1.1s³%1.1s³ %-25.25s ³ %-25.25s",user->misc&DELETED?"*":" ",user->misc&INACTIVE?"*":" ",user->name,user->alias);
+				opt[j++]->usernum=i;
+			}
+		}
+		if((opt[j]=(struct user_list *)malloc(sizeof(struct user_list)))==NULL)
+			allocfail(sizeof(struct user_list));
+		opt[j]->info[0]=0;
+		i=0;
+		switch(uifc.list(WIN_ORG|WIN_MID|WIN_ACT,0,0,0,&i,0,"D³I³ Real Name                 ³ Alias                    ",(char **)opt)) {
+			case -1:
+				done=1;
+				break;
+			default:
+				edit_user(cfg, opt[i]->usernum);
+				break;
+		}
+	}
+	return(0);
+}
+
 int main(int argc, char** argv)  {
 	char**	opt;
 	char**	mopt;
@@ -1809,7 +1862,7 @@ int main(int argc, char** argv)  {
 			/* New User */
 		}
 		if(j==1) {
-			/* Find User */
+			finduser(&cfg,&user);
 		}
 		if(j==2) {
 			/* User List */
