@@ -146,6 +146,7 @@ extern "C" {
 #endif
 
 DLLEXPORT int		DLLCALL	xp_random(int);
+DLLEXPORT char*		DLLCALL os_version(char *str);
 
 #if defined(__cplusplus)
 }

@@ -1,5 +1,7 @@
 /* wraptest.c */
 
+/* Verification of cross-platform development wrappers */
+
 #include <time.h>	/* ctime */
 
 #include "genwrap.h"
@@ -19,10 +21,11 @@ typedef struct {
 
 int main()
 {
+	char	str[128];
 	char	compiler[128];
-	char*	glob_pattern = "*wrap*";
-	char*	path = ".";
 	char	fullpath[MAX_PATH+1];
+	char*	path = ".";
+	char*	glob_pattern = "*wrap*";
 	int		i;
 	int		ch;
 	uint	u;
@@ -34,9 +37,10 @@ int main()
 
 	/* Show platform details */
 	DESCRIBE_COMPILER(compiler);
-	printf("Platform: %s\n",PLATFORM_DESC);
-	printf("Compiler: %s\n",compiler);
-	printf("Random #: %d\n",xp_random(1000));
+	printf("%-15s: %s\n","Platform",PLATFORM_DESC);
+	printf("%-15s: %s\n","Version",os_version(str));
+	printf("%-15s: %s\n","Compiler"	,compiler);
+	printf("%-15s: %d\n","Random Number",xp_random(1000));
 
 	printf("\ngetch() test (ESC to continue)\n");
 	do {
@@ -136,10 +140,10 @@ int main()
 
 static void getkey(void)
 {
-	printf("Hit any key...");
+	printf("Hit any key to continue...");
 	fflush(stdout);
 	getch();
-	printf("\r%20s\r","");
+	printf("\r%30s\r","");
 	fflush(stdout);
 }
 

@@ -132,3 +132,59 @@ int DLLCALL xp_random(int n)
 	return((int)(n*f));
 }
 
+/****************************************************************************/
+/* Write the version details of the current operating system into str		*/
+/****************************************************************************/
+char* DLLCALL os_version(char *str)
+{
+#if defined(__OS2__) && defined(__BORLANDC__)
+
+	sprintf(str,"OS/2 %u.%u (%u.%u)",_osmajor/10,_osminor/10,_osmajor,_osminor);
+
+#elif defined(_WIN32)
+
+	/* Windows Version */
+	char*			winflavor="";
+	OSVERSIONINFO	winver;
+
+	winver.dwOSVersionInfoSize=sizeof(winver);
+	GetVersionEx(&winver);
+
+	switch(winver.dwPlatformId) {
+		case VER_PLATFORM_WIN32_NT:
+			winflavor="NT ";
+			break;
+		case VER_PLATFORM_WIN32s:
+			winflavor="Win32s ";
+			break;
+		case VER_PLATFORM_WIN32_WINDOWS:
+			winver.dwBuildNumber&=0xffff;
+			break;
+	}
+
+	sprintf(str,"Windows %sVersion %u.%02u (Build %u) %s"
+			,winflavor
+			,winver.dwMajorVersion, winver.dwMinorVersion
+			,winver.dwBuildNumber,winver.szCSDVersion);
+
+#elif defined(__unix__)
+
+	struct utsname unixver;
+
+	if(uname(&unixver)!=0)
+		sprintf(str,"Unix (uname errno: %d)",errno);
+	else
+		sprintf(str,"%s %s %s"
+			,unixver.sysname	/* e.g. "Linux" */
+			,unixver.release	/* e.g. "2.2.14-5.0" */
+			,unixver.machine	/* e.g. "i586" */
+			);
+
+#else	/* DOS */
+
+	sprintf(str,"DOS %u.%02u",_osmajor,_osminor);
+
+#endif
+
+	return(str);
+}
