@@ -295,6 +295,7 @@ js_getkey(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 static JSBool
 js_handle_ctrlkey(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
+	char		key;
 	int32		mode=0;
 	sbbs_t*		sbbs;
     JSString*	js_str;
@@ -304,13 +305,18 @@ js_handle_ctrlkey(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	if((js_str=JS_ValueToString(cx, argv[0]))==NULL)
-		return(JS_FALSE);
+	if(JSVAL_IS_INT(argv[0]))
+		key=(char)JSVAL_TO_INT(argv[0]);
+	else {
+		if((js_str=JS_ValueToString(cx, argv[0]))==NULL)
+			return(JS_FALSE);
+		key=*JS_GetStringBytes(js_str);
+	}
 
 	if(argc>1)
 		JS_ValueToInt32(cx, argv[1], &mode);
 
-	*rval = BOOLEAN_TO_JSVAL(sbbs->handle_ctrlkey(*JS_GetStringBytes(js_str),mode));
+	*rval = BOOLEAN_TO_JSVAL(sbbs->handle_ctrlkey(key,mode));
     return(JS_TRUE);
 }
 
