@@ -655,7 +655,6 @@ js_matchuserdata(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 	int32		usernumber=0;
 	int			len;
 	scfg_t*		cfg;
-	BOOL		sysop_alias=TRUE;
 
 	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_FALSE);
