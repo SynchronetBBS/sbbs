@@ -47,10 +47,24 @@ static const char*	strHostName="HostName";
 static const char*	strLogMask="LogMask";
 
 #define DEFAULT_LOG_MASK		0x1f	/* EMERG|ALERT|CRIT|ERR|WARNING */
+#define DEFAULT_MAX_MSG_SIZE    (10*1024*1024)	/* 10MB */
 
-void sbbs_get_ini_fname(char* ini_file, char* ctrl_dir, char* host_name)
+void sbbs_get_ini_fname(char* ini_file, char* ctrl_dir, char* pHostName)
 {
-	sprintf(ini_file,"%s%c%s.ini",ctrl_dir,PATH_DELIM,host_name);
+    char host_name[128];
+    
+    if(pHostName==NULL) {
+#if defined(_WINSOCKAPI_)
+        WSADATA WSAData;
+        WSAStartup(MAKEWORD(1,1), &WSAData); /* req'd for gethostname */
+#endif
+    	gethostname(host_name,sizeof(host_name)-1);
+#if defined(_WINSOCKAPI_)
+        WSACleanup();
+#endif
+        pHostName=host_name;
+    }
+	sprintf(ini_file,"%s%c%s.ini",ctrl_dir,PATH_DELIM,pHostName);
 #if defined(__unix__) && defined(PREFIX)
 	if(!fexistcase(ini_file))
 		sprintf(ini_file,PREFIX"/etc/sbbs.ini");
@@ -62,19 +76,20 @@ void sbbs_get_ini_fname(char* ini_file, char* ctrl_dir, char* host_name)
 static void read_ini_globals(FILE* fp, global_startup_t* global)
 {
 	const char* section = "Global";
+	char		value[INI_MAX_VALUE_LEN];
 
-	global->ctrl_dir[0]=0;
-	iniGetString(fp,section,"CtrlDirectory",nulstr,global->ctrl_dir);
-	if(global->ctrl_dir[0])
+	if(*iniGetString(fp,section,"CtrlDirectory",nulstr,value)) {
+	    SAFECOPY(global->ctrl_dir,value);
 		backslash(global->ctrl_dir);
+    }
 
-	global->temp_dir[0]=0;
-	iniGetString(fp,section,"TempDirectory",nulstr,global->temp_dir);
-	if(global->temp_dir[0])
+	if(*iniGetString(fp,section,"TempDirectory",nulstr,value)) {
+	    SAFECOPY(global->temp_dir,value);
 		backslash(global->temp_dir);
+    }
 
-	global->host_name[0]=0;
-	iniGetString(fp,section,strHostName,nulstr,global->host_name);
+	if(*iniGetString(fp,section,strHostName,nulstr,value))
+        SAFECOPY(global->host_name,value);
 
 	global->sem_chk_freq=iniGetShortInt(fp,section,strSemFileCheckFrequency,0);
 	global->interface_addr=iniGetIpAddress(fp,section,strInterface,INADDR_ANY);
@@ -290,7 +305,7 @@ void sbbs_read_ini(
 		mail->max_recipients
 			=iniGetShortInt(fp,section,"MaxRecipients",100);
 		mail->max_msg_size
-			=iniGetInteger(fp,section,"MaxMsgSize",10*1024*1024);	/* 10MB */
+			=iniGetInteger(fp,section,"MaxMsgSize",DEFAULT_MAX_MSG_SIZE);
 
 		SAFECOPY(mail->host_name
 			,iniGetString(fp,section,strHostName,global->host_name,value));
@@ -438,6 +453,7 @@ void sbbs_read_ini(
 
 BOOL sbbs_write_ini(
 	 FILE*					fp
+    ,scfg_t*                cfg
 	,global_startup_t*		global
 	,BOOL					run_bbs
 	,bbs_startup_t*			bbs
@@ -465,6 +481,7 @@ BOOL sbbs_write_ini(
 	
 	memset(&style, 0, sizeof(style));
 	style.key_prefix = "\t";
+    style.bit_separator = " | ";
 
 	if((list=iniReadFile(fp))==NULL)
 		return(FALSE);
@@ -523,6 +540,7 @@ BOOL sbbs_write_ini(
 			break;
 
 		if(strcmp(bbs->host_name,global->host_name)
+            && strcmp(bbs->host_name,cfg->sys_inetaddr)
 			&& !iniSetString(lp,section,strHostName,bbs->host_name,&style))
 			break;
 
@@ -576,6 +594,7 @@ BOOL sbbs_write_ini(
 			break;
 
 		if(strcmp(ftp->host_name,global->host_name)
+            && strcmp(bbs->host_name,cfg->sys_inetaddr)
 			&& !iniSetString(lp,section,strHostName,ftp->host_name,&style))
 			break;
 
@@ -636,6 +655,7 @@ BOOL sbbs_write_ini(
 			break;
 
 		if(strcmp(mail->host_name,global->host_name)
+            && strcmp(bbs->host_name,cfg->sys_inetaddr)
 			&& !iniSetString(lp,section,strHostName,mail->host_name,&style))
 			break;
 
@@ -709,6 +729,7 @@ BOOL sbbs_write_ini(
 			break;
 
 		if(strcmp(services->host_name,global->host_name)
+            && strcmp(bbs->host_name,cfg->sys_inetaddr)        
 			&& !iniSetString(lp,section,strHostName,services->host_name,&style))
 			break;
 		if(!iniSetString(lp,section,"iniFile",services->ini_file,&style))
@@ -754,6 +775,7 @@ BOOL sbbs_write_ini(
 			break;
 
 		if(strcmp(web->host_name,global->host_name)
+            && strcmp(bbs->host_name,cfg->sys_inetaddr)        
 			&& !iniSetString(lp,section,strHostName,web->host_name,&style))
 			break;
 
