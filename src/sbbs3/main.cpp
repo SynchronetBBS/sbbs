@@ -1484,8 +1484,10 @@ void event_thread(void* arg)
 					strcpy(str,sbbs->cfg.event[i]->code);
 					eprintf("Running timed event: %s",strupr(str));
 					int ex_mode = EX_OFFLINE;
-					if(!(sbbs->cfg.event[i]->misc&EVENT_EXCL))
+					if(!(sbbs->cfg.event[i]->misc&EVENT_EXCL)
+						&& sbbs->cfg.event[i]->misc&EX_BG)
 						ex_mode |= EX_BG;
+					ex_mode|=(sbbs->cfg.event[i]->misc&EX_NATIVE);
 					sbbs->online=ON_LOCAL;
 					sbbs->external(
 						 sbbs->cmdstr(sbbs->cfg.event[i]->cmd,nulstr,nulstr,NULL)
