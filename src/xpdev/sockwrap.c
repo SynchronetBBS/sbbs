@@ -172,32 +172,48 @@ int recvfilesocket(int sock, int file, long *offset, long count)
 
 
 /* Return true if connected, optionally sets *rd_p to true if read data available */
-BOOL socket_check(SOCKET sock, BOOL* rd_p, DWORD timeout)
+BOOL socket_check(SOCKET sock, BOOL* rd_p, BOOL* wr_p, DWORD timeout)
 {
 	char	ch;
 	int		i,rd;
-	fd_set	socket_set;
+	fd_set	rd_set;
+	fd_set	wr_set;
+	fd_set*	wr_set_p=NULL;
 	struct	timeval tv;
 
 	if(rd_p!=NULL)
 		*rd_p=FALSE;
 
+	if(wr_p!=NULL)
+		*wr_p=FALSE;
+
 	if(sock==INVALID_SOCKET)
 		return(FALSE);
 
-	FD_ZERO(&socket_set);
-	FD_SET(sock,&socket_set);
+	FD_ZERO(&rd_set);
+	FD_SET(sock,&rd_set);
+	if(wr_p!=NULL) {
+		wr_set_p=&wr_set;
+		FD_ZERO(wr_set_p);
+		FD_SET(sock,wr_set_p);
+	}
 
 	/* Convert timeout from ms to sec/usec */
 	tv.tv_sec=timeout/1000;
 	tv.tv_usec=(timeout%1000)*1000;
 
-	i=select(sock+1,&socket_set,NULL,NULL,&tv);
+	i=select(sock+1,&rd_set,wr_set_p,NULL,&tv);
 	if(i==SOCKET_ERROR)
 		return(FALSE);
 
 	if(i==0) 
 		return(TRUE);
+
+	if(wr_p!=NULL && FD_ISSET(sock,wr_set_p)) {
+		*wr_p=TRUE;
+		if(i==1)
+			return(TRUE);
+	}
 
 	rd=recv(sock,&ch,1,MSG_PEEK);
 	if(rd==1 
