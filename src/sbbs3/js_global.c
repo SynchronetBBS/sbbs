@@ -264,6 +264,106 @@ js_strip_ctrl(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 	return(JS_TRUE);
 }
 
+static JSBool
+js_fexist(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		p;
+	JSString*	js_str;
+
+	if((js_str=JS_ValueToString(cx, argv[0]))==NULL) {
+		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+		return(JS_TRUE);
+	}
+
+	if((p=JS_GetStringBytes(js_str))==NULL) {
+		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+		return(JS_TRUE);
+	}
+
+	*rval = BOOLEAN_TO_JSVAL(fexist(p));
+	return(JS_TRUE);
+}
+
+static JSBool
+js_isdir(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		p;
+	JSString*	js_str;
+
+	if((js_str=JS_ValueToString(cx, argv[0]))==NULL) {
+		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+		return(JS_TRUE);
+	}
+
+	if((p=JS_GetStringBytes(js_str))==NULL) {
+		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+		return(JS_TRUE);
+	}
+
+	*rval = BOOLEAN_TO_JSVAL(isdir(p));
+	return(JS_TRUE);
+}
+
+static JSBool
+js_fattr(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		p;
+	JSString*	js_str;
+
+	if((js_str=JS_ValueToString(cx, argv[0]))==NULL) {
+		*rval = INT_TO_JSVAL(-1);
+		return(JS_TRUE);
+	}
+
+	if((p=JS_GetStringBytes(js_str))==NULL) {
+		*rval = INT_TO_JSVAL(-1);
+		return(JS_TRUE);
+	}
+
+	*rval = INT_TO_JSVAL(getfattr(p));
+	return(JS_TRUE);
+}
+
+static JSBool
+js_fdate(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		p;
+	JSString*	js_str;
+
+	if((js_str=JS_ValueToString(cx, argv[0]))==NULL) {
+		*rval = INT_TO_JSVAL(-1);
+		return(JS_TRUE);
+	}
+
+	if((p=JS_GetStringBytes(js_str))==NULL) {
+		*rval = INT_TO_JSVAL(-1);
+		return(JS_TRUE);
+	}
+
+	*rval = INT_TO_JSVAL(fdate(p));
+	return(JS_TRUE);
+}
+
+static JSBool
+js_flength(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		p;
+	JSString*	js_str;
+
+	if((js_str=JS_ValueToString(cx, argv[0]))==NULL) {
+		*rval = INT_TO_JSVAL(-1);
+		return(JS_TRUE);
+	}
+
+	if((p=JS_GetStringBytes(js_str))==NULL) {
+		*rval = INT_TO_JSVAL(-1);
+		return(JS_TRUE);
+	}
+
+	*rval = INT_TO_JSVAL(flength(p));
+	return(JS_TRUE);
+}
+
 static JSClass js_global_class ={
         "Global",
 		JSCLASS_HAS_PRIVATE, /* needed for scfg_t ptr */
@@ -285,6 +385,11 @@ static JSFunctionSpec js_global_functions[] = {
 	{"chksum",			js_chksum,			1},		/* calculate 32-bit chksum of string */
 	{"ascii",			js_ascii,			1},		/* convert str to ascii-val or vice-versa */
 	{"strip_ctrl",		js_strip_ctrl,		1},		/* strip ctrl chars from string */
+	{"file_exists",		js_fexist,			1},		/* verify file existence */
+	{"file_isdir",		js_isdir,			1},		/* check if directory */
+	{"file_attrib",		js_fattr,			1},		/* get file mode/attributes */
+	{"file_date",		js_fdate,			1},		/* get file last modified date/time */
+	{"file_size",		js_flength,			1},		/* get file length (in bytes) */
 	{0}
 };
 
