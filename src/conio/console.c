@@ -858,7 +858,6 @@ video_async_event(void *crap)
 		/*
 		* Handle any events just sitting around...
 		*/
-		XFlush(dpy);
 		while (QLength(dpy) > 0) {
 			XNextEvent(dpy, &ev);
 			video_event(&ev);
@@ -880,7 +879,6 @@ video_async_event(void *crap)
 				perror("select");
 				break;
 			case 0:
-				XFlush(dpy);
 				break;
 			default:
 				if (FD_ISSET(xfd, &fdset)) {
