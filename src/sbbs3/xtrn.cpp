@@ -205,12 +205,13 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 	OPENVXDHANDLE OpenVxDHandle;
 
 	if(cmdline[0]=='*') {   /* Baja module */
-		strcpy(str,cmdline+1);
+		sprintf(str,"%.*s",sizeof(str)-1,cmdline+1);
 		p=strchr(str,SP);
 		if(p) {
-			strcpy(main_csi.str,p+1);
+			sprintf(main_csi.str,"%.*s",sizeof(main_csi.str)-1,p+1);
 			*p=0; }
-		return(exec_bin(str,&main_csi)); }
+		return(exec_bin(str,&main_csi)); 
+	}
 
 	attr(cfg.color[clr_external]);        /* setup default attributes */
 
@@ -720,11 +721,14 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 
 int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 {
+	char	str[256];
+	char*	p;
+		
 	if(cmdline[0]=='*') {   /* Baja module */
-		strcpy(str,cmdline+1);
+		sprintf(str,"%.*s",sizeof(str)-1,cmdline+1);
 		p=strchr(str,SP);
 		if(p) {
-			strcpy(main_csi.str,p+1);
+			sprintf(main_csi.str,"%.*s",sizeof(main_csi.str)-1,p+1);
 			*p=0; }
 		return(exec_bin(str,&main_csi)); 
 	}
