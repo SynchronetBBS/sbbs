@@ -49,8 +49,6 @@ __published:
         TEdit *CtrlDirEdit;
         TLabel *Label6;
         TEdit *HostnameEdit;
-	TLabel *Label7;
-	TEdit *JS_MaxBytesEdit;
 	TLabel *Label8;
 	TEdit *MaxLogLenEdit;
 	TLabel *Label9;
@@ -59,6 +57,17 @@ __published:
 	TLabel *Label10;
 	TEdit *SemFreqEdit;
 	TUpDown *SemFreqUpDown;
+	TTabSheet *JavaScriptTabSheet;
+	TLabel *Label7;
+	TEdit *JS_MaxBytesEdit;
+	TLabel *Label11;
+	TEdit *JS_ContextStackEdit;
+	TLabel *Label12;
+	TEdit *JS_BranchLimitEdit;
+	TLabel *Label13;
+	TEdit *JS_GcIntervalEdit;
+	TLabel *Label14;
+	TEdit *JS_YieldIntervalEdit;
 	void __fastcall FormShow(TObject *Sender);
 	void __fastcall TrayIconCheckBoxClick(TObject *Sender);
 	void __fastcall SourceComboBoxChange(TObject *Sender);
