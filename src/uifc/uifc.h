@@ -300,7 +300,7 @@ typedef struct {
 /* bar is a pointer to the current location of the lightbar (which used).	*/
 /* title is the caption for the menu.										*/
 /* Menus can centered left to right and top to bottom automatically.		*/
-/* mode bits are set with macros WIN_*										*/
+/* mode bits are set with macros WIN_*.										*/
 /* option is an array of char arrays, first element of last char array		*/
 /* must be NULL.															*/
 /* Returns the 0-based selected option number, -1 for ESC, or the selected	*/
@@ -314,8 +314,9 @@ typedef struct {
 /* left and top specify desired screen location.							*/
 /* prompt is displayed before the input is requested.						*/
 /* str is the string to input or edit.										*/
-/* len is the maximum length of the string									*/
-/* kmode contains flags that control the string input (K_* macros)			*/
+/* len is the maximum length of the string.									*/
+/* kmode contains flags that control the string input (K_* macros).			*/
+/* This function sets uifcapi_t.changes to TRUE if the string is modified.	*/
 /* Returns the length of the string or -1 on escape/abort.					*/
 /****************************************************************************/
     int     (*input)(int mode, char left, char top, char* prompt, char* str
