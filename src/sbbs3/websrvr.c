@@ -1138,6 +1138,7 @@ static BOOL check_ars(http_session_t * session)
 				,session->socket,username);
 		return(FALSE);
 	}
+	thisuser.number=i;
 	getuserdat(&scfg, &thisuser);
 	if(thisuser.pass[0] && stricmp(thisuser.pass,password)) {
 		if(session->last_user_num!=0) {
