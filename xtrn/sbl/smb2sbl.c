@@ -221,6 +221,10 @@ int main(int argc, char **argv)
 	fprintf(stderr,"\nSMB2SBL v%s - Updates SBL via SMB - Developed 1994-2000 "
 		"Rob Swindell\n\n",VERSION);
 
+	if(putenv("TZ=UCT0"))
+		fprintf(stderr,"!putenv() FAILED\n");
+	tzset();
+
 	if(checktime()) {
 		printf("Time problem!\n");
 		return(-1); }
