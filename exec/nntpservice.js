@@ -387,10 +387,11 @@ while(client.socket.is_connected) {
 				}
 			}
 
-            for(n in newsgroups)
+            for(n in newsgroups) 
     			for(g in msg_area.grp_list) 
 				    for(s in msg_area.grp_list[g].sub_list) 
-					    if(msg_area.grp_list[g].sub_list[s].newsgroup.toLowerCase()==n.toLowerCase()) {
+					    if(msg_area.grp_list[g].sub_list[s].newsgroup.toLowerCase()
+							==newsgroups[n].toLowerCase()) {
 						    if(!msg_area.grp_list[g].sub_list[s].can_post)
 							    continue;
 
@@ -404,7 +405,7 @@ while(client.socket.is_connected) {
 
 						    msgbase=new MsgBase(msg_area.grp_list[g].sub_list[s].code);
 						    if(msgbase.save_msg(hdr,body)) {
-							    log(format("%s posted a message on %s",user.alias,newsgroups));
+							    log(format("%s posted a message on %s",user.alias,newsgroups[n]));
 							    writeln("240 article posted ok");
 							    posted=true;
 						    } else 
