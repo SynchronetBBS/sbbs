@@ -799,7 +799,6 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 {
 	char	str[256];
 	char	fname[128];
-	char	shell_str[MAX_PATH];
     char	fullcmdline[MAX_PATH*2];
 	char*	argv[30];
 	char*	p;
@@ -845,10 +844,9 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 	}
 
 	if(mode&EX_SH || strcspn(cmdline,"<>|")!=strlen(cmdline)) 
-		sprintf(shell_str,"%s -c ", comspec);
+		sprintf(fullcmdline,"%s -c \"%s\"", comspec,cmdline);
 	else
-		shell_str[0]=0;
-	sprintf(fullcmdline,"%s%s",shell_str,cmdline);
+		strcpy(fullcmdline,cmdline);
 
  	if(native) { // Native (32-bit) external
 
