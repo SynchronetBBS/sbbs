@@ -57,7 +57,7 @@ static JSClass js_msg_area_class = {
 };
 
 JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t* cfg
-										  ,user_t* user)
+										  ,user_t* user, subscan_t* subscan)
 {
 	char		str[128];
 	JSObject*	areaobj;
@@ -211,6 +211,19 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 				val=BOOLEAN_TO_JSVAL(JS_FALSE);
 			if(!JS_SetProperty(cx, subobj, "is_moderated", &val))
 				return(NULL);
+
+			if(subscan!=NULL) {
+				val=INT_TO_JSVAL(subscan[d].ptr);
+				if(!JS_SetProperty(cx, subobj, "scan_ptr", &val))
+					return(NULL);
+				val=INT_TO_JSVAL(subscan[d].cfg);
+				if(!JS_SetProperty(cx, subobj, "scan_cfg", &val))
+					return(NULL);
+				val=INT_TO_JSVAL(subscan[d].last);
+				if(!JS_SetProperty(cx, subobj, "last_read", &val))
+					return(NULL);
+			}
+
 
 			if(!JS_GetArrayLength(cx, sub_list, &index))
 				return(NULL);							
