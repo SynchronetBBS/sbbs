@@ -988,7 +988,6 @@ begin
 
     { Over-ride Locale settings here }
     DateSeparator:='/';
-    Caption:=ShortDateFormat;
 
     if(ShortDateFormat = 'M/d/yyyy') then
         ShortDateFormat:='mm/dd/yy'     { American }
