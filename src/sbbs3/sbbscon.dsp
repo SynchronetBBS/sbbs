@@ -50,7 +50,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:console /machine:I386
-# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib msvc.win32.exe.debug/sbbs.lib msvc.win32.exe.debug/ftpsrvr.lib msvc.win32.exe.debug/mailsrvr.lib msvc.win32.dll.debug/sbbs.lib msvc.win32.dll.debug/ftpsrvr.lib msvc.win32.dll.debug/mailsrvr.lib msvc.win32.dll.debug/services.lib wsock32.lib /nologo /subsystem:console /machine:I386 /out:"msvc.win32.exe.release/sbbs.exe"
+# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib msvc.win32.dll.debug/sbbs.lib msvc.win32.dll.debug/ftpsrvr.lib msvc.win32.dll.debug/mailsrvr.lib msvc.win32.dll.debug/services.lib wsock32.lib /nologo /subsystem:console /machine:I386 /out:"msvc.win32.exe.release/sbbs.exe"
 
 !ELSEIF  "$(CFG)" == "sbbscon - Win32 Debug"
 
