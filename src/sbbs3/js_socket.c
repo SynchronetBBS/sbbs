@@ -67,7 +67,7 @@ static void dbprintf(BOOL error, private_t* p, char* fmt, ...)
 	sbuf[sizeof(sbuf)-1]=0;
     va_end(argptr);
 	
-	lprintf("%04d Socket %s%s",p->sock,error ? "ERROR: ":"",sbuf);
+	lprintf(LOG_DEBUG,"%04d Socket %s%s",p->sock,error ? "ERROR: ":"",sbuf);
 }
 
 /* Socket Destructor */

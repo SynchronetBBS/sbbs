@@ -62,10 +62,10 @@ bool sbbs_t::pack_rep(uint hubnum)
 	delfiles(cfg.temp_dir,ALLFILES);
 	sprintf(str,"%s%s.rep",cfg.data_dir,cfg.qhub[hubnum]->id);
 	if(fexist(str)) {
-		eprintf("Updating %s", str);
+		eprintf(LOG_INFO,"Updating %s", str);
 		external(cmdstr(cfg.qhub[hubnum]->unpack,str,ALLFILES,NULL),EX_OFFLINE);
 	} else
-		eprintf("Creating %s", str);
+		eprintf(LOG_INFO,"Creating %s", str);
 	/*************************************************/
 	/* Create SYSID.MSG, write header and leave open */
 	/*************************************************/
@@ -99,7 +99,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 	mail=loadmail(&smb,&mailmsgs,0,MAIL_YOUR,0);
 	packedmail=0;
 	if(mailmsgs) {
-		eprintf("Packing NetMail for %s", cfg.qhub[hubnum]->id);
+		eprintf(LOG_INFO,"Packing NetMail for %s", cfg.qhub[hubnum]->id);
 		for(l=0;(ulong)l<mailmsgs;l++) {
 	//		bprintf("\b\b\b\b\b%-5lu",l+1);
 
@@ -124,7 +124,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 			smb_freemsgmem(&msg); 
 			YIELD();	/* yield */
 		}
-		eprintf("Packed %d NetMail messages",packedmail); 
+		eprintf(LOG_INFO,"Packed %d NetMail messages",packedmail); 
 	}
 	smb_close(&smb);					/* Close the e-mail */
 	if(mailmsgs)
@@ -138,7 +138,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 			if(subscan[j].ptr>last) {
 				subscan[j].ptr=last;
 				subscan[j].ptr=last; }
-			eprintf(remove_ctrl_a(text[NScanStatusFmt],tmp)
+			eprintf(LOG_INFO,remove_ctrl_a(text[NScanStatusFmt],tmp)
 				,cfg.grp[cfg.sub[j]->grp]->sname
 				,cfg.sub[j]->lname,0L,msgs);
 			continue; }
@@ -152,7 +152,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 			continue; }
 
 		post=loadposts(&posts,j,subscan[j].ptr,LP_BYSELF|LP_OTHERS|LP_PRIVATE|LP_REP);
-		eprintf(remove_ctrl_a(text[NScanStatusFmt],tmp)
+		eprintf(LOG_INFO,remove_ctrl_a(text[NScanStatusFmt],tmp)
 			,cfg.grp[cfg.sub[j]->grp]->sname
 			,cfg.sub[j]->lname,posts,msgs);
 		if(!posts)	{ /* no new messages */
@@ -160,7 +160,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 			continue; }
 
 		subscan[j].ptr=last;                   /* set pointer */
-		eprintf("%s",remove_ctrl_a(text[QWKPackingSubboard],tmp));	/* ptr to last msg	*/
+		eprintf(LOG_INFO,"%s",remove_ctrl_a(text[QWKPackingSubboard],tmp));	/* ptr to last msg	*/
 		submsgs=0;
 		for(l=0;l<posts;l++) {
 	//		bprintf("\b\b\b\b\b%-5lu",l+1);
@@ -196,7 +196,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 			if(!(l%50))
 				YIELD(); /* yield */
 		}
-		eprintf(remove_ctrl_a(text[QWKPackedSubboard],tmp),submsgs,msgcnt);
+		eprintf(LOG_INFO,remove_ctrl_a(text[QWKPackedSubboard],tmp),submsgs,msgcnt);
 		LFREE(post);
 		smb_close(&smb); 
 		YIELD();	/* yield */
@@ -214,7 +214,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 		if(isdir(str))
 			continue;
 		sprintf(tmp2,"%s%s",cfg.temp_dir,dirent->d_name);
-		eprintf(remove_ctrl_a(text[RetrievingFile],tmp),str);
+		eprintf(LOG_INFO,remove_ctrl_a(text[RetrievingFile],tmp),str);
 		if(!mv(str,tmp2,1))
 			netfiles++;
 	}
@@ -224,7 +224,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 		CRLF;
 
 	if(!msgcnt && !netfiles && !packedmail) {
-		eprintf("%s",remove_ctrl_a(text[QWKNoNewMessages],tmp));
+		eprintf(LOG_INFO,remove_ctrl_a(text[QWKNoNewMessages],tmp));
 		return(false); 
 	}
 
@@ -236,7 +236,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 	i=external(cmdstr(cfg.qhub[hubnum]->pack,str,tmp2,NULL)
 		,EX_OFFLINE|EX_WILDCARD);
 	if(!fexist(str)) {
-		eprintf("%s",remove_ctrl_a(text[QWKCompressionFailed],tmp));
+		eprintf(LOG_WARNING,"%s",remove_ctrl_a(text[QWKCompressionFailed],tmp));
 		if(i)
 			errormsg(WHERE,ERR_EXEC,cmdstr(cfg.qhub[hubnum]->pack,str,tmp2,NULL),i);
 		else
@@ -303,7 +303,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 		smb_close(&smb);
 		if(mailmsgs)
 			FREE(mail); 
-		eprintf("Deleted %d sent NetMail messages",deleted); 
+		eprintf(LOG_INFO,"Deleted %d sent NetMail messages",deleted); 
 	}
 
 	return(true);

@@ -987,15 +987,15 @@ BOOL 	md(char *path);
 #ifdef SBBS /* These aren't exported */
 
 	/* main.c */
-	int 	lprintf(char *fmt, ...);	/* telnet log */
+	int 	lputs(int level, char *);			/* telnet log */
+	int 	lprintf(int level, char *fmt, ...);	/* telnet log */
+	int 	eprintf(int level, char *fmt, ...);	/* event log */
 	SOCKET	open_socket(int type);
 	SOCKET	accept_socket(SOCKET s, SOCKADDR* addr, socklen_t* addrlen);
 	int		close_socket(SOCKET);
 	u_long	resolve_ip(char *addr);
 
 	char *	readtext(long *line, FILE *stream);
-	int 	eprintf(char *fmt, ...);	/* event log */
-	int 	lputs(char *);				/* telnet log */
 
 	/* ver.cpp */
 	char*	socklib_version(char* str);

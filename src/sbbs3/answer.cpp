@@ -98,7 +98,7 @@ bool sbbs_t::answer()
 			}
 			terminal[i]=0;
 			truncstr(terminal,"/");
-			lprintf("Node %d RLogin: '%s' / '%s / %s'",cfg.node_num,str,str2,terminal);
+			lprintf(LOG_DEBUG,"Node %d RLogin: '%s' / '%s / %s'",cfg.node_num,str,str2,terminal);
 			SAFECOPY(rlogin_name
 				,startup->options&BBS_OPT_USE_2ND_RLOGIN ? str2 : str);
 			useron.number=userdatdupe(0, U_ALIAS, LEN_ALIAS, rlogin_name, 0);
@@ -171,7 +171,7 @@ bool sbbs_t::answer()
 				SAFECOPY(terminal,"ANSI");
 			autoterm|=(ANSI|COLOR);
             rows=atoi(str+2);
-			lprintf("Node %d ANSI cursor position report: %u rows"
+			lprintf(LOG_DEBUG,"Node %d ANSI cursor position report: %u rows"
 				,cfg.node_num, rows);
 			if(rows<10 || rows>99) rows=24; 
 		}
@@ -200,7 +200,7 @@ bool sbbs_t::answer()
 	rioctl(IOFI); /* flush left-over or late response chars */
 
 	if(!autoterm && str[0]) {
-		lputs("Terminal Auto-detect failed, Response: ");
+		lputs(LOG_DEBUG,"Terminal Auto-detect failed, Response: ");
         str2[0]=0;
 		for(i=0;str[i];i++) {
         	if(str[i]>=' ' && str[i]<='~')
@@ -209,7 +209,7 @@ bool sbbs_t::answer()
 				sprintf(tmp,"<%02X>", (uchar)str[i]);
             strcat(str2,tmp);
         }
-        lputs(str2);
+        lputs(LOG_DEBUG,str2);
 	}
 
 	/* AutoLogon via IP or Caller ID here */

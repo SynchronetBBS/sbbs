@@ -66,7 +66,7 @@ void sbbs_t::telnet_gate(char* destaddr, ulong mode)
 
 	ip_addr=resolve_ip(destaddr);
 	if(ip_addr==INADDR_NONE) {
-		lprintf("!TELGATE Failed to resolve address: %s",destaddr);
+		lprintf(LOG_NOTICE,"!TELGATE Failed to resolve address: %s",destaddr);
 		bprintf("!Failed to resolve address: %s\r\n",destaddr);
 		return;
 	}
@@ -81,7 +81,7 @@ void sbbs_t::telnet_gate(char* destaddr, ulong mode)
 	addr.sin_family = AF_INET;
 
 	if((i=bind(remote_socket, (struct sockaddr *) &addr, sizeof (addr)))!=0) {
-		lprintf("!TELGATE ERROR %d (%d) binding to socket %d",i, ERROR_VALUE, remote_socket);
+		lprintf(LOG_NOTICE,"!TELGATE ERROR %d (%d) binding to socket %d",i, ERROR_VALUE, remote_socket);
 		bprintf("!ERROR %d (%d) binding to socket\r\n",i, ERROR_VALUE);
 		close_socket(remote_socket);
 		return;
@@ -93,7 +93,7 @@ void sbbs_t::telnet_gate(char* destaddr, ulong mode)
 	addr.sin_port   = htons(port);
 
 	if((i=connect(remote_socket, (struct sockaddr *)&addr, sizeof(addr)))!=0) {
-		lprintf("!TELGATE ERROR %d (%d) connecting to server: %s"
+		lprintf(LOG_NOTICE,"!TELGATE ERROR %d (%d) connecting to server: %s"
 			,i,ERROR_VALUE, destaddr);
 		bprintf("!ERROR %d (%d) connecting to server: %s\r\n"
 			,i,ERROR_VALUE, destaddr);
@@ -104,13 +104,13 @@ void sbbs_t::telnet_gate(char* destaddr, ulong mode)
 	l=1;
 
 	if((i = ioctlsocket(remote_socket, FIONBIO, &l))!=0) {
-		lprintf("!TELGATE ERROR %d (%d) disabling socket blocking"
+		lprintf(LOG_NOTICE,"!TELGATE ERROR %d (%d) disabling socket blocking"
 			,i, ERROR_VALUE);
 		close_socket(remote_socket);
 		return;
 	}
 
-	lprintf("Node %d %s gate to %s port %d on socket %d"
+	lprintf(LOG_INFO,"Node %d %s gate to %s port %d on socket %d"
 		,cfg.node_num
 		,mode&TG_RLOGIN ? "RLogin" : "Telnet"
 		,destaddr,port,remote_socket);
@@ -202,7 +202,7 @@ void sbbs_t::telnet_gate(char* destaddr, ulong mode)
 				mswait(500);
 			} 
 			if(i<0) {
-				lprintf("!TELGATE ERROR %d sending on socket %d",ERROR_VALUE,remote_socket);
+				lprintf(LOG_NOTICE,"!TELGATE ERROR %d sending on socket %d",ERROR_VALUE,remote_socket);
 				break;
 			}
 		}
@@ -220,11 +220,11 @@ void sbbs_t::telnet_gate(char* destaddr, ulong mode)
 				YIELD();
 				continue;
 			}
-			lprintf("!TELGATE ERROR %d receiving on socket %d",ERROR_VALUE,remote_socket);
+			lprintf(LOG_NOTICE,"!TELGATE ERROR %d receiving on socket %d",ERROR_VALUE,remote_socket);
 			break;
 		}
 		if(!rd) {
-			lprintf("Node %d Telnet gate disconnected",cfg.node_num);
+			lprintf(LOG_INFO,"Node %d Telnet gate disconnected",cfg.node_num);
 			break;
 		}
 		RingBufWrite(&outbuf,buf,rd);
@@ -237,6 +237,6 @@ void sbbs_t::telnet_gate(char* destaddr, ulong mode)
 
 	close_socket(remote_socket);
 
-	lprintf("Node %d Telnet gate to %s finished",cfg.node_num,destaddr);
+	lprintf(LOG_INFO,"Node %d Telnet gate to %s finished",cfg.node_num,destaddr);
 }
 

@@ -2015,7 +2015,7 @@ js_socket_select(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 
 	if(select(maxsock+1,rd_set,wr_set,NULL,&tv)<0)
 	{
-		lprintf("Error in socket_select()  %s (%d)",strerror(errno),errno);
+		lprintf(LOG_DEBUG,"Error in socket_select()  %s (%d)",strerror(errno),errno);
 	}
 
 	for(i=0;i<limit;i++)

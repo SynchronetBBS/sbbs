@@ -298,7 +298,7 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 					if(i && !(useron.rows)) {	/* auto-detect rows */
 						str[i]=0;
 						rows=atoi(str);
-						lprintf("Node %d ANSI cursor position report: %u rows"
+						lprintf(LOG_DEBUG,"Node %d ANSI cursor position report: %u rows"
 							,cfg.node_num, rows);
 						if(rows<10 || rows>99) rows=24; 
 					}

@@ -317,7 +317,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 	OPENVXDHANDLE OpenVxDHandle;
 
 	if(online==ON_LOCAL)
-		eprintf("Executing external: %s",cmdline);
+		eprintf(LOG_INFO,"Executing external: %s",cmdline);
 
 	XTRN_LOADABLE_MODULE;
 	XTRN_LOADABLE_JS_MODULE;
@@ -699,7 +699,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 	            was_online=false;
             }
             if(hungup && time(NULL)-hungup>5 && !processTerminated) {
-				lprintf("Node %d Terminating process from line %d",cfg.node_num,__LINE__);
+				lprintf(LOG_INFO,"Node %d Terminating process from line %d",cfg.node_num,__LINE__);
 				processTerminated=TerminateProcess(process_info.hProcess, 2112);
 			}
         }
@@ -939,7 +939,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
             errormsg(WHERE, ERR_CHK, "ExitCodeProcess",(DWORD)process_info.hProcess);
 
 		if(retval==STILL_ACTIVE) {
-			lprintf("Node %d Terminating process from line %d",cfg.node_num,__LINE__);
+			lprintf(LOG_INFO,"Node %d Terminating process from line %d",cfg.node_num,__LINE__);
 			TerminateProcess(process_info.hProcess, GetLastError());
 		}	
 
@@ -1122,7 +1122,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 	struct timeval timeout;
 
 	if(online==ON_LOCAL)
-		eprintf("Executing external: %s",cmdline);
+		eprintf(LOG_INFO,"Executing external: %s",cmdline);
 
 	XTRN_LOADABLE_MODULE;
 	XTRN_LOADABLE_JS_MODULE;
@@ -1556,7 +1556,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 
 		if(mode&EX_BG)	/* background execution, detach child */
 		{
-			lprintf("Detaching external process");
+			lprintf(LOG_INFO,"Detaching external process");
 			daemon(TRUE,FALSE);
    	    }
 
@@ -1569,7 +1569,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		_exit(-1);	/* should never get here */
 	}
 
-	lprintf("Node %d executing external: %s",cfg.node_num,fullcmdline);
+	lprintf(LOG_INFO,"Node %d executing external: %s",cfg.node_num,fullcmdline);
 
 	/* Disable Ctrl-C checking */
 	if(!(mode&EX_OFFLINE))
@@ -1618,7 +1618,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 					break;
 			}
 			if(i)
-				lprintf("%.*s",i,buf);		/* lprintf mangles i? */
+				lprintf(LOG_NOTICE,"%.*s",i,buf);		/* lprintf mangles i? */
 
 			/* Eat stderr if mode is EX_BIN */
 			if(mode&EX_BIN)  {
@@ -1714,7 +1714,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 			if((rd=read(err_pipe[0],bp,1))>0)  {
 				i+=rd;
 				if(*bp=='\n') {
-					lprintf("%.*s",i-1,buf);
+					lprintf(LOG_NOTICE,"%.*s",i-1,buf);
 					i=0;
 					bp=buf;
 				}
@@ -1725,7 +1725,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 				break;
 		}
 		if(i)
-			lprintf("%.*s",i,buf);
+			lprintf(LOG_NOTICE,"%.*s",i,buf);
 	}
 	
 

@@ -86,9 +86,9 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 						putmsg(cmdstr(tmp,path,csi->str,buf),P_SAVEATR|P_NOABORT);
 					else {
 						if(online==ON_LOCAL)
-							eprintf("%s",cmdstr(tmp,path,csi->str,buf));
+							eprintf(LOG_INFO,"%s",cmdstr(tmp,path,csi->str,buf));
 						else
-							lputs(cmdstr(tmp,path,csi->str,buf));
+							lputs(LOG_INFO,cmdstr(tmp,path,csi->str,buf));
 					}
 					return(0);
 				case SHOW_VARS:

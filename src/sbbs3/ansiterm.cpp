@@ -152,7 +152,7 @@ bool sbbs_t::ansi_getxy(int* x, int* y)
 				ungetkey(ch);
         }
     	if(time(NULL)-start>TIMEOUT_ANSI_GETXY) {
-        	lprintf("Node %d !TIMEOUT in ansi_getxy", cfg.node_num);
+        	lprintf(LOG_NOTICE,"Node %d !TIMEOUT in ansi_getxy", cfg.node_num);
             return(false);
         }
     }

@@ -232,7 +232,7 @@ int sbbs_t::exec_net(csi_t* csi)
 
 				if(!rd) {
 					if(time(NULL)-start>TIMEOUT_SOCK_READLINE) {
-						lprintf("!socket_readline: timeout (%d) exceeded"
+						lprintf(LOG_WARNING,"!socket_readline: timeout (%d) exceeded"
 							,TIMEOUT_SOCK_READLINE);
 						return(0);
 					}
@@ -489,7 +489,7 @@ bool sbbs_t::ftp_cmd(csi_t* csi, SOCKET sock, char* cmdsrc, char* rsp)
 
 				if(!data_avail) {
 					if(time(NULL)-start>TIMEOUT_FTP_RESPONSE) {
-						lprintf("!ftp_cmd: TIMEOUT_FTP_RESPONSE (%d) exceeded"
+						lprintf(LOG_WARNING,"!ftp_cmd: TIMEOUT_FTP_RESPONSE (%d) exceeded"
 							,TIMEOUT_FTP_RESPONSE);
 						return(FALSE);
 					}

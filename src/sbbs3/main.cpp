@@ -135,15 +135,15 @@ static void thread_down()
 		startup->thread_up(startup->cbdata,FALSE,FALSE);
 }
 
-int lputs(char* str)
+int lputs(int level, char* str)
 {
 	if(startup==NULL || startup->lputs==NULL || str==NULL)
     	return(0);
 
-    return(startup->lputs(startup->cbdata,LOG_INFO,str));
+    return(startup->lputs(startup->cbdata,level,str));
 }
 
-int lprintf(char *fmt, ...)
+int lprintf(int level, char *fmt, ...)
 {
 	va_list argptr;
 	char sbuf[1024];
@@ -152,10 +152,10 @@ int lprintf(char *fmt, ...)
     vsnprintf(sbuf,sizeof(sbuf),fmt,argptr);
 	sbuf[sizeof(sbuf)-1]=0;
     va_end(argptr);
-    return(lputs(sbuf));
+    return(lputs(level,sbuf));
 }
 
-int eprintf(char *fmt, ...)
+int eprintf(int level, char *fmt, ...)
 {
 	va_list argptr;
 	char sbuf[1024];
@@ -168,7 +168,7 @@ int eprintf(char *fmt, ...)
 	sbuf[sizeof(sbuf)-1]=0;
     va_end(argptr);
 	strip_ctrl(sbuf);
-    return(startup->event_lputs(LOG_INFO,sbuf));
+    return(startup->event_lputs(level,sbuf));
 }
 
 SOCKET open_socket(int type)
@@ -180,7 +180,7 @@ SOCKET open_socket(int type)
 	if(sock!=INVALID_SOCKET && startup!=NULL && startup->socket_open!=NULL) 
 		startup->socket_open(startup->cbdata,TRUE);
 	if(sock!=INVALID_SOCKET && set_socket_options(&scfg, sock, error))
-		lprintf("%04d !ERROR %s",sock,error);
+		lprintf(LOG_ERR,"%04d !ERROR %s",sock,error);
 
 	return(sock);
 }
@@ -208,7 +208,7 @@ int close_socket(SOCKET sock)
 	if(result==0 && startup!=NULL && startup->socket_open!=NULL) 
 		startup->socket_open(startup->cbdata,FALSE);
 	if(result!=0 && ERROR_VALUE!=ENOTSOCK)
-		lprintf("!ERROR %d closing socket %d",ERROR_VALUE,sock);
+		lprintf(LOG_ERR,"!ERROR %d closing socket %d",ERROR_VALUE,sock);
 	return(result);
 }
 
@@ -502,7 +502,7 @@ js_log(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 			if(startup!=NULL && startup->event_lputs!=NULL)
 				startup->event_lputs(level,JS_GetStringBytes(str));
 		} else
-			lputs(JS_GetStringBytes(str));
+			lputs(level,JS_GetStringBytes(str));
 	}
 
 	if(str==NULL)
@@ -580,7 +580,7 @@ js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		if((str=JS_ValueToString(cx, argv[i]))==NULL)
 		    return(JS_FALSE);
 		if(sbbs->online==ON_LOCAL)
-			eprintf("%s",JS_GetStringBytes(str));
+			eprintf(LOG_INFO,"%s",JS_GetStringBytes(str));
 		else
 			sbbs->bputs(JS_GetStringBytes(str));
 	}
@@ -643,7 +643,7 @@ js_printf(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_FALSE);
 
 	if(sbbs->online==ON_LOCAL)
-		eprintf("%s",p);
+		eprintf(LOG_INFO,"%s",p);
 	else
 		sbbs->bputs(p);
 
@@ -783,7 +783,7 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 		return;
 	
 	if(report==NULL) {
-		lprintf("!JavaScript: %s", message);
+		lprintf(LOG_ERR,"!JavaScript: %s", message);
 		return;
     }
 
@@ -806,9 +806,9 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 		warning=nulstr;
 
 	if(sbbs->online==ON_LOCAL) 
-		eprintf("!JavaScript %s%s%s: %s",warning,file,line,message);
+		eprintf(LOG_ERR,"!JavaScript %s%s%s: %s",warning,file,line,message);
 	else {
-		lprintf("!JavaScript %s%s%s: %s",warning,file,line,message);
+		lprintf(LOG_ERR,"!JavaScript %s%s%s: %s",warning,file,line,message);
 		sbbs->bprintf("!JavaScript %s%s%s: %s\r\n",warning,file,line,message);
 	}
 }
@@ -826,13 +826,13 @@ bool sbbs_t::js_init()
     else
     	strcpy(node,client_name);
 
-	lprintf("%s JavaScript: Creating runtime: %lu bytes"
+	lprintf(LOG_DEBUG,"%s JavaScript: Creating runtime: %lu bytes"
 		,node,startup->js_max_bytes);
 
 	if((js_runtime = JS_NewRuntime(startup->js_max_bytes))==NULL)
 		return(false);
 
-	lprintf("%s JavaScript: Initializing context (stack: %lu bytes)"
+	lprintf(LOG_DEBUG,"%s JavaScript: Initializing context (stack: %lu bytes)"
 		,node,startup->js_cx_stack);
 
     if((js_cx = JS_NewContext(js_runtime, startup->js_cx_stack))==NULL)
@@ -942,7 +942,7 @@ void sbbs_t::js_create_user_objects(void)
 		return;
 
 	if(!js_CreateUserObjects(js_cx, js_glob, &cfg, &useron, NULL, subscan)) 
-		lprintf("!JavaScript ERROR creating user objects");
+		lprintf(LOG_ERR,"!JavaScript ERROR creating user objects");
 }
 
 #endif	/* JAVASCRIPT */
@@ -957,12 +957,12 @@ static BOOL winsock_startup(void)
 	int		status;             /* Status Code */
 
     if((status = WSAStartup(MAKEWORD(1,1), &WSAData))==0) {
-		lprintf("%s %s",WSAData.szDescription, WSAData.szSystemStatus);
+		lprintf(LOG_INFO,"%s %s",WSAData.szDescription, WSAData.szSystemStatus);
 		WSAInitialized=TRUE;
 		return(TRUE);
 	}
 
-    lprintf("!WinSock startup ERROR %d", status);
+    lprintf(LOG_ERR,"!WinSock startup ERROR %d", status);
 	return(FALSE);
 }
 
@@ -1009,7 +1009,7 @@ static BYTE* telnet_interpret(sbbs_t* sbbs, BYTE* inbuf, int inlen,
 			if(sbbs->telnet_last_rxch==CR
 				&& (inbuf[i]==LF || inbuf[i]==0)) { // CR/LF or CR/NUL, ignore 2nd char
 #if 0 /* Debug CR/LF problems */
-				lprintf("Node %d CR/%02Xh detected and ignored"
+				lprintf(LOG_INFO,"!Node %d CR/%02Xh detected and ignored"
 					,sbbs->cfg.node_num, inbuf[i]);
 #endif
 				sbbs->telnet_last_rxch=inbuf[i];
@@ -1033,7 +1033,7 @@ static BYTE* telnet_interpret(sbbs_t* sbbs, BYTE* inbuf, int inlen,
 					if(sbbs->telnet_cmd[2]==TELNET_TERM_TYPE
 						&& sbbs->telnet_cmd[3]==TELNET_TERM_IS) {
 						sprintf(sbbs->terminal,"%.*s",(int)sbbs->telnet_cmdlen-6,sbbs->telnet_cmd+4);
-						lprintf("Node %d %s telnet terminal type: %s"
+						lprintf(LOG_INFO,"Node %d %s telnet terminal type: %s"
 	                		,sbbs->cfg.node_num
 							,sbbs->telnet_mode&TELNET_MODE_GATE ? "passed-through" : "received"
 							,sbbs->terminal);
@@ -1043,7 +1043,7 @@ static BYTE* telnet_interpret(sbbs_t* sbbs, BYTE* inbuf, int inlen,
 			}
             else if(sbbs->telnet_cmdlen==2 && inbuf[i]<TELNET_WILL) {
 				if(startup->options&BBS_OPT_DEBUG_TELNET)
-            		lprintf("Node %d %s telnet cmd: %s"
+            		lprintf(LOG_INFO,"!Node %d %s telnet cmd: %s"
 	                	,sbbs->cfg.node_num
 						,sbbs->telnet_mode&TELNET_MODE_GATE ? "passed-through" : "received"
                 		,telnet_cmd_desc(sbbs->telnet_cmd[2]));
@@ -1066,7 +1066,7 @@ static BYTE* telnet_interpret(sbbs_t* sbbs, BYTE* inbuf, int inlen,
 					}
 				}
 				if(startup->options&BBS_OPT_DEBUG_TELNET)
-					lprintf("Node %d %s telnet cmd: %s %s"
+					lprintf(LOG_INFO,"!Node %d %s telnet cmd: %s %s"
 	                    ,sbbs->cfg.node_num
 						,sbbs->telnet_mode&TELNET_MODE_GATE ? "passed-through" : "received"
 						,telnet_cmd_desc(sbbs->telnet_cmd[1])
@@ -1090,14 +1090,14 @@ void sbbs_t::send_telnet_cmd(uchar cmd, uchar opt)
 
 	if(cmd<TELNET_WILL) {
 		if(startup->options&BBS_OPT_DEBUG_TELNET)
-            lprintf("Node %d sending telnet cmd: %s"
+            lprintf(LOG_INFO,"!Node %d sending telnet cmd: %s"
 	            ,cfg.node_num
                 ,telnet_cmd_desc(cmd));
 		sprintf(buf,"%c%c",TELNET_IAC,cmd);
 		putcom(buf,2);
 	} else {
 		if(startup->options&BBS_OPT_DEBUG_TELNET)
-			lprintf("Node %d sending telnet cmd: %s %s"
+			lprintf(LOG_INFO,"!Node %d sending telnet cmd: %s %s"
 				,cfg.node_num
 				,telnet_cmd_desc(cmd)
 				,telnet_opt_desc(opt));
@@ -1123,7 +1123,7 @@ void input_thread(void *arg)
 	thread_up(TRUE /* setuid */);
 
 #ifdef _DEBUG
-	lprintf("Node %d input thread started",sbbs->cfg.node_num);
+	lprintf(LOG_INFO,"!Node %d input thread started",sbbs->cfg.node_num);
 #endif
 
 	pthread_mutex_init(&sbbs->input_thread_mutex,NULL);
@@ -1159,17 +1159,17 @@ void input_thread(void *arg)
 
 			if(FD_ISSET(sbbs->client_socket,&socket_set))  {
 	        	if(ERROR_VALUE == ENOTSOCK)
-    	            lprintf("Node %d socket closed by peer on input->select", sbbs->cfg.node_num);
+    	            lprintf(LOG_INFO,"!Node %d socket closed by peer on input->select", sbbs->cfg.node_num);
 				else if(ERROR_VALUE==ESHUTDOWN)
-					lprintf("Node %d socket shutdown on input->select", sbbs->cfg.node_num);
+					lprintf(LOG_INFO,"!Node %d socket shutdown on input->select", sbbs->cfg.node_num);
 				else if(ERROR_VALUE==EINTR)
-					lprintf("Node %d input thread interrupted",sbbs->cfg.node_num);
+					lprintf(LOG_INFO,"!Node %d input thread interrupted",sbbs->cfg.node_num);
         	    else if(ERROR_VALUE==ECONNRESET) 
-					lprintf("Node %d connection reset by peer on input->select", sbbs->cfg.node_num);
+					lprintf(LOG_INFO,"!Node %d connection reset by peer on input->select", sbbs->cfg.node_num);
 	            else if(ERROR_VALUE==ECONNABORTED) 
-					lprintf("Node %d connection aborted by peer on input->select", sbbs->cfg.node_num);
+					lprintf(LOG_INFO,"!Node %d connection aborted by peer on input->select", sbbs->cfg.node_num);
 				else
-					lprintf("Node %d !ERROR %d input->select socket %d"
+					lprintf(LOG_INFO,"!Node %d !ERROR %d input->select socket %d"
                 		,sbbs->cfg.node_num, ERROR_VALUE, sbbs->client_socket);
 				break;
 			}
@@ -1177,7 +1177,7 @@ void input_thread(void *arg)
 			else if(uspy_socket[sbbs->cfg.node_num-1]!=INVALID_SOCKET && 
 					FD_ISSET(uspy_socket[sbbs->cfg.node_num-1],&socket_set))  {
 				if(ERROR_VALUE != EAGAIN)  {
-					lprintf("Node %d !ERROR %d on local spy socket %d input->select"
+					lprintf(LOG_INFO,"!Node %d !ERROR %d on local spy socket %d input->select"
 						, sbbs->cfg.node_num, errno, uspy_socket[sbbs->cfg.node_num-1]);
 					close_socket(uspy_socket[sbbs->cfg.node_num-1]);
 					uspy_socket[sbbs->cfg.node_num-1]=INVALID_SOCKET;
@@ -1236,22 +1236,22 @@ void input_thread(void *arg)
 		{
 			if(sock==sbbs->client_socket)  {
 	        	if(ERROR_VALUE == ENOTSOCK)
-    	            lprintf("Node %d socket closed by peer on receive", sbbs->cfg.node_num);
+    	            lprintf(LOG_INFO,"!Node %d socket closed by peer on receive", sbbs->cfg.node_num);
         	    else if(ERROR_VALUE==ECONNRESET) 
-					lprintf("Node %d connection reset by peer on receive", sbbs->cfg.node_num);
+					lprintf(LOG_INFO,"!Node %d connection reset by peer on receive", sbbs->cfg.node_num);
 				else if(ERROR_VALUE==ESHUTDOWN)
-					lprintf("Node %d socket shutdown on receive", sbbs->cfg.node_num);
+					lprintf(LOG_INFO,"!Node %d socket shutdown on receive", sbbs->cfg.node_num);
         	    else if(ERROR_VALUE==ECONNABORTED) 
-					lprintf("Node %d connection aborted by peer on receive", sbbs->cfg.node_num);
+					lprintf(LOG_INFO,"!Node %d connection aborted by peer on receive", sbbs->cfg.node_num);
 				else
-					lprintf("Node %d !ERROR %d receiving from socket %d"
+					lprintf(LOG_INFO,"!Node %d !ERROR %d receiving from socket %d"
         	        	,sbbs->cfg.node_num, ERROR_VALUE, sock);
 				break;
 			}
 #ifdef __unix__
 			else  {
 				if(ERROR_VALUE != EAGAIN)  {
-					lprintf("Node %d !ERROR %d on local spy socket %d receive"
+					lprintf(LOG_INFO,"!Node %d !ERROR %d on local spy socket %d receive"
 						, sbbs->cfg.node_num, errno, sock);
 					close_socket(uspy_socket[sbbs->cfg.node_num-1]);
 					uspy_socket[sbbs->cfg.node_num-1]=INVALID_SOCKET;
@@ -1263,7 +1263,7 @@ void input_thread(void *arg)
 
 		if(rd == 0 && sock==sbbs->client_socket)
 		{
-			lprintf("Node %d disconnected", sbbs->cfg.node_num);
+			lprintf(LOG_INFO,"!Node %d disconnected", sbbs->cfg.node_num);
 			break;
 		}
 
@@ -1282,7 +1282,7 @@ void input_thread(void *arg)
 		else
 			wrbuf=telnet_interpret(sbbs, inbuf, rd, telbuf, wr);
 		if(wr > (int)sizeof(telbuf)) 
-			lprintf("!TELBUF OVERFLOW (%d>%d)",wr,sizeof(telbuf));
+			lprintf(LOG_ERR,"!TELBUF OVERFLOW (%d>%d)",wr,sizeof(telbuf));
 
 		/* First level Ctrl-C checking */
 		if(!(sbbs->cfg.ctrlkey_passthru&(1<<CTRL_C))
@@ -1290,10 +1290,10 @@ void input_thread(void *arg)
 			&& !(sbbs->telnet_mode&(TELNET_MODE_BIN_RX|TELNET_MODE_GATE))
 			&& memchr(wrbuf, CTRL_C, wr)) {	
 			if(RingBufFull(&sbbs->inbuf))
-    			lprintf("Node %d Ctrl-C hit with %lu bytes in input buffer"
+    			lprintf(LOG_INFO,"!Node %d Ctrl-C hit with %lu bytes in input buffer"
 					,sbbs->cfg.node_num,RingBufFull(&sbbs->inbuf));
 			if(RingBufFull(&sbbs->outbuf))
-    			lprintf("Node %d Ctrl-C hit with %lu bytes in output buffer"
+    			lprintf(LOG_INFO,"!Node %d Ctrl-C hit with %lu bytes in output buffer"
 					,sbbs->cfg.node_num,RingBufFull(&sbbs->outbuf));
 			sbbs->sys_status|=SS_ABORT;
 			RingBufReInit(&sbbs->inbuf);	/* Purge input buffer */
@@ -1305,7 +1305,7 @@ void input_thread(void *arg)
 		avail=RingBufFree(&sbbs->inbuf);
 
         if(avail<wr)
-			lprintf("!INPUT BUFFER FULL (%d free)", avail);
+			lprintf(LOG_ERR,"!INPUT BUFFER FULL (%d free)", avail);
         else
 			RingBufWrite(&sbbs->inbuf, wrbuf, wr);
 //		if(wr>100)
@@ -1320,7 +1320,7 @@ void input_thread(void *arg)
 	pthread_mutex_destroy(&sbbs->input_thread_mutex);
 
 	thread_down();
-	lprintf("Node %d input thread terminated (received %lu bytes in %lu blocks)"
+	lprintf(LOG_INFO,"!Node %d input thread terminated (received %lu bytes in %lu blocks)"
 		,sbbs->cfg.node_num, total_recv, total_pkts);
 }
 
@@ -1346,7 +1346,7 @@ void output_thread(void* arg)
     else
     	strcpy(node,sbbs->client_name);
 #ifdef _DEBUG
-	lprintf("%s output thread started",node);
+	lprintf(LOG_INFO,"!%s output thread started",node);
 #endif
 
     sbbs->output_thread_running = true;
@@ -1375,7 +1375,7 @@ void output_thread(void* arg)
 
 		i=select(sbbs->client_socket+1,NULL,&socket_set,NULL,&tv);
 		if(i==SOCKET_ERROR) {
-			lprintf("!%s: ERROR %d selecting socket %u for send"
+			lprintf(LOG_ERR,"!%s: ERROR %d selecting socket %u for send"
 				,node,ERROR_VALUE,sbbs->client_socket);
 			if(sbbs->cfg.node_num)	/* Only break if node output (not server) */
 				break;
@@ -1388,7 +1388,7 @@ void output_thread(void* arg)
 
         if(bufbot==buftop) { // linear buf empty, read from ring buf
             if(avail>sizeof(buf)) {
-                lprintf("Reducing output buffer");
+                lprintf(LOG_INFO,"!Reducing output buffer");
                 avail=sizeof(buf);
             }
             buftop=RingBufRead(&sbbs->outbuf, buf, avail);
@@ -1397,13 +1397,13 @@ void output_thread(void* arg)
 		i=sendsocket(sbbs->client_socket, (char*)buf+bufbot, buftop-bufbot);
 		if(i==SOCKET_ERROR) {
         	if(ERROR_VALUE == ENOTSOCK)
-                lprintf("%s client socket closed on send", node);
+                lprintf(LOG_INFO,"!%s client socket closed on send", node);
             else if(ERROR_VALUE==ECONNRESET) 
-				lprintf("%s connection reset by peer on send", node);
+				lprintf(LOG_INFO,"!%s connection reset by peer on send", node);
             else if(ERROR_VALUE==ECONNABORTED) 
-				lprintf("%s connection aborted by peer on send", node);
+				lprintf(LOG_INFO,"!%s connection aborted by peer on send", node);
 			else
-				lprintf("!%s: ERROR %d sending on socket %d"
+				lprintf(LOG_ERR,"!%s: ERROR %d sending on socket %d"
                 	,node, ERROR_VALUE, sbbs->client_socket);
 			sbbs->online=0;
 			/* was break; on 4/7/00 */
@@ -1445,7 +1445,7 @@ void output_thread(void* arg)
 		stats[0]=0;
 
 	thread_down();
-	lprintf("%s output thread terminated %s", node, stats);
+	lprintf(LOG_INFO,"!%s output thread terminated %s", node, stats);
 }
 
 void event_thread(void* arg)
@@ -1469,7 +1469,7 @@ void event_thread(void* arg)
 	struct tm	now_tm;
 	struct tm	tm;
 
-	eprintf("BBS Events thread started");
+	eprintf(LOG_INFO,"BBS Events thread started");
 
 	sbbs->event_thread_running = true;
 
@@ -1481,7 +1481,7 @@ void event_thread(void* arg)
 #ifdef JAVASCRIPT
 	if(!(startup->options&BBS_OPT_NO_JAVASCRIPT)) {
 		if(!sbbs->js_init())	/* This must be done in the context of the node thread */
-			lprintf("!JavaScript Initialization FAILURE");
+			lprintf(LOG_ERR,"!JavaScript Initialization FAILURE");
 	}
 #endif
 
@@ -1577,7 +1577,7 @@ void event_thread(void* arg)
 				getuserdat(&sbbs->cfg,&sbbs->useron);
 				if(sbbs->useron.number && flength(g.gl_pathv[i])>0) {
 					sbbs->online=ON_LOCAL;
-					eprintf("Un-packing QWK Reply packet from %s",sbbs->useron.alias);
+					eprintf(LOG_INFO,"Un-packing QWK Reply packet from %s",sbbs->useron.alias);
 					sbbs->getusrsubs();
 					sbbs->unpack_rep(g.gl_pathv[i]);
 					sbbs->batch_create_list();	/* FREQs? */
@@ -1597,7 +1597,7 @@ void event_thread(void* arg)
 				sbbs->useron.number=atoi(g.gl_pathv[i]+offset);
 				getuserdat(&sbbs->cfg,&sbbs->useron);
 				if(sbbs->useron.number && !(sbbs->useron.misc&(DELETED|INACTIVE))) {
-					eprintf("Packing QWK Message Packet for %s",sbbs->useron.alias);
+					eprintf(LOG_INFO,"Packing QWK Message Packet for %s",sbbs->useron.alias);
 					sbbs->online=ON_LOCAL;
 					delfiles(sbbs->cfg.temp_dir,ALLFILES);
 					sbbs->getmsgptrs();
@@ -1611,12 +1611,12 @@ void event_thread(void* arg)
 					sprintf(str,"%sfile%c%04u.qwk"
 						,sbbs->cfg.data_dir,PATH_DELIM,sbbs->useron.number);
 					if(sbbs->pack_qwk(str,&l,true /* pre-pack/off-line */)) {
-						eprintf("Packing completed");
+						eprintf(LOG_INFO,"Packing completed");
 						sbbs->qwk_success(l,0,1);
 						sbbs->putmsgptrs(); 
 						remove(bat_list);
 					} else
-						eprintf("No packet created (no new messages)");
+						eprintf(LOG_INFO,"No packet created (no new messages)");
 					delfiles(sbbs->cfg.temp_dir,ALLFILES);
 					sbbs->online=0;
 				}
@@ -1629,7 +1629,7 @@ void event_thread(void* arg)
 			if(sbbs->cfg.preqwk_ar[0] 
 				&& (fexistcase(semfile) || (now-lastprepack)/60>(60*24))) {
 				j=lastuser(&sbbs->cfg);
-				eprintf("Pre-packing QWK Message packets...");
+				eprintf(LOG_INFO,"Pre-packing QWK Message packets...");
 				for(i=1;i<=j;i++) {
 
 					sprintf(str,"%5u of %-5u",i,j);
@@ -1649,7 +1649,7 @@ void event_thread(void* arg)
 						}
 						if(k<=sbbs->cfg.sys_nodes)	/* Don't pre-pack with user online */
 							continue;
-						eprintf("Pre-packing QWK for %s",sbbs->useron.alias);
+						eprintf(LOG_INFO,"Pre-packing QWK for %s",sbbs->useron.alias);
 						sbbs->online=ON_LOCAL;
 						delfiles(sbbs->cfg.temp_dir,ALLFILES);
 						sbbs->getmsgptrs();
@@ -1695,7 +1695,7 @@ void event_thread(void* arg)
 						sbbs->cfg.node_num=i;
 						strcpy(sbbs->cfg.node_dir, sbbs->cfg.node_path[i-1]);
 
-						eprintf("Running node %d daily event",i);
+						eprintf(LOG_INFO,"Running node %d daily event",i);
 						sbbs->online=ON_LOCAL;
 						sbbs->logentry("!:","Run node daily event");
 						sbbs->external(
@@ -1720,7 +1720,7 @@ void event_thread(void* arg)
 				sprintf(str,"%sqnet/%s.now",sbbs->cfg.data_dir,sbbs->cfg.qhub[i]->id);
 				if(fexistcase(str)) {
 					strcpy(str,sbbs->cfg.qhub[i]->id);
-					eprintf("Semaphore signaled for QWK Network Hub: %s",strupr(str));
+					eprintf(LOG_INFO,"Semaphore signaled for QWK Network Hub: %s",strupr(str));
 					sbbs->cfg.qhub[i]->last=-1; 
 				}
 			}
@@ -1738,7 +1738,7 @@ void event_thread(void* arg)
 				sprintf(str,"%s%s.now",sbbs->cfg.data_dir,sbbs->cfg.event[i]->code);
 				if(fexistcase(str)) {
 					strcpy(str,sbbs->cfg.event[i]->code);
-					eprintf("Semaphore signaled for Timed Event: %s",strupr(str));
+					eprintf(LOG_INFO,"Semaphore signaled for Timed Event: %s",strupr(str));
 					sbbs->cfg.event[i]->last=-1; 
 				}
 			}
@@ -1834,7 +1834,7 @@ void event_thread(void* arg)
 					if(sbbs->cfg.node_num<1) 
 						sbbs->cfg.node_num=1;
 					strcpy(sbbs->cfg.node_dir, sbbs->cfg.node_path[sbbs->cfg.node_num-1]);
-					eprintf("QWK Network call-out: %s",sbbs->cfg.qhub[i]->id); 
+					eprintf(LOG_INFO,"QWK Network call-out: %s",sbbs->cfg.qhub[i]->id); 
 					sbbs->online=ON_LOCAL;
 					sbbs->external(
 						 sbbs->cmdstr(sbbs->cfg.qhub[i]->call,nulstr,nulstr,NULL)
@@ -1874,7 +1874,7 @@ void event_thread(void* arg)
 					if(sbbs->cfg.node_num<1) 
 						sbbs->cfg.node_num=1;
 					strcpy(sbbs->cfg.node_dir, sbbs->cfg.node_path[sbbs->cfg.node_num-1]);
-					eprintf("PostLink Network call-out: %s",sbbs->cfg.phub[i]->name); 
+					eprintf(LOG_INFO,"PostLink Network call-out: %s",sbbs->cfg.phub[i]->name); 
 					sbbs->online=ON_LOCAL;
 					sbbs->external(
 						 sbbs->cmdstr(sbbs->cfg.phub[i]->call,nulstr,nulstr,NULL)
@@ -1913,7 +1913,7 @@ void event_thread(void* arg)
 
 					if(sbbs->cfg.event[i]->node<first_node
 						|| sbbs->cfg.event[i]->node>last_node) {
-						eprintf("Waiting for node %d to run timed event: %s"
+						eprintf(LOG_INFO,"Waiting for node %d to run timed event: %s"
 							,sbbs->cfg.event[i]->node,sbbs->cfg.event[i]->code);
 						lastnodechk=0;	 /* really last event time check */
 						start=time(NULL);
@@ -1944,7 +1944,7 @@ void event_thread(void* arg)
 							if(now-sbbs->cfg.event[i]->last<(60*60))	/* event is done */
 								break; 
 							if(now-start>(90*60)) {
-								eprintf("!TIMEOUT waiting for event to complete");
+								eprintf(LOG_WARNING,"!TIMEOUT waiting for event to complete");
 								break;
 							}
 						}
@@ -1953,7 +1953,7 @@ void event_thread(void* arg)
 							remove(str);
 						sbbs->cfg.event[i]->last=now;
 					} else {	// Exclusive event to run on a node under our control
-						eprintf("Waiting for all nodes to become inactive before "
+						eprintf(LOG_INFO,"Waiting for all nodes to become inactive before "
 							"running timed event: %s",sbbs->cfg.event[i]->code);
 						lastnodechk=0;
 						start=time(NULL);
@@ -1991,9 +1991,9 @@ void event_thread(void* arg)
 							}
 							if(j>sbbs->cfg.sys_nodes) /* all nodes either offline or in limbo */
 								break;
-							eprintf("Waiting for node %d (status=%d)",j,node.status);
+							eprintf(LOG_DEBUG,"Waiting for node %d (status=%d)",j,node.status);
 							if(now-start>(90*60)) {
-								eprintf("!TIMEOUT waiting for node %d to become inactive",j);
+								eprintf(LOG_WARNING,"!TIMEOUT waiting for node %d to become inactive",j);
 								break;
 							}
 						} 
@@ -2008,7 +2008,7 @@ void event_thread(void* arg)
 #endif
 				if(sbbs->cfg.event[i]->node<first_node 
 					|| sbbs->cfg.event[i]->node>last_node) {
-					eprintf("Changing node status for nodes %d through %d to WFC"
+					eprintf(LOG_NOTICE,"Changing node status for nodes %d through %d to WFC"
 						,first_node,last_node);
 					sbbs->cfg.event[i]->last=now;
 					for(j=first_node;j<=last_node;j++) {
@@ -2034,7 +2034,7 @@ void event_thread(void* arg)
 						sbbs->putnodedat(sbbs->cfg.event[i]->node,&node);
 					}
 					strcpy(str,sbbs->cfg.event[i]->code);
-					eprintf("Running timed event: %s",strupr(str));
+					eprintf(LOG_INFO,"Running timed event: %s",strupr(str));
 					int ex_mode = EX_OFFLINE;
 					if(!(sbbs->cfg.event[i]->misc&EVENT_EXCL)
 						&& sbbs->cfg.event[i]->misc&EX_BG)
@@ -2079,7 +2079,7 @@ void event_thread(void* arg)
     sbbs->event_thread_running = false;
 
 	thread_down();
-	eprintf("BBS Event thread terminated (%u threads remain)", thread_count);
+	eprintf(LOG_INFO,"BBS Event thread terminated (%u threads remain)", thread_count);
 }
 
 
@@ -2095,7 +2095,7 @@ sbbs_t::sbbs_t(ushort node_num, DWORD addr, char* name, SOCKET sd,
     else
     	strcpy(nodestr,name);
 
-	lprintf("%s constructor using socket %d (settings=%lx)"
+	lprintf(LOG_INFO,"!%s constructor using socket %d (settings=%lx)"
 		, nodestr, sd, global_cfg->node_misc);
 
 	startup = ::startup;	// Convert from global to class member
@@ -2252,11 +2252,11 @@ bool sbbs_t::init()
 
 		addr_len=sizeof(addr);
 		if((result=getsockname(client_socket, (struct sockaddr *)&addr,&addr_len))!=0) {
-			lprintf("Node %d !ERROR %d (%d) getting address/port"
+			lprintf(LOG_INFO,"!Node %d !ERROR %d (%d) getting address/port"
 				,cfg.node_num, result, ERROR_VALUE);
 			return(false);
 		} 
-		lprintf("Node %d attached to local interface %s port %d"
+		lprintf(LOG_INFO,"!Node %d attached to local interface %s port %d"
 			,cfg.node_num, inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
 
 		local_addr=addr.sin_addr.s_addr;
@@ -2316,7 +2316,7 @@ bool sbbs_t::init()
 		sprintf(str,"%snode.log",cfg.node_dir);
 		if((logfile_fp=fopen(str,"a+b"))==NULL) {
 			errormsg(WHERE, ERR_OPEN, str, 0);
-			lprintf("Perhaps this node is already running");
+			lprintf(LOG_INFO,"!Perhaps this node is already running");
 			return(false); 
 		}
 
@@ -2526,7 +2526,7 @@ sbbs_t::~sbbs_t()
     else
     	strcpy(node,client_name);
 #ifdef _DEBUG
-	lprintf("%s destructor begin", node);
+	lprintf(LOG_INFO,"!%s destructor begin", node);
 #endif
 
 //	if(!cfg.node_num)
@@ -2563,13 +2563,13 @@ sbbs_t::~sbbs_t()
 #ifdef JAVASCRIPT
 	/* Free Context */
 	if(js_cx!=NULL) {	
-		lprintf("%s JavaScript: Destroying context",node);
+		lprintf(LOG_INFO,"!%s JavaScript: Destroying context",node);
 		JS_DestroyContext(js_cx);
 		js_cx=NULL;
 	}
 
 	if(js_runtime!=NULL) {
-		lprintf("%s JavaScript: Destroying runtime",node);
+		lprintf(LOG_INFO,"!%s JavaScript: Destroying runtime",node);
 		JS_DestroyRuntime(js_runtime);
 		js_runtime=NULL;
 	}
@@ -2645,11 +2645,11 @@ sbbs_t::~sbbs_t()
 
 #if 0 && defined(_WIN32) && defined(_DEBUG) && defined(_MSC_VER)
 	if(!_CrtCheckMemory())
-		lprintf("!MEMORY ERRORS REPORTED IN DATA/DEBUG.LOG!");
+		lprintf(LOG_ERR,"!MEMORY ERRORS REPORTED IN DATA/DEBUG.LOG!");
 #endif
 
 #ifdef _DEBUG
-	lprintf("%s destructor end", node);
+	lprintf(LOG_INFO,"!%s destructor end", node);
 #endif
 }
 
@@ -3159,7 +3159,7 @@ void node_thread(void* arg)
 	thread_up(TRUE /* setuid */);
 
 #ifdef _DEBUG
-	lprintf("Node %d thread started",sbbs->cfg.node_num);
+	lprintf(LOG_INFO,"!Node %d thread started",sbbs->cfg.node_num);
 #endif
 
 	srand(time(NULL));	/* Seed random number generator */
@@ -3168,7 +3168,7 @@ void node_thread(void* arg)
 #ifdef JAVASCRIPT
 	if(!(startup->options&BBS_OPT_NO_JAVASCRIPT)) {
 		if(!sbbs->js_init())	/* This must be done in the context of the node thread */
-			lprintf("Node %d !JavaScript Initialization FAILURE",sbbs->cfg.node_num);
+			lprintf(LOG_INFO,"!Node %d !JavaScript Initialization FAILURE",sbbs->cfg.node_num);
 	}
 #endif
 
@@ -3248,7 +3248,7 @@ void node_thread(void* arg)
 		sbbs->logentry("!:","Ran system daily maintenance");
 
 		if(sbbs->cfg.user_backup_level) {
-			lprintf("Node %d Backing-up user data..."
+			lprintf(LOG_INFO,"!Node %d Backing-up user data..."
 				,sbbs->cfg.node_num);
 			sprintf(str,"%suser/user.dat",sbbs->cfg.data_dir);
 			backup(str,sbbs->cfg.user_backup_level,FALSE);
@@ -3257,7 +3257,7 @@ void node_thread(void* arg)
 		}
 
 		if(sbbs->cfg.mail_backup_level) {
-			lprintf("Node %d Backing-up mail data..."
+			lprintf(LOG_INFO,"!Node %d Backing-up mail data..."
 				,sbbs->cfg.node_num);
 			sprintf(str,"%smail.shd",sbbs->cfg.data_dir);
 			backup(str,sbbs->cfg.mail_backup_level,FALSE);
@@ -3273,7 +3273,7 @@ void node_thread(void* arg)
 			backup(str,sbbs->cfg.mail_backup_level,FALSE);
 		}
 
-		lprintf("Node %d Checking for inactive/expired user records..."
+		lprintf(LOG_INFO,"!Node %d Checking for inactive/expired user records..."
 			,sbbs->cfg.node_num);
 		j=lastuser(&sbbs->cfg);
 		for(i=1;i<=j;i++) {
@@ -3360,7 +3360,7 @@ void node_thread(void* arg)
 			}
 		}
 
-		lprintf("Node %d Purging deleted/expired e-mail",sbbs->cfg.node_num);
+		lprintf(LOG_INFO,"!Node %d Purging deleted/expired e-mail",sbbs->cfg.node_num);
 		sprintf(sbbs->smb.file,"%smail",sbbs->cfg.data_dir);
 		sbbs->smb.retry_time=sbbs->cfg.smb_retry_time;
 		sbbs->smb.subnum=INVALID_SUB;
@@ -3406,7 +3406,7 @@ void node_thread(void* arg)
 
     // Wait for all node threads to terminate
 	if(sbbs->input_thread_running || sbbs->output_thread_running) {
-		lprintf("Node %d Waiting for %s to terminate..."
+		lprintf(LOG_INFO,"!Node %d Waiting for %s to terminate..."
 			,sbbs->cfg.node_num
 			,(sbbs->input_thread_running && sbbs->output_thread_running) ?
                	"I/O threads" : sbbs->input_thread_running
@@ -3415,7 +3415,7 @@ void node_thread(void* arg)
 		while(sbbs->input_thread_running
     		|| sbbs->output_thread_running) {
 			if(time(NULL)-start>TIMEOUT_THREAD_WAIT) {
-				lprintf("Node %d !TIMEOUT waiting for %s to terminate"
+				lprintf(LOG_INFO,"!Node %d !TIMEOUT waiting for %s to terminate"
 					, sbbs->cfg.node_num
 					,(sbbs->input_thread_running && sbbs->output_thread_running) ?
                   		"I/O threads"
@@ -3443,12 +3443,12 @@ void node_thread(void* arg)
 
 	if(node_threads_running>0)
 		node_threads_running--;
-	lprintf("Node %d thread terminated (%u node threads remain, %lu clients served)"
+	lprintf(LOG_INFO,"!Node %d thread terminated (%u node threads remain, %lu clients served)"
 		,sbbs->cfg.node_num, node_threads_running, served);
     if(!sbbs->input_thread_running && !sbbs->output_thread_running)
 		delete sbbs;
     else
-		lprintf("Node %d !ORPHANED I/O THREAD(s)",sbbs->cfg.node_num);
+		lprintf(LOG_INFO,"!Node %d !ORPHANED I/O THREAD(s)",sbbs->cfg.node_num);
 
 	update_clients();
 	thread_down();
@@ -3512,7 +3512,7 @@ void DLLCALL bbs_terminate(void)
 {
 	recycle_server=false;
 	if(telnet_socket!=INVALID_SOCKET) {
-    	lprintf("BBS Terminate: closing telnet socket %d",telnet_socket);
+    	lprintf(LOG_INFO,"!BBS Terminate: closing telnet socket %d",telnet_socket);
 		close_socket(telnet_socket);
 		telnet_socket=INVALID_SOCKET;
     }
@@ -3520,7 +3520,7 @@ void DLLCALL bbs_terminate(void)
 
 static void cleanup(int code)
 {
-    lputs("BBS System thread terminating");
+    lputs(LOG_INFO,"BBS System thread terminating");
 
 	if(telnet_socket!=INVALID_SOCKET) {
 		close_socket(telnet_socket);
@@ -3534,7 +3534,7 @@ static void cleanup(int code)
 
 #ifdef _WINSOCKAPI_
 	if(WSAInitialized && WSACleanup()!=0) 
-		lprintf("!WSACleanup ERROR %d",ERROR_VALUE);
+		lprintf(LOG_ERR,"!WSACleanup ERROR %d",ERROR_VALUE);
 #endif
 
 	free_cfg(&scfg);
@@ -3565,7 +3565,7 @@ static void cleanup(int code)
 
 	status("Down");
 	thread_down();
-    lprintf("BBS System thread terminated (%u threads remain, %lu clients served)"
+    lprintf(LOG_INFO,"!BBS System thread terminated (%u threads remain, %lu clients served)"
 		,thread_count, served);
 	if(startup->terminated!=NULL)
 		startup->terminated(startup->cbdata,code);
@@ -3644,7 +3644,7 @@ void DLLCALL bbs_thread(void* arg)
 	/* Defeat the lameo hex0rs - the name and copyright must remain intact */
 	if(crc32(COPYRIGHT_NOTICE,0)!=COPYRIGHT_CRC 
 		|| crc32(VERSION_NOTICE,10)!=SYNCHRONET_CRC) {
-		lprintf("!CORRUPTED LIBRARY FILE");
+		lprintf(LOG_ERR,"!CORRUPTED LIBRARY FILE");
 		cleanup(1);
 		return;
 	}
@@ -3658,7 +3658,7 @@ void DLLCALL bbs_thread(void* arg)
 	char compiler[32];
 	DESCRIBE_COMPILER(compiler);
 
-	lprintf("%s Version %s Revision %c%s"
+	lprintf(LOG_INFO,"!%s Version %s Revision %c%s"
 		,TELNET_SERVER
 		,VERSION
 		,toupper(REVISION)
@@ -3668,18 +3668,18 @@ void DLLCALL bbs_thread(void* arg)
 		,""
 #endif
 		);
-	lprintf("Compiled %s %s with %s", __DATE__, __TIME__, compiler);
-	lprintf("SMBLIB %s (format %x.%02x)",smb_lib_ver(),smb_ver()>>8,smb_ver()&0xff);
+	lprintf(LOG_INFO,"!Compiled %s %s with %s", __DATE__, __TIME__, compiler);
+	lprintf(LOG_INFO,"!SMBLIB %s (format %x.%02x)",smb_lib_ver(),smb_ver()>>8,smb_ver()&0xff);
 
     if(startup->first_node<1 || startup->first_node>startup->last_node) {
-    	lprintf("!ILLEGAL node configuration (first: %d, last: %d)"
+    	lprintf(LOG_ERR,"!ILLEGAL node configuration (first: %d, last: %d)"
         	,startup->first_node, startup->last_node);
 		cleanup(1);
         return;
     }
 
 	if(sizeof(node_t)!=SIZEOF_NODE_T) {
-		lprintf("!COMPILER ERROR: sizeof(node_t)=%d instead of %d"
+		lprintf(LOG_ERR,"!COMPILER ERROR: sizeof(node_t)=%d instead of %d"
 			,sizeof(node_t),SIZEOF_NODE_T);
 		cleanup(1);
 		return;
@@ -3687,7 +3687,7 @@ void DLLCALL bbs_thread(void* arg)
 
 #ifdef _WIN32
     if((exec_mutex=CreateMutex(NULL,false,NULL))==NULL) {
-    	lprintf("!ERROR %d creating exec_mutex", GetLastError());
+    	lprintf(LOG_ERR,"!ERROR %d creating exec_mutex", GetLastError());
 		cleanup(1);
         return;
     }
@@ -3702,21 +3702,21 @@ void DLLCALL bbs_thread(void* arg)
 	}
 
 	t=time(NULL);
-	lprintf("Initializing on %.24s with options: %lx"
+	lprintf(LOG_INFO,"!Initializing on %.24s with options: %lx"
 		,CTIME_R(&t,str),startup->options);
 
 	if(chdir(startup->ctrl_dir)!=0)
-		lprintf("!ERROR %d changing directory to: %s", errno, startup->ctrl_dir);
+		lprintf(LOG_ERR,"!ERROR %d changing directory to: %s", errno, startup->ctrl_dir);
 
 	/* Initial configuration and load from CNF files */
     SAFECOPY(scfg.ctrl_dir,startup->ctrl_dir);
-    lprintf("Loading configuration files from %s", scfg.ctrl_dir);
+    lprintf(LOG_INFO,"!Loading configuration files from %s", scfg.ctrl_dir);
 	scfg.size=sizeof(scfg);
 	scfg.node_num=startup->first_node;
 	SAFECOPY(logstr,UNKNOWN_LOAD_ERROR);
 	if(!load_cfg(&scfg, text, TRUE, logstr)) {
-		lprintf("!ERROR %s",logstr);
-		lprintf("!FAILED to load configuration files");
+		lprintf(LOG_ERR,"!ERROR %s",logstr);
+		lprintf(LOG_ERR,"!FAILED to load configuration files");
 		cleanup(1);
 		return;
 	}
@@ -3727,11 +3727,11 @@ void DLLCALL bbs_thread(void* arg)
 
 	if(!(scfg.sys_misc&SM_LOCAL_TZ) && !(startup->options&BBS_OPT_LOCAL_TIMEZONE)) {
 		if(putenv("TZ=UTC0"))
-			lprintf("!putenv() FAILED");
+			lprintf(LOG_ERR,"!putenv() FAILED");
 		tzset();
 
 		if((t=checktime())!=0) {   /* Check binary time */
-			lprintf("!TIME PROBLEM (%ld)",t);
+			lprintf(LOG_ERR,"!TIME PROBLEM (%ld)",t);
 			cleanup(1);
 			return;
 		}
@@ -3741,24 +3741,24 @@ void DLLCALL bbs_thread(void* arg)
 		uptime=time(NULL);	/* this must be done *after* setting the timezone */
 
     if(startup->last_node>scfg.sys_nodes) {
-    	lprintf("Specified last_node (%d) > sys_nodes (%d), auto-corrected"
+    	lprintf(LOG_INFO,"!Specified last_node (%d) > sys_nodes (%d), auto-corrected"
         	,startup->last_node, scfg.sys_nodes);
         startup->last_node=scfg.sys_nodes;
     }
 
 	/* Create missing directories */
-	lprintf("Verifying/creating data directories");
+	lprintf(LOG_INFO,"!Verifying/creating data directories");
 	make_data_dirs(&scfg);
 
 	/* Create missing node directories and dsts.dab files */
-	lprintf("Verifying/creating node directories");
+	lprintf(LOG_INFO,"!Verifying/creating node directories");
 	for(i=0;i<=scfg.sys_nodes;i++) {
 		if(i)
 			md(scfg.node_path[i-1]);
 		sprintf(str,"%sdsts.dab",i ? scfg.node_path[i-1] : scfg.ctrl_dir);
 		if(flength(str)<DSTSDABLEN) {
 			if((file=sopen(str,O_WRONLY|O_CREAT|O_APPEND, SH_DENYNO, S_IREAD|S_IWRITE))==-1) {
-				lprintf("!ERROR %d creating %s",errno, str);
+				lprintf(LOG_ERR,"!ERROR %d creating %s",errno, str);
 				cleanup(1);
 				return; 
 			}
@@ -3787,22 +3787,22 @@ void DLLCALL bbs_thread(void* arg)
     telnet_socket = open_socket(SOCK_STREAM);
 
 	if(telnet_socket == INVALID_SOCKET) {
-		lprintf("!ERROR %d creating Telnet socket", ERROR_VALUE);
+		lprintf(LOG_ERR,"!ERROR %d creating Telnet socket", ERROR_VALUE);
 		cleanup(1);
 		return;
 	}
 
-    lprintf("Telnet socket %d opened",telnet_socket);
+    lprintf(LOG_INFO,"!Telnet socket %d opened",telnet_socket);
 
 	if(startup->options&BBS_OPT_KEEP_ALIVE) {
-		lprintf("Enabling WinSock Keep Alives");
+		lprintf(LOG_INFO,"!Enabling WinSock Keep Alives");
 		option = TRUE;
 
 		result = setsockopt(telnet_socket, SOL_SOCKET, SO_KEEPALIVE
     		,(char *)&option, sizeof(option));
 
 		if(result != 0) {
-			lprintf("!ERROR %d (%d) setting Telnet socket option", result, ERROR_VALUE);
+			lprintf(LOG_ERR,"!ERROR %d (%d) setting Telnet socket option", result, ERROR_VALUE);
 			cleanup(1);
 			return;
 		}
@@ -3824,9 +3824,9 @@ void DLLCALL bbs_thread(void* arg)
 	if(startup->seteuid!=NULL)
 		startup->seteuid(TRUE);
 	if(result != 0) {
-		lprintf("!ERROR %d (%d) binding Telnet socket to port %d"
+		lprintf(LOG_ERR,"!ERROR %d (%d) binding Telnet socket to port %d"
 			,result, ERROR_VALUE,startup->telnet_port);
-		lprintf(BIND_FAILURE_HELP);
+		lprintf(LOG_NOTICE,"%s",BIND_FAILURE_HELP);
 		cleanup(1);
 		return;
 	}
@@ -3834,11 +3834,11 @@ void DLLCALL bbs_thread(void* arg)
     result = listen(telnet_socket, 1);
 
 	if(result != 0) {
-		lprintf("!ERROR %d (%d) listening on Telnet socket", result, ERROR_VALUE);
+		lprintf(LOG_ERR,"!ERROR %d (%d) listening on Telnet socket", result, ERROR_VALUE);
 		cleanup(1);
 		return;
 	}
-	lprintf("Telnet server listening on port %d",startup->telnet_port);
+	lprintf(LOG_INFO,"!Telnet server listening on port %d",startup->telnet_port);
 
 	if(startup->options&BBS_OPT_ALLOW_RLOGIN) {
 
@@ -3847,12 +3847,12 @@ void DLLCALL bbs_thread(void* arg)
 		rlogin_socket = open_socket(SOCK_STREAM);
 
 		if(rlogin_socket == INVALID_SOCKET) {
-			lprintf("!ERROR %d creating RLogin socket", ERROR_VALUE);
+			lprintf(LOG_ERR,"!ERROR %d creating RLogin socket", ERROR_VALUE);
 			cleanup(1);
 			return;
 		}
 
-		lprintf("RLogin socket %d opened",rlogin_socket);
+		lprintf(LOG_INFO,"!RLogin socket %d opened",rlogin_socket);
 
 		/*****************************/
 		/* Listen for incoming calls */
@@ -3869,9 +3869,9 @@ void DLLCALL bbs_thread(void* arg)
 		if(startup->seteuid!=NULL)
 			startup->seteuid(TRUE);
 		if(result != 0) {
-			lprintf("!ERROR %d (%d) binding RLogin socket to port %d"
+			lprintf(LOG_ERR,"!ERROR %d (%d) binding RLogin socket to port %d"
 				,result, ERROR_VALUE,startup->rlogin_port);
-			lprintf(BIND_FAILURE_HELP);
+			lprintf(LOG_NOTICE,"%s",BIND_FAILURE_HELP);
 			cleanup(1);
 			return;
 		}
@@ -3879,18 +3879,18 @@ void DLLCALL bbs_thread(void* arg)
 		result = listen(rlogin_socket, 1);
 
 		if(result != 0) {
-			lprintf("!ERROR %d (%d) listening on RLogin socket", result, ERROR_VALUE);
+			lprintf(LOG_ERR,"!ERROR %d (%d) listening on RLogin socket", result, ERROR_VALUE);
 			cleanup(1);
 			return;
 		}
-		lprintf("RLogin server listening on port %d",startup->rlogin_port);
+		lprintf(LOG_INFO,"!RLogin server listening on port %d",startup->rlogin_port);
 	}
 
 	sbbs = new sbbs_t(0, server_addr.sin_addr.s_addr
 		,"BBS System", telnet_socket, &scfg, text, NULL);
     sbbs->online = 0;
 	if(sbbs->init()==false) {
-		lputs("!BBS initialization failed");
+		lputs(LOG_ERR,"!BBS initialization failed");
 		cleanup(1);
 		return;
 	}
@@ -3901,7 +3901,7 @@ void DLLCALL bbs_thread(void* arg)
 			,"BBS Events", INVALID_SOCKET, &scfg, text, NULL);
 		events->online = 0;
 		if(events->init()==false) {
-			lputs("!Events initialization failed");
+			lputs(LOG_ERR,"!Events initialization failed");
 			cleanup(1);
 			return;
 		}
@@ -3920,7 +3920,7 @@ void DLLCALL bbs_thread(void* arg)
 		sbbs->putnodedat(i,&node);
 	}
 
-	lprintf("BBS System thread started for nodes %d through %d", first_node, last_node);
+	lprintf(LOG_INFO,"!BBS System thread started for nodes %d through %d", first_node, last_node);
 	status(STATUS_WFC);
 
 #if defined(_WIN32) && defined(_DEBUG) && defined(_MSC_VER)
@@ -3935,7 +3935,7 @@ void DLLCALL bbs_thread(void* arg)
 		FILE_ATTRIBUTE_NORMAL, // file attributes
 		NULL				// handle to file with attributes to 
 		))==INVALID_HANDLE_VALUE) {
-		lprintf("!ERROR %ld creating %s",GetLastError(),str);
+		lprintf(LOG_ERR,"!ERROR %ld creating %s",GetLastError(),str);
 		cleanup(1);
 		return;
 	}
@@ -3966,10 +3966,10 @@ void DLLCALL bbs_thread(void* arg)
 #ifdef __unix__	//	unix-domain spy sockets
 	for(i=first_node;i<=last_node;i++)  {
 	    if((uspy_listen_socket[i-1]=socket(PF_LOCAL,SOCK_STREAM,0))==INVALID_SOCKET)
-	        lprintf("Node %d ERROR %d creating local spy socket"
+	        lprintf(LOG_INFO,"!Node %d ERROR %d creating local spy socket"
 	            , i, errno);
 	    else {
-	        lprintf("Node %d local spy using socket %d", i, uspy_listen_socket[i-1]);
+	        lprintf(LOG_INFO,"!Node %d local spy using socket %d", i, uspy_listen_socket[i-1]);
 	        if(startup!=NULL && startup->socket_open!=NULL)
 	            startup->socket_open(startup->cbdata,TRUE);
 	    }
@@ -3987,16 +3987,16 @@ void DLLCALL bbs_thread(void* arg)
 	    if(uspy_listen_socket[i-1]!=INVALID_SOCKET) {
 	        uspy_addr_len=SUN_LEN(&uspy_addr);
 	        if(bind(uspy_listen_socket[i-1], (struct sockaddr *) &uspy_addr, uspy_addr_len)) {
-	            lprintf("Node %d !ERROR %d binding local spy socket %d to %s"
+	            lprintf(LOG_INFO,"!Node %d !ERROR %d binding local spy socket %d to %s"
 	                , i, errno, uspy_listen_socket[i-1], uspy_addr.sun_path);
 	            close_socket(uspy_listen_socket[i-1]);
 				uspy_listen_socket[i-1]=INVALID_SOCKET;
 	            continue;
 	        }
-            lprintf("Node %d local spy socket %d bound to %s"
+            lprintf(LOG_INFO,"!Node %d local spy socket %d bound to %s"
                 , i, uspy_listen_socket[i-1], uspy_addr.sun_path);
 	        if(listen(uspy_listen_socket[i-1],1))  {
-	            lprintf("Node %d !ERROR %d listening local spy socket %d", i, errno);
+	            lprintf(LOG_INFO,"!Node %d !ERROR %d listening local spy socket %d", i, errno);
 	            close_socket(uspy_listen_socket[i-1]);
 				uspy_listen_socket[i-1]=INVALID_SOCKET;
 	            continue;
@@ -4021,20 +4021,20 @@ void DLLCALL bbs_thread(void* arg)
 				if(node.misc&NODE_RRUN) {
 					sbbs->getnodedat(i,&node,1);
 					if(!rerun)
-						lprintf("Node %d flagged for re-run",i);
+						lprintf(LOG_INFO,"!Node %d flagged for re-run",i);
 					rerun=true;
 					node.misc&=~NODE_RRUN;
 					sbbs->putnodedat(i,&node);
 				}
 			}
 			if(rerun) {
-				lprintf("Loading configuration files from %s", scfg.ctrl_dir);
+				lprintf(LOG_INFO,"!Loading configuration files from %s", scfg.ctrl_dir);
 				scfg.node_num=first_node;
 				pthread_mutex_lock(&event_mutex);
 				SAFECOPY(logstr,UNKNOWN_LOAD_ERROR);
 				if(!load_cfg(&scfg, text, TRUE, logstr)) {
-					lprintf("!ERROR %s",logstr);
-					lprintf("!FAILED to load configuration files");
+					lprintf(LOG_ERR,"!ERROR %s",logstr);
+					lprintf(LOG_ERR,"!FAILED to load configuration files");
 					break;
 				}
 				scfg_reloaded=true;
@@ -4044,14 +4044,14 @@ void DLLCALL bbs_thread(void* arg)
 				sprintf(str,"%stelnet.rec",scfg.ctrl_dir);
 				t=fdate(str);
 				if(t!=-1 && t>initialized) {
-					lprintf("0000 Recycle semaphore file (%s) detected",str);
+					lprintf(LOG_INFO,"!0000 Recycle semaphore file (%s) detected",str);
 					initialized=t;
 					break;
 				}
 				if(startup->recycle_sem!=NULL && sem_trywait(&startup->recycle_sem)==0)
 					startup->recycle_now=TRUE;
 				if(startup->recycle_now==TRUE) {
-					lprintf("0000 Recycle semaphore signaled");
+					lprintf(LOG_INFO,"!0000 Recycle semaphore signaled");
 					startup->recycle_now=FALSE;
 					break;
 				}
@@ -4095,11 +4095,11 @@ void DLLCALL bbs_thread(void* arg)
 			if(i==0)
 				continue;
 			if(ERROR_VALUE==EINTR)
-				lprintf("Telnet Server listening interrupted");
+				lprintf(LOG_INFO,"!Telnet Server listening interrupted");
 			else if(ERROR_VALUE == ENOTSOCK)
-            	lprintf("Telnet Server sockets closed");
+            	lprintf(LOG_INFO,"!Telnet Server sockets closed");
 			else
-				lprintf("!ERROR %d selecting sockets",ERROR_VALUE);
+				lprintf(LOG_ERR,"!ERROR %d selecting sockets",ERROR_VALUE);
 			break;
 		}
 
@@ -4130,7 +4130,7 @@ void DLLCALL bbs_thread(void* arg)
 					if(node_socket[i-1]==INVALID_SOCKET)
 						read(uspy_socket[i-1],str,sizeof(str));
 					if(!socket_check(uspy_socket[i-1],NULL,NULL,0)) {
-						lprintf("Spy socket for node %d disconnected",i);
+						lprintf(LOG_INFO,"!Spy socket for node %d disconnected",i);
 						close_socket(uspy_socket[i-1]);
 						uspy_socket[i-1]=INVALID_SOCKET;
 					}
@@ -4142,18 +4142,18 @@ void DLLCALL bbs_thread(void* arg)
 					new_socket = accept(uspy_listen_socket[i-1], (struct sockaddr *)&uspy_addr
 						,&uspy_addr_len);
 					if(new_socket < 0)  {
-						lprintf("ERROR! Spy socket for node %d unable to accept()",i);
+						lprintf(LOG_INFO,"!ERROR! Spy socket for node %d unable to accept()",i);
 						close_socket(uspy_listen_socket[i-1]);
 						uspy_listen_socket[i-1]=INVALID_SOCKET;
 					}
 					fcntl(new_socket,F_SETFL,fcntl(new_socket,F_GETFL)|O_NONBLOCK);
 					if(already_connected)  {
-						lprintf("ERROR! Spy socket %s already in use",uspy_addr.sun_path);
+						lprintf(LOG_INFO,"!ERROR! Spy socket %s already in use",uspy_addr.sun_path);
 						send(new_socket,"Spy socket already in use.\r\n",27,0);
 						close_socket(new_socket);
 					}
 					else  {
-						lprintf("Spy socket %s connected",uspy_addr.sun_path);
+						lprintf(LOG_INFO,"!Spy socket %s connected",uspy_addr.sun_path);
 						uspy_socket[i-1]=new_socket;
 						sprintf(str,"Spy connection established to node %d\r\n",i);
 						send(uspy_socket[i-1],str,strlen(str),0);
@@ -4161,7 +4161,7 @@ void DLLCALL bbs_thread(void* arg)
 				}
 			}
 #else
-			lprintf("!NO SOCKETS set by select");
+			lprintf(LOG_ERR,"!NO SOCKETS set by select");
 #endif
 		}
 
@@ -4170,10 +4170,10 @@ void DLLCALL bbs_thread(void* arg)
 
 		if(client_socket == INVALID_SOCKET)	{
 			if(ERROR_VALUE == ENOTSOCK || ERROR_VALUE == EINTR || ERROR_VALUE == EINVAL) {
-            	lputs("BBS socket closed");
+            	lputs(LOG_INFO,"BBS socket closed");
 				break;
 			}
-			lprintf("!ERROR %d accepting connection", ERROR_VALUE);
+			lprintf(LOG_ERR,"!ERROR %d accepting connection", ERROR_VALUE);
 			break;	// was continue, July-01-2002
 		}
 		char host_ip[32];
@@ -4185,7 +4185,7 @@ void DLLCALL bbs_thread(void* arg)
 			continue;
 		}
 
-		lprintf("%04d %s connection accepted from: %s port %u"
+		lprintf(LOG_INFO,"!%04d %s connection accepted from: %s port %u"
 			,client_socket
 			,rlogin ? "RLogin" : "Telnet", host_ip, ntohs(client_addr.sin_port));
 
@@ -4199,7 +4199,7 @@ void DLLCALL bbs_thread(void* arg)
 
 		if(sbbs->trashcan(host_ip,"ip")) {
 			close_socket(client_socket);
-			lprintf("%04d !CLIENT BLOCKED in ip.can"
+			lprintf(LOG_INFO,"!%04d !CLIENT BLOCKED in ip.can"
 				,client_socket);
 			sprintf(logstr, "Blocked IP: %s",host_ip);
 			sbbs->syslog("@!",logstr);
@@ -4209,7 +4209,7 @@ void DLLCALL bbs_thread(void* arg)
 		if(rlogin) {
 			if(!trashcan(&scfg,host_ip,"rlogin")) {
 				close_socket(client_socket);
-				lprintf("%04d !CLIENT IP NOT LISTED in rlogin.can",client_socket);
+				lprintf(LOG_INFO,"!%04d !CLIENT IP NOT LISTED in rlogin.can",client_socket);
 				sprintf(logstr, "Invalid RLogin from: %s",host_ip);
 				sbbs->syslog("@!",logstr);
 				continue;
@@ -4238,14 +4238,14 @@ void DLLCALL bbs_thread(void* arg)
 			host_name="<no name>";
 
 		if(!(startup->options&BBS_OPT_NO_HOST_LOOKUP)) {
-			lprintf("%04d Hostname: %s", client_socket, host_name);
+			lprintf(LOG_INFO,"!%04d Hostname: %s", client_socket, host_name);
 			for(i=0;h!=NULL && h->h_aliases!=NULL && h->h_aliases[i]!=NULL;i++)
-				lprintf("%04d HostAlias: %s", client_socket, h->h_aliases[i]);
+				lprintf(LOG_INFO,"!%04d HostAlias: %s", client_socket, h->h_aliases[i]);
 		}
 
 		if(sbbs->trashcan(host_name,"host")) {
 			close_socket(client_socket);
-			lprintf("%04d !CLIENT BLOCKED in host.can",client_socket);
+			lprintf(LOG_INFO,"!%04d !CLIENT BLOCKED in host.can",client_socket);
 			sprintf(logstr, "Blocked Hostname: %s",host_name);
 			sbbs->syslog("@!",logstr);
 			continue;
@@ -4260,7 +4260,7 @@ void DLLCALL bbs_thread(void* arg)
 				identity++;	/* skip colon */
 				while(*identity && *identity<=SP) /* point to user name */
 					identity++;
-				lprintf("%04d Identity: %s",client_socket, identity);
+				lprintf(LOG_INFO,"!%04d Identity: %s",client_socket, identity);
 			}
 		}
 		/* Initialize client display */
@@ -4287,7 +4287,7 @@ void DLLCALL bbs_thread(void* arg)
 		}
 
 		if(i>last_node) {
-			lprintf("%04d !No nodes available for login.",client_socket);
+			lprintf(LOG_INFO,"!%04d !No nodes available for login.",client_socket);
 			sprintf(str,"%snonodes.txt",scfg.text_dir);
 			if(fexist(str))
 				sbbs->printfile(str,P_NOABORT);
@@ -4313,7 +4313,7 @@ void DLLCALL bbs_thread(void* arg)
 			SAFECOPY(new_node->client_ident,identity);
 
 		if(new_node->init()==false) {
-			lprintf("%04d !Node %d Initialization failure"
+			lprintf(LOG_INFO,"!%04d !Node %d Initialization failure"
 				,client_socket,new_node->cfg.node_num);
 			sprintf(str,"%snonodes.txt",scfg.text_dir);
 			if(fexist(str))
@@ -4347,7 +4347,7 @@ void DLLCALL bbs_thread(void* arg)
     // Close all open sockets
     for(i=0;i<MAX_NODES;i++)  {
     	if(node_socket[i]!=INVALID_SOCKET) {
-        	lprintf("Closing node %d socket %d", i+1, node_socket[i]);
+        	lprintf(LOG_INFO,"!Closing node %d socket %d", i+1, node_socket[i]);
         	close_socket(node_socket[i]);
 			node_socket[i]=INVALID_SOCKET;
         }
@@ -4374,11 +4374,11 @@ void DLLCALL bbs_thread(void* arg)
 
     // Wait for all node threads to terminate
 	if(node_threads_running) {
-		lprintf("Waiting for %d node threads to terminate...", node_threads_running);
+		lprintf(LOG_INFO,"!Waiting for %d node threads to terminate...", node_threads_running);
 		start=time(NULL);
 		while(node_threads_running) {
 			if(time(NULL)-start>TIMEOUT_THREAD_WAIT) {
-				lprintf("!TIMEOUT waiting for %d node thread(s) to "
+				lprintf(LOG_ERR,"!TIMEOUT waiting for %d node thread(s) to "
             		"terminate", node_threads_running);
 				break;
 			}
@@ -4389,11 +4389,11 @@ void DLLCALL bbs_thread(void* arg)
 	// Wait for Events thread to terminate
 	if(events!=NULL && events->event_thread_running) {
 		pthread_mutex_unlock(&event_mutex);
-		lprintf("Waiting for event thread to terminate...");
+		lprintf(LOG_INFO,"!Waiting for event thread to terminate...");
 		start=time(NULL);
 		while(events->event_thread_running) {
 			if(time(NULL)-start>TIMEOUT_THREAD_WAIT) {
-				lprintf("!TIMEOUT waiting for BBS event thread to "
+				lprintf(LOG_ERR,"!TIMEOUT waiting for BBS event thread to "
             		"terminate");
 				break;
 			}
@@ -4403,11 +4403,11 @@ void DLLCALL bbs_thread(void* arg)
 
     // Wait for BBS output thread to terminate
 	if(sbbs->output_thread_running) {
-		lprintf("Waiting for system output thread to terminate...");
+		lprintf(LOG_INFO,"!Waiting for system output thread to terminate...");
 		start=time(NULL);
 		while(sbbs->output_thread_running) {
 			if(time(NULL)-start>TIMEOUT_THREAD_WAIT) {
-				lprintf("!TIMEOUT waiting for BBS output thread to "
+				lprintf(LOG_ERR,"!TIMEOUT waiting for BBS output thread to "
             		"terminate");
 				break;
 			}
@@ -4431,7 +4431,7 @@ void DLLCALL bbs_thread(void* arg)
 	cleanup(0);
 
 	if(recycle_server) {
-		lprintf("Recycling server...");
+		lprintf(LOG_INFO,"!Recycling server...");
 		mswait(2000);
 	}
 
