@@ -80,11 +80,12 @@
 
 #define SMB_ALL_REFS		0			/* Free all references to data		*/
 
-#define GETMSGTXT_TAILS 	(1<<0)		/* Get message tail(s)				*/
-#define GETMSGTXT_NO_BODY	(1<<1)		/* Do not retrieve message body		*/
-#define GETMSGTXT_BODY_ONLY	0
-#define GETMSGTXT_TAIL_ONLY (GETMSGTXT_TAILS|GETMSGTXT_NO_BODY)
-#define GETMSGTXT_ALL		GETMSGTXT_TAILS
+#define GETMSGTXT_TAILS 		(1<<0)	/* Get message tail(s)				*/
+#define GETMSGTXT_NO_BODY		(1<<1)	/* Don't retrieve message body		*/
+#define GETMSGTXT_NO_HFIELDS	(1<<2)	/* Don't include text header fields	*/
+#define GETMSGTXT_BODY_ONLY		GETMSGTXT_NO_HFIELDS
+#define GETMSGTXT_TAIL_ONLY		(GETMSGTXT_TAILS|GETMSGTXT_NO_BODY|GETMSGTXT_NO_HFIELDS)
+#define GETMSGTXT_ALL			GETMSGTXT_TAILS
 
 #define SMB_IS_OPEN(smb)	((smb)->shd_fp!=NULL)
 
