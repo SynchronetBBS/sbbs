@@ -1215,7 +1215,8 @@ int main(int argc, char** argv)
 #ifdef __unix__
 				case 'D': /* Run as daemon */
 					is_daemon=TRUE;
-					SAFECOPY(daemon_type,arg++);
+					if(*arg)
+						SAFECOPY(daemon_type,arg++);
 				break;
 #endif
 			case 'T':	/* Telnet settings */
