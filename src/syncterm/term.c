@@ -104,6 +104,7 @@ void doterm(void)
 	ciomouse_addevent(CIOLIB_BUTTON_1_DRAG_MOVE);
 	ciomouse_addevent(CIOLIB_BUTTON_1_DRAG_END);
 	ciomouse_addevent(CIOLIB_BUTTON_3_CLICK);
+	ciomouse_addevent(CIOLIB_BUTTON_2_CLICK);
 	scrollback=malloc(term.width*2*backlines);
 	memset(scrollback,0,term.width*2*backlines);
 	cterm_init(term.height,term.width,term.x-1,term.y-1,backlines,scrollback);
@@ -143,6 +144,7 @@ void doterm(void)
 								case CIOLIB_BUTTON_1_DRAG_START:
 									mousedrag(scrollback);
 									break;
+								case CIOLIB_BUTTON_2_CLICK:
 								case CIOLIB_BUTTON_3_CLICK:
 									p=getcliptext();
 									if(p!=NULL) {
