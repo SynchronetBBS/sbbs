@@ -221,7 +221,7 @@ void sbbs_t::temp_xfer()
 					if(isdir(g.gl_pathv[i]))
 						continue;
 					t=fdate(g.gl_pathv[i]);
-					bprintf("%-15s %15s %s\r\n",getfname(g.gl_pathv[i])
+					bprintf("%-25s %15s   %s\r\n",getfname(g.gl_pathv[i])
 						,ultoac(flength(g.gl_pathv[i]),tmp)
 						,timestr(&t));
 					files++;
