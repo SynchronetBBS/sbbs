@@ -760,8 +760,8 @@ js_hacklog(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	memset(&addr,0,sizeof(addr));
 	for(i=0;i<argc;i++) {
 		if(JSVAL_IS_INT(argv[i])) {
-			if(addr.sin_addr.S_un.S_addr==0)
-				addr.sin_addr.S_un.S_addr=JSVAL_TO_INT(argv[i]);
+			if(addr.sin_addr.s_addr==0)
+				addr.sin_addr.s_addr=JSVAL_TO_INT(argv[i]);
 			else
 				addr.sin_port=(ushort)JSVAL_TO_INT(argv[i]);
 			continue;
