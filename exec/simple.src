@@ -310,7 +310,7 @@ return
 
 :sendmail
 print "\r\nbhSend E-mail to (User name or number): n"
-getname 25
+getname 40
 compare_str ""
 if_true
 	return
