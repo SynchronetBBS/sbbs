@@ -197,8 +197,12 @@ void* msgQueuePeek(msg_queue_t* q, long timeout)
 
 void* msgQueueFind(msg_queue_t* q, const void* data, size_t length)
 {
-	return listRemoveNode(msgQueueReadList(q)
-		,listFindNode(msgQueueReadList(q),data,length));
+	link_list_t*	list = msgQueueReadList(q);
+	list_node_t*	node;
+
+	if((node=listFindNode(list,data,length))==NULL)
+		return(NULL);
+	return listRemoveNode(list,node);
 }
 
 list_node_t* msgQueueFirstNode(msg_queue_t* q)
