@@ -339,6 +339,61 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 	}
 }
 
+bool sbbs_t::js_initcx()
+{
+    if((js_cx = JS_NewContext(js_runtime, JAVASCRIPT_CONTEXT_STACK))==NULL)
+		return(false);
+
+	bool success=false;
+
+	JS_BeginRequest(js_cx);	/* Required for multi-thread support */
+
+	do {
+
+		JS_SetErrorReporter(js_cx, js_ErrorReporter);
+
+		JS_SetContextPrivate(js_cx, this);	/* Store a pointer to sbbs_t instance */
+
+		if((js_glob = JS_NewObject(js_cx, &js_global_class, NULL, NULL)) ==NULL)
+			break;
+
+		if (!JS_InitStandardClasses(js_cx, js_glob))
+			break;
+
+		if (!JS_DefineFunctions(js_cx, js_glob, js_global_functions))
+			break;
+
+		JSObject* sysobj;
+		
+		if((sysobj=js_CreateSystemObject(&cfg, js_cx, js_glob))==NULL)
+			break;
+
+		char	ver[256];
+		jsval	val;
+		sprintf(ver,"%s v%s",TELNET_SERVER,VERSION);
+		val = STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, ver));
+		if(!JS_SetProperty(js_cx, sysobj, "version", &val))
+			break;
+
+		val = STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, bbs_ver()));
+		if(!JS_SetProperty(js_cx, sysobj, "version_detail", &val))
+			break;
+
+		success=true;
+
+	} while(0);
+
+	JS_EndRequest(js_cx);	/* Required for multi-thread support */
+
+	if(!success) {
+		JS_DestroyContext(js_cx);
+		js_cx=NULL;
+		return(false);
+	}
+
+	return(true);
+}
+
 #endif	/* JAVASCRIPT */
 
 #ifdef _WINSOCKAPI_
@@ -853,6 +908,8 @@ void event_thread(void* arg)
 	sbbs->event_thread_running = true;
 
 	thread_up();
+
+	sbbs->js_initcx();	/* This must be done in the context of the event thread */
 
 	while(1) {
 
@@ -1633,44 +1690,6 @@ bool sbbs_t::init()
 
 /** Put in if(cfg.node_num) ? (not needed for server and event threads) */
 	backout();
-
-#ifdef JAVASCRIPT
-
-    if((js_cx = JS_NewContext(js_runtime, JAVASCRIPT_CONTEXT_STACK))==NULL)
-		return(false);
-
-    JS_SetErrorReporter(js_cx, js_ErrorReporter);
-
-	JS_SetContextPrivate(js_cx, this);	/* Store a pointer to sbbs_t instance */
-
-//    JS_SetErrorReporter(js_cx, js_ErrorReporter);
-
-    if((js_glob = JS_NewObject(js_cx, &js_global_class, NULL, NULL)) ==NULL)
-		return(false);
-
-    if (!JS_InitStandardClasses(js_cx, js_glob))
-		return(false);
-
-    if (!JS_DefineFunctions(js_cx, js_glob, js_global_functions))
-		return(false);
-
-	JSObject* sysobj;
-	
-	if((sysobj=js_CreateSystemObject(&cfg, js_cx, js_glob))==NULL)
-		return(false);
-
-	char	ver[256];
-	jsval	val;
-	sprintf(ver,"%s v%s",TELNET_SERVER,VERSION);
-	val = STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, ver));
-	if(!JS_SetProperty(js_cx, sysobj, "version", &val))
-		return(FALSE);
-
-	val = STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, bbs_ver()));
-	if(!JS_SetProperty(js_cx, sysobj, "version_detail", &val))
-		return(FALSE);
-
-#endif /* JAVASCRIPT */
 
 	/* Reset COMMAND SHELL */
 
@@ -2538,6 +2557,8 @@ void node_thread(void* arg)
     node_threads_running++;
 	update_clients();
 	thread_up();
+
+	sbbs->js_initcx();	/* This must be done in the context of the node thread */
 
 	if(sbbs->answer()) {
 

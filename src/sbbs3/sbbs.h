@@ -86,6 +86,7 @@
 	#else
 		#define XP_PC
 	#endif
+	#define JS_THREADSAFE	/* required for multi-thread support */
 	#include <jsapi.h>
 
 	#define	JAVASCRIPT_RUNTIME_MEMORY	(1*1024*1024)
@@ -166,6 +167,7 @@ public:
 	JSContext*	js_cx;
 	JSObject*	js_glob;
 	long		js_execfile(char *fname);
+	bool		js_initcx(void);
 
 #endif
 
