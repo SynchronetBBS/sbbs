@@ -64,7 +64,6 @@ struct mouse_state {
 	link_list_t	*output;
 };
 
-
 struct mouse_state state;
 int mouse_events=0;
 static mouse_initialized=0;
@@ -72,10 +71,12 @@ static mouse_initialized=0;
 void init_mouse(void)
 {
 	memset(&state,0,sizeof(state));
+	state.input=malloc(sizeof(link_list_t));
+	state.output=malloc(sizeof(link_list_t));
 	state.click_timeout=200;
 	state.multi_timeout=300;
-	state.input=listInit(NULL,LINK_LIST_MALLOC);
-	state.output=listInit(NULL,LINK_LIST_MALLOC);
+	listInit(state.input,LINK_LIST_NEVER_FREE);
+	listInit(state.output,LINK_LIST_NEVER_FREE);
 	pthread_mutex_init(&in_mutex,NULL);
 	pthread_mutex_init(&out_mutex,NULL);
 	sem_init(&in_sem,0,0);
@@ -159,8 +160,6 @@ void ciolib_mouse_thread(void *data)
 	clock_t	ttime=0;
 
 	init_mouse();
-	while(!mouse_initialized)
-		SLEEP(1);
 	while(1) {
 		timedout=0;
 		if(timeout_button) {
@@ -172,8 +171,9 @@ void ciolib_mouse_thread(void *data)
 				timedout=sem_trywait_block(&in_sem,delay);
 			}
 		}
-		else
+		else {
 			sem_wait(&in_sem);
+}
 		if(timedout) {
 			state.timeout[timeout_button-1]=0;
 			switch(state.button_state[timeout_button-1]) {
@@ -217,6 +217,7 @@ void ciolib_mouse_thread(void *data)
 		}
 		else {
 			struct in_mouse_event *in;
+
 			pthread_mutex_lock(&in_mutex);
 			in=listRemoveNode(state.input, FIRST_NODE);
 			pthread_mutex_unlock(&in_mutex);
