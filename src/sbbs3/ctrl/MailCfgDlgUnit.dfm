@@ -233,21 +233,21 @@ object MailCfgDlg: TMailCfgDlg
         TabOrder = 0
       end
       object UserNumberCheckBox: TCheckBox
-        Left = 185
-        Top = 12
-        Width = 147
+        Left = 113
+        Top = 108
+        Width = 200
         Height = 24
         Hint = 
           'Allow mail to be received for users by number (i.e "1@yourbbs.co' +
           'm")'
-        Caption = 'RX by User Number'
+        Caption = 'Allow RX by User Number'
         ParentShowHint = False
         ShowHint = True
         TabOrder = 1
       end
       object DebugHeadersCheckBox: TCheckBox
         Left = 185
-        Top = 108
+        Top = 12
         Width = 146
         Height = 26
         Hint = 'Log all received mail headers (for debugging)'
@@ -269,7 +269,7 @@ object MailCfgDlg: TMailCfgDlg
         TabOrder = 2
       end
       object AllowRelayCheckBox: TCheckBox
-        Left = 115
+        Left = 113
         Top = 140
         Width = 198
         Height = 24
