@@ -634,6 +634,8 @@ Local_Sockets_Map = new Array;
 Selectable_Sockets = new Array;
 Selectable_Sockets_Map = new Array;
 
+Global_CommandLine = ""; // We use this to track if a cmdline causes a crash.
+
 hcc_total = 0;
 hcc_users = 0;
 hcc_counter = 0;
@@ -774,9 +776,14 @@ while (!server.terminated) {
 		mswait(1000);
 	} else if (this.socket_select!=undefined) {
 		var readme = socket_select(Selectable_Sockets, 1 /*secs*/);
-		for(thisPolled in readme) {
-			if (Selectable_Sockets_Map[readme[thisPolled]])
-				Selectable_Sockets_Map[readme[thisPolled]].work();
+		try {
+			for(thisPolled in readme) {
+				if (Selectable_Sockets_Map[readme[thisPolled]])
+						Selectable_Sockets_Map[readme[thisPolled]].work();
+			}
+		} catch(e) {
+			gnotice("FATAL ERROR: " + e + " CMDLINE: " + Global_CommandLine);
+			terminate_everything("Terminated: A fatal error occured!");
 		}
 	}
 

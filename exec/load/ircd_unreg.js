@@ -108,6 +108,8 @@ function Unregistered_Commands() {
 	}
 	cmdline=this.socket.recvline(4096,0);
 
+	Global_CommandLine = cmdline;
+
 	if (!cmdline)
 		return 0;
 	// Only accept up to 512 bytes from unregistered clients.

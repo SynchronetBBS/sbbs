@@ -257,6 +257,8 @@ function User_Work() {
 	if (!cmdline)
 		return 0;
 
+	Global_CommandLine = cmdline;
+
 	// Only accept up to 512 bytes from clients as per RFC1459.
 	cmdline = cmdline.slice(0,512);
 	// Kludge for broken clients.
