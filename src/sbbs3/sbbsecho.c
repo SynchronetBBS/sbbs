@@ -441,7 +441,7 @@ size_t fwrite_crlf(char* buf, size_t len, FILE* fp)
  If file is non-zero, will set file attachment bit (for bundles).
  Returns 0 on success.
 ******************************************************************************/
-int create_netmail(char *to,char *subject,char *body,faddr_t dest,int file)
+int create_netmail(char *to, char *subject, char *body, faddr_t dest, BOOL file_attached)
 {
 	FILE *fstream;
 	char str[256],fname[256];
@@ -491,7 +491,7 @@ int create_netmail(char *to,char *subject,char *body,faddr_t dest,int file)
 		hdr.destpoint=dest.point;
 
 		hdr.attr=(FIDO_PRIVATE|FIDO_KILLSENT|FIDO_LOCAL);
-		if(file)
+		if(file_attached)
 			hdr.attr|=FIDO_FILE;
 
 		if(attr&ATTR_HOLD)
@@ -521,7 +521,7 @@ int create_netmail(char *to,char *subject,char *body,faddr_t dest,int file)
 		fwrite(str,strlen(str),1,fstream);
 		if(attr&ATTR_DIRECT) {
 			fwrite("\1FLAGS DIR",10,1,fstream);
-			if(file)
+			if(file_attached)
 				fwrite(" KFS\r",5,1,fstream);
 			else
 				fwrite("\r",1,1,fstream); }
@@ -531,7 +531,7 @@ int create_netmail(char *to,char *subject,char *body,faddr_t dest,int file)
 		if(hdr.origpoint) {
 			sprintf(str,"\1FMPT %hu\r",hdr.origpoint);
 			fwrite(str,strlen(str),1,fstream); }
-		if(!file || (!(attr&ATTR_DIRECT) && file))
+		if(!file_attached || (!(attr&ATTR_DIRECT) && file_attached))
 			fwrite_crlf(body,strlen(body)+1,fstream);	/* Write additional NULL */
 		else
 			fwrite("\0",1,1,fstream);               /* Write NULL */
@@ -571,7 +571,8 @@ void file_to_netmail(FILE *infile,char *title,faddr_t addr,char *to)
 					fseek(infile,-1L,SEEK_CUR); } } }
 		if(ftell(infile)<l)
 			strcat(buf,"\r\nContinued in next message...\r\n");
-		create_netmail(to,title,buf,addr,0); }
+		create_netmail(to,title,buf,addr,FALSE); 
+	}
 	FREE(buf);
 }
 /******************************************************************************
@@ -710,7 +711,7 @@ void netmail_arealist(char type,faddr_t addr)
 							break; } } } } }
 
 	if(!ftell(tmpf))
-		create_netmail(0,title,"None.",addr,0);
+		create_netmail(NULL,title,"None.",addr,FALSE);
 	else
 		file_to_netmail(tmpf,title,addr,0);
 	fclose(tmpf);
@@ -1024,7 +1025,7 @@ void alter_areas(area_t add_area,area_t del_area,faddr_t addr)
 			if(add_area.tag[i][0])
 				fprintf(nmfile,"%s not found.\r\n",add_area.tag[i]); }
 	if(!ftell(nmfile))
-		create_netmail(0,"Area Change Request","No changes made.",addr,0);
+		create_netmail(NULL,"Area Change Request","No changes made.",addr,FALSE);
 	else
 		file_to_netmail(nmfile,"Area Change Request",addr,0);
 	fclose(nmfile);
@@ -1190,29 +1191,35 @@ void command(char *instr,faddr_t addr)
 			printf("\7ERROR couldn't open %s.\n",str);
 			logprintf("ERROR line %d opening %s %s",__LINE__,str
 				,strerror(errno));
-			return; }
+			return; 
+		}
 		l=filelength(file);
 		if((buf=(char *)LMALLOC(l+1L))==NULL) {
 			printf("ERROR line %d allocating %lu bytes for %s\n",__LINE__,l,str);
-			return; }
+			return; 
+		}
 		fread(buf,l,1,stream);
 		fclose(stream);
 		buf[l]=0;
-		create_netmail(0,"Area Manager Help",buf,addr,0);
+		create_netmail(NULL,"Area Manager Help",buf,addr,FALSE);
 		LFREE(buf);
-		return; }
+		return; 
+	}
 
 	if((p=strstr(instr,"LIST"))!=NULL) {
 		netmail_arealist(0,addr);
-		return; }
+		return; 
+	}
 
 	if((p=strstr(instr,"QUERY"))!=NULL) {
 		netmail_arealist(1,addr);
-		return; }
+		return; 
+	}
 
 	if((p=strstr(instr,"UNLINKED"))!=NULL) {
 		netmail_arealist(2,addr);
-		return; }
+		return; 
+	}
 
 	if((p=strstr(instr,"COMPRESSION"))!=NULL) {
 		while(*p && *p>SP) p++;
@@ -1234,13 +1241,15 @@ void command(char *instr,faddr_t addr)
 			file_to_netmail(tmpf,"Compression Type Change",addr,0);
 			fclose(tmpf);
 			//LFREE(buf);
-			return; }
+			return; 
+		}
 		alter_config(addr,cfg.arcdef[cfg.nodecfg[node].arctype].name
 			,cfg.arcdef[i].name,0);
 		cfg.nodecfg[node].arctype=i;
 		sprintf(str,"Compression type changed to %s.",cfg.arcdef[i].name);
-		create_netmail(0,"Compression Type Change",str,addr,0);
-		return; }
+		create_netmail(NULL,"Compression Type Change",str,addr,0);
+		return; 
+	}
 
 	if((p=strstr(instr,"PASSWORD"))!=NULL) {
 		while(*p && *p>SP) p++;
@@ -1254,41 +1263,46 @@ void command(char *instr,faddr_t addr)
 		if(!stricmp(temp,cfg.nodecfg[node].password)) {
 			sprintf(str,"Your password was already set to %s."
 				,cfg.nodecfg[node].password);
-			create_netmail(0,"Password Change Request",str,addr,0);
+			create_netmail(NULL,"Password Change Request",str,addr,0);
 			return; }
 		alter_config(addr,cfg.nodecfg[node].password,temp,1);
 		sprintf(str,"Your password has been changed from %s to %.25s."
 			,cfg.nodecfg[node].password,temp);
 		sprintf(cfg.nodecfg[node].password,"%.25s",temp);
-		create_netmail(0,"Password Change Request",str,addr,0);
-		return; }
+		create_netmail(NULL,"Password Change Request",str,addr,0);
+		return; 
+	}
 
 	if((p=strstr(instr,"RESCAN"))!=NULL) {
 		export_echomail("",addr);
-		create_netmail(0,"Rescan Areas"
+		create_netmail(NULL,"Rescan Areas"
 			,"All connected areas carried by your hub have been rescanned."
-			,addr,0);
-		return; }
+			,addr,FALSE);
+		return; 
+	}
 
 	if((p=strstr(instr,"ACTIVE"))!=NULL) {
 		if(!(cfg.nodecfg[node].attr&ATTR_PASSIVE)) {
-			create_netmail(0,"Reconnect Disconnected Areas"
-				,"Your areas are already connected.",addr,0);
+			create_netmail(NULL,"Reconnect Disconnected Areas"
+				,"Your areas are already connected.",addr,FALSE);
 			return; }
 		alter_config(addr,0,0,3);
-		create_netmail(0,"Reconnect Disconnected Areas"
-			,"Temporarily disconnected areas have been reconnected.",addr,0);
-		return; }
+		create_netmail(NULL,"Reconnect Disconnected Areas"
+			,"Temporarily disconnected areas have been reconnected.",addr,FALSE);
+		return; 
+	}
 
 	if((p=strstr(instr,"PASSIVE"))!=NULL) {
 		if(cfg.nodecfg[node].attr&ATTR_PASSIVE) {
-			create_netmail(0,"Temporarily Disconnect Areas"
-				,"Your areas are already temporarily disconnected.",addr,0);
-			return; }
+			create_netmail(NULL,"Temporarily Disconnect Areas"
+				,"Your areas are already temporarily disconnected.",addr,FALSE);
+			return; 
+		}
 		alter_config(addr,0,0,2);
-		create_netmail(0,"Temporarily Disconnect Areas"
-			,"Your areas have been temporarily disconnected.",addr,0);
-		return; }
+		create_netmail(NULL,"Temporarily Disconnect Areas"
+			,"Your areas have been temporarily disconnected.",addr,FALSE);
+		return; 
+	}
 
 	if((p=strstr(instr,"FROM"))!=NULL);
 
@@ -1312,7 +1326,8 @@ void command(char *instr,faddr_t addr)
 		for(i=0;i<add_area.tags;i++)
 			LFREE(add_area.tag[i]);
 		FREE(add_area.tag);
-		return; }
+		return; 
+	}
 
 	if((p=strstr(instr,"-ALL"))!=NULL) {
 		if((del_area.tag=(char **)REALLOC(del_area.tag
@@ -1334,7 +1349,8 @@ void command(char *instr,faddr_t addr)
 		for(i=0;i<del_area.tags;i++)
 			LFREE(del_area.tag[i]);
 		FREE(del_area.tag);
-		return; }
+		return; 
+	}
 }
 /******************************************************************************
  This is where we're gonna process any netmail that comes in for areafix.
@@ -1372,14 +1388,14 @@ char *process_areafix(faddr_t addr,char HUGE16 *inbuf,char *password)
 	if(i>=cfg.nodecfgs) {
 		sprintf(body,"Your node is not configured for Areafix, please "
 			"contact your hub.\r\n");
-		create_netmail(0,"Areafix Request",body,addr,0);
+		create_netmail(NULL,"Areafix Request",body,addr,FALSE);
 		sprintf(body,"An areafix request was made by node %s.\r\nThis node "
 			"is not currently configured for areafix.\r\n"
 			,faddrtoa(&addr,NULL));
 		return(body); }
 
 	if(stricmp(cfg.nodecfg[i].password,password)) {
-		create_netmail(0,"Areafix Request","Invalid Password.",addr,0);
+		create_netmail(NULL,"Areafix Request","Invalid Password.",addr,FALSE);
 		sprintf(body,"Node %s attempted an areafix request using an invalid "
 			"password.\r\nThe password attempted was %s.\r\nThe correct password "
 			"for this node is %s.\r\n",faddrtoa(&addr,NULL),password
@@ -1448,7 +1464,7 @@ char *process_areafix(faddr_t addr,char HUGE16 *inbuf,char *password)
 		while(*(p+l) && *(p+l)!=CR) l++; }
 
 	if(!percent && !add_area.tags && !del_area.tags) {
-		create_netmail(0,"Areafix Request","No commands to process.",addr,0);
+		create_netmail(NULL,"Areafix Request","No commands to process.",addr,FALSE);
 		sprintf(body,"Node %s attempted an areafix request with an empty message "
 			"body or with no valid commands.\r\n",faddrtoa(&addr,NULL));
 		return(body); }
@@ -1644,7 +1660,7 @@ int attachment(char *bundlename,faddr_t dest, int mode)
 				if(mfncrc[crcidx]==fncrc)
 					break;
 			if(crcidx==num_mfncrc)
-				if(create_netmail(0,str,"\1FLAGS KFS\r",attach.dest,1))
+				if(create_netmail(NULL,str,"\1FLAGS KFS\r",attach.dest,TRUE))
 					error=1; 
 		}
 		fclose(stream);
@@ -1731,7 +1747,7 @@ void pack_bundle(char *infile,faddr_t dest)
 			if(misc&FLO_MAILER)
 				i=write_flofile(infile,dest);
 			else
-				i=create_netmail(0,infile,"\1FLAGS KFS\r",dest,1);
+				i=create_netmail(NULL,infile,"\1FLAGS KFS\r",dest,TRUE);
 			if(i) bail(1);
 			return; }
 
