@@ -1,0 +1,234 @@
+DOVE-Net Introduction and Instructions 12/08/00, Updated 03/06/02
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+Q. What is DOVE-Net?
+
+A. DOVE-Net is a message network connecting numerous BBSes and the users on
+   those BBSes together through QWK and Fido networking technologies. DOVE-Net
+   consists of primarily Synchronet {tm} BBSes. This is due to the fact that
+   the co-founders of DOVE-Net are also the developers of Synchronet BBS
+   software. DOVE-Net is not limited to one specific BBS package and welcomes
+   any QWK or Fido network compatible BBS to join as long as their software of
+   choice does not interfere with the operation of the network in any way.
+
+
+Q. Why the name DOVE-Net?
+
+A. Two BBSes began DOVE-Net back in 1989. These BBSes were Vertrauen (Home
+   of Synchronet BBS Software) and The Beast's Domain (Home of Domain
+   Entertainment BBS Add-ons). The word DOVE came from DOmain VErtrauen,
+   much like the word MODEM came from MOdulator DEModulator. It has nothing
+   to do with that species of bird or the symbolism of peace, but we have
+   nothing against those things either. It was a small network that needed
+   a small name.
+
+
+Q. What is the focus of DOVE-Net?
+
+A. Connecting BBS sysops and users without a lot of politics and red tape.
+   DOVE-Net requires no "application processing time" or "node numbers" to
+   be assigned. While the capabilities of DOVE-Net rival those of more
+   technically complex networks, it has none of the setup complexities as
+   reflected by the fact that many of the systems on DOVE-Net are managed by
+   first-time sysops. DOVE-Net allows (or rather encourages) the use of color
+   codes in messages (preferably using the Synchronet Ctrl-A standard, but
+   Wildcat, PCBoard, Celerity, Renegade, and WWIV color codes are also
+   supported in Synchronet BBS software and may also be used). DOVE-Net allows
+   the use of aliases, ANSI encoded messages (when necessary for animation)
+   and use of high-ASCII characters. There are no strict "hubbing" rules;
+   pretty much anyone that's willing to feed anyone else is encouraged to do
+   so. DOVE-Net is moderated only by the founders of the network so there
+   aren't different rules for different message areas that users need to
+   remember. Private messages are allowed, but when possible, routed NetMail
+   is preferred. DOVE-Net has very few rules, and the few that do exist are
+   often bent.
+
+
+Instructions
+============
+
+Synchronet BBS Software for Win32 v3.00 comes pre-configured for DOVE-Net 
+using the Windows command-line FTP client application to transfer packets 
+with Vetrauen (vert.synchro.net). All you need to do is follow the 
+instructions in the pre-installed file: EXEC\VERT.BAT.
+
+*** FTP Caveat ***
+Normal FTP transfers require a separate data session back to your system. 
+This is normally handled automatically by the FTP software, but if your 
+system is behind a firewall, proxy server, or other gateway that does not 
+support normal (non-passive) FTP sessions, the FTP file transfers will fail. 
+You will need to either enable normal FTP support in your gateway system, 
+switch to a different FTP client application (e.g. WS_FTP) that supports 
+passive (PASV) mode, or use a scripted telnet client as an alternative method 
+of transferring packets.
+
+If you're a Synchronet sysop using an older version of Synchronet, consult 
+the step-by-step instructions in the QWK networking chapter of your sysop 
+manual, but use the updated conference numbers at the end of this document. 
+Additionally, if you're going to use Vertrauen (VERT) as your hub, then 
+you'll need to connect using a scripted Telnet or FTP client (details follow).
+
+*** IMPORTANT ***
+When you create your QWKnet account on your hub BBS, you MUST use your BBS's
+QWK ID for the user name. QWK IDs are a maximum of eight characters, may
+only contain valid DOS filename characters, and MUST begin with an alphabetic
+character. QWK IDs are not case sensitive. Your QWK ID should be an 
+abbreviation of your BBS name or something relevant to you or your BBS and it 
+must be unique among the names in the enclosed NODES.DAT file. Note: If you're 
+using Vertrauen as a hub, you must login (to vert.synchro.net) with a Telnet 
+client to create your account.
+
+
+Using a Scripted Telnet Client for QWKnet Transfers
+---------------------------------------------------
+Any Telnet client that supports scripting should work. I've included a script
+for ZOC (Telnet client for Windows and OS/2) written by PistolGrip
+(sysop@wasteland.darktech.org). This script and instructions on how to use it
+are included in ZOCQWK11.ZIP.
+
+
+Using a Scripted FTP Client for QWKnet Transfers
+------------------------------------------------
+Your hub must be running a Synchronet v3 FTP Server for you to use FTP for
+QWKnet transfers. If you're using Vertrauen as your hub, the FTP address is
+ftp://vert.synchro.net. To use the command-line FTP client that comes with
+Windows, follow these steps (ignore these instructions if you've installed 
+Synchronet v3.00b or later):
+
+1. Edit the enclosed VERT.BAT file to reflect the correct location of your
+   Synchronet DATA directory. If you using a hub other than Vertrauen, change
+   the filenames to reflect your hub's QWK ID.
+
+2. Edit the enclosed VERT.FTP file to reflect your system's QWK ID, the
+   password you used for your QWKnet account, and the correct location of your
+   Synchronet DATA directory.
+
+3. Copy VERT.BAT and VERT.FTP to your Synchronet EXEC directory.
+
+4. Change your QWKnet call-out command line to "%!VERT.BAT".
+
+
+Using the Baja FTP Client for QWKnet Transfers (Requires Synchronet v3.1+)
+--------------------------------------------------------------------------
+This is the preferred method of QWKnet packet transfers.
+
+1. Make sure you have the file QNET-FTP.BIN in your EXEC directory.
+
+2. Change the QWKnet call-out command line (in SCFG->Networks->QWK->Hubs->VERT)
+   to "*QNET-FTP VERT vert.synchro.net YOURPASS" but replace YOURPASS with the
+   password you used when creating your QWKnet user account on Vertrauen.
+
+
+Terminology (as used in this document)
+--------------------------------------
+
+Hub:		A BBS that feeds another BBS messages for a message network
+Node:		A BBS that calls another BBS to exchange messages for a network
+		A BBS can be (and most often is) either "both a node and a hub"
+		or "only a node", if you're joining DOVE-Net for the first time,
+                then your system will be "only a node".
+QWK:		Message packet format used for off-line mail readers
+QWKnet: 	Message networking technology using QWK packets
+Fido:		Message networking technology based on Fido BBS software
+FidoNet:	The single largest amateur message network on earth
+Echo:		Message area that is connected to multiple BBSes via message
+		network
+NetMail:	Private message between one user and another not stored in a
+		topical message area (echo), similar in princicple to Internet 
+		e-mail
+SMB:		Synchronet Message Base format, download SMB_*.ZIP from Vertrauen
+		for technical specification and C library
+
+
+QWK Technical Notes
+-------------------
+
+Non-Synchronet systems importing DOVE-Net messages may notice some things about
+the messages which are different from other BBS packages. The first line of
+each message may contain "@VIA:" and a list of DOVE-Net BBS ID's the message
+has passed through, each separated by a slash character. This line is used to
+automatically create and maintain the Synchronet ROUTE.DAT "map" file as well 
+as detect circular message paths (dupe loops). The first or second line of each
+message may contain "@TZ:" and a four character hexadecimal number. This is the
+time zone (as defined in the SMB specification) of the BBS that the message was
+originally posted on. These Synchronet-specific QWK features can be disabled
+from the online QWK: menu. Note, if Ctrl-A codes are enabled, the @VIA/@TZ
+lines are automatically enabled for QWKnet nodes as well. So to disable the 
+@VIA/@TZ lines, you must also disable (strip) Ctrl-A codes.
+
+Messages exported from Synchronet may also contain Synchronet Ctrl-A color
+codes. These can be disabled for any hubs you're calling in SCFG (Synchronet
+Configuration Program) or if the other BBS is calling you, then they can
+disable them by sending a message to "SBBS" with a title of "CTRL-A STRIP".
+
+The following control messages are supported by Synchronet for QWK networking.
+The message must be posted to "SBBS" from the node BBS:
+
+Subj: DROP [conf#]
+Note: Drop current conference (or specified conference #) from future packets
+
+Subj: ADD [ptr | -msgs | mm/dd/yy]
+Note: Add current conference to future packets and optionally set message ptr
+
+Subj: RESET [ptr | -msgs | mm/dd/yy]
+Note: Set message pointer for current conference, - indicates offset from last
+
+Subj: RESETALL [ptr | -msgs | mm/dd/yy]
+Note: Set message pointers for all conferences
+
+Subj: FREQ <filename>
+Note: File Request from file transfer database (not attachments)
+
+Subj: FILES [ON | OFF | mm/dd/yy]
+Note: Include files list in packet and/or specify new-scan date
+
+Subj: ATTACH [ON | OFF]
+Note: Include file attachments in packet automatically (e-mail only)
+
+Subj: CTRL-A [KEEP | EXPAND | STRIP]
+Note: Ctrl-A color/attribute codes - leave-in, expand to ANSI, or remove
+
+Subj: TZ [ON | OFF]
+Note: Include time-zone (@TZ) lines in exported messages
+
+Subj: VIA [ON | OFF]
+Note: Include path (@VIA) lines in exported messages
+
+Subj: NDX [ON | OFF]
+Note: Include index (.NDX) files
+
+Subj: CONTROL [ON | OFF]
+Note: Include extraneous control files (CONTROL.DAT, DOOR.ID, NETFLAGS.DAT)
+
+
+DOVE-Net QWK Conference Numbers on Vertrauen
+============================================
+Conf  Name					Access Requirements
+----  --------------------------------------	-------------------
+2001  General
+2002  Advertisements
+2003  Entertainment
+2004  Debate
+2005  Hardware/Software Help
+2006  Programming
+2009  Linux Discussion
+2015  HAM Radio Operators
+2016  Internet Discussion
+2017  Pro-Audio Discussion
+2018  Firearms Discussion
+2019  Sports Discussion
+2007  Synchronet Discussion
+2008  Synchronet Sysops Only			LEVEL 90 OR REST Q
+2011  Synchronet Programming (Baja)
+2014  Synchronet Programming (non-Baja)
+2012  Synchronet Beta Testing			LEVEL 90
+2013  Synchronet Data				LEVEL 90 OR REST Q
+2010  DOVE-Net Sysops Only			LEVEL 90 OR REST Q
+
+
+Contact Information
+-------------------
+Vertrauen: 	telnet://vert.synchro.net
+Co-founder:	rob@synchro.net
+
+/* End of DOVE-NET.TXT */
