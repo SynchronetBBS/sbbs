@@ -127,11 +127,19 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 				k++;	/* k is how many subs */
 		fprintf(stream,"%s\r\n\r\n0\r\n0\r\n%u\r\n",useron.alias,k);
 		fprintf(stream,"0\r\nE-mail\r\n");   /* first conference is e-mail */
-		for(i=0;i<usrgrps;i++)
-			for(j=0;j<usrsubs[i];j++)
+		char confname[256];
+		for(i=0;i<usrgrps;i++) 
+			for(j=0;j<usrsubs[i];j++) {
+				if(useron.qwk&QWK_EXT)	/* 255 char max */
+					sprintf(confname,"%s %s"
+						,cfg.grp[cfg.sub[usrsub[i][j]]->grp]->sname
+						,cfg.sub[usrsub[i][j]]->lname);
+				else					/* 10 char max */
+					strcpy(confname,cfg.sub[usrsub[i][j]]->qwkname);
 				fprintf(stream,"%u\r\n%s\r\n"
 					,cfg.sub[usrsub[i][j]]->qwkconf ? cfg.sub[usrsub[i][j]]->qwkconf
-					: ((i+1)*1000)+j+1,cfg.sub[usrsub[i][j]]->qwkname);
+					: ((i+1)*1000)+j+1,confname);
+			}
 		fprintf(stream,"HELLO\r\nBBSNEWS\r\nGOODBYE\r\n");
 		fclose(stream);
 		/***********************/
