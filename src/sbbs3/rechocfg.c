@@ -262,7 +262,7 @@ void read_echo_cfg()
 
 /****** READ IN SBBSECHO.CFG FILE *******/
 
-printf("\n\nReading %s\n",cfg.cfgfile);
+printf("\nReading %s\n",cfg.cfgfile);
 if((stream=fnopen(&file,cfg.cfgfile,O_RDONLY))==NULL) {
     printf("Unable to open %s for read.\n",cfg.cfgfile);
     exit(1); }
