@@ -16,6 +16,37 @@ for(i=0;i<argc;i++)
 		exit();
 	}
 
+// Read the list of systems into list array
+fname = system.ctrl_dir + "sbbsimsg.lst";
+
+f = new File(fname);
+if(!f.open("r")) {
+	alert("Error opening " + fname);
+	exit();
+}
+
+list = f.readAll();
+f.close();
+for(line=0;;) {
+	if(list[line]==null)
+		break;
+	while(list[line].charAt(0)==' ')		// skip prepended spaces
+		list[line]=list[line].slice(1);
+	if(list[line].charAt(0)==';' ||			// comment
+		list[line]==system.inetaddr) {		// local system
+		list.splice(line,1);				// ignore
+		continue;
+	}
+	sp=list[line].indexOf(' ');
+	tab=list[line].indexOf('\t');
+	if(tab>0 && tab<sp)
+		sp=tab;
+	if(sp>0)								// truncate at first space or tab
+		list[line]=list[line].slice(0,sp);
+	line++;
+}
+
+
 // Truncate space off end of string
 function truncsp(str)
 {
@@ -31,38 +62,18 @@ function list_users(show)
 {
 	imsg_user = new Array();
 
-	fname = system.ctrl_dir + "sbbsimsg.lst";
-
-	f = new File(fname);
-	if(!f.open("r")) {
-		alert("Error opening " + fname);
-		exit();
-	}
-
-	text = f.readAll();
-	f.close();
-
-	for(line in text) {
-		while(text[line].charAt(0)==' ')	// skip prepended spaces
-			text[line]=text[line].slice(1);
-		if(text[line].charAt(0)==';')		// comment
-			continue;
-		sp=text[line].indexOf(' ');
-		tab=text[line].indexOf('\t');
-		if(tab>0 && tab<sp)
-			sp=tab;
-		if(sp>0)							// truncate at first space or tab
-			text[line]=text[line].slice(0,sp);
-		if(text[line]==system.inetaddr)
-			continue;
+	for(i=0;list[i]!=null;i++) {
 
 		if(show) 
-			print(format("\1n\1h%s\1n",text[line]));
+			printf("\1n\1h%-25.25s\1n ",list[i]);
 
 		sock = new Socket();
-		if(!sock.connect(text[line],79)) {
+		if(!sock.connect(list[i],79)) {
 			log(format("!Finger connection to %s FAILED with error %d"
-				,text[line],sock.last_error));
+				,list[i],sock.last_error));
+			alert("system not available");
+			list.splice(i,1);
+			i--;
 			continue;
 		}
 		sock.send("\r\n");	// Get list of active users
@@ -75,23 +86,33 @@ function list_users(show)
 		}
 		sock.close();
 
+
 		// Skip header
 		while(response.length && response[0].charAt(0)!='-')
 			response.shift();
 		response.shift();
-		if(!response.length)
-			continue;
 
-		for(i in response) {
-			if(response[i]=="")
+		if(!response.length) {
+			if(show)
+				print();
+			continue;
+		}
+
+		if(show) {
+			str = format("%lu user%s",response.length,response.length==1 ? "":"s");
+			printf("\1g\1h%-40s Age Sex\r\n",str);
+		}
+
+		for(j in response) {
+			if(response[j]=="")
 				continue;
 
 			if(show)
 				print(format("\1h\1y%.25s\1n\1g %.48s"
-					,response[i],response[i].slice(26)));
+					,response[j],response[j].slice(26)));
 			var u = new Object;
-			u.host = text[line];
-			u.name = format("%.25s",response[i]);
+			u.host = list[i];
+			u.name = format("%.25s",response[j]);
 			u.name = truncsp(u.name);
 			imsg_user.push(u);
 		}
@@ -107,6 +128,7 @@ function send_msg(dest, msg)
 	}
 	host = dest.slice(hp+1);
 
+	printf("\1h\1ySending...\r\1w");
 	sock = new Socket();
 	//sock.debug = true;
 	do {
@@ -157,10 +179,15 @@ function getmsg()
 {
 	var lines=0;
 	var msg="";
+	const max_lines = 5;
 
-	while(bbs.online && lines<5) {
+	printf("\1n\1g\1h%lu\1n\1g lines maximum (blank line ends)\r\n",max_lines);
+	while(bbs.online && lines<max_lines) {
 		console.print("\1n: \1h");
-		str=console.getstr(76,K_WRAP);
+		mode=0;
+		if(lines+1<max_lines)
+			mode|=K_WRAP;
+		str=console.getstr(76, mode);
 		if(str=="")
 			break;
 		msg+=str;
@@ -210,7 +237,7 @@ while(bbs.online) {
 				dest=format("%s@%s",imsg_user[last_user].name,imsg_user[last_user].host);
 			else
 				dest="";
-			dest=console.getstr(dest,64,K_EDIT);
+			dest=console.getstr(dest,64,K_EDIT|K_AUTODEL);
 			if(dest==null || dest=='' || bbs.sys_status&SS_ABORT)
 				break;
 			if((msg=getmsg())=='')
@@ -226,7 +253,7 @@ while(bbs.online) {
 			}
 			done=false;
 			while(bbs.online && !done) {
-				printf("\r\1n\1h<> \1y%-25s \1c%s\1>"
+				printf("\r\1n\1h\x11\1n-[\1hQ\1nuit]-\1h\x10 \1y%-25s \1c%s\1>"
 					,imsg_user[last_user].name,imsg_user[last_user].host);
 				switch(console.getkey(K_UPPER|K_NOECHO)) {
 					case '+':
@@ -257,11 +284,12 @@ while(bbs.online) {
 						break;
 					case '\r':
 						done=true;
-						console.crlf();
+						dest=format("%s@%s"
+							,imsg_user[last_user].name,imsg_user[last_user].host);
+						printf("\r\1n\1cSending message to \1h%s\1>\r\n",dest);
 						if((msg=getmsg())=='')
 							break;
-						send_msg(format("%s@%s"
-							,imsg_user[last_user].name,imsg_user[last_user].host),msg);
+						send_msg(dest,msg);
 						console.crlf();
 						break;
 				}
