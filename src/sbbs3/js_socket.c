@@ -318,7 +318,6 @@ js_sendto(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char*		cp;
 	int			len;
-	int32		i=0;
 	ulong		ip_addr;
 	ushort		port;
 	JSString*	data_str;
