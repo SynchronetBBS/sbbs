@@ -95,8 +95,10 @@ void sbbs_t::putnodedat(uint number, node_t* node)
 		mswait(100);
 	}
 	unlock(nodefile,(long)number*sizeof(node_t),sizeof(node_t));
-	close(nodefile);
-	nodefile=-1;
+	if(cfg.node_misc&NM_CLOSENODEDAB) {
+		close(nodefile);
+		nodefile=-1;
+	}
 
 	if(wr!=sizeof(node_t)) {
 		errno=wrerr;

@@ -1571,7 +1571,8 @@ sbbs_t::sbbs_t(ushort node_num, DWORD addr, char* name, SOCKET sd,
     else
     	strcpy(nodestr,name);
 
-	lprintf("%s constructor using socket %d", nodestr, sd);
+	lprintf("%s constructor using socket %d (settings=%lx)"
+		, nodestr, sd, global_cfg->node_misc);
 
 	startup = ::startup;	// Convert from global to class member
 
@@ -1776,8 +1777,10 @@ bool sbbs_t::init()
 		}
 		mswait(100);
 	}
-	close(nodefile);
-	nodefile=-1;
+	if(cfg.node_misc&NM_CLOSENODEDAB) {
+		close(nodefile);
+		nodefile=-1;
+	}
 
 	if(i>=LOOP_NODEDAB) {
 		errormsg(WHERE, ERR_LOCK, str, cfg.node_num);
