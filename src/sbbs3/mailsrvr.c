@@ -2279,7 +2279,7 @@ static void smtp_thread(void* arg)
 			continue;
 		}
 		if(!stricmp(buf,"AUTH CRAM-MD5")) {
-			sprintf(challenge,"<%u.%u@%s>",socket,clock(),startup->host_name);
+			sprintf(challenge,"<%u.%lu@%s>",socket,clock(),startup->host_name);
 			/***
 			lprintf("%04d SMTP CRAM-MD5 challenge: %s"
 				,socket,challenge);
