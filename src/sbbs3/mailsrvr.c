@@ -61,6 +61,7 @@
 #include "mailsrvr.h"
 #include "mime.h"
 #include "crc32.h"
+#include "base64.h"
 
 /* Constants */
 #define FORWARD			"forward:"
@@ -72,6 +73,7 @@ int dns_getmx(char* name, char* mx, char* mx2
 static char* ok_rsp		=	"250 OK";
 static char* sys_error	=	"421 System error";
 static char* badseq_rsp	=	"503 Bad sequence of commands";
+static char* badauth_rsp=	"535 Authentication failure";
 static char* badrsp_err	=	"%s replied with:\r\n\"%s\"\r\n"
 							"instead of the expected reply:\r\n\"%s ...\"";
 
@@ -414,7 +416,7 @@ static int sockreadline(SOCKET socket, char* buf, int len)
 		buf[rd++]=ch;
 	}
 	if(rd>0 && buf[rd-1]=='\r')
-		buf[rd-1]=0;
+		buf[--rd]=0;
 	else
 		buf[rd]=0;
 	
@@ -1408,6 +1410,8 @@ static void smtp_thread(void* arg)
 	char		sender[128];
 	char		sender_addr[128];
 	char		hello_name[128];
+	char		user_name[LEN_ALIAS+1];
+	char		user_pass[LEN_PASS+1];
 	char		relay_list[MAX_PATH+1];
 	char		domain_list[MAX_PATH+1];
 	char		host_name[128];
@@ -1499,6 +1503,7 @@ static void smtp_thread(void* arg)
 	memset(&smb,0,sizeof(smb));
 	memset(&msg,0,sizeof(msg));
 	memset(&user,0,sizeof(user));
+	memset(&relay_user,0,sizeof(relay_user));
 
 	SAFECOPY(host_ip,inet_ntoa(smtp.client_addr.sin_addr));
 
@@ -2184,12 +2189,66 @@ static void smtp_thread(void* arg)
 			p=buf+4;
 			while(*p && *p<=' ') p++;
 			SAFECOPY(hello_name,p);
-			sockprintf(socket,"250 %s",startup->host_name);
+			sockprintf(socket,"250-%s",startup->host_name);
+			sockprintf(socket,"250 AUTH LOGIN");
 			esmtp=TRUE;
 			state=SMTP_STATE_HELO;
 			cmd=SMTP_CMD_NONE;
 			telegram=FALSE;
 			subnum=INVALID_SUB;
+			continue;
+		}
+		/* This is a stupid protocol, but it's the only one Outlook Express supports */
+		if(!stricmp(buf,"AUTH LOGIN")) {	
+			sockprintf(socket,"334 VXNlcm5hbWU6");	/* Base64-encoded "Username:" */
+			rd = sockreadline(socket, buf, sizeof(buf));
+			if(rd<1) {
+				sockprintf(socket,badauth_rsp);
+				continue;
+			}
+			b64_decode(user_name,sizeof(user_name),buf,rd);
+			sockprintf(socket,"334 UGFzc3dvcmQ6");	/* Base64-encoded "Password:" */
+			rd = sockreadline(socket, buf, sizeof(buf));
+			if(rd<1) {
+				sockprintf(socket,badauth_rsp);
+				continue;
+			}
+			b64_decode(user_pass,sizeof(user_pass),buf,rd);
+			if((relay_user.number=matchuser(&scfg,user_name,FALSE))==0) {
+				if(scfg.sys_misc&SM_ECHO_PW)
+					lprintf("%04d !SMTP UNKNOWN USER: %s (password: %s)"
+						,socket, user_name, user_pass);
+				else
+					lprintf("%04d !SMTP UNKNOWN USER: %s"
+						,socket, user_name);
+				sockprintf(socket,badauth_rsp);
+				continue;
+			}
+			if((i=getuserdat(&scfg, &relay_user))!=0) {
+				lprintf("%04d !SMTP ERROR %d getting data on user (%s)"
+					,socket, i, user_name);
+				sockprintf(socket,badauth_rsp);
+				continue;
+			}
+			if(relay_user.misc&(DELETED|INACTIVE)) {
+				lprintf("%04d !SMTP DELETED or INACTIVE user #%u (%s)"
+					,socket, relay_user.number, user_name);
+				sockprintf(socket,badauth_rsp);
+				break;
+			}
+			if(stricmp(user_pass,relay_user.pass)) {
+				if(scfg.sys_misc&SM_ECHO_PW)
+					lprintf("%04d !SMTP FAILED Password attempt for user %s: '%s' expected '%s'"
+						,socket, user_name, user_pass, relay_user.pass);
+				else
+					lprintf("%04d !SMTP FAILED Password attempt for user %s"
+						,socket, user_name);
+				sockprintf(socket,badauth_rsp);
+				break;
+			}
+			lprintf("%04d SMTP %s authenticated using LOGIN protocol"
+				,socket,relay_user.alias);
+			sockprintf(socket,"235 User Authenticated");
 			continue;
 		}
 		if(!stricmp(buf,"QUIT")) {
@@ -2389,7 +2448,8 @@ static void smtp_thread(void* arg)
 					|| dest_port!=server_addr.sin_port) {
 
 					sprintf(relay_list,"%srelay.cfg",scfg.ctrl_dir);
-					relay_user.number=userdatdupe(&scfg, 0, U_NOTE, LEN_NOTE, host_ip, FALSE);
+					if(relay_user.number==0)
+						relay_user.number=userdatdupe(&scfg, 0, U_NOTE, LEN_NOTE, host_ip, FALSE);
 					if(relay_user.number!=0)
 						getuserdat(&scfg,&relay_user);
 					if(p!=alias_buf /* forced relay by alias */ &&
