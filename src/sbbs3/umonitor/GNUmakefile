@@ -76,13 +76,18 @@ ifeq ($(os),netbsd)
  CFLAGS	+=	-D__unix__
 endif
 
-vpath %.c $(UIFC) $(XPDEV)
+vpath %.c $(UIFC) $(XPDEV) $(SBBS3)
 
 OBJS	:=	$(LIBODIR)/filewrap.o \
 			$(LIBODIR)/uifcc.o \
 			$(LIBODIR)/sockwrap.o \
 			$(LIBODIR)/dirwrap.o \
 			$(LIBODIR)/genwrap.o \
+			$(LIBODIR)/sbbs_ini.o \
+			$(LIBODIR)/ini_file.o \
+			$(LIBODIR)/scfglib1.o \
+			$(LIBODIR)/nopen.o \
+			$(LIBODIR)/ars.o \
 			$(LIBODIR)/umonitor.o
 
 all: $(LIBODIR) $(BUILD_DEPENDS)$(EXEODIR)/umonitor

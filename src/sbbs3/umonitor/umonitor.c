@@ -54,6 +54,9 @@
 #include "dirwrap.h"	/* lock/unlock/sopen */
 #include "filewrap.h"	/* lock/unlock/sopen */
 #include "sockwrap.h"
+#include "sbbs_ini.h"	/* INI parsing */
+#include "scfglib.h"	/* SCFG files */
+#include "ars_defs.h"	/* needed for SCFG files */
 
 enum {
 	 MODE_LIST
@@ -92,7 +95,6 @@ char tmp[256];
 int nodefile;
 const char *YesStr="Yes";
 const char *NoStr="No";
-
 
 void bail(int code)
 {
@@ -617,6 +619,53 @@ void node_toggles(int nodenum)  {
 	}
 }
 
+/****************************************************************************/
+/* Truncates white-space chars off end of 'str'								*/
+/****************************************************************************/
+char* DLLCALL truncsp(char *str)
+{
+	uint c;
+
+	c=strlen(str);
+	while(c && (uchar)str[c-1]<=' ') c--;
+	str[c]=0;
+	return(str);
+}
+
+/****************************************************************************/
+/* If the directory 'path' doesn't exist, create it.                      	*/
+/****************************************************************************/
+BOOL md(char *inpath)
+{
+	DIR*	dir;
+	char	path[MAX_PATH+1];
+
+	if(inpath[0]==0)
+		return(FALSE);
+
+	SAFECOPY(path,inpath);
+
+	/* Remove trailing '.' if present */
+	if(path[strlen(path)-1]=='.')
+		path[strlen(path)-1]=0;
+
+	/* Remove trailing slash if present */
+	if(path[strlen(path)-1]=='\\' || path[strlen(path)-1]=='/')
+		path[strlen(path)-1]=0;
+
+	dir=opendir(path);
+	if(dir==NULL) {
+		if(MKDIR(path)) {
+			printf("!ERROR %d creating directory: %s",errno,path);
+			return(FALSE); 
+		} 
+	}
+	else
+		closedir(dir);
+	
+	return(TRUE);
+}
+
 int main(int argc, char** argv)  {
 	char**	opt;
 	char**	mopt;
@@ -630,6 +679,26 @@ int main(int argc, char** argv)  {
 	node_t node;
 	char	*buf;
 	int		buffile;
+/******************/
+/* Ini file stuff */
+/******************/
+	char	host_name[128]="";
+	char	ini_file[MAX_PATH+1];
+	FILE*				fp;
+	BOOL				run_bbs;
+	bbs_startup_t		bbs_startup;
+	BOOL				run_ftp;
+	ftp_startup_t		ftp_startup;
+	BOOL				run_web;
+	web_startup_t		web_startup;
+	BOOL				run_mail;
+	mail_startup_t		mail_startup;
+	BOOL				run_services;
+	services_startup_t	services_startup;
+/******************/
+/* CFG file stuff */
+/******************/
+	scfg_t	cfg;
 
 	sscanf("$Revision$", "%*s %s", revision);
 
@@ -648,7 +717,92 @@ int main(int argc, char** argv)  {
 		&& ctrl_dir[strlen(ctrl_dir)-1]!='/')
 		strcat(ctrl_dir,"/");
 
-	sprintf(str,"%snode.dab",ctrl_dir);
+	gethostname(host_name,sizeof(host_name)-1);
+	sprintf(ini_file,"%s%c%s.ini",ctrl_dir,BACKSLASH,host_name);
+#if defined(PREFIX)
+	if(!fexistcase(ini_file))
+		sprintf(ini_file,"%s/etc/sbbs.ini",PREFIX);
+#endif
+	if(!fexistcase(ini_file))
+		sprintf(ini_file,"%s%csbbs.ini",ctrl_dir,BACKSLASH);
+
+	/* Initialize BBS startup structure */
+    memset(&bbs_startup,0,sizeof(bbs_startup));
+    bbs_startup.size=sizeof(bbs_startup);
+    strcpy(bbs_startup.ctrl_dir,ctrl_dir);
+    strcpy(bbs_startup.temp_dir,ctrl_dir);		/* Why is this necessary on my system?  -Deuce */
+
+	/* Initialize FTP startup structure */
+    memset(&ftp_startup,0,sizeof(ftp_startup));
+    ftp_startup.size=sizeof(ftp_startup);
+    strcpy(ftp_startup.index_file_name,"00index");
+    strcpy(ftp_startup.ctrl_dir,ctrl_dir);
+    strcpy(ftp_startup.temp_dir,ctrl_dir);		/* Why is this necessary on my system?  -Deuce */
+
+	/* Initialize Web Server startup structure */
+    memset(&web_startup,0,sizeof(web_startup));
+    web_startup.size=sizeof(web_startup);
+    strcpy(web_startup.ctrl_dir,ctrl_dir);
+
+	/* Initialize Mail Server startup structure */
+    memset(&mail_startup,0,sizeof(mail_startup));
+    mail_startup.size=sizeof(mail_startup);
+    strcpy(mail_startup.ctrl_dir,ctrl_dir);
+
+	/* Look up DNS server address */
+	{
+		FILE*	fp;
+		char*	p;
+		char	str[128];
+
+		if((fp=fopen("/etc/resolv.conf","r"))!=NULL) {
+			while(!feof(fp)) {
+				if(fgets(str,sizeof(str),fp)==NULL)
+					break;
+				truncsp(str);
+				p=str;
+				while(*p && *p<=' ') p++;	/* skip white-space */
+				if(strnicmp(p,"nameserver",10)!=0) /* no match */
+					continue;
+				p+=10;	/* skip "nameserver" */
+				while(*p && *p<=' ') p++;	/* skip more white-space */
+				SAFECOPY(mail_startup.dns_server,p);
+				break;
+			}
+			fclose(fp);
+		}
+	}
+
+	/* Initialize Services startup structure */
+    memset(&services_startup,0,sizeof(services_startup));
+    services_startup.size=sizeof(services_startup);
+    strcpy(services_startup.ctrl_dir,ctrl_dir);
+
+	/* Read .ini file here */
+	if(ini_file[0]!=0 && (fp=fopen(ini_file,"r"))!=NULL) {
+		printf("Reading %s\n",ini_file);
+	}
+	/* We call this function to set defaults, even if there's no .ini file */
+	sbbs_read_ini(fp, 
+		&run_bbs,		&bbs_startup,
+		&run_ftp,		&ftp_startup, 
+		&run_web,		&web_startup,
+		&run_mail,		&mail_startup, 
+		&run_services,	&services_startup);
+
+	/* close .ini file here */
+	if(fp!=NULL)
+		fclose(fp);
+
+	chdir(bbs_startup.ctrl_dir);
+	
+	/* Read .cfg files here */
+	if(!read_main_cfg(&cfg, str)) {
+		printf("ERROR! %s\n",str);
+		exit(1);
+	}
+
+	sprintf(str,"%s/node.dab",bbs_startup.ctrl_dir);
 	if((nodefile=sopen(str,O_RDWR|O_BINARY,SH_DENYNO))==-1) {
 		printf("\7\nError %d opening %s.\n",errno,str);
 		exit(1); }
@@ -731,8 +885,7 @@ int main(int argc, char** argv)  {
 			,title,mopt);
 
 		if(j==-7) {	/* CTRL-E */
-			/* ToDo must get the logs dir from the config */
-			sprintf(str,"%s../data/error.log",ctrl_dir);
+			sprintf(str,"%s/error.log",cfg.data_dir);
 			if(fexist(str)) {
 				if((buffile=sopen(str,O_RDONLY,SH_DENYWR))>=0) {
 					j=filelength(buffile);
@@ -784,7 +937,7 @@ int main(int argc, char** argv)  {
 							"\nToDo: Add help";
 			switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"Node Options",opt))  {
 				case 0:	/* Spy */
-					snprintf(str,sizeof(str),"%slocalspy%d.sock", ctrl_dir, j+1);
+	    			snprintf(str,sizeof(str),"%slocalspy%d.sock", bbs_startup.temp_dir, j+1);
 					endwin();
 					i=spyon(str);
 					refresh();
