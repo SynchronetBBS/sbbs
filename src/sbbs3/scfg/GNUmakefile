@@ -145,7 +145,7 @@ $(SCFG): $(OBJS)
 	@$(MAKE) --no-print-directory -C ../../libdialog
    endif
 	@echo Linking $@
-	$(CCPP) -o $@ $(OBJS) $(LFLAGS)
+	@$(CCPP) -o $@ $(OBJS) $(LFLAGS)
 
 # Auto-dependency files (should go in output dir, but gcc v2.9.5 puts in cwd)
 -include ./*.d
