@@ -68,12 +68,110 @@
 
 #ifdef __unix__
 
-struct termios current;            // our current term settings
-struct termios original;           // old termios settings
-struct timeval timeout = {0, 0};   // passed in select() call
-fd_set inp;                        // ditto
-static int beensetup = 0;          // has _termios_setup() been called?
+/****************************************************************************/
+/* Wrapper for Win32 create/begin thread function							*/
+/* Uses POSIX threads														*/
+/****************************************************************************/
+#ifdef _POSIX_THREADS
+ulong _beginthread(void( *start_address )( void * )
+		,unsigned stack_size, void *arglist)
+{
+	pthread_t	thread;
+	pthread_attr_t attr;
 
+	pthread_attr_init(&attr);     /* initialize attribute structure */
+
+	/* set thread attributes to PTHREAD_CREATE_DETACHED which will ensure
+	   that thread resources are freed on exit() */
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+
+	if(pthread_create(&thread
+		,&attr	/* default attributes */
+		/* POSIX defines this arg as "void *(*start_address)" */
+		,(void *) start_address
+		,arglist)==0)
+		return((int) thread /* thread handle */);
+
+	return(-1);	/* error */
+}
+#else
+
+#error "Need _beginthread implementation for non-POSIX thread library."
+
+#endif
+
+/****************************************************************************/
+/* Convert ASCIIZ string to upper case										*/
+/****************************************************************************/
+char* strupr(char* str)
+{
+	char*	p=str;
+
+	while(*p) {
+		*p=toupper(*p);
+		p++;
+	}
+	return(str);
+}
+/****************************************************************************/
+/* Convert ASCIIZ string to lower case										*/
+/****************************************************************************/
+char* strlwr(char* str)
+{
+	char*	p=str;
+
+	while(*p) {
+		*p=tolower(*p);
+		p++;
+	}
+	return(str);
+}
+
+/****************************************************************************/
+/* Reverse chars in string													*/
+/****************************************************************************/
+char* strrev(char* str)
+{
+    char t, *i=str, *j=str+strlen(str);
+
+    while (i<j) {
+        t=*i; *(i++)=*(--j); *j=t;
+    }
+    return str;
+}
+
+/* This is a bit of a hack, but it works */
+char* _fullpath(char* absPath, const char* relPath, size_t maxLength)
+{
+	char *curdir = (char *) malloc(PATH_MAX+1);
+
+	if(curdir == NULL) {
+		strcpy(absPath,relPath);
+		return(absPath);
+	}
+
+    getcwd(curdir, PATH_MAX);
+    if(chdir(relPath)!=0) /* error, invalid dir */
+		strcpy(absPath,relPath);
+	else {
+		getcwd(absPath, maxLength);
+		chdir(curdir);
+	}
+	free(curdir);
+
+    return absPath;
+}
+
+/***************************************/
+/* Console I/O Stuff (by Casey Martin) */
+/***************************************/
+
+static struct termios current;				// our current term settings
+static struct termios original;				// old termios settings
+static struct timeval timeout = {0, 0};		// passed in select() call
+static fd_set inp;							// ditto
+static int beensetup = 0;					// has _termios_setup() been called?
+											
 /*
 	I'm using a variable function here simply for the sake of speed.  The
     termios functions must be called before a kbhit() can be successful, so
@@ -160,34 +258,9 @@ int getch(void)
 
 #endif // __unix__
 
-/****************************************************************************/
-/* Convert ASCIIZ string to upper case										*/
-/****************************************************************************/
-#ifdef __unix__
-char* strupr(char* str)
-{
-	char*	p=str;
-
-	while(*p) {
-		*p=toupper(*p);
-		p++;
-	}
-	return(str);
-}
-/****************************************************************************/
-/* Convert ASCIIZ string to lower case										*/
-/****************************************************************************/
-char* strlwr(char* str)
-{
-	char*	p=str;
-
-	while(*p) {
-		*p=tolower(*p);
-		p++;
-	}
-	return(str);
-}
-#endif
+/**************/
+/* File Stuff */
+/**************/
 
 /****************************************************************************/
 /* Returns the length of the file in 'filename'                             */
