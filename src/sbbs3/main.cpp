@@ -986,7 +986,7 @@ void event_thread(void* arg)
 
 					sprintf(str,"%sfile%c%04u.qwk"
 						,sbbs->cfg.data_dir,BACKSLASH,sbbs->useron.number);
-					if(sbbs->pack_qwk(str,&l,true /* pre-pack */)) {
+					if(sbbs->pack_qwk(str,&l,true /* pre-pack/off-line */)) {
 						eprintf("Packing completed");
 						sbbs->qwk_success(l,0,1);
 						sbbs->putmsgptrs(); 
@@ -2512,14 +2512,17 @@ void node_thread(void* arg)
 #ifdef JAVASCRIPT
 		JS_BeginRequest(sbbs->js_cx);	/* Required for multi-thread support */
 
+		/* User Class */
+		if(js_CreateUserClass(sbbs->js_cx, sbbs->js_glob, &sbbs->cfg)==NULL) 
+			lprintf("!JavaScript ERROR creating user class");
+
 		/* User Object */
-		if(js_CreateUserObject(sbbs->js_cx, sbbs->js_glob, &sbbs->cfg, "user", &sbbs->useron)==NULL) {
+		if(js_CreateUserObject(sbbs->js_cx, sbbs->js_glob, &sbbs->cfg, "user", sbbs->useron.number)==NULL) 
 			lprintf("!JavaScript ERROR creating user object");
-		}
+
 		/* FileArea Object */
-		if(js_CreateFileAreaObject(sbbs->js_cx, sbbs->js_glob, &sbbs->cfg, &sbbs->useron, "")==NULL) {
+		if(js_CreateFileAreaObject(sbbs->js_cx, sbbs->js_glob, &sbbs->cfg, &sbbs->useron, "")==NULL) 
 			lprintf("!JavaScript ERROR createing file_area object");
-		}
 
 		JS_EndRequest(sbbs->js_cx);	/* Required for multi-thread support */
 #endif

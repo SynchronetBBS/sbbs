@@ -39,16 +39,19 @@
 
 #ifdef JAVASCRIPT
 
+static scfg_t* scfg=NULL;
+
 typedef struct
 {
-	user_t* user;
+	uint	usernumber;
 	scfg_t*	cfg;
 
 } private_t;
 
 /* User Object Properites */
 enum {
-	 USER_PROP_ALIAS 	
+	 USER_PROP_NUMBER
+	,USER_PROP_ALIAS 	
 	,USER_PROP_NAME		
 	,USER_PROP_HANDLE	
 	,USER_PROP_NOTE		
@@ -113,187 +116,192 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	char		tmp[128];
 	ulong		val=0;
     jsint       tiny;
+	user_t		user;
 	private_t*	p;
 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_FALSE);
 
-	getuserdat(p->cfg,p->user);
+	user.number=p->usernumber;
+	getuserdat(p->cfg,&user);
 
     tiny = JSVAL_TO_INT(id);
 
 	switch(tiny) {
+		case USER_PROP_NUMBER:
+			val=user.number;
+			break;
 		case USER_PROP_ALIAS: 
-			s=p->user->alias;
+			s=user.alias;
 			break;
 		case USER_PROP_NAME:
-			s=p->user->name;
+			s=user.name;
 			break;
 		case USER_PROP_HANDLE:
-			s=p->user->handle;
+			s=user.handle;
 			break;
 		case USER_PROP_NOTE:
-			s=p->user->note;
+			s=user.note;
 			break;
 		case USER_PROP_COMP:
-			s=p->user->comp;
+			s=user.comp;
 			break;
 		case USER_PROP_COMMENT:
-			s=p->user->comment;
+			s=user.comment;
 			break;
 		case USER_PROP_NETMAIL:
-			s=p->user->netmail;
+			s=user.netmail;
 			break;
 		case USER_PROP_ADDRESS:
-			s=p->user->address;
+			s=user.address;
 			break;
 		case USER_PROP_LOCATION:
-			s=p->user->location;
+			s=user.location;
 			break;
 		case USER_PROP_ZIPCODE:
-			s=p->user->zipcode;
+			s=user.zipcode;
 			break;
 		case USER_PROP_PASS:
-			s=p->user->pass;
+			s=user.pass;
 			break;
 		case USER_PROP_PHONE:
-			s=p->user->phone;
+			s=user.phone;
 			break;
 		case USER_PROP_BIRTH:
-			s=p->user->birth;
+			s=user.birth;
 			break;
 		case USER_PROP_AGE:
-			val=getage(p->cfg,p->user->birth);
+			val=getage(p->cfg,user.birth);
 			break;
 		case USER_PROP_MODEM:
-			s=p->user->modem;
+			s=user.modem;
 			break;
 		case USER_PROP_LASTON:
-			val=p->user->laston;
+			val=user.laston;
 			break;
 		case USER_PROP_FIRSTON:
-			val=p->user->firston;
+			val=user.firston;
 			break;
 		case USER_PROP_EXPIRE:
-			val=p->user->expire;
+			val=user.expire;
 			break;
 		case USER_PROP_PWMOD: 
-			val=p->user->pwmod;
+			val=user.pwmod;
 			break;
 		case USER_PROP_LOGONS:
-			val=p->user->logons;
+			val=user.logons;
 			break;
 		case USER_PROP_LTODAY:
-			val=p->user->ltoday;
+			val=user.ltoday;
 			break;
 		case USER_PROP_TIMEON:
-			val=p->user->timeon;
+			val=user.timeon;
 			break;
 		case USER_PROP_TEXTRA:
-			val=p->user->textra;
+			val=user.textra;
 			break;
 		case USER_PROP_TTODAY:
-			val=p->user->ttoday;
+			val=user.ttoday;
 			break;
 		case USER_PROP_TLAST: 
-			val=p->user->tlast;
+			val=user.tlast;
 			break;
 		case USER_PROP_POSTS: 
-			val=p->user->posts;
+			val=user.posts;
 			break;
 		case USER_PROP_EMAILS: 
-			val=p->user->emails;
+			val=user.emails;
 			break;
 		case USER_PROP_FBACKS: 
-			val=p->user->fbacks;
+			val=user.fbacks;
 			break;
 		case USER_PROP_ETODAY:	
-			val=p->user->etoday;
+			val=user.etoday;
 			break;
 		case USER_PROP_PTODAY:
-			val=p->user->ptoday;
+			val=user.ptoday;
 			break;
 		case USER_PROP_ULB:
-			val=p->user->ulb;
+			val=user.ulb;
 			break;
 		case USER_PROP_ULS:
-			val=p->user->uls;
+			val=user.uls;
 			break;
 		case USER_PROP_DLB:
-			val=p->user->dlb;
+			val=user.dlb;
 			break;
 		case USER_PROP_DLS:
-			val=p->user->dls;
+			val=user.dls;
 			break;
 		case USER_PROP_CDT:
-			val=p->user->cdt;
+			val=user.cdt;
 			break;
 		case USER_PROP_MIN:
-			val=p->user->min;
+			val=user.min;
 			break;
 		case USER_PROP_LEVEL:
-			val=p->user->level;
+			val=user.level;
 			break;
 		case USER_PROP_FLAGS1:
-			val=p->user->flags1;
+			val=user.flags1;
 			break;
 		case USER_PROP_FLAGS2:
-			val=p->user->flags2;
+			val=user.flags2;
 			break;
 		case USER_PROP_FLAGS3:
-			val=p->user->flags3;
+			val=user.flags3;
 			break;
 		case USER_PROP_FLAGS4:
-			val=p->user->flags4;
+			val=user.flags4;
 			break;
 		case USER_PROP_EXEMPT:
-			val=p->user->exempt;
+			val=user.exempt;
 			break;
 		case USER_PROP_REST:
-			val=p->user->rest;
+			val=user.rest;
 			break;
 		case USER_PROP_ROWS:
-			val=p->user->rows;
+			val=user.rows;
 			break;
 		case USER_PROP_SEX:
-			sprintf(tmp,"%c",p->user->sex);
+			sprintf(tmp,"%c",user.sex);
 			s=tmp;
 			break;
 		case USER_PROP_MISC:
-			val=p->user->misc;
+			val=user.misc;
 			break;
 		case USER_PROP_LEECH:
-			val=p->user->leech;
+			val=user.leech;
 			break;
 		case USER_PROP_CURSUB:
-			s=p->user->cursub;
+			s=user.cursub;
 			break;
 		case USER_PROP_CURDIR:
-			s=p->user->curdir;
+			s=user.curdir;
 			break;
 		case USER_PROP_FREECDT:
-			val=p->user->freecdt;
+			val=user.freecdt;
 			break;
 		case USER_PROP_XEDIT:
-			val=p->user->xedit;
+			val=user.xedit;
 			break;
 		case USER_PROP_SHELL:
-			val=p->user->shell;
+			val=user.shell;
 			break;
 		case USER_PROP_QWK:
-			val=p->user->qwk;
+			val=user.qwk;
 			break;
 		case USER_PROP_TMPEXT:
-			s=p->user->tmpext;
+			s=user.tmpext;
 			break;
 		case USER_PROP_CHAT:
-			val=p->user->laston;
+			val=user.laston;
 			break;
 		case USER_PROP_NS_TIME:
-			val=p->user->laston;
+			val=user.laston;
 			break;
 		case USER_PROP_PROT:
-			sprintf(tmp,"%c",p->user->prot);
+			sprintf(tmp,"%c",user.prot);
 			s=tmp;
 			break;
 		default:
@@ -312,6 +320,7 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	char*		str;
 	char		tmp[64];
 	ulong		val;
+	ulong		usermisc;
     jsint       tiny;
 	JSString*	js_str;
 	private_t*	p;
@@ -328,138 +337,146 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
     tiny = JSVAL_TO_INT(id);
 
 	switch(tiny) {
+		case USER_PROP_NUMBER:
+			JS_ValueToInt32(cx, *vp, &p->usernumber);
+			break;
 		case USER_PROP_ALIAS:
-			putuserrec(p->cfg,p->user->number,U_ALIAS,LEN_ALIAS,str);
-			if(!(p->user->misc&DELETED))
-				putusername(p->cfg,p->user->number,str);
+			/* update USER.DAT */
+			putuserrec(p->cfg,p->usernumber,U_ALIAS,LEN_ALIAS,str);
+
+			/* update NAME.DAT */
+			getuserrec(p->cfg,p->usernumber,U_MISC,8,tmp);
+			usermisc=ahtoul(tmp);
+			if(!(usermisc&DELETED))
+				putusername(p->cfg,p->usernumber,str);
 			break;
 		case USER_PROP_NAME:
-			putuserrec(p->cfg,p->user->number,U_NAME,LEN_NAME,str);
+			putuserrec(p->cfg,p->usernumber,U_NAME,LEN_NAME,str);
 			break;
 		case USER_PROP_HANDLE:
-			putuserrec(p->cfg,p->user->number,U_HANDLE,LEN_HANDLE,str);
+			putuserrec(p->cfg,p->usernumber,U_HANDLE,LEN_HANDLE,str);
 			break;
 		case USER_PROP_NOTE:		 
-			putuserrec(p->cfg,p->user->number,U_NOTE,LEN_NOTE,str);
+			putuserrec(p->cfg,p->usernumber,U_NOTE,LEN_NOTE,str);
 			break;
 		case USER_PROP_COMP:		 
-			putuserrec(p->cfg,p->user->number,U_COMP,LEN_COMP,str);
+			putuserrec(p->cfg,p->usernumber,U_COMP,LEN_COMP,str);
 			break;
 		case USER_PROP_COMMENT:	 
-			putuserrec(p->cfg,p->user->number,U_COMMENT,LEN_COMMENT,str);
+			putuserrec(p->cfg,p->usernumber,U_COMMENT,LEN_COMMENT,str);
 			break;
 		case USER_PROP_NETMAIL:	 
-			putuserrec(p->cfg,p->user->number,U_NETMAIL,LEN_NETMAIL,str);
+			putuserrec(p->cfg,p->usernumber,U_NETMAIL,LEN_NETMAIL,str);
 			break;
 		case USER_PROP_ADDRESS:	 
-			putuserrec(p->cfg,p->user->number,U_ADDRESS,LEN_ADDRESS,str);
+			putuserrec(p->cfg,p->usernumber,U_ADDRESS,LEN_ADDRESS,str);
 			break;
 		case USER_PROP_LOCATION:	 
-			putuserrec(p->cfg,p->user->number,U_LOCATION,LEN_LOCATION,str);
+			putuserrec(p->cfg,p->usernumber,U_LOCATION,LEN_LOCATION,str);
 			break;
 		case USER_PROP_ZIPCODE:	 
-			putuserrec(p->cfg,p->user->number,U_ZIPCODE,LEN_ZIPCODE,str);
+			putuserrec(p->cfg,p->usernumber,U_ZIPCODE,LEN_ZIPCODE,str);
 			break;
 		case USER_PROP_PHONE:  	 
-			putuserrec(p->cfg,p->user->number,U_PHONE,LEN_PHONE,str);
+			putuserrec(p->cfg,p->usernumber,U_PHONE,LEN_PHONE,str);
 			break;
 		case USER_PROP_BIRTH:  	 
-			putuserrec(p->cfg,p->user->number,U_BIRTH,LEN_BIRTH,str);
+			putuserrec(p->cfg,p->usernumber,U_BIRTH,LEN_BIRTH,str);
 			break;
 		case USER_PROP_MODEM:     
-			putuserrec(p->cfg,p->user->number,U_MODEM,LEN_MODEM,str);
+			putuserrec(p->cfg,p->usernumber,U_MODEM,LEN_MODEM,str);
 			break;
 		case USER_PROP_ROWS:		 
-			putuserrec(p->cfg,p->user->number,U_ROWS,2,str);	/* base 10 */
+			putuserrec(p->cfg,p->usernumber,U_ROWS,2,str);	/* base 10 */
 			break;
 		case USER_PROP_SEX:		 
-			putuserrec(p->cfg,p->user->number,U_SEX,1,strupr(str));	/* single char */
+			putuserrec(p->cfg,p->usernumber,U_SEX,1,strupr(str));	/* single char */
 			break;
 		case USER_PROP_CURSUB:	 
-			putuserrec(p->cfg,p->user->number,U_CURSUB,8,strupr(str));
+			putuserrec(p->cfg,p->usernumber,U_CURSUB,8,strupr(str));
 			break;
 		case USER_PROP_CURDIR:	 
-			putuserrec(p->cfg,p->user->number,U_CURDIR,8,strupr(str));
+			putuserrec(p->cfg,p->usernumber,U_CURDIR,8,strupr(str));
 			break;
 		case USER_PROP_XEDIT: 	 
-			putuserrec(p->cfg,p->user->number,U_XEDIT,8,strupr(str));
+			putuserrec(p->cfg,p->usernumber,U_XEDIT,8,strupr(str));
 			break;
 		case USER_PROP_SHELL: 	 
-			putuserrec(p->cfg,p->user->number,U_COMP,8,strupr(str));
+			putuserrec(p->cfg,p->usernumber,U_COMP,8,strupr(str));
 			break;
 		case USER_PROP_MISC:
 			JS_ValueToInt32(cx,*vp,&val);
-			putuserrec(p->cfg,p->user->number,U_MISC,8,ultoa(val,tmp,16));
+			putuserrec(p->cfg,p->usernumber,U_MISC,8,ultoa(val,tmp,16));
 			break;
 		case USER_PROP_QWK:		 
 			JS_ValueToInt32(cx,*vp,&val);
-			putuserrec(p->cfg,p->user->number,U_QWK,8,ultoa(val,tmp,16));
+			putuserrec(p->cfg,p->usernumber,U_QWK,8,ultoa(val,tmp,16));
 			break;
 		case USER_PROP_CHAT:		 
 			JS_ValueToInt32(cx,*vp,&val);
-			putuserrec(p->cfg,p->user->number,U_CHAT,8,ultoa(val,tmp,16));
+			putuserrec(p->cfg,p->usernumber,U_CHAT,8,ultoa(val,tmp,16));
 			break;
 		case USER_PROP_TMPEXT:	 
-			putuserrec(p->cfg,p->user->number,U_TMPEXT,3,str);
+			putuserrec(p->cfg,p->usernumber,U_TMPEXT,3,str);
 			break;
 		case USER_PROP_NS_TIME:	 
 			JS_ValueToInt32(cx,*vp,&val);
-			putuserrec(p->cfg,p->user->number,U_NS_TIME,8,ultoa(val,tmp,16));
+			putuserrec(p->cfg,p->usernumber,U_NS_TIME,8,ultoa(val,tmp,16));
 			break;
 		case USER_PROP_PROT:	
-			putuserrec(p->cfg,p->user->number,U_PROT,1,strupr(str)); /* single char */
+			putuserrec(p->cfg,p->usernumber,U_PROT,1,strupr(str)); /* single char */
 			break;
 			
 		/* security properties*/
 		case USER_PROP_PASS:	
-			putuserrec(p->cfg,p->user->number,U_PASS,LEN_PASS,strupr(str));
+			putuserrec(p->cfg,p->usernumber,U_PASS,LEN_PASS,strupr(str));
 			break;
 		case USER_PROP_PWMOD:
 			JS_ValueToInt32(cx,*vp,&val);
-			putuserrec(p->cfg,p->user->number,U_PWMOD,8,ultoa(val,tmp,16));
+			putuserrec(p->cfg,p->usernumber,U_PWMOD,8,ultoa(val,tmp,16));
 			break;
 		case USER_PROP_LEVEL: 
-			putuserrec(p->cfg,p->user->number,U_LEVEL,2,str);
+			putuserrec(p->cfg,p->usernumber,U_LEVEL,2,str);
 			break;
 		case USER_PROP_FLAGS1:
 			JS_ValueToInt32(cx,*vp,&val);
-			putuserrec(p->cfg,p->user->number,U_FLAGS1,8,ultoa(val,tmp,16));
+			putuserrec(p->cfg,p->usernumber,U_FLAGS1,8,ultoa(val,tmp,16));
 			break;
 		case USER_PROP_FLAGS2:
 			JS_ValueToInt32(cx,*vp,&val);
-			putuserrec(p->cfg,p->user->number,U_FLAGS2,8,ultoa(val,tmp,16));
+			putuserrec(p->cfg,p->usernumber,U_FLAGS2,8,ultoa(val,tmp,16));
 			break;
 		case USER_PROP_FLAGS3:
 			JS_ValueToInt32(cx,*vp,&val);
-			putuserrec(p->cfg,p->user->number,U_FLAGS3,8,ultoa(val,tmp,16));
+			putuserrec(p->cfg,p->usernumber,U_FLAGS3,8,ultoa(val,tmp,16));
 			break;
 		case USER_PROP_FLAGS4:
 			JS_ValueToInt32(cx,*vp,&val);
-			putuserrec(p->cfg,p->user->number,U_FLAGS4,8,ultoa(val,tmp,16));
+			putuserrec(p->cfg,p->usernumber,U_FLAGS4,8,ultoa(val,tmp,16));
 			break;
 		case USER_PROP_EXEMPT:
 			JS_ValueToInt32(cx,*vp,&val);
-			putuserrec(p->cfg,p->user->number,U_EXEMPT,8,ultoa(val,tmp,16));
+			putuserrec(p->cfg,p->usernumber,U_EXEMPT,8,ultoa(val,tmp,16));
 			break;
 		case USER_PROP_REST:	
 			JS_ValueToInt32(cx,*vp,&val);
-			putuserrec(p->cfg,p->user->number,U_REST,8,ultoa(val,tmp,16));
+			putuserrec(p->cfg,p->usernumber,U_REST,8,ultoa(val,tmp,16));
 			break;
 		case USER_PROP_CDT:	
-			putuserrec(p->cfg,p->user->number,U_CDT,10,str);
+			putuserrec(p->cfg,p->usernumber,U_CDT,10,str);
 			break;
 		case USER_PROP_FREECDT:
-			putuserrec(p->cfg,p->user->number,U_FREECDT,10,str);
+			putuserrec(p->cfg,p->usernumber,U_FREECDT,10,str);
 			break;
 		case USER_PROP_MIN:	
-			putuserrec(p->cfg,p->user->number,U_MIN,10,str);
+			putuserrec(p->cfg,p->usernumber,U_MIN,10,str);
 			break;
 		case USER_PROP_TEXTRA:  
-			putuserrec(p->cfg,p->user->number,U_TEXTRA,5,str);
+			putuserrec(p->cfg,p->usernumber,U_TEXTRA,5,str);
 			break;
 		case USER_PROP_EXPIRE:  
 			JS_ValueToInt32(cx,*vp,&val);
-			putuserrec(p->cfg,p->user->number,U_EXPIRE,8,ultoa(val,tmp,16));
+			putuserrec(p->cfg,p->usernumber,U_EXPIRE,8,ultoa(val,tmp,16));
 			break;
 	}
 
@@ -471,6 +488,7 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 static struct JSPropertySpec js_user_properties[] = {
 /*		 name				,tinyid					,flags,				getter,	setter	*/
 
+	{	"number"			,USER_PROP_NUMBER		,USER_PROP_NUMBER,		NULL,NULL},
 	{	"alias"				,USER_PROP_ALIAS 		,USER_PROP_FLAGS,		NULL,NULL},
 	{	"name"				,USER_PROP_NAME		 	,USER_PROP_FLAGS,		NULL,NULL},
 	{	"handle"			,USER_PROP_HANDLE	 	,USER_PROP_FLAGS,		NULL,NULL},
@@ -558,7 +576,7 @@ static void js_user_finalize(JSContext *cx, JSObject *obj)
 
 	p=(private_t*)JS_GetPrivate(cx,obj);
 
-	if(p!=NULL)
+	if(p!=NULL && (scfg_t*)p!=scfg)
 		free(p);
 
 	p=NULL;
@@ -570,6 +588,7 @@ js_chk_ar(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char*		ar;
 	JSString*	js_str;
+	user_t		user;
 	private_t*	p;
 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
@@ -580,7 +599,10 @@ js_chk_ar(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	ar = arstr(NULL,JS_GetStringBytes(js_str),p->cfg);
 
-	*rval = BOOLEAN_TO_JSVAL(chk_ar(p->cfg,ar,p->user));
+	user.number=p->usernumber;
+	getuserdat(p->cfg,&user);
+
+	*rval = BOOLEAN_TO_JSVAL(chk_ar(p->cfg,ar,&user));
 
 	if(ar!=NULL && ar!=nular)
 		free(ar);
@@ -633,7 +655,49 @@ static JSClass js_user_security_class = {
 	,JS_FinalizeStub		/* finalize		*/
 };
 
-JSObject* DLLCALL js_CreateUserObject(JSContext* cx, JSObject* parent, scfg_t* cfg, char* name, user_t* user)
+/* User Constructor (creates instance of user class) */
+
+static JSBool
+js_user_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	user_t		user;
+	private_t*	p;
+
+	user.number=(ushort)(JSVAL_TO_INT(argv[0]));
+	if(getuserdat(scfg,&user)!=0)
+		return(JS_FALSE);
+
+	if((p=(private_t*)malloc(sizeof(private_t)))==NULL)
+		return(JS_FALSE);
+
+	p->cfg = scfg;
+	p->usernumber = user.number;
+
+	JS_SetPrivate(cx, obj, p);
+
+	return(JS_TRUE);
+}
+
+
+JSObject* DLLCALL js_CreateUserClass(JSContext* cx, JSObject* parent, scfg_t* cfg)
+{
+	JSObject*	userclass;
+
+	scfg = cfg;
+	userclass = JS_InitClass(cx, parent, NULL
+		,&js_user_class
+		,js_user_constructor
+		,1	/* number of constructor args */
+		,js_user_properties
+		,js_user_functions
+		,NULL,NULL);
+
+//	JS_SetPrivate(cx, userclass, cfg);	
+
+	return(userclass);
+}
+
+JSObject* DLLCALL js_CreateUserObject(JSContext* cx, JSObject* parent, scfg_t* cfg, char* name, uint usernumber)
 {
 	JSObject*	userobj;
 	JSObject*	statsobj;
@@ -644,7 +708,7 @@ JSObject* DLLCALL js_CreateUserObject(JSContext* cx, JSObject* parent, scfg_t* c
 		return(NULL);
 
 	p->cfg = cfg;
-	p->user = user;
+	p->usernumber = usernumber;
 
 	userobj = JS_DefineObject(cx, parent, name, &js_user_class, NULL, 0);
 

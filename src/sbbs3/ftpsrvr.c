@@ -2413,16 +2413,19 @@ static void ctrl_thread(void* arg)
 #ifdef JAVASCRIPT
 			JS_BeginRequest(js_cx);	/* Required for multi-thread support */
 
-			if((js_user=js_CreateUserObject(js_cx, js_glob, &scfg, "user", &user))==NULL) {
+			if(js_CreateUserClass(js_cx, js_glob, &scfg)==NULL) 
+				lprintf("%04d !JavaScript ERROR creating user class",sock);
+
+			if((js_user=js_CreateUserObject(js_cx, js_glob, &scfg, "user", user.number))==NULL) 
 				lprintf("%04d !JavaScript ERROR creating user object",sock);
-			}
-			if(js_CreateClientObject(js_cx, js_glob, "client", &client, sock)==NULL) {
+
+			if(js_CreateClientObject(js_cx, js_glob, "client", &client, sock)==NULL) 
 				lprintf("%04d !JavaScript ERROR creating client object",sock);
-			}
+
 			if(js_CreateFileAreaObject(js_cx, js_glob, &scfg, &user
-				,startup->html_index_file)==NULL) {
+				,startup->html_index_file)==NULL) 
 				lprintf("%04d !JavaScript ERROR creating file area object",sock);
-			}
+
 			JS_EndRequest(js_cx);	/* Required for multi-thread support */
 #endif
 

@@ -797,8 +797,10 @@ extern "C" {
 	DLLEXPORT JSObject* DLLCALL js_CreateClientObject(JSContext* cx, JSObject* parent
 													,char* name, client_t* client, SOCKET sock);
 	/* js_user.c */
+	DLLEXPORT JSObject*	DLLCALL js_CreateUserClass(JSContext* cx, JSObject* parent, scfg_t* cfg);
 	DLLEXPORT JSObject* DLLCALL js_CreateUserObject(JSContext* cx, JSObject* parent, scfg_t* cfg
-													,char* name, user_t* user);
+													,char* name, uint usernumber);
+
 	/* js_file_area.c */
 	DLLEXPORT JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_t* cfg 
 													,user_t* user, char* html_index_file);
