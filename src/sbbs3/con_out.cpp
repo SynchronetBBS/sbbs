@@ -217,7 +217,7 @@ void sbbs_t::outchar(char ch)
 			putcom("\x1b[2J\x1b[H");	/* clear screen, home cursor */
 		}
 		else {
-			if(ch==TELNET_IAC && !(telnet_mode&TELNET_MODE_OFF))
+			if(ch==(char)TELNET_IAC && !(telnet_mode&TELNET_MODE_OFF))
 				outcom(TELNET_IAC);	/* Must escape Telnet IAC char (255) */
 			i=0;
 			while(outcom(ch)&TXBOF && i<1440) { /* 3 minute pause delay */
