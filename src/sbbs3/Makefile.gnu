@@ -21,7 +21,8 @@ ifeq ($(os),win32)	# Windows
 
 LD		=	dllwrap
 LFILE	=	dll
-ODIR	:=	gcc.win32.dll
+LIBODIR	:=	gcc.win32.dll
+EXEODIR	:=	gcc.win32.exe
 LIBDIR	:=	/gcc/i386-mingw32/lib
 CFLAGS	:=	-mno-cygwin
 LFLAGS  :=	--target=i386-mingw32 -mno-cygwin
@@ -30,7 +31,8 @@ else	# Linux
 
 LD		=	ld
 LFILE	=	a
-ODIR	:=	lib
+LIBODIR	:=	gcc.linux.lib
+EXEODIR	:=	gcc.linux.exe
 LIBDIR	:=	/usr/lib
 CFLAGS	:=	
 LFLAGS  :=	
@@ -39,21 +41,23 @@ endif
 
 ifdef DEBUG
 CFLAGS	:=	$(CFLAGS) -g -O0 -D_DEBUG 
-ODIR	:=	$(ODIR).debug
+LIBODIR	:=	$(LIBODIR).debug
+EXEODIR	:=	$(EXEODIR).debug
 else
 LFLAGS	:=	$(LFLAGS) -S
-ODIR	:=	$(ODIR).release
+LIBODIR	:=	$(LIBODIR).release
+EXEODIR	:=	$(EXEODIR).release
 endif
 
-SBBS	=	$(ODIR)/sbbs.$(LFILE)
+SBBS	=	$(LIBODIR)/sbbs.$(LFILE)
 
-FTPSRVR	=	$(ODIR)/ftpsrvr.$(LFILE)
+FTPSRVR	=	$(LIBODIR)/ftpsrvr.$(LFILE)
 
-MAILSRVR=	$(ODIR)/mailsrvr.$(LFILE)
+MAILSRVR=	$(LIBODIR)/mailsrvr.$(LFILE)
 
-SBBSLIB	=	$(ODIR)/sbbs.a
+SBBSLIB	=	$(LIBODIR)/sbbs.a
 
-ALL: $(ODIR) $(SBBS) $(FTPSRVR) $(MAILSRVR)
+ALL: $(LIBODIR) $(SBBS) $(FTPSRVR) $(MAILSRVR)
 
 include objects.mak		# defines $(OBJS)
 include headers.mak		# defines $(HEADERS)
@@ -62,37 +66,37 @@ include sbbsdefs.mak	# defines $(SBBSDEFS)
 LIBS	=	$(LIBDIR)/libwsock32.a $(LIBDIR)/libwinmm.a
 
 # Implicit C Compile Rule for SBBS
-$(ODIR)/%.o : %.c
+$(LIBODIR)/%.o : %.c
 	$(CC) $(CFLAGS) -c $(SBBSDEFS) $< -o $@
 
 # Implicit C++ Compile Rule for SBBS
-$(ODIR)/%.o : %.cpp
+$(LIBODIR)/%.o : %.cpp
 	$(CC) $(CFLAGS) -c $(SBBSDEFS) $< -o $@
 
 # Create output directory
-$(ODIR):
-	mkdir $(ODIR)
+$(LIBODIR):
+	mkdir $(LIBODIR)
 
 # SBBS Link Rule
-$(SBBS): $(OBJS) $(ODIR)/ver.o
+$(SBBS): $(OBJS) $(LIBODIR)/ver.o
 	$(LD) $(LFLAGS) -o $@ $^ $(LIBS) --output-lib $(SBBSLIB)
 
 # FTP Server Link Rule
-$(FTPSRVR): $(ODIR)/ftpsrvr.o $(SBBSLIB)
-	$(LD) $(LFLAGS) -o $@ $^ $(LIBS) --output-lib $(ODIR)/ftpsrvr.a
+$(FTPSRVR): $(LIBODIR)/ftpsrvr.o $(SBBSLIB)
+	$(LD) $(LFLAGS) -o $@ $^ $(LIBS) --output-lib $(LIBODIR)/ftpsrvr.a
 
 # Mail Server Link Rule
-$(MAILSRVR): $(ODIR)/mailsrvr.o $(ODIR)/mxlookup.o $(SBBSLIB)
-	$(LD) $(LFLAGS) -o $@ $^ $(LIBS) --output-lib $(ODIR)/mailsrvr.a
+$(MAILSRVR): $(LIBODIR)/mailsrvr.o $(LIBODIR)/mxlookup.o $(SBBSLIB)
+	$(LD) $(LFLAGS) -o $@ $^ $(LIBS) --output-lib $(LIBODIR)/mailsrvr.a
 
 # Specifc Compile Rules
-$(ODIR)/ftpsrvr.o: ftpsrvr.c ftpsrvr.h
+$(LIBODIR)/ftpsrvr.o: ftpsrvr.c ftpsrvr.h
 	$(CC) $(CFLAGS) -c -DFTPSRVR_EXPORTS $< -o $@
 
-$(ODIR)/mailsrvr.o: mailsrvr.c mailsrvr.h
+$(LIBODIR)/mailsrvr.o: mailsrvr.c mailsrvr.h
 	$(CC) $(CFLAGS) -c -DMAILSRVR_EXPORTS $< -o $@
 
-$(ODIR)/mxlookup.o: mxlookup.c
+$(LIBODIR)/mxlookup.o: mxlookup.c
 	$(CC) $(CFLAGS) -c -DMAILSRVR_EXPORTS $< -o $@		
 
 include depends.mak

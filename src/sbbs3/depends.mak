@@ -4,80 +4,85 @@
 
 # $Id$
 
-# ODIR, SLASH, and OFILE must be pre-defined
+# LIBODIR, EXEODIR, SLASH, and OFILE must be pre-defined
 
-$(ODIR)$(SLASH)answer.$(OFILE):		$(HEADERS)
-$(ODIR)$(SLASH)ars.$(OFILE):			$(HEADERS) ars_defs.h
-$(ODIR)$(SLASH)bat_xfer.$(OFILE):    	$(HEADERS)
-$(ODIR)$(SLASH)bulkmail.$(OFILE):    	$(HEADERS)
-$(ODIR)$(SLASH)chk_ar.$(OFILE):		$(HEADERS) ars_defs.h
-$(ODIR)$(SLASH)atcodes.$(OFILE):		$(HEADERS) cmdshell.h
-$(ODIR)$(SLASH)chat.$(OFILE):        	$(HEADERS)
-$(ODIR)$(SLASH)comio.$(OFILE):       	$(HEADERS)
-$(ODIR)$(SLASH)con_hi.$(OFILE):      	$(HEADERS)
-$(ODIR)$(SLASH)con_out.$(OFILE):     	$(HEADERS)
-$(ODIR)$(SLASH)data.$(OFILE):        	$(HEADERS)
-$(ODIR)$(SLASH)data_ovl.$(OFILE):    	$(HEADERS)
-$(ODIR)$(SLASH)date_str.$(OFILE):    	$(HEADERS)
-$(ODIR)$(SLASH)download.$(OFILE):    	$(HEADERS)
-$(ODIR)$(SLASH)email.$(OFILE):			$(HEADERS) cmdshell.h
-$(ODIR)$(SLASH)exec.$(OFILE):			$(HEADERS) cmdshell.h
-$(ODIR)$(SLASH)execfile.$(OFILE):		$(HEADERS) cmdshell.h
-$(ODIR)$(SLASH)execfunc.$(OFILE):		$(HEADERS) cmdshell.h
-$(ODIR)$(SLASH)execmisc.$(OFILE):		$(HEADERS) cmdshell.h
-$(ODIR)$(SLASH)execmsg.$(OFILE):		$(HEADERS) cmdshell.h
-$(ODIR)$(SLASH)fido.$(OFILE):        	$(HEADERS)
-$(ODIR)$(SLASH)file.$(OFILE):        	$(HEADERS)
-$(ODIR)$(SLASH)filedat.$(OFILE):    	$(HEADERS)
-$(ODIR)$(SLASH)getkey.$(OFILE):    	$(HEADERS)
-$(ODIR)$(SLASH)getmsg.$(OFILE):    	$(HEADERS)
-$(ODIR)$(SLASH)getnode.$(OFILE):		$(HEADERS)
-$(ODIR)$(SLASH)getstr.$(OFILE):    	$(HEADERS)
-$(ODIR)$(SLASH)inkey.$(OFILE):    		$(HEADERS)
-$(ODIR)$(SLASH)listfile.$(OFILE):		$(HEADERS)
-$(ODIR)$(SLASH)load_cfg.$(OFILE):		$(HEADERS)
-$(ODIR)$(SLASH)logfile.$(OFILE):		$(HEADERS)
-$(ODIR)$(SLASH)login.$(OFILE):			$(HEADERS)
-$(ODIR)$(SLASH)logon.$(OFILE):    		$(HEADERS) cmdshell.h
-$(ODIR)$(SLASH)logout.$(OFILE):		$(HEADERS)
-$(ODIR)$(SLASH)lzh.$(OFILE):			$(HEADERS)
-$(ODIR)$(SLASH)mail.$(OFILE):	       	$(HEADERS)
-$(ODIR)$(SLASH)main.$(OFILE):        	$(HEADERS) cmdshell.h
-$(ODIR)$(SLASH)misc.$(OFILE):        	$(HEADERS) ars_defs.h crc32.h
-$(ODIR)$(SLASH)msgtoqwk.$(OFILE):		$(HEADERS) qwk.h
-$(ODIR)$(SLASH)netmail.$(OFILE):     	$(HEADERS) qwk.h
-$(ODIR)$(SLASH)newuser.$(OFILE):		$(HEADERS)
-$(ODIR)$(SLASH)pack_qwk.$(OFILE):		$(HEADERS) qwk.h post.h
-$(ODIR)$(SLASH)pack_rep.$(OFILE):		$(HEADERS) qwk.h post.h
-$(ODIR)$(SLASH)postmsg.$(OFILE):     	$(HEADERS)
-$(ODIR)$(SLASH)prntfile.$(OFILE):     	$(HEADERS)
-$(ODIR)$(SLASH)putmsg.$(OFILE):		$(HEADERS)
-$(ODIR)$(SLASH)putnode.$(OFILE):		$(HEADERS)
-$(ODIR)$(SLASH)qwk.$(OFILE):			$(HEADERS) qwk.h post.h
-$(ODIR)$(SLASH)qwktomsg.$(OFILE):		$(HEADERS) qwk.h
-$(ODIR)$(SLASH)readmail.$(OFILE):     	$(HEADERS)
-$(ODIR)$(SLASH)readmsgs.$(OFILE):		$(HEADERS) post.h
-$(ODIR)$(SLASH)ringbuf.$(OFILE):		$(HEADERS)
-$(ODIR)$(SLASH)scandirs.$(OFILE):    	$(HEADERS)
-$(ODIR)$(SLASH)scansubs.$(OFILE):    	$(HEADERS)
-$(ODIR)$(SLASH)scfglib1.$(OFILE):    	$(HEADERS) scfglib.h
-$(ODIR)$(SLASH)scfglib2.$(OFILE):    	$(HEADERS) scfglib.h
-$(ODIR)$(SLASH)smblib.$(OFILE):    	$(HEADERS)
-$(ODIR)$(SLASH)sortdir.$(OFILE):    	$(HEADERS)
-$(ODIR)$(SLASH)str.$(OFILE):         	$(HEADERS)
-$(ODIR)$(SLASH)telgate.$(OFILE):		$(HEADERS)
-$(ODIR)$(SLASH)telmet.$(OFILE):		$(HEADERS)
-$(ODIR)$(SLASH)text_sec.$(OFILE):		$(HEADERS)
-$(ODIR)$(SLASH)tmp_xfer.$(OFILE):		$(HEADERS)
-$(ODIR)$(SLASH)un_qwk.$(OFILE):		$(HEADERS) qwk.h
-$(ODIR)$(SLASH)un_rep.$(OFILE):		$(HEADERS) qwk.h
-$(ODIR)$(SLASH)upload.$(OFILE):		$(HEADERS)
-$(ODIR)$(SLASH)userdat.$(OFILE):		$(HEADERS)
-$(ODIR)$(SLASH)useredit.$(OFILE):    	$(HEADERS)
-$(ODIR)$(SLASH)getuser.$(OFILE):		$(HEADERS)
-$(ODIR)$(SLASH)ver.$(OFILE):			$(HEADERS) $(OBJS)
-$(ODIR)$(SLASH)viewfile.$(OFILE):		$(HEADERS)
-$(ODIR)$(SLASH)wrappers.$(OFILE):     	$(HEADERS)
-$(ODIR)$(SLASH)writemsg.$(OFILE):     	$(HEADERS)
-$(ODIR)$(SLASH)xtrn.$(OFILE):        	$(HEADERS) cmdshell.h
-$(ODIR)$(SLASH)xtrn_sec.$(OFILE):    	$(HEADERS)
+$(LIBODIR)$(SLASH)answer.$(OFILE):		$(HEADERS)
+$(LIBODIR)$(SLASH)ars.$(OFILE):			$(HEADERS) ars_defs.h
+$(LIBODIR)$(SLASH)bat_xfer.$(OFILE):	$(HEADERS)
+$(LIBODIR)$(SLASH)bulkmail.$(OFILE):	$(HEADERS)
+$(LIBODIR)$(SLASH)chk_ar.$(OFILE):		$(HEADERS) ars_defs.h
+$(LIBODIR)$(SLASH)atcodes.$(OFILE):		$(HEADERS) cmdshell.h
+$(LIBODIR)$(SLASH)chat.$(OFILE):		$(HEADERS)
+$(LIBODIR)$(SLASH)comio.$(OFILE):		$(HEADERS)
+$(LIBODIR)$(SLASH)con_hi.$(OFILE):		$(HEADERS)
+$(LIBODIR)$(SLASH)con_out.$(OFILE):		$(HEADERS)
+$(LIBODIR)$(SLASH)data.$(OFILE):		$(HEADERS)
+$(LIBODIR)$(SLASH)data_ovl.$(OFILE):	$(HEADERS)
+$(LIBODIR)$(SLASH)date_str.$(OFILE):	$(HEADERS)
+$(LIBODIR)$(SLASH)download.$(OFILE):	$(HEADERS)
+$(LIBODIR)$(SLASH)email.$(OFILE):		$(HEADERS) cmdshell.h
+$(LIBODIR)$(SLASH)exec.$(OFILE):		$(HEADERS) cmdshell.h
+$(LIBODIR)$(SLASH)execfile.$(OFILE):	$(HEADERS) cmdshell.h
+$(LIBODIR)$(SLASH)execfunc.$(OFILE):	$(HEADERS) cmdshell.h
+$(LIBODIR)$(SLASH)execmisc.$(OFILE):	$(HEADERS) cmdshell.h
+$(LIBODIR)$(SLASH)execmsg.$(OFILE):		$(HEADERS) cmdshell.h
+$(LIBODIR)$(SLASH)fido.$(OFILE):		$(HEADERS)
+$(LIBODIR)$(SLASH)file.$(OFILE):      	$(HEADERS)
+$(LIBODIR)$(SLASH)filedat.$(OFILE):		$(HEADERS)
+$(LIBODIR)$(SLASH)getkey.$(OFILE):    	$(HEADERS)
+$(LIBODIR)$(SLASH)getmsg.$(OFILE):    	$(HEADERS)
+$(LIBODIR)$(SLASH)getnode.$(OFILE):		$(HEADERS)
+$(LIBODIR)$(SLASH)getstr.$(OFILE):    	$(HEADERS)
+$(LIBODIR)$(SLASH)inkey.$(OFILE):    	$(HEADERS)
+$(LIBODIR)$(SLASH)listfile.$(OFILE):	$(HEADERS)
+$(LIBODIR)$(SLASH)load_cfg.$(OFILE):	$(HEADERS)
+$(LIBODIR)$(SLASH)logfile.$(OFILE):		$(HEADERS)
+$(LIBODIR)$(SLASH)login.$(OFILE):		$(HEADERS)
+$(LIBODIR)$(SLASH)logon.$(OFILE):    	$(HEADERS) cmdshell.h
+$(LIBODIR)$(SLASH)logout.$(OFILE):		$(HEADERS)
+$(LIBODIR)$(SLASH)lzh.$(OFILE):			$(HEADERS)
+$(LIBODIR)$(SLASH)mail.$(OFILE):	    $(HEADERS)
+$(LIBODIR)$(SLASH)main.$(OFILE):		$(HEADERS) cmdshell.h
+$(LIBODIR)$(SLASH)misc.$(OFILE):		$(HEADERS) ars_defs.h crc32.h
+$(LIBODIR)$(SLASH)msgtoqwk.$(OFILE):	$(HEADERS) qwk.h
+$(LIBODIR)$(SLASH)netmail.$(OFILE):		$(HEADERS) qwk.h
+$(LIBODIR)$(SLASH)newuser.$(OFILE):		$(HEADERS)
+$(LIBODIR)$(SLASH)pack_qwk.$(OFILE):	$(HEADERS) qwk.h post.h
+$(LIBODIR)$(SLASH)pack_rep.$(OFILE):	$(HEADERS) qwk.h post.h
+$(LIBODIR)$(SLASH)postmsg.$(OFILE):		$(HEADERS)
+$(LIBODIR)$(SLASH)prntfile.$(OFILE):	$(HEADERS)
+$(LIBODIR)$(SLASH)putmsg.$(OFILE):		$(HEADERS)
+$(LIBODIR)$(SLASH)putnode.$(OFILE):		$(HEADERS)
+$(LIBODIR)$(SLASH)qwk.$(OFILE):			$(HEADERS) qwk.h post.h
+$(LIBODIR)$(SLASH)qwktomsg.$(OFILE):	$(HEADERS) qwk.h
+$(LIBODIR)$(SLASH)readmail.$(OFILE):	$(HEADERS)
+$(LIBODIR)$(SLASH)readmsgs.$(OFILE):	$(HEADERS) post.h
+$(LIBODIR)$(SLASH)ringbuf.$(OFILE):		$(HEADERS)
+$(LIBODIR)$(SLASH)scandirs.$(OFILE):	$(HEADERS)
+$(LIBODIR)$(SLASH)scansubs.$(OFILE):	$(HEADERS)
+$(LIBODIR)$(SLASH)scfglib1.$(OFILE):	$(HEADERS) scfglib.h
+$(LIBODIR)$(SLASH)scfglib2.$(OFILE):	$(HEADERS) scfglib.h
+$(LIBODIR)$(SLASH)smblib.$(OFILE):    	smblib.h smbdefs.h
+$(EXEODIR)$(SLASH)smblib.$(OFILE):    	smblib.h smbdefs.h
+$(LIBODIR)$(SLASH)smbtxt.$(OFILE):   	smblib.h lzh.h
+$(EXEODIR)$(SLASH)smbtxt.$(OFILE):   	smblib.h lzh.h
+$(LIBODIR)$(SLASH)smbwrap.$(OFILE):   	smbwrap.h
+$(EXEODIR)$(SLASH)smbwrap.$(OFILE):   	smbwrap.h
+$(LIBODIR)$(SLASH)sortdir.$(OFILE):		$(HEADERS)
+$(LIBODIR)$(SLASH)str.$(OFILE):			$(HEADERS)
+$(LIBODIR)$(SLASH)telgate.$(OFILE):		$(HEADERS)
+$(LIBODIR)$(SLASH)telmet.$(OFILE):		$(HEADERS)
+$(LIBODIR)$(SLASH)text_sec.$(OFILE):	$(HEADERS)
+$(LIBODIR)$(SLASH)tmp_xfer.$(OFILE):	$(HEADERS)
+$(LIBODIR)$(SLASH)un_qwk.$(OFILE):		$(HEADERS) qwk.h
+$(LIBODIR)$(SLASH)un_rep.$(OFILE):		$(HEADERS) qwk.h
+$(LIBODIR)$(SLASH)upload.$(OFILE):		$(HEADERS)
+$(LIBODIR)$(SLASH)userdat.$(OFILE):		$(HEADERS)
+$(LIBODIR)$(SLASH)useredit.$(OFILE):	$(HEADERS)
+$(LIBODIR)$(SLASH)getuser.$(OFILE):		$(HEADERS)
+$(LIBODIR)$(SLASH)ver.$(OFILE):			$(HEADERS) $(OBJS)
+$(LIBODIR)$(SLASH)viewfile.$(OFILE):	$(HEADERS)
+$(LIBODIR)$(SLASH)wrappers.$(OFILE):	$(HEADERS)
+$(LIBODIR)$(SLASH)writemsg.$(OFILE):	$(HEADERS)
+$(LIBODIR)$(SLASH)xtrn.$(OFILE):		$(HEADERS) cmdshell.h
+$(LIBODIR)$(SLASH)xtrn_sec.$(OFILE):	$(HEADERS)
