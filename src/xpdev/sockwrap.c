@@ -196,6 +196,8 @@ BOOL socket_check(SOCKET sock, BOOL* rd_p, BOOL* wr_p, DWORD timeout)
 		wr_set_p=&wr_set;
 		FD_ZERO(wr_set_p);
 		FD_SET(sock,wr_set_p);
+		if(rd_p==NULL)
+			FD_CLR(sock,&rd_set);
 	}
 
 	/* Convert timeout from ms to sec/usec */
