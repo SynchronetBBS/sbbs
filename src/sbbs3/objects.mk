@@ -84,6 +84,7 @@ OBJS	=	$(MTOBJODIR)$(DIRSEP)ansiterm$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)scfglib1$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)scfglib2$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)scfgsave$(OFILE)\
+			$(MTOBJODIR)$(DIRSEP)semfile$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)sockopts$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)sortdir$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)str$(OFILE)\

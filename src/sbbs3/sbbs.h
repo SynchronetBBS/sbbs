@@ -116,6 +116,7 @@
 #include "dirwrap.h"
 #include "filewrap.h"
 #include "sockwrap.h"
+#include "link_list.h"
 
 #include "smblib.h"
 #include "ars_defs.h"
@@ -877,6 +878,13 @@ extern "C" {
 	/* xtrn.cpp */
 	DLLEXPORT char*		DLLCALL cmdstr(scfg_t* cfg, user_t* user, const char* instr
 									,const char* fpath, const char* fspec, char* cmd);
+
+	/* semfile.c */
+	DLLEXPORT BOOL		DLLCALL semfile_check(time_t* t, const char* fname);
+	DLLEXPORT char*		DLLCALL semfile_list_check(time_t* t, link_list_t* filelist);
+	DLLEXPORT void		DLLCALL semfile_list_init(link_list_t* filelist, const char* parent, 
+								   const char* action, const char* hostname, const char* service);
+
 
 #ifdef JAVASCRIPT
 
