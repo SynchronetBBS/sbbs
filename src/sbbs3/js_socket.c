@@ -783,13 +783,13 @@ static char* socket_prop_desc[SOCK_PROPERTIES+1] = {
 	,"<i>true</i> if data is waiting to be read - <small>READ ONLY</small>"
 	,"number of bytes waiting to be read - <small>READ ONLY</small>"
 	,"enable debug logging"
-	,"socket descriptor"
+	,"socket descriptor (advanced uses only)"
 	,"use non-blocking operation (default is <i>false</i>)"
 	,"local IP address (in dotted-decimal format)"
 	,"local TCP or UDP port number"
 	,"remote IP address (in dotted-decimal format)"
 	,"remote TCP or UDP port number"
-	,"socket type, SOCK_STREAM (TCP) or SOCK_DGRAM (UDP)"
+	,"socket type, <tt>SOCK_STREAM</tt> (TCP) or <tt>SOCK_DGRAM</tt> (UDP)"
 	,NULL
 };
 #endif
@@ -1088,8 +1088,8 @@ JSObject* DLLCALL js_CreateSocketObject(JSContext* cx, JSObject* parent, char *n
 	js_DescribeObject(cx,obj,"Instance of <i>Socket</i> class, "
 		"used for TCP/IP socket communications");
 	js_DescribeConstructor(cx,obj,"To create a new Socket object: "
-		"<tt>load('sockdefs.js'); var s = new Socket(type)</tt><br>"
-		"where type = <tt>SOCK_STREAM</tt> for TCP (default) or <tt>SOCK_DGRAM</tt> for UDP");
+		"<tt>load('sockdefs.js'); var s = new Socket(<i>type</i>)</tt><br>"
+		"where <i>type</i> = <tt>SOCK_STREAM</tt> for TCP (default) or <tt>SOCK_DGRAM</tt> for UDP");
 	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", socket_prop_desc, JSPROP_READONLY);
 #endif
 

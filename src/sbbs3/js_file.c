@@ -837,16 +837,15 @@ static char* file_prop_desc[] = {
 
 static jsMethodSpec js_file_functions[] = {
 	{"open",			js_open,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("[string mode, boolean shareable, number buflen]")
-	,JSDOCSTR("open file, <i>shareable</i> defaults to <i>false</i>, <i>buflen</i> defaults to 2048 bytes,<br>"
-		"mode (default: <tt>w+</tt>)specifies the type of access requested for the file, as follows:<br>"
-		"<tt>r&nbsp</tt> opens for reading. If the file does not exist or cannot be found, the open call fails.<br>"
-		"<tt>w&nbsp</tt> opens an empty file for writing. If the given file exists, its contents are destroyed.<br>"
-		"<tt>a&nbsp</tt> opens for writing at the end of the file (appending); creates the file first if it doesn’t exist.<br>"
-		"<tt>r+</tt> opens for both reading and writing. (The file must exist.)<br>"
-		"<tt>w+</tt> opens an empty file for both reading and writing. If the given file exists, its contents are destroyed.<br>"
-		"<tt>a+</tt> opens for reading and appending<br>"
-		"<tt>b&nbsp</tt> open in binary (untranslated) mode; translations involving carriage-return and linefeed characters are suppressed (e.g. <tt>r+b</tt>).<br>"
-		"returns <i>true</i> on success"
+	,JSDOCSTR("open file, <i>shareable</i> defaults to <i>false</i>, <i>buflen</i> defaults to 2048 bytes, "
+		"mode (default: <tt>w+</tt>) specifies the type of access requested for the file, as follows:<br>"
+		"<tt>r&nbsp</tt> open for reading; if the file does not exist or cannot be found, the open call fails<br>"
+		"<tt>w&nbsp</tt> open an empty file for writing; if the given file exists, its contents are destroyed<br>"
+		"<tt>a&nbsp</tt> open for writing at the end of the file (appending); creates the file first if it doesn’t exist<br>"
+		"<tt>r+</tt> open for both reading and writing (the file must exist)<br>"
+		"<tt>w+</tt> open an empty file for both reading and writing; if the given file exists, its contents are destroyed<br>"
+		"<tt>a+</tt> open for reading and appending<br>"
+		"<tt>b&nbsp</tt> open in binary (untranslated) mode; translations involving carriage-return and linefeed characters are suppressed (e.g. <tt>r+b</tt>)<br>"
 		)
 	},		
 	{"close",			js_close,			0,	JSTYPE_VOID,	""
@@ -965,7 +964,7 @@ js_file_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval
 
 #ifdef _DEBUG
 	js_DescribeObject(cx,obj,"Class used for opening/creating files on the local file system");
-	js_DescribeConstructor(cx,obj,"To create a new file object: <tt>var f = new File(filename)</tt>");
+	js_DescribeConstructor(cx,obj,"To create a new File object: <tt>var f = new File(filename)</tt>");
 	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", file_prop_desc, JSPROP_READONLY);
 #endif
 
