@@ -49,6 +49,8 @@ typedef struct {
 extern "C" {
 #endif
 
+char**		iniReadSectionList(FILE* fp);
+char**		iniReadKeyList	(FILE* fp, const char* section);
 char*		iniReadString	(FILE* fp, const char* section, const char* key, 
 							 const char* deflt);
 char**		iniReadStringList(FILE* fp, const char* section, const char* key

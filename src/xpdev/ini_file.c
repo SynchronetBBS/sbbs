@@ -65,7 +65,7 @@ static BOOL find_section(FILE* fp, const char* section)
 	rewind(fp);
 
 	while(!feof(fp)) {
-		if(fgets(str,sizeof(str)-1,fp)==NULL)
+		if(fgets(str,sizeof(str),fp)==NULL)
 			break;
 		p=str;
 		while(*p && *p<=' ') p++;
@@ -96,7 +96,7 @@ static char* get_value(FILE* fp, const char* section, const char* key)
 		return(NULL);
 
 	while(!feof(fp)) {
-		if(fgets(str,sizeof(str)-1,fp)==NULL)
+		if(fgets(str,sizeof(str),fp)==NULL)
 			break;
 		p=str;
 		while(*p && *p<=' ') p++;
@@ -182,6 +182,100 @@ char** iniFreeStringList(char** list)
 
 	free(list);
 	return(NULL);
+}
+
+char** iniReadSectionList(FILE* fp)
+{
+	char*	p;
+	char*	tp;
+	char**	lp;
+	char**	np;
+	char	str[MAX_LINE_LEN];
+	ulong	items=0;
+
+	if((lp=malloc(sizeof(char*)))==NULL)
+		return(NULL);
+
+	*lp=NULL;
+
+	if(fp==NULL)
+		return(lp);
+
+	rewind(fp);
+
+	while(!feof(fp)) {
+		if(fgets(str,sizeof(str),fp)==NULL)
+			break;
+		p=str;
+		while(*p && *p<=' ') p++;
+		if(*p!='[')
+			continue;
+		p++;
+		tp=strchr(p,']');
+		if(tp==NULL)
+			continue;
+		*tp=0;
+		if((np=realloc(lp,sizeof(char*)*(items+2)))==NULL)
+			break;
+		lp=np;
+		if((lp[items]=malloc(strlen(p)+1))==NULL)
+			break;
+		strcpy(lp[items++],p);
+	}
+
+	lp[items]=NULL;	/* terminate list */
+
+	return(lp);
+}
+
+char** iniReadKeyList(FILE* fp, const char* section)
+{
+
+	char*	p;
+	char*	tp;
+	char**	lp;
+	char**	np;
+	char	str[MAX_LINE_LEN];
+	ulong	items=0;
+
+	if((lp=malloc(sizeof(char*)))==NULL)
+		return(NULL);
+
+	*lp=NULL;
+
+	if(fp==NULL)
+		return(lp);
+
+	rewind(fp);
+
+	if(!find_section(fp,section))
+		return(lp);
+
+	while(!feof(fp)) {
+		if(fgets(str,sizeof(str),fp)==NULL)
+			break;
+		p=str;
+		while(*p && *p<=' ') p++;
+		if(*p==';')
+			continue;
+		if(*p=='[')
+			break;
+		tp=strchr(p,'=');
+		if(tp==NULL)
+			continue;
+		*tp=0;
+		truncsp(p);
+		if((np=realloc(lp,sizeof(char*)*(items+2)))==NULL)
+			break;
+		lp=np;
+		if((lp[items]=malloc(strlen(p)+1))==NULL)
+			break;
+		strcpy(lp[items++],p);
+	}
+
+	lp[items]=NULL;	/* terminate list */
+
+	return(lp);
 }
 
 long iniReadInteger(FILE* fp, const char* section, const char* key, long deflt)
