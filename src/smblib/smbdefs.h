@@ -275,6 +275,11 @@
 #define USENETPATH			0xc0
 #define USENETNEWSGROUPS	0xc1
 
+#define SMTPCOMMAND			0xd0		/* Aribtrary SMTP command */
+#define SMTPREVERSEPATH		0xd1		/* MAIL FROM: reverse path */
+
+#define SMTPSYSMSG			0xd8		/* for delivery failure notification */
+
 #define UNKNOWN 			0xf1
 #define UNKNOWNASCII		0xf2
 #define UNUSED				0xff
@@ -351,7 +356,9 @@ enum {
 
 enum {
      AGENT_PERSON
-    ,AGENT_PROCESS
+    ,AGENT_PROCESS			/* unknown process type */
+	,AGENT_SMBUTIL			/* imported via Synchronet SMBUTIL */
+	,AGENT_SMTPSYSMSG		/* Synchronet SMTP server system message */
 
 /* Add new ones here */
 
@@ -503,6 +510,7 @@ typedef struct {				// Message
 				*replyto_ext,	// Reply-to extension */
 				*id,			// RFC822 Message-ID
 				*reply_id,		// RFC822 Reply-ID
+				*reverse_path,	// SMTP reverse-path
 				*path,			// USENET Path
 				*newsgroups,	// USENET Newsgroups
 				*ftn_pid,		// FTN PID
