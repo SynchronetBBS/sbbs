@@ -1086,7 +1086,6 @@ js_useredit(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	return(JS_TRUE);
 }
 
-
 static JSBool
 js_logonlist(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
@@ -1143,6 +1142,112 @@ js_spy(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	return(JS_TRUE);
 }
 
+static JSBool
+js_readmail(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	int			readwhich=MAIL_YOUR;
+	uint		usernumber;
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	usernumber=sbbs->useron.number;
+	if(argc>0)
+		readwhich=JSVAL_TO_INT(argv[0]);
+	if(argc>1)
+		usernumber=JSVAL_TO_INT(argv[1]);
+
+	sbbs->readmail(usernumber,readwhich);
+
+	*rval = JSVAL_VOID;
+	return(JS_TRUE);
+}
+
+static JSBool
+js_email(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	uint		usernumber;
+	long		mode=WM_EMAIL;
+	char*		top="";
+	char*		subj="";
+	JSString*	js_top=NULL;
+	JSString*	js_subj=NULL;
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	usernumber=JSVAL_TO_INT(argv[0]);
+	for(uintN i=1;i<argc;i++) {
+		if(JSVAL_IS_INT(argv[i]))
+			mode=JSVAL_TO_INT(argv[i]);
+		else if(JSVAL_IS_STRING(argv[i]) && js_top==NULL)
+			js_top=JS_ValueToString(cx,argv[i]);
+		else if(JSVAL_IS_STRING(argv[i]))
+			js_subj=JS_ValueToString(cx,argv[i]);
+	}
+
+	if(js_top!=NULL)
+		top=JS_GetStringBytes(js_top);
+	if(js_subj!=NULL)
+		subj=JS_GetStringBytes(js_subj);
+
+	*rval = BOOLEAN_TO_JSVAL(sbbs->email(usernumber,top,subj,mode));
+	return(JS_TRUE);
+}
+static JSBool
+js_netmail(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	long		mode=0;
+	char*		subj="";
+	JSString*	js_to;
+	JSString*	js_subj=NULL;
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	if((js_to=JS_ValueToString(cx, argv[0]))==NULL)
+		return(JS_FALSE);
+
+	for(uintN i=1;i<argc;i++) {
+		if(JSVAL_IS_INT(argv[i]))
+			mode=JSVAL_TO_INT(argv[i]);
+		else if(JSVAL_IS_STRING(argv[i]))
+			js_subj=JS_ValueToString(cx,argv[i]);
+	}
+
+	if(js_subj!=NULL)
+		subj=JS_GetStringBytes(js_subj);
+
+	*rval = BOOLEAN_TO_JSVAL(sbbs->netmail(JS_GetStringBytes(js_to),subj,mode));
+	return(JS_TRUE);
+}
+
+static JSBool
+js_bulkmail(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	uchar*		ar=(uchar*)"";
+	JSString*	js_ars=NULL;
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	if(argc) {
+		if((js_ars=JS_ValueToString(cx, argv[0]))==NULL)
+			return(JS_FALSE);
+
+		ar=arstr(NULL,JS_GetStringBytes(js_ars), &sbbs->cfg);
+	}
+	sbbs->bulkmail(ar);
+	if(ar && ar[0])
+		FREE(ar);
+
+	*rval = JSVAL_VOID;
+	return(JS_TRUE);
+}
 
 static JSBool
 js_telnet_gate(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
@@ -1355,6 +1460,10 @@ static JSFunctionSpec js_bbs_functions[] = {
 	{"userlist",		js_userlist,		0},		// user list
 	{"useredit",		js_useredit,		0},		// user edit
 	{"logonlist",		js_logonlist,		0},		// logon list
+	{"readmail",		js_readmail,		0},		// read private mail
+	{"email",			js_email,			1},		// send private e-mail
+	{"netmail",			js_netmail,			1},		// send private netmail
+	{"bulkmail",		js_bulkmail,		0},		// send bulk private e-mail
 	/* menuing */
 	{"menu",			js_menu,			1},		// show menu
 	{"log_key",			js_logkey,			1},		// log key to node.log (comma optional)
