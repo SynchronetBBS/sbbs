@@ -752,7 +752,6 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 						if(use_pipes) {
 							/* echo */
 							RingBufWrite(&outbuf, bp, wr);
-							sem_post(&output_sem);
 						}
 					} else		// VDD not loaded yet
 						wr=0;
@@ -813,7 +812,6 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 						rd=RingBufFree(&outbuf);
 					}
 					RingBufWrite(&outbuf, bp, rd);
-					sem_post(&output_sem);
 				}
 			} else {	// Windows 9x
 
@@ -884,7 +882,6 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 						rd=RingBufFree(&outbuf);
 					}
 					RingBufWrite(&outbuf, bp, rd);
-					sem_post(&output_sem);
 				}
 			}
             if(!rd && !wr) {
@@ -1382,7 +1379,6 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 			}
 	
 			RingBufWrite(&outbuf, bp, output_len);
-			sem_post(&output_sem);	
 		}
 
 		if(waitpid(pid, &i, WNOHANG)==0)  {		// Child still running? 

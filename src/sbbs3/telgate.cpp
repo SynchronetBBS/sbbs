@@ -191,7 +191,6 @@ void sbbs_t::telnet_gate(char* destaddr, ulong mode)
 					buf[rd++]='\n';
 				if(!gotline && mode&TG_ECHO) {
 					RingBufWrite(&outbuf,buf,rd);
-					sem_post(&output_sem);
 				}
 			}
 			for(attempts=0;attempts<60 && online; attempts++) /* added retry loop here, Jan-20-2003 */
@@ -229,7 +228,6 @@ void sbbs_t::telnet_gate(char* destaddr, ulong mode)
 			break;
 		}
 		RingBufWrite(&outbuf,buf,rd);
-		sem_post(&output_sem);
 	}
 	console&=~CON_RAW_IN;
 	telnet_mode&=~TELNET_MODE_GATE;
