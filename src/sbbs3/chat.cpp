@@ -1718,7 +1718,8 @@ void sbbs_t::localguru(char *gurubuf, int gurunum)
 	thisnode.aux=gurunum;
 	putnodedat(cfg.node_num,&thisnode);
 	attr(cfg.color[clr_chatlocal]);
-	guruchat("HELLO",gurubuf,gurunum);
+	strcpy(str,"HELLO");
+	guruchat(str,gurubuf,gurunum);
 	while(online && (sys_status&SS_GURUCHAT)) {
 		checkline();
 		action=NODE_GCHT;
