@@ -83,49 +83,82 @@ long DLLCALL filelength(int fd)
 
 /* Sets a lock on a portion of a file */
 #ifdef __QNX__
-int DLLCALL lock(int fd, long pos, long len)
+int DLLCALL lock(int file, long offset, long len)
+{    
+#if 0
+	int		i;
+	long	pos;
+
+    pos=tell(file);
+    if(offset!=pos)
+        lseek(file, offset, SEEK_SET);
+    i=lockf(file,F_TLOCK,len);
+    if(offset!=pos)
+        lseek(file, pos, SEEK_SET);
+
+    return(i);
 #else
-int DLLCALL lock(int fd, long pos, int len)
-#endif
-{
-#if defined(F_SANERDLCKNO) || !defined(BSD)
- 	struct flock alock;
-
-#ifndef F_SANEWRLCKNO
-	int	flags;
-	if((flags=fcntl(fd,F_GETFL))==-1)
-		return -1;
-
-	if(flags==O_RDONLY)
-		alock.l_type = F_RDLCK; /* set read lock to prevent writes */
-	else
-		alock.l_type = F_WRLCK; /* set write lock to prevent all access */
-#else
-	alock.l_type = F_SANEWRLCKNO;
-#endif
-	alock.l_whence = L_SET;		/* SEEK_SET */
-	alock.l_start = pos;
-	alock.l_len = (int)len;
-
-	if(fcntl(fd, F_SETLK, &alock)==-1)
-		return(-1);
-#endif
-
-#ifndef F_SANEWRLCKNO
-	/* use flock (doesn't work over NFS) */
-	if(flock(fd,LOCK_EX|LOCK_NB)!=0)
-		return(-1);
-#endif
-
 	return(0);
+#endif
 }
+#else	/* Not QNX */
+int DLLCALL lock(int fd, long pos, int len)
+{
+	#if defined(F_SANERDLCKNO) || !defined(BSD)
+ 		struct flock alock;
+
+	#ifndef F_SANEWRLCKNO
+		int	flags;
+		if((flags=fcntl(fd,F_GETFL))==-1)
+			return -1;
+
+		if(flags==O_RDONLY)
+			alock.l_type = F_RDLCK; /* set read lock to prevent writes */
+		else
+			alock.l_type = F_WRLCK; /* set write lock to prevent all access */
+	#else
+		alock.l_type = F_SANEWRLCKNO;
+	#endif
+		alock.l_whence = L_SET;		/* SEEK_SET */
+		alock.l_start = pos;
+		alock.l_len = (int)len;
+
+		if(fcntl(fd, F_SETLK, &alock)==-1)
+			return(-1);
+	#endif
+
+	#if !defined(F_SANEWRLCKNO)
+		/* use flock (doesn't work over NFS) */
+		if(flock(fd,LOCK_EX|LOCK_NB)!=0)
+			return(-1);
+	#endif
+
+		return(0);
+}
+#endif /* !QNX */
 
 /* Removes a lock from a file record */
 #ifdef __QNX__
-int DLLCALL unlock(int fd, long pos, long len)
+int DLLCALL unlock(int file, long offset, long len)
+{
+#if 0
+    int		i;
+    long	pos;
+   
+	pos=tell(file);
+	if(offset!=pos)
+		lseek(file, offset, SEEK_SET);
+	i=lockf(file,F_ULOCK,len);
+	if(offset!=pos)
+		lseek(file, pos, SEEK_SET);
+
+	return(i);
+#else
+	return(0);
+#endif
+}
 #else
 int DLLCALL unlock(int fd, long pos, int len)
-#endif
 {
 
 #if defined(F_SANEUNLCK) || !defined(BSD)
@@ -142,7 +175,7 @@ int DLLCALL unlock(int fd, long pos, int len)
 		return(-1);
 #endif
 
-#ifndef F_SANEUNLCK
+#if !defined(F_SANEUNLCK)
 	/* use flock (doesn't work over NFS) */
 	if(flock(fd,LOCK_UN|LOCK_NB)!=0)
 		return(-1);
@@ -150,6 +183,7 @@ int DLLCALL unlock(int fd, long pos, int len)
 
 	return(0);
 }
+#endif /* !QNX */
 
 #ifndef __QNX__
 /* Opens a file in specified sharing (file-locking) mode */
