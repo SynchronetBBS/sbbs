@@ -906,7 +906,7 @@ js_exec(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 static JSBool
 js_exec_xtrn(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	uint		i;
+	int32		i=0;
 	char*		code;
 	sbbs_t*		sbbs;
     JSString*	str;
@@ -925,7 +925,7 @@ js_exec_xtrn(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 			if(!stricmp(sbbs->cfg.xtrn[i]->code,code))
 				break;
 	} else
-		i=JSVAL_TO_INT(argv[0]);
+		JS_ValueToInt32(cx,argv[0],&i);
 
 	if(i>=sbbs->cfg.total_xtrns) {
 		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
@@ -939,13 +939,14 @@ js_exec_xtrn(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 static JSBool
 js_user_event(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
+	int32		i=0;
 	sbbs_t*		sbbs;
 
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	*rval = BOOLEAN_TO_JSVAL(
-		sbbs->user_event((user_event_t)JSVAL_TO_INT(argv[0])));
+	JS_ValueToInt32(cx,argv[0],&i);
+	*rval = BOOLEAN_TO_JSVAL(sbbs->user_event((user_event_t)i));
 	return(JS_TRUE);
 }
 
@@ -964,17 +965,17 @@ js_chksyspass(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 static JSBool
 js_text(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	int			i;
+	int32		i=0;
 	sbbs_t*		sbbs;
 
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	i=JSVAL_TO_INT(argv[0]);
+	JS_ValueToInt32(cx,argv[0],&i);
 	i--;
 
 	if(i<0 || i>=TOTAL_TEXT)
-		*rval = *rval = JSVAL_NULL;
+		*rval = JSVAL_NULL;
 	else
 		*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, sbbs->text[i]));
 
@@ -985,7 +986,8 @@ static JSBool
 js_replace_text(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char*		p;
-	int			i,len;
+	int32		i=0;
+	int			len;
 	JSString*	js_str;
 	sbbs_t*		sbbs;
 
@@ -994,7 +996,7 @@ js_replace_text(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	i=JSVAL_TO_INT(argv[0]);
+	JS_ValueToInt32(cx,argv[0],&i);
 	i--;
 
 	if(i<0 || i>=TOTAL_TEXT)
@@ -1029,13 +1031,13 @@ js_replace_text(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 static JSBool
 js_revert_text(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	int			i;
+	int32		i=0;
 	sbbs_t*		sbbs;
 
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	i=JSVAL_TO_INT(argv[0]);
+	JS_ValueToInt32(cx,argv[0],&i);
 	i--;
 
 	if(i<0 || i>=TOTAL_TEXT) {
@@ -1599,14 +1601,14 @@ js_sys_stats(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 static JSBool
 js_node_stats(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	uint		node_num=0;
+	int32		node_num=0;
 	sbbs_t*		sbbs;
 
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
 	if(argc>0)
-		node_num=JSVAL_TO_INT(argv[0]);
+		JS_ValueToInt32(cx,argv[0],&node_num);
 
 	sbbs->node_stats(node_num);
 
@@ -1617,14 +1619,14 @@ js_node_stats(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 static JSBool
 js_userlist(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	int			mode=UL_ALL;
+	int32		mode=UL_ALL;
 	sbbs_t*		sbbs;
 
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
 	if(argc>0)
-		mode=JSVAL_TO_INT(argv[0]);
+		JS_ValueToInt32(cx,argv[0],&mode);
 
 	sbbs->userlist(mode);
 
@@ -1635,14 +1637,14 @@ js_userlist(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 static JSBool
 js_useredit(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	uint		usernumber=0;
+	int32		usernumber=0;
 	sbbs_t*		sbbs;
 
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
 	if(argc>0)
-		usernumber=JSVAL_TO_INT(argv[0]);
+		JS_ValueToInt32(cx,argv[0],&usernumber);
 
 	sbbs->useredit(usernumber);
 
@@ -1709,12 +1711,14 @@ js_whos_online(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 static JSBool
 js_spy(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
+	int32		node_num=1;
 	sbbs_t*		sbbs;
 
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	sbbs->spy(JSVAL_TO_INT(argv[0]));
+	JS_ValueToInt32(cx,argv[0],&node_num);
+	sbbs->spy(node_num);
 
 	*rval = JSVAL_VOID;
 	return(JS_TRUE);
@@ -1723,8 +1727,8 @@ js_spy(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 static JSBool
 js_readmail(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	int			readwhich=MAIL_YOUR;
-	uint		usernumber;
+	int32		readwhich=MAIL_YOUR;
+	int32		usernumber;
 	sbbs_t*		sbbs;
 
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
@@ -1732,9 +1736,9 @@ js_readmail(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	usernumber=sbbs->useron.number;
 	if(argc>0)
-		readwhich=JSVAL_TO_INT(argv[0]);
+		JS_ValueToInt32(cx,argv[0],&readwhich);
 	if(argc>1)
-		usernumber=JSVAL_TO_INT(argv[1]);
+		JS_ValueToInt32(cx,argv[1],&usernumber);
 
 	sbbs->readmail(usernumber,readwhich);
 
@@ -1745,7 +1749,7 @@ js_readmail(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 static JSBool
 js_email(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	uint		usernumber;
+	int32		usernumber=1;
 	long		mode=WM_EMAIL;
 	char*		top="";
 	char*		subj="";
@@ -1756,7 +1760,7 @@ js_email(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	usernumber=JSVAL_TO_INT(argv[0]);
+	JS_ValueToInt32(cx,argv[0],&usernumber);
 	for(uintN i=1;i<argc;i++) {
 		if(JSVAL_IS_INT(argv[i]))
 			mode=JSVAL_TO_INT(argv[i]);
@@ -1830,7 +1834,7 @@ js_bulkmail(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 static JSBool
 js_upload_file(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	uint		dirnum;
+	int32		dirnum=0;
 	char*		code;
 	sbbs_t*		sbbs;
     JSString*	str;
@@ -1849,7 +1853,7 @@ js_upload_file(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 			if(!stricmp(sbbs->cfg.dir[dirnum]->code,code))
 				break;
 	} else
-		dirnum=JSVAL_TO_INT(argv[0]);
+		JS_ValueToInt32(cx,argv[0],&dirnum);
 
 	if(dirnum>=sbbs->cfg.total_dirs) {
 		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
@@ -1864,7 +1868,7 @@ js_upload_file(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 static JSBool
 js_bulkupload(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	uint		dirnum;
+	int32		dirnum=0;
 	char*		code;
 	sbbs_t*		sbbs;
     JSString*	str;
@@ -1883,7 +1887,7 @@ js_bulkupload(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 			if(!stricmp(sbbs->cfg.dir[dirnum]->code,code))
 				break;
 	} else
-		dirnum=JSVAL_TO_INT(argv[0]);
+		JS_ValueToInt32(cx,argv[0],&dirnum);
 
 	if(dirnum>=sbbs->cfg.total_dirs) {
 		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
@@ -1897,7 +1901,7 @@ js_bulkupload(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 static JSBool
 js_resort_dir(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	uint		i;
+	uint		i=0;
 	char*		code;
 	sbbs_t*		sbbs;
     JSString*	str;
@@ -1933,7 +1937,7 @@ static JSBool
 js_telnet_gate(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char*		addr;
-	int			mode=0;
+	int32		mode=0;
 	JSString*	js_addr;
 	sbbs_t*		sbbs;
 
@@ -1947,7 +1951,7 @@ js_telnet_gate(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 		return(JS_FALSE);
 
 	if(argc>1)
-		mode=JSVAL_TO_INT(argv[1]);
+		JS_ValueToInt32(cx,argv[1],&mode);
 
 	sbbs->telnet_gate(addr,mode);
 	
@@ -1983,13 +1987,13 @@ static JSBool
 js_multinode_chat(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	sbbs_t*		sbbs;
-	int			channel=1;
+	int32		channel=1;
 
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
 	if(argc>1)
-		channel=JSVAL_TO_INT(argv[1]);
+		JS_ValueToInt32(cx,argv[1],&channel);
 
 	sbbs->multinodechat(channel);
 
@@ -2043,14 +2047,15 @@ static JSBool
 js_put_node_message(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	sbbs_t*		sbbs;
-	int			node;
+	int32		node=0;
 	JSString*	js_msg;
 	char*		msg;
 
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	if((node=JSVAL_TO_INT(argv[0]))<1)
+	JS_ValueToInt32(cx,argv[0],&node);
+	if(node<1)
 		node=1;
 
 	if((js_msg=JS_ValueToString(cx, argv[1]))==NULL) 
@@ -2069,14 +2074,14 @@ static JSBool
 js_get_telegram(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	sbbs_t*		sbbs;
-	int			usernumber;
+	int32		usernumber;
 
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
 	usernumber=sbbs->useron.number;
-	if(argc>1)
-		usernumber=JSVAL_TO_INT(argv[0]);
+	if(argc)
+		JS_ValueToInt32(cx,argv[0],&usernumber);
 
 	sbbs->getsmsg(usernumber);
 
@@ -2088,14 +2093,15 @@ static JSBool
 js_put_telegram(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	sbbs_t*		sbbs;
-	int			usernumber;
+	int32		usernumber=0;
 	JSString*	js_msg;
 	char*		msg;
 
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	if((usernumber=JSVAL_TO_INT(argv[0]))<1)
+	JS_ValueToInt32(cx,argv[0],&usernumber);
+	if(usernumber<1)
 		usernumber=1;
 
 	if((js_msg=JS_ValueToString(cx, argv[1]))==NULL) 
@@ -2423,7 +2429,7 @@ js_scanposts(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 static JSBool
 js_getnstime(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	time_t		t;
+	time_t		t=time(NULL);
 	sbbs_t*		sbbs;
 
 	*rval = JSVAL_VOID;
@@ -2431,7 +2437,8 @@ js_getnstime(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	t = JSVAL_TO_INT(argv[0]);
+	if(argc)
+		JS_ValueToInt32(cx,argv[0],&t);
 
 	if(sbbs->inputnstime(&t)==true)
 		*rval = INT_TO_JSVAL(t);
