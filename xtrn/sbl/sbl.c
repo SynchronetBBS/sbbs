@@ -771,7 +771,11 @@ int main(int argc, char **argv)
 				case 'M':
 					maint=1;
 					xsdk_mode&=~XSDK_MODE_NOCONSOLE;
-					break; }
+					break; 
+				case 'W':
+					xsdk_mode&=~XSDK_MODE_NOCONSOLE;
+					break; 
+			}
 
 	p=getenv("SBBSNODE");
 	if(p)
