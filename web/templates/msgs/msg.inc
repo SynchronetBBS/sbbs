@@ -2,13 +2,13 @@
 <a class="navigation" href="msgs.ssjs?msg_grp=^^group:number^^&amp;msg_sub=^^sub:code^^">%%sub:description%%</a>
 <a class="navigation" href="subinfo.ssjs?msg_grp=^^group:number^^&amp;msg_sub=^^sub:code^^">[?]</a><br /></p>
 <table class="msg" border="0" width="95%">
-<tr>
+<tr class="msg">
     <td class="msgheader" nowrap="nowrap">Subject:</td>
     <td nowrap="nowrap">%%hdr:subject%%</td>
     <td class="msgheader" nowrap="nowrap">To:</td>
     <td nowrap="nowrap">%%hdr:to%%</td>
 </tr>
-<tr>
+<tr class="msg">
     <td class="msgheader" nowrap="nowrap">From:</td>
     <td nowrap="nowrap">%%hdr:from%%</td>
     <td class="msgheader" nowrap="nowrap">Date:</td>
