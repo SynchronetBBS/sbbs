@@ -1411,7 +1411,7 @@ int sbbs_t::exec(csi_t *csi)
 							break;
 						sprintf(useron.alias,"%.*s",LEN_ALIAS,csi->str);
 						putuserrec(&cfg,useron.number,U_ALIAS,LEN_ALIAS,useron.alias);
-						putusername(useron.number,useron.alias);
+						putusername(&cfg,useron.number,useron.alias);
 						csi->logic=LOGIC_TRUE;
 						break;
 					case USER_STRING_REALNAME:

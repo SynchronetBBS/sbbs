@@ -357,7 +357,6 @@ public:
 	void	putnodeext(uint number, char * str);
 	void	getnodedat(uint number, node_t * node, bool lock);
 	void	putnodedat(uint number, node_t * node);
-	void	putusername(int number, char * name);
 	void	nodesync(void);
 	user_t	nodesync_user;
 	bool	nodesync_inside;

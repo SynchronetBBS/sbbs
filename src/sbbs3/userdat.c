@@ -154,10 +154,9 @@ int DLLCALL getuserdat(scfg_t* cfg, user_t *user)
 
 	unlock(file,(long)((long)(user->number-1)*U_LEN),U_LEN);
 	close(file);
+	/* order of these function calls is irrelevant */
 	getrec(userdat,U_ALIAS,LEN_ALIAS,user->alias);
-	/* order of these function	*/
 	getrec(userdat,U_NAME,LEN_NAME,user->name);
-	/* calls is irrelevant */
 	getrec(userdat,U_HANDLE,LEN_HANDLE,user->handle);
 	getrec(userdat,U_NOTE,LEN_NOTE,user->note);
 	getrec(userdat,U_COMP,LEN_COMP,user->comp);
@@ -197,8 +196,7 @@ int DLLCALL getuserdat(scfg_t* cfg, user_t *user)
 	getrec(userdat,U_CDT,10,str); user->cdt=atol(str);
 	getrec(userdat,U_MIN,10,str); user->min=atol(str);
 	getrec(userdat,U_LEVEL,2,str); user->level=atoi(str);
-	getrec(userdat,U_FLAGS1,8,str); user->flags1=ahtoul(str); /***
-	getrec(userdat,U_TL,2,str); user->tl=atoi(str); ***/
+	getrec(userdat,U_FLAGS1,8,str); user->flags1=ahtoul(str);
 	getrec(userdat,U_FLAGS2,8,str); user->flags2=ahtoul(str);
 	getrec(userdat,U_FLAGS3,8,str); user->flags3=ahtoul(str);
 	getrec(userdat,U_FLAGS4,8,str); user->flags4=ahtoul(str);
@@ -469,6 +467,43 @@ char* DLLCALL username(scfg_t* cfg, int usernumber,char *strin)
 	if(!c)
 		strcpy(strin,"DELETED USER");
 	return(strin);
+}
+
+/****************************************************************************/
+/* Puts 'name' into slot 'number' in user/name.dat							*/
+/****************************************************************************/
+int putusername(scfg_t* cfg, int number, char *name)
+{
+	char str[256];
+	int file;
+	long length;
+
+	if (number<1) 
+		return(-1);
+
+	sprintf(str,"%suser/name.dat", cfg->data_dir);
+	if((file=nopen(str,O_RDWR|O_CREAT))==-1) 
+		return(-2); 
+	length=filelength(file);
+	if(length && length%(LEN_ALIAS+2)) {
+		close(file);
+		return(-3); 
+	}
+	if(length<(((long)number-1)*(LEN_ALIAS+2))) {
+		sprintf(str,"%*s",LEN_ALIAS,nulstr);
+		memset(str,ETX,LEN_ALIAS);
+		strcat(str,crlf);
+		lseek(file,0L,SEEK_END);
+		while(filelength(file)<((long)number*(LEN_ALIAS+2)))
+			write(file,str,(LEN_ALIAS+2)); 
+	}
+	lseek(file,(long)(((long)number-1)*(LEN_ALIAS+2)),SEEK_SET);
+	putrec(str,0,LEN_ALIAS,name);
+	putrec(str,LEN_ALIAS,2,crlf);
+	write(file,str,LEN_ALIAS+2);
+	close(file);
+
+	return(0);
 }
 
 /****************************************************************************/

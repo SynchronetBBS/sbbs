@@ -174,7 +174,7 @@ void sbbs_t::useredit(int usernumber)
 				getstr(user.alias,LEN_ALIAS,K_LINE|K_EDIT|K_AUTODEL);
 				putuserrec(&cfg,user.number,U_ALIAS,LEN_ALIAS,user.alias);
 				if(!(user.misc&DELETED))
-					putusername(user.number,user.alias);
+					putusername(&cfg,user.number,user.alias);
 				bputs(text[EnterYourHandle]);
 				getstr(user.handle,LEN_HANDLE,K_LINE|K_EDIT|K_AUTODEL);
 				putuserrec(&cfg,user.number,U_HANDLE,LEN_HANDLE,user.handle);
@@ -194,7 +194,7 @@ void sbbs_t::useredit(int usernumber)
 					if(!noyes(text[UeditRestoreQ])) {
 						putuserrec(&cfg,user.number,U_MISC,8
 							,ultoa(user.misc&~DELETED,str,16));
-						putusername(user.number,user.alias); }
+						putusername(&cfg,user.number,user.alias); }
 					break; }
 				if(user.misc&INACTIVE) {
 					if(!noyes(text[UeditActivateQ]))
@@ -211,7 +211,7 @@ void sbbs_t::useredit(int usernumber)
 							readmail(user.number,MAIL_SENT); }
 					putuserrec(&cfg,user.number,U_MISC,8
 						,ultoa(user.misc|DELETED,str,16));
-					putusername(user.number,nulstr);
+					putusername(&cfg,user.number,nulstr);
 					break; }
 				if(!noyes(text[UeditDeactivateUserQ])) {
 					if(getmail(&cfg,user.number,0)) {
@@ -496,7 +496,7 @@ void sbbs_t::useredit(int usernumber)
 					i=getnum(lastuser(&cfg));
 					if(i>0) {
 						user.number=i;
-						putusername(user.number,user.alias);
+						putusername(&cfg,user.number,user.alias);
 						putuserdat(&cfg,&user); } }
 				break;
 			case 'Z':
@@ -1019,6 +1019,6 @@ void sbbs_t::purgeuser(int usernumber)
 	sprintf(str,"Purged %s #%u",user.alias,usernumber);
 	logentry("!*",str);
 	delallmail(usernumber);
-	putusername(usernumber,nulstr);
+	putusername(&cfg,usernumber,nulstr);
 	putuserrec(&cfg,usernumber,U_MISC,8,ultoa(user.misc|DELETED,str,16));
 }

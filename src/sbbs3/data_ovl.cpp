@@ -38,42 +38,6 @@
 #include "sbbs.h"
 
 /****************************************************************************/
-/* Puts 'name' into slot 'number' in user/name.dat							*/
-/****************************************************************************/
-void sbbs_t::putusername(int number, char *name)
-{
-	char str[256];
-	int file;
-	long length;
-
-	if (number<1) {
-		errormsg(WHERE,ERR_CHK,"user number",number);
-		return; }
-
-	sprintf(str,"%suser/name.dat", cfg.data_dir);
-	if((file=nopen(str,O_RDWR|O_CREAT))==-1) {
-		errormsg(WHERE,ERR_OPEN,str,O_RDWR|O_CREAT);
-		return; }
-	length=filelength(file);
-	if(length && length%(LEN_ALIAS+2)) {
-		close(file);
-		errormsg(WHERE,ERR_LEN,str,length);
-		return; }
-	if(length<(((long)number-1)*(LEN_ALIAS+2))) {
-		sprintf(str,"%*s",LEN_ALIAS,nulstr);
-		memset(str,ETX,LEN_ALIAS);
-		strcat(str,crlf);
-		lseek(file,0L,SEEK_END);
-		while(filelength(file)<((long)number*(LEN_ALIAS+2)))
-			write(file,str,(LEN_ALIAS+2)); }
-	lseek(file,(long)(((long)number-1)*(LEN_ALIAS+2)),SEEK_SET);
-	putrec(str,0,LEN_ALIAS,name);
-	putrec(str,LEN_ALIAS,2,crlf);
-	write(file,str,LEN_ALIAS+2);
-	close(file);
-}
-
-/****************************************************************************/
 /* Fills the 'ptr' element of the each element of the cfg.sub[] array of sub_t  */
 /* and the sub_cfg and sub_ptr global variables                            */
 /* Called from function main                                                */

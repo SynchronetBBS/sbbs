@@ -2606,11 +2606,11 @@ void node_thread(void* arg)
 			username(&sbbs->cfg,i,uname);
 			if(user.misc&DELETED) {
 				if(strcmp(uname,"DELETED USER"))
-					sbbs->putusername(i,nulstr);
+					putusername(&sbbs->cfg,i,nulstr);
 				continue; }
 
 			if(strcmp(user.alias,uname))
-				sbbs->putusername(i,user.alias);
+				putusername(&sbbs->cfg,i,user.alias);
 
 			if(!(user.misc&(DELETED|INACTIVE))
 				&& user.expire && (ulong)user.expire<=(ulong)now) {
@@ -2668,7 +2668,7 @@ void node_thread(void* arg)
 				sprintf(str,"Auto-Deleted %s #%u",user.alias,user.number);
 				sbbs->logentry("!*",str);
 				sbbs->delallmail(i);
-				sbbs->putusername(i,nulstr);
+				putusername(&sbbs->cfg,i,nulstr);
 				putuserrec(&sbbs->cfg,i,U_MISC,8,ultoa(user.misc|DELETED,str,16)); }
 		}
 
