@@ -57,6 +57,7 @@
 	#include <sys/stat.h>		/* S_IREAD */
 	#include <fcntl.h>			/* O_BINARY */
 	#include <windows.h>		/* OF_SHARE_ */
+	#include <share.h>			/* SH_DENY */
 
 	#define sopen(f,o,s)		_sopen(f,o,s,S_IREAD|S_IWRITE)
 	#define close(f)			_close(f)
