@@ -10,15 +10,15 @@ void x_scrollup(void)
 	char *buf;
 	int i,j;
 
-	buf=(char *)malloc(DpyCols*(DpyRows-1)*2);
-	x_gettext(1,2,DpyCols,DpyRows,buf);
-	x_puttext(1,1,DpyCols,DpyRows-1,buf);
+	buf=(char *)malloc(DpyCols*DpyRows*2);
+	x_gettext(1,2,DpyCols,DpyRows+1,buf);
+	x_puttext(1,1,DpyCols,DpyRows,buf);
 	j=0;
 	for(i=0;i<DpyCols;i++) {
 		buf[j++]=' ';
 		buf[j++]=x_curr_attr>>8;
 	}
-	x_puttext(1,DpyRows,DpyCols,DpyRows,buf);
+	x_puttext(1,DpyRows+1,DpyCols,DpyRows+1,buf);
 	free(buf);
 }
 
@@ -32,7 +32,7 @@ int x_puttext(int sx, int sy, int ex, int ey, unsigned char *fill)
 	for(y=sy-1;y<ey;y++) {
 		for(x=sx-1;x<ex;x++) {
 			sch=(*(out++))|(*(out++)<<8);
-			vmem[y*DpyCols+y]=sch;
+			vmem[y*DpyCols+x]=sch;
 		}
 	}
 }
@@ -46,7 +46,7 @@ int x_gettext(int sx, int sy, int ex, int ey, unsigned char *fill)
 	out=fill;
 	for(y=sy-1;y<ey;y++) {
 		for(x=sx-1;x<ex;x++) {
-			sch=vmem[y*DpyCols+y];
+			sch=vmem[y*DpyCols+x];
 			*(out++)=sch & 0xff;
 			*(out++)=sch >> 8;
 		}
@@ -94,7 +94,7 @@ void x_putch(unsigned char ch)
 			break;
 		case '\n':
 			CursRow0++;
-			while(CursRow0>=DpyRows) {
+			while(CursRow0>DpyRows) {
 				x_scrollup();
 				CursRow0--;
 			}
@@ -114,7 +114,7 @@ void x_putch(unsigned char ch)
 			if(CursCol0>=DpyCols) {
 				CursCol0=0;
 				CursRow0++;
-				while(CursRow0>=DpyRows) {
+				while(CursRow0>DpyRows) {
 					x_scrollup();
 					CursRow0--;
 				}
