@@ -1590,6 +1590,7 @@ static jsSyncMethodSpec js_msgbase_functions[] = {
 	"<tr><td><tt>from_org</tt><td>Sender's organization"
 	"<tr><td><tt>from_net_type</tt><td>Sender's network type (default: 0 for local)"
 	"<tr><td><tt>from_net_addr</tt><td>Sender's network address"
+	"<tr><td><tt>from_agent</tt><td>Sender's agent type"
 	"<tr><td><tt>from_ip_addr</tt><td>Sender's IP address (if available, for security tracking)"
 	"<tr><td><tt>from_host_name</tt><td>Sender's host name (if available, for security tracking)"
 	"<tr><td><tt>from_protocol</tt><td>TCP/IP protocol used by sender (if available, for security tracking)"
