@@ -214,7 +214,7 @@ void sbbs_read_ini(
 #if defined(__FreeBSD__)
 	default_dosemu_path="/usr/bin/doscmd";
 #else
-	default_dosemu_path="/usr/bin/dosemu";
+	default_dosemu_path="/usr/bin/dosemu.bin";
 #endif
 
 	SAFECOPY(bbs->dosemu_path
