@@ -1724,7 +1724,7 @@ static BOOL get_fullpath(http_session_t * session)
 		else
 			safe_snprintf(str,sizeof(str),"%s%s",root_dir,session->req.physical_path);
 	} else
-		sprintf(str,"%s%s",root_dir,session->req.physical_path);
+		safe_snprintf(str,sizeof(str),"%s%s",root_dir,session->req.physical_path);
 
 	if(FULLPATH(session->req.physical_path,str,sizeof(session->req.physical_path))==NULL) {
 		send_error(session,error_500);
