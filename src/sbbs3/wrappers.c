@@ -47,6 +47,7 @@
 #include <ctype.h>		/* toupper */
 #include <sys/kd.h>		/* KIOCSOUND */
 #include <sys/ioctl.h>	/* ioctl */
+#include <pthread.h>	/* POSIX threads */
 
 #ifdef __GLIBC__		/* actually, BSD, but will work for now */
 #include <sys/vfs.h>    /* statfs() */
@@ -301,6 +302,26 @@ char* _fullpath(char* absPath, const char* relPath, size_t maxLength)
 	free(curdir);
 
     return absPath;
+}
+#endif
+
+/****************************************************************************/
+/* Wrapper for Win32 create/begin thread function							*/
+/* Uses POSIX threads														*/
+/****************************************************************************/
+#ifdef __unix__
+ulong _beginthread(void( __cdecl *start_address )( void * )
+		,unsigned stack_size, void *arglist)
+{
+	pthread_t	thread;
+
+	if(pthread_create(&thread
+		,NULL	/* default attributes */
+		,start_address
+		,arglist)==0)
+		return(1 /* thread handle? */);
+
+	return(-1);	/* error */
 }
 #endif
 
