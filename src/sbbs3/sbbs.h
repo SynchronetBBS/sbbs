@@ -850,6 +850,9 @@ extern "C" {
 
 #endif
 
+/* misc.c */
+FILE *	fnopen(int *file, char *str, int access);
+
 #ifdef SBBS /* These aren't exported */
 
 	/* main.c */
@@ -861,7 +864,6 @@ extern "C" {
 
 	/* misc.c */
 	int		nopen(char *str, int access);
-	FILE *	fnopen(int *file, char *str, int access);
 	int		bstrlen(char *str);
 	char *	ultoac(ulong l,char *str);
 	void	truncsp(char *str);		/* Truncates white spaces off end of str */
