@@ -1,14 +1,14 @@
 How to add Kermit file transfer protocol support to Synchronet v3
------------------------------------------------------------------
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 By: Rob Swindell (digital man)
 http://www.synchro.net
 
 $Id$
 
-The information in this file is current as of the date above. The answers and
-instructions in this file may change over time, so be sure to get the current
-version of this file at:
+The information in this file is current as of the date above. The instructions
+in this file may change over time, so be sure to get the current version of
+this file at:
 http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/docs/kermit.txt
 
 
@@ -58,6 +58,14 @@ Add a new protocol in SCFG->File Options->Transfer Protocols:
 7: Batch DL Command Line    gkermit -q -P -s %s
 8: Bidir Command Line
 9: Uses DSZLOG              No
+
+Add "gkermit" to SCFG->External Programs->Native Program List.
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+If you or your BBS users find Kermit support useful, you can thank Michel
+Samson and Winston Smith for their promotion of Kermit and help with testing
+Kermit support in Synchronet.
 
 Send comments/questions to rob@synchro.net
 
