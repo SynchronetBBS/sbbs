@@ -170,21 +170,27 @@ int win32_keyboardio(int isgetch)
 				OutputDebugString(str);
 #endif
 
+				if(input.Event.KeyEvent.wVirtualScanCode==0x38 /* ALT */
+						|| input.Event.KeyEvent.wVirtualScanCode==0x36 /* SHIFT */
+						|| input.Event.KeyEvent.wVirtualScanCode==0x1D /* CTRL */
+					break;
+
 				if(input.Event.KeyEvent.dwControlKeyState & (LEFT_ALT_PRESSED|RIGHT_ALT_PRESSED)) {
 					if(input.Event.KeyEvent.wVirtualScanCode >= CIO_KEY_F(1)
 							&& input.Event.KeyEvent.wVirtualScanCode <= CIO_KEY_F(10)) {
 						/* Magic number to convert from Fx to ALT-Fx */
-						lastch=input.Event.KeyEvent.wVirtualScanCode+45;
+						lastch=(input.Event.KeyEvent.wVirtualScanCode+45)<<8;
 						break;
 					}
 					if(input.Event.KeyEvent.wVirtualScanCode == CIO_KEY_F(11)
 							&& input.Event.KeyEvent.wVirtualScanCode == CIO_KEY_F(12)) {
 						/* Magic number to convert from F(x>10) to ALT-Fx */
-						lastch=input.Event.KeyEvent.wVirtualScanCode+6;
+						lastch=(input.Event.KeyEvent.wVirtualScanCode+6i)<<8;
 						break;
 					}
 
 					lastch=input.Event.KeyEvent.wVirtualScanCode<<8;
+					break;
 				}
 
 				if(input.Event.KeyEvent.uChar.AsciiChar)
