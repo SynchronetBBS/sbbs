@@ -46,6 +46,7 @@ typedef struct
 	BOOL	debug;
 	BOOL	nonblocking;
 	BOOL	is_connected;
+	BOOL	network_byte_order;
 	int		last_error;
 	int		type;
 
@@ -160,12 +161,12 @@ js_bind(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(bind(p->sock, (struct sockaddr *) &addr, sizeof(addr))!=0) {
 		p->last_error=ERROR_VALUE;
 		dbprintf(TRUE, p, "bind failed with error %d",ERROR_VALUE);
-		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+		*rval = JSVAL_FALSE;
 		return(JS_TRUE);
 	}
 
 	dbprintf(FALSE, p, "bound to port %u",port);
-	*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
+	*rval = JSVAL_TRUE;
 	return(JS_TRUE);
 }
 
@@ -186,12 +187,12 @@ js_listen(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(listen(p->sock, backlog)!=0) {
 		p->last_error=ERROR_VALUE;
 		dbprintf(TRUE, p, "listen failed with error %d",ERROR_VALUE);
-		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+		*rval = JSVAL_FALSE;
 		return(JS_TRUE);
 	}
 
 	dbprintf(FALSE, p, "listening, backlog=%d",backlog);
-	*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
+	*rval = JSVAL_TRUE;
 	return(JS_TRUE);
 }
 
@@ -256,7 +257,7 @@ js_connect(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if((ip_addr=resolve_ip(JS_GetStringBytes(str)))==INADDR_NONE) {
 		p->last_error=ERROR_VALUE;
 		dbprintf(TRUE, p, "resolve_ip failed with error %d",ERROR_VALUE);
-		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+		*rval = JSVAL_FALSE;
 		return(JS_TRUE);
 	}
 
@@ -272,12 +273,12 @@ js_connect(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(connect(p->sock, (struct sockaddr *)&addr, sizeof(addr))!=0) {
 		p->last_error=ERROR_VALUE;
 		dbprintf(TRUE, p, "connect failed with error %d",ERROR_VALUE);
-		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+		*rval = JSVAL_FALSE;
 		return(JS_TRUE);
 	}
 
 	p->is_connected = TRUE;
-	*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
+	*rval = JSVAL_TRUE;
 	dbprintf(FALSE, p, "connected to port %u at %s", port, JS_GetStringBytes(str));
 
 	return(JS_TRUE);
@@ -296,7 +297,7 @@ js_send(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_FALSE);
 	}
 
-	*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+	*rval = JSVAL_FALSE;
 
 	str = JS_ValueToString(cx, argv[0]);
 	cp=JS_GetStringBytes(str);
@@ -304,7 +305,7 @@ js_send(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	if(sendsocket(p->sock,cp,len)==len) {
 		dbprintf(FALSE, p, "sent %u bytes",len);
-		*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
+		*rval = JSVAL_TRUE;
 	} else {
 		p->last_error=ERROR_VALUE;
 		dbprintf(TRUE, p, "send of %u bytes failed",len);
@@ -330,7 +331,7 @@ js_sendto(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_FALSE);
 	}
 
-	*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+	*rval = JSVAL_FALSE;
 
 	/* data */
 	data_str = JS_ValueToString(cx, argv[0]);
@@ -343,7 +344,7 @@ js_sendto(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if((ip_addr=resolve_ip(JS_GetStringBytes(ip_str)))==INADDR_NONE) {
 		p->last_error=ERROR_VALUE;
 		dbprintf(TRUE, p, "resolve_ip failed with error %d",ERROR_VALUE);
-		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+		*rval = JSVAL_FALSE;
 		return(JS_TRUE);
 	}
 
@@ -360,7 +361,7 @@ js_sendto(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	if(sendto(p->sock,cp,len,0 /* flags */,(SOCKADDR*)&addr,sizeof(addr))==len) {
 		dbprintf(FALSE, p, "sent %u bytes",len);
-		*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
+		*rval = JSVAL_TRUE;
 	} else {
 		p->last_error=ERROR_VALUE;
 		dbprintf(TRUE, p, "send of %u bytes failed",len);
@@ -385,7 +386,7 @@ js_sendfile(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_FALSE);
 	}
 
-	*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+	*rval = JSVAL_FALSE;
 
 	if((str = JS_ValueToString(cx, argv[0]))==NULL
 		|| (fname=JS_GetStringBytes(str))==NULL) {
@@ -410,7 +411,7 @@ js_sendfile(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	if(sendsocket(p->sock,buf,len)==len) {
 		dbprintf(FALSE, p, "sent %u bytes",len);
-		*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
+		*rval = JSVAL_TRUE;
 	} else {
 		p->last_error=ERROR_VALUE;
 		dbprintf(TRUE, p, "send of %u bytes failed",len);
@@ -419,6 +420,64 @@ js_sendfile(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	return(JS_TRUE);
 }
+
+static JSBool
+js_sendbin(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	BYTE		b;
+	WORD		w;
+	DWORD		l;
+	int32		val=0;
+	size_t		wr=0;
+	size_t		size=sizeof(DWORD);
+	private_t*	p;
+
+	*rval = JSVAL_FALSE;
+
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx,getprivate_failure,WHERE);
+		return(JS_FALSE);
+	}
+
+	if(argc>1) 
+		JS_ValueToInt32(cx,argv[1],(int32*)&size);
+
+	switch(size) {
+		case sizeof(BYTE):
+			JS_ValueToInt32(cx,argv[0],&val);
+			b = (BYTE)val;
+			wr=sendsocket(p->sock,&b,size);
+			break;
+		case sizeof(WORD):
+			JS_ValueToInt32(cx,argv[0],&val);
+			w = (WORD)val;
+			if(p->network_byte_order)
+				w=htons(w);
+			wr=sendsocket(p->sock,(BYTE*)&w,size);
+			break;
+		case sizeof(DWORD):
+			JS_ValueToInt32(cx,argv[0],&val);
+			l = val;
+			if(p->network_byte_order)
+				l=htonl(l);
+			wr=sendsocket(p->sock,(BYTE*)&l,size);
+			break;
+		default:	
+			/* unknown size */
+			dbprintf(TRUE, p, "unsupported binary write size: %d",size);
+			break;
+	}
+	if(wr==size) {
+		dbprintf(FALSE, p, "sent %u bytes (binary)",size);
+		*rval = JSVAL_TRUE;
+	} else {
+		p->last_error=ERROR_VALUE;
+		dbprintf(TRUE, p, "send of %u bytes (binary) failed",size);
+	}
+		
+	return(JS_TRUE);
+}
+
 
 static JSBool
 js_recv(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
@@ -482,7 +541,14 @@ js_recvfrom(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	char*		buf;
 	char		ip_addr[64];
 	char		port[32];
+	int			rd=0;
 	int32		len=512;
+	uintN		n;
+	BOOL		binary=FALSE;
+	BYTE		b;
+	WORD		w;
+	DWORD		l;
+	jsval		data_val=JSVAL_NULL;
 	JSString*	str;
 	JSObject*	retobj;
 	SOCKADDR_IN	addr;
@@ -495,29 +561,71 @@ js_recvfrom(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_FALSE);
 	}
 
-	if(argc)
-		JS_ValueToInt32(cx,argv[0],&len);
+	*rval = JSVAL_NULL;
 
-	if((buf=(char*)malloc(len+1))==NULL) {
-		JS_ReportError(cx,"Error allocating %u bytes",len+1);
-		return(JS_FALSE);
+	for(n=0;n<argc;n++) {
+		if(JSVAL_IS_BOOLEAN(argv[n])) {
+			binary=JSVAL_TO_BOOLEAN(argv[n]);
+			if(binary)
+				len=sizeof(DWORD);
+		} else
+			JS_ValueToInt32(cx,argv[n],&len);
 	}
 
 	addrlen=sizeof(addr);
-	len = recvfrom(p->sock,buf,len,0,(SOCKADDR*)&addr,&addrlen);
-	if(len<0) {
+
+	if(binary) {	/* Binary/Integer Data */
+
+		switch(len) {
+			case sizeof(BYTE):
+				if((rd=recvfrom(p->sock,&b,len,0,(SOCKADDR*)&addr,&addrlen))==len)
+					data_val = INT_TO_JSVAL(b);
+				break;
+			case sizeof(WORD):
+				if((rd=recvfrom(p->sock,(BYTE*)&w,len,0,(SOCKADDR*)&addr,&addrlen))==len) {
+					if(p->network_byte_order)
+						w=ntohs(w);
+					data_val = INT_TO_JSVAL(w);
+				}
+				break;
+			case sizeof(DWORD):
+				if((rd=recvfrom(p->sock,(BYTE*)&l,len,0,(SOCKADDR*)&addr,&addrlen))==len) {
+					if(p->network_byte_order)
+						l=ntohl(l);
+					data_val = INT_TO_JSVAL(l);
+				}
+				break;
+		}
+
+		if(rd!=len) {
+			p->last_error=ERROR_VALUE;
+			return(JS_TRUE);
+		}
+
+	} else {		/* String Data */
+
+		if((buf=(char*)malloc(len+1))==NULL) {
+			JS_ReportError(cx,"Error allocating %u bytes",len+1);
+			return(JS_FALSE);
+		}
+
+		len = recvfrom(p->sock,buf,len,0,(SOCKADDR*)&addr,&addrlen);
+		if(len<0) {
+			free(buf);
+			p->last_error=ERROR_VALUE;
+			return(JS_TRUE);
+		}
+		buf[len]=0;
+
+		str = JS_NewStringCopyZ(cx, buf);
 		free(buf);
-		p->last_error=ERROR_VALUE;
-		*rval = JSVAL_NULL;
-		return(JS_TRUE);
+
+		if(str==NULL)
+			return(JS_FALSE);
+
+		data_val = STRING_TO_JSVAL(str);
 	}
-	buf[len]=0;
 
-	str = JS_NewStringCopyZ(cx, buf);
-	free(buf);
-
-	if(str==NULL)
-		return(JS_FALSE);
 
 	if((retobj=JS_NewObject(cx,&js_recvfrom_class,NULL,obj))==NULL) {
 		JS_ReportError(cx,"JS_NewObject failed");
@@ -525,7 +633,7 @@ js_recvfrom(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	}
 
 	JS_DefineProperty(cx, retobj, "data"
-		,STRING_TO_JSVAL(str)
+		,data_val
 		,NULL,NULL,JSPROP_ENUMERATE);
 
 	sprintf(port,"%u",ntohs(addr.sin_port));
@@ -666,6 +774,54 @@ js_recvline(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		
 	return(JS_TRUE);
 }
+
+static JSBool
+js_recvbin(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	BYTE		b;
+	WORD		w;
+	DWORD		l;
+	int			size=sizeof(DWORD);
+	int			rd=0;
+	private_t*	p;
+
+	*rval = INT_TO_JSVAL(-1);
+
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx,getprivate_failure,WHERE);
+		return(JS_FALSE);
+	}
+
+	if(argc) 
+		JS_ValueToInt32(cx,argv[0],(int32*)&size);
+
+	switch(size) {
+		case sizeof(BYTE):
+			if((rd=recv(p->sock,&b,size,0))==size)
+				*rval = INT_TO_JSVAL(b);
+			break;
+		case sizeof(WORD):
+			if((rd=recv(p->sock,(BYTE*)&w,size,0))==size) {
+				if(p->network_byte_order)
+					w=ntohs(w);
+				*rval = INT_TO_JSVAL(w);
+			}
+			break;
+		case sizeof(DWORD):
+			if((rd=recv(p->sock,(BYTE*)&l,size,0))==size) {
+				if(p->network_byte_order)
+					l=ntohl(l);
+				*rval = INT_TO_JSVAL(l);
+			}
+			break;
+	}
+
+	if(rd!=size)
+		p->last_error=ERROR_VALUE;
+		
+	return(JS_TRUE);
+}
+
 
 static JSBool
 js_getsockopt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
@@ -814,6 +970,7 @@ enum {
 	,SOCK_PROP_REMOTE_IP
 	,SOCK_PROP_REMOTE_PORT
 	,SOCK_PROP_TYPE
+	,SOCK_PROP_NETWORK_ORDER
 
 };
 
@@ -831,6 +988,7 @@ static char* socket_prop_desc[] = {
 	,"remote IP address (in dotted-decimal format)"
 	,"remote TCP or UDP port number"
 	,"socket type, <tt>SOCK_STREAM</tt> (TCP) or <tt>SOCK_DGRAM</tt> (UDP)"
+	,"<i>true</i> if binary data is to be sent in Network Byte Order (big end first)"
 	,NULL
 };
 #endif
@@ -862,6 +1020,9 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 		case SOCK_PROP_NONBLOCKING:
 			JS_ValueToBoolean(cx,*vp,&(p->nonblocking));
 			ioctlsocket(p->sock,FIONBIO,(ulong*)&(p->nonblocking));
+			break;
+		case SOCK_PROP_NETWORK_ORDER:
+			JS_ValueToBoolean(cx,*vp,&(p->network_byte_order));
 			break;
 	}
 
@@ -960,6 +1121,10 @@ static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 		case SOCK_PROP_TYPE:
 			*vp = INT_TO_JSVAL(p->type);
 			break;
+		case SOCK_PROP_NETWORK_ORDER:
+			*vp = INT_TO_JSVAL(p->network_byte_order);
+			break;
+
 	}
 
 	return(TRUE);
@@ -982,6 +1147,7 @@ static struct JSPropertySpec js_socket_properties[] = {
 	{	"remote_ip_address"	,SOCK_PROP_REMOTE_IP	,SOCK_PROP_FLAGS,	NULL,NULL},
 	{	"remote_port"		,SOCK_PROP_REMOTE_PORT	,SOCK_PROP_FLAGS,	NULL,NULL},
 	{	"type"				,SOCK_PROP_TYPE			,SOCK_PROP_FLAGS,	NULL,NULL},
+	{	"network_byte_order",SOCK_PROP_NETWORK_ORDER,JSPROP_ENUMERATE,	NULL,NULL},
 	{0}
 };
 
@@ -1024,6 +1190,10 @@ static jsMethodSpec js_socket_functions[] = {
 	{"sendfile",	js_sendfile,	1,	JSTYPE_BOOLEAN,	JSDOCSTR("filename")
 	,JSDOCSTR("send an entire file over the socket")
 	},
+	{"writeBin",	js_sendbin,		1,	JSTYPE_ALIAS },
+	{"sendBin",		js_sendbin,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("number value [,number bytes]")
+	,JSDOCSTR("send a binary integer over the socket, default number of bytes is 4 (32-bits)")
+	},
 	{"read",		js_recv,		1,	JSTYPE_ALIAS },
 	{"recv",		js_recv,		1,	JSTYPE_STRING,	JSDOCSTR("[maxlen]")
 	,JSDOCSTR("receive a string, default maxlen is 512 characters (AKA read)")
@@ -1036,8 +1206,14 @@ static jsMethodSpec js_socket_functions[] = {
 	{"recvline",	js_recvline,	0,	JSTYPE_STRING,	JSDOCSTR("[maxlen] [,timeout]")
 	,JSDOCSTR("receive a line-feed terminated string, default maxlen is 512 characters, default timeout is 30 seconds (AKA readline and readln)")
 	},
-	{"recvfrom",	js_recvfrom,	0,	JSTYPE_OBJECT,	JSDOCSTR("[maxlen]")
-	,JSDOCSTR("receive a string from (typically UDP) socket, returns object with <i>ip_address</i> and <i>port</i> of sender along with <i>data</i>")
+	{"recvfrom",	js_recvfrom,	0,	JSTYPE_OBJECT,	JSDOCSTR("[bool binary] [,maxlen or int_size]")
+	,JSDOCSTR("receive data (string or integer) from a socket (typically UDP)"
+	"<p>returns object with <i>ip_address</i> and <i>port</i> of sender along with <i>data</i>"
+	"<p><i>binary</i> defaults to <i>false</i>, <i>int_size</i> defaults to 4 bytes (32-bits)")
+	},
+	{"readBin",		js_recvbin,		0,	JSTYPE_ALIAS },
+	{"recvBin",		js_recvbin,		0,	JSTYPE_NUMBER,	JSDOCSTR("[number bytes]")
+	,JSDOCSTR("receive a binary integer from the socket, default number of bytes is 4 (32-bits)")
 	},
 	{"getoption",	js_getsockopt,	1,	JSTYPE_NUMBER,	JSDOCSTR("option")
 	,JSDOCSTR("get socket option value, option may be socket option name (see sockopts in sockdefs.js) or number")
@@ -1078,6 +1254,7 @@ js_socket_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsv
 		return(JS_FALSE);
 	}
 	p->type = type;
+	p->network_byte_order = TRUE;
 
 	if(!JS_SetPrivate(cx, obj, p)) {
 		JS_ReportError(cx,"JS_SetPrivate failed");
@@ -1135,6 +1312,7 @@ JSObject* DLLCALL js_CreateSocketObject(JSContext* cx, JSObject* parent, char *n
 
 	p->sock = sock;
 	p->external = TRUE;
+	p->network_byte_order = TRUE;
 
 	if(!JS_SetPrivate(cx, obj, p)) {
 		dbprintf(TRUE, p, "JS_SetPrivate failed");
