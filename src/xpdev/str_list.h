@@ -47,7 +47,7 @@ extern "C" {
 typedef char** str_list_t;
 
 /* Returns an allocated and terminated string list */
-str_list_t	strListAlloc(void);
+str_list_t	strListInit(void);
 
 /* Frees the strings in the list (and the list itself) */
 void		strListFree(str_list_t* list);
@@ -59,6 +59,9 @@ str_list_t	strListAdd(str_list_t* list, const char* str);
 /* Adds a string into the list at a specific index */
 str_list_t	strListAddAt(str_list_t* list, const char* str, size_t index);
 
+/* Append a string list onto an another string */
+str_list_t	strListAddList(str_list_t* list, str_list_t append_list);
+
 /* Add to an exiting or new string list by splitting specified string (str) */
 /* into multiple strings, separated by one of the delimit characters */
 str_list_t	strListSplit(str_list_t* list, char* str, const char* delimit);
@@ -66,11 +69,17 @@ str_list_t	strListSplit(str_list_t* list, char* str, const char* delimit);
 /* Same as above, but copies str to temporary heap buffer first */
 str_list_t	strListSplitCopy(str_list_t* list, const char* str, const char* delimit);
 
+/* Merge 2 string lists (no copying of string data) */
+str_list_t	strListMerge(str_list_t* list, str_list_t append_list);
+
 /* Count the number of strings in the list and returns the count */
 size_t		strListCount(const str_list_t list);
 
+/* Sort the strings in the string list */
 void		strListSortAlpha(str_list_t list);
 void		strListSortAlphaReverse(str_list_t list);
+
+/* Case-sensitive sorting */
 void		strListSortAlphaCase(str_list_t list);
 void		strListSortAlphaCaseReverse(str_list_t list);
 

@@ -39,7 +39,7 @@
 #include "genwrap.h"	/* stricmp */
 #include "str_list.h"
 
-str_list_t strListAlloc()
+str_list_t strListInit()
 {
 	str_list_t list;
 
@@ -63,7 +63,7 @@ size_t strListCount(const str_list_t list)
 	return(i);
 }
 
-str_list_t strListAddAt(str_list_t* list, const char* str, size_t count)
+static str_list_t str_list_add_at(str_list_t* list, char* str, size_t count)
 {
 	str_list_t lp;
 
@@ -71,13 +71,22 @@ str_list_t strListAddAt(str_list_t* list, const char* str, size_t count)
 		return(NULL);
 
 	*list=lp;
-	if((lp[count]=(char*)malloc(strlen(str)+1))==NULL)
-		return(NULL);
-
-	strcpy(lp[count++],str);
+	lp[count++]=str;
 	lp[count]=NULL;	/* terminate list */
 
 	return(lp);
+}
+
+str_list_t strListAddAt(str_list_t* list, const char* str, size_t count)
+{
+	char* buf;
+
+	if((buf=(char*)malloc(strlen(str)+1))==NULL)
+		return(NULL);
+
+	strcpy(buf,str);
+
+	return(str_list_add_at(list,buf,count));
 }
 
 
@@ -86,12 +95,23 @@ str_list_t strListAdd(str_list_t* list, const char* str)
 	return strListAddAt(list,str,strListCount(*list));
 }
 
+str_list_t	strListAddList(str_list_t* list, str_list_t add_list)
+{
+	size_t	i,j;
+
+	j=strListCount(*list);
+	for(i=0;add_list[i];i++)
+		strListAddAt(list,add_list[i],j++);
+
+	return(*list);
+}
+
 str_list_t strListSplit(str_list_t* list, char* str, const char* delimit)
 {
 	char*	token;
 
 	if(list==NULL) {
-		if((*list = strListAlloc())==NULL)
+		if((*list = strListInit())==NULL)
 			return(NULL);
 	}
 
@@ -113,6 +133,17 @@ str_list_t strListSplitCopy(str_list_t* list, const char* str, const char* delim
 	*list = strListSplit(list,buf,delimit);
 
 	free(buf);
+
+	return(*list);
+}
+
+str_list_t	strListMerge(str_list_t* list, str_list_t add_list)
+{
+	size_t	i,j;
+
+	j=strListCount(*list);
+	for(i=0;add_list[i];i++)
+		str_list_add_at(list,add_list[i],j++);
 
 	return(*list);
 }
