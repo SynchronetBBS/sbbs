@@ -25,6 +25,7 @@ $(LIBODIR)$(SLASH)exec.$(OFILE):		$(HEADERS) cmdshell.h
 $(LIBODIR)$(SLASH)execfile.$(OFILE):	$(HEADERS) cmdshell.h
 $(LIBODIR)$(SLASH)execfunc.$(OFILE):	$(HEADERS) cmdshell.h
 $(LIBODIR)$(SLASH)execmisc.$(OFILE):	$(HEADERS) cmdshell.h
+$(LIBODIR)$(SLASH)execnet.$(OFILE):	$(HEADERS) cmdshell.h
 $(LIBODIR)$(SLASH)execmsg.$(OFILE):		$(HEADERS) cmdshell.h
 $(LIBODIR)$(SLASH)fido.$(OFILE):		$(HEADERS)
 $(LIBODIR)$(SLASH)file.$(OFILE):      	$(HEADERS)
