@@ -198,7 +198,7 @@ $(EXEODIR):
 	mkdir $(EXEODIR)
 
 CON_OBJS	= $(EXEODIR)/sbbscon.o $(EXEODIR)/conwrap.o \
-		  $(EXEODIR)/ini_file.o $(EXEODIR)/sbbs_ini.o
+		  $(EXEODIR)/sbbs_ini.o
 FTP_OBJS	= $(LIBODIR)/ftpsrvr.o
 MAIL_OBJS	= $(LIBODIR)/mailsrvr.o $(LIBODIR)/mxlookup.o \
  		  $(LIBODIR)/mime.o $(LIBODIR)/base64.o

@@ -83,7 +83,6 @@ $(EXEODIR):
 $(SBBSMONO): $(OBJS) \
 	$(LIBODIR)\sbbscon.obj \
 	$(LIBODIR)\sbbs_ini.obj \
-	$(LIBODIR)\ini_file.obj \
 	$(LIBODIR)\ver.obj \
 	$(LIBODIR)\ftpsrvr.obj \
 	$(LIBODIR)\websrvr.obj \
