@@ -138,11 +138,11 @@ else
 endif
 
 # The following are needed for echocfg (uses UIFC)
-UIFC_OBJS =	$(EXEODIR)/uifcx.o
+UIFC_OBJS =	$(LIBODIR)/uifcx.o
 ifdef USE_FLTK
  CFLAGS +=	-DUSE_FLTK -I../../include/fltk
  UIFC_LFLAGS += -L../../lib/fltk/$(os) -L/usr/X11R6/lib -lm -lfltk -lX11
- UIFC_OBJS+=	$(EXEODIR)/uifcfltk.o
+ UIFC_OBJS+=	$(LIBODIR)/uifcfltk.o
 endif
 ifdef USE_CURSES
  CFLAGS +=	-DUSE_CURSES
@@ -151,7 +151,7 @@ ifdef USE_CURSES
  else
   UIFC_LFLAGS += -lcurses
  endif
- UIFC_OBJS +=	$(EXEODIR)/uifcc.o
+ UIFC_OBJS +=	$(LIBODIR)/uifcc.o
 endif
 
 #The following is needed for nspr support on Linux
@@ -214,12 +214,12 @@ $(LIBODIR):
 $(EXEODIR):
 	mkdir $(EXEODIR)
 
-CON_OBJS	= $(EXEODIR)/sbbscon.o $(EXEODIR)/conwrap.o \
-		  $(EXEODIR)/sbbs_ini.o
-FTPCON_OBJS	= $(EXEODIR)/sbbsftp.o $(EXEODIR)/conwrap.o \
-		  $(EXEODIR)/sbbs_ini.o
-WEBCON_OBJS	= $(EXEODIR)/sbbsweb.o $(EXEODIR)/conwrap.o \
-		  $(EXEODIR)/sbbs_ini.o
+CON_OBJS	= $(LIBODIR)/sbbscon.o $(LIBODIR)/conwrap.o \
+		  $(LIBODIR)/sbbs_ini.o
+FTPCON_OBJS	= $(LIBODIR)/sbbsftp.o $(LIBODIR)/conwrap.o \
+		  $(LIBODIR)/sbbs_ini.o
+WEBCON_OBJS	= $(LIBODIR)/sbbsweb.o $(LIBODIR)/conwrap.o \
+		  $(LIBODIR)/sbbs_ini.o
 CON_LDFLAGS	= -lftpsrvr -lwebsrvr -lmailsrvr -lservices
 FTP_OBJS	= $(LIBODIR)/ftpsrvr.o
 MAIL_OBJS	= $(LIBODIR)/mailsrvr.o $(LIBODIR)/mxlookup.o \
@@ -230,9 +230,9 @@ SERVICE_OBJS	= $(LIBODIR)/services.o
 MONO_OBJS	= $(CON_OBJS) $(FTP_OBJS) $(WEB_OBJS) \
 			$(MAIL_OBJS) $(SERVICE_OBJS)
 SMBLIB_OBJS = \
-	$(EXEODIR)/smblib.o \
-	$(EXEODIR)/filewrap.o \
-	$(EXEODIR)/crc16.o
+	$(LIBODIR)/smblib.o \
+	$(LIBODIR)/filewrap.o \
+	$(LIBODIR)/crc16.o
 
 
 # Monolithic Synchronet executable Build Rule
@@ -315,11 +315,11 @@ $(LIBODIR)/services.o: services.c services.h $(BUILD_DEPENDS)
 
 # Baja Utility
 BAJA_OBJS = \
-	$(EXEODIR)/baja.o \
-	$(EXEODIR)/ars.o \
-	$(EXEODIR)/crc32.o \
-	$(EXEODIR)/genwrap.o \
-	$(EXEODIR)/filewrap.o
+	$(LIBODIR)/baja.o \
+	$(LIBODIR)/ars.o \
+	$(LIBODIR)/crc32.o \
+	$(LIBODIR)/genwrap.o \
+	$(LIBODIR)/filewrap.o
 FORCE$(BAJA): $(BAJA_OBJS)
 
 $(BAJA): $(BAJA_OBJS)
@@ -328,9 +328,9 @@ $(BAJA): $(BAJA_OBJS)
 
 # Node Utility
 NODE_OBJS = \
-	$(EXEODIR)/node.o \
-	$(EXEODIR)/genwrap.o \
-	$(EXEODIR)/filewrap.o
+	$(LIBODIR)/node.o \
+	$(LIBODIR)/genwrap.o \
+	$(LIBODIR)/filewrap.o
 FORCE$(NODE): $(NODE_OBJS)
 
 $(NODE): $(NODE_OBJS)
@@ -339,10 +339,10 @@ $(NODE): $(NODE_OBJS)
 
 # FIXSMB Utility
 FIXSMB_OBJS = \
-	$(EXEODIR)/fixsmb.o \
+	$(LIBODIR)/fixsmb.o \
 	$(SMBLIB_OBJS) \
-	$(EXEODIR)/genwrap.o \
-	$(EXEODIR)/str_util.o
+	$(LIBODIR)/genwrap.o \
+	$(LIBODIR)/str_util.o
 FORCE$(FIXSMB): $(FIXSMB_OBJS)
 	
 $(FIXSMB): $(FIXSMB_OBJS)
@@ -351,11 +351,11 @@ $(FIXSMB): $(FIXSMB_OBJS)
 
 # CHKSMB Utility
 CHKSMB_OBJS = \
-	$(EXEODIR)/chksmb.o \
+	$(LIBODIR)/chksmb.o \
 	$(SMBLIB_OBJS) \
-	$(EXEODIR)/conwrap.o \
-	$(EXEODIR)/dirwrap.o \
-	$(EXEODIR)/genwrap.o
+	$(LIBODIR)/conwrap.o \
+	$(LIBODIR)/dirwrap.o \
+	$(LIBODIR)/genwrap.o
 FORCE$(CHKSMB): $(CHKSMB_OBJS)
 
 $(CHKSMB): $(CHKSMB_OBJS)
@@ -364,16 +364,16 @@ $(CHKSMB): $(CHKSMB_OBJS)
 
 # SMB Utility
 SMBUTIL_OBJS = \
-	$(EXEODIR)/smbutil.o \
+	$(LIBODIR)/smbutil.o \
 	$(SMBLIB_OBJS) \
-	$(EXEODIR)/conwrap.o \
-	$(EXEODIR)/dirwrap.o \
-	$(EXEODIR)/genwrap.o \
-	$(EXEODIR)/smbtxt.o \
-	$(EXEODIR)/crc32.o \
-	$(EXEODIR)/lzh.o \
-	$(EXEODIR)/date_str.o \
-	$(EXEODIR)/str_util.o
+	$(LIBODIR)/conwrap.o \
+	$(LIBODIR)/dirwrap.o \
+	$(LIBODIR)/genwrap.o \
+	$(LIBODIR)/smbtxt.o \
+	$(LIBODIR)/crc32.o \
+	$(LIBODIR)/lzh.o \
+	$(LIBODIR)/date_str.o \
+	$(LIBODIR)/str_util.o
 FORCE$(SMBUTIL): $(SMBUTIL_OBJS)
 	
 $(SMBUTIL): $(SMBUTIL_OBJS)
@@ -382,24 +382,24 @@ $(SMBUTIL): $(SMBUTIL_OBJS)
 
 # SBBSecho (FidoNet Packet Tosser)
 SBBSECHO_OBJS = \
-	$(EXEODIR)/sbbsecho.o \
-	$(EXEODIR)/ars.o \
-	$(EXEODIR)/crc32.o \
-	$(EXEODIR)/date_str.o \
-	$(EXEODIR)/load_cfg.o \
-	$(EXEODIR)/scfglib1.o \
-	$(EXEODIR)/scfglib2.o \
-	$(EXEODIR)/nopen.o \
-	$(EXEODIR)/str_util.o \
-	$(EXEODIR)/dat_rec.o \
-	$(EXEODIR)/userdat.o \
-	$(EXEODIR)/rechocfg.o \
-	$(EXEODIR)/conwrap.o \
-	$(EXEODIR)/dirwrap.o \
-	$(EXEODIR)/genwrap.o \
+	$(LIBODIR)/sbbsecho.o \
+	$(LIBODIR)/ars.o \
+	$(LIBODIR)/crc32.o \
+	$(LIBODIR)/date_str.o \
+	$(LIBODIR)/load_cfg.o \
+	$(LIBODIR)/scfglib1.o \
+	$(LIBODIR)/scfglib2.o \
+	$(LIBODIR)/nopen.o \
+	$(LIBODIR)/str_util.o \
+	$(LIBODIR)/dat_rec.o \
+	$(LIBODIR)/userdat.o \
+	$(LIBODIR)/rechocfg.o \
+	$(LIBODIR)/conwrap.o \
+	$(LIBODIR)/dirwrap.o \
+	$(LIBODIR)/genwrap.o \
 	$(SMBLIB_OBJS) \
-	$(EXEODIR)/smbtxt.o \
-	$(EXEODIR)/lzh.o
+	$(LIBODIR)/smbtxt.o \
+	$(LIBODIR)/lzh.o
 
 FORCE$(SBBSECHO): $(SBBSECHO_OBJS)
 
@@ -409,15 +409,15 @@ $(SBBSECHO): $(SBBSECHO_OBJS)
 
 # SBBSecho Configuration Program
 ECHOCFG_OBJS = \
-	$(EXEODIR)/echocfg.o \
-	$(EXEODIR)/rechocfg.o \
+	$(LIBODIR)/echocfg.o \
+	$(LIBODIR)/rechocfg.o \
 	$(UIFC_OBJS) \
-	$(EXEODIR)/nopen.o \
-	$(EXEODIR)/crc16.o \
-	$(EXEODIR)/str_util.o \
-	$(EXEODIR)/filewrap.o \
-	$(EXEODIR)/genwrap.o \
-	$(EXEODIR)/dirwrap.o
+	$(LIBODIR)/nopen.o \
+	$(LIBODIR)/crc16.o \
+	$(LIBODIR)/str_util.o \
+	$(LIBODIR)/filewrap.o \
+	$(LIBODIR)/genwrap.o \
+	$(LIBODIR)/dirwrap.o
 
 FORCE$(ECHOCFG): $(ECHOCFG_OBJS)
 
@@ -427,21 +427,21 @@ $(ECHOCFG): $(ECHOCFG_OBJS)
 
 # ADDFILES
 ADDFILES_OBJS = \
-	$(EXEODIR)/addfiles.o \
-	$(EXEODIR)/ars.o \
-	$(EXEODIR)/date_str.o \
-	$(EXEODIR)/load_cfg.o \
-	$(EXEODIR)/scfglib1.o \
-	$(EXEODIR)/scfglib2.o \
-	$(EXEODIR)/nopen.o \
-	$(EXEODIR)/crc16.o \
-	$(EXEODIR)/str_util.o \
-	$(EXEODIR)/dat_rec.o \
-	$(EXEODIR)/userdat.o \
-	$(EXEODIR)/filedat.o \
-	$(EXEODIR)/filewrap.o \
-	$(EXEODIR)/dirwrap.o \
-	$(EXEODIR)/genwrap.o
+	$(LIBODIR)/addfiles.o \
+	$(LIBODIR)/ars.o \
+	$(LIBODIR)/date_str.o \
+	$(LIBODIR)/load_cfg.o \
+	$(LIBODIR)/scfglib1.o \
+	$(LIBODIR)/scfglib2.o \
+	$(LIBODIR)/nopen.o \
+	$(LIBODIR)/crc16.o \
+	$(LIBODIR)/str_util.o \
+	$(LIBODIR)/dat_rec.o \
+	$(LIBODIR)/userdat.o \
+	$(LIBODIR)/filedat.o \
+	$(LIBODIR)/filewrap.o \
+	$(LIBODIR)/dirwrap.o \
+	$(LIBODIR)/genwrap.o
 
 FORCE$(ADDFILES): $(ADDFILES_OBJS)
 
@@ -451,20 +451,20 @@ $(ADDFILES): $(ADDFILES_OBJS)
 
 # FILELIST
 FILELIST_OBJS = \
-	$(EXEODIR)/filelist.o \
-	$(EXEODIR)/ars.o \
-	$(EXEODIR)/date_str.o \
-	$(EXEODIR)/load_cfg.o \
-	$(EXEODIR)/scfglib1.o \
-	$(EXEODIR)/scfglib2.o \
-	$(EXEODIR)/nopen.o \
-	$(EXEODIR)/crc16.o \
-	$(EXEODIR)/str_util.o \
-	$(EXEODIR)/dat_rec.o \
-	$(EXEODIR)/filedat.o \
-	$(EXEODIR)/filewrap.o \
-	$(EXEODIR)/dirwrap.o \
-	$(EXEODIR)/genwrap.o
+	$(LIBODIR)/filelist.o \
+	$(LIBODIR)/ars.o \
+	$(LIBODIR)/date_str.o \
+	$(LIBODIR)/load_cfg.o \
+	$(LIBODIR)/scfglib1.o \
+	$(LIBODIR)/scfglib2.o \
+	$(LIBODIR)/nopen.o \
+	$(LIBODIR)/crc16.o \
+	$(LIBODIR)/str_util.o \
+	$(LIBODIR)/dat_rec.o \
+	$(LIBODIR)/filedat.o \
+	$(LIBODIR)/filewrap.o \
+	$(LIBODIR)/dirwrap.o \
+	$(LIBODIR)/genwrap.o
 
 FORCE$(FILELIST): $(FILELIST_OBJS)
 
@@ -474,20 +474,20 @@ $(FILELIST): $(FILELIST_OBJS)
 
 # MAKEUSER
 MAKEUSER_OBJS = \
-	$(EXEODIR)/makeuser.o \
-	$(EXEODIR)/ars.o \
-	$(EXEODIR)/date_str.o \
-	$(EXEODIR)/load_cfg.o \
-	$(EXEODIR)/scfglib1.o \
-	$(EXEODIR)/scfglib2.o \
-	$(EXEODIR)/nopen.o \
-	$(EXEODIR)/crc16.o \
-	$(EXEODIR)/str_util.o \
-	$(EXEODIR)/dat_rec.o \
-	$(EXEODIR)/userdat.o \
-	$(EXEODIR)/filewrap.o \
-	$(EXEODIR)/dirwrap.o \
-	$(EXEODIR)/genwrap.o
+	$(LIBODIR)/makeuser.o \
+	$(LIBODIR)/ars.o \
+	$(LIBODIR)/date_str.o \
+	$(LIBODIR)/load_cfg.o \
+	$(LIBODIR)/scfglib1.o \
+	$(LIBODIR)/scfglib2.o \
+	$(LIBODIR)/nopen.o \
+	$(LIBODIR)/crc16.o \
+	$(LIBODIR)/str_util.o \
+	$(LIBODIR)/dat_rec.o \
+	$(LIBODIR)/userdat.o \
+	$(LIBODIR)/filewrap.o \
+	$(LIBODIR)/dirwrap.o \
+	$(LIBODIR)/genwrap.o
 
 FORCE$(MAKEUSER): $(MAKEUSER_OBJS)
 
@@ -497,7 +497,7 @@ $(MAKEUSER): $(MAKEUSER_OBJS)
 
 # JSEXEC
 JSEXEC_OBJS = \
-	$(EXEODIR)/jsexec.o \
+	$(LIBODIR)/jsexec.o \
 	$(SBBSLIB)
 
 FORCE$(JSEXEC): $(JSEXEC_OBJS)
