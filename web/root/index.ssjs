@@ -35,7 +35,7 @@ if(include_statistics) {
 			,system.stats.files_uploaded_today) + "</td>");
 	writeln("</tr>");
 	writeln("<tr>");
-	writeln("<td class=\"main_stats\">Time-on</td><td class=\"main_stats_bold\">" + system.stats.timeon_today + "</td>");
+	writeln("<td class=\"main_stats\">Time On</td><td class=\"main_stats_bold\">" + system.stats.timeon_today + " minutes</td>");
 	writeln("<td class=\"main_stats\">New Users</td><td class=\"main_stats_bold\">" + system.stats.new_users_today + "</td>");
 	writeln("<td class=\"main_stats\">Emails</td><td class=\"main_stats_bold\">" + system.stats.email_sent_today + "</td>");
 	writeln("<td class=\"main_stats\">Downloads</td><td class=\"main_stats_bold\">" 
@@ -46,11 +46,11 @@ if(include_statistics) {
     writeln("</tr>");
     writeln("</table><br />");
    writeln("</td></tr><tr>");
-    writeln("<td align=\"center\">All Time<br /><br />");
+    writeln("<td align=\"center\">System Totals<br /><br />");
     
     writeln("<table class=\"main_stats\">");
     writeln("<tr>");
-    writeln("<td class=\"main_stats\">Time-on</td><td class=\"main_stats_bold\">" + system.stats.total_timeon + "</td>");writeln("<td class=\"main_stats\">Logons</td><td class=\"main_stats_bold\">" + system.stats.total_logons + "</td>");
+    writeln("<td class=\"main_stats\">Time On</td><td class=\"main_stats_bold\">" + system.stats.total_timeon + " minutes</td>");writeln("<td class=\"main_stats\">Logons</td><td class=\"main_stats_bold\">" + system.stats.total_logons + "</td>");
     writeln("<td class=\"main_stats\">Messages</td><td class=\"main_stats_bold\">" + system.stats.total_messages + "</td>");
     writeln("</tr>");
     writeln("<tr>");
