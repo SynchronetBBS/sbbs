@@ -430,8 +430,8 @@ int main(int argc, char** argv)
 	char*	ctrl_dir;
 	BOOL	quit=FALSE;
 
-	printf("\n%s%c  %s\n\n"
-		,VERSION_NOTICE,REVISION,COPYRIGHT_NOTICE);
+	printf("\nSynchronet Console for %s  Version %s%c  %s\n\n"
+		,PLATFORM_DESC,VERSION,REVISION,COPYRIGHT_NOTICE);
 
 	ctrl_dir=getenv("SBBSCTRL");	/* read from environment variable */
 	if(ctrl_dir==NULL)
@@ -544,7 +544,6 @@ int main(int argc, char** argv)
 		while(*arg=='-')/* ignore prepended slashes */
 			arg++;
 		if(!stricmp(arg,"defaults")) {
-			printf("\n");
 			printf("Default settings:\n");
 			printf("\n");
 			printf("Telnet server port:\t%u\n",IPPORT_TELNET);
@@ -554,7 +553,6 @@ int main(int argc, char** argv)
 			printf("SMTP server port:\t%u\n",IPPORT_SMTP);
 			printf("SMTP relay port:\t%u\n",IPPORT_SMTP);
 			printf("POP3 server port:\t%u\n",IPPORT_POP3);
-			printf("\n");
 			return(0);
 		}
 		switch(toupper(*(arg++))) {
@@ -750,7 +748,7 @@ int main(int argc, char** argv)
 					quit=TRUE;
 					break;
 				default:
-					printf("\nSynchronet BBS Console Version %s%c Help\n\n",VERSION,REVISION);
+					printf("\nSynchronet Console Version %s%c Help\n\n",VERSION,REVISION);
 					printf("q   = quit\n");
 #if 0	/* to do */	
 					printf("n   = node list\n");
