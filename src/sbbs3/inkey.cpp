@@ -45,7 +45,7 @@
 /* Returns character if a key has been hit remotely and responds			*/
 /* Called from functions getkey, msgabort and main_sec						*/
 /****************************************************************************/
-char sbbs_t::inkey(long mode)
+char sbbs_t::inkey(long mode, unsigned long timeout)
 {
 	uchar	ch=0;
 
@@ -54,15 +54,15 @@ char sbbs_t::inkey(long mode)
         if(keybufbot==KEY_BUFSIZE)
             keybufbot=0; 
 	} else
-		ch=incom();
+		ch=incom(timeout);
 	if(ch==0) {
 		// moved here from getkey() on AUG-29-2001
 		if(sys_status&SS_SYSPAGE) 
 			sbbs_beep(sbbs_random(800),100);
-
+#if 0
 		if(!(mode&K_GETSTR) || mode&K_LOWPRIO || cfg.node_misc&NM_LOWPRIO)
 			YIELD();
-
+#endif
 		return(0);
 	}
 
@@ -248,15 +248,10 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 			hotkey_inside--;
 			return(0); 
 		case ESC:
-			if(mode&K_GETSTR)
-				i=60;	// 3 seconds in GETSTR mode
-			else
-				i=20;	// 1 second otherwise
-			for(;i && !rioctl(RXBC);i--)
-				mswait(50);
-			if(!i)		// timed-out waiting for '['
+			i=incom(mode&K_GETSTR ? 3000:1000);
+			if(i==NOINP)		// timed-out waiting for '['
 				return(ESC);
-			ch=incom();
+			ch=i;
 			if(ch!='[') {
 				ungetkey(ESC);
 				ungetkey(ch);
