@@ -3422,7 +3422,7 @@ int pkt_to_msg(FILE* fidomsg, fmsghdr_t* hdr, char* info)
 			logprintf("ERROR %u line %d creating %s",errno,__LINE__,path);
 			return(-1);
 		}
-		write(file,&hdr,sizeof(hdr));
+		write(file,hdr,sizeof(fmsghdr_t));
 		write(file,fmsgbuf,l+1); /* Write the '\0' terminator too */
 		close(file);
 		printf("%s", path);
