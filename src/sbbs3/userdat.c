@@ -38,7 +38,7 @@
 #include "sbbs.h"
 #include "cmdshell.h"
 #ifndef USHRT_MAX
-	#define USHRT_MAX ((1<<sizeof(unsigned short))-1)
+	#define USHRT_MAX ((unsigned short)~0)
 #endif
 
 /* convenient space-saving global variables */
