@@ -1329,58 +1329,66 @@ static char* cmdstr(char* instr, char* msgpath, char* lstpath, char* errpath, ch
 }
 
 
-static int parse_header_field(char* buf, smbmsg_t* msg)
+static int parse_header_field(char* buf, smbmsg_t* msg, ushort* type)
 {
 	char*	p;
 	ushort	nettype;
+
+	if(buf[0]<=' ' && *type!=UNKNOWN) {	/* folded header, append to previous */
+		p=buf;
+		truncsp(p);
+		smb_hfield_append(msg,*type,2,"\r\n");
+		return smb_hfield_append(msg,*type, (ushort)strlen(p), p);
+	}
 
 	if(!strnicmp(buf, "TO:",3)) {
 		p=buf+3;
 		while(*p && *p<=' ') p++;
 		truncsp(p);
-		return smb_hfield(msg, RFC822TO, (ushort)strlen(p), p);
+		return smb_hfield(msg, *type=RFC822TO, (ushort)strlen(p), p);
 	}
 	if(!strnicmp(buf, "REPLY-TO:",9)) {
 		p=buf+9;
 		while(*p && *p<=' ') p++;
 		truncsp(p);
-		smb_hfield(msg, RFC822REPLYTO, (ushort)strlen(p), p);
+		smb_hfield(msg, *type=RFC822REPLYTO, (ushort)strlen(p), p);
 		if(*p=='<')  {
 			p++;
 			truncstr(p,">");
 		}
 		nettype=NET_INTERNET;
 		smb_hfield(msg, REPLYTONETTYPE, sizeof(nettype), &nettype);
-		return smb_hfield(msg, REPLYTONETADDR, (ushort)strlen(p), p);
+		return smb_hfield(msg, *type=REPLYTONETADDR, (ushort)strlen(p), p);
 	}
 	if(!strnicmp(buf, "FROM:", 5)) {
 		p=buf+5;
 		while(*p && *p<=' ') p++;
 		truncsp(p);
-		return smb_hfield(msg, RFC822FROM, (ushort)strlen(p), p);
+		return smb_hfield(msg, *type=RFC822FROM, (ushort)strlen(p), p);
 	}
 	if(!strnicmp(buf, "ORGANIZATION:",13)) {
 		p=buf+13;
 		while(*p && *p<=' ') p++;
-		return smb_hfield(msg, SENDERORG, (ushort)strlen(p), p);
+		return smb_hfield(msg, *type=SENDERORG, (ushort)strlen(p), p);
 	}
 	if(!strnicmp(buf, "DATE:",5)) {
 		p=buf+5;
 		msg->hdr.when_written=rfc822date(p);
+		*type=UNKNOWN;
 		return(0);
 	}
 	if(!strnicmp(buf, "MESSAGE-ID:",11)) {
 		p=buf+11;
 		while(*p && *p<=' ') p++;
-		return smb_hfield(msg, RFC822MSGID, (ushort)strlen(p), p);
+		return smb_hfield(msg, *type=RFC822MSGID, (ushort)strlen(p), p);
 	}
 	if(!strnicmp(buf, "IN-REPLY-TO:",12)) {
 		p=buf+12;
 		while(*p && *p<=' ') p++;
-		return smb_hfield(msg, RFC822REPLYID, (ushort)strlen(p), p);
+		return smb_hfield(msg, *type=RFC822REPLYID, (ushort)strlen(p), p);
 	}
 	/* Fall-through */
-	return smb_hfield(msg, RFC822HEADER, (ushort)strlen(buf), buf);
+	return smb_hfield(msg, *type=RFC822HEADER, (ushort)strlen(buf), buf);
 }
 
 static void smtp_thread(void* arg)
@@ -1410,6 +1418,7 @@ static void smtp_thread(void* arg)
 	char		dest_host[128];
 	ushort		dest_port;
 	socklen_t	addr_len;
+	ushort		hfield_type;
 	ushort		nettype;
 	uint		usernum;
 	ulong		lines=0;
@@ -1745,6 +1754,7 @@ static void smtp_thread(void* arg)
 				memset(&msg,0,sizeof(smbmsg_t));		
 
 				/* Parse message header here */
+				hfield_type=UNKNOWN;
 				smb_error=0; /* no SMB error */
 				while(!feof(msgtxt)) {
 					if(!fgets(buf,sizeof(buf),msgtxt))
@@ -1772,7 +1782,7 @@ static void smtp_thread(void* arg)
 					if(!strnicmp(buf, "FROM:", 5)
 						&& !chk_email_addr(socket,buf+5,host_name,host_ip,rcpt_addr,reverse_path))
 						break;
-					if((smb_error=parse_header_field(buf,&msg))!=0) {
+					if((smb_error=parse_header_field(buf,&msg,&hfield_type))!=0) {
 						if(smb_error==SMB_ERR_HDR_LEN)
 							lprintf("%04d !SMTP MESSAGE HEADER EXCEEDS %u BYTES"
 								,socket, SMB_MAX_HDR_LEN);
