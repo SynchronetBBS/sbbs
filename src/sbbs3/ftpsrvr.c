@@ -1112,7 +1112,7 @@ int sockreadline(SOCKET socket, char* buf, int len, time_t* lastactive)
 	while(rd<len-1) {
 
 		tv.tv_sec=startup->max_inactivity;
-		tv.tv_usec=0;
+		tv.tv_usec=1000;
 
 		FD_ZERO(&socket_set);
 		FD_SET(socket,&socket_set);
@@ -1132,7 +1132,6 @@ int sockreadline(SOCKET socket, char* buf, int len, time_t* lastactive)
 						,startup->max_inactivity);
 					return(0);
 				}
-				YIELD();
 				continue;
 			}
 			recverror(socket,i,__LINE__);
@@ -1422,10 +1421,8 @@ static void send_thread(void* arg)
 			error=TRUE;
 			break;
 		}
-		if(i<1) {
-			YIELD();
+		if(i<1)
 			continue;
-		}
 
 		fseek(fp,xfer.filepos+total,SEEK_SET);
 		rd=fread(buf,sizeof(char),sizeof(buf),fp);
@@ -1678,10 +1675,8 @@ static void receive_thread(void* arg)
 			error=TRUE;
 			break;
 		}
-		if(i<1) {
-			YIELD();
+		if(i<1)
 			continue;
-		}
 
 #if defined(SOCKET_DEBUG_RECV_BUF)
 		socket_debug[xfer.ctrl_sock]|=SOCKET_DEBUG_RECV_BUF;
@@ -4661,10 +4656,8 @@ void DLLCALL ftp_server(void* arg)
 			FD_SET(server_socket,&socket_set);
 
 			if((i=select(server_socket+1,&socket_set,NULL,NULL,&tv))<1) {
-				if(i==0) {
-					YIELD();
+				if(i==0)
 					continue;
-				}
 				if(ERROR_VALUE==EINTR)
 					lprintf("0000 FTP Server listening interrupted");
 				else if(ERROR_VALUE == ENOTSOCK)
