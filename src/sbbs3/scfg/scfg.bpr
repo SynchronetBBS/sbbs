@@ -6,7 +6,7 @@
     <PROJECT value="scfg.exe"/>
     <OBJFILES value="scfg.obj scfgxtrn.obj scfgmsg.obj scfgnet.obj scfgnode.obj scfgsub.obj 
       scfgsys.obj scfgxfr1.obj scfgxfr2.obj scfgchat.obj ..\..\uifc\uifc.obj 
-      ..\scfgsave.obj ..\scfglib1.obj ..\smblib.obj ..\scfglib2.obj ..\ars.obj 
+      ..\scfgsave.obj ..\scfglib1.obj ..\smblib.obj ..\scfglib2.obj 
       ..\load_cfg.obj ..\crc32.obj ..\userdat.obj ..\date_str.obj 
       ..\..\uifc\uifcx.obj ..\..\xpdev\genwrap.obj ..\..\xpdev\filewrap.obj 
       ..\..\xpdev\dirwrap.obj ..\str_util.obj ..\nopen.obj ..\crc16.obj 
@@ -23,24 +23,24 @@
       ibsmp.bpi bdertl.bpi vcldbx.bpi qrpt.bpi teeui.bpi teedb.bpi tee.bpi 
       dss.bpi teeqr.bpi ibxpress.bpi dsnap.bpi vclie.bpi inetdb.bpi inet.bpi 
       nmfast.bpi webdsnap.bpi bcbie.bpi dclocx.bpi bcb2kaxserver.bpi"/>
-    <PATHCPP value=".;..\..\uifc;..;..;..;..;..;..;..;..;..;..\..\uifc;..\..\xpdev;..\..\xpdev;..\..\xpdev;..;..;..;.."/>
+    <PATHCPP value=".;..\..\uifc;..;..;..;..;..;..;..;..;..\..\uifc;..\..\xpdev;..\..\xpdev;..\..\xpdev;..;..;..;.."/>
     <PATHPAS value=".;"/>
     <PATHRC value=".;"/>
     <PATHASM value=".;"/>
     <DEBUGLIBPATH value="$(BCB)\lib\debug"/>
     <RELEASELIBPATH value="$(BCB)\lib\release"/>
     <LINKER value="ilink32"/>
-    <USERDEFINES value="_DEBUG"/>
+    <USERDEFINES value="_DEBUG;SCFG"/>
     <SYSDEFINES value="NO_STRICT;_NO_VCL;USEPACKAGES"/>
     <MAINSOURCE value="scfg.bpf"/>
     <INCLUDEPATH value="..\;..;$(BCB)\include;$(BCB)\include\vcl;..\..\uifc;..\..\xpdev"/>
-    <LIBPATH value="..\..\xpdev;..\;..;..\..\uifc;$(BCB)\lib\obj;$(BCB)\lib"/>
+    <LIBPATH value="..\;..\..\xpdev;..;..\..\uifc;$(BCB)\lib\obj;$(BCB)\lib"/>
     <WARNINGS value="-w-8065 -w-8064 -w-par -w-csu"/>
     <OTHERFILES value=""/>
   </MACROS>
   <OPTIONS>
-    <IDLCFLAGS value="-src_suffix cpp -D_DEBUG -I..\. -I.. -I$(BCB)\include -I$(BCB)\include\vcl 
-      -I..\..\uifc -I..\..\xpdev -boa"/>
+    <IDLCFLAGS value="-I..\. -I.. -I$(BCB)\include -I$(BCB)\include\vcl -I..\..\uifc 
+      -I..\..\xpdev -src_suffix cpp -D_DEBUG -DSCFG -boa"/>
     <CFLAG1 value="-Od -H=c:\borland\CBUILD~2\lib\vcl60.csm -Hc -Vx -Ve -X- -r- -a8 -b- -k -y 
       -v -vi- -tWC -tWM- -c"/>
     <PFLAGS value="-$YD -$W -$O- -$A8 -v -JPHNE -M"/>
@@ -72,7 +72,6 @@
       <FILE FILENAME="..\scfglib1.c" FORMNAME="" UNITNAME="scfglib1" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="..\smblib.c" FORMNAME="" UNITNAME="smblib" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="..\scfglib2.c" FORMNAME="" UNITNAME="scfglib2" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="..\ars.c" FORMNAME="" UNITNAME="ars" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="..\load_cfg.c" FORMNAME="" UNITNAME="load_cfg" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="..\crc32.c" FORMNAME="" UNITNAME="crc32" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="..\userdat.c" FORMNAME="" UNITNAME="userdat" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
@@ -128,19 +127,21 @@ Item5=$(BCB)\include;$(BCB)\include\vcl;..\..\uifc
 Item6=$(BCB)\include;$(BCB)\include\vcl
 
 [HistoryLists\hlLibraryPath]
-Count=3
-Item0=..\;..;..\..\uifc;$(BCB)\lib\obj;$(BCB)\lib
-Item1=..\;..\..\uifc;$(BCB)\lib\obj;$(BCB)\lib
-Item2=$(BCB)\lib\obj;$(BCB)\lib
+Count=4
+Item0=..\..\xpdev;..\;..;..\..\uifc;$(BCB)\lib\obj;$(BCB)\lib
+Item1=..\;..;..\..\uifc;$(BCB)\lib\obj;$(BCB)\lib
+Item2=..\;..\..\uifc;$(BCB)\lib\obj;$(BCB)\lib
+Item3=$(BCB)\lib\obj;$(BCB)\lib
 
 [HistoryLists\hlDebugSourcePath]
 Count=1
 Item0=$(BCB)\source\vcl
 
 [HistoryLists\hlConditionals]
-Count=2
-Item0=_DEBUG
-Item1=_DEBUG;JAVASCRIPT
+Count=3
+Item0=_DEBUG;SCFG
+Item1=_DEBUG
+Item2=_DEBUG;JAVASCRIPT
 
 [Debugging]
 DebugSourceDirs=$(BCB)\source\vcl
