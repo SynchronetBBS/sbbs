@@ -86,6 +86,6 @@ function getsizestr(size, bytes)
 		outstr=format("%ld,%03ldP",(size/1000),(size%1000));
 		return(outstr);
 	}
-	sprintf(outstr,"Too damn big to download.");
+	outstr="Too damn big to download.";
 	return(outstr);
 }
