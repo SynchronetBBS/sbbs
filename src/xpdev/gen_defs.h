@@ -73,7 +73,6 @@
 #define TAB 	'\t'				/* Horizontal tabulation	^I	*/
 #define LF		'\n'				/* Line feed				^J	*/
 #define CR		'\r'				/* Carriage return			^M	*/
-#define SP		' '					/* Space						*/
 
 enum {
 	 CTRL_A=1
