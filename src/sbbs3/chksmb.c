@@ -143,7 +143,7 @@ int main(int argc, char **argv)
 	smbmsg_t	msg;
 
 	fprintf(stderr,"\nCHKSMB v2.12 - Check Synchronet Message Base - "
-		"Copyright 2002 Rob Swindell\n");
+		"Copyright 2003 Rob Swindell\n");
 
 	if(argc<2) {
 		printf("%s",usage);
@@ -203,7 +203,7 @@ int main(int argc, char **argv)
 
 	smb.retry_time=30;
 	if((i=smb_open(&smb))!=0) {
-		printf("smb_open returned %d\n",i);
+		printf("smb_open returned %d: %s\n",i,smb.last_error);
 		errors++;
 		continue; }
 
@@ -215,7 +215,7 @@ int main(int argc, char **argv)
 
 	if((i=smb_locksmbhdr(&smb))!=0) {
 		smb_close(&smb);
-		printf("smb_locksmbhdr returned %d\n",i);
+		printf("smb_locksmbhdr returned %d: %s\n",i,smb.last_error);
 		errors++;
 		continue; }
 
@@ -230,11 +230,11 @@ int main(int argc, char **argv)
 
 	if(chkalloc && !(smb.status.attr&SMB_HYPERALLOC)) {
 		if((i=smb_open_ha(&smb))!=0) {
-			printf("smb_open_ha returned %d\n",i);
+			printf("smb_open_ha returned %d: %s\n",i,smb.last_error);
 			return(++errors); }
 
 		if((i=smb_open_da(&smb))!=0) {
-			printf("smb_open_da returned %d\n",i);
+			printf("smb_open_da returned %d: %s\n",i,smb.last_error);
 			return(++errors); } }
 
 	headers=deleted=orphan=dupenumhdr=attr=zeronum=timeerr=lockerr=hdrerr=0;
@@ -246,7 +246,7 @@ int main(int argc, char **argv)
 		msg.idx.offset=l;
 		msgerr=0;
 		if((i=smb_lockmsghdr(&smb,&msg))!=0) {
-			printf("\n(%06lX) smb_lockmsghdr returned %d\n",l,i);
+			printf("\n(%06lX) smb_lockmsghdr returned %d: %s\n",l,i,smb.last_error);
 			lockerr++;
 			headers++;
 			size=SHD_BLOCK_LEN;
@@ -258,7 +258,7 @@ int main(int argc, char **argv)
 					,(l-smb.status.header_offset)/SHD_BLOCK_LEN,SEEK_SET);
 				j=fgetc(smb.sha_fp);
 				if(j) { 			/* Allocated block or at EOF */
-					printf("%s\n(%06lX) smb_getmsghdr returned %d\n",beep,l,i);
+					printf("%s\n(%06lX) smb_getmsghdr returned %d: %s\n",beep,l,i,smb.last_error);
 					hdrerr++; }
 				else
 					delhdrblocks++; }
