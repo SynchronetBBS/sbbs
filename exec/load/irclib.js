@@ -164,11 +164,18 @@ function IRC_create_default_mask(uh) {
 	if (tmp[0][0] == "~")
 		tmp[0] = tmp[0].slice(1);
 	tmp[0] = tmp[0].slice(0,9); // always make sure there's room.
-	var uh_chopped = tmp[1].slice(tmp[1].indexOf(".")+1);
-	if (uh_chopped.indexOf(".") == -1)
-		uh_chopped = tmp[1];
-	else
-		uh_chopped = "*." + uh_chopped;
+	// Check to see if we're an IP address
+	var last_quad = tmp[1].slice(tmp[1].lastIndexOf(".")+1);
+	var uh_chopped;
+	if (last_quad == parseInt(last_quad)) { //ip
+		uh_chopped = tmp[1].slice(0,tmp[1].lastIndexOf(".")) + ".*";
+	} else { //hostname
+		uh_chopped = tmp[1].slice(tmp[1].indexOf(".")+1);
+		if (uh_chopped.indexOf(".") == -1)
+			uh_chopped = tmp[1];
+		else
+			uh_chopped = "*." + uh_chopped;
+	}
 	return "*" + tmp[0] + "@" + uh_chopped;
 }
 
