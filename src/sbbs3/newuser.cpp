@@ -296,7 +296,8 @@ void sbbs_t::newuser()
 	CLS;
 	answertime=time(NULL);		/* could take 10 minutes to get this far */
 
-	if(cfg.total_xedits && cfg.uq&UQ_XEDIT && !noyes("Use an external editor")) {
+	if(cfg.total_xedits && cfg.uq&UQ_XEDIT 
+		&& !noyes("Use an external text editor")) {
 		if(useron.xedit) useron.xedit--;
 		for(i=0;i<cfg.total_xedits;i++)
 			uselect(1,i,"External Editor",cfg.xedit[i]->name,cfg.xedit[i]->ar);
