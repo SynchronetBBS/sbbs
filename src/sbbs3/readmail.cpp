@@ -257,8 +257,7 @@ void sbbs_t::readmail(uint usernumber, int which)
 										&& chk_ar(cfg.prot[i]->ar,&useron))
 										break;
 								if(i<cfg.total_prots) {
-									j=protocol(cmdstr(cfg.prot[i]->dlcmd,str2,nulstr
-										,NULL),0);
+									j=protocol(cmdstr(cfg.prot[i]->dlcmd,str2,nulstr,NULL),false);
 									if((cfg.prot[i]->misc&PROT_DSZLOG
 										&& checkprotlog(&fd))
 										|| (!(cfg.prot[i]->misc&PROT_DSZLOG) && !j)) {

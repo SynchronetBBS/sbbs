@@ -546,7 +546,7 @@ public:
 	/* download.cpp */
 	void	downloadfile(file_t* f);
 	void	notdownloaded(ulong size, time_t start, time_t end);
-	int		protocol(char *cmdline, int cd);
+	int		protocol(char *cmdline, bool cd);
 	void	seqwait(uint devnum);
 	void	autohangup(void);
 	bool	checkprotlog(file_t* f);

@@ -575,7 +575,7 @@ void sbbs_t::qwk_sec()
 				padfname(tmp2,fd.name);
 				sprintf(str,"%sBATCHDN.LST",cfg.node_dir);
 				sprintf(tmp2,"%sBATCHUP.LST",cfg.node_dir);
-				j=protocol(cmdstr(cfg.prot[i]->bicmd,str,tmp2,NULL),0);
+				j=protocol(cmdstr(cfg.prot[i]->bicmd,str,tmp2,NULL),true);
 				batdn_total=batup_total=0;
 				if(cfg.prot[i]->misc&PROT_DSZLOG) {
 					if(!checkprotlog(&fd)) {
@@ -672,7 +672,7 @@ void sbbs_t::qwk_sec()
 				sprintf(str,"%s%s.qwk",cfg.temp_dir,cfg.sys_id);
 				sprintf(tmp2,"%s.qwk",cfg.sys_id);
 				padfname(tmp2,fd.name);
-				j=protocol(cmdstr(cfg.prot[i]->dlcmd,str,nulstr,NULL),0);
+				j=protocol(cmdstr(cfg.prot[i]->dlcmd,str,nulstr,NULL),false);
 				if(cfg.prot[i]->misc&PROT_DSZLOG) {
 					if(!checkprotlog(&fd)) {
 						last_ns_time=ns_time;
@@ -748,7 +748,7 @@ void sbbs_t::qwk_sec()
 			if(i>=cfg.total_prots)	/* This shouldn't happen */
 				continue;
 			sprintf(str,"%s%s.rep",cfg.temp_dir,cfg.sys_id);
-			protocol(cmdstr(cfg.prot[i]->ulcmd,str,nulstr,NULL),0);
+			protocol(cmdstr(cfg.prot[i]->ulcmd,str,nulstr,NULL),true);
 			unpack_rep();
 			delfiles(cfg.temp_dir,ALLFILES);
 			//autohangup();

@@ -648,7 +648,7 @@ int sbbs_t::exec_function(csi_t *csi)
 				if(cfg.prot[i]->mnemonic==ch && chk_ar(cfg.prot[i]->ar,&useron))
 					break;
 			if(i<cfg.total_prots) {
-				protocol(cmdstr(cfg.prot[i]->dlcmd,csi->str,csi->str,str),0);
+				protocol(cmdstr(cfg.prot[i]->dlcmd,csi->str,csi->str,str),false);
 				autohangup(); }
 			return(0);
 
@@ -672,7 +672,7 @@ int sbbs_t::exec_function(csi_t *csi)
 				if(cfg.prot[i]->mnemonic==ch && chk_ar(cfg.prot[i]->ar,&useron))
 					break;
 			if(i<cfg.total_prots) {
-				protocol(cmdstr(cfg.prot[i]->ulcmd,csi->str,csi->str,str),0);
+				protocol(cmdstr(cfg.prot[i]->ulcmd,csi->str,csi->str,str),true);
 				autohangup(); }
 			return(0);
 
