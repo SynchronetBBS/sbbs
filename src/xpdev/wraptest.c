@@ -9,26 +9,55 @@
 #include "sockwrap.h"
 #include "threadwrap.h"
 
+static void getkey(void)
+{
+	printf("Hit any key...");
+	while(getch()==0);
+	printf("\r%20s\r","");
+}
+
 int main()
 {
 	char	compiler[128];
-	char	fname[MAX_PATH+1];
 	char*	glob_pattern = "*wrap*";
 	int		i;
+	int		ch;
 	uint	u;
 	time_t	t;
 	glob_t	g;
 	DIR*	dir;
 	DIRENT*	dirent;
 
-	COMPILER_DESC(compiler);
+	/* Show platform details */
+	DESCRIBE_COMPILER(compiler);
 	printf("Platform: %s\n",PLATFORM_DESC);
 	printf("Compiler: %s\n",compiler);
 
-	xp_beep(500,500);
+	printf("\ngetch() test (ESC to continue)\n");
+	do {
+		ch=getch();
+		printf("getch() returned %d\n",ch);
+	} while(ch!=ESC);
 
-	/* GLOB TEST */
-	printf("glob() test\n");
+#if 0
+	/* BEEP test */
+	printf("\nBEEP() test\n");
+	getkey();
+	for(i=750;i>250;i-=5)
+		BEEP(i,10);
+	for(;i<1000;i+=5)
+		BEEP(i,10);
+#endif
+	/* SLEEP test */
+	printf("\nSLEEP() test\n");
+	getkey();
+	t=time(NULL);
+	SLEEP(5000);
+	printf("slept %d seconds\n",time(NULL)-t);
+
+	/* glob test */
+	printf("\nglob() test\n");
+	getkey();
 	i=glob(glob_pattern,GLOB_MARK,NULL,&g);
 	if(i==0) {
 		for(u=0;u<g.gl_pathc;u++)
@@ -37,29 +66,22 @@ int main()
 	} else
 		printf("glob(%s) returned %d\n",glob_pattern,i);
 
-	printf("Hit any key...");
-	printf("\ngetch() returned %d\n",getch());
-
-	/* OPENDIR TEST */
-	printf("opendir() test\n");
+	/* opendir (and other directory functions) test */
+	printf("\nopendir() test\n");
+	getkey();
 	dir=opendir(".");
 	while(dir!=NULL && (dirent=readdir(dir))!=NULL) {
 		t=fdate(dirent->d_name);
-		sprintf(fname,"%.*s%c"
-			,sizeof(fname)-2
-			,dirent->d_name
-			,isdir(dirent->d_name) ? '/':0);
-		printf("%-25s %10lu %.24s\n"
-			,fname
-			,flength(dirent->d_name)
+		printf("%.24s %10lu  %04o  %s%c\n"
 			,ctime(&t)
+			,flength(dirent->d_name)
+			,getfattr(dirent->d_name)
+			,dirent->d_name
+			,isdir(dirent->d_name) ? '/':0
 			);
 	}
 	if(dir!=NULL)
 		closedir(dir);
-
-	printf("Hit any key...");
-	printf("\ngetch() returned %d\n",getch());
 
 	return 0;
 }
