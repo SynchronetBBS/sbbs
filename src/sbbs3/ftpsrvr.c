@@ -1734,7 +1734,7 @@ static void ctrl_thread(void* arg)
 			else {
 				if(!direxist(p)) {
 					sockprintf(sock,"550 Directory does not exist.");
-					lprintf("%04d %s attempted to mount invalid directory: %s"
+					lprintf("%04d !%s attempted to mount invalid directory: %s"
 						,sock, user.alias, p);
 					continue;
 				}
@@ -1842,7 +1842,7 @@ static void ctrl_thread(void* arg)
 
 				if(!direxist(path)) {
 					sockprintf(sock,"550 Directory does not exist (%s).",path);
-					lprintf("%04d %s attempted to change to an invalid directory: %s"
+					lprintf("%04d !%s attempted to change to an invalid directory: %s"
 						,sock, user.alias, path);
 				} else {
 					strcpy(local_dir,path);
@@ -1882,7 +1882,7 @@ static void ctrl_thread(void* arg)
 					lprintf("%04d %s created directory: %s",sock,user.alias,fname);
 				} else {
 					sockprintf(sock,"521 Error %d creating directory: %s",i,fname);
-					lprintf("%04d %s attempted to create directory: %s (Error %d)"
+					lprintf("%04d !%s attempted to create directory: %s (Error %d)"
 						,sock,user.alias,fname,i);
 				}
 				continue;
@@ -1901,7 +1901,7 @@ static void ctrl_thread(void* arg)
 					lprintf("%04d %s removed directory: %s",sock,user.alias,fname);
 				} else {
 					sockprintf(sock,"450 Error %d removing directory: %s",i,fname);
-					lprintf("%04d %s attempted to remove directory: %s (Error %d)"
+					lprintf("%04d !%s attempted to remove directory: %s (Error %d)"
 						,sock,user.alias,fname,i);
 				}
 				continue;
@@ -1916,7 +1916,7 @@ static void ctrl_thread(void* arg)
 					sprintf(ren_from,"%s%s",local_dir,p);
 				if(!fexist(ren_from)) {
 					sockprintf(sock,"550 File not found: %s",ren_from);
-					lprintf("%04d %s attempted to rename %s"
+					lprintf("%04d !%s attempted to rename %s (not found)"
 						,sock,user.alias,ren_from);
 				} else
 					sockprintf(sock,"350 File exists, ready for destination name");
@@ -1936,7 +1936,7 @@ static void ctrl_thread(void* arg)
 					lprintf("%04d %s renamed %s to %s",sock,user.alias,ren_from,fname);
 				} else {
 					sockprintf(sock,"450 Error %d renaming file: %s",i,ren_from);
-					lprintf("%04d %s attempted to rename file: %s (Error %d)"
+					lprintf("%04d !%s attempted to rename file: %s (Error %d)"
 						,sock,user.alias,ren_from,i);
 				}
 				continue;
@@ -1958,7 +1958,7 @@ static void ctrl_thread(void* arg)
 				else		/* relative */
 					sprintf(fname,"%s%s",local_dir,p);
 				if(!fexist(fname)) {
-					lprintf("%04d %s file not found: %s",sock,user.alias,fname);
+					lprintf("%04d !%s file not found: %s",sock,user.alias,fname);
 					sockprintf(sock,"550 File not found: %s",fname);
 					continue;
 				}
@@ -1984,7 +1984,7 @@ static void ctrl_thread(void* arg)
 						lprintf("%04d %s deleted file: %s",sock,user.alias,fname);
 					} else {
 						sockprintf(sock,"450 Error %d removing file: %s",i,fname);
-						lprintf("%04d %s attempted to delete file: %s (Error %d)"
+						lprintf("%04d !%s attempted to delete file: %s (Error %d)"
 							,sock,user.alias,fname,i);
 					}
 					continue;
@@ -2540,7 +2540,8 @@ static void ctrl_thread(void* arg)
 				filedat=getfileixb(&scfg,&f);
 				if(!filedat && !(startup->options&FTP_OPT_DIR_FILES)) {
 					sockprintf(sock,"550 File not found: %s",p);
-					lprintf("%04d %s file not found: %s",sock,user.alias,fname);
+					lprintf("%04d !%s file not in database (%s) for %.4s command"
+						,sock,user.alias,fname,cmd);
 					filepos=0;
 					continue;
 				}
@@ -2608,7 +2609,8 @@ static void ctrl_thread(void* arg)
 			}
 			else {
 				sockprintf(sock,"550 File not found: %s",p);
-				lprintf("%04d !File not found (%s) for %.4s command",sock,p,cmd);
+				lprintf("%04d !%s file not found (%s) for %.4s command"
+					,sock,user.alias,p,cmd);
 			}
 			filepos=0;
 			continue;
@@ -2767,7 +2769,7 @@ static void ctrl_thread(void* arg)
 				p+=strlen(LOCAL_FSYS_DIR);
 				if(!direxist(p)) {
 					sockprintf(sock,"550 Directory does not exist.");
-					lprintf("%04d %s attempted to mount invalid directory: %s"
+					lprintf("%04d !%s attempted to mount invalid directory: %s"
 						,sock, user.alias, p);
 					continue;
 				}
