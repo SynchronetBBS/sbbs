@@ -1042,16 +1042,17 @@ js_new_user(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		strcpy(user.tmpext,cfg->fcomp[0]->ext);
 	else
 		strcpy(user.tmpext,"ZIP");
-	for(i=0;i<cfg->total_xedits;i++)
-		if(!stricmp(cfg->xedit[i]->code,cfg->new_xedit) && chk_ar(cfg,cfg->xedit[i]->ar,&user))
-			break;
-	if(i<cfg->total_xedits)
-		user.xedit=i+1;
 
 	user.shell=cfg->new_shell;
 	user.misc=cfg->new_misc|(AUTOTERM|COLOR);
 	user.prot=cfg->new_prot;
 	user.qwk=QWK_DEFAULT;
+
+	for(i=0;i<cfg->total_xedits;i++)
+		if(!stricmp(cfg->xedit[i]->code,cfg->new_xedit) && chk_ar(cfg,cfg->xedit[i]->ar,&user))
+			break;
+	if(i<cfg->total_xedits)
+		user.xedit=i+1;
 
 	i=newuserdat(cfg,&user);
 
