@@ -263,7 +263,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 				k--;	/* k is sub */
 				if(j>=usrgrps || k>=usrsubs[j] || cfg.sub[usrsub[j][k]]->qwkconf) {
 					bprintf(text[QWKInvalidConferenceN],n);
-					sprintf(str,"%s: Invalid conference number %d",useron.alias,n);
+					sprintf(str,"%s: Invalid conference number %lu",useron.alias,n);
 					logline("P!",str);
 					continue; } }
 

@@ -50,7 +50,7 @@ const char *scfgnulstr="";
 
 BOOL allocerr(char* error, long offset, char *fname, uint size)
 {
-	sprintf(error,"offset %d in %s, allocating %u bytes of memory"
+	sprintf(error,"offset %ld in %s, allocating %u bytes of memory"
 		,offset,fname,size);
 	return(FALSE);
 }
@@ -75,7 +75,7 @@ BOOL read_node_cfg(scfg_t* cfg, char* error)
 
 	get_int(cfg->node_num,instream);
 	if(!cfg->node_num) {
-		sprintf(error,"offset %d in %s, Node number must be non-zero"
+		sprintf(error,"offset %ld in %s, Node number must be non-zero"
 			,offset,fname);
 		return(FALSE); 
 	}
@@ -515,7 +515,7 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error)
 #ifdef SBBS
 		for(j=0;j<i;j++)
 			if(cfg->sub[i]->ptridx==cfg->sub[j]->ptridx) {
-				sprintf(error,"offset %u in %s: Duplicate pointer index for subs #%d and #%d"
+				sprintf(error,"offset %ld in %s: Duplicate pointer index for subs #%d and #%d"
 					,offset,fname
 					,i+1,j+1);
 				return(FALSE); 

@@ -514,7 +514,7 @@ int SMBCALL smb_getmsgidx(smb_t* smb, smbmsg_t* msg)
 			return(1);
 		}
 		if(bot==top-1 && idx.number!=msg->hdr.number) {
-			sprintf(smb->last_error,"msg %d not found",msg->hdr.number);
+			sprintf(smb->last_error,"msg %ld not found",msg->hdr.number);
 			return(1);
 		}
 		if(idx.number>msg->hdr.number) {
@@ -939,7 +939,7 @@ int SMBCALL smb_addcrc(smb_t* smb, ulong crc)
 	if((buf=(ulong*)MALLOC(smb->status.max_crcs*4))==NULL) {
 		close(file);
 		sprintf(smb->last_error
-			,"malloc failure of %d bytes"
+			,"malloc failure of %ld bytes"
 			,smb->status.max_crcs*4);
 		return(-3); 
 	}
@@ -1080,7 +1080,7 @@ int SMBCALL smb_putmsghdr(smb_t* smb, smbmsg_t* msg)
 	}
 	clearerr(smb->shd_fp);
 	if(fseek(smb->shd_fp,msg->idx.offset,SEEK_SET)) {
-		sprintf(smb->last_error,"seeking to %d in index",msg->idx.offset);
+		sprintf(smb->last_error,"seeking to %ld in index",msg->idx.offset);
 		return(-1);
 	}
 

@@ -1047,7 +1047,7 @@ bool sbbs_t::spy(uint i /* node_num */)
 			}
 			ansi_len=0;
 		}
-		if(ansi_len && ansi_len<sizeof(ansi_seq)-2) {
+		if(ansi_len && ansi_len<(int)sizeof(ansi_seq)-2) {
 			if(ansi_len==1) {
 				if(ch=='[') {
 					ansi_seq[ansi_len++]=ch;

@@ -65,7 +65,7 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 			sprintf(from,"%.128s@%.128s"
 				,msg->from,faddrtoa((faddr_t *)msg->from_net.addr,tmp));
 		else if(msg->from_net.type==NET_INTERNET)
-			sprintf(from,"%.128s",msg->from_net.addr);
+			sprintf(from,"%.128s",(char*)msg->from_net.addr);
 		else
 			sprintf(from,"%.128s@%.128s",msg->from,msg->from_net.addr);
 		if(strlen(from)>25) {
@@ -82,7 +82,7 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 		if(msg->to_net.type==NET_FIDO)
 			sprintf(to,"%.128s@%s",msg->to,faddrtoa((faddr_t *)msg->to_net.addr,tmp));
 		else if(msg->to_net.type==NET_INTERNET)
-			sprintf(to,"%.128s",msg->to_net.addr);
+			sprintf(to,"%.128s",(char*)msg->to_net.addr);
 		else if(msg->to_net.type==NET_QWK) {
 			if(mode&TO_QNET) {
 				p=strchr((char *)msg->to_net.addr,'/');
@@ -95,9 +95,9 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 				else
 					sprintf(to,"%.128s",msg->to); }
 			else
-				sprintf(to,"%.128s@%.128s",msg->to,msg->to_net.addr); }
+				sprintf(to,"%.128s@%.128s",msg->to,(char*)msg->to_net.addr); }
 		else
-			sprintf(to,"%.128s@%.128s",msg->to,msg->to_net.addr);
+			sprintf(to,"%.128s@%.128s",msg->to,(char*)msg->to_net.addr);
 		if(strlen(to)>25) {
 			sprintf(str,"To: %.128s\xe3\xe3",to);
 			fwrite(str,strlen(str),1,qwk_fp);
@@ -110,7 +110,7 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 		sprintf(to,"%.128s",msg->to);
 
 	if(msg->from_net.type==NET_QWK && mode&VIA && !msg->forwarded) {
-		sprintf(str,"@VIA:%.128s\xe3",msg->from_net.addr);
+		sprintf(str,"@VIA:%.128s\xe3",(char*)msg->from_net.addr);
 		fwrite(str,strlen(str),1,qwk_fp);
 		size+=strlen(str); }
 
