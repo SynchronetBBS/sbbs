@@ -6,20 +6,19 @@
 
 // @format.tab-size 8, @format.use-tabs true
 
-send_newuser_welcome = true; // Set to false to disable the new user welcome msg
-
 load("sbbsdefs.js");
 
-console.clear();
-
-ask_qnet=false;
-ask_sysop=false;
+send_newuser_welcome = true; // Set to false to disable the new user welcome msg
+ask_qnet=false;		// Set to true to enable QWKnet Node question
+ask_sysop=false;	// Set to true to enable Synchronet Sysop question
 qnet=false;
 
 if(system.name=="Vertrauen") {
 	ask_qnet=true;
 	ask_sysop=true;
 }
+
+console.clear();
 
 if(!user.address.length && user.number>1) {
 	printf("\1y\1hWhere did you hear about this BBS? ");
