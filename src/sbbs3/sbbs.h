@@ -470,6 +470,13 @@ public:
 	int		rprintf(char *fmt, ...);		/* BBS raw printf function */
 	void	outchar(char ch);				/* Output a char - check echo and emu.  */
 	void	center(char *str);
+	void	clearline(void);
+	void	cleartoeol(void);
+	void	cursor_home(void);
+	void	cursor_up(int count=1);
+	void	cursor_down(int count=1);
+	void	cursor_left(int count=1);
+	void	cursor_right(int count=1);
 
 	/* getstr.cpp */
 	size_t	getstr_offset;
@@ -504,7 +511,6 @@ public:
 	void	redrwstr(char *strin, int i, int l, long mode);
 	void	attr(int atr);				/* Change local and remote text attributes */
 	void	ctrl_a(char x);			/* Peforms the Ctrl-Ax attribute changes */
-	void	clearline(void);
 
 	/* atcodes.cpp */
 	int		show_atcode(char *code);
