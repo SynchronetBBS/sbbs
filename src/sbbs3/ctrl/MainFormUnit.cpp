@@ -320,20 +320,18 @@ static void bbs_start(void)
 {
 	Screen->Cursor=crAppStart;
     bbs_status(NULL,"Starting");
-    SAFECOPY(MainForm->bbs_startup.ctrl_dir
-        ,MainForm->global.ctrl_dir);
-    SAFECOPY(MainForm->bbs_startup.temp_dir
-        ,MainForm->global.temp_dir);
-    SAFECOPY(MainForm->bbs_startup.host_name
-        ,MainForm->global.host_name);
-    MainForm->bbs_startup.sem_chk_freq=MainForm->global.sem_chk_freq;
 
-    /* JavaScript operational parameters */
-    MainForm->bbs_startup.js_max_bytes=MainForm->global.js.max_bytes;
-    MainForm->bbs_startup.js_cx_stack=MainForm->global.js.cx_stack;
-    MainForm->bbs_startup.js_branch_limit=MainForm->global.js.branch_limit;
-    MainForm->bbs_startup.js_gc_interval=MainForm->global.js.gc_interval;
-    MainForm->bbs_startup.js_yield_interval=MainForm->global.js.yield_interval;
+    FILE* fp=fopen(MainForm->ini_file,"r");
+    sbbs_read_ini(fp
+        ,&MainForm->global
+        ,NULL   ,&MainForm->bbs_startup
+        ,NULL   ,NULL
+        ,NULL   ,NULL
+        ,NULL   ,NULL
+        ,NULL   ,NULL
+        );
+    if(fp!=NULL)
+        fclose(fp);
 
 	_beginthread((void(*)(void*))bbs_thread,0,&MainForm->bbs_startup);
     Application->ProcessMessages();
@@ -508,11 +506,19 @@ static void mail_start(void)
 {
 	Screen->Cursor=crAppStart;
     mail_status(NULL, "Starting");
-    SAFECOPY(MainForm->mail_startup.ctrl_dir
-        ,MainForm->global.ctrl_dir);
-    SAFECOPY(MainForm->mail_startup.host_name
-        ,MainForm->global.host_name);
-    MainForm->mail_startup.sem_chk_freq=MainForm->global.sem_chk_freq;
+
+    FILE* fp=fopen(MainForm->ini_file,"r");
+    sbbs_read_ini(fp
+        ,&MainForm->global
+        ,NULL   ,NULL
+        ,NULL   ,NULL
+        ,NULL   ,NULL
+        ,NULL   ,&MainForm->mail_startup
+        ,NULL   ,NULL
+        );
+    if(fp!=NULL)
+        fclose(fp);
+
 	_beginthread((void(*)(void*))mail_server,0,&MainForm->mail_startup);
     Application->ProcessMessages();
 }
@@ -617,17 +623,18 @@ static void ftp_start(void)
 {
 	Screen->Cursor=crAppStart;
     ftp_status(NULL, "Starting");
-    SAFECOPY(MainForm->ftp_startup.ctrl_dir
-        ,MainForm->global.ctrl_dir);
-    SAFECOPY(MainForm->ftp_startup.temp_dir
-        ,MainForm->global.temp_dir);
-    SAFECOPY(MainForm->ftp_startup.host_name
-        ,MainForm->global.host_name);
-    MainForm->ftp_startup.sem_chk_freq=MainForm->global.sem_chk_freq;
 
-    /* JavaScript operational parameters */
-    MainForm->ftp_startup.js_max_bytes=MainForm->global.js.max_bytes;
-    MainForm->ftp_startup.js_cx_stack=MainForm->global.js.cx_stack;
+    FILE* fp=fopen(MainForm->ini_file,"r");
+    sbbs_read_ini(fp
+        ,&MainForm->global
+        ,NULL   ,NULL
+        ,NULL   ,&MainForm->ftp_startup
+        ,NULL   ,NULL
+        ,NULL   ,NULL
+        ,NULL   ,NULL
+        );
+    if(fp!=NULL)
+        fclose(fp);
 
 	_beginthread((void(*)(void*))ftp_server,0,&MainForm->ftp_startup);
     Application->ProcessMessages();
@@ -733,15 +740,18 @@ static void web_start(void)
 {
 	Screen->Cursor=crAppStart;
     web_status(NULL, "Starting");
-    SAFECOPY(MainForm->web_startup.ctrl_dir
-        ,MainForm->global.ctrl_dir);
-    SAFECOPY(MainForm->web_startup.host_name
-        ,MainForm->global.host_name);
-    MainForm->web_startup.sem_chk_freq=MainForm->global.sem_chk_freq;
 
-    /* JavaScript operational parameters */
-    MainForm->web_startup.js_max_bytes=MainForm->global.js.max_bytes;
-    MainForm->web_startup.js_cx_stack=MainForm->global.js.cx_stack;
+    FILE* fp=fopen(MainForm->ini_file,"r");
+    sbbs_read_ini(fp
+        ,&MainForm->global
+        ,NULL   ,NULL
+        ,NULL   ,NULL
+        ,NULL   ,&MainForm->web_startup
+        ,NULL   ,NULL
+        ,NULL   ,NULL
+        );
+    if(fp!=NULL)
+        fclose(fp);
 
 	_beginthread((void(*)(void*))web_server,0,&MainForm->web_startup);
     Application->ProcessMessages();
@@ -1133,20 +1143,19 @@ void __fastcall TMainForm::ServicesStartExecute(TObject *Sender)
 	Screen->Cursor=crAppStart;
     services_status(NULL, "Starting");
 
-    SAFECOPY(MainForm->services_startup.ctrl_dir
-        ,MainForm->global.ctrl_dir);
-    SAFECOPY(MainForm->services_startup.host_name
-        ,MainForm->global.host_name);
-    MainForm->services_startup.sem_chk_freq=global.sem_chk_freq;
+    FILE* fp=fopen(ini_file,"r");
+    sbbs_read_ini(fp
+        ,&MainForm->global
+        ,NULL   ,NULL
+        ,NULL   ,NULL
+        ,NULL   ,NULL
+        ,NULL   ,NULL
+        ,NULL   ,&services_startup
+        );
+    if(fp!=NULL)
+        fclose(fp);
 
-    /* JavaScript operational parameters */
-    MainForm->services_startup.js_max_bytes=MainForm->global.js.max_bytes;
-    MainForm->services_startup.js_cx_stack=MainForm->global.js.cx_stack;
-    MainForm->services_startup.js_branch_limit=MainForm->global.js.branch_limit;
-    MainForm->services_startup.js_gc_interval=MainForm->global.js.gc_interval;
-    MainForm->services_startup.js_yield_interval=MainForm->global.js.yield_interval;
-
-	_beginthread((void(*)(void*))services_thread,0,&MainForm->services_startup);
+	_beginthread((void(*)(void*))services_thread,0,&services_startup);
     Application->ProcessMessages();
 }
 
@@ -2080,6 +2089,66 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
 
 		if(SaveIniSettings(Sender))
             Registry->WriteBool("Imported",true);   /* Use the .ini file for these settings from now on */
+
+#if 0
+        /******************************************************/
+        /* Copy global values into each server startup struct */
+        /******************************************************/
+
+        /* used to be handled in bbs_start() */
+        SAFECOPY(bbs_startup.ctrl_dir,global.ctrl_dir);
+        SAFECOPY(bbs_startup.temp_dir,global.temp_dir);
+        SAFECOPY(bbs_startup.host_name,global.host_name);
+        bbs_startup.sem_chk_freq=global.sem_chk_freq;
+
+        /* JavaScript operational parameters */
+        bbs_startup.js_max_bytes=global.js.max_bytes;
+        bbs_startup.js_cx_stack=global.js.cx_stack;
+        bbs_startup.js_branch_limit=global.js.branch_limit;
+        bbs_startup.js_gc_interval=global.js.gc_interval;
+        bbs_startup.js_yield_interval=global.js.yield_interval;
+
+        /* used to be handled in mail_start() */
+        SAFECOPY(mail_startup.ctrl_dir
+            ,global.ctrl_dir);
+        SAFECOPY(mail_startup.host_name
+            ,global.host_name);
+        mail_startup.sem_chk_freq=global.sem_chk_freq;
+
+        /* used to be handled in ftp_start() */
+        SAFECOPY(ftp_startup.ctrl_dir
+            ,global.ctrl_dir);
+        SAFECOPY(ftp_startup.temp_dir
+            ,global.temp_dir);
+        SAFECOPY(ftp_startup.host_name
+            ,global.host_name);
+        ftp_startup.sem_chk_freq=global.sem_chk_freq;
+
+        /* JavaScript operational parameters */
+        ftp_startup.js_max_bytes=global.js.max_bytes;
+        ftp_startup.js_cx_stack=global.js.cx_stack;
+
+        /* used to be handled in web_start() */
+        SAFECOPY(web_startup.ctrl_dir,global.ctrl_dir);
+        SAFECOPY(web_startup.host_name,global.host_name);
+        web_startup.sem_chk_freq=global.sem_chk_freq;
+
+        /* JavaScript operational parameters */
+        web_startup.js_max_bytes=global.js.max_bytes;
+        web_startup.js_cx_stack=global.js.cx_stack;
+
+        /* used to be handled in ServicesStartExecute() */
+        SAFECOPY(services_startup.ctrl_dir,global.ctrl_dir);
+        SAFECOPY(services_startup.host_name,global.host_name);
+        services_startup.sem_chk_freq=global.sem_chk_freq;
+
+        /* JavaScript operational parameters */
+        services_startup.js_max_bytes=global.js.max_bytes;
+        services_startup.js_cx_stack=global.js.cx_stack;
+        services_startup.js_branch_limit=global.js.branch_limit;
+        services_startup.js_gc_interval=global.js.gc_interval;
+        services_startup.js_yield_interval=global.js.yield_interval;
+#endif
     }
 
     Registry->CloseKey();
