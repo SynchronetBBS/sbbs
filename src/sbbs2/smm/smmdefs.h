@@ -158,3 +158,4 @@ typedef struct {
 #define TGRAM_NOTICE "\1n\1h\1mNew telegram in \1wMatch Maker \1mfor you!" \
                 "\7\1n\r\n"
 #define DEFAULT_ZMODEM_SEND "%!dsz portx %u,%i sz %f"
+#define TM_YEAR(yy)		((yy)%100)

@@ -516,172 +516,119 @@ printf("\n");
 printf("%-25s         : %lu\n","Total",users);
 printf("%-25s         : %lu\n","Photos",photos);
 printf("%-25s         : %lu\n","Networked",networked);
-// if(male_straight)
+
+if(users) {	/* divide-by-zero fix, Jan-2003 */
 	printf("%-25s (%4.1f%%) : %lu\n","Sex: male (hetero)"
 		,(((float)male_straight/users)*100.0),male_straight);
-// if(male_gay)
 	printf("%-25s (%4.1f%%) : %lu\n","Sex: male (gay)"
 		,(((float)male_gay/users)*100.0),male_gay);
-// if(male_bi)
 	printf("%-25s (%4.1f%%) : %lu\n","Sex: male (bi)"
 		,(((float)male_bi/users)*100.0),male_bi);
-// if(female_straight)
 	printf("%-25s (%4.1f%%) : %lu\n","Sex: female (hetero)"
 		,(((float)female_straight/users)*100.0),female_straight);
-// if(female_gay)
 	printf("%-25s (%4.1f%%) : %lu\n","Sex: female (gay)"
 		,(((float)female_gay/users)*100.0),female_gay);
-// if(female_bi)
 	printf("%-25s (%4.1f%%) : %lu\n","Sex: female (bi)"
 		,(((float)female_bi/users)*100.0),female_bi);
-// if(age12)
 	printf("%-25s (%4.1f%%) : %lu\n","Age: 12 and younger"
 		,(((float)age12/users)*100.0),age12);
-// if(age15)
 	printf("%-25s (%4.1f%%) : %lu\n","Age: 13 to 15 years old"
 		,(((float)age15/users)*100.0),age15);
-// if(age20)
 	printf("%-25s (%4.1f%%) : %lu\n","Age: 16 to 20 years old"
 		,(((float)age20/users)*100.0),age20);
-// if(age25)
 	printf("%-25s (%4.1f%%) : %lu\n","Age: 21 to 25 years old"
 		,(((float)age25/users)*100.0),age25);
-// if(age30)
 	printf("%-25s (%4.1f%%) : %lu\n","Age: 26 to 30 years old"
 		,(((float)age30/users)*100.0),age30);
-// if(age35)
 	printf("%-25s (%4.1f%%) : %lu\n","Age: 31 to 35 years old"
 		,(((float)age35/users)*100.0),age35);
-// if(age40)
 	printf("%-25s (%4.1f%%) : %lu\n","Age: 36 to 40 years old"
 		,(((float)age40/users)*100.0),age40);
-// if(age45)
 	printf("%-25s (%4.1f%%) : %lu\n","Age: 41 to 45 years old"
 		,(((float)age45/users)*100.0),age45);
-// if(age50)
 	printf("%-25s (%4.1f%%) : %lu\n","Age: 46 to 50 years old"
 		,(((float)age50/users)*100.0),age50);
-// if(age55)
 	printf("%-25s (%4.1f%%) : %lu\n","Age: 51 to 55 years old"
 		,(((float)age55/users)*100.0),age55);
-// if(age60)
 	printf("%-25s (%4.1f%%) : %lu\n","Age: 56 to 60 years old"
 		,(((float)age60/users)*100.0),age60);
-// if(age65)
 	printf("%-25s (%4.1f%%) : %lu\n","Age: 61 to 65 years old"
 		,(((float)age65/users)*100.0),age65);
-// if(age70)
 	printf("%-25s (%4.1f%%) : %lu\n","Age: 66 to 70 years old"
 		,(((float)age70/users)*100.0),age70);
-// if(age71)
 	printf("%-25s (%4.1f%%) : %lu\n","Age: 71 and older"
 		,(((float)age71/users)*100.0),age71);
-// if(hair_blonde)
 	printf("%-25s (%4.1f%%) : %lu\n","Hair: blonde"
 		,(((float)hair_blonde/users)*100.0),hair_blonde);
-// if(hair_brown)
 	printf("%-25s (%4.1f%%) : %lu\n","Hair: brown"
 		,(((float)hair_brown/users)*100.0),hair_brown);
-// if(hair_black)
 	printf("%-25s (%4.1f%%) : %lu\n","Hair: black"
 		,(((float)hair_black/users)*100.0),hair_black);
-// if(hair_red)
 	printf("%-25s (%4.1f%%) : %lu\n","Hair: red"
 		,(((float)hair_red/users)*100.0),hair_red);
-// if(hair_grey)
 	printf("%-25s (%4.1f%%) : %lu\n","Hair: grey"
 		,(((float)hair_grey/users)*100.0),hair_grey);
-// if(hair_other)
 	printf("%-25s (%4.1f%%) : %lu\n","Hair: other"
 		,(((float)hair_other/users)*100.0),hair_other);
-// if(eyes_blue)
 	printf("%-25s (%4.1f%%) : %lu\n","Eyes: blue"
 		,(((float)eyes_blue/users)*100.0),eyes_blue);
-// if(eyes_brown)
 	printf("%-25s (%4.1f%%) : %lu\n","Eyes: brown"
         ,(((float)eyes_brown/users)*100.0),eyes_brown);
-// if(eyes_green)
 	printf("%-25s (%4.1f%%) : %lu\n","Eyes: green"
 		,(((float)eyes_green/users)*100.0),eyes_green);
-// if(eyes_hazel)
 	printf("%-25s (%4.1f%%) : %lu\n","Eyes: hazel"
 		,(((float)eyes_hazel/users)*100.0),eyes_hazel);
-// if(eyes_other)
 	printf("%-25s (%4.1f%%) : %lu\n","Eyes: other"
 		,(((float)eyes_other/users)*100.0),eyes_other);
-// if(race_white)
 	printf("%-25s (%4.1f%%) : %lu\n","Race: white"
 		,(((float)race_white/users)*100.0),race_white);
-// if(race_black)
 	printf("%-25s (%4.1f%%) : %lu\n","Race: black"
 		,(((float)race_black/users)*100.0),race_black);
-// if(race_asian)
 	printf("%-25s (%4.1f%%) : %lu\n","Race: asian"
 		,(((float)race_asian/users)*100.0),race_asian);
-// if(race_amerindian)
 	printf("%-25s (%4.1f%%) : %lu\n","Race: amerindian"
 		,(((float)race_amerindian/users)*100.0),race_amerindian);
-// if(race_mideastern)
 	printf("%-25s (%4.1f%%) : %lu\n","Race: mideastern"
 		,(((float)race_mideastern/users)*100.0),race_mideastern);
-// if(race_hispanic)
 	printf("%-25s (%4.1f%%) : %lu\n","Race: hispanic"
 		,(((float)race_hispanic/users)*100.0),race_hispanic);
-// if(race_other)
 	printf("%-25s (%4.1f%%) : %lu\n","Race: other"
 		,(((float)race_other/users)*100.0),race_other);
-// if(marital_single)
 	printf("%-25s (%4.1f%%) : %lu\n","Marital: single"
         ,(((float)marital_single/users)*100.0),marital_single);
-// if(marital_married)
 	printf("%-25s (%4.1f%%) : %lu\n","Marital: married"
 		,(((float)marital_married/users)*100.0),marital_married);
-// if(marital_divorced)
 	printf("%-25s (%4.1f%%) : %lu\n","Marital: divorced"
 		,(((float)marital_divorced/users)*100.0),marital_divorced);
-// if(marital_widowed)
 	printf("%-25s (%4.1f%%) : %lu\n","Marital: widowed"
 		,(((float)marital_widowed/users)*100.0),marital_widowed);
-// if(marital_other)
 	printf("%-25s (%4.1f%%) : %lu\n","Marital: other"
 		,(((float)marital_other/users)*100.0),marital_other);
-// if(zodiac_aries)
 	printf("%-25s (%4.1f%%) : %lu\n","Zodiac: aries"
 		,(((float)zodiac_aries/users)*100.0),zodiac_aries);
-// if(zodiac_taurus)
 	printf("%-25s (%4.1f%%) : %lu\n","Zodiac: taurus"
 		,(((float)zodiac_taurus/users)*100.0),zodiac_taurus);
-// if(zodiac_gemini)
 	printf("%-25s (%4.1f%%) : %lu\n","Zodiac: gemini"
 		,(((float)zodiac_gemini/users)*100.0),zodiac_gemini);
-// if(zodiac_cancer)
 	printf("%-25s (%4.1f%%) : %lu\n","Zodiac: cancer"
 		,(((float)zodiac_cancer/users)*100.0),zodiac_cancer);
-// if(zodiac_leo)
 	printf("%-25s (%4.1f%%) : %lu\n","Zodiac: leo"
 		,(((float)zodiac_leo/users)*100.0),zodiac_leo);
-// if(zodiac_virgo)
 	printf("%-25s (%4.1f%%) : %lu\n","Zodiac: virgo"
 		,(((float)zodiac_virgo/users)*100.0),zodiac_virgo);
-// if(zodiac_libra)
 	printf("%-25s (%4.1f%%) : %lu\n","Zodiac: libra"
 		,(((float)zodiac_libra/users)*100.0),zodiac_libra);
-// if(zodiac_scorpio)
 	printf("%-25s (%4.1f%%) : %lu\n","Zodiac: scorpio"
 		,(((float)zodiac_scorpio/users)*100.0),zodiac_scorpio);
-// if(zodiac_sagittarius)
 	printf("%-25s (%4.1f%%) : %lu\n","Zodiac: sagittarius"
 		,(((float)zodiac_sagittarius/users)*100.0),zodiac_sagittarius);
-// if(zodiac_capricorn)
 	printf("%-25s (%4.1f%%) : %lu\n","Zodiac: capricorn"
 		,(((float)zodiac_capricorn/users)*100.0),zodiac_capricorn);
-// if(zodiac_aquarius)
 	printf("%-25s (%4.1f%%) : %lu\n","Zodiac: aquarius"
 		,(((float)zodiac_aquarius/users)*100.0),zodiac_aquarius);
-// if(zodiac_pisces)
 	printf("%-25s (%4.1f%%) : %lu\n","Zodiac: pisces"
 		,(((float)zodiac_pisces/users)*100.0),zodiac_pisces);
-
+}
 if(!max_wall)
 	return(0);
 
