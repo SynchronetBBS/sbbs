@@ -125,6 +125,7 @@ bool sbbs_t::answer()
 	tos=1;
 	strcpy(str,VERSION_NOTICE);
 	strcat(str,COPYRIGHT_NOTICE);
+	strip_ctrl(str);
 	center(str);
 	while(i++<50 && l<sizeof(str)-1) { 	/* wait up to 5 seconds for response */
 		c=(incom()&0x7f);
