@@ -43,11 +43,11 @@
 #include <ctype.h>		/* toupper */
 
 /* SMB-specific */
-#include "smblib.h"
 #include "genwrap.h"
 #include "conwrap.h"	/* getch */
 #include "dirwrap.h"	/* fexist */
 #include "filewrap.h"	/* filelength */
+#include "smblib.h"
 
 /****************************************************************************/
 /* Returns in 'string' a character representation of the number in l with   */
