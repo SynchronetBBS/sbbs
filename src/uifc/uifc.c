@@ -75,7 +75,8 @@ static uifcapi_t* api;
 static int  uprintf(int x, int y, char attr, char *fmt,...);
 static void bottomline(int line);
 static char *utimestr(time_t *intime);
-static void help();
+static void help(void);
+static int	getstr(char *outstr, int max, long mode);
 
 /* API routines */
 static void uifcbail(void);
@@ -310,7 +311,7 @@ else
 /* Updates time in upper left corner of screen with current time in ASCII/  */
 /* Unix format																*/
 /****************************************************************************/
-static void timedisplay()
+static void timedisplay(void)
 {
 	static time_t savetime;
 	time_t now;
