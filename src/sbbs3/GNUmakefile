@@ -44,7 +44,7 @@ else
  endif
 endif
 
-CFLAGS  +=  -I$(XPDEV)
+CFLAGS  +=  -I$(XPDEV) -I$(SMBLIB_SRC)
 CFLAGS	+=  $(UIFC_CFLAGS)
 
 ifndef bcc
