@@ -59,8 +59,10 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 	msg.hdr.version=smb_ver();
 
 	blocks=atol(hdrblk+116);
-	if(blocks<2)
+	if(blocks<2) {
+		errormsg(WHERE,ERR_CHK,"QWK packet header blocks",blocks);
 		return(false);
+	}
 
 	if(subnum!=INVALID_SUB
 		&& (hdrblk[0]=='*' || hdrblk[0]=='+' || cfg.sub[subnum]->misc&SUB_PONLY))
