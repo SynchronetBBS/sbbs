@@ -663,25 +663,25 @@ static JSBool js_node_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	
     switch(tiny) {
 		case NODE_PROP_STATUS:
-			node.status=val;
+			node.status=(BYTE)val;
 			break;
 		case NODE_PROP_ERRORS:	
-			node.errors=val;
+			node.errors=(BYTE)val;
 			break;
 		case NODE_PROP_ACTION:	
-			node.action=val;
+			node.action=(BYTE)val;
 			break;
 		case NODE_PROP_USERON:	
-			node.useron=val;
+			node.useron=(WORD)val;
 			break;
 		case NODE_PROP_CONNECTION:
-			node.connection=val;
+			node.connection=(WORD)val;
 			break;
 		case NODE_PROP_MISC:		
-			node.misc=val;
+			node.misc=(WORD)val;
 			break;
 		case NODE_PROP_AUX:		
-			node.aux=val;
+			node.aux=(WORD)val;
 			break;
 		case NODE_PROP_EXTAUX:	
 			node.extaux=val;
