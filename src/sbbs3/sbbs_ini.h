@@ -56,6 +56,12 @@
 extern "C" {
 #endif
 
+void sbbs_get_ini_fname(
+	 char* ini_file
+	,char* ctrl_dir
+	,char* host_name
+	);
+
 void sbbs_read_ini(
 	 FILE*					fp
 	,BOOL*					run_bbs

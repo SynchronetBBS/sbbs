@@ -944,13 +944,7 @@ int main(int argc, char** argv)
 	if(!winsock_cleanup())
 		return(-1);
 
-	sprintf(ini_file,"%s%c%s.ini",ctrl_dir,PATH_DELIM,host_name);
-#if defined(__unix__) && defined(PREFIX)
-	if(!fexistcase(ini_file))
-		sprintf(ini_file,PREFIX"/etc/sbbs.ini");
-#endif
-	if(!fexistcase(ini_file))
-		sprintf(ini_file,"%s%csbbs.ini",ctrl_dir,PATH_DELIM);
+	sbbs_get_ini_fname(ini_file, ctrl_dir, host_name);
 
 	/* Initialize BBS startup structure */
     memset(&bbs_startup,0,sizeof(bbs_startup));

@@ -410,13 +410,8 @@ int main(int argc, char** argv)  {
 		strcat(ctrl_dir,"/");
 
 	gethostname(str,sizeof(str)-1);
-	sprintf(ini_file,"%s%c%s.ini",ctrl_dir,PATH_DELIM,str);
-#if defined(PREFIX)
-	if(!fexistcase(ini_file))
-		sprintf(ini_file,"%s/etc/sbbs.ini",PREFIX);
-#endif
-	if(!fexistcase(ini_file))
-		sprintf(ini_file,"%s%csbbs.ini",ctrl_dir,PATH_DELIM);
+
+	sbbs_get_ini_fname(ini_file, ctrl_dir, str);
 
 	/* Initialize BBS startup structure */
     memset(&bbs_startup,0,sizeof(bbs_startup));

@@ -140,6 +140,16 @@ static ini_bitdesc_t service_options[] = {
 	{ -1							,NULL					}
 };
 
+void sbbs_get_ini_fname(char* ini_file, char* ctrl_dir, char* host_name)
+{
+	sprintf(ini_file,"%s%c%s.ini",ctrl_dir,PATH_DELIM,host_name);
+#if defined(__unix__) && defined(PREFIX)
+	if(!fexistcase(ini_file))
+		sprintf(ini_file,PREFIX"/etc/sbbs.ini");
+#endif
+	if(!fexistcase(ini_file))
+		sprintf(ini_file,"%s%csbbs.ini",ctrl_dir,PATH_DELIM);
+}
 
 void sbbs_read_ini(
 	 FILE*					fp
