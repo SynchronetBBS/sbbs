@@ -48,6 +48,9 @@ ulong		js_loop=0;
 scfg_t		scfg;
 ulong		js_max_bytes=JAVASCRIPT_MAX_BYTES;
 ulong		js_context_stack=JAVASCRIPT_CONTEXT_STACK;
+ulong		js_branch_limit=JAVASCRIPT_BRANCH_LIMIT;
+ulong		js_yield_frequency=JAVASCRIPT_YIELD_FREQUENCY;
+ulong		js_gc_frequency=JAVASCRIPT_GC_FREQUENCY;
 FILE*		confp;
 FILE*		errfp;
 char		revision[16];
@@ -69,14 +72,20 @@ void usage(FILE* fp)
 
 	fprintf(fp,"\nusage: jsexec [-opts] [path]module[.js] [args]\n"
 		"\navailable opts:\n\n"
-		"\t-m <bytes>      set maximum heap size (default: %u bytes)\n"
-		"\t-s <bytes>      set context stack size (default: %u bytes)\n"
+		"\t-m <bytes>      set maximum heap size (default=%u bytes)\n"
+		"\t-s <bytes>      set context stack size (default=%u bytes)\n"
+		"\t-b <limit>      set branch limit (default=%lu, 0=unlimited)\n"
+		"\t-y <freq>       set yield frequency (default=%lu, 0=never)\n"
+		"\t-g <freq>       set garbage collection frequency (default=%lu, 0=never)\n"
 		"\t-t <filename>   send console output to stdout and filename\n"
 		"\t-q              send console output to %s (quiet mode)\n"
 		"\t-e              send error messages to console instead of stderr\n"
 		"\t-p              wait for keypress (pause) on exit\n"
 		,JAVASCRIPT_MAX_BYTES
 		,JAVASCRIPT_CONTEXT_STACK
+		,JAVASCRIPT_BRANCH_LIMIT
+		,JAVASCRIPT_YIELD_FREQUENCY
+		,JAVASCRIPT_GC_FREQUENCY
 		,_PATH_DEVNULL
 		);
 }
@@ -99,7 +108,7 @@ js_log(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     for (i = 0; i < argc; i++) {
 		if((str=JS_ValueToString(cx, argv[i]))==NULL)
 		    return(JS_FALSE);
-		puts(JS_GetStringBytes(str));
+		fprintf(errfp,JS_GetStringBytes(str));
 	}
 
 	*rval = JSVAL_VOID;
@@ -107,19 +116,31 @@ js_log(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 }
 
 static JSBool
-js_print(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     uintN		i;
-    JSString *	str;
+    JSString*	str=NULL;
 
     for (i = 0; i < argc; i++) {
 		if((str=JS_ValueToString(cx, argv[i]))==NULL)
 		    return(JS_FALSE);
-		printf("%s",JS_GetStringBytes(str));
+		fprintf(confp,"%s",JS_GetStringBytes(str));
 	}
-	printf("\n");
 
-	*rval = JSVAL_VOID;
+	if(str==NULL)
+		*rval = JSVAL_VOID;
+	else
+		*rval = STRING_TO_JSVAL(str);
+    return(JS_TRUE);
+}
+
+static JSBool
+js_print(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	if(!js_write(cx,obj,argc,argv,rval))
+		return(JS_FALSE);
+
+	fprintf(confp,"\n");
     return(JS_TRUE);
 }
 
@@ -154,10 +175,12 @@ js_printf(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if((p=JS_vsmprintf(JS_GetStringBytes(fmt),(char*)arglist))==NULL)
 		return(JS_FALSE);
 
-	printf("%s",p);
+	fprintf(confp,"%s",p);
+
+	*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, p));
+
 	JS_smprintf_free(p);
 
-	*rval = JSVAL_VOID;
     return(JS_TRUE);
 }
 
@@ -169,7 +192,7 @@ js_alert(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if((str=JS_ValueToString(cx, argv[0]))==NULL)
 	    return(JS_FALSE);
 
-	printf("!%s\n",JS_GetStringBytes(str));
+	fprintf(confp,"!%s\n",JS_GetStringBytes(str));
 
 	*rval = JSVAL_VOID;
     return(JS_TRUE);
@@ -204,10 +227,10 @@ js_prompt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	} else
 		instr[0]=0;
 
-	printf("%s: ",JS_GetStringBytes(prompt));
+	fprintf(confp,"%s: ",JS_GetStringBytes(prompt));
 
 	if(!fgets(instr,sizeof(instr),stdin)) {
-		*rval = JSVAL_NULL;
+		*rval = JSVAL_VOID;
 		return(JS_TRUE);
 	}
 
@@ -218,13 +241,24 @@ js_prompt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     return(JS_TRUE);
 }
 
+static JSBool
+js_reset_loop(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	js_loop=0;
+	*rval = JSVAL_VOID;
+	return(JS_TRUE);
+}
+
 static jsMethodSpec js_global_functions[] = {
 	{"log",				js_log,				1},
+    {"write",           js_write,           0},
+    {"writeln",         js_print,           0},
     {"print",           js_print,           0},
     {"printf",          js_printf,          1},	
 	{"alert",			js_alert,			1},
 	{"prompt",			js_prompt,			1},
 	{"confirm",			js_confirm,			1},
+	{"reset_loop",		js_reset_loop,		0},
     {0}
 };
 
@@ -275,16 +309,16 @@ js_BranchCallback(JSContext *cx, JSScript *script)
 	}
 #endif
 	/* Infinite loop? */
-	if(js_loop>JAVASCRIPT_BRANCH_LIMIT) {
+	if(js_branch_limit && js_loop>js_branch_limit) {
 		JS_ReportError(cx,"Infinite loop (%lu branches) detected",js_loop);
 		js_loop=0;
 		return(JS_FALSE);
 	}
 	/* Give up timeslices every once in a while */
-	if(!(js_loop%JAVASCRIPT_YIELD_FREQUENCY))
+	if(js_yield_frequency && !(js_loop%js_yield_frequency))
 		YIELD();
 
-	if(!(js_loop%JAVASCRIPT_GC_FREQUENCY))
+	if(js_gc_frequency && !(js_loop%js_gc_frequency))
 		JS_MaybeGC(cx);
 
     return(JS_TRUE);
@@ -471,6 +505,15 @@ int main(int argc, char **argv, char** environ)
 					break;
 				case 's':
 					js_context_stack=strtoul(argv[++argn],NULL,0);
+					break;
+				case 'b':
+					js_branch_limit=strtoul(argv[++argn],NULL,0);
+					break;
+				case 'y':
+					js_yield_frequency=strtoul(argv[++argn],NULL,0);
+					break;
+				case 'g':
+					js_gc_frequency=strtoul(argv[++argn],NULL,0);
 					break;
 				case 'e':
 					errfp=confp;
