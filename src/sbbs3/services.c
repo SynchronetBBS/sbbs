@@ -255,6 +255,41 @@ static u_long resolve_ip(char *addr)
 	return(*((ulong*)host->h_addr_list[0]));
 }
 
+/* Global JavaScript Methods */
+static JSBool
+js_log(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char		str[512];
+    uintN		i;
+    JSString*	js_str;
+	service_client_t* client;
+
+	if((client=(service_client_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+    if(startup==NULL || startup->lputs==NULL)
+        return(JS_FALSE);
+
+	str[0]=0;
+    for(i=0;i<argc && strlen(str)<(sizeof(str)/2);i++) {
+		if((js_str=JS_ValueToString(cx, argv[i]))==NULL)
+		    return(JS_FALSE);
+		strcat(str,JS_GetStringBytes(js_str));
+		strcat(str," ");
+	}
+
+	lprintf("%04d %s %s",client->socket,client->service->protocol,str);
+
+	*rval = JSVAL_VOID;
+    return(JS_TRUE);
+}
+
+
+static JSFunctionSpec js_global_functions[] = {
+	{"log",				js_log,				1},		/* Log a string */
+    {0}
+};
+
 static void
 js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 {
@@ -289,18 +324,18 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 }
 
 static JSContext* 
-js_initcx(SOCKET sock, client_t* client, JSObject** glob)
+js_initcx(SOCKET sock, client_t* client, service_client_t* service_client, JSObject** glob)
 {
 	JSContext*	js_cx;
 	JSObject*	js_glob;
 	BOOL		success=FALSE;
 
-	lprintf("%04d JavaScript: Initializing context",sock);
+//	lprintf("%04d JavaScript: Initializing context",sock);
 
     if((js_cx = JS_NewContext(js_runtime, JAVASCRIPT_CONTEXT_STACK))==NULL)
 		return(NULL);
 
-	lprintf("%04d JavaScript: Context created",sock);
+//	lprintf("%04d JavaScript: Context created",sock);
 
 	JS_BeginRequest(js_cx);	/* Required for multi-thread support */
 
@@ -308,8 +343,13 @@ js_initcx(SOCKET sock, client_t* client, JSObject** glob)
 
 	do {
 
-		lprintf("%04d JavaScript: Initializing Global object",sock);
+		JS_SetContextPrivate(js_cx, service_client);
+
+//		lprintf("%04d JavaScript: Initializing Global object",sock);
 		if((js_glob=js_CreateGlobalObject(js_cx, &scfg))==NULL) 
+			break;
+
+		if (!JS_DefineFunctions(js_cx, js_glob, js_global_functions))
 			break;
 
 		/* Client Object */
@@ -328,12 +368,7 @@ js_initcx(SOCKET sock, client_t* client, JSObject** glob)
 		if(js_CreateFileClass(js_cx, js_glob)==NULL)
 			break;
 
-
-#if 0
-		if (!JS_DefineFunctions(js_cx, js_glob, js_global_functions)) 
-			break;
-#endif
-		lprintf("%04d JavaScript: Initializing System object",sock);
+//		lprintf("%04d JavaScript: Initializing System object",sock);
 		if(js_CreateSystemObject(js_cx, js_glob, &scfg, uptime)==NULL) 
 			break;
 
@@ -357,7 +392,6 @@ js_initcx(SOCKET sock, client_t* client, JSObject** glob)
 
 static void js_service_thread(void* arg)
 {
-	char					spath[MAX_PATH];
 	char*					p;
 	char*					host_name;
 	HOSTENT*				host;
@@ -366,9 +400,15 @@ static void js_service_thread(void* arg)
 	service_t*				service;
 	service_client_t		service_client=*(service_client_t*)arg;
 	/* JavaScript-specific */
+	char					spath[MAX_PATH];
+	char*					args=NULL;
+	int						argc=0;
+	JSString*				arg_str;
+	JSObject*				argv;
 	JSObject*				js_glob;
 	JSScript*				js_script;
 	JSContext*				js_cx;
+	jsval					val;
 	jsval					rval;
 
 	free(arg);
@@ -428,7 +468,7 @@ static void js_service_thread(void* arg)
 	client.protocol=service->protocol;
 	client.user="<unknown>";
 
-	if(((js_cx=js_initcx(socket,&client,&js_glob))==NULL)) {
+	if(((js_cx=js_initcx(socket,&client,&service_client,&js_glob))==NULL)) {
 		lprintf("%04d !%s ERROR initializing JavaScript context"
 			,socket,service->protocol);
 		close_socket(socket);
@@ -446,21 +486,50 @@ static void js_service_thread(void* arg)
 	sprintf(spath,"%s%s",scfg.exec_dir,service->cmd);
 	p=spath;
 	while(*p && *p>' ') p++;
-	*p=0;	/* truncate arguments */
+	if(*p) {
+		*p=0;	/* truncate arguments */
+		args=p+1;
+	}
 
 	JS_BeginRequest(js_cx);	/* Required for multi-thread support */
+
+	argv=JS_NewArrayObject(js_cx, 0, NULL);
+
+	if(args!=NULL && argv!=NULL) {
+		while(*args) {
+			p=strchr(args,' ');
+			if(p!=NULL)
+				*p=0;
+			while(*args && *args<=' ') args++; /* Skip spaces */
+			arg_str = JS_NewStringCopyZ(js_cx, args);
+			if(arg_str==NULL)
+				break;
+			val=STRING_TO_JSVAL(arg_str);
+			if(!JS_SetElement(js_cx, argv, argc, &val))
+				break;
+			argc++;
+			if(p==NULL)	/* last arg */
+				break;
+			args+=(strlen(args)+1);
+		}
+	}
+	JS_DefineProperty(js_cx, js_glob, "argv", OBJECT_TO_JSVAL(argv)
+		,NULL,NULL,JSPROP_READONLY);
+	JS_DefineProperty(js_cx, js_glob, "argc", INT_TO_JSVAL(argc)
+		,NULL,NULL,JSPROP_READONLY);
+
 	js_script=JS_CompileFile(js_cx, js_glob, spath);
 	JS_EndRequest(js_cx);
 
 	if(js_script==NULL) 
 		lprintf("%04d !JavaScript FAILED to compile script (%s)",socket,spath);
 	else  {
-		if(JS_ExecuteScript(js_cx, js_glob, js_script, &rval)!=TRUE) 
-			lprintf("%04d !JavaScript FAILED to execute script (%s)",socket,spath);
-
+		JS_ExecuteScript(js_cx, js_glob, js_script, &rval);
 		JS_DestroyScript(js_cx, js_script);
 	}
 
+//	lprintf("%04d JavaScript: Destroying context",socket);
+	JS_DestroyContext(js_cx);	/* Free Context */
 
 	lprintf("%04d %s service thread terminated", socket, service->protocol);
 	if(service->clients)
@@ -472,7 +541,6 @@ static void js_service_thread(void* arg)
 	client_off(socket);
 
 	thread_down();
-
 }
 
 void DLLCALL services_terminate(void)
@@ -545,13 +613,11 @@ static void cleanup(int code)
 		lprintf("0000 !WSACleanup ERROR %d",ERROR_VALUE);
 #endif
 
-#ifdef JAVASCRIPT
 	if(js_runtime!=NULL) {
 		lprintf("0000 JavaScript: Destroying runtime");
 		JS_DestroyRuntime(js_runtime);
 		js_runtime=NULL;
 	}
-#endif
 
     lprintf("#### Services thread terminated");
 	status("Down");
@@ -710,8 +776,8 @@ void DLLCALL services_thread(void* arg)
 		addr.sin_port   = htons(service[i].port);
 
 		if(bind(socket, (struct sockaddr *) &addr, sizeof(addr))!=0) {
-			lprintf("%04d !ERROR %d binding socket to port %u"
-				,socket, ERROR_VALUE, service[i].port);
+			lprintf("%04d !ERROR %d binding %s socket to port %u"
+				,socket, ERROR_VALUE, service[i].protocol, service[i].port);
 			lprintf("%04d !Another application or service may be using this port"
 				,socket);
 			close_socket(socket);
