@@ -18,6 +18,7 @@ var debug = false;
 var no_anonymous = false;
 var msgs_read = 0;
 var msgs_posted = 0;
+var slave = false;
 
 // Parse arguments
 for(i=0;i<argc;i++)
@@ -137,6 +138,7 @@ while(client.socket.is_connected) {
 	switch(cmd[0].toUpperCase()) {
 
 		case "SLAVE":
+			slave = true;
 			writeln("202 slave status noted");
 			break;
 
@@ -462,6 +464,10 @@ while(client.socket.is_connected) {
 						break;
 					case "subject":
 						hdr.subject=data;
+						break;
+					case "message-id":
+						if(slave)
+							hdr.id=data;
 						break;
 					case "references":
 						hdr.reply_id=data;
