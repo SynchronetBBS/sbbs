@@ -1,0 +1,276 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+<meta name="GENERATOR" content="Microsoft FrontPage 4.0">
+<meta name="ProgId" content="FrontPage.Editor.Document">
+<title>Synchronet BBS Software&nbsp; -&nbsp; Sysop Documentation</title>
+</head>
+
+<body>
+<!--webbot bot="Include" U-Include="../_borders/top.htm" TAG="BODY" startspan -->
+
+<a href="http://www.synchro.net" target="_blank"><img border="0" src="images/synclogo_fancyred.gif" alt="Synchronet BBS - Multinode Bulletin Board Software" width="626" height="86"></a>
+
+<hr>
+
+<!--webbot bot="Include" endspan i-checksum="9987" -->
+<h1>Synchronet System Operator Documentation</h1>
+<p><b><a name="TOC"><u>Sysop Documentation Table of Contents</u></a></b>
+</p>
+
+<p><a href="features.html">Features</a>
+</p>
+
+<pre>1.  <b>Installing Synchronet</b><a href="install.html">
+</a>    1.0   <a href="install.html">Installation</a><a href="install.html#Getting Started">
+</a>    1.1   <a href="install.html#Getting Started">Getting Started
+</a>    1.2   <a href="install.html#How to Get Help">How to Get Help
+</a>    1.3   <a href="install.html#About this manual">About this Manual</a></pre>
+
+<pre>2.  <b>Configuring Synchronet
+</b>    2.0   <a href="system_config.html">System Configuration</a>
+    2.1   <a href="system_config.html#Message Options">Message Options</a><a href="system_config.html#System Options">
+</a>    2.2   <a href="system_config.html#System Options">System Options</a>
+    2.3   <a href="system_config.html#System Toggle Options">Toggle Options</a>
+    2.4   <a href="system_config.html#New User Values">New User Values</a>
+    2.5   <a href="system_config.html#Advanced Options">Advanced Options</a>
+    2.6   <a href="system_config.html#Loadable Modules">Loadable Modules</a>
+    2.7   <a href="system_config.html#Security Values">System Security Level Values</a>
+    2.8   <a href="system_config.html#Expired Account Values">Expired Account Values</a>
+    2.9   <a href="system_config.html#Quick Validation Values">Quick Validation Values</a>
+    2.10  <a href="system_config.html#Creating User Accounts Locally">Creating User Accounts Locally</a>
+	  2.10.1 <a href="system_config.html#Creating a Sysop Account">Creating a Sysop Account</a>
+	  2.10.2 <a href="system_config.html#Creating a Guest Account">Creating a Guest Account</a></pre>
+
+<pre>3.  <b>Adding Nodes to your System</b>
+    3.0   <a href="adding_nodes.html">Adding Nodes</a>
+    3.1   <a href="adding_nodes.html#Configuring Nodes">Node Configuration</a>
+    3.2   <a href="adding_nodes.html#Node Toggle Options">Node Toggle Options</a>
+    3.3   <a href="adding_nodes.html#Node Advanced Options">Node Advanced Options</a>
+    3.4   <a href="adding_nodes.html#Wait for Call Number Keys">Waiting For Caller Number Key Assignments</a>
+    3.5   <a href="adding_nodes.html#Wait for Call Function Keys">Waiting For Caller Function Key Assignments</a></pre>
+
+<pre>4.  <b>Modem and FAX Configuration (<font color="#CC0000">v2.30 DOS/OS2 Only</font>)</b>
+    4.0   <a href="modem_setup.html">Modem Setup</a>
+    4.1   <a href="modem_setup.html#Using UART Serial Cards/Internal Modems">Installing UART Serial Card/Internal Modems</a>
+    4.2   <a href="modem_setup.html#Using a Shared IRQ or Non-UART Serial Card">Installing a Shared IRQ or Non-UART Serial Card</a>
+    4.3   <a href="modem_setup.html#Dumb (NULL) Modem Connection">Using a Dumb (NULL) Modem Connection</a>
+    4.4   <a href="modem_setup.html#Modem Configuration">Modem Configuration</a>
+    4.5   <a href="modem_setup.html#Result Codes">Modem Result Codes
+</a>    4.6   <a href="modem_setup.html#Toggle Options">Modem Toggle Options</a>
+    4.7   <a href="modem_setup.html#Control Strings">Modem Control Strings</a>
+    4.8   <a href="modem_setup.html#Auto-Configuration">Modem Auto-Configuration</a>
+    4.9   <a href="modem_setup.html#Caller Identification">Caller-ID Support</a>
+    4.10  <a href="modem_setup.html#FAX/Modem Setup for Receiving FAXes">Incoming FAX Support</a></pre>
+
+<pre>5.  <b>Sysop Commands (Remote / Local)</b>
+    5.0   <a href="sysop_commands.html">Sysop Commands</a>
+    5.1   <a href="sysop_commands.html#Sysop Definition">Definition of a Sysop</a>
+    5.2   <a href="sysop_commands.html#Multiple Sysops">Multiple Sysops</a>
+    5.3   <a href="sysop_commands.html#Local Sysop">Local Only Sysop Commands</a>
+    5.4   <a href="sysop_commands.html#Extra Online Sysop Commands">Remote/Local Sysop Commands</a></pre>
+
+<pre>6.  <b>Synchronet User Management</b>
+    6.0   <a href="user_editor.html">User Editor</a>
+    6.1   <a href="user_editor.html#Initiating User Edit">Invoking the User Editor</a>
+    6.2   <a href="user_editor.html#Using User Edit Remotely">Editing Users Remotely</a>
+    6.3   <a href="user_editor.html#User Edit Commands">User Editor Commands Explained</a></pre>
+
+<pre>7.  <b>Access Requirement Strings (ARS) Security</b>
+    7.0   <a href="security.html">ARS Security</a>
+    7.1   <a href="security.html#Introduction">Introduction to ARS</a>
+    7.2   <a href="security.html#Key words and Symbols">ARS Keywords and Symbols</a>
+    7.3   <a href="security.html#General Example #1">ARS General Usage Examples</a>
+    7.4   <a href="security.html#Nesting Expressions">Nesting ARS Logic</a>
+    7.5   <a href="security.html#Nested Example #1">ARS Nested Logic Examples</a></pre>
+
+<pre>8.  <b>Synchronet Message Base Section</b>
+    8.0   <a href="message_section.html">Message Base</a>	
+    8.2   <a href="message_section.html#Electronic Mail (E-mail)">Electronic Mail
+</a>          8.2.1 <a href="message_section.html#Synchronet Mail Server">Internet (SMTP/POP) Email Server</a>  <b>(<font color="#FF0000">v3.0+ Only Feature</font>)</b>
+    8.3   <a href="message_section.html#Setting Up the Message Base">Adding Message Bases</a>
+          8.3.1 <a href="message_section.html#Creating Message Groups">Creating Message Groups</a>
+          8.3.2   <a href="message_section.html#Message Group Options">Main Options
+</a>          8.3.3 <a href="message_section.html#Creating Message Sub-boards">Creating Message Sub-Boards</a>
+	  8.3.4   <a href="message_section.html#Sub-board Main Options">Main Options</a>
+          8.3.5   <a href="message_section.html#Toggle Options">Toggle Options</a>
+          8.3.6   <a href="message_section.html#Network Options">Network Options</a>
+          8.3.7   <a href="message_section.html#Advanced Options">Advanced Options</a>
+    8.4   <a href="message_section.html#Importing QWK Packet from Previous BBS Software">Importing Messages from Your Previous BBS Software</a>
+    8.5   <a href="message_section.html#Posting a Message">Posting</a>
+    8.6   <a href="message_section.html#Remote QWK Functions">Remote QWK Functions</a></pre>
+
+<pre>9.  <b>Synchronet and Networking</b>
+    9.0   <a href="networking.html">Networking Message Bases</a>
+    9.1   <a href="networking.html#QWK Packet Networking">QWK Networking</a>
+          9.1.1 <a href="networking.html#Network Hubs">Network Hubs</a>
+          9.1.2 <a href="networking.html#Networked Sub-boards">Networked Sub-Boards</a>
+          9.1.3 <a href="networking.html#Configuring Your BBS as a QWK Node">Setting up a QWK Node</a>
+          9.1.4 <a href="networking.html#Configuring Your BBS as a QWK Network Hub">Setting up a QWK Hub</a><a href="networking.html#Step-by-step Instructions for Joining DOVE-Net">
+</a>    9.2   <a href="networking.html#Step-by-step Instructions for Joining DOVE-Net">Adding the DOVE-Net QWK Packet Network</a>
+    9.3   <a href="networking.html#Transferring Files Through QWK Network">Transferring Files via QWK Network</a>
+    9.4   <a href="networking.html#PostLink Networking">PostLink Networking</a>
+    9.5   <a href="networking.html#FidoNet Networking">FidoNet Networking</a>
+          9.5.1 <a href="networking.html#Step-by-Step instructions for setting up FidoNet using SBBSecho and InterMail">Step-by-Step Setup</a>
+          9.5.2 <a href="networking.html#Sending FidoNet NetMail">Sending FidoNet Netmail</a>
+    9.6   <a href="networking.html#Internet Networking">Internet Networking</a></pre>
+
+<pre>10. <b>Synchronet File Section</b>
+    10.0  <a href="file_section.html">File Transfer Section
+</a>    10.1  <a href="file_section.html#Synchronet FTP Server Documentation">Internal Internet FTP Server</a>  <b>(<font color="#FF0000">v3.0+ Only Feature</font>)
+</b>    10.2  <a href="file_section.html#Setting Up the File Transfer Section">Setting up the File Section Options</a>
+          10.2.1 <a href="file_section.html#Main Options">Main Options</a>
+    10.3  <a href="file_section.html#Viewable Files">Viewable File Types</a>
+    10.4  <a href="file_section.html#Testable Files">Testable File Types
+</a>    10.5  <a href="file_section.html#Download Events">Download Events</a>
+    10.6  <a href="file_section.html#Extractable Files">Extractable File Types</a>
+    10.7  <a href="file_section.html#Compressable Files">Compressable File Types</a>
+    10.8  <a href="file_section.html#Transfer Protocols">Transfer Protocols
+</a>          10.8.1 <a href="file_section.html#Version 3.0 (Win32 / Telnet) using FDSZ :">FDSZ Protocol</a>
+          10.8.2 <a href="file_section.html#Version 2.30 (DOS/OS2) using DSZ :">DSZ Protocol</a>
+          10.8.3 <a href="file_section.html#Version 2.30 (DOS/OS2) using HS/Link :">HS/Link Protocol</a>
+    10.9  <a href="file_section.html#Creating File Libraries">Adding File Libraries</a>
+          10.9.1  <a href="file_section.html#Library Options">Main Options</a>
+    10.10 <a href="file_section.html#Creating File Directories">Adding File Directories</a>
+          10.10.1 <a href="file_section.html#Main Directory Options">Main Options</a>
+          10.10.2 <a href="file_section.html#Toggle Options">Toggle Options</a>
+          10.10.3 <a href="file_section.html#Advanced Options">Advanced Options</a>
+    10.11 <a href="file_section.html#IMPORTANT - Adding files to the BBS database">Adding Files to File Sections</a>
+          10.11.1 <a href="file_section.html#Creating Offline File Directories">Creating an Offline Files Directory</a>
+          10.11.2 <a href="file_section.html#Creating a Sysop Directory">Creating a Sysop Directory</a>
+          10.11.3 <a href="file_section.html#Creating a User-to-User Transfer Directory">Creating a User to User Directory</a>
+          10.11.4 <a href="file_section.html#Creating a Default Upload Directory">Creating a Default Upload Directory</a>
+          10.11.5 <a href="file_section.html#Supporting Blind Batch Uploads">Supporting Blind Batch Uploads</a>
+    10.12 <a href="file_section.html#CD-ROM and Other Slow Media Devices">CD-ROM and other Slow Media Devices</a>
+          10.12.1 <a href="file_section.html#Alternate File Paths">Using Alternate File Paths</a></pre>
+
+<pre>11. <b>Synchronet Chat Section</b>
+    11.0  <a href="chat_section.html">Chat Section Configuration</a>
+    11.1  <a href="chat_section.html#Artificial Chat Gurus">Artificial Chat Gurus</a>
+    11.2  <a href="chat_section.html#Chat Actions">Multinode Chat Actions</a>
+    11.3  <a href="chat_section.html#Multinode Chat Channels">Multinode Chat Channels</a>
+    11.4  <a href="chat_section.html#External Sysop Chat Pagers">External Sysop Chat Pagers</a></pre>
+
+<pre>12. <b>Synchronet External Program Section</b>
+    12.0  <a href="external_programs.html">External Programs
+</a>    12.1  <a href="external_programs.html#Fixed Events">External Fixed Events</a>
+    12.2  <a href="external_programs.html#Timed Events">External Timed Events</a>
+    12.3  <a href="external_programs.html#Global Swap List">Global Swap List</a>
+    12.4  <a href="external_programs.html#OS/2 Program List">Win32 / OS/2 Program List</a>
+    12.5  <a href="external_programs.html#External Editors">External Editors</a>
+    12.6  <a href="external_programs.html#Online Programs">Adding Online Programs</a>
+    12.7  <a href="external_programs.html#DropFiles">Supported BBS Drop File Types</a>
+    12.8  <a href="external_programs.html#Call-back Verifiers">Callback Verifiers</a>
+    12.9  <a href="external_programs.html#Installing a New External Program">Installing a New External Program</a>
+    12.10 <a href="external_programs.html#Configuring a New External Program">Configuring a New External Program</a>
+    12.11 <a href="external_programs.html#Examples for some popular programs">External Program Setup Examples</a>
+          12.11.1 <a href="external_programs.html#Legend of the Red Dragon (L.O.R.D.)">Legend of the Red Dragon (L.O.R.D.)</a>
+          12.11.2 <a href="external_programs.html#Usurper">Usurper</a>
+          12.11.3 <a href="external_programs.html#Trade Wars 2002">Trade Wars 2002
+</a>          12.11.4 <a href="external_programs.html#Barren Realms Elite (BRE)">Barren Realms Elite</a><a href="external_programs.html#Usurper">
+</a>    12.12 <a href="external_programs.html#Internal Telnet gateway">Internal Gateways (Telnet, RLogin, etc.)</a>  <b>(<font color="#FF0000">v3.0+ Only Feature</font>)</b>
+    12.13 <a href="external_programs.html#Troubleshooting External Programs">Troubleshooting External Programs</a></pre>
+
+<pre>13. <b>Synchronet Text File Section</b>
+    13.0  <a href="textfile_section.html">General Text Files</a>
+    13.1  <a href="textfile_section.html#Text File Options">Main Options</a>
+    13.2  <a href="textfile_section.html#Adding Text Files">Adding Text Files to a Section</a>
+    13.3  <a href="textfile_section.html#976/900 Number Billing">976/900 Number Billing Support</a></pre>
+
+<pre>14. <b>Synchronet Multinode Information</b>
+    14.0  <a href="multnode_config.html">Multinode</a>
+    14.1  <a href="multnode_config.html#LAN Method">The Local Area Network (LAN) Method</a>
+    14.2  <a href="multnode_config.html#Multitasker Method">The Multitasker Method</a>
+    14.3  <a href="multnode_config.html#Is it Safe?">Is it Safe to run Multiple Nodes?</a>
+    14.4  <a href="multnode_config.html#Multinode: DESQview">Setting Up Synchronet Under DESQview</a>
+    14.5  <a href="multnode_config.html#Multinode: OS/2">Setting Up Synchronet Under OS/2</a>
+    14.6  <a href="multnode_config.html#Multinode: Windows 3.x">Setting Up Synchronet Under Windows 3.x</a>
+    14.7  <a href="multnode_config.html#Multinode: Windows 95">Setting Up Synchronet Under Windows 9x</a>
+    14.8  <a href="multnode_config.html#Multinode: LAN">Setting Up Synchronet on a LAN</a></pre>
+
+<pre>15. <b>Synchronet Utility Reference</b><a href="utility_reference.html">
+</a>    15.1  <a href="utility_reference.html#CHKSMB">CHKSMB</a>	<b>(</b>Checks Message Base for Validity<b>)</b>
+    15.2  <a href="utility_reference.html#FIXSMB">FIXSMB</a>	<b>(</b>Fixes Message Base and Mail Indexes<b>)</b>
+    15.3  <a href="utility_reference.html#SMBUTIL">SMBUTIL</a> 	<b>(</b>Synchronet Message Base Utility<b>)
+</b>    15.4  <a href="utility_reference.html#SMBACTIV">SMBACTIV</a>	<b>(</b>Checks for Active Message Bases<b>)</b>
+    15.5  <a href="utility_reference.html#ADDFILES">ADDFILES</a>	<b>(</b>Importing ASCII File Lists<b>)</b>
+    15.6  <a href="utility_reference.html#FILELIST">FILELIST</a>	<b>(</b>Creating ASCII File Lists<b>)</b>
+    15.7  <a href="utility_reference.html#DUPEFIND">DUPEFIND</a>	<b>(</b>Finds Duplicate Files in Synchronet<b>)</b>
+    15.8  <a href="utility_reference.html#DELFILES">DELFILES</a>	<b>(</b>Deletes Files from File Base<b>)</b>
+    15.9  <a href="utility_reference.html#MLABELS">MLABELS</a> 	<b>(</b>Mailing Labels Creation Util<b>)</b>
+    15.10 <a href="utility_reference.html#QWKNODES">QWKNODES</a>	<b>(</b>Create QWKnet Users/Route/Node Lists<b>)</b>
+    15.11 <a href="utility_reference.html#ALLUSERS">ALLUSERS</a>	<b>(</b>Command Line Bulk User Editor<b>)</b>
+    15.12 <a href="utility_reference.html#AUTONODE">AUTONODE</a>	<b>(</b>Automatic Local Logon Utility<b>)</b>
+    15.13 <a href="utility_reference.html#NODE">NODE</a>		<b>(</b>Node Display/Control Utility<b>)</b>
+    15.14 <a href="utility_reference.html#UTI">UTI Driver</a>	<b>(</b>PostLink Import/Export Utils<b>)</b>
+    15.15 <a href="utility_reference.html#SLOG">SLOG</a>		<b>(</b>Node/System Statistics Viewer<b>)</b>
+    15.16 <a href="utility_reference.html#DSTSEDIT">DSTSEDIT</a>	<b>(</b>Node/System Statistics Editor<b>)</b>
+    15.17 <a href="utility_reference.html#TOTALS">TOTALS</a>	<b>(</b>Credit Gain/Loss Util for Games<b>)</b>
+    15.18 <a href="utility_reference.html#ANS2MSG">ANS2MSG</a> 	<b>(</b>ANSI to Ctrl-A Conversion Utility<b>)</b>
+    15.19 <a href="utility_reference.html#MSG2ANS">MSG2ANS</a> 	<b>(</b>Ctrl-A to ANSI Conversion Utility<b>)</b></pre>
+
+<pre>16. <b>Troubleshooting your System</b>
+    16.0 <a href="troubleshooting.html">Troubleshooting</a></pre>
+
+<pre>17. <b>Customizing your Synchronet System</b>
+    17.1  <a href="customization.html#Menus">Menus and Other Text Files</a>
+          17.1.1 <a href="customization.html#Text/Colors">Text Colors</a>
+          17.1.2 <a href="customization.html#Node Action Text">Node Action Text</a>
+          17.1.3 <a href="customization.html#Trash Can Files">Trash Can Files</a>
+    17.2  <a href="customization.html#Customization: Message Variables">Message Variables</a>
+    17.3  <a href="customization.html#Customization: Message Color Codes">Message Color Codes</a>
+    17.4  <a href="customization.html#SIF Questionnaire File">SIF Questionnaire File Format</a>
+    17.5  <a href="customization.html#GURU.DAT">GURU.DAT (Guru Brain) Modifications</a></pre>
+
+<pre>18. <b>Appendix Information
+</b>    18.1  <a href="appendix.html#Appendix A:">Appendix A</a> : Command Line Specifier Reference<b>
+</b>    18.2  <a href="appendix.html#Appendix B">Appendix B</a> : Synchronet (SBBS/SCFG) Command Line Options
+    18.3  <a href="appendix.html#Appendix C">Appendix C</a> : Synchronet Environment Variables<b>
+</b>    18.4  <a href="appendix.html#Appendix D">Appendix D</a> : Phone Numbers/Addresses of Important Contacts<b>
+</b>    18.5  <a href="appendix.html#Appendix E">Appendix E</a> : Wait for Call Status Display<b>
+</b>    18.6  <a href="appendix.html#Appendix F">Appendix F</a> : Node Status Display<b>
+</b>    18.7  <a href="appendix.html#Appendix G">Appendix G</a> : Log File Line Type Specifiers<b>
+</b>    18.8  <a href="appendix.html#Appendix H">Appendix H</a> : File Formats (Technical Specs for Developers)</pre>
+
+<pre><b>19. Definitions of Commonly Used Terms
+</b>    19.0  <a href="glossary.html">Glossary</a></pre>
+
+<p><b><a href="#TOC">Back to Table of Contents</a></b></p>
+
+<!--webbot bot="Include" U-Include="../_borders/bottom.htm" TAG="BODY" startspan -->
+
+<hr>
+<p><b><a href="http://www.synchro.net/copyright.html">Copyright</a> © 2000 by </b> <a href="http://www.synchro.net/author.htm"><b>Rob Swindell</b><br>
+</a>
+
+<a href="http://www.synchro.net"><font size="2"><br>
+Synchronet BBS Software</font></a>  <font size="2">  (Synchronet)
+Version 3 is comprised of several documentation,<br>
+library, executable, and <a href="http://www.synchro.net/source.html">source code</a> 
+files, all of which are covered by the<a href="http://www.fsf.org/copyleft/gpl.html">
+<br>
+GNU General Public License</a>  with the exception of the following portions
+covered by<br>
+the <a href="http://www.fsf.org/copyleft/lesser.html">GNU Lesser General Public License</a>:
+SMBLIB and XSDK.<br>
+<br>
+Synchronet Version 2 (for DOS and OS/2) and its source code was released to the<a href="http://www.fsf.org/philosophy/categories.html#PublicDomainSoftware">
+<br>
+Public Domain</a>  by <a href="ftp://vert.synchro.net/main/sbbs/manifest.txt">Digital Dynamics</a> 
+in 1997 and remains Public Domain software today.<br>
+Synchronet Version 3 is not Public Domain software.</font></p>
+<p align="left"><font size="2"><a href="http://www.synchro.net/author.htm">Rob Swindell<br>
+</a>PO Box 501<br>Yorba Linda, CA 92885<a href="http://www.synchro.net"><br>
+http://www.synchro.net</a>
+
+</font></p>
+<p align="left"><font size="2">For the complete Copyright Information please
+read the <a href="http://www.synchro.net/copyright.html">Copyright Documentation</a>
+.</font></p>
+
+<!--webbot bot="Include" endspan i-checksum="10364" -->
+
+</body>
+
+</html>

@@ -1,0 +1,172 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+<meta name="GENERATOR" content="Microsoft FrontPage 4.0">
+<meta name="ProgId" content="FrontPage.Editor.Document">
+<title>Installation</title>
+<base target="_self">
+</head>
+
+<body>
+
+<!--webbot bot="Include" U-Include="../_borders/top.htm" TAG="BODY" startspan -->
+
+<a href="http://www.synchro.net" target="_blank"><img border="0" src="images/synclogo_fancyred.gif" alt="Synchronet BBS - Multinode Bulletin Board Software" width="626" height="86"></a>
+
+<hr>
+
+<!--webbot bot="Include" endspan i-checksum="9987" -->
+
+<p><a name="top"></a><a href="sysop.html#TOC">Back to Table of Contents</a></p>
+
+<h2><u>[1.0] - Synchronet Installation Instructions</u></h2>
+
+<h3><u>Finding the Latest version of Synchronet</u></h3>
+
+<pre>You can find the latest released public distribution of Synchronet at 
+<a href="http://www.synchro.net" target="_blank">http://www.synchro.net</a>.</pre>
+
+<h3>
+<u>Upgrading to a Newer Version of Synchronet</u></h3>
+<pre>Because of the many variances when changing to a different version or revision
+of Synchronet, this topic is not covered here.	When upgrading an existing Synchronet 
+installation to a newer version or revision, you should <b>ALWAYS</b> consult the
+upgrade documentation included with the distribution (usually in the form of an
+<a href="../upgrade.txt">UPGRADE.TXT</a> file). Upgrade-only distributions are usually made available 
+in a more compact archive form (e.g. <b>sbup300c.zip</b>).</pre>
+<h3><b><u>Windows 95/98/ME/NT/2000 Installation</u></b></h3>
+<pre>After downloading the Synchronet distribution file (e.g. <b>sbbs300c.zip</b>), you will
+need to extract the archive file that you downloaded into a temporary directory 
+on your hard drive. You will need <a href="http://www.winzip.com" target="_blank">WinZip</a> or an equivalent archive program to 
+uncompress and extract the installation files.</pre>
+<pre>Once you've extracted the installation files, go to the directory you extracted
+the compressed files to and run <b>SETUP</b> to start the installation.</pre>
+<pre>The default installation directory should be fine for most users. If you choose 
+to change the installation directory, it is <b>critical</b> that you <b>DO NOT</b> use a path 
+with long filenames or spaces as Synchronet still relies on some 16-bit DOS 
+utilities which require DOS-compatible 8.3 file and directory names to function. 
+It is recommended you use a directory named <i>SBBS</i> off of the root directory on one 
+of your hard drives (e.g. <b>C:\SBBS</b>).</pre>
+<pre>You should now be at the Setup Type Installation menu. From this menu, you can
+select the items that you want (or don't want) installed, as well as a few
+other options. </pre>
+<pre><img border="0" src="images/setuptype.gif" width="479" height="357"></pre>
+<pre>
+After completing your selection and the installation is completed you will
+find a new Icon on your Desktop and in your StartUp Folder in your Start
+Menu. If you do not want Synchronet to start automatically during boot, you
+may safely delete the Synchronet shortcut from your StartUp Folder.</pre>
+<h2>
+<br>
+<u>[1.1] - <a name="Getting Started">Getting Started</a></u></h2>
+<h3><u>Getting Started with v3.0 for Win32</u></h3>
+<pre>Upon Executing Synchronet the screen will look something like the one below.</pre>
+<pre><img border="0" src="images/sbbsctrl.gif" width="740" height="497">
+
+After starting Synchronet for the first time there will be several pop-up
+windows that are running programs and events required before the system
+can be used.</pre>
+<pre>The last window that opens will start the Synchronet Configuration
+Program (<a href="system_config.html#System Configuration">SCFG</a>). To run SCFG again later you can load it from the
+Synchronet Control Panel (SBBSCTRL) by selecting BBS and then
+Configure from the Pull Down Menu at the top of SBSCTRL.</pre>
+<pre><img border="0" src="images/sbbsctrl_configure.gif" width="301" height="192"></pre>
+<pre>Before putting the system online you should <a href="system_config.html">configure your BBS</a> with <a href="system_config.html#System Configuration">SCFG</a>
+to set your system options and settings according to your preferences. It
+is recommended you spend some time reading and becoming familiar with
+your <a href="system_config.html">configuration</a> and the many options available.</pre>
+<pre>After completing <a href="system_config.html">configuration</a> you should then follow the proper steps
+to <a href="system_config.html#Creating User Accounts Locally">add a sysop account</a>. Once you <a href="system_config.html#Creating User Accounts Locally">create the account</a> you should become 
+familiar with the <a href="user_editor.html">Synchronet User Editor</a> and set the <a href="security.html">security</a> settings for 
+the account(s) you have created.</pre>
+<pre>Once you have completed the initial setup of your system and sysop
+account, you have a basic functioning Synchronet BBS System. Please
+refer to the rest of the <a href="../index.htm">documentation</a> to finish the setup of your new
+BBS System.
+
+<a href="#top">Back to Top</a></pre>
+
+<h3>
+<u>Getting Started with v2.30 for DOS/OS2</u></h3>
+
+<pre>Before putting the system online you should <a href="system_config.html">configure your BBS</a> with <a href="system_config.html#System Configuration">SCFG</a>
+and set your system options and settings according to your preferences. It
+is recommended you spend some time reading and becoming familiar with
+your <a href="system_config.html">configuration</a> and the many options available.</pre>
+<pre><a href="system_config.html#System Configuration">SCFG</a> is the <a href="system_config.html#System Configuration">Synchronet Configuration Utility</a> which can be executed from the
+&quot;Waiting for call&quot; screen by hitting 'C' or from DOS by typing SCFG from any
+node directory. Example:</pre>
+<pre><img border="0" src="images/scfg_dos_startup.gif" width="500" height="150">
+
+After completing <a href="system_config.html">configuration</a> you should then follow the proper steps
+to <a href="system_config.html#Creating User Accounts Locally">add a sysop account</a>. Once you<a href="system_config.html#Creating User Accounts Locally"> create the account</a> you should become 
+familiar with the <a href="user_editor.html">Synchronet User Editor</a> and set the <a href="security.html">security</a> settings 
+for the account(s) you have created.</pre>
+<pre>Once you have completed the initial setup of your system and sysop
+account you have a basic functioning Synchronet BBS System. Please
+refer to the rest of the <a href="../index.htm">documentation</a> to finish the setup of your new
+BBS System.</pre>
+
+<h3><u>Copying Utilities</u></h3>
+<pre>Synchronet has a specific sub-directory for executable programs (EXEC).
+You need to copy all utilities that the BBS will run into this directory
+(this does not mean Doors or Online Games). For example, you need to copy
+PKZIP.EXE and PKUNZIP.EXE into your EXEC directory. If you plan on supporting
+other archive/compression programs on your BBS, you should copy these programs
+into the EXEC directory as well. Any file transfer protocol programs need to
+be copied into your EXEC directory. Synchronet comes with an unregisterd copy
+of FDSZ (DSZ for the DOS/OS2 version). If you have a registered version of 
+DSZ/FDSZ, copy it into the EXEC directory as well.</pre>
+<h2><u><a name="How to Get Help">[1.2] - How to Get Help</a></u></h2>
+<pre>There are a number of avenues that can be used to find help on Synchronet.</pre>
+<pre>This list is but a small one of the available resources:</pre>
+<pre><b><u>Synchronet Homepage</u>     :</b> <a href="http://www.synchro.net">http://www.synchro.net</a></pre>
+<pre><b><u>Support BBS (Vertrauen)</u> :</b> <a href="telnet://vert.synchro.net">telnet://vert.synchro.net</a></pre>
+<pre><b><u>Email support:</u></b>          : <a href="mailto:sysop@vert.synchro.net">sysop@vert.synchro.net</a></pre>
+<pre><b><u>Echomail support:</u></b>
+  FidoNet (zone 1)      : <b>SYNC</b> - Synchronet BBS Software Discussion                       </pre>
+<h2><u>[1.3] - <a name="About this manual"> About this manual</a></u></h2>
+<pre>This manual is an ongoing work of progress. As <a href="http://www.synchro.net">Synchronet</a> is constantly evolving,
+so is this manual.  This manual will give you comprehensive information about
+installing, configuring, updating, and maintaing your <a href="http://www.synchro.net">Synchronet</a> system.</pre>
+<pre>The manual is currently maintained in an <a href="http://www.synchro.net/source.html">Open Source</a> manner. If you have any
+questions or concerns about the manual, please direct them to : 
+<a href="mailto:syncdocs@wasteland-bbs.com">syncdocs@wasteland-bbs.com</a></pre>
+<pre>Updates for this manual can be found periodically on <a href="http://www.synchro.net">http://www.synchro.net</a> or at the
+<a href="http://wasteland-bbs.com/syncdocs/">Synchronet Documentation Project</a> (<a href="http://wasteland-bbs.com/syncdocs/">http://wasteland-bbs.com/syncdocs/</a>).</pre>
+<!--webbot bot="Include" U-Include="../_borders/bottom.htm" TAG="BODY" startspan -->
+
+<hr>
+<p><b><a href="http://www.synchro.net/copyright.html">Copyright</a> © 2000 by </b> <a href="http://www.synchro.net/author.htm"><b>Rob Swindell</b><br>
+</a>
+
+<a href="http://www.synchro.net"><font size="2"><br>
+Synchronet BBS Software</font></a>  <font size="2">  (Synchronet)
+Version 3 is comprised of several documentation,<br>
+library, executable, and <a href="http://www.synchro.net/source.html">source code</a> 
+files, all of which are covered by the<a href="http://www.fsf.org/copyleft/gpl.html">
+<br>
+GNU General Public License</a>  with the exception of the following portions
+covered by<br>
+the <a href="http://www.fsf.org/copyleft/lesser.html">GNU Lesser General Public License</a>:
+SMBLIB and XSDK.<br>
+<br>
+Synchronet Version 2 (for DOS and OS/2) and its source code was released to the<a href="http://www.fsf.org/philosophy/categories.html#PublicDomainSoftware">
+<br>
+Public Domain</a>  by <a href="ftp://vert.synchro.net/main/sbbs/manifest.txt">Digital Dynamics</a> 
+in 1997 and remains Public Domain software today.<br>
+Synchronet Version 3 is not Public Domain software.</font></p>
+<p align="left"><font size="2"><a href="http://www.synchro.net/author.htm">Rob Swindell<br>
+</a>PO Box 501<br>Yorba Linda, CA 92885<a href="http://www.synchro.net"><br>
+http://www.synchro.net</a>
+
+</font></p>
+<p align="left"><font size="2">For the complete Copyright Information please
+read the <a href="http://www.synchro.net/copyright.html">Copyright Documentation</a>
+.</font></p>
+
+<!--webbot bot="Include" endspan i-checksum="10364" -->
+</body>
+
+</html>
