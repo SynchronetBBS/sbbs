@@ -46,8 +46,14 @@
 /* Constants */
 /*************/
 
-#define VERSION 	"3.00"  /* Version: Major.minor  */
-#define REVISION	'D'
+#ifdef JAVASCRIPT
+	#define VERSION 	"3.10"  /* Version: Major.minor  */
+	#define REVISION	'A'
+#else
+	#define VERSION 	"3.00"  /* Version: Major.minor  */
+	#define REVISION	'D'
+#endif
+
 #define VERSION_NOTICE		"Synchronet BBS for "PLATFORM_DESC\
 								"  Version 3.00  "
 #define COPYRIGHT_NOTICE	"Copyright 2001 Rob Swindell"
