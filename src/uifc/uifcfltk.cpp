@@ -797,7 +797,7 @@ int uifcinifltk(uifcapi_t* uifcapi)
 	CurrWin=0;
 	MainWin=NULL;
 
-#if defined(_WIN32)
+#if defined(_WIN32) && !defined(_DEBUG)
 	FreeConsole();		// close popup console window
 #endif
     return(0);
@@ -809,7 +809,7 @@ int uifcinifltk(uifcapi_t* uifcapi)
 void uifcbail(void)
 {
 	int i;
-	
+
 	for(i=CurrWin;i>=0;i--) {
 		delwin(i);
 	}
