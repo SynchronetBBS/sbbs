@@ -317,6 +317,11 @@ void sbbs_read_ini(
 	SAFECOPY(web->error_dir
 		,iniReadString(fp,section,"ErrorDirectory","../html/error"));
 
+	SAFECOPY(web->index_file_name
+		,iniReadString(fp,section,"IndexFileName","index.html"));
+	SAFECOPY(web->js_ext
+		,iniReadString(fp,section,"JavaScriptExtension",".ssjs"));
+
 #ifdef __unix__
 	default_cgi_temp = "/tmp";
 #else
