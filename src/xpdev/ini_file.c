@@ -146,7 +146,7 @@ str_list_t iniGetStringList(FILE* fp, const char* section, const char* key
 
 	SAFECOPY(list,value);
 
-	if((lp=strListAlloc())==NULL)
+	if((lp=strListInit())==NULL)
 		return(NULL);
 
 	token=strtok(list,sep);
@@ -192,7 +192,7 @@ str_list_t iniGetSectionList(FILE* fp, const char* prefix)
 	ulong	items=0;
 	str_list_t	lp;
 
-	if((lp=strListAlloc())==NULL)
+	if((lp=strListInit())==NULL)
 		return(NULL);
 
 	if(fp==NULL)
@@ -230,7 +230,7 @@ str_list_t iniGetKeyList(FILE* fp, const char* section)
 	ulong	items=0;
 	str_list_t	lp;
 
-	if((lp=strListAlloc())==NULL)
+	if((lp=strListInit())==NULL)
 		return(NULL);
 
 	if(fp==NULL)
