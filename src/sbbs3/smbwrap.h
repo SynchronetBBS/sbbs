@@ -56,14 +56,26 @@
 	#define SH_DENYWR			OF_SHARE_DENY_WRITE
 	#define SH_DENYRW			OF_SHARE_EXCLUSIVE
 	#endif
+	#ifndef O_DENYNONE
+	#define O_DENYNONE			SH_DENYNO
+	#endif
 
 #elif defined(__unix__)
+
+	#include <fcntl.h>
+
+	#define O_BINARY	0		/* all files in binary mode on Unix */
+	#define O_DENYNONE  (1<<31)	/* req'd for Baja/nopen compatibility */
+
+	#define SH_DENYNO	2          // sopen() will *not* block
+	#define SH_DENYRW	F_WRLCK	   // blocks on read/write
+	#define SH_DENYRD   F_RDLCK	   // blocks on read
+	#define SH_DENYWR   F_WRLCK    // blocks on write (and read)
 
 	#define stricmp(x,y)		strcasecmp(x,y)
 	#define strnicmp(x,y,z)		strncasecmp(x,y,z)
 	#define chsize(fd,size)		ftruncate(fd,size)
 
-	#define O_BINARY		0
 #endif
 
 #ifndef BOOL
