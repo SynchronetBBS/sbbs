@@ -218,7 +218,7 @@ typedef struct {
 #define FIND_HEXDIGIT(p)			while(*(p) && !isxdigit(*(p)))			(p)++;
 
 /* Variable/buffer initialization (with zeros) */
-#define ZERO_VAR(var)				memset(&var,0,sizeof(var))
+#define ZERO_VAR(var)				memset(&(var),0,sizeof(var))
 #define ZERO_ARRAY(array)			memset(array,0,sizeof(array))
 
 /****************************************************************************/
