@@ -211,13 +211,11 @@ static void client_off(SOCKET sock)
 		startup->client_on(FALSE,sock,NULL,FALSE);
 }
 
-static void thread_up(BOOL setuid)
+static void thread_up(void)
 {
 	thread_count++;
 	if(startup!=NULL && startup->thread_up!=NULL)
 		startup->thread_up(TRUE);
-	if(setuid && startup!=NULL && startup->setuid!=NULL)
-		startup->setuid();
 }
 
 static void thread_down(void)
@@ -1364,7 +1362,7 @@ static void send_thread(void* arg)
 		*xfer.inprogress=FALSE;
 		return;
 	}
-	thread_up(TRUE /* setuid */);
+	thread_up();
 
 #if defined(_DEBUG) && defined(SOCKET_DEBUG_SENDTHREAD)
 			socket_debug[xfer.ctrl_sock]|=SOCKET_DEBUG_SENDTHREAD;
@@ -1576,7 +1574,7 @@ static void receive_thread(void* arg)
 		return;
 	}
 
-	thread_up(TRUE /* setuid */);
+	thread_up();
 
 	*xfer.aborted=FALSE;
 	if(xfer.filepos || startup->options&FTP_OPT_DEBUG_DATA)
@@ -1848,8 +1846,10 @@ static void filexfer(SOCKADDR_IN* addr, SOCKET ctrl_sock, SOCKET pasv_sock, SOCK
 		server_addr.sin_family = AF_INET;
 		server_addr.sin_port   = htons((WORD)(startup->port-1));	/* 20? */
 
+		startup->seteuid(FALSE);
 		if((result=bind(*data_sock, (struct sockaddr *) &server_addr
 			,sizeof(server_addr)))!=0) {
+			startup->seteuid(TRUE);
 			lprintf ("%04d !DATA ERROR %d (%d) binding socket %d"
 				,ctrl_sock, result, ERROR_VALUE, *data_sock);
 			sockprintf(ctrl_sock,"425 Error %d binding socket",ERROR_VALUE);
@@ -1859,6 +1859,7 @@ static void filexfer(SOCKADDR_IN* addr, SOCKET ctrl_sock, SOCKET pasv_sock, SOCK
 			ftp_close_socket(data_sock,__LINE__);
 			return;
 		}
+		startup->seteuid(TRUE);
 
 		result=connect(*data_sock, (struct sockaddr *)addr,sizeof(struct sockaddr));
 		if(result!=0) {
@@ -2263,7 +2264,7 @@ static void ctrl_thread(void* arg)
 	JSObject*	js_ftp;
 #endif
 
-	thread_up(TRUE /* setuid */);
+	thread_up();
 
 	lastactive=time(NULL);
 
@@ -2714,12 +2715,15 @@ static void ctrl_thread(void* arg)
 
 			pasv_addr.sin_port = 0;
 
+			startup->seteuid(FALSE);
 			if((result=bind(pasv_sock, (struct sockaddr *) &pasv_addr,sizeof(pasv_addr)))!= 0) {
+				startup->seteuid(TRUE);
 				lprintf("%04d !PASV ERROR %d (%d) binding socket", sock, result, ERROR_VALUE);
 				sockprintf(sock,"425 Error %d binding data socket",ERROR_VALUE);
 				ftp_close_socket(&pasv_sock,__LINE__);
 				continue;
 			}
+			startup->seteuid(TRUE);
 
 			addr_len=sizeof(addr);
 			if((result=getsockname(pasv_sock, (struct sockaddr *)&addr,&addr_len))!=0) {
@@ -4340,7 +4344,7 @@ void DLLCALL ftp_server(void* arg)
 	recycle_server=TRUE;
 	do {
 
-		thread_up(FALSE /* setuid */);
+		thread_up();
 
 		status("Initializing");
 
@@ -4467,14 +4471,17 @@ void DLLCALL ftp_server(void* arg)
 		server_addr.sin_family = AF_INET;
 		server_addr.sin_port   = htons(startup->port);
 
+		startup->seteuid(FALSE);
 		if((result=bind(server_socket, (struct sockaddr *) &server_addr
     		,sizeof(server_addr)))!=0) {
+			startup->seteuid(TRUE);
 			lprintf("%04d !ERROR %d (%d) binding socket to port %u"
 				,server_socket, result, ERROR_VALUE,startup->port);
 			lprintf("%04d %s", server_socket, BIND_FAILURE_HELP);
 			cleanup(1,__LINE__);
 			return;
 		}
+		startup->seteuid(TRUE);
 
 		if((result=listen(server_socket, 1))!= 0) {
 			lprintf("%04d !ERROR %d (%d) listening on socket"
@@ -4482,9 +4489,6 @@ void DLLCALL ftp_server(void* arg)
 			cleanup(1,__LINE__);
 			return;
 		}
-
-		if(startup->setuid!=NULL)
-			startup->setuid();
 
 		/* signal caller that we've started up successfully */
 		if(startup->started!=NULL)

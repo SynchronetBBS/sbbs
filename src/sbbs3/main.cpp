@@ -117,13 +117,11 @@ static void client_off(SOCKET sock)
 		startup->client_on(FALSE,sock,NULL,FALSE);
 }
 
-static void thread_up(BOOL setuid)
+static void thread_up()
 {
 	thread_count++;
 	if(startup!=NULL && startup->thread_up!=NULL)
 		startup->thread_up(TRUE);
-	if(setuid && startup!=NULL && startup->setuid!=NULL)
-		startup->setuid();
 }
 
 static void thread_down()
@@ -710,7 +708,7 @@ void input_thread(void *arg)
 	sbbs_t*		sbbs = (sbbs_t*) arg;
 	struct timeval	tv;
 
-	thread_up(TRUE /* setuid */);
+	thread_up();
 
 #ifdef _DEBUG
 	lprintf("Node %d input thread started",sbbs->cfg.node_num);
@@ -854,7 +852,7 @@ void output_thread(void* arg)
 	fd_set		socket_set;
 	struct timeval tv;
 
-	thread_up(TRUE /* setuid */);
+	thread_up();
 
     if(sbbs->cfg.node_num)
     	sprintf(node,"Node %d",sbbs->cfg.node_num);
@@ -991,7 +989,7 @@ void event_thread(void* arg)
 	srand(clock());		/* Seed random number generator */
 	sbbs_random(10);	/* Throw away first number */
 
-	thread_up(TRUE /* setuid */);
+	thread_up();
 
 #ifdef JAVASCRIPT
 	if(!(startup->options&BBS_OPT_NO_JAVASCRIPT)) {
@@ -2619,7 +2617,7 @@ void node_thread(void* arg)
 	sbbs_t*			sbbs = (sbbs_t*) arg;
 
 	update_clients();
-	thread_up(TRUE /* setuid */);
+	thread_up();
 
 #ifdef _DEBUG
 	lprintf("Node %d thread started",sbbs->cfg.node_num);
@@ -3051,7 +3049,7 @@ void DLLCALL bbs_thread(void* arg)
 	recycle_server=TRUE;
 	do {
 
-	thread_up(FALSE /* setuid */);
+	thread_up();
 
 	status("Initializing");
 
@@ -3246,8 +3244,10 @@ void DLLCALL bbs_thread(void* arg)
     server_addr.sin_family = AF_INET;
     server_addr.sin_port   = htons(startup->telnet_port);
 
+	startup->seteuid(FALSE);
     result = bind(telnet_socket, (struct sockaddr *)&server_addr
     	,sizeof(server_addr));
+	startup->seteuid(TRUE);
 
 	if(result != 0) {
 		lprintf("!ERROR %d (%d) binding Telnet socket to port %d"
@@ -3303,8 +3303,10 @@ void DLLCALL bbs_thread(void* arg)
 		server_addr.sin_family = AF_INET;
 		server_addr.sin_port   = htons(startup->rlogin_port);
 
+		startup->seteuid(FALSE);
 		result = bind(rlogin_socket, (struct sockaddr *)&server_addr
     		,sizeof(server_addr));
+		startup->seteuid(TRUE);
 
 		if(result != 0) {
 			lprintf("!ERROR %d (%d) binding RLogin socket to port %d"
@@ -3323,9 +3325,6 @@ void DLLCALL bbs_thread(void* arg)
 		}
 		lprintf("RLogin server listening on port %d",startup->rlogin_port);
 	}
-
-	if(startup->setuid!=NULL)
-		startup->setuid();
 
 	/* signal caller that we've started up successfully */
     if(startup->started!=NULL)

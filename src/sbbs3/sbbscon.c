@@ -47,6 +47,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <pwd.h>
+#include <grp.h>
 
 #endif
 
@@ -67,7 +68,13 @@ uint				socket_count=0;
 uint				client_count=0;
 ulong				served=0;
 int					prompt_len=0;
-char*				new_uid_name=NULL;
+
+#ifdef __unix__
+uid_t				new_uid;
+uid_t				old_uid;
+gid_t				new_gid;
+gid_t				old_gid;
+#endif
 
 static const char* prompt = 
 "[Threads: %d  Sockets: %d  Clients: %d  Served: %lu] (?=Help): ";
@@ -103,6 +110,9 @@ static const char* usage  = "usage: %s [[option] [...]]\n"
 							"\n"
 #ifdef __unix__
 							"\tun<user>   set username for BBS to run as\n"
+							"\tug<group>  set group for BBS to run as\n"
+							"\t           must NOT be followed by un\n"
+							"\t           ie: put un first or not at all\n"
 #endif
 							"\tgi         get user identity (using IDENT protocol)\n"
 							"\tnh         disable hostname lookups\n"
@@ -137,16 +147,30 @@ static void lputs(char *str)
 /**********************************************************
 * Change uid of the calling process to the user if specified
 * **********************************************************/
-BOOL do_setuid() 
+static BOOL do_setuid() 
 {
 	BOOL	result=FALSE;
-	uid_t	new_uid;
-	struct passwd* pw_entry;
+
+	setegid(old_gid);
+	seteuid(old_uid);
+	if(!setgid(new_gid) && !setuid(new_uid)) 
+		result=TRUE;
+
+	if(!result) {
+		lputs("!setuid FAILED");
+		lputs(strerror(errno));
+	}
+	return result;
+}
+
+/**********************************************************
+* Change uid of the calling process to the user if specified
+* **********************************************************/
+static BOOL do_seteuid(BOOL to_new) 
+{
+	BOOL	result=FALSE;
 	static pthread_mutex_t mutex;
 	static BOOL mutex_initialized;
-
-	if(new_uid_name==NULL)	/* unspecified */
-		return TRUE;
 
 	if(!mutex_initialized) {
 		pthread_mutex_init(&mutex,NULL);
@@ -154,13 +178,25 @@ BOOL do_setuid()
 	}
 
 	pthread_mutex_lock(&mutex);
-	if((pw_entry=getpwnam(new_uid_name)) && (new_uid=pw_entry->pw_uid))
-		if(!setuid(new_uid)) 
+
+	if (to_new)
+		if(!setegid(new_gid) && !seteuid(new_uid))
 			result=TRUE;
+		else
+			result=FALSE;
+	else
+		if(!setegid(old_gid) && !seteuid(old_uid))
+			result=TRUE;
+		else
+			result=FALSE;
+
+		
 	pthread_mutex_unlock(&mutex);
 
-	if(!result)
-		lputs("!setuid FAILED");
+	if(!result) {
+		lputs("!seteuid FAILED");
+		lputs(strerror(errno));
+	}
 	return result;
 }
 #endif   /* __unix__ */
@@ -432,6 +468,12 @@ int main(int argc, char** argv)
 	char*	arg;
 	char*	ctrl_dir;
 	BOOL	quit=FALSE;
+#ifdef __unix__
+	char*	new_uid_name;
+	char*	new_gid_name;
+	struct passwd* pw_entry;
+	struct group*  gr_entry;
+#endif
 
 	printf("\nSynchronet Console for %s  Version %s%c  %s\n\n"
 		,PLATFORM_DESC,VERSION,REVISION,COPYRIGHT_NOTICE);
@@ -459,7 +501,7 @@ int main(int argc, char** argv)
     bbs_startup.socket_open=socket_open;
     bbs_startup.client_on=client_on;
 #ifdef __unix__
-	bbs_startup.setuid=do_setuid;
+	bbs_startup.seteuid=do_seteuid;
 #endif
 /*	These callbacks haven't been created yet
     bbs_startup.status=bbs_status;
@@ -478,7 +520,7 @@ int main(int argc, char** argv)
     ftp_startup.client_on=client_on;
 	ftp_startup.options=FTP_OPT_INDEX_FILE|FTP_OPT_ALLOW_QWK;
 #ifdef __unix__
-	ftp_startup.setuid=do_setuid;
+	ftp_startup.seteuid=do_seteuid;
 #endif
     strcpy(ftp_startup.index_file_name,"00index");
     strcpy(ftp_startup.ctrl_dir,ctrl_dir);
@@ -494,7 +536,7 @@ int main(int argc, char** argv)
     mail_startup.client_on=client_on;
 	mail_startup.options|=MAIL_OPT_ALLOW_POP3;
 #ifdef __unix__
-	mail_startup.setuid=do_setuid;
+	mail_startup.seteuid=do_seteuid;
 #endif
 	/* Spam filtering */
 	mail_startup.options|=MAIL_OPT_USE_RBL;	/* Realtime Blackhole List */
@@ -537,7 +579,7 @@ int main(int argc, char** argv)
     services_startup.socket_open=socket_open;
     services_startup.client_on=client_on;
 #ifdef __unix__
-	services_startup.setuid=do_setuid;
+	services_startup.seteuid=do_seteuid;
 #endif
     strcpy(services_startup.ctrl_dir,ctrl_dir);
 
@@ -664,7 +706,32 @@ int main(int argc, char** argv)
 				switch(toupper(*(arg++))) {
 					case 'N': /* username */
 #ifdef __unix__
-						if (strlen(arg) > 1) new_uid_name=arg;
+						if (strlen(arg) > 1)
+						{
+							new_uid_name=arg;
+							old_uid = getuid();
+							if(pw_entry=getpwnam(new_uid_name))
+							{
+								new_uid=pw_entry->pw_uid;
+								new_gid=pw_entry->pw_gid;
+								do_seteuid(TRUE);
+							}
+							else  {
+								new_uid=getuid();
+								new_gid=getgid();
+							}
+						}
+#endif			
+						break;
+					case 'G': /* groupname */
+#ifdef __unix__
+						if (strlen(arg) > 1)
+						{
+							new_gid_name=arg;
+							old_gid = getgid();
+							if((gr_entry=getgrnam(new_gid_name)) && (new_gid=gr_entry->gr_gid))
+								do_seteuid(TRUE);
+						}
 #endif			
 						break;
 					default:
@@ -755,14 +822,21 @@ int main(int argc, char** argv)
 	else if(!new_uid_name)   /*  check the user arg, if we have uid 0 */
 		bbs_lputs("Warning: No user account specified, running as root.");
 	
-	else if (!do_setuid())
-			/* actually try to change the uid of this process */
-		bbs_lputs("!Setting new user_id failed!  (Does the user exist?)");
+	else 
+	{
+		while((!bbs_running) || (run_ftp && !ftp_running) 
+			|| (run_mail && !mail_running) || (run_services && !services_running))
+			mswait(1);
+
+		if (!do_setuid())
+				/* actually try to change the uid of this process */
+			bbs_lputs("!Setting new user_id failed!  (Does the user exist?)");
 	
-	else {
-		char str[256];
-		sprintf(str,"Successfully changed user_id to %s", new_uid_name);
-		bbs_lputs(str);
+		else {
+			char str[256];
+			sprintf(str,"Successfully changed user_id to %s", new_uid_name);
+			bbs_lputs(str);
+		}
 	}
 
 	if(!isatty(fileno(stdin)))			/* redirected */

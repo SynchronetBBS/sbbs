@@ -168,12 +168,10 @@ static void client_off(SOCKET sock)
 		startup->client_on(FALSE,sock,NULL,FALSE);
 }
 
-static void thread_up(BOOL setuid)
+static void thread_up(void)
 {
 	if(startup!=NULL && startup->thread_up!=NULL)
 		startup->thread_up(TRUE);
-	if(setuid && startup!=NULL && startup->setuid!=NULL)
-		startup->setuid();
 }
 
 static void thread_down(void)
@@ -618,7 +616,7 @@ static void js_service_thread(void* arg)
 
 	lprintf("%04d %s JavaScript service thread started", socket, service->protocol);
 
-	thread_up(TRUE /* setuid */);
+	thread_up();
 
 	/* Host name lookup and filtering */
 	if(service->options&BBS_OPT_NO_HOST_LOOKUP 
@@ -786,7 +784,7 @@ static void native_service_thread(void* arg)
 
 	lprintf("%04d %s service thread started", socket, service->protocol);
 
-	thread_up(TRUE /* setuid */);
+	thread_up();
 
 	/* Host name lookup and filtering */
 	if(service->options&BBS_OPT_NO_HOST_LOOKUP 
@@ -1032,7 +1030,7 @@ void DLLCALL services_thread(void* arg)
 
 	do {
 
-		thread_up(FALSE /* setuid */);
+		thread_up();
 
 		status("Initializing");
 
@@ -1122,13 +1120,16 @@ void DLLCALL services_thread(void* arg)
 			addr.sin_family = AF_INET;
 			addr.sin_port   = htons(service[i].port);
 
+			startup->seteuid(FALSE);
 			if(bind(socket, (struct sockaddr *) &addr, sizeof(addr))!=0) {
+				startup->seteuid(TRUE);
 				lprintf("%04d !ERROR %d binding %s socket to port %u"
 					,socket, ERROR_VALUE, service[i].protocol, service[i].port);
 				lprintf("%04d %s",socket,BIND_FAILURE_HELP);
 				close_socket(socket);
 				continue;
 			}
+			startup->seteuid(TRUE);
 
 			lprintf("%04d %s socket bound to port %u"
 				,socket, service[i].protocol, service[i].port);
@@ -1148,9 +1149,6 @@ void DLLCALL services_thread(void* arg)
 			cleanup(1);
 			return;
 		}
-
-		if(startup->setuid!=NULL)
-			startup->setuid();
 
 		/* signal caller that we've started up successfully */
 		if(startup->started!=NULL)

@@ -188,13 +188,11 @@ static void client_off(SOCKET sock)
 	}
 }
 
-static void thread_up(BOOL setuid)
+static void thread_up(void)
 {
 	thread_count++;
 	if(startup!=NULL && startup->thread_up!=NULL)
 		startup->thread_up(TRUE);
-	if(setuid && startup!=NULL && startup->setuid!=NULL)
-		startup->setuid();
 }
 
 static void thread_down(void)
@@ -585,7 +583,7 @@ static void pop3_thread(void* arg)
 	mail_t*		mail;
 	pop3_t		pop3=*(pop3_t*)arg;
 
-	thread_up(TRUE /* setuid */);
+	thread_up();
 
 	free(arg);
 
@@ -1205,7 +1203,7 @@ static void smtp_thread(void* arg)
 
 	} cmd = SMTP_CMD_NONE;
 
-	thread_up(TRUE /* setuid */);
+	thread_up();
 
 	free(arg);
 
@@ -2294,7 +2292,7 @@ static void sendmail_thread(void* arg)
 
 	sendmail_running=TRUE;
 
-	thread_up(TRUE /* setuid */);
+	thread_up();
 
 	lprintf("0000 SendMail thread started");
 
@@ -2460,10 +2458,13 @@ static void sendmail_thread(void* arg)
 			addr.sin_addr.s_addr = htonl(startup->interface_addr);
 			addr.sin_family = AF_INET;
 
+			startup->seteuid(FALSE);
 			if((i=bind(sock, (struct sockaddr *) &addr, sizeof (addr)))!=0) {
+				startup->seteuid(TRUE);
 				lprintf("%04d !SEND ERROR %d (%d) binding socket", sock, i, ERROR_VALUE);
 				continue;
 			}
+			startup->seteuid(TRUE);
 
 			strcpy(err,"UNKNOWN ERROR");
 			success=FALSE;
@@ -2709,7 +2710,7 @@ void DLLCALL mail_server(void* arg)
 	recycle_server=TRUE;
 	do {
 
-		thread_up(FALSE /* setuid */);
+		thread_up();
 
 		status("Initializing");
 
@@ -2818,8 +2819,10 @@ void DLLCALL mail_server(void* arg)
 		server_addr.sin_family = AF_INET;
 		server_addr.sin_port   = htons(startup->smtp_port);
 
+		startup->seteuid(FALSE);
 		result = bind(server_socket, (struct sockaddr *) &server_addr
     		,sizeof (server_addr));
+		startup->seteuid(TRUE);
 
 		if (result != 0) {
 			lprintf("%04d !ERROR %d (%d) binding SMTP socket to port %u"
@@ -2864,8 +2867,10 @@ void DLLCALL mail_server(void* arg)
 			server_addr.sin_family = AF_INET;
 			server_addr.sin_port   = htons(startup->pop3_port);
 
+			startup->seteuid(FALSE);
 			result = bind(pop3_socket, (struct sockaddr *) &server_addr
     			,sizeof (server_addr));
+			startup->seteuid(TRUE);
 
 			if (result != 0) {
 				lprintf("%04d !ERROR %d (%d) binding POP3 socket to port %u"
@@ -2887,9 +2892,6 @@ void DLLCALL mail_server(void* arg)
 				return;
 			}
 		}
-
-		if(startup->setuid!=NULL)
-			startup->setuid();
 
 		/* signal caller that we've started up successfully */
 		if(startup->started!=NULL)
