@@ -994,28 +994,28 @@ static jsMethodSpec js_socket_functions[] = {
 	{"accept",		js_accept,		0,	JSTYPE_OBJECT,	""					
 	,JSDOCSTR("accept an incoming connection, returns a new Socket object")
 	},
-	{"send",		js_send,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("string data")
-	,JSDOCSTR("send a string")
-	},
 	{"write",		js_send,		1,	JSTYPE_ALIAS },
+	{"send",		js_send,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("string data")
+	,JSDOCSTR("send a string (AKA write)")
+	},
 	{"sendto",		js_sendto,		3,	JSTYPE_BOOLEAN,	JSDOCSTR("string data, address, port")
 	,JSDOCSTR("send a string to a specific address and port (typically used for UDP sockets)")
 	},
 	{"sendfile",	js_sendfile,	1,	JSTYPE_BOOLEAN,	JSDOCSTR("string filename")
 	,JSDOCSTR("send a file")
 	},
-	{"recv",		js_recv,		0,	JSTYPE_STRING,	JSDOCSTR("[maxlen]")
-	,JSDOCSTR("receive a string, default maxlen is 512 characters")
-	},
 	{"read",		js_recv,		1,	JSTYPE_ALIAS },
+	{"recv",		js_recv,		0,	JSTYPE_STRING,	JSDOCSTR("[maxlen]")
+	,JSDOCSTR("receive a string, default maxlen is 512 characters (AKA read)")
+	},
 	{"peek",		js_peek,		0,	JSTYPE_STRING,	JSDOCSTR("[maxlen]")
 	,JSDOCSTR("receive a string, default maxlen is 512 characters, leave string in receive buffer")
 	},
-	{"recvline",	js_recvline,	0,	JSTYPE_STRING,	JSDOCSTR("[maxlen] [,timeout]")
-	,JSDOCSTR("receive a line-feed terminated string, default maxlen is 512 characters, default timeout is 30 seconds")
-	},
 	{"readline",	js_recvline,	0,	JSTYPE_ALIAS },
 	{"readln",		js_recvline,	0,	JSTYPE_ALIAS },
+	{"recvline",	js_recvline,	0,	JSTYPE_STRING,	JSDOCSTR("[maxlen] [,timeout]")
+	,JSDOCSTR("receive a line-feed terminated string, default maxlen is 512 characters, default timeout is 30 seconds (AKA readline and readln)")
+	},
 	{"recvfrom",	js_recvfrom,	0,	JSTYPE_OBJECT,	JSDOCSTR("[maxlen]")
 	,JSDOCSTR("receive a string from (typically UDP) socket, return address and port of sender")
 	},

@@ -2475,10 +2475,10 @@ static jsMethodSpec js_bbs_functions[] = {
 	{"hangup",			js_hangup,			0,	JSTYPE_VOID,	""
 	,JSDOCSTR("hangup immediately")
 	},
-	{"nodesync",		js_nodesync,		0,	JSTYPE_VOID,	""
-	,JSDOCSTR("synchronize node with system")
-	},
 	{"node_sync",		js_nodesync,		0,	JSTYPE_ALIAS },
+	{"nodesync",		js_nodesync,		0,	JSTYPE_VOID,	""
+	,JSDOCSTR("synchronize node with system (AKA node_sync)")
+	},
 	{"auto_msg",		js_automsg,			0,	JSTYPE_VOID,	""
 	,JSDOCSTR("edit/create auto-message")
 	},		
