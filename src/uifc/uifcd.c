@@ -37,10 +37,6 @@
 
 #include <dialog.h>
 
-#ifndef __unix__
-#include <share.h>
-#endif
-
 static char *helpfile=0;
 static uint helpline=0;
 static uifcapi_t* api;
@@ -281,11 +277,7 @@ void help()
 
     printf("\n");
     if(!api->helpbuf) {
-#ifdef __unix__
         if((fp=fopen(api->helpixbfile,"rb"))==NULL)
-#else
-        if((fp=_fsopen(api->helpixbfile,"rb",SH_DENYWR))==NULL)
-#endif
             sprintf(hbuf,"ERROR: Cannot open help index: %s"
                 ,api->helpixbfile);
         else {
@@ -312,11 +304,7 @@ void help()
                 sprintf(hbuf,"ERROR: Cannot locate help key (%s:%u) in: %s"
                     ,p,helpline,api->helpixbfile);
             else {
-#ifdef __unix__
                 if((fp=fopen(api->helpdatfile,"rb"))==NULL)
-#else
-                if((fp=_fsopen(api->helpdatfile,"rb",SH_DENYWR))==NULL)
-#endif
                     sprintf(hbuf,"ERROR: Cannot open help file: %s"
                         ,api->helpdatfile);
                 else {
