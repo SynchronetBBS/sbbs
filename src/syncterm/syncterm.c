@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <ciolib.h>
 
+#include <ini_file.h>
 #include <dirwrap.h>
 
 #include "bbslist.h"
@@ -59,6 +60,37 @@ int main(int argc, char **argv)
 		if(!rlogin_connect(bbs->addr,bbs->port,bbs->reversed?bbs->password:bbs->user,bbs->reversed?bbs->user:bbs->password,bbs->dumb)) {
 			/* ToDo: Update the entry with new lastconnected */
 			/* ToDo: Disallow duplicate entries */
+			str_list_t	inifile;
+			FILE *listfile;
+			char	listpath[MAX_PATH+1];
+			char	*home;
+
+			/* User BBS list */
+			home=getenv("HOME");
+			if(home==NULL)
+				home=getenv("USERPROFILE");
+			if(home==NULL)
+				strcpy(listpath,path);
+			else
+				strcpy(listpath,home);
+			strncat(listpath,"/syncterm.lst",sizeof(listpath));
+			if(strlen(listpath)>MAX_PATH) {
+				fprintf(stderr,"Path to syncterm.lst too long");
+				return(NULL);
+			}
+			bbs->connected=time(NULL);
+			bbs->calls++;
+			if((listfile=fopen(listpath,"r"))!=NULL) {
+				inifile=iniReadFile(listfile);
+				fclose(listfile);
+				iniSetInteger(&inifile,bbs->name,"LastConnected",bbs->connected,NULL);
+				iniSetInteger(&inifile,bbs->name,"TotalCalls",bbs->calls,NULL);
+				if((listfile=fopen(listpath,"w"))!=NULL) {
+					iniWriteFile(listfile,inifile);
+					fclose(listfile);
+				}
+				strListFreeStrings(inifile);
+			}
 			uifcbail();
 			if(drawwin())
 				return(1);
