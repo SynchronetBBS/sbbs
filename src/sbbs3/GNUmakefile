@@ -129,7 +129,7 @@ endif
 ifdef JSLIB
  LIBS	+=	$(JSLIB)
 else
- LIBS	+=	../../lib/mozilla/js/$(os).$(BUILD)/libjs.a
+ LIBS	+=	../../lib/mozilla/js/$(os).$(BUILD)/libjs.a ../../lib/mozilla/nspr/$(os).$(BUILD)/libnspr4.a
 endif
 
 # The following are needed for echocfg (uses UIFC)
