@@ -52,6 +52,7 @@ enum {
 	,BBS_PROP_ONLINE
 	,BBS_PROP_TIMELEFT
 	,BBS_PROP_EVENT_TIME
+	,BBS_PROP_EVENT_CODE
 
 	,BBS_PROP_NODE_NUM
 	,BBS_PROP_NODE_MISC
@@ -145,6 +146,7 @@ enum {
 	,"online (see <tt>ON_*</tt> in <tt>sbbsdefs.js</tt> for valid values)"
 	,"time left (in seconds)"
 	,"time of next exclusive event (in time_t format), or 0 if none"
+	,"internal code of next exclusive event"
 
 	,"current node number"
 	,"current node settings bitfield (see <tt>NM_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
@@ -268,6 +270,9 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			break;
 		case BBS_PROP_EVENT_TIME:
 			val=sbbs->event_time;
+			break;
+		case BBS_PROP_EVENT_CODE:
+			p=sbbs->event_code;
 			break;
 
 		case BBS_PROP_NODE_NUM:
@@ -769,6 +774,7 @@ static struct JSPropertySpec js_bbs_properties[] = {
 	{	"timeleft"			,BBS_PROP_TIMELEFT		,JSPROP_READONLY	,NULL,NULL},	/* alias */
 	{	"time_left"			,BBS_PROP_TIMELEFT		,PROP_READONLY		,NULL,NULL},
 	{	"event_time"		,BBS_PROP_EVENT_TIME	,PROP_READONLY		,NULL,NULL},
+	{	"event_code"		,BBS_PROP_EVENT_CODE	,PROP_READONLY		,NULL,NULL},
 	{	"node_num"			,BBS_PROP_NODE_NUM		,PROP_READONLY		,NULL,NULL},
 	{	"node_settings"		,BBS_PROP_NODE_MISC		,JSPROP_ENUMERATE	,NULL,NULL},
 	{	"node_action"		,BBS_PROP_NODE_ACTION	,JSPROP_ENUMERATE	,NULL,NULL},

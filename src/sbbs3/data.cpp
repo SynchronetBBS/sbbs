@@ -211,14 +211,16 @@ void sbbs_t::gettimeleft(void)
 		thisevent=mktime(&tm);
 		if(tm.tm_mday==last_tm.tm_mday && tm.tm_mon==last_tm.tm_mon)
 			thisevent+=24L*60L*60L;     /* already ran today, so add 24hrs */
-		if(!event_time || thisevent<event_time)
+		if(!event_time || thisevent<event_time) {
 			event_time=thisevent; 
+			event_code=cfg.event[i]->code;
+		}
 	}
 	if(event_time && now+(time_t)timeleft>event_time) {    /* less time, set flag */
 		timeleft=event_time-now; 
 		if(!(sys_status&SS_EVENT)) {
-			lprintf("Node %d Time reduced (to %s) due to upcoming event on %s"
-				,cfg.node_num,sectostr(timeleft,tmp),timestr(&event_time));
+			lprintf("Node %d Time reduced (to %s) due to upcoming event (%s) on %s"
+				,cfg.node_num,sectostr(timeleft,tmp),event_code,timestr(&event_time));
 			sys_status|=SS_EVENT;
 		}
 	}

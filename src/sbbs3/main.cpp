@@ -1873,6 +1873,7 @@ sbbs_t::sbbs_t(ushort node_num, DWORD addr, char* name, SOCKET sd,
 	nodemsg_inside = 0;	/* allows single nest */
 	hotkey_inside = 0;	/* allows single nest */
 	event_time = 0;
+	event_code = nulstr;
 	nodesync_inside = false;
 	errorlog_inside = false;
 	errormsg_inside = false;
