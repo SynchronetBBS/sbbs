@@ -191,7 +191,7 @@ js_load(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	    if((bg->cx = JS_NewContext(bg->runtime, JAVASCRIPT_CONTEXT_STACK))==NULL)
 			return(JS_FALSE);
 
-		if((bg->obj=js_CreateGlobalObjects(bg->cx
+		if((bg->obj=js_CreateCommonObjects(bg->cx
 				,cfg			/* common config */
 				,NULL			/* node-specific config */
 				,NULL			/* additional global methods */
@@ -201,6 +201,7 @@ js_load(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 				,&bg->branch	/* js */
 				,NULL			/* client */
 				,INVALID_SOCKET	/* client_socket */
+				,NULL			/* server props */
 				))==NULL) 
 			return(JS_FALSE);
 
@@ -2753,7 +2754,7 @@ JSObject* DLLCALL js_CreateGlobalObject(JSContext* cx, scfg_t* cfg, jsSyncMethod
 	return(glob);
 }
 
-JSObject* DLLCALL js_CreateGlobalObjects(JSContext* js_cx
+JSObject* DLLCALL js_CreateCommonObjects(JSContext* js_cx
 										,scfg_t* cfg				/* common */
 										,scfg_t* node_cfg			/* node-specific */
 										,jsSyncMethodSpec* methods	/* global */
@@ -2763,6 +2764,7 @@ JSObject* DLLCALL js_CreateGlobalObjects(JSContext* js_cx
 										,js_branch_t* branch		/* js */
 										,client_t* client			/* client */
 										,SOCKET client_socket		/* client */
+										,js_server_props_t* props	/* server */
 										)
 {
 	JSObject*	js_glob;
@@ -2786,6 +2788,10 @@ JSObject* DLLCALL js_CreateGlobalObjects(JSContext* js_cx
 	/* Client Object */
 	if(client!=NULL 
 		&& js_CreateClientObject(js_cx, js_glob, "client", client, client_socket)==NULL)
+		return(NULL);
+
+	if(props!=NULL
+		&& js_CreateServerObject(js_cx, js_glob, props)==NULL)
 		return(NULL);
 
 	/* Socket Class */

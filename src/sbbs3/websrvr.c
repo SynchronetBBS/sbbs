@@ -2468,7 +2468,7 @@ js_initcx(http_session_t *session)
 	JS_SetBranchCallback(js_cx, js_BranchCallback);
 
 	lprintf(LOG_INFO,"%04d JavaScript: Creating Global Objects and Classes",session->socket);
-	if((session->js_glob=js_CreateGlobalObjects(js_cx, &scfg, NULL
+	if((session->js_glob=js_CreateCommonObjects(js_cx, &scfg, NULL
 									,NULL						/* global */
 									,uptime						/* system */
 									,startup->host_name			/* system */
@@ -2476,6 +2476,7 @@ js_initcx(http_session_t *session)
 									,&session->js_branch		/* js */
 									,&session->client			/* client */
 									,session->socket			/* client */
+									,&js_server_props			/* server */
 		))==NULL
 		|| !JS_DefineFunctions(js_cx, session->js_glob, js_global_functions)) {
 		JS_DestroyContext(js_cx);

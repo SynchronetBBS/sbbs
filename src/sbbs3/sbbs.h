@@ -947,7 +947,7 @@ extern "C" {
 
 	/* js_global.c */
 	DLLEXPORT JSObject* DLLCALL js_CreateGlobalObject(JSContext* cx, scfg_t* cfg, jsSyncMethodSpec* methods);
-	DLLEXPORT JSObject*	DLLCALL js_CreateGlobalObjects(JSContext* cx
+	DLLEXPORT JSObject*	DLLCALL js_CreateCommonObjects(JSContext* cx
 													,scfg_t* cfg				/* common */
 													,scfg_t* node_cfg			/* node-specific */
 													,jsSyncMethodSpec* methods	/* global */
@@ -957,6 +957,7 @@ extern "C" {
 													,js_branch_t* js_branch		/* js */
 													,client_t* client			/* client */
 													,SOCKET client_socket		/* client */
+													,js_server_props_t* props	/* server */
 													);
 
 	/* js_internal.c */

@@ -514,10 +514,11 @@ static BOOL js_init(char** environ)
 	JS_SetErrorReporter(js_cx, js_ErrorReporter);
 
 	/* Global Object */
-	if((js_glob=js_CreateGlobalObjects(js_cx, &scfg, NULL, js_global_functions
+	if((js_glob=js_CreateCommonObjects(js_cx, &scfg, NULL, js_global_functions
 		,time(NULL), host_name, SOCKLIB_DESC	/* system */
 		,&branch								/* js */
 		,NULL,INVALID_SOCKET					/* client */
+		,NULL									/* server */
 		))==NULL)
 		return(FALSE);
 
