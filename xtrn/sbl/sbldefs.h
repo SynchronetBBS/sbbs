@@ -35,10 +35,11 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#define MAX_SYSOPS   5
+#define MAX_SYSOPS  5
 #define MAX_NUMBERS 20
 #define MAX_NETS	10
-#define MAX_TERMS	 5
+#define MAX_TERMS	5
+#define DESC_LINES	5
 #define DEF_LIST_FMT "NSTP"
 
 /* Misc bits */
@@ -81,7 +82,7 @@ typedef struct _PACK {
 			,address[MAX_NETS][26]		/* Network addresses */
 			,total_terminals
 			,terminal[MAX_TERMS][16]	/* Terminals supported */
-			,desc[5][51]				/* 5 line description */
+			,desc[DESC_LINES][51]		/* 5 line description */
 			;
 	ushort	 nodes						/* Total nodes */
 			,users						/* Total users */
