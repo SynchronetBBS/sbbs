@@ -1410,6 +1410,28 @@ js_resolve_ip(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 	return(JS_TRUE);
 }
 
+
+static JSBool
+js_resolve_host(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	struct in_addr addr;
+	HOSTENT*	h;
+
+	*rval = JSVAL_NULL;
+
+	if(argv[0]==JSVAL_VOID)
+		return(JS_TRUE);
+
+	addr.s_addr=inet_addr(JS_GetStringBytes(JS_ValueToString(cx, argv[0])));
+	h=gethostbyaddr((char *)&addr,sizeof(addr),AF_INET);
+
+	if(h!=NULL && h->h_name!=NULL)
+		*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,h->h_name));
+
+	return(JS_TRUE);
+
+}
+
 	
 static JSClass js_global_class = {
      "Global"				/* name			*/
@@ -1572,8 +1594,13 @@ static jsMethodSpec js_global_functions[] = {
 	{"md5_calc",		js_md5_calc,		1,	JSTYPE_STRING,	JSDOCSTR("string text [,bool hex]")
 	,JSDOCSTR("calculate and return 128-bit MD5 digest of text string, result encoded in base64 (default) or hexadecimal")
 	},
+	{"gethostbyname",	js_resolve_ip,		1,	JSTYPE_ALIAS },
 	{"resolve_ip",		js_resolve_ip,		1,	JSTYPE_STRING,	JSDOCSTR("string hostname")
-	,JSDOCSTR("resolve IP address of specified hostname")
+	,JSDOCSTR("resolve IP address of specified hostname (AKA gethostbyname)")
+	},
+	{"gethostbyaddr",	js_resolve_host,	1,	JSTYPE_ALIAS },
+	{"resolve_host",	js_resolve_host,	1,	JSTYPE_STRING,	JSDOCSTR("string ip_address")
+	,JSDOCSTR("resolve hostname of specified IP address (AKA gethostbyaddr)")
 	},
 	{0}
 };
