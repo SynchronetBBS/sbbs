@@ -1499,6 +1499,7 @@ int main(int argc, char **argv)
 						break;
 					case 'D':
 						to="All";
+						to_number="1";
 						from="Sysop";
 						from_number="1";
 						subj="Announcement";
