@@ -79,6 +79,8 @@
 #define SBBS_LOG_NAME	"synchronet"
 
 /* Global variables */
+BOOL				terminated=FALSE;
+
 BOOL				run_bbs=FALSE;
 BOOL				bbs_running=FALSE;
 BOOL				bbs_stopped=FALSE;
@@ -726,6 +728,15 @@ static void terminate(void)
 		SLEEP(1000);
 	}
 }
+
+#if defined(_WIN32)
+BOOL WINAPI ControlHandler(DWORD CtrlType)
+{
+	terminated=TRUE;
+	return TRUE;
+}
+#endif
+
 
 #ifdef __unix__
 void _sighandler_quit(int sig)
@@ -1445,8 +1456,10 @@ int main(int argc, char** argv)
         return(-1);
     }
 
-
-#ifdef __unix__
+	/* Install Ctrl-C/Break signal handler here */
+#if defined(_WIN32)
+	SetConsoleCtrlHandler(ControlHandler, TRUE /* Add */);
+#elif defined(__unix__)
 	/* Set up blocked signals */
 	sigemptyset(&sigs);
 	sigaddset(&sigs,SIGINT);
@@ -1579,12 +1592,16 @@ int main(int argc, char** argv)
 		select(0,NULL,NULL,NULL,NULL);	/* Sleep forever - Should this just exit the thread? */
 	else								/* interactive */
 #endif
-		while(!quit) {
+		while(!terminated) {
+			if(!kbhit()) {
+				YIELD();
+				continue;
+			}
 			ch=getch();
 			printf("%c\n",ch);
 			switch(ch) {
 				case 'q':
-					quit=TRUE;
+					terminated=TRUE;
 					break;
 				case 'w':	/* who's online */
 					printf("\nNodes in use:\n");
