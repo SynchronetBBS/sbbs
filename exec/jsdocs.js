@@ -45,8 +45,8 @@ function document_methods(name,obj)
 	table_open(name);
 
 	
-	writeln("<caption align=left><b>" + name.italics());
-	writeln("<a name=" + name + "_methods> methods</a>"); 
+	writeln("<caption align=left><b><tt>" + name);
+	writeln("<a name=" + name + "_methods></tt> methods</a>"); 
 	writeln("</b></caption>");
 	writeln("<tr bgcolor=gray>");
 	writeln("<th align=left width=100>");
@@ -98,7 +98,7 @@ function object_header(name, obj)
 function properties_header(name)
 {
 	table_open(name);
-	writeln("<caption align=left><b>" + name.italics() + " properties" + "</b></caption>");
+	writeln("<caption align=left><b><tt>" + name + "</tt> properties" + "</b></caption>");
 	writeln("<tr bgcolor=gray>");
 	writeln("<th align=left width=100>");
 	writeln("Name".fontcolor("white"));
@@ -112,7 +112,7 @@ function document_properties(name, obj)
 {
 	var prop_name;
 
-	properties_header(name);
+	prop_hdr=false;
 
 	p=0;
 	for(prop in obj) {
@@ -125,6 +125,10 @@ function document_properties(name, obj)
 				document_object(prop_name,obj[prop]);
 			continue;
 		} 
+		if(!prop_hdr) {
+			properties_header(name);
+			prop_hdr=true;
+		}
 		write("<tr valign=top>");
 		writeln("<td>" + prop.bold() + "<td>" + typeof(obj[prop]) );
 		if(obj._property_desc_list!=undefined)
@@ -136,13 +140,15 @@ function document_object(name, obj)
 {
 	
 	object_header(name,obj);
+	f.writeln("<ul type=disc>");
 	document_properties(name,obj);
+	f.writeln("</ul>");
 	document_methods(name,obj);
 	table_close();
 }
 
 // open HTML output file
-f=new File("jsdocs.html");
+f=new File("jsobjs.html");
 if(!f.open("w")) {
 	printf("!Error %d opening output file\n",errno);
 	exit();
@@ -178,6 +184,7 @@ document_object("bbs"		,bbs);
 document_object("console"	,console);
 document_object("msg_area"	,msg_area);
 document_object("file_area"	,file_area);
+document_object("xtrn_area"	,xtrn_area);
 document_object("MsgBase"	,new MsgBase(msg_area.grp_list[0].sub_list[0].code));
 document_object("File"		,new File("bogusfile"));
 
