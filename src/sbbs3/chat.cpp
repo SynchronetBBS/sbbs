@@ -591,15 +591,8 @@ void sbbs_t::chatsection()
 		action=NODE_CHAT;
 		if(!(useron.misc&EXPERT) || useron.misc&WIP
 			|| (useron.misc&RIP && !no_rip_menu)) {
-	#if 0 /* legacy */
-			sys_status&=~SS_ABORT;
-			if(lncntr) {
-				SYNC;
-				CRLF;
-				if(lncntr)			/* CRLF or SYNC can cause pause */
-					pause(); }
-	#endif
-			menu("chat"); }
+			menu("chat"); 
+		}
 		ASYNC;
 		bputs(text[ChatPrompt]); }
 	if(gurubuf)
@@ -650,7 +643,6 @@ bool sbbs_t::chan_access(uint cnum)
 /****************************************************************************/
 /* Private split-screen (or interspersed) chat with node or local sysop		*/
 /****************************************************************************/
-#define CHAT_REDRAW 18	/* Ctrl-R */
 void sbbs_t::privchat(bool local)
 {
 	char	str[128],c,*p,localbuf[5][81],remotebuf[5][81]
@@ -857,7 +849,7 @@ void sbbs_t::privchat(bool local)
 					if(echo)
 						outchar(SP);
 					localbuf[localline][localchar++]=SP; } }
-			else if(ch==CHAT_REDRAW) {
+			else if(ch==CTRL_R) {
 				if(sys_status&SS_SPLITP) {
 					CLS;
 					attr(cfg.color[clr_chatremote]);
@@ -1178,13 +1170,9 @@ void sbbs_t::nodemsg()
 				break;
 			if(sys_status&SS_ABORT)
 				break;
-#if 0	// no longer necessary ?
-			if(online==ON_REMOTE && rioctl(IOSTATE)&ABORT) {
-				sys_status|=SS_ABORT;
-				break; }
-#endif
 			getnodedat(cfg.node_num,&thisnode,0);
 			if(thisnode.misc&(NODE_MSGW|NODE_NMSG)) {
+				lncntr=0;	/* prevent pause prompt */
 				SAVELINE;
 				CRLF;
 				if(thisnode.misc&NODE_NMSG)
