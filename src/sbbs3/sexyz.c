@@ -124,13 +124,25 @@ static BOOL winsock_startup(void)
 
 #endif
 
-/********/
-/* Code */
-/********/
 
 void newline(void)
 {
 	fprintf(statfp,"\n");
+}
+
+int lprintf(int level, char *fmt, ...)
+{
+	va_list argptr;
+	int		retval;
+	FILE*	fp=statfp;
+
+    if(level<LOG_NOTICE)
+		fp=errfp;
+
+    va_start(argptr,fmt);
+    retval = vfprintf(fp,fmt,argptr);
+    va_end(argptr);
+    return(retval);
 }
 
 /**************/
@@ -138,8 +150,12 @@ void newline(void)
 /**************/
 void bail(int code)
 {
-	fprintf(statfp,"Terminating\n");
-	YIELD();
+#if !SINGLE_THREADED
+	lprintf(LOG_DEBUG,"Waiting for output buffer to empty...");
+	WaitForSingleObject(outbuf_empty,5000);
+	lprintf(LOG_DEBUG,"\n");
+#endif
+
 	terminate=TRUE;
 //	sem_post(outbuf.sem);
 //	sem_post(outbuf.highwater_sem);
@@ -1279,7 +1295,7 @@ int main(int argc, char **argv)
 
 	RingBufInit(&inbuf, IO_THREAD_BUF_SIZE);
 	RingBufInit(&outbuf, IO_THREAD_BUF_SIZE);
-	outbuf.highwater_mark=1024;
+	outbuf.highwater_mark=1100;
 	outbuf_empty=CreateEvent(NULL,FALSE,TRUE,NULL);
 
 #if 0
@@ -1480,8 +1496,6 @@ int main(int argc, char **argv)
 
 	xm.sock=sock;
 	xm.mode=&mode;
-	xm.errfp=errfp;
-	xm.statfp=statfp;
 
 	zm.sock=sock;
 	zm.mode=&mode;

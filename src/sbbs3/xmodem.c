@@ -41,7 +41,7 @@
 
 #define getcom(t)	recv_byte(xm->sock,t,*xm->mode)
 #define putcom(ch)	send_byte(xm->sock,ch,10,*xm->mode)
-#define newline()	fprintf(xm->statfp,"\n");
+#define newline()
 
 void xmodem_put_nak(xmodem_t* xm)
 {
@@ -97,15 +97,15 @@ int xmodem_get_block(xmodem_t* xm, uchar* block, BOOL hdrblock)
 				newline();
 				if(!can) {			/* must get two CANs in a row */
 					can=1;
-					fprintf(xm->statfp,"Received CAN  Expected SOH, STX, or EOT\n");
+					xm->lprintf(LOG_WARNING,"Received CAN  Expected SOH, STX, or EOT\n");
 					continue; 
 				}
-				fprintf(xm->statfp,"Cancelled remotely\n");
+				xm->lprintf(LOG_WARNING,"Cancelled remotely\n");
 				bail(-1);
 				break;
 			default:
 				newline();
-				fprintf(xm->statfp,"Received %s  Expected SOH, STX, or EOT\n",chr((uchar)i));
+				xm->lprintf(LOG_WARNING,"Received %s  Expected SOH, STX, or EOT\n",chr((uchar)i));
 			case NOINP: 	/* Nothing came in */
 				if(hdrblock || (*xm->mode)&GMODE)
 					return(-1);
@@ -129,7 +129,7 @@ int xmodem_get_block(xmodem_t* xm, uchar* block, BOOL hdrblock)
 		}
 		if(block_num!=(uchar)~i) {
 			newline();
-			fprintf(xm->statfp,"Block number error\n");
+			xm->lprintf(LOG_ERR,"Block number error\n");
 			if(hdrblock || (*xm->mode)&GMODE)
 				return(-1);
 			xmodem_put_nak(xm);
@@ -165,14 +165,14 @@ int xmodem_get_block(xmodem_t* xm, uchar* block, BOOL hdrblock)
 			if(crc==calc_crc)
 				break;
 			newline();
-			fprintf(xm->statfp,"CRC error\n"); 
+			xm->lprintf(LOG_ERR,"CRC error\n"); 
 		}
 		else	/* CHKSUM */
 		{	
 			if(chksum==calc_chksum)
 				break;
 			newline();
-			fprintf(xm->statfp,"Checksum error\n"); 
+			xm->lprintf(LOG_ERR,"Checksum error\n"); 
 		}
 
 		if((*xm->mode)&GMODE) 	/* Don't bother sending a NAK. He's not listening */
@@ -183,7 +183,7 @@ int xmodem_get_block(xmodem_t* xm, uchar* block, BOOL hdrblock)
 
 	if(errors>=MAXERRORS) {
 		newline();
-		fprintf(xm->statfp,"Too many errors\n");
+		xm->lprintf(LOG_ERR,"Too many errors\n");
 		return(-1); 
 	}
 	return(block_num);
@@ -238,7 +238,7 @@ int xmodem_get_ack(xmodem_t* xm, int tries)
 			YIELD();
 			if(getcom(0)==CAN) {
 				newline();
-				fprintf(xm->statfp,"Cancelled remotely\n");
+				xm->lprintf(LOG_WARNING,"Cancelled remotely\n");
 				xmodem_cancel(xm);
 				bail(1); 
 			}
@@ -253,7 +253,7 @@ int xmodem_get_ack(xmodem_t* xm, int tries)
 		if(i==CAN) {
 			if(can) {
 				newline();
-				fprintf(xm->statfp,"Cancelled remotely\n");
+				xm->lprintf(LOG_WARNING,"Cancelled remotely\n");
 				xmodem_cancel(xm);
 				bail(1); 
 			}
@@ -261,7 +261,7 @@ int xmodem_get_ack(xmodem_t* xm, int tries)
 		}
 		if(i!=NOINP) {
 			newline();
-			fprintf(xm->statfp,"Received %s  Expected ACK\n",chr((uchar)i));
+			xm->lprintf(LOG_WARNING,"Received %s  Expected ACK\n",chr((uchar)i));
 			if(i!=CAN)
 				return(0); 
 		} 
