@@ -1110,12 +1110,14 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 	bool	native=false;			// DOS program by default
 	bool	rio_abortable_save=rio_abortable;
 	int		i;
+	bool	data_waiting;
 	int		rd;
 	int		wr;
 	int		argc;
 	pid_t	pid;
 	int		in_pipe[2];
 	int		out_pipe[2];
+	int		err_pipe[2];
 	fd_set ibits;
 	struct timeval timeout;
 
@@ -1207,6 +1209,11 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 	if(!(mode&EX_INR) && input_thread_running)
 		pthread_mutex_lock(&input_thread_mutex);
 
+	if(pipe(err_pipe)!=0) {
+		errormsg(WHERE,ERR_CREATE,"err_pipe",0);
+		return(-1);
+	}
+
 	if((mode&EX_INR) && (mode&EX_OUTR))  {
 		struct winsize winsize;
 		struct termios term;
@@ -1296,15 +1303,18 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		if(mode&EX_OUTR && !(mode&EX_INR)) {
 			close(out_pipe[0]);		/* close read-end of pipe */
 			dup2(out_pipe[1],1);	/* stdout */
-			dup2(out_pipe[1],2);	/* stderr */
+			/* dup2(out_pipe[1],2);	stderr */
 			close(out_pipe[1]);		/* close excess file descriptor */
-		}	
+		}
 
 		if(mode&EX_BG)	/* background execution, detach child */
 		{
 			lprintf("Detaching external process");
 			daemon(TRUE,FALSE);
    	    }
+
+		close(err_pipe[0]);		/* close read-end of pipe */
+		dup2(err_pipe[1],2);	/* stderr */
 	
 		execvp(argv[0],argv);
 		sprintf(str,"!ERROR %d executing %s",errno,argv[0]);
@@ -1318,6 +1328,8 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 	if(!(mode&EX_OFFLINE))
 		rio_abortable=false;
 	
+	close(err_pipe[1]);	/* close write-end of pipe */
+
 	if(mode&EX_OUTR) {
 		if(!(mode&EX_INR))
 			close(out_pipe[1]);	/* close write-end of pipe */
@@ -1340,14 +1352,40 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 					write(in_pipe[1],buf,wr);
 			}
 				
+			/* Error Output */
+			FD_ZERO(&ibits);
+			FD_SET(err_pipe[0],&ibits);
+			timeout.tv_sec=0;
+			timeout.tv_usec=1000;
+			bp=buf;
+			i=0;
+			while ((select(err_pipe[0]+1,&ibits,NULL,NULL,&timeout)>0) && (i<(int)sizeof(buf)-1))  {
+				if((rd=read(err_pipe[0],bp,1))>0)  {
+					i+=rd;
+					bp++;
+					if(*(bp-1)=='\n')
+						break;
+				}
+				else
+					break;
+			}
+			if(i)
+				lprintf("%.*s",i,buf);		/* lprintf mangles i? */
+
+			/* Eat stderr if mode is EX_BIN */
+			if(mode&EX_BIN)  {
+				bp=buf;
+				i=0;
+			}
+
 			/* Output */
 			FD_ZERO(&ibits);
 			FD_SET(out_pipe[0],&ibits);
 			timeout.tv_sec=0;
-			timeout.tv_usec=1000;
-			if(!select(out_pipe[0]+1,&ibits,NULL,NULL,&timeout))  {
+			timeout.tv_usec=0;
+			data_waiting=(select(out_pipe[0]+1,&ibits,NULL,NULL,&timeout)!=0);
+			if(i==0 && data_waiting==0)
 				continue;
-			}
 
 			avail=RingBufFree(&outbuf)/2;	// Leave room for wwiv/telnet expansion
 			if(avail==0) {
@@ -1361,12 +1399,21 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 
 			rd=avail;
 
-			if(rd>(int)sizeof(buf))
-				rd=sizeof(buf);
+			if(rd>((int)sizeof(buf)-i))
+				rd=sizeof(buf)-i;
 
-			if((rd=read(out_pipe[0],buf,rd))<1)
-				continue;
-				
+			if(data_waiting)  {
+				rd=read(out_pipe[0],bp,rd);
+				if(rd<1 && i==0)
+					continue;
+				if(rd<0)
+					rd=0;
+			}
+			else
+				rd=0;
+
+			rd += i;
+
 			if(mode&EX_BIN) {
 				if(telnet_mode&TELNET_MODE_OFF)
 					bp=buf;
@@ -1380,14 +1427,15 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 				errorlog("OUTPUT_BUF OVERRUN");
 				output_len=sizeof(output_buf);
 			}
-			
+
 			/* Does expanded size fit in the ring buffer? */
 			if(output_len>RingBufFree(&outbuf)) {
 				errorlog("output buffer overflow");
 				output_len=RingBufFree(&outbuf);
 			}
-	
+
 			RingBufWrite(&outbuf, bp, output_len);
+
 		}
 
 		if(waitpid(pid, &i, WNOHANG)==0)  {		// Child still running? 
@@ -1424,6 +1472,32 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 	}
 
 	pthread_mutex_unlock(&input_thread_mutex);
+
+	/* Final Error Output */
+	FD_ZERO(&ibits);
+	FD_SET(err_pipe[0],&ibits);
+	timeout.tv_sec=0;
+	timeout.tv_usec=0;
+	bp=buf;
+	i=0;
+	while ((select(err_pipe[0]+1,&ibits,NULL,NULL,&timeout)>0) && (i<XTRN_IO_BUF_LEN-1))  {
+		if((rd=read(err_pipe[0],bp,1))>0)  {
+			i+=rd;
+			if(*bp=='\n') {
+				lprintf("%.*s",i-1,buf);
+				i=0;
+				bp=buf;
+			}
+			else
+				bp++;
+		}
+		else
+			break;
+	}
+	if(i)
+		lprintf("%.*s",i,buf);
+
+	close(err_pipe[0]);
 
 	return(WEXITSTATUS(i));
 }
