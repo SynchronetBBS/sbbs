@@ -1,6 +1,8 @@
 // listserver.js
 
-// Mailing List Server module for Synchronet v3.11c
+// Mailing List Server module for Synchronet v3.12
+
+// $Id$
 
 load("sbbsdefs.js");
 
@@ -19,14 +21,19 @@ if(!ini_file.open("r")) {
 		,ini_file.error, ini_fname));
 	exit();
 }
-listserver_address=ini_file.iniGetValue("config","address","listserver@"+system.inet_addr);
-listserver_name=ini_file.iniGetValue("config","name","Synchronet ListServer");
-alias_list=ini_file.iniGetValue("config","aliases",new Array());
-subj_cmd=ini_file.iniGetValue("config","SubjectCommand",false);
-list_array=ini_file.iniGetAllObjects("name","list:");
+listserver_address=ini_file.iniGetValue(null,"address","listserver@"+system.inet_addr);
+listserver_name=ini_file.iniGetValue(null,"name","Synchronet ListServer");
+subj_cmd=ini_file.iniGetValue(null,"SubjectCommand",false);
+disabled=ini_file.iniGetValue(null,"disabled",false);
+list_array=ini_file.iniGetAllObjects("name");
 ini_file.close();
 if(!list_array.length) {
 	log(LOG_ERR,"!No lists defined in " + ini_fname);
+	exit();
+}
+
+if(disabled) {
+	log(LOG_WARNING,"Disabled in " + ini_fname);
 	exit();
 }
 
@@ -102,49 +109,7 @@ if(this.recipient_list_filename!=undefined) {
 	var body = get_msg_body(msgtxt);
 
 	var r;
-	/* control message for list server? */
-	for(r=0;r<rcpt_list.length;r++) {
-		if(rcpt_list[r].Recipient.toLowerCase()==listserver_address.toLowerCase())
-			break;
-		for(n=0;n<alias_list.length;n++) {
-			if(rcpt_list[r].Recipient.search(new RegExp(alias_list[n],"i"))!=-1)
-				break;
-		}
-		if(n<alias_list.length)	/* match found */
-			break;
-	}
-	if(r<rcpt_list.length) { 
-
-		log(LOG_INFO,format("ListServer Control message from %s to %s: %s"
-			,header.from, header.to, header.subject));
-
-		file_remove(recipient_list_filename);
-
-		if(subj_cmd)
-			body.unshift(header.subject);	/* Process the subject as a command */
-
-		var response = process_control_msg(body);
-		var resp_hdr = {};
-
-		resp_hdr.subject		= listserver_name + " Response";
-		resp_hdr.to				= header.from;
-		resp_hdr.to_net_addr	= header.from_net_addr;
-		resp_hdr.to_net_type	= NET_INTERNET;
-		resp_hdr.from			= listserver_name;
-		resp_hdr.from_net_addr	= listserver_address;
-		resp_hdr.from_net_type	= NET_INTERNET;
-		resp_hdr.from_agent		= AGENT_PROCESS;
-		resp_hdr.reply_id		= header.id;
-
-		/* Write response to message */
-		if(mailbase.save_msg(resp_hdr, response.body.join('\r\n')))
-			log(LOG_INFO,"ListServer Response to control message created");
-		else
-			log(LOG_ERR,format("ListServer !ERROR %s saving response message to mail msgbase"
-				,msgbase.error));
-
-		exit();
-	}
+	var handled=false;
 
 	/* contribution to mailing list? */
 	for(r=0;r<rcpt_list.length;r++) {
@@ -163,11 +128,42 @@ if(this.recipient_list_filename!=undefined) {
 		if(l<list_array.length) {	/* match found */
 			log(LOG_INFO,format("ListServer Contribution message from %s to %s: %s"
 				,header.from, rcpt_list[r].Recipient, header.subject));
-
+			handled=true;
 			if(!process_contribution(header, body, list))
 				break;
 		}
 	}
+	if(handled)
+		exit();
+
+
+	log(LOG_INFO,format("ListServer Control message from %s to %s: %s"
+		,header.from, header.to, header.subject));
+
+	file_remove(recipient_list_filename);
+
+	if(subj_cmd)
+		body.unshift(header.subject);	/* Process the subject as a command */
+
+	var response = process_control_msg(body);
+	var resp_hdr = {};
+
+	resp_hdr.subject		= listserver_name + " Response";
+	resp_hdr.to				= header.from;
+	resp_hdr.to_net_addr	= header.from_net_addr;
+	resp_hdr.to_net_type	= NET_INTERNET;
+	resp_hdr.from			= listserver_name;
+	resp_hdr.from_net_addr	= listserver_address;
+	resp_hdr.from_net_type	= NET_INTERNET;
+	resp_hdr.from_agent		= AGENT_PROCESS;
+	resp_hdr.reply_id		= header.id;
+
+	/* Write response to message */
+	if(mailbase.save_msg(resp_hdr, response.body.join('\r\n')))
+		log(LOG_INFO,"ListServer Response to control message created");
+	else
+		log(LOG_ERR,format("ListServer !ERROR %s saving response message to mail msgbase"
+			,msgbase.error));
 
 	exit();
 }
