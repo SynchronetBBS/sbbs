@@ -261,7 +261,7 @@ const char *htmlansi[256]=
 	"text-decoration: blink; color: white; background-color: #aaaaaa;",
 };
 
-#define HTML_COLOR_PREFIX		"</SPAN><SPAN STYLE=\""
+#define HTML_COLOR_PREFIX		"</span><span style=\""
 #define HTML_COLOR_SUFFIX		"\">"
 
 #define MAX_COLOR_STRING 100

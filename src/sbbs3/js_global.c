@@ -1072,7 +1072,7 @@ js_html_encode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 			free(tmpbuf);
 			return(JS_FALSE);
 		}
-		j=sprintf(outbuf,"<SPAN STYLE=\"%s\">",htmlansi[7],htmlansi[7]);
+		j=sprintf(outbuf,"<span style=\"%s\">",htmlansi[7],htmlansi[7]);
 		clear_screen=j;
 		for(i=0;tmpbuf[i];i++) {
 			if(j>(obsize/2))		/* Completely arbitrary here... must be carefull with this eventually ToDo */
@@ -1182,7 +1182,7 @@ js_html_encode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 						lastcolor=0;
 						l=ansi_param[0]>0?ansi_param[0]:1;
 						if(wrappos==0 && wrapvpos==currrow)  {
-							j+=sprintf(outbuf+j,"<!-- \r\nC after A l=%d hpos=%d -->",l,hpos);
+							/* j+=sprintf(outbuf+j,"<!-- \r\nC after A l=%d hpos=%d -->",l,hpos); */
 							l=l-hpos;
 							wrapvpos=-2;	/* Prevent additional move right */
 						}
@@ -1533,7 +1533,7 @@ js_html_encode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 				}
 			}
 		}
-		strcpy(outbuf+j,"</SPAN>");
+		strcpy(outbuf+j,"</span>");
 
 		js_str = JS_NewStringCopyZ(cx, outbuf);
 		free(outbuf);
