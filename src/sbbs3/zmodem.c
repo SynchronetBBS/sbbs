@@ -1836,3 +1836,15 @@ zmodem_send_files(char** fname, int total_files)
 
 
 #endif
+
+char* zmodem_ver(char *buf)
+{
+	sscanf("$Revision$", "%*s %s", buf);
+
+	return(buf);
+}
+
+const char* zmodem_source(void)
+{
+	return(__FILE__);
+}

@@ -87,7 +87,7 @@ FILE*	statfp;
 
 char	revision[16];
 
-SOCKET	sock;
+SOCKET	sock=INVALID_SOCKET;
 #define DCDHIGH		socket_check(sock, NULL, NULL, 0)
 
 #define getcom(t)	recv_byte(sock,t,mode)
@@ -1092,14 +1092,14 @@ void receive_files(char** fname, int fnames, FILE* log)
 
 static const char* usage=
 	"usage: sexyz <socket> [opts] <cmd> [file | path | +list]\n\n"
-	"where:\n\n"
 	"socket = TCP socket descriptor\n"
 	"opts   = o  to overwrite files when receiving\n"
 	"         d  to disable dropped carrier detection\n"
 	"         a  to sound alarm at start and stop of transfer\n"
 	"         p  to pause after abnormal exit (error)\n"
 	"         l  to disable local keyboard (Ctrl-C) checking\n"
-	"cmd    = sx to send Xmodem     rx to recv Xmodem\n"
+	"cmd    = v  to display detailed version information\n"
+	"         sx to send Xmodem     rx to recv Xmodem\n"
 	"         sX to send Xmodem-1k  rc to recv Xmodem-CRC\n"
 	"         sy to send Ymodem     ry to recv Ymodem\n"
 	"         sY to send Ymodem-1k  rg to recv Ymodem-G\n"
@@ -1119,6 +1119,9 @@ int main(int argc, char **argv)
 	uint	fnames=0;
 	FILE*	fp;
 	FILE*	log=NULL;
+	char	compiler[32];
+
+	DESCRIBE_COMPILER(compiler);
 
 	errfp=stderr;
 	statfp=stdout;
@@ -1131,25 +1134,21 @@ int main(int argc, char **argv)
 		,PLATFORM_DESC
 		);
 
+#if 0
 	if(argc>1) {
 		fprintf(statfp,"Command line: ");
 		for(i=1;i<argc;i++)
 			fprintf(statfp,"%s ",argv[i]);
 		fprintf(statfp,"\n",statfp);
 	}
+#endif
 
-	if(argc<3) {
-		fprintf(errfp,usage);
-		exit(1); 
-	}
+	for(i=1;i<argc;i++) {
 
-	sock=atoi(argv[1]);
-	if(sock==INVALID_SOCKET || sock<1) {
-		fprintf(errfp,usage);
-		exit(1);
-	}
-
-	for(i=2;i<argc;i++) {
+		if(sock==INVALID_SOCKET && isdigit(argv[i][0])) {
+			sock=atoi(argv[i]);
+			continue;
+		}
 
 		if(!(mode&(SEND|RECV))) {
 			if(toupper(argv[i][0])=='S' || toupper(argv[i][0])=='R') { /* cmd */
@@ -1188,6 +1187,20 @@ int main(int argc, char **argv)
 						exit(1); 
 				} 
 			}
+
+			else if(toupper(argv[i][0])=='V') {
+
+				fprintf(statfp,"%-8s %s\n",getfname(__FILE__),revision);
+				fprintf(statfp,"%-8s %s\n",getfname(xmodem_source()),xmodem_ver(str));
+				fprintf(statfp,"%-8s %s\n",getfname(zmodem_source()),zmodem_ver(str));
+#ifdef _DEBUG
+				fprintf(statfp,"Debug\n");
+#endif
+				fprintf(statfp,"Compiled %s %.5s with %s\n",__DATE__,__TIME__,compiler);
+				fprintf(statfp,"%s\n",os_version(str));
+				exit(1);
+			}
+
 
 			else if(toupper(argv[i][0])=='O')
 				mode|=OVERWRITE;
@@ -1256,14 +1269,20 @@ int main(int argc, char **argv)
 		} 
 	}
 
+	if(sock==INVALID_SOCKET || sock<1) {
+		fprintf(statfp,"!No socket descriptor specified\n\n");
+		fprintf(errfp,usage);
+		exit(1);
+	}
+
 	if(!(mode&(SEND|RECV))) {
-		fprintf(statfp,"No command specified\n");
+		fprintf(statfp,"!No command specified\n\n");
 		fprintf(statfp,usage);
 		exit(1); 
 	}
 
 	if(mode&(SEND|XMODEM) && !fnames) { /* Sending with any or recv w/Xmodem */
-		fprintf(statfp,"Must specify filename or filelist\n");
+		fprintf(statfp,"!Must specify filename or filelist\n\n");
 		fprintf(statfp,usage);
 		exit(1); 
 	}

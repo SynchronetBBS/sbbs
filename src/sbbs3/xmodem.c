@@ -262,3 +262,15 @@ int xmodem_get_ack(xmodem_t* xm, int tries)
 
 	return(0);
 }
+
+char* xmodem_ver(char *buf)
+{
+	sscanf("$Revision$", "%*s %s", buf);
+
+	return(buf);
+}
+
+const char* xmodem_source(void)
+{
+	return(__FILE__);
+}

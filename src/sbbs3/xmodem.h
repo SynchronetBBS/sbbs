@@ -52,10 +52,12 @@ typedef struct {
 } xmodem_t;
 
 
-void	xmodem_cancel(xmodem_t* xm);
-int		xmodem_get_ack(xmodem_t* xm, int tries);
-void	xmodem_put_nak(xmodem_t* xm);
-int		xmodem_get_block(xmodem_t* xm, uchar* block, uint block_size, BOOL hdrblock);
-void	xmodem_put_block(xmodem_t* xm, uchar* block, uint block_size, ulong block_num);
+char*		xmodem_ver(char *buf);
+const char* xmodem_source(void);
+void		xmodem_cancel(xmodem_t* xm);
+int			xmodem_get_ack(xmodem_t* xm, int tries);
+void		xmodem_put_nak(xmodem_t* xm);
+int			xmodem_get_block(xmodem_t* xm, uchar* block, uint block_size, BOOL hdrblock);
+void		xmodem_put_block(xmodem_t* xm, uchar* block, uint block_size, ulong block_num);
 
 #endif	/* Don't add anything after this line */

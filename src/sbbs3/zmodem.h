@@ -244,10 +244,12 @@ typedef struct {
 
 } zmodem_t;
 
-int		zmodem_get_zrinit(zmodem_t* zm);
-void	zmodem_parse_zrinit(zmodem_t* zm);
-int		zmodem_send_zfin(zmodem_t* zm);
-int		zmodem_send_file(zmodem_t* zm, char* name, FILE* fp);
+char*		zmodem_ver(char *buf);
+const char* zmodem_source(void);
+int			zmodem_get_zrinit(zmodem_t* zm);
+void		zmodem_parse_zrinit(zmodem_t* zm);
+int			zmodem_send_zfin(zmodem_t* zm);
+int			zmodem_send_file(zmodem_t* zm, char* name, FILE* fp);
 
 #endif
 
