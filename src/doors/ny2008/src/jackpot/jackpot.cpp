@@ -367,19 +367,13 @@ main_menu:
 			od_printf("\n\r\n\r`bright red`Y`red`ou have won %lu!\n\r`bright red`Y`red`ou had to pay 10\% tax though!",jackpot);
 
 			/*****this routine adds money but checks for overflow*****/
-			/**/
-			DWORD med;                                     /**/
+			/**/    DWORD med;                                     /**/
 			/**/                                                   /**/
-			/**/
-			med=ULONG_MAX-jackpot;                         /**/
-			/**/
-			if (med<=urec.money)                           /**/
-				/**/
-				urec.money=ULONG_MAX;                        /**/
-			/**/
-			else                                           /**/
-				/**/
-				urec.money+=jackpot;                         /**/
+			/**/    med=ULONG_MAX-jackpot;                         /**/
+			/**/    if (med<=urec.money)                           /**/
+			/**/      urec.money=ULONG_MAX;                        /**/
+			/**/    else                                           /**/
+			/**/      urec.money+=jackpot;                         /**/
 			/*********************************************************/
 
 			//display the enter prompt
