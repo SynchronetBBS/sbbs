@@ -6,6 +6,7 @@ template.sysinfo="";
 f=new File(system.text_dir+"system.msg");
 if(f.open("rb",true)) {
 	template.sysinfo=f.read();
+	template.sysinfo=lfexpand(template.sysinfo);
 	template.sysinfo=html_encode(template.sysinfo,true,true,true,true);
 }
 
@@ -18,7 +19,7 @@ else {
 	if(f.open("rb",true))
 		template.logon=f.read();
 }
-template.logon=template.logon.replace(/\r?\n/g,"\r\n");
+template.logon=lfexpand(template.logon);
 template.logon=html_encode(template.logon,true,false,true,true);
 
 template.fidoaddrs=new Array;
