@@ -185,7 +185,7 @@ object WebCfgDlg: TWebCfgDlg
         Top = 108
         Width = 105
         Height = 24
-        Hint = 'File extension that denotes server-side JavaScript (e.g. "ssjs")'
+        Hint = 'File extension that denotes server-side JavaScript files (e.g. ".ssjs")'
         ParentShowHint = False
         ShowHint = True
         TabOrder = 2
@@ -195,7 +195,7 @@ object WebCfgDlg: TWebCfgDlg
         Top = 76
         Width = 105
         Height = 24
-        Hint = 'File extension that denotes embedded JavaScript (e.g. "bbs")'
+        Hint = 'File extension that denotes embedded JavaScript files (e.g. ".bbs")'
         ParentShowHint = False
         ShowHint = True
         TabOrder = 3
@@ -262,7 +262,7 @@ object WebCfgDlg: TWebCfgDlg
         Top = 108
         Width = 192
         Height = 24
-        Hint = 'Root directory for HTML files'
+        Hint = 'Base directory and filename for HTTP access log files'
         ParentShowHint = False
         ShowHint = True
         TabOrder = 3
