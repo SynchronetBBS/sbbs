@@ -138,7 +138,7 @@ void sbbs_read_ini(
 	bbs->xtrn_polls_before_yield
 		=iniReadInteger(fp,section,"ExternalYield",10);
 	bbs->js_max_bytes
-		=iniReadInteger(fp,section,"JS_MaxBytes",0);
+		=iniReadInteger(fp,section,"JavaScriptMaxBytes",0);
 
 	/* Set default terminal type to "stock" termcap closest to "ansi-bbs" */
 #if defined(__FreeBSD__)
@@ -175,6 +175,8 @@ void sbbs_read_ini(
 		=iniReadShortInt(fp,section,"MaxInactivity",300);	/* seconds */
 	ftp->qwk_timeout
 		=iniReadShortInt(fp,section,"QwkTimeout",600);		/* seconds */
+	ftp->js_max_bytes
+		=iniReadInteger(fp,section,"JavaScriptMaxBytes",0);
 
 	SAFECOPY(ftp->index_file_name
 		,iniReadString(fp,section,"IndexFileName","00index"));
@@ -253,6 +255,12 @@ void sbbs_read_ini(
 
 	services->interface_addr
 		=iniReadIpAddress(fp,section,"Interface",INADDR_ANY);
+
+	services->js_max_bytes
+		=iniReadInteger(fp,section,"JavaScriptMaxBytes",0);
+
+	SAFECOPY(services->cfg_file
+		,iniReadString(fp,section,"ConfigFile",nulstr));
 
 	SAFECOPY(services->answer_sound
 		,iniReadString(fp,section,"AnswerSound",nulstr));
