@@ -46,9 +46,9 @@ int main()
 	printf("\nBEEP() test\n");
 	getkey();
 	for(i=750;i>250;i-=5)
-		BEEP(i,10);
+		BEEP(i,15);
 	for(;i<1000;i+=5)
-		BEEP(i,10);
+		BEEP(i,15);
 #endif
 	/* SLEEP test */
 	printf("\nSLEEP() test\n");
@@ -74,7 +74,7 @@ int main()
 	dir=opendir(".");
 	while(dir!=NULL && (dirent=readdir(dir))!=NULL) {
 		t=fdate(dirent->d_name);
-		printf("%.24s %10lu  %04o  %s%c\n"
+		printf("%.24s %10lu  %06o  %s%c\n"
 			,ctime(&t)
 			,flength(dirent->d_name)
 			,getfattr(dirent->d_name)
