@@ -15,6 +15,7 @@ static void getkey(void)
 	fflush(stdout);
 	while(getch()==0);
 	printf("\r%20s\r","");
+	fflush(stdout);
 }
 
 int main()
