@@ -155,9 +155,9 @@ int main(int argc, char **argv)
                         "-f  =  force save of config files\r\n"
                         "-u  =  update all message base status headers\r\n"
                         "-h  =  don't update message base status headers\r\n"
-#if !defined(__unix__)
                         "-d  =  run in standard input/output/door mode\r\n"
                         "-c  =  force color mode\r\n"
+#if !defined(__unix__)
                         "-v# =  set video mode to #\r\n"
 #endif
                         "-l# =  set screen lines to #\r\n"
