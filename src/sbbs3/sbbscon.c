@@ -93,11 +93,13 @@ static int bbs_lputs(char *str)
 
 static void bbs_started(void)
 {
+	bbs_lputs("bbs_started");
 	bbs_running=TRUE;
 }
 
 static void bbs_terminated(int code)
 {
+	bbs_lputs("bbs_terminated");
 	bbs_running=FALSE;
 }
 
@@ -129,11 +131,13 @@ static int ftp_lputs(char *str)
 
 static void ftp_started(void)
 {
+	ftp_lputs("ftp_started");
 	ftp_running=TRUE;
 }
 
 static void ftp_terminated(int code)
 {
+	ftp_lputs("ftp_terminated");
 	ftp_running=FALSE;
 }
 
@@ -165,11 +169,13 @@ static int mail_lputs(char *str)
 
 static void mail_started(void)
 {
+	mail_lputs("mail_started");
 	mail_running=TRUE;
 }
 
 static void mail_terminated(int code)
 {
+	mail_lputs("mail_terminated");
 	mail_running=FALSE;
 }
 
@@ -180,7 +186,8 @@ int main(int argc, char** argv)
 {
 	char*	ctrl_dir;
 
-	printf("\nSynchronet BBS Console Version %s\n",SBBSCON_VERSION);
+	printf("\nSynchronet BBS Console Version %s  Copyright 2000 Rob Swindell\n"
+		,SBBSCON_VERSION);
 
 	ctrl_dir=getenv("SBBSCTRL");	/* read from environment variable */
 	if(ctrl_dir==NULL)
@@ -218,6 +225,8 @@ int main(int argc, char** argv)
     ftp_startup.port=IPPORT_FTP;
     ftp_startup.interface_addr=INADDR_ANY;
 	ftp_startup.lputs=ftp_lputs;
+    ftp_startup.started=ftp_started;
+    ftp_startup.terminated=ftp_terminated;
     strcpy(ftp_startup.ctrl_dir,ctrl_dir);
 
 	/* Initialize Mail Server startup structure */
@@ -248,7 +257,7 @@ int main(int argc, char** argv)
 	ftp_terminate();
 //	mail_terminate();
 
-	printf("\nWaiting for servers to terminate...");
+	printf("\nWaiting for servers to terminate...\n");
 
 	while(bbs_running || ftp_running || mail_running)
 		mswait(1);
