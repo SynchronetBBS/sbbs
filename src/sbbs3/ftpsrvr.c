@@ -2230,6 +2230,9 @@ static void ctrl_thread(void* arg)
 			if((js_user=js_CreateUserObject(js_cx, js_glob, &scfg, "user", &user))==NULL) {
 				lprintf("%04d !JavaScript ERROR creating user object",sock);
 			}
+			if(js_CreateClientObject(js_cx, js_glob, "client", &client, sock)==NULL) {
+				lprintf("%04d !JavaScript ERROR creating client object",sock);
+			}
 			if(js_CreateFileAreaObject(js_cx, js_glob, &scfg, &user
 				,startup->html_index_file)==NULL) {
 				lprintf("%04d !JavaScript ERROR creating file area object",sock);
