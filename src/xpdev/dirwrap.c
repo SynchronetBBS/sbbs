@@ -95,6 +95,20 @@ char* DLLCALL getfname(const char* path)
 	return(fname);
 }
 
+/****************************************************************************/
+/* Return a pointer to a file's extesion (beginning with '.')				*/
+/****************************************************************************/
+char* DLLCALL getfext(const char* path)
+{
+	char *fname;
+	char *fext;
+
+	fname=getfname(path);
+	fext=strrchr(fname,'.');
+	if(fext==NULL || fext==fname) 
+		return(NULL);
+	return(fext);
+}
 
 /****************************************************************************/
 /* Break a path name into components.										*/
