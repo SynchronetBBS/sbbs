@@ -209,6 +209,7 @@ char* sbbs_t::atcode(char* sp, char* str)
 	if(!strcmp(sp,"TIME") || !strcmp(sp,"SYSTIME")) {
 		now=time(NULL);
 		memset(&tm,0,sizeof(tm));
+		localtime_r(&now,&tm);
 		sprintf(str,"%02d:%02d %s"
 			,tm.tm_hour==0 ? 12
 			: tm.tm_hour>12 ? tm.tm_hour-12
