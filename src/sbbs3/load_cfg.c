@@ -139,10 +139,12 @@ void prep_cfg(scfg_t* cfg)
 {
 	int i;
 
+#ifdef __unix__
 	strlwr(cfg->text_dir);	/* temporary Unix-compatibility hack */
 	strlwr(cfg->temp_dir);	/* temporary Unix-compatibility hack */
 	strlwr(cfg->data_dir);	/* temporary Unix-compatibility hack */
 	strlwr(cfg->exec_dir);	/* temporary Unix-compatibility hack */
+#endif
 
 	/* Fix-up paths */
 	prep_dir(cfg->ctrl_dir, cfg->data_dir);
@@ -157,6 +159,7 @@ void prep_cfg(scfg_t* cfg)
 	prep_path(cfg->echomail_sem);
 	prep_path(cfg->inetmail_sem);
 
+#ifdef __unix__
 	/* temporary hack for Unix compatibility */
 	strlwr(cfg->logon_mod);
 	strlwr(cfg->logoff_mod);
@@ -165,10 +168,12 @@ void prep_cfg(scfg_t* cfg)
 	strlwr(cfg->logout_mod);
 	strlwr(cfg->sync_mod);
 	strlwr(cfg->expire_mod);
+#endif
 
 	for(i=0;i<cfg->total_subs;i++) {
+#ifdef __unix__
 		strlwr(cfg->sub[i]->code); /* temporary Unix-compatibility hack */
-
+#endif
 		if(!cfg->sub[i]->data_dir[0])	/* no data storage path specified */
 			sprintf(cfg->sub[i]->data_dir,"%ssubs",cfg->data_dir);
 		prep_dir(cfg->ctrl_dir, cfg->sub[i]->data_dir);
@@ -187,7 +192,9 @@ void prep_cfg(scfg_t* cfg)
 	}
 
 	for(i=0;i<cfg->total_dirs;i++) {
+#ifdef __unix__
 		strlwr(cfg->dir[i]->code); 	/* temporary Unix-compatibility hack */
+#endif
 
 		if(!cfg->dir[i]->data_dir[0])	/* no data storage path specified */
 			sprintf(cfg->dir[i]->data_dir,"%sdirs",cfg->data_dir);
@@ -200,6 +207,7 @@ void prep_cfg(scfg_t* cfg)
 		prep_path(cfg->dir[i]->upload_sem);
 	}
 
+#ifdef __unix__
 	for(i=0;i<cfg->total_shells;i++)
 		strlwr(cfg->shell[i]->code);	/* temporary Unix-compatibility hack */
 
@@ -211,12 +219,14 @@ void prep_cfg(scfg_t* cfg)
 
 	for(i=0;i<cfg->total_xtrnsecs;i++)
 		strlwr(cfg->xtrnsec[i]->code); 	/* temporary Unix-compatibility hack */
-
+#endif
 	for(i=0;i<cfg->total_xtrns;i++) {
 		prep_dir(cfg->ctrl_dir, cfg->xtrn[i]->path);
 	}
 	for(i=0;i<cfg->total_events;i++) {
+#ifdef __unix__
 		strlwr(cfg->event[i]->code); 	/* temporary Unix-compatibility hack */
+#endif
 		prep_dir(cfg->ctrl_dir, cfg->event[i]->dir);
 	}
 
