@@ -45,13 +45,15 @@
 #include "websrvr.h"	/* services_startup_t */
 #include "ini_file.h"
 
+#ifdef __BORLANDC__
+	#pragma warn -pch
+#endif
 static const char* strJavaScriptMaxBytes		="JavaScriptMaxBytes";
 static const char* strJavaScriptContextStack	="JavaScriptContextStack";
 static const char* strJavaScriptBranchLimit		="JavaScriptBranchLimit";
 static const char* strJavaScriptGcInterval		="JavaScriptGcInterval";
 static const char* strJavaScriptYieldInterval	="JavaScriptYieldInterval";
 static const char* strSemFileCheckFrequency		="SemFileCheckFrequency";
-
 
 #if defined(__cplusplus)
 extern "C" {
