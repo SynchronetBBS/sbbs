@@ -343,7 +343,7 @@ int win32_initciolib(long inmode)
 	if(!SetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), conmode))
 		return(0);
 
-	if(GetConsoleScreenBufferInfo(GetStdHandle(STD_INPUT_HANDLE), &sbuff)==0) {
+	if(GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &sbuff)==0) {
 		win32_textmode(C80);
 	}
 	else {
