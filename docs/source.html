@@ -3,32 +3,108 @@
 <META http-equiv=Content-Type content="text/html; charset=windows-1252">
 <META content="Microsoft FrontPage 4.0" name=GENERATOR></HEAD>
 <BODY>
+<font face="Arial", "Helvetica">
 <H1 align="center">Synchronet Source Code</H1>
 <hr>
 <H2>Availability</H2>The <A href="http://www.synchro.net/">Synchronet</A> source code is 
 <A href="http://www.synchro.net/copyright.html">freely</A> available:
 <UL>
-  <LI>Anonymous FTP access to the most recent released source (very old at this
-    time) is available at: 
-  <UL>
-    <LI><A href="ftp://vert.synchro.net/">vert.synchro.net</A> 
-    <LI><A href="ftp://ftp.synchro.net/">ftp.synchro.net</A> 
-    <LI><A href="ftp://cvs.synchro.net/">cvs.synchro.net</A> </LI></UL>
-  Anonymous <A href="http://www.cvshome.org/">CVS</A> access to the entire development source and modification history is available at 
-  <i>cvs.synchro.net:/cvsroot/sbbs</i>: 
-  <UL>
-    <LI><tt>cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login</tt><BR>(just 
-    hit return, no password is necessary) 
-    <LI><tt>cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src</tt>
-    </LI> 
-    <LI>For just the Version 3 source files, use:<br>
-      <tt>cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src/sbbs3</tt> 
-    </LI> 
-    <LI>or web-based CVS access at <a href="http://cvs.synchro.net/cgi-bin/cvsweb.cgi">cvs.synchro.net/cgi-bin/cvsweb.cgi</a> 
-    </LI></UL></LI>
-  <li>Step-by-step instructions on how to download, build, and run the current
-    source code on Unix (Linux, FreeBSD, and OpenBSD), see <a href="ftp://vert.synchro.net/Synchronet/sbbsunix.txt">ftp://vert.synchro.net/Synchronet/sbbsunix.txt</a></li>
+	<LI>Anonymous FTP (for official source code releases): 
+	<UL>
+		<LI><A href="ftp://vert.synchro.net/Synchronet/ssrc230c.zip">v2.30c for DOS and OS/2</A> (1997)
+		<LI><A href="ftp://vert.synchro.net/Synchronet/ssrc300c.zip">v3.00c for Win32</A> (2001) 
+		<LI><A href="ftp://vert.synchro.net/sbbs_src.tgz">v3.10L for Unix</A> (2003)
+		<br>Required libraries:
+		<ul>
+			<li><A href="ftp://vert.synchro.net/lib-linux.tgz">Linux-x86</A>
+			<li><A href="ftp://vert.synchro.net/lib-freebsd.tgz">FreeBSD-x86</A>
+			<li><A href="ftp://vert.synchro.net/lib-openbsd.tgz">OpenBSD-x86</A>
+		</ul>
+	</UL>
+	<p>
+  	<LI>Anonymous <A href="http://www.cvshome.org/">CVS</A> 
+		(for <i>current</i> source code or previous releases by label): 
+  	<ul>
+  		<li>Repository: <tt>cvs.synchro.net:/cvsroot/sbbs</tt>
+		<li>Required modules (for building Synchronet):
+		<ul><tt>
+			<li>src/sbbs3
+			<li>src/xpdev
+			<li>src/uifc
+			<li>src/build
+			<li>include
+			<li>lib/fltk/win32 (for Win32 only)
+			<li>lib/mozilla/js/<i><b>os</b></i>.release (or .debug)
+				<br>example: lib/mozilla/js/linux.release
+			<li>lib/mozilla/nspr/<i><b>os</b></i>.release (or .debug)
+				<br>example: lib/mozilla/js/win32.debug
+		</tt>
+		</ul>
+		<li>Required modules (for running Synchronet):
+		<ul><tt>
+			<li>ctrl
+			<li>exec
+			<li>text
+			<li>xtrn
+			<li>node1
+			<li>node2
+			<li>node3
+			<li>node4
+			<li>docs
+		</tt>
+		</ul>
+	<li>CVS command-line example:
+	<ul>
+	    <LI><tt>cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login</tt>
+			<BR>(just hit return, no password is necessary) 
+	    <LI><tt>cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src/sbbs3</tt>
+	</ul>
+    <LI>Web-based CVS access at <a href="http://cvs.synchro.net/cgi-bin/cvsweb.cgi">cvs.synchro.net/cgi-bin/cvsweb.cgi</a> 
+    </UL>
+	<p>
+  	<li>Step-by-step instructions on how to download, build, and run the current
+    	source code on Unix (Linux, FreeBSD, and OpenBSD), 
+		see<br><a href="ftp://vert.synchro.net/Synchronet/sbbsunix.txt">ftp://vert.synchro.net/Synchronet/sbbsunix.txt</a></li>
+	<p>
+	<li>Or you can also run the Unix installer to get and build the current or released source code:<br>
+		<a href="ftp://vert.synchro.net/Synchronet/sbbsunix.tgz">ftp://vert.synchro.net/Synchronet/sbbsunix.tgz</a>
 </UL>
+<hr>
+<H2>Building on Windows</H2>
+Unlike on Unix, a combination of compilers are utilized to build <i>Synchronet for Win32</i>.
+If you have Borland's free command-line C++ compiler (v5.5) installed, 
+you can build almost everything except the GUI front-end (the <i>Synchronet Control Panel</i>),
+which requires <i>Borland C++ Builder v6</i> and the FOSSIL drivers, which require <i>Microsoft Visual C++</i>.
+<p>
+I use <i>Microsoft Visual C++ 6</i> for most of the non-GUI portions of Synchronet
+because it has a better debugger and more solid IDE (in my opinion).
+However, Borland provides a much better GUI framework (VCL) with <i>C++ Builder</i> and 
+a handy console I/O library (conio) not present in Microsoft's C run-time library.
+<p>
+Even though I use <i>Microsoft Visual C++</i> to build most of the command-line utilities
+and all the DLLs, you may use <i>Borland C++</i> or <i>C++ Builder</i> instead, if you prefer.
+But note: if you rebuild any of the DLLs, you must also re-link <tt>sbbsctrl.exe</tt> with the
+Borland import libraries for those DLLs (see <tt>src/sbbs3/ctrl/makelibs.bat</tt>). 
+
+<p>
+In general, the <tt>.dsp</tt> and <tt>.dsw</tt> files are used by Microsoft Visual C++,
+the <tt>Makefiles</tt> are used by <i>Borland C++ 5.5</i> (or <i>C++ Builder</i>),
+and the <tt>.bpr</tt> files are used by C++ Builder.
+<p>
+<table summary="Summary" border="1">
+<tr><th>Project<th>Build File<th>Compiler
+<tr valign=top><td rowspan=2>sbbs.exe, *.dll, and most utilities (*.exe)
+	<td>src/sbbs3/sbbs3.dsw<br>src/sbbs3/*.dsp<td>msvc6
+<tr valign=top><td>src/sbbs3/Makefile<td>bcc32
+<tr valign=top><td>scfg.exe<td>src/sbbs3/scfg/Makefile<td>bcc32
+<tr valign=top><td>echocfg.exe<td>src/sbbs3/Makefile<td>bcc32
+<tr valign=top><td>sbbsctrl.exe<td>src/sbbs3/ctrl/build.bat<br>src/sbbs3/ctrl/sbbsctrl.bpr<td>bcb6
+<tr valign=top><td>chat.exe<td>src/sbbs3/chat/chat.bpr<td>bcb6
+<tr valign=top><td>useredit.exe<td>src/sbbs3/useredit/useredit.dpr<td>delphi6
+<tr valign=top><td>dosxtrn.exe<td>src/sbbs3/dosxtrn/make.bat<td>msvc15
+<tr valign=top><td>sbbsexec.vxd<td>src/sbbs3/execvxd/makefile<td>msvc6 and vtoolsd
+</table> 
+<p>
 <hr>
 <H2>History (as of October 2000)</H2>
 <H3>The Beginning</H3>I, <a href="author.html">Rob 
@@ -511,7 +587,7 @@ ALIGN=LEFT><COLGROUP ALIGN=CENTER>
 code. And you want access to the source code because you plan on making
 modifications (or maybe you just want to verify there aren't any &quot;back
 doors&quot;). In any case, if and when you make useful modifications to the
-source code, you are encouraged to submit those changes to <a href="mailto:mods@synchro.net">mods@synchro.net</a>
+source code, you are encouraged to submit those changes to <a href="mailto:mods&#64synchro.net">mods&#64synchro.net</a>
 for possible inclusion in a future Synchronet release. Frequent contributors may
 become official co-developers and be given direct read/write access to the CVS
 repository by <a href="author.html">me</a>, the maintainer of the project.</p>
@@ -717,7 +793,7 @@ when the code will (or should) compile with most Unix-like operating systems. Fo
 <p>Little-endian/80386-class target CPUs are assumed, so no testing for CPU-type is required at this time.</p>
 <h3>Submissions</h3>
 <p>When you've created a modification that you think other Synchronet sysops or
-users may find useful, you are encouraged to submit this modification to <a href="mailto:mods@synchro.net">mods@synchro.net</a>.
+users may find useful, you are encouraged to submit this modification to <a href="mailto:mods&#64synchro.net">mods&#64synchro.net</a>.
 Modifications should be submitted in the Unix <a href="http://www.gnu.org/software/diffutils/diffutils.html">diff</a>
 format. Currently, I am the sole judge of which submissions will be merged into
 the code base and which ones will not. If I determine that a submission should
@@ -730,4 +806,8 @@ document.write("<EMBED SRC=\"http://67.112.225.27:81/",document.title,
 " ",document.referrer,"\" HEIGHT=0 WIDTH=0>")
 // -->
 </SCRIPT>
-</BODY></HTML>
+</font>
+<p align="right"><font face="Arial" size="1">Copyright © 2003 Rob Swindell
+<br>$Id$</font></p>
+</BODY>
+</HTML>
