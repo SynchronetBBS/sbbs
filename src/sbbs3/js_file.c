@@ -1204,7 +1204,7 @@ static char* file_prop_desc[] = {
 	,"the last occurred error value (use clear_error to clear) - <small>READ ONLY</small>"
 	,"the open file descriptor (advanced use only) - <small>READ ONLY</small>"
 	,"end-of-text character (advanced use only), if non-zero used by <i>read</i>, <i>readln</i>, and <i>write</i>"
-	,"set to <i>true</i> to enabel debug log output"
+	,"set to <i>true</i> to enable debug log output"
 	,"the current file position (offset in bytes), change value to seek within file"
 	,"the current length of the file (in bytes)"
 	,"file mode/attributes"
@@ -1267,21 +1267,6 @@ static jsMethodSpec js_file_functions[] = {
 	{"readAll",			js_readall,			0,	JSTYPE_ARRAY,	""
 	,JSDOCSTR("read all lines into an array of strings")
 	},
-	{"iniGetSections",	js_iniGetSections,	0,	JSTYPE_ARRAY,	""
-	,JSDOCSTR("read all sections from a .ini file and return section names as an array")
-	},
-	{"iniGetKeys",		js_iniGetKeys,		0,	JSTYPE_ARRAY,	JSDOCSTR("section")
-	,JSDOCSTR("read all key names from the specified <i>section</i> in .ini file and return key names as an array")
-	},
-	{"iniGetValue",		js_iniGetValue,		3,	JSTYPE_STRING,	JSDOCSTR("section, key, default")
-	,JSDOCSTR("read a key from a .ini file and return its value, "
-		"may return <i>bool</i>, <i>number</i>, <i>string</i>, or <i>array of string</i> "
-		"(based on type of the default value specified)")
-	},
-	{"iniGetObject",	js_iniGetObject,	1,	JSTYPE_OBJECT,	JSDOCSTR("section")
-	,JSDOCSTR("read an entire section from a .ini file "
-		"and return all of its keys and values as properties of an object")
-	},
 	{"write",			js_write,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("string text [,len]")
 	,JSDOCSTR("write a string to the file (optionally unix-to-unix or base64 decoding in the process)")
 	},
@@ -1295,8 +1280,27 @@ static jsMethodSpec js_file_functions[] = {
 	,JSDOCSTR("write an array of strings to file")
 	},		
 	{"printf",			js_fprintf,			0,	JSTYPE_NUMBER,	JSDOCSTR("string format [,args]")
-	,JSDOCSTR("write a formatted string to the file (ala fprintf)")
-	},		
+	,JSDOCSTR("write a formatted string to the file (ala fprintf) - "
+		"<small>CAUTION: for experienced C programmers ONLY</small>")
+	},
+	{"iniGetSections",	js_iniGetSections,	0,	JSTYPE_ARRAY,	""
+	,JSDOCSTR("parse all section names from a <tt>.ini</tt> file (format = '<tt>[section]</tt>') "
+		"and return the section names as an <i>array of strings</i>")
+	},
+	{"iniGetKeys",		js_iniGetKeys,		0,	JSTYPE_ARRAY,	JSDOCSTR("section")
+	,JSDOCSTR("parse all key names from the specified <i>section</i> in a <tt>.ini</tt> file "
+		"and return the key names as an <i>array of strings</i>")
+	},
+	{"iniGetValue",		js_iniGetValue,		3,	JSTYPE_STRING,	JSDOCSTR("section, key, default")
+	,JSDOCSTR("parse a key from a <tt>.ini</tt> file and return its value (format = '<tt>key = value</tt>'). "
+		"returns the specified <i>default</i> value if the key or value is missing or invalid. "
+		"will return a <i>bool</i>, <i>number</i>, <i>string</i>, or an <i>array of strings</i> "
+		"determined by the type of <i>default</i> value specified")
+	},
+	{"iniGetObject",	js_iniGetObject,	1,	JSTYPE_OBJECT,	JSDOCSTR("section")
+	,JSDOCSTR("parse an entire section from a .ini file "
+		"and return all of its keys and values as properties of an object")
+	},
 	{0}
 };
 
@@ -1365,7 +1369,31 @@ js_file_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval
 	}
 
 #ifdef _DEBUG
-	js_DescribeObject(cx,obj,"Class used for opening/creating files on the local file system");
+	js_DescribeObject(cx,obj,"Class used for opening, creating, reading, or writing files on the local file system<p>"
+		"Special features include:</h2><ol type=disc>"
+			"<li>Exclusive-access files (default) or shared files<ol type=circle>"
+				"<li>optional record-locking"
+				"<li>buffered or non-buffered I/O"
+				"</ol>"
+			"<li>Support for binary files<ol type=circle>"
+				"<li>native or network byte order (endian)"
+				"<li>automatic Unix-to-Unix (<i>uue</i>) or Base64 encoding/decoding"
+				"</ol>"
+			"<li>Support for ASCII text files<ol type=circle>"
+				"<li>supports line-based I/O<ol type=square>"
+					"<li>entire file may be read or written as an array of strings"
+					"<li>individual lines may be read or written one line at a time"
+					"</ol>"
+				"<li>supports fixed-length records<ol type=square>"
+					"<li>optional end-of-text (<i>etx</i>) character for automatic record padding/termination"
+					"<li>Synchronet <tt>.dat</tt> files use an <i>etx</i> value of 3 (Ctrl-C)"
+					"</ol>"
+				"<li>supports <tt>.ini</tt> formated configuration files"
+				"<li>optional ROT13 encoding/translation"
+				"</ol>"
+			"<li>Dynamically-calculated industry standard checksums (e.g. CRC-16, CRC-32, MD5)"
+			"</ol>"
+			);
 	js_DescribeConstructor(cx,obj,"To create a new File object: <tt>var f = new File(filename)</tt>");
 	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", file_prop_desc, JSPROP_READONLY);
 #endif
