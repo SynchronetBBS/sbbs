@@ -229,7 +229,7 @@ int DLLCALL getuserdat(scfg_t* cfg, user_t *user)
 
 	getrec(userdat,U_XEDIT,8,str);
 	for(i=0;i<cfg->total_xedits;i++)
-		if(!stricmp(str,cfg->xedit[i]->code) /* && chk_ar(cfg->xedit[i]->ar,user) */)
+		if(!stricmp(str,cfg->xedit[i]->code) && chk_ar(cfg,cfg->xedit[i]->ar,user))
 			break;
 	user->xedit=i+1;
 	if(user->xedit>cfg->total_xedits)
