@@ -255,6 +255,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
     bool	was_online=true;
 	bool	rio_abortable_save=rio_abortable;
 	bool	use_pipes=false;	// NT-compatible console redirection
+	BOOL	processTerminated=false;
 	uint	i;
     time_t	hungup=0;
 	HANDLE	vxd=INVALID_HANDLE_VALUE;
@@ -552,7 +553,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		fclose(fp);
 
 		/* not temporary */
-		if(!(mode&EX_INR)) {
+		if(!(mode&EX_INR) && input_thread_running) {
 			pthread_mutex_lock(&input_thread_mutex);
 			input_thread_mutex_locked=true;
 		}
@@ -571,7 +572,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		&process_info  	// pointer to PROCESS_INFORMATION
 		)) {
 		XTRN_CLEANUP;
-		if(input_thread_mutex_locked) {
+		if(input_thread_mutex_locked && input_thread_running) {
 			pthread_mutex_unlock(&input_thread_mutex);
 			input_thread_mutex_locked=false;
 		}
@@ -661,8 +662,10 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 				}
 	            was_online=false;
             }
-            if(hungup && time(NULL)-hungup>5) 
-                TerminateProcess(process_info.hProcess, 2112);
+            if(hungup && time(NULL)-hungup>5 && !processTerminated) {
+				lprintf("Node %d Terminating process from line %d",cfg.node_num,__LINE__);
+				processTerminated=TerminateProcess(process_info.hProcess, 2112);
+			}
         }
 		if((native && !use_pipes) || mode&EX_OFFLINE) {	
 			/* Monitor for process termination only */
@@ -849,20 +852,14 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 				}
 			}
             if(!rd && !wr) {
-				if(++loop_since_io>=1000) {
+				if(hungup || ++loop_since_io>=1000) {
 	                if(GetExitCodeProcess(process_info.hProcess, &retval)==FALSE) {
 	                    errormsg(WHERE, ERR_CHK, "ExitCodeProcess"
 						,(DWORD)process_info.hProcess);
 						break;
 					}
-					if(retval!=STILL_ACTIVE)  {
-#if 0
-						if(hungup)
-							Sleep(5000);	// Give the application time to close files
-#endif
+					if(retval!=STILL_ACTIVE)
 	                    break;
-					}
-					
 
 					if(!(loop_since_io%3000)) {
 						OutputDebugString(".");
@@ -901,8 +898,10 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 
     if(!(mode&EX_BG)) {			/* !background execution */
 
-		if(retval==STILL_ACTIVE)
+		if(retval==STILL_ACTIVE) {
+			lprintf("Node %d Terminating process from line %d",cfg.node_num,__LINE__);
 			TerminateProcess(process_info.hProcess, GetLastError());
+		}	
 
 	 	// Get return value
     	sprintf(str,"%sDOSXTRN.RET", cfg.node_dir);
@@ -921,7 +920,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		if(native) {
 			ulong l=0;
 			ioctlsocket(client_socket, FIONBIO, &l);
-			if(input_thread_mutex_locked) {
+			if(input_thread_mutex_locked && input_thread_running) {
 				pthread_mutex_unlock(&input_thread_mutex);
 				input_thread_mutex_locked=false;
 			}
@@ -1163,7 +1162,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 #endif
 	}
 
-	if(!(mode&EX_INR))
+	if(!(mode&EX_INR) && input_thread_running)
 		pthread_mutex_lock(&input_thread_mutex);
 
 	if((mode&EX_INR) && (mode&EX_OUTR))  {
