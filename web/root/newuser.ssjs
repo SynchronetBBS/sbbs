@@ -4,11 +4,15 @@
 
 /* $Id$ */
 
+var required_str="*";
+var	optional_str="";
+
 load("sbbsdefs.js");
 load("html_inc/template.ssjs");
 
-var fields=new Array("alias","name","handle","netmail","address","location","zipcode","phone","birthdate","gender");
-var required=new Array("name","netmail","address","location","zipcode","phone","birthdate","gender");
+template.required=required_str;
+var fields=new Array("alias","name","handle","netmail","address","location","zipcode","phone","birthdate","gender", "shell", "editor");
+var required=new Array;
 var maxlengths={alias:25,name:25,handle:8,netmail:60,address:30,location:30,zipcode:10,phone:12,birthdate:8,gender:1};
 var err=0;
 template.err_message='';
@@ -20,9 +24,117 @@ template.title=system.name+" new user signup";
 template.posted=http_request.query;
 template.errs=new Object;
 
+/* System is closed to new users */
+if(system.settings & SYS_CLOSED) {
+	write_template("header.inc");
+	write("This system is closed to new users, sorry.");
+	write_template("footer.inc");
+	exit(0);
+}
+
+/* Set up fields and required array */
+template.RealNameIs="Real Name";
+if(system.newuser_questions & UQ_ALIASES) {
+	required.push("alias");
+	template.alias_required=required_str;
+}
+else
+	template.alias_required=optional_str;
+
+if(system.newuser_questions & UQ_LOCATION) {
+	required.push("location");
+	template.loc_required=required_str;
+}
+else
+	template.loc_required=optional_str;
+
+if(system.newuser_questions & UQ_ADDRESS) {
+	required.push("zipcode");
+	template.zip_required=required_str;
+	required.push("address");
+	template.addr_required=required_str;
+}
+else {
+	template.zip_required=optional_str;
+	template.addr_required=optional_str;
+}
+
+if(system.newuser_questions & UQ_PHONE) {
+	required.push("phone");
+	template.ph_required=required_str;
+}
+else
+	template.ph_required=optional_str;
+
+if(system.newuser_questions & UQ_HANDLE) {
+	required.push("handle");
+	template.handle_required=required_str;
+}
+else
+	template.handle_required=optional_str;
+
+if(system.newuser_questions & UQ_SEX) {
+	required.push("gender");
+	template.sex_required=required_str;
+}
+else
+	template.sex_required=optional_str;
+
+if(system.newuser_questions & UQ_BIRTH) {
+	required.push("birthdate");
+	template.bd_required=required_str;
+}
+else
+	template.bd_required=optional_str;
+
+if(system.newuser_questions & UQ_REALNAME) {
+	required.push("name");
+	template.name_required=required_str;
+}
+else
+	template.name_required=optional_str;
+
+if(!(system.newuser_questions & UQ_ALIASES && system.newuser_questions & UQ_REALNAME)) {
+	if(system.newuser_questions & UQ_COMPANY) {
+		template.RealNameIs="Company Name";
+		required.push("name");
+		template.name_required=required_str;
+	}
+}
+
+/* List of shells is on the ToDo list */
+http_request.query.shell=system.newuser_command_shell;
+if(system.newuser_questions & UQ_CMDSHELL) {
+	required.push("shell");
+	template.shell_required=required_str;
+}
+else
+	template.shell_required=optional_str;
+
+if(system.newuser_questions & UQ_XEDIT) {
+	required.push("editor");
+	template.editor_required=required_str;
+}
+else
+	template.editor_required=optional_str;
+
+if(system.newuser_questions & UQ_NONETMAIL)
+	template.email_required=optional_str;
+else {
+	required.push("email");
+	template.email_required=required_str;
+}
+
+/* ToDo: Deal with UQ_DUPREAL, UQ_NOEXASC, UQ_NODEF, UQ_NOCOMMAS, UQ_NOUPRLWR */
+
 /* Plain GET with no query, just display the sign-up page */
 if(http_request.method=='GET') {
-	template.gender_list='<select name="gender">\n<option value="M">Male</option>\n<option value="F">Female</option>\n</select>';
+	if(system.newuser_questions & UQ_SEX)
+		template.gender_list='<select name="gender">\n<option value="M">Male</option>\n<option value="F">Female</option>\n</select>';
+	else
+		template.gender_list='<select name="gender">\n<option value="">Unspecified</option>\n<option value="M">Male</option>\n<option value="F">Female</option>\n</select>';
+	template.shell_list=gen_shell_list(system.newuser_command_shell);
+	template.editor_list=gen_editor_list(system.newuser_editor);
 	showform();
 }
 else {
@@ -30,15 +142,28 @@ else {
 	if(http_request.query["gender"] != undefined)
 		gender=http_request.query["gender"].toString().toUpperCase();
 	template.gender_list='<select name="gender">\n';
+	if(!(system.newuser_questions & UQ_SEX))
+		template.gender_list+='<option value=""'+(gender==''?' selected':'')+'>Unspecified</option>\n';
 	template.gender_list+='<option value="M"'+(gender=='M'?' selected':'')+'>Male</option>\n';
 	template.gender_list+='<option value="F"'+(gender=='F'?' selected':'')+'>Female</option>\n</select>';
+
+	if(http_request.query["shell"] != undefined)
+		template.shell_list=gen_shell_list(http_request.query.shell[0]);
+	else
+		template.shell_list=gen_shell_list(system.newuser_command_shell);
+	if(http_request.query["editor"] != undefined)
+		template.editor_list=gen_editor_list(http_request.query.editor[0]);
+	else
+		template.editor_list=gen_editor_list(system.newuser_editor);
 
 	/* POST request... should be a valid application */
 	for(field in fields) {
 		if(http_request.query[fields[field]]==undefined) {
 			template.gender_list='<select name="gender">\n<option value="M">Male</option>\n<option value="F">Female</option>\n</select>';
- 		err=1;
+			err=1;
 			template.errs[fields[field]]="MISSING";
+write(fields[field]);
+write("Fields: "+fields);
 			template.err_message+="Some fields missing from POST data... possible browser issue.\r\n";
 		}
 		if(err)
@@ -84,7 +209,7 @@ else {
 			}
 		}
 	}
-	if(system.new_user_questions & UQ_DUPHAND & system.matchuserdata(50,http_request.query["handle"])) {
+	if(system.newuser_questions & UQ_DUPHAND & system.matchuserdata(50,http_request.query["handle"])) {
 		err=1;
 		template.err_message+="Please choose a different chat handle\r\n";
 		template.errs["handle"]="Duplicate handle";
@@ -105,37 +230,39 @@ else {
 	}
 
 	/* Generate and send email */
-	var hdrs = new Object;
-	hdrs.to=http_request.query.name;
-	hdrs.to_net_type=netaddr_type(http_request.query.netmail);
-	if(hdrs.to_net_type!=NET_NONE) {
-		hdrs.to_net_addr=http_request.query.netmail;
-	}
-	else {
-		err=1;
-		template.err_message+="Cannot mail password to new email address!\r\n";
-		showform();
-	}
-	hdrs.from=system.name;
-	hdrs.from_net_addr='sysop@'+system.inet_addr;
-	hdrs.from_net_type=NET_INTERNET;
-	hdrs.subject="New user signup";
-	var msgbase = new MsgBase("mail");
-	if(msgbase.open!=undefined && msgbase.open()==false) {
-		err=1;
-		template.err_message+=msgbase.last_error+"\r\n";
-		showform();
-	}
-	var msg="Your account on "+system.name+" has been created!\n\n";
-	msg += "User name: "+http_request.query.name+"\n";
-	msg += "Password: "+newpw+"\n";
+	if(http_request.query.netmail != undefined && http_request.query.netmail != '') {
+		var hdrs = new Object;
+		hdrs.to=http_request.query.name;
+		hdrs.to_net_type=netaddr_type(http_request.query.netmail);
+		if(hdrs.to_net_type!=NET_NONE) {
+			hdrs.to_net_addr=http_request.query.netmail;
+		}
+		else {
+			err=1;
+			template.err_message+="Cannot mail password to new email address!\r\n";
+			showform();
+		}
+		hdrs.from=system.name;
+		hdrs.from_net_addr='sysop@'+system.inet_addr;
+		hdrs.from_net_type=NET_INTERNET;
+		hdrs.subject="New user signup";
+		var msgbase = new MsgBase("mail");
+		if(msgbase.open!=undefined && msgbase.open()==false) {
+			err=1;
+			template.err_message+=msgbase.last_error+"\r\n";
+			showform();
+		}
+		var msg="Your account on "+system.name+" has been created!\n\n";
+		msg += "User name: "+http_request.query.name+"\n";
+		msg += "Password: "+newpw+"\n";
 
-	if(!msgbase.save_msg(hdrs,msg))  {
-		err=1;
-		template.err_message+=msgbase.last_error+"\r\n";
-		showform();
+		if(!msgbase.save_msg(hdrs,msg))  {
+			err=1;
+			template.err_message+=msgbase.last_error+"\r\n";
+			showform();
+		}
+		msgbase.close();
 	}
-	msgbase.close();
 
 	nuser=system.new_user(http_request.query.name);
 	nuser.name=http_request.query.name;
@@ -149,10 +276,15 @@ else {
 	nuser.gender=http_request.query.gender;
 	nuser.security.password=newpw;
 	nuser.phone=http_request.query.phone;
+	nuser.shell=http_request.query.shell;
+	nuser.editor=http_request.query.editor;
 
 	template.title="New user created";
 	write_template("header.inc");
-	write("Your account has been created and the password has been mailed to: "+http_request.query.netmail);
+	if(http_request.query.netmail != undefined && http_request.query.netmail != '')
+		write("Your account has been created and the password has been mailed to: "+http_request.query.netmail);
+	else
+		write("Your account has been created and the password is: "+newpw);
 	write_template("footer.inc");
 }
 
@@ -170,4 +302,21 @@ function genpass() {
 		pw+=pwchars.substr(random(pwchars.length),1);
 	}
 	return(pw);
+}
+
+/* List of shells is on the ToDo list */
+function gen_shell_list(current) {
+	return("");
+}
+
+/* List of editors is on the ToDo list */
+function gen_editor_list(current) {
+	var retval="";
+	retval='<select name="editor">\n';
+	retval+='<option value=""'+(current==''?' selected':'')+'>Internal Editor</option>\n';
+	for(ed in xtrn_area.editor) {
+		retval+='<option value="'+ed+'"'+(current==ed?' selected':'')+'>'+xtrn_area.editor[ed].name+'</option>\n';
+	}
+	retval+='</select>';
+	return(retval);
 }
