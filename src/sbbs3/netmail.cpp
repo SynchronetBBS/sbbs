@@ -223,7 +223,7 @@ bool sbbs_t::inetmail(char *into, char *subj, long mode)
 	if(mode&WM_FILE)
 		msg.hdr.auxattr|=MSG_FILEATTACH;
 	msg.hdr.when_written.time=msg.hdr.when_imported.time=time(NULL);
-	msg.hdr.when_written.zone=msg.hdr.when_imported.zone=cfg.sys_timezone;
+	msg.hdr.when_written.zone=msg.hdr.when_imported.zone=sys_timezone(&cfg);
 
 	msg.hdr.offset=offset;
 
@@ -415,7 +415,7 @@ bool sbbs_t::qnetmail(char *into, char *subj, long mode)
 	if(mode&WM_FILE)
 		msg.hdr.auxattr|=MSG_FILEATTACH;
 	msg.hdr.when_written.time=msg.hdr.when_imported.time=time(NULL);
-	msg.hdr.when_written.zone=msg.hdr.when_imported.zone=cfg.sys_timezone;
+	msg.hdr.when_written.zone=msg.hdr.when_imported.zone=sys_timezone(&cfg);
 
 	msg.hdr.offset=offset;
 

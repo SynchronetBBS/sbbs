@@ -491,7 +491,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 		memset(&msg,0,sizeof(smbmsg_t));
 		msg.hdr.version=smb_ver();
 		msg.hdr.when_imported.time=time(NULL);
-		msg.hdr.when_imported.zone=cfg.sys_timezone;
+		msg.hdr.when_imported.zone=sys_timezone(&cfg);
 
 		if(fromhub || useron.rest&FLAG('Q')) {
 			net=NET_QWK;
@@ -516,7 +516,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 				smb_hfield(&msg,SENDERNETADDR,strlen(senderaddr),senderaddr); }
 			sprintf(sender,"%.25s",block+46); }    /* From name */
 		else {	/* Not Networked */
-			msg.hdr.when_written.zone=cfg.sys_timezone;
+			msg.hdr.when_written.zone=sys_timezone(&cfg);
 			sprintf(str,"%u",useron.number);
 			smb_hfield(&msg,SENDEREXT,strlen(str),str);
 			strcpy(sender,(qnet || cfg.inetmail_misc&NMAIL_ALIAS)
@@ -537,7 +537,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 			while(*cp && *cp<=SP) cp++;
 			msg.hdr.when_written.zone=(short)ahtoul(cp); }
 		else
-			msg.hdr.when_written.zone=cfg.sys_timezone;
+			msg.hdr.when_written.zone=sys_timezone(&cfg);
 		memset(&tm,0,sizeof(tm));
 		tm.tm_mon=((qwkbuf[8]&0xf)*10)+(qwkbuf[9]&0xf);
 		if(tm.tm_mon) tm.tm_mon--;	/* 0 based */

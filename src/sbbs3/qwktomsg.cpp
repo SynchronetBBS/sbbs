@@ -98,9 +98,9 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 
 	msg.hdr.when_written.time=mktime(&tm);
 	if(!(useron.rest&FLAG('Q')) && !fromhub)
-		msg.hdr.when_written.zone=cfg.sys_timezone;
+		msg.hdr.when_written.zone=sys_timezone(&cfg);
 	msg.hdr.when_imported.time=time(NULL);
-	msg.hdr.when_imported.zone=cfg.sys_timezone;
+	msg.hdr.when_imported.zone=sys_timezone(&cfg);
 
 	hdrblk[116]=0;	// don't include number of blocks in "re: msg number"
 	if(!(useron.rest&FLAG('Q')) && !fromhub)

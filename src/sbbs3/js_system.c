@@ -148,6 +148,7 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			p=cfg->sys_location;
 			break;
 		case SYS_PROP_TIMEZONE:
+			sys_timezone(cfg);
 			*vp = INT_TO_JSVAL(cfg->sys_timezone);
 			break;
 		case SYS_PROP_NODES:
@@ -861,7 +862,7 @@ js_zonestr(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_FALSE);
 
 	if(argc<1)
-		zone=cfg->sys_timezone;
+		zone=sys_timezone(cfg);
 	else {
 		JS_ValueToInt32(cx,argv[0],&val);
 		zone=(short)val;

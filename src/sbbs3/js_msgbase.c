@@ -1237,7 +1237,7 @@ js_save_msg(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	if(msg.hdr.when_written.time==0) {
 		msg.hdr.when_written.time=time(NULL);
-		msg.hdr.when_written.zone=scfg->sys_timezone;
+		msg.hdr.when_written.zone=sys_timezone(scfg);
 	}
 
 	truncsp(body);

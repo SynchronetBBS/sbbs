@@ -2356,7 +2356,7 @@ int fmsgtosmsg(uchar HUGE16 *fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 		msg.hdr.auxattr|=MSG_FILEATTACH;
 
 	msg.hdr.when_imported.time=time(NULL);
-	msg.hdr.when_imported.zone=scfg.sys_timezone;
+	msg.hdr.when_imported.zone=sys_timezone(&scfg);
 	msg.hdr.when_written.time=fmsgtime(fmsghdr.time);
 
 	origaddr.zone=fmsghdr.origzone; 	/* only valid if NetMail */

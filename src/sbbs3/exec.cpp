@@ -266,7 +266,7 @@ long * sbbs_t::getintvar(csi_t *bin, long name)
 		case 0x11c83294:
 			return((long *)&cfg.sys_psnum);
 		case 0x02408dc5:
-			sysvar_l[sysvar_li]=cfg.sys_timezone;
+			sysvar_l[sysvar_li]=sys_timezone(&cfg);
 			break;
 		case 0x78afeaf1:
 			sysvar_l[sysvar_li]=cfg.sys_pwdays;
