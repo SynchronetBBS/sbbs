@@ -11,9 +11,7 @@
       emulvt.obj UserListFormUnit.obj UserMsgFormUnit.obj PropertiesDlgUnit.obj 
       EventsFormUnit.obj ConfigWizardUnit.obj ServicesFormUnit.obj 
       TelnetCfgDlgUnit.obj MailCfgDlgUnit.obj FtpCfgDlgUnit.obj 
-      ServicesCfgDlgUnit.obj ..\sbbs_ini.obj ..\..\xpdev\ini_file.obj 
-      ..\..\xpdev\str_list.obj PreviewFormUnit.obj ..\..\xpdev\genwrap.obj 
-      WebFormUnit.obj"/>
+      ServicesCfgDlgUnit.obj ..\sbbs_ini.obj PreviewFormUnit.obj WebFormUnit.obj"/>
     <RESFILES value="sbbsctrl.res"/>
     <IDLFILES value=""/>
     <IDLGENFILES value=""/>
@@ -26,7 +24,8 @@
       EventsFormUnit.dfm ConfigWizardUnit.dfm ServicesFormUnit.dfm 
       TelnetCfgDlgUnit.dfm MailCfgDlgUnit.dfm FtpCfgDlgUnit.dfm 
       ServicesCfgDlgUnit.dfm PreviewFormUnit.dfm WebFormUnit.dfm"/>
-    <LIBFILES value="sbbs.lib mailsrvr.lib ftpsrvr.lib services.lib"/>
+    <LIBFILES value="sbbs.lib mailsrvr.lib ftpsrvr.lib services.lib 
+      ..\..\xpdev\bcc.win32.lib.debug\xpdev_mt.lib"/>
     <LIBRARIES value="bcb2kaxserver.lib indy.lib dbxcds.lib dclocx.lib soaprtl.lib bcbie.lib 
       nmfast.lib dbexpress.lib inetdbxpress.lib inetdbbde.lib dsnapcon.lib 
       dsnapcrba.lib visualdbclx.lib teeqr.lib dss.lib tee.lib teedb.lib 
@@ -40,7 +39,7 @@
     <PACKAGES value="rtl.bpi vcl.bpi vclx.bpi vcljpg.bpi bcbsmp.bpi dsnap.bpi dbrtl.bpi 
       vcldb.bpi bdertl.bpi inet.bpi inetdb.bpi vcldbx.bpi qrpt.bpi teeui.bpi 
       teedb.bpi tee.bpi dss.bpi nmfast.bpi dclocx.bpi"/>
-    <PATHCPP value=".;..;..\..\xpdev"/>
+    <PATHCPP value=".;..;.."/>
     <PATHPAS value=".;"/>
     <PATHRC value=".;"/>
     <PATHASM value=".;"/>
@@ -106,11 +105,9 @@
       <FILE FILENAME="FtpCfgDlgUnit.cpp" FORMNAME="FtpCfgDlg" UNITNAME="FtpCfgDlgUnit" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="ServicesCfgDlgUnit.cpp" FORMNAME="ServicesCfgDlg" UNITNAME="ServicesCfgDlgUnit" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="..\sbbs_ini.c" FORMNAME="" UNITNAME="sbbs_ini" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="..\..\xpdev\ini_file.c" FORMNAME="" UNITNAME="ini_file" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="..\..\xpdev\str_list.c" FORMNAME="" UNITNAME="str_list" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="PreviewFormUnit.cpp" FORMNAME="PreviewForm" UNITNAME="PreviewFormUnit" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="..\..\xpdev\genwrap.c" FORMNAME="" UNITNAME="genwrap" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="WebFormUnit.cpp" FORMNAME="WebForm" UNITNAME="WebFormUnit" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\..\xpdev\bcc.win32.lib.debug\xpdev_mt.lib" FORMNAME="" UNITNAME="xpdev_mt.lib" CONTAINERID="LibTool" DESIGNCLASS="" LOCALCOMMAND=""/>
   </FILELIST>
   <BUILDTOOLS>
   </BUILDTOOLS>
