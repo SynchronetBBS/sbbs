@@ -82,7 +82,9 @@ uint *label_indx=NULL
 	,*call_indx=NULL
 	,*call_line=NULL;
 
-char bin_file[MAX_PATH+1]="";
+char bin_file[MAX_PATH+1];
+char output_dir[MAX_PATH+1];
+char include_dir[MAX_PATH+1];
 
 uint display=0,line=0,labels=0,gotos=0,calls=0,defines=0,case_sens=0;
 BOOL pause_on_error=FALSE;
@@ -444,6 +446,7 @@ void expdefs(uchar *line)
 void compile(char *src)
 {
 	uchar *str,*save,*p,*sp,*tp,*arg,*arg2,*arg3,*arg4,*ar,ch;
+	char path[MAX_PATH+1];
     ushort i,j;
 	long l,savline;
 	FILE *in;
@@ -503,9 +506,11 @@ void compile(char *src)
 			savline=line;
 			sp=strchr(arg,SP);
 			if(sp) *sp=0;
-			compile(arg);
+			sprintf(path,"%s%s",include_dir,arg);
+			compile(path);
 			line=savline;
-			continue; }
+			continue; 
+		}
 
 		if(!stricmp(p,"!DEFINE")) {                     /* define */
 			sp=strchr(arg,SP);
@@ -3376,14 +3381,15 @@ char *usage=	"\n"
 				"\n"
 				" opts: -d display debug during compile\n"
 				"       -c case sensitive variables, labels, and macros\n"
-				"       -o set output directory (e.g. /o/sbbs/exec)\n"
+				"       -o set output directory (e.g. -o/sbbs/exec)\n"
+				"       -i set include directory (e.g. -i/sbbs/exec)\n"
 				"       -q quiet mode (no banner)\n"
 				"       -p pause on error\n"
 				;
 
 int main(int argc, char **argv)
 {
-	uchar str[128],src[128]="",*p,outdir[128]="",outfname[128]="";
+	uchar str[128],src[128]="",*p;
 	int i,j;
 	int show_banner=1;
 
@@ -3401,7 +3407,12 @@ int main(int argc, char **argv)
 					case_sens=1;
 					break;
 				case 'O':
-					strcpy(outdir,argv[i]+2);
+					SAFECOPY(output_dir,argv[i]+2);
+					backslash(output_dir);
+					break;
+				case 'I':
+					SAFECOPY(include_dir,argv[i]+2);
+					backslash(include_dir);
 					break;
 				case 'P':
 					pause_on_error=TRUE;
@@ -3421,37 +3432,32 @@ int main(int argc, char **argv)
 
 	if(!src[0]) {
 		printf(usage);
-		bail(1); }
-
-	strcpy(str,src);
-	if(!strchr(str,'.'))
-		sprintf(src,"%s.src",str);
-
-	strcpy(str,src);
-	p=strrchr(str,'.');
-	if(p)
-		*p=0;
-	strcat(str,".bin");
-
-	if(outdir[0]) {
-		p=strrchr(str,'\\');
-		if(!p)
-			p=strrchr(str,':');
-		if(p)
-			strcpy(outfname,p+1);
-		else
-			strcpy(outfname,str);
-		if(outdir[strlen(outdir)-1]!='\\'
-			&& outdir[strlen(outdir)-1]!=':')
-			strcat(outdir,"\\");
-		sprintf(str,"%s%s",outdir,outfname); }
-
-	if((out=fopen(str,"w+b"))==NULL) {
-		printf("error %d opening %s for write\n",errno,str);
 		bail(1); 
 	}
 
-	SAFECOPY(bin_file,str);
+	if(include_dir[0]==0) {				/* Include directory not specified */
+		SAFECOPY(include_dir,src);		/* Default to same dir as src file */
+		if((p=getfname(include_dir))!=NULL)
+			*p=0;						/* Truncate off the src filename */
+	}
+	if(getfext(src)==NULL)
+		strcat(src,".src");
+
+	SAFECOPY(bin_file,src);
+	if((p=getfext(bin_file))!=NULL)
+		*p=0;
+	strcat(bin_file,".bin");
+
+	if(output_dir[0]) {
+		p=getfname(bin_file);
+		sprintf(str,"%s%s",output_dir,bin_file);
+		SAFECOPY(bin_file,str); 
+	}
+
+	if((out=fopen(bin_file,"w+b"))==NULL) {
+		printf("error %d opening %s for write\n",errno,bin_file);
+		bail(1); 
+	}
 
 	printf("\nCompiling %s...\n",src);
 
