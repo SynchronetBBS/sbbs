@@ -39,7 +39,7 @@
 
 #define ADDFILES_VER "3.00"
 
-extern char *crlf;
+char *crlf="\r\n";
 
 scfg_t scfg;
 
