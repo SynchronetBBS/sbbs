@@ -90,7 +90,7 @@ const char *mon[]={"Jan","Feb","Mar","Apr","May","Jun"
 smb_t smb;
 ulong mode=0L;
 ushort tzone=0;
-FILE* err_fp=stderr;
+FILE* err_fp;
 
 /************************/
 /* Program usage/syntax */
@@ -1375,6 +1375,7 @@ int main(int argc, char **argv)
 	struct	tm* tm;
 
 	setvbuf(stdout,0,_IONBF,0);
+	err_fp=stderr;
 
 	sscanf("$Revision$", "%*s %s", revision);
 
