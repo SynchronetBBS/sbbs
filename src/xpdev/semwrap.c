@@ -41,6 +41,7 @@
 #if defined(__unix__)
 
 #include <sys/time.h>	/* timespec */
+#include <stdlib.h>	/* NULL */
 
 int
 sem_trywait_block(sem_t *sem, unsigned long timeout)
