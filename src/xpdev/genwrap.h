@@ -43,14 +43,12 @@
 #include "wrapdll.h"	/* DLLEXPORT and DLLCALL */
 
 #if defined(__unix__)
-	#include <unistd.h>		/* usleep */
-	#include <sys/time.h>	/* struct timeval */
 	#include <sched.h>		/* sched_yield */
+	#include <sys/time.h>	/* struct timeval */
+	#include <strings.h>	/* strcasecmp() */
+	#include <unistd.h>		/* usleep */
 #endif
 
-#if defined(__QNX__)
-	#include <strings.h>	/* strcasecmp() */
-#endif
 
 #if defined(__cplusplus)
 extern "C" {
@@ -90,7 +88,6 @@ extern "C" {
 /* Macros */
 /**********/
 
-#define FORK()	fork()
 /* Target Platform Description */
 #if defined(_WIN64)
 	#define PLATFORM_DESC	"Win64"
@@ -118,8 +115,6 @@ extern "C" {
 	#define PLATFORM_DESC	"GNU/Hurd"
 #elif defined(__QNX__)
 	#define PLATFORM_DESC	"QNX"
-	#undef FORK
-	#define FORK()	vfork()
 #elif defined(__unix__)
 	#define PLATFORM_DESC	"Unix"
 #else
@@ -175,19 +170,28 @@ extern "C" {
 
 #elif defined(__unix__)
 
-#ifndef SLEEP
-	#ifndef YIELD
-	#if defined(__OpenBSD__) || defined(__NetBSD__)
-		#define YIELD()
+
+	#if defined(_PTH_PTHREAD_H_)
+		#define SLEEP(x)  ({ int y=x; struct timeval tv; \
+			tv.tv_sec=(y/1000); tv.tv_usec=((y%1000)*1000); \
+			pth_nap(tv); })
 	#else
-		#define	YIELD()			sched_yield()
-	#endif
-	#endif
-	#define SLEEP(x)		({	int y=x; struct timeval tv; \
+		#define SLEEP(x)		({	int y=x; struct timeval tv; \
 								tv.tv_sec=(y/1000); tv.tv_usec=((y%1000)*1000); \
-								YIELD(); \
 								select(0,NULL,NULL,NULL,&tv); })
-#endif
+	#endif
+
+	/*
+	 * QNX doesn't support fork() in threaded apps (yet) using vfork() instead
+	 * works, but relies on undefined behaviours not being nasty.  On most OSs
+	 * vfork() will share the stack between the parent and child...
+	 */
+	#if defined(__QNX__)
+		#define FORK()	vfork()
+	#else
+		#define FORK()	fork()
+	#endif
+
 	#define BEEP(freq,dur)	unix_beep(freq,dur)
 	DLLEXPORT void	DLLCALL	unix_beep(int freq, int dur);
 
@@ -223,8 +227,22 @@ DLLEXPORT char*		DLLCALL	lastchar(const char* str);
 }
 #endif
 
-#ifndef YIELD
-#define	YIELD()
+#ifdef _THREAD_SAFE
+	#if defined(__FreeBSD__)
+		#define YIELD()         pthread_yield()
+	#elif defined(_PTH_PTHREAD_H_)
+		#define YIELD()         pth_yield(NULL)
+	#elif defined(_POSIX_PRIORITY_SCHEDULING)
+		#define YIELD()         sched_yield()
+	#else
+		#define YIELD()
+	#endif
+#else
+	#if defined(_POSIX_PRIORITY_SCHEDULING)
+		#define	YIELD()			sched_yield()
+	#else
+		#define YIELD()
+	#endif
 #endif
 
 #endif	/* Don't add anything after this line */
