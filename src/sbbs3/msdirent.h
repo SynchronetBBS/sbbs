@@ -73,8 +73,6 @@ struct dirent  *	readdir  (DIR *__dir);
 int                 closedir (DIR *__dir);
 void                rewinddir(DIR *__dir);
 
-int					getfattr(char* filename);
-
 #ifdef __cplusplus
 }
 #endif

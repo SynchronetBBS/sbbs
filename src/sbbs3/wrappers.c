@@ -55,6 +55,7 @@
 
 #include <stdio.h>		/* sprintf */
 #include <stdlib.h>		/* rand */
+#include <errno.h>		/* ENOENT definitions */
 
 #include "gen_defs.h"	/* BOOL */ 
 #include "sbbswrap.h"	/* verify prototypes */
@@ -129,6 +130,33 @@ long fdate(char *filename)
 		return(-1L);
 
 	return(st.st_mtime);
+}
+
+/****************************************************************************/
+/* Returns the attributes (mode) for specified 'filename'					*/
+/****************************************************************************/
+int getfattr(char* filename)
+{
+#ifdef _WIN32
+	long handle;
+	struct _finddata_t	finddata;
+
+	if((handle=_findfirst(filename,&finddata))==-1) {
+		errno=ENOENT;
+		return(-1);
+	}
+	_findclose(handle);
+	return(finddata.attrib);
+#else
+	STAT st;
+
+	if(stat(filename, &st)!=0) {
+		errno=ENOENT;
+		return(-1L);
+	}
+
+	return(st.st_mode);
+#endif
 }
 
 /****************************************************************************/

@@ -88,15 +88,3 @@ void rewinddir(DIR* dir)
 	dir->end=FALSE;
 	dir->handle=_findfirst(dir->filespec,&dir->finddata);
 }
-int getfattr(char* filename)
-{
-	long handle;
-	struct _finddata_t	finddata;
-
-	if((handle=_findfirst(filename,&finddata))==-1) {
-		errno=ENOENT;
-		return(-1);
-	}
-	_findclose(handle);
-	return(finddata.attrib);
-}

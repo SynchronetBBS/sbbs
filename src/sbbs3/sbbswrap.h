@@ -119,6 +119,7 @@ DLLEXPORT char* ultoa(ulong, char*, int radix);
 DLLEXPORT BOOL		fexist(char *filespec);
 DLLEXPORT long		flength(char *filename);
 DLLEXPORT long		fdate(char *filename);
+DLLEXPORT int		getfattr(char* filename);
 DLLEXPORT ulong		getfreediskspace(char* path);
 
 #ifdef __cplusplus
