@@ -137,7 +137,7 @@ static void reset_dynamic(void) {
 int kbwait(void) {
 	int timeout=0;
 	while(timeout++<500) {
-		if(kbhit)
+		if(kbhit())
 			return(TRUE);
 		mswait(1);
 	}
@@ -450,6 +450,10 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 			&& save_menu_cur==*cur
 			&& save_menu_bar==*bar)
 		is_redraw=1;
+	if(mode&WIN_DYN && mode&WIN_REDRAW)
+		is_redraw=1;
+	if(mode&WIN_DYN && mode&WIN_NODRAW)
+		is_redraw=0;
 
 	if(!is_redraw) {
 		if(mode&WIN_SAV && api->savdepth==api->savnum) {
@@ -1755,6 +1759,10 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 			&& save_menu_cur==*curp
 			&& save_menu_bar==*barp)
 		is_redraw=1;
+	if(mode&WIN_DYN && mode&WIN_REDRAW)
+		is_redraw=1;
+	if(mode&WIN_DYN && mode&WIN_NODRAW)
+		is_redraw=0;
 
 	gettext(1,1,api->scrn_width,api->scrn_len,tmp_buffer);
 
@@ -1845,7 +1853,7 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 	}
 	memset(textbuf,SP,(width-2-pad-pad)*lines*2);
 	for(i=1;i<(width-2-pad-pad)*lines*2;i+=2)
-		tmp_buffer2[i]=(hclr|(bclr<<4));
+		textbuf[i]=(hclr|(bclr<<4));
 	i=0;
 	for(j=0;j<len;j++,i+=2) {
 		if(hbuf[j]==LF) {

@@ -176,6 +176,8 @@
 #define WIN_PACK 	(1<<18) /* Pack text in window (No padding) */
 #define WIN_IMM 	(1<<19) /* Draw window and return immediately */
 #define WIN_FAT		(1<<20)	/* Do not pad outside borders */
+#define WIN_REDRAW	(1<<21) /* Force redraw on dynamic window */
+#define WIN_NODRAW	(1<<22) /* Force not to redraw on dynamic window */
 
 #define WIN_MID WIN_L2R|WIN_T2B  /* Place window in middle of screen */
 
