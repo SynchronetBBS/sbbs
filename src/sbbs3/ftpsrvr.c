@@ -2736,6 +2736,8 @@ static void ctrl_thread(void* arg)
 			continue;
 		}
 
+		getuserdat(&scfg, &user);	/* get current user data */
+
 		if((timeleft=gettimeleft(&scfg,&user,logintime))<1L) {
 			sockprintf(sock,"421 Sorry, you've run out of time.");
 			lprintf("%04d Out of time, disconnecting",sock);
