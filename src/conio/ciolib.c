@@ -477,8 +477,8 @@ void ciolib_gettextinfo(struct text_info *info)
                                			 BW40, BW80, C40, C80, or C4350 */
 		info->screenheight=cio_textinfo.screenheight;   /* text screen's height */
 		info->screenwidth=cio_textinfo.screenwidth;    /* text screen's width */
-		info->curx=cio_textinfo.curx;           /* x-coordinate in current window */
-		info->cury=cio_textinfo.cury;           /* y-coordinate in current window */
+		info->curx=cio_textinfo.curx-cio_textinfo.winleft+1;           /* x-coordinate in current window */
+		info->cury=cio_textinfo.cury-cio_textinfo.wintop+1;           /* y-coordinate in current window */
 	}
 }
 
