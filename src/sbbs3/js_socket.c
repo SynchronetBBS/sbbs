@@ -62,7 +62,7 @@ static void dbprintf(BOOL error, private_t* p, char* fmt, ...)
     vsprintf(sbuf,fmt,argptr);
     va_end(argptr);
 	
-	lprintf("%04u Socket %s%s",p->sock,error ? "ERROR: ":"",sbuf);
+	lprintf("%04d Socket %s%s",p->sock,error ? "ERROR: ":"",sbuf);
 }
 
 /* Socket Constructor (creates socket descriptor) */
