@@ -105,6 +105,7 @@ char *usage=
 "       i[f] = import msg from text file f (or use stdin)\n"
 "       e[f] = import e-mail from text file f (or use stdin)\n"
 "       n[f] = import netmail from text file f (or use stdin)\n"
+"       h    = dump hash table\n"
 "       s    = display msg base status\n"
 "       c    = change msg base status\n"
 "       d    = delete all msgs\n"
@@ -584,6 +585,28 @@ void viewmsgs(ulong start, ulong count)
 		printf("\n");
 		smb_freemsgmem(&msg);
 		l++; 
+	}
+}
+
+/****************************************************************************/
+/****************************************************************************/
+void dump_hashes(void)
+{
+	int		retval;
+	hash_t	hash;
+
+	if((retval=smb_open_hash(&smb))!=SMB_SUCCESS) {
+		fprintf(stderr,"\n\7!smb_open_hash returned %d: %s\n", retval, smb.last_error);
+		return;
+	}
+
+	while(!smb_feof(smb.hash_fp)) {
+		if(smb_fread(&smb,&hash,sizeof(hash),smb.hash_fp)!=sizeof(hash))
+			break;
+		printf("%-25s: %lu\n", "number",	hash.number);
+		printf("%-25s: %lx\n", "flags",		hash.flags);
+		printf("%-25s: %s\n",  "source",	smb_hfieldtype(hash.source));
+		printf("%-25s: %s\n",  "time",		my_timestr(&hash.time));
 	}
 }
 
@@ -1564,6 +1587,9 @@ int main(int argc, char **argv)
 						case 'V':
 							viewmsgs(atol(cmd+1),count);
 							y=strlen(cmd)-1;
+							break;
+						case 'H':
+							dump_hashes();
 							break;
 						case 'M':
 							maint();
