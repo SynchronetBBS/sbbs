@@ -271,6 +271,9 @@ void sbbs_read_ini(
 	SAFECOPY(mail->outbound_sound
 		,iniReadString(fp,section,"OutboundSound",nulstr));
 
+	SAFECOPY(mail->proc_cfg_file
+		,iniReadString(fp,section,"ProcessConfigFile",nulstr));
+
 	mail->options
 		=iniReadBitField(fp,section,"Options",mail_options
 			,MAIL_OPT_ALLOW_POP3);

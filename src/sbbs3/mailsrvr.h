@@ -85,7 +85,7 @@ typedef struct {
     char	reserved_path6[128];
     char	reserved_path5[128];
     char	reserved_path4[128];
-    char	reserved_path3[128];
+    char	proc_cfg_file[128];
 	char	inbound_sound[128];
 	char	outbound_sound[128];
     char	pop3_sound[128];
