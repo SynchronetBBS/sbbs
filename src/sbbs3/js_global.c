@@ -1072,7 +1072,9 @@ js_html_encode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 			free(tmpbuf);
 			return(JS_FALSE);
 		}
-		j=sprintf(outbuf,"<DIV STYLE=\"%s\"><SPAN STYLE=\"%s\">",htmlansi[7],htmlansi[7]);
+		/* The <DIV> here isn't HTML 4.01 Transitional compliant */
+		/* j=sprintf(outbuf,"<DIV STYLE=\"%s\"><SPAN STYLE=\"%s\">",htmlansi[7],htmlansi[7]); */
+		j=sprintf(outbuf,"<SPAN STYLE=\"%s\">",htmlansi[7],htmlansi[7]);
 		clear_screen=j;
 		for(i=0;tmpbuf[i];i++) {
 			if(j>(obsize/2))		/* Completely arbitrary here... must be carefull with this eventually ToDo */
@@ -1533,7 +1535,9 @@ js_html_encode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 				}
 			}
 		}
-		strcpy(outbuf+j,"</SPAN></DIV>");
+		/* The <DIV> here isn't HTML 4.01 Transitional compliant */
+		/* strcpy(outbuf+j,"</SPAN></DIV>"); */
+		strcpy(outbuf+j,"</SPAN>");
 
 		js_str = JS_NewStringCopyZ(cx, outbuf);
 		free(outbuf);
