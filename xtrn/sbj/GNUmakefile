@@ -16,38 +16,39 @@
 CC		=	gcc
 LD		=	ld
 
-ifndef $(os)
-os              =       $(shell uname)
-$(warning OS not specified on command line, setting to '$(os)'.)
+ifndef os
+ os              =       $(shell uname)
+ $(warning OS not specified on command line, setting to '$(os)'.)
 endif
+os      :=	$(shell echo $(os) | awk '/.*/ { print tolower($$1)}')
 
 ifeq ($(os),win32)	# Windows
 
-EXEFILE	=	.exe
-LIBDIR	:=	/gcc/i386-mingw32/lib
-CFLAGS	:=	-mno-cygwin
-LFLAGS  :=	--target=i386-mingw32 -mno-cygwin
-DELETE	=	echo y | del 
-LIBS	=	$(LIBDIR)/libwsock32.a
+ EXEFILE	:=	.exe
+ LIBDIR	:=	/gcc/i386-mingw32/lib
+ CFLAGS	+=	-mno-cygwin
+ LFLAGS  +=	--target=i386-mingw32 -mno-cygwin
+ DELETE	:=	echo y | del 
+ LIBS	+=	$(LIBDIR)/libwsock32.a
 
-else	# Linux
+else	# Unix
 
-EXEFILE	=	
-LIBODIR	:=	gcc.linux.lib
-EXEODIR	:=	gcc.linux.exe
-LIBDIR	:=	/usr/lib
-CFLAGS	:=	
-LFLAGS  :=	
-DELETE	=	rm -f -v
-ifeq ($(os),FreeBSD)	# FreeBSD
-LIBS	=	-pthread
-else
-LIBS	=	$(LIBDIR)/libpthread.a
-endif	#! FreeBSD
+ EXEFILE	:=	
+ LIBDIR	:=	/usr/lib
+ DELETE	:=	rm -f -v
+ ifeq ($(os),freebsd)	# FreeBSD
+  LIBS	+=	-pthread
+ else
+  ifeq ($(os),openbsd)	# OpenBSD
+   LIBS	+=	-pthread
+  else					# Linux / Generic UNIX
+   LIBS	+=	$(LIBDIR)/libpthread.a
+  endif	#! OpenBSD
+ endif	#! FreeBSD
 
 endif
 
-CFLAGS	:=	$(CFLAGS) -I../sdk
+CFLAGS	+=	$(CFLAGS) -I../sdk
 
 SBJ: sbj$(EXEFILE)
 
