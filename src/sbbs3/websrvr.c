@@ -2830,9 +2830,10 @@ static void respond(http_session_t * session)
 		sprintf(session->req.physical_path
 			,"%sSBBS_SSJS.%u.%u.html",temp_dir,getpid(),session->socket);
 	}
-
-	session->req.mime_type=get_mime_type(strrchr(session->req.physical_path,'.'));
-	send_file=send_headers(session,session->req.status);
+	else {
+		session->req.mime_type=get_mime_type(strrchr(session->req.physical_path,'.'));
+		send_file=send_headers(session,session->req.status);
+	}
 	if(session->req.method==HTTP_HEAD)
 		send_file=FALSE;
 	if(send_file)  {
