@@ -86,5 +86,5 @@ input.theme { text-align: center; background-color: black; color: #aaaaaa; }
 p.navigation { text-align: center; font-style: italic; font-weight: bold; }
 a.navigation { font-style: normal; font-weight: normal; }
 a.navigation:hover { font-style: normal; font-weight: normal; }
-
+span.navigation { font-style: normal; font-weight: normal; }
 

@@ -2,7 +2,7 @@
     <a class="navigation" href="http://^^JS:system.inet_addr^^/">Home</a> : <a class="navigation" href="/members/">Members</a> : 
     <a class="navigation" href="index.ssjs">Groups</a> : @@JS:if(template.group.name!="E-Mail") '<a class="navigation" href="subs.ssjs?msg_grp='+template.group.name+'">'+template.group.description+'</a> :'; else '';@@
     <a class="navigation" href="subinfo.ssjs?msg_sub=^^sub:code^^" title="Click for Sub Info">%%sub:description%%</a> -&#062;
-    <a class="navigation" href="post.ssjs?msg_sub=^^sub:code^^&amp;post=new">Post New Message</a> : (@@show_choice@@)</p>
+    <a class="navigation" href="post.ssjs?msg_sub=^^sub:code^^&amp;post=new">Post New Message</a><br /><span class="navigation">(@@show_choice@@)</p></span>
 <form action="management.ssjs" method="post">
 <input type="hidden" name="msg_sub" value="^^sub:code^^" />
 <table class="msglist" cellpadding="5" cellspacing="2" border="0" width="100%">
