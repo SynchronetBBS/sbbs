@@ -148,6 +148,12 @@ To configure syslog and the LogFacility, a good default to use is
 LogFacility=3 Then, in /etc/syslog.conf you will need to add the line:
 local3.*                 /var/log/synchronet.log
 
+Depending on how your vendor set up syslog.conf initially, you may also want
+to exclude local3.* from other log files (Noteably /var/log/messages) how to
+do this varies with your syslogd implementation, but for BSD based ones
+(Which BSD and many Linux distros use) you would add ";local3.none" to the
+end of the first field in the /var/log/messages line.
+
 You will have to create this file manually initially by running:
 touch /var/log/synchronet.log
 
