@@ -187,6 +187,8 @@ void sbbs_t::telnet_gate(char* destaddr, ulong mode)
 					attr(LIGHTGRAY);
 					console=save_console;
 				}
+				else if(*buf<' ' && mode&TG_CTRLKEYS)
+					handle_ctrlkey(*buf, K_NONE);
 				gotline=false;
 				if(mode&TG_LINEMODE && buf[0]!='\r') {
 					ungetkey(buf[0]);
