@@ -336,9 +336,12 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 		if((js_str=JS_NewStringCopyZ(cx, s))==NULL)
 			return(JS_FALSE);
 		*vp = STRING_TO_JSVAL(js_str);
-	} else
-		*vp = INT_TO_JSVAL(val);
-
+	} else {
+		if(INT_FITS_IN_JSVAL(val) && !(val&0x80000000))
+			*vp = INT_TO_JSVAL(val);
+		else
+            JS_NewDoubleValue(cx, val, vp);
+	}
 	return(JS_TRUE);
 }
 
