@@ -88,6 +88,7 @@ static int uinput(int imode, int left, int top, char *prompt, char *str
 static void umsg(char *str);
 static void upop(char *str);
 static void sethelp(int line, char* file);
+static void timedisplay(void);
 
 #ifdef __FLAT__
 int inkey(int mode)
