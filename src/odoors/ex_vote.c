@@ -59,8 +59,8 @@
 #define QUESTION_STR_SIZE         71
 #define ANSWER_STR_SIZE           31
 
-#define USER_FILENAME             "VOTE.USR"
-#define QUESTION_FILENAME         "VOTE.QST"
+#define USER_FILENAME             "vote.usr"
+#define QUESTION_FILENAME         "vote.qst"
 
 #define FILE_ACCESS_MAX_WAIT      20
 
@@ -167,7 +167,7 @@ int main(int argc, char *argv[])
 
    /* Set filename for log file. If not set, DOOR.LOG will be used by */
    /* default.                                                        */
-   strcpy(od_control.od_logfile_name, "VOTE.LOG");
+   strcpy(od_control.od_logfile_name, "vote.log");
 
    /* Set function to be called before program exits. */
    od_control.od_before_exit = BeforeExitFunction;
