@@ -616,17 +616,18 @@ int SMBCALL smb_getlastidx(smb_t* smb, idxrec_t *idx)
 uint SMBCALL smb_getmsghdrlen(smbmsg_t* msg)
 {
 	int i;
+	int	length;
 
 	/* fixed portion */
-	msg->hdr.length=sizeof(msghdr_t);
+	length=sizeof(msghdr_t);
 	/* data fields */
-	msg->hdr.length+=msg->hdr.total_dfields*sizeof(dfield_t);
+	length+=msg->hdr.total_dfields*sizeof(dfield_t);
 	/* header fields */
 	for(i=0;i<msg->total_hfields;i++) {
-		msg->hdr.length+=sizeof(hfield_t);
-		msg->hdr.length+=msg->hfield[i].length; 
+		length+=sizeof(hfield_t);
+		length+=msg->hfield[i].length; 
 	}
-	return(msg->hdr.length);
+	return(length);
 }
 
 /****************************************************************************/
