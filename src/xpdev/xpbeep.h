@@ -1,6 +1,8 @@
 #ifndef _XPBEEP_H_
 #define _XPBEEP_H_
 
+#include "gen_defs.h"
+
 #if defined(_WIN32)
 	#if 0
 	#define BEEP(freq,dur)	xpbeep((double)(freq),(DWORD)(dur))
