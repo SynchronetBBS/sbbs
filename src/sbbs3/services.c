@@ -100,9 +100,10 @@ typedef struct {
 	user_t			user;
 	client_t*		client;
 	service_t*		service;
+	ulong			js_loop;
 } service_client_t;
 
-static service_t	*service; //[MAX_SERVICES];
+static service_t	*service;
 static DWORD		services=0;
 
 static int lprintf(char *fmt, ...)
@@ -487,12 +488,8 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 	jsval		val;
 	BOOL		success=FALSE;
 
-//	lprintf("%04d JavaScript: Initializing context",sock);
-
     if((js_cx = JS_NewContext(js_runtime, JAVASCRIPT_CONTEXT_STACK))==NULL)
 		return(NULL);
-
-//	lprintf("%04d JavaScript: Context created",sock);
 
     JS_SetErrorReporter(js_cx, js_ErrorReporter);
 
@@ -500,7 +497,6 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 
 		JS_SetContextPrivate(js_cx, service_client);
 
-//		lprintf("%04d JavaScript: Initializing Global object",sock);
 		if((js_glob=js_CreateGlobalObject(js_cx, &scfg))==NULL) 
 			break;
 
@@ -527,7 +523,6 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 		if(js_CreateFileClass(js_cx, js_glob)==NULL)
 			break;
 
-//		lprintf("%04d JavaScript: Initializing System object",sock);
 		if(js_CreateSystemObject(js_cx, js_glob, &scfg, uptime)==NULL) 
 			break;
 		
@@ -559,6 +554,36 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 	}
 
 	return(js_cx);
+}
+
+static JSBool
+js_BranchCallback(JSContext *cx, JSScript *script)
+{
+	service_client_t* client;
+
+	if((client=(service_client_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	client->js_loop++;
+
+	/* Terminated? */ 
+	if(terminated) {
+		lprintf("%04d %s !Terminated"
+			,client->socket,client->service->protocol);
+		return(JS_FALSE);
+	}
+	/* Infinite loop detection */
+	if(client->js_loop>JAVASCRIPT_BRANCH_LIMIT) {
+		lprintf("%04d %s !INFINITE LOOOP (%lu branches) detected"
+			,client->socket,client->service->protocol,JAVASCRIPT_BRANCH_LIMIT);
+		client->js_loop=0;
+		return(JS_FALSE);
+	}
+	/* Give up timeslices every once in a while */
+	if(!(client->js_loop%JAVASCRIPT_YIELD_FREQUENCY))
+		mswait(1);
+
+    return(JS_TRUE);
 }
 
 
@@ -710,14 +735,12 @@ static void js_service_thread(void* arg)
 	if(js_script==NULL) 
 		lprintf("%04d !JavaScript FAILED to compile script (%s)",socket,spath);
 	else  {
+		JS_SetBranchCallback(js_cx, js_BranchCallback);
 		JS_ExecuteScript(js_cx, js_glob, js_script, &rval);
-//		lprintf("%04d %s JS_DestroyScript",socket,service->protocol);
 		JS_DestroyScript(js_cx, js_script);
 	}
-//	lprintf("%04d %s JS_DestroyContext",socket,service->protocol);
 	JS_DestroyContext(js_cx);	/* Free Context */
 
-//	lprintf("%04d %s JS_DestroyRuntime",socket,service->protocol);
 	JS_DestroyRuntime(js_runtime);
 
 	if(service_client.user.number) {

@@ -524,6 +524,29 @@ char * sbbs_t::copystrvar(csi_t *csi, char *p, char *str)
 
 #ifdef JAVASCRIPT
 
+static JSBool
+js_BranchCallback(JSContext *cx, JSScript *script)
+{
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	sbbs->js_loop++;
+
+	/* Termination and infinite loop detection */
+	if(sbbs->terminated || sbbs->js_loop>JAVASCRIPT_BRANCH_LIMIT) {
+		sbbs->js_loop=0;
+		return(JS_FALSE);
+	}
+	
+	/* Give up timeslices every once in a while */
+	if(!(sbbs->js_loop%JAVASCRIPT_YIELD_FREQUENCY))
+		mswait(1);
+
+    return(JS_TRUE);
+}
+
 static JSClass js_scope_class ={
         "Scope",
 		0,			/* flags */
@@ -606,6 +629,8 @@ long sbbs_t::js_execfile(char *cmd)
 		errormsg(WHERE,ERR_EXEC,path,0);
 		return(-1);
 	}
+
+	JS_SetBranchCallback(js_cx, js_BranchCallback);
 
 	JS_ExecuteScript(js_cx, js_scope, js_script, &rval);
 
