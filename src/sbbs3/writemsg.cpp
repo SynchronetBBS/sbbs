@@ -51,7 +51,7 @@ void quotestr(char *str);
 bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 	,char *dest)
 {
-	char	str[256],quote[128],c,HUGE16 *buf,*p,*tp
+	char	str[256],quote[128],c,*buf,*p,*tp
 				,useron_level;
 	char	msgtmp[MAX_PATH+1];
 	char 	tmp[512];
@@ -62,7 +62,7 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 
 	useron_level=useron.level;
 
-	if((buf=(char HUGE16*)LMALLOC(cfg.level_linespermsg[useron_level]*MAX_LINE_LEN))
+	if((buf=(char*)malloc(cfg.level_linespermsg[useron_level]*MAX_LINE_LEN))
 		==NULL) {
 		errormsg(WHERE,ERR_ALLOC,fname
 			,cfg.level_linespermsg[useron_level]*MAX_LINE_LEN);
@@ -92,13 +92,13 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 			sprintf(str,"%s%s",cfg.node_dir,tmp);
 			if((stream=fnopen(NULL,str,O_RDONLY))==NULL) {
 				errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
-				LFREE(buf);
+				free(buf);
 				return(false); 
 			}
 
 			if((file=nopen(msgtmp,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
 				errormsg(WHERE,ERR_OPEN,msgtmp,O_WRONLY|O_CREAT|O_TRUNC);
-				LFREE(buf);
+				free(buf);
 				fclose(stream);
 				return(false); 
 			}
@@ -127,13 +127,13 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 			sprintf(str,"%s%s",cfg.node_dir,tmp);
 			if((stream=fnopen(&file,str,O_RDONLY))==NULL) {
 				errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
-				LFREE(buf);
+				free(buf);
 				return(false); 
 			}
 
 			if((file=nopen(msgtmp,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
 				errormsg(WHERE,ERR_OPEN,msgtmp,O_WRONLY|O_CREAT|O_TRUNC);
-				LFREE(buf);
+				free(buf);
 				fclose(stream);
 				return(false); 
 			}
@@ -147,7 +147,7 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 				if(sys_status&SS_ABORT) {
 					fclose(stream);
 					close(file);
-					LFREE(buf);
+					free(buf);
 					return(false); 
 				}
 				if(!i && linesquoted)
@@ -234,7 +234,7 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 	}
 
 	if(!online || sys_status&SS_ABORT) {
-		LFREE(buf);
+		free(buf);
 		return(false); 
 	}
 
@@ -255,20 +255,20 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 			c=25;
 		if(!getstr(title,c,mode&WM_FILE ? K_LINE|K_UPPER : K_LINE|K_EDIT|K_AUTODEL)
 			&& useron_level && useron.logons) {
-			LFREE(buf);
+			free(buf);
 			return(false); 
 		}
 		if(!(mode&(WM_EMAIL|WM_NETMAIL)) && cfg.sub[subnum]->misc&SUB_QNET
 			&& !SYSOP
 			&& (!stricmp(title,"DROP") || !stricmp(title,"ADD")
 			|| !strnicmp(dest,"SBBS",4))) {
-			LFREE(buf);   /* Users can't post DROP or ADD in QWK netted subs */
+			free(buf);   /* Users can't post DROP or ADD in QWK netted subs */
 			return(false); /* or messages to "SBBS" */
 		}
 	}
 
 	if(!online || sys_status&SS_ABORT) {
-		LFREE(buf);
+		free(buf);
 		return(false); 
 	}
 
@@ -296,7 +296,7 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 		while(l<(ulong)(cfg.level_linespermsg[useron_level]*MAX_LINE_LEN)) {
 			c=getkey(0);
 			if(sys_status&SS_ABORT) {  /* Ctrl-C */
-				LFREE(buf);
+				free(buf);
 				return(false); 
 			}
 			if((c==ESC || c==CTRL_A) && useron.rest&FLAG('A')) /* ANSI restriction */
@@ -352,7 +352,7 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 		checkline();
 		if(!fexist(msgtmp) || !online
 			|| (linesquoted && qlen==flength(msgtmp) && qtime==fdate(msgtmp))) {
-			LFREE(buf);
+			free(buf);
 			return(false); 
 		}
 		buf[0]=0;
@@ -360,7 +360,7 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 			strcpy((char *)buf,top);
 		if((file=nopen(msgtmp,O_RDONLY))==-1) {
 			errormsg(WHERE,ERR_OPEN,msgtmp,O_RDONLY);
-			LFREE(buf);
+			free(buf);
 			return(false); 
 		}
 		length=filelength(file);
@@ -380,8 +380,8 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 		if(linesquoted) {
 			if((file=nopen(msgtmp,O_RDONLY))!=-1) {
 				length=filelength(file);
-				l=length>cfg.level_linespermsg[useron_level]*MAX_LINE_LEN
-					? cfg.level_linespermsg[useron_level]*MAX_LINE_LEN : length;
+				l=length>(cfg.level_linespermsg[useron_level]*MAX_LINE_LEN)-1
+					? (cfg.level_linespermsg[useron_level]*MAX_LINE_LEN)-1 : length;
 				lread(file,buf,l);
 				buf[l]=0;
 				close(file);
@@ -389,7 +389,7 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 			} 
 		}
 		if(!(msgeditor((char *)buf,mode&WM_NOTOP ? nulstr : top,title))) {
-			LFREE(buf);
+			free(buf);	/* Assertion here Dec-17-2003, think I fixed in block above (rev 1.52) */
 			return(false); 
 		} 
 	}
@@ -398,7 +398,7 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 	bputs(text[Saving]);
 	if((stream=fnopen(&file,fname,O_WRONLY|O_CREAT|O_TRUNC))==NULL) {
 		errormsg(WHERE,ERR_OPEN,fname,O_WRONLY|O_CREAT|O_TRUNC);
-		LFREE(buf);
+		free(buf);
 		return(false); 
 	}
 	for(l=i=0;buf[l] && i<cfg.level_linespermsg[useron_level];l++) {
@@ -454,7 +454,7 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 	}
 
 	fclose(stream);
-	LFREE((char *)buf);
+	free((char *)buf);
 	bprintf(text[SavedNBytes],l,i);
 	return(true);
 }
@@ -526,7 +526,7 @@ void sbbs_t::editor_inf(int xeditnum,char *dest, char *title, long mode
 /****************************************************************************/
 void sbbs_t::removeline(char *str, char *str2, char num, char skip)
 {
-	char	HUGE16 *buf;
+	char*	buf;
     char    slen;
     int     i,file;
 	long	l=0,flen;
@@ -546,14 +546,14 @@ void sbbs_t::removeline(char *str, char *str2, char num, char skip)
 	if(lread(file,buf,flen)!=flen) {
 		close(file);
 		errormsg(WHERE,ERR_READ,str,flen);
-		FREE(buf);
+		free(buf);
 		return; 
 	}
 	close(file);
 	if((stream=fnopen(&file,str,O_WRONLY|O_TRUNC))==NULL) {
 		close(file);
 		errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_TRUNC);
-		FREE(buf);
+		free(buf);
 		return; 
 	}
 	for(i=0;l<flen && i<skip;l++) {
@@ -576,7 +576,7 @@ void sbbs_t::removeline(char *str, char *str2, char num, char skip)
 		} 
 	}
 	fclose(stream);
-	FREE((char *)buf);
+	free((char *)buf);
 }
 
 /*****************************************************************************/
@@ -609,8 +609,8 @@ ulong sbbs_t::msgeditor(char *buf, char *top, char *title)
 		if((str[lines]=(char *)MALLOC(MAX_LINE_LEN))==NULL) {
 			errormsg(WHERE,ERR_ALLOC,nulstr,MAX_LINE_LEN);
 			for(i=0;i<lines;i++)
-				FREE(str[i]);
-			FREE(str);
+				free(str[i]);
+			free(str);
 			if(online==ON_REMOTE)
 				rioctl(IOSM|ABORT);
 			return(0); 
@@ -671,8 +671,8 @@ ulong sbbs_t::msgeditor(char *buf, char *top, char *title)
 			if((str[line]=(char *)MALLOC(MAX_LINE_LEN))==NULL) {
 				errormsg(WHERE,ERR_ALLOC,nulstr,MAX_LINE_LEN);
 				for(i=0;i<lines;i++)
-					FREE(str[i]);
-				FREE(str);
+					free(str[i]);
+				free(str);
 				return(0); 
 			}
 			str[line][0]=0; 
@@ -692,27 +692,27 @@ ulong sbbs_t::msgeditor(char *buf, char *top, char *title)
 
 		if(sys_status&SS_ABORT) {
 			if(line==lines)
-				FREE(str[line]);
+				free(str[line]);
 			continue; 
 		}
 		if(strin[0]=='/' && strlen(strin)<8) {
 			if(!stricmp(strin,"/DEBUG") && SYSOP) {
 				if(line==lines)
-					FREE(str[line]);
+					free(str[line]);
 				bprintf("\r\nline=%d lines=%d rows=%d\r\n",line,lines,rows);
 				continue; 
 			}
 			else if(!stricmp(strin,"/ABT")) {
 				if(line==lines) 		/* delete a line */
-					FREE(str[line]);
+					free(str[line]);
 				for(i=0;i<lines;i++)
-					FREE(str[i]);
-				FREE(str);
+					free(str[i]);
+				free(str);
 				return(0); 
 			}
 			else if(toupper(strin[1])=='D') {
 				if(line==lines)         /* delete a line */
-					FREE(str[line]);
+					free(str[line]);
 				if(!lines)
 					continue;
 				i=atoi(strin+2)-1;
@@ -721,7 +721,7 @@ ulong sbbs_t::msgeditor(char *buf, char *top, char *title)
 				if(i>=lines || i<0)
 					bputs(text[InvalidLineNumber]);
 				else {
-					FREE(str[i]);
+					free(str[i]);
 					lines--;
 					while(i<lines) {
 						str[i]=str[i+1];
@@ -734,7 +734,7 @@ ulong sbbs_t::msgeditor(char *buf, char *top, char *title)
 			}
 			else if(toupper(strin[1])=='I') {
 				if(line==lines)         /* insert a line before number x */
-					FREE(str[line]);
+					free(str[line]);
 				if(line==maxlines || !lines)
 					continue;
 				i=atoi(strin+2)-1;
@@ -748,8 +748,8 @@ ulong sbbs_t::msgeditor(char *buf, char *top, char *title)
 					if((str[i]=(char *)MALLOC(MAX_LINE_LEN))==NULL) {
 						errormsg(WHERE,ERR_ALLOC,nulstr,MAX_LINE_LEN);
 						for(i=0;i<lines;i++)
-							FREE(str[i]);
-						FREE(str);
+							free(str[i]);
+						free(str);
 						return(0); 
 					}
 					str[i][0]=0;
@@ -759,7 +759,7 @@ ulong sbbs_t::msgeditor(char *buf, char *top, char *title)
 			}
 			else if(toupper(strin[1])=='E') {
 				if(line==lines)         /* edit a line */
-					FREE(str[line]);
+					free(str[line]);
 				if(!lines)
 					continue;
 				i=atoi(strin+2)-1;
@@ -779,7 +779,7 @@ ulong sbbs_t::msgeditor(char *buf, char *top, char *title)
 				if(line!=lines)
 					lines--;
 				for(i=0;i<=lines;i++)
-					FREE(str[i]);
+					free(str[i]);
 				line=0;
 				lines=0;
 				putmsg(top,P_SAVEATR|P_NOATCODES);
@@ -787,7 +787,7 @@ ulong sbbs_t::msgeditor(char *buf, char *top, char *title)
 			}
 			else if(toupper(strin[1])=='L') {   /* list message */
 				if(line==lines)
-					FREE(str[line]);
+					free(str[line]);
 				if(lines)
 					i=!noyes(text[WithLineNumbersQ]);
 				else
@@ -816,12 +816,12 @@ ulong sbbs_t::msgeditor(char *buf, char *top, char *title)
 			}
 			else if(!stricmp(strin,"/S")) { /* Save */
 				if(line==lines)
-					FREE(str[line]);
+					free(str[line]);
 				done=1;
 				continue;}
 			else if(!stricmp(strin,"/T")) { /* Edit title/subject */
 				if(line==lines)
-					FREE(str[line]);
+					free(str[line]);
 				if(title[0]) {
 					bputs(text[SubjectPrompt]);
 					getstr(title,LEN_TITLE,K_LINE|K_EDIT|K_AUTODEL);
@@ -832,14 +832,14 @@ ulong sbbs_t::msgeditor(char *buf, char *top, char *title)
 			}
 			else if(!stricmp(strin,"/?")) {
 				if(line==lines)
-					FREE(str[line]);
+					free(str[line]);
 				menu("editor"); /* User Editor Commands */
 				SYNC;
 				continue; 
 			}
 			else if(!stricmp(strin,"/ATTR"))    {
 				if(line==lines)
-					FREE(str[line]);
+					free(str[line]);
 				menu("attr");   /* User ANSI Commands */
 				SYNC;
 				continue; 
@@ -849,7 +849,7 @@ ulong sbbs_t::msgeditor(char *buf, char *top, char *title)
 		if(line<maxlines)
 			line++;
 		else
-			FREE(str[line]);
+			free(str[line]);
 		if(line>lines)
 			lines++;
 		if(console&CON_UPARROW) {
@@ -861,17 +861,17 @@ ulong sbbs_t::msgeditor(char *buf, char *top, char *title)
 		}
 	if(!online) {
 		for(i=0;i<lines;i++)
-			FREE(str[i]);
-		FREE(str);
+			free(str[i]);
+		free(str);
 		return(0); 
 	}
 	strcpy(buf,top);
 	for(i=0;i<lines;i++) {
 		strcat(buf,str[i]);
 		strcat(buf,crlf);
-		FREE(str[i]); 
+		free(str[i]); 
 	}
-	FREE(str);
+	free(str);
 	return(lines);
 }
 
@@ -922,7 +922,7 @@ void sbbs_t::editfile(char *str)
 		length=filelength(file);
 		if(length>(long)maxlines*MAX_LINE_LEN) {
 			close(file);
-			FREE(buf); 
+			free(buf); 
 			attr(cfg.color[clr_err]);
 			bprintf("\7\r\nFile size (%lu bytes) is larger than %lu (maxlines: %lu).\r\n"
 				,length, (ulong)maxlines*MAX_LINE_LEN, maxlines);
@@ -930,7 +930,7 @@ void sbbs_t::editfile(char *str)
 		}
 		if(read(file,buf,length)!=length) {
 			close(file);
-			FREE(buf);
+			free(buf);
 			errormsg(WHERE,ERR_READ,str,length);
 			return; 
 		}
@@ -942,19 +942,19 @@ void sbbs_t::editfile(char *str)
 		bputs(text[NewFile]); 
 	}
 	if(!msgeditor(buf,nulstr,nulstr)) {
-		FREE(buf);
+		free(buf);
 		return; 
 	}
 	bputs(text[Saving]);
 	if((file=nopen(str,O_CREAT|O_WRONLY|O_TRUNC))==-1) {
 		errormsg(WHERE,ERR_OPEN,str,O_CREAT|O_WRONLY|O_TRUNC);
-		FREE(buf);
+		free(buf);
 		return; 
 	}
 	if((size_t)write(file,buf,strlen(buf))!=strlen(buf)) {
 		close(file);
 		errormsg(WHERE,ERR_WRITE,str,strlen(buf));
-		FREE(buf);
+		free(buf);
 		return; 
 	}
 	for(l=lines=0;buf[l];l++)
@@ -962,7 +962,7 @@ void sbbs_t::editfile(char *str)
 			lines++;
 	bprintf(text[SavedNBytes],l,lines);
 	close(file);
-	FREE(buf);
+	free(buf);
 	return;
 }
 
@@ -1299,7 +1299,7 @@ bool sbbs_t::movemsg(smbmsg_t* msg, uint subnum)
 	newsmb.retry_time=cfg.smb_retry_time;
 	newsmb.subnum=newsub;
 	if((i=smb_open(&newsmb))!=0) {
-		FREE(buf);
+		free(buf);
 		errormsg(WHERE,ERR_OPEN,newsmb.file,i,newsmb.last_error);
 		return(false); 
 	}
@@ -1310,7 +1310,7 @@ bool sbbs_t::movemsg(smbmsg_t* msg, uint subnum)
 		newsmb.status.max_age=cfg.sub[newsub]->maxage;
 		newsmb.status.attr=cfg.sub[newsub]->misc&SUB_HYPER ? SMB_HYPERALLOC :0;
 		if((i=smb_create(&newsmb))!=0) {
-			FREE(buf);
+			free(buf);
 			smb_close(&newsmb);
 			errormsg(WHERE,ERR_CREATE,newsmb.file,i,newsmb.last_error);
 			return(false); 
@@ -1318,14 +1318,14 @@ bool sbbs_t::movemsg(smbmsg_t* msg, uint subnum)
 	}
 
 	if((i=smb_locksmbhdr(&newsmb))!=0) {
-		FREE(buf);
+		free(buf);
 		smb_close(&newsmb);
 		errormsg(WHERE,ERR_LOCK,newsmb.file,i,newsmb.last_error);
 		return(false); 
 	}
 
 	if((i=smb_getstatus(&newsmb))!=0) {
-		FREE(buf);
+		free(buf);
 		smb_close(&newsmb);
 		errormsg(WHERE,ERR_READ,newsmb.file,i,newsmb.last_error);
 		return(false); 
@@ -1337,7 +1337,7 @@ bool sbbs_t::movemsg(smbmsg_t* msg, uint subnum)
 	}
 	else {
 		if((i=smb_open_da(&newsmb))!=0) {
-			FREE(buf);
+			free(buf);
 			smb_close(&newsmb);
 			errormsg(WHERE,ERR_OPEN,newsmb.file,i,newsmb.last_error);
 			return(false); 
@@ -1359,7 +1359,7 @@ bool sbbs_t::movemsg(smbmsg_t* msg, uint subnum)
 	fseek(newsmb.sdt_fp,offset,SEEK_SET);
 	fwrite(buf,length,1,newsmb.sdt_fp);
 	fflush(newsmb.sdt_fp);
-	FREE(buf);
+	free(buf);
 
 	i=smb_addmsghdr(&newsmb,&newmsg,storage);	// calls smb_unlocksmbhdr() 
 	smb_close(&newsmb);
