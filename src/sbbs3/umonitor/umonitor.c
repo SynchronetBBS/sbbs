@@ -125,11 +125,14 @@ void node_toggles(scfg_t *cfg,int nodenum)  {
 		j=0;
 		sprintf(opt[j++],"%-30s%3s","Locked for SysOps only",node.misc&NODE_LOCK ? YesStr : NoStr);
 		sprintf(opt[j++],"%-30s%3s","Interrupt (Hangup)",node.misc&NODE_INTR ? YesStr : NoStr);
+		sprintf(opt[j++],"%-30s%3s","Re-run on logoff",node.misc&NODE_RRUN ? YesStr : NoStr);
+		sprintf(opt[j++],"%-30s%3s","Down node after logoff"
+			,(node.misc&NODE_DOWN || (node.status==NODE_OFFLINE)) ? YesStr : NoStr);
+#if 0	/* There's no reason these should be toggled by the sysop under normal circumstances */
 		sprintf(opt[j++],"%-30s%3s","Page disabled",node.misc&NODE_POFF ? YesStr : NoStr);
 		sprintf(opt[j++],"%-30s%3s","Activity alert disabled",node.misc&NODE_AOFF ? YesStr : NoStr);
-		sprintf(opt[j++],"%-30s%3s","Re-run on logoff",node.misc&NODE_RRUN ? YesStr : NoStr);
-		sprintf(opt[j++],"%-30s%3s","Down node after logoff",(node.misc&NODE_DOWN || (node.status==NODE_OFFLINE)) ? YesStr : NoStr);
 		sprintf(opt[j++],"%-30s%3s","Reset private chat",node.misc&NODE_RPCHT ? YesStr : NoStr);
+#endif
 		opt[j][0]=0;
 
 		switch(uifc.list(WIN_MID,0,0,0,&i,0,"Node Toggles",opt)) {
@@ -141,19 +144,11 @@ void node_toggles(scfg_t *cfg,int nodenum)  {
 				node.misc ^= NODE_INTR;
 				break;
 
-			case 2:	/* Page disabled */
-				node.misc ^= NODE_POFF;
-				break;
-
-			case 3:	/* Activity alert */
-				node.misc ^= NODE_AOFF;
-				break;
-
-			case 4:	/* Re-run */
+			case 2:	/* Re-run */
 				node.misc ^= NODE_RRUN;
 				break;
 
-			case 5:	/* Down */
+			case 3:	/* Down */
 				if(node.status != NODE_WFC && node.status != NODE_OFFLINE)
 					node.misc ^= NODE_DOWN;
 				else {
@@ -164,10 +159,6 @@ void node_toggles(scfg_t *cfg,int nodenum)  {
 				}
 				break;
 
-			case 6:	/* Reset chat */
-				node.misc ^= NODE_RPCHT;
-				break;
-				
 			case -1:
 				save=1;
 				break;
