@@ -60,6 +60,7 @@ USEUNIT("..\ringbuf.c");
 USEUNIT("emulvt.pas");
 USEFORM("UserListFormUnit.cpp", UserListForm);
 USEFORM("UserMsgFormUnit.cpp", UserMsgForm);
+USEFORM("PropertiesDlgUnit.cpp", PropertiesDlg);
 //---------------------------------------------------------------------------
 #include "MainFormUnit.h"
 #include "SpyFormUnit.h"
