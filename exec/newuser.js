@@ -12,7 +12,7 @@ load("sbbsdefs.js");
 
 console.clear();
 
-if(!user.address.length) {
+if(!user.address.length && user.number>1) {
 	printf("\1y\1hWhere did you hear about this BBS? ");
 	user.address=console.getstr(30,K_LINE);
 }
