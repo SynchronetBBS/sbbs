@@ -163,7 +163,7 @@ if(username!=undefined && username.length) {
 		writeln(format("AUTHINFO PASS %s",password));
 		rsp = readln();
 		if(rsp==null || rsp[0]!='2') {
-			printf("!Authentication failure: %s\r\n", rsp);
+			printf("!Authentication FAILURE: %s\r\n", rsp);
 			delete socket;
 			exit();
 		}
@@ -189,13 +189,17 @@ for(i in area) {
 	
 	sub = area[i][1];
 	newsgroup = area[i][2];
+	flags = area[i][3];
+	if(flags==undefined)
+		flags="";
+	flags = flags.toLowerCase();
+
 	printf("sub: %s, newsgroup: %s\r\n",sub,newsgroup);
 	msgbase = new MsgBase(sub);
 	if(msgbase == null) {
 		printf("!ERROR opening msgbase: %s\r\n",sub);
 		continue;
 	}
-
 	/*********************/
 	/* Read Pointer File */
 	/*********************/
@@ -208,8 +212,8 @@ for(i in area) {
 		printf("%s export ptr: %ld\r\n",sub,export_ptr);
 		import_ptr = ptr_file.readBin();
 		printf("%s import ptr: %ld\r\n",sub,import_ptr);
+		ptr_file.close();
 	}
-	ptr_file.close();
 
 	if(reset_export_ptrs)
 		ptr = 0;
@@ -226,6 +230,8 @@ for(i in area) {
 	/*************************/
 	/* EXPORT Local Messages */
 	/*************************/
+	if(debug)
+		print("exporting local messages");
 	for(;socket.is_connected && ptr<=msgbase.last_msg;ptr++) {
 		console.line_counter = 0;
 		hdr = msgbase.get_msg_header(false,ptr);
@@ -249,9 +255,10 @@ for(i in area) {
 			continue;
 		}
 		body = ascii_str(body);
-		body += tearline;
-		body += tagline;
-
+		if(flags.indexOf('x')==-1) {
+			body += tearline;
+			body += tagline;
+		}
 		if(0) 
 			writeln(format("IHAVE %s",hdr.id));
 		else
@@ -259,7 +266,7 @@ for(i in area) {
 
 		rsp = readln();
 		if(rsp==null || rsp[0]!='3') {
-			printf("!POST failure: %s\r\n",rsp);
+			printf("!POST FAILURE: %s\r\n",rsp);
 			break;
 		}
 
@@ -312,7 +319,7 @@ for(i in area) {
 		writeln(".");
 		rsp = readln();
 		if(rsp==null || rsp[0]!='2') {
-			printf("!POST failure: %s\r\n",rsp);
+			printf("!POST FAILURE: %s\r\n",rsp);
 			break;
 		}
 		printf("Exported message %lu to newsgroup: %s\r\n",ptr,newsgroup);
@@ -329,7 +336,7 @@ for(i in area) {
 	writeln(format("GROUP %s",newsgroup));
 	rsp = readln();
 	if(rsp==null || rsp[0]!='2') {
-		printf("!GROUP %s failure: %s\r\n",newsgroup,rsp);
+		printf("!GROUP %s FAILURE: %s\r\n",newsgroup,rsp);
 		delete ptr_file;
 		delete msgbase;
 		continue;
@@ -362,12 +369,16 @@ for(i in area) {
 		writeln(format("ARTICLE %lu",ptr));
 		rsp = readln();
 		if(rsp==null || rsp[0]!='2') {
-			printf("!ARTICLE %lu failure: %s\r\n",ptr,rsp);
+			if(debug)
+				printf("!ARTICLE %lu ERROR: %s\r\n",ptr,rsp);
 			continue;
 		}
-		body=format("\1n\1b\1hFrom Newsgroup\1n\1b: \1h\1c%s\1n\r\n\r\n",newsgroup);
+		if(flags.indexOf('n')==-1)
+			body=format("\1n\1b\1hFrom Newsgroup\1n\1b: \1h\1c%s\1n\r\n\r\n",newsgroup);
+		else
+			body="";
 		header=true;
-		var hdr=new Object();
+		var hdr={ from: "", to: "", subject: "", id: "" };
 		while(socket.is_connected) {
 
 			line = socket.recvline(512 /*maxlen*/, 300 /*timeout*/);
@@ -459,11 +470,14 @@ for(i in area) {
 
 		hdr.from_net_type=NET_INTERNET;
 //		hdr.from_net_addr=hdr.from;
-		body += tearline;
+		if(flags.indexOf('t')==-1)
+			body += tearline;
 		if(msgbase.save_msg(hdr,body)) {
-			printf("Message %lu imported into %s\r\n",ptr,sub);
 			imported++;
-		}
+			printf("Message %lu imported into %s (%lu of %lu total)\r\n"
+				,ptr,sub,imported,msgbase.total_msgs);
+		} else
+			printf("!IMPORT %lu ERROR: %s\r\n", ptr, msgbase.last_error);
 	}
 	if(ptr > last_msg)
 		ptr = last_msg;
