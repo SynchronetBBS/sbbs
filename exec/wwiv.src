@@ -1,0 +1,821 @@
+# WWIV emulation script for BAJA.  It's as close to the real thing as the
+# compiler would allow.  Enjoy.  By Kitsune@1:264/227
+################################# Begins Here #################################
+
+!include sbbsdefs.inc
+
+# Set return point for main menu commands (via end_cmd)
+cmd_home
+
+# Display TEXT\MENU\MAIN.* if not in expert mode
+compare_ars expert
+if_false
+	cls
+	menu wwiv/main
+	end_if
+
+# Update node status
+node_action NODE_MAIN
+async
+
+# Display main Prompt
+compare_ars exempt T
+if_true
+	print "\r\nnT - @TUSED@\n\r"
+else
+	print "\r\nnT - @TLEFT@\n\r"
+	end_if
+print "yh(@GN@:@SN@) (@GRP@: @SUBL@) : n"
+
+# Get key (with / extended commands allowed)
+getkeye
+
+# Do nothing for control keys and space
+cmdkey ^@
+	end_cmd
+cmdkey ^M
+	end_cmd
+cmdkey ^S
+	end_cmd
+ cmdkey  "
+	end_cmd
+
+# Write command to log file
+logkey_comma
+
+# Hitting number changes current sub-board
+cmdkey digit
+	ungetkey
+	msg_get_sub_num
+	end_cmd
+
+# Hitting /number changes current group
+cmdkey edigit
+	ungetkey
+	msg_get_grp_num
+	end_cmd
+
+# Show the key hit
+printkey
+
+# Next sub-board
+cmdkey >
+	msg_subboard_up
+	end_cmd
+cmdkey }
+	msg_subboard_up
+	end_cmd
+cmdkey +
+	msg_subboard_up
+	end_cmd
+cmdkey =
+	msg_subboard_up
+	end_cmd
+
+# Previous sub-board
+cmdkey <
+	msg_subboard_down
+	end_cmd
+cmdkey {
+	msg_subboard_down
+	end_cmd
+cmdkey -
+	msg_subboard_down
+	end_cmd
+
+# Next group
+cmdkey ]
+	msg_group_up
+	end_cmd
+
+# Previous group
+cmdkey [
+	msg_group_down
+	end_cmd
+
+# String commands start with a semicolon
+cmdkey ;
+	getstrupr 40
+	exec_bin str_cmds
+	end_cmd
+
+cmdkey T
+	print "\r\n"
+        call file_transfers
+        end_cmd
+
+crlf
+pause_reset
+
+# Menu
+cmdkey ?
+	compare_ars expert
+	if_true
+		menu wwiv/main
+		end_if
+	end_cmd
+
+# Sysop Menu
+compare_ars level 90 or exempt Q or I or N
+if_true
+	cmdkey !
+		menu sysmain
+		end_cmd
+	end_if
+
+# Commands
+
+cmdkey A
+	auto_message
+	end_cmd
+
+cmdkey C
+	exec_bin chat_sec
+	end_cmd
+
+cmdkey D
+	user_defaults
+	end_cmd
+
+cmdkey E
+	call E-mail
+	end_cmd
+
+cmdkey F
+	print "\r\nchFind Text in Messages\r\n"
+	msg_find_text
+	end_cmd
+
+cmdkey /F
+	msg_find_text_all
+	end_cmd
+
+cmdkey G
+	text_file_section
+	end_cmd
+
+cmdkey I
+	call main_info
+	end_cmd
+
+cmdkey J
+	msg_select_area
+	end_cmd
+
+cmdkey L
+	exec_xtrn SBL
+	end_cmd
+
+cmdkey /L
+	nodelist_all
+	end_cmd
+
+cmdkey $
+	minute_bank
+	end_cmd
+
+cmdkey N
+	print "\r\nchNew Message Scan\r\n"
+	msg_new_scan
+	end_cmd
+
+cmdkey /N
+	msg_new_scan_all
+	end_cmd
+
+cmdkey O
+	file_download_batch
+	if_true
+		end_cmd
+                end_if
+	logoff
+	end_cmd
+
+cmdkey /O
+	file_download_batch
+	if_true
+		end_cmd
+                end_if
+	logoff_fast
+	end_cmd
+
+cmdkey P
+	msg_post
+	end_cmd
+
+cmdkey M
+	msg_qwk
+	end_cmd
+
+cmdkey R
+	msg_read
+	end_cmd
+
+cmdkey S
+	msg_read
+	end_cmd
+
+cmdkey Y
+	print "\r\nchScan for Messages Posted to You\r\n"
+	msg_your_scan
+	end_cmd
+
+cmdkey /S
+	msg_your_scan_all
+	end_cmd
+
+cmdkey U
+	print "\r\nchList Users\r\n"
+	mnemonics "\r\n~Logons Today, ~Sub-board, or ~All: "
+	getcmd LSA\r
+
+	cmdkey L
+		userlist_logons
+		end_cmd
+	cmdkey S
+		userlist_sub
+		end_cmd
+	cmdkey A
+		userlist_all
+		end_cmd
+
+	# fall-through for CR, Ctrl-C, etc
+	end_cmd
+
+cmdkey /U
+	userlist_all
+	end_cmd
+
+cmdkey .
+	xtrn_section
+	end_cmd
+
+cmdkey Z
+	print "\r\nchContinuous New Message Scan\r\n"
+	msg_cont_scan
+	end_cmd
+
+cmdkey /Z
+	msg_cont_scan_all
+	end_cmd
+
+cmdkey *
+	msg_show_subboards
+	end_cmd
+
+cmdkey /*
+	msg_show_groups
+	end_cmd
+
+cmdkey &
+	call main_cfg
+	end_cmd
+
+cmdkey #
+	print "\r\nchType the actual number, not the symbol.\r\n"
+	end_cmd
+
+cmdkey /#
+	print "\r\nchType the actual number, not the symbol.\r\n"
+        end_cmd
+
+# fall through
+print "\r\nchUnrecognized command."
+compare_ars expert
+if_true
+	print " Hit 'i?nch' for a menu."
+	end_if
+crlf
+end_cmd
+
+# shouldn't hit next line
+print "Problem in command shell."
+pause
+hangup
+
+############################### E-mail Section ################################
+
+:e-mail
+cmd_home
+compare_ars expert
+if_false
+	menu E-MAIL
+	end_if
+async
+print "\r\nyhE-mail: n"
+getcmd ?SRFNUKQ\r
+logkey
+
+cmdkey ?
+	compare_ars expert
+	if_true
+		menu E-MAIL
+		end_if
+	end_cmd
+
+cmdkey S
+	print "_\r\nbhE-mail (User name or number): w"
+	getname 25
+	compare_str ""
+	if_true
+		end_cmd
+		end_if
+	compare_str "SYSOP"
+	if_true
+		setstr "1"
+		end_if
+	mail_send
+	end_cmd
+
+cmdkey U
+	print "_\r\nbhE-mail (User name or number): w"
+	getname 25
+	compare_str ""
+	if_true
+		end_cmd
+		end_if
+	compare_str "SYSOP"
+	if_true
+		setstr "1"
+		end_if
+	mail_send_file
+        end_cmd
+
+cmdkey R
+	mail_read
+	end_cmd
+
+cmdkey F
+	setstr "1"
+	mail_send_feedback
+	end_cmd
+
+cmdkey N
+	mail_send_netmail
+	end_cmd
+
+cmdkey K
+	mail_read_sent
+	end_cmd
+
+cmdkey Q
+	cmd_pop
+	return
+	end_cmd
+
+cmd_pop
+return
+
+############################ Main Info Section	###############################
+
+:main_info
+cmd_home
+compare_ars expert
+if_false
+	menu MAININFO
+	end_if
+async
+print "\r\nyhInfo: n"
+getcmd ?QISVY\r
+logkey
+
+cmdkey ?
+	compare_ars expert
+	if_true
+		menu MAININFO
+		end_if
+	end_cmd
+
+cmdkey I
+	info_system
+	end_cmd
+
+cmdkey S
+	info_subboard
+	end_cmd
+
+cmdkey Y
+	info_user
+	end_cmd
+
+cmdkey V
+	info_version
+	end_cmd
+
+cmdkey Q
+	cmd_pop
+	return
+	end_cmd
+
+cmd_pop
+return
+
+########################### Main Config Section  ##############################
+
+:main_cfg
+
+compare_ars expert
+if_false
+	menu MAINCFG
+	end_if
+async
+print "\r\nyhConfig: n"
+getcmd ?QNPIS\r
+logkey
+
+cmdkey ?
+	compare_ars expert
+	if_true
+		menu MAINCFG
+		end_if
+	goto main_cfg
+	end_cmd
+
+cmdkey N
+	msg_new_scan_cfg
+	return
+	end_cmd
+
+cmdkey S
+	msg_your_scan_cfg
+	return
+	end_cmd
+
+cmdkey P
+	msg_ptrs_cfg
+	return
+	end_cmd
+
+cmdkey I
+	msg_ptrs_reinit
+	return
+	end_cmd
+
+return
+
+########################### File Transfer Section #############################
+
+:file_transfers
+
+cmd_home
+
+compare_ars expert
+if_false
+	cls
+	menu wwiv/transfer
+	end_if
+
+# Update node status
+node_action NODE_XFER
+async
+
+# Display main Prompt
+compare_ars exempt T
+if_true
+	print "\r\nnT - @TUSED@\n\r"
+else
+	print "\r\nnT - @TLEFT@\n\r"
+	end_if
+print "yh[@LN@:@DN@] [@LIB@: @DIRL@] : n"
+
+# Get key (with / extended commands allowed)
+getkeye
+
+# Do nothing for control keys and space
+cmdkey ^@
+	end_cmd
+cmdkey ^M
+	end_cmd
+cmdkey ^S
+	end_cmd
+ cmdkey  "
+	end_cmd
+
+# Write command to log file
+logkey_comma
+
+# Hitting number changes current sub-board
+cmdkey digit
+	ungetkey
+	file_get_dir_num
+	end_cmd
+
+# Hitting /number changes current group
+cmdkey edigit
+	ungetkey
+	file_get_lib_num
+	end_cmd
+
+# Show the key hit
+printkey
+
+# Next directory
+cmdkey >
+	file_directory_up
+	end_cmd
+cmdkey }
+	file_directory_up
+	end_cmd
+cmdkey +
+	file_directory_up
+	end_cmd
+cmdkey =
+	file_directory_up
+	end_cmd
+
+# Previous directory
+cmdkey <
+	file_directory_down
+	end_cmd
+cmdkey {
+	file_directory_down
+	end_cmd
+cmdkey -
+	file_directory_down
+	end_cmd
+
+# Next library
+cmdkey ]
+	file_library_up
+	end_cmd
+
+# Previous library
+cmdkey [
+	file_library_down
+	end_cmd
+
+# String commands start with a semicolon
+cmdkey ;
+	getstrupr 40
+	exec_bin str_cmds
+	end_cmd
+
+cmdkey Q
+        cmd_pop
+        print "\r\n"
+	return
+        end_cmd
+
+crlf
+pause_reset
+
+# Menu
+cmdkey ?
+	compare_ars expert
+	if_true
+		menu wwiv/TRANSFER
+		end_if
+	end_cmd
+
+# Sysop Menu
+compare_ars level 90
+if_true
+	cmdkey !
+		menu sysxfer
+		end_cmd
+	end_if
+
+# Commands
+
+cmdkey B
+	file_batch_section
+	end_cmd
+
+cmdkey C
+	exec_bin chat_sec
+	end_cmd
+
+cmdkey D
+	print "\r\nchDownload File(s)\r\n"
+	file_download_batch
+	if_true
+		end_cmd
+		end_if
+	getfilespec
+	if_true
+		file_download
+		end_if
+	end_cmd
+
+cmdkey /D
+	print "\r\nchDownload File(s) from User(s)\r\n"
+	file_download_user
+	end_cmd
+
+cmdkey E
+	print "\r\nchList Extended File Information\r\n"
+	getfilespec
+	if_true
+		file_list_extended
+		end_if
+	end_cmd
+
+cmdkey F
+	print "\r\nchFind Text in File Descriptions (no wildcards)\r\n"
+	file_find_text
+	end_cmd
+
+cmdkey /F
+	file_find_text_all
+        end_cmd
+
+cmdkey I
+	call file_info
+	end_cmd
+
+cmdkey J
+	file_select_area
+	end_cmd
+
+cmdkey L
+	print "\r\nchList Files\r\n"
+	getfilespec
+	if_true
+		file_list
+		end_if
+	end_cmd
+
+cmdkey /L
+	nodelist_all
+	end_cmd
+
+cmdkey N
+	print "\r\nchNew File Scan\r\n"
+	file_new_scan
+	end_cmd
+
+cmdkey /N
+	file_new_scan_all
+	end_cmd
+
+cmdkey O
+	file_download_batch
+	if_true
+		end_cmd
+                end_if
+	logoff
+	end_cmd
+
+cmdkey /O
+	file_download_batch
+	if_true
+		end_cmd
+                end_if
+	logoff_fast
+        end_cmd
+
+cmdkey R
+	print "\r\nchRemove/Edit File(s)\r\n"
+	getfilespec
+	if_true
+		file_remove
+		end_if
+	end_cmd
+
+cmdkey S
+	print "\r\nchSearch for Filename(s)\r\n"
+	file_find_name
+	end_cmd
+
+cmdkey /S
+	file_find_name_all
+	end_cmd
+
+cmdkey G
+	file_temp_section
+	end_cmd
+
+cmdkey U
+	print "\r\nchUpload File\r\n"
+	file_upload
+	end_cmd
+
+cmdkey /U
+	print "\r\nchUpload File to User\r\n"
+	file_upload_user
+	end_cmd
+
+cmdkey V
+	print "\r\nchView File(s)\r\n"
+	getfilespec
+	if_true
+		file_view
+		end_if
+	end_cmd
+
+cmdkey Z
+	print "\r\nchUpload File to Sysop\r\n"
+	file_upload_sysop
+	end_cmd
+
+cmdkey *
+	file_show_directories
+	end_cmd
+
+cmdkey /*
+	file_show_libraries
+	end_cmd
+
+cmdkey T
+	:xfercfg
+	compare_ars expert
+	if_false
+		menu XFERCFG
+		end_if
+	async
+	print "\r\nyhConfig: n"
+	getcmd ?QBP\r
+	logkey
+
+	cmdkey ?
+		compare_ars expert
+		if_true
+			menu XFERCFG
+			end_if
+		goto xfercfg
+		end_cmd
+
+	cmdkey P
+		file_ptrs_cfg
+		end_cmd
+
+	cmdkey B
+		toggle_user_misc UM_BATCHFLAG
+		end_cmd
+	end_cmd
+
+cmdkey #
+	print "\r\nchType the actual number, not the symbol.\r\n"
+	end_cmd
+
+cmdkey /#
+	print "\r\nchType the actual number, not the symbol.\r\n"
+        end_cmd
+
+cmdkey P
+	file_ptrs_cfg
+	end_cmd
+
+cmdkey Y
+	info_user
+	end_cmd
+
+# fall through
+print "\r\nchUnrecognized command."
+compare_ars expert
+if_true
+	print " Hit 'i?nch' for a menu."
+	end_if
+crlf
+end_cmd
+
+# shouldn't hit next line
+print "Problem in command shell."
+pause
+hangup
+
+############################ File Info Section	###############################
+
+:file_info
+cmd_home
+compare_ars expert
+if_false
+	menu XFERINFO
+	end_if
+async
+print "\r\nyhInfo: n"
+getcmd ?TYDUQ\r
+logkey
+
+cmdkey ?
+	compare_ars expert
+	if_true
+		menu XFERINFO
+		end_if
+	end_cmd
+
+cmdkey T
+	info_xfer_policy
+	end_cmd
+
+cmdkey Y
+	info_user
+	end_cmd
+
+cmdkey D
+	info_directory
+	end_cmd
+
+cmdkey U
+	userlist_dir
+	end_cmd
+
+cmdkey Q
+	cmd_pop
+	return
+	end_cmd
+
+cmd_pop
+return
+
+#end of DEFAULT.CST
