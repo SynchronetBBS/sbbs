@@ -91,14 +91,14 @@ static void js_finalize_socket(JSContext *cx, JSObject *obj)
 	
 	sock=(uint)JS_GetPrivate(cx,obj)>>1;
 
-	if(sock==INVALID_SOCKET || sock==0)
+	if(sock==0)
 		return;
 
 	close_socket(sock);
 
 	dbprintf(FALSE, sock, "closed/deleted");
 
-	sock=INVALID_SOCKET;
+	sock=0; /* use zero to signify invalid socket */
 
 	JS_SetPrivate(cx, obj, (char*)(sock<<1));
 }
@@ -115,14 +115,14 @@ js_close(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	*rval = JSVAL_VOID;
 
-	if(sock==INVALID_SOCKET || sock==0)
+	if(sock==0)
 		return(JS_TRUE);
 
 	close_socket(sock);
 
 	dbprintf(FALSE, sock, "closed");
 
-	sock=INVALID_SOCKET;
+	sock=0; /* use zero to signify invalid socket */
 
 	JS_SetPrivate(cx, obj, (char*)(sock<<1));
 
