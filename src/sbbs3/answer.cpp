@@ -121,8 +121,7 @@ bool sbbs_t::answer()
 								sprintf(str,"(%04u)  %-25s  FAILED Password attempt"
 									,0,useron.alias);
 								logline("+!",str);
-							/* ToDo: Hardcoded prompt! */
-							putcom("PW: ");
+							bputs(text[PasswordPrompt]);
 							console|=CON_R_ECHOX;
 							if(!(cfg.sys_misc&SM_ECHO_PW))
 								console|=CON_L_ECHOX;
