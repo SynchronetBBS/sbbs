@@ -69,12 +69,12 @@ char sbbs_t::inkey(long mode)
 		ch&=0x7f; 
 
 	timeout=time(NULL);
-	if(ch==3) {  /* Ctrl-C Abort */
+	if(ch==CTRL_C) {  /* Ctrl-C Abort */
 		sys_status|=SS_ABORT;
 		if(mode&K_SPIN) /* back space once if on spinning cursor */
 			bputs("\b \b");
 		return(0); }
-	if(ch==26 && action!=NODE_PCHT) {	 /* Ctrl-Z toggle raw input mode */
+	if(ch==CTRL_Z && action!=NODE_PCHT) {	 /* Ctrl-Z toggle raw input mode */
 		if(mode&K_SPIN)
 			bputs("\b ");
 		SAVELINE;
@@ -99,92 +99,48 @@ char sbbs_t::inkey(long mode)
 	if(ch<SP) { 				/* Control chars */
 		if(ch==LF)				/* ignore LF's in not in raw mode */
 			return(0);
-		if(ch==15) {	/* Ctrl-O toggles pause temporarily */
+		if(ch==CTRL_O) {	/* Ctrl-O toggles pause temporarily */
 			useron.misc^=UPAUSE;
 			return(0); }
-		if(ch==0x10) {	/* Ctrl-P Private node-node comm */
+		if(ch==CTRL_P) {	/* Ctrl-P Private node-node comm */
 			if(!(sys_status&SS_USERON))
 				return(0);			 /* keep from being recursive */
 			if(mode&K_SPIN)
 				bputs("\b ");
-			if(sys_status&SS_SPLITP) {
-#if 0 /* screen size */
-				if((scrnbuf=(uchar*)MALLOC((24L*80L)*2L))==NULL) {
-					errormsg(WHERE,ERR_ALLOC,nulstr,(24L*80L)*2L);
-					return(CR); }
-				gettext(1,1,80,24,scrnbuf);
-				x=lclwx();
-				y=lclwy();
-				CLS; 
-#endif
-			}
-			else {
+			if(!(sys_status&SS_SPLITP)) {
 				SAVELINE;
 				attr(LIGHTGRAY);
-				CRLF; }
+				CRLF; 
+			}
 			nodesync(); 	/* read any waiting messages */
 			nodemsg();		/* send a message */
 			SYNC;
-			if(sys_status&SS_SPLITP) {
-#if 0 /* screen size */
-				lncntr=0;
-				CLS;
-				for(i=0;i<((24*80)-1)*2;i+=2) {
-					if(scrnbuf[i+1]!=curatr)
-						attr(scrnbuf[i+1]);
-					outchar(scrnbuf[i]); }
-				FREE(scrnbuf);
-				GOTOXY(x,y); 
-#endif
-			}
-			else {
+			if(!(sys_status&SS_SPLITP)) {
 				CRLF;
-				RESTORELINE; }
+				RESTORELINE; 
+			}
 			lncntr=0;
 			return(0); }
 
-		if(ch==21) { /* Ctrl-U Users online */
+		if(ch==CTRL_U) { /* Ctrl-U Users online */
 			if(!(sys_status&SS_USERON))
 				return(0);
 			if(mode&K_SPIN)
 				bputs("\b ");
-			if(sys_status&SS_SPLITP) {
-#if 0 /* screen size */
-				if((scrnbuf=(uchar*)MALLOC((24L*80L)*2L))==NULL) {
-					errormsg(WHERE,ERR_ALLOC,nulstr,(24L*80L)*2L);
-					return(CR); }
-				gettext(1,1,80,24,scrnbuf);
-				x=lclwx();
-				y=lclwy();
-				CLS; 
-#endif
-			}
-			else {
+			if(!(sys_status&SS_SPLITP)) {
 				SAVELINE;
 				attr(LIGHTGRAY);
-				CRLF; }
+				CRLF; 
+			}
 			whos_online(true); 	/* list users */
 			ASYNC;
-			if(sys_status&SS_SPLITP) {
-#if 0 /* screen size */
+			if(!(sys_status&SS_SPLITP)) {
 				CRLF;
-				nodesync();
-				pause();
-				CLS;
-				for(i=0;i<((24*80)-1)*2;i+=2) {
-					if(scrnbuf[i+1]!=curatr)
-						attr(scrnbuf[i+1]);
-					outchar(scrnbuf[i]); }
-				FREE(scrnbuf);
-				GOTOXY(x,y); 
-#endif
+				RESTORELINE; 
 			}
-			else {
-				CRLF;
-				RESTORELINE; }
 			lncntr=0;
 			return(0); }
-		if(ch==20 && !(sys_status&SS_SPLITP)) { /* Ctrl-T Time information */
+		if(ch==CTRL_T && !(sys_status&SS_SPLITP)) { /* Ctrl-T Time information */
 			if(!(sys_status&SS_USERON))
 				return(0);
 			if(mode&K_SPIN)
@@ -202,7 +158,7 @@ char sbbs_t::inkey(long mode)
 			RESTORELINE;
 			lncntr=0;
 			return(0); }
-		if(ch==11 && !(sys_status&SS_SPLITP)) {  /*  Ctrl-k Control key menu */
+		if(ch==CTRL_K && !(sys_status&SS_SPLITP)) {  /*  Ctrl-k Control key menu */
 			if(!(sys_status&SS_USERON))
 				return(0);
 			if(mode&K_SPIN)
