@@ -102,6 +102,7 @@ static char		cgi_dir[MAX_PATH+1];
 static time_t	uptime=0;
 static DWORD	served=0;
 static web_startup_t* startup=NULL;
+static js_server_props_t js_server_props;
 
 typedef struct  {
 	char	*val;
@@ -2074,12 +2075,8 @@ static JSFunctionSpec js_global_functions[] = {
 static JSContext* 
 js_initcx(JSRuntime* runtime, SOCKET sock, JSObject** glob, http_session_t *session)
 {
-	char		ver[256];
 	JSContext*	js_cx;
 	JSObject*	js_glob;
-	JSObject*	server;
-	JSString*	js_str;
-	jsval		val;
 	BOOL		success=FALSE;
 
 	lprintf(LOG_INFO,"%04d JavaScript: Initializing context (stack: %lu bytes)"
@@ -2105,6 +2102,12 @@ js_initcx(JSRuntime* runtime, SOCKET sock, JSObject** glob, http_session_t *sess
 		if(js_CreateSystemObject(js_cx, js_glob, &scfg, uptime, startup->host_name)==NULL) 
 			break;
 
+#if 0
+		char		ver[256];
+		JSObject*	server;
+		JSString*	js_str;
+		jsval		val;
+
 		if((server=JS_DefineObject(js_cx, js_glob, "server", NULL,NULL
 			,JSPROP_ENUMERATE|JSPROP_READONLY))==NULL)
 			break;
@@ -2121,6 +2124,10 @@ js_initcx(JSRuntime* runtime, SOCKET sock, JSObject** glob, http_session_t *sess
 		val = STRING_TO_JSVAL(js_str);
 		if(!JS_SetProperty(js_cx, server, "version_detail", &val))
 			break;
+#else
+		if(js_CreateServerObject(js_cx,js_glob,&js_server_props)==NULL)
+			break;
+#endif
 
 		if(glob!=NULL)
 			*glob=js_glob;
@@ -2527,6 +2534,12 @@ void DLLCALL web_server(void* arg)
 	if(startup->js_max_bytes==0)			startup->js_max_bytes=JAVASCRIPT_MAX_BYTES;
 	if(startup->js_cx_stack==0)				startup->js_cx_stack=JAVASCRIPT_CONTEXT_STACK;
 	if(startup->ssjs_ext[0]==0)				SAFECOPY(startup->ssjs_ext,"ssjs");
+
+	sprintf(js_server_props.version,"%s %s",server_name,revision);
+	js_server_props.version_detail=web_ver();
+	js_server_props.clients=&active_clients;
+	js_server_props.options=&startup->options;
+	js_server_props.interface_addr=&startup->interface_addr;
 
 	/* Copy html directories */
 	SAFECOPY(root_dir,startup->root_dir);

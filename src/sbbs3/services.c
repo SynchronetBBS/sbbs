@@ -97,6 +97,7 @@ typedef struct {
 	DWORD	js_branch_limit;
 	DWORD	js_yield_interval;
 	DWORD	js_gc_interval;
+	js_server_props_t js_server_props;
 	/* These are run-time state and stat vars */
 	DWORD	clients;
 	DWORD	served;
@@ -757,12 +758,9 @@ js_client_remove(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 static JSContext* 
 js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, JSObject** glob)
 {
-	char		ver[256];
 	JSContext*	js_cx;
 	JSObject*	js_glob;
 	JSObject*	server;
-	JSString*	js_str;
-	jsval		val;
 	BOOL		success=FALSE;
 
     if((js_cx = JS_NewContext(js_runtime, service_client->service->js_cx_stack))==NULL)
@@ -811,7 +809,11 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 
 		if(js_CreateSystemObject(js_cx, js_glob, &scfg, uptime, startup->host_name)==NULL) 
 			break;
-		
+#if 0		
+		char		ver[256];
+		JSString*	js_str;
+		jsval		val;
+
 		/* server object */
 		if((server=JS_DefineObject(js_cx, js_glob, "server", &js_server_class
 			,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))==NULL)
@@ -819,14 +821,6 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 
 		if(!JS_DefineProperties(js_cx, server, js_server_properties))
 			break;
-
-		if(service_client->client==NULL)	/* static service */
-			if(js_CreateSocketObject(js_cx, server, "socket", service_client->socket)==NULL)
-				break;
-
-		JS_DefineFunction(js_cx, server, "client_add"	, js_client_add,	1, 0);
-		JS_DefineFunction(js_cx, server, "client_update", js_client_update,	1, 0);
-		JS_DefineFunction(js_cx, server, "client_remove", js_client_remove, 1, 0);
 
 		sprintf(ver,"Synchronet Services %s",revision);
 		if((js_str=JS_NewStringCopyZ(js_cx, ver))==NULL)
@@ -840,6 +834,35 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 		val = STRING_TO_JSVAL(js_str);
 		if(!JS_SetProperty(js_cx, server, "version_detail", &val))
 			break;
+
+#else
+
+		if(service_client->service->js_server_props.version[0]==0) {
+			sprintf(service_client->service->js_server_props.version
+				,"Synchronet Services %s",revision);
+			service_client->service->js_server_props.version_detail=
+				services_ver();
+			service_client->service->js_server_props.clients=
+				&service_client->service->clients;
+			service_client->service->js_server_props.interface_addr=
+				&startup->interface_addr;
+			service_client->service->js_server_props.options=
+				&service_client->service->options;
+		}
+
+		if((server=js_CreateServerObject(js_cx,js_glob
+			,&service_client->service->js_server_props))==NULL)
+			break;
+#endif
+
+		if(service_client->client==NULL)	/* static service */
+			if(js_CreateSocketObject(js_cx, server, "socket", service_client->socket)==NULL)
+				break;
+
+		JS_DefineFunction(js_cx, server, "client_add"	, js_client_add,	1, 0);
+		JS_DefineFunction(js_cx, server, "client_update", js_client_update,	1, 0);
+		JS_DefineFunction(js_cx, server, "client_remove", js_client_remove, 1, 0);
+
 
 		if(glob!=NULL)
 			*glob=js_glob;

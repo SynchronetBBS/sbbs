@@ -70,8 +70,8 @@ uint riobp;
 time_t	uptime=0;
 DWORD	served=0;
 
-static	uint node_threads_running=0;
-static	uint thread_count=0;
+static	ulong node_threads_running=0;
+static	ulong thread_count=0;
 		
 char 	lastuseron[LEN_ALIAS+1];  /* Name of user last online */
 RingBuf* node_inbuf[MAX_NODES];
@@ -234,6 +234,8 @@ u_long resolve_ip(char *addr)
 } /* extern "C" */
 
 #ifdef JAVASCRIPT
+
+static js_server_props_t js_server_props;
 
 JSBool	
 DLLCALL js_CreateArrayOfStrings(JSContext* cx, JSObject* parent, const char* name, char* str[],uintN flags)
@@ -816,10 +818,6 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 bool sbbs_t::js_init()
 {
 	char		node[128];
-	char		ver[256];
-	jsval		val;
-	JSObject*	server;
-	JSString*	js_str;
 
     if(cfg.node_num)
     	sprintf(node,"Node %d",cfg.node_num);
@@ -901,6 +899,12 @@ bool sbbs_t::js_init()
 		if(!js_CreateUserObjects(js_cx, js_glob, &scfg, NULL, NULL, NULL)) 
 			break;
 
+#if 0
+		char		ver[256];
+		jsval		val;
+		JSObject*	server;
+		JSString*	js_str;
+
 		/* Server Object */
 		if((server=JS_DefineObject(js_cx, js_glob, "server", NULL
 			,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))==NULL)
@@ -923,6 +927,12 @@ bool sbbs_t::js_init()
 		js_DescribeSyncObject(js_cx,server,"Server-specifc properties",310);
 		js_CreateArrayOfStrings(js_cx, server, "_property_desc_list", server_prop_desc, JSPROP_READONLY);
 #endif
+
+#else
+		if(js_CreateServerObject(js_cx,js_glob,&js_server_props)==NULL)
+			break;
+#endif
+
 		success=true;
 
 	} while(0);
@@ -3479,20 +3489,21 @@ const char* DLLCALL bbs_ver(void)
 	static char ver[256];
 	char compiler[32];
 
-	DESCRIBE_COMPILER(compiler);
+	if(ver[0]==0) {	/* uninitialized */
+		DESCRIBE_COMPILER(compiler);
 
-	sprintf(ver,"%s %s%c%s  SMBLIB %s  Compiled %s %s with %s"
-		,TELNET_SERVER
-		,VERSION, REVISION
+		sprintf(ver,"%s %s%c%s  SMBLIB %s  Compiled %s %s with %s"
+			,TELNET_SERVER
+			,VERSION, REVISION
 #ifdef _DEBUG
-		," Debug"
+			," Debug"
 #else
-		,""
+			,""
 #endif
-		,smb_lib_ver()
-		,__DATE__, __TIME__, compiler
-		);
-
+			,smb_lib_ver()
+			,__DATE__, __TIME__, compiler
+			);
+	}
 	return(ver);
 }
 
@@ -3630,6 +3641,12 @@ void DLLCALL bbs_thread(void* arg)
 	if(startup->outbuf_drain_timeout==0)	startup->outbuf_drain_timeout=10;
 	if(startup->sem_chk_freq==0)			startup->sem_chk_freq=5;
 	if(startup->temp_dir[0])				backslash(startup->temp_dir);
+
+	sprintf(js_server_props.version,"%s %s%c",TELNET_SERVER,VERSION,REVISION);
+	js_server_props.version_detail=bbs_ver();
+	js_server_props.clients=&node_threads_running;
+	js_server_props.options=&startup->options;
+	js_server_props.interface_addr=&startup->telnet_interface;
 
 	uptime=0;
 	served=0;

@@ -887,11 +887,18 @@ extern "C" {
 		int				ver;		/* version added/modified */
 	} jsSyncPropertySpec;
 
-
 	typedef struct {
 		const char*		name;
 		int				val;
 	} jsConstIntSpec;
+
+	typedef struct {
+		char		version[128];
+		const char*	version_detail;
+		DWORD*		interface_addr;
+		DWORD*		options;
+		DWORD*		clients;
+	} js_server_props_t;
 
 	#define JSTYPE_ARRAY JSTYPE_LIMIT
 	#define JSTYPE_ALIAS JSTYPE_LIMIT+1
@@ -910,6 +917,10 @@ extern "C" {
 	DLLEXPORT JSBool	DLLCALL js_DefineConstIntegers(JSContext* cx, JSObject* obj, jsConstIntSpec*, int flags);
 	DLLEXPORT JSBool	DLLCALL js_CreateArrayOfStrings(JSContext* cx, JSObject* parent
 														,const char* name, char* str[], uintN flags);
+
+	/* js_server.c */
+	DLLEXPORT JSObject* DLLCALL js_CreateServerObject(JSContext* cx, JSObject* parent
+										,js_server_props_t* props);
 
 	/* js_global.c */
 	DLLEXPORT JSObject* DLLCALL js_CreateGlobalObject(JSContext* cx, scfg_t* cfg, jsSyncMethodSpec* methods);

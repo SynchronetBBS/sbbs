@@ -286,6 +286,10 @@ SOURCE=.\js_msgbase.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\js_server.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\js_socket.c
 # End Source File
 # Begin Source File

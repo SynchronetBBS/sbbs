@@ -378,6 +378,8 @@ int getdir(char* p, user_t* user)
 /*********************************/
 #ifdef JAVASCRIPT
 
+js_server_props_t js_server_props;
+
 static JSBool
 js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
@@ -465,12 +467,8 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 static JSContext* 
 js_initcx(JSRuntime* runtime, SOCKET sock, JSObject** glob, JSObject** ftp)
 {
-	char		ver[256];
 	JSContext*	js_cx;
 	JSObject*	js_glob;
-	JSObject*	server;
-	JSString*	js_str;
-	jsval		val;
 	BOOL		success=FALSE;
 
 	lprintf(LOG_DEBUG,"%04d JavaScript: Initializing context (stack: %lu bytes)"
@@ -500,6 +498,12 @@ js_initcx(JSRuntime* runtime, SOCKET sock, JSObject** glob, JSObject** ftp)
 			,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))==NULL)
 			break;
 
+#if 0
+		char		ver[256];
+		JSObject*	server;
+		JSString*	js_str;
+		jsval		val;
+
 		if((server=JS_DefineObject(js_cx, js_glob, "server", NULL
 			,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))==NULL)
 			break;
@@ -516,6 +520,11 @@ js_initcx(JSRuntime* runtime, SOCKET sock, JSObject** glob, JSObject** ftp)
 		val = STRING_TO_JSVAL(js_str);
 		if(!JS_SetProperty(js_cx, server, "version_detail", &val))
 			break;
+
+#else
+		if(js_CreateServerObject(js_cx,js_glob,&js_server_props)==NULL)
+			break;
+#endif
 
 		if(glob!=NULL)
 			*glob=js_glob;
@@ -4523,7 +4532,14 @@ void DLLCALL ftp_server(void* arg)
 #ifdef JAVASCRIPT
 	if(startup->js_max_bytes==0)			startup->js_max_bytes=JAVASCRIPT_MAX_BYTES;
 	if(startup->js_cx_stack==0)				startup->js_cx_stack=JAVASCRIPT_CONTEXT_STACK;
+
+	sprintf(js_server_props.version,"%s %s",FTP_SERVER,revision);
+	js_server_props.version_detail=ftp_ver();
+	js_server_props.clients=&active_clients;
+	js_server_props.options=&startup->options;
+	js_server_props.interface_addr=&startup->interface_addr;
 #endif
+
 
 	uptime=0;
 	served=0;
