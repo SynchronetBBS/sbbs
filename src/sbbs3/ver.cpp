@@ -132,7 +132,7 @@ void sbbs_t::ver()
 	CRLF;
 	strcpy(str,VERSION_NOTICE);
 #if defined(_DEBUG)
-	strcat(str,"Debug");
+	strcat(str,"  Debug");
 #endif
 	center(str);
 	CRLF;
@@ -141,7 +141,9 @@ void sbbs_t::ver()
 
 	sprintf(str,"Revision %c%s %s %.5s  "
 		"SMBLIB %s  %s"
-		,REVISION,BETA,__DATE__,__TIME__
+		,toupper(REVISION)
+		,BETA
+		,__DATE__,__TIME__
 		,smb_lib_ver(),compiler);
 
 	center(str);

@@ -2974,7 +2974,8 @@ void DLLCALL bbs_thread(void* arg)
 
 	lprintf("%s Version %s Revision %c%s"
 		,TELNET_SERVER
-		,VERSION,REVISION
+		,VERSION
+		,toupper(REVISION)
 #ifdef _DEBUG
 		," Debug"
 #else
