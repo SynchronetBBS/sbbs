@@ -81,6 +81,7 @@ typedef struct {
     char	host_name[128];
 	BOOL	recycle_now;
 	sem_t	recycle_sem;
+	DWORD	log_mask;
 
 } services_startup_t;
 
