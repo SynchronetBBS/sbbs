@@ -186,7 +186,7 @@ void strip_symbols(char *str);
 void debug(void);
 
 #ifndef __BORLANDC__
-int random(int n)
+int my_random(int n)
 {
 	float f;
 
@@ -1126,7 +1126,7 @@ for(i=0;i<total_decks;i++)
 
 i=0;
 while(i<(uint)(total_decks*52)-1) {
-	j=random((total_decks*52)-1);
+	j=my_random((total_decks*52)-1);
 	if(!shufdeck[j].value)	/* card already used */
 		continue;
 	card[i]=shufdeck[j];
