@@ -38,7 +38,7 @@ endif
 
 DELETE	=	rm -fv
 
-CFLAGS	=	-DJAVASCRIPT -I../mozilla/js/src -I$(XPDEV)
+CFLAGS	=	-Wall -DJAVASCRIPT -I../mozilla/js/src -I$(XPDEV)
 
 ifeq ($(os),FreeBSD)	# FreeBSD
 CFLAGS	+= -D_THREAD_SAFE
