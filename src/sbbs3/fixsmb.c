@@ -36,91 +36,122 @@
  ****************************************************************************/
 
 #include <stdio.h>	
-#include <stdlib.h>	/* atoi */
+#include <stdlib.h>	/* atoi, qsort */
 #include <string.h>	/* strnicmp */
 #include <ctype.h>	/* toupper */
 
 #include "sbbs.h"
 
-char *usage="usage: fixsmb [/opts] <smb_file>\n"
-			"\n"
-			" opts:\n"
-			"       m - force mail format instead of sub-board format\n"
-			"\n"
-			"   ex: FIXSMB /M MAIL\n"
-			"   or: FIXSMB DEBATE\n";
+int compare_index(const idxrec_t* idx1, const idxrec_t* idx2)
+{
+	return(idx1->number - idx2->number);
+}
 
-#define MAIL (1<<0)
+void sort_index(smb_t* smb)
+{
+	ulong		l;
+	idxrec_t*	idx;
+
+	printf("Sorting index... ");
+	if((idx=malloc(sizeof(idxrec_t)*smb->status.total_msgs))==NULL) {
+		perror("malloc");
+		return;
+	}
+
+	rewind(smb->sid_fp);
+	for(l=0;l<smb->status.total_msgs;l++)
+		if(fread(&idx[l],sizeof(idxrec_t),1,smb->sid_fp)<1) {
+			perror("reading index");
+			break;
+		}
+
+	qsort(idx,l,sizeof(idxrec_t),compare_index);
+
+	rewind(smb->sid_fp);
+	chsize(fileno(smb->sid_fp),0L);			/* Truncate the index */
+
+	printf("\nRe-writing index... \n");
+	smb->status.total_msgs=l;
+	for(l=0;l<smb->status.total_msgs;l++)
+		if(fwrite(&idx[l],sizeof(idxrec_t),1,smb->sid_fp)<1) {
+			perror("wrtiing index");
+			break;
+		}
+
+	free(idx);
+	printf("\n");
+}
+
+
+char *usage="usage: fixsmb [-renumber] <smb_file>\n";
 
 int main(int argc, char **argv)
 {
 	char		str[512],c;
-	int 		i,w,mode=0;
+	char		revision[16];
+	int 		i,w;
 	ulong		l,length,size,n;
+	BOOL		renumber=FALSE;
 	smb_t		smb;
 	smbmsg_t	msg;
 
-	printf("\nFIXSMB v1.24 - Rebuild Synchronet Message Base Index - by Rob Swindell\n");
+	sscanf("$Revision$", "%*s %s", revision);
+
+	printf("\nFIXSMB v2.00-%s (rev %s) - Rebuild Synchronet Message Base Index\n\n"
+		,PLATFORM_DESC,revision);
+
+	memset(&smb,0,sizeof(smb));
 
 	smb.file[0]=0;
-	for(i=1;i<argc;i++)
-		if(argv[i][0]=='-')
-			switch(toupper(argv[i][1])) {
-				case 'M':
-					mode|=MAIL;
-					break;
-				default:
-					printf(usage);
-					exit(1); }
+	for(i=1;i<argc;i++) {
+		if(!stricmp(argv[i],"-renumber"))
+			renumber=TRUE;
 		else
 			SAFECOPY(smb.file,argv[i]);
+	}
 
 	if(!smb.file[0]) {
 		printf(usage);
-		exit(1); }
-
-	smb.retry_time=30;
+		exit(1); 
+	}
 
 	if((i=smb_open(&smb))!=0) {
 		printf("smb_open returned %d\n",i);
-		exit(1); }
+		exit(1); 
+	}
 
 	if((i=smb_locksmbhdr(&smb))!=0) {
 		smb_close(&smb);
 		printf("smb_locksmbhdr returned %d\n",i);
-		exit(1); }
+		exit(1); 
+	}
 
 	if((i=smb_getstatus(&smb))!=0) {
 		smb_unlocksmbhdr(&smb);
 		smb_close(&smb);
 		printf("smb_getstatus returned %d\n",i);
-		exit(1); }
-
-	if(mode&MAIL && !(smb.status.attr&SMB_EMAIL)) {
-		smb.status.attr|=SMB_EMAIL;
-		if((i=smb_putstatus(&smb))!=0) {
-			smb_unlocksmbhdr(&smb);
-			smb_close(&smb);
-			printf("smb_putstatus returned %d\n",i);
-			exit(1); } }
+		exit(1); 
+	}
 
 	if(!(smb.status.attr&SMB_HYPERALLOC)) {
 
 		if((i=smb_open_ha(&smb))!=0) {
 			smb_close(&smb);
 			printf("smb_open_ha returned %d\n",i);
-			exit(1); }
+			exit(1); 
+		}
 
 		if((i=smb_open_da(&smb))!=0) {
 			smb_close(&smb);
 			printf("smb_open_da returned %d\n",i);
-			exit(1); }
+			exit(1); 
+		}
 
 		rewind(smb.sha_fp);
 		chsize(fileno(smb.sha_fp),0L);		/* Truncate the header allocation file */
 		rewind(smb.sda_fp);
 		chsize(fileno(smb.sda_fp),0L);		/* Truncate the data allocation file */
-		}
+	}
 
 	rewind(smb.sid_fp);
 	chsize(fileno(smb.sid_fp),0L);			/* Truncate the index */
@@ -135,28 +166,31 @@ int main(int argc, char **argv)
 		length=filelength(fileno(smb.shd_fp));
 		c=0;
 		for(l=0;l<length;l+=SHD_BLOCK_LEN)	/* Init .SHD file to NULL */
-			fwrite(&c,1,1,smb.sha_fp); }
-	else
+			fwrite(&c,1,1,smb.sha_fp); 
+	} else
 		length=filelength(fileno(smb.shd_fp));
 
-	n=1;	/* messsage number */
+	n=0;	/* messsage offset */
 	for(l=smb.status.header_offset;l<length;l+=size) {
 		size=SHD_BLOCK_LEN;
 		printf("\r%2lu%%  ",(long)(100.0/((float)length/l)));
 		msg.idx.offset=l;
 		if((i=smb_lockmsghdr(&smb,&msg))!=0) {
 			printf("\n(%06lX) smb_lockmsghdr returned %d\n",l,i);
-			continue; }
+			continue; 
+		}
 		if((i=smb_getmsghdr(&smb,&msg))!=0) {
 			smb_unlockmsghdr(&smb,&msg);
 			printf("\n(%06lX) smb_getmsghdr returned %d\n",l,i);
-			continue; }
+			continue; 
+		}
 		smb_unlockmsghdr(&smb,&msg);
 		printf("#%-5lu (%06lX) %-25.25s ",msg.hdr.number,l,msg.from);
 		if(!(msg.hdr.attr&MSG_DELETE)) {   /* Don't index deleted messages */
-			msg.offset=n-1;
-			msg.hdr.number=n;
-			msg.idx.number=n;
+			msg.offset=n;
+			if(renumber)
+				msg.hdr.number=n+1;
+			msg.idx.number=msg.hdr.number;
 			msg.idx.attr=msg.hdr.attr;
 			msg.idx.time=msg.hdr.when_imported.time;
 			msg.idx.subj=subject_crc(msg.subj);
@@ -168,18 +202,21 @@ int main(int argc, char **argv)
 				if(msg.from_ext)
 					msg.idx.from=atoi(msg.from_ext);
 				else
-					msg.idx.from=0; }
-			else {
+					msg.idx.from=0; 
+			} else {
 				SAFECOPY(str,msg.to);
 				strlwr(str);
 				msg.idx.to=crc16(str,0);
 				SAFECOPY(str,msg.from);
 				strlwr(str);
-				msg.idx.from=crc16(str,0); }
+				msg.idx.from=crc16(str,0); 
+			}
 			if((i=smb_putmsg(&smb,&msg))!=0) {
 				printf("\nsmb_putmsg returned %d\n",i);
-				continue; }
-			n++; }
+				continue; 
+			}
+			n++; 
+		}
 		else
 			printf("Not indexing deleted message\n");
 		size=smb_getmsghdrlen(&msg);
@@ -203,11 +240,16 @@ int main(int argc, char **argv)
 
 			if(!(msg.hdr.attr&MSG_DELETE))
 				smb_incdat(&smb,msg.hdr.offset,smb_getmsgdatlen(&msg),1);
-			}
+		}
 
-		smb_freemsgmem(&msg); }
+		smb_freemsgmem(&msg); 
+	}
 	printf("\r%79s\r100%%\n","");
-	smb.status.total_msgs=smb.status.last_msg=n-1;
+	smb.status.total_msgs=n;
+	if(renumber)
+		smb.status.last_msg=n;
+	else
+		sort_index(&smb);
 	printf("Saving message base status.\n");
 	if((i=smb_putstatus(&smb))!=0)
 		printf("\nsmb_putstatus returned %d\n",i);
