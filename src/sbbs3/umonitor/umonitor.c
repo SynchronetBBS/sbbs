@@ -97,7 +97,7 @@ void spyon(char *sockname)  {
 	pset[1].fd=spy_sock;
 	pset[1].events=POLLIN;
 	while(spy_sock!=INVALID_SOCKET)  {
-		if((poll(pset,2,INFTIM))<0)  {
+		if((poll(pset,2,-1))<0)  {
 			close(spy_sock);
 			spy_sock=INVALID_SOCKET;
 			break;
