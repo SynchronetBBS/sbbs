@@ -325,6 +325,8 @@ for(i in area) {
 				,hdr.from
 				,hdr.from.replace(/ /g,".").toLowerCase()
 				,system.inetaddr,antispam));
+		if(hdr.from_org!=undefined)
+			writeln("Organization: " + hdr.from_org);
 		writeln("To: " + hdr.to);
 		writeln("X-Comment-To: " + hdr.to);
 		writeln("Subject: " + hdr.subject);
@@ -487,6 +489,9 @@ for(i in area) {
 					break;
 				case "from":
 					hdr.from=data;
+					break;
+				case "organization":
+					hdr.from_org=data;
 					break;
 				case "reply-to":
 					hdr.replyto_net_type=NET_INTERNET;

@@ -455,6 +455,8 @@ while(client.socket.is_connected) {
 						,hdr.from
 						,hdr.from.replace(/ /g,".").toLowerCase()
 						,hdr.from_net_addr));
+				if(hdr.from_org!=undefined)
+					writeln("Organization: " + hdr.from_org);
 				writeln("To: " + hdr.to);
 				writeln("X-Comment-To: " + hdr.to);
 				writeln("Subject: " + hdr.subject);
@@ -589,6 +591,9 @@ while(client.socket.is_connected) {
 					case "from":
 						if(user.security.restrictions&(UFLAG_G|UFLAG_Q)) // Guest or Network Node
 							hdr.from=data;
+						break;
+					case "organization":
+						hdr.from_org=data;
 						break;
 					case "reply-to":
 						hdr.replyto_net_type=NET_INTERNET;
