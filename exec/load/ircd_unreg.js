@@ -38,6 +38,7 @@ function Unregistered_Client(id,socket) {
 	this.password = "";
 	this.ircclass = 0;
 	this.idletime = time();
+	this.ip = socket.remote_ip_address;
 	// Variables (consts, really) that point to various state information
 	this.socket = socket;
 	////////// FUNCTIONS
@@ -62,12 +63,12 @@ function Unregistered_Client(id,socket) {
 	Local_Sockets_Map[id] = this;
 	rebuild_socksel_array = true;
 	log(format("%04u",socket.descriptor)
-		+ " Accepted new connection: " + socket.remote_ip_address
+		+ " Accepted new connection: " + this.ip
 		+ " port " + socket.remote_port);
-	if ((socket.remote_ip_address.slice(0,4) == "127.") ||
-	    (socket.remote_ip_address.slice(0,3) == "10.") ||
-	    (socket.remote_ip_address.slice(0,8) == "192.168.") ||
-	    (socket.remote_ip_address.slice(0,7) == "172.16." )) {
+	if ((this.ip.slice(0,4) == "127.") ||
+	    (this.ip.slice(0,3) == "10.") ||
+	    (this.ip.slice(0,8) == "192.168.") ||
+	    (this.ip.slice(0,7) == "172.16." )) {
 		this.hostname = servername;
 	} else {
 		var went_into_hostname;
@@ -75,13 +76,13 @@ function Unregistered_Client(id,socket) {
 		if (debug && resolve_hostnames)
 			went_into_hostname = time();
 		if (resolve_hostnames)
-			possible_hostname = resolve_host(socket.remote_ip_address);
+			possible_hostname = resolve_host(this.ip);
 		if (resolve_hostnames && possible_hostname) {
 			this.hostname = possible_hostname;
 			if(server.client_update != undefined)
 				server.client_update(socket,this.nick,this.hostname);
 		} else {
-			this.hostname = socket.remote_ip_address;
+			this.hostname = this.ip;
 		}
 		if (debug && resolve_hostnames) {
 			went_into_hostname = time() - went_into_hostname;
@@ -292,7 +293,7 @@ function Unregistered_Commands() {
 		// FIXME: We don't compare connecting port.
 		for(thisILine in ILines) {
 			if ((IRC_match(this.uprefix + "@" +
-			    this.socket.remote_ip_address,
+			    this.ip,
 			    ILines[thisILine].ipmask)) &&
 			    (IRC_match(this.uprefix + "@" + 
 			    this.hostname,
@@ -326,8 +327,7 @@ function Unregistered_Commands() {
 		new_user.hostname = this.hostname;
 		new_user.realname = this.realname;
 		new_user.created = time();
-		if (this.socket.remote_ip_address)
-			new_user.ip = this.socket.remote_ip_address;
+		new_user.ip = this.ip;
 		new_user.ircclass = my_iline.ircclass;
 		hcc_counter++;
 		this.numeric("001", ":Welcome to the Synchronet IRC Service, " + new_user.nuh);
@@ -339,7 +339,7 @@ function Unregistered_Commands() {
 		new_user.motd();
 		umode_notice(USERMODE_CLIENT,"Client","Client connecting: " +
 			this.nick + " (" + this.uprefix + "@" + this.hostname +
-			") [" + this.socket.remote_ip_address + "] {1}");
+			") [" + this.ip + "] {1}");
 		if (server.client_update != undefined)
 			server.client_update(this.socket, this.nick, this.hostname);
 		server_bcast_to_servers("NICK " + this.nick + " 1 " + this.created + " + " + this.uprefix + " " + this.hostname + " " + servername + " 0 " + ip_to_int(new_user.ip) + " :" + this.realname);

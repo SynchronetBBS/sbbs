@@ -501,7 +501,7 @@ function User_Work() {
 				this.numeric401(cmd[1]);
 				break;
 			}
-			if (nickid.channels[chanid.toUpperCase()]) {
+			if (nickid.channels[cmd[2].toUpperCase()]) {
 				this.numeric(443, nickid.nick + " " + chanid.nam + " :is already on channel.");
 				break;
 			}
@@ -859,7 +859,7 @@ function User_Work() {
 				break;
 			}
 			the_nick = IRC_string(cmd[1]).slice(0,max_nicklen);
-			if(this.check_nickname(the_nick)) {
+			if(this.check_nickname(the_nick) > 0) {
 				var str="NICK " + the_nick;
 				this.bcast_to_uchans_unique(str);
 				this.originatorout(str,this);

@@ -1717,7 +1717,7 @@ function IRCClient_do_summon(summon_user) {
 function IRCClient_do_links(mask) {
 	if (!mask)
 		mask = "*";
-	umode_notice(USERMODE_SPY,"Spy","LINKS " + mask + " requested from " +
+	umode_notice(USERMODE_SPY,"Spy","LINKS " + mask + " requested by " +
 		this.nick + " (" + this.uprefix + "@" + this.hostname + ") [" +
 		this.servername + "]");
 	for(thisServer in Servers) {
