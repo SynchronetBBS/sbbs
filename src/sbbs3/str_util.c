@@ -64,13 +64,16 @@ char* DLLCALL strip_ctrl(char *str)
 	char tmp[1024];
 	int i,j;
 
-	for(i=j=0;str[i] && j<(int)sizeof(tmp)-1;i++)
+	for(i=j=0;str[i] && j<(int)sizeof(tmp)-1;i++) {
 		if(str[i]==CTRL_A && str[i+1]!=0)
 			i++;
 		else if((uchar)str[i]>=SP)
 			tmp[j++]=str[i];
-	tmp[j]=0;
-	strcpy(str,tmp);
+	}
+	if(i!=j) {
+		tmp[j]=0;
+		strcpy(str,tmp);
+	}
 	return(str);
 }
 
