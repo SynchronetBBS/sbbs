@@ -128,6 +128,7 @@ typedef struct {
 	int		(*getmouse)		(struct cio_mouse_event *mevent);
 	int		(*hidemouse)	(void);
 	int		(*showmouse)	(void);
+	void	(*settitle)		(const char *);
 } cioapi_t;
 
 extern cioapi_t cio_api;
@@ -173,6 +174,7 @@ void ciolib_window(int sx, int sy, int ex, int ey);
 void ciolib_delline(void);
 void ciolib_insline(void);
 char *ciolib_getpass(const char *prompt);
+void settitle(const char *title);
 #ifdef __cplusplus
 }
 #endif
@@ -214,6 +216,7 @@ char *ciolib_getpass(const char *prompt);
 	#define getmouse(a)				ciolib_getmouse(a)
 	#define	hidemouse()				ciolib_hidemouse()
 	#define showmouse()				ciolib_showmouse()
+	#define settitle(a)				ciolib_settitle(a)
 #endif
 
 #endif	/* Do not add anything after this line */

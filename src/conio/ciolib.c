@@ -85,6 +85,7 @@ int try_x_init(int mode)
 		cio_api.getmouse=NULL;
 		cio_api.showmouse=NULL;
 		cio_api.hidemouse=NULL;
+		cio_api.settitle=x_settitle;
 		return(1);
 	}
 	fprintf(stderr,"X init failed\n");
@@ -113,6 +114,7 @@ int try_curses_init(int mode)
 		cio_api.getmouse=curs_getmouse;
 		cio_api.showmouse=curs_showmouse;
 		cio_api.hidemouse=curs_hidemouse;
+		cio_api.settitle=NULL;
 		return(1);
 	}
 	fprintf(stderr,"Curses init failed\n");
@@ -142,6 +144,7 @@ int try_ansi_init(int mode)
 		cio_api.getmouse=NULL;
 		cio_api.showmouse=NULL;
 		cio_api.hidemouse=NULL;
+		cio_api.settitle=NULL;
 		return(1);
 	}
 	fprintf(stderr,"ANSI init failed\n");
@@ -174,6 +177,7 @@ int try_conio_init(int mode)
 		cio_api.getmouse=win32_getmouse;
 		cio_api.showmouse=win32_showmouse;
 		cio_api.hidemouse=win32_hidemouse;
+		cio_api.settitle=NULL;
 		return(1);
 	}
 	fprintf(stderr,"CONIO init failed\n");
@@ -758,4 +762,11 @@ int ciolib_hidemouse(void) {
 	if(cio_api.hidemouse!=NULL)
 		return(cio_api.hidemouse());
 	return(-1);
+}
+
+void ciolib_settitle(const char *title) {
+	CIOLIB_INIT();
+
+	if(cio_api.settitle!=NULL)
+		cio_api.settitle(title);
 }

@@ -230,3 +230,8 @@ void x_textmode(int mode)
 {
 	init_mode(mode);
 }
+
+void x_settitle(const char *title)
+{
+	x_win_title(title);
+}

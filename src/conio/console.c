@@ -1380,3 +1380,8 @@ tty_kbhit(void)
 		return(1);
 	return(0);
 }
+
+void x_win_title(const char *title)
+{
+    XStoreName(dpy, win, title);
+}
