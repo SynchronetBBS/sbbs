@@ -113,6 +113,8 @@ void __fastcall TMailCfgDlg::FormShow(TObject *Sender)
 
     DebugTXCheckBox->Checked=MainForm->mail_startup.options
         &MAIL_OPT_DEBUG_TX;
+    DebugRXCheckBox->Checked=MainForm->mail_startup.options
+        &MAIL_OPT_DEBUG_RX_RSP;
     DebugHeadersCheckBox->Checked=MainForm->mail_startup.options
         &MAIL_OPT_DEBUG_RX_HEADER;
     POP3EnabledCheckBox->Checked=MainForm->mail_startup.options
@@ -206,6 +208,10 @@ void __fastcall TMailCfgDlg::OKBtnClick(TObject *Sender)
     	MainForm->mail_startup.options|=MAIL_OPT_DEBUG_TX;
     else
 	    MainForm->mail_startup.options&=~MAIL_OPT_DEBUG_TX;
+	if(DebugRXCheckBox->Checked==true)
+    	MainForm->mail_startup.options|=MAIL_OPT_DEBUG_RX_RSP;
+    else
+	    MainForm->mail_startup.options&=~MAIL_OPT_DEBUG_RX_RSP;
 	if(DebugHeadersCheckBox->Checked==true)
     	MainForm->mail_startup.options|=MAIL_OPT_DEBUG_RX_HEADER;
     else

@@ -53,8 +53,8 @@ object MailCfgDlg: TMailCfgDlg
     Top = 4
     Width = 342
     Height = 245
-    ActivePage = DNSBLTabSheet
-    TabIndex = 5
+    ActivePage = GeneralTabSheet
+    TabIndex = 0
     TabOrder = 3
     object GeneralTabSheet: TTabSheet
       Caption = 'General'
@@ -154,14 +154,14 @@ object MailCfgDlg: TMailCfgDlg
         Width = 146
         Height = 24
         Hint = 'Log all transmitted mail commands and responses (for debugging)'
-        Caption = 'Log TX'
+        Caption = 'Log Transmissions'
         ParentShowHint = False
         ShowHint = True
         TabOrder = 6
       end
       object LogFileCheckBox: TCheckBox
         Left = 185
-        Top = 108
+        Top = 140
         Width = 146
         Height = 24
         Hint = 'Save log entries to a file (in your DATA directory)'
@@ -181,6 +181,17 @@ object MailCfgDlg: TMailCfgDlg
         ParentShowHint = False
         ShowHint = True
         TabOrder = 5
+      end
+      object DebugRXCheckBox: TCheckBox
+        Left = 185
+        Top = 108
+        Width = 146
+        Height = 24
+        Hint = 'Log all transmitted mail commands and responses (for debugging)'
+        Caption = 'Log Responses'
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 8
       end
     end
     object SMTPTabSheet: TTabSheet
