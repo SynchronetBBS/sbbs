@@ -296,9 +296,12 @@ char* _fullpath(char* absPath, const char* relPath, size_t maxLength)
 	}
 
     getcwd(curdir, PATH_MAX);
-    chdir(relPath);
-    getcwd(absPath, maxLength);
-    chdir(curdir);
+    if(chdir(relPath)!=0) /* error, invalid dir */
+		strcpy(absPath,relPath);
+	else {
+		getcwd(absPath, maxLength);
+		chdir(curdir);
+	}
 	free(curdir);
 
     return absPath;
