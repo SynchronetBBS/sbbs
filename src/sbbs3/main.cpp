@@ -39,6 +39,10 @@
 #include "ident.h"
 #include "telnet.h" 
 
+#ifdef __unix__
+	#include <sys/un.h>
+#endif
+
 //---------------------------------------------------------------------------
 
 /* Temporary */
@@ -932,6 +936,14 @@ void input_thread(void *arg)
 	fd_set		socket_set;
 	sbbs_t*		sbbs = (sbbs_t*) arg;
 	struct timeval	tv;
+	int			curr_socket=INVALID_SOCKET;
+#ifdef __unix__
+	int			spy_sock=INVALID_SOCKET;
+	int			spy_insock=INVALID_SOCKET;
+	struct sockaddr_un spy_name;
+	socklen_t	spy_len;
+	char		spy_path[sizeof(spy_name.sun_path)];
+#endif
 
 	thread_up(TRUE /* setuid */);
 
@@ -943,6 +955,33 @@ void input_thread(void *arg)
     sbbs->input_thread_running = true;
 	sbbs->console|=CON_R_INPUT;
 
+#ifdef __unix__
+	// SPY socket setup.
+	
+	if((spy_sock=socket(PF_LOCAL,SOCK_STREAM,0))<0)  {
+		lprintf("Node %d unable to create spy socket (%d)",sbbs->cfg.node_num,errno);
+		spy_sock=INVALID_SOCKET;
+	}
+	else
+		lprintf("Node %d spy using socket %d",sbbs->cfg.node_num,spy_sock);
+	spy_name.sun_family=AF_LOCAL;
+	if((unsigned int)snprintf(spy_path,sizeof(spy_name.sun_path),
+			"%slocalspy.sock",sbbs->cfg.node_dir)>=sizeof(spy_name.sun_path))
+		spy_sock=INVALID_SOCKET;
+	else  {
+		strcpy(spy_name.sun_path,spy_path);
+		if(fexist(spy_path))
+			unlink(spy_path);
+	}
+	spy_len=SUN_LEN(&spy_name);
+	if(bind(spy_sock, (struct sockaddr *) &spy_name, spy_len))
+		lprintf("Node %d unable to bind spy socket %s (%d)",sbbs->cfg.node_num,spy_name.sun_path,errno);
+	listen(spy_sock,1);
+	fcntl(spy_sock,F_SETFL,fcntl(spy_sock,F_GETFL)|O_NONBLOCK);
+	spy_len=sizeof(spy_name);
+#endif
+
+	curr_socket=sbbs->client_socket;
 	while(sbbs->online && sbbs->client_socket!=INVALID_SOCKET
 		&& node_socket[sbbs->cfg.node_num-1]!=INVALID_SOCKET) {
 
@@ -951,33 +990,67 @@ void input_thread(void *arg)
 		#endif
 		pthread_mutex_lock(&sbbs->input_thread_mutex);
 
-		FD_ZERO(&socket_set);
-		FD_SET(sbbs->client_socket,&socket_set);
-	
-		tv.tv_sec=1;
-		tv.tv_usec=0;
+#ifdef __unix__
+		if(spy_socket[sbbs->cfg.node_num-1]==INVALID_SOCKET)  {
+			curr_socket=sbbs->client_socket;
+			spy_socket[sbbs->cfg.node_num-1]=accept(spy_sock, (struct sockaddr *) &spy_name, &spy_len);
+			if(spy_socket[sbbs->cfg.node_num-1]>0)  {
+				sbbs->spymsg("Connected");
+				spy_insock=spy_socket[sbbs->cfg.node_num-1];
+			}
+		}
+		else  {
+			if(curr_socket==sbbs->client_socket)
+				curr_socket=spy_insock;
+			else
+				curr_socket=sbbs->client_socket;
+		}
+#endif
 
-		if((i=select(sbbs->client_socket+1,&socket_set,NULL,NULL,&tv))<1) {
+		FD_ZERO(&socket_set);
+		FD_SET(curr_socket,&socket_set);
+
+		if(curr_socket==sbbs->client_socket)  {
+			tv.tv_sec=1;
+			tv.tv_usec=0;
+		}
+		else  {
+			tv.tv_sec=0;
+			tv.tv_usec=0;
+		}
+
+		if((i=select(curr_socket+1,&socket_set,NULL,NULL,&tv))<1) {
 			pthread_mutex_unlock(&sbbs->input_thread_mutex);
-			if(i==0) {
+			if(i==0 && curr_socket==sbbs->client_socket) {
 				mswait(1);
 				continue;
 			}
 
-        	if(ERROR_VALUE == ENOTSOCK)
-                lprintf("Node %d socket closed by peer on input->select", sbbs->cfg.node_num);
-			else if(ERROR_VALUE==ESHUTDOWN)
-				lprintf("Node %d socket shutdown on input->select", sbbs->cfg.node_num);
-			else if(ERROR_VALUE==EINTR)
-				lprintf("Node %d input thread interrupted",sbbs->cfg.node_num);
-            else if(ERROR_VALUE==ECONNRESET) 
-				lprintf("Node %d connection reset by peer on input->select", sbbs->cfg.node_num);
-            else if(ERROR_VALUE==ECONNABORTED) 
-				lprintf("Node %d connection aborted by peer on input->select", sbbs->cfg.node_num);
-			else
-				lprintf("Node %d !ERROR %d input->select socket %d"
-                	,sbbs->cfg.node_num, ERROR_VALUE, sbbs->client_socket);
-			break;
+			if(curr_socket==sbbs->client_socket)  {
+	        	if(ERROR_VALUE == ENOTSOCK)
+    	            lprintf("Node %d socket closed by peer on input->select", sbbs->cfg.node_num);
+				else if(ERROR_VALUE==ESHUTDOWN)
+					lprintf("Node %d socket shutdown on input->select", sbbs->cfg.node_num);
+				else if(ERROR_VALUE==EINTR)
+					lprintf("Node %d input thread interrupted",sbbs->cfg.node_num);
+        	    else if(ERROR_VALUE==ECONNRESET) 
+					lprintf("Node %d connection reset by peer on input->select", sbbs->cfg.node_num);
+	            else if(ERROR_VALUE==ECONNABORTED) 
+					lprintf("Node %d connection aborted by peer on input->select", sbbs->cfg.node_num);
+				else
+					lprintf("Node %d !ERROR %d input->select socket %d"
+                		,sbbs->cfg.node_num, ERROR_VALUE, curr_socket);
+				break;
+			}
+			else  {
+#ifdef __unix__
+				if(ERROR_VALUE != EAGAIN)  {
+					lprintf("Node %d spy socket %d error on input->select (%d)", sbbs->cfg.node_num,curr_socket,errno);
+					close_socket(spy_insock);
+					spy_insock=spy_socket[sbbs->cfg.node_num-1]=INVALID_SOCKET;
+				}
+#endif
+			}
 		}
 
 		if(sbbs->client_socket==INVALID_SOCKET) {
@@ -1002,27 +1075,38 @@ void input_thread(void *arg)
 	    if(rd > (int)sizeof(inbuf))
         	rd=sizeof(inbuf);
 
-    	rd = recv(sbbs->client_socket, (char*)inbuf, rd, 0);
+    	rd = recv(curr_socket, (char*)inbuf, rd, 0);
 
 		pthread_mutex_unlock(&sbbs->input_thread_mutex);
 
 		if(rd == SOCKET_ERROR)
 		{
-        	if(ERROR_VALUE == ENOTSOCK)
-                lprintf("Node %d socket closed by peer on receive", sbbs->cfg.node_num);
-            else if(ERROR_VALUE==ECONNRESET) 
-				lprintf("Node %d connection reset by peer on receive", sbbs->cfg.node_num);
-			else if(ERROR_VALUE==ESHUTDOWN)
-				lprintf("Node %d socket shutdown on receive", sbbs->cfg.node_num);
-            else if(ERROR_VALUE==ECONNABORTED) 
-				lprintf("Node %d connection aborted by peer on receive", sbbs->cfg.node_num);
-			else
-				lprintf("Node %d !ERROR %d receiving from socket %d"
-                	,sbbs->cfg.node_num, ERROR_VALUE, sbbs->client_socket);
-			break;
+			if(curr_socket==sbbs->client_socket)  {
+	        	if(ERROR_VALUE == ENOTSOCK)
+    	            lprintf("Node %d socket closed by peer on receive", sbbs->cfg.node_num);
+        	    else if(ERROR_VALUE==ECONNRESET) 
+					lprintf("Node %d connection reset by peer on receive", sbbs->cfg.node_num);
+				else if(ERROR_VALUE==ESHUTDOWN)
+					lprintf("Node %d socket shutdown on receive", sbbs->cfg.node_num);
+        	    else if(ERROR_VALUE==ECONNABORTED) 
+					lprintf("Node %d connection aborted by peer on receive", sbbs->cfg.node_num);
+				else
+					lprintf("Node %d !ERROR %d receiving from socket %d"
+        	        	,sbbs->cfg.node_num, ERROR_VALUE, curr_socket);
+				break;
+			}
+			else  {
+#ifdef __unix__
+				if(ERROR_VALUE != EAGAIN)  {
+					lprintf("Node %d spy socket %d error on receive (%d)", sbbs->cfg.node_num,curr_socket,errno);
+					close_socket(spy_insock);
+					spy_insock=spy_socket[sbbs->cfg.node_num-1]=INVALID_SOCKET;
+				}
+#endif
+			}
 		}
 
-		if(rd == 0)
+		if(rd == 0 && curr_socket==sbbs->client_socket)
 		{
 			lprintf("Node %d disconnected", sbbs->cfg.node_num);
 			break;
@@ -1032,7 +1116,14 @@ void input_thread(void *arg)
 		total_pkts++;
 
         // telbuf and wr are modified to reflect telnet escaped data
-		wrbuf=telnet_interpret(sbbs, inbuf, rd, telbuf, wr);
+#ifdef __unix__
+		if(curr_socket==spy_insock)  {
+			wr=rd;
+			wrbuf=inbuf;
+		}
+		else
+#endif
+			wrbuf=telnet_interpret(sbbs, inbuf, rd, telbuf, wr);
 		if(wr > (int)sizeof(telbuf)) 
 			lprintf("!TELBUF OVERFLOW (%d>%d)",wr,sizeof(telbuf));
 
@@ -1064,6 +1155,12 @@ void input_thread(void *arg)
 	}
 	sbbs->online=0;
 
+#ifdef __unix__
+	close_socket(spy_insock);
+	close_socket(spy_sock);
+	if(fexist(spy_path))
+		unlink(spy_path);
+#endif
     sbbs->input_thread_running = false;
 	if(node_socket[sbbs->cfg.node_num-1]==INVALID_SOCKET)	// Shutdown locally
 		sbbs->terminated = true;	// Signal JS to stop execution
