@@ -4,6 +4,7 @@
 struct mouse_event {
 	int event;
 	int bstate;
+	int kbsm;
 	int startx;
 	int starty;
 	int endx;

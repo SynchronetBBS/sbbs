@@ -4,7 +4,7 @@
 #include "mouse.h"
 
 static pthread_mutex_t in_mutex;
-static int in_mutex_initialized=0;
+static pthread_mutex_t out_mutex;
 sem_t in_sem;
 
 struct in_mouse_event {
@@ -39,6 +39,15 @@ struct mouse_state {
 	int	click_drift;	/* Allowed "drift" during a click event */
 	struct in_mouse_event	*events_in;	/* Pointer to recevied events stack */
 	struct out_mouse_event	*events_out;	/* Pointer to output events stack */
+	int	b1_currevent;	/* Event that is currently being processed on button 1 */
+	int	b1_ce_sx;	/* Start X for current b1 event */
+	int	b1_ce_sy;	/* Start Y for current b1 event */
+	int	b2_currevent;	
+	int	b2_ce_sx;	/* Start X for current b2 event */
+	int	b2_ce_sy;	/* Start Y for current b2 event */
+	int	b3_currevent;
+	int	b3_ce_sx;	/* Start X for current b3 event */
+	int	b3_ce_sy;	/* Start Y for current b3 event */
 };
 
 struct mouse_state state;
@@ -55,6 +64,7 @@ void init_mouse(void)
 	state.events_in=(struct in_mouse_event *)NULL;
 	state.events_out=(struct out_mouse_event *)NULL;
 	pthread_mutex_init(&in_mutex,NULL);
+	pthread_mutex_init(&out_mutex,NULL);
 	sem_init(&in_sem,0,0);
 }
 
@@ -102,6 +112,30 @@ static void ciomouse_gotevent(int event, int x, int y)
 	sem_post(&in_sem);
 }
 
+static void add_outevent(int event, int bstate, int kbsm, sx, sy, ex, ey)
+{
+	struct out_mouse_event *ome;
+	struct out_mouse_event **lastevent;
+
+	ome=(struct out_mouse_event *)malloc(sizeof(out_mouse_ecent));
+
+	ome->event=event;
+	ome->bstate=bstate;
+	ome->kbsm=kbsm;
+	ome->startx=sx;
+	ome->starty=sy;
+	ome->endx=ex;
+	ome->endy=ey;
+	ome->nextevent=(struct out_mouse_event *)NULL;
+
+	pthread_mutex_lock(&out_mutex);
+
+	for(lastevent=&state.events_out;*lastevent != NULL;lastevent=&(lastevent->nextevent));
+	*lastevent=ome;
+
+	pthread_mutex_unlock(&in_mutex);
+}
+
 static void coilib_mouse_thread(void *data)
 {
 	int	use_timeout=0;
@@ -124,7 +158,7 @@ static void coilib_mouse_thread(void *data)
 				break;
 
 			case CIOLIB_BUTTON_1_PRESS:
-				/* No current event should affect a press event */
+				/* Currently processing a B1 event? */
 				break;
 
 			case CIOLIB_BUTTON_1_RELEASE:
@@ -132,7 +166,6 @@ static void coilib_mouse_thread(void *data)
 				break;
 
 			case CIOLIB_BUTTON_2_PRESS:
-				/* No current event should affect a press event */
 				break;
 
 			case CIOLIB_BUTTON_2_RELEASE:
@@ -140,7 +173,6 @@ static void coilib_mouse_thread(void *data)
 				break;
 
 			case CIOLIB_BUTTON_3_PRESS:
-				/* No current event should affect a press event */
 				break;
 
 			case CIOLIB_BUTTON_3_RELEASE:
