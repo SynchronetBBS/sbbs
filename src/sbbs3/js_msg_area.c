@@ -81,8 +81,8 @@ static char* msg_area_prop_desc[] = {
 	,"user has sufficient access to post messages"
 	,"user has operator access to this message area"
 	,"user's posts are moderated"
-	,"user's current new message scan pointer"
-	,"user's message scan configuration (bitfield)"
+	,"user's current new message scan pointer (highest-read message number)"
+	,"user's message scan configuration (bitfield) see <tt>SUB_SCAN_*</tt> in <tt>sbbsdefs.js</tt> for valid bits"
 	,"user's last-read message number"
 	,NULL
 };
@@ -228,6 +228,90 @@ BOOL DLLCALL js_CreateMsgAreaProperties(JSContext* cx, scfg_t* cfg, JSObject* su
 	return(TRUE);
 }
 
+/*******************************************/
+/* Re-writable Sub-board Object Properites */
+/*******************************************/
+enum {
+	 SUB_PROP_SCAN_PTR
+	,SUB_PROP_SCAN_CFG
+	,SUB_PROP_LAST_READ
+};
+
+
+static JSBool js_sub_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
+{
+    jsint       tiny;
+	subscan_t*	scan;
+
+	if((scan=(subscan_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_TRUE);
+
+    tiny = JSVAL_TO_INT(id);
+
+	switch(tiny) {
+		case SUB_PROP_SCAN_PTR:
+			JS_NewNumberValue(cx,scan->ptr,vp);
+			break;
+		case SUB_PROP_SCAN_CFG:
+			JS_NewNumberValue(cx,scan->cfg,vp);
+			break;
+		case SUB_PROP_LAST_READ:
+			JS_NewNumberValue(cx,scan->last,vp);
+			break;
+	}
+
+	return(JS_TRUE);
+}
+
+static JSBool js_sub_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
+{
+	int32		val=0;
+    jsint       tiny;
+	subscan_t*	scan;
+
+	if((scan=(subscan_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_TRUE);
+
+    tiny = JSVAL_TO_INT(id);
+
+	switch(tiny) {
+		case SUB_PROP_SCAN_PTR:
+			JS_ValueToInt32(cx, *vp, (int32*)&scan->ptr);
+			break;
+		case SUB_PROP_SCAN_CFG:
+			JS_ValueToInt32(cx, *vp, &val);
+			scan->cfg=(ushort)val;
+			break;
+		case SUB_PROP_LAST_READ:
+			JS_ValueToInt32(cx, *vp, (int32*)&scan->last);
+			break;
+	}
+
+	return(JS_TRUE);
+}
+
+static struct JSPropertySpec js_sub_properties[] = {
+/*		 name				,tinyid		,flags				,getter,setter	*/
+
+	{	"scan_ptr"	,SUB_PROP_SCAN_PTR	,JSPROP_ENUMERATE	,NULL,NULL},
+	{	"scan_cfg"	,SUB_PROP_SCAN_CFG	,JSPROP_ENUMERATE	,NULL,NULL},
+	{	"lead_read"	,SUB_PROP_LAST_READ	,JSPROP_ENUMERATE	,NULL,NULL},
+	{0}
+};
+
+
+static JSClass js_sub_class = {
+     "Message Sub-board"	/* name			*/
+    ,JSCLASS_HAS_PRIVATE	/* flags		*/
+	,JS_PropertyStub		/* addProperty	*/
+	,JS_PropertyStub		/* delProperty	*/
+	,js_sub_get				/* getProperty	*/
+	,js_sub_set				/* setProperty	*/
+	,JS_EnumerateStub		/* enumerate	*/
+	,JS_ResolveStub			/* resolve		*/
+	,JS_ConvertStub			/* convert		*/
+	,JS_FinalizeStub		/* finalize		*/
+};
 
 JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t* cfg
 										  ,user_t* user, subscan_t* subscan)
@@ -335,8 +419,11 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 			if(user!=NULL && !chk_ar(cfg,cfg->sub[d]->ar,user))
 				continue;
 
-			if((subobj=JS_NewObject(cx, NULL, NULL, NULL))==NULL)
+			if((subobj=JS_NewObject(cx, &js_sub_class, NULL, NULL))==NULL)
 				return(NULL);
+
+			if(subscan!=NULL)
+				JS_SetPrivate(cx,subobj,&subscan[d]);
 
 			if(!JS_GetArrayLength(cx, sub_list, &index))
 				return(NULL);							
@@ -384,7 +471,7 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 				val=BOOLEAN_TO_JSVAL(JS_FALSE);
 			if(!JS_SetProperty(cx, subobj, "is_moderated", &val))
 				return(NULL);
-
+#if 0	/* Old way */
 			if(subscan!=NULL) {
 				if(!JS_NewNumberValue(cx,subscan[d].ptr,&val))
 					return(NULL);
@@ -399,14 +486,19 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 				if(!JS_SetProperty(cx, subobj, "last_read", &val))
 					return(NULL);
 			}
-
+#else
+			if(!JS_DefineProperties(cx, subobj, js_sub_properties))
+				return(NULL);
+#endif
 			/* Add as property (associative array element) */
 			if(!JS_DefineProperty(cx, allsubs, cfg->sub[d]->code, val
 				,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE))
 				return(NULL);
 
 #ifdef _DEBUG
-			js_DescribeObject(cx,subobj,"Message Sub-boards");
+			js_DescribeObject(cx,subobj,"Message Sub-boards</h2>"
+				"(all properties are <small>READ ONLY</small> except for "
+				"<i>scan_ptr</i>, <i>scan_cfg</i>, and <i>last_read</i>)");
 #endif
 
 		}
