@@ -53,7 +53,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
     uchar	ch;
 	uchar	atr;
 
-	console&=~(CON_UPARROW|CON_LEFTARROW|CON_BACKSPACE);
+	console&=~(CON_UPARROW|CON_DOWNARROW|CON_LEFTARROW|CON_BACKSPACE);
 	sys_status&=~SS_ABORT;
 	if(mode&K_LINE && useron.misc&ANSI && !(mode&K_NOECHO)) {
 		attr(cfg.color[clr_inputline]);
