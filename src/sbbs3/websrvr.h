@@ -94,6 +94,7 @@ typedef struct {
 	DWORD	log_mask;
 	uint	bind_retry_count;		/* Number of times to retry bind() calls */
 	uint	bind_retry_delay;		/* Time to wait between each bind() retry */
+	char	default_cgi_content[128];
 
 } web_startup_t;
 
@@ -147,6 +148,7 @@ static ini_bitdesc_t web_options[] = {
 #define WEB_DEFAULT_ROOT_DIR		"../web/html"
 #define WEB_DEFAULT_ERROR_DIR		"error"
 #define WEB_DEFAULT_CGI_DIR			"cgi-bin"
+#define WEB_DEFAULT_CGI_CONTENT		"text/plain"
 
 #ifdef DLLEXPORT
 #undef DLLEXPORT

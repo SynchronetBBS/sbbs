@@ -498,6 +498,9 @@ void sbbs_read_ini(
 		SAFECOPY(web->logfile_base
 			,iniReadString(fp,section,"HttpLogFile",nulstr,value));
 
+		SAFECOPY(web->default_cgi_content
+			,iniReadString(fp,section,"DefaultCGIContent",WEB_DEFAULT_CGI_CONTENT,value));
+
 		iniFreeStringList(web->index_file_name);
 		web->index_file_name
 			=iniReadStringList(fp,section,"IndexFileNames", "," ,"index.html,index.ssjs");
@@ -1077,6 +1080,11 @@ BOOL sbbs_write_ini(
 		if(!iniSetString(lp,section,"ErrorDirectory",web->error_dir,&style))
 			break;
 		if(!iniSetString(lp,section,"CGIDirectory",web->cgi_dir,&style))
+			break;
+		if(!iniSetString(lp,section,"HttpLogFile",web->logfile_base,&style))
+			break;
+
+		if(!iniSetString(lp,section,"DefaultCGIContent",web->default_cgi_content,&style))
 			break;
 
 		if(!iniSetStringList(lp,section,"IndexFileNames", "," ,web->index_file_name,&style))

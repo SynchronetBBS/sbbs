@@ -2108,6 +2108,8 @@ static str_list_t get_cgi_env(http_session_t *session)
 
 	strListAppendList(&env_list, session->req.cgi_env);
 
+	strListPush(&env_list,"REDIRECT_STATUS=200");	/* Kludge for php-cgi */
+
 	if((fp=iniOpenFile(iniFileName(path,sizeof(path),scfg.ctrl_dir,"cgi_env.ini")))==NULL)
 		return(env_list);
 
@@ -2491,7 +2493,7 @@ static BOOL exec_cgi(http_session_t *session)
 	start=time(NULL);
 
 	SAFECOPY(cgi_status,session->req.status);
-	SAFEPRINTF(content_type,"%s: text/plain",get_header(HEAD_TYPE));
+	SAFEPRINTF(content_type,"%s: %s",get_header(HEAD_TYPE),startup->default_cgi_content);
 	while(server_socket!=INVALID_SOCKET) {
 
 		if((time(NULL)-start) >= startup->max_cgi_inactivity)  {
@@ -2530,6 +2532,8 @@ static BOOL exec_cgi(http_session_t *session)
 					got_valid_headers=FALSE;
 					break;
 				}
+				lprintf(LOG_DEBUG,"%04d CGI header line: %s"
+					,session->socket, buf);
 				SAFECOPY(header,buf);
 				if(strchr(header,':')!=NULL) {
 					directive=strtok(header,":");
@@ -3519,6 +3523,7 @@ void DLLCALL web_server(void* arg)
 	if(startup->root_dir[0]==0)				SAFECOPY(startup->root_dir,WEB_DEFAULT_ROOT_DIR);
 	if(startup->error_dir[0]==0)			SAFECOPY(startup->error_dir,WEB_DEFAULT_ERROR_DIR);
 	if(startup->cgi_dir[0]==0)				SAFECOPY(startup->cgi_dir,WEB_DEFAULT_CGI_DIR);
+	if(startup->default_cgi_content[0]==0)	SAFECOPY(startup->default_cgi_content,WEB_DEFAULT_CGI_CONTENT);
 	if(startup->max_inactivity==0) 			startup->max_inactivity=120; /* seconds */
 	if(startup->max_cgi_inactivity==0) 		startup->max_cgi_inactivity=120; /* seconds */
 	if(startup->sem_chk_freq==0)			startup->sem_chk_freq=2; /* seconds */
