@@ -253,6 +253,64 @@ js_send(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 }
 
 static JSBool
+js_sendto(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		cp;
+	int			len;
+	ulong		ip_addr;
+	ushort		port;
+	JSString*	data_str;
+	JSString*	ip_str;
+	private_t*	p;
+	SOCKADDR_IN	addr;
+
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+		return(JS_FALSE);
+
+	*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+
+	if(argc<3)
+		return(JS_FALSE);
+
+	/* data */
+	data_str = JS_ValueToString(cx, argv[0]);
+	cp = JS_GetStringBytes(data_str);
+	len = strlen(cp);
+
+	/* address */
+	ip_str = JS_ValueToString(cx, argv[1]);
+	dbprintf(FALSE, p, "resolving hostname: %s", JS_GetStringBytes(ip_str));
+	if((ip_addr=resolve_ip(JS_GetStringBytes(ip_str)))==0) {
+		p->last_error=ERROR_VALUE;
+		dbprintf(TRUE, p, "resolve_ip failed with error %d",ERROR_VALUE);
+		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+		return(JS_TRUE);
+	}
+
+	/* port */
+	port = (ushort)JSVAL_TO_INT(argv[2]);
+
+	dbprintf(FALSE, p, "sending %d bytes to port %u at %s"
+		,len, port, JS_GetStringBytes(ip_str));
+
+	memset(&addr,0,sizeof(addr));
+	addr.sin_addr.s_addr = ip_addr;
+	addr.sin_family = AF_INET;
+	addr.sin_port   = htons(port);
+
+	if(sendto(p->sock,cp,len,0 /* flags */,(SOCKADDR*)&addr,sizeof(addr))==len) {
+		dbprintf(FALSE, p, "sent %u bytes",len);
+		*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
+	} else {
+		p->last_error=ERROR_VALUE;
+		dbprintf(TRUE, p, "send of %u bytes failed",len);
+	}
+
+	return(JS_TRUE);
+}
+
+
+static JSBool
 js_sendfile(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char*		fname;
@@ -801,6 +859,7 @@ static JSFunctionSpec js_socket_functions[] = {
 	{"bind",			js_bind,			0},		/* bind to a port */
 	{"connect",         js_connect,         2},		/* connect to an IP address and port */
 	{"send",			js_send,			1},		/* send a string */
+	{"sendto",			js_sendto,			3},		/* send a string to address and port */
 	{"sendfile",		js_sendfile,		1},		/* send a file */
 	{"write",			js_send,			1},		/* send a string */
 	{"recv",			js_recv,			0},		/* receive a string */
