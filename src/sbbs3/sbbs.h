@@ -375,7 +375,7 @@ public:
 	bool	gettimeleft_inside;
 
 	/* str.cpp */
-	char *	timestr(time_t* intime);  /* ASCII representation of time_t */
+	char*	timestr(time_t *intime);
     char	timestr_output[60];
 	void	userlist(char subonly);
 	size_t	gettmplt(char *outstr, char *tmplt, long mode);
@@ -773,7 +773,6 @@ extern "C" {
 	DLLEXPORT char *	DLLCALL prep_dir(char* base, char* dir);
 
 	/* date_str.c */
-
 	/* ASCII date (MM/DD/YY) to unix conversion */
 	DLLEXPORT time_t	DLLCALL dstrtounix(scfg_t*, char *str);	
 	 /* Unix time to ASCII date */
@@ -782,6 +781,9 @@ extern "C" {
 	DLLEXPORT char *	DLLCALL sectostr(uint sec, char *str);		
 	/* struct tm to HH:MMa/p */
 	DLLEXPORT char *	DLLCALL hhmmtostr(scfg_t* cfg, struct tm* tm, char* str);
+	/* time_t to ctime()-like string */
+	DLLEXPORT char *	DLLCALL timestr(scfg_t* cfg, time_t *intime, char* str);
+
 
 	/* logfile.cpp */
 	DLLEXPORT BOOL		DLLCALL hacklog(scfg_t* cfg, char* prot, char* user, char* text 

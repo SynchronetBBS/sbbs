@@ -40,6 +40,7 @@
 extern "C" BOOL DLLCALL hacklog(scfg_t* cfg, char* prot, char* user, char* text, char* host, SOCKADDR_IN* addr)
 {
 	char	hdr[512];
+	char	tstr[64];
 	char	fname[MAX_PATH+1];
 	int		file;
 	time_t	now=time(NULL);
@@ -52,7 +53,7 @@ extern "C" BOOL DLLCALL hacklog(scfg_t* cfg, char* prot, char* user, char* text,
 	sprintf(hdr,"SUSPECTED %s HACK ATTEMPT from %s on %.24s\r\nUsing port %u at %s [%s]\r\nDetails: "
 		,prot
 		,user
-		,ctime(&now)
+		,timestr(cfg,&now,tstr)
 		,addr->sin_port
 		,host
 		,inet_ntoa(addr->sin_addr)
@@ -69,6 +70,7 @@ extern "C" BOOL DLLCALL hacklog(scfg_t* cfg, char* prot, char* user, char* text,
 extern "C" BOOL DLLCALL spamlog(scfg_t* cfg, char* prot, char* reason, char* host, char* ip_addr)
 {
 	char	hdr[512];
+	char	tstr[64];
 	char	fname[MAX_PATH+1];
 	int		file;
 	time_t	now=time(NULL);
@@ -80,7 +82,7 @@ extern "C" BOOL DLLCALL spamlog(scfg_t* cfg, char* prot, char* reason, char* hos
 
 	sprintf(hdr,"SUSPECTED %s SPAM REJECTED on %.24s\r\nFrom: %s [%s]\r\nReason: "
 		,prot
-		,ctime(&now)
+		,timestr(cfg,&now,tstr)
 		,host
 		,ip_addr
 		);

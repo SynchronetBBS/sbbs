@@ -839,39 +839,7 @@ bool sbbs_t::trashcan(char *insearch, char *name)
 	return(result);
 }
 
-/****************************************************************************/
-/* Generates a 24 character ASCII string that represents the time_t pointer */
-/* Used as a replacement for ctime()                                        */
-/****************************************************************************/
-char * sbbs_t::timestr(time_t *intime)
+char* sbbs_t::timestr(time_t *intime)
 {
-    char mer[3],hour;
-    struct tm *gm;
-
-	gm=localtime(intime);
-	if(gm==NULL) {
-		strcpy(timestr_output,"Invalid Time");
-		return(timestr_output); }
-	if(cfg.sys_misc&SM_MILITARY) {
-		sprintf(timestr_output,"%s %s %02d %4d %02d:%02d:%02d"
-			,wday[gm->tm_wday],mon[gm->tm_mon],gm->tm_mday,1900+gm->tm_year
-			,gm->tm_hour,gm->tm_min,gm->tm_sec);
-		return(timestr_output); }
-	if(gm->tm_hour>=12) {
-		if(gm->tm_hour==12)
-			hour=12;
-		else
-			hour=gm->tm_hour-12;
-		strcpy(mer,"pm"); }
-	else {
-		if(gm->tm_hour==0)
-			hour=12;
-		else
-			hour=gm->tm_hour;
-		strcpy(mer,"am"); }
-	sprintf(timestr_output,"%s %s %02d %4d %02d:%02d %s"
-		,wday[gm->tm_wday],mon[gm->tm_mon],gm->tm_mday,1900+gm->tm_year
-		,hour,gm->tm_min,mer);
-	return(timestr_output);
+	return(::timestr(&cfg,intime,timestr_output));
 }
-

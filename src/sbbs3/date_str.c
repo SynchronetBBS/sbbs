@@ -142,3 +142,43 @@ char* DLLCALL hhmmtostr(scfg_t* cfg, struct tm* tm, char* str)
 	return(str);
 }
 
+/****************************************************************************/
+/* Generates a 24 character ASCII string that represents the time_t pointer */
+/* Used as a replacement for ctime()                                        */
+/****************************************************************************/
+char* DLLCALL timestr(scfg_t* cfg, time_t *intime, char* str)
+{
+    char*		mer;
+	uchar		hour;
+    struct tm*	gm;
+
+	gm=localtime(intime);
+	if(gm==NULL) {
+		strcpy(str,"Invalid Time");
+		return(str); 
+	}
+	if(cfg->sys_misc&SM_MILITARY) {
+		sprintf(str,"%s %s %02u %4u %02u:%02u:%02u"
+			,wday[gm->tm_wday],mon[gm->tm_mon],gm->tm_mday,1900+gm->tm_year
+			,gm->tm_hour,gm->tm_min,gm->tm_sec);
+		return(str); 
+	}
+	if(gm->tm_hour>=12) {
+		if(gm->tm_hour==12)
+			hour=12;
+		else
+			hour=gm->tm_hour-12;
+		mer="pm"; 
+	} else {
+		if(gm->tm_hour==0)
+			hour=12;
+		else
+			hour=gm->tm_hour;
+		mer="am"; 
+	}
+	sprintf(str,"%s %s %02u %4u %02u:%02u %s"
+		,wday[gm->tm_wday],mon[gm->tm_mon],gm->tm_mday,1900+gm->tm_year
+		,hour,gm->tm_min,mer);
+	return(str);
+}
+
