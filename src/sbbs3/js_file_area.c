@@ -78,7 +78,7 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 	JSBool		found;
 
 	/* Return existing object if it's already been created */
-	if(JS_GetProperty(cx,parent,"file_area",&val))
+	if(JS_GetProperty(cx,parent,"file_area",&val) && val!=JSVAL_VOID)
 		return(JSVAL_TO_OBJECT(val));
 
 	areaobj = JS_DefineObject(cx, parent, "file_area", &js_file_area_class, NULL, 0);
