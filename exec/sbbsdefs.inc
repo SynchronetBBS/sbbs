@@ -180,6 +180,9 @@
 !define EVENT_NEWUSER	2	# Execute during newuser app.
 !define EVENT_BIRTHDAY	3	# Execute on birthday
 !define EVENT_LOGOFF	4	# Execute during normal logoff
+!define EVENT_POST		5	# Execute after message posted
+!define EVENT_UPLOAD	6	# Execute after file uploaded
+!define EVENT_DOWNLOAD	7	# Execute after file downloaded
 
 !define TG_ECHO		.0	# Turn on telnet echo
 !define TG_CRLF		.1	# Expand sole CR to CRLF

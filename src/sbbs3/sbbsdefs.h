@@ -362,6 +362,9 @@ typedef enum {						/* Values for xtrn_t.event				*/
 	,EVENT_LOGOFF					/* Execute during logoff sequence		*/
 	,EVENT_NEWUSER					/* Execute during newuser app.			*/
 	,EVENT_BIRTHDAY 				/* Execute on birthday					*/
+	,EVENT_POST						/* Execute after posting a message		*/
+	,EVENT_UPLOAD					/* Execute after uploading a file		*/
+	,EVENT_DOWNLOAD					/* Execute after downloading a file		*/
 } user_event_t;																
 																			
 									/* Misc bits for event_t.misc			*/

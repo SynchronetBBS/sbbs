@@ -494,6 +494,9 @@ var   EVENT_LOGON	=1			/* Execute during logon sequence			*/
 var   EVENT_LOGOFF	=2			/* Execute during logoff sequence			*/
 var   EVENT_NEWUSER	=3			/* Execute during newuser app.				*/
 var   EVENT_BIRTHDAY=4			/* Execute on birthday						*/
+var   EVENT_POST	=5			/* Execute after message posted				*/
+var   EVENT_UPLOAD	=6			/* Execute after file uploaded				*/
+var   EVENT_DOWNLOAD=7			/* Execute after file downloaded			*/
 					    		/********************************************/
 
 					    		/********************************************/

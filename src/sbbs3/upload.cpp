@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -59,7 +59,8 @@ bool sbbs_t::uploadfile(file_t *f)
 	curdirnum=f->dir;
 	if(findfile(&cfg,f->dir,f->name)) {
 		errormsg(WHERE,ERR_CHK,f->name,f->dir);
-		return(0); }
+		return(0); 
+	}
 	sprintf(path,"%s%s",f->altpath>0 && f->altpath<=cfg.altpaths
 		? cfg.altpath[f->altpath-1]
 		: cfg.dir[f->dir]->path,unpadfname(f->name,fname));
@@ -73,7 +74,8 @@ bool sbbs_t::uploadfile(file_t *f)
 			,f->name
 			,cfg.lib[cfg.dir[f->dir]->lib]->sname,cfg.dir[f->dir]->sname);
 		logline("U!",str);
-		return(0); }
+		return(0); 
+	}
 	strcpy(tmp,f->name);
 	truncsp(tmp);
 	for(i=0;i<cfg.total_ftests;i++)
@@ -90,23 +92,26 @@ bool sbbs_t::uploadfile(file_t *f)
 			sprintf(str,"%ssbbsfile.nam",cfg.node_dir);
 			if((stream=fopen(str,"w"))!=NULL) {
 				fwrite(fname,1,strlen(fname),stream);
-				fclose(stream); }
+				fclose(stream); 
+			}
 			sprintf(str,"%ssbbsfile.des",cfg.node_dir);
 			if((stream=fopen(str,"w"))!=NULL) {
 				fwrite(f->desc,1,strlen(f->desc),stream);
-				fclose(stream); }
+				fclose(stream); 
+			}
 			if(external(cmdstr(cfg.ftest[i]->cmd,path,f->desc,NULL),EX_OFFLINE)) {
 				bprintf(text[FileHadErrors],f->name,cfg.ftest[i]->ext);
 				if(SYSOP) {
-					if(!yesno(text[DeleteFileQ])) return(0); }
+					if(!yesno(text[DeleteFileQ])) return(0); 
+				}
 				remove(path);
 				sprintf(str,"%s attempted to upload %s to %s %s (%s Errors)"
 					,useron.alias
 					,f->name
 					,cfg.lib[cfg.dir[f->dir]->lib]->sname,cfg.dir[f->dir]->sname,cfg.ftest[i]->ext);
 				logline("U!",str);
-				return(0); }
-			else {
+				return(0); 
+			} else {
 				sprintf(str,"%ssbbsfile.nam",cfg.node_dir);
 				if((stream=fopen(str,"r"))!=NULL) {
 					if(fgets(str,128,stream)) {
@@ -116,16 +121,21 @@ bool sbbs_t::uploadfile(file_t *f)
 						truncsp(tmp);
 						sprintf(path,"%s%s",f->altpath>0 && f->altpath<=cfg.altpaths
 							? cfg.altpath[f->altpath-1] : cfg.dir[f->dir]->path
-							,unpadfname(f->name,fname)); }
+							,unpadfname(f->name,fname)); 
+					}
 					fclose(stream);
 					}
 				sprintf(str,"%ssbbsfile.des",cfg.node_dir);
 				if((stream=fopen(str,"r"))!=NULL) {
 					if(fgets(str,128,stream)) {
 						truncsp(str);
-						sprintf(f->desc,"%.*s",LEN_FDESC,str); }
-					fclose(stream); }
-				CRLF; } }
+						sprintf(f->desc,"%.*s",LEN_FDESC,str); 
+					}
+					fclose(stream); 
+				}
+				CRLF; 
+			} 
+		}
 
 	if((length=flength(path))<=0L) {
 		bprintf(text[FileZeroLength],f->name);
@@ -135,7 +145,8 @@ bool sbbs_t::uploadfile(file_t *f)
 			,f->name
 			,cfg.lib[cfg.dir[f->dir]->lib]->sname,cfg.dir[f->dir]->sname);
 		logline("U!",str);
-		return(0); }
+		return(0); 
+	}
 	if(cfg.dir[f->dir]->misc&DIR_DIZ) {
 		for(i=0;i<cfg.total_fextrs;i++)
 			if(!stricmp(cfg.fextr[i]->ext,tmp+9) && chk_ar(cfg.fextr[i]->ar,&useron))
@@ -166,10 +177,14 @@ bool sbbs_t::uploadfile(file_t *f)
 					for(i=0;desc[i];i++)
 						if(isalnum(desc[i]))
 							break;
-					sprintf(f->desc,"%.*s",LEN_FDESC,desc+i); }
+					sprintf(f->desc,"%.*s",LEN_FDESC,desc+i); 
+				}
 				close(file);
 				remove(str);
-				f->misc|=FM_EXTDESC; } } }
+				f->misc|=FM_EXTDESC; 
+			} 
+		} 
+	}
 
 	logon_ulb+=length;  /* Update 'this call' stats */
 	logon_uls++;
@@ -208,7 +223,10 @@ bool sbbs_t::uploadfile(file_t *f)
 				,((ulong)(length*(cfg.dir[f->dir]->up_pct/100.0))/cur_cps)/60);
 		else
 			useron.cdt=adjustuserrec(&cfg,useron.number,U_CDT,10
-				,(ulong)(f->cdt*(cfg.dir[f->dir]->up_pct/100.0))); }
+				,(ulong)(f->cdt*(cfg.dir[f->dir]->up_pct/100.0))); 
+	}
+
+	user_event(EVENT_UPLOAD);
 
 	return(true);
 }
@@ -291,16 +309,19 @@ bool sbbs_t::upload(uint dirnum)
 	if(fexistcase(str)) {   /* File is on disk */
 		if(!dir_op(dirnum) && online!=ON_LOCAL) {		 /* local users or sysops */
 			bprintf(text[FileAlreadyThere],fname);
-			return(false); }
+			return(false); 
+		}
 		if(!yesno(text[FileOnDiskAddQ]))
-			return(false); }
+			return(false); 
+	}
 	else if(online==ON_LOCAL) {
 		bputs(text[FileNotOnDisk]);
 		bputs(text[EnterPath]);
 		if(!getstr(tmp,60,K_LINE))
 			return(false);
 		backslash(tmp);
-		sprintf(src,"%s%s",tmp,fname); }
+		sprintf(src,"%s%s",tmp,fname); 
+	}
 	strcpy(str,cfg.dir[dirnum]->exts);
 	strcpy(tmp,f.name);
 	truncsp(tmp);
@@ -311,14 +332,16 @@ bool sbbs_t::upload(uint dirnum)
 			*p=0;
 		ch=strlen(str+i);
 		if(!strcmp(tmp+9,str+i))
-			break; }
+			break; 
+	}
 	if(j && i>=j) {
 		bputs(text[TheseFileExtsOnly]);
 		bputs(cfg.dir[dirnum]->exts);
 		CRLF;
-		if(!dir_op(dirnum)) return(false); }
+		if(!dir_op(dirnum)) return(false); 
+	}
 	bputs(text[SearchingForDupes]);
-	for(i=k=0;i<usrlibs;i++)
+	for(i=k=0;i<usrlibs;i++) {
 		for(j=0;j<usrdirs[i];j++,k++) {
 			outchar('.');
 			if(k && !(k%5))
@@ -330,7 +353,10 @@ bool sbbs_t::upload(uint dirnum)
 				if(!dir_op(dirnum))
 					return(false); 	 /* File is in database for another dir */
 				if(usrdir[i][j]==dirnum)
-					return(false); } } /* don't allow duplicates */
+					return(false); /* don't allow duplicates */
+			}
+		}
+	}
 	bputs(text[SearchedForDupes]);
 	if(dirnum==cfg.user_dir) {  /* User to User transfer */
 		bputs(text[EnterAfterLastDestUser]);
@@ -341,25 +367,32 @@ bool sbbs_t::upload(uint dirnum)
 			if((user.number=finduser(str))!=0) {
 				if(!dir_op(dirnum) && user.number==useron.number) {
 					bputs(text[CantSendYourselfFiles]);
-					continue; }
+					continue; 
+				}
 				for(i=0;i<destusers;i++)
 					if(user.number==destuser[i])
 						break;
 				if(i<destusers) {
 					bputs(text[DuplicateUser]);
-					continue; }
+					continue; 
+				}
 				getuserdat(&cfg,&user);
 				if((user.rest&(FLAG('T')|FLAG('D')))
 					|| !chk_ar(cfg.lib[cfg.dir[cfg.user_dir]->lib]->ar,&user)
 					|| !chk_ar(cfg.dir[cfg.user_dir]->dl_ar,&user)) {
-					bprintf(text[UserWontBeAbleToDl],user.alias); }
-				else {
+					bprintf(text[UserWontBeAbleToDl],user.alias); 
+				} else {
 					bprintf(text[UserAddedToDestList],user.alias);
-					destuser[destusers++]=user.number; } }
+					destuser[destusers++]=user.number; 
+				} 
+			}
 			else {
-				CRLF; } }
+				CRLF; 
+			} 
+		}
 		if(!destusers)
-			return(false); }
+			return(false); 
+	}
 	if(cfg.dir[dirnum]->misc&DIR_RATE) {
 		SYNC;
 		bputs(text[RateThisFile]);
@@ -367,13 +400,15 @@ bool sbbs_t::upload(uint dirnum)
 		if(!isalpha(ch) || sys_status&SS_ABORT)
 			return(false);
 		CRLF;
-		sprintf(descbeg,text[Rated],toupper(ch)); }
+		sprintf(descbeg,text[Rated],toupper(ch)); 
+	}
 	if(cfg.dir[dirnum]->misc&DIR_ULDATE) {
 		now=time(NULL);
 		if(descbeg[0])
 			strcat(descbeg," ");
 		sprintf(str,"%s  ",unixtodstr(&cfg,now,tmp));
-		strcat(descbeg,str); }
+		strcat(descbeg,str); 
+	}
 	if(cfg.dir[dirnum]->misc&DIR_MULT) {
 		SYNC;
 		if(!noyes(text[MultipleDiskQ])) {
@@ -388,9 +423,10 @@ bool sbbs_t::upload(uint dirnum)
 			if(i>9)
 				sprintf(descend,text[FileOneOfTen],j,i);
 			else
-				sprintf(descend,text[FileOneOfTwo],j,i); }
-		else
-			upload_lastdesc[0]=0; }
+				sprintf(descend,text[FileOneOfTwo],j,i); 
+		} else
+			upload_lastdesc[0]=0; 
+	}
 	else
 		upload_lastdesc[0]=0;
 	bputs(text[EnterDescNow]);
@@ -406,17 +442,19 @@ bool sbbs_t::upload(uint dirnum)
 	if(cfg.dir[dirnum]->misc&DIR_ANON && !(cfg.dir[dirnum]->misc&DIR_AONLY)
 		&& (dir_op(dirnum) || useron.exempt&FLAG('A'))) {
 		if(!noyes(text[AnonymousQ]))
-			f.misc|=FM_ANON; }
+			f.misc|=FM_ANON; 
+	}
 	sprintf(str,"%s%s",path,fname);
 	if(src[0]) {    /* being copied from another local dir */
 		bprintf(text[RetrievingFile],fname);
 		if(mv(src,str,1))
 			return(false);
-		CRLF; }
+		CRLF; 
+	}
 	if(fexistcase(str)) {   /* File is on disk */
 		if(!uploadfile(&f))
-			return(false); }
-	else {
+			return(false); 
+	} else {
 		menu("ulprot");
 		SYNC;
 		strcpy(keys,"Q");
@@ -424,11 +462,13 @@ bool sbbs_t::upload(uint dirnum)
 			mnemonics(text[ProtocolOrQuit]);
 		else {
 			mnemonics(text[ProtocolBatchOrQuit]);
-			strcat(keys,"B"); }
+			strcat(keys,"B"); 
+		}
 		for(i=0;i<cfg.total_prots;i++)
 			if(cfg.prot[i]->ulcmd[0] && chk_ar(cfg.prot[i]->ar,&useron)) {
 				sprintf(tmp,"%c",cfg.prot[i]->mnemonic);
-				strcat(keys,tmp); }
+				strcat(keys,tmp); 
+			}
 		ch=(char)getkeys(keys,0);
 		if(ch=='Q')
 			return(false);
@@ -439,7 +479,8 @@ bool sbbs_t::upload(uint dirnum)
 				for(i=0;i<batup_total;i++)
 					if(!strcmp(batup_name[i],f.name)) {
 						bprintf(text[FileAlreadyInQueue],f.name);
-						return(false); }
+						return(false); 
+					}
 				strcpy(batup_name[batup_total],f.name);
 				strcpy(batup_desc[batup_total],f.desc);
 				batup_dir[batup_total]=dirnum;
@@ -447,8 +488,9 @@ bool sbbs_t::upload(uint dirnum)
 				batup_alt[batup_total]=altul;
 				batup_total++;
 				bprintf(text[FileAddedToUlQueue]
-					,f.name,batup_total,cfg.max_batup); } }
-		else {
+					,f.name,batup_total,cfg.max_batup); 
+			} 
+		} else {
 			for(i=0;i<cfg.total_prots;i++)
 				if(cfg.prot[i]->ulcmd[0] && cfg.prot[i]->mnemonic==ch
 					&& chk_ar(cfg.prot[i]->ar,&useron))
@@ -462,12 +504,16 @@ bool sbbs_t::upload(uint dirnum)
 				ch=uploadfile(&f);
 				autohangup();
 				if(!ch)  /* upload failed, don't process user to user xfer */
-					return(false); } } }
+					return(false); 
+			} 
+		} 
+	}
 	if(dirnum==cfg.user_dir) {  /* Add files to XFER.IXT in INDX dir */
 		sprintf(str,"%sxfer.ixt",cfg.data_dir);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_APPEND))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_APPEND);
-			return(false); }
+			return(false); 
+		}
 		for(j=0;j<destusers;j++) {
 			for(i=1;i<=cfg.sys_nodes;i++) { /* Tell user, if online */
 				getnodedat(i,&node,0);
@@ -475,13 +521,17 @@ bool sbbs_t::upload(uint dirnum)
 					&& (node.status==NODE_INUSE || node.status==NODE_QUIET)) {
 					sprintf(str,text[UserToUserXferNodeMsg],cfg.node_num,useron.alias);
 					putnmsg(&cfg,i,str);
-					break; } }
+					break; 
+				} 
+			}
 			if(i>cfg.sys_nodes) {   /* User not online */
 				sprintf(str,text[UserSentYouFile],useron.alias);
-				putsmsg(&cfg,destuser[j],str); }
+				putsmsg(&cfg,destuser[j],str); 
+			}
 			sprintf(str,"%4.4u %12.12s %4.4u\r\n"
 				,destuser[j],f.name,useron.number);
-			write(file,str,strlen(str)); }
+			write(file,str,strlen(str)); 
+		}
 		close(file); 
 	}
 	return(true);

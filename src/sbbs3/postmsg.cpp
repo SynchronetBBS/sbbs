@@ -392,6 +392,8 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 
 	signal_sub_sem(&cfg,subnum);
 
+	user_event(EVENT_POST);
+
 	return(true);
 }
 

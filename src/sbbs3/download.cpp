@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -103,23 +103,28 @@ void sbbs_t::downloadfile(file_t* f)
 	sprintf(str,"%s%s.ixb",cfg.dir[f->dir]->data_dir,cfg.dir[f->dir]->code);
 	if((file=nopen(str,O_RDWR))==-1) {
 		errormsg(WHERE,ERR_OPEN,str,O_RDWR);
-		return; }
+		return; 
+	}
 	length=filelength(file);
 	if(length%F_IXBSIZE) {
 		close(file);
 		errormsg(WHERE,ERR_LEN,str,length);
-		return; }
+		return; 
+	}
 	strcpy(fname,f->name);
 	for(i=8;i<12;i++)   /* Turn FILENAME.EXT into FILENAMEEXT */
 		fname[i]=fname[i+1];
 	for(l=0;l<(ulong)length;l+=F_IXBSIZE) {
 		read(file,str,F_IXBSIZE);      /* Look for the filename in the IXB file */
 		str[11]=0;
-		if(!strcmp(fname,str)) break; }
+		if(!strcmp(fname,str)) 
+			break; 
+	}
 	if(l>=(ulong)length) {
 		close(file);
 		errormsg(WHERE,ERR_CHK,f->name,0);
-		return; }
+		return; 
+	}
 	lseek(file,l+18,SEEK_SET);
 	write(file,&f->datedled,4);  /* Write the current time stamp for datedled */
 	close(file);
@@ -140,6 +145,8 @@ void sbbs_t::downloadfile(file_t* f)
 			removefiledat(&cfg,f); 
 		} 
 	}
+
+	user_event(EVENT_DOWNLOAD);
 }
 
 /****************************************************************************/
@@ -161,7 +168,8 @@ void sbbs_t::notdownloaded(ulong size, time_t start, time_t end)
 		sprintf(str,"Possible use of leech protocol (leech=%u  downloads=%u)"
 			,useron.leech+1,useron.dls);
 		errorlog(str);
-		useron.leech=(uchar)adjustuserrec(&cfg,useron.number,U_LEECH,2,1); }
+		useron.leech=(uchar)adjustuserrec(&cfg,useron.number,U_LEECH,2,1); 
+	}
 }
 
 
@@ -183,7 +191,8 @@ int sbbs_t::protocol(char *cmdline, bool cd)
 		autohang=yesno(text[HangUpAfterXferQ]);
 	if(sys_status&SS_ABORT) {				/* if ctrl-c */
 		autohang=0;
-		return(-1); }
+		return(-1); 
+	}
 	bputs(text[StartXferNow]);
 	RIOSYNC(0);
 	//lprintf("%s",cmdline);
@@ -261,16 +270,22 @@ void sbbs_t::autohangup()
 		while((k=inkey(K_NONE,DELAY_AUTOHG))!=0 && online) {
 			if(toupper(k)=='H') {
 				c=0;
-				break; }
+				break; 
+			}
 			if(toupper(k)=='A') {
 				a=1;
-				break; } }
+				break; 
+			} 
+		}
 		if(!a) {
 			outchar(BS);
-			outchar(BS); } }
+			outchar(BS); 
+		} 
+	}
 	if(c==-1) {
 		bputs(text[Disconnected]);
-		hangup(); }
+		hangup(); 
+	}
 	else
 		CRLF;
 }
@@ -301,7 +316,8 @@ bool sbbs_t::checkprotlog(file_t* f)
 			sprintf(str,"%s attempted to download attached file: %s"
 				,useron.alias,f->name);
 		logline("D!",str);
-		return(0); }
+		return(0); 
+	}
 	unpadfname(f->name,tmp);
 	if(tmp[strlen(tmp)-1]=='.')     /* DSZ log uses FILE instead of FILE. */
 		tmp[strlen(tmp)-1]=0;       /* when there isn't an extension.     */
@@ -317,7 +333,9 @@ bool sbbs_t::checkprotlog(file_t* f)
 			if(str[0]=='E' || str[0]=='L' || (str[6]==SP && str[7]=='0'))
 				break;          /* E for Error or L for Lost Carrier */
 			fclose(stream);     /* or only sent 0 bytes! */
-			return(true); } }
+			return(true); 
+		} 
+	}
 	fclose(stream);
 	bprintf(text[FileNotSent],f->name);
 	if(f->dir<cfg.total_dirs)
@@ -367,11 +385,13 @@ void sbbs_t::seqwait(uint devnum)
 			thisnode.action=NODE_RFSD;
 			thisnode.aux=devnum;
 			putnodedat(cfg.node_num,&thisnode);	/* write devnum, unlock, and ret */
-			return; }
+			return; 
+		}
 		putnodedat(cfg.node_num,&thisnode);
 		if(!loop)
 			bprintf(text[WaitingForDeviceN],devnum);
 		loop=1;
-		mswait(100); }
+		mswait(100); 
+	}
 
 }

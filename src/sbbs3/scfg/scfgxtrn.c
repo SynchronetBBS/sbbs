@@ -872,9 +872,19 @@ online program name.
 			case EVENT_BIRTHDAY:
 				strcpy(str,"Birthday");
 				break;
+			case EVENT_POST:
+				strcpy(str,"Message Posted");
+				break;
+			case EVENT_UPLOAD:
+				strcpy(str,"File Uploaded");
+				break;
+			case EVENT_DOWNLOAD:
+				strcpy(str,"File Downloaded");
+				break;
 			default:
 				strcpy(str,"No");
-				break; }
+				break; 
+		}
 		if(cfg.xtrn[i]->misc&EVENTONLY && cfg.xtrn[i]->event)
 			strcat(str,", Only");
 		sprintf(opt[k++],"%-27.27s%s","Execute on Event",str);
@@ -1135,23 +1145,11 @@ modify the data of users who run the program, set this option to Yes.
 				strcpy(opt[k++],"Logoff");
 				strcpy(opt[k++],"New User");
 				strcpy(opt[k++],"Birthday");
+				strcpy(opt[k++],"Message Posted");
+				strcpy(opt[k++],"File Uploaded");
+				strcpy(opt[k++],"File Downloaded");
 				opt[k][0]=0;
-				switch(cfg.xtrn[i]->event) {
-					default:
-						k=0;
-						break;
-					case EVENT_LOGON:
-						k=1;
-						break;
-					case EVENT_LOGOFF:
-						k=2;
-						break;
-					case EVENT_NEWUSER:
-						k=3;
-						break;
-					case EVENT_BIRTHDAY:
-						k=4;
-						break; }
+				k=cfg.xtrn[i]->event;
 				SETHELP(WHERE);
 /*
 Execute Online Program on Event:
