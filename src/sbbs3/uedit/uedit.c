@@ -1699,7 +1699,9 @@ int main(int argc, char** argv)  {
 			edtuser=atoi(argv[i]);
     }
 
+#ifdef __unix__
 	signal(SIGPIPE, SIG_IGN);   
+#endif
 
 	uifc.size=sizeof(uifc);
 #ifdef USE_CURSES
