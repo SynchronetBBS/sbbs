@@ -78,12 +78,12 @@ writeln('\t\t<language>en-us</language>');
 
 function encode(str)
 {
-	return(html_encode(str
+	return(strip_ctrl(html_encode(str
 		,true	/* ex-ASCII */
 		,false	/* white-space */
 		,false	/* ANSI */
-		,true	/* Ctrl-A */
-		));
+		,false	/* Ctrl-A */
+		)));
 }
 
 var msgbase=new MsgBase(channel.sub);
