@@ -715,7 +715,7 @@ This is the security level automatically given to new users.
 						cfg.new_level=atoi(str);
 						break;
 					case 1:
-						ltoaf(cfg.new_flags1,str);
+						truncsp(ltoaf(cfg.new_flags1,str));
 						SETHELP(WHERE);
 /*
 New User Security Flags:
@@ -727,7 +727,7 @@ These are the security flags automatically given to new users.
 						cfg.new_flags1=aftol(str);
 						break;
 					case 2:
-						ltoaf(cfg.new_flags2,str);
+						truncsp(ltoaf(cfg.new_flags2,str));
 						SETHELP(WHERE);
 /*
 New User Security Flags:
@@ -739,7 +739,7 @@ These are the security flags automatically given to new users.
 						cfg.new_flags2=aftol(str);
                         break;
 					case 3:
-						ltoaf(cfg.new_flags3,str);
+						truncsp(ltoaf(cfg.new_flags3,str));
 						SETHELP(WHERE);
 /*
 New User Security Flags:
@@ -751,7 +751,7 @@ These are the security flags automatically given to new users.
 						cfg.new_flags3=aftol(str);
                         break;
 					case 4:
-						ltoaf(cfg.new_flags4,str);
+						truncsp(ltoaf(cfg.new_flags4,str));
 						SETHELP(WHERE);
 /*
 New User Security Flags:
@@ -763,7 +763,7 @@ These are the security flags automatically given to new users.
 						cfg.new_flags4=aftol(str);
                         break;
 					case 5:
-						ltoaf(cfg.new_exempt,str);
+						truncsp(ltoaf(cfg.new_exempt,str));
 						SETHELP(WHERE);
 /*
 New User Exemption Flags:
@@ -775,7 +775,7 @@ These are the exemptions that are automatically given to new users.
 						cfg.new_exempt=aftol(str);
 						break;
 					case 6:
-						ltoaf(cfg.new_rest,str);
+						truncsp(ltoaf(cfg.new_rest,str));
 						SETHELP(WHERE);
 /*
 New User Restriction Flags:
@@ -1712,7 +1712,7 @@ This is the security level automatically given to expired user accounts.
 						cfg.expired_level=atoi(str);
 						break;
 					case 1:
-						ltoaf(cfg.expired_flags1,str);
+						truncsp(ltoaf(cfg.expired_flags1,str));
 						SETHELP(WHERE);
 /*
 Expired Security Flags to Remove:
@@ -1725,7 +1725,7 @@ has expired.
 						cfg.expired_flags1=aftol(str);
 						break;
 					case 2:
-						ltoaf(cfg.expired_flags2,str);
+						truncsp(ltoaf(cfg.expired_flags2,str));
 						SETHELP(WHERE);
 /*
 Expired Security Flags to Remove:
@@ -1738,7 +1738,7 @@ has expired.
 						cfg.expired_flags2=aftol(str);
                         break;
 					case 3:
-						ltoaf(cfg.expired_flags3,str);
+						truncsp(ltoaf(cfg.expired_flags3,str));
 						SETHELP(WHERE);
 /*
 Expired Security Flags to Remove:
@@ -1751,7 +1751,7 @@ has expired.
 						cfg.expired_flags3=aftol(str);
                         break;
 					case 4:
-						ltoaf(cfg.expired_flags4,str);
+						truncsp(ltoaf(cfg.expired_flags4,str));
 						SETHELP(WHERE);
 /*
 Expired Security Flags to Remove:
@@ -1764,7 +1764,7 @@ has expired.
 						cfg.expired_flags4=aftol(str);
                         break;
 					case 5:
-						ltoaf(cfg.expired_exempt,str);
+						truncsp(ltoaf(cfg.expired_exempt,str));
 						SETHELP(WHERE);
 /*
 Expired Exemption Flags to Remove:
@@ -1777,7 +1777,7 @@ account if it expires.
 						cfg.expired_exempt=aftol(str);
 						break;
 					case 6:
-						ltoaf(cfg.expired_rest,str);
+						truncsp(ltoaf(cfg.expired_rest,str));
 						SETHELP(WHERE);
 /*
 Expired Restriction Flags to Add:
@@ -1788,7 +1788,9 @@ account if it expires.
 						uifc.input(WIN_SAV|WIN_MID,0,0,"Restriction Flags",str,26
 							,K_EDIT|K_UPPER|K_ALPHA);
 						cfg.expired_rest=aftol(str);
-						break; } }
+						break; 
+					} 
+			}
 			break;
 		case 14:	/* Quick-Validation Values */
 			dflt=0;
@@ -1860,42 +1862,42 @@ user's security values with very few key-strokes.
 						case 1:
 							uifc.input(WIN_MID|WIN_SAV,0,0
 								,"Flag Set #1"
-								,ltoaf(cfg.val_flags1[i],tmp),26
+								,truncsp(ltoaf(cfg.val_flags1[i],tmp)),26
 								,K_UPPER|K_ALPHA|K_EDIT);
 							cfg.val_flags1[i]=aftol(tmp);
                             break;
 						case 2:
 							uifc.input(WIN_MID|WIN_SAV,0,0
 								,"Flag Set #2"
-								,ltoaf(cfg.val_flags2[i],tmp),26
+								,truncsp(ltoaf(cfg.val_flags2[i],tmp)),26
 								,K_UPPER|K_ALPHA|K_EDIT);
 							cfg.val_flags2[i]=aftol(tmp);
                             break;
 						case 3:
 							uifc.input(WIN_MID|WIN_SAV,0,0
 								,"Flag Set #3"
-								,ltoaf(cfg.val_flags3[i],tmp),26
+								,truncsp(ltoaf(cfg.val_flags3[i],tmp)),26
 								,K_UPPER|K_ALPHA|K_EDIT);
 							cfg.val_flags3[i]=aftol(tmp);
                             break;
 						case 4:
 							uifc.input(WIN_MID|WIN_SAV,0,0
 								,"Flag Set #4"
-								,ltoaf(cfg.val_flags4[i],tmp),26
+								,truncsp(ltoaf(cfg.val_flags4[i],tmp)),26
 								,K_UPPER|K_ALPHA|K_EDIT);
 							cfg.val_flags4[i]=aftol(tmp);
                             break;
 						case 5:
 							uifc.input(WIN_MID|WIN_SAV,0,0
 								,"Exemption Flags"
-								,ltoaf(cfg.val_exempt[i],tmp),26
+								,truncsp(ltoaf(cfg.val_exempt[i],tmp)),26
 								,K_UPPER|K_ALPHA|K_EDIT);
 							cfg.val_exempt[i]=aftol(tmp);
                             break;
 						case 6:
 							uifc.input(WIN_MID|WIN_SAV,0,0
 								,"Restriction Flags"
-								,ltoaf(cfg.val_rest[i],tmp),26
+								,truncsp(ltoaf(cfg.val_rest[i],tmp)),26
 								,K_UPPER|K_ALPHA|K_EDIT);
 							cfg.val_rest[i]=aftol(tmp);
 							break;
