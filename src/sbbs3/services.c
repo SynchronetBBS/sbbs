@@ -890,44 +890,41 @@ js_BranchCallback(JSContext *cx, JSScript *script)
     return(JS_TRUE);
 }
 
-static void js_init_cmdline(JSContext* js_cx, JSObject* js_obj, char* path)
+static void js_init_args(JSContext* js_cx, JSObject* js_obj, const char* cmdline)
 {
-	char					spath[MAX_PATH+1];
+	char					argbuf[MAX_PATH+1];
 	char*					p;
-	char*					args=NULL;
+	char*					args;
 	int						argc=0;
 	JSString*				arg_str;
 	JSObject*				argv;
 	jsval					val;
 
-	SAFECOPY(spath,path);
-	p=spath;
-	while(*p && *p>' ') p++;
-	if(*p) {
-		*p=0;	/* truncate arguments */
-		args=p+1;
-	}
 	argv=JS_NewArrayObject(js_cx, 0, NULL);
 	JS_DefineProperty(js_cx, js_obj, "argv", OBJECT_TO_JSVAL(argv)
 		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
-	if(args!=NULL && argv!=NULL) {
-		while(*args) {
-			p=strchr(args,' ');
-			if(p!=NULL)
-				*p=0;
-			while(*args && *args<=' ') args++; /* Skip spaces */
-			arg_str = JS_NewStringCopyZ(js_cx, args);
-			if(arg_str==NULL)
-				break;
-			val=STRING_TO_JSVAL(arg_str);
-			if(!JS_SetElement(js_cx, argv, argc, &val))
-				break;
-			argc++;
-			if(p==NULL)	/* last arg */
-				break;
-			args+=(strlen(args)+1);
-		}
+	p=(char*)cmdline;
+	while(*p && *p>' ') p++;	/* find end of filename */
+	while(*p && *p<=' ') p++;	/* find first arg */
+	SAFECOPY(argbuf,p);
+
+	args=argbuf;
+	while(*args && argv!=NULL) {
+		p=strchr(args,' ');
+		if(p!=NULL)
+			*p=0;
+		while(*args && *args<=' ') args++; /* Skip spaces */
+		arg_str = JS_NewStringCopyZ(js_cx, args);
+		if(arg_str==NULL)
+			break;
+		val=STRING_TO_JSVAL(arg_str);
+		if(!JS_SetElement(js_cx, argv, argc, &val))
+			break;
+		argc++;
+		if(p==NULL)	/* last arg */
+			break;
+		args+=(strlen(args)+1);
 	}
 	JS_DefineProperty(js_cx, js_obj, "argc", INT_TO_JSVAL(argc)
 		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
@@ -1046,7 +1043,7 @@ static void js_service_thread(void* arg)
 	if(scfg.mods_dir[0]==0 || !fexist(spath))
 		sprintf(spath,"%s%s",scfg.exec_dir,service->cmd);
 
-	js_init_cmdline(js_cx, js_glob, spath);
+	js_init_args(js_cx, js_glob, service->cmd);
 
 	val = BOOLEAN_TO_JSVAL(JS_FALSE);
 	JS_SetProperty(js_cx, js_glob, "logged_in", &val);
@@ -1155,7 +1152,7 @@ static void js_static_service_thread(void* arg)
 			break;
 		}
 
-		js_init_cmdline(js_cx, js_glob, spath);
+		js_init_args(js_cx, js_glob, service->cmd);
 
 		val = BOOLEAN_TO_JSVAL(JS_FALSE);
 		JS_SetProperty(js_cx, js_glob, "logged_in", &val);
