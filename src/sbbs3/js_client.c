@@ -154,6 +154,7 @@ JSObject* DLLCALL js_CreateClientObject(JSContext* cx, JSObject* parent
 	js_CreateSocketObject(cx, obj, "socket", sock);
 
 #ifdef _DEBUG
+	js_DescribeObject(cx,obj,"Represents a TCP/IP client session");
 	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", client_prop_desc, JSPROP_READONLY);
 #endif
 

@@ -2717,6 +2717,7 @@ JSObject* js_CreateBbsObject(JSContext* cx, JSObject* parent)
 		return(NULL);
 
 #ifdef _DEBUG
+	js_DescribeObject(cx,obj,"Controls the Telnet/RLogin BBS experience");
 	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", bbs_prop_desc, JSPROP_READONLY);
 #endif
 

@@ -1280,6 +1280,7 @@ JSObject* DLLCALL js_CreateSystemObject(JSContext* cx, JSObject* parent
 		return(NULL);
 
 #ifdef _DEBUG
+	js_DescribeObject(cx,sysobj,"Global system-related properties and methods");
 	js_CreateArrayOfStrings(cx, sysobj, "_property_desc_list", sys_prop_desc, JSPROP_READONLY);
 #endif
 
@@ -1364,6 +1365,7 @@ JSObject* DLLCALL js_CreateSystemObject(JSContext* cx, JSObject* parent
 		return(NULL);
 
 #ifdef _DEBUG
+	js_DescribeObject(cx,statsobj,"System statistics");
 	js_CreateArrayOfStrings(cx, statsobj, "_property_desc_list", sysstat_prop_desc, JSPROP_READONLY);
 #endif
 
@@ -1388,6 +1390,7 @@ JSObject* DLLCALL js_CreateSystemObject(JSContext* cx, JSObject* parent
 			return(NULL);
 
 #ifdef _DEBUG
+		js_DescribeObject(cx,nodeobj,"BBS node listing");
 		js_CreateArrayOfStrings(cx, nodeobj, "_property_desc_list", node_prop_desc, JSPROP_READONLY);
 #endif
 
