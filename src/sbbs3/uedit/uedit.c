@@ -172,6 +172,37 @@ time_t DLLCALL strtosec(char *str)
 	return(sec);
 }
 
+char *geteditor(char *edit)
+{
+	if(getenv("EDITOR")==NULL && (getenv("VISUAL")==NULL || getenv("DISPLAY")==NULL))
+#ifdef __unix__
+		strcpy(edit,"vi");
+#else
+		strcpy(edit,"notepad");
+#endif
+	else {
+		if(getenv("DISPLAY")!=NULL && getenv("VISUAL")!=NULL)
+			strcpy(edit,getenv("VISUAL"));
+		else
+			strcpy(edit,getenv("EDITOR"));
+	}
+	return(edit);
+}
+
+int do_cmd(char *cmd)
+{
+	int i;
+
+#ifdef __unix__	
+	endwin();
+#endif
+	i=system(cmd);
+#ifdef __unix__
+	refresh();
+#endif
+	return(i);
+}
+
 /* Edit terminal settings
  *       Auto-Detect
  *       Extended ASCII
@@ -448,9 +479,333 @@ int edit_cmd(scfg_t *cfg, user_t *user)
 	return(0);
 }
 
+/* Pick External Editor */
+int edit_xedit(scfg_t *cfg, user_t *user)
+{
+	int 	i,j;
+	char 	**opt;
+
+	if((opt=(char **)MALLOC(sizeof(char *)*(MAX_OPTS+1)))==NULL)
+		allocfail(sizeof(char *)*(MAX_OPTS+1));
+
+	opt[0]="None";
+	for(i=1;i<=cfg->total_xedits;i++) {
+		opt[i]=cfg->xedit[i-1]->name;
+	}
+	opt[i]="";
+	j=user->xedit;
+	switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&j,0,"Shell",opt)) {
+		case -1:
+			break;
+		default:
+			if(user->xedit != j)
+				modified=1;
+			user->xedit=j;
+			break;
+	}
+	free(opt);
+	return(0);
+}
+
+/* Edit Message Options
+ *       Forward Email to NetMail
+ *       Clear Screen Between Messages
+ *       External Editor
+ */
+int edit_msgopts(scfg_t *cfg, user_t *user)
+{	
+	int 	i,j;
+	char 	**opt;
+
+	if((opt=(char **)MALLOC(sizeof(char *)*(MAX_OPTS+1)))==NULL)
+		allocfail(sizeof(char *)*(MAX_OPTS+1));
+	for(i=0;i<(MAX_OPTS+1);i++)
+		if((opt[i]=(char *)MALLOC(MAX_OPLN))==NULL)
+			allocfail(MAX_OPLN);
+
+	j=0;
+	while(1) {
+		i=0;
+		sprintf(opt[i++],"Forward Email to NetMail:      %s",user->misc & NETMAIL?"Yes":"No");
+		sprintf(opt[i++],"Clear Screen Between Messages: %s",user->misc & CLRSCRN?"Yes":"No");
+		sprintf(opt[i++],"External Editor:               %s",user->xedit?cfg->xedit[user->xedit-1]->name:"None");
+		opt[i][0]=0;
+		switch(uifc.list(WIN_MID|WIN_ACT|WIN_SAV,0,0,0,&j,0,"Message Options",opt)) {
+			case -1:
+				freeopt(opt);
+				return(0);
+				break;
+			case 0:
+				/* FWD Email */
+				user->misc ^= NETMAIL;
+				break;
+			case 1:
+				/* Clear Between MSGS */
+				user->misc ^=CLRSCRN;
+				break;
+			case 2:
+				/* External Editor */
+				edit_xedit(cfg,user);
+				break;
+		}
+	}
+	return(0);
+}
+
+/* Pick Tmp/QWK File Type */
+int edit_tmpqwktype(scfg_t *cfg, user_t *user)
+{
+	int 	i;
+	int		j=0;
+	char 	**opt;
+
+	if((opt=(char **)MALLOC(sizeof(char *)*(MAX_OPTS+1)))==NULL)
+		allocfail(sizeof(char *)*(MAX_OPTS+1));
+
+	for(i=0;i<cfg->total_fcomps;i++) {
+		opt[i]=cfg->fcomp[i]->ext;
+		if(!strcmp(cfg->fcomp[i]->ext,user->tmpext))
+			j=i;
+	}
+	opt[i]="";
+	switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&j,0,"Temp/QWK File Type",opt)) {
+		case -1:
+			break;
+		default:
+			if(strcmp(cfg->fcomp[j]->ext,user->tmpext))
+				modified=1;
+			strcpy(user->tmpext,cfg->fcomp[j]->ext);
+			break;
+	}
+	free(opt);
+	return(0);
+}
+
+/* Edit QWK Packet Options
+ *       Include New Files List
+ *       Include Unread Email
+ *       Delete Email After Download
+ *       Include Messages From Self
+ *       Expand CTRL-A Codes to ANSI
+ *       Strip CTRL-A Codes
+ *       Include File Attachments
+ *       Include Index Files
+ *       Include Time Zone (@TZ)
+ *       Include Seen-Bys (@VIA)
+ *       Extraneous Control Files
+ */
+int edit_qwk(scfg_t *cfg, user_t *user)
+{
+	int 	i,j;
+	char 	**opt;
+
+	if((opt=(char **)MALLOC(sizeof(char *)*(MAX_OPTS+1)))==NULL)
+		allocfail(sizeof(char *)*(MAX_OPTS+1));
+	for(i=0;i<(MAX_OPTS+1);i++)
+		if((opt[i]=(char *)MALLOC(MAX_OPLN))==NULL)
+			allocfail(MAX_OPLN);
+
+	j=0;
+	while(1) {
+		i=0;
+		sprintf(opt[i++],"Include New Files List:       %s",user->qwk & QWK_FILES?"Yes":"No");
+		sprintf(opt[i++],"Include Unread Email:         %s",user->qwk & QWK_EMAIL?"Yes":"No");
+		sprintf(opt[i++],"Include ALL Email:            %s",user->qwk & QWK_ALLMAIL?"Yes":"No");
+		sprintf(opt[i++],"Delete Email After Download:  %s",user->qwk & QWK_DELMAIL?"Yes":"No");
+		sprintf(opt[i++],"Include Messages from Self:   %s",user->qwk & QWK_BYSELF?"Yes":"No");
+		sprintf(opt[i++],"Expand CTRL-A to ANSI:        %s",user->qwk & QWK_EXPCTLA?"Yes":"No");
+		sprintf(opt[i++],"Strip CTRL-A Codes:           %s",user->qwk & QWK_RETCTLA?"No":"Yes");
+		sprintf(opt[i++],"Include File Attachments:     %s",user->qwk & QWK_ATTACH?"Yes":"No");
+		sprintf(opt[i++],"Include Index Files:          %s",user->qwk & QWK_NOINDEX?"No":"Yes");
+		sprintf(opt[i++],"Include Time Zone (@TZ):      %s",user->qwk & QWK_TZ?"Yes":"No");
+		sprintf(opt[i++],"Include Seen-Bys (@VIA):      %s",user->qwk & QWK_VIA?"Yes":"No");
+		sprintf(opt[i++],"Extraneous Control Files:     %s",user->qwk & QWK_NOCTRL?"No":"Yes");
+		sprintf(opt[i++],"Extended (QWKE) Format:       %s",user->qwk & QWK_EXT?"Yes":"No");
+		sprintf(opt[i++],"Include Message IDs (@MSGID): %s",user->qwk & QWK_MSGID?"Yes":"No");
+		sprintf(opt[i++],"Temp/QWK File Type:           %s",user->tmpext);
+		opt[i][0]=0;
+		switch(uifc.list(WIN_MID|WIN_ACT|WIN_SAV,0,0,0,&j,0,"Command Shell",opt)) {
+			case -1:
+				freeopt(opt);
+				return(0);
+				break;
+			case 0:
+				/* New Files List */
+				user->qwk ^= QWK_FILES;
+				break;
+			case 1:
+				/* Unread Email */
+				user->qwk ^= QWK_EMAIL;
+				break;
+			case 2:
+				/* ALL Email */
+				user->qwk ^= QWK_ALLMAIL;
+				break;
+			case 3:
+				/* Del Email after Download */
+				user->qwk ^= QWK_DELMAIL;
+				break;
+			case 4:
+				/* Include From Self */
+				user->qwk ^= QWK_BYSELF;
+				break;
+			case 5:
+				/* Expand CTRL-A */
+				user->qwk ^= QWK_EXPCTLA;
+				break;
+			case 6:
+				/* Strip CTRL-A */
+				user->qwk ^= QWK_RETCTLA;
+				break;
+			case 7:
+				/* Include Attach */
+				user->qwk ^= QWK_ATTACH;
+				break;
+			case 8:
+				/* Include Indexes */
+				user->qwk ^= QWK_NOINDEX;
+				break;
+			case 9:
+				/* Include TZ */
+				user->qwk ^= QWK_TZ;
+				break;
+			case 10:
+				/* Include VIA */
+				user->qwk ^= QWK_VIA;
+				break;
+			case 11:
+				/* Extra CTRL Files */
+				user->qwk ^= QWK_NOCTRL;
+				break;
+			case 12:
+				/* Extended QWKE */
+				user->qwk ^= QWK_EXT;
+				break;
+			case 13:
+				/* Include MSGID */
+				user->qwk ^= QWK_MSGID;
+				break;
+			case 14:
+				/* Temp/QWK Type */
+				edit_tmpqwktype(cfg,user);
+				break;
+		}
+	}
+	return(0);
+}
+
+/* Pick Protocol */
+int edit_proto(scfg_t *cfg, user_t *user)
+{
+	int 	i;
+	int		j=0;
+	char 	**opt;
+
+	if((opt=(char **)MALLOC(sizeof(char *)*(MAX_OPTS+1)))==NULL)
+		allocfail(sizeof(char *)*(MAX_OPTS+1));
+
+	opt[0]="None";
+	for(i=1;i<=cfg->total_prots;i++) {
+		opt[i]=cfg->prot[i-1]->name;
+		if(cfg->prot[i-1]->mnemonic == user->prot)
+			j=i;
+	}
+	opt[i]="";
+	switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&j,0,"Default Protcol",opt)) {
+		case -1:
+			break;
+		case 0:
+			if(user->prot != ' ')
+				modified=1;
+			user->prot=' ';
+			break;
+		default:
+			if(user->prot != cfg->prot[j-1]->mnemonic)
+				modified=1;
+			user->prot=cfg->prot[j-1]->mnemonic;
+			break;
+	}
+	free(opt);
+	return(0);
+}
+
+/* Edit File Options
+ *       Auto-New Scan
+ *       Extended Descriptions
+ *       Batch Flagging
+ *       Auto-Hangup After Transfer
+ *       Default download Protocol
+ *       Temp/QWK File Type
+ */
+int edit_fileopts(scfg_t *cfg, user_t *user)
+{
+	int 	i,j;
+	int		k;
+	char 	**opt;
+	char 	str[256];
+
+	if((opt=(char **)MALLOC(sizeof(char *)*(MAX_OPTS+1)))==NULL)
+		allocfail(sizeof(char *)*(MAX_OPTS+1));
+	for(i=0;i<(MAX_OPTS+1);i++)
+		if((opt[i]=(char *)MALLOC(MAX_OPLN))==NULL)
+			allocfail(MAX_OPLN);
+
+	j=0;
+	while(1) {
+		i=0;
+		sprintf(opt[i++],"Auto-New Scan:             %s",user->misc & ANFSCAN?"Yes":"No");
+		sprintf(opt[i++],"Extended Descriptions:     %s",user->misc & EXTDESC?"Yes":"No");
+		sprintf(opt[i++],"Batch Flagging:            %s",user->misc & BATCHFLAG?"Yes":"No");
+		sprintf(opt[i++],"Auto Transfer Hangup:      %s",user->misc & AUTOHANG?"Yes":"No");
+		strcpy(str,"None");
+		for(k=0;k<cfg->total_prots;k++)
+			if(cfg->prot[k]->mnemonic==user->prot)
+				strcpy(str,cfg->prot[k]->name);
+		sprintf(opt[i++],"Default Download Protocol: %s",str);
+		sprintf(opt[i++],"Temp/QWK File Type:        %s",user->tmpext);
+		opt[i][0]=0;
+		switch(uifc.list(WIN_MID|WIN_ACT|WIN_SAV,0,0,0,&j,0,"File Options",opt)) {
+			case -1:
+				freeopt(opt);
+				return(0);
+				break;
+			case 0:
+				/* Auto-New Scan */
+				user->misc ^= ANFSCAN;
+				break;
+			case 1:
+				/* Extended Descs */
+				user->misc ^= EXTDESC;
+				break;
+			case 2:
+				/* Batch Flagging */
+				user->misc ^= BATCHFLAG;
+				break;
+			case 3:
+				/* Atuo-Hangup */
+				user->misc ^= AUTOHANG;
+				break;
+			case 4:
+				/* Default Download Protocol */
+				edit_proto(cfg,user);
+				break;
+			case 5:
+				/* Temp/QWK File Type */
+				edit_tmpqwktype(cfg,user);
+				break;
+		}
+	}
+	return(0);
+}
+
 /* Edit "Extended comment" */
 int edit_comment(scfg_t *cfg, user_t *user)
 {
+	char str[1024];
+	char editor[1024];
+
+	sprintf(str,"%s %suser/%04d.msg",geteditor(editor),cfg->data_dir,user->number);
+	do_cmd(str);
 	return(0);
 }
 
@@ -461,6 +816,31 @@ int edit_comment(scfg_t *cfg, user_t *user)
  */
 int edit_msgfile(scfg_t *cfg, user_t *user)
 {
+	char *opt[4]={
+		 "Message Options"
+		,"QWK Message Packet"
+		,"File Options"
+		,""};
+	int i=0;
+	while(1) {
+		switch(uifc.list(WIN_BOT|WIN_RHT|WIN_ACT,0,0,0,&i,0,"Settings",opt)) {
+			case -1:
+				return(0);
+				break;
+			case 0:
+				/* Message Options */
+				edit_msgopts(cfg,user);
+				break;
+			case 1:
+				/* QWK Message Packet */
+				edit_qwk(cfg,user);
+				break;
+			case 2:
+				/* File Options */
+				edit_fileopts(cfg,user);
+				break;
+		}
+	}
 	return(0);
 }
 
@@ -561,6 +941,8 @@ int edit_stats(scfg_t *cfg, user_t *user)
 		sprintf(opt[i++],"Total Uploads:     %hu",user->uls);
 		sprintf(opt[i++],"Uploaded Bytes:    %lu",user->ulb);
 		sprintf(opt[i++],"Leech:             %u",user->leech);
+		sprintf(opt[i++],"Password Modified: %s",user->pwmod?timestr(cfg, &user->pwmod, str):"Never");
+		opt[i][0]=0;
 		switch(uifc.list(WIN_MID|WIN_ACT,0,0,0,&j,0,"Statistics",opt)) {
 			case -1:
 				freeopt(opt);
@@ -754,6 +1136,21 @@ int edit_stats(scfg_t *cfg, user_t *user)
 					modified=1;
 					user->leech=strtoul(str,NULL,10);
 				}
+				break;
+			case 19:
+				/* Password Last Modified */
+				temptime=user->pwmod;
+				unixtodstr(cfg,temptime,str);
+				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Password Modified Date",str,8,K_EDIT);
+				user->firston=dstrtounix(cfg, str);
+				temptime2=temptime-user->pwmod;
+				sectostr(temptime2,str);
+				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Password Modified Time",str,8,K_EDIT);
+				temptime2=strtosec(str);
+				if(temptime2!=-1)
+					user->pwmod += temptime2;
+				if(temptime!=user->pwmod)
+					modified=1;
 				break;
 		}
 	}
@@ -1020,8 +1417,10 @@ int edit_personal(scfg_t *cfg, user_t *user)
 			case 9:
 				/* Password */
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Password",user->pass,LEN_PASS,K_EDIT);
-				if(uifc.changes)
+				if(uifc.changes) {
 					modified=1;
+					user->pwmod=time(NULL);
+				}
 				break;
 			case 10:
 				/* Location */

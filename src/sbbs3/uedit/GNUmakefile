@@ -1,7 +1,7 @@
 # GNUmakefile
 
 #########################################################################
-# Makefile for Synchronet monitor for Unix								#
+# Makefile for Synchronet User Editor for Unix								#
 # For use with GNU make and GNU C Compiler or Borland Kylix C++			#
 # @format.tab-size 4, @format.use-tabs true								#
 #																		#
