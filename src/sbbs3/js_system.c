@@ -883,7 +883,7 @@ static JSClass js_node_class = {
 extern const char* beta_version;
 
 JSObject* DLLCALL js_CreateSystemObject(JSContext* cx, JSObject* parent
-										,scfg_t* cfg, time_t uptime)
+										,scfg_t* cfg, time_t uptime, char* host_name)
 {
 	char		str[256];
 	uint		i;
@@ -903,6 +903,10 @@ JSObject* DLLCALL js_CreateSystemObject(JSContext* cx, JSObject* parent
 
 	/****************************/
 	/* static string properties */
+	val = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, host_name));
+	if(!JS_SetProperty(cx, sysobj, "host_name", &val))
+		return(NULL);
+
 	val = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, VERSION));
 	if(!JS_SetProperty(cx, sysobj, "version", &val))
 		return(NULL);

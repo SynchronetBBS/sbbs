@@ -832,7 +832,7 @@ extern "C" {
 
 	/* js_system.c */
 	DLLEXPORT JSObject* DLLCALL js_CreateSystemObject(JSContext* cx, JSObject* parent
-													,scfg_t* cfg, time_t uptime);
+													,scfg_t* cfg, time_t uptime, char* host_name);
 
 	/* js_client.c */
 	DLLEXPORT JSObject* DLLCALL js_CreateClientObject(JSContext* cx, JSObject* parent
