@@ -1919,7 +1919,8 @@ void event_thread(void* arg)
 					eprintf(LOG_INFO,"QWK Network call-out: %s",sbbs->cfg.qhub[i]->id); 
 					sbbs->online=ON_LOCAL;
 					sbbs->external(
-						 sbbs->cmdstr(sbbs->cfg.qhub[i]->call,nulstr,nulstr,NULL)
+						 sbbs->cmdstr(sbbs->cfg.qhub[i]->call
+							,sbbs->cfg.qhub[i]->id,sbbs->cfg.qhub[i]->id,NULL)
 						,EX_OFFLINE|EX_SH);	/* sh for Unix perl scripts */
 				}
 			} 
