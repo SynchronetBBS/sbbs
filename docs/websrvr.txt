@@ -1,10 +1,117 @@
----------------------------------------
-DEUCE'S SYNCHWEB OFFICIAL DOCUMENTATION
----------------------------------------
+Synchronet Web Server Documentation
+===================================
 
-I. ssjs stuff and ummm yeah
-II. Themes and blah blah whatever
-III. How to do um... neat stuff.
-IIII. Getting ssjs to read synchronet crap and blah
-V. Editing html stuff in the inc files and bleh bleh ya know
-VI. The new web file section thing and blah you get the idea
+$Id$
+
+1. Introduction
+---------------
+The Synchronet Web Server is a mostly HTTP 1.1 compliant web server capable of
+handing basic web servicing tasks.  It has most of the basic features of a
+general-purpose web server one would come to expect, but currently, the *nix
+version is more capable (the Win32 version doesn't support CGI scripts)
+
+It also, through Server-Side JavaScript (SSJS) allows dynamic pages to be
+created which access to BBS data directly.
+
+2. Web Server Configuration
+---------------------------
+Most of the web server configuration is in your system INI file (Usually
+ctrl/sbbs.ini) the [Web] section contains the following unique settings (The
+remaining sections are the same as the same ones in other sections and are
+documented elsewhere)
+
+2.1. INI file web configuration [Web] section keys
+--------------------------------------------------
+RootDirectory=../web/html
+	This is the root directory of your web server... a request to
+	http://yourbbs.synchro.net/index.html will be served out of this dir.
+ErrorDirectory=error
+	The directory relative to RootDirectory where the various error
+	messages are located.  The error messages are named by the error code
+	they will be displayed on and may be either .html or .ssjs files.
+	(.ssjs files are displayed if they exist, .html files if they do not)
+IndexFileNames=index.html,index.ssjs
+	A comma-separated list of filenames in order of preference to serve as
+	the default document in a directory.  Many SysOps change this to:
+	IndexFileNames=index.html,index.htm,index.ssjs
+	Do not renove the index.ssjs unless you are not using the stock
+	web pages at all.
+CGIExtensions=.cgi
+	Files with this extension will be considered CGI files.  On *nix
+	systems, the web server will attempt to execute them as such.  CGI
+	files on Win32 systems will currently always return an error.
+JavaScriptExtension=.ssjs
+	Files with this extension will be considered SSJS files.  On all
+	systems, this will be attempted to run with the JavaScript interpreter.
+MaxInactivity=120
+	If a client holds a connection open for this many seconds without a
+	request, the web server will shut down the connection.
+MaxCgiInactivity=120
+	If a CGI script runs for more than this many seconds without any
+	output, it will be terminated and the connection will be shut down.
+HttpLogFile=../data/logs/http-
+	The prefix of log files if HTTP_LOGGING is enabled (See next item) to
+	store Common Logfile Format logs in.  The current virtual host
+	(if enabled, see next item), date, and .log are appended to this.  ie:
+	http-2005-03-12.log
+Options=NO_HOST_LOOKUP
+	The | separated list of options to enable.  In addition to the standard
+	options, the web server also supports the following:
+	DEBUG_RX
+		Log all received data to the console log, as well as various
+		extra bits related to receiving data.
+	DEBUG_TX
+		Log all transmitted data except the reply body itself, as well
+		as various extra bits of information related to transmitted
+		data.
+	VIRTUAL_HOSTS
+		Supports name-based virtual hosts.  If your system has multiple
+		host names, you can have each host name return unique content
+		depending on which hostname is used.  ie: if
+		freebsd.synchro.net and nix.synchro.net both resolved to your
+		system, you could have FreeBSD-sepcific pages on one, and 
+		general *nix stuff on the other.
+		A virtual host is added by simply putting the desired content
+		into a sub-directory of RootDirectory with the desired hostname
+		ie: web/html/freebsd.synchro.net/ if the browser doesn't send
+		the request host name (very old browsers, or some automated
+		tools) they will be served out of document root.
+		It is therefore a good idea to put links to your various
+		virtual hosts in an index.html page in RootDirectory something
+		like this:
+			<html>
+			  <head>
+			    <title>Old Browser</title>
+			  </head>
+			  <body>
+			    Your browser is either too old to support
+			    name-based virtual hosts, or you have visited a
+			    virtual hosts that is not yet configured.  The
+			    following are hosted here:<br>
+			    <a href="freebsd.synchro.net">freebsd.synchro.net
+			    </a><br>
+			    <a href="nix.synchro.net">nix.synchro.net</a><br>
+			  </body>
+			</html>
+	NO_CGI
+		Disable CGI script execution.
+	HTTP_LOGGING
+		Enable logging to a Common Logfile Format log as described in
+		the HttpLogFile section.  Usefull for running log analysis
+		programs (like Webalizer: http://www.mrunix.net/webalizer/)
+	NO_JAVASCRIPT
+		Disable SSJS execution.
+
+2.2. Other web-related configuration files
+------------------------------------------
+In addition to the keys in the INI file, the web server also, by default, uses
+two other configuration files.
+	ctrl/mime_types.ini
+		Contains the file extension to mime-type mapping.  Each line
+		is in the format "extension = mime-type" ie: "html = text/html"
+		The extensions are case-insensitive.
+	ctrl/webicons.ini
+		Contains the URLs to the icons used by the default 404.ssjs
+		script for each file type.  Format is "extension = URL" ie:
+		"html=/icons/layout.gif"
+
