@@ -15,6 +15,7 @@
 # Macros
 CC		=	gcc
 LD		=	ld
+XSDK		=	../sdk
 
 ifndef os
  os              =       $(shell uname)
@@ -22,35 +23,24 @@ ifndef os
 endif
 os      :=	$(shell echo $(os) | awk '/.*/ { print tolower($$1)}')
 
-ifeq ($(os),win32)	# Windows
-
- EXEFILE	:=	.exe
- LIBDIR	:=	/gcc/i386-mingw32/lib
- CFLAGS	+=	-mno-cygwin
- LFLAGS  +=	--target=i386-mingw32 -mno-cygwin
- DELETE	:=	echo y | del 
- LIBS	+=	$(LIBDIR)/libwsock32.a
-
-else	# Unix
-
- EXEFILE	:=	
- LIBDIR	:=	/usr/lib
- DELETE	:=	rm -f -v
- ifeq ($(os),freebsd)	# FreeBSD
+LIBDIR	:=	/usr/lib
+DELETE	:=	rm -f -v
+ifeq ($(os),freebsd)	# FreeBSD
+ LIBS	+=	-pthread
+else
+ ifeq ($(os),openbsd)	# OpenBSD
   LIBS	+=	-pthread
- else
-  ifeq ($(os),openbsd)	# OpenBSD
-   LIBS	+=	-pthread
-  else					# Linux / Generic UNIX
-   LIBS	+=	$(LIBDIR)/libpthread.a
-  endif	#! OpenBSD
- endif	#! FreeBSD
+ else					# Linux / Generic UNIX
+  LIBS	+=	$(LIBDIR)/libpthread.a
+ endif	#! OpenBSD
+endif	#! FreeBSD
 
-endif
+CFLAGS	+=	-I$(XSDK)
 
-CFLAGS	+=	-I../sdk
+all: sbj sbjclean
 
-SBJ: sbj$(EXEFILE)
+sbj: sbj.c $(XSDK)/xsdk.c $(XSDK)/xsdkvars.c $(XSDK)/xsdkwrap.c
+	$(CC) $(CFLAGS) $^ -o $@ $(LIBS)
 
-sbj$(EXEFILE) : sbj.c ../sdk/xsdk.c ../sdk/xsdkvars.c ../sdk/xsdkwrap.c
+sbjclean: sbjclean.c $(XSDK)/xsdk.c $(XSDK)/xsdkvars.c $(XSDK)/xsdkwrap.c
 	$(CC) $(CFLAGS) $^ -o $@ $(LIBS)
