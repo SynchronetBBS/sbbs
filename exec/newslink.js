@@ -491,7 +491,7 @@ for(i in area) {
 						fname=attachment_dir + fname;
 
 						file=new File(fname);
-						file.uuencoded=true;
+						file.uue=true;
 						if(file.open("w+b"))
 							printf("Receiving/decoding attachment: %s\r\n",file.name);
 						else
