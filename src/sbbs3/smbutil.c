@@ -841,7 +841,7 @@ void maint(void)
 			idx[m].attr|=MSG_DELETE; } }
 	printf("\r100%% (%lu flagged for deletion)\n",f);
 
-	if(l-flagged>smb.status.max_msgs) {
+	if(smb.status.max_msgs && l-flagged>smb.status.max_msgs) {
 		printf("Flagging excess messages for deletion...\n");
 		for(m=n=0,f=flagged;l-flagged>smb.status.max_msgs && m<l;m++) {
 			if(idx[m].attr&(MSG_PERMANENT|MSG_DELETE))
