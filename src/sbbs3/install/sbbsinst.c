@@ -50,9 +50,10 @@
 /***************/
 #define DEFAULT_CVSROOT		":pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs"
 #define DIST_LIST_URL1		"ftp://ftp.synchro.net/sbbsdist.lst"
-#define DIST_LIST_URL2		"ftp://rob.synchro.net/sbbsdist.lst"
-#define DIST_LIST_URL3		"ftp://cvs.synchro.net/sbbsdist.lst"
-#define DIST_LIST_URL4		"ftp://vert.synchro.net/sbbsdist.lst"
+#define DIST_LIST_URL2		"ftp://rob.synchro.net/Synchronet/sbbsdist.lst"
+#define DIST_LIST_URL3		"ftp://cvs.synchro.net/Synchronet/sbbsdist.lst"
+#define DIST_LIST_URL4		"ftp://vert.synchro.net/Synchronet/sbbsdist.lst"
+#define DIST_LIST_URL5		"ftp://freebsd.synchro.net/Synchronet/sbbsdist.lst"
 #define DEFAULT_DISTFILE	"sbbs_src.tgz"
 #define DEFAULT_LIBFILE		"lib-%s.tgz"	/* MUST HAVE ONE %s for system type (os-machine or just os) */
 #define DEFAULT_SYSTYPE		"unix"			/* If no other system type available, use this one */
@@ -551,7 +552,7 @@ void install_sbbs(dist_t *dist,struct server_ent_t *server)  {
 dist_t **
 get_distlist(void)
 {
-	int ret1,ret2,ret3,ret4;
+	int ret1,ret2,ret3,ret4,ret5;
 	int i;
 	char	in_line[256];
 	dist_t	**dist;
@@ -602,14 +603,22 @@ get_distlist(void)
 			&& (list=ftpGetURL(DIST_LIST_URL2,ftp_user,ftp_pass,&ret2))==NULL
 			&& (list=ftpGetURL(DIST_LIST_URL3,ftp_user,ftp_pass,&ret3))==NULL
 			&& (list=ftpGetURL(DIST_LIST_URL4,ftp_user,ftp_pass,&ret4))==NULL
+			&& (list=ftpGetURL(DIST_LIST_URL5,ftp_user,ftp_pass,&ret5))==NULL
 			&& r==0)  {
 		uifc.pop(NULL);
 		uifc.bail();
-		printf("Cannot get distribution list!\n%s\n- %s\n%s\n- %s\n%s\n- %s\n%s\n- %s\n",
-				DIST_LIST_URL1,ftpErrString(ret1),
-				DIST_LIST_URL2,ftpErrString(ret2),
-				DIST_LIST_URL3,ftpErrString(ret3),
-				DIST_LIST_URL4,ftpErrString(ret4));
+		printf("Cannot get distribution list!\n"
+			"%s\n- %s\n"
+			"%s\n- %s\n"
+			"%s\n- %s\n"
+			"%s\n- %s\n"
+			"%s\n- %s\n",
+			DIST_LIST_URL1,ftpErrString(ret1),
+			DIST_LIST_URL2,ftpErrString(ret2),
+			DIST_LIST_URL3,ftpErrString(ret3),
+			DIST_LIST_URL4,ftpErrString(ret4),
+			DIST_LIST_URL5,ftpErrString(ret5),
+			);
 		exit(EXIT_FAILURE);
 	}
 
