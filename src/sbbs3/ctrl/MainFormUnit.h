@@ -55,7 +55,7 @@
 #include <Buttons.hpp>
 #include <Graphics.hpp>
 #include <vcl\Registry.hpp>	/* TRegistry */
-#include "Trayicon.h"
+#include "trayicon.h"
 //---------------------------------------------------------------------------
 #define APP_TITLE "Synchronet Control Panel"
 #define REG_KEY "\\Software\\Swindell\\"APP_TITLE"\\"

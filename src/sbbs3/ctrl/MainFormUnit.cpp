@@ -73,7 +73,7 @@
 
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
-#pragma link "Trayicon"
+#pragma link "trayicon"
 #pragma resource "*.dfm"
 TMainForm *MainForm;
 
