@@ -385,48 +385,52 @@ Default Configuration (SCFG) Screen-shots
 3: Access Requirements   UNIX
 
 [File Transfer Protocol]
-1: Mnemonic (Command Key)   X
-2: Protocol Name            Xmodem (SZ)
-3: Access Requirements      UNIX
-4: Upload Command Line      rz --xmodem
-5: Download Command Line    sz --xmodem %f
-6: Batch UL Command Line
-7: Batch DL Command Line
-8: Bidir Command Line
-9: Uses DSZLOG              No
+ 1: Mnemonic (Command Key)        X
+ 2: Protocol Name                 Xmodem (SZ)
+ 3: Access Requirements           UNIX
+ 4: Upload Command Line           rz --xmodem
+ 5: Download Command Line         sz --xmodem %f
+ 6: Batch Upload Command Line
+ 7: Batch Download Command Line
+ 8: Bi-dir Command Line
+ 9: Native (32-bit) Executable    Yes
+10: Supports DSZLOG               No
 
 [File Transfer Protocol]
-1: Mnemonic (Command Key)   Y
-2: Protocol Name            Ymodem (SZ)
-3: Access Requirements      UNIX
-4: Upload Command Line      rz --ymodem
-5: Download Command Line    sz --ymodem %f
-6: Batch UL Command Line    rz --ymodem
-7: Batch DL Command Line    sz --ymodem %s
-8: Bidir Command Line
-9: Uses DSZLOG              No
+ 1: Mnemonic (Command Key)        Y
+ 2: Protocol Name                 Ymodem (SZ)
+ 3: Access Requirements           UNIX
+ 4: Upload Command Line           rz --ymodem
+ 5: Download Command Line         sz --ymodem %f
+ 6: Batch Upload Command Line     rz --ymodem
+ 7: Batch Download Command Line   sz --ymodem %s
+ 8: Bi-dir Command Line
+ 9: Native (32-bit) Executable    Yes
+10: Supports DSZLOG               No
 
 [File Transfer Protocol]
-1: Mnemonic (Command Key)   Z
-2: Protocol Name            Zmodem (SZ)
-3: Access Requirements      UNIX
-4: Upload Command Line      rz -p -R
-5: Download Command Line    sz %f
-6: Batch UL Command Line    rz -p -R
-7: Batch DL Command Line    sz %s
-8: Bidir Command Line
-9: Uses DSZLOG              No
+ 1: Mnemonic (Command Key)        Z
+ 2: Protocol Name                 Zmodem (SZ)
+ 3: Access Requirements           UNIX
+ 4: Upload Command Line           rz -p -R
+ 5: Download Command Line         sz %f
+ 6: Batch Upload Command Line     rz -p -R
+ 7: Batch Download Command Line   sz %s
+ 8: Bi-dir Command Line
+ 9: Native (32-bit) Executable    Yes
+10: Supports DSZLOG               No
 
 [File Transfer Protocol]
-1: Mnemonic (Command Key)   K
-2: Protocol Name            Kermit (G-Kermit)
-3: Access Requirements      UNIX
-4: Upload Command Line      gkermit -q -P -r -a %f
-5: Download Command Line    gkermit -q -P -s %f
-6: Batch UL Command Line
-7: Batch DL Command Line    gkermit -q -P -s %s
-8: Bidir Command Line
-9: Uses DSZLOG              No
+ 1: Mnemonic (Command Key)        K
+ 2: Protocol Name                 Kermit (G-Kermit)
+ 3: Access Requirements           UNIX
+ 4: Upload Command Line           gkermit -q -P -r -a %f
+ 5: Download Command Line         gkermit -q -P -s %f
+ 6: Batch Upload Command Line
+ 7: Batch Download Command Line   gkermit -q -P -s %s
+ 8: Bi-dir Command Line
+ 9: Native (32-bit) Executable    Yes
+10: Supports DSZLOG               No
 
 [Native (32-bit) Program List]
  1: cmd.exe
@@ -434,13 +438,8 @@ Default Configuration (SCFG) Screen-shots
  3: csh
  4: bash
  5: node
- 6: sz
- 7: rz
- 8: gkermit
- 9: zip
-10: unzip
-11: pkzip25
-12: jsexec
+ 6: zip
+ 7: unzip
 
 [Pico (Pine Composer) Editor]
  1: Name                            Pico (Pine Composer)
