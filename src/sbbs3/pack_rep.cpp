@@ -223,7 +223,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 
 	if(!msgcnt && !netfiles && !packedmail) {
 		eprintf(LOG_INFO,remove_ctrl_a(text[QWKNoNewMessages],tmp));
-		return(false); 
+		return(true);	// Changed from false Mar-11-2005 (needs to be true to save updated ptrs)
 	}
 
 	/*******************/
