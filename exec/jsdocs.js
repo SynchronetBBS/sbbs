@@ -222,6 +222,7 @@ writeln("<tr><td>" + "errno".bold() + "<td>number<td>last system error number</t
 writeln("<tr><td>" + "errno_str".bold() + "<td>string<td>description of last system error</td>");
 f.writeln("</ul>");
 
+document_object("branch"	,branch);
 document_object("system"	,system);
 document_object("server"	,server);
 document_object("client"	,client);
@@ -232,8 +233,10 @@ document_object("msg_area"	,msg_area);
 document_object("file_area"	,file_area);
 document_object("xtrn_area"	,xtrn_area);
 document_object("MsgBase"	,new MsgBase(msg_area.grp_list[0].sub_list[0].code), "class");
-document_object("File"		,new File("bogusfile"), "class");
-document_object("Socket"	,new Socket(), "class");
+document_object("File"		,new File(system.devnull), "class");
+sock=new Socket();
+sock.descriptor=client.socket.descriptor;
+document_object("Socket"	,sock, "class");
 
 f.writeln("</ol>");
 
