@@ -238,6 +238,7 @@ BYTE* cr_expand(BYTE* inbuf, ulong inlen, BYTE* outbuf, ulong& newlen)
 int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 {
 	char	str[256],*p,*p_startup_dir;
+	char	path[MAX_PATH+1];
 	char	fname[128];
     char	fullcmdline[256];
 	char	realcmdline[256];
@@ -363,15 +364,15 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 
     } else { // DOS external
 
-		sprintf(str,"%sDOSXTRN.RET", cfg.node_dir);
-		remove(str);
+		sprintf(path,"%sDOSXTRN.RET", cfg.node_dir);
+		remove(path);
 
     	// Create temporary environment file
-    	sprintf(str,"%sDOSXTRN.ENV", cfg.node_dir);
-        FILE* fp=fopen(str,"w");
+    	sprintf(path,"%sDOSXTRN.ENV", cfg.node_dir);
+        FILE* fp=fopen(path,"w");
         if(fp==NULL) {
 			XTRN_CLEANUP;
-        	errormsg(WHERE, ERR_CREATE, str, 0);
+        	errormsg(WHERE, ERR_CREATE, path, 0);
             return(errno);
         }
         fprintf(fp, "%s\n", fullcmdline);
@@ -389,6 +390,8 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 		fprintf(fp, "YEAR=%u\n",1900+tm.tm_year);
         fclose(fp);
 
+		SAFECOPY(str,path);	// incase GetShortPathName fails
+		GetShortPathName(path,str,sizeof(str));
         sprintf(fullcmdline, "%sDOSXTRN.EXE %s", cfg.exec_dir, str);
 
 		if(!(mode&EX_OFFLINE) && nt) {	// Windows NT/2000
