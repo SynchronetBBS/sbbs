@@ -63,6 +63,7 @@
 /* Synchronet-specific headers */
 #include "sbbs.h"
 #include "mailsrvr.h"
+#include "mime.h"
 #include "crc32.h"
 
 /* Constants */
@@ -210,7 +211,7 @@ static void status(char* str)
 	    startup->status(str);
 }
 
-static int sockprintf(SOCKET sock, char *fmt, ...)
+int sockprintf(SOCKET sock, char *fmt, ...)
 {
 	int		len;
 	int		result;
@@ -404,8 +405,10 @@ static void sockmsgtxt(SOCKET socket, smbmsg_t* msg, char* msgtxt, char* fromadd
 {
 	char		toaddr[256];
 	char		date[64];
+	char		filepath[MAX_PATH+1]="";
 	char*		p;
 	char*		tp;
+	char*		boundary=NULL;
 	int			i;
 	ulong		line;
 
@@ -431,9 +434,28 @@ static void sockmsgtxt(SOCKET socket, smbmsg_t* msg, char* msgtxt, char* fromadd
 		sockprintf(socket,"Reply-To: %s",fromaddr);
 	sockprintf(socket,"Message-ID: <%08lX.%lu@%s>"
 		,msg->hdr.when_written.time,msg->idx.number,scfg.sys_inetaddr);
-	for(i=0;i<msg->total_hfields;i++) 
+    for(i=0;i<msg->total_hfields;i++) { 
 		if(msg->hfield[i].type==RFC822HEADER)
 			sockprintf(socket,"%s",(char*)msg->hfield_dat[i]);
+        else if(msg->hdr.auxattr&MSG_FILEATTACH && msg->hfield[i].type==FILEATTACH) 
+            strncpy(filepath,(char*)msg->hfield_dat[i],sizeof(filepath)-1);
+    }
+	if(msg->hdr.auxattr&MSG_FILEATTACH) {
+		if(filepath[0]==0) { /* filename stored in subject */
+			if(msg->idx.to!=0)
+				snprintf(filepath,sizeof(filepath)-1,"%sfile/%04u.in/%s"
+					,scfg.data_dir,msg->idx.to,msg->subj);
+			else
+				snprintf(filepath,sizeof(filepath)-1,"%sfile/%04u.out/%s"
+					,scfg.data_dir,msg->idx.from,msg->subj);
+		}
+        boundary=mimegetboundary();
+        mimeheaders(socket,boundary);
+        sockprintf(socket,"");
+        mimeblurb(socket,boundary);
+        sockprintf(socket,"");
+        mimetextpartheader(socket,boundary);
+	}
 	sockprintf(socket,"");	/* Header Terminator */
 	/* MESSAGE BODY */
 	line=0;
@@ -458,7 +480,14 @@ static void sockmsgtxt(SOCKET socket, smbmsg_t* msg, char* msgtxt, char* fromadd
 		line++;
 		mswait(1);
 	}
-	sockprintf(socket,".");	/* End of text */
+    if(msg->hdr.auxattr&MSG_FILEATTACH) { 
+	    sockprintf(socket,"");
+        if(!mimeattach(socket,boundary,filepath))
+			lprintf("%04u !ERROR opening/encoding %s",socket,filepath);
+        endmime(socket,boundary);
+    }
+    sockprintf(socket,".");	/* End of text */
+    if(boundary) FREE(boundary);
 }
 
 static u_long resolve_ip(char *addr)
@@ -954,6 +983,8 @@ static void pop3_thread(void* arg)
 					sockprintf(socket,"-ERR %d marking message for deletion",i);
 					continue;
 				}
+				if(msg.hdr.auxattr&MSG_FILEATTACH)
+					delfattach(&scfg,&msg);
 				smb_unlockmsghdr(&smb,&msg);
 				smb_freemsgmem(&msg);
 				sockprintf(socket,"+OK");
@@ -2174,6 +2205,8 @@ BOOL bounce(smb_t* smb, smbmsg_t* msg, char* err, BOOL immediate)
 		smb_unlockmsghdr(smb,msg);
 		return(FALSE);
 	}
+	if(msg->hdr.auxattr&MSG_FILEATTACH)
+		delfattach(&scfg,msg);
 	smb_unlockmsghdr(smb,msg);
 
 	newmsg.hfield=NULL;
@@ -2517,6 +2550,8 @@ static void sendmail_thread(void* arg)
 				lprintf("%04d !SEND ERROR %d deleting message #%lu"
 					,sock
 					,i,msg.hdr.number);
+			if(msg.hdr.auxattr&MSG_FILEATTACH)
+				delfattach(&scfg,&msg);
 			smb_unlockmsghdr(&smb,&msg);
 
 			/* QUIT */

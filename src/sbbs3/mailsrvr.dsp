@@ -97,6 +97,10 @@ SOURCE=.\mailsrvr.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\mime.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\mxlookup.c
 # End Source File
 # End Target
