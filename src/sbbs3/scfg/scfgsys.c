@@ -1146,29 +1146,25 @@ displayed to them.
 					case 1:
 						SETHELP(WHERE);
 /*
-Data Directory Parent:
+Data Directory:
 
 The Synchronet data directory contains almost all the data for your BBS.
 This directory must be located where ALL nodes can access it and
 MUST NOT be placed on a RAM disk or other volatile media.
 
-This option allows you to change the parent of your data directory.
-The \DATA\ suffix (sub-directory) cannot be changed or removed.
+This option allows you to change the location of your data directory.
 */
 						strcpy(str,cfg.data_dir);
-						if(strstr(str,"/data/")!=NULL)
-							*strstr(str,"/data/")=0;
-						if(uifc.input(WIN_MID|WIN_SAV,0,9,"Data Dir Parent"
+						if(uifc.input(WIN_MID|WIN_SAV,0,9,"Data Directory"
 							,str,50,K_EDIT)>0) {
-							if(str[strlen(str)-1]!='\\' && str[strlen(str)-1]!='/')
-								strcat(str,"/");
-							strcat(str,"data/");
-							strcpy(cfg.data_dir,str); }
+							backslash(str);
+							SAFECOPY(cfg.data_dir,str); 
+						}
                         break;
 					case 2:
 						SETHELP(WHERE);
 /*
-Exec Directory Parent:
+Exec Directory:
 
 The Synchronet exec directory contains executable files that your BBS
 executes. This directory does not need to be in your DOS search path.
@@ -1176,18 +1172,14 @@ If you place programs in this directory for the BBS to execute, you
 should place the %! abreviation for this exec directory at the
 beginning of the command line.
 
-This option allows you to change the parent of your exec directory.
-The \EXEC\ suffix (sub-directory) cannot be changed or removed.
+This option allows you to change the location of your exec directory.
 */
 						strcpy(str,cfg.exec_dir);
-						if(strstr(str,"/exec/")!=NULL)
-							*strstr(str,"/exec/")=0;
-						if(uifc.input(WIN_MID|WIN_SAV,0,9,"Exec Dir Parent"
+						if(uifc.input(WIN_MID|WIN_SAV,0,9,"Exec Directory"
 							,str,50,K_EDIT)>0) {
-							if(str[strlen(str)-1]!='\\' && str[strlen(str)-1]!='/')
-								strcat(str,"/");
-							strcat(str,"exec/");
-							strcpy(cfg.exec_dir,str); }
+							backslash(str);
+							SAFECOPY(cfg.exec_dir,str); 
+						}
                         break;
 					case 3:
 						strcpy(str,cfg.new_sif);
