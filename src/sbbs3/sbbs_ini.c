@@ -41,8 +41,20 @@
 #include "dirwrap.h"	/* backslash */
 
 static const char*	nulstr="";
+static const char*	strOptions="Options";
+static const char*	strInterface="Interface";
+static const char*	strHostName="HostName";
+static const char*	strLogMask="LogMask";
 
 #define DEFAULT_LOG_MASK		0x1f	/* EMERG|ALERT|CRIT|ERR|WARNING */
+
+typedef struct {
+	ulong		max_bytes;
+	ulong		cx_stack;
+	ulong		branch_limit;
+	ulong		gc_interval;
+	ulong		yield_interval;
+} js_settings_t;
 
 void sbbs_get_ini_fname(char* ini_file, char* ctrl_dir, char* host_name)
 {
@@ -54,6 +66,48 @@ void sbbs_get_ini_fname(char* ini_file, char* ctrl_dir, char* host_name)
 	if(!fexistcase(ini_file))
 		sprintf(ini_file,"%s%csbbs.ini",ctrl_dir,PATH_DELIM);
 }
+
+static void read_ini_globals(FILE* fp, char* ctrl_dir, char* temp_dir, char* host_name
+							 ,ushort* sem_chk_freq, ulong* interface_addr, ulong* log_mask
+							 ,js_settings_t* js)
+{
+	const char* section = "Global";
+
+	if(ctrl_dir!=NULL) {
+		ctrl_dir[0]=0;
+		iniGetString(fp,section,"CtrlDirectory",nulstr,ctrl_dir);
+		if(ctrl_dir[0])
+			backslash(ctrl_dir);
+	}
+
+	if(temp_dir!=NULL) {
+		temp_dir[0]=0;
+		iniGetString(fp,section,"TempDirectory",nulstr,temp_dir);
+		if(temp_dir[0])
+			backslash(temp_dir);
+	}
+
+	if(host_name!=NULL) {
+		host_name[0]=0;
+		iniGetString(fp,section,strHostName,nulstr,host_name);
+	}
+
+	if(sem_chk_freq!=NULL)
+		*sem_chk_freq=iniGetShortInt(fp,section,strSemFileCheckFrequency,0);
+	if(interface_addr!=NULL)
+		*interface_addr=iniGetIpAddress(fp,section,strInterface,INADDR_ANY);
+	if(log_mask!=NULL)
+		*log_mask=iniGetBitField(fp,section,strLogMask,log_mask_bits,DEFAULT_LOG_MASK);
+
+	if(js!=NULL) {
+		js->max_bytes		= iniGetInteger(fp,section,strJavaScriptMaxBytes		,JAVASCRIPT_MAX_BYTES);
+		js->cx_stack		= iniGetInteger(fp,section,strJavaScriptContextStack	,JAVASCRIPT_CONTEXT_STACK);
+		js->branch_limit	= iniGetInteger(fp,section,strJavaScriptBranchLimit		,JAVASCRIPT_BRANCH_LIMIT);
+		js->gc_interval		= iniGetInteger(fp,section,strJavaScriptGcInterval		,JAVASCRIPT_GC_INTERVAL);
+		js->yield_interval	= iniGetInteger(fp,section,strJavaScriptYieldInterval	,JAVASCRIPT_YIELD_INTERVAL);
+	}
+}
+
 
 void sbbs_read_ini(
 	 FILE*					fp
@@ -73,52 +127,30 @@ void sbbs_read_ini(
 	const char* default_term_ansi;
 	const char*	default_cgi_temp;
 	const char*	default_dosemu_path;
-	const char* strOptions="Options";
-	const char* strInterface="Interface";
-	const char* strHostName="HostName";
-	const char* strLogMask="LogMask";
-	char*		ctrl_dir;
-	char*		temp_dir;
-	char		host_name[128];
+	char		ctrl_dir[INI_MAX_VALUE_LEN];
+	char		temp_dir[INI_MAX_VALUE_LEN];
+	char		host_name[INI_MAX_VALUE_LEN];
 	char		value[INI_MAX_VALUE_LEN];
 	DWORD		log_mask;
 	ulong		interface_addr;
-	ulong		js_max_bytes;
-	ulong		js_cx_stack;
-	ulong		js_branch_limit;
-	ulong		js_gc_interval;
-	ulong		js_yield_interval;
 	ushort		sem_chk_freq;
+	js_settings_t js;
 
-	section = "Global";
+	read_ini_globals(fp, ctrl_dir, temp_dir, host_name
+					 ,&sem_chk_freq, &interface_addr, &log_mask
+					 ,&js);
 
-	ctrl_dir=iniGetString(fp,section,"CtrlDirectory",nulstr,value);
-	if(*ctrl_dir) {
-		backslash(ctrl_dir);
+	if(ctrl_dir[0]) {
 		if(bbs!=NULL)		SAFECOPY(bbs->ctrl_dir,ctrl_dir);
 		if(ftp!=NULL)		SAFECOPY(ftp->ctrl_dir,ctrl_dir);
 		if(mail!=NULL)		SAFECOPY(mail->ctrl_dir,ctrl_dir);
 		if(services!=NULL)	SAFECOPY(services->ctrl_dir,ctrl_dir);
 	}
-	temp_dir=iniGetString(fp,section,"TempDirectory",nulstr,value);
-	if(*temp_dir) {
-		backslash(temp_dir);
+	if(temp_dir[0]) {
 		if(bbs!=NULL)		SAFECOPY(bbs->temp_dir,temp_dir);
 		if(ftp!=NULL)		SAFECOPY(ftp->temp_dir,temp_dir);
 	}
-
-	SAFECOPY(host_name,iniGetString(fp,section,strHostName,nulstr,value));
-	sem_chk_freq=iniGetShortInt(fp,section,strSemFileCheckFrequency,0);
-	interface_addr=iniGetIpAddress(fp,section,strInterface,INADDR_ANY);
-	log_mask=iniGetBitField(fp,section,strLogMask,log_mask_bits,DEFAULT_LOG_MASK);
-
-	/* Global JavaScript defaults */
-	js_max_bytes		= iniGetInteger(fp,section,strJavaScriptMaxBytes		,JAVASCRIPT_MAX_BYTES);
-	js_cx_stack			= iniGetInteger(fp,section,strJavaScriptContextStack	,JAVASCRIPT_CONTEXT_STACK);
-	js_branch_limit		= iniGetInteger(fp,section,strJavaScriptBranchLimit		,JAVASCRIPT_BRANCH_LIMIT);
-	js_gc_interval		= iniGetInteger(fp,section,strJavaScriptGcInterval		,JAVASCRIPT_GC_INTERVAL);
-	js_yield_interval	= iniGetInteger(fp,section,strJavaScriptYieldInterval	,JAVASCRIPT_YIELD_INTERVAL);
-																		
+													
 	/***********************************************************************/
 	if(bbs!=NULL) {
 
@@ -155,15 +187,15 @@ void sbbs_read_ini(
 
 		/* JavaScript operating parameters */
 		bbs->js_max_bytes
-			=iniGetInteger(fp,section,strJavaScriptMaxBytes		,js_max_bytes);
+			=iniGetInteger(fp,section,strJavaScriptMaxBytes		,js.max_bytes);
 		bbs->js_cx_stack
-			=iniGetInteger(fp,section,strJavaScriptContextStack	,js_cx_stack);
+			=iniGetInteger(fp,section,strJavaScriptContextStack	,js.cx_stack);
 		bbs->js_branch_limit
-			=iniGetInteger(fp,section,strJavaScriptBranchLimit	,js_branch_limit);
+			=iniGetInteger(fp,section,strJavaScriptBranchLimit	,js.branch_limit);
 		bbs->js_gc_interval
-			=iniGetInteger(fp,section,strJavaScriptGcInterval	,js_gc_interval);
+			=iniGetInteger(fp,section,strJavaScriptGcInterval	,js.gc_interval);
 		bbs->js_yield_interval
-			=iniGetInteger(fp,section,strJavaScriptYieldInterval,js_yield_interval);
+			=iniGetInteger(fp,section,strJavaScriptYieldInterval,js.yield_interval);
 
 		SAFECOPY(bbs->host_name
 			,iniGetString(fp,section,strHostName,host_name,value));
@@ -212,7 +244,7 @@ void sbbs_read_ini(
 		ftp->interface_addr
 			=iniGetIpAddress(fp,section,strInterface,interface_addr);
 		ftp->port
-			=iniGetShortInt(fp,section,"Port",ftp->port);
+			=iniGetShortInt(fp,section,"Port",IPPORT_FTP);
 		ftp->max_clients
 			=iniGetShortInt(fp,section,"MaxClients",10);
 		ftp->max_inactivity
@@ -224,9 +256,9 @@ void sbbs_read_ini(
 
 		/* JavaScript Operating Parameters */
 		ftp->js_max_bytes
-			=iniGetInteger(fp,section,strJavaScriptMaxBytes		,js_max_bytes);
+			=iniGetInteger(fp,section,strJavaScriptMaxBytes		,js.max_bytes);
 		ftp->js_cx_stack
-			=iniGetInteger(fp,section,strJavaScriptContextStack	,js_cx_stack);
+			=iniGetInteger(fp,section,strJavaScriptContextStack	,js.cx_stack);
 
 		SAFECOPY(ftp->host_name
 			,iniGetString(fp,section,strHostName,host_name,value));
@@ -313,9 +345,9 @@ void sbbs_read_ini(
 
 		/* JavaScript Operating Parameters */
 		mail->js_max_bytes
-			=iniGetInteger(fp,section,strJavaScriptMaxBytes		,js_max_bytes);
+			=iniGetInteger(fp,section,strJavaScriptMaxBytes		,js.max_bytes);
 		mail->js_cx_stack
-			=iniGetInteger(fp,section,strJavaScriptContextStack	,js_cx_stack);
+			=iniGetInteger(fp,section,strJavaScriptContextStack	,js.cx_stack);
 
 		mail->log_mask
 			=iniGetBitField(fp,section,strLogMask,log_mask_bits,log_mask);
@@ -340,15 +372,15 @@ void sbbs_read_ini(
 
 		/* Configurable JavaScript default parameters */
 		services->js_max_bytes
-			=iniGetInteger(fp,section,strJavaScriptMaxBytes		,js_max_bytes);
+			=iniGetInteger(fp,section,strJavaScriptMaxBytes		,js.max_bytes);
 		services->js_cx_stack
-			=iniGetInteger(fp,section,strJavaScriptContextStack	,js_cx_stack);
+			=iniGetInteger(fp,section,strJavaScriptContextStack	,js.cx_stack);
 		services->js_branch_limit
-			=iniGetInteger(fp,section,strJavaScriptBranchLimit	,js_branch_limit);
+			=iniGetInteger(fp,section,strJavaScriptBranchLimit	,js.branch_limit);
 		services->js_gc_interval
-			=iniGetInteger(fp,section,strJavaScriptGcInterval	,js_gc_interval);
+			=iniGetInteger(fp,section,strJavaScriptGcInterval	,js.gc_interval);
 		services->js_yield_interval
-			=iniGetInteger(fp,section,strJavaScriptYieldInterval,js_yield_interval);
+			=iniGetInteger(fp,section,strJavaScriptYieldInterval,js.yield_interval);
 
 		SAFECOPY(services->host_name
 			,iniGetString(fp,section,strHostName,host_name,value));
@@ -388,9 +420,9 @@ void sbbs_read_ini(
 
 		/* JavaScript Operating Parameters */
 		web->js_max_bytes
-			=iniGetInteger(fp,section,strJavaScriptMaxBytes		,js_max_bytes);
+			=iniGetInteger(fp,section,strJavaScriptMaxBytes		,js.max_bytes);
 		web->js_cx_stack
-			=iniGetInteger(fp,section,strJavaScriptContextStack	,js_cx_stack);
+			=iniGetInteger(fp,section,strJavaScriptContextStack	,js.cx_stack);
 
 		SAFECOPY(web->host_name
 			,iniGetString(fp,section,strHostName,host_name,value));
@@ -427,4 +459,367 @@ void sbbs_read_ini(
 			=iniGetBitField(fp,section,strOptions,web_options
 				,BBS_OPT_NO_HOST_LOOKUP);
 	}
+}
+
+BOOL sbbs_write_ini(
+	 FILE*					fp
+	,BOOL					run_bbs
+	,bbs_startup_t*			bbs
+	,BOOL					run_ftp
+	,ftp_startup_t*			ftp
+	,BOOL					run_web
+	,web_startup_t*			web
+	,BOOL					run_mail		
+	,mail_startup_t*		mail
+	,BOOL					run_services
+	,services_startup_t*	services
+	)
+{
+	const char*	section;
+	BOOL		result=FALSE;
+	str_list_t	list;
+	str_list_t*	lp;
+	ini_style_t style;
+	char		host_name[INI_MAX_VALUE_LEN];
+	DWORD		log_mask;
+	ulong		interface_addr;
+	ushort		sem_chk_freq;
+	js_settings_t js;
+
+	read_ini_globals(fp, NULL, NULL, host_name
+					 ,&sem_chk_freq, &interface_addr, &log_mask
+					 ,&js);
+	
+	memset(&style, 0, sizeof(style));
+	style.key_prefix = "\t";
+
+	if((list=iniReadFile(fp))==NULL)
+		return(FALSE);
+	
+	lp=&list;
+
+	do { /* try */
+
+	/***********************************************************************/
+	if(bbs!=NULL) {
+
+		section = "BBS";
+
+		if(!iniSetBool(lp,section,"AutoStart",run_bbs,&style))
+			break;
+		if(bbs->telnet_interface!=interface_addr
+			&& !iniSetIpAddress(lp,section,"TelnetInterface",bbs->telnet_interface,&style))
+			break;
+		if(!iniSetShortInt(lp,section,"TelnetPort",bbs->telnet_port,&style))
+			break;
+		if(bbs->rlogin_interface!=interface_addr
+			&& !iniSetIpAddress(lp,section,"RLoginInterface",bbs->rlogin_interface,&style))
+			break;
+		if(!iniSetShortInt(lp,section,"RLoginPort",bbs->rlogin_port,&style))
+			break;
+		if(!iniSetShortInt(lp,section,"FirstNode",bbs->first_node,&style))
+			break;
+		if(!iniSetShortInt(lp,section,"LastNode",bbs->last_node,&style))
+			break;
+		if(!iniSetShortInt(lp,section,"OutbufHighwaterMark",bbs->outbuf_highwater_mark,&style))
+			break;
+		if(!iniSetShortInt(lp,section,"OutbufDrainTimeout",bbs->outbuf_drain_timeout,&style))
+			break;
+		if(bbs->sem_chk_freq!=sem_chk_freq
+			&& !iniSetShortInt(lp,section,strSemFileCheckFrequency,bbs->sem_chk_freq,&style))
+			break;
+		if(!iniSetInteger(lp,section,"ExternalYield",bbs->xtrn_polls_before_yield,&style))
+			break;
+
+		/* JavaScript operating parameters */
+		
+		if(bbs->js_max_bytes!=js.max_bytes
+			&& !iniSetInteger(lp,section,strJavaScriptMaxBytes		,bbs->js_max_bytes,&style))
+			break;
+		if(bbs->js_cx_stack!=js.cx_stack
+			&& !iniSetInteger(lp,section,strJavaScriptContextStack	,bbs->js_cx_stack,&style))
+			break;
+		if(bbs->js_branch_limit!=js.branch_limit
+			&& !iniSetInteger(lp,section,strJavaScriptBranchLimit	,bbs->js_branch_limit,&style))
+			break;
+		if(bbs->js_gc_interval!=js.gc_interval
+			&& !iniSetInteger(lp,section,strJavaScriptGcInterval	,bbs->js_gc_interval,&style))
+			break;
+		if(bbs->js_yield_interval!=js.yield_interval
+			&& !iniSetInteger(lp,section,strJavaScriptYieldInterval	,bbs->js_yield_interval,&style))
+			break;
+
+		if(strcmp(bbs->host_name,host_name)
+			&& !iniSetString(lp,section,strHostName,bbs->host_name,&style))
+			break;
+
+		if(!iniSetString(lp,section,"ExternalTermANSI",bbs->xtrn_term_ansi,&style))
+			break;
+		if(!iniSetString(lp,section,"ExternalTermDumb",bbs->xtrn_term_dumb,&style))
+			break;
+		if(!iniSetString(lp,section,"DOSemuPath",bbs->dosemu_path,&style))
+			break;
+
+		if(!iniSetString(lp,section,"AnswerSound",bbs->answer_sound,&style))
+			break;
+		if(!iniSetString(lp,section,"HangupSound",bbs->hangup_sound,&style))
+			break;
+
+		if(bbs->log_mask!=log_mask
+			&& !iniSetBitField(lp,section,strLogMask,log_mask_bits,bbs->log_mask,&style))
+			break;
+		if(!iniSetBitField(lp,section,strOptions,bbs_options,bbs->options,&style))
+			break;
+	}
+	/***********************************************************************/
+	if(ftp!=NULL) {
+
+		section = "FTP";
+
+		if(!iniSetBool(lp,section,"AutoStart",run_ftp,&style))
+			break;
+		if(ftp->interface_addr!=interface_addr
+			&& !iniSetIpAddress(lp,section,strInterface,ftp->interface_addr,&style))
+			break;
+		if(!iniSetShortInt(lp,section,"Port",ftp->port,&style))
+			break;
+		if(!iniSetShortInt(lp,section,"MaxClients",ftp->max_clients,&style))
+			break;
+		if(!iniSetShortInt(lp,section,"MaxInactivity",ftp->max_inactivity,&style))
+			break;
+		if(!iniSetShortInt(lp,section,"QwkTimeout",ftp->qwk_timeout,&style))
+			break;
+		if(ftp->sem_chk_freq!=sem_chk_freq
+			&& !iniSetShortInt(lp,section,strSemFileCheckFrequency,ftp->sem_chk_freq,&style))
+			break;
+
+		/* JavaScript Operating Parameters */
+		
+		if(ftp->js_max_bytes!=js.max_bytes
+			&& !iniSetInteger(lp,section,strJavaScriptMaxBytes		,ftp->js_max_bytes,&style))
+			break;
+		if(ftp->js_cx_stack!=js.cx_stack
+			&& !iniSetInteger(lp,section,strJavaScriptContextStack	,ftp->js_cx_stack,&style))
+			break;
+
+		if(strcmp(ftp->host_name,host_name)
+			&& !iniSetString(lp,section,strHostName,ftp->host_name,&style))
+			break;
+
+		if(!iniSetString(lp,section,"IndexFileName",ftp->index_file_name,&style))
+			break;
+		if(!iniSetString(lp,section,"HtmlIndexFile",ftp->html_index_file,&style))
+			break;
+		if(!iniSetString(lp,section,"HtmlIndexScript",ftp->html_index_script,&style))
+			break;
+
+		if(!iniSetString(lp,section,"AnswerSound",ftp->answer_sound,&style))
+			break;
+		if(!iniSetString(lp,section,"HangupSound",ftp->hangup_sound,&style))
+			break;
+		if(!iniSetString(lp,section,"HackAttemptSound",ftp->hack_sound,&style))
+			break;
+
+		if(ftp->log_mask!=log_mask
+			&& !iniSetBitField(lp,section,strLogMask,log_mask_bits,ftp->log_mask,&style))
+			break;
+		
+		if(!iniSetBitField(lp,section,strOptions,ftp_options,ftp->options,&style))
+			break;
+	}
+
+	/***********************************************************************/
+	if(mail!=NULL) {
+
+		section = "Mail";
+
+		if(!iniSetBool(lp,section,"AutoStart",run_mail,&style))
+			break;
+		if(mail->interface_addr!=interface_addr
+			&& !iniSetIpAddress(lp,section,strInterface,mail->interface_addr,&style))
+			break;
+		if(!iniSetShortInt(lp,section,"SMTPPort",mail->smtp_port,&style))
+			break;
+		if(!iniSetShortInt(lp,section,"POP3Port",mail->pop3_port,&style))
+			break;
+		if(!iniSetShortInt(lp,section,"RelayPort",mail->relay_port,&style))
+			break;
+		if(!iniSetShortInt(lp,section,"MaxClients",mail->max_clients,&style))
+			break;
+		if(!iniSetShortInt(lp,section,"MaxInactivity",mail->max_inactivity,&style))
+			break;
+		if(!iniSetShortInt(lp,section,"MaxDeliveryAttempts",mail->max_delivery_attempts,&style))
+			break;
+		if(!iniSetShortInt(lp,section,"RescanFrequency",mail->rescan_frequency,&style))
+			break;
+		if(mail->sem_chk_freq!=sem_chk_freq
+			&& !iniSetShortInt(lp,section,strSemFileCheckFrequency,mail->sem_chk_freq,&style))
+			break;
+		if(!iniSetShortInt(lp,section,"LinesPerYield",mail->lines_per_yield,&style))
+			break;
+		if(!iniSetShortInt(lp,section,"MaxRecipients",mail->max_recipients,&style))
+			break;
+		if(!iniSetInteger(lp,section,"MaxMsgSize",mail->max_msg_size,&style))
+			break;
+
+		if(strcmp(mail->host_name,host_name)
+			&& !iniSetString(lp,section,strHostName,mail->host_name,&style))
+			break;
+
+		if(!iniSetString(lp,section,"RelayServer",mail->relay_server,&style))
+			break;
+		if(!iniSetString(lp,section,"DNSServer",mail->dns_server,&style))
+			break;
+
+		if(!iniSetString(lp,section,"DefaultUser",mail->default_user,&style))
+			break;
+
+		if(!iniSetString(lp,section,"DNSBlacklistHeader",mail->dnsbl_hdr,&style))
+			break;
+		if(!iniSetString(lp,section,"DNSBlacklistSubject",mail->dnsbl_tag,&style))
+			break;
+
+		if(!iniSetString(lp,section,"POP3Sound",mail->pop3_sound,&style))
+			break;
+		if(!iniSetString(lp,section,"InboundSound",mail->inbound_sound,&style))
+			break;
+		if(!iniSetString(lp,section,"OutboundSound",mail->outbound_sound,&style))
+			break;
+
+		if(!iniSetString(lp,section,"ProcessConfigFile",mail->proc_cfg_file,&style))
+			break;
+
+		/* JavaScript Operating Parameters */
+		if(mail->js_max_bytes!=js.max_bytes
+			&& !iniSetInteger(lp,section,strJavaScriptMaxBytes		,mail->js_max_bytes,&style))
+			break;
+		if(mail->js_cx_stack!=js.cx_stack
+			&& !iniSetInteger(lp,section,strJavaScriptContextStack	,mail->js_cx_stack,&style))
+			break;
+
+		if(mail->log_mask!=log_mask
+			&& !iniSetBitField(lp,section,strLogMask,log_mask_bits,mail->log_mask,&style))
+			break;
+		if(!iniSetBitField(lp,section,strOptions,mail_options,mail->options,&style))
+			break;
+	}
+
+	/***********************************************************************/
+	if(services!=NULL) {
+
+		section = "Services";
+
+		if(!iniSetBool(lp,section,"AutoStart",run_services,&style))
+			break;
+		if(services->interface_addr!=interface_addr
+			&& !iniSetIpAddress(lp,section,strInterface,services->interface_addr,&style))
+			break;
+		if(services->sem_chk_freq!=sem_chk_freq
+			&& !iniSetShortInt(lp,section,strSemFileCheckFrequency,services->sem_chk_freq,&style))
+			break;
+
+		/* Configurable JavaScript default parameters */
+		if(services->js_max_bytes!=js.max_bytes
+			&& !iniSetInteger(lp,section,strJavaScriptMaxBytes		,services->js_max_bytes,&style))
+			break;
+		if(services->js_cx_stack!=js.cx_stack
+			&& !iniSetInteger(lp,section,strJavaScriptContextStack	,services->js_cx_stack,&style))
+			break;
+		if(services->js_branch_limit!=js.branch_limit
+			&& !iniSetInteger(lp,section,strJavaScriptBranchLimit	,services->js_branch_limit,&style))
+			break;
+		if(services->js_gc_interval!=js.gc_interval
+			&& !iniSetInteger(lp,section,strJavaScriptGcInterval	,services->js_gc_interval,&style))
+			break;
+		if(services->js_yield_interval!=js.yield_interval
+			&& !iniSetInteger(lp,section,strJavaScriptYieldInterval	,services->js_yield_interval,&style))
+			break;
+
+		if(strcmp(services->host_name,host_name)
+			&& !iniSetString(lp,section,strHostName,services->host_name,&style))
+			break;
+		if(!iniSetString(lp,section,"iniFile",services->ini_file,&style))
+			break;
+		if(!iniSetString(lp,section,"ConfigFile",services->cfg_file,&style))
+			break;
+
+		if(!iniSetString(lp,section,"AnswerSound",services->answer_sound,&style))
+			break;
+		if(!iniSetString(lp,section,"HangupSound",services->hangup_sound,&style))
+			break;
+
+		if(services->log_mask!=log_mask
+			&& !iniSetBitField(lp,section,strLogMask,log_mask_bits,services->log_mask,&style))
+			break;
+		if(!iniSetBitField(lp,section,strOptions,service_options,services->options,&style))
+			break;
+	}
+
+	/***********************************************************************/
+	if(web!=NULL) {
+
+		section = "Web";
+
+		if(!iniSetBool(lp,section,"AutoStart",run_web,&style))
+			break;
+
+		if(web->interface_addr!=interface_addr
+			&& !iniSetIpAddress(lp,section,strInterface,web->interface_addr,&style))
+			break;
+		if(!iniSetShortInt(lp,section,"Port",web->port,&style))
+			break;
+		if(web->sem_chk_freq!=sem_chk_freq
+			&& !iniSetShortInt(lp,section,strSemFileCheckFrequency,web->sem_chk_freq,&style))
+			break;
+
+		/* JavaScript Operating Parameters */
+		if(web->js_max_bytes!=js.max_bytes
+			&& !iniSetInteger(lp,section,strJavaScriptMaxBytes		,web->js_max_bytes,&style))
+			break;
+		if(web->js_cx_stack!=js.cx_stack
+			&& !iniSetInteger(lp,section,strJavaScriptContextStack	,web->js_cx_stack,&style))
+			break;
+
+		if(strcmp(web->host_name,host_name)
+			&& !iniSetString(lp,section,strHostName,web->host_name,&style))
+			break;
+
+		if(!iniSetString(lp,section,"RootDirectory",web->root_dir,&style))
+			break;
+		if(!iniSetString(lp,section,"ErrorDirectory",web->error_dir,&style))
+			break;
+		if(!iniSetString(lp,section,"CGIDirectory",web->cgi_dir,&style))
+			break;
+
+		if(!iniSetStringList(lp,section,"IndexFileNames", "," ,web->index_file_name,&style))
+			break;
+		if(!iniSetStringList(lp,section,"CGIExtensions", "," ,web->cgi_ext,&style))
+			break;
+
+		if(!iniSetString(lp,section,"JavaScriptExtension",web->ssjs_ext,&style))
+			break;
+
+		if(!iniSetShortInt(lp,section,"MaxInactivity",web->max_inactivity,&style))
+			break;
+		if(!iniSetShortInt(lp,section,"MaxCgiInactivity",web->max_cgi_inactivity,&style))
+			break;
+
+		if(!iniSetString(lp,section,"CGITempDirectory",web->cgi_temp_dir,&style))
+			break;
+
+		if(web->log_mask!=log_mask
+			&& !iniSetBitField(lp,section,strLogMask,log_mask_bits,web->log_mask,&style))
+			break;
+		if(!iniSetBitField(lp,section,strOptions,web_options,web->options,&style))
+			break;
+	}
+
+	/***********************************************************************/
+	result=iniWriteFile(fp,list);
+
+	} while(0);	/* finally */
+
+	free(list);
+
+	return(result);
 }
