@@ -505,7 +505,7 @@ js_recvfrom(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	free(buf);
 
 	if((retobj=JS_NewObject(cx,&js_recvfrom_class,NULL,obj))==NULL)
-		return(JS_TRUE);
+		return(JS_FALSE);
 
 	sprintf(port,"%u",ntohs(addr.sin_port));
 	JS_DefineProperty(cx, retobj, "port"
@@ -778,10 +778,10 @@ enum {
 
 #ifdef _DEBUG
 static char* socket_prop_desc[SOCK_PROPERTIES+1] = {
-	 "error status for the last socket operation that failed - READ ONLY"
-	,"<i>true</i> if socket is in a connected state - READ ONLY"
-	,"<i>true</i> if data is waiting to be read - READ ONLY"
-	,"number of bytes waiting to be read - READ ONLY"
+	 "error status for the last socket operation that failed - <small>READ ONLY</small>"
+	,"<i>true</i> if socket is in a connected state - <small>READ ONLY</small>"
+	,"<i>true</i> if data is waiting to be read - <small>READ ONLY</small>"
+	,"number of bytes waiting to be read - <small>READ ONLY</small>"
 	,"enable debug logging"
 	,"socket descriptor"
 	,"use non-blocking operation (default is <i>false</i>)"

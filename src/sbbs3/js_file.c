@@ -681,6 +681,7 @@ enum {
 	,FILE_PROP_ATTRIBUTES
 };
 
+
 static JSBool js_file_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
     jsint       tiny;
@@ -814,29 +815,59 @@ static struct JSPropertySpec js_file_properties[] = {
 	{0}
 };
 
+#ifdef _DEBUG
+static char* file_prop_desc[] = {
+	 "filename specified in constructor - <small>READ ONLY</small>"
+	,"mode string specified in <i>open</i> call - <small>READ ONLY</small>"
+	,"<i>true</i> if the file exists - <small>READ ONLY</small>"
+	,"last modified date/time (time_t format) - <small>READ ONLY</small>"
+	,"<i>true</i> if the file has been opened successfully - <small>READ ONLY</small>"
+	,"<i>true</i> if the current file position is at the <b>end of file</b> - <small>READ ONLY</small>"
+	,"the last occurred error value (use clear_error to clear) - <small>READ ONLY</small>"
+	,"the open file descriptor (advanced use only) - <small>READ ONLY</small>"
+	,"end-of-text character (advanced use only), if non-zero used by <i>read</i>, <i>readln</i>, and <i>write</i>"
+	,"<i>true</i> if debug output is enabled"
+	,"the current file position (offset in bytes), change value to seek within file"
+	,"the current length of the file (in bytes)"
+	,"file mode/attributes"
+	,NULL
+};
+#endif
+
+
 static jsMethodSpec js_file_functions[] = {
 	{"open",			js_open,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("[string mode, boolean shareable, number buflen]")
-	,JSDOCSTR("open file (w/mode) [buffered]")
+	,JSDOCSTR("open file, <i>shareable</i> defaults to <i>false</i>, <i>buflen</i> defaults to 2048 bytes,<br>"
+		"mode (default: <tt>w+</tt>)specifies the type of access requested for the file, as follows:<br>"
+		"<tt>r&nbsp</tt> opens for reading. If the file does not exist or cannot be found, the open call fails.<br>"
+		"<tt>w&nbsp</tt> opens an empty file for writing. If the given file exists, its contents are destroyed.<br>"
+		"<tt>a&nbsp</tt> opens for writing at the end of the file (appending); creates the file first if it doesn’t exist.<br>"
+		"<tt>r+</tt> opens for both reading and writing. (The file must exist.)<br>"
+		"<tt>w+</tt> opens an empty file for both reading and writing. If the given file exists, its contents are destroyed.<br>"
+		"<tt>a+</tt> opens for reading and appending<br>"
+		"<tt>b&nbsp</tt> open in binary (untranslated) mode; translations involving carriage-return and linefeed characters are suppressed (e.g. <tt>r+b</tt>).<br>"
+		"returns <i>true</i> on success"
+		)
 	},		
 	{"close",			js_close,			0,	JSTYPE_VOID,	""
 	,JSDOCSTR("close file")
 	},		
 	{"remove",			js_delete,			0,	JSTYPE_ALIAS },
 	{"delete",			js_delete,			0,	JSTYPE_BOOLEAN, ""
-	,JSDOCSTR("Remove the file from the disk (AKA remove)")
+	,JSDOCSTR("remove the file from the disk (AKA remove)")
 	},
 	{"clearError",		js_clear_error,		0,	JSTYPE_ALIAS },
 	{"clear_error",		js_clear_error,		0,	JSTYPE_BOOLEAN, ""
-	,JSDOCSTR("Clears the current error value (AKA clearError)")
+	,JSDOCSTR("clears the current error value (AKA clearError)")
 	},
 	{"flush",			js_flush,			0,	JSTYPE_BOOLEAN,	""
-	,JSDOCSTR("flush buffers")
+	,JSDOCSTR("flush/commit buffers to disk")
 	},
 	{"lock",			js_lock,			2,	JSTYPE_BOOLEAN,	JSDOCSTR("[offset, length]")
-	,JSDOCSTR("lock file record")
+	,JSDOCSTR("lock file record for exclusive access (file must be opened <i>shareable</i>)")
 	},		
 	{"unlock",			js_unlock,			2,	JSTYPE_BOOLEAN,	JSDOCSTR("[offset, length]")
-	,JSDOCSTR("unlock file record")
+	,JSDOCSTR("unlock file record for exclusive access")
 	},		
 	{"read",			js_read,			0,	JSTYPE_STRING,	JSDOCSTR("[number maxlen]")
 	,JSDOCSTR("read a string from file, maxlen defaults to 512 characters")
@@ -863,7 +894,7 @@ static jsMethodSpec js_file_functions[] = {
 	,JSDOCSTR("write an array of strings to file")
 	},		
 	{"printf",			js_fprintf,			0,	JSTYPE_NUMBER,	JSDOCSTR("string format [,args]")
-	,JSDOCSTR("write a formatted string to the file")
+	,JSDOCSTR("write a formatted string to the file (ala fprintf)")
 	},		
 	{0}
 };
@@ -933,8 +964,9 @@ js_file_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval
 	}
 
 #ifdef _DEBUG
-	js_DescribeObject(cx,obj,"Class used for opening/creating files on the system file system");
+	js_DescribeObject(cx,obj,"Class used for opening/creating files on the local file system");
 	js_DescribeConstructor(cx,obj,"To create a new file object: <tt>var f = new File(filename)</tt>");
+	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", file_prop_desc, JSPROP_READONLY);
 #endif
 
 	dbprintf(FALSE, p, "object constructed");

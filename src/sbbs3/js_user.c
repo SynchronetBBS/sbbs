@@ -564,13 +564,13 @@ static char* user_prop_desc[] = {
 	,"AKA host_name"
 	,"sysop's comment"
 	,"external e-mail address"
-	,"local Internet e-mail address	(READ ONLY)"
+	,"local Internet e-mail address	- <small>READ ONLY</small>"
 	,"street address"
 	,"location (city, state)"
 	,"zip/postal code"
 	,"phone number"
 	,"birth date"
-	,"calculated age in years (READ ONLY)"
+	,"calculated age in years - <small>READ ONLY</small>"
 	,"connection type"
 	,"AKA connection"
 	,"terminal rows (lines)"
@@ -888,7 +888,7 @@ JSObject* DLLCALL js_CreateUserObject(JSContext* cx, JSObject* parent, scfg_t* c
 	JS_DefineProperties(cx, statsobj, js_user_stats_properties);
 
 #ifdef _DEBUG
-	js_DescribeObject(cx,statsobj,"User statistics");
+	js_DescribeObject(cx,statsobj,"User statistics (all <small>READ ONLY</small>)");
 	js_CreateArrayOfStrings(cx, statsobj, "_property_desc_list", user_stats_prop_desc, JSPROP_READONLY);
 #endif
 

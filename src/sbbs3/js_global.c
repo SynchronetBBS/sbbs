@@ -718,10 +718,7 @@ static jsMethodSpec js_global_functions[] = {
 	,JSDOCSTR("stop execution")
 	},		
 	{"load",            js_load,            1,	JSTYPE_VOID,	JSDOCSTR("string filename [,args]")
-	,JSDOCSTR("Load and execute a javascript file")
-	},		
-	{"format",			js_format,			1,	JSTYPE_STRING,	JSDOCSTR("string format [,args]")
-	,JSDOCSTR("return a formatted string (ala printf)")
+	,JSDOCSTR("load and execute a JavaScript file")
 	},		
 	{"sleep",			js_mswait,			0,	JSTYPE_ALIAS },
 	{"mswait",			js_mswait,			0,	JSTYPE_VOID,	JSDOCSTR("[number milliseconds]")
@@ -731,40 +728,40 @@ static jsMethodSpec js_global_functions[] = {
 	,JSDOCSTR("return random int between 0 and n")
 	},		
 	{"time",			js_time,			0,	JSTYPE_NUMBER,	""
-	,JSDOCSTR("return time in Unix format")
+	,JSDOCSTR("return current time in Unix (time_t) format")
 	},		
 	{"beep",			js_beep,			0,	JSTYPE_VOID,	JSDOCSTR("[number freq, duration]")
-	,JSDOCSTR("local beep (freq, dur)")
+	,JSDOCSTR("produce a tone on the local speaker at specified frequency for specified duration (in milliseconds)")
 	},		
 	{"sound",			js_sound,			0,	JSTYPE_BOOLEAN,	JSDOCSTR("[string filename]")
-	,JSDOCSTR("play sound file")
+	,JSDOCSTR("play a waveform (.wav) sound file")
 	},		
 	{"crc16",			js_crc16,			1,	JSTYPE_NUMBER,	JSDOCSTR("string text")
-	,JSDOCSTR("calculate 16-bit CRC of string")
+	,JSDOCSTR("calculate and return 16-bit CRC of string")
 	},		
 	{"crc32",			js_crc32,			1,	JSTYPE_NUMBER,	JSDOCSTR("string text")
-	,JSDOCSTR("calculate 32-bit CRC of string")
+	,JSDOCSTR("calculate and return 32-bit CRC of string")
 	},		
 	{"chksum",			js_chksum,			1,	JSTYPE_NUMBER,	JSDOCSTR("string text")
-	,JSDOCSTR("calculate 32-bit chksum of string")
+	,JSDOCSTR("calculate and return 32-bit chksum of string")
 	},		
 	{"ascii",			js_ascii,			1,	JSTYPE_NUMBER,	JSDOCSTR("[string text] or [number value]")
-	,JSDOCSTR("convert str to ascii-val or vice-versa")
+	,JSDOCSTR("convert string to ASCII value or vice-versa (returns number OR string)")
 	},		
 	{"ascii_str",		js_ascii_str,		1,	JSTYPE_STRING,	JSDOCSTR("string text")
-	,JSDOCSTR("convert ex-ascii in str to plain ascii")
+	,JSDOCSTR("convert extended-ASCII in string to plain ASCII")
 	},		
 	{"strip_ctrl",		js_strip_ctrl,		1,	JSTYPE_STRING,	JSDOCSTR("string text")
-	,JSDOCSTR("strip ctrl chars from string")
+	,JSDOCSTR("strip control characters from string")
 	},		
 	{"strip_exascii",	js_strip_exascii,	1,	JSTYPE_STRING,	JSDOCSTR("string text")
-	,JSDOCSTR("strip ex-ascii chars from string")
+	,JSDOCSTR("strip extended-ASCII characters from string")
 	},		
 	{"truncsp",			js_truncsp,			1,	JSTYPE_STRING,	JSDOCSTR("string text")
-	,JSDOCSTR("truncate space off end of string")
+	,JSDOCSTR("truncate white-space characters off end of string")
 	},		
 	{"truncstr",		js_truncstr,		2,	JSTYPE_STRING,	JSDOCSTR("string text, charset")
-	,JSDOCSTR("truncate string at first char in set")
+	,JSDOCSTR("truncate string at first char in <i>charset</i>")
 	},		
 	{"file_exists",		js_fexist,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("string filename")
 	,JSDOCSTR("verify file existence")
@@ -779,7 +776,7 @@ static jsMethodSpec js_global_functions[] = {
 	,JSDOCSTR("get file mode/attributes")
 	},		
 	{"file_date",		js_fdate,			1,	JSTYPE_NUMBER,	JSDOCSTR("string filename")
-	,JSDOCSTR("get file last modified date/time")
+	,JSDOCSTR("get file last modified date/time (in time_t format)")
 	},		
 	{"file_size",		js_flength,			1,	JSTYPE_NUMBER,	JSDOCSTR("string filename")
 	,JSDOCSTR("get file length (in bytes)")
@@ -794,7 +791,10 @@ static jsMethodSpec js_global_functions[] = {
 	,JSDOCSTR("remove directory")
 	},		
 	{"strftime",		js_strftime,		2,	JSTYPE_STRING,	JSDOCSTR("string format, number time")
-	,JSDOCSTR("format time string")
+	,JSDOCSTR("return a formatted time string")
+	},		
+	{"format",			js_format,			1,	JSTYPE_STRING,	JSDOCSTR("string format [,args]")
+	,JSDOCSTR("return a formatted string (ala sprintf)")
 	},		
 	{0}
 };
@@ -817,6 +817,10 @@ JSObject* DLLCALL js_CreateGlobalObject(JSContext* cx, scfg_t* cfg)
 
 	if(!JS_SetPrivate(cx, glob, cfg))	/* Store a pointer to scfg_t */
 		return(NULL);
+
+#ifdef _DEBUG
+	js_DescribeObject(cx,glob,"Top-level functions and properties (common to all servers and services)");
+#endif
 
 	return(glob);
 }
