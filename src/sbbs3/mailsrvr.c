@@ -1699,6 +1699,8 @@ static void smtp_thread(void* arg)
 						system(cmdstr(p, msgtxt_fname, rcptlst_fname, proc_err_fname, str));
 						if(flength(proc_err_fname)>0)
 							break;
+						if(!fexist(msgtxt_fname) || !fexist(rcptlst_fname))
+							break;
 					}
 					fclose(proc_cfg);
 					if(flength(proc_err_fname)>0 
@@ -1718,6 +1720,12 @@ static void smtp_thread(void* arg)
 						}
 						fclose(proc_err);
 						remove(proc_err_fname);
+						continue;
+					}
+					if(!fexist(msgtxt_fname) || !fexist(rcptlst_fname)) {
+						lprintf("%04d SMTP external process removed %s"
+							,socket, fexist(msgtxt_fname)==FALSE ? "message text" : "recipient list");
+						sockprintf(socket,ok_rsp);
 						continue;
 					}
 				}
