@@ -470,7 +470,6 @@ typedef struct {
 
 static void send_thread(void* arg)
 {
-	char*		p;
 	char		buf[8192];
 	char		fname[MAX_PATH];
 	int			i;
@@ -585,12 +584,13 @@ static void send_thread(void* arg)
 
 		if(xfer.dir>=0) {
 			memset(&f,0,sizeof(f));
+#ifdef _WIN32
 			GetShortPathName(xfer.filename,fname,sizeof(fname));
-			p=strrchr(fname,'\\');
-			if(!p) p=strrchr(fname,'/');
-			if(!p) p=fname;
-			if(p!=fname) p++;
-			padfname(p,f.name);
+#else
+			strcpy(xfer.filename,fname);
+#endif
+			padfname(getfname(fname),f.name);
+			strupr(f.name);
 			f.dir=xfer.dir;
 			f.size=total;
 			if(getfileixb(&scfg,&f)==TRUE && getfiledat(&scfg,&f)==TRUE) {
@@ -628,7 +628,6 @@ static void receive_thread(void* arg)
 {
 	char		buf[8192];
 	char		fname[MAX_PATH];
-	char*		p;
 	int			rd;
 	int			file;
 	ulong		total=0;
@@ -727,12 +726,13 @@ static void receive_thread(void* arg)
 
 		if(xfer.dir>=0) {
 			memset(&f,0,sizeof(f));
+#ifdef _WIN32
 			GetShortPathName(xfer.filename,fname,sizeof(fname));
-			p=strrchr(fname,'\\');
-			if(!p) p=strrchr(fname,'/');
-			if(!p) p=fname;
-			if(p!=fname) p++;
-			padfname(p,f.name);
+#else
+			strcpy(fname,xfer.filename);
+#endif
+			padfname(getfname(fname),f.name);
+			strupr(f.name);
 			f.dir=xfer.dir;
 			if(scfg.dir[f.dir]->misc&DIR_AONLY)  /* Forced anonymous */
 				f.misc|=FM_ANON;
@@ -742,11 +742,7 @@ static void receive_thread(void* arg)
 			f.datedled=0L;
 			f.opencount=0;
 			if(xfer.desc==NULL || *xfer.desc==0) {
-				p=strrchr(xfer.filename,'\\');
-				if(!p) p=strrchr(xfer.filename,'/');
-				if(!p) p=xfer.filename;
-				if(p!=xfer.filename) p++;
-				sprintf(f.desc,"%.*s",(int)sizeof(f.desc)-1,p);
+				sprintf(f.desc,"%.*s",(int)sizeof(f.desc)-1,getfname(xfer.filename));
 /* old way		strcpy(f.desc,"Received via FTP: No description given"); */
 			} else
 				sprintf(f.desc,"%.*s",(int)sizeof(f.desc)-1,xfer.desc);
@@ -2278,10 +2274,7 @@ static void ctrl_thread(void* arg)
 				delfile=FALSE;
 				lprintf("%04d %s %.4s by alias: %s"
 					,sock,user.alias,cmd,p);
-				p=strrchr(fname,'\\');
-				if(p==NULL)
-					p=strrchr(fname,'/');
-				if(p!=NULL) p++;
+				p=getfname(fname);
 			}
 			if(!success && lib<0 && (tp=strchr(p,'/'))!=NULL) {
 				dir=-1;
@@ -2477,14 +2470,12 @@ static void ctrl_thread(void* arg)
 					continue;
 				}
 				sprintf(fname,"%s%s",scfg.dir[dir]->path,p);
-
+#ifdef _WIN32
 				GetShortPathName(fname, str, sizeof(str));
-				np=strrchr(str,'\\');
-				if(np==NULL) 
-					np=str;
-				else 
-					np++;
-				padfname(np,f.name);
+#else
+				strcpy(str,fname);
+#endif
+				padfname(getfname(str),f.name);
 				strupr(f.name);
 				f.dir=dir;
 				f.cdt=0;
