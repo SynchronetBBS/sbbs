@@ -57,6 +57,13 @@
 	#include <process.h>	/* getpid() */
 #endif
 
+/* utime() support */
+#if defined(_MSC_VER) || defined(__WATCOMC__)
+	#include <sys/utime.h>
+#else
+	#include <utime.h>
+#endif
+
 #if defined(__cplusplus)
 extern "C" {
 #endif
@@ -182,9 +189,9 @@ extern "C" {
 #elif defined(__unix__)
 
 	#if defined(_PTH_PTHREAD_H_)
-		#define SLEEP(x)  ({ int y=x; struct timeval tv; \
-			tv.tv_sec=(y/1000); tv.tv_usec=((y%1000)*1000); \
-			pth_nap(tv); })
+		#define SLEEP(x)		({ int y=x; struct timeval tv; \
+								tv.tv_sec=(y/1000); tv.tv_usec=((y%1000)*1000); \
+								pth_nap(tv); })
 	#else
 		#define SLEEP(x)		({	int y=x; struct timeval tv; \
 								tv.tv_sec=(y/1000); tv.tv_usec=((y%1000)*1000); \
