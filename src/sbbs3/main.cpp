@@ -223,7 +223,7 @@ u_long resolve_ip(char *addr)
 	char*		p;
 
 	if(*addr==0)
-		return(INADDR_NONE);
+		return((u_long)INADDR_NONE);
 
 	for(p=addr;*p;p++)
 		if(*p!='.' && !isdigit(*p))
@@ -231,7 +231,7 @@ u_long resolve_ip(char *addr)
 	if(!(*p))
 		return(inet_addr(addr));
 	if((host=gethostbyname(addr))==NULL) 
-		return(INADDR_NONE);
+		return((u_long)INADDR_NONE);
 	return(*((ulong*)host->h_addr_list[0]));
 }
 

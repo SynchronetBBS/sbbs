@@ -573,7 +573,7 @@ static u_long resolve_ip(char *addr)
 	HOSTENT*	host;
 
 	if(*addr==0)
-		return(INADDR_NONE);
+		return((u_long)INADDR_NONE);
 
 	for(p=addr;*p;p++)
 		if(*p!='.' && !isdigit(*p))
@@ -583,7 +583,7 @@ static u_long resolve_ip(char *addr)
 
 	if((host=gethostbyname(addr))==NULL) {
 		lprintf(LOG_WARNING,"0000 !ERROR resolving hostname: %s",addr);
-		return(INADDR_NONE);
+		return((u_long)INADDR_NONE);
 	}
 	return(*((ulong*)host->h_addr_list[0]));
 }
