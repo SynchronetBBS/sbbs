@@ -38,7 +38,7 @@
 void sub_cfg(uint grpnum)
 {
 	static int dflt,tog_dflt,opt_dflt,net_dflt,adv_dflt,bar;
-	char str[81],str2[81],str3[11],done=0,code[9],*p;
+	char str[81],str2[81],done=0,code[9],*p;
 	int j,m,n,ptridx,q,s;
 	uint i,subnum[MAX_OPTS+1];
 	static sub_t savsub;
