@@ -212,8 +212,8 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
     if(p) *p=0;
     strcpy(fname,str);
 
-    p=strrchr(fname,'\\');
-    if(!p) p=strrchr(fname,'/');
+    p=strrchr(fname,'/');
+    if(!p) p=strrchr(fname,'\\');
     if(!p) p=strchr(fname,':');
     if(!p) p=fname;
     else   p++;
