@@ -2,7 +2,7 @@ CVS
 CVS/*
 *.o
 *.d
-*.tds
+*.bat
 *.~*
 .#*
 bcc.*
