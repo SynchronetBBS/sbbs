@@ -298,9 +298,9 @@ static void truncsp(char *str)
 {
 	uint c;
 
-c=strlen(str);
-while(c && (uchar)str[c-1]<=' ') c--;
-str[c]=0;
+	c=strlen(str);
+	while(c && (uchar)str[c-1]<=' ') c--;
+	str[c]=0;
 }
 
 
