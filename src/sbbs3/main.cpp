@@ -2604,11 +2604,11 @@ int sbbs_t::incom(void)
 
 	if(!RingBufRead(&inbuf, &ch, 1))
 		return(NOINP);
-
+#if 0 // removed Jan-2003
 	if(!(cfg.ctrlkey_passthru&(1<<CTRL_C))	
 		&& rio_abortable && ch==CTRL_C)
 		return(NOINP); /* this should never happen since input_thread eats Ctrl-C chars */
-
+#endif
 	return(ch);
 }
 
