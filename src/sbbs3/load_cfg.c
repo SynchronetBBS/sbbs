@@ -110,7 +110,7 @@ BOOL DLLCALL load_cfg(scfg_t* cfg, char* text[], BOOL prep, char* error)
 
 		if(i<TOTAL_TEXT) {
 			sprintf(error,"line %lu in %s: Less than TOTAL_TEXT (%u) strings defined in %s."
-				,line,fname
+				,i,fname
 				,TOTAL_TEXT,fname);
 			return(FALSE); 
 		}
