@@ -578,10 +578,15 @@ static ulong sockmsgtxt(SOCKET socket, smbmsg_t* msg, char* msgtxt, ulong maxlin
 	}
     if(msg->hdr.auxattr&MSG_FILEATTACH) { 
 	    sockprintf(socket,"");
-		lprintf("%04u MIME Encoding %s",socket,filepath);
+		lprintf("%04u MIME Encoding and sending %s",socket,filepath);
         if(!mimeattach(socket,boundary,filepath))
-			lprintf("%04u !ERROR opening/encoding %s",socket,filepath);
-        endmime(socket,boundary);
+			lprintf("%04u !ERROR opening/encoding/sending %s",socket,filepath);
+		else {
+			endmime(socket,boundary);
+			if(msg->hdr.auxattr&MSG_KILLFILE)
+				if(remove(filepath)!=0)
+					lprintf("%04u !ERROR %d removing %s",socket,filepath);
+		}
     }
     sockprintf(socket,".");	/* End of text */
     if(boundary) FREE(boundary);
