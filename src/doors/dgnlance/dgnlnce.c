@@ -98,6 +98,7 @@ struct weapon {
     char            name[31];
     WORD            attack;
     WORD            power;
+    DWORD	    cost;
 };
 
 struct playertype player[31];
@@ -111,7 +112,6 @@ QWORD           required[29];	       /* Experience required for each level */
 struct weapon   weapon[26];
 char            sname[26][31];	       /* Array of shield names */
 char            temp[81];
-DWORD           cost[26];	       /* Array of weapon/shield costs */
 FILE           *infile;		       /* Current input file */
 DWORD           player_num;	       /* Current Player Number */
 DWORD           number_of_players;     /* Number of players in player[] */
@@ -1146,7 +1146,7 @@ weaponlist(void)
     od_disp_str("(-------------------------------------------------------------------------)\r\n");
     od_set_color(L_YELLOW, D_BLACK);
     for (i = 1; i <= 25; i++)
-	od_printf("  %2d>  %-25.25s   %-25.25s   %9u\r\n", i, weapon[i].name, sname[i], cost[i]);
+	od_printf("  %2d>  %-25.25s   %-25.25s   %9u\r\n", i, weapon[i].name, sname[i], weapon[i].cost);
 }
 
 void
@@ -1179,7 +1179,7 @@ weaponshop(void)
 		buy = strtoul(temp, NULL, 10);
 		if (buy == 0)
 		    return;
-		if (cost[buy] > user.gold)
+		if (weapon[buy].cost > user.gold)
 		    od_disp_str("You do not have enough Steel.\r\n");
 		else {
 		    nl();
@@ -1190,7 +1190,7 @@ weaponshop(void)
 			    od_disp_str("Are you sure you want buy it? ");
 			    if (od_get_answer("YN") == 'Y') {
 				od_disp_str("Yes\r\n");
-				user.gold -= cost[buy];
+				user.gold -= weapon[buy].cost;
 				user.weapon = buy;
 				nl();
 				od_set_color(D_MAGENTA, D_BLACK);
@@ -1205,7 +1205,7 @@ weaponshop(void)
 			    od_disp_str("Are you sure you want buy it? ");
 			    if (od_get_answer("YN") == 'Y') {
 				od_disp_str("Yes\r\n");
-				user.gold -= cost[buy];
+				user.gold -= weapon[buy].cost;
 				user.armour = buy;
 				nl();
 				od_set_color(D_MAGENTA, D_BLACK);
@@ -1227,7 +1227,7 @@ weaponshop(void)
 		    case 'W':
 			od_disp_str("Weapon\r\n");
 			buyprice = user.charisma;
-			buyprice = buyprice * cost[user.weapon];
+			buyprice = buyprice * weapon[user.weapon].cost;
 			buyprice = (buyprice / 20);
 			nl();
 			od_printf("I will purchase it for %u, okay? ", buyprice);
@@ -1242,7 +1242,7 @@ weaponshop(void)
 			break;
 		    case 'A':
 			od_disp_str("Armour\r\n");
-			buyprice = user.charisma * cost[user.armour] / 20;
+			buyprice = user.charisma * weapon[user.armour].cost / 20;
 			nl();
 			od_printf("I will purchase it for %u, okay? ", buyprice);
 			if (od_get_answer("YN") == 'Y') {
@@ -1620,7 +1620,7 @@ main(int argc, char **argv)
     fclose(infile);
     infile = fopen("data/prices.lan", "rb");
     for (i = 1; i <= 25; i++) {
-	cost[i] = readnumb(100000000);
+	weapon[i].cost = readnumb(100000000);
 	endofline();
     }
     fclose(infile);
