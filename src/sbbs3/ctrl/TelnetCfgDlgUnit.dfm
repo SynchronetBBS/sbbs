@@ -1,6 +1,6 @@
 object TelnetCfgDlg: TTelnetCfgDlg
-  Left = 572
-  Top = 382
+  Left = 402
+  Top = 155
   BorderStyle = bsDialog
   Caption = 'Telnet Server Configuration'
   ClientHeight = 288
@@ -17,7 +17,8 @@ object TelnetCfgDlg: TTelnetCfgDlg
     Top = 4
     Width = 342
     Height = 229
-    ActivePage = GeneralTabSheet
+    ActivePage = TelnetTabSheet
+    TabIndex = 1
     TabOrder = 0
     object GeneralTabSheet: TTabSheet
       Caption = 'General'
@@ -54,7 +55,7 @@ object TelnetCfgDlg: TTelnetCfgDlg
         Caption = 'Auto Startup'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 2
+        TabOrder = 5
       end
       object FirstNodeEdit: TEdit
         Left = 105
@@ -75,7 +76,7 @@ object TelnetCfgDlg: TTelnetCfgDlg
         Caption = 'Minimize Externals'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 4
+        TabOrder = 6
       end
       object LastNodeEdit: TEdit
         Left = 105
@@ -107,7 +108,7 @@ object TelnetCfgDlg: TTelnetCfgDlg
         Caption = 'QWK Msg Events'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 5
+        TabOrder = 7
       end
       object JavaScriptCheckBox: TCheckBox
         Left = 182
@@ -118,7 +119,7 @@ object TelnetCfgDlg: TTelnetCfgDlg
         Caption = 'JavaScript Support'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 6
+        TabOrder = 8
       end
       object XtrnYieldEdit: TEdit
         Left = 105
@@ -130,7 +131,7 @@ object TelnetCfgDlg: TTelnetCfgDlg
           'SIL programs'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 7
+        TabOrder = 2
       end
       object IdentityCheckBox: TCheckBox
         Left = 6
@@ -141,7 +142,7 @@ object TelnetCfgDlg: TTelnetCfgDlg
         Caption = 'Identity Lookup'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 8
+        TabOrder = 4
       end
     end
     object TelnetTabSheet: TTabSheet

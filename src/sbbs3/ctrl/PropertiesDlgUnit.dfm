@@ -81,7 +81,7 @@ object PropertiesDlg: TPropertiesDlg
     Caption = 'OK'
     Default = True
     ModalResult = 1
-    TabOrder = 5
+    TabOrder = 10
   end
   object CancelBtn: TButton
     Left = 329
@@ -92,7 +92,7 @@ object PropertiesDlg: TPropertiesDlg
     Cancel = True
     Caption = 'Cancel'
     ModalResult = 2
-    TabOrder = 6
+    TabOrder = 11
   end
   object CtrlDirEdit: TEdit
     Left = 136
@@ -133,7 +133,7 @@ object PropertiesDlg: TPropertiesDlg
     Caption = 'Minimize to System Tray'
     ParentShowHint = False
     ShowHint = True
-    TabOrder = 4
+    TabOrder = 8
     OnClick = TrayIconCheckBoxClick
   end
   object NodeIntEdit: TEdit
@@ -156,7 +156,7 @@ object PropertiesDlg: TPropertiesDlg
     Min = 1
     Max = 99
     Position = 1
-    TabOrder = 7
+    TabOrder = 4
     Wrap = False
   end
   object ClientIntEdit: TEdit
@@ -167,7 +167,7 @@ object PropertiesDlg: TPropertiesDlg
     Hint = 'Frequency of updates to clients window'
     ParentShowHint = False
     ShowHint = True
-    TabOrder = 8
+    TabOrder = 5
     Text = '1'
   end
   object ClientIntUpDown: TUpDown
@@ -179,7 +179,7 @@ object PropertiesDlg: TPropertiesDlg
     Min = 1
     Max = 99
     Position = 1
-    TabOrder = 9
+    TabOrder = 6
     Wrap = False
   end
   object UndockableCheckBox: TCheckBox
@@ -191,7 +191,7 @@ object PropertiesDlg: TPropertiesDlg
     Caption = 'Undockable Windows'
     ParentShowHint = False
     ShowHint = True
-    TabOrder = 10
+    TabOrder = 7
   end
   object PasswordEdit: TEdit
     Left = 136
@@ -202,6 +202,6 @@ object PropertiesDlg: TPropertiesDlg
     ParentShowHint = False
     PasswordChar = '*'
     ShowHint = True
-    TabOrder = 11
+    TabOrder = 9
   end
 end
