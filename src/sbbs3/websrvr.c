@@ -3262,6 +3262,7 @@ void DLLCALL web_server(void* arg)
 		lprintf(LOG_DEBUG,"Root HTML directory: %s", root_dir);
 		lprintf(LOG_DEBUG,"Error HTML directory: %s", error_dir);
 		lprintf(LOG_DEBUG,"Temporary file directory: %s", temp_dir);
+		MKDIR(temp_dir);
 		if(!isdir(temp_dir)) {
 			lprintf(LOG_ERR,"!Invalid temp directory: %s", temp_dir);
 			cleanup(1);
