@@ -104,7 +104,7 @@ js_socket_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsv
 static void js_finalize_socket(JSContext *cx, JSObject *obj)
 {
 	private_t* p;
-	
+
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
 		return;
 
@@ -602,6 +602,7 @@ static JSFunctionSpec js_socket_functions[] = {
 	{"peek",			js_peek,			0},		/* receive a string, leave in buffer */
 	{"recvline",		js_recvline,		0},		/* receive a \n terminated string	*/
 	{"readline",		js_recvline,		0},		/* receive a \n terminated string	*/
+	{"readln",			js_recvline,		0},		/* receive a \n terminated string	*/
 	{"getoption",		js_getsockopt,		2},		/* getsockopt(level,opt)			*/
 	{"setoption",		js_setsockopt,		3},		/* setsockopt(level,opt,val)		*/
 	{"ioctl",			js_ioctlsocket,		1},		/* ioctl(cmd,arg)					*/
