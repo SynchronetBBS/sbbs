@@ -55,7 +55,7 @@ char *stou(char *str)
 	int i;
 
 for(i=0;str[i];i++)
-	if(str[i]==SP)
+	if(str[i]==' ')
 		out[i]='_';
 	else
 		out[i]=str[i];
@@ -547,7 +547,7 @@ import into the current message group.
 						continue;
 					if(k) {
 						p=str;
-						while(*p && *p<=SP) p++;
+						while(*p && *p<=' ') p++;
 						if(!*p || *p==';')
 							continue;
 						memset(&tmpsub,0,sizeof(sub_t));

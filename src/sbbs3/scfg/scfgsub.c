@@ -120,7 +120,7 @@ This is the name of the sub-board used for QWK off-line readers.
             continue;
 #endif
 		sprintf(code,"%.8s",str2);
-		p=strchr(code,SP);
+		p=strchr(code,' ');
 		if(p) *p=0;
 		strupr(code);
 		SETHELP(WHERE);

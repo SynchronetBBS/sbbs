@@ -457,7 +457,7 @@ command: DIR /ON /AD /B > DIRS.RAW
 					tmpdir.dn_pct=cfg.cdt_dn_pct; 
 
 					p=str;
-					while(*p && *p<=SP) p++;
+					while(*p && *p<=' ') p++;
 
 					if(k==2) { /* raw */
 						SAFECOPY(tmp_code,p);
@@ -470,14 +470,14 @@ command: DIR /ON /AD /B > DIRS.RAW
 						if(strnicmp(p,"AREA ",5))
 							continue;
 						p+=5;
-						while(*p && *p<=SP) p++;
+						while(*p && *p<=' ') p++;
 						SAFECOPY(tmp_code,p);
-						while(*p>SP) p++;			/* Skip areaname */
-						while(*p && *p<=SP) p++;	/* Skip space */
-						while(*p>SP) p++;			/* Skip level */
-						while(*p && *p<=SP) p++;	/* Skip space */
-						while(*p>SP) p++;			/* Skip flags */
-						while(*p && *p<=SP) p++;	/* Skip space */
+						while(*p>' ') p++;			/* Skip areaname */
+						while(*p && *p<=' ') p++;	/* Skip space */
+						while(*p>' ') p++;			/* Skip level */
+						while(*p && *p<=' ') p++;	/* Skip space */
+						while(*p>' ') p++;			/* Skip flags */
+						while(*p && *p<=' ') p++;	/* Skip space */
 						SAFECOPY(tmpdir.sname,p); 
 						SAFECOPY(tmpdir.lname,p); 
 						ported++; 
@@ -666,7 +666,7 @@ the file transfer prompt.
 			,K_EDIT)<1)
             continue;
 		sprintf(code,"%.8s",str2);
-		p=strchr(code,SP);
+		p=strchr(code,' ');
 		if(p) *p=0;
 		strupr(code);
 		SETHELP(WHERE);

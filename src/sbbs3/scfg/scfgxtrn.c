@@ -799,7 +799,7 @@ This is the name or description of the online program (door).
 			,0)<1)
             continue;
 		sprintf(code,"%.8s",str);
-		p=strchr(code,SP);
+		p=strchr(code,' ');
 		if(p) *p=0;
         strupr(code);
 		SETHELP(WHERE);
@@ -1489,7 +1489,7 @@ This is the name or description of the external editor.
 			,0)<1)
             continue;
 		sprintf(code,"%.8s",str);
-		p=strchr(code,SP);
+		p=strchr(code,' ');
 		if(p) *p=0;
         strupr(code);
 		SETHELP(WHERE);
@@ -2008,7 +2008,7 @@ This is the name of this section.
 			,0)<1)
             continue;
 		sprintf(code,"%.8s",str);
-		p=strchr(code,SP);
+		p=strchr(code,' ');
 		if(p) *p=0;
         strupr(code);
 		SETHELP(WHERE);

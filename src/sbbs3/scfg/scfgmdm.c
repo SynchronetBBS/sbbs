@@ -71,7 +71,7 @@ void cvttab(char *str)
 
 for(i=0;str[i];i++)
 	if(str[i]==TAB)
-		str[i]=SP;
+		str[i]=' ';
 }
 
 int export_mdm(char *fname)
@@ -134,7 +134,7 @@ while(!feof(stream)) {
 	cvttab(str);
     truncsp(str);
 	p=str;
-	while(*p && *p<=SP)   /* look for beginning of command */
+	while(*p && *p<=' ')   /* look for beginning of command */
 		p++;
 	if(!*p)
 		continue;
@@ -143,55 +143,55 @@ while(!feof(stream)) {
 
 	if(!strnicmp(p,"COM_RATE",8)) {
 		p+=8;
-		while(*p==SP) p++;
+		while(*p==' ') p++;
 		cfg.com_rate=atol(p);
 		continue; }
 
 	if(!strnicmp(p,"INIT_STR",8)) {
 		p+=8;
-		while(*p==SP) p++;
+		while(*p==' ') p++;
 		sprintf(cfg.mdm_init,"%.63s",p);
         continue; }
 
 	if(!strnicmp(p,"DIAL_STR",8)) {
 		p+=8;
-		while(*p==SP) p++;
+		while(*p==' ') p++;
 		sprintf(cfg.mdm_dial,"%.63s",p);
         continue; }
 
 	if(!strnicmp(p,"HANGUP_STR",10)) {
 		p+=10;
-		while(*p==SP) p++;
+		while(*p==' ') p++;
 		sprintf(cfg.mdm_hang,"%.63s",p);
         continue; }
 
 	if(!strnicmp(p,"ANSWER_STR",10)) {
 		p+=10;
-		while(*p==SP) p++;
+		while(*p==' ') p++;
 		sprintf(cfg.mdm_answ,"%.63s",p);
         continue; }
 
 	if(!strnicmp(p,"OFFHOOK_STR",11)) {
 		p+=11;
-		while(*p==SP) p++;
+		while(*p==' ') p++;
 		sprintf(cfg.mdm_offh,"%.63s",p);
         continue; }
 
 	if(!strnicmp(p,"SPEC_INIT",9)) {
 		p+=9;
-		while(*p==SP) p++;
+		while(*p==' ') p++;
 		sprintf(cfg.mdm_spec,"%.63s",p);
         continue; }
 
 	if(!strnicmp(p,"TERM_INIT",9)) {
 		p+=9;
-		while(*p==SP) p++;
+		while(*p==' ') p++;
 		sprintf(cfg.mdm_term,"%.63s",p);
         continue; }
 
 	if(!strnicmp(p,"LOCKED_RATE",11)) {
 		p+=11;
-		while(*p==SP) p++;
+		while(*p==' ') p++;
 		if(!stricmp(p,"OFF") || !stricmp(p,"NO"))
 			cfg.mdm_misc&=~MDM_STAYHIGH;
 		else
@@ -200,7 +200,7 @@ while(!feof(stream)) {
 
 	if(!strnicmp(p,"CALLER_ID",9)) {
 		p+=9;
-		while(*p==SP) p++;
+		while(*p==' ') p++;
 		if(!stricmp(p,"YES") || !stricmp(p,"ON"))
 			cfg.mdm_misc|=MDM_CALLERID;
 		else
@@ -209,7 +209,7 @@ while(!feof(stream)) {
 
 	if(!strnicmp(p,"VERBAL_RESULTS",14)) {
 		p+=14;
-		while(*p==SP) p++;
+		while(*p==' ') p++;
 		if(!stricmp(p,"YES") || !stricmp(p,"ON"))
 			cfg.mdm_misc|=MDM_VERBAL;
 		else
@@ -218,7 +218,7 @@ while(!feof(stream)) {
 
 	if(!strnicmp(p,"DROP_DTR",8)) {
 		p+=8;
-		while(*p==SP) p++;
+		while(*p==' ') p++;
 		if(!stricmp(p,"OFF") || !stricmp(p,"NO"))
 			cfg.mdm_misc|=MDM_NODTR;
 		else
@@ -227,7 +227,7 @@ while(!feof(stream)) {
 
 	if(!strnicmp(p,"FLOW_CONTROL",12)) {
 		p+=12;
-		while(*p==SP) p++;
+		while(*p==' ') p++;
 		cfg.mdm_misc&=~(MDM_RTS|MDM_CTS);
 		strupr(p);
 		if(strstr(p,"RTS") || strstr(p,"RECEIVE") || strstr(p,"RECV")
@@ -240,7 +240,7 @@ while(!feof(stream)) {
 
 	if(!strnicmp(p,"RESULT ",7)) {
 		p+=7;
-		while(*p==SP) p++;
+		while(*p==' ') p++;
 		i=atoi(p);
 		for(j=0;j<cfg.mdm_results;j++)
 			if(cfg.mdm_result[j].code==i)
@@ -255,20 +255,20 @@ while(!feof(stream)) {
 				continue; }
 			cfg.mdm_results++; }
 		cfg.mdm_result[j].code=i;
-		while(*p!=SP) p++;
-		while(*p==SP) p++;
+		while(*p!=' ') p++;
+		while(*p==' ') p++;
 		cfg.mdm_result[j].cps=atoi(p);
-		while(*p!=SP) p++;
-        while(*p==SP) p++;
+		while(*p!=' ') p++;
+        while(*p==' ') p++;
 		cfg.mdm_result[j].rate=atoi(p);
-		while(*p!=SP) p++;
-        while(*p==SP) p++;
+		while(*p!=' ') p++;
+        while(*p==' ') p++;
 		sprintf(cfg.mdm_result[j].str,"%.*s",LEN_MODEM,p);
 		continue; }
 
 	if(!strnicmp(p,"INCLUDE ",8)) {
 		p+=8;
-		while(*p==SP) p++;
+		while(*p==' ') p++;
 		exec_mdm(p);
 		continue; }
 

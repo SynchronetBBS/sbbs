@@ -659,7 +659,7 @@ This is the name of this text section.
             ,K_EDIT)<1)
             continue;
 		sprintf(code,"%.8s",str);
-		p=strchr(code,SP);
+		p=strchr(code,' ');
 		if(p) *p=0;
         strupr(code);
 		SETHELP(WHERE);
@@ -825,7 +825,7 @@ This is the descriptive name of this command shell.
             ,K_EDIT)<1)
             continue;
 		sprintf(code,"%.8s",str);
-		p=strchr(code,SP);
+		p=strchr(code,' ');
 		if(p) *p=0;
         strupr(code);
 		SETHELP(WHERE);
@@ -1187,7 +1187,7 @@ while(!done) {
 		str[0]=0;
 		n=strlen(ar);
 		for(i=0;i<n;i++)
-			if(ar[i]!=SP && ar[i]!='&')
+			if(ar[i]!=' ' && ar[i]!='&')
 				strncat(str,ar+i,1);
 		strcpy(ar,str);
 		len=strlen(ar); }

@@ -683,7 +683,7 @@ to Yes.
 					,cfg.new_xedit);
 				sprintf(opt[i++],"%-27.27s%s","Command Shell"
 					,cfg.shell[cfg.new_shell]->code);
-				if(cfg.new_prot!=SP)
+				if(cfg.new_prot!=' ')
                     sprintf(str,"%c",cfg.new_prot);
                 else
                     strcpy(str,"None");
@@ -882,8 +882,8 @@ This option allows you to set the default download protocol of new users
 							,"Default Download Protocol (SPACE=Disabled)"
 							,str,1,K_EDIT|K_UPPER);
 						cfg.new_prot=str[0];
-						if(cfg.new_prot<SP)
-							cfg.new_prot=SP;
+						if(cfg.new_prot<' ')
+							cfg.new_prot=' ';
                         break;
 					case 13:
 						SETHELP(WHERE);

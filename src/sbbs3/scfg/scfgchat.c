@@ -222,7 +222,7 @@ This is the name or description of the chat channel.
 			,K_EDIT)<1)
             continue;
 		sprintf(code,"%.8s",str);
-		p=strchr(code,SP);
+		p=strchr(code,' ');
 		if(p) *p=0;
         strupr(code);
 		SETHELP(WHERE);
@@ -620,7 +620,7 @@ This is the name of the selected Guru.
 			,0)<1)
             continue;
 		sprintf(code,"%.8s",str);
-		p=strchr(code,SP);
+		p=strchr(code,' ');
 		if(p) *p=0;
         strupr(code);
 		SETHELP(WHERE);
