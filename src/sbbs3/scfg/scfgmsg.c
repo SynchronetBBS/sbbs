@@ -569,7 +569,8 @@ import into the current message group.
 							SAFECOPY(tmp_code,p);		/* Copy internal code suffix */
 							p=tp+1;
 							SKIP_WHITESPACE(p);			/* Find echo tag */
-							SAFECOPY(tmpsub.lname,truncstr(utos(p)," \t"));
+							truncstr(p," \t");			/* Truncate tag */
+							SAFECOPY(tmpsub.lname,utos(p));
 							SAFECOPY(tmpsub.sname,tmpsub.lname);
 							SAFECOPY(tmpsub.qwkname,tmpsub.sname);
 						}
@@ -586,7 +587,6 @@ import into the current message group.
 							SKIP_WHITESPACE(p);			/* Find description */
 							SAFECOPY(tmpsub.lname,p);	/* Copy description to long name */
 						}
-						ported++; 
 					}
 					else {
 						memset(&tmpsub,0,sizeof(sub_t));
@@ -650,7 +650,6 @@ import into the current message group.
 						truncsp(str);
 						sprintf(tmpsub.mod_arstr,"%.*s",LEN_ARSTR,str);
 
-						ported++;
 						while(!feof(stream)
 							&& strcmp(str,"***END-OF-SUB***")) {
 							if(!fgets(str,128,stream)) break;
@@ -668,6 +667,13 @@ import into the current message group.
 					truncsp(tmpsub.sname);
 					truncsp(tmpsub.lname);
 					truncsp(tmpsub.qwkname);
+
+					if(tmpsub.code_suffix[0]==0
+						|| tmpsub.sname[0]==0
+						|| tmpsub.lname[0]==0
+						|| tmpsub.qwkname[0]==0)
+						continue;
+
 					for(j=0;j<cfg.total_subs;j++) {
 						if(cfg.sub[j]->grp!=i)
 							continue;
@@ -718,6 +724,7 @@ import into the current message group.
 						cfg.total_subs++; 
 					}
 					uifc.changes=1; 
+					ported++;
 				}
 				fclose(stream);
 				uifc.pop(0);
