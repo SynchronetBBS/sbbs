@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -106,18 +106,6 @@ void bail(int retval)
 	}
 
 	exit(retval);
-}
-
-/****************************************************************************/
-/* Truncates white-space chars off end of 'str'								*/
-/****************************************************************************/
-void truncsp(char *str)
-{
-	int c;
-
-	c=strlen(str);
-	while(c && str[c-1]<=' ') c--;
-	str[c]=0;
 }
 
 /****************************************************************************/
