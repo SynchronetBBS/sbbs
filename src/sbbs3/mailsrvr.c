@@ -1558,7 +1558,7 @@ static void smtp_thread(void* arg)
 		}
 	}
 
-	sprintf(session_id,"%d.%x.%x",socket,clock()&0xffff,xp_random(0x10000));
+	sprintf(session_id,"%d.%lx.%x",socket,clock()&0xffff,xp_random(0x10000));
 
 	sprintf(rcptlst_fname,"%sSMTP.%s.lst", scfg.data_dir, session_id);
 	rcptlst=fopen(rcptlst_fname,"w+");
