@@ -2741,7 +2741,6 @@ int sbbs_t::outcom(uchar ch)
 		return(TXBOF);
 	sem_post(&output_sem);
 	return(0);
-	YIELD();
 }
 
 void sbbs_t::putcom(char *str, int len)
