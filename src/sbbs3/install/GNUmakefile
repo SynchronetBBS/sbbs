@@ -22,6 +22,7 @@ XPDEV	=	../../xpdev/
 
 NEED_UIFC	:=	1
 include $(XPDEV)/Common.gmake
+include $(UIFC)/Common.gmake
 
 ifdef STATIC
  LDFLAGS	+=	-static

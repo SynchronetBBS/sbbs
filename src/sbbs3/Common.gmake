@@ -1,0 +1,43 @@
+##########
+#
+# You really should set SBBS_SRC before calling this.
+#
+# Available options:
+# NEED_JAVASCRIPT   = Set flags for use with JS
+
+SBBS_SRC	?=	$(XPDEV)../sbbs3/
+CFLAGS	+=	-I$(SBBS_SRC)
+
+JS_CFLAGS += -DJAVASCRIPT
+ifdef JSINCLUDE
+ JS_CFLAGS += -I$(JSINCLUDE)
+else
+ JS_CFLAGS += -I$(XPDEV)../../include/mozilla/js
+endif
+ifndef JSLIBDIR
+ JSLIBDIR := $(XPDEV)../../lib/mozilla/js/$(os).$(BUILD)
+endif
+ifndef JSLIB
+ JSLIB	:=	js
+endif
+ifndef NSPRDIR
+ NSPRDIR := $(XPDEV)../../lib/mozilla/nspr/$(os).$(BUILD)
+endif
+JS_LDFLAGS += -L$(JSLIBDIR) -l$(JSLIB)
+#The following is needed for nspr support on Linux
+ifeq ($(os),linux)
+ JS_LDFLAGS	+=	-ldl
+endif
+JS_LDFLAGS	+=	-lnspr4 -L$(NSPRDIR)
+
+ifdef NEED_JAVASCRIPT
+ CFLAGS	+=	$(JS_CFLAGS)
+ LDFLAGS	+=	$(JS_LDFLAGS)
+endif
+
+vpath %.c $(SBBS_SRC)
+vpath %.cpp $(SBBS_SRC)
+
+SBBSDEFS	:=
+-include $(SBBS_SRC)sbbsdefs.mk		# defines $(SBBSDEFS)
+CFLAGS	+=	$(SBBSDEFS)

@@ -20,13 +20,16 @@ ifndef NO_CURSES
  USE_UIFC32      =       1       # Curses version of UIFC
 endif
 
-UIFC	=	../uifc/
-XPDEV	=	../xpdev/
+UIFC_SRC =	../uifc/
+XPDEV	 =	../xpdev/
+SBBS_SRC =	./
 
 NEED_JAVASCRIPT	:= 1
 NEED_THREADS	:= 1
 
 include $(XPDEV)/Common.gmake
+include $(SBBS_SRC)/Common.gmake
+include $(UIFC_SRC)/Common.gmake
 
 ifeq ($(os),freebsd)
  BSD	=	1
@@ -37,6 +40,7 @@ else
 endif
 
 CFLAGS  +=  -I$(XPDEV)
+CFLAGS	+=  $(UIFC_CFLAGS)
 
 ifndef bcc
  LDFLAGS	+=	-lm -lutil
@@ -295,6 +299,7 @@ ECHOCFG_OBJS = \
 	$(LIBODIR)/echocfg.o \
 	$(LIBODIR)/rechocfg.o \
 	$(UIFC_OBJS) \
+	$(LIBODIR)/uifcx.o \
 	$(LIBODIR)/nopen.o \
 	$(LIBODIR)/crc16.o \
 	$(LIBODIR)/str_util.o \

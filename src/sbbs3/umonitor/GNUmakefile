@@ -18,10 +18,12 @@ USE_UIFC32	:=	1	# Use new uifc32 implementation
 
 UIFC	=	../../uifc/
 XPDEV	=	../../xpdev/
-SBBS3	=   ../
+SBBS_SRC	=   ../
 
 NEED_UIFC	:=	1
 include $(XPDEV)Common.gmake
+include $(SBBS_SRC)Common.gmake
+include $(UIFC)Common.gmake
 
 FORCE$(EXEODIR)/umonitor: $(EXEODIR) $(OBJS) $(BUILD_DEPENDS)
 

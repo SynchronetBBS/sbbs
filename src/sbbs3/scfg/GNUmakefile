@@ -22,8 +22,12 @@ endif
 
 UIFC	=	../../uifc/
 XPDEV	=	../../xpdev/
+SBBS_SRC =	../
 NEED_UIFC	:=	1
 include $(XPDEV)Common.gmake
+include $(UIFC)Common.gmake
+include $(SBBS_SRC)Common.gmake
+
 SCFG	:=	$(EXEODIR)$(SLASH)scfg$(EXEFILE)
 
 $(MAKEHELP): makehelp.c
