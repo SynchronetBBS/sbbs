@@ -87,7 +87,10 @@ function list_users(show)
 			str=sock.readline();
 			if(str==null)
 				break;
-			response.push(truncsp(str));
+			str = truncsp(str);
+			if(str=="")
+				continue;
+			response.push(str);
 		}
 		sock.close();
 
