@@ -11,6 +11,12 @@ load("sbbsdefs.js");
 load("html_inc/template.ssjs");
 
 template.required=required_str;
+template.date_format="MM/DD/YY";
+if(system.settings & SYS_EURODATE)
+	template.date_format="DD/MM/YY";
+else
+	template.date_format="MM/DD/YY";
+
 var fields=new Array("alias","name","handle","netmail","address","location","zipcode","phone","birthdate","gender", "shell", "editor");
 var required=new Array;
 var maxlengths={alias:25,name:25,handle:8,netmail:60,address:30,location:30,zipcode:10,phone:12,birthdate:8,gender:1};
@@ -190,9 +196,12 @@ write("Fields: "+fields);
 		template.errs["gender"]="Male or Female";
 	}
 	/* Validate date */
-	    if(http_request.query["birthdate"].toString().length<8) {
+	if(http_request.query["birthdate"].toString().length<8) {
 		err=1;
-		template.err_message+="Bad date format (ie: 12/19/75)\r\n";
+		if(system.settings & SYS_EURODATE)
+			template.err_message+="Bad date format (ie: 19/12/75)\r\n";
+		else
+			template.err_message+="Bad date format (ie: 12/19/75)\r\n";
 	}
 	else {
 		brokendate=http_request.query["birthdate"].toString().split('/');
@@ -201,11 +210,21 @@ write("Fields: "+fields);
 			template.err_message="Bad date format\r\n";
 		}
 		else {
-			if((brokendate[0]<1 || brokendate[0]>12)
-					|| (brokendate[1]<1 || brokendate[1]>31)
-					|| (brokendate[2]<0 || brokendate[2]>99)) {
-				err=1;
-				template.err_message="Invalid Date\r\n";
+			if(system.settings & SYS_EURODATE) {
+				if((brokendate[1]<1 || brokendate[1]>12)
+						|| (brokendate[0]<1 || brokendate[0]>31)
+						|| (brokendate[2]<0 || brokendate[2]>99)) {
+					err=1;
+					template.err_message="Invalid Date\r\n";
+				}
+			}
+			else {
+				if((brokendate[0]<1 || brokendate[0]>12)
+						|| (brokendate[1]<1 || brokendate[1]>31)
+						|| (brokendate[2]<0 || brokendate[2]>99)) {
+					err=1;
+					template.err_message="Invalid Date\r\n";
+				}
 			}
 		}
 	}

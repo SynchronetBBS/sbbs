@@ -39,7 +39,7 @@
 				<td class="newuser" align="left"><input type="text" name="phone" size="12" maxlength="12" value="%%posted:phone%%" /></td>
 			</tr>
 			<tr>
-				<td class="newuser" align="right">%%errs:birthdate%% %%bd_required%% Birthdate (MM/DD/YY):</td>
+				<td class="newuser" align="right">%%errs:birthdate%% %%bd_required%% Birthdate (%%date_format%%):</td>
 				<td class="newuser" align="left"><input type="text" name="birthdate" size="8" maxlength="8" value="%%posted:birthdate%%" /></td>
 			</tr>
 			<tr>
