@@ -644,6 +644,118 @@ ulong SMBCALL smb_getmsgdatlen(smbmsg_t* msg)
 	return(length);
 }
 
+static void set_convenience_ptr(smbmsg_t* msg, ushort hfield_type, void* hfield_dat)
+{
+	switch(hfield_type) {	/* convenience variables */
+		case SENDER:
+			if(!msg->from) {
+				msg->from=(char*)hfield_dat;
+				break; 
+			}
+		case FORWARDED: 	/* fall through */
+			msg->forwarded=1;
+			break;
+		case SENDERAGENT:
+			if(!msg->forwarded)
+				msg->from_agent=*(ushort *)hfield_dat;
+			break;
+		case SENDEREXT:
+			if(!msg->forwarded)
+				msg->from_ext=(char*)hfield_dat;
+			break;
+		case SENDERORG:
+			if(!msg->forwarded)
+				msg->from_org=(char*)hfield_dat;
+			break;
+		case SENDERNETTYPE:
+			if(!msg->forwarded)
+				msg->from_net.type=*(ushort *)hfield_dat;
+			break;
+		case SENDERNETADDR:
+			if(!msg->forwarded)
+				msg->from_net.addr=(char*)hfield_dat;
+			break;
+		case REPLYTO:
+			msg->replyto=(char*)hfield_dat;
+			break;
+		case REPLYTOEXT:
+			msg->replyto_ext=(char*)hfield_dat;
+			break;
+		case REPLYTOAGENT:
+			msg->replyto_agent=*(ushort *)hfield_dat;
+			break;
+		case REPLYTONETTYPE:
+			msg->replyto_net.type=*(ushort *)hfield_dat;
+			break;
+		case REPLYTONETADDR:
+			msg->replyto_net.addr=(char*)hfield_dat;
+			break;
+		case RECIPIENT:
+			msg->to=(char*)hfield_dat;
+			break;
+		case RECIPIENTEXT:
+			msg->to_ext=(char*)hfield_dat;
+			break;
+		case RECIPIENTAGENT:
+			msg->to_agent=*(ushort *)hfield_dat;
+			break;
+		case RECIPIENTNETTYPE:
+			msg->to_net.type=*(ushort *)hfield_dat;
+			break;
+		case RECIPIENTNETADDR:
+			msg->to_net.addr=(char*)hfield_dat;
+			break;
+		case SUBJECT:
+			msg->subj=(char*)hfield_dat;
+			break;
+		case SMB_SUMMARY:
+			msg->summary=(char*)hfield_dat;
+			break;
+		case SMB_EXPIRATION:
+			msg->expiration=*(time_t*)hfield_dat;
+			break;
+		case SMB_PRIORITY:
+			msg->priority=*(ulong*)hfield_dat;
+			break;
+		case SMB_COST:
+			msg->cost=*(ulong*)hfield_dat;
+			break;
+		case RFC822MSGID:
+			msg->id=(char*)hfield_dat;
+			break;
+		case RFC822REPLYID:
+			msg->reply_id=(char*)hfield_dat;
+			break;
+		case SMTPREVERSEPATH:
+			msg->reverse_path=(char*)hfield_dat;
+			break;
+		case USENETPATH:
+			msg->path=(char*)hfield_dat;
+			break;
+		case USENETNEWSGROUPS:
+			msg->newsgroups=(char*)hfield_dat;
+			break;
+		case FIDOMSGID:
+			msg->ftn_msgid=(char*)hfield_dat;
+			break;
+		case FIDOREPLYID:
+			msg->ftn_reply=(char*)hfield_dat;
+			break;
+		case FIDOAREA:
+			msg->ftn_area=(char*)hfield_dat;
+			break;
+		case FIDOPID:
+			msg->ftn_pid=(char*)hfield_dat;
+			break;
+		case FIDOTID:
+			msg->ftn_tid=(char*)hfield_dat;
+			break;
+		case FIDOFLAGS:
+			msg->ftn_flags=(char*)hfield_dat;
+			break;
+	}
+}
+
 /****************************************************************************/
 /* Read header information into 'msg' structure                             */
 /* msg->idx.offset must be set before calling this function 				*/
@@ -730,7 +842,7 @@ int SMBCALL smb_getmsghdr(smb_t* smb, smbmsg_t* msg)
 		}
 		l+=sizeof(hfield_t);
 		if((msg->hfield_dat[i]=(char*)MALLOC(msg->hfield[i].length+1))
-			==NULL) {			/* Allocate 1 extra for NULL terminator */
+			==NULL) {			/* Allocate 1 extra for ASCIIZ terminator */
 			sprintf(smb->last_error
 				,"malloc failure of %d bytes for header field %d"
 				,msg->hfield[i].length+1, i);
@@ -744,115 +856,8 @@ int SMBCALL smb_getmsghdr(smb_t* smb, smbmsg_t* msg)
 			sprintf(smb->last_error,"reading header field data");
 			return(-6); 
 		}
-		switch(msg->hfield[i].type) {	/* convenience variables */
-			case SENDER:
-				if(!msg->from) {
-					msg->from=(char*)msg->hfield_dat[i];
-					break; 
-				}
-			case FORWARDED: 	/* fall through */
-				msg->forwarded=1;
-				break;
-			case SENDERAGENT:
-				if(!msg->forwarded)
-					msg->from_agent=*(ushort *)msg->hfield_dat[i];
-				break;
-			case SENDEREXT:
-				if(!msg->forwarded)
-					msg->from_ext=(char*)msg->hfield_dat[i];
-				break;
-			case SENDERORG:
-				if(!msg->forwarded)
-					msg->from_org=(char*)msg->hfield_dat[i];
-				break;
-			case SENDERNETTYPE:
-				if(!msg->forwarded)
-					msg->from_net.type=*(ushort *)msg->hfield_dat[i];
-				break;
-			case SENDERNETADDR:
-				if(!msg->forwarded)
-					msg->from_net.addr=(char*)msg->hfield_dat[i];
-				break;
-			case REPLYTO:
-				msg->replyto=(char*)msg->hfield_dat[i];
-				break;
-			case REPLYTOEXT:
-				msg->replyto_ext=(char*)msg->hfield_dat[i];
-				break;
-			case REPLYTOAGENT:
-				msg->replyto_agent=*(ushort *)msg->hfield_dat[i];
-				break;
-			case REPLYTONETTYPE:
-				msg->replyto_net.type=*(ushort *)msg->hfield_dat[i];
-				break;
-			case REPLYTONETADDR:
-				msg->replyto_net.addr=(char*)msg->hfield_dat[i];
-				break;
-			case RECIPIENT:
-				msg->to=(char*)msg->hfield_dat[i];
-				break;
-			case RECIPIENTEXT:
-				msg->to_ext=(char*)msg->hfield_dat[i];
-				break;
-			case RECIPIENTAGENT:
-				msg->to_agent=*(ushort *)msg->hfield_dat[i];
-				break;
-			case RECIPIENTNETTYPE:
-				msg->to_net.type=*(ushort *)msg->hfield_dat[i];
-				break;
-			case RECIPIENTNETADDR:
-				msg->to_net.addr=(char*)msg->hfield_dat[i];
-				break;
-			case SUBJECT:
-				msg->subj=(char*)msg->hfield_dat[i];
-				break;
-			case SMB_SUMMARY:
-				msg->summary=(char*)msg->hfield_dat[i];
-				break;
-			case SMB_EXPIRATION:
-				msg->expiration=*(time_t*)msg->hfield_dat[i];
-				break;
-			case SMB_PRIORITY:
-				msg->priority=*(ulong*)msg->hfield_dat[i];
-				break;
-			case SMB_COST:
-				msg->cost=*(ulong*)msg->hfield_dat[i];
-				break;
-			case RFC822MSGID:
-				msg->id=(char*)msg->hfield_dat[i];
-				break;
-			case RFC822REPLYID:
-				msg->reply_id=(char*)msg->hfield_dat[i];
-				break;
-			case SMTPREVERSEPATH:
-				msg->reverse_path=(char*)msg->hfield_dat[i];
-				break;
-			case USENETPATH:
-				msg->path=(char*)msg->hfield_dat[i];
-				break;
-			case USENETNEWSGROUPS:
-				msg->newsgroups=(char*)msg->hfield_dat[i];
-				break;
-			case FIDOMSGID:
-				msg->ftn_msgid=(char*)msg->hfield_dat[i];
-				break;
-			case FIDOREPLYID:
-				msg->ftn_reply=(char*)msg->hfield_dat[i];
-				break;
-			case FIDOAREA:
-				msg->ftn_area=(char*)msg->hfield_dat[i];
-				break;
-			case FIDOPID:
-				msg->ftn_pid=(char*)msg->hfield_dat[i];
-				break;
-			case FIDOTID:
-				msg->ftn_tid=(char*)msg->hfield_dat[i];
-				break;
-			case FIDOFLAGS:
-				msg->ftn_flags=(char*)msg->hfield_dat[i];
-				break;
-			
-		}
+		set_convenience_ptr(msg,msg->hfield[i].type,msg->hfield_dat[i]);
+
 		l+=msg->hfield[i].length; 
 	}
 
@@ -963,9 +968,11 @@ int SMBCALL smb_hfield(smbmsg_t* msg, ushort type, size_t length, void* data)
 	msg->hfield[i].type=type;
 	msg->hfield[i].length=length;
 	if(length) {
-		if((msg->hfield_dat[i]=(void* )MALLOC(length))==NULL) 
-			return(4);
+		if((msg->hfield_dat[i]=(void* )MALLOC(length+1))==NULL) 
+			return(4);	/* Allocate 1 extra for ASCIIZ terminator */
+		memset(msg->hfield_dat[i],0,length+1);
 		memcpy(msg->hfield_dat[i],data,length); 
+		set_convenience_ptr(msg,type,msg->hfield_dat[i]);
 	}
 	else
 		msg->hfield_dat[i]=NULL;
