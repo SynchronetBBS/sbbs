@@ -39,6 +39,10 @@ function secstr(sec)
 var title = system.name + " BBS - FTP Server";
 var font_face = "<font face=Arial,Helvetica,sans-serif>";
 var font_size = 2;	// Change base font size here
+if(client.socket.local_port!=21)
+	port=":" + client.socket.local_port;
+else
+	port="";
 
 writeln('<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">');
 writeln("<html>");
@@ -98,7 +102,7 @@ if(!(user.security.restrictions&UFLAG_G)) {	/* !Guest or Anonymous */
 	writeln("<table align=right>");
 	writeln("<form>");
 	writeln("<input type=button value=Logout onclick='location=\"ftp://" 
-		+ format("%s/%s?$%s",system.host_name,html_index_file,time_stamp)
+		+ format("%s/%s?$%s",system.host_name + port,html_index_file,time_stamp)
 		+ "\";'>");
 	writeln("</form>");
 	writeln("</table>");
@@ -137,7 +141,7 @@ if(!(user.security.restrictions&UFLAG_G)) {	/* !Guest or Anonymous */
 } else if(ftp.curlib.name==undefined) {	/* Login */
 	writeln("<table align=right>");
 	writeln("<td><input type=button value='New User' onClick='location=\"telnet://" 
-		+ system.host_name + "\";'>");
+		+ system.host_name + port + "\";'>");
 	writeln("</table>");
 
 	writeln("<form name='login'>");
@@ -156,7 +160,8 @@ if(!(user.security.restrictions&UFLAG_G)) {	/* !Guest or Anonymous */
 		write("var url='ftp://'"); 
 		write("+ escape(document.login.username.value) + ':'");
 		write("+ escape(document.login.password.value) + '@'");
-		write(format("+ '%s/%s?$%s'\r\n",system.host_name,html_index_file,time_stamp));
+		write(format("+ '%s/%s?$%s'\r\n"
+			,system.host_name + port,html_index_file,time_stamp));
 //		writeln("alert(url);");
 		writeln("location = url;");
 		writeln("}");
