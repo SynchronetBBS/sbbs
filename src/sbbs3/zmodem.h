@@ -241,7 +241,7 @@ typedef struct {
 	int n_cans;
 
 	/* Stuff added by RRS */
-	SOCKET	sock;					/* socket descriptor */
+	void*	cbdata;
 	long*	mode;
 	FILE*	statfp;
 	FILE*	errfp;

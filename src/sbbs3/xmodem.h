@@ -42,24 +42,34 @@
 #include <sockwrap.h>	/* SOCKET */
 #include "crc16.h"
 
+#define CPMEOF		CTRL_Z	/* CP/M End of file (^Z)					*/
+
 typedef struct {
 
-	SOCKET		sock;	/* socket descriptor */
+	void*		cbdata;
 	long*		mode;
 	unsigned	block_size;
 	unsigned	ack_timeout;
 	unsigned	byte_timeout;
-	int			(*lprintf)(int level, char *fmt, ...);
+	unsigned	send_timeout;
+	unsigned	max_errors;
+	int			(*lputs)(void*, int level, const char* str);
+	int			(*send_byte)(void*, uchar ch, unsigned timeout);
+	int			(*recv_byte)(void*, unsigned timeout);
 
 } xmodem_t;
 
 
+void		xmodem_init(xmodem_t*, void* cbdata, long* mode
+						,int (*lputs)(void*, int level, const char* str)
+						,int (*send_byte)(void*, uchar ch, unsigned timeout)
+						,int (*recv_byte)(void*, unsigned timeout));
 char*		xmodem_ver(char *buf);
 const char* xmodem_source(void);
-void		xmodem_cancel(xmodem_t* xm);
-int			xmodem_get_ack(xmodem_t* xm, int tries);
-void		xmodem_put_nak(xmodem_t* xm);
-int			xmodem_get_block(xmodem_t* xm, uchar* block, BOOL hdrblock);
-void		xmodem_put_block(xmodem_t* xm, uchar* block, uint block_size, ulong block_num);
+void		xmodem_cancel(xmodem_t*);
+int			xmodem_get_ack(xmodem_t*, unsigned tries, unsigned block_num);
+void		xmodem_put_nak(xmodem_t*);
+int			xmodem_get_block(xmodem_t*, uchar* block, BOOL hdrblock);
+void		xmodem_put_block(xmodem_t*, uchar* block, unsigned block_size, unsigned block_num);
 
 #endif	/* Don't add anything after this line */

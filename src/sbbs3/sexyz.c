@@ -55,6 +55,8 @@
 #include "dirwrap.h"
 #include "filewrap.h"
 #include "sockwrap.h"
+#include "str_list.h"
+#include "ini_file.h"
 #include "threadwrap.h"
 
 /* sbbs */
@@ -64,15 +66,13 @@
 /* sexyz */
 #include "sexyz.h"
 
-#define MAX_FNAMES	100 	/* Up to 100 filenames						*/
-
 #define SINGLE_THREADED		FALSE
 #define IO_THREAD_BUF_SIZE	4096
 
 /***************/
 /* Global Vars */
 /***************/
-long	mode=TELNET;					/* Program mode 					*/
+long	mode=0;							/* Program mode 					*/
 long	zmode=0L;						/* Zmodem mode						*/
 uchar	block[1024];					/* Block buffer 					*/
 ulong	block_num;						/* Block number 					*/
@@ -89,15 +89,22 @@ FILE*	statfp;
 char	revision[16];
 
 SOCKET	sock=INVALID_SOCKET;
+
+BOOL	telnet=TRUE;
 BOOL	terminate=FALSE;
+BOOL	pause_on_abend=FALSE;
+BOOL	pause_on_exit=FALSE;
+BOOL	debug_tx=FALSE;
+BOOL	debug_rx=FALSE;
+BOOL	debug_telnet=FALSE;
 
 RingBuf inbuf;
 RingBuf outbuf;
 HANDLE	outbuf_empty;
-unsigned outbuf_drain_timeout=10;
+unsigned outbuf_drain_timeout;
 
-#define getcom(t)	recv_byte(sock,t,mode)
-#define putcom(ch)	send_byte(sock,ch,10,mode)
+#define getcom(t)	recv_byte(NULL,t)
+#define putcom(ch)	send_byte(NULL,ch,10)
 
 #ifdef _WINSOCKAPI_
 
@@ -130,7 +137,17 @@ void newline(void)
 	fprintf(statfp,"\n");
 }
 
-int lprintf(int level, char *fmt, ...)
+int lputs(void* unused, int level, const char* str)
+{
+	FILE*	fp=statfp;
+
+    if(level<LOG_NOTICE)
+		fp=errfp;
+
+    return fprintf(fp,"%s\n",str);
+}
+
+int lprintf(int level, const char *fmt, ...)
 {
 	va_list argptr;
 	int		retval;
@@ -172,7 +189,7 @@ void bail(int code)
 
 //	YIELD();
 
-	if(code && mode&PAUSE_ABEND) {
+	if((code && pause_on_abend) || pause_on_exit) {
 		printf("Hit enter to continue...");
 		getchar();
 	}
@@ -225,11 +242,12 @@ void send_telnet_cmd(SOCKET sock, uchar cmd, uchar opt)
 	buf[1]=cmd;
 	buf[2]=opt;
 
-	fprintf(statfp,"Sending telnet command: %s %s"
-		,telnet_cmd_desc(buf[1]),telnet_opt_desc(buf[2]));
-	if(send(sock,buf,sizeof(buf),0)==sizeof(buf))
+	if(debug_telnet)
+		fprintf(statfp,"Sending telnet command: %s %s"
+			,telnet_cmd_desc(buf[1]),telnet_opt_desc(buf[2]));
+	if(send(sock,buf,sizeof(buf),0)==sizeof(buf) && debug_telnet)
 		fprintf(statfp,"\n");
-	else
+	else if(debug_telnet)
 		fprintf(statfp," FAILED!\n");
 }
 
@@ -238,7 +256,7 @@ void send_telnet_cmd(SOCKET sock, uchar cmd, uchar opt)
 /****************************************************************************/
 /* Receive a byte from remote												*/
 /****************************************************************************/
-uint recv_byte(SOCKET sock, unsigned timeout, long mode)
+int recv_byte(void* unused, unsigned timeout)
 {
 	int			i;
 	long		t;
@@ -258,10 +276,12 @@ uint recv_byte(SOCKET sock, unsigned timeout, long mode)
 		tv.tv_sec=t/MSCLOCKS_PER_SEC;
 		tv.tv_usec=0;
 
-		if(select(sock+1,&socket_set,NULL,NULL,&tv)<1) {
+		if((i=select(sock+1,&socket_set,NULL,NULL,&tv))<1) {
+			if(i==SOCKET_ERROR)
+				fprintf(errfp,"!ERROR %d selecting socket", ERROR_VALUE);
 			if(timeout) {
 				newline();
-				fprintf(statfp,"!Receive timeout\n");
+				fprintf(statfp,"!Receive timeout (%u seconds)\n", timeout);
 			}
 			return(NOINP);
 		}
@@ -277,7 +297,7 @@ uint recv_byte(SOCKET sock, unsigned timeout, long mode)
 			bail(1); 
 		}
 
-		if(mode&TELNET) {
+		if(telnet) {
 			if(ch==TELNET_IAC) {
 #if DEBUG_TELNET
 				fprintf(statfp,"T<%s> ",telnet_cmd_desc(ch));
@@ -299,7 +319,7 @@ uint recv_byte(SOCKET sock, unsigned timeout, long mode)
 				else
 					fprintf(statfp,"T<%s> ",telnet_opt_desc(ch));
 #endif
-				if(telnet_cmdlen==3)
+				if(debug_telnet && telnet_cmdlen==3)
 					fprintf(statfp,"Received telnet command: %s %s\n"
 						,telnet_cmd_desc(telnet_cmd),telnet_opt_desc(ch));
 				if(telnet_cmdlen==3 && telnet_cmd==TELNET_DO)
@@ -316,7 +336,7 @@ uint recv_byte(SOCKET sock, unsigned timeout, long mode)
 				continue;
 			}
 		}
-		if(mode&DEBUG_RX)
+		if(debug_rx)
 			fprintf(statfp,"RX: %s\n",chr(ch));
 		return(ch);
 	}
@@ -328,12 +348,12 @@ uint recv_byte(SOCKET sock, unsigned timeout, long mode)
 /*************************/
 /* Send a byte to remote */
 /*************************/
-int send_byte(SOCKET sock, uchar ch, unsigned timeout, long mode)
+int send_byte(void* unused, uchar ch, unsigned timeout)
 {
 	uchar		buf[2] = { TELNET_IAC, TELNET_IAC };
 	unsigned	len=1;
 
-	if(mode&TELNET && ch==TELNET_IAC)	/* escape IAC char */
+	if(telnet && ch==TELNET_IAC)	/* escape IAC char */
 		len=2;
 	else
 		buf[0]=ch;
@@ -349,7 +369,7 @@ int send_byte(SOCKET sock, uchar ch, unsigned timeout, long mode)
 
 	RingBufWrite(&outbuf,buf,len);
 
-	if(mode&DEBUG_TX)
+	if(debug_tx)
 		fprintf(statfp,"TX: %s\n",chr(ch));
 	return(0);
 }
@@ -359,7 +379,7 @@ int send_byte(SOCKET sock, uchar ch, unsigned timeout, long mode)
 /*************************/
 /* Send a byte to remote */
 /*************************/
-int send_byte(SOCKET sock, uchar ch, unsigned timeout, long mode)
+int send_byte(void* unused, uchar ch, unsigned timeout, long mode)
 {
 	uchar		buf[2] = { TELNET_IAC, TELNET_IAC };
 	int			len=1;
@@ -375,7 +395,7 @@ int send_byte(SOCKET sock, uchar ch, unsigned timeout, long mode)
 	if(select(sock+1,NULL,&socket_set,NULL,&tv)<1)
 		return(ERROR_VALUE);
 
-	if(mode&TELNET && ch==TELNET_IAC)	/* escape IAC char */
+	if(telnet && ch==TELNET_IAC)	/* escape IAC char */
 		len=2;
 	else
 		buf[0]=ch;
@@ -383,7 +403,7 @@ int send_byte(SOCKET sock, uchar ch, unsigned timeout, long mode)
 	i=send(sock,buf,len,0);
 	
 	if(i==len) {
-		if(mode&DEBUG_TX)
+		if(debug_tx)
 			fprintf(statfp,"TX: %s\n",chr(ch));
 		return(0);
 	}
@@ -593,10 +613,8 @@ void send_files(char** fname, uint fnames, FILE* log)
 				newline();
 				fprintf(statfp,"Waiting for receiver to initiate transfer...\n");
 
-//				mode|=DEBUG_RX;
-
 				mode&=~GMODE;
-				for(errors=can=0;errors<MAXERRORS;errors++) {
+				for(errors=can=0;errors<xm.max_errors;errors++) {
 					i=getcom(10);
 					if(can && i!=CAN)
 						can=0;
@@ -631,7 +649,7 @@ void send_files(char** fname, uint fnames, FILE* log)
 				}
 			}
 
-			if(errors==MAXERRORS) {
+			if(errors==xm.max_errors) {
 				fprintf(statfp,"\n!Timeout waiting for receiver to start/accept file transfer\n");
 				xmodem_cancel(&xm);
 				bail(1); 
@@ -680,19 +698,19 @@ void send_files(char** fname, uint fnames, FILE* log)
 					fprintf(statfp,"Sending Ymodem header block: '%s'\n",block+strlen(block)+1);
 					
 					block_len=strlen(block)+1+i;
-					for(errors=0;errors<MAXERRORS;errors++) {
+					for(errors=0;errors<xm.max_errors;errors++) {
 						xmodem_put_block(&xm, block, block_len <=128 ? 128:1024, 0  /* block_num */);
-						if(mode&GMODE || xmodem_get_ack(&xm,1))
+						if(mode&GMODE || xmodem_get_ack(&xm,1,0))
 							break; 
 					}
-					if(errors==MAXERRORS) {
+					if(errors==xm.max_errors) {
 						newline();
 						fprintf(statfp,"Failed to send header block\n");
 						xmodem_cancel(&xm);
 						bail(1); 
 					}
 					mode&=~GMODE;
-					for(errors=can=0;errors<MAXERRORS;errors++) {
+					for(errors=can=0;errors<xm.max_errors;errors++) {
 						i=getcom(10);
 						if(can && i!=CAN)
 							can=0;
@@ -725,7 +743,7 @@ void send_files(char** fname, uint fnames, FILE* log)
 								,chr((uchar)i)); 
 						} 
 					}
-					if(errors==MAXERRORS) {
+					if(errors==xm.max_errors) {
 						newline();
 						fprintf(statfp,"Too many errors waiting for receiver\n");
 						xmodem_cancel(&xm);
@@ -734,7 +752,7 @@ void send_files(char** fname, uint fnames, FILE* log)
 				}
 				last_block_num=block_num=1;
 				errors=0;
-				while((block_num-1)*xm.block_size<(ulong)fsize && errors<MAXERRORS) {
+				while((block_num-1)*xm.block_size<(ulong)fsize && errors<xm.max_errors) {
 					if(last_block_num==block_num) {  /* block_num didn't increment */
 						fseek(fp,(block_num-1)*(long)xm.block_size,SEEK_SET);
 						memset(block,CPMEOF,xm.block_size);
@@ -770,9 +788,11 @@ void send_files(char** fname, uint fnames, FILE* log)
 							);
 						last_status=now;
 					}
-					if(!xmodem_get_ack(&xm,5))
+					if(!xmodem_get_ack(&xm,5,block_num)) {
 						errors++;
-					else
+						if(debug_tx)
+							dump_block(xm.block_size);
+					} else
 						block_num++; 
 				}
 				fclose(fp);
@@ -869,7 +889,7 @@ void send_files(char** fname, uint fnames, FILE* log)
 
 			memset(block,0,128);	/* send short block for terminator */
 			xmodem_put_block(&xm, block, 128 /* block_size */, 0 /* block_num */);
-			if(!xmodem_get_ack(&xm,6)) {
+			if(!xmodem_get_ack(&xm,6,0)) {
 				newline();
 				fprintf(statfp,"Failed to receive ACK after terminating block\n"); 
 			} 
@@ -904,8 +924,6 @@ void receive_files(char** fname, int fnames, FILE* log)
 	if(fnames>1)
 		fprintf(statfp,"Receiving %u files\n",fnames);
 
-//	mode|=DEBUG_TX;
-
 	while(1) {
 		if(mode&XMODEM) {
 			SAFECOPY(str,fname[0]);
@@ -913,9 +931,9 @@ void receive_files(char** fname, int fnames, FILE* log)
 		}
 
 		else if(mode&YMODEM) {
-			for(errors=0;errors<MAXERRORS;errors++) {
+			for(errors=0;errors<xm.max_errors;errors++) {
 				fprintf(statfp,"Fetching Ymodem header block, requesting: ");
-				if(errors>(MAXERRORS/2) && mode&CRC && !(mode&GMODE))
+				if(errors>(xm.max_errors/2) && mode&CRC && !(mode&GMODE))
 					mode&=~CRC;
 				if(mode&GMODE) {		/* G for Ymodem-G */
 					fprintf(statfp,"G (Streaming CRC) mode\n");
@@ -933,8 +951,8 @@ void receive_files(char** fname, int fnames, FILE* log)
 					break; 
 				} 
 			}
-			if(errors==MAXERRORS) {
-				fprintf(statfp,"Error fetching Ymodem header block\n");
+			if(errors==xm.max_errors) {
+				fprintf(statfp,"!Error fetching Ymodem header block\n");
 				xmodem_cancel(&xm);
 				bail(1); 
 			}
@@ -1090,7 +1108,7 @@ void receive_files(char** fname, int fnames, FILE* log)
 			bail(1); 
 		}
 		if((fp=fopen(str,"wb"))==NULL) {
-			fprintf(statfp,"Error creating %s\n",str);
+			fprintf(statfp,"!Error creating %s\n",str);
 			xmodem_cancel(&xm);
 			bail(1); 
 		}
@@ -1111,7 +1129,7 @@ void receive_files(char** fname, int fnames, FILE* log)
 			putcom('C');
 		else				/* NAK for checksum */
 			putcom(NAK);
-		while(errors<MAXERRORS) {
+		while(errors<xm.max_errors) {
 			if(errors && mode&GMODE) {
 				xmodem_cancel(&xm);
 				bail(1); 
@@ -1138,7 +1156,7 @@ void receive_files(char** fname, int fnames, FILE* log)
 					if(fwrite(block,1,file_bytes_left,fp)
 						!=file_bytes_left) {
 						newline();
-						fprintf(statfp,"Error writing to file\n");
+						fprintf(statfp,"!Error writing to file\n");
 						xmodem_cancel(&xm);
 						bail(1); 
 					} 
@@ -1147,7 +1165,7 @@ void receive_files(char** fname, int fnames, FILE* log)
 					if(fwrite(block,1,xm.block_size,fp)
 						!=(uint)xm.block_size) {
 						newline();
-						fprintf(statfp,"Error writing to file\n");
+						fprintf(statfp,"!Error writing to file\n");
 						xmodem_cancel(&xm);
 						bail(1); 
 					} 
@@ -1271,14 +1289,19 @@ static const char* usage=
 /***************/
 int main(int argc, char **argv)
 {
-	char	str[256];
-	char*	fname[MAX_FNAMES];
+	char	str[MAX_PATH+1];
+	char	fname[MAX_PATH+1];
+	char	ini_fname[MAX_PATH+1];
+	char*	p;
 	int 	i;
 	uint	fnames=0;
 	FILE*	fp;
 	FILE*	log=NULL;
-	BOOL	b;
+	BOOL	tcp_nodelay;
 	char	compiler[32];
+	str_list_t fname_list;
+
+	fname_list=strListInit();
 
 	DESCRIBE_COMPILER(compiler);
 
@@ -1295,7 +1318,42 @@ int main(int argc, char **argv)
 
 	RingBufInit(&inbuf, IO_THREAD_BUF_SIZE);
 	RingBufInit(&outbuf, IO_THREAD_BUF_SIZE);
-	outbuf.highwater_mark=1100;
+
+	xmodem_init(&xm,INVALID_SOCKET,&mode,lputs,send_byte,recv_byte);
+
+	/* Generate path/sexyz[.host].ini from path/sexyz[.exe] */
+	SAFECOPY(str,argv[0]);
+	p=getfname(str);
+	SAFECOPY(fname,p);
+	*p=0;
+	if((p=getfext(fname))!=NULL) 
+		*p=0;
+	strcat(fname,".ini");
+	
+	iniFileName(ini_fname,sizeof(ini_fname),str,fname);
+	if((fp=fopen(ini_fname,"r"))!=NULL)
+		fprintf(statfp,"Reading %s\n",ini_fname);
+
+	tcp_nodelay				=iniReadBool(fp,ROOT_SECTION,"TCP_NODELAY",TRUE);
+
+	debug_tx				=iniReadBool(fp,ROOT_SECTION,"DebugTx",FALSE);
+	debug_rx				=iniReadBool(fp,ROOT_SECTION,"DebugRx",FALSE);
+	debug_telnet			=iniReadBool(fp,ROOT_SECTION,"DebugTelnet",FALSE);
+
+	pause_on_exit			=iniReadBool(fp,ROOT_SECTION,"PauseOnExit",FALSE);
+	pause_on_abend			=iniReadBool(fp,ROOT_SECTION,"PauseOnAbend",FALSE);
+
+	outbuf.highwater_mark	=iniReadInteger(fp,ROOT_SECTION,"OutbufHighwaterMark",1100);
+	outbuf_drain_timeout	=iniReadInteger(fp,ROOT_SECTION,"OutbufDrainTimeout",10);
+
+	xm.byte_timeout			=iniReadInteger(fp,"Xmodem","ByteTimeout",xm.byte_timeout);	/* seconds */
+	xm.ack_timeout			=iniReadInteger(fp,"Xmodem","AckTimeout",xm.ack_timeout);	/* seconds */
+	xm.block_size			=iniReadInteger(fp,"Xmodem","BlockSize",xm.block_size);		/* 128 or 1024 */
+	xm.max_errors			=iniReadInteger(fp,"Xmodem","MaxErrors",xm.max_errors);
+
+	if(fp!=NULL)
+		fclose(fp);
+
 	outbuf_empty=CreateEvent(NULL,FALSE,TRUE,NULL);
 
 #if 0
@@ -1307,8 +1365,6 @@ int main(int argc, char **argv)
 	}
 #endif
 
-	xm.byte_timeout=3;	/* seconds */
-	xm.ack_timeout=10;	/* seconds */
 
 	for(i=1;i<argc;i++) {
 
@@ -1324,8 +1380,6 @@ int main(int argc, char **argv)
 				else
 					mode|=SEND;
 
-				xm.block_size=1024;
-
 				switch(argv[i][1]) {
 					case 'c':
 					case 'C':
@@ -1335,6 +1389,8 @@ int main(int argc, char **argv)
 					case 'X':
 						mode|=XMODEM;
 						break;
+					case 'b':	/* sz/rz compatible */
+					case 'B':
 					case 'y':
 						xm.block_size=128;
 					case 'Y':
@@ -1372,14 +1428,17 @@ int main(int argc, char **argv)
 
 			if(argv[i][0]=='-') {
 				if(stricmp(argv[i]+1,"telnet")==0) {
-					mode|=TELNET;
+					telnet=TRUE;
 					continue;
 				}
 				if(stricmp(argv[i]+1,"rlogin")==0) {
-					mode&=~TELNET;
+					telnet=FALSE;
 					continue;
 				}
 				switch(toupper(argv[i][1])) {
+					case 'K':	/* sz/rz compatible */
+						xm.block_size=1024;
+						break;
 					case 'O':
 						mode|=OVERWRITE;
 						break;
@@ -1387,7 +1446,7 @@ int main(int argc, char **argv)
 						mode|=ALARM;
 						break;
 					case '!':
-						mode|=PAUSE_ABEND;
+						pause_on_abend=TRUE;
 						break;
 					case 'D':
 						mode|=DEBUG; 
@@ -1398,49 +1457,40 @@ int main(int argc, char **argv)
 
 		else if(argv[i][0]=='+') {
 			if(mode&DIR) {
-				fprintf(statfp,"Cannot specify both directory and filename\n");
+				fprintf(statfp,"!Cannot specify both directory and filename\n");
 				exit(1); 
 			}
 			sprintf(str,"%s",argv[i]+1);
 			if((fp=fopen(str,"r"))==NULL) {
-				fprintf(statfp,"Error %d opening filelist: %s\n",errno,str);
+				fprintf(statfp,"!Error %d opening filelist: %s\n",errno,str);
 				exit(1); 
 			}
-			while(!feof(fp) && !ferror(fp) && fnames<MAX_FNAMES) {
+			while(!feof(fp) && !ferror(fp)) {
 				if(!fgets(str,sizeof(str),fp))
 					break;
 				truncsp(str);
-				if((fname[fnames]=(char *)malloc(strlen(str)+1))==NULL) {
-					fprintf(statfp,"Error allocating memory for filename\n");
-					exit(1); 
-				}
-				strcpy(fname[fnames++],str); 
+				strListAppend(&fname_list,strdup(str),fnames++);
 			}
 			fclose(fp); 
 		}
 
 		else if(mode&(SEND|RECV)){
-			if((fname[fnames]=(char *)malloc(strlen(argv[i])+1))==NULL) {
-				fprintf(statfp,"Error allocating memory for filename\n");
-				exit(1); 
-			}
-			strcpy(fname[fnames],argv[i]);
-			if(isdir(fname[fnames])) { /* is a directory */
+			if(isdir(argv[i])) { /* is a directory */
 				if(mode&DIR) {
-					fprintf(statfp,"Only one directory can be specified\n");
+					fprintf(statfp,"!Only one directory can be specified\n");
 					exit(1); 
 				}
 				if(fnames) {
-					fprintf(statfp,"Cannot specify both directory and filename\n");
+					fprintf(statfp,"!Cannot specify both directory and filename\n");
 					exit(1); 
 				}
 				if(mode&SEND) {
-					fprintf(statfp,"Cannot send directory '%s'\n",fname[fnames]);
+					fprintf(statfp,"!Cannot send directory '%s'\n",argv[i]);
 					exit(1);
 				}
 				mode|=DIR; 
 			}
-			fnames++; 
+			strListAppend(&fname_list,argv[i],fnames++);
 		} 
 	}
 
@@ -1463,8 +1513,8 @@ int main(int argc, char **argv)
 	}
 
 
-	if(mode&DIR)
-		backslash(fname[0]);
+//	if(mode&DIR)
+//		backslash(fname[0]);
 
 	if(mode&ALARM) {
 		BEEP(1000,500);
@@ -1474,30 +1524,25 @@ int main(int argc, char **argv)
 	if(!winsock_startup())
 		bail(2);
 
-#if 0
 	/* Enable the Nagle Algorithm */
-	b=0;
-	setsockopt(sock,IPPROTO_TCP,TCP_NODELAY,(char*)&b,sizeof(b));
-#endif
+	lprintf(LOG_DEBUG,"Setting TCP_NODELAY to %d\n",tcp_nodelay);
+	setsockopt(sock,IPPROTO_TCP,TCP_NODELAY,(char*)&tcp_nodelay,sizeof(tcp_nodelay));
+
 	if(!socket_check(sock, NULL, NULL, 0)) {
 		newline();
-		fprintf(statfp,"No socket connection\n");
+		fprintf(statfp,"!No socket connection\n");
 		bail(1); 
 	}
 
 	if((dszlog=getenv("DSZLOG"))!=NULL) {
 		if((log=fopen(dszlog,"w"))==NULL) {
-			fprintf(statfp,"Error opening DSZLOG file: %s\n",dszlog);
+			fprintf(statfp,"!Error opening DSZLOG file: %s\n",dszlog);
 			bail(1); 
 		}
 	}
 
 	startall=time(NULL);
 
-	xm.sock=sock;
-	xm.mode=&mode;
-
-	zm.sock=sock;
 	zm.mode=&mode;
 	zm.errfp=errfp;
 	zm.statfp=statfp;
@@ -1507,9 +1552,9 @@ int main(int argc, char **argv)
 #endif
 
 	if(mode&RECV)
-		receive_files(fname, fnames, log);
+		receive_files(fname_list, fnames, log);
 	else
-		send_files(fname, fnames, log);
+		send_files(fname_list, fnames, log);
 
 	bail(0);
 	return(0);
