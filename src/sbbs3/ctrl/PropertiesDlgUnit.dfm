@@ -1,6 +1,6 @@
 object PropertiesDlg: TPropertiesDlg
-  Left = 624
-  Top = 358
+  Left = 631
+  Top = 219
   BorderStyle = bsDialog
   Caption = 'Control Panel Properties'
   ClientHeight = 288
@@ -292,6 +292,14 @@ object PropertiesDlg: TPropertiesDlg
         AutoSize = False
         Caption = 'JavaScript Heap'
       end
+      object Label8: TLabel
+        Left = 8
+        Top = 108
+        Width = 110
+        Height = 24
+        AutoSize = False
+        Caption = 'Log Window Size'
+      end
       object CtrlDirEdit: TEdit
         Left = 120
         Top = 12
@@ -323,6 +331,18 @@ object PropertiesDlg: TPropertiesDlg
         ParentShowHint = False
         ShowHint = True
         TabOrder = 2
+      end
+      object MaxLogLenEdit: TEdit
+        Left = 120
+        Top = 108
+        Width = 169
+        Height = 24
+        Hint = 
+          'Maximum number of bytes to store in log windows before auto-dele' +
+          'ting old lines'
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 3
       end
     end
   end
