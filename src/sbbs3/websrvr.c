@@ -952,12 +952,13 @@ static BOOL check_request(http_session_t * session)
 	if(!strcmp(path,session->req.request))
 		session->req.send_location=TRUE;
 	if(!fexist(path)) {
-		if(path[strlen(path)-1]!='/')
-			strcat(path,"/");
+		backslash(path);
 		strcat(path,startup->index_file_name);
 		session->req.send_location=TRUE;
 	}
 	if(strnicmp(session->req.request,root_dir,strlen(root_dir))) {
+		lprintf("%04d request = '%s'",session->socket,session->req.request);
+		lprintf("%04d root_dir = '%s'",session->socket,root_dir);
 		send_error("400 Bad Request",session);
 		session->req.keep_alive=FALSE;
 		return(FALSE);
@@ -1384,7 +1385,7 @@ void DLLCALL web_server(void* arg)
 			_beginthread(http_session_thread, 0, session);
 		}
 
-#if 0	/* this is handled in cleanup()
+#if 0	/* this is handled in cleanup() */
 		/* Close all open sockets  */
 		lprintf("Closing Server Socket %d", server_socket);
 		close_socket(server_socket);
