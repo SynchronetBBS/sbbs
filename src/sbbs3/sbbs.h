@@ -443,7 +443,6 @@ public:
 
 	/* postmsg.cpp */
 	bool	postmsg(uint subnum, smbmsg_t* msg, long wm_mode);
-	void	signal_sub_sem(uint subnum);
 
 	/* mail.cpp */
 	int		delmail(uint usernumber,int which);
@@ -759,6 +758,7 @@ extern "C" {
 	DLLEXPORT void		DLLCALL delfattach(scfg_t*, smbmsg_t*);
 	/* postmsg.cpp */
 	DLLEXPORT int		DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, char* msgbuf);
+	DLLEXPORT void		DLLCALL signal_sub_sem(scfg_t* cfg, uint subnum);
 
 	/* filedat.c */
 	DLLEXPORT BOOL		DLLCALL getfileixb(scfg_t* cfg, file_t* f);
@@ -842,6 +842,10 @@ extern "C" {
 	/* sockopt.c */
 	DLLEXPORT int		DLLCALL sockopt(char* str, int* level);
 	DLLEXPORT int		DLLCALL set_socket_options(scfg_t* cfg, SOCKET sock, char* error);
+
+	/* xtrn.cpp */
+	DLLEXPORT char*		DLLCALL cmdstr(scfg_t* cfg, user_t* user, const char* instr
+									,const char* fpath, const char* fspec, char* cmd);
 
 #ifdef JAVASCRIPT
 

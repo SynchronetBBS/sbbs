@@ -1583,3 +1583,163 @@ char* sbbs_t::cmdstr(char *instr, char *fpath, char *fspec, char *outstr)
 
     return(cmd);
 }
+
+/****************************************************************************/
+/* Returns command line generated from instr with %c replacments            */
+/* This is the C-exported version											*/
+/****************************************************************************/
+extern "C" char* cmdstr(scfg_t* cfg, user_t* user, const char* instr, const char* fpath
+						,const char* fspec, char* cmd)
+{
+	char	str[256];
+    int		i,j,len;
+
+    len=strlen(instr);
+    for(i=j=0;i<len && j<MAX_PATH;i++) {
+        if(instr[i]=='%') {
+            i++;
+            cmd[j]=0;
+			char ch=instr[i];
+			if(isalpha(ch))
+				ch=toupper(ch);
+            switch(ch) {
+                case 'A':   /* User alias */
+					if(user!=NULL)
+						strcat(cmd,user->alias);
+                    break;
+                case 'B':   /* Baud (DTE) Rate */
+                    break;
+                case 'C':   /* Connect Description */
+                    break;
+                case 'D':   /* Connect (DCE) Rate */
+                    break;
+                case 'E':   /* Estimated Rate */
+                    break;
+                case 'F':   /* File path */
+                    strcat(cmd,fpath);
+                    break;
+                case 'G':   /* Temp directory */
+                    strcat(cmd,cfg->temp_dir);
+                    break;
+                case 'H':   /* Port Handle or Hardware Flow Control */
+                    break;
+                case 'I':   /* UART IRQ Line */
+                    strcat(cmd,ultoa(cfg->com_irq,str,10));
+                    break;
+                case 'J':
+                    strcat(cmd,cfg->data_dir);
+                    break;
+                case 'K':
+                    strcat(cmd,cfg->ctrl_dir);
+                    break;
+                case 'L':   /* Lines per message */
+					if(user!=NULL)
+						strcat(cmd,ultoa(cfg->level_linespermsg[user->level],str,10));
+                    break;
+                case 'M':   /* Minutes (credits) for user */
+					if(user!=NULL)
+						strcat(cmd,ultoa(user->min,str,10));
+                    break;
+                case 'N':   /* Node Directory (same as SBBSNODE environment var) */
+                    strcat(cmd,cfg->node_dir);
+                    break;
+                case 'O':   /* SysOp */
+                    strcat(cmd,cfg->sys_op);
+                    break;
+                case 'P':   /* COM Port */
+                    break;
+                case 'Q':   /* QWK ID */
+                    strcat(cmd,cfg->sys_id);
+                    break;
+                case 'R':   /* Rows */
+					if(user!=NULL)
+						strcat(cmd,ultoa(user->rows,str,10));
+                    break;
+                case 'S':   /* File Spec */
+                    strcat(cmd,fspec);
+                    break;
+                case 'T':   /* Time left in seconds */
+                    break;
+                case 'U':   /* UART I/O Address (in hex) */
+                    strcat(cmd,ultoa(cfg->com_base,str,16));
+                    break;
+                case 'V':   /* Synchronet Version */
+                    sprintf(str,"%s%c",VERSION,REVISION);
+                    break;
+                case 'W':   /* Time-slice API type (mswtype) */
+#if 0 //ndef __FLAT__
+                    strcat(cmd,ultoa(mswtyp,str,10));
+#endif
+                    break;
+                case 'X':
+					if(user!=NULL)
+						strcat(cmd,cfg->shell[user->shell]->code);
+                    break;
+                case '&':   /* Address of msr */
+                    sprintf(str,"%lu",(DWORD)&fakeriobp);
+                    strcat(cmd,str);
+                    break;
+                case 'Y':
+                    break;
+                case 'Z':
+                    strcat(cmd,cfg->text_dir);
+                    break;
+				case '~':	/* DOS-compatible (8.3) filename */
+#ifdef _WIN32
+					char sfpath[MAX_PATH+1];
+					SAFECOPY(sfpath,fpath);
+					GetShortPathName(fpath,sfpath,sizeof(sfpath));
+					strcat(cmd,sfpath);
+#else
+                    strcat(cmd,fpath);
+#endif			
+					break;
+                case '!':   /* EXEC Directory */
+                    strcat(cmd,cfg->exec_dir);
+                    break;
+                case '#':   /* Node number (same as SBBSNNUM environment var) */
+                    sprintf(str,"%d",cfg->node_num);
+                    strcat(cmd,str);
+                    break;
+                case '*':
+                    sprintf(str,"%03d",cfg->node_num);
+                    strcat(cmd,str);
+                    break;
+                case '$':   /* Credits */
+					if(user!=NULL)
+						strcat(cmd,ultoa(user->cdt+user->freecdt,str,10));
+                    break;
+                case '%':   /* %% for percent sign */
+                    strcat(cmd,"%");
+                    break;
+				case '.':	/* .exe for DOS/OS2/Win32, blank for Unix */
+#ifndef __unix__
+					strcat(cmd,".exe");
+#endif
+					break;
+				case '?':	/* Platform */
+#ifdef __OS2__
+					strcpy(str,"OS2");
+#else
+					strcpy(str,PLATFORM_DESC);
+#endif
+					strlwr(str);
+					strcat(cmd,str);
+					break;
+                default:    /* unknown specification */
+                    if(isdigit(instr[i]) && user!=NULL) {
+                        sprintf(str,"%0*d",instr[i]&0xf,user->number);
+                        strcat(cmd,str); 
+					}
+                    break; 
+			}
+            j=strlen(cmd); 
+		}
+        else
+            cmd[j++]=instr[i]; 
+	}
+    cmd[j]=0;
+
+    return(cmd);
+}
+
