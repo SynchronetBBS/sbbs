@@ -1,10 +1,12 @@
+# Makefile.gnu
+
 #########################################################################
 # Makefile for Synchronet BBS 											#
 # For use with GNU make and GNU C Compiler								#
 # @format.tab-size 4													#
 #########################################################################
 
-# $id$
+# $Id$
 
 # Macros
 DEBUG	=	1		# Comment out for release (non-debug) version
@@ -31,6 +33,8 @@ FTPSRVR	=	$(ODIR)/ftpsrvr.dll
 
 MAILSRVR=	$(ODIR)/mailsrvr.dll
 
+SBBSLIB	=	$(ODIR)/sbbs.a
+
 ALL: $(ODIR) $(SBBS) $(FTPSRVR) $(MAILSRVR)
 
 include objects.mak		# defines $(OBJS)
@@ -53,15 +57,15 @@ $(ODIR):
 
 # SBBS DLL Link Rule
 $(SBBS): $(OBJS) $(ODIR)/ver.o
-	$(LD) $(LFLAGS) -o $@ $^ $(LIBS) --output-lib sbbs.a
+	$(LD) $(LFLAGS) -o $@ $^ $(LIBS) --output-lib $(SBBSLIB)
 
 # FTP Server DLL Link Rule
-$(FTPSRVR): $(ODIR)/ftpsrvr.o
-	$(LD) $(LFLAGS) -o $@ $^ $(LIBS) sbbs.a --output-lib ftpsrvr.a
+$(FTPSRVR): $(ODIR)/ftpsrvr.o $(SBBSLIB)
+	$(LD) $(LFLAGS) -o $@ $^ $(LIBS) --output-lib $(ODIR)/ftpsrvr.a
 
 # Mail Server DLL Link Rule
-$(MAILSRVR): $(ODIR)/mailsrvr.o $(ODIR)/mxlookup.o
-	$(LD) $(LFLAGS) -o $@ $^ $(LIBS) sbbs.a --output-lib mailsrvr.a
+$(MAILSRVR): $(ODIR)/mailsrvr.o $(ODIR)/mxlookup.o $(SBBSLIB)
+	$(LD) $(LFLAGS) -o $@ $^ $(LIBS) --output-lib $(ODIR)/mailsrvr.a
 
 # Specifc Compile Rules
 $(ODIR)/ftpsrvr.o: ftpsrvr.c ftpsrvr.h
