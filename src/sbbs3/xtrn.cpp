@@ -148,12 +148,9 @@ BYTE* telnet_expand(BYTE* inbuf, ulong inlen, BYTE* outbuf, ulong& newlen, bool&
 //
 HANDLE (WINAPI *GetAddressOfOpenVxDHandle(void))(HANDLE)
 {
-	CHAR K32Path[MAX_PATH];
 	HINSTANCE hK32;
 
-	GetSystemDirectory(K32Path, MAX_PATH);
-	strcat(K32Path, "\\kernel32.dll");
-	if ((hK32 = LoadLibrary(K32Path)) == 0)
+	if ((hK32 = LoadLibrary("KERNEL32")) == NULL)
 		return NULL;
 
 	return (HANDLE(WINAPI *)(HANDLE))GetProcAddress(hK32, "OpenVxDHandle");
