@@ -936,13 +936,21 @@ char * sbbs_t::cmdstr(char *instr, char *fpath, char *fspec, char *outstr)
                     strcat(cmd,str);
                     break;
                 case 'Y':
-                    strcat(cmd,
-                    comspec
-                    );
+                    strcat(cmd,comspec);
                     break;
                 case 'Z':
                     strcat(cmd,cfg.text_dir);
                     break;
+				case '~':	/* DOS-compatible (8.3) filename */
+#ifdef _WIN32
+					char sfpath[MAX_PATH];
+					strcpy(sfpath,fpath);
+					GetShortPathName(fpath,sfpath,sizeof(sfpath));
+					strcat(cmd,sfpath);
+#else
+                    strcat(cmd,fpath);
+#endif			
+					break;
                 case '!':   /* EXEC Directory */
                     strcat(cmd,cfg.exec_dir);
                     break;
