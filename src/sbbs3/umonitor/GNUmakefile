@@ -144,8 +144,8 @@ $(EXEODIR):
 	mkdir $(EXEODIR)
 
 clean:
-	@$(DELETE) $(LIBODIR)$(SLASH)*
-	@$(DELETE) $(EXEODIR)$(SLASH)*
+	@$(DELETE) $(LIBODIR)/*
+	@$(DELETE) $(EXEODIR)/*
 
 depend:
 	@$(DELETE) $(LIBODIR)/.depend
