@@ -125,7 +125,7 @@ static int getstr(char* str, int maxlen)
 #endif
         if(ch=='\r' || ch=='\n')	/* enter */
         	break;
-        if(ch=='\b') {				/* backspace */
+        if(ch=='\b' || ch==DEL) {	/* backspace */
         	if(len) len--;
             continue;
     	}
