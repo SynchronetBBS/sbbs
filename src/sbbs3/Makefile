@@ -142,7 +142,7 @@ $(CHKSMB): chksmb.c $(SMBLIB) $(XPDEV)dirwrap.c
 	@$(CC) $(CFLAGS) -n$(EXEODIR) $** 
 
 # SMB Utility
-$(SMBUTIL): smbutil.c smbtxt.c crc32.c lzh.c $(SMBLIB) $(XPDEV)dirwrap.c
+$(SMBUTIL): smbutil.c smbtxt.c crc32.c lzh.c date_str.c str_util.c $(SMBLIB) $(XPDEV)dirwrap.c
 	@echo Creating $@
 	@$(CC) $(CFLAGS) -n$(EXEODIR) $** 
 

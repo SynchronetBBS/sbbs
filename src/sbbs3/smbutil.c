@@ -57,6 +57,7 @@
 #include <string.h>		/* strrchr */
 #include <ctype.h>		/* toupper */
 
+#include "sbbs.h"
 #include "genwrap.h"	/* stricmp */
 #include "dirwrap.h"	/* fexist */
 #include "conwrap.h"	/* getch */
@@ -109,62 +110,6 @@ char *usage=
 "       s<s> = set 'subject' for imported message\n"
 "       z[n] = set time zone (n=min +/- from UT or 'EST','EDT','CST',etc)\n"
 ;
-
-char *wday[]={"Sun","Mon","Tue","Wed","Thu","Fri","Sat"};
-char *mon[]={"Jan","Feb","Mar","Apr","May","Jun"
-            ,"Jul","Aug","Sep","Oct","Nov","Dec"};
-
-/****************************************************************************/
-/* Updates 16-bit "rcrc" with character 'ch'                                */
-/****************************************************************************/
-void ucrc16(uchar ch, ushort *rcrc) {
-	ushort i, cy;
-    uchar nch=ch;
- 
-	for (i=0; i<8; i++) {
-		cy=*rcrc & 0x8000;
-		*rcrc<<=1;
-		if (nch & 0x80) *rcrc |= 1;
-		nch<<=1;
-		if (cy) *rcrc ^= 0x1021; }
-}
-
-/****************************************************************************/
-/* Returns CRC-16 of string (not including terminating NULL)				*/
-/****************************************************************************/
-ushort crc16(char *str)
-{
-	int 	i=0;
-	ushort	crc=0;
-
-	ucrc16(0,&crc);
-	while(str[i])
-		ucrc16(str[i++],&crc);
-	ucrc16(0,&crc);
-	ucrc16(0,&crc);
-	return(crc);
-}
-
-void remove_re(char *str)
-{
-	while(!strnicmp(str,"RE:",3)) {
-		strcpy(str,str+3);
-		while(str[0]==SP)
-			strcpy(str,str+1); 
-	}
-}
-
-/************************************************/
-/* Truncates white-space chars off end of 'str' */
-/************************************************/
-static void truncsp(char *str)
-{
-	uint c;
-
-	c=strlen(str);
-	while(c && (uchar)str[c-1]<=' ') c--;
-	str[c]=0;
-}
 
 /*****************************************************************************/
 // Expands Unix LF to CRLF
@@ -366,9 +311,7 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 		smb_freemsgdat(&smb,offset,length,1);
 		exit(1); 
 	}
-	remove_re(str);
-	strlwr(str);
-	msg.idx.subj=crc16(str);
+	msg.idx.subj=subject_crc(str);
 
 	i=smb_dfield(&msg,TEXT_BODY,length);
 	if(i) {
@@ -507,21 +450,6 @@ void listmsgs(ulong start, ulong count)
 		l++; }
 }
 
-/****************************************************************************/
-/* Returns an ASCII string for FidoNet address 'addr'                       */
-/****************************************************************************/
-char *faddrtoa(fidoaddr_t addr)
-{
-	static char str[25];
-	char point[25];
-
-	sprintf(str,"%hu:%hu/%hu",addr.zone,addr.net,addr.node);
-	if(addr.point) {
-		sprintf(point,".%u",addr.point);
-		strcat(str,point); }
-	return(str);
-}
-
 char *binstr(uchar *buf, ushort length)
 {
 	static char str[512];
@@ -549,7 +477,7 @@ char *binstr(uchar *buf, ushort length)
 /* Generates a 24 character ASCII string that represents the time_t pointer */
 /* Used as a replacement for ctime()                                        */
 /****************************************************************************/
-char *timestr(time_t *intime)
+char *my_timestr(time_t *intime)
 {
     static char str[256];
     char mer[3],hour;
@@ -576,64 +504,6 @@ char *timestr(time_t *intime)
 		,hour,gm->tm_min,mer);
 	return(str);
 }
-
-
-/****************************************************************************/
-/* Converts when_t.zone into ASCII format									*/
-/****************************************************************************/
-char *zonestr(short zone)
-{
-	static char str[32];
-
-	switch((ushort)zone) {
-		case 0: 	return("UTC");
-		case AST:	return("AST");
-		case EST:	return("EST");
-		case CST:	return("CST");
-		case MST:	return("MST");
-		case PST:	return("PST");
-		case YST:	return("YST");
-		case HST:	return("HST");
-		case BST:	return("BST");
-		case ADT:	return("ADT");
-		case EDT:	return("EDT");
-		case CDT:	return("CDT");
-		case MDT:	return("MDT");
-		case PDT:	return("PDT");
-		case YDT:	return("YDT");
-		case HDT:	return("HDT");
-		case BDT:	return("BDT");
-		case MID:	return("MID");
-		case VAN:	return("VAN");
-		case EDM:	return("EDM");
-		case WIN:	return("WIN");
-		case BOG:	return("BOG");
-		case CAR:	return("CAR");
-		case RIO:	return("RIO");
-		case FER:	return("FER");
-		case AZO:	return("AZO");
-		case LON:	return("LON");
-		case BER:	return("BER");
-		case ATH:	return("ATH");
-		case MOS:	return("MOS");
-		case DUB:	return("DUB");
-		case KAB:	return("KAB");
-		case KAR:	return("KAR");
-		case BOM:	return("BOM");
-		case KAT:	return("KAT");
-		case DHA:	return("DHA");
-		case BAN:	return("BAN");
-		case HON:	return("HON");
-		case TOK:	return("TOK");
-		case SYD:	return("SYD");
-		case NOU:	return("NOU");
-		case WEL:	return("WEL");
-		}
-
-	sprintf(str,"%02d:%02u",zone/60,zone<0 ? (-zone)%60 : zone%60);
-	return(str);
-}
-			 
 
 /****************************************************************************/
 /* Displays message header information										*/
@@ -663,10 +533,10 @@ void viewmsgs(ulong start, ulong count)
 			break; }
 
 		sprintf(when_written,"%.24s %s"
-			,timestr((time_t*)&msg.hdr.when_written.time)
+			,my_timestr((time_t*)&msg.hdr.when_written.time)
 			,zonestr(msg.hdr.when_written.zone));
 		sprintf(when_imported,"%.24s %s"
-			,timestr((time_t*)&msg.hdr.when_imported.time)
+			,my_timestr((time_t*)&msg.hdr.when_imported.time)
 			,zonestr(msg.hdr.when_imported.zone));
 
 		printf( "%-20.20s %s\n"
@@ -764,21 +634,21 @@ void viewmsgs(ulong start, ulong count)
 				   "from_net.addr        %s\n"
 				,msg.from_net.type
 				,msg.from_net.type==NET_FIDO
-				? faddrtoa(*(fidoaddr_t *)msg.from_net.addr) : (char*)msg.from_net.addr);
+				? faddrtoa((fidoaddr_t *)msg.from_net.addr,NULL) : (char*)msg.from_net.addr);
 
 		if(msg.to_net.type)
 			printf("to_net.type          %02Xh\n"
 				   "to_net.addr          %s\n"
 				,msg.to_net.type
 				,msg.to_net.type==NET_FIDO
-				? faddrtoa(*(fidoaddr_t *)msg.to_net.addr) : (char*)msg.to_net.addr);
+				? faddrtoa((fidoaddr_t *)msg.to_net.addr,NULL) : (char*)msg.to_net.addr);
 
 		if(msg.replyto_net.type)
 			printf("replyto_net.type     %02Xh\n"
 				   "replyto_net.addr     %s\n"
 				,msg.replyto_net.type
 				,msg.replyto_net.type==NET_FIDO
-				? faddrtoa(*(fidoaddr_t *)msg.replyto_net.addr)
+				? faddrtoa((fidoaddr_t *)msg.replyto_net.addr,NULL)
 					: (char*)msg.replyto_net.addr);
 
 		printf("from_agent           %02Xh\n"
@@ -1216,10 +1086,7 @@ void packmsgs(ulong packable)
 		msg.idx.number=msg.hdr.number;
 		msg.idx.attr=msg.hdr.attr;
 		msg.idx.time=msg.hdr.when_imported.time;
-		SAFECOPY(str,msg.subj);
-		strlwr(str);
-		remove_re(str);
-		msg.idx.subj=crc16(str);
+		msg.idx.subj=subject_crc(msg.subj);
 		if(smb.status.attr&SMB_EMAIL) {
 			if(msg.to_ext)
 				msg.idx.to=atoi(msg.to_ext);
@@ -1334,14 +1201,14 @@ void readmsgs(ulong start)
 			printf("To   : %s",msg.to);
 			if(msg.to_net.type)
 				printf(" (%s)",msg.to_net.type==NET_FIDO
-					? faddrtoa(*(fidoaddr_t *)msg.to_net.addr) : (char*)msg.to_net.addr);
+					? faddrtoa((fidoaddr_t *)msg.to_net.addr,NULL) : (char*)msg.to_net.addr);
 			printf("\nFrom : %s",msg.from);
 			if(msg.from_net.type)
 				printf(" (%s)",msg.from_net.type==NET_FIDO
-					? faddrtoa(*(fidoaddr_t *)msg.from_net.addr)
+					? faddrtoa((fidoaddr_t *)msg.from_net.addr,NULL)
 						: (char*)msg.from_net.addr);
 			printf("\nDate : %.24s %s"
-				,timestr((time_t*)&msg.hdr.when_written.time)
+				,my_timestr((time_t*)&msg.hdr.when_written.time)
 				,zonestr(msg.hdr.when_written.zone));
 
 			printf("\n\n");
