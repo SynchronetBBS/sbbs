@@ -1149,6 +1149,7 @@ function IRCClient(socket,new_id,local_client,do_newconn) {
 	this.numeric351=IRCClient_numeric351;
 	this.numeric352=IRCClient_numeric352;
 	this.numeric353=IRCClient_numeric353;
+	this.numeric382=IRCClient_numeric382;
 	this.numeric391=IRCClient_numeric391;
 	this.numeric401=IRCClient_numeric401;
 	this.numeric402=IRCClient_numeric402;
@@ -1677,6 +1678,10 @@ function IRCClient_numeric353(chan, str) {
 	else
 		var ctype_str = "=";
 	this.numeric("353", ctype_str + " " + Channels[chan].nam + " :" + str);
+}
+
+function IRCClient_numeric382(str) {
+	this.numeric(382, "ircd.conf :" + str);
 }
 
 function IRCClient_numeric391() {
@@ -2717,12 +2722,10 @@ function IRCClient_do_complex_who(cmd) {
 			else if ((who.del_flags&WHO_IP) &&
 			    match_irc_mask(wc.ip,who.IP))
 				continue;
-			log("----mark : " + wc.nick);
 			if (who.add_flags&WHO_UMODE) { // no -m
 				var sic = false;
 				var madd = true;
 				for (mm in who.UMode) {
-					log("XXX switch: " + who.UMode[mm]);
 					switch(who.UMode[mm]) {
 						case "+":
 							if (!madd)
@@ -2812,8 +2815,6 @@ function IRCClient_do_complex_who(cmd) {
 			if (whomask && !wc.match_who_mask(whomask))
 				continue;       
 
-			log("---mark: " + wc.nick);
-
 			chan = "";
 			if ((who.add_flags&WHO_FIRST_CHANNEL) && !who.Channel) {
 				for (x in wc.channels) {
@@ -2831,8 +2832,6 @@ function IRCClient_do_complex_who(cmd) {
 					}
 				}
 			}
-
-			log("--mark: " + wc.nick);
 
 			if (who.Channel)
 				chan = who.Channel;
@@ -4712,11 +4711,41 @@ function IRCClient_registered_commands(command, cmdline) {
 				this.numeric481();
 				break;
 			}
-			this.numeric(382, this.nick + " ircd.conf :Rehashing.");
-			umode_notice(USERMODE_SERVER,"Notice",this.nick +
-				" is rehashing Server config file while " +
-				"whistling innocently");
-			read_config_file();
+			if (cmd[1]) {
+				switch(cmd[1].toUpperCase()) {
+					case "TKLINES":
+						this.numeric382("temp klines");
+						for (kl in KLines) {
+							if(KLines[kl].type ==
+							   "k")
+								delete KLines[kl];
+						}
+						break;
+					case "GC":
+						if (js.gc!=undefined) {
+							this.numeric382("garbage collecting");
+							js.gc();
+						}
+						break;
+					case "AKILLS":
+						this.numeric382("akills");
+						for (kl in KLines) {
+							if(KLines[kl].type ==
+							   "A")
+								delete KLines[kl
+];
+						}
+						break;
+					default:
+						break;
+				}
+			} else {
+				this.numeric382("Rehashing.");
+				umode_notice(USERMODE_SERVER,"Notice",this.nick +
+					" is rehashing Server config file while " +
+					"whistling innocently");
+				read_config_file();
+			}
 			break;
 		case "RESTART":
 			if (!((this.mode&USERMODE_OPER) &&
