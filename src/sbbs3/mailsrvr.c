@@ -1491,7 +1491,7 @@ static int chk_received_hdr(SOCKET socket,const char *buf,IN_ADDR *dnsbl_result,
 		check_addr.s_addr = inet_addr(ip);
 		if(startup->options&MAIL_OPT_DNSBL_DEBUG)
 			lprintf("%04d DEBUG checking %s (%s)",socket,host_name,ip);
-		if((dnsbl_result->s_addr=dns_blacklisted(socket,check_addr,host_name,dnsbl,dnsbl_ip)))
+		if((dnsbl_result->s_addr=dns_blacklisted(socket,check_addr,host_name,dnsbl,dnsbl_ip))!=0)
 				lprintf("%04d !SMTP BLACKLISTED SERVER on %s: %s [%s] = %s"
 					,socket, dnsbl, host_name, ip, inet_ntoa(*dnsbl_result));
 	} while(0);
