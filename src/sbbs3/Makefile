@@ -247,15 +247,15 @@ $(JSEXEC): jsexec.c \
 	$(LIBS) \
 	$(SBBSLIB)
 	@echo Creating $@
-	$(QUIET)$(CC) $(CFLAGS) -n$(EXEODIR) $** 
+	$(QUIET)$(CC) $(CFLAGS) -n$(EXEODIR) $**
 
-# ANS2MSG
-$(ANS2MSG): ans2msg.c
+# ANS2ASC
+$(ANS2ASC): ans2asc.c
 	@echo Creating $@
 	$(QUIET)$(CC) $(CFLAGS) -n$(EXEODIR) $** 
 
-# MSG2MSG
-$(MSG2ANS): msg2ans.c
+# ASC2ANS
+$(ASC2ANS): asc2ans.c
 	@echo Creating $@
 	$(QUIET)$(CC) $(CFLAGS) -n$(EXEODIR) $** 
 
