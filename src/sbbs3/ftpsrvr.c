@@ -107,7 +107,7 @@ static time_t	uptime;
 	#define SOCKET_DEBUG_READLINE	(1<<2)	// 0x04
 	#define SOCKET_DEBUG_ACCEPT		(1<<3)	// 0x08
 	#define SOCKET_DEBUG_DOWNLOAD	(1<<4)	// 0x10
-	#define SOCKET_DEBUG_SELECT		(1<<5)	// 0x20
+	#define SOCKET_DEBUG_TERMINATE	(1<<5)	// 0x20
 	#define SOCKET_DEBUG_RECV_CHAR	(1<<6)	// 0x40
 	#define SOCKET_DEBUG_RECV_BUF	(1<<7)	// 0x80
 #endif
@@ -1871,11 +1871,11 @@ static void filexfer(SOCKADDR_IN* addr, SOCKET ctrl_sock, SOCKET pasv_sock, SOCK
 		FD_ZERO(&socket_set);
 		FD_SET(pasv_sock,&socket_set);
 
-#ifdef _DEBUG
+#if defined(_DEBUG) && defined(SOCKET_DEBUG_SELECT)
 		socket_debug[ctrl_sock]|=SOCKET_DEBUG_SELECT;
 #endif
 		result=select(pasv_sock+1,&socket_set,NULL,NULL,&tv);
-#ifdef _DEBUG
+#if defined(_DEBUG) && defined(SOCKET_DEBUG_SELECT)
 		socket_debug[ctrl_sock]&=~SOCKET_DEBUG_SELECT;
 #endif
 		if(result<1) {
@@ -2360,8 +2360,10 @@ static void ctrl_thread(void* arg)
 		socket_debug[sock]&=~SOCKET_DEBUG_READLINE;
 #endif
 		if(rd<1) {
-			if(transfer_inprogress==TRUE)
+			if(transfer_inprogress==TRUE) {
+				lprintf("%04d Aborting transfer due to receive error",sock);
 				transfer_aborted=TRUE;
+			}
 			break;
 		}
 		truncsp(buf);
@@ -2786,6 +2788,8 @@ static void ctrl_thread(void* arg)
 			if(!transfer_inprogress)
 				sockprintf(sock,"226 No tranfer in progress.");
 			else {
+				lprintf("%04d %s aborting transfer"
+					,sock,user.alias);
 				transfer_aborted=TRUE;
 				mswait(1); /* give send thread time to abort */
 				sockprintf(sock,"226 Transfer aborted.");
@@ -4120,6 +4124,10 @@ static void ctrl_thread(void* arg)
 			,sock,user.alias,cmd);
 	} /* while(1) */
 
+#if defined(_DEBUG) && defined(SOCKET_DEBUG_TERMINATE)
+	socket_debug[sock]|=SOCKET_DEBUG_TERMINATE;
+#endif
+
 	if(transfer_inprogress==TRUE) {
 		lprintf("%04d Waiting for transfer to complete...",sock);
 		while(transfer_inprogress==TRUE) {
@@ -4174,15 +4182,19 @@ static void ctrl_thread(void* arg)
 
 	status(STATUS_WFC);
 
-	lprintf("%04d CTRL thread terminated", sock);
 	active_clients--;
 	update_clients();
 	client_off(sock);
+	lprintf("%04d CTRL thread terminated (%u clients remain)"
+		,sock, active_clients);
 
 #ifdef _DEBUG
 	socket_debug[sock]&=~SOCKET_DEBUG_CTRL;
 #endif
 
+#if defined(_DEBUG) && defined(SOCKET_DEBUG_TERMINATE)
+	socket_debug[sock]&=~SOCKET_DEBUG_TERMINATE;
+#endif
 	/* Free up resources here */
 	ftp_close_socket(&sock,__LINE__);
 	if(pasv_sock!=INVALID_SOCKET)
