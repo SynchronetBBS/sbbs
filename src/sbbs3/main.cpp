@@ -1289,7 +1289,7 @@ void event_thread(void* arg)
 				if(sbbs->useron.number && !(sbbs->useron.misc&(DELETED|INACTIVE))) {
 					eprintf("Packing QWK Message Packet for %s",sbbs->useron.alias);
 					sbbs->online=ON_LOCAL;
-					sbbs->delfiles(sbbs->cfg.temp_dir,ALLFILES);
+					delfiles(sbbs->cfg.temp_dir,ALLFILES);
 					sbbs->getmsgptrs();
 					sbbs->getusrsubs();
 					sbbs->batdn_total=0;
@@ -1307,7 +1307,7 @@ void event_thread(void* arg)
 						remove(bat_list);
 					} else
 						eprintf("No packet created (no new messages)");
-					sbbs->delfiles(sbbs->cfg.temp_dir,ALLFILES);
+					delfiles(sbbs->cfg.temp_dir,ALLFILES);
 					sbbs->online=0;
 				}
 				remove(g.gl_pathv[i]);
@@ -1341,7 +1341,7 @@ void event_thread(void* arg)
 							continue;
 						eprintf("Pre-packing QWK for %s",sbbs->useron.alias);
 						sbbs->online=ON_LOCAL;
-						sbbs->delfiles(sbbs->cfg.temp_dir,ALLFILES);
+						delfiles(sbbs->cfg.temp_dir,ALLFILES);
 						sbbs->getmsgptrs();
 						sbbs->getusrsubs();
 						sbbs->batdn_total=0;
@@ -1351,7 +1351,7 @@ void event_thread(void* arg)
 							sbbs->qwk_success(l,0,1);
 							sbbs->putmsgptrs(); 
 						}
-						sbbs->delfiles(sbbs->cfg.temp_dir,ALLFILES);
+						delfiles(sbbs->cfg.temp_dir,ALLFILES);
 						sbbs->online=0;
 					} 
 				}
@@ -1446,7 +1446,7 @@ void event_thread(void* arg)
 						,j ? ((j-1)%10)+'0' : 'k');
 					fexistcase(str);		/* fix wrong-case filenames on Unix */
 					if(flength(str)>0) {	/* silently ignore 0-byte QWK packets */
-						sbbs->delfiles(sbbs->cfg.temp_dir,ALLFILES);
+						delfiles(sbbs->cfg.temp_dir,ALLFILES);
 						if(sbbs->unpack_qwk(str,i)==false) {
 							char newname[MAX_PATH+1];
 							sprintf(newname,"%s.%lx.bad",str,now);
@@ -1502,7 +1502,7 @@ void event_thread(void* arg)
 						close(file); 
 					} 
 				}
-				sbbs->delfiles(sbbs->cfg.temp_dir,ALLFILES);
+				delfiles(sbbs->cfg.temp_dir,ALLFILES);
 
 				sbbs->cfg.qhub[i]->last=time(NULL);
 				sprintf(str,"%sqnet.dab",sbbs->cfg.ctrl_dir);
