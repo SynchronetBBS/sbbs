@@ -710,6 +710,245 @@ int DLLCALL putnodedat(scfg_t* cfg, uint number, node_t* node, int file)
 }
 
 /****************************************************************************/
+/* Packs the password 'pass' into 5bit ASCII inside node_t. 32bits in 		*/
+/* node.extaux, and the other 8bits in the upper byte of node.aux			*/
+/****************************************************************************/
+void DLLCALL packchatpass(char *pass, node_t *node)
+{
+	char	bits;
+	int		i,j;
+
+	node->aux&=~0xff00;		/* clear the password */
+	node->extaux=0L;
+	if((j=strlen(pass))==0) /* there isn't a password */
+		return;
+	node->aux|=(int)((pass[0]-64)<<8);  /* 1st char goes in low 5bits of aux */
+	if(j==1)	/* password is only one char, we're done */
+		return;
+	node->aux|=(int)((pass[1]-64)<<13); /* low 3bits of 2nd char go in aux */
+	node->extaux|=(long)((pass[1]-64)>>3); /* high 2bits of 2nd char go extaux */
+	bits=2;
+	for(i=2;i<j;i++) {	/* now process the 3rd char through the last */
+		node->extaux|=(long)((long)(pass[i]-64)<<bits);
+		bits+=5; 
+	}
+}
+
+/****************************************************************************/
+/* Unpacks the password 'pass' from the 5bit ASCII inside node_t. 32bits in */
+/* node.extaux, and the other 8bits in the upper byte of node.aux			*/
+/****************************************************************************/
+char* DLLCALL unpackchatpass(char *pass, node_t* node)
+{
+	char 	bits;
+	int 	i;
+
+	pass[0]=(node->aux&0x1f00)>>8;
+	pass[1]=(char)(((node->aux&0xe000)>>13)|((node->extaux&0x3)<<3));
+	bits=2;
+	for(i=2;i<8;i++) {
+		pass[i]=(char)((node->extaux>>bits)&0x1f);
+		bits+=5; 
+	}
+	pass[8]=0;
+	for(i=0;i<8;i++)
+		if(pass[i])
+			pass[i]+=64;
+	return(pass);
+}
+
+/****************************************************************************/
+/* Displays the information for node number 'number' contained in 'node'    */
+/****************************************************************************/
+void DLLCALL printnodedat(scfg_t* cfg, uint number, node_t* node)
+{
+	char	mer[3];
+	char	tmp[128];
+    int		hour;
+
+	printf("Node %2d: ",number);
+	switch(node->status) {
+		case NODE_WFC:
+			printf("Waiting for call");
+			break;
+		case NODE_OFFLINE:
+			printf("Offline");
+			break;
+		case NODE_NETTING:
+			printf("Networking");
+			break;
+		case NODE_LOGON:
+			printf("At logon prompt");
+			break;
+		case NODE_EVENT_WAITING:
+			printf("Waiting for all nodes to become inactive");
+			break;
+		case NODE_EVENT_LIMBO:
+			printf("Waiting for node %d to finish external event",node->aux);
+			break;
+		case NODE_EVENT_RUNNING:
+			printf("Running external event");
+			break;
+		case NODE_NEWUSER:
+			printf("New user");
+			printf(" applying for access ");
+			if(!node->connection)
+				printf("locally");
+			else if(node->connection==0xffff)
+				printf("via telnet");
+			else
+				printf("at %ubps",node->connection);
+			break;
+		case NODE_QUIET:
+		case NODE_INUSE:
+			printf("%s ",username(cfg, node->useron, tmp));
+			switch(node->action) {
+				case NODE_MAIN:
+					printf("at main menu");
+					break;
+				case NODE_RMSG:
+					printf("reading messages");
+					break;
+				case NODE_RMAL:
+					printf("reading mail");
+					break;
+				case NODE_RSML:
+					printf("reading sent mail");
+					break;
+				case NODE_RTXT:
+					printf("reading text files");
+					break;
+				case NODE_PMSG:
+					printf("posting message");
+					break;
+				case NODE_SMAL:
+					printf("sending mail");
+					break;
+				case NODE_AMSG:
+					printf("posting auto-message");
+					break;
+				case NODE_XTRN:
+					if(!node->aux)
+						printf("at external program menu");
+					else
+						printf("running external program #%d",node->aux);
+					break;
+				case NODE_DFLT:
+					printf("changing defaults");
+					break;
+				case NODE_XFER:
+					printf("at transfer menu");
+					break;
+				case NODE_RFSD:
+					printf("retrieving from device #%d",node->aux);
+					break;
+				case NODE_DLNG:
+					printf("downloading");
+					break;
+				case NODE_ULNG:
+					printf("uploading");
+					break;
+				case NODE_BXFR:
+					printf("transferring bidirectional");
+					break;
+				case NODE_LFIL:
+					printf("listing files");
+					break;
+				case NODE_LOGN:
+					printf("logging on");
+					break;
+				case NODE_LCHT:
+					printf("in local chat with sysop");
+					break;
+				case NODE_MCHT:
+					if(node->aux) {
+						printf("in multinode chat channel %d",node->aux&0xff);
+						if(node->aux&0x1f00) { /* password */
+							putchar('*');
+							printf(" %s",unpackchatpass(tmp,node)); } }
+					else
+						printf("in multinode global chat channel");
+					break;
+				case NODE_PAGE:
+					printf("paging node %u for private chat",node->aux);
+					break;
+				case NODE_PCHT:
+					printf("in private chat with node %u",node->aux);
+					break;
+				case NODE_GCHT:
+					printf("chatting with The Guru");
+					break;
+				case NODE_CHAT:
+					printf("in chat section");
+					break;
+				case NODE_TQWK:
+					printf("transferring QWK packet");
+					break;
+				case NODE_SYSP:
+					printf("performing sysop activities");
+					break;
+				default:
+					printf(itoa(node->action,tmp,10));
+					break;  }
+			if(!node->connection)
+				printf(" locally");
+			else if(node->connection==0xffff)
+				printf(" via telnet");
+			else
+				printf(" at %ubps",node->connection);
+			if(node->action==NODE_DLNG) {
+				if((node->aux/60)>=12) {
+					if(node->aux/60==12)
+						hour=12;
+					else
+						hour=(node->aux/60)-12;
+					strcpy(mer,"pm"); }
+				else {
+					if((node->aux/60)==0)    /* 12 midnite */
+						hour=12;
+					else hour=node->aux/60;
+					strcpy(mer,"am"); }
+				printf(" ETA %02d:%02d %s"
+					,hour,node->aux-((node->aux/60)*60),mer); }
+			break; }
+	if(node->misc&(NODE_LOCK|NODE_POFF|NODE_AOFF|NODE_MSGW|NODE_NMSG)) {
+		printf(" (");
+		if(node->misc&NODE_AOFF)
+			putchar('A');
+		if(node->misc&NODE_LOCK)
+			putchar('L');
+		if(node->misc&(NODE_MSGW|NODE_NMSG))
+			putchar('M');
+		if(node->misc&NODE_POFF)
+			putchar('P');
+		putchar(')'); }
+	if(((node->misc
+		&(NODE_ANON|NODE_UDAT|NODE_INTR|NODE_RRUN|NODE_EVENT|NODE_DOWN))
+		|| node->status==NODE_QUIET)) {
+		printf(" [");
+		if(node->misc&NODE_ANON)
+			putchar('A');
+		if(node->misc&NODE_INTR)
+			putchar('I');
+		if(node->misc&NODE_RRUN)
+			putchar('R');
+		if(node->misc&NODE_UDAT)
+			putchar('U');
+		if(node->status==NODE_QUIET)
+			putchar('Q');
+		if(node->misc&NODE_EVENT)
+			putchar('E');
+		if(node->misc&NODE_DOWN)
+			putchar('D');
+		if(node->misc&NODE_LCHAT)
+			putchar('C');
+		putchar(']'); }
+	if(node->errors)
+		printf(" %d error%c",node->errors, node->errors>1 ? 's' : '\0' );
+	printf("\n");
+}
+
+/****************************************************************************/
 uint DLLCALL userdatdupe(scfg_t* cfg, uint usernumber, uint offset, uint datlen, char *dat
     ,BOOL del)
 {
