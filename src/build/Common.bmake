@@ -177,6 +177,7 @@ UIFC_SRC	=	$(SRC_ROOT)$(DIRSEP)uifc
 
 # Pull in lib-specific flags
 !include     $(CIOLIB_SRC)$(DIRSEP)Common.make
+!include     $(UIFC_SRC)$(DIRSEP)Common.make
 
 .path.c		=	.;$(XPDEV_SRC);$(SMBLIB_SRC);$(CIOLIB_SRC);$(UIFC_SRC)
 .path.cpp	=	.;$(XPDEV_SRC);$(SMBLIB_SRC);$(CIOLIB_SRC);$(UIFC_SRC)
