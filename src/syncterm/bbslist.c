@@ -5,6 +5,7 @@
 #include <ini_file.h>
 #include <uifc.h>
 
+#include "syncterm.h"
 #include "bbslist.h"
 #include "uifcinit.h"
 #include "conn.h"
@@ -259,7 +260,7 @@ void del_bbs(char *listpath, struct bbslist *bbs)
  */
 struct bbslist *show_bbslist(int mode, char *path)
 {
-	char	*home;
+	char	*home=NULL;
 	char	listpath[MAX_PATH+1];
 	struct	bbslist	*list[MAX_OPTS+1];
 	int		i,j;
@@ -274,9 +275,11 @@ struct bbslist *show_bbslist(int mode, char *path)
 		return(NULL);
 
 	/* User BBS list */
-	home=getenv("HOME");
-	if(home==NULL)
-		home=getenv("USERPROFILE");
+	if(inpath==NULL) {
+		home=getenv("HOME");
+		if(home==NULL)
+			home=getenv("USERPROFILE");
+	}
 	if(home==NULL)
 		strcpy(listpath,path);
 	else
