@@ -79,7 +79,7 @@ $(EXEODIR):
 
 
 # SBBS Link Rule
-$(SBBS) $(SBBSLIB): $(OBJS) $(LIBODIR)/ver.o
+$(SBBS): $(OBJS) $(LIBODIR)/ver.o
 	$(LD) $(LFLAGS) -o $(SBBS) $^ $(LIBS) --output-lib $(SBBSLIB)
 
 # FTP Server Link Rule
