@@ -241,20 +241,20 @@ void gettextinfo(struct text_info *info)
 		initciowrap(3);
 	else {
 		cio_api.gettextinfo(&cio_textinfo);
-		if(info!=&cio_textinfo) {
-			info->winleft=cio_textinfo.winleft;        /* left window coordinate */
-			info->wintop=cio_textinfo.wintop;         /* top window coordinate */
-			info->winright=cio_textinfo.winright;       /* right window coordinate */
-			info->winbottom=cio_textinfo.winbottom;      /* bottom window coordinate */
-			info->attribute=cio_textinfo.attribute;      /* text attribute */
-			info->normattr=cio_textinfo.normattr;       /* normal attribute */
-			info->currmode=cio_textinfo.currmode;       /* current video mode:
-                                			 BW40, BW80, C40, C80, or C4350 */
-			info->screenheight=cio_textinfo.screenheight;   /* text screen's height */
-			info->screenwidth=cio_textinfo.screenwidth;    /* text screen's width */
-			info->curx=cio_textinfo.curx;           /* x-coordinate in current window */
-			info->cury=cio_textinfo.cury;           /* y-coordinate in current window */
-		}
+	}
+	if(info!=&cio_textinfo) {
+		info->winleft=cio_textinfo.winleft;        /* left window coordinate */
+		info->wintop=cio_textinfo.wintop;         /* top window coordinate */
+		info->winright=cio_textinfo.winright;       /* right window coordinate */
+		info->winbottom=cio_textinfo.winbottom;      /* bottom window coordinate */
+		info->attribute=cio_textinfo.attribute;      /* text attribute */
+		info->normattr=cio_textinfo.normattr;       /* normal attribute */
+		info->currmode=cio_textinfo.currmode;       /* current video mode:
+                               			 BW40, BW80, C40, C80, or C4350 */
+		info->screenheight=cio_textinfo.screenheight;   /* text screen's height */
+		info->screenwidth=cio_textinfo.screenwidth;    /* text screen's width */
+		info->curx=cio_textinfo.curx;           /* x-coordinate in current window */
+		info->cury=cio_textinfo.cury;           /* y-coordinate in current window */
 	}
 }
 
