@@ -355,11 +355,11 @@ private:	// User declarations
 public:		// User declarations
     __fastcall TMainForm(TComponent* Owner);
     bool            Initialized;
-    bool			SysAutoStart;
-    bool            FtpAutoStart;
-    bool            WebAutoStart;
-    bool            MailAutoStart;
-    bool            ServicesAutoStart;
+    BOOL			SysAutoStart;
+    BOOL            FtpAutoStart;
+    BOOL            WebAutoStart;
+    BOOL            MailAutoStart;
+    BOOL            ServicesAutoStart;
     bool			MailLogFile;
     bool			FtpLogFile;
     AnsiString      LoginCommand;

@@ -1574,12 +1574,13 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
         }
         sbbs_read_ini(fp
             ,&global
-            ,(BOOL*)&SysAutoStart   		,&bbs_startup
-            ,(BOOL*)&FtpAutoStart 			,&ftp_startup
-            ,(BOOL*)&WebAutoStart 			,&web_startup
-            ,(BOOL*)&MailAutoStart 	    	,&mail_startup
-            ,(BOOL*)&ServicesAutoStart     	,&services_startup
+            ,&SysAutoStart   		,&bbs_startup
+            ,&FtpAutoStart 			,&ftp_startup
+            ,&WebAutoStart 			,&web_startup
+            ,&MailAutoStart 	    	,&mail_startup
+            ,&ServicesAutoStart     	,&services_startup
             );
+       	StatusBar->Panels->Items[4]->Text="Imported " + AnsiString(ini_file);
         fclose(fp);
 
     } else {
