@@ -52,6 +52,7 @@ int SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, long dupechk_hash
 	size_t		l,length;
 	size_t		taillen=0;
 	size_t		bodylen=0;
+	size_t		chklen=0;
 	long		offset;
 	ulong		crc=0xffffffff;
 	hash_t		found;
@@ -81,7 +82,6 @@ int SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, long dupechk_hash
 			break;
 
 		msg->hdr.number=smb->status.last_msg+1;
-
 		hashes=smb_msghashes(msg,body);
 
 		if(smb_findhash(smb, hashes, &found, dupechk_hashes, /* mark? */FALSE)==SMB_SUCCESS) {
@@ -100,12 +100,13 @@ int SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, long dupechk_hash
 		if(body!=NULL && (bodylen=strlen(body))>0) {
 
 			/* Remove white-space from end of message text */
-			while(bodylen && body[bodylen-1]<=' ')
-				bodylen--;
+			chklen=bodylen;
+			while(chklen && body[chklen-1]<=' ')
+				chklen--;
 
 			/* Calculate CRC-32 of message text (before encoding, if any) */
-			if(smb->status.max_crcs && dupechk_hashes&SMB_HASH_SOURCE_BODY) {
-				for(l=0;l<bodylen;l++)
+			if(smb->status.max_crcs && dupechk_hashes&(1<<SMB_HASH_SOURCE_BODY)) {
+				for(l=0;l<chklen;l++)
 					crc=ucrc32(body[l],crc); 
 				crc=~crc;
 
@@ -292,7 +293,6 @@ int SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, long dupechk_hash
 
 		if(smb_addhashes(smb,hashes,/* skip_marked? */FALSE)==SMB_SUCCESS)
 			msg->flags|=MSG_FLAG_HASHED;
-
 		if(msg->to==NULL)	/* no recipient, don't add header (required for bulkmail) */
 			break;
 
