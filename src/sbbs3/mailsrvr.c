@@ -2006,98 +2006,6 @@ static void smtp_thread(void* arg)
 				}
 
 				/* E-mail */
-#if 0	/* old way */
-				sprintf(smb.file,"%smail", scfg.data_dir);
-				smb.retry_time=scfg.smb_retry_time;
-				smb.subnum=INVALID_SUB;
-				if((i=smb_open(&smb))!=0) {
-					lprintf("%04d !SMTP ERROR %d (%s) opening %s"
-						,socket, i, smb.last_error, smb.file);
-					sockprintf(socket, "452 Insufficient system storage");
-					continue;
-				}
-
-				if(smb_fgetlength(smb.shd_fp)<1) {	 /* Create it if it doesn't exist */
-					smb.status.max_crcs=scfg.mail_maxcrcs;
-					smb.status.max_age=scfg.mail_maxage;
-					smb.status.max_msgs=MAX_SYSMAIL;
-					smb.status.attr=SMB_EMAIL;
-					if((i=smb_create(&smb))!=0) {
-						smb_close(&smb);
-						lprintf("%04d !SMTP ERROR %d (%s) creating %s"
-							,socket, i, smb.last_error, smb.file);
-						sockprintf(socket, "452 Insufficient system storage");
-						continue;
-					} 
-				}
-
-				if((i=smb_locksmbhdr(&smb))!=0) {
-					smb_close(&smb);
-					lprintf("%04d !SMTP ERROR %d (%s) locking %s"
-						,socket, i, smb.last_error, smb.file);
-					sockprintf(socket, "452 Insufficient system storage");
-					continue; 
-				}
-
-				length+=sizeof(xlat);	 /* +2 for translation string */
-
-				if((i=smb_open_da(&smb))!=0) {
-					smb_unlocksmbhdr(&smb);
-					smb_close(&smb);
-					lprintf("%04d !SMTP ERROR %d (%s) opening %s.sda"
-						,socket, i, smb.last_error, smb.file);
-					sockprintf(socket, "452 Insufficient system storage");
-					continue; 
-				}
-
-				if(scfg.sys_misc&SM_FASTMAIL)
-					offset=smb_fallocdat(&smb,length,1);
-				else
-					offset=smb_allocdat(&smb,length,1);
-
-				smb_fseek(smb.sdt_fp,offset,SEEK_SET);
-				xlat=XLAT_NONE;
-				smb_fwrite(&xlat,2,smb.sdt_fp);
-				x=SDT_BLOCK_LEN-2;				/* Don't read/write more than 255 */
-				while(!feof(msgtxt)) {
-					memset(buf,0,x);
-					j=fread(buf,1,x,msgtxt);
-					if(j<1)
-						break;
-					if(j>1 && (j!=x || feof(msgtxt)) && buf[j-1]=='\n' && buf[j-2]=='\r')
-						buf[j-1]=buf[j-2]=0;
-					if(scfg.mail_maxcrcs) {
-						for(i=0;i<j;i++)
-							crc=ucrc32(buf[i],crc); 
-					}
-					smb_fwrite(buf,j,smb.sdt_fp);
-					x=SDT_BLOCK_LEN; 
-				}
-				smb_fflush(smb.sdt_fp);
-				crc=~crc;
-
-				if(scfg.mail_maxcrcs) {
-					i=smb_addcrc(&smb,crc);
-					if(i) {
-						smb_freemsgdat(&smb,offset,length,1);
-						smb_unlocksmbhdr(&smb);
-						smb_close_da(&smb);
-						smb_close(&smb);
-						lprintf("%04d !SMTP ERROR %d ADDING MESSAGE: %s"
-							, socket, i, smb.last_error);
-						sockprintf(socket, "554 Duplicate Message");
-						continue; 
-					} 
-				}
-
-				msg.hdr.offset=offset;
-
-				smb_dfield(&msg,TEXT_BODY,length);
-
-				smb_unlocksmbhdr(&smb);
-
-#else	/* new way */
-
 				smb.subnum=INVALID_SUB;
 				i=savemsg(&scfg, &smb, &msg, msgbuf);
 				free(msgbuf);
@@ -2108,7 +2016,6 @@ static void smtp_thread(void* arg)
 						,i,smb.last_error);
 					continue;
 				}
-#endif
 
 				rcpt_count=0;
 				while(!feof(rcptlst) && rcpt_count<startup->max_recipients) {
@@ -2217,29 +2124,6 @@ static void smtp_thread(void* arg)
 			if(msgtxt!=NULL) 
 				fprintf(msgtxt, "%s\r\n", buf);
 			hdr_lines++;
-
-#if 0 /* moved */
-			if(!strnicmp(buf, "SUBJECT:",8)) {
-				p=buf+8;
-				while(*p && *p<=' ') p++;
-				if(dnsbl_result.s_addr && startup->dnsbl_tag[0]
-					&& !(startup->options&MAIL_OPT_DNSBL_IGNORE)) {
-					sprintf(str,"%.*s: %.*s"
-						,(int)sizeof(str)/2, startup->dnsbl_tag
-						,(int)sizeof(str)/2, p);
-					p=str;
-					lprintf("%04d !SMTP TAGGED MAIL SUBJECT from blacklisted server with: %s"
-						,socket, startup->dnsbl_tag);
-				}
-				smb_hfield(&msg, SUBJECT, (ushort)strlen(p), p);
-				msg.idx.subj=subject_crc(p);
-				continue;
-			}
-			if(!strnicmp(buf, "FROM:", 5)
-				&& !chk_email_addr(socket,buf+5,host_name,host_ip,rcpt_addr,reverse_path))
-				break;
-			parse_header_field(buf,&msg);
-#endif
 			continue;
 		}
 		lprintf("%04d SMTP RX: %s", socket, buf);
@@ -2507,15 +2391,6 @@ static void smtp_thread(void* arg)
 				break;
 			}
 			rcpt_count=0;
-
-#if 0 /* moved */
-			/* Initialize message header */
-			smb_freemsgmem(&msg);
-			memset(&msg,0,sizeof(smbmsg_t));		
-			msg.hdr.version=smb_ver();
-			msg.hdr.when_imported.time=time(NULL);
-			msg.hdr.when_imported.zone=scfg.sys_timezone;
-#endif
 			sockprintf(socket,ok_rsp);
 			badcmds=0;
 			continue;
