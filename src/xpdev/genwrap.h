@@ -182,6 +182,11 @@ extern "C" {
 	DLLEXPORT char*	        DLLCALL		asctime_r(const struct tm *tm, char *buf);
 #endif
 
+#if defined(__solaris__)
+	#define CTIME_R(x,y)	ctime_r(x,y,sizeof y)
+#else
+	#define CTIME_R(x,y)	ctime_r(x,y)
+#endif
 
 DLLEXPORT int		DLLCALL	xp_random(int);
 DLLEXPORT char*		DLLCALL os_version(char *str);
