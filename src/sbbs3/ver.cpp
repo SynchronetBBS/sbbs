@@ -37,7 +37,7 @@
 
 #include "sbbs.h"
 
-extern "C" const char* beta_version = " "; /* Space if non-beta, " beta" otherwise */
+extern "C" const char* beta_version = " beta"; /* Space if non-beta, " beta" otherwise */
 
 #if defined(_WINSOCKAPI_)
 	extern WSADATA WSAData;
