@@ -74,11 +74,12 @@
 
 #ifdef _WIN32
 #include <windows.h>		/* OF_SHARE_ */
-#endif
 
 #ifndef SH_DENYNO
 #define SH_DENYNO		   OF_SHARE_DENY_NONE
 #define SH_DENYRW		   OF_SHARE_EXCLUSIVE
+#endif
+
 #endif
 
 #if defined _MSC_VER || defined __MINGW32__
