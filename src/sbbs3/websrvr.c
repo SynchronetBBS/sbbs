@@ -833,14 +833,16 @@ static BOOL check_ars(http_session_t * session)
 	char	*password;
 	uchar	*ar;
 	BOOL	authorized;
+	char	auth_req[MAX_REQUEST_LINE];
 
 	if(session->req.auth[0]==0) {
 		if(startup->options&WEB_OPT_DEBUG_RX)
 			lprintf(LOG_NOTICE,"%04d !No authentication information",session->socket);
 		return(FALSE);
 	}
+	SAFECOPY(auth_req,session->req.auth);
 
-	username=strtok(session->req.auth,":");
+	username=strtok(auth_req,":");
 	if(username==NULL)
 		username="";
 	password=strtok(NULL,":");
