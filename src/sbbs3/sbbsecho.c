@@ -413,6 +413,29 @@ int write_flofile(char *attachment, faddr_t dest)
 	return(0);
 }
 
+/* Writes text buffer to file, expanding sole LFs to CRLFs */
+size_t fwrite_crlf(char* buf, size_t len, FILE* fp)
+{
+	char	ch,last_ch=0;
+	size_t	i;
+	size_t	wr=0;	/* total chars written (may be > len) */
+
+	for(i=0;i<len;i++) {
+		ch=*buf++;
+		if(ch=='\n' && last_ch!='\r') {
+			if(fputc('\r',fp)==EOF)
+				return(wr);
+			wr++;
+		}
+		if(fputc(ch,fp)==EOF)
+			return(wr);
+		wr++;
+		last_ch=ch;
+	}
+
+	return(wr);
+}
+
 /******************************************************************************
  This function will create a netmail message (.MSG format).
  If file is non-zero, will set file attachment bit (for bundles).
@@ -508,7 +531,7 @@ int create_netmail(char *to,char *subject,char *body,faddr_t dest,int file)
 			sprintf(str,"\1FMPT %hu\r",hdr.origpoint);
 			fwrite(str,strlen(str),1,fstream); }
 		if(!file || (!(attr&ATTR_DIRECT) && file))
-			fwrite(body,strlen(body)+1,1,fstream);	/* Write additional NULL */
+			fwrite_crlf(body,strlen(body)+1,fstream);	/* Write additional NULL */
 		else
 			fwrite("\0",1,1,fstream);               /* Write NULL */
 		fclose(fstream);
