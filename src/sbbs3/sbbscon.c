@@ -96,7 +96,7 @@ uid_t				old_uid;
 gid_t				new_gid;
 gid_t				old_gid;
 BOOL				is_daemon=FALSE;
-BOOL				use_facilities=FALSE;
+BOOL				std_facilities=FALSE;
 #endif
 
 static const char* prompt = 
@@ -149,7 +149,7 @@ static const char* usage  = "usage: %s [[setting] [...]]\n"
 							"\td[x]       run as daemon, log using syslog\n"
 							"\t           x is the optional LOCALx facility to use\n"
 							"\t           if none is specified, uses USER\n"
-							"\t           if 'f' is specified, uses standard facilities\n"
+							"\t           if 'S' is specified, uses standard facilities\n"
 #endif
 							"\tgi         get user identity (using IDENT protocol)\n"
 							"\tnh         disable hostname lookups\n"
@@ -171,7 +171,7 @@ static int lputs(char *str)
 
 	if (is_daemon)  {
 		if(str!=NULL) {
-			if (use_facilities)
+			if (std_facilities)
 				syslog(LOG_INFO|LOG_AUTH,"%s",str);
 			else
 				syslog(LOG_INFO,"%s",str);
@@ -367,7 +367,7 @@ static int bbs_lputs(char *str)
 	if (is_daemon)  {
 		if(str==NULL)
 			return(0);
-		if (use_facilities)
+		if (std_facilities)
 			syslog(LOG_INFO|LOG_AUTH,"%s",str);
 		else
 			syslog(LOG_INFO,"     %s",str);
@@ -421,7 +421,7 @@ static int ftp_lputs(char *str)
 	if (is_daemon)  {
 		if(str==NULL)
 			return(0);
-		if (use_facilities)
+		if (std_facilities)
 			syslog(LOG_INFO|LOG_FTP,"%s",str);
 		else
 			syslog(LOG_INFO,"ftp  %s",str);
@@ -475,7 +475,7 @@ static int mail_lputs(char *str)
 	if (is_daemon)  {
 		if(str==NULL)
 			return(0);
-		if (use_facilities)
+		if (std_facilities)
 			syslog(LOG_INFO|LOG_MAIL,"%s",str);
 		else
 			syslog(LOG_INFO,"mail %s",str);
@@ -529,7 +529,7 @@ static int services_lputs(char *str)
 	if (is_daemon)  {
 		if(str==NULL)
 			return(0);
-		if (use_facilities)
+		if (std_facilities)
 			syslog(LOG_INFO|LOG_DAEMON,"%s",str);
 		else
 			syslog(LOG_INFO,"srvc %s",str);
@@ -583,7 +583,7 @@ static int event_lputs(char *str)
 	if (is_daemon)  {
 		if(str==NULL)
 			return(0);
-		if (use_facilities)
+		if (std_facilities)
 			syslog(LOG_INFO|LOG_CRON,"%s",str);
 		else
 			syslog(LOG_INFO,"evnt %s",str);
@@ -795,7 +795,7 @@ int main(int argc, char** argv)
 	SAFECOPY(new_uid_name,iniReadString(fp,"UNIX","User",""));
 	SAFECOPY(new_gid_name,iniReadString(fp,"UNIX","Group",""));
 	is_daemon=iniReadBool(fp,"UNIX","Daemonize",FALSE);
-	SAFECOPY(daemon_type,iniReadString(fp,"UNIX","Facility","U"));
+	SAFECOPY(daemon_type,iniReadString(fp,"UNIX","LogFacility","U"));
 #endif			
 	/* close .ini file here */
 	if(fp!=NULL)
@@ -1105,10 +1105,11 @@ int main(int argc, char** argv)
 			case '7':
 				openlog(SBBS_LOG_NAME,LOG_CONS,LOG_LOCAL7);
 				break;
-			case 'F':
-				/* Use appropriate facilities */
+			case 'F':	/* this is legacy */
+			case 'S':
+				/* Use standard facilities */
 				openlog(SBBS_LOG_NAME,LOG_CONS,LOG_USER);
-				use_facilities = TRUE;
+				std_facilities = TRUE;
 				break;
 			default:
 				openlog(SBBS_LOG_NAME,LOG_CONS,LOG_USER);
