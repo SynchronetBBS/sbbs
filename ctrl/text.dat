@@ -471,7 +471,7 @@
 "\r\nSort alphabetically"                               394 SortAlphaQ
 "\r\nmhChecking Slots..."                             395 CheckingSlots
 "nh%-32.32snm%-30.30sh%-8.8s nm%-8.8s\r\n"       396 UserListFmt
-"\r\1h\1w%d\b total users.        \r\n"                 397 NTotalUsers
+"\r\1h\1w%d\1b total users.        \r\n"                397 NTotalUsers
 "\1w%d \1busers with access to current sub-board.\r\n"  398 NUsersOnCurSub
 "\1w%d \1busers with access to current directory.\r\n"  399 NUsersOnCurDir
 "\r\n-cCurrent New-Scan date/time: h"                400 NScanDate
