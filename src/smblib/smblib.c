@@ -2238,7 +2238,7 @@ ushort SMBCALL smb_hfieldtypelookup(const char* str)
 	ushort type;
 
 	if(isdigit(*str))
-		return(strtol(str,NULL,0));
+		return((ushort)strtol(str,NULL,0));
 
 	for(type=0;type<=UNUSED;type++)
 		if(stricmp(str,smb_hfieldtype(type))==0)
