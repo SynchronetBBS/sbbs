@@ -43,7 +43,13 @@
 /****************************************************************************/
 float ltomsbin(long val)
 {
-	converter t;
+	union {
+		uchar	uc[10];
+		ushort	ui[5];
+		ulong	ul[2];
+		float	f[2];
+		double	d[1]; 
+	} t;
 	int   sign, exp;	/* sign and exponent */
 
 	t.f[0]=(float)val;
@@ -230,7 +236,7 @@ void sbbs_t::update_qwkroute(char *via)
 						errormsg(WHERE,ERR_ALLOC,str,9*(i+1));
 						break; }
 					if((qwk_path=(char **)REALLOC(qwk_path,sizeof(char *)*(i+1)))==NULL) {
-						errormsg(WHERE,ERR_ALLOC,str,128*(i+1));
+						errormsg(WHERE,ERR_ALLOC,str,sizeof(char*)*(i+1));
 						break; }
 					if((qwk_time=(time_t *)REALLOC(qwk_time,sizeof(time_t)*(i+1)))==NULL) {
 						errormsg(WHERE,ERR_ALLOC,str,sizeof(time_t)*(i+1));
@@ -238,8 +244,8 @@ void sbbs_t::update_qwkroute(char *via)
 					if((qwk_node[i]=(char *)MALLOC(9))==NULL) {
 						errormsg(WHERE,ERR_ALLOC,str,9);
 						break; }
-					if((qwk_path[i]=(char *)MALLOC(128))==NULL) {
-						errormsg(WHERE,ERR_ALLOC,str,128);
+					if((qwk_path[i]=(char *)MALLOC(MAX_PATH+1))==NULL) {
+						errormsg(WHERE,ERR_ALLOC,str,MAX_PATH+1);
 						break; }
 					total_nodes++; }
 				strcpy(qwk_node[i],node);
@@ -268,7 +274,7 @@ void sbbs_t::update_qwkroute(char *via)
 				errormsg(WHERE,ERR_ALLOC,str,9*(total_nodes+1));
 				break; }
 			if((qwk_path=(char **)REALLOC(qwk_path,sizeof(char *)*(total_nodes+1)))==NULL) {
-				errormsg(WHERE,ERR_ALLOC,str,128*(total_nodes+1));
+				errormsg(WHERE,ERR_ALLOC,str,sizeof(char *)*(total_nodes+1));
 				break; }
 			if((qwk_time=(time_t *)REALLOC(qwk_time,sizeof(time_t)*(total_nodes+1)))
 				==NULL) {
@@ -277,8 +283,8 @@ void sbbs_t::update_qwkroute(char *via)
 			if((qwk_node[total_nodes]=(char *)MALLOC(9))==NULL) {
 				errormsg(WHERE,ERR_ALLOC,str,9);
 				break; }
-			if((qwk_path[total_nodes]=(char *)MALLOC(128))==NULL) {
-				errormsg(WHERE,ERR_ALLOC,str,128);
+			if((qwk_path[total_nodes]=(char *)MALLOC(MAX_PATH+1))==NULL) {
+				errormsg(WHERE,ERR_ALLOC,str,MAX_PATH+1);
 				break; }
 			total_nodes++; }
 		sprintf(qwk_node[i],"%.8s",node);
@@ -292,7 +298,7 @@ void sbbs_t::update_qwkroute(char *via)
 /****************************************************************************/
 void sbbs_t::qwk_success(ulong msgcnt, char bi, char prepack)
 {
-	char	str[128];
+	char	str[MAX_PATH+1];
 	int 	i;
 	ulong	l,msgs,deleted=0;
 	mail_t	*mail;
