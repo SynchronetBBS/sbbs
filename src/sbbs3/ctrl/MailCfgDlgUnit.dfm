@@ -1,6 +1,6 @@
 object MailCfgDlg: TMailCfgDlg
-  Left = 403
-  Top = 140
+  Left = 501
+  Top = 303
   BorderStyle = bsDialog
   Caption = 'Mail Server Configuration'
   ClientHeight = 303
@@ -50,7 +50,7 @@ object MailCfgDlg: TMailCfgDlg
     Top = 4
     Width = 342
     Height = 245
-    ActivePage = SoundTabSheet
+    ActivePage = SMTPTabSheet
     TabOrder = 3
     object GeneralTabSheet: TTabSheet
       Caption = 'General'
