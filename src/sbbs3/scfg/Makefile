@@ -25,8 +25,13 @@ DELETE	=	echo y | del
 
 .path.c = .;..;$(UIFC);$(XPDEV)
 
+# Enable auto-dependency checking
+.autodepend
+.cacheautodepend	
+
 # Optional compile flags (disable banner, warnings and such)
-CFLAGS	=	$(CFLAGS) -q -d -H -X- -w-csu -w-pch -w-ccc -w-rch -w-par -w-pro
+CFLAGS	=	$(CFLAGS) -q -d -H -X- -w-csu -w-pch -w-ccc -w-rch -w-par -w-pro 
+#-w-aus
 
 # Debug or release build?
 !ifdef DEBUG
@@ -62,5 +67,3 @@ $(SCFGHELP): $(OBJS) makehelp.exe
 $(SCFG): $(OBJS) 
 	@echo Linking $@
 	@$(CC) $(CFLAGS) -e$@ $**
-
-!include depends.mk	# defines dependencies
