@@ -299,7 +299,7 @@ char *ciolib_cgets(char *str)
 				break;
 			case '\b':
 				if(len==0) {
-					putch(7);
+					ciolib_putch(7);
 					break;
 				}
 				ciolib_putch('\b');
@@ -344,7 +344,7 @@ char *ciolib_getpass(const char *prompt)
 
 	if(!initialized)
 		initciolib(CIOLIB_AUTO_MODE);
-	cputs(prompt);
+	ciolib_cputs(prompt);
 	while((ch=getch())!='\n') {
 		switch(ch) {
 			case 0:	/* Skip extended keys */
@@ -354,14 +354,14 @@ char *ciolib_getpass(const char *prompt)
 				break;
 			case '\b':
 				if(len==0) {
-					putch(7);
+					ciolib_putch(7);
 					break;
 				}
 				len--;
 				break;
 			default:
 				if(len==8)
-					putch(7);
+					ciolib_putch(7);
 				else
 					pass[len++]=ch;
 				break;
