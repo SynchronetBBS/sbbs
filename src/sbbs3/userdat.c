@@ -195,6 +195,7 @@ int DLLCALL getuserdat(scfg_t* cfg, user_t *user)
 	user->ns_time=ahtoul(str);
 	if(user->ns_time<0x20000000L)
 		user->ns_time=user->laston;  /* Fix for v2.00->v2.10 */
+	getrec(userdat,U_LOGONTIME,8,str); user->logontime=ahtoul(str);
 
 	getrec(userdat,U_LOGONS,5,str); user->logons=atoi(str);
 	getrec(userdat,U_LTODAY,5,str); user->ltoday=atoi(str);
@@ -235,8 +236,9 @@ int DLLCALL getuserdat(scfg_t* cfg, user_t *user)
 
 	getrec(userdat,U_LEECH,2,str);
 	user->leech=(uchar)ahtoul(str);
-	getrec(userdat,U_CURSUB,8,user->cursub);	/* was useron.cursub (01/19/00) */
-	getrec(userdat,U_CURDIR,8,user->curdir);	/* was useron.curdir (01/19/00) */
+	getrec(userdat,U_CURSUB,8,user->cursub);
+	getrec(userdat,U_CURDIR,8,user->curdir);
+	getrec(userdat,U_CURXTRN,8,user->curxtrn);
 
 	getrec(userdat,U_FREECDT,10,str);
 	user->freecdt=atol(str);
@@ -379,9 +381,8 @@ int DLLCALL putuserdat(scfg_t* cfg, user_t* user)
 
 	putrec(userdat,U_CURSUB,8,user->cursub);
 	putrec(userdat,U_CURDIR,8,user->curdir);
-
-	// putrec(userdat,U_CMDSET,2,ultoa(user->cmdset,str,16)); /* Unused */
-	putrec(userdat,U_CMDSET+2,2,crlf);
+	putrec(userdat,U_CURXTRN,8,user->curxtrn);
+	putrec(userdat,U_CURXTRN+8,2,crlf);
 
 	putrec(userdat,U_XFER_CMD+LEN_XFER_CMD,2,crlf);
 
@@ -403,6 +404,7 @@ int DLLCALL putuserdat(scfg_t* cfg, user_t* user)
 	putrec(userdat,U_TMPEXT,3,user->tmpext);
 	putrec(userdat,U_CHAT,8,ultoa(user->chat,str,16));
 	putrec(userdat,U_NS_TIME,8,ultoa(user->ns_time,str,16));
+	putrec(userdat,U_LOGONTIME,8,ultoa(user->logontime,str,16));
 
 	putrec(userdat,U_UNUSED,29,crlf);
 	putrec(userdat,U_UNUSED+29,2,crlf);

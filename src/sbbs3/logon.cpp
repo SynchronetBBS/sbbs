@@ -194,6 +194,7 @@ bool sbbs_t::logon()
 	logon_ml=useron.level;
 	logontime=time(NULL);
 	starttime=logontime;
+	useron.logontime=logontime;
 	last_ns_time=ns_time=useron.ns_time;
 	// ns_time-=(useron.tlast*60); /* file newscan time == last logon time */
 	delfiles(cfg.temp_dir,ALLFILES);

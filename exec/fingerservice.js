@@ -80,11 +80,11 @@ while(request.charAt(0)==' ')	// skip prepended spaces
 
 if(request=="") {	// no specific user requested, give list of active users
 	log("client requested active user list");
-	write(format("%-25.25s %-40.40s %7s Node\r\n"
+	write(format("%-25.25s %-31.31s   Time   %7s Node\r\n"
 		,"User","Action",include_age_gender ? "Age Sex":""));
 	var dashes="----------------------------------------";
-	write(format("%-25.25s %-40.40s %3.3s %3.3s %4.4s\r\n"
-		,dashes,dashes
+	write(format("%-25.25s %-31.31s %8.8s %3.3s %3.3s %4.4s\r\n"
+		,dashes,dashes,dashes
 		,include_age_gender ? dashes : ""
 		,include_age_gender ? dashes : ""
 		,dashes));
@@ -93,11 +93,18 @@ if(request=="") {	// no specific user requested, give list of active users
 		if(system.node_list[n].status!=NODE_INUSE)
 			continue;
 		user.number=system.node_list[n].useron;
-		var action=format(NodeAction[system.node_list[n].action]
-			,system.node_list[n].aux);
-		write(format("%-25.25s %-40.40s %3s %3s %4d\r\n"
+		if(system.node_list[n].action==NODE_XTRN && system.node_list[n].aux)
+			action=format("running %s",user.curxtrn);
+		else
+			action=format(NodeAction[system.node_list[n].action]
+							,system.node_list[n].aux);
+		t=time()-user.logontime;
+		write(format("%-25.25s %-31.31s%3u:%02u:%02u %3s %3s %4d\r\n"
 			,user.alias
 			,action
+			,Math.floor(t/(60*60))
+			,Math.floor(t/60)%60
+			,t%60
 			,include_age_gender ? user.age.toString() : ""
 			,include_age_gender ? user.gender : ""
 			,n+1
@@ -154,7 +161,12 @@ if(request.charAt(0)=='?') {	// Handle "special" requests
 				if(system.node_list[n].status==NODE_INUSE) {
 					user.number=system.node_list[n].useron;
 					write(format("%s (%u %s) ", user.alias, user.age, user.gender));
-					write(format(NodeAction[system.node_list[n].action],system.node_list[n].aux));
+					if(system.node_list[n].action==NODE_XTRN && system.node_list[n].aux)
+						write(format("running %s",user.curxtrn));
+					else
+						write(format(NodeAction[system.node_list[n].action],system.node_list[n].aux));
+					t = time()-user.logontime;
+					write(format(" for %u minutes",Math.floor(t/60)));
 				} else
 					write(format(NodeStatus[system.node_list[n].status],system.node_list[n].aux));
 

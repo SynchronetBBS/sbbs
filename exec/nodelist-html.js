@@ -40,16 +40,8 @@ writeln(format("<title>%s BBS - Node List</title>",system.name));
 writeln(format("<meta http-equiv=refresh content=%d>",refresh_rate));
 writeln("</head>");
 
-writeln("<font face=Arial,Helvetica,sans-serif>");
 writeln("<body bgcolor=teal text=white link=yellow vlink=lime alink=white>");
-
-// Login Button
-writeln("<form>");
-writeln("<table align=right>");
-writeln("<td><input type=button value='Login' onClick='location=\"telnet://" 
-	+ system.inetaddr + "\";'>"); 
-writeln("</table>");
-writeln("</form>");
+writeln("<font face=Arial,Helvetica,sans-serif>");
 
 // Table
 writeln("<table border=0 width=100%>");
@@ -67,6 +59,7 @@ write(format("<th align=center width=20%>%sUser",font_color));
 write(format("<th align=left>%sAction/Status",font_color));
 write(format("<th align=center width=7%>%sAge",font_color));
 write(format("<th align=center width=10%>%sGender\r\n",font_color));
+write(format("<th align=center width=10%>%sTime\r\n",font_color));
 writeln("</thead>");
 
 writeln("<tbody>");
@@ -77,7 +70,7 @@ for(n=0;n<system.node_list.length;n++) {
 	if(system.node_list[n].status==NODE_INUSE) {
 		user.number=system.node_list[n].useron;
 		if(system.node_list[n].action==NODE_XTRN && system.node_list[n].aux)
-			action=format("running external program (door) #%d",system.node_list[n].aux);
+			action=format("running %s",user.curxtrn);
 		else
 			action=format(NodeAction[system.node_list[n].action]
 				,system.node_list[n].aux);
@@ -92,6 +85,13 @@ for(n=0;n<system.node_list.length;n++) {
 			,user.age
 			,user.gender
 			));
+		t=time()-user.logontime;
+		write(format(
+			"<td align=center>%u:%02u:%02u"
+			,Math.floor(t/(60*60))
+			,Math.floor(t/60)%60
+			,t%60
+			));
 	} else {
 		action=format(NodeStatus[system.node_list[n].status],system.node_list[n].aux);
 		write(format("<td><td>%s",action));
@@ -100,6 +100,14 @@ for(n=0;n<system.node_list.length;n++) {
 }
 writeln("</tbody>");
 writeln("</table>");
+
+// Login Button
+writeln("<form>");
+writeln("<table align=right>");
+writeln("<tr><td><input type=button value='Login' onClick='location=\"telnet://" 
+	+ system.inetaddr + "\";'>"); 
+writeln("</table>");
+writeln("</form>");
 
 writeln("<p><font color=silver><font size=-2>");
 writeln(format("Auto-refresh in %d seconds",refresh_rate));

@@ -101,6 +101,7 @@ enum {
 	,USER_PROP_LEECH 	
 	,USER_PROP_CURSUB	
 	,USER_PROP_CURDIR	
+	,USER_PROP_CURXTRN
 	,USER_PROP_FREECDT	
 	,USER_PROP_XEDIT 	
 	,USER_PROP_SHELL 	
@@ -109,6 +110,7 @@ enum {
 	,USER_PROP_CHAT		
 	,USER_PROP_NS_TIME	
 	,USER_PROP_PROT		
+	,USER_PROP_LOGONTIME
 };
 
 static JSBool js_user_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
@@ -284,6 +286,10 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 		case USER_PROP_CURDIR:
 			s=user.curdir;
 			break;
+		case USER_PROP_CURXTRN:
+			s=user.curxtrn;
+			break;
+
 		case USER_PROP_FREECDT:
 			val=user.freecdt;
 			break;
@@ -306,12 +312,16 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			val=user.chat;
 			break;
 		case USER_PROP_NS_TIME:
-			val=user.laston;
+			val=user.ns_time;
 			break;
 		case USER_PROP_PROT:
 			sprintf(tmp,"%c",user.prot);
 			s=tmp;
 			break;
+		case USER_PROP_LOGONTIME:
+			val=user.logontime;
+			break;
+
 		default:	
 			/* This must not set vp in order for child objects to work (stats and security) */
 			return(JS_TRUE);
@@ -406,6 +416,9 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			break;
 		case USER_PROP_CURDIR:	 
 			putuserrec(p->cfg,p->usernumber,U_CURDIR,8,strupr(str));
+			break;
+		case USER_PROP_CURXTRN:	 
+			putuserrec(p->cfg,p->usernumber,U_CURXTRN,8,strupr(str));
 			break;
 		case USER_PROP_XEDIT: 	 
 			putuserrec(p->cfg,p->usernumber,U_XEDIT,8,strupr(str));
@@ -520,6 +533,7 @@ static struct JSPropertySpec js_user_properties[] = {
 	{	"gender"			,USER_PROP_SEX		 	,USER_PROP_FLAGS,		NULL,NULL},
 	{	"cursub"			,USER_PROP_CURSUB	 	,USER_PROP_FLAGS,		NULL,NULL},
 	{	"curdir"			,USER_PROP_CURDIR	 	,USER_PROP_FLAGS,		NULL,NULL},
+	{	"curxtrn"			,USER_PROP_CURXTRN	 	,USER_PROP_FLAGS,		NULL,NULL},
 	{	"editor"			,USER_PROP_XEDIT 	 	,USER_PROP_FLAGS,		NULL,NULL},
 	{	"command_shell"		,USER_PROP_SHELL 	 	,USER_PROP_FLAGS,		NULL,NULL},
 	{	"settings"			,USER_PROP_MISC		 	,USER_PROP_FLAGS,		NULL,NULL},
