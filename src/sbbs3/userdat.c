@@ -2035,9 +2035,8 @@ int DLLCALL newuserdat(scfg_t* cfg, user_t* user)
 
 	for(i=0;i<2;i++) {
 		sprintf(str,"%sdsts.dab",i ? cfg->ctrl_dir : cfg->node_dir);
-		if((file=nopen(str,O_RDWR))==-1) {
-			return(errno); 
-		}
+		if((file=nopen(str,O_RDWR))==-1)
+			continue; 
 		memset(&stats,0,sizeof(stats));
 		lseek(file,4L,SEEK_SET);   /* Skip timestamp */
 		read(file,&stats,sizeof(stats));  
