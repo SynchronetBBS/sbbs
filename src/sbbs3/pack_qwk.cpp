@@ -46,7 +46,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 	char	str[MAX_PATH+1],ch,*p;
 	char 	tmp[MAX_PATH+1],tmp2[MAX_PATH+1];
 	char*	fname;
-	int 	file,mode;
+	int 	mode;
 	uint	i,j,k,conf;
 	long	l,size,msgndx,posts,ex;
 	ulong	mailmsgs=0;
@@ -104,9 +104,10 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 		/* Create CONTROL.DAT file */
 		/***************************/
 		sprintf(str,"%sCONTROL.DAT",cfg.temp_dir);
-		if((stream=fnopen(&file,str,O_WRONLY|O_CREAT|O_TRUNC))==NULL) {
-			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC);
-			return(false); }
+		if((stream=fopen(str,"wb"))==NULL) {
+			errormsg(WHERE,ERR_OPEN,str,0);
+			return(false); 
+		}
 
 		now=time(NULL);
 		if(localtime_r(&now,&tm)==NULL)
@@ -146,9 +147,10 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 		/* Create DOOR.ID File */
 		/***********************/
 		sprintf(str,"%sDOOR.ID",cfg.temp_dir);
-		if((stream=fnopen(&file,str,O_WRONLY|O_CREAT|O_TRUNC))==NULL) {
-			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC);
-			return(false); }
+		if((stream=fopen(str,"wb"))==NULL) {
+			errormsg(WHERE,ERR_OPEN,str,0);
+			return(false); 
+		}
 		p="CONTROLTYPE = ";
 		fprintf(stream,"DOOR = %.10s\r\nVERSION = %s%c\r\n"
 			"SYSTEM = %s\r\n"
@@ -184,7 +186,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 			/* Create NETFLAGS.DAT */
 			/***********************/
 			sprintf(str,"%sNETFLAGS.DAT",cfg.temp_dir);
-			if((stream=fopen(str,"w"))==NULL) {
+			if((stream=fopen(str,"wb"))==NULL) {
 				errormsg(WHERE,ERR_CREATE,str,0);
 				return(false); 
 			}
@@ -192,23 +194,24 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 			if(usrgrps)
 				for(i=0;i<(usrgrps*1000)+usrsubs[usrgrps-1];i++)
 					fputc(ch,stream);
-			fclose(stream); }
-		} /* !prepack */
+			fclose(stream); 
+		}
+	}
 
 	/****************************************************/
 	/* Create MESSAGES.DAT, write header and leave open */
 	/****************************************************/
 	sprintf(str,"%sMESSAGES.DAT",cfg.temp_dir);
-	if((qwk=fnopen(&file,str,O_CREAT|O_WRONLY|O_TRUNC))==NULL) {
-		errormsg(WHERE,ERR_OPEN,str,O_CREAT|O_WRONLY|O_TRUNC);
-		return(false); }
-	l=filelength(file);
+	if((qwk=fopen(str,"ab"))==NULL) {
+		errormsg(WHERE,ERR_OPEN,str,0);
+		return(false); 
+	}
+	l=filelength(fileno(qwk));
 	if(l<1) {
 		fprintf(qwk,"%-128.128s","Produced by " VERSION_NOTICE "  " COPYRIGHT_NOTICE);
 		msgndx=1; 
 	} else
 		msgndx=l/QWK_BLOCK_LEN;
-	fseek(qwk,0,SEEK_END);
 	sprintf(str,"%sNEWFILES.DAT",cfg.temp_dir);
 	remove(str);
 	if(!(useron.rest&FLAG('T')) && useron.qwk&QWK_FILES)
@@ -223,11 +226,12 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 
 	if(!(useron.qwk&QWK_NOINDEX)) {
 		sprintf(str,"%sPERSONAL.NDX",cfg.temp_dir);
-		if((personal=fnopen(&file,str,O_CREAT|O_WRONLY|O_APPEND))==NULL) {
+		if((personal=fopen(str,"ab"))==NULL) {
 			fclose(qwk);
-			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_APPEND);
-			return(false); }
-		fseek(personal,0L,SEEK_END); }
+			errormsg(WHERE,ERR_OPEN,str,0);
+			return(false); 
+		}
+	}
 	else
 		personal=NULL;
 
@@ -240,7 +244,8 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 			if(personal)
 				fclose(personal);
 			errormsg(WHERE,ERR_OPEN,smb.file,i,smb.last_error);
-			return(false); }
+			return(false); 
+		}
 
 		/***********************/
 		/* Pack E-mail, if any */
@@ -252,15 +257,16 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 			bputs(text[QWKPackingEmail]);
 			if(!(useron.qwk&QWK_NOINDEX)) {
 				sprintf(str,"%s000.NDX",cfg.temp_dir);
-				if((ndx=fnopen(&file,str,O_CREAT|O_WRONLY|O_APPEND))==NULL) {
+				if((ndx=fopen(str,"ab"))==NULL) {
 					fclose(qwk);
 					if(personal)
 						fclose(personal);
 					smb_close(&smb);
-					errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_APPEND);
+					errormsg(WHERE,ERR_OPEN,str,0);
 					FREE(mail);
-					return(false); }
-				fseek(ndx,0L,SEEK_END); }
+					return(false); 
+				}
+			}
 			else
 				ndx=NULL;
 
@@ -283,7 +289,8 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 						,cfg.data_dir,useron.number,msg.subj);
 					sprintf(tmp,"%s%s",cfg.temp_dir,msg.subj);
 					if(fexist(str) && !fexist(tmp))
-						mv(str,tmp,1); }
+						mv(str,tmp,1); 
+				}
 
 				size=msgtoqwk(&msg,qwk,mode,INVALID_SUB,0);
 				smb_unlockmsghdr(&smb,&msg);
@@ -294,7 +301,8 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 					ch=0;					/* Sub number, not used */
 					if(personal) {
 						fwrite(&f,4,1,personal);
-						fwrite(&ch,1,1,personal); }
+						fwrite(&ch,1,1,personal); 
+					}
 					fwrite(&f,4,1,ndx);
 					fwrite(&ch,1,1,ndx);
 					msgndx+=size/QWK_BLOCK_LEN; 
@@ -303,7 +311,8 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 			}
 			bprintf(text[QWKPackedEmail],mailmsgs);
 			if(ndx)
-				fclose(ndx); }
+				fclose(ndx); 
+		}
 		smb_close(&smb);					/* Close the e-mail */
 		if(mailmsgs)
 			FREE(mail);
@@ -329,11 +338,13 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 					if(subscan[usrsub[i][j]].ptr>lastmsg)	{ /* corrupted ptr */
 						outchar('*');
 						subscan[usrsub[i][j]].ptr=lastmsg; /* so fix automatically */
-						subscan[usrsub[i][j]].last=lastmsg; }
+						subscan[usrsub[i][j]].last=lastmsg; 
+					}
 					bprintf(text[NScanStatusFmt]
 						,cfg.grp[cfg.sub[usrsub[i][j]]->grp]->sname
 						,cfg.sub[usrsub[i][j]]->lname,0L,msgs);
-					continue; }
+					continue; 
+				}
 
 				sprintf(smb.file,"%s%s"
 					,cfg.sub[usrsub[i][j]]->data_dir,cfg.sub[usrsub[i][j]]->code);
@@ -341,7 +352,8 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 				smb.subnum=usrsub[i][j];
 				if((k=smb_open(&smb))!=0) {
 					errormsg(WHERE,ERR_OPEN,smb.file,k,smb.last_error);
-					continue; }
+					continue; 
+				}
 
 				k=0;
 				if(useron.qwk&QWK_BYSELF)
@@ -355,7 +367,8 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 					,cfg.sub[usrsub[i][j]]->lname,posts,msgs);
 				if(!posts)	{ /* no new messages */
 					smb_close(&smb);
-					continue; }
+					continue; 
+				}
 				bputs(text[QWKPackingSubboard]);	
 				submsgs=0;
 				conf=cfg.sub[usrsub[i][j]]->qwkconf;
@@ -364,15 +377,16 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 
 				if(!(useron.qwk&QWK_NOINDEX)) {
 					sprintf(str,"%s%u.NDX",cfg.temp_dir,conf);
-					if((ndx=fnopen(&file,str,O_CREAT|O_WRONLY|O_APPEND))==NULL) {
+					if((ndx=fopen(str,"ab"))==NULL) {
 						fclose(qwk);
 						if(personal)
 							fclose(personal);
 						smb_close(&smb);
-						errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_APPEND);
+						errormsg(WHERE,ERR_OPEN,str,0);
 						LFREE(post);
-						return(false); }
-					fseek(ndx,0L,SEEK_END); }
+						return(false); 
+					}
+				}
 				else
 					ndx=NULL;
 
@@ -392,7 +406,8 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 							!(cfg.sub[usrsub[i][j]]->misc&SUB_GATE)) { /* From other */
 							smb_freemsgmem(&msg);			 /* net, don't gate */
 							smb_unlockmsghdr(&smb,&msg);
-							continue; }
+							continue; 
+						}
 						mode|=(QM_TO_QNET|QM_TAGLINE);
 						if(msg.from_net.type==NET_QWK) {
 							mode&=~QM_TAGLINE;
@@ -400,7 +415,10 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 								|| !strnicmp(msg.subj,"NE:",3)) {
 								smb_freemsgmem(&msg);
 								smb_unlockmsghdr(&smb,&msg);
-								continue; } } }
+								continue; 
+							} 
+						} 
+					}
 					else
 						mode&=~(QM_TAGLINE|QM_TO_QNET);
 
@@ -415,10 +433,12 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 							&& (!stricmp(msg.to,useron.alias)
 								|| !stricmp(msg.to,useron.name))) {
 							fwrite(&f,4,1,personal);
-							fwrite(&ch,1,1,personal); }
+							fwrite(&ch,1,1,personal); 
+						}
 						fwrite(&f,4,1,ndx);
 						fwrite(&ch,1,1,ndx);
-						msgndx+=size/QWK_BLOCK_LEN; }
+						msgndx+=size/QWK_BLOCK_LEN; 
+					}
 
 					smb_freemsgmem(&msg);
 					(*msgcnt)++;
@@ -507,7 +527,8 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 		if(dir!=NULL)
 			closedir(dir);
 		if(netfiles)
-			CRLF; }
+			CRLF; 
+	}
 
 	if(batdn_total) {
 		for(i=0,totalcdt=0;i<batdn_total;i++)
@@ -515,11 +536,13 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 		if(!(useron.exempt&FLAG('D'))
 			&& totalcdt>useron.cdt+useron.freecdt) {
 			bprintf(text[YouOnlyHaveNCredits]
-				,ultoac(useron.cdt+useron.freecdt,tmp)); }
+				,ultoac(useron.cdt+useron.freecdt,tmp)); 
+		}
 		else {
 			for(i=0,totaltime=0;i<batdn_total;i++) {
 				if(!(cfg.dir[batdn_dir[i]]->misc&DIR_TFREE) && cur_cps)
-					totaltime+=batdn_size[i]/(ulong)cur_cps; }
+					totaltime+=batdn_size[i]/(ulong)cur_cps; 
+			}
 			if(!(useron.exempt&FLAG('T')) && !SYSOP && totaltime>timeleft)
 				bputs(text[NotEnoughTimeToDl]);
 			else {
@@ -539,12 +562,18 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 						getnodedat(cfg.node_num,&thisnode,1);
 						thisnode.aux=0xfe;
 						putnodedat(cfg.node_num,&thisnode);
-						CRLF; } } } } }
+						CRLF; 
+					} 
+				} 
+			} 
+		} 
+	}
 
 	if(!(*msgcnt) && !mailmsgs && !files && !netfiles && !batdn_total
 		&& (prepack || !preqwk)) {
 		bputs(text[QWKNoNewMessages]);
-		return(false); }
+		return(false); 
+	}
 
 	if(!prepack && !(useron.rest&FLAG('Q'))) {      /* Don't include in network */
 		/***********************/					/* packets */
@@ -553,15 +582,18 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 		sprintf(str,"%sQWK/HELLO",cfg.text_dir);
 		if(fexist(str)) {
 			sprintf(tmp2,"%sHELLO",cfg.temp_dir);
-			mv(str,tmp2,1); }
+			mv(str,tmp2,1); 
+		}
 		sprintf(str,"%sQWK/BBSNEWS",cfg.text_dir);
 		if(fexist(str)) {
 			sprintf(tmp2,"%sBBSNEWS",cfg.temp_dir);
-			mv(str,tmp2,1); }
+			mv(str,tmp2,1); 
+		}
 		sprintf(str,"%sQWK/GOODBYE",cfg.text_dir);
 		if(fexist(str)) {
 			sprintf(tmp2,"%sGOODBYE",cfg.temp_dir);
-			mv(str,tmp2,1); }
+			mv(str,tmp2,1); 
+		}
 		sprintf(str,"%sQWK/BLT-*",cfg.text_dir);
 		glob(str,0,NULL,&g);
 		for(i=0;i<(uint)g.gl_pathc;i++) { 			/* Copy BLT-*.* files */
@@ -581,9 +613,11 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 			getnodedat(i,&node,0);
 			if((node.status==NODE_INUSE || node.status==NODE_QUIET
 				|| node.status==NODE_LOGON) && node.useron==useron.number)
-				break; }
+				break; 
+		}
 		if(i<=cfg.sys_nodes)	/* Don't pre-pack with user online */
-			return(false); }
+			return(false); 
+	}
 
 	/*******************/
 	/* Compress Packet */
@@ -597,7 +631,8 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 			errormsg(WHERE,ERR_EXEC,cmdstr(temp_cmd(),packet,tmp2,NULL),i);
 		else
 			errorlog("Couldn't compress QWK packet");
-		return(false); }
+		return(false); 
+	}
 
 	if(prepack) 		/* Early return if pre-packing */
 		return(true);
