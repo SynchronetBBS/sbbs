@@ -83,9 +83,11 @@ long DLLCALL filelength(int fd)
 /* Sets a lock on a portion of a file */
 int DLLCALL lock(int fd, long pos, int len)
 {
-	int	flags;
+#if defined(F_SANERDLCKNO) || !defined(BSD)
  	struct flock alock;
 
+#ifndef F_SANEWRLCKNO
+	int	flags;
 	if((flags=fcntl(fd,F_GETFL))==-1)
 		return -1;
 
@@ -93,16 +95,22 @@ int DLLCALL lock(int fd, long pos, int len)
 		alock.l_type = F_RDLCK; /* set read lock to prevent writes */
 	else
 		alock.l_type = F_WRLCK; /* set write lock to prevent all access */
+#else
+	alock.l_type = F_SANEWRLCKNO;
+#endif
 	alock.l_whence = L_SET;		/* SEEK_SET */
 	alock.l_start = pos;
 	alock.l_len = len;
 
 	if(fcntl(fd, F_SETLK, &alock)==-1)
 		return(-1);
+#endif
 
+#ifndef F_SANEWRLCKNO
 	/* use flock (doesn't work over NFS) */
 	if(flock(fd,LOCK_EX|LOCK_NB)!=0)
 		return(-1);
+#endif
 
 	return(0);
 }
@@ -110,18 +118,26 @@ int DLLCALL lock(int fd, long pos, int len)
 /* Removes a lock from a file record */
 int DLLCALL unlock(int fd, long pos, int len)
 {
-	struct flock alock;
 
+#if defined(F_SANEUNLCK) || !defined(BSD)
+	struct flock alock;
+#ifdef F_SANEUNLCK
+	alock.l_type = F_SANEUNLCK;   /* remove the lock */
+#else
 	alock.l_type = F_UNLCK;   /* remove the lock */
+#endif
 	alock.l_whence = L_SET;
 	alock.l_start = pos;
 	alock.l_len = len;
 	if(fcntl(fd, F_SETLK, &alock)==-1)
 		return(-1);
+#endif
 
+#ifndef F_SANEUNLCK
 	/* use flock (doesn't work over NFS) */
 	if(flock(fd,LOCK_UN|LOCK_NB)!=0)
 		return(-1);
+#endif
 
 	return(0);
 }
@@ -130,7 +146,9 @@ int DLLCALL unlock(int fd, long pos, int len)
 int DLLCALL sopen(char *fn, int access, int share)
 {
 	int fd;
+#ifndef F_SANEWRLCKNO
 	int	flock_op=LOCK_NB;	/* non-blocking */
+#endif
 	struct flock alock;
 
 	if ((fd = open(fn, access, S_IREAD|S_IWRITE)) < 0)
@@ -139,6 +157,20 @@ int DLLCALL sopen(char *fn, int access, int share)
 	if (share == SH_DENYNO) /* no lock needed */
 		return fd;
 
+#if defined(F_SANEWRLCKNO) || !defined(BSD)
+	/* use fcntl (doesn't work correctly with threads) */
+	alock.l_type = share;
+	alock.l_whence = L_SET;
+	alock.l_start = 0;
+	alock.l_len = 0;       /* lock to EOF */
+
+	if(fcntl(fd, F_SETLK, &alock)==-1) {
+		close(fd);
+		return -1;
+	}
+#endif
+
+#ifndef F_SANEWRLCKNO
 	/* use flock (doesn't work over NFS) */
 	if(share==SH_DENYRW)
 		flock_op|=LOCK_EX;
@@ -150,17 +182,7 @@ int DLLCALL sopen(char *fn, int access, int share)
 		close(fd);
 		return(-1);
 	}
-
-	/* use fcntl (doesn't work correctly with threads) */
-	alock.l_type = share;
-	alock.l_whence = L_SET;
-	alock.l_start = 0;
-	alock.l_len = 0;       /* lock to EOF */
-
-	if(fcntl(fd, F_SETLK, &alock)==-1) {
-		close(fd);
-		return -1;
-	}
+#endif
 
 	return fd;
 }
