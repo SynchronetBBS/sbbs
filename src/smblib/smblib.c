@@ -202,7 +202,7 @@ int SMBCALL smb_open_da(smb_t* smb)
 {
 	int 	file;
 	char	str[128];
-	ulong	start=0;
+	time_t	start=0;
 
 	sprintf(str,"%s.sda",smb->file);
 	while(1) {
@@ -215,10 +215,12 @@ int SMBCALL smb_open_da(smb_t* smb)
 		if(!start)
 			start=time(NULL);
 		else
-			if(time(NULL)-start>=smb->retry_time) {
-				sprintf(smb->last_error,"timeout opening %s",str);
+			if(time(NULL)-start>=(time_t)smb->retry_time) {
+				sprintf(smb->last_error,"timeout opening %s (retry_time=%d)"
+					,str,smb->retry_time);
 				return(-2); 
 			}
+		mswait(1);
 	}
 	if((smb->sda_fp=fdopen(file,"r+b"))==NULL) {
 		sprintf(smb->last_error,"%d fdopening %s (%d)",errno,str,file);
@@ -245,7 +247,7 @@ int SMBCALL smb_open_ha(smb_t* smb)
 {
 	int 	file;
 	char	str[128];
-	ulong	start=0;
+	time_t	start=0;
 
 	sprintf(str,"%s.sha",smb->file);
 	while(1) {
@@ -258,10 +260,12 @@ int SMBCALL smb_open_ha(smb_t* smb)
 		if(!start)
 			start=time(NULL);
 		else
-			if(time(NULL)-start>=smb->retry_time) {
-				sprintf(smb->last_error,"timeout opening %s",str);
+			if(time(NULL)-start>=(time_t)smb->retry_time) {
+				sprintf(smb->last_error,"timeout opening %s (retry_time=%d)"
+					,str,smb->retry_time);
 				return(-2); 
 			}
+		mswait(1);
 	}
 	if((smb->sha_fp=fdopen(file,"r+b"))==NULL) {
 		sprintf(smb->last_error,"%d fdopening %s (%d)",errno,str,file);
@@ -337,7 +341,7 @@ int SMBCALL smb_stack(smb_t* smb, int op)
 /****************************************************************************/
 int SMBCALL smb_trunchdr(smb_t* smb)
 {
-	ulong	start=0;
+	time_t	start=0;
 
 	rewind(smb->shd_fp);
 	while(1) {
@@ -350,10 +354,12 @@ int SMBCALL smb_trunchdr(smb_t* smb)
 		if(!start)
 			start=time(NULL);
 		else
-			if(time(NULL)-start>=smb->retry_time) {	 /* Time-out */
-				sprintf(smb->last_error,"timeout changing header file size");
+			if(time(NULL)-start>=(time_t)smb->retry_time) {	 /* Time-out */
+				sprintf(smb->last_error,"timeout changing header file size (retry_time=%d)"
+					,smb->retry_time);
 				return(-2); 
 			}
+		mswait(1);
 	}
 	return(0);
 }
@@ -367,7 +373,7 @@ int SMBCALL smb_trunchdr(smb_t* smb)
 /****************************************************************************/
 int SMBCALL smb_locksmbhdr(smb_t* smb)
 {
-	ulong	start=0;
+	time_t	start=0;
 
 	while(1) {
 		if(!lock(fileno(smb->shd_fp),0L,sizeof(smbhdr_t)+sizeof(smbstatus_t)))
@@ -375,10 +381,11 @@ int SMBCALL smb_locksmbhdr(smb_t* smb)
 		if(!start)
 			start=time(NULL);
 		else
-			if(time(NULL)-start>=smb->retry_time) 
+			if(time(NULL)-start>=(time_t)smb->retry_time) 
 				break;						
 		/* In case we've already locked it */
 		unlock(fileno(smb->shd_fp),0L,sizeof(smbhdr_t)+sizeof(smbstatus_t)); 
+		mswait(1);
 	}
 	sprintf(smb->last_error,"timeout locking header");
 	return(-1);
@@ -436,7 +443,7 @@ int SMBCALL smb_unlocksmbhdr(smb_t* smb)
 /****************************************************************************/
 int SMBCALL smb_lockmsghdr(smb_t* smb, smbmsg_t* msg)
 {
-	ulong	start=0;
+	time_t	start=0;
 
 	while(1) {
 		if(!lock(fileno(smb->shd_fp),msg->idx.offset,sizeof(msghdr_t)))
@@ -444,10 +451,11 @@ int SMBCALL smb_lockmsghdr(smb_t* smb, smbmsg_t* msg)
 		if(!start)
 			start=time(NULL);
 		else
-			if(time(NULL)-start>=smb->retry_time) 
+			if(time(NULL)-start>=(time_t)smb->retry_time) 
 				break;
 		/* In case we've already locked it */
 		unlock(fileno(smb->shd_fp),msg->idx.offset,sizeof(msghdr_t)); 
+		mswait(1);
 	}
 	sprintf(smb->last_error,"timeout locking header");
 	return(-1);
@@ -893,7 +901,7 @@ int SMBCALL smb_addcrc(smb_t* smb, ulong crc)
 	int 	file;
 	long	length;
 	ulong	l,*buf;
-	ulong	start=0;
+	time_t	start=0;
 
 	if(!smb->status.max_crcs)
 		return(0);
@@ -909,10 +917,12 @@ int SMBCALL smb_addcrc(smb_t* smb, ulong crc)
 		if(!start)
 			start=time(NULL);
 		else
-			if(time(NULL)-start>=smb->retry_time) {
-				sprintf(smb->last_error,"timeout opening %s", str);
+			if(time(NULL)-start>=(time_t)smb->retry_time) {
+				sprintf(smb->last_error,"timeout opening %s (retry_time=%d)"
+					,str,smb->retry_time);
 				return(-2); 
 			}
+		mswait(1);
 	}
 
 	length=filelength(file);
