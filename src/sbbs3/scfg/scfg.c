@@ -49,13 +49,8 @@ extern BOOL all_msghdr;
 extern BOOL no_msghdr;
 char **opt;
 char tmp[256];
+char error[256];
 int  backup_level=5;
-
-read_cfg_text_t txt={
-	"\7\r\nError opening %s for read.\r\n",
-	"","",
-	"\7\r\nError allocating %u bytes of memory\r\n",
-	"\7\r\nERROR: Offset %lu in %s\r\n\r\n" };
 
 char *invalid_code=
 "Invalid Internal Code:\n\n"
@@ -209,9 +204,6 @@ for(i=0;i<14;i++)
 	if((mopt[i]=(char *)MALLOC(64))==NULL)
 		allocfail(64);
 
-txt.reading=nulstr;
-txt.readit=nulstr;
-
 sprintf(str,"%.*s",sizeof(str)-1,argv[0]);
 p=strrchr(str,'/');
 if(p==NULL)
@@ -266,16 +258,16 @@ Use the arrow keys and  ENTER  to select an option, or  ESC  to exit.
 		,"Configure",mopt)) {
 		case 0:
 			uifc.pop("Reading MAIN.CNF...");
-			read_main_cfg(&cfg,&txt);
+			read_main_cfg(&cfg,error);
 			uifc.pop(0);
 			node_menu();
 			free_main_cfg(&cfg);
 			break;
 		case 1:
 			uifc.pop("Reading MAIN.CNF...");
-			read_main_cfg(&cfg,&txt);
+			read_main_cfg(&cfg,error);
 			uifc.pop("Reading XTRN.CNF...");
-			read_xtrn_cfg(&cfg,&txt);
+			read_xtrn_cfg(&cfg,error);
 			uifc.pop(0);
 			sys_cfg();
 			free_xtrn_cfg(&cfg);
@@ -283,9 +275,9 @@ Use the arrow keys and  ENTER  to select an option, or  ESC  to exit.
 			break;
 		case 2:
 			uifc.pop("Reading MAIN.CNF...");
-            read_main_cfg(&cfg,&txt);
+            read_main_cfg(&cfg,error);
 			uifc.pop("Reading MSGS.CNF...");
-			read_msgs_cfg(&cfg,&txt);
+			read_msgs_cfg(&cfg,error);
 			uifc.pop(0);
 			net_cfg();
 			free_msgs_cfg(&cfg);
@@ -293,9 +285,9 @@ Use the arrow keys and  ENTER  to select an option, or  ESC  to exit.
 			break;
 		case 3:
 			uifc.pop("Reading MAIN.CNF...");
-            read_main_cfg(&cfg,&txt);
+            read_main_cfg(&cfg,error);
             uifc.pop("Reading FILE.CNF...");
-            read_file_cfg(&cfg,&txt);
+            read_file_cfg(&cfg,error);
 			uifc.pop(0);
             xfer_cfg();
             free_file_cfg(&cfg);
@@ -303,9 +295,9 @@ Use the arrow keys and  ENTER  to select an option, or  ESC  to exit.
             break;
 		case 4:
 			uifc.pop("Reading MAIN.CNF...");
-            read_main_cfg(&cfg,&txt);
+            read_main_cfg(&cfg,error);
             uifc.pop("Reading FILE.CNF...");
-            read_file_cfg(&cfg,&txt);
+            read_file_cfg(&cfg,error);
 			uifc.pop(0);
 			xfer_opts();
             free_file_cfg(&cfg);
@@ -313,7 +305,7 @@ Use the arrow keys and  ENTER  to select an option, or  ESC  to exit.
             break;
 		case 5:
             uifc.pop("Reading CHAT.CNF...");
-            read_chat_cfg(&cfg,&txt);
+            read_chat_cfg(&cfg,error);
 			uifc.pop(0);
             while(1) {
                 i=0;
@@ -351,9 +343,9 @@ Use the arrow keys and  ENTER  to select an option, or  ESC  to exit.
             break;
 		case 6:
 			uifc.pop("Reading MAIN.CNF...");
-            read_main_cfg(&cfg,&txt);
+            read_main_cfg(&cfg,error);
 			uifc.pop("Reading MSGS.CNF...");
-			read_msgs_cfg(&cfg,&txt);
+			read_msgs_cfg(&cfg,error);
 			uifc.pop(0);
 			msgs_cfg();
 			free_msgs_cfg(&cfg);
@@ -361,9 +353,9 @@ Use the arrow keys and  ENTER  to select an option, or  ESC  to exit.
 			break;
 		case 7:
 			uifc.pop("Reading MAIN.CNF...");
-            read_main_cfg(&cfg,&txt);
+            read_main_cfg(&cfg,error);
 			uifc.pop("Reading MSGS.CNF...");
-            read_msgs_cfg(&cfg,&txt);
+            read_msgs_cfg(&cfg,error);
 			uifc.pop(0);
 			msg_opts();
 			free_msgs_cfg(&cfg);
@@ -371,16 +363,16 @@ Use the arrow keys and  ENTER  to select an option, or  ESC  to exit.
 			break;
 		case 8:
 			uifc.pop("Reading MAIN.CNF...");
-			read_main_cfg(&cfg,&txt);
+			read_main_cfg(&cfg,error);
 			uifc.pop(0);
 			shell_cfg();
 			free_main_cfg(&cfg);
             break;
 		case 9:
 			uifc.pop("Reading MAIN.CNF...");
-            read_main_cfg(&cfg,&txt);
+            read_main_cfg(&cfg,error);
 			uifc.pop("Reading XTRN.CNF...");
-			read_xtrn_cfg(&cfg,&txt);
+			read_xtrn_cfg(&cfg,error);
 			uifc.pop(0);
 			xprogs_cfg();
 			free_xtrn_cfg(&cfg);
@@ -388,9 +380,9 @@ Use the arrow keys and  ENTER  to select an option, or  ESC  to exit.
 			break;
 		case 10:
 			uifc.pop("Reading MAIN.CNF...");
-            read_main_cfg(&cfg,&txt);
+            read_main_cfg(&cfg,error);
             uifc.pop("Reading FILE.CNF...");
-            read_file_cfg(&cfg,&txt);
+            read_file_cfg(&cfg,error);
 			uifc.pop(0);
             txt_cfg();
             free_file_cfg(&cfg);
@@ -1797,11 +1789,11 @@ void bail(int code)
         getch(); }
     else if(forcesave) {
         uifc.pop("Loading Configs...");
-        read_main_cfg(&cfg,&txt);
-        read_msgs_cfg(&cfg,&txt);
-        read_file_cfg(&cfg,&txt);
-        read_chat_cfg(&cfg,&txt);
-        read_xtrn_cfg(&cfg,&txt);
+        read_main_cfg(&cfg,error);
+        read_msgs_cfg(&cfg,error);
+        read_file_cfg(&cfg,error);
+        read_chat_cfg(&cfg,error);
+        read_xtrn_cfg(&cfg,error);
         uifc.pop(0);
         write_main_cfg(&cfg,backup_level);
         write_msgs_cfg(&cfg,backup_level);

@@ -101,7 +101,7 @@ select No or hit  ESC .
 		strcpy(cfg.node_dir,cfg.node_path[cfg.sys_nodes-1]);
 		i=cfg.sys_nodes+1;
 		uifc.pop("Reading NODE.CNF...");
-		read_node_cfg(&cfg,&txt);
+		read_node_cfg(&cfg,error);
 		uifc.pop(0);
 		sprintf(str,"../node%d/",i);
 		sprintf(tmp,"Node %d Path",i);
@@ -141,7 +141,7 @@ If you want to abort the creation of this new node, hit  ESC .
 		i&=MSK_OFF;
 		strcpy(cfg.node_dir,cfg.node_path[i]);
 		uifc.pop("Reading NODE.CNF...");
-		read_node_cfg(&cfg,&txt);
+		read_node_cfg(&cfg,error);
 		uifc.pop(0);
 		savnode=1;
 		continue; }
@@ -162,7 +162,7 @@ If you want to abort the creation of this new node, hit  ESC .
 	prep_dir(cfg.ctrl_dir, cfg.node_dir);
 
 	uifc.pop("Reading NODE.CNF...");
-	read_node_cfg(&cfg,&txt);
+	read_node_cfg(&cfg,error);
 	uifc.pop(0);
 	if(cfg.node_num!=i+1) { 	/* Node number isn't right? */
 		cfg.node_num=i+1;		/* so fix it */
