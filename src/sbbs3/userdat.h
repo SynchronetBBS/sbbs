@@ -79,6 +79,7 @@ DLLEXPORT int	DLLCALL putusername(scfg_t* cfg, int number, char * name);
 DLLEXPORT uint	DLLCALL lastuser(scfg_t* cfg);
 DLLEXPORT char	DLLCALL getage(scfg_t* cfg, char *birthdate);
 DLLEXPORT char*	DLLCALL username(scfg_t* cfg, int usernumber, char * str);
+DLLEXPORT char* DLLCALL usermailaddr(scfg_t* cfg, char* addr, char* name);
 DLLEXPORT int	DLLCALL getnodedat(scfg_t* cfg, uint number, node_t *node, char lockit);
 DLLEXPORT int	DLLCALL putnodedat(scfg_t* cfg, uint number, node_t *node);
 DLLEXPORT uint	DLLCALL userdatdupe(scfg_t* cfg, uint usernumber, uint offset, uint datlen, char *dat

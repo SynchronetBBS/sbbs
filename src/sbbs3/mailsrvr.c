@@ -397,23 +397,6 @@ static BOOL sockgetrsp(SOCKET socket, char* rsp, char *buf, int len)
 	return(TRUE);
 }
 
-static void usermailaddr(char* addr, char* name)
-{
-	int i;
-
-	if(strchr(name,'.')) /* unresolved exception here Nov-06-2000 */
-		sprintf(addr,"\"%s\"@",name);
-	else {
-		sprintf(addr,"%s@",name);
-		/* convert "first last@" to "first.last@" */
-		for(i=0;addr[i];i++)
-			if(addr[i]==' ' || addr[i]&0x80)
-				addr[i]='.';
-		strlwr(addr);
-	}
-	strcat(addr,scfg.sys_inetaddr);
-}
-
 static char *msgdate(when_t when, char* buf)
 {
 	struct tm	tm;
@@ -462,7 +445,7 @@ static void sockmsgtxt(SOCKET socket, smbmsg_t* msg, char* msgtxt, char* fromadd
 		else
 			sockprintf(socket,"To: \"%s\" <%s>",msg->to,(char*)msg->to_net.addr);
 	} else {
-		usermailaddr(toaddr,msg->to);
+		usermailaddr(&scfg,toaddr,msg->to);
 		sockprintf(socket,"To: \"%s\" <%s>",msg->to,toaddr);
 	}
 	if(msg->replyto_net.type==NET_INTERNET)
@@ -926,7 +909,7 @@ static void pop3_thread(void* arg)
 					sprintf(fromaddr,"\"%s@%s\"@%s"
 						,msg.from,(char*)msg.from_net.addr,scfg.sys_inetaddr);
 				else 
-					usermailaddr(fromaddr,msg.from);	/* unresolved exception here Nov-06-2000 */
+					usermailaddr(&scfg,fromaddr,msg.from);	/* unresolved exception here Nov-06-2000 */
 				lprintf("%04d POP3 sending message text (%u bytes)"
 					,socket,strlen(msgtxt));
 				sockmsgtxt(socket,&msg,msgtxt,fromaddr,lines);
@@ -2195,7 +2178,7 @@ static void sendmail_thread(void* arg)
 			if(msg.from_net.type==NET_INTERNET)
 				strcpy(fromaddr,msg.from_net.addr);
 			else 
-				usermailaddr(fromaddr,msg.from);
+				usermailaddr(&scfg,fromaddr,msg.from);
 			if(fromaddr[0]=='<')
 				sockprintf(sock,"MAIL FROM: %s",fromaddr);
 			else
