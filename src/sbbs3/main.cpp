@@ -56,8 +56,6 @@ uint riobp;
 	HANDLE		exec_mutex=NULL;
 	HINSTANCE	hK32=NULL;
 
-	GetLongPathName_t Win98GetLongPathName=NULL;
-
 	#if defined(_DEBUG) && defined(_MSC_VER)
 			HANDLE	debug_log=INVALID_HANDLE_VALUE;
 		   _CrtMemState mem_chkpoint;
@@ -3435,10 +3433,6 @@ void DLLCALL bbs_thread(void* arg)
         return;
     }
 	hK32 = LoadLibrary("KERNEL32");
-
-	if(hK32!=NULL)
-		Win98GetLongPathName
-			= (GetLongPathName_t)GetProcAddress(hK32,"GetLongPathNameA");
 #endif // _WIN32
 
 	pthread_mutex_init(&event_mutex,NULL);
