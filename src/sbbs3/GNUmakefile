@@ -54,9 +54,10 @@ endif
 SLASH	=	/
 OFILE	=	o
 
-LIBFILE	=	.a
+LIBFILE	=	.so
 UIFC	=	../uifc/
 XPDEV	=	../xpdev/
+LIBPREFIX =	lib
 
 ifndef os
  os		:=	$(shell uname)
@@ -86,7 +87,8 @@ CFLAGS	+=	-DJAVASCRIPT -I../../include/mozilla/js -I$(XPDEV) -I$(UIFC)
 
 ifdef BSD	# BSD
  # Math libraries needed and uses pthread
- LFLAGS	:=	-lm -pthread -lutil
+ LFLAGS	:=	-lm -lutil -lc_r
+ CFLAGS +=	-pthread 
 else			# Linux / Other UNIX
  # Math and pthread libraries needed
  ifdef bcc
@@ -102,12 +104,12 @@ endif
 
 ifeq ($(os),sunos)    # Solaris
  CFLAGS	+= -D_REENTRANT -D__solaris__ -DNEEDS_DAEMON -D_POSIX_PTHREAD_SEMANTICS -DNEEDS_FORKPTY
- LFLAGS := -lm -lpthread -lsocket -lnsl -lrt
+ LFLAGS += -lm -lpthread -lsocket -lnsl -lrt
 endif
 
 ifeq ($(os),netbsd)
  CFLAGS += -D_REENTRANT -D__unix__ -I/usr/pkg/include -DNEEDS_FORKPTY
- LFLAGS := -lm -lpthread -L/usr/pkg/lib -L/usr/pkg/pthreads/lib
+ LFLAGS += -lm -lpthread -L/usr/pkg/lib -L/usr/pkg/pthreads/lib
 endif
 
 # So far, only QNX has sem_timedwait()
@@ -165,10 +167,18 @@ ifeq ($(USE_XP_SEMAPHORES),1)
  OBJS	+=	$(LIBODIR)$(SLASH)xpsem.$(OFILE)
 endif
 
-SBBSLIB	=	$(LIBODIR)/sbbs.a
+#SBBSLIB	=	$(LIBODIR)$(SLASH)libsbbs.so
+SBBSLIB	=	-lsbbs
+
+#dummy rule
+$(SBBSLIB) : $(SBBS)
 
 vpath %.c $(XPDEV) $(UIFC)
 vpath %.cpp $(UIFC)
+
+LFLAGS		+=	-L./$(LIBODIR)
+LDFLAGS		:=	$(LFLAGS) -rpath-link ./$(LIBODIR) -rpath ./
+LFLAGS		+=	-Wl,-rpath-link,./$(LIBODIR),-rpath,./
 
 # Implicit C Compile Rule for utils
 $(EXEODIR)/%.o : %.c $(BUILD_DEPENDS)
@@ -206,11 +216,12 @@ $(EXEODIR):
 
 CON_OBJS	= $(EXEODIR)/sbbscon.o $(EXEODIR)/conwrap.o \
 		  $(EXEODIR)/sbbs_ini.o
+CON_LDFLAGS	= -lftpsrvr -lwebsrvr -lmailsrvr -lservices
 FTP_OBJS	= $(LIBODIR)/ftpsrvr.o
 MAIL_OBJS	= $(LIBODIR)/mailsrvr.o $(LIBODIR)/mxlookup.o \
  		  $(LIBODIR)/mime.o $(LIBODIR)/base64.o
 WEB_OBJS	= $(LIBODIR)/websrvr.o $(LIBODIR)/sockwrap.o $(LIBODIR)/base64.o
-SERVICE_OBJS= $(LIBODIR)/services.o
+SERVICE_OBJS	= $(LIBODIR)/services.o
 
 MONO_OBJS	= $(CON_OBJS) $(FTP_OBJS) $(WEB_OBJS) \
 			$(MAIL_OBJS) $(SERVICE_OBJS)
@@ -231,25 +242,43 @@ $(SBBSMONO): $(MONO_OBJS) $(OBJS) $(LIBS)
 FORCE$(SBBS): $(OBJS) $(LIBS)
 
 $(SBBS): $(OBJS) $(LIBS)
-	$(LD) $(LFLAGS) -S -o $(SBBS) $^ $(LIBS) -o $@
+	@echo Linking $@
+	@$(LD) $(LDFLAGS) -S -o $(SBBS) $^ -shared -o $@
 
 # FTP Server Link Rule
 FORCE$(FTPSRVR): $(LIBODIR)/ftpsrvr.o $(SBBSLIB)
 
 $(FTPSRVR): $(LIBODIR)/ftpsrvr.o $(SBBSLIB)
-	$(LD) $(LFLAGS) -S $^ $(LIBS) -o $@ 
+	@echo Linking $@
+	$(LD) $(LDFLAGS) -S $^ $(LIBS) -shared -o $@ 
 
 # Mail Server Link Rule
-FORCE$(MAILSRVR): $(MAIL_OBJS) $(SBBSLIB)
+FORCE$(MAILSRVR): $(MAIL_OBJS) $(LIBODIR)$(SLASH)$(SBBSLIB)
 
 $(MAILSRVR): $(MAIL_OBJS) $(SBBSLIB)
-	$(LD) $(LFLAGS) -S $^ $(LIBS) -o $@
+	@echo Linking $@
+	@$(LD) $(LDFLAGS) -S $^ $(LIBS) -shared -o $@
+
+# Mail Server Link Rule
+FORCE$(WEBSRVR): $(WEB_OBJS) $(SBBSLIB)
+
+$(WEBSRVR): $(WEB_OBJS) $(SBBSLIB)
+	@echo Linking $@
+	@$(LD) $(LDFLAGS) -S $^ $(LIBS) -shared -o $@
+
+# Services Link Rule
+FORCE$(SERVICES): $(WEB_OBJS) $(SBBSLIB)
+
+$(SERVICES): $(SERVICE_OBJS) $(SBBSLIB)
+	@echo Linking $@
+	@$(LD) $(LDFLAGS) -S $^ $(LIBS) -shared -o $@
 
 # Synchronet Console Build Rule
-FORCE$(SBBSCON): $(CON_OBJS) $(SBBSLIB)
+FORCE$(SBBSCON): $(CON_OBJS) $(SBBSLIB) $(FTP_OBJS) $(MAIL_OBJS) $(WEB_OBJS) $(SERVICE_OBJS)
 
-$(SBBSCON): $(CON_OBJS) $(SBBSLIB)
-	@$(CC) $(CFLAGS) -o $@ $^
+$(SBBSCON): $(CON_OBJS) $(SBBSLIB) $(FTPSRVR) $(WEBSRVR) $(MAILSRVR) $(SERVICES)
+	@echo Linking $@
+	@$(CC) $(CFLAGS) $(LFLAGS) $(CON_LDFLAGS) -o $@ $(CON_OBJS) $(SBBSLIB)
 
 # Specifc Compile Rules
 $(LIBODIR)/ftpsrvr.o: ftpsrvr.c ftpsrvr.h $(BUILD_DEPENDS)
@@ -465,7 +494,7 @@ $(MAKEUSER): $(MAKEUSER_OBJS)
 # JSEXEC
 JSEXEC_OBJS = \
 	$(EXEODIR)/jsexec.o \
-	$(OBJS)
+	$(SBBSLIB)
 
 FORCE$(JSEXEC): $(JSEXEC_OBJS)
 
