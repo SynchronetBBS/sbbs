@@ -56,8 +56,9 @@ OUTLIB	=	-o
 CFLAGS	:=	-I../../uifc -I/usr/local/include -I../
 
 ifeq ($(os),freebsd)	# FreeBSD
-CFLAGS	:=	$(CFLAGS)
-LIBS	:=	-L/usr/local/lib
+CFLAGS	:=	$(CFLAGS) -DUSE_DIALOG
+LIBS	:=	-L/usr/local/lib -ldialog
+USE_DIALOG =	YES
 else			# Linux / Other UNIX
 LIBS	:=	-L/usr/local/lib
 endif
@@ -93,9 +94,14 @@ $(LIBODIR)/%.o : %.c
 $(LIBODIR)/%.o : %.cpp
 	$(CC) $(CFLAGS) -c $(SBBSDEFS) $< -o $@
 
-# uifc Rule
+# uifc Rules
 ../../uifc/uifcx.$(OFILE):
 	$(CC) $(CFLAGS) -c $(SBBSDEFS) ../../uifc/uifcx.c -o ../../uifc/uifcx.$(OFILE)
+
+../../uifc/uifcd.c:
+
+../../uifc/uifcd.$(OFILE):
+	$(CC) $(CFLAGS) -c $(SBBSDEFS) ../../uifc/uifcd.c -o ../../uifc/uifcd.$(OFILE)
 
 # Create output directories
 $(LIBODIR):

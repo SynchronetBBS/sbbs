@@ -17,7 +17,6 @@ OBJS	=	$(LIBODIR)$(SLASH)scfg.$(OFILE)\
 			$(LIBODIR)$(SLASH)scfgxfr1.$(OFILE)\
 			$(LIBODIR)$(SLASH)scfgxfr2.$(OFILE)\
 			$(LIBODIR)$(SLASH)scfgchat.$(OFILE)\
-			../../uifc/uifcx.$(OFILE)\
                         ..$(SLASH)$(LIBODIR)$(SLASH)scfgsave.$(OFILE)\
                         ..$(SLASH)$(LIBODIR)$(SLASH)scfglib1.$(OFILE)\
                         ..$(SLASH)$(LIBODIR)$(SLASH)smblib.$(OFILE)\
@@ -29,3 +28,9 @@ OBJS	=	$(LIBODIR)$(SLASH)scfg.$(OFILE)\
                         ..$(SLASH)$(LIBODIR)$(SLASH)crc32.$(OFILE)\
                         ..$(SLASH)$(LIBODIR)$(SLASH)userdat.$(OFILE)\
                         ..$(SLASH)$(LIBODIR)$(SLASH)date_str.$(OFILE)
+
+ifdef USE_DIALOG
+OBJS := $(OBJS)			../../uifc/uifcd.$(OFILE)
+else
+OBJS := $(OBJS)			../../uifc/uifcx.$(OFILE)
+endif
