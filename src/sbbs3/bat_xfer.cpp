@@ -148,7 +148,7 @@ void sbbs_t::batchmenu()
 							lncntr=0;
 							unpadfname(batdn_name[i],tmp);
 							sprintf(tmp2,"%s%s",cfg.temp_dir,tmp);
-							if(!fexist(tmp2)) {
+							if(!fexistcase(tmp2)) {
 								seqwait(cfg.dir[batdn_dir[i]]->seqdev);
 								bprintf(text[RetrievingFile],tmp);
 								sprintf(str,"%s%s"
@@ -401,7 +401,7 @@ BOOL sbbs_t::start_batch_download()
 		if(cfg.dir[batdn_dir[i]]->seqdev) {
 			lncntr=0;
 			sprintf(path,"%s%s",cfg.temp_dir,fname);
-			if(!fexist(path)) {
+			if(!fexistcase(path)) {
 				seqwait(cfg.dir[batdn_dir[i]]->seqdev);
 				bprintf(text[RetrievingFile],fname);
 				sprintf(str,"%s%s"
@@ -588,7 +588,7 @@ void sbbs_t::batch_upload()
 		unpadfname(batup_name[i],tmp);
 		sprintf(str1,"%s%s",cfg.temp_dir,tmp);
 		sprintf(str2,"%s%s",cfg.dir[batup_dir[i]]->path,tmp);
-		if(fexist(str1) && fexist(str2)) { /* file's in two places */
+		if(fexistcase(str1) && fexistcase(str2)) { /* file's in two places */
 			bprintf(text[FileAlreadyThere],batup_name[i]);
 			remove(str1);    /* this is the one received */
 			i++;
@@ -632,7 +632,7 @@ void sbbs_t::batch_upload()
 				break; 
 		}
 		sprintf(str2,"%s%s",cfg.dir[f.dir]->path,dirent->d_name);
-		if(x<usrlibs || fexist(str2)) {
+		if(x<usrlibs || fexistcase(str2)) {
 			bprintf(text[FileAlreadyOnline],f.name);
 			remove(str1); 
 		} else {
