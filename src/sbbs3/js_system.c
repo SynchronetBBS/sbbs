@@ -317,6 +317,7 @@ static struct JSPropertySpec js_system_properties[] = {
 	{	"pwdays",	SYS_PROP_PWDAYS,	SYSOBJ_FLAGS,		NULL,	NULL },
 	{	"deldays",	SYS_PROP_DELDAYS,	SYSOBJ_FLAGS,		NULL,	NULL },
 
+	{	"lastuser",					SYS_PROP_LASTUSER		,SYSOBJ_FLAGS,	NULL,	NULL },
 	{	"lastuseron",				SYS_PROP_LASTUSERON		,SYSOBJ_FLAGS,	NULL,	NULL },
 	{	"freediskspace",			SYS_PROP_FREEDISKSPACE	,SYSOBJ_FLAGS,	NULL,	NULL },
 	{	"freediskspacek",			SYS_PROP_FREEDISKSPACEK	,SYSOBJ_FLAGS,	NULL,	NULL },
@@ -1199,7 +1200,7 @@ static jsMethodSpec js_system_functions[] = {
 		"defaults to current time if <i>time</i> not specified")
 	},		
 	{"datestr",			js_datestr,			0,	JSTYPE_STRING,	JSDOCSTR("[time]")
-	,JSDOCSTR("convert time_t integer into a date string (in either MM/DD/YY or DD/MM/YY format), "
+	,JSDOCSTR("convert time_t integer into a date string (in either <tt>MM/DD/YY</tt> or <tt>DD/MM/YY</tt> format), "
 		"defaults to current date if <i>time</i> not specified")
 	},		
 	{"secondstr",		js_secondstr,		0,	JSTYPE_STRING,	JSDOCSTR("seconds")
@@ -1252,8 +1253,8 @@ static char* node_prop_desc[] = {
 	,"current user number"
 	,"connection speed (<tt>0xffff</tt> = Telnet or RLogin)"
 	,"miscellaneous bitfield (see <tt>nodedefs.js</tt>)"
-	,"auxillary bitfield"
-	,"extended auxillary bitfield"
+	,"auxillary value"
+	,"extended auxillary value"
 	,NULL
 };
 #endif
