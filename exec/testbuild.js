@@ -48,10 +48,12 @@ if(platform=="win32") {
 	builds.push(["src/sbbs3/uedit",		"gmake"]);
 }
 
+var start = time();
+
 for(i in builds) {
 	var sub_dir = builds[i][0];
 	var build_dir = temp_dir + "/" + sub_dir;
-	var subject = "Build failure in " + sub_dir;
+	var subject = system.platform + " build failure in " + sub_dir;
 
 	if(sub_dir.length)
 		log(LOG_INFO, "Build sub-directory: " + sub_dir);
@@ -59,6 +61,8 @@ for(i in builds) {
 		semd_email(subject, log(LOG_ERR,"!FAILED to chdir to: " + build_dir));
 		exit(1);
 	}
+
+	builds[i].start = time();
 
 	var cmd_line = builds[i][1];
 	if(cmd_line.indexOf(build_output)<0)
@@ -70,9 +74,22 @@ for(i in builds) {
 		send_email(subject, file_contents(build_output));
 		exit(1);
 	}
+
+	builds[i].end = time();
 }
 
-send_email("Builds successful!",builds);
+var body = "System: " + system.local_host_name + " - " + system.os_version + "\n\n";
+
+for(i in builds) {
+	body += system.secondstr(builds[i].end-builds[i].start) + " - ";
+	body += builds[i][0] + "\t" + builds[i][1];
+	body += "\n";
+}
+
+body += "--------\n";
+body += system.secondstr(time()-start) + " - total\n";
+
+send_email(system.platform + " builds successful", lfexpand(body));
 
 function file_contents(fname)
 {
