@@ -257,7 +257,7 @@ f.printf("Generated for <b>Synchronet v%s</b>, compiled %s\n"
 		 ,system.full_version,system.compiled_when);
 f.writeln("<br><font size=-1>");
 if(min_ver)
-	f.writeln("Includes Properties and Methods added in Synchronet v" + verstr(min_ver) + " only.");
+	f.writeln("Includes Properties and Methods added or substantially modified in Synchronet v" + verstr(min_ver) + " only.");
 else
 	f.writeln("Property and Method version numbers (when available) indicate the Synchronet version when the " +
 		  "item was added or modified.");
