@@ -190,7 +190,6 @@ function list_users(show)
 		if(sys[i].udp)
 			continue;
 			
-		replies++;
 		if(sys[i].failed)
 			continue;
 
@@ -236,6 +235,7 @@ function list_users(show)
 
 
 		parse_response(response,show);
+		replies++;
 	}
 	
 	
