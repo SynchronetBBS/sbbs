@@ -1338,6 +1338,8 @@ static void send_thread(void* arg)
 	xfer=*(xfer_t*)arg;
 	free(arg);
 
+	thread_up();
+
 	length=flength(xfer.filename);
 
 	if((fp=fopen(xfer.filename,"rb"))==NULL) {
@@ -1347,9 +1349,9 @@ static void send_thread(void* arg)
 			remove(xfer.filename);
 		ftp_close_socket(xfer.data_sock,__LINE__);
 		*xfer.inprogress=FALSE;
+		thread_down();
 		return;
 	}
-	thread_up();
 
 #if defined(_DEBUG) && defined(SOCKET_DEBUG_SENDTHREAD)
 			socket_debug[xfer.ctrl_sock]|=SOCKET_DEBUG_SENDTHREAD;
@@ -1553,15 +1555,16 @@ static void receive_thread(void* arg)
 	xfer=*(xfer_t*)arg;
 	free(arg);
 
+	thread_up();
+
 	if((fp=fopen(xfer.filename,xfer.append ? "ab" : "wb"))==NULL) {
 		lprintf("%04d !DATA ERROR %d opening %s",xfer.ctrl_sock,errno,xfer.filename);
 		sockprintf(xfer.ctrl_sock,"450 ERROR %d opening %s.",errno,xfer.filename);
 		ftp_close_socket(xfer.data_sock,__LINE__);
 		*xfer.inprogress=FALSE;
+		thread_down();
 		return;
 	}
-
-	thread_up();
 
 	*xfer.aborted=FALSE;
 	if(xfer.filepos || startup->options&FTP_OPT_DEBUG_DATA)
@@ -2703,11 +2706,7 @@ static void ctrl_thread(void* arg)
 
 			pasv_addr.sin_port = 0;
 
-			if(startup->seteuid!=NULL)
-				startup->seteuid(FALSE);
 			result=bind(pasv_sock, (struct sockaddr *) &pasv_addr,sizeof(pasv_addr));
-			if(startup->seteuid!=NULL)
-				startup->seteuid(TRUE);
 			if(result!= 0) {
 				lprintf("%04d !PASV ERROR %d (%d) binding socket", sock, result, ERROR_VALUE);
 				sockprintf(sock,"425 Error %d binding data socket",ERROR_VALUE);
