@@ -39,6 +39,10 @@ void mousedrag(unsigned char *scrollback)
 				getmouse(&mevent);
 				startpos=((mevent.starty-1)*term.width)+(mevent.startx-1);
 				endpos=((mevent.endy-1)*term.width)+(mevent.endx-1);
+				if(startpos>=term.width*2*term.height)
+					startpos=term.width*2*term.height-1;
+				if(endpos>=term.width*2*term.height)
+					endpos=term.width*2*term.height-1;
 				if(endpos<startpos) {
 					pos=endpos;
 					endpos=startpos;
