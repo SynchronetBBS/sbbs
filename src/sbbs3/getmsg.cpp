@@ -125,6 +125,7 @@ void sbbs_t::show_msghdr(smbmsg_t* msg)
 	char	*sender=NULL;
 	int 	i;
 
+	current_msg=msg;
 	attr(LIGHTGRAY);
 	if(useron.misc&CLRSCRN)
 		outchar(FF);

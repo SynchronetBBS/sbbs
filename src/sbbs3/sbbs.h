@@ -314,6 +314,8 @@ public:
 
 	csi_t	main_csi;		/* Main Command Shell Image */
 
+	smbmsg_t*	current_msg;	/* For message header @-codes */
+
 			/* Global command shell variables */
 	uint	global_str_vars;
 	char **	global_str_var;
