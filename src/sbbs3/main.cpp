@@ -1187,7 +1187,8 @@ void event_thread(void* arg)
 				sprintf(str,"%stime.dab",sbbs->cfg.ctrl_dir);
 				if((file=sbbs->nopen(str,O_WRONLY))==-1) {
 					sbbs->errormsg(WHERE,ERR_OPEN,str,O_WRONLY);
-					break; }
+					break; 
+				}
 				lseek(file,(long)sbbs->cfg.total_events*4L,SEEK_SET);
 				write(file,&lastprepack,sizeof(time_t));
 				close(file);
@@ -1229,28 +1230,32 @@ void event_thread(void* arg)
 
 			/* QWK Networking Call-out sempahores */
 			for(i=0;i<sbbs->cfg.total_qhubs;i++) {
-				if(sbbs->cfg.qhub[i]->node>=first_node 
-					&& sbbs->cfg.qhub[i]->node<=last_node) {
-					sprintf(str,"%sqnet/%s.now",sbbs->cfg.data_dir,sbbs->cfg.qhub[i]->id);
-					if(fexist(str)) {
-						strcpy(str,sbbs->cfg.qhub[i]->id);
-						eprintf("Semaphore signaled for QWK Network Hub: %s",strupr(str));
-						sbbs->cfg.qhub[i]->last=-1; 
-					}
+				if(sbbs->cfg.qhub[i]->node<first_node 
+					|| sbbs->cfg.qhub[i]->node>last_node)
+					continue;
+				if(sbbs->cfg.qhub[i]->last==-1) // already signaled
+					continue;
+				sprintf(str,"%sqnet/%s.now",sbbs->cfg.data_dir,sbbs->cfg.qhub[i]->id);
+				if(fexist(str)) {
+					strcpy(str,sbbs->cfg.qhub[i]->id);
+					eprintf("Semaphore signaled for QWK Network Hub: %s",strupr(str));
+					sbbs->cfg.qhub[i]->last=-1; 
 				}
 			}
 
 			/* Timed Event sempahores */
 			for(i=0;i<sbbs->cfg.total_events;i++) {
-				if((sbbs->cfg.event[i]->node>=first_node
-					&& sbbs->cfg.event[i]->node<=last_node)
-					|| sbbs->cfg.event[i]->misc&EVENT_EXCL) {
-					sprintf(str,"%s%s.now",sbbs->cfg.data_dir,sbbs->cfg.event[i]->code);
-					if(fexist(str)) {
-						strcpy(str,sbbs->cfg.event[i]->code);
-						eprintf("Semaphore signaled for Timed Event: %s",strupr(str));
-						sbbs->cfg.event[i]->last=-1; 
-					}
+				if((sbbs->cfg.event[i]->node<first_node
+					|| sbbs->cfg.event[i]->node>last_node)
+					&& !(sbbs->cfg.event[i]->misc&EVENT_EXCL))
+					continue;	// ignore non-exclusive events for other instances
+				if(sbbs->cfg.event[i]->last==-1) // already signaled
+					continue;
+				sprintf(str,"%s%s.now",sbbs->cfg.data_dir,sbbs->cfg.event[i]->code);
+				if(fexist(str)) {
+					strcpy(str,sbbs->cfg.event[i]->code);
+					eprintf("Semaphore signaled for Timed Event: %s",strupr(str));
+					sbbs->cfg.event[i]->last=-1; 
 				}
 			}
 		}
@@ -1318,8 +1323,11 @@ void event_thread(void* arg)
 							lseek(file
 								,sbbs->cfg.sub[sbbs->cfg.qhub[i]->sub[j]]->ptridx*sizeof(long)
 								,SEEK_SET);
-							write(file,&sbbs->subscan[sbbs->cfg.qhub[i]->sub[j]].ptr,sizeof(long)); }
-						close(file); } }
+							write(file,&sbbs->subscan[sbbs->cfg.qhub[i]->sub[j]].ptr,sizeof(long)); 
+						}
+						close(file); 
+					} 
+				}
 				sbbs->delfiles(sbbs->cfg.temp_dir,ALLFILES);
 
 				sbbs->cfg.qhub[i]->last=time(NULL);
@@ -1337,11 +1345,6 @@ void event_thread(void* arg)
 					if(sbbs->cfg.node_num<1) 
 						sbbs->cfg.node_num=1;
 					strcpy(sbbs->cfg.node_dir, sbbs->cfg.node_path[sbbs->cfg.node_num-1]);
-#if 0
-					sbbs->getnodedat(sbbs->cfg.qhub[i]->node,&node,1);
-					node.status=NODE_NETTING;
-					sbbs->putnodedat(sbbs->cfg.qhub[i]->node,&node);
-#endif
 					eprintf("QWK Network call-out: %s",sbbs->cfg.qhub[i]->id); 
 					sbbs->online=ON_LOCAL;
 					sbbs->external(
@@ -1380,11 +1383,6 @@ void event_thread(void* arg)
 					if(sbbs->cfg.node_num<1) 
 						sbbs->cfg.node_num=1;
 					strcpy(sbbs->cfg.node_dir, sbbs->cfg.node_path[sbbs->cfg.node_num-1]);
-#if 0
-					sbbs->getnodedat(sbbs->cfg.phub[i]->node,&node,1);
-					node.status=NODE_NETTING;
-					sbbs->putnodedat(sbbs->cfg.phub[i]->node,&node);
-#endif
 					eprintf("PostLink Network call-out: %s",sbbs->cfg.phub[i]->name); 
 					sbbs->online=ON_LOCAL;
 					sbbs->external(
@@ -1396,8 +1394,15 @@ void event_thread(void* arg)
 
 		/* Timed Events */
 		for(i=0;i<sbbs->cfg.total_events;i++) {
-			if(!sbbs->cfg.event[i]->node || sbbs->cfg.event[i]->node>sbbs->cfg.sys_nodes)
-				continue;
+			if(!sbbs->cfg.event[i]->node 
+				|| sbbs->cfg.event[i]->node>sbbs->cfg.sys_nodes)
+				continue;	// ignore events for invalid nodes
+
+			if((sbbs->cfg.event[i]->node<first_node
+				|| sbbs->cfg.event[i]->node>last_node)
+				&& !(sbbs->cfg.event[i]->misc&EVENT_EXCL))
+				continue;	// ignore non-exclusive events for other instances
+
 			tm=localtime(&sbbs->cfg.event[i]->last);
 			if(tm==NULL || sbbs->cfg.event[i]->last==-1 ||
 				(((sbbs->cfg.event[i]->freq 
@@ -1429,17 +1434,13 @@ void event_thread(void* arg)
 								sbbs->putnodedat(j,&node);
 							}
 
-#if 0
-							getnodedat(node_num,&thisnode,0);
-							if(thisnode.misc&NODE_DOWN)
-								return(0);
-#endif
 							lastnodechk=now;
 							sprintf(str,"%stime.dab",sbbs->cfg.ctrl_dir);
 							if((file=sbbs->nopen(str,O_RDONLY))==-1) {
 								sbbs->errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
 								sbbs->cfg.event[i]->last=now;
-								continue; }
+								continue; 
+							}
 							lseek(file,(long)i*4L,SEEK_SET);
 							read(file,&sbbs->cfg.event[i]->last,sizeof(time_t));
 							close(file);
@@ -1464,11 +1465,6 @@ void event_thread(void* arg)
 							if(now-lastnodechk<10)
 								continue;
 							lastnodechk=now;
-#if 0
-							getnodedat(node_num,&thisnode,0);
-							if(thisnode.misc&NODE_DOWN)
-								return(0);
-#endif
 							// Check/change the status of the nodes that we're in control of
 							for(j=first_node;j<=last_node;j++) {
 								if(sbbs->getnodedat(j,&node,1)!=0)
@@ -1505,11 +1501,13 @@ void event_thread(void* arg)
 						} 
 					} 
 				}
+#if 0 // removed Jun-23-2002
 				else {	/* non-exclusive */
 					sbbs->getnodedat(sbbs->cfg.event[i]->node,&node,0);
 					if(node.status!=NODE_WFC)
 						continue;
 				}
+#endif
 				if(sbbs->cfg.event[i]->node<first_node 
 					|| sbbs->cfg.event[i]->node>last_node) {
 					eprintf("Changing node status for nodes %d through %d to WFC"
@@ -1552,7 +1550,8 @@ void event_thread(void* arg)
 					sprintf(str,"%stime.dab",sbbs->cfg.ctrl_dir);
 					if((file=sbbs->nopen(str,O_WRONLY))==-1) {
 						sbbs->errormsg(WHERE,ERR_OPEN,str,O_WRONLY);
-						break; }
+						break; 
+					}
 					lseek(file,(long)i*4L,SEEK_SET);
 					write(file,&sbbs->cfg.event[i]->last,sizeof(time_t));
 					close(file);
@@ -1817,7 +1816,8 @@ bool sbbs_t::init()
 		if((logfile_fp=fopen(str,"a+b"))==NULL) {
 			errormsg(WHERE, ERR_OPEN, str, 0);
 			lprintf("Perhaps this node is already running");
-			return(false); }
+			return(false); 
+		}
 
 		if(filelength(fileno(logfile_fp))) {
 			log(crlf);
@@ -2162,7 +2162,8 @@ int sbbs_t::nopen(char *str, int access)
 
     if(access&O_DENYNONE) {
         share=SH_DENYNO;
-        access&=~O_DENYNONE; }
+        access&=~O_DENYNONE; 
+	}
     else if(access==O_RDONLY) share=SH_DENYWR;
     else share=SH_DENYRW;
 	if(!(access&O_TEXT))
@@ -2173,7 +2174,8 @@ int sbbs_t::nopen(char *str, int access)
     if(count>(LOOP_NOPEN/2) && count<=LOOP_NOPEN) {
         sprintf(logstr,"NOPEN COLLISION - File: \"%s\" Count: %d"
             ,str,count);
-        logline("!!",logstr); }
+        logline("!!",logstr); 
+	}
     if(file==-1 && (errno==EACCES || errno==EAGAIN)) {
         sprintf(logstr,"NOPEN ACCESS DENIED - File: \"%s\" errno: %d"
 			,str,errno);
@@ -2228,50 +2230,60 @@ int sbbs_t::mv(char *src, char *dest, char copy)
     if(!fexist(src)) {
         bprintf("\r\n\7MV ERROR: Source doesn't exist\r\n'%s'\r\n"
             ,src);
-        return(-1); }
+        return(-1); 
+	}
     if(!copy && fexist(dest)) {
         bprintf("\r\n\7MV ERROR: Destination already exists\r\n'%s'\r\n"
             ,dest);
-        return(-1); }
+        return(-1); 
+	}
 #ifndef __unix__	/* need to determine if on same mount device */
     if(!copy && ((src[1]!=':' && dest[1]!=':')
         || (src[1]==':' && dest[1]==':' && toupper(src[0])==toupper(dest[0])))) {
         if(rename(src,dest)) {						/* same drive, so move */
             bprintf("\r\nMV ERROR: Error renaming '%s'"
                     "\r\n                      to '%s'\r\n\7",src,dest);
-            return(-1); }
-        return(0); }
+            return(-1); 
+		}
+        return(0); 
+	}
 #endif
     attr(WHITE);
     if((ind=nopen(src,O_RDONLY))==-1) {
         errormsg(WHERE,ERR_OPEN,src,O_RDONLY);
-        return(-1); }
+        return(-1); 
+	}
     if((inp=fdopen(ind,"rb"))==NULL) {
         close(ind);
         errormsg(WHERE,ERR_FDOPEN,str,O_RDONLY);
-        return(-1); }
+        return(-1); 
+	}
     setvbuf(inp,NULL,_IOFBF,32*1024);
     if((outd=nopen(dest,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
         fclose(inp);
         errormsg(WHERE,ERR_OPEN,dest,O_WRONLY|O_CREAT|O_TRUNC);
-        return(-1); }
+        return(-1); 
+	}
     if((outp=fdopen(outd,"wb"))==NULL) {
         close(outd);
         fclose(inp);
         errormsg(WHERE,ERR_FDOPEN,dest,O_WRONLY|O_CREAT|O_TRUNC);
-        return(-1); }
+        return(-1); 
+	}
     setvbuf(outp,NULL,_IOFBF,8*1024);
     length=filelength(ind);
     if(!length) {
         fclose(inp);
         fclose(outp);
         errormsg(WHERE,ERR_LEN,src,0);
-        return(-1); }
+        return(-1); 
+	}
     if((buf=(char *)MALLOC(MV_BUFLEN))==NULL) {
         fclose(inp);
         fclose(outp);
         errormsg(WHERE,ERR_ALLOC,nulstr,MV_BUFLEN);
-        return(-1); }
+        return(-1); 
+	}
     l=0L;
     while(l<length) {
         bprintf("%2lu%%",l ? (long)(100.0/((float)length/l)) : 0L);
@@ -2282,15 +2294,18 @@ int sbbs_t::mv(char *src, char *dest, char copy)
             fclose(inp);
             fclose(outp);
             errormsg(WHERE,ERR_READ,src,chunk);
-            return(-1); }
+            return(-1); 
+		}
         if(fwrite(buf,1,chunk,outp)!=chunk) {
             FREE(buf);
             fclose(inp);
             fclose(outp);
             errormsg(WHERE,ERR_WRITE,dest,chunk);
-            return(-1); }
+            return(-1); 
+		}
         l+=chunk;
-        bputs("\b\b\b"); }
+        bputs("\b\b\b"); 
+	}
     bputs("   \b\b\b");  /* erase it */
     attr(atr);
     /* getftime(ind,&ftime);
@@ -2300,7 +2315,8 @@ int sbbs_t::mv(char *src, char *dest, char copy)
     fclose(outp);
     if(!copy && remove(src)) {
         errormsg(WHERE,ERR_REMOVE,src,0);
-        return(-1); }
+        return(-1); 
+	}
     return(0);
 }
 
@@ -2535,7 +2551,8 @@ void sbbs_t::catsyslog(int crash)
 	if(length) {
 		if((buf=(char HUGE16 *)LMALLOC(length))==NULL) {
 			errormsg(WHERE,ERR_ALLOC,str,length);
-			return; }
+			return; 
+		}
 		rewind(logfile_fp);
 		if(fread(buf,1,length,logfile_fp)!=(size_t)length) {
 			errormsg(WHERE,ERR_READ,"log file",length);
@@ -2551,12 +2568,14 @@ void sbbs_t::catsyslog(int crash)
 		if((file=nopen(str,O_WRONLY|O_APPEND|O_CREAT))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_APPEND|O_CREAT);
 			FREE((char *)buf);
-			return; }
+			return; 
+		}
 		if(lwrite(file,buf,length)!=length) {
 			close(file);
 			errormsg(WHERE,ERR_WRITE,str,length);
 			FREE((char *)buf);
-			return; }
+			return; 
+		}
 		close(file);
 		if(crash) {
 			for(i=0;i<2;i++) {
@@ -2564,14 +2583,19 @@ void sbbs_t::catsyslog(int crash)
 				if((file=nopen(str,O_WRONLY|O_APPEND|O_CREAT))==-1) {
 					errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_APPEND|O_CREAT);
 					FREE((char *)buf);
-					return; }
+					return; 
+				}
 				if(lwrite(file,buf,length)!=length) {
 					close(file);
 					errormsg(WHERE,ERR_WRITE,str,length);
 					FREE((char *)buf);
-					return; }
-				close(file); } }
-		FREE((char *)buf); }
+					return; 
+				}
+				close(file); 
+			} 
+		}
+		FREE((char *)buf); 
+	}
 
 	fclose(logfile_fp);
 
@@ -2594,7 +2618,8 @@ void sbbs_t::logoffstats()
 		sprintf(str,"%sdsts.dab",i ? cfg.ctrl_dir : cfg.node_dir);
 		if((file=nopen(str,O_RDWR))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_RDWR);
-			return; }
+			return; 
+		}
 		lseek(file,12L,SEEK_SET);   /* Skip timestamp, logons and logons today */
 		read(file,&stats.timeon,4);   /* Total time on system  */
 		read(file,&stats.ttoday,4); /* Time today on system  */
@@ -2687,7 +2712,8 @@ void node_thread(void* arg)
 				if((file=sbbs->nopen(str,O_RDONLY))==-1) {
 					sbbs->errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
 					sbbs->hangup();
-					break; }
+					break; 
+				}
 				FREE_AND_NULL(sbbs->main_csi.cs);
 				sbbs->freevars(&sbbs->main_csi);
 				sbbs->clearvars(&sbbs->main_csi);
@@ -2697,7 +2723,8 @@ void node_thread(void* arg)
 					close(file);
 					sbbs->errormsg(WHERE,ERR_ALLOC,str,sbbs->main_csi.length);
 					sbbs->hangup();
-					break; }
+					break; 
+				}
 
 				if(lread(file,sbbs->main_csi.cs,sbbs->main_csi.length)
 					!=(int)sbbs->main_csi.length) {
@@ -2706,7 +2733,8 @@ void node_thread(void* arg)
 					FREE(sbbs->main_csi.cs);
 					sbbs->main_csi.cs=NULL;
 					sbbs->hangup();
-					break; }
+					break; 
+				}
 				close(file);
 
 				curshell=sbbs->useron.shell;
@@ -2757,7 +2785,8 @@ void node_thread(void* arg)
 			if(user.misc&DELETED) {
 				if(strcmp(uname,"DELETED USER"))
 					putusername(&sbbs->cfg,i,nulstr);
-				continue; }
+				continue; 
+			}
 
 			if(strcmp(user.alias,uname))
 				putusername(&sbbs->cfg,i,user.alias);
@@ -2780,7 +2809,8 @@ void node_thread(void* arg)
 							+(sbbs->cfg.val_expire[sbbs->cfg.level_expireto[user.level]]*24*60*60);
 					else
 						user.expire=0;
-					user.level=sbbs->cfg.val_level[sbbs->cfg.level_expireto[user.level]]; }
+					user.level=sbbs->cfg.val_level[sbbs->cfg.level_expireto[user.level]]; 
+				}
 				else {
 					if(sbbs->cfg.level_misc[user.level]&LEVEL_EXPTOLVL)
 						user.level=sbbs->cfg.level_expireto[user.level];
@@ -2792,7 +2822,8 @@ void node_thread(void* arg)
 					user.flags4&=~sbbs->cfg.expired_flags4; /* expired status */
 					user.exempt&=~sbbs->cfg.expired_exempt;
 					user.rest|=sbbs->cfg.expired_rest;
-					user.expire=0; }
+					user.expire=0; 
+				}
 				putuserrec(&sbbs->cfg,i,U_LEVEL,2,ultoa(user.level,str,10));
 				putuserrec(&sbbs->cfg,i,U_FLAGS1,8,ultoa(user.flags1,str,16));
 				putuserrec(&sbbs->cfg,i,U_FLAGS2,8,ultoa(user.flags2,str,16));
@@ -2805,8 +2836,9 @@ void node_thread(void* arg)
 					sbbs->useron=user;
 					sbbs->online=ON_LOCAL;
 					sbbs->exec_bin(sbbs->cfg.expire_mod,&sbbs->main_csi);
-					sbbs->online=0; }
+					sbbs->online=0; 
 				}
+			}
 
 			/***********************************************************/
 			/* Auto deletion based on expiration date or days inactive */
@@ -2819,7 +2851,8 @@ void node_thread(void* arg)
 				sbbs->logentry("!*",str);
 				sbbs->delallmail(i);
 				putusername(&sbbs->cfg,i,nulstr);
-				putuserrec(&sbbs->cfg,i,U_MISC,8,ultoa(user.misc|DELETED,str,16)); }
+				putuserrec(&sbbs->cfg,i,U_MISC,8,ultoa(user.misc|DELETED,str,16)); 
+			}
 		}
 
 		lprintf("Node %d Purging deleted/expired e-mail",sbbs->cfg.node_num);
@@ -3212,7 +3245,8 @@ void DLLCALL bbs_thread(void* arg)
 			if((file=sopen(str,O_WRONLY|O_CREAT|O_APPEND, SH_DENYNO))==-1) {
 				lprintf("!ERROR %d creating %s",errno, str);
 				cleanup(1);
-				return; }
+				return; 
+			}
 			while(filelength(file)<DSTSDABLEN)
 				if(write(file,"\0",1)!=1)
 					break;				/* Create NULL system dsts.dab */
