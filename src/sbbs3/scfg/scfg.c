@@ -75,6 +75,7 @@ void allocfail(uint size)
 int main(int argc, char **argv)
 {
 	char	**mopt,*p;
+    char    errormsg[MAX_PATH*2];
 	int 	i,j,main_dflt=0,chat_dflt=0;
 	uint	u;
 	long	l;
@@ -162,7 +163,7 @@ uifc.size=sizeof(uifc);
 #if defined(USE_DIALOG)
 if(!door_mode)
     i=uifcinid(&uifc);  /* libdialog */
-else    
+else
 #elif !defined(__unix__)
 if(!door_mode)
     i=uifcini(&uifc);   /* conio */
@@ -202,6 +203,21 @@ if(uifc.scrn(str)) {
 	printf(" USCRN (len=%d) failed!\r\n",uifc.scrn_len+1);
 	bail(1);
 }
+
+if(!fexist(uifc.helpdatfile)) {
+    sprintf(errormsg,"Help file (%s) missing!",uifc.helpdatfile);
+    uifc.msg(errormsg);
+}
+if(!fexist(uifc.helpixbfile)) {
+    sprintf(errormsg,"Help file (%s) missing!",uifc.helpixbfile);
+    uifc.msg(errormsg);
+}
+sprintf(str,"%smain.cnf",cfg.ctrl_dir);
+if(!fexist(str)) {
+    sprintf(errormsg,"Main configuration file (%s) missing!",str);
+    uifc.msg(errormsg);
+}
+
 i=0;
 strcpy(mopt[i++],"Nodes");
 strcpy(mopt[i++],"System");
