@@ -38,9 +38,16 @@
 #ifndef _XSDKWRAP_H
 #define _XSDKWRAP_H
 
-/**********/
-/* Macros */
-/**********/
+#if defined(__unix__)
+
+	int kbhit(void);
+	int getch(void);
+
+#else	/* DOS-Based */
+
+	#include <conio.h>
+
+#endif
 
 #if defined(_WIN32)
 
@@ -78,6 +85,66 @@
 
 #endif
 
+#ifdef __unix__
+
+	#include <pthread.h>	/* POSIX threads and mutexes */
+	#include <semaphore.h>	/* POSIX semaphores */
+	ulong _beginthread(void( *start_address )( void * )
+		,unsigned stack_size, void *arglist);
+
+#elif defined(_WIN32)	
+
+	/* POIX semaphores */
+	typedef HANDLE sem_t;
+	#define sem_init(psem,ps,v)			ResetEvent(*(psem))
+	#define sem_wait(psem)				WaitForSingleObject(*(psem),INFINITE)
+	#define sem_post(psem)				SetEvent(*(psem))
+	#define sem_destroy(psem)			CloseHandle(*(psem))
+
+	/* POIX mutexes */
+	typedef HANDLE pthread_mutex_t;
+	#define pthread_mutex_init(pmtx,v)	*(pmtx)=CreateMutex(NULL,FALSE,NULL)
+	#define pthread_mutex_lock(pmtx)	WaitForSingleObject(*(pmtx),INFINITE)
+	#define pthread_mutex_unlock(pmtx)	ReleaseMutex(*(pmtx))
+	#define	pthread_mutex_destroy(pmtx)	CloseHandle(*(pmtx))
+
+#else
+
+	#warning "Need semaphore wrappers."
+
+#endif
+
+
+#if defined(_WIN32)
+
+	#define mswait(x)			Sleep(x)
+
+#elif defined(__OS2__)
+
+	#define mswait(x)			DosSleep(x)
+
+#elif defined(__unix__)
+
+	#define mswait(x)			usleep(x*1000)
+	#define _mkdir(dir)			mkdir(dir,0777)
+	#define _rmdir(dir)			rmdir(dir)
+	#define tell(fd)			lseek(fd,0,SEEK_CUR)
+
+	char* _fullpath(char* absPath, const char* relPath
+								,size_t maxLength);
+
+#elif defined(__MSDOS__)
+
+	void mswait(int ms);	/* Wait a specific number of milliseconds */
+
+#else	/* Unsupported OS */
+
+	#warning "Unsupported Target: Need some macros of function prototypes here."
+
+#endif
+
+
+
 #ifndef BOOL
 	#define BOOL	int
 #endif
@@ -104,6 +171,10 @@ extern "C" {
 	long	filelength(int fd);
 	char*	strupr(char* str);
 	char*	strlwr(char* str);
+#endif
+
+#if !defined(_MSC_VER) && !defined(__BORLANDC__)
+	char*	ultoa(unsigned long val, char* str, int radix);
 #endif
 
 BOOL	fexist(char *filespec);
