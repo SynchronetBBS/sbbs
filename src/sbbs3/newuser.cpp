@@ -180,7 +180,8 @@ void sbbs_t::newuser()
 				if(useron.alias[0]<=SP || !isalpha(useron.alias[0])
 					|| !stricmp(useron.alias,cfg.sys_id)
 					|| strchr(useron.alias,0xff)
-					|| matchuser(&cfg,useron.alias) || trashcan(useron.alias,"name")
+					|| matchuser(&cfg,useron.alias,TRUE /* sysop_alias */) 
+					|| trashcan(useron.alias,"name")
 					|| (!(cfg.uq&UQ_ALIASES) && !strchr(useron.alias,SP))) {
 					bputs(text[YouCantUseThatName]);
 					continue; }

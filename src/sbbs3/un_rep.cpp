@@ -151,13 +151,8 @@ bool sbbs_t::unpack_rep(char* repfile)
 			j=atoi(str);
 			if(j && j>lastuser(&cfg))
 				j=0;
-			if(!j &&
-				(!stricmp(str,"SYSOP")
-				|| !stricmp(str,cfg.sys_id)
-				|| !stricmp(str,cfg.sys_op)))
-				j=1;
 			if(!j)
-				j=matchuser(&cfg,str);
+				j=matchuser(&cfg,str,TRUE /* sysop_alias */);
 			if(!j) {
 				bputs(text[UnknownUser]);
 				continue; }

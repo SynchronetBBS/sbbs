@@ -1405,7 +1405,7 @@ int sbbs_t::exec(csi_t *csi)
 					case USER_STRING_ALIAS:
 						if(!isalpha(csi->str[0]) || trashcan(csi->str,"name"))
 							break;
-						i=matchuser(&cfg,csi->str);
+						i=matchuser(&cfg,csi->str,TRUE /*sysop_alias*/);
 						if(i && i!=useron.number)
 							break;
 						sprintf(useron.alias,"%.*s",LEN_ALIAS,csi->str);

@@ -518,6 +518,7 @@ js_matchuser(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	char*		p;
 	JSString*	js_str;
 	scfg_t*		cfg;
+	BOOL		sysop_alias=TRUE;
 
 	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_FALSE);
@@ -527,12 +528,15 @@ js_matchuser(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_TRUE);
 	}
 
+	if(argc>1)
+		sysop_alias=JSVAL_TO_BOOLEAN(argv[1]);
+
 	if((p=JS_GetStringBytes(js_str))==NULL) {
 		*rval = INT_TO_JSVAL(0);
 		return(JS_TRUE);
 	}
 
-	*rval = INT_TO_JSVAL(matchuser(cfg,p));
+	*rval = INT_TO_JSVAL(matchuser(cfg,p,sysop_alias));
 	return(JS_TRUE);
 }
 

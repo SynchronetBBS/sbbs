@@ -994,7 +994,7 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 					csi->ip+=4;
 					if(lp) {
 						if(pp && *pp)
-							*lp=matchuser(&cfg, *pp);
+							*lp=matchuser(&cfg, *pp, TRUE /*sysop_alias*/);
 						else
 							*lp=0; 
 					}

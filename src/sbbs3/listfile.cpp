@@ -491,7 +491,7 @@ bool sbbs_t::removefcdt(file_t* f)
 	int		u;
 	long	cdt;
 
-	if((u=matchuser(&cfg,f->uler))==0) {
+	if((u=matchuser(&cfg,f->uler,TRUE /*sysop_alias*/))==0) {
 	   bputs(text[UnknownUser]);
 	   return(false); }
 	cdt=0L;
@@ -1079,7 +1079,7 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 						if(noyes(text[RemoveCreditsQ]))
 	/* Fall through */      break; }
 				case 'C':   /* remove credits only */
-					if((i=matchuser(&cfg,f.uler))==0) {
+					if((i=matchuser(&cfg,f.uler,TRUE /*sysop_alias*/))==0) {
 						bputs(text[UnknownUser]);
 						break; }
 					if(dir_op(dirnum)) {

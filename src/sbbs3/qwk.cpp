@@ -87,14 +87,14 @@ int sbbs_t::qwk_route(char *inaddr, char *fulladdr)
 	sprintf(node,"%.8s",p);                 /* node = destination node */
 	truncsp(node);
 
-	for(i=0;i<cfg.total_qhubs;i++)				/* Check if destination is our hub */
+	for(i=0;i<cfg.total_qhubs;i++)			/* Check if destination is our hub */
 		if(!stricmp(cfg.qhub[i]->id,node))
 			break;
 	if(i<cfg.total_qhubs) {
 		strcpy(fulladdr,node);
 		return(0); }
 
-	i=matchuser(&cfg,node);						/* Check if destination is a node */
+	i=matchuser(&cfg,node,FALSE);			/* Check if destination is a node */
 	if(i) {
 		getuserrec(&cfg,i,U_REST,8,str);
 		if(ahtoul(str)&FLAG('Q')) {
@@ -115,7 +115,7 @@ int sbbs_t::qwk_route(char *inaddr, char *fulladdr)
 			strcpy(fulladdr,inaddr);
 			return(0); }
 
-		i=matchuser(&cfg,node);					/* Check if next hop is a node */
+		i=matchuser(&cfg,node,FALSE);			/* Check if next hop is a node */
 		if(i) {
 			getuserrec(&cfg,i,U_REST,8,str);
 			if(ahtoul(str)&FLAG('Q')) {
@@ -155,7 +155,7 @@ int sbbs_t::qwk_route(char *inaddr, char *fulladdr)
 	if(i<cfg.total_qhubs)
 		return(0);
 
-	i=matchuser(&cfg,node);						/* Check if first hop is a node */
+	i=matchuser(&cfg,node,FALSE);				/* Check if first hop is a node */
 	if(i) {
 		getuserrec(&cfg,i,U_REST,8,str);
 		if(ahtoul(str)&FLAG('Q'))

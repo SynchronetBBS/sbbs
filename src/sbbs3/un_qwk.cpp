@@ -116,12 +116,8 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 			j=atoi(str);
 			if(j && j>lastuser(&cfg))
 				j=0;
-			if(!j && !stricmp(str,"SYSOP"))
-				j=1;
 			if(!j)
-				j=matchuser(&cfg,str);
-			if(!j && !stricmp(str,cfg.sys_id))
-				j=1;
+				j=matchuser(&cfg,str,TRUE /* sysop_alias */);
 			if(!j) {
 				lprintf("!NetMail from %s to UNKNOWN USER: %s", cfg.qhub[hubnum]->id, str);
 				continue; 
