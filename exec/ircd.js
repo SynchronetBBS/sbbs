@@ -1009,7 +1009,7 @@ while (!server.terminated) {
 	readme=socket_select(poll_clients,1000000);
 	for(thisPolled in readme)
 	{
-		Clients[poll_client_map[thisPolled]].work();
+		Clients[poll_client_map[readme[thisPolled]]].work();
 	}
 
 	// Scan C:Lines for servers to connect to automatically.
