@@ -40,7 +40,7 @@ lib-netbsd          -a lib/mozilla/js/netbsd.release  lib/mozilla/nspr/netbsd.re
 lib-netbsd.release  -a lib/mozilla/js/netbsd.release  lib/mozilla/nspr/netbsd.release
 lib-netbsd.debug    -a lib/mozilla/js/netbsd.debug    lib/mozilla/nspr/netbsd.debug
 src-sbbs3           -a src/build src/sbbs3 src/xpdev src/smblib src/uifc include/mozilla src/conio
-run-sbbs3           -a ctrl text exec xtrn node1 node2 node3 node4 docs
+run-sbbs3           -a ctrl text exec xtrn node1 node2 node3 node4 docs html
 install install
 include include
 lib	lib
