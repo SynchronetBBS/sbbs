@@ -221,16 +221,14 @@ int uifcini32(uifcapi_t* uifcapi)
     clrscr();
 
     gettextinfo(&txtinfo);
-#ifdef _WIN32
     /* unsupported mode? */
     if(txtinfo.screenheight<MIN_LINES
 /*        || txtinfo.screenheight>MAX_LINES */
-        || txtinfo.screenwidth<80) {
+        || txtinfo.screenwidth<40) {
         textmode(C80);  /* set mode to 80x25*/
         gettextinfo(&txtinfo);
     }
 
-#endif
 
     api->scrn_len=txtinfo.screenheight;
     if(api->scrn_len<MIN_LINES) {
@@ -564,7 +562,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 			*(ptr++)='[';
 			*(ptr++)=hclr|(bclr<<4);
 			/* *(ptr++)='þ'; */
-			*(ptr++)='X';
+			*(ptr++)=0xfe;
 			*(ptr++)=lclr|(bclr<<4);
 			*(ptr++)=']';
 			*(ptr++)=hclr|(bclr<<4);
@@ -1419,7 +1417,7 @@ int uinput(int mode, int left, int top, char *prompt, char *str,
 		in_win[2]='[';
 		in_win[3]=hclr|(bclr<<4);
 		/* in_win[4]='þ'; */
-		in_win[4]='X';
+		in_win[4]=0xfe;
 		in_win[5]=lclr|(bclr<<4);
 		in_win[6]=']';
 		in_win[7]=hclr|(bclr<<4);
@@ -2064,7 +2062,7 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 			tmp_buffer2[2]='[';
 			tmp_buffer2[3]=hclr|(bclr<<4);
 			/* tmp_buffer2[4]='þ'; */
-			tmp_buffer2[4]='X';
+			tmp_buffer2[4]=0xfe;
 			tmp_buffer2[5]=lclr|(bclr<<4);
 			tmp_buffer2[6]=']';
 			tmp_buffer2[7]=hclr|(bclr<<4);
