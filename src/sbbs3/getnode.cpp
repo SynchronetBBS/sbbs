@@ -99,9 +99,9 @@ void sbbs_t::getnodedat(uint number, node_t *node, bool lockit)
 void sbbs_t::nodesync()
 {
 	char	str[256],today[32];
-	int		atr=curatr; /* was lclatr(-1) 01/29/96 */
+	int		atr=curatr;
 
-	if(nodesync_inside) 
+	if(nodesync_inside || !online) 
 		return;
 	nodesync_inside=1;
 
