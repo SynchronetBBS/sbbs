@@ -1055,56 +1055,57 @@ static BYTE* telnet_interpret(sbbs_t* sbbs, BYTE* inbuf, int inlen,
 						,telnet_cmd_desc(command)
 						,telnet_opt_desc(option));
 
-				if(command==TELNET_DO || command==TELNET_DONT) {	/* local options */
-					if(sbbs->telnet_local_option[option]!=command) {
-						sbbs->telnet_local_option[option]=command;
-						sbbs->send_telnet_cmd(telnet_opt_ack(command),option);
-					}
-				} else { /* WILL/WONT (remote options) */ 
-					if(sbbs->telnet_remote_option[option]!=command) {	
-					
-						switch(option) {
-							case TELNET_BINARY_TX:
-							case TELNET_ECHO:
-							case TELNET_TERM_TYPE:
-							case TELNET_TERM_SPEED:
-							case TELNET_SUP_GA:
-							case TELNET_NEGOTIATE_WINDOW_SIZE:
-								sbbs->telnet_remote_option[option]=command;
-								sbbs->send_telnet_cmd(telnet_opt_ack(command),option);
-								break;
-							default: /* unsupported remote options */
-								if(command==TELNET_WILL) /* NAK */
-									sbbs->send_telnet_cmd(telnet_opt_nak(command),option);
-								break;
+				if(!(sbbs->telnet_mode&TELNET_MODE_GATE)) {
+					if(command==TELNET_DO || command==TELNET_DONT) {	/* local options */
+						if(sbbs->telnet_local_option[option]!=command) {
+							sbbs->telnet_local_option[option]=command;
+							sbbs->send_telnet_cmd(telnet_opt_ack(command),option);
+						}
+					} else { /* WILL/WONT (remote options) */ 
+						if(sbbs->telnet_remote_option[option]!=command) {	
+						
+							switch(option) {
+								case TELNET_BINARY_TX:
+								case TELNET_ECHO:
+								case TELNET_TERM_TYPE:
+								case TELNET_TERM_SPEED:
+								case TELNET_SUP_GA:
+								case TELNET_NEGOTIATE_WINDOW_SIZE:
+									sbbs->telnet_remote_option[option]=command;
+									sbbs->send_telnet_cmd(telnet_opt_ack(command),option);
+									break;
+								default: /* unsupported remote options */
+									if(command==TELNET_WILL) /* NAK */
+										sbbs->send_telnet_cmd(telnet_opt_nak(command),option);
+									break;
+							}
+						}
+
+						if(command==TELNET_WILL && option==TELNET_TERM_TYPE) {
+							if(startup->options&BBS_OPT_DEBUG_TELNET)
+								lprintf(LOG_DEBUG,"Node %d requesting telnet terminal type"
+									,sbbs->cfg.node_num);
+
+							char	buf[64];
+							sprintf(buf,"%c%c%c%c%c%c"
+								,TELNET_IAC,TELNET_SB
+								,TELNET_TERM_TYPE,TELNET_TERM_SEND
+								,TELNET_IAC,TELNET_SE);
+							sbbs->putcom(buf,6);
+						}
+						else if(command==TELNET_WILL && option==TELNET_TERM_SPEED) {
+							if(startup->options&BBS_OPT_DEBUG_TELNET)
+								lprintf(LOG_DEBUG,"Node %d requesting telnet terminal speed"
+									,sbbs->cfg.node_num);
+
+							char	buf[64];
+							sprintf(buf,"%c%c%c%c%c%c"
+								,TELNET_IAC,TELNET_SB
+								,TELNET_TERM_SPEED,TELNET_TERM_SEND
+								,TELNET_IAC,TELNET_SE);
+							sbbs->putcom(buf,6);
 						}
 					}
-
-					if(command==TELNET_WILL && option==TELNET_TERM_TYPE) {
-						if(startup->options&BBS_OPT_DEBUG_TELNET)
-							lprintf(LOG_DEBUG,"Node %d requesting telnet terminal type"
-								,sbbs->cfg.node_num);
-
-						char	buf[64];
-						sprintf(buf,"%c%c%c%c%c%c"
-							,TELNET_IAC,TELNET_SB
-							,TELNET_TERM_TYPE,TELNET_TERM_SEND
-							,TELNET_IAC,TELNET_SE);
-						sbbs->putcom(buf,6);
-					}
-					else if(command==TELNET_WILL && option==TELNET_TERM_SPEED) {
-						if(startup->options&BBS_OPT_DEBUG_TELNET)
-							lprintf(LOG_DEBUG,"Node %d requesting telnet terminal speed"
-								,sbbs->cfg.node_num);
-
-						char	buf[64];
-						sprintf(buf,"%c%c%c%c%c%c"
-							,TELNET_IAC,TELNET_SB
-							,TELNET_TERM_SPEED,TELNET_TERM_SEND
-							,TELNET_IAC,TELNET_SE);
-						sbbs->putcom(buf,6);
-					}
-
 				}
 
                 sbbs->telnet_cmdlen=0;
