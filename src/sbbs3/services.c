@@ -667,6 +667,7 @@ js_client_add(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 	if((service_client=(service_client_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
+	service_client->service->clients++;
 	memset(&client,0,sizeof(client));
 	client.size=sizeof(client);
 	client.protocol=service_client->service->protocol;
@@ -739,6 +740,7 @@ static JSBool
 js_client_remove(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	SOCKET	sock=INVALID_SOCKET;
+	service_client_t* service_client;
 
 	if(active_clients)
 		active_clients--, update_clients();
@@ -746,6 +748,12 @@ js_client_remove(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 	sock=js_socket(cx,argv[0]);
 
 	client_off(sock);
+
+	if((service_client=(service_client_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	service_client->service->clients--;
+
 #if 0	
 	lprintf(LOG_DEBUG,"client_remove(%04u)",sock);
 #endif
@@ -1595,6 +1603,8 @@ void DLLCALL services_thread(void* arg)
 	uptime=0;
 	served=0;
 	startup->recycle_now=FALSE;
+	startup->shutdown_now=FALSE;
+
 	do {
 
 		thread_up(FALSE /* setuid */);
@@ -1789,23 +1799,30 @@ void DLLCALL services_thread(void* arg)
 			for(i=0;i<(int)services;i++) 
 				total_clients+=service[i].clients;
 
-			if(total_clients==0 && !(startup->options&BBS_OPT_NO_RECYCLE)) {
-				if((p=semfile_list_check(&initialized,&recycle_semfiles))!=NULL) {
-					lprintf(LOG_INFO,"0000 Recycle semaphore file (%s) detected",p);
+			if(total_clients==0) {
+				if(!(startup->options&BBS_OPT_NO_RECYCLE)) {
+					if((p=semfile_list_check(&initialized,&recycle_semfiles))!=NULL) {
+						lprintf(LOG_INFO,"0000 Recycle semaphore file (%s) detected",p);
+						break;
+					}
+#if 0	/* unused */
+					if(startup->recycle_sem!=NULL && sem_trywait(&startup->recycle_sem)==0)
+						startup->recycle_now=TRUE;
+#endif
+					if(startup->recycle_now==TRUE) {
+						lprintf(LOG_NOTICE,"0000 Recycle semaphore signaled");
+						startup->recycle_now=FALSE;
+						break;
+					}
+				}
+				if(((p=semfile_list_check(&initialized,&shutdown_semfiles))!=NULL
+						&& lprintf(LOG_INFO,"0000 Shutdown semaphore file (%s) detected",p))
+					|| (startup->shutdown_now==TRUE
+						&& lprintf(LOG_INFO,"0000 Shutdown semaphore signaled"))) {
+					startup->shutdown_now=FALSE;
+					terminated=TRUE;
 					break;
 				}
-				if(startup->recycle_sem!=NULL && sem_trywait(&startup->recycle_sem)==0)
-					startup->recycle_now=TRUE;
-				if(startup->recycle_now==TRUE) {
-					lprintf(LOG_NOTICE,"0000 Recycle semaphore signaled");
-					startup->recycle_now=FALSE;
-					break;
-				}
-			}
-			if((p=semfile_list_check(&initialized,&shutdown_semfiles))!=NULL) {
-				lprintf(LOG_INFO,"0000 Shutdown semaphore file (%s) detected",p);
-				terminated=TRUE;
-				break;
 			}
 
 			/* Setup select() parms */
