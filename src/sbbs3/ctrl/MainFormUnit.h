@@ -245,6 +245,7 @@ __published:	// IDE-managed Components
     TMenuItem *ServicesStopMenuItem;
     TAction *ServicesConfigure;
     TMenuItem *UserTruncateMenuItem;
+	TMenuItem *HelpFAQMenuItem;
     void __fastcall FileExitMenuItemClick(TObject *Sender);
 	void __fastcall ViewToolbarMenuItemClick(TObject *Sender);
 	void __fastcall FormClose(TObject *Sender, TCloseAction &Action);

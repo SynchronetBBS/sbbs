@@ -2546,6 +2546,11 @@ object MainForm: TMainForm
         Hint = 'http://www.synchro.net/docs/sysop.html'
         OnClick = WebPageMenuItemClick
       end
+      object HelpFAQMenuItem: TMenuItem
+        Caption = 'Frequently Asked Questions'
+        Hint = 'ftp://ftp.synchro.net/v3cfgfaq.txt'
+        OnClick = WebPageMenuItemClick
+      end
       object N7: TMenuItem
         Caption = '-'
       end
