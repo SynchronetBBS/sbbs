@@ -4,11 +4,12 @@
   <MACROS>
     <VERSION value="BCB.05.03"/>
     <PROJECT value="sbbsctrl.exe"/>
-    <OBJFILES value="sbbsctrl.obj MainFormUnit.obj CtrlPathDialogUnit.obj TelnetCfgDlgUnit.obj 
-      MailCfgDlgUnit.obj FtpCfgDlgUnit.obj TextFileEditUnit.obj 
-      TelnetFormUnit.obj FtpFormUnit.obj MailFormUnit.obj NodeFormUnit.obj 
-      StatsFormUnit.obj AboutBoxFormUnit.obj StatsLogFormUnit.obj 
-      CodeInputFormUnit.obj ClientFormUnit.obj SpyFormUnit.obj ..\ringbuf.obj"/>
+    <OBJFILES value="emulvt.obj sbbsctrl.obj MainFormUnit.obj CtrlPathDialogUnit.obj 
+      TelnetCfgDlgUnit.obj MailCfgDlgUnit.obj FtpCfgDlgUnit.obj 
+      TextFileEditUnit.obj TelnetFormUnit.obj FtpFormUnit.obj MailFormUnit.obj 
+      NodeFormUnit.obj StatsFormUnit.obj AboutBoxFormUnit.obj 
+      StatsLogFormUnit.obj CodeInputFormUnit.obj ClientFormUnit.obj 
+      SpyFormUnit.obj ..\ringbuf.obj"/>
     <RESFILES value="sbbsctrl.res"/>
     <IDLFILES value=""/>
     <IDLGENFILES value=""/>
@@ -19,12 +20,12 @@
       StatsFormUnit.dfm AboutBoxFormUnit.dfm StatsLogFormUnit.dfm 
       CodeInputFormUnit.dfm ClientFormUnit.dfm SpyFormUnit.dfm"/>
     <LIBFILES value="sbbs.lib mailsrvr.lib ftpsrvr.lib"/>
-    <LIBRARIES value="IcsBcb50.lib vcl50.lib"/>
-    <SPARELIBS value="vcl50.lib IcsBcb50.lib"/>
+    <LIBRARIES value="vcl50.lib"/>
+    <SPARELIBS value="vcl50.lib"/>
     <PACKAGES value="vcl50.bpi vclx50.bpi vcljpg50.bpi bcbsmp50.bpi vclmid50.bpi vcldb50.bpi 
       vclbde50.bpi inet50.bpi inetdb50.bpi vcldbx50.bpi qrpt50.bpi teeui50.bpi 
       teedb50.bpi tee50.bpi dss50.bpi nmfast50.bpi dclocx50.bpi"/>
-    <PATHCPP value=".;..\..\sbbs3"/>
+    <PATHCPP value=".;.."/>
     <PATHPAS value=".;"/>
     <PATHRC value=".;"/>
     <PATHASM value=".;"/>
@@ -34,13 +35,13 @@
     <USERDEFINES value="SBBS;SMB_GETMSGTXT;_DEBUG"/>
     <SYSDEFINES value="NO_STRICT;_VIS_NOLIB"/>
     <MAINSOURCE value="sbbsctrl.cpp"/>
-    <INCLUDEPATH value="..\..\ics\DELPHI\VC32;..\;C:\Borland\CBuilder5\Projects;..;$(BCB)\include;$(BCB)\include\vcl"/>
-    <LIBPATH value="$(BCB)\Projects\Lib;..\..\ics\DELPHI\VC32;..\;C:\Borland\CBuilder5\Projects;$(BCB)\lib\obj;$(BCB)\lib"/>
+    <INCLUDEPATH value="..\;C:\Borland\CBuilder5\Projects;..;$(BCB)\include;$(BCB)\include\vcl"/>
+    <LIBPATH value="$(BCB)\Projects\Lib;..\;C:\Borland\CBuilder5\Projects;$(BCB)\lib\obj;$(BCB)\lib"/>
     <WARNINGS value="-w-par -w-csu"/>
     <WARNOPTSTR value=""/>
   </MACROS>
   <OPTIONS>
-    <IDLCFLAGS value="-I..\..\ics\DELPHI\VC32 -I..\. -IC:\Borland\CBuilder5\Projects -I.. 
+    <IDLCFLAGS value="-I..\. -IC:\Borland\CBuilder5\Projects -I.. 
       -I$(BCB)\include -I$(BCB)\include\vcl -src_suffix cpp -DSBBS 
       -DSMB_GETMSGTXT -D_DEBUG -boa"/>
     <CFLAG1 value="-Od -H=$(BCB)\lib\vcl50.csm -Hc -Vx -Ve -X- -r- -a8 -b- -k -y -v -vi- -c 
