@@ -125,7 +125,7 @@ int SMBCALL smb_open(smb_t* smb)
 			return(-10);
 		}
 		if(memcmp(hdr.id,"SMB\x1a",4)) {
-			sprintf(smb->last_error,"corrupt header id: %.4s",hdr.id);
+			sprintf(smb->last_error,"corrupt SMB header id: %.4s",hdr.id);
 			smb_close(smb);
 			return(-2); 
 		}
@@ -627,7 +627,7 @@ int SMBCALL smb_getmsghdr(smb_t* smb, smbmsg_t* msg)
 		return(-1);
 	}
 	if(memcmp(msg->hdr.id,"SHD\x1a",4)) {
-		sprintf(smb->last_error,"corrupt header id: %.4s",msg->hdr.id);
+		sprintf(smb->last_error,"corrupt message header id: %.4s",msg->hdr.id);
 		return(-2);
 	}
 	if(msg->hdr.version<0x110) {
