@@ -96,23 +96,6 @@ void sbbs_t::newuser()
 			hangup();
 			return; } }
 
-	if(autoterm || yesno(text[AutoTerminalQ])) {
-		useron.misc|=AUTOTERM;
-		useron.misc|=autoterm; }
-
-	if(!(useron.misc&AUTOTERM)) {
-		if(yesno(text[AnsiTerminalQ]))
-			useron.misc|=ANSI; }
-
-	if(useron.misc&ANSI) {
-		useron.rows=0;	/* Auto-rows */
-		if(useron.misc&(RIP|WIP) || yesno(text[ColorTerminalQ]))
-			useron.misc|=COLOR; }
-	else
-		useron.rows=24;
-	if(!yesno(text[ExAsciiTerminalQ]))
-		useron.misc|=NO_EXASCII;
-
 	/* Sets defaults per sysop config */
 	useron.misc|=(cfg.new_misc&~(DELETED|INACTIVE|QUIET|NETMAIL));
 	useron.qwk=(QWK_FILES|QWK_ATTACH|QWK_EMAIL|QWK_DELMAIL);
@@ -166,6 +149,34 @@ void sbbs_t::newuser()
 
 	useron.alias[0]=0;
 	while(online) {
+
+		if(autoterm || yesno(text[AutoTerminalQ])) {
+			useron.misc|=AUTOTERM;
+			useron.misc|=autoterm; 
+		} else
+			useron.misc&=~AUTOTERM;
+
+		if(!(useron.misc&AUTOTERM)) {
+			if(yesno(text[AnsiTerminalQ]))
+				useron.misc|=ANSI; 
+			else
+				useron.misc&=~ANSI;
+		}
+
+		if(useron.misc&ANSI) {
+			useron.rows=0;	/* Auto-rows */
+			if(useron.misc&(RIP|WIP) || yesno(text[ColorTerminalQ]))
+				useron.misc|=COLOR; 
+			else
+				useron.misc&=~COLOR;
+		}
+		else
+			useron.rows=24;
+		if(!yesno(text[ExAsciiTerminalQ]))
+			useron.misc|=NO_EXASCII;
+		else
+			useron.misc&=~NO_EXASCII;
+
 		if(sys_status&SS_RLOGIN && rlogin_name[0])
 			strcpy(useron.alias,rlogin_name);
 		else {
@@ -222,16 +233,6 @@ void sbbs_t::newuser()
 			else
 				break; }
 		if(!online) return;
-		while(!(sys_status&SS_RLOGIN) && !(cfg.uq&UQ_NONETMAIL) && online) {
-			bputs(text[EnterNetMailAddress]);
-			if(getstr(useron.netmail,LEN_NETMAIL,K_EDIT|K_AUTODEL|K_LINE)
-				&& !trashcan(useron.netmail,"email"))
-				break;
-		}
-		if(useron.netmail[0] && cfg.sys_misc&SM_FWDTONET && yesno(text[ForwardMailQ]))
-			useron.misc|=NETMAIL;
-		else 
-			useron.misc&=~NETMAIL;
 		if(cfg.uq&UQ_ADDRESS)
 			while(online) { 	   /* Get address and zip code */
 				bputs(text[EnterYourAddress]);
@@ -277,6 +278,17 @@ void sbbs_t::newuser()
 				,cfg.sys_misc&SM_EURODATE ? "DD/MM/YY" : "MM/DD/YY");
 			if(gettmplt(useron.birth,"nn/nn/nn",K_EDIT)==8 && getage(&cfg,useron.birth))
 				break; }
+		if(!online) return;
+		while(!(sys_status&SS_RLOGIN) && !(cfg.uq&UQ_NONETMAIL) && online) {
+			bputs(text[EnterNetMailAddress]);
+			if(getstr(useron.netmail,LEN_NETMAIL,K_EDIT|K_AUTODEL|K_LINE)
+				&& !trashcan(useron.netmail,"email"))
+				break;
+		}
+		if(useron.netmail[0] && cfg.sys_misc&SM_FWDTONET && yesno(text[ForwardMailQ]))
+			useron.misc|=NETMAIL;
+		else 
+			useron.misc&=~NETMAIL;
 		if(yesno(text[UserInfoCorrectQ]))
 			break; }
 	if(!online) return;
