@@ -348,6 +348,73 @@ static JSClass js_sysstats_class = {
 	,JS_FinalizeStub		/* finalize		*/
 };
 
+static JSBool
+js_matchuser(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		p;
+	JSString*	js_str;
+	scfg_t*		cfg;
+
+	if((cfg=(scfg_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	if((js_str=JS_ValueToString(cx, argv[0]))==NULL) {
+		*rval = INT_TO_JSVAL(0);
+		return(JS_TRUE);
+	}
+
+	if((p=JS_GetStringBytes(js_str))==NULL) {
+		*rval = INT_TO_JSVAL(0);
+		return(JS_TRUE);
+	}
+
+	*rval = INT_TO_JSVAL(matchuser(cfg,p));
+	return(JS_TRUE);
+}
+
+static JSBool
+js_trashcan(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		str;
+	char*		can;
+	JSString*	js_str;
+	JSString*	js_can;
+	scfg_t*		cfg;
+
+	if((cfg=(scfg_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	if((js_can=JS_ValueToString(cx, argv[0]))==NULL) {
+		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+		return(JS_TRUE);
+	}
+
+	if((js_str=JS_ValueToString(cx, argv[1]))==NULL) {
+		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+		return(JS_TRUE);
+	}
+
+	if((can=JS_GetStringBytes(js_can))==NULL) {
+		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+		return(JS_TRUE);
+	}
+
+	if((str=JS_GetStringBytes(js_str))==NULL) {
+		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+		return(JS_TRUE);
+	}
+
+	*rval = BOOLEAN_TO_JSVAL(trashcan(cfg,str,can));	// user args are reversed
+	return(JS_TRUE);
+}
+
+static JSFunctionSpec js_system_functions[] = {
+	{"matchuser",		js_matchuser,		1},		// exact user name matching
+	{"trashcan",		js_trashcan,		2},		// search file for pseudo-regexp
+	{0}
+};
+
+
 /* node properties */
 enum {
 	/* raw node_t fields */
@@ -603,6 +670,9 @@ JSObject* DLLCALL js_CreateSystemObject(JSContext* cx, JSObject* parent, scfg_t*
 	/***********************/
 
 	if(!JS_DefineProperties(cx, sysobj, js_system_properties))
+		return(NULL);
+
+	if (!JS_DefineFunctions(cx, sysobj, js_system_functions)) 
 		return(NULL);
 
 	statsobj = JS_DefineObject(cx, sysobj, "stats", &js_sysstats_class, NULL, 0);
