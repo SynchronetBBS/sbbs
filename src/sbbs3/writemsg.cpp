@@ -921,11 +921,12 @@ void sbbs_t::editfile(char *str)
 	if((file=nopen(str,O_RDONLY))!=-1) {
 		length=filelength(file);
 		if(length>(long)maxlines*MAX_LINE_LEN) {
-			attr(cfg.color[clr_err]);
-			bprintf("\7\r\nFile size (%lu bytes) is larger than (%lu).\r\n"
-				,length,(ulong)maxlines*MAX_LINE_LEN);
 			close(file);
 			FREE(buf); 
+			attr(cfg.color[clr_err]);
+			bprintf("\7\r\nFile size (%lu bytes) is larger than %lu (maxlines: %lu).\r\n"
+				,length, (ulong)maxlines*MAX_LINE_LEN, maxlines);
+			return;
 		}
 		if(read(file,buf,length)!=length) {
 			close(file);
