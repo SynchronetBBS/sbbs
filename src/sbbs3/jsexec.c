@@ -118,6 +118,51 @@ js_log(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 }
 
 static JSBool
+js_read(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*	buf;
+	int		rd;
+	int32	len=128;
+
+	*rval = JSVAL_VOID;
+
+	JS_ValueToInt32(cx,argv[0],&len);
+	if((buf=malloc(len))==NULL)
+		return(JS_TRUE);
+
+	rd=fread(buf,sizeof(char),len,stdin);
+
+	if(rd>=0)
+		*rval = STRING_TO_JSVAL(JS_NewStringCopyN(cx,buf,rd));
+
+	free(buf);
+    return(JS_TRUE);
+}
+
+static JSBool
+js_readln(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*	buf;
+	char*	p;
+	int32	len=128;
+
+	*rval = JSVAL_VOID;
+
+	JS_ValueToInt32(cx,argv[0],&len);
+	if((buf=malloc(len+1))==NULL)
+		return(JS_TRUE);
+
+	p=fgets(buf,len+1,stdin);
+
+	if(p!=NULL)
+		*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,p));
+
+	free(buf);
+    return(JS_TRUE);
+}
+
+
+static JSBool
 js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     uintN		i;
@@ -137,7 +182,7 @@ js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 }
 
 static JSBool
-js_print(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+js_writeln(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	if(!js_write(cx,obj,argc,argv,rval))
 		return(JS_FALSE);
@@ -245,9 +290,11 @@ js_prompt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 static jsMethodSpec js_global_functions[] = {
 	{"log",				js_log,				1},
+	{"read",			js_read,            1},
+	{"readln",			js_readln,          1},
     {"write",           js_write,           0},
-    {"writeln",         js_print,           0},
-    {"print",           js_print,           0},
+    {"writeln",         js_writeln,         0},
+    {"print",           js_writeln,         0},
     {"printf",          js_printf,          1},	
 	{"alert",			js_alert,			1},
 	{"prompt",			js_prompt,			1},
@@ -469,6 +516,7 @@ int main(int argc, char **argv, char** environ)
 	char*	module=NULL;
 	char*	p;
 	int		argn;
+	long	result;
 
 	confp=stdout;
 	errfp=stderr;
@@ -569,7 +617,15 @@ int main(int argc, char **argv, char** environ)
 	}
 	fprintf(statfp,"\n");
 
-	bail(js_exec(module,&argv[argn]));
+	result=js_exec(module,&argv[argn]);
+
+	fprintf(statfp,"\n");
+	fprintf(statfp,"JavaScript: Destroying context\n");
+	JS_DestroyContext(js_cx);
+	fprintf(statfp,"JavaScript: Destroying runtime\n");
+	JS_DestroyRuntime(js_runtime);	
+
+	bail(result);
 
 	return(-1);	/* never gets here */
 }
