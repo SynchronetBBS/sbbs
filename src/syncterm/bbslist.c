@@ -378,7 +378,7 @@ struct bbslist *show_bbslist(int mode, char *path)
 					break;
 				case MSK_DEL:
 					if(!list[opt]->name[0]) {
-						uifc.helpbuf=	"`Calming down`\n\n";
+						uifc.helpbuf=	"`Calming down`\n\n"
 										"~ Some handy tips on calming down ~\n"
 										"Close your eyes, imagine yourself alone on a brilliant white beach...\n"
 										"Picture the palm trees up towards the small town...\n"
