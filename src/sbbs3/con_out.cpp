@@ -413,7 +413,7 @@ void sbbs_t::ctrl_a(char x)
 			console&=~CON_ECHO_OFF;
 			break;
 		case '+':	/* push current attribte */
-			if(attr_sp<sizeof(attr_stack))
+			if(attr_sp<(int)sizeof(attr_stack))
 				attr_stack[attr_sp++]=curatr;
 			break;
 		case '-':	/* pop current attribute OR optimized "normal" */
