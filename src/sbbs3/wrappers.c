@@ -36,8 +36,18 @@
  ****************************************************************************/
 
 #ifdef _WIN32
+
 #include <windows.h>	/* WINAPI, etc */
 #include <io.h>			/* _findfirst */
+
+#elif defined __unix__
+
+#include <unistd.h>		/* usleep */
+#include <fcntl.h>		/* O_NOCCTY */
+#include <ctype.h>		/* toupper */
+#include <sys/kd.h>		/* KIOCSOUND */
+#include <sys/ioctl.h>	/* ioctl */
+
 #endif
 
 #include <sys/types.h>	/* _dev_t */
@@ -82,12 +92,12 @@ BOOL fexist(char *filespec)
 
 #warning "fexist() port needs to support wildcards!"
 
-	STAT stat;
+	STAT st;
 
-	if(stat(filespec, &stat)!=0)
+	if(stat(filespec, &st)!=0)
 		return(FALSE);
 
-	if(stat.st_mode&S_IFDIR)	/* Directory, not a file */
+	if(st.st_mode&S_IFDIR)	/* Directory, not a file */
 		return(FALSE);		
 
 	return(TRUE);
@@ -100,12 +110,12 @@ BOOL fexist(char *filespec)
 /****************************************************************************/
 long flength(char *filename)
 {
-	STAT stat;
+	STAT st;
 
-	if(stat(filename, &stat)!=0)
+	if(stat(filename, &st)!=0)
 		return(-1L);
 
-	return(stat.st_size);
+	return(st.st_size);
 }
 
 /****************************************************************************/
@@ -113,12 +123,12 @@ long flength(char *filename)
 /****************************************************************************/
 long fdate(char *filename)
 {
-	STAT stat;
+	STAT st;
 
-	if(stat(filename, &stat)!=0)
+	if(stat(filename, &st)!=0)
 		return(-1L);
 
-	return(stat.st_mtime);
+	return(st.st_mtime);
 }
 
 /****************************************************************************/
@@ -127,12 +137,12 @@ long fdate(char *filename)
 #ifdef __unix__
 long filelength(int fd)
 {
-	STAT stat;
+	STAT st;
 
-	if(fstat(fd, &stat)!=0)
+	if(fstat(fd, &st)!=0)
 		return(-1L);
 
-	return(stat.st_size);
+	return(st.st_size);
 }
 #endif
 
@@ -143,7 +153,7 @@ long filelength(int fd)
 #ifdef __unix__
 void sbbs_beep(int freq, int dur)
 {
-	static	console_fd=-1;
+	static int console_fd=-1;
 
 	if(console_fd == -1) 
   		console_fd = open("/dev/console", O_NOCTTY);
