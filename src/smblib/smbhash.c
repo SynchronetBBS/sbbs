@@ -261,8 +261,10 @@ int SMBCALL smb_hashmsg(smb_t* smb, smbmsg_t* msg, const uchar* text, BOOL updat
 	if(smb_findhash(smb, hashes, &found, update)==SMB_SUCCESS && !update) {
 		retval=SMB_DUPE_MSG;
 		safe_snprintf(smb->last_error,sizeof(smb->last_error)
-			,"duplicate %s hash found (message #%lu)"
-			,smb_hashsource(found.source), found.number);
+			,"duplicate %s (%s) found in message #%lu"
+			,smb_hashsourcetype(found.source)
+			,smb_hashsource(msg,found.source)
+			,found.number);
 	} else
 		if((retval=smb_addhashes(smb,hashes,/* skip_marked? */TRUE))==SMB_SUCCESS)
 			msg->flags|=MSG_FLAG_HASHED;

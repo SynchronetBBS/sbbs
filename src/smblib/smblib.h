@@ -206,7 +206,8 @@ SMBEXPORT char*		SMBCALL smb_dfieldtype(ushort type);
 SMBEXPORT char*		SMBCALL smb_faddrtoa(fidoaddr_t* addr, char* outstr);
 SMBEXPORT char*		SMBCALL smb_netaddr(net_t* net);
 SMBEXPORT char*		SMBCALL smb_zonestr(short zone, char* outstr);
-SMBEXPORT char*		SMBCALL smb_hashsource(uchar type);
+SMBEXPORT char*		SMBCALL smb_hashsource(smbmsg_t* msg, int source);
+SMBEXPORT char*		SMBCALL smb_hashsourcetype(uchar type);
 
 /* smbdump.c */
 SMBEXPORT void		SMBCALL smb_dump_msghdr(FILE* fp, smbmsg_t* msg);

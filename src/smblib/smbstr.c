@@ -135,11 +135,22 @@ char* SMBCALL smb_dfieldtype(ushort type)
 	return(str);
 }
 
-char* SMBCALL smb_hashsource(uchar type)
+char* SMBCALL smb_hashsourcetype(uchar type)
 {
 	if(type==TEXT_BODY || type==TEXT_TAIL)
 		return(smb_dfieldtype(type));
 	return(smb_hfieldtype(type));
+}
+
+char* SMBCALL smb_hashsource(smbmsg_t* msg, int source)
+{
+	switch(source) {
+		case RFC822MSGID:
+			return(msg->id);
+		case FIDOMSGID:
+			return(msg->ftn_msgid);
+	}
+	return("hash");
 }
 
 /****************************************************************************/
