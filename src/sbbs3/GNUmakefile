@@ -69,10 +69,10 @@ LIBS	+=	../mozilla/js/src/Linux_All_OPT.OBJ/libjs.a
 endif
 endif
 
-include targets.mak		# defines all targets
-include objects.mak		# defines $(OBJS)
-include headers.mak		# defines $(HEADERS)
-include sbbsdefs.mak	# defines $(SBBSDEFS)
+include targets.mk		# defines all targets
+include objects.mk		# defines $(OBJS)
+include headers.mk		# defines $(HEADERS)
+include sbbsdefs.mk		# defines $(SBBSDEFS)
 
 SBBSLIB	=	$(LIBODIR)/sbbs.a
 
@@ -177,4 +177,4 @@ $(SMBUTIL): $(EXEODIR)/smbutil.o $(SMBLIB) $(EXEODIR)/conwrap.o \
 	@echo Linking $@
 	@$(CC) $^ -o $@
 
-include depends.mak
+include depends.mk
