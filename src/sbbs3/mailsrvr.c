@@ -503,7 +503,7 @@ static ulong sockmsgtxt(SOCKET socket, smbmsg_t* msg, char* msgtxt, ulong maxlin
 		return(0);
 	if((p=smb_get_hfield(msg,RFC822REPLYTO,NULL))==NULL) {
 		if(msg->replyto_net.type==NET_INTERNET)
-			p=msg->replyto_net.addr);
+			p=msg->replyto_net.addr;
 		else if(msg->replyto!=NULL)
 			p=msg->replyto;
 	}
