@@ -200,7 +200,7 @@ void sbbs_read_ini(
 		=iniReadShortInt(fp,section,"LastNode",4);
 
 	bbs->outbuf_highwater_mark
-		=iniReadShortInt(fp,section,"OutbufHighwaterMark",128);
+		=iniReadShortInt(fp,section,"OutbufHighwaterMark",1024);
 	bbs->outbuf_drain_timeout
 		=iniReadShortInt(fp,section,"OutbufDrainTimeout",10);
 
