@@ -671,7 +671,7 @@ get_distlist(void)
 				SAFECOPY(server[s]->addr,p);
 				p=tp+1;
 				while(*p && *p<=' ') p++;	/* desc follows whitepsace */
-				SAFECOPY(server[s]->desc,++p);
+				SAFECOPY(server[s]->desc,p);
 				s++;
 				break;
 		}
