@@ -34,6 +34,7 @@
 #ifndef _CIOLIB_H_
 #define _CIOLIB_H_
 
+#include <string.h>	/* size_t */
 #include "mouse.h"
 
 enum {
