@@ -45,15 +45,26 @@ if(!msgbase.open())
 	results(LOG_ERR,format("%s opening mail base", msgbase.error));
 
 //------------------------
+// Build the body text
+//------------------------
+var i;
+var body="Form fields follow:\r\n\r\n";
+for(i in http_request.query) {
+	if(hidden_fields[i])
+		continue;
+	if(http_request.query[i].toString().length)
+		body += format(value_fmt_string, i, http_request.query[i]) + "\r\n";
+}
+
+body+=format("\r\nvia %s\r\nat %s [%s]\r\n"
+			 ,http_request.header['user-agent']
+			 ,http_request.remote_host, http_request.remote_ip);
+
+//------------------------
 // Build the e-mail header
 //------------------------
 var hdr = { from: 'FormMail',
-			to: 'Sysop',
 			subject: 'WWW Form Submission' };
-
-// Use form-specified recipient
-if(http_request.query.recipient)	
-	hdr.to				=strip_ctrl(http_request.query.recipient[0]);
 
 // Use form-specified message subject
 if(http_request.query.subject)		
@@ -69,33 +80,34 @@ if(http_request.query.email && http_request.query.email.toString().length) {
 if(http_request.query.realname && http_request.query.realname.toString().length)
 	hdr.from			=strip_ctrl(http_request.query.realname);
 
-hdr.to_net_type=netaddr_type(hdr.to);
-if(hdr.to_net_type!=NET_NONE)
-	hdr.to_net_addr=hdr.to;
-else {
-	var usrnum=system.matchuser(hdr.to);
-	if(usrnum==0)
-		results(LOG_ERR,"bad local username specified: " + hdr.to);
-	hdr.to_ext=usrnum;
+//-------------------------
+// Build the recipient list
+//-------------------------
+var recipient = ['Sysop'];
+
+// Use form-specified recipient list
+if(http_request.query.recipient)
+	recipient=http_request.query.recipient[0].split(/\s*,\s*/);
+
+var rcpt_list = [];
+
+for(i in recipient) {
+
+	var rcpt  = { to: strip_ctrl(recipient[i]) };
+
+	rcpt.to_net_type=netaddr_type(rcpt.to);
+	if(rcpt.to_net_type!=NET_NONE)
+		rcpt.to_net_addr=rcpt.to;
+	else {
+		var usrnum=system.matchuser(rcpt.to);
+		if(usrnum==0)
+			results(LOG_ERR,"bad local username specified: " + rcpt.to);
+		rcpt.to_ext=usrnum;
+	}
+	rcpt_list.push(rcpt);
 }
 
-//------------------------
-// Build the body text
-//------------------------
-var i;
-var body="Form fields follow:\r\n\r\n";
-for(i in http_request.query) {
-	if(hidden_fields[i])
-		continue;
-	if(http_request.query[i].toString().length)
-		body += format(value_fmt_string, i, http_request.query[i]) + "\r\n";
-}
-
-body+=format("\r\nvia %s\r\nat %s [%s]\r\n"
-			 ,http_request.header['user-agent']
-			 ,http_request.remote_host, http_request.remote_ip);
-	
-if(!msgbase.save_msg(hdr,client,body))
+if(!msgbase.save_msg(hdr,client,body,rcpt_list))
 	results(LOG_ERR,format("%s saving message", msgbase.error));
 
-results(LOG_INFO,"E-mail sent from " + hdr.from + " to " + hdr.to.toString().italics().bold() + " successfully.");
+results(LOG_INFO,"E-mail sent from " + hdr.from + " to " + recipient.toString().italics().bold() + " successfully.");
