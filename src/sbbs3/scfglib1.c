@@ -69,7 +69,7 @@ BOOL read_node_cfg(scfg_t* cfg, char* error)
 	strcpy(fname,"node.cnf");
 	sprintf(str,"%s%s",cfg->node_dir,fname);
 	if((instream=fnopen(NULL,str,O_RDONLY))==NULL) {
-		sprintf(error,"%d opening %s",errno,str);
+		sprintf(error,"%d (%s) opening %s",errno,strerror(errno),str);
 		return(FALSE); 
 	}
 
@@ -186,7 +186,7 @@ BOOL read_main_cfg(scfg_t* cfg, char* error)
 	strcpy(fname,"main.cnf");
 	sprintf(str,"%s%s",cfg->ctrl_dir,fname);
 	if((instream=fnopen(NULL,str,O_RDONLY))==NULL) {
-		sprintf(error,"%d opening %s",errno,str);
+		sprintf(error,"%d (%s) opening %s",errno,strerror(errno),str);
 		return(FALSE); 
 	}
 
@@ -406,7 +406,7 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error)
 	strcpy(fname,"msgs.cnf");
 	sprintf(str,"%s%s",cfg->ctrl_dir,fname);
 	if((instream=fnopen(NULL,str,O_RDONLY))==NULL) {
-		sprintf(error,"%d opening %s",errno,str);
+		sprintf(error,"%d (%s) opening %s",errno,strerror(errno),str);
 		return(FALSE);
 	}
 
