@@ -7,6 +7,7 @@
 #																		#
 # Linux: make -f Makefile.gnu											#
 # Win32: make -f Makefile.gnu os=win32									#
+# FreeBSD: make -f Makefile.gnu os=freebsd								#
 #########################################################################
 
 # $Id$
@@ -33,7 +34,11 @@ LIBDIR	:=	/usr/lib
 CFLAGS	:=	
 LFLAGS  :=	
 DELETE	=	rm -f -v
+ifeq ($(os),freebsd)	# FreeBSD
+LIBS	=	-pthread
+else
 LIBS	=	$(LIBDIR)/libpthread.a
+endif
 
 endif
 

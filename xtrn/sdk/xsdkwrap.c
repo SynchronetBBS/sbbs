@@ -49,7 +49,11 @@
 	#include <stdlib.h>
 	#include <unistd.h>
 	#include <termios.h>
+	#ifdef __FreeBSD__
+	#include <sys/kbio.h>
+	#else
 	#include <sys/kd.h>
+	#endif
 	#include <sys/time.h>
 	#include <sys/types.h>
 	#include <signal.h>
