@@ -58,7 +58,6 @@ endif
 SLASH	=	/
 OFILE	=	o
 
-LIBFILE	=	.so
 UIFC	=	../uifc/
 XPDEV	=	../xpdev/
 LIBPREFIX =	lib
@@ -73,6 +72,12 @@ endif
 os      :=	$(shell echo $(os) | tr "[ A-Z]" "[\-a-z]")
 # remove '/' from "os/2"
 os      :=  $(shell echo $(os) | tr -d "/")
+
+ifeq ($(os),openbsd)
+LIBFILE =	.so.0.0
+else
+LIBFILE	=	.so
+endif
 
 ifeq ($(os),freebsd)
  BSD	=	1
@@ -176,7 +181,7 @@ $(SBBSLIB) : $(SBBS)
 vpath %.c $(XPDEV) $(UIFC)
 vpath %.cpp $(UIFC)
 
-LFLAGS		+=	-L./$(LIBODIR)
+LFLAGS		+=	-L./$(LIBODIR) -L../../lib/mozilla/js/$(os).$(BUILD) -L../../lib/mozilla/nspr/$(os).$(BUILD)
 SBBSLDFLAGS	:=	$(LFLAGS) -rpath-link ./$(LIBODIR) -rpath ./ 
 #LFLAGS		+=	-Wl,-rpath-link,./$(LIBODIR),-rpath,./
 LFLAGS		+=	-Xlinker -rpath
@@ -188,6 +193,8 @@ LFLAGS		+=	-Xlinker -rpath-link
 LFLAGS		+=	-Xlinker ../../lib/mozilla/js/$(os).$(BUILD)
 LFLAGS		+=	-Xlinker -rpath-link
 LFLAGS		+=	-Xlinker ../../lib/mozilla/nspr/$(os).$(BUILD)
+else
+LFLAGS		+=	-ljs -lnspr4
 endif
 ifeq ($(os),freebsd)
 LFLAGS		+=	-pthread
@@ -232,6 +239,7 @@ SMBLIB_OBJS = \
 	$(LIBODIR)/filewrap.o \
 	$(LIBODIR)/crc16.o
 
+SHLIBOPTS	:=	-shared
 
 # Monolithic Synchronet executable Build Rule
 FORCE$(SBBSMONO): $(MONO_OBJS) $(OBJS) $(LIBS)
@@ -245,35 +253,35 @@ FORCE$(SBBS): $(OBJS) $(LIBS)
 
 $(SBBS): $(OBJS) $(LIBS)
 	@echo Linking $@
-	$(QUIET)$(CCPP) $(LFLAGS) -o $(SBBS) $(JSLIB) $^ -shared -o $@
+	$(QUIET)$(CCPP) $(LFLAGS) -o $(SBBS) $(JSLIB) $^ $(SHLIBOPTS) -o $@
 
 # FTP Server Link Rule
 FORCE$(FTPSRVR): $(LIBODIR)/ftpsrvr.o $(SBBSLIB)
 
 $(FTPSRVR): $(LIBODIR)/ftpsrvr.o $(SBBSLIB)
 	@echo Linking $@
-	$(QUIET)$(CC) $(LFLAGS) $^ $(JSLIB) -shared -o $@ 
+	$(QUIET)$(CC) $(LFLAGS) $^ $(JSLIB) $(SHLIBOPTS) -o $@ 
 
 # Mail Server Link Rule
 FORCE$(MAILSRVR): $(MAIL_OBJS) $(LIBODIR)$(SLASH)$(SBBSLIB)
 
 $(MAILSRVR): $(MAIL_OBJS) $(SBBSLIB)
 	@echo Linking $@
-	$(QUIET)$(CC) $(LFLAGS) $^ $(JSLIB) -shared -o $@
+	$(QUIET)$(CC) $(LFLAGS) $^ $(JSLIB) $(SHLIBOPTS) -o $@
 
 # Mail Server Link Rule
 FORCE$(WEBSRVR): $(WEB_OBJS) $(SBBSLIB)
 
 $(WEBSRVR): $(WEB_OBJS) $(SBBSLIB)
 	@echo Linking $@
-	$(QUIET)$(CC) $(LFLAGS) $^ $(JSLIB) -shared -o $@
+	$(QUIET)$(CC) $(LFLAGS) $^ $(JSLIB) $(SHLIBOPTS) -o $@
 
 # Services Link Rule
 FORCE$(SERVICES): $(WEB_OBJS) $(SBBSLIB)
 
 $(SERVICES): $(SERVICE_OBJS) $(SBBSLIB)
 	@echo Linking $@
-	$(QUIET)$(CC) $(LFLAGS) $^ $(JSLIB) -shared -o $@
+	$(QUIET)$(CC) $(LFLAGS) $^ $(JSLIB) $(SHLIBOPTS) -o $@
 
 # Synchronet Console Build Rule
 FORCE$(SBBSCON): $(CON_OBJS) $(SBBSLIB) $(FTP_OBJS) $(MAIL_OBJS) $(WEB_OBJS) $(SERVICE_OBJS)
