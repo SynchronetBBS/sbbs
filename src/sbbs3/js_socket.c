@@ -944,7 +944,7 @@ js_poll(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		else if(JSVAL_IS_DOUBLE(argv[argn])) {
 			JS_ValueToNumber(cx,argv[argn],&jsd);
 			tv.tv_sec = (int)jsd;
-			tv.tv_usec = (int)(jsd*1000.0);
+			tv.tv_usec = (int)(jsd*1000000.0)%1000000;
 		}
 	}
 
