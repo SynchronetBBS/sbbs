@@ -1255,15 +1255,15 @@ static void ctrl_thread(void* arg)
 	lprintf("%04d Host name: %s", sock, host_name);
 
 	if(trashcan(&scfg,host_ip,"IP")) {
-		lprintf("!Client blocked in IP.CAN: %s [%s]", host_name, host_ip);
+		lprintf("!Client blocked in IP.CAN: ", host_ip);
 		sockprintf(sock,"550 Access denied.");
 		close_socket(&sock,__LINE__);
 		thread_down();
 		return;
 	}
 
-	if(trashcan(&scfg,host_name,"IP")) {
-		lprintf("!Client blocked in IP.CAN: %s [%s]", host_name, host_ip);
+	if(trashcan(&scfg,host_name,"HOST")) {
+		lprintf("!Client blocked in HOST.CAN: %s", host_name);
 		sockprintf(sock,"550 Access denied.");
 		close_socket(&sock,__LINE__);
 		thread_down();

@@ -545,18 +545,18 @@ static void pop3_thread(void* arg)
 	if(startup->options&MAIL_OPT_DEBUG_POP3)
 		lprintf("%04d POP3 client name: %s", socket, host_name);
 
-	if(trashcan(&scfg,host_name,"IP")) {
-		lprintf("!%04d POP3 client blocked in IP.CAN: %s [%s]"
-			,socket, host_name, host_ip);
+	if(trashcan(&scfg,host_ip,"IP")) {
+		lprintf("!%04d POP3 client blocked in IP.CAN: %s"
+			,socket, host_ip);
 		sockprintf(socket,"-ERR Access denied.");
 		close_socket(socket);
 		thread_down();
 		return;
 	}
 
-	if(trashcan(&scfg,host_ip,"IP")) {
-		lprintf("!%04d POP3 client blocked in IP.CAN: %s [%s]"
-			,socket, host_name, host_ip);
+	if(trashcan(&scfg,host_name,"HOST")) {
+		lprintf("!%04d POP3 client blocked in HOST.CAN: %s"
+			,socket, host_name);
 		sockprintf(socket,"-ERR Access denied.");
 		close_socket(socket);
 		thread_down();
@@ -1093,18 +1093,18 @@ static void smtp_thread(void* arg)
 
 	strcpy(hello_name,host_name);
 
-	if(trashcan(&scfg,host_name,"IP")) {
-		lprintf("!%04d SMTP server blocked in IP.CAN: %s [%s]"
-			,socket, host_name, host_ip);
+	if(trashcan(&scfg,host_ip,"IP")) {
+		lprintf("!%04d SMTP server blocked in IP.CAN: %s"
+			,socket, host_ip);
 		sockprintf(socket,"550 Access denied.");
 		close_socket(socket);
 		thread_down();
 		return;
 	}
 
-	if(trashcan(&scfg,host_ip,"IP")) {
-		lprintf("!%04d SMTP server blocked in IP.CAN: %s [%s]"
-			,socket, host_name, host_ip);
+	if(trashcan(&scfg,host_name,"HOST")) {
+		lprintf("!%04d SMTP server blocked in HOST.CAN: %s"
+			,socket, host_name);
 		sockprintf(socket,"550 Access denied.");
 		close_socket(socket);
 		thread_down();
