@@ -4,6 +4,9 @@
 
 // $Id$
 
+load("sbbsdefs.js");
+load("mailutil.js");	// mail_get_name() and mail_get_address()
+
 // Parses raw RFC822-formatted messages for use with SMTP Mail Processors
 // Returns an array of header fields parsed from the msgtxt
 // msgtxt is an array of lines from the source (RFC822) message text
@@ -25,6 +28,23 @@ function parse_msg_header(msgtxt)
 	return(hdr);
 }
 
+// Convert a parsed message header into Synchronet-compatible
+function convert_msg_header(hdr)
+{
+	hdr.id				= hdr["message-id"]; 
+
+	hdr.from_net_type	= NET_INTERNET;
+	hdr.from_net_addr	= mail_get_address(hdr.from);
+	hdr.from			= mail_get_name(hdr.from);
+
+	hdr.to_net_type		= NET_INTERNET;
+	hdr.to_net_addr		= mail_get_address(hdr.to);
+	hdr.to				= mail_get_name(hdr.to);
+
+	return(hdr);
+}
+
+// Parses the body portion of the complete message text into an array
 function get_msg_body(msgtxt)
 {
 	var body = new Array();
