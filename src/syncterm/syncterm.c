@@ -58,6 +58,7 @@ int main(int argc, char **argv)
 	uifc.mode=UIFC_NOCTRL;
 	uifc.size=sizeof(uifc);
 	uifc.esc_delay=25;
+	url[0]=0;
 	for(i=1;i<argc;i++) {
         if(argv[i][0]=='-'
 #ifndef __unix__
