@@ -1677,7 +1677,7 @@ static void smtp_thread(void* arg)
 					if(tp) *tp=0;
 					sprintf(rcpt_name,"%.*s",sizeof(rcpt_name)-1,p);
 				}
-				smb_hfield(&msg, RFC822TO, (ushort)strlen(buf), buf);
+				smb_hfield(&msg, RFC822TO, (ushort)strlen(p), p);
 				continue;
 			}
 			if(!strnicmp(buf, "REPLY-TO:",9)) {
