@@ -111,6 +111,10 @@ int main()
 		printf("Locks in first thread survive open()/close() in other thread\n");
 	else
 		printf("!FAILURE lock() in first thread lost by open()/close() in other thread\n");
+	if(lock(fd,LOCK_OFFSET+LOCK_LEN+1,LOCK_LEN))
+		printf("!FAILURE file locking\n");
+	else
+		printf("SUCCESS!  Record locking\n");
 	close(fd);
 
 	/* getch test */
