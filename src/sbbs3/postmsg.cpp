@@ -402,9 +402,13 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, char* msg
 	char*	pid;
 	char*	reply_id;
 	char	msg_id[256];
+	char*	lzhbuf=NULL;
 	ushort	xlat;
+	int		xlatlen;
 	int 	i;
 	int		storage;
+	long	lzhlen;
+	BOOL	lzh=FALSE;
 	ulong	l;
 	ulong	length;
 	ulong	offset;
@@ -444,11 +448,35 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, char* msg
 		smb_unlocksmbhdr(smb);
 		return(i);
 	}
-	length=strlen(msgbuf)+sizeof(xlat);	 /* +2 for translation string */
+	length=strlen(msgbuf);
+
+	/* Calculate CRC-32 of message text (before encoding, if any) */
+	if(smb->status.max_crcs) {
+		for(i=0;msgbuf[i];i++)
+			crc=ucrc32(msgbuf[i],crc); 
+		crc=~crc;
+	}
+
+	/* LZH compress? */
+	if(smb->subnum!=INVALID_SUB && cfg->sub[smb->subnum]->misc&SUB_LZH 
+		&& length+sizeof(xlat)>=SDT_BLOCK_LEN
+		&& (lzhbuf=(char *)LMALLOC(length*2))!=NULL) {
+		lzhlen=lzh_encode((uchar *)msgbuf,length,(uchar *)lzhbuf);
+		if(lzhlen>1
+			&& smb_datblocks(lzhlen+(sizeof(xlat)*2)) 
+				< smb_datblocks(length+sizeof(xlat))) {
+			length=lzhlen+sizeof(xlat); 	/* Compressable */
+			lzh=TRUE;
+			msgbuf=lzhbuf; 
+		}
+	}
+
+	length+=sizeof(xlat);	/* xlat string terminator */
 
 	if(length&0x80000000) {
 		smb_unlocksmbhdr(smb);
 		sprintf(smb->last_error,"message length: 0x%lX",length);
+		FREE_AND_NULL(lzhbuf);
 		return(-1);
 	}
 
@@ -459,6 +487,7 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, char* msg
 	} else {
 		if((i=smb_open_da(smb))!=0) {
 			smb_unlocksmbhdr(smb);
+			FREE_AND_NULL(lzhbuf);
 			return(i);
 		}
 		if((smb->subnum==INVALID_SUB && cfg->sys_misc&SM_FASTMAIL)
@@ -473,18 +502,26 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, char* msg
 	}
 
 	smb_fseek(smb->sdt_fp,offset,SEEK_SET);
+	xlatlen=0;
+	if(lzh) {
+		xlat=XLAT_LZH;
+		smb_fwrite(&xlat,sizeof(xlat),smb->sdt_fp);
+		xlatlen+=sizeof(xlat);
+	}
 	xlat=XLAT_NONE;
 	smb_fwrite(&xlat,sizeof(xlat),smb->sdt_fp);
-	smb_fwrite(msgbuf,length-sizeof(xlat),smb->sdt_fp);
+	xlatlen+=sizeof(xlat);
+
+	smb_fwrite(msgbuf,length-xlatlen,smb->sdt_fp);
 	for(l=length;l%SDT_BLOCK_LEN;l++)
 		smb_fwrite(&pad,1,smb->sdt_fp);
 
 	fflush(smb->sdt_fp);
 
+	FREE_AND_NULL(lzhbuf);
+
+	/* Add CRC to CRC history (and check for duplicates) */
 	if(smb->status.max_crcs) {
-		for(i=0;msgbuf[i];i++)
-			crc=ucrc32(msgbuf[i],crc); 
-		crc=~crc;
 		i=smb_addcrc(smb,crc);
 		if(i) {
 			smb_freemsgdat(smb,offset,length,1);
