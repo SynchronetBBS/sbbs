@@ -187,14 +187,18 @@ for(i=0;i<14;i++)
 	if((mopt[i]=(char *)MALLOC(64))==NULL)
 		allocfail(64);
 
-sprintf(str,"%.*s",sizeof(str)-1,argv[0]);
-p=strrchr(str,'/');
-if(p==NULL)
-    p=strrchr(str,'\\');
-if(p!=NULL)
-    *p=0;
-else
-    strcpy(str,"../exec");
+if((p=getenv("SBBSEXEC"))!=NULL)
+	SAFECOPY(str,p);
+else {
+	SAFECOPY(str,argv[0]);
+	p=strrchr(str,'/');
+	if(p==NULL)
+	    p=strrchr(str,'\\');
+	if(p!=NULL)
+		*p=0;
+	else 
+	   	sprintf(str,"%s../exec",cfg.ctrl_dir);
+}
 sprintf(uifc.helpdatfile,"%s/scfghelp.dat",str);
 sprintf(uifc.helpixbfile,"%s/scfghelp.ixb",str);
 
