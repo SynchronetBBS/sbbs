@@ -401,19 +401,52 @@ int random(int n)
 }
 #endif
 
+
+typedef BOOL(WINAPI * GetDiskFreeSpaceEx_t)(LPCTSTR,PULARGE_INTEGER,PULARGE_INTEGER,PULARGE_INTEGER); 
+
 ulong getfreediskspace(char* path)
 {
+#ifdef _WIN32
+	HINSTANCE		hK32;
+	DWORD			TotalNumberOfClusters;
+	DWORD			NumberOfFreeClusters;
+	DWORD			BytesPerSector;
+	DWORD			SectorsPerCluster;
 	ULARGE_INTEGER	avail;
 	ULARGE_INTEGER	size;
+	GetDiskFreeSpaceEx_t GetDiskFreeSpaceEx;
 
-	if(!GetDiskFreeSpaceEx(
-		path,		// pointer to the directory name
-		&avail,		// receives the number of bytes on disk available to the caller
-		&size,		// receives the number of bytes on disk
-	    NULL))		// receives the free bytes on disk
+	if ((hK32 = LoadLibrary("KERNEL32")) == NULL)
 		return(0);
 
-	if(avail.HighPart)
-		return(0xffffffff);
-	return(avail.LowPart);
+	GetDiskFreeSpaceEx = (GetDiskFreeSpaceEx_t)GetProcAddress(hK32,"GetDiskFreeSpaceEx");
+ 
+	if (GetDiskFreeSpaceEx!=NULL) {	/* Windows 95-OSR2 or later */
+		if(!GetDiskFreeSpaceEx(
+			path,		// pointer to the directory name
+			&avail,		// receives the number of bytes on disk available to the caller
+			&size,		// receives the number of bytes on disk
+			NULL))		// receives the free bytes on disk
+			return(0);
+
+		if(avail.HighPart)
+			return(0xffffffff);
+		return(avail.LowPart);
+	}
+
+	/* Windows 95 (old way), limited to 2GB */
+	if(!GetDiskFreeSpace(
+		path,					// pointer to root path
+		&SectorsPerCluster,		// pointer to sectors per cluster
+		&BytesPerSector,		// pointer to bytes per sector
+		&NumberOfFreeClusters,	// pointer to number of free clusters
+		&TotalNumberOfClusters  // pointer to total number of clusters
+		))
+		return(0);
+
+	return(NumberOfFreeClusters*SectorsPerCluster*BytesPerSector);
+#else
+	#warning OS-specific code needed here
+	return(0);
+#endif
 }
