@@ -20,12 +20,15 @@ var STRIKE_THROUGH	="\1N\1K\x017"
 var LIST_ITEM 		="\1N\r\n    \1H\1Wo \1G"
 
 var f;
-var mono=false;
+var mono=true;
 
 for(i in argv) {
 	switch(argv[i].toLowerCase()) {
 	case "-mono":
 		mono=true;
+		break;
+	case "-color":
+		mono=false;
 		break;
 	default:
 		f = new File(argv[i]);
