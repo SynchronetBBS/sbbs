@@ -74,9 +74,8 @@ typedef struct {
     BOOL	(*seteuid)(BOOL user);
 	BOOL	(*setuid)(BOOL force);
 
-	/* Paths */
+	/* Strings */
     char    ctrl_dir[128];
-    char	relay_server[128];
     char	dns_server[128];
     char	default_user[128];
     char	dnsbl_tag[32];		// Tag to add to blacklisted subject
@@ -92,32 +91,43 @@ typedef struct {
 	sem_t	recycle_sem;
 	DWORD	log_mask;
 
+	/* Relay Server */
+    char	relay_server[128];
+	/* Relay authentication required */
+	char	relay_user[128];
+	char	relay_pass[128];
+
 } mail_startup_t;
 
-#define MAIL_OPT_DEBUG_RX_HEADER	(1<<0)
-#define MAIL_OPT_DEBUG_RX_BODY		(1<<1)
-#define MAIL_OPT_ALLOW_POP3			(1<<2)
-#define MAIL_OPT_DEBUG_TX			(1<<3)
-#define MAIL_OPT_DEBUG_RX_RSP		(1<<4)
-#define MAIL_OPT_RELAY_TX			(1<<5)	/* Use SMTP relay server */
-#define MAIL_OPT_DEBUG_POP3			(1<<6)
-#define MAIL_OPT_ALLOW_RX_BY_NUMBER	(1<<7)	/* Allow mail sent to user # */
-#define MAIL_OPT_NO_NOTIFY			(1<<8)	/* Don't notify local recipients */
-#define MAIL_OPT_NO_HOST_LOOKUP		(1<<11)	/* Don't look-up hostnames */
-#define MAIL_OPT_USE_TCP_DNS		(1<<12)	/* Use TCP vs UDP for DNS req */
-#define MAIL_OPT_NO_SENDMAIL		(1<<13)	/* Don't run SendMail thread */
-#define MAIL_OPT_ALLOW_RELAY		(1<<14)	/* Allow relays from stored user IPs */
-#define MAIL_OPT_DNSBL_REFUSE		(1<<15) /* Refuse session, return error */
-#define MAIL_OPT_DNSBL_IGNORE		(1<<16) /* Dump mail, return success */
-#define MAIL_OPT_DNSBL_BADUSER		(1<<17) /* Refuse mail (bad user name) */
-#define MAIL_OPT_DNSBL_CHKRECVHDRS	(1<<18)	/* Check all Recieved: from addresses */
-#define MAIL_OPT_DNSBL_THROTTLE		(1<<19)	/* Throttle receive from blacklisted servers */
-#define MAIL_OPT_DNSBL_DEBUG		(1<<20) /* Debug DNSBL activity */
-#define MAIL_OPT_SMTP_AUTH_VIA_IP	(1<<21)	/* Allow SMTP authentication via IP */
-#define MAIL_OPT_SEND_INTRANSIT		(1<<22)	/* Send mail, even if already "in transit" */
-#define MAIL_OPT_NO_RECYCLE			(1<<27)	/* Disable recycling of server		*/
-#define MAIL_OPT_LOCAL_TIMEZONE		(1<<30)	/* Don't force UTC/GMT */
-#define MAIL_OPT_MUTE				(1<<31)
+#define MAIL_OPT_DEBUG_RX_HEADER		(1<<0)
+#define MAIL_OPT_DEBUG_RX_BODY			(1<<1)
+#define MAIL_OPT_ALLOW_POP3				(1<<2)
+#define MAIL_OPT_DEBUG_TX				(1<<3)
+#define MAIL_OPT_DEBUG_RX_RSP			(1<<4)
+#define MAIL_OPT_RELAY_TX				(1<<5)	/* Use SMTP relay server */
+#define MAIL_OPT_DEBUG_POP3				(1<<6)
+#define MAIL_OPT_ALLOW_RX_BY_NUMBER		(1<<7)	/* Allow mail sent to user # */
+#define MAIL_OPT_NO_NOTIFY				(1<<8)	/* Don't notify local recipients */
+#define MAIL_OPT_NO_HOST_LOOKUP			(1<<11)	/* Don't look-up hostnames */
+#define MAIL_OPT_USE_TCP_DNS			(1<<12)	/* Use TCP vs UDP for DNS req */
+#define MAIL_OPT_NO_SENDMAIL			(1<<13)	/* Don't run SendMail thread */
+#define MAIL_OPT_ALLOW_RELAY			(1<<14)	/* Allow relays from stored user IPs */
+#define MAIL_OPT_DNSBL_REFUSE			(1<<15) /* Refuse session, return error */
+#define MAIL_OPT_DNSBL_IGNORE			(1<<16) /* Dump mail, return success */
+#define MAIL_OPT_DNSBL_BADUSER			(1<<17) /* Refuse mail (bad user name) */
+#define MAIL_OPT_DNSBL_CHKRECVHDRS		(1<<18)	/* Check all Recieved: from addresses */
+#define MAIL_OPT_DNSBL_THROTTLE			(1<<19)	/* Throttle receive from blacklisted servers */
+#define MAIL_OPT_DNSBL_DEBUG			(1<<20) /* Debug DNSBL activity */
+#define MAIL_OPT_SMTP_AUTH_VIA_IP		(1<<21)	/* Allow SMTP authentication via IP */
+#define MAIL_OPT_SEND_INTRANSIT			(1<<22)	/* Send mail, even if already "in transit" */
+#define MAIL_OPT_RELAY_AUTH_PLAIN		(1<<23)
+#define MAIL_OPT_RELAY_AUTH_LOGIN		(1<<24)
+#define MAIL_OPT_RELAY_AUTH_CRAM_MD5	(1<<25)
+#define MAIL_OPT_NO_RECYCLE				(1<<27)	/* Disable recycling of server		*/
+#define MAIL_OPT_LOCAL_TIMEZONE			(1<<30)	/* Don't force UTC/GMT */
+#define MAIL_OPT_MUTE					(1<<31)
+
+#define MAIL_OPT_RELAY_AUTH_MASK		(MAIL_OPT_RELAY_AUTH_PLAIN|MAIL_OPT_RELAY_AUTH_LOGIN|MAIL_OPT_RELAY_AUTH_CRAM_MD5)
 
 #ifdef DLLEXPORT
 #undef DLLEXPORT

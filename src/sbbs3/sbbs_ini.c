@@ -312,6 +312,11 @@ void sbbs_read_ini(
 
 		SAFECOPY(mail->relay_server
 			,iniGetString(fp,section,"RelayServer",mail->relay_server,value));
+		SAFECOPY(mail->relay_user
+			,iniGetString(fp,section,"RelayUsername",mail->relay_user,value));
+		SAFECOPY(mail->relay_pass
+			,iniGetString(fp,section,"RelayPassword",mail->relay_pass,value));
+
 		SAFECOPY(mail->dns_server
 			,iniGetString(fp,section,"DNSServer",mail->dns_server,value));
 
@@ -703,6 +708,11 @@ BOOL sbbs_write_ini(
 
 		if(!iniSetString(lp,section,"RelayServer",mail->relay_server,&style))
 			break;
+		if(!iniSetString(lp,section,"RelayUsername",mail->relay_user,&style))
+			break;
+		if(!iniSetString(lp,section,"RelayPassword",mail->relay_pass,&style))
+			break;
+
 		if(!iniSetString(lp,section,"DNSServer",mail->dns_server,&style))
 			break;
 
