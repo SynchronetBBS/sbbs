@@ -9,5 +9,5 @@ elif [ -x *.$os.exe.release/$0 ]
 elif [ -x *.$os.exe.debug/$0 ]
 	then exec *.$os.exe.debug/$0 $@
 elif [ -x *.$os.exe.*/$0 ]
-	then exec *.$os.exe.debug/$0 $@
+	then exec *.$os.exe.*/$0 $@
 fi
