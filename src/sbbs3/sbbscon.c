@@ -40,6 +40,7 @@
 #include "sbbs.h"
 #include "ftpsrvr.h"	/* ftp_startup_t, ftp_server */
 #include "mailsrvr.h"	/* mail_startup_t, mail_server */
+#include "services.h"	/* services_startup_t, services_thread */
 
 /* Constants */
 #define SBBSCON_VERSION		"1.10"
