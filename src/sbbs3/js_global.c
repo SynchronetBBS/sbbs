@@ -604,7 +604,7 @@ js_word_wrap(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if((inbuf=JS_GetStringBytes(JS_ValueToString(cx, argv[0])))==NULL) 
 		return(JS_FALSE);
 
-	if((outbuf=(char*)malloc((strlen(inbuf)*2)+1))==NULL)
+	if((outbuf=(char*)malloc((strlen(inbuf)*3)+1))==NULL)
 		return(JS_FALSE);
 
 	if(argc>1)
