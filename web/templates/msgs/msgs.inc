@@ -9,7 +9,7 @@
 <table class="msglist" cellpadding="5" cellspacing="2" border="0" width="100%">
 <tr class="msglist">
      @@JS:template.can_delete?'<th class="msglist">X</th>':''@@
-    <th class="msglist"><img src="/graphics/attach.gif" alt="Attachment?" width="10" height="13" border="0" /></th>
+    <th class="msglist"><img src="/graphics/attach_black.gif" alt="Attachment?" width="10" height="13" border="0" /></th>
     <th class="msglist">Subject</th>
     <th class="msglist">From</th>
     <th class="msglist">To</th>
@@ -20,7 +20,7 @@
     <tr class="msglist" bgcolor=@@JS:((template.color++)%2==0)?'"#008699"':'"#007688"';@@>
     @@JS:template.can_delete?'<td class="msglist"><input name="number" value="%%messages:number%%" type="checkbox"></td>':''@@
 	   <td class="msglist">
-    		@@JS:if(@@messages:attachments@@>0) '<img alt="Attachment" src="/graphics/attach.gif" />'; else '&nbsp;';@@
+    		@@JS:if(@@messages:attachments@@>0) '<img alt="Attachment" src="/graphics/attach_black.gif" />'; else '&nbsp;';@@
 	   </td>
 	   <td class="msglist">
 		  <a class="msglist" href="msg.ssjs?msg_grp=^^group:number^^&amp;msg_sub=^^sub:code^^&amp;message=^^messages:number^^">%%messages:subject%%</a>
