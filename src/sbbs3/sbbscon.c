@@ -56,8 +56,10 @@
 /* Global variables */
 BOOL				bbs_running=FALSE;
 bbs_startup_t		bbs_startup;
+BOOL				run_ftp=TRUE;
 BOOL				ftp_running=FALSE;
 ftp_startup_t		ftp_startup;
+BOOL				run_mail=TRUE;
 BOOL				mail_running=FALSE;
 mail_startup_t		mail_startup;
 BOOL				run_services=TRUE;
@@ -80,12 +82,14 @@ static const char* usage  = "\nusage: %s [[option] [...]]\n"
 							"tl<node>   set Last Telnet Node Number\n"
 							"tp<port>   set Telnet Server Port\n"
 							"rp<port>   set RLogin Server Port (and enable RLogin Server)\n"
-							"fp<port>   set FTP Server Port (0 to disable FTP Server)\n"
-							"sp<port>   set SMTP Server Port (0 to disable Mail Server)\n"
+							"fp<port>   set FTP Server Port\n"
+							"sp<port>   set SMTP Server Port\n"
 							"sr<port>   set SMTP Relay Port\n"
 							"pp<port>   set POP3 Server Port\n"
 							"u<user>    set username for BBS to run as\n"
-							"ns         run without services (no services module)\n"
+							"nf         run without FTP Server\n"
+							"nm			run without Mail Server\n"
+							"ns         run without Services (no services module)\n"
 							"\n"
 							;
 
@@ -515,14 +519,16 @@ int main(int argc, char** argv)
 		if(*arg=='-')/* ignore prepended slashes */
 			arg++;
 		if(!stricmp(arg,"defaults")) {
-			printf("default settings:\n\n");
-			printf("Telnet server port:\t%u\n",bbs_startup.telnet_port);
+			printf("default settings:\n");
+			printf("\n");
+			printf("Telnet server port:\t%u\n",IPPORT_TELNET);
 			printf("Telnet first node:\t%u\n",bbs_startup.first_node);
 			printf("Telnet last node:\t%u\n",bbs_startup.last_node);
-			printf("FTP server port:\t%u\n",ftp_startup.port);
-			printf("SMTP server port:\t%u\n",mail_startup.smtp_port);
-			printf("SMTP relay port:\t%u\n",mail_startup.relay_port);
-			printf("POP3 server port:\t%u\n",mail_startup.pop3_port);
+			printf("FTP server port:\t%u\n",IPPORT_FTP);
+			printf("SMTP server port:\t%u\n",IPPORT_SMTP);
+			printf("SMTP relay port:\t%u\n",IPPORT_SMTP);
+			printf("POP3 server port:\t%u\n",IPPORT_POP3);
+			printf("\n");
 			return(0);
 		}
 		switch(toupper(*(arg++))) {
@@ -593,6 +599,12 @@ int main(int argc, char** argv)
 				break;
 			case 'N':	/* No */
 				switch(toupper(*(arg++))) {
+					case 'F':	/* FTP Server */
+						run_ftp=FALSE;
+						break;
+					case 'M':	/* Mail Server */
+						run_mail=FALSE;
+						break;
 					case 'S':	/* Services */
 						run_services=FALSE;
 						break;
@@ -608,9 +620,9 @@ int main(int argc, char** argv)
 	}
 
 	_beginthread((void(*)(void*))bbs_thread,0,&bbs_startup);
-	if(ftp_startup.port)
+	if(run_ftp)
 		_beginthread((void(*)(void*))ftp_server,0,&ftp_startup);
-	if(mail_startup.smtp_port)
+	if(run_mail)
 		_beginthread((void(*)(void*))mail_server,0,&mail_startup);
 	if(run_services)
 		_beginthread((void(*)(void*))services_thread,0,&services_startup);
