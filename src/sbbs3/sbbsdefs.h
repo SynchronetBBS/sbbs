@@ -61,7 +61,7 @@
 #elif defined(__MSDOS__)
 								"DOS"\
 #else
-								"Uknown OS"\
+								"Unknown OS"\
 #endif
 								"  Version 3.00  "
 #define COPYRIGHT_NOTICE	"Copyright 2000 Rob Swindell"
