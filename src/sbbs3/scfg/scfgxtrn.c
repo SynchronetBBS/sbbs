@@ -874,9 +874,12 @@ online program name.
 			,cfg.xtrn[i]->run_arstr);
 		sprintf(opt[k++],"%-27.27s%s","Multiple Concurrent Users"
 			,cfg.xtrn[i]->misc&MULTIUSER ? "Yes" : "No");
-		sprintf(opt[k++],"%-27.27s%s%s","Intercept Standard I/O"
+		sprintf(opt[k++],"%-27.27s%s%s%s","Intercept Standard I/O"
 			,cfg.xtrn[i]->misc&IO_INTS ? "Yes" : "No"
-			,cfg.xtrn[i]->misc&WWIVCOLOR ? ", WWIV" : nulstr);
+			,(cfg.xtrn[i]->misc&(IO_INTS|WWIVCOLOR))
+				==(IO_INTS|WWIVCOLOR) ? ", WWIV Color" : nulstr
+			,(cfg.xtrn[i]->misc&(IO_INTS|XTRN_NOECHO))
+				==(IO_INTS|XTRN_NOECHO) ? ", No Echo" : nulstr);
 		sprintf(opt[k++],"%-27.27s%s","Native (32-bit) Executable"
 			,cfg.xtrn[i]->misc&XTRN_NATIVE ? "Yes" : "No");
 		sprintf(opt[k++],"%-27.27s%s","Use Shell to Execute"
@@ -1075,9 +1078,6 @@ set this option to No.
 				if(!(cfg.xtrn[i]->misc&IO_INTS))
 					break;
 				k=cfg.xtrn[i]->misc&WWIVCOLOR ? 0:1;
-				strcpy(opt[0],"Yes");
-				strcpy(opt[1],"No");
-				opt[2][0]=0;
 				SETHELP(WHERE);
 /*
 Program Uses WWIV Color Codes:
@@ -1095,6 +1095,25 @@ option to Yes.
 				else if(k==1 && cfg.xtrn[i]->misc&WWIVCOLOR) {
 					cfg.xtrn[i]->misc&=~WWIVCOLOR;
                     uifc.changes=TRUE; }
+				k=cfg.xtrn[i]->misc&XTRN_NOECHO ? 1:0;
+				SETHELP(WHERE);
+/*
+`Echo Input:`
+
+If you want the BBS to copy ("echo") all keyboard input to the screen
+output, set this option to ~Yes~ (for native Win32 programs only).
+*/
+				uifc.savnum=4;
+				k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
+					,"Echo Keyboard Input"
+					,opt);
+				if(!k && cfg.xtrn[i]->misc&XTRN_NOECHO) {
+					cfg.xtrn[i]->misc&=~XTRN_NOECHO;
+					uifc.changes=TRUE; 
+				} else if(k==1 && !(cfg.xtrn[i]->misc&XTRN_NOECHO)) {
+					cfg.xtrn[i]->misc|=XTRN_NOECHO;
+					uifc.changes=TRUE; 
+				}
                 break;
 			case 10:
 				k=cfg.xtrn[i]->misc&XTRN_NATIVE ? 0:1;
