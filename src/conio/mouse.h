@@ -15,6 +15,8 @@ struct mouse_event {
 #define CIOLIB_BUTTON_2	2
 #define CIOLIB_BUTTON_3	4
 
+#define CIOLIB_BUTTON(x)	(1<<(x-1))
+
 enum {
 	 CIOLIB_MOUSE_MOVE
 	,CIOLIB_BUTTON_1_PRESS
@@ -45,5 +47,15 @@ enum {
 	,CIOLIB_BUTTON_3_DRAG_MOVE
 	,CIOLIB_BUTTON_3_DRAG_END
 };
+
+#define CIOLIB_BUTTON_PRESS(x)		((x-1)*9+1)
+#define CIOLIB_BUTTON_RELEASE(x)	((x-1)*9+2)
+#define CIOLIB_BUTTON_CLICK(x)		((x-1)*9+3)
+#define CIOLIB_BUTTON_DBL_CLICK(x)	((x-1)*9+4)
+#define CIOLIB_BUTTON_TRPL_CLICK(x)	((x-1)*9+5)
+#define CIOLIB_BUTTON_QUAD_CLOCK(x)	((x-1)*9+6)
+#define CIOLIB_BUTTON_DRAG_START(x)	((x-1)*9+7)
+#define CIOLIB_BUTTON_DRAG_MOVE(x)	((x-1)*9+8)
+#define CIOLIB_BUTTON_DRAG_END(x)	((x-1)*9+9)
 
 #endif
