@@ -19,7 +19,7 @@ OFILE	=	obj
 LIBFILE	=	.dll
 EXEFILE	=	.exe
 ODIR	=	bcc.win32		# Output directory
-CFLAGS	=	-M -g1 
+CFLAGS	=	-M
 LFLAGS  =	-m -s -c -Tpd -Gi -I$(LIBODIR)
 DELETE	=	echo y | del 
 
@@ -32,6 +32,7 @@ CFLAGS	=	$(CFLAGS) -v -Od -D_DEBUG
 LFLAGS	=	$(LFLAGS) -v
 ODIR	=	$(ODIR).debug
 !else
+CFLAGS	=	$(CFLAGS) -g1
 ODIR	=	$(ODIR).release
 !endif
 
