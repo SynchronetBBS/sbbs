@@ -118,6 +118,7 @@ extern "C" {
 #endif
 
 int		sendfilesocket(int sock, int file, long *offset, long count);
+int		recvfilesocket(int sock, int file, long *offset, long count);
 BOOL	socket_check(SOCKET sock, BOOL* rd_p);
 
 #ifdef __cplusplus

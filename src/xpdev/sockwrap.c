@@ -39,6 +39,7 @@
 #include <string.h>		/* bzero (for FD_ZERO) on FreeBSD */
 #include <errno.h>		/* ENOMEM */
 #include <stdio.h>		/* SEEK_SET */
+#include <string.h>
 
 #include "gen_defs.h"	/* BOOL */
 #include "sockwrap.h"	/* sendsocket */
@@ -61,7 +62,7 @@ int sendfilesocket(int sock, int file, long *offset, long count)
 		if(lseek(file,*offset,SEEK_SET)<0)
 			return(-1);
 
-	if(count==0 || count > len)
+	if(count<1 || count>len)
 		count=len;
 
 	rd=read(file,buf,count);
@@ -79,6 +80,57 @@ int sendfilesocket(int sock, int file, long *offset, long count)
 
 	return(wr);
 }
+
+int recvfilesocket(int sock, int file, long *offset, long count)
+{
+	/* Writes a file from a socket -
+	 *
+	 * sock		- Socket to read from
+	 * file		- File descriptior to write to
+	 *				MUST be open and writeable
+	 * offset	- pointer to file offset to start writing at
+	 *				is set to offset writing STOPPED
+	 *				on return
+	 * count	- number of bytes to read/write
+	 *
+	 * returns -1 if an error occurse, otherwise
+	 * returns number ob bytes written and sets offset
+	 * to the new offset
+	 */
+	 
+	char*	buf;
+	int		rd;
+	int		wr;
+
+	if(count<1) {
+		errno=ERANGE;
+		return(-1);
+	}
+		
+	if((buf=malloc(count))==NULL) {
+		errno=ENOMEM;
+		return(-1);
+	}
+
+	if(offset!=NULL)
+		if(lseek(file,*offset,SEEK_SET)<0)
+			return(-1);
+
+	rd=read(sock,buf,count);
+	if(rd!=count) {
+		free(buf);
+		return(-1);
+	}
+
+	wr=write(file,buf,rd);
+	free(buf);
+
+	if(offset!=NULL)
+		(*offset)+=wr;
+
+	return(wr);
+}
+
 
 /* Return true if connected, optionally sets *rd_p to true if read data available */
 BOOL socket_check(SOCKET sock, BOOL* rd_p)
@@ -117,4 +169,5 @@ BOOL socket_check(SOCKET sock, BOOL* rd_p)
 
 	return(FALSE);
 }
+
 
