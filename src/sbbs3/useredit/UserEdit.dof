@@ -1,5 +1,7 @@
+[FileVersion]
+Version=6.0
 [Compiler]
-A=1
+A=8
 B=0
 C=1
 D=1
@@ -49,8 +51,11 @@ Conditionals=
 DebugSourceDirs=
 UsePackages=0
 [Parameters]
-RunParams=
+RunParams=s:\sbbs\data\
 HostApplication=
+Launcher=
+UseLauncher=0
+DebugCWD=
 [Language]
 ActiveLang=
 ProjectLang=$00000409
@@ -61,7 +66,7 @@ AutoIncBuild=1
 MajorVer=1
 MinorVer=0
 Release=0
-Build=6
+Build=10
 Debug=0
 PreRelease=0
 Special=0
@@ -70,16 +75,21 @@ DLL=0
 Locale=1033
 CodePage=1252
 [Version Info Keys]
-CompanyName=
-FileDescription=
-FileVersion=1.0.0.6
+CompanyName=Rob Swindell
+FileDescription=Synchronet User Editor
+FileVersion=1.0.0.10
 InternalName=
-LegalCopyright=
+LegalCopyright=(C) 2003 Rob Swindell
 LegalTrademarks=
-OriginalFilename=
-ProductName=
-ProductVersion=1.0.0.0
+OriginalFilename=useredit.exe
+ProductName=Synchronet BBS
+ProductVersion=3.10
 Comments=
+[Excluded Packages]
+c:\borland\delphi6\Bin\dclnet60.bpl=Borland Internet Components
+c:\borland\delphi6\Bin\dclwbm60.bpl=Borland InternetExpress Components
+c:\borland\delphi6\Bin\dclwebsnap60.bpl=Borland WebSnap Components
+c:\borland\delphi6\Bin\dclsoap60.bpl=Borland Soap Components
 [HistoryLists\hlUnitAliases]
 Count=1
 Item0=WinTypes=Windows;WinProcs=Windows;DbiTypes=BDE;DbiProcs=BDE;DbiErrs=BDE;
