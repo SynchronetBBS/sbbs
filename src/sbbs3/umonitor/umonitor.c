@@ -152,7 +152,7 @@ void node_toggles(scfg_t *cfg,int nodenum)  {
 			,(node.misc&NODE_DOWN || (node.status==NODE_OFFLINE)) ? YesStr : NoStr);
 		opt[j][0]=0;
 
-		switch(uifc.list(WIN_MID,0,0,0,&i,0,"Node Toggles",opt)) {
+		switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"Node Toggles",opt)) {
 			case 0:	/* Locked */
 				node.misc ^= NODE_LOCK;
 				break;
@@ -234,7 +234,7 @@ int dospy(int nodenum, bbs_startup_t *bbs_startup)  {
 int sendmessage(scfg_t *cfg, int nodenum,node_t *node)  {
 	char str[80],str2[80];
 
-	uifc.input(WIN_MID,0,0,"Telegram",str2,58,K_WRAP|K_MSG);
+	uifc.input(WIN_MID|WIN_SAV,0,0,"Telegram",str2,58,K_WRAP|K_MSG);
 	sprintf(str,"\1n\1y\1hMessage From Sysop:\1w %s\r\n",str2);
 	if(getnodedat(cfg,nodenum,node,NULL))
 		return(-1);
@@ -972,7 +972,7 @@ int main(int argc, char** argv)  {
 
 		uifc.helpbuf=	"`Synchronet Monitor\n"
 		                "`------------------\n"
-		                "Welcome to the Sychonet UNIX Monitor.\n"
+		                "Welcome to the Sychronet UNIX Monitor.\n"
 		                "Displayed on this screen are the statitics for the BBS\n"
 		                "You can scroll through the list starting at \"System Options\" \n"
 		                "Pressing Enter on each will give a menu of option to perform.\n"
@@ -1301,6 +1301,7 @@ int main(int argc, char** argv)  {
        	}
 	}
 }
+
 
 
 
