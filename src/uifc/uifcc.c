@@ -110,7 +110,6 @@ static void delay(int msec);
 static int ugetstr(char *outstr, int max, long mode);
 static int wherey(void);
 static int wherex(void);
-static FILE * _fsopen(char *pathname, char *mode, int flags);
 static int cprintf(char *fmat, ...);
 static void cputs(char *str);
 static void gotoxy(int x, int y);
@@ -1668,7 +1667,7 @@ void help()
     buf[j]='Ù';
 
 	if(!api->helpbuf) {
-		if((fp=_fsopen(api->helpixbfile,"rb",SH_DENYWR))==NULL)
+		if((fp=fopen(api->helpixbfile,"rb"))==NULL)
 			sprintf(hbuf," ERROR  Cannot open help index:\r\n          %s"
 				,api->helpixbfile);
 		else {
@@ -1695,7 +1694,7 @@ void help()
 				sprintf(hbuf," ERROR  Cannot locate help key (%s:%u) in:\r\n"
 					"         %s",p,helpline,api->helpixbfile);
 			else {
-				if((fp=_fsopen(api->helpdatfile,"rb",SH_DENYWR))==NULL)
+				if((fp=fopen(api->helpdatfile,"rb"))==NULL)
 					sprintf(hbuf," ERROR  Cannot open help file:\r\n          %s"
 						,api->helpdatfile);
 				else {
@@ -2045,24 +2044,6 @@ static int wherex(void)
 	int x,y;
 	getyx(stdscr,y,x);
 	return(x+1);
-}
-
-static FILE * _fsopen(char *pathname, char *mode, int flags)
-{
-	FILE *thefile;
-	
-	thefile = fopen(pathname, mode);
-	if (thefile != NULL)  {
-		if (flags&SH_DENYWR) {
-			flock(fileno(thefile), LOCK_SH);
-			return(thefile);
-		}
-		if (flags&SH_DENYRW) {
-			flock(fileno(thefile), LOCK_EX);
-			return(thefile);
-		}
-	}
-	return(thefile);
 }
 
 static void _putch(unsigned char ch, BOOL refresh_now)
