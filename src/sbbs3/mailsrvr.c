@@ -456,6 +456,7 @@ static ulong sockmsgtxt(SOCKET socket, smbmsg_t* msg, char* msgtxt, ulong maxlin
 {
 	char		toaddr[256]="";
 	char		fromaddr[256]="";
+	char		fromhost[256];
 	char		date[64];
 	char		filepath[MAX_PATH+1]="";
 	char*		p;
@@ -475,8 +476,9 @@ static ulong sockmsgtxt(SOCKET socket, smbmsg_t* msg, char* msgtxt, ulong maxlin
 		if(msg->from_net.type==NET_INTERNET && msg->from_net.addr!=NULL)
 			SAFECOPY(fromaddr,(char*)msg->from_net.addr);
 		else if(msg->from_net.type==NET_QWK && msg->from_net.addr!=NULL)
-			sprintf(fromaddr,"%s!%s@%s"
-				,msg->from,(char*)msg->from_net.addr,scfg.sys_inetaddr);
+			sprintf(fromaddr,"%s!%s"
+				,(char*)msg->from_net.addr
+				,usermailaddr(&scfg,fromhost,msg->from));
 		else 
 			usermailaddr(&scfg,fromaddr,msg->from);
 		if(fromaddr[0]=='<')
@@ -2574,6 +2576,15 @@ static void smtp_thread(void* arg)
 			if(tp!=NULL)
 				*tp=0;	/* truncate at '@' */
 
+			tp=strchr(p,'!');	/* Routed QWKnet mail in <qwkid!user@host> format */
+			if(tp!=NULL) {
+				*(tp++)=0;
+				while(*tp && *tp=='"') tp++;	/* Skip '"' */
+				truncstr(tp,"\"");				/* Strip '"' */
+				SAFECOPY(rcpt_addr,tp);
+				no_forward=TRUE;
+			}
+
 			while(*p && !isalnum(*p)) p++;	/* Skip '<' or '"' */
 			truncstr(p,"\"");	
 
@@ -2599,16 +2610,6 @@ static void smtp_thread(void* arg)
 			}
 
 			usernum=0;	/* unknown user at this point */
-
-			tp=strrchr(p,'@');		/* Double-@? Routed QWKnet mail? */
-			if(tp==NULL)
-				tp=strrchr(p,'!');	/* Or user!node@host format */
-			if(tp!=NULL) {
-				*tp=0;
-				SAFECOPY(rcpt_addr,p);
-				p=tp+1;
-				no_forward=TRUE;
-			}
 
 			if(startup->options&MAIL_OPT_ALLOW_RX_BY_NUMBER 
 				&& isdigit(*p)) {
