@@ -58,5 +58,3 @@
 
 #define NOINP -1     			/* input buffer empty (incom only) */
 
-char*	chr(uchar ch);
-void	bail(int code);

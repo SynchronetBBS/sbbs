@@ -80,7 +80,6 @@ long	mode=0;							/* Program mode 					*/
 long	zmode=0L;						/* Zmodem mode						*/
 uchar	block[1024];					/* Block buffer 					*/
 ulong	block_num;						/* Block number 					*/
-time_t	startall;
 char*	dszlog;
 
 xmodem_t xm;
@@ -155,7 +154,7 @@ static BOOL winsock_startup(void)
 #endif
 
 
-int lputs(void* unused, int level, const char* str)
+static int lputs(void* unused, int level, const char* str)
 {
 	FILE*	fp=statfp;
 
@@ -172,7 +171,7 @@ int lputs(void* unused, int level, const char* str)
 		return fprintf(fp,"%s\n",str);
 }
 
-int lprintf(int level, const char *fmt, ...)
+static int lprintf(int level, const char *fmt, ...)
 {
 	char sbuf[1024];
 	va_list argptr;
@@ -184,12 +183,13 @@ int lprintf(int level, const char *fmt, ...)
     return(lputs(NULL,level,sbuf));
 }
 
-char *chr(uchar ch)
+static char *chr(uchar ch)
 {
 	static char str[25];
 
 	if(mode&ZMODEM) {
 		switch(ch) {
+			case ZACK:		return("ZACK");
 			case ZPAD:		return("ZPAD");
 			case ZDLE:		return("ZDLE");
 			case ZDLEE:		return("ZDLEE");
@@ -420,7 +420,7 @@ int send_byte(void* unused, uchar ch, unsigned timeout)
 }
 #endif
 
-void output_thread(void* arg)
+static void output_thread(void* arg)
 {
 	char		stats[128];
     BYTE		buf[IO_THREAD_BUF_SIZE];
@@ -653,7 +653,7 @@ void zmodem_progress(void* unused, ulong offset, ulong fsize, time_t start)
 	}
 }
 
-int send_files(char** fname, uint fnames)
+static int send_files(char** fname, uint fnames)
 {
 	char	path[MAX_PATH+1];
 	int		i;
@@ -663,16 +663,14 @@ int send_files(char** fname, uint fnames)
 	glob_t	g;
 	int		gi;
 	BOOL	success=TRUE;
-	long	l;
 	long	fsize;
-	long	block_len;
-	uint	total_files=0,sent_files=0;
-	ulong	total_bytes=0,sent_bytes=0;
-	ulong	total_blocks;
-	size_t	n;
+	ulong	sent_bytes;
+	ulong	total_bytes=0;
 	time_t	t,startfile;
-	time_t	now;
+	time_t	startall;
 	FILE*	fp;
+
+	startall=time(NULL);
 
 	/****************************************************/
 	/* Search through all to find total files and bytes */
@@ -685,18 +683,18 @@ int send_files(char** fname, uint fnames)
 		for(i=0;i<(int)g.gl_pathc;i++) {
 			if(isdir(g.gl_pathv[i]))
 				continue;
-			total_files++;
-			total_bytes+=flength(g.gl_pathv[i]);
+			xm.total_files++;
+			xm.total_bytes+=flength(g.gl_pathv[i]);
 		} 
 		globfree(&g);
 	}
 
-	if(fnames>1)
+	if(xm.total_files>1)
 		lprintf(LOG_INFO,"Sending %u files (%lu KB total)"
-			,total_files,total_bytes/1024);
+			,xm.total_files,xm.total_bytes/1024);
 
-	zm.n_files_remaining = total_files;
-	zm.n_bytes_remaining = total_bytes;
+	zm.n_files_remaining = xm.total_files;
+	zm.n_bytes_remaining = xm.total_bytes;
 
 	/***********************************************/
 	/* Send every file matching names or filespecs */
@@ -722,131 +720,53 @@ int send_files(char** fname, uint fnames)
 			success=FALSE;
 			startfile=time(NULL);
 
-			do { /* try */
+			lprintf(LOG_INFO,"Sending %s (%lu KB) via %s"
+				,path,fsize/1024
+				,mode&XMODEM ? "Xmodem" : mode&YMODEM ? "Ymodem" : "Zmodem");
 
-				if(!(mode&ZMODEM)) { /* X/Ymodem */
-					if(!xmodem_get_mode(&xm)) {
-						xmodem_cancel(&xm);
-						break;
-					}
-				}
+			if(mode&ZMODEM)
+					success=zmodem_send_file(&zm, path, fp, /* ZRQINIT? */fnum==0, &startfile, &sent_bytes);
+			else	/* X/Ymodem */
+					success=xmodem_send_file(&xm, path, fp, &startfile, &sent_bytes);
 
-				lprintf(LOG_INFO,"Sending %s (%lu KB) via %s"
-					,path,fsize/1024
-					,mode&XMODEM ? "Xmodem" : mode&YMODEM ? mode&GMODE ? "Ymodem-G"
-						: "Ymodem" : "Zmodem");
-
-				if(mode&ZMODEM) {
-
-					success=zmodem_send_file(&zm,getfname(path),fp,fnum==0);
-
-				} else {	/* X/Ymodem */
-
-					if(!(mode&XMODEM)) {
-						t=fdate(path);
-						memset(block,0,sizeof(block));
-						SAFECOPY(block,getfname(path));
-						i=sprintf(block+strlen(block)+1,"%lu %lo 0 0 %d %ld"
-							,fsize,t,total_files-sent_files,total_bytes-sent_bytes);
-						
-						lprintf(LOG_INFO,"Sending Ymodem header block: '%s'",block+strlen(block)+1);
-						
-						block_len=strlen(block)+1+i;
-						for(errors=0;errors<xm.max_errors;errors++) {
-							xmodem_put_block(&xm, block, block_len <=128 ? 128:1024, 0  /* block_num */);
-							if(xmodem_get_ack(&xm,1,0))
-								break; 
-						}
-						if(errors==xm.max_errors) {
-							lprintf(LOG_ERR,"Failed to send header block");
-							xmodem_cancel(&xm);
-							break; 
-						}
-						if(!xmodem_get_mode(&xm)) {
-							xmodem_cancel(&xm);
-							break;
-						}
-					}
-					startfile=time(NULL);	/* reset time, don't count header block */
-					block_num=1;
-					errors=0;
-					while((block_num-1)*xm.block_size<(ulong)fsize && errors<xm.max_errors) {
-						fseek(fp,(block_num-1)*(long)xm.block_size,SEEK_SET);
-						memset(block,CPMEOF,xm.block_size);
-						if((n=fread(block,1,xm.block_size,fp))!=xm.block_size
-							&& block_num*xm.block_size<(ulong)fsize) {
-							lprintf(LOG_ERR,"READ ERROR %d instead of %d at offset %lu"
-								,n,xm.block_size,(block_num-1)*(long)xm.block_size);
-							errors++;
-							continue;
-						}
-						xmodem_progress(xm.cbdata,block_num,ftell(fp),fsize,startfile);
-						xmodem_put_block(&xm, block, xm.block_size, block_num);
-						now=time(NULL);
-						total_blocks=num_blocks(fsize,xm.block_size);
-						if(!xmodem_get_ack(&xm,5,block_num)) {
-							errors++;
-							lprintf(LOG_WARNING,"Error #%d at offset %ld"
-								,errors,ftell(fp)-xm.block_size);
-						} else
-							block_num++; 
-					}
-					if((long)(block_num-1)*(long)xm.block_size>=fsize) {
-
-#if !SINGLE_THREADED
-						lprintf(LOG_DEBUG,"Waiting for output buffer to empty... ");
-						if(WaitForEvent(outbuf_empty,5000)!=WAIT_OBJECT_0)
-							lprintf(LOG_WARNING,"FAILURE");
-#endif
-						success=xmodem_put_eot(&xm);	/* end-of-text, wait for ACK */
-					}
-				}
-			} while(0);
-			/* finally */
 			fclose(fp);
 
 			if((t=time(NULL)-startfile)<=0) 
 				t=1;
-			cps=fsize/t;
+			cps=sent_bytes/t;
 			if(success) {
-				sent_files++;
-				sent_bytes+=fsize;
+				xm.sent_files++;
+				xm.sent_bytes+=fsize;
 				lprintf(LOG_INFO,"Successful - Time: %lu:%02lu  CPS: %lu"
 						,t/60,t%60,cps);
 			} else
 				lprintf(LOG_WARNING,"File Transfer Failure");
 
-			if(total_files>1)
+			if(xm.total_files-xm->sent_files)
 				lprintf(LOG_INFO,"Remaining - Time: %lu:%02lu  Files: %u  KBytes: %lu"
-					,((total_bytes-sent_bytes)/cps)/60
-					,((total_bytes-sent_bytes)/cps)%60
-					,total_files-sent_files
-					,(total_bytes-sent_bytes)/1024
+					,((xm.total_bytes-xm.sent_bytes)/cps)/60
+					,((xm.total_bytes-xm.sent_bytes)/cps)%60
+					,xm.total_files-xm.sent_files
+					,(xm.total_bytes-xm.sent_bytes)/1024
 					);
 
 			/* DSZLOG entry */
 			if(logfp) {
 				lprintf(LOG_DEBUG,"Updating DSZLOG: %s", dszlog);
-				if(mode&ZMODEM)
-					l=zm.sent_successfully;
-				else {
-					l=(block_num-1)*(long)xm.block_size;
-					if(l>fsize)
-						l=fsize;
-				}
 				fprintf(logfp,"%c %7lu %5u bps %6lu cps %3u errors %5u %4u "
 					"%s -1\n"
 					,success ? (mode&ZMODEM ? 'z':'S') 
 						: (mode&ZMODEM && zm.file_skipped) ? 's' 
 						: 'E'
-					,l
+					,sent_bytes
 					,115200 /* baud */
-					,l/t
+					,cps
 					,errors
 					,flows
 					,xm.block_size
 					,path); 
 			}
+			total_bytes += sent_bytes;
 		} /* while(gi<(int)g.gl_pathc) */
 
 		if(gi<(int)g.gl_pathc)/* error occurred */
@@ -875,16 +795,16 @@ int send_files(char** fname, uint fnames)
 			} 
 		}
 	}
-	if(total_files>1) {
+	if(xm.total_files>1) {
 		t=time(NULL)-startall;
 		if(!t) t=1;
 		lprintf(LOG_INFO,"Overall - Time %02lu:%02lu  KBytes: %lu  CPS: %lu"
-			,t/60,t%60,sent_bytes/1024,sent_bytes/t); 
+			,t/60,t%60,total_bytes/1024,total_bytes/t); 
 	}
 	return(0);	/* success */
 }
 
-int receive_files(char** fname, int fnames)
+static int receive_files(char** fname, int fnames)
 {
 	char	str[MAX_PATH+1];
 	int		i;
@@ -1550,8 +1470,6 @@ int main(int argc, char **argv)
 			return(-1); 
 		}
 	}
-
-	startall=time(NULL);
 
 #if !SINGLE_THREADED
 	_beginthread(output_thread,0,NULL);

@@ -247,7 +247,6 @@ typedef struct {
 	/* Status */
 	BOOL		cancelled;
 	BOOL		file_skipped;
-	ulong		sent_successfully;
 
 	/* Configuration */
 	long*		mode;
@@ -274,7 +273,7 @@ const char* zmodem_source(void);
 int			zmodem_get_zrinit(zmodem_t*);
 void		zmodem_parse_zrinit(zmodem_t*);
 int			zmodem_send_zfin(zmodem_t*);
-int			zmodem_send_file(zmodem_t*, char* name, FILE* fp, BOOL request_init);
+BOOL		zmodem_send_file(zmodem_t*, char* name, FILE* fp, BOOL request_init, time_t* start, ulong* bytes_sent);
 
 #endif
 
