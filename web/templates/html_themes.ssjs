@@ -2,3 +2,4 @@
 Themes["Default"]=new Object;
 Themes["Default"].desc="Default Synchronet Theme";
 Themes["Default"].dir="default";
+Themes["Default"].css="/synchronet.css";
