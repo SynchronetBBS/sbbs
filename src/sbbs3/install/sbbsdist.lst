@@ -28,7 +28,7 @@
  Lines that start with anything but a C, T, f, t, D or s are ignored.
 
 T Current Source Tarball (v3.10l)
-m NOCVS
+m NOCVS=1
 f sbbs_src.tgz
 f lib-%s.tgz
 s ftp://ftp.synchro.net/				Official FTP server (T1)
