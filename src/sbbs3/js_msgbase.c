@@ -136,39 +136,39 @@ static BOOL parse_recipient_object(JSContext* cx, private_t* p, JSObject* hdr, s
 		msg->idx.to=crc16(to,0);
 	}
 
-		if(JS_GetProperty(cx, hdr, "to_ext", &val) && val!=JSVAL_VOID) {
-			if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
-				return(FALSE);
-			smb_hfield_str(msg, RECIPIENTEXT, cp);
-			if(p->smb.status.attr&SMB_EMAIL)
-				msg->idx.to=atoi(cp);
-		}
+	if(JS_GetProperty(cx, hdr, "to_ext", &val) && val!=JSVAL_VOID) {
+		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
+			return(FALSE);
+		smb_hfield_str(msg, RECIPIENTEXT, cp);
+		if(p->smb.status.attr&SMB_EMAIL)
+			msg->idx.to=atoi(cp);
+	}
 
-		if(JS_GetProperty(cx, hdr, "to_org", &val) && val!=JSVAL_VOID) {
-			if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
-				return(FALSE);
-			smb_hfield_str(msg, RECIPIENTORG, cp);
-		}
+	if(JS_GetProperty(cx, hdr, "to_org", &val) && val!=JSVAL_VOID) {
+		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
+			return(FALSE);
+		smb_hfield_str(msg, RECIPIENTORG, cp);
+	}
 
-		if(JS_GetProperty(cx, hdr, "to_net_type", &val) && val!=JSVAL_VOID) {
-			JS_ValueToInt32(cx,val,&i32);
-			nettype=(ushort)i32;
-			smb_hfield(msg, RECIPIENTNETTYPE, sizeof(nettype), &nettype);
-			if(p->smb.status.attr&SMB_EMAIL && nettype!=NET_NONE)
-				msg->idx.to=0;
-		}
+	if(JS_GetProperty(cx, hdr, "to_net_type", &val) && val!=JSVAL_VOID) {
+		JS_ValueToInt32(cx,val,&i32);
+		nettype=(ushort)i32;
+		smb_hfield(msg, RECIPIENTNETTYPE, sizeof(nettype), &nettype);
+		if(p->smb.status.attr&SMB_EMAIL && nettype!=NET_NONE)
+			msg->idx.to=0;
+	}
 
-		if(JS_GetProperty(cx, hdr, "to_net_addr", &val) && val!=JSVAL_VOID) {
-			if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
-				return(FALSE);
-			smb_hfield_str(msg, RECIPIENTNETADDR, cp);
-		}
+	if(JS_GetProperty(cx, hdr, "to_net_addr", &val) && val!=JSVAL_VOID) {
+		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
+			return(FALSE);
+		smb_hfield_str(msg, RECIPIENTNETADDR, cp);
+	}
 
-		if(JS_GetProperty(cx, hdr, "to_agent", &val) && val!=JSVAL_VOID) {
-			JS_ValueToInt32(cx,val,&i32);
-			agent=(ushort)i32;
-			smb_hfield(msg, RECIPIENTAGENT, sizeof(agent), &agent);
-		}
+	if(JS_GetProperty(cx, hdr, "to_agent", &val) && val!=JSVAL_VOID) {
+		JS_ValueToInt32(cx,val,&i32);
+		agent=(ushort)i32;
+		smb_hfield(msg, RECIPIENTAGENT, sizeof(agent), &agent);
+	}
 
 	return(TRUE);
 }
