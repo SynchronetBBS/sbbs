@@ -854,6 +854,7 @@ static JSClass js_user_security_class = {
 static JSBool
 js_user_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
+	int			i;
 	int32		val=0;
 	user_t		user;
 	private_t*	p;
@@ -862,8 +863,8 @@ js_user_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval
 
 	JS_ValueToInt32(cx,argv[0],&val);
 	user.number=(ushort)val;
-	if(user.number!=0 && getuserdat(scfg,&user)!=0) {
-		JS_ReportError(cx,"Invalid user number: %d",val);
+	if(user.number!=0 && (i=getuserdat(scfg,&user))!=0) {
+		JS_ReportError(cx,"Error %d reading user number %d",i,val);
 		return(JS_FALSE);
 	}
 
