@@ -49,10 +49,10 @@
 /* Definitions */
 /***************/
 #define DEFAULT_CVSROOT		":pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs"
-#define RELEASE_LIST_URL1	"ftp://freebsd.synchro.net/main/misc/sbbs-release.lst"
-#define RELEASE_LIST_URL2	"ftp://freebsd.synchro.net/main/misc/sbbs-release.lst"
-#define RELEASE_LIST_URL3	"ftp://freebsd.synchro.net/main/misc/sbbs-release.lst"
-#define RELEASE_LIST_URL4	"ftp://freebsd.synchro.net/main/misc/sbbs-release.lst"
+#define RELEASE_LIST_URL1	"ftp://freebsd.synchro.net/main/misc/sbbs-rel.lst"
+#define RELEASE_LIST_URL2	"ftp://freebsd.synchro.net/main/misc/sbbs-rel.lst"
+#define RELEASE_LIST_URL3	"ftp://freebsd.synchro.net/main/misc/sbbs-rel.lst"
+#define RELEASE_LIST_URL4	"ftp://freebsd.synchro.net/main/misc/sbbs-rel.lst"
 #define MAX_RELEASES		50
 #define	MAX_DIST_FILES			10
 #define MAX_SERVERS			100
@@ -117,7 +117,7 @@ char *ftp_pass="new@synchro.net";
 /**************/
 /* Prototypes */
 /**************/
-void install_sbbs(void);
+void install_sbbs(struct dist_t *, struct server_ent_t *);
 struct dist_t **get_distlist(void);
 int choose_release(char **opts);
 int choose_server(char **opts);
@@ -143,12 +143,12 @@ int main(int argc, char **argv)
 {
 	char	**mopt;
 	int 	i=0;
-	int		release=0;
-	int		server=0;
 	int		main_dflt=0;
 	char 	str[129];
 	BOOL    door_mode=FALSE;
 	struct dist_t 	**distlist;
+	int		release;
+	int		server;
 
 	/************/
 	/* Defaults */
@@ -362,31 +362,7 @@ while(1) {
 				i=0;
 				break;
 			case 5:
-				strcpy(opt[0],"Yes");
-				strcpy(opt[1],"No");
-				opt[2][0]=0;
-				i=params.cvs?0:1;
-				uifc.helpbuf=	"`Pull sources from CVS:`\n"
-								"\n"
-								"\nShould the installer do a CVS update before compiling the binaies?"
-								"\n"
-								"\nIf this is the first time you have ran SBBSINST, you `MUST` enable this.";
-				i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
-					,"Pull from CVS",opt);
-				if(!i)
-					params.cvs=TRUE;
-				else if(i==1)
-					params.cvs=FALSE;
-				i=0;
-				break;
-			case 6:
-				uifc.helpbuf=	"`CVS Tag:`\n"
-								"\n"
-								"\nCVS tag to use when updating sources.  Enter \"HEAD\" to use current sources.";
-				uifc.input(WIN_MID,0,0,"CVS Tag",params.cvstag,40,K_EDIT);
-				break;
-			case 7:
-				install_sbbs();
+				install_sbbs(distlist[release],distlist[release]->servers[server]);
 				bail(0);
 				break;
 			case -1:
@@ -404,7 +380,55 @@ while(1) {
  *		Actually, it looks like you don't NEED to login if the password is blank... huh.
  */
 
-void install_sbbs(void)  {
+void install_sbbs(struct dist_t *release,struct server_ent_t *server)  {
+	char	cmd[MAX_PATH+1];
+	char	str[1024];
+	char	sbbsdir[9+MAX_PATH];
+	char	jslib[7+MAX_PATH];
+
+	if(params.release)
+		putenv("RELEASE=1");
+	else
+		putenv("DEBUG=1");
+	
+	if(params.symlink)
+		putenv("SYMLINK=1");
+	
+	sprintf(sbbsdir,"SBBSDIR=%s",params.install_path);
+	putenv(sbbsdir);
+	
+	if(params.use_bcc)
+		putenv("bcc=1");
+	
+	if(mkdir(params.install_path,0777)&&errno!=EEXIST)  {
+		sprintf(str,"Could not create install %s!",params.install_path);
+		uifc.msg(str);
+		bail(EXIT_FAILURE);
+	}
+	if(chdir(params.install_path))  {
+		sprintf(str,"Could not change to %s (%d)!",params.install_path,errno);
+		uifc.msg(str);
+		bail(EXIT_FAILURE);
+	}
+	uifc.bail();
+	switch (release->type)  {
+		case CVS_SERVER:
+			sprintf(cmd,"cvs -d %s co -r %s install",server->addr,release->tag,params.install_path);
+			if(system(cmd))  {
+				printf("Could not checkout install makefile.\n");
+				exit(EXIT_FAILURE);
+			}
+			sprintf(cmd,"gmake -f install/GNUmakefile");
+			if(system(cmd))  {
+				printf("'Nuff said.\n");
+				exit(EXIT_FAILURE);
+			}
+			exit(EXIT_SUCCESS);
+		case DIST_SET:
+			
+			break;
+	}
+
 	uifc.bail();
 	system("gmake -f " MAKEFILE " install");
 	if(!keep_makefile)

@@ -1,0 +1,29 @@
+ Release list format:
+
+ C <sp> Text description of release
+		Indicates a CVS release... contains one AND ONLY ONE tag line,
+		then a number of server lines.
+
+ T <sp> Text description of release
+ 		Indicates a Tarball release... contains multiples file lines
+ 		then numtiple server lines
+ 
+ t <sp> Text
+ 		A tag line defines a CVS tag to use.
+
+ f <sp> Text
+ 		A file line.
+		%s is replaced with sysname-machine from uname.
+
+ s <sp> Address <tab> Text description of server
+		A server line.  Address is either the CVSROOT for C sections or the URL
+		for T sections %s is replaced by the current file name for URLs.
+
+ D <sp> <sysname-machine>[,<PLATFORM> ...] <sp> <LINE>
+ 		A depends line.  Line is only parsed if the current sysname/machine is <sysname-machine>
+
+ Lines that start with anything but a C, T, f, t, D or s are ignored.
+
+C Current Beta (CVS)
+t HEAD
+s :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs	Official Synchronet Server (256kbps)
