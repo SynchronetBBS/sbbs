@@ -735,7 +735,8 @@ void __fastcall TMainForm::FormClose(TObject *Sender, TCloseAction &Action)
 {
     UpTimer->Enabled=false; /* Stop updating the status bar */
 
-    TrayIcon->Visible=false; /* in case we're minimized to the tray */
+    if(TrayIcon->Visible)           /* minimized to tray? */
+        TrayIcon->Visible=false;    /* restore to avoid crash */
 
     if(Initialized) /* Don't overwrite registry settings with defaults */
         SaveSettings(Sender);
