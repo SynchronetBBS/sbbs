@@ -41,6 +41,7 @@
 #include "md5.h"
 #include "base64.h"
 #include "htmlansi.h"
+#include "ini_file.h"
 
 #define MAX_ANSI_SEQ	16
 #define MAX_ANSI_PARAMS	8
@@ -1884,6 +1885,24 @@ js_getfcase(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 }
 
 static JSBool
+js_cfgfname(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		path;
+	char*		fname;
+	char		result[MAX_PATH+1];
+
+	if((path=JS_GetStringBytes(JS_ValueToString(cx, argv[0])))==NULL) 
+		return(JS_FALSE);
+
+	if((fname=JS_GetStringBytes(JS_ValueToString(cx, argv[1])))==NULL) 
+		return(JS_FALSE);
+
+	*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,iniFileName(result,sizeof(result),path,fname)));
+
+	return(JS_TRUE);
+}
+
+static JSBool
 js_fexist(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char*		p;
@@ -2485,6 +2504,12 @@ static jsSyncMethodSpec js_global_functions[] = {
 	,JSDOCSTR("returns correct case of filename (long version of filename on Win32) "
 		"or <i>undefined</i> if the file doesn't exist")
 	,311
+	},
+	{"file_cfgname",	js_cfgfname,		2,	JSTYPE_STRING,	JSDOCSTR("string path, filename")
+	,JSDOCSTR("returns completed configuration filename from supplied <i>path</i> and <i>filename</i>, "
+	"optionally including the local hostname (e.g. <tt>path/file.<i>host</i>.<i>domain</i>.ext</tt> "
+	"or <tt>path/file.<i>host</i>.ext</tt>) if such a variation of the filename exists")
+	,312
 	},
 	{"file_exists",		js_fexist,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("string filename")
 	,JSDOCSTR("verify a file's existence")
