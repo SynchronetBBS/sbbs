@@ -127,7 +127,7 @@
 "View logon message"                                    114 ViewLogonMsgQ
 "\r\n\r\nYou can't read mail you've sent.\r\n"          115 R_ReadSentMail
 "\r\nwhMessage Scan "                                 116 MessageScan
-"complete.\r\n"                                         117 MessageScanComplete
+"nc(h%lu ncsub-boards)hw complete.\r\n"          117 MessageScanComplete
 "riaborted.n\r\n"                                    118 MessageScanAborted
 "\r\nLog off"                                           119 LogOffQ
 "\r\nYou can't post on this sub.\r\n"                   120 CantPostOnSub
@@ -583,8 +583,8 @@
 "\r\n_yhHow many rows on your monitor "\             497 HowManyRows
 	"[Auto Detect]: "
 "\r\n_yhCurrent Password: w"                        498 CurrentPassword
-"\r\nForward E-mail to NetMail address"                 499 ForwardMailQ
-"\r\n_yhNetMail/e-mail address "\                    500 EnterNetMailAddress
+"\r\nForward personal e-mail to network mail address"   499 ForwardMailQ
+"\r\n_yhNetwork mail address "\                      500 EnterNetMailAddress
 	"(Example: name@address)\r\n: "
 "nlgSelect h%sng:\r\n\r\n"                        501 SelectItemHdr
 "gh%3d: ng%s\r\n"                                   502 SelectItemFmt
@@ -614,7 +614,7 @@
 "\r\nSysop page is now %s\r\n"                          521 SysopPageIsNow
 "\r\n%s is not available.\r\n"                          522 SysopIsNotAvailable
 "Chat with %s instead"                                  523 ChatWithGuruInsteadQ
-"\r\nbhPrivate: g~Tngelegram, "\                   524 PrivateMsgPrompt
+"\r\nqbhPrivate: g~Tngelegram, "\                 524 PrivateMsgPrompt
 	"h~Mngessage, h~Cnghat, or h~Qnguit: ch"
 "\r\nhyNode, User name, w#yNumber, "\               525 NodeToPrivateChat
 	"w'yHandle, or w^Uyser list: wh"
