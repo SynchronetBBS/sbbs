@@ -553,9 +553,12 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 		default:
 			return(JS_TRUE);
 	}
-	if(p!=NULL) 
-		*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, p));
-	else
+	if(p!=NULL) {
+		JSString* js_str=JS_NewStringCopyZ(cx, p);
+		if(js_str==NULL)
+			return(JS_FALSE);
+		*vp = STRING_TO_JSVAL(js_str);
+	} else
 		*vp = INT_TO_JSVAL(val);
 
 	return(JS_TRUE);
@@ -819,6 +822,41 @@ static struct JSPropertySpec js_bbs_properties[] = {
 	{0}
 };
 
+/* Utility functions */
+static uint get_subnum(JSContext* cx, sbbs_t* sbbs, jsval val)
+{
+	uint subnum=INVALID_SUB;
+
+	if(JSVAL_IS_STRING(val)) {
+		char* p=JS_GetStringBytes(JS_ValueToString(cx,val));
+		for(subnum=0;subnum<sbbs->cfg.total_subs;subnum++)
+			if(!stricmp(sbbs->cfg.sub[subnum]->code,p))
+				break;
+	} else if(JSVAL_IS_INT(val))
+		subnum=JSVAL_TO_INT(val);
+	else if(sbbs->usrgrps>0)
+		subnum=sbbs->usrsub[sbbs->curgrp][sbbs->cursub[sbbs->curgrp]];
+
+	return(subnum);
+}
+
+static uint get_dirnum(JSContext* cx, sbbs_t* sbbs, jsval val)
+{
+	uint dirnum=INVALID_DIR;
+
+	if(JSVAL_IS_STRING(val)) {
+		char* p=JS_GetStringBytes(JS_ValueToString(cx,val));
+		for(dirnum=0;dirnum<sbbs->cfg.total_dirs;dirnum++)
+			if(!stricmp(sbbs->cfg.dir[dirnum]->code,p))
+				break;
+	} else if(JSVAL_IS_INT(val))
+		dirnum=JSVAL_TO_INT(val);
+	else if(sbbs->usrlibs>0)
+		dirnum=sbbs->usrdir[sbbs->curlib][sbbs->curdir[sbbs->curlib]];
+
+	return(dirnum);
+}
+
 /**************************/
 /* bbs Object Methods */
 /**************************/
@@ -975,8 +1013,12 @@ js_text(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	if(i<0 || i>=TOTAL_TEXT)
 		*rval = JSVAL_NULL;
-	else
-		*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, sbbs->text[i]));
+	else {
+		JSString* js_str = JS_NewStringCopyZ(cx, sbbs->text[i]);
+		if(js_str==NULL)
+			return(JS_FALSE);
+		*rval = STRING_TO_JSVAL(js_str);
+	}
 
 	return(JS_TRUE);
 }
@@ -1126,8 +1168,12 @@ js_atcode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	if(p==NULL)
 		*rval = JSVAL_NULL;
-	else
-		*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, p));
+	else {
+		JSString* js_str = JS_NewStringCopyZ(cx, p);
+		if(js_str==NULL)
+			return(JS_FALSE);
+		*rval = STRING_TO_JSVAL(js_str);
+	}
 
 	return(JS_TRUE);
 }
@@ -1531,8 +1577,10 @@ js_sub_info(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	if(sbbs->usrgrps>0)
-		sbbs->subinfo(sbbs->usrsub[sbbs->curgrp][sbbs->cursub[sbbs->curgrp]]);
+	uint subnum=get_subnum(cx,sbbs,argv[0]);
+
+	if(subnum<sbbs->cfg.total_subs)
+		sbbs->subinfo(subnum);
 
 	*rval = JSVAL_VOID;
 	return(JS_TRUE);
@@ -1546,8 +1594,9 @@ js_dir_info(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	if(sbbs->usrlibs>0)
-		sbbs->dirinfo(sbbs->usrdir[sbbs->curlib][sbbs->curdir[sbbs->curlib]]);
+	uint dirnum=get_dirnum(cx,sbbs,argv[0]);
+	if(dirnum<sbbs->cfg.total_dirs)
+		sbbs->dirinfo(dirnum);
 
 	*rval = JSVAL_VOID;
 	return(JS_TRUE);
@@ -1831,26 +1880,13 @@ js_bulkmail(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 static JSBool
 js_upload_file(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	int32		dirnum=0;
-	char*		code;
+	uint		dirnum=0;
 	sbbs_t*		sbbs;
-    JSString*	str;
 
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	if(JSVAL_IS_STRING(argv[0])) {
-		if((str=JS_ValueToString(cx, argv[0]))==NULL)
-			return(JS_FALSE);
-
-		if((code=JS_GetStringBytes(str))==NULL)
-			return(JS_FALSE);
-
-		for(dirnum=0;dirnum<sbbs->cfg.total_dirs;dirnum++)
-			if(!stricmp(sbbs->cfg.dir[dirnum]->code,code))
-				break;
-	} else
-		JS_ValueToInt32(cx,argv[0],&dirnum);
+	dirnum=get_dirnum(cx,sbbs,argv[0]);
 
 	if(dirnum>=sbbs->cfg.total_dirs) {
 		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
@@ -1865,26 +1901,13 @@ js_upload_file(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 static JSBool
 js_bulkupload(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	int32		dirnum=0;
-	char*		code;
+	uint		dirnum=0;
 	sbbs_t*		sbbs;
-    JSString*	str;
 
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	if(JSVAL_IS_STRING(argv[0])) {
-		if((str=JS_ValueToString(cx, argv[0]))==NULL)
-			return(JS_FALSE);
-
-		if((code=JS_GetStringBytes(str))==NULL)
-			return(JS_FALSE);
-
-		for(dirnum=0;dirnum<sbbs->cfg.total_dirs;dirnum++)
-			if(!stricmp(sbbs->cfg.dir[dirnum]->code,code))
-				break;
-	} else
-		JS_ValueToInt32(cx,argv[0],&dirnum);
+	dirnum=get_dirnum(cx,sbbs,argv[0]);
 
 	if(dirnum>=sbbs->cfg.total_dirs) {
 		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
@@ -1898,33 +1921,20 @@ js_bulkupload(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 static JSBool
 js_resort_dir(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	uint		i=0;
-	char*		code;
+	uint		dirnum=0;
 	sbbs_t*		sbbs;
-    JSString*	str;
 
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	if(JSVAL_IS_STRING(argv[0])) {
-		if((str=JS_ValueToString(cx, argv[0]))==NULL)
-			return(JS_FALSE);
+	dirnum=get_dirnum(cx,sbbs,argv[0]);
 
-		if((code=JS_GetStringBytes(str))==NULL)
-			return(JS_FALSE);
-
-		for(i=0;i<sbbs->cfg.total_dirs;i++)
-			if(!stricmp(sbbs->cfg.dir[i]->code,code))
-				break;
-	} else
-		i=JSVAL_TO_INT(argv[0]);
-
-	if(i>=sbbs->cfg.total_dirs) {
+	if(dirnum>=sbbs->cfg.total_dirs) {
 		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
 		return(JS_TRUE);
 	}
 
-	sbbs->resort(i);
+	sbbs->resort(dirnum);
 
 	*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
 	return(JS_TRUE);
@@ -2143,7 +2153,9 @@ js_cmdstr(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	p=sbbs->cmdstr(p,fpath,fspec,NULL);
 
-	*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, p));
+	if((js_str=JS_NewStringCopyZ(cx, p))==NULL)
+		return(JS_FALSE);
+	*rval = STRING_TO_JSVAL(js_str);
 	return(JS_TRUE);
 }
 
@@ -2161,8 +2173,12 @@ js_getfilespec(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 
 	if(p==NULL)
 		*rval=JSVAL_NULL;
-	else
-		*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, p));
+	else {
+		JSString* js_str = JS_NewStringCopyZ(cx, p);
+		if(js_str==NULL)
+			return(JS_FALSE);
+		*rval = STRING_TO_JSVAL(js_str);
+	}
 	return(JS_TRUE);
 }
 
@@ -2170,7 +2186,6 @@ static JSBool
 js_listfiles(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	long		mode=0;
-	char*		code;
 	char*		fspec=ALLFILES;
 	uint		dirnum;
     JSString*	js_str;
@@ -2179,18 +2194,7 @@ js_listfiles(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	if(JSVAL_IS_STRING(argv[0])) {
-		if((js_str=JS_ValueToString(cx, argv[0]))==NULL)
-			return(JS_FALSE);
-
-		if((code=JS_GetStringBytes(js_str))==NULL)
-			return(JS_FALSE);
-
-		for(dirnum=0;dirnum<sbbs->cfg.total_dirs;dirnum++)
-			if(!stricmp(sbbs->cfg.dir[dirnum]->code,code))
-				break;
-	} else
-		dirnum=JSVAL_TO_INT(argv[0]);
+	dirnum=get_dirnum(cx,sbbs,argv[0]);
 
 	if(dirnum>=sbbs->cfg.total_dirs) {
 		*rval = INT_TO_JSVAL(0);
@@ -2215,7 +2219,6 @@ static JSBool
 js_listfileinfo(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	long		mode=FI_INFO;
-	char*		code;
 	char*		fspec=ALLFILES;
 	uint		dirnum;
     JSString*	js_str;
@@ -2224,18 +2227,7 @@ js_listfileinfo(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	if(JSVAL_IS_STRING(argv[0])) {
-		if((js_str=JS_ValueToString(cx, argv[0]))==NULL)
-			return(JS_FALSE);
-
-		if((code=JS_GetStringBytes(js_str))==NULL)
-			return(JS_FALSE);
-
-		for(dirnum=0;dirnum<sbbs->cfg.total_dirs;dirnum++)
-			if(!stricmp(sbbs->cfg.dir[dirnum]->code,code))
-				break;
-	} else
-		dirnum=JSVAL_TO_INT(argv[0]);
+	dirnum=get_dirnum(cx,sbbs,argv[0]);
 
 	if(dirnum>=sbbs->cfg.total_dirs) {
 		*rval = INT_TO_JSVAL(0);
@@ -2265,13 +2257,7 @@ js_postmsg(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	if(JSVAL_IS_STRING(argv[0])) {
-		char* p=JS_GetStringBytes(JS_ValueToString(cx,argv[0]));
-		for(subnum=0;subnum<sbbs->cfg.total_subs;subnum++)
-			if(!stricmp(sbbs->cfg.sub[subnum]->code,p))
-				break;
-	} else
-		subnum=JSVAL_TO_INT(argv[0]);
+	subnum=get_subnum(cx,sbbs,argv[0]);
 
 	if(subnum>=sbbs->cfg.total_subs) {	// invalid sub-board
 		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
@@ -2399,13 +2385,7 @@ js_scanposts(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	if(JSVAL_IS_STRING(argv[0])) {
-		char* p=JS_GetStringBytes(JS_ValueToString(cx,argv[0]));
-		for(subnum=0;subnum<sbbs->cfg.total_subs;subnum++)
-			if(!stricmp(sbbs->cfg.sub[subnum]->code,p))
-				break;
-	} else
-		subnum=JSVAL_TO_INT(argv[0]);
+	subnum=get_subnum(cx,sbbs,argv[0]);
 
 	if(subnum>=sbbs->cfg.total_subs) {	// invalid sub-board
 		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
@@ -2522,11 +2502,11 @@ static jsMethodSpec js_bbs_functions[] = {
 	{"sys_info",		js_sys_info,		0,	JSTYPE_VOID,	""
 	,JSDOCSTR("display system information")
 	},		
-	{"sub_info",		js_sub_info,		0,	JSTYPE_VOID,	""
-	,JSDOCSTR("display current message sub-board information")
+	{"sub_info",		js_sub_info,		1,	JSTYPE_VOID,	JSDOCSTR("[subboard]")
+	,JSDOCSTR("display message sub-board information (current subboard, if unspecified)")
 	},		
-	{"dir_info",		js_dir_info,		0,	JSTYPE_VOID,	""
-	,JSDOCSTR("display current file directory information")
+	{"dir_info",		js_dir_info,		0,	JSTYPE_VOID,	JSDOCSTR("[directory]")
+	,JSDOCSTR("display file directory information (current directory, if unspecified)")
 	},		
 	{"user_info",		js_user_info,		0,	JSTYPE_VOID,	""
 	,JSDOCSTR("display current user information")
@@ -2597,7 +2577,7 @@ static jsMethodSpec js_bbs_functions[] = {
 	{"scan_dirs",		js_scandirs,		0,	JSTYPE_VOID,	JSDOCSTR("[number mode, boolean all]")
 	,JSDOCSTR("scan directories for files")
 	},		
-	{"scan_posts",		js_scanposts,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("sub-board, [number mode, string find]")
+	{"scan_posts",		js_scanposts,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("[sub-board, number mode, string find]")
 	,JSDOCSTR("scan posts in the specified message sub-board (number or internal code), optionally search for 'find' string")
 	},		
 	/* menuing */
