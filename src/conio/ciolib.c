@@ -801,9 +801,10 @@ void ciolib_delay(long a)
 
 int ciolib_putch(int a)
 {
+	unsigned char a1=a;
 	CIOLIB_INIT();
 
-	return(cio_api.putch(a));
+	return(cio_api.putch(a1));
 }
 
 void ciolib_setcursortype(int a)
