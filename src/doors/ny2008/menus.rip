@@ -1,0 +1,320 @@
+@CENTRAL_PARK
+$RIP$
+!|*|1K|w0000000000|Y00000100|1B00000000LC0200000B080300000003000000
+!|1U4Q02HP9N0000|1B00000000LC020000080B0300000003000000|1U4X08HI9H0000|W0|c0A
+!|=00000001|S010A|p07009P004R0R49204N3F4G4O4S4O9P|c02|S0102
+!|p0B001H12171Y1D3E0P4F0W4N0V4N4S3D4G204O0R4A014S|c07|S0107
+!|p040E1C0E0S100S1217|p04241A24002X002X0W|c08|S0108|p052Y0B3P0B3P0R3E0P2Y0X
+!|p04120Z1M0Z1M1B1218|c0B|S010B
+!|p0B00002300231B1Y1D1N1B1N0Y120Y120R0D0R0D1E001G
+!|p072Y004N004N0U4G0W3Q0R3Q0A2Y0A|Y07000400
+!|1B00000200MC02080C0E020A0000080A000000|1U4Z0AHF1F0000<>Central Park
+!|Y00000100|1B00000202ZM02080F0F080700000807000000
+!|1U691WAE292B00<>Street Fights<>S|1U692LAE2Y1V00<>Cop Fights<>C
+!|1U693AAE3N2800<>Player Fights<>P|1UBX1WG2291X00<>Evil Stuff<>E
+!|1UBX2LG22Y1U00<>Bank and Money<>B|1UBY3AG33N2000<>Healing<>H
+!|1U693YAE4B1Y00<>Food<>F|1U694NAE501W00<>Drugs<>D
+!|1U695CAE5P1T00<>Arm Yerself<>A|1U6961AE6E1Z00<>Get Laid<>G
+!|1U6A6QAF732D00<>Use Atomic Bomb<>U|1U697EAE7R2500<>Mail<>M
+!|1U6983AE8G2100<>Change Yer Info<>I|1UBX3YG24B2H00<>Your Stats<>Y
+!|1UBX4NG2502400<>List Players<>L|1UBX5CG25P2F00<>Whos Online<>W
+!|1UBX61G26E2A00<>Rest Somewhere<>R|1UBX6QG2732600<>Newz<>N
+!|1UBX7EG27R0000<>Instructions<>\!|1UBX83G28G2300<>Kill Yerself\!<>K
+!|1U698SAE952700<>Other Stuff<>O|1UBX8SG2952900<>Quit To BBS<>Q|#|#|#
+@CENTRAL_PARK_IB
+$RIP$
+!|*|1K|w0000000000|Y00000100|1B00000000LC0200000B080300000003000000
+!|1U4Q02HP9N0000|1B00000000LC020000080B0300000003000000|1U4X08HI9H0000|W0|c0A
+!|=00000001|S010A|p07009P004R0R49204N3F4G4O4S4O9P|c02|S0102
+!|p0B001H12171Y1D3E0P4F0W4N0V4N4S3D4G204O0R4A014S|c07|S0107
+!|p040E1C0E0S100S1217|p04241A24002X002X0W|c08|S0108|p052Y0B3P0B3P0R3E0P2Y0X
+!|p04120Z1M0Z1M1B1218|c0B|S010B
+!|p0B00002300231B1Y1D1N1B1N0Y120Y120R0D0R0D1E001G
+!|p072Y004N004N0U4G0W3Q0R3Q0A2Y0A|Y07000400
+!|1B00000200MC02080C0E020A0000080A000000|1U4Z0AHF1F0000<>Central Park
+!|Y00000100|1B00000202ZM02080F0F080700000807000000
+!|1U691WAE292B00<>Street Fights<>S|1U692LAE2Y1V00<>Cop Fights<>C
+!|1U693AAE3N2800<>Player Fights<>P|1UBX1WG2291X00<>Evil Stuff<>E
+!|1UBX2LG22Y1U00<>Bank and Money<>B|1UBY3AG33N2000<>Healing<>H
+!|1U693YAE4B1Y00<>Food<>F|1U694NAE501W00<>Drugs<>D
+!|1U695CAE5P1T00<>Arm Yerself<>A|1U6961AE6E1Z00<>Get Laid<>G
+!|1U6A6QAF732D00<>Use Atomic Bomb<>U|1U697EAE7R2500<>Mail<>M
+!|1U6983AE8G2100<>Change Yer Info<>I|1UBX3YG24B2H00<>Your Stats<>Y
+!|1UBX4NG2502400<>List Players<>L|1UBX5CG25P2F00<>Whos Online<>W
+!|1UBX61G26E2A00<>Rest Somewhere<>R|1UBX6QG2732600<>Newz<>N
+!|1UBX7EG27R0000<>Instructions<>\!|1UBX83G28G2300<>Kill Yerself\!<>K
+!|1U0A904F9D2900<>Quit To BBS<>Q
+!|1U698SAE952700<>Other Stuff<>O|1UBX8SG2950000<>Other Cities<>*|#|#|#
+@EVIL_STUFF
+$RIP$
+!|*|1K|w0000000010|W0|c04|Y0A000400|@5I0OEvil Stuff|Y00000100
+!|1B00000202YY02070F0F000800000708000000|1U5B2YBR3J2B00<>Steal From Beggars<>S
+!|1U5B3YBR4J1W00<>Destroy a Car<>D|1U5C4YBS5J1U00<>Burn a School Down<>B
+!|1U5C5YBS6J2A00<>Break a Window<>R|1U5C70BS7L2800<>Poison Water<>P
+!|1U5D80BT8L2F00<>United Nations HQ Bombing<>U
+!|1U5C90BT9L0000<>Return<>Q|#|#|#
+@BANK
+$RIP$
+!|*|1K|w0000000000|W0|c0A|Y0A000A00|@2S01$|c02|Y06000600|@0S04Bank|Y00000100
+!|1B000002027402080F0F080700000807000000|1U600TBE5M0000
+!|1B000002030202080F0F080700000807000000|1U6912B41G0000<>Deposit Money<>D
+!|1U691TB4270000<>Withraw Money<>W|1U692LB42Z0000<>Go Steal Money<>G
+!|1U693DB33R0000<>Send Money To Others<>S|1U6945B34J0000<>Your Stats<>Y
+!|1U694XB25B0000<>Return To Central Park<>Q|#|#|#
+@HEALING
+$RIP$
+!|*|1K|w0000000010|S010F|B001T728P|S010C|B074I6V5T|B2H2H4888|Y00000100
+!|1B00000202KG22000F0E020A0000000A000000|1U7A1TBC2H0000<>Heal Wounds<>H
+!|1B00000202KG22000F0F040C0000000C000000|1UB031F23P0000<>Cure STD's<>C
+!|1B00000202KG22000F0F070E0000000E000000|1U7M4NBO5B0000<>Drug Rehab<>D
+!|1B00000202KG22000F0F030B0000000B000000|1UAH68EJ6W0000<>Yer Stats<>Y
+!|1B00000202KG22000F0F050D0000000D000000|1U9C80DE8O0000<>Get Outta Here<>Q|#|#|#
+@FOOD
+$RIP$
+!|*|1K|w0000000010|Y00000100|1B0000020S8Y02000F0E020A0000000A000000
+!|1U9V19EI1U0000<>Go Eat Out<>G|1B0000020S8Y02000F0B010900000009000000
+!|1U802NCN380000<>Eat From Dumpster<>E|1B0000020S8Y02000F0F070E0000000E000000
+!|1U9Q3ZED4K0000<>Steal Some Food<>S|1B0000020S8Y02000F0F050D0000000D000000
+!|1UB75IFU630000<>Your Stats<>Y|1B0000020S8Y02000F0F040C0000000C000000
+!|1U8171CO7M0000<>Go Away<>Q|1B000002026802000F0F040C0000000C000000
+!|1U6U05759J0000|W0|c0C|Y0A000500|@0K00Food|#|#|#
+@DRUGS
+$RIP$
+!|*|1K|w0000000010|W0|c08|Y01000500|@7E1GDrugs|c00|=00000001|S010A
+!|p042J7D2O7I2U7F2Z6N|p082X6M2W662Y5S355E3M4Q3G5H3768336H
+!|p062Y6M396C3R5Z4C5S3X663F6G|p062Y6L3R6F436F4C6J3P6N346N
+!|p05316M3B6Q3H6V3H70396V|p05316L2Q6L2J6P2F6T2P6Q|p052X6M2M6A2D5U2D592O5T
+!|p042X6L2E681Z672D6H|Y00000100|1B0000020S9602070F0F000800000708000000
+!|1U643ZB04H1U00<>Buy Drugs<>B|1U9V4WER5E2D00<>Use Drugs<>U
+!|1U585TA46B2B00<>Sell Drugs<>S|1U876PD3772H00<>Your Stats<>Y
+!|1U6L7MBH841V00<>Change Yer Drug<>C|1UAW8HFS8Z0000<>Get Outta Here<>Q|#|#|#
+@ARMS
+$RIP$
+!|*|1K|w0000000010|W0|c09|Y07000400|@6R0QArm Yerself
+!|1B00000000LC0200000F000800000008000000|1U6G1XCP990000
+!|1B00000000LC020000000F0800000008000000|1U6N23CI930000|Y00000100
+!|1B0000020S9602070F0F000800000708000000|1U712UBX3C1U00<>Buy a Weapon<>B
+!|1U7141BX4J2B00<>Sell Yer Weapon<>S|1U7159BX5R2H00<>Your Stats<>Y
+!|1U716HBX6Z2400<>List Prices<>L|1U717SBX8A0000<>Go Back<>Q|#|#|#
+@SEX
+$RIP$
+!|*|1K|w0000000010|W0|c03|Y08000400|@2Q0VGet Laid|Y00000100
+!|1B0000020S9602070F0F000800000708000000|1U9809E40R1Z00<>Get Laid<>G
+!|1U841OD0262B00<>Score Other Players<>S|1U1A2R66392A00<>Rape Somebody<>R
+!|1U843GD03Y2800<>Pick Up a Hooker<>P|1U6Z4ZBV5H1U00<>Buy Condoms<>B
+!|1UAO6FFK6X2500<>Masturbate<>M|1U7Z7OCV862H00<>Yer Stats<>Y
+!|1UBP8XGL9F0000<>Get Me Out<>Q|c00|=00000001|S0103|p04109A1E6W4A6W3Z9A
+!|C2M8319|C2M8313|Y07000200|@1K7QTrojan|#|#|#
+@MAIL
+$RIP$
+!|*|1K|w0000000010|W0|c00|=00000001|S010F|p04224R31717A546B2X|L204S7A54
+!|L31706A2Y|c02|Y03000600|@2Y0SMail|Y00000100
+!|1B0000020S9602070F0F000800000708000000|1U6J15BF1N2B00<>Send Mail<>S
+!|1U792LC5332A00<>Read Yer Mail<>R|1U8L40DH4I1T00<>Anounce Something<>A
+!|1U7R5NCN652700<>Online Message<>O|1U4C79987R1V00<>Colors Info<>C
+!|1UCE8YHA9G0000<>Return<>Q|#|#|#
+@REST
+$RIP$
+!|*|1K|w0000000010|W0|c02|Y03000400|@2R0XRest Somewhere|c00|=00000001|S0108
+!|p041A9F448X444G1A4W|p04444C184S0A4A1C4I|p04074E144X147F0V55|c0F|L1J521J5T
+!|L1J5H1R5G|L1S501S5R|O245C00A0060D|L2D4Y2T4V|L2J4Y2J5J|l04394S2Z4U2Z5E3B5C
+!|L2Z553653|l033I4Q3I5B3X58|Y00000100|1B0000020S9602070F0F000800000708000000
+!|1U5H3WAD4E1V00<>Cheap Motel<>C|1U604RAW592A00<>Regular Motel<>R
+!|1U6L5MBH641X00<>Expensive Hotel<>E|1U7G6GCC6Y2H00<>Your Stats<>Y
+!|1U857AD17S0000<>Return<>Q|#|#|#
+@ENTRY_1
+$RIP$
+!|*|1K|w0000000010|W0|c0B|Y00000600|@0302New|c03|@5F01York|c09|@BZ012008|c0C
+!|Y00000100|@041GBy Franz|c0A|@041VVersion `v `w|c04|@042A`r|c02
+!|@042PThis game has been running `d days\!
+!|1B00000202ZM02080F0F080700000807000000|1U5Y4EAD4R1X00<>Enter The Streets<>E
+!|1U5Y50AD5D2400<>List Players<>L|1U5Y5MAD5Z2H00<>Your Stats<>Y
+!|1U5Y68AD6L2600<>Newz<>N|1U5Y6UAD772900<>Quit To BBS<>Q|c0A|Y02000400
+!|@D01C(c) 1995-1996 George Lebl|=00000001|R5G3VAX7Q|#|#|#
+@P_FIG
+$RIP$
+!|*|1K|w0000000010|Y00000100|1B000002027402080F0F080700000807000000
+!|1U041IHD7D0000|1B000002030202080F0F080700000807000000
+!|1U0C5U7N642400<>List Consious Players<>L|1U0C3X7N472000<>Heal Wounds<>H
+!|1U0C4K7N4U2H00<>Your Stats<>Y|1U0C577N5H2C00<>Take a Drug<>T
+!|1U0C6I7N6S2A00<>Return To Central Park<>Q|W0|c0C|Y06000200
+!|@7Y36Hitpoints: `h|@7Y45Fights Left: `f|@7Y57Points: `p|@7Z6AMoney: `m|c01
+!|Y06000500|@0716Player Fights|c0A|=00000001|L072WHB2W|Y00000100
+!|1U0C3A7N3K2300<>Kick a Player Ass<>K|#|#|#
+@C_FIG
+$RIP$
+!|*|1K|w0000000010|Y00000100|1B000002027402080F0F080700000807000000
+!|1U041IHD7D0000|1B000002030202080F0F080700000807000000
+!|1U0B3A7M3K2400<>Look For Some Cop<>L|1U0B427M4C2000<>Heal Wounds<>H
+!|1U0B4V7M552H00<>Your Stats<>Y|1U0B5P7M5Z2C00<>Take a Drug<>T
+!|1U0B6I7M6S2A00<>Return To Central Park<>Q|W0|c0C|Y06000200
+!|@7Y36Hitpoints: `h|@7Y45Fights Left: `f|@7Y57Points: `p|@7Z6AMoney: `m|c01
+!|Y06000500|@0716Cop Fights|c0A|=00000001|L072WHB2W|#|#|#
+@S_FIG
+$RIP$
+!|*|1K|w0000000010|Y00000100|1B000002027402080F0F080700000807000000
+!|1U041IHD7D0000|1B000002030202080F0F080700000807000000
+!|1U0B3A7M3K2400<>Look For Ass To Kick<>L|1U0B427M4C2000<>Heal Wounds<>H
+!|1U0B4V7M552H00<>Your Stats<>Y|1U0B5P7M5Z2C00<>Take a Drug<>T
+!|1U0B6I7M6S2A00<>Return To Central Park<>Q|W0|c0C|Y06000200
+!|@7Y36Hitpoints: `h|@7Y45Fights Left: `f|@7Y57Points: `p|@7Z6AMoney: `m|c01
+!|Y06000500|@0716Street Fights|c0A|=00000001|L072WHB2W|#|#|#
+@ONLINE
+`0O`2nline `0P`2layer `0L`2isting `0F`2or `@N`4ew `@Y`4ork `@2008
+
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`!Rank: Lvl: Name:                     Points:              S: T:
+@NEWZ
+`%T`3h`9e `%N`3e`9w `%Y`3o`9rk `%T`3i`9mes
+
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+@LIST
+`0P`2layer `0L`2isting `0F`2or `@N`4ew `@Y`4ork `@2008
+
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`!Rank: Lvl: Name:                     Points:              S: T:
+@CONSIOUS
+`0C`2onsious `0P`2layer `0L`2isting `0F`2or `@N`4ew `@Y`4ork `@2008
+
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`!Rank: Lvl: Name:                     Points:              S: T:
+@ATTACK
+`@[A] `4- `@A`4ttack
+`@[T] `4- `@T`4ake `@D`4rug `@A`4nd `@A`4ttack
+`@[K] `4- `@K`4ick
+`@[P] `4- `@P`4unch
+`@[R] `4- `@T`4hrow `@A R`4ock
+`@[G] `4- `@G`4et `@O`4utta `@H`4ere
+`@[Y] `4- `@Y`4er `@S`4tats
+@WIN
+`7Of course blowing up New York with an A-Bomb did wonders to your body ...
+basically what I'm saying is, you DIED... but you completed yer mission ...
+just think of all the people that died with you ...
+@MAINT_RUN
+`@W`4ell the maintanace is running on some other node so please come back
+later, or if it is a one node bbs or the sysop's running the maintanance in
+the nightly batch file then he should delete the MAINT.RUN flag file....
+@WEAPONS
+`%A`2. (price `0         70`2) `0P`2epper `0S`2pray
+`%B`2. (price `0        300`2) `0S`2harp `0S`2tick
+`%C`2. (price `0        600`2) `0S`2crewdriver
+`%D`2. (price `0      1,500`2) `0K`2nife
+`%E`2. (price `0      3,000`2) `0H`2ammer
+`%F`2. (price `0      7,000`2) `0C`2hain
+`%G`2. (price `0     12,000`2) `0L`2ead `0P`2ipe
+`%H`2. (price `0     30,000`2) `0G`2un
+`%I`2. (price `0     70,000`2) `0C`2olt
+`%J`2. (price `0    130,000`2) `0R`2ifle
+`%K`2. (price `0    300,000`2) `0E`2lephant `0G`2un
+`%L`2. (price `0    500,000`2) `0L`2aser `0G`2un
+`%M`2. (price `0    900,000`2) `0N`2ail `0G`2un
+`%N`2. (price `0  2,000,000`2) `0S`2hotgun
+`%O`2. (price `0  5,500,000`2) `0A`2ssault `0R`2ifle
+`%P`2. (price `0  8,000,000`2) `0M`2achine `0G`2un
+`%R`2. (price `0 15,000,000`2) `0P`2roton `0G`2un
+`%S`2. (price `0 30,000,000`2) `0G`2ranade `0L`2auncher
+`%T`2. (price `0 80,000,000`2) `0N`2Neutron `0P`2haser
+`%U`2. (price `0130,000,000`2) `0B`2laster
+`%V`2. (price `0150,000,000`2) `0U`2ltrasound `0G`2un
+`%W`2. (price `0500,000,000`2) `0A`2tomic `0B`2omb
+@COPS
+Not Used For RIP
+@NEW
+`@W`4elcome `@T`4o `@N`4ew `@Y`4ork `@2008
+
+`0T`2his game is quite self explanatory... `0T`2hough here is yer mission...
+`0Y`2ou are the child of terrorism, your grandfathers could only dream of what you
+are about to do ...`0B`2low up `@N`4ew `@Y`4ork `2...
+`0F`2or this you will need an `0ATOMIC BOMB`2... `0A`2nd believe me they're not cheap
+
+`@H`4ere are a few game tips: (read the instructions anywayz! (! in main menu))
+
+`@I`4f you get drug addiction of an addictive drug to 100% you die and heffta start
+over. `@S`4ame with hunger and sexual diseases ... so watch those percentages.
+`@A`4lso read instructions on the efects of drugs ... `@O`4ne more tip, if you
+don't have sex fer a while, your attack force goes down. `@K`4eep it in mind!
+`@C`4olors can be used in messages and in the stuff you say or namez!
+
+@NATION
+Not Used For RIP
+@OTHER
+`@O`4ther `@S`4tuff
+
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`9You go and look for something less boring ...
+
+@NEW_NAME
+`@I`4nput yer new name: (`@ENTER`4=abort)
+|------------------------|`0
+@NEW_WIN
+`@W`4hat do you say when you win:
+|--------------------------------------|`0
+@NEW_LOOSE
+`@W`4hat do you say when you get yer ass kicked:
+|--------------------------------------|`0
+@TEN_BEST
+`@T`4en `@B`4est ... `@W`4inners
+
+`1-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`!Rank:    Name:                     Points:
+@TEN_BEST_IBBS
+`@T`4en `@B`4est ... `@W`4inners
+
+`1-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`!Name:                     Points:       Location:
+@BUSTED
+$RIP$
+!|1B00000000LC0200000F030B0000000B000000|1U1M20FQ6K0000
+!|1B00000000LC020000030F0B0000000B000000|1U1T26FJ6E0000|W0|c0C|Y01000200
+!|@7G2CBUSTED\!\!\!|c04|@2S33Well the police beat the hell out of you\!\!\!
+!|@4W3ZYou lost 2% of yer points\!|@3B4VWhy don't ya come back tommorrow
+!|Y00000100|1B00000202ZM02080F0F080700000807000000
+!|1U215TFA670000<>Press Enter Or Click Here<>^M|#|#|#
+@ASS_KICKED
+`%You had yer ass kicked ... oh well that happens
+Come back tomorrow to get revenge ...
+You lost all the money on ya ...
+And 2% of yer points
+@ASS_KICKED_P
+`%You had yer ass kicked ... oh well that happens
+Come back tomorrow to get revenge ...
+Ya lost 8% of yer points
+@ASS_KICKED_O
+`@Y`4a `%LOST`4!!!!
+`@C`4ome back tomorrow to get revenge
+`@8%`4 of yer points lost
+@COLORS_HELP
+`@S`4o ya'd like to use colors, huh?
+
+`@W`4ell its easy. `@T`4hey can be used in mail and the stuff you say.
+
+`@Y`4ou simply type the `%`` `4character and one of the following:
+`11`22`33`44`55`66`77`88`99`00`!!`@@`##`$$`%%
+
+``$Colors ``0RULE
+
+Would look like:
+
+`$Colors `0RULE
+
+`@N`4OTE: `@S`4ame as in `@LORD
+@CH_DRUG
+Not Used For RIP
+@LIST_IB_SYS
+`0O`2ther `0C`2ities:
+
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+@IBBS_MENU
+$RIP$
+!|*|1K|w0000000010|W0|c03|Y06000800|@3U0AOther Cities|Y00000100
+!|1B0000020S9602070F0F000800000708000000|1U3T3F8P3X2400<>List Cities<>L
+!|1U993FE53X2B00<>Send Mail<>S|1U3T478P4P2500<>Send Money<>S
+!|1U9947E54P1U00<>Send Mail Bomb<>B|1U3T4Z8P5H2000<>Send Hitmen<>H
+!|1U994ZE55H2100<>Infected Prostitute<>I|1U3T5R8P692800<>Spy on Players<>P
+!|1U995RE5691W00<>Look at Spy DBase<>D|1U3T6J8P712G00<>Have Sex<>X
+!|1U996JE5711T00<>Anounce Something<>A|1U3T7B8P7T2H00<>Yer Stats<>Y
+!|1U997BE57T0000<>Return<>Q|#|#|#
+@HITMEN
+Not Used For RIP
+@END
+

@@ -1,0 +1,481 @@
+`@Smack [ENTER] to go on.
+`@G`4etting the menu text file pointers...
+!|*|c0C|TReading mail...|#|#|#
+!|*|c0C|TPlease wait while maintanance runs on another node...|#|#|#
+!|@0020Thanks for waiting...|#|#|#
+!|@0040You were kicked out of the hotel|#|#|#
+!|10000((*You get a message/!::^M@OK))|#|#|#
+   `9F`1rom: `@
+`@M`4aking `%ANSI`4, `%ASCII`4 scorefiles ...
+ `@D`4one!
+`3### Checking for maintanance running
+### Checking for last maintanance
+### Running daily maintance
+### Packing and updating user file and creating scorefile
+### User file done...
+### Sorting SCR file...
+### Checking for mail index file...
+### Packing mail index file...
+### Deleting messages for dead users...
+### Deleting read messages...
+### Mail file done...
+### Cleaning up...
+### Executing custom maintanance program
+`3### Running Crash Recovery
+### Updating (no maintanance) user file and creating scorefile
+### User file done...
+### Sorting new SCR file...
+`@C`4hange `@Y`4er `@I`4nfo
+`%1 `4- `@Y`4er name: `0
+`%2 `4- `@W`4hen you win ya say: `0
+`%3 `4- `@W`4hen you loose ya say: `0
+`%Q `4- `@R`4eturn to Central Park
+`9W`1hich do ya wanna change? (`91`1,`92`1,`93`1,`9Q`1)
+`$T`6his game has been running for `0
+`6 days!
+`9E`1nter `9Y`1er `9C`1ommand (`9
+`1mins)`9>
+`%S`!t`9ats `%F`!o`9r `%L`!e`9vel `%
+`@S`4ex: `0
+`@W`4ell it's end of the road for ya....yer `%DEAD`4!
+`0Y`2ou died of: `0
+Drug Overdose
+`@Y`4a should consider cutting down on those drugs next time ...
+Hunger
+`@Y`4a should consider eating more next time ...
+Sexual Diseases
+`@Y`4a got a bad luck with girls ... next time ...
+`@Y`4a got a bad luck with guys ... next time ...
+Suicide
+`@Y`4a should talk to somebody before you get that down ... next time ...
+`%But you can still start all over tomorrow and be the best!
+!|10000((*Boy yer hungry....you should eat something not to starve...::^M@OK))|#|#|#
+!|10000((*Yer dying of hunger... If you don't eat today yer gonna die\!::^M@OK))|#|#|#
+!|10000((*Ya sure ya really wanna kill yerself? (heffta start over)::Y@Yes,N@No))|#|#|#
+`@E`4xpert mode turned `@ON
+`@R`4egular mode turned `@ON
+!|10000((*Do you want to quit the game?::Y@Yes,N@No))|#|#|#
+!|10000((*You ain't got an A-Bomb::^M@OK))|#|#|#
+!|10000((*Really do it?::Y@Yes,N@No))|#|#|#
+!|10000((*Yer level has been raised to level 
+!|10000((*Yer already staying at:
+!|10000((*Wanna check outta there (no money back)?::Y@Yes,N@No))|#|#|#
+!|10000((*Yer still staying at:
+!|10000((*Ok dude you got it ...::@OK))|#|#|#
+`0T`4 - Todays Newz `0Y`4 - Yesterdays Newz `0[Q]`4 - Quit `2:`0
+`0H`2ere's what I got:
+`0C`2hoose yer new weapon:
+`%If you buy an A-Bomb you will have to fight with hands again, but who wants to
+fight if you can finish what you came here for ...
+!|10000((*Ya'll heffta sell yer
+!|10000((*Sold\!::^M@OK))|#|#|#
+!|10000((*Ya ain't got nuff money bro ...::^M@OK))|#|#|#
+!|10000((*Buy a 
+!|10000((*Ya now got the 
+ so go destroy something::^M@OK))|#|#|#
+!|10000((*You ain't got nothing to sell\!::^M@OK))|#|#|#
+!|10000((*Sell yer 
+ for 
+?::Y@Yes,N@No))|#|#|#
+!|10000((*You ain't got no hits man ...::^M@OK))|#|#|#
+!|10000((*Yer already 100% stoned\!::^M@OK))|#|#|#
+!|10000((*You take a hit of yer favorite drug ...::^M@OK))|#|#|#
+!|10000((*You are now 
+% high::^M@OK))|#|#|#
+!|10000((*Yer drug addiction went up by 10%::^M@OK))|#|#|#
+!|10000((*Yer not infected ... (yet) ...::^M@OK))|#|#|#
+!|10000((*It costs 
+ to cure 1%::^M@OK))|#|#|#
+!|10000((*You can heal 
+% for 
+!|10000((*You can only afford to cure 
+`0S`2o how much ya want healed (`9Enter`2=`0[
+]`2, `9M`2=max `0
+% cured\!::^M@OK))|#|#|#
+!|10000((*Yer not addicted to anything...::^M@OK))|#|#|#
+!|10000((*Pay
+ for loosing 1/3 of addiction, do it?::Y@Yes,N@No))|#|#|#
+!|10000((*You can't afford it\!::^M@OK))|#|#|#
+!|10000((*You feel so much better ...::^M@OK))|#|#|#
+!|10000((*Yer not hurt ... (yet) ...::^M@OK))|#|#|#
+!|10000((*You can heal 
+!|10000((*You can only afford to heal 
+ hitpoints\!::^M@OK))|#|#|#
+`0S`2o how much ya want healed (`9Enter`2=`0[
+ Hitpoints were healed\!::^M@OK))|#|#|#
+!|10000((*Yer not hungry ...::^M@OK))|#|#|#
+!|10000((*You look at the prices ... 
+ ... do it?::Y@Yes,N@No))|#|#|#
+!|10000((*Well you ain't got enuff cash for that ...::^M@OK))|#|#|#
+!|10000((*You feel so refreshed yer hitpoints maxed out ...::^M@OK))|#|#|#
+!|10000((*Though not feeling that hungry anymore, you feel sick\!::^M@OK))|#|#|#
+!|10000((*You loose 1/3 of yer hitpoints ...::^M@OK))|#|#|#
+!|10000((*Level 0 players can't steal ...::^M@OK))|#|#|#
+!|10000((*You try to steel some food from a supermarket ...::^M@OK))|#|#|#
+!|10000((*You just stole enough so yer hunger went down by 
+!|10000((*You did not manage to steal anything but did not get busted\!::^M@OK))|#|#|#
+!|10000((*Your points went up by 
+!|10000((*You already used up all your sex turns today ...::^M@OK))|#|#|#
+!|10000((*You look for a victim ...::^M@OK))|#|#|#
+!|10000((*You raped some lady and ran away ... Good job ...::^M@OK))|#|#|#
+!|10000((*You raped some guy and ran away ... Good job ...::^M@OK))|#|#|#
+!|10000((*You couldn't find any victim ...::^M@OK))|#|#|#
+!|10000((*You scored a pretty nice chick ... Good job ...::^M@OK))|#|#|#
+!|10000((*You scored some cool guy ... Good job ...::^M@OK))|#|#|#
+!|10000((*You couldn't find anybody who'd like you ...::^M@OK))|#|#|#
+!|10000((*The sex turns went down anyway ...::^M@OK))|#|#|#
+!|10000((*You can get a hooker fer 
+ ...::Y@Yes,N@No))|#|#|#
+!|10000((*Ok there you go ...::^M@OK))|#|#|#
+!|10000((*You wanna list all the female players?::Y@Yes,N@No))|#|#|#
+!|10000((*You wanna list all the male players?::Y@Yes,N@No))|#|#|#
+`@W`4ho ya wanna ask out (`@full`4 or `@partial`4 name):`0
+!|10000((*Got no idea who you mean ...::^M@OK))|#|#|#
+`@H`4ow you gonna ask? (`@/s`4=save `@/a`4=abort):
+!|10000((*Saving ...::^M@OK))|#|#|#
+!|10000((*Aborted ...::^M@OK))|#|#|#
+!|10000((*Well it just aint the real thing.::^M@OK))|#|#|#
+!|10000((*But at least ya can't get sick this way.::^M@OK))|#|#|#
+!|10000((*You got 
+ condoms.::^M@OK))|#|#|#
+`0H`2ow much ya want? (`9Enter`2=`0[0]`2, `9M`2=max `0
+!|10000((*Ok you now got 
+ condoms.::^M@OK))|#|#|#
+!|10000((*You used a condom and got only 1/2 infected ...::^M@OK))|#|#|#
+!|10000((*You are now 
+% infected with 
+`0H`2ow much ya want to deposit? (`9Enter`2=`0[0]`2, `9M`2=max `0
+!|10000((*You got 
+ in the bank ...::^M@OK))|#|#|#
+`0H`2ow much ya want to widthraw? (`9Enter`2=`0[0]`2, `9M`2=max `2
+ on ya...::^M@OK))|#|#|#
+!|10000((*You try to steel some money from the bank ...::^M@OK))|#|#|#
+!|10000((*You just stole
+ without getting busted, good job ...::^M@OK))|#|#|#
+!|10000((*You did not manage to steal anything but did not get busted\!::^M@OK))|#|#|#
+!|10000((*Yer drug of choice is: 
+!|10000((*The price is 
+`0H`2ow much ya want? (`9Enter`2=`0[0]`2, `9M`2=max `0
+!|10000((*Ok you now have 
+ hits\!::^M@OK))|#|#|#
+!|10000((*Ya can sell it for 
+`0H`2ow much ya wanna sell? (`9Enter`2=`0[0]`2, `9M`2=max `0
+!|10000((*Yer addicted to another drug ... Get off of that first ...
+!|10000((*Which drug you wanna switch to?::1@Pot,2@Hash,3@LSD,4@Coke,5@PCP,6@Heroin,0@Quit))|#|#|#
+`@S`4o....(`0[0]`4=quit):
+!|10000((*You'll heffta sell all the hits of yer old drug\! Do it?::Y@Yes,N@No))|#|#|#
+!|10000((*Yer drug of choice set to: 
+!|10000((*Sorry that name is already in use...choose a different one\!::^M@OK))|#|#|#
+`!T`9his game contains violence, sex, drugs ... `!Y`9a sure ya can handle that?(`!Y`9/`!N`9)
+`@N`4ot everybody was born with a vicious mind ...
+`@N`4ow that we got through that, I'll heffta ask ya a few questions ...
+`0W`2hat is yer name: `0
+!|10000((*What is your sex?::m@Male,f@Female))|#|#|#
+!|10000((*What Are You?::1@Headbanger,2@Hippie,3@Big Fat Dude,4@Crack Addict,5@Punk))|#|#|#
+!|10000((*Did ya enter all that stuff correctly?::Y@Yes,N@No))|#|#|#
+`9Resetting User Record ...
+`9Writing to user file ...
+`@W`4ell nothing 'round here ... (yet)
+ `0Q`2 - Quit
+`%Loading ...
+!|10000((*You cannot bomb anymore today, try again tomorrow ...::^M@OK))|#|#|#
+!|10000((*You cannot poison people anymore today, try again tomorrow ...::^M@OK))|#|#|#
+!|10000((*Stuff happens ...::^M@OK))|#|#|#
+!|10000((*Ya find a rich new car ...::^M@OK))|#|#|#
+!|10000((*Smash it?::Y@Yes,N@No))|#|#|#
+!|10000((*Ya find an open car ...::^M@OK))|#|#|#
+!|10000((*There is money inside ...::^M@OK))|#|#|#
+!|10000((*Take the money?::Y@Yes,N@No))|#|#|#
+!|10000((*Ya consider the risks and decide it ain't a good idea::^M@OK))|#|#|#
+!|10000((*Wow, the guy that owns the car came back and beat you up\!::^M@OK))|#|#|#
+!|10000((*Ya lost almost all yer hitpoints and 1/2 the money on ya\!::^M@OK))|#|#|#
+!|10000((*You totally smashed that car ... a very nice job ...::^M@OK))|#|#|#
+!|10000((*Ya find a bunch of hippies ...::^M@OK))|#|#|#
+!|10000((*Ya smoke some dope with them ...::^M@OK))|#|#|#
+!|10000((*They give ya hit of yer favorite drug ...::^M@OK))|#|#|#
+!|10000((*And yer hitpoints max out\!::^M@OK))|#|#|#
+!|10000((*Ya fell inside a hole ...::^M@OK))|#|#|#
+!|10000((*Ya lost 1/3 of yer hitpoints ...::^M@OK))|#|#|#
+!|10000((*Ya enter the hospital ...::^M@OK))|#|#|#
+!|10000((*Ya ain't got no fights left ... come back tomorrow::^M@OK))|#|#|#
+`@Y`4ou meet `0
+ `4...
+`@H`4e got a bad lokin' `0
+`@S`4treet `@F`4ight`0
+'s `@H`4itpoints: `0
+`@Y`4er `@H`4itpoints: `0
+`@W`4hat ya gonna do? (`@[A] T K P R G Y`4)
+`@Y`4a hit `0
+ `4 fer `0
+ `4damage
+ `4hits you fer `0
+!|10000((*Ya got away ...::^M@OK))|#|#|#
+`@Y`4a couldn't find a way outta this ...
+`@Y`4ou beat up `0
+ `4 ...
+`@Y`4a find `@
+`4 bucks and ya get `@
+`4 points!
+`@L`4ookin fer yer enemy ... (`%S`4) to stop ...
+!|10000((*User is not online anymore\!::^M@OK))|#|#|#
+`@O`4nline `@P`4layer `@F`4ight
+`@W`4aiting ...
+!|10000((*Yer enemy droped carrier on ya\!::^M@OK))|#|#|#
+!|10000((*Go and kill him offline\!::^M@OK))|#|#|#
+`@W`4aiting fer enemy response ...
+`@Y`4er enemy ran away in fear ...
+`@Y`4a `%WON`4!
+!|10000((*Do ya wanna swap weapons with 
+!|10000((*Done\! You now got the 
+!|10000((*Do ya wanna rape 
+`4 tried to get away but could not ...
+ `4raped ya!
+`@W`4ho ya don't like (`@full`4 or `@partial`4 name):`0
+!|10000((*The user is already being fought\!::^M@OK))|#|#|#
+!|10000((*The player is somewhere where you can't find him\!::^M@OK))|#|#|#
+!|10000((*It will cost ya
+ to get keys to his room ... Do it?::Y@Yes,N@No))|#|#|#
+!|10000((*Not nuff money man ...::^M@OK))|#|#|#
+`@S`4till wanna do it? (`@Y`4/`@N`4)
+`@P`4layer `@F`4ight
+!|10000((*You find a blind beggar and try to take some of his money::^M@OK))|#|#|#
+!|10000((*You just stole 
+ from the poor bastard, good job ...::^M@OK))|#|#|#
+!|10000((*The poor bastard was broke ...::^M@OK))|#|#|#
+!|10000((*You find a school ... that's the easy part ...::^M@OK))|#|#|#
+!|10000((*It looks lovely as the school buildings crumble into ashes\!::^M@OK))|#|#|#
+!|10000((*Schools don't burn very well ... all matches are gone ...::^M@OK))|#|#|#
+!|10000((*You pick up a rock and ...::^M@OK))|#|#|#
+!|10000((*Breaking glass sounds so good ...::^M@OK))|#|#|#
+!|10000((*Poisoning water will cost ya 
+ ... Do it?::Y@Yes,N@No))|#|#|#
+!|10000((*Ya can't afford it man ...::^M@OK))|#|#|#
+!|10000((*You buy enough poison and dump it into the water...::^M@OK))|#|#|#
+!|10000((*Wow lotsa dead folks ... It worked ...::^M@OK))|#|#|#
+!|10000((*The poison didn't work ... The guy ripped you off ...::^M@OK))|#|#|#
+!|10000((*Explosives will cost ya 
+!|10000((*You buy nuff explosives and ...::^M@OK))|#|#|#
+!|10000((*BOOOOOOOM ... Wow ... it didn't fall but almost ...::^M@OK))|#|#|#
+!|10000((*The police found yer explosives ... Bad Luck ...::^M@OK))|#|#|#
+!|10000((*Which one do ya wanna attack?::0@Museum Nightguard,1@School Security Guy,2@Old Sergant,3@Regular Street Cop,4@Motorcycle Cop,5@Detective,6@Gang Unit Member,7@Special Assigment Member,8@Anti Terrorist Unit Guy,9@SuperCop,Q@Quit))|#|#|#
+!|10000((*You cannot attack this cop in your level...::^M@OK))|#|#|#
+`@C`4op `@F`4ight
+!|10000((*Wow ya got 
+ from that car ...::^M@OK))|#|#|#
+!|10000((*Ya find 
+ bucks\!::^M@OK))|#|#|#
+`%New York 2008  v`v  `w
+`7(Xpert or Regular mode recomended for slow modems)
+`7Wanna start in Xpert, Regular or Novice mode (`%X`7,`%[R]`7,`%N`7) `%
+`@S`4tatus: `@
+`@P`4oints: `0
+`@M`4oney `@I`4n `@H`4and: `0
+`@F`4ights: `0
+`@M`4oney `@I`4n `@B`4ank: `0
+`@H`4it `@P`4oints: `0
+`@o`4f `0
+`@H`4ungry: `0
+`@A`4rm: `0
+`@W`4inning `@S`4entence: `0
+`@L`4oosing `@S`4entence: `0
+`@D`4ays `@S`4ince `@G`4ot `@L`4aid: `0
+`@S`4TD: `0
+`@S`4ex `@T`4urns `@L`4eft: `0
+`@I`4nfected: `0
+`@C`4ondoms: `0
+`@D`4rug: `0
+`@H`4its: `0
+`@H`4igh: `0
+`@A`4ddicted: `0
+`@D`4ays `@S`4ince `@L`4ast `@H`4it: `0
+`@S`4taying `@a`4t: `0
+ `@F`4or `0
+`@ D`4ays
+ `4has attacked you ... `@Y`4ou are now in an online battle!
+`%YOU WON THE GAME!!!!! With `0
+`% points ...
+!|10000((*It will cost ya 
+ per day::^M@OK))|#|#|#
+!|10000((*You can afford 
+ days\!::^M@OK))|#|#|#
+`0H`2ow mady days ya wanna stay here? (`9Enter`2=`0[0]`2, `9M`2=max `0
+!|10000((*You made the BEST list.::^M@OK))|#|#|#
+!|10000((*You didn't make the BEST list. There were better.::^M@OK))|#|#|#
+!|10000((*Actually ya were the first to do it.::^M@OK))|#|#|#
+`@W`4ho's mailbox do ya wanna fill (`@full`4 or `@partial`4 name): `0
+!|10000((*Ask 
+ to have sex with you?::Y@Yes,N@No))|#|#|#
+`@O`4k type yer message now (`@/s`4=save `@/a`4=abort):
+`@S`4ay what:
+|-----------------------------------------------------------------------------|`0
+!|10000((*Posted...::^M@OK))|#|#|#
+`@W`4ho do ya want to bother (full or partial): `0
+`@O`4k type what u wanna say now:
+|------------------------------------------------|`0
+!|10000((*Sent\!::^M@OK))|#|#|#
+`9S`1earching `9...
+`@M`4ail from: `0
+  `@T`4o: `0
+`4 wants to have sex with ya, `@O`4k?
+`9[O]`4=OK (sex) `9R`4=reply `9D`4=delete `9I`4=ignore `9>
+`9R`4=reply `9[D]`4=delete `9I`4=ignore `9>
+`4 agreed and had sex with ya ...
+`4 raped you!!
+`4 defeated you!!
+!|10000((*Deleting...::^M@OK))|#|#|#
+!|10000((*Try again tomorrow....::^M@OK))|#|#|#
+`@Y`4ou just had sex with `@
+!|10000((*Ask 
+ to have sex with you?::Y@Yes,N@No))|#|#|#
+!|10000((*Quote message?::Y@Yes,N@No))|#|#|#
+`@C`4ommand (`9S A C`4=continue)
+!|10000((*Did ya mean 
+`@W`4hich one? `@Y`4ou got `@
+`4 to spend. (`@A-W`4, `@Enter`4=`@[Q]`4=Quit)
+ for 
+, OK?::Y@Yes,N@No))|#|#|#
+!|10000((*You stopped looking ...::^M@OK))|#|#|#
+!|10000((*This is a single node only game\!\!\!\!::^M@OK))|#|#|#
+!|10000((*You just raped 
+'s unconcious body\!::^M@OK))|#|#|#
+`@N`4ovice mode turned `@ON
+`@C`4entral `@P`4ark`0
+`@R`4est `@S`4omewhere`0
+`@M`4ail`0
+`@A`4rm `@Y`4erself`0
+`@H`4ealing`0
+`@F`4ood`0
+`@G`4et `@L`4aid`0
+`@B`4ank ...`@M`4oney ...`@A`4nd `@S`4tuff ...`0
+`@D`4rugs`0
+`@O`4ther `@S`4tuff`0
+? = list  Q = Quit
+`@S`4treet `@F`4ights`0
+`@P`4layer `@F`4ights`0
+`@E`4vil `@S`4tuff`0
+`@C`4op `@F`4ights`0
+ Sent you mail\!::^M@OK))|#|#|#
+ Replied to yer mail\!::^M@OK))|#|#|#
+!|10000((*Read your mail?::Y@Yes,N@No))|#|#|#
+ Arrived at New York\!::^M@OK))|#|#|#
+ Left New York\!::^M@OK))|#|#|#
+`0H`2eadbanger
+`0H`2ippie
+`0B`2ig `0F`2at `0D`2ude
+`0C`2rack `0A`2ddict
+`0P`2unk
+M`2ale  `@
+F`2emale`@
+`0A`2live
+DEAD
+UNCONSIOUS
+C`2heap `0M`2otel
+R`2egular `0H`2otel
+E`2xpensive `0H`2otel
+Pot
+Hash
+LSD
+Coke
+PCP
+Heroin
+Healthy
+Crabs
+Herpes
+Syphilis
+AIDS
+Hands
+Pepper Spray
+Knife
+Chain
+Gun
+Rifle
+Laser Gun
+Shotgun
+Machine Gun
+Granade Launcher
+Blaster
+Atomic Bomb
+!|10000((*You get 10 points for staying consious...::^M@OK))|#|#|#
+`1-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+!|10000((*Dead people are not allowed to play\! Come back later\!::^M@OK))|#|#|#
+!|10000((*You heffta wait until tomorrow to play again\!::^M@OK))|#|#|#
+!|10000((*You are currently being fought by another node right now\!::^M@OK))|#|#|#
+!|10000((*Yer feeling better as you wake up from a coma...::^M@OK))|#|#|#
+`%PLEASE tell your sysop to register!
+`@T`4hanks to `0
+!|10000((*You see a cop so you run away...::^M@OK))|#|#|#
+!|10000((*You just can't hit any window...::^M@OK))|#|#|#
+!|10000((*You cannot buy an A-Bomb until yer in level 20::^M@OK))|#|#|#
+`@P`4 - `@P`4revious  `@
+`@N`4 - `@N`4ext  `@
+!|10000((*You come up to a place called:
+!|10000((*Go there?::Y@Yes,N@No))|#|#|#
+`@N`4othing has happened in New York today!
+`@N`4othing has happened in New York yesterday!
+!|10000((*You are high on another drug ... Come back when ya sober up\!::^M@OK))|#|#|#
+`@S`4end money to who: `0
+`0H`2ow much to send? (`9Enter`2=`0[0]`2, `9M`2=max `0
+!|10000((*Sent ...::^M@OK))|#|#|#
+ `4sent you `0
+ `4bucks!
+!|10000((*Tell the sysop to register this game so you can WIN\!::^M@OK))|#|#|#
+!|10000((*If you are too weak for regular fights, fight cops\!::^M@OK))|#|#|#
+!|10000((*Put all money to bank so you won't loose it\!::^M@OK))|#|#|#
+!|10000((*Eating in restaurants heals you\!::^M@OK))|#|#|#
+!|10000((*Ya find an open house go inside?::Y@Yes,N@No))|#|#|#
+!|10000((*You find 
+ bucks, take it?::Y@Yes,N@No))|#|#|#
+!|10000((*You find a hit of yer drug, take it?::Y@Yes,N@No))|#|#|#
+!|10000((*Ok, ya got away with it ... Good job\!::^M@OK))|#|#|#
+!|10000((*The guy that lives here REALLY beat ya up\!::^M@OK))|#|#|#
+!|10000((*He took all yer money too\!::^M@OK))|#|#|#
+!|10000((*Ya find an unused condom\! You take it ...::^M@OK))|#|#|#
+`@R`4ocks: `0
+`@A`4bilities: `@T`4hrowing: `0
+`@K`4icking: `0
+`@P`4unching: `0
+!|10000((*Raise which ability?::T@Throwing,K@Kicking,P@Punching))|#|#|#
+ rocks to throw.::^M@OK))|#|#|#
+`@Y`4a kick REAL hard ...
+`@Y`4a kick REAL hard ... but `%MISS
+`@Y`4a punch your opponent in the face ...
+`@Y`4a punch your opponent in the face ... but `%MISS
+`@Y`4a throw a rock at your enemy ...
+`@Y`4a throw a rock at your enemy ... but `%MISS
+`@Y`4a realize ya don't got no rocks ... `@G`4o find some ...
+`@O`4k type yer message now (`@10 `4lines`@ max`4) (`@/s`4=save `@/a`4=abort):
+### Packing InterBBS mail file...
+`@W`4hich `@BBS #`4: `0
+`@W`4hich `@P`4layer `@#`4: `0
+`@P`4layer list not yet recieved!
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0P`2layer `0L`2isting `0F`2or: `@
+`!BBS Name:                                Highest Player Score:
+`@O`4ther `@C`4ities`0
+!|10000((*No InterBBS Moves left, only two InterBBS actions per day\!::^M@OK))|#|#|#
+!|10000((*Spy information requested ...::^M@OK))|#|#|#
+`!Lvl: Name:                     Points:              S: T:
+`4 sent you an infected prostitute!
+`@S`4omebody sent you an infected prostitute!
+`@S`4omebody tried to send you an infected prostitute!
+`4 hired a Hitman.
+`@Y`4ou have to fight him!
+`4 sent you a mailbomb!
+`@S`4omebody sent you a mailbomb!
+`@S`4omebody tried to send you a maibomb but it failed!
+`@Y`4ou loose 1/3 of your hitpoints!
+!|10000((*A mailbomb will cost 
+, OK?::Y@Yes,N@No))|#|#|#
+!|10000((*The hitman will cost 
+!|10000((*Which hitman to send::1@George,2@Gang Member,3@Mafia Guy,4@Lloyd The Bloody,5@David Koresh,6@Masked Fella,Q@Quit))|#|#|#
+`0S`2harp `0S`2tick
+`0S`2crewdriver
+`0H`2ammer
+`0L`2ead `0P`2ipe
+`0C`2olt
+`0E`2lephant `0G`2un
+`0N`2ail `0G`2un
+`0A`2ssault `0R`2ifle
+`0P`2roton `0G`2un
+`0N`2Neutron `0P`2haser
+`0U`2ltrasound `0G`2un

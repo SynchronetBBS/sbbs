@@ -1,0 +1,178 @@
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+New York 2008 InterBBS Documentation
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+New York v0.10 and higher have the ability to be set up as an interbbs
+door over any fido style network or even locally (have two installations
+of the game fight against each other on the same bbs)
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+How It Works...
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+There is one "operator" system, which is the central system, the sysop
+of that bbs controls and sends out the node list and basically maintains
+the whole game. Read on for instructions for the "operator" bbs.
+
+The rest of the boards are regular game nodes.
+
+There can be up to 255 bbses in one game ....
+
+There can be up to 32000 games, so that one bbs can run more than one
+interbbs game (league) at a time.
+
+The game never has to be reset, unless you want to ... The best winner lists
+will never be reset (unless each system would delete the "NYBEST.TEN" file)
+The game is made so that the bbses can compete for the best average player
+score. Or just player can compete between each other. It's like in local
+games if one player wins he's added to the ten best list (if he's good enough)
+and he is reset, but the rest of the game can just keep on playing.
+I all depends on how the players want to play the game. It's best not
+to work together actually, but to compete even between local players since
+thats' the way to get points. I guess it will be more a battle of individuals
+more then a battle of bbses ....
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+If you are a normal bbs wanting to join in a game ....
+
+Make sure you are a registered sysop, otherwise the interbbs stuff will NOT
+work ... on info how to register, read REGISTER.DOC
+
+The Inter-BBS is enabled by a keyword in the game .cfg file (usually
+"NY2008.CFG"), "InterBBS" set that, make sure that "InterBBSOperator" is not
+set unless you are the "operator" bbs. And make sure you put down the
+game number you are joining under "InterBBSGameNumber" keyword.
+
+Copy SAMPLEIB.CFG to INTERBBS.CFG then edit the INTERBBS.CFG with your info.
+
+Set up the interbbs maintanance modes in your nightly batch file.
+
+There are two modes ... which are controlled by command line options.
+You use these with the NYIBBS.EXE file! You can specify -C option with
+nyibbs.exe to specify a .cfg file or make sure the ny2008.cfg file contains
+the bbs name, interbbs number and the other info. The nyibbs.exe also reads
+INTERBBS.CFG for the remaining interbbs info.
+
+-ibbso = Proccess all outgoing information, should be run before you proccess
+         and send your mail that day. 
+-ibbsi = Proccess all incoming information, should be run after you proccess
+         and recieve all mail that day.
+
+So in your nightly batch file you'd first run:
+
+ nyibbs -ibbso
+
+ then you would proccess your mail and send it with your front door or another
+ mailer, and you would get all the incoming mail, just like usual. After that
+ you would run:
+
+ nyibbs -ibbsi
+
+Run your game as you normally would with no other options ... just make sure
+that the .cfg file which the game is using (usually NY2008.CFG) has interbbs
+enabled and contains the right game number.
+
+You have to contact the "operator" of the game you want to join and have him
+add you to the node list and send out a new one. You will get it
+automatiacally if you setup everything right. You will need to supply him
+with some information, Your FIDO(or other fido style net) node number,
+Your BBS name and Your location(city and state should do).
+
+If you recieve the nodelist the game will automatically request player lists
+from other bbses and the game can begin. You don't have to get the nodelist
+yourself since the "operator" bbs sends it out and the game will recieve and
+read it automatically. To check if everything went well, check if you have
+recieved the nodelist, the filename is "NYNODE.LST", it migth take a few days,
+depending on how far your bbs is from the "operator" system which sent out the
+nodelist. So if you are impatient you can get the nodelist from the "operator"
+bbs yourself ... so you can start the game earlier. But basically you don't
+have to worry about anything .. it's all done automatically ...
+
+And thats' it you are now part of the game .... pretty easy eh? ....
+
+If you want to get out, of the game, run ny2008 RESET and select the kill
+interbbs option. It will not reset the game. Then tell the "operator" system
+so he can take you out of the nodelist.
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+If you are the "operator" BBS
+
+There can only be one "operator" BBS in any InterBBS game. If you are the
+operator you will be maintaining the nodelist for the game and basically
+overseeing the game. Look at "SAMPLE.LST" file for creating a nodelist.
+Once you cerated a nodelist and all of the systems that the nodelist
+contains have their systems set up for interbbs, and all have the
+game number in the interbbs.cfg file set to the same number, just run:
+
+nyibbs -sendnodelist
+
+This will read the nodelist and send it to all the systems in the nodelist.
+
+If you ever add or delete a system, just run this again and all the nodelists
+on all the systems (including the one you added) will be updated.
+
+That's basically all you have to do, remember you have to have the
+"InterBBSOperator" option set in your config file if you are one, otherwise
+it will not work.
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+LOCAL IBBS GAMES! (If having remote games use the setup above!)
+
+If you want to run a local league, just create the node file, select one
+of the games to be the operator, install the games in different directories.
+If you set the flag dir in the config file, these have to be different too.
+
+Create a directory where to put mail. Then set it as the mail directory in
+the interbbs.cfg of each game installation. This should be something like
+'C:\DOOR\NY2008\MSG'
+
+In the nodelist create "fake" node nubers like, 1:1/1 or similiar. Assign
+a different one to each game installation.
+
+There are 3 ways to run the local games, You will need to run
+
+  NYIBBS -IBBSI
+  NYIBBS -IBBSO
+
+In your batchfile every night in each game's directory no matter how
+you choose to run the game itself.
+
+I)
+ For slow response time but fast game startup, just run the game as you
+ would for a non-interbbs game. This makes the response time slow (the time
+ it takes for mail and stuff to get from one game to the other) but the game
+ starts up fast
+
+II)
+ Run the game as you allways would but add -IBBSM as another command line
+ argument. This will proccess the mail every time the game is entered, but
+ it will not proccess any other info, most player interaction is done through
+ mail anyway ... xcept spying. So you would run the game like this
+
+ NY2008 -IBBSM <put all your other command line arguments here>
+
+III) 
+ To make the game response fastest, but entering the game will be slower,
+ put this in your batchfile
+
+  NYIBBS -IBBSI
+  NY2008 <the command line arguments to run the game>
+
+ this will make the interaction between the nodes the fastest, though it might
+ slow things down for the user, since he will have to wait for the incoming
+ stuff to be proccessed, but this will be no problem for small games but if
+ there aren't more then a few game installations then it should be no problem.
+ Make sure you run the -IBBSI for each game installation at least once a day
+ so that you don't get a big pileup of all the .MSG files. And make sure you
+ also run the -IBBSO once a day so that the scores and stuff can be proccesed,
+ this don't have to be run after the game, once a day is enough and will still make the ibbs
+ game responsive.
+
+Remember the -IBBSI and -IBBSO options don't have remote output, so make sure
+they don't take too long if you are running them while somebody is online.
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+OK have fun ...
+
+Franz

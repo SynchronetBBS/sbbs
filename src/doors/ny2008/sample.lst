@@ -1,0 +1,17 @@
+;SAMPLE Node List File ... 
+;
+;If you are the "operator" bbs, edit this file, and name it NYNODE.LST, other
+;wise you should automatically recieve this file from the "operator"
+;
+;This is how a node list should look like .... You can have comments in the
+;node list if you wish ...
+;
+LinkWith        1:111/1
+LinkName        BBS Name Here
+LinkLocation    Location Of the BBS
+
+LinkWith        2:222/2
+LinkName        Cool BBS
+LinkLocation    Anytown, AA
+
+

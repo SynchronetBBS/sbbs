@@ -1,0 +1,117 @@
+;This is the enemy file (run 'AEDIT < ENM.TXT' to compile)
+;format:
+;commands = 
+; A - Add record, followed by the record ... do not add comments into the
+;     record...
+; N - Set the last enemy to be overleap into the next level and increase 
+;     level and set it to the first enemy of the new level
+; Q - Quit Sets the last record as the last enemy in the current level and 
+;     quits
+;record format =
+;name
+;hitpoints
+;attack strength
+;defense strength
+;arm
+;-----------
+A
+Kid
+12 
+10
+9
+1
+;-----------
+A
+Beggar
+17
+10
+10
+1
+;-----------
+A
+Old Fart
+14
+9
+6
+1
+;-----------
+A
+Ugly old bitch
+19
+13
+9
+1
+;-----------
+A
+Blind criple
+10
+5
+3
+0
+;-----------
+A
+Big ugly rat
+11
+10
+11
+0
+;-----------
+A
+John Waynes' Bobbit Dick
+14
+15
+5
+0
+;-----------
+A
+Tagger
+19
+14
+9
+1
+;-----------
+A
+Real old hippie
+23
+14
+8
+2
+N - 1 level
+;-----------
+A
+Acid junkie on a trip
+26
+16
+12
+2
+;-----------
+A
+Small gang member
+23
+17
+15
+3
+;-----------
+A
+Gang banger
+34
+19
+18
+4
+;-----------
+A
+Drive by maniac
+30
+20
+15
+4
+N - 2 level
+;-----------
+A
+Big Fat Dude
+35
+21
+19
+4
+;-----------
+Q

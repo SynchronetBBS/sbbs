@@ -1,0 +1,365 @@
+@CENTRAL_PARK
+`@C`4entral `@P`4ark
+
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`9You find yerself sitting on the grass ... thinking bout yer next move...
+
+     `@S`4 - Street Fights         `@E`4 - Evil Stuff To Do
+     `@C`4 - Cop Fights            `@B`4 - Bank...Money...and Stuff
+     `@P`4 - Player Fights         `@H`4 - Healing
+     `@F`4 - Food                  `@Y`4 - Your Stats
+     `@D`4 - Drugs                 `@W`4 - Who's Online
+     `@A`4 - Arm Yerself           `@L`4 - List Players
+     `@G`4 - Get Laid              `@R`4 - Rest Somewhere
+     `@U`4 - Use Atomic Bomb       `@N`4 - Newz
+     `@M`4 - Mail                  `@O`4 - Other Stuff
+     `@I`4 - Change Yer Info       `0!`2 - Instructions
+     `%X`4 - Help Level Toggle     `0K`2 - Kill Yerself (Start over)
+
+		    `0Q`2 - Quit to BBS
+
+@CENTRAL_PARK_IB
+`@C`4entral `@P`4ark
+
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`9You find yerself sitting on the grass ... thinking bout yer next move...
+
+     `@S`4 - Street Fights         `@E`4 - Evil Stuff To Do
+     `@C`4 - Cop Fights            `@B`4 - Bank...Money...and Stuff
+     `@P`4 - Player Fights         `@H`4 - Healing
+     `@F`4 - Food                  `@Y`4 - Your Stats
+     `@D`4 - Drugs                 `@W`4 - Who's Online
+     `@A`4 - Arm Yerself           `@L`4 - List Players
+     `@G`4 - Get Laid              `@R`4 - Rest Somewhere
+     `@U`4 - Use Atomic Bomb       `@N`4 - Newz
+     `@M`4 - Mail                  `@O`4 - Other Stuff
+     `@I`4 - Change Yer Info       `@*`4 - Other Cities
+     `%X`4 - Help Level Toggle     `0!`2 - Instructions
+
+		    `0K`2 - Kill Yerself (Start over)
+		    `0Q`2 - Quit to BBS
+
+@EVIL_STUFF
+`@E`4vil `@S`4tuff
+
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`9So you wanna do some damage ....
+
+     `@S`4 - Steal From Beggars    `@D`4 - Destroy a Car
+     `@B`4 - Burn a School Down    `@R`4 - Break a Window
+     `@P`4 - Poison Water          `@U`4 - United Nations HQ Bombing
+     `@Q`4 - Return To Central Park
+
+@BANK
+`@B`4ank ...`@M`4oney ...`@A`4nd `@S`4tuff ...
+
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`9Money...Yeah...Gotta get some...
+
+     `@D`4 - Deposit In Bank       `@G`4 - Go Steal Some Money
+     `@W`4 - Widthraw From Bank    `@S`4 - Send Money To Others
+     `@Y`4 - Your Stats            `@Q`4 - Return To Central Park
+
+@HEALING
+`@H`4ealing
+
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`9You enter a hospital... that smell is familiar... horrible memories ...
+
+     `@H`4 - Heal Wounds           `@C`4 - Cure STD's
+     `@D`4 - Drug Rehab            `@Y`4 - Yer Stats
+     `@Q`4 - Return To Central Park
+
+@FOOD
+`@F`4ood
+
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`9Well you gotta eat sometime ...
+
+     `@G`4 - Go Eat Out            `@S`4 - Steal Some Food
+     `@E`4 - Eat From Dumpster     `@Y`4 - Your Stats
+     `@Q`4 - Return To Central Park
+
+@DRUGS
+`@D`4rugs
+
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`9You enter the drug strip... This is heaven you say to yerself...
+
+     `@B`4 - Buy Drugs             `@U`4 - Use Some Drugs
+     `@S`4 - Sell Drugs            `@Y`4 - Your Stats
+     `@C`4 - Change Yer Drug       `@Q`4 - Return To Central Park
+
+@ARMS
+`@A`4rm `@Y`4erself
+
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`9You call up a friend of yours ... he deals illegal guns ...
+
+     `@B`4 - Buy Some Weapon       `@S`4 - Sell Your Weapon
+     `@Y`4 - Your Stats            `@L`4 - List Prices
+     `@Q`4 - Return To Central Park
+
+@SEX
+`@G`4et `@L`4aid
+
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`9Looking to score? ...
+
+     `@G`4 - Get Laid              `@R`4 - Rape Somebody
+     `@S`4 - Score Other Players   `@P`4 - Pick Up a Hooker
+     `@B`4 - Buy Some Condoms      `@M`4 - Masturbate
+     `@Y`4 - Your Stats            `@Q`4 - Return To Central Park
+
+@MAIL
+`@M`4ail
+
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`9Ahhh post office ... You could kick some ass here but you hold yerself ...
+
+     `@S`4 - Send Mail             `@R`4 - Read Yer Mail
+     `@A`4 - Anounce Something     `@O`4 - Online Message
+     `@C`4 - Colors Info           `@Q`4 - Return To Central Park
+
+@REST
+`@R`4est `@S`4omewhere
+
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`9So u wanna go to sleep and come back tomorrow ...
+
+     `@C`4 - Cheap Motel...        `@R`4 - Regular Hotel
+     `@E`4 - Expensive Hotel       `@Y`4 - Your Stats
+     `@Q`4 - Return To Central Park
+
+@ENTRY_1
+`@N`4ew `@Y`4ork `@2008
+
+`2By `0Franz
+
+`4Version `@`v `%`w
+`1Copyright 1995, George Lebl
+@ENTRY_2
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+       `@E`4 - Enter The Streets
+       `@L`4 - List Players
+       `@Y`4 - Your Stats
+       `@N`4 - Newz
+       `@Q`4 - Quit I Don't Wanna Die
+
+@P_FIG
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`9So you wanna kick some ass ....
+
+     `@K`4 - Kick a Player Ass     `@H`4 - Heal Wounds
+     `@Y`4 - Your Stats            `@T`4 - Take a Drug
+     `@L`4 - List Consious Players `@Q`4 - Return To Central Park
+
+@C_FIG
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`9So you wanna kick some cop ass ....
+
+     `@L`4 - Look For Some Cop     `@H`4 - Heal Wounds
+     `@Y`4 - Your Stats            `@T`4 - Take a Drug
+     `@Q`4 - Return To Central Park
+
+@S_FIG
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`9So you wanna kick some ass ....
+
+     `@L`4 - Look For Ass To Kick  `@H`4 - Heal Wounds
+     `@Y`4 - Your Stats            `@T`4 - Take a Drug
+     `@Q`4 - Return To Central Park
+
+@ONLINE
+`0O`2nline `0P`2layer `0L`2isting `0F`2or `@N`4ew `@Y`4ork `@2008
+
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`!Rank: Lvl: Name:                     Points:              S: T:
+@NEWZ
+`%T`3h`9e `%N`3e`9w `%Y`3o`9rk `%T`3i`9mes
+
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+@LIST
+`0P`2layer `0L`2isting `0F`2or `@N`4ew `@Y`4ork `@2008
+
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`!Rank: Lvl: Name:                     Points:              S: T:
+@CONSIOUS
+`0C`2onsious `0P`2layer `0L`2isting `0F`2or `@N`4ew `@Y`4ork `@2008
+
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`!Rank: Lvl: Name:                     Points:              S: T:
+@ATTACK
+`@[A] `4- `@A`4ttack
+`@[T] `4- `@T`4ake `@D`4rug `@A`4nd `@A`4ttack
+`@[K] `4- `@K`4ick
+`@[P] `4- `@P`4unch
+`@[R] `4- `@T`4hrow `@A R`4ock
+`@[G] `4- `@G`4et `@O`4utta `@H`4ere
+`@[Y] `4- `@Y`4er `@S`4tats
+@WIN
+`7Of course blowing up New York with an A-Bomb did wonders to your body ...
+basically what I'm saying is, you DIED... but you completed yer mission ...
+just think of all the people that died with you ...
+@MAINT_RUN
+`@W`4ell the maintanace is running on some other node so please come back
+later, or if it is a one node bbs or the sysop's running the maintanance in
+the nightly batch file then he should delete the MAINT.RUN flag file....
+@WEAPONS
+`%A`2. (price `0         70`2) `0P`2epper `0S`2pray
+`%B`2. (price `0        300`2) `0S`2harp `0S`2tick
+`%C`2. (price `0        600`2) `0S`2crewdriver
+`%D`2. (price `0      1,500`2) `0K`2nife
+`%E`2. (price `0      3,000`2) `0H`2ammer
+`%F`2. (price `0      7,000`2) `0C`2hain
+`%G`2. (price `0     12,000`2) `0L`2ead `0P`2ipe
+`%H`2. (price `0     30,000`2) `0G`2un
+`%I`2. (price `0     70,000`2) `0C`2olt
+`%J`2. (price `0    130,000`2) `0R`2ifle
+`%K`2. (price `0    300,000`2) `0E`2lephant `0G`2un
+`%L`2. (price `0    500,000`2) `0L`2aser `0G`2un
+`%M`2. (price `0    900,000`2) `0N`2ail `0G`2un
+`%N`2. (price `0  2,000,000`2) `0S`2hotgun
+`%O`2. (price `0  5,500,000`2) `0A`2ssault `0R`2ifle
+`%P`2. (price `0  8,000,000`2) `0M`2achine `0G`2un
+`%R`2. (price `0 15,000,000`2) `0P`2roton `0G`2un
+`%S`2. (price `0 30,000,000`2) `0G`2ranade `0L`2auncher
+`%T`2. (price `0 80,000,000`2) `0N`2Neutron `0P`2haser
+`%U`2. (price `0130,000,000`2) `0B`2laster
+`%V`2. (price `0150,000,000`2) `0U`2ltrasound `0G`2un
+`%W`2. (price `0500,000,000`2) `0A`2tomic `0B`2omb
+@COPS
+`@W`4hich one ya wanna attack:
+
+`%0`4. `0Museum Nightguard
+`%1`4. `0School Security Guy
+`%2`4. `0Old Sergant
+`%3`4. `0Regular Street Cop
+`%4`4. `0Motocycle Cop
+`%5`4. `0Detective
+`%6`4. `0Gang Unit Member
+`%7`4. `0Special Assigment Member
+`%8`4. `0Anti Terrorist Unit Guy
+`%9`4. `0SuperCop
+
+@NEW
+`@W`4elcome `@T`4o `@N`4ew `@Y`4ork `@2008
+
+`0T`2his game is quite self explanatory... `0T`2hough here is yer mission...
+`0Y`2ou are the child of terrorism, your grandfathers could only dream of what you
+are about to do ...`0B`2low up `@N`4ew `@Y`4ork `2...
+`0F`2or this you will need an `0ATOMIC BOMB`2... `0A`2nd believe me they're not cheap
+
+`@H`4ere are a few game tips: (read the instructions anywayz! (! in main menu))
+
+`@I`4f you get drug addiction of an addictive drug to 100% you die and heffta start
+over. `@S`4ame with hunger and sexual diseases ... so watch those percentages.
+`@A`4lso read instructions on the efects of drugs ... `@O`4ne more tip, if you
+don't have sex fer a while, your attack force goes down. `@K`4eep it in mind!
+`@C`4olors can be used in messages and in the stuff you say or namez!
+
+@NATION
+`@W`4hat are you....
+
+`01`2. `0H`2eadbanger
+`02`2. `0H`2ippie
+`03`2. `0B`2ig `0F`2at `0D`2ude
+`04`2. `0C`2rack `0A`2ddict
+`05`2. `0P`2unk
+
+@OTHER
+`@O`4ther `@S`4tuff
+
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`9You go and look for something less boring ...
+
+@NEW_NAME
+`@I`4nput yer new name: (`@ENTER`4=abort)
+|------------------------|`0
+@NEW_WIN
+`@W`4hat do you say when you win:
+|--------------------------------------|`0
+@NEW_LOOSE
+`@W`4hat do you say when you get yer ass kicked:
+|--------------------------------------|`0
+@TEN_BEST
+`@T`4en `@B`4est ... `@W`4inners
+
+`1-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`!Rank:    Name:                     Points:
+@TEN_BEST_IBBS
+`@T`4en `@B`4est ... `@W`4inners
+
+`1-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`!Name:                     Points:       Location:
+@BUSTED
+`%BUSTED!!!! ... well the police beat the hell out of you ...
+Why don't you try again tomorrow ...
+Ya lost 2% of yer points!
+@ASS_KICKED
+`%You had yer ass kicked ... oh well that happens
+Come back tomorrow to get revenge ...
+You lost all the money on ya ...
+And 2% of yer points
+@ASS_KICKED_P
+`%You had yer ass kicked ... oh well that happens
+Come back tomorrow to get revenge ...
+Ya lost 8% of yer points
+@ASS_KICKED_O
+`@Y`4a `%LOST`4!!!!
+`@C`4ome back tomorrow to get revenge
+`@8%`4 of yer points lost
+@COLORS_HELP
+`@S`4o ya'd like to use colors, huh?
+
+`@W`4ell its easy. `@T`4hey can be used in mail and the stuff you say.
+
+`@Y`4ou simply type the `%`` `4character and one of the following:
+`11`22`33`44`55`66`77`88`99`00`!!`@@`##`$$`%%
+
+``$Colors ``0RULE
+
+Would look like:
+
+`$Colors `0RULE
+
+`@N`4OTE: `@S`4ame as in `@LORD
+@CH_DRUG
+`01`2. `0P`2ot
+`02`2. `0H`2ash
+`03`2. `0L`2SD
+`04`2. `0C`2oke
+`05`2. `0P`2CP
+`06`2. `0H`2eroin
+
+@LIST_IB_SYS
+`0O`2ther `0C`2ities:
+
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+@IBBS_MENU
+`@O`4ther `@C`4ities
+
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`9Ya decide ya need to cause some evil in other cities ...
+
+     `@L`4 - List Cities           `@S`4 - Send Mail to Other Cities
+     `@M`4 - Send Money            `@B`4 - Send Mail Bombs
+     `@H`4 - Send Hitmen           `@I`4 - Send Infected Prostitute
+     `@P`4 - Spy on Players        `@D`4 - Look at Spy Database
+     `@X`4 - Have Sex              `@A`4 - Anounce Something in Every City
+     `@Y`4 - Your Stats            `@Q`4 - Return To Central Park
+
+@HITMEN
+`@W`4hich hitman to send:
+
+`@1`4 - `0G`2eorge
+`@2`4 - `0G`2ang `0M`2ember
+`@3`4 - `0M`2afia `0G`2uy
+`@4`4 - `0L`2loyd `0T`2he `0B`2loody
+`@5`4 - `0D`2avid `0K`2oresh
+`@6`4 - `0M`2asked `0F`2ella
+`@Q`4 - `@Q`4uit
+
+@END
+

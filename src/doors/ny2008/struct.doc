@@ -1,0 +1,281 @@
+NY2008 (update 5)
+
+!!!
+NOTE: When I added new weapons i have added them after the old ones to keep
+compatibility with the older versions
+!!!
+NOTE2: This file contains the structures of version 0.10 no InterBBS structs
+though
+!!!
+NOTE3:I found out about a misspelling which is CRAPS is supposed to be CRABS,
+it's still CRAPS in the datafiles (the text dropfile and the enum types), but
+be sure it's crabs when you display it to the user.
+!!!
+
+These are the 'C' structures used in user files, .sts file and mail, and newz:
+
+Also here is a description how they work and stuff like that ... READ ALL!!
+
+NOTE: all numbers of records are 0 based ... 0=1st record, user number 0 is
+the first in the file, enemy number 0 is the first in the file .... this is
+done for easy seeking of records .... to get the pointer to the beginning of
+record 34 in the user file do:
+
+  fseek(fpUserFile,34 * sizeof(user_rec),SEEK_SET);
+
+
+
+These are the enumerated types:
+(!!!!!!be sure to store them as *UNSIGNED CHARACTERS* not int!!!!!)
+(or you can use character values directly to write to the user file,
+ here's how that would work: first choice=0, second=1 ... e.g. POT=0, HASH=1)
+
+typedef enum {HANDS,PEPPER,KNIFE,CHAIN,GUN,RIFLE,LASER_GUN,SHOTGUN,
+              MACHINEGUN,GRANADE_LAUNCHER,BLASTER,A_BOMB
+              SHARPSTICK,SCREWDRIVER,HAMMER,LEAD_PIPE,COLT,
+              ELEPHANT_GUN,NAILGUN,ASSAULT_RIFLE,PROTON_GUN,
+              NEUTRON_PHASER,ULTRASOUND_GUN} weapon;
+typedef enum {POT,HASH,LSD,COKE,PCP,HEROIN} drug_type;
+typedef enum {MALE,FEMALE} sex_type;
+typedef enum {HEADBANGER,HIPPIE,BIG_FAT_DUDE,CRACK_ADDICT,PUNK} guy_type;
+typedef enum {NONE,CRAPS,HERPES,SYPHILIS,AIDS} desease;
+typedef enum {ALIVE,UNCONCIOUS,DEAD} guy_status;
+typedef enum {NOWHERE,MOTEL,REG_HOTEL,EXP_HOTEL} hotel_type;
+
+
+And here is the structure of the user file (and the .sts file):
+(you should not use the user file in the IGM, but this structure is written
+ to the temporary file .sts which you should read and modify upon exit)
+
+NOTE: With BETA 9 the name of the .sts file changed to
+n<zero padded node number>.sts (the old style .sts files exist but changing
+them will not make any difference. They are there only for crash recovery
+purposes)
+
+NOTE: All the strings are null terminated, if you are using pascal, use a
+conversion routine! if you are just creating IGM it is probably better
+to use the text character information file, the .stt file, read the
+3rdparty.doc for more info.
+
+NOTE: Editting hitpoints and strenghts is only temporary so not recomended,
+these are reset to defaults each time the user rise a level ... this will
+be redone sometime in the future, but not yet ... (i strongly recomend
+against doing that, and under no circumstances do not make hitpoints
+larger that maxhitpoints, or make max hitpoints smaller!)
+
+NOTE: Read the SCORE FILE INFO further on, on modifying this file!!!
+
+//Player User File structure (v0.10+ format)
+typedef struct {
+	//character records
+	char            bbsname[36],     //the BBS name of the user
+			name[25],        //the name of the character
+			say_win[41],     //what the user says when he wins
+			say_loose[41];   // "    "    "   "    "   "  looses
+	//integer records
+	int             rank,            //user rank (read score file info
+					 //in this document!!!)
+			days_not_on,     //days the user has been inactive
+			strength,        //attacking strenght of the user
+			defense,         //defensive strenght
+			condoms,         //condoms user has
+			since_got_laid,  //days since the user last got laid
+			drug_hits,       //the hits of drug that the user has
+			drug_days_since; //if addicted how long the user
+					 //has not used the drug
+
+	//long type records
+	long            hitpoints,       //users hitpoints
+			maxhitpoints;    //maximum of the users hitpoints
+
+	//unsigned long type records
+	unsigned long   points,          //users points
+			money,           //money in hand
+			bank;            //money in bank
+
+	//unsigned char type records used as values
+	unsigned char   level,           //user level
+			turns,           //fights the user has left today
+			hunger,          // % of hunger
+			sex_today,       //sex turns left today
+			std_percent,     // % of current std
+			drug_addiction,  // % of drug addiction
+			drug_high,       // % of how "high" the player is
+			hotel_paid_fer,  //for how many more days the hotel
+					 //is paid for
+			days_in_hospital;//how many days has the use been
+					 //in hospital
+
+	/*enumerated types stored as unsigned chars!!! (not int)*/
+	guy_status      alive;           //user: alive, unconsious, or dead
+	sex_type        sex;             //user sex: Male, Female
+	guy_type        nation;          //what is he:
+					 //punk, headbanger ...
+	weapon          arm;             //players weapon
+	desease         std;             //current player std
+	drug_type       drug;            //current player drug type
+	hotel_type      rest_where;      //where the user is staying lately
+
+	/*added values BETA 9*/
+	char            wtc;             //# of wtc bombings allowed per day
+					 //default=1
+	char            poison;          //number of poisoning of water allowed
+					 //per day, default=1
+
+	/*added values v0.10*/
+	unsigned char   rocks,           //Rocks, usable in fights
+			throwing_ability,//Throwing ability 0-100
+			punch_ability,   //Punching ability 0-100
+			kick_ability;    //Kicking ability 0-100
+        char            InterBBSMoves;   //InterBBS Moves left today
+
+/*reserved for future use 3 bytes reset to 0*/
+	char            res1;
+	int		res2;
+      } user_rec;
+
+Here is the mail header file NY2008.MSX structure:
+
+typedef struct {
+	char    sender[25];    //sender character name
+	char    senderI[36];   //sender bbsname
+	sex_type sender_sex;   //sender sex
+	char    n1;            //unused!
+	char    recver[25];    //receiver character name
+	char    recverI[36];   //receiver bbs name, used for searching mail
+	long    location;      //position of the message text in the
+			       //NY2008.MSG file
+	int     afterquote;    //how many lines are a quote
+	int     length;        //how long is the post
+	int     flirt;         //flirt flag used for other flags too:
+			       //0=no flag normal mail
+			       //1=sender wants sex
+			       //999=positive reply to flirt 1 (no mail body)
+			       //1000=receiver was raped (no mail body)
+			       //1001=receiver was defeated (no mail body)
+			       //1002=receiver got some money (the amount
+			       //stored as text in a one line msg body)
+	desease ill;           //sender's illness (std)
+	char    n2;            //unused!
+	int     inf;           //sender's infection percent (std_percent)
+	int     deleted;       //is this mail deleted (TRUE,FALSE)
+	} mail_idx_type;
+
+Here is how the NY2008.MSG works:
+
+location record points to the line where message starts in NY2008.MSG
+
+A line (any length is stored as an 80 byte character field) so the position
+of a message body is location*80. And just read an 80 character string, (79
+characters and a NULL terminating character) each record is 80 char long and
+the terminating NULL character is anywhere in this field. If the NULL character
+is the first character, it's a blank line!
+
+All the other records are in lines as the units, (not bytes) too so if length
+is 3 the message is 3 lines long.
+
+And online messages. To send an online message, add to or if it does not
+exist create a file called "U00<user number>.OMG", and store two, null
+terminated strings in it, one of them is 51 characters long (including the
+NULL character) and that is the message, the one that follows is the name
+of the sender which is 25 characters long. Do not delete this file, and if
+it exists add to it, so no messages are lost, in C use the "a+b" mode.
+The game will erase it when the user recieves the messages. Do not
+send online messages in the SingleNode mode, they would not work.
+
+NOTE the .OMG file has to be in the flag directory to be read.
+
+
+Here is the newz structure:
+files are : NYNEWS.YES for yesterday's news
+	    NYNEWS.TOD for today's news
+
+struct {
+  char  tagline[80],
+	name[25],
+	name2[36];
+  int   flag;
+} newzfile;
+// flag settings//
+// 0 - system news (tagline)
+// 1 - user announcment (name) anounces (tagline)
+// 2 - user BUSTED (name) for (tagline)
+// 3 - user newz (name) (tagline)
+// 4 - user kicked ass (name) kicked (name2)'s ass
+// 5 - user had his ass kicked (name) was beat by (name2)
+
+
+And here are the enemy file structures .... (street fights)
+
+typedef struct {
+	char            name[36];   //name of the enemy
+	long            hitpoints,  //it's hitpoints
+			strength,   //enemy offensive strength
+			defense;    //users defensive strength
+	weapon          arm;        //users weapon
+	char            n1;         //not used
+	} enemy;
+
+This is an enemy record in the enemy file "NYENM.DAT", here is how the
+level indexing works ("NYENM.IDX"):
+
+the file "NYENM.IDX" consists of two arrays:
+
+int first[21];
+int last[21];
+
+(In this order!)
+
+The first array contains the number of the first monster (the number of the
+record in the enemy file 0=1st) to choose randomly from. last is the last
+enemy that can be used for that particular level.
+
+Example:
+
+user is in level 5 and first[5]=50 and last[5]=60, which means:
+create a random number between 50 and 60 and that is the enemy the user
+will fight.
+
+
+SCORE FILE INFO!!!!! READ BEFORE DOING ANYTHING!!!!!
+
+This is the score file .... it is created every night during the
+maintanance. ("NY2008.SCR") (It is used for lot of stuff so don't mess
+it up !!!)
+
+DO NOT TOUCH this file in your IGMs, I included the structure so that
+if you are going to change points of players or add players or NPCs
+outside of NY2008 (not in an IGM), so you can add them to the scr file
+and SORT it.
+
+Also if you sort the score file, you have to change the rank variables
+in the user file. And vice versa, if you change the order of the user
+file, you have to change the user_num variables in the scr structure ...
+
+Remember there is no temporary file for this structure and it is writen
+to all the time so the scores are up to date ... it is also used for user
+searching. Changing users properties here will have little effect.
+I strongly recomend not messing with the usr and scr files if any users are
+online. If you do, to change a rank of a user that is online send him a
+rank flag file (binary) ("U00?????.RNK"). dump the integer value of his new
+rank to this file. the proccess looks for these files and will process them
+as soon as it can ... (user num and alive numbers might change during the
+maintanance ... packing) .. this file should be treated as read only and if
+you read from it while people are online then close it as soon as you can,
+so other nodes can read it ... (or write - the game does)
+
+typedef struct {
+	char            name[25]; //character's name
+	guy_type        nation;   //what is the character
+	char            n1;       //not used
+	int             level;    //his level
+	unsigned long   points;   //points
+	guy_status      alive;    //alive, unconsious or dead
+	char            n2;       //not used
+	sex_type        sex;      //users sex
+	char            n3;       //not used
+	int             user_num, // user's number in the usr file
+			online;   //TRUE or FALSE ... is the user online.
+	} scr_rec;
+
+

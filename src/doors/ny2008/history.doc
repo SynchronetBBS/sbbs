@@ -1,0 +1,291 @@
+Sometime in February 1995
+-------------------------
+Started working on New York. At this time it was still supposed to be a
+small freeware game, but soon I have seen there is gonna be too much work
+to make it freeware ... so it became shareware ...
+
+Also I put up the ALPHA 1 on my BBS.
+
+Then ALPHA 2-23 followed.
+
+3/17/1995
+---------
+I released the BETA 1 version.
+
+3/19/1995
+---------
+BETA 2 version.
+1 more BETA 2 release with a minor bugfix.
+
+3/22/1995
+---------
+BETA 3 version. - bug fix release
+
+3/23/1995
+---------
+BETA 4 version. - bug fix release
+
+3/24/1995
+---------
+BETA 5 version.
+
+3/28/1995
+---------
+BETA 6 version.
+new file structures implemented. - proved to cause a few bugs
+
+3/30/1995
+---------
+BETA 7 version. - bug fix release
+
+4/6/1995
+--------
+BETA 8 version.
+Got new stuff users asked for. + IGM support! (read 3rdparty.doc + struct.doc)
+after a release to one beta test site ... new bugfixes arrived ... same ver #
+Only released to one beta test site.
+
+4/9/1995
+--------
+BETA 9 version started being tested on my BBS.
+
+4/21/1995
+---------
+BETA 9 version released.
+new record to the structure added, no conversion neccessary.
+using text files for the output! ... editable!
+
+4/27/1995
+---------
+v0.01 WIDE BETA!
+first public release!
+
+4/29/1995
+---------
+New 3rdparty.doc file released.
+
+5/3/1995
+--------
+WIDE BETA 2 released!
+                     
+5/12/1995
+---------
+WIDE BETA 3 released!
+
+5/14/1995
+---------
+WIDE BETA 4 released!
+
+5/15/1995 - 8/10/1995
+---------------------
+Been on vacation no releases
+
+8/15/1995
+---------
+WIDE BETA 5 released!
+
+8/21/1995
+---------
+WIDE BETA 6 released!
+nasty bug in wb5 fixed!
+
+8/23/1995
+---------
+WIDE BETA 7 released!
+IGM .inf drop file format changed a bit .... 
+this was a more-IGM-support-features-and-fixes release
+JACKPOT IGM released!
+
+8/24/1995
+---------
+JACKPOT IGM source released
+
+9/4/1995
+--------
+WIDE BETA 8 released
+Franz's Bar IGM released
+
+9/10/1995
+---------
+WIDE BETA 9 released!
+bugfixes and mail search speeded up to warp speed!
+
+9/21/1995
+---------
+v0.01 released!
+the first non-beta release!
+Jackpot IGM v1.1 released
+Franz's Bar IGM v1.1 released
+Shoot Em IGM released
+Custom Installation Program released in the ny2008 main archive
+
+9/28/1995
+---------
+v0.02 minor release!
+Franz's Bar IGM v1.2 released!
+Custom Installation Program v1.1 released!
+
+10/16/1995
+----------
+I have not been working on the game too hard, but I started testing 0.03
+bugfix release on my board.
+
+10/18/1995
+----------
+LOT of bugtesting today brought results, a faster multitasking support, and
+a lot of bugfixes.
+
+10/25/1995
+----------
+0.03 released
+v1.3 of Franz's Bar released
+v1.2 of Jackpot released
+v1.1 of Shoot Em released
+
+11/2/1995
+---------
+0.03a released
+
+12/1/1995
+---------
+Just got hold of the crack for 0.03a ... try again ...
+
+12/6/1995
+---------
+0.03b released
+
+12/9/1995
+---------
+Finally found the -p command line argument bug 
+v0.03c released
+
+12/15/1995
+----------
+CheatFix!! There has been a "legal way" to gain lot of points (but only 
+worked for higher level players!) So ... I fixed it!
+v0.03d is put up on my board, no public release!
+
+12/18/1995
+----------
+Finished all fixes and compiled 0.04 and I think I will release it in the 
+morning. Actually it is the morning, but I have not yet slept:)
+
+1/26/1996
+---------
+Fineshed all i planned for this release ... not much but it makes the game 
+much more stable (well as long as the new stuff is working correctly:)!
+The new ver # is v0.05
+
+1/28/1996
+---------
+I just remembered one feature which was supposed to be in 0.05 but I forgot 
+about it ... so I relased v0.05a which includes this new feature ... I will 
+dist it a bit today and tommorow .. no big deal ...
+
+During most of February 1996
+----------------------------
+I'm working on the new version v0.10, it is now named v0.06 and is only
+on my BBS ... Wow just realized ... this is exactly a year after I started
+working on New York ... v0.10 will probably be the biggest release since
+WB1 ... Since there are BIG changes ... look at the WHATSNEW.DOC file.
+
+3/23/1996
+---------
+I have finaly cought a bug that I have been stalking for the last couple of
+weeks. It was a VERY VERY nasty overflow bug, that occured in interbbs mail
+So it seems I'm getting VERY close to the first beta of v0.10 ...
+
+3/23/1996
+---------
+BETA 1 of v0.10 Will be released today or tommorrow ... some ibbs stuff is not
+implemented yet but enough is to test how the interbbs works. I have finished
+making temporary rip screens.
+
+3/24/1996
+---------
+BETA 1 was released the 23rd, 1 year and 6 days after BETA 1 of v0.01
+was released. And exactly 1 year after BETA 4 of v0.01 was released.
+
+3/28/1996
+---------
+Just finished all I need for BETA 2, but haven't tested it yet ... I'll do
+that tommorrow.
+
+4/2/1996
+--------
+I'm waiting for .MSG packets from beta sites so I can resolve the problem
+of them not being read in. So I did a little (ok a lot) of optimizing and
+saved around 18k of the exe file!
+
+4/5/1996
+--------
+Well just about finished with BETA 2 since I solved that problem with the
+.msg packets hopefully ... so I'm testing it right now and I will release
+it tommorrow.
+
+4/7/1996
+--------
+Well I had a large problem with the .exe file and large memory model. To
+avoid switching to huge, I took the interbbs -ibbsi, -ibbso, and
+-sendnodelist and made a separate .exe file for that ... I just finished but
+have not tested it yet.
+
+4/14/1996
+---------
+Ok finally found the problem, well a couple of them, it wasn't the memory
+model nor too large exefile, but a few bad pointer assigments and too short
+declared strings ... A LOT OF STUFF .... So it seems to be all working right
+now i will have to test it and change one more thing before putting out the
+beta 2
+
+4/15/1996
+---------
+Everything seems to be working so I'm releasing beta 2!
+
+4/27/1996
+---------
+I don't have much time with finals coming up, I fixed the online fight bug in
+beta 2. Also I found a couple of bugs in the interbbs and fixed them. Still
+some are lurking around. I'm releasing this as BETA 3 today.
+
+5/17/1996
+---------
+Summer finally:) ... I have decided to make the BETA 3 available to the
+public as wide beta 1 as I have not gotten enough feedback from the beta
+sites.
+
+7/7/1996
+--------
+I have made some changes to the manuals and the distro site list but have
+not distributed it since I have a more then a full time job and no time for
+ny2008 ...
+
+8/28/1996
+---------
+I have made more changes to docs, plus added more weapons and worked on
+the program a bit. I'm releasing 0.11 as the first 0.1? non-beta release!
+
+11/24/1996
+----------
+I fixed a few bugs, the wepons selecting bug and a mail bug. 0.12 is out.
+no new big releases are coming too soon since registrations are slow and 
+I have a lot of other projects. I WILL keep supporting this software 
+though, releasing, bug fixes as they come in. I plan a Win95/NT version. 
+This might take a little time but I think I will get to that this spring 
+at least, maybe sooner.
+
+12/25/1996
+----------
+I'm waiting to getting all my new internet stuff set up before releasing 
+another version, bad words support are in plus a few other things I've done.
+
+4/22/1997
+---------
+Tired of not getting regs. THE GAME IS FREE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+v1.00 released!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+ok so this is the end of ny2008 development .. I will make sources available 
+as well ... for anybody wanteing to port mess around with it use it ...
+whatever.
+
+Franz

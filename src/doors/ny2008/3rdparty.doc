@@ -1,0 +1,299 @@
+==============================================================================
+NY2008 Third Party Development Manual (update 11)
+==============================================================================
+
+> NEW STUFF THAT WAS ADDED IN UPDATE 6!
+| NEW STUFF THAT WAS ADDED IN UPDATE 7!
+* NEW STUFF THAT WAS ADDED IN UPDATE 8!
+@ NEW STUFF THAT WAS ADDED IN UPDATE 9!
+} NEW STUFF THAT WAS ADDED IN UPDATE 10!
++ NEW STUFF THAT WAS ADDED IN UPDATE 11!
+
+} I found a misspelling, CRAPS is supposed to be CRABS ... oh well ... not to
+} make any incompatibilities, all the data files still use CRAPS ... but
+} please make your igm display CRABS ... sorry bout this:)
+
+> From wide beta 7 up the .inf drop file has changed format a bit, READ ON
+> if you made any IGM's for wide beta 6 or lower!
+
+@ You can now add IGMs to be fight events. You just create a file called
+@ 3rdevent.dat with same format as 3rdparty.dat. If this file exists NY2008
+@ will sometimes ask the player instead of a fight event if he wants to enter 
+@ a randomly chozen IGM for the 3rdevent.dat file.
+
+* There is a new type of character information file, the .stt file. The
+* name and location of this file is the same as for the n00?????.sts
+* file. The only difference is that it is written as a text file so it is
+* easier to read for you non-C programmers ... Read on
+
+* If ya are too lazy to write a good installation program for your IGM then I 
+* included mine, it's easy to setup and use for almost any igm you make. Look
+* at it in the NY_IGMIN.ZIP file, which is included in the ny2008 main archive
+@ It now asks if the IGM should be added to 3rdparty.dat, 3rdevent.dat or both.
+
+  Well ... so ya want to create something i haven't done already for NY2008
+  ...
+
+  First a few tips on how i do stuff ... i LOVE binary files, whatever can be
+  IS in binary format ...
+
+  And read the struct.doc for the structures of those files and a few extra
+  tips ...
+
+  User number is the number in the user file...
+
+  DO NOT CHANGE how many points the user has in the user file... you can do it
+  as an IGM and pass the new point value back to NY2008, but do not do it to 
+  users anytime otherwise. It will messup the score file for the day ...
+  (Actually in an IGM you can change almost all the user data, xpt the level,
+  and the rank variable, those will change when ny2008 reads in the .sts file)
+
+  To get info on the user that's online read in his .sts file, changing this
+  will not effect anything unless you are returning from an igm so don't 
+  change it otherwise.
+
+  DO NOT REARANGE USERS!!!!! (WILL MESS UP VERY VERY BAD!)
+  (or if ya have to read the struct.doc file VERY carefully, but i would not
+  recomend it ... and this is absolutely not to be done in IGM's anywayz)
+
+  Flags for users (flag files I mean) are named 
+
+  U00<0 padded user number>.<flag name>
+
+  And they are store in the FlagDirectory if it is specified in the .cfg file
+
+  For example online flag for user 36 would look like "U0000036.ON"
+
+
+  The temporary character dropfile is named (it is stored in the game
+  directory not in the flag didrectory!)
+
+  N<0 padded node number>.STS
+
+  For example .STS file for node 6 would look like "N0000006.STS"
+
+  NOTE: There is also a flagfile called U00?????.STS ... this is used for
+  data recovery and if you dump any data in here it will not be read unless
+  the crash recovery is run ...
+
+==============================================================================
+How to create In Game Modules for NY2008!
+==============================================================================
+
+| If You'd like to see how an IGM looks inside look at NY_JPSRC.ZIP which  
+| is the source code for the Jackpot IGM. It's in Turbo C++ and OpenDoors 5.00
+
+  To create NY2008 IGM's you actually create something like a door, only
+  easier, because you anly have to deal with one type of dropfile and one
+  character information file. These will be created in the game directory, so
+  you will have to get that information from the user. (I'd recomend having
+  it passed on the command line rather than having it read from a cfg file.)
+* There are two character dropfiles you can choose from now on ... so it's
+* easier for non-C programmers.
+
+  NY2008 will pass the node number, the user number and if the game is local
+  or not, through the command line, by adding '-N<node number> -U<user number>'
+  and optionally '-L' if the game is in local mode, to the command line when
+  calling the IGM. '-L' is passed every local game no matter if it was started
+  from command line or from a dropfile.
+
+@ You have to create or edit '3rdparty.dat' and/or '3rdevent.dat' and put in
+> appearance to user first and the command line on the second line. Comments
+* are OK! (comment lines start with ';'!) -  there can be any number of IGM's!
+* As i said above i'd recommend passing the path to the dropfiles on the
+  command line!
+
+@ '3rdparty.dat' file will add your IGM to the other stuff menu!
+@ '3rdevent.dat' file will add your IGM as a random fight event! 
+
+  Example:
+    `@B`4ar
+    C:\NY2008\BAR.BAT C:\BBS\NY2008\
+
+  And the BAR.BAT would look like:
+
+    cd\bar
+    bar.exe %1 %2 %3 %4
+    cd\ny2008
+
+  Don't worry about changing dirs back ... ny2008 will do that by itself.
+} But the IGM will be run with the game dir of ny2008 as the current dir!!!!
+} so in the batch file make sure you change to the igm's dir, or o that in
+} the IGM itself. Or use the '*' described next
+
+> There is also a new feature if you want NY2008 to change to the IGM's dir
+> before it is run, you add '*' as the VERY FIRST character in the command
+> line!
+
+> Example:
+>   `@B`4ar
+>   *C:\NY2008\BAR\BAR.EXE C:\BBS\NY2008\
+
+> This will run BAR.EXE in it's own dir (c:\ny2008\bar) so you don't need to
+> write a bat file as in the example above!
+
+
+  THE FILES: 
+@ You have to read both, and they are in the game directory, not the flag 
+@ directory! You can choose the character info file, but you have to read the 
+@ text version and delete the binary version, so that ny2008 knows you read 
+@ the text version, or just read the binary version, you don't have to delete 
+@ the text version, ny2008 will read the binary version as default, only if it 
+@ doesn't find it will it read the text version!
+
+  The character information file (N<node number>.STS) is a binary file with
+  the user structure dumped into it. (read struct.doc) (this is the one you
+  can change!) (e.g. N0000003.STS for node 3)
+
+* User rank and days user has been inactive will not be read in after an IGM
+* so it wouldn't kill the user or destroy others if they get changed in
+* the IGM.
+
+* There is also a text character information file available too. if you want to
+* use that you have to delete the N<node number>.STS so that ny2008 will read
+* this file instead. The name for this file is N<node number>.STT!
+* It has the same data order as the character info structure, here it is:
+*
+} Line 1:  The BBS name of the user !!!Will not be read in!!!
+* Line 2:  The name of the character
+* Line 3:  What the user says when he wins
+* Line 4:  What the user says when he looses
+* Line 5:  User rank !!! Will not be read in !!!
+* Line 6:  Days the user has been inactive !!! Will not be read in !!!
+* Line 7:  Attacking strenght of the user !!these will have a change only for!!
+* Line 8:  Defensive strenght             !!this level I recomend no change  !!
+* Line 9:  Condoms user has
+* Line 10: Days since the user last got laid
+* Line 11: The hits of drug that the user has
+* Line 12: If addicted how long the user has not used the drug
+* Line 13: User's hitpoints
+* Line 14: Maximum of the user's hitpoints
+* Line 15: User's points
+* Line 16: Money in hand
+* Line 17: Money in bank
+* Line 18: User level
+* Line 19: Fights the user has left today
+* Line 20: % of hunger
+* Line 21: Sex turns left today
+* Line 22: % of current std infection
+* Line 23: % of drug addiction
+* Line 24: % of how "high" the player is
+* Line 25: For how many more days the hotel is paid for
+* Line 26: How many days has the user has been in hospital
+* Line 27: If alive this is set to "ALIVE" if not consious "UNCONSIOUS"
+*          set this to "DEAD" if user died in the IGM (user has to start over!)
+* Line 28: "M" if male "F" if female
+* Line 29: what the user is:
+*          "PUNK", "HEADBANGER", "BIG FAT DUDE","CRACK ADDICT" or "HIPPIE"
++ Line 30: number of the user's weapon .... 0=hands, 1 pepper spray,... more
++          weapons in v0.11 look it all up in STRUCTS.DOC
+* Line 31: user'ss STD:
+*          "CRAPS", "HERPES", "SYPHILIS", "AIDS" or "NONE"
+}          Sorry about the "CRAPS" misspelling, but it's still here not to
+}          make trouble, but in the game make sure it displays "crabs":)
+* Line 32: user's drug:
+*          "POT", "HASH", "LSD", "COKE", "PCP" or "HEROIN"
+* Line 33: Where the user is staying:
+*          "NOWHERE", "MOTEL", "REGULAR HOTEL", "EXPENSIVE HOTEL"
+* Line 34: UN HQ bombings left for today
+* Line 35: Water poisonings left for today
+} Line 36: Rocks, The number of rocks the player has
+} Line 37: Throwing ability 0-100
+} Line 38: Punching ability 0-100
+} Line 39: Kicking ability 0-100
+} Line 40: InterBBS Moves Left Today
+
+
+  The dropfile is a textfile with the communication parameters written in it:
+  (e.g. U0000034.INF for user 34) (this is also the ... in IGM flag, so do not
+  modify it cuz it might change names if the maintanance runs on another node!)
+
+  Line1: The path to the bbs dropfiles...(if you want to read those)
+	 (they will not be available if game was run with the '-L' command
+	 line option.
+  Line2: Callers time left
+  Line3: Com Port (0 based - COM1=0, COM2=1 ...)
+  Line4: Baud Rate
+> Line5: Either "ANSI","AVATAR" or "ASCII" depending on players terminal!
+}        Will be ANSI If the user has RIP, If your door has a RIP interface
+}        Then make it autodetect RIP (simple).
+> Line6: User's location
+> Line7: This is either "FOSSIL" if fossil driver is used or "NOFOSSIL" if not
+
+  The rest of these settings is written to the dropfile only if FOSSIL is
+  disabled!
+
+> Line8: Com port address
+> Line9: Com port IRQ
+> Line10: Either "FIFO" or "NOFIFO" depending if the 16550A FIFO buffer is used
+> Line11: The number of bytes that is placed in the FIFO buffer before trigger
+> Line12: Receive Buffer
+> Line13: Send Buffer
+
+  That's it .... all the caller info you need is in the character file, but 
+  if you need something that's not here, read the first line of this dropfile 
+  which has the path to the bbs dropfiles. (also i do not recomend that .... 
+  it makes life of the sysop who installs the software not very easy to do 
+  job, since all you need is passed through this dropfile and the .sts file 
+  then there's no need to do anything else, and it will make the IGM's 
+  portable to any system.)
+
+  Only the things that you change in the character file will be read in by 
+  NY2008. (Do not change the bbsname field in the character file as this could
+} have unpredictable results). It will no longer be read in!
+
+  Also do not change the level of the user, the user will have his level 
+  raised when he returns back to the game (if he deserves it).
+
+==============================================================================
+How amounts work... for any add-on ...
+==============================================================================
+
+  The usuall points raise for a single fight is 10*(level+1) for better things 
+  make it a bit more.
+
+  The money the user gets is calculated from the hitpoints of his enemy (plus 
+  some randomness):
+  (level+1)*(enemy_hitpoints*0.5 + randomf(enemy_hitpoints*.7))+(20*(level+1))
+
+  This is to give you an idea how the money is calculated, take in account 
+  that the player will spend some money on healing.
+
+  Generally try not to give out too much money or points for free .... 
+  gambling is good cuz that makles people loose money also.
+
+==============================================================================
+How to change users offline ...
+==============================================================================
+
+  if you want to write to the user file, do it when the user is offline ...
+  if the user is online there's no way you can edit him (unless if you edit
+  the .sts file from an IGM). (U00?????.ON will be present if user is online).
+
+==============================================================================
+Running stuff in maintanance
+==============================================================================
+
+* NY2008 has the option to run an external program after it's nightly
+* maintanance, just create 3rdmnt.bat and put whatever you want in there and
+* it will run it after every maintanance. Do not make your maintanance
+* too long since on most systems maintanance takes place when the first
+* user gets online. if you have something that takes long (maybe NPC's), just
+* ask the sysop installing your software to put it in his nightly maintanance
+* batch file.
+
+* If you want to send remote output, there is a "3rdmnt.inf" file created,
+* it has the same format as the IGM dropfile, so look at that.
+
+* You could also use the old style, and use the option in the .cfg file, but
+* no "3rdmnt.inf" is created for that one and I recomend strongly agains it
+* since the above way is just a better way to do it, and more flexible.
+
+==============================================================================
+
+  Anywayz ... have fun ....
+
+  Franz
+
+  PS: I know i can be very cryptic and incomplete in instructions .... contact
+  me with any problems you might have.

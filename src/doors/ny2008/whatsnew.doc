@@ -1,0 +1,702 @@
+-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+New York 2008 What's New File
+-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+What's NEW in these versions ... stuff to check out ...
+
+Features:
+Totally new stuff that's added to the game.
+
+Bugs:
+Descriptions of bugs that were fixed in this version.
+
+CheatFix:
+Fixed something that allowed cheating!
+
+Known maybe-bugs:
+Might be just system specific bugs, and I could not duplicate them
+although I tried. If you find these, send me EXACT description of what
+is happening!
+
+Docs Changes:
+Important changes to the docs
+
+-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+The 1.?? series releases
+-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+v1.00 (FINAL FREE RELEASE)
+==========================
+
+Features:
+
+- No changes since 0.13
+- FREEWARE, Public Domain!
+
+-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+The 0.1? series releases
+-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+v0.13 (minor release NEVER RELEASED!)
+=====================================
+
+Features:
+
+- Bad words support. Will replace bad words with #@!$#% (read sysop.doc)
+- Chat wink bug fixed
+- Minor cosmetic changes to nyedit.exe.
+- Few NEW enemies.
+- A little bit of code clean up and performance increase (slight)
+
+Docs Changes:
+
+- New York 2008 Now published by PraetorSoft (Franz's company)
+- Partenrs for Peace is back online so this is the official USA
+  distro site again!
+
+v0.12 (bugfix release)
+======================
+
+Bugs:
+
+- The weapons selecting bug was fixed, moved weapons up so that there is
+  no "Q" conflict in selecting.
+- The menus*.* lines*.* files updated.
+- Mail reading bug fixed, man this was a tough one to find.
+
+Docs Changes:
+
+- No old addresses anymore in the contact.doc/register.doc
+
+v0.11 (major release)
+=====================
+
+Features:
+
+- 11 New weapons added!
+- NYEDIT updated because of this!
+- This is the 0.1? final release!
+
+Bugs:
+
+- Stack size was increased to 20k since I received several errors which looked
+  like stack overflow
+- Several missplelings in the game itself were fixed.
+
+Docs Changes:
+
+- Cosmetic and spelling errors fixed in the manuals
+- Distro site list has been updated.
+- New addresses in the contact.doc/register.doc
+
+v0.10 WIDE BETA 1
+=================
+
+This is basically the beta 3 release I have had little time to work on it,
+but the game itself seems to be stable. The InterBBS is having problems but
+with a limited beta sites I have not gotten enough feedback ... only from
+one site on which it didn't work.
+
+Features:
+
+- InterBBS play, read INTERBBS.DOC for more info on how to participate in
+  an InterBBS game. It works only with registered sysops. You can now
+  interact with other BBSes, through fido type mail networks. I will work on
+  an Internet options, though it might not be hard to set it up even now.
+  Local IBBS games can also be set up, with fake node numbers (1:1/1 ...)
+- There are one new command line option linked to the InterBBS, -IBBSM,
+  see INTERBBS.DOC for more info!
+- NYIBBS.EXE is added for the interbbs processing, Look at INTERBBS.DOC for
+  info.
+- RIP is here ... that's the major improvement in this version! 
+- Two screen saving levels now, if a person is given an online message or
+  something similiar happens, the screen is saved and then restored ... same
+  as with chat. Now you can chat AND the user can be in a screen saving event
+  all at the same time ... won't corrupt screen if more then two levels are
+  entered.
+- Few new enemies. Not many but a few.
+- Full screen chat mode much like KewlChat 1.2, even supports RIP(remote
+  graphics only though, locally it looks like ANSI)!...
+- Three abilities throwing,punching,kicking. For throwing the player needs
+  a rock. This can only be found in one of the events. The initial abilities
+  for exeisting users are set to be distributed evenly (since they already
+  had level raises and existing users also get 2 rocks free). Each level
+  raise the user can pick one ability to increase by 4. These abilities
+  can be used in all fights!
+- User File structure changed, but used the reserved bits so no is conversion
+  neccessary. Existing users will get default values of the abilities.
+- User Stats is much faster, but it takes a bit more memory.
+- Removed the -AD command line option. Auto terminal detection is now the
+  default.
+- Added -NAD command line option. Disables the auto terminal detection.
+- Added -RIP switch, forces RIP even if the user does not have RIP.
+- Messed with the Maintanance, it will be a little slower, but safer for mail.
+- The editor now edits all the new values (the abilities)
+- Added -MM argument. Forces maintanance even if it was run that day already,
+  does not check! Will force a new day on all players! Use only if you know
+  what you are doing. Good if you want to test the game, or if you are just
+  trying the game and want to test it as a several days game ...
+- When local mode is invoked with the -l option a better display and
+  prompt is used.
+- There are two main menus in the menu files, it's the one iwth the interbbs
+  option. And there is also the interbbs menu.
+- Compiled with a new version of OpenDoors (v6.00)
+- The struct.doc file updated to display the new file structure.
+- 3rdparty.doc updated.
+- The IGMs can now read/write the new values into the text character file.
+- Sex turns not being decremented on user rapes bug fixed.
+- Recompiled the Editor, and made a few fixes made it faster and safer.
+- When no dropfile found the game displays it's own no dropfile msg instead of
+  default opendoors one.
+- Screen not cleared on exit if the login was not with the "-L" argument.
+- Optimized menus, saved 10k
+- Optimized online fights, saved 8k
+- New trimming routine.
+- User names from the local login prompt are now trimmed of uneccessary
+  spaces.
+
+Bugs:
+- Fixed a file finding and opening bug ...
+- Fixed a stack overflow bug which i'm not sure if it occured in v0.05 ...
+- Fixed a bug not deleting all dead user's messages ... Revamped the deleting
+  part completely, making it a tiny bit slower, but MUCH MUCH safer.
+- Small Local name input bug fixed. (local logon)
+- Several display bugs fixed!
+- "?" didn't work in drugs menu.
+- Craps is spelled Crabs ...:) sorry bout this. file structures not changed
+  because of this though
+- The idle time time slicing now actually really works ... so multitasker
+  support is now much much better then before.
+- The "-p" command line argument now works right for NYEDIT
+- Online fights should now cause more problems if an online message is sent to
+  that node!
+
+v0.10 BETA 1-3 (The above is a compilation of the new features in those
+releases The Wide BETA 1 is the BETA 3 release basicaly)
+
+-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+The 0.0? series releases
+-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+v0.06 (alpha release of v0.10 on my bbs only!)
+==============================================
+
+Look at v0.10 for features ... 0.06 was the marking for all the v0.10 alpha
+versions, since they were on my bbs only. 0.06 did not have the complete
+feature list. Was never released on any BBS but mine.
+
+v0.05a (very minor release)
+===========================
+
+Features:
+- The game can now autodetect the terminal emulation type, just use the
+  -AD command line option.
+
+v0.05 (Minor Release)
+=====================
+
+Features:
+- Created my own copyfile and delete routines so the game does not call dos
+  anymore (xcept to run IGMs).
+- New in game events that happen practically anywhere in the game. They
+  happen sparsely though.
+- The polling value can now be edited. So you can fine-tune your multitasker!
+  Make sure you use the new .cfg file! or copy the "PollingValue" keyword into 
+  your .cfg file if you wish to change it!
+
+Bugs:
+- The you are being fought by another node bug fixed, finally!
+
+v0.04 (Minor Release)
+=====================
+
+Features:
+- Better slice releasing under multitaskers. THX DINK! You can turn off the
+  time slicing in the .cfg file if you wish.
+- Does not ask if the player wants to have sex with a user of if he wants to
+  rape if he already used up all his sex turns.
+- If a user does not have any hits of his drug it does not tell him he has to
+  sell it.
+- Checks for flags during fights only every second, not all the time!
+
+Bugs:
+- If user said no to "you'll have to sell all yer hits of your currnt drug"
+  it changed the drug anywayz.
+- Very minor display bugs fixed.
+- Again a fix in the file checking during idle, it didn't check untill a
+  key was pressed!
+
+CheatFixes:
+- Well since there are a lot of people running older versions I'm not telling!
+  It was strange but only worked for higher level users!
+
+v0.03c (Bugfixes only)
+======================
+
+Bugs:
+- Command line reading bug fixed! The one with the -p argument. This one
+  was a hard to find but I GOT IT!
+
+v0.03b (Bugfixes only)
+======================
+
+Bugs:
+- Overflow in Evil Stuff fixed.
+- User being fought bug fixed (multinode only).
+- Current Player being fought bug fixed (multinode only).
+- Not checking for online messages durning idle bug fixed (multinode only).
+
+v0.03a (VERY minor release)
+===========================
+
+Features:
+- Send money through mail option added (in bank)! This added 4 lines to the
+  lines.dat file.
+- Finally made the menu capitalization constant and went and capitalized all
+  menu items (menus.dat).
+- Very small display changes in a few places.
+
+Bugs:
+- Few misspellings and linguistic errors fixed.
+
+v0.03 (Minor Release)
+======================
+
+Features:
+- NY2008.CFG was renamed to SAMPLE.CFG to avoid overwriting during unzip.
+  (if you have not had ny2008 instaled before, copy this file to NY2008.CFG!)
+- New, more user friendly, registration program, same name, REGISTER.EXE
+- Editor now includes Levels/Minimum Points table when you enter points
+- The NYEDIT.EXE is smaller about 35k or so!
+- New command line parameter, RESET, which will reset the game, instead of
+  the old RESET.BAT! (works with multiple game setups and you can include a
+  .CFG file using the "-C" parameter.
+- It is now faster in multitasking enviroment since it does not check for
+  flags that often during idle anymore.
+- Added "CheckFlagsEvery" keyword to SAMPLE.CFG file so you can edit exactly
+  how often does NY2008 check for other nodes messages during idle. Read
+  the SAMPLE.CFG file for more info!
+- No-Self-Mail checking finally works ...
+- Message automatically aborted if nothing in the body and user does not want
+  to have sex.
+- "Nothing happened" displayed if newzfiles not found or found empty
+  (this added 2 lines to lines.dat, and linesc.dat)
+- The bps rate is not read in, if a fossil is used. This should solve some
+  communication problems.
+- "-RDBPS" comand line option added. Makes the game read the locked bps!
+  use only if you have problems
+- Users can't change their drug when they're high. they gotta sober up first!
+  (1 more line in lines.dat (and linesc.dat) file)
+- If a player looses in an offline player fight he looses all his money on
+  hand
+
+Bugs:
+- An overflow bug fixed when buying drugs when the user had a LOT of money.
+  (It would mess up the users money and points)
+- Offline player fight bug fixed if maintanance ran on another node.
+- RIP users should be allright now (used to be some display garbage).
+- Also RIP users might have gotten ASCII not ANSI... I fixed that too
+- [F9] did not work if Standard personality was chosen in the .cfg file
+- In editor, when entering points only numbers can be entered.
+- In editor, a small statusline display bug fixed.
+- Few misspellings fixed.
+- Alt keys did not work if NY2008 personality was chozen in the .cfg file.
+- A lot of display bugs fixed (it just looks a bit better now).
+
+Known maybe-bugs:
+- A user got "agreed and had sex with you" from a male player, I could not
+  duplicate it. Only one system reported it. Strange. I looked through all
+  parts that posted messages and all parts that recieved and could not find
+  something that would put a had sex with you flag on ... I think it must
+  have gotten corrupted somehow from defeated you message ...
+- "You are being fought node" bug still not caught, if it is a bug. It looks
+  like the flag might be left in place after an error or a sys-crash. It
+  might not be a bug and might not even be caused by the game. If you
+  turn of multinode support or run crash recovery during maintanance each
+  day it should not ever come up anywayz. (I'm strongly convinced it is not
+  a bug but something that happened with my board)
+  (NOTE: Fixed in v0.05)
+
+v0.02 (Minor Release)
+=====================
+
+Features:
+- IGMs can be in fights as events. Just add the IGM's you want to be available
+  as fight events into a file called '3RDEVENT.DAT'. The format is the same as
+  '3RDPARTY.DAT'.
+- New IGM Installation program that implements the fight event igms. It's in
+  the main archive in (NY_IGMIN.ZIP, same as before).
+- Franz's Bar has a minor release, with afew bugfixes and the new installation
+  program (NY_BAR12.ZIP).
+- The checking for flags is faster, so the game should be a bit faster now.
+- The "1 File Copied" message is not displayed localy anymore.
+- Personalities can be changed even when a user is online.
+- New personality called "NY2008" which will display player status, like points
+  and money. From this status line you can switch to any other personality.
+  If you want "NY2008" personality online press Alt-[F1].
+
+Bugs:
+- Mail name searching bug fixed!
+- If user has enough money to buy an A-Bomb but isn't level 20, it tells him
+  before it kicks him back to menu.
+- A bug in IGM prompt fixed, nothing major.
+- Few small display bugs fixed
+
+v0.01 (Major Release)
+=====================
+
+Features:
+- The maintanance should now take about 2,000,000,000 messages without
+  crashing (theoretically).
+- Can have infinite number of IGMs now. If you use the OTHER.ANS, .ASC, .AVT
+  screen to override the default display, only one screen is used so the
+  numbers of the IGM in the 3rdparty.dat is the number to enter to run the
+  igm, if other.a?? is not used it's allways 1-20 on infinite number of pages.
+- IGM display faster due to pre-formatting the 3rdparty.dat each play into
+  a temporary binary file which is read from the disk to save memory.
+- "Q", "?" are now hotkeyd in IGM menu, along with the new Next and Previous
+  commands (only active when there is more than 20 igms).
+- Rank number and inactivity days are no longer read from igm dropfiles,
+  to prevent errors.
+- New text file character information dropfile for IGM's so that the non-C
+  programmers can make IGM's easier. (read 3rdparty.doc for more info!)
+- If 3rdmnt.bat is found in the game dir it will be executed after the
+  nightly maintanance if you need to run something everynight.
+- If the screen length is not read properly it's reset to 24 lines
+- Custom Installation Program is included in the main archive
+- Franz's Bar and Jackpot IGM's have 1.1 releases (NY_BAR11.ZIP and NY_JP11.ZIP)
+- New IGM called Shoot Em is released! (NY_SHOOT.ZIP)
+
+Bugs:
+- Few Display bugs fixed.
+- Few misspellings fixed.
+
+-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+These were the WIDE BETA public releases
+-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+WIDE BETA 9
+===========
+
+Features:
+- Killed the turning cursor on the mail search thing ... I put it in there
+  partly cuz it looked good but it slowed the mail search down about 60 to
+  100 timez! So I took it out <G> Sorry that was in there and ya had to put
+  up with it but that just happens. Now it just says "Searching ..." and
+  that's it.
+
+Bugs:
+- If a player hangs up in player fight the player that is fought was, not
+  let in again, it's fixed now.
+- Few minor display bugs fixed.
+
+WIDE BETA 8
+===========
+
+Features:
+- Clean mode, will make the game "CLEAN". You cannot rape and language has
+  been cleaned up ... though I think it's pretty clean to begin with. If you
+  want to change something else in clean mode .... let me know and I'll do
+  it fer ya.
+- On exit from IGM it now checks the deadly percentages and if user hasn't
+  been killed properly in the igm it will kill him with the usual die message.
+- New users can no longer input a name that is already used but capitalized.
+  (e.g. Franz and fRanz are now considered same in the new user name scan, and
+  also if user changes his name)
+- Users can no longer send mail to themselves.
+- Brought down the executable size 50k (from 308k to 258k)
+- Also look for the BAR igm (NY_BAR.ZIP) it should be available at the same
+  time as this version.
+
+Bugs:
+- Duplicate name checking bug fixed. (sometimez said it was duplicate even
+  when it wasn't)
+- Change info now really checks for duplicate namez. (I hate bugs)
+- Two carrige returns in (.asc,.ans) scorefiles bug fixed
+- A small display bug in Evil Stuff fixed.
+- Few misspellings fixed.
+
+WIDE BETA 7
+===========
+
+Features:
+- In adding the command line to the 3rdparty.dat file you can add '*' in
+  front and it will use the exe file name's dir instead the game dir.
+  (has to be the first character on the line)
+- You can restrict players ability to get into IGM's by security level.
+  Do this by putting '{<minimum security level>}' into the command line of
+  the IGM.
+- You can have a custom display of available IGM's by creating a file
+  called OTHER.ASC, OTHER.ANS and OTHER.AVT (you don't have to make all of
+  them, but they will be displayed to user if available and his termonal
+  allows).
+- The drop files for IGM's format has changed a bit .... there are two more
+  fields, terminal emulation and user location! Sorry about this! It will be
+  easy to change that and since I don't think there's a single IGM out there
+  except the one I just wrote I don't think it will affect anything.
+- I made an IGM! It's a very simple JACKPOT IGM and the filename is
+  NY_JPIGM.ZIP (I will release the source soon ... I have to clean it up
+  first.)
+
+WIDE BETA 6
+===========
+
+Features:
+- You can now edit the chances of being busted and succssesfull for every
+  offense in the .cfg file. of course you can only do that if you registered.
+- You can now be unsuccessfull smashing up a car and breaking a window.
+  I have changed the default chances accordingly.
+
+Bugs:
+- Few minor display bugs fixed.
+- The 3rdparty.dat could not be read sometimes.
+- Slow other stuff display bug fixed.
+- Fixed dos calls bug created in wb5 that didn't clean up after players by
+  deleting the flag files.
+
+WIDE BETA 5
+===========
+
+Features:
+- Moved a few lines from menus.dat into the lines.dat and added one or two
+- Made some dos calls slightly faster.
+- Changed the Initial screen a bit.
+
+Bugs:
+- Fixed a bug deleting dead user messages
+- Fixed a few display bugs
+
+WIDE BETA 4
+===========
+
+Features:
+- You can steal more from the bank
+- Curing STD's is now a bit cheaper, especially for higher levels
+
+Bugs:
+- File locking bug fixed, which may have been causing the user file deletes
+- Few display bugs fixed
+- Online flag before user was online bug fixed
+- Few editor bugs fixed
+- Free hookers bug fixed
+
+WIDE BETA 3
+===========
+
+Features:
+- Menu titles are now in the LINES.DAT file.
+- And a few more things in the LINES.DAT file
+- Added and updated stuff in the MENUS.DAT file.
+- Changed the expert mode to help level toggle, it can now be expert, regular
+  and novice, novice is what regular was before, and expert mode did not
+  change. The regular mode will display the menu when you first enter it but
+  not after that.
+- Color instructions.
+- Expert mode now does not clear screen when the prompt is displayed.
+- Online users notified of new mail!
+- FlagDirectory option added to the .cfg file.
+- Online players notified if a new player comes online or leaves.
+- Bank Interest is now a registered only feature, and can be editted in the
+  .cfg file.
+- Complete CHARACTER EDITTING in the NYEDIT.EXE player editor. (of course
+  if you didn't register yet ... ya can't really use it ....)
+
+Bugs:
+- Mail Sex bug fixed which caused infection to overflow if it was sent as
+  regular mail.
+- The unregistered pause is not repeated if user presses enter.
+- When sex mail is aborted it no longer subtract the sex turns.
+- An online message overload during too many messages bug fixed.
+- Online fight weapon swap bug fixed.
+- Few minor display bugs fixed.
+- Few misspellings fixed.
+
+WIDE BETA 2
+===========
+
+Features:
+- If a user initiated an online fight, he can stop looking for the player.
+  (this is in case a player stays online after a crash)
+- The game now uses file locking, instead of the old system. This should
+  fix the file sharing error bugs. All the files are open in share mode and
+  the access is locked just before and just after reading/writing.
+- SingleNodeOnly mode added to the .CFG file for single node bbses.
+  (this disables online fights and messages, temporary files and speeds up
+  the game, read the .CFG file!)
+- More Prompt now included when reading long messages.
+- You can give credit to a user that paid for the registration in the .cfg file
+- Screen is saved and then restored after dos shell.
+- Few messages added.
+
+Bugs:
+- File error in mail fixed, a file stayed open.
+- Display problem with the ` character fixed, this was in the colors help.
+- Online message bug, sent to wrong people, fixed
+- Few online fight bugs fixed.
+- IGM menu display bug fixed.
+- Two User Listing display bugs fixed.
+- Several double display bugs fixed.
+- Language file reading bug fixed, displayed wrong lines sometimes.
+- Few misspellings fixed.
+
+WIDE BETA
+=========
+
+Features:
+- Made the stuff displayed from textfiles to be faster.
+- Added about 40 more lines to the LINES.DAT file
+- Changed some file opening techniques so that more nodes can read
+  the same file at a time but only one can have read/write access
+- More prompt is now displayed if user list or newz is longer than a page
+- Screen is saved (if enough memory exists) before and after chat, online
+  fights and online messages.
+- More prompts are erased after a key is hit.
+
+Bugs:
+- Few mail display bugs fixed.
+- New day every play if -NM option was enabled before maintanance bug fixed.
+- More prompt file display bug fixed.
+- Few more minor bugs fixed.
+
+-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+These were the BETA versions only tested on selected sitez
+-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+BETA 9
+======
+
+Features:
+- Changed the .STS fileNAME format for IGM's.
+  (uses node # instead of user #)
+- Non addictive drugs now lower attack strength.
+- Colors in the instruction file.
+- Colors can be used in namez!!!
+- Take Drug added to the attack menu.
+- Two new events in the street.
+- In evil stuff the game now displays the number of points earned.
+- Will now support colors in enemy names ... when i make the enemy editor.
+- Reduced point values in evil stuff.
+- WTC bombing and Poisoning of water can only be done once a day now.
+- They're also more expensive to do but easier to succeed.
+- This also changed the file structures, but no need for a conversion!
+  (I used up 2 bytes of the reserved space in the file structure)
+- Menus and larger texts are now stored in the MENUS.DAT and can be editted.
+- Most of the textlines are in the LINES.DAT.
+  (contains practically all the text used)
+- This saved 23k of memory! (from 283k to 260k exe file)
+- Changed the gun prices.
+- Users now get a bit less money for fights.
+- Healing is cheaper.
+- Reworked the enemy files.
+
+Bugs:
+- The Crash Recovery system bug fixed ... (very dangerous one too)
+- Players unavailable for fight bug fixed.
+- Hotels display bug fixed.
+- Two nodes fighting the same player bug fixed.
+- Online Fight overflow and display bugs fixed.
+- Fight hitforce overflow bug fixed.
+- Few minor bugs fixed.
+- Few misspellings fixed.
+
+BETA 8
+======
+
+Features:
+- IGM support is now complete (read 3rdparty.doc and struct.doc)
+- Money in bank gets now 5% interest a day.
+- COLORS are in!!! Same codes as in LORD. They work in mail and stuff the
+  player says when he's beaten, or won, also in newz (not in names).
+- Weapon price listing option added.
+- Game now displays what you get after a kill.
+- Re-wrote the attacking mechanism (for better I hope)
+- Curing STD's now cheaper.
+
+Bugs:
+- Best score bug fixed.
+- Blank disease bug fixed.
+- Hippie event now works.
+- Several display bugs fixed.
+- Lotsa other bugs fixed.
+
+BETA 7
+======
+
+Bugs:
+- Infection overflow bug fixed (was lethal to players!)
+- Few other overflow bugs fixed.
+- Users getting kicked out of hotel every day bug fixed.
+- Users getting kicked out of hospital all the time bug fixed.
+- Lotsa other bugs fixed usually connected with the new stuff from BETA 6.
+
+
+BETA 6
+======
+
+Features:
+- Faster consious player display.
+- Faster heal wounds display.
+- New user file structure, though adding 12 bytes per user, 10 of which
+  are reserved, I compressed all other records so that it is now 6 bytes
+  shoreter per user than in the beta 1 format.
+- Hotel is now paid for days not until next play.
+- The kicking out of hospital is always two days after you got yer ass kicked,
+  not like in beta 5 when after 2 days of inactivity you were kicked out every
+  day.
+- Started implementing IGMs (far from done yet)
+- Drugs get more expensive, at a slow rate, int different levels.
+- Regular mode is now the default choice in the startup menu.
+- Added Street fight events, three now implemented.
+- Added Crash recovery to get all online flags and temporary files and flags
+  outta there and read in temp user files: -CR option on the command line.
+
+Bugs:
+- Few minor bugs and misspellings fixed.
+- BBS name display bug fixed in the editor.
+
+BETA 5
+======
+
+Features:
+- Expert mode!
+- Faster display of instructions.
+- Quit is the default action in news.
+- Game is now RIP ready but still does not support RIP.
+- The maintanance now doesn't run the first day since there is no need to.
+
+Bugs:
+- Nasty user adding bug.
+- Few minor bugs and misspellings fixed.
+
+BETA 4
+======
+
+Bugs:
+- Whoops .... if an user beat user he got 80% of his points instead of 8%.
+- Few minor bugs fixed.
+
+BETA 3
+======
+
+Bugs:
+- Should not break down if user hangs up during maintanance.
+- When a user is beat on the street the game should not hang anymore.
+- Few other minor bugs fixed.
+
+
+BETA 2
+======
+
+New Features:
+- Faster display!
+- Better UserStats display
+- Hotkeyed menu displays
+
+Bugs:
+- Online Fight rape bug fixed
+- Editor display bug fixed
+
+-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+Since the ALPHA versions were not released at all, except my bbs I did not
+include a what's new file.
+-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

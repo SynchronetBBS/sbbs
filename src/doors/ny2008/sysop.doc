@@ -1,0 +1,553 @@
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+New York 2008 Sysop Documentation
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+   ---   ---   ---   ---   ---   ---   ---   ---   ---   ---   ---   ---
+   If you only want to try the game, type NY2008 -L at the command line!
+   ---   ---   ---   ---   ---   ---   ---   ---   ---   ---   ---   ---
+
+ ***************************************************************************
+ WARNING! This game might contain material some people might find offensive,
+ please review the game if you are not sure. You might edit the language 
+ file if you wish, "LINES.DAT" and "MENUS.DAT". (Never offended me! It's 
+ quite clean as for my personal opinion)
+
+ "LINESC.DAT" and "MENUSC.DAT" are the clean version files.
+ ***************************************************************************
+
+ IGM DEVELOPERS READ IGMOFFER.DOC!
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+Welcome to New York 2008 version 0.13
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+Read WHATSNEW.DOC for new stuff in this version!
+
+ALSO READ THE READ.ME FILE FOR IMPORTANT INFO!!!!
+
+[----------------------------------------------------------------------------]
+[ NOTE: I included file called NY2008.ANS (and a smaller .ASC) to include in ]
+[ your logon proccess if you wish.                                           ]
+[----------------------------------------------------------------------------]
+
+||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+ Inter-BBS now available, READ INTERBBS.DOC on how to set up an InterBBS game
+||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+WHAT IS IT?:
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+NY2008 is a fully multi-node aware RPG door game, which includes on-line
+fights and, on-line messages. Also the game includes all essential parts of
+an RPG game, being similiar to some other popular doors, like LORD or USURPER.
+The purpose of the player is to blow up New York and get rid of it's evil ways
+for this the players need an Atomic Bomb. Try the game out with the -L option.
+This game can run in ASCII, ANSI, AVATAR or RIP. It also allows InterBBS
+gameplay, read INTERBBS.DOC to read how to set up an InterBBS game.
+
+There is a clean mode in now with the -CL option. (I don't recomend it!)
+
+No reset is neccessary, the game assumes it's a new game if the user files 
+are missing.
+
+If you want to change some of the language, edit files LINES.DAT and MENUS.DAT!
+(or LINESC.DAT and MENUSC.DAT for clean mode)
+RIP stuff is in MENUS.RIP, MENUSC.RIP, LINES.RIP and LINESC.RIP.
+
+I have tested NY2008 to work under OS/2 and DOS, many people are running
+Win95 without any problems. Even WinNT is able to run NY2008.
+
+Also it seems NY2008 to be running stable under Linux and DOSEMU ... I have 
+tested Linux 2.1.15 and DOSEMU 0.64.2 . I do not know how stable it is for
+long term running such as a bbs ... but I think it should work allright.
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+UPGRADING:
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+from ALL versions:
+==================
+Just unzip the archive into yer directory. Check for new stuff in the
+SAMPLE.CFG file so that you can edit your .CFG file. It is not necessary to
+use the SAMPLE.CFG file, but It might have new stuff in it. Also check out
+SAMPLEIB.CFG fo the InterBBS setup file. If you wish to have interbbs
+you will have to copy SAMPLEIB.CFG to INTERBBS.CFG and edit it with your info
+READ INTERBBS.DOC for more info on InterBBS.
+
+There is no conversion neccessary from v0.10 since I used reserved fields.
+so just unzip the archive into the game dir ...
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+INSTALATION:
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+Well to get you up and running fast, let's get to the instalation. Copy all
+files into a directory (e.g. C:\NY2008) and edit the SAMPLE.CFG file to your
+systems specifications and then save it as NY2008.CFG. It has been known to
+cause problems, if you edit the comm parameters in the .cfg file, I recomend
+leaving them commented out if your bbs software can pass those to the program.
+They are there for the purpose if some bbs didn't pass these.
+
+The game will read NY2008.CFG unless otherwise specified, so make sure that
+NY2008.CFG file exists. If it does not exist, it will use default settings,
+but I'm sure you wanna change some of them.
+
+If your bbs software cannot pass the comport information through the door
+file, then edit the comport options in the .CFG file. If you run a multiple
+nodes on such a system create more .CFG files (e.g. NY1.CFG, NY2.CFG) edit
+these ... (You have to put all the settins in both af them!) and start the
+NY2008.exe with the -C option (e.g. NY2008.EXE -Cny1.cfg)
+
+If you have a bbs software that passes the comport information leave the
+comport settings in the .CFG file commented out. Even on a multinode system.
+!!Unless you use non-standard IRQ's, read in the problems section!)
+
+The game does not need to be reset ... if all system files are missing it
+tells the program to start over. If you ever need a reset run:
+
+  NY2008 RESET
+
+which will erase all user information. If you are running interbbs game
+you can use this command to, reset the game and stay in the interbbs game or
+kill all interbbs info but not reset the game.
+
+If you specified different door directories in .cfg file than the one that
+the bbs is run on, just run:
+
+  NY2008 -C<config file to use> RESET
+
+NOTE: the file of winners will not be deleted on reset to keep records
+NOTE2: reset only works locally!
+
+The game does not need to be reset at all for that matter, every time
+somebody wins he is just ereased so others can continue to play and this
+person may start over. So the game is more or less continuous.
+
+Take a look at the EXAMPLE.BAT to see an example batch file to run the game.
+
+The game now does not read in the bps rate if you are using fossil. Use the
+-RDBPS option to force reading in the bps rate (only if you have trouble!)
+
+If you run Wildcat then if the game don't work, try editting .CFG files for 
+each node (they'll be same escept for BBSName and Node fields) and then call
+the game like:
+
+NY2008 -CNY3.CFG
+
+That is assuming you made a .cfg file named ny3.cfg, try using the command
+line parameters as explained in example.bat first. This is the more 
+difficult solution and you should use it only if your system gets confused
+by long command lines.
+
+If you run with multinode stuff enabled:
+I recomend running "NY2008 -CR" everynight when nobody is online as this
+should solve flag problems if there are any ... (If program terminated and
+did not erase them)
+
+If You want to set up and InterBBS game read INTERBBS.DOC
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+Bad Words
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+New York now supports filtering mail and posts for bad words.
+
+If New York finds a file called BADWORDS.TXT it will read the words in it,
+and use them as filter. It replaces bad words with characters such as $@#!
+It takes the word case-insensitively and tries to match it to the beginnings 
+of words.
+
+Lets say your BADWORDS.TXT looks like:
+
+TRAIN TREE
+
+then when the user types something like this:
+
+The train hit the tree tore off some treebark and the tree was an appletree.
+
+It will be replaced by something like
+
+The !@$!@ hit the @#$! tore off some $#@!bark and the @#$@ was an appletree.
+
+Notice that treebark has the tree-part censored out and note that
+appletree was not touched.
+
+Be careful with what you put in the badwords.txt since lets say you put in
+ass, then all words that start with ass will have the ass part censored out
+which is not good.
+
+You have a limit of 50 words.
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+Personalities
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+NY2008 can behave like (status line and sysop keys):
+
+ NY2008 (behaves as the Standard, but the status line has player stats)
+ Standard Opendoors Door (Similiar to to RA 1.11)
+ Wildcat
+ Remote Access (Looks like 2.0x)
+ PCBoard
+
+You can switch to the NY2008 personality anytime by pressing Alt-[F1] in the
+game. From this personality you can go to any other personality. Or you can
+set the default personality in the .CFG file.
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+Clean Mode
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+USE OF CLEAN MODE TAKES AWAY SOME CHOICES FROM THE PLAYER, WHICH ARE VERY
+MUCH PART OF THE GAME, LIKE RAPES, HOOKERS AND MORE ... I DO NOT
+RECOMMEND USING THE CELAN MODE, BUT IF YOU JUST REALLY DON'T LIKE THAT STUFF
+THERE YA GO.
+
+I don't think it's neccessary as the game is quite clean, and adding this
+will prolly not making it as fun and also taking away some choices for the
+player.
+
+At requests I added clean mode. I cleand up the lines.dat and menus.dat files
+and saved them as linesc.dat and menusc.dat. Use the -CL option to enable
+clean mode. Rape and getting hookers was taken out in the clean mode.
+
+If you have any ideas what not to put in the clean mode and/or how to change
+it, please let me know!!!!
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+Adding IGM's
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+You can add In Game Modules to NY2008 as they become available. You can an
+infinite number of IGM's.
+
+You can also add IGM's as fight events. you add the igm's to the file 
+3rdevent.dat the same way you add them to 3rdparty.dat. If you want all the
+IGMs you have in the other stuff menu available as fight events just copy
+the 3rdparty.dat file into the 3rdevent.dat file!
+
+To add IGM's follow the instructions of the IGM author. If the IGM does not
+have an installation program that adds it to the 3rdparty.dat file, you have
+to add it yourself, it is done like this: (you add two lines for each IGM)
+(there can be comments - lines starting with ";" or blank lines in the
+3rdparty.dat file now)
+
+How to put entries into the 3rdparty.dat file (and 3rdevent.dat).
+
+This will run CASINO.EXE with the game dir as it's working dir:
+
+`@C`4asino
+C:\BBS\NY2008\CASINO\CASINO.EXE C:\BBS\NY2008\
+
+This will run CASINO.EXE with c:\bbs\ny2008\casino as it's working dir:
+NOTE: The "*" must be THE VERY FIRST character on the command line!
+
+`@C`4asino
+*C:\BBS\NY2008\CASINO\CASINO.EXE C:\BBS\NY2008\
+
+This will show CASINO.EXE IGM only to users with security higher or equal
+to 50 (lower cannot run it):
+
+`@C`4asino
+{50}C:\BBS\NY2008\CASINO\CASINO.EXE C:\BBS\NY2008\
+
+NOTE: the brackets can be placed anywhere in the command line:
+
+`@C`4asino
+C:\BBS\NY2008\CASINO\CASINO.EXE C:\BBS\NY2008\ {50}
+
+or:
+
+`@C`4asino
+C:\BBS\NY2008\CASINO\CASINO.EXE {50} C:\BBS\NY2008\
+
+are equivalent!
+
+You can also have your personalized ANSI, ASCII and AVATAR IGM menu, just
+create OTHER.ANS, OTHER.ASC and OTHER.AVT and put it into the game dir. You
+don't have to make all of them .ANS and .ASC will suffice but creating .AVT
+version makes it faster! (if the player has that terminal emulation!)
+
+NOTE: Probably the IGM will need the path to the dropfiles that ny2008 creates.
+The node number and user number will be passed to the program by generic
+arguments so you don't have to worry about it.
+
+NOTE2: The name of the IGM should only be under 30 characters long.
+(including color codes)
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+Drop Files
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+NY2008 Recognizes these dropfiles (you can configure your own drop file
+in the .cfg file. See the ny2008.cfg file for complete details.
+
+NY2008 does not need to know the name of the drop file as it will find the one
+it thinks is the best, if you want to specify exactly which drop file to use
+put it's name in the path either in the .cfg file or with the -P option!
+
+
++--------------------------+----------------------------------------+
+| FILE FORMAT              | EXAMPLE BBS SYSTEMS                    |
++--------------------------+----------------------------------------+
+| CHAIN.TXT                | WWIV                                   |
++--------------------------+----------------------------------------+
+| DORINFO1.DEF             | RBBS-PC                                |
++--------------------------+----------------------------------------+
+| DORINFO1.DEF             | QuickBBS                               |
+|      &                   | Remote Access (versions 0.01-0.04)     |
+| EXITINFO.BBS (Std. Ver.) |                                        |
++--------------------------+----------------------------------------+
+| DOOR.SYS (DoorWay Style) | Remote Access                          |
++--------------------------+----------------------------------------+
+| DOOR.SYS (PCB/GAP Style) | PC-Board                               |
+|                          | GAP                                    |
++--------------------------+----------------------------------------+
+| DOOR.SYS (WildCat Style) | Wildcat 3.00 and above                 |
+|                          | Telegard                               |
++--------------------------+----------------------------------------+
+| SFDOORS.DAT              | Spitfire                               |
+|                          | TriTel                                 |
++--------------------------+----------------------------------------+
+| CALLINFO.BBS             | WildCat 2.xx                           |
++--------------------------+----------------------------------------+
+| DORINFO1.DEF             | Remote Access (versions 1.00 and later)|
+|      &                   |                                        |
+| EXITINFO.BBS (Ext. Ver.) |                                        |
++--------------------------+----------------------------------------+
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+Maintanance
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+There are two ways to run the maintanance:
+
+SMART MAINTANANCE: First time the game is played in a day. This way users
+  will not get deleted if nobody plays that day does not count.
+
+REGULAR MAINTANANCE: Maintanance has to be run from a batch file.
+  While this otion is not so useful on a small system or if the game is
+  not used too often.
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+SMART MAINTANANCE: This is the default so you do not have to worry about
+  anything.
+
+  but I recomend running "NY2008 -CR" in your nightly maintanance file if
+  you run with the multinode support turned on. Make sure nobody is in the
+  game while this runs ... it would mess their game up.
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+REGULAR MAINTANANCE: Will not cause problems if others are on at the time of
+  maintanance (e.g. Somebody logged on just before midnight and another player
+  after midnight). Although this is acounted for I recomend using regular
+  maintanance in cases this happens too often.
+
+  To run regular maintanance, run the game with the -NM option so that if you
+  call maintanance at say 3:00AM the game knows not to run the maintanance
+  earlier. Then call the game with the -M option to run maintanance only. This
+  option will not send anything to the remote system. New day WILL start at
+  midnight no matter what time the maintanance is run, be sure to run it every
+  day though ....
+
+  I also recomend running crash recovery nightly, but that's optional, if you
+  run the crash recovery do not use any other options, same as with -M option.
+  Make sure nobody can be online when you run the crash recovery.
+  NOTE: Crash recovery WILL NOT run the maintanance so you will have to run:
+
+  cd\doors\ny2008
+  NY2008 -CR
+  NY2008 -M
+  cd\bbs
+
+You can also run the FORCED maintanance, but it is not recomended for regular
+use. I added it since some of you requested so that you can try the game out
+locally, without having to wait a day each time. Running the FORCED
+maintanance basically sets a new day to the game. IT IS NOT RECOMENDED TO RUN
+FORCED MAINTANANCE AT ALL SO YOU DON'T MESS UP THE GAME.
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+RUNNING STUFF IN MAINTANANCE
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+NY2008 has the option to run an external program after it's nightly
+maintanance, just create 3rdmnt.bat and put whatever you want in there and
+it will run it after every maintanance. Do not make your maintanance too
+long since on most systems maintanance usually takes place when the first
+user gets online.
+
+This is good for some IGMs. Ones that need to run something everyday.
+
+If you want to send remote output, there is a "3rdmnt.inf" file created,
+it has the same format as the IGM dropfile, so look at that in the
+3rdparty.doc file
+
+You could also use the old style, and use the option in the .cfg file, but
+no "3rdmnt.inf" is created for that one and I recomend strongly against it
+since the above way is just a better way to do it, and more flexible.
+
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+COMMAND LINE
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+Options For NY2008.EXE:
+
+  -C   =   Run the game with config file differen from NY2008.CFG
+	   (e.g. -Cnyalt.cfg = run NY2008 with the NYALT.CFG file)
+
+  -L   =   Force local operation. Does not read the drop file and asks for
+	   your name. (press enter on the name prompt for quick sysop logon)
+
+  -P   =   Use drop file in dir specified after this option. You can also
+	   specify a drop file to use. (e.g. -Pc:\ra\doorinfo1.def)
+
+  -N   =   Which node is this game running on. (e.g. -N2 for node 2)
+	   can be from 1 to 255.
+
+  -NM  =   Do not run the maintanance. The game will be aware it is a new
+	   day, but the data files are left alone. (See above)
+
+  -M   =   Run maintanance only, runs only in local mode, used to run
+	   maintanance from the nightly batchfile. It will only run if it has
+	   not been run that day before. (See above)
+
+  -MM  =   Run Maintanance whatever the day. FORCED maintanance. Use of this
+	   is not recommended uless under speacial circumstances. Use -CR
+	   after a crash. Use -MM only if you WANT TO SET A NEW DAY FOR ALL
+	   PLAYERS!!! NOT RECOMMENDED IN NORMAL GAMES!
+
+  -DV  =   Use direct video writes. Might be faster local display but can
+	   cause problems in multitasking enviroments.
+
+  -CR  =   Crash recovery. Turn all online flags off and read in all the
+	   temporary files so that users will not loose what they got when
+	   the crash occured. Also will read in the ny2008.usr file and
+	   create new score file!
+	   WARNING!!! BE SURE NOBODY IS REALLY ONLINE!!!!!
+
+  -CL  =   Clean mode. I don't recommend it, but if you really think the
+	   regular ver is offending, use it then. Give me any ideas of
+	   what should still be changed in the clean mode.
+
+ RESET =   Use this to reset the game (read above), can be used with options
+	   (-C,-DV). It can also take the bbs off a interbbs game without
+	   reseting the game
+
+-RDBPS =   Force the game to read the BPS setting for the .cfg file or the
+	   drop file. Use this if you have trouble. Only if fossil is used!
+
+ -NAD  =   Do not use auto terminal detection. This is used if you have
+	   trouble with the autodetection algorythm. It used to be default,
+	   but since RIP was added I made autodetection the default mode.
+
+ -RIP  =   Force RIP. Even if the users terminal isn't RIP.
+
+
+Options for NYIBBS.EXE (-C also works here):
+
+-IBBSI =   Proccess Incoming information in an InterBBS game, read
+	   INTERBBS.DOC fro more info.
+
+-IBBSO =   Proccess and send out Outgoing information in an InterBBS game,
+	   read INTERBBS.DOC fro more info.
+
+-SENDNODELIST = If you are the "operator" system of an InterBBS game, you can
+		use this to send out an updated or new nodelist to all the
+		bbses in the nodelist, read INTERBBS.DOC fro more info.
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+That's IT!!!
+
+You've done it ....
+
+run NY2008 -L to test it local, and enjoy the game
+
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+NY 2008 Player Editor!
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+Now a full blown editor lets you edit practically every aspect of the
+character.
+
+This editor is remote aware so it uses the same command line arguments,
+(not the maintanance ones of course but it supports -C,-L,-P,-DV,-N ...)
+The typical command line would be "NYEDIT -L" since I suppose you will do
+most the editting, but you also might give the co-sysops the oportunity to
+do some editting. The editor does not require ANSI graphics! (but it will
+sure look better in ANSI, and also supports AVATAR!)
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+PROBLEMS
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+These are the problems I know about, if you run into a problem installing the
+game, try looking in some other doors docs if you can find an answer there, or
+contact me or somebody who has more experience (Me of course being the
+smartest:)
+  
+  If your remote users get garbage, that's probably because your bbs is
+  locked at a different baud from the door, check these settings. Try
+  fiddeling around with the settings. Sometimes this happens if the port isn't
+  locked properly. Try disabeling the communication options in the .cfg file
+  if your bbs can pass them, to be sure that they are the same. And try
+  to use DOOR.SYS if you can as it passes more info to the door! Also check
+  your modem manual for the lock rates, usually it is 19600 for 14400 modem
+  etc... It might be different and causing problems. If you use a fossil, be
+  sure it's locked right. Some dropfiles pass the connect rate and not the 
+  locked rate, in this case if you don't have DOOR.SYS, just make your own
+  dropfile in the .CFG file, one which passes the locked rate or have NY2008
+  ignore the baud rate in the drop file and pass it in the .CFG file.
+
+  If you use Fossil and non-standard IRQ's you may have to create individual
+  *.cfg files for each node (see INSTALATION) and in those you have to
+  specify the IRQ number and the other com stuff. This is a problem in the
+  comm drivers I use, but you can easily work it out like this. Also
+  it may work without the workaround, but it might not.
+
+  If your user file or your messages get erased during or after maintanance,
+  each maintanance creates backup files of both the mail and the users.
+  "nybak.usr", "nyback.msx" and "nyback.msg" are backups created before
+  maintanance or crash recovery of "ny2008.usr", "ny2008.msx" and "ny2008.msg".
+  If you want too keep permanent backup these are the files to backup. If
+  you put them back into the directory and want the game to read them run
+  "ny2008 -cr" to read them in. (they have to be named "ny2008.*" not
+  "nybak.*"!)
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+SUGGESTIONS?
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+Do you want to see something in the game that's not there ... just contact me
+and tell it to me and if I find it usefull or fun I'll add it ...
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+WHAT'S TO COME
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+Here is what I'm planning on doing in the game:
+
+dunno .... have not thought about anything new ...
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+REGISTRATION
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+IT'S FREE ... public domain ... do what you want with it, hack it crack it,
+... use it ... give it to friends ... frankly I don't care ....
+
+Send me internet e-mail to:
+
+jirka@5z.com
+
+or see my home page at:
+
+http://www.5z.com/franz
+
+or mail me at:
+
+  George Lebl
+  6161 Arnoldson Ct.
+  San Diego, CA 92122
+  USA

@@ -1,0 +1,38 @@
+Files included in this archive:                        <---- = important
+
+NY2008.EXE   - The game executable.
+SAMPLE.CFG   - Edit this and save as NY2008.CFG!!!          <-----
+SAMPLEIB.CFG - Sample InterBBS configuration file.
+NYEDIT.EXE   - The User Editor.
+RESET.BAT    - This batch file will erase the game files and RESET THE GAME!
+EXAMPLE.BAT  - Example batch file which runs the game.
+READ.ME      - Important notes about the release!           <-----
+3RDPARTY.DOC - How to create 3rd party software and IGM's.
+SYSOP.DOC    - How to install and run the game!!!!!!!!      <-----
+INTERBBS.DOC - How to set up interbbs games
+STRUCT.DOC   - The 'C' Structures for NY2008.
+CONTACT.DOC  - Contacts and beta sites.
+WHATSNEW.DOC - All the changes are here.
+HISTORY.DOC  - When was which version released.
+LICENSE.DOC  - The software license and disclaimer.         <-----
+FILES.DOC    - This file!
+MENUS.DAT    - The menus of the game.
+LINES.DAT    - Various text lines from the game (language file).
+MENUSC.DAT   - Version of menus.dat for clean mode.
+LINESC.DAT   - Version of lines.dat for clean mode.
+MENUS.RIP    - The RIP menus of the game.
+LINES.RIP    - Various RIP text lines from the game (language file).
+MENUSC.RIP   - Version of menus.rip for clean mode.
+LINESC.RIP   - Version of lines.rip for clean mode.
+NYINSTR.ASC  - The instruction file. (in NY2008 color codes)
+NYINSTRC.ASC - The instruction file for clean mode.
+INTRO.???    - Introduction text file.
+WIN.???      - File displayed when a person wins the game.
+NY2008.???   - File for you to display on logon to advertise the game.
+*.RIP        - Files needed for RIP games.
+NYENM.IDX    - Enemy index file.
+NYENM.DAT    - Enemy data file.
+NY_JPSRC.ZIP - An example IGM source code.
+NY_IGMIN.ZIP - IGM installation program you can use in your own IGM's
+
+

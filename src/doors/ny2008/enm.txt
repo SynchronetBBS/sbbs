@@ -1,0 +1,1339 @@
+;This is the enemy file (run 'AEDIT < ENM.TXT' to compile)
+;format:
+;commands = 
+; A - Add record, followed by the record ... do not add comments into the
+;     record...
+; N - Set the next enemy to be overleap into the next level and increase 
+;     level and set it to the first enemy of the new level
+; Q - Quit Sets the last record as the last enemy in the current level and 
+;     quits
+;record format =
+;name
+;hitpoints
+;attack strength
+;defense strength
+;arm
+;-----------
+A
+Kid
+12 
+3
+3
+1
+;-----------
+A
+Beggar
+17
+2
+3
+1
+;-----------
+A
+Old Fart
+14
+5
+2
+1
+;-----------
+A
+Ugly Old Slut
+19
+4
+4
+1
+;-----------
+A
+Yer Nextdoor Neighbour
+18
+4
+4
+1
+;-----------
+A
+Blind Criple
+10
+2
+3
+0
+;-----------
+A
+Big Ugly Rat
+11
+5
+3
+0
+;-----------
+A
+John Waynes' Bobbit Dick
+13
+3
+5
+0
+;-----------
+A
+Tagger
+19
+3
+4
+1
+;-----------
+A
+Real Old Hippie
+23
+2
+3
+2
+;-----------
+A
+Drunken Slob
+21
+3
+3
+2
+;-----------
+A
+Ceasar's Ghost
+25
+2
+2
+2
+;-----------
+N - level 1
+A
+Acid Junkie On A Trip
+21
+2
+3
+2
+;-----------
+A
+Small Gang Member
+23
+4
+2
+1
+;-----------
+A
+Gang Banger
+34
+5
+3
+2
+;-----------
+A
+Drive By Maniac
+30
+4
+3
+2
+;-----------
+A
+Imbecil
+26
+4
+3
+2
+;-----------
+A
+One Legged Veteran
+29
+3
+2
+1
+;-----------
+A
+Limo Driver
+30
+4
+4
+2
+;-----------
+A
+Drunk Biker
+31
+4
+4
+2
+;-----------
+A
+Blind Bulldog
+30
+4
+4
+2
+;-----------
+A
+Alleycat
+32
+4
+3
+2
+;-----------
+N - level 2
+A
+Big Fat Dude
+35
+5
+5
+3
+;-----------
+A
+Ugly Hooker
+51
+5
+3
+2
+;-----------
+A
+Ex-Cop
+49
+5
+4
+2
+;-----------
+A
+Karate Guy
+55
+12
+5
+0
+;-----------
+A
+Private Security Dude
+50
+5
+5
+2
+;-----------
+A
+Ugly Kid
+50
+5
+5
+2
+;-----------
+A
+Prep
+47
+5
+5
+2
+;-----------
+A
+A Fairly Large Rat
+48
+5
+5
+2
+;-----------
+A
+Limping Dog
+50
+5
+4
+2
+;-----------
+A
+Strange Lookin' Fella
+47
+4
+5
+2
+;-----------
+N - level 3
+A
+Vietnam Vet
+54
+6
+6
+3
+;-----------
+A
+Taxi Driver
+72
+8
+9
+3
+;-----------
+A
+Rich Kid on LSD
+70
+7
+9
+4
+;-----------
+A
+Teacher
+73
+9
+8
+3
+;-----------
+A
+Butthead
+72
+8
+9
+3
+;-----------
+A
+Drunk
+69
+8
+10
+3
+;-----------
+A
+Surfer Dude
+71
+9
+9
+4
+;-----------
+A
+Ugly Mutanat
+70
+9
+9
+4
+;-----------
+A
+Lunch Lady
+71
+9
+9
+4
+;-----------
+N - level 4
+A
+Wannabe
+72
+8
+9
+4
+;-----------
+A
+Rich Boy
+120
+11
+11
+4
+;-----------
+A
+Chinese Dude
+120
+11
+11
+4
+;-----------
+A
+Small Black Dude
+130
+12
+11
+3
+;-----------
+A
+White Kid
+123
+12
+11
+4
+;-----------
+A
+Grunge Dude
+119
+11
+10
+4
+;-----------
+A
+Wannabe Skinhead
+115
+13
+8
+4
+;-----------
+A
+Real Ugly Dude
+126
+10
+8
+4
+;-----------
+A
+Big Fat Chick
+137
+11
+12
+4
+;-----------
+A
+Judo Chick
+130
+12
+12
+4
+;-----------
+N - level 5
+A
+Country Hick
+120
+11
+10
+4
+;-----------
+A
+Fake Priest
+210
+15
+14
+4
+;-----------
+A
+Middle Class Junkie
+215
+16
+12
+3
+;-----------
+A
+Big Ugly Fella
+270
+8
+10
+3
+;-----------
+A
+Fireman
+250
+25
+15
+1
+;-----------
+A
+Small Illegal Alien
+310
+25
+12
+0
+;-----------
+A
+Shareware Author
+315
+10
+10
+3
+;-----------
+N - level 6
+A
+Disco Maniac
+260
+15
+15
+4
+;-----------
+A
+College Dude
+350
+20
+19
+4
+;-----------
+A
+50's Cool Dude
+360
+19
+20
+4
+;-----------
+A
+Lonely Hitchhiker
+354
+19
+19
+4
+;-----------
+A
+Metallica Fan
+375
+18
+19
+4
+;-----------
+A
+City Boy
+340
+20
+17
+4
+;-----------
+A
+Cowboy
+320
+24
+17
+4
+;-----------
+A
+Very Small Alien
+325
+24
+18
+4
+;-----------
+N - level 7
+A
+Buisness Guy
+370
+18
+16
+5
+;-----------
+A
+Artist Dude
+630
+21
+19
+5
+;-----------
+A
+Crook
+615
+20
+20
+5
+;-----------
+A
+Male Prostitute
+620
+22
+18
+5
+;-----------
+A
+Shop Clerk
+612
+21
+20
+5
+;-----------
+A
+Your Aunt
+630
+18
+18
+5
+;-----------
+N - level 8
+A
+Wannabe Cop
+1500
+20
+20
+4
+;-----------
+A
+Guns Dealer
+1250
+25
+24
+5
+;-----------
+A
+Small Rich Kid
+1050
+35
+34
+5
+;-----------
+A
+Lorena Bobbit
+1000
+34
+36
+5
+;-----------
+A
+Big Ugly Hairball
+1100
+34
+30
+5
+;-----------
+A
+Small Wannabe Headbanger
+1099
+32
+30
+5
+;-----------
+A
+Door to Door Sales Dude
+1111
+32
+35
+5
+;-----------
+A
+A Sysop You Hate
+1066
+33
+35
+5
+;-----------
+N - level 9
+A
+Slayer Fan
+1576
+30
+35
+5
+;-----------
+A
+Jim Morrison's Ghost
+1811
+41
+41
+6
+;-----------
+A
+Street Priest
+1790
+41
+40
+6
+;-----------
+A
+Monkeyspank
+1801
+37
+38
+7
+;-----------
+A
+Clean Dude
+1799
+42
+36
+6
+;-----------
+A
+Big Ugly Guy
+2100
+34
+31
+6
+;-----------
+A
+Security Robot
+3600
+12
+18
+7
+;-----------
+A
+Regular Lowlife
+1700
+45
+41
+6
+;-----------
+N - level 10
+A
+Big Disco Dude
+2000
+42
+40
+6
+;-----------
+A
+Crack Addict
+3103
+59
+64
+6
+;-----------
+A
+Pot Dealer
+2999
+52
+65
+7
+;-----------
+A
+Wannabe Superman
+3007
+60
+68
+6
+;-----------
+A
+Preppy Dude
+2800
+60
+67
+6
+;-----------
+A
+Black Blues Dude
+3154
+49
+70
+7
+;-----------
+A
+Elvis
+3033
+60
+68
+6
+;-----------
+A
+Small Skinhead
+2998
+54
+77
+6
+;-----------
+A
+Hot Dog Mascot
+3000
+55
+77
+6
+;-----------
+N - level 11
+A
+Wannabe Biker
+3400
+49
+62
+7
+;-----------
+A
+Drunken Hippie
+5276
+63
+76
+7
+;-----------
+A
+Real Clean Guy
+5300
+79
+76
+6
+;-----------
+A
+Green Martian
+5300
+75
+70
+6
+;-----------
+A
+Fat Slut
+5222
+80
+70
+6
+;-----------
+A
+Illegal Guns Dealer
+9555
+35
+18
+7
+;-----------
+A
+Cowboy
+3000
+34
+130
+7
+;-----------
+A
+Citizen X
+5387
+80
+68
+6
+;-----------
+A
+Living Dead
+5223
+85
+68
+6
+;-----------
+N - level 12
+A
+Bill Clinton
+5297
+70
+72
+7
+;-----------
+A
+Workout Guy
+8888
+91
+79
+7
+;-----------
+A
+Bill Gates
+9000
+97
+89
+6
+;-----------
+A
+Wierd Lookin Guy
+8765
+93
+95
+7
+;-----------
+A
+Jimi Hendrix's Ghost
+8999
+94
+99
+7
+;-----------
+A
+Green Day Fan
+9021
+82
+93
+8
+;-----------
+A
+Facist Dude
+9458
+85
+90
+7
+;-----------
+A
+Malcom X Ghost
+9408
+86
+90
+7
+;-----------
+N - level 13
+A
+8th Grader on PCP
+9111
+130
+90
+5
+;-----------
+A
+Big Car Thief
+15112
+120
+120
+7
+;-----------
+A
+Copkiller Guy
+15355
+120
+120
+7
+;-----------
+A
+Regular Skinhead
+16744
+128
+121
+7
+;-----------
+A
+Headbanger
+17000
+117
+117
+8
+;-----------
+A
+Bountyhunter
+16121
+121
+120
+7
+;-----------
+A
+Big Dude
+15341
+122
+120
+7
+;-----------
+N - level 14
+A
+Jock
+16123
+125
+130
+7
+;-----------
+A
+Anti-Abortion Dude
+26034
+190
+199
+8
+;-----------
+A
+Headhunter
+25345
+199
+200
+7
+;-----------
+A
+Industrial Lead Singer
+25121
+205
+200
+7
+;-----------
+A
+Big Karate Guy
+35865
+2750
+220
+0
+;-----------
+A
+Real Big Taxi Driver
+20872
+199
+210
+7
+;-----------
+A
+Your Mirror Reflection
+25256
+210
+198
+7
+;-----------
+A
+Punk-Rock Girl
+25035
+200
+210
+7
+;-----------
+A
+Rock Station DJ
+34000
+190
+200
+7
+;-----------
+N - level 15
+A
+White Zombie Fan
+32000
+210
+10
+7
+;-----------
+A
+Small Sex Pistols Fan
+45634
+230
+10
+7
+;-----------
+A
+Real Dirty Dude
+44875
+230
+20
+8
+;-----------
+A
+UFO Thing
+48976
+230
+10
+8
+;-----------
+A
+It
+45023
+230
+20
+7
+;-----------
+A
+Street Artist
+41876
+230
+10
+7
+;-----------
+A
+Scottish Dude
+47628
+230
+10
+7
+;-----------
+A
+James Bond
+50000
+230
+10
+7
+;-----------
+A
+Rich Boy
+52183
+230
+10
+7
+;-----------
+N - level 16
+A
+Thing
+49354
+240
+10
+7
+;-----------
+A
+Big Fat Waitress
+75452
+360
+20
+7
+;-----------
+A
+Beavis
+81648
+390
+90
+7
+;-----------
+A
+Pot Pusher
+73853
+420
+10
+8
+;-----------
+A
+Small Coke Dealer
+76963
+455
+13
+8
+;-----------
+A
+Judo Dude
+68754
+8806
+40
+0
+;-----------
+A
+Hacker
+70234
+430
+10
+8
+;-----------
+A
+Knife Throwing Dude
+75439
+7854
+24
+2
+;-----------
+N -level 17
+A
+Butthead's Mom
+79467
+400
+10
+8
+;-----------
+A
+Weight Lifter
+128529
+523
+22
+8
+;-----------
+A
+Nintendo Addict
+134428
+520
+10
+8
+;-----------
+A
+Dude on PCP
+128566
+530
+20
+8
+;-----------
+A
+Zombie
+138246
+529
+30
+7
+;-----------
+A
+Doomsday Guy
+125874
+534
+90
+6
+;-----------
+A
+Football Player
+134428
+520
+30
+8
+;-----------
+A
+Skinhead Dude
+145672
+540
+60
+8
+;-----------
+A
+OJ Simpson
+125413
+660
+20
+7
+;-----------
+N - level 18
+A
+BBS Maniac
+139451
+570
+40
+8
+;-----------
+A
+Undertaker
+228564
+670
+60
+9
+;-----------
+A
+Cool Dude
+212343
+620
+60
+9
+;-----------
+A
+PCP dealer
+235632
+620
+60
+9
+;-----------
+A
+Undertaker's Son
+228564
+600
+50
+9
+;-----------
+A
+Biker Bitch
+213563
+660
+70
+9
+;-----------
+A
+Mafia Guy
+222543
+600
+60
+9
+;-----------
+A
+Hitman
+226226
+1210
+70
+7
+;-----------
+N - level 19
+A
+Led Zepelin Dude
+250232
+650
+60
+9
+;-----------
+A
+Big Mafia Dude
+480776
+480
+20
+9
+;-----------
+A
+Big Stoned Hippie
+472653
+480
+60
+10
+;-----------
+A
+Big Guitar Player
+467771
+480
+90
+10
+;-----------
+A
+Heavy Metal Dude
+450542
+480
+50
+10
+;-----------
+A
+Heroin Addict
+467321
+481
+30
+9
+;-----------
+A
+Big Skinhead Dude
+480442
+483
+70
+10
+;-----------
+A
+Real Mad Sysop
+450666
+480
+70
+10
+;-----------
+A
+Beer Dude
+467843
+484
+90
+9
+;-----------
+N - level 20
+A
+Heavy Metal Singer
+480653
+481
+40
+10
+;-----------
+A
+Sid Vicious's Ghost
+1010423
+800
+50
+10
+;-----------
+A
+Punk Guy
+1000423
+790
+11
+10
+;-----------
+A
+Punk Rock Singer
+1010102
+790
+11
+10
+;-----------
+A
+Big Biker Guy
+1009321
+799
+11
+10
+;-----------
+A
+Sex Pistols Fan
+1099634
+800
+15
+10
+;-----------
+A
+Heroin Dealer
+1000111
+799
+10
+10
+;-----------
+A
+Big Biker Bitch
+998534
+800
+10
+10
+;-----------
+A
+Ozzy
+1020954
+790
+30
+10
+;-----------
+A
+Nancy Spungen
+1010954
+790
+30
+10
+;-----------
+A
+Mass Killer
+1001521
+800
+20
+10
+;-----------
+A
+Franz's Girlfriend
+1020000
+820
+35
+10
+;-----------
+A
+Franz
+1050000
+820
+35
+10
+;-----------
+Q
