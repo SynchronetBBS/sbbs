@@ -2677,6 +2677,19 @@ object MainForm: TMainForm
       ImageIndex = 55
       OnExecute = ReloadConfigExecute
     end
+    object ServicesStart: TAction
+      Caption = 'ServicesStart'
+      Hint = 'Start Services'
+      ImageIndex = 0
+      OnExecute = ServicesStartExecute
+    end
+    object ServicesStop: TAction
+      Caption = 'ServicesStop'
+      Enabled = False
+      Hint = 'Stop Services'
+      ImageIndex = 2
+      OnExecute = ServicesStopExecute
+    end
   end
   object ImageList: TImageList
     Left = 360
