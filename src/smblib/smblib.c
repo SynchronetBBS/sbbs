@@ -1265,7 +1265,7 @@ int SMBCALL smb_addcrc(smb_t* smb, ulong crc)
 		close(file);
 		FREE(buf);
 		sprintf(smb->last_error
-			,"%d (%s) reading %u bytes"
+			,"%d (%s) reading %ld bytes"
 			,errno,STRERROR(errno),length);
 		return(SMB_ERR_READ);
 	}
