@@ -522,20 +522,17 @@ int main(int argc, char** argv)  {
 			getnodedat(i,&node,0);
 			nodedat(mopt[i-1],i,node);
 		}
-		strcpy(mopt[i-1],"Exit UNIX Monitor");
-		mopt[i][0]=0;
+		mopt[i-1][0]=0;
 
 		uifc.helpbuf=	"`Synchronet Monitor:`\n"
 						"\nToDo: Add help.";
 						
-		alarm(1);
-		j=uifc.list(WIN_ORG|WIN_ACT|WIN_MID|WIN_ESC,0,0,70,&main_dflt,&main_bar
+		j=uifc.list(WIN_ORG|WIN_MID|WIN_ESC|WIN_DYN,0,0,70,&main_dflt,&main_bar
 			,str,mopt);
 		if(j==-2)
 			continue;
 
-		if(j==sys_nodes) {
-			alarm(0);
+		if(j==-1) {
 			i=0;
 			strcpy(opt[0],"Yes");
 			strcpy(opt[1],"No");
@@ -547,7 +544,6 @@ int main(int argc, char** argv)  {
 			i=uifc.list(WIN_MID,0,0,0,&i,0,"Exit Synchronet Install",opt);
 			if(!i)
 				bail(0);
-			alarm(0);
 			continue;
 		}
 		if(j<sys_nodes && j>=0) {
