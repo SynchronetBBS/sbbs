@@ -728,9 +728,9 @@ str_list_t iniReadFile(FILE* fp)
 
 	list = strListReadFile(fp, NULL, INI_MAX_LINE_LEN);
 	if(list!=NULL) {
-		/* truncate the white-space off end of strings */
+		/* truncate new-line chars off end of strings */
 		for(i=0; list[i]!=NULL; i++)
-			truncsp(list[i]);
+			truncnl(list[i]);
 	}
 
 	return(list);
