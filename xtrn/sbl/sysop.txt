@@ -1,0 +1,139 @@
+Synchronet BBS List Sysop Information
+=====================================
+
+This list is created and distributed every Monday. It is exported from the
+online BBS List database on Vertrauen and distributed via the SYNCMAIN FidoNet
+filebone file echo as SBBSLIST.ZIP.
+
+If you are a sysop of a Synchronet BBS and would like to have your BBS included
+in future versions of this list, do any one of the following:
+
+	o  Call Vertrauen at 714-529-9525 and use the Synchronet BBS List
+	   (external program) to add your system information.
+
+	o  See \SBBS\XTRN\SBL\SBL.DOC for instructions on networking your SBL
+	   database (v1.32+) with Vertrauen through DOVE-Net or  FidoNet.
+
+	o  Post a message on the Synchronet Data echo (via DOVE-Net or the
+	   SYNCDATA echo on FidoNet backbone) in the following format:
+
+To:		SBL
+Subj:		bbs name
+
+Body Text:
+------------------------------------------------------------------------------
+Name:		bbs name		(max length: 25)
+Birth:		MM/DD/YY		(first day online)
+Sysop:		your name		(max length: 25)
+Sysop:		co-sysop		(up to 5 sysops)
+Software:	Synchronet
+
+Desc:		description		(max length: 50)
+Desc:		more description	(up to 5 description lines)
+
+Nodes:		number of nodes 	(numbers only)
+Megs:		megabytes of storage	(numbers only)
+Users:		number of users 	(numbers only)
+Subs:		message areas		(numbers only)
+Msgs:		total messages		(numbers only)
+Dirs:		file directories	(numbers only)
+Files:		total files online	(numbers only)
+Xtrns:		externals (doors)	(numbers only)
+
+Network:	name of network 	(max length: 15)
+Address:	network address 	(max length: 25)
+Network:	another network 	(up to 10 networks)
+Address:	another address
+
+Terminal:	supported terminnal	(max length: 15)
+Terminal:	another terminal	(up to 5 terminals)
+
+Number: 	phone number		(max length: 12)
+Location:	city, state		(max length: 30)
+Modem:		modem description	(max length: 15)
+MaxRate:	maximum connect rate	(numbers only)
+MinRate:	minimum connect rate	(numbers only)
+					(up to 20 phone numbers)
+-------------------------------------------------------------------------------
+
+The message must be posted to "SBL". If updating an existing entry, the message
+must be posted by the person who created the original entry. The title
+(subject) must be your BBS name. If changing the BBS name, the title must be
+the original name, and "NAME:" must be specified in the body text.
+
+All entry fields are optional. Only one field can be specified per line. The
+amount of whitespace between the colon and the data is irrelevant. All lines
+that do not begin with a valid field name and colon (like these) are ignored.
+Field names are not case sensitive (e.g. NAME: and Name: are equivalent).
+The order of the entry fields in the body text is not significant.
+
+Entries must be updated at least once every 90 days or they are automatically
+deleted. If you wish to delete your entry, send a message to SBL with the BBS
+name in the title and include a blank "Name:" field.
+
+If you want to just update an entry (to keep it from being auto-deleted), you
+do not have to specify any fields in the body text. But, it is suggested that
+you re-post all of your fields for all updates so that any new systems that are
+"watching" this sub-board can add your complete entry to their list.
+
+Up to 20 phone numbers can be specified. The number is limited to 12
+characters (so please use AAA-PPP-SSSS format), location is limited to 30
+characters, and modem description is limited to 15 characters. Do NOT put
+38400 or 57600 for maximum connect rate (MaxRate), as such standards do not
+yet exist.
+
+For all numeric files (noted as: "numbers only"), do not use commas, symbols,
+or letters. A MaxRate of 14,400bps must be specified as "14400".
+
+An example of a valid BBS post body text:
+-------------------------------------------------------------------------------
+Name:		Vertrauen
+Birth:		08/01/88
+Software:	Synchronet
+Sysop: 		Digital Man
+Sysop: 		Ille Homine Albe
+
+Desc:		Home of Synchronet Multinode BBS Software
+
+Nodes:		6
+Megs: 		1800
+Users: 		1600
+Subs:		100
+Msgs:		45000
+Dirs:		150
+Files:		7000
+Xtrns:		10
+
+Network:	FidoNet
+Address:	1:103/705
+Network:	RIME
+Address:	5115
+Network:	DOVE-Net
+Address:	VERT
+
+Terminal:	TTY
+Terminal:	ANSI
+Terminal:	RIP
+
+Number: 	714-529-9525
+Location: 	Yorba Linda, Ca
+Modem: 		V.32bis
+MaxRate: 	14400
+MinRate:	300
+
+Number: 	714-529-9547
+Location: 	Yorba Linda, Ca
+Modem: 		V.FC
+MaxRate: 	28800
+MinRate:	16800
+
+Number: 	714-529-9721
+Location: 	Yorba Linda, Ca
+Modem: 		ZyXEL
+MaxRate: 	19200
+MinRate:        16800
+-------------------------------------------------------------------------------
+
+Rob Swindell, Digital Dynamics
+(Keeper of the Synchronet BBS List)
+
