@@ -665,20 +665,25 @@ static void web_terminated(int code)
 	web_stopped=TRUE;
 }
 
+static void terminate()
+{
+	bbs_terminate();
+	ftp_terminate();
+	web_terminate();
+	mail_terminate();
+#ifdef JAVASCRIPT
+	services_terminate();
+#endif
 
+	while(bbs_running || ftp_running || web_running || mail_running || services_running)
+		SLEEP(1);
+}
 
 #ifdef __unix__
 void _sighandler_quit(int sig)
 {
-    // Close threads
-    bbs_terminate();
-    ftp_terminate();
-    mail_terminate();
-#ifdef JAVASCRIPT
-	services_terminate();
-#endif
-    while(bbs_running || ftp_running || web_running || mail_running || services_running)
-		mswait(1);
+	terminate();
+
 	if(is_daemon)
 		unlink(SBBS_PID_FILE);
 
@@ -1356,15 +1361,7 @@ int main(int argc, char** argv)
 			lputs("");	/* redisplay prompt */
 		}
 
-	bbs_terminate();
-	ftp_terminate();
-	mail_terminate();
-#ifdef JAVASCRIPT
-	services_terminate();
-#endif
-
-	while(bbs_running || ftp_running || web_running || mail_running || services_running)
-		SLEEP(1);
+	terminate();
 
 	/* erase the prompt */
 	printf("\r%*s\r",prompt_len,"");
