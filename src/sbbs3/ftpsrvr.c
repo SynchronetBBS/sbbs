@@ -217,13 +217,13 @@ static int close_socket(SOCKET* sock, int line)
 
 	if(IsBadWritePtr(sock,sizeof(SOCKET))) {
 		ReleaseMutex(socket_mutex);
-		lprintf("!BAD socket pointer in close_socket from line %d",line);
+		lprintf("0000 !BAD socket pointer in close_socket from line %d",line);
 		return(-1);
 	}
 #endif
 	if((*sock)==INVALID_SOCKET) {
 		ReleaseMutex(socket_mutex);
-		lprintf("!INVALID_SOCKET in close_socket from line %d",line);
+		lprintf("0000 !INVALID_SOCKET in close_socket from line %d",line);
 		return(-1);
 	}
 
@@ -397,7 +397,7 @@ BOOL download_stats(ulong bytes)
 void recverror(SOCKET socket, int rd)
 {
 	if(rd==0) 
-		lprintf("%04d Socket closed by peer",socket);
+		lprintf("%04d Socket closed by peer on receive",socket);
 	else if(rd==SOCKET_ERROR) {
 		if(ERROR_VALUE==ECONNRESET) 
 			lprintf("%04d Connection reset by peer on receive",socket);
@@ -448,7 +448,7 @@ int sockreadline(SOCKET socket, char* buf, int len, time_t* lastactive)
 void DLLCALL ftp_terminate(void)
 {
 	if(server_socket!=INVALID_SOCKET) {
-    	lprintf("FTP Terminate: closing socket %d",server_socket);
+    	lprintf("%04d FTP Terminate: closing socket",server_socket);
 		close_socket(&server_socket,__LINE__);
 	    server_socket=INVALID_SOCKET;
     }
@@ -1095,7 +1095,7 @@ BOOL alias(char* fullalias, char* filename, user_t* user, int* curdir)
 
 		if(!strnicmp(p,BBS_VIRTUAL_PATH,strlen(BBS_VIRTUAL_PATH))) {
 			if((dir=getdir(p+strlen(BBS_VIRTUAL_PATH),user))<0)	{
-				lprintf("!Invalid virtual path (%s) for %s",p,user->alias);
+				lprintf("0000 !Invalid virtual path (%s) for %s",p,user->alias);
 				/* invalid or no access */
 				continue;
 			}
@@ -1266,7 +1266,7 @@ static void ctrl_thread(void* arg)
 	lprintf("%04d Host name: %s", sock, host_name);
 
 	if(trashcan(&scfg,host_ip,"ip")) {
-		lprintf("!Client blocked in ip.can: ", host_ip);
+		lprintf("%04d !Client blocked in ip.can: %s", sock, host_ip);
 		sockprintf(sock,"550 Access denied.");
 		close_socket(&sock,__LINE__);
 		thread_down();
@@ -1274,7 +1274,7 @@ static void ctrl_thread(void* arg)
 	}
 
 	if(trashcan(&scfg,host_name,"host")) {
-		lprintf("!Client blocked in host.can: %s", host_name);
+		lprintf("%04d !Client blocked in host.can: %s", sock, host_name);
 		sockprintf(sock,"550 Access denied.");
 		close_socket(&sock,__LINE__);
 		thread_down();
@@ -1284,7 +1284,7 @@ static void ctrl_thread(void* arg)
 	/* For PASV mode */
 	addr_len=sizeof(pasv_addr);
 	if((result=getsockname(sock, (struct sockaddr *)&pasv_addr,&addr_len))!=0) {
-		lprintf ("%04d !ERROR %d (%d) getting address/port", sock, result, ERROR_VALUE);
+		lprintf("%04d !ERROR %d (%d) getting address/port", sock, result, ERROR_VALUE);
 		sockprintf(sock,"425 Error %d getting address/port",ERROR_VALUE);
 		close_socket(&sock,__LINE__);
 		thread_down();
@@ -2892,10 +2892,10 @@ static void cleanup(int code)
 
 #ifdef _WINSOCKAPI_
 	if(WSAInitialized && WSACleanup()!=0) 
-		lprintf("!WSACleanup ERROR %d",ERROR_VALUE);
+		lprintf("0000 !WSACleanup ERROR %d",ERROR_VALUE);
 #endif
 
-    lprintf("FTP Server thread terminated");
+    lprintf("0000 FTP Server thread terminated");
 	status("Down");
 	if(startup!=NULL && startup->terminated!=NULL)
 		startup->terminated(code);
@@ -3044,7 +3044,7 @@ void DLLCALL ftp_server(void* arg)
 		return;
 	}
 
-    lprintf("FTP socket %d opened",server_socket);
+    lprintf("%04d FTP socket opened",server_socket);
 
 #if 1
 	linger.l_onoff=TRUE;
@@ -3052,7 +3052,8 @@ void DLLCALL ftp_server(void* arg)
 
 	if((result=setsockopt(server_socket, SOL_SOCKET, SO_LINGER
     	,(char *)&linger, sizeof(linger)))!=0) {
-		lprintf ("!ERROR %d (%d) setting socket options.", result, ERROR_VALUE);
+		lprintf ("%04d !ERROR %d (%d) setting socket options."
+			,server_socket, result, ERROR_VALUE);
 		cleanup(1);
 		return;
 	}
@@ -3069,14 +3070,15 @@ void DLLCALL ftp_server(void* arg)
 
     if((result=bind(server_socket, (struct sockaddr *) &server_addr
     	,sizeof(server_addr)))!=0) {
-		lprintf("!ERROR %d (%d) binding socket to port %d"
-			,result, ERROR_VALUE,startup->port);
+		lprintf("%04d !ERROR %d (%d) binding socket to port %d"
+			,server_socket, result, ERROR_VALUE,startup->port);
 		cleanup(1);
 		return;
 	}
 
     if((result=listen(server_socket, 1))!= 0) {
-		lprintf("!ERROR %d (%d) listening on socket", result, ERROR_VALUE);
+		lprintf("%04d !ERROR %d (%d) listening on socket"
+			,server_socket, result, ERROR_VALUE);
 		cleanup(1);
 		return;
 	}
@@ -3085,7 +3087,7 @@ void DLLCALL ftp_server(void* arg)
     if(startup->started!=NULL)
     	startup->started();
 
-	lprintf("FTP Server thread started on port %d",startup->port);
+	lprintf("%04d FTP Server thread started on port %d",server_socket,startup->port);
 	status(STATUS_WFC);
 
 	while(server_socket!=INVALID_SOCKET) {
@@ -3099,9 +3101,9 @@ void DLLCALL ftp_server(void* arg)
 		if(client_socket == INVALID_SOCKET)
 		{
 			if(ERROR_VALUE == ENOTSOCK || ERROR_VALUE == EINTR)
-            	lprintf ("FTP socket closed while listening");
+            	lprintf("0000 FTP socket closed while listening");
             else
-				lprintf ("!ERROR %d accept failed", ERROR_VALUE);
+				lprintf("0000 !accept failed (ERROR %d)", ERROR_VALUE);
 			break;
 		}
 		if(startup->socket_open!=NULL)
@@ -3109,7 +3111,8 @@ void DLLCALL ftp_server(void* arg)
 		sockets++;
 
 		if(active_clients>=startup->max_clients) {
-			lprintf("!MAXMIMUM CLIENTS (%d) reached, access denied",startup->max_clients);
+			lprintf("%04d !MAXMIMUM CLIENTS (%d) reached, access denied"
+				,client_socket, startup->max_clients);
 			sockprintf(client_socket,"421 Maximum active clients reached, please try again later.");
 			mswait(3000);
 			close_socket(&client_socket,__LINE__);
@@ -3117,7 +3120,8 @@ void DLLCALL ftp_server(void* arg)
 		}
 
 		if((ftp=malloc(sizeof(ftp_t)))==NULL) {
-			lprintf("!ERROR allocating %d bytes of memory for ftp_t",sizeof(ftp_t));
+			lprintf("%04d !ERROR allocating %d bytes of memory for ftp_t"
+				,client_socket,sizeof(ftp_t));
 			sockprintf(client_socket,"421 System error, please try again later.");
 			mswait(3000);
 			close_socket(&client_socket,__LINE__);
@@ -3131,11 +3135,11 @@ void DLLCALL ftp_server(void* arg)
 	}
 
 	if(active_clients) {
-		lprintf("Waiting for %d active clients to disconnect...", active_clients);
+		lprintf("0000 Waiting for %d active clients to disconnect...", active_clients);
 		start=time(NULL);
 		while(active_clients) {
 			if(time(NULL)-start>TIMEOUT_THREAD_WAIT) {
-				lprintf("!TIMEOUT waiting for %d active clients ",active_clients);
+				lprintf("0000 !TIMEOUT waiting for %d active clients ",active_clients);
 				break;
 			}
 			mswait(100);

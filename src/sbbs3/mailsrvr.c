@@ -183,7 +183,7 @@ int mail_close_socket(SOCKET sock)
 		startup->socket_open(FALSE);
 	sockets--;
 	if(result!=0)
-		lprintf("!ERROR %d closing socket %d",ERROR_VALUE,sock);
+		lprintf("%04d !ERROR %d closing socket",sock, ERROR_VALUE);
 	else {
 #if 0 /*def _DEBUG */
 		lprintf("%04d Socket closed (%d sockets in use)",sock,sockets);
@@ -209,7 +209,7 @@ static int sockprintf(SOCKET sock, char *fmt, ...)
     va_start(argptr,fmt);
     len=vsprintf(sbuf,fmt,argptr);
 	if(startup->options&MAIL_OPT_DEBUG_TX)
-		lprintf("TX: %s", sbuf);
+		lprintf("%04d TX: %s", sock, sbuf);
 	strcat(sbuf,"\r\n");
 	len+=2;
     va_end(argptr);
@@ -224,10 +224,10 @@ static int sockprintf(SOCKET sock, char *fmt, ...)
 			else if(ERROR_VALUE==ECONNABORTED) 
 				lprintf("%04d Connection aborted by peer on send",sock);
 			else
-				lprintf("!ERROR %d sending on socket %d",ERROR_VALUE,sock);
+				lprintf("%04d !ERROR %d sending on socket",sock,ERROR_VALUE);
 			return(0);
 		}
-		lprintf("!ERROR: short send on socket %d: %d instead of %d",sock,result,len);
+		lprintf("%04d !ERROR: short send on socket: %d instead of %d",sock,result,len);
 	}
 	return(len);
 }
@@ -245,16 +245,16 @@ static time_t checktime(void)
 static void recverror(SOCKET socket, int rd)
 {
 	if(rd==0) 
-		lprintf("Socket %d closed",socket);
+		lprintf("%04d Socket closed by peer on receive",socket);
 	else if(rd==SOCKET_ERROR) {
 		if(ERROR_VALUE==ECONNRESET) 
 			lprintf("%04d Connection reset by peer on receive",socket);
 		else if(ERROR_VALUE==ECONNABORTED) 
 			lprintf("%04d Connection aborted by peer on receive",socket);
 		else
-			lprintf("Error %d on socket %d", ERROR_VALUE, socket);
+			lprintf("%04d !Socket error %d on receive", socket, ERROR_VALUE);
 	} else
-		lprintf("recv on socket %d returned unexpected value: %d",socket,rd);
+		lprintf("%04d !recv on socket returned unexpected value: %d",socket,rd);
 }
 
 static int sockreadline(SOCKET socket, char* buf, int len)
@@ -270,7 +270,7 @@ static int sockreadline(SOCKET socket, char* buf, int len)
 		if(i<1) {
 			if(ERROR_VALUE==EWOULDBLOCK) {
 				if((time(NULL)-start)>startup->max_inactivity) {
-					lprintf("!Socket %d inactive",socket);
+					lprintf("%04d !Socket inactive",socket);
 					return(0);
 				}
 				mswait(1);
@@ -335,7 +335,7 @@ static char* alias(char* name, char* alias)
 			while(*np && *np<=' ') np++;
 			p=np;
 			truncsp(p);
-			lprintf("Alias: %s",p);
+			lprintf("0000 Alias: %s",p);
 			break;
 		}
 	}
@@ -353,17 +353,17 @@ static BOOL sockgetrsp(SOCKET socket, char* rsp, char *buf, int len)
 			return(FALSE);
 		if(buf[3]=='-')	{ /* Multi-line response */
 			if(startup->options&MAIL_OPT_DEBUG_RX_RSP) 
-				lprintf("RX: %s",buf);
+				lprintf("%04d RX: %s",socket,buf);
 			continue;
 		}
 		if(strnicmp(buf,rsp,strlen(rsp))) {
-			lprintf("!INVALID RESPONSE: '%s' Expected: '%s'", buf, rsp);
+			lprintf("%04d !INVALID RESPONSE: '%s' Expected: '%s'", socket, buf, rsp);
 			return(FALSE);
 		}
 		break;
 	}
 	if(startup->options&MAIL_OPT_DEBUG_RX_RSP) 
-		lprintf("RX: %s",buf);
+		lprintf("%04d RX: %s",socket,buf);
 	return(TRUE);
 }
 
@@ -478,7 +478,7 @@ static u_long resolve_ip(char *addr)
 	if(isdigit(addr[0]) && strchr(addr,'.'))
 		return(inet_addr(addr));
 	if ((host=gethostbyname(addr))==NULL) {
-		lprintf("!ERROR resolving host name: %s",addr);
+		lprintf("0000 !ERROR resolving host name: %s",addr);
 		return(0);
 	}
 	return(*((ulong*)host->h_addr_list[0]));
@@ -586,7 +586,7 @@ static void pop3_thread(void* arg)
 
 		sprintf(smb.file,"%smail",scfg.data_dir);
 		if((i=smb_open(&smb))!=0) {
-			lprintf("Error %d (%s) opening %s",i,smb.last_error,smb.file);
+			lprintf("%04d !Error %d (%s) opening %s",socket,i,smb.last_error,smb.file);
 			sockprintf(socket,"-ERR %d opening %s",i,smb.file);
 			break;
 		}
@@ -1814,19 +1814,19 @@ BOOL bounce(smb_t* smb, smbmsg_t* msg, char* err, BOOL immediate)
 	smbmsg_t	newmsg;
 
 	if((i=smb_lockmsghdr(smb,msg))!=0) {
-		lprintf("!BOUNCE ERROR %d locking message header #%lu"
+		lprintf("0000 !BOUNCE ERROR %d locking message header #%lu"
 			,i,msg->hdr.number);
 		return(FALSE);
 	}
 
 	msg->hdr.delivery_attempts++;
 	if((i=smb_putmsg(smb,msg))!=0) {
-		lprintf("!BOUNCE ERROR %d incrementing delivery attempt counter",i);
+		lprintf("0000 !BOUNCE ERROR %d incrementing delivery attempt counter",i);
 		smb_unlockmsghdr(smb,msg);
 		return(FALSE);
 	}
 
-	lprintf("!Delivery attempt #%u failed for message #%lu from %s to %s"
+	lprintf("0000 !Delivery attempt #%u failed for message #%lu from %s to %s"
 		,msg->hdr.delivery_attempts, msg->hdr.number
 		,msg->from, msg->to_net.addr);
 
@@ -1835,14 +1835,14 @@ BOOL bounce(smb_t* smb, smbmsg_t* msg, char* err, BOOL immediate)
 		return(TRUE);
 	}
 	
-	lprintf("!Bouncing message back to %s", msg->from);
+	lprintf("0000 !Bouncing message back to %s", msg->from);
 
 	newmsg=*msg;
 	/* Mark original message as deleted */
 	msg->hdr.attr|=MSG_DELETE;
 	msg->idx.attr=msg->hdr.attr;
 	if((i=smb_putmsg(smb,msg))!=0) {
-		lprintf("!BOUNCE ERROR %d deleting message",i);
+		lprintf("0000 !BOUNCE ERROR %d deleting message",i);
 		smb_unlockmsghdr(smb,msg);
 		return(FALSE);
 	}
@@ -1875,7 +1875,7 @@ BOOL bounce(smb_t* smb, smbmsg_t* msg, char* err, BOOL immediate)
 	smb_hfield(&newmsg, SUBJECT, (ushort)strlen(full_err), full_err);
 
 	if((i=smb_addmsghdr(smb,&newmsg,SMB_SELFPACK))!=0)
-		lprintf("!BOUNCE ERROR %d adding message header",i);
+		lprintf("0000 !BOUNCE ERROR %d adding message header",i);
 
 	newmsg.dfield=NULL;				/* Don't double-free the data fields */
 	newmsg.hdr.total_dfields=0;
@@ -1916,7 +1916,7 @@ static void sendmail_thread(void* arg)
 
 	thread_up();
 
-	lprintf("SendMail thread started");
+	lprintf("0000 SendMail thread started");
 
 	memset(&msg,0,sizeof(msg));
 	memset(&smb,0,sizeof(smb));
@@ -1989,13 +1989,13 @@ static void sendmail_thread(void* arg)
 			msg.offset=offset;
 
 			if((i=smb_lockmsghdr(&smb,&msg))!=0) {
-				lprintf("!SendMail: ERROR %d locking message header #%lu"
+				lprintf("0000 !SendMail: ERROR %d locking message header #%lu"
 					,i,msg.idx.number);
 				continue;
 			}
 			if((i=smb_getmsghdr(&smb,&msg))!=0) {
 				smb_unlockmsghdr(&smb,&msg);
-				lprintf("!SendMail: ERROR %d reading message header #%lu"
+				lprintf("0000 !SendMail: ERROR %d reading message header #%lu"
 					,i,msg.idx.number);
 				continue; 
 			}
@@ -2007,7 +2007,7 @@ static void sendmail_thread(void* arg)
 			active_sendmail=1;
 			update_clients();
 
-			lprintf("SendMail: Message #%lu from %s to %s"
+			lprintf("0000 SendMail: Message #%lu from %s to %s"
 				,msg.hdr.number, msg.from, msg.to_net.addr);
 			status("SendMail");
 #ifdef _WIN32
@@ -2015,9 +2015,9 @@ static void sendmail_thread(void* arg)
 				PlaySound(startup->outbound_sound, NULL, SND_ASYNC|SND_FILENAME);
 #endif
 
-			lprintf("SendMail: getting message text");
+			lprintf("0000 SendMail: getting message text");
 			if((msgtxt=smb_getmsgtxt(&smb,&msg,GETMSGTXT_TAILS))==NULL) {
-				lprintf("!SendMail: ERROR retrieving message text");
+				lprintf("0000 !SendMail: ERROR retrieving message text");
 				continue;
 			}
 
@@ -2030,7 +2030,7 @@ static void sendmail_thread(void* arg)
 
 				p=strrchr(to,'@');
 				if(p==NULL) {
-					lprintf("!SendMail: INVALID destination address: %s", to);
+					lprintf("0000 !SendMail: INVALID destination address: %s", to);
 					sprintf(err,"Invalid destination address: %s", to);
 					bounce(&smb,&msg,err,TRUE);
 					continue;
@@ -2038,10 +2038,10 @@ static void sendmail_thread(void* arg)
 				if((dns=resolve_ip(startup->dns_server))==0) 
 					continue;
 				p++;
-				lprintf("SendMail: getting MX records for %s from %s",p,startup->dns_server);
+				lprintf("0000 SendMail: getting MX records for %s from %s",p,startup->dns_server);
 				if((i=dns_getmx(p, mx, mx2, startup->interface_addr, dns
 					,startup->options&MAIL_OPT_USE_TCP_DNS ? TRUE : FALSE))!=0) {
-					lprintf("!SendMail: ERROR %d obtaining MX records for %s from %s"
+					lprintf("0000 !SendMail: ERROR %d obtaining MX records for %s from %s"
 						,i,p,startup->dns_server);
 					sprintf(err,"Error %d obtaining MX record for %s",i,p);
 					bounce(&smb,&msg,err,FALSE);
@@ -2051,21 +2051,21 @@ static void sendmail_thread(void* arg)
 			}
 
 
-			lprintf("SendMail: opening socket");
+			lprintf("0000 SendMail: opening socket");
 			if((sock=mail_open_socket(SOCK_STREAM))==INVALID_SOCKET) {
-				lprintf("!SendMail: ERROR %d opening socket", ERROR_VALUE);
+				lprintf("0000 !SendMail: ERROR %d opening socket", ERROR_VALUE);
 				continue;
 			}
 
-			lprintf("SendMail: socket opened: %d",sock);
+			lprintf("%04d SendMail: socket opened",sock);
 
 			memset(&addr,0,sizeof(addr));
 			addr.sin_addr.s_addr = htonl(startup->interface_addr);
 			addr.sin_family = AF_INET;
 
-			lprintf("SendMail: binding socket");
+			lprintf("%04d SendMail: binding socket",sock);
 			if((i=bind(sock, (struct sockaddr *) &addr, sizeof (addr)))!=0) {
-				lprintf("!SendMail: ERROR %d (%d) binding socket %d", i, ERROR_VALUE, sock);
+				lprintf("%04d !SendMail: ERROR %d (%d) binding socket", sock, i, ERROR_VALUE);
 				continue;
 			}
 
@@ -2078,7 +2078,7 @@ static void sendmail_thread(void* arg)
 					server=mx2;	/* Give second mx record a try */
 				}
 				
-				lprintf("SendMail: resolving SMTP host name: %s", server);
+				lprintf("%04d SendMail: resolving SMTP host name: %s", sock, server);
 				ip_addr=resolve_ip(server);
 				if(!ip_addr)  {
 					sprintf(err,"Failed to resolve SMTP host name: %s",server);
@@ -2093,11 +2093,13 @@ static void sendmail_thread(void* arg)
 				else
 					server_addr.sin_port = htons(IPPORT_SMTP);
 				
-				lprintf("SendMail: connecting to port %u on %s [%s]"
+				lprintf("%04d SendMail: connecting to port %u on %s [%s]"
+					,sock
 					,ntohs(server_addr.sin_port)
 					,server,inet_ntoa(server_addr.sin_addr));
 				if((i=connect(sock, (struct sockaddr *)&server_addr, sizeof(server_addr)))!=0) {
-					lprintf("!SendMail: ERROR %d (%d) connecting to SMTP server: %s"
+					lprintf("%04d !SendMail: ERROR %d (%d) connecting to SMTP server: %s"
+						,sock
 						,i,ERROR_VALUE, server);
 					sprintf(err,"Error %d connecting to SMTP server: %s"
 						,(int)ERROR_VALUE,server);
@@ -2110,7 +2112,7 @@ static void sendmail_thread(void* arg)
 				continue;
 			}
 
-			lprintf("SendMail: connected to %s on socket %d",server,sock);
+			lprintf("%04d SendMail: connected to %s",sock,server);
 
 			/* HELO */
 			if(!sockgetrsp(sock,"220",buf,sizeof(buf))) {
@@ -2155,22 +2157,24 @@ static void sendmail_thread(void* arg)
 				bounce(&smb,&msg,err,buf[0]=='5');
 				continue;
 			}
-			lprintf("SendMail: sending message text");
+			lprintf("%04d SendMail: sending message text",sock);
 			sockmsgtxt(sock,&msg,msgtxt,fromaddr,-1);
 			if(!sockgetrsp(sock,"250", buf, sizeof(buf))) {
 				sprintf(err,"%s replied with '%s' instead of 250",server,buf);
 				bounce(&smb,&msg,err,buf[0]=='5');
 				continue;
 			}
-			lprintf("SendMail: transfer successful");
+			lprintf("%04d SendMail: transfer successful",sock);
 
 			msg.hdr.attr|=MSG_DELETE;
 			msg.idx.attr=msg.hdr.attr;
 			if((i=smb_lockmsghdr(&smb,&msg))!=0) 
-				lprintf("!SendMail: ERROR %d locking message header #%lu"
+				lprintf("%04d !SendMail: ERROR %d locking message header #%lu"
+					,sock
 					,i,msg.hdr.number);
 			if((i=smb_putmsg(&smb,&msg))!=0)
-				lprintf("!SendMail: ERROR %d deleting message #%lu"
+				lprintf("%04d !SendMail: ERROR %d deleting message #%lu"
+					,sock
 					,i,msg.hdr.number);
 			smb_unlockmsghdr(&smb,&msg);
 
@@ -2189,7 +2193,7 @@ static void sendmail_thread(void* arg)
 	smb_freemsgmem(&msg);
 	smb_close(&smb);
 
-	lprintf("SendMail thread terminated");
+	lprintf("0000 SendMail thread terminated");
 
 	sendmail_running=FALSE;
 
@@ -2199,7 +2203,7 @@ static void sendmail_thread(void* arg)
 void DLLCALL mail_terminate(void)
 {
 	if(server_socket!=INVALID_SOCKET) {
-    	lprintf("MAIL Terminate: closing socket %d",server_socket);
+    	lprintf("%04d MAIL Terminate: closing socket",server_socket);
 		mail_close_socket(server_socket);
 	    server_socket=INVALID_SOCKET;
     }
@@ -2221,10 +2225,10 @@ static void cleanup(int code)
 
 #ifdef _WINSOCKAPI_	
 	if(WSAInitialized && WSACleanup()!=0) 
-		lprintf("!WSACleanup ERROR %d",ERROR_VALUE);
+		lprintf("0000 !WSACleanup ERROR %d",ERROR_VALUE);
 #endif
 
-    lprintf("Mail Server thread terminated");
+    lprintf("0000 Mail Server thread terminated");
 	status("Down");
 	if(startup!=NULL && startup->terminated!=NULL)
 		startup->terminated(code);
@@ -2368,33 +2372,7 @@ void DLLCALL mail_server(void* arg)
 		return;
 	}
 
-    lprintf("SMTP socket %d opened",server_socket);
-
-#if 0
-	optlen = sizeof(i);
-	result = getsockopt (server_socket, SOL_SOCKET, SO_SNDBUF
-    	,(char *)&i, &optlen);
-
-	if (result != 0) {
-		lprintf("!ERROR %d (%d) getting socket options", result, ERROR_VALUE);
-		cleanup(1);
-		return;
-	}
-
-	lprintf("SO_SNDBUF size=%d",i);
-
-	optlen=sizeof(i);
-	result = getsockopt (server_socket, SOL_SOCKET, SO_RCVBUF
-    	,(char *)&i, &optlen);
-
-	if (result != 0) {
-		lprintf("!ERROR %d (%d) getting socket options", result, ERROR_VALUE);
-		cleanup(1);
-		return;
-	}
-
-	lprintf("SO_RCVBUF size=%d",i);
-#endif
+    lprintf("%04d SMTP socket opened",server_socket);
 
 #if 1
 	linger.l_onoff=TRUE;
@@ -2404,7 +2382,8 @@ void DLLCALL mail_server(void* arg)
     	,(char *)&linger, sizeof(linger));
 
 	if (result != 0) {
-		lprintf("!ERROR %d (%d) setting socket options", result, ERROR_VALUE);
+		lprintf("%04d !ERROR %d (%d) setting socket options"
+			,server_socket, result, ERROR_VALUE);
 		cleanup(1);
 		return;
 	}
@@ -2423,18 +2402,20 @@ void DLLCALL mail_server(void* arg)
     	,sizeof (server_addr));
 
 	if (result != 0) {
-		lprintf("!ERROR %d (%d) binding SMTP socket to port %u"
-			,result, ERROR_VALUE, startup->smtp_port);
+		lprintf("%04d !ERROR %d (%d) binding SMTP socket to port %u"
+			,server_socket, result, ERROR_VALUE, startup->smtp_port);
 		cleanup(1);
 		return;
 	}
 
-    lprintf("SMTP socket bound to port %u",startup->smtp_port);
+    lprintf("%04d SMTP socket bound to port %u"
+		,server_socket, startup->smtp_port);
 
     result = listen (server_socket, 1);
 
 	if (result != 0) {
-		lprintf("!ERROR %d (%d) listening on socket", result, ERROR_VALUE);
+		lprintf("%04d !ERROR %d (%d) listening on socket"
+			,server_socket, result, ERROR_VALUE);
 		cleanup(1);
 		return;
 	}
@@ -2451,7 +2432,7 @@ void DLLCALL mail_server(void* arg)
 			return;
 		}
 
-		lprintf("POP3 socket %d opened",pop3_socket);
+		lprintf("%04d POP3 socket opened",pop3_socket);
 
 		/*****************************/
 		/* Listen for incoming calls */
@@ -2466,18 +2447,20 @@ void DLLCALL mail_server(void* arg)
     		,sizeof (server_addr));
 
 		if (result != 0) {
-			lprintf("!ERROR %d (%d) binding POP3 socket to port %u"
-				,result, ERROR_VALUE, startup->pop3_port);
+			lprintf("%04d !ERROR %d (%d) binding POP3 socket to port %u"
+				,pop3_socket, result, ERROR_VALUE, startup->pop3_port);
 			cleanup(1);
 			return;
 		}
 
-	    lprintf("POP3 socket bound to port %u",startup->pop3_port);
+	    lprintf("%04d POP3 socket bound to port %u"
+			,pop3_socket, startup->pop3_port);
 
 		result = listen (pop3_socket, 1);
 
 		if (result != 0) {
-			lprintf("!ERROR %d (%d) listening on POP3 socket", result, ERROR_VALUE);
+			lprintf("%04d !ERROR %d (%d) listening on POP3 socket"
+				,pop3_socket, result, ERROR_VALUE);
 			cleanup(1);
 			return;
 		}
@@ -2489,7 +2472,7 @@ void DLLCALL mail_server(void* arg)
 
 	_beginthread (sendmail_thread, 0, NULL);
 
-	lprintf("Mail Server thread started");
+	lprintf("%04d Mail Server thread started",server_socket);
 	status(STATUS_WFC);
 
 	while (server_socket!=INVALID_SOCKET) {
@@ -2507,15 +2490,15 @@ void DLLCALL mail_server(void* arg)
 
 		if((i=select(high_socket_set,&socket_set,NULL,NULL,NULL))<1) {
 			if(!i) {
-				lprintf("select returned zero");
+				lprintf("0000 !select returned zero");
 				break;
 			}
 			if(ERROR_VALUE==EINTR)
-				lprintf("Mail Server listening interrupted");
+				lprintf("0000 Mail Server listening interrupted");
 			else if(ERROR_VALUE == ENOTSOCK)
-            	lprintf("Mail Server sockets closed");
+            	lprintf("0000 Mail Server sockets closed");
 			else
-				lprintf("!ERROR %d selecting sockets",ERROR_VALUE);
+				lprintf("0000 !ERROR %d selecting sockets",ERROR_VALUE);
 			break;
 		}
 
@@ -2529,9 +2512,9 @@ void DLLCALL mail_server(void* arg)
 			if (client_socket == INVALID_SOCKET)
 			{
 				if(ERROR_VALUE == ENOTSOCK)
-            		lprintf("SMTP Socket closed while listening");
+            		lprintf("%04d SMTP Socket closed while listening",server_socket);
 				else
-					lprintf("!ERROR %d accept failed", ERROR_VALUE);
+					lprintf("%04d !ERROR %d accept failed", server_socket, ERROR_VALUE);
 				break;
 			}
 			if(startup->socket_open!=NULL)
@@ -2539,7 +2522,8 @@ void DLLCALL mail_server(void* arg)
 			sockets++;
 
 			if(active_clients>=startup->max_clients) {
-				lprintf("!MAXMIMUM CLIENTS (%u) reached, access denied",startup->max_clients);
+				lprintf("%04d !MAXMIMUM CLIENTS (%u) reached, access denied"
+					,client_socket, startup->max_clients);
 				sockprintf(client_socket,"421 Maximum active clients reached, please try again later.");
 				mswait(3000);
 				mail_close_socket(client_socket);
@@ -2549,15 +2533,15 @@ void DLLCALL mail_server(void* arg)
 			l=1;
 
 			if((i=ioctlsocket(client_socket, FIONBIO, &l))!=0) {
-				lprintf("!ERROR %d (%d) disabling blocking on socket %d"
-					,i, ERROR_VALUE, client_socket);
+				lprintf("%04d !ERROR %d (%d) disabling blocking on socket"
+					,client_socket, i, ERROR_VALUE);
 				mail_close_socket(client_socket);
 				continue;
 			}
 
 			if((smtp=malloc(sizeof(smtp_t)))==NULL) {
-				lprintf("!ERROR allocating %u bytes of memory for smtp_t"
-					,sizeof(smtp_t));
+				lprintf("%04d !ERROR allocating %u bytes of memory for smtp_t"
+					,client_socket, sizeof(smtp_t));
 				mail_close_socket(client_socket);
 				continue;
 			}
@@ -2576,9 +2560,9 @@ void DLLCALL mail_server(void* arg)
 			if (client_socket == INVALID_SOCKET)
 			{
 				if(ERROR_VALUE == ENOTSOCK)
-            		lprintf("POP3 Socket closed while listening");
+            		lprintf("%04d POP3 Socket closed while listening",pop3_socket);
 				else
-					lprintf("!ERROR %d accept failed", ERROR_VALUE);
+					lprintf("%04d !ERROR %d accept failed", pop3_socket, ERROR_VALUE);
 				break;
 			}
 			if(startup->socket_open!=NULL)
@@ -2586,7 +2570,8 @@ void DLLCALL mail_server(void* arg)
 			sockets++;
 
 			if(active_clients>=startup->max_clients) {
-				lprintf("!MAXMIMUM CLIENTS (%u) reached, access denied",startup->max_clients);
+				lprintf("%04d !MAXMIMUM CLIENTS (%u) reached, access denied"
+					,client_socket, startup->max_clients);
 				sockprintf(client_socket,"-ERR Maximum active clients reached, please try again later.");
 				mswait(3000);
 				mail_close_socket(client_socket);
@@ -2597,8 +2582,8 @@ void DLLCALL mail_server(void* arg)
 			l=1;
 
 			if((i=ioctlsocket(client_socket, FIONBIO, &l))!=0) {
-				lprintf("!ERROR %d (%d) disabling blocking on socket %d"
-					,i, ERROR_VALUE, client_socket);
+				lprintf("%04d !ERROR %d (%d) disabling blocking on socket"
+					,client_socket, i, ERROR_VALUE);
 				sockprintf(client_socket,"-ERR System error, please try again later.");
 				mswait(3000);
 				mail_close_socket(client_socket);
@@ -2606,8 +2591,8 @@ void DLLCALL mail_server(void* arg)
 			}
 
 			if((pop3=malloc(sizeof(pop3_t)))==NULL) {
-				lprintf("!ERROR allocating %u bytes of memory for pop3_t"
-					,sizeof(pop3_t));
+				lprintf("%04d !ERROR allocating %u bytes of memory for pop3_t"
+					,client_socket,sizeof(pop3_t));
 				sockprintf(client_socket,"-ERR System error, please try again later.");
 				mswait(3000);
 				mail_close_socket(client_socket);
@@ -2622,7 +2607,7 @@ void DLLCALL mail_server(void* arg)
 	}
 
 	if(active_clients) {
-		lprintf("Waiting for %d active clients to disconnect...", active_clients);
+		lprintf("0000 Waiting for %d active clients to disconnect...", active_clients);
 		start=time(NULL);
 		while(active_clients) {
 			if(time(NULL)-start>TIMEOUT_THREAD_WAIT) {
@@ -2634,7 +2619,7 @@ void DLLCALL mail_server(void* arg)
 	}
 
 	if(sendmail_running) {
-		lprintf("Waiting for SendMail thread to terminate...");
+		lprintf("0000 Waiting for SendMail thread to terminate...");
 		start=time(NULL);
 		while(sendmail_running) {
 			if(time(NULL)-start>TIMEOUT_THREAD_WAIT) {
