@@ -93,6 +93,9 @@ int RINGBUFCALL RingBufInit( RingBuf* rb, DWORD size
 	rb->pHead=rb->pTail=rb->pStart;
 	rb->pEnd=rb->pStart+size;
     rb->size=size;
+#ifdef RINGBUF_MUTEX
+	pthread_mutex_init(&rb->mutex,NULL);
+#endif
 	return(0);
 }
 
@@ -100,12 +103,19 @@ void RINGBUFCALL RingBufDispose( RingBuf* rb)
 {
     if(rb->pStart!=NULL)
 		os_free(rb->pStart);
+#ifdef RINGBUF_MUTEX
+	pthread_mutex_destroy(&rb->mutex);
+#endif
 	memset(rb,0,sizeof(RingBuf));
 }
 
 DWORD RINGBUFCALL RingBufFull( RingBuf* rb )
 {
 	DWORD	head,tail,retval;
+
+#ifdef RINGBUF_MUTEX
+	pthread_mutex_lock(&rb->mutex);
+#endif
 
 	head = (DWORD) rb->pHead;
 	tail = (DWORD) rb->pTail;
@@ -114,6 +124,10 @@ DWORD RINGBUFCALL RingBufFull( RingBuf* rb )
 		retval = head - tail;
 	else
 		retval = rb->size - (tail - head);
+
+#ifdef RINGBUF_MUTEX
+	pthread_mutex_unlock(&rb->mutex);
+#endif
 
 	return(retval);
 }
@@ -133,6 +147,10 @@ DWORD RINGBUFCALL RingBufWrite( RingBuf* rb, BYTE* src,  DWORD cnt )
 
 	if(rb->pStart==NULL)
 		return(0);
+
+#ifdef RINGBUF_MUTEX
+	pthread_mutex_lock(&rb->mutex);
+#endif
 
     /* allowed to write at pEnd */
 	max = (((DWORD) rb->pEnd) - ((DWORD) rb->pHead)) + 1;
@@ -164,6 +182,10 @@ DWORD RINGBUFCALL RingBufWrite( RingBuf* rb, BYTE* src,  DWORD cnt )
     if(rb->pHead > rb->pEnd)
     	rb->pHead = rb->pStart;
 
+#ifdef RINGBUF_MUTEX
+	pthread_mutex_unlock(&rb->mutex);
+#endif
+
 	return(cnt);
 }
 
@@ -175,6 +197,10 @@ DWORD RINGBUFCALL RingBufRead( RingBuf* rb, BYTE* dst,  DWORD cnt )
 	len = RingBufFull( rb );
 	if( len == 0 )
 		return(0);
+
+#ifdef RINGBUF_MUTEX
+	pthread_mutex_lock(&rb->mutex);
+#endif
 
 	if( len < cnt )
         cnt = len;
@@ -207,6 +233,10 @@ DWORD RINGBUFCALL RingBufRead( RingBuf* rb, BYTE* dst,  DWORD cnt )
     if(rb->pTail > rb->pEnd)
 		rb->pTail = rb->pStart;
 
+#ifdef RINGBUF_MUTEX
+	pthread_mutex_unlock(&rb->mutex);
+#endif
+
 	return(cnt);
 }
 
@@ -217,6 +247,10 @@ DWORD RINGBUFCALL RingBufPeek( RingBuf* rb, BYTE* dst,  DWORD cnt)
 	len = RingBufFull( rb );
 	if( len == 0 )
 		return(0);
+
+#ifdef RINGBUF_MUTEX
+	pthread_mutex_lock(&rb->mutex);
+#endif
 
 	if( len < cnt )
         cnt = len;
@@ -239,13 +273,23 @@ DWORD RINGBUFCALL RingBufPeek( RingBuf* rb, BYTE* dst,  DWORD cnt)
 		rb_memcpy( dst, rb->pStart, remain );
 	}
 
+#ifdef RINGBUF_MUTEX
+	pthread_mutex_unlock(&rb->mutex);
+#endif
+
 	return(cnt);
 }
 
 /* Reset head and tail pointers */
 void RINGBUFCALL RingBufReInit(RingBuf* rb)
 {
+#ifdef RINGBUF_MUTEX
+	pthread_mutex_lock(&rb->mutex);
+#endif
 	rb->pHead = rb->pTail = rb->pStart;
+#ifdef RINGBUF_MUTEX
+	pthread_mutex_unlock(&rb->mutex);
+#endif
 }
 
 /* End of RINGBUF.C */
