@@ -1656,6 +1656,7 @@ static void smtp_thread(void* arg)
 					telegram_buf[length+strlen(str)]=0;	/* Need ASCIIZ */
 
 					/* Send telegram to users */
+					rewind(rcptlst);
 					rcpt_count=0;
 					while(!feof(rcptlst)  && rcpt_count<startup->max_recipients) {
 						if(fgets(str,sizeof(str),rcptlst)==NULL)
