@@ -224,6 +224,9 @@ stop)
 *)
         echo "Usage: `basename $0` {start|stop}" >&2
         ;;
+esac
+
+exit 0
 --- CUT --- END OF FILE --- CUT ---
 
 /* End of sbbscon.txt */
