@@ -2194,6 +2194,7 @@ o Now using thread-safe time functions in Unix builds
 o Now using thread-safe "real path" function in OpenBSD build
 
 o New command-line utility (makeuser) to add a user to the user database
+  - run makeuser -? for usage instructions
 
 o Node window in SBBSCTRL no longer unnecessarily locks node.dab
   - eliminates locking/reading errors
@@ -2217,6 +2218,8 @@ o Message sub-board and file directory internal codes can now be extended to
   "internal code prefix" - this feature allows sysops to easy create message
   and file areas with unique (non-conflicting) internal codes
 
+o Download notifications can now be disabled on a per-directory basis
+
 o New cross-platform graphical user interface (based on FLTK) for SCFG and
   ECHOCFG (run with "-g" to enable GUI interface)
 
@@ -2224,6 +2227,8 @@ o New Unix installer - installs and builds source code from CVS or tgz files
   - thank Deuce for this neat-o program
 
 o All TCP servers individually track and log the number of clients served
+
+o All TCP servers now detect and log client hostname aliases (canonical names)
 
 o Bugfix: TCP server's up-time root value is reset if the server thread is 
   shutdown and restarted (excluding recycles)
@@ -2239,6 +2244,12 @@ o Servers are recycled/refreshed after completing Configuration Wizard
 o Fixed DNS Server address detection on systems with multiple NICs
 
 o File->Import/Export Settings menu options now prompt for path/filename
+
+
+Synchronet for UNIX
+~~~~~~~~~~~~~~~~~~~
+o Separately configurable ANSI and Dumb (non-ANSI) terminal values:
+  ExternalTermANSI and ExternalTermDumb
 
 
 Telnet Server
@@ -2295,6 +2306,20 @@ o New SERVED @-code to report the number of clients served since started
 
 o Bugfix: telnet gateway now handles temporarily blocked sockets (retries)
 
+o Bugfix: occasional attribute mismatch when restoring saved line with ANSI
+
+o %s command-line specifier now represents the configured start-up directory
+  when used in online external program (door) and timed event command lines
+  - This is actually a cross-platform compatibility fix for Unix systems
+    where '.' is not in the current search path
+
+o New default modules: newuser.js and logon.js to replace Baja equivalents
+  - newuser.js optionally sends welcome e-mail to new users
+  - logon.js prompts sysop to create guest account (calls makeguest.js)
+
+o New chkspace.js event module to check free disk space and e-mail warning
+  to sysop when low
+
 
 JavaScript
 ~~~~~~~~~~
@@ -2315,7 +2340,10 @@ o New array, console.color_list[] contains sysop-configured attributes from
 
 o Timed events now have access to user objects (msg_area, file_area, etc)
 
-o Fixed msgbase.put_msg_header() - no longer creates duplicate header fields
+o Fixed MsgBase.put_msg_header() - no longer creates duplicate header fields
+
+o MsgBase.get/put msg header/body/tail functions can now access messages
+  via message ID (rather than by offset or message number)
 
 o system.spamlog() now takes additional 'from' parameter (typically the SMTP
   reverse-path)
@@ -2386,7 +2414,7 @@ o Unix version unpacks bundles with upper or mixed case extensions
 
 o Added log message for routed EchoMail bundles
 
-o Added support for ctrl/twitlist.cfg
+o Added support for ctrl/twitlist.cfg - optional twit list
 
 
 ADDFILES
@@ -2436,6 +2464,8 @@ o Now deletes attached file if MSG_KILLFILE aux attribute set
 
 o New log entry when a delivery failure notification message is created
 
+o Configurable maximum message size (in bytes) - default: 10MB
+
 o Now correctly handles (and rejects) mail headers > 64K in size
   - total length of all header fields for a single message cannot exceed 64K
 
@@ -2458,5 +2488,7 @@ o Now gives uploader credits/minutes upon subsequent downloads (as configured)
   
 o Now notifies the uploader of a file when the file is later downloaded
 
+o Data sessions now use non-blocking sockets to prevent occasional locked
+  client sessions (noticed on Win9x only)
 
 /* End of V310_NEW.TXT */
