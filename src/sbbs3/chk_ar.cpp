@@ -91,6 +91,9 @@ bool sbbs_t::ar_exp(uchar **ptrptr, user_t* user)
 			case AR_QUIET:
 			case AR_OS2:
 			case AR_DOS:
+			case AR_WIN32:
+			case AR_UNIX:
+			case AR_LINUX:
 				break;
 			default:
 				(*ptrptr)++;
