@@ -243,8 +243,6 @@ be able to logon as New, leave this option blank.
 					,cfg.sys_misc&SM_R_SYSOP ? "Yes" : "No");
 				sprintf(opt[i++],"%-33.33s%s","Echo Passwords Locally"
 					,cfg.sys_misc&SM_ECHO_PW ? "Yes" : "No");
-				sprintf(opt[i++],"%-33.33s%s","Require Passwords Locally"
-					,cfg.sys_misc&SM_REQ_PW ? "Yes" : "No");
 				sprintf(opt[i++],"%-33.33s%s","Short Sysop Page"
 					,cfg.sys_misc&SM_SHRTPAGE ? "Yes" : "No");
 				sprintf(opt[i++],"%-33.33s%s","Sound Alarm on Error"
@@ -410,27 +408,6 @@ If you want to passwords to be displayed locally, set this option to
 							changes=1; }
                         break;
 					case 6:
-						strcpy(opt[0],"Yes");
-						strcpy(opt[1],"No");
-						opt[2][0]=0;
-						i=0;
-						SETHELP(WHERE);
-/*
-Require Passwords Locally:
-
-If you want to passwords to be required when logged on locally, set this
-option to Yes.
-*/
-						i=ulist(WIN_MID|WIN_SAV,0,0,0,&i,0
-							,"Require Passwords Locally",opt);
-						if(!i && !(cfg.sys_misc&SM_REQ_PW)) {
-							cfg.sys_misc|=SM_REQ_PW;
-							changes=1; }
-						else if(i==1 && cfg.sys_misc&SM_REQ_PW) {
-							cfg.sys_misc&=~SM_REQ_PW;
-							changes=1; }
-                        break;
-					case 7:
                         strcpy(opt[0],"Yes");
                         strcpy(opt[1],"No");
 						opt[2][0]=0;
@@ -451,7 +428,7 @@ than continuous random tones, set this option to Yes.
 							cfg.sys_misc|=SM_SHRTPAGE;
                             changes=1; }
 						break;
-					case 8:
+					case 7:
                         strcpy(opt[0],"Yes");
                         strcpy(opt[1],"No");
 						opt[2][0]=0;
@@ -472,7 +449,7 @@ system error has occured, set this option to Yes.
 							cfg.sys_misc|=SM_ERRALARM;
                             changes=1; }
                         break;
-					case 9:
+					case 8:
                         strcpy(opt[0],"Yes");
                         strcpy(opt[1],"No");
 						opt[2][0]=0;
@@ -496,7 +473,7 @@ include sysop maintenance activity.
                             cfg.sys_misc&=~SM_SYSSTAT;
                             changes=1; }
                         break;
-					case 10:
+					case 9:
                         strcpy(opt[0],"Yes");
                         strcpy(opt[1],"No");
 						opt[2][0]=0;
@@ -516,7 +493,7 @@ If you want callers to be able to logon as New, set this option to No.
                             cfg.sys_misc&=~SM_CLOSED;
                             changes=1; }
                         break;
-					case 11:
+					case 10:
                         strcpy(opt[0],"Yes");
                         strcpy(opt[1],"No");
 						opt[2][0]=0;
@@ -539,7 +516,7 @@ set this option to Yes. If this option is set to No, the user notes
 							cfg.sys_misc&=~SM_LISTLOC;
                             changes=1; }
                         break;
-					case 12:
+					case 11:
                         strcpy(opt[0],"Yes");
                         strcpy(opt[1],"No");
 						opt[2][0]=0;
@@ -560,7 +537,7 @@ format always, set this option to Yes.
 							cfg.sys_misc&=~SM_MILITARY;
                             changes=1; }
                         break;
-					case 13:
+					case 12:
                         strcpy(opt[0],"Yes");
                         strcpy(opt[1],"No");
 						opt[2][0]=0;
@@ -582,7 +559,7 @@ instead of MM/DD/YY format, set this option to Yes.
                             changes=1; }
                         break;
 
-					case 14:
+					case 13:
                         strcpy(opt[0],"Yes");
                         strcpy(opt[1],"No");
 						opt[2][0]=0;
@@ -604,7 +581,7 @@ time online, then set this option to Yes.
                             changes=1; }
                         break;
 
-					case 15:
+					case 14:
                         strcpy(opt[0],"Yes");
                         strcpy(opt[1],"No");
 						opt[2][0]=0;
