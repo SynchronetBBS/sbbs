@@ -251,11 +251,12 @@ void win32_textmode(int mode)
 	}
 	sz.X=vid_modes[modeidx].xsize;
 	sz.Y=vid_modes[modeidx].ysize;
-	SetConsoleScreenBufferSize(GetStdHandle(STD_OUTPUT_HANDLE),sz);
 	rc.Left=0;
 	rc.Right=vid_modes[modeidx].xsize-1;
 	rc.Top=0;
 	rc.Bottom=vid_modes[modeidx].ysize-1;
+	SetConsoleWindowInfo(GetStdHandle(STD_OUTPUT_HANDLE),TRUE,&rc);
+	SetConsoleScreenBufferSize(GetStdHandle(STD_OUTPUT_HANDLE),sz);
 	SetConsoleWindowInfo(GetStdHandle(STD_OUTPUT_HANDLE),TRUE,&rc);
 }
 
