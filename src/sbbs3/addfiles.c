@@ -95,6 +95,27 @@ int lprintf(char *fmat, ...)
 	return(chcount);
 }
 
+void prep_desc(char *str)
+{
+	char tmp[1024];
+	int i,j;
+
+	for(i=j=0;str[i] && j < sizeof(tmp)-1;i++) {
+		if(j && str[i]==SP && tmp[j-1]==SP && (mode&KEEP_SPACE))
+			tmp[j++]=str[i];
+		else if(j && str[i]<=SP && tmp[j-1]==SP)
+			continue;
+		else if(i && !isalnum(str[i]) && str[i]==str[i-1])
+			continue;
+		else if((uchar)str[i]>=SP)
+			tmp[j++]=str[i];
+		else if(str[i]==TAB || (str[i]==CR && str[i+1]==LF))
+			tmp[j++]=SP;
+	}
+	tmp[j]=0;
+	strcpy(str,tmp);
+}
+
 /*****************************************************************************/
 /* Returns command line generated from instr with %c replacments             */
 /*****************************************************************************/
@@ -278,7 +299,7 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 							strip_exascii(ext);
 						if(!(mode&KEEP_DESC)) {
 							sprintf(tmpext,"%.256s",ext);
-							strip_ctrl(tmpext);
+							prep_desc(tmpext);
 							for(i=0;tmpext[i];i++)
 								if(isalpha(tmpext[i]))
 									break;
@@ -294,7 +315,7 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 
 			f.dateuled=time(NULL);
 			f.altpath=cur_altpath;
-			strip_ctrl(f.desc);
+			prep_desc(f.desc);
 			if(mode&ASCII_ONLY)
 				strip_exascii(f.desc);
 			if(exist) {
@@ -479,7 +500,7 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 						strip_exascii(ext);
 					if(!(mode&KEEP_DESC)) {
 						sprintf(tmpext,"%.256s",ext);
-						strip_ctrl(tmpext);
+						prep_desc(tmpext);
 						for(i=0;tmpext[i];i++)
 							if(isalpha(tmpext[i]))
 								break;
@@ -497,7 +518,7 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 		f.cdt=l;
 		f.dateuled=time(NULL);
 		f.altpath=cur_altpath;
-		strip_ctrl(f.desc);
+		prep_desc(f.desc);
 		if(mode&ASCII_ONLY)
 			strip_exascii(f.desc);
 		if(exist) {
@@ -852,7 +873,7 @@ int main(int argc, char **argv)
 			f.cdt=l;
 			f.dateuled=time(NULL);
 			f.altpath=cur_altpath;
-			strip_ctrl(f.desc);
+			prep_desc(f.desc);
 			if(mode&ASCII_ONLY)
 				strip_exascii(f.desc);
 			printf("%s %7lu %s\n",f.name,f.cdt,f.desc);
