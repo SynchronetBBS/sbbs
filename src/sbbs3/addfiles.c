@@ -595,16 +595,20 @@ char *usage="\nusage: addfiles code [.alt_path] [/opts] [\"*user\"] +list "
 int main(int argc, char **argv)
 {
 	char error[512];
+	char revision[16];
 	uchar str[256],*p,exist,listgiven=0,namegiven=0,ext[513]
 		,auto_name[13]="FILES.BBS";
 	int i,j,file;
 	long l;
 	file_t	f;
 
-	fprintf(stderr,"\nADDFILES Version %s (%s) - Adds files to Synchronet "
+	sscanf("$Revision$" + 11, "%s", revision);
+
+	fprintf(stderr,"\nADDFILES v%s-%s (rev %s) - Adds files to Synchronet "
 		"Filebase\n"
 		,ADDFILES_VER
 		,PLATFORM_DESC
+		,revision
 		);
 
 	if(argc<2) {

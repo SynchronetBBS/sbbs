@@ -3767,6 +3767,7 @@ int main(int argc, char **argv)
 {
 	FILE*	fidomsg;
 	char	packet[MAX_PATH+1];
+	char	revision[16];
 	char	ch,str[1025],fname[256],path[512],sub_code[9]
 			,*p,*tp
 			,areatagstr[128],outbound[128]
@@ -3824,7 +3825,10 @@ int main(int argc, char **argv)
 	memset(&msg_seen,0,sizeof(addrlist_t));
 	memset(&msg_path,0,sizeof(addrlist_t));
 	memset(&fakearea,0,sizeof(areasbbs_t));
-	printf("\nSBBSecho Version %s (%s) SMBLIB %s - Synchronet FidoNet Packet "
+
+	sscanf("$Revision$" + 11, "%s", revision);
+
+	printf("\nSBBSecho v%s-%s (rev %s) - Synchronet FidoNet Packet "
 		"Tosser\n"
 		,SBBSECHO_VER
 #ifdef PLATFORM_DESC
@@ -3842,7 +3846,7 @@ int main(int argc, char **argv)
 		,"DOS16"
 	#endif
 #endif
-		,smb_lib_ver()
+		,revision
 		);
 #if 0
 	putenv("TZ=UTC0");
