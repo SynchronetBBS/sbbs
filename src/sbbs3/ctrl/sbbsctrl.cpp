@@ -59,6 +59,7 @@ USEFORM("TelnetCfgDlgUnit.cpp", TelnetCfgDlg);
 USEFORM("MailCfgDlgUnit.cpp", MailCfgDlg);
 USEFORM("FtpCfgDlgUnit.cpp", FtpCfgDlg);
 USEFORM("ServicesCfgDlgUnit.cpp", ServicesCfgDlg);
+USEFORM("PreviewFormUnit.cpp", PreviewForm);
 //---------------------------------------------------------------------------
 #include "MainFormUnit.h"
 #include "SpyFormUnit.h"
