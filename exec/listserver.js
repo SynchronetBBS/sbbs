@@ -15,7 +15,7 @@ var ini_fname = system.ctrl_dir + "listserver.ini";
 
 ini_file = new File(ini_fname);
 if(!ini_file.open("r")) {
-	log(LOG_ERR,format("!ERROR %s opening ini_file: %s"
+	log(LOG_ERR,format("!ERROR %d opening ini_file: %s"
 		,ini_file.error, ini_fname));
 	exit();
 }
@@ -31,29 +31,32 @@ if(!list_array.length) {
 }
 
 for(var l in list_array) {
+	
+	var list = list_array[l];
+
 	/* Set default list addresses */
-	if(!list_array[l].address)
-		list_array[l].address = format("%s@%s", list_array[l].name, system.inet_addr);
-	if(!msg_area.sub[list_array[l].sub]) {
-		log(LOG_WARNING,"!Unrecognized sub-board internal code: " + list_array[l].sub);
-		list_array[l].disabled=true;
+	if(!list.address)
+		list.address = format("%s@%s", list.name, system.inet_addr);
+	if(!msg_area.sub[list.sub]) {
+		log(LOG_WARNING,"!Unrecognized sub-board internal code: " + list.sub);
+		list.disabled=true;
 		continue;
 	}
-	if(!list_array[l].description)
-		list_array[l].description = msg_area.sub[list_array[l].sub].description;
-	if(list_array[l].confirm==undefined)
-		list_array[l].confirm=true;
+	if(!list.description)
+		list.description = msg_area.sub[list.sub].description;
+	if(list.confirm==undefined)
+		list.confirm=true;
 
-	var msgbase = new MsgBase(list_array[l].sub);
+	var msgbase = new MsgBase(list.sub);
 	if(msgbase.open()==false) {
 		log(LOG_ERR,format("%s !ERROR %s opening msgbase: %s"
-			,list_array[l].name, msgbase.error, list_array[l].sub));
+			,list.name, msgbase.error, list.sub));
 		continue;
 	}
-	list_array[l].msgbase_file = msgbase.file;
+	list.msgbase_file = msgbase.file;
 
 	/* Create the user list file if it doesn't exist */
-	var user_fname = list_array[l].msgbase_file + user_list_ext;
+	var user_fname = list.msgbase_file + user_list_ext;
 	if(!file_exists(user_fname))
 		file_touch(user_fname);
 }
@@ -69,14 +72,14 @@ if(this.recipient_list_filename!=undefined) {
 
 	var error_file = new File(processing_error_filename);
 	if(!error_file.open("w")) {
-		log(LOG_ERR,format("!ERROR %s opening processing error file: %s"
+		log(LOG_ERR,format("!ERROR %d opening processing error file: %s"
 			,error_file.error, processing_error_filename));
 		exit();
 	}
 
 	var rcptlst_file = new File(recipient_list_filename);
 	if(!rcptlst_file.open("r")) {
-		error_file.writeln(log(LOG_ERR,format("!ERROR %s opening recipient list: %s"
+		error_file.writeln(log(LOG_ERR,format("!ERROR %d opening recipient list: %s"
 			,rcptlst_file.error, recipient_list_filename)));
 		exit();
 	}
@@ -85,7 +88,7 @@ if(this.recipient_list_filename!=undefined) {
 
 	var msgtxt_file = new File(message_text_filename);
 	if(!msgtxt_file.open("r")) {
-		error_file.writeln(log(LOG_ERR,format("!ERROR %s opening message text: %s"
+		error_file.writeln(log(LOG_ERR,format("!ERROR %d opening message text: %s"
 			,msgtxt_file.error, message_text_filename)));
 		exit();
 	}
@@ -123,7 +126,7 @@ if(this.recipient_list_filename!=undefined) {
 		var response = process_control_msg(body);
 		var resp_hdr = {};
 
-		resp_hdr.subject		= "Synchronet ListServer Results";
+		resp_hdr.subject		= listserver_name + " Response";
 		resp_hdr.to				= header.from;
 		resp_hdr.to_net_addr	= header.from_net_addr;
 		resp_hdr.to_net_type	= NET_INTERNET;
@@ -147,20 +150,21 @@ if(this.recipient_list_filename!=undefined) {
 	for(r=0;r<rcpt_list.length;r++) {
 		var l;
 		for(l=0;l<list_array.length;l++) {
+			var list = list_array[l];
 /** DEBUG
-			for(var p in list_array[l])
-				log("list_array["+l+"]."+p+" = "+list_array[l][p]);
+			for(var p in list)
+				log("list_array["+l+"]."+p+" = "+list[p]);
 **/
-			if(rcpt_list[r].Recipient.toLowerCase()==list_array[l].address.toLowerCase()
-				&& !list_array[l].disabled
-				&& !list_array[l].readonly)
+			if(rcpt_list[r].Recipient.toLowerCase()==list.address.toLowerCase()
+				&& !list.disabled
+				&& !list.readonly)
 				break;
 		}
 		if(l<list_array.length) {	/* match found */
 			log(LOG_INFO,format("ListServer Contribution message from %s to %s: %s"
 				,header.from, rcpt_list[r].Recipient, header.subject));
 
-			if(!process_contribution(header, body, list_array[l]))
+			if(!process_contribution(header, body, list))
 				break;
 		}
 	}
@@ -175,21 +179,21 @@ for(var l in list_array) {
 		break;
 	}
 
-	if(list_array[l].disabled)
+	var list = list_array[l];
+
+	if(list.disabled)
 		continue;
 
-	list_name = list_array[l].name;
-
-	msgbase = new MsgBase(list_array[l].sub);
+	msgbase = new MsgBase(list.sub);
 	if(msgbase.open()==false) {
 		log(LOG_ERR,format("%s !ERROR %s opening msgbase: %s"
-			,list_name, msgbase.error, list_array[l].sub));
+			,list.name, msgbase.error, list.sub));
 		delete msgbase;
 		continue;
 	}
 
 	/* Get subscriber list */
-	var user_list = get_user_list(list_array[l]);
+	var user_list = get_user_list(list);
 	if(!user_list.length) {
 		delete msgbase;
 		continue;
@@ -197,18 +201,18 @@ for(var l in list_array) {
 
 /***
 	if(!user_list.length) {
-		log(LOG_NOTICE,"No subscribers to list: " + list_name);
+		log(LOG_NOTICE,"No subscribers to list: " + list.name);
 		delete msgbase;
 		continue;
 	}
 ***/
 
 	/* Get export message pointer */
-	ptr_fname = list_array[l].msgbase_file + ".list.ptr";
+	ptr_fname = list.msgbase_file + ".list.ptr";
 	ptr_file = new File(ptr_fname);
 	if(!ptr_file.open("w+")) {
-		log(LOG_ERR,format("%s !ERROR %s opening/creating file: %s"
-			,list_name, ptr_file.error, ptr_fname));
+		log(LOG_ERR,format("%s !ERROR %d opening/creating file: %s"
+			,list.name, ptr_file.error, ptr_fname));
 		delete msgbase;
 		continue;
 	}
@@ -224,25 +228,24 @@ for(var l in list_array) {
 	for(;ptr<=last_msg && !js.terminated; ptr++) {
 		hdr = msgbase.get_msg_header(
 			/* retrieve by offset? */	false,
-			/* message number */		ptr,
-			/* regenerate msg-id? */	false
+			/* message number */		ptr
 			);
 		if(hdr == null) {
 			/**
 			log(LOG_WARNING,format("%s !ERROR %s getting msg header #%lu"
-				,list_name, msgbase.error, ptr));
+				,list.name, msgbase.error, ptr));
 			**/
 			continue;
 		}
 		if(hdr.attr&(MSG_DELETE|MSG_PRIVATE))	{ /* marked for deletion */
 			log(LOG_NOTICE,format("%s Skipping %s message #%lu from %s: %s"
-				,list_name, hdr.attr&MSG_DELETE ? "deleted":"private"
+				,list.name, hdr.attr&MSG_DELETE ? "deleted":"private"
 				,ptr, hdr.from, hdr.subject));
 			continue;
 		}
 		if(hdr.attr&MSG_MODERATED && !(hdr.attr&MSG_VALIDATED)) {
 			log(LOG_NOTICE,format("%s Stopping at unvalidated moderated message #%lu from %s: %s"
-				,list_name, ptr, hdr.from, hdr.subject));
+				,list.name, ptr, hdr.from, hdr.subject));
 			ptr--;
 			break;
 		}
@@ -256,7 +259,7 @@ for(var l in list_array) {
 				);
 		if(body == null) {
 			log(LOG_ERR,format("%s !ERROR %s reading text of message #%lu"
-				,list_name, msgbase.error, ptr));
+				,list.name, msgbase.error, ptr));
 			continue;
 		}
 
@@ -267,7 +270,7 @@ for(var l in list_array) {
 			if(user_list[u].disabled || !user_list[u].address)
 				continue;
 			log(LOG_DEBUG,format("%s Enqueing message #%lu for %s <%s>"
-				,list_name, ptr, user_list[u].name, user_list[u].address));
+				,list.name, ptr, user_list[u].name, user_list[u].address));
 			rcpt_list.push(	{	to:				user_list[u].name,
 								to_net_addr:	user_list[u].address, 
 								to_net_type:	NET_INTERNET 
@@ -278,18 +281,18 @@ for(var l in list_array) {
 			break;
 		}
 		if(rcpt_list.length < 1) {
-			log(LOG_NOTICE,format("%s No active subscriptions", list_name));
+			log(LOG_NOTICE,format("%s No active subscriptions", list.name));
 			continue;
 		}
 
 		log(LOG_INFO,format("%s Sending message #%lu from %s to %lu recipients: %s"
-			,list_name, ptr, hdr.from, rcpt_list.length, hdr.subject));
+			,list.name, ptr, hdr.from, rcpt_list.length, hdr.subject));
 
 		hdr.replyto_net_type = NET_INTERNET;
-		hdr.replyto_net_addr = list_array[l].address;
+		hdr.replyto_net_addr = list.address;
 		if(!mailbase.save_msg(hdr,body,rcpt_list))
 			log(LOG_ERR,format("%s !ERROR %s saving mail message"
-				,list_name, mailbase.error));
+				,list.name, mailbase.error));
 	}
 
 	if(ptr > last_msg)
@@ -311,7 +314,7 @@ function process_control_msg(cmd_list)
 {
 	var response = { body: new Array(), subject: "" };
 	
-	response.body.push("Synchronet ListServer " +REVISION+ " Response:\r\n");
+	response.body.push(listserver_name + " " +REVISION+ " Response:\r\n");
 
 	for(var c in cmd_list) {
 		var cmd=cmd_list[c];
@@ -321,19 +324,22 @@ function process_control_msg(cmd_list)
 		switch(token[0].toLowerCase()) {
 			case "lists":
 				response.body.push("List of lists:");
-				for(var l in list_array)
-					if(!list_array[l].disabled)
-						response.body.push("\t"+list_array[l].name.toUpperCase()
-										  +"\t\t"+list_array[l].description);
+				for(var l in list_array) {
+					var list = list_array[l];
+					if(!list.disabled)
+						response.body.push("\t"+list.name.toUpperCase()
+										  +"\t\t"+list.description);
+				}
 				break;
 			case "subscribe":
 			case "unsubscribe":
 				for(var l in list_array) {
-					if(list_array[l].disabled || list_array[l].closed)
+					var list = list_array[l];
+					if(list.disabled || list.closed)
 						continue;
-					if(list_array[l].name.toLowerCase()==token[1].toLowerCase()
-						|| list_array[l].address.toLowerCase()==token[1].toLowerCase()) {
-						response.body.push(subscription_control(token[0], list_array[l], token[2]));
+					if(list.name.toLowerCase()==token[1].toLowerCase()
+						|| list.address.toLowerCase()==token[1].toLowerCase()) {
+						response.body.push(subscription_control(token[0], list, token[2]));
 						return(response);
 					}
 				}
@@ -357,16 +363,29 @@ function process_control_msg(cmd_list)
 	return(response);
 }
 
+function open_user_list(list, mode)
+{
+	var user_fname = list.msgbase_file + user_list_ext;
+	var user_file = new File(user_fname);
+	if(!user_file.open(mode)) {
+		log(LOG_ERR,format("%s !ERROR %d opening file: %s"
+			,list.name, user_file.error, user_fname));
+		return(null);
+	}
+
+	return(user_file);
+}
+
+function read_user_list(user_file)
+{
+	return user_file.iniGetAllObjects("address");
+}
+
 function get_user_list(list)
 {
 	var user_list = new Array();
-	var user_fname = list.msgbase_file + user_list_ext;
-	var user_file = new File(user_fname);
-	if(!user_file.open("r")) {
-		log(LOG_ERR,format("%s !ERROR %d opening file: %s"
-			,list.name, user_file.error, user_fname));
-	} else {
-		user_list = user_file.iniGetAllObjects();
+	if((user_file = open_user_list("r")) != null) {
+		user_list = read_user_list(user_file);
 		user_file.close();
 	}
 	return user_list;
@@ -393,9 +412,10 @@ function write_user_list(user_list, user_file)
 	user_file.rewind();
 	user_file.length = 0;
 	for(var u in user_list) {
-		user_file.writeln("[" + user_list[u].name + "]");
+		user_file.writeln("[" + user_list[u].address + "]");
 		for(var p in user_list[u])
-			user_file.writeln(p + " = " + user_list[u][p]);
+			if(p!="address")
+				user_file.writeln(format("%-25s",p) + " = " + user_list[u][p]);
 		user_file.writeln();
 	}
 }
@@ -409,13 +429,10 @@ function subscription_control(cmd, list, address)
 		,list.name,cmd,address));
 
 	/* Get subscriber list */
-	var user_fname = list.msgbase_file + user_list_ext;
-	var user_file = new File(user_fname);
-	if(!user_file.open("r+"))
-		return log(LOG_ERR,format("%s !ERROR %d opening file: %s"
-			,list.name, user_file.error, user_fname));
+	if((user_file=open_user_list(list,"r+"))==null)
+		return log(LOG_ERR,format("%s !ERROR opening subscriber list",list.name));
 
-	user_list = user_file.iniGetAllObjects();
+	user_list = read_user_list(user_file);
 	
 	switch(cmd.toLowerCase()) {
 		case "unsubscribe":
@@ -436,7 +453,7 @@ function subscription_control(cmd, list, address)
 				,address:				address
 				,created:				system.timestr(now)
 				,last_activity:			system.timestr(now)
-				,last_activity_time:	format("%08lxh",now)
+				,last_activity_time:	format("%08lx",now)
 				});
 			write_user_list(user_list, user_file);
 			return log(LOG_INFO,format("%s %s subscription successful"
@@ -456,6 +473,10 @@ function process_contribution(header, body, list)
 	if(find_user(user_list, sender_address)==-1) {
 		error_file.writeln(log(LOG_WARNING,format("%s !ERROR %s is not a subscriber"
 			,list.name, sender_address)));
+//		error_file.writeln();
+//		error_file.writeln("To subscribe to this list, send an e-mail to " 
+//			+ listserver_address);
+//		error_file.writeln("with \"subscribe " + list.name + "\" in the message body.");
 		return(false);
 	}
 
