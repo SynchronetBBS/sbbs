@@ -122,7 +122,7 @@ static char* get_value(FILE* fp, const char* section, const char* key, char* val
 
 char* iniGetString(FILE* fp, const char* section, const char* key, const char* deflt, char* value)
 {
-	if((value=get_value(fp,section,key,value))==NULL || *value==0 /* blank */) {
+	if(get_value(fp,section,key,value)==NULL || *value==0 /* blank */) {
 		if(deflt==NULL)
 			return(NULL);
 		sprintf(value,"%.*s",INI_MAX_VALUE_LEN-1,deflt);
