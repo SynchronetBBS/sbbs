@@ -386,9 +386,6 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 static JSBool
 js_BranchCallback(JSContext *cx, JSScript *script)
 {
-	JSObject*	obj=js_glob;
-	jsval		val=JSVAL_VOID;
-
 	branch.counter++;
 
 	/* Infinite loop? */
