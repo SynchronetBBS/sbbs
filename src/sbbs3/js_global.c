@@ -414,6 +414,41 @@ js_strip_exascii(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 }
 
 static JSBool
+js_lfexpand(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	ulong		i,j;
+	char*		inbuf;
+	char*		outbuf;
+	JSString*	js_str;
+
+	if(!JSVAL_IS_STRING(argv[0])) {
+		JS_ReportError(cx,nostringarg);
+		return(JS_FALSE);
+	}
+
+	if((inbuf=JS_GetStringBytes(JSVAL_TO_STRING(argv[0])))==NULL) 
+		return(JS_FALSE);
+
+	if((outbuf=(char*)malloc(strlen(inbuf)*2))==NULL)
+		return(JS_FALSE);
+
+	for(i=j=0;inbuf[i];i++) {
+		if(inbuf[i]=='\n' && (!i || inbuf[i-1]!='\r'))
+			outbuf[j++]='\r';
+		outbuf[j++]=inbuf[i];
+	}
+	outbuf[j]=0;
+
+	js_str = JS_NewStringCopyZ(cx, outbuf);
+	free(outbuf);
+	if(js_str==NULL)
+		return(JS_FALSE);
+
+	*rval = STRING_TO_JSVAL(js_str);
+	return(JS_TRUE);
+}
+
+static JSBool
 js_truncsp(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char*		p;
@@ -804,6 +839,9 @@ static jsMethodSpec js_global_functions[] = {
 	},		
 	{"truncstr",		js_truncstr,		2,	JSTYPE_STRING,	JSDOCSTR("string text, charset")
 	,JSDOCSTR("truncate string at first char in <i>charset</i>")
+	},		
+	{"lfexpand",		js_lfexpand,		2,	JSTYPE_STRING,	JSDOCSTR("string text")
+	,JSDOCSTR("expand line-feeds (LF) to carriage-return/line-feeds (CRLF)")
 	},		
 	{"file_exists",		js_fexist,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("string filename")
 	,JSDOCSTR("verify file existence")
