@@ -727,6 +727,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 	char	fname[128];
 	char*	p;
     bool	native=false;			// DOS program by default
+	int		i;
 		
 	if(cmdline[0]=='*') {   /* Baja module */
 		sprintf(str,"%.*s",sizeof(str)-1,cmdline+1);
