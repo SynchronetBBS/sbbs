@@ -2,14 +2,18 @@
 #include <stdio.h>
 
 #include "conio.h"
-#ifndef NO_X
- #include "x_cio.h"
+
+#ifndef _WIN32
+ #ifndef NO_X
+  #include "x_cio.h"
+ #endif
+ #include "curs_cio.h"
+ #undef getch
 #endif
+
 #ifdef INCLUDE_OPENDOOR
  #include "od_cio.h"
 #endif
-#include "curs_cio.h"
-#undef getch
 
 cioapi_t	cio_api;
 
@@ -22,7 +26,8 @@ static int initialized=0;
 
 void initciowrap(int mode)
 {
-#ifndef NO_X
+#ifndef _WIN32
+ #ifndef NO_X
 	if(!console_init()) {
 		cio_api.mode=X_MODE;
 		cio_api.puttext=x_puttext;
@@ -43,7 +48,9 @@ void initciowrap(int mode)
 	}
 	else {
 		fprintf(stderr,"X init failed\n");
-#endif
+ #endif /* NO_X */
+#endif /* !(_WIN32) */
+
 #ifdef INCLUDE_OPENDOOR
 		OD_initciowrap(mode);
 		cio_api.mode=OPENDOOR_MODE;
@@ -63,6 +70,7 @@ void initciowrap(int mode)
 		cio_api.beep=OD_beep;
 		cio_api.textmode=OD_textmode;
 #else
+ #ifndef _WIN32
 		curs_initciowrap(mode);
 		cio_api.mode=CURSES_MODE;
 		cio_api.puttext=curs_puttext;
@@ -80,10 +88,13 @@ void initciowrap(int mode)
 		cio_api.getche=curs_getche;
 		cio_api.beep=beep;
 		cio_api.textmode=curs_textmode;
+ #endif /* !(_WIN32) */
 #endif
-#ifndef NO_X
+#ifndef _WIN32
+ #ifndef NO_X
 	}
-#endif
+ #endif
+#endif /* !(_WIN32) */
 	initialized=1;
 	gettextinfo(&cio_textinfo);
 	cio_textinfo.winleft=1;
