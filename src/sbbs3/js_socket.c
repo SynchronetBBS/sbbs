@@ -250,6 +250,55 @@ js_send(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 }
 
 static JSBool
+js_sendfile(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		fname;
+	char*		buf;
+	long		len;
+	int			file;
+	JSString*	str;
+	private_t*	p;
+
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+		return(JS_FALSE);
+
+	*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+
+	if(!argc)
+		return(JS_FALSE);
+
+	if((str = JS_ValueToString(cx, argv[0]))==NULL)
+		return(JS_FALSE);
+	if((fname=JS_GetStringBytes(str))==NULL)
+		return(JS_FALSE);
+
+	if((file=nopen(fname,O_RDONLY|O_BINARY))==-1)
+		return(JS_TRUE);
+
+	len=filelength(file);
+	if((buf=malloc(len))==NULL) {
+		close(file);
+		return(JS_TRUE);
+	}
+	if(read(file,buf,len)!=len) {
+		close(file);
+		return(JS_TRUE);
+	}
+	close(file);
+
+	if(sendsocket(p->sock,buf,len)==len) {
+		dbprintf(FALSE, p, "sent %u bytes",len);
+		*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
+	} else {
+		p->last_error=ERROR_VALUE;
+		dbprintf(TRUE, p, "send of %u bytes failed",len);
+	}
+	free(buf);
+
+	return(JS_TRUE);
+}
+
+static JSBool
 js_recv(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char		buf[513];
@@ -587,6 +636,7 @@ static JSFunctionSpec js_socket_functions[] = {
 	{"bind",			js_bind,			0},		/* bind to a port */
 	{"connect",         js_connect,         2},		/* connect to an IP address and port */
 	{"send",			js_send,			1},		/* send a string */
+	{"sendfile",		js_sendfile,		1},		/* send a file */
 	{"write",			js_send,			1},		/* send a string */
 	{"recv",			js_recv,			0},		/* receive a string */
 	{"read",			js_recv,			0},		/* receive a string */
