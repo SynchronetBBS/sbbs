@@ -187,9 +187,10 @@ int http_get_fd(char *URL, size_t *len, char *error)
 		return(-1);
 	}
 	if(atoi(header+9)!=200)  {
-		if(error != NULL)
+		if(error != NULL)  {
 			strncpy(error, header, 128);
-		error[127]=0;
+			error[127]=0;
+		}
 		close(s);
 		return(-1);
 	}
