@@ -1,5 +1,5 @@
 ############################################
-# Makefile for Synchronet SBBSFIDO Utility #
+# Makefile for Synchronet SBBSecho Utility #
 # For use with Borland C++ for DOS or OS/2 #
 ############################################
 
