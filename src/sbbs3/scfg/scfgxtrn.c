@@ -32,16 +32,36 @@
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
-
-char *daystr(char days);
-
 /****************************************************************************/
 /* Synchronet configuration utility 										*/
 /****************************************************************************/
 
 #include "scfg.h"
 
+char *daystr(char days);
 static void hotkey_cfg(void);
+
+static char* mdaystr(long mdays)
+{
+	int		i;
+	char	tmp[16];
+	static	char str[256];
+
+	if(mdays==0 || mdays==1)
+		return("Any");
+
+	str[0]=0;
+	for(i=1;i<32;i++) {
+		if((mdays&(1<<i))==0)
+			continue;
+		if(str[0])
+			strcat(str," ");
+		sprintf(tmp,"%u",i);
+		strcat(str,tmp);
+	}
+	
+	return(str);
+}
 
 static char* dropfile(int type, ulong misc)
 {
@@ -341,8 +361,8 @@ This is the internal code for the timed event.
 		sprintf(opt[k++],"%-32.32s%.40s","Start-up Directory",cfg.event[i]->dir);
 		sprintf(opt[k++],"%-32.32s%.40s","Command Line",cfg.event[i]->cmd);
 		sprintf(opt[k++],"%-32.32s%u","Execution Node",cfg.event[i]->node);
-		sprintf(opt[k++],"%-32.32s%s","Execution Day of Month"
-			,cfg.event[i]->mday==0 ? "Any" : ultoa(cfg.event[i]->mday,tmp,10));
+		sprintf(opt[k++],"%-32.32s%s","Execution Days of Month"
+			,mdaystr(cfg.event[i]->mdays));
 		sprintf(opt[k++],"%-32.32s%s","Execution Days of Week",daystr(cfg.event[i]->days));
         if(cfg.event[i]->freq) {
             sprintf(str,"%u times a day",1440/cfg.event[i]->freq);
@@ -445,18 +465,23 @@ This is the node number to execute the timed event.
 			case 4:
 				SETHELP(WHERE);
 /*
-`Day of Month to Execute Event:`
+`Days of Month to Execute Event:`
 
-Specifies a day of the month (`1-31`) on which to execute this event, 
-or `Any` to execute event on any and all days of the month.
+Specifies the days of the month (`1-31`, separated by spaces) on which 
+to execute this event, or `Any` to execute event on any and all days of
+the month.
 */
-				if(cfg.event[i]->mday)
-					ultoa(cfg.event[i]->mday,str,10);
-				else
-					strcpy(str,"Any");
-				uifc.input(WIN_MID|WIN_SAV,0,0,"Day of Month to Execute Event (or Any)"
-					,str,3,K_EDIT);
-				cfg.event[i]->mday=atoi(str);
+				SAFECOPY(str,mdaystr(cfg.event[i]->mdays));
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Days of Month to Execute Event (or Any)"
+					,str,16,K_EDIT);
+				cfg.event[i]->mdays=0;
+				for(p=str;*p;p++) {
+					if(!isdigit(*p))
+						continue;
+					cfg.event[i]->mdays|=(1<<atoi(p));
+					while(*p && isdigit(*p))
+						p++;
+				}
 				break;
 			case 5:
 				j=0;

@@ -1020,11 +1020,9 @@ BOOL DLLCALL write_xtrn_cfg(scfg_t* cfg, int backup_level)
 		put_int(cfg->event[i]->misc,stream);
 		put_int(cfg->event[i]->dir,stream);
 		put_int(cfg->event[i]->freq,stream);
-		put_int(cfg->event[i]->mday,stream);
-		c=0;
-		put_int(c,stream);
+		put_int(cfg->event[i]->mdays,stream);
 		n=0;
-		for(j=0;j<6;j++)
+		for(j=0;j<5;j++)
 			put_int(n,stream);
 		}
 

@@ -99,7 +99,7 @@ BOOL read_file_cfg(scfg_t* cfg, char* error)
 
 		for(j=0;j<8;j++)
 			get_int(n,instream);
-		}
+	}
 	cfg->total_fextrs=i;
 
 	/***************************/
@@ -127,7 +127,7 @@ BOOL read_file_cfg(scfg_t* cfg, char* error)
 
 		for(j=0;j<8;j++)
 			get_int(n,instream);
-		}
+	}
 	cfg->total_fcomps=i;
 
 	/***********************/
@@ -154,7 +154,7 @@ BOOL read_file_cfg(scfg_t* cfg, char* error)
 
 		for(j=0;j<8;j++)
 			get_int(n,instream);
-		}
+	}
 	cfg->total_fviews=i;
 
 	/***********************/
@@ -182,7 +182,7 @@ BOOL read_file_cfg(scfg_t* cfg, char* error)
 
 		for(j=0;j<8;j++)
 			get_int(n,instream);
-		}
+	}
 	cfg->total_ftests=i;
 
 	/*******************/
@@ -211,7 +211,7 @@ BOOL read_file_cfg(scfg_t* cfg, char* error)
 
 		for(j=0;j<8;j++)
 			get_int(n,instream);
-		}
+	}
 	cfg->total_dlevents=i;
 
 
@@ -247,7 +247,7 @@ BOOL read_file_cfg(scfg_t* cfg, char* error)
 
 		for(j=0;j<8;j++)
 			get_int(n,instream);
-		}
+	}
 
 	/************************/
 	/* Alternate File Paths */
@@ -309,7 +309,7 @@ BOOL read_file_cfg(scfg_t* cfg, char* error)
 
 		for(j=0;j<16;j++)
 			get_int(n,instream);	/* 0xffff */
-		}
+	}
 	cfg->total_libs=i;
 
 	/********************/
@@ -420,7 +420,7 @@ BOOL read_file_cfg(scfg_t* cfg, char* error)
 
 		for(j=0;j<8;j++)
 			get_int(n,instream);
-		}
+	}
 	cfg->total_txtsecs=i;
 
 	fclose(instream);
@@ -495,7 +495,7 @@ BOOL read_xtrn_cfg(scfg_t* cfg, char* error)
 		get_int(c,instream);
 		for(j=0;j<7;j++)
 			get_int(n,instream);
-		}
+	}
 	cfg->total_xedits=i;
 
 
@@ -525,7 +525,7 @@ BOOL read_xtrn_cfg(scfg_t* cfg, char* error)
 
 		for(j=0;j<8;j++)
 			get_int(n,instream);
-		}
+	}
 	cfg->total_xtrnsecs=i;
 
 
@@ -566,7 +566,7 @@ BOOL read_xtrn_cfg(scfg_t* cfg, char* error)
 		get_int(cfg->xtrn[i]->maxtime,instream);
 		for(j=0;j<7;j++)
 			get_int(n,instream);
-		}
+	}
 	cfg->total_xtrns=i;
 
 
@@ -596,12 +596,11 @@ BOOL read_xtrn_cfg(scfg_t* cfg, char* error)
 		get_int(cfg->event[i]->misc,instream);
 		get_str(cfg->event[i]->dir,instream);
 		get_int(cfg->event[i]->freq,instream);
-		get_int(cfg->event[i]->mday,instream);
+		get_int(cfg->event[i]->mdays,instream);
 
-		get_int(c,instream);
-		for(j=0;j<6;j++)
+		for(j=0;j<5;j++)
 			get_int(n,instream);
-		}
+	}
 	cfg->total_events=i;
 
 	/********************************/
@@ -621,7 +620,8 @@ BOOL read_xtrn_cfg(scfg_t* cfg, char* error)
 		if((cfg->natvpgm[i]=(natvpgm_t *)MALLOC(sizeof(natvpgm_t)))==NULL)
 			return allocerr(instream,error,offset,fname,sizeof(natvpgm_t));
 		get_str(cfg->natvpgm[i]->name,instream);
-		cfg->natvpgm[i]->misc=0; }
+		cfg->natvpgm[i]->misc=0; 
+	}
 	cfg->total_natvpgms=i;
 	for(i=0;i<cfg->total_natvpgms;i++) {
 		if(feof(instream)) break;
@@ -651,7 +651,7 @@ BOOL read_xtrn_cfg(scfg_t* cfg, char* error)
 
 		for(j=0;j<8;j++)
 			get_int(n,instream);
-		}
+	}
 	cfg->total_hotkeys=i;
 
 	/************************************/
@@ -706,7 +706,7 @@ BOOL read_chat_cfg(scfg_t* cfg, char* error)
 
 		for(j=0;j<8;j++)
 			get_int(n,instream);
-		}
+	}
 	cfg->total_chans=i;
 
 
@@ -727,7 +727,7 @@ BOOL read_chat_cfg(scfg_t* cfg, char* error)
 		if((cfg->actset[i]=(actset_t *)MALLOC(sizeof(actset_t)))==NULL)
 			return allocerr(instream,error,offset,fname,sizeof(actset_t));
 		get_str(cfg->actset[i]->name,instream);
-		}
+	}
 	cfg->total_actsets=i;
 
 
@@ -755,7 +755,7 @@ BOOL read_chat_cfg(scfg_t* cfg, char* error)
 		get_str(cfg->chatact[i]->out,instream);
 		for(j=0;j<8;j++)
 			get_int(n,instream);
-		}
+	}
 
 	cfg->total_chatacts=i;
 
@@ -821,7 +821,7 @@ BOOL read_chat_cfg(scfg_t* cfg, char* error)
 		get_int(cfg->page[i]->misc,instream);
 		for(j=0;j<8;j++)
 			get_int(n,instream);
-		}
+	}
 	cfg->total_pages=i;
 
 
@@ -871,7 +871,8 @@ long aftol(char *str)
 	while(str[c]) {
 		if(str[c]>='A' && str[c]<='Z')
 			l|=FLAG(str[c]);
-		c++; }
+		c++; 
+	}
 	return(l);
 }
 
@@ -886,7 +887,8 @@ char *ltoaf(long l,char *str)
 		if(l&(long)(1L<<c))
 			str[c]='A'+c;
 		else str[c]=SP;
-		c++; }
+		c++; 
+	}
 	str[c]=0;
 	return(str);
 }

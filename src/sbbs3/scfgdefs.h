@@ -289,13 +289,13 @@ typedef struct {						/* External Editors */
 typedef struct {						/* Generic Timed Event */
 	char	code[LEN_CODE+1],			/* Internal code */
 			days,						/* week days to run event */
-			mday,						/* day of month (if non-zero) to run event */
 			dir[LEN_DIR+1], 			/* Start-up directory */
 			cmd[LEN_CMD+1]; 			/* Command line */
 	ushort	node,						/* Node to execute event */
 			time,						/* Time to run event */
 			freq;						/* Frequency to run event */
-	ulong	misc;						/* Misc bits */
+	ulong	misc,						/* Misc bits */
+			mdays;						/* days of month (if non-zero) to run event */
 	time_t	last;						/* Last time event ran */
 
 } event_t;
