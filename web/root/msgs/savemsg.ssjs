@@ -66,21 +66,25 @@ if(sub != 'mail') {
 /* Set kill when read flag */
 if(sub=="mail" && hdrs.to_net_type==NET_NONE && system.settings&SYS_DELREADM)
 	hdrs.attr|=MSG_KILLREAD;
+if(sub != 'mail') {
 if(msgbase.cfg.settings&SUB_KILL)
 	hdrs.attr|=MSG_KILLREAD;
 if(msgbase.cfg.settings&SUB_KILLP && hdrs.attr&MSG_PRIVATE)
 	hdrs.attr|=MSG_KILLREAD;
+}
 
 /* Sig stuff */
-if(!(msgbase.cfg.settings&SUB_NOUSERSIG) && !(hdrs.attr&MSG_ANONYMOUS)) {
-	sigfile=new File(format("%suser/%04u.sig",system.data_dir,user.number));
-	if(sigfile.exists) {
-		sigfile.open("r",true);
-		if(body.search(/\n$/)==-1)
-			body+='\r\n';
-		var sigf=sigfile.readAll();
-		body=body+sigf.join('\r\n');
-	}
+if(sub != 'mail') {
+    if(!(msgbase.cfg.settings&SUB_NOUSERSIG) && !(hdrs.attr&MSG_ANONYMOUS)) {
+	   sigfile=new File(format("%suser/%04u.sig",system.data_dir,user.number));
+	   if(sigfile.exists) {
+		  sigfile.open("r",true);
+		  if(body.search(/\n$/)==-1)
+			 body+='\r\n';
+		  var sigf=sigfile.readAll();
+		  body=body+sigf.join('\r\n');
+	   }
+    }
 }
 
 if(!msgbase.save_msg(hdrs,body)) {
