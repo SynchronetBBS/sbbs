@@ -390,8 +390,6 @@ int getdir(char* p, user_t* user)
 /*********************************/
 #ifdef JAVASCRIPT
 
-static JSRuntime* js_runtime=NULL;
-
 static JSBool
 js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
@@ -470,7 +468,7 @@ static JSClass js_ftp_class = {
 }; 
 
 static JSContext* 
-js_initcx(SOCKET sock, JSObject** glob, JSObject** ftp)
+js_initcx(JSRuntime* runtime, SOCKET sock, JSObject** glob, JSObject** ftp)
 {
 	char		ver[256];
 	JSContext*	js_cx;
@@ -479,14 +477,13 @@ js_initcx(SOCKET sock, JSObject** glob, JSObject** ftp)
 	jsval		val;
 	BOOL		success=FALSE;
 
-	lprintf("%04d JavaScript: Initializing context",sock);
+	lprintf("%04d JavaScript: Initializing context (stack: %lu bytes)"
+		,sock,JAVASCRIPT_CONTEXT_STACK);
 
-    if((js_cx = JS_NewContext(js_runtime, JAVASCRIPT_CONTEXT_STACK))==NULL)
+    if((js_cx = JS_NewContext(runtime, JAVASCRIPT_CONTEXT_STACK))==NULL)
 		return(NULL);
 
 	lprintf("%04d JavaScript: Context created",sock);
-
-	JS_BeginRequest(js_cx);	/* Required for multi-thread support */
 
     JS_SetErrorReporter(js_cx, js_ErrorReporter);
 
@@ -526,8 +523,6 @@ js_initcx(SOCKET sock, JSObject** glob, JSObject** ftp)
 		success=TRUE;
 
 	} while(0);
-
-	JS_EndRequest(js_cx);		/* Required for multi-thread support */
 
 	if(!success) {
 		JS_DestroyContext(js_cx);
@@ -1233,9 +1228,6 @@ char * cmdstr(user_t* user, char *instr, char *fpath, char *fspec, char *cmd)
                     sprintf(str,"%s%c",VERSION,REVISION);
                     break;
                 case 'W':   /* Time-slice API type (mswtype) */
-#if 0 //ndef __FLAT__
-                    strcat(cmd,ultoa(mswtyp,str,10));
-#endif
                     break;
                 case 'X':
                     strcat(cmd,scfg.shell[user->shell]->code);
@@ -1377,11 +1369,7 @@ static void send_thread(void* arg)
 				str[0]=0;
 			lprintf("%04d Sent %lu bytes (%lu total) of %s (%lu cps)%s"
 				,xfer.ctrl_sock,total,length,xfer.filename
-#if 0
-				,now-start ? total/(now-start) : total*2
-#else
 				,(total-last_total)/(now-last_report)
-#endif
 				,str);
 			last_total=total;
 			last_report=now;
@@ -1584,11 +1572,7 @@ static void receive_thread(void* arg)
 				str[0]=0;
 			lprintf("%04d Received %lu bytes of %s (%lu cps)%s"
 				,xfer.ctrl_sock,total,xfer.filename
-#if 0
-				,now-start ? total/(now-start) : total*2
-#else
 				,(total-last_total)/(now-last_report)
-#endif
 				,str);
 			last_total=total;
 			last_report=now;
@@ -2241,6 +2225,7 @@ static void ctrl_thread(void* arg)
 	struct tm 	cur_tm;
 #ifdef JAVASCRIPT
 	jsval		js_val;
+	JSRuntime*	js_runtime=NULL;
 	JSContext*	js_cx=NULL;
 	JSObject*	js_glob;
 	JSObject*	js_ftp;
@@ -2263,20 +2248,6 @@ static void ctrl_thread(void* arg)
 #ifdef _WIN32
 	if(startup->answer_sound[0] && !(startup->options&FTP_OPT_MUTE)) 
 		PlaySound(startup->answer_sound, NULL, SND_ASYNC|SND_FILENAME);
-#endif
-
-#ifdef JAVASCRIPT
-#ifdef JS_CX_PER_SESSION
-	if(js_runtime!=NULL) {
-		if(((js_cx=js_initcx(sock,&js_glob,&js_ftp))==NULL)) {
-			lprintf("%04d !ERROR initializing JavaScript context",sock);
-			sockprintf(sock,"425 Error initializing JavaScript context");
-			ftp_close_socket(&sock,__LINE__);
-			thread_down();
-			return;
-		}
-	}
-#endif
 #endif
 
 	transfer_inprogress = FALSE;
@@ -2577,7 +2548,6 @@ static void ctrl_thread(void* arg)
 #ifdef JAVASCRIPT
 #ifdef JS_CX_PER_SESSION
 			if(js_cx!=NULL) {
-				JS_BeginRequest(js_cx);	/* Required for multi-thread support */
 
 				if(js_CreateUserClass(js_cx, js_glob, &scfg)==NULL) 
 					lprintf("%04d !JavaScript ERROR creating user class",sock);
@@ -2592,7 +2562,6 @@ static void ctrl_thread(void* arg)
 					,startup->html_index_file)==NULL) 
 					lprintf("%04d !JavaScript ERROR creating file area object",sock);
 
-				JS_EndRequest(js_cx);	/* Required for multi-thread support */
 			}
 #endif
 #endif
@@ -3626,21 +3595,31 @@ static void ctrl_thread(void* arg)
 				|| !strnicmp(p,html_index_ext,strlen(html_index_ext)))
 				&& !delecmd) {
 #ifdef JAVASCRIPT
-				if(js_runtime==NULL) {
+				if(startup->options&FTP_OPT_NO_JAVASCRIPT) {
 					lprintf("%04d !JavaScript disabled, cannot generate %s",sock,fname);
 					sockprintf(sock, "451 JavaScript disabled");
 					filepos=0;
 					continue;
 				}
+				if(js_runtime == NULL) {
+					lprintf("%04d JavaScript: Creating runtime: %lu bytes"
+						,sock,JAVASCRIPT_RUNTIME_MEMORY);
+
+					if((js_runtime = JS_NewRuntime(JAVASCRIPT_RUNTIME_MEMORY))==NULL) {
+						lprintf("%04d !ERROR creating JavaScript runtime",sock);
+						sockprintf(sock,"451 Error creating JavaScript runtime");
+						filepos=0;
+						continue;
+					}
+				}
+
 				if(js_cx==NULL) {	/* Context not yet created, create it now */
-					if(((js_cx=js_initcx(sock,&js_glob,&js_ftp))==NULL)) {
+					if(((js_cx=js_initcx(js_runtime, sock,&js_glob,&js_ftp))==NULL)) {
 						lprintf("%04d !ERROR initializing JavaScript context",sock);
 						sockprintf(sock,"451 Error initializing JavaScript context");
 						filepos=0;
 						continue;
 					}
-					JS_BeginRequest(js_cx);	/* Required for multi-thread support */
-
 					if(js_CreateUserClass(js_cx, js_glob, &scfg)==NULL) 
 						lprintf("%04d !JavaScript ERROR creating user class",sock);
 
@@ -3656,11 +3635,7 @@ static void ctrl_thread(void* arg)
 					if(js_CreateFileAreaObject(js_cx, js_glob, &scfg, &user
 						,startup->html_index_file)==NULL) 
 						lprintf("%04d !JavaScript ERROR creating file area object",sock);
-
-					JS_EndRequest(js_cx);	/* Required for multi-thread support */
 				}
-
-				JS_BeginRequest(js_cx);	/* Required for multi-thread support */
 
 				js_val=STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, "name"));
 				JS_SetProperty(js_cx, js_ftp, "sort", &js_val);
@@ -3696,7 +3671,6 @@ static void ctrl_thread(void* arg)
 						JS_SetProperty(js_cx, js_ftp, "sort", &js_val);
 					}
 				}
-				JS_EndRequest(js_cx);	/* Required for multi-thread support */
 #endif
 				sprintf(fname,"%sftp%d.tx", scfg.data_dir, sock);
 				if((fp=fopen(fname,"w+b"))==NULL) {
@@ -3714,14 +3688,10 @@ static void ctrl_thread(void* arg)
 				tmpfile=TRUE;
 				delfile=TRUE;
 #ifdef JAVASCRIPT
-				JS_BeginRequest(js_cx);	/* Required for multi-thread support */
-
 				js_val=INT_TO_JSVAL(timeleft);
 				if(!JS_SetProperty(js_cx, js_ftp, "time_left", &js_val))
 					lprintf("%04d !JavaScript ERROR setting user.time_left",sock);
 				js_generate_index(js_cx, js_ftp, sock, fp, lib, dir, &user);
-
-				JS_EndRequest(js_cx);	/* Required for multi-thread support */
 #endif
 				fclose(fp);
 			} else if(dir>=0) {
@@ -4181,6 +4151,12 @@ static void ctrl_thread(void* arg)
 		lprintf("%04d JavaScript: Destroying context",sock);
 		JS_DestroyContext(js_cx);	/* Free Context */
 	}
+
+	if(js_runtime!=NULL) {
+		lprintf("%04d JavaScript: Destroying runtime");
+		JS_DestroyRuntime(js_runtime);
+	}
+
 #endif
 
 	status(STATUS_WFC);
@@ -4223,14 +4199,6 @@ static void cleanup(int code)
 	if(socket_mutex!=NULL) {
 		CloseHandle(socket_mutex);
 		socket_mutex=NULL;
-	}
-#endif
-
-#ifdef JAVASCRIPT
-	if(js_runtime!=NULL) {
-		lprintf("0000 JavaScript: Destroying runtime");
-		JS_DestroyRuntime(js_runtime);
-		js_runtime=NULL;
 	}
 #endif
 
@@ -4399,20 +4367,6 @@ void DLLCALL ftp_server(void* arg)
 
 	for(i=0;i<scfg.total_dirs;i++) 
 		strlwr(scfg.dir[i]->code);
-
-#ifdef JAVASCRIPT
-	if(!(startup->options&FTP_OPT_NO_JAVASCRIPT)) {
-		lprintf("JavaScript: Creating runtime: %lu bytes"
-			,JAVASCRIPT_RUNTIME_MEMORY);
-
-		if((js_runtime = JS_NewRuntime(JAVASCRIPT_RUNTIME_MEMORY))==NULL) {
-			lprintf("!JS_NewRuntime failed");
-			cleanup(1);
-			return;
-		}
-		lprintf("JavaScript: Context stack: %lu bytes", JAVASCRIPT_CONTEXT_STACK);
-	}
-#endif
 
     /* open a socket and wait for a client */
 
