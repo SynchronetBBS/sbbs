@@ -67,7 +67,9 @@
 #include "crc32.h"
 
 /* Constants */
-#define MAIL_VERSION "1.11"
+#define MAIL_VERSION	"1.11"
+#define FORWARD			"forward:"
+#define NO_FORWARD		"local:"
 
 int dns_getmx(char* name, char* mx, char* mx2
 			  ,DWORD intf, DWORD ip_addr, BOOL use_tcp, int timeout);
@@ -1160,6 +1162,8 @@ static void smtp_thread(void* arg)
 	ulong		badcmds=0;
 	BOOL		esmtp=FALSE;
 	BOOL		telegram=FALSE;
+	BOOL		forward=FALSE;
+	BOOL		no_forward=FALSE;
 	uint		subnum=INVALID_SUB;
 	FILE*		msgtxt=NULL;
 	char		msgtxt_fname[MAX_PATH+1];
@@ -1898,6 +1902,17 @@ static void smtp_thread(void* arg)
 			tp=strchr(str,'>');				/* Truncate '>' */
 			if(tp!=NULL) *tp=0;
 
+			forward=FALSE;
+			no_forward=FALSE;
+			if(!strnicmp(p,FORWARD,strlen(FORWARD))) {
+				forward=TRUE;		/* force forward to user's netmail address */
+				p+=strlen(FORWARD);
+			}
+			if(!strnicmp(p,NO_FORWARD,strlen(NO_FORWARD))) {
+				no_forward=TRUE;	/* do not forward to user's netmail address */
+				p+=strlen(NO_FORWARD);
+			}
+
 			rcpt_name[0]=0;
 			SAFECOPY(rcpt_addr,p);
 
@@ -2103,8 +2118,9 @@ static void smtp_thread(void* arg)
 			/* Forward to Internet */
 			tp=strrchr(user.netmail,'@');
 			if(!telegram
+				&& !no_forward
 				&& scfg.sys_misc&SM_FWDTONET 
-				&& user.misc&NETMAIL 
+				&& (user.misc&NETMAIL || forward)
 				&& tp && strchr(tp,'.') && !strchr(tp,'/') 
 				&& !strstr(tp,scfg.sys_inetaddr)) {
 				lprintf("%04d SMTP Forwarding to: %s"
