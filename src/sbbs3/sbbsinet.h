@@ -85,8 +85,6 @@
 
 #define ERROR_VALUE		WSAGetLastError()
 
-#define SHUT_RDWR		2	/* for shutdown() */
-
 #else	/* BSD sockets */
 
 /* WinSock-isms */
@@ -101,5 +99,9 @@
 #define ERROR_VALUE		errno
 
 #endif	/* __unix__ */
+
+#ifndef SHUT_RDWR
+#define SHUT_RDWR		2	/* for shutdown() */
+#endif
 
 #endif	/* Don't add anything after this line */
