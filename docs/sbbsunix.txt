@@ -96,12 +96,9 @@ A. External programs can either use standard I/O (e.g. bash, pico, Lord/X,
 
 Q. Does Synchronet for Unix require X-Windows?
 A. No, Synchronet for Unix is currently a console-based application.
-   However, it does have an X-based character mode console now.  To build 
-   without X support, you'll need to add NO_X=1 to the make/gmake lines below.
-   Further, if your X headers are not installed in /usr/X11R6/include,
-   You must define either X_PATH (Path to root of X11 install ie: /usr/X11R6)
-   or X_HEADERS (Path to X11 include files ie: /usr/X11R6/include) on the make
-   command lines below.  ie: "gmake X_PATH=/usr/X11"
+   However, it does have an X-based character mode console now.  The X11
+   headers (Part of the X11-devel package or something similar) are required
+   for this to work.
 
 Q. Are there any plans to make an X-Windows front-end for Synchronet?
 A. Possibly, but it would be optional.
@@ -217,10 +214,8 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
       # gmake
       Note: If you're linking with /usr/lib/libmozjs.so, don't forget to add
             "JSLIB=mozjs" to the gmake command-line
-      Note: For those building on systems that do not have X installed,
-            use "gmake NO_X=1"
       Note: If X is not installed in /usr/X11R6, 
-            use "gmake X_DIR=/path/to/X"
+            use "gmake X_PATH=/path/to/X"
       Note: To debug compile/link command-line problems, adding "VERBOSE=1"
             to the gmake command-line can be very helpful
       Note: Warnings (if any) can be safely ignored
@@ -237,10 +232,8 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
 
    D. Build the Synchronet configuration utility (SCFG):
       # gmake
-      Note: For those building on systems that do not have X installed,
-            use "gmake NO_X=1"
       Note: If X is not installed in /usr/X11R6, 
-            use "gmake X_DIR=/path/to/X"
+            use "gmake X_PATH=/path/to/X"
       Note: Warnings (if any) can be safely ignored
 
    E. Congratulate yourself on a job well-done.
