@@ -1393,6 +1393,7 @@ int ugetstr(int left, int top, char *outstr, int max, long mode, int *lastkey)
 					if(mode&K_SCANNING)
 						ch=CR;
 					break;
+				case KEY_F(2):
 				case KEY_UP:
 				case KEY_DOWN:
 					if(mode&K_DEUCEEXIT)
