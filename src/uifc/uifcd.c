@@ -124,7 +124,6 @@ int ulist(int mode, char left, int top, char width, int *cur, int *bar
     char **it;
     char str[128];
     int ret;
-	int adj_width=0;
 
 	/* Count number of menu options */
     for(cnt=0;cnt<MAX_OPTS;cnt++)
@@ -151,10 +150,8 @@ int ulist(int mode, char left, int top, char width, int *cur, int *bar
 		strcpy(it[cnt2++],option[i]);
 
 		/* Adjust width if it's too small */
-		if(width<strlen(option[i])+12)  {
+		if(width<strlen(option[i])+12)  
 			width=strlen(option[i])+12;
-			adj_width=TRUE;
-		}
     }
 
 	// Make up for expanding first column in width adjustment.
@@ -193,20 +190,27 @@ int ulist(int mode, char left, int top, char width, int *cur, int *bar
         if(i<0) i=0;
 		if(strcmp(option[0],"Yes")==0 && strcmp(option[1],"No")==0 && cnt==2)  {
 		    if(i==0)
-				ret=dialog_yesno(app_title,title,5,width);
+				ret=dialog_yesno((char*)NULL,title,5,width);
 	    	else
-				ret=dialog_noyes(app_title,title,5,width);
+				ret=dialog_noyes((char*)NULL,title,5,width);
 	
-	    	if(ret) ret=1; else ret=0;
+/*          what is this line doing? -1 is ESC, which should not be the same as "No".
+ *	    	if(ret) ret=1; else ret=0;
+ */
 		}
+#if 0	/* this never happens */
 		else if(strcmp(option[0],"No")==0 && strcmp(option[1],"Yes")==0 && cnt==2)  {
 	    	if(i==1)
-				ret=dialog_yesno(app_title,title,5,width);
+				ret=dialog_yesno((char*)NULL,title,5,width);
 	    	else
-				ret=dialog_noyes(app_title,title,5,width);
+				ret=dialog_noyes((char*)NULL,title,5,width);
 	    	if(ret) ret=0; else ret=1;
 		}
+#endif
 		else  {
+			/* make sure we're wide enough to display the application title */
+			if(width<strlen(app_title)
+				width=strlen(app_title);
             dialog_clear_norefresh();
 			scrollpos=0;
 			if(i>14)
@@ -302,7 +306,7 @@ int uinput(int mode, char left, char top, char *prompt, char *outstr,
 {
 	char str[256];
 	sprintf(str,"%.*s",sizeof(str)-1,outstr);
-    dialog_inputbox(app_title, prompt, 9, max+4, outstr);
+    dialog_inputbox((char*)NULL, prompt, 9, max+4, outstr);
 	if(strcmp(str,outstr))
 		api->changes=TRUE;
     return strlen(outstr);
@@ -313,7 +317,7 @@ int uinput(int mode, char left, char top, char *prompt, char *outstr,
 /****************************************************************************/
 void umsg(char *str)
 {
-    dialog_mesgbox(app_title, str, 7, strlen(str)+4);
+    dialog_mesgbox((char*)NULL, str, 7, strlen(str)+4);
 }
 
 /****************************************************************************/
@@ -322,7 +326,7 @@ void umsg(char *str)
 void upop(char *str)
 {
 	// Pop-down doesn't do much... the mext item should over-write this.
-    dialog_gauge(app_title,str,8,20,7,40,0);
+    dialog_gauge((char*)NULL,str,8,20,7,40,0);
 }
 
 /****************************************************************************/
