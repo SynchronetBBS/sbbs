@@ -445,7 +445,7 @@ static jsval get_value(JSContext *cx, char* value)
 static JSBool
 js_iniGetValue(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	char*	section=NULL;
+	char*	section=ROOT_SECTION;
 	char*	key;
 	char**	list;
 	char	buf[INI_MAX_VALUE_LEN];
@@ -511,7 +511,7 @@ js_iniGetValue(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 static JSBool
 js_iniSetValue(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	char*	section=NULL;
+	char*	section=ROOT_SECTION;
 	char*	key;
 	char*	result=NULL;
 	int32	i;
@@ -607,7 +607,7 @@ js_iniGetSections(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 static JSBool
 js_iniGetKeys(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	char*		section=NULL;
+	char*		section=ROOT_SECTION;
 	char**		list;
     jsint       i;
     jsval       val;
@@ -641,7 +641,7 @@ js_iniGetKeys(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 static JSBool
 js_iniGetObject(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	char*		section=NULL;
+	char*		section=ROOT_SECTION;
     jsint       i;
     JSObject*	object;
 	private_t*	p;

@@ -42,6 +42,7 @@
 #include "str_list.h"	/* strList_t */
 
 #define INI_MAX_VALUE_LEN	1024		/* Maximum value length, includes '\0' */
+#define ROOT_SECTION		NULL
 
 typedef struct {
 	ulong		bit;
