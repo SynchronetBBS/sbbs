@@ -19,7 +19,7 @@ int total
 int mode
 str fname
 
-printf "\r\nSynchronet BullsEye! Version 1.00 by Rob Swindell\r\n"
+printf "\r\nSynchronet BullsEye! Version 1.06 by Rob Swindell\r\n"
 pause_reset
 set str "%zbullseye.cfg"
 fopen file O_RDONLY str
@@ -42,6 +42,7 @@ set total 0
 	        end_if
 
 # Display menu, list bulletins, display prompt, etc.
+
 :menu
 printfile "%zbullseye.asc"
 print "\1n\r\n\1b\1hEnter number of bulletin to view or press (\1wENTER\1b) to continue: \1w"
@@ -62,6 +63,7 @@ if_true	# not end of file
 		truncsp str
 		copy fname str
 		compare_substr str ".htm"
+		replace_text 563 "\1n\1h\1b{\1wContinue? Yes/No\1b} "
 		if_true
 			exec_bin typehtml
 		else
@@ -69,6 +71,7 @@ if_true	# not end of file
 			end_if
 		sprintf str "Node %d %s viewed bulletin #%d: %s" _node_num _useron.alias i fname
 		print_local "%s"
+		revert_text 563
 		clear_abort
 		goto menu
 		end_if
