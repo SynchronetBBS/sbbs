@@ -59,8 +59,8 @@ for(i in text) {
 
 		t=t.replace(/%BN/g,system.name);		// Board Name
 		t=t.replace(/%SN/g,system.operator);	// Sysop Name
-		t=t.replace(/%DT/g,system.datestr);		// Date
-		t=t.replace(/%TM/g,system.timestr);		// Time
+		t=t.replace(/%DT/g,system.datestr());	// Date
+		t=t.replace(/%TM/g,system.timestr());	// Time
 
 	//          SS Current Status Screen Library Name
 	//          MS Current Menu Library Name
