@@ -49,6 +49,7 @@
 
 /* Synchronet-specific */
 #include "sbbsdefs.h"
+#include "genwrap.h"	/* stricmp */
 #include "filewrap.h"	/* lock/unlock/sopen */
 
 enum {

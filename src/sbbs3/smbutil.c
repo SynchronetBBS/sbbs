@@ -56,8 +56,9 @@
 #include <errno.h>	/* errno */
 #include <string.h>	/* strrchr */
 
-#include "filewrap.h"
+#include "genwrap.h"	/* stricmp */
 #include "dirwrap.h"	/* fexist */
+#include "filewrap.h"
 #include "smblib.h"
 #include "crc32.h"
 #include "gen_defs.h"	/* MAX_PATH */
