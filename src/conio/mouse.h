@@ -58,4 +58,8 @@ enum {
 #define CIOLIB_BUTTON_DRAG_MOVE(x)	((x-1)*9+8)
 #define CIOLIB_BUTTON_DRAG_END(x)	((x-1)*9+9)
 
+#define CIOLIB_BUTTON_NUMBER(x)		((x-1)/9+1)
+
+#define CIOLIB_BUTTON_BASE(x)		(x-9*CIOLIB_BUTTON_NUMBER(x))
+
 #endif

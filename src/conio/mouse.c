@@ -3,6 +3,18 @@
 
 #include "mouse.h"
 
+enum {
+	 MOUSE_NOSTATE
+	,MOUSE_SINGLEPRESSED
+	,MOUSE_CLICKED
+	,MOUSE_DOUBLEPRESSED
+	,MOUSE_DOUBLECLICKED
+	,MOUSE_TRIPLEPRESSED
+	,MOUSE_TRIPLECLICKED
+	,MOUSE_QUADPRESSED
+	,MOUSE_QUADCLICKED
+};
+
 static pthread_mutex_t in_mutex;
 static pthread_mutex_t out_mutex;
 sem_t in_sem;
@@ -38,19 +50,21 @@ struct curr_event {
 }
 
 struct mouse_state {
-	int	buttonstate;		/* Current state of all buttons */
-	int	knownbuttonstatemask;	/* Mask of buttons that have done something since */
-					 * We started watching... the rest are actually in
-					 * an unknown state */
-	int	curx;		/* Current X position */
-	int	cury;		/* Current Y position */
-	int	events;		/* Currently enabled events */
-	int	click_timeout;	/* Timeout between press and release events for a click (ms) */
-	int	multi_timeout;	/* Timeout after a click for detection of multi clicks (ms) */
-	int	click_drift;	/* Allowed "drift" during a click event */
-	struct in_mouse_event	*events_in;	/* Pointer to recevied events stack */
+	int	buttonstate;			/* Current state of all buttons - bitmap */
+	int	knownbuttonstatemask;	/* Mask of buttons that have done something since
+								 * We started watching... the rest are actually in
+								 * an unknown state */
+	int	button_states[3];				/* Expanded state of each button */
+	int	button_x[3];					/* Start X/Y position of the current state */
+	int	button_y[3];					
+	int	curx;					/* Current X position */
+	int	cury;					/* Current Y position */
+	int	events;					/* Currently enabled events */
+	int	click_timeout;			/* Timeout between press and release events for a click (ms) */
+	int	multi_timeout;			/* Timeout after a click for detection of multi clicks (ms) */
+	int	click_drift;			/* Allowed "drift" during a click event */
+	struct in_mouse_event	*events_in;		/* Pointer to recevied events stack */
 	struct out_mouse_event	*events_out;	/* Pointer to output events stack */
-	struct curr_event	pending[3];	/* Per-button pending events */
 };
 
 struct mouse_state state;
@@ -144,6 +158,7 @@ static void ciolib_mouse_thread(void *data)
 	int	use_timeout=0;
 	struct timespec timeout;
 	init_mouse();
+	struct in_mouse_event *old_in_event;
 
 	while(1) {
 		if(use_timeout)
@@ -152,35 +167,16 @@ static void ciolib_mouse_thread(void *data)
 			sem_wait(&in_sem);
 
 		/* Check for a timeout rather than a sem_post() */
-
-		switch(state.events_in->event) {
-			case CIOLIB_MOUSE_MOVE:
-				/* Needs to check if currently dragging/clicking/etc */
-				/* This can result in MULTIPLE events hitting the output */
-				/* Stack */
-				break;
-
-			case CIOLIB_BUTTON_1_PRESS:
-				/* Currently processing a B1 event? */
-				break;
-
-			case CIOLIB_BUTTON_1_RELEASE:
-				/* Needs to check if currently dragging/clicking/etc */
-				break;
-
-			case CIOLIB_BUTTON_2_PRESS:
-				break;
-
-			case CIOLIB_BUTTON_2_RELEASE:
-				/* Needs to check if currently dragging/clicking/etc */
-				break;
-
-			case CIOLIB_BUTTON_3_PRESS:
-				break;
-
-			case CIOLIB_BUTTON_3_RELEASE:
-				/* Needs to check if currently dragging/clicking/etc */
-				break;
+		
+		if(!validate_pending(state.events_in->event)) {
+			add_eventsfor(state.events_in->event);
 		}
+		use_timeout=get_timeout(&timeout);
+
+		pthread_mutex_lock(&in_mutex);
+		old_in_event=state.events_in;
+		state.events_in=state.events_in->nextevent;
+		free(old_in_event);
+		pthread_mutes_unlock(&in_mutex);
 	}
 }

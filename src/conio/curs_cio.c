@@ -606,6 +606,11 @@ void curs_gotoxy(int x, int y)
 	refresh();
 }
 
+void call_endwin(void)
+{
+	endwin();
+}
+
 int curs_initciolib(long inmode)
 {
 	short	fg, bg, pair=0;
@@ -634,7 +639,7 @@ int curs_initciolib(long inmode)
 	keypad(stdscr, TRUE);
 	scrollok(stdscr,FALSE);
 	raw();
-	atexit(endwin);
+	atexit(call_endwin);
 
 	/* Set up color pairs */
 	for(bg=0;bg<8;bg++)  {
