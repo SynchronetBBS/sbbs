@@ -59,6 +59,7 @@ int main(int argc, char **argv)
 			rlogin_close();
 		}
 	}
+	uifcbail();
 #ifdef _WINSOCKAPI_
 	if(WSAInitialized && WSACleanup()!=0) 
 		fprintf(stderr,"!WSACleanup ERROR %d",ERROR_VALUE);
