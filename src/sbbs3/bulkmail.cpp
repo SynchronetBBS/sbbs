@@ -177,7 +177,7 @@ int sbbs_t::bulkmailhdr(smb_t* smb, smbmsg_t* msg, uint usernum)
 {
     char		str[256];
     int			i,j;
-	ushort		nettype;
+	ushort		nettype=NET_UNKNOWN;
     node_t		node;
 	user_t		user;
 	smbmsg_t	newmsg;
@@ -194,9 +194,8 @@ int sbbs_t::bulkmailhdr(smb_t* smb, smbmsg_t* msg, uint usernum)
 
 	if(cfg.sys_misc&SM_FWDTONET && user.misc&NETMAIL && user.netmail[0]) {
 		bprintf(text[UserNetMail],user.netmail);
-		nettype=NET_INTERNET;
-		smb_hfield(&newmsg,RECIPIENTNETTYPE,sizeof(nettype),&nettype);
-		smb_hfield_str(&newmsg,RECIPIENTNETADDR,user.netmail);
+		smb_hfield_netaddr(&newmsg,RECIPIENTNETADDR,user.netmail,&nettype);
+		smb_hfield_bin(&newmsg,RECIPIENTNETTYPE,nettype);
 	} else {
 		sprintf(str,"%u",usernum);
 		smb_hfield_str(&newmsg,RECIPIENTEXT,str);
