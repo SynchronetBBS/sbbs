@@ -209,6 +209,7 @@ if(bbs.verified && bbs.userverified[0])
         ,timestr(&bbs.verified),bbs.userverified);
 }
 
+#if 0 /* old way */
 u_long resolve_ip(char *addr)
 {
 	HOSTENT*	host;
@@ -221,6 +222,25 @@ u_long resolve_ip(char *addr)
 	}
 	return(*((ulong*)host->h_addr_list[0]));
 }
+#else
+u_long resolve_ip(char *addr)
+{
+	HOSTENT*	host;
+	char*		p;
+
+	if(*addr==0)
+		return(INADDR_NONE);
+
+	for(p=addr;*p;p++)
+		if(*p!='.' && !isdigit(*p))
+			break;
+	if(!(*p))
+		return(inet_addr(addr));
+	if((host=gethostbyname(addr))==NULL) 
+		return(INADDR_NONE);
+	return(*((ulong*)host->h_addr_list[0]));
+}
+#endif
 
 int telnet_negotiate(SOCKET sock, uchar* buf, int rd, int max_rd)
 {
@@ -428,7 +448,7 @@ int main(int argc, char **argv)
 	ulong	total_systems;
 	ulong	total_attempts=0;
 	ulong	total_verified=0;
-	FILE	*in,*shrt,*lng,*html;
+	FILE	*in,*shrt,*lng,*html,*mail;
 	FILE*	ibbs;
 	ulong	ip_list[1000];
 	ulong	ip_total=0;
@@ -477,6 +497,10 @@ int main(int argc, char **argv)
 
 	if((ibbs=fopen("sbbsimsg.lst","w"))==NULL) {
 		printf("error opening/creating sbbsimsg.lst\n");
+		return(1); }
+
+	if((mail=fopen("sysop.lst","w"))==NULL) {
+		printf("error opening/creating sysop.lst\n");
 		return(1); }
 
 	fprintf(shrt,"Synchronet BBS List exported from Vertrauen on %s\r\n"
@@ -610,7 +634,9 @@ int main(int argc, char **argv)
 				ip_addr=resolve_ip(telnet_addr);
 				printf("\n");
 
-				if(i && ip_addr!=0) {
+				if(i) {
+					if(ip_addr==0 || ip_addr==INADDR_NONE)
+						continue;	/* bad hostname/IP, ignore */
 					for(ip=0;ip<ip_total;ip++)
 						if(ip_addr==ip_list[ip])
 							break;
@@ -663,7 +689,7 @@ int main(int argc, char **argv)
 					,total_attempts,total_systems,telnet_addr,telnet_port);
 
 //				ip_addr=resolve_ip(telnet_addr);	/* already done above */
-				if(!ip_addr) 
+				if(!ip_addr || ip_addr==INADDR_NONE) 
 					strcpy(verify_result,"bad hostname");
 				else {
 
@@ -820,6 +846,7 @@ int main(int argc, char **argv)
 		fprintf(html,"Online since: %s<BR>\n",unixtodstr(bbs.birth,tmp));
 
 		if(bbs.sysop_email[0]) {
+			fprintf(mail,"%s\n",bbs.sysop_email);
 			sprintf(sysop_email,"<A HREF=mailto:%s>%s</A>",bbs.sysop_email,bbs.sysop[0]);
 			sysop=sysop_email;
 		} else
