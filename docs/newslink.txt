@@ -139,7 +139,7 @@ n   do not add "From Newsgroup" text to imported messages
 t   do not add tearline to imported messages
 a   convert extended-ASCII chars to ASCII on imported messages
 r   remove "Newsgroups:" header field from imported messages
-b   decode binary attachments
+b   decode single-part (uuencoded or yenc-encoded) binary attachments
 i   import all articles on first run (not just new articles)
 s   no subject filtering (do not check against text/subject.can)
 
@@ -188,6 +188,7 @@ Other supported NewsLink command-line options:
 -ue     update export pointers (export none)
 -ne     no e-mail addresses
 -nm     no mangling of e-mail addresses (disable anti-SPAM measures)
+-um     un-mangle e-mail addresses when importing
 -ix [n] import a fixed number (n) of articles/messages (default is 500)
 
 
