@@ -500,7 +500,11 @@ int main(int argc, char** argv)  {
 	signal(SIGPIPE, SIG_IGN);   
 
 	uifc.size=sizeof(uifc);
+#ifdef USE_CURSES
 	i=uifcinic(&uifc);  /* curses */
+#else
+	i=uifcini32(&uifc);  /* curses */
+#endif
 	if(i!=0) {
 		printf("uifc library init returned error %d\n",i);
 		exit(1);
