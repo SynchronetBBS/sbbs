@@ -107,9 +107,6 @@
 	#endif
 	#include <jsapi.h>
 	#include <jsprf.h>		/* JS-safe sprintf functions */
-
-	#define	JAVASCRIPT_MAX_BYTES		(8*1024*1024)
-	#define JAVASCRIPT_CONTEXT_STACK	(16*1024)
 #endif
 
 /***********************/
@@ -190,6 +187,7 @@ public:
 	JSRuntime*	js_runtime;
 	JSContext*	js_cx;
 	JSObject*	js_glob;
+	ulong		js_loop;
 	long		js_execfile(char *fname);
 	bool		js_init(void);
 
