@@ -860,9 +860,14 @@ int main(int argc, char **argv)
 		aborted=0;
 		attr(LIGHTGRAY);
 		cls();
-		bprintf("\1n\1m\1hSynchronet \1wBBS List \1mv3.10 (XSDK v%s) "
-			"Developed 1994-2000 Rob Swindell\r\n\r\n"
-			,xsdk_ver);
+		COMPILER_DESC(str);
+		bprintf("\1n\1m\1hSynchronet \1wBBS List \1mv3.10 for %s\r\n (XSDK v%s %s %s) "
+			"\r\n\r\n"
+			,PLATFORM_DESC
+			,xsdk_ver
+			,str
+			,__DATE__
+			);
 
 	#define SBL_INDENT "    "
 		sprintf(str,SBL_INDENT"~List all systems (condensed)\r\n"
@@ -894,7 +899,7 @@ int main(int argc, char **argv)
 			bprintf(SBL_INDENT"\1n\1cEntries are auto-deleted \1h%u\1n\1c days after "
 				"last update or verification.\r\n",del_days);
 			bputs(SBL_INDENT"Users are encouraged to \1hV\1n\1cerify (vouch for) any listed "
-				"BBSs they call.\r\n"); }
+				"systems they call.\r\n"); }
 
 		nodesync(); 			/* Display any waiting messages */
 
