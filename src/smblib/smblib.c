@@ -114,7 +114,7 @@ int SMBCALL smb_open(smb_t* smb)
 		if(smb_fread(smb,&hdr,sizeof(smbhdr_t),smb->shd_fp)!=sizeof(smbhdr_t)) {
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
 				,"%d (%s) reading header"
-				,ferror(smb->shd_fp),STRERROR(ferror(smb->shd_fp)));
+				,get_errno(),STRERROR(get_errno()));
 			smb_close(smb);
 			return(SMB_ERR_READ);
 		}
@@ -135,7 +135,7 @@ int SMBCALL smb_open(smb_t* smb)
 		if(smb_fread(smb,&(smb->status),sizeof(smbstatus_t),smb->shd_fp)!=sizeof(smbstatus_t)) {
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
 				,"%d (%s) reading status"
-				,ferror(smb->shd_fp),STRERROR(ferror(smb->shd_fp)));
+				,get_errno(),STRERROR(get_errno()));
 			smb_close(smb);
 			return(SMB_ERR_READ); 
 		}
@@ -380,7 +380,7 @@ int SMBCALL smb_getstatus(smb_t* smb)
 	if(i==sizeof(smbstatus_t))
 		return(SMB_SUCCESS);
 	safe_snprintf(smb->last_error,sizeof(smb->last_error)
-		,"%d (%s) reading status",ferror(smb->shd_fp),STRERROR(ferror(smb->shd_fp)));
+		,"%d (%s) reading status",get_errno(),STRERROR(get_errno()));
 	return(SMB_ERR_READ);
 }
 
@@ -407,7 +407,7 @@ int SMBCALL smb_putstatus(smb_t* smb)
 	if(i==sizeof(smbstatus_t))
 		return(SMB_SUCCESS);
 	safe_snprintf(smb->last_error,sizeof(smb->last_error)
-		,"%d (%s) writing status",ferror(smb->shd_fp),STRERROR(ferror(smb->shd_fp)));
+		,"%d (%s) writing status",get_errno(),STRERROR(get_errno()));
 	return(SMB_ERR_WRITE);
 }
 
@@ -526,7 +526,7 @@ int SMBCALL smb_getmsgidx(smb_t* smb, smbmsg_t* msg)
 		if(smb_fread(smb,&msg->idx,sizeof(idxrec_t),smb->sid_fp)!=sizeof(idxrec_t)) {
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
 				,"%d (%s) reading index at offset %lu (byte %lu)"
-				,ferror(smb->sid_fp),STRERROR(ferror(smb->sid_fp))
+				,get_errno(),STRERROR(get_errno())
 				,msg->offset,msg->offset*sizeof(idxrec_t));
 			return(SMB_ERR_READ);
 		}
@@ -552,7 +552,7 @@ int SMBCALL smb_getmsgidx(smb_t* smb, smbmsg_t* msg)
 		if(smb_fread(smb,&idx,sizeof(idxrec_t),smb->sid_fp)!=sizeof(idxrec_t)) {
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
 				,"%d (%s) reading index at offset %lu (byte %lu)"
-				,ferror(smb->sid_fp),STRERROR(ferror(smb->sid_fp)),l,l*sizeof(idxrec_t));
+				,get_errno(),STRERROR(get_errno()),l,l*sizeof(idxrec_t));
 			return(SMB_ERR_READ);
 		}
 		if(bot==top-1 && idx.number!=msg->hdr.number) {
@@ -596,7 +596,7 @@ int SMBCALL smb_getfirstidx(smb_t* smb, idxrec_t *idx)
 	if(smb_fread(smb,idx,sizeof(idxrec_t),smb->sid_fp)!=sizeof(idxrec_t)) {
 		safe_snprintf(smb->last_error,sizeof(smb->last_error)
 			,"%d (%s) reading first index"
-			,ferror(smb->sid_fp),STRERROR(ferror(smb->sid_fp)));
+			,get_errno(),STRERROR(get_errno()));
 		return(SMB_ERR_READ);
 	}
 	return(SMB_SUCCESS);
@@ -630,7 +630,7 @@ int SMBCALL smb_getlastidx(smb_t* smb, idxrec_t *idx)
 	if(smb_fread(smb,idx,sizeof(idxrec_t),smb->sid_fp)!=sizeof(idxrec_t)) {
 		safe_snprintf(smb->last_error,sizeof(smb->last_error)
 			,"%d (%s) reading last index"
-			,ferror(smb->sid_fp),STRERROR(ferror(smb->sid_fp)));
+			,get_errno(),STRERROR(get_errno()));
 		return(SMB_ERR_READ);
 	}
 	return(SMB_SUCCESS);
@@ -870,7 +870,7 @@ int SMBCALL smb_getmsghdr(smb_t* smb, smbmsg_t* msg)
 	if(smb_fread(smb,&msg->hdr,sizeof(msghdr_t),smb->shd_fp)!=sizeof(msghdr_t)) {
 		safe_snprintf(smb->last_error,sizeof(smb->last_error)
 			,"%d (%s) reading msg header"
-			,ferror(smb->shd_fp),STRERROR(ferror(smb->shd_fp)));
+			,get_errno(),STRERROR(get_errno()));
 		return(SMB_ERR_READ);
 	}
 	if(memcmp(msg->hdr.id,SHD_HEADER_ID,LEN_HEADER_ID)) {
@@ -900,7 +900,7 @@ int SMBCALL smb_getmsghdr(smb_t* smb, smbmsg_t* msg)
 			smb_freemsgmem(msg);
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
 				,"%d (%s) reading data field %d"
-				,ferror(smb->shd_fp),STRERROR(ferror(smb->shd_fp)),i);
+				,get_errno(),STRERROR(get_errno()),i);
 			return(SMB_ERR_READ); 
 		}
 		i++;
@@ -936,7 +936,7 @@ int SMBCALL smb_getmsghdr(smb_t* smb, smbmsg_t* msg)
 			smb_freemsgmem(msg);
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
 				,"%d (%s) reading header field"
-				,ferror(smb->shd_fp),STRERROR(ferror(smb->shd_fp)));
+				,get_errno(),STRERROR(get_errno()));
 			return(SMB_ERR_READ); 
 		}
 		l+=sizeof(hfield_t);
@@ -955,7 +955,7 @@ int SMBCALL smb_getmsghdr(smb_t* smb, smbmsg_t* msg)
 			smb_freemsgmem(msg);
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
 				,"%d (%s) reading header field data"
-				,ferror(smb->shd_fp),STRERROR(ferror(smb->shd_fp)));
+				,get_errno(),STRERROR(get_errno()));
 			return(SMB_ERR_READ); 
 		}
 		set_convenience_ptr(msg,msg->hfield[i].type,msg->hfield_dat[i]);
@@ -1443,7 +1443,7 @@ int SMBCALL smb_putmsgidx(smb_t* smb, smbmsg_t* msg)
 	if(!fwrite(&msg->idx,sizeof(idxrec_t),1,smb->sid_fp)) {
 		safe_snprintf(smb->last_error,sizeof(smb->last_error)
 			,"%d (%s) writing index"
-			,ferror(smb->sid_fp),STRERROR(ferror(smb->sid_fp)));
+			,get_errno(),STRERROR(get_errno()));
 		return(SMB_ERR_WRITE);
 	}
 	fflush(smb->sid_fp);
@@ -1507,7 +1507,7 @@ int SMBCALL smb_putmsghdr(smb_t* smb, smbmsg_t* msg)
 	if(!fwrite(&msg->hdr,sizeof(msghdr_t),1,smb->shd_fp)) {
 		safe_snprintf(smb->last_error,sizeof(smb->last_error)
 			,"%d (%s) writing fixed portion of header record"
-			,ferror(smb->shd_fp),STRERROR(ferror(smb->shd_fp)));
+			,get_errno(),STRERROR(get_errno()));
 		return(SMB_ERR_WRITE);
 	}
 
@@ -1518,7 +1518,7 @@ int SMBCALL smb_putmsghdr(smb_t* smb, smbmsg_t* msg)
 		if(!fwrite(&msg->dfield[i],sizeof(dfield_t),1,smb->shd_fp)) {
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
 				,"%d (%s) writing data field"
-				,ferror(smb->shd_fp),STRERROR(ferror(smb->shd_fp)));
+				,get_errno(),STRERROR(get_errno()));
 			return(SMB_ERR_WRITE);
 		}
 
@@ -1529,14 +1529,14 @@ int SMBCALL smb_putmsghdr(smb_t* smb, smbmsg_t* msg)
 		if(!fwrite(&msg->hfield[i],sizeof(hfield_t),1,smb->shd_fp)) {
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
 				,"%d (%s) writing header field"
-				,ferror(smb->shd_fp),STRERROR(ferror(smb->shd_fp)));
+				,get_errno(),STRERROR(get_errno()));
 			return(SMB_ERR_WRITE);
 		}
 		if(msg->hfield[i].length					 /* more then 0 bytes long */
 			&& !fwrite(msg->hfield_dat[i],msg->hfield[i].length,1,smb->shd_fp)) {
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
 				,"%d (%s) writing header field data"
-				,ferror(smb->shd_fp),STRERROR(ferror(smb->shd_fp)));
+				,get_errno(),STRERROR(get_errno()));
 			return(SMB_ERR_WRITE); 
 		}
 	}
@@ -1545,7 +1545,7 @@ int SMBCALL smb_putmsghdr(smb_t* smb, smbmsg_t* msg)
 		if(fputc(0,smb->shd_fp)!=0) {
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
 				,"%d (%s) padding header block"
-				,ferror(smb->shd_fp),STRERROR(ferror(smb->shd_fp)));
+				,get_errno(),STRERROR(get_errno()));
 			return(SMB_ERR_WRITE); 			   /* pad block with NULL */
 		}
 		hdrlen++; 

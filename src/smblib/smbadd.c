@@ -171,7 +171,7 @@ int SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, long dupechk_hash
 				if(smb_fwrite(smb,&xlat,sizeof(xlat),smb->sdt_fp)!=sizeof(xlat)) {
 					safe_snprintf(smb->last_error,sizeof(smb->last_error)
 						,"%d (%s) writing body xlat string"
-						,ferror(smb->sdt_fp),STRERROR(ferror(smb->sdt_fp)));
+						,get_errno(),STRERROR(get_errno()));
 					retval=SMB_ERR_WRITE;
 					break;
 				}
@@ -181,7 +181,7 @@ int SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, long dupechk_hash
 			if(smb_fwrite(smb,&xlat,sizeof(xlat),smb->sdt_fp)!=sizeof(xlat)) {
 				safe_snprintf(smb->last_error,sizeof(smb->last_error)
 					,"%d (%s) writing body xlat terminator"
-					,ferror(smb->sdt_fp),STRERROR(ferror(smb->sdt_fp)));
+					,get_errno(),STRERROR(get_errno()));
 				retval=SMB_ERR_WRITE;
 				break;
 			}
@@ -190,7 +190,7 @@ int SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, long dupechk_hash
 			if(smb_fwrite(smb,body,bodylen,smb->sdt_fp)!=bodylen) {
 				safe_snprintf(smb->last_error,sizeof(smb->last_error)
 					,"%d (%s) writing body (%ld bytes)"
-					,ferror(smb->sdt_fp),STRERROR(ferror(smb->sdt_fp))
+					,get_errno(),STRERROR(get_errno())
 					,bodylen);
 				retval=SMB_ERR_WRITE;
 				break;
@@ -205,7 +205,7 @@ int SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, long dupechk_hash
 			if(smb_fwrite(smb,&xlat,sizeof(xlat),smb->sdt_fp)!=sizeof(xlat)) {
 				safe_snprintf(smb->last_error,sizeof(smb->last_error)
 					,"%d (%s) writing tail xlat terminator"
-					,ferror(smb->sdt_fp),STRERROR(ferror(smb->sdt_fp)));
+					,get_errno(),STRERROR(get_errno()));
 				retval=SMB_ERR_WRITE;
 				break;
 			}
@@ -213,7 +213,7 @@ int SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, long dupechk_hash
 			if(smb_fwrite(smb,tail,taillen-sizeof(xlat),smb->sdt_fp)!=taillen-sizeof(xlat)) {
 				safe_snprintf(smb->last_error,sizeof(smb->last_error)
 					,"%d (%s) writing tail (%ld bytes)"
-					,ferror(smb->sdt_fp),STRERROR(ferror(smb->sdt_fp))
+					,get_errno(),STRERROR(get_errno())
 					,taillen-sizeof(xlat));
 				retval=SMB_ERR_WRITE;
 				break;
@@ -227,7 +227,7 @@ int SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, long dupechk_hash
 		if(l%SDT_BLOCK_LEN) {
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
 				,"%d (%s) writing data padding"
-				,ferror(smb->sdt_fp),STRERROR(ferror(smb->sdt_fp)));
+				,get_errno(),STRERROR(get_errno()));
 			retval=SMB_ERR_WRITE;
 			break;
 		}
