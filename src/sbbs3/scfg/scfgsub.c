@@ -918,12 +918,6 @@ compatible mail programs you use support the LZH translation.
 					sprintf(opt[n++],"%-27.27s%s","FidoNet Address"
                         ,faddrtoa(&cfg.sub[i]->faddr,tmp));
 					sprintf(opt[n++],"EchoMail Origin Line");
-					if(!cfg.sub[i]->echomail_sem[0])
-						strcpy(str,cfg.echomail_sem);
-					else
-						strcpy(str,cfg.sub[i]->echomail_sem);
-					sprintf(opt[n++],"%-27.27s%.40s","EchoMail Semaphore File"
-						,str);
 					opt[n][0]=0;
 					uifc.savnum=2;
 					SETHELP(WHERE);
@@ -1166,18 +1160,8 @@ If this option is blank, the default origin line is used.
 							uifc.input(WIN_MID|WIN_SAV,0,0,nulstr,cfg.sub[i]->origline
 								,50,K_EDIT);
                             break;
-						case 10:
-SETHELP(WHERE);
-/*
-EchoMail Semaphore File:
-
-This is a filename that will be used as a semaphore (signal) to your
-FidoNet front-end that new EchoMail has been created and the messages
-should be re-scanned.
-*/
-							uifc.input(WIN_MID|WIN_SAV,0,17,"EchoMail Semaphore"
-								,cfg.sub[i]->echomail_sem,50,K_EDIT);
-							break; } }
+					} 
+				}
 				break;
 			case 15:
 				while(1) {
@@ -1197,6 +1181,7 @@ should be re-scanned.
 					else
 						strcpy(str,cfg.sub[i]->data_dir);
 					sprintf(opt[n++],"%-27.27s%.40s","Storage Directory",str);
+					sprintf(opt[n++],"%-27.27s%.40s","Semaphore File",cfg.sub[i]->post_sem);
 					opt[n][0]=0;
 					uifc.savnum=2;
 					SETHELP(WHERE);
@@ -1315,7 +1300,22 @@ another drive or in another directory besides the default setting.
 */
 							uifc.input(WIN_MID|WIN_SAV,0,17,"Directory"
 								,cfg.sub[i]->data_dir,50,K_EDIT);
-							break; } }
+							break; 
+						case 3:
+SETHELP(WHERE);
+/*
+`Sub-board Semaphore File:`
+
+This is a filename that will be created as a semaphore (signal) to an
+external program or event whenever a message is posted in this sub-board.
+*/
+							uifc.input(WIN_MID|WIN_SAV,0,17,"Semaphore File"
+								,cfg.sub[i]->post_sem,50,K_EDIT);
+							break; 
+					} 
+				}
 				break;
-				} } }
+			} 
+		} 
+	}
 }

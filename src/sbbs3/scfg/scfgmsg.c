@@ -389,8 +389,7 @@ of CRCs, maximum age of messages, storage method, and data directory.
 								strcpy(cfg.sub[j]->origline,cfg.sub[k]->origline);
 								strcpy(cfg.sub[j]->tagline,cfg.sub[k]->tagline);
 								strcpy(cfg.sub[j]->data_dir,cfg.sub[k]->data_dir);
-								strcpy(cfg.sub[j]->echomail_sem
-									,cfg.sub[k]->echomail_sem);
+								strcpy(cfg.sub[j]->post_sem,cfg.sub[k]->post_sem);
 								cfg.sub[j]->maxmsgs=cfg.sub[k]->maxmsgs;
 								cfg.sub[j]->maxcrcs=cfg.sub[k]->maxcrcs;
 								cfg.sub[j]->maxage=cfg.sub[k]->maxage;
@@ -511,7 +510,7 @@ export the current message group into.
 						,cfg.sub[j]->misc
 						,cfg.sub[j]->tagline
 						,cfg.sub[j]->origline
-						,cfg.sub[j]->echomail_sem
+						,cfg.sub[j]->post_sem
 						,cfg.sub[j]->newsgroup
 						,faddrtoa(&cfg.sub[j]->faddr,tmp)
 						);
@@ -682,7 +681,7 @@ import into the current message group.
 						sprintf(tmpsub.origline,"%.*s",50,str);
 						if(!fgets(str,128,stream)) break;
 						truncsp(str);
-						sprintf(tmpsub.echomail_sem,"%.*s",LEN_DIR,str);
+						sprintf(tmpsub.post_sem,"%.*s",LEN_DIR,str);
 						if(!fgets(str,128,stream)) break;
 						truncsp(str);
 						SAFECOPY(tmpsub.newsgroup,str);
