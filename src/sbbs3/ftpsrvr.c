@@ -1112,7 +1112,7 @@ int sockreadline(SOCKET socket, char* buf, int len, time_t* lastactive)
 	while(rd<len-1) {
 
 		tv.tv_sec=startup->max_inactivity;
-		tv.tv_usec=1000;
+		tv.tv_usec=0;
 
 		FD_ZERO(&socket_set);
 		FD_SET(socket,&socket_set);
