@@ -299,6 +299,7 @@ $(ECHOCFG): \
 	$(EXEODIR)/str_util.o \
 	$(EXEODIR)/filewrap.o \
 	$(EXEODIR)/genwrap.o
+	$(EXEODIR)/dirwrap.o
 	@echo Linking $@
 	@$(CC) -o $@ $^ $(UIFC_LFLAGS)
 

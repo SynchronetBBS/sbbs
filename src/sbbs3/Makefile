@@ -173,6 +173,8 @@ $(ECHOCFG): echocfg.c rechocfg.c \
 	$(UIFC)uifc.c \
 	$(UIFC)uifcx.c \
 	$(UIFC)uifcfltk.cpp \
+	$(LIBODIR)\genwrap.obj \
+	$(LIBODIR)\dirwrap.obj \
 	$(LIBODIR)\nopen.obj \
 	$(LIBODIR)\crc16.obj \
 	$(LIBODIR)\str_util.obj \
