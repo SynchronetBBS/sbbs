@@ -1244,7 +1244,7 @@ bool sbbs_t::movemsg(smbmsg_t* msg, uint subnum)
 		,cfg.grp[newgrp]->sname,cfg.sub[newsub]->sname
 		,cfg.grp[cfg.sub[subnum]->grp]->sname,cfg.sub[subnum]->sname);
 	logline("M+",str);
-	signal_sub_sem(newsub);
+	signal_sub_sem(&cfg,newsub);
 
 	return(true);
 }

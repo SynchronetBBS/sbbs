@@ -400,7 +400,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 				,cfg.sub[n]->lname);
 			sprintf(str,"%s posted on %s %s"
 				,useron.alias,cfg.grp[cfg.sub[n]->grp]->sname,cfg.sub[n]->lname);
-			signal_sub_sem(n);
+			signal_sub_sem(&cfg,n);
 			logline("P+",str); 
 		}   /* end of public message */
 	}
