@@ -1433,11 +1433,6 @@ static void smtp_thread(void* arg)
 					free(telegram_buf);
 					sockprintf(socket,SMTP_OK);
 					telegram=FALSE;
-
-					/* reset recipient list */
-					rewind(rcptlst);
-					chsize(fileno(rcptlst),0);
-					rcpt_count=0;
 					continue;
 				}
 
@@ -1489,11 +1484,6 @@ static void smtp_thread(void* arg)
 					free(msgbuf);
 					smb_close(&smb);
 					subnum=INVALID_SUB;
-
-					/* reset recipient list */
-					rewind(rcptlst);
-					chsize(fileno(rcptlst),0);
-					rcpt_count=0;
 					continue;
 				}
 
@@ -1662,11 +1652,6 @@ static void smtp_thread(void* arg)
 				}
 				smb_close_da(&smb);
 				smb_close(&smb);
-
-				/* reset recipient list */
-				rewind(rcptlst);
-				chsize(fileno(rcptlst),0);
-				rcpt_count=0;
 				continue;
 			}
 			if(buf[0]==0 && state==SMTP_STATE_DATA_HEADER) {	
@@ -1830,18 +1815,25 @@ static void smtp_thread(void* arg)
 			smb_freemsgmem(&msg);
 			memset(&msg,0,sizeof(smbmsg_t));		/* Initialize message header */
 			reverse_path[0]=0;
-			sockprintf(socket,SMTP_OK);
-			rewind(rcptlst);
-			chsize(fileno(rcptlst),0);
 			state=SMTP_STATE_HELO;
 			cmd=SMTP_CMD_NONE;
 			telegram=FALSE;
 			subnum=INVALID_SUB;
+
+			/* reset recipient list */
+			rewind(rcptlst);
+			chsize(fileno(rcptlst),0);
 			rcpt_count=0;
+
+			sockprintf(socket,SMTP_OK);
 			badcmds=0;
 			continue;
 		}
-		if(!strnicmp(buf,"MAIL FROM:",10)) {
+		if(!strnicmp(buf,"MAIL FROM:",10)
+			|| !strnicmp(buf,"SEND FROM:",10)	/* Send a Message (Telegram) to a local ONLINE user */
+			|| !strnicmp(buf,"SOML FROM:",10)	/* Send OR Mail a Message to a local user */
+			|| !strnicmp(buf,"SAML FROM:",10)	/* Send AND Mail a Message to a local user */
+			) {
 			p=buf+10;
 			if(!chk_email_addr(socket,p,host_name,host_ip,NULL))
 				break;
@@ -1852,54 +1844,31 @@ static void smtp_thread(void* arg)
 			client.user=reverse_path;
 			client_on(socket,&client,TRUE /* update */);
 
-			sockprintf(socket,SMTP_OK);
+			/* Setup state */
 			state=SMTP_STATE_MAIL_FROM;
-			cmd=SMTP_CMD_MAIL;
+			if(!strnicmp(buf,"MAIL FROM:",10))
+				cmd=SMTP_CMD_MAIL;
+			else if(!strnicmp(buf,"SEND FROM:",10))
+				cmd=SMTP_CMD_SEND;
+			else if(!strnicmp(buf,"SOML FROM:",10))
+				cmd=SMTP_CMD_SOML;
+			else if(!strnicmp(buf,"SAML FROM:",10))
+				cmd=SMTP_CMD_SAML;
 
+			/* reset recipient list */
+			rewind(rcptlst);
+			chsize(fileno(rcptlst),0);
+			rcpt_count=0;
+
+			/* Initialize message header */
 			smb_freemsgmem(&msg);
-			memset(&msg,0,sizeof(smbmsg_t));		/* Initialize message header */
+			memset(&msg,0,sizeof(smbmsg_t));		
 			msg.hdr.version=smb_ver();
 			msg.hdr.when_imported.time=time(NULL);
 			msg.hdr.when_imported.zone=scfg.sys_timezone;
-			badcmds=0;
-			continue;
-		}
 
-		/* Send a Message (Telegram) to a local ONLINE user */
-		if(!strnicmp(buf,"SEND FROM:",10)) {
-			p=buf+10;
-			if(!chk_email_addr(socket,p,host_name,host_ip,NULL))
-				break;
-			while(*p && *p<=' ') p++;
-			sprintf(reverse_path,"%.*s",(int)sizeof(reverse_path)-1,p);
 			sockprintf(socket,SMTP_OK);
-			state=SMTP_STATE_MAIL_FROM;
-			cmd=SMTP_CMD_SEND;
 			badcmds=0;
-			continue;
-		}
-		/* Send OR Mail a Message to a local user */
-		if(!strnicmp(buf,"SOML FROM:",10)) {
-			p=buf+10;
-			if(!chk_email_addr(socket,p,host_name,host_ip,NULL))
-				break;
-			while(*p && *p<=' ') p++;
-			sprintf(reverse_path,"%.*s",(int)sizeof(reverse_path)-1,p);
-			sockprintf(socket,SMTP_OK);
-			state=SMTP_STATE_MAIL_FROM;
-			cmd=SMTP_CMD_SOML;
-			continue;
-		}
-		/* Send AND Mail a Message to a local user */
-		if(!strnicmp(buf,"SAML FROM:",10)) {
-			p=buf+10;
-			if(!chk_email_addr(socket,p,host_name,host_ip,NULL))
-				break;
-			while(*p && *p<=' ') p++;
-			sprintf(reverse_path,"%.*s",(int)sizeof(reverse_path)-1,p);
-			sockprintf(socket,SMTP_OK);
-			state=SMTP_STATE_MAIL_FROM;
-			cmd=SMTP_CMD_SAML;
 			continue;
 		}
 
