@@ -198,7 +198,7 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
       gmake
       Note: For those building for *nix systems that do not have X installed,
             use "gmake NO_X=1"
-      Note: If X is not installed in /usr/X11R6, use: gname X_DIR=/path/to/X
+      Note: If X is not installed in /usr/X11R6, use: gmake X_DIR=/path/to/X
       Note: Warnings (if any) can be safely ignored
       Note: The "current" code in the CVS repository is in a fairly constant
             state of change. And often, one or more projects will not build
