@@ -264,7 +264,7 @@ char sbbs_t::getkey(long mode)
 			last_telnet_cmd=now;
 		}
 			
-		if(online==ON_REMOTE && !(cfg.node_misc&NM_NO_INACT) && !(console&CON_NO_INACT)
+		if(online==ON_REMOTE && !(console&CON_NO_INACT)
 			&& now-timeout>=cfg.sec_warn) { 					/* warning */
 			if(sys_status&SS_USERON) {
 				SAVELINE;
