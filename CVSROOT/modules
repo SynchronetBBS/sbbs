@@ -39,7 +39,7 @@ lib-openbsd.debug   -a lib/mozilla/js/openbsd.debug   lib/mozilla/nspr/openbsd.d
 lib-netbsd          -a lib/mozilla/js/netbsd.release  lib/mozilla/nspr/netbsd.release
 lib-netbsd.release  -a lib/mozilla/js/netbsd.release  lib/mozilla/nspr/netbsd.release
 lib-netbsd.debug    -a lib/mozilla/js/netbsd.debug    lib/mozilla/nspr/netbsd.debug
-src-sbbs3           -a src/build src/sbbs3 src/xpdev src/uifc include/mozilla
+src-sbbs3           -a src/build src/sbbs3 src/xpdev src/uifc include/mozilla src/conio
 run-sbbs3           -a ctrl text exec xtrn node1 node2 node3 node4 docs
 install install
 include include
