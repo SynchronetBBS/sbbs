@@ -30,6 +30,7 @@ int x_beep(void);
 void x_highvideo(void);
 void x_lowvideo(void);
 void x_normvideo(void);
+void x_textmode(int mode);
 #ifdef __cplusplus
 }
 #endif

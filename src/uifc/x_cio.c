@@ -296,3 +296,8 @@ void x_normvideo(void)
 {
 	x_textattr(0x07);
 }
+
+void x_textmode(int mode)
+{
+	init_mode(mode);
+}

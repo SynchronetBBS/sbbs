@@ -973,3 +973,7 @@ void curs_normvideo(void)
 {
 	curs_textattr(0x07);
 }
+
+void curs_textmode(int mode)
+{
+}

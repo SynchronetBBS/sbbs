@@ -31,6 +31,7 @@ int curs_getche(void);
 void curs_highvideo(void);
 void curs_lowvideo(void);
 void curs_normvideo(void);
+void curs_textmode(int mode);
 #ifdef __cplusplus
 }
 #endif
