@@ -247,9 +247,7 @@ int sockprintf(SOCKET sock, char *fmt, ...)
     len=vsnprintf(sbuf,maxlen=sizeof(sbuf)-2,fmt,argptr);
     va_end(argptr);
 
-	if(len<0)		/* format error? */
-		return(0);
-	if(len>maxlen)	/* output truncated */
+	if(len<0 || len > maxlen) /* format error or output truncated */
 		len=maxlen;
 	if(startup->options&MAIL_OPT_DEBUG_TX)
 		lprintf(LOG_DEBUG,"%04d TX: %.*s", sock, len, sbuf);
