@@ -38,10 +38,11 @@
 #include "sbbs.h"
 
 #if defined(JAVASCRIPT) || defined(__unix__)
-	#define BETA	" alpha"
+	#define BETA	" Alpha"
 #else
-	#define BETA	" beta"     /* Space if non-beta, " beta" otherwise */
+	#define BETA	" Beta"     /* Space if non-beta, " beta" otherwise */
 #endif
+extern "C" const char* beta_version = BETA;
 
 #if defined(_WINSOCKAPI_)
 	extern WSADATA WSAData;
@@ -51,46 +52,27 @@
 	#include <sys/utsname.h>	/* uname() */
 #endif
 
-void sbbs_t::ver()
+char* socklib_version(char* str)
 {
-	char str[128],compiler[32];
-
-	CRLF;
-	strcpy(str,VERSION_NOTICE);
-#if defined(_DEBUG)
-	strcat(str,"Debug");
-#endif
-	center(str);
-	CRLF;
-
-	COMPILER_DESC(compiler);
-
-	sprintf(str,"Revision %c%s %s %.5s  "
-		"SMBLIB %s  %s"
-		,REVISION,BETA,__DATE__,__TIME__
-		,smb_lib_ver(),compiler);
-
-	center(str);
-	CRLF;
-
-	sprintf(str,"%s - http://www.synchro.net", COPYRIGHT_NOTICE);
-	center(str);
-	CRLF;
-
-#ifdef JAVASCRIPT
-
-	center((char *)JS_GetImplementationVersion());
-	CRLF;
-
-#endif
-
 #if defined(_WINSOCKAPI_)
 
-	center(WSAData.szDescription);
-	CRLF;
+	strcpy(str,WSAData.szDescription);
+
+#elif defined(__GLIBC__)
+
+	sprintf(str,"GLIBC %u.%u",__GLIBC__,__GLIBC_MINOR__);
+
+#else
+	
+	strcpy(str,"No socket library version available");
 
 #endif
 
+	return(str);
+}
+
+char* os_version(char *str)
+{
 #if defined(__OS2__) && defined(__BORLANDC__)
 
 	sprintf(str,"OS/2 %u.%u (%u.%u)",_osmajor/10,_osminor/10,_osmajor,_osminor);
@@ -140,6 +122,45 @@ void sbbs_t::ver()
 
 #endif
 
+	return(str);
+}
+
+void sbbs_t::ver()
+{
+	char str[128],compiler[32];
+
+	CRLF;
+	strcpy(str,VERSION_NOTICE);
+#if defined(_DEBUG)
+	strcat(str,"Debug");
+#endif
 	center(str);
+	CRLF;
+
+	COMPILER_DESC(compiler);
+
+	sprintf(str,"Revision %c%s %s %.5s  "
+		"SMBLIB %s  %s"
+		,REVISION,BETA,__DATE__,__TIME__
+		,smb_lib_ver(),compiler);
+
+	center(str);
+	CRLF;
+
+	sprintf(str,"%s - http://www.synchro.net", COPYRIGHT_NOTICE);
+	center(str);
+	CRLF;
+
+#ifdef JAVASCRIPT
+
+	center((char *)JS_GetImplementationVersion());
+	CRLF;
+
+#endif
+
+	center(socklib_version(str));
+	CRLF;
+
+	center(os_version(str));
 }
 
