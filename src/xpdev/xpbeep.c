@@ -207,6 +207,7 @@ void DLLCALL unix_beep(int freq, int dur)
 
 void DLLCALL SineBeep(double freq, DWORD duration)
 {
+#ifdef AFMT_U8
 	int dsp;
 	int format=AFMT_U8;
 	int channels=1;
@@ -251,5 +252,8 @@ void DLLCALL SineBeep(double freq, DWORD duration)
 			wr+=i;
 	}
 	close(dsp);
+#else
+		unix_beep((int)(freq+.5),duration);
+#endif
 }
 #endif
