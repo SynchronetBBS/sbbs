@@ -35,7 +35,7 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#define SMBUTIL_VER "2.30"
+#define SMBUTIL_VER "2.31"
 
 #define NOANALYSIS		(1L<<0)
 
@@ -166,7 +166,20 @@ static void truncsp(char *str)
 	str[c]=0;
 }
 
+/*****************************************************************************/
+// Expands Unix LF to CRLF
+/*****************************************************************************/
+ulong lf_expand(BYTE* inbuf, ulong inlen, BYTE* outbuf)
+{
+	ulong	i,j;
 
+	for(i=j=0;i<inlen;i++) {
+		if(inbuf[i]=='\n' && (!i || inbuf[i-1]!='\r'))
+			outbuf[j++]='\r';
+		outbuf[j++]=inbuf[i];
+	}
+	return(j);
+}
 
 /****************************************************************************/
 /* Adds a new message to the message base									*/
@@ -178,6 +191,7 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 	char	buf[128];
 	char	pad=0;
 	char*	msgtxt=NULL;
+	char*	newtxt;
 	long	msgtxtlen;
 	ushort	xlat,net;
 	int 	i;
@@ -198,6 +212,16 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 		memcpy(msgtxt+msgtxtlen,buf,i);
 		msgtxtlen+=i;
 	}
+
+	if((newtxt=(char*)malloc(msgtxtlen*2))==NULL) {
+		fprintf(stderr,"\n\7malloc(%ld) failure\n",msgtxtlen*2);
+		exit(1);
+	}
+
+	/* Expand LFs to CRLFs */
+	msgtxtlen=lf_expand(msgtxt, msgtxtlen, newtxt);
+	free(msgtxt);
+	msgtxt=newtxt;
 
 	/* Allocate space in message base */
 	length=msgtxtlen+sizeof(xlat);	/* for translation string */
