@@ -19,4 +19,3 @@
 </table>
 </body>
 </html>
-<img src="../../html/graphics/sync_pbgj1_teal_bg.gif" width="175" height="85" border="0">
