@@ -608,7 +608,7 @@ void            RefreshBest(void) {
 
 
 
-INT16             main(INT16 argc, char *argv[]) {
+int             main(int argc, char *argv[]) {
 	FILE           *justfile, *njustfile;
 	//char          key;
 	//WORD  uintval;
