@@ -35,6 +35,8 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
+#define JS_THREADSAFE	/* needed for JS_SetContextThread */
+
 #include "sbbs.h"
 #include "md5.h"
 #include "base64.h"
@@ -81,6 +83,35 @@ static struct JSPropertySpec js_global_properties[] = {
 	{0}
 };
 
+typedef struct {
+	JSContext*	cx;
+	JSContext*	parent_cx;
+	JSObject*	obj;
+	JSObject*	parent_obj;
+	JSScript*	script;
+	JSObject*	retobj;
+} background_load_t;
+
+static void load_thread(void* arg)
+{
+	background_load_t* bg = (background_load_t*)arg;
+
+	jsval result=JSVAL_VOID;
+
+	JS_SetContextThread(bg->cx);
+
+	JS_ExecuteScript(bg->cx, bg->obj, bg->script, &result);
+	if(bg->retobj!=NULL) {
+		JS_BeginRequest(bg->parent_cx);
+		JS_DefineProperty(bg->parent_cx, bg->parent_obj, "retval", result
+			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+		JS_EndRequest(bg->parent_cx);
+	}
+	JS_DestroyScript(bg->cx, bg->script);
+	JS_DestroyContext(bg->cx);
+	free(bg);
+}
+
 static JSBool
 js_load(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
@@ -89,19 +120,60 @@ js_load(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	uintN		argn=0;
     const char*	filename;
     JSScript*	script;
-    jsval		result;
 	scfg_t*		cfg;
 	JSObject*	js_argv;
+	JSObject*	exec_obj;
+	JSContext*	exec_cx=cx;
 	JSBool		success;
+	JSBool		background=JS_FALSE;
+	background_load_t* bg;
+	JSErrorReporter	reporter;
+	JSBranchCallback callback;
 
-	*rval=JSVAL_FALSE;
+	*rval=JSVAL_VOID;
 
 	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_FALSE);
 
-	obj=JS_GetScopeChain(cx);
+	exec_obj=JS_GetScopeChain(cx);
 
-	if(JSVAL_IS_OBJECT(argv[argn]))	/* Scope specified */
+	if(JSVAL_IS_BOOLEAN(argv[argn]))
+		background=JSVAL_TO_BOOLEAN(argv[argn++]);
+
+	if(background) {
+
+	    if((exec_cx = JS_NewContext(JS_GetRuntime(cx), 8192))==NULL)
+			return(JS_FALSE);
+
+		if((bg=(background_load_t*)malloc(sizeof(background_load_t)))==NULL)
+			return(JS_FALSE);
+
+		memset(bg,0,sizeof(background_load_t));
+
+		bg->cx = exec_cx;
+		bg->parent_cx = cx;
+		bg->parent_obj = obj;
+
+		if((exec_obj=js_CreateGlobalObject(exec_cx, cfg, NULL))==NULL) 
+			return(JS_FALSE);
+
+		/* Use the error reporter from the parent context */
+		reporter=JS_SetErrorReporter(cx,NULL);
+		JS_SetErrorReporter(cx,reporter);
+		JS_SetErrorReporter(exec_cx,reporter);
+
+		/* Use the private data from the parent context */
+		JS_SetContextPrivate(exec_cx, JS_GetContextPrivate(cx));
+
+		/* Use the branch callback from the parent context */
+		callback=JS_SetBranchCallback(cx,NULL);
+		JS_SetBranchCallback(exec_cx, callback);
+		JS_SetBranchCallback(cx, callback);
+
+		if(JSVAL_IS_OBJECT(argv[argn]))
+			bg->retobj=JSVAL_TO_OBJECT(argv[argn++]);
+		
+	} else if(JSVAL_IS_OBJECT(argv[argn]))	/* Scope specified */
 		obj=JSVAL_TO_OBJECT(argv[argn++]);
 
 	if((filename=JS_GetStringBytes(JS_ValueToString(cx, argv[argn++])))==NULL)
@@ -109,16 +181,16 @@ js_load(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	if(argc>argn) {
 
-		if((js_argv=JS_NewArrayObject(cx, 0, NULL)) == NULL)
+		if((js_argv=JS_NewArrayObject(exec_cx, 0, NULL)) == NULL)
 			return(JS_FALSE);
 
-		JS_DefineProperty(cx, obj, "argv", OBJECT_TO_JSVAL(js_argv)
+		JS_DefineProperty(exec_cx, exec_obj, "argv", OBJECT_TO_JSVAL(js_argv)
 			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 
 		for(i=argn; i<argc; i++)
-			JS_SetElement(cx, js_argv, i-argn, &argv[i]);
+			JS_SetElement(exec_cx, js_argv, i-argn, &argv[i]);
 
-		JS_DefineProperty(cx, obj, "argc", INT_TO_JSVAL(argc-argn)
+		JS_DefineProperty(exec_cx, exec_obj, "argc", INT_TO_JSVAL(argc-argn)
 			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 	}
 
@@ -131,21 +203,24 @@ js_load(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 			sprintf(path,"%s%s",cfg->exec_dir,filename);
 	}
 
-	JS_ClearPendingException(cx);
+	JS_ClearPendingException(exec_cx);
 
-	if((script=JS_CompileFile(cx, obj, path))==NULL)
+	if((script=JS_CompileFile(exec_cx, exec_obj, path))==NULL)
 		return(JS_FALSE);
 
-	success = JS_ExecuteScript(cx, obj, script, &result);
+	if(background) {
 
-	JS_DestroyScript(cx, script);
+		bg->script = script;
+		bg->obj = exec_obj;
+		success = _beginthread(load_thread,0,bg)!=-1;
 
-	if(!success)
-		return(JS_FALSE);
+	} else {
 
-	*rval = result;
+		success = JS_ExecuteScript(exec_cx, exec_obj, script, rval);
+		JS_DestroyScript(exec_cx, script);
+	}
 
-    return(JS_TRUE);
+    return(success);
 }
 
 static JSBool
@@ -2241,11 +2316,11 @@ static jsSyncMethodSpec js_global_functions[] = {
 		"optionally setting the global property <tt>exit_code</tt> to the specified numeric value")
 	,311
 	},		
-	{"load",            js_load,            1,	JSTYPE_BOOLEAN,	JSDOCSTR("[object scope,] string filename [,args]")
+	{"load",            js_load,            1,	JSTYPE_VOID,	JSDOCSTR("[object scope,] string filename [,args]")
 	,JSDOCSTR("load and execute a JavaScript module (<i>filename</i>), "
 		"optionally specifying a target <i>scope</i> object (default: <i>this</i>) "
 		"and a list of arguments to pass to the module (as <i>argv</i>), "
-		"returns <i>true</i> if the execution was successful")
+		"returns the result of the script execution (or <i>undefined</i>)")
 	,311
 	},		
 	{"sleep",			js_mswait,			0,	JSTYPE_ALIAS },
