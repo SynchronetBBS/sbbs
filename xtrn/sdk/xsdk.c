@@ -1820,7 +1820,7 @@ void initdata(void)
 	str[0]=0;
 	fgets(str,81,stream);			/* exec dir */
 	if(!str[0])
-		sprintf(exec_dir,"%s..\\EXEC\\",ctrl_dir);
+		sprintf(exec_dir,"%s../exec/",ctrl_dir);
 	else {
 		if(str[0]=='.')
 			sprintf(exec_dir,"%s%s",node_dir,str);
@@ -1834,7 +1834,7 @@ void initdata(void)
 	str[0]=0;
 	fgets(str,81,stream);			/* text dir */
 	if(!str[0])
-		sprintf(text_dir,"%s..\\TEXT\\",ctrl_dir);
+		sprintf(text_dir,"%s../text/",ctrl_dir);
 	else {
 		if(str[0]=='.')
 			sprintf(text_dir,"%s%s",node_dir,str);
@@ -1848,9 +1848,9 @@ void initdata(void)
 	str[0]=0;
 	fgets(str,81,stream);			/* temp dir */
 	if(!str[0])
-		sprintf(temp_dir,"%sTEMP\\",node_dir);
+		sprintf(temp_dir,"%stemp/",node_dir);
 	else {
-		if(str[0]!='\\' && str[1]!=':')
+		if(str[0]!=BACKSLASH && str[1]!=':')
 			sprintf(temp_dir,"%s%s",node_dir,str);
 		else
 			sprintf(temp_dir,"%.50s",str); }
@@ -1920,13 +1920,13 @@ void initdata(void)
 	sysop_level=90; 				/* Minimum level to be considered sysop */
 	timeleft_warn=0;				/* Running out of time warning */
 
-	sprintf(str,"%s%s",ctrl_dir,"NODE.DAB");
+	sprintf(str,"%s%s",ctrl_dir,"node.dab");
 	if((nodefile=sopen(str,O_BINARY|O_RDWR,SH_DENYNO))==-1) {
 		printf("\r\n\7Error opening %s\r\n",str);
 		exit(1); 
 	}
 
-	sprintf(str,"%sUSER\\NAME.DAT",data_dir);
+	sprintf(str,"%suser/name.dat",data_dir);
 	if((i=nopen(str,O_RDONLY))==-1) {
 		printf("\r\n\7Error opening %s\r\n",str);
 		exit(1); 
@@ -1998,8 +1998,9 @@ void backslash(char *str)
     int i;
 
 	i=strlen(str);
-	if(i && str[i-1]!='\\') {
-		str[i]='\\'; str[i+1]=0; 
+	if(i && str[i-1]!='\\' && str[i-1]!='/') {
+		str[i]=BACKSLASH; 
+		str[i+1]=0; 
 	}
 }
 
@@ -2060,7 +2061,7 @@ char *username(uint usernumber)
 	if(!usernumber) {
 		bputs("\7username: called with zero usernumber\r\n");
 		return(name); }
-	sprintf(str,"%sUSER\\NAME.DAT",data_dir);
+	sprintf(str,"%suser/name.dat",data_dir);
 	if((file=nopen(str,O_RDONLY))==-1) {
 		bprintf("\7username: couldn't open %s\r\n",str);
 		return(name); }
@@ -2091,7 +2092,7 @@ uint usernumber(char *username)
 
 	if(!data_dir[0])
 		return(0);
-	sprintf(str,"%sUSER\\NAME.DAT",data_dir);
+	sprintf(str,"%suser/name.dat",data_dir);
 	if((file=nopen(str,O_RDONLY))==-1 || (stream=fdopen(file,"rb"))==NULL) {
 		if(file!=-1)
 			close(file);
@@ -2164,7 +2165,7 @@ void getnodedat(int number, node_t *node, char lockit)
 			break;
 		count++; }
 	if(count==LOOP_NODEDAB)
-		bprintf("\7Error unlocking and reading NODE.DAB\r\n");
+		bprintf("\7Error unlocking and reading node.dab\r\n");
 }
 
 /****************************************************************************/
@@ -2180,7 +2181,7 @@ void putnodedat(int number, node_t node)
 	lseek(nodefile,(long)number*sizeof(node_t),SEEK_SET);
 	if(write(nodefile,&node,sizeof(node_t))!=sizeof(node_t)) {
 		unlock(nodefile,(long)number*sizeof(node_t),sizeof(node_t));
-		bprintf("\7Error writing NODE.DAB for node %u\r\n",number+1);
+		bprintf("\7Error writing node.dab for node %u\r\n",number+1);
 		return; }
 	unlock(nodefile,(long)number*sizeof(node_t),sizeof(node_t));
 }
@@ -2426,7 +2427,7 @@ void getsmsg(int usernumber)
 
 	if(!data_dir[0])
 		return;
-	sprintf(str,"%sMSGS\\%4.4u.MSG",data_dir,usernumber);
+	sprintf(str,"%smsgs/%4.4u.msg",data_dir,usernumber);
 	if(flength(str)<1L) {
 		return; }
 	if((file=nopen(str,O_RDWR))==-1) {
@@ -2467,7 +2468,7 @@ void putsmsg(int usernumber, char *strin)
 
 	if(!data_dir[0])
 		return;
-	sprintf(str,"%sMSGS\\%4.4u.MSG",data_dir,usernumber);
+	sprintf(str,"%smsgs/%4.4u.msg",data_dir,usernumber);
 	if((file=nopen(str,O_WRONLY|O_CREAT|O_APPEND))==-1) {
 		bprintf("\7Error opening/creating %s for creat/append access\r\n",str);
 		return; }
@@ -2503,7 +2504,7 @@ void getnmsg(void)
 	thisnode.misc&=~NODE_NMSG;			/* clear the NMSG flag */
 	putnodedat(node_num,thisnode);
 
-	sprintf(str,"%sMSGS\\N%3.3u.MSG",data_dir,node_num);
+	sprintf(str,"%smsgs/n%3.3u.msg",data_dir,node_num);
 	if(flength(str)<1L) {
 		return; }
 	if((file=nopen(str,O_RDWR))==-1) {
@@ -2538,7 +2539,7 @@ void putnmsg(int num, char *strin)
 
 	if(!data_dir[0])
 		return;
-	sprintf(str,"%sMSGS\\N%3.3u.MSG",data_dir,num);
+	sprintf(str,"%smsgs/n%3.3u.msg",data_dir,num);
 	if((file=nopen(str,O_WRONLY|O_CREAT|O_APPEND))==-1) {
 		printf("Couldn't open %s for append\r\n",str);
 		return; }
