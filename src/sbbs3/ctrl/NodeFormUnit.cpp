@@ -6,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -145,9 +145,9 @@ char* username(int usernumber,char *strin)
 void __fastcall TNodeForm::TimerTick(TObject *Sender)
 {
 	static int nodedab;
-    char	str[128],tmp[128];
-    char*   mer;
-    int		i,n,rd,hour;
+    char	str[256];
+	char	status[128];
+    int		i,n,rd,digits=1;
     node_t	node;
 
     if(nodedab<1) {
@@ -159,6 +159,12 @@ void __fastcall TNodeForm::TimerTick(TObject *Sender)
             return;
         }
     }
+	if(MainForm->cfg.sys_nodes>9)
+		digits++;
+	if(MainForm->cfg.sys_nodes>99)
+		digits++;
+	if(MainForm->cfg.sys_nodes>999)
+		digits++;
     for(n=0;n<MainForm->cfg.sys_nodes;n++) {
 	    lseek(nodedab, n*sizeof(node_t), SEEK_SET);
         if(eof(nodedab))
@@ -177,217 +183,10 @@ void __fastcall TNodeForm::TimerTick(TObject *Sender)
         if(rd!=sizeof(node_t))
         	continue;
             
-		sprintf(str,"%3d ",n+1);
-        switch(node.status) {
-            case NODE_WFC:
-                strcat(str,"Waiting for call");
-                break;
-            case NODE_OFFLINE:
-                strcat(str,"Offline");
-                break;
-            case NODE_NETTING:
-                strcat(str,"Networking");
-                break;
-            case NODE_LOGON:
-                strcat(str,"At logon prompt");
-                break;
-            case NODE_EVENT_WAITING:
-                strcat(str,"Waiting for all nodes to become inactive");
-                break;
-            case NODE_EVENT_LIMBO:
-                sprintf(tmp,"Waiting for node %d to finish external event"
-                	,node.aux);
-                strcat(str,tmp);
-                break;
-            case NODE_EVENT_RUNNING:
-                strcat(str,"Running external event");
-                break;
-            case NODE_NEWUSER:
-                strcat(str,"New user");
-                strcat(str," applying for access ");
-                if(!node.connection)
-                    strcat(str,"Locally");
-                else if(node.connection==0xffff) {
-                	strcat(str,"via telnet");
-                } else {
-                    sprintf(tmp,"at %ubps",node.connection);
-                    strcat(str,tmp);
-                }
-                break;
-            case NODE_QUIET:
-            case NODE_INUSE:
-//                sprintf(tmp, "User #%d ",node.useron);
-                username(node.useron,tmp);
-                strcat(str,tmp);
-                strcat(str," ");
-                switch(node.action) {
-                    case NODE_MAIN:
-                        strcat(str,"at main menu");
-                        break;
-                    case NODE_RMSG:
-                        strcat(str,"reading messages");
-                        break;
-                    case NODE_RMAL:
-                        strcat(str,"reading mail");
-                        break;
-                    case NODE_RSML:
-                        strcat(str,"reading sent mail");
-                        break;
-                    case NODE_RTXT:
-                        strcat(str,"reading text files");
-                        break;
-                    case NODE_PMSG:
-                        strcat(str,"posting message");
-                        break;
-                    case NODE_SMAL:
-                        strcat(str,"sending mail");
-                        break;
-                    case NODE_AMSG:
-                        strcat(str,"posting auto-message");
-                        break;
-                    case NODE_XTRN:
-                        if(!node.aux)
-                            strcat(str,"at external program menu");
-                        else if(node.aux<=MainForm->cfg.total_xtrns) {
-                          	sprintf(tmp,"running %s"
- 	                           ,MainForm->cfg.xtrn[node.aux-1]->name);
-                            strcat(str,tmp);
-                        } else {
-                            sprintf(tmp,"running external program #%d"
-                            	,node.aux);
-                            strcat(str,tmp);
-                        }
-                        break;
-                    case NODE_DFLT:
-                        strcat(str,"changing defaults");
-                        break;
-                    case NODE_XFER:
-                        strcat(str,"at transfer menu");
-                        break;
-                    case NODE_RFSD:
-                        sprintf(tmp,"retrieving from device #%d",node.aux);
-                        strcat(str,tmp);
-                        break;
-                    case NODE_DLNG:
-                        strcat(str,"downloading");
-                        break;
-                    case NODE_ULNG:
-                        strcat(str,"uploading");
-                        break;
-                    case NODE_BXFR:
-                        strcat(str,"transferring bidirectional");
-                        break;
-                    case NODE_LFIL:
-                        strcat(str,"listing files");
-                        break;
-                    case NODE_LOGN:
-                        strcat(str,"logging on");
-                        break;
-                    case NODE_LCHT:
-                        strcat(str,"in local chat with sysop");
-                        break;
-                    case NODE_MCHT:
-                        if(node.aux) {
-                            sprintf(tmp,"in multinode chat channel %d"
-                            	,node.aux&0xff);
-                            if(node.aux&0x1f00) { /* password */
-                                strcat(tmp,"* ");
-//                                strcat(tmp, unpackchatpass(tmp,node));
-                            }
-                            strcat(str,tmp);
-                        }
-                        else
-                            strcat(str,"in multinode global chat channel");
-                        break;
-                    case NODE_PAGE:
-                        sprintf(tmp,"paging node %u for private chat",node.aux);
-                        strcat(str,tmp);
-                        break;
-                    case NODE_PCHT:
-                        if(!node.aux)
-                            strcat(str,"in local chat with sysop");
-                        else {
-                            sprintf(tmp,"in private chat with node %u"
-                                ,node.aux);
-                            strcat(str,tmp);
-                        }
-                        break;
-                    case NODE_GCHT:
-                        strcat(str,"chatting with The Guru");
-                        break;
-                    case NODE_CHAT:
-                        strcat(str,"in chat section");
-                        break;
-                    case NODE_TQWK:
-                        strcat(str,"transferring QWK packet");
-                        break;
-                    case NODE_SYSP:
-                        strcat(str,"performing sysop activities");
-                        break;
-                    default:
-                        strcat(str,itoa(node.action,tmp,10));
-                        break;  }
-                if(!node.connection)
-                    strcat(str," locally");
-                if(node.connection==0xffff) {
-                	strcat(str," via telnet");
-                } else {
-                    sprintf(tmp," at %ubps",node.connection);
-                    strcat(str,tmp);
-                }
-                if(node.action==NODE_DLNG) {
-                    if((node.aux/60)>=12) {
-                        if(node.aux/60==12)
-                            hour=12;
-                        else
-                            hour=(node.aux/60)-12;
-                        mer="pm";
-                    } else {
-                        if((node.aux/60)==0)    /* 12 midnite */
-                            hour=12;
-                        else hour=node.aux/60;
-                        mer="am";
-                    }
-                    sprintf(tmp, " ETA %02d:%02d %s"
-                        ,hour,node.aux-((node.aux/60)*60),mer);
-                    strcat(str, tmp); }
-                break; }
-        if(node.misc&(NODE_LOCK|NODE_POFF|NODE_AOFF|NODE_MSGW|NODE_NMSG)) {
-            strcat(str," (");
-            if(node.misc&NODE_AOFF)
-                strcat(str,"A");
-            if(node.misc&NODE_LOCK)
-                strcat(str,"L");
-            if(node.misc&(NODE_MSGW|NODE_NMSG))
-                strcat(str,"M");
-            if(node.misc&NODE_POFF)
-                strcat(str,"P");
-            strcat(str,")"); }
-        if(((node.misc
-            &(NODE_ANON|NODE_UDAT|NODE_INTR|NODE_RRUN|NODE_EVENT|NODE_DOWN))
-            || node.status==NODE_QUIET)) {
-            strcat(str," [");
-            if(node.misc&NODE_ANON)
-                strcat(str,"A");
-            if(node.misc&NODE_INTR)
-                strcat(str,"I");
-            if(node.misc&NODE_RRUN)
-                strcat(str,"R");
-            if(node.misc&NODE_UDAT)
-                strcat(str,"U");
-            if(node.status==NODE_QUIET)
-                strcat(str,"Q");
-            if(node.misc&NODE_EVENT)
-                strcat(str,"E");
-            if(node.misc&NODE_DOWN)
-                strcat(str,"D");
-            if(node.misc&NODE_LCHAT)
-                strcat(str,"C");
-            strcat(str,"]"); }
-        if(node.errors) {
-            sprintf(tmp, " %d error%c",node.errors, node.errors>1 ? 's' : '\0' );
-            strcat(str,tmp);
-        }
+		sprintf(str,"%*d %s"
+			,digits
+			,n+1
+			,nodestatus(&MainForm->cfg,&node,status,sizeof(status)));
         AnsiString Str=AnsiString(str);
         if(ListBox->Items->Count<n+1)
         	ListBox->Items->Add(Str);
