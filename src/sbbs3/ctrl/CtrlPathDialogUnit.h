@@ -59,6 +59,7 @@ __published:
 	TButton *BrowseButton;
 	TOpenDialog *OpenDialog;
 	void __fastcall BrowseButtonClick(TObject *Sender);
+	void __fastcall FormShow(TObject *Sender);
 private:
 public:
 	virtual __fastcall TCtrlPathDialog(TComponent* AOwner);

@@ -41,7 +41,7 @@
 //---------------------------------------------------------------------
 #pragma resource "*.dfm"
 TCtrlPathDialog *CtrlPathDialog;
-//--------------------------------------------------------------------- 
+//---------------------------------------------------------------------
 __fastcall TCtrlPathDialog::TCtrlPathDialog(TComponent* AOwner)
 	: TForm(AOwner)
 {
@@ -50,13 +50,14 @@ __fastcall TCtrlPathDialog::TCtrlPathDialog(TComponent* AOwner)
 void __fastcall TCtrlPathDialog::BrowseButtonClick(TObject *Sender)
 {
 	OpenDialog->InitialDir=Edit->Text;
-    OpenDialog->Options << ofFileMustExist;	
+    OpenDialog->Options << ofFileMustExist;
 	if(OpenDialog->Execute()==true)
     	Edit->Text=OpenDialog->FileName;
 }
 //---------------------------------------------------------------------------
-
-
-
-
+void __fastcall TCtrlPathDialog::FormShow(TObject *Sender)
+{
+   	Application->BringToFront();
+}
+//---------------------------------------------------------------------------
 
