@@ -209,8 +209,10 @@ for(var l in list_array) {
 
 	/* Get export message pointer */
 	ptr_fname = list.msgbase_file + ".list.ptr";
+	if(!file_exists(ptr_fname))
+		file_touch(ptr_fname);
 	ptr_file = new File(ptr_fname);
-	if(!ptr_file.open("w+")) {
+	if(!ptr_file.open("r+")) {
 		log(LOG_ERR,format("%s !ERROR %d opening/creating file: %s"
 			,list.name, ptr_file.error, ptr_fname));
 		delete msgbase;
@@ -219,6 +221,9 @@ for(var l in list_array) {
 
 	var last_msg = msgbase.last_msg;
 	var ptr = Number(ptr_file.readln());
+
+	log(LOG_DEBUG,format("%s pointer read: %u"
+		,list.name, ptr));
 
 	if(ptr < msgbase.first_msg)
 		ptr = msgbase.first_msg;
@@ -297,6 +302,9 @@ for(var l in list_array) {
 
 	if(ptr > last_msg)
 		ptr = last_msg;
+
+	log(LOG_DEBUG,format("%s pointer written: %u"
+		,list.name, ptr));
 
 	ptr_file.rewind();
 	ptr_file.length=0;		// truncate
@@ -384,7 +392,7 @@ function read_user_list(user_file)
 function get_user_list(list)
 {
 	var user_list = new Array();
-	if((user_file = open_user_list("r")) != null) {
+	if((user_file = open_user_list(list,"r")) != null) {
 		user_list = read_user_list(user_file);
 		user_file.close();
 	}
