@@ -2700,8 +2700,10 @@ void http_logging_thread(void* arg)
 		SAFECOPY(newfilename,base);
 		strftime(strchr(newfilename,0),15,"%G-%m-%d.log",&ld->completed);
 		if(strcmp(newfilename,filename)) {
-			if(logfile!=NULL)
+			if(logfile!=NULL) {
 				fclose(logfile);
+				logfile=NULL;
+			}
 			SAFECOPY(filename,newfilename);
 			logfile=fopen(filename,"ab");
 			lprintf(LOG_INFO,"http logfile is now: %s",filename);
@@ -2737,8 +2739,10 @@ void http_logging_thread(void* arg)
 			lprintf(LOG_ERR,"logfile %s was not open!",filename);
 		}
 	}
-	if(logfile!=NULL)
+	if(logfile!=NULL) {
 		fclose(logfile);
+		logfile=NULL;
+	}
 	thread_down();
 }
 
