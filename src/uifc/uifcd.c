@@ -311,6 +311,8 @@ int uinput(int mode, char left, char top, char *prompt, char *outstr,
 	char max, int kmode)
 {
 	char str[256];
+	if(!(kmode&K_EDIT))
+		outstr[0]=0;
 	sprintf(str,"%.*s",sizeof(str)-1,outstr);
     while(dialog_inputbox((char*)NULL, prompt, 9, max+4, outstr)==-2)
 		help();
