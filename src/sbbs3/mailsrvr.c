@@ -549,7 +549,7 @@ static u_long resolve_ip(char *addr)
 	if(!(*p))
 		return(inet_addr(addr));
 
-	if ((host=gethostbyname(addr))==NULL) {
+	if((host=gethostbyname(addr))==NULL) {
 		lprintf("0000 !ERROR resolving hostname: %s",addr);
 		return(0);
 	}
@@ -2458,13 +2458,15 @@ static void sendmail_thread(void* arg)
 			addr.sin_addr.s_addr = htonl(startup->interface_addr);
 			addr.sin_family = AF_INET;
 
-			startup->seteuid(FALSE);
-			if((i=bind(sock, (struct sockaddr *) &addr, sizeof (addr)))!=0) {
+			if(startup->seteuid!=NULL)
+				startup->seteuid(FALSE);
+			i=bind(sock,(struct sockaddr *)&addr, sizeof(addr));
+			if(startup->seteuid!=NULL)
 				startup->seteuid(TRUE);
+			if(i!=0) {
 				lprintf("%04d !SEND ERROR %d (%d) binding socket", sock, i, ERROR_VALUE);
 				continue;
 			}
-			startup->seteuid(TRUE);
 
 			strcpy(err,"UNKNOWN ERROR");
 			success=FALSE;
@@ -2787,7 +2789,7 @@ void DLLCALL mail_server(void* arg)
 
 		server_socket = mail_open_socket(SOCK_STREAM);
 
-		if (server_socket == INVALID_SOCKET) {
+		if(server_socket == INVALID_SOCKET) {
 			lprintf("!ERROR %d opening socket", ERROR_VALUE);
 			cleanup(1);
 			return;
@@ -2802,7 +2804,7 @@ void DLLCALL mail_server(void* arg)
 		result = setsockopt (server_socket, SOL_SOCKET, SO_LINGER
     		,(char *)&linger, sizeof(linger));
 
-		if (result != 0) {
+		if(result != 0) {
 			lprintf("%04d !ERROR %d (%d) setting socket options"
 				,server_socket, result, ERROR_VALUE);
 			cleanup(1);
@@ -2819,12 +2821,12 @@ void DLLCALL mail_server(void* arg)
 		server_addr.sin_family = AF_INET;
 		server_addr.sin_port   = htons(startup->smtp_port);
 
-		startup->seteuid(FALSE);
-		result = bind(server_socket, (struct sockaddr *) &server_addr
-    		,sizeof (server_addr));
-		startup->seteuid(TRUE);
-
-		if (result != 0) {
+		if(startup->seteuid!=NULL)
+			startup->seteuid(FALSE);
+		result = bind(server_socket,(struct sockaddr *)&server_addr,sizeof(server_addr));
+		if(startup->seteuid!=NULL)
+			startup->seteuid(TRUE);
+		if(result != 0) {
 			lprintf("%04d !ERROR %d (%d) binding SMTP socket to port %u"
 				,server_socket, result, ERROR_VALUE, startup->smtp_port);
 			lprintf("%04d %s",server_socket, BIND_FAILURE_HELP);
@@ -2837,7 +2839,7 @@ void DLLCALL mail_server(void* arg)
 
 		result = listen (server_socket, 1);
 
-		if (result != 0) {
+		if(result != 0) {
 			lprintf("%04d !ERROR %d (%d) listening on socket"
 				,server_socket, result, ERROR_VALUE);
 			cleanup(1);
@@ -2850,7 +2852,7 @@ void DLLCALL mail_server(void* arg)
 
 			pop3_socket = mail_open_socket(SOCK_STREAM);
 
-			if (pop3_socket == INVALID_SOCKET) {
+			if(pop3_socket == INVALID_SOCKET) {
 				lprintf("!ERROR %d opening POP3 socket", ERROR_VALUE);
 				cleanup(1);
 				return;
@@ -2867,12 +2869,12 @@ void DLLCALL mail_server(void* arg)
 			server_addr.sin_family = AF_INET;
 			server_addr.sin_port   = htons(startup->pop3_port);
 
-			startup->seteuid(FALSE);
-			result = bind(pop3_socket, (struct sockaddr *) &server_addr
-    			,sizeof (server_addr));
-			startup->seteuid(TRUE);
-
-			if (result != 0) {
+			if(startup->seteuid!=NULL)
+				startup->seteuid(FALSE);
+			result = bind(pop3_socket,(struct sockaddr *)&server_addr,sizeof(server_addr));
+			if(startup->seteuid!=NULL)
+				startup->seteuid(TRUE);
+			if(result != 0) {
 				lprintf("%04d !ERROR %d (%d) binding POP3 socket to port %u"
 					,pop3_socket, result, ERROR_VALUE, startup->pop3_port);
 				lprintf("%04d %s",pop3_socket,BIND_FAILURE_HELP);
@@ -2885,7 +2887,7 @@ void DLLCALL mail_server(void* arg)
 
 			result = listen (pop3_socket, 1);
 
-			if (result != 0) {
+			if(result != 0) {
 				lprintf("%04d !ERROR %d (%d) listening on POP3 socket"
 					,pop3_socket, result, ERROR_VALUE);
 				cleanup(1);
@@ -2951,11 +2953,11 @@ void DLLCALL mail_server(void* arg)
 
 			if(FD_ISSET(server_socket,&socket_set)) {
 
-				client_addr_len = sizeof (client_addr);
+				client_addr_len = sizeof(client_addr);
 				client_socket = accept(server_socket, (struct sockaddr *)&client_addr
         			,&client_addr_len);
 
-				if (client_socket == INVALID_SOCKET)
+				if(client_socket == INVALID_SOCKET)
 				{
 					if(ERROR_VALUE == ENOTSOCK)
             			lprintf("0000 SMTP socket closed while listening");
@@ -2999,11 +3001,11 @@ void DLLCALL mail_server(void* arg)
 
 			if(FD_ISSET(pop3_socket,&socket_set)) {
 
-				client_addr_len = sizeof (client_addr);
+				client_addr_len = sizeof(client_addr);
 				client_socket = accept(pop3_socket, (struct sockaddr *)&client_addr
         			,&client_addr_len);
 
-				if (client_socket == INVALID_SOCKET)
+				if(client_socket == INVALID_SOCKET)
 				{
 					if(ERROR_VALUE == ENOTSOCK)
             			lprintf("%04d POP3 socket closed while listening",pop3_socket);

@@ -1120,16 +1120,18 @@ void DLLCALL services_thread(void* arg)
 			addr.sin_family = AF_INET;
 			addr.sin_port   = htons(service[i].port);
 
-			startup->seteuid(FALSE);
-			if(bind(socket, (struct sockaddr *) &addr, sizeof(addr))!=0) {
+			if(startup->seteuid!=NULL)
+				startup->seteuid(FALSE);
+			result=bind(socket, (struct sockaddr *) &addr, sizeof(addr));
+			if(startup->seteuid!=NULL)
 				startup->seteuid(TRUE);
+			if(result!=0) {
 				lprintf("%04d !ERROR %d binding %s socket to port %u"
 					,socket, ERROR_VALUE, service[i].protocol, service[i].port);
 				lprintf("%04d %s",socket,BIND_FAILURE_HELP);
 				close_socket(socket);
 				continue;
 			}
-			startup->seteuid(TRUE);
 
 			lprintf("%04d %s socket bound to port %u"
 				,socket, service[i].protocol, service[i].port);

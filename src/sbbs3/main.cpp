@@ -245,7 +245,7 @@ u_long resolve_ip(char *addr)
 			break;
 	if(!(*p))
 		return(inet_addr(addr));
-	if ((host=gethostbyname(addr))==NULL) 
+	if((host=gethostbyname(addr))==NULL) 
 		return(0);
 	return(*((ulong*)host->h_addr_list[0]));
 }
@@ -513,7 +513,7 @@ bool sbbs_t::js_init()
 		if((js_glob=js_CreateGlobalObject(js_cx, &cfg))==NULL)
 			break;
 
-		if (!JS_DefineFunctions(js_cx, js_glob, js_global_functions))
+		if(!JS_DefineFunctions(js_cx, js_glob, js_global_functions))
 			break;
 
 		/* System Object */
@@ -3244,11 +3244,11 @@ void DLLCALL bbs_thread(void* arg)
     server_addr.sin_family = AF_INET;
     server_addr.sin_port   = htons(startup->telnet_port);
 
-	startup->seteuid(FALSE);
-    result = bind(telnet_socket, (struct sockaddr *)&server_addr
-    	,sizeof(server_addr));
-	startup->seteuid(TRUE);
-
+	if(startup->seteuid!=NULL)
+		startup->seteuid(FALSE);
+    result = bind(telnet_socket,(struct sockaddr *)&server_addr,sizeof(server_addr));
+	if(startup->seteuid!=NULL)
+		startup->seteuid(TRUE);
 	if(result != 0) {
 		lprintf("!ERROR %d (%d) binding Telnet socket to port %d"
 			,result, ERROR_VALUE,startup->telnet_port);
@@ -3303,11 +3303,11 @@ void DLLCALL bbs_thread(void* arg)
 		server_addr.sin_family = AF_INET;
 		server_addr.sin_port   = htons(startup->rlogin_port);
 
-		startup->seteuid(FALSE);
-		result = bind(rlogin_socket, (struct sockaddr *)&server_addr
-    		,sizeof(server_addr));
-		startup->seteuid(TRUE);
-
+		if(startup->seteuid!=NULL)
+			startup->seteuid(FALSE);
+		result = bind(rlogin_socket,(struct sockaddr *)&server_addr,sizeof(server_addr));
+		if(startup->seteuid!=NULL)
+			startup->seteuid(TRUE);
 		if(result != 0) {
 			lprintf("!ERROR %d (%d) binding RLogin socket to port %d"
 				,result, ERROR_VALUE,startup->rlogin_port);
