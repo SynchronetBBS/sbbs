@@ -39,10 +39,21 @@
 #include <string.h>		/* memset */
 #include "link_list.h"
 
-link_list_t* listInit(link_list_t* list)
-{
-	unsigned long flags=0;
+#if defined(LINK_LIST_THREADSAFE)
+	#define MUTEX_INIT(list)	if(list->flags&LINK_LIST_MUTEX)	pthread_mutex_init(&list->mutex,NULL);
+	#define MUTEX_DESTROY(list)	if(list->flags&LINK_LIST_MUTEX)	pthread_mutex_destroy(&list->mutex);
+	#define MUTEX_LOCK(list)	if(list->flags&LINK_LIST_MUTEX) pthread_mutex_lock(&list->mutex);
+	#define MUTEX_UNLOCK(list)	if(list->flags&LINK_LIST_MUTEX) pthread_mutex_unlock(&list->mutex);
 
+#else
+	#define MUTEX_INIT(list)
+	#define MUTEX_DESTROY(list)
+	#define MUTEX_LOCK(list)
+	#define MUTEX_UNLOCK(list)
+#endif
+
+link_list_t* listInit(link_list_t* list, long flags)
+{
 	if(flags&LINK_LIST_MALLOC || list==NULL) {
 		if((list=(link_list_t*)malloc(sizeof(link_list_t)))==NULL)
 			return(NULL);
@@ -52,6 +63,8 @@ link_list_t* listInit(link_list_t* list)
 	memset(list,0,sizeof(link_list_t));
 
 	list->flags = flags;
+
+	MUTEX_INIT(list);
 
 	return(list);
 }
@@ -91,10 +104,22 @@ link_list_t* listFree(link_list_t* list)
 
 	listFreeNodes(list);
 
+	MUTEX_DESTROY(list);
+
 	if(list->flags&LINK_LIST_MALLOC)
 		free(list), list=NULL;
 
 	return(list);
+}
+
+void listLock(link_list_t* list)
+{
+	MUTEX_LOCK(list);
+}
+
+void listUnlock(link_list_t* list)
+{
+	MUTEX_UNLOCK(list);
 }
 
 long listCountNodes(const link_list_t* list)
@@ -108,8 +133,12 @@ long listCountNodes(const link_list_t* list)
 	if(list->count)
 		return(list->count);
 
+	MUTEX_LOCK(list);
+
 	for(node=list->first; node!=NULL; node=node->next)
 		count++;
+
+	MUTEX_UNLOCK(list);
 
 	return(count);
 }
@@ -121,9 +150,13 @@ list_node_t* listFindNode(const link_list_t* list, void* data, size_t length)
 	if(list==NULL)
 		return(NULL);
 
+	MUTEX_LOCK(list);
+
 	for(node=list->first; node!=NULL; node=node->next)
 		if(node->data!=NULL && memcmp(node->data,data,length)==0)
 			break;
+
+	MUTEX_UNLOCK(list);
 
 	return(node);
 }
@@ -139,10 +172,14 @@ str_list_t listStringList(const link_list_t* list)
 	if((str_list=strListInit())==NULL)
 		return(NULL);
 
+	MUTEX_LOCK(list);
+
 	for(node=list->first; node!=NULL; node=node->next) {
 		if(node->data!=NULL)
 			strListAdd(&str_list, node->data);
 	}
+
+	MUTEX_UNLOCK(list);
 
 	return(str_list);
 }
@@ -158,12 +195,16 @@ str_list_t listSubStringList(const list_node_t* node, long max)
 	if((str_list=strListInit())==NULL)
 		return(NULL);
 
+	MUTEX_LOCK(list);
+
 	for(count=0; count<max && node!=NULL; node=node->next) {
 		if(node->data!=NULL) {
 			strListAdd(&str_list, node->data);
 			count++;
 		}
 	}
+
+	MUTEX_UNLOCK(list);
 
 	return(str_list);
 }
@@ -187,8 +228,12 @@ list_node_t* listLastNode(const link_list_t* list)
 	if(list->last!=NULL)
 		return(list->last);
 
+	MUTEX_LOCK(list);
+
 	for(node=list->first; node!=NULL; node=node->next)
 		last=node;
+
+	MUTEX_UNLOCK(list);
 
 	return(last);
 }
@@ -201,9 +246,13 @@ long listNodeIndex(const link_list_t* list, list_node_t* find_node)
 	if(list==NULL)
 		return(-1);
 
+	MUTEX_LOCK(list);
+
 	for(node=list->first; node!=NULL; node=node->next)
 		if(node==find_node)
 			break;
+
+	MUTEX_UNLOCK(list);
 
 	if(node==NULL)
 		return(-1);
@@ -219,8 +268,12 @@ list_node_t* listNodeAt(const link_list_t* list, long index)
 	if(list==NULL || index<0)
 		return(NULL);
 
+	MUTEX_LOCK(list);
+
 	for(node=list->first; node!=NULL && i<index; node=node->next)
 		i++;
+
+	MUTEX_UNLOCK(list);
 
 	return(node);
 }
@@ -254,6 +307,9 @@ static list_node_t* list_add_node(link_list_t* list, list_node_t* node, list_nod
 	if(list==NULL)
 		return(NULL);
 
+	MUTEX_LOCK(list);
+
+	node->list = list;
 	node->prev = after;
 
 	if(after==list->last)					/* append to list */
@@ -272,6 +328,8 @@ static list_node_t* list_add_node(link_list_t* list, list_node_t* node, list_nod
 	}
 
 	list->count++;
+
+	MUTEX_UNLOCK(list);
 
 	return(node);
 }
@@ -403,7 +461,7 @@ link_list_t* listExtract(link_list_t* dest_list, const list_node_t* node, long m
 	if(node==NULL)
 		return(NULL);
 
-	if((list=listInit(dest_list))==NULL)
+	if((list=listInit(dest_list, node->list->flags))==NULL)
 		return(NULL);
 
 	for(count=0; count<max && node!=NULL; node=node->next) {
@@ -426,6 +484,8 @@ void* listRemoveNode(link_list_t* list, list_node_t* node)
 	if(node==NULL)
 		return(NULL);
 
+	MUTEX_LOCK(list);
+
 	if(node->prev!=NULL)
 		node->prev->next = node->next;
 	if(node->next!=NULL)
@@ -445,6 +505,8 @@ void* listRemoveNode(link_list_t* list, list_node_t* node)
 	if(list->count)
 		list->count--;
 
+	MUTEX_UNLOCK(list);
+
 	return(data);
 }
 
@@ -455,11 +517,15 @@ long listRemoveNodes(link_list_t* list, list_node_t* node, long max)
 	if(list==NULL)
 		return(-1);
 
+	MUTEX_LOCK(list);
+
 	if(node==NULL)
 		node=list->first;
 
 	for(count=0; node!=NULL && count<max; node=node->next, count++)
 		listRemoveNode(list, node);
+
+	MUTEX_UNLOCK(list);
 	
 	return(count);
 }

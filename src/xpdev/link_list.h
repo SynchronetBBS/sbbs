@@ -41,6 +41,10 @@
 #include <stddef.h>		/* size_t */
 #include "str_list.h"	/* string list functions and types */
 
+#if defined(LINK_LIST_THREADSAFE)
+	#include "threadwrap.h"
+#endif
+
 #if defined(__cplusplus)
 extern "C" {
 #endif
@@ -48,26 +52,35 @@ extern "C" {
 /* Valid link_list_t.flags bits */
 #define LINK_LIST_MALLOC		(1<<0)	/* List/node allocated with malloc() */
 #define LINK_LIST_ALWAYS_FREE	(1<<1)	/* Always free node data when removing */
+#define LINK_LIST_MUTEX			(1<<2)	/* Mutex protected linked-list */
 
 typedef struct list_node {
 	void*				data;		/* pointer to some kind of data */
 	struct list_node*	next;		/* next node in list (or NULL) */
 	struct list_node*	prev;		/* previous node in list (or NULL) */
+	struct link_list*	list;
 	unsigned long		flags;		/* private use flags */
 } list_node_t;
 
-typedef struct {
+typedef struct link_list {
 	list_node_t*		first;		/* first node in list (or NULL) */
 	list_node_t*		last;		/* last node in list (or NULL) */
 	unsigned long		flags;		/* private use flags */
 	long				count;		/* number of nodes in list */
+#if defined(LINK_LIST_THREADSAFE)
+	pthread_mutex_t		mutex;
+#endif
 } link_list_t;
 
 /* Initialization, Allocation, and Freeing of Lists and Nodes */
-link_list_t*	listInit(link_list_t* /* NULL to auto-allocate */);
+link_list_t*	listInit(link_list_t* /* NULL to auto-allocate */, long flags);
 link_list_t*	listFree(link_list_t*);
 void			listFreeNodes(link_list_t*);
 void			listFreeNodeData(list_node_t* node);
+
+/* Lock/unlock mutex-protoected linked lists */
+void			listLock(link_list_t*);
+void			listUnlock(link_list_t*);
 
 /* Return count or index of nodes, or -1 on error */
 long			listCountNodes(const link_list_t*);
