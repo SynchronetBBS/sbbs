@@ -1793,11 +1793,12 @@ function IRCClient_do_stats(statschar) {
 	switch(statschar[0]) {
 		case "C":
 		case "c":
+			var cline_port;
 			for (cline in CLines) {
 				if(CLines[cline].port)
-					var cline_port = CLines[cline].port;
+					cline_port = CLines[cline].port;
 				else
-					var cline_port = "*";
+					cline_port = "*";
 				this.numeric(213,"C " + CLines[cline].host + " * " + CLines[cline].servername + " " + cline_port + " " + CLines[cline].ircclass);
 				if (NLines[cline])
 					this.numeric(214,"N " + NLines[cline].host + " * " + NLines[cline].servername + " " + NLines[cline].flags + " " + NLines[cline].ircclass);
@@ -1811,11 +1812,12 @@ function IRCClient_do_stats(statschar) {
 			break;
 		case "I":
 		case "i":
+			var my_port;
 			for (iline in ILines) {
 				if (!ILines[iline].port)
-					var my_port = "*";
+					my_port = "*";
 				else
-					var my_port = ILines[iline].port;
+					my_port = ILines[iline].port;
 				this.numeric(215,"I " + ILines[iline].ipmask + " * " + ILines[iline].hostmask + " " + my_port + " " + ILines[iline].ircclass);
 			}
 			break;
@@ -1861,8 +1863,9 @@ function IRCClient_do_stats(statschar) {
 			break;
 		case "Y":
 		case "y":
+			var yl;
 			for (thisYL in YLines) {
-				var yl = YLines[thisYL];
+				yl = YLines[thisYL];
 				this.numeric(218,"Y " + thisYL + " " + yl.pingfreq + " " + yl.connfreq + " " + yl.maxlinks + " " + yl.sendq);
 			}
 			break;
@@ -1873,11 +1876,14 @@ function IRCClient_do_stats(statschar) {
 }
 
 function IRCClient_do_users() {
+	var usersshown;
+	var u;
+
 	this.numeric(392,':UserID                    Terminal  Host');
-	var usersshown=0;
+	usersshown=0;
 	for(node in system.node_list) {
 		if(system.node_list[node].status == NODE_INUSE) {
-			var u=new User(system.node_list[node].useron);
+			u=new User(system.node_list[node].useron);
 			this.numeric(393,format(':%-25s %-9s %-30s',u.alias,'Node'+node,u.host_name));
 			usersshown++;
 		}
@@ -1890,13 +1896,16 @@ function IRCClient_do_users() {
 }
 
 function IRCClient_do_summon(summon_user) {
+	var usernum;
+	var isonline;
+
 	// Check if exists.
-	var usernum = system.matchuser(summon_user);
+	usernum = system.matchuser(summon_user);
 	if(!usernum)
 		this.numeric(444,":No such user.");
 	else {
 		// Check if logged in
-		var isonline = 0;
+		isonline = 0;
 		for(node in system.node_list) {
 		if(system.node_list[node].status == NODE_INUSE &&
 		   system.node_list[node].useron == usernum)
@@ -2609,7 +2618,7 @@ function IRCClient_unregistered_commands(command, cmdline) {
 			server.client_update(this.socket, this.nick, this.hostname);
 		if (!this.sentps) {
 			for (cl in CLines) {
-				if(CLines[cl].servername == this.nick) {
+				if(match_irc_mask(this.nick,CLines[cl].servername)) {
 					this.rawout("PASS " + CLines[cl].password + " :TS");
 					break;
 				}
@@ -4207,6 +4216,10 @@ function IRCClient_server_commands(origin, command, cmdline) {
 }
 
 function IRCClient_work() {
+	var command;
+	var cmdline;
+	var origin;
+
 	if (!this.socket.is_connected) {
 		this.quit("Connection reset by peer",true);
 		return 0;
@@ -4240,15 +4253,15 @@ function IRCClient_work() {
 				return 0;
 			// if :<originator> doesn't match nick of originating
 			// socket, drop silently per RFC.
-			var origin = cmd[0].slice(1);
+			origin = cmd[0].slice(1);
 			if ((this.conntype == TYPE_USER) &&
 			    (origin.toUpperCase() != this.nick.toUpperCase()))
 				return 0;
-			var command = cmd[1].toUpperCase();
+			command = cmd[1].toUpperCase();
 			cmdline = cmdline.slice(cmdline.indexOf(" ")+1);
 		} else {
 			command = cmd[0].toUpperCase();
-			var origin = this.nick;
+			origin = this.nick;
 		}
 
 		this.idletime = time();
