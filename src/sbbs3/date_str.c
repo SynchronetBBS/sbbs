@@ -128,4 +128,17 @@ char* DLLCALL sectostr(uint sec,char *str)
 	return(str);
 }
 
+/****************************************************************************/
+/****************************************************************************/
+char* DLLCALL hhmmtostr(scfg_t* cfg, struct tm* tm, char* str)
+{
+	if(cfg->sys_misc&SM_MILITARY)
+		sprintf(str,"%02d:%02d "
+	        ,tm->tm_hour,tm->tm_min);
+	else
+		sprintf(str,"%02d:%02d%c"
+	        ,tm->tm_hour>12 ? tm->tm_hour-12 : tm->tm_hour==0 ? 12 : tm->tm_hour
+			,tm->tm_min,tm->tm_hour>=12 ? 'p' : 'a');
+	return(str);
+}
 
