@@ -178,7 +178,7 @@ document_object("bbs"		,bbs);
 document_object("console"	,console);
 document_object("msg_area"	,msg_area);
 document_object("file_area"	,file_area);
-document_object("MsgBase"	,new MsgBase("mail"));
+document_object("MsgBase"	,new MsgBase(msg_area.grp_list[0].sub_list[0].code));
 document_object("File"		,new File("bogusfile"));
 
 f.writeln("</ul>");
