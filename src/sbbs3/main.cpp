@@ -939,7 +939,8 @@ void input_thread(void *arg)
 	fd_set		socket_set;
 	sbbs_t*		sbbs = (sbbs_t*) arg;
 	struct timeval	tv;
-	SOCKET		sock=INVALID_SOCKET;
+	SOCKET		high_socket;
+	SOCKET		sock;
 
 	thread_up(TRUE /* setuid */);
 
@@ -951,42 +952,34 @@ void input_thread(void *arg)
     sbbs->input_thread_running = true;
 	sbbs->console|=CON_R_INPUT;
 
-	sock=sbbs->client_socket;
 	while(sbbs->online && sbbs->client_socket!=INVALID_SOCKET
 		&& node_socket[sbbs->cfg.node_num-1]!=INVALID_SOCKET) {
 
 		pthread_mutex_lock(&sbbs->input_thread_mutex);
 
+		FD_ZERO(&socket_set);
+		FD_SET(sbbs->client_socket,&socket_set);
+		high_socket=sbbs->client_socket;
 #ifdef __unix__
 		if(uspy_socket[sbbs->cfg.node_num-1]!=INVALID_SOCKET)  {
-			if(sock==sbbs->client_socket)
-				sock=uspy_socket[sbbs->cfg.node_num-1];
-			else
-				sock=sbbs->client_socket;
+			FD_SET(uspy_socket[sbbs->cfg.node_num-1],&socket_set);
+			if(uspy_socket[sbbs->cfg.node_num-1] > high_socket)
+				high_socket=uspy_socket[sbbs->cfg.node_num-1];
 		}
 #endif
 
-		FD_ZERO(&socket_set);
-		FD_SET(sock,&socket_set);
+		tv.tv_sec=1;
+		tv.tv_usec=0;
 
-		if(sock==sbbs->client_socket)  {
-			tv.tv_sec=0;
-			tv.tv_usec=250000;
-		}
-		else  {
-			tv.tv_sec=0;
-			tv.tv_usec=0;
-		}
-
-		if((i=select(sock+1,&socket_set,NULL,NULL,&tv))<1) {
+		if((i=select(high_socket+1,&socket_set,NULL,NULL,&tv))<1) {
 			pthread_mutex_unlock(&sbbs->input_thread_mutex);
-			if(i==0 && sock==sbbs->client_socket)
+			if(i==0)
 				continue;
 
 			if(sbbs->client_socket==INVALID_SOCKET)
 				break;
 
-			if(sock==sbbs->client_socket)  {
+			if(FD_ISSET(sbbs->client_socket,&socket_set))  {
 	        	if(ERROR_VALUE == ENOTSOCK)
     	            lprintf("Node %d socket closed by peer on input->select", sbbs->cfg.node_num);
 				else if(ERROR_VALUE==ESHUTDOWN)
@@ -1003,7 +996,7 @@ void input_thread(void *arg)
 				break;
 			}
 #ifdef __unix__
-			else  {
+			else if(FD_ISSET(uspy_socket[sbbs->cfg.node_num-1],&socket_set))  {
 				if(ERROR_VALUE != EAGAIN)  {
 					lprintf("Node %d !ERROR %d on local spy socket %d input->select"
 						, sbbs->cfg.node_num, errno, sock);
@@ -1014,6 +1007,15 @@ void input_thread(void *arg)
 			}
 #endif
 		}
+
+		if(FD_ISSET(sbbs->client_socket,&socket_set))
+			sock=sbbs->client_socket;
+#ifdef __unix__
+		else if(FD_ISSET(uspy_socket[sbbs->cfg.node_num-1],&socket_set))
+			sock=uspy_socket[sbbs->cfg.node_num-1];
+#endif
+		else
+			continue;
 
 		if(sbbs->client_socket==INVALID_SOCKET) {
 			pthread_mutex_unlock(&sbbs->input_thread_mutex);
@@ -1061,7 +1063,7 @@ void input_thread(void *arg)
 			else  {
 				if(ERROR_VALUE != EAGAIN)  {
 					lprintf("Node %d !ERRRO %d on local spy socket %d receive"
-						,sbbs->cfg.node_num, errno, sock);
+						, sbbs->cfg.node_num, errno, sock);
 					close_socket(uspy_socket[sbbs->cfg.node_num-1]);
 					uspy_socket[sbbs->cfg.node_num-1]=INVALID_SOCKET;
 				}
@@ -3412,6 +3414,7 @@ void DLLCALL bbs_thread(void* arg)
 	SOCKET	uspy_listen_socket[MAX_NODES];
 	struct sockaddr_un uspy_addr;
 	socklen_t		addr_len;
+	BOOL			wr;
 #endif
 
     if(startup==NULL) {
@@ -3876,15 +3879,27 @@ void DLLCALL bbs_thread(void* arg)
 		}
 #ifdef __unix__
 		for(i=first_node;i<=last_node;i++)  {
+			if(uspy_listen_socket[i-1]!=INVALID_SOCKET) {
+				if(!socket_check(uspy_listen_socket[i-1],NULL,&wr,0)) {
+					close_socket(uspy_listen_socket[i-1]);
+					uspy_listen_socket[i-1]=INVALID_SOCKET;
+				}
+			}
 			if(uspy_listen_socket[i-1]!=INVALID_SOCKET)  {
 				FD_SET(uspy_listen_socket[i-1],&socket_set);
 				if(uspy_listen_socket[i-1]+1>high_socket_set)
 					high_socket_set=uspy_listen_socket[i-1]+1;
 			}
+			if(uspy_socket[i-1]!=INVALID_SOCKET) {
+				if(!socket_check(uspy_socket[i-1],NULL,&wr,0)) {
+					close_socket(uspy_socket[i-1]);
+					uspy_socket[i-1]=INVALID_SOCKET;
+				}
+			}
 			if(uspy_socket[i-1]!=INVALID_SOCKET)  {
 				FD_SET(uspy_socket[i-1],&socket_set);
 				if(uspy_socket[i-1]+1>high_socket_set)
-					high_socket_set=uspy_socket[i-1]+1;
+					high_socket_set=uspy_listen_socket[i-1]+1;
 			}
 		}
 #endif
@@ -3931,23 +3946,19 @@ void DLLCALL bbs_thread(void* arg)
 				&& FD_ISSET(uspy_listen_socket[i-1],&socket_set)) {
 					BOOL already_connected=(uspy_socket[i-1]!=INVALID_SOCKET);
 					SOCKET new_socket=INVALID_SOCKET;
-					new_socket = accept(uspy_listen_socket[i-1], (struct sockaddr *)&client_addr
+					new_socket = accept(uspy_listen_socket[i-1], (struct sockaddr *)&uspy_addr
 						,&client_addr_len);
+					fcntl(new_socket,F_SETFL,fcntl(new_socket,F_GETFL)|O_NONBLOCK);
 					if(already_connected)  {
+lprintf("ERROR! Spy socket %s already in use",uspy_addr.sun_path);
 						send(new_socket,"Spy socket already in use.\n",27,0);
 						close_socket(new_socket);
 					}
 					else  {
+lprintf("Spy socket %s connected",uspy_addr.sun_path);
 						uspy_socket[i-1]=new_socket;
 						sprintf(str,"Spy connection established to node %d\n",i);
 						send(uspy_socket[i-1],str,strlen(str),0);
-					}
-				}
-				if(uspy_socket[i-1]!=INVALID_SOCKET
-				&& FD_ISSET(uspy_socket[i-1],&socket_set))  {
-					if(!socket_check(uspy_socket[i-1],NULL,NULL,0)) {
-						close_socket(uspy_socket[i-1]);
-						uspy_socket[i-1]=INVALID_SOCKET;
 					}
 				}
 			}
