@@ -3,7 +3,7 @@
 // This script generates HTML documentation of the Synchronet JavaScript object model
 // Requires a Debug build of the Synchronet executable(s)
 
-// $Id: jsdocs.js
+// $Id$
 
 const table_tag = "<table border=1 width=100%>";
 
@@ -183,7 +183,7 @@ function document_object(name, obj, type)
 }
 
 // open HTML output file
-f=new File("jsobjs.html");
+f=new File("../docs/jsobjs.html");
 if(!f.open("w")) {
 	printf("!Error %d opening output file\n",errno);
 	exit();
