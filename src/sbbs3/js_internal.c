@@ -209,55 +209,52 @@ js_BranchCallback(JSContext *cx, JSScript *script)
 
 /* Execute a string in its own context (away from Synchronet objects) */
 static JSBool
-js_eval(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+js_eval(JSContext *parent_cx, JSObject *parent_obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char*			buf;
     JSScript*		script;
+	JSContext*		cx;
+	JSObject*		obj;
 	js_branch_t*	branch;
 	JSErrorReporter	reporter;
-
-	if((branch=(js_branch_t*)JS_GetPrivate(cx,obj))==NULL)
-		return(JS_FALSE);
-
-	/* Get the error reporter for the original context */
-	JS_SetErrorReporter(cx,(reporter=JS_SetErrorReporter(cx,NULL)));
 
 	*rval=JSVAL_VOID;
 
 	if(argc<1)
 		return(JS_TRUE);
 
-	if((cx=JS_NewContext(JS_GetRuntime(cx),JAVASCRIPT_CONTEXT_STACK))==NULL)
+	if((branch=(js_branch_t*)JS_GetPrivate(parent_cx, parent_obj))==NULL)
 		return(JS_FALSE);
 
-	JS_SetContextPrivate(cx,branch);
+	if((buf=JS_GetStringBytes(JS_ValueToString(parent_cx, argv[0])))==NULL)
+		return(JS_FALSE);
+
+	if((cx=JS_NewContext(JS_GetRuntime(parent_cx),JAVASCRIPT_CONTEXT_STACK))==NULL)
+		return(JS_FALSE);
+
+	/* Use the error reporter from the parent context */
+#ifdef jscntxt_h___
+	reporter=parent_cx->errorReporter;
+#else
+	JS_SetErrorReporter(parent_cx,(reporter=JS_SetErrorReporter(parent_cx,NULL)));
+#endif
 	JS_SetErrorReporter(cx,reporter);
 
-	if((obj=JS_NewObject(cx, NULL, NULL, NULL))==NULL)
-		return(JS_FALSE);
-
-	if(!JS_InitStandardClasses(cx,obj))
-		return(JS_FALSE);
-	if((buf=JS_GetStringBytes(JS_ValueToString(cx, argv[0])))==NULL)
-		return(JS_FALSE);
-
-#if 0	/* This is a security risk due to access to __parent__ */
-
-	for(i=1; i+1<argc; i+=2)
-		JS_DefineProperty(cx, obj
-			,JS_GetStringBytes(JS_ValueToString(cx,argv[i]))	/* name */
-			,argv[i+1]											/* value */
-			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
-
+#ifdef jscntxt_h___
+	JS_SetBranchCallback(cx, parent_cx->branchCallback);
+#else
+	JS_SetContextPrivate(cx,branch);
+	JS_SetBranchCallback(cx, js_BranchCallback);
 #endif
 
-	branch->counter=0;	// Reset loop counter
+	if((obj=JS_NewObject(cx, NULL, NULL, NULL))==NULL
+		|| !JS_InitStandardClasses(cx,obj)) {
+		JS_DestroyContext(cx);
+		return(JS_FALSE);
+	}
 
-	JS_SetBranchCallback(cx, js_BranchCallback);
-
-	script=JS_CompileScript(cx, obj, buf, strlen(buf), NULL, 0);
-
-	if(script!=NULL) {
+	if((script=JS_CompileScript(cx, obj, buf, strlen(buf), NULL, 0))!=NULL) {
+		branch->counter=0;	/* Reset loop counter */
 		JS_ExecuteScript(cx, obj, script, rval);
 		JS_DestroyScript(cx, script);
 	}
