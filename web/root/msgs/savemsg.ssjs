@@ -59,7 +59,7 @@ if(sub != 'mail') {
 		hdrs.attr|=MSG_PRIVATE;
 
 	/* Moderated stuff */
-	if(msgbase.cfg.moderated_ars!='')
+	if(msg_area.sub[sub].is_moderated)
 		hdrs.attr|=MSG_MODERATED;
 }
 
