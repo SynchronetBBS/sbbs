@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -126,7 +126,7 @@ BOOL DLLCALL backup(char *fname, int backup_level, BOOL ren)
 	len=strlen(fname)-strlen(ext);
 
 	for(i=backup_level;i;i--) {
-		sprintf(newname,"%.*s.%d%s",len,fname,i-1,ext);
+		safe_snprintf(newname,sizeof(newname),"%.*s.%d%s",len,fname,i-1,ext);
 		if(i==backup_level)
 			if(fexist(newname) && remove(newname)!=0)
 				return(FALSE);
@@ -139,7 +139,7 @@ BOOL DLLCALL backup(char *fname, int backup_level, BOOL ren)
 					return(FALSE);
 			continue; 
 		}
-		sprintf(oldname,"%.*s.%d%s",len,fname,i-2,ext);
+		safe_snprintf(oldname,sizeof(oldname),"%.*s.%d%s",len,fname,i-2,ext);
 		if(fexist(oldname) && rename(oldname,newname)!=0)
 			return(FALSE);
 	}
@@ -151,7 +151,7 @@ BOOL DLLCALL backup(char *fname, int backup_level, BOOL ren)
 /****************************************************************************/
 BOOL DLLCALL write_node_cfg(scfg_t* cfg, int backup_level)
 {
-	char	str[128];
+	char	str[MAX_PATH+1];
 	int 	i,file;
 	short	n;
 	FILE	*stream;
@@ -162,7 +162,7 @@ BOOL DLLCALL write_node_cfg(scfg_t* cfg, int backup_level)
 	if(cfg->node_num<1)
 		return(FALSE);
 
-	sprintf(str,cfg->node_path[cfg->node_num-1]);
+	SAFECOPY(str,cfg->node_path[cfg->node_num-1]);
 	prep_dir(cfg->ctrl_dir,str,sizeof(str));
 	md(str);
 	strcat(str,"node.cnf");
@@ -249,7 +249,7 @@ BOOL DLLCALL write_node_cfg(scfg_t* cfg, int backup_level)
 /****************************************************************************/
 BOOL DLLCALL write_main_cfg(scfg_t* cfg, int backup_level)
 {
-	char	str[128],c=0;
+	char	str[MAX_PATH+1],c=0;
 	int 	file;
 	short	i,j,n;
 	FILE	*stream;
@@ -257,7 +257,7 @@ BOOL DLLCALL write_main_cfg(scfg_t* cfg, int backup_level)
 	if(cfg->prepped)
 		return(FALSE);
 
-	sprintf(str,"%smain.cnf",cfg->ctrl_dir);
+	SAFEPRINTF(str,"%smain.cnf",cfg->ctrl_dir);
 	backup(str, backup_level, TRUE);
 
 	if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1
@@ -404,7 +404,7 @@ BOOL DLLCALL write_main_cfg(scfg_t* cfg, int backup_level)
 /****************************************************************************/
 BOOL DLLCALL write_msgs_cfg(scfg_t* cfg, int backup_level)
 {
-	char	str[128],c;
+	char	str[MAX_PATH+1],c;
 	char	dir[LEN_DIR+1]="";
 	int 	i,j,k,file;
 	short	n;
@@ -415,7 +415,7 @@ BOOL DLLCALL write_msgs_cfg(scfg_t* cfg, int backup_level)
 	if(cfg->prepped)
 		return(FALSE);
 
-	sprintf(str,"%smsgs.cnf",cfg->ctrl_dir);
+	SAFEPRINTF(str,"%smsgs.cnf",cfg->ctrl_dir);
 	backup(str, backup_level, TRUE);
 
 	if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1
@@ -502,9 +502,9 @@ BOOL DLLCALL write_msgs_cfg(scfg_t* cfg, int backup_level)
 
 		if(all_msghdr || (cfg->sub[i]->misc&SUB_HDRMOD && !no_msghdr)) {
 			if(!cfg->sub[i]->data_dir[0])
-				sprintf(smb.file,"%ssubs",cfg->data_dir);
+				SAFEPRINTF(smb.file,"%ssubs",cfg->data_dir);
 			else
-				sprintf(smb.file,"%s",cfg->sub[i]->data_dir);
+				SAFECOPY(smb.file,cfg->sub[i]->data_dir);
 			prep_dir(cfg->ctrl_dir,smb.file,sizeof(smb.file));
 			strcat(smb.file,cfg->grp[cfg->sub[i]->grp]->code_prefix);
 			strcat(smb.file,cfg->sub[i]->code_suffix);
@@ -639,7 +639,7 @@ BOOL DLLCALL write_msgs_cfg(scfg_t* cfg, int backup_level)
 	if(!no_msghdr) {
 		strcpy(dir,cfg->data_dir);
 		prep_dir(cfg->ctrl_dir,dir,sizeof(dir));
-		sprintf(smb.file,"%smail",dir);
+		SAFEPRINTF(smb.file,"%smail",dir);
 		if(smb_open(&smb)!=0) {
 			return(FALSE); 
 		}
@@ -681,7 +681,7 @@ BOOL DLLCALL write_msgs_cfg(scfg_t* cfg, int backup_level)
 /****************************************************************************/
 BOOL DLLCALL write_file_cfg(scfg_t* cfg, int backup_level)
 {
-	char	str[128],cmd[LEN_CMD+1],c;
+	char	str[MAX_PATH+1],cmd[LEN_CMD+1],c;
 	char	path[MAX_PATH+1];
 	int 	i,j,k,file;
 	short	n;
@@ -691,7 +691,7 @@ BOOL DLLCALL write_file_cfg(scfg_t* cfg, int backup_level)
 	if(cfg->prepped)
 		return(FALSE);
 
-	sprintf(str,"%sfile.cnf",cfg->ctrl_dir);
+	SAFEPRINTF(str,"%sfile.cnf",cfg->ctrl_dir);
 	backup(str, backup_level, TRUE);
 
 	if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1
@@ -849,7 +849,7 @@ BOOL DLLCALL write_file_cfg(scfg_t* cfg, int backup_level)
 				if(cfg->dir[i]->misc&DIR_FCHK) {
 					SAFECOPY(path,cfg->dir[i]->path);
 					if(!path[0])		/* no file storage path specified */
-						sprintf(path,"%sdirs/%s%s/"
+						safe_snprintf(path,sizeof(path),"%sdirs/%s%s/"
 							,cfg->data_dir
 							,cfg->lib[cfg->dir[i]->lib]->code_prefix
 							,cfg->dir[i]->code_suffix);
@@ -891,7 +891,7 @@ BOOL DLLCALL write_file_cfg(scfg_t* cfg, int backup_level)
 	put_int(cfg->total_txtsecs,stream);
 	for(i=0;i<cfg->total_txtsecs;i++) {
 #if 1
-		sprintf(str,"%stext/%s",cfg->data_dir,cfg->txtsec[i]->code);
+		safe_snprintf(str,sizeof(str),"%stext/%s",cfg->data_dir,cfg->txtsec[i]->code);
 		md(str);
 #endif
 		put_str(cfg->txtsec[i]->name,stream);
@@ -912,7 +912,7 @@ BOOL DLLCALL write_file_cfg(scfg_t* cfg, int backup_level)
 /****************************************************************************/
 BOOL DLLCALL write_chat_cfg(scfg_t* cfg, int backup_level)
 {
-	char	str[128];
+	char	str[MAX_PATH+1];
 	int 	i,j,file;
 	short	n;
 	FILE	*stream;
@@ -987,7 +987,7 @@ BOOL DLLCALL write_chat_cfg(scfg_t* cfg, int backup_level)
 /****************************************************************************/
 BOOL DLLCALL write_xtrn_cfg(scfg_t* cfg, int backup_level)
 {
-	uchar	str[128],c;
+	uchar	str[MAX_PATH+1],c;
 	int 	i,j,sec,file;
 	short	n;
 	FILE	*stream;
