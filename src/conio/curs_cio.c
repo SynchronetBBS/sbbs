@@ -633,6 +633,7 @@ int curs_initciolib(long inmode)
 	keypad(stdscr, TRUE);
 	scrollok(stdscr,FALSE);
 	raw();
+	atexit(endwin);
 
 	/* Set up color pairs */
 	for(bg=0;bg<8;bg++)  {
