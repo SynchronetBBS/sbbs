@@ -237,9 +237,7 @@ be able to logon as New, leave this option blank.
 					,cfg.sys_misc&SM_TIMEBANK ? "Yes" : "No");
 				sprintf(opt[i++],"%-33.33s%s","Allow Credit Conversions"
 					,cfg.sys_misc&SM_NOCDTCVT ? "No" : "Yes");
-				sprintf(opt[i++],"%-33.33s%s","Allow Local Sysop Access"
-					,cfg.sys_misc&SM_L_SYSOP ? "Yes" : "No");
-				sprintf(opt[i++],"%-33.33s%s","Allow Remote Sysop Access"
+				sprintf(opt[i++],"%-33.33s%s","Allow Sysop Logins"
 					,cfg.sys_misc&SM_R_SYSOP ? "Yes" : "No");
 				sprintf(opt[i++],"%-33.33s%s","Echo Passwords Locally"
 					,cfg.sys_misc&SM_ECHO_PW ? "Yes" : "No");
@@ -259,8 +257,6 @@ be able to logon as New, leave this option blank.
 					,cfg.sys_misc&SM_EURODATE ? "Yes" : "No");
 				sprintf(opt[i++],"%-33.33s%s","User Expires When Out-of-time"
 					,cfg.sys_misc&SM_TIME_EXP ? "Yes" : "No");
-				sprintf(opt[i++],"%-33.33s%s","Quick Validation Hot-Keys"
-					,cfg.sys_misc&SM_QVALKEYS ? "Yes" : "No");
 				opt[i][0]=0;
 				savnum=0;
 				SETHELP(WHERE);
@@ -351,34 +347,12 @@ set this option to Yes.
 						i=0;
 						SETHELP(WHERE);
 /*
-Allow Local Sysop Access:
+Allow Sysop Logins:
 
-If you want to be able to logon locally with sysop access, set this
-option to Yes.
+If you want to be able to login with sysop access, set this option to Yes.
 */
 						i=ulist(WIN_MID|WIN_SAV,0,0,0,&i,0
-							,"Allow Local Sysop Access",opt);
-						if(!i && !(cfg.sys_misc&SM_L_SYSOP)) {
-							cfg.sys_misc|=SM_L_SYSOP;
-							changes=1; }
-						else if(i==1 && cfg.sys_misc&SM_L_SYSOP) {
-							cfg.sys_misc&=~SM_L_SYSOP;
-							changes=1; }
-                        break;
-					case 4:
-						strcpy(opt[0],"Yes");
-						strcpy(opt[1],"No");
-						opt[2][0]=0;
-						i=0;
-						SETHELP(WHERE);
-/*
-Allow Remote Sysop Access:
-
-If you want to be able to logon remotely with sysop access, set this
-option to Yes.
-*/
-						i=ulist(WIN_MID|WIN_SAV,0,0,0,&i,0
-							,"Allow Remote Sysop Access",opt);
+							,"Allow Sysop Logins",opt);
 						if(!i && !(cfg.sys_misc&SM_R_SYSOP)) {
 							cfg.sys_misc|=SM_R_SYSOP;
 							changes=1; }
@@ -386,7 +360,7 @@ option to Yes.
 							cfg.sys_misc&=~SM_R_SYSOP;
 							changes=1; }
                         break;
-					case 5:
+					case 4:
 						strcpy(opt[0],"Yes");
 						strcpy(opt[1],"No");
 						opt[2][0]=0;
@@ -407,7 +381,7 @@ If you want to passwords to be displayed locally, set this option to
 							cfg.sys_misc&=~SM_ECHO_PW;
 							changes=1; }
                         break;
-					case 6:
+					case 5:
                         strcpy(opt[0],"Yes");
                         strcpy(opt[1],"No");
 						opt[2][0]=0;
@@ -428,7 +402,7 @@ than continuous random tones, set this option to Yes.
 							cfg.sys_misc|=SM_SHRTPAGE;
                             changes=1; }
 						break;
-					case 7:
+					case 6:
                         strcpy(opt[0],"Yes");
                         strcpy(opt[1],"No");
 						opt[2][0]=0;
@@ -449,7 +423,7 @@ system error has occured, set this option to Yes.
 							cfg.sys_misc|=SM_ERRALARM;
                             changes=1; }
                         break;
-					case 8:
+					case 7:
                         strcpy(opt[0],"Yes");
                         strcpy(opt[1],"No");
 						opt[2][0]=0;
@@ -473,7 +447,7 @@ include sysop maintenance activity.
                             cfg.sys_misc&=~SM_SYSSTAT;
                             changes=1; }
                         break;
-					case 9:
+					case 8:
                         strcpy(opt[0],"Yes");
                         strcpy(opt[1],"No");
 						opt[2][0]=0;
@@ -493,7 +467,7 @@ If you want callers to be able to logon as New, set this option to No.
                             cfg.sys_misc&=~SM_CLOSED;
                             changes=1; }
                         break;
-					case 10:
+					case 9:
                         strcpy(opt[0],"Yes");
                         strcpy(opt[1],"No");
 						opt[2][0]=0;
@@ -516,7 +490,7 @@ set this option to Yes. If this option is set to No, the user notes
 							cfg.sys_misc&=~SM_LISTLOC;
                             changes=1; }
                         break;
-					case 11:
+					case 10:
                         strcpy(opt[0],"Yes");
                         strcpy(opt[1],"No");
 						opt[2][0]=0;
@@ -537,7 +511,7 @@ format always, set this option to Yes.
 							cfg.sys_misc&=~SM_MILITARY;
                             changes=1; }
                         break;
-					case 12:
+					case 11:
                         strcpy(opt[0],"Yes");
                         strcpy(opt[1],"No");
 						opt[2][0]=0;
@@ -559,7 +533,7 @@ instead of MM/DD/YY format, set this option to Yes.
                             changes=1; }
                         break;
 
-					case 13:
+					case 12:
                         strcpy(opt[0],"Yes");
                         strcpy(opt[1],"No");
 						opt[2][0]=0;
@@ -580,29 +554,6 @@ time online, then set this option to Yes.
 							cfg.sys_misc&=~SM_TIME_EXP;
                             changes=1; }
                         break;
-
-					case 14:
-                        strcpy(opt[0],"Yes");
-                        strcpy(opt[1],"No");
-						opt[2][0]=0;
-						i=1;
-						SETHELP(WHERE);
-/*
-Quick Validation Hot-Keys:
-
-If you would like to enable the Alt-# hot-keys for quick user
-validation, set this option to Yes.
-*/
-						i=ulist(WIN_MID|WIN_SAV,0,0,0,&i,0
-							,"Quick Validation Hot-Keys",opt);
-						if(!i && !(cfg.sys_misc&SM_QVALKEYS)) {
-							cfg.sys_misc|=SM_QVALKEYS;
-                            changes=1; }
-						else if(i==1 && cfg.sys_misc&SM_QVALKEYS) {
-							cfg.sys_misc&=~SM_QVALKEYS;
-                            changes=1; }
-                        break;
-
 						} }
             break;
 		case 9:    /* New User Values */
@@ -1081,12 +1032,8 @@ user.
 					,cfg.max_minutes ? ltoa(cfg.max_minutes,tmp,10) : "Unlimited");
 				sprintf(opt[i++],"%-27.27s%u","Warning Days Till Expire"
 					,cfg.sys_exp_warn);
-				sprintf(opt[i++],"%-27.27s%u","Default Status Line"
-					,cfg.sys_def_stat);
 				sprintf(opt[i++],"%-27.27s%u","Last Displayable Node"
 					,cfg.sys_lastnode);
-				sprintf(opt[i++],"%-27.27s%u","First Local Auto-Node"
-					,cfg.sys_autonode);
 				sprintf(opt[i++],"%-27.27s%s","Phone Number Format"
 					,cfg.sys_phonefmt);
 				sprintf(opt[i++],"%-27.27s%.40s","Sysop Chat Requirements"
@@ -1266,20 +1213,6 @@ completely.
 					case 9:
 						SETHELP(WHERE);
 /*
-Default Status Line:
-
-This is the number of the status line format that will be the default
-display on the bottom line of the screen. For explanation of the
-available status lines, see the sysop documentation.
-*/
-						sprintf(str,"%u",cfg.sys_def_stat);
-						uinput(WIN_MID|WIN_SAV,0,0
-							,"Default Status Line",str,5,K_NUMBER|K_EDIT);
-						cfg.sys_def_stat=atoi(str);
-						break;
-					case 10:
-						SETHELP(WHERE);
-/*
 Last Displayed Node:
 
 This is the number of the last node to display to users in node lists.
@@ -1291,20 +1224,7 @@ to users.
 							,"Last Displayed Node",str,5,K_NUMBER|K_EDIT);
 						cfg.sys_lastnode=atoi(str);
                         break;
-					case 11:
-						SETHELP(WHERE);
-/*
-First Local Auto-Node:
-
-This is the number of the first node in the search for an available
-node for local login using the AUTONODE utility.
-*/
-						sprintf(str,"%u",cfg.sys_autonode);
-						uinput(WIN_MID|WIN_SAV,0,0
-							,"First Local Auto-Node",str,5,K_NUMBER|K_EDIT);
-						cfg.sys_autonode=atoi(str);
-                        break;
-					case 12:
+					case 10:
 						SETHELP(WHERE);
 /*
 Phone Number Format:
@@ -1318,7 +1238,7 @@ format. An example for North American phone numbers is NNN-NNN-NNNN.
 							,"Phone Number Format",cfg.sys_phonefmt
 							,LEN_PHONE,K_UPPER|K_EDIT);
                         break;
-					case 13:
+					case 11:
 						getar("Sysop Chat",cfg.sys_chat_arstr);
 						break;
 						} }
