@@ -37,7 +37,7 @@
 
 load("nodedefs.js");
 
-/* Would rather const than var, but end up with redeclaration errors. :-(	*/
+/* Would rather use const than var, but end up with redeclaration errors.	*/
 
 							    /********************************************/
 							    /* system.settings							*/
@@ -108,6 +108,30 @@ var   SS_NEWDAY		=(1<<25)	/* Date changed while online				*/
 var   SS_RLOGIN		=(1<<26)	/* Current login via BSD RLogin				*/
 var   SS_FILEXFER	=(1<<27)	/* File transfer in progress, halt spy		*/
 					    		/********************************************/
+
+						    	/********************************************/
+								/* bbs.startup_options						*/
+						    	/********************************************/
+var   BBS_OPT_KEEP_ALIVE		=(1<<0)	/* Send keep-alives					*/
+var   BBS_OPT_XTRN_MINIMIZED	=(1<<1)	/* Run externals minimized			*/
+var   BBS_OPT_AUTO_LOGON		=(1<<2)	/* Auto-logon via IP				*/
+var   BBS_OPT_DEBUG_TELNET		=(1<<3)	/* Debug telnet commands			*/
+var   BBS_OPT_SYSOP_AVAILABLE	=(1<<4)	/* Available for chat				*/
+var   BBS_OPT_ALLOW_RLOGIN		=(1<<5)	/* Allow logins via BSD RLogin		*/
+var   BBS_OPT_USE_2ND_RLOGIN	=(1<<6)	/* Use 2nd username in BSD RLogin	*/
+var   BBS_OPT_NO_QWK_EVENTS		=(1<<7)	/* Don't run QWK-related events		*/
+var   BBS_OPT_NO_HOST_LOOKUP	=(1<<11)/* Don't lookup hostname			*/
+var   BBS_OPT_NO_JAVASCRIPT		=(1<<29)/* JavaScript disabled				*/
+var   BBS_OPT_LOCAL_TIMEZONE	=(1<<30)/* Don't force UCT/GMT				*/
+var   BBS_OPT_MUTE				=(1<<31)/* Mute sounds						*/
+						    	/*******************************************/
+
+						    	/********************************************/
+								/* bbs.online								*/
+						    	/********************************************/
+var   ON_LOCAL		=1	 		/* Online locally (events only in v3)		*/
+var   ON_REMOTE		=2 			/* Online remotely							*/
+						    	/********************************************/
 
 							    /********************************************/
 							    /* console.status							*/
@@ -368,4 +392,40 @@ var   DIR_MOVENEW	=(1<<17)	/* Files marked as new when moved			*/
 							    /********************************************/
 var   FILE_EXTDESC	=(1<<0)     /* Extended description exists				*/
 var   FILE_ANON 	=(1<<1)		/* Anonymous upload							*/
+					    		/********************************************/
+
+					    		/********************************************/
+								/* Bits in the mode of bbs.exec()           */
+					    		/********************************************/
+var   EX_CC			=(1<<0)		/* Use command.com to load other process    */
+var   EX_OUTR		=(1<<1)		/* Copy DOS output to remote                */
+var   EX_OUTL 		=(1<<2)		/* Use _lputc() for local DOS output		*/
+var   EX_INR		=(1<<3)		/* Trap int 16h keyboard input requests     */
+var   EX_WWIV 		=(1<<4)		/* Expand WWIV color codes to ANSI sequence */
+var   EX_SWAP 		=(1<<5)		/* Swap out for this external				*/
+var   EX_POPEN		=(1<<7)		/* Leave COM port open						*/
+var   EX_OFFLINE	=(1<<8)		/* Run this program offline					*/
+var   EX_NATIVE		=(1<<9)		/* Native 32-bit application				*/
+var   EX_BG			=(1<<10)	/* Back-ground/detached process				*/
+					    		/********************************************/
+
+					    		/********************************************/
+								/* Values for bbs.user_event()				*/
+					    		/********************************************/
+var   EVENT_LOGON	=1			/* Execute during logon sequence			*/
+var   EVENT_LOGOFF	=2			/* Execute during logoff sequence			*/
+var   EVENT_NEWUSER	=3			/* Execute during newuser app.				*/
+var   EVENT_BIRTHDAY=4			/* Execute on birthday						*/
+					    		/********************************************/
+
+					    		/********************************************/
+								/* Bits in mode of bbs.telnet_gate()		*/
+					    		/********************************************/
+var   TG_ECHO		=(1<<0)		/* Turn on telnet echo						*/
+var   TG_CRLF		=(1<<1)		/* Expand sole CR to CRLF					*/
+var   TG_LINEMODE	=(1<<2)		/* Send entire lines only					*/
+var   TG_NODESYNC	=(1<<3)		/* Call Nodesync, get msgs, etc.			*/
+var   TG_CTRLKEYS	=(1<<4)		/* Interpret ^P ^U ^T, etc locally			*/
+var   TG_PASSTHRU	=(1<<5)		/* Pass-through telnet commands/responses	*/
+var   TG_RLOGIN		=(1<<6)		/* Use BSD RLogin protocol					*/
 					    		/********************************************/
