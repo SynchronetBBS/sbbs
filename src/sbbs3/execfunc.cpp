@@ -283,7 +283,7 @@ int sbbs_t::exec_function(csi_t *csi)
 				CRLF; }
 			return(0);
 		case CS_PAGE_SYSOP:
-			csi->logic=sysop_page();
+			csi->logic=!sysop_page();
 			return(0);
 		case CS_PAGE_GURU:
 #if 0 /* old way */
@@ -310,7 +310,7 @@ int sbbs_t::exec_function(csi_t *csi)
 			FREE(p);
 			csi->logic=LOGIC_TRUE;
 #else
-			csi->logic=guru_page();
+			csi->logic=!guru_page();
 #endif
 			return(0);
 		case CS_SPY:
