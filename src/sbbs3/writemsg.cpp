@@ -604,9 +604,9 @@ ulong sbbs_t::msgeditor(char *buf, char *top, char *title)
 	putmsg(top,P_SAVEATR|P_NOATCODES);
 	for(line=0;line<lines && !msgabort();line++) { /* display lines in buf */
 		putmsg(str[line],P_SAVEATR|P_NOATCODES);
-		if(useron.misc&ANSI)
-			bputs("\x1b[K");  /* delete to end of line */
-		CRLF; }
+		cleartoeol();  /* delete to end of line */
+		CRLF; 
+	}
 	SYNC;
 	if(online==ON_REMOTE)
 		rioctl(IOSM|ABORT);
@@ -735,8 +735,7 @@ ulong sbbs_t::msgeditor(char *buf, char *top, char *title)
 						putmsg(tmp,P_SAVEATR|P_NOATCODES); }
 					else
 						putmsg(str[j],P_SAVEATR|P_NOATCODES);
-					if(useron.misc&ANSI)
-						bputs("\x1b[K");  /* delete to end of line */
+					cleartoeol();  /* delete to end of line */
 					CRLF;
 					j++; }
 				SYNC;
@@ -776,7 +775,8 @@ ulong sbbs_t::msgeditor(char *buf, char *top, char *title)
 			lines++;
 		if(console&CON_UPARROW) {
 			outchar(CR);
-			bprintf("\x1b[A\x1b[K");    /* up one line, clear to eol */
+			cursor_up();
+			cleartoeol();
 			line-=2; }
 		}
 	if(!online) {

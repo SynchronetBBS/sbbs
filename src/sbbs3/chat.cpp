@@ -965,7 +965,7 @@ void sbbs_t::privchat(bool local)
 							,thisnode.misc&NODE_NMSG ? 'M':SP);
 						attr(cfg.color[clr_chatlocal]);
 						for(x=13,y=0;x<rows;x++,y++) {
-							bprintf("\x1b[%d;1H\x1b[K",x+1);
+							rprintf("\x1b[%d;1H\x1b[K",x+1);
 							if(y<=localline)
 								bprintf("%s\r\n",localbuf[y]); }
 						GOTOXY(1,local_y=(15+localline));
@@ -980,7 +980,7 @@ void sbbs_t::privchat(bool local)
 							CRLF;
 		            		local_y++;
 							if(sys_status&SS_SPLITP)
-								bputs("\x1b[K"); 
+								cleartoeol(); 
 						} 
 					}
 					// SYNC;
@@ -1067,7 +1067,11 @@ void sbbs_t::privchat(bool local)
 							CRLF;
 		            		remote_y++;
 							if(sys_status&SS_SPLITP)
-								bputs("\x1b[K"); } } } }
+								cleartoeol(); 
+						} 
+					} 
+				} 
+			}
 			ch=0;
 			write(in,&ch,1);
 
