@@ -56,6 +56,7 @@ __published:
 	TBevel *Bevel1;
 	TLabel *Label;
     TComboBox *ComboBox;
+	TEdit *Edit;
 	void __fastcall FormShow(TObject *Sender);
 private:
 public:

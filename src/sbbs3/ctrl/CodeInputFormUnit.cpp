@@ -49,7 +49,10 @@ __fastcall TCodeInputForm::TCodeInputForm(TComponent* AOwner)
 //---------------------------------------------------------------------
 void __fastcall TCodeInputForm::FormShow(TObject *Sender)
 {
-	ActiveControl=ComboBox;	
+	if(Edit->Visible)
+    	ActiveControl=Edit;
+    else
+		ActiveControl=ComboBox;
 }
 //---------------------------------------------------------------------------
 
