@@ -44,10 +44,14 @@
 bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 	, uint touser)
 {
-	char	str[256],*body,*tail,col=0,lastch=0,*p,*lzhbuf,qwkbuf[129];
+	char*	body;
+	char*	tail;
+	char*	header;
+	char	str[256],col=0,lastch=0,*p,*lzhbuf,qwkbuf[QWK_BLOCK_LEN+1];
 	uint 	i,j,k,lzh=0,storage,skip=0;
 	ushort	xlat;
 	long	l,bodylen,taillen,length;
+	bool	header_cont=false;
 	ulong	crc,block,blocks;
 	smbmsg_t	msg;
 	struct	tm tm;
@@ -118,82 +122,7 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 		msg.idx.to=crc16(str); }
 
 	memset(qwkbuf,0,sizeof(qwkbuf));
-	fread(qwkbuf,1,128,qwk_fp);
-
-	if(useron.rest&FLAG('Q') || fromhub) {      /* QWK Net */
-		if(!strnicmp(qwkbuf,"@VIA:",5)) {
-			set_qwk_flag(QWK_VIA);
-			p=strchr(qwkbuf,'\xe3');
-			if(p) {
-				*p=0;
-				skip=strlen(qwkbuf)+1; }
-			truncsp(qwkbuf);
-			p=qwkbuf+5; 					/* Skip "@VIA:" */
-			while(*p && *p<=SP) p++;		/* Skip any spaces */
-			if(route_circ(p,cfg.sys_id)) {
-				smb_freemsgmem(&msg);
-				bprintf("\r\nCircular message path: %s\r\n",p);
-				sprintf(str,"Circular message path: %s from %s"
-					,p,fromhub ? cfg.qhub[fromhub-1]->id:useron.alias);
-				errorlog(str);
-				return(false); }
-			sprintf(str,"%s/%s"
-				,fromhub ? cfg.qhub[fromhub-1]->id : useron.alias,p);
-			strupr(str);
-			update_qwkroute(str); }
-		else {
-			if(fromhub)
-				strcpy(str,cfg.qhub[fromhub-1]->id);
-			else
-				strcpy(str,useron.alias); }
-		strupr(str);
-		j=NET_QWK;
-		smb_hfield(&msg,SENDERNETTYPE,2,&j);
-		smb_hfield(&msg,SENDERNETADDR,strlen(str),str);
-		sprintf(str,"%25.25s",hdrblk+46);  /* From user */
-		truncsp(str);
-		if(!strnicmp(qwkbuf+skip,"@MSGID:",7)) {
-			set_qwk_flag(QWK_MSGID);
-			p=strchr(qwkbuf+skip,'\xe3');
-			i=skip;
-			if(p) {
-				*p=0;
-				skip+=strlen(qwkbuf+i)+1; }
-			p=qwkbuf+i+7;					/* Skip "@MSGID:" */
-			while(*p && *p<=SP) p++;		/* Skip any spaces */
-			truncsp(p);
-			smb_hfield(&msg,RFC822MSGID,strlen(p),p);
-		}
-		if(!strnicmp(qwkbuf+skip,"@REPLY:",7)) {
-			set_qwk_flag(QWK_MSGID);
-			p=strchr(qwkbuf+skip,'\xe3');
-			i=skip;
-			if(p) {
-				*p=0;
-				skip+=strlen(qwkbuf+i)+1; }
-			p=qwkbuf+i+7;					/* Skip "@REPLY:" */
-			while(*p && *p<=SP) p++;		/* Skip any spaces */
-			truncsp(p);
-			smb_hfield(&msg,RFC822REPLYID,strlen(p),p);
-		}
-		if(!strnicmp(qwkbuf+skip,"@TZ:",4)) {
-			set_qwk_flag(QWK_TZ);
-			p=strchr(qwkbuf+skip,'\xe3');
-			i=skip;
-			if(p) {
-				*p=0;
-				skip+=strlen(qwkbuf+i)+1; }
-			p=qwkbuf+i+4;					/* Skip "@TZ:" */
-			while(*p && *p<=SP) p++;		/* Skip any spaces */
-			msg.hdr.when_written.zone=(short)ahtoul(p); 
-		}
-	} else {
-		sprintf(str,"%u",useron.number);
-		smb_hfield(&msg,SENDEREXT,strlen(str),str);
-		if((uint)subnum!=INVALID_SUB && cfg.sub[subnum]->misc&SUB_NAME)
-			strcpy(str,useron.name);
-		else
-			strcpy(str,useron.alias); }
+	fread(qwkbuf,1,QWK_BLOCK_LEN,qwk_fp);
 
 	smb_hfield(&msg,SENDER,strlen(str),str);
 	if((uint)subnum==INVALID_SUB) {
@@ -216,26 +145,47 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 	/* Convert the QWK message text */
 	/********************************/
 
-	bodylen=0;
-	if((body=(char *)LMALLOC((blocks-1L)*128L*2L))==NULL) {
+	if((header=(char *)calloc((blocks-1L)*QWK_BLOCK_LEN*2L,sizeof(char)))==NULL) {
 		smb_freemsgmem(&msg);
-		errormsg(WHERE,ERR_ALLOC,"QWK msg body",(blocks-1L)*128L*2L);
-		return(false); }
+		errormsg(WHERE,ERR_ALLOC,"QWK msg header",(blocks-1L)*QWK_BLOCK_LEN*2L);
+		return(false); 
+	}
+
+	bodylen=0;
+	if((body=(char *)LMALLOC((blocks-1L)*QWK_BLOCK_LEN*2L))==NULL) {
+		LFREE(header);
+		smb_freemsgmem(&msg);
+		errormsg(WHERE,ERR_ALLOC,"QWK msg body",(blocks-1L)*QWK_BLOCK_LEN*2L);
+		return(false); 
+	}
 
 	taillen=0;
-	if((tail=(char *)LMALLOC((blocks-1L)*128L*2L))==NULL) {
+	if((tail=(char *)LMALLOC((blocks-1L)*QWK_BLOCK_LEN*2L))==NULL) {
+		LFREE(header);
 		LFREE(body);
 		smb_freemsgmem(&msg);
-		errormsg(WHERE,ERR_ALLOC,"QWK msg tail",(blocks-1L)*128L*2L);
-		return(false); }
+		errormsg(WHERE,ERR_ALLOC,"QWK msg tail",(blocks-1L)*QWK_BLOCK_LEN*2L);
+		return(false); 
+	}
 
 	for(block=1;block<blocks;block++) {
-		if(block>1)
-			if(!fread(qwkbuf,1,128,qwk_fp))
-				break;
-		for(k=skip;k<128;k++,skip=0) {
+		if(!fread(qwkbuf,1,QWK_BLOCK_LEN,qwk_fp))
+			break;
+		for(k=0;k<QWK_BLOCK_LEN;k++) {
 			if(qwkbuf[k]==0)
 				continue;
+			if(bodylen==0 && (qwkbuf[k]=='@' || header_cont)) {
+				if((p=strchr(qwkbuf+k, QWK_NEWLINE))!=NULL)
+					*p=0;
+				strcat(header, qwkbuf+k);
+				strcat(header, "\n");
+				if(p==NULL) {
+					header_cont=true;
+					break;
+				}
+				k+=strlen(qwkbuf+k);
+				header_cont=false;
+			}
 			if(!taillen && qwkbuf[k]==SP && col==3 && bodylen>=3
 				&& body[bodylen-3]=='-' && body[bodylen-2]=='-'
 				&& body[bodylen-1]=='-') {
@@ -244,7 +194,7 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 				taillen=4;
 				col++;
 				continue; }
-			if((uchar)qwkbuf[k]==0xE3) {		/* expand 0xe3 to crlf */
+			if(qwkbuf[k]==QWK_NEWLINE) {		/* expand QWK_NEWLINE to crlf */
 				if(!taillen && col==3 && bodylen>=3 && body[bodylen-3]=='-'
 					&& body[bodylen-2]=='-' && body[bodylen-1]=='-') {
 					bodylen-=3;
@@ -276,13 +226,101 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 			if(taillen)
 				tail[taillen++]=qwkbuf[k];
 			else
-				body[bodylen++]=qwkbuf[k]; } }
+				body[bodylen++]=qwkbuf[k]; 
+		} 
+	}
 
 	while(bodylen && body[bodylen-1]==SP) bodylen--; /* remove trailing spaces */
 	if(bodylen>=2 && body[bodylen-2]==CR && body[bodylen-1]==LF)
 		bodylen-=2;
 
 	while(taillen && tail[taillen-1]<=SP) taillen--; /* remove trailing garbage */
+
+	skip=0;
+	if(useron.rest&FLAG('Q') || fromhub) {      /* QWK Net */
+		if(!strnicmp(header,"@VIA:",5)) {
+			set_qwk_flag(QWK_VIA);
+			p=strchr(header, '\n');
+			if(p) {
+				*p=0;
+				skip=strlen(header)+1; 
+			}
+			truncsp(header);
+			p=header+5; 					/* Skip "@VIA:" */
+			while(*p && *p<=SP) p++;		/* Skip any spaces */
+			if(route_circ(p,cfg.sys_id)) {
+				free(header);
+				free(body);
+				free(tail);
+				smb_freemsgmem(&msg);
+				bprintf("\r\nCircular message path: %s\r\n",p);
+				sprintf(str,"Circular message path: %s from %s"
+					,p,fromhub ? cfg.qhub[fromhub-1]->id:useron.alias);
+				errorlog(str);
+				return(false); }
+			sprintf(str,"%s/%s"
+				,fromhub ? cfg.qhub[fromhub-1]->id : useron.alias,p);
+			strupr(str);
+			update_qwkroute(str); }
+		else {
+			if(fromhub)
+				strcpy(str,cfg.qhub[fromhub-1]->id);
+			else
+				strcpy(str,useron.alias); }
+		strupr(str);
+		j=NET_QWK;
+		smb_hfield(&msg,SENDERNETTYPE,2,&j);
+		smb_hfield(&msg,SENDERNETADDR,strlen(str),str);
+		sprintf(str,"%25.25s",hdrblk+46);  /* From user */
+		truncsp(str);
+	} else {
+		sprintf(str,"%u",useron.number);
+		smb_hfield(&msg,SENDEREXT,strlen(str),str);
+		if((uint)subnum!=INVALID_SUB && cfg.sub[subnum]->misc&SUB_NAME)
+			strcpy(str,useron.name);
+		else
+			strcpy(str,useron.alias);
+	}
+
+	if(!strnicmp(header+skip,"@MSGID:",7)) {
+		set_qwk_flag(QWK_MSGID);
+		p=strchr(header+skip, '\n');
+		i=skip;
+		if(p) {
+			*p=0;
+			skip+=strlen(header+i)+1; 
+		}
+		p=header+i+7;					/* Skip "@MSGID:" */
+		while(*p && *p<=SP) p++;		/* Skip any spaces */
+		truncsp(p);
+		smb_hfield(&msg,RFC822MSGID,strlen(p),p);
+	}
+	if(!strnicmp(header+skip,"@REPLY:",7)) {
+		set_qwk_flag(QWK_MSGID);
+		p=strchr(header+skip, '\n');
+		i=skip;
+		if(p) {
+			*p=0;
+			skip+=strlen(header+i)+1; 
+		}
+		p=header+i+7;					/* Skip "@REPLY:" */
+		while(*p && *p<=SP) p++;		/* Skip any spaces */
+		truncsp(p);
+		smb_hfield(&msg,RFC822REPLYID,strlen(p),p);
+	}
+	if(!strnicmp(header+skip,"@TZ:",4)) {
+		set_qwk_flag(QWK_TZ);
+		p=strchr(header+skip, '\n');
+		i=skip;
+		if(p) {
+			*p=0;
+			skip+=strlen(header+i)+1; 
+		}
+		p=header+i+4;					/* Skip "@TZ:" */
+		while(*p && *p<=SP) p++;		/* Skip any spaces */
+		msg.hdr.when_written.zone=(short)ahtoul(p); 
+	}
+	free(header);
 
 	/*****************/
 	/* Calculate CRC */
