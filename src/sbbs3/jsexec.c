@@ -508,7 +508,7 @@ long js_exec(const char *fname, char** args)
 			if(scfg.mods_dir[0]==0 || !fexistcase(path))
 				sprintf(path,"%s%s%s",scfg.exec_dir,fname,js_ext(fname));
 		} else
-			sprintf(path,"%s%s",fname,js_ext(fname));
+			SAFECOPY(path,fname);
 
 		if(!fexistcase(path)) {
 			fprintf(errfp,"!Module file (%s) doesn't exist\n",path);
