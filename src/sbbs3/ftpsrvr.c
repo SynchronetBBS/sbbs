@@ -100,6 +100,7 @@ static DWORD	sockets=0;
 static DWORD	thread_count=0;
 static HANDLE	socket_mutex=NULL;
 static time_t	uptime;
+static BOOL		recycle_server=FALSE;
 #ifdef _DEBUG
 	static BYTE 	socket_debug[0x10000]={0};
 
@@ -1297,6 +1298,7 @@ char * cmdstr(user_t* user, char *instr, char *fpath, char *fspec, char *cmd)
 
 void DLLCALL ftp_terminate(void)
 {
+	recycle_server=FALSE;
 	if(server_socket!=INVALID_SOCKET) {
     	lprintf("%04d FTP Terminate: closing socket",server_socket);
 		ftp_close_socket(&server_socket,__LINE__);
@@ -4318,230 +4320,238 @@ void DLLCALL ftp_server(void* arg)
 	if(startup->js_max_bytes==0)			startup->js_max_bytes=JAVASCRIPT_MAX_BYTES;
 #endif
 
-	thread_up();
+	recycle_server=TRUE;
+	do {
 
-	status("Initializing");
+		thread_up();
 
-    memset(&scfg, 0, sizeof(scfg));
+		status("Initializing");
 
-#ifdef __unix__		/* Ignore "Broken Pipe" signal */
-	signal(SIGPIPE,SIG_IGN);
-#endif
+		memset(&scfg, 0, sizeof(scfg));
 
-	lprintf("Synchronet FTP Server Version %s%s"
-		,FTP_VERSION
-#ifdef _DEBUG
-		," Debug"
-#else
-		,""
-#endif
-		);
+	#ifdef __unix__		/* Ignore "Broken Pipe" signal */
+		signal(SIGPIPE,SIG_IGN);
+	#endif
 
-	COMPILER_DESC(compiler);
+		lprintf("Synchronet FTP Server Version %s%s"
+			,FTP_VERSION
+	#ifdef _DEBUG
+			," Debug"
+	#else
+			,""
+	#endif
+			);
 
-	lprintf("Compiled %s %s with %s", __DATE__, __TIME__, compiler);
+		COMPILER_DESC(compiler);
 
-	srand(clock());		/* Seed random number generator */
-	sbbs_random(10);	/* Throw away first number */
+		lprintf("Compiled %s %s with %s", __DATE__, __TIME__, compiler);
 
-	if(!(startup->options&FTP_OPT_LOCAL_TIMEZONE)) { 
-		if(PUTENV("TZ=UTC0"))
-			lprintf("!putenv() FAILED");
-		tzset();
+		srand(clock());		/* Seed random number generator */
+		sbbs_random(10);	/* Throw away first number */
 
-		if((t=checktime())!=0) {   /* Check binary time */
-			lprintf("!TIME PROBLEM (%ld)",t);
+		if(!(startup->options&FTP_OPT_LOCAL_TIMEZONE)) { 
+			if(PUTENV("TZ=UTC0"))
+				lprintf("!putenv() FAILED");
+			tzset();
+
+			if((t=checktime())!=0) {   /* Check binary time */
+				lprintf("!TIME PROBLEM (%ld)",t);
+				cleanup(1);
+				return;
+			}
+		}
+
+		uptime=time(NULL);
+
+		if(!winsock_startup()) {
 			cleanup(1);
 			return;
 		}
-	}
 
-	uptime=time(NULL);
+		t=time(NULL);
+		lprintf("Initializing on %.24s with options: %lx"
+			,ctime(&t),startup->options);
 
-	if(!winsock_startup()) {
-		cleanup(1);
-		return;
-	}
+	#ifdef _WIN32
+		if((socket_mutex=CreateMutex(NULL,FALSE,NULL))==NULL) {
+    		lprintf("!ERROR %d creating socket_mutex", GetLastError());
+			cleanup(1);
+			return;
+		}
+	#endif
 
-	t=time(NULL);
-	lprintf("Initializing on %.24s with options: %lx"
-		,ctime(&t),startup->options);
-
-#ifdef _WIN32
-    if((socket_mutex=CreateMutex(NULL,FALSE,NULL))==NULL) {
-    	lprintf("!ERROR %d creating socket_mutex", GetLastError());
-		cleanup(1);
-        return;
-    }
-#endif
-
-	/* Initial configuration and load from CNF files */
-    sprintf(scfg.ctrl_dir, "%.*s",(int)sizeof(scfg.ctrl_dir)-1
-    	,startup->ctrl_dir);
-    lprintf("Loading configuration files from %s", scfg.ctrl_dir);
-	scfg.size=sizeof(scfg);
-	if(!load_cfg(&scfg, NULL, TRUE, error)) {
-		lprintf("!ERROR %s",error);
-		lprintf("!Failed to load configuration files");
-		cleanup(1);
-		return;
-	}
-
-	/* Use DATA/TEMP for temp dir - should ch'd to be FTP/HOST specific */
-	prep_dir(scfg.data_dir, scfg.temp_dir);
-
-	if(!startup->max_clients) {
-		startup->max_clients=scfg.sys_nodes;
-		if(startup->max_clients<10)
-			startup->max_clients=10;
-	}
-	lprintf("Maximum clients: %d",startup->max_clients);
-
-	lprintf("Maximum inactivity: %d seconds",startup->max_inactivity);
-
-	active_clients=0;
-	update_clients();
-
-	strlwr(scfg.sys_id); /* Use lower-case unix-looking System ID for group name */
-
-	for(i=0;i<scfg.total_libs;i++) {
-		strlwr(scfg.lib[i]->sname);
-		dotname(scfg.lib[i]->sname,scfg.lib[i]->sname);
-	}
-
-	for(i=0;i<scfg.total_dirs;i++) 
-		strlwr(scfg.dir[i]->code);
-
-    /* open a socket and wait for a client */
-
-    if((server_socket=ftp_open_socket(SOCK_STREAM))==INVALID_SOCKET) {
-		lprintf("!ERROR %d opening socket", ERROR_VALUE);
-		cleanup(1);
-		return;
-	}
-
-    lprintf("%04d FTP socket opened",server_socket);
-
-#if 1
-	linger.l_onoff=TRUE;
-    linger.l_linger=5;	/* seconds */
-
-	if((result=setsockopt(server_socket, SOL_SOCKET, SO_LINGER
-    	,(char *)&linger, sizeof(linger)))!=0) {
-		lprintf ("%04d !ERROR %d (%d) setting socket options."
-			,server_socket, result, ERROR_VALUE);
-		cleanup(1);
-		return;
-	}
-#endif
-
-	/*****************************/
-	/* Listen for incoming calls */
-	/*****************************/
-    memset(&server_addr, 0, sizeof(server_addr));
-
-	server_addr.sin_addr.s_addr = htonl(startup->interface_addr);
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_port   = htons(startup->port);
-
-    if((result=bind(server_socket, (struct sockaddr *) &server_addr
-    	,sizeof(server_addr)))!=0) {
-		lprintf("%04d !ERROR %d (%d) binding socket to port %u"
-			,server_socket, result, ERROR_VALUE,startup->port);
-		lprintf("%04d %s", server_socket, BIND_FAILURE_HELP);
-		cleanup(1);
-		return;
-	}
-
-    if((result=listen(server_socket, 1))!= 0) {
-		lprintf("%04d !ERROR %d (%d) listening on socket"
-			,server_socket, result, ERROR_VALUE);
-		cleanup(1);
-		return;
-	}
-
-	/* signal caller that we've started up successfully */
-    if(startup->started!=NULL)
-    	startup->started();
-
-	lprintf("%04d FTP Server thread started on port %d",server_socket,startup->port);
-	status(STATUS_WFC);
-
-	while(server_socket!=INVALID_SOCKET) {
-
-		/* now wait for connection */
-
-		tv.tv_sec=2;
-		tv.tv_usec=0;
-
-		FD_ZERO(&socket_set);
-		FD_SET(server_socket,&socket_set);
-
-		if((i=select(server_socket+1,&socket_set,NULL,NULL,&tv))<1) {
-			if(i==0) {
-				mswait(1);
-				continue;
-			}
-			if(ERROR_VALUE==EINTR)
-				lprintf("0000 FTP Server listening interrupted");
-			else if(ERROR_VALUE == ENOTSOCK)
-            	lprintf("0000 FTP Server sockets closed");
-			else
-				lprintf("0000 !ERROR %d selecting sockets",ERROR_VALUE);
-			break;
+		/* Initial configuration and load from CNF files */
+		sprintf(scfg.ctrl_dir, "%.*s",(int)sizeof(scfg.ctrl_dir)-1
+    		,startup->ctrl_dir);
+		lprintf("Loading configuration files from %s", scfg.ctrl_dir);
+		scfg.size=sizeof(scfg);
+		if(!load_cfg(&scfg, NULL, TRUE, error)) {
+			lprintf("!ERROR %s",error);
+			lprintf("!Failed to load configuration files");
+			cleanup(1);
+			return;
 		}
 
-		client_addr_len = sizeof(client_addr);
-		client_socket = accept(server_socket, (struct sockaddr *)&client_addr
-        	,&client_addr_len);
+		/* Use DATA/TEMP for temp dir - should ch'd to be FTP/HOST specific */
+		prep_dir(scfg.data_dir, scfg.temp_dir);
 
-		if(client_socket == INVALID_SOCKET)
-		{
-			if(ERROR_VALUE == ENOTSOCK || ERROR_VALUE == EINTR)
-            	lprintf("0000 FTP socket closed while listening");
-            else
-				lprintf("0000 !accept failed (ERROR %d)", ERROR_VALUE);
-			continue;	/* Jun-08-2001 was break; */
+		if(!startup->max_clients) {
+			startup->max_clients=scfg.sys_nodes;
+			if(startup->max_clients<10)
+				startup->max_clients=10;
 		}
-		if(startup->socket_open!=NULL)
-			startup->socket_open(TRUE);
-		sockets++;
+		lprintf("Maximum clients: %d",startup->max_clients);
 
-		if(active_clients>=startup->max_clients) {
-			lprintf("%04d !MAXMIMUM CLIENTS (%d) reached, access denied"
-				,client_socket, startup->max_clients);
-			sockprintf(client_socket,"421 Maximum active clients reached, please try again later.");
-			mswait(3000);
-			ftp_close_socket(&client_socket,__LINE__);
-			continue;
+		lprintf("Maximum inactivity: %d seconds",startup->max_inactivity);
+
+		active_clients=0;
+		update_clients();
+
+		strlwr(scfg.sys_id); /* Use lower-case unix-looking System ID for group name */
+
+		for(i=0;i<scfg.total_libs;i++) {
+			strlwr(scfg.lib[i]->sname);
+			dotname(scfg.lib[i]->sname,scfg.lib[i]->sname);
 		}
 
-		if((ftp=malloc(sizeof(ftp_t)))==NULL) {
-			lprintf("%04d !ERROR allocating %d bytes of memory for ftp_t"
-				,client_socket,sizeof(ftp_t));
-			sockprintf(client_socket,"421 System error, please try again later.");
-			mswait(3000);
-			ftp_close_socket(&client_socket,__LINE__);
-			continue;
+		for(i=0;i<scfg.total_dirs;i++) 
+			strlwr(scfg.dir[i]->code);
+
+		/* open a socket and wait for a client */
+
+		if((server_socket=ftp_open_socket(SOCK_STREAM))==INVALID_SOCKET) {
+			lprintf("!ERROR %d opening socket", ERROR_VALUE);
+			cleanup(1);
+			return;
 		}
 
-		ftp->socket=client_socket;
-		ftp->client_addr=client_addr;
+		lprintf("%04d FTP socket opened",server_socket);
 
-		_beginthread (ctrl_thread, 0, ftp);
-	}
+	#if 1
+		linger.l_onoff=TRUE;
+		linger.l_linger=5;	/* seconds */
 
-	if(active_clients) {
-		lprintf("0000 Waiting for %d active clients to disconnect...", active_clients);
-		start=time(NULL);
-		while(active_clients) {
-			if(time(NULL)-start>TIMEOUT_THREAD_WAIT) {
-				lprintf("0000 !TIMEOUT waiting for %d active clients ",active_clients);
+		if((result=setsockopt(server_socket, SOL_SOCKET, SO_LINGER
+    		,(char *)&linger, sizeof(linger)))!=0) {
+			lprintf ("%04d !ERROR %d (%d) setting socket options."
+				,server_socket, result, ERROR_VALUE);
+			cleanup(1);
+			return;
+		}
+	#endif
+
+		/*****************************/
+		/* Listen for incoming calls */
+		/*****************************/
+		memset(&server_addr, 0, sizeof(server_addr));
+
+		server_addr.sin_addr.s_addr = htonl(startup->interface_addr);
+		server_addr.sin_family = AF_INET;
+		server_addr.sin_port   = htons(startup->port);
+
+		if((result=bind(server_socket, (struct sockaddr *) &server_addr
+    		,sizeof(server_addr)))!=0) {
+			lprintf("%04d !ERROR %d (%d) binding socket to port %u"
+				,server_socket, result, ERROR_VALUE,startup->port);
+			lprintf("%04d %s", server_socket, BIND_FAILURE_HELP);
+			cleanup(1);
+			return;
+		}
+
+		if((result=listen(server_socket, 1))!= 0) {
+			lprintf("%04d !ERROR %d (%d) listening on socket"
+				,server_socket, result, ERROR_VALUE);
+			cleanup(1);
+			return;
+		}
+
+		/* signal caller that we've started up successfully */
+		if(startup->started!=NULL)
+    		startup->started();
+
+		lprintf("%04d FTP Server thread started on port %d",server_socket,startup->port);
+		status(STATUS_WFC);
+
+		while(server_socket!=INVALID_SOCKET) {
+
+			/* now wait for connection */
+
+			tv.tv_sec=2;
+			tv.tv_usec=0;
+
+			FD_ZERO(&socket_set);
+			FD_SET(server_socket,&socket_set);
+
+			if((i=select(server_socket+1,&socket_set,NULL,NULL,&tv))<1) {
+				if(i==0) {
+					mswait(1);
+					continue;
+				}
+				if(ERROR_VALUE==EINTR)
+					lprintf("0000 FTP Server listening interrupted");
+				else if(ERROR_VALUE == ENOTSOCK)
+            		lprintf("0000 FTP Server sockets closed");
+				else
+					lprintf("0000 !ERROR %d selecting sockets",ERROR_VALUE);
 				break;
 			}
-			mswait(100);
-		}
-	}
 
-	cleanup(0);
+			client_addr_len = sizeof(client_addr);
+			client_socket = accept(server_socket, (struct sockaddr *)&client_addr
+        		,&client_addr_len);
+
+			if(client_socket == INVALID_SOCKET)
+			{
+				if(ERROR_VALUE == ENOTSOCK || ERROR_VALUE == EINTR) 
+            		lprintf("0000 FTP socket closed while listening");
+				else
+					lprintf("0000 !ERROR %d accepting connection", ERROR_VALUE);
+				break;
+			}
+			if(startup->socket_open!=NULL)
+				startup->socket_open(TRUE);
+			sockets++;
+
+			if(active_clients>=startup->max_clients) {
+				lprintf("%04d !MAXMIMUM CLIENTS (%d) reached, access denied"
+					,client_socket, startup->max_clients);
+				sockprintf(client_socket,"421 Maximum active clients reached, please try again later.");
+				mswait(3000);
+				ftp_close_socket(&client_socket,__LINE__);
+				continue;
+			}
+
+			if((ftp=malloc(sizeof(ftp_t)))==NULL) {
+				lprintf("%04d !ERROR allocating %d bytes of memory for ftp_t"
+					,client_socket,sizeof(ftp_t));
+				sockprintf(client_socket,"421 System error, please try again later.");
+				mswait(3000);
+				ftp_close_socket(&client_socket,__LINE__);
+				continue;
+			}
+
+			ftp->socket=client_socket;
+			ftp->client_addr=client_addr;
+
+			_beginthread (ctrl_thread, 0, ftp);
+		}
+
+		if(active_clients) {
+			lprintf("0000 Waiting for %d active clients to disconnect...", active_clients);
+			start=time(NULL);
+			while(active_clients) {
+				if(time(NULL)-start>TIMEOUT_THREAD_WAIT) {
+					lprintf("0000 !TIMEOUT waiting for %d active clients ",active_clients);
+					break;
+				}
+				mswait(100);
+			}
+		}
+
+		cleanup(0);
+
+		if(recycle_server) 
+			lprintf("Recycling server...");
+
+	} while(recycle_server);
 }
