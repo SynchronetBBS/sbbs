@@ -657,15 +657,15 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 				sprintf(str2,text[Regarding]
 					,msg.subj
 					,timestr((time_t *)&msg.hdr.when_written.time));
-				if(msg.from_net.type==NET_FIDO)
+				if(msg.from_net.addr==NULL)
+					strcpy(str,msg.from);
+				else if(msg.from_net.type==NET_FIDO)
 					sprintf(str,"%s @%s",msg.from
 						,faddrtoa((faddr_t *)msg.from_net.addr,tmp));
 				else if(msg.from_net.type==NET_INTERNET)
 					strcpy(str,(char *)msg.from_net.addr);
-				else if(msg.from_net.type)
-					sprintf(str,"%s@%s",msg.from,(char *)msg.from_net.addr);
 				else
-					strcpy(str,msg.from);
+					sprintf(str,"%s@%s",msg.from,(char *)msg.from_net.addr);
 				bputs(text[Email]);
 				if(!getstr(str,60,K_EDIT|K_AUTODEL))
 					break;
@@ -673,8 +673,7 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 					LFREE(post);
 				post=NULL;
 				quotemsg(&msg,1);
-				if(msg.from_net.type==NET_INTERNET
-					&& (!strcmp(str,(char *)msg.from_net.addr) || strchr(str,'@')))
+				if(msg.from_net.type==NET_INTERNET && strchr(str,'@'))
 					inetmail(str,msg.subj,WM_QUOTE|WM_NETMAIL);
 				else {
 					p=strrchr(str,'@');
