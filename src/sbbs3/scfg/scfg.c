@@ -177,6 +177,9 @@ int main(int argc, char **argv)
 				case 'Y':
 					auto_save=TRUE;
 					break;
+				case 'T':
+					/* Legacy (time-slice API), ignore */
+					break;
                 default:
 					USAGE:
                     printf("\nusage: scfg [ctrl_dir] [options]"
