@@ -257,7 +257,7 @@ void sbbs_t::quotemsg(smbmsg_t* msg, int tails)
 {
 	char	str[256];
 
-	sprintf(str,"%sQUOTES.TXT",cfg.node_dir);
+	sprintf(str,"%sQUOTES.TXT",cfg.temp_dir);
 	remove(str);
 	msgtotxt(msg,str,0,tails);
 }
