@@ -1000,7 +1000,11 @@ begin
     { Over-ride Locale settings here }
     DateSeparator:='/';
 
-    if(ShortDateFormat = 'M/d/yyyy') then
+    if (ShortDateFormat = 'M/d/yy')
+	or (ShortDateFormat = 'M/d/yyyy')
+	or (ShortDateFormat = 'MM/dd/yy')
+	or (ShortDateFormat = 'MM/dd/yyyy')
+	then
         ShortDateFormat:='mm/dd/yy'     { American }
     else
         ShortDateFormat:='dd/mm/yy';    { European }
