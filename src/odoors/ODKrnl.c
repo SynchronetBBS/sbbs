@@ -107,6 +107,9 @@ static void ODKrnlHandleReceivedChar(char chReceived, BOOL bFromRemote);
 static void ODKrnlTimeUpdate(void);
 static void ODKrnlChatCleanup(void);
 static void ODKrnlChatMode(void);
+#ifdef ODPLAT_NIX
+void sig_run_kernel(int sig);
+#endif
 
 /* Functions specific to the multithreaded implementation of the kernel. */
 #ifdef OD_MULTITHREADED
@@ -170,6 +173,8 @@ tODResult ODKrnlInitialize(void)
 {
 #ifdef ODPLAT_NIX
    sigset_t		block;
+   struct sigaction act;
+   struct itimerval itv;
 #endif
 
    tODResult Result = kODRCSuccess;
@@ -179,6 +184,17 @@ tODResult ODKrnlInitialize(void)
    sigemptyset(&block);
    sigaddset(&block,SIGHUP);
    sigprocmask(SIG_BLOCK,&block,NULL);
+
+   /* Run kernel on SIGALRM */
+   act.sa_handler=sig_run_kernel;
+   act.sa_flags=0;
+   sigemptyset(&(act.sa_mask));
+   sigaction(SIGALRM,&act,NULL);
+   itv.it_interval.tv_sec=0;
+   itv.it_interval.tv_usec=250000;
+   itv.it_value.tv_sec=0;
+   itv.it_value.tv_usec=250000;
+   setitimer(ITIMER_REAL,&itv,NULL);
 #endif
 
    /* Initialize time of next status update and next time deduction. */
@@ -1573,3 +1589,18 @@ static void ODKrnlChatCleanup(void)
    }
 #endif
 }
+
+/* ----------------------------------------------------------------------------
+ * sig_run_kernel(sig)				   *** PRIVATE FUNCTION ***
+ *
+ * Runs od_kernel() on a SIGALRM
+ *
+ */
+#ifdef ODPLAT_NIX
+void sig_run_kernel(int sig)
+{
+   od_kernel();
+}
+#endif
+
+
