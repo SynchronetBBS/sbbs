@@ -162,17 +162,17 @@ $(NODE): $(EXEODIR)/node.o $(EXEODIR)/genwrap.o $(EXEODIR)/filewrap.o
 SMBLIB = $(EXEODIR)/smblib.o $(EXEODIR)/filewrap.o
 
 # FIXSMB Utility
-$(FIXSMB): $(EXEODIR)/fixsmb.o $(SMBLIB)
+$(FIXSMB): $(EXEODIR)/fixsmb.o $(SMBLIB) $(EXEODIR)/genwrap.o
 	@echo Linking $@
 	@$(CC) $^ -o $@
 
 # CHKSMB Utility
-$(CHKSMB): $(EXEODIR)/chksmb.o $(EXEODIR)/conwrap.o $(SMBLIB)
+$(CHKSMB): $(EXEODIR)/chksmb.o $(SMBLIB) $(EXEODIR)/conwrap.o $(EXEODIR)/dirwrap.o
 	@echo Linking $@
 	@$(CC) $^ -o $@
 
 # SMB Utility
-$(SMBUTIL): $(EXEODIR)/smbutil.o $(SMBLIB) $(EXEODIR)/conwrap.o \
+$(SMBUTIL): $(EXEODIR)/smbutil.o $(SMBLIB) $(EXEODIR)/conwrap.o $(EXEODIR)/dirwrap.o \
 	$(EXEODIR)/smbtxt.o $(EXEODIR)/crc32.o $(EXEODIR)/lzh.o 
 	@echo Linking $@
 	@$(CC) $^ -o $@
