@@ -284,19 +284,9 @@ void SMBCALL smb_close_ha(smb_t* smb)
 /****************************************************************************/
 int SMBCALL smb_stack(smb_t* smb, int op)
 {
-	static char stack_file[SMB_STACK_LEN][128];
-	static FILE* stack_sdt[SMB_STACK_LEN],
-				*stack_shd[SMB_STACK_LEN],
-				*stack_sid[SMB_STACK_LEN],
-				*stack_sda[SMB_STACK_LEN],
-				*stack_sha[SMB_STACK_LEN];
+	static smb_t stack[SMB_STACK_LEN];
 	static int	stack_idx;
-	char		tmp_file[128];
-	FILE		*tmp_sdt,
-				*tmp_shd,
-				*tmp_sid,
-				*tmp_sda,
-				*tmp_sha;
+	smb_t		tmp_smb;
 
 	if(op==SMB_STACK_PUSH) {
 		if(stack_idx>=SMB_STACK_LEN) {
@@ -305,12 +295,7 @@ int SMBCALL smb_stack(smb_t* smb, int op)
 		}
 		if(smb->shd_fp==NULL || smb->sdt_fp==NULL || smb->sid_fp==NULL)
 			return(0);	  /* Msg base not open */
-		memcpy(stack_file[stack_idx],smb->file,128);
-		stack_sdt[stack_idx]=smb->sdt_fp;
-		stack_shd[stack_idx]=smb->shd_fp;
-		stack_sid[stack_idx]=smb->sid_fp;
-		stack_sda[stack_idx]=smb->sda_fp;
-		stack_sha[stack_idx]=smb->sha_fp;
+		memcpy(&stack[stack_idx],smb,sizeof(smb_t));
 		stack_idx++;
 		return(0); 
 	}
@@ -318,31 +303,16 @@ int SMBCALL smb_stack(smb_t* smb, int op)
 	if(!stack_idx)	/* Nothing on the stack, so do nothing */
 		return(0);
 	if(op==SMB_STACK_XCHNG) {
-		if(!smb->shd_fp)
+		if(smb->shd_fp==NULL)
 			return(0);
-		memcpy(tmp_file,smb->file,128);
-		tmp_sdt=smb->sdt_fp;
-		tmp_shd=smb->shd_fp;
-		tmp_sid=smb->sid_fp;
-		tmp_sda=smb->sda_fp;
-		tmp_sha=smb->sha_fp; 
+		memcpy(&tmp_smb,smb,sizeof(smb_t));
 	}
 
 	stack_idx--;
-	memcpy(smb->file,stack_file[stack_idx],128);
-	smb->sdt_fp=stack_sdt[stack_idx];
-	smb->shd_fp=stack_shd[stack_idx];
-	smb->sid_fp=stack_sid[stack_idx];
-	smb->sda_fp=stack_sda[stack_idx];
-	smb->sha_fp=stack_sha[stack_idx];
+	memcpy(smb,&stack[stack_idx],sizeof(smb_t));
 	if(op==SMB_STACK_XCHNG) {
+		memcpy(&stack[stack_idx],&tmp_smb,sizeof(smb_t));
 		stack_idx++;
-		memcpy(stack_file[stack_idx-1],tmp_file,128);
-		stack_sdt[stack_idx-1]=tmp_sdt;
-		stack_shd[stack_idx-1]=tmp_shd;
-		stack_sid[stack_idx-1]=tmp_sid;
-		stack_sda[stack_idx-1]=tmp_sda;
-		stack_sha[stack_idx-1]=tmp_sha; 
 	}
 	return(0);
 }
