@@ -44,6 +44,8 @@ const char *weekday[]={"Sunday","Monday","Tuesday","Wednesday","Thursday","Frida
 const char *month[]={"January","February","March","April","May","June"
 				,"July","August","September","October","November","December"};
 
+/****************************************************************************/
+/****************************************************************************/
 void sbbs_t::multinodechat(int channel)
 {
 	char	line[256],str[256],ch,done
@@ -54,6 +56,11 @@ void sbbs_t::multinodechat(int channel)
 	int 	file;
 	long	i,j,k,n;
 	node_t 	node;
+
+	if(useron.rest&FLAG('C')) {
+		bputs(text[R_Chat]);
+		return; 
+	}
 
 	if(channel<1 || channel>cfg.total_chans)
 		channel=1;
@@ -491,12 +498,19 @@ void sbbs_t::multinodechat(int channel)
 	lncntr=0;
 }
 
+/****************************************************************************/
+/****************************************************************************/
 bool sbbs_t::guru_page(void)
 {
 	char	path[MAX_PATH+1];
 	char*	gurubuf;
 	int 	file;
 	long	i;
+
+	if(useron.rest&FLAG('C')) {
+		bputs(text[R_Chat]);
+		return(false); 
+	}
 
 	if(!cfg.total_gurus) {
 		bprintf(text[SysopIsNotAvailable],"The Guru");
@@ -535,6 +549,11 @@ bool sbbs_t::guru_page(void)
 void sbbs_t::chatsection()
 {
 	char	str[256],ch,no_rip_menu;
+
+	if(useron.rest&FLAG('C')) {
+		bputs(text[R_Chat]);
+		return; 
+	}
 
 	action=NODE_CHAT;
 	if(useron.misc&(RIP|WIP) || !(useron.misc&EXPERT))
@@ -617,9 +636,16 @@ void sbbs_t::chatsection()
 //		FREE(gurubuf);
 }
 
+/****************************************************************************/
+/****************************************************************************/
 bool sbbs_t::sysop_page(void)
 {
 	int i;
+
+	if(useron.rest&FLAG('C')) {
+		bputs(text[R_Chat]);
+		return(false); 
+	}
 
 	if(startup->options&BBS_OPT_SYSOP_AVAILABLE 
 		|| (cfg.sys_chat_ar[0] && chk_ar(cfg.sys_chat_ar,&useron))
@@ -690,6 +716,11 @@ void sbbs_t::privchat(bool local)
 	int 	in,out,i,n,echo=1,x,y,activity,remote_activity;
     int		local_y,remote_y;
 	node_t	node;
+
+	if(useron.rest&FLAG('C')) {
+		bputs(text[R_Chat]);
+		return; 
+	}
 
 	if(local) 
 		n=0;
@@ -1190,7 +1221,8 @@ void sbbs_t::nodemsg()
 	while(online && !done) {
 		if(useron.rest&FLAG('C')) {
 			bputs(text[R_SendMessages]);
-			break; }
+			break; 
+		}
 		SYNC;
 		mnemonics(text[PrivateMsgPrompt]);
 		sys_status&=~SS_ABORT;

@@ -121,10 +121,7 @@ int sbbs_t::exec_function(csi_t *csi)
 					logline("*+",str); } }
 			return(0);
 		case CS_CHAT_SECTION:
-			if(useron.rest&FLAG('C'))
-				bputs(text[R_Chat]);
-			else
-				chatsection();
+			chatsection();
 			return(0);
 		case CS_USER_DEFAULTS:
 			maindflts(&useron);
@@ -286,32 +283,7 @@ int sbbs_t::exec_function(csi_t *csi)
 			csi->logic=!sysop_page();
 			return(0);
 		case CS_PAGE_GURU:
-#if 0 /* old way */
-			csi->logic=LOGIC_FALSE;
-			for(i=0;i<cfg.total_gurus;i++)
-				if(!stricmp(csi->str,cfg.guru[i]->code)
-					&& chk_ar(cfg.guru[i]->ar,&useron))
-					break;
-			if(i>=cfg.total_gurus)
-				return(0);
-			sprintf(str,"%s%s.dat", cfg.ctrl_dir, cfg.guru[i]->code);
-			int file;
-			if((file=nopen(str,O_RDONLY))==-1) {
-				errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
-				return(0); }
-			if((p=(uchar *)MALLOC(filelength(file)+1))==NULL) {
-				close(file);
-				errormsg(WHERE,ERR_ALLOC,str,filelength(file)+1);
-				return(0); }
-			read(file,p,filelength(file));
-			p[filelength(file)]=0;
-			close(file);
-			localguru((char*)p,i);
-			FREE(p);
-			csi->logic=LOGIC_TRUE;
-#else
 			csi->logic=!guru_page();
-#endif
 			return(0);
 		case CS_SPY:
 			i=atoi(csi->str);
