@@ -37,12 +37,19 @@
 
 /* Platform-specific headers */
 #ifdef _WIN32
+
 	#include <io.h>			/* open/close */
 	#include <share.h>		/* share open flags */
 	#include <process.h>	/* _beginthread */
 	#include <windows.h>	/* required for mmsystem.h */
 	#include <mmsystem.h>	/* SND_ASYNC */
+
+#elif defined(__unix__)
+
+	#include <signal.h>		/* signal/SIGPIPE */
+
 #endif
+
 
 /* ANSI C Library headers */
 #include <stdio.h>
@@ -2303,6 +2310,10 @@ void DLLCALL mail_server(void* arg)
 	thread_up();
 
 	status("Initializing");
+
+#ifdef __unix__		/* Ignore "Broken Pipe" signal */
+	signal(SIGPIPE,SIG_IGN);
+#endif
 
 	lprintf("Synchronet Mail Server Version %s%s"
 		,MAIL_VERSION
