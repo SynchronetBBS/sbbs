@@ -64,7 +64,7 @@ typedef struct {
     DWORD	js_max_bytes;
     RingBuf** node_spybuf;		// Spy output buffer (each node)
     RingBuf** node_inbuf;		// User input buffer (each node)
-    sem_t*	node_spysem;		// Spy output semaphore (each node)
+    sem_t**	node_spysem;		// Spy output semaphore (each node)
     DWORD	reserved_dword1;
     int 	(*event_log)(char*);	// Event log - put string
 	int 	(*lputs)(char*);		// Log - put string
