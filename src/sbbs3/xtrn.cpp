@@ -1230,7 +1230,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 		if(startup_dir!=NULL && startup_dir[0])
 			chdir(startup_dir);
 
-		if(mode&EX_SH || strcspn(fullcmdline,"<>|;")!=strlen(fullcmdline)) {
+		if(mode&EX_SH || strcspn(fullcmdline,"<>|;\"")!=strlen(fullcmdline)) {
 			argv[0]=comspec;
 			argv[1]="-c";
 			argv[2]=fullcmdline;
@@ -1558,35 +1558,3 @@ char * sbbs_t::cmdstr(char *instr, char *fpath, char *fspec, char *outstr)
 
     return(cmd);
 }
-
-/* The following termcap entry is nice (for Unix):
-
-<---SNIP--->
-# Handy for HyperTerminal and such
-ansi-bbs|ANSI terminals (emulators):\
-	:co#80:li#24:am:\
-	:bs:mi:ms:pt:xn:xo:it#8:\
-	:bl=^G:cr=^M:ta=^I:\
-	:cm=\E[%i%d;%dH:\
-	:le=\E[D:up=\E[A:do=\E[B:nd=\E[C:\
-	:ho=\E[H:cl=\E[H\E[2J:ce=\E[0K:cb=\E[1K:cd=\E[0J:\
-	:sc=\E[s:rc=\E[u:\
-	:ic=\E[@:al=\E[L:AL=\E[%dL:\
-	:dc=\E[P:DC=\E[%dP:dl=\E[M:DL=\E[%dM:\
-	:so=\E[7m:se=\E[m:us=\E[4m:ue=\E[m:\
-	:mb=\E[5m:mh=\E[2m:md=\E[1m:mr=\E[7m:me=\E[m:\
-	:ku=\E[A:kd=\E[B:kr=\E[C:kl=\E[D:\
-	:is=\Ec\E[m:rs=\Ec:kb=^H:\
-	:kD=\177:kH=\E[Y:kN=\E[U:kP=\E[V:\
-	:kh=\E[2J:@7=\E[k:\
-	:Co#8:pa#64:so=\E[7m:se=\E[27m:AF=\E[3%dm:AB=\E[4%dm:op=\E[39;49m:\
-	:k1=\EOP:k2=\EOQ:k3=\EOw:k4=\EOx:\
-	:ac=l\332m\300k\277j\331u\264t\303v\301w\302q\304x\263n\305`^Da\260f\370
-g\361~\371.^Y-^Xh\261i^U0\333y\363z\362:\
-	:LE=\E[%dD:RI=\E[%dC:UP=\E[%dA:DO=\E[%dB:
-
-
-
-<---SNIP--->
-
-*/
