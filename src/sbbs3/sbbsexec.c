@@ -53,9 +53,14 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 	int				node_num;
 	BYTE*			p;
 	vdd_status_t*	status;
+	static  DWORD	writes;
+	static  DWORD	bytes_written;
+	static	DWORD	reads;
+	static  DWORD	bytes_read;
 	static  DWORD	inbuf_poll;
 	static	DWORD	online_poll;
 	static	DWORD	status_poll;
+	static	DWORD	yields;
 	static  HANDLE	hungup_event;
 	static  HANDLE	rdslot=INVALID_HANDLE_VALUE;
 	static  HANDLE	wrslot=INVALID_HANDLE_VALUE;
@@ -121,15 +126,18 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 			status_poll=0;
 			inbuf_poll=0;
 			online_poll=0;
+			yields=0;
 
 			retval=0;
 			break;
 
 		case VDD_CLOSE:
 			if(fp!=NULL) {
-				fprintf(fp,"VDD_CLOSE: rdbuf=%d "
-					"status_poll=%d inbuf_poll=%d online_poll=%d\r\n"
-					,RingBufFull(&rdbuf),status_poll,inbuf_poll,online_poll);
+				fprintf(fp,"VDD_CLOSE: rdbuf=%u "
+					"status_poll=%u inbuf_poll=%u online_poll=%u yields=%u\r\n"
+					,RingBufFull(&rdbuf),status_poll,inbuf_poll,online_poll,yields);
+				fprintf(fp,"           read=%u bytes (in %u calls)\r\n",bytes_read,reads);
+				fprintf(fp,"           wrote=%u bytes (in %u calls)\r\n",bytes_written,writes);
 				fclose(fp);
 			}
 			CloseHandle(rdslot);
@@ -152,6 +160,8 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 				retval=RingBufRead(&rdbuf,p,count);
 				if(retval==0 && fp!=NULL)
 					fprintf(fp,"!VDD_READ: RingBufRead read 0\r\n");
+				reads++;
+				bytes_read+=retval;
 				break;
 			}
 			if(!ReadFile(rdslot,buf,sizeof(buf),&retval,NULL)) {
@@ -170,6 +180,8 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 			retval=RingBufRead(&rdbuf,p,count);
 			if(retval==0 && fp!=NULL)
 				fprintf(fp,"!VDD_READ: RingBufRead read 0 after write\r\n");
+			reads++;
+			bytes_read+=retval;
 			break;
 
 		case VDD_PEEK:
@@ -212,6 +224,9 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 					fprintf(fp,"!VDD_WRITE: WriteFile Error %d (size=%d)\r\n"
 						,GetLastError(),retval);
 				retval=0;
+			} else {
+				writes++;
+				bytes_written+=retval;
 			}
 			break;
 
@@ -341,6 +356,7 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 
 		case VDD_YIELD:
 			Sleep(1);
+			yields++;
 			break;
 
 		default:
