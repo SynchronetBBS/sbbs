@@ -534,7 +534,7 @@ void doterm(void)
 							case 0:
 								break;
 							case 7:			/* Beep */
-								cprintf(prn);
+								cputs(prn);
 								prn[0]=0;
 								#ifdef __unix__
 									putch(7);
@@ -543,18 +543,18 @@ void doterm(void)
 								#endif
 								break;
 							case 12:		/* ^L - Clear screen */
-								cprintf(prn);
+								cputs(prn);
 								prn[0]=0;
 								clearscreen(term.attr);
 								gotoxy(1,1);
 								break;
 							case 27:		/* ESC */
-								cprintf(prn);
+								cputs(prn);
 								prn[0]=0;
 								term.sequence=1;
 								break;
 							case '\t':
-								cprintf(prn);
+								cputs(prn);
 								prn[0]=0;
 								for(k=0;k<11;k++) {
 									if(tabs[k]>wherex()) {
@@ -568,7 +568,7 @@ void doterm(void)
 						}
 					}
 				}
-				cprintf(prn);
+				cputs(prn);
 				prn[0]=0;
 				break;
 		}
