@@ -479,6 +479,211 @@ js_lfexpand(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	return(JS_TRUE);
 }
 
+/* This table is used to convert between IBM ex-ASCII and HTML character entities */
+static const char* exasctbl[128] = {
+	 "Ccedil"	/* 128 C, cedilla */
+	,"uuml"		/* 129 u, umlaut */
+	,"eacute"	/* 130 e, acute accent */
+	,"acirc"	/* 131 a, circumflex accent */
+	,"auml"		/* 132 a, umlaut */
+	,"agrave"	/* 133 a, grave accent */
+	,"aring"	/* 134 a, ring */
+	,"ccedil"	/* 135 c, cedilla */
+	,"ecirc"	/* 136 e, circumflex accent */
+	,"euml"		/* 137 e, umlaut */
+	,"egrave"	/* 138 e, grave accent */
+	,"iuml"		/* 139 i, umlaut */
+	,"icrc"		/* 140 i, circumflex accent */
+	,"igrave"	/* 141 i, grave accent */
+	,"Auml"		/* 142 A, umlaut */
+	,"Aring"	/* 143 A, ring */
+	,"Eacute"	/* 144 E, acute accent */
+	,"aelig"	/* 145 ae ligature */
+	,"AElig"	/* 146 AE ligature */
+	,"ocirc"	/* 147 o, circumflex accent */
+	,"ouml"		/* 148 o, umlaut */
+	,"ograve"	/* 149 o, grave accent */
+	,"ucirc"	/* 150 u, circumflex accent */
+	,"ugrave"	/* 151 u, grave accent */
+	,"yuml"		/* 152 y, umlaut */
+	,"Ouml"		/* 153 O, umlaut */
+	,"Uuml"		/* 154 U, umlaut */
+	,"cent"		/* 155 Cent sign */
+	,"pound"	/* 156 Pound sign */
+	,"yen"		/* 157 Yen sign */
+	,"#8359"	/* 158 Pt (unicode) */
+	,"#131"		/* 159 Florin (non-standard) */
+	,"aacute"	/* 160 a, acute accent */
+	,"iacute"	/* 161 i, acute accent */
+	,"oacute"	/* 162 o, acute accent */
+	,"uacute"	/* 163 u, acute accent */
+	,"ntilde"	/* 164 n, tilde */
+	,"Ntilde"	/* 165 N, tilde */
+	,"ordf"		/* 166 Feminine ordinal */
+	,"ordm"		/* 167 Masculine ordinal */
+	,"iquest"	/* 168 Inverted question mark */
+	,"#8976"	/* 169 Inverse "Not sign" (unicode) */
+	,"not"		/* 170 Not sign */
+	,"frac12"	/* 171 Fraction one-half */
+	,"frac14"	/* 172 Fraction one-fourth */
+	,"iexcl"	/* 173 Inverted exclamation point */
+	,"laquo"	/* 174 Left angle quote */
+	,"raquo"	/* 175 Right angle quote */
+	,"#9617"	/* 176 drawing symbol (unicode) */
+	,"#9618"	/* 177 drawing symbol (unicode) */
+	,"#9619"	/* 178 drawing symbol (unicode) */
+	,"#9474"	/* 179 drawing symbol (unicode) */
+	,"#9508"	/* 180 drawing symbol (unicode) */
+	,"#9569"	/* 181 drawing symbol (unicode) */
+	,"#9570"	/* 182 drawing symbol (unicode) */
+	,"#9558"	/* 183 drawing symbol (unicode) */
+	,"#9557"	/* 184 drawing symbol (unicode) */
+	,"#9571"	/* 185 drawing symbol (unicode) */
+	,"#9553"	/* 186 drawing symbol (unicode) */
+	,"#9559"	/* 187 drawing symbol (unicode) */
+	,"#9565"	/* 188 drawing symbol (unicode) */
+	,"#9564"	/* 189 drawing symbol (unicode) */
+	,"#9563"	/* 190 drawing symbol (unicode) */
+	,"#9488"	/* 191 drawing symbol (unicode) */
+	,"#9492"	/* 192 drawing symbol (unicode) */
+	,"#9524"	/* 193 drawing symbol (unicode) */
+	,"#9516"	/* 194 drawing symbol (unicode) */
+	,"#9500"	/* 195 drawing symbol (unicode) */
+	,"#9472"	/* 196 drawing symbol (unicode) */
+	,"#9532"	/* 197 drawing symbol (unicode) */
+	,"#9566"	/* 198 drawing symbol (unicode) */
+	,"#9567"	/* 199 drawing symbol (unicode) */
+	,"#9562"	/* 200 drawing symbol (unicode) */
+	,"#9556"	/* 201 drawing symbol (unicode) */
+	,"#9577"	/* 202 drawing symbol (unicode) */
+	,"#9574"	/* 203 drawing symbol (unicode) */
+	,"#9568"	/* 204 drawing symbol (unicode) */
+	,"#9552"	/* 205 drawing symbol (unicode) */
+	,"#9580"	/* 206 drawing symbol (unicode) */
+	,"#9575"	/* 207 drawing symbol (unicode) */
+	,"#9576"	/* 208 drawing symbol (unicode) */
+	,"#9572"	/* 209 drawing symbol (unicode) */
+	,"#9573"	/* 210 drawing symbol (unicode) */
+	,"#9561"	/* 211 drawing symbol (unicode) */
+	,"#9560"	/* 212 drawing symbol (unicode) */
+	,"#9554"	/* 213 drawing symbol (unicode) */
+	,"#9555"	/* 214 drawing symbol (unicode) */
+	,"#9579"	/* 215 drawing symbol (unicode) */
+	,"#9578"	/* 216 drawing symbol (unicode) */
+	,"#9496"	/* 217 drawing symbol (unicode) */
+	,"#9484"	/* 218 drawing symbol (unicode) */
+	,"#9608"	/* 219 drawing symbol (unicode) */
+	,"#9604"	/* 220 drawing symbol (unicode) */
+	,"#9612"	/* 221 drawing symbol (unicode) */
+	,"#9616"	/* 222 drawing symbol (unicode) */
+	,"#9600"	/* 223 drawing symbol (unicode) */
+	,"#945"		/* 224 alpha symbol */
+	,"szlig"	/* 225 sz ligature (beta symbol) */
+	,"#915"		/* 226 omega symbol */
+	,"#960"		/* 227 pi symbol*/
+	,"#931"		/* 228 epsilon symbol */
+	,"#963"		/* 229 o with stick */
+	,"micro"	/* 230 Micro sign (Greek mu) */
+	,"#964"		/* 231 greek char? */
+	,"#934"		/* 232 greek char? */
+	,"#920"		/* 233 greek char? */
+	,"#937"		/* 234 greek char? */
+	,"#948"		/* 235 greek char? */
+	,"#8734"	/* 236 infinity symbol (unicode) */
+	,"oslash"	/* 237 o, slash (also #966?) */
+	,"#949"		/* 238 rounded E */
+	,"#8745"	/* 239 unside down U (unicode) */
+	,"#8801"	/* 240 drawing symbol (unicode) */
+	,"plusmn"	/* 241 Plus or minus */
+	,"#8805"	/* 242 drawing symbol (unicode) */
+	,"#8804"	/* 243 drawing symbol (unicode) */
+	,"#8992"	/* 244 drawing symbol (unicode) */
+	,"#8993"	/* 245 drawing symbol (unicode) */
+	,"divide"	/* 246 Division sign */
+	,"#8776"	/* 247 two squiggles (unicode) */
+	,"deg"		/* 248 Degree sign */
+	,"#8729"	/* 249 drawing symbol (unicode) */
+	,"middot"	/* 250 Middle dot */
+	,"#8730"	/* 251 check mark (unicode) */
+	,"#8319"	/* 252 superscript n (unicode) */
+	,"sup2"		/* 253 superscript 2 */
+	,"#9632"	/* 254 drawing symbol (unicode) */
+	,"nbsp"		/* 255 non-printing char */
+};
+
+static JSBool
+js_html_escape(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	ulong		i,j;
+	char*		inbuf;
+	char*		outbuf;
+	JSBool		exascii=JS_FALSE;
+	JSString*	js_str;
+
+	if(!JSVAL_IS_STRING(argv[0])) {
+		JS_ReportError(cx,nostringarg);
+		return(JS_FALSE);
+	}
+
+	if((inbuf=JS_GetStringBytes(JSVAL_TO_STRING(argv[0])))==NULL) 
+		return(JS_FALSE);
+
+	if(argc>1 && JSVAL_IS_BOOLEAN(argv[1]))
+		exascii=JSVAL_TO_BOOLEAN(argv[1]);
+
+	if((outbuf=(char*)malloc(strlen(inbuf)*10))==NULL)
+		return(JS_FALSE);
+
+	for(i=j=0;inbuf[i];i++) {
+		switch(inbuf[i]) {
+			case TAB:
+			case LF:
+			case CR:
+				j+=sprintf(outbuf+j,"&#%03u;",inbuf[i]);
+				break;
+			case '"':
+				j+=sprintf(outbuf+j,"&quot;");
+				break;
+			case '&':
+				j+=sprintf(outbuf+j,"&qmp;");
+				break;
+			case '<':
+				j+=sprintf(outbuf+j,"&lt;");
+				break;
+			case '>':
+				j+=sprintf(outbuf+j,"&gt;");
+				break;
+			case 15:	/* Ctrl-O, General currency symbol */
+				j+=sprintf(outbuf+j,"&curren;");
+				break;
+			case 20:	/* Ctrl-T, Paragraph sign */
+				j+=sprintf(outbuf+j,"&para;");
+				break;
+			case 21:	/* Ctrl-U, Section sign */
+				j+=sprintf(outbuf+j,"&sect;");
+				break;
+			default:
+				if(inbuf[i]>' ' && inbuf[i]<DEL)
+					outbuf[j++]=inbuf[i];
+				else if(exascii && inbuf[i]&0x80) {
+					j+=sprintf(outbuf+j,"&%s;",exasctbl[(int)(inbuf[i]^0x80)]);
+				}
+				else if(inbuf[i]>=' ') /* strip unknown control chars */
+					j+=sprintf(outbuf+j,"&#%03u;",inbuf[i]);
+				break;
+		}
+	}
+	outbuf[j]=0;
+
+	js_str = JS_NewStringCopyZ(cx, outbuf);
+	free(outbuf);
+	if(js_str==NULL)
+		return(JS_FALSE);
+
+	*rval = STRING_TO_JSVAL(js_str);
+	return(JS_TRUE);
+}
+
 static JSBool
 js_truncsp(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
@@ -909,7 +1114,10 @@ static jsMethodSpec js_global_functions[] = {
 	},		
 	{"format",			js_format,			1,	JSTYPE_STRING,	JSDOCSTR("string format [,args]")
 	,JSDOCSTR("return a formatted string (ala sprintf)")
-	},		
+	},
+	{"html_escape",		js_html_escape,		1,	JSTYPE_STRING,	JSDOCSTR("string text [,bool ex_ascii]")
+	,JSDOCSTR("return an HTML escaped text buffer (using standard HTML character entities), optionally escaping IBM extended-ASCII characters")
+	},
 	{0}
 };
 
