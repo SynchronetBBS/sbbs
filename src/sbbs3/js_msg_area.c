@@ -185,10 +185,16 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 			if(!JS_SetProperty(cx, subobj, "can_read", &val))
 				return(NULL);
 
-			if(user==NULL || chk_ar(cfg,cfg->sub[d]->post_ar,user))
+			if(user==NULL)
 				val=BOOLEAN_TO_JSVAL(JS_TRUE);
-			else
+			else if(cfg->sub[d]->misc&(SUB_QNET|SUB_FIDO|SUB_PNET|SUB_INET)
+				&& user->rest&FLAG('N'))		/* network restriction? */
 				val=BOOLEAN_TO_JSVAL(JS_FALSE);
+			else if(!chk_ar(cfg,cfg->sub[d]->post_ar,user)
+				|| user->rest&FLAG('P'))		/* post restriction? */
+				val=BOOLEAN_TO_JSVAL(JS_FALSE);	
+			else
+				val=BOOLEAN_TO_JSVAL(JS_TRUE);
 			if(!JS_SetProperty(cx, subobj, "can_post", &val))
 				return(NULL);
 
