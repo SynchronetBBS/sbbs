@@ -196,8 +196,13 @@ char sbbs_t::putmsg(char HUGE16 *str, long mode)
 					break; }
 			l+=2; }
 		else {
-			if(exatr && str[l]==LF) 	/* clear at newline for extra attr codes */
-				attr(LIGHTGRAY);
+			if(str[l]==LF) {
+				if(exatr) 	/* clear at newline for extra attr codes */
+					attr(LIGHTGRAY);
+				if(l && str[l-1]!=CR)	/* convert sole LF to CR/LF */
+					outchar(CR);
+			}
+
 			/* ansi escape sequence */
 			if(outchar_esc) {
 				if(str[l]=='A' || str[l]=='B' || str[l]=='H' || str[l]=='J'
