@@ -67,7 +67,6 @@
 #include "crc32.h"
 
 /* Constants */
-#define MAIL_VERSION	"1.11"
 #define FORWARD			"forward:"
 #define NO_FORWARD		"local:"
 
@@ -95,6 +94,7 @@ static DWORD	thread_count=0;
 static BOOL		sendmail_running=FALSE;
 static DWORD	sockets=0;
 static BOOL		recycle_server=FALSE;
+static char		revision[16];
 
 typedef struct {
 	SOCKET			socket;
@@ -674,8 +674,8 @@ static void pop3_thread(void* arg)
 			break;
 		}
 
-		sockprintf(socket,"+OK Synchronet POP3 Server for %s v%s Ready"
-			,PLATFORM_DESC,MAIL_VERSION);
+		sockprintf(socket,"+OK Synchronet POP3 Server %s/%s Ready"
+			,revision,PLATFORM_DESC);
 
 		/* Requires USER command first */
 		for(i=3;i;i--) {
@@ -1168,7 +1168,7 @@ static BOOL chk_email_addr(SOCKET socket, char* p, char* host_name, char* host_i
 	lprintf("%04d !SMTP BLOCKED SOURCE: %s"
 		,socket, addr);
 	sprintf(tmp,"Blocked source e-mail address: %s", addr);
-	spamlog(&scfg, "SMTP", tmp, host_name, host_ip, to);
+	spamlog(&scfg, "SMTP", "REFUSED", tmp, host_name, host_ip, to);
 	sockprintf(socket, "554 Sender not allowed.");
 
 	return(FALSE);
@@ -1333,9 +1333,9 @@ static void smtp_thread(void* arg)
 	if(dnsbl_result.s_addr) {
 		lprintf("%04d SMTP BLACKLISTED SERVER on %s: %s [%s] = %s"
 			,socket, dnsbl, host_name, host_ip, inet_ntoa(dnsbl_result));
-		sprintf(str,"Listed on %s as %s", dnsbl, inet_ntoa(dnsbl_result));
-		spamlog(&scfg, "SMTP", str, host_name, host_ip, NULL);
 		if(startup->options&MAIL_OPT_DNSBL_REFUSE) {
+			sprintf(str,"Listed on %s as %s", dnsbl, inet_ntoa(dnsbl_result));
+			spamlog(&scfg, "SMTP", "REFUSED", str, host_name, host_ip, NULL);
 			sockprintf(socket
 				,"550 Mail from %s refused due to listing at %s"
 				,host_ip, dnsbl);
@@ -1380,8 +1380,8 @@ static void smtp_thread(void* arg)
 	sprintf(str,"SMTP: %s",host_ip);
 	status(str);
 
-	sockprintf(socket,"220 %s Synchronet SMTP Server for %s v%s Ready"
-		,scfg.sys_inetaddr,PLATFORM_DESC,MAIL_VERSION);
+	sockprintf(socket,"220 %s Synchronet SMTP Server %s/%s Ready"
+		,scfg.sys_inetaddr,revision,PLATFORM_DESC);
 	while(1) {
 		rd = sockreadline(socket, buf, sizeof(buf));
 		if(rd<1) 
@@ -1413,17 +1413,22 @@ static void smtp_thread(void* arg)
 
 				if(dnsbl_result.s_addr) {
 					if(startup->options&MAIL_OPT_DNSBL_IGNORE) {
-						/* pretend we received it */
-						sockprintf(socket,SMTP_OK);
 						lprintf("%04d SMTP IGNORED MAIL from blacklisted server"
 							,socket);
+						sprintf(str,"Listed on %s as %s", dnsbl, inet_ntoa(dnsbl_result));
+						spamlog(&scfg, "SMTP", "IGNORED", str, host_name, host_ip, NULL);
+						/* pretend we received it */
+						sockprintf(socket,SMTP_OK);
 						continue;
 					}
+					/* flag message as spam */
 					sprintf(str,"X-RBL: %s is listed on %s as %s"
 						,host_ip, dnsbl, inet_ntoa(dnsbl_result));
 					smb_hfield(&msg,RFC822HEADER,strlen(str),str);
 					lprintf("%04d SMTP FLAGGED MAIL from blacklisted server"
 						,socket);
+					sprintf(str,"Listed on %s as %s", dnsbl, inet_ntoa(dnsbl_result));
+					spamlog(&scfg, "SMTP", "FLAGGED", str, host_name, host_ip, NULL);
 				}
 
 				if(telegram==TRUE) {		/* Telegram */
@@ -1639,11 +1644,11 @@ static void smtp_thread(void* arg)
 
 					snprintf(hdrfield,sizeof(hdrfield),
 						"Received: from %s (%s [%s])\r\n"
-						"          by %s [%s] (Synchronet Mail Server for %s v%s) with %s\r\n"
+						"          by %s [%s] (Synchronet Mail Server %s/%s) with %s\r\n"
 						"          for %s; %s"
 						,host_name,hello_name,host_ip
 						,scfg.sys_inetaddr,inet_ntoa(server_addr.sin_addr)
-						,PLATFORM_DESC,MAIL_VERSION
+						,revision,PLATFORM_DESC
 						,esmtp ? "ESMTP" : "SMTP"
 						,rcpt_name,msgdate(msg.hdr.when_imported,date));
 					smb_hfield(&newmsg, RFC822HEADER, (ushort)strlen(hdrfield), hdrfield);
@@ -1726,7 +1731,7 @@ static void smtp_thread(void* arg)
 						,socket, p, reverse_path);
 					sprintf(tmp,"Blocked subject (%s) from: %s"
 						,p, reverse_path);
-					spamlog(&scfg, "SMTP", tmp, host_name, host_ip, rcpt_addr);
+					spamlog(&scfg, "SMTP", "REFUSED", tmp, host_name, host_ip, rcpt_addr);
 					sockprintf(socket, "554 Subject not allowed.");
 					break;
 				}
@@ -1979,7 +1984,7 @@ static void smtp_thread(void* arg)
 					,socket, MAX_RECIPIENTS);
 				sprintf(tmp,"Maximum recipient count (%d) from: %s"
 					,MAX_RECIPIENTS, reverse_path);
-				spamlog(&scfg, "SMTP", tmp, host_name, host_ip, rcpt_addr);
+				spamlog(&scfg, "SMTP", "REFUSED", tmp, host_name, host_ip, rcpt_addr);
 				sockprintf(socket, "552 Too many recipients");
 				continue;
 			}
@@ -1990,7 +1995,7 @@ static void smtp_thread(void* arg)
 					,socket, rcpt_addr, reverse_path);
 				sprintf(str,"Blocked recipient e-mail address from: %s"
 					,reverse_path);
-				spamlog(&scfg, "SMTP", str, host_name, host_ip, rcpt_addr);
+				spamlog(&scfg, "SMTP", "REFUSED", str, host_name, host_ip, rcpt_addr);
 				sockprintf(socket, "550 Unknown User:%s", buf+8);
 				continue;
 			}
@@ -2032,7 +2037,7 @@ static void smtp_thread(void* arg)
 							,socket, reverse_path, host_ip, p);
 						sprintf(tmp,"Relay attempt from: %s to: %s"
 							,reverse_path, p);
-						spamlog(&scfg, "SMTP", tmp, host_name, host_ip, rcpt_addr);
+						spamlog(&scfg, "SMTP", "REFUSED", tmp, host_name, host_ip, rcpt_addr);
 						if(startup->options&MAIL_OPT_ALLOW_RELAY)
 							sockprintf(socket, "553 Relaying through this server "
 							"requires authentication.  "
@@ -2756,9 +2761,11 @@ const char* DLLCALL mail_ver(void)
 
 	DESCRIBE_COMPILER(compiler);
 
-	sprintf(ver,"Synchronet Mail Server v%s%s  SMBLIB v%s  "
+	sscanf("$Revision$" + 11, "%s", revision);
+
+	sprintf(ver,"Synchronet Mail Server %s%s  SMBLIB %s  "
 		"Compiled %s %s with %s"
-		,MAIL_VERSION
+		,revision
 #ifdef _DEBUG
 		," Debug"
 #else
@@ -2791,6 +2798,8 @@ void DLLCALL mail_server(void* arg)
 	pop3_t*			pop3;
 	smtp_t*			smtp;
 	struct timeval	tv;
+
+	mail_ver();
 
 	startup=(mail_startup_t*)arg;
 
@@ -2829,8 +2838,8 @@ void DLLCALL mail_server(void* arg)
 		signal(SIGPIPE,SIG_IGN);
 #endif
 
-		lprintf("Synchronet Mail Server Version %s%s"
-			,MAIL_VERSION
+		lprintf("Synchronet Mail Server %s%s"
+			,revision
 #ifdef _DEBUG
 			," Debug"
 #else
@@ -2842,7 +2851,7 @@ void DLLCALL mail_server(void* arg)
 
 		lprintf("Compiled %s %s with %s", __DATE__, __TIME__, compiler);
 
-		lprintf("SMBLIB v%s (format %x.%02x)",smb_lib_ver(),smb_ver()>>8,smb_ver()&0xff);
+		lprintf("SMBLIB %s (format %x.%02x)",smb_lib_ver(),smb_ver()>>8,smb_ver()&0xff);
 
 		srand(time(NULL));
 
