@@ -36,8 +36,7 @@
  ****************************************************************************/
 
 #include "uifc.h"
-
-#include <dialog.h>
+#include "dialog.h"
 
 static char *helpfile=0;
 static uint helpline=0;
@@ -58,8 +57,8 @@ static void upop(char *str);
 static void sethelp(int line, char* file);
 
 /****************************************************************************/
-/* Initialization function, see uifc.h for details.							*/
-/* Returns 0 on success.													*/
+/* Initialization function, see uifc.h for details.                         */
+/* Returns 0 on success.                                                    */
 /****************************************************************************/
 int uifcinid(uifcapi_t* uifcapi)
 {
@@ -87,7 +86,7 @@ int uifcinid(uifcapi_t* uifcapi)
 }
 
 /****************************************************************************/
-/* Exit/uninitialize UIFC implementation.									*/
+/* Exit/uninitialize UIFC implementation.                                   */
 /****************************************************************************/
 void uifcbail(void)
 {
@@ -95,18 +94,22 @@ void uifcbail(void)
 }
 
 /****************************************************************************/
-/* Clear screen, fill with background attribute, display application title.	*/
-/* Returns 0 on success.													*/
+/* Clear screen, fill with background attribute, display application title. */
+/* Returns 0 on success.                                                    */
 /****************************************************************************/
 int uscrn(char *str)
 {
-    // ToDo
+	/**********************************************************************/
+    /* ToDo - Does not display application title... mostly 'cause I clear */
+	/* the screen so often                                                */
+    /**********************************************************************/
+	dialog_clear();
     return(0);
 }
 
-/****************************************************************************/
-/* General menu function, see uifc.h for details.							*/
-/****************************************************************************/
+/**************************************************************************/
+/* General menu display function. see uifc.h for details                  */
+/**************************************************************************/
 int ulist(int mode, char left, int top, char width, int *cur, int *bar
 	, char *title, char **option)
 {
@@ -115,15 +118,16 @@ int ulist(int mode, char left, int top, char width, int *cur, int *bar
     int cnt2;
     int freecnt;
     int i;
+	int	scrollpos;
     char **it;
-    char str[128];;
-    char key;
+    char str[128];
     int ret;
+	int adj_width=0;
 
 	/* Count number of menu options */
     for(cnt=0;cnt<MAX_OPTS;cnt++)
 		if(option[cnt][0]==0)
-		    break;
+	   		break;
     freecnt=cnt+4;
 
     // Allocate and fill **it
@@ -131,101 +135,157 @@ int ulist(int mode, char left, int top, char width, int *cur, int *bar
 	if(it==NULL)
 		return(-1);
 
-    for(i=0;i<(cnt+4)*2;i++) {
+    for(i=0;i<(cnt+4)*2;i++)  {
         it[i]=(char *)MALLOC(MAX_OPLN+1);
 		if(it[i]==NULL)
 			return(-1);
 	}
 
+    strcpy(str,"1");
+
     cnt2 = 0;
-	key='1';
     for(i=0;i<cnt;i++)  {
-		sprintf(it[cnt2++],"%c",key);
-		if(key=='9') 
-			key='A';
-		else
-			key++;
-		/* What are you going to do when there are more than 25 options? */
-		/* Why not do this instead (just number all options): */
-		// sprintf(it[cnt2++],"%d",i+1);
-		/* ??? */
+		sprintf(it[cnt2++],"%d",i+1);
 		strcpy(it[cnt2++],option[i]);
-		if(width<strlen(option[i]+12)) 
+
+		/* Adjust width if it's too small */
+		if(width<strlen(option[i])+12)  {
 			width=strlen(option[i])+12;
+			adj_width=TRUE;
+		}
     }
+
+	// Make up for expanding first column in width adjustment.
+	i=cnt;
+	while(i>9)  {
+		i /= 10;
+		width+=1;
+	}
+
     if(mode&WIN_INS)  {
-		strcpy(it[cnt2++],"!");
-		strcpy(it[cnt2++],"Add New");
+		strcpy(it[cnt2++],"I");
+        strcpy(it[cnt2++],"Add New");
 		cnt++;
     }
     if(mode&WIN_DEL)  {
-		strcpy(it[cnt2++],"@");
-		strcpy(it[cnt2++],"Delete");
+		strcpy(it[cnt2++],"D");
+        strcpy(it[cnt2++],"Delete");
 		cnt++;
     }
-    if(width<strlen(title)+4) 
-		width=strlen(title)+4;
+    if(mode&WIN_GET)  {
+		strcpy(it[cnt2++],"C");
+        strcpy(it[cnt2++],"Copy");
+		cnt++;
+    }
+    if(mode&WIN_PUT)  {
+		strcpy(it[cnt2++],"P");
+        strcpy(it[cnt2++],"Paste");
+		cnt++;
+    }
+    if(width<strlen(title)+4) width=strlen(title)+4;
+
+    if(*cur<0 || *cur>cnt)*cur=0;
 
     do {
         i=*cur;
         if(i<0) i=0;
 		if(strcmp(option[0],"Yes")==0 && strcmp(option[1],"No")==0 && cnt==2)  {
-			ret=dialog_yesno("Yes/No",title,5,width);
-			if(ret) ret=1; else ret=0;
+		    if(i==0)
+				ret=dialog_yesno((char *)NULL,title,5,width);
+	    	else
+				ret=dialog_noyes((char *)NULL,title,5,width);
+	
+	    	if(ret) ret=1; else ret=0;
 		}
 		else if(strcmp(option[0],"No")==0 && strcmp(option[1],"Yes")==0 && cnt==2)  {
-			ret=dialog_noyes("Yes/No",title,5,width);
-			if(ret) ret=0; else ret=1;
+	    	if(i==1)
+				ret=dialog_yesno((char *)NULL,title,5,width);
+	    	else
+				ret=dialog_noyes((char *)NULL,title,5,width);
+	    	if(ret) ret=0; else ret=1;
 		}
 		else  {
-			dialog_clear_norefresh();
-			ret=dialog_menu(title, "SCFG Menu", 22, width, 15, cnt, it, str, &i, 0);
-
-			if(ret==1) ret = -1;
-			if(ret==0)  {
-				ret = str[0];
-				ret -= '1';
-				if(ret==-16) ret = -2;
-				if(ret==15) ret = -3;
-				if(ret>10) ret -= 7;
+            dialog_clear_norefresh();
+			scrollpos=0;
+			if(i>14)
+				scrollpos=i-14;
+            ret=dialog_menu((char *)NULL, title, 22, width, 14, cnt, it, str, &i, &scrollpos);
+            if(ret==1)  {
+				ret = -1;
+				*cur = -1;
 			}
-		}
-		if(ret==-2)  {
-			dialog_clear_norefresh();
-			if(freecnt-4>0)  {
-				ret=dialog_menu(title, "Insert Where?", 22, width, 15, freecnt-4, it, str, 0, 0);
-				if(ret==1) ret=-2;
-				if(ret==-1) ret=-2;
-				if(ret==0)  {
-					ret=str[0];
-					ret -= 49;
-					if(ret>10) ret -= 7;
+            if(ret==0)  {
+				if(str[0]=='I') ret=-2;
+				else if(str[0]=='D') ret=-3;
+				else if(str[0]=='C') ret=-4;
+				else if(str[0]=='P') ret=-5;
+				else  {
+					*cur=atoi(str)-1;
+					ret=*cur;
 				}
-				ret |= MSK_INS;
-			}
-			else ret=MSK_INS;
+            }
 		}
-		if(ret==-3)  {
-			dialog_clear_norefresh();
+        if(ret==-2)  {
+            dialog_clear_norefresh();
 			if(freecnt-4>0)  {
-				ret=dialog_menu(title, "Delete Which?", 22, width, 15, freecnt-4, it, str, 0, 0);
-				if(ret==1) ret=-3;
-				if(ret==-1) ret=-3;
+	        	ret=dialog_menu(title, "Insert Where?", 22, width, 14, freecnt-4, it, str, 0, 0);
 				if(ret==0)  {
-					ret=str[0];
-					ret -= 49;
-					if(ret>10) ret -= 7;
+					*cur=atoi(str)-1;
+					ret=*cur|MSK_INS;
 				}
-				ret |= MSK_DEL;
+	       	}
+			else {
+				*cur=0;
+				ret=MSK_INS;
 			}
-			else ret=MSK_DEL;
-		}
-    } while(ret<-1);
+	    }
+        if(ret==-3)  {
+            dialog_clear_norefresh();
+			if(freecnt-4>0)  {
+	        	ret=dialog_menu(title, "Delete Which?", 22, width, 14, freecnt-4, it, str, 0, 0);
+				if(ret==0)  {
+					*cur=atoi(str)-1;
+					ret=*cur|MSK_DEL;
+				}
+	       	}
+			else {
+				*cur=0;
+				ret=MSK_DEL;
+			}
+        }
+        if(ret==-4)  {
+            dialog_clear_norefresh();
+			if(freecnt-4>0)  {
+	        	ret=dialog_menu(title, "Copy Which?", 22, width, 14, freecnt-4, it, str, 0, 0);
+				if(ret==0)  {
+					*cur=atoi(str)-1;
+					ret=*cur|MSK_GET;
+				}
+	       	}
+			else {
+				*cur=0;
+				ret=MSK_GET;
+			}
+        }
+        if(ret==-5)  {
+            dialog_clear_norefresh();
+			if(freecnt-4>0)  {
+	        	ret=dialog_menu(title, "Paste Where?", 22, width, 14, freecnt-4, it, str, 0, 0);
+				if(ret==0)  {
+					*cur=atoi(str)-1;
+					ret=*cur|MSK_PUT;
+				}
+	       	}
+			else {
+				*cur=0;
+				ret=MSK_PUT;
+			}
+        }
+    } while(ret<-1 && ret>-8);
 
     // free() the strings!
-
     for(i=0;i<(freecnt)*2;i++)
-		free(it[i]);
+	free(it[i]);
     free(it);
     
     return(ret);
@@ -238,7 +298,8 @@ int ulist(int mode, char left, int top, char width, int *cur, int *bar
 int uinput(int mode, char left, char top, char *prompt, char *outstr,
 	char max, int kmode)
 {
-    dialog_inputbox(prompt, "", 9, max+4, outstr);
+    dialog_inputbox((char *)NULL, prompt, 9, max+4, outstr);
+    return strlen(outstr);
 }
 
 /****************************************************************************/
@@ -246,29 +307,30 @@ int uinput(int mode, char left, char top, char *prompt, char *outstr,
 /****************************************************************************/
 void umsg(char *str)
 {
-    dialog_mesgbox("Message:", str, 7, strlen(str)+4);
+    dialog_mesgbox((char *)NULL, str, 7, strlen(str)+4);
 }
 
 /****************************************************************************/
-/* Status popup/down function, see uifc.h for details.						*/
+/* Status popup/down function, see uifc.h for details.                      */
 /****************************************************************************/
 void upop(char *str)
 {
-    dialog_gauge("",str,8,20,7,40,0);
+	// Pop-down doesn't do much... the mext item should over-write this.
+    dialog_gauge((char *)NULL,str,8,20,7,40,0);
 }
 
 /****************************************************************************/
-/* Sets the current help index by source code file and line number.			*/
+/* Sets the current help index by source code file and line number.         */
 /****************************************************************************/
 void sethelp(int line, char* file)
 {
-    helpline=line;
     helpfile=file;
+    helpline=line;
 }
 
-/****************************************************************************/
-/* Help function.															*/
-/****************************************************************************/
+/************************************************************/
+/* Help function. 											*/
+/************************************************************/
 void help()
 {
 	char hbuf[HELPBUF_SIZE],str[256];
@@ -296,7 +358,7 @@ void help()
                     break;
                 str[12]=0;
                 fread(&k,2,1,fp);
-                if(strcasecmp(str,p) || k!=helpline) {
+                if(stricmp(str,p) || k!=helpline) {
                     fseek(fp,4,SEEK_CUR);
                     continue; }
                 fread(&l,4,1,fp);
@@ -322,5 +384,3 @@ void help()
         getc(stdin);
     }
 }
-
-
