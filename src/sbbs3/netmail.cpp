@@ -99,7 +99,7 @@ bool sbbs_t::inetmail(char *into, char *subj, long mode)
 		sprintf(str2,"%sfile/%04u.out",cfg.data_dir,useron.number);
 		MKDIR(str2);
 		sprintf(str2,"%sfile/%04u.out/%s",cfg.data_dir,useron.number,title);
-		if(fexist(str2)) {
+		if(fexistcase(str2)) {
 			bputs(text[FileAlreadyThere]);
 			remove(msgpath);
 			return(false); }

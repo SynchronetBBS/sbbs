@@ -1920,10 +1920,10 @@ int mv(char *src, char *dest, BOOL copy)
 
 	if(!strcmp(src,dest))	/* source and destination are the same! */
 		return(0);
-	if(!fexist(src)) {
+	if(!fexistcase(src)) {
 		logprintf("MV ERROR: Source doesn't exist '%s",src);
 		return(-1); }
-	if(!copy && fexist(dest)) {
+	if(!copy && fexistcase(dest)) {
 		logprintf("MV ERROR: Destination already exists '%s'",dest);
 		return(-1); }
 	if(!copy && ((src[1]!=':' && dest[1]!=':')

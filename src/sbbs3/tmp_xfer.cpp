@@ -371,7 +371,7 @@ void sbbs_t::extract(uint dirnum)
 			temp_cdt=f.cdt;
 		strcpy(temp_uler,f.uler);
 		strcpy(temp_file,f.name); }     /* padded filename */
-	if(!fexist(path)) {
+	if(!fexistcase(path)) {
 		bputs(text[FileNotThere]);  /* not on disk */
 		return; }
 	done=0;

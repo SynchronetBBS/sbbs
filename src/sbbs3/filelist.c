@@ -392,7 +392,7 @@ int main(int argc, char **argv)
 
 			if(misc&MINUS) {
 				sprintf(str,"%s%s",scfg.dir[i]->path,fname);
-				if(!fexist(str))
+				if(!fexistcase(str))
 					fputc('-',out);
 				else
 					fputc(SP,out); }

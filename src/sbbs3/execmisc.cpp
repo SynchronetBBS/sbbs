@@ -888,7 +888,7 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 				case CHKFILE_VAR:
 					pp=getstrvar(csi,*(long *)csi->ip);
 					csi->ip+=4;
-					if(pp && *pp && fexist(cmdstr(*pp,path,csi->str,buf)))
+					if(pp && *pp && fexistcase(cmdstr(*pp,path,csi->str,buf)))
 						csi->logic=LOGIC_TRUE;
 					else
 						csi->logic=LOGIC_FALSE;

@@ -295,7 +295,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 					sprintf(str,"%sfile/%04u.in/%s"
 						,cfg.data_dir,useron.number,msg.subj);
 					sprintf(tmp,"%s%s",cfg.temp_dir,msg.subj);
-					if(fexist(str) && !fexist(tmp))
+					if(fexistcase(str) && !fexistcase(tmp))
 						mv(str,tmp,1); 
 				}
 
@@ -557,7 +557,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 					lncntr=0;
 					unpadfname(batdn_name[i],tmp);
 					sprintf(tmp2,"%s%s",cfg.temp_dir,tmp);
-					if(!fexist(tmp2)) {
+					if(!fexistcase(tmp2)) {
 						seqwait(cfg.dir[batdn_dir[i]]->seqdev);
 						bprintf(text[RetrievingFile],tmp);
 						sprintf(str,"%s%s"
@@ -587,17 +587,17 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 		/* Copy QWK Text files */
 		/***********************/
 		sprintf(str,"%sQWK/HELLO",cfg.text_dir);
-		if(fexist(str)) {
+		if(fexistcase(str)) {
 			sprintf(tmp2,"%sHELLO",cfg.temp_dir);
 			mv(str,tmp2,1); 
 		}
 		sprintf(str,"%sQWK/BBSNEWS",cfg.text_dir);
-		if(fexist(str)) {
+		if(fexistcase(str)) {
 			sprintf(tmp2,"%sBBSNEWS",cfg.temp_dir);
 			mv(str,tmp2,1); 
 		}
 		sprintf(str,"%sQWK/GOODBYE",cfg.text_dir);
-		if(fexist(str)) {
+		if(fexistcase(str)) {
 			sprintf(tmp2,"%sGOODBYE",cfg.temp_dir);
 			mv(str,tmp2,1); 
 		}
