@@ -217,7 +217,6 @@ js_eval(JSContext *parent_cx, JSObject *parent_obj, uintN argc, jsval *argv, jsv
     JSScript*		script;
 	JSContext*		cx;
 	JSObject*		obj;
-	js_branch_t*	branch;
 	JSErrorReporter	reporter;
 #ifndef EVAL_BRANCH_CALLBACK
 	JSBranchCallback callback;
@@ -227,9 +226,6 @@ js_eval(JSContext *parent_cx, JSObject *parent_obj, uintN argc, jsval *argv, jsv
 
 	if(argc<1)
 		return(JS_TRUE);
-
-	if((branch=(js_branch_t*)JS_GetPrivate(parent_cx, parent_obj))==NULL)
-		return(JS_FALSE);
 
 	if((buf=JS_GetStringBytes(JS_ValueToString(parent_cx, argv[0])))==NULL)
 		return(JS_FALSE);
@@ -243,7 +239,7 @@ js_eval(JSContext *parent_cx, JSObject *parent_obj, uintN argc, jsval *argv, jsv
 	JS_SetErrorReporter(cx,reporter);
 
 #ifdef EVAL_BRANCH_CALLBACK
-	JS_SetContextPrivate(cx, branch);
+	JS_SetContextPrivate(cx, JS_GetPrivate(parent_cx, parent_obj));
 	JS_SetBranchCallback(cx, js_BranchCallback);
 #else	/* Use the branch callback from the parent context */
 	JS_SetContextPrivate(cx, JS_GetContextPrivate(parent_cx));
@@ -259,7 +255,6 @@ js_eval(JSContext *parent_cx, JSObject *parent_obj, uintN argc, jsval *argv, jsv
 	}
 
 	if((script=JS_CompileScript(cx, obj, buf, strlen(buf), NULL, 0))!=NULL) {
-		branch->counter=0;	/* Reset loop counter */
 		JS_ExecuteScript(cx, obj, script, rval);
 		JS_DestroyScript(cx, script);
 	}
