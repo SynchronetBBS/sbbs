@@ -121,6 +121,7 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 
 	if(useron.rest&FLAG('Q') || fromhub) {      /* QWK Net */
 		if(!strnicmp(qwkbuf,"@VIA:",5)) {
+			set_qwk_flag(QWK_VIA);
 			p=strchr(qwkbuf,'\xe3');
 			if(p) {
 				*p=0;
@@ -150,7 +151,32 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 		smb_hfield(&msg,SENDERNETADDR,strlen(str),str);
 		sprintf(str,"%25.25s",hdrblk+46);  /* From user */
 		truncsp(str);
+		if(!strnicmp(qwkbuf+skip,"@MSGID:",7)) {
+			set_qwk_flag(QWK_MSGID);
+			p=strchr(qwkbuf+skip,'\xe3');
+			i=skip;
+			if(p) {
+				*p=0;
+				skip+=strlen(qwkbuf+i)+1; }
+			p=qwkbuf+i+7;					/* Skip "@MSGID:" */
+			while(*p && *p<=SP) p++;		/* Skip any spaces */
+			truncsp(p);
+			smb_hfield(&msg,RFC822MSGID,strlen(p),p);
+		}
+		if(!strnicmp(qwkbuf+skip,"@REPLY:",7)) {
+			set_qwk_flag(QWK_MSGID);
+			p=strchr(qwkbuf+skip,'\xe3');
+			i=skip;
+			if(p) {
+				*p=0;
+				skip+=strlen(qwkbuf+i)+1; }
+			p=qwkbuf+i+7;					/* Skip "@REPLY:" */
+			while(*p && *p<=SP) p++;		/* Skip any spaces */
+			truncsp(p);
+			smb_hfield(&msg,RFC822REPLYID,strlen(p),p);
+		}
 		if(!strnicmp(qwkbuf+skip,"@TZ:",4)) {
+			set_qwk_flag(QWK_TZ);
 			p=strchr(qwkbuf+skip,'\xe3');
 			i=skip;
 			if(p) {
@@ -158,9 +184,9 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 				skip+=strlen(qwkbuf+i)+1; }
 			p=qwkbuf+i+4;					/* Skip "@TZ:" */
 			while(*p && *p<=SP) p++;		/* Skip any spaces */
-			msg.hdr.when_written.zone=(short)ahtoul(p); }
+			msg.hdr.when_written.zone=(short)ahtoul(p); 
 		}
-	else {
+	} else {
 		sprintf(str,"%u",useron.number);
 		smb_hfield(&msg,SENDEREXT,strlen(str),str);
 		if((uint)subnum!=INVALID_SUB && cfg.sub[subnum]->misc&SUB_NAME)

@@ -97,6 +97,9 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 		mode|=TZ;
 	if(useron.qwk&QWK_VIA)
 		mode|=VIA;
+	if(useron.qwk&QWK_MSGID)
+		mode|=MSGID;
+
 	(*msgcnt)=0L;
 	if(/* !prepack && */ !(useron.qwk&QWK_NOCTRL)) {
 		/***************************/

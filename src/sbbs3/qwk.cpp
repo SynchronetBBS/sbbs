@@ -476,11 +476,14 @@ void sbbs_t::qwk_sec()
 				bprintf("\1hV\1n) %-30s: \1h%s\1n\r\n"
 					,"Include Message Path (VIA)"
 					,useron.qwk&QWK_VIA ? text[Yes]:text[No]);
+				bprintf("\1hM\1n) %-30s: \1h%s\1n\r\n"
+					,"Include Message/Reply IDs"
+					,useron.qwk&QWK_MSGID ? text[Yes]:text[No]);
 				bprintf("\1hX\1n) %-30s: \1h%s\1n\r\n"
 					,"Extended (QWKE) Packet Format"
 					,useron.qwk&QWK_EXT ? text[Yes]:text[No]);
 				bputs(text[UserDefaultsWhich]);
-				ch=(char)getkeys("AQEDFIOQTYNCZV",0);
+				ch=(char)getkeys("AEDFIOQTYMNCZV",0);
 				if(sys_status&SS_ABORT || !ch || ch=='Q')
 					break;
 				switch(ch) {
@@ -530,6 +533,9 @@ void sbbs_t::qwk_sec()
 						break;
 					case 'V':
 						useron.qwk^=QWK_VIA;
+						break;
+					case 'M':
+						useron.qwk^=QWK_MSGID;
 						break;
 					case 'Y':   /* Yourself */
 						useron.qwk^=QWK_BYSELF;
