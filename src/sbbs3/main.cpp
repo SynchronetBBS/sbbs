@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -76,6 +76,7 @@ SOCKET	node_socket[MAX_NODES];
 static	SOCKET telnet_socket=INVALID_SOCKET;
 static	SOCKET rlogin_socket=INVALID_SOCKET;
 static	pthread_mutex_t event_mutex;
+static  bool	event_mutex_locked;
 static	sbbs_t*	sbbs=NULL;
 static	scfg_t	scfg;
 static	bool	scfg_reloaded=true;
@@ -1244,6 +1245,7 @@ void event_thread(void* arg)
 			check_semaphores=false;
 
 		pthread_mutex_lock(&event_mutex);
+		event_mutex_locked=true;
 
 		sbbs->online=0;	/* reset this from ON_LOCAL */
 
@@ -1254,8 +1256,11 @@ void event_thread(void* arg)
 
 			memcpy(&sbbs->cfg,&scfg,sizeof(scfg_t));
 
-//			sprintf(sbbs->cfg.temp_dir, "temp/%08lX", sbbs_random(INT_MAX));
-			prep_dir(sbbs->cfg.data_dir, sbbs->cfg.temp_dir, sizeof(sbbs->cfg.temp_dir));
+			if(startup->temp_dir[0]) {
+				SAFECOPY(sbbs->cfg.temp_dir,startup->temp_dir);
+				backslash(sbbs->cfg.temp_dir);
+			} else
+				prep_dir(sbbs->cfg.data_dir, sbbs->cfg.temp_dir, sizeof(sbbs->cfg.temp_dir));
 
 			// Read TIME.DAB
 			sprintf(str,"%stime.dab",sbbs->cfg.ctrl_dir);
@@ -1807,6 +1812,7 @@ void event_thread(void* arg)
 				} 
 			} 
 		}
+		event_mutex_locked=false;
 		pthread_mutex_unlock(&event_mutex);
 
 		mswait(1000);
@@ -1842,10 +1848,11 @@ sbbs_t::sbbs_t(ushort node_num, DWORD addr, char* name, SOCKET sd,
 	if(node_num>0) {
 		strcpy(cfg.node_dir, cfg.node_path[node_num-1]);
 		prep_dir(cfg.node_dir, cfg.temp_dir, sizeof(cfg.temp_dir));
-	} else {
-//		sprintf(cfg.temp_dir, "temp/%08lX", sbbs_random(INT_MAX));
+	} else if(startup->temp_dir[0]) {
+		SAFECOPY(cfg.temp_dir,startup->temp_dir);
+		backslash(cfg.temp_dir);
+	} else
     	prep_dir(cfg.data_dir, cfg.temp_dir, sizeof(cfg.temp_dir));
-	}
 
 	terminated = false;
 	event_thread_running = false;
@@ -2020,10 +2027,7 @@ bool sbbs_t::init()
 #endif
 	sem_init(&output_sem,0,0);
 
-	strcpy(str,cfg.temp_dir);
-	if(strcmp(str+1,":\\") && strcmp(str+1,":/"))     /* not root directory */
-	    str[strlen(str)-1]=0;   /* chop off '\' */
-	md(str);
+	md(cfg.temp_dir);
 
 	/* Shared NODE files */
 	sprintf(str,"%s%s",cfg.ctrl_dir,"node.dab");
@@ -3708,7 +3712,7 @@ void DLLCALL bbs_thread(void* arg)
 
 	while(telnet_socket!=INVALID_SOCKET) {
 
-		if(node_threads_running==0) {	/* check for re-run flags */
+		if(node_threads_running==0 && !event_mutex_locked) {	/* check for re-run flags */
 			bool rerun=false;
 			for(i=first_node;i<=last_node;i++) {
 				if(sbbs->getnodedat(i,&node,0)!=0)
