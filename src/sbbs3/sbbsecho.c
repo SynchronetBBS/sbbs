@@ -3734,7 +3734,7 @@ void export_echomail(char *sub_code,faddr_t addr)
 					minus="-";
 					tzone=-tzone;
 				} else
-					minutes="";
+					minus="";
 				f+=sprintf(fmsgbuf+f,"\1TZUTC: %s%02d%02u\r"		/* TZUTC (FSP-1001) */
 					,minus,tzone/60,tzone%60);
 
