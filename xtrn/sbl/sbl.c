@@ -730,7 +730,7 @@ int sortstr_cmp(sortstr_t *str1, sortstr_t *str2)
 return(stricmp(str1->str,str2->str));
 }
 
-void main(int argc, char **argv)
+int main(int argc, char **argv)
 {
 	char	str[512],name[128],*p,ch;
 	short	i,j,file,done,sort_by_str;
@@ -741,723 +741,724 @@ void main(int argc, char **argv)
 	sortstr_t *sortstr;
 	sortint_t *sortint;
 
-for(i=1;i<argc;i++)
-	if(argv[i][0]=='/')
-		switch(toupper(argv[i][1])) {
-			case 'M':
-				maint=1;
-				break; }
+	for(i=1;i<argc;i++)
+		if(argv[i][0]=='/')
+			switch(toupper(argv[i][1])) {
+				case 'M':
+					maint=1;
+					break; }
 
-p=getenv("SBBSNODE");
-if(p)
-	strcpy(node_dir,p);
-else {
-	printf("\nSBBSNODE environment variable must be set\n");
-	exit(0); }
+	p=getenv("SBBSNODE");
+	if(p)
+		strcpy(node_dir,p);
+	else {
+		printf("\nSBBSNODE environment variable must be set\n");
+		exit(0); }
 
-if(node_dir[strlen(node_dir)-1]!='\\')
-	strcat(node_dir,"\\");
+	if(node_dir[strlen(node_dir)-1]!='\\')
+		strcat(node_dir,"\\");
 
-strcpy(str,"SBL.CFG");
-if((file=sopen(str,O_RDONLY,SH_DENYNO))==-1) {
-	printf("error opening %s\r\n",str);
-	exit(1); }
-if((stream=fdopen(file,"rb"))==NULL) {
-	printf("fdopen error with %s\r\n",str);
-	exit(1); }
-fgets(str,81,stream);
-del_days=atoi(str);
-fgets(str,81,stream);
-add_ml=atoi(str);
-fgets(str,81,stream);
-update_ml=atoi(str);
-fgets(str,81,stream);
-remove_ml=atoi(str);
-fgets(str,81,stream);
-verify_ml=atoi(str);
-fgets(str,81,stream);
-notify_user=atoi(str);
-fclose(stream);
-
-initdata();
-
-mnehigh=HIGH|LIGHTGRAY;
-mnelow=HIGH|YELLOW;
-if(maint)
-	user_misc=(ANSI|COLOR);
-
-if((file=sopen("SBL.DAB",O_RDWR|O_BINARY|O_CREAT,SH_DENYNO
-	,S_IWRITE|S_IREAD))==-1) {
-	bprintf("\r\n\7Error opening/creating SBL.DAB\r\n");
-	exit(1); }
-if((stream=fdopen(file,"w+b"))==NULL) {
-	bprintf("\r\n\7Error converting SBL.DAB file handle to stream\r\n");
-	exit(1); }
-setvbuf(stream,0L,_IOFBF,2048);
-
-if(del_days) {
-    now=time(NULL);
-	strcpy(str,"SBLPURGE.DAB");
-	if((file=nopen(str,O_RDWR|O_CREAT))==-1) {
-		printf("Error creating %s\r\n",str);
+	strcpy(str,"SBL.CFG");
+	if((file=sopen(str,O_RDONLY,SH_DENYNO))==-1) {
+		printf("error opening %s\r\n",str);
 		exit(1); }
-	l=0;
-	read(file,&l,4);
-	if(now-l>(24L*60L*60L) || maint) {	 /* more than a day since update */
-		bputs("\r\n\1n\1hRunning daily maintenance for Synchronet BBS List...");
-		lseek(file,0L,SEEK_SET);
-		write(file,&now,4);
-		close(file);
-		fseek(stream,0L,SEEK_SET);
-		while(!feof(stream)) {
-			if(!fread(&bbs,sizeof(bbs_t),1,stream))
-				break;
-			if(bbs.name[0]) {
-				if((now-bbs.updated)/(24L*60L*60L)>(time_t)del_days
-					&& (now-bbs.created)/(24L*60L*60L)>(time_t)del_days
-					&& (now-bbs.verified)/(24L*60L*60L)>(time_t)del_days) {
-					lncntr=0;
-					bprintf("\r\n\1n\1hAuto-deleting \1m%s\r\n",bbs.name);
-					if(!(bbs.misc&FROM_SMB)) {
-						sprintf(str,"\1n\1hSBL: \1mYour BBS entry for \1y%s\1m\r\n"
-							"     was auto-deleted from the \1cSynchronet BBS "
-							"List\r\n",bbs.name);
-						i=usernumber(bbs.user);
-						if(i) putsmsg(i,str);
-					}
-					bbs.name[0]=0;
-					fseek(stream,-(long)(sizeof(bbs_t)),SEEK_CUR);
-					fwrite(&bbs,sizeof(bbs_t),1,stream); }
-				else if (!(bbs.misc&FROM_SMB)) { /* Warn user */
-					l=bbs.created;
-					if(l<bbs.updated)
-						l=bbs.updated;
-					if(l<bbs.verified)
-						l=bbs.verified;
-					if((now-l)/(24L*60L*60L)>=(time_t)(del_days/2)) {
-						bprintf("\r\n\1n\1hWarning \1y%s\r\n",bbs.user);
-						lncntr=0;
-						sprintf(str,"\1n\1hSBL: \1mPlease verify your BBS "
-							"entry for \1y%s\1m\r\n     "
-							"in the \1cSynchronet BBS List "
-							"\1mor it will be deleted in \1i\1r%u "
-							"\1n\1h\1mdays.\r\n"
-							,bbs.name
-							,del_days-((now-l)/(24L*60L*60L)));
-						i=usernumber(bbs.user);
-						if(i) putsmsg(i,str); } } } } }
-	else
-		close(file); }
+	if((stream=fdopen(file,"rb"))==NULL) {
+		printf("fdopen error with %s\r\n",str);
+		exit(1); }
+	fgets(str,81,stream);
+	del_days=atoi(str);
+	fgets(str,81,stream);
+	add_ml=atoi(str);
+	fgets(str,81,stream);
+	update_ml=atoi(str);
+	fgets(str,81,stream);
+	remove_ml=atoi(str);
+	fgets(str,81,stream);
+	verify_ml=atoi(str);
+	fgets(str,81,stream);
+	notify_user=atoi(str);
+	fclose(stream);
 
-if(maint)
-	return;
+	initdata();
 
-strcpy(list_fmt,DEF_LIST_FMT);
-while(1) {
-	aborted=0;
-	attr(LIGHTGRAY);
-	cls();
-	bprintf("\1n\1m\1hSynchronet \1wBBS List \1mv3.10 (XSDK v%s) "
-        "Developed 1994-2000 Rob Swindell\r\n\r\n"
-        ,xsdk_ver);
+	mnehigh=HIGH|LIGHTGRAY;
+	mnelow=HIGH|YELLOW;
+	if(maint)
+		user_misc=(ANSI|COLOR);
 
-#define SBL_INDENT "    "
-	sprintf(str,SBL_INDENT"~List all systems (condensed)\r\n"
-				SBL_INDENT"~Change list format\r\n"
-				SBL_INDENT"~Extended information on all systems\r\n"
-				SBL_INDENT"~Turn screen pause %s\r\n"
-				SBL_INDENT"~Find text in BBS entries\r\n"
-				SBL_INDENT"~Generate sorted list\r\n"
-				SBL_INDENT"~Display sorted list\r\n"
-				SBL_INDENT"~New entry scan\r\n"
-				SBL_INDENT"~Add a BBS entry\r\n"
-				SBL_INDENT"~Update a BBS entry\r\n"
-				SBL_INDENT"~Verify a BBS entry\r\n"
-				SBL_INDENT"~Remove a BBS entry\r\n"
-				SBL_INDENT"~Quit back to BBS\r\n"
-				,sbl_pause ? "OFF" : "ON");
-	mnemonics(str);
-	if(SYSOP)
-		mnemonics(SBL_INDENT"~* Undelete entries\r\n");
-
-	bputs("\r\n");
-
-	l=filelength(fileno(stream));
-	if(l>0)
-		bprintf(SBL_INDENT"\1n\1cThere are \1h%lu\1n\1c entries in the online BBS list "
-			"database.\r\n",l/(long)sizeof(bbs_t));
+	if((file=sopen("SBL.DAB",O_RDWR|O_BINARY|O_CREAT,SH_DENYNO
+		,S_IWRITE|S_IREAD))==-1) {
+		bprintf("\r\n\7Error opening/creating SBL.DAB\r\n");
+		exit(1); }
+	if((stream=fdopen(file,"w+b"))==NULL) {
+		bprintf("\r\n\7Error converting SBL.DAB file handle to stream\r\n");
+		exit(1); }
+	setvbuf(stream,0L,_IOFBF,2048);
 
 	if(del_days) {
-		bprintf(SBL_INDENT"\1n\1cEntries are auto-deleted \1h%u\1n\1c days after "
-			"last update or verification.\r\n",del_days);
-		bputs(SBL_INDENT"Users are encouraged to \1hV\1n\1cerify (vouch for) any listed "
-			"BBSs they call.\r\n"); }
-
-	nodesync(); 			/* Display any waiting messages */
-
-	bputs("\r\n"SBL_INDENT"\1y\1hWhich: \1w");
-	switch(getkeys("CLGDEFSNAURTQV!*",0)) {
-		case '!':
-			bprintf("\r\nsizeof(bbs_t)=%u\r\n",sizeof(bbs_t));
-			pause();
-			break;
-		case '*':
-			cls();
-			if(!SYSOP)
-				break;
+		now=time(NULL);
+		strcpy(str,"SBLPURGE.DAB");
+		if((file=nopen(str,O_RDWR|O_CREAT))==-1) {
+			printf("Error creating %s\r\n",str);
+			exit(1); }
+		l=0;
+		read(file,&l,4);
+		if(now-l>(24L*60L*60L) || maint) {	 /* more than a day since update */
+			bputs("\r\n\1n\1hRunning daily maintenance for Synchronet BBS List...");
+			lseek(file,0L,SEEK_SET);
+			write(file,&now,4);
+			close(file);
 			fseek(stream,0L,SEEK_SET);
-			while(!feof(stream) && !aborted) {
+			while(!feof(stream)) {
 				if(!fread(&bbs,sizeof(bbs_t),1,stream))
 					break;
-				if(!bbs.name[0]) {
-					bbs.name[0]='?';
-					bbs.verified=time(NULL);
-					sprintf(bbs.userverified,"%.25s",user_name);
-					if(yesno(bbs.name)) {
-						bprintf("\1n\1gFirst char: \1h");
-						bbs.name[0]=getkey(0);
-						bprintf("%s\r\n",bbs.name);
-						fseek(stream,-(long)sizeof(bbs_t),SEEK_CUR);
-						fwrite(&bbs,sizeof(bbs_t),1,stream); } } }
-            break;
-		case 'L':
-			cls();
-			fseek(stream,0L,SEEK_SET);
-			i=0;
-			while(!feof(stream) && !aborted) {
-				if(!fread(&bbs,sizeof(bbs_t),1,stream))
-					break;
-				if(!bbs.name[0])
-					continue;
-				i++;
-				if(!short_bbs_info(bbs))
-					break;
-				if(!sbl_pause)
-					lncntr=0; }
-			bprintf("\r\n\1n\1h%u systems listed.\r\n",i);
-			if(kbhit())
-				getch();
-			if(lncntr)
+				if(bbs.name[0]) {
+					if((now-bbs.updated)/(24L*60L*60L)>(time_t)del_days
+						&& (now-bbs.created)/(24L*60L*60L)>(time_t)del_days
+						&& (now-bbs.verified)/(24L*60L*60L)>(time_t)del_days) {
+						lncntr=0;
+						bprintf("\r\n\1n\1hAuto-deleting \1m%s\r\n",bbs.name);
+						if(!(bbs.misc&FROM_SMB)) {
+							sprintf(str,"\1n\1hSBL: \1mYour BBS entry for \1y%s\1m\r\n"
+								"     was auto-deleted from the \1cSynchronet BBS "
+								"List\r\n",bbs.name);
+							i=usernumber(bbs.user);
+							if(i) putsmsg(i,str);
+						}
+						bbs.name[0]=0;
+						fseek(stream,-(long)(sizeof(bbs_t)),SEEK_CUR);
+						fwrite(&bbs,sizeof(bbs_t),1,stream); }
+					else if (!(bbs.misc&FROM_SMB)) { /* Warn user */
+						l=bbs.created;
+						if(l<bbs.updated)
+							l=bbs.updated;
+						if(l<bbs.verified)
+							l=bbs.verified;
+						if((now-l)/(24L*60L*60L)>=(time_t)(del_days/2)) {
+							bprintf("\r\n\1n\1hWarning \1y%s\r\n",bbs.user);
+							lncntr=0;
+							sprintf(str,"\1n\1hSBL: \1mPlease verify your BBS "
+								"entry for \1y%s\1m\r\n     "
+								"in the \1cSynchronet BBS List "
+								"\1mor it will be deleted in \1i\1r%u "
+								"\1n\1h\1mdays.\r\n"
+								,bbs.name
+								,del_days-((now-l)/(24L*60L*60L)));
+							i=usernumber(bbs.user);
+							if(i) putsmsg(i,str); } } } } }
+		else
+			close(file); }
+
+	if(maint)
+		return;
+
+	strcpy(list_fmt,DEF_LIST_FMT);
+	while(1) {
+		aborted=0;
+		attr(LIGHTGRAY);
+		cls();
+		bprintf("\1n\1m\1hSynchronet \1wBBS List \1mv3.10 (XSDK v%s) "
+			"Developed 1994-2000 Rob Swindell\r\n\r\n"
+			,xsdk_ver);
+
+	#define SBL_INDENT "    "
+		sprintf(str,SBL_INDENT"~List all systems (condensed)\r\n"
+					SBL_INDENT"~Change list format\r\n"
+					SBL_INDENT"~Extended information on all systems\r\n"
+					SBL_INDENT"~Turn screen pause %s\r\n"
+					SBL_INDENT"~Find text in BBS entries\r\n"
+					SBL_INDENT"~Generate sorted list\r\n"
+					SBL_INDENT"~Display sorted list\r\n"
+					SBL_INDENT"~New entry scan\r\n"
+					SBL_INDENT"~Add a BBS entry\r\n"
+					SBL_INDENT"~Update a BBS entry\r\n"
+					SBL_INDENT"~Verify a BBS entry\r\n"
+					SBL_INDENT"~Remove a BBS entry\r\n"
+					SBL_INDENT"~Quit back to BBS\r\n"
+					,sbl_pause ? "OFF" : "ON");
+		mnemonics(str);
+		if(SYSOP)
+			mnemonics(SBL_INDENT"~* Undelete entries\r\n");
+
+		bputs("\r\n");
+
+		l=filelength(fileno(stream));
+		if(l>0)
+			bprintf(SBL_INDENT"\1n\1cThere are \1h%lu\1n\1c entries in the online BBS list "
+				"database.\r\n",l/(long)sizeof(bbs_t));
+
+		if(del_days) {
+			bprintf(SBL_INDENT"\1n\1cEntries are auto-deleted \1h%u\1n\1c days after "
+				"last update or verification.\r\n",del_days);
+			bputs(SBL_INDENT"Users are encouraged to \1hV\1n\1cerify (vouch for) any listed "
+				"BBSs they call.\r\n"); }
+
+		nodesync(); 			/* Display any waiting messages */
+
+		bputs("\r\n"SBL_INDENT"\1y\1hWhich: \1w");
+		switch(getkeys("CLGDEFSNAURTQV!*",0)) {
+			case '!':
+				bprintf("\r\nsizeof(bbs_t)=%u\r\n",sizeof(bbs_t));
 				pause();
-			break;
-		case 'C':
-			cls();
-			bputs("\1n\1c\1hList Format Specifier Definitions:\1n\r\n\r\n");
-			bputs("\1h\1w(\1mN\1w) \1n\1mName of System\r\n");
-			bputs("\1h\1w(\1mS\1w) \1n\1mSoftware Used\r\n");
-			bputs("\1h\1w(\1mP\1w) \1n\1mPhone Number\r\n");
-			bputs("\1h\1w(\1mB\1w) \1n\1mMaximum Connect Rate (in bps)\r\n");
-			bputs("\1h\1w(\1mM\1w) \1n\1mModem Type\r\n");
-			bputs("\1h\1w(\1mY\1w) \1n\1mSysop's Name\r\n");
-			bputs("\1h\1w(\1mT\1w) \1n\1mTotal Number of Nodes\r\n");
-			bputs("\1h\1w(\1mU\1w) \1n\1mTotal Number of Users\r\n");
-			bputs("\1h\1w(\1mH\1w) \1n\1mTotal Storage Capacity (in megabytes)\r\n");
-			bputs("\1h\1w(\1mL\1w) \1n\1mLocation (City, State)\r\n");
-			bputs("\1h\1w(\1mF\1w) \1n\1mDate System was First Online\r\n");
-			bputs("\1h\1w(\1mC\1w) \1n\1mDate Entry was Created\r\n");
-			bputs("\1h\1w(\1mV\1w) \1n\1mDate Entry was Last Verified\r\n");
-			bputs("\1h\1w(\1mD\1w) \1n\1mDate Entry was Last Updated\r\n");
-			bprintf("\r\n\1n\1gDefault Format: \1h%s",DEF_LIST_FMT);
-			bprintf("\r\n\1n\1gCurrent Format: \1h%s\r\n",list_fmt);
-			bprintf("\r\n\1y\1hNew Format: ");
-			if(getstr(tmp,10,K_UPPER|K_LINE)) {
-				if(!strchr(tmp,'P') || !strchr(tmp,'N')) {
-					bputs("\r\n\1h\1mP\1n\1mhone and \1hN\1n\1mame specifiers "
-						"must be present in format.\r\n\r\n");
-					pause(); }
-				else
-					strcpy(list_fmt,tmp); }
-			break;
-		case 'E':
-			fseek(stream,0L,SEEK_SET);
-			while(!feof(stream) && !aborted) {
-				if(!fread(&bbs,sizeof(bbs_t),1,stream))
-					break;
-				if(bbs.name[0] && !long_bbs_info(bbs))
-					break;
-				if(!sbl_pause)
-					lncntr=0; }
-            break;
-		case 'F':   /* Find text */
-			cls();
-			bputs("\1y\1hText to search for: ");
-			if(!getstr(name,25,K_UPPER|K_LINE))
 				break;
-			ch=yesno("\r\nDisplay extended information");
-
-			found=0;
-			bputs("\1n\1h\r\nSearching...\r\n\r\n");
-			fseek(stream,0L,SEEK_SET);
-			while(!feof(stream) && !aborted) {
-				if(!sbl_pause)
-					lncntr=0;
-				if(!fread(&bbs,sizeof(bbs_t),1,stream))
+			case '*':
+				cls();
+				if(!SYSOP)
 					break;
-				if(!bbs.name[0])
-					continue;
-				tmpbbs=bbs;
-				strupr(tmpbbs.name);
-				strupr(tmpbbs.user);
-				strupr(tmpbbs.software);
-				strupr(tmpbbs.userverified);
-				strupr(tmpbbs.userupdated);
-				strupr(tmpbbs.web_url);
-				if(strstr(tmpbbs.name,name)
-					|| strstr(tmpbbs.user,name)
-					|| strstr(tmpbbs.software,name)
-					|| strstr(tmpbbs.userverified,name)
-					|| strstr(tmpbbs.userupdated,name)
-					|| strstr(tmpbbs.web_url,name)
-					) {
-					found++;
-					if(ch && !long_bbs_info(bbs))
+				fseek(stream,0L,SEEK_SET);
+				while(!feof(stream) && !aborted) {
+					if(!fread(&bbs,sizeof(bbs_t),1,stream))
 						break;
-					if(!ch && !short_bbs_info(bbs))
+					if(!bbs.name[0]) {
+						bbs.name[0]='?';
+						bbs.verified=time(NULL);
+						sprintf(bbs.userverified,"%.25s",user_name);
+						if(yesno(bbs.name)) {
+							bprintf("\1n\1gFirst char: \1h");
+							bbs.name[0]=getkey(0);
+							bprintf("%s\r\n",bbs.name);
+							fseek(stream,-(long)sizeof(bbs_t),SEEK_CUR);
+							fwrite(&bbs,sizeof(bbs_t),1,stream); } } }
+				break;
+			case 'L':
+				cls();
+				fseek(stream,0L,SEEK_SET);
+				i=0;
+				while(!feof(stream) && !aborted) {
+					if(!fread(&bbs,sizeof(bbs_t),1,stream))
 						break;
-					continue; }
-
-				for(i=0;i<tmpbbs.total_sysops;i++) {
-					strupr(tmpbbs.sysop[i]);
-					if(strstr(tmpbbs.sysop[i],name))
-						break; }
-				if(i<tmpbbs.total_sysops) {
-					found++;
-					if(ch && !long_bbs_info(bbs))
+					if(!bbs.name[0])
+						continue;
+					i++;
+					if(!short_bbs_info(bbs))
 						break;
-					if(!ch && !short_bbs_info(bbs))
-						break;
-					continue; }
-
-				for(i=0;i<tmpbbs.total_networks;i++) {
-					strupr(tmpbbs.network[i]);
-					strupr(tmpbbs.address[i]);
-					if(strstr(tmpbbs.network[i],name)
-						|| strstr(tmpbbs.address[i],name))
-						break; }
-				if(i<tmpbbs.total_networks) {
-					found++;
-					if(ch && !long_bbs_info(bbs))
-						break;
-					if(!ch && !short_bbs_info(bbs))
-						break;
-                    continue; }
-
-				for(i=0;i<tmpbbs.total_terminals;i++) {
-					strupr(tmpbbs.terminal[i]);
-					if(strstr(tmpbbs.terminal[i],name))
-						break; }
-				if(i<tmpbbs.total_terminals) {
-					found++;
-					if(ch && !long_bbs_info(bbs))
-						break;
-					if(!ch && !short_bbs_info(bbs))
-						break;
-                    continue; }
-
-				for(i=0;i<tmpbbs.total_numbers;i++) {
-					strupr(tmpbbs.number[i].modem.number);
-					strupr(tmpbbs.number[i].modem.desc);
-					strupr(tmpbbs.number[i].modem.location);
-					if(strstr(tmpbbs.number[i].modem.number,name)
-						|| strstr(tmpbbs.number[i].modem.desc,name)
-						|| strstr(tmpbbs.number[i].modem.location,name))
-						break; }
-				if(i<tmpbbs.total_numbers) {
-					found++;
-					if(ch && !long_bbs_info(bbs))
-						break;
-					if(!ch && !short_bbs_info(bbs))
-						break;
-					continue; } }
-			if(!ch || !found) {
-				CRLF;
+					if(!sbl_pause)
+						lncntr=0; }
+				bprintf("\r\n\1n\1h%u systems listed.\r\n",i);
 				if(kbhit())
 					getch();
-				if(found)
-					bprintf("\1n\1h%u systems listed.\r\n",found);
-				pause(); }
-            break;
-		case 'G':   /* Generated sorted list */
-			cls();
-			if(!filelength(fileno(stream))) {
-                bprintf("No BBS list exists.\r\n");
-                pause();
-                break; }
-			bputs("\1n\1c\1hSort Options:\1n\r\n\r\n");
-			bputs("\1h\1w(\1mN\1w) \1n\1mName of System\r\n");
-			bputs("\1h\1w(\1mS\1w) \1n\1mSoftware Used\r\n");
-			bputs("\1h\1w(\1mP\1w) \1n\1mPhone Number\r\n");
-			bputs("\1h\1w(\1mB\1w) \1n\1mMaximum Connect Rate (in bps)\r\n");
-			bputs("\1h\1w(\1mM\1w) \1n\1mModem Type\r\n");
-			bputs("\1h\1w(\1mY\1w) \1n\1mSysop's Name\r\n");
-			bputs("\1h\1w(\1mT\1w) \1n\1mTotal Number of Nodes\r\n");
-			bputs("\1h\1w(\1mU\1w) \1n\1mTotal Number of Users\r\n");
-			bputs("\1h\1w(\1mH\1w) \1n\1mTotal Storage Capacity (in megabytes)\r\n");
-			bputs("\1h\1w(\1mL\1w) \1n\1mLocation (City, State)\r\n");
-			bputs("\1h\1w(\1mF\1w) \1n\1mDate System was First Online\r\n");
-			bputs("\1h\1w(\1mC\1w) \1n\1mDate Entry was Created\r\n");
-			bputs("\1h\1w(\1mV\1w) \1n\1mDate Entry was Last Verified\r\n");
-            bputs("\1h\1w(\1mD\1w) \1n\1mDate Entry was Last Updated\r\n");
-			bprintf("\r\n\1y\1hSort by (\1wQ\1y=Quit): \1w");
-			ch=getkeys("NSPBMYTUHLFCVDQ",0);
-			if(!ch || ch=='Q')
+				if(lncntr)
+					pause();
 				break;
-			cls();
-			bputs("\1n\1hSorting...     \1m");
-			fseek(stream,0L,SEEK_SET);
-			i=j=done=0;
-			sort_by_str=0;
-			sortstr=NULL;
-			sortint=NULL;
-			while(!feof(stream) && !done) {
-				if(!fread(&bbs,sizeof(bbs_t),1,stream))
+			case 'C':
+				cls();
+				bputs("\1n\1c\1hList Format Specifier Definitions:\1n\r\n\r\n");
+				bputs("\1h\1w(\1mN\1w) \1n\1mName of System\r\n");
+				bputs("\1h\1w(\1mS\1w) \1n\1mSoftware Used\r\n");
+				bputs("\1h\1w(\1mP\1w) \1n\1mPhone Number\r\n");
+				bputs("\1h\1w(\1mB\1w) \1n\1mMaximum Connect Rate (in bps)\r\n");
+				bputs("\1h\1w(\1mM\1w) \1n\1mModem Type\r\n");
+				bputs("\1h\1w(\1mY\1w) \1n\1mSysop's Name\r\n");
+				bputs("\1h\1w(\1mT\1w) \1n\1mTotal Number of Nodes\r\n");
+				bputs("\1h\1w(\1mU\1w) \1n\1mTotal Number of Users\r\n");
+				bputs("\1h\1w(\1mH\1w) \1n\1mTotal Storage Capacity (in megabytes)\r\n");
+				bputs("\1h\1w(\1mL\1w) \1n\1mLocation (City, State)\r\n");
+				bputs("\1h\1w(\1mF\1w) \1n\1mDate System was First Online\r\n");
+				bputs("\1h\1w(\1mC\1w) \1n\1mDate Entry was Created\r\n");
+				bputs("\1h\1w(\1mV\1w) \1n\1mDate Entry was Last Verified\r\n");
+				bputs("\1h\1w(\1mD\1w) \1n\1mDate Entry was Last Updated\r\n");
+				bprintf("\r\n\1n\1gDefault Format: \1h%s",DEF_LIST_FMT);
+				bprintf("\r\n\1n\1gCurrent Format: \1h%s\r\n",list_fmt);
+				bprintf("\r\n\1y\1hNew Format: ");
+				if(getstr(tmp,10,K_UPPER|K_LINE)) {
+					if(!strchr(tmp,'P') || !strchr(tmp,'N')) {
+						bputs("\r\n\1h\1mP\1n\1mhone and \1hN\1n\1mame specifiers "
+							"must be present in format.\r\n\r\n");
+						pause(); }
+					else
+						strcpy(list_fmt,tmp); }
+				break;
+			case 'E':
+				fseek(stream,0L,SEEK_SET);
+				while(!feof(stream) && !aborted) {
+					if(!fread(&bbs,sizeof(bbs_t),1,stream))
+						break;
+					if(bbs.name[0] && !long_bbs_info(bbs))
+						break;
+					if(!sbl_pause)
+						lncntr=0; }
+				break;
+			case 'F':   /* Find text */
+				cls();
+				bputs("\1y\1hText to search for: ");
+				if(!getstr(name,25,K_UPPER|K_LINE))
 					break;
-				j++;
-				bprintf("\b\b\b\b%4u",j);
-				if(!bbs.name[0])	/* don't sort deleted entries */
-                    continue;
-				i++;
-				switch(ch) {
-					case 'N':
-						sprintf(str,"%.30s",bbs.name);
-						sort_by_str=1;
+				ch=yesno("\r\nDisplay extended information");
+
+				found=0;
+				bputs("\1n\1h\r\nSearching...\r\n\r\n");
+				fseek(stream,0L,SEEK_SET);
+				while(!feof(stream) && !aborted) {
+					if(!sbl_pause)
+						lncntr=0;
+					if(!fread(&bbs,sizeof(bbs_t),1,stream))
 						break;
-					case 'S':
-						sprintf(str,"%.30s",bbs.software);
-						sort_by_str=1;
+					if(!bbs.name[0])
+						continue;
+					tmpbbs=bbs;
+					strupr(tmpbbs.name);
+					strupr(tmpbbs.user);
+					strupr(tmpbbs.software);
+					strupr(tmpbbs.userverified);
+					strupr(tmpbbs.userupdated);
+					strupr(tmpbbs.web_url);
+					if(strstr(tmpbbs.name,name)
+						|| strstr(tmpbbs.user,name)
+						|| strstr(tmpbbs.software,name)
+						|| strstr(tmpbbs.userverified,name)
+						|| strstr(tmpbbs.userupdated,name)
+						|| strstr(tmpbbs.web_url,name)
+						) {
+						found++;
+						if(ch && !long_bbs_info(bbs))
+							break;
+						if(!ch && !short_bbs_info(bbs))
+							break;
+						continue; }
+
+					for(i=0;i<tmpbbs.total_sysops;i++) {
+						strupr(tmpbbs.sysop[i]);
+						if(strstr(tmpbbs.sysop[i],name))
+							break; }
+					if(i<tmpbbs.total_sysops) {
+						found++;
+						if(ch && !long_bbs_info(bbs))
+							break;
+						if(!ch && !short_bbs_info(bbs))
+							break;
+						continue; }
+
+					for(i=0;i<tmpbbs.total_networks;i++) {
+						strupr(tmpbbs.network[i]);
+						strupr(tmpbbs.address[i]);
+						if(strstr(tmpbbs.network[i],name)
+							|| strstr(tmpbbs.address[i],name))
+							break; }
+					if(i<tmpbbs.total_networks) {
+						found++;
+						if(ch && !long_bbs_info(bbs))
+							break;
+						if(!ch && !short_bbs_info(bbs))
+							break;
+						continue; }
+
+					for(i=0;i<tmpbbs.total_terminals;i++) {
+						strupr(tmpbbs.terminal[i]);
+						if(strstr(tmpbbs.terminal[i],name))
+							break; }
+					if(i<tmpbbs.total_terminals) {
+						found++;
+						if(ch && !long_bbs_info(bbs))
+							break;
+						if(!ch && !short_bbs_info(bbs))
+							break;
+						continue; }
+
+					for(i=0;i<tmpbbs.total_numbers;i++) {
+						strupr(tmpbbs.number[i].modem.number);
+						strupr(tmpbbs.number[i].modem.desc);
+						strupr(tmpbbs.number[i].modem.location);
+						if(strstr(tmpbbs.number[i].modem.number,name)
+							|| strstr(tmpbbs.number[i].modem.desc,name)
+							|| strstr(tmpbbs.number[i].modem.location,name))
+							break; }
+					if(i<tmpbbs.total_numbers) {
+						found++;
+						if(ch && !long_bbs_info(bbs))
+							break;
+						if(!ch && !short_bbs_info(bbs))
+							break;
+						continue; } }
+				if(!ch || !found) {
+					CRLF;
+					if(kbhit())
+						getch();
+					if(found)
+						bprintf("\1n\1h%u systems listed.\r\n",found);
+					pause(); }
+				break;
+			case 'G':   /* Generated sorted list */
+				cls();
+				if(!filelength(fileno(stream))) {
+					bprintf("No BBS list exists.\r\n");
+					pause();
+					break; }
+				bputs("\1n\1c\1hSort Options:\1n\r\n\r\n");
+				bputs("\1h\1w(\1mN\1w) \1n\1mName of System\r\n");
+				bputs("\1h\1w(\1mS\1w) \1n\1mSoftware Used\r\n");
+				bputs("\1h\1w(\1mP\1w) \1n\1mPhone Number\r\n");
+				bputs("\1h\1w(\1mB\1w) \1n\1mMaximum Connect Rate (in bps)\r\n");
+				bputs("\1h\1w(\1mM\1w) \1n\1mModem Type\r\n");
+				bputs("\1h\1w(\1mY\1w) \1n\1mSysop's Name\r\n");
+				bputs("\1h\1w(\1mT\1w) \1n\1mTotal Number of Nodes\r\n");
+				bputs("\1h\1w(\1mU\1w) \1n\1mTotal Number of Users\r\n");
+				bputs("\1h\1w(\1mH\1w) \1n\1mTotal Storage Capacity (in megabytes)\r\n");
+				bputs("\1h\1w(\1mL\1w) \1n\1mLocation (City, State)\r\n");
+				bputs("\1h\1w(\1mF\1w) \1n\1mDate System was First Online\r\n");
+				bputs("\1h\1w(\1mC\1w) \1n\1mDate Entry was Created\r\n");
+				bputs("\1h\1w(\1mV\1w) \1n\1mDate Entry was Last Verified\r\n");
+				bputs("\1h\1w(\1mD\1w) \1n\1mDate Entry was Last Updated\r\n");
+				bprintf("\r\n\1y\1hSort by (\1wQ\1y=Quit): \1w");
+				ch=getkeys("NSPBMYTUHLFCVDQ",0);
+				if(!ch || ch=='Q')
+					break;
+				cls();
+				bputs("\1n\1hSorting...     \1m");
+				fseek(stream,0L,SEEK_SET);
+				i=j=done=0;
+				sort_by_str=0;
+				sortstr=NULL;
+				sortint=NULL;
+				while(!feof(stream) && !done) {
+					if(!fread(&bbs,sizeof(bbs_t),1,stream))
 						break;
-					case 'P':
-						sprintf(str,"%.30s",bbs.number[0].modem.number);
-						sort_by_str=1;
-						break;
-					case 'M':
-						sprintf(str,"%.30s",bbs.number[0].modem.desc);
-						sort_by_str=1;
-						break;
-					case 'Y':
-						sprintf(str,"%.30s",bbs.sysop[0]);
-						sort_by_str=1;
-						break;
-					case 'L':
-						sprintf(str,"%.30s",bbs.number[0].modem.location);
-						sort_by_str=1;
-						break;
-					case 'B':
-						l=bbs.number[0].modem.max_rate;
-						break;
-					case 'T':
-						l=bbs.nodes;
-						break;
-					case 'U':
-						l=bbs.users;
-						break;
-					case 'H':
-						l=bbs.megs;
-						break;
-					case 'F':
-						l=bbs.birth;
-						break;
-					case 'C':
-						l=bbs.created;
-						break;
-					case 'V':
-						l=bbs.verified;
-						break;
-					case 'D':
-						l=bbs.updated;
-						break; }
-				if(sort_by_str) {
-					if((sortstr=(sortstr_t *)REALLOC(sortstr
-						,sizeof(sortstr_t)*i))==NULL) {
-						bprintf("\r\n\7Memory allocation error\r\n");
+					j++;
+					bprintf("\b\b\b\b%4u",j);
+					if(!bbs.name[0])	/* don't sort deleted entries */
+						continue;
+					i++;
+					switch(ch) {
+						case 'N':
+							sprintf(str,"%.30s",bbs.name);
+							sort_by_str=1;
+							break;
+						case 'S':
+							sprintf(str,"%.30s",bbs.software);
+							sort_by_str=1;
+							break;
+						case 'P':
+							sprintf(str,"%.30s",bbs.number[0].modem.number);
+							sort_by_str=1;
+							break;
+						case 'M':
+							sprintf(str,"%.30s",bbs.number[0].modem.desc);
+							sort_by_str=1;
+							break;
+						case 'Y':
+							sprintf(str,"%.30s",bbs.sysop[0]);
+							sort_by_str=1;
+							break;
+						case 'L':
+							sprintf(str,"%.30s",bbs.number[0].modem.location);
+							sort_by_str=1;
+							break;
+						case 'B':
+							l=bbs.number[0].modem.max_rate;
+							break;
+						case 'T':
+							l=bbs.nodes;
+							break;
+						case 'U':
+							l=bbs.users;
+							break;
+						case 'H':
+							l=bbs.megs;
+							break;
+						case 'F':
+							l=bbs.birth;
+							break;
+						case 'C':
+							l=bbs.created;
+							break;
+						case 'V':
+							l=bbs.verified;
+							break;
+						case 'D':
+							l=bbs.updated;
+							break; }
+					if(sort_by_str) {
+						if((sortstr=(sortstr_t *)REALLOC(sortstr
+							,sizeof(sortstr_t)*i))==NULL) {
+							bprintf("\r\n\7Memory allocation error\r\n");
+							LFREE(sortstr);
+							done=1;
+							continue; }
+						strcpy(sortstr[i-1].str,str);
+						sortstr[i-1].offset=j-1; }
+					else {
+						if((sortint=(sortint_t *)REALLOC(sortint
+							,sizeof(sortint_t)*i))==NULL) {
+							bprintf("\r\n\7Memory allocation error\r\n");
+							LFREE(sortint);
+							done=1;
+							continue; }
+						sortint[i-1].i=l;
+						sortint[i-1].offset=j-1; } }
+
+				if(done) {
+					pause();
+					break; }
+
+				if(sort_by_str)
+					qsort((void *)sortstr,i,sizeof(sortstr[0])
+						,(int(*)(const void *, const void *))sortstr_cmp);
+				else
+					qsort((void *)sortint,i,sizeof(sortint[0])
+						,(int(*)(const void *, const void *))sortint_cmp);
+
+				bprintf("\r\n\r\n\1h\1gCreating index...");
+				sprintf(str,"SORT_%03d.NDX",node_num);
+				if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
+					bprintf("\r\n\7Error creating %s\r\n",str);
+					if(sort_by_str)
 						LFREE(sortstr);
-						done=1;
-						continue; }
-					strcpy(sortstr[i-1].str,str);
-					sortstr[i-1].offset=j-1; }
-				else {
-					if((sortint=(sortint_t *)REALLOC(sortint
-						,sizeof(sortint_t)*i))==NULL) {
-						bprintf("\r\n\7Memory allocation error\r\n");
+					else
 						LFREE(sortint);
-						done=1;
-						continue; }
-					sortint[i-1].i=l;
-					sortint[i-1].offset=j-1; } }
-
-			if(done) {
-				pause();
-				break; }
-
-			if(sort_by_str)
-				qsort((void *)sortstr,i,sizeof(sortstr[0])
-					,(int(*)(const void *, const void *))sortstr_cmp);
-			else
-				qsort((void *)sortint,i,sizeof(sortint[0])
-					,(int(*)(const void *, const void *))sortint_cmp);
-
-			bprintf("\r\n\r\n\1h\1gCreating index...");
-			sprintf(str,"SORT_%03d.NDX",node_num);
-			if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
-				bprintf("\r\n\7Error creating %s\r\n",str);
+					pause();
+					break; }
+				for(j=0;j<i;j++)
+					if(sort_by_str)
+						write(file,&sortstr[j].offset,2);
+					else
+						write(file,&sortint[j].offset,2);
+				close(file);
 				if(sort_by_str)
 					LFREE(sortstr);
 				else
 					LFREE(sortint);
+				bputs("\r\n\r\n\1n\1hDone.\r\n");
 				pause();
-				break; }
-			for(j=0;j<i;j++)
-				if(sort_by_str)
-					write(file,&sortstr[j].offset,2);
-				else
-					write(file,&sortint[j].offset,2);
-			close(file);
-			if(sort_by_str)
-				LFREE(sortstr);
-			else
-				LFREE(sortint);
-			bputs("\r\n\r\n\1n\1hDone.\r\n");
-			pause();
-			break;
-		case 'D':
-			cls();
-			sprintf(str,"SORT_%03d.NDX",node_num);
-			if((file=nopen(str,O_RDONLY))==-1) {
-				bputs("\1n\1r\1hSorted list not generated.\r\n");
-				pause(); }
-			ch=yesno("Display extended information");
-			cls();
-			while(!eof(file) && !aborted) {
-				if(read(file,&i,2)!=2)
-					break;
-				fseek(stream,(long)i*sizeof(bbs_t),SEEK_SET);
-				if(!sbl_pause)
-					lncntr=0;
-				if(!fread(&bbs,sizeof(bbs_t),1,stream))
-					break;
-				if(!bbs.name[0])
-                    continue;
-				if(ch && !long_bbs_info(bbs))
-					break;
-				if(!ch && !short_bbs_info(bbs))
-					break; }
-			close(file);
-			if(kbhit())
-				getch();
-			if(lncntr)
-                pause();
-			break;
-		case 'N':   /* New (updated) entry scan */
-			cls();
-			bputs("\1y\1hLast update (MM/DD/YY): ");
-			if(!getstr(str,8,K_UPPER|K_LINE))
 				break;
-			l=dstrtounix(str);
-			ch=yesno("\r\nDisplay extended information");
-			found=0;
-			bputs("\1n\1h\r\nSearching...\r\n\r\n");
-			fseek(stream,0L,SEEK_SET);
-			while(!feof(stream) && !aborted) {
-				if(!sbl_pause)
-					lncntr=0;
-				if(!fread(&bbs,sizeof(bbs_t),1,stream))
-					break;
-				if(!bbs.name[0])
-					continue;
-				if(bbs.updated>=l || bbs.created>=l) {
+			case 'D':
+				cls();
+				sprintf(str,"SORT_%03d.NDX",node_num);
+				if((file=nopen(str,O_RDONLY))==-1) {
+					bputs("\1n\1r\1hSorted list not generated.\r\n");
+					pause(); }
+				ch=yesno("Display extended information");
+				cls();
+				while(!eof(file) && !aborted) {
+					if(read(file,&i,2)!=2)
+						break;
+					fseek(stream,(long)i*sizeof(bbs_t),SEEK_SET);
+					if(!sbl_pause)
+						lncntr=0;
+					if(!fread(&bbs,sizeof(bbs_t),1,stream))
+						break;
+					if(!bbs.name[0])
+						continue;
 					if(ch && !long_bbs_info(bbs))
 						break;
 					if(!ch && !short_bbs_info(bbs))
+						break; }
+				close(file);
+				if(kbhit())
+					getch();
+				if(lncntr)
+					pause();
+				break;
+			case 'N':   /* New (updated) entry scan */
+				cls();
+				bputs("\1y\1hLast update (MM/DD/YY): ");
+				if(!getstr(str,8,K_UPPER|K_LINE))
+					break;
+				l=dstrtounix(str);
+				ch=yesno("\r\nDisplay extended information");
+				found=0;
+				bputs("\1n\1h\r\nSearching...\r\n\r\n");
+				fseek(stream,0L,SEEK_SET);
+				while(!feof(stream) && !aborted) {
+					if(!sbl_pause)
+						lncntr=0;
+					if(!fread(&bbs,sizeof(bbs_t),1,stream))
 						break;
-					found++;
-					continue; } }
-			if(!ch || !found) {
-				CRLF;
-				pause(); }
-            break;
-		case 'A':
-			cls();
-			if((uint)user_level<add_ml) {
-				bprintf("\1h\1rYou have insufficient access.\r\n\r\n");
-				pause();
-				break; }
-			bputs("\1g\1hAdding a BBS entry:\1n\r\n\r\n");
-			bputs("\1n\1gHit ENTER for unknown data items.\r\n\r\n");
-			memset(&bbs,0,sizeof(bbs_t));
-			if(!get_bbs_info(&bbs))
+					if(!bbs.name[0])
+						continue;
+					if(bbs.updated>=l || bbs.created>=l) {
+						if(ch && !long_bbs_info(bbs))
+							break;
+						if(!ch && !short_bbs_info(bbs))
+							break;
+						found++;
+						continue; } }
+				if(!ch || !found) {
+					CRLF;
+					pause(); }
 				break;
-			bputs("\1n\1h\r\nSearching for duplicates...");
-			fseek(stream,0L,SEEK_SET);
-			i=0;
-			dots(0);
-			while(!feof(stream) && !i) {
-				dots(1);
-				if(!fread(&tmpbbs,sizeof(bbs_t),1,stream))
-					break;
-				if(!stricmp(tmpbbs.name,bbs.name)) i=1; }
-			if(i) {
-				bprintf("\7\1n\1h\1r\1i\r\n\r\n%s \1n\1h\1ralready exists!"
-					"\r\n\r\n"
-					,bbs.name);
-				pause();
-				break; }
-
-			bputs("\1n\1h\r\nSaving...");
-			fseek(stream,0L,SEEK_SET);
-			dots(0);
-			while(!feof(stream)) {
-				dots(1);
-				if(!fread(&ch,1,1,stream))
-					break;
-				if(!ch) {			/* first byte is null */
-					fseek(stream,-1L,SEEK_CUR);
+			case 'A':
+				cls();
+				if((uint)user_level<add_ml) {
+					bprintf("\1h\1rYou have insufficient access.\r\n\r\n");
+					pause();
 					break; }
-				fseek(stream,(long)sizeof(bbs_t)-1L,SEEK_CUR); }
-			bbs.created=time(NULL);
-			fwrite(&bbs,sizeof(bbs_t),1,stream);
-			if(notify_user && notify_user!=user_number) {
-				sprintf(str,"\1n\1hSBL: \1y%s \1madded \1c%s\1m "
-					"to the BBS List\r\n",user_name,bbs.name);
-				putsmsg(notify_user,str); }
-			break;
-		case 'R':       /* Remove an entry */
-			cls();
-			if((uint)user_level<remove_ml) {
-				bprintf("\1h\1rYou have insufficient access.\r\n\r\n");
-				pause();
-                break; }
-			bprintf("\1y\1hRemove which system: ");
-			if(!getstr(name,25,K_LINE|K_UPPER))
-				break;
-			bputs("\1n\1h\r\nSearching...");
-			fseek(stream,0L,SEEK_SET);
-			found=0;
-			dots(0);
-			while(!feof(stream) && !aborted) {
-				dots(1);
-				if(!fread(&bbs,sizeof(bbs_t),1,stream))
+				bputs("\1g\1hAdding a BBS entry:\1n\r\n\r\n");
+				bputs("\1n\1gHit ENTER for unknown data items.\r\n\r\n");
+				memset(&bbs,0,sizeof(bbs_t));
+				if(!get_bbs_info(&bbs))
 					break;
-				if(!stricmp(bbs.name,name) || partname(bbs.name,name)) {
-					found=1;
+				bputs("\1n\1h\r\nSearching for duplicates...");
+				fseek(stream,0L,SEEK_SET);
+				i=0;
+				dots(0);
+				while(!feof(stream) && !i) {
+					dots(1);
+					if(!fread(&tmpbbs,sizeof(bbs_t),1,stream))
+						break;
+					if(!stricmp(tmpbbs.name,bbs.name)) i=1; }
+				if(i) {
+					bprintf("\7\1n\1h\1r\1i\r\n\r\n%s \1n\1h\1ralready exists!"
+						"\r\n\r\n"
+						,bbs.name);
+					pause();
+					break; }
+
+				bputs("\1n\1h\r\nSaving...");
+				fseek(stream,0L,SEEK_SET);
+				dots(0);
+				while(!feof(stream)) {
+					dots(1);
+					if(!fread(&ch,1,1,stream))
+						break;
+					if(!ch) {			/* first byte is null */
+						fseek(stream,-1L,SEEK_CUR);
+						break; }
+					fseek(stream,(long)sizeof(bbs_t)-1L,SEEK_CUR); }
+				bbs.created=time(NULL);
+				fwrite(&bbs,sizeof(bbs_t),1,stream);
+				if(notify_user && notify_user!=user_number) {
+					sprintf(str,"\1n\1hSBL: \1y%s \1madded \1c%s\1m "
+						"to the BBS List\r\n",user_name,bbs.name);
+					putsmsg(notify_user,str); }
+				break;
+			case 'R':       /* Remove an entry */
+				cls();
+				if((uint)user_level<remove_ml) {
+					bprintf("\1h\1rYou have insufficient access.\r\n\r\n");
+					pause();
+					break; }
+				bprintf("\1y\1hRemove which system: ");
+				if(!getstr(name,25,K_LINE|K_UPPER))
+					break;
+				bputs("\1n\1h\r\nSearching...");
+				fseek(stream,0L,SEEK_SET);
+				found=0;
+				dots(0);
+				while(!feof(stream) && !aborted) {
+					dots(1);
+					if(!fread(&bbs,sizeof(bbs_t),1,stream))
+						break;
+					if(!stricmp(bbs.name,name) || partname(bbs.name,name)) {
+						found=1;
+						for(i=0;i<bbs.total_sysops && i<MAX_SYSOPS;i++)
+							if(!stricmp(bbs.sysop[i],user_name))
+								break;
+						if(SYSOP || !stricmp(bbs.user,user_name)
+							|| i<bbs.total_sysops) {
+							fseek(stream,-(long)(sizeof(bbs_t)),SEEK_CUR);
+							strcpy(tmp,bbs.name);
+							bbs.name[0]=0;
+							bbs.updated=time(NULL);
+							fwrite(&bbs,sizeof(bbs_t),1,stream);
+							bprintf("\r\n\r\n\1m%s\1c deleted."
+								,tmp);
+							if(notify_user && notify_user!=user_number) {
+								sprintf(str,"\1n\1hSBL: \1y%s \1mremoved \1c%s\1m "
+									"from the BBS List\r\n",user_name,tmp);
+								putsmsg(notify_user,str); } }
+						else
+							bprintf("\r\n\r\n\1rYou did not create \1m%s\1n."
+								,bbs.name);
+						break; } }
+				if(!found)
+					bprintf("\r\n\r\n\1m%s\1c not found.",name);
+				CRLF;
+				CRLF;
+				pause();
+				break;
+			case 'T':
+				sbl_pause=!sbl_pause;
+				break;
+			case 'V':       /* Verify an entry */
+				cls();
+				if((uint)user_level<verify_ml) {
+					bprintf("\1h\1rYou have insufficient access.\r\n\r\n");
+					pause();
+					break; }
+				bprintf("\1y\1hVerify which system: ");
+				if(!getstr(name,25,K_LINE|K_UPPER))
+					break;
+				bputs("\1n\1h\r\nSearching...");
+				fseek(stream,0L,SEEK_SET);
+				found=0;
+				dots(0);
+				while(!feof(stream) && !aborted) {
+					dots(1);
+					if(!fread(&bbs,sizeof(bbs_t),1,stream))
+						break;
+					if(!stricmp(bbs.name,name) || partname(bbs.name,name)) {
+						found=1;
+						bbs.verified=time(NULL);
+						sprintf(bbs.userverified,"%.25s",user_name);
+						fseek(stream,-(long)(sizeof(bbs_t)),SEEK_CUR);
+						fwrite(&bbs,sizeof(bbs_t),1,stream);
+						bprintf("\r\n\r\n\1m%s\1c verified. \1r\1h\1iThank you!"
+							,bbs.name);
+						sprintf(str,"\1n\1hSBL: \1y%s \1mverified \1c%s\1m "
+							"in the BBS List\r\n",user_name,bbs.name);
+						if(notify_user && notify_user!=user_number)
+							putsmsg(notify_user,str);
+						if(stricmp(bbs.user,user_name)) {
+							i=usernumber(bbs.user);
+							if(i && i!=(int)user_number) putsmsg(i,str); }
+						break; } }
+				if(!found)
+					bprintf("\r\n\r\n\1m%s\1c not found.",name);
+				CRLF;
+				CRLF;
+				pause();
+				break;
+			case 'U':       /* Update an entry */
+				cls();
+				if((uint)user_level<update_ml) {
+					bprintf("\1h\1rYou have insufficient access.\r\n\r\n");
+					pause();
+					break; }
+				bprintf("\1y\1hUpdate which system: ");
+				if(!getstr(name,25,K_LINE|K_UPPER))
+					break;
+				bputs("\1n\1h\r\nSearching...");
+				fseek(stream,0L,SEEK_SET);
+				found=0;
+				dots(0);
+				while(!feof(stream) && !aborted) {
+					dots(1);
+					l=ftell(stream);
+					if(!fread(&bbs,sizeof(bbs_t),1,stream))
+						break;
+					if(!stricmp(bbs.name,name) || partname(bbs.name,name)) {
+						found=1;
+						break; } }
+				if(found) {
 					for(i=0;i<bbs.total_sysops && i<MAX_SYSOPS;i++)
-						if(!stricmp(bbs.sysop[i],user_name))
+						if(!bbs.sysop[i][0] || !stricmp(bbs.sysop[i],user_name))
 							break;
 					if(SYSOP || !stricmp(bbs.user,user_name)
 						|| i<bbs.total_sysops) {
-						fseek(stream,-(long)(sizeof(bbs_t)),SEEK_CUR);
-						strcpy(tmp,bbs.name);
-						bbs.name[0]=0;
-						bbs.updated=time(NULL);
-						fwrite(&bbs,sizeof(bbs_t),1,stream);
-						bprintf("\r\n\r\n\1m%s\1c deleted."
-							,tmp);
-						if(notify_user && notify_user!=user_number) {
-							sprintf(str,"\1n\1hSBL: \1y%s \1mremoved \1c%s\1m "
-								"from the BBS List\r\n",user_name,tmp);
-							putsmsg(notify_user,str); } }
+						CRLF;
+						CRLF;
+						if(get_bbs_info(&bbs)) {
+							bbs.misc&=~FROM_SMB;
+							bbs.updated=time(NULL);
+							sprintf(bbs.userupdated,"%.25s",user_name);
+							fseek(stream,l,SEEK_SET);
+							fwrite(&bbs,sizeof(bbs_t),1,stream);
+							bprintf("\r\n\1h\1m%s\1c updated.",bbs.name);
+							if(notify_user && notify_user!=user_number) {
+								sprintf(str,"\1n\1hSBL: \1y%s \1mupdated \1c%s\1m "
+									"in the BBS List\r\n",user_name,bbs.name);
+								putsmsg(notify_user,str); } } }
 					else
-						bprintf("\r\n\r\n\1rYou did not create \1m%s\1n."
-							,bbs.name);
-					break; } }
-			if(!found)
-				bprintf("\r\n\r\n\1m%s\1c not found.",name);
-			CRLF;
-			CRLF;
-			pause();
-            break;
-		case 'T':
-			sbl_pause=!sbl_pause;
-			break;
-		case 'V':       /* Verify an entry */
-			cls();
-			if((uint)user_level<verify_ml) {
-				bprintf("\1h\1rYou have insufficient access.\r\n\r\n");
+						bprintf("\r\n\r\n\1h\1rYou did not create \1m%s\1n."
+						   ,bbs.name); }
+				else
+					bprintf("\r\n\r\n\1h\1m%s\1c not found.",name);
+				CRLF;
+				CRLF;
 				pause();
-                break; }
-			bprintf("\1y\1hVerify which system: ");
-			if(!getstr(name,25,K_LINE|K_UPPER))
 				break;
-			bputs("\1n\1h\r\nSearching...");
-			fseek(stream,0L,SEEK_SET);
-			found=0;
-			dots(0);
-			while(!feof(stream) && !aborted) {
-				dots(1);
-				if(!fread(&bbs,sizeof(bbs_t),1,stream))
-					break;
-				if(!stricmp(bbs.name,name) || partname(bbs.name,name)) {
-					found=1;
-					bbs.verified=time(NULL);
-					sprintf(bbs.userverified,"%.25s",user_name);
-					fseek(stream,-(long)(sizeof(bbs_t)),SEEK_CUR);
-					fwrite(&bbs,sizeof(bbs_t),1,stream);
-					bprintf("\r\n\r\n\1m%s\1c verified. \1r\1h\1iThank you!"
-						,bbs.name);
-					sprintf(str,"\1n\1hSBL: \1y%s \1mverified \1c%s\1m "
-						"in the BBS List\r\n",user_name,bbs.name);
-					if(notify_user && notify_user!=user_number)
-						putsmsg(notify_user,str);
-					if(stricmp(bbs.user,user_name)) {
-						i=usernumber(bbs.user);
-						if(i && i!=(int)user_number) putsmsg(i,str); }
-					break; } }
-			if(!found)
-				bprintf("\r\n\r\n\1m%s\1c not found.",name);
-			CRLF;
-			CRLF;
-			pause();
-            break;
-		case 'U':       /* Update an entry */
-			cls();
-			if((uint)user_level<update_ml) {
-				bprintf("\1h\1rYou have insufficient access.\r\n\r\n");
-				pause();
-                break; }
-			bprintf("\1y\1hUpdate which system: ");
-			if(!getstr(name,25,K_LINE|K_UPPER))
-				break;
-			bputs("\1n\1h\r\nSearching...");
-			fseek(stream,0L,SEEK_SET);
-			found=0;
-			dots(0);
-			while(!feof(stream) && !aborted) {
-				dots(1);
-				l=ftell(stream);
-				if(!fread(&bbs,sizeof(bbs_t),1,stream))
-					break;
-				if(!stricmp(bbs.name,name) || partname(bbs.name,name)) {
-					found=1;
-					break; } }
-			if(found) {
-				for(i=0;i<bbs.total_sysops && i<MAX_SYSOPS;i++)
-					if(!bbs.sysop[i][0] || !stricmp(bbs.sysop[i],user_name))
-						break;
-				if(SYSOP || !stricmp(bbs.user,user_name)
-					|| i<bbs.total_sysops) {
-					CRLF;
-					CRLF;
-					if(get_bbs_info(&bbs)) {
-						bbs.misc&=~FROM_SMB;
-						bbs.updated=time(NULL);
-						sprintf(bbs.userupdated,"%.25s",user_name);
-						fseek(stream,l,SEEK_SET);
-						fwrite(&bbs,sizeof(bbs_t),1,stream);
-						bprintf("\r\n\1h\1m%s\1c updated.",bbs.name);
-						if(notify_user && notify_user!=user_number) {
-							sprintf(str,"\1n\1hSBL: \1y%s \1mupdated \1c%s\1m "
-								"in the BBS List\r\n",user_name,bbs.name);
-							putsmsg(notify_user,str); } } }
-                else
-					bprintf("\r\n\r\n\1h\1rYou did not create \1m%s\1n."
-					   ,bbs.name); }
-			else
-				bprintf("\r\n\r\n\1h\1m%s\1c not found.",name);
-			CRLF;
-			CRLF;
-			pause();
-            break;
-		case 'Q':
-			return; } }
+			case 'Q':
+				return(0); } }
+	return(-1);
 }
 
 /* End of SBL.C */
