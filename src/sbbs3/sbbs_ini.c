@@ -327,6 +327,12 @@ void sbbs_read_ini(
 	SAFECOPY(web->js_ext
 		,iniReadString(fp,section,"JavaScriptExtension",".js"));
 
+	web->max_inactivity
+		=iniReadShortInt(fp,section,"MaxInactivity",120);		/* seconds */
+	web->max_cgi_inactivity
+		=iniReadShortInt(fp,section,"MaxCgiInactivity",120);	/* seconds */
+
+
 #ifdef __unix__
 	default_cgi_temp = "/tmp";
 #else

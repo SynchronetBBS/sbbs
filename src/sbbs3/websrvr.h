@@ -45,7 +45,7 @@ typedef struct {
 	WORD	port;
 	WORD	max_clients;
 	WORD	max_inactivity;
-	WORD	reserved_word4;
+	WORD	max_cgi_inactivity;
 	WORD	reserved_word3;
 	WORD	reserved_word2;
 	WORD	reserved_word1;
