@@ -50,60 +50,6 @@ typedef struct
 
 
 
-/* MsgBase Constructor (open message base) */
-
-static JSBool
-js_msgbase_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
-{
-	char*		code;
-	JSString*	js_str;
-	private_t*	p;
-
-	if((p=(private_t*)malloc(sizeof(private_t)))==NULL) 
-		return(JS_FALSE);
-
-	memset(&(p->smb),0,sizeof(smb_t));
-	js_str = JS_ValueToString(cx, argv[0]);
-	code = JS_GetStringBytes(js_str);
-	if(stricmp(code,"mail")==0) {
-		p->smb.subnum=INVALID_SUB;
-		snprintf(p->smb.file,sizeof(p->smb.file),"%s%s",scfg->data_dir,"mail");
-	} else {
-		for(p->smb.subnum=0;p->smb.subnum<scfg->total_subs;p->smb.subnum++) {
-			if(!stricmp(scfg->sub[p->smb.subnum]->code,code))
-				break;
-		}
-		if(p->smb.subnum>=scfg->total_subs)	{ /* unknown code */
-			free(p);
-			return(JS_FALSE);
-		}
-		snprintf(p->smb.file,sizeof(p->smb.file),"%s%s"
-			,scfg->sub[p->smb.subnum]->data_dir,scfg->sub[p->smb.subnum]->code);
-	}
-
-	if(argc>1)
-		JS_ValueToInt32(cx,argv[1],(int32*)&(p->smb.retry_time));
-	else
-		p->smb.retry_time=scfg->smb_retry_time;
-
-	if(smb_open(&(p->smb))!=0)  {
-		free(p);
-		return(JS_FALSE);
-	}
-
-	p->debug=JS_FALSE;
-
-	if(!JS_SetPrivate(cx, obj, p)) {
-		free(p);
-		return(JS_FALSE);
-	}
-
-	if(JSVAL_IS_OBJECT(*rval) && p->smb.subnum!=INVALID_SUB)
-		js_CreateMsgAreaProperties(cx, JSVAL_TO_OBJECT(*rval), scfg->sub[p->smb.subnum]);
-
-	return(JS_TRUE);
-}
-
 /* Destructor */
 
 static void js_finalize_msgbase(JSContext *cx, JSObject *obj)
@@ -951,6 +897,26 @@ static struct JSPropertySpec js_msgbase_properties[] = {
 	{0}
 };
 
+#ifdef _DEBUG
+static char* msgbase_prop_desc[] = {
+
+	 "last occurred message base error - <small>READ ONLY</small>"
+	,"base path and filename of message base - <small>READ ONLY</small>"
+	,"<i>true</i> if debug output is enabled"
+	,"message base open/lock retry timeout (in seconds)"
+	,"first message number - <small>READ ONLY</small>"
+	,"last message number - <small>READ ONLY</small>"
+	,"total number of messages - <small>READ ONLY</small>"
+	,"maximum number of message CRCs to store (for dupe checking) - <small>READ ONLY</small>"
+	,"maximum number of messages before expiration - <small>READ ONLY</small>"
+	,"maximum age (in days) of messages to store - <small>READ ONLY</small>"
+	,"message base attributes - <small>READ ONLY</small>"
+	,"sub-board number (0-based, -1 for e-mail) - <small>READ ONLY</small>"
+	,NULL
+};
+#endif
+
+
 static JSClass js_msgbase_class = {
      "MsgBase"				/* name			*/
     ,JSCLASS_HAS_PRIVATE	/* flags		*/
@@ -964,16 +930,92 @@ static JSClass js_msgbase_class = {
 	,js_finalize_msgbase	/* finalize		*/
 };
 
-static JSFunctionSpec js_msgbase_functions[] = {
-	{"close",				js_close,				0},		/* close msgbase */
-	{"get_msg_header",		js_get_msg_header,		2},		/* get_msg_header(by_offset, number) */
-	{"put_msg_header",		js_put_msg_header,		2},		/* put_msg_header(by_offset, number, hdrObj) */
-	{"get_msg_body",		js_get_msg_body,		2},		/* get_msg_body(by_offset, number, [strip_ctrl_a]) */
-	{"get_msg_tail",		js_get_msg_tail,		2},		/* get_msg_body(by_offset, number, [strip_ctrl_a]) */
-	{"save_msg",			js_save_msg,			2},		/* save_msg(code, hdr, body) */
+static jsMethodSpec js_msgbase_functions[] = {
+	{"close",			js_close,			0, JSTYPE_BOOLEAN,	JSDOCSTR("boolean by_offset, number")
+	,JSDOCSTR("close message base")
+	},
+	{"get_msg_header",	js_get_msg_header,	2, JSTYPE_OBJECT,	JSDOCSTR("boolean by_offset, number")
+	,JSDOCSTR("retrieve a specific message header")
+	},
+	{"put_msg_header",	js_put_msg_header,	2, JSTYPE_BOOLEAN,	JSDOCSTR("boolean by_offset, number, object header")
+	,JSDOCSTR("write a message header")
+	},
+	{"get_msg_body",	js_get_msg_body,	2, JSTYPE_STRING,	JSDOCSTR("boolean by_offset, number [,boolean strip_ctrl_a]")
+	,JSDOCSTR("retrieve the body text of a specific message")
+	},
+	{"get_msg_tail",	js_get_msg_tail,	2, JSTYPE_STRING,	JSDOCSTR("boolean by_offset, number [,boolean strip_ctrl_a]")
+	,JSDOCSTR("retrieve the tail text of a specific message")
+	},
+	{"save_msg",		js_save_msg,		2, JSTYPE_BOOLEAN,	JSDOCSTR("object header, string body_text")
+	,JSDOCSTR("create a new message in message base")
+	},		/* save_msg(code, hdr, body) */
 	{0}
 };
 
+/* MsgBase Constructor (open message base) */
+
+static JSBool
+js_msgbase_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		code;
+	JSString*	js_str;
+	private_t*	p;
+
+	if((p=(private_t*)malloc(sizeof(private_t)))==NULL) 
+		return(JS_FALSE);
+
+	memset(&(p->smb),0,sizeof(smb_t));
+	js_str = JS_ValueToString(cx, argv[0]);
+	code = JS_GetStringBytes(js_str);
+	if(stricmp(code,"mail")==0) {
+		p->smb.subnum=INVALID_SUB;
+		snprintf(p->smb.file,sizeof(p->smb.file),"%s%s",scfg->data_dir,"mail");
+	} else {
+		for(p->smb.subnum=0;p->smb.subnum<scfg->total_subs;p->smb.subnum++) {
+			if(!stricmp(scfg->sub[p->smb.subnum]->code,code))
+				break;
+		}
+		if(p->smb.subnum>=scfg->total_subs)	{ /* unknown code */
+			free(p);
+			return(JS_FALSE);
+		}
+		snprintf(p->smb.file,sizeof(p->smb.file),"%s%s"
+			,scfg->sub[p->smb.subnum]->data_dir,scfg->sub[p->smb.subnum]->code);
+	}
+
+	if(argc>1)
+		JS_ValueToInt32(cx,argv[1],(int32*)&(p->smb.retry_time));
+	else
+		p->smb.retry_time=scfg->smb_retry_time;
+
+	if(smb_open(&(p->smb))!=0)  {
+		free(p);
+		return(JS_FALSE);
+	}
+
+	p->debug=JS_FALSE;
+
+	if(!JS_SetPrivate(cx, obj, p)) {
+		free(p);
+		return(JS_FALSE);
+	}
+
+	if(!js_DefineMethods(cx, obj, js_msgbase_functions))
+		return(JS_FALSE);
+
+	if(JSVAL_IS_OBJECT(*rval) && p->smb.subnum!=INVALID_SUB)
+		js_CreateMsgAreaProperties(cx, JSVAL_TO_OBJECT(*rval), scfg->sub[p->smb.subnum]);
+
+#ifdef _DEBUG
+	js_DescribeObject(cx,obj,"Class used for accessing message bases");
+	js_DescribeConstructor(cx,obj,"To create a new MsgBase object: "
+		"<tt>var msgbase = new MsgBase('<i>code</i>')</tt><br>"
+		"where <i>code</i> is a sub-board internal code, or <tt>mail</tt> for the e-mail message base");
+	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", msgbase_prop_desc, JSPROP_READONLY);
+#endif
+
+	return(JS_TRUE);
+}
 
 JSObject* DLLCALL js_CreateMsgBaseClass(JSContext* cx, JSObject* parent, scfg_t* cfg)
 {
@@ -985,7 +1027,7 @@ JSObject* DLLCALL js_CreateMsgBaseClass(JSContext* cx, JSObject* parent, scfg_t*
 		,js_msgbase_constructor
 		,1	/* number of constructor args */
 		,js_msgbase_properties
-		,js_msgbase_functions
+		,NULL //js_msgbase_functions
 		,NULL,NULL);
 
 	return(obj);
