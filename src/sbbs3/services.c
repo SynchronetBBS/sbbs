@@ -1716,7 +1716,7 @@ void DLLCALL services_thread(void* arg)
 
 			if(startup->seteuid!=NULL)
 				startup->seteuid(FALSE);
-			result=bind(socket, (struct sockaddr *) &addr, sizeof(addr));
+			result=retry_bind(socket, (struct sockaddr *) &addr, sizeof(addr),startup->bind_retry_count,startup->bind_retry_delay,lprintf);
 			if(startup->seteuid!=NULL)
 				startup->seteuid(TRUE);
 			if(result!=0) {

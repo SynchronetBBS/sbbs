@@ -4101,7 +4101,7 @@ void DLLCALL mail_server(void* arg)
 
 		if(startup->seteuid!=NULL)
 			startup->seteuid(FALSE);
-		result = bind(server_socket,(struct sockaddr *)&server_addr,sizeof(server_addr));
+		result = retry_bind(server_socket,(struct sockaddr *)&server_addr,sizeof(server_addr),startup->bind_retry_count,startup->bind_retry_delay,lprintf);
 		if(startup->seteuid!=NULL)
 			startup->seteuid(TRUE);
 		if(result != 0) {
@@ -4149,7 +4149,7 @@ void DLLCALL mail_server(void* arg)
 
 			if(startup->seteuid!=NULL)
 				startup->seteuid(FALSE);
-			result = bind(pop3_socket,(struct sockaddr *)&server_addr,sizeof(server_addr));
+			result = retry_bind(pop3_socket,(struct sockaddr *)&server_addr,sizeof(server_addr),startup->bind_retry_count,startup->bind_retry_delay,lprintf);
 			if(startup->seteuid!=NULL)
 				startup->seteuid(TRUE);
 			if(result != 0) {
