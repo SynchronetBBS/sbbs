@@ -26,20 +26,14 @@ A. Should work with any GNU/Linux-x86 distribution (e.g. RedHat, Mandrake,
    Debian, Slackware, etc.).
 
 Q. Linking error: undefined reference: '__ctype_b'
-A: There are currently issues linking the provided Mozilla libraries for Linux
+A: This is an issue linking the provided Mozilla libraries for Linux
    (libjs.a and libnspr4.lib) on RedHat Linux 9 and Mandrake Linux 9 using
    glibc v2.3.2-11+.
  
-   We are working on resolving this issue permanently, but in the mean-time, 
-   there are currently two available work-arounds:
-
-   1. Download and extract ftp://ftp.synchro.net/lib-linux-rh9.tgz for
-      RH9-compatible versions of the Mozilla libraries.
-
-   or:
-
-   2. Build the Mozilla libraries from source,
-      see http://mannsoft.ca/howtos.php for detailed instructions.
+   This issue has been resolved with the addition of libjs.so and libnspr4.so
+   to the CVS repository (in the lib/mozilla directory). If you're having this
+   problem, run "cvs update" in your lib and src/sbbs3 directories and
+   rebuild.
 
 Q. Are non-x86 (Alpha, SPARC, 68k, PowerPC, etc) processors supported?
 A. Not currently. Synchronet assumes a little-endian processor. It *may* work
@@ -281,7 +275,7 @@ Default Configuration (SCFG) Screen-shots
 
 [Viewable File Type]
 1: File Extension        zip
-2: Command Line          unzip -l %s
+2: Command Line          unzip -C -l %s
 3: Access Requirements   UNIX
 
 [Testable File Type]
@@ -292,7 +286,7 @@ Default Configuration (SCFG) Screen-shots
 
 [Extractable File Type]
 1: File Extension        zip
-2: Command Line          unzip -o -j %f %s -d %g
+2: Command Line          unzip -C -o -j %f %s -d %g
 3: Access Requirements   UNIX
 
 [Compressable File Type]
