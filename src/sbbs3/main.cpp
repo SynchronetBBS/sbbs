@@ -273,7 +273,7 @@ static const char* method_array_name = "_method_list";
  * Keep this in sync with jspubtd.h -- an assertion below will insist that
  * its length match the JSType enum's JSTYPE_LIMIT limit value.
  */
-const char *js_type_str[] = {
+static const char *js_type_str[] = {
     "undefined",
     "object",
     "function",
