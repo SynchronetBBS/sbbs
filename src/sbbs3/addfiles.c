@@ -635,6 +635,8 @@ int main(int argc, char **argv)
 		exit(1); 
 	}
 
+	memset(&scfg,0,sizeof(scfg));
+	scfg.size=sizeof(scfg);
 	SAFECOPY(scfg.ctrl_dir,p);
 	printf("Reading configuration files from %s\n",scfg.ctrl_dir);
 	if(!load_cfg(&scfg,NULL,TRUE,error)) {
