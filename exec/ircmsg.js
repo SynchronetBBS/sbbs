@@ -55,6 +55,7 @@ while(!done) {
 	while(!done && (response=my_server.recvline())) {
 		var resp=response.split(/\s+/);
 		if(resp[1]=='433') {
+			log(response);
 			/* Nick in use... */
 			nick+='_';
 			log("Using nick: " + nick);
@@ -62,7 +63,7 @@ while(!done) {
 		}
 		if(resp[1]=='422' || resp[1]=='376')
 			done=1;
-		log(response);
+		//log(response);
 	}
 	if(!my_server.is_connected) {
 		alert("Disconnected");
@@ -86,6 +87,8 @@ while(my_server.poll(0) && (response=my_server.recvline()))
 	log(response);
 
 IRC_quit(my_server);
+log("Exiting");
+exit();
 
 function send(msg)
 {
