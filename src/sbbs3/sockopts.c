@@ -76,17 +76,17 @@ int DLLCALL sockopt(char* str)
 
 int DLLCALL set_socket_options(scfg_t* cfg, SOCKET sock, char* error)
 {
-	char	cfgfile[MAX_PATH+1];
-	char	str[256];
-	char*	p;
-	BYTE*	vp;
-	FILE*	fp;
-	int		option;
-	int		value;
-	int		len;
-	int		type;
-	int		result=0;
-	LINGER	linger;
+	char		cfgfile[MAX_PATH+1];
+	char		str[256];
+	char*		p;
+	BYTE*		vp;
+	FILE*		fp;
+	int			option;
+	int			value;
+	int			type;
+	int			result=0;
+	LINGER		linger;
+	socklen_t	len;
 
 	/* Set user defined socket options */
 	sprintf(cfgfile,"%ssockopts.cfg",cfg->ctrl_dir);
