@@ -213,6 +213,10 @@ int fixsmb(char* sub)
 			msg.offset=n;
 			if(renumber)
 				msg.hdr.number=n+1;
+			if(msg.hdr.netattr&MSG_INTRANSIT) {
+				printf("Removing 'in transit' attribute\n");
+				msg.hdr.netattr&=~MSG_INTRANSIT;
+			}
 			msg.idx.number=msg.hdr.number;
 			msg.idx.attr=msg.hdr.attr;
 			msg.idx.time=msg.hdr.when_imported.time;
