@@ -12,6 +12,7 @@ const REVISION = "$Revision$".split(' ')[1];
 
 printf("Synchronet Binary Decoder %s session started\r\n", REVISION);
 
+expire_parts=10;		/* after x days */
 lines_per_yield=10;
 yield_length=1;
 completed_files=0;
@@ -74,26 +75,6 @@ for(i in sub) {
 
 	/* save for later */
 	msg_area.sub[sub[i].code].attachment_dir=attachment_dir;
-
-	/* Read MD5 list */
-	md5_fname=attachment_dir + "md5.lst";
-	md5_list=new Array();
-	md5_file=new File(md5_fname);
-	if(md5_file.open("r")) {
-		md5_list=md5_file.readAll();
-		md5_file.close();
-	}
-	md5_list_length=md5_list.length;
-
-	/* Read CRC-32 list */
-	crc_fname=attachment_dir + "crc32.lst";
-	crc_list=new Array();
-	crc_file=new File(crc_fname);
-	if(crc_file.open("r")) {
-		crc_list=crc_file.readAll();
-		crc_file.close();
-	}
-	crc_list_length=crc_list.length;
 
 	/* Read parts database */
 	parts_fname=attachment_dir + "parts.db";
@@ -246,11 +227,9 @@ for(i in sub) {
 				}
 
 				if(crc32!=undefined) {
-					for(ci=0;ci<crc_list.length;ci++)
-						if(parseInt(crc_list[ci],16)==crc32)
-							break;
-					if(ci<crc_list.length) {
-						printf("Duplicate CRC-32 found: %s\r\n",crc_list[ci]);
+					str=duplicate_crc(crc32);
+					if(str) {
+						printf("Duplicate CRC-32 found: %s\r\n",str);
 						continue;
 					}
 				}
@@ -263,7 +242,7 @@ for(i in sub) {
 						,fname,"yenc" /* codec */
 						,part,total,first_line,li-1 /* last_line */
 						,begin,end,part_crc32,size,crc32)
-						&& console!=undefined)
+						&& this.console!=undefined)
 						console.pause();
 					continue;
 				}
@@ -339,6 +318,9 @@ for(i in sub) {
 				continue;
 			}
 
+			if(li>=100 && !file.yenc && !file.uue)
+				break;
+
 		} /* for(li in lines) */
 
 		if(file.is_open && file.uue) {
@@ -347,7 +329,7 @@ for(i in sub) {
 				,fname,"uue" /* codec */
 				,part,undefined
 				,first_line,li-1 /* last_line */
-				) && console!=undefined)
+				) && this.console!=undefined)
 				console.pause();
 		}
 
@@ -364,24 +346,6 @@ for(i in sub) {
 	delete ptr_file;
 	delete msgbase;
 
-	/* Save Attachment MD5 history */
-	if(md5_list.length!=md5_list_length) {
-		printf("Saving MD5 history (%lu files)\r\n",md5_list.length);
-		if(md5_file.open("w")) {
-			md5_file.writeAll(md5_list);
-			md5_file.close();
-		}
-	}
-
-	/* Save Attachment CRC-32 history */
-	if(crc_list.length!=crc_list_length) {
-		printf("Saving CRC-32 History (%lu files)\r\n",crc_list.length);
-		if(crc_file.open("w")) {
-			crc_file.writeAll(crc_list);
-			crc_file.close();
-		}
-	}
-
 	if(parts_list_modified==true) {
 
 		/* Combine and decode parts */
@@ -393,6 +357,14 @@ for(i in sub) {
 		parts_file.open("w");
 		for(o in parts_list) {
 			obj=parts_list[o];
+			age=time()-parseInt(obj.updated_time,16);
+			age/=(24*60*60);
+			if(age >= expire_parts) {
+				print("Purging expired incomplete file: " + obj.name);
+				print("Last updated: " + obj.updated);
+				print("Collected " +obj.parts+ " of " +obj.total+ " parts");
+				continue;
+			}
 			parts_file.writeln("[" + obj.name + "]");
 			for(prop in obj)
 				parts_file.printf("%-20s=%s\n"
@@ -419,6 +391,8 @@ exit();	/* all done */
 function compare_subject(subj1, subj2)
 {
 	part=subj1.lastIndexOf('(');
+	if(part<0)
+		part=subj1.lastIndexOf('[');
 	if(part<0)
 		return(0);
 
@@ -466,6 +440,8 @@ function add_part(list,sub_code,hdr
 {
 	if(part<1) {		/* must parse from subject (yuck) */
 		part=hdr.subject.lastIndexOf('(');
+		if(part<0)
+			part=hdr.subject.lastIndexOf('[');
 		if(part>=0)
 			part=parseInt(hdr.subject.slice(part+1),10);
 		if(part<1) {
@@ -476,6 +452,8 @@ function add_part(list,sub_code,hdr
 	}
 	if(total==undefined || total<part) {	/* must parse from subject (yuck) */
 		total=hdr.subject.lastIndexOf('(');
+		if(total<0)
+			total=hdr.subject.lastIndexOf('[');
 		if(total>=0) {
 			subject=hdr.subject.slice(total+1);
 			total=subject.indexOf('/');
@@ -591,7 +569,7 @@ function part_exists(list,fname,size,part,total)
 /****************************************************************************/
 /* Combine parts for complete files											*/
 /****************************************************************************/
-function combine_parts(list,attachment_dir)
+function combine_parts(list)
 {
 	var li;
 	for(li=0; li<list.length; li++) {
@@ -680,6 +658,77 @@ function combine_parts(list,attachment_dir)
 	}
 }
 
+/* Search for duplicate MD5 digest */
+function duplicate_md5(md5)
+{
+	print("Searching for duplicate file (via MD5 digest)");
+	var md5_file=new File(attachment_dir + "md5.lst");
+	if(!md5_file.open("r"))
+		return(null);
+
+	var duplicate=false;
+	var str;
+	while(!md5_file.eof && !duplicate) {
+		str=md5_file.readln();
+		if(str==null)
+			break;
+		if(str.substr(0,32)==md5)
+			duplicate=true;
+	}
+	md5_file.close();
+	return(str);
+}
+
+/* Append MD5 to history file */
+function save_md5(md5)
+{
+	print("Adding MD5 digest to history file");
+	var md5_file=new File(attachment_dir + "md5.lst");
+	if(!md5_file.open("a")) {
+		printf("!ERROR %d (%s) creating/appending %s\r\n"
+			,errno, errno_str, md5_file.name);
+		return;
+	}
+	md5_file.printf("%s\n",md5);
+	md5_file.close();
+}
+
+/* Search for duplicate CRC-32 */
+function duplicate_crc(crc)
+{
+	print("Searching for duplicate file (via CRC-32)");
+	var file=new File(attachment_dir + "crc32.lst");
+	if(!file.open("r"))
+		return(null);
+
+	var duplicate=false;
+	var str;
+	while(!file.eof && !duplicate) {
+		str=file.readln();
+		if(str==null)
+			break;
+		if(parseInt(str,16)==crc)
+			duplicate=true;
+	}
+	file.close();
+	return(str);
+}
+
+/* Append CRC-32 to history file */
+function save_crc(crc)
+{
+	print("Adding CRC-32 to history file");
+	var file=new File(attachment_dir + "crc32.lst");
+	if(!file.open("a")) {
+		printf("!ERROR %d (%s) creating/appending %s\r\n"
+			,errno, errno_str, file.name);
+		return;
+	}
+	file.printf("%s\n",crc);
+	file.close();
+}
+
+
 /***********************************************************************************/
 /* When a file is completely decoded, verifies uniqueness and copies to output dir */
 /***********************************************************************************/
@@ -693,23 +742,19 @@ function complete_file(file, fname, attachment_dir)
 	crc32=file.crc32;
 	file.close();
 
-	for(mi=0;mi<md5_list.length;mi++)
-		if(md5_list[mi].substr(0,32)==md5)
-			break;
-	if(mi<md5_list.length) {
-		printf("Duplicate MD5 digest found: %s\r\n",md5_list[mi]);
+	var str=duplicate_md5(md5);
+	if(str) {
+		printf("Duplicate MD5 digest found: %s\r\n",str);
 		return(false);
 	}
-	md5_list.push(format("%s %s",md5,fname));
+	save_md5(format("%s %s",md5,fname));
 
-	for(ci=0;ci<crc_list.length;ci++)
-		if(parseInt(crc_list[ci],16)==crc32)
-			break;
-	if(ci<crc_list.length) {
-		printf("Duplicate CRC-32 found: %s\r\n",crc_list[ci]);
+	str=duplicate_crc(crc32);
+	if(str) {
+		printf("Duplicate CRC-32 found: %s\r\n",str);
 		return(false);
 	}
-	crc_list.push(format("%08lx %s",crc32,fname));
+	save_crc(format("%08lx %s",crc32,fname));
 
 	new_fname=fname;
 	file_num=0;
