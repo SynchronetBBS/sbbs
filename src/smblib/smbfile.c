@@ -35,9 +35,7 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#include <time.h>
 #include "smblib.h"
-#include "genwrap.h"
 
 int SMBCALL smb_feof(FILE* fp)
 {

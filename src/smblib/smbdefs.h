@@ -38,8 +38,16 @@
 #ifndef _SMBDEFS_H
 #define _SMBDEFS_H
 
+/* ANSI headers */
 #include <stdio.h>
+#include <time.h>
+
+/* XPDEV headers */
+#include "genwrap.h"	/* truncsp() and get_errno() */
 #include "dirwrap.h"	/* MAX_PATH */
+#include "filewrap.h"	/* SH_DENYRW */
+
+/* SMBLIB Headers */
 #include "md5.h"		/* MD5_DIGEST_SIZE */
 
 /**********/
