@@ -94,6 +94,7 @@ int SMBCALL smb_open(smb_t* smb)
 	if(!smb->retry_time)
 		smb->retry_time=10;
 	smb->shd_fp=smb->sdt_fp=smb->sid_fp=NULL;
+	smb->last_error[0]=0;
 	sprintf(str,"%s.shd",smb->file);
 	if((file=sopen(str,O_RDWR|O_CREAT|O_BINARY,SH_DENYNO))==-1
 		|| (smb->shd_fp=fdopen(file,"r+b"))==NULL) {
