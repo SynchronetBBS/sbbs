@@ -834,7 +834,7 @@ int main(int argc, char** argv)
 		,PLATFORM_DESC,VERSION,REVISION,COPYRIGHT_NOTICE);
 
 	ctrl_dir=getenv("SBBSCTRL");	/* read from environment variable */
-	if(ctrl_dir==NULL)
+	if(ctrl_dir==NULL || ctrl_dir[0]==0)
 		ctrl_dir="/sbbs/ctrl";		/* Not set? Use default */
 
 	if(!winsock_startup())
@@ -1333,7 +1333,7 @@ int main(int argc, char** argv)
 
 	/* Read in configuration files */
     memset(&scfg,0,sizeof(scfg));
-    SAFECOPY(scfg.ctrl_dir,ctrl_dir);
+    SAFECOPY(scfg.ctrl_dir,bbs_startup.ctrl_dir);
     scfg.size=sizeof(scfg);
 	SAFECOPY(error,UNKNOWN_LOAD_ERROR);
 	sprintf(str,"Loading configuration files from %s", scfg.ctrl_dir);
