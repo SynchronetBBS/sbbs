@@ -2,13 +2,14 @@
 <!-- C++Builder XML Project -->
 <PROJECT>
   <MACROS>
-    <VERSION value="BCB.05.03"/>
+    <VERSION value="BCB.06.00"/>
     <PROJECT value="scfg.exe"/>
     <OBJFILES value="scfg.obj scfgxtrn.obj scfgmsg.obj scfgnet.obj scfgnode.obj scfgsub.obj 
       scfgsys.obj scfgxfr1.obj scfgxfr2.obj scfgchat.obj ..\..\uifc\uifc.obj 
-      ..\scfgsave.obj ..\scfglib1.obj ..\smblib.obj ..\scfglib2.obj 
-      ..\smbwrap.obj ..\ars.obj ..\load_cfg.obj ..\misc.obj ..\crc32.obj 
-      ..\userdat.obj ..\date_str.obj"/>
+      ..\scfgsave.obj ..\scfglib1.obj ..\smblib.obj ..\scfglib2.obj ..\ars.obj 
+      ..\load_cfg.obj ..\crc32.obj ..\userdat.obj ..\date_str.obj 
+      ..\..\uifc\uifcx.obj ..\..\xpdev\genwrap.obj ..\..\xpdev\filewrap.obj 
+      ..\..\xpdev\dirwrap.obj ..\str_util.obj ..\nopen.obj"/>
     <RESFILES value=""/>
     <IDLFILES value=""/>
     <IDLGENFILES value=""/>
@@ -17,40 +18,74 @@
     <LIBFILES value=""/>
     <LIBRARIES value=""/>
     <SPARELIBS value=""/>
-    <PACKAGES value="Vcl50.bpi Vclx50.bpi bcbsmp50.bpi Vcldb50.bpi vclado50.bpi ibsmp50.bpi 
-      VCLBDE50.bpi vcldbx50.bpi Qrpt50.bpi TeeUI50.bpi TeeDB50.bpi Tee50.bpi 
-      Dss50.bpi TeeQR50.bpi VCLIB50.bpi Vclmid50.bpi vclie50.bpi Inetdb50.bpi 
-      Inet50.bpi NMFast50.bpi webmid50.bpi bcbie50.bpi dclocx50.bpi 
-      bcb2kaxserver50.bpi"/>
-    <PATHCPP value=".;..\..\uifc;.."/>
+    <PACKAGES value="rtl.bpi vcl.bpi vclx.bpi bcbsmp.bpi dbrtl.bpi vcldb.bpi adortl.bpi 
+      ibsmp.bpi bdertl.bpi vcldbx.bpi qrpt.bpi teeui.bpi teedb.bpi tee.bpi 
+      dss.bpi teeqr.bpi ibxpress.bpi dsnap.bpi vclie.bpi inetdb.bpi inet.bpi 
+      nmfast.bpi webdsnap.bpi bcbie.bpi dclocx.bpi bcb2kaxserver.bpi"/>
+    <PATHCPP value=".;..\..\uifc;..;..;..;..;..;..;..;..;..;..\..\uifc;..\..\xpdev;..\..\xpdev;..\..\xpdev;..;.."/>
     <PATHPAS value=".;"/>
     <PATHRC value=".;"/>
     <PATHASM value=".;"/>
     <DEBUGLIBPATH value="$(BCB)\lib\debug"/>
     <RELEASELIBPATH value="$(BCB)\lib\release"/>
-    <LINKER value="tlink32"/>
+    <LINKER value="ilink32"/>
     <USERDEFINES value="_DEBUG"/>
     <SYSDEFINES value="NO_STRICT;_NO_VCL;USEPACKAGES"/>
     <MAINSOURCE value="scfg.bpf"/>
-    <INCLUDEPATH value="..\;..;$(BCB)\include;$(BCB)\include\vcl;..\..\uifc;..\..\spawno"/>
-    <LIBPATH value="..\;..;..\..\uifc;$(BCB)\lib\obj;$(BCB)\lib"/>
+    <INCLUDEPATH value="..\;..;$(BCB)\include;$(BCB)\include\vcl;..\..\uifc;..\..\xpdev"/>
+    <LIBPATH value="..\..\xpdev;..\;..;..\..\uifc;$(BCB)\lib\obj;$(BCB)\lib"/>
     <WARNINGS value="-w-8065 -w-8064 -w-par -w-csu"/>
+    <OTHERFILES value=""/>
   </MACROS>
   <OPTIONS>
     <IDLCFLAGS value="-src_suffix cpp -D_DEBUG -I..\. -I.. -I$(BCB)\include -I$(BCB)\include\vcl 
-      -I..\..\uifc -I..\..\spawno -boa"/>
-    <CFLAG1 value="-Od -H=$(BCB)\lib\vcl50.csm -Hc -Vx -Ve -X- -r- -a8 -b- -k -y -v -vi- -tWC 
-      -tWM- -c"/>
-    <PFLAGS value="-$YD -$W -$O- -v -JPHNE -M"/>
+      -I..\..\uifc -I..\..\xpdev -boa"/>
+    <CFLAG1 value="-Od -H=c:\borland\CBUILD~2\lib\vcl60.csm -Hc -Vx -Ve -X- -r- -a8 -b- -k -y 
+      -v -vi- -tWC -tWM- -c"/>
+    <PFLAGS value="-$YD -$W -$O- -$A8 -v -JPHNE -M"/>
     <RFLAGS value=""/>
     <AFLAGS value="/mx /w2 /zd"/>
     <LFLAGS value="-D&quot;&quot; -ap -Tpe -x -Gn -v"/>
+    <OTHERFILES value=""/>
   </OPTIONS>
   <LINKER>
     <ALLOBJ value="c0x32.obj $(PACKAGES) $(OBJFILES)"/>
     <ALLRES value="$(RESFILES)"/>
     <ALLLIB value="$(LIBFILES) $(LIBRARIES) import32.lib cw32.lib"/>
+    <OTHERFILES value=""/>
   </LINKER>
+  <FILELIST>
+      <FILE FILENAME="scfg.bpf" FORMNAME="" UNITNAME="scfg" CONTAINERID="BPF" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="scfg.c" FORMNAME="" UNITNAME="scfg" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="scfgxtrn.c" FORMNAME="" UNITNAME="scfgxtrn" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="scfgmsg.c" FORMNAME="" UNITNAME="scfgmsg" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="scfgnet.c" FORMNAME="" UNITNAME="scfgnet" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="scfgnode.c" FORMNAME="" UNITNAME="scfgnode" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="scfgsub.c" FORMNAME="" UNITNAME="scfgsub" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="scfgsys.c" FORMNAME="" UNITNAME="scfgsys" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="scfgxfr1.c" FORMNAME="" UNITNAME="scfgxfr1" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="scfgxfr2.c" FORMNAME="" UNITNAME="scfgxfr2" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="scfgchat.c" FORMNAME="" UNITNAME="scfgchat" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\..\uifc\uifc.c" FORMNAME="" UNITNAME="uifc" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\scfgsave.c" FORMNAME="" UNITNAME="scfgsave" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\scfglib1.c" FORMNAME="" UNITNAME="scfglib1" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\smblib.c" FORMNAME="" UNITNAME="smblib" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\scfglib2.c" FORMNAME="" UNITNAME="scfglib2" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\ars.c" FORMNAME="" UNITNAME="ars" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\load_cfg.c" FORMNAME="" UNITNAME="load_cfg" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\crc32.c" FORMNAME="" UNITNAME="crc32" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\userdat.c" FORMNAME="" UNITNAME="userdat" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\date_str.c" FORMNAME="" UNITNAME="date_str" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\..\uifc\uifcx.c" FORMNAME="" UNITNAME="uifcx" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\..\xpdev\genwrap.c" FORMNAME="" UNITNAME="genwrap.c" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\..\xpdev\filewrap.c" FORMNAME="" UNITNAME="filewrap.c" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\..\xpdev\dirwrap.c" FORMNAME="" UNITNAME="dirwrap.c" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\str_util.c" FORMNAME="" UNITNAME="str_util" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\nopen.c" FORMNAME="" UNITNAME="nopen" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+  </FILELIST>
+  <BUILDTOOLS>
+  </BUILDTOOLS>
+
   <IDEOPTIONS>
 [Version Info]
 IncludeVerInfo=0
@@ -80,13 +115,14 @@ ProductVersion=1.0.0.0
 Comments=
 
 [HistoryLists\hlIncludePath]
-Count=6
-Item0=..\;..;$(BCB)\include;$(BCB)\include\vcl;..\..\uifc;..\..\spawno
-Item1=..\;$(BCB)\include;$(BCB)\include\vcl;..;..\..\uifc;..\..\spawno
-Item2=$(BCB)\include;$(BCB)\include\vcl;..;..\..\uifc;..\..\spawno
-Item3=$(BCB)\include;$(BCB)\include\vcl;..;..\..\uifc
-Item4=$(BCB)\include;$(BCB)\include\vcl;..\..\uifc
-Item5=$(BCB)\include;$(BCB)\include\vcl
+Count=7
+Item0=..\;..;$(BCB)\include;$(BCB)\include\vcl;..\..\uifc;..\..\xpdev
+Item1=..\;..;$(BCB)\include;$(BCB)\include\vcl;..\..\uifc;..\..\spawno
+Item2=..\;$(BCB)\include;$(BCB)\include\vcl;..;..\..\uifc;..\..\spawno
+Item3=$(BCB)\include;$(BCB)\include\vcl;..;..\..\uifc;..\..\spawno
+Item4=$(BCB)\include;$(BCB)\include\vcl;..;..\..\uifc
+Item5=$(BCB)\include;$(BCB)\include\vcl;..\..\uifc
+Item6=$(BCB)\include;$(BCB)\include\vcl
 
 [HistoryLists\hlLibraryPath]
 Count=3
@@ -107,10 +143,15 @@ Item1=_DEBUG;JAVASCRIPT
 DebugSourceDirs=$(BCB)\source\vcl
 
 [Parameters]
-RunParams=c:\sbbs\ctrl
+RunParams=-l25 s:\sbbs\ctrl
+Launcher=
+UseLauncher=0
+DebugCWD=
 HostApplication=
 RemoteHost=
 RemotePath=
+RemoteLauncher=
+RemoteCWD=
 RemoteDebug=0
 
 [Compiler]
@@ -122,5 +163,10 @@ LinkCGLIB=0
 AddServerUnit=1
 AddClientUnit=1
 PrecompiledHeaders=1
+
+[Language]
+ActiveLang=
+ProjectLang=
+RootDir=
   </IDEOPTIONS>
 </PROJECT>

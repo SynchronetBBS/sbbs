@@ -1,28 +1,3 @@
-USEUNIT("scfg.c");
-USEUNIT("scfgxtrn.c");
-USEUNIT("scfgmsg.c");
-USEUNIT("scfgnet.c");
-USEUNIT("scfgnode.c");
-USEUNIT("scfgsub.c");
-USEUNIT("scfgsys.c");
-USEUNIT("scfgxfr1.c");
-USEUNIT("scfgxfr2.c");
-USEUNIT("scfgchat.c");
-USEUNIT("..\..\uifc\uifc.c");
-USEUNIT("..\scfgsave.c");
-USEUNIT("..\scfglib1.c");
-USEUNIT("..\smblib.c");
-USEUNIT("..\scfglib2.c");
-USEUNIT("..\smbwrap.c");
-USEUNIT("..\ars.c");
-USEUNIT("..\load_cfg.c");
-USEUNIT("..\misc.c");
-USEUNIT("..\crc32.c");
-USEUNIT("..\userdat.c");
-USEUNIT("..\date_str.c");
-USEUNIT("..\..\uifc\uifcx.c");
-USEUNIT("..\wrappers.c");
-//---------------------------------------------------------------------------
 This file is used by the project manager only and should be treated like the project file
 
 main
