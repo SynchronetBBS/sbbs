@@ -1,8 +1,8 @@
 /* SBBSLIST.C */
 
-/* Developed 1990-1997 by Rob Swindell; PO Box 501, Yorba Linda, CA 92885 */
+/* Developed 1990-2003 by Rob Swindell; PO Box 501, Yorba Linda, CA 92885 */
 
-/* Converts Synchronet BBS List (SBL.DAB) to text file */
+/* Converts Synchronet BBS List (SBL.DAB) to HTML file */
 
 #include "xsdk.h"
 #include "telnet.h"
@@ -125,6 +125,16 @@ char *unixtodstr(time_t unix, char *str)
 	return(str);
 }
 
+char* html_encode(char *src)
+{
+	static char	buf[1024];
+	int i;
+
+	for(i=0;*src;src++)
+		i+=sprintf(buf+i,"&#%u;",*src);
+
+	return(buf);
+}
 
 void long_bbs_info(FILE *out, bbs_t bbs)
 {
@@ -426,7 +436,8 @@ BOOL check_imsg_support(ulong ip_addr)
 int main(int argc, char **argv)
 {
 	char	str[128],name[128],*location,nodes[32],*sysop;
-	char	sysop_email[128];
+	char*	mail_to = "&#109;&#97;&#105;&#108;&#116;&#111;&#58;";	/* encoded "mailto:" */
+	char	sysop_email[1024];
 	char	buf[256];
 	char	verify_result[128];
 	char	version[128];
@@ -603,8 +614,9 @@ int main(int argc, char **argv)
 		total_attempts++;
 		for(i=0;i<bbs.total_numbers && i<MAX_NUMBERS;i++) {
 			if(!i) {
-				if(bbs.sysop_email[0]) {
-					sprintf(sysop_email,"<A HREF=mailto:%s>%s</A>",bbs.sysop_email,bbs.sysop[0]);
+				if(strchr(bbs.sysop_email,'@')) {
+					sprintf(sysop_email,"<A HREF=%s%s>%s</A>"
+						,mail_to,html_encode(bbs.sysop_email),bbs.sysop[0]);
 					sysop=sysop_email;
 				} else
 					sysop=bbs.sysop[0];
@@ -760,7 +772,10 @@ int main(int argc, char **argv)
 							}
 							/* Check Finger */
 							if(!fingered) {	/* not already checked */
-								if(check_imsg_support(ip_addr)) {
+								for(ip=0;ip<ip_total;ip++)
+									if(ip_addr==ip_list[ip])
+										break;
+								if(ip>=ip_total && check_imsg_support(ip_addr)) {
 									fingered=TRUE;
 									printf("[IM]");
 									fprintf(ibbs,"%-63s %s\n"
@@ -847,7 +862,8 @@ int main(int argc, char **argv)
 
 		if(strchr(bbs.sysop_email,'@')) {
 			fprintf(mail,"%s\n",bbs.sysop_email);
-			sprintf(sysop_email,"<A HREF=mailto:%s>%s</A>",bbs.sysop_email,bbs.sysop[0]);
+			sprintf(sysop_email,"<A HREF=%s%s>%s</A>"
+				,mail_to,html_encode(bbs.sysop_email),bbs.sysop[0]);
 			sysop=sysop_email;
 		} else
 			sysop=bbs.sysop[0];
