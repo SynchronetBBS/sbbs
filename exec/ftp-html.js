@@ -45,10 +45,10 @@ writeln("<html>");
 writeln("<head>");
 writeln("<title>");
 writeln(title);
-if (curdir.name!=undefined)
-	write(" - " + curdir.name);
-else if(curlib.description!=undefined)
-	write(" - " + curlib.description);
+if (ftp.curdir.name!=undefined)
+	write(" - " + ftp.curdir.name);
+else if(ftp.curlib.description!=undefined)
+	write(" - " + ftp.curlib.description);
 writeln("</title>");
 
 /* META TAGS */
@@ -117,7 +117,7 @@ if(!(user.security.restrictions&UFLAG_G)) {	/* !Guest or Anonymous */
 	if(user.security.exemptions&UFLAG_T)
 		writeln("Exempt");
 	else
-		writeln(secstr(user.time_left));
+		writeln(secstr(ftp.time_left));
 	writeln("</table>");
 
 	/* User Stats */
@@ -134,7 +134,7 @@ if(!(user.security.restrictions&UFLAG_G)) {	/* !Guest or Anonymous */
 		,user.stats.files_downloaded));
 	writeln("</table>");
 	writeln("<br>");
-} else if(curlib.name==undefined) {	/* Login */
+} else if(ftp.curlib.name==undefined) {	/* Login */
 	writeln("<table align=right>");
 	writeln("<td><input type=button value='New User' onClick='location=\"telnet://" 
 		+ system.inetaddr + "\";'>");
@@ -169,20 +169,20 @@ if(!(user.security.restrictions&UFLAG_G)) {	/* !Guest or Anonymous */
 
 /* Virtual Path */
 writeln("<h3>" + hdr_font + "Path: ");
-if(curlib.name==undefined) 
+if(ftp.curlib.name==undefined) 
 	writeln(dat_font + "Root");
 else
 	writeln("Root".link(format("/%s?$%s",html_index_file,time_stamp)));
-if(curlib.name!=undefined) {
-	if(curdir.name==undefined)
-		writeln(" / " + dat_font + curlib.description);
+if(ftp.curlib.name!=undefined) {
+	if(ftp.curdir.name==undefined)
+		writeln(" / " + dat_font + ftp.curlib.description);
 	else
-		writeln(" / " + curlib.description.link(format("/%s/%s?$%s"
-			,curlib.name,html_index_file,time_stamp)));
+		writeln(" / " + ftp.curlib.description.link(format("/%s/%s?$%s"
+			,ftp.curlib.name,html_index_file,time_stamp)));
 }		
-if(curdir.name!=undefined) 
-	writeln(" / " + dat_font + curdir.description);
-if(curdir.settings!=undefined && curdir.settings&DIR_FREE)
+if(ftp.curdir.name!=undefined) 
+	writeln(" / " + dat_font + ftp.curdir.description);
+if(ftp.curdir.settings!=undefined && ftp.curdir.settings&DIR_FREE)
 	write(hdr_font+" - FREE");
 writeln("</h3>");
 
@@ -194,7 +194,7 @@ var dat_font=format("<font size=%d>",font_size);
 var cell_spacing=""; //"cellspacing=2 cellpadding=2";
 
 /* Directory Listing */
-if(dir_list.length) {
+if(ftp.dir_list.length) {
 
 	writeln("<table " + cell_spacing + " width=33%>");
 	writeln(font_face);
@@ -203,36 +203,36 @@ if(dir_list.length) {
 	writeln("<thead>");
 	writeln("<tr bgcolor=" + hdr_background + ">");
 	writeln("<th>" + hdr_font + "Directory");
-	if(curlib.name!=undefined) 
+	if(ftp.curlib.name!=undefined) 
 		writeln("<th>" + hdr_font + "Files");
 	writeln("</thead>");
 
 	/* body */
 	writeln("<tbody>");
-	for(i in dir_list) {
+	for(i in ftp.dir_list) {
 		writeln("<tr>");
 	
 		/* filename */
 		writeln("<th nowrap align=left>" + dat_font 
-			+ dir_list[i].description.link(dir_list[i].link + "?$" + time_stamp));
+			+ ftp.dir_list[i].description.link(ftp.dir_list[i].link + "?$" + time_stamp));
 
-		if(curlib.name!=undefined) {
-			writeln("<td align=right><font color=black>" + dat_font + dir_list[i].size);
-			writeln("<th>" + dat_font + (dir_list[i].settings&DIR_FREE ? "FREE":""));
+		if(ftp.curlib.name!=undefined) {
+			writeln("<td align=right><font color=black>" + dat_font + ftp.dir_list[i].size);
+			writeln("<th>" + dat_font + (ftp.dir_list[i].settings&DIR_FREE ? "FREE":""));
 		}
 	}	
 	writeln("</table>");
-	if(file_list.length)
+	if(ftp.file_list.length)
 		writeln("<br>"); 
 }
 
 /* File Listing */
-if(file_list.length) {
+if(ftp.file_list.length) {
 
 	/* Sort the list? */
-	switch(ftp_sort) {
+	switch(ftp.sort) {
 		case "uploader":
-			file_list.sort(function(a,b) 
+			ftp.file_list.sort(function(a,b) 
 				{ 	if(a.uploader>b.uploader)
 						return(1);
 					if(a.uploader<b.uploader)
@@ -241,35 +241,35 @@ if(file_list.length) {
 				);
 			break;
 		case "size":
-			file_list.sort(function(a,b) 
+			ftp.file_list.sort(function(a,b) 
 				{ return(a.size-b.size); }
 				);
 			break;
 		case "credits":
-			file_list.sort(function(a,b) 
+			ftp.file_list.sort(function(a,b) 
 				{ return(a.credits-b.credits); }
 				);
 			break;
 		case "time":
-			file_list.sort(function(a,b) 
+			ftp.file_list.sort(function(a,b) 
 				{ return(a.time.valueOf()-b.time.valueOf()); }
 				);
 			break;
 		case "hits":
-			file_list.sort(function(a,b) 
+			ftp.file_list.sort(function(a,b) 
 				{ return(a.times_downloaded-b.times_downloaded); }
 				);
 			break;
 	}
-	if(ftp_reverse)
-		file_list.reverse();
+	if(ftp.reverse)
+		ftp.file_list.reverse();
 
 	var show_ext_desc;			/* show extended descriptions */
 	var total_bytes=0;
 	var total_downloads=0;
 	var most_recent=0;
 
-	if (curdir.name==undefined)
+	if (ftp.curdir.name==undefined)
 		show_ext_desc=false;	/* aliased files have no ext desc */
 	else
 		show_ext_desc=user.settings&USER_EXTDESC;
@@ -284,21 +284,21 @@ if(file_list.length) {
 	/* File */
 	writeln(format("<th><a href=%s?sort=name%s$%s>%sFile</a>"
 		,html_index_file
-		,(ftp_sort=="name" && !ftp_reverse) ? "&reverse":"", time_stamp, hdr_font));
+		,(ftp.sort=="name" && !ftp.reverse) ? "&reverse":"", time_stamp, hdr_font));
 
 	/* Credits or Size */
-	if(curdir.settings!=undefined && !(curdir.settings&DIR_FREE))
+	if(ftp.curdir.settings!=undefined && !(ftp.curdir.settings&DIR_FREE))
 		writeln(format("<th><a href=%s?sort=credits%s$%s>%sCredits</a>"
 			,html_index_file
-			,(ftp_sort=="credits" && !ftp_reverse) ? "&reverse" : "", time_stamp, hdr_font));
+			,(ftp.sort=="credits" && !ftp.reverse) ? "&reverse" : "", time_stamp, hdr_font));
 	else
 		writeln(format("<th><a href=%s?sort=size%s$%s>%sSize</a>"
 			,html_index_file
-			,(ftp_sort=="size" && !ftp_reverse) ? "&reverse" : "", time_stamp, hdr_font));
+			,(ftp.sort=="size" && !ftp.reverse) ? "&reverse" : "", time_stamp, hdr_font));
 
 	/* Description */
 	write("<th>" + hdr_font + "Description");
-	if(!(user.security.restrictions&UFLAG_G) && curdir.settings!=undefined) {
+	if(!(user.security.restrictions&UFLAG_G) && ftp.curdir.settings!=undefined) {
 		if(user.settings&USER_EXTDESC)
 			writeln(format(" [%s]"
 				,(hdr_font+"short").link(format("%s?ext=off$%s",html_index_file, time_stamp))));
@@ -310,75 +310,75 @@ if(file_list.length) {
 	/* Date/Time */
 	writeln(format("<th><a href=%s?sort=time%s$%s>%sDate/Time</a>"
 		,html_index_file
-		,(ftp_sort=="time" && !ftp_reverse) ? "&reverse" : "", time_stamp, hdr_font));
+		,(ftp.sort=="time" && !ftp.reverse) ? "&reverse" : "", time_stamp, hdr_font));
 
 	/* Uploader and Hits (downloads) */
-	if(curdir.name!=undefined) {	/* not valid for aliased files in root */
+	if(ftp.curdir.name!=undefined) {	/* not valid for aliased files in root */
 		writeln(format("<th><a href=%s?sort=uploader%s$%s>%sUploader</a>"
 			,html_index_file
-			,(ftp_sort=="uploader" && !ftp_reverse) ? "&reverse" : "", time_stamp, hdr_font));
+			,(ftp.sort=="uploader" && !ftp.reverse) ? "&reverse" : "", time_stamp, hdr_font));
 		writeln(format("<th><a href=%s?sort=hits%s$%s>%sHits</a>"
 			,html_index_file
-			,(ftp_sort=="hits" && !ftp_reverse) ? "&reverse" : "", time_stamp, hdr_font));
+			,(ftp.sort=="hits" && !ftp.reverse) ? "&reverse" : "", time_stamp, hdr_font));
 	}
 	writeln("</thead>");
 
 	/* body */
 	writeln("<tbody>");
-	for(i in file_list) {
+	for(i in ftp.file_list) {
 
-		total_downloads+=file_list[i].times_downloaded;
-		if(file_list[i].time>most_recent)
-			most_recent=file_list[i].time;
+		total_downloads+=ftp.file_list[i].times_downloaded;
+		if(ftp.file_list[i].time>most_recent)
+			most_recent=ftp.file_list[i].time;
 
 		writeln("<tr valign=top>");
 
 		/* filename */
 		if(user.security.restrictions&UFLAG_D
-			|| (curdir.settings!=undefined 
-				&& !(curdir.settings&DIR_FREE)
+			|| (ftp.curdir.settings!=undefined 
+				&& !(ftp.curdir.settings&DIR_FREE)
 				&& !(user.security.exemptions&UFLAG_D)
-				&& file_list[i].credits > (user.security.credits+user.security.free_credits))
+				&& ftp.file_list[i].credits > (user.security.credits+user.security.free_credits))
 			) {
 			write("<td align=left>" + dat_font);
-			writeln(file_list[i].name.link(
+			writeln(ftp.file_list[i].name.link(
 				"javascript:alert('Sorry, you do not have enough credits to download this file.');"));
 		} else {
 			write("<th align=left>" + dat_font);
-			writeln(file_list[i].name.link(file_list[i].link));
+			writeln(ftp.file_list[i].name.link(ftp.file_list[i].link));
 		}
 
 		/* size */
 		write("<td align=right>" + dat_font + "<font color=black>");
-		if(curdir.settings!=undefined && !(curdir.settings&DIR_FREE)) {
-			if(!file_list[i].credits)
+		if(ftp.curdir.settings!=undefined && !(ftp.curdir.settings&DIR_FREE)) {
+			if(!ftp.file_list[i].credits)
 				writeln("<font color=white><b>FREE");
 			else
-				writeln(kbytes(file_list[i].credits)); 
-			total_bytes+=file_list[i].credits;
+				writeln(kbytes(ftp.file_list[i].credits)); 
+			total_bytes+=ftp.file_list[i].credits;
 		} else {
-			writeln(kbytes(file_list[i].size)); 
-			total_bytes+=file_list[i].size;
+			writeln(kbytes(ftp.file_list[i].size)); 
+			total_bytes+=ftp.file_list[i].size;
 		}
 
 		/* description */
-		write("<td>");
+		write("<td>" + dat_font);
 		if (show_ext_desc) {
-			if(file_list[i].settings&FILE_EXTDESC)
-				writeln("<pre>" + file_list[i].extended_description);
+			if(ftp.file_list[i].settings&FILE_EXTDESC)
+				writeln("<pre>" + ftp.file_list[i].extended_description);
 			else
-				writeln("<tt>" + file_list[i].description);
+				writeln("<tt>" + ftp.file_list[i].description);
 		} else
-			writeln(dat_font + file_list[i].description);
+			writeln(dat_font + ftp.file_list[i].description);
 
 		/* date/time */
 		writeln("<td align=center nowrap>" + dat_font + "<font color=black>" 
-			+ "<tt>"+ date(file_list[i].time));
+			+ "<tt>"+ date(ftp.file_list[i].time));
 
-		if(curdir.name!=undefined) {	/* not valid for aliased files in root */
+		if(ftp.curdir.name!=undefined) {	/* not valid for aliased files in root */
 			/* uploader */
-			var uploader=file_list[i].uploader;
-			if (file_list[i].settings&FILE_ANON)
+			var uploader=ftp.file_list[i].uploader;
+			if (ftp.file_list[i].settings&FILE_ANON)
 				uploader="Anonymous";
 			else if (uploader == "-> ADDFILES <-")
 				uploader="Sysop".link("mailto:sysop@"+system.inetaddr);
@@ -388,7 +388,7 @@ if(file_list.length) {
 
 			/* download count */
 			writeln("<td align=right>" + dat_font + "<font color=black>" 
-				+ file_list[i].times_downloaded);
+				+ ftp.file_list[i].times_downloaded);
 		}
 	}
 
@@ -397,13 +397,13 @@ if(file_list.length) {
 	writeln(format("<tr bgcolor=%s><th>%s%lu files" +
 		"<th align=right>%s%s<th>%s-<th>%s<font color=black><tt>%s"
 		,hdr_background
-		,hdr_font, file_list.length
+		,hdr_font, ftp.file_list.length
 		,hdr_font, kbytes(total_bytes)
 		,hdr_font
 		,dat_font, date(most_recent)
 		));
 
-	if(curdir.name!=undefined) 	/* not valid for aliased files in root */
+	if(ftp.curdir.name!=undefined) 	/* not valid for aliased files in root */
 		writeln(format("<th>%s-<th align=right>%s%lu"
 			,hdr_font
 			,hdr_font, total_downloads
@@ -412,7 +412,7 @@ if(file_list.length) {
 	writeln("</table>");
 }
 
-if(!file_list.length && !dir_list.length)
+if(!ftp.file_list.length && !ftp.dir_list.length)
 	writeln("<br><b>No Files.</b><br>");
 
 /* Footer */
