@@ -146,6 +146,7 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 {
 	char		str[128];
 	JSObject*	areaobj;
+	JSObject*	allsubs;
 	JSObject*	grpobj;
 	JSObject*	subobj;
 	JSObject*	grp_list;
@@ -168,6 +169,9 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 #ifdef _DEBUG
 	js_DescribeObject(cx,areaobj,"Message Areas");
 #endif
+
+	if((allsubs=JS_NewObject(cx, NULL, NULL, areaobj))==NULL)
+		return(NULL);
 
 	/* grp_list[] */
 	if((grp_list=JS_NewArrayObject(cx, 0, NULL))==NULL) 
@@ -307,6 +311,10 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 			if(!JS_SetElement(cx, sub_list, index, &val))
 				return(NULL);
 
+			/* Add as property (associative array element) */
+			if(!JS_SetProperty(cx, allsubs, cfg->sub[d]->code, &val))
+				return(NULL);
+
 #ifdef _DEBUG
 			js_DescribeObject(cx,subobj,"Message Sub-boards");
 #endif
@@ -320,6 +328,10 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 		if(!JS_SetElement(cx, grp_list, index, &val))
 			return(NULL);
 	}
+
+	val=OBJECT_TO_JSVAL(allsubs);
+	if(!JS_SetProperty(cx, areaobj, "sub", &val))
+		return(NULL);
 
 	return(areaobj);
 }
