@@ -50,15 +50,18 @@ int sbbs_t::xtrn_sec()
 
 	if(!cfg.total_xtrns || !cfg.total_xtrnsecs) {
 		bputs(text[NoXtrnPrograms]);
-		return(1); }
+		return(1); 
+	}
 
 	if((usrxtrn=(uint *)MALLOC(cfg.total_xtrns*sizeof(int)))==NULL) {
 		errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_xtrns);
-		return(1); }
+		return(1); 
+	}
 	if((usrxsec=(uint *)MALLOC(cfg.total_xtrnsecs*sizeof(int)))==NULL) {
 		errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_xtrnsecs);
 		FREE(usrxtrn);
-		return(1); }
+		return(1); 
+	}
 
 	while(online) {
 		for(i=0,usrxsecs=0;i<cfg.total_xtrnsecs;i++)
@@ -68,7 +71,8 @@ int sbbs_t::xtrn_sec()
 			bputs(text[NoXtrnPrograms]);
 			FREE(usrxtrn);
 			FREE(usrxsec);
-			return(1); }
+			return(1); 
+		}
 		if(usrxsecs>1) {
 			sprintf(str,"%smenu/xtrn_sec.*",cfg.text_dir);
 			if(fexist(str)) {
@@ -77,14 +81,17 @@ int sbbs_t::xtrn_sec()
 				if(xsec<=0)
 					break;
 				xsec--;
-				xsec=usrxsec[xsec]; }
+				xsec=usrxsec[xsec]; 
+			}
 			else {
 				for(i=0;i<cfg.total_xtrnsecs;i++)
 					uselect(1,i,"External Program Section"
 						,cfg.xtrnsec[i]->name,cfg.xtrnsec[i]->ar);
-				xsec=uselect(0,0,0,0,0); }
+				xsec=uselect(0,0,0,0,0); 
+			}
 			if(xsec==-1)
-				break; }
+				break; 
+		}
 		else
 			xsec=0;
 
@@ -95,7 +102,8 @@ int sbbs_t::xtrn_sec()
 			bputs(text[NoXtrnPrograms]);
 			FREE(usrxtrn);
 			FREE(usrxsec);
-			return(1); }
+			return(1); 
+		}
 
 		while(online) {
 			for(i=0,usrxtrns=0;i<cfg.total_xtrns; i++) {
@@ -105,26 +113,31 @@ int sbbs_t::xtrn_sec()
 					continue;
 				if(!chk_ar(cfg.xtrn[i]->ar,&useron))
 					continue;
-				usrxtrn[usrxtrns++]=i; }
+				usrxtrn[usrxtrns++]=i; 
+			}
 			if(!usrxtrns) {
 				bputs(text[NoXtrnPrograms]);
 				pause();
-				break; }
+				break; 
+			}
 			sprintf(str,"%smenu/xtrn%u.*",cfg.text_dir,xsec+1);
 			if(fexist(str)) {
 				sprintf(str,"xtrn%u",xsec+1);
-				menu(str); }
+				menu(str); 
+			}
 			else {
 				bprintf(text[XtrnProgLstHdr],cfg.xtrnsec[xsec]->name);
 				bputs(text[XtrnProgLstTitles]);
 				if(usrxtrns>=10) {
 					bputs("     ");
-					bputs(text[XtrnProgLstTitles]); }
+					bputs(text[XtrnProgLstTitles]); 
+				}
 				CRLF;
 				bputs(text[XtrnProgLstUnderline]);
 				if(usrxtrns>=10) {
 					bputs("     ");
-					bputs(text[XtrnProgLstUnderline]); }
+					bputs(text[XtrnProgLstUnderline]); 
+				}
 				CRLF;
 				if(usrxtrns>=10)
 					j=(usrxtrns/2)+(usrxtrns&1);
@@ -139,10 +152,14 @@ int sbbs_t::xtrn_sec()
 							bputs("     ");
 							bprintf(text[XtrnProgLstFmt],k+1
 								,cfg.xtrn[usrxtrn[k]]->name
-								,cfg.xtrn[usrxtrn[k]]->cost); } }
-					CRLF; }
+								,cfg.xtrn[usrxtrn[k]]->cost); 
+						}
+					}
+					CRLF; 
+				}
 				ASYNC;
-				mnemonics(text[WhichXtrnProg]); }
+				mnemonics(text[WhichXtrnProg]); 
+			}
 			getnodedat(cfg.node_num,&thisnode,1);
 			thisnode.aux=0; /* aux is 0, only if at menu */
 			putnodedat(cfg.node_num,&thisnode);
@@ -150,9 +167,11 @@ int sbbs_t::xtrn_sec()
 			SYNC;
 			if((l=getnum(usrxtrns))<1)
 				break;
-			exec_xtrn(usrxtrn[l-1]); }
+			exec_xtrn(usrxtrn[l-1]); 
+		}
 		if(usrxsecs<2)
-			break; }
+			break; 
+	}
 	FREE(usrxtrn);
 	FREE(usrxsec);
 	return(0);
@@ -224,7 +243,8 @@ time_t juliantounix(ulong j)
 
 	if (!(temp%100)) {
 		j++;
-		leap=1; }
+		leap=1; 
+	}
 	else leap=0;
 
 	for(date.da_mon=counter=0;counter<12;counter++)
@@ -260,7 +280,8 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 		sprintf(str,"%sXTRN.DAT",dropdir);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC);
-			return; }
+			return; 
+		}
 
 		sprintf(str,"%s\r\n%s\r\n%s\r\n%s\r\n"
 			,name								/* User name */
@@ -322,7 +343,8 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			else
 				str[0]=0;						/* Blank if no access */
 			strcat(str,crlf);
-			write(file,str,strlen(str)); }
+			write(file,str,strlen(str)); 
+		}
 
 		sprintf(str,"%s\r\n%s\r\n"
 			,ltoaf(useron.flags1,tmp)			/* Main flags */
@@ -364,13 +386,15 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			);
 		write(file,str,strlen(str));
 
-		close(file); }
+		close(file); 
+	}
 
 	else if(type==XTRN_WWIV) {	/*	WWIV CHAIN.TXT File */
 		sprintf(str,"%sCHAIN.TXT",dropdir);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC);
-			return; }
+			return; 
+		}
 
 		sprintf(str,"%u\r\n%s\r\n%s\r\n%s\r\n%u\r\n%c\r\n"
 			,useron.number						/* User number */
@@ -413,13 +437,15 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,"8N1");                            /* Data, parity, stop bits */
 		write(file,str,strlen(str));
 
-		close(file); }
+		close(file); 
+	}
 
 	else if(type==XTRN_GAP) {	/* Gap DOOR.SYS File */
 		sprintf(str,"%sDOOR.SYS",dropdir);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC);
-			return; }
+			return; 
+		}
 
 		sprintf(str,"COM%d:\r\n%lu\r\n%u\r\n%u\r\n%lu\r\n%c\r\n%c\r\n%c\r\n%c\r\n"
 			,online==ON_REMOTE ? cfg.com_port:0	/* 01: COM port - 0 if Local */
@@ -508,7 +534,8 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,useron.posts); 					/* 52: User message left */
 		write(file,str,strlen(str));
 
-		close(file); }
+		close(file); 
+	}
 
 	else if(type==XTRN_RBBS || type==XTRN_RBBS1) {
 		if(type==XTRN_RBBS)
@@ -517,7 +544,8 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			sprintf(str,"%sDORINFO1.DEF",dropdir);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC);
-			return; }
+			return; 
+		}
 
 		strcpy(tmp,cfg.sys_op);
 		p=strchr(tmp,SP);
@@ -557,7 +585,8 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 		sprintf(str,"%sEXITINFO.BBS",dropdir);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC);
-			return; }
+			return; 
+		}
 		w=(WORD)dte_rate;
 		write(file,&w,sizeof(short));			/* BaudRate */
 		/* SysInfo */
@@ -684,13 +713,14 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 		c=useron.misc&ANSI ? 1:0;
 		write(file,&c,1);						/* ANSI_Capable */
 		close(file);
-		}
+	}
 
 	else if(type==XTRN_WILDCAT) { /* WildCat CALLINFO.BBS File */
 		sprintf(str,"%sCALLINFO.BBS",dropdir);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC);
-			return; }
+			return; 
+		}
 
 		if(online==ON_LOCAL) i=5;
 		else
@@ -715,7 +745,8 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 					break;
 				default:
 					i=7;
-					break; }
+					break; 
+		}
 		sprintf(str,"%s\r\n%u\r\n%s\r\n%u\r\n%lu\r\n%s\r\n%s\r\n%u\r\n"
 			,name								/* User name */
 			,i									/* DTE rate */
@@ -787,13 +818,15 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,0);								/* Door number */
 		write(file,str,strlen(str));
 
-		close(file); }
+		close(file); 
+	}
 
 	else if(type==XTRN_PCBOARD) { /* PCBoard Files */
 		sprintf(str,"%sPCBOARD.SYS",dropdir);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC);
-			return; }
+			return; 
+		}
 
 		sprintf(str,"%2d%2d%2d%2d%c%2d%c%c%5u%-5.5s"
 			,-1 								/* Display on/off */
@@ -889,7 +922,8 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 		sprintf(str,"%sUSERS.SYS",dropdir);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC);
-			return; }
+			return; 
+		}
 
 		/* Write goof-ball header */
 
@@ -981,14 +1015,14 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 		close(file);
 
 		/* End of USERS.SYS creation */
-
-		}
+	}
 
 	else if(type==XTRN_SPITFIRE) {	 /* SpitFire SFDOORS.DAT File */
 		sprintf(str,"%sSFDOORS.DAT",dropdir);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC);
-			return; }
+			return; 
+		}
 
 		now=time(NULL);
 		tm=gmtime(&now);
@@ -1051,13 +1085,15 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			);
 		write(file,str,strlen(str));
 
-		close(file); }
+		close(file); 
+	}
 
 	else if(type==XTRN_UTI) { /* UTI v2.1 - UTIDOOR.TXT */
 		sprintf(str,"%sUTIDOOR.TXT",dropdir);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC);
-			return; }
+			return; 
+		}
 
 		strcpy(tmp,name);
 		strupr(tmp);
@@ -1069,13 +1105,15 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,tleft);							/* Time left in sec */
 		write(file,str,strlen(str));
 
-		close(file); }
+		close(file); 
+	}
 
 	else if(type==XTRN_SR) { /* Solar Realms DOORFILE.SR */
 		sprintf(str,"%sDOORFILE.SR",dropdir);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC);
-			return; }
+			return; 
+		}
 
 		sprintf(str,"%s\r\n%d\r\n%d\r\n%lu\r\n%lu\r\n%u\r\n%lu\r\n"
 			,name								/* Complete name of user */
@@ -1087,13 +1125,15 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,tleft/60							/* Time left (in minutes) */
 			);
 		write(file,str,strlen(str));
-		close(file); }
+		close(file); 
+	}
 
 	else if(type==XTRN_TRIBBS) { /* TRIBBS.SYS */
 		sprintf(str,"%sTRIBBS.SYS",dropdir);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC);
-			return; }
+			return; 
+		}
 
 		sprintf(str,"%u\r\n%s\r\n%s\r\n%u\r\n%c\r\n%c\r\n%lu\r\n%s\r\n%s\r\n%s\r\n"
 			,useron.number						/* User's record number */
@@ -1121,7 +1161,30 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,useron.handle						/* User's alias */
 			);
 		write(file,str,strlen(str));
-		close(file); }
+		close(file); 
+	}
+
+	else if(type==XTRN_DOOR32) { /* DOOR32.SYS */
+		sprintf(str,"%sDOOR32.SYS",dropdir);
+		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
+			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC);
+			return; 
+		}
+
+		sprintf(str,"2\r\n%d\r\n38400\r\n%s%c\r\n%d\r\n%s\r\n%s\r\n%d\r\n%d\r\n"
+			"%d\r\n%d\r\n"
+			,client_socket_dup
+			,VERSION_NOTICE,REVISION
+			,useron.number
+			,useron.name
+			,useron.alias
+			,useron.level
+			,timeleft/60
+			,useron.misc&ANSI ? 1 : 0
+			,cfg.node_num);
+		write(file,str,strlen(str));
+		close(file);
+	}
 
 	else if(type)
 		errormsg(WHERE,ERR_CHK,"Drop file type",type);
@@ -1153,10 +1216,13 @@ void sbbs_t::moduserdat(uint xtrnnum)
 			read(file,&i,2);			/* SecLvl */
 			if(i<SYSOP_LEVEL) {
 				useron.level=i;
-				putuserrec(&cfg,useron.number,U_LEVEL,2,ultoa(useron.level,tmp,10)); }
+				putuserrec(&cfg,useron.number,U_LEVEL,2,ultoa(useron.level,tmp,10)); 
+			}
 			close(file);
-			remove(path); }
-		return; }
+			remove(path); 
+		}
+		return; 
+	}
 	else if(cfg.xtrn[xtrnnum]->type==XTRN_GAP) {
 		sprintf(path,"%sDOOR.SYS"
 			,cfg.xtrn[xtrnnum]->misc&STARTUPDIR ? startup : cfg.node_dir);
@@ -1168,14 +1234,17 @@ void sbbs_t::moduserdat(uint xtrnnum)
 				mod=atoi(str);
 				if(mod<SYSOP_LEVEL) {
 					useron.level=(char)mod;
-					putuserrec(&cfg,useron.number,U_LEVEL,2,ultoa(useron.level,tmp,10)); } }
+					putuserrec(&cfg,useron.number,U_LEVEL,2,ultoa(useron.level,tmp,10)); 
+				} 
+			}
 
 			for(;i<23;i++)
 				if(!fgets(str,128,stream))
 					break;
 			if(i==23) { 					/* set main flags */
 				useron.flags1=aftol(str);
-				putuserrec(&cfg,useron.number,U_FLAGS1,8,ultoa(useron.flags1,tmp,16)); }
+				putuserrec(&cfg,useron.number,U_FLAGS1,8,ultoa(useron.flags1,tmp,16)); 
+			}
 
 			for(;i<25;i++)
 				if(!fgets(str,128,stream))
@@ -1186,7 +1255,8 @@ void sbbs_t::moduserdat(uint xtrnnum)
 				&& (str[5]=='/' || str[5]=='-')
 				&& isdigit(str[6]) && isdigit(str[7])) { /* valid expire date */
 				useron.expire=dstrtounix(&cfg,str);
-				putuserrec(&cfg,useron.number,U_EXPIRE,8,ultoa(useron.expire,tmp,16)); }
+				putuserrec(&cfg,useron.number,U_EXPIRE,8,ultoa(useron.expire,tmp,16)); 
+			}
 
 			for(;i<29;i++)					/* line 29, total downloaded files */
 				if(!fgets(str,128,stream))
@@ -1194,7 +1264,8 @@ void sbbs_t::moduserdat(uint xtrnnum)
 			if(i==29) {
 				truncsp(str);
 				useron.dls=atoi(str);
-				putuserrec(&cfg,useron.number,U_DLS,5,str); }
+				putuserrec(&cfg,useron.number,U_DLS,5,str); 
+			}
 
 			if(fgets(str,128,stream)) { 	/* line 30, Kbytes downloaded today */
 				i++;
@@ -1202,17 +1273,22 @@ void sbbs_t::moduserdat(uint xtrnnum)
 				mod=atol(str)*1024L;
 				if(mod) {
 					useron.dlb=adjustuserrec(&cfg,useron.number,U_DLB,10,mod);
-					subtract_cdt(&cfg,&useron,mod); } }
+					subtract_cdt(&cfg,&useron,mod); 
+				} 
+			}
 
 			for(;i<42;i++)
 				if(!fgets(str,128,stream))
 					break;
 			if(i==42 && isdigit(str[0])) {	/* Time Credits in Minutes */
 				useron.min=atol(str);
-				putuserrec(&cfg,useron.number,U_MIN,10,ultoa(useron.min,tmp,10)); }
+				putuserrec(&cfg,useron.number,U_MIN,10,ultoa(useron.min,tmp,10)); 
+			}
 
-			fclose(stream); }
-		return; }
+			fclose(stream); 
+		}
+		return; 
+	}
 
 	else if(cfg.xtrn[xtrnnum]->type==XTRN_PCBOARD) {
 		sprintf(path,"%sUSERS.SYS"
@@ -1225,13 +1301,17 @@ void sbbs_t::moduserdat(uint xtrnnum)
 				read(file,&i,2);
 				if(i<SYSOP_LEVEL) {
 					useron.level=i;
-					putuserrec(&cfg,useron.number,U_LEVEL,2,ultoa(useron.level,tmp,10)); }
+					putuserrec(&cfg,useron.number,U_LEVEL,2,ultoa(useron.level,tmp,10)); 
+				}
 				lseek(file,75,SEEK_CUR);	/* read in expiration date */
 				read(file,&i,2);			/* convert from julian to unix */
 				useron.expire=juliantounix(i);
-				putuserrec(&cfg,useron.number,U_EXPIRE,8,ultoa(useron.expire,tmp,16)); }
-			close(file); }
-		return; }
+				putuserrec(&cfg,useron.number,U_EXPIRE,8,ultoa(useron.expire,tmp,16)); 
+			}
+			close(file); 
+		}
+		return; 
+	}
 
 	sprintf(path,"%sMODUSER.DAT"
 			,cfg.xtrn[xtrnnum]->misc&STARTUPDIR ? startup : cfg.node_dir);
@@ -1250,84 +1330,102 @@ void sbbs_t::moduserdat(uint xtrnnum)
 			if(mod>0L)			/* always add to real cdt */
 				useron.cdt=adjustuserrec(&cfg,useron.number,U_CDT,10,mod);
 			else
-				subtract_cdt(&cfg,&useron,-mod); }	/* subtract from free cdt first */
+				subtract_cdt(&cfg,&useron,-mod); /* subtract from free cdt first */
+		}
 		if(fgets(str,81,stream)) {		/* main level */
 			mod=atoi(str);
 			if(isdigit(str[0]) && mod<SYSOP_LEVEL) {
 				useron.level=(uchar)mod;
-				putuserrec(&cfg,useron.number,U_LEVEL,2,ultoa(useron.level,tmp,10)); } }
+				putuserrec(&cfg,useron.number,U_LEVEL,2,ultoa(useron.level,tmp,10)); 
+			} 
+		}
 		fgets(str,81,stream);		 /* was transfer level, now ignored */
 		if(fgets(str,81,stream)) {		/* flags #1 */
 			if(strchr(str,'-'))         /* remove flags */
 				useron.flags1&=~aftol(str);
 			else						/* add flags */
 				useron.flags1|=aftol(str);
-			putuserrec(&cfg,useron.number,U_FLAGS1,8,ultoa(useron.flags1,tmp,16)); }
+			putuserrec(&cfg,useron.number,U_FLAGS1,8,ultoa(useron.flags1,tmp,16)); 
+		}
 
 		if(fgets(str,81,stream)) {		/* flags #2 */
 			if(strchr(str,'-'))         /* remove flags */
 				useron.flags2&=~aftol(str);
 			else						/* add flags */
 				useron.flags2|=aftol(str);
-			putuserrec(&cfg,useron.number,U_FLAGS2,8,ultoa(useron.flags2,tmp,16)); }
+			putuserrec(&cfg,useron.number,U_FLAGS2,8,ultoa(useron.flags2,tmp,16)); 
+		}
 
 		if(fgets(str,81,stream)) {		/* exemptions */
 			if(strchr(str,'-'))
 				useron.exempt&=~aftol(str);
 			else
 				useron.exempt|=aftol(str);
-			putuserrec(&cfg,useron.number,U_EXEMPT,8,ultoa(useron.exempt,tmp,16)); }
+			putuserrec(&cfg,useron.number,U_EXEMPT,8,ultoa(useron.exempt,tmp,16)); 
+		}
 		if(fgets(str,81,stream)) {		/* restrictions */
 			if(strchr(str,'-'))
 				useron.rest&=~aftol(str);
 			else
 				useron.rest|=aftol(str);
-			putuserrec(&cfg,useron.number,U_REST,8,ultoa(useron.rest,tmp,16)); }
+			putuserrec(&cfg,useron.number,U_REST,8,ultoa(useron.rest,tmp,16)); 
+		}
 		if(fgets(str,81,stream)) {		/* Expiration date */
 			if(isxdigit(str[0]))
-				putuserrec(&cfg,useron.number,U_EXPIRE,8,str); }
+				putuserrec(&cfg,useron.number,U_EXPIRE,8,str); 
+		}
 		if(fgets(str,81,stream)) {		/* additional minutes */
 			mod=atol(str);
 			if(mod) {
 				sprintf(str,"Minute Adjustment: %s",ultoac(mod,tmp));
 				logline("*+",str);
-				useron.min=adjustuserrec(&cfg,useron.number,U_MIN,10,mod); } }
-
+				useron.min=adjustuserrec(&cfg,useron.number,U_MIN,10,mod); 
+			} 
+		}
 		if(fgets(str,81,stream)) {		/* flags #3 */
 			if(strchr(str,'-'))         /* remove flags */
 				useron.flags3&=~aftol(str);
 			else						/* add flags */
 				useron.flags3|=aftol(str);
-			putuserrec(&cfg,useron.number,U_FLAGS3,8,ultoa(useron.flags3,tmp,16)); }
+			putuserrec(&cfg,useron.number,U_FLAGS3,8,ultoa(useron.flags3,tmp,16)); 
+		}
 
 		if(fgets(str,81,stream)) {		/* flags #4 */
 			if(strchr(str,'-'))         /* remove flags */
 				useron.flags4&=~aftol(str);
 			else						/* add flags */
 				useron.flags4|=aftol(str);
-			putuserrec(&cfg,useron.number,U_FLAGS4,8,ultoa(useron.flags4,tmp,16)); }
+			putuserrec(&cfg,useron.number,U_FLAGS4,8,ultoa(useron.flags4,tmp,16)); 
+		}
 
 		if(fgets(str,81,stream)) {		/* flags #1 to REMOVE only */
 			useron.flags1&=~aftol(str);
-			putuserrec(&cfg,useron.number,U_FLAGS1,8,ultoa(useron.flags1,tmp,16)); }
+			putuserrec(&cfg,useron.number,U_FLAGS1,8,ultoa(useron.flags1,tmp,16)); 
+		}
 		if(fgets(str,81,stream)) {		/* flags #2 to REMOVE only */
 			useron.flags2&=~aftol(str);
-			putuserrec(&cfg,useron.number,U_FLAGS2,8,ultoa(useron.flags2,tmp,16)); }
+			putuserrec(&cfg,useron.number,U_FLAGS2,8,ultoa(useron.flags2,tmp,16)); 
+		}
 		if(fgets(str,81,stream)) {		/* flags #3 to REMOVE only */
 			useron.flags3&=~aftol(str);
-			putuserrec(&cfg,useron.number,U_FLAGS3,8,ultoa(useron.flags3,tmp,16)); }
+			putuserrec(&cfg,useron.number,U_FLAGS3,8,ultoa(useron.flags3,tmp,16)); 
+		}
 		if(fgets(str,81,stream)) {		/* flags #4 to REMOVE only */
 			useron.flags4&=~aftol(str);
-			putuserrec(&cfg,useron.number,U_FLAGS4,8,ultoa(useron.flags4,tmp,16)); }
+			putuserrec(&cfg,useron.number,U_FLAGS4,8,ultoa(useron.flags4,tmp,16)); 
+		}
 		if(fgets(str,81,stream)) {		/* exemptions to remove */
 			useron.exempt&=~aftol(str);
-			putuserrec(&cfg,useron.number,U_EXEMPT,8,ultoa(useron.exempt,tmp,16)); }
+			putuserrec(&cfg,useron.number,U_EXEMPT,8,ultoa(useron.exempt,tmp,16)); 
+		}
 		if(fgets(str,81,stream)) {		/* restrictions to remove */
 			useron.rest&=~aftol(str);
-			putuserrec(&cfg,useron.number,U_REST,8,ultoa(useron.rest,tmp,16)); }
+			putuserrec(&cfg,useron.number,U_REST,8,ultoa(useron.rest,tmp,16)); 
+		}
 
 		fclose(stream);
-		remove(path); }
+		remove(path); 
+	}
 }
 
 
@@ -1366,7 +1464,8 @@ bool sbbs_t::exec_xtrn(uint xtrnnum)
 				&& node.action==NODE_XTRN && node.aux==(xtrnnum+1)) {
 				if(node.status==NODE_QUIET) {
 					strcpy(str,cfg.sys_guru);
-					c=cfg.sys_nodes+1; }
+					c=cfg.sys_nodes+1; 
+				}
 				else if(node.misc&NODE_ANON)
 					strcpy(str,"UNKNOWN USER");
 				else
@@ -1374,7 +1473,9 @@ bool sbbs_t::exec_xtrn(uint xtrnnum)
 				bprintf(text[UserRunningXtrn],str
 					,cfg.xtrn[xtrnnum]->name,c);
 				pause();
-				break; } }
+				break; 
+			} 
+		}
 		if(i<=cfg.sys_nodes)
 			return(false); 
 	}
@@ -1411,7 +1512,8 @@ bool sbbs_t::exec_xtrn(uint xtrnnum)
 			break;
 		default:
 			strcat(path,"XTRN.DAT");
-			break; }
+			break; 
+	}
 	getnodedat(cfg.node_num,&thisnode,1);
 	thisnode.aux=xtrnnum+1;
 	thisnode.action=NODE_XTRN;
@@ -1455,7 +1557,8 @@ bool sbbs_t::exec_xtrn(uint xtrnnum)
 		mode|=EX_SWAP;
 	if(cfg.xtrn[xtrnnum]->misc&MODUSERDAT) {	 /* Delete MODUSER.DAT */
 		sprintf(str,"%sMODUSER.DAT",dropdir);       /* if for some weird  */
-		remove(str); }								/* reason it's there  */
+		remove(str); 								/* reason it's there  */
+	}
 
 	start=time(NULL);
 	external(cmdstr(cfg.xtrn[xtrnnum]->cmd,path,dropdir,NULL),mode
@@ -1465,7 +1568,8 @@ bool sbbs_t::exec_xtrn(uint xtrnnum)
 		starttime+=end-start;
 	if(cfg.xtrn[xtrnnum]->clean[0]) {
 		external(cmdstr(cfg.xtrn[xtrnnum]->clean,path,nulstr,NULL)
-			,mode&~EX_INR, cfg.xtrn[xtrnnum]->path); }
+			,mode&~EX_INR, cfg.xtrn[xtrnnum]->path); 
+	}
 	/* Re-open the logfile */
 	if(logfile_fp==NULL) {
 		sprintf(str,"%snode.log",cfg.node_dir);
@@ -1479,7 +1583,8 @@ bool sbbs_t::exec_xtrn(uint xtrnnum)
 	sprintf(str,"%shangup.now",cfg.node_dir);
 	if(fexist(str)) {
 		remove(str);
-		hangup(); }
+		hangup(); 
+	}
 	if(online==ON_REMOTE) {
 		checkline();
 		if(!online) {
@@ -1493,7 +1598,9 @@ bool sbbs_t::exec_xtrn(uint xtrnnum)
 			sprintf(str,hungupstr,useron.alias,cfg.xtrn[thisnode.aux-1]->name
 				,timestr(&now));
 			write(file,str,strlen(str));
-			close(file); } }
+			close(file); 
+		} 
+	}
 	if(cfg.xtrn[xtrnnum]->misc&MODUSERDAT) 	/* Modify user data */
 		moduserdat(xtrnnum);
 
