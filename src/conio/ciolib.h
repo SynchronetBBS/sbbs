@@ -255,7 +255,7 @@ void ciolib_settitle(const char *title);
 	#define cgets(a)				ciolib_cgets(a)
 	#define kbhit()					ciolib_kbhit()
 	#define getch()					ciolib_getch()
-	#define getchr()				ciolib_getche()
+	#define getche()				ciolib_getche()
 	#define ungetch(a)				ciolib_ungetch(a)
 	#define gettextinfo(a)			ciolib_gettextinfo(a)
 	#define wherex()				ciolib_wherex()
