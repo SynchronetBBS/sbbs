@@ -38,7 +38,7 @@ else {
 }
 
 template.hdr=msgbase.get_msg_header(false,id);
-template.body=msgbase.get_msg_body(false,id,true,true);
+template.body=msgbase.get_msg_body(false,id);
 
 msg=mime_decode(template.hdr,template.body);
 template.body=msg.body;

@@ -30,7 +30,7 @@ template.idx=msgbase.get_msg_index(false,m);
 if(sub=='mail' && template.idx.to!=user.number)
 	error("You can only read e-mail messages addressed to yourself!");
 template.hdr=msgbase.get_msg_header(false,m);
-template.body=msgbase.get_msg_body(false,m,true,true);
+template.body=msgbase.get_msg_body(false,m);
 
 msg=mime_decode(template.hdr,template.body);
 template.body=msg.body;

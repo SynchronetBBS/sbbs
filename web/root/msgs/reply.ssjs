@@ -36,7 +36,7 @@ else
 
 template.number=hdr.number;
 
-template.body=msgbase.get_msg_body(false,parseInt(http_request.query.reply_to),true,true);
+template.body=msgbase.get_msg_body(false,parseInt(http_request.query.reply_to),true);
 if(this.word_wrap != undefined)  {
 	template.body=quote_msg(word_wrap(template.body,79),79);
 }
