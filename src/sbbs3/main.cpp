@@ -1431,6 +1431,7 @@ void input_thread(void *arg)
 //			mswait(500);	// Throttle sender
 	}
 	sbbs->online=0;
+	sbbs->sys_status|=SS_ABORT;	/* as though Ctrl-C were hit */
 
     sbbs->input_thread_running = false;
 	if(node_socket[sbbs->cfg.node_num-1]==INVALID_SOCKET)	// Shutdown locally
