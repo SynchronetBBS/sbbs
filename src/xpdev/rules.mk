@@ -1,10 +1,8 @@
 $(LIBODIR):
-	@echo Creating $(LIBODIR)
-	$(QUIET)mkdir $(LIBODIR)
+	$(QUIET)$(IFNOTEXIST) mkdir $(LIBODIR)
 
 $(EXEODIR):
-	@echo Creating $(EXEODIR)
-	$(QUIET)mkdir $(EXEODIR)
+	$(QUIET)$(IFNOTEXIST) mkdir $(EXEODIR)
 
 clean:
 	@echo Deleting $(LIBODIR)$(SLASH)
