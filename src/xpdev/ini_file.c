@@ -602,6 +602,33 @@ str_list_t iniReadSectionList(FILE* fp, const char* prefix)
 	return(lp);
 }
 
+str_list_t iniGetSectionList(str_list_t* list, const char* prefix)
+{
+	char*	p;
+	char	str[INI_MAX_LINE_LEN];
+	ulong	i,items=0;
+	str_list_t	lp;
+
+	if((lp=strListInit())==NULL)
+		return(NULL);
+
+	if(list==NULL)
+		return(lp);
+
+	for(i=0;list[i];i++) {
+		SAFECOPY(str,list[i]);
+		if((p=section_name(str))==NULL)
+			continue;
+		if(prefix!=NULL)
+			if(strnicmp(p,prefix,strlen(prefix))!=0)
+				continue;
+		if(strListAppend(&lp,p,items++)==NULL)
+			break;
+	}
+
+	return(lp);
+}
+
 str_list_t iniReadKeyList(FILE* fp, const char* section)
 {
 	char*	p;
@@ -634,6 +661,34 @@ str_list_t iniReadKeyList(FILE* fp, const char* section)
 
 	return(lp);
 }
+
+str_list_t iniGetKeyList(str_list_t* list, const char* section)
+{
+	char*	p;
+	char*	vp;
+	char	str[INI_MAX_LINE_LEN];
+	ulong	i,items=0;
+	str_list_t	lp;
+
+	if((lp=strListInit())==NULL)
+		return(NULL);
+
+	if(list==NULL)
+		return(lp);
+
+	for(i=find_section(*list,section);list[i]==NULL;i++) {
+		SAFECOPY(str,list[i]);
+		if((p=key_name(str,&vp))==NULL)
+			continue;
+		if(p==INI_NEW_SECTION)
+			break;
+		if(strListAppend(&lp,p,items++)==NULL)
+			break;
+	}
+
+	return(lp);
+}
+
 
 named_string_t**
 iniReadNamedStringList(FILE* fp, const char* section)
@@ -681,6 +736,48 @@ iniReadNamedStringList(FILE* fp, const char* section)
 
 	return(lp);
 }
+
+named_string_t**
+iniGetNamedStringList(str_list_t* list, const char* section)
+{
+	char*	name;
+	char*	value;
+	char	str[INI_MAX_LINE_LEN];
+	ulong	i,items=0;
+	named_string_t** lp;
+	named_string_t** np;
+
+	if((lp=(named_string_t**)malloc(sizeof(named_string_t*)))==NULL)
+		return(NULL);
+
+	*lp=NULL;
+
+	if(list==NULL)
+		return(lp);
+
+	for(i=find_section(*list,section);list[i]!=NULL;i++) {
+		SAFECOPY(str,list[i]);
+		if((name=key_name(str,&value))==NULL)
+			continue;
+		if(name==INI_NEW_SECTION)
+			break;
+		if((np=(named_string_t**)realloc(lp,sizeof(named_string_t*)*(items+2)))==NULL)
+			break;
+		lp=np;
+		if((lp[items]=(named_string_t*)malloc(sizeof(named_string_t)))==NULL)
+			break;
+		if((lp[items]->name=strdup(name))==NULL)
+			break;
+		if((lp[items]->value=strdup(value))==NULL)
+			break;
+		items++;
+	}
+
+	lp[items]=NULL;	/* terminate list */
+
+	return(lp);
+}
+
 
 /* These functions read a single key of the specified type */
 

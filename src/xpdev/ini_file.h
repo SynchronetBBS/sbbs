@@ -100,6 +100,11 @@ str_list_t	iniReadFile(FILE*);
 BOOL		iniWriteFile(FILE*, const str_list_t);
 
 /* StringList functions */
+str_list_t	iniGetSectionList(str_list_t* list, const char* prefix);
+str_list_t	iniGetKeyList(str_list_t* list, const char* section);
+named_string_t**
+			iniGetNamedStringList(str_list_t* list, const char* section);
+
 char*		iniGetString(str_list_t*, const char* section, const char* key
 					,const char* deflt, char* value);
 str_list_t	iniGetStringList(str_list_t*, const char* section, const char* key
