@@ -1561,7 +1561,7 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     cfg.size=sizeof(cfg);
     cfg.node_num=bbs_startup.first_node;
     char error[256];
-	error[0]=0;
+	SAFECOPY(error,UNKNOWN_LOAD_ERROR);
 	if(!load_cfg(&cfg, NULL, TRUE, error)) {
     	Application->MessageBox(error,"ERROR Loading Configuration"
 	        ,MB_OK|MB_ICONEXCLAMATION);
@@ -2347,7 +2347,7 @@ void __fastcall TMainForm::ReloadConfigExecute(TObject *Sender)
 	ServicesRecycleExecute(Sender);
 
 	char error[256];
-	error[0]=0;
+	SAFECOPY(error,UNKNOWN_LOAD_ERROR);
 	if(!load_cfg(&cfg, NULL, TRUE, error)) {
     	Application->MessageBox(error,"ERROR Re-loading Configuration"
 	        ,MB_OK|MB_ICONEXCLAMATION);

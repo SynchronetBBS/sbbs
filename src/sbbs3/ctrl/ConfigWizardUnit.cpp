@@ -139,7 +139,7 @@ void __fastcall TConfigWizard::FormShow(TObject *Sender)
     SAFECOPY(scfg.ctrl_dir,MainForm->CtrlDirectory.c_str());
     scfg.size=sizeof(scfg);
     char error[256];
-	error[0]=0;
+	SAFECOPY(error,UNKNOWN_LOAD_ERROR);
     if(!load_cfg(&scfg,NULL,FALSE,error)) {
         Application->MessageBox(error,"ERROR Loadin Configuration"
         	,MB_OK|MB_ICONEXCLAMATION);
