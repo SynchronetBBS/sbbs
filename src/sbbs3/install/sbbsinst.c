@@ -851,6 +851,8 @@ get_distlist(void)
 	}
 	memset(dist[r],0,sizeof(dist_t));
 	uifc.pop(NULL);
+	if(list>=0)
+		close(list);
 	if(r<1)
 		return(NULL);
 	return(dist);
