@@ -81,6 +81,7 @@ BOOL DLLCALL save_cfg(scfg_t* cfg, int backup_level)
 static BOOL fcopy(char* src, char* dest)
 {
 	int		ch;
+	ulong	count=0;
 	FILE*	in;
 	FILE*	out;
 
@@ -96,6 +97,8 @@ static BOOL fcopy(char* src, char* dest)
 		if(ch==EOF)
 			break;
 		fputc(ch,out);
+		if(((count++)%(10*1024))==0)
+			SLEEP(1);
 	}
 
 	fclose(in);
