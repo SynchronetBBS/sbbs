@@ -11,6 +11,7 @@
 #include "gen_defs.h"
 #include "bbslist.h"
 #include "conn.h"
+#include "uifcinit.h"
 
 #define TELNET_TERM_MAXLEN	40
 
@@ -53,7 +54,7 @@ static BYTE* telnet_interpret(BYTE* inbuf, int inlen, BYTE* outbuf, int *outlen)
 {
 	BYTE	command;
 	BYTE	option;
-	BYTE*   first_iac=NULL;
+	BYTE*   first_iac;
 	int 	i;
 
 	if(inlen<1) {

@@ -21,7 +21,7 @@ void mousedrag(unsigned char *scrollback)
 	struct mouse_event mevent;
 	unsigned char *screen;
 	unsigned char *sbuffer;
-	int sbufsize=0;
+	int sbufsize;
 	int pos, startpos,endpos, lines;
 	int outpos;
 	char *copybuf;

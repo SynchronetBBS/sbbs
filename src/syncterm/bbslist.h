@@ -46,5 +46,8 @@ struct bbslist {
 };
 
 struct bbslist *show_bbslist(int mode,char *path);
+void read_list(char *listpath, struct bbslist **list, int *i, int type);
+void free_list(struct bbslist **list, int listcount);
+void add_bbs(char *listpath, struct bbslist *bbs);
 
 #endif

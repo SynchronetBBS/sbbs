@@ -7,6 +7,8 @@
 #include "term.h"
 #include "uifcinit.h"
 #include "bbslist.h"
+#include "conn.h"
+#include "window.h"
 
 void viewscroll(void)
 {

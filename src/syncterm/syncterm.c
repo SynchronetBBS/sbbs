@@ -11,6 +11,7 @@
 #include "conn.h"
 #include "term.h"
 #include "uifcinit.h"
+#include "window.h"
 
 #ifdef _WINSOCKAPI_
 
@@ -322,5 +323,5 @@ int main(int argc, char **argv)
 		"          telnet://nix.synchro.net\n\nPress any key to exit..."
         );
 	getch();
-    exit(0);
+	return(0);
 }
