@@ -2386,7 +2386,7 @@ void sbbs_t::riosync(char abortable)
 			break;								/* abort sync */
 		}
 		if(time(NULL)-start>180) {				/* timeout */
-			errorlog("riosync timeout"); 
+			logline("!!","riosync timeout"); 
 			break;
 		}
 		mswait(100);
