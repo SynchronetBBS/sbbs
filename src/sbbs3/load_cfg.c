@@ -183,8 +183,6 @@ void prep_cfg(scfg_t* cfg)
 		/* default origin line */
 		if(!cfg->sub[i]->origline[0])
 			strcpy(cfg->sub[i]->origline,cfg->origline);
-
-		prep_dir(cfg->ctrl_dir, cfg->sub[i]->echomail_sem);
 	}
 
 	for(i=0;i<cfg->total_dirs;i++) {
