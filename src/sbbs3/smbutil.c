@@ -35,7 +35,7 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#define SMBUTIL_VER "2.20"
+#define SMBUTIL_VER "2.30"
 
 #define NOANALYSIS		(1L<<0)
 
