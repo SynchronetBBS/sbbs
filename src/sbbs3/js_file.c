@@ -508,6 +508,66 @@ js_iniGetValue(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 }
 
 static JSBool
+js_iniSetValue(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*	section;
+	char*	key;
+	char*	result=NULL;
+	int32	i;
+	jsval	value=argv[2];
+	private_t*	p;
+	str_list_t	list;
+
+	*rval = JSVAL_FALSE;
+
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx,getprivate_failure,WHERE);
+		return(JS_FALSE);
+	}
+
+	section=JS_GetStringBytes(JS_ValueToString(cx, argv[0]));
+	key=JS_GetStringBytes(JS_ValueToString(cx, argv[1]));
+
+	if((list=iniReadFile(p->fp))==NULL)
+		return(JS_TRUE);
+
+	if(value==JSVAL_VOID) 	/* unspecified value */
+		result = iniSetString(&list,section,key,"",NULL);
+	else {
+
+		switch(JSVAL_TAG(value)) {
+			case JSVAL_STRING:
+				result = iniSetString(&list,section,key,JS_GetStringBytes(JS_ValueToString(cx,value)),NULL);
+				break;
+			case JSVAL_BOOLEAN:
+				result = iniSetBool(&list,section,key,JSVAL_TO_BOOLEAN(value),NULL);
+				break;
+			case JSVAL_DOUBLE:
+				result = iniSetFloat(&list,section,key,*JSVAL_TO_DOUBLE(value),NULL);
+				break;
+			case JSVAL_OBJECT:
+				result = iniSetString(&list,section,key,JS_GetStringBytes(JS_ValueToString(cx,value)),NULL);
+				break;
+			default:
+				if(JSVAL_IS_NUMBER(value)) {
+					JS_ValueToInt32(cx,value,&i);
+					result = iniSetInteger(&list,section,key,i,NULL);
+					break;
+				}
+				break;
+		}
+	}
+
+	if(result != NULL)
+		*rval = BOOLEAN_TO_JSVAL(iniWriteFile(p->fp,list));
+
+	strListFree(&list);
+
+	return(JS_TRUE);
+}
+
+
+static JSBool
 js_iniGetSections(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char*		prefix=NULL;
@@ -607,6 +667,45 @@ js_iniGetObject(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 
     return(JS_TRUE);
 }
+
+static JSBool
+js_iniSetObject(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+    jsint       i;
+    JSObject*	object;
+	private_t*	p;
+	JSIdArray*	id_array;
+	jsval		set_argv[3];
+
+	*rval = JSVAL_FALSE;
+
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx,getprivate_failure,WHERE);
+		return(JS_FALSE);
+	}
+
+	set_argv[0]=argv[0];	/* section */
+
+	if(!JSVAL_IS_OBJECT(argv[1]))
+		return(JS_TRUE);
+
+    object = JSVAL_TO_OBJECT(argv[1]);
+
+	if((id_array=JS_Enumerate(cx,object))==NULL)
+		return(JS_TRUE);
+
+	for(i=0; i<id_array->length; i++)  {
+		/* property */
+		JS_IdToValue(cx,id_array->vector[i],&set_argv[1]);	
+		/* value */
+		JS_GetProperty(cx,object,JS_GetStringBytes(JSVAL_TO_STRING(set_argv[1])),&set_argv[2]);
+		if(!js_iniSetValue(cx,obj,3,set_argv,rval))
+			break;
+	}
+
+    return(JS_TRUE);
+}
+
 
 static JSBool
 js_iniGetAllObjects(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
@@ -1476,9 +1575,19 @@ static jsSyncMethodSpec js_file_functions[] = {
 		"determined by the type of <i>default</i> value specified")
 	,311
 	},
+	{"iniSetValue",		js_iniSetValue,		3,	JSTYPE_BOOLEAN,	JSDOCSTR("section, key, value")
+	,JSDOCSTR("set the specified <i>key</i> to the specified <i>value</i> in the specified <i>section</i> "
+		"of a <tt>.ini</tt> file")
+	,311
+	},
 	{"iniGetObject",	js_iniGetObject,	1,	JSTYPE_OBJECT,	JSDOCSTR("section")
 	,JSDOCSTR("parse an entire section from a .ini file "
 		"and return all of its keys and values as properties of an object")
+	,311
+	},
+	{"iniSetObject",	js_iniSetObject,	2,	JSTYPE_BOOLEAN,	JSDOCSTR("section, object")
+	,JSDOCSTR("write all the properties of the specified <i>object</i> as separate <tt>key=value</tt> pairs "
+		"in the specified <i>section</i> of a <tt>.ini</tt> file")
 	,311
 	},
 	{"iniGetAllObjects",js_iniGetAllObjects,1,	JSTYPE_ARRAY,	JSDOCSTR("[name_property] [,prefix]")
