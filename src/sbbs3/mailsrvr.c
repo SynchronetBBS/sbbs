@@ -591,7 +591,8 @@ static void pop3_thread(void* arg)
 			break;
 		}
 
-		sockprintf(socket,"+OK Synchronet POP3 Server v%s Ready",MAIL_VERSION);
+		sockprintf(socket,"+OK Synchronet POP3 Server for %s v%s Ready"
+			,PLATFORM_DESC,MAIL_VERSION);
 
 		if(!sockgetrsp(socket,"USER ",buf,sizeof(buf))) {
 			sockprintf(socket,"-ERR USER command expected");
@@ -1188,7 +1189,8 @@ static void smtp_thread(void* arg)
 	sprintf(str,"SMTP: %s",host_ip);
 	status(str);
 
-	sockprintf(socket,"220 %s Synchronet SMTP Server %s Ready",scfg.sys_inetaddr,MAIL_VERSION);
+	sockprintf(socket,"220 %s Synchronet SMTP Server for %s v%s Ready"
+		,scfg.sys_inetaddr,PLATFORM_DESC,MAIL_VERSION);
 	while(1) {
 		rd = sockreadline(socket, buf, sizeof(buf));
 		if(rd<1) 
@@ -1315,10 +1317,11 @@ static void smtp_thread(void* arg)
 
 						_snprintf(hdrfield,sizeof(hdrfield),
 							"Received: from %s (%s [%s])\r\n"
-							"          by %s [%s] (Synchronet Mail Server %s) with %s\r\n"
+							"          by %s [%s] (Synchronet Mail Server for %s v%s) with %s\r\n"
 							"          for %s; %s"
 							,host_name,hello_name,host_ip
-							,scfg.sys_inetaddr,inet_ntoa(server_addr.sin_addr),MAIL_VERSION
+							,scfg.sys_inetaddr,inet_ntoa(server_addr.sin_addr)
+							,PLATFORM_DESC,MAIL_VERSION
 							,esmtp ? "ESMTP" : "SMTP"
 							,rcpt_addr,msgdate(msg.hdr.when_imported,date));
 						smb_hfield(&newmsg, RFC822HEADER, (ushort)strlen(hdrfield), hdrfield);

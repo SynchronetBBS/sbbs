@@ -213,6 +213,22 @@ extern "C" {
 #define BACKSLASH	'\\'
 #endif
 
+/* Target Platform Description */
+#if defined(_WIN32)
+	#define PLATFORM_DESC	"Win32"
+#elif defined(__OS2__)
+	#define PLATFORM_DESC	"OS/2"
+#elif defined(__MSDOS__)
+	#define PLATFORM_DESC	"DOS"
+#elif defined(__linux__)
+	#define PLATFORM_DESC	"Linux"
+#elif defined(__unix__)
+	#define PLATFORM_DESC	"Unix"
+#else
+	#warning "Need to describe target platform"
+	#define PLATFORM_DESC	"UNKNOWN"
+#endif
+
 #if defined(_MSC_VER) || defined(__MINGW32__)
 
 #define CHMOD(s,m)		_chmod(s,m)

@@ -48,22 +48,7 @@
 
 #define VERSION 	"3.00"  /* Version: Major.minor  */
 #define REVISION	'C'
-#if defined(_WIN32)
-	#define TARGET_PLATFORM		"Win32"
-#elif defined(__linux__)
-	#define TARGET_PLATFORM		"Linux"
-#elif defined(__unix__)			
-	#define TARGET_PLATFORM		"Unix"
-#elif defined(__OS2__)
-	#define TARGET_PLATFORM		"OS/2"
-#elif defined(__MSDOS__)
-	#define TARGET_PLATFORM		"DOS"
-#else
-	#warning "Need to describe target platform"
-	#define TARGET_PLATFORM		"UNKNOWN"
-#endif
-
-#define VERSION_NOTICE		"Synchronet BBS for "TARGET_PLATFORM\
+#define VERSION_NOTICE		"Synchronet BBS for "PLATFORM_DESC\
 								"  Version 3.00  "
 #define COPYRIGHT_NOTICE	"Copyright 2000 Rob Swindell"
 #define QWK_HEADER			"Produced by Synchronet BBS  Version 3  "\
