@@ -142,7 +142,8 @@ int sbbs_t::putnodeext(uint number, char *ext)
 	node_ext=-1;
 
 	if(count>(LOOP_NODEDAB/2) && count!=LOOP_NODEDAB) {
-		sprintf(str,"NODE.EXB COLLISION - Count: %d",count);
+		sprintf(str,"NODE.EXB (node %d) COLLISION - Count: %d"
+			,number+1, count);
 		logline("!!",str); 
 	}
 	if(count==LOOP_NODEDAB) {
