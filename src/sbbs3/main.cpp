@@ -66,6 +66,7 @@ uint riobp;
 #endif // _WIN32
 
 time_t	uptime=0;
+DWORD	served=0;
 
 static	uint node_threads_running=0;
 static	uint thread_count=0;
@@ -2264,8 +2265,9 @@ sbbs_t::~sbbs_t()
     	sprintf(node,"Node %d", cfg.node_num);
     else
     	strcpy(node,client_name);
-
+#ifdef _DEBUG
 	lprintf("%s destructor begin", node);
+#endif
 
 //	if(!cfg.node_num)
 //		rmdir(cfg.temp_dir);
@@ -2389,7 +2391,9 @@ sbbs_t::~sbbs_t()
 		lprintf("!MEMORY ERRORS REPORTED IN DATA/DEBUG.LOG!");
 #endif
 
+#ifdef _DEBUG
 	lprintf("%s destructor end", node);
+#endif
 }
 
 /****************************************************************************/
@@ -3202,8 +3206,8 @@ void node_thread(void* arg)
 
 	if(node_threads_running>0)
 		node_threads_running--;
-	lprintf("Node %d thread terminated (%u node threads remain)"
-		,sbbs->cfg.node_num, node_threads_running);
+	lprintf("Node %d thread terminated (%u node threads remain, %lu clients served)"
+		,sbbs->cfg.node_num, node_threads_running, served);
     if(!sbbs->input_thread_running && !sbbs->output_thread_running)
 		delete sbbs;
     else
@@ -3324,7 +3328,8 @@ static void cleanup(int code)
 
 	status("Down");
 	thread_down();
-    lprintf("BBS System thread terminated (%u threads remain)", thread_count);
+    lprintf("BBS System thread terminated (%u threads remain, %lu clients served)"
+		,thread_count, served);
 	if(startup->terminated!=NULL)
 		startup->terminated(code);
 }
@@ -3375,6 +3380,8 @@ void DLLCALL bbs_thread(void* arg)
 	if(startup->js_max_bytes==0)			startup->js_max_bytes=JAVASCRIPT_MAX_BYTES;
 #endif
 
+	uptime=0;
+	served=0;
 	startup->recycle_now=FALSE;
 	recycle_server=true;
 	do {
@@ -3484,7 +3491,7 @@ void DLLCALL bbs_thread(void* arg)
 	}
 
 	if(uptime==0)
-		uptime=time(NULL);
+		uptime=time(NULL);	/* this must be done *after* setting the timezone */
 
     if(startup->last_node>scfg.sys_nodes) {
     	lprintf("Specified last_node (%d) > sys_nodes (%d), auto-corrected"
@@ -3975,6 +3982,7 @@ void DLLCALL bbs_thread(void* arg)
 		new_node->input_thread=(HANDLE)_beginthread(input_thread,0, new_node);
 		_beginthread(output_thread, 0, new_node);
 		_beginthread(node_thread, 0, new_node);
+		served++;
 	}
 
     // Close all open sockets
