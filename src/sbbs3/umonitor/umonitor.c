@@ -116,7 +116,7 @@ int spyon(char *sockname)  {
 	struct sockaddr_un spy_name;
 	socklen_t	spy_len;
 	char		key;
-	char		buf[1];
+	char		buf;
 	int		i;
 	struct	termios	tio;
 	struct	termios	old_tio;
@@ -125,6 +125,7 @@ int spyon(char *sockname)  {
 	int		retval=0;
 	char	ANSIbuf[32];
 	int		parsing=0;
+	int		telnet_strip=0;
 
 	/* ToDo Test for it actually being a socket! */
 	/* Well, it will fail to connect won't it?   */
@@ -222,7 +223,20 @@ int spyon(char *sockname)  {
 		}
 		if(spy_sock != INVALID_SOCKET && FD_ISSET(spy_sock,&rd))  {
 			if((i=read(spy_sock,&buf,1))==1)  {
-				write(STDOUT_FILENO,buf,1);
+				if(telnet_strip) {
+					telnet_strip++;
+					if(buf=='\xff' && telnet_strip==2) {
+						telnet_strip=0;
+						write(STDOUT_FILENO,&buf,1);
+					}
+					if(telnet_strip==3)
+						telnet_strip=0;
+				}
+				else
+					if(buf=='\xff')
+						telnet_strip=1;
+					else
+						write(STDOUT_FILENO,&buf,1);
 			}
 			else if(i<0) {
 				close(spy_sock);
