@@ -85,6 +85,13 @@ enum {
 	,SYS_PROP_EXPIRED_REST
 	,SYS_PROP_EXPIRED_EXEMPT
 
+	/* directories */
+	,SYS_PROP_NODE_DIR
+	,SYS_PROP_CTRL_DIR
+	,SYS_PROP_DATA_DIR
+	,SYS_PROP_TEXT_DIR
+	,SYS_PROP_TEMP_DIR
+	,SYS_PROP_EXEC_DIR
 };
 
 static JSBool js_system_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
@@ -220,6 +227,24 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 		case SYS_PROP_EXPIRED_EXEMPT:
 			*vp = INT_TO_JSVAL(cfg->expired_exempt);
 			break;
+		case SYS_PROP_NODE_DIR:
+			*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, cfg->node_dir));
+			break;
+		case SYS_PROP_CTRL_DIR:
+			*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, cfg->ctrl_dir));
+			break;
+		case SYS_PROP_DATA_DIR:
+			*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, cfg->data_dir));
+			break;
+		case SYS_PROP_TEXT_DIR:
+			*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, cfg->text_dir));
+			break;
+		case SYS_PROP_TEMP_DIR:
+			*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, cfg->temp_dir));
+			break;
+		case SYS_PROP_EXEC_DIR:
+			*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, cfg->exec_dir));
+			break;
 	}
 
 	return(TRUE);
@@ -291,6 +316,15 @@ static struct JSPropertySpec js_system_properties[] = {
 	{	"expired_flags4",			SYS_PROP_EXPIRED_FLAGS4	,SYSOBJ_FLAGS,	NULL,	NULL },
 	{	"expired_restrictions",		SYS_PROP_EXPIRED_REST	,SYSOBJ_FLAGS,	NULL,	NULL },
 	{	"expired_exemptions",		SYS_PROP_EXPIRED_EXEMPT	,SYSOBJ_FLAGS,	NULL,	NULL },	
+
+	/* directories */
+	{	"node_dir",					SYS_PROP_NODE_DIR		,SYSOBJ_FLAGS,	NULL,	NULL },	
+	{	"ctrl_dir",					SYS_PROP_CTRL_DIR		,SYSOBJ_FLAGS,	NULL,	NULL },	
+	{	"data_dir",					SYS_PROP_DATA_DIR		,SYSOBJ_FLAGS,	NULL,	NULL },	
+	{	"text_dir",					SYS_PROP_TEXT_DIR		,SYSOBJ_FLAGS,	NULL,	NULL },	
+	{	"temp_dir",					SYS_PROP_TEMP_DIR		,SYSOBJ_FLAGS,	NULL,	NULL },	
+	{	"exec_dir",					SYS_PROP_EXEC_DIR		,SYSOBJ_FLAGS,	NULL,	NULL },	
+
 	{0}
 };
 
