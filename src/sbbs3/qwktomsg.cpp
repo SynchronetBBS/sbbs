@@ -184,6 +184,7 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 				}
 				k+=strlen(qwkbuf+k);
 				header_cont=false;
+				continue;
 			}
 			if(!taillen && qwkbuf[k]==SP && col==3 && bodylen>=3
 				&& body[bodylen-3]=='-' && body[bodylen-2]=='-'
