@@ -1732,37 +1732,30 @@ function IRCClient_do_links(mask) {
 
 // Don't hunt for servers based on nicknames, as TRACE is more explicit.
 function IRCClient_do_trace(target) {
-	var server;
-	var nick;
+	var server = searchbyserver(target);
 
-	if (target.match(/[.]/)) { // probably a server
-		server = searchbyserver(target);
-		if (server == -1) { // we hunted ourselves
-			// FIXME: What do these numbers mean? O_o?
-			this.numeric206("30","1","0",servername);
-			this.trace_all_opers();
-		} else if (server) {
-			server.rawout(":" + this.nick + " TRACE " + target);
-			this.numeric200(target,server.nick);
-			return 0;
-		} else {
+	if (server == -1) { // we hunted ourselves
+		// FIXME: What do these numbers mean? O_o?
+		this.numeric206("30","1","0",servername);
+		this.trace_all_opers();
+	} else if (server) {
+		server.rawout(":" + this.nick + " TRACE " + target);
+		this.numeric200(target,server.nick);
+		return 0;
+	} else {
+		// Okay, we've probably got a user.
+		var nick = Users[target.toUpperCase()];
+		if (!nick) {
 			this.numeric402(target);
 			return 0;
-		}
-	} else { // user.
-		nick = Users[target.toUpperCase()];
-		if (nick.local) {
+		} else if (nick.local) {
 			if (nick.mode&USERMODE_OPER)
 				this.numeric204(nick);
 			else
 				this.numeric205(nick);
-		} else if (nick) {
+		} else {
 			nick.rawout(":" + this.nick + " TRACE " + target);
 			this.numeric200(target,Servers[nick.parent.toLowerCase()].nick);
-			return 0;
-		} else {
-			this.numeric402(target);
-			return 0;
 		}
 	}
 	this.numeric(262, target + " :End of /TRACE.");
