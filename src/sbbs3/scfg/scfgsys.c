@@ -163,7 +163,7 @@ If you want your users to be forced to change their passwords
 periodically, select Yes.
 */
 			i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
-				,"Force Periodic Password uifc.changes",opt);
+				,"Force Periodic Password Changes",opt);
 			if(!i) {
 				ultoa(cfg.sys_pwdays,str,10);
 			SETHELP(WHERE);
@@ -175,7 +175,7 @@ If a user has not voluntarily changed his or her password in this
 many days, he or she will be forced to change their password upon
 logon.
 */
-				uifc.input(WIN_MID,0,0,"Maximum Days Between Password uifc.changes"
+				uifc.input(WIN_MID,0,0,"Maximum Days Between Password Changes"
 					,str,5,K_NUMBER|K_EDIT);
 				cfg.sys_pwdays=atoi(str); }
 			else if(i==1 && cfg.sys_pwdays) {
