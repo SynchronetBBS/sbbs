@@ -272,7 +272,7 @@ int main()
 		sem_wait(&thread_data.child_sem);	/* wait for thread to begin */
 		for(i=0;i<10;i++) {
 			printf("<parent>");
-			SLEEP(1000);
+			SLEEP(5000);
 			sem_post(&thread_data.parent_sem);
 			sem_wait(&thread_data.child_sem);
 		}

@@ -38,8 +38,6 @@
 #ifndef _SEMWRAP_H
 #define _SEMWRAP_H
 
-#include "threadwrap.h"
-
 #if defined(__cplusplus)
 extern "C" {
 #endif
@@ -60,12 +58,6 @@ extern "C" {
 	#else
 		#include <semaphore.h>	/* POSIX semaphores */
 	#endif
-
-	/* Win32 thread API wrappers */
-	ulong _beginthread(void( *start_address )( void * )
-			,unsigned stack_size, void *arglist);
-
-	#define GetCurrentThreadId()		pthread_self()
 
 	int 	sem_trywait_block(sem_t *sem, unsigned long timeout);
 
