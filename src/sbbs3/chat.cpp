@@ -721,6 +721,7 @@ void sbbs_t::privchat(bool local)
 			;
 	char 	tmp[512];
 	char	outpath[MAX_PATH+1];
+	char	inpath[MAX_PATH+1];
 	uchar	ch;
 	int 	in,out,i,n,echo=1,x,y,activity,remote_activity;
     int		local_y=1,remote_y=1;
@@ -819,12 +820,12 @@ void sbbs_t::privchat(bool local)
 	}
 
 	if(local)
-		sprintf(str,"%slchat.dab",cfg.node_dir);
+		sprintf(inpath,"%slchat.dab",cfg.node_dir);
 	else
-		sprintf(str,"%schat.dab",cfg.node_path[n-1]);
-	if(!fexist(str))		/* Wait while it's created for the first time */
+		sprintf(inpath,"%schat.dab",cfg.node_path[n-1]);
+	if(!fexist(inpath))		/* Wait while it's created for the first time */
 		mswait(2000);
-	if((in=sopen(str,O_RDWR|O_CREAT|O_BINARY,SH_DENYNO,S_IREAD|S_IWRITE))==-1) {
+	if((in=sopen(inpath,O_RDWR|O_CREAT|O_BINARY,SH_DENYNO,S_IREAD|S_IWRITE))==-1) {
 		close(out);
 		errormsg(WHERE,ERR_OPEN,str,O_RDWR|O_DENYNONE|O_CREAT);
 		return; }
@@ -1008,6 +1009,7 @@ void sbbs_t::privchat(bool local)
 			if(tell(in)>=PCHAT_LEN)
 				lseek(in,0L,SEEK_SET);
 			ch=0;
+			utime(inpath,NULL);
 			read(in,&ch,1);
 			lseek(in,-1L,SEEK_CUR);
 			if(!ch) break;					  /* char from other node */
