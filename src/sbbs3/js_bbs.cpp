@@ -452,7 +452,7 @@ js_text(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	i--;
 
 	if(i<0 || i>=TOTAL_TEXT)
-		*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, "-Invalid Text Index-"));
+		*rval = *rval = JSVAL_NULL;
 	else
 		*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, sbbs->text[i]));
 
