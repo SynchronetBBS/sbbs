@@ -11,6 +11,8 @@ else {
 	writeln("<table>");
 	for(fn in files) {
 		var thisfile=files[fn].replace(/^.*\//,'');
+		if(thisfile='access.ars')
+			continue;
 		write('<tr><td><a href="'+http_request.virtual_path+thisfile+'">'+thisfile+"</a></td>");
 		if(file_isdir(files[fn])) {
 			write('<td>Directory</td>');
