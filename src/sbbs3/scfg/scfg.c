@@ -85,6 +85,7 @@ int main(int argc, char **argv)
 	char 	str[MAX_PATH+1];
  	char	exepath[MAX_PATH+1];
 	BOOL    door_mode=FALSE;
+	int		ciolib_mode=CIOLIB_MODE_AUTO;
 
     printf("\r\nSynchronet Configuration Utility (%s)  v%s  Copyright 2004 "
         "Rob Swindell\r\n",PLATFORM_DESC,VERSION);
@@ -118,6 +119,8 @@ int main(int argc, char **argv)
         			uifc.mode|=UIFC_COLOR;
                     break;
                 case 'D':
+					printf("NOTICE: The -d option is depreciated, use -id instead\r\n");
+					SLEEP(2000);
                     door_mode=TRUE;
                     break;
                 case 'B':
@@ -142,7 +145,31 @@ int main(int argc, char **argv)
                     uifc.esc_delay=atoi(argv[i]+2);
                     break;
 				case 'I':
-					uifc.mode|=UIFC_IBM;
+					switch(toupper(argv[i][2])) {
+						case 'A':
+							ciolib_mode=CIOLIB_MODE_ANSI;
+							break;
+						case 'C':
+							ciolib_mode=CIOLIB_MODE_CURSES;
+							break;
+						case 0:
+							printf("NOTICE: The -i option is depreciated, use -if instead\r\n");
+							SLEEP(2000);
+						case 'F':
+							ciolib_mode=CIOLIB_MODE_CURSES_IBM;
+							break;
+						case 'X':
+							ciolib_mode=CIOLIB_MODE_X;
+							break;
+						case 'W':
+							ciolib_mode=CIOLIB_MODE_CONIO;
+							break;
+						case 'D':
+		                    door_mode=TRUE;
+		                    break;
+						default:
+							goto USAGE;
+					}
 					break;
                 case 'V':
                     textmode(atoi(argv[i]+2));
@@ -151,19 +178,26 @@ int main(int argc, char **argv)
 					auto_save=TRUE;
 					break;
                 default:
+					USAGE:
                     printf("\nusage: scfg [ctrl_dir] [options]"
                         "\n\noptions:\n\n"
                         "-s  =  don't check directories\r\n"
                         "-f  =  force save of config files\r\n"
                         "-u  =  update all message base status headers\r\n"
                         "-h  =  don't update message base status headers\r\n"
-                        "-d  =  run in standard input/output/door mode\r\n"
                         "-c  =  force color mode\r\n"
 						"-m  =  force monochrome mode\r\n"
-#ifdef USE_UIFC32
                         "-e# =  set escape delay to #msec\r\n"
-						"-i  =  force IBM charset\r\n"
+						"-iX =  set interface mode to X (default=auto) where X is one of:\r\n"
+#ifdef __unix__
+						"       X = X11 mode\r\n"
+						"       C = Curses mode\r\n"
+						"       F = Curses mode with forced IBM charset\r\n"
+#else
+						"       W = Win32 native mode\r\n"
 #endif
+						"       A = ANSI mode\r\n"
+						"       D = standard input/output/door mode\r\n"
                         "-v# =  set video mode to # (default=auto)\r\n"
                         "-l# =  set screen lines to # (default=auto-detect)\r\n"
                         "-b# =  set automatic back-up level (default=%d)\r\n"
@@ -187,8 +221,14 @@ FULLPATH(cfg.ctrl_dir,".",sizeof(cfg.ctrl_dir));
 backslashcolon(cfg.ctrl_dir);
 
 uifc.size=sizeof(uifc);
-if(!door_mode)
-    i=uifcini32(&uifc);  /* curses/conio */
+if(!door_mode) {
+	i=initciolib(ciolib_mode);
+	if(i!=0) {
+    	printf("ciolib library init returned error %d\n",i);
+    	exit(1);
+	}
+    i=uifcini32(&uifc);  /* curses/conio/X/ANSI */
+}
 else
     i=uifcinix(&uifc);  /* stdio */
 if(i!=0) {
