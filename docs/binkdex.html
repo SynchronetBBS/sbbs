@@ -1,0 +1,82 @@
+<HTML>
+<HEAD>
+<TITLE>BinkD and Synchronet Example Setup</TITLE>
+</HEAD>
+<BODY>
+binkd Docs are available at http://www.doe.carleton.ca/~nsoveiko/fido/binkd/man/binkd.man.html<br>
+Ok, let's just run through them then...
+I'll use the following:
+<DL>
+<DT><VAR>bP</VAR> <DD>for your binkd path (Mine is /usr/bbs/sbbs/fido)
+<DT><VAR>sP</VAR> <DD>for the sbbs path
+<DT><VAR>fZ</VAR> <DD>for the Fidonet Zone (1 for north america)
+<DT><VAR>fA</VAR> <DD>Your complete fidonet address (ie: 1:140/17)
+<DT><VAR>SysN</VAR> <DD>For your BBS name (ie FreeBSD Synchronet)
+<DT><VAR>SL</VAR> <DD>For your BBS location (ie Yorkton, Sk)
+<DT><VAR>SN</VAR> <DD>For the sysop name (ie Stephen Hurd)
+<DT><VAR>HfA</VAR> <DD>Your hubs address (ie 1:140/1)
+<DT><VAR>HiA</VAR> <DD>Your hubs internet address
+<DT><VAR>PASS</VAR> <DD>The password for the hub
+</DL>
+Note, IONs are listed as 300bps in the nodeinfo.<br>
+-------- Start of binkd.conf --------
+<PRE>
+domain fidonet <VAR>bP</VAR>/outbound <VAR>fZ</VAR>
+domain fido alias-for fidonet
+domain fidonet.org alias-for fidonet
+address <VAR>fA</VAR>@fidonet
+sysname "<VAR>SysN</VAR>"
+location "<VAR>SL</VAR>"
+sysop "<VAR>SN</VAR>"
+nodeinfo 300,TCP,BINKP
+connect-timeout 60
+try 10
+hold 600
+send-if-pwd
+log <VAR>bP</VAR>/binkd.log
+loglevel 4
+percents
+printq
+backresolv
+inbound <VAR>bP</VAR>/inbsecure
+inbound-nonsecure <VAR>bP</VAR>/inbound  
+temp-inbound <VAR>bP</VAR>/incomplete
+minfree 2048
+minfree-nonsecure 2048
+kill-dup-partial-files
+kill-old-partial-files 86400
+kill-old-bsy 43200
+flag /usr/bbs/sbbs/data/fidoin.now *.pkt *.PKT
+flag /usr/bbs/sbbs/data/fidoin.now *.su? *.mo? *.tu? *.we? *.th? *.fr? *.sa? *.SU? *.MO? *.TU? *.WE? *.TH? *.FR? *.SA?
+prescan
+node <VAR>HfA</VAR>@fidonet -md <VAR>HiA</VAR> <VAR>PASS</VAR>
+</PRE>
+-------- End of binkd.conf --------<br>
+<br>
+Then you need to set up sbbsecho.<br>
+Here's my sbbsecgo.cfg file with the same replacements as above:<br>
+-------- Start of sbbsecho.cfg --------
+<PRE>
+NOTIFY 1
+SECURE_ECHOMAIL
+FUZZY_ZONE
+FLO_MAILER
+KILL_EMPTY
+LOG 0FFFFFFF
+INBOUND <VAR>bP</VAR>/inbound/
+SECURE_INBOUND <VAR>bP</VAR>/inbsecure/
+OUTBOUND <VAR>bP</VAR>/outbound/
+ARCSIZE 0
+PKTSIZE 0
+PKTPWD ALL <VAR>PASS</VAR>
+PACKER ZIP 0 504B
+  PACK /usr/local/bin/zip %f %s
+  UNPACK /usr/local/bin/unzip -j %f -d %s
+END
+USEPACKER  ZIP ALL
+AREAFIX    ALL <VAR>PASS</VAR>
+ROUTE_TO   <VAR>HfA</VAR> ALL
+</PRE>
+-------- End of sbbsecho.cfg --------
+</BODY>
+</HMTL>
