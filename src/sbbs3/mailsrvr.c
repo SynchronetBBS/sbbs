@@ -2135,6 +2135,9 @@ static void smtp_thread(void* arg)
 						if(strListCount(mailproc_list[i].to) && !mailproc_match[i])
 							continue;
 
+						if(!mailproc_list[i].passthru)
+							msg_handled=TRUE;
+
 						mailcmdstr(mailproc_list[i].cmdline
 							,msgtxt_fname, rcptlst_fname, proc_err_fname
 							,host_name, host_ip, relay_user.number
@@ -2173,14 +2176,15 @@ static void smtp_thread(void* arg)
 						fclose(proc_err);
 						msg_handled=TRUE;
 					}
-					remove(proc_err_fname);	/* Remove error file here */
-					if(!msg_handled
-						&& (!fexist(msgtxt_fname) || !fexist(rcptlst_fname))) {
+					else if(!fexist(msgtxt_fname) || !fexist(rcptlst_fname)) {
 						lprintf(LOG_WARNING,"%04d SMTP External process removed %s file"
 							,socket, fexist(msgtxt_fname)==FALSE ? "message text" : "recipient list");
 						sockprintf(socket,ok_rsp);
 						msg_handled=TRUE;
 					}
+					else if(msg_handled)
+						sockprintf(socket,ok_rsp);
+					remove(proc_err_fname);	/* Remove error file here */
 				}
 
 				/* Re-open files */
