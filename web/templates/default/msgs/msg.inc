@@ -3,7 +3,7 @@
 
 <table class="msg" border="0" width="95%">
 <tr class="msg">
-    <td width="1%" class="msgheader" nowrap="nowrap">Subject:</td>
+    <td width="1%" class="msgheader" nowrap="nowrap" onDblClick="window.open().document.write('%%hfields%%')">Subject:</td>
     <td nowrap="nowrap">%%hdr:subject%%</td>
     <td width="1%" class="msgheader" nowrap="nowrap">Date:</td>
     <td nowrap="nowrap">%%JS:system.timestr(@@hdr:when_written_time@@)%%</td>
