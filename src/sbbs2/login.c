@@ -74,7 +74,7 @@ if((online==ON_REMOTE || sys_misc&SM_REQ_PW || node_misc&NM_SYSPW)
 	if(!online) {
 		useron.number=0;
 		return(LOGIC_FALSE); }
-	if(strcmp(useron.pass,str)) {
+	if(stricmp(useron.pass,str)) {
 		bputs(text[InvalidLogon]);
 		sprintf(tmp,"(%04u)  %-25s  Password: '%s' Attempt: '%s'"
 			,useron.number,useron.alias,useron.pass,str);
