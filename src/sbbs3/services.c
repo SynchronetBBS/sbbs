@@ -66,6 +66,7 @@
 #include "sbbs.h"
 #include "services.h"
 #include "ident.h"	/* identify() */
+#include "ini_file.h"
 
 /* Constants */
 
@@ -97,6 +98,20 @@ typedef struct {
 	BOOL	terminated;
 } service_t;
 
+static ini_bitdesc_t service_options[] = {
+
+	{ BBS_OPT_NO_HOST_LOOKUP		,"NO_HOST_LOOKUP"		},
+	{ BBS_OPT_GET_IDENT				,"GET_IDENT"			},
+	{ BBS_OPT_NO_RECYCLE			,"NO_RECYCLE"			},
+	{ BBS_OPT_MUTE					,"MUTE"					},
+	{ SERVICE_OPT_UDP				,"UDP"					},
+	{ SERVICE_OPT_STATIC			,"STATIC"				},
+	{ SERVICE_OPT_STATIC_LOOP		,"LOOP"					},
+	{ SERVICE_OPT_NATIVE			,"NATIVE"				},
+	/* terminator */				
+	{ -1							,NULL					}
+};
+
 typedef struct {
 	SOCKET			socket;
 	SOCKADDR_IN		addr;
@@ -110,7 +125,7 @@ typedef struct {
 	int				udp_len;
 } service_client_t;
 
-static service_t	*service;
+static service_t	*service=NULL;
 static DWORD		services=0;
 
 static int lprintf(char *fmt, ...)
@@ -1070,8 +1085,10 @@ static void native_static_service_thread(void* arg)
 	else
 		strcpy(cmd,service->cmd);
 	sprintf(fullcmd,cmd,socket_dup);
-
-	system(fullcmd);
+	
+	do {
+		system(fullcmd);
+	} while(!service->terminated && service->options&SERVICE_OPT_STATIC_LOOP);
 
 	thread_down();
 	lprintf("%04d %s static service thread terminated (%lu clients served)"
@@ -1232,18 +1249,16 @@ void DLLCALL services_terminate(void)
 
 #define NEXT_FIELD(p)	while(*p && *p>' ') p++; while(*p && *p<=' ') p++;
 
-static service_t* read_services_cfg(char* services_cfg, DWORD* services)
+static service_t* read_services_cfg(service_t* service, char* services_cfg, DWORD* services)
 {
 	char*	p;
 	char*	tp;
 	char	line[1024];
 	FILE*	fp;
-	service_t*	service=NULL;
-
-	if((fp=fopen(services_cfg,"r"))==NULL) {
-		lprintf("!ERROR %d opening %s",errno,services_cfg);
-		return(NULL);
-	}
+	service_t*	np;
+	
+	if((fp=fopen(services_cfg,"r"))==NULL)
+		return(service);
 
 	lprintf("Reading %s",services_cfg);
 	for((*services)=0;!feof(fp) && (*services)<MAX_SERVICES;) {
@@ -1254,10 +1269,11 @@ static service_t* read_services_cfg(char* services_cfg, DWORD* services)
 		if(*p==0 || *p==';')	/* ignore blank lines or comments */
 			continue;
 		
-		if((service=(service_t*)realloc(service,sizeof(service_t)*((*services)+1)))==NULL) {
+		if((np=(service_t*)realloc(service,sizeof(service_t)*((*services)+1)))==NULL) {
 			lprintf("!MALLOC FAILURE");
-			return(FALSE);
+			return(service);
 		}
+		service=np;
 		memset(&service[*services],0,sizeof(service_t));
 		service[*services].socket=INVALID_SOCKET;
 
@@ -1283,6 +1299,53 @@ static service_t* read_services_cfg(char* services_cfg, DWORD* services)
 
 	return(service);
 }
+
+static service_t* read_services_ini(service_t* service, char* services_ini, DWORD* services)
+{
+	uint		i,j;
+	FILE*		fp;
+	char		cmd[MAX_LINE_LEN+1];
+	char**		sec_list;
+	service_t*	np;
+	service_t	serv;
+
+	if((fp=fopen(services_ini,"r"))==NULL)
+		return(service);
+
+	lprintf("Reading %s",services_ini);
+	sec_list = iniGetSectionList(fp,"");
+    for(i=0; sec_list!=NULL && sec_list[i]!=NULL; i++) {
+		memset(&serv,0,sizeof(service_t));
+		SAFECOPY(serv.protocol,sec_list[i]);
+		serv.socket=INVALID_SOCKET;
+		serv.port=iniGetShortInt(fp,sec_list[i],"Port",0);
+		serv.max_clients=iniGetInteger(fp,sec_list[i],"MaxClients",0);
+		serv.options=iniGetBitField(fp,sec_list[i],"Options",service_options,0);
+		SAFECOPY(serv.cmd,iniGetString(fp,sec_list[i],"Command","",cmd));
+
+		for(j=0;j<*services;j++)
+			if(service[j].port==serv.port && service[j].options==serv.options)
+				break;
+		if(j<*services)	{ /* ignore duplicate services */
+			lprintf("Ignoring duplicate service: %s",sec_list[i]);
+			continue;
+		}
+		if((np=(service_t*)realloc(service,sizeof(service_t)*((*services)+1)))==NULL) {
+			fclose(fp);
+			lprintf("!MALLOC FAILURE");
+			return(service);
+		}
+		service=np;
+		service[*services]=serv;
+		(*services)++;
+	}
+	iniFreeStringList(sec_list);
+
+	fclose(fp);
+
+	return(service);
+}
+
 
 static void cleanup(int code)
 {
@@ -1446,11 +1509,19 @@ void DLLCALL services_thread(void* arg)
 
 		if(startup->cfg_file[0]==0)			
 			sprintf(startup->cfg_file,"%sservices.cfg",scfg.ctrl_dir);
-		if((service=read_services_cfg(startup->cfg_file, &services))==NULL) {
-			lprintf("!Failure reading configuration file");
+		service=read_services_cfg(service, startup->cfg_file, &services);
+
+		if(startup->ini_file[0]==0)			
+			sprintf(startup->ini_file,"%sservices.ini",scfg.ctrl_dir);
+		service=read_services_ini(service, startup->ini_file, &services);
+
+		if(service==NULL) {
+			lprintf("!Failure reading configuration file (%s or %s)"
+				,startup->cfg_file,startup->ini_file);
 			cleanup(1);
 			return;
 		}
+
 
 		/* Open and Bind Listening Sockets */
 		total_sockets=0;
@@ -1537,10 +1608,10 @@ void DLLCALL services_thread(void* arg)
 			/* start thread here */
 			SAFECOPY(cmd,service[i].cmd);
 			strlwr(cmd);
-			if(strstr(cmd,".js"))	/* JavaScript */
-				_beginthread(js_static_service_thread, 0, &service[i]);
-			else					/* Native */
+			if(service[i].options&SERVICE_OPT_NATIVE)	/* Native */
 				_beginthread(native_static_service_thread, 0, &service[i]);
+			else										/* JavaScript */
+				_beginthread(js_static_service_thread, 0, &service[i]);
 		}
 
 		/* signal caller that we've started up successfully */
@@ -1785,10 +1856,10 @@ void DLLCALL services_thread(void* arg)
 
 				SAFECOPY(cmd,service[i].cmd);
 				strlwr(cmd);
-				if(strstr(cmd,".js"))	/* JavaScript */
-					_beginthread(js_service_thread, 0, client);
-				else					/* Native */
+				if(service[i].options&SERVICE_OPT_NATIVE)	/* Native */
 					_beginthread(native_service_thread, 0, client);
+				else										/* JavaScript */
+					_beginthread(js_service_thread, 0, client);
 				service[i].served++;
 				served++;
 			}
