@@ -585,7 +585,8 @@ static struct JSPropertySpec js_user_properties[] = {
 	{	"qwk_settings"		,USER_PROP_QWK		 	,USER_PROP_FLAGS,		NULL,NULL},
 	{	"chat_settings"		,USER_PROP_CHAT		 	,USER_PROP_FLAGS,		NULL,NULL},
 	{	"temp_file_ext"		,USER_PROP_TMPEXT	 	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"newscan_date"		,USER_PROP_NS_TIME	 	,USER_PROP_FLAGS,		NULL,NULL},
+	{	"new_file_time"		,USER_PROP_NS_TIME	 	,USER_PROP_FLAGS,		NULL,NULL},
+	{	"newscan_date"		,USER_PROP_NS_TIME	 	,0, /* Alias */			NULL,NULL},
 	{	"download_protocol"	,USER_PROP_PROT		 	,USER_PROP_FLAGS,		NULL,NULL},
 	{	"logontime"			,USER_PROP_LOGONTIME 	,USER_PROP_FLAGS,		NULL,NULL},
 	{0}
