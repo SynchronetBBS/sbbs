@@ -4,7 +4,7 @@
 #include "gen_defs.h"
 
 #if defined(_WIN32)
-	#if 1
+	#if 0
 	#define BEEP(freq,dur)	xpbeep((double)(freq),(DWORD)(dur))
 	#else
 	#define BEEP(freq,dur)	Beep((DWORD)(freq),(DWORD)(dur))
