@@ -1,7 +1,7 @@
 install/GNUmakefile
 install/termcap
 install/terminfo
-include
+include/mozilla
 src/xpdev
 src/uifc
 src/sbbs3
