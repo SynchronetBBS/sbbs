@@ -12,7 +12,7 @@
 <input type="hidden" name="msg_sub" value="^^sub:code^^" />
 <table class="msglist" cellpadding="5" cellspacing="2" border="0" width="100%">
 <tr class="msglist">
-     @@JS:template.can_delete?'<th class="msglist">X</th>':''@@
+     @@JS:template.can_delete?'<th class="msglist"><input name="SelectAll" title="Select All Messages" type="checkbox" onclick="checkBoxes(this.form, this.checked)"></th>':''@@
     <th class="msglist"><img src="/graphics/attach_black.gif" title="Attachment?" alt="Attachment?" width="10" height="13" border="0" /></th>
     <th class="msglist">Subject</th>
     <th class="msglist">From</th>
@@ -51,29 +51,20 @@
     <<END REPEAT messages>>
     </table>
     <br />
-    @@JS:template.can_delete?'<div align="center"><input type="button" onclick="SetAllCheckBoxes(\'DeleteMsg\', \'number\', true);" value="Select All" />&nbsp;&nbsp;<input type="button" onclick="SetAllCheckBoxes(\'DeleteMsg\', \'number\', false);" value="Deselect All" />&nbsp;&nbsp;<input class="msg" type="submit" name="Action" value="Delete Message(s)" /></div>':''@@
+    @@JS:template.can_delete?'<div align="center"><input class="msg" type="submit" name="Action" value="Delete Selected Message(s)" /></div>':''@@
 </form>
 		
 <script type="text/javascript">
 <!--
-	function SetAllCheckBoxes(FormName, FieldName, CheckValue)
-{
-	if(!document.forms[FormName])
-	return;
-	var objCheckBoxes = document.forms[FormName].elements[FieldName];
-	if(!objCheckBoxes)
-	return;
-	var countCheckBoxes = objCheckBoxes.length;
-	if(!countCheckBoxes)
-	objCheckBoxes.checked = CheckValue;
-	else
-		// set the check value for all check boxes
-				for(var i = 0; i < countCheckBoxes; i++)
-	objCheckBoxes[i].checked = CheckValue;
+	function checkBoxes (form, check) {
+	for (var c = 0; c < form.elements.length; c++)
+		if (form.elements[c].type == 'checkbox')
+		form.elements[c].checked = check;
 }
 // -->
 </script>
 
+		
 <div align="center">@@pagelinks@@</div>
 <br />
 
