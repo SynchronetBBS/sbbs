@@ -52,7 +52,7 @@ int main(int argc, char **argv)
 		if((stream=fopen(files[i],"rb"))==NULL) {
 			fprintf(stderr,"!error opening %s\r\n",files[i]);
 			return(-3); }
-		printf("\r\n%s ",files[i]);
+		printf("\r\nIndexing %s ...",files[i]);
 		line=0;
 		while(!feof(stream)) {
 			if(!fgets(str,128,stream))
