@@ -115,7 +115,7 @@ bool sbbs_t::logon()
 			,cfg.cdt_per_dollar*cfg.node_dollars_per_call);
 		sprintf(str,"%s #%u was billed $%d T: %lu seconds"
 			,useron.alias,useron.number
-			,cfg.node_dollars_per_call,now-answertime);
+			,cfg.node_dollars_per_call,(ulong)(now-answertime));
 		logline("$+",str);
 		hangup();
 		return(false); 
