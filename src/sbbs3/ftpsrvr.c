@@ -69,11 +69,6 @@
 /* Constants */
 
 #define FTP_SERVER				"Synchronet FTP Server"
-#ifdef  JAVASCRIPT
-#define FTP_VERSION				"1.10"
-#else
-#define FTP_VERSION				"1.05"
-#endif
 
 #define STATUS_WFC				"Listening"
 #define ANONYMOUS				"anonymous"
@@ -101,6 +96,7 @@ static DWORD	thread_count=0;
 static HANDLE	socket_mutex=NULL;
 static time_t	uptime=0;
 static BOOL		recycle_server=FALSE;
+static char		revision[16];
 #ifdef _DEBUG
 	static BYTE 	socket_debug[0x10000]={0};
 
@@ -521,7 +517,7 @@ js_initcx(JSRuntime* runtime, SOCKET sock, JSObject** glob, JSObject** ftp)
 			,NULL,0))==NULL)
 			break;
 
-		sprintf(ver,"%s v%s",FTP_SERVER,FTP_VERSION);
+		sprintf(ver,"%s %s",FTP_SERVER,revision);
 		val = STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, ver));
 		if(!JS_SetProperty(js_cx, server, "version", &val))
 			break;
@@ -2351,8 +2347,8 @@ static void ctrl_thread(void* arg)
 	client_on(sock,&client,FALSE /* update */);
 
 	sockprintf(sock,"220-%s (%s)",scfg.sys_name, scfg.sys_inetaddr);
-	sockprintf(sock," Synchronet FTP Server for %s v%s Ready"
-		,PLATFORM_DESC,FTP_VERSION);
+	sockprintf(sock," Synchronet FTP Server %s/%s Ready"
+		,revision,PLATFORM_DESC);
 	sprintf(str,"%sftplogin.txt",scfg.text_dir);
 	if((fp=fopen(str,"rb"))!=NULL) {
 		while(!feof(fp)) {
@@ -4270,10 +4266,12 @@ const char* DLLCALL ftp_ver(void)
 
 	DESCRIBE_COMPILER(compiler);
 
-	sprintf(ver,"%s v%s%s  "
+	sscanf("$Revision$" + 11, "%s", revision);
+
+	sprintf(ver,"%s %s%s  "
 		"Compiled %s %s with %s"
 		,FTP_SERVER
-		,FTP_VERSION
+		,revision
 #ifdef _DEBUG
 		," Debug"
 #else
@@ -4301,6 +4299,8 @@ void DLLCALL ftp_server(void* arg)
 	fd_set			socket_set;
 	ftp_t*			ftp;
 	struct timeval	tv;
+
+	ftp_ver();
 
 	startup=(ftp_startup_t*)arg;
 
@@ -4348,8 +4348,8 @@ void DLLCALL ftp_server(void* arg)
 		signal(SIGPIPE,SIG_IGN);
 #endif
 
-		lprintf("Synchronet FTP Server Version %s%s"
-			,FTP_VERSION
+		lprintf("Synchronet FTP Server %s%s"
+			,revision
 #ifdef _DEBUG
 			," Debug"
 #else
