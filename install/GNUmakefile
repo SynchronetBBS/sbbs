@@ -2,7 +2,7 @@
 #
 # Usage:
 # ------
-# make install [variable=value]...
+# gmake install [variable=value]...
 #
 # variables:
 # ----------
@@ -103,7 +103,7 @@ sbj:	$(SBBSDIR)/xtrn
 sbl:	$(SBBSDIR)/xtrn
 	gmake -C $(SBBSDIR)/xtrn/sbl $(MKFLAGS)
 
-install: all ctrl text node1
+install: all $(SBBSDIR)/ctrl $(SBBSDIR)/text $(SBBSDIR)/node1
 ifeq ($(INSTALL),UNIX)
 	@echo ERROR: UNIX Install type not yet supported.
 	fail
@@ -124,49 +124,52 @@ else
 	chown -R $(SBBSCHOWN) $(SBBSDIR)
 endif
 
+# CVS checkout command-line
+CVS_CO = @cd $(SBBSDIR); cvs -z3 -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs co
+
 $(SBBSDIR)/ctrl: cvslogin
 ifndef NOCVS
-	cd $(SBBSDIR); cvs -z3 -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs co ctrl
+	$(CVS_CO) ctrl
 endif
 
 $(SBBSDIR)/text: cvslogin
 ifndef NOCVS
-	cd $(SBBSDIR); cvs -z3 -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs co text
+	$(CVS_CO) text
 endif
 
 $(SBBSDIR)/exec: cvslogin
 ifndef NOCVS
-	cd $(SBBSDIR); cvs -z3 -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs co exec
+	$(CVS_CO) exec
 endif
 
 $(SBBSDIR)/node1: cvslogin
 ifndef NOCVS
-	cd $(SBBSDIR); cvs -z3 -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs co node1
+	$(CVS_CO) node1
 endif
 
 $(SBBSDIR)/xtrn: cvslogin
 ifndef NOCVS
-	cd $(SBBSDIR); cvs -z3 -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs co -N xtrn
+	$(CVS_CO) -N xtrn
 endif
 
 $(SBBSDIR)/src/sbbs3: cvslogin
 ifndef NOCVS
-	cd $(SBBSDIR); cvs -z3 -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs co src/sbbs3
+	$(CVS_CO) src/sbbs3
 endif
 
 $(SBBSDIR)/src/uifc: cvslogin
 ifndef NOCVS
-	cd $(SBBSDIR); cvs -z3 -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs co src/uifc
+	$(CVS_CO) src/uifc
 endif
 
 $(SBBSDIR)/src/xpdev: cvslogin
 ifndef NOCVS
-	cd $(SBBSDIR); cvs -z3 -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs co src/xpdev
+	$(CVS_CO) src/xpdev
 endif
 
 $(SBBSDIR)/src/mozilla: cvslogin
 ifndef NOCVS
-	cd $(SBBSDIR); cvs -z3 -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs co src/mozilla
+	$(CVS_CO) src/mozilla
 endif
 
 cvslogin: $(SBBSDIR)
