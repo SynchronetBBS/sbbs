@@ -139,6 +139,9 @@ long iniReadInteger(FILE* fp, const char* section, const char* key, long deflt)
 	if((value=get_value(fp,section,key))==NULL)
 		return(deflt);
 
+	if(*value==0)		/* blank value */
+		return(deflt);
+
 	return(strtol(value,NULL,0));
 }
 
@@ -154,6 +157,9 @@ ulong iniReadIpAddress(FILE* fp, const char* section, const char* key, ulong def
 	if((value=get_value(fp,section,key))==NULL)
 		return(deflt);
 
+	if(*value==0)		/* blank value */
+		return(deflt);
+
 	if(strchr(value,'.')==NULL)
 		return(strtol(value,NULL,0));
 
@@ -167,6 +173,9 @@ double iniReadFloat(FILE* fp, const char* section, const char* key, double deflt
 	if((value=get_value(fp,section,key))==NULL)
 		return(deflt);
 
+	if(*value==0)		/* blank value */
+		return(deflt);
+
 	return(atof(value));
 }
 
@@ -175,6 +184,9 @@ BOOL iniReadBool(FILE* fp, const char* section, const char* key, BOOL deflt)
 	char* value;
 
 	if((value=get_value(fp,section,key))==NULL)
+		return(deflt);
+
+	if(*value==0)		/* blank value */
 		return(deflt);
 
 	if(!stricmp(value,"TRUE"))
