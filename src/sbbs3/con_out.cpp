@@ -76,7 +76,7 @@ int sbbs_t::bputs(char *str)
 	int i;
     ulong l=0;
 
-	if(online==ON_LOCAL) 			/* script running as event */
+	if(online==ON_LOCAL && console&CON_L_ECHO) 	/* script running as event */
 		return(eprintf("%s",str));
 
 	while(str[l]) {
@@ -114,7 +114,7 @@ int sbbs_t::rputs(char *str)
 {
     ulong l=0;
 
-	if(online==ON_LOCAL) 			/* script running as event */
+	if(online==ON_LOCAL && console&CON_L_ECHO)	/* script running as event */
 		return(eprintf("%s",str));
 
 	while(str[l])
