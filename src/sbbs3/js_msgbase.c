@@ -67,7 +67,7 @@ js_msgbase_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, js
 	code = JS_GetStringBytes(js_str);
 	if(stricmp(code,"mail")==0) {
 		p->smb.subnum=INVALID_SUB;
-		snprintf(p->smb.file,sizeof(p->smb.file),"%s%s",scfg->data_dir,code);
+		snprintf(p->smb.file,sizeof(p->smb.file),"%s%s",scfg->data_dir,"mail");
 	} else {
 		for(p->smb.subnum=0;p->smb.subnum<scfg->total_subs;p->smb.subnum++) {
 			if(!stricmp(scfg->sub[p->smb.subnum]->code,code))
@@ -78,7 +78,7 @@ js_msgbase_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, js
 			return(JS_FALSE);
 		}
 		snprintf(p->smb.file,sizeof(p->smb.file),"%s%s"
-			,scfg->sub[p->smb.subnum]->data_dir,code);
+			,scfg->sub[p->smb.subnum]->data_dir,scfg->sub[p->smb.subnum]->code);
 	}
 
 	if(argc>1)
