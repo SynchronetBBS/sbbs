@@ -151,23 +151,11 @@ Each page consists of four parts:
                 if(http_request.virtual_path=="/links.html")
                     template.topnav.push({html: '<span class="tlink">Some Links</span>'});
     Left Side Navigation (../web/templates/default/leftnav.inc &
-        ../web/lib/leftnav_nodelist.ssjs)  This starts the main table layout in the
-        default layout and also provides two other things -- the main navigation links
-        and a brief nodelisting that displays when users are online via telnet.
-        Here there are some new things to understand.  There is some @@JS: ... stuff in 
-        there.  Anything contained within @@JS: @@ is processed by the Server side 
-        Javascript engine.
-        In the case of the default layout, it checks if the user is Guest or an actual 
-        user with this line:
-            @@JS:if(user.number==0 || user.security.restrictions&UFLAG_G)'<html code for Guest>'; \
-            else '<html code for registered user>';@@
-        What this does is display links specific for Registered Users only to them and 
-        not Guest.  There are many things that can be done with @@JS: @@ code.   
-        Note, it also can be used to display HTML based on location as in the Nodelisting stuff.
-        In this case, it checks for whether or not a user is online, or if the user is anywhere 
-        but the Who's Online page before displaying the Left side Nodelisting.
-        IMPORTANT!  Anything contained within @@JS: @@ MUST be on one line or there will 
-        be errors in parsing.
+        ../web/lib/leftnav_nodelist.ssjs & ../web/lib/leftnav_html.ssjs)  This starts the main 
+        table layout in the default layout and also provides two other things -- the main 
+        navigation links and a brief nodelisting that displays when users are online via telnet.
+        The links are dynamically created as in the Top Navigation example above with the exception
+        of the two static links.
     Main Content (various files)
         This is where the layout of the main content is created.  It is best to look at the 
         various files in ../web/templates/default & ../web/templates/default/msgs to see how
@@ -320,4 +308,29 @@ is part of the line above.  The "\" is not part of the configuration as it too b
 removed.
 
 See the actual file for the defaults currently in use.
+
+3.6 Embedded Javascript
+-----------------------
+
+The *.inc files can (and do in the default layout) have embedded javascript
+which is parsed by the Javascript engine.  Care should be taken as a large
+number of embedded Javascript in the *.inc files slow down overall processing
+of pages.
+
+Anything contained within @@JS: @@ is processed by the Server side 
+Javascript engine.
+
+For example, it can check if the user is Guest or an actual user with this line:
+
+@@JS:if(user.number==0 || user.security.restrictions&UFLAG_G)'<html code for Guest>'; \
+else '<html code for registered user>';@@
+        
+What this does is display links specific for Registered Users only to them and 
+not Guest.  There are many things that can be done with @@JS: @@ code.   
+Note, it also can be used to display HTML based on location as in the Nodelisting stuff.
+In this case, it checks for whether or not a user is online, or if the user is anywhere 
+but the Who's Online page before displaying the Left side Nodelisting.
+
+IMPORTANT!  Anything contained within @@JS: @@ MUST be on one line or there will 
+be errors in parsing.
 
