@@ -18,7 +18,7 @@
 #define IGNORE_MSGPTRS	(1L<<9)
 #define UPDATE_MSGPTRS	(1L<<10)
 #define LEAVE_MSGPTRS	(1L<<11)
-#define CHECKMEM		(1L<<12)		/* Display available memory */
+#define STRIP_LF		(1L<<12)		/* Stripl line-feeds from outgoing messages */
 #define ASCII_ONLY		(1L<<13)
 #define LOGFILE 		(1L<<14)
 #define REPORT			(1L<<15)

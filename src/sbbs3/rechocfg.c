@@ -287,8 +287,8 @@ void read_echo_cfg()
 			misc|=SECURE;
 			continue; }
 
-		if(!stricmp(tmp,"CHECKMEM")) {
-			misc|=CHECKMEM;
+		if(!stricmp(tmp,"STRIP_LF")) {
+			misc|=STRIP_LF;
 			continue; }
 
 		if(!stricmp(tmp,"STORE_SEENBY")) {

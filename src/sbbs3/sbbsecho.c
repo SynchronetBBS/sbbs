@@ -3675,8 +3675,10 @@ void export_echomail(char *sub_code,faddr_t addr)
 						if(!buf[l])
 							break;
 						continue; }
-					if(buf[l]==LF)	/* Ignore line feeds */
+					
+					if(misc&STRIP_LF && buf[l]==LF)	/* Ignore line feeds */
 						continue;
+
 					if(cr) {
 						if(buf[l]=='-' && buf[l+1]=='-'
 							&& buf[l+2]=='-'
@@ -4267,10 +4269,6 @@ int main(int argc, char **argv)
 			if(fmsgbuf) {
 				FREE(fmsgbuf);
 				fmsgbuf=0; }
-#if 0
-			if(misc&CHECKMEM)
-				checkmem();
-#endif
 			if(!fread(&ch,1,1,fidomsg)) 		 /* Message type (0200h) */
 				break;
 			if(ch!=02)
