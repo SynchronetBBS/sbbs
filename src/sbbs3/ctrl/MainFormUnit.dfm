@@ -2593,7 +2593,7 @@ object MainForm: TMainForm
         Caption = 'Edit'
         object WebEditMimeTypesMenuItem: TMenuItem
           Caption = 'MIME Types'
-          Hint = 'mime_types.cfg'
+          Hint = 'mime_types.ini'
           OnClick = CtrlMenuItemEditClick
         end
       end

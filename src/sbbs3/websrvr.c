@@ -116,7 +116,6 @@ static const char*	unknown="<unknown>";
 extern const uchar* nular;
 
 #define TIMEOUT_THREAD_WAIT		60		/* Seconds */
-#define MAX_MIME_TYPES			128
 #define MAX_REQUEST_LINE		1024	/* NOT including terminator */
 #define MAX_HEADERS_SIZE		16384	/* Maximum total size of all headers 
 										   (Including terminator )*/
@@ -131,7 +130,6 @@ static BOOL		terminate_server=FALSE;
 static BOOL		terminate_http_logging_thread=FALSE;
 static uint		thread_count=0;
 static SOCKET	server_socket=INVALID_SOCKET;
-static ulong	mime_count=0;
 static char		revision[16];
 static char		root_dir[MAX_PATH+1];
 static char		error_dir[MAX_PATH+1];
@@ -142,6 +140,8 @@ static web_startup_t* startup=NULL;
 static js_server_props_t js_server_props;
 static link_list_t recycle_semfiles;
 static link_list_t shutdown_semfiles;
+
+static named_string_t** mime_types;
 
 /* Logging stuff */
 sem_t	log_sem;
@@ -217,13 +217,6 @@ typedef struct  {
 	/* Client info */
 	client_t		client;
 } http_session_t;
-
-typedef struct {
-	char	ext[16];
-	char	type[128];
-} mime_types_t;
-
-static mime_types_t		mime_types[MAX_MIME_TYPES];
 
 enum { 
 	 HTTP_0_9
@@ -820,9 +813,9 @@ static const char* get_mime_type(char *ext)
 	if(ext==NULL)
 		return(unknown_mime_type);
 
-	for(i=0;i<mime_count;i++)
-		if(!stricmp(ext+1,mime_types[i].ext))
-			return(mime_types[i].type);
+	for(i=0;mime_types[i]!=NULL;i++)
+		if(!stricmp(ext+1,mime_types[i]->name))
+			return(mime_types[i]->value);
 
 	return(unknown_mime_type);
 }
@@ -1114,36 +1107,20 @@ static BOOL check_ars(http_session_t * session)
 
 static BOOL read_mime_types(char* fname)
 {
-	char	str[1024];
-	char *	ext;
-	char *	type;
-	FILE*	mime_config;
+	int		mime_count;
+	FILE*	fp;
 
-	mime_count=0;
+	mime_types=iniFreeNamedStringList(mime_types);
 
-	if((mime_config=fopen(fname,"r"))==NULL)
+	lprintf(LOG_DEBUG,"Reading %s",fname);
+	if((fp=iniOpenFile(fname))==NULL) {
+		lprintf(LOG_WARNING,"Error %d opening %s",errno,fname);
 		return(FALSE);
-
-	while (!feof(mime_config)&&mime_count<MAX_MIME_TYPES) {
-		if(fgets(str,sizeof(str),mime_config)!=NULL) {
-			truncsp(str);
-			ext=strtok(str," \t");
-			if(ext!=NULL) {
-				while(*ext && *ext<=' ') ext++;
-				if(*ext!=';') {
-					type=strtok(NULL," \t");
-					if(type!=NULL) {
-						while(*type && *type<=' ') type++;
-						if(strlen(ext)>0 && strlen(type)>0) {
-							SAFECOPY((mime_types[mime_count]).ext,ext);
-							SAFECOPY((mime_types[mime_count++]).type,type);
-						}
-					}
-				}
-			}
-		}
 	}
-	fclose(mime_config);
+	mime_types=iniReadNamedStringList(fp,NULL /* root section */);
+	iniCloseFile(fp);
+
+	COUNT_LIST_ITEMS(mime_types,mime_count);
 	lprintf(LOG_DEBUG,"Loaded %d mime types", mime_count);
 	return(mime_count>0);
 }
@@ -2687,6 +2664,8 @@ static void cleanup(int code)
 
 	listFree(&log_list);
 
+	mime_types=iniFreeNamedStringList(mime_types);
+
 	semfile_list_free(&recycle_semfiles);
 	semfile_list_free(&shutdown_semfiles);
 
@@ -2950,9 +2929,8 @@ void DLLCALL web_server(void* arg)
 		}
 		scfg_reloaded=TRUE;
 
-		sprintf(path,"%smime_types.cfg",scfg.ctrl_dir);
+		iniFileName(path,sizeof(path),scfg.ctrl_dir,"mime_types.ini");
 		if(!read_mime_types(path)) {
-			lprintf(LOG_ERR,"!ERROR %d reading %s", errno,path);
 			cleanup(1);
 			return;
 		}
