@@ -279,7 +279,7 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 			,ch,"Synchronet",ch,cfg.sub[subnum]->tagline);
 		strcat(str,tmp);
 		if(!(mode&A_LEAVE))
-			remove_ctrl_a(str);
+			remove_ctrl_a(str,NULL);
 		fwrite(str,strlen(str),1,qwk_fp);
 		size+=strlen(str); }
 
