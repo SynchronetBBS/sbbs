@@ -383,14 +383,14 @@ int main(int argc, char **argv)
 	if(p==NULL) {
 		printf("\7\nSBBSCTRL environment variable is not set.\n");
 		printf("This environment variable must be set to your CTRL directory.");
-		printf("\nExample: SET SBBSCTRL=C:\\SBBS\\CTRL\n");
+		printf("\nExample: SET SBBSCTRL=/sbbs/ctrl\n");
 		exit(1); }
 	sprintf(ctrl_dir,"%.40s",p);
-	strupr(ctrl_dir);
-	if(ctrl_dir[strlen(ctrl_dir)-1]!='\\')
-		strcat(ctrl_dir,"\\");
+	if(ctrl_dir[strlen(ctrl_dir)-1]!='\\'
+		&& ctrl_dir[strlen(ctrl_dir)-1]!='/')
+		strcat(ctrl_dir,"/");
 
-	sprintf(str,"%sNODE.DAB",ctrl_dir);
+	sprintf(str,"%snode.dab",ctrl_dir);
 	if((nodefile=sopen(str,O_RDWR|O_BINARY,SH_DENYNO))==-1) {
 		printf("\7\nError opening %s.\n",str);
 		exit(1); }
