@@ -193,6 +193,14 @@ static char *chr(uchar ch)
 			case ZRINIT:	return("ZRINIT");
 			case ZSINIT:	return("ZSINIT");
 			case ZACK:		return("ZACK");
+			case ZFILE:		return("ZFILE");
+			case ZSKIP:		return("ZSKIP");
+			case ZNAK:		return("ZNAK");
+			case ZABORT:	return("ZABORT");
+			case ZFIN:		return("ZFIN");
+			case ZRPOS:		return("ZRPOS");
+			case ZDATA:		return("ZDATA");
+			case ZEOF:		return("ZEOF");
 			case ZPAD:		return("ZPAD");
 			case ZDLE:		return("ZDLE");
 			case ZDLEE:		return("ZDLEE");
@@ -205,6 +213,10 @@ static char *chr(uchar ch)
 			case ZVBIN32:	return("ZVBIN32");
 			case ZVBINR32:	return("ZVBINR32");
 			case ZRESC:		return("ZRESC");
+			case ZCRCE:		return("ZCRCE");
+			case ZCRCG:		return("ZCRCG");
+			case ZCRCQ:		return("ZCRCQ");
+			case ZCRCW:		return("ZCRCW");
 		}
 	} else {
 		switch(ch) {
@@ -795,7 +807,7 @@ static int send_files(char** fname, uint fnames)
 	if(mode&XMODEM)
 		return(0);
 	if(mode&ZMODEM)
-		zmodem_send_zfin(&zm);
+		zmodem_get_zfin(&zm);
 	else {	/* YMODEM */
 
 		if(xmodem_get_mode(&xm)) {
@@ -917,7 +929,7 @@ static int receive_files(char** fname_list, int fnames)
 						zmodem_send_nak(&zm);
 						break;
 					case ZFIN:
-						zmodem_send_zfin(&zm);
+						zmodem_send_zfin(&zm);	/* ACK */
 						/* fall-through */
 					case ZCOMPL:
 						return(0);
@@ -1006,7 +1018,7 @@ static int receive_files(char** fname_list, int fnames)
 				,str
 				,file_bytes/1024
 				,mode&YMODEM ? mode&GMODE ? "Ymodem-G" : "Ymodem" :"Zmodem"
-				,mode&CRC ? "CRC-16" : "Checksum");
+				,mode&ZMODEM ? "" : (mode&CRC ? "CRC-16" : "Checksum"));
 
 		startfile=time(NULL);
 		success=FALSE;

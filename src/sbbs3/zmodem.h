@@ -276,8 +276,9 @@ void		zmodem_send_zskip(zmodem_t* zm);
 void		zmodem_send_zrinit(zmodem_t*);
 void		zmodem_send_pos_header(zmodem_t* zm, int type, long pos, BOOL hex);
 int			zmodem_get_zrinit(zmodem_t*);
+int			zmodem_get_zfin(zmodem_t* zm);
 void		zmodem_parse_zrinit(zmodem_t*);
-int			zmodem_send_zfin(zmodem_t*);
+void		zmodem_send_zfin(zmodem_t*);
 BOOL		zmodem_send_file(zmodem_t*, char* name, FILE* fp, BOOL request_init, time_t* start, ulong* bytes_sent);
 int			zmodem_recv_init(zmodem_t* zm);
 BOOL		zmodem_recv_file_info(zmodem_t* zm
