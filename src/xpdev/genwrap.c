@@ -422,11 +422,12 @@ clock_t DLLCALL msclock(void)
 /****************************************************************************/
 char* DLLCALL truncsp(char* str)
 {
-	unsigned c;
+	size_t i,len;
 
-	c=strlen(str);
-	while(c && (str[c-1]==' ' || str[c-1]=='\t' || str[c-1]=='\r' || str[c-1]=='\n')) c--;
-	str[c]=0;
+	i=len=strlen(str);
+	while(i && (str[i-1]==' ' || str[i-1]=='\t' || str[i-1]=='\r' || str[i-1]=='\n')) i--;
+	if(i!=len)
+		str[i]=0;	/* truncate */
 
 	return(str);
 }
@@ -436,11 +437,12 @@ char* DLLCALL truncsp(char* str)
 /****************************************************************************/
 char* DLLCALL truncnl(char* str)
 {
-	unsigned c;
+	size_t i,len;
 
-	c=strlen(str);
-	while(c && (str[c-1]=='\r' || str[c-1]=='\n')) c--;
-	str[c]=0;
+	i=len=strlen(str);
+	while(i && (str[i-1]=='\r' || str[i-1]=='\n')) i--;
+	if(i!=len)
+		str[i]=0;	/* truncate */
 
 	return(str);
 }
