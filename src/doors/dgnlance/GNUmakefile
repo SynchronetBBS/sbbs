@@ -5,9 +5,6 @@ include ${SRC_ROOT}/build/Common.gmake
 LDFLAGS	+=	-L../../odoors
 CFLAGS	+=	-I../../odoors
 
-CFLAGS  +=       $(XPDEV_CFLAGS)
-LDFLAGS +=       $(XPDEV-MT_LDFLAGS)
-
 ifdef STATIC
  LDFLAGS	+=	-static
 endif
@@ -19,7 +16,7 @@ export LD_RUN_PATH
 
 $(DGNLNCE): $(OBJS)
 	@echo Linking $@
-	${QUIET}$(CC) $(LDFLAGS) -o $@ $(OBJS) $(XPDEV_LIBS) -lODoors
+	${QUIET}$(CC) $(LDFLAGS) -o $@ $(OBJS) -lODoors
 
 $(ODOORS_LIB):
 	@echo Building $@
