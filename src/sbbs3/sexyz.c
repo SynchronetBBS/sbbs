@@ -764,16 +764,16 @@ static int send_files(char** fname, uint fnames)
 				xm.sent_bytes+=fsize;
 				lprintf(LOG_INFO,"Successful - Time: %lu:%02lu  CPS: %lu"
 						,t/60,t%60,cps);
+
+				if(xm.total_files-xm.sent_files)
+					lprintf(LOG_INFO,"Remaining - Time: %lu:%02lu  Files: %u  KBytes: %lu"
+						,((xm.total_bytes-xm.sent_bytes)/cps)/60
+						,((xm.total_bytes-xm.sent_bytes)/cps)%60
+						,xm.total_files-xm.sent_files
+						,(xm.total_bytes-xm.sent_bytes)/1024
+						);
 			} else
 				lprintf(LOG_WARNING,"File Transfer Failure");
-
-			if(xm.total_files-xm.sent_files)
-				lprintf(LOG_INFO,"Remaining - Time: %lu:%02lu  Files: %u  KBytes: %lu"
-					,((xm.total_bytes-xm.sent_bytes)/cps)/60
-					,((xm.total_bytes-xm.sent_bytes)/cps)%60
-					,xm.total_files-xm.sent_files
-					,(xm.total_bytes-xm.sent_bytes)/1024
-					);
 
 			/* DSZLOG entry */
 			if(logfp) {
@@ -798,6 +798,10 @@ static int send_files(char** fname, uint fnames)
 		if(gi<(int)g.gl_pathc)/* error occurred */
 			break;
 	}
+
+	if(mode&ZMODEM && !zm.cancelled)
+		zmodem_get_zfin(&zm);
+
 	if(fnum<fnames) /* error occurred */
 		return(-1);
 
@@ -806,9 +810,7 @@ static int send_files(char** fname, uint fnames)
 
 	if(mode&XMODEM)
 		return(0);
-	if(mode&ZMODEM)
-		zmodem_get_zfin(&zm);
-	else {	/* YMODEM */
+	if(mode&YMODEM) {
 
 		if(xmodem_get_mode(&xm)) {
 
