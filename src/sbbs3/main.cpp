@@ -4123,7 +4123,8 @@ void DLLCALL bbs_thread(void* arg)
 				break;
 			if(!(startup->options&BBS_OPT_NO_RECYCLE)) {
 				if((p=semfile_list_check(&initialized,&recycle_semfiles))!=NULL) {
-					lprintf(LOG_INFO,"0000 Recycle semaphore file (%s) detected",p);
+					lprintf(LOG_INFO,"%04d Recycle semaphore file (%s) detected"
+						,telnet_socket,p);
 					break;
 				}
 #if 0	/* unused */
@@ -4131,15 +4132,17 @@ void DLLCALL bbs_thread(void* arg)
 					startup->recycle_now=TRUE;
 #endif
 				if(startup->recycle_now==TRUE) {
-					lprintf(LOG_INFO,"0000 Recycle semaphore signaled");
+					lprintf(LOG_INFO,"%04d Recycle semaphore signaled",telnet_socket);
 					startup->recycle_now=FALSE;
 					break;
 				}
 			}
 			if(((p=semfile_list_check(&initialized,&shutdown_semfiles))!=NULL
-					&& lprintf(LOG_INFO,"0000 Shutdown semaphore file (%s) detected",p))
+					&& lprintf(LOG_INFO,"%04d Shutdown semaphore file (%s) detected"
+						,telnet_socket,p))
 				|| (startup->shutdown_now==TRUE
-					&& lprintf(LOG_INFO,"0000 Shutdown semaphore signaled"))) {
+					&& lprintf(LOG_INFO,"%04d Shutdown semaphore signaled"
+						,telnet_socket))) {
 				startup->shutdown_now=FALSE;
 				terminate_server=TRUE;
 				break;
