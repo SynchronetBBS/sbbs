@@ -91,6 +91,18 @@ function test_port(port)
 	return(success);
 }
 
+function xtrn_name(code)
+{
+	if(this.xtrn_area==undefined)
+		return(code);
+
+	for(s in xtrn_area.sec_list)
+		for(p in xtrn_area.sec_list[s].prog_list)
+			if(xtrn_area.sec_list[s].prog_list[p].code.toLowerCase()==code.toLowerCase())
+				return(xtrn_area.sec_list[s].prog_list[p].name);
+	return(code);
+}
+
 function done()
 {
 	flush();
@@ -134,7 +146,7 @@ if(request=="") {	// no specific user requested, give list of active users
 			continue;
 		user.number=system.node_list[n].useron;
 		if(system.node_list[n].action==NODE_XTRN && system.node_list[n].aux)
-			action=format("running %s",user.curxtrn);
+			action=format("running %s",xtrn_name(user.curxtrn));
 		else
 			action=format(NodeAction[system.node_list[n].action]
 							,system.node_list[n].aux);
@@ -228,7 +240,7 @@ if(request.charAt(0)=='?') {	// Handle "special" requests
 					user.number=system.node_list[n].useron;
 					write(format("%s (%u %s) ", user.alias, user.age, user.gender));
 					if(system.node_list[n].action==NODE_XTRN && system.node_list[n].aux)
-						write(format("running %s",user.curxtrn));
+						write(format("running %s",xtrn_name(user.curxtrn)));
 					else
 						write(format(NodeAction[system.node_list[n].action],system.node_list[n].aux));
 					t=time()-user.logontime;
