@@ -1365,7 +1365,6 @@ void event_thread(void* arg)
 
 			if(startup->temp_dir[0]) {
 				SAFECOPY(sbbs->cfg.temp_dir,startup->temp_dir);
-				backslash(sbbs->cfg.temp_dir);
 			} else
 				prep_dir(sbbs->cfg.data_dir, sbbs->cfg.temp_dir, sizeof(sbbs->cfg.temp_dir));
 
@@ -1957,7 +1956,6 @@ sbbs_t::sbbs_t(ushort node_num, DWORD addr, char* name, SOCKET sd,
 		prep_dir(cfg.node_dir, cfg.temp_dir, sizeof(cfg.temp_dir));
 	} else if(startup->temp_dir[0]) {
 		SAFECOPY(cfg.temp_dir,startup->temp_dir);
-		backslash(cfg.temp_dir);
 	} else
     	prep_dir(cfg.data_dir, cfg.temp_dir, sizeof(cfg.temp_dir));
 
@@ -3472,6 +3470,7 @@ void DLLCALL bbs_thread(void* arg)
 	if(startup->js_max_bytes==0)			startup->js_max_bytes=JAVASCRIPT_MAX_BYTES;
 #endif
 	if(startup->outbuf_drain_timeout==0)	startup->outbuf_drain_timeout=10;
+	if(startup->temp_dir[0])				backslash(startup->temp_dir);
 
 	uptime=0;
 	served=0;
