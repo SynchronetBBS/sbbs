@@ -77,13 +77,13 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 	/********************/
 	/* Process messages */
 	/********************/
-	lprintf("Importing QWK Network Packet: %s",packet);
+	eprintf("Importing QWK Network Packet: %s",packet);
 
 	for(l=128;l<size;l+=blocks*128) {
 		fseek(qwk,l,SEEK_SET);
 		fread(block,128,1,qwk);
 		if(block[0]<' ' || block[0]&0x80) {
-			lprintf("!Invalid message status (%02X) at offset %lu in %s"
+			eprintf("!Invalid message status (%02X) at offset %lu in %s"
 				,block[0], l, packet);
 			blocks=1;
 			continue;
@@ -91,7 +91,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 		sprintf(tmp,"%.6s",block+116);
 		blocks=atoi(tmp);  /* i = number of 128 byte records */
 		if(blocks<2) {
-			lprintf("!Invalid number of blocks (%d) at offset %lu in %s"
+			eprintf("!Invalid number of blocks (%d) at offset %lu in %s"
 				,blocks, l+116, packet);
 			blocks=1;
 			continue; 
@@ -104,7 +104,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 		if(!n) {		/* NETMAIL */
 			sprintf(str,"%25.25s",block+21);
 			truncsp(str);
-			lprintf("NetMail from %s to %s", cfg.qhub[hubnum]->id, str);
+			eprintf("NetMail from %s to %s", cfg.qhub[hubnum]->id, str);
 			if(!stricmp(str,"NETMAIL")) {  /* QWK to FidoNet NetMail */
 				qwktonetmail(qwk,(char *)block,NULL,hubnum+1);
 				continue; 
@@ -119,7 +119,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 			if(!j)
 				j=matchuser(&cfg,str,TRUE /* sysop_alias */);
 			if(!j) {
-				lprintf("!NetMail from %s to UNKNOWN USER: %s", cfg.qhub[hubnum]->id, str);
+				eprintf("!NetMail from %s to UNKNOWN USER: %s", cfg.qhub[hubnum]->id, str);
 				continue; 
 			}
 
@@ -179,7 +179,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 			if(cfg.qhub[hubnum]->conf[j]==n)
 				break;
 		if(j>=cfg.qhub[hubnum]->subs) {	/* ignore messages for subs not in config */
-			lprintf("!Message from %s on UNKNOWN CONFERENCE NUMBER: %u"
+			eprintf("!Message from %s on UNKNOWN CONFERENCE NUMBER: %u"
 				,cfg.qhub[hubnum]->id, n);
 			continue;
 		}
@@ -222,10 +222,10 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 			lastsub=j; 
 		}
 
-		lprintf("Importing message from %s on %s %s"
+		eprintf("Importing message from %s on %s %s"
 			,cfg.qhub[hubnum]->id, cfg.grp[cfg.sub[j]->grp]->sname,cfg.sub[j]->lname);
 		if(!qwktomsg(qwk,(char *)block,hubnum+1,j,0)) {
-			lprintf("!QWKTOMSG failed");
+			eprintf("!QWKTOMSG failed");
 			continue;
 		}
 
@@ -233,7 +233,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 			if((file=nopen(cmdstr(cfg.sub[j]->echomail_sem,nulstr,nulstr,NULL)
 				,O_WRONLY|O_CREAT|O_TRUNC))!=-1)
 				close(file);
-		lprintf("Message from %s Posted on %s %s"
+		eprintf("Message from %s Posted on %s %s"
 			,cfg.qhub[hubnum]->id,cfg.grp[cfg.sub[j]->grp]->sname,cfg.sub[j]->lname); 
 	}
 
@@ -266,11 +266,12 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 		mv(str,fname,1 /* overwrite */);
 		sprintf(str,text[ReceivedFileViaQWK],dirent->d_name,cfg.qhub[hubnum]->id);
 		putsmsg(&cfg,1,str);
-		lprintf("Received %s from %s", dirent->d_name, cfg.qhub[hubnum]->id);
+		eprintf("Received %s from %s", dirent->d_name, cfg.qhub[hubnum]->id);
 	}
-	closedir(dir);
+	if(dir!=NULL)
+		closedir(dir);
 
-	lprintf("Finished Importing QWK Network Packet: %s",packet);
+	eprintf("Finished Importing QWK Network Packet: %s",packet);
 	delfiles(cfg.temp_dir,ALLFILES);
 	return(true);
 }
