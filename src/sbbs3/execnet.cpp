@@ -38,13 +38,16 @@
 #include "sbbs.h"
 #include "cmdshell.h"
 
-#define SOCK_READLINE_TIMEOUT	5	/* seconds */
+#define TIMEOUT_SOCK_READLINE	30	/* seconds */
+
+#define TIMEOUT_SOCKET_LISTEN	30	/* seconds */
 
 int sbbs_t::exec_net(csi_t* csi)
 {
 	char	str[512],rsp[512],buf[1025],ch,*p,**pp,**pp1,**pp2;
 	ushort	w;
 	uint 	i;
+	bool	rd;
 	long	*lp,*lp1,*lp2;
 	time_t	start;
 
@@ -108,7 +111,7 @@ int sbbs_t::exec_net(csi_t* csi)
 			if(lp==NULL || *lp==INVALID_SOCKET) 
 				return(0);
 
-			if(socket_check(*lp)==true)
+			if(socket_check(*lp,NULL)==true)
 				csi->logic=LOGIC_TRUE;
 			else
 				csi->socket_error=ERROR_VALUE;
@@ -224,14 +227,17 @@ int sbbs_t::exec_net(csi_t* csi)
 				if(!online)
 					return(1);
 
-				if(!socket_check(*lp))
+				if(!socket_check(*lp,&rd))
 					return(0);
 
-				if(time(NULL)-start>SOCK_READLINE_TIMEOUT) {
+				if(time(NULL)-start>TIMEOUT_SOCK_READLINE) {
 					lprintf("!socket_readline: timeout (%d) exceeded"
-						,SOCK_READLINE_TIMEOUT);
+						,TIMEOUT_SOCK_READLINE);
 					return(0);
 				}
+
+				if(!rd)
+					continue;
 
 				if(recv(*lp, &ch, 1, 0)!=1) {
 					csi->socket_error=ERROR_VALUE;
@@ -444,6 +450,7 @@ bool sbbs_t::ftp_cmd(csi_t* csi, SOCKET sock, char* cmdsrc, char* rsp)
 {
 	char	cmd[512];
 	int		len;
+	bool	data_avail;
 	time_t	start;
 
 	if(cmdsrc!=NULL) {
@@ -473,14 +480,17 @@ bool sbbs_t::ftp_cmd(csi_t* csi, SOCKET sock, char* cmdsrc, char* rsp)
 				if(!online)
 					return(FALSE);
 
-				if(!socket_check(sock))
+				if(!socket_check(sock,&data_avail))
 					return(FALSE);
 
-				if(time(NULL)-start>SOCK_READLINE_TIMEOUT) {
-					lprintf("!ftp_cmd: SOCK_READLINE_TIMEOUT (%d) exceeded"
-						,SOCK_READLINE_TIMEOUT);
+				if(time(NULL)-start>TIMEOUT_SOCK_READLINE) {
+					lprintf("!ftp_cmd: TIMEOUT_SOCK_READLINE (%d) exceeded"
+						,TIMEOUT_SOCK_READLINE);
 					return(FALSE);
 				}
+
+				if(!data_avail)
+					continue;
 
 				if(recv(sock, &ch, 1, 0)!=1) {
 					csi->socket_error=ERROR_VALUE;
@@ -616,11 +626,15 @@ bool sbbs_t::ftp_get(csi_t* csi, SOCKET ctrl_sock, char* src, char* dest, bool d
 	char		rsp[512];
 	char		buf[4097];
 	int			rd;
+	int			result;
+	bool		data_avail;
 	ulong		total=0;
 	SOCKET		data_sock;
 	SOCKADDR_IN	addr;
 	socklen_t	addr_len;
 	FILE*		fp=NULL;
+	struct timeval	tv;
+	fd_set			socket_set;
 
 	if((data_sock=ftp_data_sock(csi, ctrl_sock, &addr))==INVALID_SOCKET)
 		return(false);
@@ -652,6 +666,20 @@ bool sbbs_t::ftp_get(csi_t* csi, SOCKET ctrl_sock, char* src, char* dest, bool d
 
 	} else {	/* Normal (Active) FTP */
 
+		/* Setup for select() */
+		tv.tv_sec=TIMEOUT_SOCKET_LISTEN;
+		tv.tv_usec=0;
+
+		FD_ZERO(&socket_set);
+		FD_SET(data_sock,&socket_set);
+
+		result=select(data_sock+1,&socket_set,NULL,NULL,&tv);
+		if(result<1) {
+			csi->socket_error=ERROR_VALUE;
+			closesocket(data_sock);
+			return(false);
+		}
+
 		SOCKET accept_sock;
 
 		addr_len=sizeof(addr);
@@ -678,8 +706,16 @@ bool sbbs_t::ftp_get(csi_t* csi, SOCKET ctrl_sock, char* src, char* dest, bool d
 
 	while(online) {
 
-		if(!socket_check(ctrl_sock))
+		if(!socket_check(ctrl_sock,NULL))
 			break; /* Control connection lost */
+
+		if(!socket_check(data_sock,&data_avail))
+			break; /* Data connection lost */
+
+		if(!data_avail) {
+			mswait(1);
+			continue;
+		}
 
 		if((rd=recv(data_sock, buf, sizeof(buf)-1, 0))<1)
 			break;
@@ -720,12 +756,15 @@ bool sbbs_t::ftp_put(csi_t* csi, SOCKET ctrl_sock, char* src, char* dest)
 	char		rsp[512];
 	char		buf[4097];
 	int			rd;
+	int			result;
 	ulong		total=0;
 	SOCKET		data_sock;
 	SOCKADDR_IN	addr;
 	socklen_t	addr_len;
 	FILE*		fp=NULL;
 	bool		error=false;
+	struct timeval	tv;
+	fd_set			socket_set;
 
 	if((data_sock=ftp_data_sock(csi, ctrl_sock, &addr))==INVALID_SOCKET)
 		return(false);
@@ -753,6 +792,20 @@ bool sbbs_t::ftp_put(csi_t* csi, SOCKET ctrl_sock, char* src, char* dest)
 		}
 
 	} else {	/* Normal (Active) FTP */
+
+		/* Setup for select() */
+		tv.tv_sec=TIMEOUT_SOCKET_LISTEN;
+		tv.tv_usec=0;
+
+		FD_ZERO(&socket_set);
+		FD_SET(data_sock,&socket_set);
+
+		result=select(data_sock+1,&socket_set,NULL,NULL,&tv);
+		if(result<1) {
+			csi->socket_error=ERROR_VALUE;
+			closesocket(data_sock);
+			return(false);
+		}
 
 		SOCKET accept_sock;
 
@@ -784,7 +837,7 @@ bool sbbs_t::ftp_put(csi_t* csi, SOCKET ctrl_sock, char* src, char* dest)
 		if(rd<1) /* EOF or READ error */
 			break;
 
-		if(!socket_check(ctrl_sock))
+		if(!socket_check(ctrl_sock,NULL))
 			break; /* Control connection lost */
 
 		if(send(data_sock,buf,rd,0)<1) {
