@@ -68,12 +68,13 @@
 /* Constants */
 #define MAIL_VERSION "1.11"
 
-int dns_getmx(char* name, char* mx, char* mx2, DWORD intf, DWORD ip_addr, BOOL use_tcp);
+int dns_getmx(char* name, char* mx, char* mx2
+			  ,DWORD intf, DWORD ip_addr, BOOL use_tcp, int timeout);
 
 #define SMTP_OK		"250 OK"
 #define SMTP_BADSEQ	"503 Bad sequence of commands"
 
-#define TIMEOUT_THREAD_WAIT		15		/* Seconds */
+#define TIMEOUT_THREAD_WAIT		30		/* Seconds */
 
 #define STATUS_WFC	"Listening"
 
@@ -250,33 +251,49 @@ static time_t checktime(void)
     return(mktime(&tm)-0x2D24BD00L);
 }
 
-static void recverror(SOCKET socket, int rd)
+static void recverror(SOCKET socket, int rd, int line)
 {
 	if(rd==0) 
-		lprintf("%04d Socket closed by peer on receive",socket);
+		lprintf("%04d Socket closed by peer on receive (line %d)"
+			,socket, line);
 	else if(rd==SOCKET_ERROR) {
 		if(ERROR_VALUE==ECONNRESET) 
-			lprintf("%04d Connection reset by peer on receive",socket);
+			lprintf("%04d Connection reset by peer on receive (line %d)"
+				,socket, line);
 		else if(ERROR_VALUE==ECONNABORTED) 
-			lprintf("%04d Connection aborted by peer on receive",socket);
+			lprintf("%04d Connection aborted by peer on receive (line %d)"
+				,socket, line);
 		else
-			lprintf("%04d !SOCKET ERROR %d on receive", socket, ERROR_VALUE);
+			lprintf("%04d !ERROR %d receiving on socket (line %d)"
+				,socket, ERROR_VALUE, line);
 	} else
-		lprintf("%04d !ERROR: recv on socket returned unexpected value: %d",socket,rd);
+		lprintf("%04d !ERROR: recv on socket returned unexpected value: %d (line %d)"
+			,socket, rd, line);
 }
+
 
 static int sockreadline(SOCKET socket, char* buf, int len)
 {
 	char	ch;
 	int		i,rd=0;
+	fd_set	socket_set;
+	struct	timeval	tv;
 	time_t	start;
 
 	start=time(NULL);
 	
 	while(rd<len-1) {
-		i= recv(socket, &ch, 1, 0);
+
+		tv.tv_sec=0;
+		tv.tv_usec=0;
+
+		FD_ZERO(&socket_set);
+		FD_SET(socket,&socket_set);
+
+		i=select(socket+1,&socket_set,NULL,NULL,&tv);
+
 		if(i<1) {
-			if(ERROR_VALUE==EWOULDBLOCK) {
+			if(i==0) {
 				if((time(NULL)-start)>startup->max_inactivity) {
 					lprintf("%04d !SOCKET INACTIVE",socket);
 					return(0);
@@ -284,7 +301,12 @@ static int sockreadline(SOCKET socket, char* buf, int len)
 				mswait(1);
 				continue;
 			}
-			recverror(socket,i);
+			recverror(socket,i,__LINE__);
+			return(i);
+		}
+		i=recv(socket, &ch, 1, 0);
+		if(i<1) {
+			recverror(socket,i,__LINE__);
 			return(i);
 		}
 		if(ch=='\n' && rd>=1) {
@@ -2082,7 +2104,8 @@ static void sendmail_thread(void* arg)
 				p++;
 				lprintf("0000 SEND getting MX records for %s from %s",p,startup->dns_server);
 				if((i=dns_getmx(p, mx, mx2, startup->interface_addr, dns
-					,startup->options&MAIL_OPT_USE_TCP_DNS ? TRUE : FALSE))!=0) {
+					,startup->options&MAIL_OPT_USE_TCP_DNS ? TRUE : FALSE
+					,TIMEOUT_THREAD_WAIT/2))!=0) {
 					lprintf("0000 !SEND ERROR %d obtaining MX records for %s from %s"
 						,i,p,startup->dns_server);
 					sprintf(err,"Error %d obtaining MX record for %s",i,p);

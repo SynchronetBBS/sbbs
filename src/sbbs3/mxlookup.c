@@ -132,7 +132,8 @@ int dns_name(char* name, char* srcbuf, char* p)
 	return(len+1);
 }
 
-int dns_getmx(char* name, char* mx, char* mx2, DWORD intf, DWORD ip_addr, BOOL use_tcp)
+int dns_getmx(char* name, char* mx, char* mx2
+			  ,DWORD intf, DWORD ip_addr, BOOL use_tcp, int timeout)
 {
 	char*			p;
 	char*			tp;
@@ -152,6 +153,8 @@ int dns_getmx(char* name, char* mx, char* mx2, DWORD intf, DWORD ip_addr, BOOL u
 	dns_msghdr_t	msghdr;
 	dns_query_t		query;
 	dns_rr_t*		rr;
+	struct timeval	tv;
+	fd_set			socket_set;
 
 	mx[0]=0;
 	mx2[0]=0;
@@ -223,6 +226,23 @@ int dns_getmx(char* name, char* mx, char* mx2, DWORD intf, DWORD ip_addr, BOOL u
 	}
 
 	send(sock,msg+offset,len,0);
+
+	tv.tv_sec=timeout;
+	tv.tv_usec=0;
+
+	FD_ZERO(&socket_set);
+	FD_SET(sock,&socket_set);
+
+	i=select(sock+1,&socket_set,NULL,NULL,&tv);
+	if(i<1) {
+		if(i==SOCKET_ERROR)
+			result=ERROR_VALUE;
+		else 
+			result=-1;
+		mail_close_socket(sock);
+		return(result);
+	}
+
 	rd=recv(sock,msg,sizeof(msg),0);
 	if(rd>0) {
 
