@@ -5,7 +5,7 @@
 <body>
 
 <h2>What is this?</h2>
-<p>This is a patch that integrates support for the Linux DOS emulator into the
+<p>This is functionality that integrates support for the Linux DOS emulator into the
 <a href="http://www.synchro.net">Synchronet BBS software</a> written by Rob Swindell.
 <p>The purpose of such integration is to enable the sysop to install new DOS doors in
 a simple and straightforward manner, and to be able to easily work around the inevitable
@@ -30,26 +30,43 @@ instructions in sbbsunix.txt.
 
 <h2>Setting up a DOS BBS door</h2>
 
-<p>A few requirements first off:
-<ul>
-<li>There must be an <a href="#files">emusetup.bat</a> in your /path/to/sbbs/ctrl directory.
+<p><b>READ THIS; THESE STEPS ARE REQUIRED</b>
+
+<p>There must be an <a href="#files">emusetup.bat</a> in your /path/to/sbbs/ctrl directory.
 This batch file configures the DOS environment, and can be used to load additional TSRs,
 change drive letters around, or make any other last minute changes to the environment
-before the door is loaded.  The below instructions assume the default drive letters;
-if you change them in emusetup.bat, be sure to use the correct corresponding ones.
+before the door is loaded.  It is required to at least load a FOSSIL driver in this batch
+file.
 
-<li>The default dosemu binary is /usr/bin/dosemu.bin.  If you have a different one that you would
+<p>The rest of these instructions assume that you are using the default remapped drive
+letters and haven't changed them around in emusetup.bat.  The default drive letters are:
+<ul>
+<li>D: - The Synchronet node directory, where the dropfile should probably be put.  In door configurations,
+specify this drive (D:\) as the path to the dropfile.
+<li>E: - Under this drive, the door's directory will be mounted. Example: E:\LORD
+<li>F: - The Synchronet control directory
+<li>G: - The Synchronet data directory
+<li>H: - The Synchronet exec directory
+</ul>
+
+<p>Any necessary utils that should be loaded before the door starts (like fossil driver, ansi
+driver, etc) should be placed in the emusetup.bat with a PATH that points to them.  The default
+location is in a \dosutils directory immediately preceding the door's directory.
+(For example, if your door is in
+/home/bbs/doors/lord, put the dosutils directory as /home/bbs/doors/dosutils.)
+
+<p>
+The default dosemu binary is /usr/bin/dosemu.bin.  If you have a different one that you would
 like all DOS programs that Synchronet launches to use, configure DOSemuPath in sbbs.ini.<br>
 Example:<br>
 DOSemuPath=/usr/local/bin/dosemu.bin
-<br>Be sure to use `dosemu.bin` and not the `dosemu` wrapper script.
+<br>NOTE: Be sure to point to `dosemu.bin` and not the `dosemu` wrapper script.
 
-<li>Ensure that you have a working dosemu setup before trying to set it up with Synchronet.
+<p><b>Ensure that you have a working dosemu setup before trying to set it up with Synchronet!</b>
 For Debian, simply `apt-get install dosemu dosemu-freedos`.  For other distributions,
 you will need to first install and configure dosemu, and then install FreeDOS (or your DOS
-of choice) and set it up to work with dosemu.  (Some details on this procedure are outlined
-below.)
-</ul>
+of choice) and set it up to work with dosemu.  Ensure that you can at least get to a DOS
+prompt through standalone DOSEMU before even trying to use it with Synchronet.
 
 <h3>To configure a DOS BBS door in scfg:</h3>
 
@@ -66,12 +83,21 @@ below.)
 </ul>
 
 <p>You probably want to also add the door's setup program as a standard I/O program
-(see <a href="#stdio">below</a> for details on standard I/O programs).
+(see <a href="#stdio">below</a> for details on standard I/O programs).  If you don't want to
+do this, you will need to enter DOSEMU, redirect the door's parent directory to
+E: like this assuming the door is in /sbbs/xtrn/doordir:
+<pre>
+C:\> lredir E: linux\fs\sbbs\xtrn
+</pre>
+then go to E:, change to the door's directory, and run the setup program.  If you don't do
+this redirection and set up through the redirected drive, you will probably set up the
+door to use <b>wrong paths and it won't work</b>!
 
 <p>When you set up the door, point it to D:\ for the dropfile path.  Also, generally
 it would be a good idea to tell the door to use a fossil driver, unless it doesn't work or
 produces strange results (like missing lines or dropped characters),
-in which case you can use the internal comm routines of the door.
+in which case you can use the internal comm routines of the door. (DOSEMU's virtual
+modem support allows both approaches.)
 
 <p>The door's actual directory will be mounted on E:\ with the root of E: being the parent
 directory of the door.  So if your door is in /usr/local/games/tw2002 on the Unix side, it
@@ -79,6 +105,10 @@ will be in E:\tw2002 on the DOS side.  Make sure the door's directory conforms t
 8.3 file format!  /usr/local/games/tw2002 would be okay, but /usr/local/games/TradeWars2002
 would not.  The symptom of a non-conforming directory is a "file not found" when
 Synchronet tries to change to the DOS door's directory inside DOSEMU.
+
+<p>If the door doesn't start, it's probably a configuration problem of some kind that has
+left DOSEMU sitting at a DOS prompt.  If you have what you think is a hung session, the first
+thing to try is blindly typing 'exitemu' to see if the session can be exited.
 
 <p>Make SURE that if the door is started with a .bat batch file, that you explicitly
 name it as such in the "Program Name" field.  For instance, LORD's "start.bat" command
@@ -113,6 +143,9 @@ Just make sure Native Program is set to "No" and it will work fine.
 can get access to a DOS shell through the board.  From there, you can do things like
 the initial unzipping and setup of door software with ease.
 
+<p>Be careful with the security of these programs!  Since they aren't designed to run
+as doors, a malicious user who has access could probably wipe out your whole BBS system.
+
 <h2>Customization of your Synchronet DOSEMU setup</h2>
 
 <p>File Search Precedence:
@@ -134,8 +167,10 @@ that works for mostly everything else.
 <p>make sure you are using a dosemu.conf from the DOSEMU distribution of the
 particular version you are using.  (e.g. if using 1.1.4 release, don't use a dosemu.conf from
 1.0.2).  If you want to customize a config, start from your distro's release dosemu.conf.
+Unfortunately, if you upgrade to a newer release of DOSEMU, you will probably have to also
+forward-port your custom config files since the config file format may change.
 
-<p>The most up-to-date freedos distribution can be found <A href="http://www.fdos.org/ripcord/dosemu/">here</a> -- this is known to fix problems with Tradewars 2002.  You might consider trying DR-DOS if you have problems with FreeDOS.  However, be certain that you use the autoexec.bat from the FreeDOS distribution, as the Synchronet integration depends on it (specifically, it depends on the DOSDRIVE_D and unix -e behavior from it).  Also remember to copy the DOSEMU support files into
+<p>The most up-to-date freedos distribution can be found <A href="http://www.freedos.org/freedos/files/">here</a> -- this is known to fix problems with Tradewars 2002.  You might consider trying DR-DOS if you have problems with FreeDOS.  However, be certain that you use the autoexec.bat from the FreeDOS distribution, as the Synchronet integration depends on it (specifically, it depends on the DOSDRIVE_D and unix -e behavior from it).  Also remember to copy the DOSEMU support files (usually located in /usr/lib/dosemu/commands) into
 c:\dosemu in the DR-DOS hdimage.
 
 <hr>
@@ -144,41 +179,26 @@ c:\dosemu in the DR-DOS hdimage.
 <p>emusetup.bat -- changing drive letter mappings, and using variables that
 are passed into it
 
-<p>The default drive letters are:
-<ul>
-<li>D: - The node directory, where the dropfile should probably be put.  In door configurations,
-specify this drive (D:\) as the path to the dropfile.
-<li>E: - Under this drive, the door's directory will be mounted. Example: E:\LORD
-<li>F: - The Synchronet control directory
-<li>G: - The Synchronet data directory
-<li>H: - The Synchronet exec directory
-</ul>
-
-<p>Any necessary utils that should be loaded before the door starts (like fossil driver, ansi
-driver, etc) should be placed in the emusetup.bat with a PATH that points to them.  The default
-location is in a \dosutils directory immediately preceding the door's directory.
-(For example, if your door is in
-/home/bbs/doors/lord, put the dosutils directory as /home/bbs/doors/dosutils.)
-
 <hr>
 
 <h2>Known Problems</h2>
 
-<p>File locking is dysfunctional with the DOSEMU 1.0.2.x stable releases.  File locking
-problems will manifest themselves as strange error messages related to file opens, long
-pauses and/or hangs, game data corruption, and other fun stuff.  Note that you do not have
-to be running a multinode BBS to be prone to these issues; most programs detect DOSEMU as
-a multitasker and thus initiate their lock management regardless of whether or not
-multiple sessions of the game will be in use.  DOSEMU development releases do not
-have this issue, so you might be better off just to compile and use that.
+<p>File locking is dysfunctional with the DOSEMU 1.0.2.x stable releases.  File
+locking problems will manifest themselves as strange error messages related to
+file opens, long pauses and/or hangs, game data corruption, and other fun
+stuff.  Note that you do not have to be running a multinode BBS to be prone to
+these issues; most programs detect DOSEMU as a multitasker and thus initiate
+their lock management regardless of whether or not multiple sessions of the
+game will be in use.  The fix is to upgrade to DOSEMU 1.2 or later, since 1.0.x
+is obsolete.
 
-<p>There is a fix from Bob Newell which is detailed in <a href="faqlinux.htm">this document</a>.
-Included is a kludge for slow screen draws due to incorrect idling that will occur in some games
-such as Planets TEOS.
+<p>There is a file locking hack from Bob Newell which is detailed in <a
+href="faqlinux.htm">this document</a>.  Included is a kludge for slow screen
+draws due to incorrect idling that will occur in some games such as Planets
+TEOS.
 
-<p>There is a precompiled version <a href="#files">here</a> that may or may not work on your
-machine.  (It was compiled from the Debian sources.)  I also maintain builds of development
-versions that you can install that are likely to have fixed many more bugs.
+<p>If you are running Debian 'woody', I recommend upgrading to 'sarge' so that
+you can use DOSEMU 1.2.x that is part of the distribution.
 
 <h3>If you are having other problems:</h3>
 <ul>
@@ -192,6 +212,16 @@ dosemu installed, and check for a stale dosemu.bin symlink in the door's directo
 <li>Also verify that the paths in the door's configuration problem are correct
 <li>Verify that you have set up enough nodes in the door's configuration to handle all the nodes on your BBS.
 </ul>
+
+<p><b>If you want help with this, you must send me *at a minimum* the following files:</b>
+<ul>
+<li>dosemu.log and dosemu_boot.log from the node directory
+<li>your DOS autoexec.bat and config.sys
+<li>output of 'find /'
+<li>emusetup.bat and dosemu.conf (only if you have modified them)
+</ul>
+
+<p>Send problem reports to nemesis@icequake.net
 
 <a name="files"></a>
 <h2>Files</h2>
