@@ -1704,9 +1704,11 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 				case CIO_KEY_F(2):
 				case CIO_KEY_UP:
 				case CIO_KEY_DOWN:
-					if(mode&K_DEUCEEXIT)
+					if(mode&K_DEUCEEXIT) {
 						ch=CR;
-					break;
+						break;
+					}
+					continue;
 				case CTRL_X:
 					if(j)
 					{
