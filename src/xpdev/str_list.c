@@ -272,10 +272,8 @@ str_list_t strListSplitCopy(str_list_t* list, const char* str, const char* delim
 	if(str==NULL)
 		return(NULL);
 
-	if((buf=(char*)malloc(strlen(str)+1))==NULL)
+	if((buf=strdup(str))==NULL)
 		return(NULL);
-
-	strcpy(buf,str);
 
 	*list=strListSplit(list,buf,delimit);
 
@@ -347,7 +345,7 @@ void strListFree(str_list_t* list)
 {
 	if(*list!=NULL) {
 		strListFreeStrings(*list);
-		free(*list);
+		FREE_AND_NULL(*list);
 	}
 }
 
