@@ -880,7 +880,7 @@ static JSBool
 js_timestr(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char		str[128];
-	time_t		t=0;
+	int32		t=0;
 	JSString*	js_str;
 	scfg_t*		cfg;
 
@@ -890,8 +890,8 @@ js_timestr(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(argc<1)
 		t=time(NULL);	/* use current time */
 	else
-		JS_ValueToInt32(cx,argv[0],(int32*)&t);
-	timestr(cfg,&t,str);
+		JS_ValueToInt32(cx,argv[0],&t);
+	timestr(cfg,(time_t*)&t,str);
 	if((js_str = JS_NewStringCopyZ(cx, str))==NULL)
 		return(JS_FALSE);
 
@@ -934,7 +934,7 @@ static JSBool
 js_secondstr(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char		str[128];
-	time_t		t=0;
+	int32		t=0;
 	JSString*	js_str;
 
 	*rval = JSVAL_NULL;
@@ -942,7 +942,7 @@ js_secondstr(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(argc<1)
 		return(JS_TRUE);
 
-	JS_ValueToInt32(cx,argv[0],(int32*)&t);
+	JS_ValueToInt32(cx,argv[0],&t);
 	sectostr(t,str);
 	if((js_str = JS_NewStringCopyZ(cx, str))==NULL)
 		return(JS_FALSE);
