@@ -250,6 +250,8 @@ If you want to abort the creation of this new node, hit  ESC .
 		free_node_cfg(&cfg);
 		savnode=0; }
 	strcpy(cfg.node_dir,cfg.node_path[i]);
+	prep_dir(cfg.ctrl_dir, cfg.node_dir);
+
 	upop("Reading NODE.CNF...");
 	read_node_cfg(&cfg,&txt);
 	upop(0);
