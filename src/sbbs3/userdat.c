@@ -58,6 +58,10 @@ uint DLLCALL matchuser(scfg_t* cfg, char *name)
 	ulong l,length;
 	FILE *stream;
 
+	if(!stricmp(name,"SYSOP") || !stricmp(name,cfg->sys_id) 
+		|| !stricmp(name,"POSTMASTER") || !stricmp(name,cfg->sys_op)) 
+		return(1); /* pseudonyms for user #1 */
+
 	sprintf(str,"%suser/name.dat",cfg->data_dir);
 	if((file=nopen(str,O_RDONLY))==-1)
 		return(0);
@@ -1376,7 +1380,7 @@ char* DLLCALL usermailaddr(scfg_t* cfg, char* addr, char* name)
 	return(addr);
 }
 
-char* DLLCALL alias(scfg_t* cfg, SOCKET socket, char* name, char* buf)
+char* DLLCALL alias(scfg_t* cfg, char* name, char* buf)
 {
 	int		file;
 	char*	p;
@@ -1386,12 +1390,6 @@ char* DLLCALL alias(scfg_t* cfg, SOCKET socket, char* name, char* buf)
 	FILE*	fp;
 
 	p=name;
-
-	if(!stricmp(p,"SYSOP") || !stricmp(p,cfg->sys_id) 
-		|| !stricmp(p,"POSTMASTER") || !stricmp(p,cfg->sys_op)) {
-		strcpy(buf,"1");
-		return(buf);
-	}
 
 	sprintf(fname,"%salias.cfg",cfg->ctrl_dir);
 	if((file=sopen(fname,O_RDONLY|O_BINARY,SH_DENYNO))==-1)
