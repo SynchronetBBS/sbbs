@@ -677,7 +677,7 @@ get_distlist(void)
 				r++;
 				break;
 			case 'f':
-				SAFECOPY(file[f++],in_line+2);
+				strcpy(file[f++],in_line+2);
 				break;
 			case 't':
 				SAFECOPY(dist[r-1]->tag,in_line+2);
