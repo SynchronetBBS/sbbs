@@ -256,6 +256,7 @@ public:		// User declarations
     bool			FtpLogFile;
     AnsiString		CtrlDirectory;
     AnsiString      LoginCommand;
+    AnsiString      ConfigCommand;
     scfg_t		    cfg;
     bbs_startup_t 	bbs_startup;
     mail_startup_t 	mail_startup;

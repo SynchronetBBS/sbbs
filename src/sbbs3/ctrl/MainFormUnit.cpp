@@ -493,6 +493,7 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
 {
     CtrlDirectory="c:\\sbbs\\ctrl\\";
     LoginCommand="start telnet://localhost";
+    ConfigCommand="%sSCFG %s /T2";
 
     memset(&bbs_startup,0,sizeof(bbs_startup));
     bbs_startup.size=sizeof(bbs_startup);
@@ -697,6 +698,7 @@ void __fastcall TMainForm::SaveSettings(TObject* Sender)
 
     Registry->WriteString("CtrlDirectory",CtrlDirectory);
     Registry->WriteString("LoginCommand",LoginCommand);
+    Registry->WriteString("ConfigCommand",ConfigCommand);
 
     Registry->WriteInteger("SysAutoStart",SysAutoStart);
     Registry->WriteInteger("MailAutoStart",MailAutoStart);
@@ -923,7 +925,7 @@ void __fastcall TMainForm::BBSConfigureMenuItemClick(TObject *Sender)
 {
 	char str[256];
 
-    sprintf(str,"%sSCFG %s /T2"
+    sprintf(str,ConfigCommand.c_str()
     	,cfg.exec_dir, cfg.ctrl_dir);
     STARTUPINFO startup_info={0};
     PROCESS_INFORMATION process_info;
@@ -1260,6 +1262,8 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     	CtrlDirectory=Registry->ReadString("CtrlDirectory");
     if(Registry->ValueExists("LoginCommand"))
     	LoginCommand=Registry->ReadString("LoginCommand");
+    if(Registry->ValueExists("ConfigCommand"))
+    	ConfigCommand=Registry->ReadString("ConfigCommand");
 
     if(Registry->ValueExists("MailLogFile"))
     	MailLogFile=Registry->ReadInteger("MailLogFile");
