@@ -3259,7 +3259,7 @@ function IRCClient_registered_commands(command, cmdline) {
 			var str = cmdline.slice(cmdline.indexOf(" ")+1);
 			if (str[0] == ":")
 				str = str.slice(1);
-			this.services_msg("NickServ",ircstring(cmdline));
+			this.services_msg("NickServ",str);
 			break;
 		case "MS":
 		case "MEMOSERV":
@@ -3270,7 +3270,7 @@ function IRCClient_registered_commands(command, cmdline) {
 			var str = cmdline.slice(cmdline.indexOf(" ")+1);
 			if (str[0] == ":")
 				str = str.slice(1);
-			this.services_msg("MemoServ",ircstring(cmdline));
+			this.services_msg("MemoServ",str);
 			break;
 		case "OS":
 		case "OPERSERV":
@@ -3281,7 +3281,7 @@ function IRCClient_registered_commands(command, cmdline) {
 			var str = cmdline.slice(cmdline.indexOf(" ")+1);
 			if (str[0] == ":")
 				str = str.slice(1);
-			this.services_msg("OperServ",ircstring(cmdline));
+			this.services_msg("OperServ",str);
 			break;
 		case "IDENTIFY":
 			if (!cmd[1]) {
