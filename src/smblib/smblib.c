@@ -1739,7 +1739,7 @@ long SMBCALL smb_allocdat(smb_t* smb, ulong length, ushort refs)
 	j=0;	/* j is consecutive unused block counter */
 	fflush(smb->sda_fp);
 	rewind(smb->sda_fp);
-	while(!feof(smb->sda_fp) && offset>=0) {
+	while(!feof(smb->sda_fp) && (long)offset>=0) {
 		if(smb_fread(smb,&i,sizeof(i),smb->sda_fp)!=sizeof(i))
 			break;
 		offset+=SDT_BLOCK_LEN;
