@@ -114,14 +114,16 @@ void __fastcall TAboutBoxForm::FormShow(TObject *Sender)
         + " (c) 1998 Netscape Communications Corp.");
 }
 //---------------------------------------------------------------------------
-
-
-
 void __fastcall TAboutBoxForm::WebPageLabelClick(TObject *Sender)
 {
     ShellExecute(Handle, "open", ((TLabel*)Sender)->Hint.c_str(),
         NULL,NULL,SW_SHOWDEFAULT);
 }
 //---------------------------------------------------------------------------
-
+void __fastcall TAboutBoxForm::LogoClick(TObject *Sender)
+{
+    ShellExecute(Handle, "open", "http://www.synchro.net",
+        NULL,NULL,SW_SHOWDEFAULT);
+}
+//---------------------------------------------------------------------------
 

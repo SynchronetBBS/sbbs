@@ -14,6 +14,9 @@ object AboutBoxForm: TAboutBoxForm
   OldCreateOrder = False
   Position = poScreenCenter
   OnShow = FormShow
+  DesignSize = (
+    592
+    368)
   PixelsPerInch = 120
   TextHeight = 16
   object Bevel: TBevel
@@ -28,7 +31,10 @@ object AboutBoxForm: TAboutBoxForm
     Top = 25
     Width = 540
     Height = 104
+    Cursor = crHandPoint
+    Hint = 'http://www.synchro.net'
     Anchors = [akLeft, akTop, akRight]
+    ParentShowHint = False
     Picture.Data = {
       09544D65746166696C656E420100D7CDC69A00000000000063114003E8030000
       0000DA460100090000032AA10000CF00EE020000000004000000030108000500
@@ -2610,7 +2616,9 @@ object AboutBoxForm: TAboutBoxForm
       0A0C8312090C8512080C8612080C8812080C8A12070C8B12070C8D12070C8E12
       070C9012080C9112080C9212080C9312090C9512090C96120A0C97120B0C9812
       0C0C98120D0C99120E0C99120F0C9A12110C030000000000}
+    ShowHint = True
     Transparent = True
+    OnClick = LogoClick
   end
   object OKButton: TButton
     Left = 256
@@ -2632,7 +2640,7 @@ object AboutBoxForm: TAboutBoxForm
     Alignment = taRightJustify
     Anchors = [akLeft, akBottom]
     AutoSize = False
-    Caption = 'Copyright 2001 -'
+    Caption = 'Copyright 2002 -'
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
     Font.Height = -15

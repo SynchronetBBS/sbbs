@@ -56,6 +56,7 @@ __published:	// IDE-managed Components
     TStaticText *WebSiteLabel;
 	void __fastcall FormShow(TObject *Sender);
     void __fastcall WebPageLabelClick(TObject *Sender);
+	void __fastcall LogoClick(TObject *Sender);
 private:	// User declarations
 public:		// User declarations
 	__fastcall TAboutBoxForm(TComponent* Owner);
