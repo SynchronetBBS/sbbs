@@ -495,6 +495,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
     		// Wait for notification from VXD that new VM has started
 			if((retval=WaitForSingleObject(start_event, 5000))!=WAIT_OBJECT_0) {
 				XTRN_CLEANUP;
+                TerminateProcess(process_info.hProcess, __LINE__);
 				errormsg(WHERE, ERR_TIMEOUT, "start_event", retval);
 				return(GetLastError());
 			}
@@ -513,6 +514,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 				NULL					// Overlapped I/O
 				)) {
 				XTRN_CLEANUP;
+                TerminateProcess(process_info.hProcess, __LINE__);
 				errormsg(WHERE, ERR_IOCTL, SBBSEXEC_VXD, SBBSEXEC_IOCTL_COMPLETE);
 				return(GetLastError());
 			}
