@@ -8,6 +8,8 @@ template.group=msg_area.grp[grp];
 template.subs=msg_area.grp[grp].sub_list;
 
 for(s in msg_area.grp[grp].sub_list) {
+//	if(msg_area.grp[grp].sub_list[s].scan_cfg==0 && http_request.query.show_all_subs != undefined && http_request.query.show_all_subs != 'Yes')
+//		continue;
 	msgbase = new MsgBase(msg_area.grp[grp].sub_list[s].code);
 	if(msgbase.open()) {
 		var lastdate="No Msgs";
