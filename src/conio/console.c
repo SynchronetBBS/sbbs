@@ -92,7 +92,6 @@
 #include <sys/param.h>
 #include <sys/time.h>
 #include <sys/types.h>
-#include <sys/user.h>
 
 #include <dlfcn.h>
 #include <fcntl.h>
