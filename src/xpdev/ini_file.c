@@ -89,6 +89,9 @@ static char* get_value(FILE* fp, const char* section, const char* key)
 	char	str[MAX_LINE_LEN];
 	static char value[MAX_VALUE_LEN];
 
+	if(fp==NULL)
+		return(NULL);
+
 	if(!find_section(fp,section))
 		return(NULL);
 
