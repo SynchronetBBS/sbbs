@@ -584,7 +584,9 @@ static void js_service_thread(void* arg)
 	else
 		host_name="<no name>";
 
-	lprintf("%04d %s client name: %s", socket, service->protocol, host_name);
+	if(!(service->options&BBS_OPT_NO_HOST_LOOKUP)
+		&& !(startup->options&BBS_OPT_NO_HOST_LOOKUP))
+		lprintf("%04d %s client name: %s", socket, service->protocol, host_name);
 
 	if(trashcan(&scfg,host_name,"host")) {
 		lprintf("%04d !%s CLIENT BLOCKED in host.can: %s"
@@ -754,7 +756,9 @@ static void native_service_thread(void* arg)
 	else
 		host_name="<no name>";
 
-	lprintf("%04d %s client name: %s", socket, service->protocol, host_name);
+	if(!(service->options&BBS_OPT_NO_HOST_LOOKUP)
+		&& !(startup->options&BBS_OPT_NO_HOST_LOOKUP))
+		lprintf("%04d %s client name: %s", socket, service->protocol, host_name);
 
 	if(trashcan(&scfg,host_name,"host")) {
 		lprintf("%04d !%s CLIENT BLOCKED in host.can: %s"

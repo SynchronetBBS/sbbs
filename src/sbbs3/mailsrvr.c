@@ -537,7 +537,8 @@ static void pop3_thread(void* arg)
 	else
 		strcpy(host_name,"<no name>");
 
-	if(startup->options&MAIL_OPT_DEBUG_POP3)
+	if(startup->options&MAIL_OPT_DEBUG_POP3
+		&& !(startup->options&MAIL_OPT_NO_HOST_LOOKUP))
 		lprintf("%04d POP3 client name: %s", socket, host_name);
 
 	if(trashcan(&scfg,host_ip,"ip")) {
@@ -1151,7 +1152,8 @@ static void smtp_thread(void* arg)
 	else
 		strcpy(host_name,"<no name>");
 
-	lprintf("%04d SMTP host name: %s", socket, host_name);
+	if(!(startup->options&MAIL_OPT_NO_HOST_LOOKUP))
+		lprintf("%04d SMTP host name: %s", socket, host_name);
 
 	strcpy(hello_name,host_name);
 
