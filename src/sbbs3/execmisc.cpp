@@ -39,21 +39,13 @@
 #include "cmdshell.h"
 #include <sys/locking.h>
 
-#ifdef __BORLANDC__
-
-#include <dirent.h>
-#define getfattr(p) _chmod(p,0,0)
-
-#elif defined(_MSC_VER)
+#ifdef _MSC_VER
 
 #include "msdirent.h"
 
 #else
 
-#include <dirent.h>	/* mingw32 supplied */
-
-#warning need getfattr() function
-#define getfattr(p) 0
+#include <dirent.h>	/* POSIX directory functions */
 
 #endif
 
@@ -1204,13 +1196,12 @@ int sbbs_t::exec_misc(csi_t *csi, char *path)
 							return(0);
 						l=*lp2; 
 					}
-#ifdef __GNUC__
-#warning "Need locking equivalent"
+#ifdef __unix__
+#warning "Need lock equivalent"
 #else
 					if(lp1 && *lp1) {
 						fflush((FILE *)*lp1);
-						lseek(fileno((FILE *)*lp1),ftell((FILE *)*lp1),SEEK_SET);
-						csi->logic=locking(fileno((FILE *)*lp1),LK_LOCK,l); 
+						csi->logic=!lock(fileno((FILE *)*lp1),ftell((FILE*)*lp1),l); 
 					}
 #endif
 					return(0);
@@ -1229,13 +1220,12 @@ int sbbs_t::exec_misc(csi_t *csi, char *path)
 							return(0);
 						l=*lp2; 
 					}
-#ifdef __GNUC__
-#warning "Need locking equivalent"
+#ifdef __unix__
+#warning "Need unlock equivalent"
 #else
 					if(lp1 && *lp1) {
 						fflush((FILE *)*lp1);
-						lseek(fileno((FILE *)*lp1),ftell((FILE *)*lp1),SEEK_SET);
-						csi->logic=locking(fileno((FILE *)*lp1),LK_UNLCK,l); 
+						csi->logic=!unlock(fileno((FILE *)*lp1),ftell((FILE*)*lp1),l); 
 					}
 #endif
 					return(0);
