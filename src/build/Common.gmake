@@ -205,7 +205,7 @@ else # RELEASE
 endif
 
 -include targets.mk
--include $(SRC_ROOT)/rules.mk
+-include $(SRC_ROOT)/build/rules.mk
 -include objects.mk		# defines $(OBJS)
 -include libobjs.mk		# defines $(LIB_OBJS)
 
