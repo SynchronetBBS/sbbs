@@ -59,25 +59,17 @@ extern const uchar* nular;
 /* allocated with arstr() */	
 #define FREE_AR(x)		if(x!=NULL && x!=nular)	{ FREE(x); x=NULL; }	
 
-typedef struct {
-    char    *openerr,
-            *reading,
-            *readit,
-            *allocerr,
-            *error;
-            } read_cfg_text_t;
-
 char*	get_alloc(long *offset, char *outstr, int maxlen, FILE *instream);
-BOOL	allocerr(read_cfg_text_t* txt, long offset, char *fname, uint size);
+BOOL	allocerr(char* error, long offset, char *fname, uint size);
 char*	readline(long *offset, char *str, int maxlen, FILE *stream);
 
-BOOL	read_node_cfg(scfg_t* cfg, read_cfg_text_t* txt);
-BOOL	read_main_cfg(scfg_t* cfg, read_cfg_text_t* txt);
-BOOL	read_xtrn_cfg(scfg_t* cfg, read_cfg_text_t* txt);
-BOOL	read_file_cfg(scfg_t* cfg, read_cfg_text_t* txt);
-BOOL	read_msgs_cfg(scfg_t* cfg, read_cfg_text_t* txt);
-BOOL	read_chat_cfg(scfg_t* cfg, read_cfg_text_t* txt);
-BOOL	read_attr_cfg(scfg_t* cfg, read_cfg_text_t* txt);
+BOOL	read_node_cfg(scfg_t* cfg, char* error);
+BOOL	read_main_cfg(scfg_t* cfg, char* error);
+BOOL	read_xtrn_cfg(scfg_t* cfg, char* error);
+BOOL	read_file_cfg(scfg_t* cfg, char* error);
+BOOL	read_msgs_cfg(scfg_t* cfg, char* error);
+BOOL	read_chat_cfg(scfg_t* cfg, char* error);
+BOOL	read_attr_cfg(scfg_t* cfg, char* error);
 char*	prep_path(char* path); 
 void	make_data_dirs(scfg_t* cfg);
 

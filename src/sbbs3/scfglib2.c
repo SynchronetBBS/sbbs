@@ -41,7 +41,7 @@
 /****************************************************************************/
 /* Reads in LIBS.CNF and initializes the associated variables				*/
 /****************************************************************************/
-BOOL read_file_cfg(scfg_t* cfg, read_cfg_text_t* txt)
+BOOL read_file_cfg(scfg_t* cfg, char* error)
 {
 	char	str[256],fname[13],c,cmd[LEN_CMD+1];
 	short	i,j,n;
@@ -51,11 +51,9 @@ BOOL read_file_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 	strcpy(fname,"file.cnf");
 	sprintf(str,"%s%s",cfg->ctrl_dir,fname);
 	if((instream=fnopen(NULL,str,O_RDONLY))==NULL) {
-		lprintf(txt->openerr,str);
-		return(FALSE); }
-
-	if(txt->reading && txt->reading[0])
-		lprintf(txt->reading,fname);
+		sprintf(error,"%d opening %s",errno,str);
+		return(FALSE); 
+	}
 
 	get_int(cfg->min_dspace,instream);
 	get_int(cfg->max_batup,instream);
@@ -84,15 +82,15 @@ BOOL read_file_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 
 	if(cfg->total_fextrs) {
 		if((cfg->fextr=(fextr_t **)MALLOC(sizeof(fextr_t *)*cfg->total_fextrs))==NULL)
-			return allocerr(txt,offset,fname,sizeof(fextr_t*)*cfg->total_fextrs); }
-	else
+			return allocerr(error,offset,fname,sizeof(fextr_t*)*cfg->total_fextrs); 
+	} else
 		cfg->fextr=NULL;
 
 	for(i=0; i<cfg->total_fextrs; i++) {
 		if(feof(instream))
 			break;
 		if((cfg->fextr[i]=(fextr_t *)MALLOC(sizeof(fextr_t)))==NULL)
-			return allocerr(txt,offset,fname,sizeof(fextr_t));
+			return allocerr(error,offset,fname,sizeof(fextr_t));
 		memset(cfg->fextr[i],0,sizeof(fextr_t));
 		get_str(cfg->fextr[i]->ext,instream);
 		get_str(cfg->fextr[i]->cmd,instream);
@@ -112,15 +110,15 @@ BOOL read_file_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 
 	if(cfg->total_fcomps) {
 		if((cfg->fcomp=(fcomp_t **)MALLOC(sizeof(fcomp_t *)*cfg->total_fcomps))==NULL)
-			return allocerr(txt,offset,fname,sizeof(fcomp_t*)*cfg->total_fcomps); }
-	else
+			return allocerr(error,offset,fname,sizeof(fcomp_t*)*cfg->total_fcomps); 
+	} else
 		cfg->fcomp=NULL;
 
 	for(i=0; i<cfg->total_fcomps; i++) {
 		if(feof(instream))
 			break;
 		if((cfg->fcomp[i]=(fcomp_t *)MALLOC(sizeof(fcomp_t)))==NULL)
-			return allocerr(txt,offset,fname,sizeof(fcomp_t));
+			return allocerr(error,offset,fname,sizeof(fcomp_t));
 		memset(cfg->fcomp[i],0,sizeof(fcomp_t));
 		get_str(cfg->fcomp[i]->ext,instream);
 		get_str(cfg->fcomp[i]->cmd,instream);
@@ -140,14 +138,14 @@ BOOL read_file_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 
 	if(cfg->total_fviews) {
 		if((cfg->fview=(fview_t **)MALLOC(sizeof(fview_t *)*cfg->total_fviews))==NULL)
-			return allocerr(txt,offset,fname,sizeof(fview_t*)*cfg->total_fviews); }
-	else
+			return allocerr(error,offset,fname,sizeof(fview_t*)*cfg->total_fviews); 
+	} else
 		cfg->fview=NULL;
 
 	for(i=0; i<cfg->total_fviews; i++) {
 		if(feof(instream)) break;
 		if((cfg->fview[i]=(fview_t *)MALLOC(sizeof(fview_t)))==NULL)
-			return allocerr(txt,offset,fname,sizeof(fview_t));
+			return allocerr(error,offset,fname,sizeof(fview_t));
 		memset(cfg->fview[i],0,sizeof(fview_t));
 		get_str(cfg->fview[i]->ext,instream);
 		get_str(cfg->fview[i]->cmd,instream);
@@ -167,14 +165,14 @@ BOOL read_file_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 
 	if(cfg->total_ftests) {
 		if((cfg->ftest=(ftest_t **)MALLOC(sizeof(ftest_t *)*cfg->total_ftests))==NULL)
-			return allocerr(txt,offset,fname,sizeof(ftest_t*)*cfg->total_ftests); }
-	else
+			return allocerr(error,offset,fname,sizeof(ftest_t*)*cfg->total_ftests); 
+	} else
 		cfg->ftest=NULL;
 
 	for(i=0; i<cfg->total_ftests; i++) {
 		if(feof(instream)) break;
 		if((cfg->ftest[i]=(ftest_t *)MALLOC(sizeof(ftest_t)))==NULL)
-			return allocerr(txt,offset,fname,sizeof(ftest_t));
+			return allocerr(error,offset,fname,sizeof(ftest_t));
 		memset(cfg->ftest[i],0,sizeof(ftest_t));
 		get_str(cfg->ftest[i]->ext,instream);
 		get_str(cfg->ftest[i]->cmd,instream);
@@ -196,14 +194,14 @@ BOOL read_file_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 	if(cfg->total_dlevents) {
 		if((cfg->dlevent=(dlevent_t **)MALLOC(sizeof(dlevent_t *)*cfg->total_dlevents))
 			==NULL)
-			return allocerr(txt,offset,fname,sizeof(dlevent_t*)*cfg->total_dlevents); }
-	else
+			return allocerr(error,offset,fname,sizeof(dlevent_t*)*cfg->total_dlevents); 
+	} else
 		cfg->dlevent=NULL;
 
 	for(i=0; i<cfg->total_dlevents; i++) {
 		if(feof(instream)) break;
 		if((cfg->dlevent[i]=(dlevent_t *)MALLOC(sizeof(dlevent_t)))==NULL)
-			return allocerr(txt,offset,fname,sizeof(dlevent_t));
+			return allocerr(error,offset,fname,sizeof(dlevent_t));
 		memset(cfg->dlevent[i],0,sizeof(dlevent_t));
 		get_str(cfg->dlevent[i]->ext,instream);
 		get_str(cfg->dlevent[i]->cmd,instream);
@@ -225,14 +223,14 @@ BOOL read_file_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 
 	if(cfg->total_prots) {
 		if((cfg->prot=(prot_t **)MALLOC(sizeof(prot_t *)*cfg->total_prots))==NULL)
-			return allocerr(txt,offset,fname,sizeof(prot_t*)*cfg->total_prots); }
-	else
+			return allocerr(error,offset,fname,sizeof(prot_t*)*cfg->total_prots); 
+	} else
 		cfg->prot=NULL;
 
 	for(i=0;i<cfg->total_prots;i++) {
 		if(feof(instream)) break;
 		if((cfg->prot[i]=(prot_t *)MALLOC(sizeof(prot_t)))==NULL)
-			return allocerr(txt,offset,fname,sizeof(prot_t));
+			return allocerr(error,offset,fname,sizeof(prot_t));
 		memset(cfg->prot[i],0,sizeof(prot_t));
 
 		get_int(cfg->prot[i]->mnemonic,instream);
@@ -259,8 +257,8 @@ BOOL read_file_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 
 	if(cfg->altpaths) {
 		if((cfg->altpath=(char **)MALLOC(sizeof(char *)*cfg->altpaths))==NULL)
-			return allocerr(txt,offset,fname,sizeof(char *)*cfg->altpaths); }
-	else
+			return allocerr(error,offset,fname,sizeof(char *)*cfg->altpaths); 
+	} else
 		cfg->altpath=NULL;
 
 	for(i=0;i<cfg->altpaths;i++) {
@@ -270,7 +268,7 @@ BOOL read_file_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 		backslash(str);
 		j=LEN_DIR+1;
 		if((cfg->altpath[i]=(char *)MALLOC(j))==NULL)
-			return allocerr(txt,offset,fname,j);
+			return allocerr(error,offset,fname,j);
 		memset(cfg->altpath[i],0,j);
 		strcpy(cfg->altpath[i],str);
 		for(j=0;j<8;j++)
@@ -287,14 +285,14 @@ BOOL read_file_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 
 	if(cfg->total_libs) {
 		if((cfg->lib=(lib_t **)MALLOC(sizeof(lib_t *)*cfg->total_libs))==NULL)
-			return allocerr(txt,offset,fname,sizeof(lib_t *)*cfg->total_libs); }
-	else
+			return allocerr(error,offset,fname,sizeof(lib_t *)*cfg->total_libs);
+	} else
 		cfg->lib=NULL;
 
 	for(i=0;i<cfg->total_libs;i++) {
 		if(feof(instream)) break;
 		if((cfg->lib[i]=(lib_t *)MALLOC(sizeof(lib_t)))==NULL)
-			return allocerr(txt,offset,fname,sizeof(lib_t));
+			return allocerr(error,offset,fname,sizeof(lib_t));
 		memset(cfg->lib[i],0,sizeof(lib_t));
 		cfg->lib[i]->offline_dir=INVALID_DIR;
 
@@ -318,14 +316,14 @@ BOOL read_file_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 
 	if(cfg->total_dirs) {
 		if((cfg->dir=(dir_t **)MALLOC(sizeof(dir_t *)*(cfg->total_dirs+1)))==NULL)
-			return allocerr(txt,offset,fname,sizeof(dir_t *)*(cfg->total_dirs+1)); }
-	else
+			return allocerr(error,offset,fname,sizeof(dir_t *)*(cfg->total_dirs+1));
+	} else
 		cfg->dir=NULL;
 
 	for(i=0;i<cfg->total_dirs;i++) {
 		if(feof(instream)) break;
 		if((cfg->dir[i]=(dir_t *)MALLOC(sizeof(dir_t)))==NULL)
-			return allocerr(txt,offset,fname,sizeof(dir_t));
+			return allocerr(error,offset,fname,sizeof(dir_t));
 		memset(cfg->dir[i],0,sizeof(dir_t));
 
 		get_int(cfg->dir[i]->lib,instream);
@@ -351,9 +349,9 @@ BOOL read_file_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 		if(str[0]) {
 			prep_dir(cfg->ctrl_dir, str);
 			if((cfg->dir[i]->data_dir=(char *)MALLOC(strlen(str)+1))==NULL)
-				return allocerr(txt,offset,fname,strlen(str)+1);
-			strcpy(cfg->dir[i]->data_dir,str); }
-		else
+				return allocerr(error,offset,fname,strlen(str)+1);
+			strcpy(cfg->dir[i]->data_dir,str); 
+		} else
 			cfg->dir[i]->data_dir=cfg->data_dir_dirs;
 #endif
 
@@ -386,7 +384,8 @@ BOOL read_file_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 		get_int(cfg->dir[i]->dn_pct,instream);
 		get_int(c,instream);
 		for(j=0;j<24;j++)
-			get_int(n,instream); }
+			get_int(n,instream); 
+	}
 
 	cfg->total_dirs=i;
 
@@ -399,14 +398,14 @@ BOOL read_file_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 
 	if(cfg->total_txtsecs) {
 		if((cfg->txtsec=(txtsec_t **)MALLOC(sizeof(txtsec_t *)*cfg->total_txtsecs))==NULL)
-			return allocerr(txt,offset,fname,sizeof(txtsec_t *)*cfg->total_txtsecs); }
-	else
+			return allocerr(error,offset,fname,sizeof(txtsec_t *)*cfg->total_txtsecs); 
+	} else
 		cfg->txtsec=NULL;
 
 	for(i=0;i<cfg->total_txtsecs;i++) {
 		if(feof(instream)) break;
 		if((cfg->txtsec[i]=(txtsec_t *)MALLOC(sizeof(txtsec_t)))==NULL)
-			return allocerr(txt,offset,fname,sizeof(txtsec_t));
+			return allocerr(error,offset,fname,sizeof(txtsec_t));
 		memset(cfg->txtsec[i],0,sizeof(txtsec_t));
 
 		get_str(cfg->txtsec[i]->name,instream);
@@ -420,16 +419,13 @@ BOOL read_file_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 	cfg->total_txtsecs=i;
 
 	fclose(instream);
-	if(txt->readit && txt->readit[0])
-		lprintf(txt->readit,fname);
-
 	return (TRUE);
 }
 
 /****************************************************************************/
 /* Reads in XTRN.CNF and initializes the associated variables				*/
 /****************************************************************************/
-BOOL read_xtrn_cfg(scfg_t* cfg, read_cfg_text_t* txt)
+BOOL read_xtrn_cfg(scfg_t* cfg, char* error)
 {
 	char	str[256],fname[13],c;
 	short	i,j,n;
@@ -439,11 +435,9 @@ BOOL read_xtrn_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 	strcpy(fname,"xtrn.cnf");
 	sprintf(str,"%s%s",cfg->ctrl_dir,fname);
 	if((instream=fnopen(NULL,str,O_RDONLY))==NULL) {
-		lprintf(txt->openerr,str);
-		return(FALSE); }
-
-	if(txt->reading && txt->reading[0])
-		lprintf(txt->reading,fname);
+		sprintf(error,"%d opening %s",errno,str);
+		return(FALSE); 
+	}
 
 	/*************/
 	/* Swap list */
@@ -453,15 +447,16 @@ BOOL read_xtrn_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 
 	if(cfg->total_swaps) {
 		if((cfg->swap=(swap_t **)MALLOC(sizeof(swap_t *)*cfg->total_swaps))==NULL)
-			return allocerr(txt,offset,fname,sizeof(swap_t *)*cfg->total_swaps); }
-	else
+			return allocerr(error,offset,fname,sizeof(swap_t *)*cfg->total_swaps); 
+	} else
 		cfg->swap=NULL;
 
 	for(i=0;i<cfg->total_swaps;i++) {
 		if(feof(instream)) break;
 		if((cfg->swap[i]=(swap_t *)MALLOC(sizeof(swap_t)))==NULL)
-			return allocerr(txt,offset,fname,sizeof(swap_t));
-		get_str(cfg->swap[i]->cmd,instream); }
+			return allocerr(error,offset,fname,sizeof(swap_t));
+		get_str(cfg->swap[i]->cmd,instream); 
+	}
 	cfg->total_swaps=i;
 
 	/********************/
@@ -472,14 +467,14 @@ BOOL read_xtrn_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 
 	if(cfg->total_xedits) {
 		if((cfg->xedit=(xedit_t **)MALLOC(sizeof(xedit_t *)*cfg->total_xedits))==NULL)
-			return allocerr(txt,offset,fname,sizeof(xedit_t *)*cfg->total_xedits); }
-	else
+			return allocerr(error,offset,fname,sizeof(xedit_t *)*cfg->total_xedits); 
+	} else
 		cfg->xedit=NULL;
 
 	for(i=0;i<cfg->total_xedits;i++) {
 		if(feof(instream)) break;
 		if((cfg->xedit[i]=(xedit_t *)MALLOC(sizeof(xedit_t)))==NULL)
-			return allocerr(txt,offset,fname,sizeof(xedit_t));
+			return allocerr(error,offset,fname,sizeof(xedit_t));
 		memset(cfg->xedit[i],0,sizeof(xedit_t));
 
 		get_str(cfg->xedit[i]->name,instream);
@@ -508,14 +503,14 @@ BOOL read_xtrn_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 	if(cfg->total_xtrnsecs) {
 		if((cfg->xtrnsec=(xtrnsec_t **)MALLOC(sizeof(xtrnsec_t *)*cfg->total_xtrnsecs))
 			==NULL)
-			return allocerr(txt,offset,fname,sizeof(xtrnsec_t *)*cfg->total_xtrnsecs); }
-	else
+			return allocerr(error,offset,fname,sizeof(xtrnsec_t *)*cfg->total_xtrnsecs);
+	} else
 		cfg->xtrnsec=NULL;
 
 	for(i=0;i<cfg->total_xtrnsecs;i++) {
 		if(feof(instream)) break;
 		if((cfg->xtrnsec[i]=(xtrnsec_t *)MALLOC(sizeof(xtrnsec_t)))==NULL)
-			return allocerr(txt,offset,fname,sizeof(xtrnsec_t));
+			return allocerr(error,offset,fname,sizeof(xtrnsec_t));
 		memset(cfg->xtrnsec[i],0,sizeof(xtrnsec_t));
 
 		get_str(cfg->xtrnsec[i]->name,instream);
@@ -537,14 +532,14 @@ BOOL read_xtrn_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 
 	if(cfg->total_xtrns) {
 		if((cfg->xtrn=(xtrn_t **)MALLOC(sizeof(xtrn_t *)*cfg->total_xtrns))==NULL)
-			return allocerr(txt,offset,fname,sizeof(xtrn_t *)*cfg->total_xtrns); }
-	else
+			return allocerr(error,offset,fname,sizeof(xtrn_t *)*cfg->total_xtrns);
+	} else
 		cfg->xtrn=NULL;
 
 	for(i=0;i<cfg->total_xtrns;i++) {
 		if(feof(instream)) break;
 		if((cfg->xtrn[i]=(xtrn_t *)MALLOC(sizeof(xtrn_t)))==NULL)
-			return allocerr(txt,offset,fname,sizeof(xtrn_t));
+			return allocerr(error,offset,fname,sizeof(xtrn_t));
 		memset(cfg->xtrn[i],0,sizeof(xtrn_t));
 
 		get_int(cfg->xtrn[i]->sec,instream);
@@ -578,14 +573,14 @@ BOOL read_xtrn_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 
 	if(cfg->total_events) {
 		if((cfg->event=(event_t **)MALLOC(sizeof(event_t *)*cfg->total_events))==NULL)
-			return allocerr(txt,offset,fname,sizeof(event_t *)*cfg->total_events); }
-	else
+			return allocerr(error,offset,fname,sizeof(event_t *)*cfg->total_events);
+	} else
 		cfg->event=NULL;
 
 	for(i=0;i<cfg->total_events;i++) {
 		if(feof(instream)) break;
 		if((cfg->event[i]=(event_t *)MALLOC(sizeof(event_t)))==NULL)
-			return allocerr(txt,offset,fname,sizeof(event_t));
+			return allocerr(error,offset,fname,sizeof(event_t));
 		memset(cfg->event[i],0,sizeof(event_t));
 
 		get_str(cfg->event[i]->code,instream);
@@ -610,20 +605,21 @@ BOOL read_xtrn_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 
 	if(cfg->total_natvpgms) {
 		if((cfg->natvpgm=(natvpgm_t **)MALLOC(sizeof(natvpgm_t *)*cfg->total_natvpgms))==NULL)
-			return allocerr(txt,offset,fname,sizeof(natvpgm_t *)*cfg->total_natvpgms); }
-	else
+			return allocerr(error,offset,fname,sizeof(natvpgm_t *)*cfg->total_natvpgms);
+	} else
 		cfg->natvpgm=NULL;
 
 	for(i=0;i<cfg->total_natvpgms;i++) {
 		if(feof(instream)) break;
 		if((cfg->natvpgm[i]=(natvpgm_t *)MALLOC(sizeof(natvpgm_t)))==NULL)
-			return allocerr(txt,offset,fname,sizeof(natvpgm_t));
+			return allocerr(error,offset,fname,sizeof(natvpgm_t));
 		get_str(cfg->natvpgm[i]->name,instream);
 		cfg->natvpgm[i]->misc=0; }
 	cfg->total_natvpgms=i;
 	for(i=0;i<cfg->total_natvpgms;i++) {
 		if(feof(instream)) break;
-		get_int(cfg->natvpgm[i]->misc,instream); }
+		get_int(cfg->natvpgm[i]->misc,instream);
+	}
 
 	/*******************/
 	/* Global Hot Keys */
@@ -633,14 +629,14 @@ BOOL read_xtrn_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 
 	if(cfg->total_hotkeys) {
 		if((cfg->hotkey=(hotkey_t **)MALLOC(sizeof(hotkey_t *)*cfg->total_hotkeys))==NULL)
-			return allocerr(txt,offset,fname,sizeof(hotkey_t *)*cfg->total_hotkeys); }
-	else
+			return allocerr(error,offset,fname,sizeof(hotkey_t *)*cfg->total_hotkeys);
+	} else
 		cfg->hotkey=NULL;
 
 	for(i=0;i<cfg->total_hotkeys;i++) {
 		if(feof(instream)) break;
 		if((cfg->hotkey[i]=(hotkey_t *)MALLOC(sizeof(hotkey_t)))==NULL)
-			return allocerr(txt,offset,fname,sizeof(hotkey_t));
+			return allocerr(error,offset,fname,sizeof(hotkey_t));
 		memset(cfg->hotkey[i],0,sizeof(hotkey_t));
 
 		get_int(cfg->hotkey[i]->key,instream);
@@ -652,16 +648,13 @@ BOOL read_xtrn_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 	cfg->total_hotkeys=i;
 
 	fclose(instream);
-	if(txt->readit && txt->readit[0])
-		lprintf(txt->readit,fname);
-
 	return(TRUE);
 }
 
 /****************************************************************************/
 /* Reads in CHAT.CNF and initializes the associated variables				*/
 /****************************************************************************/
-BOOL read_chat_cfg(scfg_t* cfg, read_cfg_text_t* txt)
+BOOL read_chat_cfg(scfg_t* cfg, char* error)
 {
 	char	str[256],fname[13];
 	short	i,j,n;
@@ -671,11 +664,9 @@ BOOL read_chat_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 	strcpy(fname,"chat.cnf");
 	sprintf(str,"%s%s",cfg->ctrl_dir,fname);
 	if((instream=fnopen(NULL,str,O_RDONLY))==NULL) {
-		lprintf(txt->openerr,str);
-		return(FALSE); }
-
-	if(txt->reading && txt->reading[0])
-		lprintf(txt->reading,fname);
+		sprintf(error,"%d opening %s",errno,str);
+		return(FALSE);
+	}
 
 	/*********/
 	/* Gurus */
@@ -685,14 +676,14 @@ BOOL read_chat_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 
 	if(cfg->total_gurus) {
 		if((cfg->guru=(guru_t **)MALLOC(sizeof(guru_t *)*cfg->total_gurus))==NULL)
-			return allocerr(txt,offset,fname,sizeof(guru_t *)*cfg->total_gurus); }
-	else
+			return allocerr(error,offset,fname,sizeof(guru_t *)*cfg->total_gurus);
+	} else
 		cfg->guru=NULL;
 
 	for(i=0;i<cfg->total_gurus;i++) {
 		if(feof(instream)) break;
 		if((cfg->guru[i]=(guru_t *)MALLOC(sizeof(guru_t)))==NULL)
-			return allocerr(txt,offset,fname,sizeof(guru_t));
+			return allocerr(error,offset,fname,sizeof(guru_t));
 		memset(cfg->guru[i],0,sizeof(guru_t));
 
 		get_str(cfg->guru[i]->name,instream);
@@ -715,14 +706,14 @@ BOOL read_chat_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 
 	if(cfg->total_actsets) {
 		if((cfg->actset=(actset_t **)MALLOC(sizeof(actset_t *)*cfg->total_actsets))==NULL)
-			return allocerr(txt,offset,fname,sizeof(actset_t *)*cfg->total_actsets); }
-	else
+			return allocerr(error,offset,fname,sizeof(actset_t *)*cfg->total_actsets);
+	} else
 		cfg->actset=NULL;
 
 	for(i=0;i<cfg->total_actsets;i++) {
 		if(feof(instream)) break;
 		if((cfg->actset[i]=(actset_t *)MALLOC(sizeof(actset_t)))==NULL)
-			return allocerr(txt,offset,fname,sizeof(actset_t));
+			return allocerr(error,offset,fname,sizeof(actset_t));
 		get_str(cfg->actset[i]->name,instream);
 		}
 	cfg->total_actsets=i;
@@ -737,14 +728,14 @@ BOOL read_chat_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 	if(cfg->total_chatacts) {
 		if((cfg->chatact=(chatact_t **)MALLOC(sizeof(chatact_t *)*cfg->total_chatacts))
 			==NULL)
-			return allocerr(txt,offset,fname,sizeof(chatact_t *)*cfg->total_chatacts); }
-	else
+			return allocerr(error,offset,fname,sizeof(chatact_t *)*cfg->total_chatacts);
+	} else
 		cfg->chatact=NULL;
 
 	for(i=0;i<cfg->total_chatacts;i++) {
 		if(feof(instream)) break;
 		if((cfg->chatact[i]=(chatact_t *)MALLOC(sizeof(chatact_t)))==NULL)
-			return allocerr(txt,offset,fname,sizeof(chatact_t));
+			return allocerr(error,offset,fname,sizeof(chatact_t));
 		memset(cfg->chatact[i],0,sizeof(chatact_t));
 
 		get_int(cfg->chatact[i]->actset,instream);
@@ -765,14 +756,14 @@ BOOL read_chat_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 
 	if(cfg->total_chans) {
 		if((cfg->chan=(chan_t **)MALLOC(sizeof(chan_t *)*cfg->total_chans))==NULL)
-			return allocerr(txt,offset,fname,sizeof(chan_t *)*cfg->total_chans); }
-	else
+			return allocerr(error,offset,fname,sizeof(chan_t *)*cfg->total_chans);
+	} else
 		cfg->chan=NULL;
 
 	for(i=0;i<cfg->total_chans;i++) {
 		if(feof(instream)) break;
 		if((cfg->chan[i]=(chan_t *)MALLOC(sizeof(chan_t)))==NULL)
-			return allocerr(txt,offset,fname,sizeof(chan_t));
+			return allocerr(error,offset,fname,sizeof(chan_t));
 		memset(cfg->chan[i],0,sizeof(chan_t));
 
 		get_int(cfg->chan[i]->actset,instream);
@@ -787,7 +778,8 @@ BOOL read_chat_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 		get_int(cfg->chan[i]->guru,instream);
 		get_int(cfg->chan[i]->misc,instream);
 		for(j=0;j<8;j++)
-			get_int(n,instream); }
+			get_int(n,instream);
+	}
 	cfg->total_chans=i;
 
 
@@ -799,14 +791,14 @@ BOOL read_chat_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 
 	if(cfg->total_pages) {
 		if((cfg->page=(page_t **)MALLOC(sizeof(page_t *)*cfg->total_pages))==NULL)
-			return allocerr(txt,offset,fname,sizeof(page_t *)*cfg->total_pages); }
-	else
+			return allocerr(error,offset,fname,sizeof(page_t *)*cfg->total_pages);
+	} else
 		cfg->page=NULL;
 
 	for(i=0;i<cfg->total_pages;i++) {
 		if(feof(instream)) break;
 		if((cfg->page[i]=(page_t *)MALLOC(sizeof(page_t)))==NULL)
-			return allocerr(txt,offset,fname,sizeof(page_t));
+			return allocerr(error,offset,fname,sizeof(page_t));
 		memset(cfg->page[i],0,sizeof(page_t));
 
 		get_str(cfg->page[i]->cmd,instream);
@@ -822,9 +814,6 @@ BOOL read_chat_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 
 
 	fclose(instream);
-	if(txt->readit && txt->readit[0])
-		lprintf(txt->readit,fname);
-
 	return(TRUE);
 }
 

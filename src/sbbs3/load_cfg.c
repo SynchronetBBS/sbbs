@@ -43,31 +43,28 @@ char *	readtext(long *line, FILE *stream);
 /****************************************************************************/
 /* Initializes system and node configuration information and data variables */
 /****************************************************************************/
-BOOL DLLCALL load_cfg(scfg_t* cfg, char* text[], BOOL prep)
+BOOL DLLCALL load_cfg(scfg_t* cfg, char* text[], BOOL prep, char* error)
 {
 	char	str[256],fname[13];
 	int		i;
 	long	line=0L;
 	FILE 	*instream;
-	read_cfg_text_t txt;
 
-	if(cfg->size!=sizeof(scfg_t))
+	if(cfg->size!=sizeof(scfg_t)) {
+		sprintf(error,"cfg->size (%d) != sizeof(scfg_t) (%d)"
+			,cfg->size,sizeof(scfg_t));
 		return(FALSE);
+	}
 
 	free_cfg(cfg);	/* free allocated config parameters */
 
 	cfg->prepped=FALSE;	/* reset prepped flag */
 
-	memset(&txt,0,sizeof(txt));
-	txt.openerr=	"!ERROR: opening %s for read.";
-	txt.error= 		"!ERROR: offset %lu in %s:";
-	txt.allocerr=	"!ERROR: allocating %u bytes of memory.";
-
 	if(cfg->node_num<1)
 		cfg->node_num=1;
 
 	backslash(cfg->ctrl_dir);
-	if(read_main_cfg(cfg, &txt)==FALSE)
+	if(read_main_cfg(cfg, error)==FALSE)
 		return(FALSE);
 
 	if(prep)
@@ -76,17 +73,17 @@ BOOL DLLCALL load_cfg(scfg_t* cfg, char* text[], BOOL prep)
 
 	sprintf(cfg->node_dir,"%.*s",sizeof(cfg->node_dir)-1,cfg->node_path[cfg->node_num-1]);
 	prep_dir(cfg->ctrl_dir, cfg->node_dir);
-	if(read_node_cfg(cfg, &txt)==FALSE)
+	if(read_node_cfg(cfg, error)==FALSE)
 		return(FALSE);
-	if(read_msgs_cfg(cfg, &txt)==FALSE)
+	if(read_msgs_cfg(cfg, error)==FALSE)
 		return(FALSE);
-	if(read_file_cfg(cfg, &txt)==FALSE)
+	if(read_file_cfg(cfg, error)==FALSE)
 		return(FALSE);
-	if(read_xtrn_cfg(cfg, &txt)==FALSE)
+	if(read_xtrn_cfg(cfg, error)==FALSE)
 		return(FALSE);
-	if(read_chat_cfg(cfg, &txt)==FALSE)
+	if(read_chat_cfg(cfg, error)==FALSE)
 		return(FALSE);
-	if(read_attr_cfg(cfg, &txt)==FALSE)
+	if(read_attr_cfg(cfg, error)==FALSE)
 		return(FALSE);
 
 	if(text!=NULL) {
@@ -97,11 +94,9 @@ BOOL DLLCALL load_cfg(scfg_t* cfg, char* text[], BOOL prep)
 		strcpy(fname,"text.dat");
 		sprintf(str,"%s%s",cfg->ctrl_dir,fname);
 		if((instream=fnopen(NULL,str,O_RDONLY))==NULL) {
-			lprintf(txt.openerr,str);
-			return(FALSE); }
-		if(txt.reading && txt.reading[0])
-			lprintf(txt.reading,fname);
-
+			sprintf(error,"%d opening %s",errno,str);
+			return(FALSE); 
+		}
 		for(i=0;i<TOTAL_TEXT && !feof(instream) && !ferror(instream);i++)
 			if((text[i]=readtext(&line,instream))==NULL) {
 				i--;
@@ -110,16 +105,11 @@ BOOL DLLCALL load_cfg(scfg_t* cfg, char* text[], BOOL prep)
 		fclose(instream);
 
 		if(i<TOTAL_TEXT) {
-			lprintf(txt.error,line,fname);
-			lprintf("Less than TOTAL_TEXT (%u) strings defined in %s."
+			sprintf(error,"line %u in %s: Less than TOTAL_TEXT (%u) strings defined in %s."
+				,line,fname
 				,TOTAL_TEXT,fname);
-			return(FALSE); }
-
-		/****************************/
-		/* Read in static text data */
-		/****************************/
-		if(txt.readit && txt.readit[0])
-			lprintf(txt.readit,fname);
+			return(FALSE); 
+		}
 	}
 
     /* Override com-port settings */
@@ -404,7 +394,7 @@ char *readtext(long *line,FILE *stream)
 /****************************************************************************/
 /* Reads in ATTR.CFG and initializes the associated variables               */
 /****************************************************************************/
-BOOL read_attr_cfg(scfg_t* cfg, read_cfg_text_t* txt)
+BOOL read_attr_cfg(scfg_t* cfg, char* error)
 {
     char    str[256],fname[13];
     int     i;
@@ -414,21 +404,19 @@ BOOL read_attr_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 	strcpy(fname,"attr.cfg");
 	sprintf(str,"%s%s",cfg->ctrl_dir,fname);
 	if((instream=fnopen(NULL,str,O_RDONLY))==NULL) {
-		lprintf(txt->openerr,str);
-		return(FALSE); }
-	if(txt->reading && txt->reading[0])
-		lprintf(txt->reading,fname);
+		sprintf(error,"%d opening %s",errno,str);
+		return(FALSE); 
+	}
 	for(i=0;i<TOTAL_COLORS && !feof(instream) && !ferror(instream);i++) {
 		readline(&offset,str,4,instream);
-		cfg->color[i]=attrstr(str); }
+		cfg->color[i]=attrstr(str); 
+	}
 	if(i<TOTAL_COLORS) {
-		lprintf(txt->error,offset,fname);
-		lprintf("Less than TOTAL_COLORS (%u) defined in %s"
+		sprintf(error,"Less than TOTAL_COLORS (%u) defined in %s"
 			,TOTAL_COLORS,fname);
-		return(FALSE); }
+		return(FALSE); 
+	}
 	fclose(instream);
-	if(txt->readit && txt->readit[0])
-		lprintf(txt->readit,fname);
 	return(TRUE);
 }
 
