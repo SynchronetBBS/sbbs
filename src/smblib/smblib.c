@@ -982,7 +982,7 @@ int SMBCALL smb_getmsghdr(smb_t* smb, smbmsg_t* msg)
 	if(msg->subj==NULL)	msg->subj=nulstr;
 
 	/* If no reverse path specified, use sender's address */
-	if(msg->reverse_path == NULL)
+	if(msg->reverse_path == NULL && msg->from_net.type==NET_INTERNET)
 		msg->reverse_path = msg->from_net.addr;
 
 	return(SMB_SUCCESS);
