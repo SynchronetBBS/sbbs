@@ -124,12 +124,12 @@ void sbbs_t::telnet_gate(char* destaddr, ulong mode)
 	if(mode&TG_RLOGIN) {
 		p=(char*)buf;
 		*(p++)=0;
-		strcpy(p,useron.alias);
-		p+=strlen(p)+1;
-		strcpy(p,useron.name);
-		p+=strlen(p)+1;
-		strcpy(p,"vt100/57600");
-		p+=strlen(p)+1;
+		p+=sprintf(p,"%s",useron.alias);
+		p++;	// Add NULL
+		p+=sprintf(p,"%s",useron.name);
+		p++;	// Add NULL
+		p+=sprintf(p,"%s/57600",terminal);
+		p++;	// Add NULL
 		l=p-(char*)buf;
 		sendsocket(remote_socket,(char*)buf,l);
 	}
