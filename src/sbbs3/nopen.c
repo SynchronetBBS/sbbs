@@ -77,17 +77,17 @@ FILE* fnopen(int *fd, char *str, int access)
         *fd=file;
 
     if(access&O_APPEND) {
-        if(access&O_RDWR)
+        if(access&O_RDWR==O_RDWR)
             strcpy(mode,"a+");
         else
             strcpy(mode,"a"); 
 	} else if(access&(O_TRUNC|O_WRONLY)) {
-		if(access&O_RDWR)
+		if(access&O_RDWR==O_RDWR)
 			strcpy(mode,"w+");
 		else
 			strcpy(mode,"w");
 	} else {
-        if(access&O_RDWR)
+        if(access&O_RDWR==O_RDWR)
             strcpy(mode,"r+");
         else
             strcpy(mode,"r"); 
