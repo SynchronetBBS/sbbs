@@ -11,7 +11,7 @@
       emulvt.obj UserListFormUnit.obj UserMsgFormUnit.obj PropertiesDlgUnit.obj 
       EventsFormUnit.obj ConfigWizardUnit.obj ServicesFormUnit.obj 
       TelnetCfgDlgUnit.obj MailCfgDlgUnit.obj FtpCfgDlgUnit.obj 
-      ServicesCfgDlgUnit.obj"/>
+      ServicesCfgDlgUnit.obj ..\sbbs_ini.obj ..\..\xpdev\ini_file.obj"/>
     <RESFILES value="sbbsctrl.res"/>
     <IDLFILES value=""/>
     <IDLGENFILES value=""/>
@@ -30,7 +30,7 @@
     <PACKAGES value="rtl.bpi vcl.bpi vclx.bpi vcljpg.bpi bcbsmp.bpi dsnap.bpi dbrtl.bpi 
       vcldb.bpi bdertl.bpi inet.bpi inetdb.bpi vcldbx.bpi qrpt.bpi teeui.bpi 
       teedb.bpi tee.bpi dss.bpi nmfast.bpi dclocx.bpi"/>
-    <PATHCPP value=".;.."/>
+    <PATHCPP value=".;..;..;..\..\xpdev"/>
     <PATHPAS value=".;"/>
     <PATHRC value=".;"/>
     <PATHASM value=".;"/>
@@ -41,15 +41,15 @@
     <SYSDEFINES value="NO_STRICT;_VIS_NOLIB"/>
     <MAINSOURCE value="sbbsctrl.cpp"/>
     <INCLUDEPATH value="..\;..;..\..\xpdev;d:\Borland\CBuilder5\Projects;C:\Borland\CBuilder5\Projects;$(BCB)\include;$(BCB)\include\vcl"/>
-    <LIBPATH value="..\;..;d:\Borland\CBuilder5\Projects;$(BCB)\Projects\Lib;C:\Borland\CBuilder5\Projects;$(BCB)\lib\obj;$(BCB)\lib"/>
+    <LIBPATH value="..\..\xpdev;..\;..;d:\Borland\CBuilder5\Projects;$(BCB)\Projects\Lib;C:\Borland\CBuilder5\Projects;$(BCB)\lib\obj;$(BCB)\lib"/>
     <WARNINGS value="-w-par -w-csu"/>
     <WARNOPTSTR value=""/>
     <OTHERFILES value=""/>
   </MACROS>
   <OPTIONS>
-    <IDLCFLAGS value="-I..\. -I.. -I..\..\xpdev -Id:\Borland\CBuilder5\Projects 
-      -IC:\Borland\CBuilder5\Projects -I$(BCB)\include -I$(BCB)\include\vcl 
-      -src_suffix cpp -DSBBS -boa"/>
+    <IDLCFLAGS value="-src_suffix cpp -DSBBS -I..\. -I.. -I..\..\xpdev 
+      -Id:\Borland\CBuilder5\Projects -IC:\Borland\CBuilder5\Projects 
+      -I$(BCB)\include -I$(BCB)\include\vcl -boa"/>
     <CFLAG1 value="-Od -H=c:\borland\CBUILD~2\lib\vcl60.csm -Hc -Vx -Ve -X- -a8 -b- -k- -vi 
       -c -tW -tWM"/>
     <PFLAGS value="-$Y- -$L- -$D- -$A8 -v -JPHNE -M"/>
@@ -96,6 +96,8 @@
       <FILE FILENAME="MailCfgDlgUnit.cpp" FORMNAME="MailCfgDlg" UNITNAME="MailCfgDlgUnit" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="FtpCfgDlgUnit.cpp" FORMNAME="FtpCfgDlg" UNITNAME="FtpCfgDlgUnit" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="ServicesCfgDlgUnit.cpp" FORMNAME="ServicesCfgDlg" UNITNAME="ServicesCfgDlgUnit" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\sbbs_ini.c" FORMNAME="" UNITNAME="sbbs_ini" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\..\xpdev\ini_file.c" FORMNAME="" UNITNAME="ini_file" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
   </FILELIST>
   <BUILDTOOLS>
   </BUILDTOOLS>
@@ -107,7 +109,7 @@ AutoIncBuild=1
 MajorVer=1
 MinorVer=1
 Release=0
-Build=3
+Build=4
 Debug=0
 PreRelease=0
 Special=0
@@ -119,7 +121,7 @@ CodePage=1252
 [Version Info Keys]
 CompanyName=Rob Swindell
 FileDescription=Synchronet BBS Control Panel
-FileVersion=1.1.0.3
+FileVersion=1.1.0.4
 InternalName=
 LegalCopyright=
 LegalTrademarks=
@@ -196,7 +198,7 @@ RunParams=
 Launcher=
 UseLauncher=0
 DebugCWD=
-HostApplication=
+HostApplication=C:\src\sbbs3\ctrl\sbbsctrl.exe
 RemoteHost=
 RemotePath=
 RemoteLauncher=
