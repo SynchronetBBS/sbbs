@@ -21,8 +21,10 @@ ifndef DEBUG
 endif
 
 #USE_DIALOG =	1	# Dialog vesrion of UIFC
+USE_FLTK =	1	# Use Windowed version
 USE_CURSES	=	1	# Curses version of UIFC
 CC		=	gcc
+CCPP		=	gcc
 SLASH	=	/
 OFILE	=	o
 UIFC	=	../../uifc
@@ -46,17 +48,22 @@ CFLAGS	+=	-Wall -I$(UIFC) -I$(XPDEV) -I/usr/local/include -I../  -D_THREAD_SAFE
 LFLAGS	:=	-L/usr/local/lib
 
 ifdef USE_DIALOG
- LFLAGS	:=	$(LFLAGS) -L../../libdialog -ldialog -lcurses
+ LFLAGS	+=	-L../../libdialog -ldialog -lcurses
  CFLAGS	+=	-I../../libdialog -DUSE_DIALOG
 endif
 
 ifdef USE_CURSES
- LFLAGS	:=	$(LFLAGS) -lcurses
+ LFLAGS	+=	-lcurses
  CFLAGS	+=	-DUSE_CURSES
 endif
 
+ifdef USE_FLTK
+ LFLAGS +=	-L/usr/X11R6/lib -lfltk -lX11
+ CFLAGS +=	-I/usr/X11R6/include -DUSE_FLTK
+endif
+
 # Math library needed
-LFLAGS	:=	$(LFLAGS) -lm
+LFLAGS	+=	$(LFLAGS) -lm
 
 ifdef DEBUG
  CFLAGS	+=	-ggdb -O0 -D_DEBUG 
@@ -69,19 +76,29 @@ include targets.mk		# defines all targets
 include objects.mk		# defines $(OBJS)
 
 ifdef USE_DIALOG		
- OBJS := $(OBJS)			$(ODIR)$(SLASH)uifcd.$(OFILE)
+ OBJS += $(ODIR)$(SLASH)uifcd.$(OFILE)
 endif
 
 ifdef USE_CURSES		
- OBJS := $(OBJS)			$(ODIR)$(SLASH)uifcc.$(OFILE)
+ OBJS += $(ODIR)$(SLASH)uifcc.$(OFILE)
+endif
+
+ifdef USE_FLTK
+ OBJS += $(ODIR)$(SLASH)uifcfltk.$(OFILE)
 endif
 
 vpath %.c ..
 vpath %.c $(UIFC)
+vpath %.cpp $(UIFC)
 vpath %.c $(XPDEV)
 
 # Implicit C Compile Rule for SCFG
 $(ODIR)/%.o : %.c
+	@echo Compiling $<
+	@$(CC) $(CFLAGS) -c $(SBBSDEFS) $< -o $@
+
+# Implicit C++ Compile Rule for SCFG
+$(ODIR)/%.o : %.cpp
 	@echo Compiling $<
 	@$(CC) $(CFLAGS) -c $(SBBSDEFS) $< -o $@
 
