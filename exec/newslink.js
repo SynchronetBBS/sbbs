@@ -426,6 +426,10 @@ for(i in area) {
 				case "x-comment-to":
 					hdr.to=data;
 					break;
+				case "newsgroups":
+					if(hdr.to==newsgroup)
+						hdr.to=data;
+					break;
 				case "from":
 					hdr.from=data;
 					break;
