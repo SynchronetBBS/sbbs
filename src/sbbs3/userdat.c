@@ -1930,7 +1930,7 @@ char* DLLCALL usermailaddr(scfg_t* cfg, char* addr, char* name)
 		strcpy(addr,name);
 		return(addr);
 	}
-	if(strchr(name,'.') && strchr(name,' '))
+	if(strchr(name,'!') || (strchr(name,'.') && strchr(name,' ')))
 		sprintf(addr,"\"%s\"@",name);
 	else {
 		sprintf(addr,"%s@",name);
