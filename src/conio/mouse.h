@@ -53,13 +53,27 @@ enum {
 #define CIOLIB_BUTTON_CLICK(x)		((x-1)*9+3)
 #define CIOLIB_BUTTON_DBL_CLICK(x)	((x-1)*9+4)
 #define CIOLIB_BUTTON_TRPL_CLICK(x)	((x-1)*9+5)
-#define CIOLIB_BUTTON_QUAD_CLOCK(x)	((x-1)*9+6)
+#define CIOLIB_BUTTON_QUAD_CLICK(x)	((x-1)*9+6)
 #define CIOLIB_BUTTON_DRAG_START(x)	((x-1)*9+7)
 #define CIOLIB_BUTTON_DRAG_MOVE(x)	((x-1)*9+8)
 #define CIOLIB_BUTTON_DRAG_END(x)	((x-1)*9+9)
 
-#define CIOLIB_BUTTON_NUMBER(x)		((x-1)/9+1)
+#define CIOLIB_BUTTON_NUMBER(x)		((x+8)/9)
 
-#define CIOLIB_BUTTON_BASE(x)		(x-9*CIOLIB_BUTTON_NUMBER(x))
+#define CIOLIB_BUTTON_BASE(x)		(x!=CIOLIB_MOUSE_MOVE?x-9*(CIOLIB_BUTTON_NUMBER(x)-1):CIOLIB_MOUSE_MOVE)
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+void ciomouse_gotevent(int event, int x, int y);
+int mouse_pending(void);
+int ciolib_getmouse(struct mouse_event *mevent);
+void ciolib_mouse_thread(void *data);
+int ciomouse_setevents(int events);
+int ciomouse_addevents(int events);
+int ciomouse_delevents(int events);
+#ifdef __cplusplus
+}
+#endif
 
 #endif

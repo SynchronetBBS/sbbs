@@ -8,6 +8,7 @@
 #include "ciolib.h"
 #include "curs_cio.h"
 #include "keys.h"
+#include "mouse.h"
 
 static unsigned char curs_nextgetch=0;
 const int curs_tabs[10]={9,17,25,33,41,49,57,65,73,80};
@@ -401,6 +402,8 @@ int curs_kbhit(void)
 
 	if(curs_nextgetch)
 		return(1);
+	if(mouse_pending())
+		return(1);
 	timeout.tv_sec=0;
 	timeout.tv_usec=0;
 	FD_ZERO(&rfds);
@@ -639,6 +642,7 @@ int curs_initciolib(long inmode)
 	keypad(stdscr, TRUE);
 	scrollok(stdscr,FALSE);
 	raw();
+	halfdelay(1);
 	atexit(call_endwin);
 
 	/* Set up color pairs */
@@ -649,8 +653,10 @@ int curs_initciolib(long inmode)
 	}
 	mode = inmode;
 	#ifdef NCURSES_VERSION_MAJOR
-		if(mousemask(BUTTON1_CLICKED|BUTTON3_CLICKED,NULL)==BUTTON1_CLICKED|BUTTON3_CLICKED)
+		if(mousemask(BUTTON1_PRESSED|BUTTON1_RELEASED|BUTTON2_PRESSED|BUTTON2_RELEASED|BUTTON3_PRESSED|BUTTON3_RELEASED|REPORT_MOUSE_POSITION,NULL)==BUTTON1_PRESSED|BUTTON1_RELEASED|BUTTON2_PRESSED|BUTTON2_RELEASED|BUTTON3_PRESSED|BUTTON3_RELEASED|REPORT_MOUSE_POSITION) {
+			mouseinterval(0);
 			cio_api.mouse=1;
+		}
 		else
 			mousemask(0,NULL);
 	#endif
@@ -761,190 +767,220 @@ int curs_putch(int c)
 int curs_getch(void)
 {
 	int ch;
+	MEVENT mevnt;
 
 	if(curs_nextgetch) {
 		ch=curs_nextgetch;
 		curs_nextgetch=0;
 	}
 	else {
-		while((ch=getch())==ERR) {
-			delay(1);
+		while((ch=getch())==ERR && !mouse_pending());
+		if(mouse_pending()) {
+			curs_nextgetch=CIO_KEY_MOUSE>>8;
+			ch=CIO_KEY_MOUSE & 0xff;
 		}
-		if(ch > 255) {
-			switch(ch) {
-				case KEY_DOWN:            /* Down-arrow */
-					curs_nextgetch=0x50;
-					ch=0;
-					break;
+		else {
+			if(ch > 255) {
+				switch(ch) {
+					case KEY_DOWN:            /* Down-arrow */
+						curs_nextgetch=0x50;
+						ch=0;
+						break;
 
-				case KEY_UP:		/* Up-arrow */
-					curs_nextgetch=0x48;
-					ch=0;
-					break;
+					case KEY_UP:		/* Up-arrow */
+						curs_nextgetch=0x48;
+						ch=0;
+						break;
 
-				case KEY_LEFT:		/* Left-arrow */
-					curs_nextgetch=0x4b;
-					ch=0;
-					break;
+					case KEY_LEFT:		/* Left-arrow */
+						curs_nextgetch=0x4b;
+						ch=0;
+						break;
 
-				case KEY_RIGHT:            /* Right-arrow */
-					curs_nextgetch=0x4d;
-					ch=0;
-					break;
+					case KEY_RIGHT:            /* Right-arrow */
+						curs_nextgetch=0x4d;
+						ch=0;
+						break;
 
-				case KEY_HOME:            /* Home key (upward+left arrow) */
-					curs_nextgetch=0x47;
-					ch=0;
-					break;
+					case KEY_HOME:            /* Home key (upward+left arrow) */
+						curs_nextgetch=0x47;
+						ch=0;
+						break;
 
-				case KEY_BACKSPACE:            /* Backspace (unreliable) */
-					ch=8;
-					break;
+					case KEY_BACKSPACE:            /* Backspace (unreliable) */
+						ch=8;
+						break;
 
-				case KEY_F(1):			/* Function Key */
-					curs_nextgetch=0x3b;
-					ch=0;
-					break;
+					case KEY_F(1):			/* Function Key */
+						curs_nextgetch=0x3b;
+						ch=0;
+						break;
 
-				case KEY_F(2):			/* Function Key */
-					curs_nextgetch=0x3c;
-					ch=0;
-					break;
+					case KEY_F(2):			/* Function Key */
+						curs_nextgetch=0x3c;
+						ch=0;
+						break;
 
-				case KEY_F(3):			/* Function Key */
-					curs_nextgetch=0x3d;
-					ch=0;
-					break;
+					case KEY_F(3):			/* Function Key */
+						curs_nextgetch=0x3d;
+						ch=0;
+						break;
 
-				case KEY_F(4):			/* Function Key */
-					curs_nextgetch=0x3e;
-					ch=0;
-					break;
+					case KEY_F(4):			/* Function Key */
+						curs_nextgetch=0x3e;
+						ch=0;
+						break;
 
-				case KEY_F(5):			/* Function Key */
-					curs_nextgetch=0x3f;
-					ch=0;
-					break;
+					case KEY_F(5):			/* Function Key */
+						curs_nextgetch=0x3f;
+						ch=0;
+						break;
 
-				case KEY_F(6):			/* Function Key */
-					curs_nextgetch=0x40;
-					ch=0;
-					break;
+					case KEY_F(6):			/* Function Key */
+						curs_nextgetch=0x40;
+						ch=0;
+						break;
 
-				case KEY_F(7):			/* Function Key */
-					curs_nextgetch=0x41;
-					ch=0;
-					break;
+					case KEY_F(7):			/* Function Key */
+						curs_nextgetch=0x41;
+						ch=0;
+						break;
 
-				case KEY_F(8):			/* Function Key */
-					curs_nextgetch=0x42;
-					ch=0;
-					break;
+					case KEY_F(8):			/* Function Key */
+						curs_nextgetch=0x42;
+						ch=0;
+						break;
 
-				case KEY_F(9):			/* Function Key */
-					curs_nextgetch=0x43;
-					ch=0;
-					break;
+					case KEY_F(9):			/* Function Key */
+						curs_nextgetch=0x43;
+						ch=0;
+						break;
 
-				case KEY_F(10):			/* Function Key */
-					curs_nextgetch=0x44;
-					ch=0;
-					break;
+					case KEY_F(10):			/* Function Key */
+						curs_nextgetch=0x44;
+						ch=0;
+						break;
 
-				case KEY_F(11):			/* Function Key */
-					curs_nextgetch=0x57;
-					ch=0;
-					break;
+					case KEY_F(11):			/* Function Key */
+						curs_nextgetch=0x57;
+						ch=0;
+						break;
 
-				case KEY_F(12):			/* Function Key */
-					curs_nextgetch=0x58;
-					ch=0;
-					break;
+					case KEY_F(12):			/* Function Key */
+						curs_nextgetch=0x58;
+						ch=0;
+						break;
 
-				case KEY_DC:            /* Delete character */
-					curs_nextgetch=0x53;
-					ch=0;
-					break;
+					case KEY_DC:            /* Delete character */
+						curs_nextgetch=0x53;
+						ch=0;
+						break;
 
-				case KEY_IC:            /* Insert char or enter insert mode */
-					curs_nextgetch=0x52;
-					ch=0;
-					break;
+					case KEY_IC:            /* Insert char or enter insert mode */
+						curs_nextgetch=0x52;
+						ch=0;
+						break;
 
-				case KEY_EIC:            /* Exit insert char mode */
-					curs_nextgetch=0x52;
-					ch=0;
-					break;
+					case KEY_EIC:            /* Exit insert char mode */
+						curs_nextgetch=0x52;
+						ch=0;
+						break;
 
-				case KEY_NPAGE:            /* Next page */
-					curs_nextgetch=0x51;
-					ch=0;
-					break;
+					case KEY_NPAGE:            /* Next page */
+						curs_nextgetch=0x51;
+						ch=0;
+						break;
 
-				case KEY_PPAGE:            /* Previous page */
-					curs_nextgetch=0x49;
-					ch=0;
-					break;
+					case KEY_PPAGE:            /* Previous page */
+						curs_nextgetch=0x49;
+						ch=0;
+						break;
 
-				case KEY_ENTER:            /* Enter or send (unreliable) */
-					curs_nextgetch=0x0d;
-					ch=0;
-					break;
+					case KEY_ENTER:            /* Enter or send (unreliable) */
+						curs_nextgetch=0x0d;
+						ch=0;
+						break;
 
-				case KEY_A1:		/* Upper left of keypad */
-					curs_nextgetch=0x47;
-					ch=0;
-					break;
+					case KEY_A1:		/* Upper left of keypad */
+						curs_nextgetch=0x47;
+						ch=0;
+						break;
 
-				case KEY_A3:		/* Upper right of keypad */
-					curs_nextgetch=0x49;
-					ch=0;
-					break;
+					case KEY_A3:		/* Upper right of keypad */
+						curs_nextgetch=0x49;
+						ch=0;
+						break;
 
-				case KEY_B2:		/* Center of keypad */
-					curs_nextgetch=0x4c;
-					ch=0;
-					break;
+					case KEY_B2:		/* Center of keypad */
+						curs_nextgetch=0x4c;
+						ch=0;
+						break;
 
-				case KEY_C1:		/* Lower left of keypad */
-					curs_nextgetch=0x4f;
-					ch=0;
-					break;
+					case KEY_C1:		/* Lower left of keypad */
+						curs_nextgetch=0x4f;
+						ch=0;
+						break;
 
-				case KEY_C3:		/* Lower right of keypad */
-					curs_nextgetch=0x51;
-					ch=0;
-					break;
+					case KEY_C3:		/* Lower right of keypad */
+						curs_nextgetch=0x51;
+						ch=0;
+						break;
 
-				case KEY_BEG:		/* Beg (beginning) */
-					curs_nextgetch=0x47;
-					ch=0;
-					break;
+					case KEY_BEG:		/* Beg (beginning) */
+						curs_nextgetch=0x47;
+						ch=0;
+						break;
 
-				case KEY_CANCEL:		/* Cancel */
-					curs_nextgetch=0x03;
-					ch=0;
-					break;
+					case KEY_CANCEL:		/* Cancel */
+						curs_nextgetch=0x03;
+						ch=0;
+						break;
 
-				case KEY_END:		/* End */
-					curs_nextgetch=0x4f;
-					ch=0;
-					break;
+					case KEY_END:		/* End */
+						curs_nextgetch=0x4f;
+						ch=0;
+						break;
 
-				case KEY_SELECT:		/* Select  - Is "End" in X */
-					curs_nextgetch=0x4f;
-					ch=0;
-					break;
+					case KEY_SELECT:		/* Select  - Is "End" in X */
+						curs_nextgetch=0x4f;
+						ch=0;
+						break;
 
-				case KEY_MOUSE:			/* Mouse stuff */
-					ch=CIO_KEY_MOUSE>>8;
-					curs_nextgetch=CIO_KEY_MOUSE&0xff;
-					break;
+					case KEY_MOUSE:			/* Mouse stuff */
+						if(getmouse(&mevnt)==OK) {
+							int evnt=0;
+							switch(mevnt.bstate) {
+								case BUTTON1_PRESSED:
+									evnt=CIOLIB_BUTTON_1_PRESS;
+									break;
+								case BUTTON1_RELEASED:
+									evnt=CIOLIB_BUTTON_1_RELEASE;
+									break;
+								case BUTTON2_PRESSED:
+									evnt=CIOLIB_BUTTON_2_PRESS;
+									break;
+								case BUTTON2_RELEASED:
+									evnt=CIOLIB_BUTTON_2_RELEASE;
+									break;
+								case BUTTON3_PRESSED:
+									evnt=CIOLIB_BUTTON_3_PRESS;
+									break;
+								case BUTTON3_RELEASED:
+									evnt=CIOLIB_BUTTON_3_RELEASE;
+									break;
+								case REPORT_MOUSE_POSITION:
+									evnt=CIOLIB_MOUSE_MOVE;
+									break;
+							}
+							ciomouse_gotevent(evnt, mevnt.x+1, mevnt.y+1);
+						}
+						break;
 
-				default:
-					curs_nextgetch=0xff;
-					ch=0;
-					break;
+					default:
+						curs_nextgetch=0xff;
+						ch=0;
+						break;
+				}
 			}
 		}
 	}
@@ -980,34 +1016,8 @@ int curs_hidemouse(void)
 int curs_showmouse(void)
 {
 	#ifdef NCURSES_VERSION_MAJOR
-		if(mousemask(BUTTON1_CLICKED|BUTTON3_CLICKED,NULL)==BUTTON1_CLICKED|BUTTON3_CLICKED)
+		if(mousemask(BUTTON1_PRESSED|BUTTON1_RELEASED|BUTTON2_PRESSED|BUTTON2_RELEASED|BUTTON3_PRESSED|BUTTON3_RELEASED|REPORT_MOUSE_POSITION,NULL)==BUTTON1_PRESSED|BUTTON1_RELEASED|BUTTON2_PRESSED|BUTTON2_RELEASED|BUTTON3_PRESSED|BUTTON3_RELEASED|REPORT_MOUSE_POSITION)
 			return(0);
 	#endif
 	return(-1);
-}
-
-/* cio_get_mouse() */
-int curs_getmouse(struct cio_mouse_event *mevent)
-{
-	#ifdef NCURSES_VERSION_MAJOR
-		MEVENT	mevnt;
-
-		if(getmouse(&mevnt)==OK) {
-			mevent->x=mevnt.x;
-			mevent->y=mevnt.y;
-			switch(mevnt.bstate) {
-				case BUTTON1_CLICKED:
-					mevent->button=1;
-					break;
-				case BUTTON3_CLICKED:
-					mevent->button=2;
-					break;
-			}
-		}
-		else
-			return(-1);
-		return(0);
-	#else
-		return(-1);
-	#endif
 }

@@ -23,6 +23,8 @@ CIOLIB_LDFLAGS	+=	${PTHREAD_LDFLAGS}
 CIOLIB_CFLAGS	+=	$(PTHREAD_CFLAGS)
 CIOLIB_OBJS	+=	$(LIBODIR)/ansi_cio.o $(LIBODIR)/threadwrap.o
 CIOLIB_OBJS	+=	$(LIBODIR)/curs_cio.o $(LIBODIR)/ciolib.o
+CIOLIB_OBJS	+=	$(LIBODIR)/mouse.o $(LIBODIR)/semwrap.o
+CIOLIB_OBJS	+=	$(LIBODIR)/genwrap.o $(PTHREAD_OBJS)
 CIOLIB_CFLAGS	+=	-I$(UIFC_SRC)
 
 # Curses Stuff

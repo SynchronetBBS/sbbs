@@ -27,7 +27,6 @@ void curs_setcursortype(int type);
 int curs_getch(void);
 int curs_getche(void);
 void curs_textmode(int mode);
-int curs_getmouse(struct cio_mouse_event *mevent);
 int curs_showmouse(void);
 int curs_hidemouse(void);
 #ifdef __cplusplus

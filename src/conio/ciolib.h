@@ -3,6 +3,8 @@
 #ifndef _CIOLIB_H_
 #define _CIOLIB_H_
 
+#include <mouse.h>
+
 enum {
 	 CIOLIB_MODE_AUTO
 	,CIOLIB_MODE_CURSES
@@ -81,12 +83,6 @@ struct text_info {
 	unsigned char cury;           /* y-coordinate in current window */
 };
 
-struct cio_mouse_event {
-	int	x;
-	int	y;
-	int	button;
-};
-
 typedef struct {
 	int		mode;
 	int		mouse;
@@ -123,7 +119,7 @@ typedef struct {
 	int		(*cputs)		(char *);
 	void	(*textbackground)	(int);
 	void	(*textcolor)	(int);
-	int		(*getmouse)		(struct cio_mouse_event *mevent);
+	int		(*getmouse)		(struct mouse_event *mevent);
 	int		(*hidemouse)	(void);
 	int		(*showmouse)	(void);
 	void	(*settitle)		(const char *);

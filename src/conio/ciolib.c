@@ -68,7 +68,7 @@ int try_x_init(int mode)
 {
 	if(!console_init()) {
 		cio_api.mode=CIOLIB_MODE_X;
-		cio_api.mouse=0;
+		cio_api.mouse=1;
 		cio_api.puttext=x_puttext;
 		cio_api.gettext=x_gettext;
 		cio_api.textattr=x_textattr;
@@ -83,7 +83,6 @@ int try_x_init(int mode)
 		cio_api.getch=x_getch;
 		cio_api.getche=x_getche;
 		cio_api.textmode=x_textmode;
-		cio_api.getmouse=NULL;
 		cio_api.showmouse=NULL;
 		cio_api.hidemouse=NULL;
 		cio_api.settitle=x_settitle;
@@ -112,7 +111,6 @@ int try_curses_init(int mode)
 		cio_api.getch=curs_getch;
 		cio_api.getche=curs_getche;
 		cio_api.textmode=curs_textmode;
-		cio_api.getmouse=curs_getmouse;
 		cio_api.showmouse=curs_showmouse;
 		cio_api.hidemouse=curs_hidemouse;
 		cio_api.settitle=NULL;
@@ -142,7 +140,6 @@ int try_ansi_init(int mode)
 		cio_api.getch=ansi_getch;
 		cio_api.getche=ansi_getche;
 		cio_api.textmode=ansi_textmode;
-		cio_api.getmouse=NULL;
 		cio_api.showmouse=NULL;
 		cio_api.hidemouse=NULL;
 		cio_api.settitle=NULL;
@@ -175,7 +172,6 @@ int try_conio_init(int mode)
 		cio_api.getch=win32_getch;
 		cio_api.getche=win32_getche;
 		cio_api.textmode=win32_textmode;
-		cio_api.getmouse=win32_getmouse;
 		cio_api.showmouse=win32_showmouse;
 		cio_api.hidemouse=win32_hidemouse;
 		cio_api.settitle=win32_settitle;
@@ -232,6 +228,7 @@ int initciolib(int mode)
 	cio_textinfo.winright=cio_textinfo.screenwidth;
 	cio_textinfo.winbottom=cio_textinfo.screenheight;
 	cio_textinfo.normattr=7;
+	_beginthread(ciolib_mouse_thread,0,NULL);
 	return(0);
 }
 
@@ -239,6 +236,8 @@ int ciolib_kbhit(void)
 {
 	CIOLIB_INIT();
 	if(ungotch)
+		return(1);
+	if(mouse_pending())
 		return(1);
 	return(cio_api.kbhit());
 }
@@ -752,14 +751,6 @@ void ciolib_setcursortype(int a)
 	CIOLIB_INIT();
 	
 	cio_api.setcursortype(a);
-}
-
-int ciolib_getmouse(struct cio_mouse_event *mevent) {
-	CIOLIB_INIT();
-
-	if(cio_api.getmouse!=NULL)
-		return(cio_api.getmouse(mevent));
-	return(-1);
 }
 
 int ciolib_showmouse(void) {
