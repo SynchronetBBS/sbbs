@@ -9,6 +9,7 @@ if((g==undefined || isNaN(g) || g==-1) && sub=='mail') {
 	template.sub.name="MAIL";
 	template.sub.qwk_name="<NONE>";
 	template.sub.is_moderated=false;
+	template.sub.is_operator=true;
 	template.sub.can_post=true;
 	template.sub.can_read=true;
 	template.sub.max_msgs="Unknown";
