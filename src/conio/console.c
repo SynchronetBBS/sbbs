@@ -1342,7 +1342,7 @@ tty_peek(int flag)
 {
 	int c;
 
-    	if (c == x_nextchar)
+	if (c == x_nextchar)
 	    return(x_nextchar & 0xff);
 
 	if (KbdEmpty()) {

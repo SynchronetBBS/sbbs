@@ -4,6 +4,7 @@
 
 #include <genwrap.h>
 #include <threadwrap.h>
+#include <xpsem.h>
 
 #ifdef __unix__
 	#include <termios.h>
@@ -12,6 +13,13 @@
 
 #include "ciolib.h"
 #include "ansi_cio.h"
+
+#define	ANSI_TIMEOUT	500
+
+sem_t	got_key;
+sem_t	used_key;
+sem_t	got_input;
+sem_t	used_input;
 WORD	ansi_curr_attr=0x07<<8;
 
 int ansi_rows=24;
@@ -116,7 +124,7 @@ tODKeySequence aKeySequences[] =
    {"\033OD", ANSI_KEY_LEFT},
    {"\033OH", ANSI_KEY_HOME},
    {"\033OK", ANSI_KEY_END},
-   
+
    /* Terminator */
    {"",0}
 };
@@ -306,42 +314,45 @@ static void ansi_keyparse(void *par)
 	int		gotesc=0;
 	char	seq[64];
 	int		ch;
-	int		waited=0;
 	int		i;
 	char	*p;
+	int		timeout=0;
+	int		timedout;
 
 	for(;;) {
-		while(!ansi_raw_inch
-				&& (gotesc || (!gotesc && !seq[0]))) {
-			waited++;
-			if(waited>=ansi_esc_delay) {
-				waited=0;
+		timedout=0;
+		if(timeout) {
+			if(sem_trywait_block(&got_key,timeout)) {
 				gotesc=0;
+				timeout=0;
 			}
-			else
-				SLEEP(1);
 		}
+		else
+			sem_wait(&got_key);
+
 		if(!gotesc && seq[0]) {
-			while(ansi_inch)
-				SLEEP(1);
-			ch=seq[0];
-			for(p=seq;*p;*p=*(++p));
-			ansi_inch=ch;
+			for(p=seq;*p;p++) {
+				sem_wait(&used_input);
+				ansi_inch=*p;
+				sem_post(&got_input);
+			}
+			seq[0]=0;
 			continue;
 		}
 		else {
 			ch=ansi_raw_inch;
 			ansi_raw_inch=0;
+			sem_post(&used_key);
 		}
 		switch(gotesc) {
-			case 1:	/* Escape */
-				waited=0;
+			case 1:	/* Escape Sequence */
+				timeout=ANSI_TIMEOUT;
+				seq[strlen(seq)+1]=0;
+				seq[strlen(seq)]=ch;
 				if(strlen(seq)>=sizeof(seq)-2) {
 					gotesc=0;
 					break;
 				}
-				seq[strlen(seq)+1]=0;
-				seq[strlen(seq)]=ch;
 				if((ch<'0' || ch>'9')		/* End of ESC sequence */
 						&& ch!=';'
 						&& ch!='?'
@@ -349,16 +360,19 @@ static void ansi_keyparse(void *par)
 						&& (strlen(seq)==2?ch != 'O':1)) {
 					for(i=0;aKeySequences[i].pszSequence[0];i++) {
 						if(!strcmp(seq,aKeySequences[i].pszSequence)) {
-							gotesc=0;
 							seq[0]=0;
-							while(ansi_inch)
-								SLEEP(1);
+							sem_wait(&used_input);
 							ansi_inch=aKeySequences[i].chExtendedKey;
+							sem_post(&got_input);
+							/* Two-byte code, need to post twice and wait for one to
+							   be received */
+							sem_post(&got_input);
+							sem_wait(&used_input);
 							break;
 						}
 					}
-					if(!aKeySequences[i].pszSequence[0])
-						gotesc=0;
+					gotesc=0;
+					timeout=0;
 				}
 				break;
 			default:
@@ -366,12 +380,12 @@ static void ansi_keyparse(void *par)
 					seq[0]=27;
 					seq[1]=0;
 					gotesc=1;
-					waited=0;
+					timeout=ANSI_TIMEOUT;
 					break;
 				}
-				while(ansi_inch)
-					SLEEP(1);
+				sem_wait(&used_input);
 				ansi_inch=ch;
+				sem_post(&got_input);
 				break;
 		}
 	}
@@ -385,10 +399,9 @@ static void ansi_keythread(void *params)
 	_beginthread(ansi_keyparse,1024,NULL);
 
 	for(;;) {
-		if(!ansi_raw_inch) {
-			if(read(fileno(stdin),&ansi_raw_inch,1)!=1)
-				ansi_raw_inch=0;
-		}
+		sem_wait(&used_key);
+		if(fread(&ansi_raw_inch,1,1,stdin)==1)
+			sem_post(&got_key);
 		else
 			SLEEP(1);
 	}
@@ -396,7 +409,10 @@ static void ansi_keythread(void *params)
 
 int ansi_kbhit(void)
 {
-	return(ansi_inch);
+	int sval;
+
+	sem_getvalue(&got_input,&sval);
+	return(sval);
 }
 
 void ansi_delay(long msec)
@@ -578,10 +594,10 @@ int ansi_getch(void)
 {
 	int ch;
 
-	while(!ansi_inch)
-		SLEEP(1);
+	sem_wait(&got_input);
 	ch=ansi_inch&0xff;
 	ansi_inch=ansi_inch>>8;
+	sem_post(&used_input);
 	return(ch);
 }
 
@@ -641,6 +657,13 @@ int ansi_initciolib(long inmode)
 		atexit(ansi_fixterm);
 	}
 #endif
+
+	/* Initialize used_* to 1 so they can be immediately waited on */
+	sem_init(&got_key,0,0);
+	sem_init(&used_key,0,1);
+	sem_init(&got_input,0,0);
+	sem_init(&used_input,0,1);
+
 	vmem=(WORD *)malloc(ansi_rows*ansi_cols*sizeof(WORD));
 	ansi_sendstr(init,-1);
 	for(i=0;i<ansi_rows*ansi_cols;i++)
