@@ -72,8 +72,6 @@
 #define MAX_SERVICES			128
 #define TIMEOUT_THREAD_WAIT		30		/* Seconds */
 
-#define STATUS_WFC	"Listening"
-
 static services_startup_t* startup=NULL;
 static scfg_t	scfg;
 static int		active_clients=0;
@@ -379,9 +377,9 @@ js_initcx(SOCKET sock, client_t* client, service_client_t* service_client, JSObj
 
 	} while(0);
 
-	JS_EndRequest(js_cx);		/* Required for multi-thread support */
 
 	if(!success) {
+		JS_EndRequest(js_cx);		/* Required for multi-thread support */
 		JS_DestroyContext(js_cx);
 		return(NULL);
 	}
@@ -491,8 +489,6 @@ static void js_service_thread(void* arg)
 		args=p+1;
 	}
 
-	JS_BeginRequest(js_cx);	/* Required for multi-thread support */
-
 	argv=JS_NewArrayObject(js_cx, 0, NULL);
 
 	if(args!=NULL && argv!=NULL) {
@@ -519,7 +515,6 @@ static void js_service_thread(void* arg)
 		,NULL,NULL,JSPROP_READONLY);
 
 	js_script=JS_CompileFile(js_cx, js_glob, spath);
-	JS_EndRequest(js_cx);
 
 	if(js_script==NULL) 
 		lprintf("%04d !JavaScript FAILED to compile script (%s)",socket,spath);
@@ -527,6 +522,9 @@ static void js_service_thread(void* arg)
 		JS_ExecuteScript(js_cx, js_glob, js_script, &rval);
 		JS_DestroyScript(js_cx, js_script);
 	}
+	close_socket(socket);
+
+	JS_EndRequest(js_cx);
 
 //	lprintf("%04d JavaScript: Destroying context",socket);
 	JS_DestroyContext(js_cx);	/* Free Context */
@@ -535,7 +533,6 @@ static void js_service_thread(void* arg)
 	if(service->clients)
 		service->clients--;
 
-	close_socket(socket);
 	active_clients--;
 	update_clients();
 	client_off(socket);
@@ -795,7 +792,15 @@ void DLLCALL services_thread(void* arg)
 		}
 		service[i].socket=socket;
 	}
-				
+
+	/* signal caller that we've started up successfully */
+    if(startup->started!=NULL)
+    	startup->started();
+
+	status("Listening");
+		
+	terminated=FALSE;
+
 	/* Main Server Loop */
 	while(!terminated) {
 
