@@ -1,0 +1,1247 @@
+***************************************************
+* What's New in Synchronet Version 3.10 for Win32 *
+* (ChangeLog since v3.00c for Win32 Dec 31, 2000) *
+***************************************************
+
+Highlights
+~~~~~~~~~~
+o Server-side JavaScript for dynamically-loaded BBS modules 
+  and dynamic-HTML indexes for FTP server
+
+o GUI Configuration Wizard
+
+o TCP socket and FTP client support in loadable modules
+
+o Support for embedded file descriptions (FILE_ID.DIZ/DESC.SDI) in FTP server
+
+o Improved support for multiple SBBSCTRL instances
+
+o Improved support for external DOS/FOSSIL programs (doors)
+
+o Additional configurability/programmability options
+
+
+General
+~~~~~~~
+o Support for '*' wildcard syntax in trashcan/filter files
+  (e.g. "24.0.193.*" or "*.ppp.someisp.com")
+
+
+Control Panel
+~~~~~~~~~~~~~
+o New Configuration Wizard
+  - Automatically runs on fresh install
+  - Asks basic required questions
+  - Hopefully eliminate some FAQs and common newbie-sysop errors
+
+o New MinimizeToSysTray option
+  - Minimizes SBBSCTRL to an icon in the system tray
+  - Icon animates when there are active clients
+  - Icon tool-tip reports number of active clients
+  - Double-click icon to restore SBBSCTRL window
+  - Right-click for pop-up menu of frequently-used menu items
+
+o New "Events" window for event-thread log messages and status
+  - No longer clutters Telnet Server log
+
+o QWK message events (e.g. for FTP-QWK transfers) can be disabled per-instance
+  using the new "QWK Events" checkbox (defaults to enabled)
+  - Required for multiple instances of SBBSCTRL
+
+o New Control Panel Properties Dialog (File->Properties)
+  - Allows configuration of LoginCommand, ConfigCommand, etc.
+
+o Configurable Node and Client window display intervals 
+  (previously hard-coded to 1 and 5 seconds, respectively)
+
+o Closing no longer interferes with Windows shut-down procedure
+
+o Sorting by first/last-on dates in User List now works correctly
+
+o Added to the BBS->Edit menu: 
+  - New user password (NUP) failure message (text/nupguess.msg)
+  - Nodes full message (text/nonodes.txt, previously hard-coded)
+  - Logon message (text/menu/logon.asc)
+  - Auto-message (data/msgs/auto.msg)
+
+o Eliminated possibility of over-writing registry values with defaults
+  if SBBSCTRL is immediately shut-down before initialization has completed
+
+o SBBS.DLL version is now checked and verified (can't mix versions)
+
+o Minor cosmetic improvements (e.g. FTP server configuration dialog)
+  - Fixed tab orders and enabled more control hints (tool-tips)
+
+o Revamped Node Window
+  - Improved handling of NODE.DAB read/locking errors
+  - New popup menu item to refresh display
+  - New keyboard short-cuts for all popup menu items
+
+o Spy Window fix: KeyboardActive checkbox alternating checked status and 
+  not reflecting previously saved value
+
+o Link to Online Docs (http://www.synchro.net/docs) on Help menu
+
+o Statistics window update interval (previously hard-coded to 5 seconds) now 
+  configured via SCFG->Nodes->Node 1->Advanced Options->Statistics Frequency
+
+
+Telnet Server
+~~~~~~~~~~~~~
+o Server-side JavaScript Support for Loadable Modules
+  - Full support for Core JavaScript objects and classes:
+    - Global (extended and enhanced)
+    - Object
+    - Function
+    - Array
+    - String
+    - Boolean
+    - Number
+    - Date
+    - Math
+    - RegExp (Perlesque regular expressions)
+  - Includes Netscape server-side File class
+  - Both a procedure and object-oriented language
+  - Substantially more powerful language than Baja
+  - No "compiling" required (don't ever lose your source code again)
+  - For more info on Core JavaScript, see http://mozilla.org/js
+  - See exec/*.js for examples
+  - Baja modules and command shells are still fully supported
+  - Execute JS via command-line with "?modulename" instead of "*modulename"
+  - New and evolving ASP/DOM-like Synchronet Object Model:
+    - system
+    - system.stats
+    - system.node_list[]
+    - server
+    - client
+    - user
+    - file_area
+    - file_area.lib_list[]
+    - file_area.lib_list[].dir_list[]
+    - Socket (class)
+    - User (class)
+  - Telnet-specific objects:
+    - bbs
+    - console
+
+o Improved auto-terminal-type detection
+  - Telnet option negotiation occurs before auto-detection sequence 
+    (for CRT compatibility)
+  - Added ANSI save and restore cursor position codes to sequence 
+    (for HyperTerminal compatibility)
+
+o New inactivity (H) exemption
+  - Eliminates "Are you still there?" prompt and auto-disconnection for 
+    specific users
+  - Add to your exec/logon.src (if upgrading):
+    compare_ars exempt H
+    if_true
+        or _console CON_NO_INACT
+        end_if
+
+o New @-codes:
+  - FULL_VER            Synchronet version and revision
+  - VER_NOTICE          Synchronet version notice
+  - OS_VER              Operating system name and version
+  - JS_VER              JavaScript implementation version
+  - PLATFORM            Platform name (e.g. Win32, Linux, etc)
+  - COPYRIGHT           Copyright notice
+  - COMPILER            Compiler name and version
+  - SOCKET_LIB          Socket library name and version
+  - MSG_LIB             Message library name and version
+  - HOST                Now contains FULL (untruncated) host-name
+  - AGE                 User's age (in years)
+
+o Configurable "Nodes full" message (via text/nonodes.txt)
+
+o Better handling of DLL/EXE version mis-matches
+
+o Quicker response to Ctrl-C (abort) command
+
+o Fixed Guru Chat GPF/segfault bug
+
+o Screen pause is disabled while at the private message (Ctrl-P) prompt
+
+o Chat Menu is fully reprogrammable using PCMS (Baja or JavaScript)
+  - See exec/chat_sec.src for example
+
+o No longer logs (or displays locally) failed password attempts if the sysop 
+  has so configured the system in SCFG
+
+o Fixed problems with changing first/last node parameters during run-time
+  - New first/last node parameters don't take effect until server is restarted
+
+o Input and output threads now log/display number of bytes and packets 
+  sent/received upon termination
+
+o Changed NODE.DAB locking failure delays (earlier and longer)
+
+o Process directory is now changed to the ctrl directory during initialization
+
+o Uninitialized port numbers (set to 0) are now set to sensible defaults 
+
+o External Program enhancements/fixes:
+  - Added %~ command-line specifier for DOS-compatible (8.3) filename
+    (use in place of %f to convert long filenames to DOS-compatible)
+  - Added SBBSCTRL environment variable when running native external programs
+  - Moved exec_mutex protection to cover all types of executables 
+    (fixed problem with I/O occasionally going to wrong node/user)
+  - Improvement resource clean-up for Win32 version
+  - Sets Baja-retrievable errorlevel
+
+o Binary receive mode is automaticaly disabled when returning 
+  from external programs
+  - Some Telnet clents (e.g. HyperTerminal) enable Binary mode when
+    transferring files, but do not disable Binary mode when done.
+    This causes transmitted CR/LF pairs to be interpretted as two
+    separate characters (instead of one)
+
+o Added support under Win9x/Me for "naughty" FOSSIL programs/doors
+  - DOSXTRN.EXE now includes a 16-bit ISR stub for FOSSIL programs/doors
+    that DO NOT generate interrupts (e.g. IceEdit, Operation Overkill II, etc)
+
+o Improved background DOS program/door performance under Win9x/Me
+  - DOS/FOSSIL driver (SBBSEXEC.VXD) now schedules VM upon user input
+  - Most noticable performance gain with Global War
+
+o Reduced CPU utilization for DOS programs/doors under WinNT/2K
+  - DOS/FOSSIL driver (SBBSEXEC.DLL) now yields time-slices for programs
+    that poll for input (similar to how TAME operates)
+  - No more 100% CPU usage from games like LORD, TradeWars, BRE, etc
+
+o Improved disconnected-user detection while running DOS/FOSSIL doors
+  - Periodic sending of telnet GA (go-ahead) command
+
+o Non-exclusive timed events now run in the background automatically
+  - Allows multiple simultaneous events and asynchronous execution
+  - Has nothing to do with child window appearance or priority
+
+o Timed event codes are now logged/displayed in uppercase (cosmetic only)
+
+o Fixed bug in random number generation
+
+o No longer prompts for "Forward To Netmail" if the option is disabled in SCFG
+
+o Optional e-mail/netmail address filter/trashcan file (text/email.can) 
+
+o Event loop delay (previously hard-coded to 1 second) now configured via 
+  SCFG->Nodes->Node 1->Advanced Options->Semaphore Frequency
+  
+
+Baja v2.3
+~~~~~~~~~
+o Partially compiled .BIN files are now deleted
+
+o New Control Flow Functions:
+
+  - LOOP                Begins an execution loop (nesting supported)
+  - CONTINUE            Continues an execution loop
+  - BREAK               Breaks an executuion loop
+  - END_LOOP            Ends an execution loop
+
+o New TCP/IP Functions:
+
+  - SOCKET_OPEN         Create/open a TCP/IP socket
+  - SOCKET_CLOSE        Close a socket
+  - SOCKET_CONNECT      Initiate outbound connection
+  - SOCKET_ACCEPT       Accept an inbound connection
+  - SOCKET_NREAD        Get number of bytes ready to read
+  - SOCKET_PEEK         Peek at receive buffer
+  - SOCKET_READ         Read from socket
+  - SOCKET_WRITE        Write to socket
+  - SOCKET_CHECK        Check socket connection status
+  - SOCKET_READLINE     Read a CR/LF terminated line of text
+
+  - FTP_LOGIN           Login to a remote FTP server
+  - FTP_LOGOUT          Logout from a remote FTP server
+  - FTP_PWD             Print current working directory
+  - FTP_CWD             Change current working directory
+  - FTP_DIR             Display current directory listing
+  - FTP_PUT             Send (upload) a file to server
+  - FTP_GET             Receive (download) file from server
+  - FTP_RENAME          Rename file on server
+  - FTP_DELETE          Delete file from server
+
+o Miscellaneous New Functions:
+
+  - INCHAR              Case-insensitive version of INKEY
+  - COPY_CHAR           Copy current cmdkey to int var or str var
+  - COMPARE_ANY_BITS    Compares bits in any two integers
+  - COMPARE_ALL_BITS    Compares bits in any two integers
+  - SHIFT_TO_FIRST_CHAR Shifts string to first occurance of char
+  - SHIFT_TO_LAST_CHAR  Shifts string to last occurance of char
+  - FILE_RECEIVE        Like FILE_PUT, but doesn't require sys pass
+  - LPRINTF             Local printf (to local console)
+
+o New BBS Functions:
+
+  - FILE_RECEIVE        Same as FILE_PUT, but no system password required
+  - MULTINODE_CHAT      Joins a specified multinode chat channel
+                        (used in new exec/chat_sec.src)
+
+o New System Variables (defined in exec/sbbsdefs.inc):
+
+  - _FTP_MODE           FTP operating modes (see FTP_* constants)
+  - _CLIENT_SOCKET      Current telnet client's socket handle
+  - _SOCKET_ERROR       Last socket error
+  - _STARTUP_OPTIONS    BBS startup options (See BBS_OPT_* constants)
+
+
+FTP Server v1.10
+~~~~~~~~~~~~~~~~
+o Dynamic HTML Index support using Server-Side JavaScript 
+  - See exec/ftp-html.js for source code
+  - Additional FTP-specific objects:
+    - ftp.path
+    - ftp.sort
+    - ftp.reverse
+    - ftp.file_list[]
+    - ftp.dir_list[]
+    - ftp.curlib
+    - ftp.curdir
+    - ftp.html_index_file
+
+o Automatic support for embedded file descriptions (FILE_ID.DIZ and DESC.SDI)
+
+o Detected hack/intrusion attempts are now logged to data/hack.log
+
+o Directory listings are now sorted alphabetically (ala Unix)
+
+o Failure to create uploaded file (e.g. directory not created) bugs fixed:
+  - Error message cause gpf/segfault
+  - No 450 error response to client
+
+o Resumed downloads (using FTP "REST" command) fixed (wrong response code)
+
+o Now uses control port-1 (normally 20) as TCP port for all active data 
+  sessions
+  - Fixes problem of locating FTP server behind intelligent firewalls
+
+o Added active/passive mode indication to upload/download log output
+
+o Configurable QWK packet creation timeout 
+  - defaults to 10 minutes, previously hard-coded at 5 minutes
+
+o No longer logs (or displays locally) failed password attempts if the sysop 
+  has so configured the system in SCFG
+
+o Fixed mutex leak in Win32 build when stopping/restarting FTP server
+
+o Fix to disallow viewing of (ASCII or HTML) index file for aliased directory
+  where user has insufficient access to list files
+  (e.g. "/main/uploads" aliased as "/incoming" in ctrl/ftpalias.cfg)
+
+o Shortened thread shutdown timeout (from 60 seconds to 15)
+
+o Fixed upload filename bug in non-Win32 flavors
+
+o Now disallows uploading of dynamic index filenames (if enabled)
+
+o Sending a 0-length file is no longer treated as a failed download
+
+o The path to the upload or sysop directory can now be specified with the STOR 
+  (upload) command
+  - previously, you had to change the current directory first
+
+o Fixed occasional GPF/segfault during shutdown
+
+o Fixed case sensitivity problem with locally added files via telnet
+
+o Optional "hack attempt" sound file (Win32 version only)
+
+o Optional e-mail address filter for guest account passwords
+
+
+Mail Server v1.11
+~~~~~~~~~~~~~~~~~
+o SMTP Sending to a forwarded address (251 response) fixed
+
+o POP3 port, address, hostname activity logged
+
+o Now supports destination address hostnames starting with a digit
+
+o No longer logs (or displays locally) failed password attempts if the sysop 
+  has so configured the system in SCFG
+
+o Shortened thread shutdown timeout (from 60 seconds to 15)
+
+o Uninitialized startup values are now set to sensible defaults 
+
+o Fixed memory leak if server stopped and re-started
+
+
+***********************************************************
+* What's New in Synchronet Version 3.10 Revision C (Beta) *
+***********************************************************
+
+Telnet Server
+~~~~~~~~~~~~~
+o 0-byte QWK packets are now simply ignored rather than generating errors
+  - It is assumed the file is still being downloaded by another process
+
+o Configurable number of polls before yield for NT/2K/XP fossil driver
+  - Allows tuning of multitasker TAME-like performance
+  - Was previosly hard-coded to 10, values of 5000+ improve LORD and LORD IGM 
+    RIP detection but increases CPU usage for BRE and possibly other doors
+
+o Fixed old bug: anonymous uploads weren't flagged as anonymous unless the 
+  entire directory was forced anonymous
+
+o Fixed new bug: FidoNet echomail semaphore files weren't working
+
+o Password display char is now configurable as the fourth character in the 
+  last line of the text.dat - defaults to 'X' if not specified
+  - third char is currently ignored but is reserved for for configurable
+    "quit" character in the future (currently hard-coded to 'Q')
+
+o When replying to mail, no longer prompts to delete message if message was 
+  already flagged for deletion (caused unintential UN-deletion of message)
+
+o Fixed Baja bugs: SYSOP_PAGE and GURU_PAGE functions set reversed logic state
+
+o Improved internal chat page performance (random tones) - rarely used
+
+
+JavaScript
+~~~~~~~~~~
+o Improved Socket class 
+  - last_error property is maintained on a per-instance basis
+  - externally created sockets won't be closed on deletion
+
+o Added global sound() function to play external WAV files 
+  - use sound.js module via command-line (e.g. for external chat pager)
+
+
+FTP Server v1.10
+~~~~~~~~~~~~~~~~
+o JavaScript contexts are only created when needed
+  - should improve performance, reduce memory usage, and improve reliability
+
+o Fixed bug: anonymous uploader names were shown in directory listings
+
+o Fixed bug: daily user statistics (logons today, time used today, etc) were
+  not being reset if user was logged in during the date change (12 midnight)
+
+o Fixed bug: logoff was setting timed-used-last-call to number of 'seconds'
+  used rather than 'minutes'
+
+o Implemented security considerations recommended in RFC2577:
+  - Added a 5 second delay after each failed login attempt
+  - Session is terminated after 3 failed login attempts
+  - Port command supports ports >=1024 only, defeats "bounce attack"
+
+
+Mail Server v1.11
+~~~~~~~~~~~~~~~~~
+o Updated mail-abuse.org DNS and HTTP server addresses 
+  (for RBL/RSS/DUL SPAM rejection)
+
+o Creates data/spam.log listing every rejected SPAM attempt
+
+o Fixed bug: logoff now handles resetting of user's daily statistics
+
+o Time used during POP3 sessions are now added to user's timeon stats
+
+
+***********************************************************
+* What's New in Synchronet Version 3.10 Revision D (Beta) *
+***********************************************************
+
+Control Panel
+~~~~~~~~~~~~~
+o Fixed linker problem in v3.10c that caused various control panel functions
+  to not work or generate access violations or exceptions
+
+
+Telnet Server
+~~~~~~~~~~~~~
+o Bug fixes in Online user editor (;UEDIT) when searching based on ARS
+  potential memory leak if disconnected and access violation on blank string
+
+o Remote sysops can now give flags and exemptions (using the internal user 
+  editor) to users even if they themselves don't have that specific flag or 
+  exemption as long as the user has a lower security level than the sysop
+
+
+***********************************************************
+* What's New in Synchronet Version 3.10 Revision E (Beta) *
+***********************************************************
+
+Control Panel
+~~~~~~~~~~~~~
+o Forms are now not "undockable" (they can't be dragged and undocked)
+  by default
+  - Undockable property toggled in File->Properties dialog
+
+o Log and List colors and fonts are now customizazble via registry keys:
+  HKEY_CURRENT_USER/Software/Swindell/Synchronet Control Panel
+
+o File->Properties dialog now contains tool tips
+
+o New Mail->View->SPAM Log menu item
+
+o New Mail->Edit->Domain List menu item to edit domain alias list
+
+o Mail->Edit->Allowed Relay List menu item now edits ctrl/relay.cfg
+  instead of text/relay.can (same format and purpose)
+
+o New BBS->Reload Configuration menu item (and toolbar button)
+  -Reloads configuration in sbbsctrl and all nodes (when possible)
+
+o Configuration Wizard now loads at appropriate time during "first run"
+
+o Configuration is automatically reloaded after Wizard is run at any time
+
+o New "Lookup Idenity" checkbox in Telnet configuration dialog
+
+
+GUI User Editor
+~~~~~~~~~~~~~~~
+o Fixed problems with disabling expiration dates (setting to 00/00/00)
+
+
+JavaScript
+~~~~~~~~~~
+o New file_remove() global method/function
+o Global exit() method/function now clears pending exceptions
+o Created new File class to replace Mozilla's crappy implementation
+  - Methods:
+        open([mode string], [buflen]) - mode string ala fopen()
+        close()
+        remove() - deletes file if unopen
+        clear_error()
+        flush()
+        lock(offset, length) - provides record locking
+        unlock(offset, length)
+        read([length])
+        readln([length])
+        readBin([size]) - read binary integers of 1, 2, or 4 bytes
+        readAll() - read all lines and return as an array
+        write(string, [length])
+        writeln(string)
+        writeBin(val, size])
+        writeAll(array)
+  - Properties:
+        name       [readonly] - filename
+        mode       [readonly] - mode string
+        exists     [readonly] - file exists?
+        date       [readonly] - time_t format
+        is_open    [readonly] - file open?
+        eof        [readonly] - end of file?
+        error      [readonly] 
+        descriptor [readonly] - no known use at this time
+        etx - end of text character (defaults to 0/NULL)
+        debug - enable debug output
+        position   (ala seek)
+        length     (size in bytes)
+        attributes (OS-dependant)
+  - see http://synchro.net/docs/js.html for details (in the works)
+
+
+Baja v2.31
+~~~~~~~~~~
+o New MATCHUSER function to get the number of a user by name
+  - Used in login.src to dynamically detect Guest account
+
+
+Telnet Server
+~~~~~~~~~~~~~
+o Added identity look-up and log during logon 
+  - using IDENT protocol often utilized by IRC clients/servers
+
+o Added user name to New User dupliate IP warning
+
+o Fixed problem with ZModem/FDSZ file transfers on NT-based OSes
+
+o Event command-lines are now logged to the event log window
+
+o Includes updated DOSXTRN.EXE to allow configurable "polls before yield"
+  on NT-based OSes (forgotten in rev D beta)
+
+o Removed unused global Baja variable: CAP_FNAME
+
+o Cleaned up/beautified the log output a bit
+
+o Fixed potential race condition/crash when re-running a node right as
+  a client was connecting
+
+o Potentially helpful log message on failure to bind to server port
+  - "Another service may be using this port"
+
+o Potentially helpful log message when remote sysop login attempted
+  but disabled in SCFG
+
+o Event log output on network call-out
+
+o More fine-grained checking of 'C' restriction in chat functions
+
+o Cleaned up error.log entries 
+  - eliminated misleading/unnecessary source code path
+  - eliminated useless doserrno
+
+o QWK improvements
+  - Added time-slice yields while creating QWK messages.dat file
+  - Logs/displays total number of bytes packed in QWK packets
+  - Calculates and displays number of sub-boards scanned
+  - Beautified the static config menu
+
+o New message scans now calculate and dipslay number of sub-boards scanned
+
+o More configurable text in ctrl/text.dat
+  - SendingMessageToUser
+  - SendingTelegramToUser
+  - TelegramFmt
+  - MsgSentToUser
+  - PagingUser
+  - PrivateChatSeparator
+  - SysopChatSeparator
+  - SystemPassword
+  - InvalidNetMailAddr
+  - YNQP (Yes/No/Quit/Password chars)
+
+o In password-entry mode, non-destructive backspace now deletes the
+  password char (which is now configurable in ctrl/text.dat)
+
+o @nopause@ and @poff@ codes now work as expected (disabling pause) in
+  text/answer.* files
+  - Ctrl-AQ trick no longer necessary
+
+o New @-codes:
+  - EMAILADDR - user's Internet e-mail address on your system
+  - RESETPAUSE - resets line counter for auto-pause (same as Ctrl-AQ)
+
+o Eliminated many hard-coded colors (uses colors from ctrl/attr.cfg instead)
+
+
+Mail Server v1.11
+~~~~~~~~~~~~~~~~~
+o New optional ctrl/domains.cfg file can be used to list additional domain
+  name aliases to receive mail for
+  - wildcards are allowed, e.g. "*.synchro.net"
+
+o Allowed relay list is now stored in ctrl/relay.cfg instead of
+  text/relay.can
+  - .can files are used for trashcan/filter files
+
+o SendMail thread will now stop sending mail when the server is terminated
+
+o Potentially helpful log message on failure to bind to server port
+  - "Another service may be using this port"
+
+o Eliminated potential lock-ups waiting to receive data while looking up
+  DNS MX records and while waiting for SMTP respones in SendMail thread
+
+
+FTP Server v1.10
+~~~~~~~~~~~~~~~~
+o Fixed potential race condition and segfault while
+  "waiting for transfer to complete" upon server termination
+
+o Potentially helpful log message on failure to bind to server port
+  - "Another service may be using this port"
+
+o Displays telnet command descriptions rather than decimal value 
+  - yes, telnet commands can, and often are, sent on the FTP control port
+
+
+***********************************************************
+* What's New in Synchronet Version 3.10 Revision F (Beta) *
+***********************************************************
+
+General
+~~~~~~~
+o Now using select() before send() or recv() to eliminate potential TCP/IP
+  socket blocking problems
+
+o Much improved Linux-build functionality and FreeBSD compatibility
+  (X/Y/Zmodem file transfers, native external programs, stdio doors, etc)
+
+o Improved user name matching using underscore and dot replacement
+  (e.g. "Dr._Seuss" will match "Dr. Seuss")
+
+o Sysop psuedonym matching is now performed in global matchuser function
+  - Basically, anywhere a user name or number can be specified, "Sysop",
+    "Postmaster", the configured sysop name (in SCFG) and the system's QWK
+    ID will all be considered pseudonym's for user record #1
+
+o Sped up getuserdat() significantly by eliminating call to lastuser->flength
+  - this has a side-effect of greatly improving the load-time for the 
+    SBBSCTRL:View->User->List menu item and other places in the BBS
+
+o No longer logs <no name> host name if host name lookup is disabled
+
+
+Control Panel
+~~~~~~~~~~~~~
+o Fixed Mail Server POP3 sound file configuration
+
+o Fixed the slow close of the User List
+
+o Uninitialized user genders are no longer printed as garbage
+
+o New menu item SBBSCTRL:BBS->Filters->Email Subject Filters
+
+o Added NT-compatible work-around for default LoginCommand 
+  ("start telnet://localhost")
+
+o FTP and Mail server logs are now opened shareable (deny none)
+
+o New "Services" window, see below for details
+
+
+JavaScript (http://synchro.net/docs/js.html)
+~~~~~~~~~~
+o Each client gets its own JS-runtime to improve multi-threaded reliability
+  - This will hopefully eliminate all the JS reliability issues
+
+o New bbs.nodesync() method
+
+o bbs.text() returns null on invalid index (instead of static string)
+
+o Fixed a couple of bugs in Socket.recvline method:
+  1. was incrementing buffer char pointer even when there was no new data
+  2. was not releasing time-slices when there was no new data
+  - This same fix was applied to the Baja SOCKET_READLINE function
+
+o Socket recv, recvline, and peek methods now return null when there is a 
+  time-out or no data (instead of an empty string)
+
+o Socket recvline/readline method now supports an optional 'timeout' parameter 
+  (second argument)
+
+o Socket recvline method will now truncate \n terminated lines correctly
+
+o Dynamic instances of User class were missing stats and security properties
+
+o Changed User class email property to reflect user's BBS e-mail address
+  - Different from the netmail property - their external e-mail address
+
+o New global methods:
+    log(str)    - Log specified string to log window and/or file
+
+o System object
+    New properties:
+        system.uptime   - Time system was brought "up" (in time_t format)
+                          Subtract from time() to get seconds "up"
+    New methods:
+        alias(username) - Returns aliased user name (from ctrl/alias.cfg)
+        timestr([time]) - Returns string representation of specified time
+                          or current time if not specified
+
+o New msg_area object
+    properites:
+        msg_area.grp_list[].name
+        msg_area.grp_list[].description
+        msg_area.grp_list[].sub_list[].name
+        msg_area.grp_list[].sub_list[].description
+        msg_area.grp_list[].sub_list[].code
+        msg_area.grp_list[].sub_list[].newsgroup
+        msg_area.grp_list[].sub_list[].can_read
+        msg_area.grp_list[].sub_list[].can_post
+    (see exec/nntpservice.js for example)
+
+o New MsgBase class - constructor: new MsgBase("code")
+    properties:
+        MsgBase.last_error
+        MsgBase.file
+        MsgBase.debug
+        MsgBase.retry_time
+        MsgBase.first_msg   
+        MsgBase.last_msg    
+        MsgBase.total_msgs
+        MsgBase.max_crcs    
+        MsgBase.max_msgs    
+        MsgBase.max_age     
+        MsgBase.attributes
+    methods:
+        MsgBase.close()
+        MsgBase.get_msg_header(bool by_index, number)
+        MsgBase.get_msg_body(bool by_index, number, bool strip_ctrl_a)
+        MsgBase.save_msg(header, body)
+    (see exec/nntpservice.js for example)
+
+
+Synchronet Services
+~~~~~~~~~~~~~~~~~~~
+o Services are TCP servers that are launched dynamically by Synchronet when an
+  inbound connection is detected on a specific TCP port (ala Unix inetd)
+
+o Services are normally written in JavaScript, but native (32-bit) services are
+  also suppoorted 
+  - Native services must be able to receive socket descriptor on command-line
+
+o Stock "sample" services:
+  - Finger (exec/fingerservice.js)
+  - Gopher (exec/gopherservice.js)
+  - HTTP/HTML node list (exec/nodelist-html.js)
+  - NNTP, Network News Transfer Protocol (exec/nntpservice.js)
+
+o Services are configured with ctrl/services.cfg
+
+o The Finger service along with the SMTP telegram support creates a new 
+  Inter-BBS "Instant Messaging" technology using standard Internet protocols
+
+o Expect to see more standard Internet server protocols supported with 
+  Synchronet services in the near future, as well as-yet-to-be-invented 
+  technologies
+
+
+Telnet Server
+~~~~~~~~~~~~~
+o New finger client (exec/finger.js) launched with the [F]inger command from 
+  the chat menu
+
+o New Inter-BBS "Instant Messaging" module (exec/sbbsimsg.js) launched with the
+  [I]nstant message command from the chat menu
+
+o Increased delay after ANSI cursor position report (detection response) is 
+  received
+  - This increases the likelyhood of detecting RIPscrip support properly in
+    RIPtel
+
+o Non-QuickBBS/MSGTMP-sytle external editors now use the TEMP directory as the
+  current directory and the location of the temporary message files 
+  (for additional security)
+
+o Added support for editing existing messages using QuickBBS/MSGINF-style 
+  external editors
+
+o Batch download programs can now use %s to represent the full list of files
+  to be downloaded (required for Unix sb/sz support)
+
+o Beautified the temp directory listing a bit
+
+o Fixed a really old bug where you couldn't 'R'emove files from the temp dir
+
+o Max QWK message limit now applies to Q-restricted accounts too
+
+o Added new 'O' (QWK packet size) exemption
+
+o Detailed log entries now include user's alias
+
+o userlist will now sort up to 2500 users (previously limited to 1000)
+
+o Changed wildcard use to be more Unix-like ("*" means all files)
+
+o SEND/RECEIVE_FILE functions now use higher level protocol function 
+  - prompt for hangup after transfer, handles log parsing, etc.
+
+o @nopause@ and @poff@ codes now disable all pauses, even on screen clears
+
+o New @-code:
+  - UPTIME - System up-time in days, hours and minutes
+
+o Fixed potential lock-up in getstr if input_thread is unexpectedly terminated
+
+o inkey now recognizes and adheres to the K_UPPER mode bit
+
+o getkey no longer asks if user is still there if cfg.sec_warn is equal to
+  cfg.sec_hangup
+
+o getkey releases time-slices when called with node offline or input_thread not
+  running (just in case)
+
+o Added optional date/time argument (%s) to ctrl/text.dat/AutoMsgBy (line 42)
+
+
+Events
+~~~~~~
+o Added more event log output, especially concerning exclusive events
+
+o Added one hour time-outs while waiting for exclusive events
+  - prevents extended down-time waiting for an unresponsive node or event
+
+o Removed redundant node_daily event execution at end of node_thread 
+  - already handled in event_thread
+
+
+Mail Server v1.11
+~~~~~~~~~~~~~~~~~
+o POP3 server supports login by alias (from ctrl/alias.cfg)
+
+o SMTP server now rejects mail if there is no body text
+
+o Added ability to post on a sub-board via SMTP (sub:code@host)
+  - best to use alias.cfg for this feature (e.g. "syncprog sub:syncprog")
+
+o Support for receving SEND/SOML/SAML SMTP commands (which create telegrams)
+  - used in new Inter-BBS "Instant Messaging" technology
+
+o Set a hard maximum number of recipients in a given mail session 
+  - currently 1000
+
+o Added last_error strings to smb_getmsgtxt() error log entries for better 
+  error reporting
+
+o Added text/email.can and text/subject.can checking as sysop-configurable
+  Spam filters
+
+o Illegal relay attempts are now logged in the SPAM.LOG as Spam attempts
+
+o SMTP server now supports messages missing the 'From' field 
+  - uses MAIL FROM: return-path
+
+o SMTP server supports external address aliases (you@somedomain.com = sysop) in
+  the ctrl/alias.cfg file
+
+o Original destination address is now stored in "name" field of message header
+
+
+FTP Server v1.10
+~~~~~~~~~~~~~~~~
+o Periodic transfer progress reports occur even when no data is transferring
+
+o Progress report cps rates are now per-report rather than for total file
+
+o If resuming a transfer, file offset is now shown in progress reports
+
+
+***********************************************************
+* What's New in Synchronet Version 3.10 Revision G (Beta) *
+***********************************************************
+
+General
+~~~~~~~
+o Added user number validation to data functions to eliminate potential user
+  database corruption by external programs
+
+o New ARS keyword: SHELL
+  - used to specify the user's command shell as an access requirement
+
+
+Configuration Utility (SCFG) Updated for Version 3.x
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+o True Win32 console mode application
+
+o Added automatic re-running of nodes upon configuration changes (yea!)
+
+o Can be run in "standard input/output" mode (scfg -d) to run as a DOOR!
+
+o Increased default backup_level from 3 to 5
+
+o More flexible command-line syntax
+
+o Reads SBBSCTRL environment variable to determine location of CTRL directory 
+  (if not specified on the command-line)
+
+o Supports up to 80x60 console window
+
+o Elimination of version 2-specific options (unused in version 3)
+
+o File paths are no longer forced to uppercase (for Unix support)
+
+o Fixed importing of FIDONET.NA echolist tags with slashes (e.g. "AIDS/ARC")
+  - was creating an invalid internal code for imported sub-board
+
+o No more problems with consuming time-slices (100% CPU utilization)
+
+o No more problems with initializing larger than 80x25 console windows
+
+o New options to control the following:
+  - Long filename support in listings (Win98/Win2K+)
+  - Spinning cursor at [Hit a key] prompt
+  - Native 32-bit external programs (doors), timed events, and editors
+  - DOOR32.SYS drop file creation
+  - Timed events based on frequency (multiple executions per day)
+  - Background execution toggle for timed events
+  - Global Hot Key events
+  - SMTP (inbound e-mail) semaphore file
+  - New user e-mail/netmail address question
+  - Stripping of FidoNet Kludge lines for external editors
+
+
+Control Panel
+~~~~~~~~~~~~~
+o Password-protected tray icon option
+
+o Client form column widths saved/restored
+
+o Added window title to SCFG console ("Synchronet Configuration Utility")
+
+o Fixed crashes when closing while minimized to system tray
+
+o Code Input dialog now lists the available events/hubs in a drop-down list
+
+o Added "User->Truncate Deleted Users" menu option
+  - used to remove all deleted user records from end of user database
+
+o Fixed LogColor registry settings (weren't working)
+
+o Created File->Properties->Customize menu to change color/font schemes
+
+o Fixed window position of services config dialog 
+  (wasn't visible at low resolutions)
+
+o Detailed error reporting upon failure to load configuration files
+
+o New Help->Frequently Asked Question menu option
+
+
+Configuration Wizard
+~~~~~~~~~~~~~~~~~~~~
+o Added automatic detection of DNS server address (yea!)
+
+o Fixed Internet Address configuration page when run for the first time
+
+
+JavaScript (http://synchro.net/docs/js.html)
+~~~~~~~~~~
+o Increased maximum JavaScript heap size from 1 to 8 megabytes
+  - no additional overhead or memory consumption
+  - now supports thousands of message and file areas
+
+o Elminated reliance on exec/nspr4.dll
+  - benefit from switching to the "separate run-time per thread" model
+
+o User class is defined before the answer/login procedure
+  - answer/login .js modules can now use the User class
+
+o user, file_area, and msg_area objects are now created during logon
+
+o New bbs properties:
+    alt_ul_dir, node_action, curgrp, cursub, curlib, curdir,
+    smb_group, smb_group_desc, smb_group_number, smb_sub, smb_sub_desc,
+    smb_sub_code, smb_sub_number, msg_to, msg_to_ext, msg_to_net,
+    msg_to_agent, msg_from, msg_from_ext, msg_from_net, msg_from_agent,
+    msg_replyto, msg_replyto_ext, msg_replyto_net, msg_replyto_agent,
+    msg_subject, msg_date, msg_timezone, msg_date_imported, msg_attr,
+    msg_auxattr, msg_netattr, msg_offset, msg_number, msg_expiration,
+    msg_forwarded, msg_thread_orig, msg_thread_first, msg_thread_next, and
+    msg_delivery_attempts
+
+o New bbs methods:
+    page_sysop, page_guru, multinode_chat, private_message, private_chat,
+    get_node_message, put_node_message, get_telegram, put_telegram,
+    text_sec, xtrn_sec, user_config, sys_info, sub_info, dir_info, 
+    user_info, ver, sys_stats, node_stats, userlist, useredit, logonlist,
+    nodelist, whos_online, spy, xfer_policy, read_mail, email, netmail, 
+    qwk_sec, post_msg, cfg_msg_scan, cfg_msg_ptrs, reinit_msg_ptrs,
+    scan_posts, auto_msg, time_bank, batch_menu, batch_download,
+    batch_add_list, temp_xfer, change_user, bulk_mail, bulk_upload,
+    resort_dir, listfiles, listfileinfo, scan_subs, scan_dirs, cmdstr,
+    get_filespec, get_newscantime, list_users, edit_user, list_logons,
+    list_files, list_file_info, post_msg, list_nodes, upload_file, and atcode
+
+o New User class properties:
+    logontime   - the exact time (in time_t format) of current login
+                  (used to display time spent online in node listings)
+    curxtrn     - the internal code of the external program last run
+                  (used to display the name of the door in node listings)
+
+o New Socket class property: nonblocking (set to true for nonblocking sockets)
+
+o New Socket class method: ioctl (for sending ioctl commands to TCP/IP driver)
+
+o New MsgBase.put_msg_header() method for modifying or deleting messages
+
+o MsgBase class message header properties can now be enumerated
+  - example: for(i in header) print("header." + i + " = " + header[i]);
+
+o MsgBase class now supports anonymous-only and private-only sub-boards
+
+o MsgBase class wasn't locking message headers before reading/writing them
+
+o MsgBase class sub-boards in non-default storage directory didn't work
+
+o exec/sbbsdefs.js now includes SMB constant definitions
+  - for use with the MsgBase class
+
+o msg_area.grp_list[x].sub_list[y].can_post property now accounts for P and N 
+  user restrictions
+
+o New msg_area.grp_list[x].sub_list[y] properties:
+    settings        - bitmask of settings (SUB_*)
+    qwk_name        - QWK conference name
+    data_dir        - path to data files
+    fidonet_origin  - FidoNet origin line
+    qwknet_tagline  - QWKnet tagline
+    is_operator     - current user is sub-board operator (true/false)
+    is_moderated    - sub-board is moderated (true/false)
+    ptridx          - index into data/user/ptrs/<usernum>.ixb files
+    qwk_conf        - QWK conference number
+    max_age         - max message age (in days) before purging
+    max_msgs        - max number of messages before purging
+    max_crcs        - max number of message CRCs to store (for dupe checking)
+
+o New file_area.lib_list[x].dir_list[y] properties:
+    settings        - bitmask of settings (DIR_*)
+    can_upload      - current user can upload (true/false)
+    can_download    - current user can download (true/false)
+    is_exempt       - current user is exempt from d/l credits (true/false)
+    is_operator     - current user is a directory operator (true/false)
+    path            - path to storage directory
+    extensions      - file extensions allowed (comma separated list)
+    upload_sem      - path to upload semaphore file
+    data_dir        - path to data files
+    seqdev          - sequential device number
+    sort            - sort order
+    max_files       - max number of files allowed
+    max_age         - max age before purging
+    upload_credit_pct   - percentage of credits given for uploads
+    download_credit_pct - percentage of credits given for subsequent downloads
+
+o New system.findstr() method for searching any file for pseudo-regexp strings
+  - similar to system.trashcan(), but not limited to text/*.can files
+
+o New global directory() method to return array of files in specified
+  local file system directory matching specified wildcard pattern 
+  - example: files = directory( system.ctrl_dir + "*.cnf");
+  - see exec/dir.js for complete example
+
+o File.readBin() now returns -1 instead of garbage when attempting to read
+  past the end-of-file
+
+o system.uptime is now correctly set after accounting for timezone
+
+o Fixed bug with concurrent access to the MsgBase class from the Telnet server
+  and the services module
+
+
+Synchronet Services
+~~~~~~~~~~~~~~~~~~~
+o Fixed parsing of services.cfg, two spaces were required before port number
+
+o html-nodelist.js:
+  - now reports time online and door names in node listings
+  - added optional location to node list (use "-l" option)
+  - added Runkeeper's mod for Login button to work around MSIE table bug
+
+o fingerservice.js:
+  - now reports time online and door names in node listings
+
+o nntpservice.js:
+  - fixed message-ids for Netscape (and other client) support
+  - now supports real name only sub-boards
+  - now supports private and moderated messages
+  - includes e-mail address in "From:" header fields
+
+o Added support for server recycle semaphore file (ctrl/services.rec)
+
+
+Telnet Server
+~~~~~~~~~~~~~
+o User signature file support (totally independant of message editor)
+
+o Now supports 3-digit ANSI cursor position reports during initial
+  terminal screen length detection (fix for Windows 2K/XP telnet)
+
+o New user netmail/e-mail address question can now be toggled off
+
+o Long filenames are now displayed in extended file information and are
+  optionally displayed in file listings (requires Win98/Win2K+)
+  - files with long filenames must still be uploaded via FTP
+  - complete long filename support will follow the emergence of a WinSock
+    X/Y/Zmodem driver
+
+o 32-bit external programs (doors) and editors no longer need to be in the
+  Native Program List in SCFG for a DOOR32.SYS drop file to be created
+  - select "DOOR32.SYS" from the drop file list instead
+  - also need to set "Native (32-bit) Executable" toggle option to "Yes"
+
+o Added support for I/O redirection of Win32 console apps (e.g. cmd.exe)
+  - ;SHELL command now works on Windows NT/2K/XP
+  - unix-like (stdio) doors now supported (e.g. Lord/X)
+
+o Date environment variables (DAY, WEEKDAY, MONTH, MONTHNAME, and YEAR)
+  are now set before executing native (32-bit) programs
+  - these variables were previously only set when executing DOSXTRN.EXE
+
+o EnterYourBirthday ctrl/text.dat line now uses automatically-supplied
+  variable for the format example ("MM/DD/YY" or "DD/MM/YY") based on the
+  sysop-configured date format
+
+o Message "Title" ctrl/text.dat entries changed to "Subject"
+
+o New @-codes:
+  - SMB_GROUP           Current message group name          
+  - SMB_GROUP_DESC      Current message group description (long name)
+  - SMB_GROUP_NUM       Current message group number
+  - SMB_SUB             Current message sub-board name
+  - SMB_SUB_DESC        Current message sub-board description
+  - SMB_SUB_CODE        Current message sub-board internal code
+  - SMB_SUB_NUM         Current message sub-board number
+  - MSG_TO              Current message to-user name/number/address
+  - MSG_TO_NAME         Current message to-user name
+  - MSG_TO_EXT          Current message to-user extension (number)
+  - MSG_TO_NET          Current message to-user network address
+  - MSG_FROM            Current message from-user name/number/address
+  - MSG_FROM_EXT        Current message from-user extension (number)
+  - MSG_FROM_NET        Current message from-user network address
+  - MSG_SUBJECT         Current message subject
+  - MSG_DATE            Current message date/time
+  - MSG_TIMEZONE        Current message timezone
+  - MSG_ATTR            Current message attributes
+
+o All @-codes now support the -L and -R variations for fixed length display
+  (left or right justified) Example: [@name-l___________________@]
+
+o Fixed %f command-line expansion for DORINFO1.DEF and TRIBBS.SYS drop files
+
+o Fixed bug where the uptime was incorrectly reported in some timezones
+
+o Fixed bug where time left could go negative in Unix builds
+
+o Fixed infinite "error selecting socket for send" error message
+
+o Fixed Baja FTP passive (PASV) mode file transfers
+  - exec/getimlst.bin should now work with ftp.synchro.net
+
+o Fixed Baja FTP active/normal (non-passive) transfers 
+  - was only broken when Telnet server network interface was set to 0 (<any>)
+
+
+Events
+~~~~~~
+o Timed events based on frequency (multiple executions per day)
+
+o DOSXTRN is no longer used to launch timed events (unnecessary overhead)
+
+o Background execution can now be toggled off/on in SCFG
+
+
+Mail Server v1.11
+~~~~~~~~~~~~~~~~~
+o Support for MIME-encoding of outbound e-mails with file attachments
+  - thanks to Marc for this source code contribution
+
+o Recipient e-mail addresses can now be blocked using text/email.can
+
+o Optional "default user" for catch-all e-mail account (e.g. sysop)
+
+o Support for "port-extended" addresses to send mail to SMTP servers on 
+  non-standard ports (e.g. user@some.mail.server:2025)
+
+o alias.cfg can now specify external servers (different address or port)
+  '*' wildcard char is supported (e.g. to forward all mail for anyone at
+  some.com to the same user at orther.org, use "*@some.com *@other.org")
+
+o More detailed smap.log entries
+
+o Time-slice yields while receiving SMTP messages
+  - no more 100% CPU utilization while receiving large e-mails
+
+o Support for SMTP (inbound e-mail) semaphore file
+  - used to trigger external mail processing events
+
+o Removed support for logging in with aliases from alias.cfg (bad idea)
+  - alias.cfg is strictly used for e-mail recipient aliasing
+
+o Added support for server recycle semaphore file (ctrl/mailsrvr.rec)
+
+o Fixed double domain bug in POP3 server
+
+o Counts and logs number of lines per message
+
+
+FTP Server v1.10
+~~~~~~~~~~~~~~~~
+o E-mail aliases (from ctrl/alias.cfg) can no longer be used to login
+
+o Guest/anonymous e-mail address listed in client display
+
+o Added support for server recycle semaphore file (ctrl/ftpsrvr.rec)
+
+o Automatic server recycling upon socket select or accept failure
+
+
+/* End of V310_NEW.TXT */
