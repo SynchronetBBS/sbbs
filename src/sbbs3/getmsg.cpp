@@ -64,7 +64,8 @@ int sbbs_t::loadmsg(smbmsg_t *msg, ulong number)
 
 		if((i=smb_lockmsghdr(&smb,msg))!=0) {
 			errormsg(WHERE,ERR_LOCK,smb.file,i,smb.last_error);
-			return(0); }
+			return(0); 
+		}
 
 		i=smb_getmsghdr(&smb,msg);
 		if(!i && msg->hdr.number==number)
@@ -74,22 +75,26 @@ int sbbs_t::loadmsg(smbmsg_t *msg, ulong number)
 
 		if(!i) {
 			smb_freemsgmem(msg);
-			msg->total_hfields=0; }
+			msg->total_hfields=0; 
+		}
 
-		smb_unlockmsghdr(&smb,msg); }
+		smb_unlockmsghdr(&smb,msg); 
+	}
 
 	msg->hdr.number=number;
 	if((i=smb_getmsgidx(&smb,msg))!=0)				 /* Message is deleted */
 		return(0);
 	if((i=smb_lockmsghdr(&smb,msg))!=0) {
 		errormsg(WHERE,ERR_LOCK,smb.file,i,smb.last_error);
-		return(0); }
+		return(0); 
+	}
 	if((i=smb_getmsghdr(&smb,msg))!=0) {
 		sprintf(str,"(%06lX) #%lu/%lu %s",msg->idx.offset,msg->idx.number
 			,number,smb.file);
 		smb_unlockmsghdr(&smb,msg);
 		errormsg(WHERE,ERR_READ,str,i,smb.last_error);
-		return(0); }
+		return(0); 
+	}
 	return(msg->total_hfields);
 }
 
