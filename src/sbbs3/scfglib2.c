@@ -51,7 +51,7 @@ BOOL read_file_cfg(scfg_t* cfg, char* error)
 	strcpy(fname,"file.cnf");
 	sprintf(str,"%s%s",cfg->ctrl_dir,fname);
 	if((instream=fnopen(NULL,str,O_RDONLY))==NULL) {
-		sprintf(error,"%d (%s) opening %s",errno,strerror(errno),str);
+		sprintf(error,"%d (%s) opening %s",errno,truncsp(strerror(errno)),str);
 		return(FALSE); 
 	}
 
@@ -440,7 +440,7 @@ BOOL read_xtrn_cfg(scfg_t* cfg, char* error)
 	strcpy(fname,"xtrn.cnf");
 	sprintf(str,"%s%s",cfg->ctrl_dir,fname);
 	if((instream=fnopen(NULL,str,O_RDONLY))==NULL) {
-		sprintf(error,"%d (%s) opening %s",errno,strerror(errno),str);
+		sprintf(error,"%d (%s) opening %s",errno,truncsp(strerror(errno)),str);
 		return(FALSE); 
 	}
 
@@ -674,7 +674,7 @@ BOOL read_chat_cfg(scfg_t* cfg, char* error)
 	strcpy(fname,"chat.cnf");
 	sprintf(str,"%s%s",cfg->ctrl_dir,fname);
 	if((instream=fnopen(NULL,str,O_RDONLY))==NULL) {
-		sprintf(error,"%d (%s) opening %s",errno,strerror(errno),str);
+		sprintf(error,"%d (%s) opening %s",errno,truncsp(strerror(errno)),str);
 		return(FALSE);
 	}
 
