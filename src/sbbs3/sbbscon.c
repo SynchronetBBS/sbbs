@@ -446,11 +446,11 @@ int main(int argc, char** argv)
 	signal(SIGQUIT, _sighandler_quit);
 	signal(SIGABRT, _sighandler_quit);
 	signal(SIGTERM, _sighandler_quit);
-#endif
 
 	if(!isatty(fileno(stdin)))			/* redirected */
 		select(0,NULL,NULL,NULL,NULL);	/* so wait here until signaled */
 	else								/* interactive */
+#endif
 		while(!quit) {
 			ch=getch();
 			printf("%c\n",ch);
