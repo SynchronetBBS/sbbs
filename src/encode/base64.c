@@ -52,6 +52,8 @@ int b64_decode(char *target, size_t tlen, const char *source, size_t slen)
 	int		working=0;
 	char *	i;
 
+	if(slen==0)
+		slen=strlen(source);
 	outp=target;
 	inp=source;
 	outend=target+tlen;
@@ -102,6 +104,8 @@ int b64_encode(char *target, size_t tlen, const char *source, size_t slen)  {
 	char	enc;
 	int		buf=0;
 	
+	if(slen==0)
+		slen=strlen(source);
 	inp=source;
 	if(source==target)  {
 		tmpbuf=(char *)malloc(tlen);
