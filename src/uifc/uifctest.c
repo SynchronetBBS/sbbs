@@ -37,7 +37,7 @@
 
 #include <signal.h>
 #include <stdio.h>
-#include "curs_fix.h"
+/* #include "curs_fix.h" */
 #include "uifc.h"
 
 /********************/
