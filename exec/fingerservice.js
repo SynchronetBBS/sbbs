@@ -2,6 +2,10 @@
 
 // Synchronet Service for the Finger protocol (RFC 1288)
 
+// Example configuration (in ctrl/services.cfg):
+
+// Finger		79	0-unlimited	0		fingerservice.js
+
 load("nodedefs.js");
 
 // This is just an example of how you access command-line args
