@@ -58,6 +58,7 @@ USEFORM("ClientFormUnit.cpp", ClientForm);
 USEFORM("SpyFormUnit.cpp", SpyForm);
 USEUNIT("..\ringbuf.c");
 USEUNIT("emulvt.pas");
+USEFORM("UserListFormUnit.cpp", UserListForm);
 //---------------------------------------------------------------------------
 #include "MainFormUnit.h"
 #include "SpyFormUnit.h"
@@ -78,6 +79,7 @@ WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
          Application->CreateForm(__classid(TNodeForm), &NodeForm);
          Application->CreateForm(__classid(TStatsForm), &StatsForm);
          Application->CreateForm(__classid(TClientForm), &ClientForm);
+         Application->CreateForm(__classid(TUserListForm), &UserListForm);
          Application->Run();
     }
     catch (Exception &exception)

@@ -9,7 +9,7 @@
       TextFileEditUnit.obj TelnetFormUnit.obj FtpFormUnit.obj MailFormUnit.obj 
       NodeFormUnit.obj StatsFormUnit.obj AboutBoxFormUnit.obj 
       StatsLogFormUnit.obj CodeInputFormUnit.obj ClientFormUnit.obj 
-      SpyFormUnit.obj ..\ringbuf.obj"/>
+      SpyFormUnit.obj ..\ringbuf.obj UserListFormUnit.obj"/>
     <RESFILES value="sbbsctrl.res"/>
     <IDLFILES value=""/>
     <IDLGENFILES value=""/>
@@ -18,14 +18,15 @@
       MailCfgDlgUnit.dfm FtpCfgDlgUnit.dfm TextFileEditUnit.dfm 
       TelnetFormUnit.dfm FtpFormUnit.dfm MailFormUnit.dfm NodeFormUnit.dfm 
       StatsFormUnit.dfm AboutBoxFormUnit.dfm StatsLogFormUnit.dfm 
-      CodeInputFormUnit.dfm ClientFormUnit.dfm SpyFormUnit.dfm"/>
+      CodeInputFormUnit.dfm ClientFormUnit.dfm SpyFormUnit.dfm 
+      UserListFormUnit.dfm"/>
     <LIBFILES value="sbbs.lib mailsrvr.lib ftpsrvr.lib"/>
-    <LIBRARIES value="vcl50.lib"/>
-    <SPARELIBS value="vcl50.lib"/>
+    <LIBRARIES value="IcsBcb50.lib vcl50.lib"/>
+    <SPARELIBS value="vcl50.lib IcsBcb50.lib"/>
     <PACKAGES value="vcl50.bpi vclx50.bpi vcljpg50.bpi bcbsmp50.bpi vclmid50.bpi vcldb50.bpi 
       vclbde50.bpi inet50.bpi inetdb50.bpi vcldbx50.bpi qrpt50.bpi teeui50.bpi 
       teedb50.bpi tee50.bpi dss50.bpi nmfast50.bpi dclocx50.bpi"/>
-    <PATHCPP value=".;.."/>
+    <PATHCPP value=".;..\..\sbbs3"/>
     <PATHPAS value=".;"/>
     <PATHRC value=".;"/>
     <PATHASM value=".;"/>
