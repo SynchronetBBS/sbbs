@@ -305,7 +305,7 @@ while(!feof(stream)) {
 	strlwr(str);
 	msg.idx.to=crc16(str);
 
-	strcpy(str,"Digital Dynamics");
+	strcpy(str,user.system);
 	i=smb_hfield(&msg,SENDER,strlen(str),str);
 	if(i) {
 		printf("smb_hfield returned %d\n",i);
