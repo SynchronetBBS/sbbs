@@ -1254,6 +1254,20 @@ js_flength(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	return(JS_TRUE);
 }
 
+
+static JSBool
+js_touch(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		p;
+
+	if((p=JS_GetStringBytes(JS_ValueToString(cx, argv[0])))==NULL) {
+		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+		return(JS_TRUE);
+	}
+
+	*rval = BOOLEAN_TO_JSVAL(ftouch(p));
+	return(JS_TRUE);
+}
 		
 static JSBool
 js_sound(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
@@ -1494,13 +1508,17 @@ static jsMethodSpec js_global_functions[] = {
 	{"file_date",		js_fdate,			1,	JSTYPE_NUMBER,	JSDOCSTR("string filename")
 	,JSDOCSTR("get a file's last modified date/time (in time_t format)")
 	},
+	{"file_size",		js_flength,			1,	JSTYPE_NUMBER,	JSDOCSTR("string filename")
+	,JSDOCSTR("get a file's length (in bytes)")
+	},
 	{"file_utime",		js_utime,			3,	JSTYPE_BOOLEAN,	JSDOCSTR("string filename [,access_time] [,mod_time]")
 	,JSDOCSTR("change a file's last accessed and modification date/time (in time_t format), "
 		"or change to current time")
 	},
-	{"file_size",		js_flength,			1,	JSTYPE_NUMBER,	JSDOCSTR("string filename")
-	,JSDOCSTR("get a file's length (in bytes)")
-	},		
+	{"file_touch",		js_touch,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("string filename")
+	,JSDOCSTR("updates a file's last modification date/time to current time, "
+		"creating an empty file if it doesn't already exist")
+	},
 	{"directory",		js_directory,		1,	JSTYPE_ARRAY,	JSDOCSTR("string pattern [,flags]")
 	,JSDOCSTR("returns an array of directory entries, "
 		"<i>pattern</i> is the path and filename or wildcards to search for (e.g. '/subdir/*.txt'), "
