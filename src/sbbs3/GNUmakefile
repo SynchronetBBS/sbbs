@@ -106,6 +106,9 @@ else
  LIBS	+=	../../lib/mozilla/js/$(os).$(BUILD)/libjs.a
 endif
 
+# The following are needed for echocfg
+CFLAGS += -DUSE_CURSES -DUSE_FLTK -I../../include/fltk
+
 include targets.mk		# defines all targets
 include objects.mk		# defines $(OBJS)
 include sbbsdefs.mk		# defines $(SBBSDEFS)
@@ -273,7 +276,7 @@ $(ECHOCFG): \
 	$(EXEODIR)/genwrap.o \
 	../../lib/fltk/$(os)/libfltk.a
 	@echo Linking $@
-	@$(CC) -DUSE_CURSES -DUSE_FLTK -I../../include/fltk -o $@ $^
+	@$(CC) -o $@ $^
 
 # ADDFILES
 $(ADDFILES): \
