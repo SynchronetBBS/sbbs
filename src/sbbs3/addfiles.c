@@ -200,7 +200,8 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 	char listpath[MAX_PATH+1];
 	char filepath[MAX_PATH+1];
 	char curline[256],nextline[256];
-	uchar *p,ext[1024],tmpext[513];
+	char *p;
+	uchar ext[1024],tmpext[513];
 	int i,file;
 	long l;
 	BOOL exist;
