@@ -655,7 +655,6 @@ static JSBool
 js_client_add(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	client_t	client;
-	void*		vp;
 	SOCKET		sock=INVALID_SOCKET;
 	socklen_t	addr_len;
 	SOCKADDR_IN	addr;
@@ -672,13 +671,9 @@ js_client_add(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 	client.time=time(NULL);
 	client.user="<unknown>";
 	SAFECOPY(client.host,client.user);
-
-	if(JSVAL_IS_OBJECT(argv[0])) {
-		if((vp=JS_GetPrivate(cx,JSVAL_TO_OBJECT(argv[0])))!=NULL)
-			sock=*(SOCKET*)vp;
-	} else
-		JS_ValueToInt32(cx,argv[0],(int32*)&sock);
-
+	
+	sock=js_socket(cx,argv[0]);
+	
 	addr_len = sizeof(addr);
 	if(getpeername(sock, (struct sockaddr *)&addr, &addr_len)==0) {
 		SAFECOPY(client.addr,inet_ntoa(addr.sin_addr));
@@ -702,7 +697,6 @@ static JSBool
 js_client_update(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	client_t	client;
-	void*		vp;
 	SOCKET		sock=INVALID_SOCKET;
 	socklen_t	addr_len;
 	SOCKADDR_IN	addr;
@@ -717,11 +711,7 @@ js_client_update(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 	client.user="<unknown>";
 	SAFECOPY(client.host,client.user);
 
-	if(JSVAL_IS_OBJECT(argv[0])) {
-		if((vp=JS_GetPrivate(cx,JSVAL_TO_OBJECT(argv[0])))!=NULL)
-			sock=*(SOCKET*)vp;
-	} else
-		JS_ValueToInt32(cx,argv[0],(int32*)&sock);
+	sock=js_socket(cx,argv[0]);
 
 	addr_len = sizeof(addr);
 	if(getpeername(sock, (struct sockaddr *)&addr, &addr_len)==0) {
@@ -746,17 +736,12 @@ js_client_update(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 static JSBool
 js_client_remove(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	void*	vp;
 	SOCKET	sock=INVALID_SOCKET;
 
 	if(active_clients)
 		active_clients--, update_clients();
 
-	if(JSVAL_IS_OBJECT(argv[0])) {
-		if((vp=JS_GetPrivate(cx,JSVAL_TO_OBJECT(argv[0])))!=NULL)
-			sock=*(SOCKET*)vp;
-	} else
-		JS_ValueToInt32(cx,argv[0],(int32*)&sock);
+	sock=js_socket(cx,argv[0]);
 
 	client_off(sock);
 #if 0	
