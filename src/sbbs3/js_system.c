@@ -1262,6 +1262,44 @@ js_exec(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 }
 
 static JSBool
+js_popen(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char		str[1024];
+	char*		cmd;
+	FILE*		fp;
+	jsint		line=0;
+	jsval		val;
+	JSObject*	array;
+	JSString*	js_str;
+
+	*rval = JSVAL_VOID;
+
+	if(argc<1)
+		return(JS_TRUE);
+
+	if((array=JS_NewArrayObject(cx,0,NULL))==NULL)
+		return(JS_FALSE);
+
+	cmd=JS_GetStringBytes(JS_ValueToString(cx, argv[0]));
+	if((fp=popen(cmd,"rt"))==NULL)
+		return(JS_TRUE);
+	while(!feof(fp)) {
+		if(fgets(str,sizeof(str),fp)==NULL)
+			break;
+		if((js_str=JS_NewStringCopyZ(cx,str))==NULL)
+			break;
+		val=STRING_TO_JSVAL(js_str);
+        if(!JS_SetElement(cx, array, line++, &val))
+			break;
+	}
+	pclose(fp);
+
+    *rval = OBJECT_TO_JSVAL(array);
+
+    return(JS_TRUE);
+}
+
+static JSBool
 js_chksyspass(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	scfg_t*		cfg;
@@ -1338,7 +1376,11 @@ static jsMethodSpec js_system_functions[] = {
 	,JSDOCSTR("creates a new user record, returns a new <a href=#User>User</a> object representing the new user account")
 	},
 	{"exec",			js_exec,			1,	JSTYPE_NUMBER,	JSDOCSTR("command-line")
-	,JSDOCSTR("executes a native system/shell command-line, returns 0 on success")
+	,JSDOCSTR("executes a native system/shell command-line, returns <i>0</i> on success")
+	},
+	{"popen",			js_popen,			0,	JSTYPE_ARRAY,	JSDOCSTR("command-line")
+	,JSDOCSTR("executes a native system/shell command-line, returns array of captured output lines on success "
+		"(<b>only functional on UNIX systems</b>)")
 	},
 	{"check_syspass",	js_chksyspass,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("string password")
 	,JSDOCSTR("compares the supplied <i>password</i> against the system password and return's <i>true</i> if it matches")
