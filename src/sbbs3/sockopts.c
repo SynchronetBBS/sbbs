@@ -59,7 +59,7 @@ static const sockopt_name option_names[] = {
 	{ NULL }
 };
 
-static int sockopt(char* str)
+int DLLCALL sockopt(char* str)
 {
 	int i;
 
