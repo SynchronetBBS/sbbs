@@ -756,8 +756,9 @@ int main(int argc, char **argv, char** environ)
 	signal(SIGINT,break_handler);
 	signal(SIGTERM,break_handler);
 
-	/* Don't die on SIGPIPE */
+	/* Don't die on SIGPIPE or SIGHUP */
 	signal(SIGPIPE,SIG_IGN);
+	signal(SIGHUP,SIG_IGN);
 #endif
 
 	do {
