@@ -55,6 +55,8 @@ function get_all_message_offsets()
 	for(last_offset=0; (idx=msgbase.get_msg_index(true,last_offset)) != null;last_offset++) {
 		if(idx.attr&MSG_DELETE)
 			continue;
+		if(idx.attr&MSG_PRIVATE && idx.to!=user.number)
+			continue;
 		msg=new Object;
 		msg.idx=idx;
 		msg.offset=last_offset;
@@ -81,6 +83,8 @@ function find_np_message(offset,next)
 	for(last_offset=parseInt(offset)+step;last_offset>0 && (idx=msgbase.get_msg_index(true,last_offset))!=null;last_offset+=step) {
 		if(idx.attr&MSG_DELETE)
 			continue;
+		if(idx.attr&MSG_PRIVATE && idx.to!=user.number)
+			continue;
 		if(sub!='mail')
 			return(idx.number);
 		if(idx.to!=user.number)
@@ -93,14 +97,11 @@ function find_np_message(offset,next)
 function get_msg_offset(number)
 {
 	var idx;
-	var last_offset
+	var last_offset;
 
-	for(last_offset=0; (idx=msgbase.get_msg_index(true,last_offset)) != null;last_offset++) {
-		if((idx=msgbase.get_msg_index(true,last_offset))==null)
-			continue;
-		if(idx.number==number)
-			return(last_offset);
-	}
+	idx=msgbase.get_msg_index(false,number);
+	if(idx!=undefined)
+		return(idx.offset);
 	return(undefined);
 }
 
