@@ -874,6 +874,9 @@ for (cmdarg=0;cmdarg<argc;cmdarg++) {
 
 read_config_file();
 
+if(this.js==undefined)			// v3.10?
+	js = { terminated: false };
+
 if(this.server==undefined) {	// Running from JSexec?
 	if (cmdline_port)
 		default_port = cmdline_port;
@@ -914,7 +917,7 @@ while (!server.terminated) {
 
 	if(server.terminated)
 		break;
-	if(this.js!=undefined && js.terminated)
+	if(js.terminated)
 		break;
 
 	// Setup a new socket if a connection is accepted.
