@@ -65,10 +65,8 @@
 /* Global Variables */
 /********************/
 uifcapi_t uifc; /* User Interface (UIFC) Library API */
-char tmp[256];
 const char *YesStr="Yes";
 const char *NoStr="No";
-box_t boxch;
 
 int lprintf(char *fmt, ...)
 {
@@ -128,11 +126,6 @@ void node_toggles(scfg_t *cfg,int nodenum)  {
 		sprintf(opt[j++],"%-30s%3s","Re-run on logoff",node.misc&NODE_RRUN ? YesStr : NoStr);
 		sprintf(opt[j++],"%-30s%3s","Down node after logoff"
 			,(node.misc&NODE_DOWN || (node.status==NODE_OFFLINE)) ? YesStr : NoStr);
-#if 0	/* There's no reason these should be toggled by the sysop under normal circumstances */
-		sprintf(opt[j++],"%-30s%3s","Page disabled",node.misc&NODE_POFF ? YesStr : NoStr);
-		sprintf(opt[j++],"%-30s%3s","Activity alert disabled",node.misc&NODE_AOFF ? YesStr : NoStr);
-		sprintf(opt[j++],"%-30s%3s","Reset private chat",node.misc&NODE_RPCHT ? YesStr : NoStr);
-#endif
 		opt[j][0]=0;
 
 		switch(uifc.list(WIN_MID,0,0,0,&i,0,"Node Toggles",opt)) {
@@ -244,20 +237,19 @@ int main(int argc, char** argv)  {
 	char**	mopt;
 	int		main_dflt=0;
 	int		main_bar=0;
-	char revision[16];
-	char str[256],ctrl_dir[41],*p;
-	char title[256];
-	int i,j;
-	node_t node;
+	char	revision[16];
+	char	str[256],ctrl_dir[41],*p;
+	char	title[256];
+	int		i,j;
+	node_t	node;
 	char	*buf;
 	int		buffile;
 	int		nodefile;
 	box_t	boxch;
 	scfg_t	cfg;
-/******************/
-/* Ini file stuff */
-/******************/
-	char	host_name[128]="";
+	/******************/
+	/* Ini file stuff */
+	/******************/
 	char	ini_file[MAX_PATH+1];
 	FILE*				fp;
 	bbs_startup_t		bbs_startup;
@@ -279,8 +271,8 @@ int main(int argc, char** argv)  {
 		&& ctrl_dir[strlen(ctrl_dir)-1]!='/')
 		strcat(ctrl_dir,"/");
 
-	gethostname(host_name,sizeof(host_name)-1);
-	sprintf(ini_file,"%s%c%s.ini",ctrl_dir,BACKSLASH,host_name);
+	gethostname(str,sizeof(str)-1);
+	sprintf(ini_file,"%s%c%s.ini",ctrl_dir,BACKSLASH,str);
 #if defined(PREFIX)
 	if(!fexistcase(ini_file))
 		sprintf(ini_file,"%s/etc/sbbs.ini",PREFIX);
