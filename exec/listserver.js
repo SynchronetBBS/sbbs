@@ -6,7 +6,7 @@ load("sbbsdefs.js");
 
 const REVISION = "$Revision$".split(' ')[1];
 
-log(LOG_INFO,"Synchronet ListServer " + REVISION);
+log(LOG_INFO,"ListServer " + REVISION);
 
 js.auto_terminate=false;
 
@@ -26,7 +26,13 @@ if(!list_array.length) {
 	exit();
 }
 
-if(this.recipient_list_filename!=undefined) {	/* Subscription control */
+/* Set default list addresses */
+for(var l in list_array)
+	if(!list_array[l].address)
+		list_array[l].address = format("%s@%s", list_array[l].name, system.inet_addr);
+
+/* Inbound message from SMTP Server? */
+if(this.recipient_list_filename!=undefined) {	
 
 	var error_file = new File(processing_error_filename);
 	if(!error_file.open("w")) {
@@ -59,6 +65,7 @@ if(this.recipient_list_filename!=undefined) {	/* Subscription control */
 	var header = parse_msg_header(msgtxt);
 	var body = get_msg_body(msgtxt);
 
+	var r;
 	/* control message for list server? */
 	for(r=0;r<rcpt_list.length;r++) {
 		for(n=0;n<name_list.length;n++) {
@@ -81,8 +88,11 @@ if(this.recipient_list_filename!=undefined) {	/* Subscription control */
 	/* contribution to mailing list? */
 	var contribution=false;
 	for(r=0;r<rcpt_list.length;r++) {
+		var l;
 		for(l=0;l<list_array.length;l++) {
-			if(rcpt_list[r].Recipient.match(/(\S+)@/)[1].toLowerCase()==list_array[l].name
+			for(var p in list_array[l])
+				log("list_array["+l+"]."+p+" = "+list_array[l][p]);
+			if(rcpt_list[r].Recipient.toLowerCase()==list_array[l].address.toLowerCase()
 				&& !list_array[l].disabled
 				&& !list_array[l].readonly)
 				break;
@@ -105,7 +115,7 @@ if(mailbase.open()==false) {
 	exit();
 }
 
-for(l in list_array) {
+for(var l in list_array) {
 
 	if(js.terminated) {
 		log(LOG_WARNING,"Terminated");
@@ -154,8 +164,8 @@ for(l in list_array) {
 		continue;
 	}
 
-	last_msg=msgbase.last_msg;
-	ptr = Number(ptr_file.readln());
+	var last_msg = msgbase.last_msg;
+	var ptr = Number(ptr_file.readln());
 
 	if(ptr < msgbase.first_msg)
 		ptr = msgbase.first_msg;
@@ -205,12 +215,12 @@ for(l in list_array) {
 		for(u in user_list) {
 			if(js.terminated)
 				break;
-			if(user_list[u].disabled || !user_list[u].addr)
+			if(user_list[u].disabled || !user_list[u].address)
 				continue;
 			log(LOG_DEBUG,format("%s Enqueing message #%lu for %s <%s>"
-				,list_name, ptr, user_list[u].name, user_list[u].addr));
+				,list_name, ptr, user_list[u].name, user_list[u].address));
 			rcpt_list.push(	{	to:				user_list[u].name,
-								to_net_addr:	user_list[u].addr, 
+								to_net_addr:	user_list[u].address, 
 								to_net_type:	NET_INTERNET 
 							} );
 		}
@@ -226,6 +236,8 @@ for(l in list_array) {
 		log(LOG_INFO,format("%s Sending message #%lu from %s to %lu recipients: %s"
 			,list_name, ptr, hdr.from, rcpt_list.length, hdr.subject));
 
+		hdr.replyto_net_type = NET_INTERNET;
+		hdr.replyto_net_addr = list_array[l].address;
 		if(!mailbase.save_msg(hdr,body,rcpt_list))
 			log(LOG_ERR,format("%s !ERROR %s saving mail message"
 				,list_name, mailbase.error));
