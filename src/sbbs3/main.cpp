@@ -283,12 +283,12 @@ DLLEXPORT int DLLCALL sbbs_random(int n)
 static js_server_props_t js_server_props;
 
 JSBool
-jsval_isNaN(JSContext *cx, jsval v)
+DLLCALL jsval_isNaN(JSContext *cx, jsval v)
 {
     jsdouble d;
 
     if(JSVAL_IS_DOUBLE(v)) {
-	    if (!JS_ValueToNumber(cx, v, &d))
+	    if(!JS_ValueToNumber(cx, v, &d))
 			return JS_FALSE;
 		if(JSDOUBLE_IS_NaN(d))
 			return JS_TRUE;
