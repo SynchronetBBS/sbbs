@@ -256,8 +256,9 @@ if_true
 	compare_str "DIR"	# directory of current lib/dir
 	if_true
 		chksyspass
+		print "\r\nDirectory of %f\r\n\r\n"
 		if_true
-			exec_int command /c dir %f /p
+			exec_int "%y /c dir %f /p"
 			end_if
 		return
                 end_if
@@ -276,7 +277,7 @@ if_true
 		if_true
 			shift_str 3
 			call get_arg
-			exec_int command /c dir %s /p
+			exec_int "%y /c dir %s /p"
 			end_if
 		return
 		end_if
