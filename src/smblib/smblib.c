@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -117,7 +117,7 @@ int SMBCALL smb_open(smb_t* smb)
 	smb->shd_fp=smb->sdt_fp=smb->sid_fp=NULL;
 	smb->last_error[0]=0;
 	sprintf(str,"%s.shd",smb->file);
-	if((file=sopen(str,O_RDWR|O_CREAT|O_BINARY,SH_DENYNO))==-1) {
+	if((file=sopen(str,O_RDWR|O_CREAT|O_BINARY,SH_DENYNO,S_IREAD|S_IWRITE))==-1) {
 		sprintf(smb->last_error,"%d (%s) opening %s"
 			,errno,STRERROR(errno),str);
 		return(SMB_ERR_OPEN); 
@@ -170,7 +170,7 @@ int SMBCALL smb_open(smb_t* smb)
 	setvbuf(smb->shd_fp,smb->shd_buf,_IOFBF,SHD_BLOCK_LEN);
 
 	sprintf(str,"%s.sdt",smb->file);
-	if((file=sopen(str,O_RDWR|O_CREAT|O_BINARY,SH_DENYNO))==-1) {
+	if((file=sopen(str,O_RDWR|O_CREAT|O_BINARY,SH_DENYNO,S_IREAD|S_IWRITE))==-1) {
 		sprintf(smb->last_error,"%d (%s) opening %s"
 			,errno,STRERROR(errno),str);
 		smb_close(smb);
@@ -188,7 +188,7 @@ int SMBCALL smb_open(smb_t* smb)
 	setvbuf(smb->sdt_fp,NULL,_IOFBF,2*1024);
 
 	sprintf(str,"%s.sid",smb->file);
-	if((file=sopen(str,O_RDWR|O_CREAT|O_BINARY,SH_DENYNO))==-1) {
+	if((file=sopen(str,O_RDWR|O_CREAT|O_BINARY,SH_DENYNO,S_IREAD|S_IWRITE))==-1) {
 		sprintf(smb->last_error,"%d (%s) opening %s"
 			,errno,STRERROR(errno),str);
 		smb_close(smb);
@@ -237,7 +237,7 @@ int SMBCALL smb_open_da(smb_t* smb)
 
 	sprintf(str,"%s.sda",smb->file);
 	while(1) {
-		if((file=sopen(str,O_RDWR|O_CREAT|O_BINARY,SH_DENYRW))!=-1)
+		if((file=sopen(str,O_RDWR|O_CREAT|O_BINARY,SH_DENYRW,S_IREAD|S_IWRITE))!=-1)
 			break;
 		if(errno!=EACCES && errno!=EAGAIN) {
 			sprintf(smb->last_error,"%d (%s) opening %s"
@@ -284,7 +284,7 @@ int SMBCALL smb_open_ha(smb_t* smb)
 
 	sprintf(str,"%s.sha",smb->file);
 	while(1) {
-		if((file=sopen(str,O_RDWR|O_CREAT|O_BINARY,SH_DENYRW))!=-1)
+		if((file=sopen(str,O_RDWR|O_CREAT|O_BINARY,SH_DENYRW,S_IREAD|S_IWRITE))!=-1)
 			break;
 		if(errno!=EACCES && errno!=EAGAIN) {
 			sprintf(smb->last_error,"%d (%s) opening %s"
@@ -1205,7 +1205,7 @@ int SMBCALL smb_addcrc(smb_t* smb, ulong crc)
 
 	sprintf(str,"%s.sch",smb->file);
 	while(1) {
-		if((file=sopen(str,O_RDWR|O_CREAT|O_BINARY,SH_DENYRW))!=-1)
+		if((file=sopen(str,O_RDWR|O_CREAT|O_BINARY,SH_DENYRW,S_IREAD|S_IWRITE))!=-1)
 			break;
 		if(errno!=EACCES && errno!=EAGAIN) {
 			sprintf(smb->last_error,"%d (%s) opening %s"

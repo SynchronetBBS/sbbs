@@ -3611,7 +3611,7 @@ void DLLCALL bbs_thread(void* arg)
 			md(scfg.node_path[i-1]);
 		sprintf(str,"%sdsts.dab",i ? scfg.node_path[i-1] : scfg.ctrl_dir);
 		if(flength(str)<DSTSDABLEN) {
-			if((file=sopen(str,O_WRONLY|O_CREAT|O_APPEND, SH_DENYNO))==-1) {
+			if((file=sopen(str,O_WRONLY|O_CREAT|O_APPEND, SH_DENYNO, S_IREAD|S_IWRITE))==-1) {
 				lprintf("!ERROR %d creating %s",errno, str);
 				cleanup(1);
 				return; 
