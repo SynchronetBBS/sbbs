@@ -322,10 +322,12 @@ void textattr(unsigned char attr)
 	{
 		attrs |= A_BLINK;
 	}
-	attrset(attrs);
 	colour = COLOR_PAIR( ((attr&7)|((attr>>1)&56))+1 );
 	#ifdef NCURSES_VERSION_MAJOR
+	attrset(attrs);
 	color_set(colour,NULL);
+	#else
+	attrset(attrs|colour);
 	#endif
 	/* bkgdset(colour); */
 	bkgdset(colour);
