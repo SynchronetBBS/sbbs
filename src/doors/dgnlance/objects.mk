@@ -1,0 +1,1 @@
+OBJS	=	$(OBJODIR)$(DIRSEP)dgnlnce$(OFILE)
