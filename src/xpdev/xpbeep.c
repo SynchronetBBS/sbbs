@@ -60,8 +60,8 @@ void makewave(double freq, unsigned char *wave, int samples, enum WAVE_SHAPE sha
 				break;
 			case WAVE_SHAPE_SINE_HARM:
 				wave[i]=(sin (pos))*64+128;
-				wave[i]=(sin ((inc*2)*(double)i))*24+128;
-				wave[i]=(sin ((inc*3)*(double)i))*16+128;
+				wave[i]=(sin ((inc*2)*(double)i))*24;
+				wave[i]=(sin ((inc*3)*(double)i))*16;
 				break;
 			case WAVE_SHAPE_SAWTOOTH:
 				wave[i]=(WAVE_TPI-pos)*40.5;
@@ -74,13 +74,13 @@ void makewave(double freq, unsigned char *wave, int samples, enum WAVE_SHAPE sha
 				break;
 			case WAVE_SHAPE_SINE_SAW_CHORD:
 				wave[i]=(((sin (pos))*64+128)+((WAVE_TPI-pos)*6.2))/2;
-				wave[i]+=(sin ((inc/2)*(double)i))*24+128;
-				wave[i]+=(sin ((inc/3)*(double)i))*16+128;
+				wave[i]+=(sin ((inc/2)*(double)i))*24;
+				wave[i]+=(sin ((inc/3)*(double)i))*16;
 				break;
 			case WAVE_SHAPE_SINE_SAW_HARM:
 				wave[i]=(((sin (pos))*64+128)+((WAVE_TPI-pos)*6.2))/2;
-				wave[i]+=(sin ((inc*2)*(double)i))*24+128;
-				wave[i]+=(sin ((inc*3)*(double)i))*16+128;
+				wave[i]+=(sin ((inc*2)*(double)i))*24;
+				wave[i]+=(sin ((inc*3)*(double)i))*16;
 				break;
 		}
 	}
