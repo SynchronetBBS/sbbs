@@ -857,7 +857,8 @@ static BOOL send_headers(http_session_t *session, const char *status)
 	lprintf(LOG_DEBUG,"%04d Request resolved to: %s"
 		,session->socket,session->req.physical_path);
 	if(session->http_ver <= HTTP_0_9) {
-		session->req.ld->status=atoi(status);
+		if(session->req.ld != NULL)
+			session->req.ld->status=atoi(status);
 		return(TRUE);
 	}
 
