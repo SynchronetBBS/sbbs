@@ -35,15 +35,32 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "conwrap.h"
+#include "uifc.h"
+#include "sbbs.h"
+
 /********************/
 /* Global Variables */
 /********************/
 
-#include "sbbsinst.h"
 uifcapi_t uifc; /* User Interface (UIFC) Library API */
-params_t params; /* Build parameters */
+
+struct {
+	char install_path[256];
+	BOOL usebcc;
+	char cflags[256];
+	BOOL release;
+	BOOL symlink;
+	BOOL cvs;
+	char cvstag[256];
+} params; /* Build parameters */
 
 #define MAKEFILE "/tmp/SBBSmakefile"
+
+#define CVSCOMMAND "cvs -z3 -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs"
 
 char **opt;
 char tmp[256];
@@ -307,28 +324,36 @@ void bail(int code)
     exit(code);
 }
 
-void write_makefile(void)  {
-	FILE *makefile;
+void write_makefile(void)  
+{
+	int		i;
+	FILE *	makefile;
+	char*	build;
+	char*	ccpre;
+	char*	insbin;
+	char	platform[]=PLATFORM;
+	char	cvs_co[MAX_PATH*2];
 
+	strlwr(platform);
 	makefile=fopen(MAKEFILE,"w");
 	if(makefile==NULL)  {
 	    uifc.msg("Cannot create " MAKEFILE);
 		return;
 	}
 	if(!params.release)
-		  fputs("DEBUG	:=	1\n",makefile);
+		fputs("DEBUG    :=  1\n",makefile);
 
 	if(params.symlink)
-		fputs("INSBIN	:=	ln -s\n",makefile);
+		fputs("INSBIN   :=	ln -s\n",makefile);
 	else
-		fputs("INSBIN	:=	install -c -s\n",makefile);
+		fputs("INSBIN   :=	install -c -s\n",makefile);
 
 	if(params.usebcc)  {
-		fputs("CCPRE	:=	bcc\n",makefile);
+		ccpre="bcc";
 		fputs("MKFLAGS	+=	bcc=1\n",makefile);
 	}
 	else 
-		fputs("CCPRE	:=	gcc\n",makefile);
+		ccpre="gcc";
 
 /* Not supported
 ifndef SBBSOWNER
@@ -351,15 +376,11 @@ else	# Classic Install
 endif
 
 */
-	fputs("os      :=   $(shell uname)\n",makefile);
-	fputs("os      :=	$(shell echo $(os) | awk '/.*/ { print tolower($$1)}')\n",makefile);
-	fputs("MKFLAGS	+=	os=$(os)\n",makefile);
 	if(params.release)  {
-		fputs("SUFFIX  :=  release\n",makefile);
+		build="release";
 		fputs("MKFLAGS	+=	RELEASE=1\n",makefile);
-	}
-	else  {
-		fputs("SUFFIX  :=  debug\n",makefile);
+	} else {
+		build="debug";
 		fputs("MKFLAGS	+=	DEBUG=1\n",makefile);
 	}
 	if(params.cflags[0]) {
@@ -376,19 +397,17 @@ ifdef JSLIB
 endif
 */
 
-	if(params.cvs)
-		fputs("CVSCOMMAND	:=	cvs -z3 -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs\n",makefile);
-
 	fputs("all: binaries baja externals\n\n",makefile);
 	fputs("externals:	sbj sbl\n\n",makefile);
 	fputs("binaries:	sbbs3 scfg\n\n",makefile);
 
 	fputs("sbbs3:	",makefile);
 	if(params.cvs)
-	fputs("$(SBBSDIR)/src/sbbs3 $(SBBSDIR)/src/uifc $(SBBSDIR)/src/xpdev $(SBBSDIR)/src/mozilla",makefile);
+	fputs("$(SBBSDIR)/src/sbbs3 $(SBBSDIR)/src/uifc $(SBBSDIR)/src/xpdev $(SBBSDIR)/src/mozilla \\\n",makefile);
+	fprintf(makefile," $(SBBSDIR)/src/mozilla $(SBBSDIR)/lib/mozilla/js/%s.%s\n",platform,build);
 	fputs("\n",makefile);	
 	fputs("	gmake -C $(SBBSDIR)/src/sbbs3 $(MKFLAGS)\n",makefile);
-	fputs("	MKFLAGS	+=	BAJAPATH=../src/sbbs3/$(CCPRE).$(os).exe.$(SUFFIX)/baja\n\n",makefile);
+	fputs(makefile,"     MKFLAGS	+=	BAJAPATH=../src/sbbs3/%s.%s.exe.%s/baja\n\n",ccpre,platform,build);
 
 	fputs("scfg:",makefile);
 	if(params.cvs)
@@ -416,65 +435,73 @@ endif
 
 	fputs("install: all",makefile);
 	if(params.cvs)
-		fputs(" ctrl text node1",makefile);
+		fputs(" ctrl text node1 node2 node3 node4",makefile);
 	fputs("\n",makefile);
 	fputs("	echo Installing to $(SBBSDIR)\n",makefile);
 	if(params.release)  {
-		fputs("	strip $(SBBSDIR)/src/sbbs3/$(CCPRE).$(os).exe.$(SUFFIX)/baja\n",makefile);
-		fputs("	strip $(SBBSDIR)/src/sbbs3/$(CCPRE).$(os).exe.$(SUFFIX)/node\n",makefile);
-		fputs("	strip $(SBBSDIR)/src/sbbs3/$(CCPRE).$(os).exe.$(SUFFIX)/chksmb\n",makefile);
-		fputs("	strip $(SBBSDIR)/src/sbbs3/$(CCPRE).$(os).exe.$(SUFFIX)/fixsmb\n",makefile);
-		fputs("	strip $(SBBSDIR)/src/sbbs3/$(CCPRE).$(os).exe.$(SUFFIX)/addfiles\n",makefile);
-		fputs("	strip $(SBBSDIR)/src/sbbs3/$(CCPRE).$(os).exe.$(SUFFIX)/smbutil\n",makefile);
-		fputs("	strip $(SBBSDIR)/src/sbbs3/$(CCPRE).$(os).exe.$(SUFFIX)/sbbs\n",makefile);
-		fputs("	strip $(SBBSDIR)/src/sbbs3/$(CCPRE).$(os).exe.$(SUFFIX)/sbbsecho\n",makefile);
-		fputs("	strip $(SBBSDIR)/src/sbbs3/$(CCPRE).$(os).exe.$(SUFFIX)/filelist\n",makefile);
-		fputs("	strip $(SBBSDIR)/src/sbbs3/scfg/$(CCPRE).$(os).$(SUFFIX)/scfg\n",makefile);
+		fprintf(makefile,"	strip $(SBBSDIR)/src/sbbs3/%s.%s.exe.%s/baja\n",ccpre,platform,build);
+		fprintf(makefile,"	strip $(SBBSDIR)/src/sbbs3/%s.%s.exe.%s/node\n",ccpre,platform,build);
+		fprintf(makefile,"	strip $(SBBSDIR)/src/sbbs3/%s.%s.exe.%s/chksmb\n",ccpre,platform,build);
+		fprintf(makefile,"	strip $(SBBSDIR)/src/sbbs3/%s.%s.exe.%s/fixsmb\n",ccpre,platform,build);
+		fprintf(makefile,"	strip $(SBBSDIR)/src/sbbs3/%s.%s.exe.%s/addfiles\n",ccpre,platform,build);
+		fprintf(makefile,"	strip $(SBBSDIR)/src/sbbs3/%s.%s.exe.%s/smbutil\n",ccpre,platform,build);
+		fprintf(makefile,"	strip $(SBBSDIR)/src/sbbs3/%s.%s.exe.%s/sbbs\n",ccpre,platform,build);
+		fprintf(makefile,"	strip $(SBBSDIR)/src/sbbs3/%s.%s.exe.%s/sbbsecho\n",ccpre,platform,build);
+		fprintf(makefile,"	strip $(SBBSDIR)/src/sbbs3/%s.%s.exe.%s/filelist\n",ccpre,platform,build);
+		fprintf(makefile,"	strip $(SBBSDIR)/src/sbbs3/scfg/%s.%s.%s/scfg\n",ccpre,platform,build);
 	}
 
-	fputs("	strip $(SBBSDIR)/src/sbbs3/$(CCPRE).$(os).exe.$(SUFFIX)/baja $(SBBSDIR)/exec/baja\n",makefile);
-	fputs("	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(os).exe.$(SUFFIX)/node $(SBBSDIR)/exec/node\n",makefile);
-	fputs("	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(os).exe.$(SUFFIX)/chksmb $(SBBSDIR)/exec/chksmb\n",makefile);
-	fputs("	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(os).exe.$(SUFFIX)/fixsmb $(SBBSDIR)/exec/fixsmb\n",makefile);
-	fputs("	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(os).exe.$(SUFFIX)/addfiles $(SBBSDIR)/exec/addfiles\n",makefile);
-	fputs("	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(os).exe.$(SUFFIX)/smbutil $(SBBSDIR)/exec/smbutil\n",makefile);
-	fputs("	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(os).exe.$(SUFFIX)/sbbs $(SBBSDIR)/exec/sbbs\n",makefile);
-	fputs("	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(os).exe.$(SUFFIX)/sbbsecho $(SBBSDIR)/exec/sbbsecho\n",makefile);
-	fputs("	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(os).exe.$(SUFFIX)/filelist $(SBBSDIR)/exec/filelist\n",makefile);
-	fputs("	$(INSBIN) $(SBBSDIR)/src/sbbs3/scfg/$(CCPRE).$(os).$(SUFFIX)/scfg $(SBBSDIR)/exec/scfg\n",makefile);
-	fputs("	$(INSBIN) $(SBBSDIR)/src/sbbs3/scfg/$(CCPRE).$(os).$(SUFFIX)/scfghelp.ixb $(SBBSDIR)/exec/scfghelp.ixb\n",makefile);
-	fputs("	$(INSBIN) $(SBBSDIR)/src/sbbs3/scfg/$(CCPRE).$(os).$(SUFFIX)/scfghelp.dat $(SBBSDIR)/exec/scfghelp.dat\n\n",makefile);
+	fprintf(makefile,"	strip $(SBBSDIR)/src/sbbs3/%s.%s.exe.%s/baja $(SBBSDIR)/exec/baja\n",ccpre,platform,build);
+	fprintf(makefile,"	$(INSBIN) $(SBBSDIR)/src/sbbs3/%s.%s.exe.%s/node $(SBBSDIR)/exec/node\n",ccpre,platform,build);
+	fprintf(makefile,"	$(INSBIN) $(SBBSDIR)/src/sbbs3/%s.%s.exe.%s/chksmb $(SBBSDIR)/exec/chksmb\n",ccpre,platform,build);
+	fprintf(makefile,"	$(INSBIN) $(SBBSDIR)/src/sbbs3/%s.%s.exe.%s/fixsmb $(SBBSDIR)/exec/fixsmb\n",ccpre,platform,build);
+	fprintf(makefile,"	$(INSBIN) $(SBBSDIR)/src/sbbs3/%s.%s.exe.%s/addfiles $(SBBSDIR)/exec/addfiles\n",ccpre,platform,build);
+	fprintf(makefile,"	$(INSBIN) $(SBBSDIR)/src/sbbs3/%s.%s.exe.%s/smbutil $(SBBSDIR)/exec/smbutil\n",ccpre,platform,build);
+	fprintf(makefile,"	$(INSBIN) $(SBBSDIR)/src/sbbs3/%s.%s.exe.%s/sbbs $(SBBSDIR)/exec/sbbs\n",ccpre,platform,build);
+	fprintf(makefile,"	$(INSBIN) $(SBBSDIR)/src/sbbs3/%s.%s.exe.%s/sbbsecho $(SBBSDIR)/exec/sbbsecho\n",ccpre,platform,build);
+	fprintf(makefile,"	$(INSBIN) $(SBBSDIR)/src/sbbs3/%s.%s.exe.%s/filelist $(SBBSDIR)/exec/filelist\n",ccpre,platform,build);
+	fprintf(makefile,"	$(INSBIN) $(SBBSDIR)/src/sbbs3/scfg/%s.%s.%s/scfg $(SBBSDIR)/exec/scfg\n",ccpre,platform,build);
+	fprintf(makefile,"	$(INSBIN) $(SBBSDIR)/src/sbbs3/scfg/%s.%s.%s/scfghelp.ixb $(SBBSDIR)/exec/scfghelp.ixb\n",ccpre,platform,build);
+	fprintf(makefile,"	$(INSBIN) $(SBBSDIR)/src/sbbs3/scfg/%s.%s.%s/scfghelp.dat $(SBBSDIR)/exec/scfghelp.dat\n\n",ccpre,platform,build);
 /* Not implemented
 fputs("	chown -R $(SBBSCHOWN) $(SBBSDIR)",makefile);
 */
 
 	if(params.cvs)  {
+		sprintf(cvs_co,"  cd $(SBBSDIR); %s co -r %s", CVSCOMMAND, params.cvstag);
+
 		fputs("$(SBBSDIR)/ctrl: cvslogin\n",makefile);
-		fprintf(makefile,"	cd $(SBBSDIR); $(CVSCOMMAND) co -r %s ctrl\n\n",params.cvstag);
+		fprintf(makefile,"%s ctrl\n\n",cvs_co);
 
 		fputs("$(SBBSDIR)/text: cvslogin\n",makefile);
-		fprintf(makefile,"	cd $(SBBSDIR); $(CVSCOMMAND) co -r %s text\n\n",params.cvstag);
+		fprintf(makefile,"%s text\n\n",cvs_co);
 
 		fputs("$(SBBSDIR)/exec: cvslogin\n",makefile);
-		fprintf(makefile,"	cd $(SBBSDIR); $(CVSCOMMAND) co -r %s exec\n\n",params.cvstag);
+		fprintf(makefile,"%s exec\n\n",cvs_co);
 
-		fputs("$(SBBSDIR)/node1: cvslogin\n",makefile);
-		fprintf(makefile,"	cd $(SBBSDIR); $(CVSCOMMAND) co -r %s node1\n\n",params.cvstag);
+		for(i=1;i<=4;i++) {
+			fprintf(makefile,"$(SBBSDIR)/node%d: cvslogin\n",i);
+			fprintf(makefile,"%s node%d\n\n",cvs_co,i);
+		}
 
 		fputs("$(SBBSDIR)/xtrn: cvslogin\n",makefile);
-		fprintf(makefile,"	cd $(SBBSDIR); $(CVSCOMMAND) co -r %s xtrn\n\n",params.cvstag);
+		fprintf(makefile,"%s xtrn\n\n",cvs_co);
 
 		fputs("$(SBBSDIR)/src/sbbs3: cvslogin\n",makefile);
-		fprintf(makefile,"	cd $(SBBSDIR); $(CVSCOMMAND) co -r %s src/sbbs3\n\n",params.cvstag);
+		fprintf(makefile,"%s src/sbbs3\n\n",cvs_co);
 
 		fputs("$(SBBSDIR)/src/uifc: cvslogin\n",makefile);
-		fprintf(makefile,"	cd $(SBBSDIR); $(CVSCOMMAND) co -r %s src/uifc\n\n",params.cvstag);
+		fprintf(makefile,"%s src/uifc\n\n",cvs_co);
 
 		fputs("$(SBBSDIR)/src/xpdev: cvslogin\n",makefile);
-		fprintf(makefile,"	cd $(SBBSDIR); $(CVSCOMMAND) co -r %s src/xpdev\n\n",params.cvstag);
+		fprintf(makefile,"%s src/xpdev\n\n",cvs_co);
 
 		fputs("$(SBBSDIR)/src/mozilla: cvslogin\n",makefile);
-		fprintf(makefile,"	cd $(SBBSDIR); $(CVSCOMMAND) co -r %s src/mozilla\n\n",params.cvstag);
+		fprintf(makefile,"%s src/mozilla\n\n",cvs_co);
+
+		fprintf(makefile,"$(SBBSDIR)/lib/mozilla/js/%s.%s: cvslogin\n",platform,build);
+		fprintf(makefile,"%s lib/mozilla/js/%s.%s\n\n",cvs_co, platform, build);
+
 
 		fputs("cvslogin: $(SBBSDIR)\n",makefile);
 		fputs("	@echo Press \\<ENTER\\> when prompted for password\n",makefile);
