@@ -153,7 +153,11 @@ for(i in area) {
 		body += tearline;
 		body += tagline;
 
-		delete hdr.thread_orig;	/* we're not replying a message that exists in the mail database */
+		/* we're not replying a message that exists in the mail database */
+		/* so any thread message numbers will be invalid */
+		delete hdr.thread_orig;	
+		delete hdr.thread_next;
+		delete hdr.thread_first;
 
 		while(area[i].length) {	/* For each list server... */
 
