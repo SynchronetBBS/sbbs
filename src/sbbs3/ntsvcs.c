@@ -51,11 +51,6 @@
 	#define NO_WEB_SERVER
 #endif
 
-/* Services doesn't work without JavaScript support */
-#if !defined(JAVASCRIPT)
-	#define	NO_SERVICES
-#endif
-
 static void WINAPI bbs_ctrl_handler(DWORD dwCtrlCode);
 static void WINAPI ftp_ctrl_handler(DWORD dwCtrlCode);
 static void WINAPI web_ctrl_handler(DWORD dwCtrlCode);
@@ -240,6 +235,11 @@ static void WINAPI services_ctrl_handler(DWORD dwCtrlCode)
 /****************************************************************************/
 static int svc_lputs(void* p, char* str)
 {
+	char line[1024];
+	sbbs_ntsvc_t* svc = (sbbs_ntsvc_t*)p;
+
+	snprintf(line,sizeof(line),"%s: %s",svc==NULL ? "Synchronet" : svc->name, str);
+	OutputDebugString(line);
     return(0);
 }
 
@@ -248,7 +248,11 @@ static int svc_lputs(void* p, char* str)
 /****************************************************************************/
 static int event_lputs(char *str)
 {
-    return 0;
+	char line[1024];
+
+	snprintf(line,sizeof(line),"SynchronetEvent: %s",str);
+	OutputDebugString(line);
+    return(0);
 }
 
 /************************************/
@@ -277,6 +281,8 @@ static void svc_terminated(void* p, int code)
 /* Generic ServiceMain function */
 static void WINAPI svc_start(sbbs_ntsvc_t* svc)
 {
+	svc_lputs(svc,"Starting service");
+
     if((svc->status_handle = RegisterServiceCtrlHandler(svc->name, svc->ctrl_handler))==0) {
 		fprintf(stderr,"!ERROR %d registering service control handler\n",GetLastError());
 		return;
@@ -289,7 +295,7 @@ static void WINAPI svc_start(sbbs_ntsvc_t* svc)
 	svc->status.dwCurrentState=SERVICE_START_PENDING;
 	SetServiceStatus(svc->status_handle, &svc->status);
 
-	svc->thread(&svc->startup);
+	svc->thread(svc->startup);
 
 	svc->status.dwCurrentState=SERVICE_STOPPED;
 	SetServiceStatus(svc->status_handle, &svc->status);
@@ -348,26 +354,26 @@ static void describe_service(HANDLE hSCMlib, SC_HANDLE hService, char* descripti
 }
 
 static SC_HANDLE create_service(HANDLE hSCMlib, SC_HANDLE hSCManager
-								,char* name, char* DISP_name, char* description, char* path)
+								,char* name, char* display_name, char* description, char* path)
 {
     SC_HANDLE   hService;
 
-	printf("Installing service: %-40s ... ", DISP_name);
+	printf("Installing service: %-40s ... ", display_name);
 
     hService = CreateService(
-        hSCManager,					// SCManager database
-        name,						// name of service
-        DISP_name,				// name to display
-        SERVICE_ALL_ACCESS,         // desired access
-        SERVICE_WIN32_OWN_PROCESS,  // service type
-		SERVICE_AUTO_START,			// start type (auto or manual)
-        SERVICE_ERROR_NORMAL,       // error control type
-        path,						// service's binary
-        NULL,                       // no load ordering group
-        NULL,                       // no tag identifier
-        "",							// dependencies
-        NULL,                       // LocalSystem account
-        NULL);                      // no password
+        hSCManager,						// SCManager database
+        name,							// name of service
+        display_name,					// name to display
+        SERVICE_ALL_ACCESS,				// desired access
+        SERVICE_WIN32_SHARE_PROCESS,	// service type
+		SERVICE_AUTO_START,				// start type (auto or manual)
+        SERVICE_ERROR_NORMAL,			// error control type
+        path,							// service's binary
+        NULL,							// no load ordering group
+        NULL,							// no tag identifier
+        "",								// dependencies
+        NULL,							// LocalSystem account
+        NULL);							// no password
 
 	if(hService==NULL)
 		printf("!ERROR %d\n",GetLastError());
@@ -381,7 +387,7 @@ static SC_HANDLE create_service(HANDLE hSCMlib, SC_HANDLE hSCManager
 }
 
 
-static int install(void)
+static int install(const char* svc_name)
 {
 	int			i;
 	HANDLE		hSCMlib;
@@ -409,12 +415,14 @@ static int install(void)
 	}
 
 	for(i=0;ntsvc_list[i]!=NULL;i++)
-		create_service(hSCMlib
-			,hSCManager
-			,ntsvc_list[i]->name
-			,ntsvc_list[i]->display_name
-			,ntsvc_list[i]->description
-			,path);
+		if(svc_name==NULL	/* All? */
+			|| !stricmp(ntsvc_list[i]->name, svc_name))
+			create_service(hSCMlib
+				,hSCManager
+				,ntsvc_list[i]->name
+				,ntsvc_list[i]->display_name
+				,ntsvc_list[i]->description
+				,path);
 
 	if(hSCMlib!=NULL)
 		FreeLibrary(hSCMlib);
@@ -461,7 +469,7 @@ static void remove_service(SC_HANDLE hSCManager, char* name, char* DISP_name)
 }
 
 
-static int uninstall(void)
+static int uninstall(const char* svc_name)
 {
 	int			i;
     SC_HANDLE   hSCManager;
@@ -477,9 +485,11 @@ static int uninstall(void)
 	}
 
 	for(i=0;ntsvc_list[i]!=NULL;i++)
-		remove_service(hSCManager
-			,ntsvc_list[i]->name
-			,ntsvc_list[i]->display_name);
+		if(svc_name==NULL	/* All? */
+			|| !stricmp(ntsvc_list[i]->name, svc_name))
+			remove_service(hSCManager
+				,ntsvc_list[i]->name
+				,ntsvc_list[i]->display_name);
 
 	CloseServiceHandle(hSCManager);
 
@@ -493,9 +503,11 @@ static int uninstall(void)
 int main(int argc, char** argv)
 {
 	char*	ctrl_dir;
+	char*	arg;
 	char	str[MAX_PATH+1];
-	char	ini_file[MAX_PATH+1];
+	char	ini_file[MAX_PATH+1]="";
 	char	host_name[128]="";
+	int		i;
 	FILE*	fp=NULL;
 
 	SERVICE_TABLE_ENTRY  ServiceDispatchTable[] = 
@@ -515,18 +527,39 @@ int main(int argc, char** argv)
 	printf("\nSynchronet NT Services  Version %s%c  %s\n\n"
 		,VERSION,REVISION,COPYRIGHT_NOTICE);
 
-	if(argc>1 && !stricmp(argv[1],"-install"))
-		return install();
+	for(i=1;i<argc;i++) {
+		arg=argv[i];
+		while(*arg=='-')
+			arg++;
+		if(strcspn(arg,"\\/")!=strlen(arg)) {
+			strcpy(ini_file,arg);
+			continue;
+		}
+		if(!stricmp(arg,"install"))
+			return install(argv[i+1]);
 
-	if(argc>1 && !stricmp(argv[1],"-remove"))
-		return uninstall();
+		if(!stricmp(arg,"remove"))
+			return uninstall(argv[i+1]);
+	}
 
-    printf("%s -install          to install the services\n", getfname(argv[0]) );
-    printf("%s -remove           to remove the services\n", getfname(argv[0]) );
+	printf("Available Services:\n\n");
+	printf("%-20s %s\n","Name","Description");
+	printf("%-20s %s\n","----","-----------");
+	for(i=0;ntsvc_list[i]!=NULL;i++)
+		printf("%-20s %s\n",ntsvc_list[i]->name,ntsvc_list[i]->display_name);
+
+	SAFECOPY(str,getfname(argv[0]));
+	*getfext(str)=0;
+
+	printf("\nUsage: %s [command] [service] [ctrl_dir]\n", str);
+
+	printf("\nCommands:\n");
+    printf("\tinstall\t to install a service by name (default: ALL services)\n");
+    printf("\tremove\t to remove a service by name (default: ALL services)\n");
 
 	ctrl_dir=getenv("SBBSCTRL");	/* read from environment variable */
 	if(ctrl_dir==NULL || ctrl_dir[0]==0) {
-		ctrl_dir="/sbbs/ctrl";		/* Not set? Use default */
+		ctrl_dir="\\sbbs\\ctrl";		/* Not set? Use default */
 		printf("!SBBSCTRL environment variable not set, using default value: %s\n\n"
 			,ctrl_dir);
 	}
@@ -539,14 +572,16 @@ int main(int argc, char** argv)
 	if(!winsock_cleanup())
 		return(-1);
 
-	sprintf(ini_file,"%s%c%s.ini",ctrl_dir,PATH_DELIM,host_name);
-	if(!fexistcase(ini_file))
-		sprintf(ini_file,"%s%csbbs.ini",ctrl_dir,PATH_DELIM);
+	if(ini_file[0]==0) {	/* INI file not specified on command-line */
+		sprintf(ini_file,"%s%c%s.ini",ctrl_dir,PATH_DELIM,host_name);
+		if(!fexistcase(ini_file))
+			sprintf(ini_file,"%s%csbbs.ini",ctrl_dir,PATH_DELIM);
+	}
 
 	/* Initialize BBS startup structure */
     memset(&bbs_startup,0,sizeof(bbs_startup));
     bbs_startup.size=sizeof(bbs_startup);
-	bbs_startup.private_data=&bbs;
+	bbs_startup.cbdata=&bbs;
 	bbs_startup.lputs=svc_lputs;
 	bbs_startup.event_log=event_lputs;
     bbs_startup.started=svc_started;
@@ -555,7 +590,7 @@ int main(int argc, char** argv)
 
 	/* Initialize FTP startup structure */
     memset(&ftp_startup,0,sizeof(ftp_startup));
-	ftp_startup.private_data=&ftp;
+	ftp_startup.cbdata=&ftp;
     ftp_startup.size=sizeof(ftp_startup);
 	ftp_startup.lputs=svc_lputs;
     ftp_startup.started=svc_started;
@@ -575,7 +610,7 @@ int main(int argc, char** argv)
 
 	/* Initialize Mail Server startup structure */
     memset(&mail_startup,0,sizeof(mail_startup));
-	mail_startup.private_data=&mail;
+	mail_startup.cbdata=&mail;
     mail_startup.size=sizeof(mail_startup);
 	mail_startup.lputs=svc_lputs;
     mail_startup.started=svc_started;
@@ -585,7 +620,7 @@ int main(int argc, char** argv)
 #if !defined(NO_SERVICES)
 	/* Initialize Services startup structure */
     memset(&services_startup,0,sizeof(services_startup));
-	services_startup.private_data=&services;
+	services_startup.cbdata=&services;
     services_startup.size=sizeof(services_startup);
 	services_startup.lputs=svc_lputs;
     services_startup.started=svc_started;
@@ -596,7 +631,7 @@ int main(int argc, char** argv)
 	/* Read .ini file here */
 	if(ini_file[0]!=0 && (fp=fopen(ini_file,"r"))!=NULL) {
 		sprintf(str,"Reading %s",ini_file);
-		svc_lputs(&bbs, str);
+		svc_lputs(NULL, str);
 	}
 
 	/* We call this function to set defaults, even if there's no .ini file */
@@ -611,12 +646,18 @@ int main(int argc, char** argv)
 	if(fp!=NULL)
 		fclose(fp);
 
+	ctrl_dir = bbs_startup.ctrl_dir;
+	if(chdir(ctrl_dir)!=0) {
+		sprintf(str,"!ERROR %d changing directory to: %s", errno, ctrl_dir);
+		svc_lputs(NULL,str);
+	}
+
     printf("\nStartServiceCtrlDispatcher being called.\n" );
     printf("This may take several seconds.  Please wait.\n" );
 
 	if(!StartServiceCtrlDispatcher(ServiceDispatchTable)) 
     { 
-		sprintf(str,"!Synchronet StartServiceCtrlDispatcher ERROR %d",GetLastError());
+		sprintf(str,"!StartServiceCtrlDispatcher ERROR %d",GetLastError());
 		printf("%s\n",str);
         OutputDebugString(str); 
     } 
