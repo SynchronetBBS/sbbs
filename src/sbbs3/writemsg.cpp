@@ -373,12 +373,21 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
     		&& cfg.xedit[useron.xedit-1]->misc&QUICKBBS) {
 			fwrite(crlf,2,1,stream);
 			i++;
-			continue; }
+			continue; 
+		}
+		/* Expand LF to CRLF? */
 		if(buf[l]==LF && (!l || buf[l-1]!=CR) && useron.xedit
 			&& cfg.xedit[useron.xedit-1]->misc&EXPANDLF) {
 			fwrite(crlf,2,1,stream);
 			i++;
-			continue; }
+			continue; 
+		}
+		/* Strip FidoNet Kludge Lines? */
+		if(buf[l]==1 && useron.xedit
+			&& cfg.xedit[useron.xedit-1]->misc&STRIPKLUDGE) {
+			while(buf[l]!=LF) l++;
+			continue;
+		}
 		if(!(mode&(WM_EMAIL|WM_NETMAIL))
 			&& (!l || buf[l-1]==LF)
 			&& buf[l]=='-' && buf[l+1]=='-' && buf[l+2]=='-'

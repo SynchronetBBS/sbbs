@@ -376,6 +376,7 @@ typedef enum {						/* Values for xtrn_t.event			*/
 #define QUOTEALL	(1L<<12)		/* Automatically quote all of msg	*/
 #define QUOTENONE	(1L<<13)		/* Automatically quote none of msg	*/
 #define XTRN_NATIVE	(1L<<14)		/* Native application				*/
+#define STRIPKLUDGE (1L<<15)		/* Strip FTN Kludge lines from msg  */
 
 									/* Bits in user.qwk 				*/
 #define QWK_FILES	(1L<<0) 		/* Include new files list			*/
