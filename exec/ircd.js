@@ -2270,8 +2270,10 @@ function IRCClient_registered_commands(command, cmdline) {
 				break;
 			}
 			cmd.shift();
+			var exp = cmd.join(' ');	/* expression */
+			this.server_notice("Evaluating: " + exp);
 			try {
-				this.server_notice("Result: " + eval(cmd.join(' ')));
+				this.server_notice("Result: " + eval(exp));
 			} catch(e) {
 				this.server_notice("!" + e);
 			}
