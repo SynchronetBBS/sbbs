@@ -341,7 +341,9 @@ This is the internal code for the timed event.
 		sprintf(opt[k++],"%-32.32s%.40s","Start-up Directory",cfg.event[i]->dir);
 		sprintf(opt[k++],"%-32.32s%.40s","Command Line",cfg.event[i]->cmd);
 		sprintf(opt[k++],"%-32.32s%u","Execution Node",cfg.event[i]->node);
-		sprintf(opt[k++],"%-32.32s%s","Execution Days",daystr(cfg.event[i]->days));
+		sprintf(opt[k++],"%-32.32s%s","Execution Day of Month"
+			,cfg.event[i]->mday==0 ? "Any" : itoa(cfg.event[i]->mday,tmp,10));
+		sprintf(opt[k++],"%-32.32s%s","Execution Days of Week",daystr(cfg.event[i]->days));
         if(cfg.event[i]->freq) {
             sprintf(str,"%u times a day",1440/cfg.event[i]->freq);
             sprintf(opt[k++],"%-32.32s%s","Execution Frequency",str);
@@ -439,6 +441,22 @@ This is the node number to execute the timed event.
 				cfg.event[i]->node=atoi(str);
 				break;
 			case 4:
+				SETHELP(WHERE);
+/*
+`Day of Month to Execute Event:`
+
+Specifies a day of the month (`1-31`) on which to execute this event, 
+or `Any` to execute event on any and all days of the month.
+*/
+				if(cfg.event[i]->mday)
+					itoa(cfg.event[i]->mday,str,10);
+				else
+					strcpy(str,"Any");
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Day of Month to Execute Event (or Any)"
+					,str,3,K_EDIT);
+				cfg.event[i]->mday=atoi(str);
+				break;
+			case 5:
 				j=0;
 				while(1) {
 					for(k=0;k<7;k++)
@@ -448,18 +466,18 @@ This is the node number to execute the timed event.
 					uifc.savnum=2;
 					SETHELP(WHERE);
 /*
-Days to Execute Event:
+Days of Week to Execute Event:
 
 These are the days of the week that this event will be executed.
 */
 					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&j,0
-						,"Days to Execute Event",opt);
+						,"Days of Week to Execute Event",opt);
 					if(k==-1)
 						break;
 					cfg.event[i]->days^=(1<<k);
 					uifc.changes=1; }
 				break;
-			case 5:
+			case 6:
                 if(cfg.event[i]->freq==0)
                     k=0;
                 else
@@ -517,7 +535,7 @@ per day.
                         }
                     }
                 break;
-			case 6:
+			case 7:
 				k=cfg.event[i]->misc&EVENT_EXCL ? 0:1;
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
@@ -539,7 +557,7 @@ option to Yes.
 					cfg.event[i]->misc&=~EVENT_EXCL;
 					uifc.changes=1; }
                 break;
-			case 7:
+			case 8:
 				k=cfg.event[i]->misc&EVENT_FORCE ? 0:1;
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
@@ -562,7 +580,7 @@ execute precisely on time, set this option to Yes.
                     uifc.changes=1; }
                 break;
 
-			case 8:
+			case 9:
 				k=cfg.event[i]->misc&EX_NATIVE ? 0:1;
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
@@ -587,7 +605,7 @@ set this option to Yes.
                 }
                 break;
 
-			case 9:
+			case 10:
 				k=cfg.event[i]->misc&EX_BG ? 0:1;
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
