@@ -52,6 +52,7 @@ void sbbs_t::multinodechat(int channel)
 			,usrs,preusrs,qusrs,*gurubuf=NULL,savch,*p
 			,pgraph[400],buf[400]
 			,usr[MAX_NODES],preusr[MAX_NODES],qusr[MAX_NODES];
+	char	guru_lastanswer[512];
 	char 	tmp[512];
 	int 	file;
 	long	i,j,k,n;
@@ -168,7 +169,7 @@ void sbbs_t::multinodechat(int channel)
 		attr(cfg.color[clr_multichat]);
 		SYNC;
 		sys_status&=~SS_ABORT;
-		if((ch=inkey(0))!=0 || wordwrap[0]) {
+		if((ch=inkey(0,250))!=0 || wordwrap[0]) {
 			if(ch=='/') {
 				bputs(text[MultiChatCommandPrompt]);
 				strcpy(str,"ACELWQ?*");
@@ -377,8 +378,9 @@ void sbbs_t::multinodechat(int channel)
 						break;
 					case '?':	/* menu */
 						menu("multchat");
-						break;	} }
-			else {
+						break;	
+				} 
+			} else {
 				ungetkey(ch);
 				j=0;
 				pgraph[0]=0;
@@ -485,18 +487,21 @@ void sbbs_t::multinodechat(int channel)
 						bputs(buf);
 					for(i=0;i<usrs;i++) {
 						getnodedat(usr[i],&node,0);
-						putnmsg(&cfg,usr[i],buf); }
+						putnmsg(&cfg,usr[i],buf); 
+					}
 					for(i=0;i<qusrs;i++) {
 						getnodedat(qusr[i],&node,0);
-						putnmsg(&cfg,qusr[i],buf); }
+						putnmsg(&cfg,qusr[i],buf); 
+					}
 					if(!usrs && channel && gurubuf
 						&& cfg.chan[channel-1]->misc&CHAN_GURU)
-						guruchat(pgraph,gurubuf,cfg.chan[channel-1]->guru);
-						} } }
-		else
-			YIELD();
+						guruchat(pgraph,gurubuf,cfg.chan[channel-1]->guru,guru_lastanswer);
+				} 
+			} 
+		}
 		if(sys_status&SS_ABORT)
-			break; }
+			break; 
+	}
 	lncntr=0;
 }
 
@@ -770,13 +775,15 @@ void sbbs_t::privchat(bool local)
 					bprintf(text[NodeJoinedPrivateChat]
 						,n,node.misc&NODE_ANON ? text[UNKNOWN_USER]
 							: username(&cfg,node.useron,tmp));
-					break; }
-				if(!inkey(0))
-					YIELD();
+					break; 
+				}
 				action=NODE_PAGE;
 				checkline();
 				gettimeleft();
-				SYNC; } }
+				SYNC; 
+				SLEEP(500);
+			} 
+		}
 	}
 
 	if(getnodedat(cfg.node_num,&thisnode,true)==0) {
@@ -855,8 +862,8 @@ void sbbs_t::privchat(bool local)
 			checkline();
 			gettimeleft();
 			SYNC;
-			inkey(0);
-			YIELD(); }
+			SLEEP(500); 
+		}
 	}
 
 	action=NODE_PCHT;
@@ -902,7 +909,7 @@ void sbbs_t::privchat(bool local)
 				nodesync(); }
 		activity=0;
 		remote_activity=0;
-		if((ch=inkey(K_GETSTR))!=0) {
+		if((ch=inkey(K_GETSTR,100))!=0) {
 			activity=1;
 			if(echo)
 				attr(cfg.color[clr_chatlocal]);
@@ -1077,7 +1084,8 @@ void sbbs_t::privchat(bool local)
 		if(sys_status&SS_SPLITP && remote_activity) {
 			bputs("\1i_\1n");  /* Fake cursor */
 			ANSI_SAVE();
-			GOTOXY(x,y); }
+			GOTOXY(x,y); 
+		}
 
 		if(!activity) { 						/* no activity so chk node.dab */
 			if(!local) {
@@ -1104,9 +1112,10 @@ void sbbs_t::privchat(bool local)
 					putnodedat(cfg.node_num,&thisnode); 
 				}
 			}
-			YIELD(); }
+		}
 		checkline();
-		gettimeleft(); }
+		gettimeleft(); 
+	}
 	if(sys_status&SS_SPLITP)
 		CLS;
 	sys_status&=~(SS_SPLITP|SS_ABORT);
@@ -1223,7 +1232,6 @@ void sbbs_t::nodemsg()
 	char 	tmp[512];
 	int 	i,usernumber,done=0;
 	node_t	node,savenode;
-	time_t	last=0;
 
 	if(nodemsg_inside>1)	/* nested once only */
 		return;
@@ -1240,12 +1248,12 @@ void sbbs_t::nodemsg()
 		mnemonics(text[PrivateMsgPrompt]);
 		sys_status&=~SS_ABORT;
 		while(online) { 	 /* Watch for incoming messages */
-			ch=toupper(inkey(0));
+			ch=toupper(inkey(0,1000));
 			if(ch && strchr("TMCQ\r",ch))
 				break;
 			if(sys_status&SS_ABORT)
 				break;
-			if(last!=now && getnodedat(cfg.node_num,&thisnode,false)==0) {
+			if(getnodedat(cfg.node_num,&thisnode,false)==0) {
 				if(thisnode.misc&(NODE_MSGW|NODE_NMSG)) {
 					lncntr=0;	/* prevent pause prompt */
 					SAVELINE;
@@ -1258,9 +1266,8 @@ void sbbs_t::nodemsg()
 					RESTORELINE; }
 				else
 					nodesync();
-				last=now;
 			}
-			gettimeleft();	// sets 'now'
+			gettimeleft();
 		}
 
 		if(!online || sys_status&SS_ABORT) {
@@ -1391,13 +1398,13 @@ void sbbs_t::nodemsg()
 /****************************************************************************/
 /* The guru will respond from the 'guru' buffer to 'line'                   */
 /****************************************************************************/
-void sbbs_t::guruchat(char *line, char *gurubuf, int gurunum)
+void sbbs_t::guruchat(char* line, char* gurubuf, int gurunum, char* last_answer)
 {
-	char	str[512],cstr[512],*ptr,*answer[100],answers,theanswer[1024]
+	char	str[512],cstr[512],*ptr,*answer[100],theanswer[1024]
 			,mistakes=1,hu=0;
 	char 	tmp[512];
 	int		file;
-	uint 	c,i,j,k;
+	uint 	c,i,j,k,answers;
 	long 	len;
 	struct	tm tm;
 
@@ -1405,8 +1412,8 @@ void sbbs_t::guruchat(char *line, char *gurubuf, int gurunum)
 	localtime_r(&now,&tm);
 
 	for(i=0;i<100;i++) {
-		if((answer[i]=(char *)MALLOC(513))==NULL) {
-			errormsg(WHERE,ERR_ALLOC,nulstr,513);
+		if((answer[i]=(char *)MALLOC(512))==NULL) {
+			errormsg(WHERE,ERR_ALLOC,nulstr,512);
 			while(i) {
 				i--;
 				FREE(answer[i]); }
@@ -1452,7 +1459,7 @@ void sbbs_t::guruchat(char *line, char *gurubuf, int gurunum)
 			answers=0;
 			while(*ptr && answers<100 && ptr<gurubuf+len) {
 				i=0;
-				while(*ptr && *ptr!=CR && *ptr!=LF && i<512 && ptr<gurubuf+len) {
+				while(*ptr && *ptr!=CR && *ptr!=LF && i<511 && ptr<gurubuf+len) {
 					answer[answers][i]=*ptr;
 					ptr++;
 					i++;
@@ -1471,7 +1478,13 @@ void sbbs_t::guruchat(char *line, char *gurubuf, int gurunum)
 			if(answers==100)
 				while(*ptr && *ptr!='(' && ptr<gurubuf+len)
 					ptr++;
-			i=sbbs_random(answers);
+			/* Try to not repeat yourself */
+			for(j=0;j<answers;j++) {
+				i=sbbs_random(answers);
+				if(stricmp(answer[i],last_answer))
+					break;
+			}
+			strcpy(last_answer,answer[i]);
 			for(j=0,k=0;answer[i][j];j++) {
 				if(answer[i][j]=='`') {
 					j++;
@@ -1772,6 +1785,7 @@ void sbbs_t::localguru(char *gurubuf, int gurunum)
 {
 	char	ch,str[256];
 	int 	con=console;		 /* save console state */
+	char	lastanswer[512];
 
 	if(sys_status&SS_GURUCHAT || !cfg.total_gurus)
 		return;
@@ -1791,19 +1805,26 @@ void sbbs_t::localguru(char *gurubuf, int gurunum)
 	}
 	attr(cfg.color[clr_chatlocal]);
 	strcpy(str,"HELLO");
-	guruchat(str,gurubuf,gurunum);
+	guruchat(str,gurubuf,gurunum,lastanswer);
+	str[0]=0;
 	while(online && (sys_status&SS_GURUCHAT)) {
 		checkline();
 		action=NODE_GCHT;
 		SYNC;
-		if((ch=inkey(0))!=0) {
+		if(wordwrap[0]==0) {
+			if((ch=inkey(0,1000))==0) {
+				if(str[0]) {
+					attr(cfg.color[clr_chatlocal]);
+					guruchat(str,gurubuf,gurunum,lastanswer); 
+					str[0]=0;
+				}
+				continue;
+			}
 			ungetkey(ch);
-			attr(cfg.color[clr_chatremote]);
-			if(getstr(str,78,K_WRAP|K_CHAT)) {
-				attr(cfg.color[clr_chatlocal]);
-				guruchat(str,gurubuf,gurunum); } }
-		else
-			YIELD(); }
+		}
+		attr(cfg.color[clr_chatremote]);
+		getstr(str,78,K_WRAP|K_CHAT);
+	}
 	bputs(text[EndOfChat]);
 	sys_status&=~SS_GURUCHAT;
 	console=con;				/* restore console state */
