@@ -126,7 +126,7 @@ function unique_fname(dir,fname)
 	return(dir + new_fname);
 }
 
-var server;
+var host;
 var port=119;
 var username;
 var password;
@@ -156,7 +156,7 @@ while(!cfg_file.eof) {
 			delete cfg_file;
 			exit();
 		case "server":
-			server=str[1];
+			host=str[1];
 			break;
 		case "port":
 			port=parseInt(str[1]);
@@ -203,25 +203,25 @@ while(!cfg_file.eof) {
 }
 delete cfg_file;
 
-printf("server: %s\r\n",server);
+printf("server: %s\r\n",host);
 if(debug) {
 	printf("username: %s\r\n",username);
 	printf("password: %s\r\n",password);
 }
 printf("%ld areas\r\n",area.length);
 
-if(server==undefined || !server.length) {
+if(host==undefined || !host.length) {
 	print("!No news server specified");
 	exit();
 }
 
-printf("Connecting to %s port %d ...\r\n",server,port);
+printf("Connecting to %s port %d ...\r\n",host,port);
 socket = new Socket();
 //socket.debug=true;
 socket.bind(0,interface_ip_address);
-if(!socket.connect(server,port)) {
+if(!socket.connect(host,port)) {
 	printf("!Error %d connecting to %s port %d\r\n"
-		,socket.last_error,server,port);
+		,socket.last_error,host,port);
 	delete socket;
 	exit();
 }
@@ -704,7 +704,7 @@ for(i in area) {
 			if(ngarray.length>max_newsgroups_per_article) {
 				var reason = format("Too many newsgroups (%d): %s",ngarray.length, hdr.newsgroups);
 				printf("!%s\r\n",reason);
-				system.spamlog("NNTP","NOT IMPORTED",reason,hdr.from,server,hdr.to);
+				system.spamlog("NNTP","NOT IMPORTED",reason,hdr.from,host,hdr.to);
 				continue;
 			}
 		}
@@ -725,7 +725,7 @@ for(i in area) {
 		if(flags.indexOf('s')==-1 && system.trashcan("subject",hdr.subject)) {
 			var reason = format("Blocked subject (%s)",hdr.subject);
 			printf("!%s\r\n",reason);
-			system.spamlog("NNTP","NOT IMPORTED",reason,hdr.from,server,hdr.to);
+			system.spamlog("NNTP","NOT IMPORTED",reason,hdr.from,host,hdr.to);
 			continue;
 		}
 		if(use_twitlist 
