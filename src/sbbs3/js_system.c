@@ -1281,7 +1281,7 @@ js_popen(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_FALSE);
 
 	cmd=JS_GetStringBytes(JS_ValueToString(cx, argv[0]));
-	if((fp=popen(cmd,"rt"))==NULL)
+	if((fp=popen(cmd,"r"))==NULL)
 		return(JS_TRUE);
 	while(!feof(fp)) {
 		if(fgets(str,sizeof(str),fp)==NULL)
