@@ -35,9 +35,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#ifdef __BORLANDC__
-	#include <alloc.h>
-#endif
+#include <malloc.h>
 #include "lzh.h"
 
 /****************************************************************************/
