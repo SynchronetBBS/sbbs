@@ -375,6 +375,7 @@ int create_netmail(char *to,char *subject,char *body,faddr_t dest,int file)
 	uint i;
 	static uint startmsg;
 	time_t t;
+	faddr_t	faddr;
 	fmsghdr_t hdr;
 	struct tm *tm;
 
@@ -403,11 +404,12 @@ do {
 		logprintf("ERROR line %d opening %s %s",__LINE__,fname,sys_errlist[errno]);
 		return(-1); }
 
+	faddr=getsysfaddr(dest.zone);
 	memset(&hdr,0,sizeof(fmsghdr_t));
-	hdr.origzone=faddr[0].zone;
-	hdr.orignet=faddr[0].net;
-	hdr.orignode=faddr[0].node;
-	hdr.origpoint=faddr[0].point;
+	hdr.origzone=faddr.zone;
+	hdr.orignet=faddr.net;
+	hdr.orignode=faddr.node;
+	hdr.origpoint=faddr.point;
 	hdr.destzone=dest.zone;
 	hdr.destnet=dest.net;
 	hdr.destnode=dest.node;
