@@ -196,6 +196,7 @@ int main(int argc, char **argv)
 	if(argc<2)
 		usage();
 
+	setvbuf(stdout,NULL,_IONBF,0);
 	for(i=1;i<argc;i++) {
 		if(argv[i][0]=='-') {
 			for(j=1;argv[i][j];j++)
