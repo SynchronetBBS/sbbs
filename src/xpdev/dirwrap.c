@@ -716,3 +716,19 @@ char * DLLCALL _fullpath(char *target, const char *path, size_t size)  {
 	return(target);
 }
 #endif
+
+/****************************************************************************/
+/* Adds a trailing slash/backslash on path strings 							*/
+/****************************************************************************/
+char* DLLCALL backslash(char* path)
+{
+	char* p;
+
+	p=lastchar(str);
+
+	if(*p!='/' && *p!='\\') {
+		*(p++)=BACKSLASH;
+		*p=0;
+	}
+	return(path);
+}
