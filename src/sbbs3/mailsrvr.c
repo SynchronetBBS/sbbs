@@ -69,8 +69,10 @@
 int dns_getmx(char* name, char* mx, char* mx2
 			  ,DWORD intf, DWORD ip_addr, BOOL use_tcp, int timeout);
 
-#define SMTP_OK		"250 OK"
-#define SMTP_BADSEQ	"503 Bad sequence of commands"
+static char* ok_rsp		=	"250 OK";
+static char* badseq_rsp	=	"503 Bad sequence of commands";
+static char* badrsp_err	=	"%s replied with:\r\n\"%s\"\r\n"
+							"instead of the expected reply:\r\n\"%s ...\"";
 
 #define TIMEOUT_THREAD_WAIT		60		/* Seconds */
 
@@ -440,10 +442,10 @@ static BOOL sockgetrsp(SOCKET socket, char* rsp, char *buf, int len)
 
 #define MAX_LINE_LEN	1000
 
-static ulong sockmsgtxt(SOCKET socket, smbmsg_t* msg, char* msgtxt, char* fromaddr
-						,ulong maxlines)
+static ulong sockmsgtxt(SOCKET socket, smbmsg_t* msg, char* msgtxt, ulong maxlines)
 {
 	char		toaddr[256];
+	char		fromaddr[256];
 	char		date[64];
 	char		filepath[MAX_PATH+1]="";
 	char*		p;
@@ -453,27 +455,45 @@ static ulong sockmsgtxt(SOCKET socket, smbmsg_t* msg, char* msgtxt, char* fromad
 	int			s;
 	ulong		lines;
 
-	/* HEADERS */
+	/* HEADERS (in recommended order per RFC822 4.1) */
 	if(!sockprintf(socket,"Date: %s",msgdate(msg->hdr.when_written,date)))
 		return(0);
-	if(fromaddr[0]=='<')
-		s=sockprintf(socket,"From: \"%s\" %s",msg->from,fromaddr);
-	else
-		s=sockprintf(socket,"From: \"%s\" <%s>",msg->from,fromaddr);
+
+	if((p=smb_get_hfield(msg,RFC822FROM,NULL))!=NULL)
+		s=sockprintf(socket,"From: %s",p);	/* use original RFC822 header field */
+	else {
+		if(msg->from_net.type==NET_INTERNET && msg->from_net.addr!=NULL)
+			SAFECOPY(fromaddr,msg->from_net.addr);
+		else if(msg->from_net.type==NET_QWK && msg->from_net.addr!=NULL)
+			sprintf(fromaddr,"\"%s@%s\"@%s"
+				,msg->from,(char*)msg->from_net.addr,scfg.sys_inetaddr);
+		else 
+			usermailaddr(&scfg,fromaddr,msg->from);
+		if(fromaddr[0]=='<')
+			s=sockprintf(socket,"From: \"%s\" %s",msg->from,fromaddr);
+		else
+			s=sockprintf(socket,"From: \"%s\" <%s>",msg->from,fromaddr);
+	}
 	if(!s)
 		return(0);
+
 	if(!sockprintf(socket,"Subject: %s",msg->subj))
 		return(0);
-	if(strchr(msg->to,'@')!=NULL || msg->to_net.addr==NULL)
-		s=sockprintf(socket,"To: %s",msg->to);	/* Avoid double-@ */
-	else if(msg->to_net.type==NET_INTERNET || msg->to_net.type==NET_QWK) {
-		if(strchr((char*)msg->to_net.addr,'<')!=NULL)
-			s=sockprintf(socket,"To: %s",(char*)msg->to_net.addr);
-		else
-			s=sockprintf(socket,"To: \"%s\" <%s>",msg->to,(char*)msg->to_net.addr);
-	} else {
-		usermailaddr(&scfg,toaddr,msg->to);
-		s=sockprintf(socket,"To: \"%s\" <%s>",msg->to,toaddr);
+
+	if((p=smb_get_hfield(msg,RFC822TO,NULL))!=NULL)
+		s=sockprintf(socket,"To: %s",p);	/* use original RFC822 header field */
+	else {
+		if(strchr(msg->to,'@')!=NULL || msg->to_net.addr==NULL)
+			s=sockprintf(socket,"To: %s",msg->to);	/* Avoid double-@ */
+		else if(msg->to_net.type==NET_INTERNET || msg->to_net.type==NET_QWK) {
+			if(strchr((char*)msg->to_net.addr,'<')!=NULL)
+				s=sockprintf(socket,"To: %s",(char*)msg->to_net.addr);
+			else
+				s=sockprintf(socket,"To: \"%s\" <%s>",msg->to,(char*)msg->to_net.addr);
+		} else {
+			usermailaddr(&scfg,toaddr,msg->to);
+			s=sockprintf(socket,"To: \"%s\" <%s>",msg->to,toaddr);
+		}
 	}
 	if(!s)
 		return(0);
@@ -518,8 +538,16 @@ static ulong sockmsgtxt(SOCKET socket, smbmsg_t* msg, char* msgtxt, char* fromad
 	}
 	if(!sockprintf(socket,""))	/* Header Terminator */
 		return(0);
+
 	/* MESSAGE BODY */
 	lines=0;
+    for(i=0;i<msg->total_hfields;i++) {			/* delivery failure notification? */
+		if(msg->hfield[i].type==SMTPSYSMSG) { 
+			if(!sockprintf(socket,"%s",(char*)msg->hfield_dat[i]))
+				return(0);
+			lines++;
+		}
+    }
 	p=msgtxt;
 	while(*p && lines<maxlines) {
 		tp=strchr(p,'\n');
@@ -584,7 +612,6 @@ static void pop3_thread(void* arg)
 	char		host_ip[64];
 	char		username[LEN_ALIAS+1];
 	char		password[LEN_PASS+1];
-	char		fromaddr[256];
 	char*		msgtxt;
 	int			i;
 	int			rd;
@@ -616,7 +643,7 @@ static void pop3_thread(void* arg)
 		PlaySound(startup->pop3_sound, NULL, SND_ASYNC|SND_FILENAME);
 #endif
 
-	strcpy(host_ip,inet_ntoa(pop3.client_addr.sin_addr));
+	SAFECOPY(host_ip,inet_ntoa(pop3.client_addr.sin_addr));
 
 	if(startup->options&MAIL_OPT_DEBUG_POP3)
 		lprintf("%04d POP3 connection accepted from: %s port %u"
@@ -987,18 +1014,20 @@ static void pop3_thread(void* arg)
 				}
 
 				sockprintf(socket,"+OK message follows");
+#if 0
 				if(msg.from_net.type==NET_INTERNET && msg.from_net.addr!=NULL)
-					strcpy(fromaddr,msg.from_net.addr);
+					SAFECOPY(fromaddr,msg.from_net.addr);
 				else if(msg.from_net.type==NET_QWK && msg.from_net.addr!=NULL)
 					sprintf(fromaddr,"\"%s@%s\"@%s"
 						,msg.from,(char*)msg.from_net.addr,scfg.sys_inetaddr);
 				else 
 					usermailaddr(&scfg,fromaddr,msg.from);	/* unresolved exception here Nov-06-2000 */
+#endif
 				lprintf("%04d POP3 sending message text (%u bytes)"
 					,socket,strlen(msgtxt));
-				lines_sent=sockmsgtxt(socket,&msg,msgtxt,fromaddr,lines);
+				lines_sent=sockmsgtxt(socket,&msg,msgtxt,lines);
 				/* if(startup->options&MAIL_OPT_DEBUG_POP3) */
-				if(lines!=-1 && lines_sent!=lines)
+				if(lines!=-1 && lines_sent<lines)	/* could send *more* lines */
 					lprintf("%04d !POP3 ERROR sending message text (sent %ld of %ld lines)"
 						,socket,lines_sent,lines);
 				else {
@@ -1310,7 +1339,7 @@ static void smtp_thread(void* arg)
 	memset(&msg,0,sizeof(msg));
 	memset(&user,0,sizeof(user));
 
-	strcpy(host_ip,inet_ntoa(smtp.client_addr.sin_addr));
+	SAFECOPY(host_ip,inet_ntoa(smtp.client_addr.sin_addr));
 
 	lprintf("%04d SMTP connection accepted from: %s port %u"
 		, socket, host_ip, ntohs(smtp.client_addr.sin_port));
@@ -1329,7 +1358,7 @@ static void smtp_thread(void* arg)
 	if(!(startup->options&MAIL_OPT_NO_HOST_LOOKUP))
 		lprintf("%04d SMTP hostname: %s", socket, host_name);
 
-	strcpy(hello_name,host_name);
+	SAFECOPY(hello_name,host_name);
 
 	if(trashcan(&scfg,host_ip,"ip")) {
 		lprintf("%04d !SMTP BLOCKED SERVER IP ADDRESS: %s"
@@ -1439,7 +1468,7 @@ static void smtp_thread(void* arg)
 						sprintf(str,"Listed on %s as %s", dnsbl, inet_ntoa(dnsbl_result));
 						spamlog(&scfg, "SMTP", "IGNORED", str, host_name, host_ip, rcpt_addr);
 						/* pretend we received it */
-						sockprintf(socket,SMTP_OK);
+						sockprintf(socket,ok_rsp);
 						continue;
 					}
 					/* tag message as spam (should this be X-DNSBL?) */
@@ -1477,7 +1506,7 @@ static void smtp_thread(void* arg)
 						sockprintf(socket, "452 Insufficient system storage");
 						continue; 
 					}
-					strcpy(telegram_buf,str);
+					SAFECOPY(telegram_buf,str);
 					if(fread(telegram_buf+strlen(str),1,length,msgtxt)!=length) {
 						lprintf("%04d !SMTP ERROR reading %lu bytes from telegram file"
 							,socket,length);
@@ -1506,7 +1535,7 @@ static void smtp_thread(void* arg)
 						rcpt_count++;
 					}
 					free(telegram_buf);
-					sockprintf(socket,SMTP_OK);
+					sockprintf(socket,ok_rsp);
 					telegram=FALSE;
 					continue;
 				}
@@ -1518,6 +1547,7 @@ static void smtp_thread(void* arg)
 					continue;
 				}
 				nettype=NET_INTERNET;
+				smb_hfield(&msg, SMTPREVERSEPATH, (ushort)strlen(reverse_path), reverse_path);
 				smb_hfield(&msg, SENDER, (ushort)strlen(sender), sender);
 				smb_hfield(&msg, SENDERNETTYPE, sizeof(nettype), &nettype);
 				smb_hfield(&msg, SENDERNETADDR, (ushort)strlen(sender_addr), sender_addr);
@@ -1553,7 +1583,7 @@ static void smtp_thread(void* arg)
 					} else {
 						lprintf("%04d SMTP %s posted a message on %s"
 							,socket, sender_addr, scfg.sub[subnum]->sname);
-						sockprintf(socket,SMTP_OK);
+						sockprintf(socket,ok_rsp);
 						signal_smtp_sem();
 					}
 					free(msgbuf);
@@ -1723,7 +1753,7 @@ static void smtp_thread(void* arg)
 				else {
 					if(rcpt_count>1)
 						smb_incdat(&smb,offset,length,(ushort)(rcpt_count-1));
-					sockprintf(socket,SMTP_OK);
+					sockprintf(socket,ok_rsp);
 					signal_smtp_sem();
 				}
 				smb_close_da(&smb);
@@ -1892,14 +1922,14 @@ static void smtp_thread(void* arg)
 			break;
 		} 
 		if(!stricmp(buf,"NOOP")) {
-			sockprintf(socket, SMTP_OK);
+			sockprintf(socket, ok_rsp);
 			badcmds=0;
 			continue;
 		}
 		if(state<SMTP_STATE_HELO) {
 			/* RFC 821 4.1.1 "The first command in a session must be the HELO command." */
 			lprintf("%04d !SMTP MISSING 'HELO' command",socket);
-			sockprintf(socket, SMTP_BADSEQ);
+			sockprintf(socket, badseq_rsp);
 			continue;
 		}
 		if(!stricmp(buf,"TURN")) {
@@ -1921,7 +1951,7 @@ static void smtp_thread(void* arg)
 			chsize(fileno(rcptlst),0);
 			rcpt_count=0;
 
-			sockprintf(socket,SMTP_OK);
+			sockprintf(socket,ok_rsp);
 			badcmds=0;
 			continue;
 		}
@@ -1963,7 +1993,7 @@ static void smtp_thread(void* arg)
 			msg.hdr.when_imported.time=time(NULL);
 			msg.hdr.when_imported.zone=scfg.sys_timezone;
 
-			sockprintf(socket,SMTP_OK);
+			sockprintf(socket,ok_rsp);
 			badcmds=0;
 			continue;
 		}
@@ -1983,7 +2013,7 @@ static void smtp_thread(void* arg)
 
 			if(state<SMTP_STATE_MAIL_FROM) {
 				lprintf("%04d !SMTP MISSING 'MAIL' command",socket);
-				sockprintf(socket, SMTP_BADSEQ);
+				sockprintf(socket, badseq_rsp);
 				continue;
 			}
 
@@ -2107,7 +2137,7 @@ static void smtp_thread(void* arg)
 						,(int)sizeof(rcpt_name)-1,rcpt_addr
 						,(int)sizeof(rcpt_addr)-1,p);
 					
-					sockprintf(socket,SMTP_OK);
+					sockprintf(socket,ok_rsp);
 					state=SMTP_STATE_RCPT_TO;
 					rcpt_count++;
 					continue;
@@ -2134,7 +2164,7 @@ static void smtp_thread(void* arg)
 					continue;
 				}
 				subnum=i;
-				sockprintf(socket,SMTP_OK);
+				sockprintf(socket,ok_rsp);
 				state=SMTP_STATE_RCPT_TO;
 				rcpt_count++;
 				continue;
@@ -2240,7 +2270,7 @@ static void smtp_thread(void* arg)
 				sockprintf(socket,"251 User not local; will forward to %s", user.netmail);
 			} else { /* Local (no-forward) */
 				fprintf(rcptlst,"#%u\n",usernum);
-				sockprintf(socket,SMTP_OK);
+				sockprintf(socket,ok_rsp);
 			}
 			state=SMTP_STATE_RCPT_TO;
 			rcpt_count++;
@@ -2250,7 +2280,7 @@ static void smtp_thread(void* arg)
 		if(!strnicmp(buf,"DATA",4)) {
 			if(state<SMTP_STATE_RCPT_TO) {
 				lprintf("%04d !SMTP MISSING 'RCPT TO' command", socket);
-				sockprintf(socket, SMTP_BADSEQ);
+				sockprintf(socket, badseq_rsp);
 				continue;
 			}
 			if(msgtxt!=NULL)
@@ -2269,10 +2299,10 @@ static void smtp_thread(void* arg)
 				p=reverse_path;
 			else 
 				p++;
-			strcpy(sender_addr,p);
+			SAFECOPY(sender_addr,p);
 			truncstr(sender_addr,">");
 			/* get sender */
-			strcpy(sender,sender_addr);
+			SAFECOPY(sender,sender_addr);
 			if(truncstr(sender,"@")==NULL)
 				sender[0]=0;
 
@@ -2322,10 +2352,10 @@ static void smtp_thread(void* arg)
 
 BOOL bounce(smb_t* smb, smbmsg_t* msg, char* err, BOOL immediate)
 {
-	char		str[128],full_err[512];
+	char		str[128];
 	char		attempts[64];
 	int			i;
-	ushort		agent=AGENT_PROCESS;
+	ushort		agent=AGENT_SMTPSYSMSG;
 	smbmsg_t	newmsg;
 
 	if((i=smb_lockmsghdr(smb,msg))!=0) {
@@ -2365,8 +2395,9 @@ BOOL bounce(smb_t* smb, smbmsg_t* msg, char* err, BOOL immediate)
 		delfattach(&scfg,msg);
 	smb_unlockmsghdr(smb,msg);
 
-	if(msg->from_agent==AGENT_PROCESS	/* don't bounce 'bounce messages' */
-		|| (msg->idx.from==0 && msg->from_net.type==NET_NONE)) {
+	if(msg->from_agent!=AGENT_PERSON	/* don't bounce 'bounce messages' */
+		|| (msg->idx.from==0 && msg->from_net.type==NET_NONE)
+		|| (msg->reverse_path!=NULL && *msg->reverse_path==0)) {
 		lprintf("0000 !Deleted undeliverable message from %s", msg->from);
 		return(TRUE);
 	}
@@ -2380,27 +2411,40 @@ BOOL bounce(smb_t* smb, smbmsg_t* msg, char* err, BOOL immediate)
 	newmsg.idx.from=0;
 	newmsg.hdr.delivery_attempts=0;
 
+	sprintf(str,"Delivery failure: %.100s",newmsg.subj);
+	smb_hfield(&newmsg, SUBJECT, (ushort)strlen(str), str);
 	smb_hfield(&newmsg, RECIPIENT, (ushort)strlen(newmsg.from), newmsg.from);
 	if(newmsg.idx.to) {
 		sprintf(str,"%u",newmsg.idx.to);
 		smb_hfield(&newmsg, RECIPIENTEXT, (ushort)strlen(str), str);
 	}
-	smb_hfield(&newmsg, RECIPIENTNETTYPE, sizeof(newmsg.from_net.type), &newmsg.from_net.type);
-	if(newmsg.from_net.type && newmsg.from_net.addr!=NULL) 
-		smb_hfield(&newmsg, RECIPIENTNETADDR, (ushort)strlen(newmsg.from_net.addr)
-			,newmsg.from_net.addr);
+	if(newmsg.from_net.type!=NET_NONE && newmsg.from_net.type!=NET_FIDO
+		&& newmsg.reverse_path!=NULL) {
+		smb_hfield(&newmsg, RECIPIENTNETTYPE, sizeof(newmsg.from_net.type)
+			,&newmsg.from_net.type);
+		smb_hfield(&newmsg, RECIPIENTNETADDR, (ushort)strlen(newmsg.reverse_path)
+			,newmsg.reverse_path);
+	}
 	strcpy(str,"Mail Delivery Subsystem");
 	smb_hfield(&newmsg, SENDER, (ushort)strlen(str), str);
 	smb_hfield(&newmsg, SENDERAGENT, sizeof(agent), &agent);
 	
 	/* Put error message in subject for now */
 	if(msg->hdr.delivery_attempts>1)
-		sprintf(attempts," after %u attempts", msg->hdr.delivery_attempts);
+		sprintf(attempts,"after %u attempts", msg->hdr.delivery_attempts);
 	else
 		attempts[0]=0;
-	sprintf(full_err,"Delivery failure of message to %s%s: %s"
-		,(char*)msg->to_net.addr, attempts, err);
-	smb_hfield(&newmsg, SUBJECT, (ushort)strlen(full_err), full_err);
+	sprintf(str,"%s reporting delivery failure of message %s"
+		,startup->host_name, attempts);
+	smb_hfield(&newmsg, SMTPSYSMSG, (ushort)strlen(str), str);
+	sprintf(str,"from %s to %s\r\n"
+		,msg->reverse_path,(char*)msg->to_net.addr);
+	smb_hfield(&newmsg, SMTPSYSMSG, (ushort)strlen(str), str);
+	strcpy(str,"Reason:");
+	smb_hfield(&newmsg, SMTPSYSMSG, (ushort)strlen(str), str);
+	smb_hfield(&newmsg, SMTPSYSMSG, (ushort)strlen(err), err);
+	sprintf(str,"\r\nOriginal message text follows:\r\n");
+	smb_hfield(&newmsg, SMTPSYSMSG, (ushort)strlen(str), str);
 
 	if((i=smb_addmsghdr(smb,&newmsg,SMB_SELFPACK))!=0)
 		lprintf("0000 !BOUNCE ERROR %d (%s) adding message header"
@@ -2667,19 +2711,19 @@ static void sendmail_thread(void* arg)
 
 			/* HELO */
 			if(!sockgetrsp(sock,"220",buf,sizeof(buf))) {
-				sprintf(err,"%s replied with '%s' instead of 220",server,buf);
+				sprintf(err,badrsp_err,server,buf,"220");
 				bounce(&smb,&msg,err,buf[0]=='5');
 				continue;
 			}
 			sockprintf(sock,"HELO %s",startup->host_name);
 			if(!sockgetrsp(sock,"250", buf, sizeof(buf))) {
-				sprintf(err,"%s replied with '%s' instead of 250",server,buf);
+				sprintf(err,badrsp_err,server,buf,"250");
 				bounce(&smb,&msg,err,buf[0]=='5');
 				continue;
 			}
 			/* MAIL */
-			if(msg.from_net.type==NET_INTERNET && msg.from_net.addr!=NULL)
-				strcpy(fromaddr,msg.from_net.addr);
+			if(msg.from_net.type==NET_INTERNET && msg.reverse_path!=NULL)
+				SAFECOPY(fromaddr,msg.reverse_path);
 			else 
 				usermailaddr(&scfg,fromaddr,msg.from);
 			truncstr(fromaddr," ");
@@ -2688,7 +2732,7 @@ static void sendmail_thread(void* arg)
 			else
 				sockprintf(sock,"MAIL FROM: <%s>",fromaddr);
 			if(!sockgetrsp(sock,"250", buf, sizeof(buf))) {
-				sprintf(err,"%s replied with '%s' instead of 250",server,buf);
+				sprintf(err,badrsp_err,server,buf,"250");
 				bounce(&smb,&msg,err,buf[0]=='5');
 				continue;
 			}
@@ -2701,22 +2745,22 @@ static void sendmail_thread(void* arg)
 			truncstr(toaddr,"> ");
 			sockprintf(sock,"RCPT TO: <%s>", toaddr);
 			if(!sockgetrsp(sock,"25", buf, sizeof(buf))) {
-				sprintf(err,"%s replied with '%s' instead of 25*",server,buf);
+				sprintf(err,badrsp_err,server,buf,"25*");
 				bounce(&smb,&msg,err,buf[0]=='5');
 				continue;
 			}
 			/* DATA */
 			sockprintf(sock,"DATA");
 			if(!sockgetrsp(sock,"354", buf, sizeof(buf))) {
-				sprintf(err,"%s replied with '%s' instead of 354",server,buf);
+				sprintf(err,badrsp_err,server,buf,"354");
 				bounce(&smb,&msg,err,buf[0]=='5');
 				continue;
 			}
 			lprintf("%04d SEND sending message text (%u bytes)"
 				,sock, strlen(msgtxt));
-			lines=sockmsgtxt(sock,&msg,msgtxt,fromaddr,-1);
+			lines=sockmsgtxt(sock,&msg,msgtxt,-1);
 			if(!sockgetrsp(sock,"250", buf, sizeof(buf))) {
-				sprintf(err,"%s replied with '%s' instead of 250",server,buf);
+				sprintf(err,badrsp_err,server,buf,"250");
 				bounce(&smb,&msg,err,buf[0]=='5');
 				continue;
 			}
