@@ -106,6 +106,10 @@ SOURCE=.\atcodes.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\base64.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\bat_xfer.cpp
 # End Source File
 # Begin Source File
@@ -311,6 +315,10 @@ SOURCE=.\mail.cpp
 # Begin Source File
 
 SOURCE=.\main.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\md5.c
 # End Source File
 # Begin Source File
 
