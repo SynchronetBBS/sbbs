@@ -60,6 +60,11 @@
 #define MAX_SERVERS			100
 #define MAX_FILELEN			32
 #define MAKE_ERROR			"make failure.\n"
+#if defined(__linux__)
+#define MAKE				"make"
+#else
+#define MAKE				"gmake"
+#endif
 
 /*******************/
 /* DistList Format */
@@ -160,13 +165,7 @@ int main(int argc, char **argv)
 	/* Defaults */
 	/************/
 	SAFECOPY(params.install_path,"/usr/local/sbbs");
-	strcpy(params.make_cmdline,
-#if defined(__linux__)
-		"make"
-#else
-		"gmake"
-#endif
-		" install -f install/GNUmakefile");
+	SAFECOPY(params.make_cmdline,MAKE " install -f install/GNUmakefile");
 	params.usebcc=FALSE;
 	SAFECOPY(params.cflags,"");
 	params.debug=FALSE;
@@ -289,7 +288,7 @@ int main(int argc, char **argv)
 
 		uifc.helpbuf=	"`Synchronet Installation:`\n"
 						"\nToDo: Add help.";
-		switch(uifc.list(WIN_ESC|WIN_MID|WIN_ACT,0,0,70,&main_dflt,0
+		switch(uifc.list(WIN_ESC|WIN_MID|WIN_ACT|WIN_ORG,0,0,70,&main_dflt,0
 			,"Synchronet Installation",mopt)) {
 			case 0:
 				i=choose_dist((char **)distlist);
