@@ -394,6 +394,8 @@ while(client.socket.is_connected && !quit) {
 						field=hdr.ftn_reply;
 						break;
 				}
+				if(field==undefined)
+					field="";
 
 				writeln(format("%u %s",i,field.toString()));
 			}
