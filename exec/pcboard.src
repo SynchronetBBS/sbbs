@@ -230,7 +230,7 @@ cmdstr P
 	end_cmd
 
 cmdstr I
-	menu ../ANSWER
+	menu ../answer
 	menu pcboard/welcome
 	end_cmd
 

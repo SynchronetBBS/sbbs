@@ -252,7 +252,7 @@ cmdkey B
 
 cmdkey C
 	print_local "Config\r\n"
-	menu XFERCFG
+	menu xfercfg
 	async
 	print "\r\nyhConfig: n"
 	getcmd ?QBEP\r

@@ -348,7 +348,7 @@ return
 
 :msg_cfg
 
-menu MAINCFG
+menu maincfg
 async
 print "\r\nyhCommand: n"
 getstrupr 10

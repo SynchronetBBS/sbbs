@@ -12,7 +12,7 @@ async
 compare_ars expert
 if_false
 	clear_abort
-	menu WILDCAT\MAIN
+	menu wildcat/main
 	print "\r\nwhCommand >>? n"
 else
 	print "\r\nyh@GRP@ @SUB@, wMAIN MENUy: ? n"
@@ -29,7 +29,7 @@ logkey_comma
 cmdkey ?
 	compare_ars expert
 	if_true
-		menu WILDCAT\MAIN
+		menu wildcat/main
 		end_if
 	end_cmd
 cmdkey M
@@ -52,7 +52,7 @@ cmdkey U
 	end_cmd
 
 cmdkey N
-	menu LOGON
+	menu logon
 	pause
 	end_cmd
 
@@ -89,7 +89,7 @@ cmdkey P
 	end_cmd
 
 cmdkey I
-	menu ..\ANSWER
+	menu ../answer
 	pause
 	end_cmd
 
@@ -169,7 +169,7 @@ end_cmd
 cmd_home
 compare_ars expert
 if_false
-	menu E-MAIL
+	menu e-mail
 	end_if
 async
 print "\r\nyhE-mail: n"
@@ -179,7 +179,7 @@ logkey
 cmdkey ?
 	compare_ars expert
 	if_true
-		menu E-MAIL
+		menu e-mail
 		end_if
 	end_cmd
 
@@ -249,7 +249,7 @@ async
 compare_ars expert
 if_false
 	clear_abort
-	menu WILDCAT\FILE
+	menu wildcat/file
 	print "\r\nwhCommand >>? n"
 else
 	print "\r\nyh@LIB@ @DIR@, wFILE MENUy: ? n"
@@ -263,7 +263,7 @@ logkey_comma
 cmdkey ?
 	compare_ars expert
 	if_true
-		menu WILDCAT\FILE
+		menu wildcat/file
 		end_if
 	end_cmd
 
@@ -303,7 +303,7 @@ cmdkey D
 
 cmdkey U
 	print "\r\nchUpload File\r\n"
-	chkfile "..\text\menu\upload.*"
+	chkfile "../text/menu/upload.*"
 	if_true
 		menu upload
                 end_if
@@ -399,7 +399,7 @@ async
 compare_ars expert
 if_false
 	clear_abort
-	menu WILDCAT\MSG
+	menu wildcat/msg
 	print "\r\nwhCommand >>? n"
 else
 	print "\r\nyh@GRP@ @SUB@, wMESSAGE MENUy: ? n"
@@ -413,7 +413,7 @@ logkey_comma
 cmdkey ?
 	compare_ars expert
 	if_true
-		menu WILDCAT\MSG
+		menu wildcat/msg
 		end_if
 	end_cmd
 
@@ -479,7 +479,7 @@ cmdkey U
 	cmd_home
 	compare_ars expert
 	if_false
-		menu MAINCFG
+		menu maincfg
 		end_if
 	async
 	print "\r\nyhConfig: n"
@@ -489,7 +489,7 @@ cmdkey U
 	cmdkey ?
 		compare_ars expert
 		if_true
-			menu MAINCFG
+			menu maincfg
 			end_if
 		end_cmd
 
@@ -566,7 +566,7 @@ async
 compare_ars expert
 if_false
 	clear_abort
-	menu WILDCAT\SYSOP
+	menu wildcat/sysop
 	print "\r\nwhCommand >>? n"
 else
 	print "\r\nyh@GRP@ @SUB@, wSYSOP MENUy: ? n"
@@ -580,7 +580,7 @@ logkey_comma
 cmdkey ?
 	compare_ars expert
 	if_true
-		menu WILDCAT\SYSOP
+		menu wildcat/sysop
 		end_if
 	end_cmd
 
