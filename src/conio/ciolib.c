@@ -52,9 +52,9 @@ void ciolib_lowvideo(void);
 void ciolib_normvideo(void);
 int ciolib_puttext(int a,int b,int c,int d,unsigned char *e);
 int ciolib_gettext(int a,int b,int c,int d,unsigned char *e);
-void ciolib_textattr(unsigned char a);
+void ciolib_textattr(int a);
 void ciolib_delay(long a);
-int ciolib_putch(unsigned char a);
+int ciolib_putch(int a);
 void ciolib_setcursortype(int a);
 void ciolib_textmode(int mode);
 void ciolib_window(int sx, int sy, int ex, int ey);
@@ -308,7 +308,6 @@ char *ciolib_cgets(char *str)
 {
 	int	maxlen;
 	int len=0;
-	int chars;
 	int ch;
 
 	CIOLIB_INIT();
@@ -354,7 +353,11 @@ int ciolib_cscanf (char *format , ...)
 	
 	str[0]=-1;
 	va_start(argptr,format);
+#ifdef _MSC_VER	/* MSVC doesn't have vsscanf */
+	ret=0;
+#else
 	ret=vsscanf(ciolib_cgets(str),format,argptr);
+#endif
 	va_end(argptr);
 	return(ret);
 }
@@ -363,7 +366,6 @@ char *ciolib_getpass(const char *prompt)
 {
 	static char pass[9];
 	int len=0;
-	int chars;
 	int ch;
 
 	CIOLIB_INIT();
@@ -420,7 +422,6 @@ void ciolib_gettextinfo(struct text_info *info)
 
 void ciolib_wscroll(void)
 {
-	char *buf;
 	int os;
 	struct text_info ti;
 
@@ -599,7 +600,6 @@ void ciolib_insline(void)
 int ciolib_cprintf(char *fmat, ...)
 {
     va_list argptr;
-	int		pos;
 	int		ret;
 #ifdef _WIN32			/* Can't figure out a way to allocate a "big enough" buffer for Win32. */
 	char	str[16384];
@@ -723,7 +723,7 @@ int ciolib_gettext(int a,int b,int c,int d,unsigned char *e)
 	return(cio_api.gettext(a,b,c,d,e));
 }
 
-void ciolib_textattr(unsigned char a)
+void ciolib_textattr(int a)
 {
 	CIOLIB_INIT();
 	
@@ -737,7 +737,7 @@ void ciolib_delay(long a)
 	cio_api.delay(a);
 }
 
-int ciolib_putch(unsigned char a)
+int ciolib_putch(int a)
 {
 	CIOLIB_INIT();
 
