@@ -704,14 +704,14 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 
 				rd=0;
 				len=sizeof(buf);
-				avail=RingBufFree(&outbuf);
+				avail=RingBufFree(&outbuf)/2;	// leave room for wwiv/telnet expansion
 				if(avail==0)
 					lprintf("Node %d !output buffer full (%u bytes)"
 						,cfg.node_num,RingBufFull(&outbuf));
 				if(len>avail)
             		len=avail;
 
-				while(rd<len && avail>RingBufFull(&outbuf)) {
+				while(rd<len) {
 					DWORD waiting=0;
 
 					if(use_pipes)
@@ -748,9 +748,9 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 						if(rd>sizeof(telnet_buf))
 							errorlog("TELNET_BUF OVERRUN");
 					}
-					if(rd>avail) {
-						errorlog("RINGBUFFER OVERRUN");
-						rd=avail;
+					if(rd>RingBufFree(&outbuf)) {
+						errorlog("output buffer overflow");
+						rd=RingBufFree(&outbuf);
 					}
 					RingBufWrite(&outbuf, bp, rd);
 					sem_post(&output_sem);
@@ -808,10 +808,19 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
                 		lprintf("read %d bytes from xtrn", rd);
 #endif
 
-					if(mode&EX_WWIV)
+					if(mode&EX_WWIV) {
                 		bp=wwiv_expand(buf, rd, wwiv_buf, rd, useron.misc, wwiv_flag);
-					else
+						if(rd>sizeof(wwiv_buf))
+							errorlog("WWIV_BUF OVERRUN");
+					} else {
                 		bp=telnet_expand(buf, rd, telnet_buf, rd);
+						if(rd>sizeof(telnet_buf))
+							errorlog("TELNET_BUF OVERRUN");
+					}
+					if(rd>RingBufFree(&outbuf)) {
+						errorlog("output buffer overflow");
+						rd=RingBufFree(&outbuf);
+					}
 					RingBufWrite(&outbuf, bp, rd);
 					sem_post(&output_sem);
 				}
@@ -1150,13 +1159,6 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 			}
 				
 			/* Output */
-#if 0
-			ioctl(out_pipe[0],FIONREAD,&rd);	/* peek at input */
-			if(!rd) {
-				mswait(1);
-				continue;
-			}
-#else
 			FD_ZERO(&ibits);
 			FD_SET(out_pipe[0],&ibits);
 			timeout.tv_sec=0;
@@ -1165,9 +1167,8 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 				mswait(1);
 				continue;
 			}
-#endif
 
-			avail=RingBufFree(&outbuf);
+			avail=RingBufFree(&outbuf)/2;	// Leave room for wwiv/telnet expansion
 			if(avail==0) {
 				lprintf("Node %d !output buffer full (%u bytes)"
 						,cfg.node_num,RingBufFull(&outbuf));
@@ -1175,10 +1176,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 				continue;
 			}
 
-#if 0
-			if(rd>(int)avail)
-#endif
-				rd=avail;
+			rd=avail;
 
 			if(rd>(int)sizeof(buf))
 				rd=sizeof(buf);
@@ -1192,13 +1190,17 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
    	       		bp=telnet_expand(buf, rd, output_buf, output_len);
 			else			/* LF to CRLF expansion */
 				bp=lf_expand(buf, rd, output_buf, output_len);
+
+			/* Did expansion overrun the output buffer? */
+			if(output_len>sizeof(output_buf)) {
+				errorlog("OUTPUT_BUF OVERRUN");
+				output_len=sizeof(output_buf);
+			}
 			
-			/* Does expanded size fit? */
+			/* Does expanded size fit in the ring buffer? */
 			if(output_len>RingBufFree(&outbuf)) {
-				lprintf("Node %d !output buffer overflow (%u bytes)"
-					,cfg.node_num,output_len);
-				mswait(1);
-				continue;
+				errorlog("output buffer overflow");
+				output_len=RingBufFree(&outbuf);
 			}
 	
 			RingBufWrite(&outbuf, bp, output_len);
