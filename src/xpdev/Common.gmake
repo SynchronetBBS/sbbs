@@ -44,14 +44,15 @@ ifndef os
 endif
 os      :=	$(shell echo $(os) | tr '[A-Z]' '[a-z]' | tr ' ' '_')
 
-machine		:=	$(shell if uname -m | egrep -v "(i[3456]|x)86" > /dev/null; then uname -m | tr "[A-Z]" "[a-z]" | tr " " "_" ; fi)
+machine		:=	$(shell if uname -m | egrep -v "(i[3456789]|x)86" > /dev/null; then uname -m | tr "[A-Z]" "[a-z]" | tr " " "_" ; fi)
 ifeq ($(machine),)
-LIBODIR :=	$(CCPRE).$(os).lib.$(BUILDPATH)
-EXEODIR :=	$(CCPRE).$(os).exe.$(BUILDPATH)
+ machine	:=	$(os)
 else
-LIBODIR :=	$(CCPRE).$(os).$(machine).lib.$(BUILDPATH)
-EXEODIR :=	$(CCPRE).$(os).$(machine).exe.$(BUILDPATH)
+ machine	:=	$(os).$(machine)
 endif
+
+LIBODIR :=	$(CCPRE).$(machine).lib.$(BUILDPATH)
+EXEODIR :=	$(CCPRE).$(machine).exe.$(BUILDPATH)
 LDFLAGS	+=	-L$(LIBODIR)
 
 ifeq ($(os),netbsd)
