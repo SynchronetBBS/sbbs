@@ -77,6 +77,7 @@ ifeq ($(os),netbsd)
 endif
 
 vpath %.c $(UIFC) $(XPDEV) $(SBBS3)
+vpath %.cpp $(SBBS3)
 
 OBJS	:=	$(LIBODIR)/filewrap.o \
 			$(LIBODIR)/chat.o \
@@ -97,6 +98,9 @@ OBJS	:=	$(LIBODIR)/filewrap.o \
 			$(LIBODIR)/load_cfg.o \
 			$(LIBODIR)/date_str.o \
 			$(LIBODIR)/spyon.o \
+			$(LIBODIR)/smblib.o \
+			$(LIBODIR)/getstats.o \
+			$(LIBODIR)/getmail.o \
 			$(LIBODIR)/umonitor.o
 
 all: $(LIBODIR) $(BUILD_DEPENDS)$(EXEODIR)/umonitor

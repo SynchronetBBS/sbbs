@@ -40,6 +40,7 @@
 #include <curses.h>
 #include <signal.h>
 #include <sys/types.h>
+#include <time.h>
 #include <sys/time.h>
 #ifdef __QNX__
 #include <string.h>
@@ -232,6 +233,143 @@ int clearerrors(scfg_t *cfg, int nodenum, node_t *node) {
 	return(0);
 }
 
+/* Assumes a 12 char outstr */
+char *getsizestr(char *outstr, long size, BOOL bytes) {
+	if(bytes) {
+		if(size < 1000) {	/* Bytes */
+			snprintf(outstr,12,"%ld bytes",size);
+			return(outstr);			
+		}
+		if(size<10000) {	/* Bytes with comma */
+			snprintf(outstr,12,"%ld,%03ld bytes",(size/1000),(size%1000));
+			return(outstr);			
+		}
+		size = size/1024;
+	}
+	if(size<1000) {	/* KB */
+		snprintf(outstr,12,"%ld KB",size);
+		return(outstr);			
+	}
+	if(size<999999) { /* KB With comma */
+		snprintf(outstr,12,"%ld,%03ld KB",(size/1000),(size%1000));
+		return(outstr);			
+	}
+	size = size/1024;
+	if(size<1000) {	/* MB */
+		snprintf(outstr,12,"%ld MB",size);
+		return(outstr);			
+	}
+	if(size<999999) { /* MB With comma */
+		snprintf(outstr,12,"%ld,%03ld MB",(size/1000),(size%1000));
+		return(outstr);			
+	}
+	size = size/1024;
+	if(size<1000) {	/* GB */
+		snprintf(outstr,12,"%ld GB",size);
+		return(outstr);			
+	}
+	if(size<999999) { /* GB With comma */
+		snprintf(outstr,12,"%ld,%03ld GB",(size/1000),(size%1000));
+		return(outstr);			
+	}
+	size = size/1024;
+	if(size<1000) {	/* TB (Yeah, right) */
+		snprintf(outstr,12,"%ld TB",size);
+		return(outstr);			
+	}
+	sprintf(outstr,"Plenty");
+	return(outstr);			
+}
+
+/* Assumes a 12 char outstr */
+char *getnumstr(char *outstr, ulong size) {
+	if(size < 1000) {
+		snprintf(outstr,12,"%ld",size);
+		return(outstr);			
+	}
+	if(size<1000000) {
+		snprintf(outstr,12,"%ld,%03ld",(size/1000),(size%1000));
+		return(outstr);			
+	}
+	if(size<1000000000) {
+		snprintf(outstr,12,"%ld,%03ld,%03ld",(size/1000000),((size/1000)%1000),(size%1000));
+		return(outstr);			
+	}
+	size=size/1000000;
+	if(size<1000000) {
+		snprintf(outstr,12,"%ld,%03ld M",(size/1000),(size%1000));
+		return(outstr);			
+	}
+	if(size<10000000) {
+		snprintf(outstr,12,"%ld,%03ld,%03ld M",(size/1000000),((size/1000)%1000),(size%1000));
+		return(outstr);			
+	}
+	sprintf(outstr,"Plenty");
+	return(outstr);			
+}
+
+int drawstats(scfg_t *cfg, int nodenum, node_t *node) {
+	stats_t	sstats;
+	stats_t	nstats;
+	char	statbuf[6*78];		/* Buffer to hold the stats for passing to uifc.showbuf() */
+	char	str[4][4][12];
+	char	usrname[128];
+	ulong	free;
+	uint	i,l,m;
+	time_t	t;
+
+	if(getnodedat(cfg,nodenum,node,NULL)) {
+		return(-1);
+	}
+	username(cfg,node->useron,usrname);
+
+	getstats(cfg, 0, &sstats);
+	getstats(cfg, nodenum, &nstats);
+	t=time(NULL);
+	strftime(str[0][0],12,"%b %e",localtime(&t));
+	free=getfreediskspace(cfg->temp_dir,1024);
+	if(free<1000) {
+		free=getfreediskspace(cfg->temp_dir,0);
+		getsizestr(str[0][1],free,TRUE);
+	} 
+	else
+		getsizestr(str[0][1],free,FALSE);
+	snprintf(str[1][0],12,"%s/%s",getnumstr(str[3][2],nstats.ltoday),getnumstr(str[3][3],sstats.ltoday));
+	getnumstr(str[1][1],sstats.logons);
+	snprintf(str[1][2],12,"%s/%s",getnumstr(str[3][2],nstats.ttoday),getnumstr(str[3][3],sstats.ttoday));
+	getnumstr(str[1][3],sstats.timeon);
+	snprintf(str[2][0],12,"%s/%s",getnumstr(str[3][2],sstats.etoday),getnumstr(str[3][3],getmail(cfg,0,0)));
+	l=m=0;
+	for(i=0;i<cfg->total_subs;i++)
+		l+=getposts(cfg,i); 			/* l=total posts */
+	for(i=0;i<cfg->total_dirs;i++)
+		m+=getfiles(cfg,i); 			/* m=total files */
+	snprintf(str[2][1],12,"%s/%s",getnumstr(str[3][2],sstats.ptoday),getnumstr(str[3][3],l));
+	snprintf(str[2][2],12,"%s/%s",getnumstr(str[3][2],sstats.ftoday),getnumstr(str[3][3],getmail(cfg,1,0)));
+	snprintf(str[2][3],12,"%s/%s",getnumstr(str[3][2],sstats.nusers),getnumstr(str[3][3],total_users(cfg)));
+	getsizestr(str[3][0],sstats.ulb,TRUE);
+	snprintf(str[3][1],12,"%s/%s",getnumstr(str[3][2],sstats.uls),getnumstr(str[3][3],m));
+	getsizestr(str[3][2],sstats.dlb,TRUE);
+	getnumstr(str[3][3],sstats.dls);
+	snprintf(statbuf,sizeof(statbuf),"Node #: %-3d %6s  Space: %s"
+			"\nLogons: %-11s Total: %-11s Timeon: %-11s Total: %-11s"
+			"\nEmails: %-11s Posts: %-11s Fbacks: %-11s Users: %-11s"
+			"\nUloads: %-11s Files: %-11s Dloads: %-11s Files: %-11s",
+			nodenum,str[0][0],str[0][1],
+			str[1][0],str[1][1],str[1][2],str[1][3],
+			str[2][0],str[2][1],str[2][2],str[2][3],
+			str[3][0],str[3][1],str[3][2],str[3][3]);
+
+	uifc.showbuf(WIN_L2R|WIN_DYN|WIN_PACK,1,1,80,6,"Statistics",statbuf);
+/* Node 5 :	Mar 11  Space: 162,024k
+   Logons: 23/103      Total: 62,610      Timeon: 322/2430    Total: 5,321,900   
+   Emails: 4/265       Posts: 4/12811     Fbacks: 2/17	       Users: 1/592
+   Uloads: 324k        Files: 1/2195      Dloads: 9,308k      Files: 52 */
+	return(0);
+}
+
+
+
 int main(int argc, char** argv)  {
 	char**	opt;
 	char**	mopt;
@@ -300,21 +438,13 @@ int main(int argc, char** argv)  {
 	chdir(bbs_startup.ctrl_dir);
 	
 	/* Read .cfg files here */
+    memset(&cfg,0,sizeof(cfg));
 	cfg.size=sizeof(cfg);
-	if(!read_main_cfg(&cfg, str)) {
+	SAFECOPY(cfg.ctrl_dir,bbs_startup.ctrl_dir);
+	if(!load_cfg(&cfg, NULL, TRUE, str)) {
 		printf("ERROR! %s\n",str);
 		exit(1);
 	}
-
-	if(!read_xtrn_cfg(&cfg, str)) {
-		printf("ERROR! %s\n",str);
-		exit(1);
-	}
-
-/*	if(!read_node_cfg(&cfg, str)) {
-		printf("ERROR! %s\n",str);
-		exit(1);
-	} */
 
     memset(&uifc,0,sizeof(uifc));
 
@@ -414,7 +544,9 @@ int main(int argc, char** argv)  {
 						"\nCTRL-I Interrupt node"
 						"\nToDo: Add more help. (Explain what you're looking at)";
 						
-		j=uifc.list(WIN_ORG|WIN_MID|WIN_ESC|WIN_ACT|WIN_DYN,0,0,70,&main_dflt,&main_bar
+		drawstats(&cfg, main_dflt+1, &node);
+		
+		j=uifc.list(WIN_L2R|WIN_ESC|WIN_ACT|WIN_DYN,0,5,70,&main_dflt,&main_bar
 			,title,mopt);
 
 		if(j==-7) {	/* CTRL-E */
@@ -426,7 +558,7 @@ int main(int argc, char** argv)  {
 						read(buffile,buf,j);
 						close(buffile);
 						*(buf+j)=0;
-						uifc.showbuf(buf,"Error Log",0);
+						uifc.showbuf(WIN_MID,0,0,76,uifc.scrn_len-2,"Error Log",buf);
 						free(buf);
 						continue;
 					}

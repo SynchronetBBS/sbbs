@@ -186,13 +186,13 @@ int chat(scfg_t *cfg, int nodenum, node_t *node, box_t *boxch, void(*timecallbac
 	time_t	now;
 	time_t	last_nodechk=0;
 
-	username(cfg,node->useron,usrname);
-
-	drawchatwin(&uwin,&swin,boxch,usrname,cfg->sys_op);
-
 	if(getnodedat(cfg,nodenum,node,NULL)) {
 		return(-1);
 	}
+
+	username(cfg,node->useron,usrname);
+
+	drawchatwin(&uwin,&swin,boxch,usrname,cfg->sys_op);
 
 	sprintf(outpath,"%slchat.dab",cfg->node_path[nodenum-1]);
 	if((out=sopen(outpath,O_RDWR|O_CREAT|O_BINARY,O_DENYNONE
