@@ -36,12 +36,28 @@ os      :=  $(shell echo $(os) | tr -d "/")
 LIBDIR	:=	/usr/lib
 DELETE	:=	rm -f -v
 ifeq ($(os),freebsd)	# FreeBSD
- LIBS	=	-pthread
+ CFLAGS	+= -D_THREAD_SAFE
+ LFLAGS	:=	-pthread
 else
  ifeq ($(os),openbsd)	# OpenBSD
-  LIBS	=	-pthread
- else					# Linux / Other UNIX
-  LIBS	=	-lpthread
+  CFLAGS	+= -D_THREAD_SAFE
+  LFLAGS	:=	-pthread
+ else
+  ifeq ($(os),netbsd)	# NetBSD
+  CFLAGS	+= -D_THREAD_SAFE -D__unix__ -D_NEED_SEM -I/usr/pkg/include
+  LFLAGS	:=	-lpth -lpthread -L/usr/pkg/lib
+  else
+   ifeq ($(os),qnx)	# QNX
+    CFLAGS	+= -D_THREAD_SAFE
+    LFLAGS	:= 
+   else			# Linux / Other UNIX
+    ifdef bcc
+     LFLAGS	:=	libpthread.a
+    else
+     LFLAGS	:=	-lpthread
+    endif
+   endif
+  endif
  endif
 endif
 
