@@ -708,7 +708,7 @@ enum {						/* readmail and delmailidx which types		*/
 #endif
 
 							/* Bits in the mode of external()           */
-#define EX_CC       (1<<0)	/* Use command.com to load other process    */
+#define EX_SH       (1<<0)	/* Use command shell to load other process  */
 #define EX_OUTR     (1<<1)  /* Copy DOS output to remote                */
 #define EX_OUTL 	(1<<2)	/* Use _lputc() for local DOS output		*/
 #define EX_INR		(1<<3)	/* Trap int 16h keyboard input requests     */
