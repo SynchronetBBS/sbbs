@@ -84,6 +84,7 @@ int RINGBUFCALL RingBufInit( RingBuf* rb, DWORD size
 #endif
 	)
 {
+	memset(rb,0,sizeof(RingBuf));
 	if((rb->pStart=(BYTE *)os_malloc(size+1))==NULL)
 		return(-1);
 #ifndef RINGBUF_USE_STD_RTL
@@ -95,6 +96,7 @@ int RINGBUFCALL RingBufInit( RingBuf* rb, DWORD size
     rb->size=size;
 #ifdef RINGBUF_SEM
 	sem_init(&rb->sem,0,0);
+	sem_init(&rb->highwater_sem,0,0);
 #endif
 #ifdef RINGBUF_MUTEX
 	pthread_mutex_init(&rb->mutex,NULL);
@@ -109,6 +111,7 @@ void RINGBUFCALL RingBufDispose( RingBuf* rb)
 #ifdef RINGBUF_SEM
 	sem_post(&rb->sem);		/* just incase someone's waiting */
 	sem_destroy(&rb->sem);
+	sem_destroy(&rb->highwater_sem);
 #endif
 #ifdef RINGBUF_MUTEX
 	pthread_mutex_destroy(&rb->mutex);
@@ -191,6 +194,8 @@ DWORD RINGBUFCALL RingBufWrite( RingBuf* rb, BYTE* src,  DWORD cnt )
 
 #ifdef RINGBUF_SEM
 	sem_post(&rb->sem);
+	if(rb->highwater_mark!=0 && RingBufFull(rb)>=rb->highwater_mark)
+		sem_post(&rb->highwater_sem);
 #endif
 #ifdef RINGBUF_MUTEX
 	pthread_mutex_unlock(&rb->mutex);

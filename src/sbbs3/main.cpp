@@ -1209,6 +1209,8 @@ void output_thread(void* arg)
 
 		if(!avail) {
 			sem_wait(&sbbs->outbuf.sem);
+			if(sbbs->outbuf.highwater_mark)
+				sem_trywait_block(&sbbs->outbuf.highwater_sem,startup->outbuf_drain_timeout);
 			continue; 
 		}
 
@@ -2067,6 +2069,7 @@ bool sbbs_t::init()
 	}
 
     RingBufInit(&outbuf, IO_THREAD_BUF_SIZE);
+	outbuf.highwater_mark=startup->outbuf_highwater_mark;
 
 	if(cfg.node_num && client_socket!=INVALID_SOCKET) {
 
@@ -3457,6 +3460,7 @@ void DLLCALL bbs_thread(void* arg)
 #ifdef JAVASCRIPT
 	if(startup->js_max_bytes==0)			startup->js_max_bytes=JAVASCRIPT_MAX_BYTES;
 #endif
+	if(startup->outbuf_drain_timeout==0)	startup->outbuf_drain_timeout=10;
 
 	uptime=0;
 	served=0;

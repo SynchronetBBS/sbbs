@@ -199,6 +199,11 @@ void sbbs_read_ini(
 	bbs->last_node
 		=iniReadShortInt(fp,section,"LastNode",4);
 
+	bbs->outbuf_highwater_mark
+		=iniReadShortInt(fp,section,"OutbufHighwaterMark",128);
+	bbs->outbuf_drain_timeout
+		=iniReadShortInt(fp,section,"OutbufDrainTimeout",10);
+
 	bbs->xtrn_polls_before_yield
 		=iniReadInteger(fp,section,"ExternalYield",10);
 	bbs->js_max_bytes

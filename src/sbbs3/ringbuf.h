@@ -83,6 +83,8 @@ typedef struct {
     DWORD	size;
 #ifdef RINGBUF_SEM
 	sem_t	sem;			/* semaphore used to signal data waiting */
+	sem_t	highwater_sem;	/* semaphore used to signal highwater mark reached */
+	DWORD	highwater_mark;
 #endif
 #ifdef RINGBUF_MUTEX
 	pthread_mutex_t mutex;	/* mutex used to protect ring buffer pointers */
