@@ -35,6 +35,8 @@
 
 #include "scfg.h"
 
+#define DEFAULT_DIR_OPTIONS (DIR_FCHK|DIR_MULT|DIR_DUPES|DIR_CDTUL|DIR_CDTDL|DIR_DIZ)
+
 void xfer_cfg()
 {
 	static int libs_dflt,libs_bar,dflt;
@@ -188,6 +190,8 @@ library, select Yes.
 		j=0;
 		sprintf(opt[j++],"%-27.27s%s","Long Name",cfg.lib[i]->lname);
 		sprintf(opt[j++],"%-27.27s%s","Short Name",cfg.lib[i]->sname);
+		sprintf(opt[j++],"%-27.27s%.40s","Root Directory"
+			,cfg.lib[i]->root);
 		sprintf(opt[j++],"%-27.27s%.40s","Access Requirements"
 			,cfg.lib[i]->arstr);
 		strcpy(opt[j++],"Clone Options");
@@ -234,10 +238,21 @@ file transfer menu prompt.
 					,cfg.lib[i]->sname,LEN_GSNAME,K_EDIT);
 				break;
 			case 2:
+				SETHELP(WHERE);
+/*
+Root Directory:
+
+This an optional path to be used as the physical "root" or "parent" 
+directory for all logical directories in this library.
+*/
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Root"
+					,cfg.lib[i]->root,LEN_DIR,K_EDIT);
+				break;
+			case 3:
 				sprintf(str,"%s Library",cfg.lib[i]->sname);
 				getar(str,cfg.lib[i]->arstr);
 				break;
-			case 3: /* clone options */
+			case 4: /* clone options */
 				j=0;
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
@@ -280,7 +295,7 @@ extension, and sort type.
 								cfg.dir[j]->seqdev=cfg.dir[k]->seqdev;
 								cfg.dir[j]->sort=cfg.dir[k]->sort; } } }
                 break;
-			case 4:
+			case 5:
 				k=0;
 				ported=0;
 				q=uifc.changes;
@@ -303,7 +318,6 @@ export to.
 					sprintf(str,"%sDIRS.TXT",cfg.ctrl_dir);
 				else if(k==1)
 					sprintf(str,"FILEBONE.NA");
-				strupr(str);
 				if(uifc.input(WIN_MID|WIN_SAV,0,0,"Filename"
 					,str,40,K_EDIT)<=0) {
 					uifc.changes=q;
@@ -368,7 +382,7 @@ export to.
 				uifc.changes=q;
 				break;
 
-			case 5:
+			case 6:
 				ported=0;
 				k=0;
 				SETHELP(WHERE);
@@ -377,9 +391,13 @@ export to.
 
 This menu allows you to choose the format of the area file you wish to
 import into the current file library.
+
+A "raw" directory listing can be created in DOS with the following
+command: DIR /ON /AD /B > DIRS.RAW
 */
 				strcpy(opt[k++],"DIRS.TXT    (Synchronet)");
                 strcpy(opt[k++],"FILEBONE.NA (Fido)");
+				strcpy(opt[k++],"DIRS.RAW    (Raw)");
 				opt[k][0]=0;
 				k=0;
 				k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
@@ -390,7 +408,11 @@ import into the current file library.
 					sprintf(str,"%sDIRS.TXT",cfg.ctrl_dir);
 				else if(k==1)
 					sprintf(str,"FILEBONE.NA");
-				strupr(str);
+				else {
+					strcpy(str,cfg.lib[i]->root);
+					backslash(str);
+					strcat(str,"dirs.raw");
+				}
 				if(uifc.input(WIN_MID|WIN_SAV,0,0,"Filename"
 					,str,40,K_EDIT)<=0)
                     break;
@@ -403,29 +425,40 @@ import into the current file library.
 					truncsp(str);
 					if(!str[0])
 						continue;
-					if(k) {
-						p=str;
-						while(*p && *p<=SP) p++;
+					memset(&tmpdir,0,sizeof(dir_t));
+					tmpdir.misc=DEFAULT_DIR_OPTIONS;
+					tmpdir.maxfiles=1000;
+					tmpdir.up_pct=cfg.cdt_up_pct;
+					tmpdir.dn_pct=cfg.cdt_dn_pct; 
+
+					p=str;
+					while(*p && *p<=SP) p++;
+
+					if(k==2) { /* raw */
+						SAFECOPY(tmpdir.code,p);
+						SAFECOPY(tmpdir.lname,p);
+						SAFECOPY(tmpdir.sname,p);
+						SAFECOPY(tmpdir.path,p);
+						ported++;
+					}
+					else if(k==1) {
 						if(strnicmp(p,"AREA ",5))
 							continue;
-						memset(&tmpdir,0,sizeof(dir_t));
-						tmpdir.misc|=
-							(DIR_FCHK|DIR_DUPES|DIR_CDTUL|DIR_CDTDL|DIR_DIZ);
-						if(k==1) {
-							p+=5;
-							while(*p && *p<=SP) p++;
-							sprintf(tmpdir.code,"%.8s",p);
-							truncsp(tmpdir.code);
-							while(*p>SP) p++;			/* Skip areaname */
-							while(*p && *p<=SP) p++;	/* Skip space */
-							while(*p>SP) p++;			/* Skip level */
-							while(*p && *p<=SP) p++;	/* Skip space */
-							while(*p>SP) p++;			/* Skip flags */
-							while(*p && *p<=SP) p++;	/* Skip space */
-							sprintf(tmpdir.lname,"%.*s",LEN_SLNAME,p); }
-						ported++; }
+						p+=5;
+						while(*p && *p<=SP) p++;
+						sprintf(tmpdir.code,"%.8s",p);
+						truncsp(tmpdir.code);
+						while(*p>SP) p++;			/* Skip areaname */
+						while(*p && *p<=SP) p++;	/* Skip space */
+						while(*p>SP) p++;			/* Skip level */
+						while(*p && *p<=SP) p++;	/* Skip space */
+						while(*p>SP) p++;			/* Skip flags */
+						while(*p && *p<=SP) p++;	/* Skip space */
+						SAFECOPY(tmpdir.sname,p); 
+						SAFECOPY(tmpdir.lname,p); 
+						ported++; 
+					}
 					else {
-						memset(&tmpdir,0,sizeof(dir_t));
 						sprintf(tmpdir.lname,"%.*s",LEN_SLNAME,str);
 						if(!fgets(str,128,stream)) break;
 						truncsp(str);
@@ -486,7 +519,9 @@ import into the current file library.
 						while(!feof(stream)
 							&& strcmp(str,"***END-OF-DIR***")) {
 							if(!fgets(str,128,stream)) break;
-							truncsp(str); } }
+							truncsp(str); 
+						} 
+					}
 
 					for(j=0;j<cfg.total_dirs;j++) {
 						if(cfg.dir[j]->lib!=i)
@@ -507,29 +542,31 @@ import into the current file library.
 							errormsg(WHERE,ERR_ALLOC,"dir",sizeof(dir_t));
 							break; }
 						memset(cfg.dir[j],0,sizeof(dir_t)); }
-					if(!k)
-						memcpy(cfg.dir[j],&tmpdir,sizeof(dir_t));
-					else {
+					if(k==1) {
 						strcpy(cfg.dir[j]->code,tmpdir.code);
 						strcpy(cfg.dir[j]->sname,tmpdir.code);
 						strcpy(cfg.dir[j]->lname,tmpdir.lname);
 						if(j==cfg.total_dirs) {
 							cfg.dir[j]->maxfiles=1000;
 							cfg.dir[j]->up_pct=cfg.cdt_up_pct;
-							cfg.dir[j]->dn_pct=cfg.cdt_dn_pct; }
+							cfg.dir[j]->dn_pct=cfg.cdt_dn_pct; 
 						}
+					} else
+						memcpy(cfg.dir[j],&tmpdir,sizeof(dir_t));
 					cfg.dir[j]->lib=i;
 					if(j==cfg.total_dirs) {
 						cfg.dir[j]->misc=tmpdir.misc;
-						cfg.total_dirs++; }
-					uifc.changes=1; }
+						cfg.total_dirs++; 
+					}
+					uifc.changes=1; 
+				}
 				fclose(stream);
 				uifc.pop(0);
 				sprintf(str,"%lu File Areas Imported Successfully",ported);
                 uifc.msg(str);
                 break;
 
-			case 6:
+			case 7:
 				dir_cfg(i);
 				break; } } }
 
@@ -648,8 +685,7 @@ this directory will be stored. Example: C:\XFER\GAMES
 		cfg.dir[dirnum[i]]->lib=libnum;
 		cfg.dir[dirnum[i]]->maxfiles=MAX_FILES<500 ? MAX_FILES:500;
 		if(stricmp(str2,"OFFLINE"))
-			cfg.dir[dirnum[i]]->misc=(DIR_FCHK|DIR_MULT|DIR_DUPES
-				|DIR_CDTUL|DIR_CDTDL|DIR_DIZ);
+			cfg.dir[dirnum[i]]->misc=DEFAULT_DIR_OPTIONS;
 		strcpy(cfg.dir[dirnum[i]]->code,code);
 		strcpy(cfg.dir[dirnum[i]]->lname,str);
 		strcpy(cfg.dir[dirnum[i]]->sname,str2);
