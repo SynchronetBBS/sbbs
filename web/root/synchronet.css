@@ -70,7 +70,7 @@ td.postmsg { background-color: #007788; }
 textarea.postmsg { background-color: black; color: #aaaaaa; }
 input.postmsg { background-color: black; color: #aaaaaa; }
 
-table.posted { margin-left: auto; margin-right: auto; background-color: #116677; }
+table.posted { width: 45%; margin-left: auto; margin-right: auto; background-color: #116677; }
 td.posted { background-color: #007788; }
 p.posted { text-align: center; }
 
@@ -78,6 +78,10 @@ table.replymsg { margin-left: auto; margin-right: auto; background-color: #11667
 td.replymsg { background-color: #007788; }
 textarea.replymsg { background-color: black; color: #aaaaaa; }
 input.replymsg { background-color: black; color: #aaaaaa; }
+
+table.theme { width: 45%; margin-left: auto; margin-right: auto; background-color: #116677; }
+td.theme { text-align: center; background-color: #007788; }
+input.theme { text-align: center; background-color: black; color: #aaaaaa; }
 
 p.navigation { text-align: center; font-style: italic; font-weight: bold; }
 a.navigation { font-style: normal; font-weight: normal; }
