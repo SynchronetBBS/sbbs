@@ -4,6 +4,8 @@
 # @format.tab-size 4													#
 #########################################################################
 
+# $id$
+
 # Macros
 DEBUG	=	1		# Comment out for release (non-debug) version
 CC		=	bcc32
@@ -11,8 +13,13 @@ LD		=	ilink32
 OS		=	Win32 
 ODIR	=	$(CC).$(OS).dll
 OFILE	=	obj
-CFLAGS	=	-d -H -X- -WD -WM -I$(INCLUDE) -L$(LIB) -n$(ODIR) -q -w-csu
-LFLAGS  =	-m -s -c -Tpd -Gi -L$(LIB) -I$(ODIR)
+CFLAGS	=	-WD -WM -n$(ODIR) 
+LFLAGS  =	-m -s -c -Tpd -Gi -I$(ODIR)
+
+# Optional compile flags (disable banner, warnings and such)
+CFLAGS	=	$(CFLAGS) -q -d -H -X- -w-csu -w-pch
+
+# Debug or release build?
 !ifdef DEBUG
 CFLAGS	=	$(CFLAGS) -v -Od -D_DEBUG 
 LFLAGS	=	$(LFLAGS) -v
@@ -96,14 +103,16 @@ OBJS	=	$(ODIR)\ansiterm.$(OFILE)\
 			$(ODIR)\userdat.$(OFILE)\
 			$(ODIR)\useredit.$(OFILE)\
 			$(ODIR)\viewfile.$(OFILE)\
+			$(ODIR)\wrappers.$(OFILE)\
 			$(ODIR)\writemsg.$(OFILE)\
 			$(ODIR)\xtrn.$(OFILE)\
 			$(ODIR)\xtrn_sec.$(OFILE) 
 
-HEADERS =	sbbs.h sbbsdefs.h scfgdefs.h gen_defs.h nodedefs.h text.h \
-			smblib.h smbdefs.h
+HEADERS =	sbbs.h sbbsdefs.h sbbswrap.h sbbsinet.h scfgdefs.h gen_defs.h \
+			nodedefs.h text.h smblib.h smbdefs.h
 
-SBBSDEFS=	-DSBBS -DSBBS_EXPORTS -DSMB_GETMSGTXT -DSMBDLL -DLZHDLL
+SBBSDEFS=	-DSBBS -DSBBS_EXPORTS -DSMB_GETMSGTXT -DSMBDLL -DLZHDLL \
+			-DWRAPPER_DLL
 
 # Implicit C Compile Rule for SBBS.DLL
 {.}.c.$(OFILE):
@@ -120,8 +129,8 @@ ALL: $(SBBS) $(FTPSRVR) $(MAILSRVR)
 # SBBS DLL Link Rule
 $(SBBS): $(OBJS) $(ODIR)\ver.$(OFILE)
     	@echo Linking $< ...
-		$(LD) $(LFLAGS) $(LIB)\c0d32.obj $(OBJS) $(ODIR)\ver.$(OFILE), $*, $*, \
-			$(LIB)\import32.lib $(LIB)\cw32mt.lib $(LIB)\ws2_32.lib
+		$(LD) $(LFLAGS) c0d32.obj $(OBJS) $(ODIR)\ver.$(OFILE), $*, $*, \
+			import32.lib cw32mt.lib ws2_32.lib
 
 # Mail Server DLL Link Rule
 $(MAILSRVR): mailsrvr.c mxlookup.c
@@ -205,6 +214,7 @@ $(ODIR)\useredit.$(OFILE):    	$(HEADERS)
 $(ODIR)\getuser.$(OFILE):		$(HEADERS)
 $(ODIR)\ver.$(OFILE):			$(HEADERS) $(OBJS)
 $(ODIR)\viewfile.$(OFILE):		$(HEADERS)
+$(ODIR)\wrappers.$(OFILE):     	$(HEADERS)
 $(ODIR)\writemsg.$(OFILE):     	$(HEADERS)
 $(ODIR)\xtrn.$(OFILE):        	$(HEADERS) cmdshell.h
 $(ODIR)\xtrn_sec.$(OFILE):    	$(HEADERS)
