@@ -118,9 +118,9 @@ int main(int argc, char **argv)
 {
 	char	revision[16];
 	char	error[512];
-	char	*p,str[256],fname[256],ext,not[MAX_NOTS][9],nots=0;
+	char	*p,str[256],fname[256],ext,not[MAX_NOTS][9];
 	uchar	*datbuf,*ixbbuf;
-	int 	i,j,file,dirnum,libnum,desc_off,lines
+	int 	i,j,file,dirnum,libnum,desc_off,lines,nots=0
 			,omode=O_WRONLY|O_CREAT|O_TRUNC;
 	ulong	l,m,n,cdt,misc=0,total_cdt=0,total_files=0,datbuflen;
 	time_t	uld,dld;
@@ -307,11 +307,11 @@ int main(int argc, char **argv)
 				exit(1); }
 			out=fdopen(j,"wb"); }
 		if(misc&HDR) {
-			sprintf(fname,"%-*s      %-*s       Files: %4u"
+			sprintf(fname,"%-*s      %-*s       Files: %4lu"
 				,LEN_GSNAME,scfg.lib[scfg.dir[i]->lib]->sname
 				,LEN_SLNAME,scfg.dir[i]->lname,l/F_IXBSIZE);
 			fprintf(out,"%s\r\n",fname);
-			strset(fname,'-');
+			memset(fname,'-',strlen(fname));
 			fprintf(out,"%s\r\n",fname); }
 		if(!l) {
 			close(file);
@@ -331,7 +331,7 @@ int main(int argc, char **argv)
 		close(file);
 		sprintf(str,"%s%s.DAT",scfg.dir[i]->data_dir,scfg.dir[i]->code);
 		if((file=nopen(str,O_RDONLY))==-1) {
-			printf("\7ERR_OPEN %s %lu\n",str,O_RDONLY);
+			printf("\7ERR_OPEN %s %u\n",str,O_RDONLY);
 			FREE((char *)ixbbuf);
 			if(misc&AUTO) fclose(out);
 			continue; }
@@ -439,7 +439,7 @@ int main(int argc, char **argv)
 				if(!fexist(str))
 					continue;
 				if((j=nopen(str,O_RDONLY))==-1) {
-					printf("\7ERR_OPEN %s %lu\n",str,O_RDONLY);
+					printf("\7ERR_OPEN %s %u\n",str,O_RDONLY);
 					continue; }
 				if((in=fdopen(j,"rb"))==NULL) {
 					close(j);
