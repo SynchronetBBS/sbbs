@@ -3163,8 +3163,8 @@ void attach_bundles(void)
 
 		printf("%21s: %s ","Outbound Packet",packet);
 		if((fmsg=sopen(packet,O_RDWR,SH_DENYRW))==-1) {
-			printf("ERROR line %d opening.\n",__LINE__);
-			logprintf("ERROR line %d opening %s",__LINE__,packet);
+			printf("ERROR %d line %d opening.\n",errno,__LINE__);
+			logprintf("ERROR %d line %d opening %s",errno,__LINE__,packet);
 			continue; }
 		if((fidomsg=fdopen(fmsg,"r+b"))==NULL) {
 			close(fmsg);
