@@ -799,6 +799,7 @@ int uifcinifltk(uifcapi_t* uifcapi)
     api->sethelp=sethelp;
 
     api->scrn_len=24;
+	api->scrn_width=80;
 	api->mode |= UIFC_MOUSE;
 
 //	Fl::scheme("plastic");

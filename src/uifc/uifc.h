@@ -181,7 +181,7 @@
 
 #define SCRN_TOP	3
 #define SCRN_LEFT	5
-#define SCRN_RIGHT 	(scrn_width-6)
+#define SCRN_RIGHT 	(api->scrn_width-6)
 
 								/* Bits in 'mode' for getkey and getstr     */
 #define K_UPPER 	(1L<<0) 	/* Converts all letters to upper case		*/
@@ -280,6 +280,10 @@ typedef struct {
 /* Screen length															*/
 /****************************************************************************/
     uint    scrn_len;
+/****************************************************************************/
+/* Screen Width 															*/
+/****************************************************************************/
+    uint    scrn_width;
 /****************************************************************************/
 /* ESC key delay for curses													*/
 /****************************************************************************/

@@ -191,6 +191,7 @@ int uifcini(uifcapi_t* uifcapi)
             ,txtinfo.screenwidth);
         return(-3);
     }
+	api->scrn_width=txtinfo.screenwidth;
 
 #ifndef __FLAT__
 

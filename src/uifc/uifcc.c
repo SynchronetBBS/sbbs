@@ -99,7 +99,6 @@ static win_t sav[MAX_BUFS];
 static uint max_opts=MAX_OPTS;
 static uifcapi_t* api;
 static int lastattr=0;
-static int scrn_width;
 
 /* Prototypes */
 static int  uprintf(int x, int y, unsigned char attr, char *fmt,...);
@@ -235,7 +234,7 @@ int uifcinic(uifcapi_t* uifcapi)
         return(-2);
     }
     api->scrn_len--; /* account for status line */
-	scrn_width=width;
+	api->scrn_width=width;
 	
 
     if(width<80) {
@@ -347,7 +346,7 @@ int uscrn(char *str)
     clrtoeol();
     gotoxy(3,1);
 	cputs(str);
-    if(!puttext(1,2,scrn_width,api->scrn_len,blk_scrn))
+    if(!puttext(1,2,api->scrn_width,api->scrn_len,blk_scrn))
         return(-1);
     gotoxy(1,api->scrn_len+1);
     clrtoeol();
@@ -1638,30 +1637,33 @@ char *utimestr(time_t *intime)
 /****************************************************************************/
 /* Status popup/down function, see uifc.h for details.						*/
 /****************************************************************************/
+#define UPOP_ROW	12
+#define UPOP_ROWS	3
+#define UPOP_COLS	80
 void upop(char *str)
 {
-	static char sav[26*3*2];
-	char buf[26*3*2];
+	static char sav[UPOP_COLS*UPOP_ROWS*2];
+	char buf[UPOP_COLS*UPOP_ROWS*2];
 	int i,j,k;
 
 	reset_dynamic();
 	hidemouse();
 	if(!str) {
-		puttext(28,12,53,14,sav);
+		puttext(1,UPOP_ROW,UPOP_COLS,UPOP_ROW+UPOP_ROWS,sav);
 		showmouse();
 		return; }
-	gettext(28,12,53,14,sav);
-	memset(buf,SP,25*3*2);
-	for(i=1;i<26*3*2;i+=2)
+	gettext(1,UPOP_ROW,UPOP_COLS,UPOP_ROW+UPOP_ROWS,sav);
+	memset(buf,SP,UPOP_COLS*UPOP_ROWS*2);
+	for(i=1;i<(UPOP_COLS+1)*UPOP_COLS*2;i+=2)
 		buf[i]=(hclr|(bclr<<4));
 		buf[0]='Ú';
-	for(i=2;i<25*2;i+=2)
+	for(i=2;i<UPOP_COLS*2;i+=2)
         buf[i]='Ä';
 		buf[i]='¿'; i+=2;
         buf[i]='³'; i+=2;
 	i+=2;
 	k=strlen(str);
-	i+=(((23-k)/2)*2);
+	i+=(((UPOP_COLS-k)/2)*2);
 	for(j=0;j<k;j++,i+=2) {
 		buf[i]=str[j];
 		buf[i+1]|=BLINK; }
@@ -1672,7 +1674,7 @@ void upop(char *str)
         buf[i]='Ä';
     buf[i]='Ù';
 
-	puttext(28,12,53,14,buf);
+	puttext(1,UPOP_ROW,UPOP_COLS,UPOP_ROW+UPOP_ROWS,buf);
 	showmouse();
 }
 
@@ -1707,12 +1709,12 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 		height=(api->scrn_len-3)-top;
 	if(!width || width<strlen(title)+6)
 		width=strlen(title)+6;
-	if(width>scrn_width)
-		width=scrn_width;
+	if(width>api->scrn_width)
+		width=api->scrn_width;
 	if(mode&WIN_L2R)
-		left=(scrn_width-width)/2+1;
+		left=(api->scrn_width-width)/2+1;
 	else if(mode&WIN_RHT)
-		left=scrn_width-(width+4+left);
+		left=api->scrn_width-(width+4+left);
 	if(mode&WIN_T2B)
 		top=(api->scrn_len/2)-(height/2)-2;
 	else if(mode&WIN_BOT)
@@ -1735,9 +1737,9 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 		is_redraw=1;
 #endif
 
-	if((savscrn=(char *)MALLOC(scrn_width*api->scrn_len*2))==NULL) {
+	if((savscrn=(char *)MALLOC(api->scrn_width*api->scrn_len*2))==NULL) {
 		cprintf("UIFC line %d: error allocating %u bytes\r\n"
-			,__LINE__,scrn_width*25*2);
+			,__LINE__,api->scrn_width*25*2);
 		curs_set(1);
 		return; }
 	if((buf=(char *)MALLOC(width*height*2))==NULL) {
@@ -1747,7 +1749,7 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 		curs_set(1);
 		return; }
 	hidemouse();
-	gettext(1,1,scrn_width,api->scrn_len,savscrn);
+	gettext(1,1,api->scrn_width,api->scrn_len,savscrn);
 
 	if(!is_redraw) {
 		memset(buf,SP,width*height*2);
@@ -1915,7 +1917,7 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 		#endif
 
 		hidemouse();
-		puttext(1,1,scrn_width,api->scrn_len,savscrn);
+		puttext(1,1,api->scrn_width,api->scrn_len,savscrn);
 		showmouse();
 	}
 #ifdef __unix__
