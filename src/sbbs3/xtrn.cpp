@@ -1409,7 +1409,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		/* Attempt to keep dosemu from prompting for a disclaimer. */
 
 		sprintf(str, "%s/.dosemu", cfg.ctrl_dir);
-		if (!isdir(str) {
+		if (!isdir(str)) {
 			mkdir(str, 0755);
 		}
 
