@@ -27,6 +27,7 @@ load("sbbsdefs.js");    // UFLAG_G
 load("../web/lib/html_themes.ssjs");
 if(http_request.virtual_path=="/nodelist.ssjs")
     load("../web/lib/main_nodelist.ssjs"); // Who's Online Listing
+http_reply.fast=true;
     
 load("../web/lib/leftnav_nodelist.ssjs"); // Left Side Navigation Node Listing
 
