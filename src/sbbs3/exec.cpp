@@ -523,12 +523,34 @@ char * sbbs_t::copystrvar(csi_t *csi, char *p, char *str)
 }
 
 #ifdef JAVASCRIPT
-long sbbs_t::js_execfile(char *fname)
+
+static JSClass js_scope_class ={
+        "Scope",
+		0,			/* flags */
+        JS_PropertyStub,JS_PropertyStub,JS_PropertyStub,JS_PropertyStub, 
+        JS_EnumerateStub,JS_ResolveStub,JS_ConvertStub,JS_FinalizeStub 
+    }; 
+
+long sbbs_t::js_execfile(char *cmd)
 {
+	char*		p;
+	char*		args=NULL;
+	char*		fname;
+	int			argc=0;
+	char		cmdline[MAX_PATH+1];
 	char		path[MAX_PATH+1];
-	JSScript*	js_script;
+	JSObject*	js_scope=NULL;
+	JSScript*	js_script=NULL;
 	jsval		rval;
 	
+	sprintf(cmdline,"%.*s",sizeof(cmdline)-1,cmd);
+	p=strchr(cmdline,' ');
+	if(p!=NULL) {
+		*p=0;
+		args=p+1;
+	}
+	fname=cmdline;
+
 	/* Add extension if not specified */
 	if(!strchr(fname,BACKSLASH))
 		sprintf(path,"%s%s",cfg.exec_dir,fname);
@@ -544,20 +566,50 @@ long sbbs_t::js_execfile(char *fname)
 
 	JS_BeginRequest(js_cx);	/* Required for multi-thread support */
 
-	js_script=JS_CompileFile(js_cx, js_glob, path);
+	js_scope=JS_NewObject(js_cx, &js_scope_class, NULL, js_glob);
 
-//	js_scope=JS_NewScriptObject(js_cx, js_script);
+	if(js_scope!=NULL) {
+
+		JSObject* argv=JS_NewArrayObject(js_cx, 0, NULL);
+
+		if(args!=NULL && argv!=NULL) {
+			while(*args) {
+				p=strchr(args,' ');
+				if(p!=NULL)
+					*p=0;
+				while(*args && *args==' ') args++; /* Skip spaces */
+				JSString* arg = JS_NewStringCopyZ(js_cx, args);
+				if(arg==NULL)
+					break;
+				jsval val=STRING_TO_JSVAL(arg);
+				if(!JS_SetElement(js_cx, argv, argc, &val))
+					break;
+				argc++;
+				if(p==NULL)	/* last arg */
+					break;
+				args+=(strlen(args)+1);
+			}
+		}
+		JS_DefineProperty(js_cx, js_scope, "argv", OBJECT_TO_JSVAL(argv)
+			,NULL,NULL,JSPROP_READONLY);
+		JS_DefineProperty(js_cx, js_scope, "argc", INT_TO_JSVAL(argc)
+			,NULL,NULL,JSPROP_READONLY);
+
+		js_script=JS_CompileFile(js_cx, js_scope, path);
+	}
 
 	JS_EndRequest(js_cx);	/* Required for multi-thread support */
 
-	if(js_script==NULL) {
+	if(js_scope==NULL || js_script==NULL) {
 		errormsg(WHERE,ERR_EXEC,path,0);
 		return(-1);
 	}
 
-	JS_ExecuteScript(js_cx, js_glob, js_script, &rval);
+	JS_ExecuteScript(js_cx, js_scope, js_script, &rval);
 
 	JS_DestroyScript(js_cx, js_script);
+
+	JS_ClearScope(js_cx, js_scope);
 
 	JS_GC(js_cx);
 
@@ -1540,7 +1592,7 @@ int sbbs_t::exec(csi_t *csi)
 			log(csi->str);
 			return(0);
 		case CS_CHKSYSPASS:
-			csi->logic=!chksyspass(0);
+			csi->logic=!chksyspass();
 			return(0);
 		case CS_PUT_NODE:
 			getnodedat(cfg.node_num,&thisnode,1);
