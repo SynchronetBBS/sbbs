@@ -13,7 +13,7 @@ if((hp = dest.indexOf('@'))==-1) {
 host = dest.slice(hp+1);
 sock = new Socket();
 //sock.debug = true;
-if(!sock.connect(host,79)) 
+if(!sock.connect(host,"finger")) 
 	alert("Connection to " + host + " failed with error " + sock.last_error);
 else {
 	sock.send(dest.slice(0,hp)+"\r\n");
