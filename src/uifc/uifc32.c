@@ -366,6 +366,7 @@ int uscrn(char *str)
     gotoxy(1,api->scrn_len+1);
     clreol();
 	reset_dynamic();
+	settitle(str);
     return(0);
 }
 
