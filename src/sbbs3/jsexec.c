@@ -59,6 +59,7 @@ FILE*		statfp;
 char		revision[16];
 BOOL		pause_on_exit=FALSE;
 BOOL		pause_on_error=FALSE;
+BOOL		loop=FALSE;
 BOOL		terminated=FALSE;
 BOOL		terminate_immediately=FALSE;
 
@@ -89,6 +90,7 @@ void usage(FILE* fp)
 		"\t-n              send status messages to %s instead of stdout\n"
 		"\t-q              send console messages to %s instead of stderr\n"
 		"\t-x              terminate immediately on local abort signal\n"
+		"\t-l              loop until intentionally terminated\n"
 		"\t-p              wait for keypress (pause) on exit\n"
 		"\t-!              wait for keypress (pause) on error\n"
 		,JAVASCRIPT_MAX_BYTES
@@ -696,6 +698,9 @@ int main(int argc, char **argv, char** environ)
 				case 'x':
 					terminate_immediately=TRUE;
 					break;
+				case 'l':
+					loop=TRUE;
+					break;
 				case 'p':
 					pause_on_exit=TRUE;
 					break;
@@ -751,12 +756,6 @@ int main(int argc, char **argv, char** environ)
 	if(!winsock_startup())
 		bail(2);
 
-	if(!js_init(environ)) {
-		fprintf(errfp,"!JavaScript initialization failure\n");
-		bail(1);
-	}
-	fprintf(statfp,"\n");
-
 	/* Install Ctrl-C/Break signal handler here */
 #if defined(_WIN32)
 	SetConsoleCtrlHandler(ControlHandler, TRUE /* Add */);
@@ -766,13 +765,23 @@ int main(int argc, char **argv, char** environ)
 	signal(SIGTERM,break_handler);
 #endif
 
-	result=js_exec(module,&argv[argn]);
+	do {
 
-	fprintf(statfp,"\n");
-	fprintf(statfp,"JavaScript: Destroying context\n");
-	JS_DestroyContext(js_cx);
-	fprintf(statfp,"JavaScript: Destroying runtime\n");
-	JS_DestroyRuntime(js_runtime);	
+		if(!js_init(environ)) {
+			fprintf(errfp,"!JavaScript initialization failure\n");
+			bail(1);
+		}
+		fprintf(statfp,"\n");
+
+		result=js_exec(module,&argv[argn]);
+
+		fprintf(statfp,"\n");
+		fprintf(statfp,"JavaScript: Destroying context\n");
+		JS_DestroyContext(js_cx);
+		fprintf(statfp,"JavaScript: Destroying runtime\n");
+		JS_DestroyRuntime(js_runtime);	
+
+	} while(loop && !terminated);
 
 	bail(result);
 
