@@ -499,7 +499,7 @@ static char *cleanpath(char *target, char *path, size_t size)  {
 				memmove(out,out+1,strlen(out));
 			else if(*(out+1)=='.' && (*(out+2)=='/' || *(out+2)=='\\'))
 				memmove(out,out+2,strlen(out)-1);
-			else if(*(out+1)=='.' && *(out+2)=='.' && (*(out+3)=='/' || *(out+3)=='/'))  {
+			else if(*(out+1)=='.' && *(out+2)=='.' && (*(out+3)=='/' || *(out+3)=='\\'))  {
 				*out=0;
 				p=strrchr(target,'/');
 				p2=strrchr(target,'\\');
@@ -1415,7 +1415,6 @@ static BOOL get_req(http_session_t * session)
 		if(p!=NULL) {
 			p=get_request(session,p);
 			session->http_ver=get_version(p);
-			lprintf("VERSION: %s (%s)",http_vers[session->http_ver],p);
 			if(session->http_ver>=HTTP_1_1)
 				session->req.keep_alive=TRUE;
 			if(session->req.dynamic==IS_CGI)  {
