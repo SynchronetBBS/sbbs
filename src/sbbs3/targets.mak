@@ -31,5 +31,5 @@ mono:	$(LIBDIR) $(EXEODIR) \
 		$(SBBSMONO)
 
 clean:
-	$(DELETE) $(LIBODIR)$(SLASH)*
-	$(DELETE) $(EXEODIR)$(SLASH)*
+	$(DELETE) $(LIBODIR)
+	$(DELETE) $(EXEODIR)
