@@ -127,11 +127,11 @@ Note: Example command-lines are pre-fixed with '#', symbolizing the Unix shell
 
 Note: The "make" command may be used in place of "gmake" on systems where
       the GNU Make utility is named "make" (e.g. Debian Linux).
-	  Type "make -v" to verify that "make" is indeed GNU Make.
+      Type "make -v" to verify that "make" is indeed GNU Make.
 
 Note: Any references to cvs.synchro.net can be replaced with
       cvs-mirror.synchro.net (the Synchronet CVS Mirror site run by Stephen
-	  Hurd) if you're having any problems with cvs.synchro.net.
+      Hurd) if you're having any problems with cvs.synchro.net.
 
 Note: Skip to step 8 if you are updating an existing Synchronet installation.
 
@@ -217,10 +217,10 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
       # gmake
       Note: If you're linking with /usr/lib/libmozjs.so, don't forget to add
             "JSLIB=mozjs" to the gmake command-line
-	  Note: For those building on systems that do not have X installed,
+      Note: For those building on systems that do not have X installed,
             use "gmake NO_X=1"
       Note: If X is not installed in /usr/X11R6, 
-	        use "gmake X_DIR=/path/to/X"
+            use "gmake X_DIR=/path/to/X"
       Note: To debug compile/link command-line problems, adding "VERBOSE=1"
             to the gmake command-line can be very helpful
       Note: Warnings (if any) can be safely ignored
@@ -237,10 +237,10 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
 
    D. Build the Synchronet configuration utility (SCFG):
       # gmake
-	  Note: For those building on systems that do not have X installed,
+      Note: For those building on systems that do not have X installed,
             use "gmake NO_X=1"
       Note: If X is not installed in /usr/X11R6, 
-	        use "gmake X_DIR=/path/to/X"
+            use "gmake X_DIR=/path/to/X"
       Note: Warnings (if any) can be safely ignored
 
    E. Congratulate yourself on a job well-done.
@@ -258,7 +258,7 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
 
       Example (note the trailing dots):
       # ln -s ../src/sbbs3/gcc.linux.exe.debug/* .
-	  # ln -s ../src/sbbs3/scfg/gcc.linux.exe.debug/scfg* .
+      # ln -s ../src/sbbs3/scfg/gcc.linux.exe.debug/scfg* .
 
    C. Copy (or create symbolic links to) the following shared libraries:
       ../src/sbbs3/gcc.linux.lib.debug/*
