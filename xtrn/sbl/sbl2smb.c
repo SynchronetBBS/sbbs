@@ -147,7 +147,7 @@ strupr(smb.file);
 
 strcpy(str,argv[1]);
 strupr(str);
-if((file=open(str,O_RDONLY|O_BINARY|O_DENYNONE))==-1) {
+if((file=open(str,O_RDWR|O_BINARY|O_DENYNONE))==-1) {
 	printf("error opening %s\n",str);
 	return(1); }
 if((stream=fdopen(file,"rb"))==NULL) {
@@ -191,7 +191,8 @@ while(!feof(stream)) {
 	if(!fread(&bbs,sizeof(bbs_t),1,stream))
 		break;
 	if(!bbs.name[0] || bbs.misc&FROM_SMB
-		|| (bbs.updated<last && bbs.created<last))
+		|| (bbs.updated<last && bbs.created<last 
+			&& bbs.verified<last))
 		continue;
 	if(software[0] && strnicmp(software,bbs.software,strlen(software)))
 		continue;
