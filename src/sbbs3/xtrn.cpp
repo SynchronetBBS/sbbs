@@ -237,13 +237,13 @@ BYTE* cr_expand(BYTE* inbuf, ulong inlen, BYTE* outbuf, ulong& newlen)
 /****************************************************************************/
 int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 {
-	char	str[256],*p,*p_startup_dir;
+	char	str[MAX_PATH+1],*p,*p_startup_dir;
 	char	path[MAX_PATH+1];
-	char	fname[128];
-    char	fullcmdline[256];
-	char	realcmdline[256];
-	char	comspec_str[128];
-	char	title[256];
+	char	fname[MAX_PATH+1];
+    char	fullcmdline[MAX_PATH+1];
+	char	realcmdline[MAX_PATH+1];
+	char	comspec_str[MAX_PATH+1];
+	char	title[MAX_PATH+1];
 	BYTE	buf[XTRN_IO_BUF_LEN],*bp;
     BYTE 	telnet_buf[XTRN_IO_BUF_LEN*2];
     BYTE 	output_buf[XTRN_IO_BUF_LEN*2];
@@ -1063,8 +1063,9 @@ static int forkpty(int *amaster, char *name, termios *termp, winsize *winp)
 
 int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 {
-	char	str[256];
-	char	fname[128];
+	char	str[MAX_PATH+1];
+	char	fname[MAX_PATH+1];
+	char	fullcmdline[MAX_PATH+1];
 	char*	argv[MAX_ARGS];
 	char*	p;
 	BYTE*	bp;
@@ -1106,12 +1107,10 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
     if(i<cfg.total_natvpgms || mode&EX_NATIVE)
         native=true;
 
-#ifndef __FreeBSD__
-	if(!native) {
-		bprintf("\r\nExternal DOS programs are not yet supported in\r\n%s\r\n",VERSION_NOTICE);
-		return(-1);
-	}
-#endif
+	if(startup_dir!=NULL && cmdline[0]!='/' && cmdline[0]!='.')
+		sprintf(fullcmdline,"%s%s",startup_dir,cmdline);
+	else
+		SAFECOPY(fullcmdline,cmdline);
 
  	if(native) { // Native (32-bit) external
 
@@ -1127,7 +1126,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
         	errormsg(WHERE,ERR_WRITE,"environment",0);
 
 	} else {
-#ifdef __FreeBSD__
+#if defined(__FreeBSD__)
 		/* ToDo: This seems to work for every door except Iron Ox
 		   ToDo: Iron Ox is unique in that it runs perfectly from
 		   ToDo: tcsh but not at all from anywhere else, complaining
@@ -1165,8 +1164,12 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 		fprintf(doscmdrc,"SBBSNNUM=%d\n",cfg.node_num);
 
 		fclose(doscmdrc);
-		SAFECOPY(str,cmdline);
-		sprintf(cmdline,"%s -F %s",startup->dosemu_path,str);
+		SAFECOPY(str,fullcmdline);
+		sprintf(fullcmdline,"%s -F %s",startup->dosemu_path,str);
+#else
+		bprintf("\r\nExternal DOS programs are not yet supported in\r\n%s\r\n"
+			,VERSION_NOTICE);
+		return(-1);
 #endif
 	}
 
@@ -1192,7 +1195,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 		winsize.ws_col=80;
 		if((pid=forkpty(&in_pipe[1],NULL,&term,&winsize))==-1) {
 			pthread_mutex_unlock(&input_thread_mutex);
-			errormsg(WHERE,ERR_EXEC,cmdline,0);
+			errormsg(WHERE,ERR_EXEC,fullcmdline,0);
 			return(-1);
 		}
 		out_pipe[0]=in_pipe[1];
@@ -1212,7 +1215,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 
 		if((pid=fork())==-1) {
 			pthread_mutex_unlock(&input_thread_mutex);
-			errormsg(WHERE,ERR_EXEC,cmdline,0);
+			errormsg(WHERE,ERR_EXEC,fullcmdline,0);
 			return(-1);
 		}
 	}
@@ -1236,18 +1239,18 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 		if(startup_dir!=NULL && startup_dir[0])
 			chdir(startup_dir);
 
-		if(mode&EX_SH || strcspn(cmdline,"<>|;")!=strlen(cmdline)) {
+		if(mode&EX_SH || strcspn(fullcmdline,"<>|;")!=strlen(fullcmdline)) {
 			argv[0]=comspec;
 			argv[1]="-c";
-			argv[2]=cmdline;
+			argv[2]=fullcmdline;
 			argv[3]=NULL;
 		} else {
-			argv[0]=cmdline;	/* point to the beginning of the string */
+			argv[0]=fullcmdline;	/* point to the beginning of the string */
 			argc=1;
-			for(i=0;cmdline[i] && argc<MAX_ARGS;i++)	/* Break up command line */
-				if(cmdline[i]==SP) {
-					cmdline[i]=0;			/* insert nulls */
-					argv[argc++]=cmdline+i+1; /* point to the beginning of the next arg */
+			for(i=0;fullcmdline[i] && argc<MAX_ARGS;i++)	/* Break up command line */
+				if(fullcmdline[i]==SP) {
+					fullcmdline[i]=0;			/* insert nulls */
+					argv[argc++]=fullcmdline+i+1; /* point to the beginning of the next arg */
 				}
 			argv[argc]=NULL;
 		}
@@ -1278,7 +1281,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 		exit(-1);	/* should never get here */
 	}
 
-	lprintf("Node %d executing external: %s",cfg.node_num,cmdline);
+	lprintf("Node %d executing external: %s",cfg.node_num,fullcmdline);
 
 	/* Disable Ctrl-C checking */
 	if(!(mode&EX_OFFLINE)) {
