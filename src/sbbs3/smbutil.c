@@ -1182,7 +1182,7 @@ void packmsgs(ulong packable)
 	}
 
 	/* Change *.sh$ into *.shd */
-	fclose(smb.shd_fp);
+	fclose(smb.shd_fp), smb.shd_fp=NULL;
 	fclose(tmp_shd);
 	sprintf(fname,"%s.shd",smb.file);
 	if(remove(fname)!=0) {
@@ -1197,7 +1197,7 @@ void packmsgs(ulong packable)
 
 
 	/* Change *.sd$ into *.sdt */
-	fclose(smb.sdt_fp);
+	fclose(smb.sdt_fp), smb.sdt_fp=NULL;
 	fclose(tmp_sdt);
 	sprintf(fname,"%s.sdt",smb.file);
 	if(!error && remove(fname)!=0) {
@@ -1212,7 +1212,7 @@ void packmsgs(ulong packable)
 	}
 
 	/* Change *.si$ into *.sid */
-	fclose(smb.sid_fp);
+	fclose(smb.sid_fp), smb.sid_fp=NULL;
 	fclose(tmp_sid);
 	sprintf(fname,"%s.sid",smb.file);
 	if(!error && remove(fname)!=0) {
@@ -1226,14 +1226,19 @@ void packmsgs(ulong packable)
 		fprintf(stderr,"\n\7!Error %d renaming %s to %s\n",errno,tmpfname,fname);
 	}
 
+	if((i=smb_unlock(&smb))!=0)
+		fprintf(stderr,"\n\7!ERROR %d (%s) unlocking %s\n",i,smb.last_error,smb.file);
+
 	if((i=smb_open(&smb))!=0) {
 		fprintf(stderr,"\n\7!Error %d (%s) reopening %s\n",i,smb.last_error,smb.file);
 		return; 
 	}
-
+	if((i=smb_locksmbhdr(&smb))!=0)
+		fprintf(stderr,"\n\7!smb_locksmbhdr returned %d: %s\n",i,smb.last_error);
 	smb.status.total_msgs=total;
 	if((i=smb_putstatus(&smb))!=0)
 		fprintf(stderr,"\n\7!smb_putstatus returned %d: %s\n",i,smb.last_error);
+	smb_unlocksmbhdr(&smb);
 	printf("\nDone.\n\n");
 }
 
