@@ -45,7 +45,7 @@
 /***************/
 /* OS-specific */
 /***************/
-#ifdef _WIN32			/* Windows */
+#if defined(_WIN32)			/* Windows */
 
 	#include <io.h>
 	#include <share.h>
@@ -54,7 +54,7 @@
 	#include <direct.h>		/* _mkdir() prototype */
 	#include <mmsystem.h>	/* SND_ASYNC */
 
-#elif defined(__unix__)	/* Unix-variant */
+#elif defined(__unix__)		/* Unix-variant */
 
 	#include <unistd.h>		/* close */
 
@@ -67,7 +67,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <ctype.h>
-#include <fcntl.h>		/* open */
+#include <fcntl.h>			/* open */
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
@@ -80,6 +80,7 @@
 #include "sbbsinet.h"
 #include "sbbswrap.h"
 #include "smblib.h"
+#include "smbwrap.h"
 #include "ars_defs.h"
 #include "scfgdefs.h"
 #include "scfglib.h"
@@ -91,22 +92,7 @@
 #include "ringbuf.h"    /* RingBuf definition */
 #include "client.h"		/* client_t definition */
 
-/*********************/
-/* Compiler-Specific */
-/*********************/
-#ifndef __BORLANDC__
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-int lock(int file, long offset, int size);
-int unlock(int file, long offset, int size);
-#ifdef __cplusplus
-}
-#endif
-#endif /* !__BORLANDC__ */
-
-
+/* Synchronet Node Instance class definition */
 #ifdef __cplusplus
 class sbbs_t
 {
@@ -715,6 +701,16 @@ extern "C" {
 	/* str.cpp */
 	DLLEXPORT	BOOL	DLLCALL trashcan(scfg_t* cfg, char *insearch, char *name);
 
+	DLLEXPORT ushort	DLLCALL crc16(char *str);
+	DLLEXPORT char *	DLLCALL zonestr(short zone);
+	DLLEXPORT int		DLLCALL putsmsg(scfg_t* cfg, int usernumber, char *strin);
+
+	/* load_cfg.C */
+
+	DLLEXPORT BOOL		DLLCALL load_cfg(scfg_t* cfg, char* text[]);
+
+#ifdef SBBS /* These aren't exported */
+
 	/* misc.c */
 	int		nopen(char *str, int access);
 	int		bstrlen(char *str);
@@ -733,15 +729,8 @@ extern "C" {
 	char *	hexplus(uint num, char *str); 	/* Hex plus for 3 digits up to 9000 */
 	uint	hptoi(char *str);
 
-	DLLEXPORT ushort	DLLCALL crc16(char *str);
-	DLLEXPORT char *	DLLCALL zonestr(short zone);
-	DLLEXPORT int		DLLCALL putsmsg(scfg_t* cfg, int usernumber, char *strin);
-
-	/* load_cfg.C */
-
-	DLLEXPORT BOOL		DLLCALL load_cfg(scfg_t* cfg, char* text[]);
-	char *				readtext(long *line, FILE *stream);
-	BOOL 				md(char *path);
+	char *	readtext(long *line, FILE *stream);
+	BOOL 	md(char *path);
 
 	int 	lprintf(char *fmt, ...);
 	int 	lputs(char *);
@@ -752,32 +741,34 @@ extern "C" {
 	char *	unixtodstr(scfg_t*, time_t, char *str); /* Unix time to ASCII date */
 	char *	sectostr(uint sec, char *str);		/* seconds to HH:MM:SS */
 
+	/* qwk.cpp */
+	void	remove_re(char *str);
+#ifdef __cplusplus
+	char*	remove_ctrl_a(char* instr, char* outstr=NULL);
+#endif
+
+	/* sortdir.cpp */
+	int		fnamecmp_a(char **str1, char **str2);	 /* for use with resort() */
+	int		fnamecmp_d(char **str1, char **str2);
+	int		fdatecmp_a(uchar **buf1, uchar **buf2);
+	int		fdatecmp_d(uchar **buf1, uchar **buf2);
+
+	BOOL	filematch(char *filename, char *filespec);
+
+	/* chat.cpp */
+	void	packchatpass(char *pass, node_t* node);
+	char *	unpackchatpass(char *pass, node_t* node);
+
+#endif /* SBBS */
+
 #ifdef __cplusplus
 }
 #endif
 
-#ifdef __cplusplus
-/* qwk.cpp */
-void	remove_re(char *str);
-char*	remove_ctrl_a(char* instr, char* outstr=NULL);
-#endif
-
-/* sortdir.cpp */
-int		fnamecmp_a(char **str1, char **str2);	 /* for use with resort() */
-int		fnamecmp_d(char **str1, char **str2);
-int		fdatecmp_a(uchar **buf1, uchar **buf2);
-int		fdatecmp_d(uchar **buf1, uchar **buf2);
-
-BOOL	filematch(char *filename, char *filespec);
-
-/* chat.cpp */
-void	packchatpass(char *pass, node_t* node);
-char *	unpackchatpass(char *pass, node_t* node);
-
 /* Global data */
 
 extern const char* wday[];	/* abbreviated weekday names */
-extern const char* mon[];		/* abbreviated month names */
+extern const char* mon[];	/* abbreviated month names */
 
 #if defined(__FLAT__) || defined(_WIN32)
 
