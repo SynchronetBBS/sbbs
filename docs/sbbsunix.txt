@@ -68,7 +68,7 @@ A. Currently, only the FreeBSD build has doscmd support "built-in" (and this
    programs.
 
    There's a patch for "building-in" DOSEMU support with Synchronet for Linux:
-   http://forge.icequake.net/syncmods/index.html
+   http://www.icequake.net/bbs/syncmods/index.html
 
    and a FAQ for using DOSEMU with Synchronet for Linux (without a patch):
    http://www.exeonline.com/bbs/howto-doors.txt
