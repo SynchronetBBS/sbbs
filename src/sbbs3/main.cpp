@@ -250,7 +250,7 @@ static JSClass js_method_class = {
 
 static const char* method_array_name = "_method_list";
 
-static JSBool 
+JSBool 
 DLLCALL js_DefineMethods(JSContext* cx, JSObject* obj, JSFunctionSpec *funcs)
 {
 	int			i;
