@@ -247,18 +247,18 @@ static char *apszColorNames[] =
 /* Array of door information (drop) file names to search for. */
 static char *apszDropFileNames[] = 
 {
-   "EXITINFO.BBS",
-   "DORINFO1.DEF",
-   "CHAIN.TXT",
-   "SFDOORS.DAT",
-   "DOOR.SYS",
-   "CALLINFO.BBS",
-   "SFMAIN.DAT",
-   "SFFILE.DAT",
-   "SFMESS.DAT",
-   "SFSYSOP.DAT",
-   "TRIBBS.SYS",
-   "DOOR32.SYS",
+   "exitinfo.bbs",
+   "dorinfo1.def",
+   "chain.txt",
+   "sfdoors.dat",
+   "door.sys",
+   "callinfo.bbs",
+   "sfmain.dat",
+   "sffile.dat",
+   "sfmess.dat",
+   "sfsysop.dat",
+   "tribbs.sys",
+   "door32.sys",
 };
 
 /* Array of door information (drop) file numbers 
@@ -539,16 +539,16 @@ force_local:
       /* Generate the name of the dorinfox.def file for this node. */
       if(od_control.od_node > 35)
       {
-         apszDropFileNames[1] = (char *)"DORINFO1.DEF";
+         apszDropFileNames[1] = (char *)"dorinfo1.def";
       }
       else if(od_control.od_node > 9)
       {
-         sprintf(szIFTemp, "DORINFO%c.DEF", od_control.od_node + 55);
+         sprintf(szIFTemp, "dorinfo%c.def", od_control.od_node + 55);
          apszDropFileNames[1] = (char *)szIFTemp;
       }
       else
       {
-         sprintf(szIFTemp, "DORINFO%d.DEF", od_control.od_node);
+         sprintf(szIFTemp, "dorinfo%d.def", od_control.od_node);
          apszDropFileNames[1] = (char *)szIFTemp;
       }
 
@@ -557,10 +557,10 @@ force_local:
       if(!ODFileAccessMode(od_control.info_path, 4))
       {
          /* Check for a DORINFOx.DEF filename. */
-         if(ODStringHasTail(od_control.info_path, ".DEF") &&
+         if(ODStringHasTail(od_control.info_path, ".def") &&
             strlen(od_control.info_path) >= strlen(apszDropFileNames[2]) &&
             strnicmp((char *)&od_control.info_path +
-            (strlen(od_control.info_path) - 12), "DORINFO", 7) == 0)
+            (strlen(od_control.info_path) - 12), "dorinfo", 7) == 0)
          {
             nFound = FOUND_DORINFO1_DEF;
             strcpy(szDropFilePath, od_control.info_path);
@@ -598,7 +598,7 @@ force_local:
             goto DropFileFail;
          }
 
-         ODMakeFilename(szODWorkString, szExitinfoBBSPath, "DORINFO1.DEF",
+         ODMakeFilename(szODWorkString, szExitinfoBBSPath, "dorinfo1.def",
             sizeof(szExitinfoBBSPath));
          if((pfDropFile = fopen(szODWorkString, "r")) == NULL)
          {
@@ -1627,7 +1627,7 @@ static void ODInitReadExitInfo(void)
    od_control.od_ra_info=FALSE;
 
    /* Try to open EXITINFO.BBS. */
-   ODMakeFilename(szODWorkString, szExitinfoBBSPath, "EXITINFO.BBS",
+   ODMakeFilename(szODWorkString, szExitinfoBBSPath, "exitinfo.bbs",
       sizeof(szExitinfoBBSPath));
    if((pfDropFile = fopen(szODWorkString, "rb")) != NULL)
    {
