@@ -79,6 +79,7 @@ int DLLCALL set_socket_options(scfg_t* cfg, SOCKET sock, char* error)
 	char		cfgfile[MAX_PATH+1];
 	char		str[256];
 	char*		p;
+	char*		name;
 	BYTE*		vp;
 	FILE*		fp;
 	int			option;
@@ -104,12 +105,14 @@ int DLLCALL set_socket_options(scfg_t* cfg, SOCKET sock, char* error)
 	while(!feof(fp)) {
 		if(!fgets(str,sizeof(str),fp))
 			break;
-		if(str[0]==';')
+		name=str;
+		while(*name && *name<=' ') name++;
+		if(*name==';' || *name==0)	/* blank line or comment */
 			continue;
-		p=str;
+		p=name;
 		while(*p && *p>' ') p++;
 		if(*p) *(p++)=0;
-		option=sockopt(str);
+		option=sockopt(name);
 		while(*p && *p<=' ') p++;
 		len=sizeof(value);
 		value=strtol(p,NULL,0);
@@ -135,13 +138,13 @@ int DLLCALL set_socket_options(scfg_t* cfg, SOCKET sock, char* error)
 		result=setsockopt(sock,SOL_SOCKET,option,vp,len);
 		if(result) {
 			sprintf(error,"%d setting socket option (%s, %d) to %d"
-				,ERROR_VALUE, str, option, value);
+				,ERROR_VALUE, name, option, value);
 			break;
 		}
 #if 0
 		len = sizeof(value);
 		getsockopt(sock,SOL_SOCKET,option,(void*)&value,&len);
-		lprintf("%04d socket option: %s set to %d", sock, str, value);
+		lprintf("%04d socket option: %s set to %d", sock, name, value);
 #endif
 	}
 	fclose(fp);
