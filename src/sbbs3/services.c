@@ -224,7 +224,7 @@ static int close_socket(SOCKET sock)
 		if(ERROR_VALUE!=ENOTSOCK)
 			lprintf("%04d !ERROR %d closing socket",sock, ERROR_VALUE);
 	}
-#if 0 /*def _DEBUG */
+#ifdef _DEBUG
 	else 
 		lprintf("%04d Socket closed (%d sockets in use)",sock,sockets);
 #endif
@@ -1643,6 +1643,10 @@ void DLLCALL services_thread(void* arg)
 								,service[i].socket, service[i].protocol, ERROR_VALUE);
 						break;
 					}
+					sockets++;
+#ifdef _DEBUG
+					lprintf("%04d Socket opened (%d sockets in use)",client_socket,sockets);
+#endif
 					if(startup->socket_open!=NULL)
 						startup->socket_open(TRUE);	/* Callback, increments socket counter */
 				}
