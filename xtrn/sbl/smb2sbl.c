@@ -233,11 +233,11 @@ int main(int argc, char **argv)
 		last=0;
 	high=last;
 
-	sprintf(str,"%s.SHD",smb.file);
+	sprintf(str,"%s.shd",smb.file);
 	if(!fexist(str)) {
 		printf("%s doesn't exist\n",smb.file);
 		return(0); }
-	sprintf(str,"%s.SID",smb.file);
+	sprintf(str,"%s.sid",smb.file);
 	if(!flength(str)) {
 		printf("%s is empty\n",smb.file);
 		return(0); }

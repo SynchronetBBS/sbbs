@@ -188,7 +188,7 @@ int main(int argc, char **argv)
 		write(file,&now,sizeof(now));
 		close(file); }
 
-	sprintf(str,"%s.SHD",smb.file);
+	sprintf(str,"%s.shd",smb.file);
 	if(!fexist(str)) {
 		printf("%s doesn't exist\n",smb.file);
 		return(0); }
