@@ -101,8 +101,15 @@ BOOL	debug_telnet=FALSE;
 
 RingBuf		inbuf;
 RingBuf		outbuf;
-xpevent_t	outbuf_empty;
+#if defined(RINGBUF_EVENT)
+	#define		outbuf_empty outbuf.empty_event
+#else
+	xpevent_t	outbuf_empty;
+#endif
 unsigned	outbuf_drain_timeout;
+
+unsigned	flows=0;
+unsigned	select_errors=0;
 
 #define getcom(t)	recv_byte(NULL,t)
 #define putcom(ch)	send_byte(NULL,ch,10)
@@ -169,9 +176,11 @@ int lprintf(int level, const char *fmt, ...)
 void bail(int code)
 {
 #if !SINGLE_THREADED
-	lprintf(LOG_DEBUG,"Waiting for output buffer to empty...");
-	WaitForEvent(outbuf_empty,5000);
-	lprintf(LOG_DEBUG,"\n");
+	lprintf(LOG_DEBUG,"Waiting for output buffer to empty... ");
+	if(WaitForEvent(outbuf_empty,5000)==WAIT_OBJECT_0)
+		lprintf(LOG_DEBUG,"\n");
+	else
+		lprintf(LOG_DEBUG,"FAILURE\n");
 #endif
 
 	terminate=TRUE;
@@ -183,7 +192,8 @@ void bail(int code)
 		BEEP(1000,500);
 	}
 	newline();
-	fprintf(statfp,"Exiting - Error level: %d",code);
+	fprintf(statfp,"Exiting - Error level: %d, flows: %u, select_errors=%u"
+		,code, flows, select_errors);
 	fprintf(statfp,"\n");
 
 	if(logfp!=NULL)
@@ -360,11 +370,20 @@ int send_byte(void* unused, uchar ch, unsigned timeout)
 	else
 		buf[0]=ch;
 
-	if(RingBufFree(&outbuf)<len)
-		if(WaitForEvent(outbuf_empty,timeout*1000)!=WAIT_OBJECT_0)
+	if(RingBufFree(&outbuf)<len) {
+		fprintf(statfp,"FLOW");
+		flows++;
+		if(WaitForEvent(outbuf_empty,timeout*1000)!=WAIT_OBJECT_0) {
+			fprintf(statfp,"\n!ERROR Waiting for output buffer to flush\n");
 			return(-1);
+		}
+		fprintf(statfp,"\b\b\b\b    \b\b\b\b");
+	}
 
 	RingBufWrite(&outbuf,buf,len);
+#if !defined(RINGBUF_EVENT)
+	ResetEvent(outbuf_empty);
+#endif
 
 	if(debug_tx)
 		fprintf(statfp,"TX: %s\n",chr(ch));
@@ -420,7 +439,6 @@ void output_thread(void* arg)
 	ulong		total_sent=0;
 	ulong		total_pkts=0;
 	ulong		short_sends=0;
-	ulong	    select_errors=0;
     ulong		bufbot=0;
     ulong		buftop=0;
 	fd_set		socket_set;
@@ -432,16 +450,18 @@ void output_thread(void* arg)
 
 	while(sock!=INVALID_SOCKET && !terminate) {
 
-    	if(bufbot==buftop)
+		if(bufbot==buftop)
 	    	avail=RingBufFull(&outbuf);
-        else
+		else
         	avail=buftop-bufbot;
 
 		if(!avail) {
+#if !defined(RINGBUF_EVENT)
+			SetEvent(outbuf_empty);
+#endif
 			sem_wait(&outbuf.sem);
 			if(outbuf.highwater_mark)
 				sem_trywait_block(&outbuf.highwater_sem,outbuf_drain_timeout);
-			SetEvent(outbuf_empty);
 			continue; 
 		}
 
@@ -516,7 +536,6 @@ void output_thread(void* arg)
 	ulong		total_sent=0;
 	ulong		total_pkts=0;
 	ulong		short_sends=0;
-	ulong	    select_errors=0;
 	ulong		buftop=0;
 	fd_set		socket_set;
 	struct timeval tv;
@@ -533,7 +552,6 @@ void output_thread(void* arg)
 			sem_wait(&outbuf.sem);
 			if(outbuf.highwater_mark)
 				sem_trywait_block(&outbuf.highwater_sem,outbuf_drain_timeout);
-			SetEvent(outbuf_empty);
 			continue; 
 		}
 
@@ -790,7 +808,7 @@ void send_files(char** fname, uint fnames)
 					block_len=strlen(block)+1+i;
 					for(errors=0;errors<xm.max_errors;errors++) {
 						xmodem_put_block(&xm, block, block_len <=128 ? 128:1024, 0  /* block_num */);
-						if(mode&GMODE || xmodem_get_ack(&xm,1,0))
+						if(/* mode&GMODE || */xmodem_get_ack(&xm,1,0))
 							break; 
 					}
 					if(errors==xm.max_errors) {
@@ -894,6 +912,13 @@ void send_files(char** fname, uint fnames)
 					sent_bytes+=fsize;
 					fprintf(statfp,"\n");
 
+#if !SINGLE_THREADED
+					lprintf(LOG_DEBUG,"Waiting for output buffer to empty... ");
+					if(WaitForEvent(outbuf_empty,5000)==WAIT_OBJECT_0)
+						lprintf(LOG_DEBUG,"\n");
+					else
+						lprintf(LOG_DEBUG,"FAILURE\n");
+#endif
 					for(i=0;i<10;i++) {
 						fprintf(statfp,"\rSending EOT (%d) ",i+1);
 
@@ -950,7 +975,7 @@ void send_files(char** fname, uint fnames)
 					,30000 /* baud */
 					,l/t
 					,errors
-					,0	   /* flows */
+					,flows
 					,xm.block_size
 					,path); 
 			}
@@ -982,6 +1007,7 @@ void send_files(char** fname, uint fnames)
 
 			memset(block,0,128);	/* send short block for terminator */
 			xmodem_put_block(&xm, block, 128 /* block_size */, 0 /* block_num */);
+			SLEEP(1000);
 			if(!xmodem_get_ack(&xm,6,0)) {
 				newline();
 				fprintf(statfp,"Failed to receive ACK after terminating block\n"); 
@@ -1337,7 +1363,7 @@ void receive_files(char** fname, int fnames)
 				,30000	/* baud */
 				,l/t
 				,errors
-				,0		/* flows */
+				,flows
 				,xm.block_size
 				,str
 				,serial_num); 
@@ -1443,11 +1469,14 @@ int main(int argc, char **argv)
 	xm.ack_timeout			=iniReadInteger(fp,"Xmodem","AckTimeout",xm.ack_timeout);	/* seconds */
 	xm.block_size			=iniReadInteger(fp,"Xmodem","BlockSize",xm.block_size);		/* 128 or 1024 */
 	xm.max_errors			=iniReadInteger(fp,"Xmodem","MaxErrors",xm.max_errors);
+	xm.g_delay				=iniReadInteger(fp,"Xmodem","G_Delay",xm.g_delay);
 
 	if(fp!=NULL)
 		fclose(fp);
 
-	outbuf_empty=CreateEvent(NULL,FALSE,TRUE,NULL);
+#if !defined(RINGBUF_EVENT)
+	outbuf_empty=CreateEvent(NULL,/* ManualReset */TRUE, /*InitialState */TRUE,NULL);
+#endif
 
 #if 0
 	if(argc>1) {
@@ -1531,6 +1560,9 @@ int main(int argc, char **argv)
 				switch(toupper(argv[i][1])) {
 					case 'K':	/* sz/rz compatible */
 						xm.block_size=1024;
+						break;
+					case 'G':	/* Ymodem-G */
+						mode|=GMODE;
 						break;
 					case 'O':
 						mode|=OVERWRITE;
