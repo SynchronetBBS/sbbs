@@ -1043,7 +1043,7 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 							f.altpath=0; }
 					putfiledat(&cfg,&f);
 					inputnstime(&f.dateuled);
-					update_uldate(&f);
+					update_uldate(&cfg, &f);
 					break;
 				case 'F':   /* delete file only */
 					sprintf(str,"%s%s",dirpath,fname);
