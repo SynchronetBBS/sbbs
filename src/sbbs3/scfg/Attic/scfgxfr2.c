@@ -647,7 +647,7 @@ this directory will be stored. Example: C:\XFER\GAMES
 		memset((dir_t *)cfg.dir[dirnum[i]],0,sizeof(dir_t));
 		cfg.dir[dirnum[i]]->lib=libnum;
 		cfg.dir[dirnum[i]]->maxfiles=MAX_FILES<500 ? MAX_FILES:500;
-		if(strcmpi(str2,"OFFLINE"))
+		if(stricmp(str2,"OFFLINE"))
 			cfg.dir[dirnum[i]]->misc=(DIR_FCHK|DIR_MULT|DIR_DUPES
 				|DIR_CDTUL|DIR_CDTDL|DIR_DIZ);
 		strcpy(cfg.dir[dirnum[i]]->code,code);
