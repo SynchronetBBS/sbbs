@@ -38,6 +38,8 @@
 #ifndef _SOCKWRAP_H
 #define _SOCKWRAP_H
 
+#include "gen_defs.h"	/* BOOL */
+
 /***************/
 /* OS-specific */
 /***************/
