@@ -52,12 +52,12 @@ js_load(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	scfg_t*		cfg;
 
 	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
-		return JS_FALSE;
+		return(JS_FALSE);
 
     for (i = 0; i < argc; i++) {
 		str = JS_ValueToString(cx, argv[i]);
 		if (!str)
-			return JS_FALSE;
+			return(JS_FALSE);
 		argv[i] = STRING_TO_JSVAL(str);
 		filename = JS_GetStringBytes(str);
 		errno = 0;
@@ -73,10 +73,11 @@ js_load(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 			JS_DestroyScript(cx, script);
 			}
 		if (!ok)
-			return JS_FALSE;
+			return(JS_FALSE);
     }
 
-    return JS_TRUE;
+	*rval=JSVAL_VOID;
+    return(JS_TRUE);
 }
 
 static JSBool
@@ -90,13 +91,13 @@ js_format(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	fmt = JS_ValueToString(cx, argv[0]);
 	if (!fmt)
-		return JS_FALSE;
+		return(JS_FALSE);
 
     for (i = 1; i < argc && i<sizeof(arglist)/sizeof(arglist[0]); i++) {
 		if(JSVAL_IS_STRING(argv[i])) {
 			str = JS_ValueToString(cx, argv[i]);
 			if (!str)
-			    return JS_FALSE;
+			    return(JS_FALSE);
 			arglist[i-1]=JS_GetStringBytes(str);
 		} else if(JSVAL_IS_INT(argv[i]) || JSVAL_IS_BOOLEAN(argv[i]))
 			arglist[i-1]=(char *)JSVAL_TO_INT(argv[i]);
@@ -111,8 +112,7 @@ js_format(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	JS_smprintf_free(p);
 
 	*rval = STRING_TO_JSVAL(str);
-
-    return JS_TRUE;
+    return(JS_TRUE);
 }
 
 static JSBool
@@ -124,6 +124,7 @@ js_mswait(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		val=JSVAL_TO_INT(argv[0]);
 	mswait(val);
 
+	*rval = JSVAL_VOID;
 	return(JS_TRUE);
 }
 
@@ -154,13 +155,14 @@ js_beep(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		dur=JSVAL_TO_INT(argv[1]);
 
 	sbbs_beep(freq,dur);
-
+	*rval = JSVAL_VOID;
 	return(JS_TRUE);
 }
 
 static JSBool
 js_exit(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
+	*rval = JSVAL_VOID;
 	return(JS_FALSE);
 }
 
@@ -229,7 +231,7 @@ js_ascii(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		if((p=JS_GetStringBytes(js_str))==NULL) 
 			return(JS_FALSE);
 
-		*rval = INT_TO_JSVAL(*p);
+		*rval=INT_TO_JSVAL(*p);
 		return(JS_TRUE);
 	}
 
@@ -238,9 +240,7 @@ js_ascii(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	str[1]=0;
 
 	js_str = JS_NewStringCopyZ(cx, str);
-
 	*rval = STRING_TO_JSVAL(js_str);
-
 	return(JS_TRUE);
 }
 
@@ -260,9 +260,7 @@ js_strip_ctrl(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 	strip_ctrl(p);
 
 	js_str = JS_NewStringCopyZ(cx, p);
-
 	*rval = STRING_TO_JSVAL(js_str);
-
 	return(JS_TRUE);
 }
 

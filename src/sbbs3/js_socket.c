@@ -67,20 +67,20 @@ js_socket_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsv
 	if(argc)
 		type=JSVAL_TO_INT(argv[0]);
 
+	*rval = JSVAL_VOID;
+
 	if((sock=open_socket(type))==INVALID_SOCKET) {
 		dbprintf(TRUE, 0, "open_socket failed with error %d",ERROR_VALUE);
-		*rval = JSVAL_VOID;
-		return JS_FALSE;
+		return(JS_FALSE);
 	}
 
 	if(!JS_SetPrivate(cx, obj, (char*)(sock<<1))) {
 		dbprintf(TRUE, sock, "JS_SetPrivate failed");
-		*rval = JSVAL_VOID;
-		return JS_FALSE;
+		return(JS_FALSE);
 	}
 
 	dbprintf(FALSE, sock, "socket object constructed");
-	return JS_TRUE;
+	return(JS_TRUE);
 }
 
 /* Socket Destructor */
@@ -112,6 +112,8 @@ js_close(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	SOCKET	sock;
 	
 	sock=(uint)JS_GetPrivate(cx,obj)>>1;
+
+	*rval = JSVAL_VOID;
 
 	if(sock==INVALID_SOCKET || sock==0)
 		return(JS_TRUE);
@@ -145,12 +147,12 @@ js_bind(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if((i=bind(sock, (struct sockaddr *) &addr, sizeof (addr)))!=0) {
 		dbprintf(TRUE, sock, "bind failed with error %d",ERROR_VALUE);
 		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
-		return JS_TRUE;
+		return(JS_TRUE);
 	}
 
 	dbprintf(FALSE, sock, "bound to port %u",addr.sin_port);
 	*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
-	return JS_TRUE;
+	return(JS_TRUE);
 }
 
 static JSBool
@@ -166,13 +168,13 @@ js_connect(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	sock=(uint)JS_GetPrivate(cx,obj)>>1;
 
 	if(argc<2)
-		return JS_FALSE;
+		return(JS_FALSE);
 
 	str = JS_ValueToString(cx, argv[0]);
 	if((ip_addr=resolve_ip(JS_GetStringBytes(str)))==0) {
 		dbprintf(TRUE, sock, "resolve_ip failed with error %d",ERROR_VALUE);
 		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
-		return JS_TRUE;
+		return(JS_TRUE);
 	}
 
 	port = (ushort)JSVAL_TO_INT(argv[1]);
@@ -187,7 +189,7 @@ js_connect(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if((i=connect(sock, (struct sockaddr *)&addr, sizeof(addr)))!=0) {
 		dbprintf(TRUE, sock, "connect failed with error %d",ERROR_VALUE);
 		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
-		return JS_TRUE;
+		return(JS_TRUE);
 	}
 
 	*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
