@@ -519,7 +519,7 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
 {
     /* Defaults */
     CtrlDirectory="c:\\sbbs\\ctrl\\";
-    LoginCommand="start telnet://localhost";
+    LoginCommand="telnet://localhost";
     ConfigCommand="%sSCFG %s /T2";
     MinimizeToSysTray=false;
     NodeDisplayInterval=1;  /* seconds */
@@ -1819,9 +1819,11 @@ void __fastcall TMainForm::BBSLoginMenuItemClick(TObject *Sender)
 {
     if(!strnicmp(LoginCommand.c_str(),"start ",6))
         WinExec(LoginCommand.c_str(),SW_SHOWMINNOACTIVE);
+    else if(!strnicmp(LoginCommand.c_str(),"telnet:",7))
+        ShellExecute(Handle, "open", LoginCommand.c_str(),
+            NULL,NULL,SW_SHOWDEFAULT);
     else
         WinExec(LoginCommand.c_str(),SW_SHOWNORMAL);
-
 }
 //---------------------------------------------------------------------------
 
@@ -1878,12 +1880,10 @@ void __fastcall TMainForm::UserListExecute(TObject *Sender)
 }
 //---------------------------------------------------------------------------
 
-void __fastcall TMainForm::HelpIndexMenuItemClick(TObject *Sender)
+void __fastcall TMainForm::WebPageMenuItemClick(TObject *Sender)
 {
-    char str[512];
-
-    sprintf(str,"start http://synchro.net/docs/");
-    WinExec(str,SW_SHOWMINNOACTIVE);
+    ShellExecute(Handle, "open", ((TMenuItem*)Sender)->Hint.c_str(),
+        NULL,NULL,SW_SHOWDEFAULT);
 }
 //---------------------------------------------------------------------------
 
@@ -1933,15 +1933,6 @@ void __fastcall TMainForm::RestoreTrayMenuItemClick(TObject *Sender)
 {
     TrayIcon->Visible=false;
     Application->Restore();
-}
-//---------------------------------------------------------------------------
-
-void __fastcall TMainForm::HelpSysopMenuItemClick(TObject *Sender)
-{
-    char str[512];
-
-    sprintf(str,"start http://synchro.net/docs/sysop.html");
-    WinExec(str,SW_SHOWMINNOACTIVE);
 }
 //---------------------------------------------------------------------------
 void __fastcall TMainForm::BBSConfigWizardMenuItemClick(TObject *Sender)

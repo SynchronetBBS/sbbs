@@ -1,6 +1,6 @@
 object MainForm: TMainForm
-  Left = 446
-  Top = 149
+  Left = 573
+  Top = 540
   Width = 640
   Height = 400
   Caption = 'Synchronet Control Panel'
@@ -2472,11 +2472,13 @@ object MainForm: TMainForm
       Caption = '&Help'
       object HelpIndexMenuItem: TMenuItem
         Caption = '&Index'
-        OnClick = HelpIndexMenuItemClick
+        Hint = 'http://www.synchro.net/docs/'
+        OnClick = WebPageMenuItemClick
       end
       object HelpSysopMenuItem: TMenuItem
         Caption = 'Sysop Manual'
-        OnClick = HelpSysopMenuItemClick
+        Hint = 'http://www.synchro.net/docs/sysop.html'
+        OnClick = WebPageMenuItemClick
       end
       object N7: TMenuItem
         Caption = '-'
