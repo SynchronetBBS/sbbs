@@ -170,6 +170,19 @@ char** iniReadStringList(FILE* fp, const char* section, const char* key
 	return(lp);
 }
 
+char** iniFreeStringList(char** list)
+{
+	ulong	i;
+
+	if(list==NULL)
+		return(NULL);
+
+	for(i=0;list[i]!=NULL;i++)
+		free(list[i]);
+
+	free(list);
+	return(NULL);
+}
 
 long iniReadInteger(FILE* fp, const char* section, const char* key, long deflt)
 {

@@ -53,6 +53,7 @@ char*		iniReadString	(FILE* fp, const char* section, const char* key,
 							 const char* deflt);
 char**		iniReadStringList(FILE* fp, const char* section, const char* key
 							,const char* sep, const char* deflt);
+char**		iniFreeStringList(char** list);
 long		iniReadInteger	(FILE* fp, const char* section, const char* key, 
 							 long deflt);
 ushort		iniReadShortInt	(FILE* fp, const char* section, const char* key, 
