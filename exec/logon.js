@@ -61,7 +61,7 @@ if(user.security.exemptions&UFLAG_H)
 
 // Print logon screens based on security level
 if(file_exists(system.text_dir + "menu/logon" + user.level + ".*"))
-	menu(logon + user.level);
+	bbs.menu("logon" + user.level);
 
 // Print successively numbered logon screens (logon, logon1, logon2, etc.)
 for(i=0;;i++) {
