@@ -3003,9 +3003,11 @@ static void smtp_thread(void* arg)
 
 			for(i=0;i<mailproc_count;i++) {
 				mailproc_list[i].match=FALSE;
-				for(j=0;mailproc_list[i].to[j]!=NULL;j++) {
-					if(stricmp(p,mailproc_list[i].to[j])==0)
-						mailproc_list[i].match=TRUE;
+				if(mailproc_list[i].to!=NULL) {
+					for(j=0;mailproc_list[i].to[j]!=NULL;j++) {
+						if(stricmp(p,mailproc_list[i].to[j])==0)
+							mailproc_list[i].match=TRUE;
+					}
 				}
 				if(mailproc_list[i].match)
 					break;
