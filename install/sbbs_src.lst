@@ -1,3 +1,4 @@
+install/GNUmakefile
 src/xpdev
 src/uifc
 src/sbbs3
