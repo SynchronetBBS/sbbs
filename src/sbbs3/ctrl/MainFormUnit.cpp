@@ -941,6 +941,7 @@ void __fastcall TMainForm::BBSConfigureMenuItemClick(TObject *Sender)
     STARTUPINFO startup_info={0};
     PROCESS_INFORMATION process_info;
     startup_info.cb=sizeof(startup_info);
+    startup_info.lpTitle="Synchronet Configuration Utility";
 	CreateProcess(
 		NULL,			// pointer to name of executable module
 		str,  			// pointer to command line string
