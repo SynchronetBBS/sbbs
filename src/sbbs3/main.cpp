@@ -268,10 +268,10 @@ DLLCALL js_CreateArrayOfStrings(JSContext* cx, JSObject* parent, const char* nam
 	return(JS_TRUE);
 }
 
-/* Convert from Synchronet-specific jsMethodSpec to JSAPI's JSFunctionSpec */
+/* Convert from Synchronet-specific jsSyncMethodSpec to JSAPI's JSFunctionSpec */
 
 JSBool
-DLLCALL js_DescribeObject(JSContext* cx, JSObject* obj, const char* str)
+DLLCALL js_DescribeSyncObject(JSContext* cx, JSObject* obj, const char* str, int ver)
 {
 	JSString* js_str = JS_NewStringCopyZ(cx, str);
 
@@ -279,11 +279,13 @@ DLLCALL js_DescribeObject(JSContext* cx, JSObject* obj, const char* str)
 		return(JS_FALSE);
 
 	return(JS_DefineProperty(cx,obj,"_description"
-		,STRING_TO_JSVAL(js_str),NULL,NULL,JSPROP_READONLY));
+			,STRING_TO_JSVAL(js_str),NULL,NULL,JSPROP_READONLY)
+		&& JS_DefineProperty(cx,obj,"_ver"
+			,INT_TO_JSVAL(ver),NULL,NULL,JSPROP_READONLY));
 }
 
 JSBool
-DLLCALL js_DescribeConstructor(JSContext* cx, JSObject* obj, const char* str)
+DLLCALL js_DescribeSyncConstructor(JSContext* cx, JSObject* obj, const char* str)
 {
 	JSString* js_str = JS_NewStringCopyZ(cx, str);
 
@@ -305,6 +307,7 @@ static char* server_prop_desc[] = {
 
 
 static const char* method_array_name = "_method_list";
+static const char* propver_array_name = "_property_ver_list";
 
 /*
  * from jsatom.c:
@@ -321,8 +324,37 @@ static const char *js_type_str[] = {
 	"array",		// JSTYPE_LIMIT
 };
 
+JSBool
+DLLCALL js_DefineSyncProperties(JSContext *cx, JSObject *obj, jsSyncPropertySpec* props)
+{
+	uint		i;
+	jsval		val;
+	jsuint		len=0;
+	JSObject*	array;
+
+	if((array=JS_NewArrayObject(cx, 0, NULL))==NULL)
+		return(JS_FALSE);
+
+	if(!JS_DefineProperty(cx, obj, propver_array_name, OBJECT_TO_JSVAL(array)
+		,NULL,NULL,JSPROP_READONLY))
+		return(JS_FALSE);
+
+	for(i=0;props[i].name;i++) {
+		if(!JS_DefinePropertyWithTinyId(cx, obj, 
+			props[i].name,props[i].tinyid, JSVAL_VOID, NULL, NULL, props[i].flags))
+			return(JS_FALSE);
+		if(props[i].flags&JSPROP_ENUMERATE) {	/* No need to version invisible props */
+			val = INT_TO_JSVAL(props[i].ver);
+			if(!JS_SetElement(cx, array, len++, &val))
+				return(JS_FALSE);
+		}
+	}
+
+	return(JS_TRUE);
+}
+
 JSBool 
-DLLCALL js_DefineMethods(JSContext* cx, JSObject* obj, jsMethodSpec *funcs, BOOL append)
+DLLCALL js_DefineSyncMethods(JSContext* cx, JSObject* obj, jsSyncMethodSpec *funcs, BOOL append)
 {
 	int			i;
 	jsuint		len=0;
@@ -348,7 +380,8 @@ DLLCALL js_DefineMethods(JSContext* cx, JSObject* obj, jsMethodSpec *funcs, BOOL
 
 	for(i=0;funcs[i].name;i++) {
 
-		JS_DefineFunction(cx, obj, funcs[i].name, funcs[i].call, funcs[i].nargs, 0);
+		if(!JS_DefineFunction(cx, obj, funcs[i].name, funcs[i].call, funcs[i].nargs, 0))
+			return(JS_FALSE);
 
 		if(funcs[i].type==JSTYPE_ALIAS)
 			continue;
@@ -388,6 +421,11 @@ DLLCALL js_DefineMethods(JSContext* cx, JSObject* obj, jsMethodSpec *funcs, BOOL
 			JS_SetProperty(cx, method, "desc", &val);
 		}
 
+		if(funcs[i].ver) {
+			val = INT_TO_JSVAL(funcs[i].ver);
+			JS_SetProperty(cx,method, "ver", &val);
+		}
+
 		val=OBJECT_TO_JSVAL(method);
 		if(!JS_SetElement(cx, method_array, len+i, &val))
 			return(JS_FALSE);
@@ -398,13 +436,28 @@ DLLCALL js_DefineMethods(JSContext* cx, JSObject* obj, jsMethodSpec *funcs, BOOL
 
 #else // NON-DEBUG
 
+JSBool
+DLLCALL js_DefineSyncProperties(JSContext *cx, JSObject *obj, jsSyncPropertySpec* props)
+{
+	uint i;
+
+	for(i=0;props[i].name;i++) 
+		if(!JS_DefinePropertyWithTinyId(cx, obj, 
+			props[i].name,props[i].tinyid, JSVAL_VOID, NULL, NULL, props[i].flags))
+			return(JS_FALSE);
+
+	return(JS_TRUE);
+}
+
+
 JSBool 
-DLLCALL js_DefineMethods(JSContext* cx, JSObject* obj, jsMethodSpec *funcs, BOOL append)
+DLLCALL js_DefineSyncMethods(JSContext* cx, JSObject* obj, jsSyncMethodSpec *funcs, BOOL append)
 {
 	uint i;
 
 	for(i=0;funcs[i].name;i++)
-		JS_DefineFunction(cx, obj, funcs[i].name, funcs[i].call, funcs[i].nargs, 0);
+		if(!JS_DefineFunction(cx, obj, funcs[i].name, funcs[i].call, funcs[i].nargs, 0))
+			return(JS_FALSE);
 	return(JS_TRUE);
 }
 
@@ -673,38 +726,47 @@ js_prompt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     return(JS_TRUE);
 }
 
-static jsMethodSpec js_global_functions[] = {
+static jsSyncMethodSpec js_global_functions[] = {
 	{"log",				js_log,				1,	JSTYPE_STRING,	JSDOCSTR("[level,] value [,value]")
 	,JSDOCSTR("add a line of text to the server and/or system log, "
 		"<i>values</i> are typically string constants or variables, "
 		"<i>level</i> is the debug level/priority (default: <tt>LOG_INFO</tt>)")
+	,311
 	},
 	{"read",			js_read,			0,	JSTYPE_STRING,	JSDOCSTR("[count]")
 	,JSDOCSTR("read up to count characters from input stream")
+	,311
 	},
 	{"readln",			js_readln,			0,	JSTYPE_STRING,	JSDOCSTR("[count]")
 	,JSDOCSTR("read a single line, up to count characters, from input stream")
+	,311
 	},
 	{"write",			js_write,			0,	JSTYPE_VOID,	JSDOCSTR("value [,value]")
 	,JSDOCSTR("send one or more values (typically strings) to the server output")
+	,311
 	},
 	{"print",			js_writeln,			0,	JSTYPE_ALIAS },
     {"writeln",         js_writeln,         0,	JSTYPE_VOID,	JSDOCSTR("value [,value]")
 	,JSDOCSTR("send a line of text to the console or event log with automatic line termination (CRLF), "
 		"<i>values</i> are typically string constants or variables (AKA print)")
+	,311
 	},
     {"printf",          js_printf,          1,	JSTYPE_STRING,	JSDOCSTR("string format [,value][,value]")
 	,JSDOCSTR("print a formatted string - <small>CAUTION: for experienced C programmers ONLY</small>")
+	,310
 	},	
 	{"alert",			js_alert,			1,	JSTYPE_VOID,	JSDOCSTR("value")
 	,JSDOCSTR("print an alert message (ala client-side JS)")
+	,310
 	},
 	{"prompt",			js_prompt,			1,	JSTYPE_STRING,	JSDOCSTR("[value]")
 	,JSDOCSTR("displays a prompt (<i>value</i>) and returns a string of user input (ala clent-side JS)")
+	,310
 	},
 	{"confirm",			js_confirm,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("value")
 	,JSDOCSTR("displays a Yes/No prompt and returns <i>true</i> or <i>false</i> "
 		"based on users confirmation (ala client-side JS)")
+	,310
 	},
     {0}
 };
@@ -858,10 +920,9 @@ bool sbbs_t::js_init()
 			break;
 
 #ifdef _DEBUG
-		js_DescribeObject(js_cx,server,"Server-specifc properties");
+		js_DescribeSyncObject(js_cx,server,"Server-specifc properties",310);
 		js_CreateArrayOfStrings(js_cx, server, "_property_desc_list", server_prop_desc, JSPROP_READONLY);
 #endif
-
 		success=true;
 
 	} while(0);
