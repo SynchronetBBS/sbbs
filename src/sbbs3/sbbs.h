@@ -392,7 +392,7 @@ public:
 	/* str.cpp */
 	char*	timestr(time_t *intime);
     char	timestr_output[60];
-	void	userlist(char subonly);
+	void	userlist(long mode);
 	size_t	gettmplt(char *outstr, char *tmplt, long mode);
 	void	sif(char *fname, char *answers, long len);	/* Synchronet Interface File */
 	void	sof(char *fname, char *answers, long len);

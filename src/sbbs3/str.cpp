@@ -40,7 +40,7 @@
 /****************************************************************************/
 /* Lists all users who have access to the current sub.                      */
 /****************************************************************************/
-void sbbs_t::userlist(char mode)
+void sbbs_t::userlist(long mode)
 {
 	char	name[256],sort=0;
 	char 	tmp[512];
