@@ -1,170 +1,0 @@
-ÕÍÍÍÍÍÍÍµ Synchronet Local Keyboard Commands ÆÍÍÍÍÍÍÍ¸³                     (*
- 
-t
-o
-g
-g
-l
-e
-)                     ³³ *A
-l
-t
--
-N
- 
-Lock This Node                              ³³ *A
-l
-t
--
-R
- 
-Rerun This Node After Logoff                ³³  A
-l
-t
--
-H
- 
-Hang up on User Immediately                 ³³ *A
-l
-t
--
-I
- 
-Interrupt (Hang up) User with Message       ³³ *A
-l
-t
--
-A
- 
-Alert Sysop After Logoff                    ³³ *A
-l
-t
--
-Q
- 
-Disable/Enable Remote Keyboard (Quiet User) ³³  A
-l
-t
--
-U
- 
-User Editor (Display [WAIT] Remotely)       ³³ *A
-l
-t
--
-E
- 
-Local I/O Only (Display [WAIT] Remotely)    ³³ *A
-l
-t
--
-T
- 
-Temporary Sysop Status                      ³³  A
-l
-t
--
-D
- 
-Shell to DOS (Display [WAIT] Remotely)      ³³ *A
-l
-t
--
-L
- 
-Turn Local Text/ANSI Capture On/Off         ³³ *A
-l
-t
--
-C
- 
-Pop User in and out of Local Sysop Chat     ³³ *A
-l
-t
--
-G
- 
-Pop User in and out of Local Guru Chat      ³³  A
-l
-t
--
-P
- 
-Turn Chat Page Off                          ³³ *A
-l
-t
--
-X
- 
-Exit to DOS After Logoff (Down Node)        ³³  A
-l
-t
--
-+
- 
-Add 5 Minutes to User's Time                ³³  A
-l
-t
--
--
- 
-Subtract 5 Minutes from User's Time         ³³  A
-l
-t
--
-0
- 
-through A
-l
-t
--
-9
- 
-Quick Validation              ³³  P
-a
-g
-e
- 
-U
-p
- 
-ASCII Upload                              ³³  C
-t
-r
-l
--
-U
-p
-,
- 
-D
-n
-,
- 
-H
-o
-m
-e
-,
- 
-a
-n
-d
- 
-E
-n
-d
- 
-to Scroll Status Line  ³³ *S
-c
-r
-o
-l
-l
--
-l
-o
-c
-k
- 
-On if Sysop is Available for Chat     ³ÔÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¾

@@ -1,5 +1,0 @@
-# This is for the Hayes ACCURA/OPTIMA 288 modem
-# Updated 03/23/96 Digital Dynamics: Now uses verbal result codes
-
-INCLUDE 	HAY14400
-COM_RATE	115200
