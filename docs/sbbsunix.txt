@@ -91,10 +91,10 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
       export CVSROOT=:pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs 
       cvs login
       (no password - just hit enter)
-      cvs co ctrl text exec xtrn node1 node2 node3 node4
+      cvs co ctrl text docs exec xtrn node1 node2 node3 node4
 
    D. Get the required source code modules from the CVS repository:
-      cvs co src/sbbs3 src/uifc src/xpdev src/mozilla
+      cvs co src/sbbs3 src/uifc src/xpdev include
 
    E. Get the required JavaScript library for your platform and build type:
       cvs co lib/mozilla/js/linux.debug
