@@ -96,6 +96,8 @@ typedef struct  {
 	const char*	mime_type;
 
 	/* CGI parameters */
+	char		query_str[MAX_REQUEST_LINE];
+
 	linked_list*	cgi_env;
 	linked_list*	cgi_heads;
 	char *		post_data;
@@ -1136,6 +1138,7 @@ static char *get_request(http_session_t * session, char *req_line)
 	retval=strtok(NULL," \t");
 	strtok(session->req.virtual_path,"?");
 	p=strtok(NULL,"");
+	SAFECOPY(session->req.query_str,p);
 	add_env(session,"QUERY_STRING",p);
 	unescape(session->req.virtual_path);
 	SAFECOPY(session->req.physical_path,session->req.virtual_path);
@@ -1591,6 +1594,98 @@ static BOOL exec_cgi(http_session_t *session)
 /* JavaScript stuff */
 /********************/
 
+JSObject* DLLCALL js_CreateHttpRequestObject(JSContext* cx, JSObject* parent, http_session_t *session)
+{
+	JSObject*	request;
+	JSObject*	query;
+/*	JSObject*	cookies;
+	JSObject*	headers; */
+	JSString*	js_str;
+	jsval		val;
+	char		query_str[MAX_REQUEST_LINE];
+	char		*key;
+	char		*value;
+	char		*p;
+
+	/* Return existing object if it's already been created */
+	if(JS_GetProperty(cx,parent,"http_request",&val) && val!=JSVAL_VOID)
+		request = JSVAL_TO_OBJECT(val);
+	else
+		request = JS_DefineObject(cx, parent, "http_request", NULL
+									, NULL, JSPROP_ENUMERATE);
+
+	if((js_str=JS_NewStringCopyZ(cx, methods[session->req.method]))==NULL)
+		return(FALSE);
+	JS_DefineProperty(cx, request, "method", STRING_TO_JSVAL(js_str)
+		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+		
+	if((js_str=JS_NewStringCopyZ(cx, session->req.virtual_path))==NULL)
+		return(FALSE);
+	JS_DefineProperty(cx, request, "virtual_path", STRING_TO_JSVAL(js_str)
+		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+
+	if((js_str=JS_NewStringCopyZ(cx, session->req.physical_path))==NULL)
+		return(FALSE);
+	JS_DefineProperty(cx, request, "real_path", STRING_TO_JSVAL(js_str)
+		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+
+	if((js_str=JS_NewStringCopyZ(cx, session->req.ars))==NULL)
+		return(FALSE);
+	JS_DefineProperty(cx, request, "ars", STRING_TO_JSVAL(js_str)
+		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+
+	if((js_str=JS_NewStringCopyZ(cx, session->req.host))==NULL)
+		return(FALSE);
+	JS_DefineProperty(cx, request, "host", STRING_TO_JSVAL(js_str)
+		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+
+	if((js_str=JS_NewStringCopyZ(cx, session->useragent))==NULL)
+		return(FALSE);
+	JS_DefineProperty(cx, request, "useragent", STRING_TO_JSVAL(js_str)
+		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+
+	if((js_str=JS_NewStringCopyZ(cx, http_vers[session->http_ver]))==NULL)
+		return(FALSE);
+	JS_DefineProperty(cx, request, "http_ver", STRING_TO_JSVAL(js_str)
+		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+
+	if((js_str=JS_NewStringCopyZ(cx, session->host_ip))==NULL)
+		return(FALSE);
+	JS_DefineProperty(cx, request, "remote_ip", STRING_TO_JSVAL(js_str)
+		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+
+	if((js_str=JS_NewStringCopyZ(cx, session->host_name))==NULL)
+		return(FALSE);
+	JS_DefineProperty(cx, request, "remote_host", STRING_TO_JSVAL(js_str)
+		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+
+	
+	/* Return existing object if it's already been created */
+	if(JS_GetProperty(cx,request,"query",&val) && val!=JSVAL_VOID)
+		query = JSVAL_TO_OBJECT(val);
+	else
+		query = JS_DefineObject(cx, request, "query", NULL
+									, NULL, JSPROP_ENUMERATE);
+
+	SAFECOPY(query_str,session->req.query_str);
+	p=query_str;
+	while((key=strtok(p,"="))!=NULL)  {
+		p=NULL;
+		if(key != NULL)  {
+			value=strtok(NULL,"&");
+			if(value != NULL)  {
+				unescape(value);
+				unescape(key);
+				if((js_str=JS_NewStringCopyZ(cx, value))==NULL)
+					return(FALSE);
+				JS_DefineProperty(cx, query, key, STRING_TO_JSVAL(js_str)
+					,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+			}
+		}
+	}
+	return(request);
+}
+
 static void
 js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 {
@@ -1685,7 +1780,7 @@ static JSFunctionSpec js_global_functions[] = {
 };
 
 static JSContext* 
-js_initcx(JSRuntime* runtime, SOCKET sock, JSObject** glob)
+js_initcx(JSRuntime* runtime, SOCKET sock, JSObject** glob, http_session_t *session)
 {
 	char		ver[256];
 	JSContext*	js_cx;
@@ -1716,6 +1811,10 @@ js_initcx(JSRuntime* runtime, SOCKET sock, JSObject** glob)
 
 		lprintf("%04d JavaScript: Initializing System object",sock);
 		if(js_CreateSystemObject(js_cx, js_glob, &scfg, uptime, startup->host_name)==NULL) 
+			break;
+
+		lprintf("%04d JavaScript: Initializing HttpRequest object",sock);
+		if(js_CreateHttpRequestObject(js_cx, js_glob, session)==NULL) 
 			break;
 
 		if((server=JS_DefineObject(js_cx, js_glob, "server", NULL,NULL,0))==NULL)
@@ -1766,7 +1865,7 @@ BOOL js_setup(http_session_t* session)
 
 	if(session->js_cx==NULL) {	/* Context not yet created, create it now */
 		if(((session->js_cx=js_initcx(session->js_runtime, session->socket
-			,&session->js_glob))==NULL)) {
+			,&session->js_glob, session))==NULL)) {
 			lprintf("%04d !ERROR initializing JavaScript context",session->socket);
 			send_error(session,"500 Error initializing JavaScript context");
 			return(FALSE);
