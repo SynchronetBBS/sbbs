@@ -403,11 +403,11 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 		}
 	}
 	if(mode&WIN_L2R)
-		left=(api->scrn_width-width)/2-s_left+1;
+		left=(api->scrn_width-width+1)/2-s_left;
 	else if(mode&WIN_RHT)
 		left=api->scrn_width-(width+4+left);
 	if(mode&WIN_T2B)
-		top=(api->scrn_len/2)-(height/2)-2;
+		top=(api->scrn_len-height+1)/2-2;
 	else if(mode&WIN_BOT)
 		top=api->scrn_len-height-3-top;
 
@@ -1141,9 +1141,9 @@ int uinput(int mode, int left, int top, char *prompt, char *str,
 		slen=6;
 	width=plen+slen+max;
 	if(mode&WIN_T2B)
-		top=(api->scrn_len/2)-(height/2)-2;
+		top=(api->scrn_len-height+1)/2-2;
 	if(mode&WIN_L2R)
-		left=(api->scrn_width-width)/2-SCRN_LEFT+1;
+		left=(api->scrn_width-width+1)/2-SCRN_LEFT;
 	if(mode&WIN_SAV)
 		gettext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT+left+width+1
 			,SCRN_TOP+top+height,save_buf);
@@ -1668,11 +1668,11 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 	if(width>api->scrn_width)
 		width=api->scrn_width;
 	if(mode&WIN_L2R)
-		left=(api->scrn_width-width)/2+1;
+		left=(api->scrn_width-width+1)/2;
 	else if(mode&WIN_RHT)
 		left=api->scrn_width-(width+4+left);
 	if(mode&WIN_T2B)
-		top=(api->scrn_len/2)-(height/2);
+		top=(api->scrn_len-height+1)/2;
 	else if(mode&WIN_BOT)
 		top=api->scrn_len-height-3-top;
 
