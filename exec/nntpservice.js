@@ -438,7 +438,9 @@ while(client.socket.is_connected) {
 				break;
 
 			if(cmd[0].toUpperCase()!="BODY") {
-				writeln("Path: " + hdr.path);
+				if(hdr.path==undefined)
+					hdr.path="not-for-mail";
+				writeln("Path: " + system.inetaddr + "!" + hdr.path);
 				if(!hdr.from_net_type)	/* local message */
 					writeln(format("From: \"%s\" <%s@%s>"
 						,hdr.from
