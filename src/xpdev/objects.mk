@@ -18,7 +18,7 @@ OBJS	= \
 	$(OBJODIR)$(DIRSEP)str_list$(OFILE) \
 	$(OBJODIR)$(DIRSEP)truncsp$(OFILE)
 
-OBJS-MT	= \
+MTOBJS	= \
 	$(MTOBJODIR)$(DIRSEP)conwrap$(OFILE) \
 	$(MTOBJODIR)$(DIRSEP)dat_file$(OFILE) \
 	$(MTOBJODIR)$(DIRSEP)dirwrap$(OFILE) \

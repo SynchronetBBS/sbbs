@@ -10,10 +10,10 @@ $(WRAPTEST): $(OBJODIR)/wraptest.o $(DEPS)
 	@echo Linking $@
 	$(QUIET)$(CC) $(CFLAGS) -o $@ $(LDFLAGS) $^ $(LIBS)
 
-$(XPDEV_LIB): $(OBJS)
-	ar rc $@ $^
+$(XPDEV_LIB): $(OBJODIR) $(OBJS)
+	ar rc $@ $(OBJS)
 	ranlib $@
 
-$(XPDEV-MT_LIB): $(OBJS-MT)
-	ar rc $@ $^
+$(XPDEV-MT_LIB): $(MTOBJODIR) $(MTOBJS)
+	ar rc $@ $(MTOBJS)
 	ranlib $@
