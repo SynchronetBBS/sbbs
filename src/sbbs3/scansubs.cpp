@@ -176,7 +176,7 @@ void sbbs_t::new_scan_ptr_cfg()
 			bprintf(text[CfgGrpLstFmt],i+1,cfg.grp[usrgrp[i]]->lname); }
 		SYNC;
 		mnemonics(text[WhichOrAll]);
-		s=getkeys("AQ",i);
+		s=getkeys("AQ",usrgrps);
 		if(!s || s==-1 || s=='Q')
 			break;
 		if(s=='A') {
@@ -223,7 +223,7 @@ void sbbs_t::new_scan_ptr_cfg()
 					,timestr(&t),nulstr); }
 			SYNC;
 			mnemonics(text[WhichOrAll]);
-			s=getkeys("AQ",j);
+			s=getkeys("AQ",usrsubs[i]);
 			if(sys_status&SS_ABORT) {
 				lncntr=0;
 				return; }
@@ -322,7 +322,7 @@ void sbbs_t::new_scan_cfg(ulong misc)
 				mnemonics(text[NScanCfgWhichSub]);
 			else
 				mnemonics(text[SScanCfgWhichSub]);
-			s=getkeys("AQ",j);
+			s=getkeys("AQ",usrsubs[i]);
 			if(sys_status&SS_ABORT) {
 				lncntr=0;
 				return; }
