@@ -105,6 +105,8 @@ void __fastcall TClientForm::CloseSocketMenuItemClick(TObject *Sender)
 
 void __fastcall TClientForm::FilterIpMenuItemClick(TObject *Sender)
 {
+	char 	str[256];
+    int		res;
     TListItem* ListItem;
     TItemStates State;
 
@@ -112,11 +114,19 @@ void __fastcall TClientForm::FilterIpMenuItemClick(TObject *Sender)
     State << isSelected;
 
     while(ListItem!=NULL) {
-        MainForm->FilterIP(
-         	 ListItem->SubItems->Strings[2].c_str() /* ip_addr */
-        	,ListItem->SubItems->Strings[0].c_str() /* protocol */
-        	,ListItem->SubItems->Strings[1].c_str() /* username */
-            );
+
+    	wsprintf(str,"Disallow future connections from %s"
+        	,ListItem->SubItems->Strings[2].c_str());
+    	res=Application->MessageBox(str,"Filter IP?"
+        		,MB_YESNOCANCEL|MB_ICONQUESTION);
+        if(res==IDCANCEL)
+    		break;
+    	if(res==IDOK)
+	        MainForm->FilterIP(
+    	     	 ListItem->SubItems->Strings[2].c_str() /* ip_addr */
+	        	,ListItem->SubItems->Strings[0].c_str() /* protocol */
+	        	,ListItem->SubItems->Strings[1].c_str() /* username */
+	            );
         ListItem=ListView->GetNextItem(ListItem,sdAll,State);
     }
 }
