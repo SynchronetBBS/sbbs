@@ -38,6 +38,8 @@
 #ifndef _SCFGLIB_H
 #define _SCFGLIB_H
 
+#include "scfgdefs.h"	/* scfg_t */
+
 /* #define SAVE_MEMORY /* This makes it difficult to free */
 
 #define get_int(var,stream) { if(!fread(&var,1,sizeof(var),stream)) \
