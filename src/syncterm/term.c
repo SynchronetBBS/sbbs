@@ -241,10 +241,36 @@ void doterm(struct bbslist *bbs)
 					break;
 				case 0x2300:	/* ALT-H */
 				case 17:		/* CTRL-Q */
-					cterm_end();
-					free(scrollback);
-					conn_close();
-					return;
+					{
+						char *opts[3]={
+										 "Yes"
+										,"No"
+										,""
+									  };
+						char *buf;
+						struct	text_info txtinfo;
+
+    					gettextinfo(&txtinfo);
+						buf=(char *)malloc(txtinfo.screenheight*txtinfo.screenwidth*2);
+						gettext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
+						i=0;
+						init_uifc();
+						if(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Disconnect... Are you sure?",opts)==0) {
+							uifcbail();
+							free(buf);
+							cterm_end();
+							free(scrollback);
+							conn_close();
+							return;
+						}
+						uifcbail();
+						puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
+						window(txtinfo.winleft,txtinfo.wintop,txtinfo.winright,txtinfo.winbottom);
+						textattr(txtinfo.attribute);
+						gotoxy(txtinfo.curx,txtinfo.cury);
+						free(buf);
+					}
+					break;
 				case 19:	/* CTRL-S */
 					i=wherex();
 					j=wherey();
