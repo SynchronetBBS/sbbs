@@ -502,6 +502,7 @@ typedef struct {				// Message
 	ulong		offset; 		// Offset (number of records) into index
 	uchar		forwarded;		// Forwarded from agent to another
 	when_t		expiration; 	// Message will exipre on this day (if >0)
+	uint		subnum;			// Sub-board number (not initialized by smblib)
 
 	} smbmsg_t;
 
