@@ -248,7 +248,8 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
     DWORD	wr;
     DWORD	len;
     DWORD	avail;
-	DWORD	dummy;	
+	DWORD	dummy;
+	DWORD	msglen;
 	DWORD	retval;
 	DWORD	last_error;
 	DWORD	loop_since_io=0;
@@ -702,28 +703,43 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 
 				/* Read from VDD */
 
+				rd=0;
 				len=sizeof(buf);
 				avail=RingBufFree(&outbuf);
-				if(avail==0) 
+				if(avail==0)
 					lprintf("Node %d !output buffer full (%u bytes)"
 						,cfg.node_num,RingBufFull(&outbuf));
 				if(len>avail)
             		len=avail;
-				rd=0;
-				DWORD waiting=1;
 
-				if(use_pipes)
-					PeekNamedPipe(
-						rdslot,             // handle to pipe to copy from
-						NULL,               // pointer to data buffer
-						0,					// size, in bytes, of data buffer
-						NULL,				// pointer to number of bytes read
-						&waiting,			// pointer to total number of bytes available
-						NULL // pointer to unread bytes in this message
-						);
- 
-				if(avail>=RingBufFull(&outbuf) && waiting 
-					&& ReadFile(rdslot,buf,len,&rd,NULL)==TRUE && rd>0) {
+				while(rd<len && avail>RingBufFull(&outbuf)) {
+					DWORD waiting=0;
+
+					if(use_pipes)
+						PeekNamedPipe(
+							rdslot,             // handle to pipe to copy from
+							NULL,               // pointer to data buffer
+							0,					// size, in bytes, of data buffer
+							NULL,				// pointer to number of bytes read
+							&waiting,			// pointer to total number of bytes available
+							NULL				// pointer to unread bytes in this message
+							);
+					else
+						GetMailslotInfo(
+							rdslot,				// mailslot handle 
+ 							NULL,				// address of maximum message size 
+							NULL,				// address of size of next message 
+							&waiting,			// address of number of messages 
+ 							NULL				// address of read time-out 
+							);
+					if(!waiting)
+						break;
+					if(ReadFile(rdslot,buf+rd,len-rd,&msglen,NULL)==FALSE || msglen<1)
+						break;
+					rd+=msglen;
+				}
+
+				if(rd) {
 					if(mode&EX_WWIV) {
                 		bp=wwiv_expand(buf, rd, wwiv_buf, rd, useron.misc, wwiv_flag);
 						if(rd>sizeof(wwiv_buf))
@@ -732,6 +748,10 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
                 		bp=telnet_expand(buf, rd, telnet_buf, rd);
 						if(rd>sizeof(telnet_buf))
 							errorlog("TELNET_BUF OVERRUN");
+					}
+					if(rd>avail) {
+						errorlog("RINGBUFFER OVERRUN");
+						rd=avail;
 					}
 					RingBufWrite(&outbuf, bp, rd);
 					sem_post(&output_sem);
