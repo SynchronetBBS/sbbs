@@ -303,7 +303,7 @@ enum {								/* Node Action */
 
 #define SYSOP (user_level>=sysop_level) /* Is current user sysop t/f macro	 */
 
-#define bgotoxy(x,y)	printf("\x1b[%d;%dH",y,x)   /* place the cursor at   */
+#define bgotoxy(x,y)	bprintf("\x1b[%d;%dH",y,x)   /* place the cursor at   */
 													/* location x,y via ANSI */
 
 #define SAVELINE		{ slatr[slcnt]=latr; \
