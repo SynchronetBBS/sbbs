@@ -758,7 +758,7 @@ int sbbs_t::batchflagprompt(uint dirnum, file_t* bf, uint total
 						bprintf(text[MoveToLibLstFmt],i+1,cfg.lib[usrlib[i]]->lname);
 					SYNC;
 					bprintf(text[MoveToLibPrompt],cfg.dir[dirnum]->lib+1);
-					if((ml=getnum(usrlibs))==-1)
+					if((int)(ml=getnum(usrlibs))==-1)
 						return(2);
 					if(!ml)
 						ml=cfg.dir[dirnum]->lib;
