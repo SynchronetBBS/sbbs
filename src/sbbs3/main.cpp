@@ -93,12 +93,11 @@ js_print(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	sbbs_t*		sbbs;
 
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
-		return JS_FALSE;
+		return(JS_FALSE);
 
     for (i = 0; i < argc; i++) {
-		str = JS_ValueToString(cx, argv[i]);
-		if (!str)
-		    return JS_FALSE;
+		if((str=JS_ValueToString(cx, argv[i]))==NULL)
+		    return(JS_FALSE);
 		if(sbbs->online==ON_LOCAL)
 			eprintf("%s",JS_GetStringBytes(str));
 		else
@@ -106,7 +105,9 @@ js_print(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		}
 	if(sbbs->online==ON_REMOTE)
 		sbbs->bputs(crlf);
-    return JS_TRUE;
+
+	*rval = JSVAL_VOID;
+    return(JS_TRUE);
 }
 
 static JSBool
@@ -120,17 +121,15 @@ js_printf(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	va_list		arglist[64];
 
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
-		return JS_FALSE;
+		return(JS_FALSE);
 
-	fmt = JS_ValueToString(cx, argv[0]);
-	if (!fmt)
-		return JS_FALSE;
+	if((fmt = JS_ValueToString(cx, argv[0]))==NULL)
+		return(JS_FALSE);
 
     for (i = 1; i < argc && i<sizeof(arglist)/sizeof(arglist[0]); i++) {
 		if(JSVAL_IS_STRING(argv[i])) {
-			str = JS_ValueToString(cx, argv[i]);
-			if (!str)
-			    return JS_FALSE;
+			if((str=JS_ValueToString(cx, argv[i]))==NULL)
+			    return(JS_FALSE);
 			arglist[i-1]=JS_GetStringBytes(str);
 		} else if(JSVAL_IS_INT(argv[i]) || JSVAL_IS_BOOLEAN(argv[i]))
 			arglist[i-1]=(char *)JSVAL_TO_INT(argv[i]);
@@ -139,12 +138,13 @@ js_printf(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	}
 	
 	if((p=JS_vsmprintf(JS_GetStringBytes(fmt),(char*)arglist))==NULL)
-		return JS_FALSE;
+		return(JS_FALSE);
 
 	sbbs->bputs(p);
 	JS_smprintf_free(p);
 
-    return JS_TRUE;
+	*rval = JSVAL_VOID;
+    return(JS_TRUE);
 }
 
 static JSBool
@@ -154,16 +154,18 @@ js_alert(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	sbbs_t*		sbbs;
 
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
-		return JS_FALSE;
+		return(JS_FALSE);
 
-	str = JS_ValueToString(cx, argv[0]);
-	if (!str)
-	    return JS_FALSE;
+	if((str=JS_ValueToString(cx, argv[0]))==NULL)
+	    return(JS_FALSE);
+
 	sbbs->attr(sbbs->cfg.color[clr_err]);
 	sbbs->bputs(JS_GetStringBytes(str));
 	sbbs->attr(LIGHTGRAY);
 	sbbs->bputs(crlf);
-    return JS_TRUE;
+
+	*rval = JSVAL_VOID;
+    return(JS_TRUE);
 }
 
 static JSBool
@@ -173,14 +175,13 @@ js_confirm(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	sbbs_t*		sbbs;
 
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
-		return JS_FALSE;
+		return(JS_FALSE);
 
-	str = JS_ValueToString(cx, argv[0]);
-	if (!str)
-	    return JS_FALSE;
+	if((str=JS_ValueToString(cx, argv[0]))==NULL)
+	    return(JS_FALSE);
+
 	*rval = BOOLEAN_TO_JSVAL(sbbs->yesno(JS_GetStringBytes(str)));
-
-	return JS_TRUE;
+	return(JS_TRUE);
 }
 
 static JSBool
@@ -192,16 +193,14 @@ js_prompt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	sbbs_t*		sbbs;
 
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
-		return JS_FALSE;
+		return(JS_FALSE);
 
-	prompt = JS_ValueToString(cx, argv[0]);
-	if (!prompt)
-	    return JS_FALSE;
+	if((prompt=JS_ValueToString(cx, argv[0]))==NULL)
+	    return(JS_FALSE);
 
 	if(argc>1) {
-		str = JS_ValueToString(cx, argv[1]);
-		if (str==NULL)
-		    return JS_FALSE;
+		if((str=JS_ValueToString(cx, argv[1]))==NULL)
+		    return(JS_FALSE);
 		sprintf(instr,"%.*s",sizeof(instr)-1,JS_GetStringBytes(str));
 	} else
 		instr[0]=0;
@@ -213,12 +212,11 @@ js_prompt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_TRUE);
 	}
 
-	str = JS_NewStringCopyZ(cx, instr);
-	if (!str)
-	    return JS_FALSE;
-	*rval = STRING_TO_JSVAL(str);
+	if((str=JS_NewStringCopyZ(cx, instr))==NULL)
+	    return(JS_FALSE);
 
-    return JS_TRUE;
+	*rval = STRING_TO_JSVAL(str);
+    return(JS_TRUE);
 }
 
 static JSFunctionSpec js_global_functions[] = {
@@ -268,7 +266,7 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 		eprintf("!JavaScript %s%s%s: %s",warning,file,line,message);
 	else {
 		lprintf("!JavaScript %s%s%s: %s",warning,file,line,message);
-		sbbs->bprintf("!JavaScript %s%s%s: %s",warning,file,line,message);
+		sbbs->bprintf("!JavaScript %s%s%s: %s\r\n",warning,file,line,message);
 	}
 }
 
