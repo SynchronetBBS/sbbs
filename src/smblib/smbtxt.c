@@ -55,6 +55,11 @@ char HUGE16*  SMBCALL smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, ulong mode)
 	int 	i,lzh;
 	long	l=0,lzhlen,length;
 
+	if(!msg->hdr.total_dfields) {
+		sprintf(smb->last_error,"no data fields");
+		return(NULL);
+	}
+
 	for(i=0;i<msg->hdr.total_dfields;i++) {
 		if(!(msg->dfield[i].type==TEXT_BODY
 			|| (mode&GETMSGTXT_TAILS && msg->dfield[i].type==TEXT_TAIL))
