@@ -299,6 +299,8 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 				ex_mode|=EX_WWIV; }
 		if(useron.xedit && cfg.xedit[useron.xedit-1]->misc&XTRN_NATIVE)
 			ex_mode|=EX_NATIVE;
+		if(useron.xedit && cfg.xedit[useron.xedit-1]->misc&XTRN_SH)
+			ex_mode|=EX_SH;
 
 		if(!linesquoted && fexist(msgtmp))
 			remove(msgtmp);
@@ -798,6 +800,8 @@ void sbbs_t::editfile(char *str)
 		editor_inf(useron.xedit,nulstr,nulstr,0,INVALID_SUB);
 		if(cfg.xedit[useron.xedit-1]->misc&XTRN_NATIVE)
 			mode|=EX_NATIVE;
+		if(cfg.xedit[useron.xedit-1]->misc&XTRN_SH)
+			mode|=EX_SH;
 		if(cfg.xedit[useron.xedit-1]->misc&IO_INTS) {
 			if(online==ON_REMOTE)
 				mode|=(EX_OUTR|EX_INR);
