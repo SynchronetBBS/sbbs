@@ -385,7 +385,7 @@ enum {
 /* Add new ones here */
 
     ,NET_TYPES
-    };
+};
 
 enum {
      AGENT_PERSON
@@ -396,7 +396,7 @@ enum {
 /* Add new ones here */
 
     ,AGENT_TYPES
-    };
+};
 
 enum {
      XLAT_NONE              /* No translation/End of translation list */
@@ -413,7 +413,7 @@ enum {
 /* Add new ones here */
 
     ,XLAT_TYPES
-    };
+};
 
 
 /************/
@@ -439,7 +439,7 @@ typedef struct _PACK {		/* Time with time-zone */
 	ulong	time;			/* Local time (unix format) */
 	short	zone;			/* Time zone */
 
-	} when_t;
+} when_t;
 
 typedef struct _PACK {		/* Index record */
 
@@ -451,7 +451,28 @@ typedef struct _PACK {		/* Index record */
 	ulong	number; 		/* number of message (1 based) */
 	ulong	time;			/* time/date message was imported/posted */
 
-	} idxrec_t;
+} idxrec_t;
+
+									/* valid bits in hash_t.flags		*/
+#define SMB_HASH_CRC16		(1<<0)	/* CRC-16 hash is valid				*/
+#define SMB_HASH_CRC32		(1<<1)	/* CRC-32 hash is valid				*/
+#define SMB_HASH_MD5		(1<<2)	/* MD5 digest is valid				*/
+#define SMB_HASH_MASK		0x0f	/* which hashes are valid			*/
+#define SMB_HASH_UPPERCASE	(1<<4)	/* Convert a-z to A-Z first			*/
+#define SMB_HASH_LOWERCASE	(1<<5)	/* Convert A-Z to a-z first			*/
+#define SMB_HASH_STRIP_WSP	(1<<6)	/* Strip white-space chars first	*/
+
+typedef struct _PACK {
+
+	ulong	number;					/* Message number */
+	ulong	time;					/* Local time of fingerprinting */
+	uchar	source;					/* (e.g. TEXT_BODY, RFC822MSGID, FIDOMSGID) */
+	uchar	flags;					/* indications of valid hashes and pre-processing */
+	ushort	crc16;					/* CRC-16 of source */
+	ulong	crc32;					/* CRC-32 of source */
+	uchar	md5[MD5_DIGEST_SIZE];	/* MD5 digest of source */
+
+} hash_t;
 
 typedef struct _PACK {		/* Message base header (fixed portion) */
 
@@ -459,7 +480,7 @@ typedef struct _PACK {		/* Message base header (fixed portion) */
     ushort  version;        /* version number (initially 100h for 1.00) */
     ushort  length;         /* length including this struct */
 
-	} smbhdr_t;
+} smbhdr_t;
 
 typedef struct _PACK {		/* Message base status header */
 
@@ -471,7 +492,7 @@ typedef struct _PACK {		/* Message base status header */
     ushort  max_age;        /* Maximum age of message to keep in sub (in days) */
 	ushort	attr;			/* Attributes for this message base (SMB_HYPER,etc) */
 
-	} smbstatus_t;
+} smbstatus_t;
 
 typedef struct _PACK {		/* Message header */
 
@@ -495,7 +516,7 @@ typedef struct _PACK {		/* Message header */
     /* 40 */ ulong	offset;				/* Offset for buffer into data file (0 or mod 256) */
 	/* 44 */ ushort	total_dfields;		/* Total number of data fields */
 
-	} msghdr_t;
+} msghdr_t;
 
 #define thread_orig	thread_back	/* for backwards compatibility with older code */
 
@@ -505,14 +526,14 @@ typedef struct _PACK {		/* Data field */
     ulong   offset;         /* Offset into buffer */ 
     ulong   length;         /* Length of data field */
 
-    } dfield_t;
+} dfield_t;
 
 typedef struct _PACK {		/* Header field */
 
 	ushort	type;
 	ushort	length; 		/* Length of buffer */
 
-	} hfield_t;
+} hfield_t;
 
 typedef struct _PACK {		/* FidoNet address (zone:net/node.point) */
 
@@ -521,7 +542,7 @@ typedef struct _PACK {		/* FidoNet address (zone:net/node.point) */
 	ushort	node;
 	ushort	point;
 
-    } fidoaddr_t;
+} fidoaddr_t;
 
 #if defined(PRAGMA_PACK)
 #pragma pack(pop)		/* original packing */
@@ -532,7 +553,7 @@ typedef struct _PACK {		/* Network (type and address) */
     ushort  type;
 	void	*addr;
 
-	} net_t;
+} net_t;
 
 typedef struct {				/* Message */
 
@@ -574,16 +595,17 @@ typedef struct {				/* Message */
 	ulong		priority;		/* Message priority (0 is lowest) */
 	ulong		cost;			/* Cost to download/read */
 
-	} smbmsg_t;
+} smbmsg_t;
 
 typedef struct {			/* Message base */
 
     char    file[128];      /* Path and base filename (no extension) */
-    FILE    *sdt_fp;        /* File pointer for data (.sdt) file */
-    FILE    *shd_fp;        /* File pointer for header (.shd) file */
-    FILE    *sid_fp;        /* File pointer for index (.sid) file */
-    FILE    *sda_fp;        /* File pointer for data allocation (.sda) file */
-    FILE    *sha_fp;        /* File pointer for header allocation (.sha) file */
+    FILE*	sdt_fp;			/* File pointer for data (.sdt) file */
+    FILE*	shd_fp;			/* File pointer for header (.shd) file */
+    FILE*	sid_fp;			/* File pointer for index (.sid) file */
+    FILE*	sda_fp;			/* File pointer for data allocation (.sda) file */
+    FILE*	sha_fp;			/* File pointer for header allocation (.sha) file */
+	FILE*	hash_fp;		/* File pointer for hash (.hash) file */
 	ulong	retry_time; 	/* Maximum number of seconds to retry opens/locks */
 	ulong	retry_delay;	/* Time-slice yield (milliseconds) while retrying */
 	smbstatus_t status; 	/* Status header record */
@@ -596,6 +618,6 @@ typedef struct {			/* Message base */
 	long	msgs;			/* Number of messages loaded (for user) */
 	long	curmsg;			/* Current message number (for user) */
 
-    } smb_t;
+} smb_t;
 
 #endif /* Don't add anything after this #endif statement */

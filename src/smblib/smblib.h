@@ -39,6 +39,9 @@
 #define _SMBLIB_H
 
 #include "lzh.h"
+#include "md5.h"
+#include "crc16.h"
+#include "crc32.h"
 
 #ifdef SMBEXPORT
 	#undef SMBEXPORT
@@ -82,12 +85,19 @@
 
 #define GETMSGTXT_TAILS 	(1<<0)		/* Get message tail(s)				*/
 #define GETMSGTXT_NO_BODY	(1<<1)		/* Do not retrieve message body		*/
+#define GETMSGTXT_TAIL_ONLY (GETMSGTXT_TAILS|GETMSGTXT_NO_BODY)
 
 #define SMB_IS_OPEN(smb)	((smb)->shd_fp!=NULL)
 
 /* Legacy API functions */
 #define smb_incmsg(smb,msg)	smb_incmsg_dfields(smb,msg,1)
 #define smb_incdat			smb_incmsgdat
+#define smb_open_da(smb)	smb_open_fp(smb,&(smb)->sda_fp)
+#define smb_close_da(smb)	smb_close_fp(&(smb)->sda_fp)
+#define smb_open_ha(smb)	smb_open_fp(smb,&(smb)->sha_fp)
+#define smb_close_ha(smb)	smb_close_fp(&(smb)->sha_fp)
+#define smb_open_hash(smb)	smb_open_fp(smb,&(smb)->hash_fp)
+#define smb_close_hash(smb)	smb_close_fp(&(smb)->hash_fp)
 
 #ifdef __cplusplus
 extern "C" {
@@ -97,10 +107,8 @@ SMBEXPORT int 		SMBCALL smb_ver(void);
 SMBEXPORT char*		SMBCALL smb_lib_ver(void);
 SMBEXPORT int 		SMBCALL smb_open(smb_t* smb);
 SMBEXPORT void		SMBCALL smb_close(smb_t* smb);
-SMBEXPORT int 		SMBCALL smb_open_da(smb_t* smb);
-SMBEXPORT void		SMBCALL smb_close_da(smb_t* smb);
-SMBEXPORT int 		SMBCALL smb_open_ha(smb_t* smb);
-SMBEXPORT void		SMBCALL smb_close_ha(smb_t* smb);
+SMBEXPORT int 		SMBCALL smb_open_fp(smb_t* smb, FILE**);
+SMBEXPORT void		SMBCALL smb_close_fp(FILE**);
 SMBEXPORT int 		SMBCALL smb_create(smb_t* smb);
 SMBEXPORT int 		SMBCALL smb_stack(smb_t* smb, int op);
 SMBEXPORT int 		SMBCALL smb_trunchdr(smb_t* smb);
@@ -154,6 +162,13 @@ SMBEXPORT void		SMBCALL smb_freemsgtxt(char* buf);
 SMBEXPORT int		SMBCALL	smb_copymsgmem(smb_t* smb, smbmsg_t* destmsg, smbmsg_t* srcmsg);
 SMBEXPORT int		SMBCALL smb_tzutc(short timezone);
 SMBEXPORT int		SMBCALL smb_updatethread(smb_t* smb, smbmsg_t* remsg, ulong newmsgnum);
+
+/* hash-related functions */
+SMBEXPORT int		SMBCALL smb_findhash(smb_t* smb, hash_t** compare_list, hash_t* found);
+SMBEXPORT int		SMBCALL smb_hashmsg(smb_t* smb, smbmsg_t* msg, uchar* text);
+SMBEXPORT hash_t*	SMBCALL	smb_hash(ulong msgnum, ulong time, unsigned source, unsigned flags, uchar* str);
+SMBEXPORT hash_t**	SMBCALL smb_msghashes(smb_t* smb, smbmsg_t* msg, uchar* text);
+SMBEXPORT int		SMBCALL smb_addhashes(smb_t* smb, hash_t** hash_list);
 
 /* smbtxt.c */
 SMBEXPORT char*		SMBCALL smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, ulong mode);
