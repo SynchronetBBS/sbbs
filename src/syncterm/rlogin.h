@@ -4,6 +4,7 @@
 #include <sockwrap.h>
 
 extern SOCKET	rlogin_socket;
+extern int	rcvtimeo;
 
 int rlogin_recv(char *buffer, size_t buflen);
 int rlogin_send(char *buffer, size_t buflen, unsigned int timeout);
