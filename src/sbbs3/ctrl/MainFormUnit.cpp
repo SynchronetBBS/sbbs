@@ -1151,6 +1151,13 @@ void __fastcall TMainForm::ReadFont(AnsiString subkey, TFont* Font)
     if(Registry->ValueExists("Size"))
         Font->Size=Registry->ReadInteger("Size");
 
+    if(Registry->ValueExists("Style")) {
+        int style=Registry->ReadInteger("Style");
+        Font->Style=Font->Style.Clear();
+        for(int i=fsBold;i<=fsStrikeOut;i++)
+            if(style&(1<<i))
+                Font->Style=Font->Style<<(TFontStyle)i;
+    }
     Registry->CloseKey();
     delete Registry;
 }
@@ -1169,6 +1176,12 @@ void __fastcall TMainForm::WriteFont(AnsiString subkey, TFont* Font)
     Registry->WriteString("Color",ColorToString(Font->Color));
     Registry->WriteInteger("Height",Font->Height);
     Registry->WriteInteger("Size",Font->Size);
+
+    int style=0;
+    for(int i=fsBold;i<=fsStrikeOut;i++)
+    	if(Font->Style.Contains((TFontStyle)i))
+        	style|=(1<<i);
+    Registry->WriteInteger("Style",style);
 
     Registry->CloseKey();
     delete Registry;
