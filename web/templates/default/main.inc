@@ -44,8 +44,12 @@
         <td class="main_stats">Files</td><td class="main_stats_bold">@@total_files@@</td>
       </tr>
     </table>
+	<br />
     </td>
     </tr>
+	<tr>
+    <td align="center">Additional Services<br /><br />@@additional_services@@</td>
+	</tr>
     </table>
     <br /><br />
 
