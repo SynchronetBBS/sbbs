@@ -101,9 +101,6 @@ char *wcfaddrtoa(faddr_t* addr)
 }
 
 
-// ToDo Fix This.
-#define lprintf printf
-
 int main(int argc, char **argv)
 {
 	char str[256],*p;
@@ -170,16 +167,14 @@ int main(int argc, char **argv)
 
 	// savnum=0;
 	if((opt=(char **)MALLOC(sizeof(char *)*300))==NULL) {
-	// ToDo fix this.
-	//	cputs("memory allocation error\r\n");
-	//	uifc.bail(); }
+		uifc.bail();
+		puts("memory allocation error\n");
 		exit(1); 
 	}
 	for(i=0;i<300;i++)
 		if((opt[i]=(char *)MALLOC(MAX_OPLN))==NULL) {
-	// ToDo fix this.
-	//		cputs("memory allocation error\r\n");
-	//      uifc.bail(); }
+	      	uifc.bail();
+			puts("memory allocation error\n");
 			exit(1); 
 		}
 	uifc.size=sizeof(uifc);
@@ -1101,8 +1096,9 @@ int main(int argc, char **argv)
 				if(i==-1) break;
 				if(i) {uifc.bail(); exit(0);}
 				if((stream=fnopen(NULL,cfg.cfgfile,O_CREAT|O_TRUNC|O_WRONLY))==NULL) {
-					lprintf("Error %d opening %s\n",errno,cfg.cfgfile);
-					uifc.bail(); exit(1); 
+					uifc.bail();
+					printf("Error %d opening %s\n",errno,cfg.cfgfile);
+					exit(1); 
 				}
 				if(!cfg.check_path)
 					fprintf(stream,"NOPATHCHECK\n");
