@@ -3016,6 +3016,7 @@ void DLLCALL web_server(void* arg)
 	/* Change to absolute path */
 	prep_dir(startup->ctrl_dir, root_dir, sizeof(root_dir));
 	prep_dir(root_dir, error_dir, sizeof(error_dir));
+	prep_dir(root_dir, cgi_dir, sizeof(cgi_dir));
 
 	/* Trim off trailing slash/backslash */
 	if(IS_PATH_DELIM(*(p=lastchar(root_dir))))	*p=0;
