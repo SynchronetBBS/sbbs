@@ -23,6 +23,13 @@ else {
 	hdrs.to_net_type=netaddr_type(http_request.query.to);
 	if(hdrs.to_net_type!=NET_NONE)
 		hdrs.to_net_addr=http_request.query.to;
+	else {
+		var usr=system.matchuser(http_request.query.to);
+		if(usr!=0)
+			hdrs.to_ext=usr;
+		else
+			error("Cannot find that local user (Not net address specified)");
+	}
 }
 hdrs.from=user.alias;
 hdrs.to=http_request.query.to;
