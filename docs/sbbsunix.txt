@@ -191,29 +191,14 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
       cd /sbbs/exec
 
    B. Copy (or create symbolic links to) the following files:
-      /sbbs/src/sbbs3/gcc.linux.exe.debug/baja
-      /sbbs/src/sbbs3/gcc.linux.exe.debug/node
-      /sbbs/src/sbbs3/gcc.linux.exe.debug/chksmb
-      /sbbs/src/sbbs3/gcc.linux.exe.debug/fixsmb
-      /sbbs/src/sbbs3/gcc.linux.exe.debug/jsexec
-      /sbbs/src/sbbs3/gcc.linux.exe.debug/makeuser
-      /sbbs/src/sbbs3/gcc.linux.exe.debug/addfiles
-      /sbbs/src/sbbs3/gcc.linux.exe.debug/filelist
-      /sbbs/src/sbbs3/gcc.linux.exe.debug/smbutil
-      /sbbs/src/sbbs3/gcc.linux.exe.debug/sbbs
-      /sbbs/src/sbbs3/gcc.linux.exe.debug/sbbsecho
-      /sbbs/src/sbbs3/gcc.linux.exe.debug/echocfg
+      /sbbs/src/sbbs3/gcc.linux.exe.debug/*
       /sbbs/src/sbbs3/scfg/gcc.linux.debug/scfg
       /sbbs/src/sbbs3/scfg/gcc.linux.debug/scfghelp.ixb
       /sbbs/src/sbbs3/scfg/gcc.linux.debug/scfghelp.dat
       (the paths will be different for other platforms or release builds)
 
    C. Copy (or create symbolic links to) the following shared libraries:
-      /sbbs/src/sbbs3/gcc.linux.lib.debug/libsbbs.so
-      /sbbs/src/sbbs3/gcc.linux.lib.debug/libftpsrvr.so
-      /sbbs/src/sbbs3/gcc.linux.lib.debug/libmailsrvr.so
-      /sbbs/src/sbbs3/gcc.linux.lib.debug/libservices.so
-      /sbbs/src/sbbs3/gcc.linux.lib.debug/libwebsrvr.so
+      /sbbs/src/sbbs3/gcc.linux.lib.debug/lib*.so
       (the paths will be different for other platforms or release builds)
 
       Note: Another option is to create the symbolic links in your /usr/lib
