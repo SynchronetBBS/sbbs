@@ -316,6 +316,7 @@ char *cmdstr(scfg_t* cfg, char *instr, char *fpath, char *fspec)
 int execute(char *cmdline)
 {
 #if 1
+	printf("Executing: %s\n",cmdline);
 	return system(cmdline);
 #else
 	char c,d,e,cmdlen,*arg[30],str[256];
@@ -1519,6 +1520,7 @@ void pack(char *srcfile,char *destfile,faddr_t dest)
 	int i,j;
 	uint use=0;
 
+	printf("Executing\n");
 	i=matchnode(dest,0);
 	if(i<cfg.nodecfgs)
 		use=cfg.nodecfg[i].arctype;
@@ -4372,7 +4374,11 @@ int main(int argc, char **argv)
 		/****** START OF IMPORT PKT ROUTINE ******/
 
 		offset=strlen(secure ? cfg.secure : cfg.inbound);
+#ifdef __unix__
+		sprintf(path,"%s*.[Pp][Kk][Tt]",secure ? cfg.secure : cfg.inbound);
+#else
 		sprintf(path,"%s*.pkt",secure ? cfg.secure : cfg.inbound);
+#endif
 		glob(path,0,NULL,&g);
 		for(f=0;f<g.gl_pathc && !kbhit();f++) {
 
