@@ -707,7 +707,7 @@ static void pop3_thread(void* arg)
 	client.user="<unknown>";
 	client_on(socket,&client,FALSE /* update */);
 
-	sprintf(str,"POP3: %s", host_ip);
+	SAFEPRINTF(str,"POP3: %s", host_ip);
 	status(str);
 
 	mail=NULL;
@@ -720,7 +720,7 @@ static void pop3_thread(void* arg)
 
 		srand(time(NULL));	/* seed random number generator */
 		rand();	/* throw-away first result */
-		sprintf(challenge,"<%x%x%lx%lx@%.128s>"
+		safe_snprintf(challenge,sizeof(challenge),"<%x%x%lx%lx@%.128s>"
 			,rand(),socket,(ulong)time(NULL),clock(),startup->host_name);
 
 		sockprintf(socket,"+OK Synchronet POP3 Server %s-%s Ready %s"
@@ -818,7 +818,7 @@ static void pop3_thread(void* arg)
 
 		if(startup->options&MAIL_OPT_DEBUG_POP3)		
 			lprintf(LOG_INFO,"%04d POP3 %s logged in %s", socket, user.alias, apop ? "via APOP":"");
-		sprintf(str,"POP3: %s",user.alias);
+		SAFEPRINTF(str,"POP3: %s",user.alias);
 		status(str);
 
 		sprintf(smb.file,"%smail",scfg.data_dir);
@@ -1003,7 +1003,7 @@ static void pop3_thread(void* arg)
 			}
 			activity=TRUE;
 			if(!strnicmp(buf, "RETR ",5) || !strnicmp(buf,"TOP ",4)) {
-				sprintf(str,"POP3: %s", user.alias);
+				SAFEPRINTF(str,"POP3: %s", user.alias);
 				status(str);
 
 				lines=-1;
@@ -1187,7 +1187,7 @@ static ulong rblchk(SOCKET sock, DWORD mail_addr_n, const char* rbl_addr)
 	struct in_addr dnsbl_result;
 
 	mail_addr=ntohl(mail_addr_n);
-	sprintf(name,"%ld.%ld.%ld.%ld.%.128s"
+	safe_snprintf(name,sizeof(name),"%ld.%ld.%ld.%ld.%.128s"
 		,mail_addr&0xff
 		,(mail_addr>>8)&0xff
 		,(mail_addr>>16)&0xff
@@ -1944,7 +1944,7 @@ static void smtp_thread(void* arg)
 		lprintf(LOG_WARNING,"%04d !SMTP BLACKLISTED SERVER on %s: %s [%s] = %s"
 			,socket, dnsbl, host_name, dnsbl_ip, inet_ntoa(dnsbl_result));
 		if(startup->options&MAIL_OPT_DNSBL_REFUSE) {
-			sprintf(str,"Listed on %s as %s", dnsbl, inet_ntoa(dnsbl_result));
+			SAFEPRINTF2(str,"Listed on %s as %s", dnsbl, inet_ntoa(dnsbl_result));
 			spamlog(&scfg, "SMTP", "SESSION REFUSED", str, host_name, dnsbl_ip, NULL, NULL);
 			sockprintf(socket
 				,"550 Mail from %s refused due to listing at %s"
@@ -1973,9 +1973,9 @@ static void smtp_thread(void* arg)
 
 	srand(time(NULL));	/* seed random number generator */
 	rand();	/* throw-away first result */
-	sprintf(session_id,"%x%x%lx",socket,rand(),clock());
+	SAFEPRINTF3(session_id,"%x%x%lx",socket,rand(),clock());
 
-	sprintf(rcptlst_fname,"%sSMTP.%s.lst", scfg.data_dir, session_id);
+	SAFEPRINTF2(rcptlst_fname,"%sSMTP.%s.lst", scfg.data_dir, session_id);
 	rcptlst=fopen(rcptlst_fname,"w+");
 	if(rcptlst==NULL) {
 		lprintf(LOG_ERR,"%04d !SMTP ERROR %d creating recipient list: %s"
@@ -2004,7 +2004,7 @@ static void smtp_thread(void* arg)
 	client.user="<unknown>";
 	client_on(socket,&client,FALSE /* update */);
 
-	sprintf(str,"SMTP: %s",host_ip);
+	SAFEPRINTF(str,"SMTP: %s",host_ip);
 	status(str);
 
 	sockprintf(socket,"220 %s Synchronet SMTP Server %s-%s Ready"
@@ -2049,10 +2049,10 @@ static void smtp_thread(void* arg)
 					p=strchr(sender_addr,'@');
 					if(p==NULL || resolve_ip(p+1)!=smtp.client_addr.sin_addr.s_addr) 
 						/* Append real IP and hostname if different */
-						sprintf(str,"%s%s\r\n\1w[\1n%s\1h] (\1n%s\1h)%s"
+						safe_snprintf(str,sizeof(str),"%s%s\r\n\1w[\1n%s\1h] (\1n%s\1h)%s"
 							,head,sender_addr,host_ip,host_name,tail);
 					else
-						sprintf(str,"%s%s%s",head,sender_addr,tail);
+						safe_snprintf(str,sizeof(str),"%s%s%s",head,sender_addr,tail);
 					
 					if((telegram_buf=(char*)malloc(length+strlen(str)+1))==NULL) {
 						lprintf(LOG_CRIT,"%04d !SMTP ERROR allocating %lu bytes of memory for telegram from %s"
@@ -2101,7 +2101,7 @@ static void smtp_thread(void* arg)
 				msg_handled=FALSE;
 				if(startup->proc_cfg_file[0] 
 					&& (proc_cfg=fopen(startup->proc_cfg_file,"r"))!=NULL) {
-					sprintf(proc_err_fname,"%sSMTP.%s.err", scfg.data_dir, session_id);
+					SAFEPRINTF2(proc_err_fname,"%sSMTP.%s.err", scfg.data_dir, session_id);
 					remove(proc_err_fname);
 
 					while(!feof(proc_cfg)) {
@@ -2206,7 +2206,7 @@ static void smtp_thread(void* arg)
 						SKIP_WHITESPACE(p);
 						if(relay_user.number==0	&& dnsbl_result.s_addr && startup->dnsbl_tag[0]
 							&& !(startup->options&MAIL_OPT_DNSBL_IGNORE)) {
-							sprintf(str,"%.*s: %.*s"
+							safe_snprintf(str,sizeof(str),"%.*s: %.*s"
 								,(int)sizeof(str)/2, startup->dnsbl_tag
 								,(int)sizeof(str)/2, p);
 							p=str;
@@ -2272,7 +2272,7 @@ static void smtp_thread(void* arg)
 					if(startup->options&MAIL_OPT_DNSBL_IGNORE) {
 						lprintf(LOG_WARNING,"%04d !SMTP IGNORED MAIL from blacklisted server"
 							,socket);
-						sprintf(str,"Listed on %s as %s", dnsbl, inet_ntoa(dnsbl_result));
+						SAFEPRINTF2(str,"Listed on %s as %s", dnsbl, inet_ntoa(dnsbl_result));
 						spamlog(&scfg, "SMTP", "IGNORED"
 							,str, host_name, dnsbl_ip, rcpt_addr, reverse_path);
 						/* pretend we received it */
@@ -2281,7 +2281,7 @@ static void smtp_thread(void* arg)
 					}
 					/* tag message as spam */
 					if(startup->dnsbl_hdr[0]) {
-						sprintf(str,"%s: %s is listed on %s as %s"
+						safe_snprintf(str,sizeof(str),"%s: %s is listed on %s as %s"
 							,startup->dnsbl_hdr, dnsbl_ip
 							,dnsbl, inet_ntoa(dnsbl_result));
 						smb_hfield_str(&msg, RFC822HEADER, str);
@@ -2289,7 +2289,7 @@ static void smtp_thread(void* arg)
 							,socket, startup->dnsbl_hdr);
 					}
 					if(startup->dnsbl_hdr[0] || startup->dnsbl_tag[0]) {
-						sprintf(str,"Listed on %s as %s", dnsbl, inet_ntoa(dnsbl_result));
+						SAFEPRINTF2(str,"Listed on %s as %s", dnsbl, inet_ntoa(dnsbl_result));
 						spamlog(&scfg, "SMTP", "TAGGED", str, host_name, dnsbl_ip, rcpt_addr, reverse_path);
 					}
 				}
@@ -2444,7 +2444,8 @@ static void smtp_thread(void* arg)
 					lprintf(LOG_INFO,"%04d SMTP Created message #%ld from %s to %s <%s>"
 						,socket, newmsg.hdr.number, sender, rcpt_name, rcpt_addr);
 					if(!(startup->options&MAIL_OPT_NO_NOTIFY) && usernum) {
-						sprintf(str,"\7\1n\1hOn %.24s\r\n\1m%s \1n\1msent you e-mail from: "
+						safe_snprintf(str,sizeof(str)
+							,"\7\1n\1hOn %.24s\r\n\1m%s \1n\1msent you e-mail from: "
 							"\1h%s\1n\r\n"
 							,timestr(&scfg,(time_t*)&newmsg.hdr.when_imported.time,tmp)
 							,sender,sender_addr);
@@ -2617,7 +2618,7 @@ static void smtp_thread(void* arg)
 			continue;
 		}
 		if(!stricmp(buf,"AUTH CRAM-MD5")) {
-			sprintf(challenge,"<%x%x%lx%lx@%s>"
+			safe_snprintf(challenge,sizeof(challenge),"<%x%x%lx%lx@%s>"
 				,rand(),socket,(ulong)time(NULL),clock(),startup->host_name);
 #if 0
 			lprintf(LOG_DEBUG,"%04d SMTP CRAM-MD5 challenge: %s"
@@ -2851,7 +2852,7 @@ static void smtp_thread(void* arg)
 
 			/* Check for SPAM bait recipient */
 			if(findstr(rcpt_addr,spam_bait)) {
-				sprintf(str,"SPAM BAIT (%s) taken", rcpt_addr);
+				SAFEPRINTF(str,"SPAM BAIT (%s) taken", rcpt_addr);
 				lprintf(LOG_WARNING,"%04d !SMTP %s by: %s"
 					,socket, str, reverse_path);
 				strcpy(tmp,"REFUSED");
@@ -2878,7 +2879,7 @@ static void smtp_thread(void* arg)
 			if(relay_user.number==0 && dnsbl_result.s_addr && startup->options&MAIL_OPT_DNSBL_BADUSER) {
 				lprintf(LOG_WARNING,"%04d !SMTP REFUSED MAIL from blacklisted server"
 					,socket);
-				sprintf(str,"Listed on %s as %s", dnsbl, inet_ntoa(dnsbl_result));
+				SAFEPRINTF2(str,"Listed on %s as %s", dnsbl, inet_ntoa(dnsbl_result));
 				spamlog(&scfg, "SMTP", "REFUSED", str, host_name, host_ip, rcpt_addr, reverse_path);
 				sockprintf(socket
 					,"550 Mail from %s refused due to listing at %s"
@@ -2928,7 +2929,7 @@ static void smtp_thread(void* arg)
 						!findstr(host_ip,relay_list)) {
 						lprintf(LOG_WARNING,"%04d !SMTP ILLEGAL RELAY ATTEMPT from %s [%s] to %s"
 							,socket, reverse_path, host_ip, p);
-						sprintf(tmp,"Relay attempt to: %s", p);
+						SAFEPRINTF(tmp,"Relay attempt to: %s", p);
 						spamlog(&scfg, "SMTP", "REFUSED", tmp, host_name, host_ip, rcpt_addr, reverse_path);
 						if(startup->options&MAIL_OPT_ALLOW_RELAY)
 							sockprintf(socket, "553 Relaying through this server "
@@ -3138,7 +3139,7 @@ static void smtp_thread(void* arg)
 				if(!(startup->options&MAIL_OPT_DEBUG_RX_BODY))
 					unlink(msgtxt_fname);
 			}
-			sprintf(msgtxt_fname,"%sSMTP.%s.msg", scfg.data_dir, session_id);
+			SAFEPRINTF2(msgtxt_fname,"%sSMTP.%s.msg", scfg.data_dir, session_id);
 			if((msgtxt=fopen(msgtxt_fname,"w+b"))==NULL) {
 				lprintf(LOG_ERR,"%04d !SMTP ERROR %d opening %s"
 					,socket, errno, msgtxt_fname);
@@ -3289,7 +3290,7 @@ BOOL bounce(smb_t* smb, smbmsg_t* msg, char* err, BOOL immediate)
 		sprintf(attempts,"after %u attempts", msg->hdr.delivery_attempts);
 	else
 		attempts[0]=0;
-	sprintf(str,"%s reporting delivery failure of message %s"
+	SAFEPRINTF2(str,"%s reporting delivery failure of message %s"
 		,startup->host_name, attempts);
 	smb_hfield_str(&newmsg, SMB_COMMENT, str);
 	SAFEPRINTF2(str,"from %s to %s\r\n"
@@ -3516,7 +3517,7 @@ static void sendmail_thread(void* arg)
 				if(p==NULL) {
 					remove_msg_intransit(&smb,&msg);
 					lprintf(LOG_WARNING,"0000 !SEND INVALID destination address: %s", to);
-					sprintf(err,"Invalid destination address: %s", to);
+					SAFEPRINTF(err,"Invalid destination address: %s", to);
 					bounce(&smb,&msg,err,TRUE);
 					continue;
 				}
@@ -3534,7 +3535,7 @@ static void sendmail_thread(void* arg)
 					remove_msg_intransit(&smb,&msg);
 					lprintf(LOG_WARNING,"0000 !SEND ERROR %d obtaining MX records for %s from %s"
 						,i,p,startup->dns_server);
-					sprintf(err,"Error %d obtaining MX record for %s",i,p);
+					SAFEPRINTF2(err,"Error %d obtaining MX record for %s",i,p);
 					bounce(&smb,&msg,err,FALSE);
 					continue;
 				}
@@ -3577,7 +3578,7 @@ static void sendmail_thread(void* arg)
 				lprintf(LOG_DEBUG,"%04d SEND resolving SMTP hostname: %s", sock, server);
 				ip_addr=resolve_ip(server);
 				if(ip_addr==INADDR_NONE) {
-					sprintf(err,"Failed to resolve SMTP hostname: %s",server);
+					SAFEPRINTF(err,"Failed to resolve SMTP hostname: %s",server);
 					continue;
 				}
 
@@ -3595,7 +3596,7 @@ static void sendmail_thread(void* arg)
 					lprintf(LOG_WARNING,"%04d !SEND ERROR %d connecting to SMTP server: %s"
 						,sock
 						,i, server);
-					sprintf(err,"Error %d connecting to SMTP server: %s"
+					SAFEPRINTF2(err,"Error %d connecting to SMTP server: %s"
 						,i, server);
 					continue;
 				}
