@@ -66,7 +66,6 @@
 /* Maximums */
 /************/
 
-#define DEMO_NODES		  2
 #define MAX_NODES		250
 
 #ifdef __FLAT__
