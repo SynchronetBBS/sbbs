@@ -130,6 +130,7 @@ void msgs_cfg()
 {
 	static int dflt,msgs_dflt,bar;
 	char str[256],str2[256],done=0,*p;
+    char tmp[128];
 	int j,k,q,s;
 	int i,file,ptridx,n;
 	long ported;
@@ -479,7 +480,7 @@ export the current message group into.
 						,cfg.sub[j]->origline
 						,cfg.sub[j]->echomail_sem
 						,""
-						,faddrtoa(cfg.sub[j]->faddr)
+						,faddrtoa(&cfg.sub[j]->faddr,tmp)
 						);
 					fprintf(stream,"%lu\r\n%lu\r\n%u\r\n%u\r\n%s\r\n"
 						,cfg.sub[j]->maxmsgs
