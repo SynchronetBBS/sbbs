@@ -130,6 +130,8 @@ char *usage="\nusage: chksmb [-opts] <filespec.SHD>\n"
 int main(int argc, char **argv)
 {
 	char		str[128],*p,*s,*beep="\7";
+	char*		body;
+	char*		tail;
 	int 		i,j,x,y,lzh,errors,errlast,stop_on_error=0,pause_on_error=0
 				,chkxlat=1,chkalloc=1,lzhmsg,extinfo=0,msgerr;
 	ushort		xlat;
@@ -137,6 +139,8 @@ int main(int argc, char **argv)
 				,*offset,*number,xlaterr
 				,delidx
 				,delhdrblocks,deldatblocks,hdrerr=0,lockerr=0,hdrnumerr=0,hdrlenerr=0
+				,getbodyerr=0,gettailerr=0
+				,hasherr=0
 				,acthdrblocks,actdatblocks
 				,dfieldlength=0,dfieldoffset=0
 				,dupenum=0,dupenumhdr=0,dupeoff=0,attr=0,actalloc=0
@@ -147,8 +151,9 @@ int main(int argc, char **argv)
 	smb_t		smb;
 	idxrec_t	idx;
 	smbmsg_t	msg;
+	hash_t**	hashes;
 
-	fprintf(stderr,"\nCHKSMB v2.12 - Check Synchronet Message Base - "
+	fprintf(stderr,"\nCHKSMB v2.20 - Check Synchronet Message Base - "
 		"Copyright 2004 Rob Swindell\n");
 
 	if(argc<2) {
@@ -306,6 +311,42 @@ int main(int argc, char **argv)
 					,msg.hdr.length,smb_getmsghdrlen(&msg));
 			hdrlenerr++; 
 		}
+
+		/* Test reading of the message text (body and tails) */
+		if(msg.hdr.attr&MSG_DELETE)
+			body=tail=NULL;
+		else {
+			if((body=smb_getmsgtxt(&smb,&msg,0))==NULL) {
+				fprintf(stderr,"%sGet text body failure\n",beep);
+				msgerr=1;
+				if(extinfo)
+					printf("MSGERR: %s\n", smb.last_error);
+				getbodyerr++;
+			}
+			if((tail=smb_getmsgtxt(&smb,&msg,GETMSGTXT_TAIL_ONLY))==NULL) {
+				fprintf(stderr,"%sGet text tail failure\n",beep);
+				msgerr=1;
+				if(extinfo)
+					printf("MSGERR: %s\n", smb.last_error);
+				gettailerr++;
+			}
+		}
+
+		/* Look-up the message hashes */
+		hashes=smb_msghashes(&smb,&msg,body);
+		if((i=smb_findhash(&smb,hashes,NULL))!=SMB_SUCCESS) {
+			fprintf(stderr,"%sFailed to find hash\n",beep);
+			msgerr=1;
+			if(extinfo)
+				printf("MSGERR: %d searching for message hashes",i);
+			hasherr++;
+		}
+		
+		smb_close_hash(&smb);	/* just incase */
+
+		FREE_LIST(hashes,i);
+		FREE_AND_NULL(body);
+		FREE_AND_NULL(tail);
 
 		lzhmsg=0;
 		if(msg.hdr.attr&MSG_DELETE) {
@@ -704,10 +745,22 @@ int main(int argc, char **argv)
 		printf("%-35.35s (!): %lu\n"
 			,"Mismatched Header Import Time"
 			,timeerr);
+	if(getbodyerr)
+		printf("%-35.35s (!): %lu\n"
+			,"Message Body Text Read Failures"
+			,getbodyerr);
+	if(gettailerr)
+		printf("%-35.35s (!): %lu\n"
+			,"Message Tail Text Read Failures"
+			,gettailerr);
 	if(xlaterr)
 		printf("%-35.35s (!): %lu\n"
 			,"Unsupported Translation Types"
 			,xlaterr);
+	if(hasherr)
+		printf("%-35.35s (!): %lu\n"
+			,"Missing Hash Records"
+			,hasherr);
 	if(datactalloc)
 		printf("%-35.35s (!): %lu\n"
 			,"Misallocated Active Data Blocks"
@@ -739,6 +792,8 @@ int main(int argc, char **argv)
 		total!=smb.status.total_msgs
 		|| (headers-deleted)!=total-delidx
 		|| idxzeronum || zeronum
+		|| hdrlenerr || hasherr
+		|| getbodyerr || gettailerr
 		|| orphan || dupenumhdr || dupenum || dupeoff || attr
 		|| lockerr || hdrerr || hdrnumerr || idxnumerr || idxofferr
 		|| actalloc || datactalloc || misnumbered || timeerr
@@ -776,6 +831,8 @@ int main(int argc, char **argv)
 		fprintf(stderr,"\n"); 
 	}
 
+	if(errors)
+		printf("\n'fixsmb' can be used to repair most message base problems.\n");
 
 	return(errors);
 }
