@@ -1133,12 +1133,12 @@ static BOOL parse_headers(http_session_t * session)
 	size_t	content_len=0;
 	char	env_name[128];
 
-	while(sockreadline(session,req_line,sizeof(req_line))>0) {
+	while(sockreadline(session,req_line,sizeof(req_line)-1)>0) {
 		/* Multi-line headers */
 		while((recvfrom(session->socket,next_char,1,MSG_PEEK,NULL,0)>0) 
 			&& (next_char[0]=='\t' || next_char[0]==' ')) {
 			i=strlen(req_line);
-			sockreadline(session,req_line+i,sizeof(req_line)-i);
+			sockreadline(session,req_line+i,sizeof(req_line)-i-1);
 		}
 		strtok(req_line,":");
 		if((value=strtok(NULL,""))!=NULL) {
@@ -1373,7 +1373,7 @@ static BOOL get_req(http_session_t * session, char *request_line)
 
 	req_line[0]=0;
 	if(request_line == NULL) {
-		if(sockreadline(session,req_line,sizeof(req_line))<0)
+		if(sockreadline(session,req_line,sizeof(req_line)-1)<0)
 			req_line[0]=0;
 	}
 	else {
