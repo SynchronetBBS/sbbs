@@ -1146,7 +1146,7 @@ JSObject* DLLCALL js_CreateSystemObject(JSContext* cx, JSObject* parent
 	}	
 
 	if(!JS_DefineProperty(cx, sysobj, "node_list", OBJECT_TO_JSVAL(node_list)
-		, NULL, NULL, 0))
+		, NULL, NULL, JSPROP_ENUMERATE))
 		return(NULL);
 
 	return(sysobj);
