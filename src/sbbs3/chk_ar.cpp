@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -498,6 +498,14 @@ bool sbbs_t::ar_exp(uchar **ptrptr, user_t* user)
 			case AR_SHELL:
 				if(user->shell>=cfg.total_shells
 					|| stricmp(cfg.shell[user->shell]->code,(char*)*ptrptr))
+					result=_not;
+				else
+					result=!_not;
+				while(*(*ptrptr))
+					(*ptrptr)++;
+				break;
+			case AR_PROT:
+				if(stricmp(user->modem,(char*)*ptrptr))	/* should this be changed to client.prot? */
 					result=_not;
 				else
 					result=!_not;

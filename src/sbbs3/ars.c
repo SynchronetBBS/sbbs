@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -280,6 +280,13 @@ uchar* arstr(ushort* count, char* str, scfg_t* cfg)
 				i+=2; }
 			else if(!strnicmp(str+i,"LINUX",5)) {
 				artype=AR_LINUX;
+				if(not)
+					ar[j++]=AR_NOT;
+				not=0;
+				ar[j++]=artype;
+				i+=2; }
+			else if(!strnicmp(str+i,"PROT",4)) {
+				artype=AR_PROT;
 				if(not)
 					ar[j++]=AR_NOT;
 				not=0;

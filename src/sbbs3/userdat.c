@@ -1618,6 +1618,15 @@ static BOOL ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user)
 				while(*(*ptrptr))
 					(*ptrptr)++;
 				break;
+			case AR_PROT:
+				if(user==NULL
+					|| stricmp(user->modem,(char*)*ptrptr))	/* should this be changed to client.prot? */
+					result=not;
+				else
+					result=!not;
+				while(*(*ptrptr))
+					(*ptrptr)++;
+				break;
 		} 
 	}
 	return(result);
