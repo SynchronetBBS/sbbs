@@ -113,8 +113,13 @@ MONO_OBJS	= $(CON_OBJS) $(FTP_OBJS) $(WEB_OBJS) \
 			$(MAIL_OBJS) $(SERVICE_OBJS)
 SMBLIB_OBJS = \
 	$(LIBODIR)/smblib.o \
-	$(LIBODIR)/filewrap.o \
-	$(LIBODIR)/crc16.o
+	$(LIBODIR)/smbtxt.o \
+	$(LIBODIR)/smbdump.o \
+	$(LIBODIR)/crc16.o \
+	$(LIBODIR)/crc32.o \
+	$(LIBODIR)/md5.o \
+	$(LIBODIR)/lzh.o \
+	$(LIBODIR)/filewrap.o
 
 SHLIBOPTS	:=	-shared
 ifeq ($(os),darwin)
@@ -269,10 +274,6 @@ SMBUTIL_OBJS = \
 	$(LIBODIR)/conwrap.o \
 	$(LIBODIR)/dirwrap.o \
 	$(LIBODIR)/genwrap.o \
-	$(LIBODIR)/smbtxt.o \
-	$(LIBODIR)/smbdump.o \
-	$(LIBODIR)/crc32.o \
-	$(LIBODIR)/lzh.o \
 	$(LIBODIR)/date_str.o \
 	$(LIBODIR)/str_util.o
 FORCE$(SMBUTIL): $(SMBUTIL_OBJS)
@@ -285,7 +286,6 @@ $(SMBUTIL): $(SMBUTIL_OBJS)
 SBBSECHO_OBJS = \
 	$(LIBODIR)/sbbsecho.o \
 	$(LIBODIR)/ars.o \
-	$(LIBODIR)/crc32.o \
 	$(LIBODIR)/date_str.o \
 	$(LIBODIR)/load_cfg.o \
 	$(LIBODIR)/scfglib1.o \
@@ -298,9 +298,7 @@ SBBSECHO_OBJS = \
 	$(LIBODIR)/conwrap.o \
 	$(LIBODIR)/dirwrap.o \
 	$(LIBODIR)/genwrap.o \
-	$(SMBLIB_OBJS) \
-	$(LIBODIR)/smbtxt.o \
-	$(LIBODIR)/lzh.o
+	$(SMBLIB_OBJS)
 
 FORCE$(SBBSECHO): $(SBBSECHO_OBJS)
 

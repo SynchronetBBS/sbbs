@@ -124,6 +124,10 @@ SOURCE=.\lzh.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\md5.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\nopen.c
 # End Source File
 # Begin Source File

@@ -162,8 +162,9 @@ $(NODE): node.c
 	@echo Creating $@
 	$(QUIET)$(CC) $(CFLAGS) -n$(EXEODIR) $** 
 
-SMBLIB = $(LIBODIR)\smblib.obj $(LIBODIR)\genwrap.obj $(LIBODIR)\filewrap.obj \
-	 $(LIBODIR)\crc16.obj $(LIBODIR)\smbdump.obj
+SMBLIB = $(LIBODIR)\smblib.obj $(LIBODIR)\smbdump.obj $(LIBODIR)\smbtxt.obj \
+	 $(LIBODIR)\genwrap.obj $(LIBODIR)\filewrap.obj $(LIBODIR)\lzh.obj \
+	 $(LIBODIR)\crc16.obj $(LIBODIR)\crc32.obj $(LIBODIR)\md5.obj
 
 # FIXSMB Utility
 $(FIXSMB): fixsmb.c \
@@ -182,9 +183,6 @@ $(CHKSMB): chksmb.c \
 
 # SMB Utility
 $(SMBUTIL): smbutil.c \
-	$(LIBODIR)\smbtxt.obj \
-	$(LIBODIR)\crc32.obj \
-	$(LIBODIR)\lzh.obj \
 	$(LIBODIR)\date_str.obj \
 	$(LIBODIR)\str_util.obj \
 	$(LIBODIR)\dirwrap.obj \
@@ -196,8 +194,6 @@ $(SMBUTIL): smbutil.c \
 $(SBBSECHO): sbbsecho.c \
 	$(LIBODIR)\rechocfg.obj \
 	$(LIBODIR)\smbtxt.obj \
-	$(LIBODIR)\crc32.obj \
-	$(LIBODIR)\lzh.obj \
 	$(LIBODIR)\ars.obj \
 	$(LIBODIR)\nopen.obj \
 	$(LIBODIR)\str_util.obj \
