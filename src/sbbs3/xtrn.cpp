@@ -1080,6 +1080,8 @@ static int setenv(const char *name, const char *value, int overwrite)
 			errno=ENOMEM;
 			return(-1);
 		}
+		/* ToDo: (comment for shurd) */
+		/* Uh... I'm pretty sure we're missing an sprintf() call here or something... */
 		putenv(envstr);
 	}
 	return(0);
