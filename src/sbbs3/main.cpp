@@ -2513,7 +2513,7 @@ int sbbs_t::nopen(char *str, int access)
     else share=SH_DENYRW;
 	if(!(access&O_TEXT))
 		access|=O_BINARY;
-    while(((file=sopen(str,access,share))==-1)
+    while(((file=sopen(str,access,share,S_IREAD|S_IWRITE))==-1)
         && (errno==EACCES || errno==EAGAIN) && count++<LOOP_NOPEN)
 	    mswait(100);
     if(count>(LOOP_NOPEN/2) && count<=LOOP_NOPEN) {
