@@ -1003,8 +1003,13 @@ void http_logon(http_session_t * session, user_t *usr)
 		return;
 	if(session->user.number==0)
 		SAFECOPY(session->username,unknown);
-	else
+	else {
 		SAFECOPY(session->username,session->user.alias);
+		/* Adjust Connect and host */
+		putuserrec(&scfg,session->user.number,U_MODEM,LEN_MODEM,"HTTP");
+		putuserrec(&scfg,session->user.number,U_COMP,LEN_COMP,session->host_name);
+		putuserrec(&scfg,session->user.number,U_NOTE,LEN_NOTE,session->host_ip);
+	}
 	session->last_user_num=session->user.number;
 	session->logon_time=time(NULL);
 }
