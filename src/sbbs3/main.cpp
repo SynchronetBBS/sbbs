@@ -1163,7 +1163,7 @@ void event_thread(void* arg)
 			/* Create (pre-pack) QWK files for users configured as such */
 			sprintf(semfile,"%sprepack.now",sbbs->cfg.data_dir);
 			if(sbbs->cfg.preqwk_ar[0] 
-				&& (fexist(semfile) || (now-lastprepack)/60>(60*24))) {
+				&& (fexistcase(semfile) || (now-lastprepack)/60>(60*24))) {
 				j=lastuser(&sbbs->cfg);
 				eprintf("Pre-packing QWK Message packets...");
 				for(i=1;i<=j;i++) {
@@ -1254,7 +1254,7 @@ void event_thread(void* arg)
 				if(sbbs->cfg.qhub[i]->last==-1) // already signaled
 					continue;
 				sprintf(str,"%sqnet/%s.now",sbbs->cfg.data_dir,sbbs->cfg.qhub[i]->id);
-				if(fexist(str)) {
+				if(fexistcase(str)) {
 					strcpy(str,sbbs->cfg.qhub[i]->id);
 					eprintf("Semaphore signaled for QWK Network Hub: %s",strupr(str));
 					sbbs->cfg.qhub[i]->last=-1; 
@@ -1270,7 +1270,7 @@ void event_thread(void* arg)
 				if(sbbs->cfg.event[i]->last==-1) // already signaled
 					continue;
 				sprintf(str,"%s%s.now",sbbs->cfg.data_dir,sbbs->cfg.event[i]->code);
-				if(fexist(str)) {
+				if(fexistcase(str)) {
 					strcpy(str,sbbs->cfg.event[i]->code);
 					eprintf("Semaphore signaled for Timed Event: %s",strupr(str));
 					sbbs->cfg.event[i]->last=-1; 
@@ -1290,6 +1290,7 @@ void event_thread(void* arg)
 					sprintf(str,"%s%s.q%c%c",sbbs->cfg.data_dir,sbbs->cfg.qhub[i]->id
 						,j>10 ? ((j-1)/10)+'0' : 'w'
 						,j ? ((j-1)%10)+'0' : 'k');
+					fexistcase(str);		/* fix wrong-case filenames on Unix */
 					if(flength(str)>0) {	/* silently ignore 0-byte QWK packets */
 						sbbs->delfiles(sbbs->cfg.temp_dir,ALLFILES);
 						if(sbbs->unpack_qwk(str,i)==false) {
@@ -1317,7 +1318,8 @@ void event_thread(void* arg)
 						&& sbbs->cfg.qhub[i]->days&(1<<now_tm.tm_wday))) {
 				sprintf(str,"%sqnet/%s.now"
 					,sbbs->cfg.data_dir,sbbs->cfg.qhub[i]->id);
-				remove(str);					/* Remove semaphore file */
+				if(fexistcase(str))
+					remove(str);					/* Remove semaphore file */
 				sprintf(str,"%sqnet/%s.ptr"
 					,sbbs->cfg.data_dir,sbbs->cfg.qhub[i]->id);
 				file=sbbs->nopen(str,O_RDONLY);
@@ -1470,7 +1472,8 @@ void event_thread(void* arg)
 							}
 						}
 						sprintf(str,"%s%s.now",sbbs->cfg.data_dir,sbbs->cfg.event[i]->code);
-						remove(str);
+						if(fexistcase(str))
+							remove(str);
 						sbbs->cfg.event[i]->last=now;
 					} else {	// Exclusive event to run on a node under our control
 						eprintf("Waiting for all nodes to become inactive before "
@@ -1546,7 +1549,8 @@ void event_thread(void* arg)
 					strcpy(sbbs->cfg.node_dir, sbbs->cfg.node_path[sbbs->cfg.node_num-1]);
 				
 					sprintf(str,"%s%s.now",sbbs->cfg.data_dir,sbbs->cfg.event[i]->code);
-					remove(str);
+					if(fexistcase(str))
+						remove(str);
 					if(sbbs->cfg.event[i]->misc&EVENT_EXCL) {
 						sbbs->getnodedat(sbbs->cfg.event[i]->node,&node,1);
 						node.status=NODE_EVENT_RUNNING;
