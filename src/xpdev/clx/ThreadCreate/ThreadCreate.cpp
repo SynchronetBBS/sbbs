@@ -4,7 +4,11 @@
 #pragma hdrstop
 USEFORM("MainUnit.cpp", Form1);
 //---------------------------------------------------------------------------
+#if defined(_WIN32)
 WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
+#else
+int main(void)
+#endif
 {
 	try
 	{
