@@ -69,7 +69,7 @@ uint riobp;
 
 #endif // _WIN32
 
-time_t	uptime;
+time_t	uptime=0;
 
 static	uint node_threads_running=0;
 static	uint thread_count=0;
@@ -87,6 +87,7 @@ static	bool	scfg_reloaded=true;
 static	char *	text[TOTAL_TEXT];
 static	WORD	first_node;
 static	WORD	last_node;
+static	bool	recycle_server=FALSE;
 
 extern "C" {
 
@@ -2938,6 +2939,7 @@ long DLLCALL bbs_ver_num(void)
 
 void DLLCALL bbs_terminate(void)
 {
+	recycle_server=false;
 	if(telnet_socket!=INVALID_SOCKET) {
     	lprintf("BBS Terminate: closing telnet socket %d",telnet_socket);
 		close_socket(telnet_socket);
@@ -3015,6 +3017,7 @@ void DLLCALL bbs_thread(void* arg)
 	BOOL			option;
 	time_t			t;
 	time_t			start;
+	time_t			initialized=0;
 	node_t			node;
 	sbbs_t*			events;
 	client_t		client;
@@ -3041,6 +3044,9 @@ void DLLCALL bbs_thread(void* arg)
 #ifdef JAVASCRIPT
 	if(startup->js_max_bytes==0)			startup->js_max_bytes=JAVASCRIPT_MAX_BYTES;
 #endif
+
+	recycle_server=TRUE;
+	do {
 
 	thread_up(FALSE /* setuid */);
 
@@ -3147,7 +3153,8 @@ void DLLCALL bbs_thread(void* arg)
 		}
 	}
 
-	uptime=time(NULL);
+	if(uptime==0)
+		uptime=time(NULL);
 
     if(startup->last_node>scfg.sys_nodes) {
     	lprintf("Specified last_node (%d) > sys_nodes (%d), auto-corrected"
@@ -3388,6 +3395,9 @@ void DLLCALL bbs_thread(void* arg)
 
 #endif // _WIN32 && _DEBUG && _MSC_VER
 
+	if(!initialized)
+		initialized=time(NULL);
+
 	while(telnet_socket!=INVALID_SOCKET) {
 
 		if(node_threads_running==0) {	/* check for re-run flags */
@@ -3414,6 +3424,17 @@ void DLLCALL bbs_thread(void* arg)
 				}
 				scfg_reloaded=true;
 				pthread_mutex_unlock(&event_mutex);
+			}
+			sprintf(str,"%stelnet.rec",scfg.ctrl_dir);
+			if(fdate(str)>initialized) {
+				lprintf("0000 Recycle semaphore file (%s) detected",str);
+				initialized=fdate(str);
+				break;
+			}
+			if(startup->recycle_now==TRUE) {
+				lprintf("0000 Recycle semaphore signaled");
+				startup->recycle_now=FALSE;
+				break;
 			}
 		}
 
@@ -3715,6 +3736,12 @@ void DLLCALL bbs_thread(void* arg)
 	    delete sbbs;
 
 	cleanup(0);
+
+	if(recycle_server) 
+		lprintf("Recycling server...");
+
+	} while(recycle_server);
+
 }
 
 
