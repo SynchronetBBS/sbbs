@@ -2822,7 +2822,8 @@ tODResult ODComGetByte(tPortHandle hPort, char *pbtNext, BOOL bWait)
 					return (kODRCNothingWaiting);
 			}
 
-			recv_ret = fread(pbtNext, 1, 1, stdin);
+/*			recv_ret = fread(pbtNext, 1, 1, stdin); */
+			recv_ret = read(STDIN_FILENO, pbtNext, 1);
 			if(recv_ret == 1)
 				break;
 			return (kODRCGeneralFailure);
