@@ -137,7 +137,7 @@ int lprintf(int level, char *fmt, ...)
     va_end(argptr);
 #if defined(__unix__)
 	if(daemonize) {
-		syslog(level,sbuf);
+		syslog(level,"%s",sbuf);
 		return(ret);
 	}
 #endif
