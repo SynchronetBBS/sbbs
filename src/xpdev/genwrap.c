@@ -219,7 +219,7 @@ char* DLLCALL os_version(char *str)
 			break;
 	}
 
-	sprintf(str,"Windows %sVersion %u.%02u (Build %u) %s"
+	sprintf(str,"Windows %sVersion %u.%u (Build %u) %s"
 			,winflavor
 			,winver.dwMajorVersion, winver.dwMinorVersion
 			,winver.dwBuildNumber,winver.szCSDVersion);
