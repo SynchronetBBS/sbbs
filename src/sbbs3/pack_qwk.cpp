@@ -432,12 +432,16 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 		lprintf(str);
 
 	if((*msgcnt)+mailmsgs && time(NULL)-start) {
-		bprintf("\r\n\r\n\1n\1hPacked %lu messages in %lu seconds "
+		bprintf("\r\n\r\n\1n\1hPacked %lu messages (%lu bytes) in %lu seconds "
 			"(%lu messages/second)."
-			,(*msgcnt)+mailmsgs,time(NULL)-start
+			,(*msgcnt)+mailmsgs
+			,ftell(qwk)
+			,time(NULL)-start
 			,((*msgcnt)+mailmsgs)/(time(NULL)-start));
-		sprintf(str,"Packed %lu messages in %lu seconds (%lu msgs/sec)"
-			,(*msgcnt)+mailmsgs,time(NULL)-start
+		sprintf(str,"Packed %lu messages (%lu bytes) in %lu seconds (%lu msgs/sec)"
+			,(*msgcnt)+mailmsgs
+			,ftell(qwk)
+			,time(NULL)-start
 			,((*msgcnt)+mailmsgs)/(time(NULL)-start));
 		if(online==ON_LOCAL) /* event */
 			eprintf(str);
