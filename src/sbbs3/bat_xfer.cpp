@@ -623,7 +623,6 @@ void sbbs_t::batch_upload()
 		memset(&f,0,sizeof(file_t));
 		f.dir=cfg.upload_dir;
 		padfname(dirent->d_name,f.name);
-		strupr(f.name);
 		for(x=0;x<usrlibs;x++) {
 			for(y=0;y<usrdirs[x];y++)
 				if(cfg.dir[usrdir[x][y]]->misc&DIR_DUPES
@@ -706,7 +705,6 @@ void sbbs_t::batch_add_list(char *list)
 				break;
 			truncsp(str);
 			sprintf(f.name,"%.12s",str);
-			strupr(f.name);
 			lncntr=0;
 			for(i=j=k=0;i<usrlibs;i++) {
 				for(j=0;j<usrdirs[i];j++,k++) {

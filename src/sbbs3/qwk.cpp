@@ -954,7 +954,6 @@ void sbbs_t::qwkcfgline(char *buf,uint subnum)
 
 	else if(!strncmp(str,"FREQ ",5)) {                  /* file request */
 		padfname(str+5,f.name);
-		strupr(f.name);
 		for(x=y=0;x<usrlibs;x++) {
 			for(y=0;y<usrdirs[x];y++)
 				if(findfile(&cfg,usrdir[x][y],f.name))

@@ -939,7 +939,6 @@ BOOL js_generate_index(JSContext* js_cx, JSObject* parent,
 				SAFECOPY(str,g.gl_pathv[i]);
 	#endif
 				padfname(getfname(str),f.name);
-				strupr(f.name);
 				f.dir=dir;
 				if(getfileixb(&scfg,&f)) {
 					f.size=0; /* flength(g.gl_pathv[i]); */
@@ -1520,7 +1519,6 @@ static void send_thread(void* arg)
 			SAFECOPY(fname,xfer.filename);
 #endif
 			padfname(getfname(fname),f.name);
-			strupr(f.name);
 			f.dir=xfer.dir;
 			f.size=total;
 			if(getfileixb(&scfg,&f)==TRUE && getfiledat(&scfg,&f)==TRUE) {
@@ -1774,7 +1772,6 @@ static void receive_thread(void* arg)
 			SAFECOPY(fname,xfer.filename);
 #endif
 			padfname(getfname(fname),f.name);
-			strupr(f.name);
 			f.dir=xfer.dir;
 			filedat=getfileixb(&scfg,&f);
 			if(scfg.dir[f.dir]->misc&DIR_AONLY)  /* Forced anonymous */
@@ -3481,7 +3478,6 @@ static void ctrl_thread(void* arg)
 					SAFECOPY(str,g.gl_pathv[i]);
 #endif
 					padfname(getfname(str),f.name);
-					strupr(f.name);
 					f.dir=dir;
 					if((filedat=getfileixb(&scfg,&f))==FALSE
 						&& !(startup->options&FTP_OPT_DIR_FILES))
@@ -3744,7 +3740,6 @@ static void ctrl_thread(void* arg)
 						SAFECOPY(str,g.gl_pathv[i]);
 #endif
 						padfname(getfname(str),f.name);
-						strupr(f.name);
 						f.dir=dir;
 						if(getfileixb(&scfg,&f)) {
 							f.size=flength(g.gl_pathv[i]);
@@ -3904,7 +3899,6 @@ static void ctrl_thread(void* arg)
 				SAFECOPY(str,fname);
 #endif
 				padfname(getfname(str),f.name);
-				strupr(f.name);
 				f.dir=dir;
 				f.cdt=0;
 				f.size=-1;
@@ -4131,7 +4125,6 @@ static void ctrl_thread(void* arg)
 					SAFECOPY(str,fname);
 #endif
 					padfname(getfname(str),f.name);
-					strupr(f.name);
 					f.dir=dir;
 					f.cdt=0;
 					f.size=-1;
