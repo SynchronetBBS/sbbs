@@ -319,7 +319,7 @@ static int bbs_lputs(char *str)
 		if (use_facilities)
 			syslog(LOG_INFO|LOG_AUTH,"%s",str);
 		else
-			syslog(LOG_INFO,"%s",str);
+			syslog(LOG_INFO,"     %s",str);
 		return(strlen(str));
 	}
 #endif
@@ -369,7 +369,7 @@ static int ftp_lputs(char *str)
 		if (use_facilities)
 			syslog(LOG_INFO|LOG_FTP,"%s",str);
 		else
-			syslog(LOG_INFO,"%s",str);
+			syslog(LOG_INFO,"ftp  %s",str);
 		return(strlen(str));
 	}
 #endif
@@ -419,7 +419,7 @@ static int mail_lputs(char *str)
 		if (use_facilities)
 			syslog(LOG_INFO|LOG_MAIL,"%s",str);
 		else
-			syslog(LOG_INFO,"%s",str);
+			syslog(LOG_INFO,"mail %s",str);
 		return(strlen(str));
 	}
 #endif
@@ -469,7 +469,7 @@ static int services_lputs(char *str)
 		if (use_facilities)
 			syslog(LOG_INFO|LOG_DAEMON,"%s",str);
 		else
-			syslog(LOG_INFO,"%s",str);
+			syslog(LOG_INFO,"srvc %s",str);
 		return(strlen(str));
 	}
 #endif
@@ -519,7 +519,7 @@ static int event_lputs(char *str)
 		if (use_facilities)
 			syslog(LOG_INFO|LOG_CRON,"%s",str);
 		else
-			syslog(LOG_INFO,"%s",str);
+			syslog(LOG_INFO,"evnt %s",str);
 		return(strlen(str));
 	}
 #endif
