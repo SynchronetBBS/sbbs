@@ -145,7 +145,8 @@ char* username(int usernumber,char *strin)
 void __fastcall TNodeForm::TimerTick(TObject *Sender)
 {
 	static int nodedab;
-    char	str[128],tmp[128],mer[10];
+    char	str[128],tmp[128];
+    char*   mer;
     int		i,n,hour;
     node_t	node;
 
@@ -334,12 +335,13 @@ void __fastcall TNodeForm::TimerTick(TObject *Sender)
                             hour=12;
                         else
                             hour=(node.aux/60)-12;
-                        strcpy(mer,"pm"); }
-                    else {
+                        mer="pm";
+                    } else {
                         if((node.aux/60)==0)    /* 12 midnite */
                             hour=12;
                         else hour=node.aux/60;
-                        strcpy(mer,"am"); }
+                        mer="am";
+                    }
                     sprintf(tmp, " ETA %02d:%02d %s"
                         ,hour,node.aux-((node.aux/60)*60),mer);
                     strcat(str, tmp); }
@@ -388,6 +390,10 @@ void __fastcall TNodeForm::TimerTick(TObject *Sender)
         	ListBox->Items->Strings[n]=str;
             ListBox->Selected[n]=selected;      // restore
         }
+    }
+    if(n!=MainForm->cfg.sys_nodes) {    /* read error or something */
+        close(nodedab);
+        nodedab=-1;
     }
     Timer->Enabled=true;
 }
