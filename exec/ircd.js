@@ -351,22 +351,13 @@ function wallopers(str) {
 }
 
 function push_nickbuf(oldnick,newnick) {
-	NickHistory[nick_pointer] = new NickBuf(oldnick,newnick);
-	nick_pointer++;
-	if(nick_pointer == nick_buffer)
-		nick_pointer = 0;
+	NickHistory.unshift(new NickBuf(oldnick,newnick));
+	if(NickHistory.length >= nick_buffer)
+		NickHistory.pop;
 }
 
 function search_nickbuf(bufnick) {
-	for (nb=nick_pointer;nb>=0;nb--) {
-		if (NickHistory[nb] && (bufnick.toUpperCase() == NickHistory[nb].oldnick.toUpperCase())) {
-			if (!searchbynick(NickHistory[nb].newnick))
-				return search_nickbuf(NickHistory[nb].newnick);
-			else
-				return NickHistory[nb].newnick;
-		}
-	}
-	for (nb=nick_buffer;nb>=nick_pointer;nb--) {
+	for (nb=0;nb<nick_buffer;nb++) {
 		if (NickHistory[nb] && (bufnick.toUpperCase() == NickHistory[nb].oldnick.toUpperCase())) {
 			if (!searchbynick(NickHistory[nb].newnick))
 				return search_nickbuf(NickHistory[nb].newnick);
@@ -2911,7 +2902,7 @@ function IRCClient_server_commands(origin, command, cmdline) {
 				break;
 			str = ":" + origin + " WALLOPS :" + ircstring(cmdline);
 			wallopers(str);
-			this.bcast_to_servers(str);
+			this.bcast_to_servers_raw(str);
 			break;
 		case "AWAY":
 			if (!cmd[1])
