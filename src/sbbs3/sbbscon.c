@@ -45,12 +45,14 @@
 #define SBBSCON_VERSION		"1.10"
 
 /* Global variables */
-BOOL			bbs_running=FALSE;
-bbs_startup_t	bbs_startup;
-BOOL			ftp_running=FALSE;
-ftp_startup_t	ftp_startup;
-BOOL			mail_running=FALSE;
-mail_startup_t	mail_startup;
+BOOL				bbs_running=FALSE;
+bbs_startup_t		bbs_startup;
+BOOL				ftp_running=FALSE;
+ftp_startup_t		ftp_startup;
+BOOL				mail_running=FALSE;
+mail_startup_t		mail_startup;
+BOOL				services_running=FALSE;
+services_startup_t	services_startup;
 
 static const char* prompt = "Command (?=Help): ";
 
@@ -205,6 +207,43 @@ static void mail_terminated(int code)
 	mail_running=FALSE;
 }
 
+/****************************************************************************/
+/* Services local/log print routine											*/
+/****************************************************************************/
+static int services_lputs(char *str)
+{
+	char		logline[512];
+	char		tstr[64];
+	time_t		t;
+	struct tm*	tm_p;
+
+	t=time(NULL);
+	tm_p=localtime(&t);
+	if(tm_p==NULL)
+		tstr[0]=0;
+	else
+		sprintf(tstr,"%d/%d %02d:%02d:%02d "
+			,tm_p->tm_mon+1,tm_p->tm_mday
+			,tm_p->tm_hour,tm_p->tm_min,tm_p->tm_sec);
+
+	sprintf(logline,"%ssvc  %.*s",tstr,sizeof(logline)-2,str);
+	truncsp(logline);
+	lputs(logline);
+	
+    return(strlen(logline)+1);
+}
+
+static void services_started(void)
+{
+	services_running=TRUE;
+}
+
+static void services_terminated(int code)
+{
+	services_running=FALSE;
+}
+
+
 #ifdef __unix__
 void _sighandler_quit(int sig)
 {
@@ -310,6 +349,14 @@ int main(int argc, char** argv)
 	}
 #endif /* __unix__ */
 
+	/* Initialize Services startup structure */
+    memset(&services_startup,0,sizeof(services_startup));
+    services_startup.size=sizeof(services_startup);
+	services_startup.lputs=services_lputs;
+    services_startup.started=services_started;
+    services_startup.terminated=services_terminated;
+    strcpy(services_startup.ctrl_dir,ctrl_dir);
+
 	/* Process arguments */
 	for(i=1;i<argc;i++) {
 		arg=argv[i];
@@ -389,6 +436,7 @@ int main(int argc, char** argv)
 	_beginthread((void(*)(void*))bbs_thread,0,&bbs_startup);
 	_beginthread((void(*)(void*))ftp_server,0,&ftp_startup);
 	_beginthread((void(*)(void*))mail_server,0,&mail_startup);
+	_beginthread((void(*)(void*))services_thread,0,&services_startup);
 
 #ifdef __unix__
 	// Set up QUIT-type signals so they clean up properly.
@@ -429,8 +477,9 @@ int main(int argc, char** argv)
 	bbs_terminate();
 	ftp_terminate();
 	mail_terminate();
+	services_terminate();
 
-	while(bbs_running || ftp_running || mail_running)
+	while(bbs_running || ftp_running || mail_running || services_running)
 		mswait(1);
 
 	/* erase the prompt */
