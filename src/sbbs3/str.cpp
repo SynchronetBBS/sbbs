@@ -735,11 +735,11 @@ void sbbs_t::dirinfo(uint dirnum)
 		printfile(str,0);
 }
 
+
 /****************************************************************************/
-/* Searches the file <name>.can in the TEXT directory for matches			*/
-/* Returns 1 if found in list, 0 if not.									*/
+/* Pattern matching string search of 'insearch' in 'fname'.					*/
 /****************************************************************************/
-extern "C" BOOL DLLCALL trashcan(scfg_t* cfg, char* insearch, char* name)
+extern "C" BOOL DLLCALL findstr(scfg_t* cfg, char* insearch, char* fname)
 {
 	char*	p;
 	char	str[128];
@@ -749,9 +749,7 @@ extern "C" BOOL DLLCALL trashcan(scfg_t* cfg, char* insearch, char* name)
 	BOOL	found;
 	FILE*	stream;
 
-	sprintf(str,"%s%s.can",cfg->text_dir,name);
-
-	if((stream=fopen(str,"r"))==NULL)
+	if((stream=fopen(fname,"r"))==NULL)
 		return(FALSE); 
 
 	sprintf(search,"%.*s",sizeof(search)-1,insearch);
@@ -809,6 +807,23 @@ extern "C" BOOL DLLCALL trashcan(scfg_t* cfg, char* insearch, char* name)
 	return(found);
 }
 
+/****************************************************************************/
+/* Searches the file <name>.can in the TEXT directory for matches			*/
+/* Returns TRUE if found in list, FALSE if not.								*/
+/****************************************************************************/
+extern "C" BOOL DLLCALL trashcan(scfg_t* cfg, char* insearch, char* name)
+{
+	char fname[MAX_PATH+1];
+
+	sprintf(fname,"%s%s.can",cfg->text_dir,name);
+	return(findstr(cfg,insearch,fname));
+}
+
+/****************************************************************************/
+/* Searches the file <name>.can in the TEXT directory for matches			*/
+/* Returns TRUE if found in list, FALSE if not.								*/
+/* Displays bad<name>.can in text directory if found.						*/
+/****************************************************************************/
 bool sbbs_t::trashcan(char *insearch, char *name)
 {
 	char str[256];

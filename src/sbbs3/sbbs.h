@@ -744,6 +744,7 @@ extern "C" {
 	/* str.cpp */
 	DLLEXPORT char *	DLLCALL ascii_str(uchar* str);
 	DLLEXPORT ushort	DLLCALL crc16(char *str);
+	DLLEXPORT BOOL		DLLCALL findstr(scfg_t* cfg, char *insearch, char *fname);
 	DLLEXPORT BOOL		DLLCALL trashcan(scfg_t* cfg, char *insearch, char *name);
 	DLLEXPORT int		DLLCALL putsmsg(scfg_t* cfg, int usernumber, char *strin);
 
