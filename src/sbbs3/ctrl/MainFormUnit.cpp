@@ -86,12 +86,15 @@ int     threads=1;
 
 static void thread_up(BOOL up, BOOL setuid)
 {
-	char str[128];
-	static HANDLE mutex;
+	char 	str[128];
+	static pthread_mutex_t mutex;
+	static BOOL mutex_initialized;
 
-    if(!mutex)
-    	mutex=CreateMutex(NULL,false,NULL);
-	WaitForSingleObject(mutex,INFINITE);
+	if(!mutex_initialized) {
+		pthread_mutex_init(&mutex,NULL);
+		mutex_initialized=TRUE;
+	}
+	pthread_mutex_lock(&mutex);
     if(up)
 	    threads++;
     else if(threads>0)
@@ -100,7 +103,7 @@ static void thread_up(BOOL up, BOOL setuid)
     AnsiString Str=AnsiString(str);
     if(MainForm->StatusBar->Panels->Items[0]->Text!=Str)
 		MainForm->StatusBar->Panels->Items[0]->Text=Str;
-    ReleaseMutex(mutex);
+	pthread_mutex_unlock(&mutex);
 }
 
 int sockets=0;
@@ -108,11 +111,14 @@ int sockets=0;
 void socket_open(BOOL open)
 {
 	char 	str[128];
-	static HANDLE mutex;
+	static 	pthread_mutex_t mutex;
+	static 	BOOL mutex_initialized;
 
-    if(!mutex)
-    	mutex=CreateMutex(NULL,false,NULL);
-	WaitForSingleObject(mutex,INFINITE);
+	if(!mutex_initialized) {
+		pthread_mutex_init(&mutex,NULL);
+		mutex_initialized=TRUE;
+	}
+	pthread_mutex_lock(&mutex);
     if(open)
 	    sockets++;
     else if(sockets>0)
@@ -121,7 +127,7 @@ void socket_open(BOOL open)
     AnsiString Str=AnsiString(str);
     if(MainForm->StatusBar->Panels->Items[1]->Text!=Str)
 		MainForm->StatusBar->Panels->Items[1]->Text=Str;
-    ReleaseMutex(mutex);
+    pthread_mutex_unlock(&mutex);
 }
 
 int clients=0;
@@ -152,13 +158,16 @@ static void client_on(BOOL on, int sock, client_t* client, BOOL update)
     char    str[128];
     int     i,j;
     time_t  t;
-	static  HANDLE mutex;
+	static 	pthread_mutex_t mutex;
+	static 	BOOL mutex_initialized;
     TListItem*  Item;
 
-    if(!mutex)
-    	mutex=CreateMutex(NULL,false,NULL);
-	WaitForSingleObject(mutex,INFINITE);
-    WaitForSingleObject(ClientForm->ListMutex,INFINITE);
+	if(!mutex_initialized) {
+		pthread_mutex_init(&mutex,NULL);
+		mutex_initialized=TRUE;
+	}
+	pthread_mutex_lock(&mutex);
+    pthread_mutex_lock(&ClientForm->ListMutex);
 
     /* Search for exising entry for this socket */
     for(i=0;i<ClientForm->ListView->Items->Count;i++) {
@@ -175,8 +184,8 @@ static void client_on(BOOL on, int sock, client_t* client, BOOL update)
         client_add(FALSE);
         if(i>=0)
             ClientForm->ListView->Items->Delete(i);
-        ReleaseMutex(mutex);
-        ReleaseMutex(ClientForm->ListMutex);
+        pthread_mutex_unlock(&mutex);
+        pthread_mutex_unlock(&ClientForm->ListMutex);
         return;
     }
     if(client!=NULL && client->size==sizeof(client_t)) {
@@ -197,17 +206,20 @@ static void client_on(BOOL on, int sock, client_t* client, BOOL update)
         sprintf(str,"%d:%02d",t/60,t%60);
         Item->SubItems->Add(str);
     }
-    ReleaseMutex(mutex);
-    ReleaseMutex(ClientForm->ListMutex);
+    pthread_mutex_unlock(&mutex);
+    pthread_mutex_unlock(&ClientForm->ListMutex);
 }
 
 static int bbs_lputs(char *str)
 {
-	static HANDLE mutex;
+	static pthread_mutex_t mutex;
+	static BOOL mutex_initialized;
 
-    if(!mutex)
-    	mutex=CreateMutex(NULL,false,NULL);
-	WaitForSingleObject(mutex,INFINITE);
+	if(!mutex_initialized) {
+		pthread_mutex_init(&mutex,NULL);
+		mutex_initialized=TRUE;
+	}
+	pthread_mutex_lock(&mutex);
 
     while(MaxLogLen && TelnetForm->Log->Text.Length()>=MaxLogLen)
         TelnetForm->Log->Lines->Delete(0);
@@ -215,40 +227,46 @@ static int bbs_lputs(char *str)
     AnsiString Line=Now().FormatString(LOG_TIME_FMT)+"  ";
     Line+=AnsiString(str).Trim();
 	TelnetForm->Log->Lines->Add(Line);
-    ReleaseMutex(mutex);
+    pthread_mutex_unlock(&mutex);
     return(Line.Length());
 }
 
 static void bbs_status(char *str)
 {
-	static HANDLE mutex;
+	static pthread_mutex_t mutex;
+	static BOOL mutex_initialized;
 
-    if(!mutex)
-    	mutex=CreateMutex(NULL,false,NULL);
-	WaitForSingleObject(mutex,INFINITE);
+	if(!mutex_initialized) {
+		pthread_mutex_init(&mutex,NULL);
+		mutex_initialized=TRUE;
+	}
+	pthread_mutex_lock(&mutex);
 
 	TelnetForm->Status->Caption=AnsiString(str);
 
-    ReleaseMutex(mutex);
+    pthread_mutex_unlock(&mutex);
 }
 
 static void bbs_clients(int clients)
 {
-	static HANDLE mutex;
+	static pthread_mutex_t mutex;
+	static BOOL mutex_initialized;
     static save_clients;
 
     save_clients=clients;
 
-    if(!mutex)
-    	mutex=CreateMutex(NULL,false,NULL);
-	WaitForSingleObject(mutex,INFINITE);
+	if(!mutex_initialized) {
+		pthread_mutex_init(&mutex,NULL);
+		mutex_initialized=TRUE;
+	}
+	pthread_mutex_lock(&mutex);
 
     TelnetForm->ProgressBar->Max
     	=(MainForm->bbs_startup.last_node
 	    -MainForm->bbs_startup.first_node)+1;
 	TelnetForm->ProgressBar->Position=clients;
 
-    ReleaseMutex(mutex);
+    pthread_mutex_unlock(&mutex);
 }
 
 static void bbs_terminated(int code)
@@ -282,11 +300,14 @@ static void bbs_start(void)
 
 static int event_log(char *str)
 {
-	static HANDLE mutex;
+	static pthread_mutex_t mutex;
+	static BOOL mutex_initialized;
 
-    if(!mutex)
-    	mutex=CreateMutex(NULL,false,NULL);
-	WaitForSingleObject(mutex,INFINITE);
+	if(!mutex_initialized) {
+		pthread_mutex_init(&mutex,NULL);
+		mutex_initialized=TRUE;
+	}
+	pthread_mutex_lock(&mutex);
 
     while(MaxLogLen && EventsForm->Log->Text.Length()>=MaxLogLen)
         EventsForm->Log->Lines->Delete(0);
@@ -294,17 +315,20 @@ static int event_log(char *str)
     AnsiString Line=Now().FormatString(LOG_TIME_FMT)+"  ";
     Line+=AnsiString(str).Trim();
 	EventsForm->Log->Lines->Add(Line);
-    ReleaseMutex(mutex);
+    pthread_mutex_unlock(&mutex);
     return(Line.Length());
 }
 
 static int service_log(char *str)
 {
-	static HANDLE mutex;
+	static pthread_mutex_t mutex;
+	static BOOL mutex_initialized;
 
-    if(!mutex)
-    	mutex=CreateMutex(NULL,false,NULL);
-	WaitForSingleObject(mutex,INFINITE);
+	if(!mutex_initialized) {
+		pthread_mutex_init(&mutex,NULL);
+		mutex_initialized=TRUE;
+	}
+	pthread_mutex_lock(&mutex);
 
     while(MaxLogLen && ServicesForm->Log->Text.Length()>=MaxLogLen)
         ServicesForm->Log->Lines->Delete(0);
@@ -312,21 +336,24 @@ static int service_log(char *str)
     AnsiString Line=Now().FormatString(LOG_TIME_FMT)+"  ";
     Line+=AnsiString(str).Trim();
 	ServicesForm->Log->Lines->Add(Line);
-    ReleaseMutex(mutex);
+    pthread_mutex_unlock(&mutex);
     return(Line.Length());
 }
 
 static void services_status(char *str)
 {
-	static HANDLE mutex;
+	static pthread_mutex_t mutex;
+	static BOOL mutex_initialized;
 
-    if(!mutex)
-    	mutex=CreateMutex(NULL,false,NULL);
-	WaitForSingleObject(mutex,INFINITE);
+	if(!mutex_initialized) {
+		pthread_mutex_init(&mutex,NULL);
+		mutex_initialized=TRUE;
+	}
+	pthread_mutex_lock(&mutex);
 
 	ServicesForm->Status->Caption=AnsiString(str);
 
-    ReleaseMutex(mutex);
+    pthread_mutex_unlock(&mutex);
 }
 
 static void services_terminated(int code)
@@ -352,18 +379,21 @@ static void services_clients(int clients)
 
 static int mail_lputs(char *str)
 {
-	static HANDLE mutex;
+	static pthread_mutex_t mutex;
+	static BOOL mutex_initialized;
 	static FILE* LogStream;
 
-    if(!mutex)
-    	mutex=CreateMutex(NULL,false,NULL);
-	WaitForSingleObject(mutex,INFINITE);
+	if(!mutex_initialized) {
+		pthread_mutex_init(&mutex,NULL);
+		mutex_initialized=TRUE;
+	}
+	pthread_mutex_lock(&mutex);
 
     if(str==NULL) {
         if(LogStream!=NULL)
             fclose(LogStream);
         LogStream=NULL;
-        ReleaseMutex(mutex);
+        pthread_mutex_unlock(&mutex);
         return(0);
     }
 
@@ -398,35 +428,41 @@ static int mail_lputs(char *str)
         }
 	}
 
-    ReleaseMutex(mutex);
+    pthread_mutex_unlock(&mutex);
     return(Line.Length());
 }
 
 static void mail_status(char *str)
 {
-	static HANDLE mutex;
+	static pthread_mutex_t mutex;
+	static BOOL mutex_initialized;
 
-    if(!mutex)
-    	mutex=CreateMutex(NULL,false,NULL);
-	WaitForSingleObject(mutex,INFINITE);
+	if(!mutex_initialized) {
+		pthread_mutex_init(&mutex,NULL);
+		mutex_initialized=TRUE;
+	}
+	pthread_mutex_lock(&mutex);
 
 	MailForm->Status->Caption=AnsiString(str);
 
-    ReleaseMutex(mutex);
+    pthread_mutex_unlock(&mutex);
 }
 
 static void mail_clients(int clients)
 {
-	static HANDLE mutex;
+	static pthread_mutex_t mutex;
+	static BOOL mutex_initialized;
 
-    if(!mutex)
-    	mutex=CreateMutex(NULL,false,NULL);
-	WaitForSingleObject(mutex,INFINITE);
+	if(!mutex_initialized) {
+		pthread_mutex_init(&mutex,NULL);
+		mutex_initialized=TRUE;
+	}
+	pthread_mutex_lock(&mutex);
 
     MailForm->ProgressBar->Max=MainForm->mail_startup.max_clients;
 	MailForm->ProgressBar->Position=clients;
 
-    ReleaseMutex(mutex);
+    pthread_mutex_unlock(&mutex);
 }
 
 static void mail_terminated(int code)
@@ -459,18 +495,21 @@ static void mail_start(void)
 
 static int ftp_lputs(char *str)
 {
-	static HANDLE mutex;
+	static pthread_mutex_t mutex;
+	static BOOL mutex_initialized;
 	static FILE* LogStream;
 
-    if(!mutex)
-    	mutex=CreateMutex(NULL,false,NULL);
-	WaitForSingleObject(mutex,INFINITE);
+	if(!mutex_initialized) {
+		pthread_mutex_init(&mutex,NULL);
+		mutex_initialized=TRUE;
+	}
+	pthread_mutex_lock(&mutex);
 
     if(str==NULL) {
         if(LogStream!=NULL)
             fclose(LogStream);
         LogStream=NULL;
-        ReleaseMutex(mutex);
+        pthread_mutex_unlock(&mutex);
         return(0);
     }
 
@@ -521,35 +560,41 @@ static int ftp_lputs(char *str)
         }
 	}
 
-    ReleaseMutex(mutex);
+    pthread_mutex_unlock(&mutex);
     return(Line.Length());
 }
 
 static void ftp_status(char *str)
 {
-	static HANDLE mutex;
+	static pthread_mutex_t mutex;
+	static BOOL mutex_initialized;
 
-    if(!mutex)
-    	mutex=CreateMutex(NULL,false,NULL);
-	WaitForSingleObject(mutex,INFINITE);
+	if(!mutex_initialized) {
+		pthread_mutex_init(&mutex,NULL);
+		mutex_initialized=TRUE;
+	}
+	pthread_mutex_lock(&mutex);
 
 	FtpForm->Status->Caption=AnsiString(str);
 
-    ReleaseMutex(mutex);
+    pthread_mutex_unlock(&mutex);
 }
 
 static void ftp_clients(int clients)
 {
-	static HANDLE mutex;
+	static pthread_mutex_t mutex;
+	static BOOL mutex_initialized;
 
-    if(!mutex)
-    	mutex=CreateMutex(NULL,false,NULL);
-	WaitForSingleObject(mutex,INFINITE);
+	if(!mutex_initialized) {
+		pthread_mutex_init(&mutex,NULL);
+		mutex_initialized=TRUE;
+	}
+	pthread_mutex_lock(&mutex);
 
     FtpForm->ProgressBar->Max=MainForm->ftp_startup.max_clients;
 	FtpForm->ProgressBar->Position=clients;
 
-    ReleaseMutex(mutex);
+    pthread_mutex_unlock(&mutex);
 }
 
 static void ftp_terminated(int code)
