@@ -16,51 +16,52 @@
 <hr>
 
 <!--webbot bot="Include" endspan i-checksum="23126" -->
+
 <h1>Synchronet Baja® Documentation
 
 </h1>
-<pre><b><u><a name="TOC">Table of Contents</a></u></b>
+<pre><b><a name="TOC">Table of Contents</a></b>
 
 1.  <b>Introduction to BAJA</b><a href="#Introduction">
 </a>    1.1   <a href="#Introduction">Introduction</a>
-    1.2   <a href="#Source Files">Source Files</a>
+    1.2   <a href="#SourceFiles">Source Files</a>
     1.3   <a href="#BAJA.EXE">BAJA.EXE</a>
     1.4   <a href="#Modules">Modules</a>
 
 2.  <b>BAJA Programming Basics
-</b> <b>   </b>2.1   <a href="#Programming Syntax">Programming Syntax</a>
+</b> <b>   </b>2.1   <a href="#ProgrammingSyntax">Programming Syntax</a>
     2.2   <a href="#Variables">Variables</a>
     2.3   <a href="#Arguments">Arguments</a>
-    2.4   <a href="#C Strings">C Strings</a>
-    2.5   <a href="#Integer Constants">Integer Constants</a>
-    2.6   <a href="#Command Key Constants">Command Key Constants</a>
-    2.7   <a href="#Include Files">Include Files</a>
-    2.8   <a href="#Macro Definitions">Macro Definitions</a>
-    2.9   <a href="#Global Variable Declarations">Global Variable Declarations</a></pre>
+    2.4   <a href="#CStrings">C Strings</a>
+    2.5   <a href="#IntegerConstants">Integer Constants</a>
+    2.6   <a href="#CommandKeyConstants">Command Key Constants</a>
+    2.7   <a href="#IncludeFiles">Include Files</a>
+    2.8   <a href="#MacroDefinitions">Macro Definitions</a>
+    2.9   <a href="#GlobalVariableDeclarations">Global Variable Declarations</a></pre>
 <pre>3.  <b>Programming Style and Rules
-</b>    3.1   <a href="#Programming Style">Programming Style</a>
-    3.2   <a href="#Suggested Rules of Style">Suggested Rules</a></pre>
+</b>    3.1   <a href="#ProgrammingStyle">Programming Style</a>
+    3.2   <a href="#SuggestedRulesOfStyle">Suggested Rules</a></pre>
 <pre>4.  <b>BAJA Function Reference</b>
-    4.1   <a href="#Function Definitions">Function Definitions</a>
-    4.2   <a href="#String Manipulation Functions">String Manipulation</a>
-    4.3   <a href="#Integer Manipulation Functions">Integer Manipulation</a>
-    4.4   <a href="#Logic/Control Flow Functions">Logic/Control Flow</a>
-    4.5   <a href="#Display Functions">Display</a>
-    4.6   <a href="#Input Functions">Input</a>
-    4.7   <a href="#Miscellaneous Functions">Miscellaneous</a>
-    4.8   <a href="#Mail Functions">Mail</a>
-    4.9   <a href="#Message Base Functions">Message Base</a>
-    4.10  <a href="#File Base Functions">File Base</a>
-    4.11  <a href="#Chat Functions">Chat</a>
-    4.12  <a href="#Information Functions">Information</a>
-    4.13  <a href="#File I/O Functions">File I/O</a>
-    4.14  <a href="#File System Functions">File System</a>
-    4.15  <a href="#Directory System Functions">Directory System</a></pre>
+    4.1   <a href="#FunctionDefinitions">Function Definitions</a>
+    4.2   <a href="#StringManipulationFunctions">String Manipulation</a>
+    4.3   <a href="#IntegerManipulationFunctions">Integer Manipulation</a>
+    4.4   <a href="#Logic/ControlFlowFunctions">Logic/Control Flow</a>
+    4.5   <a href="#DisplayFunctions">Display</a>
+    4.6   <a href="#InputFunctions">Input</a>
+    4.7   <a href="#MiscellaneousFunctions">Miscellaneous</a>
+    4.8   <a href="#MailFunctions">Mail</a>
+    4.9   <a href="#MessageBaseFunctions">Message Base</a>
+    4.10  <a href="#FileBaseFunctions">File Base</a>
+    4.11  <a href="#ChatFunctions">Chat</a>
+    4.12  <a href="#InformationFunctions">Information</a>
+    4.13  <a href="#FileI/OFunctions">File I/O</a>
+    4.14  <a href="#FileSystemFunctions">File System</a>
+    4.15  <a href="#DirectorySystemFunctions">Directory System</a></pre>
 <pre>5.  <b>System Variables</b><a href="#System Variables">
-</a>    5.1   <a href="#System Variables">System Variables</a></pre>
+</a>    5.1   <a href="#SystemVariables">System Variables</a></pre>
 <pre>6.  <b>Function Reference</b><a href="#Quick Function Reference">
-</a>    6.1   <a href="#Quick Function Reference">Quick Function Reference</a></pre>
-<h2><u>[1.1] - </u><a name="Introduction"><u>Introduction</u></a></h2>
+</a>    6.1   <a href="#QuickFunctionReference">Quick Function Reference</a></pre>
+<h2>[1.1] - <a name="Introduction">Introduction</a></h2>
 <pre>Baja (pronounced bä'hä) is a high-level development tool used to create
 &quot;command shells&quot; and &quot;loadable modules&quot; for Synchronet BBS software. The
 programmable command and menu structure (PCMS) technology in Synchronet version
@@ -81,7 +82,7 @@ the document to possibly find the term defined later or used again to clarify
 its meaning by context, or see the glossary in the Synchronet sysop manual.
 
 <a href="#TOC"><b>Back to Table of Contents</b></a></pre>
-<h2><u>[1.2] - </u><a name="Source Files"><u>Source Files</u></a></h2>
+<h2><a name="SourceFiles">[1.2] - Source Files</a></h2>
 <pre>Command shells and modules begin their life as a text source file (normally
 with a .SRC extension) or group of text files (including .INC files). These
 source files (and .INC files) can be edited with any ASCII text editor (e.g.
@@ -123,7 +124,7 @@ IF_TRUE
 <pre>For more examples of Baja source code, please see the *.SRC files in your
 Synchronet EXEC directory.</pre>
 <pre><a href="#TOC"><b>Back to Table of Contents</b></a></pre>
-<h2><u>[1.3] - BAJA.EXE</u></h2>
+<h2><a name="BAJA.EXE">[1.3] - BAJA.EXE</a></h2>
 <pre>After the source file has been created, BAJA.EXE is used to compile the .SRC
 file into a binary file with a .BIN extension that Synchronet can interpret
 and execute. If the source filename is EXAMPLE1.SRC, then the command line
@@ -149,7 +150,7 @@ do not have to be re-run since command shell binary files are dynamically
 loaded for each logon.
 
 <a href="#TOC"><b>Back to Table of Contents</b></a></pre>
-<h2><u>[1.4] - </u><a name="Modules"><u>Modules</u></a></h2>
+<h2><a name="Modules">[1.4] - Modules</a></h2>
 <pre>Baja modules are very similar to command shells with the main difference being
 that they are not automatically loaded upon logon as command shells are
 (with the exception of login and logon modules). Instead, modules must be
@@ -179,7 +180,7 @@ where they cannot normally be loaded by event or command line. @-codes are
 only expanded in posts and e-mail if posted locally by user #1 (the sysop).
 
 <a href="#TOC"><b>Back to Table of Contents</b></a></pre>
-<h2><u>[2.1] - </u><a name="Programming Syntax"><u>Programming Syntax</u></a></h2>
+<h2><a name="ProgrammingSyntax">[2.1] - Programming Syntax</a></h2>
 <pre><b>Basics:</b>
         Execution always begins at the top of the source code and continues
 	downward until a function is executed which changes the flow of
@@ -206,10 +207,10 @@ only expanded in posts and e-mail if posted locally by user #1 (the sysop).
 <pre><b>Case Sensitivity:
 </b>	Most elements of Baja syntax are not case sensitive (where upper or
 	lower case is significant). Functions, and variable names (for example)
-	are not case sensitve. Character constants ('A' for example) are case
+	are not case sensitive. Character constants ('A' for example) are case
 	sensitive.</pre>
 <pre><a href="#TOC"><b>Back to Table of Contents</b></a></pre>
-<h2><u>[2.2] - <a name="Variables">Variables</a>:</u></h2>
+<h2><a name="Variables">[2.2] - Variables:</a></h2>
 <pre>        Variable names are not case sensitive and must begin with an alphabetic
         character or an underscore (_). Variable names can be any length and
 	may contain alpha, numeric, and underscore characters only. The
@@ -221,7 +222,7 @@ only expanded in posts and e-mail if posted locally by user #1 (the sysop).
 	name and exit with a syntax error. Global variable declarations should
 	appear near the top of your source file.</pre>
 <pre>	Baja modules that use variables require SBBS v2.2 or later.</pre>
-<h2>	<u>[2.3] - <a name="Arguments">Arguments</a>:</u></h2>
+<h2>	<a name="Arguments">[2.3] - Arguments:</a></h2>
 <pre>	When a function requires one or more arguments, there must some amount
 	of white space between the function name and each argument.</pre>
 <pre>	In function definitions (in this document), required arguments are
@@ -247,7 +248,7 @@ only expanded in posts and e-mail if posted locally by user #1 (the sysop).
 <pre>	See the beginning of the Functions section for the complete definition
 	of all argument types and how they're specified in function
 	definitions.</pre>
-<h2>	<u>[2.4] - <a name="C Strings">C Strings</a>:</u></h2>
+<h2>	<a name="CStrings">[2.4] - C Strings:</a></h2>
 <pre>	Some character string arguments are defined as being C type (cstr).
 	This indicates the contents of the string use the same special/control
 	character escape sequences as defined for the printf() function in the
@@ -276,7 +277,7 @@ only expanded in posts and e-mail if posted locally by user #1 (the sysop).
 <pre>	would be an invalid path and filename.</pre>
 <pre>		&quot;C:\\README.TXT&quot;</pre>
 <pre>	would be the correct C string to represent <a href="file:///C:/README.TXT">C:\README.TXT</a>.</pre>
-<h2>	<u>[2.5] - <a name="Integer Constants">Integer Constants</a>:</u></h2>
+<h2>	<a name="IntegerConstants">[2.5] - Integer Constants:</a></h2>
 <pre>	Many functions allow or require the use of integer constants (as
 	opposed to integer variables). An integer constant is a number that is
 	&quot;hard-coded&quot; into the resulting executable file and will remain
@@ -306,7 +307,7 @@ only expanded in posts and e-mail if posted locally by user #1 (the sysop).
 	^			Bit-wise XOR (exclusive OR)	0xff^12
 	&gt;&gt;			Right shift			03700&gt;&gt;4
 	&lt;&lt;			Left shift			255&lt;&lt;2</pre>
-<h2>	<u>[2.6] - <a name="Command Key Constants">Command Key Constants</a>:</u></h2>
+<h2>	<a name="CommandKeyConstants">[2.6] - Command Key Constants:</a></h2>
 <pre>	Some functions require the use of a command key constant. A command key
 	constant is a keyword or symbol representing a valid command selected
 	by a user.</pre>
@@ -314,7 +315,7 @@ only expanded in posts and e-mail if posted locally by user #1 (the sysop).
 	type the key that you wish to use for a specific command. Example:</pre>
 <pre>		CMDKEY A</pre>
 <pre>	Would use the 'A' key for the command key constant. Simply specifying
-	a letter does not indicate case sensitivy (i.e. the above example
+	a letter does not indicate case sensitive (i.e. the above example
 	could have been &quot;CMDKEY a&quot; with the same results). </pre>
 <pre>	To specify a specific case (upper or lower), you must prefix the
 	command key with a single quote symbol ('). Example:</pre>
@@ -347,7 +348,7 @@ only expanded in posts and e-mail if posted locally by user #1 (the sysop).
 		^T	Time info
 		^U	List users online
 		^V	Center line (internal line editor)
-		^W	Delete word left (interal line editor)
+		^W	Delete word left (internal line editor)
 		^X	Delete line (internal line editor)
 		^Y	Delete to end-of line (internal line editor)
 		^Z	Raw input mode toggle
@@ -384,9 +385,9 @@ only expanded in posts and e-mail if posted locally by user #1 (the sysop).
 <pre>	Extended ASCII characters (Ç for example) are not valid command keys.
 
 <a href="#TOC"><b>Back to Table of Contents</b></a></pre>
-<h2>	<u>[2.7] - </u><a name="Include Files"><u>Include Files</u></a></h2>
-<pre>Source code segments that are to be shared amoung multiple command shells or
-modules can be placed into a separate text file (preferrably with a .INC
+<h2>	<a name="IncludeFiles">[2.7] - Include Files</a></h2>
+<pre>Source code segments that are to be shared among multiple command shells or
+modules can be placed into a separate text file (preferably with a .INC
 extension) and included in the source code for multiple modules by using the
 &quot;!INCLUDE&quot; compiler directive to specify the filename to include. Example:</pre>
 <pre>!INCLUDE MYDEFS.INC</pre>
@@ -413,7 +414,7 @@ C compilers, but if a specific path is not specified, only the current
 directory will be searched for the file to include.
 
 <a href="#TOC"><b>Back to Table of Contents</b></a></pre>
-<h2><u>[2.8] - </u><a name="Macro Definitions"><u>Macro Definitions</u></a></h2>
+<h2><a name="MacroDefinitions">[2.8] - Macro Definitions</a></h2>
 <pre>Commonly used character strings and integer constants can be specified as
 macros by using the &quot;!DEFINE&quot; compiler directive to specify the macro name to
 use and the value of the macro. Example:</pre>
@@ -426,21 +427,21 @@ C compilers with the main exception being that the macro name is not case
 sensitive.
 
 <a href="#TOC"><b>Back to Table of Contents</b></a></pre>
-<h2><u>[2.9] - </u><a name="Global Variable Declarations"><u>Global Variable Declarations</u></a></h2>
+<h2><a name="GlobalVariableDeclarations">[2.9] - Global Variable Declarations</a></h2>
 <pre>When using variables defined by the system (see System Variables) or another
 shell or module (see GLOBAL_STR and GLOBAL_INT functions), you must first
 declare these variables using the &quot;!GLOBAL&quot; compiler directive. Example:</pre>
 <pre>!GLOBAL SOME_GLOBAL_VAR</pre>
 <pre>Multiple global variables may be declared with one !GLOBAL statement:</pre>
 <pre>!GLOBAL SOME_GLOBAL_VAR ANOTHER_GLOBAL_VAR</pre>
-<pre>If you attempt to use a global variable without first delcaring it, the
+<pre>If you attempt to use a global variable without first declaring it, the
 compiler will fail to compile the source with an &quot;expected variable name&quot;
 syntax error message.</pre>
 <pre>This compiler directive is very similar to the &quot;extern&quot; keyword used by C
 compilers.
 
 <a href="#TOC"><b>Back to Table of Contents</b></a></pre>
-<h2><u>[3.1] - </u><a name="Programming Style"><u>Programming Style</u></a></h2>
+<h2><a name="ProgrammingStyle">[3.1] - Programming Style</a></h2>
 <pre>As stated in the previous section, white space characters at the beginning
 of a line are ignored and have no effect on the resulting compilation. But,
 whitespace can be very useful in making the source code readable by indenting
@@ -517,18 +518,18 @@ harder to understand how the code was expected to execute at a later date
 (or by another person) if a consistent indentation style was not used.
 
 <a href="#TOC"><b>Back to Table of Contents</b></a></pre>
-<h2><u>[3.2] - </u><a name="Suggested Rules of Style"><u>Suggested Rules of Style</u></a></h2>
+<h2><a name="SuggestedRulesOfStyle">[3.2] - Suggested Rules of Style</a></h2>
 <pre>There isn't a &quot;right&quot; or &quot;wrong&quot; way to use indentation, blank lines,
 or comments, but we will present a set of suggested &quot;rules&quot; here. If you decide
 you prefer another style, that is fine. The most important thing is that you
 are consistent in your use of whatever style you choose.</pre>
-<pre><b><u>Top of File Comments</u></b></pre>
+<pre><b>Top of File Comments</b></pre>
 <pre>Place a comment as the very first line of the file with the name of the .SRC
 file. Example:</pre>
 <pre># EXAMPLE.SRC</pre>
 <pre>Then a block of comment lines that describe what the shell or module's purpose
 is, who programmed it, when, where, etc.</pre>
-<pre><b><u>Label Comments</u></b></pre>
+<pre><b>Label Comments</b></pre>
 <pre>Labels normally represent the beginning of a sub-routine and should be
 well commented. A graphical line to show the beginning of a new sub-routine
 is often helpful. Example:</pre>
@@ -540,7 +541,7 @@ is often helpful. Example:</pre>
     </td>
   </tr>
 </table>
-<pre><b><u>CMD_HOME Comments</u></b>
+<pre><b>CMD_HOME Comments</b>
 
 The CMD_HOME function marks the beginning of a command/menu loop and should
 be well commented. Example:</pre>
@@ -554,7 +555,7 @@ CMD_HOME</pre>
     </td>
   </tr>
 </table>
-<pre><b><u>Conditional Indentation</u>
+<pre><b>Conditional Indentation
 </b>
 Whenever a block of code is conditionally executed (only executed under
 specific conditions), the block of code should be indented one tabstop past
@@ -576,7 +577,7 @@ END_CMD, END_CASE, END_SWITCH, etc). Example:</pre>
     </td>
   </tr>
 </table>
-<pre><b><u>Separate Code Blocks</u></b></pre>
+<pre><b>Separate Code Blocks</b></pre>
 <pre>Use blank lines to separate medium to large code blocks from other code
 (most especially CMDKEY, CMDKEYS, CMDSTR, and SWITCH code blocks). Example:</pre>
 <table border="0" cellpadding="3" cellspacing="3" width="70%" bgcolor="#CCCCCC">
@@ -592,21 +593,21 @@ END_CMD, END_CASE, END_SWITCH, etc). Example:</pre>
     </td>
   </tr>
 </table>
-<pre><b><u>End of File Comment</u>
+<pre><b>End of File Comment
 </b>
 Place a comment at the end of the file. Example:</pre>
 <pre># End of EXAMPLE.SRC
 
 <a href="#TOC"><b>Back to Table of Contents</b></a></pre>
-<h2><u>[4.1] - </u><a name="Function Definitions"><u>Function Definitions</u></a></h2>
+<h2><a name="FunctionDefinitions">[4.1] - Function Definitions</a></h2>
 <pre>The remainder of this document is for defining the correct use of all Baja
 functions. If you wish to look up a specific function by subject, please refer
 to the table of contents or the quick reference at the end of the document.</pre>
-<pre><b><u>Argument Types</u></b></pre>
+<pre><b>Argument Types</b></pre>
 <pre>Each function definition will begin with the name of the function followed by
 all possible arguments (parameters) and the type of each argument. The possible
 argument types are:</pre>
-<pre><b><u>Type		Description</u></b>
+<pre><b>Type		Description</b>
 
 &quot;str&quot;           String constant (contained in double quotes)
 &quot;cstr&quot;          C string constant (contained in double quotes)
@@ -626,7 +627,7 @@ optional arguments of the last specified type. Example:</pre>
 <pre>This function definition indicates that the SPRINT function requires a minimum
 of three arguments: a string variable, a C string constant, and one or more
 variables of either integer or string type.</pre>
-<pre><b><u>Required Include Files
+<pre><b>Required Include Files<u>
 </u></b>
 Following the function argument types, may be one or more required include
 (.INC) files. If any files are listed on the same line as the function
@@ -635,13 +636,13 @@ your source file to use this function arguments correctly. Example:</pre>
 <pre>	!INCLUDE NODEDEFS.INC</pre>
 <pre>Do not include the same file more than once in the same source file. Once
 is enough, and it should be done so near the top of your source (.SRC) file.</pre>
-<pre><b><u>Argument Names
+<pre><b>Argument Names<u>
 </u></b>
 If any arguments are allowed for a function, a list of argument names will
 follow the text &quot;args:&quot; below the function name and argument list. This will
 help in referencing the individual arguments in the function description.</pre>
 <pre><a href="#TOC"><b>Back to Table of Contents</b></a></pre>
-<h2><u>[4.2] - </u><a name="String Manipulation Functions"><u>String Manipulation Functions</u></a></h2>
+<h2><a name="StringManipulationFunctions">[4.2] - String Manipulation Functions</a></h2>
 <pre>Functions used for manipulating string variables (global or local) and/or the
 current command string.</pre>
 <pre> <b>STR &lt;str_var&gt; [str_var] [...]
@@ -828,7 +829,7 @@ processed.</pre>
    args: string
 </b>-----------------
 Removes (truncates) all white space characters from end of specified string
-variable or current comand string (if string not specified).</pre>
+variable or current command string (if string not specified).</pre>
 <pre><b>STRUPR [str_var]
   args: string
 </b>----------------
@@ -882,7 +883,7 @@ or LOAD_TEXT (reverts back to default TEXT.DAT). Example:</pre>
 original TEXT.DAT entries.
 
 <a href="#TOC"><b>Back to Table of Contents</b></a></pre>
-<h2><u>[4.3] - </u><a name="Integer Manipulation Functions"><u>Integer Manipulation Functions</u></a></h2>
+<h2><a name="IntegerManipulationFunctions">[4.3] - Integer Manipulation Functions</a></h2>
 <pre>Functions used for manipulating integer variables (global or local).</pre>
 <pre><b> INT &lt;int_var&gt; [int_var] [...]
 args: new_vars
@@ -1016,7 +1017,7 @@ Places the ASCII value of the first character in the specified string into
 dest.
 
 <a href="#TOC"><b>Back to Table of Contents</b></a></pre>
-<h2><u>[4.4] - </u><a name="Logic/Control Flow Functions"><u>Logic/Control Flow Functions</u></a>
+<h2><a name="Logic/ControlFlowFunctions">[4.4] - Logic/Control Flow Functions</a>
 </h2>
 <pre><b>GOTO &lt;txt&gt;
 args: label
@@ -1034,7 +1035,7 @@ defined with the specified label somewhere in the current module. When a
 RETURN function is executed in the sub-routine, control flow will return to the
 next line following the CALL function that started the sub-routine. The CALL
 function is very similar to the GOSUB command used in the BASIC programming
-langauge or the CALL instruction used in the Assembly programming language. At
+language or the CALL instruction used in the Assembly programming language. At
 least one RETURN function must exist in the sub-routine. Sub-routines should
 not use a GOTO function to &quot;jump out&quot; of the sub-routine.</pre>
 <pre><b>RETURN
@@ -1061,7 +1062,7 @@ var variable is a string variable, then cmp is converted to a string
 representation of the cmp variable before the comparison is made. If the cmp
 argument is a string variable or string constant and the var variable is
 an integer variable, then cmp is converted to an integer before the comparison
-is made. The current logic state is set to the result of the comparion:
+is made. The current logic state is set to the result of the comparison:
 TRUE (same as EQUAL), FALSE (as an NOT_EQUAL), GREATER, or LESS.
 
 <b>IF_TRUE
@@ -1099,7 +1100,7 @@ function. The block of code is terminated with an END_IF function.</pre>
 <pre><b>END_IF
 </b>------
 This function is used to terminate an IF_... or  ELSE code block. Every IF_...
-function must be followed by an ELSE or END_IF instuction, and every ELSE
+function must be followed by an ELSE or END_IF instruction, and every ELSE
 function must be followed by an END_IF.
 
 <b>SWITCH &lt;int_var&gt;
@@ -1207,7 +1208,7 @@ code block contains a GOTO or RETURN function.</pre>
 <pre><b>COMPARE_KEY &lt;key&gt;
        args: cmd
 </b>-----------------
-This function is identcal to the CMDKEY function in regards to the
+This function is identical to the CMDKEY function in regards to the
 key argument. The current command key is set by the GETCMD, GETKEY, GETSTR
 or similar functions. If the current command key matches the key argument,
 the current logic state is set to TRUE, otherwise it is set to FALSE.</pre>
@@ -1258,7 +1259,7 @@ the Synchronet sysop manual for details on the syntax of ARS.</pre>
 </b>-----------------------------------------------
 This function is used to compare the first num characters of strings str1
 and str2. This function is the Baja equivalent of the standard C strnicmp()
-function. If the two strings are the same (ignoring case) for the the first
+function. If the two strings are the same (ignoring case) for the first
 num characters, the current logic state is set to TRUE, otherwise it is set
 to FALSE.</pre>
 <pre><b>COMPARE_SUBSTR &lt;str_var&gt; &lt;str_var or &quot;cstr&quot;&gt;
@@ -1273,7 +1274,7 @@ to TRUE:</pre>
 	COMPARE_SUBSTR STR &quot;test&quot;
 
 <a href="#TOC"><b>Back to Table of Contents</b></a></pre>
-<h2>	<u>[4.5] - </u><a name="Display Functions"><u>Display Functions</u></a>
+<h2>	<a name="DisplayFunctions">[4.5] - Display Functions</a>
 </h2>
 <pre>Display functions are used to display output to the user either locally,
 remotely, or both.</pre>
@@ -1283,7 +1284,7 @@ args:  string
 This function sends a string of characters to the user (both locally and
 remotely, if applicable). The string to be printed can extend beyond the 80th
 column of the screen, but when printing multiple lines, multiple consecutive
-PRINT statements are preferrred.</pre>
+PRINT statements are preferred.</pre>
 <pre>Example:
                 PRINT &quot;hello, world\r\n&quot;
      or:
@@ -1430,7 +1431,7 @@ same as those shown for the PRINTFILE function. If you don't want any of the
 mode values, use 0 for the mode.</pre>
 <pre><b>PRINTFILE_STR
 </b>-------------
-This function is indentical to the PRINTFILE function, with the exception that
+This function is identical to the PRINTFILE function, with the exception that
 there is no argument, the current command string is used for the path and
 filename instead.</pre>
 <pre><b>PRINTFILE_LOCAL &lt;&quot;str&quot;&gt;
@@ -1524,7 +1525,7 @@ TRUE, otherwise it is set to FALSE.</pre>
     args: file
 </b>--------------
 This function displays the contents of a SIF questionnaire data file (path and
-filename specified in the current command command string). The data is read
+filename specified in the current command string). The data is read
 from the SIF data file and displayed through the SIF questionnaire file:
 &quot;TEXT\file.SIF&quot;.</pre>
 <pre>The original SIF data file is created with the CREATE_SIF function. The
@@ -1540,7 +1541,7 @@ Synchronet buffer for later re-display with the RESTORELINE function.</pre>
 This function re-displays a previously saved line of text to the local and
 remote console (if applicable).</pre>
 <pre><a href="#TOC"><b>Back to Table of Contents</b></a></pre>
-<h2><u>[4.6] - </u><a name="Input Functions"><u>Input Functions</u></a>
+<h2><a name="InputFunctions">[4.6] - Input Functions</a>
 </h2>
 <pre>Input functions are used to obtain input data from the user (most often from
 the user's keyboard).</pre>
@@ -1713,7 +1714,7 @@ Example:</pre>
 <pre>See the Synchronet Sysop Manual for details on the SIF questionnaire format.
 
 <a href="#TOC"><b>Back to Table of Contents</b></a></pre>
-<h2><u>[4.7] - </u><a name="Miscellaneous Functions"><u>Miscellaneous Functions</u></a>
+<h2><a name="MiscellaneousFunctions">[4.7] - Miscellaneous Functions</a>
 </h2>
 <pre><b>ONLINE
 </b>------
@@ -1733,7 +1734,7 @@ system password with the SY: prompt if the user has level 90 or higher.</pre>
 </b>-----
 Logon the currently logged-in user. This function must be called before the
 LOGIN module terminates if the user is to be allowed online. This function,
-in turn, executs the LOGON module, if one is configured in SCFG.</pre>
+in turn, executes the LOGON module, if one is configured in SCFG.</pre>
 <pre><b>LOGOFF
 </b>------
 This function prompts the user if they really wish to log off. If they
@@ -1743,7 +1744,7 @@ is displayed before they are disconnected.</pre>
 </b>-----------
 This function immediately drops carrier and logs the user off. It differs
 from the HANGUP function in that it performs a SYNC function, then it
-immediately drops carrier, as opposed to the HANGUP function wich does not
+immediately drops carrier, as opposed to the HANGUP function which does not
 perform a SYNC operation and has a buffer flush delay before actually
 dropping carrier.</pre>
 <pre><b>LOGOUT
@@ -1936,10 +1937,10 @@ ARS comparisons.
 <b>COMPARE_USER_MISC &lt;#&gt;						 USERDEFS.INC
 	     args: attrs
 </b>------------------------
-This function is used to compare the current user's miscellaneous attributess
+This function is used to compare the current user's miscellaneous attributes
 to the attrs argument specified. If all the attrs specified are ENABLED for the
 current user, then the current logic state is set to TRUE, otherwise it is set
-to FALSE. One or more of the following attributess (defined in USERDEFS.INC)
+to FALSE. One or more of the following attributes (defined in USERDEFS.INC)
 can be specified:</pre>
 <pre>Attribute       Description
 ~~~~~~~~~	~~~~~~~~~~~
@@ -2113,7 +2114,7 @@ as the argument.
 <b>SET_USER_STRING &lt;#&gt;						USERDEFS.INC
 	   args: user_string
 </b>----------------------------
-This fucntion changes one of the current user's text string fields to the
+This function changes one of the current user's text string fields to the
 value of the current command string. The user_string argument must be one of
 the following (defined in USERDEFS.INC):</pre>
 <pre>User_string		Description
@@ -2252,7 +2253,7 @@ name for protocols that don't require a specified filename (i.e. Ymodem,
 Zmodem, etc - NOT Xmodem). [SBBS 2.3]
 
 <a href="#TOC"><b>Back to Table of Contents</b></a></pre>
-<h2><u>[4.8] - </u><a name="Mail Functions"><u>Mail Functions</u></a>
+<h2><a name="MailFunctions">[4.8] - Mail Functions</a>
 </h2>
 <pre>The following functions are related to private E-mail.</pre>
 <pre><b>MAIL_READ
@@ -2303,7 +2304,7 @@ that if the NetMail file attachments are allowed, this function will allow the
 user to send an attached file to a netmail message (for FidoNet or Internet).
 
 <a href="#TOC"><b>Back to Table of Contents</b></a></pre>
-<h2><u>[4.9] - </u><a name="Message Base Functions"><u>Message Base Functions</u></a>
+<h2><a name="MessageBaseFunctions">[4.9] - Message Base Functions</a>
 </h2>
 <pre>The following functions are related to the system's message base.</pre>
 <pre><b>MSG_SET_AREA
@@ -2420,14 +2421,14 @@ This function allows the user to configure their un-read personal message
 scan.</pre>
 <pre><b>MSG_YOUR_SCAN
 </b>-------------
-This function peforms an un-read personal message scan on the current
+This function performs an un-read personal message scan on the current
 sub-board, current message group, or all sub-boards.</pre>
 <pre><b>MSG_YOUR_SCAN_ALL
 </b>-----------------
-This function peforms an un-read personal message scan on all sub-boards.
+This function performs an un-read personal message scan on all sub-boards.
 
 <a href="#TOC"><b>Back to Table of Contents</b></a></pre>
-<h2><u>[4.10] - </u><a name="File Base Functions"><u>File Base Functions</u></a>
+<h2><a name="FileBaseFunctions">[4.10] - File Base Functions</a>
 </h2>
 <pre><b>FILE_SET_AREA
 </b>-------------
@@ -2516,7 +2517,7 @@ TRUE.
 <b>FILE_UPLOAD_SYSOP
 </b>-----------------
 This function allows the user to upload a file to the invisible sysop
-directory. If ther user does not have upload access to the sysop directory or a
+directory. If the user does not have upload access to the sysop directory or a
 sysop directory has not been created, the current logic state is set to FALSE,
 otherwise, it is set to TRUE.</pre>
 <pre><b>FILE_DOWNLOAD
@@ -2660,7 +2661,7 @@ only&quot; operation. As with the FILE_FIND_OLD function, the current command st
 must contain &quot;ALL&quot;, &quot;LIB&quot;, or &quot;&quot; to specify the search range.
 
 <a href="#TOC"><b>Back to Table of Contents</b></a></pre>
-<h2><u>[4.11] - </u><a name="Chat Functions"><u>Chat Functions</u></a>
+<h2><a name="ChatFunctions">[4.11] - Chat Functions</a>
 </h2>
 <pre>The following functions are chat related in nature.</pre>
 <pre><b>PAGE_SYSOP
@@ -2685,7 +2686,7 @@ This function takes the user immediately to the chat menu where they can
 join multinode chat and perform various other chat related operations.
 
 <a href="#TOC"><b>Back to Table of Contents</b></a></pre>
-<h2><u>[4.12] - </u><a name="Information Functions"><u>Information Functions</u></a>
+<h2><a name="InformationFunctions">[4.12] - Information Functions</a>
 </h2>
 <pre><b>INFO_SYSTEM
 </b>-----------
@@ -2738,9 +2739,9 @@ This function displays the amount of free memory available.
 This is normally reserved as a &quot;sysop only&quot; operation.
 
 <a href="#TOC"><b>Back to Table of Contents</b></a></pre>
-<h2><u>[4.13] - </u><a name="File I/O Functions"><u>File I/O Functions</u></a>
+<h2><a name="FileI/OFunctions">[4.13] - File I/O Functions</a>
 </h2>
-<pre>These functions allow Baja modules to read (input) from and write (ouput) to
+<pre>These functions allow Baja modules to read (input) from and write (output) to
 disk files. If any of the following functions fail, the current logic state
 will be set to FALSE and the system variable _ERRNO will contain the reason
 for the failure. All file I/O functions require SBBS v2.2 or later.</pre>
@@ -2762,7 +2763,7 @@ O_CREAT 	Create	  (create if doesn't exist)
 O_APPEND	Append	  (writes to end of file)
 O_TRUNC 	Truncate  (truncates file to 0 bytes automatically)
 O_EXCL		Exclusive (only open/create if file doesn't exist)
-O_DENYNONE	Deny None (shareble, for use with record locking)</pre>
+O_DENYNONE	Deny None (shareable, for use with record locking)</pre>
 <pre>To specify multiple access flags, place an OR symbol (|) between each. Example:</pre>
 <pre>	O_WRONLY|O_TRUNC</pre>
 <pre>If the file does not exist it will be created if the O_CREAT access was
@@ -2973,9 +2974,9 @@ from any files that use a non-zero end-of-text character, you'll want to use
 this function before using FREAD or FWRITE.
 
 <a href="#TOC"><b>Back to Table of Contents</b></a></pre>
-<h2><u>[4.14] - </u><a name="File System Functions"><u>File System Functions</u></a>
+<h2><a name="FileSystemFunctions">[4.14] - File System Functions</a>
 </h2>
-<pre>These functions allow Baja modules to peform operations on unopened files.</pre>
+<pre>These functions allow Baja modules to perform operations on unopened files.</pre>
 <pre><b>CHKFILE &lt;&quot;str&quot; or str_var&gt;
    args: path_and_filename
 </b>--------------------------
@@ -2988,7 +2989,7 @@ is set to TRUE, otherwise it is set to FALSE.</pre>
 </b>------------------------------
 This function attempts to remove the specified path_and_filename. If the
 removal was successful, the current logic state is set to TRUE, otherwise it
-is set to FALSE. This function is the Baja equivlanet of the standard C
+is set to FALSE. This function is the Baja equivalent of the standard C
 unlink() and remove() functions.</pre>
 <pre><b>RENAME_FILE &lt;str_var&gt; &lt;str_var&gt;
        args: source    dest
@@ -3007,7 +3008,7 @@ state is set to TRUE, otherwise it is set to FALSE.</pre>
 <pre><b>MOVE_FILE &lt;str_var&gt; &lt;str_var&gt;
      args: source    dest
 </b>-----------------------------
-This function attepts to move the file specified as 'source' to the path
+This function attempts to move the file specified as 'source' to the path
 AND filename specified in 'dest'. If the source and dest paths are on the
 same drive, this function is the same as a RENAME_FILE. If the source and
 dest paths are on separate drives, then the this is the same as a COPY_FILE
@@ -3029,7 +3030,7 @@ _chmod(char *,1) function. Valid attrib flags (defined in DIR_ATTR.INC) are:</pr
 <pre>Flag		Description
 ~~~~		~~~~~~~~~~~
 FA_RDONLY	Read Only
-FA_HIDDEN	Hiden
+FA_HIDDEN	Hidden
 FA_SYSTEM	System
 FA_LABEL	Volume Label
 FA_DIREC	Directory (or subdirectory)
@@ -3054,9 +3055,9 @@ into the specified dest variable. If the date/time stamp could not be read
 Retrieves the current length of the specified file and writes it into the
 specified dest variable. If the file doesn't exist, the value -1 is written
 to the dest variable.</pre>
-<h2><u>[4.15] - </u><a name="Directory System Functions"><u>Directory System Functions</u></a>
+<h2><a name="DirectorySystemFunctions">[4.15] - Directory System Functions</a>
 </h2>
-<pre>These functions allow Baja modules to peform operations on directories and
+<pre>These functions allow Baja modules to perform operations on directories and
 subdirectories of the local file system.</pre>
 <pre><b>MAKE_DIR &lt;str_var&gt;
     args: dir
@@ -3080,7 +3081,7 @@ is the Baja equivalent of the standard C chdir() function.</pre>
       args: dir
 </b>--------------------
 This function attempts to remove the directory specified as dir. If the
-removal is unnsuccessful (files in the directory, directory doesn't exist,
+removal is unsuccessful (files in the directory, directory doesn't exist,
 etc.) the current logic state will be set to FALSE and the system variable
 _ERRNO will contain the reason. This function is the Baja equivalent of the
 standard C rmdir() function.</pre>
@@ -3097,7 +3098,7 @@ standard C opendir() function.</pre>
 </b>----------------------------
 This function reads the next file name from the open directory handle and
 puts it into the string variable specified as filename. If the read is
-unsuccesful (no more files in directory) the current logic state is set to
+unsuccessful (no more files in directory) the current logic state is set to
 FALSE and the system variable _ERRNO will contain the reason. This function
 is the Baja equivalent of the standard C readdir() function.</pre>
 <pre><b>REWIND_DIR &lt;int_var&gt;
@@ -3113,7 +3114,7 @@ This function closes a previously opened directory handle. This function is
 the Baja equivalent of the standard C closedir() function.
 
 <a href="#TOC"><b>Back to Table of Contents</b></a></pre>
-<h2><u>[5.1] - </u><a name="System Variables"><u>System Variables</u></a>
+<h2><a name="SystemVariables">[5.1] - System Variables</a>
 </h2>
 <pre>System variables are global variables that are initialized and/or used by
 Synchronet during operation. They should not be defined in your Baja module.
@@ -3155,8 +3156,7 @@ _USERON.EMAILS	       *Total number of e-mails sent by user online
 _USERON.FBACKS	       *Total number of feedbacks sent by user online
 _USERON.ETODAY	       *Total number of e-mails sent today by user online
 _USERON.PTODAY	       *Total number of posts sent today by user online
-_USERON.TIMEON	       *Total minutes used (excluding this call) by user 
-online
+_USERON.TIMEON	       *Total minutes used (excluding this call) by user online
 _USERON.TEXTRA	       *Extra time obtained by uploads during previous calls
 _USERON.LOGONS	       *Total number of logons by user online
 _USERON.TTODAY	       *Total time used today (previous calls)
@@ -3268,7 +3268,7 @@ _ERRORLEVEL	       *Error level of most recently executed external program
 _ERRNO		       *Current DOS error code (see ERRNO.INC for values)
 <a href="#TOC"><b>
 Back to Table of Contents</b></a></pre>
-<h2><u>[6.1] - </u><a name="Quick Function Reference"><u>Quick Function Reference</u></a>
+<h2><a name="QuickFunctionReference">[6.1] - Quick Function Reference</a>
 </h2>
 <pre><a href="#String Manipulation Functions"><b>String Manipulation Functions</b></a>
 -----------------------------
