@@ -38,8 +38,6 @@
 #include "sbbs.h"
 #include "cmdshell.h"
 
-extern "C" const char* beta_version;
-
 /****************************************************************************/
 /* Returns 0 if invalid @ code. Returns length of @ code if valid.          */
 /****************************************************************************/

@@ -1499,8 +1499,6 @@ static JSClass js_node_class = {
 	,JS_FinalizeStub		/* finalize		*/
 };
 
-extern const char* beta_version;
-
 JSObject* DLLCALL js_CreateSystemObject(JSContext* cx, JSObject* parent
 										,scfg_t* cfg, time_t uptime, char* host_name)
 {
@@ -1553,6 +1551,15 @@ JSObject* DLLCALL js_CreateSystemObject(JSContext* cx, JSObject* parent
 	val = STRING_TO_JSVAL(js_str);
 	if(!JS_SetProperty(cx, sysobj, "revision", &val))
 		return(NULL);
+
+	SAFECOPY(str,beta_version);
+	truncsp(str);
+	if((js_str=JS_NewStringCopyZ(cx, str))==NULL)
+		return(NULL);
+	val = STRING_TO_JSVAL(js_str);
+	if(!JS_SetProperty(cx, sysobj, "beta_version", &val))
+		return(NULL);
+
 
 	sprintf(str,"%s%c%s",VERSION,REVISION,beta_version);
 	truncsp(str);

@@ -980,7 +980,7 @@ BOOL 	md(char *path);
 
 	/* ver.cpp */
 	char*	socklib_version(char* str);
-
+	
 	/* sortdir.cpp */
 	int		fnamecmp_a(char **str1, char **str2);	 /* for use with resort() */
 	int		fnamecmp_d(char **str1, char **str2);
@@ -999,6 +999,12 @@ extern char lastuseron[LEN_ALIAS+1];  /* Name of user last online */
 #ifdef __cplusplus
 }
 #endif
+
+extern
+#ifdef __cplusplus
+ "C"
+#endif
+	const char* beta_version;
 
 /* Global data */
 
