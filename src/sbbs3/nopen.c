@@ -37,6 +37,8 @@
 
 #include "sbbs.h"
 #include "crc32.h"
+#undef YIELD 			/* Kill YIELD in mswait() for nopen() */
+#define YIELD()
 
 /****************************************************************************/
 /* Network open function. Opens all files DENYALL and retries LOOP_NOPEN    */

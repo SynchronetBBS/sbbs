@@ -37,6 +37,8 @@
 
 #include "sbbs.h"
 #include "cmdshell.h"
+#undef YIELD
+#define YIELD()				/* Kill YIELD in mswait() for nopen() */
 
 /* convenient space-saving global variables */
 char* crlf="\r\n";

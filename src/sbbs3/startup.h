@@ -45,10 +45,6 @@
 #include "client.h"
 #include "ringbuf.h"
 #include "threadwrap.h"	/* sem_t */
-#if defined(SBBS) /* Ugly hack around the use of startup.h including threadwrap.h */
-	/* Leave the warning here as incentive to fix it correctly! */
-	#define YIELD()
-#endif
 
 typedef struct {
 
