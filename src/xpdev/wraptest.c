@@ -42,12 +42,14 @@ int main()
 	printf("%-15s: %s\n","Compiler"	,compiler);
 	printf("%-15s: %d\n","Random Number",xp_random(1000));
 
+	/* getch test */
 	printf("\ngetch() test (ESC to continue)\n");
 	do {
 		ch=getch();
 		printf("getch() returned %d\n",ch);
 	} while(ch!=ESC);
 
+	/* kbhit test */
 	printf("\nkbhit() test (any key to continue)\n");
 	while(!kbhit()) {
 		printf(".");
@@ -56,7 +58,6 @@ int main()
 	}
 	getch();	/* remove character from keyboard buffer */
 
-#if 1
 	/* BEEP test */
 	printf("\nBEEP() test\n");
 	getkey();
@@ -103,9 +104,7 @@ int main()
 	if(dir!=NULL)
 		closedir(dir);
 	printf("\nFree disk space: %lu bytes\n",getfreediskspace(path));
-#endif
 
-#if 1
 	/* Thread (and inter-process communication) test */
 	printf("\nThread test\n");
 	getkey();
@@ -134,7 +133,6 @@ int main()
 	}
 	sem_destroy(&thread_data.parent_sem);
 	sem_destroy(&thread_data.child_sem);
-#endif
 	return 0;
 }
 
