@@ -67,6 +67,8 @@ ulong _beginthread(void( *start_address )( void * )
 	/* Default stack size in FreeBSD is too small for JS stuff */
 	if(stack_size==0)
 		pthread_attr_setstacksize(&attr, (1<<17));
+	else
+		pthread_attr_setstacksize(&attr, stack_size);
 #endif
 
 	if(pthread_create(&thread
