@@ -737,9 +737,16 @@ static void sock_sendfile(SOCKET socket,char *path)
 		lprintf("%04d !ERROR %d opening %s",socket,errno,path);
 	else {
 		lseek(file,0,SEEK_SET);
+		#ifdef __FreeBSD__
+		if(sendfile(file, socket, 0, 0, NULL, NULL, 0) < 1)
+			lprintf("%04d !ERROR %d sending %s"
+				, socket, errno, path);
+		
+		#else
 		if(sendfilesocket(socket, file, 0, 0) < 1)
 			lprintf("%04d !ERROR %d sending %s"
 				, socket, errno, path);
+		#endif
 		close(file);
 	}
 }
