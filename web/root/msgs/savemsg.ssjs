@@ -67,10 +67,10 @@ if(sub != 'mail') {
 if(sub=="mail" && hdrs.to_net_type==NET_NONE && system.settings&SYS_DELREADM)
 	hdrs.attr|=MSG_KILLREAD;
 if(sub != 'mail') {
-if(msgbase.cfg.settings&SUB_KILL)
-	hdrs.attr|=MSG_KILLREAD;
-if(msgbase.cfg.settings&SUB_KILLP && hdrs.attr&MSG_PRIVATE)
-	hdrs.attr|=MSG_KILLREAD;
+    if(msgbase.cfg.settings&SUB_KILL)
+	   hdrs.attr|=MSG_KILLREAD;
+    if(msgbase.cfg.settings&SUB_KILLP && hdrs.attr&MSG_PRIVATE)
+	   hdrs.attr|=MSG_KILLREAD;
 }
 
 /* Sig stuff */
