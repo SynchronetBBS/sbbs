@@ -1322,10 +1322,12 @@ static void send_thread(void* arg)
 {
 	char		buf[8192];
 	char		fname[MAX_PATH+1];
+	char		str[128];
 	int			i;
 	int			rd;
 	int			wr;
 	ulong		total=0;
+	ulong		last_total=0;
 	ulong		dur;
 	ulong		cps;
 	ulong		length;
@@ -1397,10 +1399,21 @@ static void send_thread(void* arg)
 			continue;
 		}
 
+		/* Periodic progress report */
 		if(total && now>=last_report+XFER_REPORT_INTERVAL) {
-			lprintf("%04d Sent %ld bytes (%ld total) of %s (%lu cps)"
-				,xfer.ctrl_sock,xfer.filepos+total,length,xfer.filename
-				,now-start ? total/(now-start) : total*2);
+			if(xfer.filepos)
+				sprintf(str," from offset %lu",xfer.filepos);
+			else
+				str[0]=0;
+			lprintf("%04d Sent %ld bytes (%ld total) of %s (%lu cps)%s"
+				,xfer.ctrl_sock,total,length,xfer.filename
+#if 0
+				,now-start ? total/(now-start) : total*2
+#else
+				,(total-last_total)/(now-last_report)
+#endif
+				,str);
+			last_total=total;
 			last_report=now;
 		}
 
@@ -1513,6 +1526,7 @@ static void send_thread(void* arg)
 static void receive_thread(void* arg)
 {
 	char*		p;
+	char		str[128];
 	char		buf[8192];
 	char		ext[F_EXBSIZE+1];
 	char		desc[F_EXBSIZE+1];
@@ -1523,6 +1537,7 @@ static void receive_thread(void* arg)
 	int			rd;
 	int			file;
 	ulong		total=0;
+	ulong		last_total=0;
 	ulong		dur;
 	ulong		cps;
 	BOOL		error=FALSE;
@@ -1547,7 +1562,7 @@ static void receive_thread(void* arg)
 	*xfer.inprogress=TRUE;
 	*xfer.aborted=FALSE;
 	if(xfer.filepos || startup->options&FTP_OPT_DEBUG_DATA)
-		lprintf("%04d DATA socket %d receiving from offset %ld"
+		lprintf("%04d DATA socket %d receiving from offset %lu"
 			,xfer.ctrl_sock,*xfer.data_sock,xfer.filepos);
 
 	fseek(fp,xfer.filepos,SEEK_SET);
@@ -1555,10 +1570,22 @@ static void receive_thread(void* arg)
 	while(1) {
 
 		now=time(NULL);
+
+		/* Periodic progress report */
 		if(total && now>=last_report+XFER_REPORT_INTERVAL) {
-			lprintf("%04d Received %ld bytes of %s (%lu cps)"
+			if(xfer.filepos)
+				sprintf(str," from offset %lu",xfer.filepos);
+			else
+				str[0]=0;
+			lprintf("%04d Received %ld bytes of %s (%lu cps)%s"
 				,xfer.ctrl_sock,total,xfer.filename
-				,now-start? total/(now-start) : total*2);
+#if 0
+				,now-start ? total/(now-start) : total*2
+#else
+				,(total-last_total)/(now-last_report)
+#endif
+				,str);
+			last_total=total;
 			last_report=now;
 		}
 		if(*xfer.aborted==TRUE) {
