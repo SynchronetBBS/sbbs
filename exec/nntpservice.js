@@ -331,7 +331,7 @@ while(client.socket.is_connected) {
 			var posted=false;
 			var header=true;
 			var body="";
-			var newsgroups="";
+			var newsgroups=new Array();
 			while(client.socket.is_connected) {
 
 				line = client.socket.recvline(512 /*maxlen*/, 300 /*timeout*/);
@@ -382,33 +382,34 @@ while(client.socket.is_connected) {
 						hdr.subject=data;
 						break;
 					case "newsgroups":
-						newsgroups=data;
+						newsgroups=data.split(',');
 						break;
 				}
 			}
 
-			for(g in msg_area.grp_list) 
-				for(s in msg_area.grp_list[g].sub_list) 
-					if(msg_area.grp_list[g].sub_list[s].newsgroup.toLowerCase()==newsgroups.toLowerCase()) {
-						if(!msg_area.grp_list[g].sub_list[s].can_post)
-							continue;
+            for(n in newsgroups)
+    			for(g in msg_area.grp_list) 
+				    for(s in msg_area.grp_list[g].sub_list) 
+					    if(msg_area.grp_list[g].sub_list[s].newsgroup.toLowerCase()==n.toLowerCase()) {
+						    if(!msg_area.grp_list[g].sub_list[s].can_post)
+							    continue;
 
-						if(msgbase!=null) {
-							msgbase.close();
-							delete msgbase;
-						}
-						if(msg_area.grp_list[g].sub_list[s].settings&SUB_NAME
-							&& !(user.security.restrictions&(UFLAG_G|UFLAG_Q)))
-							hdr.from=user.name;	// Use real names
+						    if(msgbase!=null) {
+							    msgbase.close();
+							    delete msgbase;
+						    }
+						    if(msg_area.grp_list[g].sub_list[s].settings&SUB_NAME
+							    && !(user.security.restrictions&(UFLAG_G|UFLAG_Q)))
+							    hdr.from=user.name;	// Use real names
 
-						msgbase=new MsgBase(msg_area.grp_list[g].sub_list[s].code);
-						if(msgbase.save_msg(hdr,body)) {
-							log(format("%s posted a message on %s",user.alias,newsgroups));
-							writeln("240 article posted ok");
-							posted=true;
-						} else 
-							log(format("!ERROR saving mesage: %s",msgbase.last_error));
-					}
+						    msgbase=new MsgBase(msg_area.grp_list[g].sub_list[s].code);
+						    if(msgbase.save_msg(hdr,body)) {
+							    log(format("%s posted a message on %s",user.alias,newsgroups));
+							    writeln("240 article posted ok");
+							    posted=true;
+						    } else 
+							    log(format("!ERROR saving mesage: %s",msgbase.last_error));
+					    }
 			if(!posted) {
 				log("post failure");
 				writeln("441 posting failed");
