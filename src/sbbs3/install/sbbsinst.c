@@ -560,19 +560,8 @@ get_distlist(void)
 				DIST_LIST_URL2,ftpErrString(ret1),
 				DIST_LIST_URL3,ftpErrString(ret1),
 				DIST_LIST_URL4,ftpErrString(ret1));
-		exit(EXIT_FAILURE);
-		strcpy(file[f],DEFAULT_DISTFILE);
-		for(j=0,i=2;in_line[i];i++)  {
-			if(in_line[i]=='%' && in_line[i+1]=='s')  {
-				file[f][j]=0;
-				strcat(file[f],sys_desc);
-				j=strlen(file[f]);
-				i++;
-			}
-			else
-				file[f][j++]=in_line[i];
-		}
-		f++;
+		if(r==0)
+			exit(EXIT_FAILURE);
 	}
 
 	while((list->gets(in_line,sizeof(in_line),list))!=NULL)  {
