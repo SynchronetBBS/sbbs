@@ -308,7 +308,7 @@ char *getnumstr(char *outstr, ulong size) {
 	return(outstr);			
 }
 
-int drawstats(scfg_t *cfg, int nodenum, node_t *node) {
+int drawstats(scfg_t *cfg, int nodenum, node_t *node, int *curp, int *barp) {
 	stats_t	sstats;
 	stats_t	nstats;
 	char	statbuf[6*78];		/* Buffer to hold the stats for passing to uifc.showbuf() */
@@ -360,7 +360,7 @@ int drawstats(scfg_t *cfg, int nodenum, node_t *node) {
 			str[2][0],str[2][1],str[2][2],str[2][3],
 			str[3][0],str[3][1],str[3][2],str[3][3]);
 
-	uifc.showbuf(WIN_L2R|WIN_DYN|WIN_PACK,1,1,80,6,"Statistics",statbuf);
+	uifc.showbuf(WIN_L2R|WIN_DYN|WIN_PACK,1,1,80,6,"Statistics",statbuf,curp,barp);
 /* Node 5 :	Mar 11  Space: 162,024k
    Logons: 23/103      Total: 62,610      Timeon: 322/2430    Total: 5,321,900   
    Emails: 4/265       Posts: 4/12811     Fbacks: 2/17	       Users: 1/592
@@ -545,7 +545,7 @@ int main(int argc, char** argv)  {
 						"\nCTRL-I Interrupt node"
 						"\nToDo: Add more help. (Explain what you're looking at)";
 						
-		drawstats(&cfg, main_dflt+1, &node);
+		drawstats(&cfg, main_dflt+1, &node, &main_dflt, &main_bar);
 		
 		j=uifc.list(WIN_L2R|WIN_ESC|WIN_ACT|WIN_DYN,0,5,70,&main_dflt,&main_bar
 			,title,mopt);
@@ -559,7 +559,7 @@ int main(int argc, char** argv)  {
 						read(buffile,buf,j);
 						close(buffile);
 						*(buf+j)=0;
-						uifc.showbuf(WIN_MID,0,0,76,uifc.scrn_len-2,"Error Log",buf);
+						uifc.showbuf(WIN_MID,0,0,76,uifc.scrn_len-2,"Error Log",buf,NULL,NULL);
 						free(buf);
 						continue;
 					}

@@ -356,7 +356,7 @@ typedef struct {
 /****************************************************************************/
 /* Shows a scrollable text buffer - optionally parsing "help markup codes"	*/
 /****************************************************************************/
-	void (*showbuf)(int mode, int left, int top, int width, int height, char *title, char *hbuf);
+	void (*showbuf)(int mode, int left, int top, int width, int height, char *title, char *hbuf, int *curp, int *barp);
 
 /****************************************************************************/
 /* Updates time in upper left corner of screen with current time in ASCII/  */

@@ -134,7 +134,7 @@ static int uinput(int imode, int left, int top, char *prompt, char *str
 static void umsg(char *str);
 static void upop(char *str);
 static void sethelp(int line, char* file);
-void showbuf(int mode, int left, int top, int width, int height, char *title, char *hbuf);
+void showbuf(int mode, int left, int top, int width, int height, char *title, char *hbuf, int *curp, int *barp);
 
 /* Dynamic menu support */
 static int *last_menu_cur=NULL;
@@ -1688,7 +1688,7 @@ void sethelp(int line, char* file)
 /****************************************************************************/
 /* Shows a scrollable text buffer - optionally parsing "help markup codes"	*/
 /****************************************************************************/
-void showbuf(int mode, int left, int top, int width, int height, char *title, char *hbuf)
+void showbuf(int mode, int left, int top, int width, int height, char *title, char *hbuf, int *curp, int *barp)
 {
 	char *savscrn,inverse=0,high=0;
 	char *buf;
@@ -1701,6 +1701,7 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 	union  REGS r;
 #endif
 	int pad=1;
+	int	is_redraw=0;
 
 	if(top+height>api->scrn_len-3)
 		height=(api->scrn_len-3)-top;
@@ -1722,6 +1723,18 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 
 	old_curs=curs_set(0);
 
+	/* Dynamic Menus */
+#ifdef __unix__
+	if(mode&WIN_DYN
+			&& curp != NULL 
+			&& barp != NULL 
+			&& last_menu_cur==curp
+			&& last_menu_bar==barp
+			&& save_menu_cur==*curp
+			&& save_menu_bar==*barp)
+		is_redraw=1;
+#endif
+
 	if((savscrn=(char *)MALLOC(scrn_width*api->scrn_len*2))==NULL) {
 		cprintf("UIFC line %d: error allocating %u bytes\r\n"
 			,__LINE__,scrn_width*25*2);
@@ -1735,68 +1748,71 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 		return; }
 	hidemouse();
 	gettext(1,1,scrn_width,api->scrn_len,savscrn);
-	memset(buf,SP,width*height*2);
-	for(i=1;i<width*height*2;i+=2)
-		buf[i]=(hclr|(bclr<<4));
-    buf[0]='Ú';
-	j=strlen(title);
-	if(j>width-6)
-		*(title+width-6)=0;
-	for(i=2;i<((width-6)/2-(j/2))*2;i+=2)
-   	      buf[i]='Ä';
-    buf[i]='´'; i+=4;
-	for(p=title;*p;p++) {
-		buf[i]=*p;
-		i+=2;
-	}
-	i+=2;
-   	buf[i]='Ã'; i+=2;
-	for(j=i;j<((width-1)*2);j+=2)
-   	    buf[j]='Ä';
-	i=j;
-    buf[i]='¿'; i+=2;
-	j=i;	/* leave i alone */
-	for(k=0;k<(height-2);k++) { 		/* the sides of the box */
-        buf[j]='³'; j+=2;
-		j+=((width-2)*2);
-        buf[j]='³'; j+=2; }
-    buf[j]='À'; j+=2;
-	if(!(mode&WIN_DYN) && (width>31)) {
-		for(k=j;k<j+(((width-4)/2-13)*2);k+=2)
-			buf[k]='Ä';
-		buf[k]='´'; k+=4;
-		buf[k]='H'; k+=2;
-		buf[k]='i'; k+=2;
-		buf[k]='t'; k+=4;
-		buf[k]='a'; k+=2;
-		buf[k]='n'; k+=2;
-		buf[k]='y'; k+=4;
-		buf[k]='k'; k+=2;
-		buf[k]='e'; k+=2;
-		buf[k]='y'; k+=4;
-		buf[k]='t'; k+=2;
-		buf[k]='o'; k+=4;
-		buf[k]='c'; k+=2;
-		buf[k]='o'; k+=2;
-		buf[k]='n'; k+=2;
-		buf[k]='t'; k+=2;
-		buf[k]='i'; k+=2;
-		buf[k]='n'; k+=2;
-		buf[k]='u'; k+=2;
-		buf[k]='e'; k+=4;
-	    buf[k]='Ã'; k+=2;
-		for(j=k;j<k+(((width-4)/2-12)*2);j+=2)
-	        buf[j]='Ä';
-	}
-	else {
-		for(k=j;k<j+((width-2)*2);k+=2)
-			buf[k]='Ä';
-		j=k;
-	}
-    buf[j]='Ù';
-	puttext(left,top+1,left+width-1,top+height,buf);
-	len=strlen(hbuf);
 
+	if(!is_redraw) {
+		memset(buf,SP,width*height*2);
+		for(i=1;i<width*height*2;i+=2)
+			buf[i]=(hclr|(bclr<<4));
+	    buf[0]='Ú';
+		j=strlen(title);
+		if(j>width-6)
+			*(title+width-6)=0;
+		for(i=2;i<((width-6)/2-(j/2))*2;i+=2)
+   		      buf[i]='Ä';
+	    buf[i]='´'; i+=4;
+		for(p=title;*p;p++) {
+			buf[i]=*p;
+			i+=2;
+		}
+		i+=2;
+   		buf[i]='Ã'; i+=2;
+		for(j=i;j<((width-1)*2);j+=2)
+   		    buf[j]='Ä';
+		i=j;
+    	buf[i]='¿'; i+=2;
+		j=i;	/* leave i alone */
+		for(k=0;k<(height-2);k++) { 		/* the sides of the box */
+	        buf[j]='³'; j+=2;
+			j+=((width-2)*2);
+        	buf[j]='³'; j+=2; }
+	    buf[j]='À'; j+=2;
+		if(!(mode&WIN_DYN) && (width>31)) {
+			for(k=j;k<j+(((width-4)/2-13)*2);k+=2)
+				buf[k]='Ä';
+			buf[k]='´'; k+=4;
+			buf[k]='H'; k+=2;
+			buf[k]='i'; k+=2;
+			buf[k]='t'; k+=4;
+			buf[k]='a'; k+=2;
+			buf[k]='n'; k+=2;
+			buf[k]='y'; k+=4;
+			buf[k]='k'; k+=2;
+			buf[k]='e'; k+=2;
+			buf[k]='y'; k+=4;
+			buf[k]='t'; k+=2;
+			buf[k]='o'; k+=4;
+			buf[k]='c'; k+=2;
+			buf[k]='o'; k+=2;
+			buf[k]='n'; k+=2;
+			buf[k]='t'; k+=2;
+			buf[k]='i'; k+=2;
+			buf[k]='n'; k+=2;
+			buf[k]='u'; k+=2;
+			buf[k]='e'; k+=4;
+	    	buf[k]='Ã'; k+=2;
+			for(j=k;j<k+(((width-4)/2-12)*2);j+=2)
+		        buf[j]='Ä';
+		}	
+		else {
+			for(k=j;k<j+((width-2)*2);k+=2)
+				buf[k]='Ä';
+			j=k;
+		}
+	    buf[j]='Ù';
+		puttext(left,top+1,left+width-1,top+height,buf);
+	}
+	len=strlen(hbuf);
+	
 	i=0;
 	lines=1;		/* The first one is free */
 	k=0;
@@ -1902,6 +1918,10 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 		puttext(1,1,scrn_width,api->scrn_len,savscrn);
 		showmouse();
 	}
+#ifdef __unix__
+	if(is_redraw)			/* Force redraw of menu also. */
+		reset_dynamic();
+#endif
 	FREE(savscrn);
 	FREE(buf);
 	if(old_curs != ERR)
@@ -1963,7 +1983,7 @@ void help()
 	else
 		strcpy(hbuf,api->helpbuf);
 
-	showbuf(WIN_MID|WIN_HLP, 0, 0, 76, api->scrn_len-2, "Online Help", hbuf);
+	showbuf(WIN_MID|WIN_HLP, 0, 0, 76, api->scrn_len-2, "Online Help", hbuf, NULL, NULL);
 }
 
 static int puttext(int sx, int sy, int ex, int ey, unsigned char *fill)
@@ -2070,7 +2090,6 @@ static int gettext(int sx, int sy, int ex, int ey, unsigned char *fill)
 				{
 					thischar=219;
 				}
-#if 0			/* This does ^^ for up an ^_ for down in some terminals - the "Printable version" */
 				else if (ext_char == ACS_UARROW)
 				{
 					thischar=30;
@@ -2079,7 +2098,6 @@ static int gettext(int sx, int sy, int ex, int ey, unsigned char *fill)
 				{
 					thischar=31;
 				}
-#endif
 				
 				/* unlikely (Not in ncurses) */
 				else if (ext_char == ACS_SBSD)
@@ -2291,14 +2309,12 @@ static void _putch(unsigned char ch, BOOL refresh_now)
 	{
 		switch(ch)
 		{
-#if 0 	/* Not usind 30/31 anymore */
 			case 30:
 				cha=ACS_UARROW;
 				break;
 			case 31:
 				cha=ACS_DARROW;
 				break;
-#endif
 			case 176:
 				cha=ACS_CKBOARD;
 				break;
@@ -2437,7 +2453,16 @@ static void _putch(unsigned char ch, BOOL refresh_now)
 	}
 	else
 	{
-		cha=ch;
+		switch(ch) {
+			case 30:
+				cha=ACS_UARROW;
+				break;
+			case 31:
+				cha=ACS_DARROW;
+				break;
+			default:
+				cha=ch;
+		}
 	}
 			
 
