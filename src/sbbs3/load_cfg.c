@@ -254,10 +254,10 @@ BOOL md(char *inpath)
 	DIR*	dir;
 	char	path[MAX_PATH+1];
 
-	SAFECOPY(path,inpath);
-
-	if(path[0]==0)
+	if(inpath[0]==0)
 		return(FALSE);
+
+	SAFECOPY(path,inpath);
 
 	/* Remove trailing '.' if present */
 	if(path[strlen(path)-1]=='.')
