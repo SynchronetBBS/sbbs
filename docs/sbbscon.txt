@@ -192,7 +192,7 @@ Installing the termcap file:
 1) Change to the Synchroent install dircetory (e.g. sbbs/install)
 2) Enter the command ``cat termcap >> /etc/termcap''
 3) *** FreeBSD Only *** run the command:
-	``cap_mkdb -f /usr/share/misc/termcap.db /etc/termcap''
+	``cap_mkdb -f /usr/share/misc/termcap /etc/termcap''
 
 Once the terminal capability files are installed, edit the ExternalTermANSI
 value in the [BBS] section of your .ini file to read:
