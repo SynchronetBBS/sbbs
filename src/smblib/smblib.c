@@ -761,6 +761,10 @@ int SMBCALL smb_getmsghdr(smb_t* smb, smbmsg_t* msg)
 				if(!msg->forwarded)
 					msg->from_ext=(char*)msg->hfield_dat[i];
 				break;
+			case SENDERORG:
+				if(!msg->forwarded)
+					msg->from_org=(char*)msg->hfield_dat[i];
+				break;
 			case SENDERNETTYPE:
 				if(!msg->forwarded)
 					msg->from_net.type=*(ushort *)msg->hfield_dat[i];
@@ -1788,4 +1792,83 @@ int SMBCALL smb_tzutc(short zone)
 	return(tz);
 }
 
+char* SMBCALL smb_hfieldtype(ushort type)
+{
+	static char str[8];
+
+	switch(type) {
+		case SENDER:			return("SENDER");
+		case SENDERAGENT:		return("SENDERAGENT");
+		case SENDERNETTYPE:		return("SENDERNETTYPE");
+		case SENDERNETADDR:		return("SENDERNETADDR");
+		case SENDEREXT:			return("SENDEREXT");
+		case SENDERORG:			return("SENDERORG");
+
+		case REPLYTO:			return("REPLYTO");
+		case REPLYTOAGENT:		return("REPLYTOAGENT");
+		case REPLYTONETTYPE:	return("REPLYTONETTYPE");
+		case REPLYTONETADDR:	return("REPLYTONETADDR");
+		case REPLYTOEXT:		return("REPLYTOEXT");
+								
+		case RECIPIENT:			return("RECIPIENT");
+		case RECIPIENTAGENT:	return("RECIPIENTAGENT");
+		case RECIPIENTNETTYPE:	return("RECIPIENTNETTYPE");
+		case RECIPIENTNETADDR:	return("RECIPIENTNETADDR");
+		case RECIPIENTEXT:		return("RECIPIENTEXT");
+
+		case SUBJECT:			return("SUBJECT");
+		case SMB_SUMMARY:		return("SUMMARY");
+		case SMB_COMMENT:		return("COMMENT");
+		case SMB_CARBONCOPY:	return("CARBONCOPY");
+		case SMB_GROUP:			return("GROUP");
+		case SMB_EXPIRATION:	return("EXPIRATION");
+		case SMB_PRIORITY:		return("PRIORITY");
+		case SMB_COST:			return("COST");
+
+		case FIDOCTRL:			return("FIDOCTRL");
+		case FIDOAREA:			return("FIDOAREA");
+		case FIDOSEENBY:		return("FIDOSEENBY");
+		case FIDOPATH:			return("FIDOPATH");
+		case FIDOMSGID:			return("FIDOMSGID");
+		case FIDOREPLYID:		return("FIDOREPLYID");
+		case FIDOPID:			return("FIDOPID");
+		case FIDOFLAGS:			return("FIDOFLAGS");
+
+		case RFC822HEADER:		return("RFC822HEADER");
+		case RFC822MSGID:		return("RFC822MSGID");
+		case RFC822REPLYID:		return("RFC822REPLYID");
+		case RFC822TO:			return("RFC822TO");
+		case RFC822FROM:		return("RFC822FROM");
+		case RFC822REPLYTO:		return("RFC822REPLYTO");
+
+		case USENETPATH:		return("USENETPATH");
+		case USENETNEWSGROUPS:	return("USENETNEWSGROUPS");
+
+		case SMTPCOMMAND:		return("SMTPCOMMAND");
+		case SMTPREVERSEPATH:	return("SMTPREVERSEPATH");
+
+		case SMTPSYSMSG:		return("SMTPSYSMSG");
+
+		case UNKNOWN:			return("UNKNOWN");
+		case UNKNOWNASCII:		return("UNKNOWNASCII");
+		case UNUSED:			return("UNUSED");
+	}
+	sprintf(str,"%02Xh",type);
+	return(str);
+}
+
+char* SMBCALL smb_dfieldtype(ushort type)
+{
+	static char str[8];
+
+	switch(type) {
+		case TEXT_BODY: return("TEXT_BODY");
+		case TEXT_TAIL: return("TEXT_TAIL");
+		case UNUSED:	return("UNUSED");
+	}
+	sprintf(str,"%02Xh",type);
+	return(str);
+}
+
 /* End of SMBLIB.C */
+
