@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 int win32_kbhit(void);
-int win32_getch();
+int win32_getch(void);
 int win32_getche(void);
 int win32_getmouse(struct cio_mouse_event *mevent);
 int win32_hidemouse(void);

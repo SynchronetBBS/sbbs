@@ -1,6 +1,7 @@
 #include <windows.h>	/* INPUT_RECORD, etc. */
 #include <stdio.h>		/* stdin */
 #include "conio.h"
+#define CIOLIB_NO_MACROS
 #include "ciolib.h"
 #include "keys.h"
 
@@ -40,7 +41,7 @@ int win32_kbhit(void)
 	return(0);
 }
 
-int win32_getch()
+int win32_getch(void)
 {
 	char str[128];
 	INPUT_RECORD input;
@@ -128,7 +129,7 @@ int win32_getche(void)
 	if(ansi_nextchar)
 		return(ansi_getch());
 #endif
-	ch=ansi_getch();
+	ch=win32_getch();
 	if(ch)
 		putch(ch);
 	return(ch);
@@ -138,7 +139,7 @@ int win32_initciolib(long inmode)
 {
 	DWORD conmode;
 
-	if(!isatty(stdin))
+	if(!isatty(fileno(stdin)))
 		return(0);
 	textmode(inmode);
 	if(!GetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), &conmode))
@@ -175,6 +176,98 @@ int win32_showmouse(void)
 
 void textmode(int mode)
 {
+}
+
+void clreol(void)
+{
+}
+
+void clrscr(void)
+{
+}
+
+void delline(void)
+{
+}
+
+
+int gettext(int left, int top, int right, int bottom, void* buf)
+{
+	return 1;
+}
+
+void gettextinfo(struct text_info* info)
+{
+}
+
+
+void gotoxy(int x, int y)
+{
+}
+
+
+void highvideo(void)
+{
+}
+
+
+void insline(void)
+{
+}
+
+
+void lowvideo(void)
+{
+}
+
+
+int movetext(int left, int top, int right, int bottom, int destleft, int desttop)
+{
+	return 1;
+}
+
+
+void normvideo(void)
+{
+}
+
+
+int puttext(int left, int top, int right, int bottom, void* buf)
+{
+	return 1;
+}
+
+
+void textattr(int newattr)
+{
+}
+
+
+void textbackground(int newcolor)
+{
+}
+
+
+void textcolor(int newcolor)
+{
+}
+
+void window(int left, int top, int right, int bottom)
+{
+}
+
+void _setcursortype(int type)
+{
+}
+
+int wherex(void)
+{
+	return 0;
+}
+
+int wherey(void)
+{
+	return 0;
 }
 
 #endif
