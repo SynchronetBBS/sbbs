@@ -39,7 +39,7 @@ os      :=	$(shell echo $(os) | tr "[A-Z]" "[a-z]")
 ODIR	:=	gcc.$(os)
 
 LIBDIR	:=	/usr/lib
-DELETE	=	rm -f -v
+DELETE	=	rm -f
 OUTLIB	=	-o
 
 CFLAGS	+=	-MMD
