@@ -51,7 +51,7 @@ static const char*	strLogMask="LogMask";
 static const char*	strBindRetryCount="BindRetryCount";
 static const char*	strBindRetryDelay="BindRetryDelay";
 
-#if defined(SBBSNTSVCS)
+#if defined(SBBSNTSVCS) && 0	/* sbbs_ini.obj is shared with sbbs.exe (!) */
 	#define DEFAULT_LOG_MASK		0x3f	/* EMERG|ALERT|CRIT|ERR|WARNING|NOTICE */
 #else
 	#define DEFAULT_LOG_MASK		0xff	/* EMERG|ALERT|CRIT|ERR|WARNING|NOTICE|INFO|DEBUG */
