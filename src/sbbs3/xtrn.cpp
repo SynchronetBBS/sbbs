@@ -1751,16 +1751,15 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 			lprintf(LOG_NOTICE,"%.*s",i,buf);
 	}
 
-	/* Re-enable blocking (incase disabled by xtrn program) */
-	ulong l=0;
-	ioctlsocket(client_socket, FIONBIO, &l);
-
-	/* Re-set socket options */
-	if(set_socket_options(&cfg, client_socket, str))
-		lprintf(LOG_ERR,"%04d !ERROR %s",client_socket, str);
-
-
 	if(!(mode&EX_OFFLINE)) {	/* !off-line execution */
+
+		/* Re-enable blocking (incase disabled by xtrn program) */
+		ulong l=0;
+		ioctlsocket(client_socket, FIONBIO, &l);
+
+		/* Re-set socket options */
+		if(set_socket_options(&cfg, client_socket, str))
+			lprintf(LOG_ERR,"%04d !ERROR %s",client_socket, str);
 
 		curatr=~0;			// Can't guarantee current attributes
 		attr(LIGHTGRAY);	// Force to "normal"
