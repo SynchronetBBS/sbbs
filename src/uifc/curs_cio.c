@@ -1,6 +1,7 @@
 /* $Id$ */
 
 #include <sys/time.h>
+#include <stdarg.h>
 #include <unistd.h>
 
 #include "ciowrap.h"

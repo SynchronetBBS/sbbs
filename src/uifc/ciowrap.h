@@ -89,6 +89,10 @@ typedef struct {
 	void	(*normvideo)	(void);
 } cioapi_t;
 
+int movetext(int sx, int sy, int ex, int ey, int dx, int dy);
+char *cgets(char *str);
+int cscanf (char *format , ...);
+
 extern cioapi_t cio_api;
 
 #define clreol()			cio_api.clreol()

@@ -1,3 +1,6 @@
+#include <stdarg.h>
+#include <stdio.h>
+
 #include "ciowrap.h"
 #ifndef NO_X
  #include "x_cio.h"
@@ -63,4 +66,113 @@ void initciowrap(int mode)
 	cio_api.highvideo=curs_highvideo;
 	cio_api.lowvideo=curs_lowvideo;
 	cio_api.normvideo=curs_normvideo;
+}
+
+int movetext(int sx, int sy, int ex, int ey, int dx, int dy)
+{
+	int width;
+	int height;
+	char *buf;
+
+	width=ex-sx;
+	height=ey-sy;
+	buf=(char *)malloc((width+1)*(height+1)*2);
+	if(buf==NULL)
+		return(0);
+	if(!gettext(sx,sy,ex,ey,buf)) {
+		free(buf);
+		return(0);
+	}
+	if(!puttext(dx,dy,dx+width,dy+height,buf)) {
+		free(buf);
+		return(0);
+	}
+	free(buf);
+	return(1);
+}
+
+char *cgets(char *str)
+{
+	int	maxlen;
+	int len=0;
+	int chars;
+	int ch;
+
+	maxlen=*(unsigned char *)str;
+	while((ch=getche())!='\n') {
+		switch(ch) {
+			case 0:	/* Skip extended keys */
+				ch=getche();
+				break;
+			case '\n':
+				str[len+2]=0;
+				*((unsigned char *)(str+1))=(unsigned char)len;
+				return(&str[2]);
+			case '\r':	/* Skip \r (ToDo: Should this be treeated as a \n? */
+				break;
+			case '\b':
+				if(len==0) {
+					beep();
+					break;
+				}
+				putch('\b');
+				len--;
+				break;
+			default:
+				str[(len++)+2]=ch;
+				if(len==maxlen) {
+					str[len+2]=0;
+					*((unsigned char *)(str+1))=(unsigned char)len;
+					return(&str[2]);
+				}
+				break;
+		}
+	}
+}
+
+int cscanf (char *format , ...)
+{
+	char str[255];
+    va_list argptr;
+	int ret;
+
+	str[0]=-1;
+	va_start(argptr,format);
+	ret=vsscanf(cgets(str),format,argptr);
+	va_end(argptr);
+	return(ret);
+}
+
+char *getpass(const char *prompt)
+{
+	static char pass[9];
+	int len=0;
+	int chars;
+	int ch;
+
+	while((ch=getch())!='\n') {
+		switch(ch) {
+			case 0:	/* Skip extended keys */
+				ch=getch();
+				break;
+			case '\n':
+				pass[len]=0;
+				return(pass);
+			case '\r':	/* Skip \r (ToDo: Should this be treeated as a \n? */
+				break;
+			case '\b':
+				if(len==0) {
+					beep();
+					break;
+				}
+				len--;
+				break;
+			default:
+				if(len==8)
+					beep();
+				else
+					pass[len++]=ch;
+				break;
+		}
+	}
 }
