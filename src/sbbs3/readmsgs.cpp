@@ -332,7 +332,7 @@ static int get_start_msg(sbbs_t* sbbs, smb_t* smb)
 /****************************************************************************/
 int sbbs_t::scanposts(uint subnum, long mode, char *find)
 {
-	char	str[256],str2[256],reread=0,mismatches=0
+	char	str[256],str2[256],do_find=true,mismatches=0
 			,done=0,domsg=1,HUGE16 *buf,*p;
 	char	find_buf[128];
 	char	tmp[128];
@@ -550,7 +550,7 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 
 		if(domsg && !(sys_status&SS_ABORT)) {
 
-			if(!reread && mode&SCAN_FIND) { 			/* Find text in messages */
+			if(do_find && mode&SCAN_FIND) { 			/* Find text in messages */
 				buf=smb_getmsgtxt(&smb,&msg,GETMSGTXT_TAILS);
 				if(!buf) {
 					if(smb.curmsg<smb.msgs-1) 
@@ -633,7 +633,7 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 		sprintf(str,"ABCDEFILMPQRTY?<>[]{}-+.,");
 		if(sub_op(subnum))
 			strcat(str,"O");
-		reread=0;
+		do_find=true;
 		l=getkeys(str,smb.msgs);
 		if(l&0x80000000L) {
 			if((long)l==-1) { /* ctrl-c */
@@ -646,14 +646,14 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 				return(1); 
 			}
 			smb.curmsg=(l&~0x80000000L)-1;
-			reread=1;
+			do_find=false;
 			continue; 
 		}
 		switch(l) {
 			case 'A':   
 			case 'R':   
 				if((char)l==(cfg.sys_misc&SM_RA_EMU ? 'A' : 'R')) { 
-					reread=1;	/* re-read last message */
+					do_find=false;	/* re-read last message */
 					break;
 				}
 				/* Reply to last message */
@@ -878,7 +878,7 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 				break;
 			case '-':
 				if(smb.curmsg>0) smb.curmsg--;
-				reread=1;
+				do_find=false;
 				break;
 			case 'O':   /* Operator commands */
 				while(online) {
@@ -989,6 +989,7 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 						break;
 				if(i<smb.msgs)
 					smb.curmsg=i;
+				do_find=false;
 				break;
 			case ',':   /* Thread backwards */
 				if(!msg.hdr.thread_orig) {
@@ -1000,6 +1001,7 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 						break;
 				if(i<smb.msgs)
 					smb.curmsg=i;
+				do_find=false;
 				break;
 			case '>':   /* Search Title forward */
 				for(i=smb.curmsg+1;i<smb.msgs;i++)
@@ -1009,6 +1011,7 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 					smb.curmsg=i;
 				else
 					domsg=0;
+				do_find=false;
 				break;
 			case '<':   /* Search Title backward */
 				for(i=smb.curmsg-1;i>-1;i--)
@@ -1018,6 +1021,7 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 					smb.curmsg=i;
 				else
 					domsg=0;
+				do_find=false;
 				break;
 			case '}':   /* Search Author forward */
 				strcpy(str,msg.from);
@@ -1028,6 +1032,7 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 					smb.curmsg=i;
 				else
 					domsg=0;
+				do_find=false;
 				break;
 			case '{':   /* Search Author backward */
 				strcpy(str,msg.from);
@@ -1038,6 +1043,7 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 					smb.curmsg=i;
 				else
 					domsg=0;
+				do_find=false;
 				break;
 			case ']':   /* Search To User forward */
 				strcpy(str,msg.to);
@@ -1048,6 +1054,7 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 					smb.curmsg=i;
 				else
 					domsg=0;
+				do_find=false;
 				break;
 			case '[':   /* Search To User backward */
 				strcpy(str,msg.to);
@@ -1058,6 +1065,7 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 					smb.curmsg=i;
 				else
 					domsg=0;
+				do_find=false;
 				break;
 			case 0: /* Carriage return - Next Message */
 			case '+':
