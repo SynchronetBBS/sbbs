@@ -69,6 +69,7 @@
 
 #if defined(__unix__) && !defined(stricmp)
     #define stricmp strcasecmp
+	#define strnicmp strncasecmp
 #endif
 
 /****************************************************************************/
