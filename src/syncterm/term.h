@@ -12,5 +12,6 @@ extern struct terminal term;
 extern int backlines;
 
 void doterm(void);
+void mousedrag(unsigned char *scrollback);
 
 #endif

@@ -34,10 +34,16 @@ void viewscroll(void)
 		puttext(term.x-1,term.y-1,term.x+term.width-2,term.y+term.height-2,scrollback+(term.width*2*top));
 		key=getch();
 		switch(key) {
+			case 0xff:
 			case 0:
-				switch(getch()<<8) {
+				switch(key|getch()<<8) {
 					case CIO_KEY_MOUSE:
 						getmouse(&mevent);
+						switch(mevent.event) {
+							case CIOLIB_BUTTON_1_DRAG_START:
+								mousedrag(scrollback);
+								break;
+						}
 						break;
 					case CIO_KEY_UP:
 						top--;
