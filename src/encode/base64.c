@@ -42,23 +42,23 @@
 static const char * base64alphabet = 
  "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
 
-char * b64_decode(char *target, const char *source, size_t tlen, size_t slen)
+int b64_decode(char *target, size_t tlen, const char *source size_t slen)
 {
-	const char	*read;
-	char	*write;
-	char	*tend;
-	const char	*send;
+	const char	*inp;
+	char	*outp;
+	char	*outend;
+	const char	*inend;
 	int		bits=0;
 	int		working=0;
 	char *	i;
 
-	write=target;
-	read=source;
-	tend=target+tlen;
-	send=source+slen;
-	for(;write<tend && read<send;read++) {
+	outp=target;
+	inp=source;
+	outend=target+tlen;
+	inend=source+slen;
+	for(;outp<outend && inp<inend;inp++) {
 		working<<=6;
-		i=strchr(base64alphabet,(char)*read);
+		i=strchr(base64alphabet,(char)*inp);
 		if(i==NULL) {
 			break;
 		}
@@ -66,18 +66,18 @@ char * b64_decode(char *target, const char *source, size_t tlen, size_t slen)
 		working |= (i-base64alphabet);
 		bits+=6;
 		if(bits>8) {
-			*(write++)=(char)((working&(0xFF<<(bits-8)))>>(bits-8));
+			*(outp++)=(char)((working&(0xFF<<(bits-8)))>>(bits-8));
 			bits-=8;
 		}
 	}
 	if(bits)
-		*(write++)=(char)((working&(0xFF<<(bits-8)))>>(bits-8));
-	if(write == tend)  {
-		*(--write)=0;
-		return(NULL);
+		*(outp++)=(char)((working&(0xFF<<(bits-8)))>>(bits-8));
+	if(outp == outend)  {
+		*(--outp)=0;
+		return(-1);
 	}
-	*write=0;
-	return(target);
+	*outp=0;
+	return(outp-target);
 }
 
 static int add_char(char *pos, char ch, int done, char *end)
@@ -92,68 +92,68 @@ static int add_char(char *pos, char ch, int done, char *end)
 	return(0);
 }
 
-char * b64_encode(char *target, const char *source, size_t tlen, size_t slen)  {
-	const char	*read;
-	char	*write;
-	char	*tend;
-	const char	*send;
+int b64_encode(char *target, size_t tlen, const char *source, size_t slen)  {
+	const char	*inp;
+	char	*outp;
+	char	*outend;
+	const char	*inend;
 	char	*tmpbuf=NULL;
 	int		done=0;
 	char	enc;
 	int		buf=0;
 	
-	read=source;
+	inp=source;
 	if(source==target)  {
 		tmpbuf=(char *)malloc(tlen);
 		if(tmpbuf==NULL)
-			return(NULL);
-		write=tmpbuf;
+			return(-1);
+		outp=tmpbuf;
 	}
 	else
-		write=target;
+		outp=target;
 
-	tend=write+tlen;
-	send=read+slen;
-	for(;(read < send) && !done;)  {
-		enc=*(read++);
+	outend=outp+tlen;
+	inend=inp+slen;
+	for(;(inp < inend) && !done;)  {
+		enc=*(inp++);
 		buf=(enc & 0x03)<<4;
 		enc=(enc&0xFC)>>2;
-		if(add_char(write++, enc, done, tend))  {
+		if(add_char(outp++, enc, done, outend))  {
 			if(target==source)
 				free(tmpbuf);
-			return(NULL);
+			return(-1);
 		}
-		enc=buf|((*read & 0xF0) >> 4);
-		if(add_char(write++, enc, done, tend))  {
+		enc=buf|((*inp & 0xF0) >> 4);
+		if(add_char(outp++, enc, done, outend))  {
 			if(target==source)
 				free(tmpbuf);
-			return(NULL);
+			return(-1);
 		}
-		if(read==send)
+		if(inp==inend)
 			done=1;
-		buf=(*(read++)<<2)&0x3C;
-		enc=buf|((*read & 0xC0)>>6);
-		if(add_char(write++, enc, done, tend))  {
+		buf=(*(inp++)<<2)&0x3C;
+		enc=buf|((*inp & 0xC0)>>6);
+		if(add_char(outp++, enc, done, outend))  {
 			if(target==source)
 				free(tmpbuf);
-			return(NULL);
+			return(-1);
 		}
-		if(read==send)
+		if(inp==inend)
 			done=1;
-		enc=((int)*(read++))&0x3F;
-		if(add_char(write++, enc, done, tend))  {
+		enc=((int)*(inp++))&0x3F;
+		if(add_char(outp++, enc, done, outend))  {
 			if(target==source)
 				free(tmpbuf);
-			return(NULL);
+			return(-1);
 		}
-		if(read==send)
+		if(inp==inend)
 			done=1;
 	}
-	if(write<tend)
-		*write=0;
+	if(outp<outend)
+		*outp=0;
 	if(target==source)  {
 		memcpy(target,tmpbuf,tlen);
 		free(tmpbuf);
 	}
-	return(target);
+	return(outp-target);
 }

@@ -35,5 +35,5 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-char * b64_encode(char *target, const char *source, size_t tlen, size_t slen);
-char * b64_decode(char *target, const char *source, size_t tlen, size_t slen);
+int b64_encode(char *target, size_t tlen, const char *source, size_t slen);
+int b64_decode(char *target, size_t tlen, const char *source, size_t slen);

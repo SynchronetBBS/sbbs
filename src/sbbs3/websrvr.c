@@ -1164,7 +1164,7 @@ static BOOL parse_headers(http_session_t * session)
 					if(p==NULL)
 						break;
 					while(*p && *p<' ') p++;
-					b64_decode(p,p,strlen(p),strlen(p));
+					b64_decode(p,strlen(p),p,strlen(p));
 					SAFECOPY(session->req.auth,p);
 					break;
 				case HEAD_LENGTH:
