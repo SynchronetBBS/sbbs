@@ -151,13 +151,14 @@ void ansi_sendstr(char *str,int len)
 	}
 }
 
-int ansi_puttext(int sx, int sy, int ex, int ey, unsigned char *fill)
+int ansi_puttext(int sx, int sy, int ex, int ey, void* buf)
 {
 	int x,y;
 	unsigned char *out;
 	WORD	sch;
 	struct text_info	ti;
 	int		attrib;
+	unsigned char *fill = (unsigned char*)buf;
 
 	gettextinfo(&ti);
 
@@ -202,12 +203,13 @@ int ansi_puttext(int sx, int sy, int ex, int ey, unsigned char *fill)
 		textattr(ti.attribute);
 }
 
-int ansi_gettext(int sx, int sy, int ex, int ey, unsigned char *fill)
+int ansi_gettext(int sx, int sy, int ex, int ey, void* buf)
 {
 	int x,y;
 	unsigned char *out;
 	WORD	sch;
 	struct text_info	ti;
+	unsigned char *fill = (unsigned char*)buf;
 
 	gettextinfo(&ti);
 
@@ -234,7 +236,7 @@ int ansi_gettext(int sx, int sy, int ex, int ey, unsigned char *fill)
 	}
 }
 
-void ansi_textattr(unsigned char attr)
+void ansi_textattr(int attr)
 {
 	char str[16];
 	int fg,ofg;
@@ -405,7 +407,7 @@ int ansi_wherex(void)
  * The special characters return, linefeed, bell, and backspace are handled
  * properly, as is line wrap and scrolling. The cursor position is updated. 
  */
-int ansi_putch(unsigned char ch)
+int ansi_putch(int ch)
 {
 	struct text_info ti;
 	WORD sch;
