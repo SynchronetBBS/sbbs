@@ -4,7 +4,25 @@
 #include "keys.h"
 #include "win32cio.h"
 
+#define VID_MODES	6
+
 const int 	cio_tabs[10]={9,17,25,33,41,49,57,65,73,80};
+
+struct vid_mode {
+	int	mode;
+	int	xsize;
+	int	ysize;
+	int	colour;
+};
+
+const struct vid_mode vid_modes[VID_MODES]={
+	 {BW40,40,25,0}
+	,{C40,40,25,1}
+	,{BW80,80,25,0}
+	,{C80,80,25,1}
+	,{MONO,80,25,1}
+	,{C4350,80,50,1}
+};
 
 static struct cio_mouse_event	cio_last_button_press;
 static struct cio_mouse_event	last_mouse_click;
@@ -15,6 +33,7 @@ static int xpos=1;
 static int ypos=1;
 
 static int currattr=7;
+static int modeidx=1;
 
 WORD DOStoWinAttr(int newattr)
 {
@@ -221,6 +240,23 @@ int win32_showmouse(void)
 
 void win32_textmode(int mode)
 {
+	int i;
+	COORD	sz;
+	SMALL_RECT	rc;
+	CONSOLE_SCREEN_BUFFER_INFO	sb;
+
+	for(i=0;i<VID_MODES;i++) {
+		if(vid_modes[i].mode==mode)
+			modeidx=i;
+	}
+	sz.X=vid_modes[modeidx].xsize;
+	sz.Y=vid_modes[modeidx].ysize;
+	SetConsoleScreenBufferSize(GetStdHandle(STD_OUTPUT_HANDLE),sz);
+	rc.Left=0;
+	rc.Right=vid_modes[modeidx].xsize-1;
+	rc.Top=0;
+	rc.Bottom=vid_modes[modeidx].ysize-1;
+	SetConsoleWindowInfo(GetStdHandle(STD_OUTPUT_HANDLE),TRUE,&rc);
 }
 
 int win32_gettext(int left, int top, int right, int bottom, void* buf)
@@ -256,17 +292,12 @@ int win32_gettext(int left, int top, int right, int bottom, void* buf)
 
 void win32_gettextinfo(struct text_info* info)
 {
-	CONSOLE_SCREEN_BUFFER_INFO bi;
-
-	/* GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE),&bi); */
-
-	/* ToDo Fix this! */
-	info->currmode=C80;
+	info->currmode=vid_modes[modeidx].mode;
 	info->curx=xpos;
 	info->cury=ypos;
 	info->attribute=currattr;
-	info->screenheight=25;
-	info->screenwidth=80;
+	info->screenheight=vid_modes[modeidx].ysize;
+	info->screenwidth=vid_modes[modeidx].xsize;
 }
 
 void win32_gotoxy(int x, int y)
