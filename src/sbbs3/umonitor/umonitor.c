@@ -972,7 +972,7 @@ int main(int argc, char** argv)  {
 
 		uifc.helpbuf=	"`Synchronet Monitor\n"
 		                "`------------------\n"
-		                "Welcome to the Sychronet UNIX Monitor.\n"
+		                "Welcome to the Synchronet UNIX Monitor.\n"
 		                "Displayed on this screen are the statitics for the BBS\n"
 		                "You can scroll through the list starting at \"System Options\" \n"
 		                "Pressing Enter on each will give a menu of option to perform.\n"
