@@ -101,9 +101,11 @@ int main(int argc, char **argv)
 #endif
             )
             switch(toupper(argv[i][1])) {
-		        case 'M':   /* Show free mem */
-                case 'N':   /* No EMS */
+                case 'N':   /* No EMS, ignore */
                     continue;
+		        case 'M':   /* Monochrome mode */
+        			uifc.mode|=UIFC_MONO;
+                    break;
                 case 'C':
         			uifc.mode|=UIFC_COLOR;
                     break;
@@ -154,6 +156,7 @@ int main(int argc, char **argv)
 						"-t  =  use text/terminal user interface (disable GUI)\r\n"
 #endif
                         "-c  =  force color mode\r\n"
+						"-m  =  force monochrome mode\r\n"
 #ifdef USE_CURSES
                         "-e# =  set escape delay to #msec\r\n"
 						"-i  =  force IBM charset\r\n"
