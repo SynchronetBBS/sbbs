@@ -1250,6 +1250,66 @@ static void signal_smtp_sem(void)
 		close(file);
 }
 
+static void parse_header_field(char* buf, smbmsg_t* msg)
+{
+	char*	p;
+	ushort	nettype;
+
+	if(!strnicmp(buf, "TO:",3)) {
+		p=buf+3;
+		while(*p && *p<=' ') p++;
+		truncsp(p);
+		smb_hfield(msg, RFC822TO, (ushort)strlen(p), p);
+		return;
+	}
+	if(!strnicmp(buf, "REPLY-TO:",9)) {
+		p=buf+9;
+		while(*p && *p<=' ') p++;
+		truncsp(p);
+		smb_hfield(msg, RFC822REPLYTO, (ushort)strlen(p), p);
+		if(*p=='<')  {
+			p++;
+			truncstr(p,">");
+		}
+		nettype=NET_INTERNET;
+		smb_hfield(msg, REPLYTONETTYPE, sizeof(nettype), &nettype);
+		smb_hfield(msg, REPLYTONETADDR, (ushort)strlen(p), p);
+		return;
+	}
+	if(!strnicmp(buf, "FROM:", 5)) {
+		p=buf+5;
+		while(*p && *p<=' ') p++;
+		truncsp(p);
+		smb_hfield(msg, RFC822FROM, (ushort)strlen(p), p);
+		return;
+	}
+	if(!strnicmp(buf, "ORGANIZATION:",13)) {
+		p=buf+13;
+		while(*p && *p<=' ') p++;
+		smb_hfield(msg, SENDERORG, (ushort)strlen(p), p);
+		return;
+	}
+	if(!strnicmp(buf, "DATE:",5)) {
+		p=buf+5;
+		msg->hdr.when_written=rfc822date(p);
+		return;
+	}
+	if(!strnicmp(buf, "MESSAGE-ID:",11)) {
+		p=buf+11;
+		while(*p && *p<=' ') p++;
+		smb_hfield(msg, RFC822MSGID, (ushort)strlen(p), p);
+		return;
+	}
+	if(!strnicmp(buf, "IN-REPLY-TO:",12)) {
+		p=buf+12;
+		while(*p && *p<=' ') p++;
+		smb_hfield(msg, RFC822REPLYID, (ushort)strlen(p), p);
+		return;
+	}
+	/* Fall-through */
+	smb_hfield(msg, RFC822HEADER, (ushort)strlen(buf), buf);
+}
+
 static void smtp_thread(void* arg)
 {
 	int			i,j,x;
@@ -1292,6 +1352,7 @@ static void smtp_thread(void* arg)
 	uint		subnum=INVALID_SUB;
 	FILE*		msgtxt=NULL;
 	char		msgtxt_fname[MAX_PATH+1];
+	long		msgtxt_body=0;
 	FILE*		rcptlst;
 	char		rcptlst_fname[MAX_PATH+1];
 	ushort		rcpt_count=0;
@@ -1481,14 +1542,58 @@ static void smtp_thread(void* arg)
 				}
 
 				lprintf("%04d SMTP End of message (%lu lines, %lu bytes)"
-					, socket, lines, ftell(msgtxt));
+					, socket, lines, ftell(msgtxt)-msgtxt_body);
 
+				if((p=smb_get_hfield(&msg, RFC822TO, NULL))!=NULL) {
+					if(*p=='<')	p++;
+					SAFECOPY(rcpt_name,p);
+					truncstr(rcpt_name,">");
+				}
+				if((p=smb_get_hfield(&msg, RFC822FROM, NULL))!=NULL) {
+					/* Get the sender's address */
+					if((tp=strchr(p,'<'))!=NULL)
+						tp++;
+					else
+						tp=p;
+					while(*tp && *tp<=' ') tp++;
+					SAFECOPY(sender_addr,tp);
+					truncstr(sender_addr,">( ");
+
+					SAFECOPY(tmp,p);
+					p=tmp;
+					/* Get the sender's "name" (if possible) */
+					if((tp=strchr(p,'('))!=NULL) {			/* name in parenthesis? */
+						p=tp+1;
+						tp=strchr(p,')');
+					} else if((tp=strchr(p,'"'))!=NULL) {	/* name in quotes? */
+						p=tp+1;
+						tp=strchr(p,'"');
+					} else if(*p=='<') {					/* address in brackets? */
+						p++;
+						tp=strchr(p,'>');
+					} else									/* name, then address in brackets */
+						tp=strchr(p,'<');
+					if(tp) *tp=0;
+					SAFECOPY(sender,p);
+					truncsp(sender);
+				}
+				if(trashcan(&scfg,msg.subj,"subject")) {
+					lprintf("%04d !SMTP BLOCKED SUBJECT (%s) from: %s"
+						,socket, msg.subj, reverse_path);
+					sprintf(tmp,"Blocked subject (%s) from: %s"
+						,msg.subj, reverse_path);
+					spamlog(&scfg, "SMTP", "REFUSED"
+						,tmp, host_name, host_ip, rcpt_addr, reverse_path);
+					sockprintf(socket, "554 Subject not allowed.");
+					continue;
+				}
 				if(dnsbl_result.s_addr) {
 					if(startup->options&MAIL_OPT_DNSBL_IGNORE) {
 						lprintf("%04d !SMTP IGNORED MAIL from blacklisted server"
 							,socket);
 						sprintf(str,"Listed on %s as %s", dnsbl, inet_ntoa(dnsbl_result));
-						spamlog(&scfg, "SMTP", "IGNORED", str, host_name, host_ip, rcpt_addr, reverse_path);
+						spamlog(&scfg, "SMTP", "IGNORED"
+							,str, host_name, host_ip, rcpt_addr, reverse_path);
 						/* pretend we received it */
 						sockprintf(socket,ok_rsp);
 						continue;
@@ -1511,8 +1616,8 @@ static void smtp_thread(void* arg)
 				if(telegram==TRUE) {		/* Telegram */
 					const char* head="\1n\1h\1cInstant Message\1n from \1h\1y";
 					const char* tail="\1n:\r\n\1h";
-					rewind(msgtxt);
-					length=filelength(fileno(msgtxt));
+					fseek(msgtxt,msgtxt_body,SEEK_SET);
+					length=filelength(fileno(msgtxt))-msgtxt_body;
 					
 					p=strchr(sender_addr,'@');
 					if(p==NULL || resolve_ip(p+1)!=smtp.client_addr.sin_addr.s_addr) 
@@ -1579,8 +1684,8 @@ static void smtp_thread(void* arg)
 					msg.idx.subj=subject_crc(p);
 				}
 
-				rewind(msgtxt);
-				length=filelength(fileno(msgtxt));
+				fseek(msgtxt,msgtxt_body,SEEK_SET);
+				length=filelength(fileno(msgtxt))-msgtxt_body;
 
 				if(subnum!=INVALID_SUB) {	/* Message Base */
 					if(rcpt_name[0]==0)
@@ -1785,6 +1890,10 @@ static void smtp_thread(void* arg)
 			if(buf[0]==0 && state==SMTP_STATE_DATA_HEADER) {	
 				state=SMTP_STATE_DATA_BODY;	/* Null line separates header and body */
 				lines=0;
+				if(msgtxt!=NULL) {
+					fprintf(msgtxt, "\r\n");
+					msgtxt_body=ftell(msgtxt);
+				}
 				continue;
 			}
 			if(state==SMTP_STATE_DATA_BODY) {
@@ -1803,18 +1912,12 @@ static void smtp_thread(void* arg)
 			if(startup->options&MAIL_OPT_DEBUG_RX_HEADER)
 				lprintf("%04d SMTP %s",socket, buf);
 
+			if(msgtxt!=NULL) 
+				fprintf(msgtxt, "%s\r\n", buf);
+
 			if(!strnicmp(buf, "SUBJECT:",8)) {
 				p=buf+8;
 				while(*p && *p<=' ') p++;
-				if(trashcan(&scfg,p,"subject")) {
-					lprintf("%04d !SMTP BLOCKED SUBJECT (%s) from: %s"
-						,socket, p, reverse_path);
-					sprintf(tmp,"Blocked subject (%s) from: %s"
-						,p, reverse_path);
-					spamlog(&scfg, "SMTP", "REFUSED", tmp, host_name, host_ip, rcpt_addr, reverse_path);
-					sockprintf(socket, "554 Subject not allowed.");
-					break;
-				}
 				if(dnsbl_result.s_addr && startup->dnsbl_tag[0]
 					&& !(startup->options&MAIL_OPT_DNSBL_IGNORE)) {
 					sprintf(str,"%.*s: %.*s"
@@ -1828,96 +1931,10 @@ static void smtp_thread(void* arg)
 				msg.idx.subj=subject_crc(p);
 				continue;
 			}
-			if(!strnicmp(buf, "TO:",3)) {
-				p=buf+3;
-				while(*p && *p<=' ') p++;
-				truncsp(p);
-				smb_hfield(&msg, RFC822TO, (ushort)strlen(p), p);
-
-				if(*p=='<')  {
-					p++;
-					truncstr(p,">");
-					SAFECOPY(rcpt_name,p);
-				}
-				continue;
-			}
-			if(!strnicmp(buf, "REPLY-TO:",9)) {
-				p=buf+9;
-				while(*p && *p<=' ') p++;
-				truncsp(p);
-				smb_hfield(&msg, RFC822REPLYTO, (ushort)strlen(p), p);
-
-				if(*p=='<')  {
-					p++;
-					truncstr(p,">");
-				}
-				nettype=NET_INTERNET;
-				smb_hfield(&msg, REPLYTONETTYPE, sizeof(nettype), &nettype);
-				smb_hfield(&msg, REPLYTONETADDR, (ushort)strlen(p), p);
-				continue;
-			}
-			if(!strnicmp(buf, "FROM:", 5)) {
-				if(!chk_email_addr(socket,buf+5,host_name,host_ip,rcpt_addr,reverse_path))
-					break;
-
-				p=buf+5;
-				while(*p && *p<=' ') p++;
-				truncsp(p);
-				smb_hfield(&msg, RFC822FROM, (ushort)strlen(p), p);
-
-				/* Get the sender's address */
-				if((p=strchr(buf+5,'<'))!=NULL)
-					p++;
-				else
-					p=buf+5;
-				while(*p && *p<=' ') p++;
-				SAFECOPY(sender_addr,p);
-				truncstr(sender_addr,">( ");
-
-				/* Get the sender's "name" (if possible) */
-				p=buf+5;
-				while(*p && *p<=' ') p++;
-				if((tp=strchr(p,'('))!=NULL) {			/* name in parenthesis? */
-					p=tp+1;
-					tp=strchr(p,')');
-				} else if((tp=strchr(p,'"'))!=NULL) {	/* name in quotes? */
-					p=tp+1;
-					tp=strchr(p,'"');
-				} else if(*p=='<') {					/* address in brackets? */
-					p++;
-					tp=strchr(p,'>');
-				} else									/* name, then address in brackets */
-					tp=strchr(p,'<');
-				if(tp) *tp=0;
-				truncsp(p);
-				SAFECOPY(sender,p);
-				continue;
-			}
-			if(!strnicmp(buf, "ORGANIZATION:",13)) {
-				p=buf+13;
-				while(*p && *p<=' ') p++;
-				smb_hfield(&msg, SENDERORG, (ushort)strlen(p), p);
-				continue;
-			}
-			if(!strnicmp(buf, "DATE:",5)) {
-				p=buf+5;
-				msg.hdr.when_written=rfc822date(p);
-				continue;
-			}
-			if(!strnicmp(buf, "MESSAGE-ID:",11)) {
-				p=buf+11;
-				while(*p && *p<=' ') p++;
-				smb_hfield(&msg, RFC822MSGID, (ushort)strlen(p), p);
-				continue;
-			}
-			if(!strnicmp(buf, "IN-REPLY-TO:",12)) {
-				p=buf+12;
-				while(*p && *p<=' ') p++;
-				smb_hfield(&msg, RFC822REPLYID, (ushort)strlen(p), p);
-				continue;
-			}
-			/* Fall-through */
-			smb_hfield(&msg, RFC822HEADER, (ushort)strlen(buf), buf);
+			if(!strnicmp(buf, "FROM:", 5)
+				&& !chk_email_addr(socket,buf+5,host_name,host_ip,rcpt_addr,reverse_path))
+				break;
+			parse_header_field(buf,&msg);
 			continue;
 		}
 		lprintf("%04d SMTP RX: %s", socket, buf);
@@ -2310,9 +2327,12 @@ static void smtp_thread(void* arg)
 				sockprintf(socket, badseq_rsp);
 				continue;
 			}
-			if(msgtxt!=NULL)
+			if(msgtxt!=NULL) {
 				fclose(msgtxt);
-			sprintf(msgtxt_fname,"%sSMTP%d.RX", scfg.data_dir, socket);
+				if(!(startup->options&MAIL_OPT_DEBUG_RX_BODY))
+					unlink(msgtxt_fname);
+			}
+			sprintf(msgtxt_fname,"%sSMTP%u.RX", scfg.data_dir, socket);
 			if((msgtxt=fopen(msgtxt_fname,"w+b"))==NULL) {
 				lprintf("%04d !SMTP ERROR %d opening %s"
 					,socket, errno, msgtxt_fname);
