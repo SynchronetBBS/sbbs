@@ -62,6 +62,22 @@ int curs_puttext(int sx, int sy, int ex, int ey, unsigned char *fill)
 	unsigned char fill_char;
 	unsigned char orig_attr;
 	int oldx, oldy;
+	struct text_info	ti;
+
+	curs_gettextinfo(&ti);
+
+	if(		   sx < 1
+			|| sy < 1
+			|| ex < 1
+			|| ey < 1
+			|| sx > ti.screenwidth
+			|| sy > ti.screenheight
+			|| sx > ex
+			|| sy > ey
+			|| ex > ti.screenwidth
+			|| ey > ti.screenheight
+			|| fill==NULL)
+		return(0);
 
 	getyx(stdscr,oldy,oldx);
 	orig_attr=lastattr;
@@ -92,8 +108,24 @@ int curs_gettext(int sx, int sy, int ex, int ey, unsigned char *fill)
 	int oldx, oldy;
 	unsigned char thischar;
 	int	ext_char;
+	struct text_info	ti;
 
-	getyx(stdscr,oldy,oldx);	
+	curs_gettextinfo(&ti);
+
+	if(		   sx < 1
+			|| sy < 1
+			|| ex < 1
+			|| ey < 1
+			|| sx > ti.screenwidth
+			|| sy > ti.screenheight
+			|| sx > ex
+			|| sy > ey
+			|| ex > ti.screenwidth
+			|| ey > ti.screenheight
+			|| fill==NULL)
+		return(0);
+
+	getyx(stdscr,oldy,oldx);
 	for(y=sy-1;y<=ey-1;y++)
 	{
 		for(x=sx-1;x<=ex-1;x++)

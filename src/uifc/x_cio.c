@@ -27,6 +27,22 @@ int x_puttext(int sx, int sy, int ex, int ey, unsigned char *fill)
 	int x,y;
 	unsigned char *out;
 	WORD	sch;
+	struct text_info	ti;
+
+	curs_gettextinfo(&ti);
+
+	if(		   sx < 1
+			|| sy < 1
+			|| ex < 1
+			|| ey < 1
+			|| sx > ti.screenwidth
+			|| sy > ti.screenheight
+			|| sx > ex
+			|| sy > ey
+			|| ex > ti.screenwidth
+			|| ey > ti.screenheight
+			|| fill==NULL)
+		return(0);
 
 	out=fill;
 	for(y=sy-1;y<ey;y++) {
@@ -43,6 +59,22 @@ int x_gettext(int sx, int sy, int ex, int ey, unsigned char *fill)
 	int x,y;
 	unsigned char *out;
 	WORD	sch;
+	struct text_info	ti;
+
+	curs_gettextinfo(&ti);
+
+	if(		   sx < 1
+			|| sy < 1
+			|| ex < 1
+			|| ey < 1
+			|| sx > ti.screenwidth
+			|| sy > ti.screenheight
+			|| sx > ex
+			|| sy > ey
+			|| ex > ti.screenwidth
+			|| ey > ti.screenheight
+			|| fill==NULL)
+		return(0);
 
 	out=fill;
 	for(y=sy-1;y<ey;y++) {
