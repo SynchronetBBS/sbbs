@@ -273,10 +273,9 @@ $(ECHOCFG): \
 	$(EXEODIR)/nopen.o \
 	$(EXEODIR)/str_util.o \
 	$(EXEODIR)/filewrap.o \
-	$(EXEODIR)/genwrap.o \
-	../../lib/fltk/$(os)/libfltk.a
+	$(EXEODIR)/genwrap.o
 	@echo Linking $@
-	@$(CC) -o $@ $^
+	@$(CC) -o -L../../lib/fltk/$(os) -lfltk -lcurses $@ $^
 
 # ADDFILES
 $(ADDFILES): \
