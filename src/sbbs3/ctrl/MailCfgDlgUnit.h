@@ -101,6 +101,7 @@ __published:
     TButton *OutboundSoundButton;
     TEdit *OutboundSoundEdit;
     TLabel *OutboundSoundLabel;
+    TCheckBox *TcpDnsCheckBox;
     void __fastcall InboundSoundButtonClick(TObject *Sender);
     void __fastcall OutboundSoundButtonClick(TObject *Sender);
     void __fastcall FormShow(TObject *Sender);

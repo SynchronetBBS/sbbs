@@ -121,9 +121,12 @@ void __fastcall TMailCfgDlg::FormShow(TObject *Sender)
     	&MAIL_OPT_USE_DUL;
     RSSCheckBox->Checked=MainForm->mail_startup.options
     	&MAIL_OPT_USE_RSS;
+    TcpDnsCheckBox->Checked=MainForm->mail_startup.options
+    	&MAIL_OPT_USE_TCP_DNS;
 
     SMTPServerEdit->Enabled=RelayRadioButton->Checked;
     DNSServerEdit->Enabled=!RelayRadioButton->Checked;
+    TcpDnsCheckBox->Enabled=!RelayRadioButton->Checked;
 	POP3EnabledCheckBoxClick(Sender);
     PageControl->ActivePage=GeneralTabSheet;
 }
@@ -217,6 +220,10 @@ void __fastcall TMailCfgDlg::OKBtnClick(TObject *Sender)
     	MainForm->mail_startup.options|=MAIL_OPT_NO_HOST_LOOKUP;
     else
 	    MainForm->mail_startup.options&=~MAIL_OPT_NO_HOST_LOOKUP;
+	if(TcpDnsCheckBox->Checked==true)
+    	MainForm->mail_startup.options|=MAIL_OPT_USE_TCP_DNS;
+    else
+	    MainForm->mail_startup.options&=~MAIL_OPT_USE_TCP_DNS;
 
     MainForm->MailAutoStart=AutoStartCheckBox->Checked;
     MainForm->MailLogFile=LogFileCheckBox->Checked;
@@ -240,6 +247,7 @@ void __fastcall TMailCfgDlg::DNSRadioButtonClick(TObject *Sender)
 {
     SMTPServerEdit->Enabled=RelayRadioButton->Checked;
     DNSServerEdit->Enabled=!RelayRadioButton->Checked;
+    TcpDnsCheckBox->Enabled=!RelayRadioButton->Checked;
 }
 //---------------------------------------------------------------------------
 

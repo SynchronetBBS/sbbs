@@ -40,7 +40,6 @@
 #include <winsock.h>
 
 #define ERROR_VALUE			GetLastError()
-#define USE_TCP				FALSE
 
 #ifdef _WIN32
 #pragma pack(push)
@@ -48,9 +47,7 @@
 #endif
 
 typedef struct {
-#if USE_TCP
-	WORD	length;
-#endif
+	WORD	length;			/* This field included when using TCP only */
 	WORD	id;
 	WORD	bitfields;
 	WORD	qdcount;
@@ -83,7 +80,7 @@ typedef struct {
 
 #define DNS_RCODE_MASK	0x000f		// Response code bit field
 enum {
-	 DNS_RCODE_OK		// No error conidition
+	 DNS_RCODE_OK		// No error condition
 	,DNS_RCODE_FMT		// Format error
 	,DNS_RCODE_SERVER	// Server Failure
 	,DNS_RCODE_NAME		// Name error
@@ -136,7 +133,7 @@ int dns_name(char* name, char* srcbuf, char* p)
 	return(len+1);
 }
 
-int dns_getmx(char* name, char* mx, char* mx2, DWORD intf, DWORD ip_addr)
+int dns_getmx(char* name, char* mx, char* mx2, DWORD intf, DWORD ip_addr, BOOL use_tcp)
 {
 	char*			p;
 	char*			tp;
@@ -147,6 +144,7 @@ int dns_getmx(char* name, char* mx, char* mx2, DWORD intf, DWORD ip_addr)
 	int				i;
 	int				rd;
 	int				len;
+	int				offset;
 	int				result;
 	int				answers;
 	SOCKET			sock;
@@ -160,11 +158,10 @@ int dns_getmx(char* name, char* mx, char* mx2, DWORD intf, DWORD ip_addr)
 	mx[0]=0;
 	mx2[0]=0;
 
-#if USE_TCP
-    sock = open_socket(SOCK_STREAM);
-#else
-    sock = open_socket(SOCK_DGRAM);
-#endif
+	if(use_tcp) 
+		sock = open_socket(SOCK_STREAM);
+	else
+		sock = open_socket(SOCK_DGRAM);
 
 	if (sock == INVALID_SOCKET)
 		return(ERROR_VALUE);
@@ -191,10 +188,10 @@ int dns_getmx(char* name, char* mx, char* mx2, DWORD intf, DWORD ip_addr)
 	}
 
 	memset(&msghdr,0,sizeof(msghdr));
-#if USE_TCP
-	len=sizeof(msghdr)+strlen(name)+2+sizeof(query);
-	msghdr.length=htons((WORD)(len-sizeof(msghdr.length)));
-#endif
+
+	len=sizeof(msghdr)+strlen(name)+sizeof(query);
+	msghdr.length=htons((WORD)len);
+
 	msghdr.bitfields=htons(DNS_RD);
 	msghdr.qdcount=htons(1);
 	query.type=htons(DNS_MX);
@@ -219,55 +216,31 @@ int dns_getmx(char* name, char* mx, char* mx2, DWORD intf, DWORD ip_addr)
 	len++;
 	memcpy(msg+len,&query,sizeof(query));
 	len+=sizeof(query);
-	printf("sending %d\n",len);
-#if 0
-	for(i=0;i<len;i++) 
-		printf("%02X  ",msg[i]);
-#endif
-	printf("\nWaiting for response\n");
-	send(sock,msg,len,0);
-	rd=recv(sock,msg,512,0);
-	printf("recv returned %d\n",rd);
-	if(rd>0) {
-#if 0      
-		for(i=0;i<rd && i<200;i++) 
-			printf("%02X  ",msg[i]);
-		printf("\n");
-#else	
-		memcpy(&msghdr,msg,sizeof(msghdr));
 
-#if 1
-		printf("%-15s: %d\n","ID",ntohs(msghdr.id));
-		printf("%-15s: %04X\n","Bitfields",ntohs(msghdr.bitfields));
-		printf("%-15s: %d\n","QDCOUNT",ntohs(msghdr.qdcount));
-		printf("%-15s: %d\n","ANCOUNT",ntohs(msghdr.ancount));
-		printf("%-15s: %d\n","NSCOUNT",ntohs(msghdr.nscount));
-		printf("%-15s: %d\n","ARCOUNT",ntohs(msghdr.arcount));
-#endif
+	if(use_tcp)
+		offset=0;
+	else {	/* UDP */
+		offset=sizeof(msghdr.length);
+		len-=sizeof(msghdr.length);
+	}
+
+	send(sock,msg+offset,len,0);
+	rd=recv(sock,msg,512,0);
+	if(rd>0) {
+		memcpy(&msghdr,msg+offset,sizeof(msghdr)-offset);
+
 		answers=ntohs(msghdr.ancount);
 		p=msg+len;
 
 		for(i=0;i<answers;i++) {
 			p+=dns_name(hostname,msg,p);
-			printf("Answer %d: %s ",i+1, hostname);
 
 			rr=(dns_rr_t*)p;
 			p+=sizeof(dns_rr_t);
-#if 0
-			printf(" type=%d ",ntohs(rr->type));
-			printf("class=%d ",ntohs(rr->class));
-			printf("ttl=%ld ",ntohl(rr->ttl));
-			printf("length=%d\n",ntohs(rr->length));
-#endif
 
 			len=ntohs(rr->length);
-#if 0
-			for(j=0;j<len;j++)
-				printf("%02X  ",*(p+j));
-#else
 			if(ntohs(rr->type)==DNS_MX)  {
 				pref=ntohs(*(WORD*)p);
-				printf("MX %d: ",pref);
 				p+=2;
 				p+=dns_name(hostname, msg,p);
 				if(pref<=highpref) {
@@ -277,16 +250,10 @@ int dns_getmx(char* name, char* mx, char* mx2, DWORD intf, DWORD ip_addr)
 					strcpy(mx,hostname);
 				} else if(!mx2[0])
 					strcpy(mx2,hostname);
-				printf("%s",hostname);
 			}
 			else
-#endif
 				p+=len;
-			printf("\n");
 		}
-
-#endif
-			
 	}
 
 	if(!mx[0])
@@ -294,154 +261,6 @@ int dns_getmx(char* name, char* mx, char* mx2, DWORD intf, DWORD ip_addr)
 	close_socket(sock);
 	return(0);
 }
-
-#ifdef RBLCHK
-
-BOOL rblchk(ULONG mail_addr_n, char* rbl_addr, DWORD intf, DWORD dns_addr)
-{
-	char			name[128];
-	char*			p;
-	char*			tp;
-	char			hostname[128];
-	BYTE			namelen;
-	WORD			highpref=0xffff;
-	int				i;
-	int				rd;
-	int				len;
-	int				result;
-	int				answers;
-	DWORD			mail_addr;
-	SOCKET			sock;
-	SOCKADDR_IN		addr={0};
-	BYTE			msg[512];
-	dns_msghdr_t	msghdr;
-	dns_query_t		query;
-	dns_rr_t*		rr;
-
-	mail_addr=ntohl(mail_addr_n);
-	sprintf(name,"%d.%d.%d.%d.%s"
-		,mail_addr&0xff
-		,(mail_addr>>8)&0xff
-		,(mail_addr>>16)&0xff
-		,(mail_addr>>24)&0xff
-		,rbl_addr
-		);
-	printf("name: %s\n",name);
-
-#if USE_TCP
-    sock = open_socket(SOCK_STREAM);
-#else
-    sock = open_socket(SOCK_DGRAM);
-#endif
-
-	if (sock == INVALID_SOCKET) {
-		fprintf(stderr,"!open_socket failed: %d\n",ERROR_VALUE);
-		return(FALSE);
-	}
-	
-	addr.sin_addr.S_un.S_addr = htonl(intf);
-    addr.sin_family = AF_INET;
-    addr.sin_port   = htons (0);
-
-    result = bind (sock, (struct sockaddr *) &addr,sizeof (addr));
-
-	if (result != 0) {
-		fprintf(stderr,"!bind failed: %d\n",ERROR_VALUE);
-		close_socket(sock);
-		return(FALSE);
-	}
-
-	memset(&addr,0,sizeof(addr));
-	addr.sin_addr.S_un.S_addr = dns_addr;
-	addr.sin_family = AF_INET;
-	addr.sin_port   = htons(53);
-	
-	if((result=connect(sock, (struct sockaddr *)&addr, sizeof(addr)))!=0) {
-		fprintf(stderr,"!connect failed: %d\n",ERROR_VALUE);
-		close_socket(sock);
-		return(FALSE);
-	}
-
-	memset(&msghdr,0,sizeof(msghdr));
-	len=sizeof(msghdr)+strlen(name)+2+sizeof(query);
-#if USE_TCP
-	msghdr.length=htons((WORD)(len-sizeof(msghdr.length)));
-#endif
-	msghdr.bitfields=htons(DNS_RD);
-	msghdr.qdcount=htons(1);
-	query.type=htons(DNS_A);
-	query.class=htons(DNS_IN);
-	/* Build the message */
-	memcpy(msg,&msghdr,sizeof(msghdr));
-	len=sizeof(msghdr);
-	for(p=name;*p;p+=namelen) {
-		if(*p=='.')
-			p++;
-		tp=strchr(p,'.');
-		if(tp)
-			namelen=(BYTE)(tp-p);
-		else
-			namelen=(BYTE)strlen(p);
-		*(msg+len)=namelen;
-		len++;
-		memcpy(msg+len,p,namelen);
-		len+=namelen;
-	}
-	*(msg+len)=0;	// terminator
-	len++;
-	memcpy(msg+len,&query,sizeof(query));
-	len+=sizeof(query);
-	printf("sending %d\n",len);
-#if 0
-	for(i=0;i<len;i++) 
-		printf("%02X  ",msg[i]);
-#endif
-	printf("\nWaiting for response\n");
-	send(sock,msg,len,0);
-	rd=recv(sock,msg,512,0);
-	close_socket(sock);
-
-	printf("recv returned %d\n",rd);
-	if(rd<1) 
-		return(FALSE);
-
-	memcpy(&msghdr,msg,sizeof(msghdr));
-
-	printf("%-15s: %d\n","ID",ntohs(msghdr.id));
-	printf("%-15s: %04X\n","Bitfields",ntohs(msghdr.bitfields));
-	printf("%-15s: %d\n","QDCOUNT",ntohs(msghdr.qdcount));
-	printf("%-15s: %d\n","ANCOUNT",ntohs(msghdr.ancount));
-	printf("%-15s: %d\n","NSCOUNT",ntohs(msghdr.nscount));
-	printf("%-15s: %d\n","ARCOUNT",ntohs(msghdr.arcount));
-
-		answers=ntohs(msghdr.ancount);
-		p=msg+len;
-
-		for(i=0;i<answers;i++) {
-			p+=dns_name(hostname,msg,p);
-			printf("Answer %d: %s ",i+1, hostname);
-
-			rr=(dns_rr_t*)p;
-			p+=sizeof(dns_rr_t);
-#if 1
-			printf(" type=%d ",ntohs(rr->type));
-			printf("class=%d ",ntohs(rr->class));
-			printf("ttl=%ld ",ntohl(rr->ttl));
-			printf("length=%d\n",ntohs(rr->length));
-#endif
-
-			len=ntohs(rr->length);
-			p+=len;
-			printf("\n");
-		}
-
-	if(ntohs(msghdr.ancount))
-		return(TRUE);
-
-	return(FALSE);
-}
-
-#endif
 
 #if 0
 void main(int argc, char **argv)
@@ -473,30 +292,3 @@ void main(int argc, char **argv)
 }
 #endif
 
-#if defined(RBLCHK) && defined(DNSTEST)
-
-void main(int argc, char **argv)
-{
-	int			result;
-	WSADATA		WSAData;
-
-	if(argc<4) {
-		printf("usage: mxlookup hostname rbl dns\n");
-		return;
-	}
-
-    if((result = WSAStartup(MAKEWORD(1,1), &WSAData))!=0) {
-		printf("Error %d in WSAStartup",result);
-		return;
-	}
-
-	printf("checking %s\n",argv[1]);
-	if(rblchk(inet_addr(argv[1]),argv[2],0,inet_addr(argv[3]))==TRUE)
-		printf("TRUE");
-	else
-		printf("FALSE");
-	getch();
-
-	WSACleanup();
-}
-#endif

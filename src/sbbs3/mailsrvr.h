@@ -103,6 +103,7 @@ typedef struct {
 #define MAIL_OPT_USE_DUL			(1<<9)
 #define MAIL_OPT_USE_RSS			(1<<10)
 #define MAIL_OPT_NO_HOST_LOOKUP		(1<<11)
+#define MAIL_OPT_USE_TCP_DNS		(1<<12)
 #define MAIL_OPT_MUTE				(1<<31)
 
 #ifdef MAILSRVR_EXPORTS

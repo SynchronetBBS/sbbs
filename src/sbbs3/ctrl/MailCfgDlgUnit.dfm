@@ -1,6 +1,6 @@
 object MailCfgDlg: TMailCfgDlg
-  Left = 163
-  Top = 575
+  Left = 492
+  Top = 423
   BorderStyle = bsDialog
   Caption = 'Mail Server Configuration'
   ClientHeight = 246
@@ -219,19 +219,19 @@ object MailCfgDlg: TMailCfgDlg
         Left = 7
         Top = 36
         Width = 57
-        Height = 13
+        Height = 21
         Caption = 'Spam Filters'
       end
       object TelnetPortLabel: TLabel
         Left = 7
         Top = 10
         Width = 85
-        Height = 19
+        Height = 21
         AutoSize = False
         Caption = 'Port'
       end
       object RBLCheckBox: TCheckBox
-        Left = 91
+        Left = 92
         Top = 36
         Width = 46
         Height = 19
@@ -278,7 +278,7 @@ object MailCfgDlg: TMailCfgDlg
       object UserNumberCheckBox: TCheckBox
         Left = 150
         Top = 10
-        Width = 124
+        Width = 120
         Height = 19
         Hint = 'Allow mail to be sent to users by number (i.e "1@yourbbs.com")'
         Caption = 'RX by User Number'
@@ -288,9 +288,9 @@ object MailCfgDlg: TMailCfgDlg
       end
       object DNSRadioButton: TRadioButton
         Left = 7
-        Top = 59
+        Top = 62
         Width = 85
-        Height = 19
+        Height = 21
         Hint = 
           'Check this box to send mail directly to user'#39's mail servers (req' +
           'uires DNS Server access)'
@@ -314,9 +314,9 @@ object MailCfgDlg: TMailCfgDlg
       end
       object RelayRadioButton: TRadioButton
         Left = 7
-        Top = 85
+        Top = 114
         Width = 85
-        Height = 19
+        Height = 21
         Hint = 'Check this box to route all mail through your ISP'#39's SMTP Server'
         Caption = 'Relay Server'
         ParentShowHint = False
@@ -326,7 +326,7 @@ object MailCfgDlg: TMailCfgDlg
       end
       object SMTPServerEdit: TEdit
         Left = 92
-        Top = 88
+        Top = 114
         Width = 156
         Height = 21
         Hint = 
@@ -335,6 +335,17 @@ object MailCfgDlg: TMailCfgDlg
         ParentShowHint = False
         ShowHint = True
         TabOrder = 8
+      end
+      object TcpDnsCheckBox: TCheckBox
+        Left = 92
+        Top = 88
+        Width = 53
+        Height = 19
+        Hint = 'Use TCP packets (instead of UDP) for DNS queries'
+        Caption = 'TCP'
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 9
       end
     end
     object POP3TabSheet: TTabSheet

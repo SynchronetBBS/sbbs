@@ -58,7 +58,7 @@ __declspec(dllimport) mail_t*	loadmail(smb_t* smb, ulong* msgs, uint usernumber
 __declspec(dllimport) void		freemail(mail_t* mail);
 __declspec(dllimport) BOOL		trashcan(scfg_t* cfg, char *insearch, char *name);
 
-int dns_getmx(char* name, char* mx, char* mx2, DWORD intf, DWORD ip_addr);
+int dns_getmx(char* name, char* mx, char* mx2, DWORD intf, DWORD ip_addr, BOOL use_tcp);
 
 #define SMTP_OK		"250 OK"
 #define SMTP_BADSEQ	"503 Bad sequence of commands"
@@ -1910,7 +1910,7 @@ static void sendmail_thread(void* arg)
 
 	thread_up();
 
-	lprintf("Send Mail thread started");
+	lprintf("SendMail thread started");
 
 	memset(&msg,0,sizeof(msg));
 	memset(&smb,0,sizeof(smb));
@@ -2030,9 +2030,10 @@ static void sendmail_thread(void* arg)
 				if((dns=resolve_ip(startup->dns_server))==0) 
 					continue;
 				p++;
-				lprintf("SendMail: getting MX records for %s",p);
-				if((i=dns_getmx(p, mx, mx2, startup->interface_addr,dns))!=0) {
-					lprintf("!SendMail: ERROR %d obtaining MX records for %s through DNS %s"
+				lprintf("SendMail: getting MX records for %s from %s",p,startup->dns_server);
+				if((i=dns_getmx(p, mx, mx2, startup->interface_addr, dns
+					,startup->options&MAIL_OPT_USE_TCP_DNS ? TRUE : FALSE))!=0) {
+					lprintf("!SendMail: ERROR %d obtaining MX records for %s from %s"
 						,i,p,startup->dns_server);
 					sprintf(err,"Error %d obtaining MX record for %s",i,p);
 					bounce(&smb,&msg,err,FALSE);
@@ -2623,7 +2624,7 @@ void mail_server(void* arg)
 	}
 
 	if(sendmail_running) {
-		lprintf("Waiting for sendmail thread to terminate...");
+		lprintf("Waiting for SendMail thread to terminate...");
 		start=time(NULL);
 		while(sendmail_running) {
 			if(time(NULL)-start>TIMEOUT_THREAD_WAIT) {
