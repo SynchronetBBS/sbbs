@@ -58,8 +58,8 @@ else
   XP_SEM :=	1
  else
   ifeq ($(os),netbsd)	# NetBSD
-   CFLAGS	+= -D__unix__ -DUSE_XP_SEMAPHORES -I/usr/pkg/include
-   LFLAGS	:=	-lpth -lpthread -L/usr/pkg/lib
+   CFLAGS	+= -D__unix__ -DUSE_XP_SEMAPHORES -I/usr/pkg/include -I/usr/pkg/pthreads/include
+   LFLAGS	:=	-L/usr/pkg/lib -L/usr/pkg/pthreads/lib -lpthread
    XP_SEM :=	1
   else
    ifeq ($(os),qnx)	# QNX
