@@ -563,12 +563,14 @@ SOCKET sbbs_t::ftp_data_sock(csi_t* csi, SOCKET ctrl_sock, SOCKADDR_IN* addr)
 
 		if(!ftp_cmd(csi,ctrl_sock,"PASV",rsp) 
 			|| atoi(rsp)!=227 /* PASV response */) {
+			bprintf("ftp: failure, line %d",__LINE__);
 			close_socket(data_sock);
 			return(INVALID_SOCKET);
 		}
 
 		p=strchr(rsp,'(');
 		if(p==NULL) {
+			bprintf("ftp: failure, line %d",__LINE__);
 			close_socket(data_sock);
 			return(INVALID_SOCKET);
 		}
@@ -576,6 +578,7 @@ SOCKET sbbs_t::ftp_data_sock(csi_t* csi, SOCKET ctrl_sock, SOCKADDR_IN* addr)
 		if(sscanf(p,"%u,%u,%u,%u,%u,%u"
 			,&ip_b[0],&ip_b[1],&ip_b[2],&ip_b[3]
 			,&port_b[0],&port_b[1])!=6) {
+			bprintf("ftp: failure, line %d",__LINE__);
 			close_socket(data_sock);
 			return(INVALID_SOCKET);
 		}
@@ -761,6 +764,7 @@ bool sbbs_t::ftp_put(csi_t* csi, SOCKET ctrl_sock, char* src, char* dest)
 {
 	char		cmd[512];
 	char		rsp[512];
+	char		path[MAX_PATH+1];
 	char		buf[4097];
 	int			rd;
 	int			result;
@@ -773,8 +777,15 @@ bool sbbs_t::ftp_put(csi_t* csi, SOCKET ctrl_sock, char* src, char* dest)
 	struct timeval	tv;
 	fd_set			socket_set;
 
-	if((data_sock=ftp_data_sock(csi, ctrl_sock, &addr))==INVALID_SOCKET)
+	SAFECOPY(path,src);
+
+	if(!fexistcase(path))
 		return(false);
+
+	if((data_sock=ftp_data_sock(csi, ctrl_sock, &addr))==INVALID_SOCKET) {
+		bprintf("ftp: failure, line %d",__LINE__);
+		return(false);
+	}
 
 	if(csi->ftp_mode&CS_FTP_PASV) {
 
@@ -785,13 +796,15 @@ bool sbbs_t::ftp_put(csi_t* csi, SOCKET ctrl_sock, char* src, char* dest)
 #endif
 
 		if(connect(data_sock,(struct sockaddr *)&addr,sizeof(addr))!=0) {
+			bprintf("ftp: failure, line %d",__LINE__);
 			csi->socket_error=ERROR_VALUE;
 			close_socket(data_sock);
 			return(false);
 		}
 	}
 
-	if((fp=fopen(src,"rb"))==NULL) {
+	if((fp=fopen(path,"rb"))==NULL) {
+		bprintf("ftp: failure, line %d",__LINE__);
 		close_socket(data_sock);
 		return(false);
 	}
@@ -800,6 +813,7 @@ bool sbbs_t::ftp_put(csi_t* csi, SOCKET ctrl_sock, char* src, char* dest)
 
 	if(!ftp_cmd(csi,ctrl_sock,cmd,rsp) 
 		|| atoi(rsp)!=150 /* Open data connection */) {
+		bprintf("ftp: failure, line %d",__LINE__);
 		close_socket(data_sock);
 		return(false);
 	}
