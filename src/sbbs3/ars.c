@@ -81,37 +81,37 @@ uchar* arstr(ushort* count, char* str, scfg_t* cfg)
 			continue;
 
 		if(isalpha(str[i])) {
-			if(!strncmp(str+i,"OR",2)) {
+			if(!strnicmp(str+i,"OR",2)) {
 				ar[j++]=AR_OR;
 				i++;
 				continue; }
 
-			if(!strncmp(str+i,"AND",3)) {    /* AND is ignored */
+			if(!strnicmp(str+i,"AND",3)) {    /* AND is ignored */
 				i+=2;
 				continue; }
 
-			if(!strncmp(str+i,"NOT",3)) {
+			if(!strnicmp(str+i,"NOT",3)) {
 				not=1;
 				i+=2;
 				continue; }
 
-			if(!strncmp(str+i,"EQUAL TO",8)) {
+			if(!strnicmp(str+i,"EQUAL TO",8)) {
 				equal=1;
 				i+=7;
 				continue; }
 
-			if(!strncmp(str+i,"EQUAL",5)) {
+			if(!strnicmp(str+i,"EQUAL",5)) {
 				equal=1;
 				i+=4;
 				continue; }
 
-			if(!strncmp(str+i,"EQUALS",6)) {
+			if(!strnicmp(str+i,"EQUALS",6)) {
 				equal=1;
 				i+=5;
 				continue; } }
 
 		if(str[i]=='$') {
-			switch(str[i+1]) {
+			switch(toupper(str[i+1])) {
 				case 'A':
 					artype=AR_AGE;
 					break;
@@ -218,178 +218,178 @@ uchar* arstr(ushort* count, char* str, scfg_t* cfg)
 
 		if(isalpha(str[i])) {
 			n=i;
-			if(!strncmp(str+i,"AGE",3)) {
+			if(!strnicmp(str+i,"AGE",3)) {
 				artype=AR_AGE;
 				i+=2; }
-			else if(!strncmp(str+i,"BPS",3)) {
+			else if(!strnicmp(str+i,"BPS",3)) {
 				artype=AR_BPS;
 				i+=2; }
-			else if(!strncmp(str+i,"PCR",3)) {
+			else if(!strnicmp(str+i,"PCR",3)) {
 				artype=AR_PCR;
 				i+=2; }
-			else if(!strncmp(str+i,"SEX",3)) {
+			else if(!strnicmp(str+i,"SEX",3)) {
 				artype=AR_SEX;
 				i+=2; }
-			else if(!strncmp(str+i,"UDR",3)) {
+			else if(!strnicmp(str+i,"UDR",3)) {
 				artype=AR_UDR;
 				i+=2; }
-			else if(!strncmp(str+i,"DAY",3)) {
+			else if(!strnicmp(str+i,"DAY",3)) {
 				artype=AR_DAY;
 				i+=2; }
-			else if(!strncmp(str+i,"RIP",3)) {
+			else if(!strnicmp(str+i,"RIP",3)) {
 				artype=AR_RIP;
 				if(not)
 					ar[j++]=AR_NOT;
 				not=0;
 				ar[j++]=artype;
 				i+=2; }
-			else if(!strncmp(str+i,"WIP",3)) {
+			else if(!strnicmp(str+i,"WIP",3)) {
 				artype=AR_WIP;
 				if(not)
 					ar[j++]=AR_NOT;
 				not=0;
 				ar[j++]=artype;
 				i+=2; }
-			else if(!strncmp(str+i,"OS2",3)) {
+			else if(!strnicmp(str+i,"OS2",3)) {
 				artype=AR_OS2;
 				if(not)
 					ar[j++]=AR_NOT;
 				not=0;
 				ar[j++]=artype;
 				i+=2; }
-			else if(!strncmp(str+i,"DOS",3)) {
+			else if(!strnicmp(str+i,"DOS",3)) {
 				artype=AR_DOS;
 				if(not)
 					ar[j++]=AR_NOT;
 				not=0;
 				ar[j++]=artype;
 				i+=2; }
-			else if(!strncmp(str+i,"WIN32",5)) {
+			else if(!strnicmp(str+i,"WIN32",5)) {
 				artype=AR_WIN32;
 				if(not)
 					ar[j++]=AR_NOT;
 				not=0;
 				ar[j++]=artype;
 				i+=2; }
-			else if(!strncmp(str+i,"UNIX",4)) {
+			else if(!strnicmp(str+i,"UNIX",4)) {
 				artype=AR_UNIX;
 				if(not)
 					ar[j++]=AR_NOT;
 				not=0;
 				ar[j++]=artype;
 				i+=2; }
-			else if(!strncmp(str+i,"LINUX",5)) {
+			else if(!strnicmp(str+i,"LINUX",5)) {
 				artype=AR_LINUX;
 				if(not)
 					ar[j++]=AR_NOT;
 				not=0;
 				ar[j++]=artype;
 				i+=2; }
-			else if(!strncmp(str+i,"SUBCODE",7)) {
+			else if(!strnicmp(str+i,"SUBCODE",7)) {
 				artype=AR_SUBCODE;
 				i+=6; }
-			else if(!strncmp(str+i,"SUB",3)) {
+			else if(!strnicmp(str+i,"SUB",3)) {
 				artype=AR_SUB;
 				i+=2; }
-			else if(!strncmp(str+i,"LIB",3)) {
+			else if(!strnicmp(str+i,"LIB",3)) {
 				artype=AR_LIB;
 				i+=2; }
-			else if(!strncmp(str+i,"DIRCODE",7)) {
+			else if(!strnicmp(str+i,"DIRCODE",7)) {
 				artype=AR_DIRCODE;
 				i+=6; }
-			else if(!strncmp(str+i,"DIR",3)) {
+			else if(!strnicmp(str+i,"DIR",3)) {
 				artype=AR_DIR;
 				i+=2; }
-			else if(!strncmp(str+i,"ANSI",4)) {
+			else if(!strnicmp(str+i,"ANSI",4)) {
 				artype=AR_ANSI;
 				if(not)
 					ar[j++]=AR_NOT;
 				not=0;
 				ar[j++]=artype;
 				i+=3; }
-			else if(!strncmp(str+i,"UDFR",4)) {
+			else if(!strnicmp(str+i,"UDFR",4)) {
 				artype=AR_UDFR;
 				i+=3; }
-			else if(!strncmp(str+i,"FLAG",4)) {
+			else if(!strnicmp(str+i,"FLAG",4)) {
 				artype=AR_FLAG1;
 				i+=3; }
-			else if(!strncmp(str+i,"NODE",4)) {
+			else if(!strnicmp(str+i,"NODE",4)) {
 				artype=AR_NODE;
 				i+=3; }
-			else if(!strncmp(str+i,"NULL",4)) {
+			else if(!strnicmp(str+i,"NULL",4)) {
 				artype=AR_NULL;
 				i+=3; }
-			else if(!strncmp(str+i,"USER",4)) {
+			else if(!strnicmp(str+i,"USER",4)) {
 				artype=AR_USER;
 				i+=3; }
-			else if(!strncmp(str+i,"TIME",4)) {
+			else if(!strnicmp(str+i,"TIME",4)) {
 				artype=AR_TIME;
 				i+=3; }
-			else if(!strncmp(str+i,"REST",4)) {
+			else if(!strnicmp(str+i,"REST",4)) {
 				artype=AR_REST;
 				i+=3; }
-			else if(!strncmp(str+i,"LEVEL",5)) {
+			else if(!strnicmp(str+i,"LEVEL",5)) {
 				artype=AR_LEVEL;
 				i+=4; }
-			else if(!strncmp(str+i,"TLEFT",5)) {
+			else if(!strnicmp(str+i,"TLEFT",5)) {
 				artype=AR_TLEFT;
 				i+=4; }
-			else if(!strncmp(str+i,"TUSED",5)) {
+			else if(!strnicmp(str+i,"TUSED",5)) {
 				artype=AR_TUSED;
 				i+=4; }
-			else if(!strncmp(str+i,"LOCAL",5)) {
+			else if(!strnicmp(str+i,"LOCAL",5)) {
 				artype=AR_LOCAL;
 				if(not)
 					ar[j++]=AR_NOT;
 				not=0;
 				ar[j++]=artype;
 				i+=4; }
-			else if(!strncmp(str+i,"GROUP",5)) {
+			else if(!strnicmp(str+i,"GROUP",5)) {
 				artype=AR_GROUP;
 				i+=4; }
-			else if(!strncmp(str+i,"EXPIRE",6)) {
+			else if(!strnicmp(str+i,"EXPIRE",6)) {
 				artype=AR_EXPIRE;
 				i+=5; }
-			else if(!strncmp(str+i,"EXPERT",6)) {
+			else if(!strnicmp(str+i,"EXPERT",6)) {
 				artype=AR_EXPERT;
 				if(not)
 					ar[j++]=AR_NOT;
 				not=0;
 				ar[j++]=artype;
 				i+=5; }
-			else if(!strncmp(str+i,"SYSOP",5)) {
+			else if(!strnicmp(str+i,"SYSOP",5)) {
 				artype=AR_SYSOP;
 				if(not)
 					ar[j++]=AR_NOT;
 				not=0;
 				ar[j++]=artype;
 				i+=4; }
-			else if(!strncmp(str+i,"QUIET",5)) {
+			else if(!strnicmp(str+i,"QUIET",5)) {
 				artype=AR_QUIET;
 				if(not)
 					ar[j++]=AR_NOT;
 				not=0;
 				ar[j++]=artype;
 				i+=4; }
-			else if(!strncmp(str+i,"EXEMPT",6)) {
+			else if(!strnicmp(str+i,"EXEMPT",6)) {
 				artype=AR_EXEMPT;
 				i+=5; }
-			else if(!strncmp(str+i,"RANDOM",6)) {
+			else if(!strnicmp(str+i,"RANDOM",6)) {
 				artype=AR_RANDOM;
 				i+=5; }
-			else if(!strncmp(str+i,"LASTON",6)) {
+			else if(!strnicmp(str+i,"LASTON",6)) {
 				artype=AR_LASTON;
 				i+=5; }
-			else if(!strncmp(str+i,"LOGONS",6)) {
+			else if(!strnicmp(str+i,"LOGONS",6)) {
 				artype=AR_LOGONS;
 				i+=5; }
-			else if(!strncmp(str+i,"CREDIT",6)) {
+			else if(!strnicmp(str+i,"CREDIT",6)) {
 				artype=AR_CREDIT;
 				i+=5; }
-			else if(!strncmp(str+i,"MAIN_CMDS",9)) {
+			else if(!strnicmp(str+i,"MAIN_CMDS",9)) {
 				artype=AR_MAIN_CMDS;
 				i+=8; }
-			else if(!strncmp(str+i,"FILE_CMDS",9)) {
+			else if(!strnicmp(str+i,"FILE_CMDS",9)) {
 				artype=AR_FILE_CMDS;
 				i+=8; }
 			if(n!=i)            /* one of the above */
@@ -481,7 +481,7 @@ uchar* arstr(ushort* count, char* str, scfg_t* cfg)
 				&& str[i]!='='
 				&& str[i]!='|'
 				;n++)
-				ar[j++]=str[i++];
+				ar[j++]=toupper(str[i++]);
 			ar[j++]=0;
 			continue; }
 		switch(artype) {
@@ -492,7 +492,7 @@ uchar* arstr(ushort* count, char* str, scfg_t* cfg)
 			case AR_EXEMPT:
 			case AR_SEX:
 			case AR_REST:
-				ar[j++]=str[i];
+				ar[j++]=toupper(str[i]);
 				break;
 	#ifdef SBBS
 			case AR_SUB:
@@ -519,17 +519,20 @@ uchar* arstr(ushort* count, char* str, scfg_t* cfg)
 				break;
 	#endif
 			case AR_DAY:
-				if(str[i]=='S' && str[i+1]=='U')            /* Sunday */
+				if(toupper(str[i])=='S' 
+					&& toupper(str[i+1])=='U')				/* Sunday */
 					ar[j++]=0;
-				else if(str[i]=='M')                        /* Monday */
+				else if(toupper(str[i])=='M')               /* Monday */
 					ar[j++]=1;
-				else if(str[i]=='T' && str[i+1]=='U')       /* Tuesday */
+				else if(toupper(str[i])=='T' 
+					&& toupper(str[i+1])=='U')				/* Tuesday */
 					ar[j++]=2;
-				else if(str[i]=='W')                        /* Wednesday */
+				else if(toupper(str[i])=='W')               /* Wednesday */
 					ar[j++]=3;
-				else if(str[i]=='T' && str[i+1]=='H')       /* Thursday */
+				else if(toupper(str[i])=='T' 
+					&& toupper(str[i+1])=='H')				/* Thursday */
 					ar[j++]=4;
-				else if(str[i]=='F')                        /* Friday */
+				else if(toupper(str[i])=='F')               /* Friday */
 					ar[j++]=5;
 				else ar[j++]=6;                             /* Saturday */
 				while(isalpha(str[i+1])) i++;
