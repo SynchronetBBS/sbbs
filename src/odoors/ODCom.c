@@ -2082,6 +2082,8 @@ tODResult ODComCarrier(tPortHandle hPort, BOOL *pbIsCarrier)
 			break;
 		}
 #endif
+
+#ifdef INCLUDE_STDIO_COM
 	  case kComMethodStdIO:
 	    {
 			sigpending(&sigs);
@@ -2091,6 +2093,7 @@ tODResult ODComCarrier(tPortHandle hPort, BOOL *pbIsCarrier)
 				*pbIsCarrier = TRUE;
 			break;
 		}
+#endif
 
       default:
          /* If we get here, then the current serial I/O method is not */
@@ -2953,7 +2956,8 @@ keep_going:
 #ifdef INCLUDE_STDIO_COM
 	  case kComMethodStdIO:
 	    {
-		    write(1,&btToSend,1,0);
+		    if((write(1,&btToSend,1,0))!=1)
+			   return(kODRCGeneralFailure);
 			break;
 		}
 #endif
