@@ -175,6 +175,7 @@ tODResult ODKrnlInitialize(void)
    tODResult Result = kODRCSuccess;
    
 #ifdef ODPLAT_NIX
+   /* Block SIGHUP for carrier detect use */
    sigemptyset(&block);
    sigaddset(&block,SIGHUP);
    sigprocmask(SIG_BLOCK,&block,NULL);
