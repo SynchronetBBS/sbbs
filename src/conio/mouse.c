@@ -93,8 +93,8 @@ struct mouse_state {
 	int	click_timeout;			/* Timeout between press and release events for a click (ms) */
 	int	multi_timeout;			/* Timeout after a click for detection of multi clicks (ms) */
 	int	click_drift;			/* Allowed "drift" during a click event */
-	link_list_t	*input;
-	link_list_t	*output;
+	link_list_t	input;
+	link_list_t	output;
 };
 
 struct mouse_state state;
@@ -104,12 +104,10 @@ static mouse_initialized=0;
 void init_mouse(void)
 {
 	memset(&state,0,sizeof(state));
-	state.input=malloc(sizeof(link_list_t));
-	state.output=malloc(sizeof(link_list_t));
 	state.click_timeout=0;
 	state.multi_timeout=300;
-	listInit(state.input,LINK_LIST_NEVER_FREE);
-	listInit(state.output,LINK_LIST_NEVER_FREE);
+	listInit(&state.input,0);
+	listInit(&state.output,0);
 	pthread_mutex_init(&in_mutex,NULL);
 	pthread_mutex_init(&out_mutex,NULL);
 	sem_init(&in_sem,0,0);
@@ -161,7 +159,7 @@ void ciomouse_gotevent(int event, int x, int y)
 
 	pthread_mutex_lock(&in_mutex);
 
-	listPushNode(state.input,ime);
+	listPushNode(&state.input,ime);
 
 	pthread_mutex_unlock(&in_mutex);
 	sem_post(&in_sem);
@@ -188,7 +186,7 @@ void add_outevent(int event, int x, int y)
 
 	pthread_mutex_lock(&out_mutex);
 
-	listPushNode(state.output,ome);
+	listPushNode(&state.output,ome);
 
 	pthread_mutex_unlock(&out_mutex);
 }
@@ -277,7 +275,7 @@ void ciolib_mouse_thread(void *data)
 			struct in_mouse_event *in;
 
 			pthread_mutex_lock(&in_mutex);
-			in=listRemoveNode(state.input, FIRST_NODE);
+			in=listRemoveNode(&state.input, FIRST_NODE);
 			pthread_mutex_unlock(&in_mutex);
 			if(in==NULL)
 					continue;
@@ -440,7 +438,7 @@ int mouse_pending(void)
 {
 	while(!mouse_initialized)
 		SLEEP(1);
-	return(listCountNodes(state.output));
+	return(listCountNodes(&state.output));
 }
 
 int ciolib_getmouse(struct mouse_event *mevent)
@@ -449,10 +447,10 @@ int ciolib_getmouse(struct mouse_event *mevent)
 
 	while(!mouse_initialized)
 		SLEEP(1);
-	if(listCountNodes(state.output)) {
+	if(listCountNodes(&state.output)) {
 		struct out_mouse_event *out;
 		pthread_mutex_lock(&out_mutex);
-		out=listRemoveNode(state.output,FIRST_NODE);
+		out=listRemoveNode(&state.output,FIRST_NODE);
 		pthread_mutex_unlock(&out_mutex);
 		if(out==NULL)
 			return(-1);
@@ -481,7 +479,7 @@ int ciolib_ungetmouse(struct mouse_event *mevent)
 		return(-1);
 	memcpy(me,mevent,sizeof(struct mouse_event));
 	pthread_mutex_lock(&out_mutex);
-	listAddNode(state.output,me,FIRST_NODE);
+	listAddNode(&state.output,me,FIRST_NODE);
 	pthread_mutex_unlock(&out_mutex);
 	return(0);
 }
