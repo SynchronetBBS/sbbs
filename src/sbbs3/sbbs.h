@@ -548,8 +548,6 @@ public:
 	void	fileinfo(file_t* f);
 	void	openfile(file_t* f);
 	void	closefile(file_t* f);
-	void	putextdesc(uint dirnum, ulong datoffset, char *ext);
-	void	getextdesc(uint dirnum, ulong datoffset, char *ext);
 	bool	removefcdt(file_t* f);
 	bool	movefile(file_t* f, int newdir);
 	char *	getfilespec(char *str);
@@ -729,6 +727,9 @@ extern "C" {
 	DLLEXPORT 	BOOL	DLLCALL getfileixb(scfg_t* cfg, file_t* f);
 	DLLEXPORT 	BOOL	DLLCALL getfiledat(scfg_t* cfg, file_t* f);
 	DLLEXPORT 	BOOL	DLLCALL putfiledat(scfg_t* cfg, file_t* f);
+	DLLEXPORT	void	DLLCALL putextdesc(scfg_t* cfg, uint dirnum, ulong datoffset, char *ext);
+	DLLEXPORT	void	DLLCALL getextdesc(scfg_t* cfg, uint dirnum, ulong datoffset, char *ext);
+
 	DLLEXPORT 	BOOL	DLLCALL removefiledat(scfg_t* cfg, file_t* f);
 	DLLEXPORT 	BOOL	DLLCALL addfiledat(scfg_t* cfg, file_t* f);
 	DLLEXPORT 	BOOL	DLLCALL findfile(scfg_t* cfg, uint dirnum, char *filename);

@@ -37,37 +37,6 @@
 
 #include "sbbs.h"
 
-void sbbs_t::getextdesc(uint dirnum, ulong datoffset, char *ext)
-{
-	char str[256];
-	int file;
-
-	memset(ext,0,513);
-	sprintf(str,"%s%s.exb",cfg.dir[dirnum]->data_dir,cfg.dir[dirnum]->code);
-	if((file=nopen(str,O_RDONLY))==-1)
-		return;
-	lseek(file,(datoffset/F_LEN)*512L,SEEK_SET);
-	read(file,ext,512);
-	close(file);
-	}
-
-	void sbbs_t::putextdesc(uint dirnum, ulong datoffset, char *ext)
-	{
-		char str[256],nulbuf[512];
-		int file;
-
-	memset(nulbuf,0,512);
-	sprintf(str,"%s%s.exb",cfg.dir[dirnum]->data_dir,cfg.dir[dirnum]->code);
-	if((file=nopen(str,O_WRONLY|O_CREAT))==-1)
-		return;
-	lseek(file,0L,SEEK_END);
-	while(filelength(file)<(long)(datoffset/F_LEN)*512L)
-		write(file,nulbuf,512);
-	lseek(file,(datoffset/F_LEN)*512L,SEEK_SET);
-	write(file,ext,512);
-	close(file);
-}
-
 /****************************************************************************/
 /* Prints all information of file in file_t structure 'f'					*/
 /****************************************************************************/
@@ -108,7 +77,7 @@ void sbbs_t::fileinfo(file_t* f)
 			bprintf(text[InvalidAlternatePathN],f->altpath); }
 	CRLF;
 	if(f->misc&FM_EXTDESC) {
-		getextdesc(f->dir,f->datoffset,ext);
+		getextdesc(&cfg,f->dir,f->datoffset,ext);
 		CRLF;
 		putmsg(ext,P_NOATCODES);
 		CRLF; }
