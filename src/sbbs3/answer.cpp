@@ -158,8 +158,11 @@ bool sbbs_t::answer()
     if(l) {
         if(str[0]==ESC && str[1]=='[') {
 			autoterm|=(ANSI|COLOR);
-            rows=((str[2]&0xf)*10)+(str[3]&0xf);
-			if(rows<10 || rows>99) rows=24; }
+            rows=atoi(str+2);
+			lprintf("Node %d ANSI cursor position report: %u rows"
+				,cfg.node_num, rows);
+			if(rows<10 || rows>99) rows=24; 
+		}
 		truncsp(str);
 		if(strstr(str,"RIPSCRIP")) {
 			logline("@R",strstr(str,"RIPSCRIP"));
