@@ -546,6 +546,8 @@ long sbbs_t::js_execfile(char *fname)
 
 	js_script=JS_CompileFile(js_cx, js_glob, path);
 
+//	js_scope=JS_NewScriptObject(js_cx, js_script);
+
 	JS_EndRequest(js_cx);	/* Required for multi-thread support */
 
 	if(js_script==NULL) {
@@ -556,6 +558,8 @@ long sbbs_t::js_execfile(char *fname)
 	JS_ExecuteScript(js_cx, js_glob, js_script, &rval);
 
 	JS_DestroyScript(js_cx, js_script);
+
+	JS_GC(js_cx);
 
 	return(JSVAL_TO_INT(rval));
 }
