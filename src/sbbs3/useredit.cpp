@@ -494,7 +494,7 @@ void sbbs_t::useredit(int usernumber)
 				if(!noyes(text[UeditCopyUserQ])) {
 					bputs(text[UeditCopyUserToSlot]);
 					i=getnum(lastuser(&cfg));
-					if(i>0) {
+					if((int)i>0) {
 						user.number=i;
 						putusername(&cfg,user.number,user.alias);
 						putuserdat(&cfg,&user); } }

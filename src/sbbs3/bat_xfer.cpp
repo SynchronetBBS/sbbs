@@ -229,7 +229,7 @@ void sbbs_t::batchmenu()
 				if(batup_total) {
 					bprintf(text[RemoveWhichFromUlQueue],batup_total);
 					n=getnum(batup_total);
-					if(n>=1) {
+					if((int)n>=1) {
 						n--;
 						batup_total--;
 						while(n<batup_total) {
@@ -246,7 +246,7 @@ void sbbs_t::batchmenu()
 				if(batdn_total) {
 					bprintf(text[RemoveWhichFromDlQueue],batdn_total);
 					n=getnum(batdn_total);
-					if(n>=1) {
+					if((int)n>=1) {
 						n--;
 						f.dir=batdn_dir[n];
 						strcpy(f.name,batdn_name[n]);
