@@ -642,18 +642,18 @@ void DLLCALL getextdesc(scfg_t* cfg, uint dirnum, ulong datoffset, char *ext)
 	char str[256];
 	int file;
 
-	memset(ext,0,513);
+	memset(ext,0,F_EXBSIZE+1);
 	sprintf(str,"%s%s.exb",cfg->dir[dirnum]->data_dir,cfg->dir[dirnum]->code);
 	if((file=nopen(str,O_RDONLY))==-1)
 		return;
-	lseek(file,(datoffset/F_LEN)*512L,SEEK_SET);
-	read(file,ext,512);
+	lseek(file,(datoffset/F_LEN)*F_EXBSIZE,SEEK_SET);
+	read(file,ext,F_EXBSIZE);
 	close(file);
 }
 
 void DLLCALL putextdesc(scfg_t* cfg, uint dirnum, ulong datoffset, char *ext)
 {
-	char str[256],nulbuf[512];
+	char str[256],nulbuf[F_EXBSIZE];
 	int file;
 
 	memset(nulbuf,0,sizeof(nulbuf));
@@ -661,9 +661,9 @@ void DLLCALL putextdesc(scfg_t* cfg, uint dirnum, ulong datoffset, char *ext)
 	if((file=nopen(str,O_WRONLY|O_CREAT))==-1)
 		return;
 	lseek(file,0L,SEEK_END);
-	while(filelength(file)<(long)(datoffset/F_LEN)*512L)
-		write(file,nulbuf,512);
-	lseek(file,(datoffset/F_LEN)*512L,SEEK_SET);
-	write(file,ext,512);
+	while(filelength(file)<(long)(datoffset/F_LEN)*F_EXBSIZE)
+		write(file,nulbuf,sizeof(nulbuf));
+	lseek(file,(datoffset/F_LEN)*F_EXBSIZE,SEEK_SET);
+	write(file,ext,F_EXBSIZE);
 	close(file);
 }

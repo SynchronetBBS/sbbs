@@ -549,6 +549,8 @@ typedef enum {						/* Values for xtrn_t.event			*/
 
 #define F_IXBSIZE	22				/* Length of each index entry		*/
 
+#define F_EXBSIZE	512				/* Length of each ext-desc entry	*/
+
 
 #define SIF_MAXBUF  0x7000			/* Maximum buffer size of SIF data */
 
