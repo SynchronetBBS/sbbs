@@ -95,6 +95,7 @@ typedef struct {
 #define WEB_OPT_DEBUG_RX			(1<<0)	/* Log all received requests		*/
 #define WEB_OPT_DEBUG_TX			(1<<1)	/* Log all transmitted responses	*/
 #define WEB_OPT_VIRTUAL_HOSTS		(1<<4)	/* Use virutal host html subdirs	*/
+#define WEB_OPT_NO_CGI				(1<<5)	/* Disable CGI support				*/
 
 #ifdef DLLEXPORT
 #undef DLLEXPORT

@@ -445,7 +445,11 @@ static void init_heads(http_session_t *session)  {
 	return;
 }
 
-static BOOL is_cgi(http_session_t *session)  {
+static BOOL is_cgi(http_session_t *session)  
+{
+
+	if(startup->options&WEB_OPT_NO_CGI)
+		return(FALSE);
 
 #ifdef __unix__
 	/* NOTE: (From the FreeBSD man page) 
@@ -1894,6 +1898,9 @@ BOOL is_js(http_session_t * session)
 {
 	char* p;
 
+	if(startup->options&BBS_OPT_NO_JAVASCRIPT)
+		return(FALSE);
+
 	if((p=strrchr(session->req.physical_path,'.'))==NULL)
 		return(FALSE);
 
@@ -2030,8 +2037,10 @@ void http_session_thread(void* arg)
 
 	while(!session.finished && server_socket!=INVALID_SOCKET) {
 	    memset(&(session.req), 0, sizeof(session.req));
-		init_enviro(&session);
-		init_heads(&session);
+		if(!(startup->options&WEB_OPT_NO_CGI)) {
+			init_enviro(&session);
+			init_heads(&session);
+		}
 		if(get_req(&session)) {
 			lprintf("%04d Got request %s method %d version %d"
 				,session.socket
