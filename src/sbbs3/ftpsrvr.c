@@ -692,7 +692,7 @@ static void receive_thread(void* arg)
 
 	*xfer.inprogress=TRUE;
 	*xfer.aborted=FALSE;
-	if(startup->options&FTP_OPT_DEBUG_DATA)
+	if(xfer.filepos || startup->options&FTP_OPT_DEBUG_DATA)
 		lprintf("%04d DATA socket %d receiving from offset %ld"
 			,xfer.ctrl_sock,*xfer.data_sock,xfer.filepos);
 
@@ -709,12 +709,14 @@ static void receive_thread(void* arg)
 		}
 		if(*xfer.aborted==TRUE) {
 			lprintf("%04d !DATA Transfer aborted",xfer.ctrl_sock);
+			/* Send NAK */
 			sockprintf(xfer.ctrl_sock,"426 Transfer aborted.");
 			error=TRUE;
 			break;
 		}
 		if(server_socket==INVALID_SOCKET) {
 			lprintf("%04d !DATA Transfer locally aborted",xfer.ctrl_sock);
+			/* Send NAK */
 			sockprintf(xfer.ctrl_sock,"426 Transfer locally aborted.");
 			error=TRUE;
 			break;
@@ -737,6 +739,7 @@ static void receive_thread(void* arg)
 				else
 					lprintf("%04d !DATA ERROR %d receiving on data socket %d"
 						,xfer.ctrl_sock,ERROR_VALUE,*xfer.data_sock);
+				/* Send NAK */
 				sockprintf(xfer.ctrl_sock,"426 Error %d receiving on DATA channel"
 					,ERROR_VALUE);
 				error=TRUE;
@@ -744,6 +747,7 @@ static void receive_thread(void* arg)
 			}
 			lprintf("%04d !DATA ERROR recv returned %d on socket %d"
 				,xfer.ctrl_sock,rd,*xfer.data_sock);
+			/* Send NAK */
 			sockprintf(xfer.ctrl_sock,"451 Unexpected socket error: %d",rd);
 			error=TRUE;
 			break;
@@ -753,6 +757,9 @@ static void receive_thread(void* arg)
 		*xfer.lastactive=time(NULL);
 		mswait(1);
 	}
+
+	*xfer.inprogress=FALSE;
+	fclose(fp);
 
 	close_socket(xfer.data_sock,__LINE__);
 	if(error && startup->options&FTP_OPT_DEBUG_DATA)
@@ -764,7 +771,6 @@ static void receive_thread(void* arg)
 		lprintf("%04d Transfer successful: %lu bytes received in %lu seconds (%lu cps)"
 			,xfer.ctrl_sock
 			,total,dur,cps);
-		sockprintf(xfer.ctrl_sock,"226 Upload complete (%lu cps).",cps);
 
 		if(xfer.dir>=0) {
 			memset(&f,0,sizeof(f));
@@ -809,10 +815,9 @@ static void receive_thread(void* arg)
 			}
 			upload_stats(total);
 		}
+		/* Send ACK */
+		sockprintf(xfer.ctrl_sock,"226 Upload complete (%lu cps).",cps);
 	}
-
-	fclose(fp);
-	*xfer.inprogress=FALSE;
 
 	thread_down();
 }
@@ -1270,6 +1275,9 @@ static void ctrl_thread(void* arg)
 	if(startup->answer_sound[0] && !(startup->options&FTP_OPT_MUTE)) 
 		PlaySound(startup->answer_sound, NULL, SND_ASYNC|SND_FILENAME);
 #endif
+
+	transfer_inprogress = FALSE;
+	transfer_aborted = FALSE;
 
 	l=1;
 
