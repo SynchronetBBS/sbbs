@@ -81,7 +81,7 @@ BOOL			listFree(link_list_t*);
 long			listFreeNodes(link_list_t*);
 BOOL			listFreeNodeData(list_node_t* node);
 
-/* Lock/unlock mutex-protoected linked lists */
+/* Lock/unlock mutex-protected linked lists (no-op for unprotected lists) */
 void			listLock(const link_list_t*);
 void			listUnlock(const link_list_t*);
 
@@ -111,8 +111,8 @@ list_node_t*	listPrevNode(const list_node_t*);
 void*			listNodeData(const list_node_t*);
 
 /* Primitive node locking */
-void			listLockNode(list_node_t*);
-void			listUnlockNode(list_node_t*);
+BOOL			listLockNode(list_node_t*);
+BOOL			listUnlockNode(list_node_t*);
 BOOL			listNodeIsLocked(const list_node_t*);
 
 /* Add node to list, returns pointer to new node or NULL on error */
@@ -136,6 +136,9 @@ long			listAddNodeList(link_list_t*, const link_list_t* src, list_node_t* after)
 /* Merge a source linked list into the destination linked list */
 /* after merging, the nodes in the source linked list should not be modified or freed */
 long			listMerge(link_list_t* dest, const link_list_t* src, list_node_t* after);
+
+/* Swap the data pointers and flags for 2 nodes (possibly in separate lists) */
+BOOL			listSwapNodes(list_node_t* node1, list_node_t* node2);
 
 /* Convenience macros for pushing, popping, and inserting nodes */
 #define	listPushNode(list, data)				listAddNode(list, data, listLastNode(list))

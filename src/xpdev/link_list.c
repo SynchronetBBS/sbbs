@@ -40,10 +40,10 @@
 #include "link_list.h"
 
 #if defined(LINK_LIST_THREADSAFE)
-	#define MUTEX_INIT(list)	if(list->flags&LINK_LIST_MUTEX)	pthread_mutex_init(&list->mutex,NULL);
-	#define MUTEX_DESTROY(list)	if(list->flags&LINK_LIST_MUTEX)	pthread_mutex_destroy(&list->mutex);
-	#define MUTEX_LOCK(list)	if(list->flags&LINK_LIST_MUTEX) pthread_mutex_lock(&list->mutex);
-	#define MUTEX_UNLOCK(list)	if(list->flags&LINK_LIST_MUTEX) pthread_mutex_unlock(&list->mutex);
+	#define MUTEX_INIT(list)	{ if(list->flags&LINK_LIST_MUTEX) pthread_mutex_init(&list->mutex,NULL);	}
+	#define MUTEX_DESTROY(list)	{ if(list->flags&LINK_LIST_MUTEX) pthread_mutex_destroy(&list->mutex);		}
+	#define MUTEX_LOCK(list)	{ if(list->flags&LINK_LIST_MUTEX) pthread_mutex_lock(&list->mutex);			}
+	#define MUTEX_UNLOCK(list)	{ if(list->flags&LINK_LIST_MUTEX) pthread_mutex_unlock(&list->mutex);		}
 
 #else
 	#define MUTEX_INIT(list)
@@ -123,13 +123,17 @@ BOOL listFree(link_list_t* list)
 	return(TRUE);
 }
 
-#pragma argsused
+#if defined(__BORLANDC__)
+	#pragma argsused
+#endif
 void listLock(const link_list_t* list)
 {
 	MUTEX_LOCK(list);
 }
 
-#pragma argsused
+#if defined(__BORLANDC__)
+	#pragma argsused
+#endif
 void listUnlock(const link_list_t* list)
 {
 	MUTEX_UNLOCK(list);
@@ -314,23 +318,29 @@ void* listNodeData(const list_node_t* node)
 	return(node->data);
 }
 
-void listLockNode(list_node_t* node)
-{
-	if(node!=NULL)
-		node->flags|=LINK_LIST_NODE_LOCKED;
-}
-
-void listUnlockNode(list_node_t* node)
-{
-	if(node!=NULL)
-		node->flags&=~LINK_LIST_NODE_LOCKED;
-}
-
 BOOL listNodeIsLocked(const list_node_t* node)
 {
-	if(node!=NULL && node->flags&LINK_LIST_NODE_LOCKED)
-		return(TRUE);
-	return(FALSE);
+	return(node!=NULL && node->flags&LINK_LIST_NODE_LOCKED);
+}
+
+BOOL listLockNode(list_node_t* node)
+{
+	if(node==NULL || node->flags&LINK_LIST_NODE_LOCKED)
+		return(FALSE);
+
+	node->flags|=LINK_LIST_NODE_LOCKED;
+
+	return(TRUE);
+}
+
+BOOL listUnlockNode(list_node_t* node)
+{
+	if(!listNodeIsLocked(node))
+		return(FALSE);
+
+	node->flags&=~LINK_LIST_NODE_LOCKED;
+
+	return(TRUE);
 }
 
 static list_node_t* list_add_node(link_list_t* list, list_node_t* node, list_node_t* after)
@@ -488,7 +498,7 @@ link_list_t* listExtract(link_list_t* dest_list, const list_node_t* node, long m
 	long			count;
 	link_list_t*	list;
 
-	if(node==NULL)
+	if(node==NULL || node->list==NULL)
 		return(NULL);
 
 	if((list=listInit(dest_list, node->list->flags))==NULL)
@@ -562,6 +572,36 @@ long listRemoveNodes(link_list_t* list, list_node_t* node, long max)
 	MUTEX_UNLOCK(list);
 	
 	return(count);
+}
+
+BOOL listSwapNodes(list_node_t* node1, list_node_t* node2)
+{
+	list_node_t	tmp;
+
+	if(node1==NULL || node2==NULL || node1==node2)
+		return(FALSE);
+
+	if(listNodeIsLocked(node1) || listNodeIsLocked(node2))
+		return(FALSE);
+
+	if(node1->list==NULL || node2->list==NULL)
+		return(FALSE);
+
+	MUTEX_LOCK(node1->list);
+	if(node1->list != node2->list)
+		MUTEX_LOCK(node2->list);
+
+	tmp=*node1;
+	node1->data=node2->data;
+	node1->flags=node2->flags;
+	node2->data=tmp.data;
+	node2->flags=tmp.flags;
+
+	MUTEX_UNLOCK(node1->list);
+	if(node1->list != node2->list)
+		MUTEX_UNLOCK(node2->list);
+
+	return(TRUE);
 }
 
 #if 0
