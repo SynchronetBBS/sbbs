@@ -53,9 +53,8 @@ typedef struct {
 	unsigned	recv_timeout;
 	unsigned	max_errors;
 	unsigned	g_delay;
-	time_t		progress_interval;
 	int			(*lputs)(void*, int level, const char* str);
-	void		(*progress)(void*, unsigned block_num, ulong fsize, time_t t);
+	void		(*progress)(void*, unsigned block_num, ulong offset, ulong fsize, time_t t);
 	int			(*send_byte)(void*, uchar ch, unsigned timeout);
 	int			(*recv_byte)(void*, unsigned timeout);
 
@@ -64,7 +63,7 @@ typedef struct {
 
 void		xmodem_init(xmodem_t*, void* cbdata, long* mode
 						,int	(*lputs)(void*, int level, const char* str)
-						,void	(*progress)(void* unused, unsigned block_num, ulong fsize, time_t t)
+						,void	(*progress)(void* unused, unsigned block_num, ulong offset, ulong fsize, time_t t)
 						,int	(*send_byte)(void*, uchar ch, unsigned timeout)
 						,int	(*recv_byte)(void*, unsigned timeout));
 char*		xmodem_ver(char *buf);
@@ -73,8 +72,9 @@ void		xmodem_cancel(xmodem_t*);
 BOOL		xmodem_get_ack(xmodem_t*, unsigned tries, unsigned block_num);
 BOOL		xmodem_get_mode(xmodem_t*);
 BOOL		xmodem_put_eot(xmodem_t*);
-void		xmodem_put_nak(xmodem_t*);
-int			xmodem_get_block(xmodem_t*, uchar* block, BOOL hdrblock);
+void		xmodem_put_ack(xmodem_t*);
+void		xmodem_put_nak(xmodem_t*, unsigned block_num);
+int			xmodem_get_block(xmodem_t*, uchar* block, unsigned block_num);
 void		xmodem_put_block(xmodem_t*, uchar* block, unsigned block_size, unsigned block_num);
 
 #endif	/* Don't add anything after this line */
