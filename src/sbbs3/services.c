@@ -941,6 +941,7 @@ static void js_service_thread(void* arg)
 	service_client_t		service_client;
 	/* JavaScript-specific */
 	char					spath[MAX_PATH+1];
+	char					fname[MAX_PATH+1];
 	JSString*				datagram;
 	JSObject*				js_glob;
 	JSScript*				js_script;
@@ -1039,9 +1040,11 @@ static void js_service_thread(void* arg)
 	}
 
 	/* RUN SCRIPT */
-	sprintf(spath,"%s%s",scfg.mods_dir,service->cmd);
+	SAFECOPY(fname,service->cmd);
+	truncstr(fname," ");
+	sprintf(spath,"%s%s",scfg.mods_dir,fname);
 	if(scfg.mods_dir[0]==0 || !fexist(spath))
-		sprintf(spath,"%s%s",scfg.exec_dir,service->cmd);
+		sprintf(spath,"%s%s",scfg.exec_dir,fname);
 
 	js_init_args(js_cx, js_glob, service->cmd);
 
@@ -1104,6 +1107,7 @@ static void js_service_thread(void* arg)
 static void js_static_service_thread(void* arg)
 {
 	char					spath[MAX_PATH+1];
+	char					fname[MAX_PATH+1];
 	service_t*				service;
 	service_client_t		service_client;
 	SOCKET					socket;
@@ -1141,9 +1145,11 @@ static void js_static_service_thread(void* arg)
 		return;
 	}
 
-	sprintf(spath,"%s%s",scfg.mods_dir,service->cmd);
+	SAFECOPY(fname,service->cmd);
+	truncstr(fname," ");
+	sprintf(spath,"%s%s",scfg.mods_dir,fname);
 	if(scfg.mods_dir[0]==0 || !fexist(spath))
-		sprintf(spath,"%s%s",scfg.exec_dir,service->cmd);
+		sprintf(spath,"%s%s",scfg.exec_dir,fname);
 
 	do {
 		if((js_cx=js_initcx(js_runtime,service->socket,&service_client,&js_glob))==NULL) {
