@@ -397,6 +397,7 @@ void sbbs_t::qwk_sec()
 	ulong	*sav_ptr;
 	file_t	fd;
 
+	memset(&fd,0,sizeof(fd));
 	getusrdirs();
 	fd.dir=cfg.total_dirs;
 	if((sav_ptr=(ulong *)MALLOC(sizeof(ulong)*cfg.total_subs))==NULL) {
