@@ -5,6 +5,12 @@ if(http_request.virtual_path=="/index.ssjs" || http_request.virtual_path=="/")
 else
 	template.topnav.push({html: '<a class="tlink" href="/">Home</a>'});
 
+if(http_request.virtual_path=="/members/newpw.ssjs")
+    template.topnav.push({html: '<span class="tlink">Changing Password</span>'});
+
+if(http_request.virtual_path=="/members/changepw.ssjs")
+    template.topnav.push({html: '<span class="tlink">Password Change Result</span>'});
+    
 if(http_request.virtual_path=="/nodelist.ssjs")
 	template.topnav.push({html: '<span class="tlink">Who\'s Online</span>'});
 
