@@ -8,7 +8,5 @@
     </head>
 <body>
 <p class="title">@@JS:system.name@@</p>
-<center>Welcome @@JS:user.alias@@</center>
 
-
-
+<table align="center" class="welcome"><tr><td class="welcome" nowrap="nowrap">@@JS:template.user_greeting@@</td></tr></table>

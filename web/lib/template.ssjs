@@ -123,3 +123,12 @@ function regex_escape(str)
 	str=str.replace(/([\\\^\$\*\+\?\.\(\)\{\}\[\]])/g,"\\$1");
 	return(str);
 }
+
+if(user.number==0)
+	template.user_greeting="Welcome, Guest.";
+else
+	if(user.alias!='Guest')
+		template.user_greeting="Welcome, "+user.alias+ ". You last visited " +strftime("%B %d, %Y",user.stats.laston_date);
+	else
+		template.user_greeting="Welcome, "+user.alias+ ".";
+	
