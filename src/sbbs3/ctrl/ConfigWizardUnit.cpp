@@ -272,6 +272,8 @@ void __fastcall TConfigWizard::NextButtonClick(TObject *Sender)
         	Application->MessageBox("Error saving configuration"
             	,"ERROR",MB_OK|MB_ICONEXCLAMATION);
         }
+
+        MainForm->FirstRun=false;
         Close();
         return;
     }
