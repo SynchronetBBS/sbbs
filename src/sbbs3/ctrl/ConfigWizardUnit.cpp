@@ -160,22 +160,35 @@ void __fastcall TConfigWizard::FormShow(TObject *Sender)
         Sleep(1500);	/* give ipconfig time to run */
         sprintf(str,"%sipconfig.txt",scfg.ctrl_dir);
         FILE*   fp=fopen(str,"r");
-        char*   p;
-        if(fp!=NULL) {
-            while(!feof(fp)) {
-                if(!fgets(str,sizeof(str),fp))
-                    break;
-                p=str;
-                while(*p && *p<=' ') p++;
-                if(!strnicmp(p,"DNS Servers",11) && (p=strchr(p,':'))!=NULL) {
-                    p++;
+        if(fp==NULL) {
+            sprintf(error,"Error %d (%s) opening %s"
+            	,errno,strerror(errno),str);
+        	Application->MessageBox(error
+            	,"ERROR",MB_OK|MB_ICONEXCLAMATION);
+        } else {
+            char*   p;
+            if(fp!=NULL) {
+                while(!feof(fp)) {
+                    if(!fgets(str,sizeof(str),fp))
+                        break;
+    #if 0
+                    Application->MessageBox(str
+                        ,"DEBUG",MB_OK|MB_ICONEXCLAMATION);
+    #endif
+                    p=str;
                     while(*p && *p<=' ') p++;
-                    truncsp(p);
-                    SAFECOPY(MainForm->mail_startup.dns_server,p);
-                    break;
+                    if(!strnicmp(p,"DNS Servers",11) && (p=strchr(p,':'))!=NULL) {
+                        p++;
+                        while(*p && *p<=' ') p++;
+                        truncsp(p);
+                        if((*p)==0)
+                          continue;
+                        SAFECOPY(MainForm->mail_startup.dns_server,p);
+                        break;
+                    }
                 }
+                fclose(fp);
             }
-            fclose(fp);
         }
     } else {
         SystemNameEdit->Text=AnsiString(scfg.sys_name);
