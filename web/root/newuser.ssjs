@@ -111,6 +111,7 @@ else {
 	}
 	hdrs.from=system.name;
 	hdrs.from_net_addr='sysop@'+system.inet_addr;
+	hdrs.from_net_type=NET_INTERNET;
 	hdrs.subject="New user signup";
 	var msgbase = new MsgBase("mail");
 	if(msgbase.open!=undefined && msgbase.open()==false) {
