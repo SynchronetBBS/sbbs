@@ -208,7 +208,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 		sprintf(str,"%.*s",sizeof(str)-1,cmdline+1);
 		p=strchr(str,SP);
 		if(p) {
-			sprintf(main_csi.str,"%.*s",sizeof(main_csi.str)-1,p+1);
+			strcpy(main_csi.str,p+1);
 			*p=0; }
 		return(exec_bin(str,&main_csi)); 
 	}
@@ -728,7 +728,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 		sprintf(str,"%.*s",sizeof(str)-1,cmdline+1);
 		p=strchr(str,SP);
 		if(p) {
-			sprintf(main_csi.str,"%.*s",sizeof(main_csi.str)-1,p+1);
+			strcpy(main_csi.str,p+1);
 			*p=0; }
 		return(exec_bin(str,&main_csi)); 
 	}
