@@ -8,7 +8,7 @@
 # Linux: gmake															#
 # FreeBSD: gmake os=FreeBSD												#
 #																		#
-# Optional build targets: dlls, utils, mono, all (default)				#
+# Optional build targets: clean
 #########################################################################
 
 # $Id$
@@ -20,13 +20,15 @@ ifndef NO_CURSES
  USE_UIFC32	=	1	# NEW curses version of uifc
 endif
 
-UIFC_SRC	=	../../uifc/
-XPDEV	=	../../xpdev/
-SBBS_SRC =	../
+UIFC_SRC	=	../../uifc
+XPDEV	=	../../xpdev
+SBBS_SRC =	..
 NEED_UIFC	:=	1
-include $(XPDEV)Common.gmake
-include $(UIFC_SRC)Common.gmake
-include $(SBBS_SRC)Common.gmake
+CFLAGS		=	-DSCFG
+
+include $(XPDEV)/Common.gmake
+include $(UIFC_SRC)/Common.gmake
+include $(SBBS_SRC)/Common.gmake
 
 SCFG	:=	$(EXEODIR)$(SLASH)scfg$(EXEFILE)
 
@@ -36,7 +38,7 @@ $(MAKEHELP): makehelp.c
 $(SCFGHELP): $(OBJS) $(MAKEHELP)
 	$(QUIET)$(MAKEHELP) $(EXEODIR)
 
-# Monolithic Synchronet executable Build Rule
+# SCFG Build Rule
 $(SCFG): $(OBJS)
    ifdef USE_DIALOG
 	$(QUIET)$(MAKE) --no-print-directory -C ../../libdialog
