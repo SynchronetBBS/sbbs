@@ -474,6 +474,9 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, char* msg
 	smbmsg_t remsg;
 	smbmsg_t firstmsg;
 
+	if(msg==NULL)
+		return(SMB_FAILURE);
+
 	if(!SMB_IS_OPEN(smb)) {
 		if(smb->subnum==INVALID_SUB)
 			sprintf(smb->file,"%smail",cfg->data_dir);
@@ -497,7 +500,10 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, char* msg
 			smb->status.attr=cfg->sub[smb->subnum]->misc&SUB_HYPER ? SMB_HYPERALLOC : 0;
 		}
 		if((i=smb_create(smb))!=0) 
-			return(i); 
+			return(i);
+
+		/* If msgbase doesn't exist, we can't be adding a header to an existing msg */
+		msg->hdr.total_dfields=0;
 	}
 	if((i=smb_locksmbhdr(smb))!=0) 
 		return(i);
@@ -506,107 +512,112 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, char* msg
 		smb_unlocksmbhdr(smb);
 		return(i);
 	}
-	length=strlen(msgbuf);
 
-	/* Remove white-space from end of message text */
-	while(length && (uchar)msgbuf[length-1]<=' ')
-		length--;
+	if(msg->hdr.total_dfields==0) {
 
-	/* Calculate CRC-32 of message text (before encoding, if any) */
-	if(smb->status.max_crcs) {
-		for(l=0;l<length;l++)
-			crc=ucrc32(msgbuf[l],crc); 
-		crc=~crc;
-	}
+		if(msgbuf==NULL)
+			return(SMB_FAILURE);
 
-	/* LZH compress? */
-	if(smb->subnum!=INVALID_SUB && cfg->sub[smb->subnum]->misc&SUB_LZH 
-		&& length+sizeof(xlat)>=SDT_BLOCK_LEN
-		&& (lzhbuf=(char *)LMALLOC(length*2))!=NULL) {
-		lzhlen=lzh_encode((uchar *)msgbuf,length,(uchar *)lzhbuf);
-		if(lzhlen>1
-			&& smb_datblocks(lzhlen+(sizeof(xlat)*2)) 
-				< smb_datblocks(length+sizeof(xlat))) {
-			length=lzhlen+sizeof(xlat); 	/* Compressable */
-			lzh=TRUE;
-			msgbuf=lzhbuf; 
+		length=strlen(msgbuf);
+
+		/* Remove white-space from end of message text */
+		while(length && (uchar)msgbuf[length-1]<=' ')
+			length--;
+
+		/* Calculate CRC-32 of message text (before encoding, if any) */
+		if(smb->status.max_crcs) {
+			for(l=0;l<length;l++)
+				crc=ucrc32(msgbuf[l],crc); 
+			crc=~crc;
 		}
-	}
 
-	length+=sizeof(xlat);	/* xlat string terminator */
+		/* LZH compress? */
+		if(smb->subnum!=INVALID_SUB && cfg->sub[smb->subnum]->misc&SUB_LZH 
+			&& length+sizeof(xlat)>=SDT_BLOCK_LEN
+			&& (lzhbuf=(char *)LMALLOC(length*2))!=NULL) {
+			lzhlen=lzh_encode((uchar *)msgbuf,length,(uchar *)lzhbuf);
+			if(lzhlen>1
+				&& smb_datblocks(lzhlen+(sizeof(xlat)*2)) 
+					< smb_datblocks(length+sizeof(xlat))) {
+				length=lzhlen+sizeof(xlat); 	/* Compressable */
+				lzh=TRUE;
+				msgbuf=lzhbuf; 
+			}
+		}
 
-	if(length&0x80000000) {
-		smb_unlocksmbhdr(smb);
-		sprintf(smb->last_error,"message length: 0x%lX",length);
-		FREE_AND_NULL(lzhbuf);
-		return(-1);
-	}
+		length+=sizeof(xlat);	/* xlat string terminator */
 
-	/* Allocate Data Blocks */
-	if(smb->status.attr&SMB_HYPERALLOC) {
-		offset=smb_hallocdat(smb);
-		storage=SMB_HYPERALLOC; 
-	} else {
-		if((i=smb_open_da(smb))!=0) {
+		if(length&0x80000000) {
+			smb_unlocksmbhdr(smb);
+			sprintf(smb->last_error,"message length: 0x%lX",length);
+			FREE_AND_NULL(lzhbuf);
+			return(-1);
+		}
+
+		/* Allocate Data Blocks */
+		if(smb->status.attr&SMB_HYPERALLOC) {
+			offset=smb_hallocdat(smb);
+			storage=SMB_HYPERALLOC; 
+		} else {
+			if((i=smb_open_da(smb))!=0) {
+				smb_unlocksmbhdr(smb);
+				FREE_AND_NULL(lzhbuf);
+				return(i);
+			}
+			if((smb->subnum==INVALID_SUB && cfg->sys_misc&SM_FASTMAIL)
+				|| (smb->subnum!=INVALID_SUB && cfg->sub[smb->subnum]->misc&SUB_FAST)) {
+				offset=smb_fallocdat(smb,length,1);
+				storage=SMB_FASTALLOC; 
+			} else {
+				offset=smb_allocdat(smb,length,1);
+				storage=SMB_SELFPACK; 
+			}
+			smb_close_da(smb); 
+		}
+
+		if(offset<0) {
 			smb_unlocksmbhdr(smb);
 			FREE_AND_NULL(lzhbuf);
-			return(i);
+			return((int)offset);
 		}
-		if((smb->subnum==INVALID_SUB && cfg->sys_misc&SM_FASTMAIL)
-			|| (smb->subnum!=INVALID_SUB && cfg->sub[smb->subnum]->misc&SUB_FAST)) {
-			offset=smb_fallocdat(smb,length,1);
-			storage=SMB_FASTALLOC; 
-		} else {
-			offset=smb_allocdat(smb,length,1);
-			storage=SMB_SELFPACK; 
+
+		smb_fseek(smb->sdt_fp,offset,SEEK_SET);
+		xlatlen=0;
+		if(lzh) {
+			xlat=XLAT_LZH;
+			smb_fwrite(smb,&xlat,sizeof(xlat),smb->sdt_fp);
+			xlatlen+=sizeof(xlat);
 		}
-		smb_close_da(smb); 
-	}
-
-	if(offset<0) {
-		smb_unlocksmbhdr(smb);
-		FREE_AND_NULL(lzhbuf);
-		return((int)offset);
-	}
-
-	smb_fseek(smb->sdt_fp,offset,SEEK_SET);
-	xlatlen=0;
-	if(lzh) {
-		xlat=XLAT_LZH;
+		xlat=XLAT_NONE;
 		smb_fwrite(smb,&xlat,sizeof(xlat),smb->sdt_fp);
 		xlatlen+=sizeof(xlat);
+
+		smb_fwrite(smb,msgbuf,length-xlatlen,smb->sdt_fp);
+		for(l=length;l%SDT_BLOCK_LEN;l++)
+			smb_fwrite(smb,&pad,1,smb->sdt_fp);
+
+		fflush(smb->sdt_fp);
+
+		FREE_AND_NULL(lzhbuf);
+
+		/* Add CRC to CRC history (and check for duplicates) */
+		if(smb->status.max_crcs) {
+			i=smb_addcrc(smb,crc);
+			if(i) {
+				smb_freemsgdat(smb,offset,length,1);
+				smb_unlocksmbhdr(smb);
+				return(i);
+			} 
+		}
+		msg->hdr.offset=offset;
+		smb_dfield(msg,TEXT_BODY,length);
 	}
-	xlat=XLAT_NONE;
-	smb_fwrite(smb,&xlat,sizeof(xlat),smb->sdt_fp);
-	xlatlen+=sizeof(xlat);
-
-	smb_fwrite(smb,msgbuf,length-xlatlen,smb->sdt_fp);
-	for(l=length;l%SDT_BLOCK_LEN;l++)
-		smb_fwrite(smb,&pad,1,smb->sdt_fp);
-
-	fflush(smb->sdt_fp);
-
-	FREE_AND_NULL(lzhbuf);
-
-	/* Add CRC to CRC history (and check for duplicates) */
-	if(smb->status.max_crcs) {
-		i=smb_addcrc(smb,crc);
-		if(i) {
-			smb_freemsgdat(smb,offset,length,1);
-			smb_unlocksmbhdr(smb);
-			return(i);
-		} 
-	}
-
-	if(msg==NULL)	/* don't create message header */
-		return(smb_unlocksmbhdr(smb));
 
 	msg->hdr.version=smb_ver();
 	msg->hdr.when_imported.time=time(NULL);
 	msg->hdr.when_imported.zone=sys_timezone(cfg);
 	if(msg->hdr.when_written.time==0)	/* Uninitialized */
 		msg->hdr.when_written = msg->hdr.when_imported;
-	msg->hdr.offset=offset;
 	msg->idx.time=msg->hdr.when_imported.time;
 	msg->idx.number=smb->status.last_msg+1; /* this *should* be the new message number */
 
@@ -616,7 +627,6 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, char* msg
 		if(cfg->sub[smb->subnum]->misc&SUB_AONLY)
 			msg->hdr.attr|=MSG_ANONYMOUS;
 	}
-	smb_dfield(msg,TEXT_BODY,length);
 
 	if(smb_get_hfield(msg,FIDOPID,NULL)==NULL) 	/* Don't create duplicate PIDs */
 		smb_hfield_str(msg,FIDOPID,program_id(pid));
@@ -710,7 +720,7 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, char* msg
 	}
 
 	if((i=smb_addmsghdr(smb,msg,storage))!=0) // calls smb_unlocksmbhdr() 
-		smb_freemsgdat(smb,offset,length,1);
+		smb_freemsg_dfields(smb,msg,1);
 
 	signal_sub_sem(cfg,smb->subnum);
 
