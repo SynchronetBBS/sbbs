@@ -92,13 +92,5 @@ SOURCE=.\baja.c
 
 SOURCE=..\smblib\crc32.c
 # End Source File
-# Begin Source File
-
-SOURCE=..\xpdev\dirwrap.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\xpdev\genwrap.c
-# End Source File
 # End Target
 # End Project
