@@ -35,6 +35,10 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
+#if defined(__unix__)
+	#include <unistd.h>	/* _POSIX_THREADS */
+#endif
+
 #include "threadwrap.h"	/* DLLCALL */
 
 /****************************************************************************/
@@ -75,7 +79,7 @@ ulong _beginthread(void( *start_address )( void * )
 /****************************************************************************/
 /* Win32 implementation of POSIX sem_getvalue() function					*/
 /****************************************************************************/
-#ifdef _WIN32
+#if defined(_WIN32)
 int DLLCALL sem_getvalue(sem_t* psem, int* val)
 {
 	if(psem==NULL || val==NULL)
