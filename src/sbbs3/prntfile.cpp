@@ -64,6 +64,7 @@ void sbbs_t::printfile(char *str, long mode)
 		CRLF;
 
 	if((stream=fnopen(&file,str,O_RDONLY))==NULL) {
+		lprintf("File not found: %s",str);
 		bputs(text[FileNotFound]);
 		if(SYSOP) bputs(str);
 		CRLF;
@@ -105,6 +106,7 @@ void sbbs_t::printtail(char *str, int lines, long mode)
 	if(!tos) {
 		CRLF; }
 	if((file=nopen(str,O_RDONLY))==-1) {
+		lprintf("File not found: %s",str);
 		bputs(text[FileNotFound]);
 		if(SYSOP) bputs(str);
 		CRLF;
