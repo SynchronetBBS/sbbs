@@ -72,7 +72,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 	/*************************************************/
 	sprintf(str,"%s%s.msg",cfg.temp_dir,cfg.qhub[hubnum]->id);
 	if((rep=fnopen(&file,str,O_CREAT|O_WRONLY|O_TRUNC))==NULL) {
-		errormsg(WHERE,ERR_OPEN,str,O_CREAT|O_WRONLY|O_TRUNC);
+		errormsg(WHERE,ERR_CREATE,str,O_CREAT|O_WRONLY|O_TRUNC);
 		return(false); }
 	if(filelength(file)<1) { 							/* New REP packet */
 		sprintf(str,"%-128s",cfg.qhub[hubnum]->id);     /* So write header */
@@ -197,7 +197,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 		mswait(1);	/* yield */
 	}
 
-	fclose(rep);			/* close MESSAGE.DAT */
+	fclose(rep);			/* close HUB_ID.MSG */
 	CRLF;
 							/* Look for extra files to send out */
 	sprintf(str,"%sqnet/%s.out",cfg.data_dir,cfg.qhub[hubnum]->id);
@@ -213,13 +213,15 @@ bool sbbs_t::pack_rep(uint hubnum)
 		if(!mv(str,tmp2,1))
 			netfiles++;
 	}
-	closedir(dir);
+	if(dir!=NULL)
+		closedir(dir);
 	if(netfiles)
 		CRLF;
 
 	if(!msgcnt && !netfiles && !packedmail) {
 		eprintf("%s",remove_ctrl_a(text[QWKNoNewMessages],tmp));
-		return(false); }
+		return(false); 
+	}
 
 	/*******************/
 	/* Compress Packet */
