@@ -111,7 +111,7 @@ bool sbbs_t::email(int usernumber, char *top, char *subj, long mode)
 		sprintf(str2,"%sfile/%04u.in", cfg.data_dir,usernumber);
 		MKDIR(str2);
 		sprintf(str2,"%sfile/%04u.in/%s", cfg.data_dir,usernumber,title);
-		if(fexist(str2)) {
+		if(fexistcase(str2)) {
 			bputs(text[FileAlreadyThere]);
 			remove(msgpath);
 			return(false); }
@@ -142,7 +142,9 @@ bool sbbs_t::email(int usernumber, char *top, char *subj, long mode)
 					&& chk_ar(cfg.prot[x]->ar,&useron))
 					break;
 			if(x<cfg.total_prots)	/* This should be always */
-				protocol(cmdstr(cfg.prot[x]->ulcmd,str2,nulstr,NULL),true); }
+				protocol(cmdstr(cfg.prot[x]->ulcmd,str2,nulstr,NULL),true); 
+		}
+		fexistcase(str2);
 		l=flength(str2);
 		if(l>0)
 			bprintf(text[FileNBytesReceived],title,ultoac(l,tmp));

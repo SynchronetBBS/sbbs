@@ -130,7 +130,9 @@ bool sbbs_t::inetmail(char *into, char *subj, long mode)
 					&& chk_ar(cfg.prot[x]->ar,&useron))
 					break;
 			if(x<cfg.total_prots)	/* This should be always */
-				protocol(cmdstr(cfg.prot[x]->ulcmd,str2,nulstr,NULL),true); }
+				protocol(cmdstr(cfg.prot[x]->ulcmd,str2,nulstr,NULL),true); 
+		}
+		fexistcase(str2);
 		l=flength(str2);
 		if(l>0)
 			bprintf(text[FileNBytesReceived],title,ultoac(l,tmp));

@@ -252,7 +252,9 @@ bool sbbs_t::netmail(char *into, char *title, long mode)
 					&& chk_ar(cfg.prot[x]->ar,&useron))
 					break;
 			if(x<cfg.total_prots)	/* This should be always */
-				protocol(cmdstr(cfg.prot[x]->ulcmd,subj,nulstr,NULL),true); }
+				protocol(cmdstr(cfg.prot[x]->ulcmd,subj,nulstr,NULL),true); 
+		}
+		fexistcase(subj);
 		l=flength(subj);
 		if(l>0)
 			bprintf(text[FileNBytesReceived],fname,ultoac(l,tmp));
