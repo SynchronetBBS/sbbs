@@ -754,7 +754,8 @@ static int sockreadline(http_session_t * session, time_t timeout, char *buf, siz
 	else
 		buf[i]=0;
 
-	lprintf("%04d RX: %s",session->socket,buf);
+	if(startup->options&WEB_OPT_DEBUG_RX)
+		lprintf("%04d RX: %s",session->socket,buf);
 	return(0);
 }
 
