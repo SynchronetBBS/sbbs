@@ -335,7 +335,8 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 	sprintf(str,"Posted on %s %s",cfg.grp[cfg.sub[subnum]->grp]->sname,cfg.sub[subnum]->lname);
 	logline("P+",str);
 	if(cfg.sub[subnum]->misc&SUB_FIDO && cfg.sub[subnum]->echomail_sem[0]) /* semaphore */
-		if((file=nopen(cfg.sub[subnum]->echomail_sem,O_WRONLY|O_CREAT|O_TRUNC))!=-1)
+		if((file=nopen(cmdstr(cfg.sub[subnum]->echomail_sem,nulstr,nulstr,NULL)
+			,O_WRONLY|O_CREAT|O_TRUNC))!=-1)
 			close(file);
 	return(true);
 }

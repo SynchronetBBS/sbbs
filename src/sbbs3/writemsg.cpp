@@ -1187,7 +1187,7 @@ bool sbbs_t::movemsg(smbmsg_t* msg, uint subnum)
 		,cfg.grp[cfg.sub[subnum]->grp]->sname,cfg.sub[subnum]->sname);
 	logline("M+",str);
 	if(cfg.sub[newsub]->misc&SUB_FIDO && cfg.sub[newsub]->echomail_sem[0])
-		if((file=nopen(cfg.sub[newsub]->echomail_sem
+		if((file=nopen(cmdstr(cfg.sub[newsub]->echomail_sem,nulstr,nulstr,NULL)
 			,O_WRONLY|O_CREAT|O_TRUNC))!=-1)
 			close(file);
 	return(true);

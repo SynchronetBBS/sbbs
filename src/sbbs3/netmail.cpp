@@ -270,7 +270,8 @@ bool sbbs_t::inetmail(char *into, char *subj, long mode)
 		autohangup();
 
 	if(cfg.inetmail_sem[0]) 	 /* update semaphore file */
-		if((file=nopen(cfg.inetmail_sem,O_WRONLY|O_CREAT|O_TRUNC))!=-1)
+		if((file=nopen(cmdstr(cfg.inetmail_sem,nulstr,nulstr,NULL)
+			,O_WRONLY|O_CREAT|O_TRUNC))!=-1)
 			close(file);
 	if(!(useron.exempt&FLAG('S')))
 		subtract_cdt(&cfg,&useron,cfg.inetmail_cost);

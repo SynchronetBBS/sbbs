@@ -396,7 +396,8 @@ bool sbbs_t::unpack_rep(char* repfile)
 			sprintf(str,"Posted on %s/%s",cfg.grp[cfg.sub[n]->grp]->sname
 				,cfg.sub[n]->lname);
 			if(cfg.sub[n]->misc&SUB_FIDO && cfg.sub[n]->echomail_sem[0])  /* semaphore */
-				if((file=nopen(cfg.sub[n]->echomail_sem,O_WRONLY|O_CREAT|O_TRUNC))!=-1)
+				if((file=nopen(cmdstr(cfg.sub[n]->echomail_sem,nulstr,nulstr,NULL)
+					,O_WRONLY|O_CREAT|O_TRUNC))!=-1)
 					close(file);
 			logline("P+",str); } }         /* end of public message */
 
