@@ -942,7 +942,7 @@ This is the name or description of the online program (door).
 */
 				strcpy(str,cfg.xtrn[i]->name);
 				if(!uifc.input(WIN_MID|WIN_SAV,0,10,"Online Program Name"
-					,cfg.xtrn[i]->name,25,K_EDIT))
+					,cfg.xtrn[i]->name,sizeof(cfg.xtrn[i]->name)-1,K_EDIT))
 					strcpy(cfg.xtrn[i]->name,str);
 				break;
 			case 1:
@@ -956,13 +956,14 @@ online program name.
 */
 				strcpy(str,cfg.xtrn[i]->code);
 				uifc.input(WIN_MID|WIN_SAV,0,10,"Internal Code"
-					,str,8,K_UPPER|K_EDIT);
+					,str,LEN_CODE,K_UPPER|K_EDIT);
 				if(code_ok(str))
 					strcpy(cfg.xtrn[i]->code,str);
 				else {
 					uifc.helpbuf=invalid_code;
 					uifc.msg("Invalid Code");
-                    uifc.helpbuf=0; }
+                    uifc.helpbuf=0; 
+				}
                 break;
 			case 2:
                 SETHELP(WHERE);
@@ -978,8 +979,8 @@ executing the program.
 If this option is not used, the current NODE's directory will be the
 current DOS drive/directory before the command line is executed.
 */
-				uifc.input(WIN_MID|WIN_SAV,0,10,"Directory"
-					,cfg.xtrn[i]->path,50,K_EDIT);
+				uifc.input(WIN_MID|WIN_SAV,0,10,""
+					,cfg.xtrn[i]->path,sizeof(cfg.xtrn[i]->path)-1,K_EDIT);
                 break;
 			case 3:
 				SETHELP(WHERE);
@@ -989,7 +990,7 @@ current DOS drive/directory before the command line is executed.
 This is the command line to execute to run the online program.
 */
 				uifc.input(WIN_MID|WIN_SAV,0,10,"Command"
-					,cfg.xtrn[i]->cmd,50,K_EDIT);
+					,cfg.xtrn[i]->cmd,sizeof(cfg.xtrn[i]->cmd)-1,K_EDIT);
 				break;
 			case 4:
 				SETHELP(WHERE);
@@ -1000,7 +1001,7 @@ This is the command line to execute after the main command line. This
 option is usually only used for multiuser online programs.
 */
 				uifc.input(WIN_MID|WIN_SAV,0,10,"Clean-up"
-					,cfg.xtrn[i]->clean,50,K_EDIT);
+					,cfg.xtrn[i]->clean,sizeof(cfg.xtrn[i]->clean)-1,K_EDIT);
                 break;
 			case 5:
                 ultoa(cfg.xtrn[i]->cost,str,10);
@@ -2104,8 +2105,8 @@ This is the name of this section.
 */
 				strcpy(str,cfg.xtrnsec[i]->name);	 /* save */
 				if(!uifc.input(WIN_MID|WIN_SAV,0,10
-					,"Online Program Section Name"
-					,cfg.xtrnsec[i]->name,40,K_EDIT))
+					,"Program Section Name"
+					,cfg.xtrnsec[i]->name,sizeof(cfg.xtrnsec[i]->name)-1,K_EDIT))
 					strcpy(cfg.xtrnsec[i]->name,str);
 				break;
 			case 1:
@@ -2119,20 +2120,24 @@ for Synchronet to reference it by. It is helpful if this code is an
 abreviation of the name.
 */
 				uifc.input(WIN_MID|WIN_SAV,0,17,"Internal Code (unique)"
-					,str,8,K_EDIT|K_UPPER);
+					,str,LEN_CODE,K_EDIT|K_UPPER);
 				if(code_ok(str))
 					strcpy(cfg.xtrnsec[i]->code,str);
 				else {
 					uifc.helpbuf=invalid_code;
 					uifc.msg("Invalid Code");
-					uifc.helpbuf=0; }
+					uifc.helpbuf=0; 
+				}
 				break;
 			case 2:
 				getar(cfg.xtrnsec[i]->name,cfg.xtrnsec[i]->arstr);
                 break;
 			case 3:
 				xtrn_cfg(i);
-				break; } } }
+				break; 
+			} 
+		} 
+	}
 }
 
 void hotkey_cfg(void)
