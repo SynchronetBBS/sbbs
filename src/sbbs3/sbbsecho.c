@@ -3324,10 +3324,10 @@ int import_netmail(char *path,fmsghdr_t hdr, FILE *fidomsg)
 		addr.net=hdr.orignet;
 		addr.node=hdr.orignode;
 		addr.point=hdr.origpoint;
-		strcpy(hdr.to,scfg.sys_op);
-		strcpy(hdr.from,"SBBSecho");
-		strcpy(str,hdr.subj);
-		strcpy(hdr.subj,"Areafix Request");
+		sprintf(hdr.to	,"%.*s",sizeof(hdr.to)-1	,scfg.sys_op);
+		sprintf(hdr.from,"%.*s",sizeof(hdr.from)-1	,"SBBSecho");
+		sprintf(str		,"%.*s",sizeof(str)-1		,hdr.subj);
+		sprintf(hdr.subj,"%.*s",sizeof(hdr.subj)-1	,"Areafix Request");
 		hdr.origzone=hdr.orignet=hdr.orignode=hdr.origpoint=0;
 		p=process_areafix(addr,fmsgbuf,str);
 		if(p && cfg.notify)
