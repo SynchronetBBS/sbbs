@@ -2784,7 +2784,21 @@ static void ctrl_thread(void* arg)
 		if(!strnicmp(cmd,"SITE EXEC ",10) && sysop) {
 			p=cmd+10;
 			while(*p && *p<=' ') p++;
-			sockprintf(sock,"211 system(%s) returned %d",p,system(p));
+#ifdef __unix__
+			fp=popen(p,"r");
+			if(fp==NULL)
+				sockprintf(sock,"500 Error %d opening pipe to: %s",errno,p);
+			else {
+				while(!feof(fp)) {
+					if(fgets(str,sizeof(str),fp)==NULL)
+						break;
+					sockprintf(sock,"200-%s",str);
+				}
+				sockprintf(sock,"200 %s returned %d",p,pclose(fp));
+			}
+#else
+			sockprintf(sock,"200 system(%s) returned %d",p,system(p));
+#endif
 			continue;
 		}
 
