@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2002 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -162,13 +162,13 @@ extern "C" {
 
 #if defined(_WIN32)
 
-	#define YIELD()			Sleep(0)
+	#define YIELD()			Sleep(1) /* Must sleep at least 1ms to avoid 100% CPU utilization */
 	#define SLEEP(x)		Sleep(x)
 	#define BEEP(freq,dur)	Beep(freq,dur)
 
 #elif defined(__OS2__)
 
-	#define YIELD()			DosSleep(1)			/* Must Sleep for at least 1ms to Yield on OS/2 */
+	#define YIELD()			DosSleep(1)	/* Must sleep at least 1ms to avoid 100% CPU utilization */
 	#define SLEEP(x)		DosSleep(x)
 	#define BEEP(freq,dur)	DosBeep(freq,dur)
 
