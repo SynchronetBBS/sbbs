@@ -6,8 +6,8 @@
 
 # ODIR, SLASH, LIBFILE, EXEFILE, and DELETE must be pre-defined
 
-SBBSINST	=	$(EXEODIR)$(SLASH)sbbsinst$(EXEFILE) 
+SBBSINST	=	$(EXEODIR)$(DIRSEP)sbbsinst$(EXEFILE) 
 
 all:	$(EXEODIR) \
-		$(LIBODIR) \
+		$(MTOBJODIR) \
 		$(SBBSINST)

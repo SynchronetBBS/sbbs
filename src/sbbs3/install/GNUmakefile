@@ -13,16 +13,8 @@
 
 # $Id$
 
-#USE_DIALOG =	1	# Dialog vesrion of UIFC
-#USE_CURSES	=	1	# Curses version of UIFC
-#USE_FLTK	=	1	# Windowed version of UIFC
-USE_UIFC32	:=	1	# New 32-bit version of UIFC
-UIFC_SRC	=	../../uifc/
-XPDEV	=	../../xpdev/
-
-NEED_UIFC	:=	1
-include $(XPDEV)/Common.gmake
-include $(UIFC_SRC)/Common.gmake
+SRC_ROOT	= ../..
+include $(SRC_ROOT)/build/Common.gmake
 
 CFLAGS	+=	-I../
 
@@ -34,18 +26,9 @@ ifeq ($(os),sunos)
  LDFLAGS	+=	-lsocket -lnsl
 endif
 
-ifeq ($(os),netbsd)
- CFLAGS		+=	$(PTHREAD_CFLAGS)
- LDFLAGS	+=	$(PTHREAD_LDFLAGS)
-endif
+CFLAGS	+=	$(UIFC-MT_CFLAGS) $(CIOLIB-MT_CFLAGS) $(XPDEV-MT_CFLAGS) $(SMBLIB_CFLAGS)
+LDFLAGS	+=	$(UIFC-MT_LDFLAGS) $(CIOLIB-MT_LDFLAGS) $(XPDEV-MT_LDFLAGS) $(SMBLIB_LDFLAGS)
 
 $(SBBSINST): $(OBJS)
-   ifdef USE_DIALOG
-	$(QUIET)$(MAKE) --no-print-directory -C ../../libdialog
-   endif
 	$(QUIET)echo Linking $@
-	$(QUIET)$(CC) -o $@ $(OBJS) $(LDFLAGS)
-
-# Auto-dependency files (should go in output dir, but gcc v2.9.5 puts in cwd)
--include ./*.d
--include $(ODIR)/*.d
+	$(QUIET)$(CC) -o $@ $(OBJS) $(LDFLAGS) $(UIFC-MT_LIBS) $(CIOLIB-MT_LIBS) $(XPDEV-MT_LIBS)
