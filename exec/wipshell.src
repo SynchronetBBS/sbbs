@@ -30,7 +30,7 @@ logkey_comma
 
 cmdkey C
 	print_local "Chat\r\n"
-        chat_section
+        exec_bin chat_sec
         end_cmd
 
 cmdkey D

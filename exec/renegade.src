@@ -95,7 +95,7 @@ cmdkey A
 	end_cmd
 
 cmdkey C
-	chat_section
+	exec_bin chat_sec
 	end_cmd
 
 cmdkey E
@@ -457,7 +457,7 @@ cmdkey E
 	end_cmd
 
 cmdkey C
-	chat_section
+	exec_bin chat_sec
 	end_cmd
 
 cmdkey D
@@ -716,7 +716,7 @@ cmdkey /A
 	end_cmd
 
 cmdkey C
-	chat_section
+	exec_bin chat_sec
 	end_cmd
 
 cmdkey /L

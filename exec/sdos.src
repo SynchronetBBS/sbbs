@@ -111,7 +111,7 @@ if_true
 # Global BBS commands
 compare_str "chat"
 if_true
-	chat_section
+	exec_bin chat_sec
 	return
 	end_if
 

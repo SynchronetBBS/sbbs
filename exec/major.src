@@ -25,7 +25,7 @@ cmdkey ?
 	end_cmd
 
 cmdkey T
-	chat_section
+	exec_bin chat_sec
 	end_cmd
 
 cmdkey I
@@ -265,7 +265,7 @@ cmdkey Q
         end_cmd
 
 cmdkey T
-	chat_section
+	exec_bin chat_sec
 	end_cmd
 
 cmdkey S

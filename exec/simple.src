@@ -31,11 +31,11 @@ logstr
 # Commands
 
 cmdstr C
-	chat_section
+	exec_bin chat_sec
 	end_cmd
 
 cmdstr CHAT
-	chat_section
+	exec_bin chat_sec
 	end_cmd
 
 cmdstr Q
