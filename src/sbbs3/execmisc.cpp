@@ -1371,7 +1371,7 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 					if(pp && *pp)
 						switch(*(csi->ip-5)) {
 							case MAKE_DIR:
-								csi->logic=_mkdir(*pp);
+								csi->logic=MKDIR(*pp);
 								break;
 							case REMOVE_DIR:
 								csi->logic=rmdir(*pp);

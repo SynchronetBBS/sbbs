@@ -126,7 +126,7 @@ If you want to abort the creation of this new node, hit  ESC .
 		strcpy(cfg.node_path[i-1],str);
 		if(str[strlen(str)-1]=='\\' || str[strlen(str)-1]=='/')
 			str[strlen(str)-1]=0;
-		_mkdir(str);
+		MKDIR(str);
 		cfg.node_num=++cfg.sys_nodes;
 		sprintf(cfg.node_name,"Node %u",cfg.node_num);
 		write_node_cfg(&cfg,backup_level);

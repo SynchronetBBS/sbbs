@@ -108,7 +108,7 @@ bool sbbs_t::email(int usernumber, char *top, char *subj, long mode)
 
 	if(mode&WM_FILE) {
 		sprintf(str2,"%sfile/%04u.in", cfg.data_dir,usernumber);
-		_mkdir(str2);
+		MKDIR(str2);
 		sprintf(str2,"%sfile/%04u.in/%s", cfg.data_dir,usernumber,title);
 		if(fexist(str2)) {
 			bputs(text[FileAlreadyThere]);

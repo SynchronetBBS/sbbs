@@ -2980,7 +2980,7 @@ static void ctrl_thread(void* arg)
 				else		/* relative */
 					sprintf(fname,"%s%s",local_dir,p);
 
-				if((i=_mkdir(fname))==0) {
+				if((i=MKDIR(fname))==0) {
 					sockprintf(sock,"257 \"%s\" directory created",fname);
 					lprintf("%04d %s created directory: %s",sock,user.alias,fname);
 				} else {

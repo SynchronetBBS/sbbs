@@ -542,7 +542,7 @@ js_mkdir(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_TRUE);
 	}
 
-	*rval = BOOLEAN_TO_JSVAL(_mkdir(p)==0);
+	*rval = BOOLEAN_TO_JSVAL(MKDIR(p)==0);
 	return(JS_TRUE);
 }
 
