@@ -485,7 +485,7 @@ int main(int argc, char **argv, char** environ)
 	scfg.size=sizeof(scfg);
 	SAFECOPY(scfg.ctrl_dir,p);
 
-	for(argn=1;argn<argc;argn++) {
+	for(argn=1;argn<argc && module==NULL;argn++) {
 		if(argv[argn][0]=='-') {
 			switch(argv[argn][1]) {
 				case 'm':
