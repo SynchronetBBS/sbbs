@@ -663,11 +663,11 @@ char DLLCALL getage(scfg_t* cfg, char *birth)
 /****************************************************************************/
 /* Reads the data for node number 'number' into the structure 'node'        */
 /* from node.dab															*/
-/* if lockit is non-zero, locks this node's record. putnodedat() unlocks it */
 /****************************************************************************/
-int DLLCALL getnodedat(scfg_t* cfg, uint number, node_t *node, int* fp)
+int DLLCALL getnodedat(scfg_t* cfg, uint number, node_t *node, int* fdp)
 {
 	char	str[MAX_PATH+1];
+	int		rd;
 	int		count=0;
 	int		file;
 
@@ -678,8 +678,8 @@ int DLLCALL getnodedat(scfg_t* cfg, uint number, node_t *node, int* fp)
 	memset(node,0,sizeof(node_t));
 	sprintf(str,"%snode.dab",cfg->ctrl_dir);
 	if((file=nopen(str,O_RDWR|O_DENYNONE))==-1) {
-		if(fp!=NULL)
-			*fp=file;
+		if(fdp!=NULL)
+			*fdp=file;
 		return(errno); 
 	}
 
@@ -689,18 +689,20 @@ int DLLCALL getnodedat(scfg_t* cfg, uint number, node_t *node, int* fp)
 			if(count)
 				mswait(100);
 			lseek(file,(long)number*sizeof(node_t),SEEK_SET);
-			if(fp!=NULL
-				&& lock(file,(long)number*sizeof(node_t),sizeof(node_t))==-1) 
+			if(lock(file,(long)number*sizeof(node_t),sizeof(node_t))!=0) 
 				continue; 
-			if(read(file,node,sizeof(node_t))==sizeof(node_t))
+			rd=read(file,node,sizeof(node_t));
+			if(fdp==NULL || rd!=sizeof(node_t))
+				unlock(file,(long)number*sizeof(node_t),sizeof(node_t));
+			if(rd==sizeof(node_t))
 				break;
 		}
 	}
 
-	if(fp==NULL)
+	if(fdp==NULL)
 		close(file);
 	else
-		*fp=file;
+		*fdp=file;
 
 	if(count==LOOP_NODEDAB) 
 		return(-2); 
