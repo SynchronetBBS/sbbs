@@ -2,7 +2,7 @@
 
 /* Semaphore-related cross-platform development wrappers */
 
-/* $Id:  */
+/* $Id$ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
