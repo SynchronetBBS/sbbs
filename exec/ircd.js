@@ -1002,14 +1002,21 @@ while (!server.terminated) {
              ClientObject.local )
 		{
 			ClientObject.check_timeout();
+			if(socket_select==undefined)
+			{
+				ClientObject.work();
+			}
              poll_clients.push(ClientObject.socket.descriptor);
              poll_client_map.push(thisClient);
 		}
     }
-	readme=socket_select(poll_clients,1000000);
-	for(thisPolled in readme)
+	if(socket_select!=undefined)
 	{
-		Clients[poll_client_map[readme[thisPolled]]].work();
+		readme=socket_select(poll_clients,1000000);
+		for(thisPolled in readme)
+		{
+			Clients[poll_client_map[readme[thisPolled]]].work();
+		}
 	}
 
 	// Scan C:Lines for servers to connect to automatically.
