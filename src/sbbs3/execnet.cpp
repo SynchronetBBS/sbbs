@@ -307,7 +307,7 @@ int sbbs_t::exec_net(csi_t* csi)
 				return(0);
 			
 			if(atoi(rsp)==331) { /* Password needed */
-				sprintf(str,"PASS %s\r\n",*pp2);
+				sprintf(str,"PASS %s",*pp2);
 				if(!ftp_cmd(csi,*lp,str,rsp))
 					return(0);
 			}
