@@ -170,6 +170,8 @@ switch(field[0]) {
 		msgbase = new MsgBase(field[1]);
 		if(Number(field[2])) {
 			hdr=msgbase.get_msg_header(false,Number(field[2]));
+			if(hdr.attr&MSG_DELETE)
+				break;
 			writeln(format("Subj : %s",hdr.subject));
 			writeln(format("To   : %s",hdr.to));
 			writeln(format("From : %s",hdr.from));
@@ -192,6 +194,8 @@ switch(field[0]) {
 		for(i=msgbase.last_msg;i>=first;i--) {
 			hdr=msgbase.get_msg_header(false,i);
 			if(hdr==null)
+				continue;
+			if(hdr.attr&MSG_DELETE)
 				continue;
 			msginfo=format("%-25.25s %-25.25s %-25.25s %s"
 				,hdr.subject
