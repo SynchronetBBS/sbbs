@@ -378,8 +378,7 @@ static int sockprint(SOCKET sock, const char *str)
 	int len;
 	int	result;
 	int written=0;
-	fd_set	socket_set;
-	struct timeval tv;
+	BOOL	wr;
 
 	if(sock==INVALID_SOCKET)
 		return(0);
@@ -387,44 +386,9 @@ static int sockprint(SOCKET sock, const char *str)
 		lprintf("%04d TX: %s", sock, str);
 	len=strlen(str);
 
-	/* Check socket for writability (using select) */
-	tv.tv_sec=60;
-	tv.tv_usec=0;
-
-	FD_ZERO(&socket_set);
-	FD_SET(sock,&socket_set);
-
-	if((result=select(sock+1,NULL,&socket_set,NULL,&tv))<1) {
-		if(result==0)
-			lprintf("%04d !TIMEOUT selecting socket for send"
-				,sock);
-		else
-			lprintf("%04d !ERROR %d selecting socket for send"
-				,sock, ERROR_VALUE);
-		return(0);
-	}
-
-	while((result=sendsocket(sock,str+written,len-written))>0)  {
+	while(socket_check(sock,NULL,&wr,60000) && wr)  {
+		result=sendsocket(sock,str+written,len-written);
 		if(result==SOCKET_ERROR) {
-			if(ERROR_VALUE==EWOULDBLOCK) {
-				/* Check socket for writability (using select) */
-				tv.tv_sec=60;
-				tv.tv_usec=0;
-
-				FD_ZERO(&socket_set);
-				FD_SET(sock,&socket_set);
-
-				if((result=select(sock+1,NULL,&socket_set,NULL,&tv))<1) {
-					if(result==0)
-						lprintf("%04d !TIMEOUT selecting socket for send"
-							,sock);
-					else
-						lprintf("%04d !ERROR %d selecting socket for send"
-							,sock, ERROR_VALUE);
-					return(0);
-				}
-				continue;
-			}
 			if(ERROR_VALUE==ECONNRESET) 
 				lprintf("%04d Connection reset by peer on send",sock);
 			else if(ERROR_VALUE==ECONNABORTED) 
@@ -433,7 +397,6 @@ static int sockprint(SOCKET sock, const char *str)
 				lprintf("%04d !ERROR %d sending on socket",sock,ERROR_VALUE);
 			return(0);
 		}
-		lprintf("%04d !ERROR: short send on socket: %d instead of %d",sock,result,len);
 		written+=result;
 	}
 	if(written != len) {
