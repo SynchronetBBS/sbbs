@@ -494,10 +494,12 @@ int main(int argc, char **argv)
 					? faddrtoa(*(fidoaddr_t *)msg.from_net.addr)
 						: (char*)msg.from_net.addr);
 			printf("\n");
-			printf("%-20s: %.24s\n","When Written"
-				,ctime((time_t *)&msg.hdr.when_written.time));
-			printf("%-20s: %.24s\n","When Imported"
-				,ctime((time_t *)&msg.hdr.when_imported.time));
+			printf("%-20s: %.24s  tz: %04hXh\n","When Written"
+				,ctime((time_t *)&msg.hdr.when_written.time)
+				,msg.hdr.when_written.zone);
+			printf("%-20s: %.24s  tz: %04hXh\n","When Imported"
+				,ctime((time_t *)&msg.hdr.when_imported.time)
+				,msg.hdr.when_imported.zone);
 			printf("%-20s: %04hXh\n","Type"
 				,msg.hdr.type);
 			printf("%-20s: %04hXh\n","Version"
