@@ -55,7 +55,7 @@ if(http_request.query.Action=="Delete Message(s)") {
 		template.detail+=": "+errorlist;
 	template.detail+=")";
 }
-template.backurl=http_request.header.Referer;
+template.backurl=http_request.header.referer;
 
 write_template("header.inc");
 write_template("msgs/management.inc");
