@@ -99,6 +99,7 @@ if(request=="") {	// no specific user requested, give list of active users
 			action=format(NodeAction[system.node_list[n].action]
 							,system.node_list[n].aux);
 		t=time()-user.logontime;
+		if(t&0x80000000) t=0;
 		write(format("%-25.25s %-31.31s%3u:%02u:%02u %3s %3s %4d\r\n"
 			,user.alias
 			,action
@@ -165,7 +166,8 @@ if(request.charAt(0)=='?') {	// Handle "special" requests
 						write(format("running %s",user.curxtrn));
 					else
 						write(format(NodeAction[system.node_list[n].action],system.node_list[n].aux));
-					t = time()-user.logontime;
+					t=time()-user.logontime;
+					if(t&0x80000000) t=0;
 					write(format(" for %u minutes",Math.floor(t/60)));
 				} else
 					write(format(NodeStatus[system.node_list[n].status],system.node_list[n].aux));
