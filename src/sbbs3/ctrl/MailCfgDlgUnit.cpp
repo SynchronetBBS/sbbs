@@ -124,9 +124,12 @@ void __fastcall TMailCfgDlg::FormShow(TObject *Sender)
     	&MAIL_OPT_USE_RSS;
     TcpDnsCheckBox->Checked=MainForm->mail_startup.options
     	&MAIL_OPT_USE_TCP_DNS;
+    SendMailCheckBox->Checked=
+        !(MainForm->mail_startup.options&MAIL_OPT_NO_SENDMAIL);
 
     DNSRadioButtonClick(Sender);
 	POP3EnabledCheckBoxClick(Sender);
+    SendMailCheckBoxClick(Sender);
     PageControl->ActivePage=GeneralTabSheet;
 }
 //---------------------------------------------------------------------------
@@ -224,6 +227,10 @@ void __fastcall TMailCfgDlg::OKBtnClick(TObject *Sender)
     	MainForm->mail_startup.options|=MAIL_OPT_USE_TCP_DNS;
     else
 	    MainForm->mail_startup.options&=~MAIL_OPT_USE_TCP_DNS;
+    if(SendMailCheckBox->Checked==false)
+        MainForm->mail_startup.options|=MAIL_OPT_NO_SENDMAIL;
+    else
+        MainForm->mail_startup.options&=~MAIL_OPT_NO_SENDMAIL;
 
     MainForm->MailAutoStart=AutoStartCheckBox->Checked;
     MainForm->MailLogFile=LogFileCheckBox->Checked;
@@ -256,12 +263,36 @@ void __fastcall TMailCfgDlg::DNSRadioButtonClick(TObject *Sender)
 void __fastcall TMailCfgDlg::POP3EnabledCheckBoxClick(TObject *Sender)
 {
 	POP3PortEdit->Enabled=POP3EnabledCheckBox->Checked;
-    POP3SoundEdit->Enabled=POP3EnabledCheckBox->Checked;
     POP3PortLabel->Enabled=POP3EnabledCheckBox->Checked;
+    POP3SoundEdit->Enabled=POP3EnabledCheckBox->Checked;
     POP3SoundLabel->Enabled=POP3EnabledCheckBox->Checked;
     POP3SoundButton->Enabled=POP3EnabledCheckBox->Checked;
     POP3LogCheckBox->Enabled=POP3EnabledCheckBox->Checked;
 }
 //---------------------------------------------------------------------------
 
+
+void __fastcall TMailCfgDlg::SendMailCheckBoxClick(TObject *Sender)
+{
+    bool checked=SendMailCheckBox->Checked;
+
+    DeliveryAttemptsEdit->Enabled=checked;
+    DeliveryAttemptsLabel->Enabled=checked;
+    RescanFreqEdit->Enabled=checked;
+    RescanFreqLabel->Enabled=checked;
+    DNSRadioButton->Enabled=checked;
+    DNSServerEdit->Enabled=checked;
+    TcpDnsCheckBox->Enabled=checked;
+    RelayRadioButton->Enabled=checked;
+    RelayServerEdit->Enabled=checked;
+    RelayPortEdit->Enabled=checked;
+    RelayPortLabel->Enabled=checked;
+    OutboundSoundEdit->Enabled=checked;
+    OutboundSoundLabel->Enabled=checked;
+    OutboundSoundButton->Enabled=checked;
+
+    if(checked)
+        DNSRadioButtonClick(Sender);
+}
+//---------------------------------------------------------------------------
 

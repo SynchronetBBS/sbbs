@@ -83,27 +83,29 @@ __published:
     TCheckBox *POP3LogCheckBox;
     TCheckBox *POP3EnabledCheckBox;
     TTabSheet *SendMailTabSheet;
-    TButton *OutboundSoundButton;
-    TEdit *OutboundSoundEdit;
-    TLabel *OutboundSoundLabel;
-    TLabel *POP3SoundLabel;
-    TEdit *POP3SoundEdit;
-    TButton *POP3SoundButton;
     TRadioButton *DNSRadioButton;
     TEdit *DNSServerEdit;
     TCheckBox *TcpDnsCheckBox;
     TRadioButton *RelayRadioButton;
     TEdit *RelayServerEdit;
     TEdit *RelayPortEdit;
-    TLabel *InboundSoundLabel;
-    TEdit *InboundSoundEdit;
-    TButton *InboundSoundButton;
     TLabel *RelayPortLabel;
-    TLabel *Label1;
+    TLabel *DeliveryAttemptsLabel;
     TEdit *DeliveryAttemptsEdit;
-    TLabel *Label2;
+    TLabel *RescanFreqLabel;
     TEdit *RescanFreqEdit;
     TCheckBox *DebugHeadersCheckBox;
+    TTabSheet *SoundTabSheet;
+    TLabel *SMTPSoundLabel;
+    TEdit *InboundSoundEdit;
+    TButton *InboundSoundButton;
+    TLabel *POP3SoundLabel;
+    TEdit *POP3SoundEdit;
+    TButton *POP3SoundButton;
+    TLabel *OutboundSoundLabel;
+    TEdit *OutboundSoundEdit;
+    TButton *OutboundSoundButton;
+    TCheckBox *SendMailCheckBox;
     void __fastcall InboundSoundButtonClick(TObject *Sender);
     void __fastcall OutboundSoundButtonClick(TObject *Sender);
     void __fastcall FormShow(TObject *Sender);
@@ -111,6 +113,7 @@ __published:
 	void __fastcall POP3SoundButtonClick(TObject *Sender);
 	void __fastcall DNSRadioButtonClick(TObject *Sender);
 	void __fastcall POP3EnabledCheckBoxClick(TObject *Sender);
+    void __fastcall SendMailCheckBoxClick(TObject *Sender);
 private:
 public:
 	virtual __fastcall TMailCfgDlg(TComponent* AOwner);
