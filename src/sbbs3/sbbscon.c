@@ -797,6 +797,7 @@ static void handle_sigs(void)  {
 				break;
 			default:
 				sprintf(str,"     Got unhandled signal (%d)",sig);
+				lputs(str);
 		}
 	}
 }
