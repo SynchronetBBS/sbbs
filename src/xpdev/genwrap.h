@@ -45,9 +45,6 @@
 #if defined(__unix__)
 	#include <unistd.h>		/* usleep */
 	#include <sys/time.h>	/* struct timeval */
-	#if defined(_NEED_SEM)	/* Assumes that if you don't have semaphores, you're using the GNU Pth lib */
-		#include <pth.h>
-	#endif
 #endif
 
 #if defined(__QNX__)
@@ -172,20 +169,9 @@ extern "C" {
 	#define SLEEP(x)		DosSleep(x)
 	#define BEEP(freq,dur)	DosBeep(freq,dur)
 
-#elif defined(_PTH_H_)
-
-	#define SLEEP(x)		({	int y=x; struct timeval tv; \
-								tv.tv_sec=(y/1000); tv.tv_usec=((y%1000)*1000); \
-								pth_nap(tv); })
-	#define BEEP(freq,dur)	unix_beep(freq,dur)
-	DLLEXPORT void	DLLCALL	unix_beep(int freq, int dur);
-
 #elif defined(__unix__)
 
-		/* usleep() apparently doesn't work right (100% CPU utilization) */
-#if 0	/* with multiple clients/threads on *BSD */
-	#define SLEEP(x)		usleep(x*1000)
-#else
+#ifndef SLEEP
 	#define SLEEP(x)		({	int y=x; struct timeval tv; \
 								tv.tv_sec=(y/1000); tv.tv_usec=((y%1000)*1000); \
 								select(0,NULL,NULL,NULL,&tv); })
