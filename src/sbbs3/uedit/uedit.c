@@ -172,6 +172,56 @@ time_t DLLCALL strtosec(char *str)
 	return(sec);
 }
 
+/* Edit terminal settings
+ *       Auto-Detect
+ *       Extended ASCII
+ *       ANSI
+ *       Color
+ *       RIP
+ *       WIP
+ *       Pause
+ *       Hot Keys
+ *       Spinning Cursor
+ *       Number of Rows
+ */
+int edit_terminal(scfg_t *cfg, user_t *user)
+{
+	return(0);
+}
+
+/* Edit Logon settings
+ *       Ask for New Message Scan
+ *       Ask for Your Message Scan
+ *       Remember Current Sub-board
+ *       Quiet Mode (Q exempt)
+ *       Auto-Login via IP (V exempt)
+ */
+int edit_logon(scfg_t *cfg, user_t *user)
+{
+	return(0);
+}
+
+/* Edit Chat Settings
+ *       Multinode Chat Echo
+ *       Multinode Chat Actions
+ *       Available for Internode chat
+ *       Multinode Activity Alerts
+ *       Split-screen Private Chat
+ */
+int edit_chat(scfg_t *cfg, user_t *user)
+{
+	return(0);
+}
+
+/* Edit Command Shell
+ *       Name
+ *       Expert Mode
+ */
+int edit_cmd(scfg_t *cfg, user_t *user)
+{
+	return(0);
+}
+
 /* Edit "Extended comment" */
 int edit_comment(scfg_t *cfg, user_t *user)
 {
@@ -196,6 +246,37 @@ int edit_msgfile(scfg_t *cfg, user_t *user)
  */
 int edit_settings(scfg_t *cfg, user_t *user)
 {
+	char *opt[5]={
+		 "Terminal Settings"
+		,"Logon Toggles"
+		,"Chat Toggles"
+		,"Command Shell"
+		,""};
+	int i=0;
+
+	while(1) {
+		switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"Settings",opt)) {
+			case -1:
+				return(0);
+				break;
+			case 0:
+				/* Terminal Settings */
+				edit_terminal(cfg,user);
+				break;
+			case 1:
+				/* Logon Toggles */
+				edit_logon(cfg,user);
+				break;
+			case 2:
+				/* Chat Toggles */
+				edit_chat(cfg,user);
+				break;
+			case 3:
+				/* Command Shell */
+				edit_cmd(cfg,user);
+				break;
+		}
+	}
 	return(0);
 }
 
