@@ -581,6 +581,39 @@ void sbbs_t::getusrdirs()
 	while(curdir[curlib]>=usrdirs[curlib] && curdir[curlib]) curdir[curlib]--;
 }
 
+uint sbbs_t::getusrgrp(uint subnum)
+{
+	uint	ugrp;
+
+	if(subnum==INVALID_SUB)
+		return(0);
+
+	if(usrgrps<=0)
+		return(0);
+
+	for(ugrp=0;ugrp<usrgrps;ugrp++)
+		if(usrgrp[ugrp]==cfg.sub[subnum]->grp)
+			break;
+
+	return(ugrp+1);
+}
+
+uint sbbs_t::getusrsub(uint subnum)
+{
+	uint	usub;
+	uint	ugrp;
+
+	ugrp = getusrgrp(subnum);
+	if(ugrp<=0)
+		return(0);
+	
+	for(usub=0;usub<usrsubs[ugrp];usub++)
+		if(usrsub[ugrp][usub]==subnum)
+			break;
+
+	return(usub+1);
+}
+
 int sbbs_t::dir_op(uint dirnum)
 {
 	return(SYSOP || (cfg.dir[dirnum]->op_ar[0] && chk_ar(cfg.dir[dirnum]->op_ar,&useron)));

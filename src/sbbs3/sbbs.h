@@ -383,6 +383,9 @@ public:
 	void	putmsgptrs(void);
 	void	getusrsubs(void);
 	void	getusrdirs(void);
+	uint	getusrsub(uint subnum);
+	uint	getusrgrp(uint subnum);
+
 	uint	userdatdupe(uint usernumber, uint offset, uint datlen, char *dat
 				,bool del);
 	void	gettimeleft(void);
