@@ -548,10 +548,11 @@ void sbbs_t::attr(int atr)
 /****************************************************************************/
 bool sbbs_t::msgabort()
 {
+#if 0	/* slows down menu display too much */
 	if(sys_status&SS_SYSPAGE) {
 		sbbs_beep(sbbs_random(800),1);
 	}
-
+#endif
 	checkline();
 	if(sys_status&SS_ABORT)
 		return(true);
