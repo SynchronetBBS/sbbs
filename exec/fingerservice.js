@@ -217,7 +217,7 @@ if(request.charAt(0)=='?') {	// Handle "special" requests
 
 		case "sockopts":
 			for(i in sockopts)
-				writeln(format("%-10s = %d"
+				writeln(format("%-12s = %d"
 					,sockopts[i],client.socket.getoption(sockopts[i])));
 			break;
 
