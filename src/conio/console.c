@@ -129,6 +129,7 @@ sem_t	copybuf_set;
 sem_t	pastebuf_set;
 sem_t	pastebuf_request;
 pthread_mutex_t	copybuf_mutex;
+pthread_mutex_t	lines_mutex;
 char *copybuf=NULL;
 char *pastebuf=NULL;
 sem_t	x11_beep;
@@ -444,6 +445,7 @@ video_update_text()
 	wakeup_poll();	/* Wake up anyone waiting on kbd poll */
 
     vmemc = (WORD *)malloc(DpyCols*(DpyRows+1)*sizeof(WORD));
+	pthread_mutex_lock(&lines_mutex);
 	memcpy(vmemc, vmem, DpyCols*(DpyRows+1)*sizeof(WORD));
 	for (r = 0; r < (DpyRows+1); ++r) {
 	    if (!lines[r].changed) {
@@ -476,6 +478,7 @@ video_update_text()
 		lines[r].changed = 0;
 		memset(lines[r].exposed,0,CONSOLE_MAX_COLS * sizeof(u_char));
 	}
+	pthread_mutex_unlock(&lines_mutex);
 
 	if (CursStart <= CursEnd && CursEnd <= FH &&
 	    (show != os) && cursrow < (DpyRows+1) &&curscol < DpyCols) {
@@ -535,6 +538,7 @@ get_lines()
 	TextLine *newlines;
 
 	if (lines == NULL) {
+		pthread_mutex_lock(&lines_mutex);
 		lines = (TextLine *)malloc(sizeof(TextLine) * (CONSOLE_MAX_ROWS+1));
 		if (lines == NULL) {
 			fprintf(stderr, "Could not allocate data structure for text lines\n");
@@ -555,6 +559,7 @@ get_lines()
 			memset(lines[i].exposed,0,CONSOLE_MAX_COLS * sizeof(u_char));
 			lines[i].changed = 1;
 		}
+		pthread_mutex_unlock(&lines_mutex);
 	}
 }
 
@@ -605,9 +610,11 @@ void expose_chars(int x, int y, int width, int height)
 		ey=DpyRows;
 
 	for(r=sy;r<=ey;r++) {
+		pthread_mutex_lock(&lines_mutex);
 		for(c=sx;c<=ex;c++) {
 			lines[r].exposed[c]=1;
 		}
+		pthread_mutex_unlock(&lines_mutex);
 	}
 }
 
@@ -1191,9 +1198,11 @@ resize_window()
     x11.XFree(sh);
 
 	if(lines != NULL) {
+		pthread_mutex_lock(&lines_mutex);
 		for (r = 0; r < (CONSOLE_MAX_ROWS+1); ++r) {
 			lines[r].changed = 1;
 		}
+		pthread_mutex_unlock(&lines_mutex);
 	}
 
     return;
@@ -1611,6 +1620,7 @@ console_init()
 	sem_init(&x11_beep,0,0);
 	sem_init(&x11_title,0,0);
 	pthread_mutex_init(&copybuf_mutex, NULL);
+	pthread_mutex_init(&lines_mutex, NULL);
 
    	if(kbd_init()) {
 		return(-1);
