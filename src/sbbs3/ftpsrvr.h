@@ -43,7 +43,7 @@ typedef struct {
 	WORD	port;
 	WORD	max_clients;
 	WORD	max_inactivity;
-	WORD	reserved_word5;
+	WORD	qwk_timeout;
 	WORD	reserved_word4;
 	WORD	reserved_word3;
 	WORD	reserved_word2;

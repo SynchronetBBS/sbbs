@@ -3292,9 +3292,9 @@ static void ctrl_thread(void* arg)
 				close(file);
 				t=time(NULL);
 				while(fexist(str)) {
-					if(time(NULL)-t>300)
+					if(time(NULL)-t>startup->qwk_timeout)
 						break;
-					mswait(500);
+					mswait(1000);
 				}
 				if(fexist(str)) {
 					lprintf("%04d !TIMEOUT waiting for QWK packet creation",sock);
@@ -4041,6 +4041,7 @@ void DLLCALL ftp_server(void* arg)
 
 	/* Setup intelligent defaults */
 	if(startup->port==0)					startup->port=IPPORT_FTP;
+	if(startup->qwk_timeout==0)				startup->qwk_timeout=600;		/* seconds */
 	if(startup->max_inactivity==0)			startup->max_inactivity=300;	/* seconds */
 	if(startup->index_file_name[0]==0)		strcpy(startup->index_file_name,"00index");
 	if(startup->html_index_file[0]==0)		strcpy(startup->html_index_file,"00index.html");
