@@ -65,6 +65,14 @@
 	#endif
 #endif
 
+#ifndef BOOL
+	#define BOOL	int
+#endif
+#ifndef TRUE
+	#define TRUE	1
+	#define FALSE	0
+#endif
+
 /****************************************************************************/
 /* Memory allocation macros for various compilers and environments			*/
 /* MALLOC is used for allocations of 64k or less							*/
