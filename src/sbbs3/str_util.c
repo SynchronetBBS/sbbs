@@ -242,6 +242,20 @@ void DLLCALL truncsp(char *str)
 }
 
 /****************************************************************************/
+/* Truncate string at first occurance of char in specified character set	*/
+/****************************************************************************/
+char* DLLCALL truncate(char* str, const char* set)
+{
+	char* p;
+
+	p=strpbrk(str,set);
+	if(p!=NULL)
+		*p=0;
+
+	return(p);
+}
+
+/****************************************************************************/
 /* Puts a backslash on path strings 										*/
 /****************************************************************************/
 void backslash(char *str)
