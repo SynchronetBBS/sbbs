@@ -125,7 +125,6 @@
 #include "riodefs.h"
 #include "text.h"
 #include "cmdshell.h"
-#include "post.h"		/* post_t defintion */
 #include "ringbuf.h"    /* RingBuf definition */
 #include "client.h"		/* client_t definition */
 
@@ -647,7 +646,7 @@ public:
 	
 	/* qwk.cpp */
 	bool	qwklogon;
-	time_t	qwkmail_time;
+	ulong	qwkmail_time;
 	void	qwk_sec(void);
 	int		qwk_route(char *inaddr, char *fulladdr);
 	void	update_qwkroute(char *via);
