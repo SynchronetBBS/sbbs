@@ -512,7 +512,6 @@ long js_exec(const char *fname, char** args)
 	size_t		len;
 	char*		js_buf=NULL;
 	size_t		js_buflen;
-	JSObject*	js_scope=NULL;
 	JSScript*	js_script=NULL;
 	JSString*	arg;
 	JSObject*	argv;
@@ -541,15 +540,9 @@ long js_exec(const char *fname, char** args)
 	}
 	JS_ClearPendingException(js_cx);
 
-	js_scope=JS_NewObject(js_cx, NULL, NULL, js_glob);
-
-	if(js_scope==NULL) {
-		fprintf(errfp,"!Error creating JS scope\n");
-		return(-1);
-	}
 
 	argv=JS_NewArrayObject(js_cx, 0, NULL);
-	JS_DefineProperty(js_cx, js_scope, "argv", OBJECT_TO_JSVAL(argv)
+	JS_DefineProperty(js_cx, js_glob, "argv", OBJECT_TO_JSVAL(argv)
 		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
 	for(argc=0;args[argc];argc++) {
@@ -560,7 +553,7 @@ long js_exec(const char *fname, char** args)
 		if(!JS_SetElement(js_cx, argv, argc, &val))
 			break;
 	}
-	JS_DefineProperty(js_cx, js_scope, "argc", INT_TO_JSVAL(argc)
+	JS_DefineProperty(js_cx, js_glob, "argc", INT_TO_JSVAL(argc)
 		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
 	JS_SetBranchCallback(js_cx, js_BranchCallback);
@@ -591,11 +584,11 @@ long js_exec(const char *fname, char** args)
 	if(fp!=NULL && fp!=stdin)
 		fclose(fp);
 
-	if((js_script=JS_CompileScript(js_cx, js_scope, js_buf, js_buflen, fname==NULL ? NULL : path, 1))==NULL) {
+	if((js_script=JS_CompileScript(js_cx, js_glob, js_buf, js_buflen, fname==NULL ? NULL : path, 1))==NULL) {
 		fprintf(errfp,"!Error compiling script from %s\n",path);
 		return(-1);
 	}
-	JS_ExecuteScript(js_cx, js_scope, js_script, &rval);
+	JS_ExecuteScript(js_cx, js_glob, js_script, &rval);
 
 	JS_GetProperty(js_cx, js_glob, "exit_code", &rval);
 
@@ -605,8 +598,6 @@ long js_exec(const char *fname, char** args)
 	}
 
 	JS_DestroyScript(js_cx, js_script);
-
-	JS_ClearScope(js_cx, js_scope);
 
 	JS_GC(js_cx);
 
