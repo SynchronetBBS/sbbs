@@ -1,12 +1,11 @@
-Synchronet v3.0 Windows NT/2000 Instructions
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Rob Swindell
-www.synchro.net
+Synchronet v3.10 Windows NT/2000/XP Instructions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Note
 ~~~~
 Windows 2000 is actually Windows NT 5 (renamed for marketing reasons), not
 to be confused with Windows Millennium Edition (the successor to Windows 98).
+Windows XP is actually Windows NT 5.1 (renamed for marketing reasons).
 
 Issues
 ~~~~~~
@@ -17,16 +16,14 @@ Issues
 2. Add C:\SBBS\EXEC\SVDMANSI to the end of your C:\WINNT\SYSTEM32\AUTOEXEC.NT
    to use the Synchronet Virtual DOS Machine ANSI driver (originally created
    as a replacement for OS/2's ANSI driver, but it functions as an ANSI.SYS 
-   replacement for Windows NT/2000 just as well - thanks again Steve!).
+   replacement for Windows NT just as well - thanks again Steve!).
+   Use of this driver is *optional*.
    
-3. At this time, only the output of 16-bit DOS programs can be intercepted, 
-   so the output of internal NT commands and executables (dir, copy, rename, 
-   more, etc) won't be intercepted for the remote sysop. This is a very 
-   unfortunate problem (that does not exist on Windows 95/98) and I'm still 
-   trying to find a solution. In the mean-time, the remote DOS shell is of 
-   only limited usefulness. Perhaps a third-party command shell (e.g. 4DOS) 
-   or console/ANSI driver will solve this problem (this is potentially related 
-   to issue #1). Any feedback on this issue is appreciated.
+3. Use ;SHELL instead of ;DOS to remotely shell to the Windows NT 32-bit
+   command interpreter (cmd.exe), which has more functional I/O interception.
+   The backspace key does not work correctly however (watch those typos!).
+   The ;DOS command will shell to the 16-bit command interpreter (command.com)
+   which has numerous I/O interception issues on NT.
 
 4. If you need more conventional memory for your external DOS programs and 
    do not need DPMI support, remove (or REM-out) the DOSX line of your 
@@ -43,5 +40,7 @@ send it to me for debugging purposes. The sbbsexec#.log files are created
 in the current directory at the time the program is run. This will
 usually be either the Synchronet EXEC directory or the startup directory
 for an online external program (e.g. C:\SBBS\XTRN\DOORNAME).
+As for v3.10, these files are only created with the DEBUG BUILD of
+SBBSEXEC.DLL (which you probaby don't have).
 
 /* End of File */
