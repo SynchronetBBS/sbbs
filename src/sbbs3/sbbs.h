@@ -72,10 +72,6 @@
 
 	#include <unistd.h>		/* close */
 
-	#ifdef __FreeBSD__		/* FreeBSD-specific */
-		#include <sys/param.h>	/* PATH_MAX */
-	#endif
-
 #endif
 
 /******************/
