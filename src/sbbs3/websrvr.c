@@ -744,6 +744,11 @@ static void close_request(http_session_t * session)
 	if(session->socket==INVALID_SOCKET)
 		session->finished=TRUE;
 
+	if(session->js_cx!=NULL && (session->req.dynamic==IS_SSJS || session->req.dynamic==IS_JS)) {
+		lprintf(LOG_INFO,"%04d JavaScript: Garbage Collection",session->socket);
+		JS_GC(session->js_cx);
+	}
+
 	memset(&session->req,0,sizeof(session->req));
 }
 
@@ -2800,6 +2805,7 @@ void http_session_thread(void* arg)
 	if(session.js_runtime!=NULL) {
 		lprintf(LOG_INFO,"%04d JavaScript: Destroying runtime",socket);
 		JS_DestroyRuntime(session.js_runtime);
+		session.js_runtime=NULL;
 	}
 
 #ifdef _WIN32
