@@ -40,8 +40,7 @@
 
 #include "genwrap.h"
 
-#define MAX_LINE_LEN	256		/* Maximum length of entire line, includes '\0' */
-#define MAX_VALUE_LEN	128		/* Maximum value length, includes '\0' */
+#define INI_MAX_VALUE_LEN	128		/* Maximum value length, includes '\0' */
 
 typedef struct {
 	ulong		bit;

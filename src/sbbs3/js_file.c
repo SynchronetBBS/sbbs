@@ -448,7 +448,7 @@ js_iniGetValue(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 	char*	section;
 	char*	key;
 	char**	list;
-	char	buf[MAX_VALUE_LEN];
+	char	buf[INI_MAX_VALUE_LEN];
 	int32	i;
 	jsval	val;
 	jsval	dflt=argv[2];

@@ -41,6 +41,8 @@
 #include "sockwrap.h"	/* inet_addr */
 #include "ini_file.h"
 
+#define INI_MAX_LINE_LEN	256		/* Maximum length of entire line, includes '\0' */
+
 /****************************************************************************/
 /* Truncates white-space chars off end of 'str'								*/
 /****************************************************************************/
@@ -57,7 +59,7 @@ static BOOL find_section(FILE* fp, const char* section)
 {
 	char*	p;
 	char*	tp;
-	char	str[MAX_LINE_LEN];
+	char	str[INI_MAX_LINE_LEN];
 
 	rewind(fp);
 
@@ -83,7 +85,7 @@ static char* get_value(FILE* fp, const char* section, const char* key, char* val
 {
 	char*	p;
 	char*	tp;
-	char	str[MAX_LINE_LEN];
+	char	str[INI_MAX_LINE_LEN];
 
 	if(fp==NULL)
 		return(NULL);
@@ -111,7 +113,7 @@ static char* get_value(FILE* fp, const char* section, const char* key, char* val
 		p=tp+1;
 		while(*p && *p<=' ') p++;
 		truncsp(p);
-		sprintf(value,"%.*s",MAX_VALUE_LEN-1,p);
+		sprintf(value,"%.*s",INI_MAX_VALUE_LEN-1,p);
 		return(value);
 	}
 
@@ -133,11 +135,11 @@ char** iniGetStringList(FILE* fp, const char* section, const char* key
 						 ,const char* sep, const char* deflt)
 {
 	char*	value;
-	char	buf[MAX_VALUE_LEN];
+	char	buf[INI_MAX_VALUE_LEN];
 	char**	lp;
 	char**	np;
 	char*	token;
-	char	list[MAX_VALUE_LEN];
+	char	list[INI_MAX_VALUE_LEN];
 	ulong	items=0;
 
 	if((value=get_value(fp,section,key,buf))==NULL || *value==0 /* blank */)
@@ -204,7 +206,7 @@ char** iniGetSectionList(FILE* fp, const char* prefix)
 	char*	tp;
 	char**	lp;
 	char**	np;
-	char	str[MAX_LINE_LEN];
+	char	str[INI_MAX_LINE_LEN];
 	ulong	items=0;
 
 	if((lp=malloc(sizeof(char*)))==NULL)
@@ -251,7 +253,7 @@ char** iniGetKeyList(FILE* fp, const char* section)
 	char*	tp;
 	char**	lp;
 	char**	np;
-	char	str[MAX_LINE_LEN];
+	char	str[INI_MAX_LINE_LEN];
 	ulong	items=0;
 
 	if((lp=malloc(sizeof(char*)))==NULL)
@@ -301,7 +303,7 @@ iniGetNamedStringList(FILE* fp, const char* section)
 	char*	name;
 	char*	value;
 	char*	tp;
-	char	str[MAX_LINE_LEN];
+	char	str[INI_MAX_LINE_LEN];
 	ulong	items=0;
 	named_string_t** lp;
 	named_string_t** np;
@@ -362,7 +364,7 @@ iniGetNamedStringList(FILE* fp, const char* section)
 long iniGetInteger(FILE* fp, const char* section, const char* key, long deflt)
 {
 	char*	value;
-	char	buf[MAX_VALUE_LEN];
+	char	buf[INI_MAX_VALUE_LEN];
 
 	if((value=get_value(fp,section,key,buf))==NULL)
 		return(deflt);
@@ -380,7 +382,7 @@ ushort iniGetShortInt(FILE* fp, const char* section, const char* key, ushort def
 
 ulong iniGetIpAddress(FILE* fp, const char* section, const char* key, ulong deflt)
 {
-	char	buf[MAX_VALUE_LEN];
+	char	buf[INI_MAX_VALUE_LEN];
 	char*	value;
 
 	if((value=get_value(fp,section,key,buf))==NULL)
@@ -397,7 +399,7 @@ ulong iniGetIpAddress(FILE* fp, const char* section, const char* key, ulong defl
 
 double iniGetFloat(FILE* fp, const char* section, const char* key, double deflt)
 {
-	char	buf[MAX_VALUE_LEN];
+	char	buf[INI_MAX_VALUE_LEN];
 	char*	value;
 
 	if((value=get_value(fp,section,key,buf))==NULL)
@@ -411,7 +413,7 @@ double iniGetFloat(FILE* fp, const char* section, const char* key, double deflt)
 
 BOOL iniGetBool(FILE* fp, const char* section, const char* key, BOOL deflt)
 {
-	char	buf[MAX_VALUE_LEN];
+	char	buf[INI_MAX_VALUE_LEN];
 	char*	value;
 
 	if((value=get_value(fp,section,key,buf))==NULL)
@@ -435,7 +437,7 @@ ulong iniGetBitField(FILE* fp, const char* section, const char* key,
 	char*	p;
 	char*	tp;
 	char*	value;
-	char	buf[MAX_VALUE_LEN];
+	char	buf[INI_MAX_VALUE_LEN];
 	ulong	v=0;
 
 	if((value=get_value(fp,section,key,buf))==NULL)

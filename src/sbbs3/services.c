@@ -1456,8 +1456,8 @@ static service_t* read_services_ini(service_t* service, char* services_ini, DWOR
 {
 	uint		i,j;
 	FILE*		fp;
-	char		cmd[MAX_LINE_LEN+1];
-	char		host[MAX_LINE_LEN+1];
+	char		cmd[INI_MAX_VALUE_LEN];
+	char		host[INI_MAX_VALUE_LEN];
 	char**		sec_list;
 	service_t*	np;
 	service_t	serv;

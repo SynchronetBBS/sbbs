@@ -164,7 +164,7 @@ void sbbs_read_ini(
 	char*		ctrl_dir;
 	char*		temp_dir;
 	char		host_name[128];
-	char		value[MAX_VALUE_LEN];
+	char		value[INI_MAX_VALUE_LEN];
 	ulong		interface_addr;
 	ulong		js_max_bytes;
 	ushort		sem_chk_freq;
