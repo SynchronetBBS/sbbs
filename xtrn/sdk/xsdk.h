@@ -61,7 +61,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>
-#ifndef __FreeBSD__		/* FreeBSD uses stdlib.h for malloc() */
+#ifndef __BSD		/* FreeBSD uses stdlib.h for malloc() */
 	#include <malloc.h>
 #endif
 #include <sys/stat.h>

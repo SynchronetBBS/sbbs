@@ -52,7 +52,7 @@
 
 #elif defined __unix__	/* Unix-variant */
 
-#ifdef __FreeBSD__
+#ifdef __BSD
 #include <sys/types.h>	/* u_intXX_t */
 #endif
 

@@ -49,8 +49,10 @@
 	#include <stdlib.h>
 	#include <unistd.h>
 	#include <termios.h>
-	#ifdef __FreeBSD__
+	#ifdef __BSD
+	#ifndef __OpenBSD__
 	#include <sys/kbio.h>
+	#endif
 	#else
 	#include <sys/kd.h>
 	#endif
