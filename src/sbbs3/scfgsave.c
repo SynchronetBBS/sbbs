@@ -300,8 +300,7 @@ BOOL DLLCALL write_main_cfg(scfg_t* cfg, int backup_level)
 	put_int(cfg->new_shell,stream);
 	put_int(cfg->new_misc,stream);
 	put_int(cfg->new_prot,stream);
-	c=0;
-	put_int(c,stream);
+	put_int(cfg->new_install,stream);
 	n=0;
 	for(i=0;i<7;i++)
 		put_int(n,stream);

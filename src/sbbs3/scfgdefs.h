@@ -480,6 +480,7 @@ typedef struct
 	ushort	node_sem_check; 	/* Seconds between semaphore checks */
 	ushort	node_stat_check;	/* Seconds between statistic checks */
 
+	char	new_install;		/* This is a brand new installation */
 	char 	new_pass[41];		/* New User Password */
 	char 	new_magic[21];		/* New User Magic Word */
 	char 	new_sif[LEN_SIFNAME+1]; 		/* New User SIF Questionaire */
