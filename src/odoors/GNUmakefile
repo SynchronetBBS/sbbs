@@ -69,6 +69,11 @@ LDFLAGS	:=
 SHLIB		:=	.so
 STATICLIB	:=	.a
 OBJFILE 	:=	.o
+ifdef PROFILE
+	CFLAGS	+=	-pg
+	SHLIB	:=	_p${SHLIB}
+	STATICLIB	:=	_p.a
+endif
 #
 ###############################################################################
 #
