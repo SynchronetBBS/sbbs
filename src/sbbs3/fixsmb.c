@@ -117,20 +117,20 @@ int main(int argc, char **argv)
 	}
 
 	if((i=smb_open(&smb))!=0) {
-		printf("smb_open returned %d\n",i);
+		printf("smb_open returned %d: %s\n",i,smb.last_error);
 		exit(1); 
 	}
 
 	if((i=smb_locksmbhdr(&smb))!=0) {
 		smb_close(&smb);
-		printf("smb_locksmbhdr returned %d\n",i);
+		printf("smb_locksmbhdr returned %d: %s\n",i,smb.last_error);
 		exit(1); 
 	}
 
 	if((i=smb_getstatus(&smb))!=0) {
 		smb_unlocksmbhdr(&smb);
 		smb_close(&smb);
-		printf("smb_getstatus returned %d\n",i);
+		printf("smb_getstatus returned %d: %s\n",i,smb.last_error);
 		exit(1); 
 	}
 
@@ -138,13 +138,13 @@ int main(int argc, char **argv)
 
 		if((i=smb_open_ha(&smb))!=0) {
 			smb_close(&smb);
-			printf("smb_open_ha returned %d\n",i);
+			printf("smb_open_ha returned %d: %s\n",i,smb.last_error);
 			exit(1); 
 		}
 
 		if((i=smb_open_da(&smb))!=0) {
 			smb_close(&smb);
-			printf("smb_open_da returned %d\n",i);
+			printf("smb_open_da returned %d: %s\n",i,smb.last_error);
 			exit(1); 
 		}
 
@@ -177,12 +177,12 @@ int main(int argc, char **argv)
 		printf("\r%2lu%%  ",(long)(100.0/((float)length/l)));
 		msg.idx.offset=l;
 		if((i=smb_lockmsghdr(&smb,&msg))!=0) {
-			printf("\n(%06lX) smb_lockmsghdr returned %d\n",l,i);
+			printf("\n(%06lX) smb_lockmsghdr returned %d: %s\n",l,i,smb.last_error);
 			continue; 
 		}
 		if((i=smb_getmsghdr(&smb,&msg))!=0) {
 			smb_unlockmsghdr(&smb,&msg);
-			printf("\n(%06lX) smb_getmsghdr returned %d\n",l,i);
+			printf("\n(%06lX) smb_getmsghdr returned %d: %s\n",l,i,smb.last_error);
 			continue; 
 		}
 		smb_unlockmsghdr(&smb,&msg);
@@ -213,7 +213,7 @@ int main(int argc, char **argv)
 				msg.idx.from=crc16(str,0); 
 			}
 			if((i=smb_putmsg(&smb,&msg))!=0) {
-				printf("\nsmb_putmsg returned %d\n",i);
+				printf("\nsmb_putmsg returned %d: %s\n",i,smb.last_error);
 				continue; 
 			}
 			n++; 
@@ -253,7 +253,7 @@ int main(int argc, char **argv)
 		sort_index(&smb);
 	printf("Saving message base status.\n");
 	if((i=smb_putstatus(&smb))!=0)
-		printf("\nsmb_putstatus returned %d\n",i);
+		printf("\nsmb_putstatus returned %d: %s\n",i,smb.last_error);
 	smb_unlocksmbhdr(&smb);
 	printf("Closing message base.\n");
 	smb_close(&smb);
