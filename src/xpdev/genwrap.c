@@ -155,7 +155,7 @@ int DLLCALL xp_random(int n)
 /* Return ASCII string representation of ulong								*/
 /* There may be a native GNU C Library function to this...					*/
 /****************************************************************************/
-#if !defined _MSC_VER && !defined __BORLANDC__
+#if !defined(_MSC_VER) && !defined(__BORLANDC__) && !defined(__WATCOMC__)
 char* DLLCALL ultoa(ulong val, char* str, int radix)
 {
 	switch(radix) {

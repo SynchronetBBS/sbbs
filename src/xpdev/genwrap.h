@@ -69,6 +69,11 @@ extern "C" {
 	#define DESCRIBE_COMPILER(str) sprintf(str,"GCC %u.%02u" \
 		,__GNUC__,__GNUC_MINOR__);
 
+#elif defined(__WATCOMC__)
+
+	#define DESCRIBE_COMPILER(str) sprintf(str,"WATC %d" \
+		,__WATCOMC__);
+
 #else /* Unknown compiler */
 
 	#define DESCRIBE_COMPILER(str) strcpy(str,"UNKNOWN COMPILER");
@@ -109,7 +114,11 @@ extern "C" {
 	#define vsnprintf		_vsnprintf
 #endif
 
-#if !defined(_MSC_VER) && !defined(__BORLANDC__)
+#if defined(__WATCOMC__)
+	#define vsnprintf(s,l,f,a)	vsprintf(s,f,a)
+#endif
+
+#if !defined(_MSC_VER) && !defined(__BORLANDC__) && !defined(__WATCOMC__)
 	DLLEXPORT char* DLLCALL ultoa(ulong, char*, int radix);
 #endif
 
