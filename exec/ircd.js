@@ -2026,9 +2026,9 @@ function IRCClient_set_chanmode(chan,modeline,bounce_modes) {
 
 	// Now we play with the channel lists by adding or removing what was
 	// given to us on the modeline.
-	this.affect_mode_list(CHANLIST_OP)
-	this.affect_mode_list(CHANLIST_VOICE);
-	this.affect_mode_list(CHANLIST_BAN);
+	this.affect_mode_list(CHANLIST_OP,chan)
+	this.affect_mode_list(CHANLIST_VOICE,chan);
+	this.affect_mode_list(CHANLIST_BAN,chan);
 
 	if (!addmodes && !delmodes)
 		return 0;
@@ -2182,7 +2182,7 @@ function IRCClient_setusermode(modestr) {
 	return 1;
 }
 
-function IRCClient_affect_mode_list(list_bit) {
+function IRCClient_affect_mode_list(list_bit,chan) {
 	for (x=list_bit;x<=(list_bit+1);x++) {
 		for (tmp_index in chan_tmplist[x]) {
 			if (list_bit >= CHANLIST_BAN) {
