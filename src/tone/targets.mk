@@ -1,3 +1,4 @@
 TONE	=	$(EXEODIR)$(DIRSEP)tone$(EXEFILE)
 
-all:	$(EXEODIR) $(OBJODIR) $(TONE)
+all:	$(XPDEV_LIB) $(EXEODIR) $(OBJODIR) $(TONE)
+

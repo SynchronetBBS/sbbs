@@ -34,12 +34,11 @@
 #############################################################################
 
 SRC_ROOT	=	..
-!include $(SRC_ROOT)/build/Common.bmake
+!include $(SRC_ROOT)\build\Common.bmake
 LDFLAGS 	=	$(LDFLAGS) $(XPDEV_LDFLAGS)
 CFLAGS		=	$(CFLAGS) $(XPDEV_CFLAGS)
-LDLIBS		=	$(LDLIBS) -lm -lxpdev
 
-$(TONE):	$(OBJODIR)$(DIRSEP)tone$(OFILE)
+$(TONE):	$(OBJS)
 	@echo Creating $@
-	$(QUIET)$(CC) $(CFLAGS) $(CCFLAGS) $(LDFLAGS) -e$@ $** $(LDLIBS)
+	$(QUIET)$(CC) $(CFLAGS) $(LDFLAGS) -e$@ $** $(XPDEV_LIBS)
 
