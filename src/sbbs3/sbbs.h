@@ -749,9 +749,9 @@ extern "C" {
 
 	/* misc.c */
 	DLLEXPORT char *	DLLCALL zonestr(short zone);
-	DLLEXPORT void		DLLCALL strip_ctrl(char *str);
-	DLLEXPORT void		DLLCALL strip_exascii(char *str);
-
+	DLLEXPORT char *	DLLCALL strip_ctrl(char *str);
+	DLLEXPORT char *	DLLCALL strip_exascii(char *str);
+	DLLEXPORT char *	DLLCALL prep_file_desc(char *str);
 
 	/* load_cfg.c */
 	DLLEXPORT BOOL		DLLCALL load_cfg(scfg_t* cfg, char* text[], BOOL prep);
@@ -768,7 +768,7 @@ extern "C" {
 	DLLEXPORT BOOL		DLLCALL write_xtrn_cfg(scfg_t* cfg, int backup_level);
 
 	/* scfglib1.c */
-	DLLEXPORT char*		DLLCALL prep_dir(char* base, char* dir);
+	DLLEXPORT char *	DLLCALL prep_dir(char* base, char* dir);
 
 	/* date_str.c */
 
@@ -835,7 +835,6 @@ extern "C" {
 	void	truncsp(char *str);		/* Truncates white spaces off end of str */
 	void	backslash(char *str);
 	void	backslashcolon(char *str);
-	ulong	_crc32(char *str);
 	ulong	crc32(char *buf, ulong len);
 	void	ucrc16(uchar ch, ushort *rcrc);
 	int		pstrcmp(char **str1, char **str2);  /* Compares pointers to pointers */
