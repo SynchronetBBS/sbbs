@@ -61,11 +61,16 @@ function truncsp(str)
 function list_users(show)
 {
 	imsg_user = new Array();
+	var users=0;
 
-	for(i=0;list[i]!=null;i++) {
+	print("\1m\1hListing Systems and Users (Ctrl-C to Abort)...\r\n");
 
-		if(show) 
+	for(i=0;list[i]!=null && !(bbs.sys_status&SS_ABORT);i++) {
+
+		if(show) {
+			console.line_counter=0;	// defeat pause
 			printf("\1n\1h%-25.25s\1n ",list[i]);
+		}
 
 		sock = new Socket();
 		if(!sock.connect(list[i],79)) {
@@ -110,16 +115,21 @@ function list_users(show)
 			if(response[j]=="")
 				continue;
 
-			if(show)
+			if(show) {
+				console.line_counter=0;	// defeat pause
 				print(format("\1h\1y%.25s\1n\1g %.48s"
 					,response[j],response[j].slice(26)));
+			}
 			var u = new Object;
 			u.host = list[i];
 			u.name = format("%.25s",response[j]);
 			u.name = truncsp(u.name);
 			imsg_user.push(u);
+			users++;
 		}
 	}
+	printf("\1m\1h%lu systems and %lu users listed.\r\n",i+1,users);
+
 }
 
 function send_msg(dest, msg)
@@ -204,7 +214,7 @@ function getmsg()
 	return(msg);
 }
 
-list_users(true);	// Needed to initialize user[]
+list_users(true);	// Needed to initialize imsg_user[]
 console.crlf();
 
 var key;
