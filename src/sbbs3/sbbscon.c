@@ -53,15 +53,19 @@
 
 /* Global variables */
 BOOL				bbs_running=FALSE;
+BOOL				bbs_stopped=FALSE;
 bbs_startup_t		bbs_startup;
 BOOL				run_ftp=TRUE;
 BOOL				ftp_running=FALSE;
+BOOL				ftp_stopped=FALSE;
 ftp_startup_t		ftp_startup;
 BOOL				run_mail=TRUE;
 BOOL				mail_running=FALSE;
+BOOL				mail_stopped=FALSE;
 mail_startup_t		mail_startup;
 BOOL				run_services=TRUE;
 BOOL				services_running=FALSE;
+BOOL				services_stopped=FALSE;
 services_startup_t	services_startup;
 uint				thread_count=1;
 uint				socket_count=0;
@@ -298,11 +302,13 @@ static int bbs_lputs(char *str)
 static void bbs_started(void)
 {
 	bbs_running=TRUE;
+	bbs_stopped=FALSE;
 }
 
 static void bbs_terminated(int code)
 {
 	bbs_running=FALSE;
+	bbs_stopped=TRUE;
 }
 
 /****************************************************************************/
@@ -334,11 +340,13 @@ static int ftp_lputs(char *str)
 static void ftp_started(void)
 {
 	ftp_running=TRUE;
+	ftp_stopped=FALSE;
 }
 
 static void ftp_terminated(int code)
 {
 	ftp_running=FALSE;
+	ftp_stopped=TRUE;
 }
 
 /****************************************************************************/
@@ -370,11 +378,13 @@ static int mail_lputs(char *str)
 static void mail_started(void)
 {
 	mail_running=TRUE;
+	mail_stopped=FALSE;
 }
 
 static void mail_terminated(int code)
 {
 	mail_running=FALSE;
+	mail_stopped=TRUE;
 }
 
 /****************************************************************************/
@@ -406,11 +416,13 @@ static int services_lputs(char *str)
 static void services_started(void)
 {
 	services_running=TRUE;
+	services_stopped=FALSE;
 }
 
 static void services_terminated(int code)
 {
 	services_running=FALSE;
+	services_stopped=TRUE;
 }
 
 /****************************************************************************/
@@ -444,14 +456,14 @@ static int event_lputs(char *str)
 #ifdef __unix__
 void _sighandler_quit(int sig)
 {
-        // Close threads
-        bbs_terminate();
-        ftp_terminate();
-        mail_terminate();
-        while(bbs_running || ftp_running || mail_running)
-        mswait(1);
+    // Close threads
+    bbs_terminate();
+    ftp_terminate();
+    mail_terminate();
+    while(bbs_running || ftp_running || mail_running || services_running)
+		mswait(1);
 
-        exit(0);
+    exit(0);
 }
 #endif
 
@@ -826,8 +838,12 @@ int main(int argc, char** argv)
 	
 	else 
 	{
-		while((!bbs_running) || (run_ftp && !ftp_running) 
-			|| (run_mail && !mail_running) || (run_services && !services_running))
+		bbs_lputs("Waiting for child threads to bind ports...");
+		while(!bbs_stopped && !ftp_stopped && !mail_stopped && !services_stopped
+			&& ((!bbs_running) 
+				|| (run_ftp && !ftp_running) 
+				|| (run_mail && !mail_running) 
+				|| (run_services && !services_running)))
 			mswait(1);
 
 		if(!do_setuid())
