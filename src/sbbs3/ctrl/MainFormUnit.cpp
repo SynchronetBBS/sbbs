@@ -1068,7 +1068,7 @@ void __fastcall TMainForm::ReadColor(TRegistry* Registry
     ,AnsiString name, TColor* color)
 {
     if(Registry->ValueExists(name + "Color"))
-        *color=StringToColor(Registry->ReadString(name + "Color")));
+        *color=StringToColor(Registry->ReadString(name + "Color"));
 }
 void __fastcall TMainForm::WriteColor(TRegistry* Registry
     ,AnsiString name, TColor color)
@@ -1200,19 +1200,19 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     if(Registry->ValueExists("FtpFormPage"))
     	FtpFormPage=Registry->ReadInteger("FtpFormPage");
 
-    ReadColor(Registry,"TelnetLog",&TelnetForm->Log->Color);
+    ReadColor(Registry,"TelnetLog",&(TelnetForm->Log->Color));
     ReadFont("TelnetLog",TelnetForm->Log->Font);
-    ReadColor(Registry,"EventsLog",&EventsForm->Log->Color);
+    ReadColor(Registry,"EventsLog",&(EventsForm->Log->Color));
     ReadFont("EventsLog",EventsForm->Log->Font);
-    ReadColor(Registry,"ServicesLog",&ServicesForm->Log->Color);
+    ReadColor(Registry,"ServicesLog",&(ServicesForm->Log->Color));
     ReadFont("ServicesLog",ServicesForm->Log->Font);
-    ReadColor(Registry,"MailLog",&MailForm->Log->Color);
+    ReadColor(Registry,"MailLog",&(MailForm->Log->Color));
     ReadFont("MailLog",MailForm->Log->Font);
-    ReadColor(Registry,"FtpLog",&FtpForm->Log->Color);
+    ReadColor(Registry,"FtpLog",&(FtpForm->Log->Color));
     ReadFont("FtpLog",FtpForm->Log->Font);
-    ReadColor(Registry,"NodeList",&NodeForm->ListBox->Color);
+    ReadColor(Registry,"NodeList",&(NodeForm->ListBox->Color));
     ReadFont("NodeList",NodeForm->ListBox->Font);
-    ReadColor(Registry,"ClientList",&ClientForm->ListView->Color);
+    ReadColor(Registry,"ClientList",&(ClientForm->ListView->Color));
     ReadFont("ClientList",ClientForm->ListView->Font);
 
 	if(Registry->ValueExists("TelnetFormTop"))
