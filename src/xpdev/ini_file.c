@@ -881,14 +881,20 @@ char* iniFileName(char* dest, size_t maxlen, const char* indir, const char* infn
 
 		if(gethostname(hostname,sizeof(hostname))==0) {
 			safe_snprintf(dest,maxlen,"%s%s.%s%s",dir,fname,hostname,ext);
-			if(fexistcase(dest))
+			if(fexistcase(dest))		/* path/file.host.domain.ini */
 				return(dest);
+			if((p=strchr(hostname,'.'))!=NULL) {
+				*p=0;
+				safe_snprintf(dest,maxlen,"%s%s.%s%s",dir,fname,hostname,ext);
+				if(fexistcase(dest))	/* path/file.host.ini */
+					return(dest);
+			}
 		}
 	}
 #endif
 	
 	safe_snprintf(dest,maxlen,"%s%s%s",dir,fname,ext);
-	fexistcase(dest);
+	fexistcase(dest);	/* path/file.ini */
 	return(dest);
 }
 
