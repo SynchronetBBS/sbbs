@@ -615,14 +615,13 @@ BOOL DLLCALL write_msgs_cfg(scfg_t* cfg, int backup_level)
 			return(FALSE); 
 		}
 		if(!filelength(fileno(smb.shd_fp))) {
-			smb.status.max_crcs=cfg->mail_maxcrcs;
 			smb.status.max_msgs=MAX_SYSMAIL;
+			smb.status.max_crcs=cfg->mail_maxcrcs;
 			smb.status.max_age=cfg->mail_maxage;
 			smb.status.attr=SMB_EMAIL;
-			if(smb_create(&smb)!=0)
-				/* errormsg(WHERE,ERR_CREATE,smb.file,x) */;
+			i=smb_create(&smb);
 			smb_close(&smb);
-			return(FALSE); 
+			return(i==0);
 		}
 		if(smb_locksmbhdr(&smb)!=0) {
 			smb_close(&smb);
