@@ -283,7 +283,7 @@ void sbbs_t::errormsg(int line, char *source, char action, char *object
 			actstr="UNKNOWN"; 
 			break;
 	}
-	sprintf(str,"Node %d !ERROR %d in %s line %d %s \"%s\" access=%d"
+	sprintf(str,"Node %d !ERROR %d in %s line %d %s \"%s\" access=%ld"
 		,cfg.node_num, errno, src, line, actstr, object, access);
 	if(online==ON_LOCAL)
 		eprintf("%s",str);

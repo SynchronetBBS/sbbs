@@ -823,7 +823,7 @@ char* sbbs_t::atcode(char* sp, char* str)
 		else if(!strcmp(sp,"FTODAY")) 
 			sprintf(str,"%lu",stats.ftoday);
 		else if(!strcmp(sp,"NUSERS")) 
-			sprintf(str,"%lu",stats.nusers);
+			sprintf(str,"%u",stats.nusers);
 		return(str);
 	}
 

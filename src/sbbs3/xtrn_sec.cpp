@@ -334,7 +334,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 	#ifndef __FLAT__
 			,sys_status&SS_DCDHIGH ? &fakeriobp : &riobp-1	/* Modem status register */
 	#else
-			,0
+			,0L
 	#endif
 			);
 		write(file,str,strlen(str));
@@ -1081,7 +1081,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,cfg.node_num						/* Node number */
 			,15 								/* Downloads allowed per day */
 			,0									/* Downloads already this day */
-			,100000 							/* Download bytes allowed/day */
+			,100000L 							/* Download bytes allowed/day */
 			,0									/* Downloaded bytes already today */
 			,useron.ulb/1024L					/* Kbytes uploaded */
 			,useron.dlb/1024L					/* Kbytes downloaded */
@@ -1176,7 +1176,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			return; 
 		}
 
-		sprintf(str,"%d\n%d\n38400\n%s%c\n%d\n%s\n%s\n%d\n%d\n"
+		sprintf(str,"%d\n%d\n38400\n%s%c\n%d\n%s\n%s\n%d\n%ld\n"
 			"%d\n%d\n"
 			,misc&IO_INTS ? 0 /* Local */ : 2 /* Telnet */
 #if defined(__unix__)

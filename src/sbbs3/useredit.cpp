@@ -766,7 +766,7 @@ void sbbs_t::maindflts(user_t* user)
 		if(user->rows)
 			ultoa(user->rows,tmp,10);
 		else
-			sprintf(tmp,"Auto Detect (%d)",rows);
+			sprintf(tmp,"Auto Detect (%ld)",rows);
 		bprintf(text[UserDefaultsRows],tmp);
 		if(cfg.total_shells>1)
 			bprintf(text[UserDefaultsCommandSet]

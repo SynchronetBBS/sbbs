@@ -221,7 +221,7 @@ int SMBCALL smb_open_da(smb_t* smb)
 			start=time(NULL);
 		else
 			if(time(NULL)-start>=(time_t)smb->retry_time) {
-				sprintf(smb->last_error,"timeout opening %s (retry_time=%d)"
+				sprintf(smb->last_error,"timeout opening %s (retry_time=%ld)"
 					,str,smb->retry_time);
 				return(-2); 
 			}
@@ -266,7 +266,7 @@ int SMBCALL smb_open_ha(smb_t* smb)
 			start=time(NULL);
 		else
 			if(time(NULL)-start>=(time_t)smb->retry_time) {
-				sprintf(smb->last_error,"timeout opening %s (retry_time=%d)"
+				sprintf(smb->last_error,"timeout opening %s (retry_time=%ld)"
 					,str,smb->retry_time);
 				return(-2); 
 			}
@@ -360,7 +360,7 @@ int SMBCALL smb_trunchdr(smb_t* smb)
 			start=time(NULL);
 		else
 			if(time(NULL)-start>=(time_t)smb->retry_time) {	 /* Time-out */
-				sprintf(smb->last_error,"timeout changing header file size (retry_time=%d)"
+				sprintf(smb->last_error,"timeout changing header file size (retry_time=%ld)"
 					,smb->retry_time);
 				return(-2); 
 			}
@@ -923,7 +923,7 @@ int SMBCALL smb_addcrc(smb_t* smb, ulong crc)
 			start=time(NULL);
 		else
 			if(time(NULL)-start>=(time_t)smb->retry_time) {
-				sprintf(smb->last_error,"timeout opening %s (retry_time=%d)"
+				sprintf(smb->last_error,"timeout opening %s (retry_time=%ld)"
 					,str,smb->retry_time);
 				return(-2); 
 			}
