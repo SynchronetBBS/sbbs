@@ -115,10 +115,12 @@ static int getstr(char* str, int maxlen)
 	istty=isatty(fileno(stdin));
     while(1) {
 		fread(&ch,1,1,stdin);
+#ifdef __unix__
 		if(!istty)  {
 			printf("%c",ch);
 			fflush(stdout);
 		}
+#endif
         if(ch=='\r' || ch=='\n')	/* enter */
         	break;
         if(ch=='\b') {				/* backspace */
