@@ -108,7 +108,7 @@ ifeq ($(os),sunos)    # Solaris
 endif
 
 ifeq ($(os),netbsd)
- CFLAGS := -D_REENTRANT -D__unix__ -I/usr/pkg/include -DNEEDS_FORKPTY
+ CFLAGS += -D_REENTRANT -D__unix__ -I/usr/pkg/include -DNEEDS_FORKPTY
  LFLAGS := -lm -lpthread -L/usr/pkg/lib -L/usr/pkg/pthreads/lib
 endif
 
@@ -516,35 +516,35 @@ SRVCCON_OBJS	= $(LIBODIR)/sbbssrvc.o $(LIBODIR)/conwrap.o \
 BBSCON_OBJS	= $(LIBODIR)/sbbs_bbs.o $(LIBODIR)/conwrap.o \
 		  $(LIBODIR)/sbbs_ini.o
 
-$(LIBODIR)/sbbsweb.o : 
+$(LIBODIR)/sbbsweb.o : sbbscon.c
    ifndef bcc
 	@echo $(COMPILE_MSG) $<
    endif
-	@$(CC) $(CFLAGS) -o $@ -c sbbscon.c -DNO_TELNET_SERVER -DNO_FTP_SERVER -DNO_MAIL_SERVER -DNO_SERVICES
+	@$(CC) $(CFLAGS) -o $@ -c $^ -DNO_TELNET_SERVER -DNO_FTP_SERVER -DNO_MAIL_SERVER -DNO_SERVICES
 
-$(LIBODIR)/sbbsftp.o : 
+$(LIBODIR)/sbbsftp.o : sbbscon.c
    ifndef bcc
 	@echo $(COMPILE_MSG) $<
    endif
-	@$(CC) $(CFLAGS) -o $@ -c sbbscon.c -DNO_TELNET_SERVER -DNO_MAIL_SERVER -DNO_SERVICES -DNO_WEB_SERVER
+	@$(CC) $(CFLAGS) -o $@ -c $^ -DNO_TELNET_SERVER -DNO_MAIL_SERVER -DNO_SERVICES -DNO_WEB_SERVER
 
-$(LIBODIR)/sbbsmail.o : 
+$(LIBODIR)/sbbsmail.o : sbbscon.c
    ifndef bcc
 	@echo $(COMPILE_MSG) $<
    endif
-	@$(CC) $(CFLAGS) -o $@ -c sbbscon.c -DNO_TELNET_SERVER -DNO_FTP_SERVER -DNO_SERVICES -DNO_WEB_SERVER
+	@$(CC) $(CFLAGS) -o $@ -c $^ -DNO_TELNET_SERVER -DNO_FTP_SERVER -DNO_SERVICES -DNO_WEB_SERVER
 
-$(LIBODIR)/sbbssrvc.o : 
+$(LIBODIR)/sbbssrvc.o : sbbscon.c
    ifndef bcc
 	@echo $(COMPILE_MSG) $<
    endif
-	@$(CC) $(CFLAGS) -o $@ -c sbbscon.c -DNO_TELNET_SERVER -DNO_FTP_SERVER -DNO_MAIL_SERVER -DNO_WEB_SERVER
+	@$(CC) $(CFLAGS) -o $@ -c $^ -DNO_TELNET_SERVER -DNO_FTP_SERVER -DNO_MAIL_SERVER -DNO_WEB_SERVER
 
-$(LIBODIR)/sbbs_bbs.o : 
+$(LIBODIR)/sbbs_bbs.o : sbbscon.c
    ifndef bcc
 	@echo $(COMPILE_MSG) $<
    endif
-	@$(CC) $(CFLAGS) -o $@ -c sbbscon.c -DNO_FTP_SERVER -DNO_MAIL_SERVER -DNO_SERVICES -DNO_WEB_SERVER
+	@$(CC) $(CFLAGS) -o $@ -c $^ -DNO_FTP_SERVER -DNO_MAIL_SERVER -DNO_SERVICES -DNO_WEB_SERVER
 
 $(SBBSWEB): $(WEBCON_OBJS) $(SBBSLIB) $(WEBSRVR)
 	@echo Linking $@
