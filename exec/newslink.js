@@ -485,9 +485,16 @@ for(i in area) {
 						// Parse uuencode header
 						arg=line.split(' ');
 						arg.splice(0,2);	// strip "begin 666 "
-						fname=getfilename(arg.join(" "));
-						if(file_exists(attachment_dir + fname)) // generate unique name, if necessary
-							fname=ptr + "_" + fname;
+						fname=file_getname(arg.join(" "));
+						if(file_exists(attachment_dir + fname)) { // generate unique name, if necessary
+							ext=fname.lastIndexOf('.');
+							if(ext<0)
+								ext="";
+							else
+								ext=fname.slice(ext);
+							// Convert filename.ext to filename.<article>.ext
+							fname=format("%.*s.%lu%s",fname.length-ext.length,fname,ptr,ext);
+						}
 						fname=attachment_dir + fname;
 
 						file=new File(fname);
