@@ -2717,7 +2717,7 @@ void DLLCALL web_server(void* arg)
 		if(startup->started!=NULL)
     		startup->started(startup->cbdata);
 
-		while(server_socket!=INVALID_SOCKET) {
+		while(server_socket!=INVALID_SOCKET && !terminate_server) {
 
 			/* check for re-cycle semaphores */
 			if(!(startup->options&BBS_OPT_NO_RECYCLE)) {
