@@ -444,9 +444,10 @@ function parse_oline_flags(flags) {
 			case "N":
 				oline_flags |= OLINE_CAN_GGNOTICE;
 				break;
+			case "u":
+				oline_flags |= OLINE_CAN_UMODEC;
 			case "A":
 			case "a":
-			case "u":
 			case "f":
 			case "F":
 				break; // All reserved for future use.
@@ -476,6 +477,7 @@ function parse_oline_flags(flags) {
 				oline_flags |= OLINE_CAN_KLINE;
 				oline_flags |= OLINE_CAN_UNKLINE;
 				oline_flags |= OLINE_CAN_LGNOTICE;
+				oline_flags |= OLINE_CAN_UMODEC;
 				break;
 			default:
 				log("!WARNING Unknown O:Line flag '" + flags[thisflag] + "' in config.");
@@ -489,7 +491,7 @@ function umode_notice(bit,ntype,nmessage) {
 	log(ntype + ": " + nmessage);
 	for (thisuser in Clients) {
 		var user = Clients[thisuser];
-		if ((user.mode&bit) && !user.parent && user.local)
+		if (((user.mode&bit)==bit) && !user.parent && user.local)
 			user.rawout(":" + servername + " NOTICE " + user.nick + " :*** " + ntype + " -- " + nmessage);
 	}
 
@@ -1235,6 +1237,7 @@ function IRCClient(socket,new_id,local_client,do_newconn) {
 	this.do_complex_list=IRCClient_do_complex_list;
 	this.do_list_usage=IRCClient_do_list_usage;
 	this.global=IRCClient_global;
+	this.globops=IRCClient_globops;
 	this.services_msg=IRCClient_services_msg;
 	this.part_all=IRCClient_part_all;
 	this.server_commands=IRCClient_server_commands;
@@ -2050,6 +2053,18 @@ function IRCClient_global(target,type_str,send_str) {
 	return 1;
 }
 
+function IRCClient_globops(str) {
+	var globops_bits = 0;
+	globops_bits |= USERMODE_OPER;
+	globops_bits |= USERMODE_GLOBOPS;
+	umode_notice(globops_bits,"Global","from " + this.nick +": " + str);
+	if (this.parent)
+		Clients[this.parent].bcast_to_servers_raw(":" + this.nick +
+			" GLOBOPS :" + str);
+	else
+		server_bcast_to_servers(":" + this.nick + " GLOBOPS :" + str);
+}
+
 function IRCClient_do_msg(target,type_str,send_str) {
 	if ((target[0] == "$") && (this.mode&USERMODE_OPER))
 		return this.global(target,type_str,send_str);
@@ -2258,7 +2273,7 @@ function IRCClient_do_stats(statschar) {
 			var uphours=Math.floor(this_uptime/(60*60));
 			var upmins=(Math.floor(this_uptime/60))%60;
 			var upsec=this_uptime%60;
-			var str = format("Server Up %u days %u:%02u:%02u",
+			var str = format("Server Up %u days, %u:%02u:%02u",
 				updays,uphours,upmins,upsec);
 			this.numeric(242,":" + str);
 			break;
@@ -2426,6 +2441,10 @@ function IRCClient_do_connect(con_server,con_port) {
 function IRCClient_do_basic_who(whomask) {
 	var eow = "*";
 
+	var regexp = "^[0]{1,}$";
+	if (whomask.match(regexp))
+		whomask = "*";
+
 	if ((whomask[0] == "#") || (whomask[0] == "&")) {
 		var chan = whomask.toUpperCase();
 		if (Channels[chan] != undefined) {
@@ -2577,6 +2596,10 @@ function IRCClient_do_complex_who(cmd) {
 	arg++;
 	if (cmd[arg])
 		whomask = cmd[arg];
+
+	var regexp = "^[0]{1,}$";
+	if (whomask.match(regexp))
+		whomask = "*";
 
 	// allow +c/-c to override.
 	if (!who.Channel && ((whomask[0] == "#") || (whomask[0] == "&")))
@@ -3635,11 +3658,11 @@ function IRCClient_setusermode(modestr) {
 			case "w":
 			case "s":
 			case "k":
+			case "g":
 				umode.tweak_mode(USERMODE_CHAR
 					[modestr[modechar]],add);
 				break;
 			case "b":
-			case "g":
 			case "r":
 			case "f":
 			case "y":
@@ -4084,7 +4107,7 @@ function IRCClient_registered_commands(command, cmdline) {
 				this.numeric461("INVITE");
 				break;
 			}
-			chanid = searchbychannel(cmd[2]);
+			var chanid = searchbychannel(cmd[2]);
 			if (!chanid) {
 				this.numeric403(cmd[2]);
 				break;
@@ -4093,7 +4116,7 @@ function IRCClient_registered_commands(command, cmdline) {
 				this.numeric482(chanid.nam);
 				break;
 			}
-			nickid = searchbynick(cmd[1]);
+			var nickid = searchbynick(cmd[1]);
 			if (!nickid) {
 				this.numeric401(cmd[1]);
 				break;
@@ -4111,7 +4134,8 @@ function IRCClient_registered_commands(command, cmdline) {
 				break; // drop silently
 			if (cmd[1][0] == ":")
 				cmd[1] = cmd[1].slice(1);
-			isonstr = ":";
+			var isonstr = ":";
+			var ison_nick_id;
 			for(ison in cmd) {
 				if (ison) {
 					ison_nick_id = searchbynick(cmd[ison]);
@@ -4137,7 +4161,7 @@ function IRCClient_registered_commands(command, cmdline) {
 				the_keys = cmd[2].split(",");
 			var key_counter = 0;
 			for(jchan in the_channels) {
-				regexp = "^[0]{1,}$" // 0 is a special case.
+				var regexp = "^[0]{1,}$"; //0 is a special case.
 				if(the_channels[jchan].match(regexp)) {
 					this.part_all();
 				} else {
@@ -4853,10 +4877,7 @@ function IRCClient_registered_commands(command, cmdline) {
 				this.numeric461("GLOBOPS");
 				break;
 			}
-			umode_notice(USERMODE_GLOBOPS,"Global","from " +
-				this.nick + ": " + ircstring(cmdline));
-			server_bcast_to_servers(":" + this.nick + " GLOBOPS :"+
-				ircstring(cmdline));
+			this.globops(ircstring(cmdline));
 			break;
 		case "WALLOPS":
 			if (!((this.mode&USERMODE_OPER) &&
@@ -5051,10 +5072,7 @@ function IRCClient_server_commands(origin, command, cmdline) {
 		case "GLOBOPS":
 			if (!cmd[1])
 				break;
-			umode_notice(USERMODE_GLOBOPS,"Global","from " +
-				ThisOrigin.nick + ": " + ircstring(cmdline));
-			this.bcast_to_servers_raw(":" + ThisOrigin.nick + " " +
-				"GLOBOPS :" + ircstring(cmdline));
+			ThisOrigin.globops(ircstring(cmdline));
 			break;
 		case "CHATOPS":
 			if (!cmd[1])
@@ -5129,17 +5147,19 @@ function IRCClient_server_commands(origin, command, cmdline) {
 		case "INVITE":
 			if (!cmd[2])
 				break;
+			if (cmd[2][0] == ":")
+				cmd[2] = cmd[2].slice(1);
 			var chanid = searchbychannel(cmd[2]);
 			if (!chanid)
 				break;
-			if (!chanid.ismode(this.id,CHANLIST_OP))
+			if (!chanid.ismode(ThisOrigin.id,CHANLIST_OP))
 				break;
 			var nickid = searchbynick(cmd[1]);
 			if (!nickid)
 				break;
 			if (nickid.onchannel(chanid.nam.toUpperCase()))
 				break;
-			nickid.originatorout("INVITE " + nickid.nick + " :" + chanid.nam,this);
+			nickid.originatorout("INVITE " + nickid.nick + " :" + chanid.nam,ThisOrigin);
 			nickid.invited=chanid.nam.toUpperCase();
 			break;
 		case "KICK":
