@@ -1217,7 +1217,9 @@ int SMBCALL smb_addcrc(smb_t* smb, ulong crc)
 {
 	char	str[128];
 	int 	file;
+	int		wr;
 	long	length;
+	long	newlen;
 	ulong	l,*buf;
 	time_t	start=0;
 
@@ -1250,48 +1252,52 @@ int SMBCALL smb_addcrc(smb_t* smb, ulong crc)
 		sprintf(smb->last_error,"invalid file length: %ld", length);
 		return(SMB_ERR_FILE_LEN); 
 	}
+
 	if((buf=(ulong*)MALLOC(length))==NULL) {
 		close(file);
 		sprintf(smb->last_error
 			,"malloc failure of %ld bytes"
-			,smb->status.max_crcs*4);
+			,length);
 		return(SMB_ERR_MEM); 
 	}
-	if((ulong)length>=smb->status.max_crcs*4L) { /* Reached or exceeds max crcs */
-		read(file,buf,smb->status.max_crcs*4);
-		for(l=0;l<smb->status.max_crcs;l++)
-			if(crc==buf[l])
-				break;
-		if(l<smb->status.max_crcs) {				/* Dupe CRC found */
-			close(file);
-			FREE(buf);
-			sprintf(smb->last_error
-				,"duplicate message detected");
-			return(SMB_DUPE_MSG);
-		}
-		chsize(file,0L);				/* truncate it */
+
+	if(read(file,buf,length)!=length) {
+		close(file);
+		FREE(buf);
+		sprintf(smb->last_error
+			,"%d (%s) reading %u bytes"
+			,errno,STRERROR(errno),length);
+		return(SMB_ERR_READ);
+	}
+
+	for(l=0;l<length/sizeof(long);l++)
+		if(crc==buf[l])
+			break;
+	if(l<length/sizeof(long)) {					/* Dupe CRC found */
+		close(file);
+		FREE(buf);
+		sprintf(smb->last_error
+			,"duplicate message detected");
+		return(SMB_DUPE_MSG);
+	} 
+
+	if(length>=(long)(smb->status.max_crcs*sizeof(long))) {
+		newlen=(smb->status.max_crcs-1)*sizeof(long);
+		chsize(file,0);	/* truncate it */
 		lseek(file,0L,SEEK_SET);
-		write(file,buf+4,(smb->status.max_crcs-1)*4); 
+		write(file,buf+(length-newlen),newlen); 
 	}
-
-	else if(length/4) { 					/* Less than max crcs */
-		read(file,buf,length);
-		for(l=0;l<(ulong)(length/4);l++)
-			if(crc==buf[l])
-				break;
-		if(l<(ulong)(length/4L)) {					/* Dupe CRC found */
-			close(file);
-			FREE(buf);
-			sprintf(smb->last_error
-				,"duplicate message detected");
-			return(SMB_DUPE_MSG);
-		} 
-	}
-
-	lseek(file,0L,SEEK_END);
-	write(file,&crc,sizeof(crc)); 			   /* Write to the end */
+	wr=write(file,&crc,sizeof(crc));	/* Write to the end */
 	FREE(buf);
 	close(file);
+
+	if(wr!=sizeof(crc)) {	
+		sprintf(smb->last_error
+			,"%d (%s) writing %u bytes"
+			,errno,STRERROR(errno),sizeof(crc));
+		return(SMB_ERR_WRITE);
+	}
+
 	return(SMB_SUCCESS);
 }
 
@@ -1588,7 +1594,7 @@ long SMBCALL smb_allocdat(smb_t* smb, ulong length, ushort headers)
 	j=0;	/* j is consecutive unused block counter */
 	fflush(smb->sda_fp);
 	rewind(smb->sda_fp);
-	while(!feof(smb->sda_fp)) {
+	while(!feof(smb->sda_fp) && offset>=0) {
 		if(!fread(&i,2,1,smb->sda_fp))
 			break;
 		offset+=SDT_BLOCK_LEN;
@@ -1598,6 +1604,10 @@ long SMBCALL smb_allocdat(smb_t* smb, ulong length, ushort headers)
 			offset-=(blocks*SDT_BLOCK_LEN);
 			break; 
 		} 
+	}
+	if((long)offset<0) {
+		sprintf(smb->last_error,"invalid data offset: %lu",offset);
+		return(SMB_ERR_DAT_OFFSET);
 	}
 	clearerr(smb->sda_fp);
 	if(fseek(smb->sda_fp,(offset/SDT_BLOCK_LEN)*2L,SEEK_SET)) {
@@ -1632,6 +1642,10 @@ long SMBCALL smb_fallocdat(smb_t* smb, ulong length, ushort headers)
 		return(SMB_ERR_SEEK);
 	}
 	offset=(ftell(smb->sda_fp)/2L)*SDT_BLOCK_LEN;
+	if((long)offset<0) {
+		sprintf(smb->last_error,"invalid data offset: %lu",offset);
+		return(SMB_ERR_DAT_OFFSET);
+	}
 	for(l=0;l<blocks;l++)
 		if(!fwrite(&headers,2,1,smb->sda_fp))
 			break;
@@ -1938,11 +1952,20 @@ long SMBCALL smb_hallocdat(smb_t* smb)
 		return(SMB_ERR_NOT_OPEN);
 	}
 	fflush(smb->sdt_fp);
+	l=filelength(fileno(smb->sdt_fp));
+	if(l<0) {
+		sprintf(smb->last_error,"invalid file length: %lu",(ulong)l);
+		return(SMB_ERR_FILE_LEN);
+	}
 	if(fseek(smb->sdt_fp,0L,SEEK_END))
 		return(SMB_ERR_SEEK);
 	l=ftell(smb->sdt_fp);
-	if(l<=0)
-		return(l);
+	if(l<0) {
+		sprintf(smb->last_error,"invalid file offset: %ld",l);
+		return(SMB_ERR_DAT_OFFSET);
+	}
+	if(l==0)
+		return(0);
 	while(l%SDT_BLOCK_LEN)					/* Make sure even block boundry */
 		l++;
 	return(l);
