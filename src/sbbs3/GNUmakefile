@@ -104,6 +104,8 @@ ifdef DEBUG
   CFLAGS	+=	-ggdb
  endif
  CFLAGS  +=	-D_DEBUG
+else
+ CFLAGS	+= -O3
 endif
 
 ifdef JSLIB
