@@ -361,7 +361,7 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 			break;
 
 		case VDD_YIELD:
-			Sleep(1);
+			Sleep(0);
 			yields++;
 			break;
 
