@@ -1296,9 +1296,8 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 
 		if(mode&EX_BG)	/* background execution, detach child */
 		{
-			if(FORK())
-				return(0);
-			lprintf("Detaching external process pgid=%d",setsid());
+			lprintf("Detaching external process");
+			daemon(TRUE,FALSE);
    	    }
 	
 		execvp(argv[0],argv);
