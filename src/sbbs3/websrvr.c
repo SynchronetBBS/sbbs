@@ -1632,6 +1632,7 @@ static BOOL exec_cgi(http_session_t *session)
 	time_t	start;
 	char	cgipath[MAX_PATH+1];
 	char	*p;
+	char	ch;
 #endif
 
 	SAFECOPY(cmdline,session->req.physical_path);
@@ -1744,22 +1745,23 @@ static BOOL exec_cgi(http_session_t *session)
 
 		if(!done_reading && (select(high_fd+1,&read_set,&write_set,NULL,&tv)>0))  {
 			if(FD_ISSET(session->socket,&read_set))  {
-				done_reading=TRUE;
+				if(recv(session->socket,&ch,1,MSG_PEEK) < 1) /* Is there no data waiting? */
+				{
+					done_reading=TRUE;
+				}
 			}
 			if(FD_ISSET(in_pipe[1],&write_set))  {
 				if(post_offset < session->req.post_len)  {
-					i=post_offset;
-					post_offset+=write(in_pipe[1],
+					i=write(in_pipe[1],
 						session->req.post_data+post_offset,
 						session->req.post_len-post_offset);
-					if(post_offset>=session->req.post_len)
-						close(in_pipe[1]);
-					if(i!=post_offset)  {
-						start=time(NULL);
-					}
-					if(i<0)  {
+					post_offset += i;
+					if(i<0)
 						done_reading=TRUE;
-					}
+					else if(post_offset>=session->req.post_len)
+						close(in_pipe[1]);
+					else if(i!=post_offset)
+						start=time(NULL);
 				}
 			}
 			if(FD_ISSET(out_pipe[0],&read_set))  {
@@ -1769,9 +1771,8 @@ static BOOL exec_cgi(http_session_t *session)
 						start=time(NULL);
 						write(session->socket,buf,i);
 					}
-					if(i<=0)  {
+					else
 						done_reading=TRUE;
-					}
 				}
 				else  {
 					/* This is the tricky part */
@@ -1780,9 +1781,8 @@ static BOOL exec_cgi(http_session_t *session)
 						done_reading=TRUE;
 						got_valid_headers=FALSE;
 					}
-					if(i>0)  {
+					else if(i>0)
 						start=time(NULL);
-					}
 
 					if(!done_parsing_headers && *buf)  {
 						SAFECOPY(header,buf);
@@ -1831,12 +1831,10 @@ static BOOL exec_cgi(http_session_t *session)
 			if(FD_ISSET(err_pipe[0],&read_set))  {
 				i=read(err_pipe[0],buf,MAX_REQUEST_LINE);
 				buf[i]=0;
-				if(i>0)  {
+				if(i>0)
 					start=time(NULL);
-				}
-				if(i<0)  {
+				if(i<0)
 					done_reading=TRUE;
-				}
 			}
 		}
 		else  {
