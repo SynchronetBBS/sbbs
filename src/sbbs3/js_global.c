@@ -169,10 +169,10 @@ js_format(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 static JSBool
 js_mswait(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	int val=1;
+	int32 val=1;
 
 	if(argc)
-		val=JSVAL_TO_INT(argv[0]);
+		JS_ValueToInt32(cx,argv[0],&val);
 	mswait(val);
 
 	*rval = JSVAL_VOID;
@@ -182,7 +182,12 @@ js_mswait(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 static JSBool
 js_random(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	*rval = INT_TO_JSVAL(sbbs_random(JSVAL_TO_INT(argv[0])));
+	int32 val=100;
+
+	if(argc)
+		JS_ValueToInt32(cx,argv[0],&val);
+
+	*rval = INT_TO_JSVAL(sbbs_random(val));
 	return(JS_TRUE);
 }
 
@@ -197,13 +202,13 @@ js_time(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 static JSBool
 js_beep(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	int freq=500;
-	int	dur=500;
+	int32 freq=500;
+	int32	dur=500;
 
 	if(argc)
-		freq=JSVAL_TO_INT(argv[0]);
+		JS_ValueToInt32(cx,argv[0],&freq);
 	if(argc>1)
-		dur=JSVAL_TO_INT(argv[1]);
+		JS_ValueToInt32(cx,argv[1],&dur);
 
 	sbbs_beep(freq,dur);
 	*rval = JSVAL_VOID;
@@ -679,11 +684,11 @@ js_strftime(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char		str[128];
 	char*		fmt;
-	time_t		t;
+	time_t		t=time(NULL);
 	struct tm*	tm_p;
 
 	fmt=JS_GetStringBytes(JS_ValueToString(cx, argv[0]));
-	t=JSVAL_TO_INT(argv[1]);
+	JS_ValueToInt32(cx,argv[1],&t);
 
 	strcpy(str,"-Invalid time-");
 	tm_p=localtime(&t);
