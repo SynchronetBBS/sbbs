@@ -176,16 +176,7 @@ static struct termios original;				// old termios settings
 static struct timeval timeout = {0, 0};		// passed in select() call
 static fd_set inp;							// ditto
 static int beensetup = 0;					// has _termios_setup() been called?
-											
-/*
-	I'm using a variable function here simply for the sake of speed.  The
-    termios functions must be called before a kbhit() can be successful, so
-    on the first call, we just set up the terminal, point to variable function
-    to kbhit_norm(), and then call the new function.  Otherwise, testing would
-	be required on every call to determine if termios has already been setup.
-
-    Maybe I'm being way too anal, though.
-*/
+								
 
 /* Resets the termios to its previous state */
 void _termios_reset(void)
