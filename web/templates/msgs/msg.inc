@@ -22,6 +22,7 @@
         </object>
     </td>
 </tr>
+<tr class="msg"><td colspan="2">@@prevlink@@</td><td colspan="2" align="right">@@nextlink@@</td></tr>
 </table>
 @@JS:if(template.attachments==undefined) '<!--'; else '';@@
 <b>Attachments:</b><br />
