@@ -120,7 +120,7 @@ int lprintf(int level, char *fmt, ...)
 {
 	va_list argptr;
 	char sbuf[1024];
-	int ret;
+	int ret=0;
 
 	if(!(log_mask&(1<<level)))
 		return(0);
