@@ -1,4 +1,5 @@
 load("html_inc/msgslib.ssjs");
+load("html_inc/mime_decode.ssjs");
 
 if(msgbase.open!=undefined && msgbase.open()==false) {
 	error(msgbase.last_error);
@@ -18,11 +19,18 @@ else {
 template.hdr=msgbase.get_msg_header(false,m);
 template.body=msgbase.get_msg_body(false,m,true,true);
 
-if(template.body.indexOf('\x1b[')>=0 || template.body.indexOf('\x01')>=0)
-	template.body=html_encode(template.body,true,false,true,true);
-else  {
-	template.body=word_wrap(template.body,79);
-	template.body=html_encode(template.body,true,false,false,false);
+msg=mime_decode(template.hdr,template.body);
+template.body=msg.body;
+if(msg.type=="plain") {
+	/* ANSI */
+	if(template.body.indexOf('\x1b[')>=0 || template.body.indexOf('\x01')>=0) {
+		template.body=html_encode(template.body,true,false,true,true);
+	}
+	/* Plain text */
+	else {
+		template.body=word_wrap(template.body,79);
+		template.body=html_encode(template.body,true,false,false,false);
+	}
 }
 
 if(template.hdr != null)  {
