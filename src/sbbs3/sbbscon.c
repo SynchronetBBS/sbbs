@@ -124,8 +124,7 @@ gid_t				old_gid;
 BOOL				is_daemon=FALSE;
 char				daemon_type[2];
 BOOL				std_facilities=FALSE;
-FILE*				pidfile;
-
+FILE *				pidf;
 #endif
 
 static const char* prompt;
@@ -870,9 +869,9 @@ static void handle_sigs(void)  {
 		/* Write the standard .pid file if running as a daemon */
 		/* Must be here so signals are sent to the correct thread */
 
-		if(pidfile!=NULL) {
-			fprintf(pidfile,"%d",getpid());
-			fclose(pidfile);
+		if(pidf!=NULL) {
+			fprintf(pidf,"%d",getpid());
+			fclose(pidf);
 		}
 	}
 
@@ -1473,7 +1472,7 @@ int main(int argc, char** argv)
 		}
 
 		/* Open here to use startup permissions to create the file */
-		pidfile=fopen(SBBS_PID_FILE,"w");
+		pidf=fopen(SBBS_PID_FILE,"w");
 	}
 	old_uid = getuid();
 	if((pw_entry=getpwnam(new_uid_name))!=0)
