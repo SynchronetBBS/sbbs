@@ -433,6 +433,7 @@ int main(int argc, char **argv)
 int exec(char* cmd)
 {
 	printf("%s\n",cmd);
+	fflush(stdout);
 	return(system(cmd));
 }
 
