@@ -72,7 +72,6 @@ function IRC_Server() {
 	this.synchronize=IRCClient_synchronize;
 	this.reintroduce_nick=IRCClient_reintroduce_nick;
 	this.finalize_server_connect=IRCClient_finalize_server_connect;
-	this.do_msg=IRCClient_do_msg;
 	// Global Functions
 	this.check_timeout=IRCClient_check_timeout;
 	this.set_chanmode=IRCClient_set_chanmode;

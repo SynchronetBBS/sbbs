@@ -170,6 +170,10 @@ function Unregistered_Commands() {
 				this.numeric461("SERVER");
 				break;
 			}
+			if (Servers[cmd[1].toUpperCase()]) {
+				this.quit("Server already exists.");
+				return 0;
+			}
 			var this_nline = 0;
 			var qwk_slave = false;
 			var qwkid = cmd[1].slice(0,cmd[1].indexOf(".")).toUpperCase();
@@ -206,10 +210,6 @@ function Unregistered_Commands() {
 				!(this_nline.flags&NLINE_CHECK_QWKPASSWD) )
 			     ) && !qwk_slave) {
 				this.quit("Server not configured.");
-				return 0;
-			}
-			if (Servers[cmd[1].toUpperCase()]) {
-				this.quit("Server already exists.");
 				return 0;
 			}
 			// Take care of registration right now.

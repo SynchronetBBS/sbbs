@@ -1144,15 +1144,42 @@ function IRCClient_numeric482(tmp_chan_nam) {
 //////////////////// Multi-numeric Display Functions ////////////////////
 
 function IRCClient_lusers() {
-	// FIXME: calc invis clients
-	this.numeric("251", ":There are " + true_array_len(Users) + " users and 0 invisible on " + true_array_len(Servers) + " servers.");
-	// FIXME: calc total opers
-	this.numeric("252", "0 :IRC operators online.");
-	this.numeric("253", "0 :unknown connection(s).");
-	this.numeric("254", true_array_len(Channels) + " :channels formed.");
-	this.numeric("255", ":I have " + true_array_len(Local_Users) + " clients and " + true_array_len(Local_Servers) + " servers.");
-	this.numeric("250", ":Highest connection count: " + hcc_total + " (" + hcc_users + " clients.)");
+	this.numeric(251, ":There are " + num_noninvis_users() + " users and " + num_invis_users() + " invisible on " + true_array_len(Servers) + " servers.");
+	this.numeric(252, num_opers() + " :IRC operators online.");
+	var unknown_connections = true_array_len(Unregistered);
+	if (unknown_connections)
+		this.numeric(253, unknown_connections + " :unknown connection(s).");
+	this.numeric(254, true_array_len(Channels) + " :channels formed.");
+	this.numeric(255, ":I have " + true_array_len(Local_Users) + " clients and " + true_array_len(Local_Servers) + " servers.");
+	this.numeric(250, ":Highest connection count: " + hcc_total + " (" + hcc_users + " clients.)");
 	this.server_notice(hcc_counter + " clients have connected since " + strftime("%a %b %e %H:%M:%S %Y %Z",server_uptime));
+}
+
+function num_noninvis_users() {
+	var counter = 0;
+	for(myuser in Users) {
+		if (!Users[myuser].mode&USERMODE_INVISIBLE)
+			counter++;
+	}
+	return counter;
+}
+
+function num_invis_users() {
+	var counter = 0;
+	for(myuser in Users) {
+		if (Users[myuser].mode&USERMODE_INVISIBLE)
+			counter++;
+	}
+	return counter;
+}
+
+function num_opers() {
+	var counter = 0;
+	for(myuser in Users) {
+		if (Users[myuser].mode&USERMODE_OPER)
+			counter++;
+	}
+	return counter;
 }
 
 function IRCClient_motd() {
