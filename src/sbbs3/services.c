@@ -890,8 +890,9 @@ js_BranchCallback(JSContext *cx, JSScript *script)
     return(JS_TRUE);
 }
 
-static void js_init_cmdline(JSContext* js_cx, JSObject* js_obj, char* spath)
+static void js_init_cmdline(JSContext* js_cx, JSObject* js_obj, char* path)
 {
+	char					spath[MAX_PATH+1];
 	char*					p;
 	char*					args=NULL;
 	int						argc=0;
@@ -899,6 +900,7 @@ static void js_init_cmdline(JSContext* js_cx, JSObject* js_obj, char* spath)
 	JSObject*				argv;
 	jsval					val;
 
+	SAFECOPY(spath,path);
 	p=spath;
 	while(*p && *p>' ') p++;
 	if(*p) {
