@@ -454,7 +454,7 @@ these uifc.changes, select No. If you are not sure and want to review the
 configuration before deciding, hit  ESC .
 */
 i=uifc.list(mode|WIN_ACT,0,0,0,&i,0,"Save Changes",opt);
-if(mode&WIN_SAV && uifc.savdepth)
+if(mode&WIN_SAV && uifc.savdepth && uifc.savnum)
 	uifc.savnum--;
 if(i!=-1)
 	uifc.changes=0;
@@ -894,7 +894,7 @@ must have any level BUT 50. And if you select Less than from this
 menu and level 50, the user must have a level below 50.
 */
 i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"Select Logic",opt);
-if(uifc.savdepth)
+if(uifc.savdepth && uifc.savnum)
 	uifc.savnum--;
 return(i);
 }
@@ -922,7 +922,7 @@ parameter requirements aren't met, select OR to specify that either
 or any of the parameter requirements must be met.
 */
 i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"Multiple Requirement Logic",opt);
-if(uifc.savdepth)
+if(uifc.savdepth && uifc.savnum)
 	uifc.savnum--;
 return(i);
 }
@@ -1176,7 +1176,7 @@ If you wish to clear the current requirement string, select Yes.
 Otherwise, select No.
 */
 			i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"Are You Sure",opt);
-			if(uifc.savdepth)
+			if(uifc.savdepth && uifc.savnum)
                 uifc.savnum--;
 			if(!i) {
 				ar[0]=0;
@@ -1233,7 +1233,7 @@ requirement evaluation. The valid range is 0 (zero) through 99.
 			if(uifc.savdepth)
 				uifc.savnum++;
 			i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"Select Flag Set",opt);
-			if(uifc.savdepth)
+			if(uifc.savdepth && uifc.savnum)
 				uifc.savnum--;
 			if(i==-1)
                 break;
@@ -1548,7 +1548,7 @@ divided by the number of files downloaded.
 			if(uifc.savdepth)
 				uifc.savnum++;
 			i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"Time Relationship",opt);
-			if(uifc.savdepth)
+			if(uifc.savdepth && uifc.savnum)
 				uifc.savnum--;
 			if(i==-1)
 				break;
@@ -1598,7 +1598,7 @@ requirement value.
 			if(uifc.savdepth)
 				uifc.savnum++;
 			n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0,"Select Day of Week",opt);
-			if(uifc.savdepth)
+			if(uifc.savdepth && uifc.savnum)
 				uifc.savnum--;
 			if(n==-1)
                 break;
