@@ -2209,8 +2209,6 @@ static short fmsgzone(char* p)
 	return(val);
 }
 
-#if 1		/* Old way */
-
 char* getfmsg(FILE *stream, ulong *outlen)
 {
 	uchar* fbuf;
@@ -2221,68 +2219,31 @@ char* getfmsg(FILE *stream, ulong *outlen)
 	start=ftell(stream);						/* Beginning of Message */
 	while(1) {
 		ch=fgetc(stream);						/* Look for Terminating NULL */
-		if(!ch || ch==EOF)						/* Found end of message */
+		if(ch==0 || ch==EOF)					/* Found end of message */
 			break;
-		length++; } 							/* Increment the Length */
+		length++;	 							/* Increment the Length */
+	}
 
 	if((fbuf=(char *)malloc(length+1))==NULL) {
 		printf("Unable to allocate %lu bytes for message.\n",length+1);
 		logprintf("ERROR line %d allocating %lu bytes of memory",__LINE__,length+1);
-		bail(1); }
+		bail(1); 
+	}
 
 	fseek(stream,start,SEEK_SET);
 	for(l=0;l<length;l++)
 		fbuf[l]=fgetc(stream);
-	fbuf[length]=0;
-	if(!ch)
+	if(ch==0)
 		fgetc(stream);		/* Read NULL */
+
+	while(length && fbuf[length-1]<=' ')	/* truncate white-space */
+		length--;
+	fbuf[length]=0;
+
 	if(outlen)
 		*outlen=length;
 	return(fbuf);
 }
-
-#else
-
-#define FBUF_BLOCK 4096
-
-char *getfmsg(FILE *stream)
-{
-	uchar *fbuf,*p;
-	ulong l,n,length,start;
-
-	length=0L;
-	start=ftell(stream);						/* Beginning of Message */
-	if((fbuf=malloc(FBUF_BLOCK))==NULL)
-		return(fbuf);
-	while(!feof(stream)) {
-		l=fread(fbuf+length,1,FBUF_BLOCK,stream);
-		if(l<1)
-			break;
-		*(fbuf+length+l)=0;
-		n=strlen(fbuf+length);
-		if(n<l) {
-			length+=(n+1);
-			break; }
-		printf(",");
-		length+=l;
-		if(l<FBUF_BLOCK)
-			break;
-		printf("<");
-		if((p=REALLOC(fbuf,length+FBUF_BLOCK+1))==NULL) {
-			free(fbuf);
-			printf("!");
-			fseek(stream,-l,SEEK_CUR);
-			return(NULL); }
-		fbuf=p;
-		printf(">");
-		}
-	printf(".");
-
-	fseek(stream,start+length,SEEK_SET);
-	return(fbuf);
-}
-
-#endif
 
 #define MAX_TAILLEN 1024
 
