@@ -116,6 +116,12 @@ int syncmenu(struct bbslist *bbs)
 	buf=(char *)malloc(txtinfo.screenheight*txtinfo.screenwidth*2);
 	gettext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
 
+	if(cio_api.mode!=CIOLIB_MODE_CURSES
+			&& cio_api.mode!=CIOLIB_MODE_CURSES_IBM
+			&& cio_api.mode!=CIOLIB_MODE_ANSI) {
+		opts[1]="Disconnect (ALT-H)";
+	}
+
 	for(ret=0;!ret;) {
 		init_uifc();
 		i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&opt,NULL,"SyncTERM Online Menu",opts);
@@ -124,12 +130,15 @@ int syncmenu(struct bbslist *bbs)
 				ret=1;
 				break;
 			case 0:		/* Scrollback */
+				uifcbail();
+				puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,buf);
 				viewscroll();
 				break;
 			case 1:		/* Disconnect */
 				ret=-1;
 				break;
 			case 2:		/* Login */
+				ret=1;
 				conn_send(bbs->user,strlen(bbs->user),0);
 				conn_send("\r",1,0);
 				SLEEP(10);

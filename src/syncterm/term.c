@@ -116,10 +116,22 @@ void update_status(struct bbslist *bbs)
 	window(term.x-1,term.y+term.height-1,term.x+term.width-2,term.y+term.height-1);
 	gotoxy(1,1);
 	_wscroll=0;
-	if(timeon>359999)
-		cprintf(" %-29.29s \263 %-6.6s \263 Connected: Too Long \263 CTRL-S for menu ",bbs->name,conn_types[bbs->conn_type]);
-	else
-		cprintf(" %-29.29s \263 %-6.6s \263 Connected: %02d:%02d:%02d \263 CTRL-S for menu ",bbs->name,conn_types[bbs->conn_type],timeon/3600,(timeon-(timeon/3600))/60,timeon%60);
+	switch(cio_api.mode) {
+		case CIOLIB_MODE_CURSES:
+		case CIOLIB_MODE_CURSES_IBM:
+		case CIOLIB_MODE_ANSI:
+			if(timeon>359999)
+				cprintf(" %-29.29s \263 %-6.6s \263 Connected: Too Long \263 CTRL-S for menu ",bbs->name,conn_types[bbs->conn_type]);
+			else
+				cprintf(" %-29.29s \263 %-6.6s \263 Connected: %02d:%02d:%02d \263 CTRL-S for menu ",bbs->name,conn_types[bbs->conn_type],timeon/3600,(timeon-(timeon/3600))/60,timeon%60);
+			break;
+		default:
+			if(timeon>359999)
+				cprintf(" %-30.30s \263 %-6.6s \263 Connected: Too Long \263 ALT-M for menu ",bbs->name,conn_types[bbs->conn_type]);
+			else
+				cprintf(" %-30.30s \263 %-6.6s \263 Connected: %02d:%02d:%02d \263 ALT-M for menu ",bbs->name,conn_types[bbs->conn_type],timeon/3600,(timeon-(timeon/3600))/60,timeon%60);
+			break;
+	}
 	_wscroll=oldscroll;
 	textattr(txtinfo.attribute);
 	window(txtinfo.winleft,txtinfo.wintop,txtinfo.winright,txtinfo.winbottom);
@@ -173,74 +185,78 @@ void doterm(struct bbslist *bbs)
 		while(kbhit()) {
 			struct mouse_event mevent;
 			key=getch();
+			if(key==0 || key==0xff)
+				key|=getch()<<8;
 			switch(key) {
-				case 0xff:
-				case 0:
-					key|=getch()<<8;
-					switch(key) {
-						case CIO_KEY_MOUSE:
-							getmouse(&mevent);
-							switch(mevent.event) {
-								case CIOLIB_BUTTON_1_DRAG_START:
-									mousedrag(scrollback);
-									break;
-								case CIOLIB_BUTTON_2_CLICK:
-								case CIOLIB_BUTTON_3_CLICK:
-									p=getcliptext();
-									if(p!=NULL) {
-										conn_send(p,strlen(p),0);
-										free(p);
-									}
-									break;
+				case CIO_KEY_MOUSE:
+					getmouse(&mevent);
+					switch(mevent.event) {
+						case CIOLIB_BUTTON_1_DRAG_START:
+							mousedrag(scrollback);
+							break;
+						case CIOLIB_BUTTON_2_CLICK:
+						case CIOLIB_BUTTON_3_CLICK:
+							p=getcliptext();
+							if(p!=NULL) {
+								conn_send(p,strlen(p),0);
+								free(p);
 							}
-									
 							break;
-						case CIO_KEY_LEFT:
-							conn_send("\033[D",3,0);
-							break;
-						case CIO_KEY_RIGHT:
-							conn_send("\033[C",3,0);
-							break;
-						case CIO_KEY_UP:
-							conn_send("\033[A",3,0);
-							break;
-						case CIO_KEY_DOWN:
-							conn_send("\033[B",3,0);
-							break;
-						case CIO_KEY_HOME:
-							conn_send("\033[H",3,0);
-							break;
-						case CIO_KEY_END:
-#ifdef CIO_KEY_SELECT
-						case CIO_KEY_SELECT:	/* Some terminfo/termcap entries use KEY_SELECT as the END key! */
-#endif
-							conn_send("\033[K",3,0);
-							break;
-						case CIO_KEY_F(1):
-							conn_send("\033OP",3,0);
-							break;
-						case CIO_KEY_F(2):
-							conn_send("\033OQ",3,0);
-							break;
-						case CIO_KEY_F(3):
-							conn_send("\033Ow",3,0);
-							break;
-						case CIO_KEY_F(4):
-							conn_send("\033Ox",3,0);
-							break;
-						case 0x1f00:	/* ALT-S */
-							viewscroll();
-							break;
-						case 0x2600:	/* ALT-L */
-							conn_send(bbs->user,strlen(bbs->user),0);
-							conn_send("\r",1,0);
-							SLEEP(10);
-							conn_send(bbs->password,strlen(bbs->password),0);
-							conn_send("\r",1,0);
 					}
+
 					break;
-				case 0x2300:	/* ALT-H */
+				case CIO_KEY_LEFT:
+					conn_send("\033[D",3,0);
+					break;
+				case CIO_KEY_RIGHT:
+					conn_send("\033[C",3,0);
+					break;
+				case CIO_KEY_UP:
+					conn_send("\033[A",3,0);
+					break;
+				case CIO_KEY_DOWN:
+					conn_send("\033[B",3,0);
+					break;
+				case CIO_KEY_HOME:
+					conn_send("\033[H",3,0);
+					break;
+				case CIO_KEY_END:
+#ifdef CIO_KEY_SELECT
+				case CIO_KEY_SELECT:	/* Some terminfo/termcap entries use KEY_SELECT as the END key! */
+#endif
+					conn_send("\033[K",3,0);
+					break;
+				case CIO_KEY_F(1):
+					conn_send("\033OP",3,0);
+					break;
+				case CIO_KEY_F(2):
+					conn_send("\033OQ",3,0);
+					break;
+				case CIO_KEY_F(3):
+					conn_send("\033Ow",3,0);
+					break;
+				case CIO_KEY_F(4):
+					conn_send("\033Ox",3,0);
+					break;
+				case 0x1f00:	/* ALT-S */
+					viewscroll();
+					break;
+				case 0x2600:	/* ALT-L */
+					conn_send(bbs->user,strlen(bbs->user),0);
+					conn_send("\r",1,0);
+					SLEEP(10);
+					conn_send(bbs->password,strlen(bbs->password),0);
+					conn_send("\r",1,0);
 				case 17:		/* CTRL-Q */
+					if(cio_api.mode!=CIOLIB_MODE_CURSES
+							&& cio_api.mode!=CIOLIB_MODE_CURSES_IBM
+							&& cio_api.mode!=CIOLIB_MODE_ANSI) {
+						ch[0]=key;
+						conn_send(ch,1,0);
+						break;
+					}
+					/* FALLTHROUGH for curses/ansi modes */
+				case 0x2300:	/* ALT-H */
 					{
 						char *opts[3]={
 										 "Yes"
@@ -272,6 +288,15 @@ void doterm(struct bbslist *bbs)
 					}
 					break;
 				case 19:	/* CTRL-S */
+					if(cio_api.mode!=CIOLIB_MODE_CURSES
+							&& cio_api.mode!=CIOLIB_MODE_CURSES_IBM
+							&& cio_api.mode!=CIOLIB_MODE_ANSI) {
+						ch[0]=key;
+						conn_send(ch,1,0);
+						break;
+					}
+					/* FALLTHROUGH for curses/ansi modes */
+				case 0x3200:		/* ALT-M */
 					i=wherex();
 					j=wherey();
 					switch(syncmenu(bbs)) {
@@ -291,7 +316,6 @@ void doterm(struct bbslist *bbs)
 						ch[0]=key;
 						conn_send(ch,1,0);
 					}
-					
 			}
 		}
 		SLEEP(1);
