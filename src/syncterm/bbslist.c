@@ -9,11 +9,6 @@
 #include "uifcinit.h"
 #include "conn.h"
 
-enum {
-	 USER_BBSLIST
-	,SYSTEM_BBSLIST
-};
-
 char *screen_modes[]={"Current", "80x25", "80x28", "80x43", "80x50", "80x60", ""};
 
 void sort_list(struct bbslist **list)  {
@@ -31,6 +26,15 @@ void sort_list(struct bbslist **list)  {
 				swapped=1;
 			}
 		}
+	}
+}
+
+void free_list(struct bbslist **list, int listcount)
+{
+	int i;
+
+	for(i=0;i<listcount;i++) {
+		free(list[i]);
 	}
 }
 
@@ -303,6 +307,7 @@ struct bbslist *show_bbslist(int mode, char *path)
 					mode=BBSLIST_SELECT;
 					break;
 				case -1:		/* ESC */
+					free_list(&list[0],listcount);
 					return(NULL);
 			}
 		}
@@ -436,6 +441,7 @@ struct bbslist *show_bbslist(int mode, char *path)
 			}
 			else {
 				memcpy(&retlist,list[val],sizeof(struct bbslist));
+				free_list(&list[0],listcount);
 				return(&retlist);
 			}
 		}

@@ -9,6 +9,11 @@
 #define MAX_PASSWD_LEN	16
 
 enum {
+	 USER_BBSLIST
+	,SYSTEM_BBSLIST
+};
+
+enum {
 	 BBSLIST_SELECT
 	,BBSLIST_EDIT
 };
