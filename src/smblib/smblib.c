@@ -1368,8 +1368,12 @@ int SMBCALL smb_freemsgdat(smb_t* smb, ulong offset, ulong length
 			, ushort headers)
 {
 	int		da_opened=0;
+	int		retval=0;
 	ushort	i;
 	ulong	l,blocks;
+
+	if(smb->status.attr&SMB_HYPERALLOC)	/* do nothing */
+		return(0);
 
 	blocks=smb_datblocks(length);
 
@@ -1385,11 +1389,13 @@ int SMBCALL smb_freemsgdat(smb_t* smb, ulong offset, ulong length
 			sprintf(smb->last_error
 				,"seeking to %ld of allocation file"
 				,((offset/SDT_BLOCK_LEN)+l)*2L);
-			return(1);
+			retval=1;
+			break;
 		}
 		if(!fread(&i,2,1,smb->sda_fp)) {
 			sprintf(smb->last_error,"reading allocation bytes");
-			return(2);
+			retval=2;
+			break;
 		}
 		if(!headers || headers>i)
 			i=0;			/* don't want to go negative */
@@ -1397,17 +1403,19 @@ int SMBCALL smb_freemsgdat(smb_t* smb, ulong offset, ulong length
 			i-=headers;
 		if(fseek(smb->sda_fp,-2L,SEEK_CUR)) {
 			sprintf(smb->last_error,"seeking backwards 2 bytes in allocation file");
-			return(3);
+			retval=3;
+			break;
 		}
 		if(!fwrite(&i,2,1,smb->sda_fp)) {
 			sprintf(smb->last_error,"writing allocation bytes");
-			return(4); 
+			retval=4; 
+			break;
 		}
 	}
 	fflush(smb->sda_fp);
 	if(da_opened)
 		smb_close_da(smb);
-	return(0);
+	return(retval);
 }
 
 /****************************************************************************/
