@@ -14,8 +14,8 @@
 #include "ansi_cio.h"
 WORD	ansi_curr_attr=0x07<<8;
 
-unsigned int ansi_rows=24;
-unsigned int ansi_cols=80;
+int ansi_rows=24;
+int ansi_cols=80;
 unsigned int ansi_nextchar;
 int ansi_got_row=0;
 int ansi_got_col=0;
