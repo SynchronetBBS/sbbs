@@ -1,11 +1,13 @@
 #include <fcntl.h>
 #include <stdarg.h>
+#include <stdlib.h>	/* malloc */
 
 #include <genwrap.h>
 #include <threadwrap.h>
 
 #ifdef __unix__
-#include <termios.h>
+	#include <termios.h>
+	struct termios tio_default;				/* Initial term settings */
 #endif
 
 #include "ciolib.h"
@@ -24,7 +26,6 @@ const int 	ansi_tabs[10]={9,17,25,33,41,49,57,65,73,80};
 const int 	ansi_colours[8]={0,4,2,6,1,5,3,7};
 static WORD		ansi_inch;
 static char		ansi_raw_inch;
-struct termios tio_default;				/* Initial term settings */
 WORD	*vmem;
 int		ansi_row=0;
 int		ansi_col=0;
@@ -608,8 +609,8 @@ int ansi_initciolib(long inmode)
 	int i;
 	char *init="\033[0m\033[2J\033[1;1H";
 #ifdef _WIN32
-	_setmode(fileno(stdout),_O_BINARY);
-	_setmode(fileno(stdin),_O_BINARY);
+	setmode(fileno(stdout),_O_BINARY);
+	setmode(fileno(stdin),_O_BINARY);
 	setvbuf(stdout, NULL, _IONBF, 0);
 #else
 	struct termios tio_raw;
