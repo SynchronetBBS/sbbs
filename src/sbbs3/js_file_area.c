@@ -113,10 +113,12 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 		if(!JS_SetProperty(cx, libobj, "description", &val))
 			return(NULL);
 
-		sprintf(vpath,"/%s/%s",cfg->lib[l]->sname,html_index_file);
-		val=STRING_TO_JSVAL(JS_NewStringCopyZ(cx, vpath));
-		if(!JS_SetProperty(cx, libobj, "link", &val))
-			return(NULL);
+		if(html_index_file!=NULL) {
+			sprintf(vpath,"/%s/%s",cfg->lib[l]->sname,html_index_file);
+			val=STRING_TO_JSVAL(JS_NewStringCopyZ(cx, vpath));
+			if(!JS_SetProperty(cx, libobj, "link", &val))
+				return(NULL);
+		}
 
 		/* dir_list[] */
 		if((dir_list=JS_NewArrayObject(cx, 0, NULL))==NULL) 
@@ -195,14 +197,15 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 			if(!JS_SetProperty(cx, dirobj, "download_credit_pct", &val))
 				return(NULL);
 
-			sprintf(vpath,"/%s/%s/%s"
-				,cfg->lib[l]->sname
-				,cfg->dir[d]->code
-				,html_index_file);
-
-			val=STRING_TO_JSVAL(JS_NewStringCopyZ(cx, vpath));
-			if(!JS_SetProperty(cx, dirobj, "link", &val))
-				return(NULL);
+			if(html_index_file!=NULL) {
+				sprintf(vpath,"/%s/%s/%s"
+					,cfg->lib[l]->sname
+					,cfg->dir[d]->code
+					,html_index_file);
+				val=STRING_TO_JSVAL(JS_NewStringCopyZ(cx, vpath));
+				if(!JS_SetProperty(cx, dirobj, "link", &val))
+					return(NULL);
+			}
 
 			if(user==NULL || chk_ar(cfg,cfg->dir[d]->ul_ar,user))
 				val=BOOLEAN_TO_JSVAL(JS_TRUE);
