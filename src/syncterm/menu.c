@@ -60,8 +60,8 @@ void viewscroll(void)
 
 int syncmenu(void)
 {
-	char	*opts[3]={	 "Disconnect"
-						,"Scrollback"
+	char	*opts[3]={	 "Scrollback"
+						,"Disconnect"
 						,""};
 	int		opt=0;
 	int		i;
@@ -80,11 +80,11 @@ int syncmenu(void)
 			case -1:	/* Cancel */
 				ret=1;
 				break;
-			case 0:		/* Disconnect */
-				ret=-1;
-				break;
-			case 1:
+			case 0:		/* Scrollback */
 				viewscroll();
+				break;
+			case 1:		/* Disconnect */
+				ret=-1;
 				break;
 		}
 	}
