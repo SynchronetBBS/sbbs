@@ -1730,6 +1730,20 @@ JSObject* DLLCALL js_CreateSystemObject(JSContext* cx, JSObject* parent
 	if(!JS_SetProperty(cx, sysobj, "uptime", &val))
 		return(NULL);
 
+	/* fido_addr_list property */
+
+	if((fido_addr_list=JS_NewArrayObject(cx, 0, NULL))==NULL) 
+		return(NULL);
+
+	if(!JS_DefineProperty(cx, sysobj, "fido_addr_list", OBJECT_TO_JSVAL(fido_addr_list)
+		, NULL, NULL, JSPROP_ENUMERATE))
+		return(NULL);
+
+	for(i=0;i<cfg->total_faddrs;i++) {
+		val=STRING_TO_JSVAL(JS_NewStringCopyZ(cx,smb_faddrtoa(&cfg->faddr[i],str)));
+		JS_SetElement(cx, fido_addr_list, i, &val);
+	}
+
 	statsobj = JS_DefineObject(cx, sysobj, "stats", &js_sysstats_class, NULL
 		,JSPROP_ENUMERATE|JSPROP_READONLY);
 
@@ -1771,26 +1785,16 @@ JSObject* DLLCALL js_CreateSystemObject(JSContext* cx, JSObject* parent
 			return(NULL);
 
 #ifdef _DEBUG
-		js_DescribeSyncObject(cx,nodeobj,"BBS node listing",310);
-		js_CreateArrayOfStrings(cx, nodeobj, "_property_desc_list", node_prop_desc, JSPROP_READONLY);
+		if(i==0) {
+			js_DescribeSyncObject(cx,nodeobj,"BBS node listing",310);
+			js_CreateArrayOfStrings(cx, nodeobj, "_property_desc_list", node_prop_desc, JSPROP_READONLY);
+		}
 #endif
 
 		val=OBJECT_TO_JSVAL(nodeobj);
 		if(!JS_SetElement(cx, node_list, i, &val))
 			return(NULL);
 	}	
-
-	if((fido_addr_list=JS_NewArrayObject(cx, 0, NULL))==NULL) 
-		return(NULL);
-
-	if(!JS_DefineProperty(cx, sysobj, "fido_addr_list", OBJECT_TO_JSVAL(fido_addr_list)
-		, NULL, NULL, JSPROP_ENUMERATE))
-		return(NULL);
-
-	for(i=0;i<cfg->total_faddrs;i++) {
-		val=STRING_TO_JSVAL(JS_NewStringCopyZ(cx,smb_faddrtoa(&cfg->faddr[i],str)));
-		JS_SetElement(cx, fido_addr_list, i, &val);
-	}
 
 	return(sysobj);
 }
