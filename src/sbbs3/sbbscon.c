@@ -61,6 +61,7 @@
 
 /* Constants */
 #define SBBS_PID_FILE	"/var/run/sbbs.pid"
+#define SBBS_LOG_NAME	"synchronet"
 
 /* Global variables */
 BOOL				bbs_running=FALSE;
@@ -83,13 +84,13 @@ uint				socket_count=0;
 uint				client_count=0;
 ulong				served=0;
 int					prompt_len=0;
-BOOL				is_daemon=FALSE;
 
 #ifdef __unix__
 uid_t				new_uid;
 uid_t				old_uid;
 gid_t				new_gid;
 gid_t				old_gid;
+BOOL				is_daemon=FALSE;
 BOOL				use_facilities=FALSE;
 #endif
 
@@ -128,9 +129,9 @@ static const char* usage  = "usage: %s [[option] [...]]\n"
 #ifdef __unix__
 							"\tun<user>   set username for BBS to run as\n"
 							"\tug<group>  set group for BBS to run as\n"
-							"\tad<X>      run as daemon, log using syslog <X> is the\n"
-							"\t           option LOCALx facility to use if none is\n"
-							"\t           specified, uses USER\n"
+							"\td[x]       run as daemon, log using syslog\n"
+							"\t           x is the optional LOCALx facility to use\n"
+							"\t           if non is specified, uses USER\n"
 							"\t           if 'f' is specified, uses standard facilities\n"
 #endif
 							"\tgi         get user identity (using IDENT protocol)\n"
@@ -147,54 +148,30 @@ static void lputs(char *str)
 	static BOOL mutex_initialized;
 
 #ifdef __unix__
-	BOOL logged=FALSE;
 
 	if (is_daemon)  {
-		if(str!=NULL)  {
-			if (use_facilities)  {
-				if(!strncmp("ftp  ",str,5))  {
-					syslog(LOG_INFO|LOG_FTP,"%s",str+5);
-					logged=TRUE;
-				}
-				if(!strncmp("mail ",str,5))  {
-					syslog(LOG_INFO|LOG_MAIL,"%s",str+5);
-					logged=TRUE;
-				}
-				if(!strncmp("srvc ",str,5))  {
-					syslog(LOG_INFO|LOG_DAEMON,"%s",str+5);
-					logged=TRUE;
-				}
-				if(!strncmp("evnt ",str,5))  {
-					syslog(LOG_INFO|LOG_CRON,"%s",str+5);
-					logged=TRUE;
-				}
-				if(!strncmp("     ",str,5))  {
-					syslog(LOG_INFO|LOG_AUTH,"%s",str+5);
-					logged=TRUE;
-				}
-			}
-			if(!logged)  {
+		if(str!=NULL) {
+			if (use_facilities)
+				syslog(LOG_INFO|LOG_AUTH,"%s",str);
+			else
 				syslog(LOG_INFO,"%s",str);
-			}
 		}
+		return;
 	}
-	else  
 #endif
-	{
-		if(!mutex_initialized) {
-			pthread_mutex_init(&mutex,NULL);
-			mutex_initialized=TRUE;
-		}
-		pthread_mutex_lock(&mutex);
-		/* erase prompt */
-		printf("\r%*s\r",prompt_len,"");
-		if(str!=NULL)
-			printf("%s\n",str);
-		/* re-display prompt with current stats */
-		prompt_len = printf(prompt, thread_count, socket_count, client_count, served);
-		fflush(stdout);
-		pthread_mutex_unlock(&mutex);
-	}	
+	if(!mutex_initialized) {
+		pthread_mutex_init(&mutex,NULL);
+		mutex_initialized=TRUE;
+	}
+	pthread_mutex_lock(&mutex);
+	/* erase prompt */
+	printf("\r%*s\r",prompt_len,"");
+	if(str!=NULL)
+		printf("%s\n",str);
+	/* re-display prompt with current stats */
+	prompt_len = printf(prompt, thread_count, socket_count, client_count, served);
+	fflush(stdout);
+	pthread_mutex_unlock(&mutex);
 }
 
 #ifdef __unix__
@@ -335,9 +312,21 @@ static int bbs_lputs(char *str)
 	time_t		t;
 	struct tm*	tm_p;
 
+#ifdef __unix__
+	if (is_daemon)  {
+		if(str==NULL)
+			return(0);
+		if (use_facilities)
+			syslog(LOG_INFO|LOG_AUTH,"%s",str);
+		else
+			syslog(LOG_INFO,"%s",str);
+		return(strlen(str));
+	}
+#endif
+
 	t=time(NULL);
 	tm_p=localtime(&t);
-	if(tm_p==NULL || is_daemon)
+	if(tm_p==NULL)
 		tstr[0]=0;
 	else
 		sprintf(tstr,"%d/%d %02d:%02d:%02d "
@@ -373,9 +362,21 @@ static int ftp_lputs(char *str)
 	time_t		t;
 	struct tm*	tm_p;
 
+#ifdef __unix__
+	if (is_daemon)  {
+		if(str==NULL)
+			return(0);
+		if (use_facilities)
+			syslog(LOG_INFO|LOG_FTP,"%s",str);
+		else
+			syslog(LOG_INFO,"%s",str);
+		return(strlen(str));
+	}
+#endif
+
 	t=time(NULL);
 	tm_p=localtime(&t);
-	if(tm_p==NULL || is_daemon)
+	if(tm_p==NULL)
 		tstr[0]=0;
 	else
 		sprintf(tstr,"%d/%d %02d:%02d:%02d "
@@ -411,9 +412,21 @@ static int mail_lputs(char *str)
 	time_t		t;
 	struct tm*	tm_p;
 
+#ifdef __unix__
+	if (is_daemon)  {
+		if(str==NULL)
+			return(0);
+		if (use_facilities)
+			syslog(LOG_INFO|LOG_MAIL,"%s",str);
+		else
+			syslog(LOG_INFO,"%s",str);
+		return(strlen(str));
+	}
+#endif
+
 	t=time(NULL);
 	tm_p=localtime(&t);
-	if(tm_p==NULL || is_daemon)
+	if(tm_p==NULL)
 		tstr[0]=0;
 	else
 		sprintf(tstr,"%d/%d %02d:%02d:%02d "
@@ -449,9 +462,21 @@ static int services_lputs(char *str)
 	time_t		t;
 	struct tm*	tm_p;
 
+#ifdef __unix__
+	if (is_daemon)  {
+		if(str==NULL)
+			return(0);
+		if (use_facilities)
+			syslog(LOG_INFO|LOG_DAEMON,"%s",str);
+		else
+			syslog(LOG_INFO,"%s",str);
+		return(strlen(str));
+	}
+#endif
+
 	t=time(NULL);
 	tm_p=localtime(&t);
-	if(tm_p==NULL || is_daemon)
+	if(tm_p==NULL)
 		tstr[0]=0;
 	else
 		sprintf(tstr,"%d/%d %02d:%02d:%02d "
@@ -487,9 +512,21 @@ static int event_lputs(char *str)
 	time_t		t;
 	struct tm*	tm_p;
 
+#ifdef __unix__
+	if (is_daemon)  {
+		if(str==NULL)
+			return(0);
+		if (use_facilities)
+			syslog(LOG_INFO|LOG_CRON,"%s",str);
+		else
+			syslog(LOG_INFO,"%s",str);
+		return(strlen(str));
+	}
+#endif
+
 	t=time(NULL);
 	tm_p=localtime(&t);
-	if(tm_p==NULL || is_daemon)
+	if(tm_p==NULL)
 		tstr[0]=0;
 	else
 		sprintf(tstr,"%d/%d %02d:%02d:%02d "
@@ -702,52 +739,52 @@ int main(int argc, char** argv)
 			return(0);
 		}
 		switch(toupper(*(arg++))) {
+#ifdef __unix__
+				case 'D': /* Run as daemon */
+					printf("Running as daemon\n");
+					if(!daemon(TRUE,FALSE))  { /* Daemonize, DON'T switch to / and DO close descriptors */
+						is_daemon=TRUE;
+						switch(toupper(*(arg++))) {
+							case '0':
+								openlog(SBBS_LOG_NAME,LOG_CONS,LOG_LOCAL0);
+								break;
+							case '1':
+								openlog(SBBS_LOG_NAME,LOG_CONS,LOG_LOCAL1);
+								break;
+							case '2':
+								openlog(SBBS_LOG_NAME,LOG_CONS,LOG_LOCAL2);
+								break;
+							case '3':
+								openlog(SBBS_LOG_NAME,LOG_CONS,LOG_LOCAL3);
+								break;
+							case '4':
+								openlog(SBBS_LOG_NAME,LOG_CONS,LOG_LOCAL4);
+								break;
+							case '5':
+								openlog(SBBS_LOG_NAME,LOG_CONS,LOG_LOCAL5);
+								break;
+							case '6':
+								openlog(SBBS_LOG_NAME,LOG_CONS,LOG_LOCAL6);
+								break;
+							case '7':
+								openlog(SBBS_LOG_NAME,LOG_CONS,LOG_LOCAL7);
+								break;
+							case 'F':
+								/* Use appropriate facilities */
+								openlog(SBBS_LOG_NAME,LOG_CONS,LOG_USER);
+								use_facilities = TRUE;
+								break;
+							default:
+								openlog(SBBS_LOG_NAME,LOG_CONS,LOG_USER);
+						}
+					}
+				break;
+#endif
 			case 'A':
 				switch(toupper(*(arg++))) {
 					case 'L': /* Auto-logon via IP */
 						bbs_startup.options|=BBS_OPT_AUTO_LOGON;
 						break;
-#ifdef __unix__
-					case 'D': /* Run as daemon */
-						printf("Running as daemon\n");
-						if(!daemon(TRUE,FALSE))  { /* Daemonize, DON'T switch to / and DO close descriptors */
-							is_daemon=TRUE;
-							switch(toupper(*(arg++))) {
-								case '0':
-									openlog("synchronet",LOG_CONS,LOG_LOCAL0);
-									break;
-								case '1':
-									openlog("synchronet",LOG_CONS,LOG_LOCAL1);
-									break;
-								case '2':
-									openlog("synchronet",LOG_CONS,LOG_LOCAL2);
-									break;
-								case '3':
-									openlog("synchronet",LOG_CONS,LOG_LOCAL3);
-									break;
-								case '4':
-									openlog("synchronet",LOG_CONS,LOG_LOCAL4);
-									break;
-								case '5':
-									openlog("synchronet",LOG_CONS,LOG_LOCAL5);
-									break;
-								case '6':
-									openlog("synchronet",LOG_CONS,LOG_LOCAL6);
-									break;
-								case '7':
-									openlog("synchronet",LOG_CONS,LOG_LOCAL7);
-									break;
-								case 'F':
-									/* Use appropriate facilities */
-									openlog("synchronet",LOG_CONS,LOG_USER);
-									use_facilities = TRUE;
-									break;
-								default:
-									openlog("synchronet",LOG_CONS,LOG_USER);
-							}
-						}
-						break;
-#endif
 					default:
 						printf(usage,argv[0]);
 						return(0);
