@@ -61,11 +61,12 @@ DosSleep(msec ? msec : 1);
 
 #define HELP 1
 
-char hclr,lclr,bclr,cclr,scrn_len,savnum=0,show_free_mem=0
+char hclr,lclr,bclr,cclr,savnum=0,show_free_mem=0
 	,helpdatfile[256]=""
 	,helpixbfile[256]=""
 	,*helpfile=0,*helpbuf=0
 	,blk_scrn[MAX_BFLN],savdepth=0,changes=0,uifc_status=0;
+uint scrn_len;
 win_t sav[MAX_BUFS];
 uint cursor,helpline=0,max_opts=MAX_OPTS;
 
@@ -106,20 +107,30 @@ int uifcini()
 	union	REGS r;
 #endif
 
-    putenv("TZ=UTC0");  /* Fix for Watcom C++ EDT default */
-
     clrscr();
     gettextinfo(&txtinfo);
+    txtinfo.screenheight;
+    /* unsupported mode? */
+    if(txtinfo.screenheight<MIN_LINES
+        || txtinfo.screenheight>MAX_LINES
+        || txtinfo.screenwidth<80) {
+        textmode(C80);  /* set mode to 80x25*/
+        gettextinfo(&txtinfo);
+    }
 
     scrn_len=txtinfo.screenheight;
-    if(scrn_len>50) {
-        cputs("\7UIFC: Can't operate in video modes beyond 80x50\r\n");
-        exit(1); }
-    scrn_len--;
+    if(scrn_len<MIN_LINES || scrn_len>MAX_LINES) {
+        cprintf("\7UIFC: Screen length (%u) must be between %d and %d lines\r\n"
+            ,scrn_len,MIN_LINES,MAX_LINES);
+        exit(1);
+    }
+    scrn_len--; /* account for status line */
 
     if(txtinfo.screenwidth<80) {
-        cputs("\7UIFC: Can't operate in video modes less than 80x25\r\n");
-        exit(1); }
+        cprintf("\7UIFC: Screen width (%u) must be at least 80 characters\r\n"
+            ,txtinfo.screenwidth);
+        exit(1);
+    }
 
 #ifndef __FLAT__
 
@@ -155,16 +166,17 @@ int uifcini()
         bclr=BLACK;
         hclr=WHITE;
         lclr=LIGHTGRAY;
-        cclr=LIGHTGRAY; }
-    else {
-        textmode(C80);
+        cclr=LIGHTGRAY;
+    } else {
         bclr=BLUE;
         hclr=YELLOW;
         lclr=WHITE;
-        cclr=CYAN; }
-    for(i=0;i<8000;i+=2) {
+        cclr=CYAN;
+    }
+    for(i=0;i<MAX_BFLN;i+=2) {
         blk_scrn[i]='°';
-        blk_scrn[i+1]=cclr|(bclr<<4); }
+        blk_scrn[i+1]=cclr|(bclr<<4);
+    }
 
     cursor=_NOCURSOR;
     _setcursortype(cursor);
@@ -311,7 +323,8 @@ else if(mode&WIN_BOT)
 	top=scrn_len-height-3-top;
 if(mode&WIN_SAV && savdepth==savnum) {
 	if((sav[savnum].buf=(char *)MALLOC((width+3)*(height+2)*2))==NULL) {
-		cprintf("UIFC: error allocating %u bytes.",(width+3)*(height+2)*2);
+		cprintf("UIFC line %d: error allocating %u bytes."
+            ,__LINE__,(width+3)*(height+2)*2);
 		return(-1); }
 	gettext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT+left+width+1
 		,SCRN_TOP+top+height,sav[savnum].buf);
@@ -329,7 +342,8 @@ else if(mode&WIN_SAV
 		,sav[savnum].buf);	/* put original window back */
 	FREE(sav[savnum].buf);
 	if((sav[savnum].buf=(char *)MALLOC((width+3)*(height+2)*2))==NULL) {
-		cprintf("UIFC: error allocating %u bytes.",(width+3)*(height+2)*2);
+		cprintf("UIFC line %d: error allocating %u bytes."
+            ,__LINE__,(width+3)*(height+2)*2);
 		return(-1); }
 	gettext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT+left+width+1
 		,SCRN_TOP+top+height,sav[savnum].buf);	  /* save again */
@@ -755,7 +769,7 @@ hitesc:
 					puttext(SCRN_LEFT+3+left,SCRN_TOP+y
 						,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
 
-					for(i=(opts+4)-height,j=0;i<opts;i++,j++)						  uprintf(SCRN_LEFT+left+3,SCRN_TOP+top+3+j
+					for(i=(opts+4)-height,j=0;i<opts;i++,j++)
 						uprintf(SCRN_LEFT+left+3,SCRN_TOP+top+3+j
 							,i==(*cur) bclr|(LIGHTGRAY<<4) : lclr|(bclr<<4)
 							,"%-*.*s",width-4,width-4,option[i]);
@@ -1192,8 +1206,8 @@ uifc_status&=~UIFC_INMSG;
 /****************************************************************************/
 int getstr(char *outstr, int max, long mode)
 {
-	uchar str[256],ch,ins=0,buf[256],y;
-	int i,j,k,f=0;	/* i=offset, j=length */
+	uchar   ch,str[256],ins=0,buf[256],y;
+	int     i,j,k,f=0;	/* i=offset, j=length */
 #ifndef __FLAT__
 	union  REGS r;
 #endif
@@ -1615,11 +1629,13 @@ void help()
 _setcursortype(_NOCURSOR);
 
 if((savscrn=(char *)MALLOC(80*25*2))==NULL) {
-	cprintf("UIFC: error allocating %u bytes\r\n",80*25*2);
+	cprintf("UIFC line %d: error allocating %u bytes\r\n"
+        ,__LINE__,80*25*2);
 	_setcursortype(cursor);
 	return; }
 if((buf=(char *)MALLOC(76*21*2))==NULL) {
-	cprintf("UIFC: error allocating %u bytes\r\n",76*21*2);
+	cprintf("UIFC line %d: error allocating %u bytes\r\n"
+        ,__LINE__,76*21*2);
 	FREE(savscrn);
 	_setcursortype(cursor);
 	return; }

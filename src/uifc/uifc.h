@@ -118,7 +118,9 @@
 #endif
 #define MAX_OPLN	75		/* Maximum length of each option per menu call */
 #define MAX_BUFS	7		/* Maximum number of screen buffers to save */
-#define MAX_BFLN	8000	/* Maximum size of screen buffers - 80x50	*/
+#define MIN_LINES   20      /* Minimum number of screen lines supported */
+#define MAX_LINES   60      /* Maximum number of screen rows supported */ 
+#define MAX_BFLN	80*MAX_LINES*2	/* Maximum size of screen buffers */
 
 #ifndef uint
 #define uint unsigned int
@@ -215,12 +217,12 @@ void mswait(int msecs);
 extern mswtyp;
 #endif
 
-extern char scrn_len,lclr,hclr,bclr,cclr,blk_scrn[MAX_BFLN],savdepth
+extern char lclr,hclr,bclr,cclr,blk_scrn[MAX_BFLN],savdepth
 	,changes,show_free_mem,savnum,uifc_status,*helpfile,*helpbuf
 	,helpdatfile[256]
 	,helpixbfile[256];
 extern win_t sav[MAX_BUFS];
-extern uint cursor,helpline;
+extern uint cursor,helpline,scrn_len;
 
 int uifcini(void);
 int uscrn(char *str);
