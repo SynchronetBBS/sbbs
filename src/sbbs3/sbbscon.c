@@ -751,15 +751,15 @@ static void terminate(void)
 	while(bbs_running || ftp_running || web_running || mail_running || services_running)  {
 		if(count && (count%10)==0) {
 			if(bbs_running)
-				bbs_lputs(NULL,LOG_INFO,"BBS System thread still running");
+				lputs(LOG_INFO,"BBS System thread still running");
 			if(ftp_running)
-				ftp_lputs(NULL,LOG_INFO,"FTP Server thread still running");
+				lputs(LOG_INFO,"FTP Server thread still running");
 			if(web_running)
-				web_lputs(NULL,LOG_INFO,"Web Server thread still running");
+				lputs(LOG_INFO,"Web Server thread still running");
 			if(mail_running)
-				mail_lputs(NULL,LOG_INFO,"Mail Server thread still running");
+				lputs(LOG_INFO,"Mail Server thread still running");
 			if(services_running)
-				services_lputs(NULL,LOG_INFO,"Services thread still running");
+				lputs(LOG_INFO,"Services thread still running");
 		}
 		count++;
 		SLEEP(1000);
@@ -769,21 +769,18 @@ static void terminate(void)
 static void read_startup_ini(bbs_startup_t* bbs, ftp_startup_t* ftp, web_startup_t* web
 							 ,mail_startup_t* mail, services_startup_t* services)
 {
-	char	str[MAX_PATH+1];
 	FILE*	fp=NULL;
 
 	/* Read .ini file here */
 	if(ini_file[0]!=0) { 
 		if((fp=fopen(ini_file,"r"))==NULL) {
-			sprintf(str,"!ERROR %d (%s) opening %s",errno,strerror(errno),ini_file);
-			bbs_lputs(NULL,LOG_ERR,str);
+			lprintf(LOG_ERR,"!ERROR %d (%s) opening %s",errno,strerror(errno),ini_file);
 		} else {
-			sprintf(str,"Reading %s",ini_file);
-			bbs_lputs(NULL,LOG_INFO,str);
+			lprintf(LOG_INFO,"Reading %s",ini_file);
 		}
 	}
 	if(fp==NULL)
-		bbs_lputs(NULL,LOG_WARNING,"Using default initialization values");
+		lputs(LOG_WARNING,"Using default initialization values");
 
 	/* We call this function to set defaults, even if there's no .ini file */
 	sbbs_read_ini(fp, 
@@ -863,8 +860,7 @@ void _sighandler_quit(int sig)
 	pthread_mutex_lock(&mutex);
 	/* Can I get away with leaving this locked till exit? */
 
-	sprintf(str,"     Got quit signal (%d)",sig);
-	lputs(LOG_NOTICE,str);
+	lprintf(LOG_NOTICE,"     Got quit signal (%d)",sig);
 	terminate();
 
     exit(0);
@@ -885,10 +881,10 @@ void _sighandler_rerun(int sig)
 	services_startup.recycle_now=TRUE;
 }
 
-static void handle_sigs(void)  {
+static void handle_sigs(void)
+{
 	int			sig;
 	sigset_t	sigs;
-	char		str[1024];
 
 	thread_up(NULL,TRUE,TRUE);
 
@@ -914,8 +910,7 @@ static void handle_sigs(void)  {
 	pthread_sigmask(SIG_BLOCK,&sigs,NULL);
 	while(1)  {
 		sigwait(&sigs,&sig);    /* wait here until signaled */
-		sprintf(str,"     Got signal (%d)",sig);
-		lputs(LOG_NOTICE,str);
+		lprintf(LOG_NOTICE,"     Got signal (%d)",sig);
 		switch(sig)  {
 			/* QUIT-type signals */
 			case SIGINT:
@@ -928,8 +923,7 @@ static void handle_sigs(void)  {
 				_sighandler_rerun(sig);
 				break;
 			default:
-				sprintf(str,"     Signal has no handler (unexpected)");
-				lputs(LOG_NOTICE,str);
+				lputs(LOG_NOTICE,"     Signal has no handler (unexpected)");
 		}
 	}
 }
@@ -1540,8 +1534,7 @@ int main(int argc, char** argv)
 
     scfg.size=sizeof(scfg);
 	SAFECOPY(error,UNKNOWN_LOAD_ERROR);
-	sprintf(str,"Loading configuration files from %s", scfg.ctrl_dir);
-	bbs_lputs(NULL,LOG_INFO,str);
+	lprintf(LOG_INFO,"Loading configuration files from %s", scfg.ctrl_dir);
 	if(!load_cfg(&scfg, NULL /* text.dat */, TRUE /* prep */, error)) {
 		lprintf(LOG_ERR,"!ERROR Loading Configuration Files: %s", error);
         return(-1);
@@ -1607,16 +1600,16 @@ int main(int argc, char** argv)
 
 #ifdef __unix__
 	if(getuid())  { /*  are we running as a normal user?  */
-		sprintf(str,"!Started as non-root user.  Cannot bind() to ports below %u.", IPPORT_RESERVED);
-		bbs_lputs(NULL,LOG_ERR,str);
+		lprintf(LOG_WARN
+			,"!Started as non-root user.  Cannot bind() to ports below %u.", IPPORT_RESERVED);
 	}
 	
 	else if(new_uid_name[0]==0)   /*  check the user arg, if we have uid 0 */
-		bbs_lputs(NULL,LOG_WARNING,"Warning: No user account specified, running as root.");
+		lputs(LOG_WARNING,"Warning: No user account specified, running as root.");
 	
 	else 
 	{
-		bbs_lputs(NULL,LOG_INFO,"Waiting for child threads to bind ports...");
+		lputs(LOG_INFO,"Waiting for child threads to bind ports...");
 		while((run_bbs && !(bbs_running || bbs_stopped)) 
 				|| (run_ftp && !(ftp_running || ftp_stopped)) 
 				|| (run_web && !(web_running || web_stopped)) 
@@ -1624,20 +1617,20 @@ int main(int argc, char** argv)
 				|| (run_services && !(services_running || services_stopped)))  {
 			mswait(1000);
 			if(run_bbs && !(bbs_running || bbs_stopped))
-				bbs_lputs(NULL,LOG_INFO,"Waiting for BBS thread");
+				lputs(LOG_INFO,"Waiting for BBS thread");
 			if(run_web && !(web_running || web_stopped))
-				bbs_lputs(NULL,LOG_INFO,"Waiting for Web thread");
+				lputs(LOG_INFO,"Waiting for Web thread");
 			if(run_ftp && !(ftp_running || ftp_stopped))
-				bbs_lputs(NULL,LOG_INFO,"Waiting for FTP thread");
+				lputs(LOG_INFO,"Waiting for FTP thread");
 			if(run_mail && !(mail_running || mail_stopped))
-				bbs_lputs(NULL,LOG_INFO,"Waiting for Mail thread");
+				lputs(LOG_INFO,"Waiting for Mail thread");
 			if(run_services && !(services_running || services_stopped))
-				bbs_lputs(NULL,LOG_INFO,"Waiting for Services thread");
+				lputs(LOG_INFO,"Waiting for Services thread");
 		}
 
 		if(!do_setuid(FALSE))
 				/* actually try to change the uid of this process */
-			bbs_lputs(NULL,LOG_ERR,"!Setting new user_id failed!  (Does the user exist?)");
+			lputs(LOG_ERR,"!Setting new user_id failed!  (Does the user exist?)");
 	
 		else {
 			char str[256];
@@ -1657,9 +1650,7 @@ int main(int argc, char** argv)
 				sprintf(genv,"GROUP=%s",new_gid_name);
 				putenv(genv);
 			}
-			sprintf(str,"Successfully changed user_id to %s", new_uid_name);
-			bbs_lputs(NULL,LOG_INFO,str);
-
+			lprintf(LOG_INFO,"Successfully changed user_id to %s", new_uid_name);
 		}
 	}
 
@@ -1684,7 +1675,7 @@ int main(int argc, char** argv)
             			(void)close(fd);
     			}
 				is_daemon=TRUE;
-				bbs_lputs(NULL, LOG_ERR, "STDIN is not a tty anymore... switching to syslog logging");
+				lputs(LOG_WARN, "STDIN is not a tty anymore... switching to syslog logging");
 				select(0,NULL,NULL,NULL,NULL);	/* Sleep forever - Should this just exit the thread? */
 			}
 #endif
