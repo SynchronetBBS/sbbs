@@ -248,21 +248,37 @@ static JSClass js_method_class = {
 	,JS_FinalizeStub		/* finalize		*/
 };
 
+/* Convert from Synchronet-specific jsMethodSpec to JSAPI's JSFunctionSpec */
+
+int DLLCALL js_MethodsToFunctions(jsMethodSpec meth[], JSFunctionSpec func[])
+{
+	int			i;
+
+	/* Convert from jsMethodSpec to JSFunctionSpec */
+	for(i=0;meth[i].name!=NULL;i++) {
+		func[i].name=meth[i].name;
+		func[i].call=meth[i].call;
+		func[i].nargs=meth[i].nargs;
+	}
+
+	return(i);
+}
+
+#ifdef _DEBUG
+
 static const char* method_array_name = "_method_list";
 
 JSBool 
-DLLCALL js_DefineMethods(JSContext* cx, JSObject* obj, JSFunctionSpec *funcs)
+DLLCALL js_DefineMethods(JSContext* cx, JSObject* obj, jsMethodSpec *funcs)
 {
-	int			i;
+	int			i,a;
 	jsuint		len=0;
 	jsval		val;
 	JSObject*	method;
+	JSObject*	alias_list;
 	JSObject*	method_array;
 
-	if(!JS_DefineFunctions(cx,obj,funcs))
-		return(JS_FALSE);
-
-	/* Return existing user object if it's already been created */
+	/* Return existing method_list array if it's already been created */
 	if(JS_GetProperty(cx,obj,method_array_name,&val) && val!=JSVAL_VOID)
 		method_array=JSVAL_TO_OBJECT(val);
 	else
@@ -273,18 +289,53 @@ DLLCALL js_DefineMethods(JSContext* cx, JSObject* obj, JSFunctionSpec *funcs)
 
 	for(i=0;funcs[i].name;i++) {
 
+		JS_DefineFunction(cx, obj, funcs[i].name, funcs[i].call, funcs[i].nargs, 0);
+
 		method = JS_NewObject(cx, &js_method_class, NULL, method_array);
 
 		if(method==NULL)
 			return(JS_FALSE);
 
-		val = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,funcs[i].name));
-		if(!JS_SetProperty(cx, method, "name", &val))
-			return(JS_FALSE);
+		if(funcs[i].name!=NULL) {
+			val = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,funcs[i].name));
+			JS_SetProperty(cx, method, "name", &val);
+		}
 
 		val = INT_TO_JSVAL(funcs[i].nargs);
 		if(!JS_SetProperty(cx, method, "nargs", &val))
 			return(JS_FALSE);
+
+		if(funcs[i].type!=NULL) {
+			val = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,funcs[i].type));
+			JS_SetProperty(cx, method, "type", &val);
+		}
+
+		if(funcs[i].args!=NULL) {
+			val = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,funcs[i].args));
+			JS_SetProperty(cx, method, "args", &val);
+		}
+
+		if(funcs[i].desc!=NULL) { 
+			val = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,funcs[i].desc));
+			JS_SetProperty(cx, method, "desc", &val);
+		}
+
+		if(funcs[i].alias != NULL) {
+			alias_list = JS_NewArrayObject(cx, 0, NULL);
+			if(alias_list==NULL)
+				return(JS_FALSE);
+			for(a=0;funcs[i].alias[a]!=NULL;a++) {
+
+				JS_DefineFunction(cx, obj, funcs[i].alias[a], funcs[i].call, funcs[i].nargs, 0);
+
+				val = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,funcs[i].alias[a]));
+				if(!JS_SetElement(cx, alias_list, a, &val))
+					return(JS_FALSE);
+			}
+			if(!JS_DefineProperty(cx, method, "alias_list", OBJECT_TO_JSVAL(alias_list)
+				, NULL, NULL, 0))
+				return(JS_FALSE);
+		}
 
 		val=OBJECT_TO_JSVAL(method);
 		if(!JS_SetElement(cx, method_array, len+i, &val))
@@ -297,6 +348,24 @@ DLLCALL js_DefineMethods(JSContext* cx, JSObject* obj, JSFunctionSpec *funcs)
 
 	return(JS_TRUE);
 }
+
+#else // NON-DEBUG
+
+JSBool 
+DLLCALL js_DefineMethods(JSContext* cx, JSObject* obj, jsMethodSpec *funcs)
+{
+	int			i,a;
+
+	for(i=0;funcs[i].name;i++) {
+		JS_DefineFunction(cx, obj, funcs[i].name, funcs[i].call, funcs[i].nargs, 0);
+		if(funcs[i].alias != NULL)
+			for(a=0;funcs[i].alias[a]!=NULL;a++)
+				JS_DefineFunction(cx, obj, funcs[i].alias[a], funcs[i].call, funcs[i].nargs, 0);
+	}
+	return(JS_TRUE);
+}
+
+#endif
 
 /* 
  * @method: log
@@ -475,13 +544,13 @@ js_prompt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     return(JS_TRUE);
 }
 
-static JSFunctionSpec js_global_functions[] = {
-	{"log",				js_log,				1},		/* Log a string */
-    {"print",           js_print,           0},		/* Print a string, auto-crlf */
-    {"printf",          js_printf,          1},		/* Print a formatted string */
-	{"alert",			js_alert,			1},		/* alert (ala client-side) */
-	{"prompt",			js_prompt,			1},		/* prompt (ala clent-side) */ 
-	{"confirm",			js_confirm,			1},		/* confirm (ala client-side) */
+static jsMethodSpec js_global_functions[] = {
+	{"log",				js_log,				1,	"void",		"string text [,text]",				"Log a string"								},
+    {"print",           js_print,           0,	"void",		"string text [,test]",				"Print a string, auto-crlf"					},
+    {"printf",          js_printf,          1,	"void",		"string format [,value][,value]",	"Print a formatted string"					},	
+	{"alert",			js_alert,			1,	"void",		"string text",						"Print an alert message (ala client-side)"	},
+	{"prompt",			js_prompt,			1,	"string",	"string text",						"Prompt for a user string  (ala clent-side)"},
+	{"confirm",			js_confirm,			1,	"bool",		"string text",						"Confirm a question (ala client-side)"		},
     {0}
 };
 
