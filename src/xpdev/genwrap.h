@@ -186,7 +186,7 @@ extern "C" {
 	#define YIELD()			Sleep(1) /* Must sleep at least 1ms to avoid 100% CPU utilization */
 	#define	MAYBE_YIELD()	Sleep(0)
 	#define SLEEP(x)		Sleep(x)
-	#define BEEP(freq,dur)	Beep(freq,dur)
+	#define BEEP(freq,dur)	Beep((DWORD)(freq),(DWORD)(dur))
 	#define	popen			_popen
 	#define pclose			_pclose
 
