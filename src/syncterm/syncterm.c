@@ -265,10 +265,10 @@ int main(int argc, char **argv)
         "-v# =  set video mode to # (default=auto)\r\n"
         "-l# =  set screen lines to # (default=auto-detect)\r\n"
 		"\r\n"
-		"URL format is: (rlogin|telnet)://[user[:password]@]domainname[:port]\r\n";
-		"examples: rlogin://deuce:password@nix.synchro.net:5885\r\n";
-		"          telnet://deuce@nix.synchro.net\r\n";
-		"          telnet://nix.synchro.net\r\n";
+		"URL format is: (rlogin|telnet)://[user[:password]@]domainname[:port]\r\n"
+		"examples: rlogin://deuce:password@nix.synchro.net:5885\r\n"
+		"          telnet://deuce@nix.synchro.net\r\n"
+		"          telnet://nix.synchro.net\r\n"
         );
     exit(0);
 }
