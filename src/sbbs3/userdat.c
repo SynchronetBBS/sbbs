@@ -1003,6 +1003,88 @@ int DLLCALL putsmsg(scfg_t* cfg, int usernumber, char *strin)
 }
 
 /****************************************************************************/
+/* Returns any short messages waiting for user number, buffer must be freed */
+/****************************************************************************/
+char* DLLCALL getsmsg(scfg_t* cfg, int usernumber)
+{
+	char	str[MAX_PATH+1], HUGE16 *buf;
+	int		i;
+    int		file;
+    long	length;
+	node_t	node;
+
+	sprintf(str,"%smsgs/%4.4u.msg",cfg->data_dir,usernumber);
+	if(flength(str)<1L)
+		return(NULL);
+	if((file=nopen(str,O_RDWR))==-1)
+		return(NULL);
+	length=filelength(file);
+	if((buf=(char *)malloc(length+1))==NULL) {
+		close(file);
+		return(NULL);
+	}
+	if(read(file,buf,length)!=length) {
+		close(file);
+		free(buf);
+		return(NULL);
+	}
+	chsize(file,0L);
+	close(file);
+	buf[length]=0;
+
+	for(i=1;i<=cfg->sys_nodes;i++) {	/* clear msg waiting flag */
+		getnodedat(cfg,i,&node,NULL);
+		if(node.useron==usernumber
+			&& (node.status==NODE_INUSE || node.status==NODE_QUIET)
+			&& node.misc&NODE_MSGW) {
+			getnodedat(cfg,i,&node,&file);
+			node.misc&=~NODE_MSGW;
+			putnodedat(cfg,i,&node,file); 
+		} 
+	}
+
+	return(buf);	/* caller must free */
+}
+
+char* DLLCALL getnmsg(scfg_t* cfg, int node_num)
+{
+	char	str[MAX_PATH+1];
+	char*	buf;
+	int		file;
+	long	length;
+	node_t	node;
+
+	getnodedat(cfg,node_num,&node,&file);
+	node.misc&=~NODE_NMSG;          /* clear the NMSG flag */
+	putnodedat(cfg,node_num,&node,file);
+
+	sprintf(str,"%smsgs/n%3.3u.msg",cfg->data_dir,node_num);
+	if(flength(str)<1L)
+		return(NULL);
+	if((file=nopen(str,O_RDWR))==-1)
+		return(NULL); 
+	length=filelength(file);
+	if(!length) {
+		close(file);
+		return(NULL); 
+	}
+	if((buf=(char *)malloc(length+1))==NULL) {
+		close(file);
+		return(NULL); 
+	}
+	if(read(file,buf,length)!=length) {
+		close(file);
+		free(buf);
+		return(NULL);
+	}
+	chsize(file,0L);
+	close(file);
+	buf[length]=0;
+
+	return(buf);	/* caller must free */
+}
+
+/****************************************************************************/
 /* Creates a short message for node 'num' that contains 'strin'             */
 /****************************************************************************/
 int DLLCALL putnmsg(scfg_t* cfg, int num, char *strin)
