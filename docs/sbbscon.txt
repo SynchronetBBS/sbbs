@@ -176,9 +176,9 @@ Installing the termcap file:
 3) *** FreeBSD Only *** run the command:
 	``cap_mkdb -f /usr/share/misc/termcap.db /etc/termcap''
 
-Once the terminal capability files are installed, edit the ExternalTerm value
-in the [BBS] section of your .ini file to read:
-    ExternalTerm=ansi-bbs
+Once the terminal capability files are installed, edit the ExternalTermANSI
+value in the [BBS] section of your .ini file to read:
+    ExternalTermANSI=ansi-bbs
 
 
 6. Running Synchronet
