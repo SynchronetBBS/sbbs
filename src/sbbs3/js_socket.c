@@ -471,7 +471,7 @@ static JSBool
 js_setsockopt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	int			opt;
-	int			val=1;
+	int32		val=1;
 	private_t*	p;
 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
