@@ -476,6 +476,9 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, client_t*
 		if(cfg->sys_misc&SM_FASTMAIL)
 			storage=SMB_FASTALLOC;
 
+		/* duplicate message-IDs must be allowed in mail database */
+		dupechk_hashes&=~(1<<SMB_HASH_SOURCE_MSG_ID);
+
 	} else {	/* sub-board */
 
 		smb->status.max_crcs=cfg->sub[smb->subnum]->maxcrcs;
