@@ -336,14 +336,15 @@
 
 
 enum {
-     NET_NONE
-    ,NET_UNKNOWN
-    ,NET_FIDO
-    ,NET_POSTLINK
-    ,NET_QWK
-	,NET_INTERNET
-	,NET_WWIV
-	,NET_MHS
+     NET_NONE				/* Local message */
+    ,NET_UNKNOWN			/* Unknown network type */
+    ,NET_FIDO				/* FidoNet address, faddr_t format (4D) */
+    ,NET_POSTLINK			/* Imported with UTI driver */
+    ,NET_QWK				/* QWK networked messsage */
+	,NET_INTERNET			/* Internet e-mail, netnews, etc. */
+	,NET_WWIV				/* unused */
+	,NET_MHS				/* unused */
+	,NET_FIDO_ASCII			/* FidoNet address, ASCIIZ format (e.g. 5D) */
 
 /* Add new ones here */
 
@@ -535,6 +536,7 @@ typedef struct {			// Message base
 	ulong	retry_time; 	// Maximum number of seconds to retry opens/locks
 	ulong	retry_delay;	// Time-slice yield (milliseconds) while retrying
 	smbstatus_t status; 	// Status header record
+	BOOL	locked;			// SMB header is locked
 	char	shd_buf[SHD_BLOCK_LEN]; 	// File I/O buffer for header file
 	char	last_error[128];			// Last error message
 
