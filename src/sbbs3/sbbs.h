@@ -47,15 +47,16 @@
 /***************/
 #ifdef _WIN32			/* Windows */
 
-#include <io.h>
-#include <share.h>
-#include <windows.h>
-#include <process.h>	/* _beginthread() prototype */
-#include <direct.h>		/* _mkdir() prototype */
+	#include <io.h>
+	#include <share.h>
+	#include <windows.h>
+	#include <process.h>	/* _beginthread() prototype */
+	#include <direct.h>		/* _mkdir() prototype */
+	#include <mmsystem.h>	/* SND_ASYNC */
 
 #elif defined(__unix__)	/* Unix-variant */
 
-#include <unistd.h>		/* close */
+	#include <unistd.h>		/* close */
 
 #endif
 
