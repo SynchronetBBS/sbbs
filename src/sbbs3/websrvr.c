@@ -1402,7 +1402,7 @@ static BOOL check_request(http_session_t * session)
 		}
 		last_slash=strrchr(path,'/');
 		if(last_slash==NULL)
-			last_slash=strrchr(path,'\');
+			last_slash=strrchr(path,'\\');
 		if(last_slash==NULL) {
 			send_error(session,"404 Not Found");
 			return(FALSE);
