@@ -20,7 +20,8 @@ function writeln(str)
 
 for(h in host_list) {
 	sock = new Socket();
-	if(!sock.bind(0,server.interface_ip_address)) {
+	if( (this.server != undefined) &&
+	    !sock.bind(0,server.interface_ip_address)) {
 		printf("Error %lu binding socket to %s\r\n"
 			,sock.last_error,server.interface_ip_address);
 		continue;
