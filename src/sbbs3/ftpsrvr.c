@@ -100,7 +100,7 @@ static DWORD	sockets=0;
 static HANDLE	socket_mutex=NULL;
 static time_t	uptime;
 #ifdef _DEBUG
-	static BYTE 	socket_debug[20000]={0};
+	static BYTE 	socket_debug[0x10000]={0};
 
 	#define	SOCKET_DEBUG_CTRL		(1<<0)	// 0x01
 	#define SOCKET_DEBUG_SEND		(1<<1)	// 0x02
@@ -224,7 +224,7 @@ static SOCKET ftp_open_socket(int type)
 	if(sock!=INVALID_SOCKET) {
 		sockets++;
 #ifdef _DEBUG
-		lprintf("%04d Socket opened (%d sockets in use)",sock,sockets);
+		lprintf("%04d Socket opened (%u sockets in use)",sock,sockets);
 #endif
 	}
 	return(sock);
@@ -241,18 +241,18 @@ static int ftp_close_socket(SOCKET* sock, int line)
 #define ReleaseMutex(x)
 #else
 	if((result=WaitForSingleObject(socket_mutex,5000))!=WAIT_OBJECT_0) 
-		lprintf("%04d !ERROR %d getting socket mutex from line %d"
+		lprintf("%04d !ERROR %d getting socket mutex from line %u"
 			,*sock,ERROR_VALUE,line);
 
 	if(IsBadWritePtr(sock,sizeof(SOCKET))) {
 		ReleaseMutex(socket_mutex);
-		lprintf("0000 !BAD socket pointer in close_socket from line %d",line);
+		lprintf("0000 !BAD socket pointer in close_socket from line %u",line);
 		return(-1);
 	}
 #endif
 	if((*sock)==INVALID_SOCKET) {
 		ReleaseMutex(socket_mutex);
-		lprintf("0000 !INVALID_SOCKET in close_socket from line %d",line);
+		lprintf("0000 !INVALID_SOCKET in close_socket from line %u",line);
 		return(-1);
 	}
 
@@ -266,11 +266,11 @@ static int ftp_close_socket(SOCKET* sock, int line)
 
 	if(result!=0) {
 		if(ERROR_VALUE!=ENOTSOCK)
-			lprintf("%04d !ERROR %d closing socket from line %d",*sock,ERROR_VALUE,line);
+			lprintf("%04d !ERROR %d closing socket from line %u",*sock,ERROR_VALUE,line);
 	}
 #ifdef _DEBUG
 	else 
-		lprintf("%04d Socket closed (%d sockets in use) from line %d",*sock,sockets,line);
+		lprintf("%04d Socket closed (%u sockets in use) from line %u",*sock,sockets,line);
 #endif
 	*sock=INVALID_SOCKET;
 	ReleaseMutex(socket_mutex);
@@ -321,7 +321,7 @@ static int sockprintf(SOCKET sock, char *fmt, ...)
 				lprintf("%04d !ERROR %d sending",sock,ERROR_VALUE);
 			return(0);
 		}
-		lprintf("%04d !ERROR: short send: %d instead of %d",sock,result,len);
+		lprintf("%04d !ERROR: short send: %u instead of %u",sock,result,len);
 	}
 	return(len);
 }
@@ -440,7 +440,7 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 		file[0]=0;
 
 	if(report->lineno)
-		sprintf(line," line %d",report->lineno);
+		sprintf(line," line %u",report->lineno);
 	else
 		line[0]=0;
 
@@ -1086,20 +1086,20 @@ BOOL download_stats(ulong bytes)
 void recverror(SOCKET socket, int rd, int line)
 {
 	if(rd==0) 
-		lprintf("%04d Socket closed by peer on receive (line %d)"
+		lprintf("%04d Socket closed by peer on receive (line %u)"
 			,socket, line);
 	else if(rd==SOCKET_ERROR) {
 		if(ERROR_VALUE==ECONNRESET) 
-			lprintf("%04d Connection reset by peer on receive (line %d)"
+			lprintf("%04d Connection reset by peer on receive (line %u)"
 				,socket, line);
 		else if(ERROR_VALUE==ECONNABORTED) 
-			lprintf("%04d Connection aborted by peer on receive (line %d)"
+			lprintf("%04d Connection aborted by peer on receive (line %u)"
 				,socket, line);
 		else
-			lprintf("%04d !ERROR %d receiving on socket (line %d)"
+			lprintf("%04d !ERROR %d receiving on socket (line %u)"
 				,socket, ERROR_VALUE, line);
 	} else
-		lprintf("%04d !ERROR: recv on socket returned unexpected value: %d (line %d)"
+		lprintf("%04d !ERROR: recv on socket returned unexpected value: %d (line %u)"
 			,socket, rd, line);
 }
 
@@ -1255,11 +1255,11 @@ char * cmdstr(user_t* user, char *instr, char *fpath, char *fspec, char *cmd)
                     strcat(cmd,scfg.exec_dir);
                     break;
                 case '#':   /* Node number (same as SBBSNNUM environment var) */
-                    sprintf(str,"%d",scfg.node_num);
+                    sprintf(str,"%u",scfg.node_num);
                     strcat(cmd,str);
                     break;
                 case '*':
-                    sprintf(str,"%03d",scfg.node_num);
+                    sprintf(str,"%03u",scfg.node_num);
                     strcat(cmd,str);
                     break;
                 case '$':   /* Credits */
@@ -1359,13 +1359,33 @@ static void send_thread(void* arg)
 	*xfer.inprogress=TRUE;
 	*xfer.aborted=FALSE;
 	if(startup->options&FTP_OPT_DEBUG_DATA || xfer.filepos)
-		lprintf("%04d DATA socket %d sending %s from offset %ld"
+		lprintf("%04d DATA socket %d sending %s from offset %lu"
 			,xfer.ctrl_sock,*xfer.data_sock,xfer.filename,xfer.filepos);
 
 	fseek(fp,xfer.filepos,SEEK_SET);
 	last_report=start=time(NULL);
 	while(!feof(fp)) {
+
 		now=time(NULL);
+
+		/* Periodic progress report */
+		if(total && now>=last_report+XFER_REPORT_INTERVAL) {
+			if(xfer.filepos)
+				sprintf(str," from offset %lu",xfer.filepos);
+			else
+				str[0]=0;
+			lprintf("%04d Sent %lu bytes (%lu total) of %s (%lu cps)%s"
+				,xfer.ctrl_sock,total,length,xfer.filename
+#if 0
+				,now-start ? total/(now-start) : total*2
+#else
+				,(total-last_total)/(now-last_report)
+#endif
+				,str);
+			last_total=total;
+			last_report=now;
+		}
+
 		if(*xfer.aborted==TRUE) {
 			lprintf("%04d !DATA Transfer aborted",xfer.ctrl_sock);
 			sockprintf(xfer.ctrl_sock,"426 Transfer aborted.");
@@ -1388,7 +1408,7 @@ static void send_thread(void* arg)
 
 		i=select((*xfer.data_sock)+1,NULL,&socket_set,NULL,&tv);
 		if(i==SOCKET_ERROR) {
-			lprintf("%04d !DATA ERROR %d selecting socket %u for send"
+			lprintf("%04d !DATA ERROR %d selecting socket %d for send"
 				,xfer.ctrl_sock, ERROR_VALUE, *xfer.data_sock);
 			sockprintf(xfer.ctrl_sock,"426 Transfer error.");
 			error=TRUE;
@@ -1397,24 +1417,6 @@ static void send_thread(void* arg)
 		if(i<1) {
 			mswait(1);
 			continue;
-		}
-
-		/* Periodic progress report */
-		if(total && now>=last_report+XFER_REPORT_INTERVAL) {
-			if(xfer.filepos)
-				sprintf(str," from offset %lu",xfer.filepos);
-			else
-				str[0]=0;
-			lprintf("%04d Sent %ld bytes (%ld total) of %s (%lu cps)%s"
-				,xfer.ctrl_sock,total,length,xfer.filename
-#if 0
-				,now-start ? total/(now-start) : total*2
-#else
-				,(total-last_total)/(now-last_report)
-#endif
-				,str);
-			last_total=total;
-			last_report=now;
 		}
 
 		rd=fread(buf,sizeof(char),sizeof(buf),fp);
@@ -1547,6 +1549,8 @@ static void receive_thread(void* arg)
 	time_t		now;
 	time_t		start;
 	time_t		last_report;
+	fd_set		socket_set;
+	struct timeval tv;
 
 	xfer=*(xfer_t*)arg;
 
@@ -1577,7 +1581,7 @@ static void receive_thread(void* arg)
 				sprintf(str," from offset %lu",xfer.filepos);
 			else
 				str[0]=0;
-			lprintf("%04d Received %ld bytes of %s (%lu cps)%s"
+			lprintf("%04d Received %lu bytes of %s (%lu cps)%s"
 				,xfer.ctrl_sock,total,xfer.filename
 #if 0
 				,now-start ? total/(now-start) : total*2
@@ -1602,6 +1606,27 @@ static void receive_thread(void* arg)
 			error=TRUE;
 			break;
 		}
+
+		/* Check socket for readability (using select) */
+		tv.tv_sec=0;
+		tv.tv_usec=0;
+
+		FD_ZERO(&socket_set);
+		FD_SET(*xfer.data_sock,&socket_set);
+
+		i=select((*xfer.data_sock)+1,&socket_set,NULL,NULL,&tv);
+		if(i==SOCKET_ERROR) {
+			lprintf("%04d !DATA ERROR %d selecting socket %d for receive"
+				,xfer.ctrl_sock, ERROR_VALUE, *xfer.data_sock);
+			sockprintf(xfer.ctrl_sock,"426 Transfer error.");
+			error=TRUE;
+			break;
+		}
+		if(i<1) {
+			mswait(1);
+			continue;
+		}
+
 #ifdef _DEBUG
 		socket_debug[xfer.ctrl_sock]|=SOCKET_DEBUG_RECV_BUF;
 #endif
@@ -2577,7 +2602,7 @@ static void ctrl_thread(void* arg)
 			if(!(user.exempt&FLAG('D')) && (user.cdt+user.freecdt)>0)
 				sockprintf(sock,"230-You have %lu download credits."
 					,user.cdt+user.freecdt);
-			sockprintf(sock,"230 You are allowed %ld minutes of use for this session."
+			sockprintf(sock,"230 You are allowed %lu minutes of use for this session."
 				,timeleft/60);
 			sprintf(qwkfile,"%sfile/%04d.qwk",scfg.data_dir,user.number);
 
@@ -2731,9 +2756,9 @@ static void ctrl_thread(void* arg)
 			else
 				avail=getfreediskspace(scfg.data_dir);	/* Change to temp_dir? */
 			if(l && l>avail)
-				sockprintf(sock,"504 Only %ld bytes available.",avail);
+				sockprintf(sock,"504 Only %lu bytes available.",avail);
 			else
-				sockprintf(sock,"200 %ld bytes available.",avail);
+				sockprintf(sock,"200 %lu bytes available.",avail);
 			continue;
 		}
 
@@ -2744,7 +2769,7 @@ static void ctrl_thread(void* arg)
 				filepos=atol(p);
 			else
 				filepos=0;
-			sockprintf(sock,"350 Restarting at %ld. Send STORE or RETRIEVE to initiate transfer."
+			sockprintf(sock,"350 Restarting at %lu. Send STORE or RETRIEVE to initiate transfer."
 				,filepos);
 			continue;
 		}
@@ -3049,7 +3074,7 @@ static void ctrl_thread(void* arg)
 					continue;
 				}
 				/* RETR */
-				lprintf("%04d %s downloading: %s (%ld bytes) in %s mode"
+				lprintf("%04d %s downloading: %s (%lu bytes) in %s mode"
 					,sock,user.alias,fname,flength(fname)
 					,pasv_sock==INVALID_SOCKET ? "active":"passive");
 				sockprintf(sock,"150 Opening BINARY mode data connection for file transfer.");
@@ -3483,7 +3508,7 @@ static void ctrl_thread(void* arg)
 				success=TRUE;
 				delfile=TRUE;
 				credits=FALSE;
-				lprintf("%04d %s downloading QWK packet (%ld bytes) in %s mode"
+				lprintf("%04d %s downloading QWK packet (%lu bytes) in %s mode"
 					,sock,user.alias,flength(fname)
 					,pasv_sock==INVALID_SOCKET ? "active":"passive");
 			/* ASCII Index File */
@@ -3777,7 +3802,7 @@ static void ctrl_thread(void* arg)
 					if(fexist(fname)) {
 						success=TRUE;
 						if(!getsize && !getdate && !delecmd)
-							lprintf("%04d %s downloading: %s (%ld bytes) in %s mode"
+							lprintf("%04d %s downloading: %s (%lu bytes) in %s mode"
 								,sock,user.alias,fname,flength(fname)
 								,pasv_sock==INVALID_SOCKET ? "active":"passive");
 					} 
