@@ -16,12 +16,11 @@ if(offset > 0)  {
 	}
 }
 var currpage=Math.floor(offset/max_messages);
-var total_pages=Math.floor(msgbase.total_msgs/max_messages)-1;
+var total_pages=Math.floor(msgbase.total_msgs/max_messages);
 var firstpage=0;
 var lastpage=firstpage+max_pages-1;
 if(lastpage>total_pages)
 	lastpage=total_pages;
-
 /* Ensure currpage is inside first/last */
 var lcount=0;
 while(currpage>lastpage) {
