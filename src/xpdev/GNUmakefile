@@ -7,7 +7,7 @@ endif
 MTOBJS	+=	$(MTOBJODIR)$(DIRSEP)xpevent$(OFILE)
 
 MT_CFLAGS += -DLINK_LIST_THREADSAFE
-CFLAGS	+=	-DSOUNDCARD_H_IN=$(shell if [ -e /usr/include/sys/soundcard.h ] ; then echo SYS ; elif [ -e /usr/include/soundcard.h ] ; then echo INCLUDE ; elif [ -e /usr/include/linux/soundcard.h ] ; then echo LINUX ; else echo NONE ; fi)
+CFLAGS	+=	-DSOUNDCARD_H_IN=$(shell if [ -e /usr/include/sys/soundcard.h ] ; then echo SYS ; elif [ -e /usr/include/soundcard.h ] ; then echo INCLUDE ; elif [ -e /usr/include/linux/soundcard.h ] ; then echo LINUX ; else echo NONE ; fi) -I.
 
 # Executable Build Rule
 $(WRAPTEST): $(OBJODIR)/wraptest.o $(DEPS)
