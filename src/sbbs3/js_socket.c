@@ -125,10 +125,13 @@ static ushort js_port(JSContext* cx, jsval val, int type)
 {
 	char*			cp;
 	JSString*		str;
+	int32			i=0;
 	struct servent*	serv;
 
-	if(JSVAL_IS_INT(val))
-		return((ushort)JSVAL_TO_INT(val));
+	if(JSVAL_IS_NUMBER(val)) {
+		JS_ValueToInt32(cx,val,&i);
+		return((ushort)i);
+	}
 	if(JSVAL_IS_STRING(val)) {
 		str = JS_ValueToString(cx,val);
 		cp = JS_GetStringBytes(str);

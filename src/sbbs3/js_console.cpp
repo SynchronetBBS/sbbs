@@ -370,11 +370,11 @@ js_getstr(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_FALSE);
 
 	for(i=0;i<argc;i++) {
-		if(JSVAL_IS_INT(argv[i])) {
+		if(JSVAL_IS_NUMBER(argv[i])) {
 			if(!maxlen)
-				maxlen=JSVAL_TO_INT(argv[i]);
+				JS_ValueToInt32(cx,argv[i],(int32*)&maxlen);
 			else
-				mode=JSVAL_TO_INT(argv[i]);
+				JS_ValueToInt32(cx,argv[i],(int32*)&mode);
 			continue;
 		}
 		if(JSVAL_IS_STRING(argv[i])) {
@@ -414,8 +414,8 @@ js_getnum(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	if(argc && JSVAL_IS_INT(argv[0]))
-		maxnum=JSVAL_TO_INT(argv[0]);
+	if(argc && JSVAL_IS_NUMBER(argv[0]))
+		JS_ValueToInt32(cx,argv[0],(int32*)&maxnum);
 
 	*rval = INT_TO_JSVAL(sbbs->getnum(maxnum));
     return(JS_TRUE);
@@ -435,8 +435,8 @@ js_getkeys(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_FALSE);
 
 	for(i=0;i<argc;i++) {
-		if(JSVAL_IS_INT(argv[i])) {
-			maxnum=JSVAL_TO_INT(argv[i]);
+		if(JSVAL_IS_NUMBER(argv[i])) {
+			JS_ValueToInt32(cx,argv[i],(int32*)&maxnum);
 			continue;
 		}
 		if(JSVAL_IS_STRING(argv[i])) {
@@ -483,8 +483,8 @@ js_gettemplate(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 				js_fmt = JS_ValueToString(cx, argv[i]);
 			else
 				js_str = JS_ValueToString(cx, argv[i]);
-		} else if (JSVAL_IS_INT(argv[i]))
-			mode=JSVAL_TO_INT(argv[i]);
+		} else if(JSVAL_IS_NUMBER(argv[i]))
+			JS_ValueToInt32(cx,argv[i],(int32*)&mode);
 	}
 
 	if(js_fmt==NULL)
@@ -721,8 +721,8 @@ js_putmsg(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if (!str)
 		return(JS_FALSE);
 
-	if(argc>1 && JSVAL_IS_INT(argv[1]))
-		mode=JSVAL_TO_INT(argv[1]);
+	if(argc>1 && JSVAL_IS_NUMBER(argv[1]))
+		JS_ValueToInt32(cx,argv[1],(int32*)&mode);
 
 	sbbs->putmsg(JS_GetStringBytes(str),mode);
 	*rval=JSVAL_VOID;
@@ -744,7 +744,7 @@ js_printfile(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_FALSE);
 
 	if(argc>1 && JSVAL_IS_INT(argv[1]))
-		mode=JSVAL_TO_INT(argv[1]);
+		JS_ValueToInt32(cx,argv[1],(int32*)&mode);
 
 	sbbs->printfile(JS_GetStringBytes(str),mode);
 	*rval=JSVAL_VOID;
@@ -764,11 +764,11 @@ js_printtail(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_FALSE);
 
 	for(i=0;i<argc;i++) {
-		if(JSVAL_IS_INT(argv[i])) {
+		if(JSVAL_IS_NUMBER(argv[i])) {
 			if(!lines)
-				lines=JSVAL_TO_INT(argv[i]);
+				JS_ValueToInt32(cx,argv[i],(int32*)&lines);
 			else
-				mode=JSVAL_TO_INT(argv[i]);
+				JS_ValueToInt32(cx,argv[i],(int32*)&mode);
 		} else if(JSVAL_IS_STRING(argv[i]))
 			js_str = JS_ValueToString(cx, argv[i]);
 	}
@@ -806,7 +806,7 @@ static JSBool
 js_uselect(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	uintN		i;
-	int			num=0;
+	int32		num=0;
 	char*		title="";
 	char*		item="";
 	char*		ar_str;
@@ -823,8 +823,8 @@ js_uselect(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	}
 	
 	for(i=0;i<argc;i++) {
-		if(!JSVAL_IS_STRING(argv[i])) {
-			num = JSVAL_TO_INT(argv[i]);
+		if(JSVAL_IS_NUMBER(argv[i])) {
+			JS_ValueToInt32(cx,argv[i],&num);
 			continue;
 		}
 		if((js_str=JS_ValueToString(cx, argv[i]))==NULL)

@@ -1389,13 +1389,13 @@ static JSBool js_msgbase_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 
 	switch(tiny) {
 		case SMB_PROP_RETRY_TIME:
-			p->smb.retry_time = JSVAL_TO_INT(*vp);
+			JS_ValueToInt32(cx,*vp,(int32*)&p->smb.retry_time);
 			break;
 		case SMB_PROP_RETRY_DELAY:
-			p->smb.retry_delay = JSVAL_TO_INT(*vp);
+			JS_ValueToInt32(cx,*vp,(int32*)&p->smb.retry_delay);
 			break;
 		case SMB_PROP_DEBUG:
-			p->debug = JSVAL_TO_BOOLEAN(*vp);
+			JS_ValueToBoolean(cx,*vp,&p->debug);
 			break;
 	}
 

@@ -496,9 +496,9 @@ js_iniGetValue(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 			*rval = OBJECT_TO_JSVAL(array);
 			break;
 		default:
-			if(JSVAL_IS_INT(dflt)) {
-				*rval = INT_TO_JSVAL(
-					iniGetInteger(p->fp,section,key,JSVAL_TO_INT(dflt)));
+			if(JSVAL_IS_NUMBER(dflt)) {
+				JS_ValueToInt32(cx,dflt,&i);
+				JS_NewNumberValue(cx,iniGetInteger(p->fp,section,key,i),rval);
 				break;
 			}
 			break;
@@ -1095,6 +1095,7 @@ enum {
 
 static JSBool js_file_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
+	int32		i=0;
     jsint       tiny;
 	private_t*	p;
 
@@ -1127,21 +1128,28 @@ static JSBool js_file_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			JS_ValueToBoolean(cx,*vp,&(p->network_byte_order));
 			break;
 		case FILE_PROP_POSITION:
-			if(p->fp!=NULL)
-				fseek(p->fp,JSVAL_TO_INT(*vp),SEEK_SET);
+			if(p->fp!=NULL) {
+				JS_ValueToInt32(cx,*vp,&i);
+				fseek(p->fp,i,SEEK_SET);
+			}
 			break;
 		case FILE_PROP_DATE:
-			setfdate(p->name,JSVAL_TO_INT(*vp));
+			JS_ValueToInt32(cx,*vp,&i);
+			setfdate(p->name,i);
 			break;
 		case FILE_PROP_LENGTH:
-			if(p->fp!=NULL)
-				chsize(fileno(p->fp),JSVAL_TO_INT(*vp));
+			if(p->fp!=NULL) {
+				JS_ValueToInt32(cx,*vp,&i);
+				chsize(fileno(p->fp),i);
+			}
 			break;
 		case FILE_PROP_ATTRIBUTES:
-			CHMOD(p->name,JSVAL_TO_INT(*vp));
+			JS_ValueToInt32(cx,*vp,&i);
+			CHMOD(p->name,i);
 			break;
 		case FILE_PROP_ETX:
-			p->etx = (uchar)JSVAL_TO_INT(*vp);
+			JS_ValueToInt32(cx,*vp,&i);
+			p->etx = (uchar)i;
 			break;
 	}
 

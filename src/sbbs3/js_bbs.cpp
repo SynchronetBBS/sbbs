@@ -859,8 +859,8 @@ static uint get_subnum(JSContext* cx, sbbs_t* sbbs, jsval val)
 		for(subnum=0;subnum<sbbs->cfg.total_subs;subnum++)
 			if(!stricmp(sbbs->cfg.sub[subnum]->code,p))
 				break;
-	} else if(JSVAL_IS_INT(val))
-		subnum=JSVAL_TO_INT(val);
+	} else if(JSVAL_IS_NUMBER(val))
+		JS_ValueToInt32(cx,val,(int32*)&subnum);
 	else if(sbbs->usrgrps>0)
 		subnum=sbbs->usrsub[sbbs->curgrp][sbbs->cursub[sbbs->curgrp]];
 
@@ -876,8 +876,8 @@ static uint get_dirnum(JSContext* cx, sbbs_t* sbbs, jsval val)
 		for(dirnum=0;dirnum<sbbs->cfg.total_dirs;dirnum++)
 			if(!stricmp(sbbs->cfg.dir[dirnum]->code,p))
 				break;
-	} else if(JSVAL_IS_INT(val))
-		dirnum=JSVAL_TO_INT(val);
+	} else if(JSVAL_IS_NUMBER(val))
+		JS_ValueToInt32(cx,val,(int32*)&dirnum);
 	else if(sbbs->usrlibs>0)
 		dirnum=sbbs->usrdir[sbbs->curlib][sbbs->curdir[sbbs->curlib]];
 
@@ -953,8 +953,8 @@ js_exec(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_FALSE);
 
 	for(i=1;i<argc;i++) {
-		if(JSVAL_IS_INT(argv[i]))
-			mode=JSVAL_TO_INT(argv[i]);
+		if(JSVAL_IS_NUMBER(argv[i]))
+			JS_ValueToInt32(cx,argv[i],(int32*)&mode);
 		else if(JSVAL_IS_STRING(argv[i]))
 			startup_dir=JS_ValueToString(cx,argv[i]);
 	}
@@ -1848,8 +1848,8 @@ js_email(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	JS_ValueToInt32(cx,argv[0],&usernumber);
 	for(uintN i=1;i<argc;i++) {
-		if(JSVAL_IS_INT(argv[i]))
-			mode=JSVAL_TO_INT(argv[i]);
+		if(JSVAL_IS_NUMBER(argv[i]))
+			JS_ValueToInt32(cx,argv[i],(int32*)&mode);
 		else if(JSVAL_IS_STRING(argv[i]) && js_top==NULL)
 			js_top=JS_ValueToString(cx,argv[i]);
 		else if(JSVAL_IS_STRING(argv[i]))
@@ -1880,8 +1880,8 @@ js_netmail(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_FALSE);
 
 	for(uintN i=1;i<argc;i++) {
-		if(JSVAL_IS_INT(argv[i]))
-			mode=JSVAL_TO_INT(argv[i]);
+		if(JSVAL_IS_NUMBER(argv[i]))
+			JS_ValueToInt32(cx,argv[i],(int32*)&mode);
 		else if(JSVAL_IS_STRING(argv[i]))
 			js_subj=JS_ValueToString(cx,argv[i]);
 	}
@@ -2240,8 +2240,8 @@ js_listfiles(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	}
 
 	for(uintN i=1;i<argc;i++) {
-		if(JSVAL_IS_INT(argv[i]))
-			mode=JSVAL_TO_INT(argv[i]);
+		if(JSVAL_IS_NUMBER(argv[i]))
+			JS_ValueToInt32(cx,argv[i],(int32*)&mode);
 		else if(JSVAL_IS_STRING(argv[i])) {
 			js_str = JS_ValueToString(cx, argv[i]);
 			fspec=JS_GetStringBytes(js_str);
@@ -2273,8 +2273,8 @@ js_listfileinfo(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 	}
 
 	for(uintN i=1;i<argc;i++) {
-		if(JSVAL_IS_INT(argv[i]))
-			mode=JSVAL_TO_INT(argv[i]);
+		if(JSVAL_IS_NUMBER(argv[i]))
+			JS_ValueToInt32(cx,argv[i],(int32*)&mode);
 		else if(JSVAL_IS_STRING(argv[i])) {
 			js_str = JS_ValueToString(cx, argv[i]);
 			fspec=JS_GetStringBytes(js_str);
@@ -2302,8 +2302,8 @@ js_postmsg(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_TRUE);
 	}
 
-	if(argc>1 && JSVAL_IS_INT(argv[1]))
-		mode=JSVAL_TO_INT(argv[1]);
+	if(argc>1 && JSVAL_IS_NUMBER(argv[1]))
+		JS_ValueToInt32(cx,argv[1],(int32*)&mode);
 
 	*rval = BOOLEAN_TO_JSVAL(sbbs->postmsg(subnum,NULL,mode));
 	return(JS_TRUE);
@@ -2318,8 +2318,8 @@ js_msgscan_cfg(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	if(argc && JSVAL_IS_INT(argv[0]))
-		mode=JSVAL_TO_INT(argv[0]);
+	if(argc && JSVAL_IS_NUMBER(argv[0]))
+		JS_ValueToInt32(cx,argv[0],(int32*)&mode);
 
 	sbbs->new_scan_cfg(mode);
 
@@ -2371,8 +2371,8 @@ js_scansubs(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_FALSE);
 
 	for(uintN i=0;i<argc;i++) {
-		if(JSVAL_IS_INT(argv[i]))
-			mode=JSVAL_TO_INT(argv[i]);
+		if(JSVAL_IS_NUMBER(argv[i]))
+			JS_ValueToInt32(cx,argv[i],(int32*)&mode);
 		else if(JSVAL_IS_BOOLEAN(argv[i]))
 			all=JSVAL_TO_BOOLEAN(argv[i]);
 	}
@@ -2397,8 +2397,8 @@ js_scandirs(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_FALSE);
 
 	for(uintN i=0;i<argc;i++) {
-		if(JSVAL_IS_INT(argv[i]))
-			mode=JSVAL_TO_INT(argv[i]);
+		if(JSVAL_IS_NUMBER(argv[i]))
+			JS_ValueToInt32(cx,argv[i],(int32*)&mode);
 		else if(JSVAL_IS_BOOLEAN(argv[i]))
 			all=JSVAL_TO_BOOLEAN(argv[i]);
 	}
@@ -2431,8 +2431,8 @@ js_scanposts(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	}
 
 	for(uintN i=1;i<argc;i++) {
-		if(JSVAL_IS_INT(argv[i]))
-			mode=JSVAL_TO_INT(argv[i]);
+		if(JSVAL_IS_NUMBER(argv[i]))
+			JS_ValueToInt32(cx,argv[i],(int32*)&mode);
 		else if(JSVAL_IS_STRING(argv[i]))
 			find=JS_GetStringBytes(JS_ValueToString(cx,argv[i]));
 	}
