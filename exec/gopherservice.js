@@ -9,7 +9,7 @@
 load("sbbsdefs.js");
 load("nodedefs.js");
 
-const VERSION = "1.00 Alpha";
+const REVISION = "$Revision$".split(' ')[1];
 const GOPHER_PORT = client.socket.local_port;
 
 var debug = false;
@@ -23,7 +23,7 @@ for(i=0;i<argc;i++)
 // Write a string to the client socket
 function write(str)
 {
-	if(0 && debug)
+	if(debug)
 		log("rsp: " + str);
 	client.socket.send(str);
 }
@@ -47,12 +47,8 @@ function send_file(fname)
 
 var msgbase=null;
 
-if(!login("guest"))	{
-	writeln("Sorry, no Gopher access here.");
-	log("!NO GUEST ACCOUNT CONFIGURED");
-	exit();
-}
-
+if(!login("guest"))
+	log("!WARNING: NO GUEST ACCOUNT CONFIGURED");
 
 // Get Request
 request = client.socket.recvline(512 /*maxlen*/, 10 /*timeout*/);
@@ -75,27 +71,37 @@ if(request=="" || request=='/') { /* "root" */
 	for(g in msg_area.grp_list) 
 		writeln("1" + msg_area.grp_list[g].description 
 			+ "\tgrp:" + msg_area.grp_list[g].name.toLowerCase() 
-			+ "\t" + system.inetaddr
+			+ "\t" + system.host_name
 			+ "\t" + GOPHER_PORT);
 /** to-do
 	for(l in file_area.lib_list) 
 		writeln(format("1%s\tlib:%s\t%s\t%u"
 			,file_area.lib_list[l].description
 			,file_area.lib_list[l].name.toLowerCase()
-			,system.inetaddr
+			,system.host_name
 			,GOPHER_PORT
 			));
 **/
 	writeln("0Node List\tnodelist"
-		+"\t" + system.inetaddr
+		+"\t" + system.host_name
 		+"\t" + GOPHER_PORT);
 	writeln("0Logon List\tlogonlist"
-		+"\t" + system.inetaddr
+		+"\t" + system.host_name
 		+"\t" + GOPHER_PORT);
 	writeln("0Auto-Message\tautomsg"
-		+"\t" + system.inetaddr
+		+"\t" + system.host_name
+		+"\t" + GOPHER_PORT);
+	writeln("0System Statistics\tstats"
+		+"\t" + system.host_name
+		+"\t" + GOPHER_PORT);
+	writeln("0System Time\ttime"
+		+"\t" + system.host_name
+		+"\t" + GOPHER_PORT);
+	writeln("0Version Information\tver"
+		+"\t" + system.host_name
 		+"\t" + GOPHER_PORT);
 
+	writeln(".");
 	exit();
 }
 
@@ -125,6 +131,36 @@ switch(request) {
 	case "automsg":
 		send_file(system.data_dir + "msgs/auto.msg");
 		break;
+
+	case "ver":
+		writeln("Synchronet Gopher Service " + REVISION);
+		writeln(server.version);
+		writeln(system.version_notice + system.revision);
+		writeln("Compiled " + system.compiled_when + " with " + system.compiled_with);
+		writeln(system.js_version);
+		writeln(system.os_version);
+		break;
+
+	case "time":
+		t=time();
+		writeln(system.timestr(t) + " " + system.zonestr() + " 0x" + t.toString(16));
+		break;
+
+	case "stats":	/* Statistics */
+		for(i in system.stats)
+			writeln(format("%-25s = ", i) + system.stats[i]);
+
+		total	= time()-system.uptime;
+		days	= Math.floor(total/(24*60*60));
+		if(days) 
+			total%=(24*60*60);
+		hours	= Math.floor(total/(60*60));
+		min		= (Math.floor(total/60))%60;
+		sec		= total%60;
+
+		writeln(format("uptime = %u days, %u hours, %u minutes and %u seconds"
+			,days,hours,min,sec));
+		break;
 }
 
 field = request.split(':');
@@ -138,7 +174,7 @@ switch(field[0]) {
 						+ "\tsub:"
 						+ msg_area.grp_list[g].sub_list[s].code.toLowerCase() 
 						+ "\t"
-						+ system.inetaddr 
+						+ system.host_name 
 						+ "\t"
 						+ GOPHER_PORT
 						);
@@ -153,7 +189,7 @@ switch(field[0]) {
 						,file_area.lib_list[l].name
 						,file_area.lib_list[l].dir_list[d].description
 						,file_area.lib_list[l].dir_list[d].code.toLowerCase()
-						,system.inetaddr
+						,system.host_name
 						,GOPHER_PORT
 						));
 				break;
@@ -205,7 +241,7 @@ switch(field[0]) {
 				);
 			writeln("0" + msginfo + "\tsub:"
 				+ field[1] + ":" + i + "\t"
-				+ system.inetaddr + "\t"
+				+ system.host_name + "\t"
 				+ GOPHER_PORT
 				);
 		}
@@ -215,5 +251,7 @@ switch(field[0]) {
 		/* to-do */
 		break;
 }
+
+writeln(".");
 
 /* End of gopherservice.js */
