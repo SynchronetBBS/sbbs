@@ -335,9 +335,10 @@ function Server_Work() {
 				var target = Users[kills[kill].toUpperCase()];
 				if (!target)
 					target = search_nickbuf(kills[kill]);
+				log("target.parent: " + target.parent + " this.nick: " + this.nick);
 				if (target && (this.hub ||
 				    (target.parent == this.nick)) ) {
-					umode_notice(USERMODE_KILL,"Notice","Received KILL message for " + target.nuh + ". From " + ThisOrigin.nick + " Path: target!Synchronet!" + ThisOrigin.nick + " (" + reason + ")");
+					umode_notice(USERMODE_KILL,"Notice","Received KILL message for " + target.nuh + ". From " + ThisOrigin.nick + " Path: " + target.nick + "!Synchronet!" + ThisOrigin.nick + " (" + reason + ")");
 					this.bcast_to_servers_raw(":" + ThisOrigin.nick + " KILL " + target.nick + " :" + reason);
 					target.quit("KILLED by " + ThisOrigin.nick + " (" + reason + ")",true);
 				} else if (target && !this.hub) {
@@ -379,7 +380,8 @@ function Server_Work() {
 				ThisOrigin.set_chanmode(chan,modeline,false);
 			} else { // assume it's for a user
 				var my_bcastmodes = ThisOrigin.setusermode(cmd[2]);
-				this.bcast_to_servers_raw(":" + ThisOrigin.nick + " MODE " + ThisOrigin.nick + " " + my_bcastmodes);
+				if (my_bcastmodes)
+					this.bcast_to_servers_raw(":" + ThisOrigin.nick + " MODE " + ThisOrigin.nick + " " + my_bcastmodes);
 			}
 			break;
 		case "MOTD":
@@ -875,7 +877,7 @@ function Server_Work() {
 			}
 			break;
 		case "TOPIC":
-			if (!cmd[4] || ThisOrigin.server)
+			if (!cmd[4])
 				break;
 			var chan = Channels[cmd[1].toUpperCase()];
 			if (!chan)
@@ -891,7 +893,7 @@ function Server_Work() {
 			chan.topicchangedby = cmd[2];
 			var str = "TOPIC " + chan.nam + " :" + chan.topic;
 			ThisOrigin.bcast_to_channel(chan,str,false);
-			this.bcast_to_servers_raw(":" + ThisOrigin.nick + " TOPIC " + chan.nam + " " + ThisOrigin.nick + " " + chan.topictime + " :" + chan.topic);
+			this.bcast_to_servers_raw(":" + ThisOrigin.nick + " TOPIC " + chan.nam + " " + cmd[2] + " " + chan.topictime + " :" + chan.topic);
 			break;
 		case "TRACE":
 			if (!cmd[1] || ThisOrigin.server)
@@ -910,7 +912,7 @@ function Server_Work() {
 				var dest_server = searchbyserver(cmd[1]);
 				if (!dest_server)
 					break;
-				dest_server.rawout(":" + ThisOrigin.nick + " VERSION :" + dest_server.nick);
+				dest_server.rawout(":" + ThisOrigin.nick + " USERS :" + dest_server.nick);
 			}
 			break;
 		case "VERSION":
