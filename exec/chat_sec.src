@@ -59,7 +59,7 @@ cmdkey 'F'
 
 cmdkey 'I'
 	crlf
-	exec "?sendmsg"
+	exec "?sbbsimsg"
 	end_cmd
 
 cmdkey 'J'
