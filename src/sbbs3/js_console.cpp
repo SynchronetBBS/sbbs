@@ -46,11 +46,15 @@ enum {
 	 CON_PROP_ONLINE
 	,CON_PROP_STATUS
 	,CON_PROP_LNCNTR 
+	,CON_PROP_ATTR
 	,CON_PROP_TOS
 	,CON_PROP_ROWS
 	,CON_PROP_AUTOTERM
+	,CON_PROP_WORDWRAP
 	,CON_PROP_TIMEOUT			/* User inactivity timeout reference */
 	,CON_PROP_TIMELEFT_WARN		/* low timeleft warning flag */
+	,CON_PROP_ABORTABLE
+	,CON_PROP_TELNET_MODE
 };
 
 static JSBool js_console_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
@@ -74,6 +78,9 @@ static JSBool js_console_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 		case CON_PROP_LNCNTR:
 			val=sbbs->lncntr;
 			break;
+		case CON_PROP_ATTR:
+			val=sbbs->curatr;
+			break;
 		case CON_PROP_TOS:
 			val=sbbs->tos;
 			break;
@@ -89,6 +96,15 @@ static JSBool js_console_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 		case CON_PROP_TIMELEFT_WARN:
 			val=sbbs->timeleft_warn;
 			break;
+		case CON_PROP_ABORTABLE:
+			val=sbbs->rio_abortable;
+			break;
+		case CON_PROP_TELNET_MODE:
+			val=sbbs->telnet_mode;
+			break;
+		case CON_PROP_WORDWRAP:
+			*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, sbbs->wordwrap));
+			return(JS_TRUE);
 		default:
 			return(JS_TRUE);
 	}
@@ -100,7 +116,7 @@ static JSBool js_console_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 
 static JSBool js_console_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
-	long		val;
+	long		val=0;
     jsint       tiny;
 	sbbs_t*		sbbs;
 
@@ -109,7 +125,8 @@ static JSBool js_console_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 
     tiny = JSVAL_TO_INT(id);
 
-	JS_ValueToInt32(cx, *vp, &val);
+	if(JSVAL_IS_INT(*vp))
+		JS_ValueToInt32(cx, *vp, &val);
 
 	switch(tiny) {
 		case CON_PROP_ONLINE:
@@ -120,6 +137,9 @@ static JSBool js_console_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			break;
 		case CON_PROP_LNCNTR:
 			sbbs->lncntr=val;
+			break;
+		case CON_PROP_ATTR:
+			sbbs->attr(val);
 			break;
 		case CON_PROP_TOS:
 			sbbs->tos=val;
@@ -136,6 +156,12 @@ static JSBool js_console_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 		case CON_PROP_TIMELEFT_WARN:
 			sbbs->timeleft_warn=val;
 			break;
+		case CON_PROP_ABORTABLE:
+			sbbs->rio_abortable=(bool)val;
+			break;
+		case CON_PROP_TELNET_MODE:
+			sbbs->telnet_mode=val;
+			break;
 		default:
 			return(JS_TRUE);
 	}
@@ -143,7 +169,7 @@ static JSBool js_console_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	return(JS_TRUE);
 }
 
-#define CON_PROP_FLAGS JSPROP_ENUMERATE|JSPROP_READONLY
+#define CON_PROP_FLAGS JSPROP_ENUMERATE
 
 static struct JSPropertySpec js_console_properties[] = {
 /*		 name				,tinyid					,flags			,getter,setter	*/
@@ -151,11 +177,15 @@ static struct JSPropertySpec js_console_properties[] = {
 	{	"online"			,CON_PROP_ONLINE		,CON_PROP_FLAGS	,NULL,NULL},
 	{	"status"			,CON_PROP_STATUS		,CON_PROP_FLAGS	,NULL,NULL},
 	{	"line_counter"		,CON_PROP_LNCNTR 		,CON_PROP_FLAGS	,NULL,NULL},
+	{	"attributes"		,CON_PROP_ATTR			,CON_PROP_FLAGS	,NULL,NULL},
 	{	"top_of_screen"		,CON_PROP_TOS			,CON_PROP_FLAGS	,NULL,NULL},
 	{	"rows"				,CON_PROP_ROWS			,CON_PROP_FLAGS	,NULL,NULL},
 	{	"autoterm"			,CON_PROP_AUTOTERM		,CON_PROP_FLAGS	,NULL,NULL},
 	{	"timeout"			,CON_PROP_TIMEOUT		,CON_PROP_FLAGS	,NULL,NULL},
 	{	"timeleft_warning"	,CON_PROP_TIMELEFT_WARN	,CON_PROP_FLAGS	,NULL,NULL},
+	{	"rio_abortable"		,CON_PROP_ABORTABLE		,CON_PROP_FLAGS	,NULL,NULL},
+	{	"telnet_mode"		,CON_PROP_TELNET_MODE	,CON_PROP_FLAGS	,NULL,NULL},
+	{	"wordwrap"			,CON_PROP_WORDWRAP		,JSPROP_ENUMERATE|JSPROP_READONLY ,NULL,NULL},
 	{0}
 };
 
@@ -464,19 +494,6 @@ js_crlf(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 }
 
 static JSBool
-js_attr(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
-{
-	sbbs_t*		sbbs;
-
-	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
-		return(JS_FALSE);
-
-	sbbs->attr(JSVAL_TO_INT(argv[0]));
-
-    return(JS_TRUE);
-}
-
-static JSBool
 js_pause(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	sbbs_t*		sbbs;
@@ -714,6 +731,19 @@ js_restoreline(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 }
 
 static JSBool
+js_ansi(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,sbbs->ansi(JSVAL_TO_INT(argv[0]))));
+
+    return(JS_TRUE);
+}
+
+static JSBool
 js_ansi_save(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	sbbs_t*		sbbs;
@@ -725,7 +755,6 @@ js_ansi_save(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
     return(JS_TRUE);
 }
-
 
 static JSBool
 js_ansi_restore(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
@@ -847,7 +876,6 @@ static JSFunctionSpec js_console_functions[] = {
 	{"clear",           js_clear,			0},		// clear screen 
 	{"clearline",       js_clearline,		0},		// clear current line 
 	{"crlf",            js_crlf,			0},		// output cr/lf 
-	{"attr",			js_attr,			1},		// set current text attribute 
 	{"pause",			js_pause,			0},		// pause 
 	{"print",			js_print,			1},		// display a string (supports ^A and @-codes) 
 	{"write",			js_write,			1},		// display a raw string 
@@ -859,6 +887,7 @@ static JSFunctionSpec js_console_functions[] = {
 	{"uselect",			js_uselect,			0},		// user selection menu
 	{"saveline",		js_saveline,		0},		// save last output line 
 	{"restoreline",		js_restoreline,		0},		// restore last output line 
+	{"ansi",			js_ansi,			1},		// returns ANSI encoding of attribute arg
 	{"ansi_pushxy",		js_ansi_save,		0},
 	{"ansi_popxy",		js_ansi_restore,	0},
 	{"ansi_gotoxy",		js_ansi_gotoxy,		2},
