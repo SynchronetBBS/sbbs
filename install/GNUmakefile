@@ -114,20 +114,11 @@ else
 	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(os).exe.$(SUFFIX)/makeuser $(SBBSDIR)/exec/makeuser
 	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(os).exe.$(SUFFIX)/smbutil $(SBBSDIR)/exec/smbutil
 	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(os).exe.$(SUFFIX)/sbbs $(SBBSDIR)/exec/sbbs
-	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(os).exe.$(SUFFIX)/sbbsmono $(SBBSDIR)/exec/sbbs
 	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(os).exe.$(SUFFIX)/sbbsecho $(SBBSDIR)/exec/sbbsecho
-	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(os).exe.$(SUFFIX)/echocfg $(SBBSDIR)/exec/echocfg
 	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(os).exe.$(SUFFIX)/filelist $(SBBSDIR)/exec/filelist
 	$(INSBIN) $(SBBSDIR)/src/sbbs3/scfg/$(CCPRE).$(os).$(SUFFIX)/scfg $(SBBSDIR)/exec/scfg
 	$(INSBIN) $(SBBSDIR)/src/sbbs3/scfg/$(CCPRE).$(os).$(SUFFIX)/scfghelp.ixb $(SBBSDIR)/exec/scfghelp.ixb
 	$(INSBIN) $(SBBSDIR)/src/sbbs3/scfg/$(CCPRE).$(os).$(SUFFIX)/scfghelp.dat $(SBBSDIR)/exec/scfghelp.dat
-	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(os).lib.$(SUFFIX)/libsbbs.so $(SBBSDIR)/exec/libsbbs.so
-	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(os).lib.$(SUFFIX)/libftpsrvr.so $(SBBSDIR)/exec/libftpsrvr.so
-	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(os).lib.$(SUFFIX)/libmailsrvr.so $(SBBSDIR)/exec/libmailsrvr.so
-	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(os).lib.$(SUFFIX)/libservices.so $(SBBSDIR)/exec/libservices.so
-	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(os).lib.$(SUFFIX)/libwebsrvr.so $(SBBSDIR)/exec/libwebsrvr.so
-# kludge... must fix this to allow moz JS libs and such.  ToDo
-	$(INSBIN) $(SBBSDIR)/lib/mozilla/*/$(os).$(SUFFIX)/*.so $(SBBSDIR)/exec/
 	-chown -R $(SBBSCHOWN) $(SBBSDIR)
 	-chown -h $(SBBSCHOWN) $(SBBSDIR)/exec/*
 endif
