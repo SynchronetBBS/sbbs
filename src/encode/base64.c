@@ -65,7 +65,6 @@ int b64_decode(char *target, size_t tlen, const char *source, size_t slen)
 			return(-1);
 		}
 		if(*i=='=')  { /* pad char */
-			i=(char *)base64alphabet;
 			if(working&0xFF != 0)
 				return(-1);
 			break;
