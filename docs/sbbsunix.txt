@@ -25,6 +25,15 @@ Q. What distributions of Linux are supported?
 A. Should work with any GNU/Linux-x86 distribution (e.g. RedHat, Mandrake, 
    Debian, Slackware, etc.).
 
+Q. The installer (e.g. Linux-install from sbbsunix.tgz) segfaults, crashes,
+   or fails to get the file size of sbbs_src.tgz.
+A. This installer has known issues and is currently *unsupported*. Do not use
+   it. This installer (known to us as "sbbsinst") will be revamped and
+   re-released in the near future.
+
+   In the mean-time, follow the steps given in this document to download,
+   build, install, and run Synchronet for Unix.
+
 Q. Linking error: undefined reference: '__ctype_b'
 A: This is an issue linking the JavaScript library for Linux (libjs.a) on
    RedHat Linux 9 and Mandrake Linux 9 using glibc v2.3.2-11+.
@@ -46,14 +55,19 @@ A. Not currently. Synchronet assumes a little-endian processor. It *may* work
 Q. Will Synchronet ever support big-endian and/or 64-bit processors?
 A. Yes, that is the plan.
 
+Q. Will Synchronet be ported to Mac OS X?
+A. Definitely. See the 2 questions above.
+
 Q. Where do I get Synchronet for Unix?
 A. There are no binary distributions at this time, so you must get the source
-   code from the Synchronet CVS repository (cvs.synchro.net).
-   See the step-by-step instructions below for details.
-
+   code from the Synchronet CVS repository (see the step-by-step instructions
+   below for details) or by downloading the latest verified buildable source
+   code tarball (tgz file) from ftp://vert.synchro.net/Synchronet.
+   
 Q. Will there be binary releases?
-A. Yes, some day soon. Or maybe a binary installer that will come with source
-   code and build it for you.
+A. Maybe. Linux is a particularly difficult "platform" to deliver consistently
+   compatible binaries for and unfortunately, it is the most popular Unix-like
+   operating system we currently support.
 
 Q. Can I mix Synchronet for Unix and Synchronet for Win32 or DOS or OS/2 nodes
    on the same BBS?
@@ -70,7 +84,8 @@ A. Currently, only the FreeBSD build has doscmd support "built-in" (and this
    programs.
 
    There's a patch for "building-in" DOSEMU support with Synchronet for Linux:
-   http://www.icequake.net/bbs/syncmods/index.html
+   http://www.icequake.net/bbs/syncmods/index.html and
+   (mirror) http://www.synchro.net/docs/linux-dosemu.html
 
    and a FAQ for using DOSEMU with Synchronet for Linux (without a patch):
    http://www.exeonline.com/bbs/howto-doors.txt
@@ -81,15 +96,25 @@ A. External programs can either use standard I/O (e.g. bash, pico, Lord/X,
 
 Q. Does Synchronet for Unix require X-Windows?
 A. No, Synchronet for Unix is currently a console-based application.
-   However, it does have an X console now.  To build without X support,
-   you'll need to add NO_X=1 to the make/gmake lines below.
+   However, it does have an X-based character mode console now.  To build 
+   without X support, you'll need to add NO_X=1 to the make/gmake lines below.
    Further, if your X headers are not installed in /usr/X11R6/include,
    You must define either X_PATH (Path to root of X11 install ie: /usr/X11R6)
    or X_HEADERS (Path to X11 include files ie: /usr/X11R6/include) on the make
    command lines below.  ie: "gmake X_PATH=/usr/X11"
 
 Q. Are there any plans to make an X-Windows front-end for Synchronet?
-A. Yes, but it will be optional.
+A. Possibly, but it would be optional.
+
+Q. What are the recent developments in Synchronet?
+A. There are changes (fixes, improvements, etc.) being made all the time.
+   See http://cvs.synchro.net/commitlog.ssjs for a log of the most recently
+   committed changes to the Synchronet CVS repository.
+
+   New releases are always posted on the web-site (http://www.synchro.net),
+   as well as announced in the Synchronet discussion groups
+   (http://www.synchro.net/docs/support.html) and the Synchronet Announcements
+   mailing list (subscribe at listserver@synchro.net).
 
 
 Step-by-step Instructions
@@ -97,30 +122,36 @@ Step-by-step Instructions
 
 Note: These instructions assume you are already logged in as 'root'.
 
+Note: Example command-lines are pre-fixed with '#', symbolizing the Unix shell
+      prompt. You do not actually type the '#' character.
+
 Note: The "make" command may be used in place of "gmake" on systems where
-      the GNU Make utility is named "make" (e.g. some Linux distros).
+      the GNU Make utility is named "make" (e.g. Debian Linux).
+	  Type "make -v" to verify that "make" is indeed GNU Make.
+
+Note: Any references to cvs.synchro.net can be replaced with
+      cvs-mirror.synchro.net (the Synchronet CVS Mirror site run by Stephen
+	  Hurd) if you're having any problems with cvs.synchro.net.
 
 Note: Skip to step 8 if you are updating an existing Synchronet installation.
 
 1. Get the required installation and source code modules from CVS:
 
    A. Create the Synchronet BBS directory on your file system:
-      mkdir /sbbs
+      # mkdir /sbbs
 
-   B. Change to this directory:
-      cd /sbbs
+   B. Change to the Synchronet BBS directory:
+      # cd /sbbs
 
    *> Optional Shortcut:
    *> At this point you can copy the file from this url: 
-   *> http://cvs.synchro.net/cgi-bin/cvsweb.cgi/~checkout~/install/GNUmakefile
-   *> into the /sbbs directory, run "gmake install", and then skip ahead to 
-   *> step 5.
+   *> http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/install/GNUmakefile
+   *> into the Synchronet directory, run "gmake install", and then skip ahead 
+   *> to step 5.
 
    C. Get the required installation modules from the CVS repository:
-      export CVSROOT=:pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs 
-      cvs login
-      (no password - just hit enter)
-      cvs co run-sbbs3
+      # export CVSROOT=:pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs 
+      # cvs co run-sbbs3
 
    *> Recommended Shortcut for Linux systems:
    *> Download the last verified buildable source archive (for Linux)
@@ -129,7 +160,7 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
    *> and skip ahead to G.
 
    D. Get the required source code modules from the CVS repository:
-      cvs co src-sbbs3
+      # cvs co src-sbbs3
 
    *> Optional Shortcut (existing JavaScript library):
    *> If your Unix distribution includes the file /usr/lib/libjs.so or
@@ -141,11 +172,11 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
    *> If your system already has the JavaScript library, skip ahead to step 2.
 
    E. Get the required JavaScript library for your platform and build type:
-      cvs co lib/mozilla/js/linux.debug
+      # cvs co lib/mozilla/js/linux.debug
       or:
-      cvs co lib/mozilla/js/linux.release
+      # cvs co lib/mozilla/js/linux.release
       or:
-      cvs co lib/mozilla/js/freebsd.debug
+      # cvs co lib/mozilla/js/freebsd.debug
       etc.
       Note: If you want to get the full source code to the Mozilla JavaScript
             library to build it yourself, the cvs repository is:
@@ -153,18 +184,18 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
             the module name is mozilla/js/src.
 
    F. Get the required NSPR library for your platform and build type:
-      cvs co lib/mozilla/nspr/linux.debug
+      # cvs co lib/mozilla/nspr/linux.debug
       or:
-      cvs co lib/mozilla/nspr/linux.release
+      # cvs co lib/mozilla/nspr/linux.release
       or:
-      cvs co lib/mozilla/nspr/freebsd.debug
+      # cvs co lib/mozilla/nspr/freebsd.debug
       etc.
       Note: This step is not necessary if your system already has the file
             /usr/lib/libnspr4.so
 
    G. Create symbolic links to the Mozilla Libraries (JavaScript and NSPR) in 
       your /usr/lib directory:
-      cd /usr/lib; ln -s /sbbs/lib/mozilla/*/linux.debug/*.so .
+      # cd /usr/lib; ln -s /sbbs/lib/mozilla/*/linux.debug/*.so .
 
       or: Add these two directories to your LD_LIBRARY_PATH environment 
           variable.
@@ -179,26 +210,19 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
       files /usr/include/curses.h and /usr/lib/libcurses.a then you're ready
       to continue.
 
-   A. Change to this directory:
-      cd /sbbs/src/sbbs3
+   A. Change to the Synchronet src/sbbs3 directory:
+      # cd /sbbs/src/sbbs3
 
    B. Build the main executable (and utilities):
-      gmake
-      (please report build errors to rob@synchro.net)
-      Note: Warnings (if any) can be safely ignored
+      # gmake
       Note: If you're linking with /usr/lib/libmozjs.so, don't forget to add
             "JSLIB=mozjs" to the gmake command-line
+	  Note: For those building on systems that do not have X installed,
+            use "gmake NO_X=1"
+      Note: If X is not installed in /usr/X11R6, 
+	        use "gmake X_DIR=/path/to/X"
       Note: To debug compile/link command-line problems, adding "VERBOSE=1"
             to the gmake command-line can be very helpful
-
-   C. Change to this directory:
-      cd /sbbs/src/sbbs3/scfg
-
-   D. Build the Synchronet configuration utility (SCFG):
-      gmake
-      Note: For those building for *nix systems that do not have X installed,
-            use "gmake NO_X=1"
-      Note: If X is not installed in /usr/X11R6, use: gmake X_DIR=/path/to/X
       Note: Warnings (if any) can be safely ignored
       Note: The "current" code in the CVS repository is in a fairly constant
             state of change. And often, one or more projects will not build
@@ -208,61 +232,77 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
             download one of the source code archives (e.g. sbbs_src.tgz) or
             use a release label (tag) when checking out files from CVS.
 
+   C. Change to the src/sbbs3/scfg directory:
+      # cd /sbbs/src/sbbs3/scfg
+
+   D. Build the Synchronet configuration utility (SCFG):
+      # gmake
+	  Note: For those building on systems that do not have X installed,
+            use "gmake NO_X=1"
+      Note: If X is not installed in /usr/X11R6, 
+	        use "gmake X_DIR=/path/to/X"
+      Note: Warnings (if any) can be safely ignored
+
    E. Congratulate yourself on a job well-done.
 
 
 3. Prepare the "exec" directory:
 
-   A. Change to this directory:
-      cd /sbbs/exec
+   A. Change to the Synchronet exec directory:
+      # cd /sbbs/exec
 
    B. Copy (or create symbolic links to) the following files:
-      /sbbs/src/sbbs3/gcc.linux.exe.debug/*
-      /sbbs/src/sbbs3/scfg/gcc.linux.exe.debug/scfg
-      /sbbs/src/sbbs3/scfg/gcc.linux.exe.debug/scfghelp.ixb
-      /sbbs/src/sbbs3/scfg/gcc.linux.exe.debug/scfghelp.dat
+      ../src/sbbs3/gcc.linux.exe.debug/*
+      ../src/sbbs3/scfg/gcc.linux.exe.debug/scfg*
       (the paths will be different for other platforms or release builds)
+
+      Example (note the trailing dots):
+      # ln -s ../src/sbbs3/gcc.linux.exe.debug/* .
+	  # ln -s ../src/sbbs3/scfg/gcc.linux.exe.debug/scfg* .
 
    C. Copy (or create symbolic links to) the following shared libraries:
-      /sbbs/src/sbbs3/gcc.linux.lib.debug/lib*.so
-      (the paths will be different for other platforms or release builds)
+      ../src/sbbs3/gcc.linux.lib.debug/*
+      (the path will be different for other platforms or release builds)
+
+      Example (note the trailing dot):
+      # ln -s ../src/sbbs3/gcc.linux.lib.debug/* .
 
       Note: Another option is to create the symbolic links in your /usr/lib
-            directory:
-            cd /usr/lib; ln -s /sbbs/src/sbbs3/gcc.linux.lib.debug/*.so .
+            directory (note the trailing dot):
+            # cd /usr/lib; ln -s /sbbs/src/sbbs3/gcc.linux.lib.debug/*.so .
 
         OR: set the LD_LIBRARY_PATH environment variable to point to your 
             gcc.<os>.lib.<build> directory:
-            export LD_LIBRARY_PATH=/sbbs/src/sbbs3/gcc.linux.lib.debug
+            # export LD_LIBRARY_PATH=/sbbs/src/sbbs3/gcc.linux.lib.debug
 
    D. Build the required Baja {tm} modules (exec/*.bin):
-      gmake
+      # gmake
 
 
 4. Prepare the "xtrn" directory:
 
-   A. Change to this directory:
-      cd /sbbs/xtrn/sbj
+   A. Change to the xtrn/sbj directory:
+      # cd /sbbs/xtrn/sbj
 
    B. Build Synchronet Blackjack:
-      gmake
+      # gmake
 
-   C. Change to this directory:
-      cd /sbbs/xtrn/sbl
+   C. Change to the xtrn/sbl directory:
+      # cd /sbbs/xtrn/sbl
 
    D. Build Synchronet BBS List:
-      gmake
+      # gmake
 
 
 5. Configure the BBS:
 
-   A. Run SCFG:
-      /sbbs/exec/scfg /sbbs/ctrl
+   A. Run the Synchronet Configuration Utility (SCFG)
+      # /sbbs/exec/scfg /sbbs/ctrl
       (if you have problems with the curses interface, try running
-       "scfg -d" instead)
+       "scfg -id" instead)
       Tip: Set the SBBSCTRL environment variable and you won't have to specify
            the path to the "ctrl" directory on the command-line:
-           export SBBSCTRL=/sbbs/ctrl
+           # export SBBSCTRL=/sbbs/ctrl
 
    B. Change SCFG->Networks->QWK->Hubs->VERT:
       Pack Command Line               zip -j -D %f %s
@@ -277,19 +317,18 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
 6. Running Synchronet:
 
    1. Set the SBBSCTRL environment variable to point to your "ctrl" directory:
-      export SBBSCTRL=/sbbs/ctrl
+      # export SBBSCTRL=/sbbs/ctrl
 
    2. Run the main executable (with default settings/options):
-      /sbbs/exec/sbbs
+      # /sbbs/exec/sbbs
 
    3. To view available command-line options, run:
-      /sbbs/exec/sbbs help | more
+      # /sbbs/exec/sbbs help | more
 
    4. To view default settings (node and port numbers), run:
-      /sbbs/exec/sbbs defaults
+      # /sbbs/exec/sbbs defaults
 
-   5. To change the default settings, edit the file:
-      /sbbs/ctrl/sbbs.ini
+   5. To change the default settings, edit the file /sbbs/ctrl/sbbs.ini
 
    6. For more details, see /sbbs/docs/sbbscon.txt
 
@@ -297,30 +336,29 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
 7. Debugging:
 
    A. Run the GNU debugger:
-      gdb /sbbs/exec/sbbs
+      # gdb /sbbs/exec/sbbs
 
    B. Run Synchronet:
-      run
+      (gdb) run
 
    C. After segfault, display back-trace:
-      bt
+      (gdb) bt
 
-   D. Copy and paste in e-mail to rob@synchro.net
+   D. Copy and paste in e-mail to rob[at]synchro[dot]net or post in one of the
+      Synchronet discussion groups (http://www.synchro.net/docs/support.html).
 
 
 8. Updating/synchronizing the source code with the CVS repository:
 
    A. Change to your Synchronet installation directory:
-      cd /sbbs
+      # cd /sbbs
 
    B. Back-up your working exec directory:
-      cp -a exec exec.bak
+      # cp -a exec exec.bak
 
    C. Get the latest changes from CVS:
-      export CVSROOT=:pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs 
-      cvs login
-      (no password - just hit enter)
-      cvs update docs exec xtrn src lib include
+      # export CVSROOT=:pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs 
+      # cvs update docs exec xtrn src lib include
 
    D. Repeat steps 2, 3 and 4 (only).
 
@@ -534,6 +572,6 @@ PACKER ZIP 0 504B
   UNPACK unzip -o -j %f -d %s
 
 
-Send comments/questions to rob@synchro.net
+Send comments/questions to rob[at]synchro[dot]net
 
 /* End of sbbsunix.txt */
