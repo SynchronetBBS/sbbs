@@ -946,7 +946,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 
 			if(rd>avail)
 				rd=avail;
-			if(rd>sizeof(buf)
+			if(rd>sizeof(buf))
 				rd=sizeof(buf);
 
 			if((rd=read(out_pipe[0],buf,rd))<1) {
