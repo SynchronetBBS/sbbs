@@ -779,6 +779,7 @@ extern "C" {
 	/* postmsg.cpp */
 	DLLEXPORT int		DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, char* msgbuf);
 	DLLEXPORT void		DLLCALL signal_sub_sem(scfg_t* cfg, uint subnum);
+	DLLEXPORT int		DLLCALL msg_client_hfields(smbmsg_t* msg, client_t* client);
 
 	/* filedat.c */
 	DLLEXPORT BOOL		DLLCALL getfileixb(scfg_t* cfg, file_t* f);

@@ -120,6 +120,7 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 	ushort		nettype;
 	ushort		type;
 	ushort		agent;
+	ushort		port;
 	int32		i32;
 	jsval		val;
 	JSObject*	array;
@@ -210,6 +211,18 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
 		smb_hfield_str(msg, SENDERHOSTNAME, cp);
+	}
+
+	if(JS_GetProperty(cx, hdr, "from_protocol", &val) && val!=JSVAL_VOID) {
+		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
+			return(FALSE);
+		smb_hfield_str(msg, SENDERPROTOCOL, cp);
+	}
+
+	if(JS_GetProperty(cx, hdr, "from_port", &val) && val!=JSVAL_VOID) {
+		JS_ValueToInt32(cx,val,&i32);
+		port=(ushort)i32;
+		smb_hfield(msg, SENDERPORT, sizeof(port), &port);
 	}
 
 	if(JS_GetProperty(cx, hdr, "to_ext", &val) && val!=JSVAL_VOID) {

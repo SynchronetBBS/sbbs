@@ -246,8 +246,7 @@ bool sbbs_t::inetmail(char *into, char *subj, long mode)
 	*/
 
 	/* Security logging */
-	smb_hfield_str(&msg,SENDERIPADDR,client.addr);
-	smb_hfield_str(&msg,SENDERHOSTNAME,client.host);
+	msg_client_hfields(&msg,&client);
 
 	smb_hfield_str(&msg,SUBJECT,title);
 	strcpy(str,title);
@@ -436,8 +435,7 @@ bool sbbs_t::qnetmail(char *into, char *subj, long mode)
 	msg.idx.from=useron.number;
 
 	/* Security logging */
-	smb_hfield_str(&msg,SENDERIPADDR,client.addr);
-	smb_hfield_str(&msg,SENDERHOSTNAME,client.host);
+	msg_client_hfields(&msg,&client);
 
 	smb_hfield_str(&msg,SUBJECT,title);
 	msg.idx.subj=subject_crc(title);

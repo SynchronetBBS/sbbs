@@ -391,8 +391,7 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 	smb_hfield_str(&msg,SENDEREXT,str);
 
 	/* Security logging */
-	smb_hfield_str(&msg,SENDERIPADDR,client.addr);
-	smb_hfield_str(&msg,SENDERHOSTNAME,client.host);
+	msg_client_hfields(&msg,&client);
 
 	smb_hfield_str(&msg,SUBJECT,title);
 	msg.idx.subj=subject_crc(title);
@@ -440,6 +439,19 @@ extern "C" void DLLCALL signal_sub_sem(scfg_t* cfg, uint subnum)
 		ftouch(cmdstr(cfg,NULL,cfg->echomail_sem,nulstr,nulstr,str));
 	if(cfg->sub[subnum]->post_sem[0]) 
 		ftouch(cmdstr(cfg,NULL,cfg->sub[subnum]->post_sem,nulstr,nulstr,str));
+}
+
+extern "C" int DLLCALL msg_client_hfields(smbmsg_t* msg, client_t* client)
+{
+	int i;
+
+	if((i=smb_hfield_str(msg,SENDERIPADDR,client->addr))!=0)
+		return(i);
+	if((i=smb_hfield_str(msg,SENDERHOSTNAME,client->host))!=0)
+		return(i);
+	if((i=smb_hfield_str(msg,SENDERPROTOCOL,client->protocol))!=0)
+		return(i);
+	return smb_hfield(msg,SENDERPORT,sizeof(client->port),&client->port);
 }
 
 extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, char* msgbuf)

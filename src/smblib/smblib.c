@@ -2190,6 +2190,8 @@ char* SMBCALL smb_hfieldtype(ushort type)
 		case SENDERORG:			return("SenderOrg");
 		case SENDERIPADDR:		return("SenderIpAddr");
 		case SENDERHOSTNAME:	return("SenderHostName");
+		case SENDERPROTOCOL:	return("SenderProtocol");
+		case SENDERPORT:		return("SenderPort");
 
 		case REPLYTO:			return("ReplyTo");
 		case REPLYTOAGENT:		return("ReplyToAgent");

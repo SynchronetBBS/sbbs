@@ -2205,8 +2205,7 @@ static void smtp_thread(void* arg)
 				}
 
 				/* Security logging */
-				smb_hfield_str(&msg,SENDERIPADDR,host_ip);
-				smb_hfield_str(&msg,SENDERHOSTNAME,host_name);
+				msg_client_hfields(&msg,&client);
 
 				length=filelength(fileno(msgtxt))-ftell(msgtxt);
 
