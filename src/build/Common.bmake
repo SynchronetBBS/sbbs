@@ -218,41 +218,41 @@ UIFC_SRC	=	$(SRC_ROOT)$(DIRSEP)uifc
 xpdev:
 	$(COMSPEC) <<|
 	cd $(XPDEV_SRC)
-	$(MAKE) lib
+	$(MAKE) -$(MAKEFLAGS) lib
 	exit
 |
 
 xpdev-mt:
 	$(COMSPEC) <<|
 	cd $(XPDEV_SRC)
-	$(MAKE) mtlib
+	$(MAKE) -$(MAKEFLAGS) mtlib
 	exit
 |
 
 smblib:
 	$(COMSPEC) <<|
 	cd $(SMBLIB_SRC)
-	$(MAKE) lib
+	$(MAKE) -$(MAKEFLAGS) lib
 	exit
 |
 
 ciolib-mt:
 	$(COMSPEC) <<|
 	cd $(CIOLIB_SRC)
-	$(MAKE) mtlib
+	$(MAKE) -$(MAKEFLAGS) mtlib
 	exit
 |
 
 uifc:
 	$(COMSPEC) <<|
 	cd $(UIFC_SRC)
-	$(MAKE) lib
+	$(MAKE) -$(MAKEFLAGS) lib
 	exit
 |
 
 uifc-mt:
 	$(COMSPEC) <<|
 	cd $(UIFC_SRC)
-	$(MAKE) mtlib
+	$(MAKE) -$(MAKEFLAGS) mtlib
 	exit
 |
