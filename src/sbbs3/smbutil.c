@@ -334,7 +334,8 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 	}
 
 	if((i=smb_addmsg(&smb,&msg,smb.status.attr&SMB_HYPERALLOC
-		,INT_TO_BOOL(mode&NOCRC),xlat,msgtxt,NULL))!=SMB_SUCCESS) {
+		,mode&NOCRC ? SMB_HASH_SOURCE_NONE : SMB_HASH_SOURCE_ALL
+		,xlat,msgtxt,NULL))!=SMB_SUCCESS) {
 		fprintf(errfp,"\n\7!smb_addmsg returned %d: %s\n",i,smb.last_error);
 		bail(1); 
 	}
