@@ -132,7 +132,7 @@ enum {
 };
 
 #ifdef _DEBUG
-	static char* bbs_prop_desc[BBS_PROPERTIES] = {
+	static char* bbs_prop_desc[BBS_PROPERTIES+1] = {
 	 "system status"
 	,"startup options"
 	,"answer time"
@@ -2477,8 +2477,8 @@ static jsMethodSpec js_bbs_functions[] = {
 	},
 	{"nodesync",		js_nodesync,		0,	JSTYPE_VOID,	""
 	,JSDOCSTR("synchronize node with system")
-	,"node_sync"
 	},
+	{"node_sync",		js_nodesync,		0,	JSTYPE_ALIAS },
 	{"auto_msg",		js_automsg,			0,	JSTYPE_VOID,	""
 	,JSDOCSTR("edit/create auto-message")
 	},		

@@ -719,8 +719,8 @@ static jsMethodSpec js_global_functions[] = {
 	},		
 	{"mswait",			js_mswait,			0,	JSTYPE_VOID,	"[number milliseconds]"
 	,"millisecond wait/sleep routine"
-	,"sleep"
-	},		
+	},
+	{"sleep",			js_mswait,			0,	JSTYPE_ALIAS },
 	{"random",			js_random,			1,	JSTYPE_NUMBER,	"number max"
 	,"return random int between 0 and n"
 	},		

@@ -996,8 +996,8 @@ static jsMethodSpec js_socket_functions[] = {
 	},
 	{"send",		js_send,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("string data")
 	,JSDOCSTR("send a string")
-	,"write"
 	},
+	{"write",		js_send,		1,	JSTYPE_ALIAS },
 	{"sendto",		js_sendto,		3,	JSTYPE_BOOLEAN,	JSDOCSTR("string data, address, port")
 	,JSDOCSTR("send a string to a specific address and port (typically used for UDP sockets)")
 	},
@@ -1006,15 +1006,16 @@ static jsMethodSpec js_socket_functions[] = {
 	},
 	{"recv",		js_recv,		0,	JSTYPE_STRING,	JSDOCSTR("[maxlen]")
 	,JSDOCSTR("receive a string, default maxlen is 512 characters")
-	,"read"
 	},
+	{"read",		js_recv,		1,	JSTYPE_ALIAS },
 	{"peek",		js_peek,		0,	JSTYPE_STRING,	JSDOCSTR("[maxlen]")
 	,JSDOCSTR("receive a string, default maxlen is 512 characters, leave string in receive buffer")
 	},
 	{"recvline",	js_recvline,	0,	JSTYPE_STRING,	JSDOCSTR("[maxlen] [,timeout]")
 	,JSDOCSTR("receive a line-feed terminated string, default maxlen is 512 characters, default timeout is 30 seconds")
-	,"readline"
 	},
+	{"readline",	js_recvline,	0,	JSTYPE_ALIAS },
+	{"readln",		js_recvline,	0,	JSTYPE_ALIAS },
 	{"recvfrom",	js_recvfrom,	0,	JSTYPE_OBJECT,	JSDOCSTR("[maxlen]")
 	,JSDOCSTR("receive a string from (typically UDP) socket, return address and port of sender")
 	},

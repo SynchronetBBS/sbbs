@@ -832,13 +832,13 @@ extern "C" {
 		const char*		name;
 		JSNative        call;
 		uint8           nargs;
-		JSType			type;		/* return type */
+		int				type;		/* return type */
 		const char*		args;		/* arguments */
 		const char*		desc;		/* description */
-		const char*		alias;		/* a.k.a. */
 	} jsMethodSpec;
 
 	#define JSTYPE_ARRAY JSTYPE_LIMIT
+	#define JSTYPE_ALIAS JSTYPE_LIMIT+1
 
 	#ifdef _DEBUG	/* String compiled into debug build only, for JS documentation generation */
 		#define	JSDOCSTR(s)	s
