@@ -322,7 +322,7 @@ function process_control_msg(cmd_list)
 
 	for(var c in cmd_list) {
 		var cmd=cmd_list[c];
-		if(!cmd.length)
+		if(!cmd || !cmd.length)
 			continue;
 		var token=cmd.split(/\s+/);
 		switch(token[0].toLowerCase()) {
@@ -349,8 +349,6 @@ function process_control_msg(cmd_list)
 				}
 				response.body.push("!List not found: " + token[1]);
 				break;
-			case "end":
-				return(response);
 			default:
 				response.body.push("!Bad command: " + cmd);
 			case "help":
@@ -360,7 +358,8 @@ function process_control_msg(cmd_list)
 				response.body.push("\tunsubscribe");
 				response.body.push("\thelp");
 				response.body.push("\tend");
-				break;
+			case "end":
+				return(response);
 		}
 	}
 
