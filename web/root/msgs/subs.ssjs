@@ -1,6 +1,6 @@
 load("html_inc/msgslib.ssjs");
 
-title="Message Subs in "+msg_area.grp[grp].description;
+template.title="Message Subs in Group: "+msg_area.grp[grp].description;
 
 write_template("header.inc");
 
@@ -10,7 +10,7 @@ template.subs=msg_area.grp[grp].sub_list;
 for(s in msg_area.grp[grp].sub_list) {
 	msgbase = new MsgBase(msg_area.grp[grp].sub_list[s].code);
 	if(msgbase.open()) {
-		var lastdate="Unknown";
+		var lastdate="No Msgs";
         msgs=msgbase.total_msgs;
 		if(msgs != undefined && msgs > 0) {
 			lastdate=msgbase.get_msg_index(true,msgs-1);

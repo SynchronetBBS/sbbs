@@ -14,7 +14,7 @@ else							/* v3.11 */
 var u = new User(1);
 template = new Object;
 template.users = new Array;
-template.title = "User List";
+template.title = system.name+ " - User List";
 
 for(i=1;i<=lastuser;i++) {
 	usr=new Object;

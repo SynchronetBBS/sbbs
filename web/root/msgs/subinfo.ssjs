@@ -1,6 +1,8 @@
 load("sbbsdefs.js");
 load("html_inc/msgslib.ssjs");
 
+template.title="Detailed Info on Sub"
+
 if(sub=='mail') {
 	template.type="Internet";
 	template.sub=new Object;

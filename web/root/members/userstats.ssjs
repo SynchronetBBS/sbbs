@@ -1,6 +1,6 @@
 load("html_inc/template.ssjs");
 
-template.title="Your statistics";
+template.title="User Statistics for " +user.alias; 
 
 template.bytes_uploaded=addcommas(user.stats.bytes_uploaded);
 template.files_uploaded=addcommas(user.stats.files_uploaded);

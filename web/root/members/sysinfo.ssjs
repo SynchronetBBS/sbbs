@@ -1,6 +1,6 @@
 load("html_inc/template.ssjs");
 
-template.title="System Information";
+template.title= system.name+ " - System Information";
 
 template.sysinfo="";
 f=new File(system.text_dir+"system.msg");
