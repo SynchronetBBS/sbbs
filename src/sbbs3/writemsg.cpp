@@ -246,13 +246,12 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 		}
 		else {
 			c=LEN_TITLE;
+			if(mode&WM_QWKNET
+				|| (subnum!=INVALID_SUB 
+					&& (cfg.sub[subnum]->misc&(SUB_QNET|SUB_INET|SUB_FIDO))==SUB_QNET))
+				c=25;
 			bputs(text[SubjectPrompt]); 
 		}
-		if(!(mode&(WM_EMAIL|WM_NETMAIL)) && !(mode&WM_FILE)
-			&& cfg.sub[subnum]->misc&(SUB_QNET /* |SUB_PNET */ ))
-			c=25;
-		if(mode&WM_QWKNET)
-			c=25;
 		if(!getstr(title,c,mode&WM_FILE ? K_LINE|K_UPPER : K_LINE|K_EDIT|K_AUTODEL)
 			&& useron_level && useron.logons) {
 			free(buf);
