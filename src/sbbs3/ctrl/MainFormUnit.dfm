@@ -1,6 +1,6 @@
 object MainForm: TMainForm
-  Left = 459
-  Top = 349
+  Left = 623
+  Top = 590
   Width = 640
   Height = 400
   Caption = 'Synchronet Control Panel'
@@ -2237,7 +2237,13 @@ object MainForm: TMainForm
         ImageIndex = 29
         object MailEditAliasList: TMenuItem
           Caption = '&Alias List'
-          OnClick = MailEditAliasListClick
+          Hint = 'ALIAS.CFG'
+          OnClick = CtrlMenuItemEditClick
+        end
+        object AllowedRelayList1: TMenuItem
+          Caption = 'Allowed &Relay List'
+          Hint = 'RELAY.CAN'
+          OnClick = TextMenuItemEditClick
         end
       end
     end
