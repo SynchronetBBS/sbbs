@@ -3419,7 +3419,7 @@ void DLLCALL bbs_thread(void* arg)
 #ifdef __unix__
 	SOCKET	uspy_listen_socket[MAX_NODES];
 	struct sockaddr_un uspy_addr;
-	socklen_t		addr_len;
+	socklen_t		uspy_addr_len;
 #endif
 
     if(startup==NULL) {
@@ -3804,8 +3804,8 @@ void DLLCALL bbs_thread(void* arg)
 	            unlink(str);
 	    }
 	    if(uspy_listen_socket[i-1]!=INVALID_SOCKET) {
-	        addr_len=SUN_LEN(&uspy_addr);
-	        if(bind(uspy_listen_socket[i-1], (struct sockaddr *) &uspy_addr, addr_len)) {
+	        uspy_addr_len=SUN_LEN(&uspy_addr);
+	        if(bind(uspy_listen_socket[i-1], (struct sockaddr *) &uspy_addr, uspy_addr_len)) {
 	            lprintf("Node %d !ERROR %d binding local spy socket %d to %s"
 	                , i, errno, uspy_listen_socket[i-1], uspy_addr.sun_path);
 	            close_socket(uspy_listen_socket[i-1]);
@@ -3818,7 +3818,7 @@ void DLLCALL bbs_thread(void* arg)
 	            close_socket(uspy_listen_socket[i-1]);
 	            continue;
 			}
-	        addr_len=sizeof(uspy_addr);
+	        uspy_addr_len=sizeof(uspy_addr);
 	    }
 	}
 #endif // __unix__ (unix-domain spy sockets)
@@ -3940,7 +3940,7 @@ void DLLCALL bbs_thread(void* arg)
 					BOOL already_connected=(uspy_socket[i-1]!=INVALID_SOCKET);
 					SOCKET new_socket=INVALID_SOCKET;
 					new_socket = accept(uspy_listen_socket[i-1], (struct sockaddr *)&uspy_addr
-						,&client_addr_len);
+						,&uspy_addr_len);
 					if(new_socket < 0)  {
 						lprintf("ERROR! Spy socket for node %d unable to accept()",i);
 						close_socket(uspy_listen_socket[i-1]);
