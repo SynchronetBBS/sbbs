@@ -129,7 +129,7 @@ $(CHKSMB): chksmb.c smblib.c smbwrap.c conwrap.c
 	$(CC) $(CFLAGS) -o $@ $^
 
 # SMB Utility
-$(SMBUTIL): smbutil.c smblib.c smbwrap.c conwrap.c smbtxt.c lzh.c
+$(SMBUTIL): smbutil.c smblib.c smbwrap.c conwrap.c smbtxt.c crc32.c lzh.c 
 	$(CC) $(CFLAGS) -o $@ $^
 
 
