@@ -1537,7 +1537,7 @@ static void send_thread(void* arg)
 					/* Inform uploader of downloaded file */
 					sprintf(str,text[DownloadUserMsg]
 						,getfname(xfer.filename)
-						,xfer.filepos ? "Partially FTP-" : "FTP-"
+						,xfer.filepos ? "partially FTP-" : "FTP-"
 						,xfer.user->alias,tmp); 
 					putsmsg(&scfg,uploader.number,str); 
 				}
