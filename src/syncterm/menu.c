@@ -1,3 +1,4 @@
+#include <genwrap.h>
 #include <uifc.h>
 #include <ciolib.h>
 #include <keys.h>
@@ -5,6 +6,7 @@
 #include "cterm.h"
 #include "term.h"
 #include "uifcinit.h"
+#include "bbslist.h"
 
 void viewscroll(void)
 {
@@ -97,11 +99,12 @@ void viewscroll(void)
 	return;
 }
 
-int syncmenu(void)
+int syncmenu(struct bbslist *bbs)
 {
-	char	*opts[3]={
+	char	*opts[4]={
 						 "Scrollback (ALT-S)"
 						,"Disconnect (CTRL-Q)"
+						,"Send Login (ALT-L)"
 						,""};
 	int		opt=0;
 	int		i;
@@ -126,6 +129,12 @@ int syncmenu(void)
 			case 1:		/* Disconnect */
 				ret=-1;
 				break;
+			case 2:		/* Login */
+				conn_send(bbs->user,strlen(bbs->user),0);
+				conn_send("\r",1,0);
+				SLEEP(10);
+				conn_send(bbs->password,strlen(bbs->password),0);
+				conn_send("\r",1,0);
 		}
 	}
 

@@ -263,7 +263,7 @@ int main(int argc, char **argv)
 			settitle(str);
 			if(drawwin())
 				return(1);
-			doterm();
+			doterm(bbs);
 			textmode(txtinfo.currmode);
 			settitle("SyncTERM");
 		}

@@ -92,7 +92,7 @@ void mousedrag(unsigned char *scrollback)
 	}
 }
 
-void doterm(void)
+void doterm(struct bbslist *bbs)
 {
 	unsigned char ch[2];
 	unsigned char buf[BUFSIZE];
@@ -194,6 +194,12 @@ void doterm(void)
 						case 0x1f00:	/* ALT-S */
 							viewscroll();
 							break;
+						case 0x2600:	/* ALT-L */
+							conn_send(bbs->user,strlen(bbs->user),0);
+							conn_send("\r",1,0);
+							SLEEP(10);
+							conn_send(bbs->password,strlen(bbs->password),0);
+							conn_send("\r",1,0);
 					}
 					break;
 				case 17:	/* CTRL-Q */
@@ -204,7 +210,7 @@ void doterm(void)
 				case 19:	/* CTRL-S */
 					i=wherex();
 					j=wherey();
-					switch(syncmenu()) {
+					switch(syncmenu(bbs)) {
 						case -1:
 							cterm_end();
 							free(scrollback);
