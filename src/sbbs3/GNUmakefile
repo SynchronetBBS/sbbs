@@ -38,23 +38,23 @@ else
 endif
 
 ifdef bcc
- CC		?=	bc++ -q
+ CC		=	bc++ -q
  CCPRE	:=	bcc
- CXX	?=	bc++ -q
+ CXX	=	bc++ -q
  LD		=	ilink -q
  CFLAGS +=	-mm -md -D__unix__ -w-csu -w-pch -w-ccc -w-rch -w-par -w-aus
 else
  CFLAGS	+=	-MMD -Wall
  CCPRE	?=	gcc
  ifdef BUILD_DEPENDS
-  CC		=	../build/mkdep -a
+  CC	=	../build/mkdep -a
   CXX	=	../build/mkdep -a
-  LD		=	echo
+  LD	=	echo
   COMPILE_MSG	:= Depending
  else
-  CC		?=	gcc
+  CC	?=	gcc
   CXX	?=	g++
-  LD		?=	ld
+  LD	?=	ld
   COMPILE_MSG	:= Compiling
  endif
 endif
