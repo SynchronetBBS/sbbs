@@ -2186,7 +2186,8 @@ o Timed events can be configured to run only on specific days of the month
 
 o Eliminated harmless accept/select errors when shutting down servers
 
-o Win32 build now uses Critical Sections in place of Mutexes (slower)
+o Win32 build now uses Critical Sections in place of Mutexes
+  - Mutexe API routines are slower because they must enter the kernel
 
 o Now using thread-safe time functions in Unix builds
 
@@ -2204,6 +2205,29 @@ o QWK Bugfix: was always truncating MESSAGES.DAT, so appending to an existing
 o Beautified and sped-up (immensely) the unpacking of QWK network message 
   packets
 
+o New optional ctrl/twitlist.cfg file contains, names (with wildcards) of
+  users/authors whose posts will not be imported from QWK or FidoNet networks
+
+o Configurable directory for modified modules/scripts
+
+o Configurable directory for log files
+
+o Message sub-board and file directory internal codes can now be extended to
+  16 characters by using the new optional message group/file library 
+  "internal code prefix" - this feature allows sysops to easy create message
+  and file areas with unique (non-conflicting) internal codes
+
+o New cross-platform graphical user interface (based on FLTK) for SCFG and
+  ECHOCFG (run with "-g" to enable GUI interface)
+
+o New Unix installer - installs and builds source code from CVS or tgz files
+  - thank Deuce for this neat-o program
+
+o All TCP servers individually track and log the number of clients served
+
+o Bugfix: TCP server's up-time root value is reset if the server thread is 
+  shutdown and restarted (excluding recycles)
+
 
 Control Panel (Win32 GUI)
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -2219,9 +2243,17 @@ o File->Import/Export Settings menu options now prompt for path/filename
 
 Telnet Server
 ~~~~~~~~~~~~~
+o System password is now required to create the first user (sysop) account
+
 o Fixed problem detecting number of rows for Windows 2K/XP telnet client 
   (was reporting 105 lines when used in a scrollable window)
   - fixed by Deuce
+
+o Screen-lines are no longer auto-detected (for ANSI terminals) at every
+  "default config" menu prompt, but rather only when using the "Screen Length"
+  option and selecting "Auto Detect"
+  - solves problem with terminals that don't respond properly to the ANSI
+    cursor position request
 
 o Ctrl-C now purges both input and output buffers (when appropriate)
 
@@ -2234,6 +2266,13 @@ o New toggle option for external programs, events, and message editors:
   - use Shell to Execute, forces command-line to be executed via system
     command shell (e.g. cmd.exe, bash/sh, etc.)
 
+o The periodic sending of Telnet Go-Ahead commands can now be disabled
+  - This feature is useful for quickly detecting dropped connections
+  - Unfortunately, some Telnet clients print/echo the Telnet GA command
+
+o Now sends Telnet DO/WILL BINARY TRANSMIT commands before file transfers
+  - Fixes problem with some Unix telnet clients that don't do this themselves
+
 o ctrl/attr.cfg now support lower-case attribute character codes
 
 o Improved server shutdown detection in node threads
@@ -2244,6 +2283,17 @@ o Displays external netmail address before prompting to forward local mail
 
 o The 'F'ind text command while reading messages can now either show message
   headers only or entire text
+
+o Bugfix: files with on extension in filebase would corrupt listing display
+
+o Optional text/menu/msgtabs.* menu, displayed as the "tab bar" in the
+  internal editor instead of the hard-coded tab bar
+
+o New FREESPACEK @-code to display free disk space in kilobytes
+
+o New SERVED @-code to report the number of clients served since started
+
+o Bugfix: telnet gateway now handles temporarily blocked sockets (retries)
 
 
 JavaScript
@@ -2270,6 +2320,10 @@ o Fixed msgbase.put_msg_header() - no longer creates duplicate header fields
 o system.spamlog() now takes additional 'from' parameter (typically the SMTP
   reverse-path)
 
+o New system.freediskspacek property - free disk space in kilobytes
+
+o New system.logs_dir and system.mods_dir properties
+
 o Socket poll() method accepts a floating point timeout for fractional timeout
   values
 
@@ -2295,23 +2349,62 @@ o New properties: file_area.min_diskspace, user_dir, sysop_dir, and upload_dir
 o Renamed the File.delete() method to File.remove() - can't use JavaScript 
   keyword as method name
 
+o New method: console.telnet_cmd(cmd,opt) - used to send a Telnet command to
+  client (with optional 'opt' value)
+
 o New property: console.aborted (bool), true if user hit Ctrl-C to abort I/O
 
 o Renamed property: console.rio_abortable to console.abortable (no local I/O)
 
+o New global method: lfexpand(), converts line-feeds (LF) to carriage-return
+  /line-feed pairs (CRLF end-of-line sequences) in strings
+
+o Bugfix: system.new_user(): if a sysop-configured default new user editor has
+  terminal-type access requirements (e.g. ANSI), it will now work
+
 o Services now have access to user objects (e.g. msg_area, file_area, etc.),
   without requiring a false login() call
+
+
+SMBUTIL
+~~~~~~~
+o Added support for -i (ignore CRC) option, to override duplicate msg checking
 
 
 SBBSecho
 ~~~~~~~~
 o The TID (Tosser ID) kludge line is only added when exporting messages
 
+o Adds FSP-1010 Via control code to packed NetMail messages
+
+o 0-byte bundles less than 24-hours old are not deleted or overwritten
+  - allows unique bundle numbering if mailer truncates sent bundles
+
+o Unix versions expand sole LFs to CRLFs in NetMail created from text files
+
+o Unix version unpacks bundles with upper or mixed case extensions
+
+o Added log message for routed EchoMail bundles
+
+o Added support for ctrl/twitlist.cfg
+
 
 ADDFILES
 ~~~~~~~~
 o Ignores ex-ASCII chars in filenames only when run in ASCII-only mode
   - support for foreign language chars in filenames
+
+o Added -L option to specify library name to limit Auto-ADD directory list
+
+o Strips whitespace off beginning of second line ext-desc in files.bbs
+
+o Reverted to the old (v2) method of preparing the file descriptions
+  (compressing white-space, etc)
+
+
+FILELIST
+~~~~~~~~
+o Displays files with no extension without a '.'
 
 
 Mail Server
@@ -2357,6 +2450,9 @@ o SITE WHO command now reports total number of active FTP clients
 o Added SITE VER and SITE UPTIME commands
 
 o Added SITE RECYCLE and SITE RECYCLE ALL sysop-only commands
+
+o Fixed normal (non-PASV) file transfers on Unix when running as non-root user
+  - if it can't bind ctrl_port-1, then it'll retry the bind using any port (0)
 
 
 /* End of V310_NEW.TXT */
