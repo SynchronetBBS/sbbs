@@ -3266,9 +3266,12 @@ void http_session_thread(void* arg)
 				memset(session.req.ld,0,sizeof(struct log_data));
 				session.req.ld->hostname=strdup(session.host_name);
 			}
-			session.req.headers=strListInit();
-			session.req.cgi_env=strListInit();
-			session.req.dynamic_heads=strListInit();
+			if((session.req.headers=strListInit())==NULL
+				|| (session.req.cgi_env=strListInit())==NULL
+				|| (session.req.dynamic_heads=strListInit())==NULL) {
+				lprintf(LOG_ERR,"%04d !ERROR allocating memory for string lists",session.socket);
+				break;	/* We should probably send "system error" type status here (?) */
+			}
 			if(get_req(&session,redirp)) {
 				/* At this point, if redirp is non-NULL then the headers have already been parsed */
 				if((session.http_ver<HTTP_1_0)||redirp!=NULL||parse_headers(&session)) {
@@ -3277,6 +3280,7 @@ void http_session_thread(void* arg)
 							respond(&session);
 						}
 						else {
+							/* is this a memory leak? It seems close_request() isn't being called in this case */
 							safe_snprintf(redir_req,sizeof(redir_req),"%s %s%s%s",methods[session.req.method]
 								,session.req.virtual_path,session.http_ver<HTTP_1_0?"":" ",http_vers[session.http_ver]);
 							lprintf(LOG_DEBUG,"%04d Internal Redirect to: %s",socket,redir_req);
