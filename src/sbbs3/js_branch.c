@@ -37,11 +37,19 @@
 
 #include "sbbs.h"
 
+#include <jscntxt.h>	/* Needed for Context-private data structure */
+
 enum {
 	 BRANCH_PROP_COUNTER
 	,BRANCH_PROP_LIMIT
-	,BRANCH_PROP_YIELD_FREQ
-	,BRANCH_PROP_GC_FREQ
+	,BRANCH_PROP_YIELD_INTERVAL
+	,BRANCH_PROP_GC_INTERVAL
+#ifdef jscntxt_h___
+	,BRANCH_PROP_GC_BYTES
+	,BRANCH_PROP_GC_LASTBYTES
+	,BRANCH_PROP_GC_MAXBYTES
+	,BRANCH_PROP_GC_COUNTER
+#endif
 };
 
 static JSBool js_branch_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
@@ -61,12 +69,26 @@ static JSBool js_branch_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 		case BRANCH_PROP_LIMIT:
 			JS_NewNumberValue(cx,branch->limit,vp);
 			break;
-		case BRANCH_PROP_GC_FREQ:
-			JS_NewNumberValue(cx,branch->gc_freq,vp);
-			break;
-		case BRANCH_PROP_YIELD_FREQ:
+		case BRANCH_PROP_YIELD_INTERVAL:
 			JS_NewNumberValue(cx,branch->yield_freq,vp);
 			break;
+		case BRANCH_PROP_GC_INTERVAL:
+			JS_NewNumberValue(cx,branch->gc_freq,vp);
+			break;
+#ifdef jscntxt_h___
+		case BRANCH_PROP_GC_BYTES:
+			JS_NewNumberValue(cx,cx->runtime->gcBytes,vp);
+			break;
+		case BRANCH_PROP_GC_LASTBYTES:
+			JS_NewNumberValue(cx,cx->runtime->gcLastBytes,vp);
+			break;
+		case BRANCH_PROP_GC_MAXBYTES:
+			JS_NewNumberValue(cx,cx->runtime->gcMaxBytes,vp);
+			break;
+		case BRANCH_PROP_GC_COUNTER:
+			JS_NewNumberValue(cx,cx->runtime->gcNumber,vp);
+			break;
+#endif
 	}
 
 	return(JS_TRUE);
@@ -89,10 +111,10 @@ static JSBool js_branch_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 		case BRANCH_PROP_LIMIT:
 			JS_ValueToInt32(cx, *vp, (int32*)&branch->limit);
 			break;
-		case BRANCH_PROP_GC_FREQ:
+		case BRANCH_PROP_GC_INTERVAL:
 			JS_ValueToInt32(cx, *vp, (int32*)&branch->gc_freq);
 			break;
-		case BRANCH_PROP_YIELD_FREQ:
+		case BRANCH_PROP_YIELD_INTERVAL:
 			JS_ValueToInt32(cx, *vp, (int32*)&branch->yield_freq);
 			break;
 	}
@@ -100,14 +122,23 @@ static JSBool js_branch_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	return(TRUE);
 }
 
+#define GC_PROP_FLAGS	JSPROP_ENUMERATE|JSPROP_READONLY
 
 static struct JSPropertySpec js_branch_properties[] = {
-/*		 name,			tinyid,				flags,				getter,	setter	*/
+/*		 name,				tinyid,						flags,				getter,	setter	*/
 
-	{	"counter",		BRANCH_PROP_COUNTER,	JSPROP_ENUMERATE,	NULL,	NULL },
-	{	"limit",		BRANCH_PROP_LIMIT,		JSPROP_ENUMERATE,	NULL,	NULL },
-	{	"gc_freq",		BRANCH_PROP_GC_FREQ,	JSPROP_ENUMERATE,	NULL,	NULL },
-	{	"yield_freq",	BRANCH_PROP_YIELD_FREQ,	JSPROP_ENUMERATE,	NULL,	NULL },
+	{	"counter",			BRANCH_PROP_COUNTER,		JSPROP_ENUMERATE,	NULL,	NULL },
+	{	"limit",			BRANCH_PROP_LIMIT,			JSPROP_ENUMERATE,	NULL,	NULL },
+	{	"yield_freq",		BRANCH_PROP_YIELD_INTERVAL,	0 /* ALIAS */,		NULL,	NULL },
+	{	"yield_interval",	BRANCH_PROP_YIELD_INTERVAL,	JSPROP_ENUMERATE,	NULL,	NULL },
+	{	"gc_freq",			BRANCH_PROP_GC_INTERVAL,	0 /* ALIAS */,		NULL,	NULL },
+	{	"gc_interval",		BRANCH_PROP_GC_INTERVAL,	JSPROP_ENUMERATE,	NULL,	NULL },
+#ifdef jscntxt_h___
+	{	"gc_bytes",			BRANCH_PROP_GC_BYTES,		GC_PROP_FLAGS,		NULL,	NULL },
+	{	"gc_last_bytes",	BRANCH_PROP_GC_LASTBYTES,	GC_PROP_FLAGS,		NULL,	NULL },
+	{	"gc_max_bytes",		BRANCH_PROP_GC_MAXBYTES,	GC_PROP_FLAGS,		NULL,	NULL },
+	{	"gc_counter",		BRANCH_PROP_GC_COUNTER,		GC_PROP_FLAGS,		NULL,	NULL },
+#endif
 	{0}
 };
 
@@ -115,8 +146,14 @@ static struct JSPropertySpec js_branch_properties[] = {
 static char* branch_prop_desc[] = {
 	 "counter incremented for each branch"
 	,"maximum number of branches, used for infinite-loop detection (0=disabled)"
-	,"frequency of periodic garbage collection (0=disabled)"
-	,"frequency of periodic time-slice yields (0=disabled)"
+	,"interval of periodic garbage collection (lower number=higher frequency, 0=disabled)"
+	,"interval of periodic time-slice yields (lower number=higher frequency, 0=disabled)"
+#ifdef jscntxt_h___
+	,"number of bytes currently in heap"
+	,"number of bytes in heap after last garbage collection"
+	,"maximum number of bytes in heap"
+	,"number of garbage collections"
+#endif
 	,NULL
 };
 #endif
