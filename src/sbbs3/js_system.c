@@ -1183,10 +1183,8 @@ static JSBool js_node_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	node_num=(uint)JS_GetPrivate(cx,obj)>>1;
 
 	memset(&node,0,sizeof(node));
-	if(getnodedat(cfg, node_num, &node, NULL)) {
-		*vp = INT_TO_JSVAL(0);
+	if(getnodedat(cfg, node_num, &node, NULL))
 		return(JS_TRUE);
-	}
 	
     switch(tiny) {
 		case NODE_PROP_STATUS:
