@@ -1403,6 +1403,8 @@ int SMBCALL smb_addmsghdr(smb_t* smb, smbmsg_t* msg, int storage)
 		return(i);
 	}
 
+	if(msg->hdr.version==0)
+		msg->hdr.version=SMB_VERSION;
 	msg->hdr.length=(ushort)hdrlen;
 	if(storage==SMB_HYPERALLOC)
 		l=smb_hallochdr(smb);

@@ -237,7 +237,6 @@ int SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, long dupechk_hash
 			fflush(smb->sdt_fp);
 		}
 
-		msg->hdr.version=smb_ver();
 		if(msg->hdr.when_imported.time==0) {
 			msg->hdr.when_imported.time=time(NULL);
 			msg->hdr.when_imported.zone=0;	/* how do we detect system TZ? */
