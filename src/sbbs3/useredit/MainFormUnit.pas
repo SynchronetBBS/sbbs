@@ -1006,7 +1006,7 @@ begin
         ShortDateFormat:='dd/mm/yy';    { European }
 
     data_dir:=ParamStr(1);
-    if Length(data_dir)=0 then data_dir:='c:\sbbs\data\';
+{    if Length(data_dir)=0 then data_dir:='.\'; }
 
     users:=LastUser();
 
