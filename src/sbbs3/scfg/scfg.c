@@ -1991,12 +1991,19 @@ char* prep_code(char *str)
 	char tmp[1024];
 	int i,j;
 
-	for(i=j=0;str[i];i++)
-		if(str[i]>' ' && str[i]!='*' && str[i]!='?'
+	for(i=j=0;str[i] && i<sizeof(tmp);i++)
+		if(str[i]>' ' && !(str[i]&0x80) && str[i]!='*' && str[i]!='?'
 			&& strchr(ILLEGAL_FILENAME_CHARS,str[i])==NULL)
 			tmp[j++]=str[i];
 	tmp[j]=0;
 	strcpy(str,tmp);
+	if(j>=LEN_CODE) {	/* Extra chars? Strip symbolic chars */
+		for(i=j=0;str[i];i++)
+			if(isalnum(str[i]))
+				tmp[j++]=str[i];
+		tmp[j]=0;
+		strcpy(str,tmp);
+	}
 	return(str);
 }
 
