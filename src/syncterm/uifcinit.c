@@ -16,6 +16,8 @@ int	init_uifc(void) {
 		return(0);
 	uifc.size=sizeof(uifc);
 	uifc.mode=UIFC_IBM|UIFC_COLOR;
+	if(uifc.scrn_len)
+		uifc.scrn_len++;
 	if((i=uifcini32(&uifc))!=0) {
 		fprintf(stderr,"uifc library init returned error %d\n",i);
 		return(-1);
