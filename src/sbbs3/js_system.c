@@ -385,6 +385,24 @@ static char* sys_prop_desc[] = {
 	,"tempory file directory"
 	,"executable file directory"
 
+	/* INSERT new tabled properties here */
+
+	/* Manually created (non-tabled) properties */
+	,"server's host name"
+	,"Synchronet version number (e.g. '3.10')"
+	,"Synchronet revision letter (e.g. 'k')"
+	,"full Synchronet version information (e.g. '3.10k Beta Debug')"
+	,"Synchronet version notice (includes version and platform)"
+	,"platform description (e.g. 'Win32', 'Linux', 'FreeBSD')"
+	,"socket library version information"
+	,"message base library version information"
+	,"compiler used to build Synchronet"
+	,"date and time compiled"
+	,"Synchronet copyright display"
+	,"JavaScript engine version information"
+	,"operating system version information"
+	,"time/date system was brought online (in time_t format)"
+
 	,NULL
 };
 #endif
@@ -1068,10 +1086,10 @@ static jsMethodSpec js_system_functions[] = {
 	,JSDOCSTR("send a node a short text message, delivered immediately")
 	},		
 	{"put_telegram",	js_put_telegram,	2,	JSTYPE_VOID,	JSDOCSTR("number user, string message")
-	,JSDOCSTR("send a user a short text message, delivered immediately or next during next logon")
+	,JSDOCSTR("send a user a short text message, delivered immediately or during next logon")
 	},		
 	{"new_user",		js_new_user,		1,	JSTYPE_OBJECT,	JSDOCSTR("name/alias")
-	,JSDOCSTR("Create a new user record, returns a User object")
+	,JSDOCSTR("Create a new user record, returns a <b>User</b> object")
 	},
 	{0}
 };
