@@ -176,7 +176,7 @@ __published:	// IDE-managed Components
     TMenuItem *FtpEditHelloMessage;
     TMenuItem *FtpEditGoodbyeMessage;
     TMenuItem *N4;
-    TMenuItem *FileOpenMenuItem;
+	TMenuItem *FileEditMenuItem;
     TMenuItem *N5;
     TMenuItem *BBSEditIPFilterMsg;
     TMenuItem *BBSEditHostFilter;
@@ -201,8 +201,8 @@ __published:	// IDE-managed Components
     TMenuItem *BBSViewAnotherDaysLog;
     TMenuItem *BBSViewYesterdaysLog;
     TMenuItem *BBSViewTodaysLog;
-    TMenuItem *ViewErrorLog1;
-    TMenuItem *ViewStatisticsLog1;
+	TMenuItem *ViewErrorLog;
+	TMenuItem *ViewStatisticsLog;
     TAction *UserList;
     TToolButton *UserListButton;
     TMenuItem *HelpIndexMenuItem;
@@ -265,6 +265,12 @@ __published:	// IDE-managed Components
 	TSaveDialog *SaveDialog;
 	TMenuItem *BBSEditNewUserEmail;
 	TMenuItem *BBSPreviewMenuItem;
+	TMenuItem *FileEditTextFiles;
+	TMenuItem *FileEditConfigFiles;
+	TMenuItem *FileEditJavaScript;
+	TMenuItem *BBSEditBajaMenuItem;
+	TMenuItem *BBSEditFile;
+	TMenuItem *N10;
 	void __fastcall FileExitMenuItemClick(TObject *Sender);
 	void __fastcall ViewToolbarMenuItemClick(TObject *Sender);
 	void __fastcall FormClose(TObject *Sender, TCloseAction &Action);
@@ -309,7 +315,6 @@ __published:	// IDE-managed Components
     void __fastcall ChatToggleExecute(TObject *Sender);
     void __fastcall ViewClientsExecute(TObject *Sender);
     void __fastcall UserEditExecute(TObject *Sender);
-    void __fastcall FileOpenMenuItemClick(TObject *Sender);
     void __fastcall SaveSettings(TObject *Sender);
     void __fastcall ImportSettings(TObject *Sender);
     void __fastcall ExportSettings(TObject *Sender);
@@ -336,6 +341,11 @@ __published:	// IDE-managed Components
 	void __fastcall ServicesRecycleExecute(TObject *Sender);
 	void __fastcall TelnetRecycleExecute(TObject *Sender);
 	void __fastcall BBSPreviewMenuItemClick(TObject *Sender);
+	void __fastcall FileEditTextFilesClick(TObject *Sender);
+	void __fastcall BBSEditBajaMenuItemClick(TObject *Sender);
+	void __fastcall FileEditJavaScriptClick(TObject *Sender);
+	void __fastcall FileEditConfigFilesClick(TObject *Sender);
+	void __fastcall BBSEditFileClick(TObject *Sender);
 private:	// User declarations
 public:		// User declarations
     __fastcall TMainForm(TComponent* Owner);

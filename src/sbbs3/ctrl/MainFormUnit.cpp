@@ -2657,27 +2657,6 @@ void __fastcall TMainForm::UserEditExecute(TObject *Sender)
 }
 //---------------------------------------------------------------------------
 
-void __fastcall TMainForm::FileOpenMenuItemClick(TObject *Sender)
-{
-    TOpenDialog* dlg=new TOpenDialog((TComponent*)Sender);
-
-    dlg->Filter = "Text files (*.txt)|*.TXT"
-                "|Log files (*.log)|*.LOG"
-                "|Config files (*.cfg)|*.CFG"
-                "|Message files (*.msg; *.asc)|*.MSG;*.ASC"
-                "|Baja Source (*.src)|*.SRC"
-                "|All files|*.*";
-    dlg->InitialDir=cfg.text_dir;
-    if(dlg->Execute()==true) {
-        Application->CreateForm(__classid(TTextFileEditForm), &TextFileEditForm);
-        TextFileEditForm->Filename=AnsiString(dlg->FileName);
-        TextFileEditForm->Caption="Edit";
-        TextFileEditForm->ShowModal();
-        delete TextFileEditForm;
-    }
-    delete dlg;
-}
-//---------------------------------------------------------------------------
 void __fastcall TMainForm::BBSPreviewMenuItemClick(TObject *Sender)
 {
     TOpenDialog* dlg=new TOpenDialog((TComponent*)Sender);
@@ -3007,6 +2986,102 @@ void __fastcall TMainForm::FilterIP(char* ip_addr
     fprintf(fp,"\n;%s abuse by %s on %s%s\n"
     	,prot,username,ctime(&now),ip_addr);
     fclose(fp);
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TMainForm::FileEditTextFilesClick(TObject *Sender)
+{
+	TOpenDialog* dlg=new TOpenDialog((TComponent*)Sender);
+
+    dlg->Filter = 	"Text files (*.txt)|*.TXT"
+    				"|All files|*.*";
+    dlg->InitialDir=cfg.text_dir;
+    if(dlg->Execute()==true) {
+        Application->CreateForm(__classid(TTextFileEditForm), &TextFileEditForm);
+        TextFileEditForm->Filename=AnsiString(dlg->FileName);
+        TextFileEditForm->Caption="Edit";
+        TextFileEditForm->ShowModal();
+        delete TextFileEditForm;
+    }
+    delete dlg;
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TMainForm::BBSEditBajaMenuItemClick(TObject *Sender)
+{
+	TOpenDialog* dlg=new TOpenDialog((TComponent*)Sender);
+
+    dlg->Filter = "Baja Source Code (*.src)|*.SRC";
+    dlg->InitialDir=cfg.exec_dir;
+    if(dlg->Execute()==true) {
+        Application->CreateForm(__classid(TTextFileEditForm), &TextFileEditForm);
+        TextFileEditForm->Filename=AnsiString(dlg->FileName);
+        TextFileEditForm->Caption="Edit";
+        if(TextFileEditForm->ShowModal()==mrOk) {
+        	/* Compile Baja Source File (requires Baja v2.33+) */
+        	char cmdline[512];
+            sprintf(cmdline,"%sbaja -p %s",cfg.exec_dir,dlg->FileName);
+            WinExec(cmdline,SW_SHOW);
+		}
+        delete TextFileEditForm;
+    }
+    delete dlg;
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TMainForm::FileEditJavaScriptClick(TObject *Sender)
+{
+	TOpenDialog* dlg=new TOpenDialog((TComponent*)Sender);
+
+    dlg->Filter = "JavaScript Files (*.js)|*.JS";
+    dlg->InitialDir=cfg.exec_dir;
+    if(dlg->Execute()==true) {
+        Application->CreateForm(__classid(TTextFileEditForm), &TextFileEditForm);
+        TextFileEditForm->Filename=AnsiString(dlg->FileName);
+        TextFileEditForm->Caption="Edit";
+        TextFileEditForm->ShowModal();
+        delete TextFileEditForm;
+    }
+    delete dlg;
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TMainForm::FileEditConfigFilesClick(TObject *Sender)
+{
+	TOpenDialog* dlg=new TOpenDialog((TComponent*)Sender);
+
+    dlg->Filter = "Configuration Files (*.cfg)|*.CFG";
+    dlg->InitialDir=cfg.ctrl_dir;
+    if(dlg->Execute()==true) {
+        Application->CreateForm(__classid(TTextFileEditForm), &TextFileEditForm);
+        TextFileEditForm->Filename=AnsiString(dlg->FileName);
+        TextFileEditForm->Caption="Edit";
+        TextFileEditForm->ShowModal();
+        delete TextFileEditForm;
+    }
+    delete dlg;
+}
+
+void __fastcall TMainForm::BBSEditFileClick(TObject *Sender)
+{
+   TOpenDialog* dlg=new TOpenDialog((TComponent*)Sender);
+
+    dlg->Filter = "ANSI/Ctrl-A files (*.asc; *.msg; *.ans)|*.ASC;*.MSG;*.ANS"
+                "|All files|*.*";
+    dlg->InitialDir=cfg.text_dir;
+    if(dlg->Execute()==true) {
+        Application->CreateForm(__classid(TTextFileEditForm), &TextFileEditForm);
+        TextFileEditForm->Filename=AnsiString(dlg->FileName);
+        TextFileEditForm->Caption="Edit";
+        if(TextFileEditForm->ShowModal()==mrOk) {
+	        Application->CreateForm(__classid(TPreviewForm), &PreviewForm);
+    	    PreviewForm->Filename=AnsiString(dlg->FileName);
+            PreviewForm->ShowModal();
+	        delete PreviewForm;
+        }
+        delete TextFileEditForm;
+    }
+    delete dlg;
 }
 //---------------------------------------------------------------------------
 
