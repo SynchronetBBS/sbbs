@@ -1,9 +1,39 @@
-/* SMB2SBL */
-
-/* Developed 1990-1997 by Rob Swindell; PO Box 501, Yorba Linda, CA 92885 */
+/* smb2sbl.c */
 
 /* Scans SMB message base for messages to "SBL" and adds them to the SBL    */
-/* database. */
+
+/* $Id$ */
+
+/****************************************************************************
+ * @format.tab-size 4		(Plain Text/Source Code File Header)			*
+ * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
+ *																			*
+ * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ *																			*
+ * This program is free software; you can redistribute it and/or			*
+ * modify it under the terms of the GNU General Public License				*
+ * as published by the Free Software Foundation; either version 2			*
+ * of the License, or (at your option) any later version.					*
+ * See the GNU General Public License for more details: gpl.txt or			*
+ * http://www.fsf.org/copyleft/gpl.html										*
+ *																			*
+ * Anonymous FTP access to the most recent released source is available at	*
+ * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
+ *																			*
+ * Anonymous CVS access to the development source and modification history	*
+ * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
+ *     (just hit return, no password is necessary)							*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout xtrn	*
+ *																			*
+ * For Synchronet coding style and modification guidelines, see				*
+ * http://www.synchro.net/source.html										*
+ *																			*
+ * You are encouraged to submit any modifications (preferably in Unix diff	*
+ * format) via e-mail to mods@synchro.net									*
+ *																			*
+ * Note: If this box doesn't appear square, then you need to fix your tabs.	*
+ ****************************************************************************/
 
 #define  uint unsigned int
 
@@ -175,7 +205,7 @@ int main(int argc, char **argv)
 	smbmsg_t msg;
 	FILE	*stream;
 
-fprintf(stderr,"\nSMB2SBL v2.00 - Updates SBL via SMB - Developed 1994-1997 "
+fprintf(stderr,"\nSMB2SBL v2.10 - Updates SBL via SMB - Developed 1994-2000 "
 	"Rob Swindell\n\n");
 
 if(checktime()) {
@@ -314,6 +344,19 @@ while(!feof(smb.sid_fp)) {
 				l++;
 			sprintf(bbs.software,"%-.15s",buf+l);
 			truncsp(bbs.software); }
+		if(!strnicmp(buf+l,"WEB-SITE:",9)) {
+			l+=9;
+			while(buf[l] && buf[l]<=SP && buf[l]!=CR)
+				l++;
+			sprintf(bbs.web_url,"%-.60s",buf+l);
+			truncsp(bbs.web_url); }
+		if(!strnicmp(buf+l,"E-MAIL:",7)) {
+			l+=7;
+			while(buf[l] && buf[l]<=SP && buf[l]!=CR)
+				l++;
+			sprintf(bbs.sysop_email,"%-.60s",buf+l);
+			truncsp(bbs.sysop_email); }
+
 		if(!strnicmp(buf+l,"SYSOP:",6)) {
 			l+=6;
 			while(buf[l] && buf[l]<=SP && buf[l]!=CR)
@@ -326,8 +369,8 @@ while(!feof(smb.sid_fp)) {
 			l+=7;
 			while(buf[l] && buf[l]<=SP && buf[l]!=CR)
 				l++;
-			sprintf(bbs.number[number].number,"%-.12s",buf+l);
-			truncsp(bbs.number[number].number);
+			sprintf(bbs.number[number].modem.number,"%-.28s",buf+l);
+			truncsp(bbs.number[number].modem.number);
 			if(number<MAX_NUMBERS-1)
 				number++; }
 		if(!strnicmp(buf+l,"MODEM:",6)) {
@@ -336,30 +379,30 @@ while(!feof(smb.sid_fp)) {
 				l++;
 			i=number;
 			if(i) i--;
-			sprintf(bbs.number[i].modem,"%-.15s",buf+l);
-			truncsp(bbs.number[i].modem); }
+			sprintf(bbs.number[i].modem.desc,"%-.15s",buf+l);
+			truncsp(bbs.number[i].modem.desc); }
 		if(!strnicmp(buf+l,"LOCATION:",9)) {
 			l+=9;
 			while(buf[l] && buf[l]<=SP && buf[l]!=CR)
 				l++;
 			i=number;
             if(i) i--;
-			sprintf(bbs.number[i].location,"%-.30s",buf+l);
-			truncsp(bbs.number[i].location); }
+			sprintf(bbs.number[i].modem.location,"%-.30s",buf+l);
+			truncsp(bbs.number[i].modem.location); }
 		if(!strnicmp(buf+l,"MINRATE:",8)) {
 			l+=8;
 			while(buf[l] && buf[l]<=SP && buf[l]!=CR)
 				l++;
 			i=number;
             if(i) i--;
-			bbs.number[i].min_rate=atoi(buf+l); }
+			bbs.number[i].modem.min_rate=atoi(buf+l); }
 		if(!strnicmp(buf+l,"MAXRATE:",8)) {
 			l+=8;
 			while(buf[l] && buf[l]<=SP && buf[l]!=CR)
 				l++;
 			i=number;
             if(i) i--;
-			bbs.number[i].max_rate=atoi(buf+l); }
+			bbs.number[i].modem.max_rate=atoi(buf+l); }
 		if(!strnicmp(buf+l,"NETWORK:",8)) {
 			l+=8;
 			while(buf[l] && buf[l]<=SP && buf[l]!=CR)
@@ -437,13 +480,13 @@ while(!feof(smb.sid_fp)) {
 			putchar(buf[l]);
 			l++; }
 		printf("\n"); }
-	if(bbs.total_sysops<sysop)
+//	if(bbs.total_sysops<sysop)
 		bbs.total_sysops=sysop;
-	if(bbs.total_networks<network)
+//	if(bbs.total_networks<network)
 		bbs.total_networks=network;
-	if(bbs.total_terminals<terminal)
+//	if(bbs.total_terminals<terminal)
 		bbs.total_terminals=terminal;
-	if(bbs.total_numbers<number)
+//	if(bbs.total_numbers<number)
 		bbs.total_numbers=number;
 	fwrite(&bbs,sizeof(bbs_t),1,stream);
 	FREE(buf);
