@@ -1725,6 +1725,10 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 			close(in_pipe[1]);
 		close(out_pipe[0]);
 	}
+	else {
+		int enabled=FALSE;
+		setsockopt(client_socket,IPPROTO_TCP,TCP_NODELAY,(char*)&enabled,sizeof(enabled));
+	}
 
 	while(waitpid(pid, &i, WNOHANG)==0)  {
 		FD_ZERO(&ibits);
@@ -1750,7 +1754,8 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		if(i)
 			lprintf(LOG_NOTICE,"%.*s",i,buf);
 	}
-	
+
+	set_socket_options(&cfg, client_socket, str);
 
 	if(!(mode&EX_OFFLINE)) {	/* !off-line execution */
 
