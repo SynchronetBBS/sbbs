@@ -67,11 +67,11 @@ if(total_pages>1) {
 	}
 
 	if(offset+max_messages < msgarray.length)  {
-		template.pagelinks+='<a href="'+path+'?msg_sub='+encodeURIComponent(sub)+'&amp;offset='+(offset+max_messages)+'">NEXT</a>';
+		template.pagelinks+='<a href="'+path+'?msg_sub='+encodeURIComponent(sub)+'&amp;offset='+(offset+max_messages)+'">'+next_page_html+'</a>';
 	}
 
 	if(offset>0) {
-		template.pagelinks='<a href="'+path+'?msg_sub='+encodeURIComponent(sub)+'&amp;offset='+(offset-max_messages)+'">PREV</a> '+template.pagelinks;
+		template.pagelinks='<a href="'+path+'?msg_sub='+encodeURIComponent(sub)+'&amp;offset='+(offset-max_messages)+'">'+prev_page_html+'</a> '+template.pagelinks;
 	}
 }
 
