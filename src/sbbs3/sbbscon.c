@@ -206,6 +206,21 @@ static void mail_terminated(int code)
 	mail_running=FALSE;
 }
 
+#ifdef __unix__
+void _sighandler_quit(int sig)
+{
+        // Close threads
+        bbs_terminate();
+        ftp_terminate();
+        mail_terminate();
+        while(bbs_running || ftp_running || mail_running)
+        mswait(1);
+
+        exit(0);
+}
+#endif
+
+
 /****************************************************************************/
 /* Main Entry Point															*/
 /****************************************************************************/
@@ -347,7 +362,21 @@ int main(int argc, char** argv)
 	_beginthread((void(*)(void*))ftp_server,0,&ftp_startup);
 	_beginthread((void(*)(void*))mail_server,0,&mail_startup);
 
+#ifdef __unix__
+	// Set up QUIT-type signals so they clean up properly.
+	signal(SIGHUP, _sighandler_quit);
+	signal(SIGINT, _sighandler_quit);
+	signal(SIGQUIT, _sighandler_quit);
+	signal(SIGABRT, _sighandler_quit);
+	signal(SIGTERM, _sighandler_quit);
+#endif
+
+
 	while(!quit) {
+		if(!isatty(fileno(stdin))) {	/* redirected */
+			mswait(1);
+			continue;
+		}
 		ch=getch();
 		printf("%c\n",ch);
 		switch(ch) {
@@ -357,7 +386,7 @@ int main(int argc, char** argv)
 			default:
 				printf("\nSynchronet BBS Console Version %s Help\n\n",SBBSCON_VERSION);
 				printf("q   = quit\n");
-#if 0	/* to do */
+#if 0	/* to do */	
 				printf("n   = node list\n");
 				printf("w   = who's online\n");
 				printf("l#  = lock node #\n");
