@@ -1,4 +1,4 @@
-<p class="navigation"><a class="navigation" href="http://^^JS:system.inet_addr^^/">Home</a> : <a class="navigation" href="/members/info.ssjs">Information</a> : Your Stats</p>
+<p class="navigation"><a class="navigation" href="/index.ssjs">Home</a> : <a class="navigation" href="/members/info.ssjs">Information</a> : Your Stats</p>
 <table class="userstats" border="0" cellpadding="2" cellspacing="2">
 <tr>
   <td class="userstats">First on:</td>

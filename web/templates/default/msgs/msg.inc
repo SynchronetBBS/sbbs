@@ -1,4 +1,4 @@
-<p class="navigation"><a class="navigation" href="http://^^JS:system.inet_addr^^">Home</a> : <a class="navigation" href="index.ssjs">Groups</a> : <a class="navigation" href="subs.ssjs?msg_grp=^^group:name^^">%%group:description%%</a> :
+<p class="navigation"><a class="navigation" href="/index.ssjs">Home</a> : <a class="navigation" href="index.ssjs">Groups</a> : <a class="navigation" href="subs.ssjs?msg_grp=^^group:name^^">%%group:description%%</a> :
 <a class="navigation" href="msgs.ssjs?msg_sub=^^sub:code^^">%%sub:description%%</a><br /></p>
 
 <table class="msg" border="0" width="95%">

@@ -1,5 +1,5 @@
 <!-- $Id$ -->
-<p class="navigation"><a class="navigation" href="http://^^JS:system.inet_addr^^/">Home</a> : New User Application</p>
+<p class="navigation"><a class="navigation" href="/index.ssjs">Home</a> : New User Application</p>
 <center>
 	(%%required%% indicates required fields)<br>
 	%%err_message%%

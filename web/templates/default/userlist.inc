@@ -1,4 +1,4 @@
-<p class="navigation"><a class="navigation" href="http://^^JS:system.inet_addr^^/">Home</a> : User List</p>
+<p class="navigation"><a class="navigation" href="/index.ssjs">Home</a> : User List</p>
 <table class="userlist" cellpadding="2" cellspacing="2">
 <tr>
     <th class="userlist"><a class="userlist" href="userlist.ssjs?sort=alias">Alias</a></th>

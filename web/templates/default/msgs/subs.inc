@@ -1,4 +1,4 @@
-<p class="navigation"><a class="navigation" href="http://^^JS:system.inet_addr^^/">Home</a> : <a class="navigation" href="index.ssjs">Groups</a> : <b>%%group:description%%</b></p>
+<p class="navigation"><a class="navigation" href="/index.ssjs">Home</a> : <a class="navigation" href="index.ssjs">Groups</a> : <b>%%group:description%%</b></p>
 <table class="sublist" cellpadding="2" cellspacing="2">
 <tr>
     <th class="sublistlft">Sub</th>
