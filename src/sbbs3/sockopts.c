@@ -39,38 +39,42 @@
 
 typedef struct {
 	char*	name;
+	int		level;
 	int		value;
 } sockopt_name;
 
 static const sockopt_name option_names[] = {
-	{ "TYPE",			SO_TYPE			},
-	{ "DEBUG",			SO_DEBUG		},
-	{ "LINGER",			SO_LINGER		},
-	{ "SNDBUF",			SO_SNDBUF		},
-	{ "RCVBUF",			SO_RCVBUF		},
-	{ "SNDLOWAT",		SO_SNDLOWAT		},
-	{ "RCVLOWAT",		SO_RCVLOWAT		},
-	{ "SNDTIMEO",		SO_SNDTIMEO		},
-	{ "RCVTIMEO",		SO_RCVTIMEO		},
-	{ "REUSEADDR",		SO_REUSEADDR	},	
-	{ "KEEPALIVE",		SO_KEEPALIVE	},
-	{ "DONTROUTE",		SO_DONTROUTE	},
-	{ "BROADCAST",		SO_BROADCAST	},
-	{ "OOBINLINE",		SO_OOBINLINE	},
+	{ "TYPE",			SOL_SOCKET,		SO_TYPE			},
+	{ "DEBUG",			SOL_SOCKET,		SO_DEBUG		},
+	{ "LINGER",			SOL_SOCKET,		SO_LINGER		},
+	{ "SNDBUF",			SOL_SOCKET,		SO_SNDBUF		},
+	{ "RCVBUF",			SOL_SOCKET,		SO_RCVBUF		},
+	{ "SNDLOWAT",		SOL_SOCKET,		SO_SNDLOWAT		},
+	{ "RCVLOWAT",		SOL_SOCKET,		SO_RCVLOWAT		},
+	{ "SNDTIMEO",		SOL_SOCKET,		SO_SNDTIMEO		},
+	{ "RCVTIMEO",		SOL_SOCKET,		SO_RCVTIMEO		},
+	{ "REUSEADDR",		SOL_SOCKET,		SO_REUSEADDR	},	
+	{ "KEEPALIVE",		SOL_SOCKET,		SO_KEEPALIVE	},
+	{ "DONTROUTE",		SOL_SOCKET,		SO_DONTROUTE	},
+	{ "BROADCAST",		SOL_SOCKET,		SO_BROADCAST	},
+	{ "OOBINLINE",		SOL_SOCKET,		SO_OOBINLINE	},
 #ifdef SO_ACCEPTCONN
-	{ "ACCEPTCONN",		SO_ACCEPTCONN	},
+	{ "ACCEPTCONN",		SOL_SOCKET,		SO_ACCEPTCONN	},
 #endif
-	{ "TCP_NODELAY",	TCP_NODELAY		},
+	{ "TCP_NODELAY",	IPPROTO_TCP,	TCP_NODELAY		},
 	{ NULL }
 };
 
-int DLLCALL sockopt(char* str)
+int DLLCALL sockopt(char* str, int* level)
 {
 	int i;
 
+	*level=SOL_SOCKET;	/* default option level */
 	for(i=0;option_names[i].name;i++) {
-		if(stricmp(str,option_names[i].name)==0)
+		if(stricmp(str,option_names[i].name)==0) {
+			*level = option_names[i].level;
 			return(option_names[i].value);
+		}
 	}
 	return(strtoul(str,NULL,0));
 }
@@ -84,6 +88,7 @@ int DLLCALL set_socket_options(scfg_t* cfg, SOCKET sock, char* error)
 	BYTE*		vp;
 	FILE*		fp;
 	int			option;
+	int			level;
 	int			value;
 	int			type;
 	int			result=0;
@@ -113,7 +118,7 @@ int DLLCALL set_socket_options(scfg_t* cfg, SOCKET sock, char* error)
 		p=name;
 		while(*p && *p>' ') p++;
 		if(*p) *(p++)=0;
-		option=sockopt(name);
+		option=sockopt(name,&level);
 		while(*p && *p<=' ') p++;
 		len=sizeof(value);
 		value=strtol(p,NULL,0);
@@ -137,10 +142,7 @@ int DLLCALL set_socket_options(scfg_t* cfg, SOCKET sock, char* error)
 #if 0
 		lprintf("%04d setting socket option: %s to %d", sock, str, value);
 #endif
-		if(option==TCP_NODELAY)
-			result=setsockopt(sock,IPPROTO_TCP,option,vp,len);
-		else
-			result=setsockopt(sock,SOL_SOCKET,option,vp,len);
+		result=setsockopt(sock,level,option,vp,len);
 		if(result) {
 			sprintf(error,"%d setting socket option (%s, %d) to %d"
 				,ERROR_VALUE, name, option, value);
@@ -148,7 +150,7 @@ int DLLCALL set_socket_options(scfg_t* cfg, SOCKET sock, char* error)
 		}
 #if 0
 		len = sizeof(value);
-		getsockopt(sock,SOL_SOCKET,option,(void*)&value,&len);
+		getsockopt(sock,level,option,(void*)&value,&len);
 		lprintf("%04d socket option: %s set to %d", sock, name, value);
 #endif
 	}

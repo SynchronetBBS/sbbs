@@ -836,6 +836,7 @@ static JSBool
 js_getsockopt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	int			opt;
+	int			level;
 	socklen_t	len;
 	int			val;
 	private_t*	p;
@@ -845,11 +846,10 @@ js_getsockopt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 		return(JS_FALSE);
 	}
 
-	opt = sockopt(JS_GetStringBytes(JS_ValueToString(cx,argv[0])));
+	opt = sockopt(JS_GetStringBytes(JS_ValueToString(cx,argv[0])),&level);
 	len = sizeof(val);
 
-	if(getsockopt(p->sock,opt==TCP_NODELAY ? IPPROTO_TCP : SOL_SOCKET
-		,opt, (void*)&val, &len)==0) {
+	if(getsockopt(p->sock, level, opt, (void*)&val, &len)==0) {
 		dbprintf(FALSE, p, "option %d = %d",opt,val);
 		JS_NewNumberValue(cx,val,rval);
 	} else {
@@ -867,6 +867,7 @@ static JSBool
 js_setsockopt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	int			opt;
+	int			level;
 	int32		val=1;
 	private_t*	p;
 
@@ -875,12 +876,11 @@ js_setsockopt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 		return(JS_FALSE);
 	}
 
-	opt = sockopt(JS_GetStringBytes(JS_ValueToString(cx,argv[0])));
+	opt = sockopt(JS_GetStringBytes(JS_ValueToString(cx,argv[0])),&level);
 	JS_ValueToInt32(cx,argv[1],&val);
 
 	*rval = BOOLEAN_TO_JSVAL(
-		setsockopt(p->sock,opt==TCP_NODELAY ? IPPROTO_TCP : SOL_SOCKET
-					,opt, (char*)&val, sizeof(val))==0);
+		setsockopt(p->sock, level, opt, (char*)&val, sizeof(val))==0);
 	p->last_error=ERROR_VALUE;
 
 	return(JS_TRUE);
