@@ -28,6 +28,9 @@ void curs_textcolor(int colour);
 void curs_clreol(void);
 int curs_getch(void);
 int curs_getche(void);
+void curs_highvideo(void);
+void curs_lowvideo(void);
+void curs_normvideo(void);
 #ifdef __cplusplus
 }
 #endif

@@ -31,6 +31,9 @@ void initciowrap(int mode)
 		cio_api.getch=x_getch;
 		cio_api.getche=x_getche;
 		cio_api.beep=x_beep;
+		cio_api.highvideo=x_highvideo;
+		cio_api.lowvideo=x_lowvideo;
+		cio_api.normvideo=x_normvideo;
 		return;
 	}
 	fprintf(stderr,"X init failed\n");
@@ -57,4 +60,7 @@ void initciowrap(int mode)
 	cio_api.getch=curs_getch;
 	cio_api.getche=curs_getche;
 	cio_api.beep=beep;
+	cio_api.highvideo=curs_highvideo;
+	cio_api.lowvideo=curs_lowvideo;
+	cio_api.normvideo=curs_normvideo;
 }

@@ -232,3 +232,26 @@ int x_beep(void)
 	tty_beep();
 	return(0);
 }
+
+void x_highvideo(void)
+{
+	int attr;
+
+	attr=x_curr_attr>>8;
+	attr |= 8;
+	x_textattr(attr);
+}
+
+void x_lowvideo(void)
+{
+	int attr;
+
+	attr=x_curr_attr>>8;
+	attr &= 0xf7;
+	x_textattr(attr);
+}
+
+void x_normvideo(void)
+{
+	x_textattr(0x07);
+}

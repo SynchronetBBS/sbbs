@@ -84,6 +84,9 @@ typedef struct {
 	int		(*getch)		(void);
 	int		(*getche)		(void);
 	int		(*beep)			(void);
+	void	(*highvideo)	(void);
+	void	(*lowvideo)		(void);
+	void	(*normvideo)	(void);
 } cioapi_t;
 
 extern cioapi_t cio_api;
@@ -110,6 +113,9 @@ extern cioapi_t cio_api;
 #define getch()				cio_api.getch()
 #define getche()			cio_api.getche()
 #define beep()				cio_api.beep()
+#define highvideo()			cio_api.highvideo()
+#define lowvideo()			cio_api.lowvideo()
+#define normvideo()			cio_api.normvideo()
 
 #endif
 

@@ -27,6 +27,9 @@ void x_clreol(void);
 int x_getch(void);
 int x_getche(void);
 int x_beep(void);
+void x_highvideo(void);
+void x_lowvideo(void);
+void x_normvideo(void);
 #ifdef __cplusplus
 }
 #endif

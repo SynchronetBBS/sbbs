@@ -71,12 +71,12 @@ int curs_puttext(int sx, int sy, int ex, int ey, unsigned char *fill)
 		{
 			fill_char=fill[fillpos++];
 			attr=fill[fillpos++];
-			textattr(attr);
+			curs_textattr(attr);
 			move(y, x);
 			_putch(fill_char,FALSE);
 		}
 	}
-	textattr(orig_attr);
+	curs_textattr(orig_attr);
 	move(oldy, oldx);
 	refresh();
 	return(1);
@@ -364,7 +364,7 @@ void curs_textbackground(int colour)
 	attr=lastattr;
 	attr&=143;
 	attr|=(colour<<4);
-	textattr(attr);
+	curs_textattr(attr);
 }
 
 void curs_textcolor(int colour)
@@ -374,7 +374,7 @@ void curs_textcolor(int colour)
 	attr=lastattr;
 	attr&=240;
 	attr|=colour;
-	textattr(attr);
+	curs_textattr(attr);
 }
 
 int curs_kbhit(void)
@@ -906,4 +906,27 @@ int curs_getche(void)
 	if(ch)
 		curs_putch(ch);
 	return(ch);
+}
+
+void curs_highvideo(void)
+{
+	int attr;
+
+	attr=lastattr;
+	attr |= 8;
+	curs_textattr(attr);
+}
+
+void curs_lowvideo(void)
+{
+	int attr;
+
+	attr=lastattr;
+	attr &= 0xf7;
+	curs_textattr(attr);
+}
+
+void curs_normvideo(void)
+{
+	curs_textattr(0x07);
 }
