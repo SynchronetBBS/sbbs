@@ -1326,6 +1326,7 @@ void input_thread(void *arg)
     	rd=RingBufFree(&sbbs->inbuf);
 
 		if(!rd) { // input buffer full
+			lprintf(LOG_WARNING,"Node %d !WARNING input buffer full", sbbs->cfg.node_num);
         	// wait up to 5 seconds to empty (1 byte min)
 			time_t start=time(NULL);
             while((rd=RingBufFree(&sbbs->inbuf))==0) {
@@ -1340,7 +1341,9 @@ void input_thread(void *arg)
 	    if(rd > (int)sizeof(inbuf))
         	rd=sizeof(inbuf);
 
+		lprintf(LOG_DEBUG,"Node %d -> recv", sbbs->cfg.node_num);
     	rd = recv(sock, (char*)inbuf, rd, 0);
+		lprintf(LOG_DEBUG,"Node %d <- recv", sbbs->cfg.node_num);
 
 		pthread_mutex_unlock(&sbbs->input_thread_mutex);
 
