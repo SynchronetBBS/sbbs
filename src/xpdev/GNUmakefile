@@ -2,7 +2,7 @@ SRC_ROOT	?=	..
 include $(SRC_ROOT)/build/Common.gmake
 
 ifdef XPSEM
-	OBJS-MT	+=	$(OBJODIR-MT)$(DIRSEP)xpsem.o$(OFILE)
+	MTOBJS	+=	$(MTOBJODIR)$(DIRSEP)xpsem.o$(OFILE)
 endif
 
 # Executable Build Rule
