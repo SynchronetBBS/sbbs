@@ -59,8 +59,13 @@ char sbbs_t::inkey(long mode)
 	} else
 		ch=incom();
 	if(ch==0) {
+		// moved here from getkey() on AUG-29-2001
+		if(sys_status&SS_SYSPAGE) 
+			sbbs_beep(sbbs_random(800),100);
+
 		if(!(mode&K_GETSTR) || mode&K_LOWPRIO || cfg.node_misc&NM_LOWPRIO)
 			mswait(1);
+
 		return(0);
 	}
 
