@@ -26,7 +26,8 @@
 #include <time.h>
 #include <errno.h>
 #include <stdlib.h>
-#include <genwrap.h>
+
+#include "genwrap.h"
 
 
 /* Hard-coded configurable constants - change these values to alter game */

@@ -9,7 +9,16 @@
 #include <stdlib.h>
 
 #include "OpenDoor.h"
-#include <genwrap.h>
+
+/******************/
+/* Wrapper macros */
+/******************/
+#if defined(__unix__)
+	#if !defined(stricmp)
+		#define stricmp(x,y)            strcasecmp(x,y)
+		#define strnicmp(x,y,z)         strncasecmp(x,y,z)
+        #endif
+#endif
 
 typedef enum
 {

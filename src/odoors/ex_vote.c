@@ -44,7 +44,7 @@
 #ifdef MULTINODE_AWARE
 #include <filewrap.h>
 #endif
-#include <genwrap.h>
+#include "genwrap.h"
 
 /* Manifest constants used by Vote */
 #define NO_QUESTION              -1
