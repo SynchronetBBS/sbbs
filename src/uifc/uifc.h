@@ -198,6 +198,8 @@
 #define K_SCANNING	(1L<<11)	/* UPC Scanner is active... return on '%'	*/
 #define K_TABEXIT	(1L<<12)	/* Return on TAB					    	*/
 #define K_DECIMAL	(1L<<13)	/* Allow floating point numbers only		*/
+#define K_DEUCEEXIT	(1L<<13)	/* Return whenever Deuce wants to exit		*/
+								/* Define this behaviour better - ToDo		*/
 
 #define HELPBUF_SIZE 4000
 

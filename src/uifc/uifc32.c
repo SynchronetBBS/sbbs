@@ -383,7 +383,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 			break;
 		else opts++;
 	if(mode&WIN_XTR && opts<max_opts && opts<MAX_OPTS)
-		option[opts++][0]=0;
+		opts++;
 	height=opts+4;
 	if(top+height>s_bottom)
 		height=(s_bottom)-top;
@@ -1394,6 +1394,11 @@ int ugetstr(int left, int top, char *outstr, int max, long mode, int *lastkey)
 					break;
 				case '%':	/* '%' indicates that a UPC is coming next */
 					if(mode&K_SCANNING)
+						ch=CR;
+					break;
+				case KEY_UP:
+				case KEY_DOWN:
+					if(mode&K_DEUCEEXIT)
 						ch=CR;
 					break;
 				case 24:   /* ctrl-x  */
