@@ -1561,28 +1561,25 @@ char * sbbs_t::cmdstr(char *instr, char *fpath, char *fspec, char *outstr)
 ansi-bbs|ANSI terminals (emulators):\
 	:co#80:li#24:am:\
 	:bs:mi:ms:pt:xn:xo:it#8:\
-	:RA=\E[?7l:SA=\E?7h:\
 	:bl=^G:cr=^M:ta=^I:\
 	:cm=\E[%i%d;%dH:\
-	:le=^H:up=\E[A:do=\E[B:nd=\E[C:\
-	:ho=\E[H:cl=\E[H\E[2J:ce=\E[K:cb=\E[1K:cd=\E[J:sf=\ED:sr=\EM:\
-	:ct=\E[3g:st=\EH:\
-	:cs=\E[%i%d;%dr:sc=\E7:rc=\E8:\
-	:ic=\E[@:IC=\E[%d@:al=\E[L:AL=\E[%dL:\
+	:le=\E[D:up=\E[A:do=\E[B:nd=\E[C:\
+	:ho=\E[H:cl=\E[H\E[2J:ce=\E[0K:cb=\E[1K:cd=\E[0J:\
+	:sc=\E[s:rc=\E[u:\
+	:ic=\E[@:al=\E[L:AL=\E[%dL:\
 	:dc=\E[P:DC=\E[%dP:dl=\E[M:DL=\E[%dM:\
 	:so=\E[7m:se=\E[m:us=\E[4m:ue=\E[m:\
 	:mb=\E[5m:mh=\E[2m:md=\E[1m:mr=\E[7m:me=\E[m:\
-	:sc=\E7:rc=\E8:\
 	:ku=\E[A:kd=\E[B:kr=\E[C:kl=\E[D:\
-	:is=:rs=\Ec:kb=^H:\
+	:is=\Ec\E[m:rs=\Ec:kb=^H:\
 	:kD=\177:kH=\E[Y:kN=\E[U:kP=\E[V:\
 	:kh=\E[2J:@7=\E[k:\
 	:Co#8:pa#64:so=\E[7m:se=\E[27m:AF=\E[3%dm:AB=\E[4%dm:op=\E[39;49m:\
-	:gb=\332\300\277\331\304\263:\
-	:k0=\EOP:k1=\EOQ:k2=\EOR:k3=\EOS:k4=\EOT:\
-	:k5=\EOU:k6=\EOV:k7=\EOW:k8=\EOX:k9=\EOY:\
-	:ac=l\332m\300k\277j\331u\264t\303v\301w\302q\304x\263n\305`^Da\260f\370g\361~\371.^Y-^Xh\261i^U0\333y\363z\362:\
+	:k1=\EOP:k2=\EOQ:k3=\EOw:k4=\EOx:\
+	:ac=l\332m\300k\277j\331u\264t\303v\301w\302q\304x\263n\305`^Da\260f\370
+g\361~\371.^Y-^Xh\261i^U0\333y\363z\362:\
 	:LE=\E[%dD:RI=\E[%dC:UP=\E[%dA:DO=\E[%dB:
+
 
 
 <---SNIP--->
