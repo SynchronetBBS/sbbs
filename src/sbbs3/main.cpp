@@ -3668,7 +3668,7 @@ void DLLCALL bbs_thread(void* arg)
 		identity=NULL;
 		if(startup->options&BBS_OPT_GET_IDENT) {
 			sbbs->bprintf("Resolving identity...");
-			identify(&client_addr, 23, str, sizeof(str)-1);
+			identify(&client_addr, startup->telnet_port, str, sizeof(str)-1);
 			identity=strrchr(str,':');
 			if(identity!=NULL) {
 				identity++;	/* skip colon */
