@@ -54,6 +54,7 @@ var lines_per_yield = 5;			// Release time-slices ever x number of lines
 var yield_length = 1;				// Length of yield (in milliseconds)
 var max_newsgroups_per_article = 5;	// Used for spam-detection
 var unmangle = false;
+var use_xover = true;
 
 // Parse arguments
 for(i=0;i<argc;i++) {
@@ -73,6 +74,8 @@ for(i=0;i<argc;i++) {
 		antispam = "";
 	else if(argv[i].toLowerCase()=="-um")	// un-mangle e-mail addresses when importing
 		unmangle = true;
+	else if(argv[i].toLowerCase()=="-nx")	// no xover command when importing
+		use_xover = false;
 	else if(argv[i].toLowerCase()=="-ix") 	// import a fixed number of messages
 	{
 		import_amount = parseInt(argv[i+1]);
@@ -193,6 +196,9 @@ while(!cfg_file.eof) {
 			break;
 		case "unmangle":
 			unmangle=true;
+			break;
+		case "no_xover":
+			use_xover=false;
 			break;
 		case "slave":
 			slave=true;
@@ -513,13 +519,15 @@ for(i in area) {
 	}
 
 	delete article_list;
-	if(ptr<=last_msg) {
+	if(use_xover && ptr<=last_msg) {
 		writeln(format("XOVER %u-%u", ptr, last_msg));
 		if(parseInt(readln())==224) {
 			printf("Getting headers for articles %u through %u\r\n", ptr, last_msg);
 			article_list = new Array();
-			while((rsp=readln())!='.' && rsp)
-				article_list.push(parseInt(rsp));
+			while((rsp=readln())!='.' && socket.is_connected) {
+				if(rsp)
+					article_list.push(parseInt(rsp));
+			}
 			printf("%u new articles\r\n", article_list.length);
 		}
 	}
