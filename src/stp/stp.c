@@ -187,8 +187,10 @@ void bail(int code)
 		BEEP(1000,500);
 	}
 	newline();
-	fprintf(statfp,"Exiting - Error level: %d  Flow restraint count: %u\n",code,flows);
-//	fcloseall();
+	fprintf(statfp,"Exiting - Error level: %d",code);
+	if(flows)
+		fprintf(statfp,"  Flow restraint count: %u",flows);
+	fprintf(statfp,"\n");
 
 #if 0 //def _WINSOCKAPI_
 	if(WSAInitialized && WSACleanup()!=0) 
@@ -231,6 +233,18 @@ char *chr(uchar ch)
 	}
 }
 
+void send_telnet_cmd(uchar cmd, uchar opt)
+{
+	uchar buf[3];
+	
+	buf[0]=TELNET_IAC;
+	buf[1]=cmd;
+	buf[2]=opt;
+
+	if(send(sock,buf,sizeof(buf),0)==sizeof(buf))
+		fprintf(statfp,"\nSent telnet command: %s %s\n"
+			,telnet_cmd_desc(buf[1]),telnet_opt_desc(buf[2]));
+}
 
 /************************************************************/
 /* Get a character from com port, time out after 10 seconds */
@@ -272,7 +286,8 @@ int getcom(int timeout)
 	uchar		ch;
 	fd_set		socket_set;
 	struct timeval	tv;
-	static int	telnet_cmdlen;
+	static uchar	telnet_cmd;
+	static int		telnet_cmdlen;
 
 	FD_ZERO(&socket_set);
 	FD_SET(sock,&socket_set);
@@ -311,8 +326,18 @@ int getcom(int timeout)
 			}
 		}
 		if(telnet_cmdlen) {
-			fprintf(statfp,"T<%s> ",telnet_cmd_desc(ch));
 			telnet_cmdlen++;
+			if(telnet_cmdlen==2)
+				fprintf(statfp,"T<%s> ",telnet_cmd_desc(ch));
+			else
+				fprintf(statfp,"T<%s> ",telnet_opt_desc(ch));
+			if(telnet_cmdlen==3 && telnet_cmd==TELNET_DO)
+				send_telnet_cmd(TELNET_WILL,ch);
+/*
+			else if(telnet_cmdlen==3 && telnet_cmd==TELNET_WILL)
+				send_telnet_cmd(TELNET_DO,ch);
+*/
+			telnet_cmd=ch;
 			if((telnet_cmdlen==2 && ch<TELNET_WILL) || telnet_cmdlen>2)
 				telnet_cmdlen=0;
 			return(NOINP);
@@ -383,7 +408,7 @@ void putcom(uchar ch)
 		newline();
 		fprintf(statfp,"Send error: %d\n",ERROR_VALUE);
 	} else {
-		fprintf(statfp,"%02X  ",ch);
+//		fprintf(statfp,"%02X  ",ch);
 	}
 
 #endif
@@ -446,7 +471,8 @@ int get_block(int hdrblock)
 					continue; 
 				}
 				fprintf(statfp,"Cancelled remotely\n");
-				return(-1);
+				bail(-1);
+				break;
 			case NOINP: 	/* Nothing came in */
 				continue;
 			default:
@@ -499,8 +525,8 @@ int get_block(int hdrblock)
 			chksum=getcom(1);
 
 		if(mode&CRC) {
-			calc_crc=ucrc16(0,calc_crc);
-			calc_crc=ucrc16(0,calc_crc);
+//			calc_crc=ucrc16(0,calc_crc);
+//			calc_crc=ucrc16(0,calc_crc);
 			if(crc==calc_crc)
 				break;
 			newline();
@@ -555,13 +581,12 @@ void put_block(void)
 	}
 
 	if(mode&CRC) {
-		crc=ucrc16(0,crc);
-		crc=ucrc16(0,crc);
 		putcom(crc>>8);
 		putcom(crc&0xff); 
 	}
 	else
 		putcom(chksum);
+	YIELD();
 }
 
 /************************************************************/
@@ -662,13 +687,13 @@ void putzhhdr(char type)
 	else
 		putcom(ZHEX);
 	putzhex(type);
-	crc=ucrc16(type,crc);
+//	crc=ucrc16(type,crc);
 	for(i=0;i<4;i++) {
 		putzhex(Txhdr[i]);
 		crc=ucrc16(Txhdr[i],crc); 
 	}
-	crc=ucrc16(0,crc);
-	crc=ucrc16(0,crc);
+//	crc=ucrc16(0,crc);
+//	crc=ucrc16(0,crc);
 	putzhex(crc>>8);
 	putzhex(crc&0xff);
 	putcom(CR);
@@ -856,6 +881,7 @@ int main(int argc, char **argv)
 {
 	char	str[256],tmp[256],tmp2[256],irq,errors,*p,*p2,first_block
 			,*fname[MAX_FNAMES],fnames=0,fnum,success;
+	char	path[MAX_PATH+1];
 	int 	ch,i,j,k,last,total_files=0,sent_files=0,can;
 	uint	file_bytes_left;
 	uint	cps;
@@ -962,7 +988,7 @@ int main(int argc, char **argv)
 				exit(1); 
 			}
 			while(!feof(fp) && !ferror(fp) && fnames<MAX_FNAMES) {
-				if(!fgets(str,128,fp))
+				if(!fgets(str,sizeof(str),fp))
 					break;
 				truncsp(str);
 				if((fname[fnames]=(char *)malloc(strlen(str)+1))==NULL) {
@@ -975,7 +1001,7 @@ int main(int argc, char **argv)
 		}
 
 		else if(mode&(SEND|RECV)){
-			if((fname[fnames]=(char *)malloc(128))==NULL) {
+			if((fname[fnames]=(char *)malloc(strlen(argv[i])+1))==NULL) {
 				fprintf(statfp,"Error allocating memory for filename\n");
 				exit(1); 
 			}
@@ -1320,8 +1346,8 @@ int main(int argc, char **argv)
 				if(l<0) l=0;
 				b=blocks(file_bytes);
 				if(mode&YMODEM)
-					fprintf(statfp,"\rBlock (%lu%s): %lu/%lu  Byte: %lu  Time: %lu:%02lu  "
-						"Left: %lu:%02lu  CPS: %u  %lu%% "
+					fprintf(statfp,"\rBlock (%lu%s): %lu/%lu  Byte: %lu  Time: %lu:%02lu/"
+						"%lu:%02lu  CPS: %u  %lu%% "
 						,block_size%1024L ? block_size: block_size/1024L
 						,block_size%1024L ? "" : "k"
 						,block_num
@@ -1350,6 +1376,10 @@ int main(int argc, char **argv)
 			putcom(ACK);
 			if(!(mode&XMODEM) && ftime)
 				setfdate(str,ftime); 
+			/* Use correct file size */
+			fflush(fp);
+			if(file_bytes < filelength(fileno(fp)));
+				chsize(fileno(fp),file_bytes);
 			fclose(fp);
 			t=time(NULL)-startfile;
 			if(!t) t=1;
@@ -1424,9 +1454,10 @@ int main(int argc, char **argv)
 			continue;
 		}
 		for(gi=0;gi<(int)g.gl_pathc;gi++) {
-			if(isdir(g.gl_pathv[gi]))
+			SAFECOPY(path,g.gl_pathv[gi]);
+			if(isdir(path))
 				continue;
-			fsize=flength(g.gl_pathv[gi]);
+			fsize=flength(path);
 			if(mode&ZMODEM) {
 	#if 0
 				putcom('r'); putcom('z'); putcom(CR);       /* send rz\r */
@@ -1478,26 +1509,14 @@ int main(int argc, char **argv)
 				} 
 			} /* X/Ymodem */
 
-			strcpy(str,fname[fnum]);
-			if(strchr(str,'*') || strchr(str,'?')) {    /* wildcards used */
-				p=strrchr(str,'\\');
-				if(!p)
-					p=strchr(str,':');
-				if(p)
-					*(p+1)=NULL;
-				else
-					str[0]=0;
-				strcat(str,g.gl_pathv[gi]); 
-			}
-
-			fprintf(statfp,"Sending %s (%lu bytes) via %s %s\n"
-				,str,fsize
+			fprintf(statfp,"\nSending %s (%lu bytes) via %s %s\n"
+				,path,fsize
 				,mode&XMODEM ? "Xmodem" : mode&YMODEM ? mode&GMODE ? "Ymodem-G"
 				: "Ymodem" :"Zmodem"
 				,mode&CRC ? "CRC-16":"Checksum");
 
-			if((fp=fopen(str,"rb"))==NULL) {
-				fprintf(statfp,"Error opening %s for read\n",str);
+			if((fp=fopen(path,"rb"))==NULL) {
+				fprintf(statfp,"Error %d opening %s for read\n",errno,path);
 				cancel();
 				bail(1); 
 			}
@@ -1506,9 +1525,9 @@ int main(int argc, char **argv)
 			rioctl(IOFB);	/* flush buffers cause extra 'G', 'C', or NAKs */
 #endif
 			if(!(mode&XMODEM)) {
-				t=fdate(str);
-				memset(block,NULL,128);
-				SAFECOPY(block,getfname(g.gl_pathv[gi]));
+				t=fdate(path);
+				memset(block,NULL,sizeof(block));
+				SAFECOPY(block,getfname(path));
 				sprintf(block+strlen(block)+1,"%lu %lo 0 0 %d %ld"
 					,fsize,t,total_files-sent_files,total_bytes-sent_bytes);
 				/*
@@ -1594,7 +1613,7 @@ int main(int argc, char **argv)
 				if(l<0) l=0;
 				b=blocks(fsize);
 				fprintf(statfp,"\rBlock (%lu%s): %lu/%lu  Byte: %lu  "
-					"Time: %lu:%02lu  Left: %lu:%02lu  CPS: %u  %lu%% "
+					"Time: %lu:%02lu/%lu:%02lu  CPS: %u  %lu%% "
 					,block_size%1024L ? block_size: block_size/1024L
 					,block_size%1024L ? "" : "k"
 					,block_num
