@@ -1525,6 +1525,20 @@ static void smtp_thread(void* arg)
 		lprintf("%04d SMTP Hostname: %s", socket, host_name);
 		for(i=0;host!=NULL && host->h_aliases!=NULL && host->h_aliases[i]!=NULL;i++)
 			lprintf("%04d SMTP HostAlias: %s", socket, host->h_aliases[i]);
+#if 0
+		if(host!=NULL) {
+			ip=resolve_ip(host_name);
+			if(ip!=smtp.client_addr.sin_addr.s_addr) {
+				smtp.client_addr.sin_addr.s_addr=ip;
+				lprintf("%04d !SMTP DNS/IP ADDRESS MISMATCH: %s vs %s"
+					,socket, inet_ntoa(smtp.client_addr.sin_addr), host_ip);
+				sockprintf(socket,"550 DNS and IP address mismatch");
+				mail_close_socket(socket);
+				thread_down();
+				return;
+			}
+		}
+#endif
 	}
 
 	SAFECOPY(hello_name,host_name);
@@ -1606,7 +1620,7 @@ static void smtp_thread(void* arg)
 		,startup->host_name,revision,PLATFORM_DESC);
 	while(1) {
 		rd = sockreadline(socket, buf, sizeof(buf));
-		if(rd<1) 
+		if(rd<0) 
 			break;
 		truncsp(buf);
 		if(spy!=NULL)
