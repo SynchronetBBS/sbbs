@@ -121,6 +121,7 @@ int SMBCALL smb_open(smb_t* smb)
 	if((i=smb_open_fp(smb,&smb->shd_fp,SH_DENYNO))!=SMB_SUCCESS)
 		return(i);
 
+	memset(&(smb->status),0,sizeof(smb->status));
 	if(filelength(fileno(smb->shd_fp))>=sizeof(smbhdr_t)) {
 		setvbuf(smb->shd_fp,NULL,_IONBF,SHD_BLOCK_LEN);
 		if(smb_locksmbhdr(smb)!=SMB_SUCCESS) {
@@ -1499,8 +1500,8 @@ int SMBCALL smb_addmsghdr(smb_t* smb, smbmsg_t* msg, int storage)
 
 /****************************************************************************/
 /****************************************************************************/
-int SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage
-					   ,ushort attr, ushort xlat, const uchar* body, const uchar* tail)
+int SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, BOOL dupechk
+					   ,ushort xlat, const uchar* body, const uchar* tail)
 {
 	uchar*		lzhbuf=NULL;
 	long		lzhlen;
@@ -1522,8 +1523,7 @@ int SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage
 	}
 
 	if(filelength(fileno(smb->shd_fp))<1) {	 /* Create it if it doesn't exist */
-		memset(&smb->status,0,sizeof(smb->status));
-		smb->status.attr=attr;
+		/* smb->status.max_crcs, max_msgs, max_age, and attr should be pre-initialized */
 		if((retval=smb_create(smb))!=SMB_SUCCESS) 
 			return(retval);
 	}
@@ -1543,7 +1543,7 @@ int SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage
 
 		hashes=smb_msghashes(smb,msg,body);
 
-		if(smb_findhash(smb, hashes, &found, /* update? */FALSE)==SMB_SUCCESS) {
+		if(dupechk && smb_findhash(smb, hashes, &found, /* update? */FALSE)==SMB_SUCCESS) {
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
 				,"duplicate %s hash found (message #%lu)"
 				,smb_hashsource(found.source), found.number);
@@ -1561,7 +1561,7 @@ int SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage
 				bodylen--;
 
 			/* Calculate CRC-32 of message text (before encoding, if any) */
-			if(smb->status.max_crcs) {
+			if(smb->status.max_crcs && dupechk) {
 				for(l=0;l<bodylen;l++)
 					crc=ucrc32(body[l],crc); 
 				crc=~crc;
