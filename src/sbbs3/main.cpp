@@ -2080,7 +2080,7 @@ bool sbbs_t::init()
 #endif
 		);
 	if(comspec==NULL) {
-		errormsg(WHERE, ERR_CHK, "shell/comspec", 0);
+		errormsg(WHERE, ERR_CHK, "SHELL or COMSPEC environment variable", 0);
 		return(false);
 	}
 
