@@ -118,6 +118,7 @@ int ulist(int mode, char left, int top, char width, int *cur, int *bar
 	int i,j,opts;
     int optnumlen;
     int yesno=0;
+    int lines;
 
     for(opts=0;opts<MAX_OPTS;opts++)
     	if(option[opts][0]==0)
@@ -143,9 +144,11 @@ int ulist(int mode, char left, int top, char width, int *cur, int *bar
             printf("%s? ",title);
         } else {
             printf("\n[%s]\n",title);
+            lines=2;
             for(i=0;i<opts;i++) {
                 printf("%*d: %s\n",optnumlen,i+1,option[i]);
-                if(i && !(i%(api->scrn_len-2))) {
+                lines++;
+                if(!(lines%api->scrn_len)) {
                     printf("More? ");
                     str[0]=0;
                     fgets(str,sizeof(str)-1,stdin);
@@ -342,7 +345,7 @@ void help()
     puts(hbuf);
     if(strlen(hbuf)>200) {
         printf("Hit enter");
-        getc(stdin);
+        fgets(str,sizeof(str)-1,stdin);
     }
 }
 
