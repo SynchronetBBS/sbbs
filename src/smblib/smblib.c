@@ -1248,48 +1248,50 @@ int SMBCALL smb_addcrc(smb_t* smb, ulong crc)
 	}
 
 	length=filelength(file);
-	if(length<0L) {
+	if(length<0L || length%sizeof(long)) {
 		close(file);
 		sprintf(smb->last_error,"invalid file length: %ld", length);
 		return(SMB_ERR_FILE_LEN); 
 	}
 
-	if((buf=(ulong*)MALLOC(length))==NULL) {
-		close(file);
-		sprintf(smb->last_error
-			,"malloc failure of %ld bytes"
-			,length);
-		return(SMB_ERR_MEM); 
-	}
+	if(length!=0) {
+		if((buf=(ulong*)MALLOC(length))==NULL) {
+			close(file);
+			sprintf(smb->last_error
+				,"malloc failure of %ld bytes"
+				,length);
+			return(SMB_ERR_MEM); 
+		}
 
-	if(read(file,buf,length)!=length) {
-		close(file);
+		if(read(file,buf,length)!=length) {
+			close(file);
+			FREE(buf);
+			sprintf(smb->last_error
+				,"%d (%s) reading %ld bytes"
+				,errno,STRERROR(errno),length);
+			return(SMB_ERR_READ);
+		}
+
+		for(l=0;l<length/sizeof(long);l++)
+			if(crc==buf[l])
+				break;
+		if(l<length/sizeof(long)) {					/* Dupe CRC found */
+			close(file);
+			FREE(buf);
+			sprintf(smb->last_error
+				,"duplicate message detected");
+			return(SMB_DUPE_MSG);
+		} 
+
+		if(length>=(long)(smb->status.max_crcs*sizeof(long))) {
+			newlen=(smb->status.max_crcs-1)*sizeof(long);
+			chsize(file,0);	/* truncate it */
+			lseek(file,0L,SEEK_SET);
+			write(file,buf+(length-newlen),newlen); 
+		}
 		FREE(buf);
-		sprintf(smb->last_error
-			,"%d (%s) reading %ld bytes"
-			,errno,STRERROR(errno),length);
-		return(SMB_ERR_READ);
-	}
-
-	for(l=0;l<length/sizeof(long);l++)
-		if(crc==buf[l])
-			break;
-	if(l<length/sizeof(long)) {					/* Dupe CRC found */
-		close(file);
-		FREE(buf);
-		sprintf(smb->last_error
-			,"duplicate message detected");
-		return(SMB_DUPE_MSG);
-	} 
-
-	if(length>=(long)(smb->status.max_crcs*sizeof(long))) {
-		newlen=(smb->status.max_crcs-1)*sizeof(long);
-		chsize(file,0);	/* truncate it */
-		lseek(file,0L,SEEK_SET);
-		write(file,buf+(length-newlen),newlen); 
 	}
 	wr=write(file,&crc,sizeof(crc));	/* Write to the end */
-	FREE(buf);
 	close(file);
 
 	if(wr!=sizeof(crc)) {	
