@@ -47,6 +47,7 @@
 #if defined(_WIN32)
 
 	#include <io.h>				/* _sopen */
+	#include <sys/stat.h>		/* S_IREAD */
 	#include <fcntl.h>			/* O_BINARY */
 	#include <windows.h>		/* OF_SHARE_ */
 
