@@ -100,15 +100,25 @@ static size_t find_section_index(str_list_t list, const char* section)
 	char	str[INI_MAX_VALUE_LEN];
 	size_t	i;
 
-	if(section==ROOT_SECTION)
-		return(0);
-
 	for(i=0; list[i]!=NULL; i++) {
 		SAFECOPY(str,list[i]);
 		if((p=section_name(str))!=NULL && stricmp(p,section)==0)
-			return(i+1);
+			return(i);
 	}
 
+	return(i);
+}
+
+static size_t find_section_values(str_list_t list, const char* section)
+{
+	size_t	i;
+
+	if(section==ROOT_SECTION)
+		return(0);
+
+	i=find_section_index(list,section);
+	if(list[i]!=NULL)
+		i++;
 	return(i);
 }
 
@@ -192,7 +202,7 @@ static size_t find_value_index(str_list_t list, const char* section, const char*
 	size_t	i;
 
 	value[0]=0;
-	for(i=find_section_index(list, section); list[i]!=NULL; i++) {
+	for(i=find_section_values(list, section); list[i]!=NULL; i++) {
 		SAFECOPY(str, list[i]);
 		if((p=key_name(str,&vp))==NULL)
 			continue;
