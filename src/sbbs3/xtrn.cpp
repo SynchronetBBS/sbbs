@@ -139,6 +139,26 @@ BYTE* telnet_expand(BYTE* inbuf, ulong inlen, BYTE* outbuf, ulong& newlen, bool&
     return(outbuf);
 }
 
+#define XTRN_LOADABLE_MODULE								\
+	if(cmdline[0]=='*') {   /* Baja module or JavaScript */	\
+		sprintf(str,"%.*s",sizeof(str)-1,cmdline+1);		\
+		p=strchr(str,SP);									\
+		if(p) {												\
+			strcpy(main_csi.str,p+1);						\
+			*p=0; 											\
+		} else												\
+			main_csi.str[0]=0;								\
+		if(!strchr(str,'.'))								\
+			strcat(str,".bin");								\
+		return(exec_bin(str,&main_csi));					\
+	}														
+#ifdef JAVASCRIPT
+	#define XTRN_LOADABLE_JS_MODULE							\
+	if(cmdline[0]=='?') 	/* JavaScript */				\
+		return(js_execfile(cmdline+1))						
+#else
+	#define XTRN_LOADABLE_JS_MODULE
+#endif
 
 #ifdef _WIN32
 
@@ -168,6 +188,17 @@ OPENVXDHANDLE GetAddressOfOpenVxDHandle(void)
 	return((OPENVXDHANDLE)GetProcAddress(hK32, "OpenVxDHandle"));
 }
 
+/* Clean-up resources while preserving current LastError value */
+#define XTRN_CLEANUP												\
+	last_error=GetLastError();										\
+    if(vxd!=INVALID_HANDLE_VALUE)		CloseHandle(vxd);			\
+	if(rdslot!=INVALID_HANDLE_VALUE)	CloseHandle(rdslot);		\
+	if(wrslot!=INVALID_HANDLE_VALUE)	CloseHandle(wrslot);		\
+	if(start_event!=NULL)				CloseHandle(start_event);	\
+	if(hungup_event!=NULL)				CloseHandle(hungup_event);	\
+	ReleaseMutex(exec_mutex);										\
+	SetLastError(last_error)
+
 /****************************************************************************/
 /* Runs an external program 												*/
 /****************************************************************************/
@@ -185,14 +216,14 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
     bool	wwiv_flag=false;
 	bool	telnet_flag=false;
     bool	native=false;			// DOS program by default
+	bool	nt=false;				// WinNT/2K? 
     bool	was_online=true;
     uint	i;
     time_t	hungup=0;
-	bool	nt=false;
 	HANDLE	vxd=INVALID_HANDLE_VALUE;
 	HANDLE	rdslot=INVALID_HANDLE_VALUE;
 	HANDLE	wrslot=INVALID_HANDLE_VALUE;
-	HANDLE  start_event;
+	HANDLE  start_event=NULL;
 	HANDLE	hungup_event=NULL;
     PROCESS_INFORMATION process_info;
 	DWORD	hVM;
@@ -208,14 +239,8 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 	sbbsexec_start_t start;
 	OPENVXDHANDLE OpenVxDHandle;
 
-	if(cmdline[0]=='*') {   /* Baja module */
-		sprintf(str,"%.*s",sizeof(str)-1,cmdline+1);
-		p=strchr(str,SP);
-		if(p) {
-			strcpy(main_csi.str,p+1);
-			*p=0; }
-		return(exec_bin(str,&main_csi)); 
-	}
+	XTRN_LOADABLE_MODULE;
+	XTRN_LOADABLE_JS_MODULE;
 
 	attr(cfg.color[clr_external]);        /* setup default attributes */
 
@@ -273,7 +298,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
         FILE* fp=fopen(str,"w");
         if(fp==NULL) {
         	errormsg(WHERE, ERR_CREATE, str, 0);
-            return(1);
+            return(errno);
         }
         fprintf(fp, "%s\n", fullcmdline);
 		fprintf(fp, "DSZLOG=%sPROTOCOL.LOG\n", cfg.node_dir);
@@ -315,9 +340,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 				,FALSE  // flag for initial state
 				,str	// pointer to event-object name
 				))==NULL) {
-				last_error=GetLastError();
-				ReleaseMutex(exec_mutex);
-				SetLastError(last_error);
+				XTRN_CLEANUP;
 				errormsg(WHERE, ERR_CREATE, "exec start event", 0);
 				return(GetLastError());
 			}
@@ -329,10 +352,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 				,0						// Read time-out
 				,NULL);                 // Security
 			if(rdslot==INVALID_HANDLE_VALUE) {
-				last_error=GetLastError();
-				ReleaseMutex(exec_mutex);
-				CloseHandle(hungup_event);
-				SetLastError(last_error);
+				XTRN_CLEANUP;
 				errormsg(WHERE, ERR_CREATE, str, 0);
 				return(GetLastError());
 			}
@@ -345,9 +365,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 			if((vxd=CreateFile(str,0,0,0
 				,CREATE_NEW, FILE_FLAG_DELETE_ON_CLOSE,0))
 				 ==INVALID_HANDLE_VALUE) {
-				last_error=GetLastError();
-				ReleaseMutex(exec_mutex);
-				SetLastError(last_error);
+				XTRN_CLEANUP;
 				errormsg(WHERE, ERR_OPEN, str, 0);
 				return(GetLastError());
 			}
@@ -358,10 +376,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 				,FALSE  // flag for initial state
 				,NULL	// pointer to event-object name
 				))==NULL) {
-				last_error=GetLastError();
-				ReleaseMutex(exec_mutex);
-				CloseHandle(vxd);
-				SetLastError(last_error);
+				XTRN_CLEANUP;
 				errormsg(WHERE, ERR_CREATE, "exec start event", 0);
 				return(GetLastError());
 			}
@@ -387,10 +402,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 				&rd,					// pointer to variable to receive output byte count
 				NULL 					// Overlapped I/O
 				)) {
-				last_error=GetLastError();
-				ReleaseMutex(exec_mutex);
-				CloseHandle(vxd);
-				SetLastError(last_error);
+				XTRN_CLEANUP;
 				errormsg(WHERE, ERR_IOCTL, SBBSEXEC_VXD, SBBSEXEC_IOCTL_START);
 				return(GetLastError());
 			}
@@ -436,11 +448,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 		fclose(fp);
 
 		/* not temporary */
-#if 0
-		SuspendThread(input_thread);
-#else
 		pthread_mutex_lock(&input_thread_mutex);
-#endif
 	}
 
     if(!CreateProcess(
@@ -455,15 +463,10 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 		&startup_info,  // pointer to STARTUPINFO
 		&process_info  	// pointer to PROCESS_INFORMATION
 		)) {
-		last_error=GetLastError();
-        ReleaseMutex(exec_mutex);
-		if(vxd!=INVALID_HANDLE_VALUE)
-			CloseHandle(vxd);
-		if(hungup_event!=NULL)
-			CloseHandle(hungup_event);
+		XTRN_CLEANUP;
 		if(native)
-			ResumeThread(input_thread);
-		SetLastError(last_error);
+			pthread_mutex_unlock(&input_thread_mutex);
+		SetLastError(last_error);	/* Restore LastError */
         errormsg(WHERE, ERR_EXEC, realcmdline, mode);
         return(GetLastError());
     }
@@ -473,16 +476,13 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 		if(!(mode&EX_OFFLINE) && !nt) {
     		// Wait for notification from VXD that new VM has started
 			if((retval=WaitForSingleObject(start_event, 5000))!=WAIT_OBJECT_0) {
-				last_error=GetLastError();
-				ReleaseMutex(exec_mutex);
-				CloseHandle(vxd);
-				CloseHandle(start_event);
-				SetLastError(last_error);
+				XTRN_CLEANUP;
 				errormsg(WHERE, ERR_TIMEOUT, "start_event", retval);
 				return(GetLastError());
 			}
 
 			CloseHandle(start_event);
+			start_event=NULL;	/* Mark as closed */
 
 			if(!DeviceIoControl(
 				vxd,					// handle to device of interest
@@ -494,10 +494,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 				&rd,					// pointer to variable to receive output byte count
 				NULL					// Overlapped I/O
 				)) {
-				last_error=GetLastError();
-				ReleaseMutex(exec_mutex);
-				CloseHandle(vxd);
-				SetLastError(last_error);
+				XTRN_CLEANUP;
 				errormsg(WHERE, ERR_IOCTL, SBBSEXEC_VXD, SBBSEXEC_IOCTL_COMPLETE);
 				return(GetLastError());
 			}
@@ -701,24 +698,10 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
     if(retval==STILL_ACTIVE)
 	    TerminateProcess(process_info.hProcess, GetLastError());
 
-    if(vxd!=INVALID_HANDLE_VALUE)
-		CloseHandle(vxd);
-
-	if(rdslot!=INVALID_HANDLE_VALUE)
-		CloseHandle(rdslot);
-
-	if(wrslot!=INVALID_HANDLE_VALUE)
-		CloseHandle(wrslot);
-
-	if(hungup_event!=NULL)
-		CloseHandle(hungup_event);
+	XTRN_CLEANUP;
 
 	if(native)
-#if 0
-		ResumeThread(input_thread);
-#else
 		pthread_mutex_unlock(&input_thread_mutex);
-#endif
 	else {	// Get return value
     	sprintf(str,"%sDOSXTRN.RET", cfg.node_dir);
         FILE* fp=fopen(str,"r");
@@ -754,15 +737,9 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 	int		i;
 	int		argc;
 	pid_t	pid;
-		
-	if(cmdline[0]=='*') {   /* Baja module */
-		sprintf(str,"%.*s",sizeof(str)-1,cmdline+1);
-		p=strchr(str,SP);
-		if(p) {
-			strcpy(main_csi.str,p+1);
-			*p=0; }
-		return(exec_bin(str,&main_csi)); 
-	}
+
+	XTRN_LOADABLE_MODULE;
+	XTRN_LOADABLE_JS_MODULE;
 
 	attr(cfg.color[clr_external]);        /* setup default attributes */
 
