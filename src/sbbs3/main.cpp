@@ -771,6 +771,11 @@ void input_thread(void *arg)
 			break;
 		}
 
+		if(sbbs->client_socket==INVALID_SOCKET) {
+			pthread_mutex_unlock(&sbbs->input_thread_mutex);
+			break;
+		}
+
     	rd=RingBufFree(&sbbs->inbuf);
 
 		if(!rd) { // input buffer full
