@@ -318,7 +318,7 @@ void sbbs_t::qwk_success(ulong msgcnt, char bi, char prepack)
 {
 	char	str[128];
 	int 	i;
-	long	l,msgs,deleted=0;
+	ulong	l,msgs,deleted=0;
 	mail_t	*mail;
 	smbmsg_t msg;
 

@@ -42,7 +42,7 @@
 /* If sent is non-zero, it returns the number of mail sent by usernumber    */
 /* If usernumber is 0, it returns all mail on the system                    */
 /****************************************************************************/
-int getmail(scfg_t* cfg, int usernumber, BOOL sent)
+int DLLCALL getmail(scfg_t* cfg, int usernumber, BOOL sent)
 {
     char    str[128];
     int     i=0;
@@ -213,14 +213,20 @@ void sbbs_t::telluser(smbmsg_t* msg)
 /* of pointers to mail_t (message numbers and attributes)                   */
 /* smb_open(&smb) must be called prior										*/
 /****************************************************************************/
-mail_t* loadmail(smb_t* smb, long* msgs, uint usernumber
+mail_t* DLLCALL loadmail(smb_t* smb, ulong* msgs, uint usernumber
 			   ,int which, long mode)
 {
 	ulong		l=0;
     idxrec_t    idx;
 	mail_t*		mail=NULL;
 
+	if(msgs==NULL)
+		return(NULL);
+
 	*msgs=0;
+
+	if(smb==NULL)
+		return(NULL);
 
 	if(smb_locksmbhdr(smb)!=0)  				/* Be sure noone deletes or */
 		return(NULL);							/* adds while we're reading */
@@ -255,7 +261,7 @@ mail_t* loadmail(smb_t* smb, long* msgs, uint usernumber
 	return(mail);
 }
 
-extern "C" void freemail(mail_t* mail)
+extern "C" void DLLCALL freemail(mail_t* mail)
 {
 	FREE(mail);
 }
@@ -266,7 +272,7 @@ extern "C" void freemail(mail_t* mail)
 void sbbs_t::delallmail(uint usernumber)
 {
 	int 	i;
-	long	l,msgs,deleted=0;
+	ulong	l,msgs,deleted=0;
 	mail_t	*mail;
 	smbmsg_t msg;
 

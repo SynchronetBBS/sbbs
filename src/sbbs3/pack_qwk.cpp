@@ -48,7 +48,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 	int 	file,mode;
 	uint	i,j,k,conf;
 	long	l,size,msgndx,posts,ex;
-	long	mailmsgs=0;
+	ulong	mailmsgs=0;
 	ulong	totalcdt,totaltime,lastmsg
 			,files,submsgs,msgs,netfiles=0,preqwk=0;
 	float	f;	/* Sparky is responsible */
@@ -189,7 +189,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 		errormsg(WHERE,ERR_OPEN,str,O_CREAT|O_WRONLY|O_TRUNC);
 		return(false); }
 	l=filelength(file);
-	if(!l) {
+	if(l<1) {
 		fprintf(qwk,"%-128s",QWK_HEADER);
 		msgndx=1; }
 	else
@@ -231,7 +231,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 		/* Pack E-mail, if any */
 		/***********************/
 		qwkmail_time=time(NULL);
-		mail=loadmail(&smb, &mailmsgs,useron.number,0,useron.qwk&QWK_ALLMAIL ? 0
+		mail=loadmail(&smb,&mailmsgs,useron.number,0,useron.qwk&QWK_ALLMAIL ? 0
 			: LM_UNREAD);
 		if(mailmsgs && !(sys_status&SS_ABORT)) {
 			bputs(text[QWKPackingEmail]);
@@ -254,7 +254,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 			else
 				mode&=~TO_QNET;
 
-			for(l=0;l<mailmsgs;l++) {
+			for(l=0;(ulong)l<mailmsgs;l++) {
 				bprintf("\b\b\b\b\b\b\b\b\b\b\b\b%4lu of %-4lu"
 					,l+1,mailmsgs);
 

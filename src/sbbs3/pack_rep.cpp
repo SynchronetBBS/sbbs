@@ -49,7 +49,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 	int 	file,mode;
 	uint	i,j,k;
 	long	l,msgcnt,submsgs,posts,packedmail,netfiles=0,deleted;
-	long	mailmsgs;
+	ulong	mailmsgs;
 	ulong	last,msgs;
 	post_t	HUGE16 *post;
 	mail_t	*mail;
@@ -73,7 +73,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 	if((rep=fnopen(&file,str,O_CREAT|O_WRONLY))==NULL) {
 		errormsg(WHERE,ERR_OPEN,str,O_CREAT|O_WRONLY);
 		return(false); }
-	if(!filelength(file)) { 						/* New REP packet */
+	if(filelength(file)<1) { 							/* New REP packet */
 		sprintf(str,"%-128s",cfg.qhub[hubnum]->id);     /* So write header */
 		fwrite(str,128,1,rep); }
 	fseek(rep,0L,SEEK_END);
@@ -97,7 +97,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 	packedmail=0;
 	if(mailmsgs) {
 		lprintf("Packing NetMail for %s", cfg.qhub[hubnum]->id);
-		for(l=0;l<mailmsgs;l++) {
+		for(l=0;(ulong)l<mailmsgs;l++) {
 	//		bprintf("\b\b\b\b\b%-5lu",l+1);
 
 			msg.idx.offset=mail[l].offset;
@@ -254,7 +254,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 
 		deleted=0;
 		/* Mark as READ and DELETE */
-		for(l=0;l<mailmsgs;l++) {
+		for(l=0;(ulong)l<mailmsgs;l++) {
 			if(mail[l].time>qwkmail_time)
 				continue;
 			msg.idx.offset=0;
