@@ -327,12 +327,14 @@ int uinput(int mode, char left, char top, char *prompt, char *outstr,
 	if(!(kmode&K_EDIT))
 		outstr[0]=0;
 	sprintf(str,"%.*s",sizeof(str)-1,outstr);
-    while(dialog_inputbox((char*)NULL, prompt, 9, max+4, outstr)==-2)
+    while(dialog_inputbox((char*)NULL, prompt, 9, max+4, str)==-2)
 		help();
     if(kmode&K_UPPER)	/* convert to uppercase? */
     	strupr(str);
-	if(strcmp(str,outstr))
+	if(strcmp(str,outstr)) {	/* changed? */
 		api->changes=TRUE;
+		sprintf(outstr,"%.*s",max,str);
+	}
     return strlen(outstr);
 }
 
