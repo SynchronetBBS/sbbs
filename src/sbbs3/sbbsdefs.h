@@ -48,10 +48,10 @@
 
 #ifdef JAVASCRIPT
 	#define VERSION 	"3.10"  /* Version: Major.minor  */
-	#define REVISION	'A'
+	#define REVISION	'B'
 #else
 	#define VERSION 	"3.00"  /* Version: Major.minor  */
-	#define REVISION	'F'
+	#define REVISION	'G'
 #endif
 
 #define VERSION_NOTICE		"Synchronet BBS for "PLATFORM_DESC\
@@ -396,8 +396,16 @@ typedef enum {						/* Values for xtrn_t.event			*/
 #define QWK_VIA 	(1L<<11)		/* Include "@VIA" seen-bys in msgs  */
 #define QWK_NOCTRL	(1L<<12)		/* No extraneous control files		*/
 
-#define INVALID_DIR 0xffff          /* Invalid directory value          */
-#define INVALID_SUB 0xffff			/* Invalid sub-board value			*/
+							/* Bits in user.chat						*/
+#define CHAT_ECHO	(1<<0)	/* Multinode chat echo						*/
+#define CHAT_ACTION (1<<1)	/* Chat actions 							*/
+#define CHAT_NOPAGE (1<<2)	/* Can't be paged                           */
+#define CHAT_NOACT	(1<<3)	/* No activity alerts						*/
+#define CHAT_SPLITP (1<<4)	/* Split screen private chat				*/
+
+
+#define INVALID_DIR 0xffff  /* Invalid directory value					*/
+#define INVALID_SUB 0xffff	/* Invalid sub-board value					*/
 
 #define KEY_BUFSIZE 1024	/* Size of keyboard input buffer			*/
 #define SAVE_LINES	 4		/* Maximum number of lines to save			*/
@@ -734,12 +742,6 @@ enum {						/* Values for 'mode' in listfileinfo        */
 
 #define L_LOGON     1       /* Logon List maintenance                   */
 #define LOL_SIZE    81      /* Length of each logon list entry          */
-
-#define CHAT_ECHO	(1<<0)	/* Multinode chat echo						*/
-#define CHAT_ACTION (1<<1)	/* Chat actions 							*/
-#define CHAT_NOPAGE (1<<2)	/* Can't be paged                           */
-#define CHAT_NOACT	(1<<3)	/* No activity alerts						*/
-#define CHAT_SPLITP (1<<4)	/* Split screen private chat				*/
 
 							/* Bits in mode of scanposts() function 	*/
 #define SCAN_CONST	(1<<0)	/* Continuous message scanning				*/
