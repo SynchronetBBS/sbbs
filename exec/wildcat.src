@@ -65,7 +65,7 @@ cmdkey F
 	goto transfers
 	end_cmd
 cmdkey T
-	chat_section
+	exec_bin chat_sec
 	end_cmd
 cmdkey J
 	msg_select_area
