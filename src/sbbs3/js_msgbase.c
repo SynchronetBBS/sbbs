@@ -364,7 +364,7 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 	return(TRUE);
 }
 
-BOOL get_msg_by_id(smb_t* smb, char* id, smbmsg_t* msg)
+BOOL get_msg_by_id(scfg_t* scfg, smb_t* smb, char* id, smbmsg_t* msg)
 {
 	ulong		n;
 	int			ret;
@@ -385,7 +385,7 @@ BOOL get_msg_by_id(smb_t* smb, char* id, smbmsg_t* msg)
 		if(ret!=SMB_SUCCESS)
 			continue;
 
-		if(strcmp(msg->id,id)==0)
+		if(strcmp(get_msgid(scfg,smb->subnum,msg),id)==0)
 			return(TRUE);
 
 		smb_freemsgmem(msg);
@@ -394,11 +394,11 @@ BOOL get_msg_by_id(smb_t* smb, char* id, smbmsg_t* msg)
 	return(FALSE);
 }
 
-BOOL msg_offset_by_id(smb_t* smb, char* id, ulong* offset)
+BOOL msg_offset_by_id(scfg_t* scfg, smb_t* smb, char* id, ulong* offset)
 {
 	smbmsg_t msg;
 
-	if(!get_msg_by_id(smb,id,&msg))
+	if(!get_msg_by_id(scfg,smb,id,&msg))
 		return(FALSE);
 
 	smb_freemsgmem(&msg);
@@ -462,7 +462,7 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 			smb_unlockmsghdr(&(p->smb),&msg); 
 			break;
 		} else if(JSVAL_IS_STRING(argv[n]))	{		/* Get by ID */
-			if(!get_msg_by_id(&(p->smb)
+			if(!get_msg_by_id(scfg,&(p->smb)
 				,JS_GetStringBytes(JSVAL_TO_STRING(argv[n]))
 				,&msg))
 				return(JS_TRUE);	/* ID not found */
@@ -776,7 +776,7 @@ js_put_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 				msg.hdr.number=JSVAL_TO_INT(argv[n]);
 			break;
 		} else if(JSVAL_IS_STRING(argv[n]))	{		/* Get by ID */
-			if(!msg_offset_by_id(&(p->smb)
+			if(!msg_offset_by_id(scfg,&(p->smb)
 				,JS_GetStringBytes(JSVAL_TO_STRING(argv[n]))
 				,&msg.offset))
 				return(JS_TRUE);	/* ID not found */
@@ -903,7 +903,7 @@ js_get_msg_body(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 				msg.hdr.number=JSVAL_TO_INT(argv[n]);
 			break;
 		} else if(JSVAL_IS_STRING(argv[n]))	{		/* Get by ID */
-			if(!msg_offset_by_id(&(p->smb)
+			if(!msg_offset_by_id(scfg,&(p->smb)
 				,JS_GetStringBytes(JSVAL_TO_STRING(argv[n]))
 				,&msg.offset))
 				return(JS_TRUE);	/* ID not found */
@@ -966,7 +966,7 @@ js_get_msg_tail(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 				msg.hdr.number=JSVAL_TO_INT(argv[n]);
 			break;
 		} else if(JSVAL_IS_STRING(argv[n]))	{		/* Get by ID */
-			if(!msg_offset_by_id(&(p->smb)
+			if(!msg_offset_by_id(scfg,&(p->smb)
 				,JS_GetStringBytes(JSVAL_TO_STRING(argv[n]))
 				,&msg.offset))
 				return(JS_TRUE);	/* ID not found */
