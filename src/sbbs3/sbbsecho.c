@@ -4606,7 +4606,7 @@ int main(int argc, char **argv)
 					freadstr(fidomsg,hdr.subj,sizeof(hdr.subj));
 				}
 #endif
-
+				hdr.attr&=~FIDO_LOCAL;	/* Strip local bit, obviously not created locally */
 
 				str[0]=0;
 				for(i=0;!grunged && i<sizeof(str);i++)	/* Read in the 'AREA' Field */
