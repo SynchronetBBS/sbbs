@@ -62,7 +62,7 @@ int b64_decode(char *target, size_t tlen, const char *source, size_t slen)
 		working<<=6;
 		i=strchr(base64alphabet,(char)*inp);
 		if(i==NULL) {
-			break;
+			return(-1);
 		}
 		if(*i!='=')  { /* pad char */
 			working |= (i-base64alphabet);
