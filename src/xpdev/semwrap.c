@@ -56,7 +56,7 @@ sem_trywait_block(sem_t *sem, unsigned long timeout)
 
 	retval=sem_timedwait(sem, &abstime);
 	if(retval && errno==ETIMEDOUT)
-		retval=EAGAIN;
+		errno=EAGAIN;
 	return retval;
 }
 #endif
