@@ -578,7 +578,7 @@ static int sockprint(SOCKET sock, const char *str)
 		lprintf(LOG_DEBUG,"%04d TX: %s", sock, str);
 	len=strlen(str);
 
-	while(socket_check(sock,NULL,&wr,60000) && wr && written<len)  {
+	while(socket_check(sock,NULL,&wr,startup->max_inactivity*1000) && wr && written<len)  {
 		result=sendsocket(sock,str+written,len-written);
 		if(result==SOCKET_ERROR) {
 			if(ERROR_VALUE==ECONNRESET) 
@@ -1227,7 +1227,8 @@ static int sockreadline(http_session_t * session, char *buf, size_t length)
 	DWORD	i;
 	BOOL	rd;
 	for(i=0;TRUE;) {
-		if(!socket_check(session->socket,&rd,NULL,60000) || !rd || recv(session->socket, &ch, 1, 0)!=1)  {
+		if(!socket_check(session->socket,&rd,NULL,startup->max_inactivity*1000) 
+			|| !rd || recv(session->socket, &ch, 1, 0)!=1)  {
 			session->req.keep_alive=FALSE;
 			close_request(session);
 			session->socket=INVALID_SOCKET;
@@ -1304,7 +1305,7 @@ int recvbufsocket(int sock, char *buf, long count)
 		return(0);
 	}
 
-	while(rd<count && socket_check(sock,NULL,NULL,60000))  {
+	while(rd<count && socket_check(sock,NULL,NULL,startup->max_inactivity*1000))  {
 		i=recv(sock,buf,count-rd,0);
 		if(i<=0)  {
 			*buf=0;
@@ -3237,6 +3238,14 @@ void DLLCALL web_server(void* arg)
 			SAFECOPY(host_ip,inet_ntoa(client_addr.sin_addr));
 
 			if(trashcan(&scfg,host_ip,"ip-silent")) {
+				close_socket(client_socket);
+				continue;
+			}
+
+			if(startup->max_clients && active_clients>=startup->max_clients) {
+				lprintf(LOG_WARNING,"%04d !MAXMIMUM CLIENTS (%d) reached, access denied"
+					,client_socket, startup->max_clients);
+				mswait(3000);
 				close_socket(client_socket);
 				continue;
 			}
