@@ -189,7 +189,6 @@ typedef struct  {
 
 	/* Dynamically (sever-side JS) generated HTML parameters */
 	FILE*	fp;
-	subscan_t		*subscan;
 
 } http_request_t;
 
@@ -215,6 +214,7 @@ typedef struct  {
 	JSObject*		js_header;
 	JSObject*		js_request;
 	js_branch_t		js_branch;
+	subscan_t		*subscan;
 
 	/* Client info */
 	client_t		client;
@@ -750,9 +750,8 @@ static void close_request(http_session_t * session)
 	if(session->js_cx!=NULL && (session->req.dynamic==IS_SSJS || session->req.dynamic==IS_JS)) {
 		JS_GC(session->js_cx);
 	}
-	if(session->req.subscan!=NULL)
-		putmsgptrs(&scfg, session->user.number, session->req.subscan);
-	FREE_AND_NULL(session->req.subscan);
+	if(session->subscan!=NULL)
+		putmsgptrs(&scfg, session->user.number, session->subscan);
 
 	memset(&session->req,0,sizeof(session->req));
 }
@@ -1005,31 +1004,42 @@ static void send_error(http_session_t * session, const char* message)
 
 void http_logon(http_session_t * session, user_t *usr)
 {
+	int	i;
+
 	if(usr==NULL)
 		getuserdat(&scfg, &session->user);
 	else
 		session->user=*usr;
-
-	if(session->user.number!=0) {
-		FREE_AND_NULL(session->req.subscan);
-		session->req.subscan=(subscan_t*)malloc(sizeof(subscan_t)*scfg.total_subs);
-		if(session->req.subscan!=NULL)
-			getmsgptrs(&scfg,session->user.number,session->req.subscan);
-	}
 
 	if(session->user.number==session->last_user_num)
 		return;
 
 	lprintf(LOG_DEBUG,"%04d HTTP Logon (%d)",session->socket,session->user.number);
 
-	if(session->user.number==0)
+	if(session->user.number==0) {
 		SAFECOPY(session->username,unknown);
+		if(session->subscan!=NULL) {
+			/* Initialize to configured defaults */
+			for(i=0;i<scfg.total_subs;i++) {
+				session->subscan[i].ptr=session->subscan[i].sav_ptr=0;
+				session->subscan[i].last=session->subscan[i].sav_last=0;
+				session->subscan[i].cfg=0xff;
+				if(!(scfg.sub[i]->misc&SUB_NSDEF))
+					session->subscan[i].cfg&=~SUB_CFG_NSCAN;
+				if(!(scfg.sub[i]->misc&SUB_SSDEF))
+				session->subscan[i].cfg&=~SUB_CFG_SSCAN;
+				session->subscan[i].sav_cfg=session->subscan[i].cfg;
+			}
+		}
+	}
 	else {
 		SAFECOPY(session->username,session->user.alias);
 		/* Adjust Connect and host */
 		putuserrec(&scfg,session->user.number,U_MODEM,LEN_MODEM,"HTTP");
 		putuserrec(&scfg,session->user.number,U_COMP,LEN_COMP,session->host_name);
 		putuserrec(&scfg,session->user.number,U_NOTE,LEN_NOTE,session->host_ip);
+		if(session->subscan!=NULL)
+			getmsgptrs(&scfg,session->user.number,session->subscan);
 	}
 	session->client.user=session->username;
 	client_on(session->socket, &session->client, /* update existing client record? */TRUE);
@@ -1059,7 +1069,7 @@ BOOL http_checkuser(http_session_t * session)
 		lprintf(LOG_INFO,"%04d JavaScript: Initializing User Objects",session->socket);
 		if(session->user.number>0) {
 			if(!js_CreateUserObjects(session->js_cx, session->js_glob, &scfg, &session->user
-				,NULL /* ftp index file */, session->req.subscan /* subscan */)) {
+				,NULL /* ftp index file */, session->subscan /* subscan */)) {
 				lprintf(LOG_ERR,"%04d !JavaScript ERROR creating user objects",session->socket);
 				send_error(session,"500 Error initializing JavaScript User Objects");
 				return(FALSE);
@@ -1067,7 +1077,7 @@ BOOL http_checkuser(http_session_t * session)
 		}
 		else {
 			if(!js_CreateUserObjects(session->js_cx, session->js_glob, &scfg, NULL
-				,NULL /* ftp index file */, NULL /* subscan */)) {
+				,NULL /* ftp index file */, session->subscan /* subscan */)) {
 				lprintf(LOG_ERR,"%04d !ERROR initializing JavaScript User Objects",session->socket);
 				send_error(session,"500 Error initializing JavaScript User Objects");
 				return(FALSE);
@@ -2735,6 +2745,8 @@ void http_session_thread(void* arg)
 	session.last_js_user_num=-1;
 	session.logon_time=0;
 
+	session.subscan=(subscan_t*)malloc(sizeof(subscan_t)*scfg.total_subs);
+
 	while(!session.finished && server_socket!=INVALID_SOCKET) {
 	    memset(&(session.req), 0, sizeof(session.req));
 		SAFECOPY(session.req.status,"200 OK");
@@ -2788,6 +2800,8 @@ void http_session_thread(void* arg)
 		JS_DestroyRuntime(session.js_runtime);
 		session.js_runtime=NULL;
 	}
+
+	FREE_AND_NULL(session.subscan);
 
 #ifdef _WIN32
 	if(startup->hangup_sound[0] && !(startup->options&BBS_OPT_MUTE)) 
