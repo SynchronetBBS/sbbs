@@ -1227,7 +1227,7 @@ void packmsgs(ulong packable)
 	}
 
 	if((i=smb_open(&smb))!=0) {
-		fprintf(stderr,"\n\7!Error %d reopening %s\n",i,smb.file);
+		fprintf(stderr,"\n\7!Error %d (%s) reopening %s\n",i,smb.last_error,smb.file);
 		return; 
 	}
 
