@@ -38,6 +38,56 @@
 #ifndef _XSDKWRAP_H
 #define _XSDKWRAP_H
 
+/*********************/
+/* Compiler-specific */
+/*********************/
+
+/* Compiler Description */
+#if defined(__BORLANDC__)
+
+	#define COMPILER_DESC(str) sprintf(str,"BCC %X.%02X" \
+		,__BORLANDC__>>8,__BORLANDC__&0xff);	
+
+#elif defined(_MSC_VER)
+
+	#define COMPILER_DESC(str) sprintf(str,"MSC %u", _MSC_VER);
+
+#elif defined(__GNUC__) && defined(__GLIBC__)
+
+	#define COMPILER_DESC(str) sprintf(str,"GCC %u.%02u (GLIBC %u.%u)" \
+		,__GNUC__,__GNUC_MINOR__,__GLIBC__,__GLIBC_MINOR__);
+
+#elif defined(__GNUC__)
+
+	#define COMPILER_DESC(str) sprintf(str,"GCC %u.%02u" \
+		,__GNUC__,__GNUC_MINOR__);
+
+#else /* Unknown compiler */
+
+	#define COMPILER_DESC(str) strcpy(str,"UNKNOWN COMPILER");
+
+#endif
+
+/* Target Platform Description */
+#if defined(_WIN32)
+	#define PLATFORM_DESC	"Win32"
+#elif defined(__OS2__)
+	#define PLATFORM_DESC	"OS/2"
+#elif defined(__MSDOS__)
+	#define PLATFORM_DESC	"DOS"
+#elif defined(__linux__)
+	#define PLATFORM_DESC	"Linux"
+#elif defined(__FreeBSD__)
+	#define PLATFORM_DESC	"FreeBSD"
+#elif defined(BSD)
+	#define PLATFORM_DESC	"BSD"
+#elif defined(__unix__)
+	#define PLATFORM_DESC	"Unix"
+#else
+	#warning "Need to describe target platform"
+	#define PLATFORM_DESC	"UNKNOWN"
+#endif
+
 #if defined(__unix__)
 
 	int kbhit(void);
@@ -110,6 +160,11 @@
 	#define pthread_mutex_lock(pmtx)	WaitForSingleObject(*(pmtx),INFINITE)
 	#define pthread_mutex_unlock(pmtx)	ReleaseMutex(*(pmtx))
 	#define	pthread_mutex_destroy(pmtx)	CloseHandle(*(pmtx))
+
+
+#elif defined(__MSDOS__)
+
+	/* No semaphores */
 
 #else
 
