@@ -44,7 +44,13 @@ void sbbs_t::fileinfo(file_t* f)
 {
 	char	fname[13],ext[513];
 	char 	tmp[512];
+	char	path[MAX_PATH+1];
 	uint	i,j;
+#ifdef _WIN32
+	char*	p;
+	char	lfn[MAX_PATH+1];
+	DWORD	lfn_len;
+#endif
 
 	for(i=0;i<usrlibs;i++)
 		if(usrlib[i]==cfg.dir[f->dir]->lib)
@@ -52,10 +58,28 @@ void sbbs_t::fileinfo(file_t* f)
 	for(j=0;j<usrdirs[i];j++)
 		if(usrdir[i][j]==f->dir)
 			break;
+
 	unpadfname(f->name,fname);
+
+	sprintf(path,"%s%s",f->altpath>0 && f->altpath<=cfg.altpaths 
+			? cfg.altpath[f->altpath-1]:cfg.dir[f->dir]->path
+			,fname);
 	bprintf(text[FiLib],i+1,cfg.lib[cfg.dir[f->dir]->lib]->lname);
 	bprintf(text[FiDir],j+1,cfg.dir[f->dir]->lname);
 	bprintf(text[FiFilename],fname);
+#ifdef _WIN32
+	if(f->size!=-1 && Win98GetLongPathName!=NULL) {	/* Windows 98/2K or later */
+
+		lfn_len=Win98GetLongPathName(path,lfn,sizeof(lfn));
+
+		if(lfn_len!=0 && lfn_len!=strlen(path)) {
+			p=strrchr(lfn,'\\');
+			if(p!=NULL)
+				bprintf(text[FiFilename],p+1);
+		}
+	}
+#endif
+
 	if(f->size!=-1L)
 		bprintf(text[FiFileSize],ultoac(f->size,tmp));
 	bprintf(text[FiCredits]
