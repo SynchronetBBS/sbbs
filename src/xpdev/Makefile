@@ -24,7 +24,7 @@ DELETE	=	echo y | del
 !ifdef msc	# Microsoft Visual C++
 CC		=	cl
 LD		=	link
-ODIR	=	msvc.Win32
+LIBODIR	=	msvc.Win32
 OUTPUT	=	-Fo
 LOUTPUT	=	-Fe
 CFLAGS  =	-nologo -MTd
@@ -37,12 +37,12 @@ CFLAGS	=	$(CFLAGS) -Yd
 
 CC		=	bcc32
 LD		=	ilink32
-ODIR	=	bcc.Win32		# Output directory
+LIBODIR	=	bcc.Win32		# Output directory
 OUTPUT	=	-o
 LOUTPUT	=	$(OUTPUT)
-CFLAGS	=	-n$(ODIR) -WM -q 
+CFLAGS	=	-n$(LIBODIR) -WM -q 
 LFLAGS	=	$(CFLAGS)
-CLFAGS  =	$(CFLAGS) -M -WD -WM -X-
+CFLAGS  =	$(CFLAGS) -M -WD -WM -X-
 !ifdef DEBUG
 CFLAGS	=	$(CFLAGS) -v
 !endif
@@ -55,9 +55,9 @@ CFLAGS	=	$(CFLAGS) -Od -D_DEBUG
 
 # Debug or release build?
 !ifdef DEBUG
-ODIR	=	$(ODIR).debug
+LIBODIR	=	$(LIBODIR).debug
 !else
-ODIR	=	$(ODIR).release
+LIBODIR	=	$(LIBODIR).release
 !endif
 
 !include objects.mk		# defines $(OBJS)
@@ -68,10 +68,10 @@ ODIR	=	$(ODIR).release
 	@$(CC) $(CFLAGS) -c $< $(OUTPUT)$@
 
 # Create output directories if they don't exist
-$(ODIR):
-	@if not exist $(ODIR) mkdir $(ODIR)
+$(LIBODIR):
+	@if not exist $(LIBODIR) mkdir $(LIBODIR)
 
 # Executable Build Rule
-$(WRAPTEST): $(ODIR)\wraptest.obj $(OBJS)
+$(WRAPTEST): $(LIBODIR)\wraptest.obj $(OBJS)
 	@echo Linking $@
 	@$(CC) $(LFLAGS) $** $(LOUTPUT)$@
