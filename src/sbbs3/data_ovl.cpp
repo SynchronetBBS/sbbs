@@ -180,14 +180,14 @@ void sbbs_t::putmsgptrs()
 }
 
 /****************************************************************************/
-/* Checks for a duplicate user filed starting at user record offset         */
+/* Checks for a duplicate user field starting at user record offset         */
 /* 'offset', reading in 'datlen' chars, comparing to 'str' for each user    */
 /* except 'usernumber' if it is non-zero. Comparison is NOT case sensitive. */
-/* del is 1 if the search is to included deleted/inactive users 0 otherwise */
+/* 'del' is true if the search is to include deleted/inactive users			*/
 /* Returns the usernumber of the dupe if found, 0 if not                    */
 /****************************************************************************/
 uint sbbs_t::userdatdupe(uint usernumber, uint offset, uint datlen, char *dat
-    , char del)
+    ,bool del)
 {
 	bputs(text[SearchingForDupes]);
 	uint i=::userdatdupe(&cfg, usernumber, offset, datlen, dat, del);

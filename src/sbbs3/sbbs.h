@@ -332,7 +332,7 @@ public:
 	void	getusrsubs(void);
 	void	getusrdirs(void);
 	uint	userdatdupe(uint usernumber, uint offset, uint datlen, char *dat
-				,char del);
+				,bool del);
 	void	gettimeleft(void);
 	bool	gettimeleft_inside;
 
