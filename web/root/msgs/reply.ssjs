@@ -66,7 +66,7 @@ else  {
 title="Reply to message";
 write_template("header.inc");
 load("../web/lib/topnav_html.ssjs");
-write_template("leftnav.inc");
+load("../web/lib/leftnav_html.ssjs");
 write_template("msgs/reply.inc");
 write_template("footer.inc");
 

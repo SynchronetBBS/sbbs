@@ -104,7 +104,7 @@ http_reply.status="201 Created";
 title="Message posted";
 write_template("header.inc");
 load("../web/lib/topnav_html.ssjs");
-write_template("leftnav.inc");
+load("../web/lib/leftnav_html.ssjs");
 write_template("msgs/posted.inc");
 write_template("footer.inc");
 

@@ -108,6 +108,6 @@ for(addr in system.fido_addr_list) {
 
 write_template("header.inc");
 load("../web/lib/topnav_html.ssjs");
-write_template("leftnav.inc");
+load("../web/lib/leftnav_html.ssjs");
 write_template("sysinfo.inc");
 write_template("footer.inc");

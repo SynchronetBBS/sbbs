@@ -37,7 +37,7 @@ for(s in msg_area.grp[grp].sub_list) {
 }
 
 load("../web/lib/topnav_html.ssjs");
-write_template("leftnav.inc");
+load("../web/lib/leftnav_html.ssjs");
 write_template("msgs/choosesubs.inc");
 write_template("footer.inc");
 

@@ -353,7 +353,7 @@ else {
 function showform() {
 	write_template("header.inc");
 	load("../web/lib/topnav_html.ssjs");
-	write_template("leftnav.inc");
+    load("../web/lib/leftnav_html.ssjs");
 	write_template("newuser.inc");
 	write_template("footer.inc");
 	exit(0);
