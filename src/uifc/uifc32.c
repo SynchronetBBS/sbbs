@@ -240,8 +240,8 @@ int uifcini32(uifcapi_t* uifcapi)
     }
     api->scrn_len--; /* account for status line */
 
-    if(txtinfo.screenwidth<80) {
-        cprintf("\7UIFC: Screen width (%u) must be at least 80 characters\r\n"
+    if(txtinfo.screenwidth<40) {
+        cprintf("\7UIFC: Screen width (%u) must be at least 40 characters\r\n"
             ,txtinfo.screenwidth);
         return(-3);
     }
