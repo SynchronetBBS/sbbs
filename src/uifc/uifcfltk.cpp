@@ -399,6 +399,18 @@ int UIFC_Button::handle(int event)  {
 			parent()->child(i)->handle(FL_FOCUS);
 			return(1);
 		}
+		if(key==FL_HOME)  {
+			i=0;
+			Fl::focus(parent()->child(i));
+			parent()->child(i)->handle(FL_FOCUS);
+			return(1);
+		}
+		if(key==FL_End)  {
+			i=parent()->children*()-3;
+			Fl::focus(parent()->child(i));
+			parent()->child(i)->handle(FL_FOCUS);
+			return(1);
+		}
 	}
 	return Fl_Button::handle(event);
 }
