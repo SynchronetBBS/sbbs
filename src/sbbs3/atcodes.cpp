@@ -104,6 +104,8 @@ int sbbs_t::atcodes(char *instr)
 	else if(!strcmp(sp,"UPTIME")) {
 		extern time_t uptime;
 		time_t up=time(NULL)-uptime;
+		if(up<0)
+			up=0;
 		char   days[64]="";
 		if((up/(24*60*60))>=2) {
 	        sprintf(days,"%u days ",up/(24*60*60));
