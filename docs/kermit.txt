@@ -73,9 +73,8 @@ them and have new protocols automatically appear on the dynamic menus.
 
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-If you or your BBS users find Kermit support useful, you can thank Michel
-Samson and Winston Smith for their promotion of Kermit and help with testing
-Kermit support in Synchronet.
+These instructions are specifically not authorized, approved, condoned, or
+verified by Michel Samson, the self-appointed Kermit expert and evangelist.
 
 Send comments/questions to rob@synchro.net
 
