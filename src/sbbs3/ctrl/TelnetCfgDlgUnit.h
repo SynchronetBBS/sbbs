@@ -90,6 +90,7 @@ __published:
     TButton *RLoginIPallowButton;
     TCheckBox *RLogin2ndNameCheckBox;
         TCheckBox *QWKEventsCheckBox;
+    TCheckBox *JavaScriptCheckBox;
 	void __fastcall FormShow(TObject *Sender);
 	void __fastcall OKBtnClick(TObject *Sender);
 	void __fastcall AnswerSoundButtonClick(TObject *Sender);

@@ -97,6 +97,8 @@ void __fastcall TTelnetCfgDlg::FormShow(TObject *Sender)
         =MainForm->bbs_startup.options&BBS_OPT_USE_2ND_RLOGIN;
     QWKEventsCheckBox->Checked
         =!(MainForm->bbs_startup.options&BBS_OPT_NO_QWK_EVENTS);
+    JavaScriptCheckBox->Checked
+        =!(MainForm->bbs_startup.options&BBS_OPT_NO_JAVASCRIPT);
 
     RLoginEnabledCheckBoxClick(Sender);
     PageControl->ActivePage=GeneralTabSheet;
@@ -170,6 +172,11 @@ void __fastcall TTelnetCfgDlg::OKBtnClick(TObject *Sender)
         MainForm->bbs_startup.options&=~BBS_OPT_NO_QWK_EVENTS;
     else
         MainForm->bbs_startup.options|=BBS_OPT_NO_QWK_EVENTS;
+    if(JavaScriptCheckBox->Checked==true)
+        MainForm->bbs_startup.options&=~BBS_OPT_NO_JAVASCRIPT;
+    else
+        MainForm->bbs_startup.options|=BBS_OPT_NO_JAVASCRIPT;
+
     if(AutoLogonCheckBox->Checked==true)
     	MainForm->bbs_startup.options|=BBS_OPT_AUTO_LOGON;
     else

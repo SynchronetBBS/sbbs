@@ -17,7 +17,7 @@ object TelnetCfgDlg: TTelnetCfgDlg
     Top = 4
     Width = 342
     Height = 229
-    ActivePage = RLoginTabSheet
+    ActivePage = GeneralTabSheet
     TabOrder = 0
     object GeneralTabSheet: TTabSheet
       Caption = 'General'
@@ -100,6 +100,17 @@ object TelnetCfgDlg: TTelnetCfgDlg
         ParentShowHint = False
         ShowHint = True
         TabOrder = 5
+      end
+      object JavaScriptCheckBox: TCheckBox
+        Left = 182
+        Top = 140
+        Width = 144
+        Height = 25
+        Hint = 'Enable JavaScript Support'
+        Caption = 'JavaScript Support'
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 6
       end
     end
     object TelnetTabSheet: TTabSheet
