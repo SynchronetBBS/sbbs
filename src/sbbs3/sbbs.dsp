@@ -189,6 +189,10 @@ SOURCE=.\filedat.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\fileobj.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\getkey.cpp
 # End Source File
 # Begin Source File
@@ -382,6 +386,10 @@ SOURCE=.\userdat.c
 # Begin Source File
 
 SOURCE=.\useredit.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\userobj.c
 # End Source File
 # Begin Source File
 
