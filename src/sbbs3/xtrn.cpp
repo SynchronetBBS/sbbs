@@ -720,6 +720,15 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 
 int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 {
+	if(cmdline[0]=='*') {   /* Baja module */
+		strcpy(str,cmdline+1);
+		p=strchr(str,SP);
+		if(p) {
+			strcpy(main_csi.str,p+1);
+			*p=0; }
+		return(exec_bin(str,&main_csi)); 
+	}
+
 //	system(cmdline);	This is going to be a lot of work for me... :-)
 	return(0);
 }
