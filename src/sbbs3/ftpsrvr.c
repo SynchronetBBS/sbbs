@@ -2432,12 +2432,10 @@ static void ctrl_thread(void* arg)
 			p=cmd+5;
 			while(*p && *p<=' ') p++;
 			truncsp(p);
-			p=alias(&scfg,p,alias_buf);
 			sprintf(user.alias,"%.*s",(int)sizeof(user.alias)-1,p);
-			/* This alias is too common to leave up to the sysop to configure in alias.cfg */
-			if(!stricmp(user.alias,"anonymous"))	
-				strcpy(user.alias,"guest"); 
-			user.number=matchuser(&scfg,user.alias);
+			user.number=matchuser(&scfg,user.alias,FALSE /*sysop_alias*/);
+			if(!user.number && !stricmp(user.alias,"anonymous"))	
+				user.number=matchuser(&scfg,"guest",FALSE);
 			if(user.number && getuserdat(&scfg, &user)==0 && user.pass[0]==0) 
 				sockprintf(sock,"331 User name okay, give your full e-mail address as password.");
 			else
@@ -2450,7 +2448,7 @@ static void ctrl_thread(void* arg)
 			while(*p && *p<=' ') p++;
 
 			sprintf(password,"%.*s",(int)sizeof(password)-1,p);
-			user.number=matchuser(&scfg,user.alias);
+			user.number=matchuser(&scfg,user.alias,FALSE /*sysop_alias*/);
 			if(!user.number) {
 				lprintf("%04d !UNKNOWN USER: %s",sock,user.alias);
 				if(badlogin(sock,&login_attempts))
