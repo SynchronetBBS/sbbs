@@ -1311,34 +1311,40 @@ static BOOL ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user)
 		i=(*(short *)*ptrptr);
 		switch(artype) {
 			case AR_LEVEL:
-				if((equal && user->level!=n) || (!equal && user->level<n))
+				if(user==NULL 
+					|| (equal && user->level!=n) 
+					|| (!equal && user->level<n))
 					result=not;
 				else
 					result=!not;
 				break;
 			case AR_AGE:
-				age=getage(cfg,user->birth);
-				if((equal && age!=n) || (!equal && age<n))
+				if(user==NULL)
 					result=not;
-				else
-					result=!not;
+				else {
+					age=getage(cfg,user->birth);
+					if((equal && age!=n) || (!equal && age<n))
+						result=not;
+					else
+						result=!not;
+				}
 				break;
 			case AR_BPS:
 				result=!not;
 				(*ptrptr)++;
 				break;
 			case AR_ANSI:
-				if(!(user->misc&ANSI))
+				if(user==NULL || !(user->misc&ANSI))
 					result=not;
 				else result=!not;
 				break;
 			case AR_RIP:
-				if(!(user->misc&RIP))
+				if(user==NULL || !(user->misc&RIP))
 					result=not;
 				else result=!not;
 				break;
 			case AR_WIP:
-				if(!(user->misc&WIP))
+				if(user==NULL || !(user->misc&WIP))
 					result=not;
 				else result=!not;
 				break;
@@ -1378,12 +1384,12 @@ static BOOL ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user)
 				#endif
 				break;
 			case AR_EXPERT:
-				if(!(user->misc&EXPERT))
+				if(user==NULL || !(user->misc&EXPERT))
 					result=not;
 				else result=!not;
 				break;
 			case AR_SYSOP:
-				if(user->level<SYSOP_LEVEL)
+				if(user==NULL || user->level<SYSOP_LEVEL)
 					result=not;
 				else result=!not;
 				break;
@@ -1404,7 +1410,8 @@ static BOOL ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user)
 				break;
 			case AR_CREDIT:
 				l=(ulong)i*1024UL;
-				if((equal && user->cdt+user->freecdt!=l)
+				if(user==NULL
+					|| (equal && user->cdt+user->freecdt!=l)
 					|| (!equal && user->cdt+user->freecdt<l))
 					result=not;
 				else
@@ -1418,7 +1425,9 @@ static BOOL ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user)
 					result=!not;
 				break;
 			case AR_USER:
-				if((equal && user->number!=i) || (!equal && user->number<i))
+				if(user==NULL
+					|| (equal && user->number!=i) 
+					|| (!equal && user->number<i))
 					result=not;
 				else
 					result=!not;
@@ -1452,7 +1461,9 @@ static BOOL ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user)
 				break;
 			case AR_EXPIRE:
 				now=time(NULL);
-				if(!user->expire || now+((long)i*24L*60L*60L)>user->expire)
+				if(user==NULL 
+					|| user->expire==0
+					|| now+((long)i*24L*60L*60L)>user->expire)
 					result=not;
 				else
 					result=!not;
@@ -1468,14 +1479,16 @@ static BOOL ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user)
 				break;
 			case AR_LASTON:
 				now=time(NULL);
-				if((now-user->laston)/(24L*60L*60L)<(long)i)
+				if(user==NULL || (now-user->laston)/(24L*60L*60L)<(long)i)
 					result=not;
 				else
 					result=!not;
 				(*ptrptr)++;
 				break;
 			case AR_LOGONS:
-				if((equal && user->logons!=i) || (!equal && user->logons<i))
+				if(user==NULL 
+					|| (equal && user->logons!=i) 
+					|| (!equal && user->logons<i))
 					result=not;
 				else
 					result=!not;
@@ -1505,80 +1518,97 @@ static BOOL ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user)
 				(*ptrptr)++;
 				break;
 			case AR_PCR:
-				if(user->logons>user->posts
+				if(user==NULL)
+					result=not;
+				else if(user->logons>user->posts
 					&& (!user->posts || 100/(user->logons/user->posts)<(long)n))
 					result=not;
 				else
 					result=!not;
 				break;
 			case AR_UDR:	/* up/download byte ratio */
-				l=user->dlb;
-				if(!l) l=1;
-				if(user->dlb>user->ulb
-					&& (!user->ulb || 100/(l/user->ulb)<n))
+				if(user==NULL)
 					result=not;
-				else
-					result=!not;
+				else {
+					l=user->dlb;
+					if(!l) l=1;
+					if(user->dlb>user->ulb
+						&& (!user->ulb || 100/(l/user->ulb)<n))
+						result=not;
+					else
+						result=!not;
+				}
 				break;
 			case AR_UDFR:	/* up/download file ratio */
-				i=user->dls;
-				if(!i) i=1;
-				if(user->dls>user->uls
-					&& (!user->uls || 100/(i/user->uls)<n))
+				if(user==NULL)
 					result=not;
-				else
-					result=!not;
+				else {
+					i=user->dls;
+					if(!i) i=1;
+					if(user->dls>user->uls
+						&& (!user->uls || 100/(i/user->uls)<n))
+						result=not;
+					else
+						result=!not;
+				}
 				break;
 			case AR_FLAG1:
-				if((!equal && !(user->flags1&FLAG(n)))
+				if(user==NULL
+					|| (!equal && !(user->flags1&FLAG(n)))
 					|| (equal && user->flags1!=FLAG(n)))
 					result=not;
 				else
 					result=!not;
 				break;
 			case AR_FLAG2:
-				if((!equal && !(user->flags2&FLAG(n)))
+				if(user==NULL
+					|| (!equal && !(user->flags2&FLAG(n)))
 					|| (equal && user->flags2!=FLAG(n)))
 					result=not;
 				else
 					result=!not;
 				break;
 			case AR_FLAG3:
-				if((!equal && !(user->flags3&FLAG(n)))
+				if(user==NULL
+					|| (!equal && !(user->flags3&FLAG(n)))
 					|| (equal && user->flags3!=FLAG(n)))
 					result=not;
 				else
 					result=!not;
 				break;
 			case AR_FLAG4:
-				if((!equal && !(user->flags4&FLAG(n)))
+				if(user==NULL
+					|| (!equal && !(user->flags4&FLAG(n)))
 					|| (equal && user->flags4!=FLAG(n)))
 					result=not;
 				else
 					result=!not;
 				break;
 			case AR_REST:
-				if((!equal && !(user->rest&FLAG(n)))
+				if(user==NULL
+					|| (!equal && !(user->rest&FLAG(n)))
 					|| (equal && user->rest!=FLAG(n)))
 					result=not;
 				else
 					result=!not;
 				break;
 			case AR_EXEMPT:
-				if((!equal && !(user->exempt&FLAG(n)))
+				if(user==NULL
+					|| (!equal && !(user->exempt&FLAG(n)))
 					|| (equal && user->exempt!=FLAG(n)))
 					result=not;
 				else
 					result=!not;
 				break;
 			case AR_SEX:
-				if(user->sex!=n)
+				if(user==NULL || user->sex!=n)
 					result=not;
 				else
 					result=!not;
 				break; 
 			case AR_SHELL:
-				if(user->shell>=cfg->total_shells
+				if(user==NULL 
+					|| user->shell>=cfg->total_shells
 					|| stricmp(cfg->shell[user->shell]->code,(char*)*ptrptr))
 					result=not;
 				else
