@@ -35,11 +35,6 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#include <limits.h>		/* INT_MAX */
-#if defined(__unix__)
-	#include <signal.h>	/* do we need bsd/signal on Linux? */
-#endif
-
 #include "sbbs.h"
 #include "ident.h"
 #include "telnet.h" 
