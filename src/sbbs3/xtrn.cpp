@@ -1970,8 +1970,8 @@ char* sbbs_t::cmdstr(char *instr, char *fpath, char *fspec, char *outstr)
                 case 'O':   /* SysOp */
                     strcat(cmd,cfg.sys_op);
                     break;
-                case 'P':   /* COM Port */
-                    strcat(cmd,ultoa(online==ON_LOCAL ? 0:cfg.com_port,str,10));
+                case 'P':   /* Client protocol */
+                    strcat(cmd,client.protocol);
                     break;
                 case 'Q':   /* QWK ID */
                     strcat(cmd,cfg.sys_id);
@@ -2126,7 +2126,7 @@ char* DLLCALL cmdstr(scfg_t* cfg, user_t* user, const char* instr, const char* f
                 case 'O':   /* SysOp */
                     strcat(cmd,cfg->sys_op);
                     break;
-                case 'P':   /* COM Port */
+                case 'P':   /* Client protocol */
                     break;
                 case 'Q':   /* QWK ID */
                     strcat(cmd,cfg->sys_id);
