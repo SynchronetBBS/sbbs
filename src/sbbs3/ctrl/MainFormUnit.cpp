@@ -35,14 +35,14 @@
 
 //---------------------------------------------------------------------------
 #include <vcl.h>
-#include <vcl\Registry.hpp>	/* TRegistry */
+#include <vcl/Registry.hpp>	/* TRegistry */
 #pragma hdrstop
 #include <winsock.h>		// IPPORT_TELNET, INADDR_ANY
 #include <process.h> 		// _beginthread()
 #include <io.h>
 #include <stdio.h>
-#include <sys\stat.h>
-#include <sys\locking.h>
+#include <sys/stat.h>
+#include <sys/locking.h>
 #include <fcntl.h>
 #include <share.h>
 
@@ -1968,7 +1968,7 @@ void __fastcall TMainForm::CtrlMenuItemEditClick(TObject *Sender)
     	,MainForm->cfg.ctrl_dir
         ,((TMenuItem*)Sender)->Hint.c_str());
 	Application->CreateForm(__classid(TTextFileEditForm), &TextFileEditForm);
-	TextFileEditForm->Filename=AnsiString(filename);
+   	TextFileEditForm->Filename=AnsiString(filename);
     TextFileEditForm->Caption=((TMenuItem*)Sender)->Caption;
 	TextFileEditForm->ShowModal();
     delete TextFileEditForm;
@@ -1982,7 +1982,7 @@ void __fastcall TMainForm::DataMenuItemClick(TObject *Sender)
     	,MainForm->cfg.data_dir
         ,((TMenuItem*)Sender)->Hint.c_str());
 	Application->CreateForm(__classid(TTextFileEditForm), &TextFileEditForm);
-	TextFileEditForm->Filename=AnsiString(filename);
+   	TextFileEditForm->Filename=AnsiString(filename);
     TextFileEditForm->Caption=((TMenuItem*)Sender)->Caption;
 	TextFileEditForm->ShowModal();
     delete TextFileEditForm;
@@ -2045,8 +2045,8 @@ void __fastcall TMainForm::BBSViewErrorLogMenuItemClick(TObject *Sender)
     sprintf(filename,"%sERROR.LOG"
     	,MainForm->cfg.data_dir);
 	Application->CreateForm(__classid(TTextFileEditForm), &TextFileEditForm);
-	TextFileEditForm->Filename=AnsiString(filename);
-    TextFileEditForm->Caption="Error Log (See SYSOP.DOC for help)";
+    TextFileEditForm->Filename=AnsiString(filename);
+    TextFileEditForm->Caption="Error Log";
     TextFileEditForm->Memo->ReadOnly=true;
 	TextFileEditForm->ShowModal();
     delete TextFileEditForm;
