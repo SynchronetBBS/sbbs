@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -122,7 +122,7 @@ enum {
 	,BBS_PROP_MSG_NUMBER
 	,BBS_PROP_MSG_EXPIRATION
 	,BBS_PROP_MSG_FORWARDED
-	,BBS_PROP_MSG_THREAD_ORIG
+	,BBS_PROP_MSG_THREAD_BACK
 	,BBS_PROP_MSG_THREAD_NEXT
 	,BBS_PROP_MSG_THREAD_FIRST
 	,BBS_PROP_MSG_ID
@@ -216,7 +216,7 @@ enum {
 	,"message number"
 	,"message expiration"
 	,"message forwarded"
-	,"message thread, original message number"
+	,"message thread, back message number (AKA msg_thread_orig)"
 	,"message thread, next message number"
 	,"message thread, first reply to this message"
 	,"message identifier"
@@ -538,9 +538,9 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			if(sbbs->current_msg!=NULL)
 				val=sbbs->current_msg->forwarded;
 			break;
-		case BBS_PROP_MSG_THREAD_ORIG:
+		case BBS_PROP_MSG_THREAD_BACK:
 			if(sbbs->current_msg!=NULL)
-				val=sbbs->current_msg->hdr.thread_orig;
+				val=sbbs->current_msg->hdr.thread_back;
 			break;
 		case BBS_PROP_MSG_THREAD_NEXT:
 			if(sbbs->current_msg!=NULL)
@@ -836,7 +836,8 @@ static jsSyncPropertySpec js_bbs_properties[] = {
 	{	"msg_number"		,BBS_PROP_MSG_NUMBER		,PROP_READONLY	,310},
 	{	"msg_expiration"	,BBS_PROP_MSG_EXPIRATION	,PROP_READONLY	,310},
 	{	"msg_forwarded"		,BBS_PROP_MSG_FORWARDED		,PROP_READONLY	,310},
-	{	"msg_thread_orig"	,BBS_PROP_MSG_THREAD_ORIG	,PROP_READONLY	,310},
+	{	"msg_thread_back"	,BBS_PROP_MSG_THREAD_BACK	,PROP_READONLY	,311},
+	{	"msg_thread_orig"	,BBS_PROP_MSG_THREAD_BACK	,JSPROP_READONLY,310},	/* alias */
 	{	"msg_thread_next"	,BBS_PROP_MSG_THREAD_NEXT	,PROP_READONLY	,310},
 	{	"msg_thread_first"	,BBS_PROP_MSG_THREAD_FIRST	,PROP_READONLY	,310},
 	{	"msg_id"			,BBS_PROP_MSG_ID			,PROP_READONLY	,310},

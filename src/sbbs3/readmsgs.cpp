@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -128,8 +128,8 @@ void sbbs_t::msghdr(smbmsg_t* msg)
 	bprintf("%-16.16s %u\r\n"	 ,"header length"	,msg->hdr.length);
 
 	/* optional fixed fields */
-	if(msg->hdr.thread_orig)
-		bprintf("%-16.16s %ld\r\n"	,"thread_orig"		,msg->hdr.thread_orig);
+	if(msg->hdr.thread_back)
+		bprintf("%-16.16s %ld\r\n"	,"thread_back"		,msg->hdr.thread_back);
 	if(msg->hdr.thread_next)
 		bprintf("%-16.16s %ld\r\n"	,"thread_next"		,msg->hdr.thread_next);
 	if(msg->hdr.thread_first)
@@ -992,12 +992,12 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 				do_find=false;
 				break;
 			case ',':   /* Thread backwards */
-				if(!msg.hdr.thread_orig) {
+				if(!msg.hdr.thread_back) {
 					domsg=0;
 					break; 
 				}
 				for(i=0;i<smb.msgs;i++)
-					if(msg.hdr.thread_orig==post[i].number)
+					if(msg.hdr.thread_back==post[i].number)
 						break;
 				if(i<smb.msgs)
 					smb.curmsg=i;

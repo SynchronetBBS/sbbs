@@ -113,8 +113,8 @@ void SMBCALL smb_dump_msghdr(FILE* fp, smbmsg_t* msg)
 	fprintf(fp,"%-20.20s %08lXh\n"	,"netattr"			,msg->hdr.netattr);
 
 	/* optional fixed fields */
-	if(msg->hdr.thread_orig)
-		fprintf(fp,"%-20.20s %ld\n"	,"thread_orig"		,msg->hdr.thread_orig);
+	if(msg->hdr.thread_back)
+		fprintf(fp,"%-20.20s %ld\n"	,"thread_back"		,msg->hdr.thread_back);
 	if(msg->hdr.thread_next)
 		fprintf(fp,"%-20.20s %ld\n"	,"thread_next"		,msg->hdr.thread_next);
 	if(msg->hdr.thread_first)

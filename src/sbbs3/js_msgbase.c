@@ -416,9 +416,10 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 		msg->hdr.when_imported.zone=(short)i32;
 	}
 
-	if(JS_GetProperty(cx, hdr, "thread_orig", &val) && !JSVAL_NULL_OR_VOID(val)) {
+	if((JS_GetProperty(cx, hdr, "thread_orig", &val) 
+		|| JS_GetProperty(cx, hdr, "thread_back", &val)) && !JSVAL_NULL_OR_VOID(val)) {
 		JS_ValueToInt32(cx,val,&i32);
-		msg->hdr.thread_orig=i32;
+		msg->hdr.thread_back=i32;
 	}
 	if(JS_GetProperty(cx, hdr, "thread_next", &val) && !JSVAL_NULL_OR_VOID(val)) {
 		JS_ValueToInt32(cx,val,&i32);
@@ -558,7 +559,7 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 	int			i;
 	uintN		n;
 	smbmsg_t	msg;
-	smbmsg_t	orig_msg;
+	smbmsg_t	remsg;
 	JSObject*	hdrobj;
 	JSObject*	array;
 	JSObject*	field;
@@ -784,8 +785,9 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 	JS_NewNumberValue(cx,msg.hdr.when_imported.zone,&v);
 	JS_DefineProperty(cx, hdrobj, "when_imported_zone", v, NULL,NULL,JSPROP_ENUMERATE);
 
-	JS_NewNumberValue(cx,msg.hdr.thread_orig,&v);
-	JS_DefineProperty(cx, hdrobj, "thread_orig", v, NULL,NULL,JSPROP_ENUMERATE);
+	JS_NewNumberValue(cx,msg.hdr.thread_back,&v);
+	JS_DefineProperty(cx, hdrobj, "thread_back", v, NULL,NULL,JSPROP_ENUMERATE);
+	JS_DefineProperty(cx, hdrobj, "thread_orig", v, NULL,NULL,0);
 	JS_NewNumberValue(cx,msg.hdr.thread_next,&v);
 	JS_DefineProperty(cx, hdrobj, "thread_next", v, NULL,NULL,JSPROP_ENUMERATE);
 	JS_NewNumberValue(cx,msg.hdr.thread_first,&v);
@@ -812,13 +814,13 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 		val=msg.reply_id;
 	else {
 		reply_id[0]=0;
-		if(expand_fields && msg.hdr.thread_orig) {
-			memset(&orig_msg,0,sizeof(orig_msg));
-			orig_msg.hdr.number=msg.hdr.thread_orig;
-			if(smb_getmsgidx(&(p->smb), &orig_msg))
+		if(expand_fields && msg.hdr.thread_back) {
+			memset(&remsg,0,sizeof(remsg));
+			remsg.hdr.number=msg.hdr.thread_back;
+			if(smb_getmsgidx(&(p->smb), &remsg))
 				sprintf(reply_id,"<%s>",p->smb.last_error);
 			else
-				SAFECOPY(reply_id,get_msgid(scfg,p->smb.subnum,&orig_msg));
+				SAFECOPY(reply_id,get_msgid(scfg,p->smb.subnum,&remsg));
 		}
 		val=reply_id;
 	}
@@ -1664,7 +1666,7 @@ static jsSyncMethodSpec js_msgbase_functions[] = {
 	"<tr><td><tt>when_written_zone</tt><td>Time zone"
 	"<tr><td><tt>when_imported_time</tt><td>Date/time message was imported"
 	"<tr><td><tt>when_imported_zone</tt><td>Time zone"
-	"<tr><td><tt>thread_orig</tt><td>Replying to this message number"
+	"<tr><td><tt>thread_back</tt><td>Replying to this message number"
 	"<tr><td><tt>thread_next</tt><td>Number of next message in this thread"
 	"<tr><td><tt>thread_first</tt><td>Number of first reply to this message"
 	"<tr><td><tt>field_list[].type</tt><td>Other SMB header fields (type)"

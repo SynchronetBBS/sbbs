@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -52,7 +52,7 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 	long	l,size=0,offset;
 	int 	i;
 	struct	tm	tm;
-	smbmsg_t	orig_msg;
+	smbmsg_t	remsg;
 
 	offset=ftell(qwk_fp);
 	memset(str,' ',QWK_BLOCK_LEN);
@@ -127,14 +127,14 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 			truncstr(tmp," ");
 			sprintf(str,"@REPLY: %.*s%c"
 				,(int)(sizeof(str)-12),tmp,QWK_NEWLINE);
-		} else if(msg->hdr.thread_orig) {
-			memset(&orig_msg,0,sizeof(orig_msg));
-			orig_msg.hdr.number=msg->hdr.thread_orig;
-			if(smb_getmsgidx(&smb, &orig_msg))
+		} else if(msg->hdr.thread_back) {
+			memset(&remsg,0,sizeof(remsg));
+			remsg.hdr.number=msg->hdr.thread_back;
+			if(smb_getmsgidx(&smb, &remsg))
 				sprintf(str,"@REPLY: <%s>%c",smb.last_error,QWK_NEWLINE);
 			else
 				sprintf(str,"@REPLY: %s%c"
-					,get_msgid(&cfg,subnum,&orig_msg)
+					,get_msgid(&cfg,subnum,&remsg)
 					,QWK_NEWLINE);
 		}
 		if(str[0]) {
@@ -359,7 +359,7 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 		,from					/* From: */
 		,msg->subj              /* Subject */
 		,nulstr                 /* Password */
-		,msg->hdr.thread_orig&MAX_MSGNUM   /* Message Re: Number */
+		,msg->hdr.thread_back&MAX_MSGNUM   /* Message Re: Number */
 		,(size/QWK_BLOCK_LEN)+1	/* Number of blocks */
 		,(char)conf&0xff        /* Conference number lo byte */
 		,(ushort)conf>>8		/*					 hi byte */

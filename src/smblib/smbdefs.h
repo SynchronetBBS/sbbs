@@ -485,7 +485,7 @@ typedef struct _PACK {		/* Message header */
 	/* 14 */ when_t	when_written;		/* Date/time/zone message was written */
 	/* 1a */ when_t	when_imported;		/* Date/time/zone message was imported */
     /* 20 */ ulong	number;				/* Message number */
-    /* 24 */ ulong	thread_orig;		/* Original message number in thread */
+    /* 24 */ ulong	thread_back;		/* Message number for backwards threading (aka thread_orig) */
     /* 28 */ ulong	thread_next;		/* Next message in thread */
     /* 2c */ ulong	thread_first;		/* First reply to this message */
 	/* 30 */ ushort	delivery_attempts;	/* Delivery attempt counter */
@@ -496,6 +496,8 @@ typedef struct _PACK {		/* Message header */
 	/* 44 */ ushort	total_dfields;		/* Total number of data fields */
 
 	} msghdr_t;
+
+#define thread_orig	thread_back	/* for backwards compatibility with older code */
 
 typedef struct _PACK {		/* Data field */
 

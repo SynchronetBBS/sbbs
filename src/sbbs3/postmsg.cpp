@@ -325,11 +325,16 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 		smb_hfield_str(&msg,FIDOMSGID,msg_id);
 	}
 	if(remsg) {
-		if(remsg->ftn_msgid!=NULL)
-			smb_hfield_str(&msg,FIDOREPLYID,remsg->ftn_msgid);
+
+		msg.hdr.thread_back=remsg->hdr.number;	/* needed for threading backward */
+
+		/* Add RFC-822 Reply-ID (generate if necessary) */
 		if(remsg->id!=NULL)
 			smb_hfield_str(&msg,RFC822REPLYID,remsg->id);
-		msg.hdr.thread_orig=remsg->hdr.number;
+
+		/* Add FidoNet Reply if original message has FidoNet MSGID */
+		if(remsg->ftn_msgid!=NULL)
+			smb_hfield_str(&msg,FIDOREPLYID,remsg->ftn_msgid);
 
 		if((i=smb_updatethread(&smb, remsg, smb.status.last_msg+1))!=SMB_SUCCESS)
 			errormsg(WHERE,ERR_WRITE,smb.file,i,smb.last_error); 
@@ -430,7 +435,6 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, char* msg
 {
 	char	pad=0;
 	char	pid[128];
-	char*	reply_id;
 	char	msg_id[256];
 	char*	lzhbuf=NULL;
 	ushort	xlat;
@@ -620,18 +624,18 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, char* msg
 	if(msg->to==NULL)	/* no recipient, don't add header (required for bulkmail) */
 		return(smb_unlocksmbhdr(smb));
 
-	/* Look-up thread_orig if Reply-ID was specified */
-	if(msg->hdr.thread_orig==0 && msg->reply_id!=NULL) {
+	/* Look-up thread_back if Reply-ID was specified */
+	if(msg->hdr.thread_back==0 && msg->reply_id!=NULL) {
 		if(get_msg_by_id(cfg, smb, msg->reply_id, &remsg)==TRUE) {
-			msg->hdr.thread_orig=remsg.hdr.number;	/* needed for thread linkage */
+			msg->hdr.thread_back=remsg.hdr.number;	/* needed for threading backward */
 			smb_freemsgmem(&remsg);
 		}
 	}
 
 	/* Auto-thread linkage */
-	if(msg->hdr.thread_orig) {
+	if(msg->hdr.thread_back) {
 		memset(&remsg,0,sizeof(remsg));
-		remsg.hdr.number=msg->hdr.thread_orig;
+		remsg.hdr.number=msg->hdr.thread_back;
 		if((i=smb_getmsgidx(smb, &remsg))!=SMB_SUCCESS)	/* invalid thread origin */
 			return(i);
 
@@ -644,10 +648,8 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, char* msg
 		}
 
 		/* Add RFC-822 Reply-ID (generate if necessary) */
-		if(msg->reply_id==NULL) {
-			reply_id=get_msgid(cfg,smb->subnum,&remsg);
-			smb_hfield_str(msg,RFC822REPLYID,reply_id);
-		}
+		if(msg->reply_id==NULL)
+			smb_hfield_str(msg,RFC822REPLYID,get_msgid(cfg,smb->subnum,&remsg));
 
 		/* Add FidoNet Reply if original message has FidoNet MSGID */
 		if(msg->ftn_reply==NULL && remsg.ftn_msgid!=NULL)
