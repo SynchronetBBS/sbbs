@@ -33,13 +33,11 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#include "uifc.h"
-#include <dir.h>
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "uifc.h"
 #include "sbbs.h"
-#include "scfglib.h"
 
 /**********/
 /* Macros */
