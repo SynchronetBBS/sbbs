@@ -511,7 +511,7 @@ void win32_setcursortype(int type)
 		
 		case _SOLIDCURSOR:
 			ci.bVisible=TRUE;
-			ci.dwSize=100;
+			ci.dwSize=99;
 			break;
 		
 		default:	/* Normal cursor */
