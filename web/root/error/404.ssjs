@@ -86,6 +86,35 @@ function getsizestr(size, bytes)
 		outstr=format("%ld,%03ldP",(size/1000),(size%1000));
 		return(outstr);
 	}
+	/* Heck, let's go all the way! */
+	size = size/1024;
+	if(size<1000) { /* EB */
+		outstr=format("%ldE",size);
+		return(outstr);
+	}
+	if(size<999999) { /* EB With comma */
+		outstr=format("%ld,%03ldE",(size/1000),(size%1000));
+		return(outstr);
+	}
+	size = size/1024;
+	if(size<1000) { /* ZB */
+		outstr=format("%ldZ",size);
+		return(outstr);
+	}
+	if(size<999999) { /* ZB With comma */
+		outstr=format("%ld,%03ldZ",(size/1000),(size%1000));
+		return(outstr);
+	}
+	size = size/1024;
+	if(size<1000) { /* YB */
+		outstr=format("%ldY",size);
+		return(outstr);
+	}
+	if(size<999999) { /* YB With comma */
+		outstr=format("%ld,%03ldY",(size/1000),(size%1000));
+		return(outstr);
+	}
+	
 	outstr="Too damn big to download.";
 	return(outstr);
 }
