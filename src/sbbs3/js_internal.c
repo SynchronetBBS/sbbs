@@ -267,7 +267,11 @@ js_eval(JSContext *parent_cx, JSObject *parent_obj, uintN argc, jsval *argv, jsv
 static JSBool
 js_gc(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	JSBool forced=JS_TRUE;
+	JSBool			forced=JS_TRUE;
+	js_branch_t*	branch;
+
+	if((branch=(js_branch_t*)JS_GetPrivate(cx,obj))==NULL)
+		return(JS_FALSE);
 
 	*rval=JSVAL_VOID;
 
@@ -278,6 +282,8 @@ js_gc(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		JS_GC(cx);
 	else
 		JS_MaybeGC(cx);
+
+	branch->gc_attempts++;
 
 	return(JS_TRUE);
 }
