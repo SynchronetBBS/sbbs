@@ -1122,7 +1122,6 @@ static void smtp_thread(void* arg)
 	char		name_alias_buf[128];
 	char		reverse_path[128];
 	char		date[64];
-	char		month[16];
 	char		rcpt_name[128];
 	char		rcpt_addr[128];
 	char		sender[128];
@@ -1161,7 +1160,6 @@ static void smtp_thread(void* arg)
 	user_t		user;
 	node_t		node;
 	client_t	client;
-	struct tm	tm;
 	smtp_t		smtp=*(smtp_t*)arg;
 	SOCKADDR_IN server_addr;
 	enum {
@@ -1725,83 +1723,7 @@ static void smtp_thread(void* arg)
 			}
 			if(!strnicmp(buf, "DATE:",5)) {
 				p=buf+5;
-				while(*p && *p<=' ') p++;
-/*				lprintf("Sent: %s",p); */
-				memset(&tm,0,sizeof(tm));
-				while(*p && !isdigit(*p)) p++;
-				/* DAY */
-				tm.tm_mday=atoi(p);
-				while(*p && isdigit(*p)) p++;
-				/* MONTH */
-				while(*p && *p<=' ') p++;
-				sprintf(month,"%3.3s",p);
-				if(!stricmp(month,"jan"))
-					tm.tm_mon=0;
-				else if(!stricmp(month,"feb"))
-					tm.tm_mon=1;
-				else if(!stricmp(month,"mar"))
-					tm.tm_mon=2;
-				else if(!stricmp(month,"apr"))
-					tm.tm_mon=3;
-				else if(!stricmp(month,"may"))
-					tm.tm_mon=4;
-				else if(!stricmp(month,"jun"))
-					tm.tm_mon=5;
-				else if(!stricmp(month,"jul"))
-					tm.tm_mon=6;
-				else if(!stricmp(month,"aug"))
-					tm.tm_mon=7;
-				else if(!stricmp(month,"sep"))
-					tm.tm_mon=8;
-				else if(!stricmp(month,"oct"))
-					tm.tm_mon=9;
-				else if(!stricmp(month,"nov"))
-					tm.tm_mon=10;
-				else
-					tm.tm_mon=11;
-				p+=4;
-				/* YEAR */
-				tm.tm_year=atoi(p);
-				if(tm.tm_year>1900)
-					tm.tm_year-=1900;
-				while(*p && isdigit(*p)) p++;
-				/* HOUR */
-				while(*p && *p<=' ') p++;
-				tm.tm_hour=atoi(p);
-				while(*p && isdigit(*p)) p++;
-				/* MINUTE */
-				if(*p) p++;
-				tm.tm_min=atoi(p);
-				while(*p && isdigit(*p)) p++;
-				/* SECONDS */
-				if(*p) p++;
-				tm.tm_sec=atoi(p);
-				while(*p && isdigit(*p)) p++;
-				/* TIME ZONE */
-				while(*p && *p<=' ') p++;
-				if(*p && (isdigit(*p) || *p=='-')) { /* HHMM or -HHMM format */
-					sprintf(str,"%.*s",*p=='-'? 3:2,p);
-					msg.hdr.when_written.zone=atoi(str)*60;
-					p+=(*p=='-') ? 3:2;
-					msg.hdr.when_written.zone+=atoi(p);
-				}
-				else if(!strnicmp(p,"PDT",3))
-					msg.hdr.when_written.zone=(short)PDT;
-				else if(!strnicmp(p,"MDT",3))
-					msg.hdr.when_written.zone=(short)MDT;
-				else if(!strnicmp(p,"CDT",3))
-					msg.hdr.when_written.zone=(short)CDT;
-				else if(!strnicmp(p,"EDT",3))
-					msg.hdr.when_written.zone=(short)EDT;
-				else if(!strnicmp(p,"PST",3))
-					msg.hdr.when_written.zone=(short)PST;
-				else if(!strnicmp(p,"MST",3))
-					msg.hdr.when_written.zone=(short)MST;
-				else if(!strnicmp(p,"CST",3))
-					msg.hdr.when_written.zone=(short)CST;
-				else if(!strnicmp(p,"EST",3))
-					msg.hdr.when_written.zone=(short)EST;
-				msg.hdr.when_written.time=mktime(&tm);
+				msg.hdr.when_written=rfc822date(p);
 				continue;
 			}
 			if(!strnicmp(buf, "MESSAGE-ID:",11)) {

@@ -810,6 +810,8 @@ extern "C" {
 	DLLEXPORT char *	DLLCALL hhmmtostr(scfg_t* cfg, struct tm* tm, char* str);
 	/* time_t to ctime()-like string */
 	DLLEXPORT char *	DLLCALL timestr(scfg_t* cfg, time_t *intime, char* str);
+	/* RFC822 date header to when_t */
+	DLLEXPORT when_t	DLLCALL rfc822date(char* p);
 
 
 	/* logfile.cpp */
