@@ -93,31 +93,29 @@ GC cgc;
 int xfd;
 
 /* X functions */
-#if 0
 struct x11 {
-	int		(*XChangeGC)	(Display*, GC, unsigned long, XGCValues);
+	int		(*XChangeGC)	(Display*, GC, unsigned long, XGCValues*);
 	int		(*XCopyPlane)	(Display*, Drawable, Drawable, GC, int, int, unsigned int, unsigned int, int, int, unsigned long);
 	int		(*XFillRectangle)	(Display*, Drawable, GC, int, int, unsigned int, unsigned int);
 	int		(*XFlush)		(Display*);
 	int		(*XBell)		(Display*, int);
-	int		(*XLookupString)	(XKeyEvent*, char*, int, KeySym*, XComposeStatus);
+	int		(*XLookupString)(XKeyEvent*, char*, int, KeySym*, XComposeStatus*);
 	int		(*XNextEvent)	(Display*, XEvent *);
-	XSizeHints	(*XAllocSizeHints)(void);
-	void		(*XSetWMNormalHints)	(Display*, Window, XSizeHints);
-	int		(*XResizeWindow)	(Display*, Window, unsigned int, unsigned int);
+	XSizeHints*	(*XAllocSizeHints)(void);
+	void		(*XSetWMNormalHints)	(Display*, Window, XSizeHints*);
+	int		(*XResizeWindow)(Display*, Window, unsigned int, unsigned int);
 	int		(*XMapWindow)	(Display*, Window);
-	int		(*XFree)		(Display*, XFontSet);
+	int		(*XFree)		(void *data);
 	int		(*XFreePixmap)	(Display*, Pixmap);
 	int		(*XCreateBitmapFromData)	(Display*, Drawable, _Xconst char*, unsigned int, unsigned int);
-	Status	(*XAllocColor)	(Display*, Colormap, XColor);
-	Display	(*XOpenDisplay)	(_Xconst char*);
+	Status	(*XAllocColor)	(Display*, Colormap, XColor*);
+	Display*(*XOpenDisplay)	(_Xconst char*);
 	Window	(*XCreateSimpleWindow)	(Display*, Window, int, int, unsigned int, unsigned int, unsigned int, unsigned long, unsigned long);
 	GC		(*XCreateGC)	(Display*, Drawable, unsigned long, XGCValues*);
 	int		(*XSelectInput)	(Display*, Window, long);
 	int		(*XStoreName)	(Display*, Window, _Xconst char*);
 };
 struct x11 x11;
-#endif
 
 /* X pixel values for the RGB triples */
 struct dac_colors *dac_rgb;
@@ -340,7 +338,7 @@ setgc(u_short attr)
 		v.foreground = pixels[(attr >> 8) & 0x0f];
 
 	v.background = pixels[(attr >> 12) & (blink ? 0x07 : 0x0f)];
-	XChangeGC(dpy, gc, GCForeground|GCBackground, &v);
+	x11.XChangeGC(dpy, gc, GCForeground|GCBackground, &v);
 }
 
 static void
@@ -390,7 +388,7 @@ video_update_text()
 
 		for (c = 0; c < DpyCols; ++c) {
 			setgc(vmem[r * DpyCols + c]  & 0xff00);
-			XCopyPlane(dpy,pfnt,win,gc,0,FH*(vmem[r * DpyCols + c]&0xff),FW,FH,c*FW+2,r*FH+2,1);
+			x11.XCopyPlane(dpy,pfnt,win,gc,0,FH*(vmem[r * DpyCols + c]&0xff),FW,FH,c*FW+2,r*FH+2,1);
 		}
 	}
 
@@ -406,8 +404,8 @@ video_update_text()
 			v.foreground = pixels[7];
 			v.function = GXcopy;
 	    }
-	    XChangeGC(dpy, cgc, GCForeground | GCFunction, &v);
-	    XFillRectangle(dpy, win, cgc,
+	    x11.XChangeGC(dpy, cgc, GCForeground | GCFunction, &v);
+	    x11.XFillRectangle(dpy, win, cgc,
 			   2 +CursCol * FW,
 			   2 + CursRow * FH + CursStart,
 			   FW, CursEnd + 1 - CursStart);
@@ -417,7 +415,7 @@ video_update_text()
 	oc =CursCol;
 	os =show;
 
-	XFlush(dpy);
+	x11.XFlush(dpy);
 }
 
 void
@@ -485,7 +483,7 @@ KbdWrite(WORD code)
 		kf = K_BUFSTARTP;
 
 	if (kf == K_NEXT) {
-		XBell(dpy, 0);
+		x11.XBell(dpy, 0);
 		return;
 	}
 	K_BUF(K_FREE) = code;
@@ -494,7 +492,7 @@ KbdWrite(WORD code)
 
 void tty_beep(void)
 {
-	XBell(dpy, 0);
+	x11.XBell(dpy, 0);
 }
 
 static int
@@ -595,7 +593,7 @@ video_event(XEvent *ev)
                         K2_STATUS &= ~K2_CLOCK;
 		}
 
-		XLookupString((XKeyEvent *)ev, buf, sizeof(buf), &ks, 0);
+		x11.XLookupString((XKeyEvent *)ev, buf, sizeof(buf), &ks, 0);
 		switch (ks) {
 		case XK_Shift_L:
 			K1_STATUS &= ~K1_LSHIFT;
@@ -659,7 +657,7 @@ video_event(XEvent *ev)
                         K2_STATUS &= ~K2_CLOCK;
 		}
 
-		n = XLookupString((XKeyEvent *)ev, buf, sizeof(buf), &ks, 0);
+		n = x11.XLookupString((XKeyEvent *)ev, buf, sizeof(buf), &ks, 0);
 
 		switch (ks) {
 		case XK_Shift_L:
@@ -887,7 +885,7 @@ video_async_event(void *crap)
 		* Handle any events just sitting around...
 		*/
 		while (QLength(dpy) > 0) {
-			XNextEvent(dpy, &ev);
+			x11.XNextEvent(dpy, &ev);
 			video_event(&ev);
 		}
 
@@ -911,7 +909,7 @@ video_async_event(void *crap)
 			default:
 				if (FD_ISSET(xfd, &fdset)) {
 					do {
-						XNextEvent(dpy, &ev);
+						x11.XNextEvent(dpy, &ev);
 						video_event(&ev);
 					} while (QLength(dpy));
 				}
@@ -926,7 +924,7 @@ resize_window()
 {
     XSizeHints *sh;
 
-    sh = XAllocSizeHints();
+    sh = x11.XAllocSizeHints();
     if (sh == NULL)
 		err(1, "Could not get XSizeHints structure");
 
@@ -939,12 +937,12 @@ resize_window()
     sh->min_height = sh->max_height = sh->base_height;
     sh->flags = USSize | PMinSize | PMaxSize | PSize;
 
-    XSetWMNormalHints(dpy, win, sh);
-    XResizeWindow(dpy, win, sh->base_width, sh->base_height);
-    XMapWindow(dpy, win);
-    XFlush(dpy);
+    x11.XSetWMNormalHints(dpy, win, sh);
+    x11.XResizeWindow(dpy, win, sh->base_width, sh->base_height);
+    x11.XMapWindow(dpy, win);
+    x11.XFlush(dpy);
 
-    XFree(sh);
+    x11.XFree(sh);
 
     return;
 }
@@ -984,8 +982,8 @@ load_font(char *filename, int width, int height)
     FH = height;
 
 	if(pfnt!=0)
-		XFreePixmap(dpy,pfnt);
-	pfnt=XCreateBitmapFromData(dpy, win, font, FW, FH*256);
+		x11.XFreePixmap(dpy,pfnt);
+	pfnt=x11.XCreateBitmapFromData(dpy, win, font, FW, FH*256);
 
     return(0);
 }
@@ -1018,7 +1016,7 @@ update_pixels()
 		XColor color;
 
 		dac2rgb(&color, i);
-		if (XAllocColor(dpy, DefaultColormap(dpy, DefaultScreen(dpy)), &color)) {
+		if (x11.XAllocColor(dpy, DefaultColormap(dpy, DefaultScreen(dpy)), &color)) {
 		    pixels[i] = color.pixel;
 		} else if (i < 7)
 		    pixels[i] = BlackPixel(dpy, DefaultScreen(dpy));
@@ -1101,7 +1099,7 @@ init_window()
     XGCValues gcv;
     int i;
 
-	dpy = XOpenDisplay(NULL);
+	dpy = x11.XOpenDisplay(NULL);
     if (dpy == NULL) {
 		fprintf(stderr,"Cannot open connection to X server\n");
 		return(-1);
@@ -1109,23 +1107,23 @@ init_window()
     xfd = ConnectionNumber(dpy);
 
     /* Create window, but defer setting a size and GC. */
-    win = XCreateSimpleWindow(dpy, DefaultRootWindow(dpy), 0, 0,
+    win = x11.XCreateSimpleWindow(dpy, DefaultRootWindow(dpy), 0, 0,
 			      1, 1, 2, black, black);
 
     gcv.foreground = white;
     gcv.background = black;
-    gc = XCreateGC(dpy, win, GCForeground | GCBackground, &gcv);
+    gc = x11.XCreateGC(dpy, win, GCForeground | GCBackground, &gcv);
 
     gcv.foreground = 1;
     gcv.background = 0;
     gcv.function = GXxor;
-    cgc = XCreateGC(dpy, win, GCForeground|GCBackground|GCFunction, &gcv);
+    cgc = x11.XCreateGC(dpy, win, GCForeground|GCBackground|GCFunction, &gcv);
 
-    XSelectInput(dpy, win, KeyReleaseMask | KeyPressMask |
+    x11.XSelectInput(dpy, win, KeyReleaseMask | KeyPressMask |
 		     ExposureMask | ButtonPressMask
 		     | ButtonReleaseMask | PointerMotionMask );
 
-    XStoreName(dpy, win, "SyncConsole");
+    x11.XStoreName(dpy, win, "SyncConsole");
 
     /* Get the default visual and depth for later use. */
     depth = DefaultDepth(dpy, DefaultScreen(dpy));
@@ -1179,90 +1177,88 @@ console_init()
     int i;
 	void *dl;
 
-#if 0
 	if((dl=dlopen("libX11.so",RTLD_LAZY))==NULL)
 		return(-1);
-	if((x11.XChangeGC=dlsym(dl,XChangeGC)==NULL) {
+	if((x11.XChangeGC=dlsym(dl,"XChangeGC"))==NULL) {
 		dlclose(dl);
 		return(-1);
 	}
-	if((x11.XCopyPlane=dlsym(dl,XCopyPlane)==NULL) {
+	if((x11.XCopyPlane=dlsym(dl,"XCopyPlane"))==NULL) {
 		dlclose(dl);
 		return(-1);
 	}
-	if((x11.XFillRectangle=dlsym(dl,XFillRectangle)==NULL) {
+	if((x11.XFillRectangle=dlsym(dl,"XFillRectangle"))==NULL) {
 		dlclose(dl);
 		return(-1);
 	}
-	if((x11.XFlush=dlsym(dl,XFlush)==NULL) {
+	if((x11.XFlush=dlsym(dl,"XFlush"))==NULL) {
 		dlclose(dl);
 		return(-1);
 	}
-	if((x11.XBell=dlsym(dl,XBell)==NULL) {
+	if((x11.XBell=dlsym(dl,"XBell"))==NULL) {
 		dlclose(dl);
 		return(-1);
 	}
-	if((x11.XLookupString=dlsym(dl,XLookupString)==NULL) {
+	if((x11.XLookupString=dlsym(dl,"XLookupString"))==NULL) {
 		dlclose(dl);
 		return(-1);
 	}
-	if((x11.XNextEvent=dlsym(dl,XNextEvent)==NULL) {
+	if((x11.XNextEvent=dlsym(dl,"XNextEvent"))==NULL) {
 		dlclose(dl);
 		return(-1);
 	}
-	if((x11.XAllocSizeHints=dlsym(dl,XAllocSizeHints)==NULL) {
+	if((x11.XAllocSizeHints=dlsym(dl,"XAllocSizeHints"))==NULL) {
 		dlclose(dl);
 		return(-1);
 	}
-	if((x11.XSetWMNormalHints=dlsym(dl,XSetWMNormalHints)==NULL) {
+	if((x11.XSetWMNormalHints=dlsym(dl,"XSetWMNormalHints"))==NULL) {
 		dlclose(dl);
 		return(-1);
 	}
-	if((x11.XResizeWindow=dlsym(dl,XResizeWindow)==NULL) {
+	if((x11.XResizeWindow=dlsym(dl,"XResizeWindow"))==NULL) {
 		dlclose(dl);
 		return(-1);
 	}
-	if((x11.XMapWindow=dlsym(dl,XMapWindow)==NULL) {
+	if((x11.XMapWindow=dlsym(dl,"XMapWindow"))==NULL) {
 		dlclose(dl);
 		return(-1);
 	}
-	if((x11.XFree=dlsym(dl,XFree)==NULL) {
+	if((x11.XFree=dlsym(dl,"XFree"))==NULL) {
 		dlclose(dl);
 		return(-1);
 	}
-	if((x11.XFreePixmap=dlsym(dl,XFreePixmap)==NULL) {
+	if((x11.XFreePixmap=dlsym(dl,"XFreePixmap"))==NULL) {
 		dlclose(dl);
 		return(-1);
 	}
-	if((x11.XCreateBitmapFromData=dlsym(dl,XCreateBitmapFromData)==NULL) {
+	if((x11.XCreateBitmapFromData=dlsym(dl,"XCreateBitmapFromData"))==NULL) {
 		dlclose(dl);
 		return(-1);
 	}
-	if((x11.XAllocColor=dlsym(dl,XAllocColor)==NULL) {
+	if((x11.XAllocColor=dlsym(dl,"XAllocColor"))==NULL) {
 		dlclose(dl);
 		return(-1);
 	}
-	if((x11.XOpenDisplay=dlsym(dl,XOpenDisplay)==NULL) {
+	if((x11.XOpenDisplay=dlsym(dl,"XOpenDisplay"))==NULL) {
 		dlclose(dl);
 		return(-1);
 	}
-	if((x11.XCreateSimpleWindow=dlsym(dl,XCreateSimpleWindow)==NULL) {
+	if((x11.XCreateSimpleWindow=dlsym(dl,"XCreateSimpleWindow"))==NULL) {
 		dlclose(dl);
 		return(-1);
 	}
-	if((x11.XCreateGC=dlsym(dl,XCreateGC)==NULL) {
+	if((x11.XCreateGC=dlsym(dl,"XCreateGC"))==NULL) {
 		dlclose(dl);
 		return(-1);
 	}
-	if((x11.XSelectInput=dlsym(dl,XSelectInput)==NULL) {
+	if((x11.XSelectInput=dlsym(dl,"XSelectInput"))==NULL) {
 		dlclose(dl);
 		return(-1);
 	}
-	if((x11.XStoreName=dlsym(dl,XStoreName)==NULL) {
+	if((x11.XStoreName=dlsym(dl,"XStoreName"))==NULL) {
 		dlclose(dl);
 		return(-1);
 	}
-#endif
 
 	if(dpy!=NULL)
 		return(0);
@@ -1401,5 +1397,5 @@ tty_kbhit(void)
 
 void x_win_title(const char *title)
 {
-    XStoreName(dpy, win, title);
+    x11.XStoreName(dpy, win, title);
 }
