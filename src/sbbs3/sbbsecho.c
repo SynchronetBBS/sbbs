@@ -2261,12 +2261,12 @@ int fmsgtosmsg(uchar* fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 				,*p,str[128];
 	char	msg_id[256];
 	BOOL	done,esc,cr;
-	int 	i,storage;
+	int 	i,storage=SMB_SELFPACK;
 	uint	col;
-	ushort	xlat,net;
+	ushort	xlat=XLAT_NONE,net;
 	ulong	l,m,length,bodylen,taillen,crc;
 	ulong	save;
-	long	dupechk_hashes;
+	long	dupechk_hashes=SMB_HASH_SOURCE_ALL;
 	faddr_t faddr,origaddr,destaddr;
 	smb_t*	smbfile;
 	char	fname[MAX_PATH+1];
@@ -2541,11 +2541,6 @@ int fmsgtosmsg(uchar* fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 		smbfile->status.max_crcs = scfg.mail_maxcrcs;
 		if(scfg.sys_misc&SM_FASTMAIL)
 			storage= SMB_FASTALLOC;
-		else
-			storage = SMB_SELFPACK;
-		if(smbfile->status.max_crcs)
-			dupechk_hashes=SMB_HASH_SOURCE_BODY;
-		xlat=XLAT_NONE;
 	} else {
 		smbfile=&smb[cur_smb];
 		smbfile->status.max_age	 = scfg.sub[subnum]->maxage;
@@ -2555,16 +2550,11 @@ int fmsgtosmsg(uchar* fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 			storage = smb->status.attr = SMB_HYPERALLOC;
 		else if(scfg.sub[subnum]->misc&SUB_FAST)
 			storage = SMB_FASTALLOC;
-		else
-			storage = SMB_SELFPACK;
-		dupechk_hashes=SMB_HASH_SOURCE_FTN_ID;
-		if(smbfile->status.max_crcs)
-			dupechk_hashes|=SMB_HASH_SOURCE_BODY;
 		if(scfg.sub[subnum]->misc&SUB_LZH)
 			xlat=XLAT_LZH;
-		else
-			xlat=XLAT_NONE;
 	}
+	if(smbfile->status.max_crcs==0)
+		dupechk_hashes&=~(1<<SMB_HASH_SOURCE_BODY);
 
 	i=smb_addmsg(smbfile, &msg, storage, dupechk_hashes, xlat, sbody, stail);
 
