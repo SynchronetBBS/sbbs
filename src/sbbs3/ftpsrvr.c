@@ -68,7 +68,8 @@
 
 /* Constants */
 
-#define FTP_VERSION				"1.02"
+#define FTP_SERVER				"Synchronet FTP Server"
+#define FTP_VERSION				"1.10"
 
 #define ILLEGAL_FILENAME_CHARS	"\\/|<>+[]:=\";,%"
 
@@ -87,23 +88,6 @@
 #define INDEX_FNAME_LEN			15
 
 #define	NAME_LEN				15		/* User name length for listings */
-
-static const char *mon[]={"Jan","Feb","Mar","Apr","May","Jun"
-            ,"Jul","Aug","Sep","Oct","Nov","Dec"};
-
-BOOL direxist(char *dir)
-{
-	if(access(dir,0)==0)
-		return(TRUE);
-	else
-		return(FALSE);
-}
-
-BOOL dir_op(scfg_t* cfg, user_t* user, uint dirnum)
-{
-	return(user->level>=SYSOP_LEVEL || user->exempt&FLAG('R')
-		|| (cfg->dir[dirnum]->op_ar[0] && chk_ar(cfg,cfg->dir[dirnum]->op_ar,user)));
-}
 
 static ftp_startup_t* startup=NULL;
 static scfg_t	scfg;
@@ -126,6 +110,24 @@ typedef struct {
 	SOCKET			socket;
 	SOCKADDR_IN		client_addr;
 } ftp_t;
+
+
+static const char *mon[]={"Jan","Feb","Mar","Apr","May","Jun"
+            ,"Jul","Aug","Sep","Oct","Nov","Dec"};
+
+BOOL direxist(char *dir)
+{
+	if(access(dir,0)==0)
+		return(TRUE);
+	else
+		return(FALSE);
+}
+
+BOOL dir_op(scfg_t* cfg, user_t* user, uint dirnum)
+{
+	return(user->level>=SYSOP_LEVEL || user->exempt&FLAG('R')
+		|| (cfg->dir[dirnum]->op_ar[0] && chk_ar(cfg,cfg->dir[dirnum]->op_ar,user)));
+}
 
 static int lprintf(char *fmt, ...)
 {
@@ -312,6 +314,540 @@ while(c && (uchar)str[c-1]<=' ') c--;
 str[c]=0;
 }
 
+/*********************************/
+/* JavaScript Data and Functions */
+/*********************************/
+#ifdef JAVASCRIPT
+
+JSRuntime* js_runtime=NULL;
+
+static JSBool
+js_load(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char		path[MAX_PATH+1];
+    uintN		i;
+    JSString*	str;
+    const char*	filename;
+    JSScript*	script;
+    JSBool		ok;
+    jsval		result;
+//    JSErrorReporter older;
+
+    for (i = 0; i < argc; i++) {
+		str = JS_ValueToString(cx, argv[i]);
+		if (!str)
+			return JS_FALSE;
+		argv[i] = STRING_TO_JSVAL(str);
+		filename = JS_GetStringBytes(str);
+		errno = 0;
+//    older = JS_SetErrorReporter(cx, my_LoadErrorReporter);
+		if(!strchr(filename,BACKSLASH))
+			sprintf(path,"%s%s",scfg.exec_dir,filename);
+		else
+			strcpy(path,filename);
+		script = JS_CompileFile(cx, obj, path);
+		if (!script)
+			ok = JS_FALSE;
+		else {
+			ok = JS_ExecuteScript(cx, obj, script, &result);
+			JS_DestroyScript(cx, script);
+			}
+//    JS_SetErrorReporter(cx, older);
+		if (!ok)
+			return JS_FALSE;
+    }
+
+    return JS_TRUE;
+}
+
+static JSBool
+js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+    uintN		i;
+    JSString *	str;
+	FILE*	fp;
+
+	if((fp=(FILE*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+    for (i = 0; i < argc; i++) {
+		str = JS_ValueToString(cx, argv[i]);
+		if (!str)
+		    return JS_FALSE;
+		fprintf(fp,"%s",JS_GetStringBytes(str));
+	}
+
+	return(JS_TRUE);
+}
+
+static JSBool
+js_format(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char		tmp[1024];
+    uintN		i;
+	JSString *	fmt;
+    JSString *	str;
+	va_list		arglist[64];
+
+	fmt = JS_ValueToString(cx, argv[0]);
+	if (!fmt)
+		return JS_FALSE;
+
+    for (i = 1; i < argc && i<sizeof(arglist)/sizeof(arglist[0]); i++) {
+		if(JSVAL_IS_STRING(argv[i])) {
+			str = JS_ValueToString(cx, argv[i]);
+			if (!str)
+			    return JS_FALSE;
+			arglist[i-1]=JS_GetStringBytes(str);
+		} else
+			arglist[i-1]=(char *)JSVAL_TO_INT(argv[i]);
+	}
+	
+	vsprintf(tmp,JS_GetStringBytes(fmt),(char*)arglist);
+
+	str = JS_NewStringCopyZ(cx, tmp);
+	*rval = STRING_TO_JSVAL(str);
+
+    return JS_TRUE;
+}
+
+static JSClass js_global_class = {
+        "Global",0, 
+        JS_PropertyStub,JS_PropertyStub,JS_PropertyStub,JS_PropertyStub, 
+        JS_EnumerateStub,JS_ResolveStub,JS_ConvertStub,JS_FinalizeStub 
+}; 
+
+static JSFunctionSpec js_global_functions[] = {
+	{"load",            js_load,            1},		/* Load and execute a javascript file */
+	{"write",           js_write,           1},		/* write to HTML file */
+	{"format",			js_format,			1},		/* return a formatted string */
+	{0}
+};
+
+static void
+js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
+{
+	char	line[64];
+	char	file[MAX_PATH+1];
+	char*	warning;
+	
+	if(report==NULL) {
+		lprintf("!JavaScript: %s", message);
+		return;
+    }
+
+	if(report->filename)
+		sprintf(file," %s",report->filename);
+	else
+		file[0]=0;
+
+	if(report->lineno)
+		sprintf(line," line %d",report->lineno);
+	else
+		line[0]=0;
+
+	if(JSREPORT_IS_WARNING(report->flags)) {
+		if(JSREPORT_IS_STRICT(report->flags))
+			warning="strict warning";
+		else
+			warning="warning";
+	} else
+		warning="";
+
+	lprintf("!JavaScript %s%s%s: %s",warning,file,line,message);
+}
+
+JSContext* js_initcx(JSObject** glob)
+{
+	char		ver[256];
+	JSContext*	js_cx;
+	JSObject*	js_glob;
+	JSObject*	sysobj;
+	jsval		val;
+
+    if((js_cx = JS_NewContext(js_runtime, JAVASCRIPT_CONTEXT_STACK))==NULL)
+		return(NULL);
+
+    JS_SetErrorReporter(js_cx, js_ErrorReporter);
+
+    if((js_glob = JS_NewObject(js_cx, &js_global_class, NULL, NULL))==NULL) {
+		JS_DestroyContext(js_cx);
+		return(NULL);
+	}
+
+    if (!JS_InitStandardClasses(js_cx, js_glob)) {
+		JS_DestroyContext(js_cx);
+		return(NULL);
+	}
+
+    if (!JS_DefineFunctions(js_cx, js_glob, js_global_functions)) {
+		JS_DestroyContext(js_cx);
+		return(NULL);
+	}
+
+	if((sysobj=CreateSystemObject(&scfg, js_cx, js_glob))==NULL) {
+		JS_DestroyContext(js_cx);
+		return(NULL);
+	}
+
+	sprintf(ver,"%s v%s",FTP_SERVER,FTP_VERSION);
+	val = STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, ver));
+	if(!JS_SetProperty(js_cx, sysobj, "version", &val))
+		return(FALSE);
+
+	val = STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, ftp_ver()));
+	if(!JS_SetProperty(js_cx, sysobj, "version_detail", &val))
+		return(FALSE);
+
+	if(glob!=NULL)
+		*glob=js_glob;
+
+	return(js_cx);
+}
+
+static JSClass js_file_class = {
+        "File",0, 
+        JS_PropertyStub,JS_PropertyStub,JS_PropertyStub,JS_PropertyStub, 
+        JS_EnumerateStub,JS_ResolveStub,JS_ConvertStub,JS_FinalizeStub 
+}; 
+
+BOOL js_add_file(JSContext* js_cx, JSObject* array, 
+				 char* name, char* desc, ulong size, time_t t, ulong credits,
+				 time_t last_downloaded, ulong times_downloaded, char* uploader, char* vpath)
+{
+	char		link[1024];
+	JSObject*	file;
+	jsval		val;
+	jsint		index;
+
+	if((file=JS_NewObject(js_cx, &js_file_class, NULL, NULL))==NULL)
+		return(FALSE);
+
+	val=STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, name));
+	if(!JS_SetProperty(js_cx, file, "name", &val))
+		return(FALSE);
+
+	val=STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, desc));
+	if(!JS_SetProperty(js_cx, file, "description", &val))
+		return(FALSE);
+
+	val=INT_TO_JSVAL(t);
+	if(!JS_SetProperty(js_cx, file, "time", &val))
+		return(FALSE);
+
+	val=INT_TO_JSVAL(size);
+	if(!JS_SetProperty(js_cx, file, "size", &val))
+		return(FALSE);
+
+	val=INT_TO_JSVAL(credits);
+	if(!JS_SetProperty(js_cx, file, "credits", &val))
+		return(FALSE);
+
+	val=INT_TO_JSVAL(last_downloaded);
+	if(!JS_SetProperty(js_cx, file, "last_downloaded", &val))
+		return(FALSE);
+
+	val=INT_TO_JSVAL(times_downloaded);
+	if(!JS_SetProperty(js_cx, file, "times_downloaded", &val))
+		return(FALSE);
+
+	val=STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, uploader));
+	if(!JS_SetProperty(js_cx, file, "uploader", &val))
+		return(FALSE);
+
+	sprintf(link,"ftp://%s%s",scfg.sys_inetaddr,vpath);
+	val=STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, link));
+	if(!JS_SetProperty(js_cx, file, "link", &val))
+		return(FALSE);
+
+	if(!JS_GetArrayLength(js_cx, array, &index))
+		return(FALSE);
+
+	val=OBJECT_TO_JSVAL(file);
+	return(JS_SetElement(js_cx, array, index, &val));
+}
+
+BOOL js_generate_index(JSContext* js_cx, JSObject* js_glob, 
+					   SOCKET sock, FILE* fp, int lib, int dir, user_t* user)
+{
+	char		str[256];
+	char		path[MAX_PATH+1];
+	char		spath[MAX_PATH+1];	/* script path */
+	char		vpath[MAX_PATH+1];	/* virtual path */
+	char*		libname;
+	char*		dirname;
+	char*		libdesc;
+	char*		dirdesc;
+	char*		p;
+	char*		tp;
+	char*		np;
+	char		aliasline[512];
+	BOOL		success=FALSE;
+	FILE*		alias_fp;
+	uint		i;
+	file_t		f;
+	glob_t		g;
+	jsval		val;
+	jsval		rval;
+	JSObject*	file_array=NULL;
+	JSObject*	dir_array=NULL;
+	JSScript*	js_script=NULL;
+
+	JS_SetContextPrivate(js_cx, fp);
+
+	do {	/* pseudo try/catch */
+
+		if((file_array=JS_NewArrayObject(js_cx, 0, NULL))==NULL) {
+			lprintf("%04d !JavaScript FAILED to create file_array",sock);
+			break;
+		}
+
+		if((dir_array=JS_NewArrayObject(js_cx, 0, NULL))==NULL) {
+			lprintf("%04d !JavaScript FAILED to create dir_array",sock);
+			break;
+		}
+
+		/* Add extension if not specified */
+		if(!strchr(startup->html_index_script,BACKSLASH))
+			sprintf(spath,"%s%s",scfg.exec_dir,startup->html_index_script);
+		else
+			sprintf(spath,"%.*s",sizeof(spath)-4,startup->html_index_script);
+		if(!strchr(spath,'.'))
+			strcat(spath,".js");
+
+		if(!fexist(spath)) {
+			lprintf("%04d !HTML JavaScript (%s) doesn't exist",sock,spath);
+			break;
+		}
+
+		val=OBJECT_TO_JSVAL(file_array);
+		if(!JS_SetProperty(js_cx, js_glob, "file", &val)) {
+			lprintf("%04d !JavaScript FAILED to set file property",sock);
+			break;
+		}
+		val=OBJECT_TO_JSVAL(dir_array);
+		if(!JS_SetProperty(js_cx, js_glob, "dir", &val)) {
+			lprintf("%04d !JavaScript FAILED to set dir property",sock);
+			break;
+		}
+
+		strcpy(vpath,"/");
+
+		if(lib<0) { /* root */
+			libname=NULL;
+			libdesc=NULL;
+		} else {
+			libname=scfg.lib[lib]->sname;
+			libdesc=scfg.lib[lib]->lname;
+			strcat(vpath,libname);
+			strcat(vpath,"/");
+		}
+		val=STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, libname));
+		if(!JS_SetProperty(js_cx, js_glob, "libname", &val)) {
+			lprintf("%04d !JavaScript FAILED to set libname property",sock);
+			break;
+		}
+		val=STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, libdesc));
+		if(!JS_SetProperty(js_cx, js_glob, "libdesc", &val)) {
+			lprintf("%04d !JavaScript FAILED to set libdesc property",sock);
+			break;
+		}
+
+		if(dir<0) { /* 1st level */
+			dirname=NULL;
+			dirdesc=NULL;
+		} else {
+			dirname=scfg.dir[dir]->code;
+			dirdesc=scfg.dir[dir]->lname;
+			strcat(vpath,dirname);
+			strcat(vpath,"/");
+		}
+		val=STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, dirname));
+		if(!JS_SetProperty(js_cx, js_glob, "dirname", &val)) {
+			lprintf("%04d !JavaScript FAILED to set dirname property",sock);
+			break;
+		}
+		val=STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, dirdesc));
+		if(!JS_SetProperty(js_cx, js_glob, "dirdesc", &val)) {
+			lprintf("%04d !JavaScript FAILED to set dirdesc property",sock);
+			break;
+		}
+
+		val=STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, vpath));
+		if(!JS_SetProperty(js_cx, js_glob, "curdir", &val)) {
+			lprintf("%04d !JavaScript FAILED to set curdir property",sock);
+			break;
+		}
+
+		if(lib<0) {	/* root dir */
+
+			/* File Aliases */
+			sprintf(path,"%sftpalias.cfg",scfg.ctrl_dir);
+			if((alias_fp=fopen(path,"r"))!=NULL) {
+
+				while(!feof(alias_fp)) {
+					if(!fgets(aliasline,sizeof(aliasline)-1,alias_fp))
+						break;
+
+					p=aliasline;	/* alias pointer */
+					while(*p && *p<=' ') p++;
+
+					if(*p==';')	/* comment */
+						continue;
+
+					tp=p;		/* terminator pointer */
+					while(*tp && *tp>' ') tp++;
+					if(*tp) *tp=0;
+
+					np=tp+1;	/* filename pointer */
+					while(*np && *np<=' ') np++;
+
+					np++;		/* description pointer */
+					while(*np && *np>' ') np++;
+
+					while(*np && *np<' ') np++;
+
+					truncsp(np);
+
+					sprintf(vpath,"/%s",p);
+					js_add_file(js_cx
+						,file_array
+						,p				/* filename */
+						,np				/* description */
+						,1024			/* size */
+						,time(NULL)		/* time */
+						,0				/* credits */
+						,0				/* last downloaded */
+						,0				/* times downloaded */
+						,scfg.sys_id	/* uploader */
+						,vpath			/* path */
+						);
+				}
+
+				fclose(alias_fp);
+			}
+
+			/* QWK Packet */
+			if(startup->options&FTP_OPT_ALLOW_QWK /* && fexist(qwkfile) */) {
+				sprintf(str,"%s.qwk",scfg.sys_id);
+				sprintf(vpath,"/%s",str);
+				js_add_file(js_cx
+					,file_array 
+					,str						/* filename */
+					,"QWK Message Packet"		/* description */
+					,10240						/* size */
+					,time(NULL)					/* time */
+					,0							/* credits */
+					,0							/* last downloaded */
+					,0							/* times downloaded */
+					,scfg.sys_id				/* uploader */
+					,vpath						/* path */
+					);
+			}
+
+			/* Library Folders */
+			for(i=0;i<scfg.total_libs;i++) {
+				if(!chk_ar(&scfg,scfg.lib[i]->ar,user))
+					continue;
+				sprintf(vpath,"/%s/%s",scfg.lib[i]->sname,startup->html_index_file);
+				js_add_file(js_cx
+					,dir_array 
+					,scfg.lib[i]->sname			/* filename */
+					,scfg.lib[i]->lname			/* description */
+					,0,0,0,0,0					/* unused */
+					,scfg.sys_id				/* uploader */
+					,vpath						/* path */
+					);
+			}
+		} else if(dir<0) {
+			for(i=0;i<scfg.total_dirs;i++) {
+				if(scfg.dir[i]->lib!=lib)
+					continue;
+				if(i!=scfg.sysop_dir && i!=scfg.upload_dir
+					&& !chk_ar(&scfg,scfg.dir[i]->ar,user))
+					continue;
+				sprintf(vpath,"/%s/%s/%s"
+					,scfg.lib[scfg.dir[i]->lib]->sname
+					,scfg.dir[i]->code
+					,startup->html_index_file);
+				js_add_file(js_cx
+					,dir_array 
+					,scfg.dir[i]->code			/* filename */
+					,scfg.dir[i]->lname			/* description */
+					,0,0,0,0,0					/* unused */
+					,scfg.sys_id				/* uploader */
+					,vpath						/* path */
+					);
+
+			}
+		} else if(chk_ar(&scfg,scfg.dir[dir]->ar,user)){
+			sprintf(path,"%s*",scfg.dir[dir]->path);
+			glob(path,0,NULL,&g);
+			for(i=0;i<(int)g.gl_pathc;i++) {
+				if(isdir(g.gl_pathv[i]))
+					continue;
+	#ifdef _WIN32
+				GetShortPathName(g.gl_pathv[i], str, sizeof(str));
+	#else
+				strcpy(str,g.gl_pathv[i]);
+	#endif
+				padfname(getfname(str),f.name);
+				strupr(f.name);
+				f.dir=dir;
+				if(getfileixb(&scfg,&f)) {
+					f.size=0; /* flength(g.gl_pathv[i]); */
+					getfiledat(&scfg,&f);
+					sprintf(vpath,"/%s/%s/%s"
+						,scfg.lib[scfg.dir[dir]->lib]->sname
+						,scfg.dir[dir]->code
+						,getfname(g.gl_pathv[i]));
+					js_add_file(js_cx
+						,file_array 
+						,getfname(g.gl_pathv[i])	/* filename */
+						,f.desc						/* description */
+						,f.size						/* size */
+						,f.date						/* time */
+						,f.cdt						/* credits */
+						,f.datedled					/* last downloaded */
+						,f.timesdled				/* times downloaded */
+						,f.uler						/* uploader */
+						,vpath						/* path */
+						);
+				}
+			}
+			globfree(&g);
+		}
+
+		/* RUN SCRIPT */
+		if((js_script=JS_CompileFile(js_cx, js_glob, spath))==NULL) {
+			lprintf("%04d !JavaScript FAILED to compile script (%s)",sock,spath);
+			break;
+		}
+
+		if((success=JS_ExecuteScript(js_cx, js_glob, js_script, &rval))!=TRUE) {
+			lprintf("%04d !JavaScript FAILED to execute script (%s)",sock,spath);
+			break;
+		}
+
+	} while(0);
+
+
+	if(js_script!=NULL)
+		JS_DestroyScript(js_cx, js_script);
+
+	JS_DeleteProperty(js_cx, js_glob, "curdir");
+	JS_DeleteProperty(js_cx, js_glob, "file");
+	JS_DeleteProperty(js_cx, js_glob, "dir");
+	JS_DeleteProperty(js_cx, js_glob, "libname");
+	JS_DeleteProperty(js_cx, js_glob, "libdesc");
+	JS_DeleteProperty(js_cx, js_glob, "dirname");
+	JS_DeleteProperty(js_cx, js_glob, "dirdesc");
+
+	return(success);
+}
+
+
+#endif
 
 static int nopen(char *str, int access)
 {
@@ -891,7 +1427,7 @@ static void filexfer(SOCKADDR_IN* addr, SOCKET ctrl_sock, SOCKET pasv_sock, SOCK
 
 		server_addr.sin_addr.s_addr = htonl(startup->interface_addr);
 		server_addr.sin_family = AF_INET;
-		server_addr.sin_port   = htons(0);
+		server_addr.sin_port   = htons(0);	/* 20? */
 
 		if((result=bind(*data_sock, (struct sockaddr *) &server_addr
 			,sizeof(server_addr)))!=0) {
@@ -1094,7 +1630,7 @@ void parsepath(char** pp, user_t* user, int* curlib, int* curdir)
 		return;
 	}
 
-	if(lib<0) {
+	if(lib<0) { /* root */
 		tp=strchr(p,'/');
 		if(tp) *tp=0;
 		for(lib=0;lib<scfg.total_libs;lib++) {
@@ -1309,6 +1845,10 @@ static void ctrl_thread(void* arg)
 	struct tm	tm;
 	struct tm *	tm_p;
 	struct tm 	cur_tm;
+#ifdef JAVASCRIPT
+	JSContext*	js_cx;
+	JSObject*	js_glob;
+#endif
 
 	thread_up();
 
@@ -1327,6 +1867,16 @@ static void ctrl_thread(void* arg)
 #ifdef _WIN32
 	if(startup->answer_sound[0] && !(startup->options&FTP_OPT_MUTE)) 
 		PlaySound(startup->answer_sound, NULL, SND_ASYNC|SND_FILENAME);
+#endif
+
+#ifdef JAVASCRIPT
+	if(((js_cx=js_initcx(&js_glob))==NULL)) {
+		lprintf("%04d !ERROR initializing JavaScript context",sock);
+		sockprintf(sock,"425 Error initializing JavaScript context");
+		close_socket(&sock,__LINE__);
+		thread_down();
+		return;
+	}
 #endif
 
 	transfer_inprogress = FALSE;
@@ -1348,7 +1898,8 @@ static void ctrl_thread(void* arg)
 
 	strcpy(host_ip,inet_ntoa(ftp.client_addr.sin_addr));
 
-	lprintf ("%04d CTRL connection accepted from: %s", sock, host_ip);
+	lprintf ("%04d CTRL connection accepted from: %s port %u"
+		,sock, host_ip, ntohs(ftp.client_addr.sin_port));
 
 	if(startup->options&FTP_OPT_NO_HOST_LOOKUP)
 		host=NULL;
@@ -2139,6 +2690,7 @@ static void ctrl_thread(void* arg)
 			else
 				cur_tm=*tm_p;
 
+			/* ASCII Index File */
 			if(startup->options&FTP_OPT_INDEX_FILE && startup->index_file_name[0]
 				&& (!stricmp(p,startup->index_file_name) || *p==0 || *p=='*')) {
 				if(detail)
@@ -2153,6 +2705,22 @@ static void ctrl_thread(void* arg)
 				else
 					fprintf(fp,"%s\r\n",startup->index_file_name);
 			} 
+			/* HTML Index File */
+			if(startup->options&FTP_OPT_HTML_INDEX_FILE && startup->html_index_file[0]
+				&& (!stricmp(p,startup->html_index_file) || *p==0 || *p=='*')) {
+				if(detail)
+					fprintf(fp,"-rw-r--r--   1 %-*s %-8s %9ld %s %2d %02d:%02d %s\r\n"
+						,NAME_LEN
+						,scfg.sys_id
+						,lib<0 ? scfg.sys_id : dir<0 
+							? scfg.lib[lib]->sname : scfg.dir[dir]->code
+						,512L
+						,mon[cur_tm.tm_mon],cur_tm.tm_mday,cur_tm.tm_hour,cur_tm.tm_min
+						,startup->html_index_file);
+				else
+					fprintf(fp,"%s\r\n",startup->html_index_file);
+			} 
+
 			if(lib<0) { /* Root dir */
 				lprintf("%04d %s listing: root",sock,user.alias);
 
@@ -2471,6 +3039,7 @@ static void ctrl_thread(void* arg)
 				credits=FALSE;
 				lprintf("%04d %s downloading QWK packet (%ld bytes)"
 					,sock,user.alias,flength(fname));
+			/* ASCII Index File */
 			} else if(startup->options&FTP_OPT_INDEX_FILE 
 				&& !stricmp(p,startup->index_file_name)
 				&& !delecmd) {
@@ -2572,6 +3141,27 @@ static void ctrl_thread(void* arg)
 					}
 					globfree(&g);
 				}
+				fclose(fp);
+			/* HTML Index File */
+			} else if(startup->options&FTP_OPT_HTML_INDEX_FILE 
+				&& !stricmp(p,startup->html_index_file)
+				&& !delecmd) {
+				sprintf(fname,"%sftp%d.tx", scfg.data_dir, sock);
+				if((fp=fopen(fname,"w+b"))==NULL) {
+					lprintf("%04d !ERROR %d opening %s",sock,errno,fname);
+					sockprintf(sock, "451 Insufficient system storage");
+					filepos=0;
+					continue;
+				}
+				if(!getsize && !getdate)
+					lprintf("%04d %s downloading HTML index",sock,user.alias);
+				success=TRUE;
+				credits=FALSE;
+				tmpfile=TRUE;
+				delfile=TRUE;
+#ifdef JAVASCRIPT				
+				success=js_generate_index(js_cx, js_glob, sock, fp, lib, dir, &user);
+#endif
 				fclose(fp);
 			} else if(dir>=0) {
 
@@ -2797,9 +3387,12 @@ static void ctrl_thread(void* arg)
 					continue;
 				}
 				sprintf(fname,"%s%s",scfg.dir[dir]->path,p);
-				if(fexist(fname) || 
-					(startup->options&FTP_OPT_INDEX_FILE 
-						&& !stricmp(p,startup->index_file_name))) {
+				if(fexist(fname)  
+					|| (startup->options&FTP_OPT_INDEX_FILE 
+						&& !stricmp(p,startup->index_file_name))
+					|| (startup->options&FTP_OPT_HTML_INDEX_FILE 
+						&& !stricmp(p,startup->html_index_file))
+					) {
 					lprintf("%04d !%s attempted to overwrite existing file: %s"
 						,sock,user.alias,fname);
 					sockprintf(sock,"553 File already exists.");
@@ -2995,6 +3588,11 @@ static void ctrl_thread(void* arg)
 		PlaySound(startup->hangup_sound, NULL, SND_ASYNC|SND_FILENAME);
 #endif
 
+#ifdef JAVASCRIPT
+	/* Free Context */
+	JS_DestroyContext(js_cx);
+#endif
+
 	status(STATUS_WFC);
 
 	lprintf("%04d CTRL thread terminated", sock);
@@ -3027,6 +3625,13 @@ static void cleanup(int code)
 		lprintf("0000 !WSACleanup ERROR %d",ERROR_VALUE);
 #endif
 
+#ifdef JAVASCRIPT
+	if(js_runtime!=NULL) {
+		JS_DestroyRuntime(js_runtime);
+		js_runtime=NULL;
+	}
+#endif
+
     lprintf("#### FTP Server thread terminated");
 	status("Down");
 	if(startup!=NULL && startup->terminated!=NULL)
@@ -3041,8 +3646,9 @@ char* DLLCALL ftp_ver(void)
 
 	COMPILER_DESC(compiler);
 
-	sprintf(ver,"Synchronet FTP Server v%s%s  "
+	sprintf(ver,"%s v%s%s  "
 		"Compiled %s %s with %s"
+		,FTP_SERVER
 		,FTP_VERSION
 #ifdef _DEBUG
 		," Debug"
@@ -3085,6 +3691,16 @@ void DLLCALL ftp_server(void* arg)
 		fprintf(stderr, "Invalid startup structure!\n");
 		return;
 	}
+
+	/* Setup intelligent defaults */
+	if(startup->port==0)					startup->port=IPPORT_FTP;
+	if(startup->max_inactivity==0)			startup->max_inactivity=300;	/* seconds */
+	if(startup->index_file_name[0]==0)		strcpy(startup->index_file_name,"00index");
+	if(startup->html_index_file[0]==0)		strcpy(startup->html_index_file,"00index.html");
+	if(startup->html_index_script[0]==0)	strcpy(startup->html_index_script,"ftp-html.js");
+
+	/*temporary*/
+	startup->options|=FTP_OPT_HTML_INDEX_FILE;
 
 	thread_up();
 
@@ -3156,9 +3772,6 @@ void DLLCALL ftp_server(void* arg)
 	}
 	lprintf("Maximum clients: %d",startup->max_clients);
 
-	if(!startup->max_inactivity) 
-		startup->max_inactivity=300; /* seconds */
-
 	lprintf("Maximum inactivity: %d seconds",startup->max_inactivity);
 
 	active_clients=0;
@@ -3174,6 +3787,13 @@ void DLLCALL ftp_server(void* arg)
 	for(i=0;i<scfg.total_dirs;i++) 
 		strlwr(scfg.dir[i]->code);
 
+#ifdef JAVASCRIPT
+	if((js_runtime = JS_NewRuntime(JAVASCRIPT_RUNTIME_MEMORY))==NULL) {
+		lprintf("!JS_NewRuntime failed");
+		cleanup(1);
+		return;
+	}
+#endif
 
     /* open a socket and wait for a client */
 
