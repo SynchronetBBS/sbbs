@@ -81,8 +81,8 @@ sh and add the line:
     (replace /sbbs/ctrl with the full path to your ctrl directory)
 
 For Unix csh/tcsh:
-Again, in the home directory of the user the BBS will be running as, in the file
-named .tcshrc (for tcsh) or .cshrc (for csh) add the line:
+Again, in the home directory of the user the BBS will be running as, in the
+file named .tcshrc (for tcsh) or .cshrc (for csh) add the line:
 
     setenv SBBSCTRL /sbbs/ctrl
     (replace /sbbs/ctrl with the full path to your ctrl directory)
@@ -109,7 +109,6 @@ defined by a "[section_name]" line. The configuration sections are:
     [Web]           - Settings applied to the Web server
     [Services]      - Settings applied to Synchronet services
     [UNIX]          - Settings applied to operations under Unix only
-    [SBBSCTRL:*]    - Settings exported from the Synchronet Control Panel
 
 Within each section is a list of values (one per line) in the form:
     name=value
@@ -184,12 +183,14 @@ root to install the files.
 
 Installing the terminfo file:
 -----------------------------
-1) Change to the Synchronet install directory (e.g. sbbs/install)
+1) Get the Synchronet ANSI-BBS terminfo file from:
+   http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/install/terminfo
 2) Enter the command ``tic terminfo''
 
 Installing the termcap file:
 ----------------------------
-1) Change to the Synchroent install dircetory (e.g. sbbs/install)
+1) Get the Synchronet ANSI-BBS termcap file from:
+   http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/install/termcap
 2) Enter the command ``cat termcap >> /etc/termcap''
 3) *** FreeBSD Only *** run the command:
 	``cap_mkdb -f /usr/share/misc/termcap /etc/termcap''
@@ -210,6 +211,21 @@ this by simply running exec/sbbs (off of the installation directory).
 ----------------------------------------------------------
 If you want Synchronet to start automatically whenever your system boots,
 you will need to set that up using the system rc scripts.  A few example are:
+
+Linux:
+------
+1) Get the Synchronet service run script (init file) from:
+   http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/install/init.d/sbbs
+
+2) Copy the run script (sbbs) into your /etc/init.d directory (if you don't
+   have this directory, then your Linux distribution isn't supported by this
+   file).
+
+3) Add the Synchronet system service:
+   # chkconfig --add sbbs
+
+4) Start the Synchronet system service:
+   # service sbbs start
 
 FreeBSD:
 --------
@@ -248,8 +264,8 @@ exit 0
 --- CUT --- END OF FILE --- CUT ---
 
 A note on SysOp paging:
-For most systems, the BBS must run as root to page the SysOp.  FreeBSD supports
-an alternative method which requires a custom kernel with the option:
+For most systems, the BBS must run as root to page the SysOp.  FreeBSD
+supports an alternative method which requires a custom kernel with the option:
 
 pseudo-device speaker
 
