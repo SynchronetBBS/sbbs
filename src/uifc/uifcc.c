@@ -2070,6 +2070,7 @@ static int gettext(int sx, int sy, int ex, int ey, unsigned char *fill)
 				{
 					thischar=219;
 				}
+#if 0			/* This does ^^ for up an ^_ for down in some terminals - the "Printable version" */
 				else if (ext_char == ACS_UARROW)
 				{
 					thischar=30;
@@ -2078,6 +2079,7 @@ static int gettext(int sx, int sy, int ex, int ey, unsigned char *fill)
 				{
 					thischar=31;
 				}
+#endif
 				
 				/* unlikely (Not in ncurses) */
 				else if (ext_char == ACS_SBSD)
