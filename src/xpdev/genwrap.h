@@ -75,28 +75,21 @@ extern "C" {
 /* Compiler Description */
 #if defined(__BORLANDC__)
 
-	#define COMPILER_DESC(str) sprintf(str,"BCC %X.%02X" \
+	#define DESCRIBE_COMPILER(str) sprintf(str,"BCC %X.%02X" \
 		,__BORLANDC__>>8,__BORLANDC__&0xff);	
 
 #elif defined(_MSC_VER)
 
-	#define COMPILER_DESC(str) sprintf(str,"MSC %u", _MSC_VER);
-
-/***
-#elif defined(__GNUC__) && defined(__GLIBC__)
-
-	#define COMPILER_DESC(str) sprintf(str,"GCC %u.%02u (GLIBC %u.%u)" \
-		,__GNUC__,__GNUC_MINOR__,__GLIBC__,__GLIBC_MINOR__);
-***/
+	#define DESCRIBE_COMPILER(str) sprintf(str,"MSC %u", _MSC_VER);
 
 #elif defined(__GNUC__)
 
-	#define COMPILER_DESC(str) sprintf(str,"GCC %u.%02u" \
+	#define DESCRIBE_COMPILER(str) sprintf(str,"GCC %u.%02u" \
 		,__GNUC__,__GNUC_MINOR__);
 
 #else /* Unknown compiler */
 
-	#define COMPILER_DESC(str) strcpy(str,"UNKNOWN COMPILER");
+	#define DESCRIBE_COMPILER(str) strcpy(str,"UNKNOWN COMPILER");
 
 #endif
 
@@ -154,23 +147,28 @@ extern "C" {
 
 #if defined(_WIN32)
 
-	#define xp_beep(freq,dur)	Beep(freq,dur)
-	#define mswait(x)			Sleep(x)
+	#define SLEEP(x)			Sleep(x)
+	#define BEEP(freq,dur)		Beep(freq,dur)
 
 #elif defined(__OS2__)
 
-	#define xp_beep(freq,dur)	DosBeep(freq,dur)
-	#define mswait(x)			DosSleep(x)
+	#define SLEEP(x)			DosSleep(x)
+	#define BEEP(freq,dur)		DosBeep(freq,dur)
 
 #elif defined(__unix__)
 
-	#define mswait(x)			usleep(x*1000)
-	DLLEXPORT void	DLLCALL		xp_beep(int freq, int dur);
+	#define SLEEP(x)			usleep(x*1000)
+	#define BEEP(freq,dur)		unix_beep(freq,dur)
+	DLLEXPORT void	DLLCALL		unix_beep(int freq, int dur);
 
 #else	/* Unsupported OS */
 
-	#warning "Unsupported Target: Need some macros or function prototypes here."
+	#warning "Unsupported Target: Need some macros and/or function prototypes here."
 
+#endif
+
+#ifdef __BORLANDC__
+	#define xp_random			random
 #endif
 
 #ifdef __cplusplus
