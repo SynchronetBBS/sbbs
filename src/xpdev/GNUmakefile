@@ -42,7 +42,7 @@ CFLAGS	+= -D_THREAD_SAFE
 LFLAGS	:=	-pthread
 else					# Linux / Other UNIX
 ifdef bcc
-LFLAGS	:=	-q libpthread.a
+LFLAGS	:=	libpthread.a
 else
 LFLAGS	:=	-lpthread
 endif
@@ -75,5 +75,5 @@ $(ODIR):
 # Executable Build Rule
 $(WRAPTEST): $(ODIR)/wraptest.o $(OBJS)
 	@echo Linking $@
-	@$(CC) -o $@ $(LFLAGS) $^
+	@$(CC) $(CFLAGS) -o $@ $(LFLAGS) $^
 
