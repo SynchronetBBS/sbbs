@@ -371,6 +371,12 @@ enum {
 /* Typedefs */
 /************/
 
+#ifdef __GNUC__ 
+	#define _PACK __attribute__ ((packed));
+#else
+	#define _PACK
+#endif
+
 #ifdef _WIN32	/* necessary for compatibility with SBBS v2 */
 #pragma pack(push)
 #pragma pack(1)

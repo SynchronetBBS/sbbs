@@ -62,10 +62,6 @@
 	#define O_DENYNONE			SH_DENYNO
 	#endif
 
-	#ifndef _PACK
-	#define _PACK
-	#endif
-
 #elif defined(__unix__)
 
 	#include <fcntl.h>
@@ -81,12 +77,6 @@
 	#define stricmp(x,y)		strcasecmp(x,y)
 	#define strnicmp(x,y,z)		strncasecmp(x,y,z)
 	#define chsize(fd,size)		ftruncate(fd,size)
-
-	#ifdef __GNUC__ 
-		#define _PACK __attribute__ ((packed));
-	#else
-		#error "Need compiler-specific pack attribute macro here"
-	#endif
 
 #endif
 
