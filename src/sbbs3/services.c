@@ -430,9 +430,11 @@ js_login(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if((p=JS_GetStringBytes(js_str))==NULL) 
 		return(JS_FALSE);
 
+	memset(&user,0,sizeof(user));
+
 	if(isdigit(*p))
 		user.number=atoi(p);
-	else
+	else if(*p)
 		user.number=matchuser(&scfg,p,FALSE);
 
 	if(getuserdat(&scfg,&user)!=0) {
@@ -1704,6 +1706,14 @@ void DLLCALL services_thread(void* arg)
 			cleanup(1);
 			return;
 		}
+
+#if 0	/* ToDo */
+		if(startup->temp_dir[0]) {
+			SAFECOPY(scfg.temp_dir,startup->temp_dir);
+			backslash(scfg.temp_dir);
+		} else
+#endif
+			prep_dir(scfg.data_dir, scfg.temp_dir, sizeof(scfg.temp_dir));
 
 		if(startup->host_name[0]==0)
 			SAFECOPY(startup->host_name,scfg.sys_inetaddr);
