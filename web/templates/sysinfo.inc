@@ -16,6 +16,16 @@
       %%JS:system.qwk_id%%
 	</td>
   </tr>
+<<REPEAT fidoaddrs>>
+  <tr>
+	<td>
+      FidoNet Address:
+	</td>
+	<td>
+      %%fidoaddrs:address%%
+	</td>
+  </tr>
+<<END REPEAT fidoaddrs>>
   <tr>
 	<td>
       Location:

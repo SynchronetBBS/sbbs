@@ -21,6 +21,12 @@ else {
 template.logon.replace(/\r?\n/g,"\r\n");
 template.logon=html_encode(template.logon,true,false,true,true);
 
+template.fidoaddrs=new Array;
+for(addr in system.fido_addr_list) {
+	template.fidoaddrs[addr]=new Object;
+	template.fidoaddrs[addr].address=system.fido_addr_list[addr];
+}
+
 write_template("header.inc");
 write_template("sysinfo.inc");
 write_template("footer.inc");
