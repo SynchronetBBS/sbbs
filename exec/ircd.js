@@ -55,7 +55,7 @@ var resolve_hostnames = true;
 // attempts (when connecting to another IRC server -- i.e. a hub)  This value
 // is important because connecing is a BLOCKING operation, so your IRC *will*
 // freeze for the amount of time it takes to connect.
-var ob_sock_timeout = 3;
+var ob_sock_timeout = 6;
 
 // what our server is capable of from a server point of view.
 // TS3 = Version 3 of accepted interserver timestamp protocol.
@@ -2763,6 +2763,8 @@ function IRCClient_registered_commands(command, cmdline) {
 				this.server_notice("Usage:");
 				this.server_notice("  DEBUG D       - Toggle DEBUG mode on/off");
 				this.server_notice("  DEBUG Y <val> - Set yield frequency to <val>");
+				this.server_notice("  DEBUG U       - Dump all users stored in mem");
+				this.server_notice("  DEBUG C       - Dump all channels stored in mem");
 				break;
 			}
 			switch (cmd[1][0].toUpperCase()) {
@@ -2781,6 +2783,19 @@ function IRCClient_registered_commands(command, cmdline) {
 						branch.yield_freq = parseInt(cmd[2]);
 					}
 					break;
+				case "U":
+					for (myuser in Clients) {
+						if (Clients[myuser]) {
+							this.server_notice(Clients[myuser].nick+","+Clients[myuser].local+","+Clients[myuser].server+","+Clients[myuser].parent+","+Clients[myuser].id+","+Clients[myuser].conntype);
+						}
+					}
+					break;
+				case "C":
+					for (mychan in Channels) {
+						if (Channels[mychan]) {
+							this.server_notice(Channels[mychan].nam+","+Channels[mychan].mode+","+Channels[mychan].users);
+						}
+					}
 				default:
 					break;
 			}
@@ -4034,6 +4049,8 @@ function IRCClient_server_commands(origin, command, cmdline) {
 				// probably killed it already on our behalf.
 				this.reintroduce_nick(collide);
 				break;
+			} else if (collide && this.hub) {
+				break;
 			}
 			if (cmd[2][0] == ":") {
 				cmd[2] = cmd[2].slice(1);
@@ -4181,7 +4198,7 @@ function IRCClient_server_commands(origin, command, cmdline) {
 			if (match_irc_mask(servername, cmd[2])) {
 				ThisOrigin.do_stats(cmd[1][0]);
 			} else {
-				var dest_server = searchbyserver(cmd[1]);
+				var dest_server = searchbyserver(cmd[2]);
 				if (!dest_server)
 					break;
 				dest_server.rawout(":" + ThisOrigin.nick + " STATS " + cmd[1][0] + " :" + dest_server.nick);
