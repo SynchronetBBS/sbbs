@@ -26,7 +26,7 @@ if(sub=='mail') {
 	template.group.number=-1;
 }
 else {
-	template.group=msg_area.grp_list[g];
+	template.group=msg_area.grp_list[group];
 }
 
 if(sub=='mail') {
@@ -35,7 +35,7 @@ if(sub=='mail') {
 	template.sub.code="mail";
 }
 else {
-	template.sub=msg_area.grp_list[g].sub_list[s];
+	template.sub=msg_area.grp_list[group].sub_list[sub];
 }
 
 template.hdr=msgbase.get_msg_header(false,id);
