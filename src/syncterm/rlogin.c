@@ -51,11 +51,6 @@ int rlogin_connect(char *addr, int port, char *ruser, char *passwd)
 	char	nil=0;
 	char	*p;
 	unsigned int	neta;
-#ifdef _WIN32
-	int	tv;
-#else
-	struct	timeval	tv;
-#endif
 
 	for(p=addr;*p;p++)
 		if(*p!='.' && !isdigit(*p))
@@ -96,14 +91,6 @@ int rlogin_connect(char *addr, int port, char *ruser, char *passwd)
 		return(-1);
 	}
 
-#ifdef _WIN32
-	tv=100000;
-#else
-	tv.tv_sec=0;
-	tv.tv_usec=100000;
-#endif
-
-/*	setsockopt(rlogin_socket, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)); */
 	fcntl(rlogin_socket, F_SETFL, fcntl(rlogin_socket, F_GETFL)|O_NONBLOCK);
 
 	rlogin_send("",1,1000);
