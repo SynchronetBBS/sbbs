@@ -60,6 +60,8 @@ enum {
 	,"date/time of initial connection (in time_t format)"
 	,"protocol description (e.g. 'Telnet', 'FTP', etc.)"
 	,"user's name/alias (if logged in)"
+	/* this next one must be last */
+	,"instance of <a href=#Socket>Socket class</a> representing client's TCP/IP connection"
 	};
 #endif
 
