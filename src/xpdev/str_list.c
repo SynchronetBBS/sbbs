@@ -58,7 +58,7 @@ size_t strListCount(const str_list_t list)
 	if(list==NULL)
 		return(0);
 
-	for(i=0;list[i]!=NULL;i++)
+	for(i=0; list[i]!=NULL; i++)
 		;
 
 	return(i);
@@ -141,11 +141,12 @@ str_list_t strListAdd(str_list_t* list, const char* str)
 
 str_list_t	strListAddList(str_list_t* list, const str_list_t add_list)
 {
-	size_t	i,j;
+	size_t	i;
+	size_t	count;
 
-	j=strListCount(*list);
-	for(i=0;add_list[i];i++)
-		strListAddAt(list,add_list[i],j++);
+	count=strListCount(*list);
+	for(i=0; add_list[i]!=NULL; i++)
+		strListAddAt(list,add_list[i],count++);
 
 	return(*list);
 }
@@ -166,7 +167,7 @@ str_list_t	strListInsertList(str_list_t* list, const str_list_t add_list, size_t
 {
 	size_t	i;
 
-	for(i=0;add_list[i];i++)
+	for(i=0; add_list[i]!=NULL; i++)
 		strListInsert(list,add_list[i],index++);
 
 	return(*list);
@@ -208,7 +209,7 @@ str_list_t	strListMerge(str_list_t* list, str_list_t add_list)
 	size_t	i,j;
 
 	j=strListCount(*list);
-	for(i=0;add_list[i];i++)
+	for(i=0; add_list[i]!=NULL; i++)
 		str_list_append(list,add_list[i],j++);
 
 	return(*list);
@@ -259,7 +260,7 @@ void strListFreeStrings(str_list_t list)
 	size_t i;
 
 	if(list!=NULL) {
-		for(i=0;list[i]!=NULL;i++)
+		for(i=0; list[i]!=NULL; i++)
 			free(list[i]);
 		list[0]=NULL;	/* terminate */
 	}
@@ -271,4 +272,49 @@ void strListFree(str_list_t* list)
 		strListFreeStrings(*list);
 		free(*list);
 	}
+}
+
+str_list_t strListReadFile(FILE* fp, str_list_t* list, size_t max_line_len)
+{
+	char*		buf;
+	size_t		count;
+
+	if(max_line_len<1)
+		max_line_len=2048;
+
+	if(list==NULL) {
+		if((*list = strListInit())==NULL)
+			return(NULL);
+	}
+
+	if((buf=malloc(max_line_len+1))==NULL)
+		return(NULL);
+
+	count = strListCount(*list);
+	while(!feof(fp)) {
+		if(fgets(buf,max_line_len+1,fp)==NULL)
+			break;
+		strListAddAt(list, buf, count++);
+	}
+
+	free(buf);
+
+	return(*list);
+}
+
+size_t strListWriteFile(FILE* fp, const str_list_t list, const char* separator)
+{
+	size_t		i;
+
+	if(list==NULL)
+		return(0);
+
+	for(i=0; list[i]!=NULL; i++) {
+		if(fputs(list[i],fp)==EOF)
+			break;
+		if(seperator!=NULL && fputs(seperator,fp)==EOF)
+			break;
+	}
+	
+	return(i);
 }

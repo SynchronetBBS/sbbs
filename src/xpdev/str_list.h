@@ -95,6 +95,17 @@ void		strListSortAlphaReverse(str_list_t list);
 void		strListSortAlphaCase(str_list_t list);
 void		strListSortAlphaCaseReverse(str_list_t list);
 
+/************/
+/* File I/O */
+/************/
+
+/* Read lines from file appending each line to string list */
+/* Pass NULL list to have list allocated for you */
+str_list_t	strListReadFile(FILE* fp, str_list_t* list, size_t max_line_len);
+
+/* Write to file (fp) each string in the list, optionally separated by separator (e.g. "\n") */
+size_t		strListWriteFile(FILE* fp, const str_list_t list, const char* separator);
+
 #if defined(__cplusplus)
 }
 #endif
