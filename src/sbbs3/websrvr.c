@@ -48,6 +48,7 @@
 #include "sbbs.h"
 #include "sockwrap.h"		/* sendfilesocket() */
 #include "websrvr.h"
+#include "base64.h"
 
 static const char*	server_name="Synchronet Web Server";
 static const char*	newline="\r\n";
@@ -216,9 +217,6 @@ enum  {
 
 static char	*days[]={"Sun","Mon","Tue","Wed","Thu","Fri","Sat"};
 static char	*months[]={"Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"};
-
-static const char * base64alphabet = 
- "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
 
 static DWORD monthdays[12] = {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334};
 
@@ -906,34 +904,6 @@ static BOOL check_ars(http_session_t * session)
 	return(FALSE);
 }
 
-static void b64_decode(uchar *p)
-{
-	uchar	*read;
-	uchar	*write;
-	int		bits=0;
-	int		working=0;
-	char *	i;
-
-	write=p;
-	read=write;
-	for(;*read;read++) {
-		working<<=6;
-		i=strchr(base64alphabet,(char)*read);
-		if(i==NULL) {
-			break;
-		}
-		if(*i=='=') i=(char*)base64alphabet; /* pad char */
-		working |= (i-base64alphabet);
-		bits+=6;
-		if(bits>8) {
-			*(write++)=(uchar)((working&(0xFF<<(bits-8)))>>(bits-8));
-			bits-=8;
-		}
-	}
-	*write=0;
-	return;
-}
-
 static BOOL read_mime_types(char* fname)
 {
 	char	str[1024];
@@ -1194,7 +1164,7 @@ static BOOL parse_headers(http_session_t * session)
 					if(p==NULL)
 						break;
 					while(*p && *p<' ') p++;
-					b64_decode(p);
+					b64_decode(p,p,strlen(p));
 					SAFECOPY(session->req.auth,p);
 					break;
 				case HEAD_LENGTH:
