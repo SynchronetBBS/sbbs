@@ -2013,7 +2013,7 @@ ulong loadmsgs(post_t** post, ulong ptr)
 	}
 
 	fseek(smb[cur_smb].sid_fp,0L,SEEK_SET);
-	for(l=0;l<total && !feof(smb[cur_smb].sid_fp); l++) {
+	for(l=0;l<total && !feof(smb[cur_smb].sid_fp); ) {
 		if(smb_fread(&smb[cur_smb], &idx,sizeof(idx),smb[cur_smb].sid_fp) != sizeof(idx))
 			break;
 
@@ -2026,7 +2026,7 @@ ulong loadmsgs(post_t** post, ulong ptr)
 		if(idx.attr&MSG_MODERATED && !(idx.attr&MSG_VALIDATED))
 			break;
 
-		(*post)[l]=idx;
+		(*post)[l++]=idx;
 	}
 	smb_unlocksmbhdr(&smb[cur_smb]);
 	if(!l)
