@@ -1732,11 +1732,11 @@ int main(int argc, char** argv)  {
 				for(i=1; i<=last; i++) {
 					user.number=i;
 					getuserdat(&cfg,&user);
-					sprintf(opt[i-1],"%s (%s)",user.name,user.alias);
+					sprintf(opt[i-1],"%1.1s³%1.1s³ %-25.25s ³ %-25.25s",user.misc&DELETED?"*":" ",user.misc&INACTIVE?"*":" ",user.name,user.alias);
 				}
 				opt[i-1][0]=0;
 				i=0;
-				switch(uifc.list(WIN_ORG|WIN_MID|WIN_ACT,0,0,0,&i,0,"Select User",opt)) {
+				switch(uifc.list(WIN_ORG|WIN_MID|WIN_ACT,0,0,0,&i,0,"D³I³ Real Name                 ³ Alias                    ",opt)) {
 					case -1:
 						done=1;
 						break;
