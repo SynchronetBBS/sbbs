@@ -9,6 +9,7 @@ CFLAGS = ${CFLAGS} -I${ODOOR_SRC} -I${XPDEV_SRC} -I${UIFC_SRC}
 # Needed for struct alignment!
 #CFLAGS += -fshort-enums
 LDFLAGS = ${LDFLAGS} -L${ODOOR_SRC}
+CFLAGS = ${CFLAGS} -b-
 
 all : ny2008 aedit nyibbs nyedit medit
 
