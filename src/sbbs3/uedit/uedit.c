@@ -36,7 +36,6 @@
  ****************************************************************************/
 
 #include "sbbs.h"
-#include "conwrap.h"	/* this has to go BEFORE curses.h so getkey() can be macroed around */
 #include <sys/types.h>
 #include <time.h>
 #ifdef __QNX__
@@ -45,12 +44,12 @@
 #include <stdio.h>
 #ifdef __unix__
 #include <unistd.h>
-#include <curses.h>
 #include <sys/time.h>
 #include <signal.h>
 #endif
 #include "genwrap.h"
 #include "uifc.h"
+#include "curs_fix.h"
 #include "sbbsdefs.h"
 #include "genwrap.h"	/* stricmp */
 #include "dirwrap.h"	/* lock/unlock/sopen */

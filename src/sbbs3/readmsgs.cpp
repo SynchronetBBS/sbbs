@@ -88,7 +88,7 @@ char *binstr(uchar *buf, ushort length)
 
 	str[0]=0;
 	for(i=0;i<length;i++)
-		if(buf[i] && (buf[i]<SP || buf[i]>=0x7f)
+		if(buf[i] && (buf[i]<' ' || buf[i]>=0x7f)
 			&& buf[i]!='\r' && buf[i]!='\n' && buf[i]!='\t')
 			break;
 	if(i==length)		/* not binary */

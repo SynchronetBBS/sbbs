@@ -71,7 +71,7 @@ void sbbs_t::batchmenu()
 		ASYNC;
 		bputs(text[BatchMenuPrompt]);
 		ch=(char)getkeys("BCDLQRU?\r",0);
-		if(ch>SP)
+		if(ch>' ')
 			logch(ch,0);
 		switch(ch) {
 			case '?':

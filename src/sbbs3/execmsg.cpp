@@ -59,9 +59,9 @@ int sbbs_t::exec_msg(csi_t *csi)
 						for(i=0;i<usrgrps && !msgabort();i++) {
 							if(i==curgrp)
 								outchar('*');
-							else outchar(SP);
-							if(i<9) outchar(SP);
-							if(i<99) outchar(SP);
+							else outchar(' ');
+							if(i<9) outchar(' ');
+							if(i<99) outchar(' ');
 							bprintf(text[CfgGrpLstFmt]
 								,i+1, cfg.grp[usrgrp[i]]->lname); } }
 					sprintf(str,text[JoinWhichGrp],curgrp+1);
@@ -82,12 +82,12 @@ int sbbs_t::exec_msg(csi_t *csi)
 					bprintf(text[SubLstHdr], cfg.grp[usrgrp[j]]->lname);
 					for(i=0;i<usrsubs[j] && !msgabort();i++) {
 						if(i==cursub[j]) outchar('*');
-						else outchar(SP);
+						else outchar(' ');
 						sprintf(str,text[SubLstFmt],i+1
 							,cfg.sub[usrsub[j][i]]->lname,nulstr
 							,getposts(&cfg,usrsub[j][i]));
-						if(i<9) outchar(SP);
-						if(i<99) outchar(SP);
+						if(i<9) outchar(' ');
+						if(i<99) outchar(' ');
 						bputs(str); } }
 				sprintf(str,text[JoinWhichSub],cursub[j]+1);
 				mnemonics(str);
@@ -200,8 +200,8 @@ int sbbs_t::exec_msg(csi_t *csi)
 			for(i=0;i<usrgrps && !msgabort();i++) {
 				if(i==curgrp)
 					outchar('*');
-				else outchar(SP);
-				if(i<9) outchar(SP);
+				else outchar(' ');
+				if(i<9) outchar(' ');
 				bprintf(text[GrpLstFmt],i+1
 					,cfg.grp[usrgrp[i]]->lname,nulstr,usrsubs[i]); }
 			return(0);
@@ -217,12 +217,12 @@ int sbbs_t::exec_msg(csi_t *csi)
 			bprintf(text[SubLstHdr],cfg.grp[usrgrp[curgrp]]->lname);
 			for(i=0;i<usrsubs[curgrp] && !msgabort();i++) {
 				if(i==cursub[curgrp]) outchar('*');
-				else outchar(SP);
+				else outchar(' ');
 				sprintf(str,text[SubLstFmt],i+1
 					,cfg.sub[usrsub[curgrp][i]]->lname,nulstr
 					,getposts(&cfg,usrsub[curgrp][i]));
-				if(i<9) outchar(SP);
-				if(i<99) outchar(SP);
+				if(i<9) outchar(' ');
+				if(i<99) outchar(' ');
 				bputs(str); }
 			return(0);
 

@@ -1204,7 +1204,7 @@ js_new_user(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	memset(&user,0,sizeof(user));
 
-	user.sex=SP;
+	user.sex=' ';
 	SAFECOPY(user.alias,alias);
 
 	/* statistics */

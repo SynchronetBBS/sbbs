@@ -270,25 +270,25 @@ bool sbbs_t::netmail(char *into, char *title, long mode)
 	if((SYSOP || useron.exempt&FLAG('F'))
 		&& !strnicmp(p,"CR:",3)) {     /* Crash over-ride by sysop */
 		p+=3;				/* skip CR: */
-		if(*p==SP) p++; 	/* skip extra space if it exists */
+		if(*p==' ') p++; 	/* skip extra space if it exists */
 		hdr.attr|=FIDO_CRASH; }
 
 	if((SYSOP || useron.exempt&FLAG('F'))
 		&& !strnicmp(p,"FR:",3)) {     /* File request */
 		p+=3;				/* skip FR: */
-		if(*p==SP) p++;
+		if(*p==' ') p++;
 		hdr.attr|=FIDO_FREQ; }
 
 	if((SYSOP || useron.exempt&FLAG('F'))
 		&& !strnicmp(p,"RR:",3)) {     /* Return receipt request */
 		p+=3;				/* skip RR: */
-		if(*p==SP) p++;
+		if(*p==' ') p++;
 		hdr.attr|=FIDO_RRREQ; }
 
 	if((SYSOP || useron.exempt&FLAG('F'))
 		&& !strnicmp(p,"FA:",3)) {     /* File Attachment */
 		p+=3;				/* skip FA: */
-		if(*p==SP) p++;
+		if(*p==' ') p++;
 		hdr.attr|=FIDO_FILE; }
 
 	SAFECOPY(hdr.subj,p);
@@ -373,7 +373,7 @@ bool sbbs_t::netmail(char *into, char *title, long mode)
 					l++; }
 		if(!cc_found)
 			break;
-		while(l<length && *(buf+l)==SP) l++;
+		while(l<length && *(buf+l)==' ') l++;
 		for(i=0;l<length && *(buf+l)!=LF && i<128;i++,l++)
 			str[i]=buf[l];
 		if(!i)
@@ -502,7 +502,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 				if(cp) *cp=0;
 				l+=strlen(str)+1;
 				cp=str;
-				while(*cp && *cp<=SP) cp++;
+				while(*cp && *cp<=' ') cp++;
 				sprintf(senderaddr,"%s/%s"
 					,fromhub ? cfg.qhub[fromhub-1]->id : useron.alias,cp);
 				strupr(senderaddr);
@@ -534,7 +534,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 			if(cp) *cp=0;
 			l+=strlen(str)+1;
 			cp=str+4;
-			while(*cp && *cp<=SP) cp++;
+			while(*cp && *cp<=' ') cp++;
 			msg.hdr.when_written.zone=(short)ahtoul(cp); }
 		else
 			msg.hdr.when_written.zone=sys_timezone(&cfg);
@@ -799,25 +799,25 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 	if((SYSOP || useron.exempt&FLAG('F'))
 		&& !strnicmp(p,"CR:",3)) {     /* Crash over-ride by sysop */
 		p+=3;               /* skip CR: */
-		if(*p==SP) p++;     /* skip extra space if it exists */
+		if(*p==' ') p++;     /* skip extra space if it exists */
 		hdr.attr|=FIDO_CRASH; }
 
 	if((SYSOP || useron.exempt&FLAG('F'))
 		&& !strnicmp(p,"FR:",3)) {     /* File request */
 		p+=3;               /* skip FR: */
-		if(*p==SP) p++;
+		if(*p==' ') p++;
 		hdr.attr|=FIDO_FREQ; }
 
 	if((SYSOP || useron.exempt&FLAG('F'))
 		&& !strnicmp(p,"RR:",3)) {     /* Return receipt request */
 		p+=3;               /* skip RR: */
-		if(*p==SP) p++;
+		if(*p==' ') p++;
 		hdr.attr|=FIDO_RRREQ; }
 
 	if((SYSOP || useron.exempt&FLAG('F'))
 		&& !strnicmp(p,"FA:",3)) {     /* File attachment */
 		p+=3;				/* skip FA: */
-		if(*p==SP) p++;
+		if(*p==' ') p++;
 		hdr.attr|=FIDO_FILE; }
 
 	SAFECOPY(hdr.subj,p);

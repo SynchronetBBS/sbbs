@@ -71,7 +71,7 @@ int sbbs_t::text_sec()
 			bputs(text[TextSectionLstHdr]);
 			for(i=0;i<usrsecs && !msgabort();i++) {
 				sprintf(str,text[TextSectionLstFmt],i+1,cfg.txtsec[usrsec[i]]->name);
-				if(i<9) outchar(SP);
+				if(i<9) outchar(' ');
 				bputs(str); } }
 		ASYNC;
 		mnemonics(text[WhichTextSection]);

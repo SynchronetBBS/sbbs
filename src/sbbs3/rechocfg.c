@@ -73,7 +73,7 @@ char *cleanstr(char *instr)
 	int i;
 
 	for(i=0;instr[i];i++)
-		if((uchar)instr[i]<=SP)
+		if((uchar)instr[i]<=' ')
 			break;
 	instr[i]=0;
 	return(instr);
@@ -209,18 +209,18 @@ void read_echo_cfg()
 			break;
 		truncsp(str);
 		p=str;
-		while(*p && *p<=SP) p++;
+		while(*p && *p<=' ') p++;
 		if(*p==';')
 			continue;
 		sprintf(tmp,"%-.25s",p);
-		tp=strchr(tmp,SP);
+		tp=strchr(tmp,' ');
 		if(tp)
 			*tp=0;                              /* Chop off at space */
 #if 0
 		strupr(tmp);                            /* Convert code to uppercase */
 #endif
-		while(*p>SP) p++;                       /* Skip code */
-		while(*p && *p<=SP) p++;                /* Skip white space */
+		while(*p>' ') p++;                       /* Skip code */
+		while(*p && *p<=' ') p++;                /* Skip white space */
 
 		if(!stricmp(tmp,"PACKER")) {             /* Archive Definition */
 			if((cfg.arcdef=(arcdef_t *)REALLOC(cfg.arcdef
@@ -230,29 +230,29 @@ void read_echo_cfg()
 				bail(1); }
 			sprintf(cfg.arcdef[cfg.arcdefs].name,"%-.25s",p);
 			tp=cfg.arcdef[cfg.arcdefs].name;
-			while(*tp && *tp>SP) tp++;
+			while(*tp && *tp>' ') tp++;
 			*tp=0;
-			while(*p && *p>SP) p++;
-			while(*p && *p<=SP) p++;
+			while(*p && *p>' ') p++;
+			while(*p && *p<=' ') p++;
 			cfg.arcdef[cfg.arcdefs].byteloc=atoi(p);
-			while(*p && *p>SP) p++;
-			while(*p && *p<=SP) p++;
+			while(*p && *p>' ') p++;
+			while(*p && *p<=' ') p++;
 			sprintf(cfg.arcdef[cfg.arcdefs].hexid,"%-.25s",p);
 			tp=cfg.arcdef[cfg.arcdefs].hexid;
-			while(*tp && *tp>SP) tp++;
+			while(*tp && *tp>' ') tp++;
 			*tp=0;
 			while(fgets(str,256,stream) && strnicmp(str,"END",3)) {
 				p=str;
-				while(*p && *p<=SP) p++;
+				while(*p && *p<=' ') p++;
 				if(!strnicmp(p,"PACK ",5)) {
 					p+=5;
-					while(*p && *p<=SP) p++;
+					while(*p && *p<=' ') p++;
 					sprintf(cfg.arcdef[cfg.arcdefs].pack,"%-.80s",p);
 					truncsp(cfg.arcdef[cfg.arcdefs].pack);
 					continue; }
 				if(!strnicmp(p,"UNPACK ",7)) {
 					p+=7;
-					while(*p && *p<=SP) p++;
+					while(*p && *p<=' ') p++;
 					sprintf(cfg.arcdef[cfg.arcdefs].unpack,"%-.80s",p);
 					truncsp(cfg.arcdef[cfg.arcdefs].unpack); } }
 			++cfg.arcdefs;
@@ -364,7 +364,7 @@ void read_echo_cfg()
 				continue;
 			strcpy(str,p);
 			p=str;
-			while(*p && *p>SP) p++;
+			while(*p && *p>' ') p++;
 			if(!*p)
 				continue;
 			*p=0;
@@ -376,11 +376,11 @@ void read_echo_cfg()
 			if(i==cfg.arcdefs)				/* i = number of arcdef til done */
 				i=0xffff;					/* Uncompressed type if not found */
 			while(*p) {
-				while(*p && *p<=SP) p++;
+				while(*p && *p<=' ') p++;
 				if(!*p)
 					break;
 				addr=atofaddr(p);
-				while(*p && *p>SP) p++;
+				while(*p && *p>' ') p++;
 				j=matchnode(addr,1);
 				if(j==cfg.nodecfgs) {
 					cfg.nodecfgs++;
@@ -397,8 +397,8 @@ void read_echo_cfg()
 			if(!*p)
 				continue;
 			addr=atofaddr(p);
-			while(*p && *p>SP) p++;         /* Skip address */
-			while(*p && *p<=SP) p++;        /* Find beginning of password */
+			while(*p && *p>' ') p++;         /* Skip address */
+			while(*p && *p<=' ') p++;        /* Find beginning of password */
 			j=matchnode(addr,1);
 			if(j==cfg.nodecfgs) {
 				cfg.nodecfgs++;
@@ -416,15 +416,15 @@ void read_echo_cfg()
 				continue;
 			strcpy(str,p);
 			p=str;
-			while(*p && *p>SP) p++;
+			while(*p && *p>' ') p++;
 			*p=0;
 			p++;
 			while(*p) {
-				while(*p && *p<=SP) p++;
+				while(*p && *p<=' ') p++;
 				if(!*p)
 					break;
 				addr=atofaddr(p);
-				while(*p && *p>SP) p++;
+				while(*p && *p>' ') p++;
 				j=matchnode(addr,1);
 				if(j==cfg.nodecfgs) {
 					cfg.nodecfgs++;
@@ -444,11 +444,11 @@ void read_echo_cfg()
 
 		if(!stricmp(tmp,"SEND_NOTIFY")) {    /* Nodes to send notify lists to */
 			while(*p) {
-				while(*p && *p<=SP) p++;
+				while(*p && *p<=' ') p++;
 				if(!*p)
 					break;
 				addr=atofaddr(p);
-				while(*p && *p>SP) p++;
+				while(*p && *p>' ') p++;
 				j=matchnode(addr,1);
 				if(j==cfg.nodecfgs) {
 					cfg.nodecfgs++;
@@ -474,11 +474,11 @@ void read_echo_cfg()
 			else if(!stricmp(tmp,"DIRECT"))
 				attr=ATTR_DIRECT;
 			while(*p) {
-				while(*p && *p<=SP) p++;
+				while(*p && *p<=' ') p++;
 				if(!*p)
 					break;
 				addr=atofaddr(p);
-				while(*p && *p>SP) p++;
+				while(*p && *p>' ') p++;
 				j=matchnode(addr,1);
 				if(j==cfg.nodecfgs) {
 					cfg.nodecfgs++;
@@ -492,16 +492,16 @@ void read_echo_cfg()
 				cfg.nodecfg[j].attr|=attr; } }
 
 		if(!stricmp(tmp,"ROUTE_TO")) {
-			while(*p && *p<=SP) p++;
+			while(*p && *p<=' ') p++;
 			if(*p) {
 				route_addr=atofaddr(p);
-				while(*p && *p>SP) p++; }
+				while(*p && *p>' ') p++; }
 			while(*p) {
-				while(*p && *p<=SP) p++;
+				while(*p && *p<=' ') p++;
 				if(!*p)
 					break;
 				addr=atofaddr(p);
-				while(*p && *p>SP) p++;
+				while(*p && *p>' ') p++;
 				j=matchnode(addr,1);
 				if(j==cfg.nodecfgs) {
 					cfg.nodecfgs++;
@@ -529,19 +529,19 @@ void read_echo_cfg()
 				memset(&cfg.nodecfg[i],0,sizeof(nodecfg_t));
 				cfg.nodecfg[i].faddr=addr; }
 			cfg.nodecfg[i].flag=NULL;
-			while(*p && *p>SP) p++; 		/* Get to the end of the address */
-			while(*p && *p<=SP) p++;		/* Skip over whitespace chars */
+			while(*p && *p>' ') p++; 		/* Get to the end of the address */
+			while(*p && *p<=' ') p++;		/* Skip over whitespace chars */
 			tp=p;
-			while(*p && *p>SP) p++; 		/* Find end of password 	*/
+			while(*p && *p>' ') p++; 		/* Find end of password 	*/
 			*p=0;							/* and terminate the string */
 			++p;
 			sprintf(cfg.nodecfg[i].password,"%-.25s",tp);
-			while(*p && *p<=SP) p++;		/* Search for more chars */
+			while(*p && *p<=' ') p++;		/* Search for more chars */
 			if(!*p) 						/* Nothing else there */
 				continue;
 			while(*p) {
 				tp=p;
-				while(*p && *p>SP) p++; 	/* Find end of this flag */
+				while(*p && *p>' ') p++; 	/* Find end of this flag */
 				*p=0;						/* and terminate it 	 */
 				++p;
 				for(j=0;j<cfg.nodecfg[i].numflags;j++)
@@ -557,7 +557,7 @@ void read_echo_cfg()
 						bail(1); }
 					cfg.nodecfg[i].numflags++;
 					sprintf(cfg.nodecfg[i].flag[j].flag,"%.4s",tp); }
-				while(*p && *p<=SP) p++; } }
+				while(*p && *p<=' ') p++; } }
 
 		if(!stricmp(tmp,"ECHOLIST")) {           /* Echolists go here */
 			if((cfg.listcfg=(echolist_t *)REALLOC(cfg.listcfg
@@ -571,35 +571,35 @@ void read_echo_cfg()
 			if(!strnicmp(p,"FORWARD ",8) || !strnicmp(p,"HUB ",4)) {
 				if(!strnicmp(p,"HUB ",4))
 					cfg.listcfg[cfg.listcfgs-1].misc|=NOFWD;
-				while(*p && *p>SP) p++;
-				while(*p && *p<=SP) p++;
+				while(*p && *p>' ') p++;
+				while(*p && *p<=' ') p++;
 				if(*p)
 					cfg.listcfg[cfg.listcfgs-1].forward=atofaddr(p);
-				while(*p && *p>SP) p++;
-				while(*p && *p<=SP) p++;
+				while(*p && *p>' ') p++;
+				while(*p && *p<=' ') p++;
 				if(*p && !(cfg.listcfg[cfg.listcfgs-1].misc&NOFWD)) {
 					tp=p;
-					while(*p && *p>SP) p++;
+					while(*p && *p>' ') p++;
 					*p=0;
 					++p;
-					while(*p && *p<=SP) p++;
+					while(*p && *p<=' ') p++;
 					SAFECOPY(cfg.listcfg[cfg.listcfgs-1].password,tp); } }
 			else
 				cfg.listcfg[cfg.listcfgs-1].misc|=NOFWD;
 			if(!*p)
 				continue;
 			tp=p;
-			while(*p && *p>SP) p++;
+			while(*p && *p>' ') p++;
 			*p=0;
 			p++;
 
 			sprintf(cfg.listcfg[cfg.listcfgs-1].listpath,"%-.128s",tp);
 			cfg.listcfg[cfg.listcfgs-1].numflags=0;
 			cfg.listcfg[cfg.listcfgs-1].flag=NULL;
-			while(*p && *p<=SP) p++;		/* Skip over whitespace chars */
+			while(*p && *p<=' ') p++;		/* Skip over whitespace chars */
 			while(*p) {
 				tp=p;
-				while(*p && *p>SP) p++; 	/* Find end of this flag */
+				while(*p && *p>' ') p++; 	/* Find end of this flag */
 				*p=0;						/* and terminate it 	 */
 				++p;
 				for(j=0;j<cfg.listcfg[cfg.listcfgs-1].numflags;j++)
@@ -615,7 +615,7 @@ void read_echo_cfg()
 						bail(1); }
 					cfg.listcfg[cfg.listcfgs-1].numflags++;
 					sprintf(cfg.listcfg[cfg.listcfgs-1].flag[j].flag,"%.4s",tp); }
-				while(*p && *p<=SP) p++; } }
+				while(*p && *p<=' ') p++; } }
 
 	//    printf("Unrecognized line in SBBSECHO.CFG file.\n");
 	}

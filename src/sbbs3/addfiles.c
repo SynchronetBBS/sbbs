@@ -86,16 +86,16 @@ void prep_desc(uchar *str)
 	int i,j;
 
 	for(i=j=0;str[i] && j < sizeof(tmp)-1;i++) {
-		if(j && str[i]==SP && tmp[j-1]==SP && (mode&KEEP_SPACE))
+		if(j && str[i]==' ' && tmp[j-1]==' ' && (mode&KEEP_SPACE))
 			tmp[j++]=str[i];
-		else if(j && str[i]<=SP && tmp[j-1]==SP)
+		else if(j && str[i]<=' ' && tmp[j-1]==' ')
 			continue;
 		else if(i && !isalnum(str[i]) && str[i]==str[i-1])
 			continue;
-		else if(str[i]>=SP)
+		else if(str[i]>=' ')
 			tmp[j++]=str[i];
 		else if(str[i]==TAB || (str[i]==CR && str[i+1]==LF))
-			tmp[j++]=SP;
+			tmp[j++]=' ';
 	}
 	tmp[j]=0;
 	strcpy(str,tmp);
@@ -277,7 +277,7 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 						memset(ext,0,513);
 						read(file,ext,512);
 						for(i=512;i;i--)
-							if(ext[i-1]>SP)
+							if(ext[i-1]>' ')
 								break;
 						ext[i]=0;
 						if(mode&ASCII_ONLY)
@@ -289,7 +289,7 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 								if(isalpha(tmpext[i]))
 									break;
 							sprintf(f.desc,"%.*s",LEN_FDESC,tmpext+i);
-							for(i=0;f.desc[i]>=SP && i<LEN_FDESC;i++)
+							for(i=0;f.desc[i]>=' ' && i<LEN_FDESC;i++)
 								;
 							f.desc[i]=0; }
 						close(file);
@@ -350,7 +350,7 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 		nextline[0]=0;
 		fgets(nextline,255,stream);
 		truncsp(curline);
-		if(curline[0]<=SP || (mode&ASCII_ONLY && (uchar)curline[0]>=0x7e))
+		if(curline[0]<=' ' || (mode&ASCII_ONLY && (uchar)curline[0]>=0x7e))
 			continue;
 		printf("%s\n",curline);
 		strcpy(fname,curline);
@@ -358,7 +358,7 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 		p=strchr(fname,'.');
 		if(!p || p==fname || p>fname+8)    /* no dot or invalid dot location */
 			continue;
-		p=strchr(p,SP);
+		p=strchr(p,' ');
 		if(p) *p=0;
 		else				   /* no space after filename? */
 			continue;
@@ -372,7 +372,7 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 			continue;
 
 		for(i=0;i<12;i++)
-			if(f.name[i]<SP || (mode&ASCII_ONLY && (uchar)f.name[i]>0x7e))
+			if(f.name[i]<' ' || (mode&ASCII_ONLY && (uchar)f.name[i]>0x7e))
 				break;
 
 		if(i<12)					/* Ctrl chars or EX-ASCII in filename? */
@@ -407,20 +407,20 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 		if(dskip && strlen(curline)>=dskip) p=curline+dskip;
 		else {
 			p++;
-			while(*p==SP) p++; 
+			while(*p==' ') p++; 
 		}
 		SAFECOPY(tmp,p);
 		prep_desc(tmp);
 		sprintf(f.desc+strlen(f.desc),"%.*s",(int)(LEN_FDESC-strlen(f.desc)),tmp);
 
-		if(nextline[0]==SP || strlen(p)>LEN_FDESC) {	/* ext desc */
+		if(nextline[0]==' ' || strlen(p)>LEN_FDESC) {	/* ext desc */
 			if(!(mode&NO_EXTEND)) {
 				memset(ext,0,513);
 				f.misc|=FM_EXTDESC;
 				sprintf(ext,"%s\r\n",p); 
 			}
 
-			if(nextline[0]==SP) {
+			if(nextline[0]==' ') {
 				strcpy(str,nextline);				   /* tack on to end of desc */
 				p=str+dskip;
 				while(*p && *p<=' ') p++;
@@ -436,14 +436,14 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 			}
 
 			while(!feof(stream) && !ferror(stream) && strlen(ext)<512) {
-				if(nextline[0]!=SP)
+				if(nextline[0]!=' ')
 					break;
 				truncsp(nextline);
 				printf("%s\n",nextline);
 				if(!(mode&NO_EXTEND)) {
 					f.misc|=FM_EXTDESC;
 					p=nextline+dskip;
-					while(*p==SP) p++;
+					while(*p==' ') p++;
 					strcat(ext,p);
 					strcat(ext,"\r\n"); 
 				}
@@ -480,7 +480,7 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 					memset(ext,0,513);
 					read(file,ext,512);
 					for(i=512;i;i--)
-						if(ext[i-1]>SP)
+						if(ext[i-1]>' ')
 							break;
 					ext[i]=0;
 					if(mode&ASCII_ONLY)
@@ -492,7 +492,7 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 							if(isalpha(tmpext[i]))
 								break;
 						sprintf(f.desc,"%.*s",LEN_FDESC,tmpext+i);
-						for(i=0;f.desc[i]>=SP && i<LEN_FDESC;i++)
+						for(i=0;f.desc[i]>=' ' && i<LEN_FDESC;i++)
 							;
 						f.desc[i]=0; 
 					}
@@ -597,7 +597,7 @@ void synclist(char *inpath, int dirnum)
 			if(!fgets(str,1000,stream))
 				break;
 			truncsp(str);
-			p=strchr(str,SP);
+			p=strchr(str,' ');
 			if(p) *p=0;
 			if(!stricmp(str,fname))
 				found=1; 
@@ -891,7 +891,7 @@ int main(int argc, char **argv)
 						read(file,ext,512);
 						if(!(mode&KEEP_DESC)) {
 							sprintf(f.desc,"%.*s",LEN_FDESC,ext);
-							for(i=0;f.desc[i]>=SP && i<LEN_FDESC;i++)
+							for(i=0;f.desc[i]>=' ' && i<LEN_FDESC;i++)
 								;
 							f.desc[i]=0; 
 						}

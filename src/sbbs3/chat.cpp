@@ -570,7 +570,7 @@ void sbbs_t::chatsection()
 	while(online) {
 		no_rip_menu=0;
 		ch=(char)getkeys("ACDJPQST?\r",0);
-		if(ch>SP)
+		if(ch>' ')
 			logch(ch,0);
 		switch(ch) {
 			case 'S':
@@ -883,9 +883,9 @@ void sbbs_t::privchat(bool local)
 		GOTOXY(1,13);
 		remote_y=1;
 		bprintf(local ? local_sep : sep
-			,thisnode.misc&NODE_MSGW ? 'T':SP
+			,thisnode.misc&NODE_MSGW ? 'T':' '
 			,sectostr(timeleft,tmp)
-			,thisnode.misc&NODE_NMSG ? 'M':SP);
+			,thisnode.misc&NODE_NMSG ? 'M':' ');
 		CRLF;
 		local_y=14; }
 
@@ -909,13 +909,13 @@ void sbbs_t::privchat(bool local)
 					localbuf[localline][localchar]=0; } }
 			else if(ch==TAB) {
 				if(echo)
-					outchar(SP);
-				localbuf[localline][localchar]=SP;
+					outchar(' ');
+				localbuf[localline][localchar]=' ';
 				localchar++;
 				while(localchar<78 && localchar%8) {
 					if(echo)
-						outchar(SP);
-					localbuf[localline][localchar++]=SP; } }
+						outchar(' ');
+					localbuf[localline][localchar++]=' '; } }
 			else if(ch==CTRL_R) {
 				if(sys_status&SS_SPLITP) {
 					CLS;
@@ -931,9 +931,9 @@ void sbbs_t::privchat(bool local)
 					ANSI_SAVE();
 					GOTOXY(1,13);
 					bprintf(local ? local_sep : sep
-						,thisnode.misc&NODE_MSGW ? 'T':SP
+						,thisnode.misc&NODE_MSGW ? 'T':' '
 						,sectostr(timeleft,tmp)
-						,thisnode.misc&NODE_NMSG ? 'M':SP);
+						,thisnode.misc&NODE_NMSG ? 'M':' ');
 					CRLF;
 					attr(cfg.color[clr_chatlocal]);
 					localbuf[localline][localchar]=0;
@@ -946,13 +946,13 @@ void sbbs_t::privchat(bool local)
 				}
 				continue;
 			}
-			else if(ch>=SP || ch==CR) {
+			else if(ch>=' ' || ch==CR) {
 				if(ch!=CR) {
 					if(echo)
 						outchar(ch);
 					localbuf[localline][localchar]=ch; }
 
-				if(ch==CR || (localchar>68 && ch==SP) || ++localchar>78) {
+				if(ch==CR || (localchar>68 && ch==' ') || ++localchar>78) {
 
 					localbuf[localline][localchar]=0;
 					localchar=0;
@@ -960,9 +960,9 @@ void sbbs_t::privchat(bool local)
 					if(sys_status&SS_SPLITP && local_y==24) {
 						GOTOXY(1,13);
 						bprintf(local ? local_sep : sep
-							,thisnode.misc&NODE_MSGW ? 'T':SP
+							,thisnode.misc&NODE_MSGW ? 'T':' '
 							,sectostr(timeleft,tmp)
-							,thisnode.misc&NODE_NMSG ? 'M':SP);
+							,thisnode.misc&NODE_NMSG ? 'M':' ');
 						attr(cfg.color[clr_chatlocal]);
 						for(x=13,y=0;x<rows;x++,y++) {
 							rprintf("\x1b[%d;1H\x1b[K",x+1);
@@ -1028,18 +1028,18 @@ void sbbs_t::privchat(bool local)
 					remotechar--;
 					remotebuf[remoteline][remotechar]=0; } }
 			else if(ch==TAB) {
-				outchar(SP);
-				remotebuf[remoteline][remotechar]=SP;
+				outchar(' ');
+				remotebuf[remoteline][remotechar]=' ';
 				remotechar++;
 				while(remotechar<78 && remotechar%8) {
-					outchar(SP);
-					remotebuf[remoteline][remotechar++]=SP; } }
-			else if(ch>=SP || ch==CR) {
+					outchar(' ');
+					remotebuf[remoteline][remotechar++]=' '; } }
+			else if(ch>=' ' || ch==CR) {
 				if(ch!=CR) {
 					outchar(ch);
 					remotebuf[remoteline][remotechar]=ch; }
 
-				if(ch==CR || (remotechar>68 && ch==SP) || ++remotechar>78) {
+				if(ch==CR || (remotechar>68 && ch==' ') || ++remotechar>78) {
 
 					remotebuf[remoteline][remotechar]=0;
 					remotechar=0;
@@ -1047,9 +1047,9 @@ void sbbs_t::privchat(bool local)
 					if(sys_status&SS_SPLITP && remote_y==12) {
 						CRLF;
 						bprintf(local ? local_sep : sep
-							,thisnode.misc&NODE_MSGW ? 'T':SP
+							,thisnode.misc&NODE_MSGW ? 'T':' '
 							,sectostr(timeleft,tmp)
-							,thisnode.misc&NODE_NMSG ? 'M':SP);
+							,thisnode.misc&NODE_NMSG ? 'M':' ');
 						attr(cfg.color[clr_chatremote]);
 						for(i=0;i<12;i++) {
 							bprintf("\x1b[%d;1H\x1b[K",i+1);
@@ -1483,14 +1483,14 @@ void sbbs_t::guruchat(char* line, char* gurubuf, int gurunum, char* last_answer)
 					/* multi-line answer */
 					if(*ptr=='\\' && (*(ptr+1)==CR || *(ptr+1)==LF)) {
 						ptr++;	/* skip \ */
-						while(*ptr && *ptr<SP) ptr++;	/* skip [CR]LF */
+						while(*ptr && *ptr<' ') ptr++;	/* skip [CR]LF */
 						answer[answers][i++]=CR;
 						answer[answers][i++]=LF; } }
 				answer[answers][i]=0;
 				if(!strlen(answer[answers]) || answer[answers][0]=='(') {
 					ptr-=strlen(answer[answers]);
 					break; }
-				while(*ptr && *ptr<SP) ptr++;	/* skip [CR]LF */
+				while(*ptr && *ptr<' ') ptr++;	/* skip [CR]LF */
 				answers++; }
 			if(answers==100)
 				while(*ptr && *ptr!='(' && ptr<gurubuf+len)
@@ -1650,7 +1650,7 @@ void sbbs_t::guruchat(char* line, char* gurubuf, int gurunum, char* last_answer)
 						mswait(25+sbbs_random(50));
 					else
 						mswait(25+sbbs_random(150));
-					if(theanswer[i]==SP)
+					if(theanswer[i]==' ')
 						mswait(sbbs_random(50)); 
 					} }
 			else {

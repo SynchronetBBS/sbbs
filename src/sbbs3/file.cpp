@@ -273,7 +273,7 @@ bool sbbs_t::checkfname(char *fname)
 #endif
 	d=strlen(fname);
 	while(c<d) {
-		if(fname[c]<=SP || fname[c]&0x80)
+		if(fname[c]<=' ' || fname[c]&0x80)
 			return(false);
 		c++; }
 	return(true);

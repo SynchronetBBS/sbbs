@@ -220,7 +220,7 @@ void sbbs_t::readmail(uint usernumber, int which)
 //				strupr(str);
 				tp=str;
 				while(online) {
-					p=strchr(tp,SP);
+					p=strchr(tp,' ');
 					if(p) *p=0;
 					sp=strrchr(tp,'/');              /* sp is slash pointer */
 					if(!sp) sp=strrchr(tp,'\\');
@@ -294,7 +294,7 @@ void sbbs_t::readmail(uint usernumber, int which)
 					if(!p)
 						break;
 					tp=p+1;
-					while(*tp==SP) tp++; 
+					while(*tp==' ') tp++; 
 				}
 				sprintf(str,"%sfile/%04u.in",cfg.data_dir,usernumber);
 				rmdir(str); }
@@ -495,7 +495,7 @@ void sbbs_t::readmail(uint usernumber, int which)
 						bprintf(text[MailOnSystemLstFmt]
 							,i+1,msg.from,msg.to
 							,msg.hdr.attr&MSG_DELETE ? '-' : msg.hdr.attr&MSG_REPLIED ? 'R'
-								: msg.hdr.attr&MSG_READ ? SP
+								: msg.hdr.attr&MSG_READ ? ' '
 								: msg.from_net.type || msg.to_net.type ? 'N':'*'
 							,msg.subj);
 					else
@@ -504,7 +504,7 @@ void sbbs_t::readmail(uint usernumber, int which)
 							: (msg.hdr.attr&MSG_ANONYMOUS) && !SYSOP
 							? text[Anonymous] : msg.from
 							,msg.hdr.attr&MSG_DELETE ? '-' : msg.hdr.attr&MSG_REPLIED ? 'R'
-								: msg.hdr.attr&MSG_READ ? SP
+								: msg.hdr.attr&MSG_READ ? ' '
 								: msg.from_net.type || msg.to_net.type ? 'N':'*'
 							,msg.subj);
 					smb_freemsgmem(&msg);
@@ -641,7 +641,7 @@ void sbbs_t::readmail(uint usernumber, int which)
 						bprintf(text[MailOnSystemLstFmt]
 							,i+1,msg.from,msg.to
 							,msg.hdr.attr&MSG_DELETE ? '-' : msg.hdr.attr&MSG_REPLIED ? 'R'
-								: msg.hdr.attr&MSG_READ ? SP 
+								: msg.hdr.attr&MSG_READ ? ' ' 
 								: msg.from_net.type || msg.to_net.type ? 'N':'*'
 							,msg.subj);
 					else
@@ -650,7 +650,7 @@ void sbbs_t::readmail(uint usernumber, int which)
 							: (msg.hdr.attr&MSG_ANONYMOUS) && !SYSOP
 							? text[Anonymous] : msg.from
 							,msg.hdr.attr&MSG_DELETE ? '-' : msg.hdr.attr&MSG_REPLIED ? 'R'
-								: msg.hdr.attr&MSG_READ ? SP
+								: msg.hdr.attr&MSG_READ ? ' '
 								: msg.from_net.type || msg.to_net.type ? 'N':'*'
 							,msg.subj);
 					smb_freemsgmem(&msg);

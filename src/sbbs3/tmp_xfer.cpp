@@ -100,7 +100,7 @@ void sbbs_t::temp_xfer()
 		bputs(text[TempDirPrompt]);
 		strcpy(f.uler,temp_uler);
 		ch=(char)getkeys("ADEFNILQRVX?\r",0);
-		if(ch>SP)
+		if(ch>' ')
 			logch(ch,0);
 		switch(ch) {
 			case 'A':   /* add to temp file */

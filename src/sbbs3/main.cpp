@@ -4301,7 +4301,7 @@ void DLLCALL bbs_thread(void* arg)
 			identity=strrchr(str,':');
 			if(identity!=NULL) {
 				identity++;	/* skip colon */
-				while(*identity && *identity<=SP) /* point to user name */
+				while(*identity && *identity<=' ') /* point to user name */
 					identity++;
 				lprintf(LOG_INFO,"%04d Identity: %s",client_socket, identity);
 			}

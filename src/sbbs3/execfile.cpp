@@ -61,9 +61,9 @@ int sbbs_t::exec_file(csi_t *csi)
 						for(i=0;i<usrlibs && !msgabort();i++) {
 							if(i==curlib)
 								outchar('*');
-							else outchar(SP);
-							if(i<9) outchar(SP);
-							if(i<99) outchar(SP);
+							else outchar(' ');
+							if(i<9) outchar(' ');
+							if(i<99) outchar(' ');
 							bprintf(text[CfgLibLstFmt]
 								,i+1,cfg.lib[usrlib[i]]->lname); } }
 					sprintf(str,text[JoinWhichLib],curlib+1);
@@ -84,12 +84,12 @@ int sbbs_t::exec_file(csi_t *csi)
 					bprintf(text[DirLstHdr], cfg.lib[usrlib[j]]->lname);
 					for(i=0;i<usrdirs[j] && !msgabort();i++) {
 						if(i==curdir[j]) outchar('*');
-						else outchar(SP);
+						else outchar(' ');
 						sprintf(str,text[DirLstFmt],i+1
 							,cfg.dir[usrdir[j][i]]->lname,nulstr
 							,getfiles(&cfg,usrdir[j][i]));
-						if(i<9) outchar(SP);
-						if(i<99) outchar(SP);
+						if(i<9) outchar(' ');
+						if(i<99) outchar(' ');
 						bputs(str); } }
 				sprintf(str,text[JoinWhichDir],curdir[j]+1);
 				mnemonics(str);
@@ -191,8 +191,8 @@ int sbbs_t::exec_file(csi_t *csi)
 			for(i=0;i<usrlibs && !msgabort();i++) {
 				if(i==curlib)
 					outchar('*');
-				else outchar(SP);
-				if(i<9) outchar(SP);
+				else outchar(' ');
+				if(i<9) outchar(' ');
 				bprintf(text[LibLstFmt],i+1
 					,cfg.lib[usrlib[i]]->lname,nulstr,usrdirs[i]); }
 			return(0);
@@ -208,12 +208,12 @@ int sbbs_t::exec_file(csi_t *csi)
 			bprintf(text[DirLstHdr],cfg.lib[usrlib[curlib]]->lname);
 			for(i=0;i<usrdirs[curlib] && !msgabort();i++) {
 				if(i==curdir[curlib]) outchar('*');
-				else outchar(SP);
+				else outchar(' ');
 				sprintf(str,text[DirLstFmt],i+1
 					,cfg.dir[usrdir[curlib][i]]->lname,nulstr
 					,getfiles(&cfg,usrdir[curlib][i]));
-				if(i<9) outchar(SP);
-				if(i<99) outchar(SP);
+				if(i<9) outchar(' ');
+				if(i<99) outchar(' ');
 				bputs(str); }
 			return(0);
 

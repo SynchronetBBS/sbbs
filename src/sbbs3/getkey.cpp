@@ -198,7 +198,7 @@ char sbbs_t::getkey(long mode)
 				continue;
 			if(mode&K_SPIN)
 				bputs("\b \b");
-			if(mode&K_COLD && ch>SP && useron.misc&COLDKEYS) {
+			if(mode&K_COLD && ch>' ' && useron.misc&COLDKEYS) {
 				if(mode&K_UPPER)
 					outchar(toupper(ch));
 				else
@@ -208,7 +208,7 @@ char sbbs_t::getkey(long mode)
 				bputs("\b \b");
 				if(coldkey==BS || coldkey==DEL)
 					continue;
-				if(coldkey>SP)
+				if(coldkey>' ')
 					ungetkey(coldkey); 
 			}
 			if(mode&K_UPPER)
@@ -291,7 +291,7 @@ void sbbs_t::mnemonics(char *str)
 	}
 	ctrl_a_codes=strchr(str,1);
 	if(!ctrl_a_codes) {
-		if(str[0]=='@' && str[strlen(str)-1]=='@' && !strchr(str,SP)) {
+		if(str[0]=='@' && str[strlen(str)-1]=='@' && !strchr(str,' ')) {
 			mnestr=str;
 			bputs(str);
 			return; 
@@ -428,7 +428,7 @@ long sbbs_t::getkeys(char *keys, ulong max)
 		}
 		if(ch && !n && (strchr(str,ch))) {  /* return character if in string */
 			outchar(ch);
-			if(useron.misc&COLDKEYS && ch>SP) {
+			if(useron.misc&COLDKEYS && ch>' ') {
 				while(online && !(sys_status&SS_ABORT)) {
 					c=getkey(0);
 					if(c==CR || c==BS || c==DEL)

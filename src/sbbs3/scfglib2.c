@@ -866,7 +866,7 @@ char *ltoaf(long l,char *str)
 	while(c<26) {
 		if(l&(long)(1L<<c))
 			str[c]='A'+c;
-		else str[c]=SP;
+		else str[c]=' ';
 		c++; 
 	}
 	str[c]=0;

@@ -176,7 +176,7 @@ int sbbs_t::listfiles(uint dirnum, char *filespec, int tofile, long mode)
 				continue; }
 			getrec((char *)&datbuf[n],F_MISC,1,tmp);
 			j=tmp[0];  /* misc bits */
-			if(j) j-=SP;
+			if(j) j-=' ';
 			if(mode&FL_EXFIND && j&FM_EXTDESC) { /* search extended description */
 				getextdesc(&cfg,dirnum,n,ext);
 				strupr(ext);
@@ -225,17 +225,17 @@ int sbbs_t::listfiles(uint dirnum, char *filespec, int tofile, long mode)
 						sprintf(hdr,text[BoxHdrLib],i+1,cfg.lib[usrlib[i]]->lname);
 						bputs(hdr);
 						for(c=bstrlen(hdr);c<d;c++)
-							outchar(SP);
+							outchar(' ');
 						bputs("º\r\nº ");
 						sprintf(hdr,text[BoxHdrDir],j+1,cfg.dir[dirnum]->lname);
 						bputs(hdr);
 						for(c=bstrlen(hdr);c<d;c++)
-							outchar(SP);
+							outchar(' ');
 						bputs("º\r\nº ");
 						sprintf(hdr,text[BoxHdrFiles],l/F_IXBSIZE);
 						bputs(hdr);
 						for(c=bstrlen(hdr);c<d;c++)
-							outchar(SP);
+							outchar(' ');
 						bputs("º\r\nÈÍ");
 						for(c=0;c<d;c++)
 							outchar('Í');
@@ -381,7 +381,7 @@ bool sbbs_t::listfile(char *fname, char HUGE16 *buf, uint dirnum
     int		i,j;
     ulong	cdt;
 
-	if(buf[F_MISC]!=ETX && (buf[F_MISC]-SP)&FM_EXTDESC && useron.misc&EXTDESC) {
+	if(buf[F_MISC]!=ETX && (buf[F_MISC]-' ')&FM_EXTDESC && useron.misc&EXTDESC) {
 		getextdesc(&cfg,dirnum,datoffset,ext);
 		if(useron.misc&BATCHFLAG && lncntr+extdesclines(ext)>=rows-2 && letter!='A')
 			return(false); }
@@ -394,13 +394,13 @@ bool sbbs_t::listfile(char *fname, char HUGE16 *buf, uint dirnum
 	sprintf(path,"%s%s",alt>0 && alt<=cfg.altpaths ? cfg.altpath[alt-1]:cfg.dir[dirnum]->path
 		,unpadfname(fname,tmp));
 
-	if(buf[F_MISC]!=ETX && (buf[F_MISC]-SP)&FM_EXTDESC) {
+	if(buf[F_MISC]!=ETX && (buf[F_MISC]-' ')&FM_EXTDESC) {
 		if(!(useron.misc&EXTDESC))
 			outchar('+');
 		else
-			outchar(SP); }
+			outchar(' '); }
 	else
-		outchar(SP);
+		outchar(' ');
 	if(useron.misc&BATCHFLAG) {
 		attr(cfg.color[clr_filedesc]);
 		bprintf("%c",letter); }
@@ -431,7 +431,7 @@ bool sbbs_t::listfile(char *fname, char HUGE16 *buf, uint dirnum
 		else
 			bprintf("%7lu",cdt); }
 	if(exist)
-		outchar(SP);
+		outchar(' ');
 	else
 		outchar('-');
 	getrec((char *)buf,F_DESC,LEN_FDESC,str);
@@ -633,7 +633,7 @@ int sbbs_t::batchflagprompt(uint dirnum, file_t* bf, uint total
 						break; }
 					if(strchr(str+c,'.')) {     /* filename or spec given */
 						f.dir=dirnum;
-						p=strchr(str+c,SP);
+						p=strchr(str+c,' ');
 						if(!p) p=strchr(str+c,',');
 						if(p) *p=0;
 						for(i=0;i<total;i++) {
@@ -684,7 +684,7 @@ int sbbs_t::batchflagprompt(uint dirnum, file_t* bf, uint total
 				for(c=0;c<d;c++) {
 					if(strchr(str+c,'.')) {     /* filename or spec given */
 						f.dir=dirnum;
-						p=strchr(str+c,SP);
+						p=strchr(str+c,' ');
 						if(!p) p=strchr(str+c,',');
 						if(p) *p=0;
 						for(i=0;i<total;i++) {
@@ -763,7 +763,7 @@ int sbbs_t::batchflagprompt(uint dirnum, file_t* bf, uint total
 				for(c=0;c<d;c++) {
 					if(strchr(str+c,'.')) {     /* filename or spec given */
 						f.dir=dirnum;
-						p=strchr(str+c,SP);
+						p=strchr(str+c,' ');
 						if(!p) p=strchr(str+c,',');
 						if(p) *p=0;
 						for(i=0;i<total;i++) {
@@ -1320,7 +1320,7 @@ void sbbs_t::listfiletofile(char *fname, char HUGE16 *buf, uint dirnum, int file
 	bool	exist=true;
 
 	strcpy(str,fname);
-	if(buf[F_MISC]!=ETX && (buf[F_MISC]-SP)&FM_EXTDESC)
+	if(buf[F_MISC]!=ETX && (buf[F_MISC]-' ')&FM_EXTDESC)
 		strcat(str,"+");
 	else
 		strcat(str," ");

@@ -259,7 +259,7 @@ BYTE* telnet_expand(BYTE* inbuf, ulong inlen, BYTE* outbuf, ulong& newlen)
 #define XTRN_LOADABLE_MODULE								\
 	if(cmdline[0]=='*') {   /* Baja module or JavaScript */	\
 		SAFECOPY(str,cmdline+1);							\
-		p=strchr(str,SP);									\
+		p=strchr(str,' ');									\
 		if(p) {												\
 			strcpy(main_csi.str,p+1);						\
 			*p=0; 											\
@@ -1659,7 +1659,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 			argv[0]=fullcmdline;	/* point to the beginning of the string */
 			argc=1;
 			for(i=0;fullcmdline[i] && argc<MAX_ARGS;i++)	/* Break up command line */
-				if(fullcmdline[i]==SP) {
+				if(fullcmdline[i]==' ') {
 					fullcmdline[i]=0;			/* insert nulls */
 					argv[argc++]=fullcmdline+i+1; /* point to the beginning of the next arg */
 				}

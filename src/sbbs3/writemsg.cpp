@@ -183,7 +183,7 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 					break;
 				p=quote;
 				while(p) {
-					if(*p==',' || *p==SP)
+					if(*p==',' || *p==' ')
 						p++;
 					i=atoi(p);
 					if(!i)
@@ -217,7 +217,7 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 						} 
 					}
 					p=strchr(p,',');
-					// if(!p) p=strchr(p,SP);  02/05/96 huh?
+					// if(!p) p=strchr(p,' ');  02/05/96 huh?
 				} 
 			}
 
@@ -426,7 +426,7 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 		if(!(mode&(WM_EMAIL|WM_NETMAIL))
 			&& (!l || buf[l-1]==LF)
 			&& buf[l]=='-' && buf[l+1]=='-' && buf[l+2]=='-'
-			&& (buf[l+3]==SP || buf[l+3]==TAB || buf[l+3]==CR))
+			&& (buf[l+3]==' ' || buf[l+3]==TAB || buf[l+3]==CR))
 			buf[l+1]='+';
 		if(buf[l]==LF)
 			i++;
@@ -466,7 +466,7 @@ void quotestr(char *str)
 	int j;
 
 	j=strlen(str);
-	while(j && (str[j-1]==SP || str[j-1]==LF || str[j-1]==CR)) j--;
+	while(j && (str[j-1]==' ' || str[j-1]==LF || str[j-1]==CR)) j--;
 	str[j]=0;
 	remove_ctrl_a(str,NULL);
 }
@@ -621,9 +621,9 @@ ulong sbbs_t::msgeditor(char *buf, char *top, char *title)
 			}
 			if(buf[l]==TAB) {
 				if(!(i%8))                  /* hard-coded tabstop of 8 */
-					str[lines][i++]=SP;     /* for expansion */
+					str[lines][i++]=' ';     /* for expansion */
 				while(i%8 && i<79)
-					str[lines][i++]=SP;
+					str[lines][i++]=' ';
 				i--;
 				/***
 				bprintf("\r\nMessage editor: Expanded tab on line #%d",lines+1);
@@ -975,7 +975,7 @@ void sbbs_t::copyfattach(uint to, uint from, char *title)
 	strcpy(str,title);
 	tp=str;
 	while(1) {
-		p=strchr(tp,SP);
+		p=strchr(tp,' ');
 		if(p) *p=0;
 		sp=strrchr(tp,'/');              /* sp is slash pointer */
 		if(!sp) sp=strrchr(tp,'\\');

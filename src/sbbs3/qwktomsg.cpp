@@ -174,7 +174,7 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 				header_cont=false;
 				continue;
 			}
-			if(!taillen && qwkbuf[k]==SP && col==3 && bodylen>=3
+			if(!taillen && qwkbuf[k]==' ' && col==3 && bodylen>=3
 				&& body[bodylen-3]=='-' && body[bodylen-2]=='-'
 				&& body[bodylen-1]=='-') {
 				bodylen-=3;
@@ -218,11 +218,11 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 		} 
 	}
 
-	while(bodylen && body[bodylen-1]==SP) bodylen--; /* remove trailing spaces */
+	while(bodylen && body[bodylen-1]==' ') bodylen--; /* remove trailing spaces */
 	if(bodylen>=2 && body[bodylen-2]==CR && body[bodylen-1]==LF)
 		bodylen-=2;
 
-	while(taillen && tail[taillen-1]<=SP) taillen--; /* remove trailing garbage */
+	while(taillen && tail[taillen-1]<=' ') taillen--; /* remove trailing garbage */
 
 	skip=0;
 	if(useron.rest&FLAG('Q') || fromhub) {      /* QWK Net */
@@ -236,7 +236,7 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 			}
 			truncsp(header);
 			p=header+5; 					/* Skip "@VIA:" */
-			while(*p && *p<=SP) p++;		/* Skip any spaces */
+			while(*p && *p<=' ') p++;		/* Skip any spaces */
 			if(route_circ(p,cfg.sys_id)) {
 				free(header);
 				free(body);
@@ -291,7 +291,7 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 			skip+=strlen(header+i)+1; 
 		}
 		p=header+i+7;					/* Skip "@MSGID:" */
-		while(*p && *p<=SP) p++;		/* Skip any spaces */
+		while(*p && *p<=' ') p++;		/* Skip any spaces */
 		truncstr(p," ");				/* Truncate at first space char */
 		smb_hfield_str(&msg,RFC822MSGID,p);
 	}
@@ -305,7 +305,7 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 			skip+=strlen(header+i)+1; 
 		}
 		p=header+i+7;					/* Skip "@REPLY:" */
-		while(*p && *p<=SP) p++;		/* Skip any spaces */
+		while(*p && *p<=' ') p++;		/* Skip any spaces */
 		truncstr(p," ");				/* Truncate at first space char */
 		smb_hfield_str(&msg,RFC822REPLYID,p);
 	}
@@ -319,7 +319,7 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 			skip+=strlen(header+i)+1; 
 		}
 		p=header+i+4;					/* Skip "@TZ:" */
-		while(*p && *p<=SP) p++;		/* Skip any spaces */
+		while(*p && *p<=' ') p++;		/* Skip any spaces */
 		msg.hdr.when_written.zone=(short)ahtoul(p); 
 	}
 	if(!strnicmp(header+skip,"@REPLYTO:",9)) {
@@ -330,7 +330,7 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 			skip+=strlen(header+i)+1; 
 		}
 		p=header+i+9;					/* Skip "@REPLYTO:" */
-		while(*p && *p<=SP) p++;		/* Skip any spaces */
+		while(*p && *p<=' ') p++;		/* Skip any spaces */
 		smb_hfield_str(&msg,REPLYTO,p);
 	}
 	free(header);

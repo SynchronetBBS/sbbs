@@ -272,8 +272,8 @@ BOOL read_main_cfg(scfg_t* cfg, char* error)
 	get_int(cfg->new_shell,instream);
 	get_int(cfg->new_misc,instream);
 	get_int(cfg->new_prot,instream);
-	if(cfg->new_prot<SP)
-		cfg->new_prot=SP;
+	if(cfg->new_prot<' ')
+		cfg->new_prot=' ';
 	get_int(cfg->new_install,instream);
 	for(i=0;i<7;i++)
 		get_int(n,instream);

@@ -1808,7 +1808,7 @@ static void receive_thread(void* arg)
 						memset(ext,0,sizeof(ext));
 						read(file,ext,sizeof(ext)-1);
 						for(i=sizeof(ext)-1;i;i--)	/* trim trailing spaces */
-							if(ext[i-1]>SP)
+							if(ext[i-1]>' ')
 								break;
 						ext[i]=0;
 						if(!f.desc[0]) {			/* use for normal description */

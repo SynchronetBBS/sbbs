@@ -67,7 +67,7 @@ char* DLLCALL strip_ctrl(char *str)
 	for(i=j=0;str[i] && j<(int)sizeof(tmp)-1;i++) {
 		if(str[i]==CTRL_A && str[i+1]!=0)
 			i++;
-		else if((uchar)str[i]>=SP)
+		else if((uchar)str[i]>=' ')
 			tmp[j++]=str[i];
 	}
 	if(i!=j) {
@@ -98,14 +98,14 @@ char* DLLCALL prep_file_desc(char *str)
 	for(i=j=0;str[i];i++)
 		if(str[i]==CTRL_A && str[i+1]!=0)
 			i++;
-		else if(j && str[i]<=SP && tmp[j-1]==SP)
+		else if(j && str[i]<=' ' && tmp[j-1]==' ')
 			continue;
 		else if(i && !isalnum(str[i]) && str[i]==str[i-1])
 			continue;
-		else if((uchar)str[i]>=SP)
+		else if((uchar)str[i]>=' ')
 			tmp[j++]=str[i];
 		else if(str[i]==TAB || (str[i]==CR && str[i+1]==LF))
-			tmp[j++]=SP;
+			tmp[j++]=' ';
 	tmp[j]=0;
 	strcpy(str,tmp);
 	return(str);
@@ -501,7 +501,7 @@ ushort DLLCALL subject_crc(char *subj)
 
 	while(!strnicmp(subj,"RE:",3)) {
 		subj+=3;
-		while(*subj==SP)
+		while(*subj==' ')
 			subj++; 
 	}
 

@@ -197,7 +197,7 @@ void sbbs_t::outchar(char ch)
 #endif
 #if 0 
 	if(console&CON_L_ECHO) {
-		if(console&CON_L_ECHOX && (uchar)ch>SP)
+		if(console&CON_L_ECHOX && (uchar)ch>' ')
 			putch(password_char);
 		else if(cfg.node_misc&NM_NOBEEP && ch==BEL);	 /* Do nothing if beep */
 		else if(ch==BEL) {
@@ -209,7 +209,7 @@ void sbbs_t::outchar(char ch)
 #endif
 
 	if(online==ON_REMOTE && console&CON_R_ECHO) {
-		if(console&CON_R_ECHOX && (uchar)ch>SP) {
+		if(console&CON_R_ECHOX && (uchar)ch>' ') {
 			ch=text[YN][3];
 			if(text[YN][2]==0 || ch==0) ch='X';
 		}
@@ -268,7 +268,7 @@ void sbbs_t::center(char *instr)
 	truncsp(str);
 	j=bstrlen(str);
 	for(i=0;i<(80-j)/2;i++)
-		outchar(SP);
+		outchar(' ');
 	bputs(str);
 	CRLF;
 }
@@ -282,7 +282,7 @@ void sbbs_t::clearline(void)
 		rputs("\x1b[K");
 	else {
 		for(i=0;i<cols-1;i++)
-			outchar(SP);
+			outchar(' ');
 		outchar(CR); 
 	}
 }
@@ -330,7 +330,7 @@ void sbbs_t::cursor_right(int count)
 			rputs("\x1b[C");
 	} else {
 		for(int i=0;i<count;i++)
-			outchar(SP);
+			outchar(' ');
 	}
 }
 
@@ -357,7 +357,7 @@ void sbbs_t::cleartoeol(void)
 	else {
 		i=j=lclwx();	/* commented out */
 		while(i++<79)
-			outchar(SP);
+			outchar(' ');
 		while(j++<79)
 			outchar(BS); 
 	}

@@ -360,10 +360,10 @@ int main(int argc, char **argv)
 
 
 			if(misc&PLUS && datbuf[n+F_MISC]!=ETX
-				&& (datbuf[n+F_MISC]-SP)&FM_EXTDESC)
+				&& (datbuf[n+F_MISC]-' ')&FM_EXTDESC)
 				fputc('+',out);
 			else
-				fputc(SP,out);
+				fputc(' ',out);
 
 			desc_off=12;
 			if(misc&(CDT_|TOT)) {
@@ -379,9 +379,9 @@ int main(int argc, char **argv)
 				if(!fexistcase(str))
 					fputc('-',out);
 				else
-					fputc(SP,out); }
+					fputc(' ',out); }
 			else
-				fputc(SP,out);
+				fputc(' ',out);
 			desc_off++;
 
 			if(misc&DFD) {
@@ -408,7 +408,7 @@ int main(int argc, char **argv)
 				fprintf(out,"%5u ",j);
 				desc_off+=6; }
 
-			if(datbuf[n+F_MISC]!=ETX && (datbuf[n+F_MISC]-SP)&FM_EXTDESC)
+			if(datbuf[n+F_MISC]!=ETX && (datbuf[n+F_MISC]-' ')&FM_EXTDESC)
 				ext=1;	/* extended description exists */
 			else
 				ext=0;	/* it doesn't */
@@ -441,7 +441,7 @@ int main(int argc, char **argv)
 					if(lines) {
 						if(misc&JST)
 							fprintf(out,"%*s",desc_off,"");
-						fputc(SP,out);				/* indent one character */ }
+						fputc(' ',out);				/* indent one character */ }
 					fprintf(out,"%s",str);
 					lines++; }
 				fclose(in); }

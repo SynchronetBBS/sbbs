@@ -293,10 +293,10 @@ int DLLCALL getuserdat(scfg_t* cfg, user_t *user)
 		user->rows=10;
 	user->sex=userdat[U_SEX];
 	if(!user->sex)
-		user->sex=SP;	 /* fix for v1b04 that could save as 0 */
+		user->sex=' ';	 /* fix for v1b04 that could save as 0 */
 	user->prot=userdat[U_PROT];
-	if(user->prot<SP)
-		user->prot=SP;
+	if(user->prot<' ')
+		user->prot=' ';
 	getrec(userdat,U_MISC,8,str); user->misc=ahtoul(str);
 	if(user->rest&FLAG('Q'))
 		user->misc&=~SPIN;
@@ -327,7 +327,7 @@ int DLLCALL getuserdat(scfg_t* cfg, user_t *user)
 	user->shell=i;
 
 	getrec(userdat,U_QWK,8,str);
-	if(str[0]<SP) { 			   /* v1c, so set defaults */
+	if(str[0]<' ') { 			   /* v1c, so set defaults */
 		if(user->rest&FLAG('Q'))
 			user->qwk=(QWK_RETCTLA);
 		else

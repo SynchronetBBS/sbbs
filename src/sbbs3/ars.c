@@ -51,7 +51,7 @@ uchar* arstr(ushort* count, char* str, scfg_t* cfg)
 	uint i,j,n,artype=AR_LEVEL,not=0,equal=0;
 
 	for(i=j=0;str[i];i++) {
-		if(str[i]==SP)
+		if(str[i]==' ')
 			continue;
 
 		if(str[i]=='(') {
@@ -479,7 +479,7 @@ uchar* arstr(ushort* count, char* str, scfg_t* cfg)
 		if(artype==AR_SUBCODE || artype==AR_DIRCODE || artype==AR_SHELL) {
 			for(n=0;n<8
 				&& str[i]
-				&& str[i]!=SP
+				&& str[i]!=' '
 				&& str[i]!='('
 				&& str[i]!=')'
 				&& str[i]!='='

@@ -116,7 +116,7 @@ void truncsp(char *str)
 	int c;
 
 	c=strlen(str);
-	while(c && str[c-1]<=SP) c--;
+	while(c && str[c-1]<=' ') c--;
 	str[c]=0;
 }
 
@@ -220,7 +220,7 @@ long val(char *src, char *p)
 					p++;
 					l<<=val(src,p); }
 				break;
-			case SP:
+			case ' ':
 			case '#':
 				inside=0;
 				return(l); }
@@ -313,7 +313,7 @@ void cvttab(char *str)
 
 	for(i=0;str[i];i++)
 		if(str[i]==TAB)
-			str[i]=SP;
+			str[i]=' ';
 }
 
 void newvar(uchar *in)
@@ -347,7 +347,7 @@ void writecrc(uchar *src, uchar *in)
 
 	/* Automatically terminate variable name Oct-09-2000 rswindell */
 	sprintf(name,"%.80s",in);
-	p=strchr(name,SP);
+	p=strchr(name,' ');
 	if(p) *p=0;
 
 	if(!case_sens)
@@ -378,7 +378,7 @@ long isvar(uchar *arg)
 		return(0);
 
 	sprintf(name,"%.80s",arg);
-	if((p=strchr(name,SP))!=NULL)	// Truncate at first space
+	if((p=strchr(name,' '))!=NULL)	// Truncate at first space
 		*p=0;
 	if(!case_sens)
 		strupr(name);
@@ -406,7 +406,7 @@ void expdefs(uchar *line)
 
 	str[0]=0;
 	for(p=line;*p;p++) {
-		if(*p==SP) {
+		if(*p==' ') {
 			strcat(str," ");
 			continue; }
 
@@ -474,7 +474,7 @@ void compile(char *src)
 		line++;
 		strcpy(save,str);
 		p=str;
-		while(*p && *p<=SP)   /* look for beginning of command */
+		while(*p && *p<=' ')   /* look for beginning of command */
 			p++;
 		if((*p)==0)
 			continue;
@@ -483,28 +483,28 @@ void compile(char *src)
 		expdefs(p); 			/* expand defines */
 		if(display)
 			printf("%s\n",p);
-		sp=strchr(p,SP);
+		sp=strchr(p,' ');
 		arg=arg2=arg3=arg4="";
 		if(sp) {
 			*sp=0;
 			arg=sp+1;
-			while(*arg && *arg<=SP) arg++;
-			sp=strchr(arg,SP);
+			while(*arg && *arg<=' ') arg++;
+			sp=strchr(arg,' ');
 			if(sp) {
 				arg2=sp+1;
-				while(*arg2 && *arg2<=SP) arg2++;
-				sp=strchr(arg2,SP);
+				while(*arg2 && *arg2<=' ') arg2++;
+				sp=strchr(arg2,' ');
 				if(sp) {
 					arg3=sp+1;
-					while(*arg3 && *arg3<=SP) arg3++; 
-					sp=strchr(arg3,SP);
+					while(*arg3 && *arg3<=' ') arg3++; 
+					sp=strchr(arg3,' ');
 					if(sp) {
 						arg4=sp+1;
-						while(*arg4 && *arg4<=SP) arg4++; } } } }
+						while(*arg4 && *arg4<=' ') arg4++; } } } }
 
 		if(!stricmp(p,"!INCLUDE")) {
 			savline=line;
-			sp=strchr(arg,SP);
+			sp=strchr(arg,' ');
 			if(sp) *sp=0;
 			sprintf(path,"%s%s",include_dir,arg);
 			compile(path);
@@ -513,7 +513,7 @@ void compile(char *src)
 		}
 
 		if(!stricmp(p,"!DEFINE")) {                     /* define */
-			sp=strchr(arg,SP);
+			sp=strchr(arg,' ');
 			if(sp)
 				*sp=0;
 			else
@@ -547,13 +547,13 @@ void compile(char *src)
 		if(!stricmp(p,"!GLOBAL")) {             /* declare global variables */
 			if(!(*arg)) break;
 			for(p=arg;*p && *p!='#';) {
-				sp=strchr(p,SP);
+				sp=strchr(p,' ');
 				if(sp) *sp=0;
 				newvar(p);
 				if(!sp)
 					break;
 				p=sp+1;
-				while(*p && *p<=SP)
+				while(*p && *p<=' ')
 					p++; }
 			continue; }
 
@@ -561,7 +561,7 @@ void compile(char *src)
 			if(!(*arg)) break;
 			p=arg;
 			while(*p) {
-				while(*p && *p<=SP) p++;
+				while(*p && *p<=' ') p++;
 				tmp[0]=*p++;
 				tmp[1]=*p++;
 				tmp[2]=0;
@@ -711,7 +711,7 @@ void compile(char *src)
 			continue; }
 		if(p[0]==':') {                     /* :label */
 			p++;
-			sp=strchr(p,SP);
+			sp=strchr(p,' ');
 			if(sp)
 				*sp=0;
 			for(i=0;i<labels;i++)
@@ -738,7 +738,7 @@ void compile(char *src)
 			continue; }
 		if(!stricmp(p,"GOTO")) {           /* goto */
 			if(!(*arg)) break;
-			sp=strchr(arg,SP);
+			sp=strchr(arg,' ');
 			if(sp)
 				*sp=0;
 			if((goto_label=(char **)REALLOC(goto_label,sizeof(char *)*(gotos+1)))
@@ -772,7 +772,7 @@ void compile(char *src)
 			continue; }
 		if(!stricmp(p,"CALL")) {          /* call */
 			if(!(*arg)) break;
-			sp=strchr(arg,SP);
+			sp=strchr(arg,' ');
 			if(sp)
 				*sp=0;
 			if((call_label=(char **)REALLOC(call_label,sizeof(char *)*(calls+1)))
@@ -850,7 +850,7 @@ void compile(char *src)
 		if(!stricmp(p,"DEFINE_STR_VAR") || !stricmp(p,"STR")) {
 			if(!(*arg)) break;
 			for(p=arg;*p && *p!='#';) {
-				sp=strchr(p,SP);
+				sp=strchr(p,' ');
 				if(sp) *sp=0;
 				fputc(CS_VAR_INSTRUCTION,out);
 				fputc(DEFINE_STR_VAR,out);
@@ -859,13 +859,13 @@ void compile(char *src)
 				if(!sp)
 					break;
 				p=sp+1;
-				while(*p && *p<=SP)
+				while(*p && *p<=' ')
 					p++; }
 			continue; }
 		if(!stricmp(p,"DEFINE_INT_VAR") || !stricmp(p,"INT")) {
 			if(!(*arg)) break;
 			for(p=arg;*p && *p!='#';) {
-				sp=strchr(p,SP);
+				sp=strchr(p,' ');
 				if(sp) *sp=0;
 				fputc(CS_VAR_INSTRUCTION,out);
 				fputc(DEFINE_INT_VAR,out);
@@ -874,13 +874,13 @@ void compile(char *src)
 				if(!sp)
 					break;
 				p=sp+1;
-				while(*p && *p<=SP)
+				while(*p && *p<=' ')
 					p++; }
 			continue; }
 		if(!stricmp(p,"DEFINE_GLOBAL_STR_VAR") || !stricmp(p,"GLOBAL_STR")) {
 			if(!(*arg)) break;
 			for(p=arg;*p && *p!='#';) {
-				sp=strchr(p,SP);
+				sp=strchr(p,' ');
 				if(sp) *sp=0;
 				fputc(CS_VAR_INSTRUCTION,out);
 				fputc(DEFINE_GLOBAL_STR_VAR,out);
@@ -889,13 +889,13 @@ void compile(char *src)
 				if(!sp)
 					break;
 				p=sp+1;
-				while(*p && *p<=SP)
+				while(*p && *p<=' ')
 					p++; }
 			continue; }
 		if(!stricmp(p,"DEFINE_GLOBAL_INT_VAR") || !stricmp(p,"GLOBAL_INT")) {
 			if(!(*arg)) break;
 			for(p=arg;*p && *p!='#';) {
-				sp=strchr(p,SP);
+				sp=strchr(p,' ');
 				if(sp) *sp=0;
 				fputc(CS_VAR_INSTRUCTION,out);
 				fputc(DEFINE_GLOBAL_INT_VAR,out);
@@ -904,7 +904,7 @@ void compile(char *src)
 				if(!sp)
 					break;
 				p=sp+1;
-				while(*p && *p<=SP)
+				while(*p && *p<=' ')
 					p++; }
 			continue; }
 
@@ -927,7 +927,7 @@ void compile(char *src)
 			if(!(*arg)) break;
 			fputc(CS_VAR_INSTRUCTION,out);
 			fputc(SET_STR_VAR,out);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(!p)
 				break;
 			*p=0;
@@ -938,7 +938,7 @@ void compile(char *src)
 			|| (!stricmp(p,"STRCAT") && strchr(arg,'"'))) {
 			fputc(CS_VAR_INSTRUCTION,out);
 			fputc(CAT_STR_VAR,out);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(!p)
 				break;
 			*p=0;
@@ -949,7 +949,7 @@ void compile(char *src)
 			&& strchr(arg,'"')) {
 			fputc(CS_VAR_INSTRUCTION,out);
 			fputc(STRSTR_VAR,out);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(!p)
 				break;
 			*p=0;
@@ -960,7 +960,7 @@ void compile(char *src)
 			if(!(*arg)) break;
 			fputc(CS_VAR_INSTRUCTION,out);
 			fputc(STRSTR_VARS,out);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(!p)
 				break;
 			*p=0;
@@ -990,7 +990,7 @@ void compile(char *src)
 			if(!(*arg)) break;
 			fputc(CS_VAR_INSTRUCTION,out);
 			fputc(CAT_STR_VARS,out);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(!p)
 				break;
 			*p=0;
@@ -1001,27 +1001,27 @@ void compile(char *src)
 			if(!(*arg)) break;
 			fputc(CS_VAR_INSTRUCTION,out);
 			fputc(FORMAT_STR_VAR,out);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(!p)
 				break;
 			*p=0;
 			writecrc(src,arg);					/* Write destination variable */
 			p++;
-			while(*p && *p<=SP) p++;
+			while(*p && *p<=' ') p++;
 			arg=p;
 			p=strrchr(arg,'"');
 			if(!p)
 				break;
 			*p=0;
 			p++;
-			while(*p && *p<=SP) p++;
+			while(*p && *p<=' ') p++;
 			writecstr(arg);                 /* Write string */
 			l=ftell(out);
 			fputc(0,out);                   /* Write total number of args */
 			i=0;
 			while(p && *p) {
 				arg=p;
-				p=strchr(arg,SP);
+				p=strchr(arg,' ');
 				if(p) {
 					*p=0;
 					p++; }
@@ -1036,13 +1036,13 @@ void compile(char *src)
 			if(!(*arg) || !(*arg2) || !(*arg3)) break;
 			fputc(CS_VAR_INSTRUCTION,out);
 			fputc(FORMAT_TIME_STR,out);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(!p)
 				break;
 			*p=0;
 			writecrc(src,arg);					/* Write destination variable */
 			p++;
-			while(*p && *p<=SP) p++;
+			while(*p && *p<=' ') p++;
 			arg=p;
 			p=strrchr(arg,'"');
 			if(!p)
@@ -1050,7 +1050,7 @@ void compile(char *src)
 			*p=0;
 			writecstr(arg);                 /* Write string */
 			p++;
-			while(*p && *p<=SP) p++;
+			while(*p && *p<=' ') p++;
 			writecrc(src,p);
 			continue; }
 
@@ -1058,7 +1058,7 @@ void compile(char *src)
 			if(!(*arg)) break;
 			fputc(CS_VAR_INSTRUCTION,out);
 			fputc(TIME_STR,out);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(!p)
 				break;
 			*p=0;
@@ -1070,7 +1070,7 @@ void compile(char *src)
 			if(!(*arg)) break;
 			fputc(CS_VAR_INSTRUCTION,out);
 			fputc(DATE_STR,out);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(!p)
 				break;
 			*p=0;
@@ -1082,7 +1082,7 @@ void compile(char *src)
 			if(!(*arg)) break;
 			fputc(CS_VAR_INSTRUCTION,out);
 			fputc(SECOND_STR,out);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(!p)
 				break;
 			*p=0;
@@ -1096,7 +1096,7 @@ void compile(char *src)
 			if(!(*arg)) break;
 			fputc(CS_VAR_INSTRUCTION,out);
 			fputc(SET_INT_VAR,out);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(!p)
 				break;
 			*p=0;
@@ -1110,7 +1110,7 @@ void compile(char *src)
 			if(!(*arg)) break;
 			fputc(CS_VAR_INSTRUCTION,out);
 			fputc(COMPARE_STR_VAR,out);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(!p)
 				break;
 			*p=0;
@@ -1132,12 +1132,12 @@ void compile(char *src)
 			fputc(CS_VAR_INSTRUCTION,out);
 			fputc(STRNCMP_VAR,out);
 			fwrite(&i,1,1,out); /* Length */
-			p=strchr(arg2,SP);
+			p=strchr(arg2,' ');
 			if(!p)
 				break;
 			*p=0;
 			p++;
-			while(*p && *p<=SP) p++;
+			while(*p && *p<=' ') p++;
 			writecrc(src,arg2);
 			writecstr(p);
 			continue; }
@@ -1158,12 +1158,12 @@ void compile(char *src)
 			fputc(STRNCMP_VARS,out);
 
 			fwrite(&i,1,1,out); /* Length */
-			p=strchr(arg2,SP);
+			p=strchr(arg2,' ');
 			if(!p)
 				break;
 			*p=0;
 			p++;
-			while(*p && *p<=SP) p++;
+			while(*p && *p<=' ') p++;
 			writecrc(src,arg2);
 			writecrc(src,p);
 			continue; }
@@ -1175,7 +1175,7 @@ void compile(char *src)
 
 			fputc(CS_VAR_INSTRUCTION,out);
 			fputc(COMPARE_INT_VAR,out);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(!p)
 				break;
 			*p=0;
@@ -1188,7 +1188,7 @@ void compile(char *src)
 			if(!(*arg)) break;
 			fputc(CS_VAR_INSTRUCTION,out);
 			fputc(COMPARE_VARS,out);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(!p)
 				break;
 			*p=0;
@@ -1199,7 +1199,7 @@ void compile(char *src)
 			if(!(*arg)) break;
 			fputc(CS_VAR_INSTRUCTION,out);
 			fputc(COPY_VAR,out);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(!p)
 				break;
 			*p=0;
@@ -1210,7 +1210,7 @@ void compile(char *src)
 			if(!(*arg)) break;
 			fputc(CS_VAR_INSTRUCTION,out);
 			fputc(SWAP_VARS,out);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(!p)
 				break;
 			*p=0;
@@ -1229,7 +1229,7 @@ void compile(char *src)
 			if(!(*arg)) break;
 			fputc(CS_VAR_INSTRUCTION,out);
 			fputc(DATE_STR_TO_INT,out);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(!p)
 				break;
 			*p=0;
@@ -1241,7 +1241,7 @@ void compile(char *src)
 			if(!(*arg)) break;
 			fputc(CS_VAR_INSTRUCTION,out);
 			fputc(CRC16_TO_INT,out);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(!p)
 				break;
 			*p=0;
@@ -1253,7 +1253,7 @@ void compile(char *src)
 			if(!(*arg)) break;
 			fputc(CS_VAR_INSTRUCTION,out);
 			fputc(CRC32_TO_INT,out);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(!p)
 				break;
 			*p=0;
@@ -1265,7 +1265,7 @@ void compile(char *src)
 			if(!(*arg)) break;
 			fputc(CS_VAR_INSTRUCTION,out);
 			fputc(CHKSUM_TO_INT,out);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(!p)
 				break;
 			*p=0;
@@ -1279,7 +1279,7 @@ void compile(char *src)
 			if(!(*arg)) break;
 			fputc(CS_VAR_INSTRUCTION,out);
 			fputc(ADD_INT_VAR,out);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(!p)
 				break;
 			*p=0;
@@ -1293,7 +1293,7 @@ void compile(char *src)
 			if(!(*arg)) break;
 			fputc(CS_VAR_INSTRUCTION,out);
 			fputc(ADD_INT_VARS,out);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(!p)
 				break;
 			*p=0;
@@ -1307,7 +1307,7 @@ void compile(char *src)
 			if(!(*arg)) break;
 			fputc(CS_VAR_INSTRUCTION,out);
 			fputc(SUB_INT_VAR,out);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(!p)
 				break;
 			*p=0;
@@ -1321,7 +1321,7 @@ void compile(char *src)
 			if(!(*arg)) break;
 			fputc(CS_VAR_INSTRUCTION,out);
 			fputc(SUB_INT_VARS,out);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(!p)
 				break;
 			*p=0;
@@ -1335,7 +1335,7 @@ void compile(char *src)
 			if(!(*arg)) break;
 			fputc(CS_VAR_INSTRUCTION,out);
 			fputc(MUL_INT_VAR,out);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(!p)
 				break;
 			*p=0;
@@ -1349,7 +1349,7 @@ void compile(char *src)
 			if(!(*arg)) break;
 			fputc(CS_VAR_INSTRUCTION,out);
 			fputc(MUL_INT_VARS,out);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(!p)
 				break;
 			*p=0;
@@ -1363,7 +1363,7 @@ void compile(char *src)
 			if(!(*arg)) break;
 			fputc(CS_VAR_INSTRUCTION,out);
 			fputc(DIV_INT_VAR,out);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(!p)
 				break;
 			*p=0;
@@ -1377,7 +1377,7 @@ void compile(char *src)
 			if(!(*arg)) break;
 			fputc(CS_VAR_INSTRUCTION,out);
 			fputc(DIV_INT_VARS,out);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(!p)
 				break;
 			*p=0;
@@ -1391,7 +1391,7 @@ void compile(char *src)
 			if(!(*arg)) break;
 			fputc(CS_VAR_INSTRUCTION,out);
 			fputc(MOD_INT_VAR,out);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(!p)
 				break;
 			*p=0;
@@ -1405,7 +1405,7 @@ void compile(char *src)
 			if(!(*arg)) break;
 			fputc(CS_VAR_INSTRUCTION,out);
 			fputc(MOD_INT_VARS,out);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(!p)
 				break;
 			*p=0;
@@ -1419,7 +1419,7 @@ void compile(char *src)
 			if(!(*arg)) break;
 			fputc(CS_VAR_INSTRUCTION,out);
 			fputc(AND_INT_VAR,out);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(!p)
 				break;
 			*p=0;
@@ -1431,7 +1431,7 @@ void compile(char *src)
 			if(!(*arg)) break;
 			fputc(CS_VAR_INSTRUCTION,out);
 			fputc(AND_INT_VARS,out);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(!p)
 				break;
 			*p=0;
@@ -1463,7 +1463,7 @@ void compile(char *src)
 			if(!(*arg)) break;
 			fputc(CS_VAR_INSTRUCTION,out);
 			fputc(OR_INT_VAR,out);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(!p)
 				break;
 			*p=0;
@@ -1475,7 +1475,7 @@ void compile(char *src)
 			if(!(*arg)) break;
 			fputc(CS_VAR_INSTRUCTION,out);
 			fputc(OR_INT_VARS,out);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(!p)
 				break;
 			*p=0;
@@ -1489,7 +1489,7 @@ void compile(char *src)
 			if(!(*arg)) break;
 			fputc(CS_VAR_INSTRUCTION,out);
 			fputc(NOT_INT_VAR,out);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(!p)
 				break;
 			*p=0;
@@ -1501,7 +1501,7 @@ void compile(char *src)
 			if(!(*arg)) break;
 			fputc(CS_VAR_INSTRUCTION,out);
 			fputc(NOT_INT_VARS,out);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(!p)
 				break;
 			*p=0;
@@ -1515,7 +1515,7 @@ void compile(char *src)
 			if(!(*arg)) break;
 			fputc(CS_VAR_INSTRUCTION,out);
 			fputc(XOR_INT_VAR,out);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(!p)
 				break;
 			*p=0;
@@ -1527,7 +1527,7 @@ void compile(char *src)
 			if(!(*arg)) break;
 			fputc(CS_VAR_INSTRUCTION,out);
 			fputc(XOR_INT_VARS,out);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(!p)
 				break;
 			*p=0;
@@ -1547,7 +1547,7 @@ void compile(char *src)
 				l=val(src,arg2);
 			fputc(CS_VAR_INSTRUCTION,out);
 			fputc(RANDOM_INT_VAR,out);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(!p)
 				break;
 			*p=0;
@@ -1577,7 +1577,7 @@ void compile(char *src)
 			continue; }
 
 		if(!stricmp(p,"PRINT") && !strchr(arg,'"') && !strchr(arg,'\\')
-			&& !strchr(arg,SP)) {
+			&& !strchr(arg,' ')) {
 			if(!(*arg)) break;
 			fputc(CS_VAR_INSTRUCTION,out);
 			fputc(PRINT_VAR,out);
@@ -1596,14 +1596,14 @@ void compile(char *src)
 				break;
 			*p=0;
 			p++;
-			while(*p && *p<=SP) p++;
+			while(*p && *p<=' ') p++;
 			writecstr(arg);                 /* Write string */
 			l=ftell(out);
 			fputc(0,out);                   /* Write total number of args */
 			i=0;
 			while(p && *p) {
 				arg=p;
-				p=strchr(arg,SP);
+				p=strchr(arg,' ');
 				if(p) {
 					*p=0;
 					p++; }
@@ -1630,18 +1630,18 @@ void compile(char *src)
 				fputc(FIO_OPEN,out);
 			else
 				fputc(FIO_OPEN_VAR,out);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(!p)
 				break;
 			*p=0;
 			writecrc(src,arg);
-			p=strchr(arg2,SP);
+			p=strchr(arg2,' ');
 			if(!p)
 				break;
 			*p=0;
 			p++;
 			fwrite(&i,2,1,out);
-			while(*p && *p<=SP) p++;
+			while(*p && *p<=' ') p++;
 			if(*p=='"')
 				writestr(p);
 			else
@@ -1667,12 +1667,12 @@ void compile(char *src)
 				fputc(FIO_READ,out);
 			else
 				fputc(FIO_READ_VAR,out);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(!p)
 				break;
 			*p=0;
 			writecrc(src,arg);			/* File handle */
-			p=strchr(arg2,SP);
+			p=strchr(arg2,' ');
 			if(p)
 				*p=0;
 			writecrc(src,arg2); 		/* Variable */
@@ -1692,12 +1692,12 @@ void compile(char *src)
 				fputc(FIO_WRITE,out);
 			else
 				fputc(FIO_WRITE_VAR,out);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(!p)
 				break;
 			*p=0;
 			writecrc(src,arg);			/* File handle */
-			p=strchr(arg2,SP);
+			p=strchr(arg2,' ');
 			if(p)
 				*p=0;
 			writecrc(src,arg2); 		/* Variable */
@@ -1716,7 +1716,7 @@ void compile(char *src)
 			if(!(*arg) || !(*arg2)) break;
 			fputc(CS_FIO_FUNCTION,out);
 			fputc(FIO_GET_LENGTH,out);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(!p)
 				break;
 			*p=0;
@@ -1727,7 +1727,7 @@ void compile(char *src)
 			if(!(*arg) || !(*arg2)) break;
 			fputc(CS_FIO_FUNCTION,out);
 			fputc(FIO_READ_LINE,out);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(!p)
 				break;
 			*p=0;
@@ -1744,7 +1744,7 @@ void compile(char *src)
 			if(!(*arg) || !(*arg2)) break;
 			fputc(CS_FIO_FUNCTION,out);
 			fputc(FIO_GET_POS,out);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(!p)
 				break;
 			*p=0;
@@ -1758,12 +1758,12 @@ void compile(char *src)
 				fputc(FIO_SEEK,out);
 			else
 				fputc(FIO_SEEK_VAR,out);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(!p)
 				break;
 			*p=0;
 			writecrc(src,arg);			/* File handle */
-			p=strchr(arg2,SP);
+			p=strchr(arg2,' ');
 			if(p)
 				*p=0;
 			if(atol(arg2) || isdigit(*arg2)) {
@@ -1774,7 +1774,7 @@ void compile(char *src)
 			i=0;
 			if(p) {
 				p++;
-				while(*p && *p<=SP) p++;
+				while(*p && *p<=' ') p++;
 				i=atoi(p);
 				if(!stricmp(p,"CUR"))
 					i=SEEK_CUR;
@@ -1789,7 +1789,7 @@ void compile(char *src)
 				fputc(FIO_LOCK,out);
 			else
 				fputc(FIO_LOCK_VAR,out);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(!p)
 				break;
 			*p=0;
@@ -1809,7 +1809,7 @@ void compile(char *src)
 				fputc(FIO_UNLOCK,out);
 			else
 				fputc(FIO_UNLOCK_VAR,out);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(!p)
 				break;
 			*p=0;
@@ -1829,7 +1829,7 @@ void compile(char *src)
 				fputc(FIO_SET_LENGTH,out);
 			else
 				fputc(FIO_SET_LENGTH_VAR,out);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(!p)
 				break;
 			*p=0;
@@ -1844,27 +1844,27 @@ void compile(char *src)
 			if(!(*arg)) break;
 			fputc(CS_FIO_FUNCTION,out);
 			fputc(FIO_PRINTF,out);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(!p)
 				break;
 			*p=0;
 			writecrc(src,arg);					/* Write destination variable */
 			p++;
-			while(*p && *p<=SP) p++;
+			while(*p && *p<=' ') p++;
 			arg=p;
 			p=strrchr(arg,'"');
 			if(!p)
 				break;
 			*p=0;
 			p++;
-			while(*p && *p<=SP) p++;
+			while(*p && *p<=' ') p++;
 			writecstr(arg);                 /* Write string */
 			l=ftell(out);
 			fputc(0,out);                   /* Write total number of args */
 			i=0;
 			while(p && *p) {
 				arg=p;
-				p=strchr(arg,SP);
+				p=strchr(arg,' ');
 				if(p) {
 					*p=0;
 					p++; }
@@ -1893,7 +1893,7 @@ void compile(char *src)
 			if(!(*arg) || !(*arg2)) break;
 			fputc(CS_FIO_FUNCTION,out);
 			fputc(FIO_GET_TIME,out);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(!p)
 				break;
 			*p=0;
@@ -1904,7 +1904,7 @@ void compile(char *src)
 			if(!(*arg) || !(*arg2)) break;
 			fputc(CS_FIO_FUNCTION,out);
 			fputc(FIO_SET_TIME,out);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(!p)
 				break;
 			*p=0;
@@ -1921,7 +1921,7 @@ void compile(char *src)
 			if(!(*arg) || !(*arg2)) break;
 			fputc(CS_FIO_FUNCTION,out);
 			fputc(RENAME_FILE,out);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(!p)
 				break;
 			*p=0;
@@ -1932,7 +1932,7 @@ void compile(char *src)
 			if(!(*arg) || !(*arg2)) break;
 			fputc(CS_FIO_FUNCTION,out);
 			fputc(COPY_FILE,out);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(!p)
 				break;
 			*p=0;
@@ -1943,7 +1943,7 @@ void compile(char *src)
 			if(!(*arg) || !(*arg2)) break;
 			fputc(CS_FIO_FUNCTION,out);
 			fputc(MOVE_FILE,out);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(!p)
 				break;
 			*p=0;
@@ -1954,7 +1954,7 @@ void compile(char *src)
 			if(!(*arg) || !(*arg2)) break;
 			fputc(CS_FIO_FUNCTION,out);
 			fputc(GET_FILE_ATTRIB,out);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(!p)
 				break;
 			*p=0;
@@ -1965,7 +1965,7 @@ void compile(char *src)
 			if(!(*arg) || !(*arg2)) break;
 			fputc(CS_FIO_FUNCTION,out);
 			fputc(SET_FILE_ATTRIB,out);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(!p)
 				break;
 			*p=0;
@@ -1994,7 +1994,7 @@ void compile(char *src)
 			if(!(*arg) || !(*arg2)) break;
 			fputc(CS_FIO_FUNCTION,out);
 			fputc(OPEN_DIR,out);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(!p)
 				break;
 			*p=0;
@@ -2005,7 +2005,7 @@ void compile(char *src)
 			if(!(*arg) || !(*arg2)) break;
 			fputc(CS_FIO_FUNCTION,out);
 			fputc(READ_DIR,out);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(!p)
 				break;
 			*p=0;
@@ -2284,7 +2284,7 @@ void compile(char *src)
 					i=val(src,arg2);
 
 				fprintf(out,"%c%c",CS_VAR_INSTRUCTION,PRINTFILE_VAR_MODE);
-				p=strchr(arg,SP);
+				p=strchr(arg,' ');
 				if(p) *p=0;
 				writecrc(src,arg);
 				fwrite(&i,2,1,out); }
@@ -2302,7 +2302,7 @@ void compile(char *src)
 				j=val(src,arg3);
 
 			fprintf(out,"%c%c",CS_VAR_INSTRUCTION,PRINTTAIL_VAR_MODE);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(p) *p=0;
 			writecrc(src,arg);
 			i=val(src,arg2);
@@ -2344,7 +2344,7 @@ void compile(char *src)
 			} else {
 				fprintf(out,"%c%c",CS_VAR_INSTRUCTION,TELNET_GATE_VAR);
 				fwrite(&l,4,1,out);
-				p=strchr(arg,SP);
+				p=strchr(arg,' ');
 				if(p) *p=0;
 				writecrc(src,arg);
 			}
@@ -2441,7 +2441,7 @@ void compile(char *src)
 			if(!(*arg) || !(*arg2))
 				break;
 			fprintf(out,"%c%c",CS_VAR_INSTRUCTION,FLENGTH_TO_INT);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(p) *p=0;
 			writecrc(src,arg);
 			writecrc(src,arg2);
@@ -2450,7 +2450,7 @@ void compile(char *src)
 			if(!(*arg) || !(*arg2))
 				break;
 			fprintf(out,"%c%c",CS_VAR_INSTRUCTION,FTIME_TO_INT);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(p) *p=0;
 			writecrc(src,arg);
 			writecrc(src,arg2);
@@ -2459,7 +2459,7 @@ void compile(char *src)
 			if(!(*arg) || !(*arg2))
 				break;
 			fprintf(out,"%c%c",CS_VAR_INSTRUCTION,CHARVAL_TO_INT);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(p) *p=0;
 			writecrc(src,arg);
 			writecrc(src,arg2);
@@ -2525,7 +2525,7 @@ void compile(char *src)
 			writecstr(arg);
 			continue; }
 		if(!stricmp(p,"GETSTR")) {
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(p) *p=0;
 			if((!(*arg) || isdigit(*arg) || !stricmp(arg,"STR")) && !(*arg3))
 				fprintf(out,"%c%c",CS_GETSTR,atoi(arg) ? atoi(arg)
@@ -2554,7 +2554,7 @@ void compile(char *src)
 			continue; }
 		if(!stricmp(p,"GETNUM")) {
 			if(!(*arg)) break;
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(p) *p=0;
 			if(isdigit(*arg)) {
 				i=val(src,arg);
@@ -2589,7 +2589,7 @@ void compile(char *src)
 			fwrite(&i,2,1,out);
 			continue; }
 		if(!stricmp(p,"GETLINE")) {
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(p) *p=0;
 			if(!(*arg) || isdigit(*arg))
 				fprintf(out,"%c%c",CS_GETLINE,*arg ? atoi(arg) :128);
@@ -2609,7 +2609,7 @@ void compile(char *src)
 				fwrite(&i,1,1,out); }
 			continue; }
 		if(!stricmp(p,"GETSTRUPR")) {
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(p) *p=0;
 			if(!(*arg) || isdigit(*arg))
 				fprintf(out,"%c%c",CS_GETSTRUPR,*arg ? atoi(arg) :128);
@@ -2629,7 +2629,7 @@ void compile(char *src)
 				fwrite(&i,1,1,out); }
 			continue; }
 		if(!stricmp(p,"GETNAME")) {
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(p) *p=0;
 			if(!(*arg) || isdigit(*arg))
 				fprintf(out,"%c%c",CS_GETNAME,*arg ? atoi(arg) :25);
@@ -2650,7 +2650,7 @@ void compile(char *src)
 			continue; }
 		if(!stricmp(p,"SHIFT_STR")) {
 			if(!(*arg)) break;
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(p) *p=0;
 			if(isdigit(*arg))
 				fprintf(out,"%c%c",CS_SHIFT_STR,atoi(arg));
@@ -2705,7 +2705,7 @@ void compile(char *src)
 		if(!stricmp(p,"STRLEN")) {
 			if(!(*arg)) break;
 			fprintf(out,"%c%c",CS_VAR_INSTRUCTION,STRLEN_INT_VAR);
-			p=strchr(arg,SP);
+			p=strchr(arg,' ');
 			if(!p)
 				break;
 			*p=0;
@@ -2828,7 +2828,7 @@ void compile(char *src)
 			if(!(*arg)) break;
 			p=arg;
 			fprintf(out,"%c%c",CS_TOGGLE_USER_FLAG,toupper(*p++));
-			while(*p && *p<=SP) p++;
+			while(*p && *p<=' ') p++;
 			fprintf(out,"%c",toupper(*p));
 			continue; }
 

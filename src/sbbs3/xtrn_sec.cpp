@@ -620,7 +620,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 		}
 
 		strcpy(tmp,cfg.sys_op);
-		p=strchr(tmp,SP);
+		p=strchr(tmp,' ');
 		if(p)
 			*(p++)=0;
 		else
@@ -638,7 +638,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 		write(file,str,strlen(str));
 
 		strcpy(tmp,name);
-		p=strchr(tmp,SP);
+		p=strchr(tmp,' ');
 		if(p)
 			*(p++)=0;
 		else
@@ -916,7 +916,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 			,0									/* Printer on/off */
 			,sys_status&SS_SYSPAGE ? -1:0		/* Page Bell on/off */
 			,cfg.node_misc&NM_ANSALARM ? -1:0	/* Caller Alarm on/off */
-			,SP 								/* Sysop next flag */
+			,' ' 								/* Sysop next flag */
 			,0									/* Error corrected */
 			,useron.misc&NO_EXASCII ? '7'       /* Graphics mode */
 				: (useron.misc&(COLOR|ANSI))==(COLOR|ANSI) ? 'Y':'N'
@@ -929,7 +929,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 		write(file,&useron.number,2);			/* User record number */
 
 		strcpy(tmp,name);
-		p=strchr(tmp,SP);
+		p=strchr(tmp,' ');
 		if(p) *p=0;
 		sprintf(str,"%-15.15s%-12s"
 			,tmp								/* User's first name */
@@ -987,8 +987,8 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 
 		sprintf(str,"%d%c%c%d%s%c%c%d%d%d%c%c"
 			,cfg.com_port						/* COM Port number */
-			,SP 								/* Reserved */
-			,SP 								/* "" */
+			,' ' 								/* Reserved */
+			,' ' 								/* "" */
 			,(useron.misc&ANSI)==ANSI			/* 1=ANSI 0=NO ANSI */
 			,"01-01-80"                         /* last event date */
 			,0,0								/* last event minute */
@@ -1119,7 +1119,7 @@ void sbbs_t::xtrndat(char *name, char *dropdir, uchar type, ulong tleft
 				+(long)tm.tm_sec;
 
 		strcpy(tmp,name);
-		if((p=strchr(tmp,SP))!=NULL)
+		if((p=strchr(tmp,' '))!=NULL)
 			*p=0;
 
 		sprintf(str,"%u\n%s\n%s\n%s\n%lu\n%u\n%lu\n%lu\n"

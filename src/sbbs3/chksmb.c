@@ -94,7 +94,7 @@ void truncsp(char *str)
 	uint c;
 
 	c=strlen(str);
-	while(c && (uchar)str[c-1]<=SP) c--;
+	while(c && (uchar)str[c-1]<=' ') c--;
 	if(str[c]!=0)
 		str[c]=0;
 }
@@ -107,7 +107,7 @@ char* DLLCALL strip_ctrl(char *str)
 	for(i=j=0;str[i] && j<sizeof(tmp)-1;i++) {
 		if(str[i]==CTRL_A && str[i+1]!=0)
 			i++;
-		else if((uchar)str[i]>=SP)
+		else if((uchar)str[i]>=' ')
 			tmp[j++]=str[i];
 	}
 	if(i!=j) {

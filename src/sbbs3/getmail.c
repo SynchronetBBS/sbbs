@@ -99,7 +99,7 @@ void DLLCALL delfattach(scfg_t* cfg, smbmsg_t* msg)
 	strcpy(str,msg->subj);
 	tp=str;
 	while(1) {
-		p=strchr(tp,SP);
+		p=strchr(tp,' ');
 		if(p) *p=0;
 		sp=strrchr(tp,'/');              /* sp is slash pointer */
 		if(!sp) sp=strrchr(tp,'\\');

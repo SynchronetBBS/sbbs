@@ -97,7 +97,7 @@ BOOL DLLCALL getfiledat(scfg_t* cfg, file_t* f)
 	getrec(buf,F_OPENCOUNT,3,str);
 	f->opencount=atoi(str);
 	if(buf[F_MISC]!=ETX)
-		f->misc=buf[F_MISC]-SP;
+		f->misc=buf[F_MISC]-' ';
 	else
 		f->misc=0;
 	return(TRUE);
@@ -122,7 +122,7 @@ BOOL DLLCALL putfiledat(scfg_t* cfg, file_t* f)
 	putrec(buf,F_TIMESDLED+5,2,crlf);
 	putrec(buf,F_OPENCOUNT,3,ultoa(f->opencount,tmp,10));
 	putrec(buf,F_OPENCOUNT+3,2,crlf);
-	buf[F_MISC]=f->misc+SP;
+	buf[F_MISC]=f->misc+' ';
 	putrec(buf,F_ALTPATH,2,hexplus(f->altpath,tmp));
 	putrec(buf,F_ALTPATH+2,2,crlf);
 	sprintf(str,"%s%s.dat",cfg->dir[f->dir]->data_dir,cfg->dir[f->dir]->code);
@@ -200,7 +200,7 @@ BOOL DLLCALL addfiledat(scfg_t* cfg, file_t* f)
 	putrec(fdat,F_TIMESDLED+5,2,crlf);
 	putrec(fdat,F_OPENCOUNT,3,ultoa(f->opencount,tmp,10));
 	putrec(fdat,F_OPENCOUNT+3,2,crlf);
-	fdat[F_MISC]=f->misc+SP;
+	fdat[F_MISC]=f->misc+' ';
 	putrec(fdat,F_ALTPATH,2,hexplus(f->altpath,tmp));
 	putrec(fdat,F_ALTPATH+2,2,crlf);
 	f->datoffset=l;
@@ -508,7 +508,7 @@ char* DLLCALL unpadfname(char *filename, char *str)
     int c,d;
 
 	for(c=0,d=0;filename[c];c++)
-		if(filename[c]!=SP) str[d++]=filename[c];
+		if(filename[c]!=' ') str[d++]=filename[c];
 	str[d]=0;
 	return(str);
 }

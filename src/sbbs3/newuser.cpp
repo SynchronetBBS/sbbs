@@ -111,7 +111,7 @@ BOOL sbbs_t::newuser()
 		useron.expire=now+((long)cfg.new_expire*24L*60L*60L); 
 	} else
 		useron.expire=0;
-	useron.sex=SP;
+	useron.sex=' ';
 	useron.prot=cfg.new_prot;
 	strcpy(useron.note,cid);		/* Caller ID if supported, NULL otherwise */
 	if((i=userdatdupe(0,U_NOTE,LEN_NOTE,cid,true))!=0) {	/* Duplicate IP address */
@@ -196,13 +196,13 @@ BOOL sbbs_t::newuser()
 					bputs(text[EnterYourRealName]);
 				getstr(useron.alias,LEN_ALIAS,kmode);
 				truncsp(useron.alias);
-				if(useron.alias[0]<=SP || !isalpha(useron.alias[0])
+				if(useron.alias[0]<=' ' || !isalpha(useron.alias[0])
 					|| alias(&cfg,useron.alias,tmp)!=useron.alias
 					|| !stricmp(useron.alias,cfg.sys_id)
 					|| strchr(useron.alias,0xff)
 					|| matchuser(&cfg,useron.alias,TRUE /* sysop_alias */) 
 					|| trashcan(useron.alias,"name")
-					|| (!(cfg.uq&UQ_ALIASES) && !strchr(useron.alias,SP))) {
+					|| (!(cfg.uq&UQ_ALIASES) && !strchr(useron.alias,' '))) {
 					bputs(text[YouCantUseThatName]);
 					if(!yesno(ContinueText))
 						return(FALSE);
@@ -218,7 +218,7 @@ BOOL sbbs_t::newuser()
 				if(!getstr(useron.name,LEN_NAME,kmode)
 					|| trashcan(useron.name,"name")
 					|| strchr(useron.name,0xff)
-					|| !strchr(useron.name,SP)
+					|| !strchr(useron.name,' ')
 					|| (cfg.uq&UQ_DUPREAL
 						&& userdatdupe(useron.number,U_NAME,LEN_NAME
 							,useron.name,0)))

@@ -60,7 +60,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 	if(mode&K_LINE && useron.misc&ANSI && !(mode&K_NOECHO)) {
 		attr(cfg.color[clr_inputline]);
 		for(i=0;i<maxlen;i++)
-			outchar(SP);
+			outchar(' ');
 		cursor_left(maxlen); 
 	}
 	if(wordwrap[0]) {
@@ -102,7 +102,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 			rputs(str1);
 			i=l; 
 		}
-		if(ch!=SP && ch!=TAB)
+		if(ch!=' ' && ch!=TAB)
 			ungetkey(ch); 
 	}
 
@@ -134,7 +134,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 		}
 		if(ch==TAB && (mode&K_TAB || !(mode&K_WRAP)))	/* TAB same as CR */
 			break;
-		if(!i && mode&K_UPRLWR && (ch==SP || ch==TAB))
+		if(!i && mode&K_UPRLWR && (ch==' ' || ch==TAB))
 			continue;	/* ignore beginning white space if upper/lower */
 		if(mode&K_E71DETECT && (uchar)ch==(CR|0x80) && l>1) {
 			if(strstr(str1,"çç")) {
@@ -171,12 +171,12 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 			case CTRL_D: /* Ctrl-D Delete word right */
 				if(i<l) {
 					x=i;
-					while(x<l && str1[x]!=SP) {
-						outchar(SP);
+					while(x<l && str1[x]!=' ') {
+						outchar(' ');
 						x++; 
 					}
-					while(x<l && str1[x]==SP) {
-						outchar(SP);
+					while(x<l && str1[x]==' ') {
+						outchar(' ');
 						x++; 
 					}
 					cursor_left(x-i);   /* move cursor back */
@@ -186,7 +186,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 						z++; 
 					}
 					while(z<l) {                    /* write over extra chars */
-						outchar(SP);
+						outchar(' ');
 						z++; 
 					}
 					cursor_left(z-i);
@@ -263,7 +263,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 						outchar(str1[z]=str1[z+1]);
 						z++; 
 					}
-					outchar(SP);        /* write over the last char */
+					outchar(' ');        /* write over the last char */
 					cursor_left((l-i)+1); 
 				}
 				else if(!(mode&K_NOECHO))
@@ -281,9 +281,9 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 							console&=~CON_INSERT; 
 #endif
 					}
-					str1[i++]=SP;
+					str1[i++]=' ';
 					if(!(mode&K_NOECHO))
-						outchar(SP); 
+						outchar(' '); 
 				}
 				while(i<maxlen && i%EDIT_TABSIZE) {
 					if(console&CON_INSERT) {
@@ -296,9 +296,9 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 							console&=~CON_INSERT; 
 #endif
 					}
-					str1[i++]=SP;
+					str1[i++]=' ';
 					if(!(mode&K_NOECHO))
-						outchar(SP); 
+						outchar(' '); 
 				}
 				if(console&CON_INSERT && !(mode&K_NOECHO))
 					redrwstr(str1,i,l,0);
@@ -309,7 +309,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 				l=bstrlen(str1);
 				if(!l) break;
 				for(x=0;x<(maxlen-l)/2;x++)
-					str2[x]=SP;
+					str2[x]=' ';
 				str2[x]=0;
 				strcat(str2,str1);
 				strcpy(strout,str2);
@@ -332,9 +332,9 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 			case CTRL_N:    /* Ctrl-N Next word */
 				if(i<l && (useron.misc&ANSI)) {
 					x=i;
-					while(str1[i]!=SP && i<l)
+					while(str1[i]!=' ' && i<l)
 						i++;
-					while(str1[i]==SP && i<l)
+					while(str1[i]==' ' && i<l)
 						i++;
 					cursor_right(i-x); 
 				}
@@ -352,11 +352,11 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 			case CTRL_W:    /* Ctrl-W   Delete word left */
 				if(i<l) {
 					x=i;                            /* x=original offset */
-					while(i && str1[i-1]==SP) {
+					while(i && str1[i-1]==' ') {
 						outchar(BS);
 						i--; 
 					}
-					while(i && str1[i-1]!=SP) {
+					while(i && str1[i-1]!=' ') {
 						outchar(BS);
 						i--; 
 					}
@@ -366,19 +366,19 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 						z++; 
 					}
 					while(z<l) {                    /* write over extra chars */
-						outchar(SP);
+						outchar(' ');
 						z++; 
 					}
 					cursor_left(z-i);				/* back to new x corridnant */
 					l-=x-i;                         /* l=new length */
 				} else {
-					while(i && str1[i-1]==SP) {
+					while(i && str1[i-1]==' ') {
 						i--;
 						l--;
 						if(!(mode&K_NOECHO))
 							bputs("\b \b"); 
 					}
-					while(i && str1[i-1]!=SP) {
+					while(i && str1[i-1]!=' ') {
 						i--;
 						l--;
 						if(!(mode&K_NOECHO))
@@ -404,7 +404,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 						l=0;
 					} else {
 						while(i<l) {
-							outchar(SP);
+							outchar(' ');
 							i++; 
 						}
 						while(l) {
@@ -426,9 +426,9 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 			case 28:    /* Ctrl-\ Previous word */
 				if(i && (useron.misc&ANSI) && !(mode&K_NOECHO)) {
 					x=i;
-					while(str1[i-1]==SP && i)
+					while(str1[i-1]==' ' && i)
 						i--;
-					while(str1[i-1]!=SP && i)
+					while(str1[i-1]!=' ' && i)
 						i--;
 					cursor_left(x-i); 
 				}
@@ -478,13 +478,13 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 					outchar(str1[z]=str1[z+1]);
 					z++; 
 				}
-				outchar(SP);        /* write over the last char */
+				outchar(' ');        /* write over the last char */
 				cursor_left((l-i)+1);
 				break;
 			default:
-				if(mode&K_WRAP && i==maxlen && ch>=SP && !(console&CON_INSERT)) {
+				if(mode&K_WRAP && i==maxlen && ch>=' ' && !(console&CON_INSERT)) {
 					str1[i]=0;
-					if(ch==SP && !(mode&K_CHAT)) { /* don't wrap a space */ 
+					if(ch==' ' && !(mode&K_CHAT)) { /* don't wrap a space */ 
 						strcpy(strout,str1);	   /* as last char */
 						if(strip_invalid_attr(strout) && !(mode&K_NOECHO))
 							redrwstr(strout,i,l,K_MSG);
@@ -495,7 +495,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 					x=i-1;
 					z=1;
 					wordwrap[0]=ch;
-					while(str1[x]!=SP && x)
+					while(str1[x]!=' ' && x)
 						wordwrap[z++]=str1[x--];
 					if(x<(maxlen/2)) {
 						wordwrap[1]=0;  /* only wrap one character */
@@ -521,9 +521,9 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 						CRLF;
 					return(x); 
 				}
-				if(i<maxlen && ch>=SP) {
+				if(i<maxlen && ch>=' ') {
 					if(mode&K_UPRLWR)
-						if(!i || (i && (str1[i-1]==SP || str1[i-1]=='-'
+						if(!i || (i && (str1[i-1]==' ' || str1[i-1]=='-'
 							|| str1[i-1]=='.' || str1[i-1]=='_')))
 							ch=toupper(ch);
 						else

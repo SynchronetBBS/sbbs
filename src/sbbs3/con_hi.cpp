@@ -58,7 +58,7 @@ void sbbs_t::redrwstr(char *strin, int i, int l, long mode)
 			cursor_left(l-i); 
 	} else {
 		while(c<cols-1) { /* clear to end of line */
-			outchar(SP);
+			outchar(' ');
 			c++; 
 		}
 		while(c>l) { /* back space to end of string */

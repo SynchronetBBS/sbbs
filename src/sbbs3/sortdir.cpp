@@ -155,7 +155,7 @@ void sbbs_t::resort(uint dirnum)
 		newoffset=(ulong)i*(ulong)F_LEN;
 
 		j=datbuf[offset+F_MISC];  /* misc bits */
-		if(j!=ETX) j-=SP;
+		if(j!=ETX) j-=' ';
 		if(j&FM_EXTDESC) { /* extended description */
 			lseek(exbfile,(offset/F_LEN)*512L,SEEK_SET);
 			memset(ext,0,512);

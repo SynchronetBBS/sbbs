@@ -504,7 +504,7 @@ size_t sbbs_t::gettmplt(char *strout,char *templt, long mode)
 		}
 		while(c<t) {
 			if(tmplt[c]=='N' || tmplt[c]=='A' || tmplt[c]=='!')
-				outchar(SP);
+				outchar(' ');
 			else
 				outchar(tmplt[c]);
 			c++; 
@@ -715,7 +715,7 @@ bool sbbs_t::chkpass(char *pass, user_t* user, bool unique)
 	strcpy(alias,user->alias);
 	strupr(alias);
 	strcpy(first,alias);
-	p=strchr(first,SP);
+	p=strchr(first,' ');
 	if(p) {
 		*p=0;
 		strcpy(last,p+1); 

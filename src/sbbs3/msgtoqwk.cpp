@@ -55,7 +55,7 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 	smbmsg_t	orig_msg;
 
 	offset=ftell(qwk_fp);
-	memset(str,SP,QWK_BLOCK_LEN);
+	memset(str,' ',QWK_BLOCK_LEN);
 	fwrite(str,QWK_BLOCK_LEN,1,qwk_fp);		/* Init header to space */
 
 	if(msg->from_net.addr && (uint)subnum==INVALID_SUB) {
@@ -198,7 +198,7 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 				tearwatch=0;			/* LF-CR- is not okay */
 			continue; }
 
-		if(ch==SP && tearwatch==4) {	/* watch for "LF--- " */
+		if(ch==' ' && tearwatch==4) {	/* watch for "LF--- " */
 			tear=1;
 			tearwatch=0; }
 
@@ -211,7 +211,7 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 			tearwatch=0;
 
 		if((uint)subnum!=INVALID_SUB && cfg.sub[subnum]->misc&SUB_ASCII) {
-			if(ch<SP && ch!=1)
+			if(ch<' ' && ch!=1)
 				ch='.';
 			else if((uchar)ch>0x7f)
 				ch='*'; }
@@ -328,7 +328,7 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 
 	while(size%QWK_BLOCK_LEN) {				 /* Pad with spaces */
 		size++;
-		fputc(SP,qwk_fp); }
+		fputc(' ',qwk_fp); }
 
 	if(localtime_r((time_t *)&msg->hdr.when_written.time,&tm)==NULL)
 		memset(&tm,0,sizeof(tm));
@@ -363,9 +363,9 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 		,(size/QWK_BLOCK_LEN)+1	/* Number of blocks */
 		,(char)conf&0xff        /* Conference number lo byte */
 		,(ushort)conf>>8		/*					 hi byte */
-		,SP                     /* not used */
-		,SP                     /* not used */
-		,useron.rest&FLAG('Q') ? '*' : SP     /* Net tag line */
+		,' '                     /* not used */
+		,' '                     /* not used */
+		,useron.rest&FLAG('Q') ? '*' : ' '     /* Net tag line */
 		);
 
 	fseek(qwk_fp,offset,SEEK_SET);

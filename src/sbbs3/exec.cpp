@@ -1775,7 +1775,7 @@ int sbbs_t::exec(csi_t *csi)
 				ungetkey(csi->str[i]);
 			return(0);
 		case CS_PRINTKEY:
-			if((csi->cmd&0x7f)>=SP)
+			if((csi->cmd&0x7f)>=' ')
 				outchar(csi->cmd&0x7f);
 			return(0);
 		case CS_PRINTSTR:

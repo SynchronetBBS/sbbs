@@ -167,7 +167,7 @@ bool sbbs_t::uploadfile(file_t *f)
 				memset(ext,0,F_EXBSIZE+1);
 				read(file,ext,F_EXBSIZE);
 				for(i=F_EXBSIZE;i;i--)
-					if(ext[i-1]>SP)
+					if(ext[i-1]>' ')
 						break;
 				ext[i]=0;
 				if(!f->desc[0]) {

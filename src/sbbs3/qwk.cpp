@@ -65,7 +65,7 @@ bool route_circ(char *via, char *id)
 
 	strcpy(str,via);
 	p=str;
-	while(*p && *p<=SP)
+	while(*p && *p<=' ')
 		p++;
 	while(*p) {
 		sp=strchr(p,'/');
@@ -127,7 +127,7 @@ int sbbs_t::qwk_route(char *inaddr, char *fulladdr)
 				strcpy(fulladdr,inaddr);
 				return(i); } } }
 
-	p=strchr(node,SP);
+	p=strchr(node,' ');
 	if(p) *p=0;
 
 	sprintf(str,"%sqnet/route.dat",cfg.data_dir);
@@ -224,7 +224,7 @@ void sbbs_t::update_qwkroute(char *via)
 				if(!p) continue;
 				*p=0;
 				sprintf(node,"%.8s",str+9);
-				tp=strchr(node,SP); 		/* change "node bbs:" to "node:" */
+				tp=strchr(node,' '); 		/* change "node bbs:" to "node:" */
 				if(tp) *tp=0;
 				for(i=0;i<total_nodes;i++)
 					if(!stricmp(qwk_node[i],node))
@@ -250,7 +250,7 @@ void sbbs_t::update_qwkroute(char *via)
 					total_nodes++; }
 				strcpy(qwk_node[i],node);
 				p++;
-				while(*p && *p<=SP) p++;
+				while(*p && *p<=' ') p++;
 				sprintf(qwk_path[i],"%.127s",p);
 				qwk_time[i]=t; }
 			fclose(stream); } }
@@ -263,7 +263,7 @@ void sbbs_t::update_qwkroute(char *via)
 		sprintf(node,"%.8s",p);
 		tp=strchr(node,'/');
 		if(tp) *tp=0;
-		tp=strchr(node,SP); 		/* no spaces allowed */
+		tp=strchr(node,' '); 		/* no spaces allowed */
 		if(tp) *tp=0;
 		truncsp(node);
 		for(i=0;i<total_nodes;i++)
@@ -423,7 +423,7 @@ void sbbs_t::qwk_sec()
 		if(bi)
 			strcat(str,"B");
 		ch=(char)getkeys(str,0);
-		if(ch>SP)
+		if(ch>' ')
 			logch(ch,0);
 		if(sys_status&SS_ABORT || ch=='Q' || ch==CR)
 			break;
