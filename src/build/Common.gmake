@@ -223,40 +223,40 @@ endif
 # PThread-specific flags
 ifeq ($(os),linux)    # Linux
  ifndef THREADS_ACTUALLY_WORK
-  MT_CFLAGS    += -D_THREAD_SUID_BROKEN
+  CFLAGS    += -D_THREAD_SUID_BROKEN
  endif
 endif
 MT_CFLAGS    += -D_THREAD_SAFE -D_REENTRANT
 ifeq ($(os),freebsd)    # FreeBSD
- MT_CFLAGS    += -DUSE_XP_SEMAPHORES
+ CFLAGS    += -DUSE_XP_SEMAPHORES
  MT_LDFLAGS    +=    -pthread
  XP_SEM    :=    1
 else
  ifeq ($(os),openbsd)    # OpenBSD
-  MT_CFLAGS    += -DUSE_XP_SEMAPHORES
+  CFLAGS    += -DUSE_XP_SEMAPHORES
   MT_LDFLAGS    +=    -pthread
   XP_SEM    :=    1
  else
   ifeq ($(os),netbsd)    # NetBSD
-   MT_CFLAGS    += -D__unix__ -DUSE_XP_SEMAPHORES
+   CFLAGS    += -D__unix__ -DUSE_XP_SEMAPHORES
    MT_LDFLAGS    +=    -L/usr/pkg/lib -L/usr/pkg/pthreads/lib -lpthread
    XP_SEM    :=    1
   else
    ifeq ($(os),qnx)    # QNX
    else
     ifeq ($(os),darwin)    # Darwin/Mac OS X
-     MT_CFLAGS    += -D__unix__ -DUSE_XP_SEMAPHORES -D__DARWIN__
+     CFLAGS    += -D__unix__ -DUSE_XP_SEMAPHORES -D__DARWIN__
      MT_LDFLAGS    += -lpthread
      XP_SEM    := 1
     else
      ifeq ($(os),sunos)  # Solaris
       XP_SEM :=    1
       MT_CFLAGS    +=    -D_POSIX_PTHREAD_SEMANTICS
-      MT_CFLAGS    += -DUSE_XP_SEMAPHORES
+      CFLAGS    += -DUSE_XP_SEMAPHORES
       MT_LDFLAGS    +=    -lpthread
      else            # Linux / Other UNIX
       XP_SEM :=    1
-      MT_CFLAGS    += -DUSE_XP_SEMAPHORES
+      CFLAGS    += -DUSE_XP_SEMAPHORES
       MT_LDFLAGS    +=    -lpthread
      endif
     endif
