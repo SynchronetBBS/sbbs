@@ -1389,7 +1389,8 @@ function IRCClient_server_info(sni_server) {
 }
 
 function IRCClient_server_nick_info(sni_client) {
-	this.rawout("NICK " + sni_client.nick + " " + sni_client.hops + " " + sni_client.created + " " + sni_client.get_usermode(true) + " " + sni_client.uprefix + " " + sni_client.hostname + " " + sni_client.servername + " 0 " + ip_to_int(sni_client.ip) + " :" + sni_client.realname);
+	var actual_hops = parseInt(sni_client.hops) + 1;
+	this.rawout("NICK " + sni_client.nick + " " + actual_hops + " " + sni_client.created + " " + sni_client.get_usermode(true) + " " + sni_client.uprefix + " " + sni_client.hostname + " " + sni_client.servername + " 0 " + ip_to_int(sni_client.ip) + " :" + sni_client.realname);
 }
 
 function IRCClient_reintroduce_nick(nick) {
@@ -1755,9 +1756,6 @@ function IRCClient_lusers() {
 }
 
 function IRCClient_motd() {
-	umode_notice(USERMODE_SPY,"Spy","MOTD requested by " + this.nick +
-		" (" + this.uprefix + "@" + this.hostname + ") [" +
-		this.servername + "]");
 	var motd_file = new File(system.text_dir + "ircmotd.txt");
 	if (motd_file.exists==false)
 		this.numeric(422, ":MOTD file missing: " + motd_file.name);
@@ -2463,20 +2461,29 @@ function IRCClient_do_basic_who(whomask) {
 
 	if ((whomask[0] == "#") || (whomask[0] == "&")) {
 		var chan = whomask.toUpperCase();
-		if (Channels[chan] != undefined) {
-			var channel=Channels[chan].nam;
+		if ((Channels[chan] != undefined) && ( (
+		    !(Channels[chan].mode&CHANMODE_SECRET) &&
+		    !(Channels[chan].mode&CHANMODE_PRIVATE) ) ||
+		    this.onchannel(chan) || (this.mode&USERMODE_OPER))
+		   ) {
 			for(i in Channels[chan].users) {
-				if (Channels[chan].users[i])
+				var usr = Clients[Channels[chan].users[i]];
+				if (usr && (!(usr.mode&USERMODE_INVISIBLE) ||
+				    (this.mode&USERMODE_OPER) ||
+				    this.onchanwith(usr) ) )
 					this.numeric352(Clients[Channels[chan].users[i]],false,Channels[chan]);
 			}
 			eow = Channels[chan].nam;
 		}
 	} else {
 		for (i in Clients) {
-			if (Clients[i] && !Clients[i].server &&
-			    ((Clients[i].conntype > 1) &&
-			     (Clients[i].conntype < 4)) &&
-			    Clients[i].match_who_mask(whomask))
+			var usr = Clients[i];
+			if (usr && !usr.server && ((usr.conntype > 1) &&
+			     (usr.conntype < 4)) &&
+			    usr.match_who_mask(whomask) &&
+			    (!(usr.mode&USERMODE_INVISIBLE) ||
+			     (this.mode&USERMODE_OPER) ||
+			     this.onchanwith(usr) ) )
 				this.numeric352(Clients[i]);
 		}
 		eow = whomask;
@@ -2493,7 +2500,10 @@ function IRCClient_do_complex_who(cmd) {
 	var whomask = "";
 	var chan;
 
-	if (cmd[2] && cmd[2].toLowerCase() == "o") { // RFC1459 Compatibility.
+	// RFC1459 Compatibility.  "WHO <mask> o"  Only do it if we find a
+	// wildcard, otherwise assume we're doing a complex WHO with 'modes'
+	if (cmd[2] && ( (cmd[1].match(/[*]/)) || cmd[1].match(/[?]/)) ||
+	    (cmd[1].match(/[0]/)) && !cmd[3] && (cmd[2].toLowerCase() == "o")) {
 		tmp = cmd[1];
 		cmd[1] = cmd[2];
 		cmd[2] = tmp;
@@ -2658,8 +2668,8 @@ function IRCClient_do_complex_who(cmd) {
 			// Don't even bother if the target is +i and the
 			// user isn't an oper or on a channel with the target.
 			if ( (wc.mode&USERMODE_INVISIBLE) &&
-			     (!(this.mode&USERMODE_OPER) ||
-			      !flag_M) )
+			     !(this.mode&USERMODE_OPER) &&
+			     !flag_M)
 				continue;
 
 			if ((who.add_flags&WHO_AWAY) && !wc.away)
@@ -2675,7 +2685,7 @@ function IRCClient_do_complex_who(cmd) {
 					continue;
 				if(sf_voice&&Channels[who.Channel.toUpperCase()]&&
 				    !Channels[who.Channel.toUpperCase()].ismode(
-				     wc.id,CHANMODE_VIOCE))
+				     wc.id,CHANMODE_VOICE))
 					continue;
 			} else if (who.del_flags&WHO_CHANNEL) {	
 				if (wc.onchannel(who.Channel.toUpperCase()))
@@ -2707,10 +2717,12 @@ function IRCClient_do_complex_who(cmd) {
 			else if ((who.del_flags&WHO_IP) &&
 			    match_irc_mask(wc.ip,who.IP))
 				continue;
+			log("----mark : " + wc.nick);
 			if (who.add_flags&WHO_UMODE) { // no -m
 				var sic = false;
 				var madd = true;
 				for (mm in who.UMode) {
+					log("XXX switch: " + who.UMode[mm]);
 					switch(who.UMode[mm]) {
 						case "+":
 							if (!madd)
@@ -2721,23 +2733,30 @@ function IRCClient_do_complex_who(cmd) {
 								madd = false;
 							break;
 						case "o":
-							if (
-							   (!madd && (wc.mode&
-							   USERMODE_OPER))
-							||
-							   (madd && !(wc.mode&
-							   USERMODE_OPER))
-							   )
-								sic = true;
-							break;
 						case "i":
+						case "w":
+						case "b":
+						case "g":
+						case "s":
+						case "c":
+						case "r":
+						case "k":
+						case "f":
+						case "y":
+						case "d":
+						case "n":
+						case "h":
+						case "F":
 							if (
 							   (!madd && (wc.mode&
-							   USERMODE_INVISIBLE))
+							   USERMODE_CHAR
+								[who.UMode[mm]])
+							   )
 							||
 							   (madd && !(wc.mode&
-							   USERMODE_INVISIBLE))
-							   )
+							   USERMODE_CHAR
+								[who.UMode[mm]])
+							   ) )
 								sic = true;
 							break;
 						default:
@@ -2793,6 +2812,8 @@ function IRCClient_do_complex_who(cmd) {
 			if (whomask && !wc.match_who_mask(whomask))
 				continue;       
 
+			log("---mark: " + wc.nick);
+
 			chan = "";
 			if ((who.add_flags&WHO_FIRST_CHANNEL) && !who.Channel) {
 				for (x in wc.channels) {
@@ -2810,6 +2831,8 @@ function IRCClient_do_complex_who(cmd) {
 					}
 				}
 			}
+
+			log("--mark: " + wc.nick);
 
 			if (who.Channel)
 				chan = who.Channel;
@@ -2951,6 +2974,7 @@ function IRCClient_do_complex_list(cmd) {
 	var arg = 1;
 	var list = new List();
 	var listmask;
+	var listmask_items;
 
 	for (lc in cmd[1]) {
 		switch(cmd[1][lc]) {
@@ -3167,9 +3191,20 @@ function IRCClient_do_complex_list(cmd) {
 					continue;
 			}
 
-			if (listmask &&
-			    !Channels[aChan].match_list_mask(listmask))
-				continue;
+			if (listmask)
+				listmask_items = listmask.split(",");
+			var l_match = false; // assume we match nothing.
+			if (listmask_items) {
+				for (l in listmask_items) {
+					if (Channels[aChan].match_list_mask
+					   (listmask_items[l])) {
+						l_match = true;
+						break;
+					}
+				}
+				if (!l_match)
+					continue;
+			}
 
 			// We made it.
 			if (list.add_flags&LIST_DISPLAY_CHAN_MODES)
@@ -4233,7 +4268,7 @@ function IRCClient_registered_commands(command, cmdline) {
 				this.numeric461("KICK");
 				break;
 			}
-			chanid = searchbychannel(cmd[1]);
+			var chanid = searchbychannel(cmd[1]);
 			if (!chanid) {
 				this.numeric403(cmd[1]);
 				break;
@@ -4254,11 +4289,12 @@ function IRCClient_registered_commands(command, cmdline) {
 				this.numeric("441", nickid.nick + " " + chanid.nam + " :They aren't on that channel!");
 				break;
 			}
+			var kick_reason;
 			if (cmd[3])
 				kick_reason = ircstring(cmdline).slice(0,max_kicklen);
 			else
 				kick_reason = this.nick;
-			str = "KICK " + chanid.nam + " " + nickid.nick + " :" + kick_reason;
+			var str = "KICK " + chanid.nam + " " + nickid.nick + " :" + kick_reason;
 			this.bcast_to_channel(chanid.nam, str, true);
 			this.bcast_to_servers(str);
 			nickid.rmchan(Channels[chanid.nam.toUpperCase()]);
@@ -4280,8 +4316,9 @@ function IRCClient_registered_commands(command, cmdline) {
 				this.numeric("461", command + " :You MUST specify a reason for /KILL.");
 				break;
 			}
-			reason = ircstring(cmdline);
-			kills = cmd[1].split(",");
+			var reason = ircstring(cmdline);
+			var kills = cmd[1].split(",");
+			var target;
 			for(kill in kills) {
 				target = searchbynick(kills[kill]);
 				if (!target)
@@ -4289,6 +4326,12 @@ function IRCClient_registered_commands(command, cmdline) {
 				if (target && target.local) {
 					target.quit("Local kill by " + this.nick + " (" + reason + ")");
 				} else if (target) {
+					var trg_srv = searchbyserver(
+						target.servername);
+					if (trg_srv && trg_srv.isulined) {
+						this.numeric(483, ":You may not KILL clients on a U:Lined server.");
+						continue;
+					}
 					server_bcast_to_servers(":" + this.nick + " KILL " + target.nick + " :" + reason);
 					target.quit("Killed (" + this.nick + " (" + reason + "))",true);
 				} else {
@@ -4442,6 +4485,9 @@ function IRCClient_registered_commands(command, cmdline) {
 					break;
 				}
 			}
+			umode_notice(USERMODE_SPY,"Spy","MOTD requested by " +
+				this.nick + " (" + this.uprefix + "@" +
+				this.hostname + ") [" + this.servername + "]");
 			this.motd();
 			break;
 		case "NAMES":
@@ -5576,6 +5622,11 @@ function IRCClient_server_commands(origin, command, cmdline) {
 			if (cmd[1][0] == ":")
 				cmd[1] = cmd[1].slice(1);
 			if (match_irc_mask(servername, cmd[1])) {
+				umode_notice(USERMODE_SPY,"Spy",
+					"MOTD requested by " + ThisOrigin.nick+
+					" (" + ThisOrigin.uprefix + "@" +
+					ThisOrigin.hostname + ") [" +
+					ThisOrigin.servername + "]");
 				ThisOrigin.motd();
 			} else {
 				var dest_server = searchbyserver(cmd[1]);
@@ -5653,7 +5704,7 @@ function IRCClient_server_commands(origin, command, cmdline) {
 				NewNick.parent = this.id;
 				NewNick.ip = int_to_ip(cmd[9]);
 				NewNick.setusermode(cmd[4]);
-				true_hops = parseInt(NewNick.hops)+1;
+				var true_hops = parseInt(NewNick.hops)+1;
 				this.bcast_to_servers_raw("NICK " + NewNick.nick + " " + true_hops + " " + NewNick.created + " " + NewNick.get_usermode(true) + " " + NewNick.uprefix + " " + NewNick.hostname + " " + NewNick.servername + " 0 " + cmd[9] + " :" + NewNick.realname);
 			}
 			break;
