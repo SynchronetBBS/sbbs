@@ -1461,6 +1461,21 @@ int main(int argc, char** argv)
 		}
 	}
 
+	/* Read in configuration files */
+    memset(&scfg,0,sizeof(scfg));
+    SAFECOPY(scfg.ctrl_dir,bbs_startup.ctrl_dir);
+
+	if(chdir(scfg.ctrl_dir)!=0)
+		lprintf(LOG_ERR,"!ERROR %d changing directory to: %s", errno, scfg.ctrl_dir);
+
+    scfg.size=sizeof(scfg);
+	SAFECOPY(error,UNKNOWN_LOAD_ERROR);
+	lprintf(LOG_INFO,"Loading configuration files from %s", scfg.ctrl_dir);
+	if(!load_cfg(&scfg, NULL /* text.dat */, TRUE /* prep */, error)) {
+		lprintf(LOG_ERR,"!ERROR Loading Configuration Files: %s", error);
+        return(-1);
+    }
+
 /* Daemonize / Set uid/gid */
 #ifdef __unix__
 
@@ -1524,21 +1539,6 @@ int main(int argc, char** argv)
 		new_gid=gr_entry->gr_gid;
 	
 #endif
-
-	/* Read in configuration files */
-    memset(&scfg,0,sizeof(scfg));
-    SAFECOPY(scfg.ctrl_dir,bbs_startup.ctrl_dir);
-
-	if(chdir(scfg.ctrl_dir)!=0)
-		lprintf(LOG_ERR,"!ERROR %d changing directory to: %s", errno, scfg.ctrl_dir);
-
-    scfg.size=sizeof(scfg);
-	SAFECOPY(error,UNKNOWN_LOAD_ERROR);
-	lprintf(LOG_INFO,"Loading configuration files from %s", scfg.ctrl_dir);
-	if(!load_cfg(&scfg, NULL /* text.dat */, TRUE /* prep */, error)) {
-		lprintf(LOG_ERR,"!ERROR Loading Configuration Files: %s", error);
-        return(-1);
-    }
 
 	/* Install Ctrl-C/Break signal handler here */
 #if defined(_WIN32)
