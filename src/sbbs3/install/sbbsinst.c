@@ -806,6 +806,8 @@ get_distlist(void)
 				tp=p;
 				while(*tp && *tp>' ') tp++;
 					*tp=0;	/* truncate address at first whitespace */
+				if(!strncasecmp(p,"ftp://",6))
+					break;
 				SAFECOPY(server[s]->addr,p);
 				p=tp+1;
 				while(*p && *p<=' ') p++;	/* desc follows whitepsace */
