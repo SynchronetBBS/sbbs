@@ -495,8 +495,8 @@ public:
 	void	clearline(void);
 
 	/* atcodes.cpp */
-	int		atcodes(char *code);
-	int		syncatcodes(char *sp, int len);
+	int		show_atcode(char *code);
+	char*	atcode(char* sp, char* str);
 
 	/* getnode.cpp */
 	int		whos_online(bool listself);/* Lists active nodes, returns active nodes */
