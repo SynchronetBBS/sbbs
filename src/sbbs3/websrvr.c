@@ -1147,7 +1147,8 @@ static char *get_method(http_session_t * session, char *req_line)
 			return(req_line+strlen(methods[i])+1);
 		}
 	}
-	send_error(session,"501 Not Implemented");
+	if(req_line!=NULL && *req_line>=' ')
+		send_error(session,"501 Not Implemented");
 	return(NULL);
 }
 
@@ -1423,7 +1424,7 @@ static BOOL exec_cgi(http_session_t *session)
 	if(child>0)  {
 		waitpid(child,&status,0);
 		lprintf("%04d Child exited",session->socket);
-//		unlink(session->req.cgi_infile);
+		unlink(session->req.cgi_infile);
 		if(WIFEXITED(status))  {
 			/* Parse headers */
 			output=fopen(session->req.request,"r");
@@ -1432,7 +1433,7 @@ static BOOL exec_cgi(http_session_t *session)
 				send_cgi_response(session,output);
 				lprintf("%04d Sent response file.",session->socket);
 				fclose(output);
-//				unlink(session->req.request);
+				unlink(session->req.request);
 				return(WEXITSTATUS(status)==EXIT_SUCCESS);
 			}
 			else  {
@@ -1447,7 +1448,7 @@ static BOOL exec_cgi(http_session_t *session)
 #else
 	sprintf(cmdline,"%s /C %s < %s > %s",comspec,cmdline,session->req.cgi_infile,session->req.request);
 	system(cmdline);
-//	unlink(session->req.cgi_infile);
+	unlink(session->req.cgi_infile);
 	return(TRUE);
 #endif
 }
