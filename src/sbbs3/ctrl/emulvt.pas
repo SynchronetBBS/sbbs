@@ -2461,7 +2461,7 @@ begin
     FPaletteEntries[5].peBlue   := 168;
     FPaletteEntries[6].peRed    := 0;                { Cyan }
     FPaletteEntries[6].peGreen  := 112;
-    FPaletteEntries[6].peBlue   := 216;
+    FPaletteEntries[6].peBlue   := 112;	{ was 216 }
     FPaletteEntries[7].peRed    := 200;              { White }
     FPaletteEntries[7].peGreen  := 200;
     FPaletteEntries[7].peBlue   := 200;
@@ -2469,8 +2469,8 @@ begin
     FPaletteEntries[8].peGreen  := 84;
     FPaletteEntries[8].peBlue   := 84;
     FPaletteEntries[9].peRed    := 255;              { Red Highlight }
-    FPaletteEntries[9].peGreen  := 84;
-    FPaletteEntries[9].peBlue   := 212;
+    FPaletteEntries[9].peGreen  := 0; { was 84 }
+    FPaletteEntries[9].peBlue   := 0; { was 212 }
     FPaletteEntries[10].peRed   := 84;               { Green Highlight }
     FPaletteEntries[10].peGreen := 255;
     FPaletteEntries[10].peBlue  := 84;
