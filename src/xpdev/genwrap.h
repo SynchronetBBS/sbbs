@@ -139,8 +139,9 @@ extern "C" {
 /* String Functionss */
 /*********************/
 
+#define snprintf	safe_snprintf
+
 #if defined(_MSC_VER) || defined(__MINGW32__)
-	#define snprintf		_snprintf
 	#define vsnprintf		_vsnprintf
 #endif
 

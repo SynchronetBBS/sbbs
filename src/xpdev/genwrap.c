@@ -59,6 +59,21 @@
 #include "genwrap.h"	/* Verify prototypes */
 
 /****************************************************************************/
+/* Used to replace snprintf()  guarantees to terminate.			  			*/
+/****************************************************************************/
+static int safe_snprintf(char *dst, size_t size, char *fmt, ...)
+{
+	va_list argptr;
+	int     numchars;
+
+	va_start(argptr,fmt);
+	numchars= vsnprintf(dst,size,fmt,argptr);
+	va_end(argptr);
+	dst[size-1]=0;
+	return(numchars);
+}
+
+/****************************************************************************/
 /* Return last character of string											*/
 /****************************************************************************/
 char* DLLCALL lastchar(const char* str)
