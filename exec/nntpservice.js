@@ -95,6 +95,7 @@ var username='';
 var msgbase=null;
 var selected=null;
 var current_article=0;
+var quit=false;
 
 writeln(format("200 %s News (Synchronet %s%s-%s NNTP Service %s)"
 		,system.name,system.version,system.revision,system.platform,REVISION));
@@ -102,7 +103,7 @@ writeln(format("200 %s News (Synchronet %s%s-%s NNTP Service %s)"
 if(!no_anonymous)
 	login("guest");	// Login as guest/anonymous by default
 
-while(client.socket.is_connected) {
+while(client.socket.is_connected && !quit) {
 
 	// Get Request
 	cmdline = client.socket.recvline(512 /*maxlen*/, 300 /*timeout*/);
@@ -163,7 +164,7 @@ while(client.socket.is_connected) {
 			continue;
 		case "QUIT":
 			writeln("205 closing connection - goodbye!");
-			client.socket.close();
+			quit=true;
 			continue;
 	}
 
@@ -558,7 +559,7 @@ while(client.socket.is_connected) {
 				//log(format("msgtxt: %s",line));
 
 				if(line==".") {
-					log("End of message text");
+					log(format("End of message text (%u chars)",body.length));
 					break;
 				}
 				if(line=="" && header) {
@@ -624,7 +625,8 @@ while(client.socket.is_connected) {
 							if(msgbase.open!=undefined && msgbase.open()==false)
 								continue;
 						    if(msgbase.save_msg(hdr,body)) {
-							    log(format("%s posted a message on %s",user.alias,newsgroups[n]));
+							    log(format("%s posted a message (%lu chars) on %s"
+									,user.alias, body.length, newsgroups[n]));
 							    writeln("240 article posted ok");
 							    posted=true;
 								msgs_posted++;
