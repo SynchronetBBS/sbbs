@@ -1004,8 +1004,6 @@ void DLLCALL services_thread(void* arg)
 
 	thread_up();
 
-	uptime=time(NULL);
-
 	status("Initializing");
 
     memset(&scfg, 0, sizeof(scfg));
@@ -1040,6 +1038,8 @@ void DLLCALL services_thread(void* arg)
 			return;
 		}
 	}
+
+	uptime=time(NULL);
 
 	if(!winsock_startup()) {
 		cleanup(1);

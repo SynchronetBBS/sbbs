@@ -4285,8 +4285,6 @@ void DLLCALL ftp_server(void* arg)
 
 	thread_up();
 
-	uptime=time(NULL);
-
 	status("Initializing");
 
     memset(&scfg, 0, sizeof(scfg));
@@ -4321,6 +4319,8 @@ void DLLCALL ftp_server(void* arg)
 			return;
 		}
 	}
+
+	uptime=time(NULL);
 
 	if(!winsock_startup()) {
 		cleanup(1);
