@@ -8,9 +8,10 @@
 
 
 OBJS	=	$(ODIR)$(SLASH)sbbsinst.$(OFILE)\
-			$(ODIR)$(SLASH)conwrap.$(OFILE)\
+			$(ODIR)$(SLASH)sockwrap.$(OFILE)\
 			$(ODIR)$(SLASH)genwrap.$(OFILE)\
 			$(ODIR)$(SLASH)dirwrap.$(OFILE)\
-			$(ODIR)$(SLASH)ftpio.$(OFILE)\
+			$(ODIR)$(SLASH)filewrap.$(OFILE)\
+			$(ODIR)$(SLASH)ciowrap.$(OFILE)\
+			$(ODIR)$(SLASH)httpio.$(OFILE)\
 			$(ODIR)$(SLASH)uifcx.$(OFILE)
-
