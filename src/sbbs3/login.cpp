@@ -38,14 +38,17 @@
 #include "sbbs.h"
 #include "cmdshell.h"
 
-int sbbs_t::login(char *str, char *pw)
+int sbbs_t::login(char *username, char *pw)
 {
+	char	str[128];
 	char 	tmp[512];
 	long	useron_misc=useron.misc;
 
 	useron.number=0;
 	if(cfg.node_dollars_per_call && noyes(text[AreYouSureQ]))
 		return(LOGIC_FALSE);
+
+	sprintf(str,"%.*s",sizeof(str)-1,username);
 
 	if(str[0]=='*') {
 		memmove(str,str+1,strlen(str));
