@@ -910,6 +910,7 @@ void event_thread(void* arg)
 	bool		check_semaphores;
 	ulong		l;
 	time_t		now;
+	time_t		start;
 	time_t		lastsemchk=0;
 	time_t		lastnodechk=0;
 	time_t		lastprepack=0;
@@ -1132,14 +1133,12 @@ void event_thread(void* arg)
 						sbbs->cfg.node_num=i;
 						strcpy(sbbs->cfg.node_dir, sbbs->cfg.node_path[i-1]);
 
-						eprintf("Running node %u daily event",i);
-						// status("Running node daily event");
+						eprintf("Running node %d daily event",i);
 						sbbs->online=ON_LOCAL;
 						sbbs->logentry("!:","Run node daily event");
 						sbbs->external(
 							 sbbs->cmdstr(sbbs->cfg.node_daily,nulstr,nulstr,NULL)
 							,EX_OFFLINE);
-						// status(STATUS_WFC);
 					}
 					sbbs->getnodedat(i,&node,1);
 					node.misc&=~NODE_EVENT;
@@ -1247,7 +1246,6 @@ void event_thread(void* arg)
 				if(sbbs->cfg.qhub[i]->call[0]) {
 					sbbs->cfg.node_num=sbbs->cfg.qhub[i]->node;
 					strcpy(sbbs->cfg.node_dir, sbbs->cfg.node_path[sbbs->cfg.node_num-1]);
-					// status("QWK Networking");
 #if 0
 					sbbs->getnodedat(sbbs->cfg.qhub[i]->node,&node,1);
 					node.status=NODE_NETTING;
@@ -1258,7 +1256,6 @@ void event_thread(void* arg)
 					sbbs->external(
 						 sbbs->cmdstr(sbbs->cfg.qhub[i]->call,nulstr,nulstr,NULL)
 						,EX_OFFLINE|EX_BG);
-					// status(STATUS_WFC);
 				}
 			} 
 		}
@@ -1291,7 +1288,6 @@ void event_thread(void* arg)
 				if(sbbs->cfg.phub[i]->call[0]) {
 					sbbs->cfg.node_num=sbbs->cfg.phub[i]->node;
 					strcpy(sbbs->cfg.node_dir, sbbs->cfg.node_path[sbbs->cfg.node_num-1]);
-					// status("PostLink Networking");
 #if 0
 					sbbs->getnodedat(sbbs->cfg.phub[i]->node,&node,1);
 					node.status=NODE_NETTING;
@@ -1302,7 +1298,6 @@ void event_thread(void* arg)
 					sbbs->external(
 						 sbbs->cmdstr(sbbs->cfg.phub[i]->call,nulstr,nulstr,NULL)
 						,EX_OFFLINE|EX_BG);
-					// status(STATUS_WFC);
 				} 
 			}
 		}
@@ -1321,10 +1316,10 @@ void event_thread(void* arg)
 
 					if(sbbs->cfg.event[i]->node<first_node
 						|| sbbs->cfg.event[i]->node>last_node) {
-						sprintf(str,"Waiting for node %d to run timed event."
-							,sbbs->cfg.event[i]->node);
-						// status(str);
+						eprintf("Waiting for node %d to run timed event: %s"
+							,sbbs->cfg.event[i]->node,sbbs->cfg.event[i]->code);
 						lastnodechk=0;	 /* really last event time check */
+						start=time(NULL);
 						while(!sbbs->terminated) {
 							mswait(1000);
 							now=time(NULL);
@@ -1353,14 +1348,20 @@ void event_thread(void* arg)
 							read(file,&sbbs->cfg.event[i]->last,sizeof(time_t));
 							close(file);
 							if(now-sbbs->cfg.event[i]->last<(60*60))	/* event is done */
-								break; }
+								break; 
+							if(now-start>(60*60)) {
+								eprintf("!TIMEOUT waiting for event to complete");
+								break;
+							}
+						}
 						sprintf(str,"%s%s.now",sbbs->cfg.data_dir,sbbs->cfg.event[i]->code);
 						remove(str);
 						sbbs->cfg.event[i]->last=now;
 					} else {	// Exclusive event to run on a node under our control
 						eprintf("Waiting for all nodes to become inactive before "
-							"running timed event.");
+							"running timed event: %s",sbbs->cfg.event[i]->code);
 						lastnodechk=0;
+						start=time(NULL);
 						while(!sbbs->terminated) {
 							mswait(1000);
 							now=time(NULL);
@@ -1398,9 +1399,11 @@ void event_thread(void* arg)
 							}
 							if(j>sbbs->cfg.sys_nodes) /* all nodes either offline or in limbo */
 								break;
-							sprintf(str,"Waiting for node %d (status=%d)"
-								,j,node.status);
-							// status(str);
+							eprintf("Waiting for node %d (status=%d)",j,node.status);
+							if(now-start>(60*60)) {
+								eprintf("!TIMEOUT waiting for node %d to become inactive",j);
+								break;
+							}
 						} 
 					} 
 				}
@@ -1457,7 +1460,6 @@ void event_thread(void* arg)
 						}
 					}
 				} 
-				// status(STATUS_WFC);
 			} 
 		}
 		pthread_mutex_unlock(&event_mutex);
@@ -2648,7 +2650,6 @@ void node_thread(void* arg)
 		node.status=NODE_EVENT_RUNNING;
 		sbbs->putnodedat(sbbs->cfg.node_num,&node);
 
-//		status("Running system daily maintenance");
 		sbbs->logentry("!:","Ran system daily maintenance");
 		lprintf("Checking users...");
 		j=lastuser(&sbbs->cfg);
@@ -2754,6 +2755,7 @@ void node_thread(void* arg)
 		}
 	}
 
+#if 0	/* this is handled in the event_thread now */
 	// Node Daily Event
 	sbbs->getnodedat(sbbs->cfg.node_num,&node,0);
 	if(node.misc&NODE_EVENT) {
@@ -2761,7 +2763,6 @@ void node_thread(void* arg)
 		node.status=NODE_EVENT_RUNNING;
 		sbbs->putnodedat(sbbs->cfg.node_num,&node);
 		if(sbbs->cfg.node_daily[0]) {
-//			status("Running node daily event");
 			sbbs->logentry("!:","Run node daily event");
 			sbbs->external(
 				 sbbs->cmdstr(sbbs->cfg.node_daily,nulstr,nulstr,NULL)
@@ -2771,6 +2772,7 @@ void node_thread(void* arg)
 		node.misc&=~NODE_EVENT;
 		sbbs->putnodedat(sbbs->cfg.node_num,&node); 
 	}
+#endif
 
     // Wait for all node threads to terminate
 	if(sbbs->input_thread_running || sbbs->output_thread_running) {
