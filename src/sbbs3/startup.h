@@ -53,10 +53,8 @@ typedef struct {
     WORD	last_node;
 	WORD	telnet_port;
 	WORD	rlogin_port;
-	WORD	reserved_word4;
-	WORD	reserved_word3;
-	WORD	reserved_word2;
-	WORD	reserved_word1;
+	WORD	outbuf_highwater_mark;	// output block size control
+	WORD	outbuf_drain_timeout;
     DWORD   telnet_interface;
     DWORD	options;			// See BBS_OPT definitions
     DWORD	rlogin_interface;
@@ -65,7 +63,6 @@ typedef struct {
     RingBuf** node_spybuf;		// Spy output buffer (each node)
     RingBuf** node_inbuf;		// User input buffer (each node)
     sem_t**	node_spysem;		// Spy output semaphore (each node)
-    DWORD	reserved_dword1;
     int 	(*event_log)(char*);	// Event log - put string
 	int 	(*lputs)(char*);		// Log - put string
 	void	(*status)(char*);
@@ -76,21 +73,13 @@ typedef struct {
 	void	(*socket_open)(BOOL open);
     void	(*client_on)(BOOL on, int sock, client_t*, BOOL update);
     BOOL	(*seteuid)(BOOL user);	// Set Unix uid for thread (bind)
-    void	(*reserved_fptr3)(void);
-    void	(*reserved_fptr2)(void);
-    void	(*reserved_fptr1)(void);
     char    ctrl_dir[128];
     char	dosemu_path[128];
     char	temp_dir[128];
-    char	reserved_path6[128];
-    char	reserved_path5[128];
-    char	reserved_path4[128];
-    char	reserved_path3[128];
 	char	answer_sound[128];
 	char	hangup_sound[128];
 	char	xtrn_term_ansi[32];		/* external ANSI terminal type (e.g. "ansi-bbs") */
 	char	xtrn_term_dumb[32];		/* external dumb terminal type (e.g. "dumb") */
-    char	reserved_str1[64];
     char	host_name[128];
 	BOOL	recycle_now;
 
