@@ -81,9 +81,9 @@ void sbbs_t::telnet_gate(char* destaddr, ulong mode)
 	addr.sin_family = AF_INET;
 
 	if((i=bind(remote_socket, (struct sockaddr *) &addr, sizeof (addr)))!=0) {
-		close_socket(remote_socket);
-		lprintf("!ERROR %d (%d) binding to socket %d",i, ERROR_VALUE, socket);
+		lprintf("!ERROR %d (%d) binding to socket %d",i, ERROR_VALUE, remote_socket);
 		bprintf("!ERROR %d (%d) binding to socket\r\n",i, ERROR_VALUE);
+		close_socket(remote_socket);
 		return;
 	}
 
@@ -93,20 +93,20 @@ void sbbs_t::telnet_gate(char* destaddr, ulong mode)
 	addr.sin_port   = htons(port);
 
 	if((i=connect(remote_socket, (struct sockaddr *)&addr, sizeof(addr)))!=0) {
-		close_socket(remote_socket);
 		lprintf("!ERROR %d (%d) connecting to server: %s"
 			,i,ERROR_VALUE, destaddr);
 		bprintf("!ERROR %d (%d) connecting to server: %s\r\n"
 			,i,ERROR_VALUE, destaddr);
+		close_socket(remote_socket);
 		return;
 	}
 
 	l=1;
 
 	if((i = ioctlsocket(remote_socket, FIONBIO, &l))!=0) {
-		close_socket(remote_socket);
 		lprintf("!ERROR %d (%d) disabling socket blocking"
 			,i, ERROR_VALUE);
+		close_socket(remote_socket);
 		return;
 	}
 
