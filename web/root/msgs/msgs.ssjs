@@ -31,25 +31,29 @@ for(key in http_request.query) {
 		new_query+=encodeURIComponent(http_request.query[key]);
 	}
 }
-if(new_query.length>0)
-	new_query+='&amp;';
-new_query+='show_messages=';
-switch(ShowMsgs) {
-	case GET_ALL_MESSAGES:
-		template.show_choice='<a href="'+http_request.virtual_path+'?'+new_query+'Yours">'+show_messages_yours_html+'</a>';
-		template.show_choice+=show_messages_spacer_html;
-		template.show_choice+='<a href="'+http_request.virtual_path+'?'+new_query+'YourUnread">'+show_messages_your_unread_html+'</a>';
-		break;
-	case GET_MY_MESSAGES:
-		template.show_choice='<a href="'+http_request.virtual_path+'?'+new_query+'All">'+show_messages_all_html+'</a>';
-		template.show_choice+=show_messages_spacer_html;
-		template.show_choice+='<a href="'+http_request.virtual_path+'?'+new_query+'YourUnread">'+show_messages_your_unread_html+'</a>';
-		break;
-	case GET_MY_UNREAD_MESSAGES:
-		template.show_choice='<a href="'+http_request.virtual_path+'?'+new_query+'All">'+show_messages_all_html+'</a>';
-		template.show_choice+=show_messages_spacer_html;
-		template.show_choice+='<a href="'+http_request.virtual_path+'?'+new_query+'Yours">'+show_messages_yours_html+'</a>';
-		break;
+if(user.security.restrictions&UFLAG_G)
+	ShowMsg=GET_ALL_MESSAGES;
+else {
+	if(new_query.length>0)
+		new_query+='&amp;';
+	new_query+='show_messages=';
+	switch(ShowMsgs) {
+		case GET_ALL_MESSAGES:
+			template.show_choice='<a href="'+http_request.virtual_path+'?'+new_query+'Yours">'+show_messages_yours_html+'</a>';
+			template.show_choice+=show_messages_spacer_html;
+			template.show_choice+='<a href="'+http_request.virtual_path+'?'+new_query+'YourUnread">'+show_messages_your_unread_html+'</a>';
+			break;
+		case GET_MY_MESSAGES:
+			template.show_choice='<a href="'+http_request.virtual_path+'?'+new_query+'All">'+show_messages_all_html+'</a>';
+			template.show_choice+=show_messages_spacer_html;
+			template.show_choice+='<a href="'+http_request.virtual_path+'?'+new_query+'YourUnread">'+show_messages_your_unread_html+'</a>';
+			break;
+		case GET_MY_UNREAD_MESSAGES:
+			template.show_choice='<a href="'+http_request.virtual_path+'?'+new_query+'All">'+show_messages_all_html+'</a>';
+			template.show_choice+=show_messages_spacer_html;
+			template.show_choice+='<a href="'+http_request.virtual_path+'?'+new_query+'Yours">'+show_messages_yours_html+'</a>';
+			break;
+	}
 }
 
 /* Ensure that offset is an even multiple of max_messages */

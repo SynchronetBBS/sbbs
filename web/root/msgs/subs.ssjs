@@ -15,14 +15,17 @@ for(key in http_request.query) {
 }
 if(new_query.length>0)
 	new_query+='&amp;';
-new_query+='show_all_subs=';
-template.showall_toggle='<a href="'+http_request.virtual_path+'?'+new_query
-if(ShowAll)
-	template.showall_toggle+='No">'+showall_subs_disable_html;
-else
-	template.showall_toggle+='Yes">'+showall_subs_enable_html;
-template.showall_toggle+='</a>';
-
+if(user.security.restrictions&UFLAG_G)
+	ShowAll=true;
+else {
+	new_query+='show_all_subs=';
+	template.showall_toggle='<a href="'+http_request.virtual_path+'?'+new_query
+	if(ShowAll)
+		template.showall_toggle+='No">'+showall_subs_disable_html;
+	else
+		template.showall_toggle+='Yes">'+showall_subs_enable_html;
+	template.showall_toggle+='</a>';
+}
 template.title="Message Subs in Group: "+msg_area.grp[grp].description;
 
 write_template("header.inc");
