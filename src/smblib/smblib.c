@@ -124,8 +124,8 @@ int SMBCALL smb_open(smb_t* smb)
 			smb_close(smb);
 			return(-10);
 		}
-		if(memcmp(hdr.id,"SMB\x1a",4)) {
-			sprintf(smb->last_error,"corrupt SMB header id: %.4s",hdr.id);
+		if(memcmp(hdr.id,SMB_HEADER_ID,LEN_HEADER_ID)) {
+			sprintf(smb->last_error,"corrupt SMB header ID: %.*s",LEN_HEADER_ID,hdr.id);
 			smb_close(smb);
 			return(-2); 
 		}
@@ -626,8 +626,8 @@ int SMBCALL smb_getmsghdr(smb_t* smb, smbmsg_t* msg)
 		sprintf(smb->last_error,"reading msg header");
 		return(-1);
 	}
-	if(memcmp(msg->hdr.id,"SHD\x1a",4)) {
-		sprintf(smb->last_error,"corrupt message header id: %.4s",msg->hdr.id);
+	if(memcmp(msg->hdr.id,SHD_HEADER_ID,LEN_HEADER_ID)) {
+		sprintf(smb->last_error,"corrupt message header ID: %.*s",LEN_HEADER_ID,msg->hdr.id);
 		return(-2);
 	}
 	if(msg->hdr.version<0x110) {
@@ -974,7 +974,7 @@ int SMBCALL smb_addcrc(smb_t* smb, ulong crc)
 	}
 
 	lseek(file,0L,SEEK_END);
-	write(file,&crc,4); 			   /* Write to the end */
+	write(file,&crc,sizeof(crc)); 			   /* Write to the end */
 	FREE(buf);
 	close(file);
 	return(0);
@@ -1083,6 +1083,11 @@ int SMBCALL smb_putmsghdr(smb_t* smb, smbmsg_t* msg)
 		return(-1);
 	}
 
+	/**********************************/
+	/* Set the message header ID here */
+	/**********************************/
+	memcpy(&msg->hdr.id,SHD_HEADER_ID,LEN_HEADER_ID);
+
 	/************************************************/
 	/* Write the fixed portion of the header record */
 	/************************************************/
@@ -1140,7 +1145,7 @@ int SMBCALL smb_create(smb_t* smb)
 		&& smb_locksmbhdr(smb))  /* header exists, so lock it */
 		return(1);
 	memset(&hdr,0,sizeof(smbhdr_t));
-	memcpy(hdr.id,"SMB\x1a",4);     /* <S> <M> <B> <^Z> */
+	memcpy(hdr.id,SMB_HEADER_ID,LEN_HEADER_ID);     
 	hdr.version=SMB_VERSION;
 	hdr.length=sizeof(smbhdr_t)+sizeof(smbstatus_t);
 	smb->status.last_msg=smb->status.total_msgs=0;
