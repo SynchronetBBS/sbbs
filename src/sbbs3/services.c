@@ -462,11 +462,20 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 	lprintf("%04d %s !JavaScript %s%s%s: %s",sock,prot,warning,file,line,message);
 }
 
+static JSClass js_server_class = {
+        "Server",0, 
+        JS_PropertyStub,JS_PropertyStub,JS_PropertyStub,JS_PropertyStub, 
+        JS_EnumerateStub,JS_ResolveStub,JS_ConvertStub,JS_FinalizeStub 
+}; 
+
 static JSContext* 
 js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, JSObject** glob)
 {
+	char		ver[256];
 	JSContext*	js_cx;
 	JSObject*	js_glob;
+	JSObject*	server;
+	jsval		val;
 	BOOL		success=FALSE;
 
 //	lprintf("%04d JavaScript: Initializing context",sock);
@@ -516,6 +525,20 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 
 //		lprintf("%04d JavaScript: Initializing System object",sock);
 		if(js_CreateSystemObject(js_cx, js_glob, &scfg, uptime)==NULL) 
+			break;
+		
+		/* server object */
+		if((server=JS_DefineObject(js_cx, js_glob, "server", &js_server_class
+			,NULL,0))==NULL)
+			break;
+
+		sprintf(ver,"Synchronet Services v%s",SERVICES_VERSION);
+		val = STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, ver));
+		if(!JS_SetProperty(js_cx, server, "version", &val))
+			break;
+
+		val = STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, services_ver()));
+		if(!JS_SetProperty(js_cx, server, "version_detail", &val))
 			break;
 
 		if(glob!=NULL)
