@@ -323,7 +323,7 @@ int SMBCALL smb_lock(smb_t* smb)
 		return(SMB_ERR_LOCK);
 	}
 	close(file);
-	return(0);
+	return(SMB_SUCCESS);
 }
 
 int SMBCALL smb_unlock(smb_t* smb)
@@ -337,17 +337,17 @@ int SMBCALL smb_unlock(smb_t* smb)
 			,errno,STRERROR(errno),str);
 		return(SMB_ERR_DELETE);
 	}
-	return(0);
+	return(SMB_SUCCESS);
 }
 
-int SMBCALL smb_islocked(smb_t* smb)
+BOOL SMBCALL smb_islocked(smb_t* smb)
 {
 	char	str[MAX_PATH+1];
 
 	if(access(smb_lockfname(smb,str,sizeof(str)-1),0)!=0)
-		return(0);
+		return(FALSE);
 	safe_snprintf(smb->last_error,sizeof(smb->last_error),"%s exists",str);
-	return(1);
+	return(TRUE);
 }
 
 /****************************************************************************/
@@ -2008,7 +2008,7 @@ int SMBCALL smb_freemsg_dfields(smb_t* smb, smbmsg_t* msg, ushort refs)
 			,msg->dfield[x].length,refs))!=SMB_SUCCESS)
 			return(i); 
 	}
-	return(0);
+	return(SMB_SUCCESS);
 }
 
 /****************************************************************************/

@@ -112,7 +112,7 @@ SMBEXPORT int 		SMBCALL smb_stack(smb_t* smb, int op);
 SMBEXPORT int 		SMBCALL smb_trunchdr(smb_t* smb);
 SMBEXPORT int		SMBCALL smb_lock(smb_t* smb);
 SMBEXPORT int		SMBCALL smb_unlock(smb_t* smb);
-SMBEXPORT int		SMBCALL smb_islocked(smb_t* smb);
+SMBEXPORT BOOL		SMBCALL smb_islocked(smb_t* smb);
 SMBEXPORT int 		SMBCALL smb_locksmbhdr(smb_t* smb);
 SMBEXPORT int 		SMBCALL smb_getstatus(smb_t* smb);
 SMBEXPORT int 		SMBCALL smb_putstatus(smb_t* smb);
