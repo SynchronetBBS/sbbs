@@ -51,6 +51,7 @@ enum {
 	,BBS_PROP_LAST_NS_TIME
 	,BBS_PROP_ONLINE
 	,BBS_PROP_TIMELEFT
+	,BBS_PROP_EVENT_TIME
 
 	,BBS_PROP_NODE_NUM
 	,BBS_PROP_NODE_MISC
@@ -142,7 +143,8 @@ enum {
 	,"file newscan time, in time_t format"
 	,"previous newscan time, in time_t format"
 	,"online (see <tt>ON_*</tt> in <tt>sbbsdefs.js</tt> for valid values)"
-	,"timeleft (in seconds)"
+	,"time left (in seconds)"
+	,"time of next exclusive event (in time_t format), or 0 if none"
 
 	,"current node number"
 	,"current node settings bitfield (see <tt>NM_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
@@ -263,6 +265,9 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			break;
 		case BBS_PROP_TIMELEFT:
 			val=sbbs->timeleft;
+			break;
+		case BBS_PROP_EVENT_TIME:
+			val=sbbs->event_time;
 			break;
 
 		case BBS_PROP_NODE_NUM:
@@ -621,9 +626,6 @@ static JSBool js_bbs_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 		case BBS_PROP_ONLINE:
 			sbbs->online=val;
 			break;
-		case BBS_PROP_TIMELEFT:
-			sbbs->timeleft=val;
-			break;
 		case BBS_PROP_NODE_MISC:
 			sbbs->cfg.node_misc=val;
 			break;
@@ -764,7 +766,9 @@ static struct JSPropertySpec js_bbs_properties[] = {
 	{	"new_file_time"		,BBS_PROP_NS_TIME		,JSPROP_ENUMERATE	,NULL,NULL},
 	{	"last_new_file_time",BBS_PROP_LAST_NS_TIME	,JSPROP_ENUMERATE	,NULL,NULL},
 	{	"online"			,BBS_PROP_ONLINE		,JSPROP_ENUMERATE	,NULL,NULL},
-	{	"time_left"			,BBS_PROP_TIMELEFT		,JSPROP_ENUMERATE	,NULL,NULL},
+	{	"timeleft"			,BBS_PROP_TIMELEFT		,JSPROP_READONLY	,NULL,NULL},	/* alias */
+	{	"time_left"			,BBS_PROP_TIMELEFT		,PROP_READONLY		,NULL,NULL},
+	{	"event_time"		,BBS_PROP_EVENT_TIME	,PROP_READONLY		,NULL,NULL},
 	{	"node_num"			,BBS_PROP_NODE_NUM		,PROP_READONLY		,NULL,NULL},
 	{	"node_settings"		,BBS_PROP_NODE_MISC		,JSPROP_ENUMERATE	,NULL,NULL},
 	{	"node_action"		,BBS_PROP_NODE_ACTION	,JSPROP_ENUMERATE	,NULL,NULL},
