@@ -140,7 +140,7 @@ static js_server_props_t js_server_props;
 /* Logging stuff */
 sem_t	log_sem;
 pthread_mutex_t	log_mutex;
-link_list_t	*log_list;
+link_list_t	log_list;
 struct log_data {
 	char	*hostname;
 	char	*ident;
@@ -649,7 +649,7 @@ static void close_request(http_session_t * session)
 		now=time(NULL);
 		localtime_r(&now,&session->req.ld->completed);
 		pthread_mutex_lock(&log_mutex);
-		listPushNode(log_list,session->req.ld);
+		listPushNode(&log_list,session->req.ld);
 		pthread_mutex_unlock(&log_mutex);
 		sem_post(&log_sem);
 		session->req.ld=NULL;
@@ -2616,6 +2616,7 @@ void DLLCALL web_terminate(void)
 static void cleanup(int code)
 {
 	free_cfg(&scfg);
+	listFree(&log_list);
 
 	if(server_socket!=INVALID_SOCKET) {
 		close_socket(server_socket);
@@ -2687,7 +2688,7 @@ void http_logging_thread(void* arg)
 		sem_wait(&log_sem);
 
 		pthread_mutex_lock(&log_mutex);
-		ld=listRemoveNode(log_list, FIRST_NODE);
+		ld=listRemoveNode(&log_list, FIRST_NODE);
 		pthread_mutex_unlock(&log_mutex);
 		if(ld==NULL) {
 			lprintf(LOG_ERR,"Received NULL linked list log entry",filename);
@@ -2820,14 +2821,13 @@ void DLLCALL web_server(void* arg)
 	terminate_server=FALSE;
 
 
+	listInit(&log_list,/* flags */ 0);
 	if(startup->options&WEB_OPT_HTTP_LOGGING) {
 		/********************/
 		/* Start log thread */
 		/********************/
 		sem_init(&log_sem,0,0);
 		pthread_mutex_init(&log_mutex,NULL);
-		log_list=malloc(sizeof(link_list_t));
-		listInit(log_list,LINK_LIST_NEVER_FREE);
 		_beginthread(http_logging_thread, 0, startup->logfile_base);
 	}
 
