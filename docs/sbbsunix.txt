@@ -522,7 +522,7 @@ Default Configuration (SCFG) Screen-shots
  9: Multiple Concurrent Users  Yes
 10: Intercept Standard I/O     No
 11: Native (32-bit) Executable Yes
-12: Use Shell to Execute       No
+12: Use Shell to Execute       Yes
 13: Modify User Data           No
 14: Execute on Event           No
 15: BBS Drop File Type         Synchronet      XTRN.DAT
@@ -540,7 +540,7 @@ Default Configuration (SCFG) Screen-shots
  9: Multiple Concurrent Users  Yes
 10: Intercept Standard I/O     No
 11: Native (32-bit) Executable Yes
-12: Use Shell to Execute       No
+12: Use Shell to Execute       Yes
 13: Modify User Data           Yes
 14: Execute on Event           No
 15: BBS Drop File Type         Synchronet      XTRN.DAT
