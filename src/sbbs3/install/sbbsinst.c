@@ -200,7 +200,7 @@ int main(int argc, char **argv)
 #endif
                     break;
                 default:
-                    printf("\nusage: sbbsinst [ctrl_dir] [options]"
+                    printf("\nusage: %s [ctrl_dir] [options]"
                         "\n\noptions:\n\n"
                         "-d  =  run in standard input/output/door mode\r\n"
                         "-c  =  force color mode\r\n"
@@ -212,6 +212,7 @@ int main(int argc, char **argv)
                         "-v# =  set video mode to #\r\n"
 #endif
                         "-l# =  set screen lines to #\r\n"
+						,argv[0]
                         );
         			exit(0);
            }
@@ -265,19 +266,20 @@ int main(int argc, char **argv)
 	while(1) {
 		i=0;
 		sprintf(mopt[i++],"%-33.33s%s","Distribution",distlist[dist]->version);
-		sprintf(mopt[i++],"%-33.33s%s","Server",(distlist[dist]->type==LOCAL_FILE?"Local Files":distlist[dist]->servers[server]->desc));
+		sprintf(mopt[i++],"%-33.33s%s","Server"
+			,(distlist[dist]->type==LOCAL_FILE?"Local Files":distlist[dist]->servers[server]->desc));
 		sprintf(mopt[i++],"%-33.33s%s","Install Path",params.install_path);
-		sprintf(mopt[i++],"%-33.33s%s","Compiler",params.usebcc?"BCC":"GCC");
+		sprintf(mopt[i++],"%-33.33s%s","Compiler",params.usebcc?"Borland":"GNU");
 		sprintf(mopt[i++],"%-33.33s%s","Compiler Flags",params.cflags);
 		sprintf(mopt[i++],"%-33.33s%s","Debug Build",params.debug?"Yes":"No");
 		sprintf(mopt[i++],"%-33.33s%s","Symlink Binaries",params.symlink?"Yes":"No");
-		sprintf(mopt[i++],"%-33.33s","Start Installation");
+		sprintf(mopt[i++],"%-33.33s","Start Installation...");
 		mopt[i][0]=0;
 
-		uifc.helpbuf=	"`Main Installation Menu:`\n"
+		uifc.helpbuf=	"`Synchronet Installation Settings:`\n"
 						"\nToDo: Add help.";
 		switch(uifc.list(WIN_MID|WIN_ACT,0,0,60,&main_dflt,0
-			,"Configure",mopt)) {
+			,"Synchronet Installation Settings",mopt)) {
 			case 0:
 				i=choose_dist((char **)distlist);
 				if(i>=0)  {
@@ -304,11 +306,11 @@ int main(int argc, char **argv)
 				uifc.input(WIN_MID,0,0,"Install Path",params.install_path,40,K_EDIT);
 				break;
 			case 3:
-				strcpy(opt[0],"BCC");
-				strcpy(opt[1],"GCC");
+				strcpy(opt[0],"Borland");
+				strcpy(opt[1],"GNU");
 				opt[2][0]=0;
 				i=params.usebcc?0:1;
-				uifc.helpbuf=	"`Build From CVS`\n"
+				uifc.helpbuf=	"`Which Compiler`\n"
 								"\nToDo: Add help.";
 				i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 					,"Compiler",opt);
@@ -364,11 +366,11 @@ int main(int argc, char **argv)
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
 				opt[2][0]=0;
-				uifc.helpbuf=	"`Exit SBBSINST:`\n"
+				uifc.helpbuf=	"`Exit Synchronet Install:`\n"
 								"\n"
 								"\nIf you want to exit the Synchronet installation utility, select `Yes`."
 								"\nOtherwise, select `No` or hit ~ ESC ~.";
-				i=uifc.list(WIN_MID,0,0,0,&i,0,"Exit SBBSINST",opt);
+				i=uifc.list(WIN_MID,0,0,0,&i,0,"Exit Synchronet Install",opt);
 				if(!i)
 					bail(0);
 				break; 
@@ -436,6 +438,7 @@ void install_sbbs(struct dist_t *dist,struct server_ent_t *server)  {
 				exit(EXIT_FAILURE);
 			}
 			exit(EXIT_SUCCESS);
+			break;
 		case DIST_SET:
 			for(i=0;dist->files[i][0];i++)  {
 				if((fout=open(dist->files[i],O_WRONLY|O_TRUNC|O_CREAT,S_IRUSR|S_IWUSR))<0)  {
@@ -548,11 +551,12 @@ get_distlist(void)
 		strcpy(file[f++],str);
 	}
 
-	uifc.pop("Getting distribution list");
+	uifc.pop("Getting distributions");
 	if((list=ftpGetURL(DIST_LIST_URL1,ftp_user,ftp_pass,&ret1))==NULL
 			&& (list=ftpGetURL(DIST_LIST_URL2,ftp_user,ftp_pass,&ret2))==NULL
 			&& (list=ftpGetURL(DIST_LIST_URL3,ftp_user,ftp_pass,&ret3))==NULL
-			&& (list=ftpGetURL(DIST_LIST_URL4,ftp_user,ftp_pass,&ret4))==NULL)  {
+			&& (list=ftpGetURL(DIST_LIST_URL4,ftp_user,ftp_pass,&ret4))==NULL
+			&& r==0)  {
 		uifc.pop(NULL);
 		uifc.bail();
 		printf("Cannot get distribution list!\n%s\n- %s\n%s\n- %s\n%s\n- %s\n%s\n- %s\n",
@@ -560,8 +564,7 @@ get_distlist(void)
 				DIST_LIST_URL2,ftpErrString(ret1),
 				DIST_LIST_URL3,ftpErrString(ret1),
 				DIST_LIST_URL4,ftpErrString(ret1));
-		if(r==0)
-			exit(EXIT_FAILURE);
+		exit(EXIT_FAILURE);
 	}
 
 	while((list->gets(in_line,sizeof(in_line),list))!=NULL)  {
@@ -669,7 +672,7 @@ int choose_dist(char **opts)
 	uifc.helpbuf=	"`Distribution List:`\n"
 			"\nToDo: Add help.";
 
-	i=uifc.list(WIN_ESC|WIN_ORG|WIN_MID|WIN_ACT,0,0,0,&dist_dflt,0
+	i=uifc.list(WIN_MID|WIN_ACT,0,0,0,&dist_dflt,0
 			,"Select Distribution",opts);
 	return(i);
 }
@@ -681,7 +684,7 @@ int choose_server(char **opts)
 
 	uifc.helpbuf=	"`Server List:`\n"
 				"\nToDo: Add help.";
-	i=uifc.list(WIN_MID|WIN_ACT|WIN_SAV,0,0,0,&srvr_dflt,0
+	i=uifc.list(WIN_MID|WIN_ACT,0,0,0,&srvr_dflt,0
 		,"Select Server",opts);
 	return(i);
 
