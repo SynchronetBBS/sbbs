@@ -58,6 +58,8 @@ int main()
 		perror(LOCK_FNAME);
 		return(errno);
 	}
+	printf("%s is opened with an exclusive (read/write) lock",LOCK_FNAME);
+	getkey();
 	if(_beginthread(
 		  sopen_test_thread	/* entry point */
 		 ,0  				/* stack size (0=auto) */
@@ -76,7 +78,7 @@ int main()
 	}
 	write(fd,"lock testing\n",LOCK_LEN);
 	if(lock(fd,LOCK_OFFSET,LOCK_LEN))
-		printf("!FAIL lock() non-functional (or file already locked)\n");
+		printf("!FAILURE lock() non-functional (or file already locked)\n");
 	else
 		printf("lock() succeeds\n");
 	if(_beginthread(
@@ -90,7 +92,7 @@ int main()
 	if(lock(fd,LOCK_OFFSET,LOCK_LEN))
 		printf("Locks in first thread survive open()/close() in other thread\n");
 	else
-		printf("!FAIL lock() in first thread lost by open()/close() in other thread\n");
+		printf("!FAILURE lock() in first thread lost by open()/close() in other thread\n");
 	close(fd);
 
 	/* getch test */
