@@ -996,7 +996,8 @@ void input_thread(void *arg)
 				break;
 			}
 #ifdef __unix__
-			else if(FD_ISSET(uspy_socket[sbbs->cfg.node_num-1],&socket_set))  {
+			else if(uspy_socket[sbbs->cfg.node_num-1]!=INVALID_SOCKET && 
+					FD_ISSET(uspy_socket[sbbs->cfg.node_num-1],&socket_set))  {
 				if(ERROR_VALUE != EAGAIN)  {
 					lprintf("Node %d !ERROR %d on local spy socket %d input->select"
 						, sbbs->cfg.node_num, errno, sock);
@@ -1008,9 +1009,15 @@ void input_thread(void *arg)
 #endif
 		}
 
+		if(sbbs->client_socket==INVALID_SOCKET)
+			break;
+
 		if(FD_ISSET(sbbs->client_socket,&socket_set))
 			sock=sbbs->client_socket;
 #ifdef __unix__
+		if(uspy_socket[sbbs->cfg.node_num-1]==INVALID_SOCKET)
+			continue;
+
 		else if(FD_ISSET(uspy_socket[sbbs->cfg.node_num-1],&socket_set))
 			sock=uspy_socket[sbbs->cfg.node_num-1];
 #endif
