@@ -6,7 +6,7 @@
 # @format.tab-size 4, @format.use-tabs true								#
 #																		#
 # Linux: gmake															#
-# FreeBSD: gmake os=freebsd												#
+# FreeBSD: gmake os=FreeBSD												#
 #																		#
 # Optional build targets: dlls, utils, mono, all (default)				#
 #########################################################################
@@ -23,7 +23,12 @@ LD		=	ld
 LIBFILE	=	.a
 EXEFILE	=	
 
-ifeq ($(os),freebsd)	# FreeBSD
+ifndef $(os)
+os		=	$(shell uname)
+$(warning OS not specified on command line, setting to '$(os)'.)
+endif
+
+ifeq ($(os),FreeBSD)	# FreeBSD
 LIBODIR	:=	gcc.freebsd.lib
 EXEODIR	:=	gcc.freebsd.exe
 else                    # Linux
@@ -35,7 +40,7 @@ DELETE	=	rm -fv
 
 CFLAGS	=	-DJAVASCRIPT -I../mozilla/js/src
 
-ifeq ($(os),freebsd)	# FreeBSD
+ifeq ($(os),FreeBSD)	# FreeBSD
 CFLAGS	+= -D_THREAD_SAFE
 # Math libraries needed and uses pthread
 LFLAGS	:=	-lm -pthread
@@ -49,7 +54,7 @@ ifdef DEBUG
 CFLAGS	+=	-g -O0 -D_DEBUG 
 LIBODIR	:=	$(LIBODIR).debug
 EXEODIR	:=	$(EXEODIR).debug
-ifeq ($(os),freebsd)	# FreeBSD
+ifeq ($(os),FreeBSD)	# FreeBSD
 LIBS	+=	../mozilla/js/src/FreeBSD4.3-RELEASE_DBG.OBJ/libjs.a
 else			# Linux
 LIBS	+=	../mozilla/js/src/Linux_All_DBG.OBJ/libjs.a
@@ -57,7 +62,7 @@ endif
 else # RELEASE
 LIBODIR	:=	$(LIBODIR).release
 EXEODIR	:=	$(EXEODIR).release
-ifeq ($(os),freebsd)	# FreeBSD
+ifeq ($(os),FreeBSD)	# FreeBSD
 LIBS	+=	../mozilla/js/src/FreeBSD4.3-RELEASE_OPT.OBJ/libjs.a
 else
 LIBS	+=	../mozilla/js/src/Linux_All_OPT.OBJ/libjs.a
