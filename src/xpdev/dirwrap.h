@@ -44,6 +44,10 @@
 	#include <sys/param.h>	/* PATH_MAX */
 #endif
 
+#if defined(INCLUDE_PATHS_H)
+	#include <paths.h>		/* _PATHS_* macros */
+#endif
+
 #include "gen_defs.h"	/* ulong */
 #include "wrapdll.h"	/* DLLEXPORT and DLLCALL */
 
