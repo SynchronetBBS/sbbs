@@ -8,23 +8,17 @@
 
 #ifdef _WIN32
 	#include <windows.h>
-	#include <io.h>			/* filelength */
-	#include <direct.h>		/* _mkdir */
 #endif
 
-#include <dos.h>
 #include <time.h>
 #include <errno.h>
 #include <stdio.h>
-#include <conio.h>
 #include <ctype.h>
 #include <fcntl.h>
-#include <share.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
-#include <process.h>
-#include <sys\stat.h>
+#include <sys/stat.h>
 
 #ifdef __WATCOMC__
 	#include <mem.h>
@@ -41,6 +35,7 @@
 #include "post.h"
 #include "lzh.h"
 #include "sbbsecho.h"
+#include "conwrap.h"		/* getch() */
 
 #ifdef __TURBOC__
     unsigned _stklen=20000;
@@ -67,9 +62,6 @@ two_plus_t two_plus;
 faddr_t		sys_faddr;
 config_t	cfg;
 scfg_t		scfg;
-
-ulong	crc32(char *buf, ulong len);
-
 
 BOOL pause_on_exit=FALSE;
 
