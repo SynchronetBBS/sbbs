@@ -41,7 +41,9 @@
 #include "websrvr.h"
 
 static const char* server_name="Synchronet Web Server";
-#define CRLF	"\r\n"
+static const char* newline="\r\n";
+
+extern const uchar* nular;
 
 #define TIMEOUT_THREAD_WAIT		60		/* Seconds */
 #define MAX_MIME_TYPES			128
@@ -252,7 +254,7 @@ static int sockprintf(SOCKET sock, char *fmt, ...)
 	sbuf[sizeof(sbuf)-1]=0;
 	if(startup->options&WEB_OPT_DEBUG_TX)
 		lprintf("%04d TX: %s", sock, sbuf);
-	strcat(sbuf,"\r\n");
+	strcat(sbuf,newline);
 	len+=2;
     va_end(argptr);
 
@@ -513,7 +515,7 @@ void send_headers(http_session_t *session, const char *status)
 		t=gmtime(&stats.st_mtime);
 		sockprintf(session->socket,"%s: %s, %02d %s %04d %02d:%02d:%02d GMT",get_header(HEAD_LASTMODIFIED),days[t->tm_wday],t->tm_mday,months[t->tm_mon],t->tm_year+1900,t->tm_hour,t->tm_min,t->tm_sec);
 	}
-	sendsocket(session->socket,CRLF,2);
+	sendsocket(session->socket,newline,2);
 }
 
 static void sock_sendfile(SOCKET socket,char *path)
@@ -548,33 +550,35 @@ static BOOL check_ars(char *ars,http_session_t * session)
 	char	*password;
 	uchar	*ar;
 	user_t	user;
+	BOOL	authorized;
 
-	if(session->req.auth[0]) {
-		username=strtok(session->req.auth,":");
-		password=strtok(NULL,":");
-		/* Require a password */
-		if(password==NULL)
-			return(FALSE);
-		user.number=matchuser(&scfg, username, FALSE);
-		lprintf("User number: %d",user.number);
-		getuserdat(&scfg, &user);
-		if(strnicmp(user.pass,password,LEN_PASS)) {
-			/* Should go to the hack log? */
-			lprintf("Incorrect password for: %s Password: %s Should be: ",username,password,user.pass);
-			return(FALSE);
-		}
-		ar = arstr(NULL,session->req.ars,&scfg);
-		if (chk_ar(&scfg,ar,&user)) {
-			free(ar);
-			return(TRUE);
-		}
-		else  {
-			/* Should go to the hack log? */
-			free(ar);
-			lprintf("Failed ARS Auth: %s Password: %s ARS: %s",username,password,ars);
-			return(FALSE);
-		}
+	if(session->req.auth[0]==0)
+		return(FALSE);
+
+	username=strtok(session->req.auth,":");
+	password=strtok(NULL,":");
+	/* Require a password */
+	if(password==NULL)
+		return(FALSE);
+	user.number=matchuser(&scfg, username, FALSE);
+	lprintf("User number: %d",user.number);
+	getuserdat(&scfg, &user);
+	if(strnicmp(user.pass,password,LEN_PASS)) {
+		/* Should go to the hack log? */
+		lprintf("Incorrect password for: %s Password: %s Should be: ",username,password,user.pass);
+		return(FALSE);
 	}
+	ar = arstr(NULL,session->req.ars,&scfg);
+	authorized=chk_ar(&scfg,ar,&user);
+	if(ar!=NULL && ar!=nular)
+		free(ar);
+
+	if(authorized)
+		return(TRUE);
+
+	/* Should go to the hack log? */
+	lprintf("Failed ARS Auth: %s Password: %s ARS: %s",username,password,ars);
+
 	return(FALSE);
 }
 
@@ -939,7 +943,7 @@ static BOOL check_request(http_session_t * session)
 	if(session->req.ars[0] && !(check_ars(session->req.ars,session))) {
 		/* No authentication provided */
 		sprintf(str,"401 Unauthorized%s%s: Basic realm=\"%s\""
-			,CRLF,get_header(HEAD_WWWAUTH),scfg.sys_name);
+			,newline,get_header(HEAD_WWWAUTH),scfg.sys_name);
 		send_error(str,session);
 		return(FALSE);
 	}
