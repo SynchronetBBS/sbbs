@@ -1281,9 +1281,10 @@ static void signal_smtp_sem(void)
 /* Returns command line generated from instr with %c replacments             */
 /*****************************************************************************/
 static char* mailcmdstr(char* instr, char* msgpath, char* lstpath, char* errpath
-						,char* host, char* ip, uint usernum, char* cmd)
+						,char* host, char* ip, uint usernum
+						,char* sender, char* sender_addr, char* cmd)
 {
-	char	str[256];
+	char	str[1024];
     int		i,j,len;
 
     len=strlen(instr);
@@ -1323,6 +1324,12 @@ static char* mailcmdstr(char* instr, char* msgpath, char* lstpath, char* errpath
                 case 'Q':   /* QWK ID */
                     strcat(cmd,scfg.sys_id);
                     break;
+				case 'S':	/* sender */
+					strcat(cmd,sender);
+					break;
+				case 'A':	/* sender address */
+					strcat(cmd,sender_addr);
+					break;
                 case 'V':   /* Synchronet Version */
                     sprintf(str,"%s%c",VERSION,REVISION);
 					strcat(cmd,str);
@@ -1440,7 +1447,8 @@ static JSFunctionSpec js_global_functions[] = {
 static BOOL
 js_mailproc(SOCKET sock, client_t* client, user_t* user
 			,char* fname, char* cmdline
-			,char* msgtxt_fname, char* rcptlst_fname, char* proc_err_fname)
+			,char* msgtxt_fname, char* rcptlst_fname, char* proc_err_fname
+			,char* sender, char* sender_addr)
 {
 	char*		p;
 	char		path[MAX_PATH+1];
@@ -1544,6 +1552,14 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user
 
 		JS_DefineProperty(js_cx, js_glob, "processing_error_filename"
 			,STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx,proc_err_fname))
+			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+
+		JS_DefineProperty(js_cx, js_glob, "sender_name"
+			,STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx,sender))
+			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+
+		JS_DefineProperty(js_cx, js_glob, "sender_address"
+			,STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx,sender_addr))
 			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 
 		if(getfext(fname)==NULL) /* No extension specified, assume '.js' */
@@ -2043,7 +2059,7 @@ static void smtp_thread(void* arg)
 						if(*p==';' || *p==0)	/* comment or blank line */
 							continue;
 						mailcmdstr(p, msgtxt_fname, rcptlst_fname, proc_err_fname
-							,host_name, host_ip, relay_user.number, str);
+							,host_name, host_ip, relay_user.number, sender, sender_addr, str);
 						lprintf(LOG_DEBUG,"%04d SMTP Executing external process: %s", socket, str);
 #ifdef JAVASCRIPT
 						if(*p=='?') {
@@ -2051,7 +2067,8 @@ static void smtp_thread(void* arg)
 							SAFECOPY(fname,str+1);
 							truncstr(fname," \t");
 							js_mailproc(socket, &client, &relay_user
-								,fname, p ,msgtxt_fname, rcptlst_fname, proc_err_fname);
+								,fname, p ,msgtxt_fname, rcptlst_fname, proc_err_fname
+								,sender, sender_addr);
 						} else									
 #endif
 							/* Native */
