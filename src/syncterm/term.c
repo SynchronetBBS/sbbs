@@ -501,6 +501,14 @@ void doterm(void)
 					switch(ch[0]) {
 						case 0:
 							break;
+						case 7:			/* Beep */
+							#ifdef __unix__
+								beep();
+							#endif
+							#ifdef _WIN32
+								
+							#endif
+							break;
 						case 12:		/* ^L - Clear screen */
 							clearscreen(term.attr);
 							term.ypos=1;

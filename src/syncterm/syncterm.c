@@ -37,7 +37,7 @@ int main(int argc, char **argv)
 	struct bbslist *bbs;
 	struct	text_info txtinfo;
 
-	if(!winsock_startup)
+	if(!winsock_startup())
 		return(1);
 
 	initciowrap(UIFC_IBM|COLOR_MODE);
