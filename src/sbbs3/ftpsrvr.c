@@ -1389,7 +1389,7 @@ static void send_thread(void* arg)
 
 	fseek(fp,xfer.filepos,SEEK_SET);
 	last_report=start=time(NULL);
-	while(!feof(fp)) {
+	while((xfer.filepos+total)<length) {
 
 		now=time(NULL);
 
