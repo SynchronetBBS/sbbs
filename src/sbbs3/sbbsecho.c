@@ -2811,7 +2811,7 @@ void putfmsg(FILE *stream,uchar HUGE16 *fbuf,fmsghdr_t fmsghdr,areasbbs_t area
 		t=time(NULL);
 		tm=gmtime(&t);
 		fprintf(stream,"\1Via: %s @%04u%02u%02u.%02u%02u%02u.UTC "
-			"SBBSecho %s-%s r%s %s %s\r"
+			"SBBSecho %s-%s r%s\r"
 			,faddrtoa(&addr,NULL)
 			,tm->tm_year+1900
 			,tm->tm_mon+1
@@ -2819,7 +2819,7 @@ void putfmsg(FILE *stream,uchar HUGE16 *fbuf,fmsghdr_t fmsghdr,areasbbs_t area
 			,tm->tm_hour
 			,tm->tm_min
 			,tm->tm_sec
-			,SBBSECHO_VER,PLATFORM_DESC,revision,__DATE__,compiler);
+			,SBBSECHO_VER,PLATFORM_DESC,revision);
 	}
 			
 
