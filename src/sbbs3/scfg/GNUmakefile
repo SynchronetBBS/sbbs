@@ -35,6 +35,8 @@ ifndef os
  $(warning OS not specified on command line, setting to '$(os)'.)
 endif
 os      :=	$(shell echo $(os) | tr "[A-Z]" "[a-z]")
+# remove '/' from "os/2"
+os      :=  $(shell echo $(os) | tr -d "/")
 
 ODIR	:=	gcc.$(os)
 

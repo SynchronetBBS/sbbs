@@ -57,6 +57,8 @@ endif
 # this line wont work with solaris unless awk in path is actually gawk 
 os      :=	$(shell echo $(os) | tr "[A-Z]" "[a-z]")
 #os      :=	$(shell echo $(os) | awk '/.*/ { print tolower($$1)}')
+# remove '/' from "os/2"
+os      :=  $(shell echo $(os) | tr -d "/")
 
 ifeq ($(os),freebsd)
  BSD	=	1
