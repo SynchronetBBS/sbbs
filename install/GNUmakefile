@@ -136,7 +136,7 @@ else
 	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(SUFFIX)/makeuser $(SBBSDIR)/exec/makeuser
 	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(SUFFIX)/smbutil $(SBBSDIR)/exec/smbutil
 	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(SUFFIX)/sbbs $(SBBSDIR)/exec/sbbs
-	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(SUFFIX)/sbbsmono $(SBBSDIR)/exec/sbbs
+	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(SUFFIX)/sbbsmono $(SBBSDIR)/exec/sbbsmono
 	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(SUFFIX)/sbbsecho $(SBBSDIR)/exec/sbbsecho
 	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(SUFFIX)/echocfg $(SBBSDIR)/exec/echocfg
 	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(SUFFIX)/filelist $(SBBSDIR)/exec/filelist
