@@ -207,7 +207,6 @@ static SOCKET open_socket(int type)
 static int close_socket(SOCKET* sock, int line)
 {
 	int		result;
-	ulong	l=0;
 
 #ifndef _WIN32
 #define ReleaseMutex(x)
@@ -228,7 +227,8 @@ static int close_socket(SOCKET* sock, int line)
 		return(-1);
 	}
 
-	ioctlsocket(*sock, FIONBIO, &l);	/* Insure that we close successfully */
+	shutdown(*sock,SHUT_RDWR);	/* required on Unix */
+
 	result=closesocket(*sock);
 	if(/* result==0 && */ startup!=NULL && startup->socket_open!=NULL) 
 		startup->socket_open(FALSE);

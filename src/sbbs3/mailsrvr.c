@@ -176,10 +176,8 @@ SOCKET open_socket(int type)
 int close_socket(SOCKET sock)
 {
 	int		result;
-	ulong	l=0;
 
-	ioctlsocket(sock, FIONBIO, &l);	/* Insure that we close successfully */
-
+	shutdown(sock,SHUT_RDWR);	/* required on Unix */
 	result=closesocket(sock);
 	if(/* result==0 && */ startup!=NULL && startup->socket_open!=NULL) 
 		startup->socket_open(FALSE);
