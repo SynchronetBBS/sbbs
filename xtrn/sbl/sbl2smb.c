@@ -1,8 +1,39 @@
-/* SBL2SMB.C */
-
-/* Developed 1990-1997 by Rob Swindell; PO Box 501, Yorba Linda, CA 92885 */
+/* sbl2smb.c */
 
 /* Scans SBL database and posts any additions/updates into the an SMB base */
+
+/* $Id$ */
+
+/****************************************************************************
+ * @format.tab-size 4		(Plain Text/Source Code File Header)			*
+ * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
+ *																			*
+ * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ *																			*
+ * This program is free software; you can redistribute it and/or			*
+ * modify it under the terms of the GNU General Public License				*
+ * as published by the Free Software Foundation; either version 2			*
+ * of the License, or (at your option) any later version.					*
+ * See the GNU General Public License for more details: gpl.txt or			*
+ * http://www.fsf.org/copyleft/gpl.html										*
+ *																			*
+ * Anonymous FTP access to the most recent released source is available at	*
+ * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
+ *																			*
+ * Anonymous CVS access to the development source and modification history	*
+ * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
+ *     (just hit return, no password is necessary)							*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout xtrn	*
+ *																			*
+ * For Synchronet coding style and modification guidelines, see				*
+ * http://www.synchro.net/source.html										*
+ *																			*
+ * You are encouraged to submit any modifications (preferably in Unix diff	*
+ * format) via e-mail to mods@synchro.net									*
+ *																			*
+ * Note: If this box doesn't appear square, then you need to fix your tabs.	*
+ ****************************************************************************/
 
 #define  uint unsigned int
 
@@ -99,7 +130,7 @@ int main(int argc, char **argv)
 	smbstatus_t status;
 	FILE	*stream;
 
-fprintf(stderr,"\nSBL2SMB v2.00 - Write SBL to SMB - Developed 1994-1997 "
+fprintf(stderr,"\nSBL2SMB v2.10 - Write SBL to SMB - Developed 1994-2000 "
 	"Rob Swindell\n\n");
 if(argc<3) {
 	fprintf(stderr,"usage: sbl2smb <sbl.dab> <smb_file> [/s:software]\n\n");
@@ -186,21 +217,42 @@ while(!feof(stream)) {
 		strcat(buf,str); }
 
 	strcat(buf,"\r\n");
+
+	if(bbs.sysop_email[0]) {
+		sprintf(str,"%-15.15s%s\r\n"
+			,"E-mail:",bbs.sysop_email);
+		strcat(buf,str);
+	}
+
+	if(bbs.web_url[0]) {
+		sprintf(str,"%-15.15s%s\r\n"
+			,"Web-site:",bbs.web_url);
+		strcat(buf,str);
+	}
+
+	strcat(buf,"\r\n");
+
 	for(i=0;i<bbs.total_numbers;i++) {
 		sprintf(str,"%-15.15s%s\r\n"
-			,"Number:",bbs.number[i].number);
+			,"Number:",bbs.number[i].modem.number);
 		strcat(buf,str);
-		sprintf(str,"%-15.15s%s\r\n"
-			,"Modem:",bbs.number[i].modem);
-        strcat(buf,str);
-		sprintf(str,"%-15.15s%s\r\n"
-			,"Location:",bbs.number[i].location);
-        strcat(buf,str);
+
 		sprintf(str,"%-15.15s%u\r\n"
-			,"MinRate:",bbs.number[i].min_rate);
-        strcat(buf,str);
+			,"MinRate:",bbs.number[i].modem.min_rate);
+		strcat(buf,str);
+
 		sprintf(str,"%-15.15s%u\r\n"
-			,"MaxRate:",bbs.number[i].max_rate);
+			,"MaxRate:",bbs.number[i].modem.max_rate);
+		strcat(buf,str);
+
+		if(bbs.number[i].modem.min_rate!=0xffff) {
+
+			sprintf(str,"%-15.15s%s\r\n"
+				,"Modem:",bbs.number[i].modem.desc);
+            strcat(buf,str);
+		}
+		sprintf(str,"%-15.15s%s\r\n"
+		   ,"Location:",bbs.number[i].modem.location);
 		strcat(buf,str);
 		if(i+1<bbs.total_numbers)
 			strcat(buf,"\r\n"); }
@@ -258,7 +310,7 @@ while(!feof(stream)) {
 			,"Desc:",bbs.desc[i]);
 		strcat(buf,str); }
 
-	strcat(buf,"\r\n--- SBL2SMB v1.10");
+	strcat(buf,"\r\n--- SBL2SMB v2.10");
 
 	length=strlen(buf);   /* +2 for translation string */
 
@@ -280,7 +332,7 @@ while(!feof(stream)) {
 
 	memset(&msg,0,sizeof(smbmsg_t));
 	memcpy(msg.hdr.id,"SHD\x1a",4);
-	msg.hdr.version=SMB_VERSION;
+	msg.hdr.version=smb_ver();
 	msg.hdr.when_written.time=time(NULL);
     
 	msg.hdr.offset=offset;
