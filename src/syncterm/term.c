@@ -291,6 +291,9 @@ void do_ansi(void)
 					break;
 				case 'U':
 					clearscreen(7);
+					term.ypos=1;
+					term.xpos=1;
+					set_cursor();
 					break;
 				case 'Y':	/* ToDo? BananaCom Clear Line */
 					break;
