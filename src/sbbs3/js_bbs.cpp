@@ -184,7 +184,7 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 static JSBool js_bbs_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
 	char*		p=NULL;
-	long		val=0;
+	int32		val=0;
     jsint       tiny;
 	JSString*	js_str;
 	sbbs_t*		sbbs;

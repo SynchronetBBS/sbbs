@@ -112,7 +112,7 @@ static JSBool js_console_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 
 static JSBool js_console_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
-	long		val=0;
+	int32		val=0;
     jsint       tiny;
 	sbbs_t*		sbbs;
 
