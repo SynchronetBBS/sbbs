@@ -22,8 +22,10 @@ endif
 
 #USE_DIALOG =	1	# Dialog vesrion of UIFC
 #USE_FLTK =	1	# Use Windowed version
-#USE_CURSES	=	1	# Curses version of UIFC
-USE_UIFC32	=	1	# NEW curses version of uifc
+ifndef NO_CURSES
+ #USE_CURSES	=	1	# Curses version of UIFC
+ USE_UIFC32	=	1	# NEW curses version of uifc
+endif
 CC		=	gcc
 CCPP		=	g++
 SLASH	=	/
