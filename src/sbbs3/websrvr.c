@@ -1403,7 +1403,7 @@ static BOOL check_request(http_session_t * session)
 	FILE*	file;
 	int		i;
 	struct stat sb;
-	
+
 	if(!(startup->options&WEB_OPT_VIRTUAL_HOSTS))
 		session->req.host[0]=0;
 	if(session->req.host[0]) {
@@ -1417,7 +1417,7 @@ static BOOL check_request(http_session_t * session)
 		send_error(session,"404 Not Found");
 		return(FALSE);
 	}
-	if(!isdir(path)) {
+	if(isdir(path)) {
 		last_ch=*lastchar(path);
 		if(last_ch!='/' && last_ch!='\\')  {
 			strcat(path,"/");
@@ -1433,6 +1433,10 @@ static BOOL check_request(http_session_t * session)
 			strcat(path,startup->index_file_name[i]);
 			if(!stat(path,&sb))
 				break;
+		}
+		if(startup->index_file_name[i] == NULL)  {
+			send_error(session,"404 Not Found");
+			return(FALSE);
 		}
 		strcat(session->req.virtual_path,startup->index_file_name[i]);
 		session->req.send_location=MOVED_PERM;
