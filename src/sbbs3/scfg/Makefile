@@ -1,92 +1,16 @@
-# Makefile
+SRC_ROOT	= ..\..
+!include ${SRC_ROOT}\build\Common.bmake
+.path.c=	.;..
 
-#########################################################################
-# Makefile for Synchronet BBS Configuration Utility (SCFG)				#
-# For use with Borland C++ Builder 5+ or Borland C++ 5.5 for Win32      #
-# @format.tab-size 4													#
-#########################################################################
+CFLAGS	=	-DSCFG -I.. $(CFLAGS) $(SMBLIB_CFLAGS) $(UIFC-MT_CFLAGS) $(CIOLIB-MT_CFLAGS) $(XPDEV-MT_CFLAGS)
+LDFLAGS	=	$(LDFLAGS) $(SMBLIB_LDFLAGS) $(UIFC-MT_LDFLAGS) $(CIOLIB-MT_LDFLAGS) $(XPDEV-MT_LDFLAGS)
 
-# $Id$
-
-# Macros
-#DEBUG	=	1				# Comment out for release (non-debug) version
-#USE_FLTK=	1
-USE_UIFC32= 1
-CC		=	bcc32
-LD		=	ilink32
-SLASH	=	\\
-OFILE	=	obj
-EXEFILE	=	.exe
-EXEODIR	=	bcc.win32	# Executable output directory
-XPDEV	=   	..\..\xpdev
-UIFC	=	..\..\uifc
-CIOLIB	=	..\..\conio
-SMBLIB	=	..\..\smblib
-LIB	=	..\..\..\lib
-INCLUDE	=	..\..\..\include
-CFLAGS	=	-DSCFG -M -I..;$(UIFC);$(XPDEV);$(CIOLIB);$(SMBLIB)
-DELETE	=	-@echo y | del 
-
-.path.c = .;..;$(UIFC);$(XPDEV);$(CIOLIB);$(SMBLIB)
-.path.cpp = $(UIFC)
-
-# Enable auto-dependency checking
-.autodepend
-.cacheautodepend	
-
-# Optional compile flags (disable banner, warnings and such)
-CFLAGS	=	$(CFLAGS) -q -d -H -X- -w-csu -w-pch -w-ccc -w-rch -w-par -w-pro -w-8004
-#-w-aus
-
-# Debug or release build?
-!ifdef DEBUG
-CFLAGS	=	$(CFLAGS) -v -Od -D_DEBUG 
-LFLAGS	=	$(LFLAGS) -v
-EXEODIR	=	$(EXEODIR).debug
-!else
-EXEODIR	=	$(EXEODIR).release
-!endif
-LIBODIR =	$(EXEODIR)
-
-# Cross platform/compiler definitions
-!include targets.mk	# defines all targets
-!include objects.mk	# defines $(OBJS)
-
-!ifdef USE_UIFC32
-OBJS = $(OBJS) $(EXEODIR)\uifc32.$(OFILE) \
-	$(EXEODIR)\ciolib.$(OFILE) $(EXEODIR)\ansi_cio.$(OFILE) $(EXEODIR)\win32cio.$(OFILE) $(EXEODIR)\mouse.$(OFILE)
-CFLAGS  =   $(CFLAGS) -DUSE_UIFC32 -WM
-!else
-OBJS = $(OBJS) $(EXEODIR)\uifc.$(OFILE)
-!endif
-
-!ifdef USE_FLTK
-CFLAGS 	= $(CFLAGS) -DUSE_FLTK -I$(INCLUDE)\fltk
-OBJS 	= $(OBJS) $(EXEODIR)\uifcfltk.$(OFILE) $(LIB)/fltk/win32/fltk.lib
-!endif
-
-# Implicit C Compile Rule for SCFG
-.c.$(OFILE):
-	@$(CC) $(CFLAGS) -n$(EXEODIR) -c $<
-
-.cpp.$(OFILE):
-	@$(CC) $(CFLAGS) -n$(EXEODIR) -c $<
-
-# Create output directory if it doesn't exist
-$(EXEODIR):
-	@if not exist $(EXEODIR) mkdir $(EXEODIR)
-
-$(MAKEHELP): makehelp.c
-	@$(CC) -q -n$(EXEODIR) $?
-
-$(SCFGHELP): $(OBJS) $(MAKEHELP)
-	@$(MAKEHELP) $(EXEODIR)
-
-# Monolithic SCFG executable Build Rule
 $(SCFG): $(OBJS)
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -e$@ $**
+        ${QUIET}$(CC) $(LDFLAGS) $(MT_LDFLAGS) -e$@ $(OBJS) $(SMBLIB_LIBS) $(UIFC-MT_LIBS) $(CIOLIB-MT_LIBS) $(XPDEV-MT_LIBS)
 
-clean:
-	@echo Deleting $(EXEODIR)
-	$(QUIET)$(DELETE) $(EXEODIR)\*
+$(MAKEHELP): makehelp.c
+	$(QUIET)$(CC) $(CFLAGS) -e$(MAKEHELP) makehelp.c
+
+$(SCFGHELP): $(OBJS) $(MAKEHELP)
+	$(QUIET)$(MAKEHELP) $(EXEODIR)

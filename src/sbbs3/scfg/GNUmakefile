@@ -1,55 +1,17 @@
-# GNUmakefile
+SRC_ROOT	?= ../..
+include ${SRC_ROOT}/build/Common.gmake
 
-#########################################################################
-# Makefile for SCFG			 											#
-# For use with GNU make and GNU C Compiler								#
-# @format.tab-size 4, @format.use-tabs true								#
-#																		#
-# Linux: gmake															#
-# FreeBSD: gmake os=FreeBSD												#
-#																		#
-# Optional build targets: clean
-#########################################################################
+CFLAGS	+=	-DSCFG -I.. $(SMBLIB_CFLAGS) $(UIFC-MT_CFLAGS) $(CIOLIB-MT_CFLAGS) $(XPDEV-MT_CFLAGS)
+LDFLAGS	+=	$(SMBLIB_LDFLAGS) $(UIFC-MT_LDFLAGS) $(CIOLIB-MT_LDFLAGS) $(XPDEV-MT_LDFLAGS)
 
-# $Id$
+vpath %.c ..
 
-#USE_DIALOG =	1	# Dialog vesrion of UIFC
-#USE_FLTK =	1	# Use Windowed version
-ifndef NO_CURSES
- #USE_CURSES	=	1	# Curses version of UIFC
- USE_UIFC32	=	1	# NEW curses version of uifc
-endif
-
-UIFC_SRC	=	../../uifc/
-XPDEV	=	../../xpdev/
-SBBS_SRC =	..
-NEED_UIFC	:=	1
-CFLAGS		=	-DSCFG
-SMBLIB_SRC	:=	../../smblib/
-NEED_SMBLIB	:=	1
-
-include $(XPDEV)/Common.gmake
-include $(UIFC_SRC)/Common.gmake
-include $(SBBS_SRC)/Common.gmake
-include $(SMBLIB_SRC)/Common.gmake
-
-ifeq ($(os),netbsd)
- CFLAGS		+=	$(PTHREAD_CFLAGS)
- LDFLAGS	+=	$(PTHREAD_LDFLAGS)
-endif
-
-SCFG	:=	$(EXEODIR)$(SLASH)scfg$(EXEFILE)
+$(SCFG): $(OBJS)
+	@echo Linking $@
+	${QUIET}$(CC) $(LDFLAGS) $(MT_LDFLAGS) -o$@ $(OBJS) $(SMBLIB_LIBS) $(UIFC-MT_LIBS) $(CIOLIB-MT_LIBS) $(XPDEV-MT_LIBS)
 
 $(MAKEHELP): makehelp.c
 	$(QUIET)$(CC) $(CFLAGS) makehelp.c -o $(MAKEHELP)
 
 $(SCFGHELP): $(OBJS) $(MAKEHELP)
 	$(QUIET)$(MAKEHELP) $(EXEODIR)
-
-# SCFG Build Rule
-$(SCFG): $(OBJS)
-   ifdef USE_DIALOG
-	$(QUIET)$(MAKE) --no-print-directory -C ../../libdialog
-   endif
-	@echo Linking $@
-	$(QUIET)$(CXX) -o $@ $(OBJS) $(LDFLAGS)

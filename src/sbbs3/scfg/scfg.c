@@ -219,7 +219,7 @@ else
 if(!door_mode)
     i=uifcinic(&uifc);  /* curses */
 else
-#elif !defined(__unix__) && !defined(_MSC_VER) && !defined(USE_UIFC32)
+#elif !defined(__unix__) && !defined(_MSC_VER) && !defined(USE_UIFC32) && 0
 if(!door_mode)
     i=uifcini(&uifc);   /* conio */
 else
