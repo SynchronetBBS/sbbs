@@ -237,7 +237,7 @@ char* sbbs_t::atcode(char* sp, char* str)
 	}
 
 	if(!strcmp(sp,"TUSER")) {
-		sprintf(str,"%u",lastuser(&cfg));
+		sprintf(str,"%u",total_users(&cfg));
 		return(str);
 	}
 
