@@ -90,6 +90,12 @@ void clearscreen(char attr)
 	char *buf;
 	int x,y,j;
 
+	term.backpos+=term.height;
+	if(term.backpos>backlines) {
+		memmove(term.scrollback,term.scrollback+term.width*2*(term.backpos-term.backlines),term.width*2*(backlines-(term.backpos-term.backlines)));
+		term.backpos=backlines;
+	}
+	gettext(term.x+1,term.y+1,term.x+term.width,term.y+term.height,term.scrollback+(term.backpos-term.height)*term.width*2);
 	buf=(char *)malloc(term.width*(term.height)*2);
 	j=0;
 	for(x=0;x<term.width;x++) {
