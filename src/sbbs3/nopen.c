@@ -115,9 +115,12 @@ BOOL ftouch(const char* fname)
 BOOL fmutex(const char* fname, const char* text)
 {
 	int file;
+	char hostname[128];
 
 	if((file=open(fname,O_CREAT|O_WRONLY|O_EXCL,S_IREAD|S_IWRITE))<0)
 		return(FALSE);
+	if(text==NULL && gethostname(hostname,sizeof(hostname))==0)
+		text=hostname;
 	if(text!=NULL)
 		write(file,text,strlen(text));
 	close(file);
