@@ -325,7 +325,8 @@ js_readall(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		js_readln(cx, obj, 0, NULL, &line); 
 		if(line==JSVAL_NULL)
 			break;
-        JS_SetElement(cx, array, len++, &line);
+        if(!JS_SetElement(cx, array, len++, &line))
+			break;
 	}
     *rval = OBJECT_TO_JSVAL(array);
 

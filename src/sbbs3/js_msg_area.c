@@ -156,14 +156,16 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 				return(NULL);							
 
 			val=OBJECT_TO_JSVAL(subobj);
-			JS_SetElement(cx, sub_list, index, &val);
+			if(!JS_SetElement(cx, sub_list, index, &val))
+				return(NULL);
 		}
 
 		if(!JS_GetArrayLength(cx, grp_list, &index))
 			return(NULL);
 
 		val=OBJECT_TO_JSVAL(grpobj);
-		JS_SetElement(cx, grp_list, index, &val);
+		if(!JS_SetElement(cx, grp_list, index, &val))
+			return(NULL);
 	}
 
 	return(areaobj);
