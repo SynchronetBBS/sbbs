@@ -60,10 +60,8 @@ BOOL DLLCALL save_cfg(scfg_t* cfg, int backup_level)
 		return(FALSE);
 
 	for(i=0;i<cfg->sys_nodes;i++) {
-		if(cfg->node_path[i][0]==0) {
+		if(cfg->node_path[i][0]==0) 
 			sprintf(cfg->node_path[i],"../node%d",i+1);
-			prep_dir(cfg->ctrl_dir, cfg->node_path[i]);
-		}
 		cfg->node_num=i+1;
 		if(!write_node_cfg(cfg,backup_level))
 			return(FALSE);
@@ -115,6 +113,9 @@ BOOL DLLCALL write_node_cfg(scfg_t* cfg, int backup_level)
 	FILE	*stream;
 
 	if(cfg->prepped)
+		return(FALSE);
+
+	if(cfg->node_num<1)
 		return(FALSE);
 
 	sprintf(str,cfg->node_path[cfg->node_num-1]);
