@@ -2523,6 +2523,16 @@ static jsConstIntSpec js_global_const_ints[] = {
 	{"ECONNREFUSED"		,ECONNREFUSED	},
 	{"EINPROGRESS"		,EINPROGRESS	},
 
+	/* Log priority values from syslog.h/sbbsdefs.h (possibly platform-dependant) */
+	{"LOG_EMERG"		,LOG_EMERG		},
+	{"LOG_ALERT"		,LOG_ALERT		},
+	{"LOG_CRIT"			,LOG_CRIT		},
+	{"LOG_ERR"			,LOG_ERR		},
+	{"LOG_WARNING"		,LOG_WARNING	},
+	{"LOG_NOTICE"		,LOG_NOTICE		},
+	{"LOG_INFO"			,LOG_INFO		},
+	{"LOG_DEBUG"		,LOG_DEBUG		},
+
 	/* Terminator (Governor Arnold) */
 	{0}
 };
