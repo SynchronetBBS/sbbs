@@ -212,6 +212,7 @@ typedef struct  {
 	JSObject*		js_query;
 	JSObject*		js_header;
 	JSObject*		js_request;
+	js_branch_t		js_branch;
 
 	/* Client info */
 	client_t		client;
@@ -819,7 +820,6 @@ static BOOL send_headers(http_session_t *session, const char *status)
 	struct tm	tm;
 	char	*headers;
 	char	header[MAX_REQUEST_LINE+1];
-	char	*p;
 	list_node_t	*node;
 
 	lprintf(LOG_DEBUG,"%04d Request resolved to: %s"
@@ -1379,7 +1379,6 @@ static void js_add_header(http_session_t * session, char *key, char *value)
 static BOOL parse_headers(http_session_t * session)
 {
 	char	*head_line;
-	char	next_char;
 	char	*value;
 	char	*p;
 	int		i;
@@ -1626,7 +1625,6 @@ static BOOL get_request_headers(http_session_t * session)
 	char	head_line[MAX_REQUEST_LINE+1];
 	char	next_char;
 	char	*value;
-	char	*p;
 	int		i;
 
 	while(sockreadline(session,head_line,sizeof(head_line)-1)>0) {
@@ -2435,6 +2433,17 @@ static JSFunctionSpec js_global_functions[] = {
 	{0}
 };
 
+static JSBool
+js_BranchCallback(JSContext *cx, JSScript *script)
+{
+	http_session_t* session;
+
+	if((session=(http_session_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+    return(js_CommonBranchCallback(cx,&session->js_branch));
+}
+
 static JSContext* 
 js_initcx(JSRuntime* runtime, SOCKET sock, JSObject** glob, http_session_t *session)
 {
@@ -2451,6 +2460,8 @@ js_initcx(JSRuntime* runtime, SOCKET sock, JSObject** glob, http_session_t *sess
 	lprintf(LOG_INFO,"%04d JavaScript: Context created",sock);
 
     JS_SetErrorReporter(js_cx, js_ErrorReporter);
+
+	JS_SetBranchCallback(js_cx, js_BranchCallback);
 
 	do {
 
@@ -2591,7 +2602,7 @@ static BOOL exec_ssjs(http_session_t* session)  {
 		/* RUN SCRIPT */
 		JS_ClearPendingException(session->js_cx);
 
-
+		session->js_branch.counter=0;
 
 		if((js_script=JS_CompileFile(session->js_cx, session->js_glob
 			,session->req.physical_path))==NULL) {
@@ -3313,6 +3324,11 @@ void DLLCALL web_server(void* arg)
 			SAFECOPY(session->host_ip,host_ip);
 			session->addr=client_addr;
    			session->socket=client_socket;
+			session->js_branch.auto_terminate=TRUE;
+			session->js_branch.terminated=&terminate_server;
+			session->js_branch.limit=startup->js_branch_limit;
+			session->js_branch.gc_interval=startup->js_gc_interval;
+			session->js_branch.yield_interval=startup->js_yield_interval;
 
 			_beginthread(http_session_thread, 0, session);
 			served++;

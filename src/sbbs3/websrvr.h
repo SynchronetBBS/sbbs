@@ -53,6 +53,9 @@ typedef struct {
     DWORD	options;
     DWORD	js_max_bytes;
 	DWORD	js_cx_stack;
+	DWORD	js_branch_limit;
+	DWORD	js_yield_interval;
+	DWORD	js_gc_interval;
 
 	void*	cbdata;				/* Private data passed to callbacks */ 
 
