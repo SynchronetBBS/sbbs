@@ -817,26 +817,26 @@ js_html_encode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 	char		ansi_seq[MAX_ANSI_SEQ+1];
 	int			ansi_param[MAX_ANSI_PARAMS];
 	int			k,l;
-	ulong		savepos;
+	ulong		savepos=0;
 	int			hpos=0;
 	int			currrow=0;
-	int			savehpos;
-	int			savevpos;
+	int			savehpos=0;
+	int			savevpos=0;
 	BOOL		extchar=FALSE;
 	ulong		obsize;
-	int			lastcolor;
+	int			lastcolor=7;
 	char		tmp1[128];
 	struct		tm tm;
 	time_t		now;
 	BOOL		nodisplay=FALSE;
 	scfg_t*		cfg;
 	uchar   	attr_stack[64]; /* Saved attributes (stack) */
-	int     	attr_sp;                /* Attribute stack pointer */
+	int     	attr_sp=0;                /* Attribute stack pointer */
 
 	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)		/* Will this work?  Ask DM */
 		return(JS_FALSE);
 
-	if((inbuf=JS_GetStringBytes(JS_ValueToString(cx, argv[0])))==NULL) 
+	if((inbuf=JS_GetStringBytes(JS_ValueToString(cx, argv[0])))==NULL)
 		return(JS_FALSE);
 
 	if(argc>1 && JSVAL_IS_BOOLEAN(argv[1]))
