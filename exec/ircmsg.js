@@ -100,11 +100,12 @@ function send(msg)
 		log("Not sending blank message");
 		return;
 	}
-	for(i in exclude)
+	for(i in exclude) {
 		if(msg.search(exclude[i])>=0) {
 			log("Excluding: " + msg);
 			return;
 		}
+	}
 	log("Sending: " + msg);
 	if(!my_server.send("PRIVMSG "+channel+" :"+expand_tabs(msg)+"\r\n"))
 		alert("send failure");
