@@ -398,15 +398,17 @@ endif
 */
 
 	fprintf(makefile,"all:          binaries baja externals\n\n");
-	fprintf(makefile,"externals:	sbj sbl\n\n");
-	fprintf(makefile,"binaries:	    sbbs3 scfg\n\n");
+	fprintf(makefile,"externals:    sbj sbl\n\n");
+	fprintf(makefile,"binaries:     sbbs3 scfg\n\n");
 
-	fprintf(makefile,"sbbs3:	");
-	if(params.cvs)
-	fprintf(makefile,"$(SBBSDIR)/src/sbbs3 $(SBBSDIR)/src/uifc $(SBBSDIR)/src/xpdev $(SBBSDIR)/src/mozilla \\\n");
+	fprintf(makefile,"sbbs3: \\\n");
+	if(params.cvs) {
+		fprintf(makefile,"\t$(SBBSDIR)/src/sbbs3 $(SBBSDIR)/src/uifc \\\n");
+		fprintf(makefile,"\t$(SBBSDIR)/src/xpdev $(SBBSDIR)/src/mozilla \\\n");
+	}
 	fprintf(makefile,"\t$(SBBSDIR)/src/mozilla $(SBBSDIR)/lib/mozilla/js/%s.%s\n\n",platform,build);
 	fprintf(makefile,"\tgmake -C $(SBBSDIR)/src/sbbs3 $(MKFLAGS)\n");
-	fprintf(makefile,"\tMKFLAGS	+=	BAJAPATH=../src/sbbs3/%s.%s.exe.%s/baja\n\n",ccpre,platform,build);
+	fprintf(makefile,"\t  MKFLAGS += BAJAPATH=../src/sbbs3/%s.%s.exe.%s/baja\n\n",ccpre,platform,build);
 
 	fprintf(makefile,"scfg:");
 	if(params.cvs)
