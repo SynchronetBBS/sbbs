@@ -42,6 +42,451 @@
 
 #include "startup.h"
 
+typedef struct {                        /* Message sub board info */
+	char
+#ifdef SCFG
+			lname[LEN_SLNAME+1],		/* Short name - used for prompts */
+			sname[LEN_SSNAME+1],		/* Long name - used for listing */
+			ar[LEN_ARSTR+1],			/* Access requirements */
+			read_ar[LEN_ARSTR+1],		/* Read requirements */
+			post_ar[LEN_ARSTR+1],		/* Post requirements */
+			op_ar[LEN_ARSTR+1], 		/* Operator requirements */
+			mod_ar[LEN_ARSTR+1],		/* Moderated user requirements */
+			qwkname[11],				/* QWK name - only 10 chars */
+			data_dir[LEN_DIR+1],		/* Data file directory */
+			origline[51],				/* Optional EchoMail origin line */
+			echomail_sem[LEN_DIR+1],	/* EchoMail semaphore for this sub */
+			tagline[81],				/* Optional QWK net tag line */
+#else
+			*lname,
+			*sname;
+	uchar	*ar,
+			*read_ar,
+			*post_ar,
+			*op_ar,
+			*mod_ar;
+	char	*qwkname,
+			*data_dir,
+			*origline,
+			*echomail_sem,
+			*tagline,
+#endif
+			code[9];					/* Eight character code */
+#if 0 /* ndef SBBS */
+	char	echopath[LEN_DIR+1];		/* EchoMail path */
+#endif
+	ushort	grp,						/* Which group this sub belongs to */
+			ptridx, 					/* Index into pointer file */
+			qwkconf,					/* QWK conference number */
+			maxage; 					/* Max age of messages (in days) */
+	ulong	misc,						/* Miscellaneous flags */
+			maxmsgs,					/* Max number of messages allowed */
+			maxcrcs;					/* Max number of CRCs to keep */
+	faddr_t faddr;						/* FidoNet address */
+
+} sub_t;
+
+typedef struct {                        /* Message group info */
+	char
+#ifdef SCFG
+			lname[LEN_GLNAME+1],		/* Short name */
+			sname[LEN_GSNAME+1],		/* Long name */
+			ar[LEN_ARSTR+1];			/* Access requirements */
+			
+#else
+			*lname,
+			*sname;
+	uchar	*ar;
+#endif
+
+} grp_t;
+
+typedef struct {                        /* Transfer Directory Info */
+	char								/* Eight character code */
+#ifdef SCFG
+			lname[LEN_SLNAME+1],		/* Short name - used for prompts */
+			sname[LEN_SSNAME+1],		/* Long name - used for listing */
+			ar[LEN_ARSTR+1],			/* Access Requirements */
+			ul_ar[LEN_ARSTR+1], 		/* Upload Requirements */
+			dl_ar[LEN_ARSTR+1], 		/* Download Requirements */
+			ex_ar[LEN_ARSTR+1], 		/* Exemption Requirements (credits) */
+			op_ar[LEN_ARSTR+1], 		/* Operator Requirements */
+			path[LEN_DIR+1],			/* Path to directory for files */
+			exts[41],   		        /* Extensions allowed */
+			upload_sem[LEN_DIR+1],		/* Upload semaphore file */
+			data_dir[LEN_DIR+1],		/* Directory where data is stored */
+#else
+			*lname,
+			*sname;
+	uchar	*ar,
+			*ul_ar,
+			*dl_ar,
+			*ex_ar,
+			*op_ar;
+	char	*path,
+			*exts,
+			*upload_sem,
+			*data_dir,
+#endif
+			code[9],
+			seqdev, 					/* Sequential access device number */
+			sort;						/* Sort type */
+	ushort	maxfiles,					/* Max number of files allowed */
+			maxage, 					/* Max age of files (in days) */
+			up_pct, 					/* Percentage of credits on uloads */
+			dn_pct, 					/* Percentage of credits on dloads */
+			lib;						/* Which library this dir is in */
+	ulong	misc;						/* Miscellaneous bits */
+
+} dir_t;
+
+typedef struct {                        /* Transfer Library Information */
+	char
+#ifdef SCFG
+			lname[LEN_GLNAME+1],		/* Short Name - used for prompts */
+			sname[LEN_GSNAME+1],		/* Long Name - used for listings */
+			ar[LEN_ARSTR+1];			/* Access Requirements */
+#else
+			*lname,
+			*sname;
+	uchar	*ar;
+#endif
+	ushort	offline_dir;				/* Offline file directory */
+
+} lib_t;
+
+typedef struct {                        /* Gfile Section Information */
+	char								/* Eight character code */
+#ifdef SCFG
+			name[41],					/* Name of section */
+			ar[LEN_ARSTR+1];			/* Access requirements */
+#else
+			*name;
+	uchar	*ar;
+#endif
+	char	code[9];
+
+} txtsec_t;
+
+typedef struct {						/* External Section Information */
+	char
+#ifdef SCFG
+			name[41],					/* Name of section */
+			ar[LEN_ARSTR+1];			/* Access requirements */
+#else
+			*name;
+	uchar	*ar;
+#endif
+	char	code[9];					/* Eight character code */
+
+} xtrnsec_t;
+
+typedef struct {						/* Swappable executable */
+#ifdef SCFG
+	char	cmd[LEN_CMD+1]; 			/* Program name */
+#else
+	char	*cmd;
+#endif
+
+} swap_t;
+
+typedef struct {						/* OS/2 executable */
+#ifdef SCFG
+	char	name[13];					/* Program name */
+#else
+	char	*name;
+#endif
+	ulong	misc;						/* See OS2PGM_* */
+
+} natvpgm_t;
+
+typedef struct {						/* External Program Information */
+	char
+#ifdef SCFG
+			name[41],					/* Name of External */
+			ar[LEN_ARSTR+1],			/* Access Requirements */
+			run_ar[LEN_ARSTR+1],		/* Run Requirements */
+			cmd[LEN_CMD+1], 			/* Command line */
+			clean[LEN_CMD+1],			/* Clean-up command line */
+			path[LEN_DIR+1],			/* Start-up path */
+#else
+			*name;
+	uchar	*ar,
+			*run_ar;
+	char	*cmd,
+			*clean,
+			*path,
+#endif
+			type,						/* What type of external program */
+            event,                      /* Execute upon what event */
+			textra, 					/* Extra time while in this program */
+			maxtime,					/* Maximum time allowed in this door */
+			code[9];					/* Internal code for program */
+	ushort	sec;						/* Section this program belongs to */
+	ulong	cost,						/* Cost to run in credits */
+			misc;						/* Misc. bits - ANSI, DOS I/O etc. */
+
+} xtrn_t;
+
+typedef struct {						/* External Page program info */
+#ifdef SCFG
+	char	cmd[LEN_CMD+1], 			/* Command line */
+			ar[LEN_ARSTR+1];			/* ARS for this chat page */
+#else
+	char	*cmd;
+	uchar	*ar;
+#endif
+	ulong	misc;						/* Intercept I/O */
+
+} page_t;
+
+
+typedef struct {						/* Chat action set */
+#ifdef SCFG
+	char	name[26];					/* Name of set */
+#else
+	char	*name;
+#endif
+
+} actset_t;
+
+typedef struct {						/* Chat action info */
+#ifdef SCFG
+	char	cmd[LEN_CHATACTCMD+1],		/* Command word */
+			out[LEN_CHATACTOUT+1];		/* Output */
+#else
+	char	*cmd,
+			*out;
+#endif
+	ushort	actset; 					/* Set this action belongs to */
+
+} chatact_t;
+
+typedef struct {						/* Gurus */
+#ifdef SCFG
+	char	name[26],
+			ar[LEN_ARSTR+1];
+#else
+	char	*name;
+	uchar	*ar;
+#endif
+	char	code[9];
+
+} guru_t;
+
+typedef struct {						/* Chat Channel Information */
+#ifdef SCFG
+	char	ar[LEN_ARSTR+1];			/* Access requirements */
+	char	name[26];					/* Channel description */
+#else
+	uchar	*ar;
+	char	*name;
+#endif
+	char	code[9];
+	ushort	actset, 					/* Set of actions used in this chan */
+			guru;						/* Guru file number */
+	ulong	cost,						/* Cost to join */
+			misc;						/* Misc. bits CHAN_* definitions */
+
+} chan_t;
+
+typedef struct {                        /* Modem Result codes info */
+	ushort	code,						/* Numeric Result Code */
+			cps,    		            /* Average Transfer CPS */
+			rate;   		            /* DCE Rate (Modem to Modem) */
+#ifdef SCFG
+	char	str[LEN_MODEM+1];   		/* String to use for description */
+#else
+	char	*str;
+#endif
+
+} mdm_result_t;
+
+typedef struct {                        /* Transfer Protocol information */
+	char	mnemonic;					/* Letter to select this protocol */
+#ifdef SCFG
+	char	name[26],					/* Name of protocol */
+			ar[LEN_ARSTR+1],			/* ARS */
+			ulcmd[LEN_CMD+1],			/* Upload command line */
+			dlcmd[LEN_CMD+1],			/* Download command line */
+			batulcmd[LEN_CMD+1],		/* Batch upload command line */
+			batdlcmd[LEN_CMD+1],		/* Batch download command line */
+			blindcmd[LEN_CMD+1],		/* Blind upload command line */
+			bicmd[LEN_CMD+1];			/* Bidirectional command line */
+#else
+	uchar	*ar;
+	char	*name,
+			*ulcmd,
+			*dlcmd,
+			*batulcmd,
+			*batdlcmd,
+			*blindcmd,
+			*bicmd;
+#endif
+	ulong	misc;						/* Miscellaneous bits */
+
+} prot_t;
+
+typedef struct {                        /* Extractable file types */
+	char	ext[4]; 					/* Extension */
+#ifdef SCFG
+	char	ar[LEN_ARSTR+1],			/* Access Requirements */
+			cmd[LEN_CMD+1]; 			/* Command line */
+#else
+	uchar	*ar;
+	char	*cmd;
+#endif
+
+} fextr_t;
+
+typedef struct {						/* Compressable file types */
+	char	ext[4]; 					/* Extension */
+#ifdef SCFG
+	char	ar[LEN_ARSTR+1],			/* Access Requirements */
+			cmd[LEN_CMD+1]; 			/* Command line */
+#else
+	uchar	*ar;
+	char	*cmd;
+#endif
+
+} fcomp_t;
+
+typedef struct {                        /* Viewable file types */
+	char	ext[4]; 					/* Extension */
+#ifdef SCFG
+	char	ar[LEN_ARSTR+1],			/* Access Requirements */
+			cmd[LEN_CMD+1]; 			/* Command line */
+#else
+	uchar	*ar;
+	char	*cmd;
+#endif
+
+} fview_t;
+
+typedef struct {                        /* Testable file types */
+	char	ext[4]; 					/* Extension */
+#ifdef SCFG
+	char	ar[LEN_ARSTR+1],			/* Access requirement */
+			cmd[LEN_CMD+1], 			/* Command line */
+			workstr[41];				/* String to display while working */
+#else
+	uchar	*ar;
+	char	*cmd,
+			*workstr;
+#endif
+
+} ftest_t;
+
+typedef struct {						/* Download events */
+	char	ext[4];
+#ifdef SCFG
+	char	ar[LEN_ARSTR+1],			/* Access requirement */
+			cmd[LEN_CMD+1], 			/* Command line */
+			workstr[41];				/* String to display while working */
+#else
+	uchar	*ar;
+	char	*cmd,
+			*workstr;
+#endif
+
+} dlevent_t;
+
+typedef struct {						/* External Editors */
+	char
+#ifdef SCFG
+			name[41],					/* Name (description) */
+			ar[LEN_ARSTR+1],			/* Access Requirement */
+			lcmd[LEN_CMD+1],			/* Local command line */
+			rcmd[LEN_CMD+1],			/* Remote command line */
+#else
+			*name;
+	uchar	*ar;
+	char	*lcmd,
+			*rcmd,
+#endif
+			code[9];
+	ulong	misc;						/* Misc. bits */
+	uchar	type;						/* Drop file type */
+
+} xedit_t;
+
+
+typedef struct {						/* Generic Timed Event */
+	char	code[9],					/* Internal code */
+			days,						/* Days to run event */
+#ifdef SCFG
+			dir[LEN_DIR+1], 			/* Start-up directory */
+			cmd[LEN_CMD+1]; 			/* Command line */
+#else
+			*dir,
+			*cmd;
+#endif
+	ushort	node,						/* Node to execute event */
+			time;						/* Time to run event */
+	ulong	misc;						/* Misc bits */
+#ifndef SCFG
+	time_t	last;						/* Last time event ran */
+#endif
+
+} event_t;
+
+typedef struct {						/* QWK Network Hub */
+	char	id[9],						/* System ID of Hub */
+			*mode,						/* Mode for Ctrl-A codes for ea. sub */
+			days,						/* Days to call-out on */
+#ifdef SCFG
+			call[LEN_CMD+1],			/* Call-out command line to execute */
+			pack[LEN_CMD+1],			/* Packing command line */
+			unpack[LEN_CMD+1];			/* Unpacking command line */
+#else
+			*call,
+			*pack,
+			*unpack;
+#endif
+	ushort	time,						/* Time to call-out */
+			node,						/* Node to do the call-out */
+			freq,						/* Frequency of call-outs */
+			subs,						/* Number Sub-boards carried */
+			*sub,						/* Number of local sub-board for ea. */
+			*conf;						/* Conference number of ea. */
+#ifndef SCFG
+	time_t	last;						/* Last network attempt */
+#endif
+
+} qhub_t;
+
+typedef struct {						/* PCRelay/PostLink Hub */
+	char	days,						/* Days to call-out on */
+#ifdef SCFG
+			name[11],					/* Site Name of Hub */
+			call[LEN_CMD+1];			/* Call-out command line to execute */
+#else
+			*call;
+#endif
+	ushort	time,						/* Time to call-out */
+			node,						/* Node to do the call-out */
+			freq;						/* Frequency of call-outs */
+#ifndef SCFG
+	time_t	last;						/* Last network attempt */
+#endif
+
+} phub_t;
+
+
+typedef struct {						/* Command Shells */
+	char
+#ifdef SCFG
+			name[41],					/* Name (description) */
+			ar[LEN_ARSTR+1];			/* Access Requirement */
+#else
+			*name;
+	uchar	*ar;
+#endif
+	char	code[9];
+	ulong	misc;
+
+} shell_t;
+
 typedef struct 
 {
 
