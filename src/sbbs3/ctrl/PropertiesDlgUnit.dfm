@@ -299,7 +299,7 @@ object PropertiesDlg: TPropertiesDlg
         Top = 44
         Width = 169
         Height = 24
-        Hint = 'Control directory (e.g. c:\sbbs\ctrl)'
+        Hint = 'Hostname (if different than configured in SCFG)'
         ParentShowHint = False
         ShowHint = True
         TabOrder = 1
