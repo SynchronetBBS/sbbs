@@ -310,7 +310,8 @@ static int getmonth(char *mon)
 static time_t decode_date(char *date)
 {
 	struct	tm	ti;
-	char	str[64];
+	char	*token;
+	time_t	t;
 
 	ti.tm_sec=0;		/* seconds (0 - 60) */
 	ti.tm_min=0;		/* minutes (0 - 59) */
@@ -324,67 +325,87 @@ static time_t decode_date(char *date)
 	ti.tm_zone="UTC";	/* abbreviation of timezone name */
 	ti.tm_gmtoff=0;		/* offset from UTC in seconds */
 #endif
-	
-	if(strtok(date,",")==NULL) {
+
+	lprintf("Parsing date: %s",date);
+
+	token=strtok(date,",");
+	/* This probobly only needs to be 9, but the extra one is for luck. */
+	if(strlen(date)>15) {
 		/* asctime() */
-		date=strtok(date," ");
-		SAFECOPY(str,date);
-		date=strtok(str," ");
-		ti.tm_mon=getmonth(str);
-		while(*date && *date<=' ') date++;
-		SAFECOPY(str,date);
-		date=strtok(str," ");
-		ti.tm_mday=atoi(str);
-		while(*date && *date<=' ') date++;
-		SAFECOPY(str,date);
-		date=strtok(str,":");
-		ti.tm_hour=atoi(str);
-		while(*date && *date<=' ') date++;
-		SAFECOPY(str,date);
-		date=strtok(str,":");
-		ti.tm_min=atoi(str);
-		while(*date && *date<=' ') date++;
-		SAFECOPY(str,date);
-		date=strtok(str," ");
-		ti.tm_sec=atoi(str);
-		while(*date && *date<=' ') date++;
-		SAFECOPY(str,date);
-		ti.tm_year=atoi(str)-1900;
+		lprintf("asctime() Date: %s",token);
+		/* Toss away week day */
+		token=strtok(date," ");
+		token=strtok(NULL," ");
+		if(token==NULL)
+			return(0);
+		lprintf("Month: %s",token);
+		ti.tm_mon=getmonth(token);
+		token=strtok(NULL," ");
+		if(token==NULL)
+			return(0);
+		lprintf("MDay: %s",token);
+		ti.tm_mday=atoi(token);
+		token=strtok(NULL,":");
+		if(token==NULL)
+			return(0);
+		lprintf("Hour: %s",token);
+		ti.tm_hour=atoi(token);
+		token=strtok(NULL,":");
+		if(token==NULL)
+			return(0);
+		lprintf("Minute: %s",token);
+		ti.tm_min=atoi(token);
+		token=strtok(NULL," ");
+		if(token==NULL)
+			return(0);
+		lprintf("Second: %s",token);
+		ti.tm_sec=atoi(token);
+		token=strtok(NULL,"");
+		if(token==NULL)
+			return(0);
+		lprintf("Year: %s",token);
+		ti.tm_year=atoi(token)-1900;
 	}
 	else  {
 		/* RFC 1123 or RFC 850 */
-		while(*date && *date<=' ') date++;
-		SAFECOPY(str,date);
-		date=strtok(str," -");
-		ti.tm_mday=atoi(str);
-		while(*date && *date<='0') date++;
-		SAFECOPY(str,date);
-		date=strtok(str," -");
-		ti.tm_mday=atoi(str);
-		while(*date && *date<='A') date++;
-		SAFECOPY(str,date);
-		date=strtok(str," -");
-		ti.tm_mon=getmonth(str);
-		while(*date && *date<='0') date++;
-		SAFECOPY(str,date);
-		date=strtok(str," ");
-		ti.tm_year=atoi(str);
-		while(*date && *date<='0') date++;
-		SAFECOPY(str,date);
-		date=strtok(str,":");
-		ti.tm_hour=atoi(str);
-		while(*date && *date<='0') date++;
-		SAFECOPY(str,date);
-		date=strtok(str,":");
-		ti.tm_min=atoi(str);
-		while(*date && *date<='0') date++;
-		SAFECOPY(str,date);
-		ti.tm_sec=atoi(str);
+		lprintf("RFC Date");
+		token=strtok(NULL," -");
+		if(token==NULL)
+			return(0);
+		lprintf("MDay: %s",token);
+		ti.tm_mday=atoi(token);
+		token=strtok(NULL," -");
+		if(token==NULL)
+			return(0);
+		lprintf("Month: %s",token);
+		ti.tm_mon=getmonth(token);
+		token=strtok(NULL," ");
+		if(token==NULL)
+			return(0);
+		lprintf("Year: %s",token);
+		ti.tm_year=atoi(token);
+		token=strtok(NULL,":");
+		if(token==NULL)
+			return(0);
+		lprintf("Hour: %s",token);
+		ti.tm_hour=atoi(token);
+		token=strtok(NULL,":");
+		if(token==NULL)
+			return(0);
+		lprintf("Min: %s",token);
+		ti.tm_min=atoi(token);
+		token=strtok(NULL," ");
+		if(token==NULL)
+			return(0);
+		lprintf("Sec: %s",token);
+		ti.tm_sec=atoi(token);
 		if(ti.tm_year>1900)
 			ti.tm_year -= 1900;
 	}
-	
-	return(mktime(&ti));
+
+	t=mktime(&ti);
+	lprintf("Parsed date as: %d",t);
+	return(t);
 }
 
 static SOCKET open_socket(int type)
@@ -470,10 +491,11 @@ static int	get_mime_type(char *ext)
 	return(i);
 }
 
-void send_headers(http_session_t *session, const char *status)
+BOOL send_headers(http_session_t *session, const char *status)
 {
 	int		ret;
-	size_t		location_offset;
+	BOOL	send_file=TRUE;
+	size_t	location_offset;
 	time_t	ti;
 	char	status_line[MAX_REQUEST_LINE];
 	struct stat	stats;
@@ -484,11 +506,17 @@ void send_headers(http_session_t *session, const char *status)
 	if(!ret && (stats.st_mtime < session->req.if_modified_since)) {
 		SAFECOPY(status_line,"304 Not Modified");
 		ret=-1;
+		send_file=FALSE;
+		lprintf("Not modified");
 	}
-	if(session->req.send_location)
+	if(session->req.send_location)  {
 		SAFECOPY(status_line,"301 Moved Permanently");
+		ret=-1;
+		send_file=FALSE;
+		lprintf("Moved Permanently");
+	}
 	/* Status-Line */
-	sockprintf(session->socket,"%s %s",http_vers[session->http_ver],status);
+	sockprintf(session->socket,"%s %s",http_vers[session->http_ver],status_line);
 
 	/* General Headers */
 	ti=time(NULL);
@@ -518,6 +546,7 @@ void send_headers(http_session_t *session, const char *status)
 		sockprintf(session->socket,"%s: %s, %02d %s %04d %02d:%02d:%02d GMT",get_header(HEAD_LASTMODIFIED),days[t->tm_wday],t->tm_mday,months[t->tm_mon],t->tm_year+1900,t->tm_hour,t->tm_min,t->tm_sec);
 	}
 	sendsocket(session->socket,newline,2);
+	return(send_file);
 }
 
 static void sock_sendfile(SOCKET socket,char *path)
@@ -621,7 +650,7 @@ static BOOL read_mime_types(void)
 	char *	type;
 	FILE*	mime_config;
 
-	sprintf(str,"%smime_types.cfg",startup->ctrl_dir);
+	sprintf(str,"%smime_types.cfg",scfg.ctrl_dir);
 	mime_config=fopen(str,"r");
 	if(mime_config==NULL) {
 		return(FALSE);
@@ -714,7 +743,7 @@ static BOOL parse_headers(http_session_t * session)
 			sockreadline(session->socket,TIMEOUT_THREAD_WAIT,req_line+i,sizeof(req_line)-i);
 		}
 		strtok(req_line,":");
-		if((value=strtok(NULL,":"))!=NULL) {
+		if((value=strtok(NULL,""))!=NULL) {
 			i=get_header_type(req_line);
 			while(*value && *value<=' ') value++;
 			switch(i) {
@@ -955,10 +984,12 @@ static BOOL check_request(http_session_t * session)
 
 static void respond(http_session_t * session)
 {
+	BOOL	send_file=TRUE;
 
 	if(session->http_ver > HTTP_0_9)
-		send_headers(session,"200 OK");
-	sock_sendfile(session->socket,session->req.request);
+		send_file=send_headers(session,"200 OK");
+	if(send_file)
+		sock_sendfile(session->socket,session->req.request);
 	close_request(session);
 }
 
