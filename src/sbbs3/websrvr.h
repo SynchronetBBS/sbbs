@@ -72,7 +72,9 @@ typedef struct {
     void	(*reserved_fptr2)(void);
     void	(*reserved_fptr1)(void);
     char	index_file_name[64];
-	char	reserved_str3[64];
+	char	js_ext[16];			/* Server-Side JavaScript file extension */
+	char	reserved_str4[16];
+	char	reserved_str3[32];
 	char	reserved_str2[64];
 	char	reserved_str1[64];
     char    ctrl_dir[128];
@@ -120,8 +122,9 @@ typedef struct {
 #ifdef __cplusplus
 extern "C" {
 #endif
-DLLEXPORT void	DLLCALL web_server(void* arg);
-DLLEXPORT void	DLLCALL web_terminate(void);
+DLLEXPORT void			DLLCALL web_server(void* arg);
+DLLEXPORT void			DLLCALL web_terminate(void);
+DLLEXPORT const char*	DLLCALL web_ver(void);
 #ifdef __cplusplus
 }
 #endif
