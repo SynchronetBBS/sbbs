@@ -51,10 +51,21 @@
 #elif defined(__linux__)
 	#include <pty.h>
 #endif
+
+	#ifdef NEEDS_FORKPTY
+	#include <grp.h>
+	#endif
+
 	#include <termios.h>
 	static void setup_term(int fd, char* term);	
 #endif
 #define XTRN_IO_BUF_LEN 5000
+
+#ifdef __solaris__
+#    define TTYDEF_IFLAG    (BRKINT | ICRNL | IMAXBEL | IXON | IXANY)
+#    define TTYDEF_OFLAG    (OPOST | ONLCR)
+#    define TTYDEF_LFLAG    (ECHO | ICANON | ISIG | IEXTEN | ECHOE|ECHOKE|ECHOCTL)
+#endif
 
 /*****************************************************************************/
 /* Interrupt routine to expand WWIV Ctrl-C# codes into ANSI escape sequences */
@@ -941,6 +952,93 @@ BYTE* lf_expand(BYTE* inbuf, ulong inlen, BYTE* outbuf, ulong& newlen)
 
 #define MAX_ARGS 1000
 
+#ifdef NEEDS_FORKPTY
+static int login_tty(int fd)
+{
+	(void) setsid();
+	if (!isatty(fd))
+		return (-1);
+	(void) dup2(fd, 0);
+	(void) dup2(fd, 1);
+	(void) dup2(fd, 2);
+	if (fd > 2)
+		(void) close(fd);
+	return (0);
+}
+
+static int openpty(int *amaster, int *aslave, char *name, struct termios *termp, winsize *winp)
+{
+	char line[] = "/dev/ptyXX";
+	const char *cp1, *cp2;
+	int master, slave, ttygid;
+	struct group *gr;
+
+	if ((gr = getgrnam("tty")) != NULL)
+		ttygid = gr->gr_gid;
+	else
+		ttygid = -1;
+
+	for (cp1 = "pqrsPQRS"; *cp1; cp1++) {
+		line[8] = *cp1;
+		for (cp2 = "0123456789abcdefghijklmnopqrstuv"; *cp2; cp2++) {
+			line[5] = 'p';
+			line[9] = *cp2;
+			if ((master = open(line, O_RDWR, 0)) == -1) {
+				if (errno == ENOENT)
+					break; /* try the next pty group */
+			} else {
+				line[5] = 't';
+				(void) chown(line, getuid(), ttygid);
+				(void) chmod(line, S_IRUSR|S_IWUSR|S_IWGRP);
+				/* Hrm... SunOS doesn't seem to have revoke
+				(void) revoke(line); */
+				if ((slave = open(line, O_RDWR, 0)) != -1) {
+					*amaster = master;
+					*aslave = slave;
+					if (name)
+						strcpy(name, line);
+					if (termp)
+						(void) tcsetattr(slave,
+							TCSAFLUSH, termp);
+					if (winp)
+						(void) ioctl(slave, TIOCSWINSZ,
+							(char *)winp);
+					return (0);
+				}
+				(void) close(master);
+			}
+		}
+	}
+	errno = ENOENT;	/* out of ptys */
+	return (-1);
+}
+
+static int forkpty(int *amaster, char *name, termios *termp, winsize *winp)
+{
+	int master, slave, pid;
+
+	if (openpty(&master, &slave, name, termp, winp) == -1)
+		return (-1);
+	switch (pid = fork()) {
+	case -1:
+		return (-1);
+	case 0:
+		/*
+		 * child
+		 */
+		(void) close(master);
+		login_tty(slave);
+		return (0);
+	}
+	/*
+	 * parent
+	 */
+	*amaster = master;
+	(void) close(slave);
+	return (pid);
+}
+#endif /* NEED_FORKPTY */
+
 int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 {
 	char	str[256];
@@ -1407,6 +1505,7 @@ void
 setup_term(int fd, char* term)
 {
 	struct termios tt;
+	char	str[256];
 	// Shoud set speed here...
 
 	tcgetattr(fd, &tt);
@@ -1415,7 +1514,10 @@ setup_term(int fd, char* term)
 	tt.c_lflag = TTYDEF_LFLAG;
 	tcsetattr(fd, TCSAFLUSH, &tt);
 
-	setenv("TERM",term,1);
+	sprintf(str,"TERM=%s",term);
+	putenv(str);
+
+
 	/* The following termcap entry is nice:
 
 <---SNIP--->
