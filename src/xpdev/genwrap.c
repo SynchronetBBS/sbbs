@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -92,10 +92,6 @@ char* DLLCALL lastchar(const char* str)
 char DLLCALL unescape_char(char ch)
 {
 	switch(ch) {
-		case '\\':	return('\\');
-		case '\'':	return('\'');
-		case '"':	return('"');
-		case '?':	return('?');
 		case 'a':	return('\a');
 		case 'b':	return('\b');
 		case 'f':	return('\f');
