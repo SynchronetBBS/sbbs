@@ -1,0 +1,33 @@
+prompt:"-c\r\nþ bhMain ncþ h"+(user.security.exemptions&UFLAG_T ? "@TUSED@":"@TLEFT@")+" nc[h@GN@nc] @GRP@ [h@SN@nc] @SUB@: n "
+exec: maxnum = msg_area.grp_list[bbs.curgrp].sub_list.length
+expert: true
+num_exec: bbs.cursub = parseInt(cmd)-1;
+hotkey_ext: /
+menu_column_width=11
+menu_reverse = true
+
+[A]
+description: Option A
+[B]
+description: Option B
+[O]
+description: Log-off
+exec: bbs.logoff()
+
+[/O]
+exec: bbs.hangup()
+
+[P]
+description: Post A Message
+exec: bbs.post_msg()
+
+[]]
+description: test
+exec: print("blah")
+
+[x]
+description: exit
+exec: done=true
+
+[?]
+exec: show_menu=true
