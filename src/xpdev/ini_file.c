@@ -284,7 +284,7 @@ BOOL iniRenameSection(str_list_t* list, const char* section, const char* newname
 	if((*list)[i]==NULL)	/* not found */
 		return(FALSE);
 
-	sprintf(str,"[%s]",newname);
+	SAFEPRINTF(str,"[%s]",newname);
 	return(strListReplace(*list, i, str)!=NULL);
 }
 
@@ -301,7 +301,7 @@ size_t iniAddSection(str_list_t* list, const char* section
 	if((*list)[i]==NULL) {
 		if(style->section_separator!=NULL)
 			strListAppend(list, style->section_separator, i++);
-		sprintf(str,"[%s]",section);
+		SAFEPRINTF(str,"[%s]",section);
 		strListAppend(list, str, i);
 	}
 
@@ -328,7 +328,8 @@ char* iniSetString(str_list_t* list, const char* section, const char* key, const
 		style->value_separator="=";
 	if(value==NULL)
 		value="";
-	sprintf(str, "%s%-*s%s%s", style->key_prefix, style->key_len, key, style->value_separator, value);
+	safe_snprintf(str, sizeof(str), "%s%-*s%s%s"
+		, style->key_prefix, style->key_len, key, style->value_separator, value);
 	i=find_value_index(*list, section, key, curval);
 	if((*list)[i]==NULL || *(*list)[i]==INI_OPEN_SECTION_CHAR) {
         while(i && *(*list)[i-1]==0) i--;   /* Insert before blank lines, not after */
@@ -346,7 +347,7 @@ char* iniSetInteger(str_list_t* list, const char* section, const char* key, long
 {
 	char	str[INI_MAX_VALUE_LEN];
 
-	sprintf(str,"%ld",value);
+	SAFEPRINTF(str,"%ld",value);
 	return iniSetString(list, section, key, str, style);
 }
 
@@ -355,7 +356,7 @@ char* iniSetShortInt(str_list_t* list, const char* section, const char* key, ush
 {
 	char	str[INI_MAX_VALUE_LEN];
 
-	sprintf(str,"%hu",value);
+	SAFEPRINTF(str,"%hu",value);
 	return iniSetString(list, section, key, str, style);
 }
 
@@ -364,7 +365,7 @@ char* iniSetHexInt(str_list_t* list, const char* section, const char* key, ulong
 {
 	char	str[INI_MAX_VALUE_LEN];
 
-	sprintf(str,"0x%lx",value);
+	SAFEPRINTF(str,"0x%lx",value);
 	return iniSetString(list, section, key, str, style);
 }
 
@@ -373,7 +374,7 @@ char* iniSetFloat(str_list_t* list, const char* section, const char* key, double
 {
 	char	str[INI_MAX_VALUE_LEN];
 
-	sprintf(str,"%g",value);
+	SAFEPRINTF(str,"%g",value);
 	return iniSetString(list, section, key, str, style);
 }
 
