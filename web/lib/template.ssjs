@@ -35,7 +35,7 @@ function write_template(filename)  {
 	}
 	var inc=new File(fname);
 	if(!inc.open("r",true,1024)) {
-		horrible_error("Cannot open template file "+'../web/templates/'+Themes[CurrTheme].dir+'/'+filename+"!");
+		horrible_error("!Error " + inc.error + " opening template file: "+ fname);
 	}
 	var file='';
 	while(! inc.eof)  {
@@ -114,7 +114,8 @@ function error(message)  {
 }
 
 function horrible_error(message) {
-	write("<html><head><title>ERROR</error></head><body><p>"+message+"</p></body></html>");
+	write("<html><head><title>ERROR</title></head><body><p>"+message+"</p></body></html>");
+    exit();
 }
 
 function regex_escape(str)
