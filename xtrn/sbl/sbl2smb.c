@@ -210,12 +210,23 @@ int main(int argc, char **argv)
 	while(!feof(stream)) {
 		if(!fread(&bbs,sizeof(bbs_t),1,stream))
 			break;
+		if(bbs.total_numbers<1		/* corrupted? */
+			|| bbs.total_numbers>MAX_NUMBERS)
+			continue;
 		truncsp(bbs.name);
-		if(!bbs.name[0] || bbs.misc&FROM_SMB
+		if(bbs.name[0]<=' '			/* corrupted? */
+			|| bbs.misc&FROM_SMB
 			|| (bbs.updated<last && bbs.created<last 
 				&& bbs.verified<last))
 			continue;
 		if(software[0] && strnicmp(software,bbs.software,strlen(software)))
+			continue;
+
+		truncsp(bbs.user);
+		if(bbs.user[0]<=' ')		/* corrupted? */
+			continue;
+		truncsp(bbs.software);
+		if(bbs.software[0]<=' ')	/* corrupted? */
 			continue;
 
 		printf("%s\r\n",bbs.name);
@@ -229,7 +240,6 @@ int main(int argc, char **argv)
 			,"Birth:",unixtodstr(bbs.birth,tmp));
 		strcat(buf,str);
 
-		truncsp(bbs.software);
 		sprintf(str,"%-15.15s%s\r\n"
 			,"Software:",bbs.software);
 		strcat(buf,str);
@@ -375,7 +385,6 @@ int main(int argc, char **argv)
 		strlwr(str);
 		msg.idx.to=crc16(str);
 
-		truncsp(bbs.user);
 		strcpy(str,bbs.user);
 		i=smb_hfield(&msg,SENDER,(ushort)strlen(str),str);
 		if(i) {

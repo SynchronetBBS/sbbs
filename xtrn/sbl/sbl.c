@@ -942,7 +942,7 @@ int main(int argc, char **argv)
 				while(!feof(stream) && !aborted) {
 					if(!fread(&bbs,sizeof(bbs_t),1,stream))
 						break;
-					if(!bbs.name[0]) {
+					if(!bbs.name[0] && bbs.total_numbers>0) {
 						bbs.name[0]='?';
 						bbs.verified=time(NULL);
 						sprintf(bbs.userverified,"%.25s",user_name);
@@ -964,7 +964,7 @@ int main(int argc, char **argv)
 				while(!feof(stream) && !aborted) {
 					if(!fread(&bbs,sizeof(bbs_t),1,stream))
 						break;
-					if(!bbs.name[0])
+					if(!bbs.name[0] || bbs.total_numbers<1)
 						continue;
 					i++;
 					if(!short_bbs_info(bbs))
@@ -1010,6 +1010,8 @@ int main(int argc, char **argv)
 				while(!feof(stream) && !aborted) {
 					if(!fread(&bbs,sizeof(bbs_t),1,stream))
 						break;
+					if(!bbs.name[0] || bbs.total_numbers<1)
+						continue;
 					i=long_bbs_info(bbs);
 					if(bbs.name[0] && !i)
 						break;
@@ -1040,7 +1042,7 @@ int main(int argc, char **argv)
 						lncntr=0;
 					if(!fread(&bbs,sizeof(bbs_t),1,stream))
 						break;
-					if(!bbs.name[0])
+					if(!bbs.name[0] || bbs.total_numbers<1)
 						continue;
 					tmpbbs=bbs;
 					strupr(tmpbbs.name);
@@ -1169,6 +1171,8 @@ int main(int argc, char **argv)
 					bprintf("\b\b\b\b%4u",j);
 					if(!bbs.name[0])	/* don't sort deleted entries */
 						continue;
+					if(bbs.total_numbers<1)	/* don't sort corrupted entries */
+						continue;
 					i++;
 					switch(ch) {
 						case 'N':
@@ -1288,7 +1292,7 @@ int main(int argc, char **argv)
 						lncntr=0;
 					if(!fread(&bbs,sizeof(bbs_t),1,stream))
 						break;
-					if(!bbs.name[0])
+					if(!bbs.name[0] || bbs.total_numbers<1)
 						continue;
 					if(ch && !long_bbs_info(bbs))
 						break;
@@ -1315,7 +1319,7 @@ int main(int argc, char **argv)
 						lncntr=0;
 					if(!fread(&bbs,sizeof(bbs_t),1,stream))
 						break;
-					if(!bbs.name[0])
+					if(!bbs.name[0] || bbs.total_numbers<1)
 						continue;
 					if(bbs.updated>=l || bbs.created>=l) {
 						if(ch && !long_bbs_info(bbs))

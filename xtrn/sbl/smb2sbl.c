@@ -287,9 +287,13 @@ int main(int argc, char **argv)
 			printf("\7Error %d reading msg #%lu\n",i,msg.idx.number);
 			continue; }
 		smb_unlockmsghdr(&smb,&msg);
-		if(!msg.from_net.type) {		/* ignore local message */
+		if(!msg.from_net.type			/* ignore local message */
+			|| msg.from[0]<=' '			/* corrupted? */
+			|| msg.subj[0]<=' '			/* corrupted */
+			) {
 			smb_freemsgmem(&msg);
-			continue; }
+			continue; 
+		}
 
 		printf("\nMessage #%lu by %s on %.24s\n"
 			,msg.hdr.number,msg.from,ctime(&(time_t)msg.hdr.when_written.time));
