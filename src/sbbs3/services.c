@@ -998,6 +998,7 @@ void DLLCALL services_thread(void* arg)
 	int				udp_len;
 	int				i;
 	int				result;
+	int				optval;
 	ulong			total_clients;
 	time_t			t;
 	time_t			initialized=0;
@@ -1234,7 +1235,7 @@ void DLLCALL services_thread(void* arg)
 					if((udp_buf = (BYTE*)calloc(1, MAX_UDP_BUF_LEN)) == NULL) {
 						lprintf("%04d %s !ERROR %d allocating UDP buffer"
 							,service[i].socket, service[i].protocol, errno);
-						break;
+						continue;
 					}
 
 					udp_len = recvfrom(service[i].socket
@@ -1244,7 +1245,7 @@ void DLLCALL services_thread(void* arg)
 						FREE_AND_NULL(udp_buf);
 						lprintf("%04d %s !ERROR %d recvfrom failed"
 							,service[i].socket, service[i].protocol, ERROR_VALUE);
-						break;
+						continue;
 					}
 
 					if((client_socket = open_socket(SOCK_DGRAM))
@@ -1252,7 +1253,40 @@ void DLLCALL services_thread(void* arg)
 						FREE_AND_NULL(udp_buf);
 						lprintf("%04d %s !ERROR %d opening socket"
 							,service[i].socket, service[i].protocol, ERROR_VALUE);
-						break;
+						continue;
+					}
+
+					lprintf("%04d %s created client socket: %d"
+						,service[i].socket, service[i].protocol, client_socket);
+
+					/* We need to set the REUSE ADDRESS socket option */
+					optval=TRUE;
+					if(setsockopt(client_socket,SOL_SOCKET,SO_REUSEADDR
+						,(char*)&optval,sizeof(optval))!=0) {
+						FREE_AND_NULL(udp_buf);
+						lprintf("%04d %s !ERROR %d setting socket option"
+							,client_socket, service[i].protocol, ERROR_VALUE);
+						close_socket(client_socket);
+						continue;
+					}
+
+
+					memset(&addr, 0, sizeof(addr));
+					addr.sin_addr.s_addr = htonl(startup->interface_addr);
+					addr.sin_family = AF_INET;
+					addr.sin_port   = htons(service[i].port);
+
+					if(startup->seteuid!=NULL)
+						startup->seteuid(FALSE);
+					result=bind(client_socket, (struct sockaddr *) &addr, sizeof(addr));
+					if(startup->seteuid!=NULL)
+						startup->seteuid(TRUE);
+					if(result!=0) {
+						FREE_AND_NULL(udp_buf);
+						lprintf("%04d %s !ERROR %d re-binding socket to port %u"
+							,client_socket, service[i].protocol, ERROR_VALUE, service[i].port);
+						close_socket(client_socket);
+						continue;
 					}
 
 					/* Set client address as default addres for send/recv */
@@ -1261,16 +1295,10 @@ void DLLCALL services_thread(void* arg)
 						FREE_AND_NULL(udp_buf);
 						lprintf("%04d %s !ERROR %d connect failed"
 							,client_socket, service[i].protocol, ERROR_VALUE);
-						break;
+						close_socket(client_socket);
+						continue;
 					}
-#if 0
-					if(send(client_socket,"test\r\n",6,0)!=6) {
-						FREE_AND_NULL(udp_buf);
-						lprintf("%04d %s !SEND TEST ERROR %d"
-						,client_socket, service[i].protocol, ERROR_VALUE);
-						break;
-					}
-#endif
+
 				} else { 
 					/* TCP */
 					if((client_socket=accept(service[i].socket
