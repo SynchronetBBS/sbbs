@@ -76,6 +76,9 @@ static	uint thread_count=0;
 char 	lastuseron[LEN_ALIAS+1];  /* Name of user last online */
 RingBuf* node_inbuf[MAX_NODES];
 SOCKET	spy_socket[MAX_NODES];
+#ifdef __unix__
+SOCKET	uspy_socket[MAX_NODES];	  /* UNIX domain spy sockets */
+#endif
 SOCKET	node_socket[MAX_NODES];
 static	SOCKET telnet_socket=INVALID_SOCKET;
 static	SOCKET rlogin_socket=INVALID_SOCKET;
@@ -937,13 +940,6 @@ void input_thread(void *arg)
 	sbbs_t*		sbbs = (sbbs_t*) arg;
 	struct timeval	tv;
 	SOCKET		sock=INVALID_SOCKET;
-#ifdef __unix__
-	SOCKET		spy_sock=INVALID_SOCKET;
-	SOCKET		spy_insock=INVALID_SOCKET;
-	struct sockaddr_un spy_name;
-	socklen_t	spy_len;
-	char		spy_path[sizeof(spy_name.sun_path)];
-#endif
 
 	thread_up(TRUE /* setuid */);
 
@@ -955,42 +951,6 @@ void input_thread(void *arg)
     sbbs->input_thread_running = true;
 	sbbs->console|=CON_R_INPUT;
 
-#ifdef __unix__
-	// SPY socket setup.
-	
-	if((spy_sock=socket(PF_LOCAL,SOCK_STREAM,0))==INVALID_SOCKET)
-		lprintf("Node %d ERROR %d creating local spy socket"
-			,sbbs->cfg.node_num, errno);
-	else {
-		lprintf("Node %d local spy using socket %d",sbbs->cfg.node_num,spy_sock);
-		if(startup!=NULL && startup->socket_open!=NULL) 
-			startup->socket_open(TRUE);
-	}
-
-	spy_name.sun_family=AF_LOCAL;
-	if((unsigned int)snprintf(spy_path,sizeof(spy_name.sun_path),
-			"%slocalspy%d.sock",startup->temp_dir,sbbs->cfg.node_num)
-			>=sizeof(spy_name.sun_path))
-		spy_sock=INVALID_SOCKET;
-	else  {
-		strcpy(spy_name.sun_path,spy_path);
-		if(fexist(spy_path))
-			unlink(spy_path);
-	}
-	if(spy_sock!=INVALID_SOCKET) {
-		spy_len=SUN_LEN(&spy_name);
-		if(bind(spy_sock, (struct sockaddr *) &spy_name, spy_len))
-			lprintf("Node %d !ERROR %d binding local spy socket %d to %s"
-				,sbbs->cfg.node_num, errno, spy_sock, spy_name.sun_path);
-		else
-			lprintf("Node %d local spy socket %d bound to %s"
-				,sbbs->cfg.node_num, spy_sock, spy_name.sun_path);
-		listen(spy_sock,1);
-		fcntl(spy_sock,F_SETFL,fcntl(spy_sock,F_GETFL)|O_NONBLOCK);
-		spy_len=sizeof(spy_name);
-	}
-#endif
-
 	sock=sbbs->client_socket;
 	while(sbbs->online && sbbs->client_socket!=INVALID_SOCKET
 		&& node_socket[sbbs->cfg.node_num-1]!=INVALID_SOCKET) {
@@ -998,17 +958,9 @@ void input_thread(void *arg)
 		pthread_mutex_lock(&sbbs->input_thread_mutex);
 
 #ifdef __unix__
-		if(spy_socket[sbbs->cfg.node_num-1]==INVALID_SOCKET && spy_sock!=INVALID_SOCKET)  {
-			sock=sbbs->client_socket;
-			spy_socket[sbbs->cfg.node_num-1]=accept_socket(spy_sock, (struct sockaddr *) &spy_name, &spy_len);
-			if(spy_socket[sbbs->cfg.node_num-1]!=INVALID_SOCKET)  {
-				sbbs->spymsg("Connected");
-				spy_insock=spy_socket[sbbs->cfg.node_num-1];
-			}
-		}
-		else  {
-			if(sock==sbbs->client_socket && spy_socket[sbbs->cfg.node_num]==spy_insock)
-				sock=spy_insock;
+		if(uspy_socket[sbbs->cfg.node_num-1]!=INVALID_SOCKET)  {
+			if(sock==sbbs->client_socket)
+				sock=uspy_socket[sbbs->cfg.node_num-1];
 			else
 				sock=sbbs->client_socket;
 		}
@@ -1018,8 +970,8 @@ void input_thread(void *arg)
 		FD_SET(sock,&socket_set);
 
 		if(sock==sbbs->client_socket)  {
-			tv.tv_sec=1;
-			tv.tv_usec=0;
+			tv.tv_sec=0;
+			tv.tv_usec=250000;
 		}
 		else  {
 			tv.tv_sec=0;
@@ -1048,19 +1000,18 @@ void input_thread(void *arg)
 				else
 					lprintf("Node %d !ERROR %d input->select socket %d"
                 		,sbbs->cfg.node_num, ERROR_VALUE, sock);
-				break;
 			}
-			else  {
 #ifdef __unix__
+			else  {
 				if(ERROR_VALUE != EAGAIN)  {
 					lprintf("Node %d !ERROR %d on local spy socket %d input->select"
 						, sbbs->cfg.node_num, errno, sock);
-					close_socket(spy_insock);
-					spy_insock=spy_socket[sbbs->cfg.node_num-1]=INVALID_SOCKET;
+					close_socket(uspy_socket[sbbs->cfg.node_num-1]);
+					uspy_socket[sbbs->cfg.node_num-1]=INVALID_SOCKET;
 				}
-#endif
-				break;
 			}
+#endif
+			break;
 		}
 
 		if(sbbs->client_socket==INVALID_SOCKET) {
@@ -1103,18 +1054,18 @@ void input_thread(void *arg)
 				else
 					lprintf("Node %d !ERROR %d receiving from socket %d"
         	        	,sbbs->cfg.node_num, ERROR_VALUE, sock);
-				break;
 			}
-			else  {
 #ifdef __unix__
+			else  {
 				if(ERROR_VALUE != EAGAIN)  {
 					lprintf("Node %d !ERRRO %d on local spy socket %d receive"
 						,sbbs->cfg.node_num, errno, sock);
-					close_socket(spy_insock);
-					spy_insock=spy_socket[sbbs->cfg.node_num-1]=INVALID_SOCKET;
+					close_socket(uspy_socket[sbbs->cfg.node_num-1]);
+					uspy_socket[sbbs->cfg.node_num-1]=INVALID_SOCKET;
 				}
-#endif
 			}
+#endif
+			break;
 		}
 
 		if(rd == 0 && sock==sbbs->client_socket)
@@ -1128,7 +1079,7 @@ void input_thread(void *arg)
 
         // telbuf and wr are modified to reflect telnet escaped data
 #ifdef __unix__
-		if(sock==spy_insock)  {
+		if(sock!=sbbs->client_socket)  {
 			wr=rd;
 			wrbuf=inbuf;
 		}
@@ -1167,12 +1118,6 @@ void input_thread(void *arg)
 	}
 	sbbs->online=0;
 
-#ifdef __unix__
-	close_socket(spy_insock);
-	close_socket(spy_sock);
-	if(fexist(spy_path))
-		unlink(spy_path);
-#endif
     sbbs->input_thread_running = false;
 	if(node_socket[sbbs->cfg.node_num-1]==INVALID_SOCKET)	// Shutdown locally
 		sbbs->terminated = true;	// Signal JS to stop execution
@@ -1283,6 +1228,10 @@ void output_thread(void* arg)
 			/* Spy on the user remotely */
 			if(spy_socket[sbbs->cfg.node_num-1]!=INVALID_SOCKET) 
 				sendsocket(spy_socket[sbbs->cfg.node_num-1],(char*)buf+bufbot,i);
+#ifdef __unix__
+			if(uspy_socket[sbbs->cfg.node_num-1]!=INVALID_SOCKET)
+				sendsocket(uspy_socket[sbbs->cfg.node_num-1],(char*)buf+bufbot,i);
+#endif
 		}
 
 		bufbot+=i;
@@ -2553,6 +2502,10 @@ void sbbs_t::spymsg(char* msg)
 
 	if(cfg.node_num && spy_socket[cfg.node_num-1]!=INVALID_SOCKET) 
 		sendsocket(spy_socket[cfg.node_num-1],str,strlen(str));
+#ifdef __unix__
+	if(cfg.node_num && uspy_socket[cfg.node_num-1]!=INVALID_SOCKET) 
+		sendsocket(uspy_socket[cfg.node_num-1],str,strlen(str));
+#endif
 }
 
 #define MV_BUFLEN	4096
@@ -3452,6 +3405,12 @@ void DLLCALL bbs_thread(void* arg)
 	sbbs_t*			events=NULL;
 	client_t		client;
 	startup=(bbs_startup_t*)arg;
+	BOOL			is_client=FALSE;
+#ifdef __unix__
+	SOCKET	uspy_listen_socket[MAX_NODES];
+	struct sockaddr_un uspy_addr;
+	socklen_t		addr_len;
+#endif
 
     if(startup==NULL) {
     	sbbs_beep(100,500);
@@ -3620,6 +3579,10 @@ void DLLCALL bbs_thread(void* arg)
 		node_inbuf[i]=NULL;
     	node_socket[i]=INVALID_SOCKET;
 		spy_socket[i]=INVALID_SOCKET;
+#ifdef __unix__
+		uspy_socket[i]=INVALID_SOCKET;
+		uspy_listen_socket[i]=INVALID_SOCKET;
+#endif
 	}
 
 	startup->node_inbuf=node_inbuf;
@@ -3809,6 +3772,47 @@ void DLLCALL bbs_thread(void* arg)
 			initialized=t;
 	}
 
+#ifdef __unix__	//	unix-domain spy sockets
+	for(i=first_node;i<=last_node;i++)  {
+	    if((uspy_listen_socket[i-1]=socket(PF_LOCAL,SOCK_STREAM,0))==INVALID_SOCKET)
+	        lprintf("Node %d ERROR %d creating local spy socket"
+	            , i, errno);
+	    else {
+	        lprintf("Node %d local spy using socket %d", i, uspy_listen_socket[i-1]);
+	        if(startup!=NULL && startup->socket_open!=NULL)
+	            startup->socket_open(TRUE);
+	    }
+	
+	    uspy_addr.sun_family=AF_LOCAL;
+	    if((unsigned int)snprintf(str,sizeof(uspy_addr.sun_path),
+	            "%slocalspy%d.sock", startup->temp_dir, i)
+	            >=sizeof(uspy_addr.sun_path))
+	        uspy_listen_socket[i-1]=INVALID_SOCKET;
+	    else  {
+	        strcpy(uspy_addr.sun_path,str);
+	        if(fexist(str))
+	            unlink(str);
+	    }
+	    if(uspy_listen_socket[i-1]!=INVALID_SOCKET) {
+	        addr_len=SUN_LEN(&uspy_addr);
+	        if(bind(uspy_listen_socket[i-1], (struct sockaddr *) &uspy_addr, addr_len)) {
+	            lprintf("Node %d !ERROR %d binding local spy socket %d to %s"
+	                , i, errno, uspy_listen_socket[i-1], uspy_addr.sun_path);
+	            close_socket(uspy_listen_socket[i-1]);
+	            continue;
+	        }
+            lprintf("Node %d local spy socket %d bound to %s"
+                , i, uspy_listen_socket[i-1], uspy_addr.sun_path);
+	        if(listen(uspy_listen_socket[i-1],1))  {
+	            lprintf("Node %d !ERROR %d listening local spy socket %d", i, errno);
+	            close_socket(uspy_listen_socket[i-1]);
+	            continue;
+			}
+	        addr_len=sizeof(uspy_addr);
+	    }
+	}
+#endif // __unix__ (unix-domain spy sockets)
+
 	while(telnet_socket!=INVALID_SOCKET) {
 
 		if(node_threads_running==0 && !event_mutex_locked) {	/* check for re-run flags */
@@ -3868,6 +3872,15 @@ void DLLCALL bbs_thread(void* arg)
 			if(rlogin_socket+1>high_socket_set)
 				high_socket_set=rlogin_socket+1;
 		}
+#ifdef __unix__
+		for(i=first_node;i<=last_node;i++)  {
+			if(uspy_listen_socket[i-1]!=INVALID_SOCKET)  {
+				FD_SET(uspy_listen_socket[i-1],&socket_set);
+				if(uspy_listen_socket[i-1]+1>high_socket_set)
+					high_socket_set=uspy_listen_socket[i-1]+1;
+			}
+		}
+#endif
 
 		struct timeval tv;
 		tv.tv_sec=2;
@@ -3892,19 +3905,45 @@ void DLLCALL bbs_thread(void* arg)
 
 		bool rlogin = false;
 
+		is_client=FALSE;
 		if(telnet_socket!=INVALID_SOCKET 
-			&& FD_ISSET(telnet_socket,&socket_set)) 
+			&& FD_ISSET(telnet_socket,&socket_set)) {
 			client_socket = accept_socket(telnet_socket, (struct sockaddr *)&client_addr
 	        	,&client_addr_len);
-		else if(rlogin_socket!=INVALID_SOCKET 
+	        is_client=TRUE;
+		} else if(rlogin_socket!=INVALID_SOCKET 
 			&& FD_ISSET(rlogin_socket,&socket_set)) {
 			client_socket = accept_socket(rlogin_socket, (struct sockaddr *)&client_addr
 	        	,&client_addr_len);
 			rlogin = true;
+			is_client=TRUE;
 		} else {
+#ifdef __unix__
+			for(i=first_node;i<=last_node;i++)  {
+				if(uspy_listen_socket[i-1]!=INVALID_SOCKET
+				&& FD_ISSET(uspy_listen_socket[i-1],&socket_set)) {
+					BOOL already_connected=(uspy_socket[i-1]!=INVALID_SOCKET);
+					SOCKET new_socket=INVALID_SOCKET;
+					new_socket = accept(uspy_listen_socket[i-1], (struct sockaddr *)&client_addr
+						,&client_addr_len);
+					if(already_connected)  {
+						send(new_socket,"Spy socket already in use.\n",27,0);
+						close_socket(new_socket);
+					}
+					else  {
+						uspy_socket[i-1]=new_socket;
+						sprintf(str,"Spy connection established to node %d\n",i);
+						send(uspy_socket[i-1],str,strlen(str),0);
+					}
+				}
+			}
+#else
 			lprintf("!NO SOCKETS set by select");
-			continue;
+#endif
 		}
+
+		if(!is_client)
+			continue;
 
 		if(client_socket == INVALID_SOCKET)	{
 			if(ERROR_VALUE == ENOTSOCK || ERROR_VALUE == EINTR || ERROR_VALUE == EINVAL) {
