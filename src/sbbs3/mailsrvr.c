@@ -1110,7 +1110,7 @@ static ulong rblchk(DWORD mail_addr_n, const char* rbl_addr)
 	return(*((ulong*)host->h_addr_list[0]));
 }
 
-static ulong dns_blacklisted(DWORD addr, char* list)
+static ulong dns_blacklisted(IN_ADDR addr, char* list)
 {
 	char	fname[MAX_PATH+1];
 	char	str[256];
@@ -1118,6 +1118,10 @@ static ulong dns_blacklisted(DWORD addr, char* list)
 	char*	tp;
 	FILE*	fp;
 	ulong	found=0;
+
+	sprintf(fname,"%sdnsbl_exempt.cfg",scfg.ctrl_dir);
+	if(findstr(inet_ntoa(addr),fname))
+		return(FALSE);
 
 	sprintf(fname,"%sdns_blacklist.cfg", scfg.ctrl_dir);
 	if((fp=fopen(fname,"r"))==NULL)
@@ -1140,7 +1144,7 @@ static ulong dns_blacklisted(DWORD addr, char* list)
 		while(*tp && *tp>' ') tp++;
 		*tp=0;	
 
-		found = rblchk(addr, p);
+		found = rblchk(addr.s_addr, p);
 	}
 	fclose(fp);
 
@@ -1327,7 +1331,7 @@ static void smtp_thread(void* arg)
 	}
 
 	/*  SPAM Filters (mail-abuse.org) */
-	dnsbl_result.s_addr = dns_blacklisted(smtp.client_addr.sin_addr.s_addr,dnsbl);
+	dnsbl_result.s_addr = dns_blacklisted(smtp.client_addr.sin_addr,dnsbl);
 	if(dnsbl_result.s_addr) {
 		lprintf("%04d !SMTP BLACKLISTED SERVER on %s: %s [%s] = %s"
 			,socket, dnsbl, host_name, host_ip, inet_ntoa(dnsbl_result));
@@ -2038,7 +2042,7 @@ static void smtp_thread(void* arg)
 				sprintf(domain_list,"%sdomains.cfg",scfg.ctrl_dir);
 				if((stricmp(dest_host,scfg.sys_inetaddr)!=0
 						&& resolve_ip(dest_host)!=server_addr.sin_addr.s_addr
-						&& findstr(&scfg,dest_host,domain_list)==FALSE)
+						&& findstr(dest_host,domain_list)==FALSE)
 					|| dest_port!=server_addr.sin_port) {
 
 					sprintf(relay_list,"%srelay.cfg",scfg.ctrl_dir);
@@ -2050,8 +2054,8 @@ static void smtp_thread(void* arg)
 							|| relay_user.number==0
 							|| relay_user.laston < time(NULL)-(60*60)
 							|| relay_user.rest&(FLAG('G')|FLAG('M'))) &&
-						!findstr(&scfg,host_name,relay_list) && 
-						!findstr(&scfg,host_ip,relay_list)) {
+						!findstr(host_name,relay_list) && 
+						!findstr(host_ip,relay_list)) {
 						lprintf("%04d !SMTP ILLEGAL RELAY ATTEMPT from %s [%s] to %s"
 							,socket, reverse_path, host_ip, p);
 						sprintf(tmp,"Relay attempt from: %s to: %s"
