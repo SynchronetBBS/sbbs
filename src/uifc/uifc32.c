@@ -290,7 +290,7 @@ int uifcini32(uifcapi_t* uifcapi)
 #endif
 #ifdef __unix__
 	#ifdef NCURSES_VERSION_MAJOR
-		if(cio_api.mode==CIOWRAP_CURSES_MODE) {
+		if(cio_api.mode==CIOLIB_CURSES_MODE) {
 			ESCDELAY=api->esc_delay;
 			if(mousemask(BUTTON1_CLICKED|BUTTON3_CLICKED,NULL)==BUTTON1_CLICKED|BUTTON3_CLICKED)
 				api->mode|=UIFC_MOUSE;
@@ -432,7 +432,7 @@ static void hidemouse(void)
 			mouse_set(0);
 		#endif
 		#ifdef NCURSES_VERSION_MAJOR
-			if(cio_api.mode==CIOWRAP_CURSES_MODE)
+			if(cio_api.mode==CIOLIB_CURSES_MODE)
 				mousemask(0,NULL);
 		#endif
 	}
@@ -445,7 +445,7 @@ static void showmouse(void)
 			mouse_set(BUTTON1_CLICKED|BUTTON3_CLICKED);
 		#endif
 		#ifdef NCURSES_VERSION_MAJOR
-			if(cio_api.mode==CIOWRAP_CURSES_MODE)
+			if(cio_api.mode==CIOLIB_CURSES_MODE)
 				mousemask(BUTTON1_CLICKED|BUTTON3_CLICKED,NULL);
 		#endif
 	}
@@ -517,7 +517,7 @@ void uifcbail(void)
 	hidemouse();
 	clrscr();
 #ifdef __unix__
-	if(cio_api.mode==CIOWRAP_CURSES_MODE) {
+	if(cio_api.mode==CIOLIB_CURSES_MODE) {
 		nl();
 		nocbreak();
 		noraw();
