@@ -778,7 +778,7 @@ extern "C" {
 	DLLEXPORT ushort	DLLCALL crc16(char *str);
 	DLLEXPORT BOOL		DLLCALL validattr(char a);
 	DLLEXPORT size_t	DLLCALL strip_invalid_attr(char *str);
-
+	DLLEXPORT ushort	DLLCALL subject_crc(char *subj);
 
 	/* date_str.c */
 	DLLEXPORT char *	DLLCALL zonestr(short zone);
@@ -903,9 +903,6 @@ BOOL 	md(char *path);
 	char *	readtext(long *line, FILE *stream);
 	int 	eprintf(char *fmt, ...);	/* event log */
 	int 	lputs(char *);				/* telnet log */
-
-	/* qwk.cpp */
-	void	remove_re(char *str);
 
 	/* ver.cpp */
 	char*	socklib_version(char* str);

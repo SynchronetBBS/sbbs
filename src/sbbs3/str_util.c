@@ -448,3 +448,18 @@ size_t DLLCALL strip_invalid_attr(char *strin)
 	strcpy(strin,str);
 	return(a);
 }
+
+ushort DLLCALL subject_crc(char *subj)
+{
+	char str[512];
+
+	while(!strnicmp(subj,"RE:",3)) {
+		subj+=3;
+		while(*subj==SP)
+			subj++; 
+	}
+
+	SAFECOPY(str,subj);
+	strlwr(str);
+	return(crc16(str));
+}
