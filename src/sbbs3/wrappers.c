@@ -298,10 +298,10 @@ ulong getfreediskspace(char* path)
 			NULL))		// receives the free bytes on disk
 			return(0);
 
-		if(avail.HighPart)
+		if(avail.u.HighPart)
 			return(~0);	/* 4GB max */
 
-		return(avail.LowPart);
+		return(avail.u.LowPart);
 	}
 
 	/* Windows 95 (old way), limited to 2GB */
