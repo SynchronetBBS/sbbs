@@ -24,15 +24,15 @@
 
  Lines that start with anything but a C, T, f, t, D or s are ignored.
 
+T Current Source Tarball (v3.10l)
+f sbbs_src.tgz
+f lib-%s.tgz
+s ftp://ftp.synchro.net/				Official FTP server (T1)
+s ftp://vert.synchro.net/				Vertrauen FTP server (256kbps)
+s ftp://rob.synchro.net/				Vertrauen FTP server (256kbps)
+s ftp://cvs.synchro.net/				Vertrauen FTP server (256kbps)
+s ftp://freebsd.synchro.net/        	Deuce's FTP server (128kbps)
+
 C Current Beta (CVS)
 t HEAD
 s :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs	Official Synchronet Server (256kbps)
-
-T Current Source tarball
-f sbbs_src.tgz
-f lib-%s.tgz
-s ftp://ftp.synchro.net/				ftp.synchro.net - Official FTP server (T1)
-s ftp://vert.synchro.net/				vert.synchro.net - Vertrauen FTP server (256kbps)
-s ftp://rob.synchro.net/				rob.synchro.net - Vertrauen FTP server (256kbps)
-s ftp://cvs.synchro.net/				cvs.synchro.net - Vertrauen FTP server (256kbps)
-s ftp://freebsd.synchro.net/        	freebsd.synchro.net - Deuce's FTP server (128kbps)
