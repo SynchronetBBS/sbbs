@@ -228,6 +228,9 @@ js_read(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	free(buf);
 
+	if(str==NULL)
+		return(JS_FALSE);
+
 	*rval = STRING_TO_JSVAL(str);
 
 	dbprintf(FALSE, p, "read %u bytes",len);
@@ -241,6 +244,7 @@ js_readln(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	char*		cp;
 	char*		buf;
 	int32		len=512;
+	JSString*	js_str;
 	private_t*	p;
 
 	*rval = JSVAL_NULL;
@@ -268,7 +272,8 @@ js_readln(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 			cp=strchr(buf,p->etx);
 			if(cp) *cp=0; 
 		}
-		*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,buf));
+		if((js_str=JS_NewStringCopyZ(cx,buf))!=NULL)
+			*rval = STRING_TO_JSVAL(js_str);
 	}
 
 	free(buf);
@@ -505,7 +510,8 @@ js_writeall(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     if(!JS_IsArrayObject(cx, array))
 		return(JS_TRUE);
 
-    JS_GetArrayLength(cx, array, &limit);
+    if(!JS_GetArrayLength(cx, array, &limit))
+		return(JS_FALSE);
 
     *rval = BOOLEAN_TO_JSVAL(JS_TRUE);
 
@@ -759,6 +765,7 @@ static JSBool js_file_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 static JSBool js_file_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
     jsint       tiny;
+	JSString*	js_str;
 	private_t*	p;
 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
@@ -774,10 +781,14 @@ static JSBool js_file_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 
 	switch(tiny) {
 		case FILE_PROP_NAME:
-			*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, p->name));
+			if((js_str=JS_NewStringCopyZ(cx, p->name))==NULL)
+				return(JS_FALSE);
+			*vp = STRING_TO_JSVAL(js_str);
 			break;
 		case FILE_PROP_MODE:
-			*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, p->mode));
+			if((js_str=JS_NewStringCopyZ(cx, p->mode))==NULL)
+				return(JS_FALSE);
+			*vp = STRING_TO_JSVAL(js_str);
 			break;
 		case FILE_PROP_EXISTS:
 			if(p->fp)	/* open? */

@@ -72,6 +72,7 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 	JSObject*	dirobj;
 	JSObject*	lib_list;
 	JSObject*	dir_list;
+	JSString*	js_str;
 	jsval		val;
 	jsuint		index;
 	uint		l,d;
@@ -112,16 +113,22 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 		if(!JS_SetProperty(cx, libobj, "number", &val))
 			return(NULL);
 
-		val=STRING_TO_JSVAL(JS_NewStringCopyZ(cx, cfg->lib[l]->sname));
+		if((js_str=JS_NewStringCopyZ(cx, cfg->lib[l]->sname))==NULL)
+			return(NULL);
+		val=STRING_TO_JSVAL(js_str);
 		if(!JS_SetProperty(cx, libobj, "name", &val))
 			return(NULL);
 
-		val=STRING_TO_JSVAL(JS_NewStringCopyZ(cx, cfg->lib[l]->lname));
+		if((js_str=JS_NewStringCopyZ(cx, cfg->lib[l]->lname))==NULL)
+			return(NULL);
+		val=STRING_TO_JSVAL(js_str);
 		if(!JS_SetProperty(cx, libobj, "description", &val))
 			return(NULL);
 
 		sprintf(vpath,"/%s/%s",cfg->lib[l]->sname,html_index_file);
-		val=STRING_TO_JSVAL(JS_NewStringCopyZ(cx, vpath));
+		if((js_str=JS_NewStringCopyZ(cx, vpath))==NULL)
+			return(NULL);
+		val=STRING_TO_JSVAL(js_str);
 		if(!JS_SetProperty(cx, libobj, "link", &val))
 			return(NULL);
 
@@ -150,31 +157,45 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 			if(!JS_SetProperty(cx, dirobj, "number", &val))
 				return(NULL);
 
-			val=STRING_TO_JSVAL(JS_NewStringCopyZ(cx, cfg->dir[d]->code));
+			if((js_str=JS_NewStringCopyZ(cx, cfg->dir[d]->code))==NULL)
+				return(NULL);
+			val=STRING_TO_JSVAL(js_str);
 			if(!JS_SetProperty(cx, dirobj, "code", &val))
 				return(NULL);
 
-			val=STRING_TO_JSVAL(JS_NewStringCopyZ(cx, cfg->dir[d]->sname));
+			if((js_str=JS_NewStringCopyZ(cx, cfg->dir[d]->sname))==NULL)
+				return(NULL);
+			val=STRING_TO_JSVAL(js_str);
 			if(!JS_SetProperty(cx, dirobj, "name", &val))
 				return(NULL);
 
-			val=STRING_TO_JSVAL(JS_NewStringCopyZ(cx, cfg->dir[d]->lname));
+			if((js_str=JS_NewStringCopyZ(cx, cfg->dir[d]->lname))==NULL)
+				return(NULL);
+			val=STRING_TO_JSVAL(js_str);
 			if(!JS_SetProperty(cx, dirobj, "description", &val))
 				return(NULL);
 
-			val=STRING_TO_JSVAL(JS_NewStringCopyZ(cx, cfg->dir[d]->path));
+			if((js_str=JS_NewStringCopyZ(cx, cfg->dir[d]->path))==NULL)
+				return(NULL);
+			val=STRING_TO_JSVAL(js_str);
 			if(!JS_SetProperty(cx, dirobj, "path", &val))
 				return(NULL);
 
-			val=STRING_TO_JSVAL(JS_NewStringCopyZ(cx, cfg->dir[d]->exts));
+			if((js_str=JS_NewStringCopyZ(cx, cfg->dir[d]->exts))==NULL)
+				return(NULL);
+			val=STRING_TO_JSVAL(js_str);
 			if(!JS_SetProperty(cx, dirobj, "extensions", &val))
 				return(NULL);
 
-			val=STRING_TO_JSVAL(JS_NewStringCopyZ(cx, cfg->dir[d]->upload_sem));
+			if((js_str=JS_NewStringCopyZ(cx, cfg->dir[d]->upload_sem))==NULL)
+				return(NULL);
+			val=STRING_TO_JSVAL(js_str);
 			if(!JS_SetProperty(cx, dirobj, "upload_sem", &val))
 				return(NULL);
 
-			val=STRING_TO_JSVAL(JS_NewStringCopyZ(cx, cfg->dir[d]->data_dir));
+			if((js_str=JS_NewStringCopyZ(cx, cfg->dir[d]->data_dir))==NULL)
+				return(NULL);
+			val=STRING_TO_JSVAL(js_str);
 			if(!JS_SetProperty(cx, dirobj, "data_dir", &val))
 				return(NULL);
 
@@ -210,7 +231,9 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 				,cfg->lib[l]->sname
 				,cfg->dir[d]->code
 				,html_index_file);
-			val=STRING_TO_JSVAL(JS_NewStringCopyZ(cx, vpath));
+			if((js_str=JS_NewStringCopyZ(cx, vpath))==NULL)
+				return(NULL);
+			val=STRING_TO_JSVAL(js_str);
 			if(!JS_SetProperty(cx, dirobj, "link", &val))
 				return(NULL);
 

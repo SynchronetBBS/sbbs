@@ -50,6 +50,7 @@ enum {
 static JSBool js_system_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
     jsint       tiny;
+	JSString*	js_str;
 
     tiny = JSVAL_TO_INT(id);
 
@@ -58,10 +59,12 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	        *vp = INT_TO_JSVAL(errno);
 			break;
 		case GLOB_PROP_ERRNO_STR:
-	        *vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, strerror(errno)));
+			if((js_str=JS_NewStringCopyZ(cx, strerror(errno)))==NULL)
+				return(JS_FALSE);
+	        *vp = STRING_TO_JSVAL(js_str);
 			break;
 	}
-	return(TRUE);
+	return(JS_TRUE);
 }
 
 #define GLOBOBJ_FLAGS JSPROP_ENUMERATE|JSPROP_READONLY
@@ -164,6 +167,9 @@ js_format(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	str = JS_NewStringCopyZ(cx, p);
 	JS_smprintf_free(p);
+
+	if(str==NULL)
+		return(JS_FALSE);
 
 	*rval = STRING_TO_JSVAL(str);
     return(JS_TRUE);
@@ -300,7 +306,9 @@ js_ascii(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	str[0]=(uchar)JSVAL_TO_INT(argv[0]);
 	str[1]=0;
 
-	js_str = JS_NewStringCopyZ(cx, str);
+	if((js_str = JS_NewStringCopyZ(cx, str))==NULL)
+		return(JS_FALSE);
+
 	*rval = STRING_TO_JSVAL(js_str);
 	return(JS_TRUE);
 }
@@ -339,6 +347,9 @@ js_ascii_str(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	js_str = JS_NewStringCopyZ(cx, p);
 	free(p);
+	if(js_str==NULL)
+		return(JS_FALSE);
+
 	*rval = STRING_TO_JSVAL(js_str);
 	return(JS_TRUE);
 }
@@ -366,6 +377,9 @@ js_strip_ctrl(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 
 	js_str = JS_NewStringCopyZ(cx, p);
 	free(p);
+	if(js_str==NULL)
+		return(JS_FALSE);
+
 	*rval = STRING_TO_JSVAL(js_str);
 	return(JS_TRUE);
 }
@@ -392,6 +406,9 @@ js_strip_exascii(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 
 	js_str = JS_NewStringCopyZ(cx, p);
 	free(p);
+	if(js_str==NULL)
+		return(JS_FALSE);
+
 	*rval = STRING_TO_JSVAL(js_str);
 	return(JS_TRUE);
 }
@@ -418,6 +435,9 @@ js_truncsp(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	js_str = JS_NewStringCopyZ(cx, p);
 	free(p);
+	if(js_str==NULL)
+		return(JS_FALSE);
+
 	*rval = STRING_TO_JSVAL(js_str);
 	return(JS_TRUE);
 }
@@ -454,6 +474,9 @@ js_truncstr(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	js_str = JS_NewStringCopyZ(cx, p);
 	free(p);
+	if(js_str==NULL)
+		return(JS_FALSE);
+
 	*rval = STRING_TO_JSVAL(js_str);
 	return(JS_TRUE);
 }
@@ -615,6 +638,7 @@ js_directory(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	char*		p;
 	glob_t		g;
 	JSObject*	array;
+	JSString*	js_str;
     jsint       len=0;
 	jsval		val;
 
@@ -636,7 +660,9 @@ js_directory(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	glob(p,flags,NULL,&g);
 	for(i=0;i<(int)g.gl_pathc;i++) {
-		val=STRING_TO_JSVAL(JS_NewStringCopyZ(cx,g.gl_pathv[i]));
+		if((js_str=JS_NewStringCopyZ(cx,g.gl_pathv[i]))==NULL)
+			break;
+		val=STRING_TO_JSVAL(js_str);
         if(!JS_SetElement(cx, array, len++, &val))
 			break;
 	}
@@ -693,6 +719,7 @@ js_strftime(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	char*		fmt;
 	time_t		t=time(NULL);
 	struct tm	tm;
+	JSString*	js_str;
 
 	if(!JSVAL_IS_STRING(argv[0])) {
 		JS_ReportError(cx,nostringarg);
@@ -708,7 +735,10 @@ js_strftime(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		memset(&tm,0,sizeof(tm));
 	strftime(str,sizeof(str),fmt,&tm);
 
-	*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, str));
+	if((js_str=JS_NewStringCopyZ(cx, str))==NULL)
+		return(JS_FALSE);
+
+	*rval = STRING_TO_JSVAL(js_str);
 	return(JS_TRUE);
 }
 	

@@ -1687,6 +1687,7 @@ js_initcx(JSRuntime* runtime, SOCKET sock, JSObject** glob)
 	JSContext*	js_cx;
 	JSObject*	js_glob;
 	JSObject*	server;
+	JSString*	js_str;
 	jsval		val;
 	BOOL		success=FALSE;
 
@@ -1717,11 +1718,15 @@ js_initcx(JSRuntime* runtime, SOCKET sock, JSObject** glob)
 			break;
 
 		sprintf(ver,"%s %s",server_name,revision);
-		val = STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, ver));
+		if((js_str=JS_NewStringCopyZ(js_cx, ver))==NULL)
+			break;
+		val = STRING_TO_JSVAL(js_str);
 		if(!JS_SetProperty(js_cx, server, "version", &val))
 			break;
 
-		val = STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, web_ver()));
+		if((js_str=JS_NewStringCopyZ(js_cx, web_ver()))==NULL)
+			break;
+		val = STRING_TO_JSVAL(js_str);
 		if(!JS_SetProperty(js_cx, server, "version_detail", &val))
 			break;
 

@@ -341,7 +341,8 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 	if(JS_GetProperty(cx, hdr, "field_list", &val) && JSVAL_IS_OBJECT(val)) {
 		array=JSVAL_TO_OBJECT(val);
 		len=0;
-		JS_GetArrayLength(cx, array, &len);
+		if(!JS_GetArrayLength(cx, array, &len))
+			return(FALSE);
 
 		for(i=0;i<len;i++) {
 			if(!JS_GetElement(cx, array, i, &val))
@@ -377,6 +378,7 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 	JSObject*	hdrobj;
 	JSObject*	array;
 	JSObject*	field;
+	JSString*	js_str;
 	jsint		items;
 	private_t*	p;
 
@@ -417,42 +419,58 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 
 	JS_DefineProperty(cx, hdrobj, "number", INT_TO_JSVAL(msg.hdr.number)
 		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+
+	if((js_str=JS_NewStringCopyZ(cx,truncsp(msg.to)))==NULL)
+		return(JS_FALSE);
 	JS_DefineProperty(cx, hdrobj, "to"
-		,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,truncsp(msg.to)))
+		,STRING_TO_JSVAL(js_str)
 		,NULL,NULL,JSPROP_ENUMERATE);
+
+	if((js_str=JS_NewStringCopyZ(cx,truncsp(msg.from)))==NULL)
+		return(JS_FALSE);
 	JS_DefineProperty(cx, hdrobj, "from"
-		,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,truncsp(msg.from)))
+		,STRING_TO_JSVAL(js_str)
 		,NULL,NULL,JSPROP_ENUMERATE);
+
+	if((js_str=JS_NewStringCopyZ(cx,truncsp(msg.subj)))==NULL)
+		return(JS_FALSE);
 	JS_DefineProperty(cx, hdrobj, "subject"
-		,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,truncsp(msg.subj)))
+		,STRING_TO_JSVAL(js_str)
 		,NULL,NULL,JSPROP_ENUMERATE);
-	if(msg.summary!=NULL)
+	if(msg.summary!=NULL 
+		&& (js_str=JS_NewStringCopyZ(cx,truncsp(msg.summary)))!=NULL)
 		JS_DefineProperty(cx, hdrobj, "summary"
-			,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,truncsp(msg.summary)))
+			,STRING_TO_JSVAL(js_str)
 			,NULL,NULL,JSPROP_ENUMERATE);
-	if(msg.to_ext!=NULL)
+	if(msg.to_ext!=NULL 
+		&& (js_str=JS_NewStringCopyZ(cx,truncsp(msg.to_ext)))!=NULL)
 		JS_DefineProperty(cx, hdrobj, "to_ext"
-			,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,truncsp(msg.to_ext)))
+			,STRING_TO_JSVAL(js_str)
 			,NULL,NULL,JSPROP_ENUMERATE);
-	if(msg.from_ext!=NULL)
+	if(msg.from_ext!=NULL 
+		&& (js_str=JS_NewStringCopyZ(cx,truncsp(msg.from_ext)))!=NULL)
 		JS_DefineProperty(cx, hdrobj, "from_ext"
-			,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,truncsp(msg.from_ext)))
+			,STRING_TO_JSVAL(js_str)
 			,NULL,NULL,JSPROP_ENUMERATE);
-	if(msg.from_org!=NULL)
+	if(msg.from_org!=NULL
+		&& (js_str=JS_NewStringCopyZ(cx,truncsp(msg.from_org)))!=NULL)
 		JS_DefineProperty(cx, hdrobj, "from_org"
-			,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,truncsp(msg.from_org)))
+			,STRING_TO_JSVAL(js_str)
 			,NULL,NULL,JSPROP_ENUMERATE);
-	if(msg.replyto!=NULL)
+	if(msg.replyto!=NULL
+		&& (js_str=JS_NewStringCopyZ(cx,truncsp(msg.replyto)))!=NULL)
 		JS_DefineProperty(cx, hdrobj, "replyto"
-			,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,truncsp(msg.replyto)))
+			,STRING_TO_JSVAL(js_str)
 			,NULL,NULL,JSPROP_ENUMERATE);
-	if(msg.replyto_ext!=NULL)
+	if(msg.replyto_ext!=NULL
+		&& (js_str=JS_NewStringCopyZ(cx,truncsp(msg.replyto_ext)))!=NULL)
 		JS_DefineProperty(cx, hdrobj, "replyto_ext"
-			,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,truncsp(msg.replyto_ext)))
+			,STRING_TO_JSVAL(js_str)
 			,NULL,NULL,JSPROP_ENUMERATE);
-	if(msg.reverse_path!=NULL)
+	if(msg.reverse_path!=NULL
+		&& (js_str=JS_NewStringCopyZ(cx,truncsp(msg.reverse_path)))!=NULL)
 		JS_DefineProperty(cx, hdrobj, "reverse_path"
-			,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,truncsp(msg.reverse_path)))
+			,STRING_TO_JSVAL(js_str)
 			,NULL,NULL,JSPROP_ENUMERATE);
 
 	JS_DefineProperty(cx, hdrobj, "to_agent",INT_TO_JSVAL(msg.to_agent)
@@ -464,23 +482,26 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 
 	JS_DefineProperty(cx, hdrobj, "to_net_type",INT_TO_JSVAL(msg.to_net.type)
 		,NULL,NULL,JSPROP_ENUMERATE);
-	if(msg.to_net.type)
+	if(msg.to_net.type
+		&& (js_str=JS_NewStringCopyZ(cx,net_addr(&msg.to_net)))!=NULL)
 		JS_DefineProperty(cx, hdrobj, "to_net_addr"
-			,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,net_addr(&msg.to_net)))
+			,STRING_TO_JSVAL(js_str)
 			,NULL,NULL,JSPROP_ENUMERATE);
 
 	JS_DefineProperty(cx, hdrobj, "from_net_type",INT_TO_JSVAL(msg.from_net.type)
 		,NULL,NULL,JSPROP_ENUMERATE);
-	if(msg.from_net.type)
+	if(msg.from_net.type
+		&& (js_str=JS_NewStringCopyZ(cx,net_addr(&msg.from_net)))!=NULL)
 		JS_DefineProperty(cx, hdrobj, "from_net_addr"
-			,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,net_addr(&msg.from_net)))
+			,STRING_TO_JSVAL(js_str)
 			,NULL,NULL,JSPROP_ENUMERATE);
 
 	JS_DefineProperty(cx, hdrobj, "replyto_net_type",INT_TO_JSVAL(msg.replyto_net.type)
 		,NULL,NULL,JSPROP_ENUMERATE);
-	if(msg.replyto_net.type)
+	if(msg.replyto_net.type
+		&& (js_str=JS_NewStringCopyZ(cx,net_addr(&msg.replyto_net)))!=NULL)
 		JS_DefineProperty(cx, hdrobj, "replyto_net_addr"
-			,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,net_addr(&msg.replyto_net)))
+			,STRING_TO_JSVAL(js_str)
 			,NULL,NULL,JSPROP_ENUMERATE);
 
 	JS_DefineProperty(cx, hdrobj, "forwarded",INT_TO_JSVAL(msg.forwarded)
@@ -531,8 +552,10 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 	JS_DefineProperty(cx, hdrobj, "data_length", INT_TO_JSVAL(l)
 		,NULL,NULL,JSPROP_ENUMERATE);
 
+	if((js_str=JS_NewStringCopyZ(cx,msgdate(msg.hdr.when_written,date)))==NULL)
+		return(JS_FALSE);
 	JS_DefineProperty(cx, hdrobj, "date"
-		,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,msgdate(msg.hdr.when_written,date)))
+		,STRING_TO_JSVAL(js_str)
 		,NULL,NULL,JSPROP_ENUMERATE);
 
 	/* Reply-ID (References) */
@@ -550,52 +573,62 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 		}
 		val=reply_id;
 	}
-	if(val[0])
+	if(val[0] && (js_str=JS_NewStringCopyZ(cx,truncsp(val)))!=NULL)
 		JS_DefineProperty(cx, hdrobj, "reply_id"
-			, STRING_TO_JSVAL(JS_NewStringCopyZ(cx,truncsp(val)))
+			, STRING_TO_JSVAL(js_str)
 			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
 	/* Message-ID */
 	SAFECOPY(msg_id,get_msgid(scfg,p->smb.subnum,&msg));
 	val=msg_id;
+	if((js_str=JS_NewStringCopyZ(cx,truncsp(val)))==NULL)
+		return(JS_FALSE);
 	JS_DefineProperty(cx, hdrobj, "id"
-		,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,truncsp(val)))
+		,STRING_TO_JSVAL(js_str)
 		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
 	/* USENET Fields */
-	if(msg.path!=NULL)
+	if(msg.path!=NULL
+		&& (js_str=JS_NewStringCopyZ(cx,truncsp(msg.path)))!=NULL)
 		JS_DefineProperty(cx, hdrobj, "path"
-			,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,truncsp(msg.path)))
+			,STRING_TO_JSVAL(js_str)
 			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
-	if(msg.newsgroups!=NULL)
+	if(msg.newsgroups!=NULL
+		&& (js_str=JS_NewStringCopyZ(cx,truncsp(msg.newsgroups)))!=NULL)
 		JS_DefineProperty(cx, hdrobj, "newsgroups"
-			,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,truncsp(msg.newsgroups)))
+			,STRING_TO_JSVAL(js_str)
 			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
 	/* FidoNet Header Fields */
-	if(msg.ftn_msgid!=NULL)
+	if(msg.ftn_msgid!=NULL
+		&& (js_str=JS_NewStringCopyZ(cx,truncsp(msg.ftn_msgid)))!=NULL)
 		JS_DefineProperty(cx, hdrobj, "ftn_msgid"
-			,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,truncsp(msg.ftn_msgid)))
+			,STRING_TO_JSVAL(js_str)
 			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
-	if(msg.ftn_reply!=NULL)
+	if(msg.ftn_reply!=NULL
+		&& (js_str=JS_NewStringCopyZ(cx,truncsp(msg.ftn_reply)))!=NULL)
 		JS_DefineProperty(cx, hdrobj, "ftn_reply"
-			,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,truncsp(msg.ftn_reply)))
+			,STRING_TO_JSVAL(js_str)
 			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
-	if(msg.ftn_pid!=NULL)
+	if(msg.ftn_pid!=NULL
+		&& (js_str=JS_NewStringCopyZ(cx,truncsp(msg.ftn_pid)))!=NULL)
 		JS_DefineProperty(cx, hdrobj, "ftn_pid"
-			,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,truncsp(msg.ftn_pid)))
+			,STRING_TO_JSVAL(js_str)
 			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
-	if(msg.ftn_tid!=NULL)
+	if(msg.ftn_tid!=NULL
+		&& (js_str=JS_NewStringCopyZ(cx,truncsp(msg.ftn_tid)))!=NULL)
 		JS_DefineProperty(cx, hdrobj, "ftn_tid"
-			,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,truncsp(msg.ftn_tid)))
+			,STRING_TO_JSVAL(js_str)
 			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
-	if(msg.ftn_area!=NULL)
+	if(msg.ftn_area!=NULL
+		&& (js_str=JS_NewStringCopyZ(cx,truncsp(msg.ftn_area)))!=NULL)
 		JS_DefineProperty(cx, hdrobj, "ftn_area"
-			,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,truncsp(msg.ftn_area)))
+			,STRING_TO_JSVAL(js_str)
 			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
-	if(msg.ftn_flags!=NULL)
+	if(msg.ftn_flags!=NULL
+		&& (js_str=JS_NewStringCopyZ(cx,truncsp(msg.ftn_flags)))!=NULL)
 		JS_DefineProperty(cx, hdrobj, "ftn_flags"
-			,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,truncsp(msg.ftn_flags)))
+			,STRING_TO_JSVAL(js_str)
 			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
 	/* Create hdr.field_list[] with repeating header fields (including type and data) */
@@ -630,8 +663,10 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 			JS_DefineProperty(cx,field,"type"
 				,INT_TO_JSVAL(msg.hfield[i].type)
 				,NULL,NULL,JSPROP_ENUMERATE);
+			if((js_str=JS_NewStringCopyN(cx,msg.hfield_dat[i],msg.hfield[i].length))==NULL)
+				break;
 			JS_DefineProperty(cx,field,"data"
-				,STRING_TO_JSVAL(JS_NewStringCopyN(cx,msg.hfield_dat[i],msg.hfield[i].length))
+				,STRING_TO_JSVAL(js_str)
 				,NULL,NULL,JSPROP_ENUMERATE);
 			JS_DefineElement(cx,array,items,OBJECT_TO_JSVAL(field)
 				,NULL,NULL,JSPROP_ENUMERATE);
@@ -766,6 +801,7 @@ js_get_msg_body(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 	JSBool		strip_ctrl_a=JS_FALSE;
 	JSBool		tails=JS_TRUE;
 	JSBool		rfc822=JS_FALSE;
+	JSString*	js_str;
 	private_t*	p;
 
 	*rval = JSVAL_NULL;
@@ -798,7 +834,8 @@ js_get_msg_body(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 	if(buf==NULL)
 		return(JS_TRUE);
 
-	*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,buf));
+	if((js_str=JS_NewStringCopyZ(cx,buf))!=NULL)
+		*rval = STRING_TO_JSVAL(js_str);
 
 	smb_freemsgtxt(buf);
 
@@ -812,6 +849,7 @@ js_get_msg_tail(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 	smbmsg_t	msg;
 	JSBool		strip_ctrl_a=JS_FALSE;
 	JSBool		rfc822=JS_FALSE;
+	JSString*	js_str;
 	private_t*	p;
 
 	*rval = JSVAL_NULL;
@@ -841,7 +879,8 @@ js_get_msg_tail(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 	if(buf==NULL)
 		return(JS_TRUE);
 
-	*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,buf));
+	if((js_str=JS_NewStringCopyZ(cx,buf))!=NULL)
+		*rval = STRING_TO_JSVAL(js_str);
 
 	smb_freemsgtxt(buf);
 
@@ -945,6 +984,8 @@ static JSBool js_msgbase_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 
 static JSBool js_msgbase_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
+	char*		s=NULL;
+	JSString*	js_str;
     jsint       tiny;
 	idxrec_t	idx;
 	private_t*	p;
@@ -958,10 +999,10 @@ static JSBool js_msgbase_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 
 	switch(tiny) {
 		case SMB_PROP_FILE:
-			*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, p->smb.file));
+			s=p->smb.file;
 			break;
 		case SMB_PROP_LAST_ERROR:
-			*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, p->smb.last_error));
+			s=p->smb.last_error;
 			break;
 		case SMB_PROP_RETRY_TIME:
 			*vp = INT_TO_JSVAL(p->smb.retry_time);
@@ -1000,6 +1041,12 @@ static JSBool js_msgbase_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 		case SMB_PROP_IS_OPEN:
 			*vp = BOOLEAN_TO_JSVAL(SMB_IS_OPEN(&(p->smb)));
 			break;
+	}
+
+	if(s!=NULL) {
+		if((js_str=JS_NewStringCopyZ(cx, s))==NULL)
+			return(JS_FALSE);
+		*vp = STRING_TO_JSVAL(js_str);
 	}
 
 	return(JS_TRUE);

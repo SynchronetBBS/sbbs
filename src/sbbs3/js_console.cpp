@@ -61,6 +61,7 @@ static JSBool js_console_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
 	ulong		val;
     jsint       tiny;
+	JSString*	js_str;
 	sbbs_t*		sbbs;
 
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
@@ -100,10 +101,14 @@ static JSBool js_console_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			val=sbbs->telnet_mode;
 			break;
 		case CON_PROP_WORDWRAP:
-			*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, sbbs->wordwrap));
+			if((js_str=JS_NewStringCopyZ(cx, sbbs->wordwrap))==NULL)
+				return(JS_FALSE);
+			*vp = STRING_TO_JSVAL(js_str);
 			return(JS_TRUE);
 		case CON_PROP_QUESTION:
-			*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, sbbs->question));
+			if((js_str=JS_NewStringCopyZ(cx, sbbs->question))==NULL)
+				return(JS_FALSE);
+			*vp = STRING_TO_JSVAL(js_str);
 			return(JS_TRUE);
 		default:
 			return(JS_TRUE);
@@ -231,7 +236,9 @@ js_inkey(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	key[0]=sbbs->inkey(mode);
 	key[1]=0;
 
-	js_str = JS_NewStringCopyZ(cx, key);
+	if((js_str = JS_NewStringCopyZ(cx, key))==NULL)
+		return(JS_FALSE);
+
 	*rval = STRING_TO_JSVAL(js_str);
     return(JS_TRUE);
 }
@@ -252,7 +259,9 @@ js_getkey(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	key[0]=sbbs->getkey(mode);
 	key[1]=0;
 
-	js_str = JS_NewStringCopyZ(cx, key);
+	if((js_str = JS_NewStringCopyZ(cx, key))==NULL)
+		return(JS_FALSE);
+
 	*rval = STRING_TO_JSVAL(js_str);
     return(JS_TRUE);
 }
@@ -298,6 +307,9 @@ js_getstr(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	js_str = JS_NewStringCopyZ(cx, p);
 
 	free(p);
+
+	if(js_str==NULL)
+		return(JS_FALSE);
 
 	*rval = STRING_TO_JSVAL(js_str);
     return(JS_TRUE);
@@ -354,7 +366,8 @@ js_getkeys(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	} else {				// key
 		key[0]=(uchar)val;
 		key[1]=0;
-		js_str = JS_NewStringCopyZ(cx, key);
+		if((js_str = JS_NewStringCopyZ(cx, key))==NULL)
+			return(JS_FALSE);
 		*rval = STRING_TO_JSVAL(js_str);
 	}
 
@@ -393,7 +406,10 @@ js_gettemplate(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 		SAFECOPY(str,JS_GetStringBytes(js_str));
 
 	sbbs->gettmplt(str,JS_GetStringBytes(js_fmt),mode);
-	js_str = JS_NewStringCopyZ(cx, str);
+
+	if((js_str=JS_NewStringCopyZ(cx, str))==NULL)
+		return(JS_FALSE);
+
 	*rval = STRING_TO_JSVAL(js_str);
     return(JS_TRUE);
 }
@@ -760,13 +776,17 @@ static JSBool
 js_ansi(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	int32		attr=0;
+	JSString*	js_str;
 	sbbs_t*		sbbs;
 
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
 	JS_ValueToInt32(cx,argv[0],&attr);
-	*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,sbbs->ansi(attr)));
+	if((js_str=JS_NewStringCopyZ(cx,sbbs->ansi(attr)))==NULL)
+		return(JS_FALSE);
+
+	*rval = STRING_TO_JSVAL(js_str);
     return(JS_TRUE);
 }
 

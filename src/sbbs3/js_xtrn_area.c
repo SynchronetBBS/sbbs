@@ -72,20 +72,31 @@ static char* xtrn_prog_prop_desc[] = {
 
 BOOL DLLCALL js_CreateXtrnProgProperties(JSContext* cx, JSObject* obj, xtrn_t* xtrn)
 {
+	JSString* js_str;
 
-	JS_DefineProperty(cx, obj, "code", STRING_TO_JSVAL(JS_NewStringCopyZ(cx, xtrn->code))
+	if((js_str=JS_NewStringCopyZ(cx, xtrn->code))==NULL)
+		return(FALSE);
+	JS_DefineProperty(cx, obj, "code", STRING_TO_JSVAL(js_str)
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 
-	JS_DefineProperty(cx, obj, "name", STRING_TO_JSVAL(JS_NewStringCopyZ(cx, xtrn->name))
+	if((js_str=JS_NewStringCopyZ(cx, xtrn->name))==NULL)
+		return(FALSE);
+	JS_DefineProperty(cx, obj, "name", STRING_TO_JSVAL(js_str)
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 
-	JS_DefineProperty(cx, obj, "cmd", STRING_TO_JSVAL(JS_NewStringCopyZ(cx, xtrn->cmd))
+	if((js_str=JS_NewStringCopyZ(cx, xtrn->cmd))==NULL)
+		return(FALSE);
+	JS_DefineProperty(cx, obj, "cmd", STRING_TO_JSVAL(js_str)
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 
-	JS_DefineProperty(cx, obj, "clean_cmd", STRING_TO_JSVAL(JS_NewStringCopyZ(cx, xtrn->clean))
+	if((js_str=JS_NewStringCopyZ(cx, xtrn->clean))==NULL)
+		return(FALSE);
+	JS_DefineProperty(cx, obj, "clean_cmd", STRING_TO_JSVAL(js_str)
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 
-	JS_DefineProperty(cx, obj, "startup_dir", STRING_TO_JSVAL(JS_NewStringCopyZ(cx, xtrn->path))
+	if((js_str=JS_NewStringCopyZ(cx, xtrn->path))==NULL)
+		return(FALSE);
+	JS_DefineProperty(cx, obj, "startup_dir", STRING_TO_JSVAL(js_str)
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 
 	JS_DefineProperty(cx, obj, "settings", INT_TO_JSVAL(xtrn->misc)
@@ -122,6 +133,7 @@ JSObject* DLLCALL js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_
 	JSObject*	progobj;
 	JSObject*	sec_list;
 	JSObject*	prog_list;
+	JSString*	js_str;
 	jsval		val;
 	jsuint		index;
 	uint		l,d;
@@ -160,11 +172,15 @@ JSObject* DLLCALL js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_
 		if(!JS_SetProperty(cx, secobj, "number", &val))
 			return(NULL);
 
-		val=STRING_TO_JSVAL(JS_NewStringCopyZ(cx, cfg->xtrnsec[l]->code));
+		if((js_str=JS_NewStringCopyZ(cx, cfg->xtrnsec[l]->code))==NULL)
+			return(NULL);
+		val=STRING_TO_JSVAL(js_str);
 		if(!JS_SetProperty(cx, secobj, "code", &val))
 			return(NULL);
 
-		val=STRING_TO_JSVAL(JS_NewStringCopyZ(cx, cfg->xtrnsec[l]->name));
+		if((js_str=JS_NewStringCopyZ(cx, cfg->xtrnsec[l]->name))==NULL)
+			return(NULL);
+		val=STRING_TO_JSVAL(js_str);
 		if(!JS_SetProperty(cx, secobj, "name", &val))
 			return(NULL);
 

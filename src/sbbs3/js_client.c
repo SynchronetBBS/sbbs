@@ -73,6 +73,7 @@ static JSBool js_client_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	char*		p=NULL;
 	ulong		val=0;
     jsint       tiny;
+	JSString*	js_str;
 	client_t*	client;
 
 	if((client=(client_t*)JS_GetPrivate(cx,obj))==NULL)
@@ -100,14 +101,16 @@ static JSBool js_client_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			p=client->user;
 			break;
 		default:
-			return(TRUE);
+			return(JS_TRUE);
 	}
-	if(p!=NULL) 
-		*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, p));
-	else
+	if(p!=NULL) {
+		if((js_str=JS_NewStringCopyZ(cx, p))==NULL)
+			return(JS_FALSE);
+		*vp = STRING_TO_JSVAL(js_str);
+	} else
 		*vp = INT_TO_JSVAL(val);
 
-	return(TRUE);
+	return(JS_TRUE);
 }
 
 #define CLIENT_PROP_FLAGS JSPROP_ENUMERATE|JSPROP_READONLY

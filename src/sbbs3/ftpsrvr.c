@@ -466,6 +466,7 @@ js_initcx(JSRuntime* runtime, SOCKET sock, JSObject** glob, JSObject** ftp)
 	JSContext*	js_cx;
 	JSObject*	js_glob;
 	JSObject*	server;
+	JSString*	js_str;
 	jsval		val;
 	BOOL		success=FALSE;
 
@@ -501,11 +502,15 @@ js_initcx(JSRuntime* runtime, SOCKET sock, JSObject** glob, JSObject** ftp)
 			break;
 
 		sprintf(ver,"%s %s",FTP_SERVER,revision);
-		val = STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, ver));
+		if((js_str=JS_NewStringCopyZ(js_cx, ver))==NULL)
+			break;
+		val = STRING_TO_JSVAL(js_str);
 		if(!JS_SetProperty(js_cx, server, "version", &val))
 			break;
 
-		val = STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, ftp_ver()));
+		if((js_str=JS_NewStringCopyZ(js_cx, ftp_ver()))==NULL)
+			break;
+		val = STRING_TO_JSVAL(js_str);
 		if(!JS_SetProperty(js_cx, server, "version_detail", &val))
 			break;
 
@@ -538,21 +543,28 @@ BOOL js_add_file(JSContext* js_cx, JSObject* array,
 				 char* uploader, char* link)
 {
 	JSObject*	file;
+	JSString*	js_str;
 	jsval		val;
 	jsuint		index;
 
 	if((file=JS_NewObject(js_cx, &js_file_class, NULL, NULL))==NULL)
 		return(FALSE);
 
-	val=STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, name));
+	if((js_str=JS_NewStringCopyZ(js_cx, name))==NULL)
+		return(FALSE);
+	val=STRING_TO_JSVAL(js_str);
 	if(!JS_SetProperty(js_cx, file, "name", &val))
 		return(FALSE);
 
-	val=STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, desc));
+	if((js_str=JS_NewStringCopyZ(js_cx, desc))==NULL)
+		return(FALSE);
+	val=STRING_TO_JSVAL(js_str);
 	if(!JS_SetProperty(js_cx, file, "description", &val))
 		return(FALSE);
 
-	val=STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, ext_desc));
+	if((js_str=JS_NewStringCopyZ(js_cx, ext_desc))==NULL)
+		return(FALSE);
+	val=STRING_TO_JSVAL(js_str);
 	if(!JS_SetProperty(js_cx, file, "extended_description", &val))
 		return(FALSE);
 
@@ -580,7 +592,9 @@ BOOL js_add_file(JSContext* js_cx, JSObject* array,
 	if(!JS_SetProperty(js_cx, file, "times_downloaded", &val))
 		return(FALSE);
 
-	val=STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, uploader));
+	if((js_str=JS_NewStringCopyZ(js_cx, uploader))==NULL)
+		return(FALSE);
+	val=STRING_TO_JSVAL(js_str);
 	if(!JS_SetProperty(js_cx, file, "uploader", &val))
 		return(FALSE);
 
@@ -588,7 +602,9 @@ BOOL js_add_file(JSContext* js_cx, JSObject* array,
 	if(!JS_SetProperty(js_cx, file, "settings", &val))
 		return(FALSE);
 
-	val=STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, link));
+	if((js_str=JS_NewStringCopyZ(js_cx, link))==NULL)
+		return(FALSE);
+	val=STRING_TO_JSVAL(js_str);
 	if(!JS_SetProperty(js_cx, file, "link", &val))
 		return(FALSE);
 
@@ -626,6 +642,7 @@ BOOL js_generate_index(JSContext* js_cx, JSObject* parent,
 	JSObject*	file_array=NULL;
 	JSObject*	dir_array=NULL;
 	JSScript*	js_script=NULL;
+	JSString*	js_str;
 
 	JS_SetContextPrivate(js_cx, fp);
 
@@ -654,7 +671,9 @@ BOOL js_generate_index(JSContext* js_cx, JSObject* parent,
 			break;
 		}
 
-		val=STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, startup->html_index_file));
+		if((js_str=JS_NewStringCopyZ(js_cx, startup->html_index_file))==NULL)
+			break;
+		val=STRING_TO_JSVAL(js_str);
 		if(!JS_SetProperty(js_cx, parent, "html_index_file", &val)) {
 			lprintf("%04d !JavaScript FAILED to set html_index_file property",sock);
 			break;
@@ -705,13 +724,17 @@ BOOL js_generate_index(JSContext* js_cx, JSObject* parent,
 			strcat(vpath,scfg.lib[lib]->sname);
 			strcat(vpath,"/");
 
-			val=STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, scfg.lib[lib]->sname));
+			if((js_str=JS_NewStringCopyZ(js_cx, scfg.lib[lib]->sname))==NULL)
+				break;
+			val=STRING_TO_JSVAL(js_str);
 			if(!JS_SetProperty(js_cx, lib_obj, "name", &val)) {
 				lprintf("%04d !JavaScript FAILED to set curlib.name property",sock);
 				break;
 			}
 
-			val=STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, scfg.lib[lib]->lname));
+			if((js_str=JS_NewStringCopyZ(js_cx, scfg.lib[lib]->lname))==NULL)
+				break;
+			val=STRING_TO_JSVAL(js_str);
 			if(!JS_SetProperty(js_cx, lib_obj, "description", &val)) {
 				lprintf("%04d !JavaScript FAILED to set curlib.desc property",sock);
 				break;
@@ -722,19 +745,25 @@ BOOL js_generate_index(JSContext* js_cx, JSObject* parent,
 			strcat(vpath,scfg.dir[dir]->code);
 			strcat(vpath,"/");
 
-			val=STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, scfg.dir[dir]->code));
+			if((js_str=JS_NewStringCopyZ(js_cx, scfg.dir[dir]->code))==NULL)
+				break;
+			val=STRING_TO_JSVAL(js_str);
 			if(!JS_SetProperty(js_cx, dir_obj, "code", &val)) {
 				lprintf("%04d !JavaScript FAILED to set curdir.code property",sock);
 				break;
 			}
 
-			val=STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, scfg.dir[dir]->sname));
+			if((js_str=JS_NewStringCopyZ(js_cx, scfg.dir[dir]->sname))==NULL)
+				break;
+			val=STRING_TO_JSVAL(js_str);
 			if(!JS_SetProperty(js_cx, dir_obj, "name", &val)) {
 				lprintf("%04d !JavaScript FAILED to set curdir.name property",sock);
 				break;
 			}
 
-			val=STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, scfg.dir[dir]->lname));
+			if((js_str=JS_NewStringCopyZ(js_cx, scfg.dir[dir]->lname))==NULL)
+				break;
+			val=STRING_TO_JSVAL(js_str);
 			if(!JS_SetProperty(js_cx, dir_obj, "description", &val)) {
 				lprintf("%04d !JavaScript FAILED to set curdir.desc property",sock);
 				break;
@@ -747,7 +776,9 @@ BOOL js_generate_index(JSContext* js_cx, JSObject* parent,
 			}
 		}
 
-		val=STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, vpath));
+		if((js_str=JS_NewStringCopyZ(js_cx, vpath))==NULL)
+			break;
+		val=STRING_TO_JSVAL(js_str);
 		if(!JS_SetProperty(js_cx, parent, "path", &val)) {
 			lprintf("%04d !JavaScript FAILED to set curdir property",sock);
 			break;
@@ -2251,6 +2282,7 @@ static void ctrl_thread(void* arg)
 	JSContext*	js_cx=NULL;
 	JSObject*	js_glob;
 	JSObject*	js_ftp;
+	JSString*	js_str;
 #endif
 
 	thread_up(TRUE /* setuid */);
@@ -3665,8 +3697,10 @@ static void ctrl_thread(void* arg)
 						lprintf("%04d !JavaScript ERROR creating file area object",sock);
 				}
 
-				js_val=STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, "name"));
-				JS_SetProperty(js_cx, js_ftp, "sort", &js_val);
+				if((js_str=JS_NewStringCopyZ(js_cx, "name"))!=NULL) {
+					js_val=STRING_TO_JSVAL(js_str);
+					JS_SetProperty(js_cx, js_ftp, "sort", &js_val);
+				}
 				js_val=BOOLEAN_TO_JSVAL(FALSE);
 				JS_SetProperty(js_cx, js_ftp, "reverse", &js_val);
 
@@ -3695,8 +3729,10 @@ static void ctrl_thread(void* arg)
 								JS_SetProperty(js_cx, js_ftp, "reverse", &js_val);
 							}
 						}
-						js_val=STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, p));
-						JS_SetProperty(js_cx, js_ftp, "sort", &js_val);
+						if((js_str=JS_NewStringCopyZ(js_cx, p))!=NULL) {
+							js_val=STRING_TO_JSVAL(js_str);
+							JS_SetProperty(js_cx, js_ftp, "sort", &js_val);
+						}
 					}
 				}
 #endif

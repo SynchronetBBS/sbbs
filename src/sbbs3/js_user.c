@@ -122,6 +122,7 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	char		tmp[128];
 	ulong		val=0;
     jsint       tiny;
+	JSString*	js_str;
 	user_t		user;
 	private_t*	p;
 
@@ -331,9 +332,11 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			/* This must not set vp in order for child objects to work (stats and security) */
 			return(JS_TRUE);
 	}
-	if(s!=NULL) 
-		*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, s));
-	else
+	if(s!=NULL) {
+		if((js_str=JS_NewStringCopyZ(cx, s))==NULL)
+			return(JS_FALSE);
+		*vp = STRING_TO_JSVAL(js_str);
+	} else
 		*vp = INT_TO_JSVAL(val);
 
 	return(JS_TRUE);

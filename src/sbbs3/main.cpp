@@ -250,7 +250,8 @@ DLLCALL js_CreateArrayOfStrings(JSContext* cx, JSObject* parent, const char* nam
 		if((array=JS_NewArrayObject(cx, 0, NULL))==NULL)
 			return(JS_FALSE);
 
-	JS_GetArrayLength(cx, array, &len);
+	if(!JS_GetArrayLength(cx, array, &len))
+		return(JS_FALSE);
 
 	for(i=0;str[i]!=NULL;i++) {
 		if((js_str = JS_NewStringCopyZ(cx, str[i]))==NULL)
@@ -330,6 +331,7 @@ DLLCALL js_DefineMethods(JSContext* cx, JSObject* obj, jsMethodSpec *funcs)
 	jsval		val;
 	JSObject*	method;
 	JSObject*	method_array;
+	JSString*	js_str;
 
 	/* Return existing method_list array if it's already been created */
 	if(JS_GetProperty(cx,obj,method_array_name,&val) && val!=JSVAL_VOID)
@@ -338,7 +340,8 @@ DLLCALL js_DefineMethods(JSContext* cx, JSObject* obj, jsMethodSpec *funcs)
 		if((method_array=JS_NewArrayObject(cx, 0, NULL))==NULL) 
 			return(JS_FALSE);
 
-	JS_GetArrayLength(cx, method_array, &len);
+	if(!JS_GetArrayLength(cx, method_array, &len))
+		return(JS_FALSE);
 
 	for(i=0;funcs[i].name;i++) {
 
@@ -353,7 +356,9 @@ DLLCALL js_DefineMethods(JSContext* cx, JSObject* obj, jsMethodSpec *funcs)
 			return(JS_FALSE);
 
 		if(funcs[i].name!=NULL) {
-			val = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,funcs[i].name));
+			if((js_str=JS_NewStringCopyZ(cx,funcs[i].name))==NULL)
+				return(JS_FALSE);
+			val = STRING_TO_JSVAL(js_str);
 			JS_SetProperty(cx, method, "name", &val);
 		}
 
@@ -361,16 +366,22 @@ DLLCALL js_DefineMethods(JSContext* cx, JSObject* obj, jsMethodSpec *funcs)
 		if(!JS_SetProperty(cx, method, "nargs", &val))
 			return(JS_FALSE);
 
-		val = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,js_type_str[funcs[i].type]));
+		if((js_str=JS_NewStringCopyZ(cx,js_type_str[funcs[i].type]))==NULL)
+			return(JS_FALSE);
+		val = STRING_TO_JSVAL(js_str);
 		JS_SetProperty(cx, method, "type", &val);
 
 		if(funcs[i].args!=NULL) {
-			val = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,funcs[i].args));
+			if((js_str=JS_NewStringCopyZ(cx,funcs[i].args))==NULL)
+				return(JS_FALSE);
+			val = STRING_TO_JSVAL(js_str);
 			JS_SetProperty(cx, method, "args", &val);
 		}
 
 		if(funcs[i].desc!=NULL) { 
-			val = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,funcs[i].desc));
+			if((js_str=JS_NewStringCopyZ(cx,funcs[i].desc))==NULL)
+				return(JS_FALSE);
+			val = STRING_TO_JSVAL(js_str);
 			JS_SetProperty(cx, method, "desc", &val);
 		}
 
@@ -653,6 +664,7 @@ bool sbbs_t::js_init()
 	char		ver[256];
 	jsval		val;
 	JSObject*	server;
+	JSString*	js_str;
 
     if(cfg.node_num)
     	sprintf(node,"Node %d",cfg.node_num);
@@ -737,11 +749,15 @@ bool sbbs_t::js_init()
 		js_DescribeObject(js_cx,server,"Server-specifc properties");
 
 		sprintf(ver,"%s %s%c",TELNET_SERVER,VERSION,REVISION);
-		val = STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, ver));
+		if((js_str=JS_NewStringCopyZ(js_cx, ver))==NULL)
+			break;
+		val = STRING_TO_JSVAL(js_str);
 		if(!JS_SetProperty(js_cx, server, "version", &val))
 			break;
 
-		val = STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, bbs_ver()));
+		if((js_str=JS_NewStringCopyZ(js_cx, bbs_ver()))==NULL)
+			break;
+		val = STRING_TO_JSVAL(js_str);
 		if(!JS_SetProperty(js_cx, server, "version_detail", &val))
 			break;
 

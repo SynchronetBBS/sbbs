@@ -98,7 +98,9 @@ enum {
 static JSBool js_system_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
 	char		str[128];
+	char*		p=NULL;
     jsint       tiny;
+	JSString*	js_str;
 	ulong		val;
 	scfg_t*		cfg;
 
@@ -109,28 +111,28 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 
 	switch(tiny) {
 		case SYS_PROP_NAME:
-	        *vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, cfg->sys_name));
+	        p=cfg->sys_name;
 			break;
 		case SYS_PROP_OP:
-			*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, cfg->sys_op));
+			p=cfg->sys_op;
 			break;
 		case SYS_PROP_ID:
-			*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, cfg->sys_id));
+			p=cfg->sys_id;
 			break;
 		case SYS_PROP_MISC:
 			*vp = INT_TO_JSVAL(cfg->sys_misc);
 			break;
 		case SYS_PROP_PSNAME:
-			*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, cfg->sys_psname));
+			p=cfg->sys_psname;
 			break;
 		case SYS_PROP_PSNUM:
 			*vp = INT_TO_JSVAL(cfg->sys_psnum);
 			break;
 		case SYS_PROP_INETADDR:
-			*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, cfg->sys_inetaddr));
+			p=cfg->sys_inetaddr;
 			break;
 		case SYS_PROP_LOCATION:
-			*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, cfg->sys_location));
+			p=cfg->sys_location;
 			break;
 		case SYS_PROP_TIMEZONE:
 			*vp = INT_TO_JSVAL(cfg->sys_timezone);
@@ -149,7 +151,7 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			break;
 
 		case SYS_PROP_LASTUSERON:
-			*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, lastuseron));
+			p=lastuseron;
 			break;
 		case SYS_PROP_FREEDISKSPACE:
 			val = getfreediskspace(cfg->temp_dir);
@@ -160,10 +162,10 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			break;
 
 		case SYS_PROP_NEW_PASS:
-			*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, cfg->new_magic));
+			p=cfg->new_magic;
 			break;
 		case SYS_PROP_NEW_MAGIC:
-			*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, cfg->new_pass));
+			p=cfg->new_pass;
 			break;
 		case SYS_PROP_NEW_LEVEL:
 			*vp = INT_TO_JSVAL(cfg->new_level);
@@ -196,14 +198,14 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			*vp = INT_TO_JSVAL(cfg->new_shell);
 			break;
 		case SYS_PROP_NEW_XEDIT:
-			*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, cfg->new_xedit));
+			p=cfg->new_xedit;
 			break;
 		case SYS_PROP_NEW_MISC:
 			*vp = INT_TO_JSVAL(cfg->new_misc);
 			break;
 		case SYS_PROP_NEW_PROT:
 			sprintf(str,"%c",cfg->new_prot);
-			*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, str));
+			p=str;
 			break;
 		case SYS_PROP_NEW_EXPIRE:
 			*vp = INT_TO_JSVAL(cfg->new_expire);
@@ -234,26 +236,32 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			*vp = INT_TO_JSVAL(cfg->expired_exempt);
 			break;
 		case SYS_PROP_NODE_DIR:
-			*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, cfg->node_dir));
+			p=cfg->node_dir;
 			break;
 		case SYS_PROP_CTRL_DIR:
-			*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, cfg->ctrl_dir));
+			p=cfg->ctrl_dir;
 			break;
 		case SYS_PROP_DATA_DIR:
-			*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, cfg->data_dir));
+			p=cfg->data_dir;
 			break;
 		case SYS_PROP_TEXT_DIR:
-			*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, cfg->text_dir));
+			p=cfg->text_dir;
 			break;
 		case SYS_PROP_TEMP_DIR:
-			*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, cfg->temp_dir));
+			p=cfg->temp_dir;
 			break;
 		case SYS_PROP_EXEC_DIR:
-			*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, cfg->exec_dir));
+			p=cfg->exec_dir;
 			break;
 	}
 
-	return(TRUE);
+	if(p!=NULL) {	/* string property */
+		if((js_str=JS_NewStringCopyZ(cx, p))==NULL)
+			return(JS_FALSE);
+		*vp = STRING_TO_JSVAL(js_str);
+	}
+
+	return(JS_TRUE);
 }
 
 static JSBool js_system_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
@@ -613,7 +621,8 @@ js_alias(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	p=alias(cfg,p,buf);
 
-	js_str = JS_NewStringCopyZ(cx, p);
+	if((js_str = JS_NewStringCopyZ(cx, p))==NULL)
+		return(JS_FALSE);
 
 	*rval = STRING_TO_JSVAL(js_str);
 
@@ -769,7 +778,8 @@ js_zonestr(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		zone=(short)val;
 	}
 
-	js_str = JS_NewStringCopyZ(cx, zonestr(zone));
+	if((js_str = JS_NewStringCopyZ(cx, zonestr(zone)))==NULL)
+		return(JS_FALSE);
 
 	*rval = STRING_TO_JSVAL(js_str);
 	return(JS_TRUE);
@@ -792,7 +802,8 @@ js_timestr(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	else
 		JS_ValueToInt32(cx,argv[0],(int32*)&t);
 	timestr(cfg,&t,str);
-	js_str = JS_NewStringCopyZ(cx, str);
+	if((js_str = JS_NewStringCopyZ(cx, str))==NULL)
+		return(JS_FALSE);
 
 	*rval = STRING_TO_JSVAL(js_str);
 	return(JS_TRUE);
@@ -822,7 +833,8 @@ js_datestr(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		t=JSVAL_TO_INT(argv[0]);
 	}
 	unixtodstr(cfg,t,str);
-	js_str = JS_NewStringCopyZ(cx, str);
+	if((js_str = JS_NewStringCopyZ(cx, str))==NULL)
+		return(JS_FALSE);
 
 	*rval = STRING_TO_JSVAL(js_str);
 	return(JS_TRUE);
@@ -841,7 +853,8 @@ js_secondstr(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	else
 		JS_ValueToInt32(cx,argv[0],(int32*)&t);
 	sectostr(t,str);
-	js_str = JS_NewStringCopyZ(cx, str);
+	if((js_str = JS_NewStringCopyZ(cx, str))==NULL)
+		return(JS_FALSE);
 
 	*rval = STRING_TO_JSVAL(js_str);
 	return(JS_TRUE);
@@ -1283,6 +1296,7 @@ JSObject* DLLCALL js_CreateSystemObject(JSContext* cx, JSObject* parent
 	JSObject*	statsobj;
 	JSObject*	nodeobj;
 	JSObject*	node_list;
+	JSString*	js_str;
 
 	sysobj = JS_DefineObject(cx, parent, "system", &js_system_class, NULL, JSPROP_ENUMERATE);
 
@@ -1305,16 +1319,22 @@ JSObject* DLLCALL js_CreateSystemObject(JSContext* cx, JSObject* parent
 
 	/****************************/
 	/* static string properties */
-	val = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, host_name));
+	if((js_str=JS_NewStringCopyZ(cx, host_name))==NULL)
+		return(NULL);
+	val = STRING_TO_JSVAL(js_str);
 	if(!JS_SetProperty(cx, sysobj, "host_name", &val))
 		return(NULL);
 
-	val = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, VERSION));
+	if((js_str=JS_NewStringCopyZ(cx, VERSION))==NULL)
+		return(NULL);
+	val = STRING_TO_JSVAL(js_str);
 	if(!JS_SetProperty(cx, sysobj, "version", &val))
 		return(NULL);
 
 	sprintf(str,"%c",REVISION);
-	val = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, str));
+	if((js_str=JS_NewStringCopyZ(cx, str))==NULL)
+		return(NULL);
+	val = STRING_TO_JSVAL(js_str);
 	if(!JS_SetProperty(cx, sysobj, "revision", &val))
 		return(NULL);
 
@@ -1323,47 +1343,67 @@ JSObject* DLLCALL js_CreateSystemObject(JSContext* cx, JSObject* parent
 #if defined(_DEBUG)
 	strcat(str," Debug");
 #endif
-	val = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, str));
+	if((js_str=JS_NewStringCopyZ(cx, str))==NULL)
+		return(NULL);
+	val = STRING_TO_JSVAL(js_str);
 	if(!JS_SetProperty(cx, sysobj, "full_version", &val))
 		return(NULL);
 
-	val = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, VERSION_NOTICE));
+	if((js_str=JS_NewStringCopyZ(cx, VERSION_NOTICE))==NULL)
+		return(NULL);
+	val = STRING_TO_JSVAL(js_str);
 	if(!JS_SetProperty(cx, sysobj, "version_notice", &val))
 		return(NULL);
 
-	val = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, PLATFORM_DESC));
+	if((js_str=JS_NewStringCopyZ(cx, PLATFORM_DESC))==NULL)
+		return(NULL);
+	val = STRING_TO_JSVAL(js_str);
 	if(!JS_SetProperty(cx, sysobj, "platform", &val))
 		return(NULL);
 
-	val = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, socklib_version(str)));
+	if((js_str=JS_NewStringCopyZ(cx, socklib_version(str)))==NULL)
+		return(NULL);
+	val = STRING_TO_JSVAL(js_str);
 	if(!JS_SetProperty(cx, sysobj, "socket_lib", &val))
 		return(NULL);
 
 	sprintf(str,"SMBLIB %s",smb_lib_ver());
-	val = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, str));
+	if((js_str=JS_NewStringCopyZ(cx, str))==NULL)
+		return(NULL);
+	val = STRING_TO_JSVAL(js_str);
 	if(!JS_SetProperty(cx, sysobj, "msgbase_lib", &val))
 		return(NULL);
 
 	DESCRIBE_COMPILER(str);
-	val = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, str));
+	if((js_str=JS_NewStringCopyZ(cx, str))==NULL)
+		return(NULL);
+	val = STRING_TO_JSVAL(js_str);
 	if(!JS_SetProperty(cx, sysobj, "compiled_with", &val))
 		return(NULL);
 
 	sprintf(str,"%s %.5s",__DATE__,__TIME__);
-	val = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, str));
+	if((js_str=JS_NewStringCopyZ(cx, str))==NULL)
+		return(NULL);
+	val = STRING_TO_JSVAL(js_str);
 	if(!JS_SetProperty(cx, sysobj, "compiled_when", &val))
 		return(NULL);
 
-	val = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, COPYRIGHT_NOTICE));
+	if((js_str=JS_NewStringCopyZ(cx, COPYRIGHT_NOTICE))==NULL)
+		return(NULL);
+	val = STRING_TO_JSVAL(js_str);
 	if(!JS_SetProperty(cx, sysobj, "copyright", &val))
 		return(NULL);
 
-	val = STRING_TO_JSVAL(JS_NewStringCopyZ(cx
-			,(char *)JS_GetImplementationVersion()));
+	if((js_str=JS_NewStringCopyZ(cx
+		,(char *)JS_GetImplementationVersion()))==NULL)
+		return(NULL);
+	val = STRING_TO_JSVAL(js_str);
 	if(!JS_SetProperty(cx, sysobj, "js_version", &val))
 		return(NULL);
 
-	val = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,os_version(str)));
+	if((js_str=JS_NewStringCopyZ(cx,os_version(str)))==NULL)
+		return(NULL);
+	val = STRING_TO_JSVAL(js_str);
 	if(!JS_SetProperty(cx, sysobj, "os_version", &val))
 		return(NULL);
 

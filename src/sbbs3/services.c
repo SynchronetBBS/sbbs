@@ -558,6 +558,7 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 	JSContext*	js_cx;
 	JSObject*	js_glob;
 	JSObject*	server;
+	JSString*	js_str;
 	jsval		val;
 	BOOL		success=FALSE;
 
@@ -617,11 +618,15 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 				break;
 
 		sprintf(ver,"Synchronet Services %s",revision);
-		val = STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, ver));
+		if((js_str=JS_NewStringCopyZ(js_cx, ver))==NULL)
+			break;
+		val = STRING_TO_JSVAL(js_str);
 		if(!JS_SetProperty(js_cx, server, "version", &val))
 			break;
 
-		val = STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, services_ver()));
+		if((js_str=JS_NewStringCopyZ(js_cx, services_ver()))==NULL)
+			break;
+		val = STRING_TO_JSVAL(js_str);
 		if(!JS_SetProperty(js_cx, server, "version_detail", &val))
 			break;
 
@@ -828,7 +833,10 @@ static void js_service_thread(void* arg)
 		&& service_client.udp_buf != NULL
 		&& service_client.udp_len > 0) {
 		datagram = JS_NewStringCopyN(js_cx, service_client.udp_buf, service_client.udp_len);
-		val = STRING_TO_JSVAL(datagram);
+		if(datagram==NULL)
+			val=JSVAL_VOID;
+		else
+			val = STRING_TO_JSVAL(datagram);
 	} else
 		val = JSVAL_VOID;
 	JS_SetProperty(js_cx, js_glob, "datagram", &val);

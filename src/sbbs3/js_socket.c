@@ -453,10 +453,12 @@ js_recv(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	str = JS_NewStringCopyZ(cx, buf);
 	free(buf);
-	*rval = STRING_TO_JSVAL(str);
+	if(str==NULL)
+		return(JS_FALSE);
 
+	*rval = STRING_TO_JSVAL(str);
 	dbprintf(FALSE, p, "received %u bytes",len);
-		
+	
 	return(JS_TRUE);
 }
 
@@ -514,22 +516,29 @@ js_recvfrom(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	str = JS_NewStringCopyZ(cx, buf);
 	free(buf);
 
+	if(str==NULL)
+		return(JS_FALSE);
+
 	if((retobj=JS_NewObject(cx,&js_recvfrom_class,NULL,obj))==NULL) {
 		JS_ReportError(cx,"JS_NewObject failed");
 		return(JS_FALSE);
 	}
 
+	JS_DefineProperty(cx, retobj, "data"
+		,STRING_TO_JSVAL(str)
+		,NULL,NULL,JSPROP_ENUMERATE);
+
 	sprintf(port,"%u",ntohs(addr.sin_port));
+	if((str=JS_NewStringCopyZ(cx,port))==NULL)
+		return(JS_FALSE);
 	JS_DefineProperty(cx, retobj, "port"
-		,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,port))
+		,STRING_TO_JSVAL(str)
 		,NULL,NULL,JSPROP_ENUMERATE);
 
 	SAFECOPY(ip_addr,inet_ntoa(addr.sin_addr));
+	if((str=JS_NewStringCopyZ(cx,ip_addr))==NULL)
+		return(JS_FALSE);
 	JS_DefineProperty(cx, retobj, "ip_address"
-		,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,ip_addr))
-		,NULL,NULL,JSPROP_ENUMERATE);
-
-	JS_DefineProperty(cx, retobj, "data"
 		,STRING_TO_JSVAL(str)
 		,NULL,NULL,JSPROP_ENUMERATE);
 
@@ -573,8 +582,10 @@ js_peek(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	str = JS_NewStringCopyZ(cx, buf);
 	free(buf);
-	*rval = STRING_TO_JSVAL(str);
+	if(str==NULL)
+		return(JS_FALSE);
 
+	*rval = STRING_TO_JSVAL(str);
 	dbprintf(FALSE, p, "received %u bytes, lasterror=%d"
 		,len,ERROR_VALUE);
 		
@@ -646,8 +657,10 @@ js_recvline(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	str = JS_NewStringCopyZ(cx, buf);
 	free(buf);
-	*rval = STRING_TO_JSVAL(str);
+	if(str==NULL)
+		return(JS_FALSE);
 
+	*rval = STRING_TO_JSVAL(str);
 	dbprintf(FALSE, p, "received %u bytes (recvline) lasterror=%d"
 		,strlen(buf),ERROR_VALUE);
 		
@@ -857,6 +870,7 @@ static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	private_t*	p;
 	socklen_t	addr_len;
 	SOCKADDR_IN	addr;
+	JSString*	js_str;
 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
 		JS_ReportError(cx,getprivate_failure,WHERE);
@@ -904,8 +918,11 @@ static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			if(getsockname(p->sock, (struct sockaddr *)&addr,&addr_len)!=0) {
 				p->last_error=ERROR_VALUE;
 				*vp = JSVAL_VOID;
-			} else
-				*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,inet_ntoa(addr.sin_addr)));
+			} else {
+				if((js_str=JS_NewStringCopyZ(cx,inet_ntoa(addr.sin_addr)))==NULL)
+					return(JS_FALSE);
+				*vp = STRING_TO_JSVAL(js_str);
+			}
 			break;
 		case SOCK_PROP_LOCAL_PORT:
 			addr_len = sizeof(addr);
@@ -920,8 +937,11 @@ static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			if(getpeername(p->sock, (struct sockaddr *)&addr,&addr_len)!=0) {
 				p->last_error=ERROR_VALUE;
 				*vp = JSVAL_VOID;
-			} else
-				*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,inet_ntoa(addr.sin_addr)));
+			} else {
+				if((js_str=JS_NewStringCopyZ(cx,inet_ntoa(addr.sin_addr)))==NULL)
+					return(JS_FALSE);
+				*vp = STRING_TO_JSVAL(js_str);
+			}
 			break;
 		case SOCK_PROP_REMOTE_PORT:
 			addr_len = sizeof(addr);
