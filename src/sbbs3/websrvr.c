@@ -969,7 +969,7 @@ static BOOL check_request(http_session_t * session)
 		send_error("404 Not Found",session);
 		return(FALSE);
 	}
-	if(!strcmp(path,session->req.request)) {
+	if(strcmp(path,session->req.request)) {
 		session->req.send_location=TRUE;
 		SAFECOPY(session->req.request,path);
 	}
