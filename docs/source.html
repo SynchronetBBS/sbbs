@@ -172,8 +172,6 @@ See <tt>docs\sbbscon.txt</tt> for more details on using the console mode version
 <li>Get the Synchronet source and library files (if you haven't already)
 <li>At a command prompt, go to the Synchronet <tt>src\sbbs3</tt> directory and run <tt>make</tt>
 <li>At a command prompt, go to the Synchronet <tt>src\sbbs3\scfg</tt> directory and run <tt>make</tt>
-<li>Edit <tt>src\sbbs3\ctrl\makelibs.bat</tt> to set the <tt>dllsrc</tt> value as follows:
-<br><tt>set dllsrc=..\bcc.win32.dll.release</tt>
 <li>At a command prompt, go to the Synchronet <tt>src\sbbs3\ctrl</tt> directory and run <tt>build.bat</tt>
 </ol>
 You can now copy the DLL and executables from the following directories into your Synchronet <tt>EXEC</tt> directory:
@@ -184,8 +182,7 @@ You can now copy the DLL and executables from the following directories into you
 <li>src\sbbs3\ctrl
 </tt></ul>
 If you wish to build binaries with debugging information, add <tt>DEBUG=1</tt> to your <tt>make</tt> command-lines and
-copy the binaries from the <tt>.debug</tt> instead of <tt>.release</tt> directories. You may also need to update
-the <tt>dllsrc</tt> value in <tt>src\sbbs3\ctrl\makelibs.bat</tt> to point to the <tt>.debug</tt> directory.
+copy the binaries from the <tt>.debug</tt> instead of <tt>.release</tt> directories.
 <p>
 If you only have the free Borland command-line C++ compiler, all of the above steps still apply except for those
 referencing the <tt>src\sbbs3\ctrl</tt> directory. Also, if the DLLs you built are from a more recent version of
