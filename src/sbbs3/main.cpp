@@ -79,6 +79,8 @@ static	sbbs_t*	sbbs=NULL;
 static	scfg_t	scfg;
 static	bool	scfg_reloaded=true;
 static	char *	text[TOTAL_TEXT];
+static	WORD	first_node;
+static	WORD	last_node;
 
 #ifdef JAVASCRIPT
 JSRuntime* js_runtime=NULL;
@@ -1053,7 +1055,7 @@ void event_thread(void* arg)
 		}
 
 		/* Node Daily Events */
-		for(i=startup->first_node;i<=startup->last_node;i++) {
+		for(i=first_node;i<=last_node;i++) {
 			// Node Daily Event
 			sbbs->getnodedat(i,&node,0);
 			if(node.misc&NODE_EVENT && node.status==NODE_WFC) {
@@ -1082,8 +1084,8 @@ void event_thread(void* arg)
 
 		/* QWK Networking Call-out sempahores */
 		for(i=0;i<sbbs->cfg.total_qhubs;i++)
-			if(sbbs->cfg.qhub[i]->node>=startup->first_node 
-				&& sbbs->cfg.qhub[i]->node<=startup->last_node) {
+			if(sbbs->cfg.qhub[i]->node>=first_node 
+				&& sbbs->cfg.qhub[i]->node<=last_node) {
 				sprintf(str,"%sqnet/%s.now",sbbs->cfg.data_dir,sbbs->cfg.qhub[i]->id);
 				if(fexist(str))
 					sbbs->cfg.qhub[i]->last=-1; 
@@ -1091,8 +1093,8 @@ void event_thread(void* arg)
 
 		/* Timed Event sempahores */
 		for(i=0;i<sbbs->cfg.total_events;i++)
-			if((sbbs->cfg.event[i]->node>=startup->first_node
-				&& sbbs->cfg.event[i]->node<=startup->last_node)
+			if((sbbs->cfg.event[i]->node>=first_node
+				&& sbbs->cfg.event[i]->node<=last_node)
 				|| sbbs->cfg.event[i]->misc&EVENT_EXCL) {
 				sprintf(str,"%s%s.now",sbbs->cfg.data_dir,sbbs->cfg.event[i]->code);
 				if(fexist(str))
@@ -1101,8 +1103,8 @@ void event_thread(void* arg)
 
 		/* QWK Networking Call-out Events */
 		for(i=0;i<sbbs->cfg.total_qhubs;i++) {
-			if(sbbs->cfg.qhub[i]->node<startup->first_node ||
-				sbbs->cfg.qhub[i]->node>startup->last_node)
+			if(sbbs->cfg.qhub[i]->node<first_node ||
+				sbbs->cfg.qhub[i]->node>last_node)
 				continue;
 
 			// See if any packets have come in
@@ -1189,8 +1191,8 @@ void event_thread(void* arg)
 
 		/* PostLink Networking Call-out Events */
 		for(i=0;i<sbbs->cfg.total_phubs;i++) {
-			if(sbbs->cfg.phub[i]->node<startup->first_node 
-				|| sbbs->cfg.phub[i]->node>startup->last_node)
+			if(sbbs->cfg.phub[i]->node<first_node 
+				|| sbbs->cfg.phub[i]->node>last_node)
 				continue;
 			tm=localtime(&sbbs->cfg.phub[i]->last);	  /* PostLink call out based on time */
 			if(tm==NULL)
@@ -1241,8 +1243,8 @@ void event_thread(void* arg)
 
 				if(sbbs->cfg.event[i]->misc&EVENT_EXCL) { /* exclusive event */
 
-					if(sbbs->cfg.event[i]->node<startup->first_node
-						|| sbbs->cfg.event[i]->node>startup->last_node) {
+					if(sbbs->cfg.event[i]->node<first_node
+						|| sbbs->cfg.event[i]->node>last_node) {
 						sprintf(str,"Waiting for node %d to run timed event."
 							,sbbs->cfg.event[i]->node);
 						// status(str);
@@ -1252,7 +1254,7 @@ void event_thread(void* arg)
 							now=time(NULL);
 							if(now-lastnodechk<10)
 								continue;
-							for(j=startup->first_node;j<=startup->last_node;j++) {
+							for(j=first_node;j<=last_node;j++) {
 								sbbs->getnodedat(j,&node,1);
 								if(node.status==NODE_WFC)
 									node.status=NODE_EVENT_LIMBO;
@@ -1295,7 +1297,7 @@ void event_thread(void* arg)
 								return(0);
 #endif
 							// Check/change the status of the nodes that we're in control of
-							for(j=startup->first_node;j<=startup->last_node;j++) {
+							for(j=first_node;j<=last_node;j++) {
 								sbbs->getnodedat(j,&node,1);
 								if(node.status==NODE_WFC) {
 									if(j==sbbs->cfg.event[i]->node)
@@ -1331,10 +1333,10 @@ void event_thread(void* arg)
 					if(node.status!=NODE_WFC)
 						continue;
 				}
-				if(sbbs->cfg.event[i]->node<startup->first_node 
-					|| sbbs->cfg.event[i]->node>startup->last_node) {
+				if(sbbs->cfg.event[i]->node<first_node 
+					|| sbbs->cfg.event[i]->node>last_node) {
 					sbbs->cfg.event[i]->last=now;
-					for(j=startup->first_node;j<=startup->last_node;j++) {
+					for(j=first_node;j<=last_node;j++) {
 						sbbs->getnodedat(j,&node,1);
 						node.status=NODE_WFC;
 						sbbs->putnodedat(j,&node);
@@ -1371,7 +1373,7 @@ void event_thread(void* arg)
 
 					if(sbbs->cfg.event[i]->misc&EVENT_EXCL) { /* exclusive event */
 						// Check/change the status of the nodes that we're in control of
-						for(j=startup->first_node;j<=startup->last_node;j++) {
+						for(j=first_node;j<=last_node;j++) {
 							sbbs->getnodedat(j,&node,1);
 							node.status=NODE_WFC;
 							sbbs->putnodedat(j,&node);
@@ -3191,7 +3193,11 @@ void DLLCALL bbs_thread(void* arg)
 	}
 	_beginthread(event_thread, 0, events);
 
-	for(i=startup->first_node;i<=startup->last_node;i++) {
+	/* Save these values incase they're changed dynamically */
+	first_node=startup->first_node;
+	last_node=startup->last_node;
+
+	for(i=first_node;i<=last_node;i++) {
 		sbbs->getnodedat(i,&node,1);
 		node.status=NODE_WFC;
 		node.misc&=NODE_EVENT;
@@ -3199,8 +3205,7 @@ void DLLCALL bbs_thread(void* arg)
 		sbbs->putnodedat(i,&node);
 	}
 
-	lprintf("BBS System thread started for nodes %d through %d"
-    	,startup->first_node, startup->last_node);
+	lprintf("BBS System thread started for nodes %d through %d", first_node, last_node);
 	status(STATUS_WFC);
 
 	/* signal caller that we've started up successfully */
@@ -3243,7 +3248,7 @@ void DLLCALL bbs_thread(void* arg)
 
 		if(node_threads_running==0) {	/* check for re-run flags */
 			bool rerun=false;
-			for(i=startup->first_node;i<=startup->last_node;i++) {
+			for(i=first_node;i<=last_node;i++) {
 				sbbs->getnodedat(i,&node,0);
 				if(node.misc&NODE_RRUN) {
 					sbbs->getnodedat(i,&node,1);
@@ -3256,7 +3261,7 @@ void DLLCALL bbs_thread(void* arg)
 			}
 			if(rerun) {
 				lprintf("Loading configuration files from %s", scfg.ctrl_dir);
-				scfg.node_num=startup->first_node;
+				scfg.node_num=first_node;
 				pthread_mutex_lock(&event_mutex);
 				if(!load_cfg(&scfg, text)) {
 					lprintf("!Failed to load configuration files");
@@ -3416,7 +3421,7 @@ void DLLCALL bbs_thread(void* arg)
 		sprintf(logstr, "%s %s", host_name, host_ip);
 		sbbs->logline("@*",logstr);
 
-		for(i=startup->first_node;i<=startup->last_node;i++) {
+		for(i=first_node;i<=last_node;i++) {
 			sbbs->getnodedat(i,&node,1);
 			if(node.status==NODE_WFC) {
 				node.status=NODE_LOGON;
@@ -3426,7 +3431,7 @@ void DLLCALL bbs_thread(void* arg)
 			sbbs->putnodedat(i,&node);
 		}
 
-		if(i>startup->last_node) {
+		if(i>last_node) {
 			lprintf("No nodes available for login.");
 			sprintf(str,"%snonodes.txt",scfg.text_dir);
 			if(fexist(str))
@@ -3534,7 +3539,7 @@ void DLLCALL bbs_thread(void* arg)
 	}
 
     // Set all nodes' status to OFFLINE
-    for(i=startup->first_node;i<=startup->last_node;i++) {
+    for(i=first_node;i<=last_node;i++) {
         sbbs->getnodedat(i,&node,1);
         node.status=NODE_OFFLINE;
         sbbs->putnodedat(i,&node);
