@@ -1,3 +1,4 @@
+<CENTER>
 <P><A HREF="http://^^JS:system.inet_addr^^/">Home</A> : <B>Groups</B></P>
 <TABLE>
 <<REPEAT groups>>
@@ -19,3 +20,4 @@
         </TD>
 </TR>
 </TABLE>
+</CENTER>
