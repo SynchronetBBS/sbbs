@@ -37,9 +37,9 @@ LIBS	=	$(LIBDIR)/libpthread.a
 
 endif
 
-CFLAGS	:=	$(CFLAGS) -I../sdk -I/src/sbbs3
+CFLAGS	:=	$(CFLAGS) -I../sdk
 
 SBL: sbl$(EXEFILE)
 
-sbl$(EXEFILE) : sbl.c ../sdk/xsdk.c ../sdk/xsdkvars.c /src/sbbs3/smbwrap.c
+sbl$(EXEFILE) : sbl.c ../sdk/xsdk.c ../sdk/xsdkvars.c ../sdk/smbwrap.c
 	$(CC) $(CFLAGS) $^ -o $@ $(LIBS)
