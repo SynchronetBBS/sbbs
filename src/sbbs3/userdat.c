@@ -593,7 +593,10 @@ int DLLCALL getnodedat(scfg_t* cfg, uint number, node_t *node, char lockit)
 int DLLCALL putnodedat(scfg_t* cfg, uint number, node_t* node)
 {
 	char	str[MAX_PATH];
+	size_t	wr;
+	int		wrerr;
 	int		file;
+	int		attempts;
 
 	if(!number || number>cfg->sys_nodes) 
 		return(-1);
@@ -605,15 +608,19 @@ int DLLCALL putnodedat(scfg_t* cfg, uint number, node_t* node)
 	}
 
 	number--;	/* make zero based */
-	lseek(file,(long)number*sizeof(node_t),SEEK_SET);
-	if(write(file,node,sizeof(node_t))!=sizeof(node_t)) {
-		unlock(file,(long)number*sizeof(node_t),sizeof(node_t));
-		close(file);
-		return(-2); 
+	for(attempts=0;attempts<10;attempts++) {
+		lseek(file,(long)number*sizeof(node_t),SEEK_SET);
+		lock(file,(long)number*sizeof(node_t),sizeof(node_t));
+		if((wr=write(file,node,sizeof(node_t)))==sizeof(node_t))
+			break;
+		wrerr=errno;	/* save write error */
+		mswait(100);
 	}
 	unlock(file,(long)number*sizeof(node_t),sizeof(node_t));
 	close(file);
 
+	if(wr!=sizeof(node_t))
+		return(wrerr);
 	return(0);
 }
 
