@@ -45,7 +45,7 @@ static char* program_id()
 	char compiler[64];
 
 	DESCRIBE_COMPILER(compiler);
-	sprintf(str,"%.10s %s%c-%s%s%s %s %s\r"
+	sprintf(str,"%.10s %s%c-%s%s%s %s %s"
 		,VERSION_NOTICE,VERSION,REVISION,PLATFORM_DESC
 		,beta_version
 #ifdef _DEBUG
