@@ -40,6 +40,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+/* XPDEV */
+#include "gen_defs.h"
+
 #define __COLORS
 #include "ciolib.h"
 #include "uifc.h"
