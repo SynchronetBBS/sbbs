@@ -211,7 +211,16 @@ if_true
 	if_true
 		chksyspass
 		if_true
-			exec_int command.com
+			exec_int "command.com"
+			end_if
+		return
+		end_if
+
+	compare_str "SHELL"	# OS-independant shell
+	if_true
+		chksyspass
+		if_true
+			exec_int "%y"
 			end_if
 		return
 		end_if
@@ -242,7 +251,8 @@ if_true
 
 	compare_word "LOAD"
 	if_true
-		shift_str 5
+		shift_str 4
+		call get_arg
 		load_text %s
 		return
 		end_if
@@ -376,9 +386,10 @@ if_true
 # Lock Node
 compare_ars exempt N
 if_true
-        compare_word "LOCK "
+        compare_word "LOCK"
         if_true
-                shift_str 5
+                shift_str 4
+		call get_arg
                 exec_int %!node lock %s
 		return
                 end_if
@@ -387,9 +398,10 @@ if_true
 # Interrupt Node
 compare_ars exempt I
 if_true
-	compare_word "INTR "
+	compare_word "INTR"
         if_true
-                shift_str 5
+                shift_str 4
+		call get_arg
                 exec_int %!node intr %s
                 return
                 end_if
