@@ -87,10 +87,9 @@ WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR cmd, int)
          Application->CreateForm(__classid(TUserListForm), &UserListForm);
          Application->CreateForm(__classid(TEventsForm), &EventsForm);
          Application->CreateForm(__classid(TServicesForm), &ServicesForm);
-         if(cmd[0])
-            SAFECOPY(MainForm->ini_file,cmd);
-        else
-            sbbs_get_ini_fname(MainForm->ini_file, MainForm->global.ctrl_dir, NULL /* auto-hostname */);
+         if(cmd[0] && isdir(cmd))
+            SAFECOPY(MainForm->global.ctrl_dir,cmd);
+         sbbs_get_ini_fname(MainForm->ini_file, MainForm->global.ctrl_dir, NULL /* auto-hostname */);
 		Application->Run();
     }
     catch (Exception &exception)
