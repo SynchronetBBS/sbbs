@@ -12,6 +12,9 @@ td.main { background-color: #007788; }
 table.info { width: 30%; background-color: #116677; margin-left: auto; margin-right: auto; margin-top: 0; margin-bottom: 0; }
 td.info { background-color: #007788; }
 
+table.welcome { width: 1%; background-color: #116677; margin-left: auto; margin-right: auto; margin-top: 0; margin-bottom: 0; }
+td.welcome { background-color: #007788; }
+
 pre { background-color: black; color: #aaaaaa; font-family: monospace; }
 pre.leftalign { background-color: black; color: #aaaaaa; text-align: left; }
 
