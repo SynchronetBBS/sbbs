@@ -784,7 +784,9 @@ This is the Site Name of this hub. It is used for only for reference.
 			sprintf(opt[i++],"%-27.27s%s"
 				,"System Address",cfg.sys_inetaddr);
 			sprintf(opt[i++],"%-27.27s%.40s"
-				,"E-mail Semaphore",cfg.inetmail_sem);
+				,"Inbound E-mail Semaphore",cfg.smtpmail_sem);
+			sprintf(opt[i++],"%-27.27s%.40s"
+				,"Outbound E-mail Semaphore",cfg.inetmail_sem);
 			sprintf(opt[i++],"%-27.27s%s"
 				,"Allow Sending of E-mail"
 				,cfg.inetmail_misc&NMAIL_ALLOW ? "Yes":"No");
@@ -825,17 +827,28 @@ Enter your system's Internet address (hostname or IP address) here
 				case 1:
 					SETHELP(WHERE);
 /*
-Internet E-mail Semaphore File:
+Inbound Internet E-mail Semaphore File:
+
+This is a filename that will be used as a semaphore (signal) to any
+external Internet e-mail processors that new mail has been received
+and the message base should be re-scanned.
+*/
+					uinput(WIN_MID|WIN_SAV,0,0,"Inbound Semaphore"
+						,cfg.smtpmail_sem,50,K_EDIT);
+                    break;
+				case 2:
+					SETHELP(WHERE);
+/*
+Outbound Internet E-mail Semaphore File:
 
 This is a filename that will be used as a semaphore (signal) to any
 external Internet gateways (if supported) that new mail has been created
 and the message base should be re-scanned.
 */
-					uinput(WIN_MID|WIN_SAV,0,0,"Semaphore File"
+					uinput(WIN_MID|WIN_SAV,0,0,"Outbound Semaphore"
 						,cfg.inetmail_sem,50,K_EDIT);
                     break;
-
-				case 2:
+				case 3:
 					i=0;
 					strcpy(opt[0],"Yes");
 					strcpy(opt[1],"No");
@@ -856,8 +869,7 @@ option to Yes.
 						changes=1;
 						cfg.inetmail_misc&=~NMAIL_ALLOW; }
 					break;
-
-				case 3:
+				case 4:
 					i=0;
 					strcpy(opt[0],"Yes");
 					strcpy(opt[1],"No");
@@ -878,7 +890,7 @@ attachments, set this option to Yes.
 						changes=1;
 						cfg.inetmail_misc&=~NMAIL_FILE; }
                     break;
-				case 4:
+				case 5:
 					i=1;
 					strcpy(opt[0],"Yes");
 					strcpy(opt[1],"No");
@@ -901,7 +913,7 @@ option to No.
 						changes=1;
 						cfg.inetmail_misc&=~NMAIL_ALIAS; }
 					break;
-				case 5:
+				case 6:
 					ultoa(cfg.inetmail_cost,str,10);
 					SETHELP(WHERE);
 /*
