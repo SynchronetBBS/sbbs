@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -243,7 +243,7 @@ void sbbs_t::temp_xfer()
 				break;
 			case 'V':   /* view files in dir */
 				bputs(text[FileSpec]);
-				if(!getstr(str,12,K_UPPER) || !checkfname(str))
+				if(!getstr(str,64,K_NONE) || !checkfname(str))
 					break;
 				viewfiles(dirnum,str);
 				break;
@@ -310,7 +310,7 @@ void sbbs_t::extract(uint dirnum)
 		} 
 	}
 	bputs(text[ExtractFrom]);
-	if(!getstr(fname,12,K_UPPER) || !checkfname(fname) || strchr(fname,'*')
+	if(!getstr(fname,64,K_NONE) || !checkfname(fname) || strchr(fname,'*')
 		|| strchr(fname,'?'))
 		return;
 	padfname(fname,f.name);
