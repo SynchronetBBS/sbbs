@@ -81,9 +81,9 @@ static const char *mon[]={"Jan","Feb","Mar","Apr","May","Jun"
             ,"Jul","Aug","Sep","Oct","Nov","Dec"};
 
 #ifdef _WIN32
-#define IMPORT	__declspec(dllimport)
+	#define IMPORT	__declspec(dllimport)
 #else
-#define IMPORT
+	#define IMPORT
 #endif
 
 IMPORT BOOL	load_cfg(scfg_t* cfg, char* text[]);

@@ -43,13 +43,13 @@
 #endif
 
 #ifdef _WIN32
-#ifdef SBBS_EXPORTS
-#define EXPORT32 __declspec(dllexport)
+	#ifdef SBBS_EXPORTS
+		#define EXPORT32 __declspec(dllexport)
+	#else
+		#define EXPORT32 __declspec(dllimport)
+	#endif
 #else
-#define EXPORT32 __declspec(dllimport)
-#endif
-#else
-#define EXPORT32
+	#define EXPORT32
 #endif
 
 #ifdef __cplusplus

@@ -43,13 +43,13 @@ extern "C" {
 #endif
 
 #ifdef _WIN32
-#ifdef SBBS
-#define BBS_CALL __declspec( dllexport )
-#else
-#define BBS_CALL __declspec( dllimport )
-#endif
-#else
-#define BBS_CALL
+	#ifdef SBBS
+		#define BBS_CALL __declspec( dllexport )
+	#else
+		#define BBS_CALL __declspec( dllimport )
+	#endif
+#else	/* !_WIN32 */
+	#define BBS_CALL
 #endif
 
 /* arg is pointer to static bbs_startup_t* */
