@@ -749,7 +749,7 @@ JSObject* DLLCALL js_CreateGlobalObject(JSContext* cx, scfg_t* cfg)
 	if (!JS_InitStandardClasses(cx, glob))
 		return(NULL);
 
-	if (!JS_DefineFunctions(cx, glob, js_global_functions)) 
+	if (!js_DefineMethods(cx, glob, js_global_functions)) 
 		return(NULL);
 
 	if(!JS_DefineProperties(cx, glob, js_global_properties))

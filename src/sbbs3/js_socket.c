@@ -1001,7 +1001,7 @@ JSObject* DLLCALL js_CreateSocketObject(JSContext* cx, JSObject* parent, char *n
 	JSObject* obj;
 	private_t*	p;
 
-	obj = JS_DefineObject(cx, parent, name, &js_socket_class, NULL, 0);
+	obj = JS_DefineObject(cx, parent, name, &js_socket_class, NULL, JSPROP_ENUMERATE);
 
 	if(obj==NULL)
 		return(NULL);
@@ -1009,7 +1009,7 @@ JSObject* DLLCALL js_CreateSocketObject(JSContext* cx, JSObject* parent, char *n
 	if(!JS_DefineProperties(cx, obj, js_socket_properties))
 		return(NULL);
 
-	if (!JS_DefineFunctions(cx, obj, js_socket_functions)) 
+	if (!js_DefineMethods(cx, obj, js_socket_functions)) 
 		return(NULL);
 
 	if((p=(private_t*)malloc(sizeof(private_t)))==NULL)

@@ -699,14 +699,14 @@ js_user_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval
 
 	/* user.stats */
 	if((statsobj=JS_DefineObject(cx, obj, "stats"
-		,&js_user_stats_class, NULL, 0))==NULL) 
+		,&js_user_stats_class, NULL, JSPROP_ENUMERATE))==NULL) 
 		return(JS_FALSE);
 
 	JS_DefineProperties(cx, statsobj, js_user_stats_properties);
 
 	/* user.security */
 	if((securityobj=JS_DefineObject(cx, obj, "security"
-		,&js_user_security_class, NULL, 0))==NULL) 
+		,&js_user_security_class, NULL, JSPROP_ENUMERATE))==NULL) 
 		return(JS_FALSE);
 
 	JS_DefineProperties(cx, securityobj, js_user_security_properties);
@@ -753,7 +753,7 @@ JSObject* DLLCALL js_CreateUserObject(JSContext* cx, JSObject* parent, scfg_t* c
 	if(JS_GetProperty(cx,parent,name,&val) && val!=JSVAL_VOID)
 		return(JSVAL_TO_OBJECT(val));
 
-	userobj = JS_DefineObject(cx, parent, name, &js_user_class, NULL, 0);
+	userobj = JS_DefineObject(cx, parent, name, &js_user_class, NULL, JSPROP_ENUMERATE);
 
 	if(userobj==NULL)
 		return(NULL);
@@ -768,11 +768,11 @@ JSObject* DLLCALL js_CreateUserObject(JSContext* cx, JSObject* parent, scfg_t* c
 
 	JS_DefineProperties(cx, userobj, js_user_properties);
 
-	JS_DefineFunctions(cx, userobj, js_user_functions);
+	js_DefineMethods(cx, userobj, js_user_functions);
 
 	/* user.stats */
 	statsobj = JS_DefineObject(cx, userobj, "stats"
-		,&js_user_stats_class, NULL, 0);
+		,&js_user_stats_class, NULL, JSPROP_ENUMERATE);
 
 	if(statsobj==NULL) {
 		free(p);
@@ -785,7 +785,7 @@ JSObject* DLLCALL js_CreateUserObject(JSContext* cx, JSObject* parent, scfg_t* c
 
 	/* user.security */
 	securityobj = JS_DefineObject(cx, userobj, "security"
-		,&js_user_security_class, NULL, 0);
+		,&js_user_security_class, NULL, JSPROP_ENUMERATE);
 
 	if(securityobj==NULL) {
 		free(p);

@@ -2459,7 +2459,7 @@ JSObject* js_CreateBbsObject(JSContext* cx, JSObject* parent)
 {
 	JSObject* obj;
 
-	obj = JS_DefineObject(cx, parent, "bbs", &js_bbs_class, NULL, 0);
+	obj = JS_DefineObject(cx, parent, "bbs", &js_bbs_class, NULL, JSPROP_ENUMERATE);
 
 	if(obj==NULL)
 		return(NULL);
@@ -2467,7 +2467,7 @@ JSObject* js_CreateBbsObject(JSContext* cx, JSObject* parent)
 	if(!JS_DefineProperties(cx, obj, js_bbs_properties))
 		return(NULL);
 
-	if (!JS_DefineFunctions(cx, obj, js_bbs_functions)) 
+	if (!js_DefineMethods(cx, obj, js_bbs_functions)) 
 		return(NULL);
 
 	return(obj);

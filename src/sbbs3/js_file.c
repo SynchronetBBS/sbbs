@@ -864,7 +864,7 @@ JSObject* DLLCALL js_CreateFileObject(JSContext* cx, JSObject* parent, char *nam
 	JSObject* obj;
 	private_t*	p;
 
-	obj = JS_DefineObject(cx, parent, name, &js_file_class, NULL, 0);
+	obj = JS_DefineObject(cx, parent, name, &js_file_class, NULL, JSPROP_ENUMERATE);
 
 	if(obj==NULL)
 		return(NULL);
@@ -872,7 +872,7 @@ JSObject* DLLCALL js_CreateFileObject(JSContext* cx, JSObject* parent, char *nam
 	if(!JS_DefineProperties(cx, obj, js_file_properties))
 		return(NULL);
 
-	if (!JS_DefineFunctions(cx, obj, js_file_functions)) 
+	if (!js_DefineMethods(cx, obj, js_file_functions)) 
 		return(NULL);
 
 	if((p=(private_t*)calloc(1,sizeof(private_t)))==NULL)

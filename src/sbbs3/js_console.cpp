@@ -977,7 +977,7 @@ JSObject* js_CreateConsoleObject(JSContext* cx, JSObject* parent)
 {
 	JSObject* obj;
 
-	obj = JS_DefineObject(cx, parent, "console", &js_console_class, NULL, 0);
+	obj = JS_DefineObject(cx, parent, "console", &js_console_class, NULL, JSPROP_ENUMERATE);
 
 	if(obj==NULL)
 		return(NULL);
@@ -985,7 +985,7 @@ JSObject* js_CreateConsoleObject(JSContext* cx, JSObject* parent)
 	if(!JS_DefineProperties(cx, obj, js_console_properties))
 		return(NULL);
 
-	if (!JS_DefineFunctions(cx, obj, js_console_functions)) 
+	if (!js_DefineMethods(cx, obj, js_console_functions)) 
 		return(NULL);
 
 	return(obj);
