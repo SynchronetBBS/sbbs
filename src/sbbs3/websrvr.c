@@ -203,7 +203,9 @@ typedef struct  {
 	char			host_name[128];	/* Resolved remote host */
 	int				http_ver;       /* HTTP version.  0 = HTTP/0.9, 1=HTTP/1.0, 2=HTTP/1.1 */
 	BOOL			finished;		/* Do not accept any more imput from client */
-	user_t			user;	
+	user_t			user;
+	int				last_user_num;
+	time_t			logon_time;
 	char			username[LEN_NAME+1];
 
 	/* JavaScript parameters */
@@ -857,7 +859,7 @@ static BOOL send_headers(http_session_t *session, const char *status)
 
 	status_line=status;
 	ret=stat(session->req.physical_path,&stats);
-	if(!ret && (stats.st_mtime <= session->req.if_modified_since) && !session->req.dynamic) {
+	if(!ret && session->req.if_modified_since && (stats.st_mtime <= session->req.if_modified_since) && !session->req.dynamic) {
 		status_line="304 Not Modified";
 		ret=-1;
 		send_file=FALSE;
@@ -994,6 +996,7 @@ static void send_error(http_session_t * session, const char* message)
 	struct stat	sb;
 	char	sbuf[1024];
 
+	session->req.if_modified_since=0;
 	lprintf(LOG_INFO,"%04d !ERROR: %s",session->socket,message);
 	session->req.keep_alive=FALSE;
 	session->req.send_location=NO_LOCATION;
@@ -1026,6 +1029,55 @@ static void send_error(http_session_t * session, const char* message)
 	close_request(session);
 }
 
+void http_logon(http_session_t * session, user_t *usr)
+{
+	if(usr==NULL)
+		getuserdat(&scfg, &session->user);
+
+	if(session->user.number==session->last_user_num)
+		return;
+	if(session->user.number==0)
+		SAFECOPY(session->username,unknown);
+	else
+		SAFECOPY(session->username,session->user.alias);
+	session->last_user_num=session->user.number;
+	session->logon_time=time(NULL);
+}
+
+void http_logoff(http_session_t * session)
+{
+	if(session->last_user_num<=0)
+		return;
+	SAFECOPY(session->username,unknown);
+	logoutuserdat(&scfg, &session->user, time(NULL), session->logon_time);
+	memset(&session->user,0,sizeof(session->user));
+	session->last_user_num=session->user.number;
+}
+
+BOOL http_checkuser(http_session_t * session)
+{
+	if(session->req.dynamic==IS_SSJS) {
+		lprintf(LOG_INFO,"%04d JavaScript: Initializing User Objects",session->socket);
+		if(session->user.number>0) {
+			if(!js_CreateUserObjects(session->js_cx, session->js_glob, &scfg, &session->user
+				,NULL /* ftp index file */, NULL /* subscan */)) {
+				lprintf(LOG_ERR,"%04d !JavaScript ERROR creating user objects",session->socket);
+				send_error(session,"500 Error initializing JavaScript User Objects");
+				return(FALSE);
+			}
+		}
+		else {
+			if(!js_CreateUserObjects(session->js_cx, session->js_glob, &scfg, NULL
+				,NULL /* ftp index file */, NULL /* subscan */)) {
+				lprintf(LOG_ERR,"%04d !ERROR initializing JavaScript User Objects",session->socket);
+				send_error(session,"500 Error initializing JavaScript User Objects");
+				return(FALSE);
+			}
+		}
+	}
+	return(TRUE);
+}
+
 static BOOL check_ars(http_session_t * session)
 {
 	char	*username;
@@ -1033,11 +1085,27 @@ static BOOL check_ars(http_session_t * session)
 	uchar	*ar;
 	BOOL	authorized;
 	char	auth_req[MAX_REQUEST_LINE+1];
+	int		i;
+	user_t	thisuser;
 
 	if(session->req.auth[0]==0) {
-		if(startup->options&WEB_OPT_DEBUG_RX)
-			lprintf(LOG_NOTICE,"%04d !No authentication information",session->socket);
-		return(FALSE);
+		/* No authentication information... */
+		if(session->last_user_num!=0) {
+			if(session->last_user_num>0)
+				http_logoff(session);
+			session->user.number=0;
+			http_logon(session,NULL);
+		}
+		if(!http_checkuser(session))
+			return(FALSE);
+		if(session->req.ars[0]) {
+			/* There *IS* an ARS string  ie: Auth is required */
+			if(startup->options&WEB_OPT_DEBUG_RX)
+				lprintf(LOG_NOTICE,"%04d !No authentication information",session->socket);
+			return(FALSE);
+		}
+		/* No auth required, allow */
+		return(TRUE);
 	}
 	SAFECOPY(auth_req,session->req.auth);
 
@@ -1048,9 +1116,16 @@ static BOOL check_ars(http_session_t * session)
 	/* Require a password */
 	if(password==NULL)
 		password="";
-	session->user.number=matchuser(&scfg, username, FALSE);
-	if(session->user.number==0) {
-		SAFECOPY(session->username,unknown);
+	i=matchuser(&scfg, username, FALSE);
+	if(i==0) {
+		if(session->last_user_num!=0) {
+			if(session->last_user_num>0)
+				http_logoff(session);
+			session->user.number=0;
+			http_logon(session,NULL);
+		}
+		if(!http_checkuser(session))
+			return(FALSE);
 		if(scfg.sys_misc&SM_ECHO_PW)
 			lprintf(LOG_NOTICE,"%04d !UNKNOWN USER: %s, Password: %s"
 				,session->socket,username,password);
@@ -1059,9 +1134,16 @@ static BOOL check_ars(http_session_t * session)
 				,session->socket,username);
 		return(FALSE);
 	}
-	getuserdat(&scfg, &session->user);
-	if(session->user.pass[0] && stricmp(session->user.pass,password)) {
-		SAFECOPY(session->username,unknown);
+	getuserdat(&scfg, &thisuser);
+	if(thisuser.pass[0] && stricmp(thisuser.pass,password)) {
+		if(session->last_user_num!=0) {
+			if(session->last_user_num>0)
+				http_logoff(session);
+			session->user.number=0;
+			http_logon(session,NULL);
+		}
+		if(!http_checkuser(session))
+			return(FALSE);
 		/* Should go to the hack log? */
 		if(scfg.sys_misc&SM_ECHO_PW)
 			lprintf(LOG_WARNING,"%04d !PASSWORD FAILURE for user %s: '%s' expected '%s'"
@@ -1069,19 +1151,24 @@ static BOOL check_ars(http_session_t * session)
 		else
 			lprintf(LOG_WARNING,"%04d !PASSWORD FAILURE for user %s"
 				,session->socket,username);
-		session->user.number=0;
 		return(FALSE);
 	}
+
+	if(i != session->last_user_num) {
+		http_logoff(session);
+		session->user.number=i;
+		http_logon(session,&thisuser);
+	}
+	if(!http_checkuser(session))
+		return(FALSE);
+
+	if(session->req.ld!=NULL)
+		session->req.ld->user=strdup(username);
+
 	ar = arstr(NULL,session->req.ars,&scfg);
 	authorized=chk_ar(&scfg,ar,&session->user);
 	if(ar!=NULL && ar!=nular)
 		FREE_AND_NULL(ar);
-
-	if(session->req.dynamic==IS_SSJS)  {
-		if(!js_CreateUserObjects(session->js_cx, session->js_glob, &scfg, &session->user
-			,NULL /* ftp index file */, NULL /* subscan */)) 
-			lprintf(LOG_ERR,"%04d !JavaScript ERROR creating user objects",session->socket);
-	}
 
 	if(authorized)  {
 		if(session->req.dynamic==IS_CGI || session->req.dynamic==IS_STATIC)  {
@@ -1089,14 +1176,9 @@ static BOOL check_ars(http_session_t * session)
 			/* Should use real name if set to do so somewhere ToDo */
 			add_env(session,"REMOTE_USER",session->user.alias);
 		}
-		if(session->req.ld!=NULL)
-			session->req.ld->user=strdup(username);
 
-		SAFECOPY(session->username,username);
 		return(TRUE);
 	}
-
-	SAFECOPY(session->username,unknown);
 
 	/* Should go to the hack log? */
 	lprintf(LOG_WARNING,"%04d !AUTHORIZATION FAILURE for user %s, ARS: %s"
@@ -1801,18 +1883,15 @@ static BOOL check_request(http_session_t * session)
 		}
 		SAFECOPY(str,path);
 	}
-	
-	if(session->req.ars[0]) {
-		if(!check_ars(session)) {
-			/* No authentication provided */
-			sprintf(str,"401 Unauthorized%s%s: Basic realm=\"%s\""
-				,newline,get_header(HEAD_WWWAUTH),scfg.sys_name);
-			send_error(session,str);
-			return(FALSE);
-		}
+
+	if(!check_ars(session)) {
+		/* No authentication provided */
+		sprintf(str,"401 Unauthorized%s%s: Basic realm=\"%s\""
+			,newline,get_header(HEAD_WWWAUTH),scfg.sys_name);
+		send_error(session,str);
+		return(FALSE);
 	}
-	else
-		SAFECOPY(session->username,unknown);
+
 	return(TRUE);
 }
 
@@ -2124,7 +2203,7 @@ JSObject* DLLCALL js_CreateHttpReplyObject(JSContext* cx
 		return(FALSE);
 	JS_DefineProperty(cx, reply, "status", STRING_TO_JSVAL(js_str)
 		,NULL,NULL,JSPROP_ENUMERATE);
-		
+
 	/* Return existing object if it's already been created */
 	if(JS_GetProperty(cx,reply,"header",&val) && val!=JSVAL_VOID)  {
 		headers = JSVAL_TO_OBJECT(val);
@@ -2393,14 +2472,6 @@ static BOOL js_setup(http_session_t* session)
 		return(FALSE);
 	}
 
-	lprintf(LOG_INFO,"%04d JavaScript: Initializing User Objects",session->socket);
-	if(!js_CreateUserObjects(session->js_cx, session->js_glob, &scfg, NULL
-		,NULL /* ftp index file */, NULL /* subscan */)) {
-		lprintf(LOG_ERR,"%04d !ERROR initializing JavaScript User Objects",session->socket);
-		send_error(session,"500 Error initializing JavaScript User Objects");
-		return(FALSE);
-	}
-
 	JS_SetContextPrivate(session->js_cx, session);
 
 	return(TRUE);
@@ -2604,6 +2675,9 @@ void http_session_thread(void* arg)
 	if(session.socket!=INVALID_SOCKET && startup!=NULL && startup->socket_open!=NULL)
 		startup->socket_open(startup->cbdata,TRUE);
 
+	session.last_user_num=-1;
+	session.logon_time=0;
+
 	while(!session.finished && server_socket!=INVALID_SOCKET) {
 	    memset(&(session.req), 0, sizeof(session.req));
 		SAFECOPY(session.req.status,"200 OK");
@@ -2640,6 +2714,8 @@ void http_session_thread(void* arg)
 			}
 		}
 	}
+
+	http_logoff(&session);
 
 	if(session.js_cx!=NULL) {
 		lprintf(LOG_INFO,"%04d JavaScript: Destroying context",socket);
