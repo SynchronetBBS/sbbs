@@ -219,14 +219,14 @@ enum {
 	,R_Upload
 	,CantUploadHere
 	,FileSpec
-	,Unused176
+	,SystemPassword
 	,NoSysopDir
 	,CantUploadToSysop
 	,DirLstHdr
 	,DirLstFmt
 	,LibLstHdr
 	,LibLstFmt
-	,Unused183
+	,InvalidNetMailAddr
 	,TransferPolicyHdr
 	,Unused185
 	,TpUpload

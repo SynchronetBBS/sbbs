@@ -177,13 +177,15 @@ bool sbbs_t::chksyspass()
 		logline("S!","Remote sysop access disabled");
 		return(false);
 	}
+#if 0	/* no local logins in v3 */
 	if(online==ON_LOCAL) {
 		if(!(cfg.sys_misc&SM_L_SYSOP))
 			return(false);
 		if(!(cfg.node_misc&NM_SYSPW) && !(cfg.sys_misc&SM_REQ_PW))
 			return(false); 
 	}
-	bputs("SY: ");
+#endif
+	bputs(text[SystemPassword]);
 	console&=~(CON_R_ECHO|CON_L_ECHO);
 	getstr(str,40,K_UPPER);
 	console=orgcon;

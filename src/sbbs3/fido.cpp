@@ -93,7 +93,7 @@ bool sbbs_t::lookup_netuser(char *into)
 }
 
 /****************************************************************************/
-/* Send FidoNet NetMail from BBS											*/
+/* Send FidoNet/QWK/Internet NetMail from BBS								*/
 /****************************************************************************/
 bool sbbs_t::netmail(char *into, char *title, long mode)
 {
@@ -133,12 +133,13 @@ bool sbbs_t::netmail(char *into, char *title, long mode)
 		else if(cfg.dflt_faddr.zone)
 			addr=cfg.dflt_faddr;
 		else {
-			bprintf("\1n\r\nInvalid NetMail address.\r\n");
-			return(false); } }
-	else {
+			bputs(text[InvalidNetMailAddr]);
+			return(false); 
+		} 
+	} else {
 		addr=atofaddr(&cfg,p+1); 	/* Get fido address */
 		*p=0;					/* Chop off address */
-		}
+	}
 
 	if(mode&WM_FILE && !SYSOP && !(cfg.netmail_misc&NMAIL_FILE))
 		mode&=~WM_FILE;
@@ -146,7 +147,8 @@ bool sbbs_t::netmail(char *into, char *title, long mode)
 	if((!SYSOP && !(cfg.netmail_misc&NMAIL_ALLOW)) || useron.rest&FLAG('M')
 		|| !cfg.total_faddrs) {
 		bputs(text[NoNetMailAllowed]);
-		return(false); }
+		return(false); 
+	}
 
 	truncsp(to);				/* Truncate off space */
 
@@ -159,10 +161,12 @@ bool sbbs_t::netmail(char *into, char *title, long mode)
 	if(cfg.netmail_cost && !(useron.exempt&FLAG('S'))) {
 		if(useron.cdt+useron.freecdt<cfg.netmail_cost) {
 			bputs(text[NotEnoughCredits]);
-			return(false); }
+			return(false); 
+		}
 		sprintf(str,text[NetMailCostContinueQ],cfg.netmail_cost);
 		if(noyes(str))
-			return(false); }
+			return(false); 
+	}
 
 	now=time(NULL);
 	tm=gmtime(&now);
@@ -182,7 +186,8 @@ bool sbbs_t::netmail(char *into, char *title, long mode)
 	if(i==cfg.total_faddrs) {
 		for(i=0;i<cfg.total_faddrs;i++)
 			if(addr.zone==cfg.faddr[i].zone)
-				break; }
+				break; 
+	}
 	if(i==cfg.total_faddrs)
 		i=0;
 	hdr.origzone	=cfg.faddr[i].zone;
@@ -205,7 +210,8 @@ bool sbbs_t::netmail(char *into, char *title, long mode)
 	// mode&=~WM_FILE;
 	if(!writemsg(str,nulstr,subj,WM_NETMAIL|mode,INVALID_SUB,into)) {
 		bputs(text[Aborted]);
-		return(false); }
+		return(false); 
+	}
 
 	if(mode&WM_FILE) {
 		strcpy(fname,subj);
@@ -223,12 +229,13 @@ bool sbbs_t::netmail(char *into, char *title, long mode)
 			bputs(text[EnterPath]);
 			if(!getstr(str,60,K_LINE|K_UPPER)) {
 				bputs(text[Aborted]);
-				return(false); }
+				return(false); 
+			}
 			backslash(str);
 			strcat(str,fname);
 			if(mv(str,subj,1))
-				return(false); }
-		else { /* Remote */
+				return(false); 
+		} else { /* Remote */
 			menu("ulprot");
 			mnemonics(text[ProtocolOrQuit]);
 			strcpy(str,"Q");
@@ -251,7 +258,9 @@ bool sbbs_t::netmail(char *into, char *title, long mode)
 			bprintf(text[FileNBytesReceived],fname,ultoac(l,tmp));
 		else {
 			bprintf(text[FileNotReceived],fname);
-			return(false); } }
+			return(false); 
+		} 
+	}
 
 	p=subj;
 	if((SYSOP || useron.exempt&FLAG('F'))
@@ -446,7 +455,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 		else if(cfg.dflt_faddr.zone)
 			fidoaddr=cfg.dflt_faddr;
 		else {
-			bprintf("\1n\r\nInvalid NetMail address.\r\n");
+			bputs(text[InvalidNetMailAddr]);
 			FREE(qwkbuf);
 			return; } }
 	else {
@@ -714,9 +723,10 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 	/****************************** FidoNet **********************************/
 
 	if(!fidoaddr.zone || !cfg.netmail_dir[0]) {  // No fido netmail allowed
-		bprintf("\1n\r\nInvalid NetMail address.\r\n");
+		bputs(text[InvalidNetMailAddr]);
 		FREE(qwkbuf);
-		return; }
+		return; 
+	}
 
 	memset(&hdr,0,sizeof(hdr));   /* Initialize header to null */
 
