@@ -6,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -41,6 +41,8 @@
 #include "ConfigWizardUnit.h"
 #include <stdio.h>      // sprintf
 #include <winsock.h>    // addresses and such
+#include <iphlpapi.h>	// GetNetworkParams
+
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma resource "*.dfm"
@@ -156,6 +158,7 @@ void __fastcall TConfigWizard::FormShow(TObject *Sender)
         /* How to convert to SMB tz format? */
         scfg.sys_timezone=0;
         /* Get DNS Server Address */
+#if 0 /* Old way */
         sprintf(str,"%s /c ipconfig /all > %sipconfig.txt"
             ,getenv("COMSPEC"),scfg.ctrl_dir);
         WinExec(str,SW_HIDE);   /* there's got to be a better way! */
@@ -192,6 +195,18 @@ void __fastcall TConfigWizard::FormShow(TObject *Sender)
                 fclose(fp);
             }
         }
+#else	/* New way (finally!) */
+		FIXED_INFO* FixedInfo=NULL;
+		ULONG    	FixedInfoLen=0;
+		if(GetNetworkParams(FixedInfo,&FixedInfoLen) == ERROR_BUFFER_OVERFLOW) {
+            FixedInfo=(FIXED_INFO*)malloc(FixedInfoLen);
+			if(GetNetworkParams(FixedInfo,&FixedInfoLen) == ERROR_SUCCESS)
+	            SAFECOPY(MainForm->mail_startup.dns_server
+		            ,FixedInfo->DnsServerList.IpAddress.String);
+            if(FixedInfo!=NULL)
+                free(FixedInfo);
+        }
+#endif
     } else {
         SystemNameEdit->Text=AnsiString(scfg.sys_name);
         SystemLocationEdit->Text=AnsiString(scfg.sys_location);
