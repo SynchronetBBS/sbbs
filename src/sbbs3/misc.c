@@ -408,6 +408,7 @@ ulong getfreediskspace(char* path)
 {
 #ifdef _WIN32
 	HINSTANCE		hK32;
+	char			root[16];
 	DWORD			TotalNumberOfClusters;
 	DWORD			NumberOfFreeClusters;
 	DWORD			BytesPerSector;
@@ -419,7 +420,7 @@ ulong getfreediskspace(char* path)
 	if ((hK32 = LoadLibrary("KERNEL32")) == NULL)
 		return(0);
 
-	GetDiskFreeSpaceEx = (GetDiskFreeSpaceEx_t)GetProcAddress(hK32,"GetDiskFreeSpaceEx");
+	GetDiskFreeSpaceEx = (GetDiskFreeSpaceEx_t)GetProcAddress(hK32,"GetDiskFreeSpaceExA");
  
 	if (GetDiskFreeSpaceEx!=NULL) {	/* Windows 95-OSR2 or later */
 		if(!GetDiskFreeSpaceEx(
@@ -435,8 +436,9 @@ ulong getfreediskspace(char* path)
 	}
 
 	/* Windows 95 (old way), limited to 2GB */
+	sprintf(root,"%.3s",path);
 	if(!GetDiskFreeSpace(
-		path,					// pointer to root path
+		root,					// pointer to root path
 		&SectorsPerCluster,		// pointer to sectors per cluster
 		&BytesPerSector,		// pointer to bytes per sector
 		&NumberOfFreeClusters,	// pointer to number of free clusters
