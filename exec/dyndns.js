@@ -20,13 +20,23 @@ function writeln(str)
 
 var mx_record;
 var ip_address;
+var host_name = system.qwk_id;
 
-for(i=1;i<argc;i++)
-	if(argv[i].toLowerCase()=="-mx")
-		mx_record = argv[++i];
-	else
-		ip_address = argv[i];
+for(i=1;i<argc;i++) {
+	switch (argv[i].toLowerCase()) {
+		case "-mx":
+			mx_record = argv[++i];
+			break;
+		case "-hn":
+			host_name = argv[++i];
+			break;
+		default:
+			ip_address = argv[i];
+	}
+}
 
+
+		
 for(h in host_list) {
 	sock = new Socket();
 	if( (this.server != undefined) &&
@@ -45,7 +55,7 @@ for(h in host_list) {
 		print(str);
 		switch(str) {
 			case "id?":
-				writeln(system.qwk_id);
+				writeln(host_name);
 				break;
 			case "pw?":
 				writeln(argv[0]);
