@@ -644,6 +644,7 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
     mail_startup.rescan_frequency=3600;  /* 60 minutes */
     mail_startup.lines_per_yield=10;
     mail_startup.max_clients=10;
+    mail_startup.max_msg_size=10*1024*1024;
 
     memset(&ftp_startup,0,sizeof(ftp_startup));
     ftp_startup.size=sizeof(ftp_startup);
@@ -1488,6 +1489,10 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     	mail_startup.max_recipients
             =Registry->ReadInteger("MailMaxRecipients");
 
+    if(Registry->ValueExists("MailMaxMsgSize"))
+    	mail_startup.max_msg_size
+            =Registry->ReadInteger("MailMaxMsgSize");
+
     if(Registry->ValueExists("MailSMTPPort"))
     	mail_startup.smtp_port=Registry->ReadInteger("MailSMTPPort");
 
@@ -1882,6 +1887,8 @@ void __fastcall TMainForm::SaveSettings(TObject* Sender)
         ,mail_startup.rescan_frequency);
     Registry->WriteInteger("MailMaxRecipients"
         ,mail_startup.max_recipients);
+    Registry->WriteInteger("MailMaxMsgSize"
+        ,mail_startup.max_msg_size);
     Registry->WriteInteger("MailLinesPerYield"
         ,mail_startup.lines_per_yield);
 
@@ -2328,6 +2335,8 @@ void __fastcall TMainForm::ExportSettings(TObject* Sender)
         ,mail_startup.lines_per_yield);
     IniFile->WriteInteger(section,"MaxRecipients"
         ,mail_startup.max_recipients);
+    IniFile->WriteInteger(section,"MaxMsgSize"
+        ,mail_startup.max_msg_size);
 
     IniFile->WriteInteger(section,"SMTPPort",mail_startup.smtp_port);
     IniFile->WriteInteger(section,"POP3Port",mail_startup.pop3_port);
