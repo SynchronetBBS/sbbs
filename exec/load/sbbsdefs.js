@@ -145,7 +145,10 @@ var   CON_L_INPUT  	=(1<<5)		/* Accept input locally						*/
 var   CON_RAW_IN   	=(1<<8)		/* Raw input mode - no editing capabilities */
 var   CON_ECHO_OFF 	=(1<<10)	/* Remote & Local echo disabled for ML/MF	*/
 var   CON_UPARROW  	=(1<<11)	/* Up arrow hit - move up one line			*/
+var   CON_DOWNARROW =(1<<12)	/* Down arrow hit - from getstr()			*/
 var   CON_NO_INACT  =(1<<13)	/* User inactivity detection disabled		*/
+var   CON_BACKSPACE =(1<<14)	/* Backspace key - from getstr(K_LEFTEXIT)	*/
+var   CON_LEFTARROW =(1<<15)	/* Left arrow hit - from getstr(K_LEFTEXIT)	*/
 					    		/********************************************/
 
 							    /********************************************/
@@ -294,6 +297,8 @@ var   K_AUTODEL		=(1<<15)	/* Auto-delete text (used with K_EDIT)		*/
 var   K_COLD		=(1<<16)	/* Possible cold key mode					*/
 var   K_NOECHO		=(1<<17)	/* Don't echo input                         */
 var   K_TAB			=(1<<18)	/* Treat TAB key as CR						*/
+var	  K_LEFTEXIT	=(1<<19)	/* Allow exit from getstr() with backspace	*/
+var   K_USEOFFSET	=(1<<20)	/* Use console.getstr_offset with getstr()	*/
 					    		/********************************************/
 
 						    	/********************************************/
