@@ -173,6 +173,10 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 			if(!JS_SetProperty(cx, dirobj, "number", &val))
 				return(NULL);
 
+			val=INT_TO_JSVAL(cfg->dir[d]->lib);
+			if(!JS_SetProperty(cx, dirobj, "lib_number", &val))
+				return(NULL);
+
 			if((js_str=JS_NewStringCopyZ(cx, cfg->dir[d]->code))==NULL)
 				return(NULL);
 			val=STRING_TO_JSVAL(js_str);

@@ -240,6 +240,10 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 			if(!JS_SetProperty(cx, subobj, "number", &val))
 				return(NULL);
 
+			val=INT_TO_JSVAL(cfg->sub[d]->grp);
+			if(!JS_SetProperty(cx, subobj, "grp_number", &val))
+				return(NULL);
+			
 			if(cfg->sub[d]->newsgroup[0])
 				SAFECOPY(str,cfg->sub[d]->newsgroup);
 			else {

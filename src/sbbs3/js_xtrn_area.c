@@ -225,6 +225,10 @@ JSObject* DLLCALL js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_
 			if(!JS_SetProperty(cx, progobj, "number", &val))
 				return(NULL);
 
+			val=INT_TO_JSVAL(cfg->xtrn[d]->sec);
+			if(!JS_SetProperty(cx, progobj, "sec_number", &val))
+				return(NULL);
+
 			if(user==NULL || chk_ar(cfg,cfg->xtrn[d]->run_ar,user))
 				val=BOOLEAN_TO_JSVAL(JS_TRUE);
 			else
