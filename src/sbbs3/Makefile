@@ -63,6 +63,8 @@ LIBS	=	..\..\lib\mozilla\js\win32.debug\js32omf.lib
 
 SBBSLIB	=	$(LIBODIR)\sbbs.lib
 
+$(SBBSLIB):	$(SBBS)
+
 .path.c = .;$(XPDEV)
 .path.cpp = .;$(XPDEV)
 
@@ -238,7 +240,7 @@ $(MAKEUSER): makeuser.c \
 # JSEXEC
 $(JSEXEC): jsexec.c \
 	$(LIBS) \
-	$(LIBODIR)\sbbs.lib
+	$(SBBSLIB)
 	@echo Creating $@
 	@$(CC) $(CFLAGS) -n$(EXEODIR) $** 
 
