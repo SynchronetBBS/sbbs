@@ -15,13 +15,13 @@ int OD_wherey(void);
 int OD_wherex(void);
 int OD_putch(unsigned char ch);
 void OD_gotoxy(int x, int y);
-void OD_initciowrap(long inmode);
 void OD_gettextinfo(struct text_info *info);
 void OD_setcursortype(int type);
 int OD_getch(void);
 int OD_getche(void);
 int OD_beep(void);
 void OD_textmode(int mode);
+void OD_initciowrap(long inmode);
 #ifdef __cplusplus
 }
 #endif

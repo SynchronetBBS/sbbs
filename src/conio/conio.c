@@ -5,6 +5,9 @@
 #ifndef NO_X
  #include "x_cio.h"
 #endif
+#ifdef INCLUDE_OPENDOOR
+ #include "od_cio.h"
+#endif
 #include "curs_cio.h"
 #undef getch
 
@@ -41,6 +44,25 @@ void initciowrap(int mode)
 	else {
 		fprintf(stderr,"X init failed\n");
 #endif
+#ifdef INCLUDE_OPENDOOR
+		OD_initciowrap(mode);
+		cio_api.mode=OPENDOOR_MODE;
+		cio_api.puttext=OD_puttext;
+		cio_api.gettext=OD_gettext;
+		cio_api.textattr=OD_textattr;
+		cio_api.kbhit=OD_kbhit;
+		cio_api.delay=OD_delay;
+		cio_api.wherey=OD_wherey;
+		cio_api.wherex=OD_wherex;
+		cio_api.putch=OD_putch;
+		cio_api.gotoxy=OD_gotoxy;
+		cio_api.gettextinfo=OD_gettextinfo;
+		cio_api.setcursortype=OD_setcursortype;
+		cio_api.getch=OD_getch;
+		cio_api.getche=OD_getche;
+		cio_api.beep=OD_beep;
+		cio_api.textmode=OD_textmode;
+#else
 		curs_initciowrap(mode);
 		cio_api.mode=CURSES_MODE;
 		cio_api.puttext=curs_puttext;
@@ -58,6 +80,7 @@ void initciowrap(int mode)
 		cio_api.getche=curs_getche;
 		cio_api.beep=beep;
 		cio_api.textmode=curs_textmode;
+#endif
 #ifndef NO_X
 	}
 #endif

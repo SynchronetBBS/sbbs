@@ -1,18 +1,44 @@
 #include <stdarg.h>
+#include <OpenDoor.h>
 
 #include "conio.h"
 #include "od_cio.h"
 
-int OD_nextch;
+unsigned int OD_nextch;
 int OD_attr;
+const int OD_tabs[10]={9,17,25,33,41,49,57,65,73,80};
 
 int OD_puttext(int sx, int sy, int ex, int ey, unsigned char *fill)
 {
+	if(	sx < 1
+		|| sx > 80
+		|| sy < 1
+		|| sy > 23
+		|| ex < sx
+		|| ey < sy
+		|| ex < 1
+		|| ex > 80
+		|| ey < 1
+		|| ey > 23)
+		return(0);
+
 	return(od_puttext(sx,sy,ex,ey,fill));
 }
 
 int OD_gettext(int sx, int sy, int ex, int ey, unsigned char *fill)
 {
+	if(	sx < 1
+		|| sx > 80
+		|| sy < 1
+		|| sy > 23
+		|| ex < sx
+		|| ey < sy
+		|| ex < 1
+		|| ex > 80
+		|| ey < 1
+		|| ey > 23)
+		return(0);
+
 	return(od_gettext(sx,sy,ex,ey,fill));
 }
 
@@ -117,20 +143,22 @@ int OD_kbhit(void)
 	tODInputEvent ie;
 
 	if(OD_nextch)
-		return(1)
+		return(1);
 
-	if(!od_get_input(&ie,0,GETIN_NORMAL))
+	if(!od_get_input(&ie,5,GETIN_NORMAL))
 		return(0);
 
 	if(ie.EventType==EVENT_CHARACTER) {
 		OD_nextch=ie.chKeyPress;
 		return(1);
 	}
-	
+
 	parsekey(ie.chKeyPress);
 
 	if(OD_nextch)
-		return(1)
+		return(1);
+
+	return(0);
 }
 
 void OD_delay(long msec)
@@ -160,20 +188,86 @@ int OD_wherex(void)
  */
 int OD_putch(unsigned char ch)
 {
-	od_putch(ch);
+	struct text_info ti;
+	int		ret;
+	int		i;
+
+	ret=ch;
+	switch(ch) {
+		case '\r':
+			gotoxy(1,wherey());
+			break;
+		case '\n':
+			gettextinfo(&ti);
+			if(wherey()==ti.winbottom-ti.wintop+1) {
+				wscroll();
+			}
+			else {
+				gotoxy(wherex(),wherey()+1);
+			}
+			break;
+		case 0x07:
+			cio_api.beep();
+			break;
+		case 0x08:
+			gotoxy(wherex()-1,wherey());
+			putch(' ');
+			gotoxy(wherex()-1,wherey());
+			break;
+		case '\t':
+			for(i=0;i<10;i++) {
+				if(OD_tabs[i]>wherex()) {
+					while(wherex()<OD_tabs[i]) {
+						putch(' ');
+					}
+					break;
+				}
+			}
+			if(i==10) {
+				putch('\r');
+				putch('\n');
+			}
+			break;
+		default:
+			gettextinfo(&ti);
+			if(wherey()==ti.winbottom-ti.wintop+1
+					&& wherex()==ti.winright-ti.winleft+1) {
+				od_putch(ch);
+				wscroll();
+				gotoxy(ti.winleft,ti.cury);
+			}
+			else {
+				if(wherex()==ti.winright-ti.winleft+1) {
+					od_putch(ch);
+					gotoxy(ti.winleft,ti.cury+1);
+				}
+				else {
+					od_putch(ch);
+					gotoxy(ti.curx+1,ti.cury);
+				}
+			}
+			break;
+	}
+
 	return(ch);
 }
 
 void OD_gotoxy(int x, int y)
 {
+	if(	x<1
+		|| x > 80
+		|| y < 1
+		|| y > 23)
+		return;
+
 	od_set_cursor(y,x);
 }
 
 void OD_gettextinfo(struct text_info *info)
 {
 	info->currmode=3;
-	info->screenheight=od_control.user_screenheight;
-	info->screenwidth=od_control.user_screenheight;
+	info->screenheight=23;
+	info->screenwidth=80;
 	info->curx=wherex();
 	info->cury=wherey();
 	info->attribute=OD_attr;
@@ -191,14 +285,15 @@ int OD_getch(void)
 	while(1) {
 		if(OD_nextch) {
 			ch=OD_nextch&0xff;
-			OD_nextch>>8;
-			return(ch)
+			OD_nextch>>=8;
+			return(ch);
 		}
 
 		od_get_input(&ie,OD_NO_TIMEOUT,GETIN_NORMAL);
 
-		if(ie.EventType==EVENT_CHARACTER)
+		if(ie.EventType==EVENT_CHARACTER) {
 			return(ie.chKeyPress);
+		}
 
 		parsekey(ie.chKeyPress);
 	}
@@ -224,4 +319,9 @@ int OD_beep(void)
 
 void OD_textmode(int mode)
 {
+}
+
+void OD_initciowrap(long mode)
+{
+	od_init();
 }

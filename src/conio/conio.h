@@ -59,6 +59,7 @@ enum
 {
 	 X_MODE
 	,CURSES_MODE
+	,OPENDOOR_MODE
 };
 
 struct text_info {
