@@ -26,9 +26,14 @@ else {
 		error("You can't read messages in this sub!");
 }
 
-if(msg_area.sub[sub].can_post)  {
-		template.can_post=true;
+if(sub=='mail' && user.alias!='Guest') {
+	template.can_post=true;
 }
+	else {		
+	if(msg_area.sub[sub].can_post)  {
+		template.can_post=true;
+	}
+}	
 
 template.idx=msgbase.get_msg_index(false,m);
 if(sub=='mail' && template.idx.to!=user.number)
