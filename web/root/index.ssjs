@@ -25,11 +25,14 @@ if(user.number || system.matchuser("Guest")) {
     write('<a href="ftp://');
     if(user.number && !(user.security.restrictions&UFLAG_G))
 	    write(escape(user.alias) + ':' + escape(user.security.password) + '@');
-    var port = http_request.host.indexOf(':');
+	var host = http_request.host;
+	if(!host || !host.length)
+		host = system.host_name;
+    var port = host.indexOf(':');
     if(port>=0)
-        write(http_request.host.slice(0,port));
+        write(host.slice(0,port));
     else
-        write(http_request.host);
+        write(host);
     writeln('/00index.html">File Libraries</a>');
     writeln('<br />');
 }
