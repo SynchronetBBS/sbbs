@@ -374,12 +374,11 @@ public:
     char	timestr_output[60];
 	void	userlist(char subonly);
 	size_t	gettmplt(char *outstr, char *tmplt, long mode);
-	void	sif(char *fname, char *answers, long len);	/* Synchronet Inteface File */
+	void	sif(char *fname, char *answers, long len);	/* Synchronet Interface File */
 	void	sof(char *fname, char *answers, long len);
 	void	create_sif_dat(char *siffile, char *datfile);
 	void	read_sif_dat(char *siffile, char *datfile);
 	void	printnodedat(uint number, node_t* node);
-	void	reports(void);
 	bool	inputnstime(time_t *dt);
 	bool	chkpass(char *pass, user_t* user, bool unique);
 	char *	cmdstr(char *instr, char *fpath, char *fspec, char *outstr);
@@ -440,7 +439,7 @@ public:
 	int		rputs(char *str);				/* BBS raw puts function */
 	int		bprintf(char *fmt, ...);		/* BBS printf function */
 	int		rprintf(char *fmt, ...);		/* BBS raw printf function */
-	void	outchar(char ch);			/* Output a char - check echo and emu.  */
+	void	outchar(char ch);				/* Output a char - check echo and emu.  */
 	void	center(char *str);
 
 	/* getstr.cpp */
@@ -448,10 +447,10 @@ public:
 	long	getnum(ulong max);
 
 	/* getkey.cpp */
-	char	getkey(long mode); 		 /* Waits for a key hit local or remote  */
+	char	getkey(long mode); 		/* Waits for a key hit local or remote  */
 	long	getkeys(char *str, ulong max);
-	void	ungetkey(char ch);			/* Places 'ch' into the input buffer    */
-	char	inkey(long mode);				/* Returns key if one has been hit		*/
+	void	ungetkey(char ch);		/* Places 'ch' into the input buffer    */
+	char	inkey(long mode);		/* Returns key if one has been hit		*/
 	char	question[128];
 	bool	yesno(char *str);
 	bool	noyes(char *str);
@@ -473,6 +472,7 @@ public:
 	void	redrwstr(char *strin, int i, int l, long mode);
 	void	attr(int atr);				/* Change local and remote text attributes */
 	void	ctrl_a(char x);			/* Peforms the Ctrl-Ax attribute changes */
+	void	clearline(void);
 
 	/* atcodes.cpp */
 	int		atcodes(char *code);
@@ -480,8 +480,6 @@ public:
 
 	/* getnode.cpp */
 	int		whos_online(bool listself);/* Lists active nodes, returns active nodes */
-
-	void	clearline(void);
 
 	/* logonoff.cpp */
 	bool	answer();
