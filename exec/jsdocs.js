@@ -7,16 +7,28 @@ const table_tag = "<table border=1 width=100%>";
 
 table_depth=0;
 
+body = "";
+
+function write(str)
+{
+	body+=str;
+}
+
+function writeln(str)
+{
+	write(str + "\n");
+}
+
 function table_open(name)
 {
-	f.writeln(table_tag);
+	writeln(table_tag);
 	table_depth++;
 }
 
 function table_close()
 {
 	if(table_depth) {
-		f.writeln("</table>");
+		writeln("</table>");
 		table_depth--;
 	}
 }
@@ -26,36 +38,41 @@ function document_methods(name,obj)
 	if(obj._method_list == undefined)
 		return;
 
+	//f.writeln(" [<a href=#" + name +"_methods>methods</a>]");
+
 	table_close();
-	f.writeln("<br>");
+	writeln("<br>");
 	table_open(name);
 
-	f.writeln("<caption align=left><b>" + name.italics() + " methods" + "</b></caption>");
-	f.writeln("<tr bgcolor=gray>");
-	f.writeln("<th align=left width=100>");
-	f.writeln("Name".fontcolor("white"));
-	f.writeln("<th align=left width=100>");
-	f.writeln("Returns".fontcolor("white"));
-	f.writeln("<th align=left width=200>");
-	f.writeln("Usage".fontcolor("white"));
-	f.writeln("<th align=left>");
-	f.writeln("Description".fontcolor("white"));
+	
+	writeln("<caption align=left><b>" + name.italics());
+	writeln("<a name=" + name + "_methods> methods</a>"); 
+	writeln("</b></caption>");
+	writeln("<tr bgcolor=gray>");
+	writeln("<th align=left width=100>");
+	writeln("Name".fontcolor("white"));
+	writeln("<th align=left width=100>");
+	writeln("Returns".fontcolor("white"));
+	writeln("<th align=left width=200>");
+	writeln("Usage".fontcolor("white"));
+	writeln("<th align=left>");
+	writeln("Description".fontcolor("white"));
 
 	for(method in obj._method_list) {
-		f.write("<tr>");
+		write("<tr>");
 
-		f.printf("<td>%s<td>%s<td><tt>%s.%s(%s)\r\n"
+		write(format("<td>%s<td>%s<td><tt>%s.%s(%s)\n"
 			,obj._method_list[method].name.bold()
 			,obj._method_list[method].type
 			,name
 			,obj._method_list[method].name
 			,obj._method_list[method].args
-			);
-		f.writeln("<td>" + obj._method_list[method].desc);
+			));
+		writeln("<td>" + obj._method_list[method].desc);
 		/**
-		f.write("<td>");
+		write("<td>");
 		if(obj._method_list[method].alias != undefined)
-			f.writeln(obj._method_list[method].alias)
+			writeln(obj._method_list[method].alias)
 		**/
 	}
 }
@@ -64,23 +81,25 @@ function document_object(name, obj)
 {
 	var prop_name;
 
+	f.writeln("<li><a href=#" + name +">" + name + "</a>");
+
 	if(table_depth)
 		table_close();
-	f.writeln("<h2>"+name+" object");
+	writeln("<h2><a name=" + name + ">" + name + " object</a>");
 	if(obj._description!=undefined)
-		f.writeln("<br><font size=-1>"+obj._description+"</font>");
-	f.writeln("</h2>");
+		writeln("<br><font size=-1>"+obj._description+"</font>");
+	writeln("</h2>");
 	if(obj._constructor!=undefined)
-		f.writeln("<p>" + obj._constructor + "</p>");
+		writeln("<p>" + obj._constructor + "</p>");
 	table_open(name);
-	f.writeln("<caption align=left><b>" + name.italics() + " properties" + "</b></caption>");
-	f.writeln("<tr bgcolor=gray>");
-	f.writeln("<th align=left width=100>");
-	f.writeln("Name".fontcolor("white"));
-	f.writeln("<th align=left width=100>");
-	f.writeln("Type".fontcolor("white"));
-	f.writeln("<th align=left>");
-	f.writeln("Description".fontcolor("white"));
+	writeln("<caption align=left><b>" + name.italics() + " properties" + "</b></caption>");
+	writeln("<tr bgcolor=gray>");
+	writeln("<th align=left width=100>");
+	writeln("Name".fontcolor("white"));
+	writeln("<th align=left width=100>");
+	writeln("Type".fontcolor("white"));
+	writeln("<th align=left>");
+	writeln("Description".fontcolor("white"));
 
 	p=0;
 	for(prop in obj) {
@@ -93,10 +112,10 @@ function document_object(name, obj)
 				document_object(prop_name,obj[prop]);
 			continue;
 		} 
-		f.write("<tr>");
-		f.writeln("<td>" + prop.bold() + "<td>" + typeof(obj[prop]) );
+		write("<tr>");
+		writeln("<td>" + prop.bold() + "<td>" + typeof(obj[prop]) );
 		if(obj._property_desc_list!=undefined)
-			f.writeln("<td>" + obj._property_desc_list[p++] + "</td>");
+			writeln("<td>" + obj._property_desc_list[p++] + "</td>");
 	}
 
 	document_methods(name,obj);
@@ -119,17 +138,23 @@ f.writeln("<body>");
 f.writeln("<font face=arial,helvetica>");
 
 f.writeln("<h1>Synchronet JavaScript Object Model Reference</h1>");
-f.printf("Generated with Synchronet v%s%s compiled %s\r\n"
-		 ,system.version,system.revision,system.compiled_when);
+f.printf("Generated with Synchronet v%s compiled %s\n"
+		 ,system.full_version,system.compiled_when);
 
-document_object("client"	,client);
+f.writeln("<ul>");
+
 document_object("system"	,system);
-document_object("bbs"		,bbs);
-document_object("user"		,user);
 document_object("server"	,server);
+document_object("client"	,client);
+document_object("user"		,user);
+document_object("bbs"		,bbs);
 document_object("console"	,console);
 document_object("msg_area"	,msg_area);
 document_object("file_area"	,file_area);
 document_object("File"		,new File("bogusfile"));
+
+f.writeln("</ul>");
+
+f.write(body);
 
 f.close();
