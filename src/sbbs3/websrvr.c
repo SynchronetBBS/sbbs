@@ -379,6 +379,8 @@ static int sockprint(SOCKET sock, const char *str)  {
 	int	result;
 	int written=0;
 
+	if(startup->options&WEB_OPT_DEBUG_TX)
+		lprintf("%04d TX: %s", sock, str);
 	if(sock==INVALID_SOCKET)
 		return(0);
 	len=strlen(str);
@@ -470,6 +472,47 @@ static int sockprintf(SOCKET sock, char *fmt, ...)
 		lprintf("%04d !ERROR: short send on socket: %d instead of %d",sock,result,len);
 	}
 	return(len);
+}
+
+static char *cleanpath(char *target, char *path, size_t size)  {
+	char	*out;
+	char	*p;
+	char	*p2;
+	
+	out=target;
+	*out=0;
+
+	if(*path != '/' && *path != '\\')  {
+		p=getcwd(target,size);
+		if(p==NULL || strlen(p)+strlen(path)>=size)
+			return(NULL);
+		out=strrchr(target,'\0');
+		*(out++)='/';
+		*out=0;
+		out--;
+	}
+	strncat(target,path,size-1);
+	
+	for(;*out;out++)  {
+		while(*out=='/' || *out=='\\')  {
+			if(*(out+1)=='/' || *(out+1)=='\\')
+				memmove(out,out+1,strlen(out));
+			else if(*(out+1)=='.' && (*(out+2)=='/' || *(out+2)=='\\'))
+				memmove(out,out+2,strlen(out)-1);
+			else if(*(out+1)=='.' && *(out+2)=='.' && (*(out+3)=='/' || *(out+3)=='/'))  {
+				*out=0;
+				p=strrchr(target,'/');
+				p2=strrchr(target,'\\');
+				if(p2>p)
+					p=p2;
+				memmove(p,out+3,strlen(out+3)+1);
+			}
+			else  {
+				out++;
+			}
+		}
+	}
+	return(target);
 }
 
 static int getmonth(char *mon)
@@ -621,7 +664,7 @@ static void close_request(http_session_t * session)
 		session->req.cgi_env=p;
 	}
 	FREE_AND_NULL(session->req.post_data);
-	if(!session->req.keep_alive || !(session->socket==NULL)) {
+	if(!session->req.keep_alive || session->socket==INVALID_SOCKET) {
 		close_socket(session->socket);
 		session->socket=INVALID_SOCKET;
 		session->finished=TRUE;
@@ -705,6 +748,7 @@ static BOOL send_headers(http_session_t *session, const char *status)
 		memset(&tm,0,sizeof(tm));
 	sprintf(status_line,"%s: %s, %02d %s %04d %02d:%02d:%02d GMT",get_header(HEAD_DATE),days[tm.tm_wday],tm.tm_mday,months[tm.tm_mon],tm.tm_year+1900,tm.tm_hour,tm.tm_min,tm.tm_sec);
 	sockprint(session->socket,status_line);
+	sockprint(session->socket,newline);
 	if(session->req.keep_alive)
 		sockprinttwo(session->socket,get_header(HEAD_CONNECTION),"Keep-Alive",TRUE);
 	else
@@ -723,11 +767,13 @@ static BOOL send_headers(http_session_t *session, const char *status)
 		sockprinttwo(session->socket,get_header(HEAD_LOCATION),(session->req.virtual_path),TRUE);
 	}
 	if(session->req.keep_alive) {
-		if(ret)
+		if(ret)  {
 			sockprinttwo(session->socket,get_header(HEAD_LENGTH),"0",TRUE);
+		}
 		else  {
 			sprintf(status_line,"%s: %d",get_header(HEAD_LENGTH),(int)stats.st_size);
 			sockprint(session->socket,status_line);
+			sockprint(session->socket,newline);
 		}
 	}
 
@@ -741,6 +787,7 @@ static BOOL send_headers(http_session_t *session, const char *status)
 			,days[tm.tm_wday],tm.tm_mday,months[tm.tm_mon]
 			,tm.tm_year+1900,tm.tm_hour,tm.tm_min,tm.tm_sec);
 		sockprint(session->socket,status_line);
+		sockprint(session->socket,newline);
 	} 
 
 	if(session->req.dynamic)  {
@@ -754,7 +801,7 @@ static BOOL send_headers(http_session_t *session, const char *status)
 		}
 	}
 
-	sendsocket(session->socket,newline,2);
+	sockprint(session->socket,newline);
 	return(send_file);
 }
 
@@ -959,7 +1006,7 @@ static int sockreadline(http_session_t * session, char *buf, size_t length)
 	}
 #else
 	for(i=0;TRUE;) {
-		if(recv(session->socket, &ch, 1, 0)!=1)  {
+		if(revc(session->socket, &ch, 1, 0)!=1)  {
 			session->req.keep_alive=FALSE;
 			close_request(session);
 			session->socket=INVALID_SOCKET;
@@ -1123,6 +1170,7 @@ static BOOL parse_headers(http_session_t * session)
 	char	env_name[128];
 
 	while(sockreadline(session,req_line,sizeof(req_line))>0) {
+		/* Multi-line headers */
 		while((recvfrom(session->socket,next_char,1,MSG_PEEK,NULL,0)>0) 
 			&& (next_char[0]=='\t' || next_char[0]==' ')) {
 			i=strlen(req_line);
@@ -1357,6 +1405,7 @@ static BOOL get_req(http_session_t * session)
 		if(p!=NULL) {
 			p=get_request(session,p);
 			session->http_ver=get_version(p);
+			lprintf("VERSION: %s (%s)",http_vers[session->http_ver],p);
 			if(session->http_ver>=HTTP_1_1)
 				session->req.keep_alive=TRUE;
 			if(session->req.dynamic==IS_CGI)  {
@@ -1390,7 +1439,7 @@ static BOOL check_request(http_session_t * session)
 	} else
 		sprintf(str,"%s%s",root_dir,session->req.physical_path);
 	
-	if(FULLPATH(path,str,sizeof(session->req.physical_path))==NULL) {
+	if(cleanpath(path,str,sizeof(session->req.physical_path))==NULL) {
 		send_error(session,"404 Not Found");
 		return(FALSE);
 	}
