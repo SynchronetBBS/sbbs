@@ -1179,6 +1179,7 @@ int main(int argc, char** argv)
 	signal(SIGQUIT, _sighandler_quit);
 	signal(SIGABRT, _sighandler_quit);
 	signal(SIGTERM, _sighandler_quit);
+	signal(SIGPIPE, SIG_IGN);	/* Ignore "Broken Pipe" signal */
 
 	if(getuid())  /*  are we running as a normal user?  */
 		bbs_lputs("!Started as non-root user.  Cannot bind() to ports below 1024.");

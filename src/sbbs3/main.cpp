@@ -3175,10 +3175,6 @@ void DLLCALL bbs_thread(void* arg)
 		return;
 	}
 
-#ifdef __unix__		/* Ignore "Broken Pipe" signal */
-	signal(SIGPIPE,SIG_IGN);
-#endif
-
 	memset(text, 0, sizeof(text));
     memset(&scfg, 0, sizeof(scfg));
 

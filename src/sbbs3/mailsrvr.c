@@ -44,10 +44,6 @@
 	#include <windows.h>	/* required for mmsystem.h */
 	#include <mmsystem.h>	/* SND_ASYNC */
 
-#elif defined(__unix__)
-
-	#include <signal.h>		/* signal/SIGPIPE */
-
 #endif
 
 
@@ -2862,10 +2858,6 @@ void DLLCALL mail_server(void* arg)
 		status("Initializing");
 
 		memset(&scfg, 0, sizeof(scfg));
-
-#ifdef __unix__		/* Ignore "Broken Pipe" signal */
-		signal(SIGPIPE,SIG_IGN);
-#endif
 
 		lprintf("Synchronet Mail Server Revision %s%s"
 			,revision
