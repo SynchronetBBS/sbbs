@@ -358,7 +358,7 @@ endif
 		fputs("SUFFIX  :=  debug\n",makefile);
 		fputs("MKFLAGS	+=	DEBUG=1\n",makefile);
 	}
-	if(param.cflags[0])
+	if(params.cflags[0])
 		fprintf(makefile,"MKFLAGS	+=	CFLAGS=%s\n",params.cflags);
 	fputs("SBBSDIR := ",makefile);
 	fputs(params.install_path,makefile);
