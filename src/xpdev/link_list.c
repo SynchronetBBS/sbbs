@@ -136,7 +136,7 @@ str_list_t listStringList(const link_list_t* list)
 	if(list==NULL)
 		return(NULL);
 
-	if((str_list=strListAlloc())==NULL)
+	if((str_list=strListInit())==NULL)
 		return(NULL);
 
 	for(node=list->first; node!=NULL; node=node->next) {
@@ -155,7 +155,7 @@ str_list_t listSubStringList(const list_node_t* node, long max)
 	if(node==NULL)
 		return(NULL);
 
-	if((str_list=strListAlloc())==NULL)
+	if((str_list=strListInit())==NULL)
 		return(NULL);
 
 	for(count=0; count<max && node!=NULL; node=node->next) {
@@ -289,19 +289,19 @@ list_node_t* listAddNode(link_list_t* list, void* data, list_node_t* after)
 	return(list_add_node(list,node,after));
 }
 
-list_node_t* listAddNodes(link_list_t* list, void** data, list_node_t* after)
+long listAddNodes(link_list_t* list, void** data, list_node_t* after)
 {
-	size_t			i;
+	long			i;
 	list_node_t*	node=NULL;
 
 	if(data==NULL)
-		return(NULL);
+		return(-1);
 
 	for(i=0;data[i];i++)
 		if((node=listAddNode(list,data[i],node==NULL ? after:node))==NULL)
-			return(NULL);
+			return(i);
 
-	return(node);
+	return(i);
 }
 
 list_node_t* listAddNodeData(link_list_t* list, const void* data, size_t length, list_node_t* after)
@@ -346,51 +346,53 @@ list_node_t* listAddNodeString(link_list_t* list, const char* str, list_node_t* 
 	return(node);
 }
 
-list_node_t* listAddStringList(link_list_t* list, str_list_t str_list, list_node_t* after)
+long listAddStringList(link_list_t* list, str_list_t str_list, list_node_t* after)
 {
-	size_t	i;
+	long			i;
 	list_node_t*	node=NULL;
 
 	if(str_list==NULL)
-		return(NULL);
+		return(-1);
 
 	for(i=0;str_list[i];i++)
 		if((node=listAddNodeString(list,str_list[i],node==NULL ? after:node))==NULL)
-			return(NULL);
+			return(i);
 
-	return(node);
+	return(i);
 }
 
-list_node_t* listAddNodeList(link_list_t* list, const link_list_t* src, list_node_t* after)
+long listAddNodeList(link_list_t* list, const link_list_t* src, list_node_t* after)
 {
+	long			count=0;
 	list_node_t*	node=NULL;
 	list_node_t*	src_node;
 
 	if(src==NULL)
-		return(NULL);
+		return(-1);
 
-	for(src_node=src->first; src_node!=NULL; src_node=src_node->next) {
+	for(src_node=src->first; src_node!=NULL; src_node=src_node->next, count++) {
 		if((node=listAddNode(list, src_node->data, node==NULL ? after:node))==NULL)
-			return(NULL);
+			return(count);
 		node->flags = src_node->flags;
 	}
 
-	return(node);
+	return(count);
 }
 
-list_node_t* listMerge(link_list_t* list, const link_list_t* src, list_node_t* after)
+long listMerge(link_list_t* list, const link_list_t* src, list_node_t* after)
 {
+	long			count=0;
 	list_node_t*	node=NULL;
 	list_node_t*	src_node;
 
 	if(src==NULL)
-		return(NULL);
+		return(-1);
 
-	for(src_node=src->first; src_node!=NULL; src_node=src_node->next)
+	for(src_node=src->first; src_node!=NULL; src_node=src_node->next, count++)
 		if((node=list_add_node(list, src_node, node==NULL ? after:node))==NULL)
-			return(NULL);
+			return(count);
 
-	return(node);
+	return(count);
 }
 
 link_list_t* listExtract(link_list_t* dest_list, const list_node_t* node, long max)

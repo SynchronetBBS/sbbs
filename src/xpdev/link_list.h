@@ -97,8 +97,8 @@ void*			listNodeData(const list_node_t*);
 /* Add node to list, returns pointer to new node or NULL on error */
 list_node_t*	listAddNode(link_list_t*, void* data, list_node_t* after /* NULL=insert */);
 
-/* Add array of node data to list, returns pointer to last new node or NULL on error */
-list_node_t*	listAddNodes(link_list_t*, void** data, list_node_t* after /* NULL=insert */);
+/* Add array of node data to list, returns number of nodes added (or negative on error) */
+long			listAddNodes(link_list_t*, void** data, list_node_t* after /* NULL=insert */);
 
 /* Add node to list, allocating and copying the data for the node */
 list_node_t*	listAddNodeData(link_list_t*, const void* data, size_t length, list_node_t* after);
@@ -107,14 +107,14 @@ list_node_t*	listAddNodeData(link_list_t*, const void* data, size_t length, list
 list_node_t*	listAddNodeString(link_list_t*, const char* str, list_node_t* after);
 
 /* Add a list of strings to the linked list, allocating and copying each */
-list_node_t*	listAddStringList(link_list_t*, str_list_t, list_node_t* after);
+long			listAddStringList(link_list_t*, str_list_t, list_node_t* after);
 
 /* Add a list of nodes from a source linked list */
-list_node_t*	listAddNodeList(link_list_t*, const link_list_t* src, list_node_t* after); 
+long			listAddNodeList(link_list_t*, const link_list_t* src, list_node_t* after); 
 
 /* Merge a source linked list into the destination linked list */
 /* after merging, the nodes in the source linked list should not be modified or freed */
-list_node_t*	listMerge(link_list_t* dest, const link_list_t* src, list_node_t* after);
+long			listMerge(link_list_t* dest, const link_list_t* src, list_node_t* after);
 
 /* Convenience macros for pushing, popping, and inserting nodes */
 #define	listPushNode(list, data)				listAddNode(list, data, listLastNode(list))
