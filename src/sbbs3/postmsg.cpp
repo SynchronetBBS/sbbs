@@ -443,7 +443,12 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, uint subnum, smbmsg_t* m
 	msg->hdr.when_imported.time=time(NULL);
 	msg->hdr.when_imported.zone=cfg->sys_timezone;
 	msg->hdr.offset=offset;
-
+	if(subnum!=INVALID_SUB) {	/* enforce anonymous/private posts only */
+		if(cfg->sub[subnum]->misc&SUB_PONLY)
+			msg->hdr.attr|=MSG_PRIVATE;
+		if(cfg->sub[subnum]->misc&SUB_AONLY)
+			msg->hdr.attr|=MSG_ANONYMOUS;
+	}
 	smb_dfield(msg,TEXT_BODY,length);
 
 	smb_unlocksmbhdr(smb);
