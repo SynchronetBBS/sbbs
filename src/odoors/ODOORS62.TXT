@@ -1,13 +1,18 @@
 **************************************************************************
-* OpenDoors v6.21 C/C++ Door Development Kit for DOS and Win32 Platforms *
+* OpenDoors v6.22 C/C++ Door Development Kit for DOS and Win32 Platforms *
 **************************************************************************
 
-October 22, 2001
+August 22, 2002
 
 Door32.sys and Socket update to Brian Pirie's OpenDoors Library 
 (http://www.attcanada.net/~pirie/opendoors.html) 
 
 by Rob Swindell (http://www.synchro.net/)
+
+The current source code is always available via CVS at cvs.synchro.net.
+
+The latest and greatest Win32 ODoors62.dll can always be downloaded here:
+http://cvs.synchro.net/cgi-bin/cvsweb.cgi/~checkout~/src/odoors/ODoors62.dll
 
 ==============================================================================
 
@@ -52,7 +57,7 @@ packages:
     -----------+-------------------------------------+--------
     Mystic BBS   www.mysticbbs.com                        1.07
     EleBBS       www.elebbs.com                           0.08?
-    Synchronet   www.synchro.net                           3.0
+    Synchronet   www.synchro.net                           3.x
 
 
 TCP SOCKET I/O
@@ -61,11 +66,6 @@ When using a Door32.sys drop file, the communications type (Local, Serial, or
 Telnet) is automatically determined and I added support for (and tested) the 
 Telnet/socket communication method using Synchronet BBS Software v3.10 for 
 Win32 and HyperTerminal Private Edition v6.1.
-
-It is feasible that other drop file formats may be used and the socket 
-descriptor passed on the command line, but I didn't add support for that. 
-Currently, the Door32.sys file is the only way to pass the open socket 
-descriptor to the OpenDoors library.
 
 Since the Telnet protocol specifies that an end-of-line sequence (ENTER or 
 Carriage Return) is a CRLF (ASCII 13, 10), I had to modify od_get_key() to 
@@ -78,5 +78,11 @@ v6.21 fixes a bug in the socket disconnection ("carrier-loss") detection in
 v6.20. I also lowered the input and carrier-detect thread priorities down to 
 "normal" which makes the doors appear to run faster and also make debugging
 continuous loop problems (like the one in v6.20) much easier.
+
+v6.22 changes:
+Another bug fixed in socket disconnection ("carrier-loss") detection.
+Added support for non-blocking sockets (e.g. EleBBS) - thanks to GSValore.
+Added support for the "-SOCKET" command-line option to specify the socket
+descriptor on the command-line.
 
 /* End of ODOORS62.TXT */
