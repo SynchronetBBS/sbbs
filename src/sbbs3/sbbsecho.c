@@ -1015,7 +1015,7 @@ void alter_areas(area_t add_area,area_t del_area,faddr_t addr)
 		  2 to set this node to passive
 		  3 to set this node to active (remove passive)
 ******************************************************************************/
-void alter_config(faddr_t addr,char *old,char *new,char option)
+void alter_config(faddr_t addr, char *old, char *new, int option)
 {
 	FILE *outfile,*cfgfile;
 	char str[257],outpath[128],tmp[257],tmp2[257],*outname,*p,*tp
@@ -1832,7 +1832,7 @@ BOOL unpack_bundle(void)
 /* both 'src' and 'dest' must contain full path and filename                */
 /* returns 0 if successful, -1 if error                                     */
 /****************************************************************************/
-int mv(char *src, char *dest, char copy)
+int mv(char *src, char *dest, BOOL copy)
 {
 	char buf[4096],str[256];
 	int  ind,outd;
@@ -2353,7 +2353,8 @@ int fmsgtosmsg(uchar HUGE16 *fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 				if(m>l)
 					smb_hfield(&msg,FIDOREPLYID,(ushort)(m-l),fbuf+l); }
 
-			else if(!strncmp((char *)fbuf+l+1,"FLAGS:",6)) {
+			else if(!strncmp((char *)fbuf+l+1,"FLAGS ",6)		/* correct */
+				||  !strncmp((char *)fbuf+l+1,"FLAGS:",6)) {	/* incorrect */
 				l+=7;
 				while(l<length && fbuf[l]<=SP) l++;
 				m=l;
@@ -3049,7 +3050,7 @@ void attach_bundles(void)
  a bundle.
 ******************************************************************************/
 void pkt_to_pkt(uchar HUGE16 *fbuf,areasbbs_t area,faddr_t faddr
-	,fmsghdr_t fmsghdr,addrlist_t seenbys,addrlist_t paths,char cleanup)
+	,fmsghdr_t fmsghdr,addrlist_t seenbys,addrlist_t paths, int cleanup)
 {
 	int i,j,k,file;
 	short node;
@@ -3499,10 +3500,12 @@ void export_echomail(char *sub_code,faddr_t addr)
 	char str[1025],tear,cr;
 	char*	buf=NULL;
 	uchar*	fmsgbuf=NULL;
+	ulong	fmsgbuflen;
 	int g,i,j,k=0,file;
 	ulong f,l,m,exp,ptr,msgs,lastmsg,posts,exported=0;
 	float export_time;
 	smbmsg_t msg;
+	smbmsg_t orig_msg;
 	fmsghdr_t hdr;
 	struct	tm *tm;
 	faddr_t pkt_faddr;
@@ -3653,20 +3656,60 @@ void export_echomail(char *sub_code,faddr_t addr)
 				if(!buf) {
 					smb_unlockmsghdr(&smb[cur_smb],&msg);
 					smb_freemsgmem(&msg);
-					continue; }
-				fmsgbuf=MALLOC(strlen((char *)buf)+512);
+					continue; 
+				}
+				fmsgbuflen=strlen((char *)buf)+4096; /* over alloc for kludge lines */
+				fmsgbuf=MALLOC(fmsgbuflen);
 				if(!fmsgbuf) {
-					printf("ERROR allocating %u bytes for fmsgbuf\n"
-						,strlen((char *)buf)+512);
+					printf("ERROR allocating %u bytes for fmsgbuf\n",fmsgbuflen);
 					logprintf("ERROR line %d allocating %lu bytes for fmsgbuf"
-						,__LINE__
-						,strlen((char *)buf)+512);
+						,__LINE__,fmsgbuflen);
 					smb_unlockmsghdr(&smb[cur_smb],&msg);
 					smb_freemsgmem(&msg);
-					continue; }
+					continue; 
+				}
+				fmsgbuflen-=1024;	/* give us a bit of a guard band here */
 
 				tear=0;
-				for(l=f=0,cr=1;buf[l];l++) {
+				f=0;
+				if(msg.ftn_flags!=NULL)
+					f+=sprintf(fmsgbuf+f,"\1FLAGS %.256s\r", msg.ftn_flags);
+
+				if(msg.ftn_msgid!=NULL)	/* use original MSGID */
+					f+=sprintf(fmsgbuf+f,"\1MSGID: %.256s\r", msg.ftn_msgid);
+				else					/* generate MSGID */
+					f+=sprintf(fmsgbuf+f,"\1MSGID: <%lu.%s@%s> %08lX\r"
+						,msg.idx.number
+						,scfg.sub[i]->code
+						,faddrtoa(&scfg.sub[i]->faddr,NULL)
+						,msg.idx.time);
+
+				if(msg.ftn_reply!=NULL)			/* use original REPLYID */
+					f+=sprintf(fmsgbuf+f,"\1REPLY: %.256s\r", msg.ftn_reply);
+				else if(msg.hdr.thread_orig) {	/* generate REPLYID */
+					memset(&orig_msg,0,sizeof(orig_msg));
+					orig_msg.hdr.number=msg.hdr.thread_orig;
+					if(smb_getmsgidx(smb, &orig_msg))
+						f+=sprintf(fmsgbuf+f,"\1REPLY: <%s>",smb->last_error);
+					else
+						f+=sprintf(fmsgbuf+f,"\1REPLY: <%lu.%s@%s> %08lX"
+							,msg.hdr.thread_orig
+							,scfg.sub[i]->code
+							,faddrtoa(&scfg.sub[i]->faddr,NULL)
+							,orig_msg.idx.time);
+				}
+				if(msg.ftn_pid!=NULL)	/* use original PID */
+					f+=sprintf(fmsgbuf+f,"\1PID: %.256s\r", msg.ftn_pid);
+				else					/* generate PID */
+					f+=sprintf(fmsgbuf+f,"\1PID: SBBSecho v%s-%s r%s %s\r"
+						,SBBSECHO_VER,PLATFORM_DESC,revision,__DATE__);
+
+				/* Unknown kludge lines are added here */
+				for(l=0;l<msg.total_hfields && f<fmsgbuflen;l++)
+					if(msg.hfield[l].type == FIDOCTRL)
+						f+=sprintf(fmsgbuf+f,"\1%.512s\r",msg.hfield_dat[l]);
+
+				for(l=0,cr=1;buf[l] && f<fmsgbuflen;l++) {
 					if(buf[l]==1) { /* Ctrl-A, so skip it and the next char */
 						l++;
 						if(!buf[l])
