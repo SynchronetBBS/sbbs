@@ -780,7 +780,15 @@ static void handle_sigs(void)  {
 	sigset_t			sigs;
 	char		str[1024];
 
-	sigfillset(&sigs);
+	/* Set up blocked signals */
+	sigemptyset(&sigs);
+	sigaddset(&sigs,SIGINT);
+	sigaddset(&sigs,SIGQUIT);
+	sigaddset(&sigs,SIGABRT);
+	sigaddset(&sigs,SIGTERM);
+	sigaddset(&sigs,SIGHUP);
+	sigaddset(&sigs,SIGALRM);
+	sigaddset(&sigs,SIGPIPE);
 	pthread_sigmask(SIG_BLOCK,&sigs,NULL);
 	while(1)  {
 		sigwait(&sigs,&sig);    /* wait here until signaled */
@@ -1363,9 +1371,6 @@ int main(int argc, char** argv)
 	sigaddset(&sigs,SIGHUP);
 	sigaddset(&sigs,SIGALRM);
 	sigaddset(&sigs,SIGPIPE);
-	sigaddset(&sigs,SIGHUP);
-	/* Debugging purposes ONLY */
-	sigfillset(&sigs);
 	pthread_sigmask(SIG_BLOCK,&sigs,NULL);
     signal(SIGALRM, SIG_IGN);       /* Ignore "Alarm" signal */
 	_beginthread((void(*)(void*))handle_sigs,0,NULL);
