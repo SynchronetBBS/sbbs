@@ -1821,15 +1821,13 @@ static BOOL get_req(http_session_t * session, char *request_line)
 			return(FALSE);
 		if(req_line[0])
 			lprintf(LOG_DEBUG,"%04d Request: %s",session->socket,req_line);
+		if(session->req.ld!=NULL && session->req.ld->request==NULL)
+			session->req.ld->request=strdup(req_line);
 	}
 	else {
 		lprintf(LOG_DEBUG,"%04d Handling Internal Redirect to: %s",session->socket,request_line);
 		SAFECOPY(req_line,request_line);
 		is_redir=1;
-	}
-	if(session->req.ld!=NULL) {
-		FREE_AND_NULL(session->req.ld->request);
-		session->req.ld->request=strdup(req_line);
 	}
 	if(req_line[0]) {
 		p=NULL;
@@ -1845,10 +1843,8 @@ static BOOL get_req(http_session_t * session, char *request_line)
 				send_error(session,error_500);
 				return(FALSE);
 			}
-			if(session->req.ld!=NULL) {
-				FREE_AND_NULL(session->req.ld->vhost);
+			if(session->req.ld!=NULL && session->req.ld->vhost==NULL)
 				session->req.ld->vhost=strdup(session->req.vhost);
-			}
 			session->req.dynamic=is_dynamic_req(session);
 			if(session->req.query_str[0])  {
 				switch(session->req.dynamic) {
