@@ -86,7 +86,7 @@ int SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, BOOL dupechk
 
 		if(smb_findhash(smb, hashes, &found, /* update? */FALSE)==SMB_SUCCESS) {
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
-				,"duplicate %s (%s) found in message #%lu"
+				,"duplicate %s: %s found in message #%lu"
 				,smb_hashsourcetype(found.source)
 				,smb_hashsource(msg,found.source)
 				,found.number);
