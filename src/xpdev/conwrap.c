@@ -57,8 +57,6 @@
 
 static struct termios current;            // our current term settings
 static struct termios original;           // old termios settings
-static struct timeval timeout = {0, 0};   // passed in select() call
-static fd_set inp;                        // ditto
 static int beensetup = 0;                 // has _termios_setup() been called?
 
 /*
@@ -106,14 +104,14 @@ void _termios_setup(void)
 {
 	beensetup = 1;
     
-	tcgetattr(0, &original);
+	tcgetattr(STDIN_FILENO, &original);
   
 	memcpy(&current, &original, sizeof(struct termios));
 	current.c_cc[VMIN] = 1;           // read() will return with one char
 	current.c_cc[VTIME] = 0;          // read() blocks forever
 	current.c_lflag &= ~ICANON;       // character mode
     current.c_lflag &= ~ECHO;         // turn off echoing
-	tcsetattr(0, TCSANOW, &current);
+	tcsetattr(STDIN_FILENO, TCSANOW, &current);
 
     // Let's install an exit function, also.  This way, we can reset
     // the termios silently
@@ -127,11 +125,16 @@ void _termios_setup(void)
 
 int kbhit(void)
 {
+	fd_set inp;
+	struct timeval timeout = {0, 0};
+
 	// set up select() args
 	FD_ZERO(&inp);
-	FD_SET(0, &inp);
+	FD_SET(STDIN_FILENO, &inp);
 
-	return select(1, &inp, NULL, NULL, &timeout);
+	if(select(STDIN_FILENO+1, &inp, NULL, NULL, &timeout)<1)
+		return 0;
+	return 1;
 }
 
 int getch(void)
@@ -144,7 +147,7 @@ int getch(void)
     	_termios_setup();
 
     // get a char out of stdin
-    read(0, &c, 1);
+    read(STDIN_FILENO, &c, 1);
 
     return c;
 }
