@@ -25,7 +25,7 @@ LFLAGS  =	-m -s -c -Tpd -Gi -I$(LIBODIR)
 DELETE	=	echo y | del 
 
 # Optional compile flags (disable banner, warnings and such)
-CFLAGS	=	$(CFLAGS) -q -d -H -X- -w-csu -w-pch -w-ccc -w-rch
+CFLAGS	=	$(CFLAGS) -q -d -H -X- -w-csu -w-pch -w-ccc -w-rch -w-par
 
 # Debug or release build?
 !ifdef DEBUG
@@ -57,9 +57,9 @@ SBBSLIB	=	$(LIBODIR)\sbbs.lib
 
 # Create output directories if they don't exist
 $(LIBODIR):
-	mkdir $(LIBODIR)
+	if not exist $(LIBODIR) mkdir $(LIBODIR)
 $(EXEODIR):
-	mkdir $(EXEODIR)
+	if not exist $(EXEODIR) mkdir $(EXEODIR)
 
 # SBBS DLL Link Rule
 $(SBBS): $(OBJS) $(LIBODIR)\ver.$(OFILE)
@@ -76,6 +76,10 @@ $(MAILSRVR): mailsrvr.c mxlookup.c $(SBBSLIB)
 $(FTPSRVR): ftpsrvr.c $(SBBSLIB)
     @echo Compiling $** ...
 	$(CC) $(CFLAGS) -WD -WM -lGi -n$(LIBODIR) -DFTPSRVR_EXPORTS $**
+
+# Synchronet Control Panel Build Rule
+$(SBBSCTRL): sbbsctrl.c $(SBBSLIB)
+	$(CC) $(CFLAGS) -n$(EXEODIR) $**
 
 # Baja Utility
 $(BAJA): baja.c ars.c
