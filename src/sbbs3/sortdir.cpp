@@ -51,10 +51,10 @@ void sbbs_t::resort(uint dirnum)
 
 	memset(nulbuf,0,512);
 	bprintf(text[ResortLineFmt],cfg.lib[cfg.dir[dirnum]->lib]->sname,cfg.dir[dirnum]->sname);
-	sprintf(ixbfname,"%s%s.IXB",cfg.dir[dirnum]->data_dir,cfg.dir[dirnum]->code);
-	sprintf(datfname,"%s%s.DAT",cfg.dir[dirnum]->data_dir,cfg.dir[dirnum]->code);
-	sprintf(exbfname,"%s%s.EXB",cfg.dir[dirnum]->data_dir,cfg.dir[dirnum]->code);
-	sprintf(txbfname,"%s%s.TXB",cfg.dir[dirnum]->data_dir,cfg.dir[dirnum]->code);
+	sprintf(ixbfname,"%s%s.ixb",cfg.dir[dirnum]->data_dir,cfg.dir[dirnum]->code);
+	sprintf(datfname,"%s%s.dat",cfg.dir[dirnum]->data_dir,cfg.dir[dirnum]->code);
+	sprintf(exbfname,"%s%s.exb",cfg.dir[dirnum]->data_dir,cfg.dir[dirnum]->code);
+	sprintf(txbfname,"%s%s.txb",cfg.dir[dirnum]->data_dir,cfg.dir[dirnum]->code);
 
 	if(flength(ixbfname)<1L || flength(datfname)<1L) {
 		remove(exbfname);

@@ -352,7 +352,7 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 			domsg=1; } }
 
 	if(useron.misc&RIP)
-		menu("MSGSCAN");
+		menu("msgscan");
 
 	if((i=smb_locksmbhdr(&smb))!=0) {
 		smb_close(&smb);
@@ -507,7 +507,7 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 				else done=1;
 			continue; }
 		if(useron.misc&WIP)
-			menu("MSGSCAN");
+			menu("msgscan");
 		ASYNC;
 		bprintf(text[ReadingSub],ugrp,cfg.grp[cfg.sub[subnum]->grp]->sname
 			,usub,cfg.sub[subnum]->sname,curpost+1,posts);
@@ -730,7 +730,7 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 			case 'O':   /* Operator commands */
 				while(online) {
 					if(!(useron.misc&EXPERT))
-						menu("SYSMSCAN");
+						menu("sysmscan");
 					bprintf("\r\n\1y\1hOperator: \1w");
 					strcpy(str,"?CEHMPQUV");
 					if(SYSOP)
@@ -738,7 +738,7 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 					switch(getkeys(str,0)) {
 						case '?':
 							if(useron.misc&EXPERT)
-								menu("SYSMSCAN");
+								menu("sysmscan");
 							continue;
 						case 'P':   /* Purge user */
 							purgeuser(cfg.sub[subnum]->misc&SUB_NAME
@@ -910,7 +910,7 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 				else done=1;
 				break;
 			case '?':
-				menu("MSGSCAN");
+				menu("msgscan");
 				domsg=0;
 				break;	} }
 	if(msg.total_hfields)

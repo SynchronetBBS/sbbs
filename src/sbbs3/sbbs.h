@@ -182,8 +182,8 @@ public:
 	/*********************************/
 	/* Color Configuration Variables */
 	/*********************************/
-	char 	*text[TOTAL_TEXT];			/* Text from CTRL\TEXT.DAT */
-	char 	*text_sav[TOTAL_TEXT];		/* Text from CTRL\TEXT.DAT */
+	char 	*text[TOTAL_TEXT];			/* Text from ctrl\text.dat */
+	char 	*text_sav[TOTAL_TEXT];		/* Text from ctrl\text.dat */
 	char 	orgcmd[129];	/* Original command to execute bbs */
 	char 	dszlog[127];	/* DSZLOG enviornment variable */
 	char 	debug;			/* Flag to allow debug writes */

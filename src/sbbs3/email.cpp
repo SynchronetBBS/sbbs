@@ -110,9 +110,9 @@ bool sbbs_t::email(int usernumber, char *top, char *subj, long mode)
 		return(false); }
 
 	if(mode&WM_FILE) {
-		sprintf(str2,"%sFILE/%04u.IN", cfg.data_dir,usernumber);
+		sprintf(str2,"%sfile/%04u.in", cfg.data_dir,usernumber);
 		_mkdir(str2);
-		sprintf(str2,"%sFILE/%04u.IN/%s", cfg.data_dir,usernumber,title);
+		sprintf(str2,"%sfile/%04u.in/%s", cfg.data_dir,usernumber,title);
 		if(fexist(str2)) {
 			bputs(text[FileAlreadyThere]);
 			remove(msgpath);
@@ -127,7 +127,7 @@ bool sbbs_t::email(int usernumber, char *top, char *subj, long mode)
 			strcat(str,title);
 			mv(str,str2,1); }
 		else { /* Remote */
-			menu("ULPROT");
+			menu("ulprot");
 			mnemonics(text[ProtocolOrQuit]);
 			strcpy(str,"Q");
 			for(x=0;x<cfg.total_prots;x++)
@@ -158,7 +158,7 @@ bool sbbs_t::email(int usernumber, char *top, char *subj, long mode)
 	if((i=smb_stack(&smb,SMB_STACK_PUSH))!=0) {
 		errormsg(WHERE,ERR_OPEN,"MAIL",i);
 		return(false); }
-	sprintf(smb.file,"%sMAIL", cfg.data_dir);
+	sprintf(smb.file,"%smail", cfg.data_dir);
 	smb.retry_time=cfg.smb_retry_time;
 	if((i=smb_open(&smb))!=0) {
 		smb_stack(&smb,SMB_STACK_POP);

@@ -148,7 +148,7 @@ int sbbs_t::qwk_route(char *inaddr, char *fulladdr)
 	p=strchr(node,SP);
 	if(p) *p=0;
 
-	sprintf(str,"%sQNET/ROUTE.DAT",cfg.data_dir);
+	sprintf(str,"%sqnet/route.dat",cfg.data_dir);
 	if((stream=fnopen(&file,str,O_RDONLY))==NULL)
 		return(0);
 
@@ -204,7 +204,7 @@ void sbbs_t::update_qwkroute(char *via)
 	if(via==NULL) {
 		if(!total_nodes)
 			return;
-		sprintf(str,"%sQNET/ROUTE.DAT",cfg.data_dir);
+		sprintf(str,"%sqnet/route.dat",cfg.data_dir);
 		if((stream=fnopen(&file,str,O_WRONLY|O_CREAT|O_TRUNC))!=NULL) {
 			t=time(NULL);
 			t-=(90L*24L*60L*60L);
@@ -231,7 +231,7 @@ void sbbs_t::update_qwkroute(char *via)
 		return; }
 
 	if(!total_nodes) {
-		sprintf(str,"%sQNET/ROUTE.DAT",cfg.data_dir);
+		sprintf(str,"%sqnet/route.dat",cfg.data_dir);
 		if((stream=fnopen(&file,str,O_RDONLY))!=NULL) {
 			while(!feof(stream)) {
 				if(!fgets(str,255,stream))
@@ -323,7 +323,8 @@ void sbbs_t::qwk_success(ulong msgcnt, char bi, char prepack)
 	smbmsg_t msg;
 
 	if(useron.rest&FLAG('Q')) {	// Was if(!prepack) only
-		sprintf(str,"%sQNET/%.8s.OUT/",cfg.data_dir,useron.alias);
+		sprintf(str,"%sqnet/%.8s.out/",cfg.data_dir,useron.alias);
+		strlwr(str);
 		delfiles(str,"*.*"); 
 	}
 
@@ -331,7 +332,7 @@ void sbbs_t::qwk_success(ulong msgcnt, char bi, char prepack)
 		logline("D-","Downloaded QWK packet");
 		posts_read+=msgcnt;
 
-		sprintf(str,"%sFILE/%04u.QWK",cfg.data_dir,useron.number);
+		sprintf(str,"%sfile/%04u.qwk",cfg.data_dir,useron.number);
 		remove(str);
 
 		if(!bi) {
@@ -341,7 +342,7 @@ void sbbs_t::qwk_success(ulong msgcnt, char bi, char prepack)
 	if(useron.rest&FLAG('Q'))
 		useron.qwk|=(QWK_EMAIL|QWK_ALLMAIL|QWK_DELMAIL);
 	if(useron.qwk&(QWK_EMAIL|QWK_ALLMAIL)) {
-		sprintf(smb.file,"%sMAIL",cfg.data_dir);
+		sprintf(smb.file,"%smail",cfg.data_dir);
 		smb.retry_time=cfg.smb_retry_time;
 		if((i=smb_open(&smb))!=0) {
 			errormsg(WHERE,ERR_OPEN,smb.file,i,smb.last_error);
@@ -426,7 +427,7 @@ void sbbs_t::qwk_sec()
 	while(online) {
 		if((useron.misc&(WIP|RIP) || !(useron.misc&EXPERT))
 			&& (useron.logons<2 || !(useron.rest&FLAG('Q'))))
-			menu("QWK");
+			menu("qwk");
 		action=NODE_TQWK;
 		ASYNC;
 		bputs(text[QWKPrompt]);
@@ -442,7 +443,7 @@ void sbbs_t::qwk_sec()
 			if((useron.misc&(WIP|RIP) || !(useron.misc&EXPERT))
 				&& !(useron.rest&FLAG('Q')))
 				continue;
-			menu("QWK");
+			menu("qwk");
 			continue; }
 		if(ch=='S') {
 			new_scan_cfg(SUB_CFG_NSCAN);
@@ -556,7 +557,7 @@ void sbbs_t::qwk_sec()
 
 
 		if(ch=='B') {   /* Bidirectional QWK and REP packet transfer */
-			sprintf(str,"%s%s.QWK",cfg.temp_dir,cfg.sys_id);
+			sprintf(str,"%s%s.qwk",cfg.temp_dir,cfg.sys_id);
 			if(!fexist(str) && !pack_qwk(str,&msgcnt,0)) {
 				for(i=0;i<cfg.total_subs;i++)
 					sub_ptr[i]=sav_ptr[i];
@@ -564,7 +565,7 @@ void sbbs_t::qwk_sec()
 				last_ns_time=ns_time;
 				continue; }
 			bprintf(text[UploadingREP],cfg.sys_id);
-			menu("BIPROT");
+			menu("biprot");
 			mnemonics(text[ProtocolOrQuit]);
 			strcpy(tmp2,"Q");
 			for(i=0;i<cfg.total_prots;i++)
@@ -584,16 +585,16 @@ void sbbs_t::qwk_sec()
 			if(i<cfg.total_prots) {
 				batup_total=1;
 				batup_dir[0]=cfg.total_dirs;
-				sprintf(batup_name[0],"%s.REP",cfg.sys_id);
+				sprintf(batup_name[0],"%s.rep",cfg.sys_id);
 				batdn_total=1;
 				batdn_dir[0]=cfg.total_dirs;
-				sprintf(batdn_name[0],"%s.QWK",cfg.sys_id);
+				sprintf(batdn_name[0],"%s.qwk",cfg.sys_id);
 				if(!create_batchdn_lst() || !create_batchup_lst()
 					|| !create_bimodem_pth()) {
 					batup_total=batdn_total=0;
 					continue; }
-				sprintf(str,"%s%s.QWK",cfg.temp_dir,cfg.sys_id);
-				sprintf(tmp2,"%s.QWK",cfg.sys_id);
+				sprintf(str,"%s%s.qwk",cfg.temp_dir,cfg.sys_id);
+				sprintf(tmp2,"%s.qwk",cfg.sys_id);
 				padfname(tmp2,fd.name);
 				sprintf(str,"%sBATCHDN.LST",cfg.node_dir);
 				sprintf(tmp2,"%sBATCHUP.LST",cfg.node_dir);
@@ -618,7 +619,7 @@ void sbbs_t::qwk_sec()
 					qwk_success(msgcnt,1,0);
 					for(i=0;i<cfg.total_subs;i++)
 						sav_ptr[i]=sub_ptr[i]; }
-				sprintf(str,"%s%s.QWK",cfg.temp_dir,cfg.sys_id);
+				sprintf(str,"%s%s.qwk",cfg.temp_dir,cfg.sys_id);
 				remove(str);
 				unpack_rep();
 				delfiles(cfg.temp_dir,"*.*");
@@ -630,7 +631,7 @@ void sbbs_t::qwk_sec()
 					sub_ptr[i]=sav_ptr[i]; } }
 
 		else if(ch=='D') {   /* Download QWK Packet of new messages */
-			sprintf(str,"%s%s.QWK",cfg.temp_dir,cfg.sys_id);
+			sprintf(str,"%s%s.qwk",cfg.temp_dir,cfg.sys_id);
 			if(!fexist(str) && !pack_qwk(str,&msgcnt,0)) {
 				for(i=0;i<cfg.total_subs;i++)
 					sub_ptr[i]=sav_ptr[i];
@@ -645,7 +646,7 @@ void sbbs_t::qwk_sec()
 					last_ns_time=ns_time;
 					continue; }
 				backslashcolon(str);
-				sprintf(tmp2,"%s%s.QWK",str,cfg.sys_id);
+				sprintf(tmp2,"%s%s.qwk",str,cfg.sys_id);
 				if(fexist(tmp2)) {
 					for(i=0;i<10;i++) {
 						sprintf(tmp2,"%s%s.QW%d",str,cfg.sys_id,i);
@@ -657,7 +658,7 @@ void sbbs_t::qwk_sec()
 						for(i=0;i<cfg.total_subs;i++)
 							sub_ptr[i]=sav_ptr[i];
 						continue; } }
-				sprintf(tmp,"%s%s.QWK",cfg.temp_dir,cfg.sys_id);
+				sprintf(tmp,"%s%s.qwk",cfg.temp_dir,cfg.sys_id);
 				if(mv(tmp,tmp2,0)) { /* unsuccessful */
 					for(i=0;i<cfg.total_subs;i++)
 						sub_ptr[i]=sav_ptr[i];
@@ -672,7 +673,7 @@ void sbbs_t::qwk_sec()
 			/***************/
 			/* Send Packet */
 			/***************/
-			menu("DLPROT");
+			menu("dlprot");
 			mnemonics(text[ProtocolOrQuit]);
 			strcpy(tmp2,"Q");
 			for(i=0;i<cfg.total_prots;i++)
@@ -691,8 +692,8 @@ void sbbs_t::qwk_sec()
 					&& chk_ar(cfg.prot[i]->ar,&useron))
 					break;
 			if(i<cfg.total_prots) {
-				sprintf(str,"%s%s.QWK",cfg.temp_dir,cfg.sys_id);
-				sprintf(tmp2,"%s.QWK",cfg.sys_id);
+				sprintf(str,"%s%s.qwk",cfg.temp_dir,cfg.sys_id);
+				sprintf(tmp2,"%s.qwk",cfg.sys_id);
 				padfname(tmp2,fd.name);
 				j=protocol(cmdstr(cfg.prot[i]->dlcmd,str,nulstr,NULL),0);
 				if(cfg.prot[i]->misc&PROT_DSZLOG) {
@@ -742,9 +743,9 @@ void sbbs_t::qwk_sec()
 				if(!getstr(str,60,K_LINE|K_UPPER))
 					continue;
 				backslashcolon(str);
-				sprintf(tmp,"%s.REP",cfg.sys_id);
+				sprintf(tmp,"%s.rep",cfg.sys_id);
 				strcat(str,tmp);
-				sprintf(tmp,"%s%s.REP",cfg.temp_dir,cfg.sys_id);
+				sprintf(tmp,"%s%s.rep",cfg.temp_dir,cfg.sys_id);
 				if(!mv(str,tmp,0))
 					unpack_rep();
 				delfiles(cfg.temp_dir,"*.*");
@@ -753,7 +754,7 @@ void sbbs_t::qwk_sec()
 			/******************/
 			/* Receive Packet */
 			/******************/
-			menu("ULPROT");
+			menu("ulprot");
 			mnemonics(text[ProtocolOrQuit]);
 			strcpy(tmp2,"Q");
 			for(i=0;i<cfg.total_prots;i++)
@@ -769,7 +770,7 @@ void sbbs_t::qwk_sec()
 					break;
 			if(i>=cfg.total_prots)	/* This shouldn't happen */
 				continue;
-			sprintf(str,"%s%s.REP",cfg.temp_dir,cfg.sys_id);
+			sprintf(str,"%s%s.rep",cfg.temp_dir,cfg.sys_id);
 			protocol(cmdstr(cfg.prot[i]->ulcmd,str,nulstr,NULL),0);
 			unpack_rep();
 			delfiles(cfg.temp_dir,"*.*");

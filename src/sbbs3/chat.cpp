@@ -59,7 +59,7 @@ void sbbs_t::chatsection()
 
 	action=NODE_CHAT;
 	if(useron.misc&(RIP|WIP) || !(useron.misc&EXPERT))
-		menu("CHAT");
+		menu("chat");
 	ASYNC;
 	bputs(text[ChatPrompt]);
 	while(online) {
@@ -101,7 +101,7 @@ void sbbs_t::chatsection()
 				if(!chan_access(0))
 					break;
 				if(useron.misc&(RIP|WIP) ||!(useron.misc&EXPERT))
-					menu("MULTCHAT");
+					menu("multchat");
 				getnodedat(cfg.node_num,&thisnode,1);
 				bputs(text[WelcomeToMultiChat]);
 				channel=1;
@@ -113,7 +113,7 @@ void sbbs_t::chatsection()
 					gurubuf=NULL; }
 				if(cfg.chan[0]->misc&CHAN_GURU && cfg.chan[0]->guru<cfg.total_gurus
 					&& chk_ar(cfg.guru[cfg.chan[0]->guru]->ar,&useron)) {
-					sprintf(str,"%s%s.DAT",cfg.ctrl_dir,cfg.guru[cfg.chan[0]->guru]->code);
+					sprintf(str,"%s%s.dat",cfg.ctrl_dir,cfg.guru[cfg.chan[0]->guru]->code);
 					if((file=nopen(str,O_RDONLY))==-1) {
 						errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
 						break; }
@@ -249,7 +249,7 @@ void sbbs_t::chatsection()
 									&& cfg.chan[savch-1]->guru<cfg.total_gurus
 									&& chk_ar(cfg.guru[cfg.chan[savch-1]->guru]->ar,&useron
 									)) {
-									sprintf(str,"%s%s.DAT",cfg.ctrl_dir
+									sprintf(str,"%s%s.dat",cfg.ctrl_dir
 										,cfg.guru[cfg.chan[savch-1]->guru]->code);
 									if((file=nopen(str,O_RDONLY))==-1) {
 										errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
@@ -372,9 +372,9 @@ void sbbs_t::chatsection()
 									done=1;
 									break;
 								case '*':
-									sprintf(str,"%sMENU/CHAN.*",cfg.text_dir);
+									sprintf(str,"%smenu/chan.*",cfg.text_dir);
 									if(fexist(str))
-										menu("CHAN");
+										menu("chan");
 									else {
 										bputs(text[ChatChanLstHdr]);
 										bputs(text[ChatChanLstTitles]);
@@ -408,7 +408,7 @@ void sbbs_t::chatsection()
 										CRLF; }
 									break;
 								case '?':	/* menu */
-									menu("MULTCHAT");
+									menu("multchat");
 									break;	} }
 						else {
 							ungetkey(ch);
@@ -562,7 +562,7 @@ void sbbs_t::chatsection()
 						break; }
 				if(gurubuf)
 					FREE(gurubuf);
-				sprintf(str,"%s%s.DAT",cfg.ctrl_dir,cfg.guru[i]->code);
+				sprintf(str,"%s%s.dat",cfg.ctrl_dir,cfg.guru[i]->code);
 				if((file=nopen(str,O_RDONLY))==-1) {
 					errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
 					return; }
@@ -580,7 +580,7 @@ void sbbs_t::chatsection()
 				break;
 			case '?':
 				if(useron.misc&EXPERT)
-					menu("CHAT");
+					menu("chat");
 				break;
 			default:	/* 'Q' or <CR> */
 				lncntr=0;
@@ -598,7 +598,7 @@ void sbbs_t::chatsection()
 				if(lncntr)			/* CRLF or SYNC can cause pause */
 					pause(); }
 	#endif
-			menu("CHAT"); }
+			menu("chat"); }
 		ASYNC;
 		bputs(text[ChatPrompt]); }
 	if(gurubuf)
@@ -734,7 +734,7 @@ void sbbs_t::privchat(bool local)
 		sys_status|=SS_SPLITP;
 	/*
 	if(!(useron.misc&EXPERT))
-		menu("PRIVCHAT");
+		menu("privchat");
 	*/
 
 	if(!(sys_status&SS_SPLITP)) {
@@ -744,15 +744,15 @@ void sbbs_t::privchat(bool local)
 			bputs(text[WelcomeToPrivateChat]);
 	}
 
-	sprintf(str,"%sCHAT.DAB",cfg.node_dir);
+	sprintf(str,"%schat.dab",cfg.node_dir);
 	if((out=sopen(str,O_RDWR|O_CREAT|O_BINARY,SH_DENYNO))==-1) {
 		errormsg(WHERE,ERR_OPEN,str,O_RDWR|O_DENYNONE|O_CREAT);
 		return; }
 
 	if(local)
-		sprintf(str,"%sLCHAT.DAB",cfg.node_dir);
+		sprintf(str,"%slchat.dab",cfg.node_dir);
 	else
-		sprintf(str,"%sCHAT.DAB",cfg.node_path[n-1]);
+		sprintf(str,"%schat.dab",cfg.node_path[n-1]);
 	if(!fexist(str))		/* Wait while it's created for the first time */
 		mswait(2000);
 	if((in=sopen(str,O_RDWR|O_CREAT|O_BINARY,SH_DENYNO))==-1) {

@@ -50,9 +50,9 @@ int DLLCALL getmail(scfg_t* cfg, int usernumber, BOOL sent)
     idxrec_t idx;
 	smb_t	smb;
 
-	sprintf(smb.file,"%sMAIL",cfg->data_dir);
+	sprintf(smb.file,"%smail",cfg->data_dir);
 	smb.retry_time=cfg->smb_retry_time;
-	sprintf(str,"%s.SID",smb.file);
+	sprintf(str,"%s.sid",smb.file);
 	l=flength(str);
 	if(l<sizeof(idxrec_t))
 		return(0);
@@ -89,13 +89,13 @@ void sbbs_t::delfattach(uint to, char *title)
 		sp=strrchr(tp,'/');              /* sp is slash pointer */
 		if(!sp) sp=strrchr(tp,'\\');
 		if(sp) tp=sp+1;
-		sprintf(str2,"%sFILE/%04u.IN/%s"  /* str2 is path/fname */
+		sprintf(str2,"%sfile/%04u.in/%s"  /* str2 is path/fname */
 			,cfg.data_dir,to,tp);
 		remove(str2);
 		if(!p)
 			break;
 		tp=p+1; }
-	sprintf(str,"%sFILE/%04u.IN",cfg.data_dir,to);
+	sprintf(str,"%sfile/%04u.in",cfg.data_dir,to);
 	rmdir(str);                     /* remove the dir if it's empty */
 }
 
@@ -279,7 +279,7 @@ void sbbs_t::delallmail(uint usernumber)
 	if((i=smb_stack(&smb,SMB_STACK_PUSH))!=0) {
 		errormsg(WHERE,ERR_OPEN,"MAIL",i);
 		return; }
-	sprintf(smb.file,"%sMAIL",cfg.data_dir);
+	sprintf(smb.file,"%smail",cfg.data_dir);
 	smb.retry_time=cfg.smb_retry_time;
 	if((i=smb_open(&smb))!=0) {
 		errormsg(WHERE,ERR_OPEN,smb.file,i,smb.last_error);

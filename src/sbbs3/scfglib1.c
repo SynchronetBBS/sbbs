@@ -115,7 +115,7 @@ BOOL read_node_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 	long	offset=0;
 	FILE	*instream;
 
-	strcpy(fname,"NODE.CNF");
+	strcpy(fname,"node.cnf");
 	sprintf(str,"%s%s",cfg->node_dir,fname);
 	if((instream=fopen(str,"rb" /*O_RDONLY*/))==NULL) {
 		lprintf(txt->openerr,str);
@@ -159,7 +159,7 @@ BOOL read_node_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 	get_str(cfg->text_dir,instream); 				/* text directory */
 	get_str(cfg->temp_dir,instream); 				/* temp directory */
 	if(!cfg->temp_dir[0])
-		strcpy(cfg->temp_dir,"TEMP");
+		strcpy(cfg->temp_dir,"temp");
 
 	#ifndef SCFG
 	prep_path(cfg->ctrl_dir, cfg->text_dir);
@@ -245,7 +245,7 @@ BOOL read_main_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 	long	offset=0;
 	FILE	*instream;
 
-	strcpy(fname,"MAIN.CNF");
+	strcpy(fname,"main.cnf");
 	sprintf(str,"%s%s",cfg->ctrl_dir,fname);
 	if((instream=fopen(str,"rb" /* O_RDONLY */))==NULL) {
 		lprintf(txt->openerr,str);
@@ -479,12 +479,12 @@ BOOL read_msgs_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 
 #ifndef SCFG
 
-	sprintf(cfg->data_dir_subs,"%sSUBS/",cfg->data_dir);
+	sprintf(cfg->data_dir_subs,"%ssubs/",cfg->data_dir);
 	prep_path(cfg->ctrl_dir, cfg->data_dir_subs);
 
 #endif
 
-	strcpy(fname,"MSGS.CNF");
+	strcpy(fname,"msgs.cnf");
 	sprintf(str,"%s%s",cfg->ctrl_dir,fname);
 	if((instream=fopen(str,"rb"/*O_RDONLY*/))==NULL) {
 		lprintf(txt->openerr,str);

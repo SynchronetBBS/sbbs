@@ -59,7 +59,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 	if(repfile!=NULL)
 		strcpy(str,repfile);
 	else
-		sprintf(str,"%s%s.REP",cfg.temp_dir,cfg.sys_id);
+		sprintf(str,"%s%s.rep",cfg.temp_dir,cfg.sys_id);
 	if(!fexist(str)) {
 		bputs(text[QWKReplyNotReceived]);
 		logline("U!",AttemptedToUploadREPpacket);
@@ -81,7 +81,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 		logline(nulstr,"Extraction failed");
 		return(false); 
 	}
-	sprintf(str,"%s%s.MSG",cfg.temp_dir,cfg.sys_id);
+	sprintf(str,"%s%s.msg",cfg.temp_dir,cfg.sys_id);
 	if(!fexist(str)) {
 		bputs(text[QWKReplyNotReceived]);
 		logline("U!",AttemptedToUploadREPpacket);
@@ -110,19 +110,19 @@ bool sbbs_t::unpack_rep(char* repfile)
 	for(l=128;l<size;l+=i*128) {
 		lncntr=0;					/* defeat pause */
 		if(fseek(rep,l,SEEK_SET)!=0) {
-			sprintf(str,"%s.MSG", cfg.sys_id);
+			sprintf(str,"%s.msg", cfg.sys_id);
 			errormsg(WHERE,ERR_SEEK,str,l);
 			break;
 		}
 		if(fread(block,1,128,rep)!=128) {
-			sprintf(str,"%s.MSG", cfg.sys_id);
+			sprintf(str,"%s.msg", cfg.sys_id);
 			errormsg(WHERE,ERR_READ,str,ftell(rep));
 			break;
 		}
 		sprintf(tmp,"%.6s",block+116);
 		i=atoi(tmp);  /* i = number of 128 byte records */
 		if(i<2) {
-			sprintf(str,"%s.MSG blocks (read '%s' at offset %ld)", cfg.sys_id, tmp, l);
+			sprintf(str,"%s.msg blocks (read '%s' at offset %ld)", cfg.sys_id, tmp, l);
 			errormsg(WHERE,ERR_CHK,str,i);
 			i=1;
 			continue; }
@@ -171,7 +171,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 				qwktonetmail(rep,block,str,0);
 				continue; }
 
-			sprintf(smb.file,"%sMAIL",cfg.data_dir);
+			sprintf(smb.file,"%smail",cfg.data_dir);
 			smb.retry_time=cfg.smb_retry_time;
 
 			if(lastsub!=INVALID_SUB) {
@@ -406,27 +406,27 @@ bool sbbs_t::unpack_rep(char* repfile)
 	fclose(rep);
 
 	if(useron.rest&FLAG('Q')) {             /* QWK Net Node */
-		sprintf(str,"%s%s.MSG",cfg.temp_dir,cfg.sys_id);
+		sprintf(str,"%s%s.msg",cfg.temp_dir,cfg.sys_id);
 		remove(str);
-		sprintf(str,"%s%s.REP",cfg.temp_dir,cfg.sys_id);
+		sprintf(str,"%s%s.rep",cfg.temp_dir,cfg.sys_id);
 		remove(str);
 
 		dir=opendir(cfg.temp_dir);
 		while((dirent=readdir(dir))!=NULL) {				/* Extra files */
 			// Create directory if necessary
-			sprintf(str,"%sQNET/%s.IN",cfg.data_dir,useron.alias);
+			sprintf(str,"%sqnet/%s.in",cfg.data_dir,useron.alias);
 			_mkdir(str); 
 			// Move files
 			sprintf(str,"%s%s",cfg.temp_dir,dirent->d_name);
 			if(isdir(str))
 				continue;
-			sprintf(fname,"%sQNET/%s.IN/%s",cfg.data_dir,useron.alias,dirent->d_name);
+			sprintf(fname,"%sqnet/%s.in/%s",cfg.data_dir,useron.alias,dirent->d_name);
 			mv(str,fname,1);
 			sprintf(str,text[ReceivedFileViaQWK],dirent->d_name,useron.alias);
 			putsmsg(&cfg,1,str);
 		} 
 		closedir(dir);
-		sprintf(str,"%sQNET-REP.NOW",cfg.data_dir);
+		sprintf(str,"%sqnet-rep.now",cfg.data_dir);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))!=-1)
 			close(file);
 	}

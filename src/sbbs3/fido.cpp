@@ -69,7 +69,7 @@ bool sbbs_t::lookup_netuser(char *into)
 		return(false);
 	strcpy(to,into);
 	strupr(to);
-	sprintf(str,"%sQNET/USERS.DAT", cfg.data_dir);
+	sprintf(str,"%sqnet/users.dat", cfg.data_dir);
 	if((stream=fnopen(&i,str,O_RDONLY))==NULL)
 		return(false);
 	while(!feof(stream)) {
@@ -208,12 +208,12 @@ bool sbbs_t::netmail(char *into, char *title, long mode)
 
 	if(mode&WM_FILE) {
 		strcpy(fname,subj);
-		sprintf(str,"%sFILE/%04u.OUT", cfg.data_dir, useron.number);
+		sprintf(str,"%sfile/%04u.out", cfg.data_dir, useron.number);
 		_mkdir(str);
 		strcpy(tmp, cfg.data_dir);
 		if(tmp[0]=='.')    /* Relative path */
 			sprintf(tmp,"%s%s", cfg.node_dir, cfg.data_dir);
-		sprintf(str,"%sFILE/%04u.OUT/%s",tmp,useron.number,fname);
+		sprintf(str,"%sfile/%04u.out/%s",tmp,useron.number,fname);
 		strcpy(subj,str);
 		if(fexist(str)) {
 			bputs(text[FileAlreadyThere]);
@@ -228,7 +228,7 @@ bool sbbs_t::netmail(char *into, char *title, long mode)
 			if(mv(str,subj,1))
 				return(false); }
 		else { /* Remote */
-			menu("ULPROT");
+			menu("ulprot");
 			mnemonics(text[ProtocolOrQuit]);
 			strcpy(str,"Q");
 			for(x=0;x<cfg.total_prots;x++)
@@ -294,7 +294,7 @@ bool sbbs_t::netmail(char *into, char *title, long mode)
 	cc_sent=0;
 	while(1) {
 		for(i=1;i;i++) {
-			sprintf(str,"%s%u.MSG", cfg.netmail_dir,i);
+			sprintf(str,"%s%u.msg", cfg.netmail_dir,i);
 			if(!fexist(str))
 				break; }
 		if(!i) {
@@ -608,7 +608,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 			FREE(qwkbuf);
 			smb_freemsgmem(&msg);
 			return; }
-		sprintf(smb.file,"%sMAIL", cfg.data_dir);
+		sprintf(smb.file,"%smail", cfg.data_dir);
 		smb.retry_time=cfg.smb_retry_time;
 		if((i=smb_open(&smb))!=0) {
 			smb_stack(&smb,SMB_STACK_POP);
@@ -807,7 +807,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 	sprintf(hdr.subj,"%.71s",p);
 
 	for(i=1;i;i++) {
-		sprintf(str,"%s%u.MSG", cfg.netmail_dir,i);
+		sprintf(str,"%s%u.msg", cfg.netmail_dir,i);
 		if(!fexist(str))
 			break; }
 	if(!i) {

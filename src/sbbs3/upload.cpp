@@ -96,7 +96,7 @@ bool sbbs_t::uploadfile(file_t *f)
 				logline("U!",str);
 				return(0); }
 			else {
-				sprintf(str,"%sSBBSFILE.NAM",cfg.node_dir);
+				sprintf(str,"%ssbbsfile.nam",cfg.node_dir);
 				if((stream=fopen(str,"r"))!=NULL) {
 					if(fgets(str,128,stream)) {
 						truncsp(str);
@@ -109,7 +109,7 @@ bool sbbs_t::uploadfile(file_t *f)
 							,unpadfname(f->name,fname)); }
 					fclose(stream);
 					}
-				sprintf(str,"%sSBBSFILE.DES",cfg.node_dir);
+				sprintf(str,"%ssbbsfile.des",cfg.node_dir);
 				if((stream=fopen(str,"r"))!=NULL) {
 					if(fgets(str,128,stream)) {
 						truncsp(str);
@@ -209,7 +209,7 @@ void sbbs_t::update_uldate(file_t* f)
 	/*******************/
 	/* Update IXB File */
 	/*******************/
-	sprintf(str,"%s%s.IXB",cfg.dir[f->dir]->data_dir,cfg.dir[f->dir]->code);
+	sprintf(str,"%s%s.ixb",cfg.dir[f->dir]->data_dir,cfg.dir[f->dir]->code);
 	if((file=nopen(str,O_RDWR))==-1) {
 		errormsg(WHERE,ERR_OPEN,str,O_RDWR);
 		return; }
@@ -236,7 +236,7 @@ void sbbs_t::update_uldate(file_t* f)
 	/*******************************************/
 	/* Update last upload date/time stamp file */
 	/*******************************************/
-	sprintf(str,"%s%s.DAB",cfg.dir[f->dir]->data_dir,cfg.dir[f->dir]->code);
+	sprintf(str,"%s%s.dab",cfg.dir[f->dir]->data_dir,cfg.dir[f->dir]->code);
 	if((file=nopen(str,O_WRONLY|O_CREAT))==-1)
 		errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT);
 	else {
@@ -427,7 +427,7 @@ void sbbs_t::upload(uint dirnum)
 		if(!uploadfile(&f))
 			return; }
 	else {
-		menu("ULPROT");
+		menu("ulprot");
 		SYNC;
 		strcpy(keys,"Q");
 		if(dirnum==cfg.user_dir || !cfg.max_batup)  /* no batch user to user xfers */
@@ -474,7 +474,7 @@ void sbbs_t::upload(uint dirnum)
 				if(!ch)  /* upload failed, don't process user to user xfer */
 					return; } } }
 	if(dirnum==cfg.user_dir) {  /* Add files to XFER.IXT in INDX dir */
-		sprintf(str,"%sXFER.IXT",cfg.data_dir);
+		sprintf(str,"%sxfer.ixt",cfg.data_dir);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_APPEND))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_APPEND);
 			return; }

@@ -72,7 +72,7 @@ void sbbs_t::bulkmail(uchar *ar)
 	if((i=smb_stack(&smb,SMB_STACK_PUSH))!=0) {
 		errormsg(WHERE,ERR_OPEN,"MAIL",i);
 		return; }
-	sprintf(smb.file,"%sMAIL",cfg.data_dir);
+	sprintf(smb.file,"%smail",cfg.data_dir);
 	smb.retry_time=cfg.smb_retry_time;
 	if((i=smb_open(&smb))!=0) {
 		smb_stack(&smb,SMB_STACK_POP);

@@ -96,7 +96,7 @@ void sbbs_t::downloadfile(file_t* f)
 	/* Update IXB File */
 	/*******************/
 	f->datedled=time(NULL);
-	sprintf(str,"%s%s.IXB",cfg.dir[f->dir]->data_dir,cfg.dir[f->dir]->code);
+	sprintf(str,"%s%s.ixb",cfg.dir[f->dir]->data_dir,cfg.dir[f->dir]->code);
 	if((file=nopen(str,O_RDWR))==-1) {
 		errormsg(WHERE,ERR_OPEN,str,O_RDWR);
 		return; }

@@ -314,7 +314,7 @@ ulong sbbs_t::getposts(uint subnum)
 	char str[128];
 	ulong l;
 
-	sprintf(str,"%s%s.SID",cfg.sub[subnum]->data_dir,cfg.sub[subnum]->code);
+	sprintf(str,"%s%s.sid",cfg.sub[subnum]->data_dir,cfg.sub[subnum]->code);
 	l=flength(str);
 	if((long)l==-1)
 		return(0);

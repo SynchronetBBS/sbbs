@@ -698,13 +698,13 @@ ulong sbbs_t::msgeditor(char *buf, char *top, char *title)
 			else if(!stricmp(strin,"/?")) {
 				if(line==lines)
 					FREE(str[line]);
-				menu("EDITOR"); /* User Editor Commands */
+				menu("editor"); /* User Editor Commands */
 				SYNC;
 				continue; }
 			else if(!stricmp(strin,"/ATTR"))    {
 				if(line==lines)
 					FREE(str[line]);
-				menu("ATTR");   /* User ANSI Commands */
+				menu("attr");   /* User ANSI Commands */
 				SYNC;
 				continue; } }
 		strcpy(str[line],strin);
@@ -822,9 +822,9 @@ void sbbs_t::copyfattach(uint to, uint from, char *title)
 		sp=strrchr(tp,'/');              /* sp is slash pointer */
 		if(!sp) sp=strrchr(tp,'\\');
 		if(sp) tp=sp+1;
-		sprintf(str2,"%sFILE/%04u.IN/%s"  /* str2 is path/fname */
+		sprintf(str2,"%sfile/%04u.in/%s"  /* str2 is path/fname */
 			,cfg.data_dir,to,tp);
-		sprintf(str3,"%sFILE/%04u.IN/%s"  /* str2 is path/fname */
+		sprintf(str3,"%sfile/%04u.in/%s"  /* str2 is path/fname */
 			,cfg.data_dir,from,tp);
 		if(strcmp(str2,str3))
 			mv(str3,str2,1);
@@ -930,15 +930,16 @@ void sbbs_t::forwardmail(smbmsg_t *msg, int usernumber)
 void sbbs_t::automsg()
 {
     char str[256],buf[300],anon=0;
+	char automsg[MAX_PATH];
     int file;
 
+	sprintf(automsg,"%smsgs/auto.msg",cfg.data_dir);
 	while(online) {
 		SYNC;
 		mnemonics(text[AutoMsg]);
 		switch(getkeys("RWQ",0)) {
 			case 'R':
-				sprintf(str,"%sMSGS/AUTO.MSG",cfg.data_dir);
-				printfile(str,P_NOABORT|P_NOATCODES);
+				printfile(automsg,P_NOABORT|P_NOATCODES);
 				break;
 			case 'W':
 				if(useron.rest&FLAG('W')) {
@@ -961,9 +962,8 @@ void sbbs_t::automsg()
 					if(useron.exempt&FLAG('A')) {
 						if(!noyes(text[AnonymousQ]))
 							anon=1; }
-					sprintf(str,"%sMSGS/AUTO.MSG",cfg.data_dir);
-					if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
-						errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC);
+					if((file=nopen(automsg,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
+						errormsg(WHERE,ERR_OPEN,automsg,O_WRONLY|O_CREAT|O_TRUNC);
 						return; }
 					if(anon)
 						sprintf(tmp,"%.80s",text[Anonymous]);
@@ -1192,7 +1192,7 @@ ushort sbbs_t::chmsgattr(ushort attr)
 	while(online && !(sys_status&SS_ABORT)) {
 		CRLF;
 		show_msgattr(attr);
-		menu("MSGATTR");
+		menu("msgattr");
 		ch=getkey(K_UPPER);
 		if(ch)
 			bprintf("%c\r\n",ch);

@@ -43,7 +43,7 @@ void sbbs_t::getextdesc(uint dirnum, ulong datoffset, char *ext)
 	int file;
 
 	memset(ext,0,513);
-	sprintf(str,"%s%s.EXB",cfg.dir[dirnum]->data_dir,cfg.dir[dirnum]->code);
+	sprintf(str,"%s%s.exb",cfg.dir[dirnum]->data_dir,cfg.dir[dirnum]->code);
 	if((file=nopen(str,O_RDONLY))==-1)
 		return;
 	lseek(file,(datoffset/F_LEN)*512L,SEEK_SET);
@@ -57,7 +57,7 @@ void sbbs_t::getextdesc(uint dirnum, ulong datoffset, char *ext)
 		int file;
 
 	memset(nulbuf,0,512);
-	sprintf(str,"%s%s.EXB",cfg.dir[dirnum]->data_dir,cfg.dir[dirnum]->code);
+	sprintf(str,"%s%s.exb",cfg.dir[dirnum]->data_dir,cfg.dir[dirnum]->code);
 	if((file=nopen(str,O_WRONLY|O_CREAT))==-1)
 		return;
 	lseek(file,0L,SEEK_END);
@@ -131,7 +131,7 @@ void sbbs_t::openfile(file_t* f)
 	/************************************/
 	/* Increment open count in dat file */
 	/************************************/
-	sprintf(str1,"%s%s.DAT",cfg.dir[f->dir]->data_dir,cfg.dir[f->dir]->code);
+	sprintf(str1,"%s%s.dat",cfg.dir[f->dir]->data_dir,cfg.dir[f->dir]->code);
 	if((file=nopen(str1,O_RDWR))==-1) {
 		errormsg(WHERE,ERR_OPEN,str1,O_RDWR);
 		return; }
@@ -152,7 +152,7 @@ void sbbs_t::openfile(file_t* f)
 	/**********************************/
 	/* Add transaction to BACKOUT.DAB */
 	/**********************************/
-	sprintf(str1,"%sBACKOUT.DAB",cfg.node_dir);
+	sprintf(str1,"%sbackout.dab",cfg.node_dir);
 	if((file=nopen(str1,O_WRONLY|O_APPEND|O_CREAT))==-1) {
 		errormsg(WHERE,ERR_OPEN,str1,O_WRONLY|O_APPEND|O_CREAT);
 		return; }
@@ -177,7 +177,7 @@ void sbbs_t::closefile(file_t* f)
 	/************************************/
 	/* Decrement open count in dat file */
 	/************************************/
-	sprintf(str1,"%s%s.DAT",cfg.dir[f->dir]->data_dir,cfg.dir[f->dir]->code);
+	sprintf(str1,"%s%s.dat",cfg.dir[f->dir]->data_dir,cfg.dir[f->dir]->code);
 	if((file=nopen(str1,O_RDWR))==-1) {
 		errormsg(WHERE,ERR_OPEN,str1,O_RDWR);
 		return; }
@@ -200,7 +200,7 @@ void sbbs_t::closefile(file_t* f)
 	/*****************************************/
 	/* Removing transaction from BACKOUT.DAB */
 	/*****************************************/
-	sprintf(str1,"%sBACKOUT.DAB",cfg.node_dir);
+	sprintf(str1,"%sbackout.dab",cfg.node_dir);
 	if(flength(str1)<1L)	/* file is not there or empty */
 		return;
 	if((file=nopen(str1,O_RDONLY))==-1) {

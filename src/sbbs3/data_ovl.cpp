@@ -38,7 +38,7 @@
 #include "sbbs.h"
 
 /****************************************************************************/
-/* Puts 'name' into slot 'number' in USER/NAME.DAT							*/
+/* Puts 'name' into slot 'number' in user/name.dat							*/
 /****************************************************************************/
 void sbbs_t::putusername(int number, char *name)
 {
@@ -50,7 +50,7 @@ void sbbs_t::putusername(int number, char *name)
 		errormsg(WHERE,ERR_CHK,"user number",number);
 		return; }
 
-	sprintf(str,"%sUSER/NAME.DAT", cfg.data_dir);
+	sprintf(str,"%suser/name.dat", cfg.data_dir);
 	if((file=nopen(str,O_RDWR|O_CREAT))==-1) {
 		errormsg(WHERE,ERR_OPEN,str,O_RDWR|O_CREAT);
 		return; }
@@ -90,7 +90,7 @@ void sbbs_t::getmsgptrs()
 	if(!useron.number)
 		return;
 	bputs(text[LoadingMsgPtrs]);
-	sprintf(str,"%sUSER/PTRS/%4.4u.IXB", cfg.data_dir,useron.number);
+	sprintf(str,"%suser/ptrs/%4.4u.ixb", cfg.data_dir,useron.number);
 	if((stream=fnopen(&file,str,O_RDONLY))==NULL) {
 		for(i=0;i<cfg.total_subs;i++) {
 			sub_ptr[i]=sav_sub_ptr[i]=0;
@@ -142,7 +142,7 @@ void sbbs_t::putmsgptrs()
 
 	if(!useron.number)
 		return;
-	sprintf(str,"%sUSER/PTRS/%4.4u.IXB", cfg.data_dir,useron.number);
+	sprintf(str,"%suser/ptrs/%4.4u.ixb", cfg.data_dir,useron.number);
 	if((file=nopen(str,O_WRONLY|O_CREAT))==-1) {
 		errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT);
 		return; }
@@ -195,7 +195,7 @@ uint sbbs_t::userdatdupe(uint usernumber, uint offset, uint datlen, char *dat
     long	l,length;
 
 	truncsp(dat);
-	sprintf(str,"%sUSER/USER.DAT", cfg.data_dir);
+	sprintf(str,"%suser/user.dat", cfg.data_dir);
 	if((file=nopen(str,O_RDONLY|O_DENYNONE))==-1)
 		return(0);
 	length=filelength(file);
@@ -213,7 +213,7 @@ uint sbbs_t::userdatdupe(uint usernumber, uint offset, uint datlen, char *dat
 
 		if(i>=LOOP_NODEDAB) {
 			close(file);
-			errormsg(WHERE,ERR_LOCK,"USER.DAT",l);
+			errormsg(WHERE,ERR_LOCK,"user.dat",l);
 			return(0); }
 
 		read(file,str,datlen);

@@ -354,7 +354,7 @@ BOOL upload_stats(ulong bytes)
 	int		file;
 	ulong	val;
 
-	sprintf(str,"%sDSTS.DAB",scfg.ctrl_dir);
+	sprintf(str,"%sdsts.dab",scfg.ctrl_dir);
 	if((file=nopen(str,O_RDWR))==-1) 
 		return(FALSE);
 
@@ -377,7 +377,7 @@ BOOL download_stats(ulong bytes)
 	int		file;
 	ulong	val;
 
-	sprintf(str,"%sDSTS.DAB",scfg.ctrl_dir);
+	sprintf(str,"%sdsts.dab",scfg.ctrl_dir);
 	if((file=nopen(str,O_RDWR))==-1) 
 		return(FALSE);
 
@@ -1059,7 +1059,7 @@ BOOL alias(char* fullalias, char* filename, user_t* user, int* curdir)
 	FILE*	fp;
 	BOOL	result=FALSE;
 
-	sprintf(aliasfile,"%sFTPALIAS.CFG",scfg.ctrl_dir);
+	sprintf(aliasfile,"%sftpalias.cfg",scfg.ctrl_dir);
 	if((fp=fopen(aliasfile,"r"))==NULL) 
 		return(result);
 
@@ -1306,7 +1306,7 @@ static void ctrl_thread(void* arg)
 
 	sockprintf(sock,"220-%s (%s)",scfg.sys_name, scfg.sys_inetaddr);
 	sockprintf(sock," Synchronet FTP Server v%s Ready",FTP_VERSION);
-	sprintf(str,"%sFTPLOGIN.TXT",scfg.text_dir);
+	sprintf(str,"%sftplogin.txt",scfg.text_dir);
 	if((fp=fopen(str,"rb"))!=NULL) {
 		while(!feof(fp)) {
 			if(!fgets(buf,sizeof(buf),fp))
@@ -1375,7 +1375,7 @@ static void ctrl_thread(void* arg)
 			continue;
 		}
 		if(!stricmp(cmd, "QUIT")) {
-			sprintf(str,"%sFTPBYE.TXT",scfg.text_dir);
+			sprintf(str,"%sftpbye.txt",scfg.text_dir);
 			if((fp=fopen(str,"rb"))!=NULL) {
 				i=0;
 				while(!feof(fp)) {
@@ -1486,7 +1486,7 @@ static void ctrl_thread(void* arg)
 			lprintf("%04d %s logged in.",sock,user.alias);
 			logintime=time(NULL);
 			timeleft=gettimeleft(&scfg,&user,logintime);
-			sprintf(str,"%sFTPHELLO.TXT",scfg.text_dir);
+			sprintf(str,"%sftphello.txt",scfg.text_dir);
 			if((fp=fopen(str,"rb"))!=NULL) {
 				i=0;
 				while(!feof(fp)) {
@@ -1509,7 +1509,7 @@ static void ctrl_thread(void* arg)
 					,user.cdt+user.freecdt);
 			sockprintf(sock,"230 You are allowed %ld minutes of use for this session."
 				,timeleft/60);
-			sprintf(qwkfile,"%sFILE/%04d.QWK",scfg.data_dir,user.number);
+			sprintf(qwkfile,"%sfile/%04d.qwk",scfg.data_dir,user.number);
 
 			/* Adjust User Total Logons/Logons Today */
 			adjustuserrec(&scfg,user.number,U_LOGONS,5,1);
@@ -2068,7 +2068,7 @@ static void ctrl_thread(void* arg)
 				} 
 
 				/* File Aliases */
-				sprintf(aliasfile,"%sFTPALIAS.CFG",scfg.ctrl_dir);
+				sprintf(aliasfile,"%sftpalias.cfg",scfg.ctrl_dir);
 				if((alias_fp=fopen(aliasfile,"r"))!=NULL) {
 
 					while(!feof(alias_fp)) {
@@ -2327,7 +2327,7 @@ static void ctrl_thread(void* arg)
 			if(lib<0 && startup->options&FTP_OPT_ALLOW_QWK 
 				&& !stricmp(p,str) && !delecmd) {
 				lprintf("%04d %s creating/updating QWK packet...",sock,user.alias);
-				sprintf(str,"%sPACK%04u.NOW",scfg.data_dir,user.number);
+				sprintf(str,"%spack%04u.now",scfg.data_dir,user.number);
 				if((file=open(str,O_WRONLY|O_CREAT,S_IWRITE))==-1) {
 					lprintf("%04d !ERROR %d opening %s",sock, errno, str);
 					sockprintf(sock, "451 !ERROR %d creating semaphore file",errno);
@@ -2381,7 +2381,7 @@ static void ctrl_thread(void* arg)
 				if(lib<0) {
 
 					/* File Aliases */
-					sprintf(aliasfile,"%sFTPALIAS.CFG",scfg.ctrl_dir);
+					sprintf(aliasfile,"%sftpalias.cfg",scfg.ctrl_dir);
 					if((alias_fp=fopen(aliasfile,"r"))!=NULL) {
 
 						while(!feof(alias_fp)) {
@@ -2659,7 +2659,7 @@ static void ctrl_thread(void* arg)
 					sockprintf(sock,"553 Invalid directory.");
 					continue;
 				}
-				sprintf(fname,"%sFILE/%04d.REP",scfg.data_dir,user.number);
+				sprintf(fname,"%sfile/%04d.rep",scfg.data_dir,user.number);
 				lprintf("%04d %s uploading %s"
 					,sock,user.alias,fname);
 			} else {

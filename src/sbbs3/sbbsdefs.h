@@ -383,7 +383,7 @@ enum {								/* Values for xtrn_t.event			*/
 
 #define SWAP_NONE	0x80	/* Allow no swapping for executables		*/
 
-#define DSTSDABLEN	50		/* Length of DSTS.DAB file					*/
+#define DSTSDABLEN	50		/* Length of dsts.dab file					*/
 
 							/* Console I/O Bits	(console)				*/
 #define CON_R_ECHO	 (1<<0)	/* Echo remotely							*/
@@ -411,7 +411,7 @@ enum {								/* Values for xtrn_t.event			*/
 #define SEC_RING	   6	/* Maximum seconds between rings			*/
 
 #define LOOP_NOPEN	  50	/* Retries before file access denied		*/
-#define LOOP_NODEDAB  50	/* Retries on NODE.DAB locking/unlocking	*/
+#define LOOP_NODEDAB  50	/* Retries on node.dab locking/unlocking	*/
 
 							/* String lengths							*/
 #define LEN_ALIAS		25	/* User alias								*/
@@ -584,7 +584,7 @@ enum {								/* Values for xtrn_t.event			*/
 #define SS_SYSPAGE	(1L<<12) /* Paging sysop							*/
 #define SS_SYSALERT (1L<<13) /* Notify sysop when users hangs up		*/
 #define SS_GURUCHAT (1L<<14) /* Guru chat in progress					*/
-#define SS_NODEDAB	(1L<<15) /* NODE.DAB operations are okay			*/
+#define SS_NODEDAB	(1L<<15) /* node.dab operations are okay			*/
 #define SS_EVENT	(1L<<16) /* Time shortened due to upcoming event	*/
 #define SS_PAUSEON	(1L<<17) /* Pause on, overriding user default		*/
 #define SS_PAUSEOFF (1L<<18) /* Pause off, overriding user default		*/
@@ -734,7 +734,7 @@ enum {						/* Values of mode for userlist function     */
 	};
 
 
-#define BO_LEN		16		/* BACKOUT.DAB record length				*/
+#define BO_LEN		16		/* backout.dab record length				*/
 
 #define BO_OPENFILE 0		/* Backout types */
 

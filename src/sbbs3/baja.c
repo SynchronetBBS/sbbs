@@ -3170,13 +3170,13 @@ int main(int argc, char **argv)
 
 	strcpy(str,src);
 	if(!strchr(str,'.'))
-		sprintf(src,"%s.SRC",str);
+		sprintf(src,"%s.src",str);
 
 	strcpy(str,src);
 	p=strrchr(str,'.');
 	if(p)
 		*p=0;
-	strcat(str,".BIN");
+	strcat(str,".bin");
 
 	if(outdir[0]) {
 		p=strrchr(str,'\\');

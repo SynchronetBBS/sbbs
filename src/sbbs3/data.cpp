@@ -61,7 +61,7 @@ uint sbbs_t::finduser(char *instr)
 			return(i); }
 	strcpy(str,instr);
 	strupr(str);
-	sprintf(str3,"%sUSER/NAME.DAT",cfg.data_dir);
+	sprintf(str3,"%suser/name.dat",cfg.data_dir);
 	if(flength(str3)<1L)
 		return(0);
 	if((stream=fnopen(&file,str3,O_RDONLY))==NULL) {
@@ -113,7 +113,7 @@ int sbbs_t::getfiles(uint dirnum)
 	char str[256];
 	long l;
 
-	sprintf(str,"%s%s.IXB",cfg.dir[dirnum]->data_dir, cfg.dir[dirnum]->code);
+	sprintf(str,"%s%s.ixb",cfg.dir[dirnum]->data_dir, cfg.dir[dirnum]->code);
 	l=flength(str);
 	if(l>0L)
 		return(l/F_IXBSIZE);
@@ -130,7 +130,7 @@ int sbbs_t::getuserxfers(int fromuser, int destuser, char *fname)
 	int file,found=0;
 	FILE *stream;
 
-	sprintf(str,"%sXFER.IXT",cfg.data_dir);
+	sprintf(str,"%sxfer.ixt",cfg.data_dir);
 	if(!fexist(str))
 		return(0);
 	if(!flength(str)) {
@@ -160,7 +160,7 @@ uint sbbs_t::gettotalfiles(uint dirnum)
 {
 	char str[81];
 
-	sprintf(str,"%s%s.IXB", cfg.dir[dirnum]->data_dir, cfg.dir[dirnum]->code);
+	sprintf(str,"%s%s.ixb", cfg.dir[dirnum]->data_dir, cfg.dir[dirnum]->code);
 	return((uint)(flength(str)/F_IXBSIZE));
 }
 

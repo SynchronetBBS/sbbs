@@ -70,7 +70,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 		ex|=EX_OFFLINE;
 
 	delfiles(cfg.temp_dir,"*.*");
-	sprintf(str,"%sFILE/%04u.QWK",cfg.data_dir,useron.number);
+	sprintf(str,"%sfile/%04u.qwk",cfg.data_dir,useron.number);
 	if(fexist(str)) {
 		for(k=0;k<cfg.total_fextrs;k++)
 			if(!stricmp(cfg.fextr[k]->ext,useron.tmpext)
@@ -150,7 +150,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 			"%sFILES\r\n"
 			"%sATTACH\r\n"
 			"%sOWN\r\n"
-			"%sMAIL\r\n"
+			"%smail\r\n"
 			"%sDELMAIL\r\n"
 			"%sCTRL-A\r\n"
 			"%sFREQ\r\n"
@@ -221,7 +221,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 		personal=NULL;
 
 	if(useron.qwk&(QWK_EMAIL|QWK_ALLMAIL) /* && !prepack */) {
-		sprintf(smb.file,"%sMAIL",cfg.data_dir);
+		sprintf(smb.file,"%smail",cfg.data_dir);
 		smb.retry_time=cfg.smb_retry_time;
 		if((i=smb_open(&smb))!=0) {
 			fclose(qwk);
@@ -266,7 +266,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 					continue;
 
 				if(msg.hdr.auxattr&MSG_FILEATTACH && useron.qwk&QWK_ATTACH) {
-					sprintf(str,"%sFILE/%04u.IN/%s"
+					sprintf(str,"%sfile/%04u.in/%s"
 						,cfg.data_dir,useron.number,msg.subj);
 					sprintf(tmp,"%s%s",cfg.temp_dir,msg.subj);
 					if(fexist(str) && !fexist(tmp))
@@ -443,10 +443,10 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 		return(false);
 
 	if(/*!prepack && */ useron.rest&FLAG('Q')) { /* If QWK Net node, check for files */
-		sprintf(str,"%sQNET/%s.OUT/",cfg.data_dir,useron.alias);
+		sprintf(str,"%sqnet/%s.out/",cfg.data_dir,useron.alias);
 		dir=opendir(str);
 		while((dirent=readdir(dir))!=NULL) {    /* Move files into temp dir */
-			sprintf(str,"%sQNET/%s.OUT/%s",cfg.data_dir,useron.alias,dirent->d_name);
+			sprintf(str,"%sqnet/%s.out/%s",cfg.data_dir,useron.alias,dirent->d_name);
 			if(isdir(str))
 				continue;
 			sprintf(tmp2,"%s%s",cfg.temp_dir,dirent->d_name);
@@ -553,7 +553,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 		return(true);
 
 	l=flength(packet);
-	sprintf(str,"%s.QWK",cfg.sys_id);
+	sprintf(str,"%s.qwk",cfg.sys_id);
 	bprintf(text[FiFilename],str);
 	bprintf(text[FiFileSize],ultoac(l,tmp));
 	if(l>0L && cur_cps)
@@ -568,7 +568,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 	}
 
 	if(useron.rest&FLAG('Q')) {
-		sprintf(str,"%s.QWK",cfg.sys_id);
+		sprintf(str,"%s.qwk",cfg.sys_id);
 		dir=opendir(cfg.temp_dir);
 		while((dirent=readdir(dir))!=NULL) {
 			if(!stricmp(str,dirent->d_name))	/* QWK packet */

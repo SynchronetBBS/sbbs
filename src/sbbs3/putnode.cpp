@@ -38,7 +38,7 @@
 #include "sbbs.h"
 
 /****************************************************************************/
-/* Write the data from the structure 'node' into NODE.DAB  					*/
+/* Write the data from the structure 'node' into node.dab  					*/
 /* getnodedat(num,&node,1); must have been called before calling this func  */
 /*          NOTE: ------^   the indicates the node record has been locked   */
 /****************************************************************************/
@@ -89,7 +89,7 @@ void sbbs_t::putnmsg(int num, char *strin)
     int file,i;
     node_t node;
 
-	sprintf(str,"%sMSGS/N%3.3u.MSG",cfg.data_dir,num);
+	sprintf(str,"%smsgs/n%3.3u.msg",cfg.data_dir,num);
 	if((file=nopen(str,O_WRONLY|O_CREAT))==-1) {
 		errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT);
 		return; }

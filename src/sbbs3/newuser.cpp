@@ -53,7 +53,7 @@ void sbbs_t::newuser()
 
 	if(cur_rate<cfg.node_minbps) {
 		bprintf(text[MinimumModemSpeed],cfg.node_minbps);
-		sprintf(str,"%sTOOSLOW.MSG",cfg.text_dir);
+		sprintf(str,"%stooslow.msg",cfg.text_dir);
 		if(fexist(str))
 			printfile(str,0);
 		sprintf(str,"New user modem speed: %lu<%u"
@@ -88,7 +88,7 @@ void sbbs_t::newuser()
 			sprintf(tmp,"NUP Attempted: '%s'",str);
 			logline("N!",tmp); }
 		if(c==4) {
-			sprintf(str,"%sNUPGUESS.MSG",cfg.text_dir);
+			sprintf(str,"%snupguess.msg",cfg.text_dir);
 			if(fexist(str))
 				printfile(str,P_NOABORT);
 			hangup();
@@ -272,17 +272,17 @@ void sbbs_t::newuser()
 	logline("N",str);
 	if(!online) return;
 	CLS;
-	sprintf(str,"%sSBBS.MSG",cfg.text_dir);
+	sprintf(str,"%ssbbs.msg",cfg.text_dir);
 	printfile(str,P_NOABORT);
 	if(lncntr)
 		pause();
 	CLS;
-	sprintf(str,"%sSYSTEM.MSG",cfg.text_dir);
+	sprintf(str,"%ssystem.msg",cfg.text_dir);
 	printfile(str,P_NOABORT);
 	if(lncntr)
 		pause();
 	CLS;
-	sprintf(str,"%sNEWUSER.MSG",cfg.text_dir);
+	sprintf(str,"%snewuser.msg",cfg.text_dir);
 	printfile(str,P_NOABORT);
 	if(lncntr)
 		pause();
@@ -358,7 +358,7 @@ void sbbs_t::newuser()
 
 	i=1;
 	bputs(text[CheckingSlots]);
-	sprintf(str,"%s/USER/NAME.DAT",cfg.data_dir);
+	sprintf(str,"%s/user/name.dat",cfg.data_dir);
 	if(fexist(str)) {
 		if((stream=fnopen(&file,str,O_RDONLY))==NULL) {
 			errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
@@ -392,7 +392,7 @@ void sbbs_t::newuser()
 	putusername(useron.number,useron.alias);
 	logline(nulstr,"Wrote user data");
 	if(cfg.new_sif[0]) {
-		sprintf(str,"%sUSER/%4.4u.DAT",cfg.data_dir,useron.number);
+		sprintf(str,"%suser/%4.4u.dat",cfg.data_dir,useron.number);
 		create_sif_dat(cfg.new_sif,str); }
 	if(!(cfg.uq&UQ_NODEF))
 		maindflts(&useron);
@@ -400,7 +400,7 @@ void sbbs_t::newuser()
 	delallmail(useron.number);
 
 	if(useron.number!=1 && cfg.node_valuser) {
-		sprintf(str,"%sFEEDBACK.MSG",cfg.text_dir);
+		sprintf(str,"%sfeedback.msg",cfg.text_dir);
 		CLS;
 		printfile(str,P_NOABORT);
 		sprintf(str,text[NewUserFeedbackHdr]
@@ -422,19 +422,19 @@ void sbbs_t::newuser()
 				putusername(useron.number,nulstr);
 				return; } } }
 
-	sprintf(str,"%sFILE/%04u.IN",cfg.data_dir,useron.number);  /* delete any files */
+	sprintf(str,"%sfile/%04u.IN",cfg.data_dir,useron.number);  /* delete any files */
 	delfiles(str,"*.*");                                    /* waiting for user */
 	rmdir(str);
 	sprintf(tmp,"%04u.*",useron.number);
-	sprintf(str,"%sFILE",cfg.data_dir);
+	sprintf(str,"%sfile",cfg.data_dir);
 	delfiles(str,tmp);
 
 	answertime=starttime=time(NULL);	  /* set answertime to now */
-	sprintf(str,"%sUSER/PTRS/%04u.IXB",cfg.data_dir,useron.number); /* msg ptrs */
+	sprintf(str,"%suser/ptrs/%04u.ixb",cfg.data_dir,useron.number); /* msg ptrs */
 	remove(str);
-	sprintf(str,"%sMSGS/%04u.MSG",cfg.data_dir,useron.number); /* delete short msg */
+	sprintf(str,"%smsgs/%04u.msg",cfg.data_dir,useron.number); /* delete short msg */
 	remove(str);
-	sprintf(str,"%sUSER/%04u.MSG",cfg.data_dir,useron.number); /* delete ex-comment */
+	sprintf(str,"%suser/%04u.msg",cfg.data_dir,useron.number); /* delete ex-comment */
 	remove(str);
 	if(cfg.newuser_mod[0])
 		exec_bin(cfg.newuser_mod,&main_csi);

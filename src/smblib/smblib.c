@@ -90,7 +90,7 @@ int SMBCALL smb_open(smb_t* smb)
 	if(!smb->retry_time)
 		smb->retry_time=10;
 	smb->shd_fp=smb->sdt_fp=smb->sid_fp=NULL;
-	sprintf(str,"%s.SHD",smb->file);
+	sprintf(str,"%s.shd",smb->file);
 	if((file=sopen(str,O_RDWR|O_CREAT|O_BINARY,SH_DENYNO))==-1
 		|| (smb->shd_fp=fdopen(file,"r+b"))==NULL) {
 		sprintf(smb->last_error,"%d opening %s",errno,str);
@@ -134,7 +134,7 @@ int SMBCALL smb_open(smb_t* smb)
 
 	setvbuf(smb->shd_fp,smb->shd_buf,_IOFBF,SHD_BLOCK_LEN);
 
-	sprintf(str,"%s.SDT",smb->file);
+	sprintf(str,"%s.sdt",smb->file);
 	if((file=sopen(str,O_RDWR|O_CREAT|O_BINARY,SH_DENYNO))==-1
 		|| (smb->sdt_fp=fdopen(file,"r+b"))==NULL) {
 		sprintf(smb->last_error,"%d opening %s",errno,str);
@@ -145,7 +145,7 @@ int SMBCALL smb_open(smb_t* smb)
 	}
 	setvbuf(smb->sdt_fp,NULL,_IOFBF,2*1024);
 
-	sprintf(str,"%s.SID",smb->file);
+	sprintf(str,"%s.sid",smb->file);
 	if((file=sopen(str,O_RDWR|O_CREAT|O_BINARY,SH_DENYNO))==-1
 		|| (smb->sid_fp=fdopen(file,"r+b"))==NULL) {
 		sprintf(smb->last_error,"%d opening %s",errno,str);
@@ -186,7 +186,7 @@ int SMBCALL smb_open_da(smb_t* smb)
 	char	str[128];
 	ulong	start=0;
 
-	sprintf(str,"%s.SDA",smb->file);
+	sprintf(str,"%s.sda",smb->file);
 	while(1) {
 		if((file=sopen(str,O_RDWR|O_CREAT|O_BINARY,SH_DENYRW))!=-1)
 			break;
@@ -229,7 +229,7 @@ int SMBCALL smb_open_ha(smb_t* smb)
 	char	str[128];
 	ulong	start=0;
 
-	sprintf(str,"%s.SHA",smb->file);
+	sprintf(str,"%s.sha",smb->file);
 	while(1) {
 		if((file=sopen(str,O_RDWR|O_CREAT|O_BINARY,SH_DENYRW))!=-1)
 			break;
@@ -886,7 +886,7 @@ int SMBCALL smb_addcrc(smb_t* smb, ulong crc)
 	if(!smb->status.max_crcs)
 		return(0);
 
-	sprintf(str,"%s.SCH",smb->file);
+	sprintf(str,"%s.sch",smb->file);
 	while(1) {
 		if((file=sopen(str,O_RDWR|O_CREAT|O_BINARY,SH_DENYRW))!=-1)
 			break;
@@ -1122,11 +1122,11 @@ int SMBCALL smb_create(smb_t* smb)
 	rewind(smb->sid_fp);
 	chsize(fileno(smb->sid_fp),0L);
 
-	sprintf(str,"%s.SDA",smb->file);
+	sprintf(str,"%s.sda",smb->file);
 	remove(str);						/* if it exists, delete it */
-	sprintf(str,"%s.SHA",smb->file);
+	sprintf(str,"%s.sha",smb->file);
 	remove(str);                        /* if it exists, delete it */
-	sprintf(str,"%s.SCH",smb->file);
+	sprintf(str,"%s.sch",smb->file);
 	remove(str);
 	smb_unlocksmbhdr(smb);
 	return(0);

@@ -110,7 +110,7 @@ enum {                              /* Node Action */
 
 #define SIZEOF_NODE_T 15			/* Must == sizeof(node_t) */
 
-typedef struct {					/* Node information kept in NODE.DAB */
+typedef struct {					/* Node information kept in node.dab */
     uchar   status,                 /* Current Status of Node */
             errors,                 /* Number of Critical Errors */
             action;                 /* Action User is doing on Node */

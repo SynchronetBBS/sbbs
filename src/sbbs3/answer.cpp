@@ -200,15 +200,15 @@ bool sbbs_t::answer()
 	if(!useron.number) {	/* manual/regular logon */
 
 		/* Display ANSWER screen */
-		sprintf(str,"%sANSWER",cfg.text_dir);
-		sprintf(tmp,"%s.%s",str,autoterm&WIP ? "WIP":"RIP");
-		sprintf(str2,"%s.ANS",str);
+		sprintf(str,"%sanswer",cfg.text_dir);
+		sprintf(tmp,"%s.%s",str,autoterm&WIP ? "wip":"rip");
+		sprintf(str2,"%s.ans",str);
 		if(autoterm&(RIP|WIP) && fexist(tmp))
-			strcat(str,autoterm&WIP ? ".WIP":".RIP");
+			strcat(str,autoterm&WIP ? ".wip":".rip");
 		else if(autoterm&ANSI && fexist(str2))
-			strcat(str,".ANS");
+			strcat(str,".ans");
 		else
-			strcat(str,".ASC");
+			strcat(str,".asc");
 		rioctl(IOSM|PAUSE);
 		sys_status|=SS_PAUSEON;
 		printfile(str,P_NOABORT);

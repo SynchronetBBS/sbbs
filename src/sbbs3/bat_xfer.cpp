@@ -52,7 +52,7 @@ void sbbs_t::batchmenu()
 		bputs(text[NoFilesInBatchQueue]);
 		return; }
 	if(useron.misc&(RIP|WIP) && !(useron.misc&EXPERT))
-		menu("BATCHXFR");
+		menu("batchxfer");
 	lncntr=0;
 	while(online && !done && (batdn_total || batup_total
 		|| cfg.upload_dir!=INVALID_DIR)) {
@@ -63,7 +63,7 @@ void sbbs_t::batchmenu()
 				CRLF;
 				if(lncntr)          /* CRLF or SYNC can cause pause */
 					pause(); }
-			menu("BATCHXFR"); }
+			menu("batchxfr"); }
 		ASYNC;
 		bputs(text[BatchMenuPrompt]);
 		ch=(char)getkeys("BCDLQRU?\r",0);
@@ -72,7 +72,7 @@ void sbbs_t::batchmenu()
 		switch(ch) {
 			case '?':
 				if(useron.misc&(EXPERT|RIP|WIP))
-					menu("BATCHXFR");
+					menu("batchxfr");
 				break;
 			case CR:
 			case 'Q':
@@ -106,7 +106,7 @@ void sbbs_t::batchmenu()
 				if(!(useron.exempt&FLAG('T')) && !SYSOP && totaltime>timeleft) {
 					bputs(text[NotEnoughTimeToDl]);
 					break; }
-				menu("BIPROT");
+				menu("biprot");
 				if(!create_batchdn_lst())
 					break;
 				if(!create_batchup_lst())
@@ -258,7 +258,7 @@ void sbbs_t::batchmenu()
 				if(!batup_total && cfg.upload_dir==INVALID_DIR) {
 					bputs(text[UploadQueueIsEmpty]);
 					break; }
-				menu("BATUPROT");
+				menu("batuprot");
 				if(!create_batchup_lst())
 					break;
 				if(!create_bimodem_pth())
@@ -374,7 +374,7 @@ void sbbs_t::start_batch_download()
 	if(!(useron.exempt&FLAG('T')) && !SYSOP && totaltime>timeleft) {
 		bputs(text[NotEnoughTimeToDl]);
 		return; }
-	menu("BATDPROT");
+	menu("batdprot");
 	if(!create_batchdn_lst())
 		return;
 	if(!create_bimodem_pth())

@@ -102,7 +102,6 @@ void sbbs_t::printtail(char *str, int lines, long mode)
 			rioctl(IOCM|ABORT);
 			rioctl(IOCS|ABORT); }
 		sys_status&=~SS_ABORT; }
-	strupr(str);
 	if(!tos) {
 		CRLF; }
 	if((file=nopen(str,O_RDONLY))==-1) {
@@ -148,19 +147,19 @@ void sbbs_t::menu(char *code)
 	if(menu_file[0])
 		strcpy(path,menu_file);
 	else {
-		sprintf(str,"%sMENU/",cfg.text_dir);
+		sprintf(str,"%smenu/",cfg.text_dir);
 		if(menu_dir[0]) {
 			strcat(str,menu_dir);
 			strcat(str,"/"); }
 		strcat(str,code);
 		strcat(str,".");
-		sprintf(path,"%s%s",str,useron.misc&WIP ? "WIP":"RIP");
+		sprintf(path,"%s%s",str,useron.misc&WIP ? "wip":"rip");
 		if(!(useron.misc&(RIP|WIP)) || !fexist(path)) {
-			sprintf(path,"%sMON",str);
+			sprintf(path,"%smon",str);
 			if((useron.misc&(COLOR|ANSI))!=ANSI || !fexist(path)) {
-				sprintf(path,"%sANS",str);
+				sprintf(path,"%sans",str);
 				if(!(useron.misc&ANSI) || !fexist(path))
-					sprintf(path,"%sASC",str); } } }
+					sprintf(path,"%sasc",str); } } }
 
 	printfile(path,P_OPENCLOSE);
 }

@@ -78,12 +78,12 @@ void sbbs_t::temp_xfer()
 	/* Fill filedat information */
 	/****************************/
 	memset(&f,0,sizeof(f));
-	sprintf(f.name,"TEMP_%3.3d.%s",cfg.node_num,useron.tmpext);
+	sprintf(f.name,"temp_%3.3d.%s",cfg.node_num,useron.tmpext);
 	strcpy(f.desc,"Temp File");
 	f.dir=dirnum;
 
 	if(useron.misc&(RIP|WIP) && !(useron.misc&EXPERT))
-		menu("TEMPXFER");
+		menu("tempxfer");
 	lncntr=0;
 	while(online && !done) {
 		if(!(useron.misc&(EXPERT|RIP|WIP))) {
@@ -93,7 +93,7 @@ void sbbs_t::temp_xfer()
 				CRLF;
 				if(lncntr)          /* CRLF or SYNC can cause pause */
 					pause(); }
-			menu("TEMPXFER"); }
+			menu("tempxfer"); }
 		ASYNC;
 		bputs(text[TempDirPrompt]);
 		strcpy(f.uler,temp_uler);
@@ -147,7 +147,7 @@ void sbbs_t::temp_xfer()
 					bputs(text[CantDownloadFromDir]);
 					break; }
 				addfiledat(&cfg,&f);
-				menu("DLPROT");
+				menu("dlprot");
 				SYNC;
 				mnemonics(text[ProtocolOrQuit]);
 				strcpy(tmp2,"Q");
@@ -260,7 +260,7 @@ void sbbs_t::temp_xfer()
 				break;
 			case '?':   /* menu */
 				if(useron.misc&(EXPERT|RIP|WIP))
-					menu("TEMPXFER");
+					menu("tempxfer");
 				break; }
 		if(sys_status&SS_ABORT)
 			break; }

@@ -51,9 +51,9 @@ int sbbs_t::execmsg(csi_t *csi)
 			while(online) {
 				j=0;
 				if(usrgrps>1) {
-					sprintf(str,"%sMENU/GRPS.*", cfg.text_dir);
+					sprintf(str,"%smenu/grps.*", cfg.text_dir);
 					if(fexist(str))
-						menu("GRPS");
+						menu("grps");
 					else {
 						bputs(text[CfgGrpLstHdr]);
 						for(i=0;i<usrgrps && !msgabort();i++) {
@@ -73,9 +73,9 @@ int sbbs_t::execmsg(csi_t *csi)
 						j=curgrp;
 					else
 						j--; }
-				sprintf(str,"%sMENU/SUBS%u.*", cfg.text_dir, usrgrp[j]+1);
+				sprintf(str,"%smenu/subs%u.*", cfg.text_dir, usrgrp[j]+1);
 				if(fexist(str)) {
-					sprintf(str,"SUBS%u",usrgrp[j]+1);
+					sprintf(str,"subs%u",usrgrp[j]+1);
 					menu(str); }
 				else {
 					CLS;
@@ -192,9 +192,9 @@ int sbbs_t::execmsg(csi_t *csi)
 
 		case CS_MSG_SHOW_GROUPS:
 			if(!usrgrps) return(0);
-			sprintf(str,"%sMENU/GRPS.*", cfg.text_dir);
+			sprintf(str,"%smenu/grps.*", cfg.text_dir);
 			if(fexist(str)) {
-				menu("GRPS");
+				menu("grps");
 				return(0); }
 			bputs(text[GrpLstHdr]);
 			for(i=0;i<usrgrps && !msgabort();i++) {
@@ -208,9 +208,9 @@ int sbbs_t::execmsg(csi_t *csi)
 
 		case CS_MSG_SHOW_SUBBOARDS:
 			if(!usrgrps) return(0);
-			sprintf(str,"%sMENU/SUBS%u.*", cfg.text_dir, usrgrp[curgrp]+1);
+			sprintf(str,"%smenu/subs%u.*", cfg.text_dir, usrgrp[curgrp]+1);
 			if(fexist(str)) {
-				sprintf(str,"SUBS%u",usrgrp[curgrp]+1);
+				sprintf(str,"subs%u",usrgrp[curgrp]+1);
 				menu(str);
 				return(0); }
 			CRLF;

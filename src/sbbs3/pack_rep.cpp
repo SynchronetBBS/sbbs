@@ -60,7 +60,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 
 	msgcnt=0L;
 	delfiles(cfg.temp_dir,"*.*");
-	sprintf(str,"%s%s.REP",cfg.data_dir,cfg.qhub[hubnum]->id);
+	sprintf(str,"%s%s.rep",cfg.data_dir,cfg.qhub[hubnum]->id);
 	if(fexist(str)) {
 		lprintf("Updating %s", str);
 		external(cmdstr(cfg.qhub[hubnum]->unpack,str,"*.*",NULL),EX_OFFLINE);
@@ -69,7 +69,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 	/*************************************************/
 	/* Create SYSID.MSG, write header and leave open */
 	/*************************************************/
-	sprintf(str,"%s%s.MSG",cfg.temp_dir,cfg.qhub[hubnum]->id);
+	sprintf(str,"%s%s.msg",cfg.temp_dir,cfg.qhub[hubnum]->id);
 	if((rep=fnopen(&file,str,O_CREAT|O_WRONLY))==NULL) {
 		errormsg(WHERE,ERR_OPEN,str,O_CREAT|O_WRONLY);
 		return(false); }
@@ -82,7 +82,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 	/*********************/
 	console|=CON_L_ECHO;
 
-	sprintf(smb.file,"%sMAIL",cfg.data_dir);
+	sprintf(smb.file,"%smail",cfg.data_dir);
 	smb.retry_time=cfg.smb_retry_time;
 	if((i=smb_open(&smb))!=0) {
 		fclose(rep);
@@ -193,10 +193,12 @@ bool sbbs_t::pack_rep(uint hubnum)
 	fclose(rep);			/* close MESSAGE.DAT */
 	CRLF;
 							/* Look for extra files to send out */
-	sprintf(str,"%sQNET/%s.OUT",cfg.data_dir,cfg.qhub[hubnum]->id);
+	sprintf(str,"%sqnet/%s.out",cfg.data_dir,cfg.qhub[hubnum]->id);
+	strlwr(str);
 	dir=opendir(str);
 	while((dirent=readdir(dir))!=NULL) {
-		sprintf(str,"%sQNET/%s.OUT/%s",cfg.data_dir,cfg.qhub[hubnum]->id,dirent->d_name);
+		sprintf(str,"%sqnet/%s.out/%s",cfg.data_dir,cfg.qhub[hubnum]->id,dirent->d_name);
+		strlwr(str);
 		if(isdir(str))
 			continue;
 		sprintf(tmp2,"%s%s",cfg.temp_dir,dirent->d_name);
@@ -215,7 +217,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 	/*******************/
 	/* Compress Packet */
 	/*******************/
-	sprintf(str,"%s%s.REP",cfg.data_dir,cfg.qhub[hubnum]->id);
+	sprintf(str,"%s%s.rep",cfg.data_dir,cfg.qhub[hubnum]->id);
 	sprintf(tmp2,"%s*.*",cfg.temp_dir);
 	i=external(cmdstr(cfg.qhub[hubnum]->pack,str,tmp2,NULL),EX_OFFLINE);
 	if(!fexist(str)) {
@@ -225,11 +227,12 @@ bool sbbs_t::pack_rep(uint hubnum)
 		else
 			errorlog("Couldn't compress REP packet");
 		return(false); }
-	sprintf(str,"%sQNET/%s.OUT/",cfg.data_dir,cfg.qhub[hubnum]->id);
+	sprintf(str,"%sqnet/%s.out/",cfg.data_dir,cfg.qhub[hubnum]->id);
+	strlwr(str);
 	delfiles(str,"*.*");
 
 	if(packedmail) {						/* Delete NetMail */
-		sprintf(smb.file,"%sMAIL",cfg.data_dir);
+		sprintf(smb.file,"%smail",cfg.data_dir);
 		smb.retry_time=cfg.smb_retry_time;
 		if((i=smb_open(&smb))!=0) {
 			errormsg(WHERE,ERR_OPEN,smb.file,i,smb.last_error);

@@ -61,7 +61,7 @@ void sbbs_t::readmail(uint usernumber, int which)
 	if((i=smb_stack(&smb,SMB_STACK_PUSH))!=0) {
 		errormsg(WHERE,ERR_OPEN,"MAIL",i);
 		return; }
-	sprintf(smb.file,"%sMAIL",cfg.data_dir);
+	sprintf(smb.file,"%smail",cfg.data_dir);
 	smb.retry_time=cfg.smb_retry_time;
 	if((i=smb_open(&smb))!=0) {
 		smb_stack(&smb,SMB_STACK_POP);
@@ -214,7 +214,7 @@ void sbbs_t::readmail(uint usernumber, int which)
 					if(!sp) sp=strrchr(tp,'\\');
 					if(sp) tp=sp+1;
 					padfname(tp,fd.name);
-					sprintf(str2,"%sFILE/%04u.IN/%s"  /* str2 is path/fname */
+					sprintf(str2,"%sfile/%04u.in/%s"  /* str2 is path/fname */
 						,cfg.data_dir,msg.idx.to,tp);
 					length=flength(str2);
 					if(length<1)
@@ -242,7 +242,7 @@ void sbbs_t::readmail(uint usernumber, int which)
 											,fd.name,ultoac(length,tmp)); } } }
 
 							else {	/* Remote User */
-								menu("DLPROT");
+								menu("dlprot");
 								mnemonics(text[ProtocolOrQuit]);
 								strcpy(str3,"Q");
 								for(i=0;i<cfg.total_prots;i++)
@@ -280,7 +280,7 @@ void sbbs_t::readmail(uint usernumber, int which)
 							break;
 						tp=p+1;
 						while(*tp==SP) tp++; }
-				sprintf(str,"%sFILE/%04u.IN",cfg.data_dir,usernumber);
+				sprintf(str,"%sfile/%04u.in",cfg.data_dir,usernumber);
 				rmdir(str); }
 			if(which==MAIL_YOUR && !(msg.hdr.attr&MSG_READ)) {
 				mail[curmsg].attr|=MSG_READ;
@@ -653,9 +653,9 @@ void sbbs_t::readmail(uint usernumber, int which)
 						? "ALLMAIL" : "SENTMAIL");
 				menu(str);
 				if(SYSOP && which==MAIL_SENT)
-					menu("SYSSMAIL");
+					menu("syssmail");
 				else if(SYSOP && which==MAIL_YOUR)
-					menu("SYSMAILR");   /* Sysop Mail Read */
+					menu("sysmailr");   /* Sysop Mail Read */
 				domsg=0;
 				break;
 				} }

@@ -134,7 +134,7 @@ void sbbs_t::unpack_qwk(char *packet,uint hubnum)
 				continue; }
 
 			smb_stack(&smb,SMB_STACK_PUSH);
-			sprintf(smb.file,"%sMAIL",cfg.data_dir);
+			sprintf(smb.file,"%smail",cfg.data_dir);
 			smb.retry_time=cfg.smb_retry_time;
 			if((k=smb_open(&smb))!=0) {
 				errormsg(WHERE,ERR_OPEN,smb.file,k,smb.last_error);
@@ -244,13 +244,13 @@ void sbbs_t::unpack_qwk(char *packet,uint hubnum)
 	dir=opendir(cfg.temp_dir);
 	while((dirent=readdir(dir))!=NULL) {
 		// Create directory if necessary
-		sprintf(str,"%sQNET/%s.IN",cfg.data_dir,cfg.qhub[hubnum]->id);
+		sprintf(str,"%sqnet/%s.in",cfg.data_dir,cfg.qhub[hubnum]->id);
 		_mkdir(str);
 		sprintf(str,"%s%s",cfg.temp_dir,dirent->d_name);
 		if(isdir(str))	/* sub-dir */
 			continue;
 		// Copy files
-		sprintf(fname,"%sQNET/%s.IN/%s",cfg.data_dir,cfg.qhub[hubnum]->id,dirent->d_name);
+		sprintf(fname,"%sqnet/%s.in/%s",cfg.data_dir,cfg.qhub[hubnum]->id,dirent->d_name);
 		mv(str,fname,1 /* overwrite */);
 		sprintf(str,text[ReceivedFileViaQWK],dirent->d_name,cfg.qhub[hubnum]->id);
 		putsmsg(&cfg,1,str);

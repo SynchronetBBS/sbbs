@@ -54,7 +54,7 @@ uint DLLCALL matchuser(scfg_t* cfg, char *name)
 	ulong l,length;
 	FILE *stream;
 
-	sprintf(str,"%sUSER/NAME.DAT",cfg->data_dir);
+	sprintf(str,"%suser/name.dat",cfg->data_dir);
 	if((file=nopen(str,O_RDONLY))==-1)
 		return(0);
 	length=filelength(file);
@@ -75,7 +75,7 @@ uint DLLCALL matchuser(scfg_t* cfg, char *name)
 }
 
 /****************************************************************************/
-/* Returns the number of the last user in USER.DAT (deleted ones too)		*/
+/* Returns the number of the last user in user.dat (deleted ones too)		*/
 /* Called from function useredit											*/
 /****************************************************************************/
 uint DLLCALL lastuser(scfg_t* cfg)
@@ -83,14 +83,14 @@ uint DLLCALL lastuser(scfg_t* cfg)
 	char str[256];
 	long length;
 
-	sprintf(str,"%sUSER/USER.DAT", cfg->data_dir);
+	sprintf(str,"%suser/user.dat", cfg->data_dir);
 	if((length=flength(str))>0)
 		return((uint)(length/U_LEN));
 	return(0);
 }
 
 /****************************************************************************/
-/* Fills the structure 'user' with info for user.number	from USER.DAT		*/
+/* Fills the structure 'user' with info for user.number	from user.dat		*/
 /* Called from functions useredit, waitforcall and main_sec					*/
 /****************************************************************************/
 int DLLCALL getuserdat(scfg_t* cfg, user_t *user)
@@ -102,7 +102,7 @@ int DLLCALL getuserdat(scfg_t* cfg, user_t *user)
 		memset(user,0,sizeof(user_t));
 		return(-1); 
 	}
-	sprintf(userdat,"%sUSER/USER.DAT",cfg->data_dir);
+	sprintf(userdat,"%suser/user.dat",cfg->data_dir);
 	if((file=nopen(userdat,O_RDONLY))==-1) {
 		close(file);
 		memset(user,0,sizeof(user_t));
@@ -263,7 +263,7 @@ int DLLCALL getuserdat(scfg_t* cfg, user_t *user)
 }
 
 /****************************************************************************/
-/* Writes into user.number's slot in USER.DAT data in structure 'user'      */
+/* Writes into user.number's slot in user.dat data in structure 'user'      */
 /* Called from functions newuser, useredit and main                         */
 /****************************************************************************/
 int DLLCALL putuserdat(scfg_t* cfg, user_t* user)
@@ -371,7 +371,7 @@ int DLLCALL putuserdat(scfg_t* cfg, user_t* user)
 	putrec(userdat,U_UNUSED,29,crlf);
 	putrec(userdat,U_UNUSED+29,2,crlf);
 
-	sprintf(str,"%sUSER/USER.DAT", cfg->data_dir);
+	sprintf(str,"%suser/user.dat", cfg->data_dir);
 	if((file=nopen(str,O_WRONLY|O_CREAT))==-1) {
 		return(errno);
 	}
@@ -427,7 +427,7 @@ char* DLLCALL username(scfg_t* cfg, int usernumber,char *strin)
 	if(usernumber<1) {
 		strin[0]=0;
 		return(strin); }
-	sprintf(str,"%sUSER/NAME.DAT",cfg->data_dir);
+	sprintf(str,"%suser/name.dat",cfg->data_dir);
 	if(flength(str)<1L) {
 		strin[0]=0;
 		return(strin); }
@@ -526,7 +526,7 @@ char DLLCALL getage(scfg_t* cfg, char *birth)
 
 /****************************************************************************/
 /* Reads the data for node number 'number' into the structure 'node'        */
-/* from NODE.DAB															*/
+/* from node.dab															*/
 /* if lockit is non-zero, locks this node's record. putnodedat() unlocks it */
 /****************************************************************************/
 int DLLCALL getnodedat(scfg_t* cfg, uint number, node_t *node, char lockit)
@@ -538,7 +538,7 @@ int DLLCALL getnodedat(scfg_t* cfg, uint number, node_t *node, char lockit)
 	if(!number || number>cfg->sys_nodes)
 		return(-1);
 
-	sprintf(str,"%sNODE.DAB",cfg->ctrl_dir);
+	sprintf(str,"%snode.dab",cfg->ctrl_dir);
 	if((file=nopen(str,O_RDONLY|O_DENYNONE))==-1) {
 		close(file);
 		memset(node,0,sizeof(node_t));
@@ -566,7 +566,7 @@ int DLLCALL getnodedat(scfg_t* cfg, uint number, node_t *node, char lockit)
 }
 
 /****************************************************************************/
-/* Write the data from the structure 'node' into NODE.DAB  					*/
+/* Write the data from the structure 'node' into node.dab  					*/
 /* getnodedat(num,&node,1); must have been called before calling this func  */
 /*          NOTE: ------^   the indicates the node record has been locked   */
 /****************************************************************************/
@@ -578,7 +578,7 @@ int DLLCALL putnodedat(scfg_t* cfg, uint number, node_t* node)
 	if(!number || number>cfg->sys_nodes) 
 		return(-1);
 
-	sprintf(str,"%sNODE.DAB",cfg->ctrl_dir);
+	sprintf(str,"%snode.dab",cfg->ctrl_dir);
 	if((file=nopen(str,O_RDWR|O_CREAT|O_DENYNONE))==-1) {
 		close(file);
 		memset(node,0,sizeof(node_t));
@@ -608,7 +608,7 @@ uint DLLCALL userdatdupe(scfg_t* cfg, uint usernumber, uint offset, uint datlen,
     long	l,length;
 
 	truncsp(dat);
-	sprintf(str,"%sUSER/USER.DAT", cfg->data_dir);
+	sprintf(str,"%suser/user.dat", cfg->data_dir);
 	if((file=nopen(str,O_RDONLY))==-1)
 		return(0);
 	length=filelength(file);
@@ -657,7 +657,7 @@ int DLLCALL putsmsg(scfg_t* cfg, int usernumber, char *strin)
     int file,i;
     node_t node;
 
-	sprintf(str,"%sMSGS/%4.4u.MSG",cfg->data_dir,usernumber);
+	sprintf(str,"%smsgs/%4.4u.msg",cfg->data_dir,usernumber);
 	if((file=nopen(str,O_WRONLY|O_CREAT|O_APPEND))==-1) {
 		return(errno); 
 	}
@@ -1013,7 +1013,7 @@ int DLLCALL getuserrec(scfg_t* cfg, int usernumber,int start, int length, char *
 
 	if(!usernumber)
 		return(-1);
-	sprintf(path,"%sUSER/USER.DAT",cfg->data_dir);
+	sprintf(path,"%suser/user.dat",cfg->data_dir);
 	if((file=nopen(path,O_RDONLY))==-1) 
 		return(errno);
 	if(usernumber<1
@@ -1051,7 +1051,7 @@ int DLLCALL getuserrec(scfg_t* cfg, int usernumber,int start, int length, char *
 }
 
 /****************************************************************************/
-/* Places into USER.DAT at the offset for usernumber+start for length bytes */
+/* Places into user.dat at the offset for usernumber+start for length bytes */
 /* Called from various locations											*/
 /****************************************************************************/
 int DLLCALL putuserrec(scfg_t* cfg, int usernumber,int start, uint length, char *str)
@@ -1064,7 +1064,7 @@ int DLLCALL putuserrec(scfg_t* cfg, int usernumber,int start, uint length, char 
 	if(usernumber<1)
 		return(-1);
 
-	sprintf(str2,"%sUSER/USER.DAT",cfg->data_dir);
+	sprintf(str2,"%suser/user.dat",cfg->data_dir);
 	if((file=nopen(str2,O_WRONLY))==-1)
 		return(errno);
 
@@ -1120,7 +1120,7 @@ ulong DLLCALL adjustuserrec(scfg_t* cfg, int usernumber, int start, int length, 
 	if(usernumber<1) 
 		return(0UL); 
 
-	sprintf(path,"%sUSER/USER.DAT",cfg->data_dir);
+	sprintf(path,"%suser/user.dat",cfg->data_dir);
 	if((file=nopen(path,O_RDWR))==-1)
 		return(0UL); 
 

@@ -511,7 +511,7 @@ long sbbs_t::exec_bin(char *mod, csi_t *csi)
 	memcpy(&bin,csi,sizeof(csi_t));
 	clearvars(&bin);
 
-	sprintf(str,"%s%s.BIN",cfg.exec_dir,mod);
+	sprintf(str,"%s%s.bin",cfg.exec_dir,mod);
 	if((file=nopen(str,O_RDONLY|O_BINARY))==-1) {
 		errormsg(WHERE,ERR_OPEN,str,O_RDONLY|O_BINARY);
 		return(-1); }
@@ -836,7 +836,7 @@ int sbbs_t::exec(csi_t *csi)
 								if(text[i]!=nulstr)
 									FREE(text[i]);
 								text[i]=text_sav[i]; }
-						sprintf(str,"%s%s.DAT"
+						sprintf(str,"%s%s.dat"
 							,cfg.ctrl_dir,cmdstr((char*)csi->ip,path,csi->str,(char*)buf));
 						if((stream=fnopen(&file,str,O_RDONLY))==NULL) {
 							errormsg(WHERE,ERR_OPEN,str,O_RDONLY);

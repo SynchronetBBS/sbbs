@@ -69,7 +69,7 @@ void sbbs_t::getnodedat(uint number, node_t *node, char lockit)
 		sprintf(str,"NODE.DAB COLLISION - Count: %d",count);
 		logline("!!",str); }
 	if(count==LOOP_NODEDAB) {
-		errormsg(WHERE,ERR_READ,"NODE.DAB",number+1);
+		errormsg(WHERE,ERR_READ,"node.dab",number+1);
 		return; }
 }
 
@@ -165,16 +165,7 @@ void sbbs_t::getnmsg()
 	thisnode.misc&=~NODE_NMSG;          /* clear the NMSG flag */
 	putnodedat(cfg.node_num,&thisnode);
 
-	#if 0	/* Only for v1b rev 2-5 and XSDK v2.1x compatibility */
-	sprintf(str,"%sMSGS/N%3.3u.IXB",cfg.data_dir,cfg.node_num);
-	if((ixb=nopen(str,O_RDONLY))!=-1) {
-		read(ixb,&offset,4);
-		chsize(ixb,0L);
-		close(ixb);
-		remove(str); }
-	#endif
-
-	sprintf(str,"%sMSGS/N%3.3u.MSG",cfg.data_dir,cfg.node_num);
+	sprintf(str,"%smsgs/n%3.3u.msg",cfg.data_dir,cfg.node_num);
 	if(flength(str)<1L)
 		return;
 	if((file=nopen(str,O_RDWR))==-1) {
@@ -250,7 +241,7 @@ void sbbs_t::getsmsg(int usernumber)
     int file;
     long length;
 
-	sprintf(str,"%sMSGS/%4.4u.MSG",cfg.data_dir,usernumber);
+	sprintf(str,"%smsgs/%4.4u.msg",cfg.data_dir,usernumber);
 	if(flength(str)<1L)
 		return;
 	if((file=nopen(str,O_RDWR))==-1) {

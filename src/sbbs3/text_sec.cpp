@@ -64,9 +64,9 @@ int sbbs_t::text_sec()
 		return(1); }
 	action=NODE_RTXT;
 	while(online) {
-		sprintf(str,"%sMENU/TEXT_SEC.*",cfg.text_dir);
+		sprintf(str,"%smenu/text_sec.*",cfg.text_dir);
 		if(fexist(str))
-			menu("TEXT_SEC");
+			menu("text_sec");
 		else {
 			bputs(text[TextSectionLstHdr]);
 			for(i=0;i<usrsecs && !msgabort();i++) {
@@ -79,15 +79,15 @@ int sbbs_t::text_sec()
 			break;
 		cursec--;
 		while(online) {
-			sprintf(str,"%sMENU/TEXT%u.*",cfg.text_dir,cursec+1);
+			sprintf(str,"%smenu/text%u.*",cfg.text_dir,cursec+1);
 			if(fexist(str)) {
-				sprintf(str,"TEXT%u",cursec+1);
+				sprintf(str,"text%u",cursec+1);
 				menu(str);
 				usemenu=1; }
 			else {
 				bprintf(text[TextFilesLstHdr],cfg.txtsec[usrsec[cursec]]->name);
 				usemenu=0; }
-			sprintf(str,"%sTEXT/%s.IXT",cfg.data_dir,cfg.txtsec[usrsec[cursec]]->code);
+			sprintf(str,"%stext/%s.ixt",cfg.data_dir,cfg.txtsec[usrsec[cursec]]->code);
 			j=0;
 			if(fexist(str)) {
 				if((stream=fnopen((int *)&i,str,O_RDONLY))==NULL) {
@@ -144,7 +144,7 @@ int sbbs_t::text_sec()
 				if(!getstr(addstr,74,0))
 					continue;
 				strcat(addstr,crlf);
-				sprintf(str,"%sTEXT/%s.IXT"
+				sprintf(str,"%stext/%s.ixt"
 					,cfg.data_dir,cfg.txtsec[usrsec[cursec]]->code);
 				if(i==j) {  /* just add to end */
 					if((i=nopen(str,O_WRONLY|O_APPEND|O_CREAT))==-1) {
@@ -184,7 +184,7 @@ int sbbs_t::text_sec()
 				i=getnum(j);
 				if(i<1)
 					continue;
-				sprintf(str,"%sTEXT/%s.IXT"
+				sprintf(str,"%stext/%s.ixt"
 					,cfg.data_dir,cfg.txtsec[usrsec[cursec]]->code);
 				j=i-1;
 				if((stream=fnopen((int *)&i,str,O_RDONLY))==NULL) {
@@ -198,7 +198,7 @@ int sbbs_t::text_sec()
 				truncsp(addpath);
 				fclose(stream);
 				if(!strchr(addpath,'\\') && !strchr(addpath,'/'))
-					sprintf(tmp,"%sTEXT/%s/%s"
+					sprintf(tmp,"%stext/%s/%s"
 						,cfg.data_dir,cfg.txtsec[usrsec[cursec]]->code,addpath);
 				else
 					strcpy(tmp,addpath);
@@ -207,7 +207,7 @@ int sbbs_t::text_sec()
 						sprintf(str,text[DeleteTextFileQ],tmp);
 						if(!noyes(str))
 							if(remove(tmp)) errormsg(WHERE,ERR_REMOVE,tmp,0); }
-					sprintf(str,"%sTEXT/%s.IXT"
+					sprintf(str,"%stext/%s.ixt"
 						,cfg.data_dir,cfg.txtsec[usrsec[cursec]]->code);
 					removeline(str,addpath,2,0); }
 				else {                      /* Edit */
@@ -216,7 +216,7 @@ int sbbs_t::text_sec()
 				continue; }
 			i=(i&~0x80000000L)-1;
 			if(!strchr(file[i],'\\') && !strchr(file[i],'/'))
-				sprintf(str,"%sTEXT/%s/%s"
+				sprintf(str,"%stext/%s/%s"
 					,cfg.data_dir,cfg.txtsec[usrsec[cursec]]->code,file[i]);
 			else
 				strcpy(str,file[i]);

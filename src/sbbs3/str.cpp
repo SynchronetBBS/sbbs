@@ -136,7 +136,7 @@ void sbbs_t::sif(char *fname, char *answers, long len)
 	int		file;
 	long	length,l=0,m,top,a=0;
 
-	sprintf(str,"%s%s.SIF",cfg.text_dir,strupr(fname));
+	sprintf(str,"%s%s.sif",cfg.text_dir,fname);
 	if((file=nopen(str,O_RDONLY))==-1) {
 		errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
 		answers[0]=0;
@@ -272,7 +272,7 @@ void sbbs_t::sof(char *fname, char *answers, long len)
 	int file;
 	long length,l=0,m,a=0;
 
-	sprintf(str,"%s%s.SIF",cfg.text_dir,strupr(fname));
+	sprintf(str,"%s%s.sif",cfg.text_dir,fname);
 	if((file=nopen(str,O_RDONLY))==-1) {
 		errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
 		answers[0]=0;
@@ -435,7 +435,6 @@ uint sbbs_t::gettmplt(char *strout,char *templt, long mode)
 
 	sys_status&=~SS_ABORT;
 	sprintf(tmplt, "%.*s",sizeof(tmplt)-1, templt);
-	strupr(tmplt);
 	if(useron.misc&ANSI) {
 		if(mode&K_LINE) {
 			if(useron.misc&COLOR)
@@ -688,7 +687,7 @@ void sbbs_t::subinfo(uint subnum)
 		bprintf(text[SubInfoFidoNet]
 			,cfg.sub[subnum]->origline
 			,faddrtoa(cfg.sub[subnum]->faddr));
-	sprintf(str,"%s%s.MSG",cfg.sub[subnum]->data_dir,cfg.sub[subnum]->code);
+	sprintf(str,"%s%s.msg",cfg.sub[subnum]->data_dir,cfg.sub[subnum]->code);
 	if(fexist(str) && yesno(text[SubInfoViewFileQ]))
 		printfile(str,0);
 }
@@ -706,7 +705,7 @@ void sbbs_t::dirinfo(uint dirnum)
 	if(cfg.dir[dirnum]->exts[0])
 		bprintf(text[DirInfoAllowedExts],cfg.dir[dirnum]->exts);
 	bprintf(text[DirInfoMaxFiles],cfg.dir[dirnum]->maxfiles);
-	sprintf(str,"%s%s.MSG",cfg.dir[dirnum]->data_dir,cfg.dir[dirnum]->code);
+	sprintf(str,"%s%s.msg",cfg.dir[dirnum]->data_dir,cfg.dir[dirnum]->code);
 	if(fexist(str) && yesno(text[DirInfoViewFileQ]))
 		printfile(str,0);
 }
@@ -724,7 +723,7 @@ extern "C" BOOL DLLCALL trashcan(scfg_t* cfg, char* insearch, char* name)
 	BOOL	found;
 	FILE*	stream;
 
-	sprintf(str,"%s%s.CAN",cfg->text_dir,name);
+	sprintf(str,"%s%s.can",cfg->text_dir,name);
 
 	if((stream=fopen(str,"r"))==NULL)
 		return(FALSE); 
@@ -783,7 +782,7 @@ bool sbbs_t::trashcan(char *insearch, char *name)
 
 	result=::trashcan(&cfg, insearch, name);
 	if(result) {
-		sprintf(str,"%sBAD%s.MSG",cfg.text_dir,name);
+		sprintf(str,"%sbad%s.msg",cfg.text_dir,name);
 		if(fexist(str))
 			printfile(str,0);
 	}

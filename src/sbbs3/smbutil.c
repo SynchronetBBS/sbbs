@@ -81,7 +81,7 @@ char attach[128];
 /************************/
 
 char *usage=
-"usage: smbutil [/opts] cmd <filespec.SHD>\n"
+"usage: smbutil [/opts] cmd <filespec.shd>\n"
 "\n"
 "cmd:\n"
 "       l[n] = list msgs starting at number n\n"
@@ -1015,11 +1015,11 @@ if(smb.status.attr&SMB_HYPERALLOC && !(mode&NOANALYSIS)) {
 			 "        and %lu header blocks (%lu bytes)\n"
 			  ,n,n*SDT_BLOCK_LEN,m,m*SHD_BLOCK_LEN); }
 
-sprintf(fname,"%s.SD$",smb.file);
+sprintf(fname,"%s.sd$",smb.file);
 tmp_sdt=fopen(fname,"wb");
-sprintf(fname,"%s.SH$",smb.file);
+sprintf(fname,"%s.sh$",smb.file);
 tmp_shd=fopen(fname,"wb");
-sprintf(fname,"%s.SI$",smb.file);
+sprintf(fname,"%s.si$",smb.file);
 tmp_sid=fopen(fname,"wb");
 if(!tmp_sdt || !tmp_shd || !tmp_sid) {
 	smb_unlocksmbhdr(&smb);
@@ -1167,36 +1167,36 @@ if(!(smb.status.attr&SMB_HYPERALLOC)) {
 	smb_close_ha(&smb);
 	smb_close_da(&smb); }
 
-/* Change *.SH$ into *.SHD */
+/* Change *.sh$ into *.shd */
 fclose(smb.shd_fp);
 fclose(tmp_shd);
-sprintf(fname,"%s.SHD",smb.file);
+sprintf(fname,"%s.shd",smb.file);
 if(remove(fname)!=0)
 	printf("\n\7!Error %d removing %s\n",errno,fname);
-sprintf(tmpfname,"%s.SH$",smb.file);
+sprintf(tmpfname,"%s.sh$",smb.file);
 if(rename(tmpfname,fname)!=0)
 	printf("\n\7!Error %d renaming %s to %s\n",errno,tmpfname,fname);
 
 
-/* Change *.SD$ into *.SDT */
+/* Change *.sd$ into *.sdt */
 fclose(smb.sdt_fp);
 fclose(tmp_sdt);
-sprintf(fname,"%s.SDT",smb.file);
+sprintf(fname,"%s.sdt",smb.file);
 if(remove(fname)!=0)
 	printf("\n\7!Error %d removing %s\n",errno,fname);
 
-sprintf(tmpfname,"%s.SD$",smb.file);
+sprintf(tmpfname,"%s.sd$",smb.file);
 if(rename(tmpfname,fname)!=0)
 	printf("\n\7!Error %d renaming %s to %s\n",errno,tmpfname,fname);
 
-/* Change *.SI$ into *.SID */
+/* Change *.si$ into *.sid */
 fclose(smb.sid_fp);
 fclose(tmp_sid);
-sprintf(fname,"%s.SID",smb.file);
+sprintf(fname,"%s.sid",smb.file);
 if(remove(fname)!=0)
 	printf("\n\7!Error %d removing %s\n",errno,fname);
 
-sprintf(tmpfname,"%s.SI$",smb.file);
+sprintf(tmpfname,"%s.si$",smb.file);
 if(rename(tmpfname,fname)!=0)
 	printf("\n\7!Error %d renaming %s to %s\n",errno,tmpfname,fname);
 
@@ -1389,7 +1389,6 @@ for(x=1;x<argc;x++) {
 			p=strrchr(smb.file,'.');
 			s=strrchr(smb.file,'\\');
 			if(p>s) *p=0;
-			strupr(smb.file);
 			smb.retry_time=30;
 			printf("Opening %s\r\n",smb.file);
 			if((i=smb_open(&smb))!=0) {

@@ -73,7 +73,7 @@ bool sbbs_t::logon()
 		return(false);
 	if(cur_rate<cfg.node_minbps && !(useron.exempt&FLAG('M'))) {
 		bprintf(text[MinimumModemSpeed],cfg.node_minbps);
-		sprintf(str,"%sTOOSLOW.MSG",cfg.text_dir);
+		sprintf(str,"%stooslow.msg",cfg.text_dir);
 		if(fexist(str))
 			printfile(str,0);
 		sprintf(str,"(%04u)  %-25s  Modem speed: %u<%u"
@@ -196,9 +196,9 @@ bool sbbs_t::logon()
 	last_ns_time=ns_time=useron.ns_time;
 	// ns_time-=(useron.tlast*60); /* file newscan time == last logon time */
 	delfiles(cfg.temp_dir,"*.*");
-	sprintf(str,"%sMSGS/N%3.3u.MSG",cfg.data_dir,cfg.node_num);
+	sprintf(str,"%smsgs/n%3.3u.msg",cfg.data_dir,cfg.node_num);
 	remove(str);            /* remove any pending node messages */
-	sprintf(str,"%sMSGS/N%3.3u.IXB",cfg.data_dir,cfg.node_num);
+	sprintf(str,"%smsgs/n%3.3u.ixb",cfg.data_dir,cfg.node_num);
 	remove(str);			/* remove any pending node message indices */
 
 	if(!SYSOP && online==ON_REMOTE) {
@@ -225,7 +225,7 @@ bool sbbs_t::logon()
 		useron.ltoday++;
 
 	gettimeleft();
-	sprintf(str,"%sFILE/%04u.DWN",cfg.data_dir,useron.number);
+	sprintf(str,"%sfile/%04u.dwn",cfg.data_dir,useron.number);
 	batch_add_list(str);
 	if(!qwklogon) { 	 /* QWK Nodes don't go through this */
 
@@ -362,7 +362,7 @@ bool sbbs_t::logon()
 					useron.misc&=~NETMAIL;
 			}
 			if(cfg.new_sif[0]) {
-				sprintf(str,"%sUSER/%4.4u.DAT",cfg.data_dir,useron.number);
+				sprintf(str,"%suser/%4.4u.dat",cfg.data_dir,useron.number);
 				if(flength(str)<1L)
 					create_sif_dat(cfg.new_sif,str); } 
 		}
@@ -496,9 +496,9 @@ bool sbbs_t::logon()
 }
 
 /****************************************************************************/
-/* Checks the system DSTS.DAB to see if it is a new day, if it is, all the  */
-/* nodes' and the system's CSTS.DAB are added to, and the DSTS.DAB's daily  */
-/* stats are cleared. Also increments the logon values in DSTS.DAB if       */
+/* Checks the system dsts.dab to see if it is a new day, if it is, all the  */
+/* nodes' and the system's csts.dab are added to, and the dsts.dab's daily  */
+/* stats are cleared. Also increments the logon values in dsts.dab if       */
 /* applicable.                                                              */
 /****************************************************************************/
 ulong sbbs_t::logonstats()
@@ -511,7 +511,7 @@ ulong sbbs_t::logonstats()
     node_t node;
 	struct tm * tm, update_tm;
 
-	sprintf(str,"%sDSTS.DAB",cfg.ctrl_dir);
+	sprintf(str,"%sdsts.dab",cfg.ctrl_dir);
 	if((dsts=nopen(str,O_RDWR))==-1) {
 		errormsg(WHERE,ERR_OPEN,str,O_RDWR);
 		return(0L); }
@@ -544,10 +544,10 @@ ulong sbbs_t::logonstats()
 				getnodedat(i,&node,1);
 				node.misc|=NODE_EVENT;
 				putnodedat(i,&node); }
-			sprintf(str,"%sDSTS.DAB",i ? cfg.node_path[i-1] : cfg.ctrl_dir);
+			sprintf(str,"%sdsts.dab",i ? cfg.node_path[i-1] : cfg.ctrl_dir);
 			if((dsts=nopen(str,O_RDWR))==-1) /* node doesn't have stats yet */
 				continue;
-			sprintf(str,"%sCSTS.DAB",i ? cfg.node_path[i-1] : cfg.ctrl_dir);
+			sprintf(str,"%scsts.dab",i ? cfg.node_path[i-1] : cfg.ctrl_dir);
 			if((csts=nopen(str,O_WRONLY|O_APPEND|O_CREAT))==-1) {
 				close(dsts);
 				errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_APPEND|O_CREAT);
@@ -599,7 +599,7 @@ ulong sbbs_t::logonstats()
 		return(0);
 
 	for(i=0;i<2;i++) {
-		sprintf(str,"%sDSTS.DAB",i ? cfg.ctrl_dir : cfg.node_dir);
+		sprintf(str,"%sdsts.dab",i ? cfg.ctrl_dir : cfg.node_dir);
 		if((dsts=nopen(str,O_RDWR))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_RDWR);
 			return(0L); }

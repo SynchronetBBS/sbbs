@@ -63,11 +63,11 @@ BOOL read_file_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 
 #ifndef SCFG
 
-	sprintf(cfg->data_dir_dirs,"%sDIRS/",cfg->data_dir);
+	sprintf(cfg->data_dir_dirs,"%sdirs/",cfg->data_dir);
 
 #endif
 
-	strcpy(fname,"FILE.CNF");
+	strcpy(fname,"file.cnf");
 	sprintf(str,"%s%s",cfg->ctrl_dir,fname);
 	if((instream=fopen(str,"rb" /*O_RDONLY*/))==NULL) {
 		lprintf(txt->openerr,str);
@@ -441,7 +441,7 @@ BOOL read_file_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 		fread(str,1,LEN_DIR+1,instream);
 		offset+=LEN_DIR+1;
 		if(!str[0]) 				   /* no path specified */
-			sprintf(str,"%sDIRS/%s/",cfg->data_dir,cfg->dir[i]->code);
+			sprintf(str,"%sdirs/%s/",cfg->data_dir,cfg->dir[i]->code);
 		prep_path(cfg->ctrl_dir, str);
 
 	#ifndef SCFG
@@ -532,7 +532,7 @@ BOOL read_xtrn_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 	long	offset=0;
 	FILE	*instream;
 
-	strcpy(fname,"XTRN.CNF");
+	strcpy(fname,"xtrn.cnf");
 	sprintf(str,"%s%s",cfg->ctrl_dir,fname);
 	if((instream=fopen(str,"rb" /*O_RDONLY*/))==NULL) {
 		lprintf(txt->openerr,str);
@@ -782,7 +782,7 @@ BOOL read_chat_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 	long	offset=0;
 	FILE	*instream;
 
-	strcpy(fname,"CHAT.CNF");
+	strcpy(fname,"chat.cnf");
 	sprintf(str,"%s%s",cfg->ctrl_dir,fname);
 	if((instream=fopen(str,"rb"/* O_RDONLY */))==NULL) {
 		lprintf(txt->openerr,str);

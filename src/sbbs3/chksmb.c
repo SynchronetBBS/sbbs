@@ -157,9 +157,8 @@ int main(int argc, char **argv)
 	p=strrchr(smb.file,'.');
 	s=strrchr(smb.file,'\\');
 	if(p>s) *p=0;
-	strupr(smb.file);
 
-	sprintf(str,"%s.SHD",smb.file);
+	sprintf(str,"%s.shd",smb.file);
 	if(!fexist(str)) {
 		printf("\n%s doesn't exist.\n",smb.file);
 		continue; }

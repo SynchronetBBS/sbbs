@@ -154,11 +154,11 @@ int sbbs_t::exec_function(csi_t *csi)
 			ver();
 			if(yesno(text[ViewSysInfoFileQ])) {
 				CLS;
-				sprintf(str,"%sSYSTEM.MSG", cfg.text_dir);
+				sprintf(str,"%ssystem.msg", cfg.text_dir);
 				printfile(str,0); }
 			if(yesno(text[ViewLogonMsgQ])) {
 				CLS;
-				menu("LOGON"); }
+				menu("logon"); }
 			return(0);
 		case CS_INFO_SUBBOARD:	 /* Sub-board information */
 			if(!usrgrps) return(0);
@@ -212,9 +212,9 @@ int sbbs_t::exec_function(csi_t *csi)
 			return(0);
 		case CS_INFO_XFER_POLICY:
 			if(!usrlibs) return(0);
-			sprintf(str,"%sMENU/TPOLICY.*", cfg.text_dir);
+			sprintf(str,"%smenu/tpolicy.*", cfg.text_dir);
 			if(fexist(str))
-				menu("TPOLICY");
+				menu("tpolicy");
 			else {
 				bprintf(text[TransferPolicyHdr],cfg.sys_name);
 				bprintf(text[TpUpload]
@@ -244,7 +244,7 @@ int sbbs_t::exec_function(csi_t *csi)
 				if(cfg.logoff_mod[0])
 					exec_bin(cfg.logoff_mod,csi);
 				user_event(EVENT_LOGOFF);
-				menu("LOGOFF");
+				menu("logoff");
 				SYNC;
 				hangup(); }
 			return(0);
@@ -297,7 +297,7 @@ int sbbs_t::exec_function(csi_t *csi)
 					break;
 			if(i>=cfg.total_gurus)
 				return(0);
-			sprintf(str,"%s%s.DAT", cfg.ctrl_dir, cfg.guru[i]->code);
+			sprintf(str,"%s%s.dat", cfg.ctrl_dir, cfg.guru[i]->code);
 			if((file=nopen(str,O_RDONLY))==-1) {
 				errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
 				return(0); }
@@ -470,7 +470,7 @@ int sbbs_t::exec_function(csi_t *csi)
 			tm=gmtime(&now);
 			if(tm==NULL)
 				return(0);
-			sprintf(str,"%sLOGS/%2.2d%2.2d%2.2d.LOG", cfg.data_dir
+			sprintf(str,"%slogs/%2.2d%2.2d%2.2d.LOG", cfg.data_dir
 				,tm->tm_mon+1,tm->tm_mday,TM_YEAR(tm->tm_year));
 			printfile(str,0);
 			return(0);
@@ -481,7 +481,7 @@ int sbbs_t::exec_function(csi_t *csi)
 			tm=gmtime(&now);
 			if(tm==NULL)
 				return(0);
-			sprintf(str,"%sLOGS/%2.2d%2.2d%2.2d.LOG",cfg.data_dir
+			sprintf(str,"%slogs/%2.2d%2.2d%2.2d.LOG",cfg.data_dir
 				,tm->tm_mon+1,tm->tm_mday,TM_YEAR(tm->tm_year));
 			printfile(str,0);
 			return(0);
@@ -649,7 +649,7 @@ int sbbs_t::exec_function(csi_t *csi)
 
 		case CS_FILE_SEND:
 
-			menu("DLPROT");
+			menu("dlprot");
 			mnemonics(text[ProtocolOrQuit]);
 			strcpy(str,"Q");
 			for(i=0;i<cfg.total_prots;i++)
@@ -670,7 +670,7 @@ int sbbs_t::exec_function(csi_t *csi)
 		case CS_FILE_PUT:
 			if(!chksyspass(0))
 				return(0);
-			menu("ULPROT");
+			menu("ulprot");
 			mnemonics(text[ProtocolOrQuit]);
 			strcpy(str,"Q");
 			for(i=0;i<cfg.total_prots;i++)

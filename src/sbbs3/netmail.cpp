@@ -98,15 +98,15 @@ bool sbbs_t::inetmail(char *into, char *subj, long mode)
 	action=NODE_SMAL;
 	nodesync();
 
-	sprintf(msgpath,"%sNETMAIL.MSG",cfg.node_dir);
+	sprintf(msgpath,"%snetmail.msg",cfg.node_dir);
 	if(!writemsg(msgpath,nulstr,title,mode,0,into)) {
 		bputs(text[Aborted]);
 		return(false); }
 
 	if(mode&WM_FILE) {
-		sprintf(str2,"%sFILE/%04u.OUT",cfg.data_dir,useron.number);
+		sprintf(str2,"%sfile/%04u.out",cfg.data_dir,useron.number);
 		_mkdir(str2);
-		sprintf(str2,"%sFILE/%04u.OUT/%s",cfg.data_dir,useron.number,title);
+		sprintf(str2,"%sfile/%04u.out/%s",cfg.data_dir,useron.number,title);
 		if(fexist(str2)) {
 			bputs(text[FileAlreadyThere]);
 			remove(msgpath);
@@ -121,7 +121,7 @@ bool sbbs_t::inetmail(char *into, char *subj, long mode)
 			strcat(str,title);
 			mv(str,str2,1); }
 		else { /* Remote */
-			menu("ULPROT");
+			menu("ulprot");
 			mnemonics(text[ProtocolOrQuit]);
 			strcpy(str,"Q");
 			for(x=0;x<cfg.total_prots;x++)
@@ -150,7 +150,7 @@ bool sbbs_t::inetmail(char *into, char *subj, long mode)
 	if((i=smb_stack(&smb,SMB_STACK_PUSH))!=0) {
 		errormsg(WHERE,ERR_OPEN,"MAIL",i);
 		return(false); }
-	sprintf(smb.file,"%sMAIL",cfg.data_dir);
+	sprintf(smb.file,"%smail",cfg.data_dir);
 	smb.retry_time=cfg.smb_retry_time;
 	if((i=smb_open(&smb))!=0) {
 		smb_stack(&smb,SMB_STACK_POP);
@@ -329,7 +329,7 @@ bool sbbs_t::qnetmail(char *into, char *subj, long mode)
 	action=NODE_SMAL;
 	nodesync();
 
-	sprintf(msgpath,"%sNETMAIL.MSG",cfg.node_dir);
+	sprintf(msgpath,"%snetmali.msg",cfg.node_dir);
 	if(!writemsg(msgpath,nulstr,title,mode|WM_QWKNET,0,to)) {
 		bputs(text[Aborted]);
 		return(false); }
@@ -337,7 +337,7 @@ bool sbbs_t::qnetmail(char *into, char *subj, long mode)
 	if((i=smb_stack(&smb,SMB_STACK_PUSH))!=0) {
 		errormsg(WHERE,ERR_OPEN,"MAIL",i);
 		return(false); }
-	sprintf(smb.file,"%sMAIL",cfg.data_dir);
+	sprintf(smb.file,"%smail",cfg.data_dir);
 	smb.retry_time=cfg.smb_retry_time;
 	if((i=smb_open(&smb))!=0) {
 		smb_stack(&smb,SMB_STACK_POP);

@@ -338,7 +338,7 @@ bool sbbs_t::yesno(char *str)
 	SYNC;
 	if(useron.misc&WIP) {
 		strip_ctrl(question);
-		menu("YESNO"); }
+		menu("yesno"); }
 	else
 		bprintf(text[YesNoQuestion],str);
 	while(online) {
@@ -372,7 +372,7 @@ bool sbbs_t::noyes(char *str)
 	SYNC;
 	if(useron.misc&WIP) {
 		strip_ctrl(question);
-		menu("NOYES"); }
+		menu("noyes"); }
 	else
 		bprintf(text[NoYesQuestion],str);
 	while(online) {

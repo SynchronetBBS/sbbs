@@ -86,7 +86,7 @@ void sbbs_t::logout()
 		batdn_total=0; }
 
 	if(batdn_total) {
-		sprintf(str,"%sFILE/%04u.DWN",cfg.data_dir,useron.number);
+		sprintf(str,"%sfile/%04u.dwn",cfg.data_dir,useron.number);
 		if((stream=fnopen(NULL,str,O_WRONLY|O_TRUNC|O_CREAT))!=NULL) {
 			for(i=0;i<(int)batdn_total;i++)
 				fprintf(stream,"%s\r\n",batdn_name[i]);
@@ -130,7 +130,7 @@ void sbbs_t::logout()
 	if(cfg.logout_mod[0])
 		exec_bin(cfg.logout_mod,&main_csi);
 	backout();
-	sprintf(str,"%sMSGS/%4.4u.MSG",cfg.data_dir,useron.number);
+	sprintf(str,"%smsgs/%4.4u.msg",cfg.data_dir,useron.number);
 	if(!flength(str))		/* remove any 0 byte message files */
 		remove(str);
 
@@ -217,7 +217,7 @@ void sbbs_t::backout()
 	long length,l;
 	file_t f;
 
-	sprintf(str,"%sBACKOUT.DAB",cfg.node_dir);
+	sprintf(str,"%sbackout.dab",cfg.node_dir);
 	if(flength(str)<1L) {
 		remove(str);
 		return; }
@@ -270,7 +270,7 @@ void sbbs_t::logofflist()
 	tm=gmtime(&logontime);
 	if(tm==NULL)
 		return;
-	sprintf(str,"%sLOGS/%2.2d%2.2d%2.2d.LOL",cfg.data_dir,tm->tm_mon+1,tm->tm_mday
+	sprintf(str,"%slogs/%2.2d%2.2d%2.2d.LOL",cfg.data_dir,tm->tm_mon+1,tm->tm_mday
 		,TM_YEAR(tm->tm_year));
 	if((file=nopen(str,O_WRONLY|O_CREAT|O_APPEND))==-1) {
 		errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_APPEND);

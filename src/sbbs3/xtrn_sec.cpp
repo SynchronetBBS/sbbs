@@ -70,9 +70,9 @@ int sbbs_t::xtrn_sec()
 			FREE(usrxsec);
 			return(1); }
 		if(usrxsecs>1) {
-			sprintf(str,"%sMENU/XTRN_SEC.*",cfg.text_dir);
+			sprintf(str,"%smenu/xtrn_sec.*",cfg.text_dir);
 			if(fexist(str)) {
-				menu("XTRN_SEC");
+				menu("xtrn_sec");
 				xsec=getnum(usrxsecs);
 				if(xsec<=0)
 					break;
@@ -110,9 +110,9 @@ int sbbs_t::xtrn_sec()
 				bputs(text[NoXtrnPrograms]);
 				pause();
 				break; }
-			sprintf(str,"%sMENU/XTRN%u.*",cfg.text_dir,xsec+1);
+			sprintf(str,"%smenu/xtrn%u.*",cfg.text_dir,xsec+1);
 			if(fexist(str)) {
-				sprintf(str,"XTRN%u",xsec+1);
+				sprintf(str,"xtrn%u",xsec+1);
 				menu(str); }
 			else {
 				bprintf(text[XtrnProgLstHdr],cfg.xtrnsec[xsec]->name);
@@ -1432,9 +1432,9 @@ void sbbs_t::exec_xtrn(uint xtrnnum)
 	sprintf(str,"%sINTRSBBS.DAT"
 			,cfg.xtrn[xtrnnum]->path[0] ? cfg.xtrn[xtrnnum]->path : cfg.node_dir);
 	remove(str);
-	sprintf(str,"%sHANGUP.NOW",cfg.node_dir);
+	sprintf(str,"%shangup.now",cfg.node_dir);
 	remove(str);
-	sprintf(str,"%sFILE/%04u.DWN",cfg.data_dir,useron.number);
+	sprintf(str,"%sfile/%04u.dwn",cfg.data_dir,useron.number);
 	remove(str);
 
 	mode=0; 	/* EX_CC */
@@ -1464,10 +1464,10 @@ void sbbs_t::exec_xtrn(uint xtrnnum)
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_APPEND);
 	}
 
-	sprintf(str,"%sFILE/%04u.DWN",cfg.data_dir,useron.number);
+	sprintf(str,"%sfile/%04u.dwn",cfg.data_dir,useron.number);
 	batch_add_list(str);
 
-	sprintf(str,"%sHANGUP.NOW",cfg.node_dir);
+	sprintf(str,"%shangup.now",cfg.node_dir);
 	if(fexist(str)) {
 		remove(str);
 		hangup(); }

@@ -60,13 +60,13 @@ int sbbs_t::listfiles(uint dirnum, char *filespec, int tofile, long mode)
 
 	if(mode&FL_ULTIME) {
 		last_ns_time=now;
-		sprintf(str,"%s%s.DAB",cfg.dir[dirnum]->data_dir,cfg.dir[dirnum]->code);
+		sprintf(str,"%s%s.dab",cfg.dir[dirnum]->data_dir,cfg.dir[dirnum]->code);
 		if((file=nopen(str,O_RDONLY))!=-1) {
 			read(file,&l,4);
 			close(file);
 			if(ns_time>(time_t)l)
 				return(0); } }
-	sprintf(str,"%s%s.IXB",cfg.dir[dirnum]->data_dir,cfg.dir[dirnum]->code);
+	sprintf(str,"%s%s.ixb",cfg.dir[dirnum]->data_dir,cfg.dir[dirnum]->code);
 	if((file=nopen(str,O_RDONLY))==-1)
 		return(0);
 	l=filelength(file);
@@ -83,7 +83,7 @@ int sbbs_t::listfiles(uint dirnum, char *filespec, int tofile, long mode)
 		FREE((char *)ixbbuf);
 		return(0); }
 	close(file);
-	sprintf(str,"%s%s.DAT",cfg.dir[dirnum]->data_dir,cfg.dir[dirnum]->code);
+	sprintf(str,"%s%s.dat",cfg.dir[dirnum]->data_dir,cfg.dir[dirnum]->code);
 	if((file=nopen(str,O_RDONLY))==-1) {
 		errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
 		FREE((char *)ixbbuf);
@@ -201,7 +201,7 @@ int sbbs_t::listfiles(uint dirnum, char *filespec, int tofile, long mode)
 					break;						/* big header */
 			if((!mode || !(useron.misc&EXPERT)) && !tofile && (!filespec[0]
 				|| (strchr(filespec,'*') || strchr(filespec,'?')))) {
-				sprintf(hdr,"%s%s.HDR",cfg.dir[dirnum]->data_dir,cfg.dir[dirnum]->code);
+				sprintf(hdr,"%s%s.hdr",cfg.dir[dirnum]->data_dir,cfg.dir[dirnum]->code);
 				if(fexist(hdr))
 					printfile(hdr,0);	/* Use DATA\DIRS\<CODE>.HDR */
 				else {
@@ -583,7 +583,7 @@ int sbbs_t::batchflagprompt(uint dirnum, file_t* bf, uint total
 		ch=getkey(K_UPPER);
 		clearline();
 		if(ch=='?') {
-			menu("BATFLAG");
+			menu("batflag");
 			if(lncntr)
 				pause();
 			return(2); }
@@ -828,7 +828,7 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
     file_t	f;
 	struct	tm * tm;
 
-	sprintf(str,"%sXFER.IXT",cfg.data_dir);
+	sprintf(str,"%sxfer.ixt",cfg.data_dir);
 	if(mode==FI_USERXFER && flength(str)>0L) {
 		if((file=nopen(str,O_RDONLY))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
@@ -844,7 +844,7 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 			errormsg(WHERE,ERR_READ,str,usrxfrlen);
 			return(0); }
 		close(file); }
-	sprintf(str,"%s%s.IXB",cfg.dir[dirnum]->data_dir,cfg.dir[dirnum]->code);
+	sprintf(str,"%s%s.ixb",cfg.dir[dirnum]->data_dir,cfg.dir[dirnum]->code);
 	if((file=nopen(str,O_RDONLY))==-1)
 		return(0);
 	l=filelength(file);
@@ -863,7 +863,7 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 			FREE(usrxfrbuf);
 		return(0); }
 	close(file);
-	sprintf(str,"%s%s.DAT",cfg.dir[dirnum]->data_dir,cfg.dir[dirnum]->code);
+	sprintf(str,"%s%s.dat",cfg.dir[dirnum]->data_dir,cfg.dir[dirnum]->code);
 	if((file=nopen(str,O_RDONLY))==-1) {
 		errormsg(WHERE,ERR_READ,str,O_RDONLY);
 		FREE((char *)ixbbuf);
@@ -1168,7 +1168,7 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 					found=-1;
 					break; }
 				continue; }
-			menu("DLPROT");
+			menu("dlprot");
 			openfile(&f);
 			SYNC;
 			mnemonics(text[ProtocolBatchQuitOrNext]);

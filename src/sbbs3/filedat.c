@@ -48,7 +48,7 @@ BOOL DLLCALL getfiledat(scfg_t* cfg, file_t* f)
 	int file;
 	long length;
 
-	sprintf(str,"%s%s.DAT",cfg->dir[f->dir]->data_dir,cfg->dir[f->dir]->code);
+	sprintf(str,"%s%s.dat",cfg->dir[f->dir]->data_dir,cfg->dir[f->dir]->code);
 	if((file=sopen(str,O_RDONLY|O_BINARY,SH_DENYWR))==-1) {
 	//	errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
 		return(FALSE); 
@@ -132,7 +132,7 @@ BOOL DLLCALL putfiledat(scfg_t* cfg, file_t* f)
 	buf[F_MISC]=f->misc+SP;
 	putrec(buf,F_ALTPATH,2,hexplus(f->altpath,tmp));
 	putrec(buf,F_ALTPATH+2,2,crlf);
-	sprintf(str,"%s%s.DAT",cfg->dir[f->dir]->data_dir,cfg->dir[f->dir]->code);
+	sprintf(str,"%s%s.dat",cfg->dir[f->dir]->data_dir,cfg->dir[f->dir]->code);
 	if((file=sopen(str,O_WRONLY|O_BINARY,SH_DENYRW))==-1) {
 //		errormsg(WHERE,ERR_OPEN,str,O_WRONLY);
 		return(FALSE); 
@@ -181,7 +181,7 @@ BOOL DLLCALL addfiledat(scfg_t* cfg, file_t* f)
 	/************************/
 	/* Add data to DAT File */
 	/************************/
-	sprintf(str,"%s%s.DAT",cfg->dir[f->dir]->data_dir,cfg->dir[f->dir]->code);
+	sprintf(str,"%s%s.dat",cfg->dir[f->dir]->data_dir,cfg->dir[f->dir]->code);
 	if((file=sopen(str,O_RDWR|O_BINARY|O_CREAT,SH_DENYRW))==-1) {
 //		errormsg(WHERE,ERR_OPEN,str,O_RDWR|O_CREAT);
 		return(FALSE); 
@@ -243,7 +243,7 @@ BOOL DLLCALL addfiledat(scfg_t* cfg, file_t* f)
 	/*******************************************/
 	/* Update last upload date/time stamp file */
 	/*******************************************/
-	sprintf(str,"%s%s.DAB",cfg->dir[f->dir]->data_dir,cfg->dir[f->dir]->code);
+	sprintf(str,"%s%s.dab",cfg->dir[f->dir]->data_dir,cfg->dir[f->dir]->code);
 	if((file=sopen(str,O_WRONLY|O_CREAT|O_BINARY,SH_DENYRW))!=-1) {
 		now=time(NULL);
 		write(file,&now,4);
@@ -256,7 +256,7 @@ BOOL DLLCALL addfiledat(scfg_t* cfg, file_t* f)
 	strcpy(fname,f->name);
 	for(i=8;i<12;i++)   /* Turn FILENAME.EXT into FILENAMEEXT */
 		fname[i]=fname[i+1];
-	sprintf(str,"%s%s.IXB",cfg->dir[f->dir]->data_dir,cfg->dir[f->dir]->code);
+	sprintf(str,"%s%s.ixb",cfg->dir[f->dir]->data_dir,cfg->dir[f->dir]->code);
 	if((file=sopen(str,O_RDWR|O_CREAT|O_BINARY,SH_DENYRW))==-1) {
 //		errormsg(WHERE,ERR_OPEN,str,O_RDWR|O_CREAT);
 		return(FALSE); 
@@ -351,7 +351,7 @@ BOOL DLLCALL addfiledat(scfg_t* cfg, file_t* f)
 }
 
 /****************************************************************************/
-/* Gets file data from dircode.IXB file										*/
+/* Gets file data from dircode.ixb file										*/
 /* Need fields .name and .dir filled.                                       */
 /* only fills .offset, .dateuled, and .datedled                             */
 /****************************************************************************/
@@ -362,7 +362,7 @@ BOOL DLLCALL getfileixb(scfg_t* cfg, file_t* f)
 	int				file;
 	long			l,length;
 
-	sprintf(str,"%s%s.IXB",cfg->dir[f->dir]->data_dir,cfg->dir[f->dir]->code);
+	sprintf(str,"%s%s.ixb",cfg->dir[f->dir]->data_dir,cfg->dir[f->dir]->code);
 	if((file=sopen(str,O_RDONLY|O_BINARY,SH_DENYWR))==-1) {
 	//	errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
 		return(FALSE); 
@@ -420,7 +420,7 @@ BOOL DLLCALL removefiledat(scfg_t* cfg, file_t* f)
 	strcpy(fname,f->name);
 	for(c=8;c<12;c++)   /* Turn FILENAME.EXT into FILENAMEEXT */
 		fname[c]=fname[c+1];
-	sprintf(str,"%s%s.IXB",cfg->dir[f->dir]->data_dir,cfg->dir[f->dir]->code);
+	sprintf(str,"%s%s.ixb",cfg->dir[f->dir]->data_dir,cfg->dir[f->dir]->code);
 	if((file=sopen(str,O_RDONLY|O_BINARY,SH_DENYWR))==-1) {
 //		errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
 		return(FALSE); 
@@ -460,7 +460,7 @@ BOOL DLLCALL removefiledat(scfg_t* cfg, file_t* f)
 	}
 	FREE((char *)ixbbuf);
 	close(file);
-	sprintf(str,"%s%s.DAT",cfg->dir[f->dir]->data_dir,cfg->dir[f->dir]->code);
+	sprintf(str,"%s%s.dat",cfg->dir[f->dir]->data_dir,cfg->dir[f->dir]->code);
 	if((file=sopen(str,O_WRONLY|O_BINARY,SH_DENYRW))==-1) {
 //		errormsg(WHERE,ERR_OPEN,str,O_WRONLY);
 		return(FALSE); 
@@ -493,7 +493,7 @@ BOOL DLLCALL findfile(scfg_t* cfg, uint dirnum, char *filename)
 	strupr(fname);
 	for(c=8;c<12;c++)   /* Turn FILENAME.EXT into FILENAMEEXT */
 		fname[c]=fname[c+1];
-	sprintf(str,"%s%s.IXB",cfg->dir[dirnum]->data_dir,cfg->dir[dirnum]->code);
+	sprintf(str,"%s%s.ixb",cfg->dir[dirnum]->data_dir,cfg->dir[dirnum]->code);
 	if((file=sopen(str,O_RDONLY|O_BINARY,SH_DENYWR))==-1) return(FALSE);
 	length=filelength(file);
 	if(!length) {
@@ -581,7 +581,7 @@ BOOL DLLCALL rmuserxfers(scfg_t* cfg, int fromuser, int destuser, char *fname)
     int file;
     long l,length;
 
-	sprintf(str,"%sXFER.IXT", cfg->data_dir);
+	sprintf(str,"%sxfer.ixt", cfg->data_dir);
 	if(!fexist(str))
 		return(FALSE);
 	if(!flength(str)) {

@@ -313,7 +313,7 @@ static char* alias(char* name, char* alias)
 	char	fname[MAX_PATH];
 	FILE*	fp;
 
-	sprintf(fname,"%sALIAS.CFG",scfg.ctrl_dir);
+	sprintf(fname,"%salias.cfg",scfg.ctrl_dir);
 	if((file=sopen(fname,O_RDONLY|O_BINARY,SH_DENYNO))==-1)
 		return(name);
 
@@ -586,7 +586,7 @@ static void pop3_thread(void* arg)
 		memset(&smb,0,sizeof(smb));
 		memset(&msg,0,sizeof(msg));
 
-		sprintf(smb.file,"%sMAIL",scfg.data_dir);
+		sprintf(smb.file,"%smail",scfg.data_dir);
 		if((i=smb_open(&smb))!=0) {
 			lprintf("Error %d (%s) opening %s",i,smb.last_error,smb.file);
 			sockprintf(socket,"-ERR %d opening %s",i,smb.file);
@@ -1210,7 +1210,7 @@ static void smtp_thread(void* arg)
 
 				if(msgtxt!=NULL) {
 					rewind(msgtxt);
-					sprintf(smb.file,"%sMAIL", scfg.data_dir);
+					sprintf(smb.file,"%smail", scfg.data_dir);
 					smb.retry_time=scfg.smb_retry_time;
 					if((i=smb_open(&smb))!=0) {
 						lprintf("%04d !SMTP ERROR %d (%s) opening %s"
@@ -1245,7 +1245,7 @@ static void smtp_thread(void* arg)
 					if((i=smb_open_da(&smb))!=0) {
 						smb_unlocksmbhdr(&smb);
 						smb_close(&smb);
-						lprintf("%04d !SMTP ERROR %d (%s) opening %s.SDA"
+						lprintf("%04d !SMTP ERROR %d (%s) opening %s.sda"
 							,socket, i, smb.last_error, smb.file);
 						sockprintf(socket, "452 Insufficient system storage");
 						continue; }
@@ -1943,7 +1943,7 @@ static void sendmail_thread(void* arg)
 
 		mswait(3000);
 
-		sprintf(smb.file,"%sMAIL",scfg.data_dir);
+		sprintf(smb.file,"%smail",scfg.data_dir);
 		if((i=smb_open(&smb))!=0) 
 			continue;
 		if((i=smb_locksmbhdr(&smb))!=0)

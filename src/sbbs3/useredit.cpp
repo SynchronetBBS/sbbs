@@ -117,7 +117,7 @@ void sbbs_t::useredit(int usernumber, int local)
 	#endif
 			bprintf(text[UserNetMail],user.netmail);
 
-		sprintf(str,"%sUSER/%4.4u.MSG", cfg.data_dir,user.number);
+		sprintf(str,"%suser/%4.4u.msg", cfg.data_dir,user.number);
 		i=fexist(str);
 		if(user.comment[0] || i)
 			bprintf(text[UeditCommentLine],i ? '+' : SP
@@ -237,7 +237,7 @@ void sbbs_t::useredit(int usernumber, int local)
 						break;
 					if(c==CR) break;
 					if(c=='?') {
-						menu("EXEMPT");
+						menu("exempt");
 						continue; }
 					if(!(useron.exempt&FLAG(c)) && console&CON_R_INPUT)
 						continue;
@@ -326,7 +326,7 @@ void sbbs_t::useredit(int usernumber, int local)
 				break;
 			case 'H': /* edit user's information file */
 				attr(LIGHTGRAY);
-				sprintf(str,"%sUSER/%4.4u.MSG", cfg.data_dir,user.number);
+				sprintf(str,"%suser/%4.4u.msg", cfg.data_dir,user.number);
 				editfile(str);
 				break;
 			case 'I':
@@ -489,7 +489,7 @@ void sbbs_t::useredit(int usernumber, int local)
 				break;
 			case 'X':
 				attr(LIGHTGRAY);
-				sprintf(str,"%sUSER/%4.4u.MSG", cfg.data_dir,user.number);
+				sprintf(str,"%suser/%4.4u.msg", cfg.data_dir,user.number);
 				printfile(str,0);
 				pause();
 				break;
@@ -512,14 +512,14 @@ void sbbs_t::useredit(int usernumber, int local)
 						break;
 					if(c==CR) break;
 					if(c=='?') {
-						menu("RESTRICT");
+						menu("restrict");
 						continue; }
 					user.rest^=FLAG(c);
 					putuserrec(&cfg,user.number,U_REST,8,ultoa(user.rest,tmp,16)); }
 				break;
 			case '?':
 				CLS;
-				menu("UEDIT");  /* Sysop Uedit Edit Menu */
+				menu("uedit");  /* Sysop Uedit Edit Menu */
 				pause();
 				break;
 			case '~':
@@ -556,7 +556,7 @@ void sbbs_t::useredit(int usernumber, int local)
 				putuserrec(&cfg,user.number,U_MIN,10,ultoa(user.min,tmp,10));
 				break;
 			case '#': /* read new user questionaire */
-				sprintf(str,"%sUSER/%4.4u.DAT", cfg.data_dir,user.number);
+				sprintf(str,"%suser/%4.4u.dat", cfg.data_dir,user.number);
 				if(!cfg.new_sof[0] || !fexist(str))
 					break;
 				read_sif_dat(cfg.new_sof,str);
@@ -639,7 +639,7 @@ int sbbs_t::searchup(char *search,int usernum)
 
 	if(!search[0])
 		return(usernum);
-	sprintf(userdat,"%sUSER/USER.DAT", cfg.data_dir);
+	sprintf(userdat,"%suser/user.dat", cfg.data_dir);
 	if((file=nopen(userdat,O_RDONLY|O_DENYNONE))==-1)
 		return(usernum);
 
@@ -656,13 +656,13 @@ int sbbs_t::searchup(char *search,int usernum)
 
 		if(count>=LOOP_NODEDAB) {
 			close(file);
-			errormsg(WHERE,ERR_LOCK,"USER.DAT",i);
+			errormsg(WHERE,ERR_LOCK,"user.dat",i);
 			return(usernum); }
 
 		if(read(file,userdat,U_LEN)!=U_LEN) {
 			unlock(file,(long)((long)(i-1)*U_LEN),U_LEN);
 			close(file);
-			errormsg(WHERE,ERR_READ,"USER.DAT",U_LEN);
+			errormsg(WHERE,ERR_READ,"user.dat",U_LEN);
 			return(usernum); }
 
 		unlock(file,(long)((long)(i-1)*U_LEN),U_LEN);
@@ -692,7 +692,7 @@ int sbbs_t::searchdn(char *search,int usernum)
 
 	if(!search[0])
 		return(usernum);
-	sprintf(userdat,"%sUSER/USER.DAT", cfg.data_dir);
+	sprintf(userdat,"%suser/user.dat", cfg.data_dir);
 	if((file=nopen(userdat,O_RDONLY))==-1)
 		return(usernum);
 	while(i) {
@@ -706,7 +706,7 @@ int sbbs_t::searchdn(char *search,int usernum)
 
 		if(count>=LOOP_NODEDAB) {
 			close(file);
-			errormsg(WHERE,ERR_LOCK,"USER.DAT",i);
+			errormsg(WHERE,ERR_LOCK,"user.dat",i);
 			return(usernum); }
 
 		if(read(file,userdat,U_LEN)==-1) {
@@ -977,7 +977,7 @@ void sbbs_t::maindflts(user_t* user)
 				pause();
 				break;
 			case 'Z':
-				menu("DLPROT");
+				menu("dlprot");
 				SYNC;
 				mnemonics(text[ProtocolOrQuit]);
 				strcpy(str,"Q");

@@ -1,6 +1,6 @@
 /* QWKNODES.C */
 
-/* Synchronet QWKnet node list or ROUTE.DAT file generator */
+/* Synchronet QWKnet node list or route.dat file generator */
 
 /* $Id$ */
 
@@ -323,14 +323,14 @@ FREE(buf);
 
 char *usage="\nusage: qwknodes [/opts] cmds"
 			"\n"
-			"\n cmds: r  =  create ROUTE.DAT"
-			"\n       u  =  create USERS.DAT"
-			"\n       n  =  create NODES.DAT"
+			"\n cmds: r  =  create route.dat"
+			"\n       u  =  create users.dat"
+			"\n       n  =  create nodes.dat
 			"\n"
 			"\n opts: f  =  format addresses for nodes that feed from this system"
 			"\n       a  =  append existing output files"
-			"\n       t  =  include tag lines in NODES.DAT"
-			"\n       l  =  include local users in USERS.DAT"
+			"\n       t  =  include tag lines in nodes.dat
+			"\n       l  =  include local users in users.dat
 			"\n       m# =  maximum message age set to # days"
 			"\n";
 
@@ -407,18 +407,18 @@ else
 	o_mode=O_WRONLY|O_CREAT|O_TRUNC;
 
 if(cmd&NODES)
-	if((nodes=fnopen(&i,"NODES.DAT",o_mode))==NULL) {
-		printf("\7\nError opening NODES.DAT\n");
+	if((nodes=fnopen(&i,"nodes.dat",o_mode))==NULL) {
+		printf("\7\nError opening nodes.dat\n");
 		exit(1); }
 
 if(cmd&USERS)
-	if((users=fnopen(&i,"USERS.DAT",o_mode))==NULL) {
-		printf("\7\nError opening USERS.DAT\n");
+	if((users=fnopen(&i,"users.dat",o_mode))==NULL) {
+		printf("\7\nError opening users.dat\n");
         exit(1); }
 
 if(cmd&ROUTE)
-	if((route=fnopen(&i,"ROUTE.DAT",o_mode))==NULL) {
-		printf("\7\nError opening ROUTE.DAT\n");
+	if((route=fnopen(&i,"route.dat",o_mode))==NULL) {
+		printf("\7\nError opening route.dat\n");
         exit(1); }
 
 if(!node_dir[0]) {
@@ -427,8 +427,6 @@ if(!node_dir[0]) {
 		printf("\7\nSBBSNODE environment variable not set.\n");
 		exit(1); }
 	strcpy(node_dir,p); }
-
-strupr(node_dir);
 
 if(node_dir[strlen(node_dir)-1]!='\\')
 	strcat(node_dir,"\\");
