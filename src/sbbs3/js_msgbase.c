@@ -1650,8 +1650,12 @@ static jsSyncMethodSpec js_msgbase_functions[] = {
 	,JSDOCSTR("write a message header")
 	,310
 	},
-	{"get_msg_body",	js_get_msg_body,	2, JSTYPE_STRING,	JSDOCSTR("[boolean by_offset,] number_or_id [,boolean strip_ctrl_a]")
-	,JSDOCSTR("returns the body text of a specific message, <i>null</i> on failure")
+	{"get_msg_body",	js_get_msg_body,	2, JSTYPE_STRING,	JSDOCSTR("[boolean by_offset,] number_or_id [,boolean strip_ctrl_a] "
+		"[,boolean rfc822_encoded] [,boolean include_tails]")
+	,JSDOCSTR("returns the body text of a specific message, <i>null</i> on failure. "
+		"The default behavior is to leave Ctrl-A codes intact, perform no RFC-822 encoding, and to include tails (if any) in the "
+		"returned body text."
+	)
 	,310
 	},
 	{"get_msg_tail",	js_get_msg_tail,	2, JSTYPE_STRING,	JSDOCSTR("[boolean by_offset,] number_or_id [,boolean strip_ctrl_a]")
