@@ -47,9 +47,6 @@ function write_template(filename)  {
 }
 
 function parse_regular_bit(bit, objname, obj) {
-if(bit.match(/\)JS:/)) {
-	write("<PLAINTEXT>1:"+bit);
-}
 	if(objname=="JS")
 		return(bit);
 	bit=bit.replace(new RegExp('([%^@])\\1'+objname+':([^^%@\r\n]*?)\\1\\1',"g"),
