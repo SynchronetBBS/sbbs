@@ -829,7 +829,7 @@ extern "C" {
 
 	/* js_msg_area.c */
 	DLLEXPORT JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t* cfg
-													,user_t* user);
+													,user_t* user, subscan_t* subscan);
 
 	/* js_msgbase.c */
 	DLLEXPORT JSObject* DLLCALL js_CreateMsgBaseClass(JSContext* cx, JSObject* parent, scfg_t* cfg);
