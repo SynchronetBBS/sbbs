@@ -77,7 +77,7 @@ void sbbs_t::telnet_gate(char* destaddr, ulong mode)
 	}
 
 	memset(&addr,0,sizeof(addr));
-	addr.sin_addr.s_addr = htonl(cfg.startup->telnet_interface);
+	addr.sin_addr.s_addr = htonl(startup->telnet_interface);
 	addr.sin_family = AF_INET;
 
 	if((i=bind(remote_socket, (struct sockaddr *) &addr, sizeof (addr)))!=0) {

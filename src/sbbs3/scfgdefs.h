@@ -294,8 +294,6 @@ typedef struct
 
 	#endif
 
-	bbs_startup_t*	startup;
-
 } scfg_t;
 
 #endif /* Don't add anything after this line */

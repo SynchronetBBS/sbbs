@@ -537,7 +537,7 @@ void sbbs_t::chatsection()
 				break;
 			case 'C':
 				no_rip_menu=1;
-				if(cfg.startup->options&BBS_OPT_SYSOP_AVAILABLE
+				if(startup->options&BBS_OPT_SYSOP_AVAILABLE
 					|| (cfg.sys_chat_ar[0] && chk_ar(cfg.sys_chat_ar,&useron))
 					|| useron.exempt&FLAG('C')) {
 					sysop_page();

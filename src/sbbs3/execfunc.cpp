@@ -283,7 +283,7 @@ int sbbs_t::exec_function(csi_t *csi)
 				CRLF; }
 			return(0);
 		case CS_PAGE_SYSOP:
-			if(cfg.startup->options&BBS_OPT_SYSOP_AVAILABLE 
+			if(startup->options&BBS_OPT_SYSOP_AVAILABLE 
 				|| (cfg.sys_chat_ar[0] && chk_ar(cfg.sys_chat_ar,&useron))
 				|| useron.exempt&FLAG('C')) {
 				sysop_page();

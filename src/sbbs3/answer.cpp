@@ -87,7 +87,7 @@ bool sbbs_t::answer()
 			str2[i]=0;
 			lprintf("Node %d RLogin: '%s' / '%s'",cfg.node_num,str,str2);
 			strcpy(rlogin_name
-				,cfg.startup->options&BBS_OPT_USE_2ND_RLOGIN ? str2 : str);
+				,startup->options&BBS_OPT_USE_2ND_RLOGIN ? str2 : str);
 			useron.number=userdatdupe(0, U_ALIAS, LEN_ALIAS, rlogin_name, 0);
 			if(useron.number)
 				getuserdat(&cfg,&useron);
@@ -177,7 +177,7 @@ bool sbbs_t::answer()
 
 	/* AutoLogon via IP or Caller ID here */
 	if(!useron.number && !(sys_status&SS_RLOGIN)
-		&& cfg.startup->options&BBS_OPT_AUTO_LOGON && cid[0]) {
+		&& startup->options&BBS_OPT_AUTO_LOGON && cid[0]) {
 		useron.number=userdatdupe(0, U_NOTE, LEN_NOTE, cid, 0);
 		if(useron.number) {
 			getuserdat(&cfg, &useron);

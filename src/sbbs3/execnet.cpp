@@ -67,7 +67,7 @@ int sbbs_t::exec_net(csi_t* csi)
 					SOCKADDR_IN	addr;
 
 					memset(&addr,0,sizeof(addr));
-					addr.sin_addr.s_addr = htonl(cfg.startup->telnet_interface);
+					addr.sin_addr.s_addr = htonl(startup->telnet_interface);
 					addr.sin_family = AF_INET;
 
 					if((i=bind(sock, (struct sockaddr *) &addr, sizeof (addr)))!=0) {
@@ -546,7 +546,7 @@ SOCKET sbbs_t::ftp_data_sock(csi_t* csi, SOCKET ctrl_sock, SOCKADDR_IN* addr)
 	}
 
 	memset(addr,0,sizeof(addr));
-	addr->sin_addr.s_addr = htonl(cfg.startup->telnet_interface);
+	addr->sin_addr.s_addr = htonl(startup->telnet_interface);
 	addr->sin_family = AF_INET;
 
 	if(bind(data_sock, (struct sockaddr *)addr,sizeof(SOCKADDR_IN))!= 0) {
@@ -690,8 +690,8 @@ bool sbbs_t::ftp_get(csi_t* csi, SOCKET ctrl_sock, char* src, char* dest, bool d
 			return(false);
 		}
 
-		if(cfg.startup->socket_open!=NULL)
-			cfg.startup->socket_open(TRUE);
+		if(startup->socket_open!=NULL)
+			startup->socket_open(TRUE);
 
 		close_socket(data_sock);
 		data_sock=accept_sock;
@@ -817,8 +817,8 @@ bool sbbs_t::ftp_put(csi_t* csi, SOCKET ctrl_sock, char* src, char* dest)
 			return(false);
 		}
 
-		if(cfg.startup->socket_open!=NULL)
-			cfg.startup->socket_open(TRUE);
+		if(startup->socket_open!=NULL)
+			startup->socket_open(TRUE);
 
 		close_socket(data_sock);
 		data_sock=accept_sock;
