@@ -1099,9 +1099,9 @@ static void unescape(char *p)
 	
 	dst=p;
 	for(;*p;p++) {
-		if(*p=='%' && isxdigit(*p) && isxdigit(*p)) {
-			sprintf(code,"%.2s",p);
-			*(dst++)=(char)strtol(p+1,NULL,16);
+		if(*p=='%' && isxdigit(*(p+1)) && isxdigit(*(p+2))) {
+			sprintf(code,"%.2s",p+1);
+			*(dst++)=(char)strtol(code,NULL,16);
 			p+=2;
 		}
 		else  {
