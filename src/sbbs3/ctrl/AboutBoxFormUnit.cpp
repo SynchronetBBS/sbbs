@@ -106,6 +106,8 @@ void __fastcall TAboutBoxForm::FormShow(TObject *Sender)
     Memo->Lines->Add(mail_ver());
     Memo->Lines->Add(ftp_ver());
     Memo->Lines->Add(ver);
+    Memo->Lines->Add("EmulVT ANSI Terminal Emulation v2.15 "
+        "(c) 1996-2000 François Piette");
 
 }
 //---------------------------------------------------------------------------
