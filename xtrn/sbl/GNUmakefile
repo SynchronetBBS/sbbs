@@ -17,10 +17,12 @@ XSDK		=	../sdk
 ifndef XPDEV
  XPDEV		=	../../src/xpdev/
 endif
-SBBS_SRC	:=	$(XPDEV)../sbbs3/
+ifndef SBBS_SRC
+ SBBS_SRC	:=	$(XPDEV)../sbbs3/
+endif
 NEED_THREADS	:=	1
-include $(XPDEV)Common.gmake
-include $(SBBS_SRC)Common.gmake
+include $(XPDEV)/Common.gmake
+include $(SBBS_SRC)/Common.gmake
 
 ifeq ($(os),sunos)
  LDFLAGS	+=	-lsocket -lnsl -lrt
