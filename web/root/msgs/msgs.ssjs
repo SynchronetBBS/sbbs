@@ -57,6 +57,8 @@ for(var page=firstpage;page<=lastpage;page++) {
 
 hdr=msgbase.get_msg_header(true,msgbase.total_msgs-1-offset-max_messages);
 if(hdr!=null)  {
+	if(hdr.subject=='')
+		hdr.subject="-- No Subject --";
 	template.pagelinks+='<a href="'+path+'?msg_grp='+g+'&msg_sub='+encodeURIComponent(sub)+'&offset='+(offset+max_messages)+'">NEXT</a>';
 }
 
