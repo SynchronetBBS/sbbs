@@ -46,20 +46,6 @@
 #if defined(__unix__)
 	#include <sys/ioctl.h>		/* ioctl() */
 	#include <sys/utsname.h>	/* uname() */
-	/* KIOCSOUND */
-	#if defined(__FreeBSD__)
-		#include <sys/kbio.h>
-	#elif defined(__linux__)
-		#include <sys/kd.h>	
-	#elif defined(__solaris__)
-		#include <sys/kbio.h>
-		#include <sys/kbd.h>
-	#endif
-	#if defined(__OpenBSD__) || defined(__NetBSD__)
-		#include <machine/spkr.h>
-	#elif defined(__FreeBSD__)
-		#include <machine/speaker.h>
-	#endif
 #endif	/* __unix__ */
 
 #include "genwrap.h"	/* Verify prototypes */
@@ -206,49 +192,6 @@ char* strrev(char* str)
         t=*i; *(i++)=*(--j); *j=t;
     }
     return str;
-}
-
-/****************************************************************************/
-/* Generate a tone at specified frequency for specified milliseconds		*/
-/* Thanks to Casey Martin for this code										*/
-/****************************************************************************/
-void DLLCALL unix_beep(int freq, int dur)
-{
-	static int console_fd=-1;
-
-#if defined(__OpenBSD__) || defined(__FreeBSD__) || defined(__NetBSD__)
-	int speaker_fd=-1;
-	tone_t tone;
-
-	speaker_fd = open("/dev/speaker", O_WRONLY|O_APPEND);
-	if(speaker_fd != -1)  {
-		tone.frequency=freq;
-		tone.duration=dur/10;
-		ioctl(speaker_fd,SPKRTONE,&tone);
-		close(speaker_fd);
-		return;
-	}
-#endif
-
-#if !defined(__GNU__) && !defined(__QNX__) && !defined(__OpenBSD__) && !defined(__NetBSD__) && !defined(__APPLE__)
-	if(console_fd == -1) 
-  		console_fd = open("/dev/console", O_NOCTTY);
-	
-	if(console_fd != -1) {
-#if defined(__solaris__)
-		ioctl(console_fd, KIOCCMD, KBD_CMD_BELL);
-#else
-		if(freq != 0)	/* Don't divide by zero */
-			ioctl(console_fd, KIOCSOUND, (int) (1193180 / freq));
-#endif /* solaris */
-		SLEEP(dur);
-#if defined(__solaris__)
-		ioctl(console_fd, KIOCCMD, KBD_CMD_NOBELL);	/* turn off tone */
-#else
-		ioctl(console_fd, KIOCSOUND, 0);	/* turn off tone */
-#endif /* solaris */
-	}
-#endif
 }
 #endif
 

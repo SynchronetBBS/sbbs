@@ -204,7 +204,6 @@ DLLEXPORT int DLLCALL	get_errno(void);
 	#define YIELD()			Sleep(1) /* Must sleep at least 1ms to avoid 100% CPU utilization */
 	#define	MAYBE_YIELD()	Sleep(0)
 	#define SLEEP(x)		Sleep(x)
-	#define BEEP(freq,dur)	Beep((DWORD)(freq),(DWORD)(dur))
 	#define	popen			_popen
 	#define pclose			_pclose
 	#define tzname			_tzname
@@ -214,7 +213,6 @@ DLLEXPORT int DLLCALL	get_errno(void);
 	#define YIELD()			DosSleep(1)	/* Must sleep at least 1ms to avoid 100% CPU utilization */
 	#define	MAYBE_YIELD()	DosSleep(0)
 	#define SLEEP(x)		DosSleep(x)
-	#define BEEP(freq,dur)	DosBeep(freq,dur)
 
 #elif defined(__unix__) || defined(__APPLE__)
 
@@ -259,8 +257,6 @@ DLLEXPORT int DLLCALL	get_errno(void);
 		#define FORK()	fork()
 	#endif
 
-	#define BEEP(freq,dur)	unix_beep(freq,dur)
-	DLLEXPORT void	DLLCALL	unix_beep(int freq, int dur);
 
 #else	/* Unsupported OS */
 
