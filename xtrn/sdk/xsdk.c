@@ -1889,6 +1889,8 @@ void initdata(void)
 			printf("\r\n\7Error %d creating output_event\r\n",GetLastError());
 			exit(1);
 		}
+#else
+		sem_init(&output_sem,0,0);
 #endif
 		_beginthread(output_thread,0,NULL);
 	}
