@@ -104,7 +104,7 @@ typedef struct {
 #define BBS_OPT_ALLOW_RLOGIN		(1<<5)	/* Allow logins via BSD RLogin		*/
 #define BBS_OPT_USE_2ND_RLOGIN		(1<<6)	/* Use 2nd username in BSD RLogin	*/
 #define BBS_OPT_NO_QWK_EVENTS		(1<<7)	/* Don't run QWK-related events		*/
-#define BBS_OPT_NO_TELNET_NOP		(1<<8)	/* Don't send periodic Telnet NOPs	*/
+#define BBS_OPT_NO_TELNET_GA		(1<<8)	/* Don't send periodic Telnet GAs	*/
 #define BBS_OPT_NO_HOST_LOOKUP		(1<<11)
 #define BBS_OPT_NO_RECYCLE			(1<<27)	/* Disable recycling of server		*/
 #define BBS_OPT_GET_IDENT			(1<<28)	/* Get Identity (RFC 1413)			*/

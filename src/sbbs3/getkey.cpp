@@ -266,11 +266,11 @@ char sbbs_t::getkey(long mode)
 			RESTORELINE; 
 		}
 
-		if(!(startup->options&BBS_OPT_NO_TELNET_NOP)
+		if(!(startup->options&BBS_OPT_NO_TELNET_GA)
 			&& now!=last_telnet_cmd && now-timeout>=60 && !((now-timeout)%60)) {
 			// Let's make sure the socket is up
 			// Sending will trigger a socket d/c detection
-			send_telnet_cmd(TELNET_NOP,0);
+			send_telnet_cmd(TELNET_GA,0);
 			last_telnet_cmd=now;
 		}
 			
