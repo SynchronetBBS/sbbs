@@ -405,7 +405,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 	if(mode&WIN_L2R)
 		left=(api->scrn_width-width+1)/2-s_left;
 	else if(mode&WIN_RHT)
-		left=s_right-(width+left+2);
+		left=s_right-(width+left+4);
 	if(mode&WIN_T2B)
 		top=(api->scrn_len-height+1)/2-2;
 	else if(mode&WIN_BOT)
