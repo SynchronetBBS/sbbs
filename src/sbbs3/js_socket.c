@@ -465,24 +465,22 @@ js_sendbin(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_FALSE);
 	}
 
+	JS_ValueToInt32(cx,argv[0],&val);
 	if(argc>1) 
 		JS_ValueToInt32(cx,argv[1],(int32*)&size);
 
 	switch(size) {
 		case sizeof(BYTE):
-			JS_ValueToInt32(cx,argv[0],&val);
 			b = (BYTE)val;
 			wr=sendsocket(p->sock,&b,size);
 			break;
 		case sizeof(WORD):
-			JS_ValueToInt32(cx,argv[0],&val);
 			w = (WORD)val;
 			if(p->network_byte_order)
 				w=htons(w);
 			wr=sendsocket(p->sock,(BYTE*)&w,size);
 			break;
 		case sizeof(DWORD):
-			JS_ValueToInt32(cx,argv[0],&val);
 			l = val;
 			if(p->network_byte_order)
 				l=htonl(l);
