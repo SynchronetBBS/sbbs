@@ -2442,7 +2442,10 @@ static void ctrl_thread(void* arg)
 		}
 		if(!stricmp(cmd, "HELP SITE") || !stricmp(cmd, "SITE HELP")) {
 			sockprintf(sock,"214-The following SITE commands are recognized (* => unimplemented):");
-			sockprintf(sock," HELP    WHO");
+			sockprintf(sock," HELP    VER     WHO     UPTIME");
+			if(user.level>=SYSOP_LEVEL)
+				sockprintf(sock,
+							" RECYCLE [ALL]");
 			sockprintf(sock,"214 Direct comments to sysop@%s.",scfg.sys_inetaddr);
 			continue;
 		}
@@ -2685,18 +2688,38 @@ static void ctrl_thread(void* arg)
 		}
 
 		if(!stricmp(cmd, "SITE WHO")) {
-			sockprintf(sock,"211-Active users");
+			sockprintf(sock,"211-Active Telnet Nodes:");
 			for(i=0;i<scfg.sys_nodes && i<scfg.sys_lastnode;i++) {
 				if((result=getnodedat(&scfg, i+1, &node, 0))!=0) {
 					sockprintf(sock," Error %d getting data for Telnet Node %d",result,i+1);
 					continue;
 				}
 				if(node.status==NODE_INUSE)
-					sockprintf(sock," Telnet Node %3d: %s",i+1, username(&scfg,node.useron,str));
+					sockprintf(sock," Node %3d: %s",i+1, username(&scfg,node.useron,str));
 			}
-			sockprintf(sock,"211 End");
+			sockprintf(sock,"211 End (%d active FTP clients)", active_clients);
 			continue;
 		}
+		if(!stricmp(cmd, "SITE VER")) {
+			sockprintf(sock,"211 %s",ftp_ver());
+			continue;
+		}
+		if(!stricmp(cmd, "SITE UPTIME")) {
+			sockprintf(sock,"211 %s",sectostr(time(NULL)-uptime,str));
+			continue;
+		}
+		if(!stricmp(cmd, "SITE RECYCLE") && user.level>=SYSOP_LEVEL) {
+			startup->recycle_now=TRUE;
+			sockprintf(sock,"211 server will recycle when not in-use");
+			continue;
+		}
+		if(!stricmp(cmd, "SITE RECYCLE ALL") && user.level>=SYSOP_LEVEL) {
+			refresh_cfg(&scfg);
+			sockprintf(sock,"211 ALL servers/nodes will recycle when not in-use");
+			continue;
+		}
+
+
 #ifdef _DEBUG
 		if(!stricmp(cmd, "SITE DEBUG")) {
 			sockprintf(sock,"211-Debug");
