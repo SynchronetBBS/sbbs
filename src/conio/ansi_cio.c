@@ -653,21 +653,11 @@ int ansi_initciolib(long inmode)
 	char *init="\033[0m\033[2J\033[1;1H";
 
 #ifdef _WIN32
-	DWORD conmode;
-
 	if(isatty(fileno(stdin))) {
-		if(!GetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), &conmode))
-			return(0);
-		conmode&=~(ENABLE_PROCESSED_INPUT|ENABLE_QUICK_EDIT_MODE);
-		conmode&=~ENABLE_MOUSE_INPUT;
-		if(!SetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), conmode))
+		if(!SetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), 0))
 			return(0);
 
-		if(!GetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), &conmode))
-			return(0);
-		conmode&=~ENABLE_PROCESSED_OUTPUT;
-		conmode&=~ENABLE_WRAP_AT_EOL_OUTPUT;
-		if(!SetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), conmode))
+		if(!SetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), 0))
 			return(0);
 	}
 	else {
