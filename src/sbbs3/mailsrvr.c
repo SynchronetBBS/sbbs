@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -438,7 +438,7 @@ static ulong sockmsgtxt(SOCKET socket, smbmsg_t* msg, char* msgtxt, ulong maxlin
 		if(msg->from_net.type==NET_INTERNET && msg->from_net.addr!=NULL)
 			SAFECOPY(fromaddr,(char*)msg->from_net.addr);
 		else if(msg->from_net.type==NET_QWK && msg->from_net.addr!=NULL)
-			sprintf(fromaddr,"%s!%s"
+			SAFEPRINTF2(fromaddr,"%s!%s"
 				,(char*)msg->from_net.addr
 				,usermailaddr(&scfg,fromhost,msg->from));
 		else 
@@ -720,7 +720,7 @@ static void pop3_thread(void* arg)
 
 		srand(time(NULL));	/* seed random number generator */
 		rand();	/* throw-away first result */
-		sprintf(challenge,"<%x%x%lx%lx@%s>"
+		sprintf(challenge,"<%x%x%lx%lx@%.128s>"
 			,rand(),socket,(ulong)time(NULL),clock(),startup->host_name);
 
 		sockprintf(socket,"+OK Synchronet POP3 Server %s-%s Ready %s"
@@ -1187,7 +1187,7 @@ static ulong rblchk(SOCKET sock, DWORD mail_addr_n, const char* rbl_addr)
 	struct in_addr dnsbl_result;
 
 	mail_addr=ntohl(mail_addr_n);
-	sprintf(name,"%ld.%ld.%ld.%ld.%s"
+	sprintf(name,"%ld.%ld.%ld.%ld.%.128s"
 		,mail_addr&0xff
 		,(mail_addr>>8)&0xff
 		,(mail_addr>>16)&0xff
@@ -1270,7 +1270,7 @@ static BOOL chk_email_addr(SOCKET socket, char* p, char* host_name, char* host_i
 
 	lprintf(LOG_NOTICE,"%04d !SMTP BLOCKED SOURCE: %s"
 		,socket, addr);
-	sprintf(tmp,"Blocked source e-mail address: %s", addr);
+	SAFEPRINTF(tmp,"Blocked source e-mail address: %s", addr);
 	spamlog(&scfg, "SMTP", "REFUSED", tmp, host_name, host_ip, to, from);
 	sockprintf(socket, "554 Sender not allowed.");
 
@@ -1401,12 +1401,12 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
     }
 
 	if(report->filename)
-		sprintf(file," %s",report->filename);
+		SAFEPRINTF(file," %s",report->filename);
 	else
 		file[0]=0;
 
 	if(report->lineno)
-		sprintf(line," line %u",report->lineno);
+		SAFEPRINTF(line," line %u",report->lineno);
 	else
 		line[0]=0;
 
@@ -2249,7 +2249,7 @@ static void smtp_thread(void* arg)
 				if(msg.subj!=NULL && trashcan(&scfg,msg.subj,"subject")) {
 					lprintf(LOG_WARNING,"%04d !SMTP BLOCKED SUBJECT (%s) from: %s"
 						,socket, msg.subj, reverse_path);
-					sprintf(tmp,"Blocked subject (%s) from: %s"
+					SAFEPRINTF2(tmp,"Blocked subject (%s) from: %s"
 						,msg.subj, reverse_path);
 					spamlog(&scfg, "SMTP", "REFUSED"
 						,tmp, host_name, host_ip, rcpt_addr, reverse_path);
@@ -3268,7 +3268,7 @@ BOOL bounce(smb_t* smb, smbmsg_t* msg, char* err, BOOL immediate)
 	newmsg.idx.from=0;
 	newmsg.hdr.delivery_attempts=0;
 
-	sprintf(str,"Delivery failure: %.100s",newmsg.subj);
+	SAFEPRINTF(str,"Delivery failure: %s",newmsg.subj);
 	smb_hfield_str(&newmsg, SUBJECT, str);
 	smb_hfield_str(&newmsg, RECIPIENT, newmsg.from);
 	if(newmsg.idx.to) {
@@ -3292,7 +3292,7 @@ BOOL bounce(smb_t* smb, smbmsg_t* msg, char* err, BOOL immediate)
 	sprintf(str,"%s reporting delivery failure of message %s"
 		,startup->host_name, attempts);
 	smb_hfield_str(&newmsg, SMB_COMMENT, str);
-	sprintf(str,"from %s to %s\r\n"
+	SAFEPRINTF2(str,"from %s to %s\r\n"
 		,msg->reverse_path==NULL ? msg->from : msg->reverse_path
 		,(char*)msg->to_net.addr);
 	smb_hfield_str(&newmsg, SMB_COMMENT, str);
@@ -3348,7 +3348,7 @@ static void sendmail_thread(void* arg)
 	char		to[128];
 	char		mx[128];
 	char		mx2[128];
-	char		err[128];
+	char		err[1024];
 	char		buf[512];
 	char		toaddr[256];
 	char		fromaddr[256];
@@ -3612,14 +3612,14 @@ static void sendmail_thread(void* arg)
 			/* HELO */
 			if(!sockgetrsp(sock,"220",buf,sizeof(buf))) {
 				remove_msg_intransit(&smb,&msg);
-				sprintf(err,badrsp_err,server,buf,"220");
+				SAFEPRINTF3(err,badrsp_err,server,buf,"220");
 				bounce(&smb,&msg,err,buf[0]=='5');
 				continue;
 			}
 			sockprintf(sock,"HELO %s",startup->host_name);
 			if(!sockgetrsp(sock,"250", buf, sizeof(buf))) {
 				remove_msg_intransit(&smb,&msg);
-				sprintf(err,badrsp_err,server,buf,"250");
+				SAFEPRINTF3(err,badrsp_err,server,buf,"250");
 				bounce(&smb,&msg,err,buf[0]=='5');
 				continue;
 			}
@@ -3635,7 +3635,7 @@ static void sendmail_thread(void* arg)
 				sockprintf(sock,"MAIL FROM: <%s>",fromaddr);
 			if(!sockgetrsp(sock,"250", buf, sizeof(buf))) {
 				remove_msg_intransit(&smb,&msg);
-				sprintf(err,badrsp_err,server,buf,"250");
+				SAFEPRINTF3(err,badrsp_err,server,buf,"250");
 				bounce(&smb,&msg,err,buf[0]=='5');
 				continue;
 			}
@@ -3649,7 +3649,7 @@ static void sendmail_thread(void* arg)
 			sockprintf(sock,"RCPT TO: <%s>", toaddr);
 			if(!sockgetrsp(sock,"25", buf, sizeof(buf))) {
 				remove_msg_intransit(&smb,&msg);
-				sprintf(err,badrsp_err,server,buf,"25*");
+				SAFEPRINTF3(err,badrsp_err,server,buf,"25*");
 				bounce(&smb,&msg,err,buf[0]=='5');
 				continue;
 			}
@@ -3657,7 +3657,7 @@ static void sendmail_thread(void* arg)
 			sockprintf(sock,"DATA");
 			if(!sockgetrsp(sock,"354", buf, sizeof(buf))) {
 				remove_msg_intransit(&smb,&msg);
-				sprintf(err,badrsp_err,server,buf,"354");
+				SAFEPRINTF3(err,badrsp_err,server,buf,"354");
 				bounce(&smb,&msg,err,buf[0]=='5');
 				continue;
 			}
@@ -3666,7 +3666,7 @@ static void sendmail_thread(void* arg)
 			lines=sockmsgtxt(sock,&msg,msgtxt,-1);
 			if(!sockgetrsp(sock,"250", buf, sizeof(buf))) {
 				remove_msg_intransit(&smb,&msg);
-				sprintf(err,badrsp_err,server,buf,"250");
+				SAFEPRINTF3(err,badrsp_err,server,buf,"250");
 				bounce(&smb,&msg,err,buf[0]=='5');
 				continue;
 			}
