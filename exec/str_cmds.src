@@ -10,7 +10,7 @@
 
 # This module is loaded from command shells with the EXEC_BIN function
 
-# It contains mostly sysop commands (i.e. ;DOS)
+# It contains mostly sysop commands (i.e. ;ERR)
 
 # The command string must be the current string (obtained with SETSTR, GETSTR
 # or similar function) before this module is loaded.
@@ -24,6 +24,9 @@ truncsp str
 logstr
 compare_ars SYSOP
 if_true
+	# Change node action to "sysop activities"
+	node_action NODE_SYSP
+	sync
 
 	######################## SYSOP Functions ##############################
 
@@ -208,6 +211,16 @@ if_true
 		chksyspass
 		if_true
 			exec_int command.com
+			end_if
+		return
+		end_if
+
+	compare_str "SPY"
+		chksyspass
+		if_true
+			shift_str 3
+			call get_arg
+			spy
 			end_if
 		return
 		end_if

@@ -38,10 +38,16 @@
 #include "sbbs.h"
 #include "cmdshell.h"
 
+extern SOCKET spy_socket[];
+extern RingBuf* node_inbuf[];
+
 int sbbs_t::exec_function(csi_t *csi)
 {
 	char	str[256],tmp2[128],ch;
 	uchar*	p;
+	char	ansi_seq[32];
+	int		ansi_len;
+	int		in;
 	int		s,file;
 	uint 	i,j,k;
 	long	l;
@@ -304,6 +310,69 @@ int sbbs_t::exec_function(csi_t *csi)
 			close(file);
 			localguru((char*)p,i);
 			FREE(p);
+			csi->logic=LOGIC_TRUE;
+			return(0);
+		case CS_SPY:
+			i=atoi(csi->str);
+			if(!i || i>MAX_NODES) {
+				bprintf("Invalid node number: %d\r\n",i);
+				csi->logic=LOGIC_FALSE;
+				return(0);
+			}
+			if(i==cfg.node_num) {
+				bprintf("Can't spy on yourself.\r\n");
+				csi->logic=LOGIC_FALSE;
+				return(0);
+			}
+			if(spy_socket[i-1]!=INVALID_SOCKET) {
+				bprintf("Node %d already being spied (%lx)\r\n",i,spy_socket[i-1]);
+				csi->logic=LOGIC_FALSE;
+				return(0);
+			}
+			bprintf("Spying on Node %d, Ctrl-C to Abort...\r\n\r\n",i);
+			spy_socket[i-1]=client_socket;
+			ansi_len=0;
+			while(online 
+				&& client_socket!=INVALID_SOCKET 
+				&& spy_socket[i-1]!=INVALID_SOCKET 
+				&& !msgabort()) {
+				in=incom();
+				if(in==NOINP) {
+					gettimeleft();
+					mswait(1);
+					continue;
+				}
+				ch=in;
+				if(ch==ESC) {
+					if(!ansi_len) {
+						ansi_seq[ansi_len++]=ch;
+						continue;
+					}
+					ansi_len=0;
+				}
+				if(ansi_len && ansi_len<sizeof(ansi_seq)-2) {
+					if(ansi_len==1) {
+						if(ch=='[') {
+							ansi_seq[ansi_len++]=ch;
+							continue;
+						}
+						ansi_len=0;
+					}
+					if(ch=='R') { /* through-away cursor position report */
+						ansi_len=0;
+						continue;
+					}
+					ansi_seq[ansi_len++]=ch;
+					if(isalpha(ch)) {
+						RingBufWrite(node_inbuf[i-1],(uchar*)ansi_seq,ansi_len);
+						ansi_len=0;
+					}
+					continue;
+				}
+				if(node_inbuf[i-1]!=NULL) 
+					RingBufWrite(node_inbuf[i-1],(uchar*)&ch,1);
+			}
+			spy_socket[i-1]=INVALID_SOCKET;
 			csi->logic=LOGIC_TRUE;
 			return(0);
 		case CS_PRIVATE_CHAT:

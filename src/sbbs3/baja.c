@@ -2818,6 +2818,10 @@ void compile(char *src)
 		if(!stricmp(p,"PAGE_GURU")) {
 			fprintf(out,"%c",CS_PAGE_GURU);
 			continue; }
+		if(!stricmp(p,"SPY")) {
+			fprintf(out,"%c",CS_SPY);
+			continue; }
+
 
 		if(!stricmp(p,"PRIVATE_CHAT")) {
 			fprintf(out,"%c",CS_PRIVATE_CHAT);
