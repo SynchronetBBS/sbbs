@@ -8,11 +8,13 @@
 #include <string.h>
 #include <fcntl.h>
 #include <sys/stat.h>
-#if !defined(__unix__)
+#if defined(__unix__)
+	#define O_BINARY 0
+#else
 	#include <io.h>	/* open */
 #endif
 
-void main(void)
+int main(void)
 {
 	char *files[]={
                  "scfg.c"
@@ -31,51 +33,52 @@ void main(void)
 	long l;
 	FILE *stream,*out;
 
-if((out=fopen("scfghelp.dat","wb"))==NULL) {
-	printf("error opening scfghelp.dat\r\n");
-	return; }
+	if((out=fopen("scfghelp.dat","wb"))==NULL) {
+		printf("error opening scfghelp.dat\r\n");
+		return(-1); }
 
-if((ixb=open("scfghelp.ixb",O_WRONLY|O_CREAT|O_BINARY,S_IWRITE|S_IREAD))==-1) {
-	printf("error opening scfghelp.ixb\r\n");
-	return; }
+	if((ixb=open("scfghelp.ixb",O_WRONLY|O_CREAT|O_BINARY,S_IWRITE|S_IREAD))==-1) {
+		printf("error opening scfghelp.ixb\r\n");
+		return(-1); }
 
-for(i=0;files[i];i++) {
-	if((stream=fopen(files[i],"rb"))==NULL) {
-		printf("error opening %s\r\n",files[i]);
-		return; }
-	printf("\r\n%s ",files[i]);
-	line=0;
-	while(!feof(stream)) {
-		if(!fgets(str,128,stream))
-			break;
-		line++;
-		if(strstr(str,"SETHELP(WHERE);")) {
-			l=ftell(out);
-			write(ixb,files[i],12);
-			write(ixb,&line,2);
-			write(ixb,&l,4);
-			fgets(str,128,stream);	 /* skip start comment */
+	for(i=0;files[i];i++) {
+		if((stream=fopen(files[i],"rb"))==NULL) {
+			printf("error opening %s\r\n",files[i]);
+			return(-3); }
+		printf("\r\n%s ",files[i]);
+		line=0;
+		while(!feof(stream)) {
+			if(!fgets(str,128,stream))
+				break;
 			line++;
-			while(!feof(stream)) {
-				if(!fgets(str,128,stream))
-					break;
-				if(strchr(str,9)) { /* Tab expansion */
-					strcpy(tmp,str);
-					k=strlen(tmp);
-					for(j=l=0;j<k;j++) {
-						if(tmp[j]==9) {
-							str[l++]=32;
-							while(l%4)
-								str[l++]=32; }
-						else
-							str[l++]=tmp[j]; }
-					str[l]=0; }
+			if(strstr(str,"SETHELP(WHERE);")) {
+				l=ftell(out);
+				write(ixb,files[i],12);
+				write(ixb,&line,2);
+				write(ixb,&l,4);
+				fgets(str,128,stream);	 /* skip start comment */
 				line++;
-				if(strstr(str,"*/"))    /* end comment */
-					break;
-				fputs(str,out); }
-			fputc(0,out); } }
-	fclose(stream); }
-fclose(out);
-printf("\n");
+				while(!feof(stream)) {
+					if(!fgets(str,128,stream))
+						break;
+					if(strchr(str,9)) { /* Tab expansion */
+						strcpy(tmp,str);
+						k=strlen(tmp);
+						for(j=l=0;j<k;j++) {
+							if(tmp[j]==9) {
+								str[l++]=32;
+								while(l%4)
+									str[l++]=32; }
+							else
+								str[l++]=tmp[j]; }
+						str[l]=0; }
+					line++;
+					if(strstr(str,"*/"))    /* end comment */
+						break;
+					fputs(str,out); }
+				fputc(0,out); } }
+		fclose(stream); }
+	fclose(out);
+	printf("\n");
+	return(0);
 }
