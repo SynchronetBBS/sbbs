@@ -149,12 +149,12 @@ writeln('\t\t</image>');
 
 function encode(str, wspace)
 {
-	return(strip_ctrl(html_encode(str
+	return(html_encode(strip_ctrl(str)
 		,true	/* ex-ASCII */
 		,wspace	/* white-space */
 		,false	/* ANSI */
 		,false	/* Ctrl-A */
-		)));
+		));
 }
 
 var msgbase=new MsgBase(channel.sub);
