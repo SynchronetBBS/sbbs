@@ -54,6 +54,8 @@
 #ifndef MAX_PATH
 	#ifdef MAXPATHLEN
 		#define MAX_PATH MAXPATHLEN	/* clib.h */
+	#elif defined PATH_MAX
+		#define MAX_PATH PATH_MAX
 	#elif defined _MAX_PATH
 		#define MAX_PATH _MAX_PATH
 	#else
