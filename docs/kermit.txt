@@ -32,7 +32,7 @@ Mnemonic (Command Key)   K
 Protocol Name            Kermit (MS-DOS Kermit)
 Access Requirements      !UNIX
 Upload Command Line      %!kermit -f %!kermit.ini receive %f
-Download Command Line    %!kermit -f %!kermit.ini resend %f
+Download Command Line    %!kermit -f %!kermit.ini send %f
 Batch UL Command Line    %!kermit -f %!kermit.ini receive
 Batch DL Command Line    %!kermit -f %!kermit.ini send @%f
 Bidir Command Line
