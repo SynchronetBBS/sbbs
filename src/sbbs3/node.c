@@ -192,7 +192,9 @@ void printnodedat(uchar number, node_t node)
 			printf("New user");
 			printf(" applying for access ");
 			if(!node.connection)
-				printf("Locally");
+				printf("locally");
+			else if(node.connection==0xffff)
+				printf("via telnet");
 			else
 				printf("at %ubps",node.connection);
 			break;
@@ -290,6 +292,8 @@ void printnodedat(uchar number, node_t node)
 					break;  }
 			if(!node.connection)
 				printf(" locally");
+			else if(node.connection==0xffff)
+				printf(" via telnet");
 			else
 				printf(" at %ubps",node.connection);
 			if(node.action==NODE_DLNG) {
@@ -336,6 +340,8 @@ void printnodedat(uchar number, node_t node)
 			putchar('E');
 		if(node.misc&NODE_DOWN)
 			putchar('D');
+		if(node.misc&NODE_LCHAT)
+			putchar('C');
 		putchar(']'); }
 	if(node.errors)
 		printf(" %d error%c",node.errors, node.errors>1 ? 's' : '\0' );
@@ -354,7 +360,7 @@ int main(int argc, char **argv)
 	long value;
 	node_t node;
 
-	printf("\nSynchronet Node Display/Control Utility v1.10\n\n");
+	printf("\nSynchronet Node Display/Control Utility v1.10  Copyright 2000 Rob Swindell\n\n");
 
 	if(sizeof(node_t)!=SIZEOF_NODE_T) {
 		printf("COMPILER ERROR: sizeof(node_t)=%d instead of %d\n"
