@@ -193,6 +193,8 @@ int edit_list(struct bbslist *item)
 				break;
 			case 5:
 				item->dumb=!item->dumb;
+				changed=1;
+				break;
 		}
 		if(uifc.changes)
 			changed=1;
