@@ -202,6 +202,11 @@ if(request.charAt(0)=='?') {	// Handle "special" requests
 			writeln(system.os_version);
 			break;
 
+		case "uptime":
+			t=system.uptime;
+			writeln("Duration: " + String(time()-t));
+			writeln(t);
+			writeln(system.timestr(t) + " 0x" + t.toString(16));
 		case "time":
 			t=time();
 			writeln(system.timestr(t) + " " + system.zonestr() + " 0x" + t.toString(16));
