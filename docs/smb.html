@@ -15,7 +15,8 @@
 
 <hr>
 
-<!--webbot bot="Include" endspan i-CheckSum="23126" -->
+<!--webbot bot="Include" endspan i-checksum="23126" -->
+
 <h1><a name="top">Synchronet Message Base Specification</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 <i>Version 1.21</i></h1>
 <h4><a name="toc"><b>Table of Contents</b></a></h4>
@@ -59,12 +60,12 @@
 <pre><b><i>Q. What is SMB?</i></b></pre>
 <pre>A. SMB (Synchronet Message Base) is a technical specification for the storage
    format of electronic mail messages. These e-mail messages may all be
-   contained in one database, or, more commonly, separated into catagorized
+   contained in one database, or, more commonly, separated into categorized
    databases. These message databases (or message bases) are also referred to
    as &quot;sub-boards&quot;, &quot;forums&quot;, &quot;conferences&quot;, and &quot;SIGs&quot;. The messages may be
    directed to an individual person, sent to a group of individuals, or sent
    to everyone who can read messages in that message base. Messages may be
-   created and read soley at one physical location, or imported from and
+   created and read solely at one physical location, or imported from and
    exported to a message network that may span continents. Message bases that
    are connected to a message network are often called &quot;echoes&quot;.
 </pre>
@@ -115,8 +116,8 @@
 <pre>A. Digital Dynamics (southern California based software development company)
    released &quot;Synchronet Multinode BBS Software Version 1a&quot; in June of 1992 as
    one of the first BBS packages to be designed from the ground-up to operate
-   in a multinode environment with incredible speed and reliability, with a
-   large suite of multinode specific features and design innovations.</pre>
+   in a multi-node environment with incredible speed and reliability, with a
+   large suite of multi-node specific features and design innovations.</pre>
 <pre>   The original message base format was designed with localized messaging and
    low volume message networks in mind. By January of 1993, it was clear that
    high volume message networks (FidoNet, RelayNet, Usenet, etc.) were the
@@ -147,12 +148,12 @@
 <pre>A. Each message base is stored in a set of binary files. This set consists
    of between three and six files depending the storage method used. The base
    filename (maximum of eight characters under DOS) is the same for all six
-   files of the same message base and unique amoung the filenames of other
+   files of the same message base and unique among the filenames of other
    message bases in the same directory. The six files each have a different
    three character extension. The first character of the extension is always
    the letter 'S' (for SMB), while the second and third characters define the
    contents of the file.</pre>
-<pre>   Two of the six files associated with each message base are not recreatable
+<pre>   Two of the six files associated with each message base are not re-creatable
    and therefore are the most important when considering data integrity. These
    two files are the data file (with a .SDT extension) and header file (.SHD
    extension). Both of these files use 256 byte blocks and have associated
@@ -177,7 +178,7 @@
 <pre>A. This is a very important question for systems for that import large volumes
    of messages. Of course, the answer depends on the storage format which you
    are importing from, the average length of messages, the design of the
-   program which is peforming the import process, as well as the hardware and
+   program which is performing the import process, as well as the hardware and
    system software being used. What's important is that SMB will allow the
    fastest import process possible with any given combination of the above
    factors.</pre>
@@ -236,12 +237,12 @@
 <p><b><a href="#toc">Back to Table of Contents</a></b></p>
 <h2><u><a name="Implementation Levels">Implementation Levels</a></u></h2>
 <pre>The SMB format can be implemented to varying degrees between programs without
-creating compatibilty issues. Rather than have developers specifically state
+creating compatibility issues. Rather than have developers specifically state
 which features they have and have not implemented, we have defined seven levels
 of implementation (represented by Roman numerals I through VII). For a program
 or software package to meet an implementation level, it must have all of the
 features listed for that level and all of those for each level below it. The
-minimum suggested imlementation is level I. The SMBUTIL program included with
+minimum suggested implementation is level I. The SMBUTIL program included with
 this specification is an example of a level I implementation with features
 from some of the higher implementation levels.</pre>
 <pre><b><u>Level I</u></b>
@@ -294,7 +295,7 @@ support for embedded and attached animation, sound, and video data.</pre>
 <h2><u><a name="Definitions">Definitions</a></u></h2>
 <pre><u><b>Control Characters</b></u></pre>
 <pre>When specifying control characters (ASCII 1 through 31), the caret symbol &quot;^&quot;
-or the abreviation &quot;ctrl-&quot; followed by a character will be used to indicate the
+or the abbreviation &quot;ctrl-&quot; followed by a character will be used to indicate the
 value. ^A is equivalent to ASCII 1, ^B ASCII 2, etc. The case of the control
 character is not significant (i.e. ^z and ^Z are equivalent). The control
 character ^@ (ASCII 0) will be specified as NULL or 0.
@@ -364,7 +365,7 @@ CRC             Cyclic Redundancy Check
 CRC-16          Standard 16-bit CRC using 1021h polynomial (seed 0)
 CRC-32          Standard 32-bit CRC using EDB88320h polynomial (seed -1)
 CRLF            Carriage Return character followed by a Line Feed character
-FSC             FidoNet Standards Commitee (FTS proposal)
+FSC             FidoNet Standards Committee (FTS proposal)
 FTN             FidoNet Technology Network
 FTS             FidoNet Technical Standard
 LF              Line Feed character (ASCII 10)
@@ -424,7 +425,7 @@ nulstr          ASCII string immediately terminated by NULL.
                     short   zone;   // Zone constant or Minutes (+/-) from UT</pre>
 <pre>                    } when_t;</pre>
 <pre>                time:</pre>
-<pre>                A time value of 0 is invalid and indicates an uninitialized
+<pre>                A time value of 0 is invalid and indicates an un-initialized
                 time stamp.</pre>
 <pre>                Time stamps are always stored in universal time. i.e.
                 Regardless of what the local time zone is, Jan 1st 1994 00:00
@@ -584,6 +585,7 @@ typedef struct {
     } idxrec_t;
 </pre>
 <pre><b><font SIZE="2">Example file dump (16 messages starting with message number 15):</font></b></pre>
+<blockquote>
 <pre>000000 36 4F 13 07 2A 77 00 00 20 00 00 00 0F 00 00 00
 000010 BE 62 76 2C 36 4F 46 0A 7F B2 00 00 20 01 00 00
 000020 10 00 00 00 C7 29 78 2C 36 4F 70 6F 46 FF 00 00
@@ -604,8 +606,8 @@ typedef struct {
 000110 1C 00 00 00 6A 94 D3 2C 36 4F F1 CE CF A2 00 00
 000120 20 0E 00 00 1D 00 00 00 53 DB D5 2C 8D A6 21 CE
 000130 F7 AB 00 00 20 0F 00 00 1E 00 00 00 31 29 DC 2C</pre>
-<pre>
-<b><u>Field descriptions:</u></b></pre>
+</blockquote>
+<pre><b><u>Field descriptions:</u></b></pre>
 <pre><b>To:</b>
 The 'To' field is the CRC-16 of the name of the intended recipient agent of
 this message or the intended recipient's user number. If the CRC is stored, the
@@ -625,7 +627,7 @@ sender name or user number. If the message was imported into the local e-mail
 message base on a Synchronet BBS via netmail, this field will contain 0.</pre>
 <pre><b>Subj:</b>
 The 'Subj' field contains the CRC-16 of the message's subject. The subject
-must be converted to lower case (A-Z changed to a-z) and all preceeding
+must be converted to lower case (A-Z changed to a-z) and all preceding
 &quot;re: &quot;'s and &quot;re:&quot;'s removed before calculating the CRC-16.</pre>
 <pre><b>Attr:</b>
 This ushort is a bit field of the specific attributes for this message.
@@ -637,7 +639,7 @@ header record.</pre>
 This ulong is the serial number of this message. Valid values are 1 through
 0xffffffff. No two index records in the same message base may have the same
 message number. All index records must have sequential, but not necessarily
-consequetive, message numbers.</pre>
+consecutive, message numbers.</pre>
 <pre><b>Time:</b>
 This field is the date/time stamp the message was imported to or posted in
 the message base. It is a clone of the 'when_imported.time' element of the
@@ -788,8 +790,10 @@ Additional headers from developers must have initial 8 bytes in smbhdr_t
 format, length must include size of smbhdr_t, and header_offset of smbstatus_t
 must be changed to include the size of the additional header(s).</pre>
 <pre><b>Example file dump (base header portion only):</b></pre>
+<blockquote>
 <pre>000000 53 4D 42 1A 20 01 20 00 F4 01 00 00 F4 01 00 00 SMB.............
 000010 20 00 00 00 D0 07 00 00 D0 07 00 00 00 00 00 00  ...............</pre>
+</blockquote>
 <pre><b><u>Message Header Record (Fixed portion):</u></b>
 
 <i>C example:</i></pre>
@@ -799,7 +803,7 @@ must be changed to include the size of the additional header(s).</pre>
     ushort  version;        // Version of type (initially 100h for 1.00)
     ushort  length;         // Total length of fixed portion + all fields
     ushort  attr;           // Attributes (bit field) (duplicated in SID)
-    ulong   auxattr;        // Auxillary attributes (bit field)
+    ulong   auxattr;        // Auxiliary attributes (bit field)
     ulong   netattr;        // Network attributes (bit field)
     when_t  when_written;   // Date/Time message was originally created
     when_t  when_imported;  // Date/Time message was imported (locally)
@@ -823,6 +827,7 @@ must be changed to include the size of the additional header(s).</pre>
 <pre>    } hfield_t;
 </pre>
 <pre><b>Example file dump (one header record, both fixed and variable length portions):</b></pre>
+<blockquote>
 <pre>000020 53 48 44 1A 00 00 20 01 F5 00 00 00 00 00 00 00 SHD... .........
 000030 00 00 00 00 46 DB F7 2C 00 00 7D D7 29 2D 00 00 .......,..}×)-..
 000040 01 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ................
@@ -839,6 +844,7 @@ must be changed to include the size of the additional header(s).</pre>
 0000F0 31 20 32 30 39 2F 32 30 39 20 31 30 33 2F 30 20 1 209/209 103/0
 000100 33 35 35 02 00 02 00 02 00 03 00 08 00 01 00 8A 355.............
 000110 00 66 00 00 00 00 00 00 00 00 00 00 00 00 00 00 .f..............</pre>
+</blockquote>
 <pre><b><u>Contents of example header:</u></b></pre>
 <pre>id                   SHD^Z
 type                 0000h
@@ -911,7 +917,7 @@ This is a bit field (16-bit) containing basic message attributes (flags) for
 this message. An exact duplicate of this field is stored in the index file as
 well. They must always match.</pre>
 <pre><b>Auxattr:</b>
-This is a bit field (32-bit) containing the auxillary attributes (flags) for
+This is a bit field (32-bit) containing the auxiliary attributes (flags) for
 this message. The attributes stored in this variable are more specific in
 nature and less critical than those in the Attr field.</pre>
 <pre><b>Netattr:</b>
@@ -935,7 +941,7 @@ contain the value 0.</pre>
 </b>If this message is a reply, and there are later replies to that message
 (the message number contained in the Thread_orig field), then this field will
 contain the number of the next reply in the chain. If this message is the only
-reply to the orignal message, this field will contain the value 0.</pre>
+reply to the original message, this field will contain the value 0.</pre>
 <pre><b>Thread_first:
 </b>If there are any replies to this message (after it has been posted), this field
 will contain the number of the first reply to this message. If there are no
@@ -945,7 +951,7 @@ replies to this message, this field will contain the value 0.</pre>
 specification.</pre>
 <pre><b>Offset:
 </b>The byte offset into the data file, specifying the start of the buffer for
-all data associated with this message. This value must be either 0 or modula
+all data associated with this message. This value must be either 0 or modulus
 256. When retrieving the actual data portion of data fields, the physical
 offset into the file will be the offset of the message data buffer (this field)
 plus the offset of the individual data field (msghdr_t.offset+dfield_t.offset).</pre>
@@ -1615,7 +1621,7 @@ Summary  : FTS/FSC-compliant control information line</pre>
 <pre>Any FidoNet FTS/FSC-compliant control information (&quot;kludge&quot;) line that
 does not have an equivalent representation here. All data not unique to the
 actual control line, including leading and trailing white space, Ctrl-A (01h)
-character and terminating CR must be ommited. Defined in FTS-0001.</pre>
+character and terminating CR must be ommitted. Defined in FTS-0001.</pre>
 <pre>Name     : FIDOAREA
 Value    : A1h
 Data     : ASCII
@@ -1663,7 +1669,7 @@ Data     : ASCII
 Multiple : No
 Required : No
 Format   : pID &quot; &quot; version [&quot; &quot;serialno]
-Summary  : Indentification string of program that created this message</pre>
+Summary  : Identification string of program that created this message</pre>
 <pre>Defined FSC-0046. &quot;^aPID:&quot; and any white space is not included.</pre>
 <pre>Name     : FIDOFLAGS
 Value    : A7h
@@ -1817,7 +1823,7 @@ MSG_KILLREAD        (1&lt;&lt;6)  // Delete message after it has been read
 MSG_MODERATED       (1&lt;&lt;7)  // This message must be validated before export
 MSG_VALIDATED       (1&lt;&lt;8)  // This message has been validated by a moderator
 </pre>
-<pre><b>Auxillary Attributes:</b>
+<pre><b>Auxiliary Attributes:</b>
 
 These are the bit values for msghdr_t.auxattr:</pre>
 <pre>MSG_FILEREQUEST     (1&lt;&lt;0)  // File request
@@ -1909,7 +1915,7 @@ IMAGE_RLE           0x0d    // Windows bitmap (compressed)
 IMAGE_DIB           0x0e    // Display independant bitmap
 IMAGE_PCD           0x0f    // Kodak PhotoCD
 IMAGE_G3F           0x10    // Group 3 FAX
-IMAGE_EPS           0x11    // Ecapsulated PostScript
+IMAGE_EPS           0x11    // Encapsulated PostScript
 IMAGE_RTF           0x12    // Rich text format
 IMAGE_RIP           0x13    // Remote Imaging Protocol Script (RIPscrip)
 IMAGE_NAP           0x14    // NAPLPS
@@ -2112,14 +2118,14 @@ to use SMBLIB functions.</pre>
 <pre>CHKSMB [/opts] smb_filespec.shd</pre>
 <pre>where opts is one or more of the following:</pre>
 <pre>        q   = quiet mode (no beeps)
-        s   = stop after an errored message base (for use with wildcards)
-        p   = pause after an errored message base (wait for key press)
+        s   = stop after an erred message base (for use with wildcards)
+        p   = pause after an erred message base (wait for key press)
         t   = don't check for unsupported translation strings (faster)
         e   = display extended information on corrupted messages</pre>
 <pre>An example command line:</pre>
 <pre>CHKSMB /QP C:\SBBS\DATA\SUBS\*.SHD</pre>
 <pre>would check all the message bases in the C:\SBBS\DATA\SUBS directory, without
-beeping on errors, and pausing after an errored message base.</pre>
+beeping on errors, and pausing after an erred message base.</pre>
 <p><b><a href="#toc">Back to Table of Contents</a></b></p>
 <h2><u><a name="FIXSMB">FIXSMB</a></u></h2>
 <pre>FIXSMB is a utility that will rebuild the index and allocation files for a
@@ -2165,7 +2171,7 @@ the same memory model.</pre>
 <pre>The SMBDEFS.H file contains important constant definitions and data types (also
 defined in this document). If ever this document and SMBDEFS.H are inconsistent
 with each other, then SMBDEFS.H is to be considered correct and this document
-in error. If such a discrepency is found, please notifiy Digital Dynamics so it
+in error. If such a discrepancy is found, please notify Digital Dynamics so it
 can be corrected in a future revision of the specification.</pre>
 <pre>Most notable of the data types is a structure called smbmsg_t (not defined
 in this document). It contains the fixed and variable portions of a message's
@@ -2173,7 +2179,7 @@ header record as well as convenience pointers to the sender's name
 (smbmsg_t.to), recipient's name (smbmsg_t.from), network addresses, and more.
 If multiple SENDER header fields are included (for example), then smbmsg_t.to
 will point to the last SENDER header field in the header record. Convenience
-pointers for other data items work in the same fasion if multiple header fields
+pointers for other data items work in the same fashion if multiple header fields
 of the same type exist in the header record.</pre>
 <pre>Variables of the smbmsg_t data type (and pointers to variables of smbmsg_t
 type) are used as arguments to many of the SMBLIB functions.</pre>
@@ -2205,7 +2211,7 @@ with a main source file to create the executable program.</pre>
 <pre>The functions in this file are organized in a logical order, but their order
 is actually irrelevant to the compiling, linking, and execution of the
 resulting program.</pre>
-<pre>A comment block preceeds each function, explaining what the function does,
+<pre>A comment block precedes each function, explaining what the function does,
 how the passed parameters are used, and what the return code (if any)
 indicates. A more detailed explanation of each function is included here:</pre>
 <pre><b>int smb_open(int retry_time)</b>
@@ -2329,7 +2335,7 @@ The function smb_getmsghdr() is used to read the header record for message
 msg. msg-&gt;idx.offset must be initialized to the byte offset of the header
 record in the header file before this function is called. The function
 smb_freemsgmem() must be called to free the memory allocated by this function
-for the header and data felds. This function returns 0 on success, -1 if
+for the header and data fields. This function returns 0 on success, -1 if
 the fixed portion of the message header record could not be read, -2 if the
 message header ID was incorrect, -3 if memory could not be allocated, -4
 if a data field could not be read, -5 if the fixed length portion of a header
@@ -2338,7 +2344,7 @@ could not be read, -7 if one or more of the mandatory header fields (SENDER,
 RECIPIENT, or SUBJECT) are missing, -8 if total_dfields extends beyond the
 end of the header record, or -9 if incompatible header version.</pre>
 <pre>Several convenience pointers in the msg structure are initialized by this
-function to point to the last occurance of the SENDER (msg-&gt;from), RECIPIENT
+function to point to the last occurrence of the SENDER (msg-&gt;from), RECIPIENT
 (msg-&gt;to), SUBJECT (msg-&gt;subj), etc.</pre>
 <pre><b>int smb_unlockmsghdr(smbmsg_t msg)</b>
 
@@ -2725,7 +2731,7 @@ return(0);
 <p><b><a href="#toc">Back to Table of Contents</a></b></p>
 <h2><u><a name="SMBLIB Performance Issues">SMBLIB Performance Issues</a></u></h2>
 <pre>Since importing messages is the usually the most time consuming task likely
-undertaken by an SMB application, it is also the most susceptable to design
+undertaken by an SMB application, it is also the most susceptible to design
 issues that effect performance.</pre>
 <pre><b><u>Opening and Closing</u></b>
 
@@ -2733,7 +2739,7 @@ When importing multiple messages for a single message base, it appears logical
 to open the message base, import all the messages, then close it. This indeed
 is preferred over opening and closing the message base for each message.</pre>
 <pre>When importing multiple messages for possibly non-consecutive message bases,
-developers may eaily make the mistake of opening and closing the message base
+developers may easily make the mistake of opening and closing the message base
 for each message. This is not necessary and can considerably hinder the
 import performance. The easiest solution is to only close the message base and
 open a new one if the next message to be imported is not for the same message
@@ -2844,7 +2850,7 @@ compressed should not be stored in compressed format since it still requires
 two full blocks of storage). It is important to note that in the above example,
 the length of the data translation string was not taken into account in
 determining the number of required blocks. Also, the smb_datblocks() function
-is normally used in determing the number of required blocks to store a given
+is normally used in determining the number of required blocks to store a given
 data length and it is a little more involved than simply dividing the length of
 the data by SDT_BLOCK_LEN.</pre>
 <p><b><a href="#toc">Back to Table of Contents</a></b></p>
@@ -2868,7 +2874,7 @@ Title     : A standard for unique message identifiers and reply chain linkage
 Publisher : FSC
 Author    : Jim Nutt</pre>
 <pre>Document  : FSC-00046
-Title     : A Product Idenfifier for FidoNet Message Handlers
+Title     : A Product Identifier for FidoNet Message Handlers
 Publisher : FSC
 Author    : Joaquim H. Homrighausen</pre>
 <pre>Document  : FSC-00053
@@ -2933,7 +2939,8 @@ http://www.synchro.net</a>
 read the <a href="http://www.synchro.net/copyright.html">Copyright Documentation</a>
 .</font></p>
 
-<!--webbot bot="Include" endspan i-CheckSum="55766" -->
+<!--webbot bot="Include" endspan i-checksum="55766" -->
+
 </body>
 
 </html>
