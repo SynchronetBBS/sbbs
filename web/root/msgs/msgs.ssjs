@@ -93,7 +93,7 @@ for(;displayed<max_messages && ((hdr=msgbase.get_msg_header(true,last_offset)) !
 		continue;
 	if(hdr.subject=='')
 		hdr.subject="-- No Subject --";
-	if(sub=='mail' && hdr.to!=user.alias && hdr.to!=user.name && hdr.to !=user.netmail)
+	if(sub=='mail' && ((idx=msgbase.get_msg_index(true,last_offset))==null || idx.to!=user.number))
 		continue;
 	template.messages[displayed.toString()]=hdr;
  	template.messages[displayed.toString()].attachments=count_attachments(hdr,msgbase.get_msg_body(true,last_offset,true,true));
