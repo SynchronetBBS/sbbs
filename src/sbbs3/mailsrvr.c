@@ -745,7 +745,7 @@ static void pop3_thread(void* arg)
 		srand(time(NULL));	/* seed random number generator */
 		rand();	/* throw-away first result */
 		sprintf(challenge,"<%x%x%lx%lx@%s>"
-			,rand(),socket,time(NULL),clock(),startup->host_name);
+			,rand(),socket,(ulong)time(NULL),clock(),startup->host_name);
 
 		sockprintf(socket,"+OK Synchronet POP3 Server %s-%s Ready %s"
 			,revision,PLATFORM_DESC,challenge);
@@ -2233,7 +2233,7 @@ static void smtp_thread(void* arg)
 		}
 		if(!stricmp(buf,"AUTH CRAM-MD5")) {
 			sprintf(challenge,"<%x%x%lx%lx@%s>"
-				,rand(),socket,time(NULL),clock(),startup->host_name);
+				,rand(),socket,(ulong)time(NULL),clock(),startup->host_name);
 #if 0
 			lprintf("%04d SMTP CRAM-MD5 challenge: %s"
 				,socket,challenge);
