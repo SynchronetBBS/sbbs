@@ -242,7 +242,7 @@ void sbbs_t::center(char *instr)
 	char str[256];
 	int i,j;
 
-	sprintf(str,"%.*s",sizeof(str)-1,instr);
+	SAFECOPY(str,instr);
 	truncsp(str);
 	j=bstrlen(str);
 	for(i=0;i<(80-j)/2;i++)

@@ -243,7 +243,7 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 		printf("To User Name: ");
 		fgets(str,sizeof(str)-1,stdin); 
 	} else
-		sprintf(str,"%.*s",sizeof(str)-1,to);
+		SAFECOPY(str,to);
 
 	truncsp(str);
 	i=smb_hfield(&msg,RECIPIENT,(ushort)strlen(str),str);
@@ -258,7 +258,7 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 			printf("To User Number (0=QWKnet or Internet): ");
 			gets(str);
 		} else
-			sprintf(str,"%.*s",sizeof(str)-1,to_number);
+			SAFECOPY(str,to_number);
 		truncsp(str);
 		i=smb_hfield(&msg,RECIPIENTEXT,(ushort)strlen(str),str);
 		if(i) {
@@ -277,7 +277,7 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 			printf("To Address: ");
 			gets(str);
 		} else
-			sprintf(str,"%.*s",sizeof(str)-1,to_address);
+			SAFECOPY(str,to_address);
 		truncsp(str);
 		if(*str) {
 			if(strchr(str,'.'))
@@ -302,7 +302,7 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 		printf("From User Name: ");
 		gets(str);
 	} else
-		sprintf(str,"%.*s",sizeof(str)-1,from);
+		SAFECOPY(str,from);
 	truncsp(str);
 	i=smb_hfield(&msg,SENDER,(ushort)strlen(str),str);
 	if(i) {
@@ -314,7 +314,7 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 			printf("From User Number: ");
 			gets(str);
 		} else
-			sprintf(str,"%.*s",sizeof(str)-1,from_number);
+			SAFECOPY(str,from_number);
 		truncsp(str);
 		i=smb_hfield(&msg,SENDEREXT,(ushort)strlen(str),str);
 		if(i) {
@@ -332,7 +332,7 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 		printf("Subject: ");
 		gets(str);
 	} else
-		sprintf(str,"%.*s",sizeof(str)-1,subject);
+		SAFECOPY(str,subject);
 	truncsp(str);
 	i=smb_hfield(&msg,SUBJECT,(ushort)strlen(str),str);
 	if(i) {

@@ -3358,10 +3358,10 @@ int import_netmail(char *path,fmsghdr_t hdr, FILE *fidomsg)
 		addr.net=hdr.orignet;
 		addr.node=hdr.orignode;
 		addr.point=hdr.origpoint;
-		sprintf(hdr.to	,"%.*s",sizeof(hdr.to)-1	,scfg.sys_op);
-		sprintf(hdr.from,"%.*s",sizeof(hdr.from)-1	,"SBBSecho");
-		sprintf(str		,"%.*s",sizeof(str)-1		,hdr.subj);
-		sprintf(hdr.subj,"%.*s",sizeof(hdr.subj)-1	,"Areafix Request");
+		SAFECOPY(hdr.to,scfg.sys_op);
+		SAFECOPY(hdr.from,"SBBSecho");
+		SAFECOPY(str,hdr.subj);
+		SAFECOPY(hdr.subj,"Areafix Request");
 		hdr.origzone=hdr.orignet=hdr.orignode=hdr.origpoint=0;
 		p=process_areafix(addr,fmsgbuf,str);
 		if(p && cfg.notify)
@@ -3950,7 +3950,7 @@ int main(int argc, char **argv)
 	if(p==NULL) {
 		printf("\7\nSBBSCTRL environment variable not set.\n");
 		bail(1); }
-	sprintf(scfg.ctrl_dir,"%.*s",sizeof(scfg.ctrl_dir)-1,p); 
+	SAFECOPY(scfg.ctrl_dir,p); 
 
 	if(_chdir(scfg.ctrl_dir)!=0)
 		printf("!ERROR changing directory to: %s", scfg.ctrl_dir);

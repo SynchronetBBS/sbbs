@@ -457,7 +457,7 @@ uint sbbs_t::gettmplt(char *strout,char *templt, long mode)
 	uint	t=strlen(templt),c=0;
 
 	sys_status&=~SS_ABORT;
-	sprintf(tmplt, "%.*s",sizeof(tmplt)-1, templt);
+	SAFECOPY(tmplt, templt);
 	strupr(tmplt);
 	if(useron.misc&ANSI) {
 		if(mode&K_LINE) {
@@ -737,9 +737,9 @@ void sbbs_t::dirinfo(uint dirnum)
 
 
 /****************************************************************************/
-/* Pattern matching string search of 'insearch' in 'fname'.					*/
+/* Pattern matching string search of 'insearchof' in 'fname'.				*/
 /****************************************************************************/
-extern "C" BOOL DLLCALL findstr(scfg_t* cfg, char* insearch, char* fname)
+extern "C" BOOL DLLCALL findstr(scfg_t* cfg, char* insearchof, char* fname)
 {
 	char*	p;
 	char	str[128];
@@ -752,7 +752,7 @@ extern "C" BOOL DLLCALL findstr(scfg_t* cfg, char* insearch, char* fname)
 	if((stream=fopen(fname,"r"))==NULL)
 		return(FALSE); 
 
-	sprintf(search,"%.*s",sizeof(search)-1,insearch);
+	SAFECOPY(search,insearchof);
 	strupr(search);
 
 	found=FALSE;
@@ -811,12 +811,12 @@ extern "C" BOOL DLLCALL findstr(scfg_t* cfg, char* insearch, char* fname)
 /* Searches the file <name>.can in the TEXT directory for matches			*/
 /* Returns TRUE if found in list, FALSE if not.								*/
 /****************************************************************************/
-extern "C" BOOL DLLCALL trashcan(scfg_t* cfg, char* insearch, char* name)
+extern "C" BOOL DLLCALL trashcan(scfg_t* cfg, char* insearchof, char* name)
 {
 	char fname[MAX_PATH+1];
 
 	sprintf(fname,"%s%s.can",cfg->text_dir,name);
-	return(findstr(cfg,insearch,fname));
+	return(findstr(cfg,insearchof,fname));
 }
 
 /****************************************************************************/
@@ -824,12 +824,12 @@ extern "C" BOOL DLLCALL trashcan(scfg_t* cfg, char* insearch, char* name)
 /* Returns TRUE if found in list, FALSE if not.								*/
 /* Displays bad<name>.can in text directory if found.						*/
 /****************************************************************************/
-bool sbbs_t::trashcan(char *insearch, char *name)
+bool sbbs_t::trashcan(char *insearchof, char *name)
 {
 	char str[256];
 	bool result;
 
-	result=::trashcan(&cfg, insearch, name)
+	result=::trashcan(&cfg, insearchof, name)
 		? true:false; // This is a dumb bool conversion to make BC++ happy
 	if(result) {
 		sprintf(str,"%sbad%s.msg",cfg.text_dir,name);

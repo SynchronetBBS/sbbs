@@ -414,12 +414,12 @@ BOOL DLLCALL getfileixb(scfg_t* cfg, file_t* f)
 BOOL DLLCALL removefiledat(scfg_t* cfg, file_t* f)
 {
 	char	c,str[256],ixbname[12],HUGE16 *ixbbuf,fname[13];
-    int		file;
+    int		i,file;
 	long	l,length;
 
 	strcpy(fname,f->name);
-	for(c=8;c<12;c++)   /* Turn FILENAME.EXT into FILENAMEEXT */
-		fname[c]=fname[c+1];
+	for(i=8;i<12;i++)   /* Turn FILENAME.EXT into FILENAMEEXT */
+		fname[i]=fname[i+1];
 	sprintf(str,"%s%s.ixb",cfg->dir[f->dir]->data_dir,cfg->dir[f->dir]->code);
 	if((file=sopen(str,O_RDONLY|O_BINARY,SH_DENYWR))==-1) {
 //		errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
@@ -447,9 +447,9 @@ BOOL DLLCALL removefiledat(scfg_t* cfg, file_t* f)
 		return(FALSE); 
 	}
 	for(l=0;l<length;l+=F_IXBSIZE) {
-		for(c=0;c<11;c++)
-			ixbname[c]=ixbbuf[l+c];
-		ixbname[c]=0;
+		for(i=0;i<11;i++)
+			ixbname[i]=ixbbuf[l+i];
+		ixbname[i]=0;
 		if(stricmp(ixbname,fname))
 			if(lwrite(file,&ixbbuf[l],F_IXBSIZE)!=F_IXBSIZE) {
 				close(file);
@@ -486,13 +486,13 @@ BOOL DLLCALL removefiledat(scfg_t* cfg, file_t* f)
 BOOL DLLCALL findfile(scfg_t* cfg, uint dirnum, char *filename)
 {
 	char str[256],c,fname[13],HUGE16 *ixbbuf;
-    int file;
+    int i,file;
     long length,l;
 
 	sprintf(fname,"%.12s",filename);
 	strupr(fname);
-	for(c=8;c<12;c++)   /* Turn FILENAME.EXT into FILENAMEEXT */
-		fname[c]=fname[c+1];
+	for(i=8;i<12;i++)   /* Turn FILENAME.EXT into FILENAMEEXT */
+		fname[i]=fname[i+1];
 	sprintf(str,"%s%s.ixb",cfg->dir[dirnum]->data_dir,cfg->dir[dirnum]->code);
 	if((file=sopen(str,O_RDONLY|O_BINARY,SH_DENYWR))==-1) return(FALSE);
 	length=filelength(file);
@@ -510,9 +510,9 @@ BOOL DLLCALL findfile(scfg_t* cfg, uint dirnum, char *filename)
 		return(FALSE); }
 	close(file);
 	for(l=0;l<length;l+=F_IXBSIZE) {
-		for(c=0;c<11;c++)
-			if(fname[c]!=toupper(ixbbuf[l+c])) break;
-		if(c==11) break; }
+		for(i=0;i<11;i++)
+			if(fname[i]!=toupper(ixbbuf[l+i])) break;
+		if(i==11) break; }
 	FREE((char *)ixbbuf);
 	if(l!=length)
 		return(TRUE);
@@ -524,7 +524,7 @@ BOOL DLLCALL findfile(scfg_t* cfg, uint dirnum, char *filename)
 /****************************************************************************/
 char* DLLCALL padfname(char *filename, char *str)
 {
-    char c,d;
+    int c,d;
 
 	for(c=0;c<8;c++)
 		if(filename[c]=='.' || !filename[c]) break;
@@ -551,7 +551,7 @@ char* DLLCALL padfname(char *filename, char *str)
 /****************************************************************************/
 char* DLLCALL unpadfname(char *filename, char *str)
 {
-    char c,d;
+    int c,d;
 
 	for(c=0,d=0;filename[c];c++)
 		if(filename[c]!=SP) str[d++]=filename[c];

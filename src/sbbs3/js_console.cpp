@@ -366,7 +366,7 @@ js_gettemplate(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 	if(js_str==NULL)
 		str[0]=0;
 	else
-		sprintf(str, "%.*s", sizeof(str)-1, JS_GetStringBytes(js_str));
+		SAFECOPY(str,JS_GetStringBytes(js_str));
 
 	sbbs->gettmplt(str,JS_GetStringBytes(js_fmt),mode);
 	js_str = JS_NewStringCopyZ(cx, str);

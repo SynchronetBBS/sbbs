@@ -48,7 +48,7 @@ int sbbs_t::login(char *username, char *pw)
 	if(cfg.node_dollars_per_call && noyes(text[AreYouSureQ]))
 		return(LOGIC_FALSE);
 
-	sprintf(str,"%.*s",sizeof(str)-1,username);
+	SAFECOPY(str,username);
 
 	if(str[0]=='*') {
 		memmove(str,str+1,strlen(str));

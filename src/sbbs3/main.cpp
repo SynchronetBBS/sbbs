@@ -400,7 +400,7 @@ js_prompt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(argc>1) {
 		if((str=JS_ValueToString(cx, argv[1]))==NULL)
 		    return(JS_FALSE);
-		sprintf(instr,"%.*s",sizeof(instr)-1,JS_GetStringBytes(str));
+		SAFECOPY(instr,JS_GetStringBytes(str));
 	} else
 		instr[0]=0;
 
@@ -1599,7 +1599,7 @@ sbbs_t::sbbs_t(ushort node_num, DWORD addr, char* name, SOCKET sd,
 		memcpy(&client,client_info,sizeof(client));
 	client_addr = addr;
 	client_socket = sd;
-	sprintf(client_name, "%.*s", (int)sizeof(client_name)-1, name);
+	SAFECOPY(client_name, name);
 	client_socket_dup=INVALID_SOCKET;
 	client_ident[0]=0;
 
@@ -3139,8 +3139,7 @@ void DLLCALL bbs_thread(void* arg)
 		lprintf("!ERROR %d changing directory to: %s", errno, startup->ctrl_dir);
 
 	/* Initial configuration and load from CNF files */
-    sprintf(scfg.ctrl_dir, "%.*s", (int)sizeof(scfg.ctrl_dir)-1
-    	,startup->ctrl_dir);
+    SAFECOPY(scfg.ctrl_dir,startup->ctrl_dir);
     lprintf("Loading configuration files from %s", scfg.ctrl_dir);
 	scfg.size=sizeof(scfg);
 	scfg.node_num=startup->first_node;
@@ -3153,7 +3152,7 @@ void DLLCALL bbs_thread(void* arg)
 	scfg_reloaded=true;
 
 	if(startup->host_name[0]==0)
-		sprintf(startup->host_name,"%.*s",sizeof(startup->host_name),scfg.sys_inetaddr);
+		SAFECOPY(startup->host_name,scfg.sys_inetaddr);
 
 	if(!(scfg.sys_misc&SM_LOCAL_TZ) && !(startup->options&BBS_OPT_LOCAL_TIMEZONE)) {
 		if(putenv("TZ=UTC0"))
@@ -3613,8 +3612,8 @@ void DLLCALL bbs_thread(void* arg)
 		/* Initialize client display */
 		client.size=sizeof(client);
 		client.time=time(NULL);
-		sprintf(client.addr,"%.*s",(int)sizeof(client.addr)-1,host_ip);
-		sprintf(client.host,"%.*s",(int)sizeof(client.host)-1,host_name);
+		SAFECOPY(client.addr,host_ip);
+		SAFECOPY(client.host,host_name);
 		client.port=ntohs(client_addr.sin_port);
 		client.protocol=rlogin ? "RLogin":"Telnet";
 		client.user="<unknown>";
@@ -3654,8 +3653,7 @@ void DLLCALL bbs_thread(void* arg)
 
 		/* copy the IDENT response, if any */
 		if(identity!=NULL)
-			sprintf(new_node->client_ident,"%.*s"
-				,sizeof(new_node->client_ident)-1,identity);
+			SAFECOPY(new_node->client_ident,identity);
 
 		if(new_node->init()==false) {
 			lprintf("%04d !Node %d Initialization failure"

@@ -3448,7 +3448,7 @@ int main(int argc, char **argv)
 		bail(1); 
 	}
 
-	sprintf(bin_file,"%.*s",sizeof(bin_file)-1,str);
+	SAFECOPY(bin_file,str);
 
 	printf("\nCompiling %s...\n",src);
 

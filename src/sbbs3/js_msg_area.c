@@ -179,7 +179,7 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 				return(NULL);
 
 			if(cfg->sub[d]->newsgroup[0])
-				sprintf(str,"%.*s",sizeof(str)-1,cfg->sub[d]->newsgroup);
+				SAFECOPY(str,cfg->sub[d]->newsgroup);
 			else {
 				sprintf(str,"%s.%s",cfg->grp[l]->sname,cfg->sub[d]->sname);
 				for(c=0;str[c];c++)

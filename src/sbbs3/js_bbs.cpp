@@ -529,10 +529,10 @@ static JSBool js_bbs_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			sbbs->posts_read=val;
 			break;
 		case BBS_PROP_MENU_DIR:
-			sprintf(sbbs->menu_dir,"%.*s",sizeof(sbbs->menu_dir)-1,p);
+			SAFECOPY(sbbs->menu_dir,p);
 			break;
 		case BBS_PROP_MENU_FILE:
-			sprintf(sbbs->menu_file,"%.*s",sizeof(sbbs->menu_file)-1,p);
+			SAFECOPY(sbbs->menu_file,p);
 			break;
 		case BBS_PROP_MAIN_CMDS:
 			sbbs->main_cmds=val;
@@ -597,10 +597,10 @@ static JSBool js_bbs_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			break;
 
 		case BBS_PROP_RLOGIN_NAME:
-			sprintf(sbbs->rlogin_name,"%.*s",sizeof(sbbs->rlogin_name)-1,p);
+			SAFECOPY(sbbs->rlogin_name,p);
 			break;
 		case BBS_PROP_CLIENT_NAME:
-			sprintf(sbbs->client_name,"%.*s",sizeof(sbbs->client_name)-1,p);
+			SAFECOPY(sbbs->client_name,p);
 			break;
 
 		case BBS_PROP_ALTUL:

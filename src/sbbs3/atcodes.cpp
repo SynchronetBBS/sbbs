@@ -140,10 +140,10 @@ char* sbbs_t::atcode(char* sp, char* str)
 			up=0;
 		char   days[64]="";
 		if((up/(24*60*60))>=2) {
-	        sprintf(days,"%u days ",up/(24*60*60));
+	        sprintf(days,"%lu days ",up/(24*60*60));
 			up%=(24*60*60);
 		}
-		sprintf(str,"%s%u:%02u"
+		sprintf(str,"%s%lu:%02lu"
 	        ,days
 			,up/(60*60)
 			,(up/60)%60
@@ -383,7 +383,7 @@ char* sbbs_t::atcode(char* sp, char* str)
 
 	if(!strcmp(sp,"TIMEON") || !strcmp(sp,"TIMEUSED")) {
 		now=time(NULL);
-		sprintf(str,"%u",(now-logontime)/60); 
+		sprintf(str,"%lu",(now-logontime)/60); 
 		return(str);
 	}
 
@@ -410,7 +410,7 @@ char* sbbs_t::atcode(char* sp, char* str)
 
 	if(!strcmp(sp,"MINLEFT") || !strcmp(sp,"LEFT") || !strcmp(sp,"TIMELEFT")) {
 		gettimeleft();
-		sprintf(str,"%u",timeleft/60); 
+		sprintf(str,"%lu",timeleft/60); 
 		return(str);
 	}
 
@@ -439,7 +439,7 @@ char* sbbs_t::atcode(char* sp, char* str)
 	}
 
 	if(!strcmp(sp,"MSGREAD")) {
-		sprintf(str,"%u",posts_read);
+		sprintf(str,"%lu",posts_read);
 		return(str);
 	}
 
@@ -536,7 +536,7 @@ char* sbbs_t::atcode(char* sp, char* str)
 		l=useron.expire-now;
 		if(l<0)
 			l=0;
-		sprintf(str,"%u",l/(1440L*60L)); 
+		sprintf(str,"%lu",l/(1440L*60L)); 
 		return(str);
 	}
 
@@ -801,29 +801,29 @@ char* sbbs_t::atcode(char* sp, char* str)
 		getstats(&cfg,0,&stats);
 		sp+=6;
 		if(!strcmp(sp,"LOGONS")) 
-			sprintf(str,"%u",stats.logons);
+			sprintf(str,"%lu",stats.logons);
 		else if(!strcmp(sp,"LTODAY")) 
-			sprintf(str,"%u",stats.ltoday);
+			sprintf(str,"%lu",stats.ltoday);
 		else if(!strcmp(sp,"TIMEON")) 
-			sprintf(str,"%u",stats.timeon);
+			sprintf(str,"%lu",stats.timeon);
 		else if(!strcmp(sp,"TTODAY")) 
-			sprintf(str,"%u",stats.ttoday);
+			sprintf(str,"%lu",stats.ttoday);
 		else if(!strcmp(sp,"ULS")) 
-			sprintf(str,"%u",stats.uls);
+			sprintf(str,"%lu",stats.uls);
 		else if(!strcmp(sp,"ULB")) 
-			sprintf(str,"%u",stats.ulb);
+			sprintf(str,"%lu",stats.ulb);
 		else if(!strcmp(sp,"DLS")) 
-			sprintf(str,"%u",stats.dls);
+			sprintf(str,"%lu",stats.dls);
 		else if(!strcmp(sp,"DLB")) 
-			sprintf(str,"%u",stats.dlb);
+			sprintf(str,"%lu",stats.dlb);
 		else if(!strcmp(sp,"PTODAY")) 
-			sprintf(str,"%u",stats.ptoday);
+			sprintf(str,"%lu",stats.ptoday);
 		else if(!strcmp(sp,"ETODAY")) 
-			sprintf(str,"%u",stats.etoday);
+			sprintf(str,"%lu",stats.etoday);
 		else if(!strcmp(sp,"FTODAY")) 
-			sprintf(str,"%u",stats.ftoday);
+			sprintf(str,"%lu",stats.ftoday);
 		else if(!strcmp(sp,"NUSERS")) 
-			sprintf(str,"%u",stats.nusers);
+			sprintf(str,"%lu",stats.nusers);
 		return(str);
 	}
 

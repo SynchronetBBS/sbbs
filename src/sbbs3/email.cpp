@@ -56,7 +56,7 @@ bool sbbs_t::email(int usernumber, char *top, char *subj, long mode)
 	node_t	node;
 	smbmsg_t msg;
 
-	sprintf(title,"%.*s",LEN_TITLE,subj);
+	SAFECOPY(title,subj);
 
 	if(useron.etoday>=cfg.level_emailperday[useron.level] && !SYSOP) {
 		bputs(text[TooManyEmailsToday]);

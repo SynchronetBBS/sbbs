@@ -426,7 +426,7 @@ long sbbs_t::getkeys(char *keys, ulong max)
 	uchar	ch,n=0,c;
 	ulong	i=0;
 
-	sprintf(str,"%.*s",sizeof(str)-1,keys);
+	SAFECOPY(str,keys);
 	strupr(str);
 	while(online) {
 		ch=getkey(K_UPPER);

@@ -134,7 +134,7 @@ BYTE* telnet_expand(BYTE* inbuf, ulong inlen, BYTE* outbuf, ulong& newlen)
 
 #define XTRN_LOADABLE_MODULE								\
 	if(cmdline[0]=='*') {   /* Baja module or JavaScript */	\
-		sprintf(str,"%.*s",sizeof(str)-1,cmdline+1);		\
+		SAFECOPY(str,cmdline+1);							\
 		p=strchr(str,SP);									\
 		if(p) {												\
 			strcpy(main_csi.str,p+1);						\

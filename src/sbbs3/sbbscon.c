@@ -347,7 +347,7 @@ static int bbs_lputs(char *str)
 			,tm_p->tm_mon+1,tm_p->tm_mday
 			,tm_p->tm_hour,tm_p->tm_min,tm_p->tm_sec);
 
-	sprintf(logline,"%s     %.*s",tstr,sizeof(logline)-2,str);
+	sprintf(logline,"%s     %.*s",tstr,(int)sizeof(logline)-32,str);
 	truncsp(logline);
 	lputs(logline);
 	
@@ -397,7 +397,7 @@ static int ftp_lputs(char *str)
 			,tm_p->tm_mon+1,tm_p->tm_mday
 			,tm_p->tm_hour,tm_p->tm_min,tm_p->tm_sec);
 
-	sprintf(logline,"%sftp  %.*s",tstr,sizeof(logline)-2,str);
+	sprintf(logline,"%sftp  %.*s",tstr,(int)sizeof(logline)-32,str);
 	truncsp(logline);
 	lputs(logline);
 	
@@ -447,7 +447,7 @@ static int mail_lputs(char *str)
 			,tm_p->tm_mon+1,tm_p->tm_mday
 			,tm_p->tm_hour,tm_p->tm_min,tm_p->tm_sec);
 
-	sprintf(logline,"%smail %.*s",tstr,sizeof(logline)-2,str);
+	sprintf(logline,"%smail %.*s",tstr,(int)sizeof(logline)-32,str);
 	truncsp(logline);
 	lputs(logline);
 	
@@ -497,7 +497,7 @@ static int services_lputs(char *str)
 			,tm_p->tm_mon+1,tm_p->tm_mday
 			,tm_p->tm_hour,tm_p->tm_min,tm_p->tm_sec);
 
-	sprintf(logline,"%ssrvc %.*s",tstr,sizeof(logline)-2,str);
+	sprintf(logline,"%ssrvc %.*s",tstr,(int)sizeof(logline)-32,str);
 	truncsp(logline);
 	lputs(logline);
 	
@@ -547,7 +547,7 @@ static int event_lputs(char *str)
 			,tm_p->tm_mon+1,tm_p->tm_mday
 			,tm_p->tm_hour,tm_p->tm_min,tm_p->tm_sec);
 
-	sprintf(logline,"%sevnt %.*s",tstr,sizeof(logline)-2,str);
+	sprintf(logline,"%sevnt %.*s",tstr,(int)sizeof(logline)-32,str);
 	truncsp(logline);
 	lputs(logline);
 	
@@ -964,7 +964,7 @@ int main(int argc, char** argv)
 						{
 							new_uid_name=arg;
 							old_uid = getuid();
-							if(pw_entry=getpwnam(new_uid_name))
+							if((pw_entry=getpwnam(new_uid_name))!=0)
 							{
 								new_uid=pw_entry->pw_uid;
 								new_gid=pw_entry->pw_gid;

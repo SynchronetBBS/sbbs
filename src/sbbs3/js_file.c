@@ -86,7 +86,7 @@ js_file_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval
 		return(JS_FALSE);
 	}
 
-	sprintf(p->name,"%.*s",sizeof(p->name)-1,JS_GetStringBytes(str));
+	SAFECOPY(p->name,JS_GetStringBytes(str));
 
 	if(!JS_SetPrivate(cx, obj, p)) {
 		dbprintf(TRUE, p, "JS_SetPrivate failed");
@@ -147,7 +147,7 @@ js_open(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		} else
 			JS_ValueToInt32(cx,argv[i],&bufsize);
 	}
-	sprintf(p->mode,"%.*s",sizeof(p->mode)-1,mode);
+	SAFECOPY(p->mode,mode);
 
 	if((p->fp=fopen(p->name,p->mode))==NULL)
 		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);

@@ -245,24 +245,6 @@ static void truncsp(char *str)
 	str[c]=0;
 }
 
-static u_long resolve_ip(char *addr)
-{
-	HOSTENT*	host;
-	char*		p;
-
-	for(p=addr;*p;p++)
-		if(*p!='.' && !isdigit(*p))
-			break;
-	if(!(*p))
-		return(inet_addr(addr));
-
-	if ((host=gethostbyname(addr))==NULL) {
-		lprintf("0000 !ERROR resolving hostname: %s",addr);
-		return(0);
-	}
-	return(*((ulong*)host->h_addr_list[0]));
-}
-
 /* Global JavaScript Methods */
 static JSBool
 js_log(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
@@ -349,9 +331,9 @@ js_login(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(argc>2)
 		inc_logons=JSVAL_TO_BOOLEAN(argv[2]);
 
-	sprintf(user.note,"%.*s",sizeof(user.note)-1,client->client->addr);
-	sprintf(user.comp,"%.*s",sizeof(user.comp)-1,client->client->host);
-	sprintf(user.modem,"%.*s",sizeof(user.modem)-1,client->service->protocol);
+	SAFECOPY(user.note,client->client->addr);
+	SAFECOPY(user.comp,client->client->host);
+	SAFECOPY(user.modem,client->service->protocol);
 
 	if(inc_logons) {
 		user.logons++;
@@ -663,8 +645,8 @@ static void js_service_thread(void* arg)
 
 	client.size=sizeof(client);
 	client.time=time(NULL);
-	sprintf(client.addr,"%.*s",(int)sizeof(client.addr)-1,inet_ntoa(service_client.addr.sin_addr));
-	sprintf(client.host,"%.*s",(int)sizeof(client.host)-1,host_name);
+	SAFECOPY(client.addr,inet_ntoa(service_client.addr.sin_addr));
+	SAFECOPY(client.host,host_name);
 	client.port=ntohs(service_client.addr.sin_port);
 	client.protocol=service->protocol;
 	client.user="<unknown>";
@@ -829,8 +811,8 @@ static void native_service_thread(void* arg)
 
 	client.size=sizeof(client);
 	client.time=time(NULL);
-	sprintf(client.addr,"%.*s",(int)sizeof(client.addr)-1,inet_ntoa(service_client.addr.sin_addr));
-	sprintf(client.host,"%.*s",(int)sizeof(client.host)-1,host_name);
+	SAFECOPY(client.addr,inet_ntoa(service_client.addr.sin_addr));
+	SAFECOPY(client.host,host_name);
 	client.port=ntohs(service_client.addr.sin_port);
 	client.protocol=service->protocol;
 	client.user="<unknown>";
@@ -927,7 +909,7 @@ static service_t* read_services_cfg(char* services_cfg, DWORD* services)
 		tp=p; 
 		while(*tp && *tp>' ') tp++; 
 		*tp=0;
-		sprintf(service[*services].protocol,"%.*s",sizeof(service[0].protocol),p);
+		sprintf(service[*services].protocol,"%.*s",(int)sizeof(service[0].protocol)-1,p);
 		p=tp+1;
 		while(*p && *p<=' ') p++;
 		service[*services].port=atoi(p);
@@ -937,7 +919,7 @@ static service_t* read_services_cfg(char* services_cfg, DWORD* services)
 		service[*services].options=strtol(p,NULL,16);
 		NEXT_FIELD(p);
 
-		sprintf(service[*services].cmd,"%.*s",sizeof(service[0].cmd),p);
+		sprintf(service[*services].cmd,"%.*s",(int)sizeof(service[0].cmd)-1,p);
 		truncsp(service[*services].cmd);
 
 		(*services)++;
@@ -1066,8 +1048,7 @@ void DLLCALL services_thread(void* arg)
 			,ctime(&t),startup->options);
 
 		/* Initial configuration and load from CNF files */
-		sprintf(scfg.ctrl_dir, "%.*s", (int)sizeof(scfg.ctrl_dir)-1
-    		,startup->ctrl_dir);
+		SAFECOPY(scfg.ctrl_dir, startup->ctrl_dir);
 		lprintf("Loading configuration files from %s", scfg.ctrl_dir);
 		scfg.size=sizeof(scfg);
 		if(!load_cfg(&scfg, NULL, TRUE, error)) {
@@ -1078,7 +1059,7 @@ void DLLCALL services_thread(void* arg)
 		}
 
 		if(startup->host_name[0]==0)
-			sprintf(startup->host_name,"%.*s",sizeof(startup->host_name),scfg.sys_inetaddr);
+			SAFECOPY(startup->host_name,scfg.sys_inetaddr);
 
 		if(!(scfg.sys_misc&SM_LOCAL_TZ) && !(startup->options&BBS_OPT_LOCAL_TIMEZONE)) {
 			if(putenv("TZ=UTC0"))
@@ -1279,7 +1260,7 @@ void DLLCALL services_thread(void* arg)
 				client->service=&service[i];
 				client->service->clients++;		/* this should be mutually exclusive */
 
-				sprintf(cmd,"%.*s",sizeof(cmd)-1,service[i].cmd);
+				SAFECOPY(cmd,service[i].cmd);
 				strlwr(cmd);
 				if(strstr(cmd,".js"))	/* JavaScript */
 					_beginthread(js_service_thread, 0, client);

@@ -133,7 +133,7 @@ bool sbbs_t::answer()
 	strcat(str,COPYRIGHT_NOTICE);
 	strip_ctrl(str);
 	center(str);
-	while(i++<50 && l<sizeof(str)-1) { 	/* wait up to 5 seconds for response */
+	while(i++<50 && l<(int)sizeof(str)-1) { 	/* wait up to 5 seconds for response */
 		c=(incom()&0x7f);
 		if(!c) {
 			mswait(100);
@@ -149,7 +149,7 @@ bool sbbs_t::answer()
 		}
 	}
 
-	while((c=(incom()&0x7f))!=0 && l<sizeof(str)-1) {
+	while((c=(incom()&0x7f))!=0 && l<(int)sizeof(str)-1) {
 		str[l++]=c;
 		mswait(1);
 	}
@@ -202,7 +202,7 @@ bool sbbs_t::answer()
 
 	useron.misc&=~(ANSI|COLOR|RIP|WIP);
 	useron.misc|=autoterm;
-	sprintf(useron.comp, "%.*s", sizeof(useron.comp)-1, client_name);
+	SAFECOPY(useron.comp,client_name);
 
 	if(!useron.number && sys_status&SS_RLOGIN) {
 		CRLF;
@@ -238,13 +238,13 @@ bool sbbs_t::answer()
 
 	/* Save the IP to the user's note */
 	if(cid[0]) {
-		sprintf(useron.note, "%.*s", sizeof(useron.note)-1, cid);
+		SAFECOPY(useron.note,cid);
 		putuserrec(&cfg,useron.number,U_NOTE,LEN_NOTE,useron.note);
 	}
 
 	/* Save host name to the user's computer description */
 	if(client_name[0]) {
-		sprintf(useron.comp, "%.*s", sizeof(useron.comp)-1, client_name);
+		SAFECOPY(useron.comp,client_name);
 		putuserrec(&cfg,useron.number,U_COMP,LEN_COMP,useron.comp);
 	}
 
