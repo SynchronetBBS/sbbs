@@ -53,6 +53,7 @@ enum {
 	,CON_PROP_QUESTION
 	,CON_PROP_TIMEOUT			/* User inactivity timeout reference */
 	,CON_PROP_TIMELEFT_WARN		/* low timeleft warning flag */
+	,CON_PROP_ABORTED
 	,CON_PROP_ABORTABLE
 	,CON_PROP_TELNET_MODE
 	,CON_PROP_CTRLKEY_PASSTHRU
@@ -95,6 +96,9 @@ static JSBool js_console_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 		case CON_PROP_TIMELEFT_WARN:
 			val=sbbs->timeleft_warn;
 			break;
+		case CON_PROP_ABORTED:
+			val=BOOLEAN_TO_JSVAL(sbbs->sys_status&SS_ABORT ? true:false);
+			return(JS_TRUE);
 		case CON_PROP_ABORTABLE:
 			val=sbbs->rio_abortable;
 			break;
@@ -168,6 +172,12 @@ static JSBool js_console_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 		case CON_PROP_TIMELEFT_WARN:
 			sbbs->timeleft_warn=val;
 			break;
+		case CON_PROP_ABORTED:
+			if(val)
+				sbbs->sys_status|=SS_ABORT;
+			else
+				sbbs->sys_status&=~SS_ABORT;
+			break;
 		case CON_PROP_ABORTABLE:
 			sbbs->rio_abortable=val 
 				? true:false; // This is a dumb bool conversion to make BC++ happy
@@ -203,7 +213,8 @@ static struct JSPropertySpec js_console_properties[] = {
 	{	"autoterm"			,CON_PROP_AUTOTERM			,CON_PROP_FLAGS	,NULL,NULL},
 	{	"timeout"			,CON_PROP_TIMEOUT			,CON_PROP_FLAGS	,NULL,NULL},
 	{	"timeleft_warning"	,CON_PROP_TIMELEFT_WARN		,CON_PROP_FLAGS	,NULL,NULL},
-	{	"rio_abortable"		,CON_PROP_ABORTABLE			,CON_PROP_FLAGS	,NULL,NULL},
+	{	"aborted"			,CON_PROP_ABORTED			,CON_PROP_FLAGS	,NULL,NULL},
+	{	"abortable"			,CON_PROP_ABORTABLE			,CON_PROP_FLAGS	,NULL,NULL},
 	{	"telnet_mode"		,CON_PROP_TELNET_MODE		,CON_PROP_FLAGS	,NULL,NULL},
 	{	"wordwrap"			,CON_PROP_WORDWRAP			,JSPROP_ENUMERATE|JSPROP_READONLY ,NULL,NULL},
 	{	"question"			,CON_PROP_QUESTION			,CON_PROP_FLAGS ,NULL,NULL},
@@ -221,6 +232,7 @@ static char* con_prop_desc[] = {
 	,"automatically detected terminal settings (see USER_* in sbbsdefs.js for bit definitions)"
 	,"user inactivity timeout reference"
 	,"low timeleft warning flag"
+	,"input/output has been aborted"
 	,"output can be aborted with Ctrl-C"
 	,"current telnet mode (see TELNET_MODE_* in sbbsdefs.js for valid values)"
 	,"word-wrap buffer (used by getstr)"
