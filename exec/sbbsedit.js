@@ -12,7 +12,7 @@ const debug=true;
 var hdr_fmt	= "\1b\1h%-4s\1n\1b: \1h\1c%.60s\1>\r\n";
 var stat_fmt	= "\1h\1w\0014 SBBSedit v" + REVISION + " - Type \1y/?\1w for help";
 if(debug)
-	stat_fmt += " row=%d l=%d ";
+	stat_fmt += "\1y row=%d l=%d offset=%d";
 stat_fmt+="\1>\1n";
 var tab_size	= 4;
 
@@ -28,7 +28,6 @@ var row = 0;
 var rows = console.screen_rows;
 var fname = argv[0];
 var line = new Array();
-var console_status=console.status;
 var ctrlkey_passthru=console.ctrlkey_passthru;
 console.ctrlkey_passthru|=(1<<3);	// Ctrl-C
 console.ctrlkey_passthru|=(1<<11);	// Ctrl-K
@@ -68,11 +67,7 @@ if(line.length)
 	show_text(0);
 update_status();
 
-console.getstr_offset=0;
-console.status|=CON_INSERT;	/* Default to insert mode */
-
-var getstr_mode = K_EDIT|K_MSG|K_WRAP|K_NOCRLF|K_LEFTEXIT;
-
+var offset;
 while(bbs.online) {
 	update_status();
 	console.clearline();
@@ -80,15 +75,44 @@ while(bbs.online) {
 	str=line[l];
 	if(str==undefined)
 		str="";
-	str = console.getstr(str,console.screen_columns-1,getstr_mode);
+
+	if(offset==undefined || offset>str.length)
+		offset=str.length;
+
+	console.write(str);
+	if(offset!=str.length) {
+		if(offset==0)
+			console.write('\r');
+		else
+			console.left(str.length-offset);
+	}
+
+	var done=false;
+	while(bbs.online && !done) {
+		ch=console.getkey();
+		switch(ch) {
+			case '\r':
+				done=true;
+				continue;
+			case '\b':
+				if(offset) {
+					str=str.slice(0,offset-1)+str.slice(offset);
+					offset--;
+					console.print("\b");
+					console.cleartoeol();
+					console.print(str.slice(offset));
+				}
+				continue;
+		}
+		console.write(ch);
+		str=str.slice(0,offset)+ch+str.slice(offset);
+		offset++;
+	}
+	log(str);
 
 	/* Allow "inline" cursor up/down movement using getstr_offset */
-	if(str.length) {
-		if(console.status&(CON_UPARROW|CON_DOWNARROW) && console.getstr_offset!=str.length)
-			getstr_mode|=K_USEOFFSET;
-		else
-			getstr_mode&=~K_USEOFFSET;
-	}
+	if(str.length && offset==str.length)
+		delete offset;
 
 	/* Commands */
 	switch(str.toLowerCase()) {
@@ -180,7 +204,6 @@ function bail()
 {
 	console.clear();
 	console.ctrlkey_passthru=ctrlkey_passthru;
-	console.status=console_status;
 	exit();
 }
 
@@ -210,7 +233,7 @@ function update_status()
 {
 	console.pushxy();
 	console.gotoxy(1,rows);
-	printf(stat_fmt,row,l);
+	printf(stat_fmt,row,l,offset);
 	console.popxy();
 }
 
