@@ -2,6 +2,7 @@ XPDEV		:=	../xpdev/
 UIFC_SRC	:=	./
 NEED_UIFC	:=	1
 USE_UIFC32	:=	1
+NEED_THREADS	:=	1
 
 include $(XPDEV)Common.gmake
 include $(UIFC_SRC)Common.gmake
