@@ -126,6 +126,8 @@ js_printf(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if((fmt = JS_ValueToString(cx, argv[0]))==NULL)
 		return(JS_FALSE);
 
+	memset(arglist,0,sizeof(arglist));	// Initialize arglist to NULLs
+
     for (i = 1; i < argc && i<sizeof(arglist)/sizeof(arglist[0]); i++) {
 		if(JSVAL_IS_STRING(argv[i])) {
 			if((str=JS_ValueToString(cx, argv[i]))==NULL)
