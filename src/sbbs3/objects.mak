@@ -27,6 +27,7 @@ OBJS	=	$(LIBODIR)$(SLASH)ansiterm.$(OFILE)\
 			$(LIBODIR)$(SLASH)execfunc.$(OFILE)\
 			$(LIBODIR)$(SLASH)execmisc.$(OFILE)\
 			$(LIBODIR)$(SLASH)execmsg.$(OFILE)\
+			$(LIBODIR)$(SLASH)execnet.$(OFILE)\
 			$(LIBODIR)$(SLASH)fido.$(OFILE)\
 			$(LIBODIR)$(SLASH)file.$(OFILE)\
 			$(LIBODIR)$(SLASH)filedat.$(OFILE)\

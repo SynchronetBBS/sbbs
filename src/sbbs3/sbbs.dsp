@@ -173,6 +173,10 @@ SOURCE=.\execmsg.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\execnet.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\fido.cpp
 # End Source File
 # Begin Source File
