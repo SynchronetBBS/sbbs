@@ -439,6 +439,122 @@ js_lfexpand(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	return(JS_TRUE);
 }
 
+static JSBool
+js_word_wrap(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	int32		len=79;
+	ulong		i,k,l;
+	int			col=1;
+	uchar*		inbuf;
+	char*		outbuf;
+	char*		linebuf;
+	JSString*	js_str;
+
+	if((inbuf=JS_GetStringBytes(JS_ValueToString(cx, argv[0])))==NULL) 
+		return(JS_FALSE);
+
+	if((outbuf=(char*)malloc((strlen(inbuf)*2)+1))==NULL)
+		return(JS_FALSE);
+
+	if(argc>1)
+		JS_ValueToInt32(cx,argv[1],&len);
+
+	if((linebuf=(char*)malloc(len+1))==NULL)
+		return(JS_FALSE);
+
+	outbuf[0]=0;
+	for(i=l=0;inbuf[i];) {
+		if(inbuf[i]=='\r' || inbuf[i]==FF)
+			col=1;
+		else if(inbuf[i]=='\t')
+			col+=8;
+		else if(inbuf[i]>=' ')
+			col++;
+		linebuf[l]=inbuf[i++];
+		if(col<len) {
+			l++;
+			continue;
+		}
+		k=l;
+		while(k && linebuf[k]>' ') k--;
+		if(k==0)	/* continuous printing chars, no word wrap possible */
+			strncat(outbuf,linebuf,l+1);
+		else {
+			i-=(l-k);	/* rewind to start of next word */
+			linebuf[k]=0;
+			truncsp(linebuf);
+			strcat(outbuf,linebuf);
+		}
+		strcat(outbuf,"\r\n");
+		/* skip white space (but no more than one LF) for starting of new line */
+		while(inbuf[i] && inbuf[i]<=' ' && inbuf[i]!='\n') i++;	
+		if(inbuf[i]=='\n') i++;
+		l=0;
+		col=1;
+	}
+	if(l)	/* remainder */
+		strncat(outbuf,linebuf,l);
+
+	js_str = JS_NewStringCopyZ(cx, outbuf);
+	free(outbuf);
+	if(js_str==NULL)
+		return(JS_FALSE);
+
+	*rval = STRING_TO_JSVAL(js_str);
+	return(JS_TRUE);
+}
+
+static JSBool
+js_quote_msg(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	int32		len=79;
+	int			i,l;
+	uchar*		inbuf;
+	char*		outbuf;
+	char*		linebuf;
+	char*		prefix=" > ";
+	JSString*	js_str;
+
+	if((inbuf=JS_GetStringBytes(JS_ValueToString(cx, argv[0])))==NULL) 
+		return(JS_FALSE);
+
+	if(argc>1)
+		JS_ValueToInt32(cx,argv[1],&len);
+
+	if(argc>2)
+		prefix=JS_GetStringBytes(JS_ValueToString(cx, argv[2]));
+
+	if((outbuf=(char*)malloc((strlen(inbuf)*strlen(prefix))+1))==NULL)
+		return(JS_FALSE);
+
+	if((linebuf=(char*)malloc(len+1))==NULL)
+		return(JS_FALSE);
+
+	outbuf[0]=0;
+	for(i=l=0;inbuf[i];i++) {
+		if(l==0)
+			strcat(outbuf,prefix);
+		if(l<len)
+			linebuf[l++]=inbuf[i];
+		if(inbuf[i]=='\n') {
+			strncat(outbuf,linebuf,l);
+			l=0;
+		}
+	}
+	if(l)	/* remainder */
+		strncat(outbuf,linebuf,l);
+
+	js_str = JS_NewStringCopyZ(cx, outbuf);
+	free(outbuf);
+	if(js_str==NULL)
+		return(JS_FALSE);
+
+	*rval = STRING_TO_JSVAL(js_str);
+	return(JS_TRUE);
+}
+
+
+
 /* This table is used to convert between IBM ex-ASCII and HTML character entities */
 /* Much of this table supplied by Deuce (thanks!) */
 static struct { 
@@ -1116,6 +1232,13 @@ static jsMethodSpec js_global_functions[] = {
 	},
 	{"html_decode",		js_html_decode,		1,	JSTYPE_STRING,	JSDOCSTR("string text")
 	,JSDOCSTR("return a decoded HTML-encoded text buffer")
+	},
+	{"word_wrap",		js_word_wrap,		1,	JSTYPE_STRING,	JSDOCSTR("string text [,line_length]")
+	,JSDOCSTR("returns a word-wrapped version of the text string argument, <i>line_length</i> defaults to <i>79</i>")
+	},
+	{"quote_msg",		js_quote_msg,		1,	JSTYPE_STRING,	JSDOCSTR("string text [,line_length] [,prefix]")
+	,JSDOCSTR("returns a quoted version of the message text string argumnet, <i>line_length</i> defaults to <i>79</i>, "
+	"<i>prefix</i> defaults to <tt>\" > \"</tt>")
 	},
 	{0}
 };
