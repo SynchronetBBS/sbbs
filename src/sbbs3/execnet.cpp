@@ -551,7 +551,7 @@ SOCKET sbbs_t::ftp_data_sock(csi_t* csi, SOCKET ctrl_sock, SOCKADDR_IN* addr)
 		return(INVALID_SOCKET);
 	}
 
-	memset(addr,0,sizeof(addr));
+	memset(addr,0,sizeof(SOCKADDR_IN));
 	addr->sin_addr.s_addr = htonl(startup->telnet_interface);
 	addr->sin_family = AF_INET;
 
