@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -1235,20 +1235,15 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 	int	high_fd;
 	struct timeval timeout;
 
-	lprintf(LOG_DEBUG,"%s %d",__FILE__,__LINE__); 
 	if(online==ON_LOCAL)
 		eprintf(LOG_INFO,"Executing external: %s",cmdline);
 
-	lprintf(LOG_DEBUG,"%s %d",__FILE__,__LINE__); 
 
 	XTRN_LOADABLE_MODULE;
-	lprintf(LOG_DEBUG,"%s %d",__FILE__,__LINE__); 
 	XTRN_LOADABLE_JS_MODULE;
-	lprintf(LOG_DEBUG,"%s %d",__FILE__,__LINE__); 
 
 	attr(cfg.color[clr_external]);  /* setup default attributes */
 
-	lprintf(LOG_DEBUG,"%s %d",__FILE__,__LINE__); 
     SAFECOPY(str,cmdline);			/* Set fname to program name only */
 	truncstr(str," ");
     SAFECOPY(fname,getfname(str));
@@ -1265,7 +1260,6 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 	else
 		SAFECOPY(fullcmdline,cmdline);
 
-	lprintf(LOG_DEBUG,"%s %d",__FILE__,__LINE__); 
  	if(native) { // Native (32-bit) external
 
 		// Current environment passed to child process
@@ -1278,7 +1272,6 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		sprintf(sbbsnnum,"%u",cfg.node_num);
 		if(setenv("SBBSNNUM",sbbsnnum,1))
         	errormsg(WHERE,ERR_WRITE,"environment",0);
-	lprintf(LOG_DEBUG,"%s %d",__FILE__,__LINE__); 
 
 	} else {
 #if defined(__FreeBSD__)
@@ -1323,7 +1316,6 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		sprintf(fullcmdline,"%s -F %s",startup->dosemu_path,str);
 
 #elif defined(__linux__) && defined(USE_DOSEMU)
-	lprintf(LOG_DEBUG,"%s %d",__FILE__,__LINE__); 
 
 		/* dosemu integration  --  Ryan Underwood, <nemesis @ icequake.net> */
 
@@ -1465,7 +1457,6 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		fprintf(dosemubat,"%s\r\n",xtrndrive);
 
 		if(startup_dir!=NULL && startup_dir[0]) {
-	lprintf(LOG_DEBUG,"%s %d",__FILE__,__LINE__); 
 
 			SAFECOPY(str,startup_dir);
 
@@ -1575,7 +1566,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 	}
 
 	if(!(mode&EX_INR) && input_thread_running) {
-	lprintf(LOG_DEBUG,"%s %d",__FILE__,__LINE__); 
+		lprintf(LOG_DEBUG,"%s %d",__FILE__,__LINE__); 
 		pthread_mutex_lock(&input_thread_mutex);
 		input_thread_mutex_locked=true;
 	}
@@ -1586,7 +1577,6 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 	}
 
 	if((mode&EX_INR) && (mode&EX_OUTR))  {
-	lprintf(LOG_DEBUG,"%s %d",__FILE__,__LINE__); 
 		struct winsize winsize;
 		struct termios term;
 		memset(&term,0,sizeof(term));
@@ -1614,7 +1604,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		out_pipe[0]=in_pipe[1];
 	}
 	else  {
-	lprintf(LOG_DEBUG,"%s %d",__FILE__,__LINE__); 
+		lprintf(LOG_DEBUG,"%s %d",__FILE__,__LINE__); 
 		if(mode&EX_INR)
 			if(pipe(in_pipe)!=0) {
 				errormsg(WHERE,ERR_CREATE,"in_pipe",0);
@@ -1636,7 +1626,6 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 			return(-1);
 		}
 	}
-	lprintf(LOG_DEBUG,"%s %d",__FILE__,__LINE__); 
 	if(pid==0) {	/* child process */
 		/* Give away all privs for good now */
 		if(startup->setuid!=NULL)
