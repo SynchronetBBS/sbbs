@@ -47,8 +47,12 @@
 #include <windows.h>
 #include <process.h>	/* _beginthread() prototype */
 #include <winsock.h>
+
 #define ENOTSOCK	WSAENOTSOCK
 #define ECONNRESET	WSAECONNRESET
+
+#define O_DENYNONE	OF_SHARE_DENY_NONE
+#define O_DENYALL	OF_SHARE_EXCLUSIVE
 
 #else					/* non-windows */
 
@@ -79,17 +83,15 @@ int unlock(int file, long offset, int size);
 #ifdef _MSC_VER			/* Visual C++ */
 #include <direct.h>		/* _mkdir() prototype */
 
-#define O_DENYNONE	_SH_DENYNO
-#define O_DENYALL	_SH_DENYRW
 #define S_IWRITE	_S_IWRITE
 
 #endif	/* _MSC_VER */
 
 #ifdef __GNUC__
-#define O_DENYNONE	0
 
 #warning "ultoa needs to be defined or replaced"
 #define ultoa	ltoa
+
 #endif	/* __GNUC__ */
 
 #ifdef _WIN32
@@ -732,7 +734,7 @@ extern "C" {
 	ulong	ahtoul(char *str);	/* Converts ASCII hex to ulong */
 	char *	hexplus(uint num, char *str); 	/* Hex plus for 3 digits up to 9000 */
 	uint	hptoi(char *str);
-#ifdef _MSC_VER
+#ifndef __BORLANDC__
 	int		random(int n);	/* return random number between 0 and n-1 */
 #endif
 

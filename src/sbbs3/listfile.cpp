@@ -819,7 +819,8 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 	char	str[258],path[258],dirpath[256],done=0,ch,fname[13],ext[513];
 	uchar HUGE16 *ixbbuf,*usrxfrbuf=NULL,*p;
 	int		file;
-    uint	i,j,found=0;
+	int		found=0;
+    uint	i,j;
 	long	usrxfrlen;
     long	m,l;
 	long	usrcdt;

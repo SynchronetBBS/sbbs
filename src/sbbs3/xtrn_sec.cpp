@@ -165,7 +165,7 @@ char *hungupstr="\1n\1h%s\1n hung up on \1h%s\1n %s\r\n";
 extern uint riobp;
 #endif
 
-extern mswtyp;
+extern int mswtyp;
 extern uint fakeriobp;
 
 /****************************************************************************/
@@ -183,13 +183,13 @@ void str2pas(char *instr, char *outstr)
 /****************************************************************************/
 /* Convert from unix time (seconds since 1/70) to julian (days since 1900)	*/
 /****************************************************************************/
-int unixtojulian(time_t unix)
+int unixtojulian(time_t unix_time)
 {
 	int days[12]={0,31,59,90,120,151,181,212,243,273,304,334};
 	long j;
 	struct tm * tm;
 
-	tm=gmtime(&unix);
+	tm=gmtime(&unix_time);
 	if(tm==NULL)
 		return(0);
 	j=36525L*(1900+tm->tm_year);

@@ -56,7 +56,7 @@
 
 #define RINGBUF_USE_STD_RTL
 
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(__GNUC__)
 #define RINGBUFCALL	_cdecl
 #else
 #define RINGBUFCALL
