@@ -147,7 +147,7 @@ SOCKET DLLCALL js_socket(JSContext *cx, jsval val)
 	if(JSVAL_IS_OBJECT(val)) {
 		if((vp=JS_GetPrivate(cx,JSVAL_TO_OBJECT(val)))!=NULL)
 			sock=*(SOCKET*)vp;
-	} else
+	} else if(val!=JSVAL_VOID)
 		JS_ValueToInt32(cx,val,(int32*)&sock);
 
 	return(sock);
