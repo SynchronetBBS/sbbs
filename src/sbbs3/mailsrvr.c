@@ -636,8 +636,8 @@ static void pop3_thread(void* arg)
 			break;
 		}
 		if((i=getuserdat(&scfg, &user))!=0) {
-			lprintf("%04d !POP3 ERROR %d getting data on user #%u (%s)"
-				,socket, i, user.number, username);
+			lprintf("%04d !POP3 ERROR %d getting data on user (%s)"
+				,socket, i, username);
 			sockprintf(socket, "-ERR");
 			break;
 		}
