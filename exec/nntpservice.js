@@ -278,23 +278,22 @@ while(client.socket.is_connected) {
 					,selected.newsgroup
 					));
 			else {
-				writeln("411 no such news group");
+				writeln("411 no such newsgroup");
 				log("!no such group");
 			}
 			break;
 
+		case "OVER":
 		case "XOVER":
-			if(cmd[1]==undefined) {
-				writeln("500 Syntax error or unknown command");
-				break;
-			}
 			if(msgbase==null) {
-				writeln("412 no news group selected");
+				writeln("412 no newsgroup selected");
 				break;
 			}
 			writeln("224 Overview information follows");
 			var first, last;
-			if(cmd[1].indexOf('-')>=0)	{ /* range */
+			if(cmd[1]==undefined)
+				first=last=current_article;
+			else if(cmd[1].indexOf('-')>=0)	{ /* range */
 				range=cmd[1].split('-');
 				first=Number(range[0]);
 				last=Number(range[1]);
@@ -326,7 +325,7 @@ while(client.socket.is_connected) {
 				break;
 			}
 			if(msgbase==null) {
-				writeln("412 no news group selected");
+				writeln("412 no newsgroup selected");
 				break;
 			}
 			writeln("221 Header follows");
@@ -397,7 +396,7 @@ while(client.socket.is_connected) {
 		case "BODY":
 		case "STAT":
 			if(msgbase==null) {
-				writeln("412 no news group selected");
+				writeln("412 no newsgroup selected");
 				break;
 			}
 			if(cmd[1]==undefined) {
@@ -493,7 +492,7 @@ while(client.socket.is_connected) {
 
 				if(hdr.from_org==undefined && !hdr.from_net_type)
 					hdr.from_org=system.name;
-		
+
 				write_news_header(hdr,writeln);	// from newsutil.js
 			}
 			if(hdr!=null && body!=null)	/* both, separate with blank line */
@@ -508,7 +507,7 @@ while(client.socket.is_connected) {
 		case "NEXT":
 		case "LAST":
 			if(msgbase==null) {
-				writeln("412 no news group selected");
+				writeln("412 no newsgroup selected");
 				break;
 			}
 			if(current_article<1) {
