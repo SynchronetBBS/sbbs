@@ -1389,18 +1389,18 @@ js_directory(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 }
 
 static JSBool
-js_sockselect(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+js_socket_select(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	JSObject*	array;
 	JSObject*	inarray;
-	fd_set		fds;
-	int			fd;
+	fd_set		rfds;
+	SOCKET		fd;
 	int32		tout;
-	int			i,j,k;
+	int			i;
 	int			maxfd=0;
 	struct timeval timeout;
     jsuint      limit;
-	int			*index;
+	SOCKET		*index;
 	jsval		val;
 	jsval		elemval;
 	int			len=0;
@@ -1418,15 +1418,15 @@ js_sockselect(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
     if((array = JS_NewArrayObject(cx, 0, NULL))==NULL)
 		return(JS_FALSE);
 
-	if((index=(int *)MALLOC(sizeof(int)*limit))==NULL)
+	if((index=(SOCKET *)MALLOC(sizeof(SOCKET)*limit))==NULL)
 		return(JS_FALSE);
 
-	FD_ZERO(&fds);
+	FD_ZERO(&rfds);
     for(i=0;i<limit;i++) {
         if(!JS_GetElement(cx, inarray, i, &elemval))
 			break;
 		JS_ValueToInt32(cx,elemval,&fd);
-		FD_SET(fd,&fds);
+		FD_SET(fd,&rfds);
 		if(fd>maxfd)
 			maxfd=fd;
 		index[i]=fd;
@@ -1436,20 +1436,17 @@ js_sockselect(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 	
 	timeout.tv_sec=tout/1000000;
 	timeout.tv_usec=tout%1000000;
-	
-	select(maxfd+1,&fds,NULL,NULL,&timeout);
 
-	for(i=0;i<=maxfd;i++)
+	if(select(maxfd+1,&rfds,NULL,NULL,&timeout)<0)
 	{
-		if(FD_ISSET(i,&fds))
+		lprintf("Error in socket_select()  %s (%d)",strerror(errno),errno);
+	}
+
+	for(i=0;i<limit;i++)
+	{
+		if(FD_ISSET(index[i],&rfds))
 		{
-			k=-1;
-			for(j=0; j<limit; j++)
-				if(index[j]==i)
-					k=j;
-			if(k==-1)
-				break;
-			val=INT_TO_JSVAL(k);
+			val=INT_TO_JSVAL(i);
     	    if(!JS_SetElement(cx, array, len++, &val))
 				break;
 		}
@@ -1682,7 +1679,7 @@ static jsMethodSpec js_global_functions[] = {
 		"<i>pattern</i> is the path and filename or wildcards to search for (e.g. '/subdir/*.txt'), "
 		"<i>flags</i> is a bitfield of optional <tt>glob</tt> flags (default is <tt>GLOB_MARK</tt>)")
 	},		
-	{"sockselect",		js_sockselect,			2,	JSTYPE_ARRAY,	JSDOCSTR("array of socket descriptors, timeout (usec)")
+	{"socket_select",		js_socket_select,			2,	JSTYPE_ARRAY,	JSDOCSTR("array of socket descriptors, timeout (usec)")
 	,JSDOCSTR("select()s a set of socket descriptors for read, ")
 	},
 	{"mkdir",			js_mkdir,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("string directory")
