@@ -5,7 +5,7 @@
 SMBLIB_SRC	?=	$(XPDEV)../smblib/
 
 SMBLIB_CFLAGS	+=	-I$(SMBLIB_SRC)
-SMBLIB_LDFLAGS	+=	-L$(SMBLIB_SRC) -lsmblib
+SMBLIB_LDFLAGS	+=	-L$(SMBLIB_SRC) -lsmb
 SMBLIB_ODIR	?=	$(XPDEV)../smblib/$(LIBODIR)
 SMBLIB_TARGET	:=	$(SMBLIB_ODIR)/libsmb.a
 SMBLIB_OBJS	:= \
@@ -33,8 +33,8 @@ $(SMBLIB_ODIR)/%.o : %.c $(BUILD_DEPENDS)
 
 $(SMBLIB_TARGET): $(SMBLIB_ODIR) $(SMBLIB_OBJS) $(BUILD_DEPENDS)
 	@echo Creating $<
-	@(QUIET)ar rc $@ $(SMBLIB_OBJS)
-	@(QUIET)ranlib $@
+	$(QUIET)ar rc $@ $(SMBLIB_OBJS)
+	$(QUIET)ranlib $@
 
 $(SMBLIB_ODIR):
 	$(QUIET)$(IFNOTEXIST) mkdir $(SMBLIB_ODIR)
