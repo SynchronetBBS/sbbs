@@ -80,9 +80,8 @@ endif
 include targets.mk		# defines all targets
 include objects.mk		# defines $(OBJS)
 
-ifeq ($(os),gnu)
- OBJS	+=	$(ODIR)$(SLASH)sem.$(OFILE)
- CFLAGS	+=	-D_NEED_SEM
+ifeq ($(os),netbsd)
+ CFLAGS	+=	-D__unix__
 endif
 
 ifdef USE_DIALOG		

@@ -53,7 +53,11 @@
 #elif defined(__linux__)
 	#include <pty.h>
 #elif defined(__QNX__)
+#if 0
 	#include <unix.h>
+#else
+	#define NEEDS_FORKPTY
+#endif
 #endif
 
 	#ifdef NEEDS_FORKPTY
@@ -1064,7 +1068,7 @@ static int forkpty(int *amaster, char *name, termios *termp, winsize *winp)
 
 	if (openpty(&master, &slave, name, termp, winp) == -1)
 		return (-1);
-	switch (pid = fork()) {
+	switch (pid = vfork()) {
 	case -1:
 		return (-1);
 	case 0:
@@ -1235,7 +1239,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 			}
 
 
-		if((pid=fork())==-1) {
+		if((pid=vfork())==-1) {
 			pthread_mutex_unlock(&input_thread_mutex);
 			errormsg(WHERE,ERR_EXEC,fullcmdline,0);
 			return(-1);
@@ -1292,15 +1296,15 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 
 		if(mode&EX_BG)	/* background execution, detach child */
 		{
-			if(fork())
-				exit(0);
+			if(vfork())
+				return(0);
 			lprintf("Detaching external process pgid=%d",setsid());
    	    }
 	
 		execvp(argv[0],argv);
 		sprintf(str,"!ERROR %d executing %s",errno,argv[0]);
 		errorlog(str);
-		exit(-1);	/* should never get here */
+		_exit(-1);	/* should never get here */
 	}
 
 	lprintf("Node %d executing external: %s",cfg.node_num,fullcmdline);
