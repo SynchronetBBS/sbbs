@@ -175,6 +175,15 @@ js_format(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 }
 
 static JSBool
+js_yield(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	YIELD();
+
+	*rval = JSVAL_VOID;
+	return(JS_TRUE);
+}
+
+static JSBool
 js_mswait(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	int32 val=1;
@@ -1317,6 +1326,9 @@ static jsMethodSpec js_global_functions[] = {
 	{"sleep",			js_mswait,			0,	JSTYPE_ALIAS },
 	{"mswait",			js_mswait,			0,	JSTYPE_VOID,	JSDOCSTR("[number milliseconds]")
 	,JSDOCSTR("millisecond wait/sleep routine (AKA sleep)")
+	},
+	{"yield",			js_yield,			0,	JSTYPE_VOID,	""
+	,JSDOCSTR("release current process time-slice")
 	},
 	{"random",			js_random,			1,	JSTYPE_NUMBER,	JSDOCSTR("number max")
 	,JSDOCSTR("return random integer between 0 and max-1")

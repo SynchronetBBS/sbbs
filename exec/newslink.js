@@ -454,7 +454,7 @@ for(i in area) {
 		while(socket.is_connected) {
 
 			if(recv_lines && lines_per_yield && (recv_lines%lines_per_yield)==0)
-				sleep(1);
+				yield();
 
 			line = socket.recvline(512 /*maxlen*/, 300 /*timeout*/);
 
