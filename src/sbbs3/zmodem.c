@@ -1500,7 +1500,10 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 			type = zmodem_rx_header(zm,zm->recv_timeout);
 			if(zm->cancelled)
 				return(FALSE);
-		} while(type == ZACK);
+		} while(type == ZACK && is_connected(zm));
+
+		if(!is_connected(zm))
+			return(FALSE);
 
 #if 0
 		lprintf(zm,LOG_INFO,"type : %d",type);
@@ -1533,6 +1536,9 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 		 */
 
 		type = zmodem_send_from(zm, fp, pos, s.st_size, &sent_bytes);
+
+		if(!is_connected(zm))
+			return(FALSE);
 
 		if(sent!=NULL)
 			*sent+=sent_bytes;
