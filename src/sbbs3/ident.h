@@ -43,7 +43,8 @@
 extern "C" {   
 #endif   
 
-char* identify(SOCKADDR_IN* client_addr, u_short local_port, char* buf, size_t maxlen);
+char* identify(SOCKADDR_IN* client_addr, u_short local_port, char* buf
+			   ,size_t maxlen, int timeout);
 
 #ifdef __cplusplus
 }

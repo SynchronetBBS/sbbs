@@ -38,17 +38,22 @@
 #include "sbbs.h"
 #include "ident.h"
 
-char* identify(SOCKADDR_IN* client_addr, u_short local_port, char* buf, size_t maxlen)
+char* identify(SOCKADDR_IN* client_addr, u_short local_port, char* buf
+			   ,size_t maxlen, int timeout)
 {
 	char		req[128];
 	char*		identity=NULL;
 	int			i;
+	int			result;
 	int			rd;
+	long		val;
 	SOCKET		sock=INVALID_SOCKET;
 	SOCKADDR_IN	addr;
 	struct timeval	tv;
 	fd_set			socket_set;
 
+	if(timeout<0)
+		timeout=10;
 
 	do {
 		if((sock = open_socket(SOCK_STREAM)) == INVALID_SOCKET) {
@@ -56,13 +61,31 @@ char* identify(SOCKADDR_IN* client_addr, u_short local_port, char* buf, size_t m
 			break;
 		}
 
+		val=1;
+		ioctlsocket(sock,FIONBIO,&val);	
+
 		addr=*client_addr;
 		addr.sin_port=htons(113);	/* per RFC1413 */
 
-		if(connect(sock, (struct sockaddr*)&addr, sizeof(addr))!=0) {
+		result=connect(sock, (struct sockaddr*)&addr, sizeof(addr));
+
+		if(result==SOCKET_ERROR
+			&& (ERROR_VALUE==EWOULDBLOCK || ERROR_VALUE==EINPROGRESS)) {
+			tv.tv_sec=timeout;
+			tv.tv_usec=0;
+
+			FD_ZERO(&socket_set);
+			FD_SET(sock,&socket_set);
+			if(select(sock+1,NULL,&socket_set,NULL,&tv)==1)
+				result=0;	/* success */
+		}
+		if(result!=0) {
 			sprintf(buf,"ERROR %d connecting to server",ERROR_VALUE);
 			break;
 		}
+
+		val=0;
+		ioctlsocket(sock,FIONBIO,&val);	
 
 		tv.tv_sec=10;
 		tv.tv_usec=0;
