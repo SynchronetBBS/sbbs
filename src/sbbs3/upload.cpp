@@ -370,7 +370,7 @@ bool sbbs_t::upload(uint dirnum)
 		bputs(text[EnterAfterLastDestUser]);
 		while((!dir_op(dirnum) && destusers<cfg.max_userxfer) || destusers<MAX_USERXFER) {
 			bputs(text[SendFileToUser]);
-			if(!getstr(str,LEN_ALIAS,K_UPRLWR))
+			if(!getstr(str,LEN_ALIAS,cfg.uq&UQ_NOUPRLWR ? K_NONE:K_UPRLWR))
 				break;
 			if((user.number=finduser(str))!=0) {
 				if(!dir_op(dirnum) && user.number==useron.number) {

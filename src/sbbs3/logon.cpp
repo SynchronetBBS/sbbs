@@ -50,6 +50,7 @@ bool sbbs_t::logon()
 	char 	tmp[512];
 	int 	file;
 	uint	i,j,mailw;
+	long	kmode;
 	ulong	totallogons;
 	node_t	node;
 	struct	tm	tm;
@@ -315,6 +316,10 @@ bool sbbs_t::logon()
 			hangup();
 			return(false); 
 		}
+		kmode=(cfg.uq&UQ_NOEXASC);
+		if(!(cfg.uq&UQ_NOUPRLWR))
+			kmode|=K_UPRLWR;
+
 		if(!(useron.rest&FLAG('G'))) {
 			if(!useron.name[0] && ((cfg.uq&UQ_ALIASES && cfg.uq&UQ_REALNAME)
 				|| cfg.uq&UQ_COMPANY))
@@ -323,7 +328,7 @@ bool sbbs_t::logon()
 						bputs(text[EnterYourRealName]);
 					else
 						bputs(text[EnterYourCompany]);
-					getstr(useron.name,LEN_NAME,K_UPRLWR|(cfg.uq&UQ_NOEXASC));
+					getstr(useron.name,LEN_NAME,kmode);
 					if(cfg.uq&UQ_ALIASES && cfg.uq&UQ_REALNAME) {
 						if(trashcan(useron.name,"name") || !useron.name[0]
 							|| !strchr(useron.name,' ')
@@ -357,13 +362,13 @@ bool sbbs_t::logon()
 			if(cfg.uq&UQ_LOCATION && !useron.location[0])
 				while(online) {
 					bputs(text[EnterYourCityState]);
-					if(getstr(useron.location,LEN_LOCATION,K_UPRLWR|(cfg.uq&UQ_NOEXASC)))
+					if(getstr(useron.location,LEN_LOCATION,kmode))
 						break; 
 				}
 			if(cfg.uq&UQ_ADDRESS && !useron.address[0])
 				while(online) {
 					bputs(text[EnterYourAddress]);
-					if(getstr(useron.address,LEN_ADDRESS,K_UPRLWR|(cfg.uq&UQ_NOEXASC)))
+					if(getstr(useron.address,LEN_ADDRESS,kmode))
 						break; 
 				}
 			if(cfg.uq&UQ_ADDRESS && !useron.zipcode[0])

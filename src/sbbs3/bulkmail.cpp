@@ -139,7 +139,7 @@ bool sbbs_t::bulkmail(uchar *ar)
 	else
 		while(online) {
 			bputs(text[EnterAfterLastDestUser]);
-			if(!getstr(str,LEN_ALIAS,K_UPRLWR))
+			if(!getstr(str,LEN_ALIAS,cfg.uq&UQ_NOUPRLWR ? K_NONE:K_UPRLWR))
 				break;
 			if((i=finduser(str))!=0) {
 				if((x=bulkmailhdr(&smb, &msg, i))!=SMB_SUCCESS) {
