@@ -183,8 +183,6 @@ int main(int argc, char **argv)
             SAFECOPY(cfg.ctrl_dir,argv[i]);
     }
 
-backslashcolon(cfg.ctrl_dir);
-
 FULLPATH(exepath,argv[0],sizeof(exepath));	/* Must do this before chdir */
 
 if(chdir(cfg.ctrl_dir)!=0) {
@@ -193,6 +191,7 @@ if(chdir(cfg.ctrl_dir)!=0) {
 	exit(-1);
 }
 FULLPATH(cfg.ctrl_dir,".",sizeof(cfg.ctrl_dir));
+backslashcolon(cfg.ctrl_dir);
 
 uifc.size=sizeof(uifc);
 #if defined(USE_FLTK)
