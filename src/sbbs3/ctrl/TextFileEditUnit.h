@@ -93,6 +93,9 @@ __published:	// IDE-managed Components
     TMenuItem *CutPopupMenuItem;
     TMenuItem *CopyPopupMenuItem;
     TMenuItem *PastePopupMenuItem;
+    TFontDialog *FontDialog;
+    TMenuItem *FontMenuItem;
+    TAction *ChangeFont;
 	void __fastcall FormShow(TObject *Sender);
     void __fastcall FontButtonClick(TObject *Sender);
     void __fastcall FindDialogFind(TObject *Sender);
@@ -107,6 +110,8 @@ __published:	// IDE-managed Components
     void __fastcall CopyExecute(TObject *Sender);
     void __fastcall PasteExecute(TObject *Sender);
     void __fastcall UndoExecute(TObject *Sender);
+    void __fastcall ChangeFontExecute(TObject *Sender);
+    void __fastcall FontDialogApply(TObject *Sender, HWND Wnd);
 private:	// User declarations
 public:		// User declarations
 	__fastcall TTextFileEditForm(TComponent* Owner);

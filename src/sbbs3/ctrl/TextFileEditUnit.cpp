@@ -237,3 +237,21 @@ void __fastcall TTextFileEditForm::UndoExecute(TObject *Sender)
 }
 //---------------------------------------------------------------------------
 
+void __fastcall TTextFileEditForm::ChangeFontExecute(TObject *Sender)
+{
+    FontDialog->Font->Assign(Memo->Font);
+    FontDialog->Execute();
+    Memo->Font->Assign(FontDialog->Font);
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TTextFileEditForm::FontDialogApply(TObject *Sender,
+      HWND Wnd)
+{
+    Memo->Font->Assign(FontDialog->Font);
+}
+//---------------------------------------------------------------------------
+
+
+
+

@@ -1,13 +1,13 @@
 object TextFileEditForm: TTextFileEditForm
-  Left = 329
-  Top = 236
+  Left = 476
+  Top = 367
   Width = 783
   Height = 540
   Caption = 'TextFileEditForm'
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
-  Font.Height = -10
+  Font.Height = -13
   Font.Name = 'MS Sans Serif'
   Font.Style = []
   Icon.Data = {
@@ -39,21 +39,21 @@ object TextFileEditForm: TTextFileEditForm
   OldCreateOrder = False
   Position = poDefaultPosOnly
   OnShow = FormShow
-  PixelsPerInch = 96
-  TextHeight = 13
+  PixelsPerInch = 120
+  TextHeight = 16
   object Panel: TPanel
     Left = 0
     Top = 0
     Width = 775
-    Height = 27
+    Height = 33
     Align = alTop
     BevelOuter = bvNone
     TabOrder = 0
     object OkButton: TBitBtn
-      Left = 8
-      Top = 3
-      Width = 73
-      Height = 21
+      Left = 10
+      Top = 4
+      Width = 90
+      Height = 26
       Action = Save
       Caption = 'OK'
       ModalResult = 1
@@ -74,10 +74,10 @@ object TextFileEditForm: TTextFileEditForm
       NumGlyphs = 2
     end
     object CancelButton: TBitBtn
-      Left = 85
-      Top = 3
-      Width = 73
-      Height = 21
+      Left = 105
+      Top = 4
+      Width = 89
+      Height = 26
       Caption = 'Discard'
       ModalResult = 2
       TabOrder = 1
@@ -99,13 +99,13 @@ object TextFileEditForm: TTextFileEditForm
   end
   object Memo: TRichEdit
     Left = 0
-    Top = 27
+    Top = 33
     Width = 775
-    Height = 467
+    Height = 451
     Align = alClient
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
-    Font.Height = -11
+    Font.Height = -15
     Font.Name = 'Courier'
     Font.Style = []
     HideSelection = False
@@ -177,6 +177,9 @@ object TextFileEditForm: TTextFileEditForm
       object EditInsertCtrlA: TMenuItem
         Action = InsertCtrlA
       end
+    end
+    object FontMenuItem: TMenuItem
+      Action = ChangeFont
     end
   end
   object PopupMenu: TPopupMenu
@@ -257,5 +260,22 @@ object TextFileEditForm: TTextFileEditForm
       ShortCut = 16474
       OnExecute = UndoExecute
     end
+    object ChangeFont: TAction
+      Caption = 'Font'
+      OnExecute = ChangeFontExecute
+    end
+  end
+  object FontDialog: TFontDialog
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -13
+    Font.Name = 'MS Sans Serif'
+    Font.Style = []
+    MinFontSize = 0
+    MaxFontSize = 0
+    Options = [fdApplyButton]
+    OnApply = FontDialogApply
+    Left = 144
+    Top = 80
   end
 end
