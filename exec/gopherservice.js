@@ -177,6 +177,7 @@ switch(field[0]) {
 			writeln("");
 			body=msgbase.get_msg_body(false,Number(field[2]),true)
 			writeln(body);
+			msgbase.close();
 			break;
 		}
 /**
