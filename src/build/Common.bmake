@@ -187,7 +187,8 @@ UIFC_SRC	=	$(SRC_ROOT)$(DIRSEP)uifc
 .cpp{$(MTOBJODIR)}$(OFILE):
 	$(QUIET)$(CC) $(CFLAGS) $(CXXFLAGS) -n$(MTOBJODIR) $(MT_CFLAGS) -c $< $(OUTPUT)$@
 
-$(XPDEV_LIB):
+$(XPDEV_LIB): xpdev
+xpdev:
 	$(COMSPEC) <<|
 	set VERSION=$(VERSION)
 	set DEBUG=$(DEBUG)
@@ -198,7 +199,8 @@ $(XPDEV_LIB):
 	exit
 |
 
-$(XPDEV-MT_LIB):
+$(XPDEV-MT_LIB): xpdev-mt
+xpdev-mt:
 	$(COMSPEC) <<|
 	set VERSION=$(VERSION)
 	set DEBUG=$(DEBUG)
@@ -209,7 +211,8 @@ $(XPDEV-MT_LIB):
 	exit
 |
 
-$(SMBLIB):
+$(SMBLIB): smblib
+smblib:
 	$(COMSPEC) <<|
 	set VERSION=$(VERSION)
 	set DEBUG=$(DEBUG)
@@ -220,7 +223,8 @@ $(SMBLIB):
 	exit
 |
 
-$(CIOLIB-MT_LIB):
+$(CIOLIB-MT_LIB): ciolib-mt
+ciolib-mt:
 	$(COMSPEC) <<|
 	set VERSION=$(VERSION)
 	set DEBUG=$(DEBUG)
@@ -231,7 +235,8 @@ $(CIOLIB-MT_LIB):
 	exit
 |
 
-$(UIFC_LIB):
+$(UIFC_LIB): uifc
+uifc:
 	$(COMSPEC) <<|
 	set VERSION=$(VERSION)
 	set DEBUG=$(DEBUG)
@@ -242,7 +247,8 @@ $(UIFC_LIB):
 	exit
 |
 
-$(UIFC-MT_LIB):
+$(UIFC-MT_LIB): uifc-mt
+uifc-mt:
 	$(COMSPEC) <<|
 	set VERSION=$(VERSION)
 	set DEBUG=$(DEBUG)

@@ -332,20 +332,26 @@ FORCE:
 -include $(LIBODIR)/*.d
 -include $(EXEODIR)/*.d
 
-$(XPDEV_LIB):
+$(XPDEV_LIB): xpdev
+xpdev:
 	$(MAKE) -C $(XPDEV_SRC) lib
 
-$(XPDEV-MT_LIB):
+$(XPDEV-MT_LIB): xpdev-mt
+xpdev-mt:
 	$(MAKE) -C $(XPDEV_SRC) mtlib
 
-$(SMBLIB):
+$(SMBLIB): smblib
+smblib:
 	$(MAKE) -C $(SMBLIB_SRC) lib
 
-$(CIOLIB-MT_LIB):
+$(CIOLIB-MT_LIB): ciolib-mt
+ciolib-mt:
 	$(MAKE) -C $(CIOLIB_SRC) mtlib
 
-$(UIFC_LIB):
+$(UIFC_LIB): uifc
+uifc:
 	$(MAKE) -C $(UIFC_SRC) lib
 
-$(UIFC-MT_LIB):
+$(UIFC-MT_LIB): uifc-mt
+uifclib-mt:
 	$(MAKE) -C $(UIFC_SRC) mtlib
