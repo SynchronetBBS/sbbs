@@ -25,7 +25,7 @@ if_false
 node_action node_chat
 async
 print "\r\n\1_\1y\1hChat: \1n"
-getcmd "ACDFIJPQST?\r"
+getcmd "ACDFIJPQRST?\r"
 cmdkey 'S'
 	TOGGLE_USER_CHAT CHAT_SPLITP
 	printf "\1n\r\nPrivate split-screen chat is now: \1h"
@@ -60,6 +60,11 @@ cmdkey 'F'
 cmdkey 'I'
 	crlf
 	exec "?sbbsimsg"
+	end_cmd
+
+cmdkey 'R'
+	crlf
+	exec "?irc irc.thebbs.org 6667 #Synchronet"
 	end_cmd
 
 cmdkey 'J'
