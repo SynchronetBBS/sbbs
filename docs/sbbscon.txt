@@ -1,0 +1,81 @@
+Synchronet Console Documentation
+================================
+
+$Id$
+
+Introduction
+------------
+The Synchronet Console is the console-mode sysop interface to Synchronet v3.
+On Win32 operating systems, this interface (sbbs.exe) is an alternative to 
+the graphical Synchronet Control Panel (sbbsctrl.exe). On Unix, this interface
+(sbbs) is currently the only option.
+
+On Win32 operating systems, the exact same underlying server libraries (DLLs)
+are used to service the clients, so from the users perspective there should
+be no difference in performance or functionality. The console mode interface
+does use fewer system resources than the graphical control panel, so for some
+sysops that wish to conserve system resources, this may be the preferred
+interface.
+
+
+BBS Configuration
+-----------------
+The system-wide configuration files (ctrl/*.cnf) are edited using the
+Synchronet configuration utility (SCFG). The executable filename is 
+exec/scfg.exe on Win32 and exec/scfg on Unix.
+
+SCFG needs to be told the location of your Synchronet ctrl directory, where
+it expects to find the Synchronet configuration (.cnf) files. This can be done
+by passing the path to your ctrl directory on the SCFG command line, example:
+
+	scfg /sbbs/ctrl
+
+or by setting the SBBSCTRL environment variable before running SCFG. Example:
+
+Unix:	export SBBSCTRL=/sbbs/ctrl
+Win32:	set SBBSCTRL=/sbbs/ctrl
+
+Many of the Synchronet utilities require this environment variable, so it is
+suggested you initialize this environment variable in your system startup 
+and/or login scripts.
+
+The SCFG application supports multiple forms of user interface. The default
+interface is currently curses/conio (full-screen colored text). To use a
+different interface, use the -G (graphical) or -D (stdio) command-line
+options. There are other command-line options to control the character set
+used, escape key delay, monochrome/color mode, etc. Type "scfg -?" to list
+all the available command-line options.
+
+There are other system-configuration files that are simple text files to be
+edited using any ASCII text editor: ctrl/*.cfg and text/*.can. Each of
+these files should contain a description of its purpose and usage.
+
+
+Server Configuration
+--------------------
+The server/host-specific configuration options are set with sbbs command-line
+options (run "sbbs help" for a list), or by editing the Synchronet
+Initialization file (e.g. ctrl/sbbs.ini).
+
+
+Initialization File
+-------------------
+The default initalization file is ctrl/sbbs.ini. A different initialization 
+(.ini) filename may be used by specifying the path and filename on the sbbs
+command-line. Example:
+
+	sbbs /sbbs/ctrl/mybbs.ini
+
+If the path and filename of the initialization file is not passed on the
+command-line, sbbs will use the SBBSCTRL environment variable to determine
+the location of your Synchronet ctrl directory, where it expects to find
+either <HOSTNAME>.ini or sbbs.ini.
+
+
+Running Synchronet
+------------------
+If you've initialized the SBBSCTRL environment variable and edited your BBS
+and server configuration, you are now ready to run Synchronet. You can do
+this by simply running exec/sbbs (off of the installation directory).
+
+/* End of sbbscon.txt */
