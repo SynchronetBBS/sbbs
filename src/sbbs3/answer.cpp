@@ -107,6 +107,7 @@ bool sbbs_t::answer()
 			useron.number=userdatdupe(0, U_ALIAS, LEN_ALIAS, rlogin_name, 0);
 			if(useron.number) {
 				getuserdat(&cfg,&useron);
+				useron.misc&=~(ANSI|COLOR|RIP|WIP);
 				if(!trashcan(client.addr,"rlogin")) {
 					SAFECOPY(tmp
 						,startup->options&BBS_OPT_USE_2ND_RLOGIN ? str : str2);
