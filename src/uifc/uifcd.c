@@ -126,8 +126,8 @@ int ulist(int mode, char left, int top, char width, int *cur, int *bar
 	size_t app_title_len;
     char **it;
     char str[128];
-    char tmpstr[128];	 //	Used for restoring the <-- At End --> bit
-    char tmpstr2[128];	//  for Add and Paste
+    char tmpstr[MAX_OPLN+1];	 //	Used for restoring the <-- At End --> bit
+    char tmpstr2[MAX_OPLN+1];	//  for Add and Paste
     int ret;
 
 	/* Count number of menu options */
@@ -235,13 +235,13 @@ int ulist(int mode, char left, int top, char width, int *cur, int *bar
 			case 'A':	/* Add */
 				dialog_clear_norefresh();
 				if(options>0)  {
-					strncpy(tmpstr,it[options*2],127);
+					strncpy(tmpstr,it[options*2],MAX_OPLN);
 					sprintf(it[options*2],"%u",options+1);
-					strncpy(tmpstr2,it[options*2+1],127);
+					strncpy(tmpstr2,it[options*2+1],MAX_OPLN);
 			        strcpy(it[options*2+1],"<-- At End -->");
 	        		ret=dialog_menu(title, "Insert Where?", height+8, width, height, options+1, it, str, 0, 0);
-					strncpy(it[options*2],tmpstr,127);
-					strncpy(it[options*2+1],tmpstr2,127);
+					strncpy(it[options*2],tmpstr,MAX_OPLN);
+					strncpy(it[(options*2)+1],tmpstr2,MAX_OPLN);
 					if(ret==0)  {
 						*cur=atoi(str)-1;
 						ret=*cur|MSK_INS;
@@ -283,13 +283,13 @@ int ulist(int mode, char left, int top, char width, int *cur, int *bar
 			case 'P':	/* Paste */
 		       dialog_clear_norefresh();
 				if(options>0)  {
-					strncpy(tmpstr,it[options*2],127);
+					strncpy(tmpstr,it[options*2],MAX_OPLN);
 					sprintf(it[options*2],"%u",options+1);
-					strncpy(tmpstr2,it[options*2+1],127);
+					strncpy(tmpstr2,it[options*2+1],MAX_OPLN);
 			        strcpy(it[options*2+1],"<-- At End -->");
 	        		ret=dialog_menu(title, "Paste Where?", height+8, width, height, options+1, it, str, 0, 0);
-					strncpy(it[options*2],tmpstr,127);
-					strncpy(it[options*2+1],tmpstr2,127);
+					strncpy(it[options*2],tmpstr,MAX_OPLN);
+					strncpy(it[(options*2)+1],tmpstr2,MAX_OPLN);
 					if(ret==0)  {
 						*cur=atoi(str)-1;
 						ret=*cur|MSK_PUT;
