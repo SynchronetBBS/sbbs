@@ -325,7 +325,7 @@ to post messages in this message area. This can be accomplished in
 Synchronet by setting the "Posting Requirements" to "USER NOT 0".
 
 The messsages posted in this conference are also distributed as
-anInternet mailing-list. You can subscribe to this mailing-list by
+an Internet mailing-list. You can subscribe to this mailing-list by
 sending an Internet e-mail to listserv@synchro.net with
 "subscribe announce" in the message body.
 
