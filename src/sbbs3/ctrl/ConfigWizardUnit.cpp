@@ -151,9 +151,10 @@ void __fastcall TConfigWizard::FormShow(TObject *Sender)
     sprintf(scfg.ctrl_dir,"%.*s",sizeof(scfg.ctrl_dir)-1
         ,MainForm->CtrlDirectory.c_str());
     scfg.size=sizeof(scfg);
-    if(!load_cfg(&scfg,NULL,FALSE)) {
-        sprintf(str,"Failed to load configuration files from %s",scfg.ctrl_dir);
-        Application->MessageBox(str,"ERROR",MB_OK|MB_ICONEXCLAMATION);
+    char error[256];
+    if(!load_cfg(&scfg,NULL,FALSE,error)) {
+        Application->MessageBox(error,"ERROR Loadin Configuration"
+        	,MB_OK|MB_ICONEXCLAMATION);
         Close();
         return;
     }

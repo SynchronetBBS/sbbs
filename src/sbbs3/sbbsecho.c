@@ -3748,7 +3748,6 @@ int main(int argc, char **argv)
 	time_t	now;
 	float	import_time;
 	clock_t start_tick=0,import_ticks=0;
-	read_cfg_text_t txt;
 	struct	tm *tm;
 	size_t	f;
 	glob_t	g;
@@ -3819,12 +3818,6 @@ int main(int argc, char **argv)
 	putenv("TMP=");
 	_fmode=O_BINARY;
 	setvbuf(stdout,NULL,_IONBF,0);
-
-	txt.openerr="\7\nError opening %s for read.\n";
-	txt.reading="\nReading %s...";
-	txt.readit="\rRead %s       ";
-	txt.allocerr="\7\nError allocating %u bytes of memory\n";
-	txt.error="\7\nERROR: Offset %lu in %s\n\n";
 
 	sub_code[0]=0;
 
@@ -3929,7 +3922,8 @@ int main(int argc, char **argv)
 
     printf("\nLoading configuration files from %s\n", scfg.ctrl_dir);
 	scfg.size=sizeof(scfg);
-	if(!load_cfg(&scfg, NULL, TRUE)) {
+	if(!load_cfg(&scfg, NULL, TRUE, str)) {
+		printf("!ERROR %s\n",str);
 		printf("!Failed to load configuration files\n");
 		bail(1);
 	}

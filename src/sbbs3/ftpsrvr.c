@@ -4270,6 +4270,7 @@ const char* DLLCALL ftp_ver(void)
 
 void DLLCALL ftp_server(void* arg)
 {
+	char			error[256];
 	char			compiler[32];
 	SOCKADDR_IN		server_addr;
 	SOCKADDR_IN		client_addr;
@@ -4379,7 +4380,8 @@ void DLLCALL ftp_server(void* arg)
     	,startup->ctrl_dir);
     lprintf("Loading configuration files from %s", scfg.ctrl_dir);
 	scfg.size=sizeof(scfg);
-	if(!load_cfg(&scfg, NULL, TRUE)) {
+	if(!load_cfg(&scfg, NULL, TRUE, error)) {
+		lprintf("!ERROR %s",error);
 		lprintf("!Failed to load configuration files");
 		cleanup(1);
 		return;

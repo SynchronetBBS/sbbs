@@ -1585,8 +1585,9 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     strcpy(cfg.ctrl_dir,CtrlDirectory.c_str());
     cfg.size=sizeof(cfg);
     cfg.node_num=bbs_startup.first_node;
-	if(!load_cfg(&cfg, NULL, TRUE)) {
-    	Application->MessageBox("Failed to load configuration files.","ERROR"
+    char error[256];
+	if(!load_cfg(&cfg, NULL, TRUE, error)) {
+    	Application->MessageBox(error,"ERROR Loading Configuration"
 	        ,MB_OK|MB_ICONEXCLAMATION);
         Application->Terminate();
         return;
@@ -2351,8 +2352,9 @@ void __fastcall TMainForm::PageControlUnDock(TObject *Sender,
 
 void __fastcall TMainForm::ReloadConfigExecute(TObject *Sender)
 {
-	if(!load_cfg(&cfg, NULL, TRUE)) {
-    	Application->MessageBox("Failed to re-load configuration files.","ERROR"
+	char error[256];
+	if(!load_cfg(&cfg, NULL, TRUE, error)) {
+    	Application->MessageBox(error,"ERROR Re-loading Configuration"
 	        ,MB_OK|MB_ICONEXCLAMATION);
         Application->Terminate();
     }

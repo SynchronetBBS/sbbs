@@ -967,6 +967,7 @@ const char* DLLCALL services_ver(void)
 
 void DLLCALL services_thread(void* arg)
 {
+	char			error[256];
 	char			host_ip[32];
 	char			compiler[32];
 	char			cmd[128];
@@ -1057,7 +1058,8 @@ void DLLCALL services_thread(void* arg)
     	,startup->ctrl_dir);
     lprintf("Loading configuration files from %s", scfg.ctrl_dir);
 	scfg.size=sizeof(scfg);
-	if(!load_cfg(&scfg, NULL, TRUE)) {
+	if(!load_cfg(&scfg, NULL, TRUE, error)) {
+		lprintf("!ERROR %s",error);
 		lprintf("!Failed to load configuration files");
 		cleanup(1);
 		return;
