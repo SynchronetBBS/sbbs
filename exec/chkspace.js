@@ -2,18 +2,20 @@
 
 // Requires minimum free disk space (in megabytes) as first argument
 
+// $Id$
+
 // Example: "?chkspace 100"
 
 minspace = file_area.min_diskspace*2;
-freespace = system.freediskspace;
+freespace = system.freediskspacek;	// new property in v3.10L
 
 if(argc)
-	minspace=Number(argv[0]);
+	minspace=Number(argv[0])*1024;	// convert megabytes to kilobytes
 
-if(freespace==-1 || freespace > minspace*1024*1024)
+if(freespace==-1 || freespace >= minspace)
 	exit();	// everything's fine
 
-log("!Low disk space: " + freespace + " bytes");
+log("!Low disk space: " + freespace + " kilobytes");
 
 msgbase = new MsgBase("mail");
 if(msgbase.open!=undefined && msgbase.open()==false) {
@@ -23,7 +25,7 @@ if(msgbase.open!=undefined && msgbase.open()==false) {
 
 hdr = { to: 'sysop', to_ext: '1', from: 'chkspace', subject: 'Low disk space notification' }
 
-if(!msgbase.save_msg(hdr, "WARNING: Only " + freespace + " bytes of free disk space on " 
+if(!msgbase.save_msg(hdr, "WARNING: Only " + freespace + " kilobytes of free disk space on " 
 	+ system.timestr()))
 	log("!Error " + msgbase.last_error + "saving mail message");
 
