@@ -10,7 +10,7 @@
 w              Synchronet BBS for @PLATFORM@ - Version @FULL_VER@
 w              @COPYRIGHT@ - http://www.synchro.net
 gh
-32-bit Multi-threaded Bulletin Board Sytem Software for the Internet Age
+32-bit Multi-threaded Bulletin Board System Software for the Internet Age
 ng
 Integerated TCP/IP Servers: hong Telnet/RLogin
                             hong SMTP/POP3 (inbound and outbound e-mail)
@@ -19,7 +19,7 @@ Integerated TCP/IP Servers: hong Telnet/RLogin
                             hong Finger (with real-time node listings)
                             hong Gopher (browse message areas online)
 h
-Native versions for Win32 and Unix-x86 (Linux, FreeBSD, and OpenBSD)
+Native versions for Win32 and Unix x86 (Linux, FreeBSD, and OpenBSD) platforms
 n@CLS@-----------------------------------------------------------------------------
 hRemembering these keys will help you enjoy your cSynchronetw Telnet experience:
 n-----------------------------------------------------------------------------
@@ -34,5 +34,6 @@ The global rhABORTnc-operation key sequence is: hCtrl-Cnc.
 Other global control-key sequences include: hCtrl-Uy: List users onlinenc
 					    hCtrl-Py: Send a private messagenc
                                             hCtrl-Ty: Show time informationnc
+                                            hCtrl-Oy: Toggle auto-pause Off/Onnc
 
 Use 'h?nc' to display help menus, and use 'hQnc' to quit.
