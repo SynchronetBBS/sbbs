@@ -17,10 +17,12 @@
 DEBUG	=	1		# Comment out for release (non-debug) version
 ifdef bcc
 CC		=	bc++ -q
+CCPP	=	bc++ -q
 LD		=	ilink -q
 CFLAGS 	=	-D__unix__ -w-csu -w-pch -w-ccc -w-rch -w-par -w-aus
 else
 CC		=	gcc
+CCPP	=	g++
 LD		=	ld
 CFLAGS	=	-Wall
 endif
@@ -147,7 +149,7 @@ MONO_OBJS	= $(CON_OBJS) $(FTP_OBJS) $(WEB_OBJS) \
 # Monolithic Synchronet executable Build Rule
 $(SBBSMONO): $(MONO_OBJS) $(OBJS) $(LIBS) $(LIBODIR)/ver.o 
 	@echo Linking $@
-	@$(CC) -o $@ $(LFLAGS) $^
+	@$(CCPP) -o $@ $(LFLAGS) $^
 
 # Synchronet BBS library Link Rule
 $(SBBS): $(OBJS) $(LIBS) $(LIBODIR)/ver.o
