@@ -163,7 +163,7 @@ ulong iniReadIpAddress(FILE* fp, const char* section, const char* key, ulong def
 	if(strchr(value,'.')==NULL)
 		return(strtol(value,NULL,0));
 
-	return(inet_addr(value));
+	return(ntohl(inet_addr(value)));
 }
 
 double iniReadFloat(FILE* fp, const char* section, const char* key, double deflt)
