@@ -8,6 +8,10 @@ load("nodedefs.js");
 
 var include_statistics=true;
 
+http_reply.header.pragma='no-cache';
+http_reply.header.expires='0';
+http_reply.header['cache-control']='must-revalidate';
+
 write_template("header.inc");
 load("../web/lib/topnav_html.ssjs");
 write_template("leftnav.inc");
