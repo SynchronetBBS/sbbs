@@ -265,14 +265,9 @@ mail_t* DLLCALL loadmail(smb_t* smb, ulong* msgs, uint usernumber
 			smb_unlocksmbhdr(smb);
 			return(NULL); 
 		}
-		mail[l].offset=idx.offset;
-		mail[l].number=idx.number;
-		mail[l].to=idx.to;
-		mail[l].from=idx.from;
-		mail[l].subj=idx.subj;
-		mail[l].time=idx.time;
-		mail[l].attr=idx.attr;
-		l++; }
+		mail[l]=idx;
+		l++; 
+	}
 	smb_unlocksmbhdr(smb);
 	*msgs=l;
 	return(mail);

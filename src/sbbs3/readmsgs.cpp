@@ -36,7 +36,6 @@
  ****************************************************************************/
 
 #include "sbbs.h"
-#include "post.h"
 
 int sbbs_t::sub_op(uint subnum)
 {
@@ -237,16 +236,13 @@ post_t HUGE16 * sbbs_t::loadposts(long *posts, uint subnum, ulong ptr, long mode
 			if(skip)
 				continue; }
 
-		post[l].offset=idx.offset;
-		post[l].number=idx.number;
-		post[l].to=idx.to;
-		post[l].from=idx.from;
-		post[l].subj=idx.subj;
-		l++; }
+		memcpy(&post[l],&idx,sizeof(idx));
+		l++; 
+	}
 	smb_unlocksmbhdr(&smb);
-	if(!l) {
-		LFREE(post);
-		post=NULL; }
+	if(!l)
+		FREE_AND_NULL(post);
+
 	(*posts)=l;
 	return(post);
 }
