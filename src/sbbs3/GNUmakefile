@@ -26,7 +26,9 @@ endif
 
 #USE_DIALOG =   1       # Dialog vesrion of UIFC
 #USE_FLTK =     1       # Use Windowed version
-USE_CURSES      =       1       # Curses version of UIFC
+ifndef NO_CURSES
+ USE_CURSES      =       1       # Curses version of UIFC
+endif
 
 ifdef DEBUG
  BUILD	=	debug
