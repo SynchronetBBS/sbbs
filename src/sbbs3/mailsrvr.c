@@ -2240,6 +2240,8 @@ void DLLCALL mail_terminate(void)
 
 static void cleanup(int code)
 {
+	free_cfg(&scfg);
+
 	if(server_socket!=INVALID_SOCKET) {
 		mail_close_socket(server_socket);
 		server_socket=INVALID_SOCKET;
@@ -2333,6 +2335,8 @@ void DLLCALL mail_server(void* arg)
 
 	status("Initializing");
 
+    memset(&scfg, 0, sizeof(scfg));
+
 #ifdef __unix__		/* Ignore "Broken Pipe" signal */
 	signal(SIGPIPE,SIG_IGN);
 #endif
@@ -2376,7 +2380,6 @@ void DLLCALL mail_server(void* arg)
 		,ctime(&t),startup->options);
 
 	/* Initial configuration and load from CNF files */
-    memset(&scfg, 0, sizeof(scfg));
     sprintf(scfg.ctrl_dir, "%.*s", (int)sizeof(scfg.ctrl_dir)-1
     	,startup->ctrl_dir);
     lprintf("Loading configuration files from %s", scfg.ctrl_dir);
