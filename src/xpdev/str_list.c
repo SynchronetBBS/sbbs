@@ -392,3 +392,43 @@ size_t strListWriteFile(FILE* fp, const str_list_t list, const char* separator)
 	
 	return(i);
 }
+
+char* strListCreateBlock(str_list_t list)
+{
+	char*	block=NULL;
+	char*	p;
+	size_t	str_len;
+	size_t	block_len=0;	
+	size_t	i;
+
+	for(i=0; list[i]!=NULL; i++) {
+		str_len=strlen(list[i]);
+		if(str_len==0)
+			continue;	/* can't include empty strings in block */
+		if((p=(char*)realloc(block, block_len + str_len + 1))==NULL) {
+			FREE_AND_NULL(block);
+			return(block);
+		}
+		block=p;
+		strcpy(block + block_len, list[i]);
+		block_len += (str_len + 1);
+	}
+
+	/* block must be double-NULL terminated */
+	if(!block_len)
+		block_len=1;
+	block_len++;
+	if((p=(char*)realloc(block, block_len))==NULL) {
+		FREE_AND_NULL(block);
+		return(block);
+	}
+	block=p;
+	memset(block + (block_len-2), 0, 2);
+
+	return(block);
+}
+
+void strListFreeBlock(char* block)
+{
+	FREE_AND_NULL(block);	/* this must be done here for Windows-DLL reasons */
+}
