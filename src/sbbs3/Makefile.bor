@@ -20,12 +20,12 @@ LIBFILE	=	.dll
 EXEFILE	=	.exe
 LIBODIR	=	bcc.win32.dll	# Library output directory
 EXEODIR =	bcc.win32.exe	# Executable output directory
-CFLAGS	=	-M
+CFLAGS	=	-M -g1
 LFLAGS  =	-m -s -c -Tpd -Gi -I$(LIBODIR)
 DELETE	=	echo y | del 
 
 # Optional compile flags (disable banner, warnings and such)
-CFLAGS	=	$(CFLAGS) -q -d -H -X- -w-csu -w-pch
+CFLAGS	=	$(CFLAGS) -q -d -H -X- -w-csu -w-pch -w-ccc -w-rch
 
 # Debug or release build?
 !ifdef DEBUG
