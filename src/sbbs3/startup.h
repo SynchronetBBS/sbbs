@@ -61,6 +61,10 @@ typedef struct {
     DWORD	rlogin_interface;
     DWORD	xtrn_polls_before_yield;
     DWORD	js_max_bytes;
+	DWORD	js_cx_stack;
+	DWORD	js_branch_limit;
+	DWORD	js_yield_interval;
+	DWORD	js_gc_interval;
     RingBuf** node_spybuf;		// Spy output buffer (each node)
     RingBuf** node_inbuf;		// User input buffer (each node)
     sem_t**	node_spysem;		// Spy output semaphore (each node)

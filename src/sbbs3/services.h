@@ -50,6 +50,10 @@ typedef struct {
     DWORD   interface_addr;
     DWORD	options;			/* See BBS_OPT definitions */
     DWORD	js_max_bytes;
+	DWORD	js_cx_stack;
+	DWORD	js_branch_limit;
+	DWORD	js_yield_interval;
+	DWORD	js_gc_interval;
 	WORD	sem_chk_freq;		/* semaphore file checking frequency (in seconds) */
 	int 	(*lputs)(char*);		/* Log - put string */
 	void	(*status)(char*);

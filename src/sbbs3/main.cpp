@@ -758,14 +758,14 @@ bool sbbs_t::js_init()
 		return(false);
 
 	lprintf("%s JavaScript: Initializing context (stack: %lu bytes)"
-		,node,JAVASCRIPT_CONTEXT_STACK);
+		,node,startup->js_cx_stack);
 
-    if((js_cx = JS_NewContext(js_runtime, JAVASCRIPT_CONTEXT_STACK))==NULL)
+    if((js_cx = JS_NewContext(js_runtime, startup->js_cx_stack))==NULL)
 		return(false);
 
-	js_branch.limit = JAVASCRIPT_BRANCH_LIMIT;
-	js_branch.gc_interval = JAVASCRIPT_GC_INTERVAL;
-	js_branch.yield_interval = JAVASCRIPT_YIELD_INTERVAL;
+	js_branch.limit = startup->js_branch_limit;
+	js_branch.gc_interval = startup->js_gc_interval;
+	js_branch.yield_interval = startup->js_yield_interval;
 	js_branch.counter = 0;	/* loop counter */
 	js_branch.terminated = (BOOL*)&terminated;
 
@@ -3551,6 +3551,7 @@ void DLLCALL bbs_thread(void* arg)
 	if(startup->xtrn_polls_before_yield==0)	startup->xtrn_polls_before_yield=10;
 #ifdef JAVASCRIPT
 	if(startup->js_max_bytes==0)			startup->js_max_bytes=JAVASCRIPT_MAX_BYTES;
+	if(startup->js_cx_stack==0)				startup->js_cx_stack=JAVASCRIPT_CONTEXT_STACK;
 #endif
 	if(startup->outbuf_drain_timeout==0)	startup->outbuf_drain_timeout=10;
 	if(startup->sem_chk_freq==0)			startup->sem_chk_freq=5;
