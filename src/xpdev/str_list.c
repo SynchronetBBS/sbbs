@@ -77,8 +77,8 @@ void strListFree(char*** list)
 
 	if(*list!=NULL) {
 
-		for(i=0;*list[i]!=NULL;i++)
-			free(*list[i]);
+		for(i=0;(*list)[i]!=NULL;i++)
+			free((*list)[i]);
 
 		free(*list);
 	}
