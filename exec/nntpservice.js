@@ -369,6 +369,7 @@ while(client.socket.is_connected) {
 				break;
 
 			if(cmd[0].toUpperCase()!="BODY") {
+				writeln("Path: " + hdr.path);
 				if(!hdr.from_net_type)	/* local message */
 					writeln(format("From: \"%s\" <%s@%s>"
 						,hdr.from
@@ -504,6 +505,9 @@ while(client.socket.is_connected) {
 					case "x-comment-to":
 						hdr.to=data;
 						break;
+					case "path":
+						hdr.path=data;
+						break;
 					case "from":
 						if(user.security.restrictions&(UFLAG_G|UFLAG_Q)) // Guest or Network Node
 							hdr.from=data;
@@ -527,6 +531,7 @@ while(client.socket.is_connected) {
 						if(hdr.to==undefined)
 							hdr.to=data;
 						newsgroups=data.split(',');
+						hdr.newsgroups=data;
 						break;
 					case "x-ftn-pid":
 						hdr.ftn_pid=data;
