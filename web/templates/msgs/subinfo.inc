@@ -1,6 +1,5 @@
-<center>
-<table>
-  <tr>
+<table class="subinfo">
+  <tr class="subinfo">
     <td>
 	  Long Name:
 	</td>
@@ -8,7 +7,7 @@
 	  %%sub:description%%
 	</td>
   </tr>
-  <tr>
+  <tr class="subinfo">
     <td>
 	  Newsgroup Name:
 	</td>
@@ -16,7 +15,7 @@
 	  %%sub:newsgroup%%
 	</td>
   </tr>
-  <tr>
+  <tr class="subinfo">
     <td>
 	  Short Name:
 	</td>
@@ -24,7 +23,7 @@
 	  %%sub:name%%
 	</td>
   </tr>
-  <tr>
+  <tr class="subinfo">
     <td>
 	  QWK Name:
 	</td>
@@ -32,7 +31,7 @@
 	  %%sub:qwk_name%%
 	</td>
   </tr>
-  <tr>
+  <tr class="subinfo">
     <td>
 	  Is Moderated:
 	</td>
@@ -40,7 +39,7 @@
 	  %%sub:is_moderated%%
 	</td>
   </tr>
-  <tr>
+  <tr class="subinfo">
     <td>
 	  Can Post:
 	</td>
@@ -48,7 +47,7 @@
 	  %%sub:can_post%%
 	</td>
   </tr>
-  <tr>
+  <tr class="subinfo">
     <td>
 	  Can Read:
 	</td>
@@ -56,7 +55,7 @@
 	  %%sub:can_read%%
 	</td>
   </tr>
-  <tr>
+  <tr class="subinfo">
     <td>
 	  Am Operator:
 	</td>
@@ -64,7 +63,7 @@
 	  %%sub:is_operator%%
 	</td>
   </tr>
-  <tr>
+  <tr class="subinfo">
     <td>
 	  Max Msgs:
 	</td>
@@ -72,7 +71,7 @@
 	  %%sub:max_msgs%%
 	</td>
   </tr>
-  <tr>
+  <tr class="subinfo">
     <td>
 	  Network Type:
 	</td>
@@ -80,7 +79,7 @@
 	  %%type%%
 	</td>
   </tr>
-  <tr>
+  <tr class="subinfo">
     <td>
 	  Tagline/Origin:
 	</td>
@@ -89,4 +88,4 @@
 	</td>
   </tr>
 </table>
-</center>
+
