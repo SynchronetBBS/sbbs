@@ -2144,7 +2144,7 @@ static void ctrl_thread(void* arg)
 #endif
 
 #ifdef JAVASCRIPT
-	if(!(startup->options&FTP_OPT_NO_JAVASCRIPT)) {
+	if(js_runtime!=NULL) {
 		if(((js_cx=js_initcx(sock,&js_glob,&js_ftp))==NULL)) {
 			lprintf("%04d !ERROR initializing JavaScript context",sock);
 			sockprintf(sock,"425 Error initializing JavaScript context");
