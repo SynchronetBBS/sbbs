@@ -986,9 +986,9 @@ void output_thread(void* arg)
 
 void event_thread(void* arg)
 {
-	char		str[256];
+	char		str[MAX_PATH+1];
 	char		bat_list[MAX_PATH+1];
-	char		semfile[128];
+	char		semfile[MAX_PATH+1];
 	int			i,j,k;
 	int			file;
 	int			offset;
@@ -2240,7 +2240,7 @@ void sbbs_t::spymsg(char*msg)
 /****************************************************************************/
 int sbbs_t::mv(char *src, char *dest, char copy)
 {
-	char	str[256],*buf,atr=curatr;
+	char	str[MAX_PATH+1],*buf,atr=curatr;
 	int		ind,outd;
 	uint	chunk=MV_BUFLEN;
 	ulong	length,l;
@@ -2348,7 +2348,7 @@ int sbbs_t::mv(char *src, char *dest, char copy)
 /****************************************************************************/
 BOOL DLLCALL getstats(scfg_t* cfg, char node, stats_t* stats)
 {
-    char str[256];
+    char str[MAX_PATH+1];
     int file;
 
     sprintf(str,"%sdsts.dab",node ? cfg->node_path[node-1] : cfg->ctrl_dir);
@@ -2556,7 +2556,7 @@ void sbbs_t::reset_logon_vars(void)
 /****************************************************************************/
 void sbbs_t::catsyslog(int crash)
 {
-	char str[256];
+	char str[MAX_PATH+1];
 	char HUGE16 *buf;
 	int  i,file;
 	long length;
@@ -2629,7 +2629,7 @@ void sbbs_t::catsyslog(int crash)
 
 void sbbs_t::logoffstats()
 {
-    char str[256];
+    char str[MAX_PATH+1];
     int i,file;
     stats_t stats;
 
