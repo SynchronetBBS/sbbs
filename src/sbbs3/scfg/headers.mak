@@ -5,6 +5,6 @@
 
 # $Id$
 
-HEADERS =	scfgx.h ars_defs.h sbbs.h sbbswrap.h scfgdefs.h smbdefs.h userdat.h\
-		   gen_defs.h sbbsdefs.h scfglib.h smblib.h
+HEADERS =	scfg.h ../ars_defs.h ../sbbs.h ../sbbswrap.h ../scfgdefs.h ../smbdefs.h ../userdat.h\
+		   ../gen_defs.h ../sbbsdefs.h ../scfglib.h ../smblib.h
 

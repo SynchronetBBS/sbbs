@@ -1,7 +1,7 @@
 # Makefile.gnu
 
 #########################################################################
-# Makefile for Synchronet BBS 											#
+# Makefile for SCFG			 											#
 # For use with GNU make and GNU C Compiler								#
 # @format.tab-size 4, @format.use-tabs true								#
 #																		#
@@ -16,6 +16,7 @@
 
 # Macros
 # DEBUG	=	1		# Comment out for release (non-debug) version
+USE_DIALOG =	1		# Comment out for stdio (uifcx) version
 CC		=	gcc
 SLASH	=	/
 OFILE	=	o
@@ -27,6 +28,8 @@ LIBFILE	=	.dll
 EXEFILE	=	.exe
 LIBODIR	:=	gcc.win32.dll
 EXEODIR	:=	gcc.win32.exe
+SBBSLIBODIR	:=	gcc.win32.sbbsdll
+UIFCLIBODIR	:=	gcc.win32.uifcdll
 LIBDIR	:=	/gcc/i386-mingw32/lib
 CFLAGS	:=	-mno-cygwin
 LFLAGS  :=	--target=i386-mingw32 -mno-cygwin
@@ -43,9 +46,15 @@ EXEFILE	=
 ifeq ($(os),freebsd)	# FreeBSD
 LIBODIR	:=	gcc.freebsd.lib
 EXEODIR	:=	gcc.freebsd.exe
+SBBSLIBODIR	:=	gcc.freebsd.sbbslib
+UIFCLIBODIR	:=	gcc.freebsd.uifclib
+MAKE	:=	gmake
 else                    # Linux
 LIBODIR	:=	gcc.linux.lib
 EXEODIR	:=	gcc.linux.exe
+SBBSLIBODIR	:=	gcc.linux.sbbslib
+UIFCLIBODIR	:=	gcc.linux.uifclib
+MAKE	:=	make
 endif
 
 LIBDIR	:=	/usr/lib
@@ -53,14 +62,13 @@ LFLAGS  :=
 DELETE	=	rm -f -v
 OUTLIB	=	-o
 
-CFLAGS	:=	-I../../uifc -I/usr/local/include -I../
+CFLAGS	:=	-I../../uifc -I/usr/local/include -I../  -D_THREAD_SAFE
 
-ifeq ($(os),freebsd)	# FreeBSD
-CFLAGS	:=	$(CFLAGS) -DUSE_DIALOG
-LIBS	:=	-L/usr/local/lib -ldialog
-USE_DIALOG =	YES
-else			# Linux / Other UNIX
 LIBS	:=	-L/usr/local/lib
+
+ifdef USE_DIALOG
+LIBS	:=	$(LIBS) -L../../libdialog -ldialog -lcurses
+CFLAGS	:=	$(CFLAGS) -I../../libdialog -DUSE_DIALOG
 endif
 
 endif   # Unix (end)
@@ -72,10 +80,14 @@ ifdef DEBUG
 CFLAGS	:=	$(CFLAGS) -g -O0 -D_DEBUG 
 LIBODIR	:=	$(LIBODIR).debug
 EXEODIR	:=	$(EXEODIR).debug
+SBBSLIBODIR	:=	$(SBBSLIBODIR).debug
+UIFCLIBODIR	:=	$(UIFCLIBODIR).debug
 else # RELEASE
 LFLAGS	:=	$(LFLAGS) -S
 LIBODIR	:=	$(LIBODIR).release
 EXEODIR	:=	$(EXEODIR).release
+SBBSLIBODIR	:=	$(SBBSLIBODIR).release
+UIFCLIBODIR	:=	$(UIFCLIBODIR).release
 endif
 
 include targets.mak		# defines all targets
@@ -83,25 +95,28 @@ include objects.mak		# defines $(OBJS)
 include headers.mak		# defines $(HEADERS)
 
 SBBSLIB	=	$(LIBODIR)/sbbs.a
-SBBSDEFS =	
+SBBSDEFs =	
 	
 
-# Implicit C Compile Rule for SBBS
+# Implicit C Compile Rule for SCFG
 $(LIBODIR)/%.o : %.c
 	$(CC) $(CFLAGS) -c $(SBBSDEFS) $< -o $@
 
-# Implicit C++ Compile Rule for SBBS
+# Implicit C++ Compile Rule for SCFG
 $(LIBODIR)/%.o : %.cpp
 	$(CC) $(CFLAGS) -c $(SBBSDEFS) $< -o $@
 
+# Implicit C Compile Rule for SBBS Objects
+$(SBBSLIBODIR)/%.o : ../%.c
+	$(CC) $(CFLAGS) -c $(SBBSDEFS) $< -o $@
+
+# Implicit C++ Compile Rule for SBBS Objects
+$(SBBSLIBODIR)/%.o : ../%.cpp
+	$(CC) $(CFLAGS) -c $(SBBSDEFS) $< -o $@
+
 # uifc Rules
-../../uifc/uifcx.$(OFILE):
-	$(CC) $(CFLAGS) -c $(SBBSDEFS) ../../uifc/uifcx.c -o ../../uifc/uifcx.$(OFILE)
-
-../../uifc/uifcd.c:
-
-../../uifc/uifcd.$(OFILE):
-	$(CC) $(CFLAGS) -c $(SBBSDEFS) ../../uifc/uifcd.c -o ../../uifc/uifcd.$(OFILE)
+$(UIFCLIBODIR)/%.o : ../../uifc/%.c
+	$(CC) $(CFLAGS) -c $(SBBSDEFS) $< -o $@
 
 # Create output directories
 $(LIBODIR):
@@ -109,6 +124,12 @@ $(LIBODIR):
 
 $(EXEODIR):
 	mkdir $(EXEODIR)
+
+$(SBBSLIBODIR):
+	mkdir $(SBBSLIBODIR)
+
+$(UIFCLIBODIR):
+	mkdir $(UIFCLIBODIR)
 
 # Monolithic Synchronet executable Build Rule
 $(SCFG): $(OBJS)

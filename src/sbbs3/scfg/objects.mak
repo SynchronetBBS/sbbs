@@ -4,7 +4,7 @@
 
 # $Id$
 
-# LIBODIR, SLASH, and OFILE must be pre-defined
+# LIBODIR, SBBSLIBODIR, SLASH, and OFILE must be pre-defined
 
 
 OBJS	=	$(LIBODIR)$(SLASH)scfg.$(OFILE)\
@@ -17,20 +17,20 @@ OBJS	=	$(LIBODIR)$(SLASH)scfg.$(OFILE)\
 			$(LIBODIR)$(SLASH)scfgxfr1.$(OFILE)\
 			$(LIBODIR)$(SLASH)scfgxfr2.$(OFILE)\
 			$(LIBODIR)$(SLASH)scfgchat.$(OFILE)\
-                        ..$(SLASH)$(LIBODIR)$(SLASH)scfgsave.$(OFILE)\
-                        ..$(SLASH)$(LIBODIR)$(SLASH)scfglib1.$(OFILE)\
-                        ..$(SLASH)$(LIBODIR)$(SLASH)smblib.$(OFILE)\
-                        ..$(SLASH)$(LIBODIR)$(SLASH)scfglib2.$(OFILE)\
-                        ..$(SLASH)$(LIBODIR)$(SLASH)smbwrap.$(OFILE)\
-                        ..$(SLASH)$(LIBODIR)$(SLASH)ars.$(OFILE)\
-                        ..$(SLASH)$(LIBODIR)$(SLASH)load_cfg.$(OFILE)\
-                        ..$(SLASH)$(LIBODIR)$(SLASH)misc.$(OFILE)\
-                        ..$(SLASH)$(LIBODIR)$(SLASH)crc32.$(OFILE)\
-                        ..$(SLASH)$(LIBODIR)$(SLASH)userdat.$(OFILE)\
-                        ..$(SLASH)$(LIBODIR)$(SLASH)date_str.$(OFILE)
+            $(SBBSLIBODIR)$(SLASH)scfgsave.$(OFILE)\
+            $(SBBSLIBODIR)$(SLASH)scfglib1.$(OFILE)\
+            $(SBBSLIBODIR)$(SLASH)smblib.$(OFILE)\
+            $(SBBSLIBODIR)$(SLASH)scfglib2.$(OFILE)\
+            $(SBBSLIBODIR)$(SLASH)smbwrap.$(OFILE)\
+            $(SBBSLIBODIR)$(SLASH)ars.$(OFILE)\
+            $(SBBSLIBODIR)$(SLASH)load_cfg.$(OFILE)\
+            $(SBBSLIBODIR)$(SLASH)misc.$(OFILE)\
+            $(SBBSLIBODIR)$(SLASH)crc32.$(OFILE)\
+            $(SBBSLIBODIR)$(SLASH)userdat.$(OFILE)\
+            $(SBBSLIBODIR)$(SLASH)date_str.$(OFILE)\
+            $(SBBSLIBODIR)$(SLASH)wrappers.$(OFILE)\
+			$(UIFCLIBODIR)$(SLASH)uifcx.$(OFILE)
 
 ifdef USE_DIALOG
-OBJS := $(OBJS)			../../uifc/uifcd.$(OFILE)
-else
-OBJS := $(OBJS)			../../uifc/uifcx.$(OFILE)
+OBJS := $(OBJS)			$(UIFCLIBODIR)$(SLASH)uifcd.$(OFILE)
 endif
