@@ -15,6 +15,7 @@ DEBUG	=	1		# Comment out for release (non-debug) version
 CC		=	gcc
 SLASH	=	/
 OFILE	=	o
+CFLAGS	=	-Wall
 
 ifndef $(os)
 os		=	$(shell uname)
