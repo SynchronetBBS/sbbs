@@ -480,7 +480,9 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
     bbs_startup.first_node=1;
     bbs_startup.last_node=4;
     bbs_startup.telnet_port=IPPORT_TELNET;
-    bbs_startup.interface_addr=INADDR_ANY;
+    bbs_startup.telnet_interface=INADDR_ANY;
+    bbs_startup.rlogin_port=513;
+    bbs_startup.rlogin_interface=INADDR_ANY;
 	bbs_startup.lputs=bbs_lputs;
     bbs_startup.status=bbs_status;
     bbs_startup.clients=bbs_clients;
@@ -672,9 +674,11 @@ void __fastcall TMainForm::SaveSettings(void)
     Registry->WriteInteger("MailLogFile",MailLogFile);
     Registry->WriteInteger("FtpLogFile",FtpLogFile);
 
-    Registry->WriteInteger("TelnetInterface",bbs_startup.interface_addr);
+    Registry->WriteInteger("TelnetInterface",bbs_startup.telnet_interface);
+    Registry->WriteInteger("RLoginInterface",bbs_startup.rlogin_interface);
 
 	Registry->WriteInteger("TelnetPort",bbs_startup.telnet_port);
+	Registry->WriteInteger("RLoginPort",bbs_startup.rlogin_port);
     Registry->WriteInteger("FirstNode",bbs_startup.first_node);
     Registry->WriteInteger("LastNode",bbs_startup.last_node);
 
@@ -1225,10 +1229,14 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     	FtpLogFile=true;
 
     if(Registry->ValueExists("TelnetInterface"))
-    	bbs_startup.interface_addr=Registry->ReadInteger("TelnetInterface");
+    	bbs_startup.telnet_interface=Registry->ReadInteger("TelnetInterface");
+    if(Registry->ValueExists("RLoginInterface"))
+    	bbs_startup.rlogin_interface=Registry->ReadInteger("RLoginInterface");
 
 	if(Registry->ValueExists("TelnetPort"))
     	bbs_startup.telnet_port=Registry->ReadInteger("TelnetPort");
+	if(Registry->ValueExists("RLoginPort"))
+    	bbs_startup.rlogin_port=Registry->ReadInteger("RLoginPort");
 
     if(Registry->ValueExists("FirstNode"))
     	bbs_startup.first_node=Registry->ReadInteger("FirstNode");

@@ -1,6 +1,6 @@
 object TelnetCfgDlg: TTelnetCfgDlg
-  Left = 484
-  Top = 622
+  Left = 766
+  Top = 707
   BorderStyle = bsDialog
   Caption = 'Telnet Server Configuration'
   ClientHeight = 234
@@ -17,29 +17,13 @@ object TelnetCfgDlg: TTelnetCfgDlg
     Top = 3
     Width = 278
     Height = 186
-    ActivePage = GeneralTabSheet
+    ActivePage = RLoginTabSheet
     TabOrder = 0
     object GeneralTabSheet: TTabSheet
       Caption = 'General'
-      object InterfaceLabel: TLabel
-        Left = 7
-        Top = 29
-        Width = 78
-        Height = 20
-        AutoSize = False
-        Caption = 'Interface (IP)'
-      end
-      object TelnetPortLabel: TLabel
-        Left = 7
-        Top = 55
-        Width = 78
-        Height = 20
-        AutoSize = False
-        Caption = 'Listening Port'
-      end
       object FirstNodeLabel: TLabel
         Left = 7
-        Top = 81
+        Top = 10
         Width = 78
         Height = 20
         AutoSize = False
@@ -47,15 +31,15 @@ object TelnetCfgDlg: TTelnetCfgDlg
       end
       object LastNodeLabel: TLabel
         Left = 7
-        Top = 107
-        Width = 78
+        Top = 36
+        Width = 74
         Height = 20
         AutoSize = False
         Caption = 'Last Node'
       end
       object AutoStartCheckBox: TCheckBox
-        Left = 7
-        Top = 5
+        Left = 148
+        Top = 10
         Width = 117
         Height = 19
         Hint = 'Automatically start Telnet server'
@@ -64,9 +48,82 @@ object TelnetCfgDlg: TTelnetCfgDlg
         ShowHint = True
         TabOrder = 0
       end
-      object NetworkInterfaceEdit: TEdit
+      object FirstNodeEdit: TEdit
         Left = 85
-        Top = 29
+        Top = 10
+        Width = 39
+        Height = 21
+        Hint = 'First node number available for Telnet logins'
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 1
+      end
+      object XtrnMinCheckBox: TCheckBox
+        Left = 148
+        Top = 62
+        Width = 117
+        Height = 20
+        Hint = 'External programs run in a minimized window'
+        Caption = 'Minimize Externals'
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 2
+      end
+      object LastNodeEdit: TEdit
+        Left = 85
+        Top = 36
+        Width = 39
+        Height = 21
+        Hint = 'Last node number available for Telnet logins'
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 3
+      end
+      object HostnameCheckBox: TCheckBox
+        Left = 148
+        Top = 36
+        Width = 117
+        Height = 19
+        Hint = 'Automatically lookup client'#39's hostnames via DNS'
+        Caption = 'Hostname Lookup'
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 4
+      end
+    end
+    object TelnetTabSheet: TTabSheet
+      Caption = 'Telnet'
+      ImageIndex = 1
+      object InterfaceLabel: TLabel
+        Left = 7
+        Top = 36
+        Width = 78
+        Height = 21
+        AutoSize = False
+        Caption = 'Interface (IP)'
+      end
+      object TelnetPortLabel: TLabel
+        Left = 7
+        Top = 10
+        Width = 78
+        Height = 21
+        AutoSize = False
+        Caption = 'Listening Port'
+      end
+      object CmdLogCheckBox: TCheckBox
+        Left = 7
+        Top = 88
+        Width = 169
+        Height = 21
+        Hint = 'Log (debug) all received Telnet commands'
+        Caption = 'Log Received Commands'
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 0
+      end
+      object TelnetInterfaceEdit: TEdit
+        Left = 85
+        Top = 36
         Width = 156
         Height = 21
         Hint = 
@@ -78,7 +135,7 @@ object TelnetCfgDlg: TTelnetCfgDlg
       end
       object TelnetPortEdit: TEdit
         Left = 85
-        Top = 55
+        Top = 10
         Width = 39
         Height = 21
         Hint = 'TCP port for incoming connections (default=23)'
@@ -87,83 +144,98 @@ object TelnetCfgDlg: TTelnetCfgDlg
         TabOrder = 2
       end
       object KeepAliveCheckBox: TCheckBox
-        Left = 148
-        Top = 55
+        Left = 7
+        Top = 62
         Width = 117
-        Height = 20
+        Height = 21
         Hint = 'Instruct WinSock to keep your dial-up connection active'
         Caption = 'Send Keep-Alives'
         ParentShowHint = False
         ShowHint = True
         TabOrder = 3
       end
-      object FirstNodeEdit: TEdit
-        Left = 85
-        Top = 81
-        Width = 39
-        Height = 21
-        Hint = 'First node number available for Telnet logins'
-        ParentShowHint = False
-        ShowHint = True
-        TabOrder = 4
-      end
-      object XtrnMinCheckBox: TCheckBox
-        Left = 148
-        Top = 80
-        Width = 117
-        Height = 20
-        Hint = 'External programs run in a minimized window'
-        Caption = 'Minimize Externals'
-        ParentShowHint = False
-        ShowHint = True
-        TabOrder = 5
-      end
-      object LastNodeEdit: TEdit
-        Left = 85
-        Top = 107
-        Width = 39
-        Height = 21
-        Hint = 'Last node number available for Telnet logins'
-        ParentShowHint = False
-        ShowHint = True
-        TabOrder = 6
-      end
       object AutoLogonCheckBox: TCheckBox
-        Left = 148
-        Top = 106
+        Left = 7
+        Top = 114
         Width = 117
         Height = 19
         Hint = 'Allow V-exempt users to auto-logon based on their IP address'
         Caption = 'AutoLogon via IP'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 7
-      end
-      object HostnameCheckBox: TCheckBox
-        Left = 148
-        Top = 5
-        Width = 117
-        Height = 19
-        Hint = 'Automatically lookup client'#39's hostnames via DNS'
-        Caption = 'Hostname Lookup'
-        ParentShowHint = False
-        ShowHint = True
-        TabOrder = 8
+        TabOrder = 4
       end
     end
-    object LogTabSheet: TTabSheet
-      Caption = 'Log'
-      ImageIndex = 1
-      object CmdLogCheckBox: TCheckBox
+    object RLoginTabSheet: TTabSheet
+      Caption = 'RLogin'
+      ImageIndex = 3
+      object Label1: TLabel
         Left = 7
-        Top = 5
-        Width = 169
-        Height = 19
-        Hint = 'Log (debug) all received Telnet commands'
-        Caption = 'Received Commands'
+        Top = 10
+        Width = 78
+        Height = 21
+        AutoSize = False
+        Caption = 'Listening Port'
+      end
+      object Label2: TLabel
+        Left = 7
+        Top = 36
+        Width = 78
+        Height = 21
+        AutoSize = False
+        Caption = 'Interface (IP)'
+      end
+      object RLoginPortEdit: TEdit
+        Left = 85
+        Top = 10
+        Width = 39
+        Height = 21
+        Hint = 'TCP port for incoming connections (default=513)'
         ParentShowHint = False
         ShowHint = True
         TabOrder = 0
+      end
+      object RLoginInterfaceEdit: TEdit
+        Left = 85
+        Top = 36
+        Width = 156
+        Height = 21
+        Hint = 
+          'Enter your Network adapter'#39's static IP address here or blank for' +
+          ' <ANY>'
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 1
+      end
+      object RLoginEnabledCheckBox: TCheckBox
+        Left = 184
+        Top = 10
+        Width = 73
+        Height = 17
+        Caption = 'Enabled'
+        TabOrder = 2
+        OnClick = RLoginEnabledCheckBoxClick
+      end
+      object RLoginIPallowButton: TButton
+        Left = 158
+        Top = 62
+        Width = 83
+        Height = 21
+        Hint = 'RLOGIN.CAN'
+        Caption = 'Allowed IPs'
+        TabOrder = 3
+        OnClick = RLoginIPallowButtonClick
+      end
+      object RLogin2ndNameCheckBox: TCheckBox
+        Left = 7
+        Top = 62
+        Width = 138
+        Height = 21
+        Hint = 'Instruct WinSock to keep your dial-up connection active'
+        Caption = 'Use 2nd Login Name'
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 4
       end
     end
     object SoundTabSheet: TTabSheet
