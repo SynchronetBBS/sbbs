@@ -47,7 +47,7 @@
 #define ZMODEM			(1<<4)	/* Use Zmodem								*/
 #define CRC 			(1<<5)	/* Use CRC error correction 				*/
 #define GMODE			(1<<6)	/* For Qmodem-G and Ymodem-G				*/
-#define DIR 			(1<<7)	/* Directory specified to download to		*/
+#define RECVDIR 		(1<<7)	/* Directory specified to download to		*/
 #define DEBUG			(1<<8)	/* Debug output 							*/
 #define OVERWRITE		(1<<9)	/* Overwrite receiving files				*/
 #define ALARM			(1<<11) /* Alarm when starting and stopping xfer	*/

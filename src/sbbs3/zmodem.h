@@ -227,6 +227,7 @@ typedef struct {
 	int n_files_remaining;
 	int n_bytes_remaining;
 	unsigned char tx_data_subpacket[MAX_SUBPACKETSIZE];
+	unsigned char rx_data_subpacket[8192];							/* zzap = 8192 */
 
 	ulong current_file_size;
 	time_t transfer_start;
@@ -270,11 +271,25 @@ void		zmodem_init(zmodem_t*, void* cbdata, long* mode
 						,int	(*recv_byte)(void*, unsigned timeout));
 char*		zmodem_ver(char *buf);
 const char* zmodem_source(void);
+void		zmodem_send_nak(zmodem_t*);
+void		zmodem_send_zskip(zmodem_t* zm);
+void		zmodem_send_zrinit(zmodem_t*);
+void		zmodem_send_pos_header(zmodem_t* zm, int type, long pos, BOOL hex);
 int			zmodem_get_zrinit(zmodem_t*);
 void		zmodem_parse_zrinit(zmodem_t*);
 int			zmodem_send_zfin(zmodem_t*);
 BOOL		zmodem_send_file(zmodem_t*, char* name, FILE* fp, BOOL request_init, time_t* start, ulong* bytes_sent);
-
+int			zmodem_recv_init(zmodem_t* zm);
+BOOL		zmodem_recv_file_info(zmodem_t* zm
+									,char* fname, size_t maxlen
+									,ulong* size
+									,time_t* time
+									,long* mode
+									,long* serial_num
+									,ulong* total_files
+									,ulong* total_bytes);
+int			zmodem_recv_file_data(zmodem_t*, FILE*, ulong offset, ulong fsize, time_t start);
+int			zmodem_rx_header_and_check(zmodem_t* zm, int timeout);
 #endif
 
 

@@ -189,6 +189,9 @@ static char *chr(uchar ch)
 
 	if(mode&ZMODEM) {
 		switch(ch) {
+			case ZRQINIT:	return("ZRQINIT");
+			case ZRINIT:	return("ZRINIT");
+			case ZSINIT:	return("ZSINIT");
 			case ZACK:		return("ZACK");
 			case ZPAD:		return("ZPAD");
 			case ZDLE:		return("ZDLE");
@@ -622,6 +625,7 @@ void xmodem_progress(void* unused, unsigned block_num, ulong offset, ulong fsize
 void zmodem_progress(void* unused, ulong start_pos, ulong current_pos
 					 ,ulong fsize, time_t start)
 {
+	char		orig[128];
 	unsigned	cps;
 	long		l;
 	long		t;
@@ -633,13 +637,20 @@ void zmodem_progress(void* unused, ulong start_pos, ulong current_pos
 		t=now-start;
 		if(t<=0)
 			t=1;
+		if(start_pos>current_pos)
+			start_pos=0;
 		if((cps=(current_pos-start_pos)/t)==0)
 			cps=1;		/* cps so far */
 		l=fsize/cps;	/* total transfer est time */
 		l-=t;			/* now, it's est time left */
 		if(l<0) l=0;
-		fprintf(statfp,"\rKByte: %lu/%lu  "
+		if(start_pos)
+			sprintf(orig,"From: %lu  ", start_pos);
+		else
+			orig[0]=0;
+		fprintf(statfp,"\r%sKByte: %lu/%lu  "
 			"Time: %lu:%02lu/%lu:%02lu  CPS: %u  %lu%% "
+			,orig
 			,current_pos/1024
 			,fsize/1024
 			,t/60L
@@ -805,9 +816,10 @@ static int send_files(char** fname, uint fnames)
 	return(0);	/* success */
 }
 
-static int receive_files(char** fname, int fnames)
+static int receive_files(char** fname_list, int fnames)
 {
 	char	str[MAX_PATH+1];
+	char	fname[MAX_PATH+1];
 	int		i;
 	int		fnum=0;
 	uint	errors;
@@ -828,41 +840,91 @@ static int receive_files(char** fname, int fnames)
 
 	outbuf.highwater_mark=0;	/* don't delay ACK/NAK transmits */
 
+	/* Purge input buffer */
+	while((i=getcom(0))!=NOINP)
+		lprintf(LOG_WARNING,"Throwing out received: %s",chr((uchar)i));
+
 	while(!terminate && !cancelled) {
 		if(mode&XMODEM) {
-			SAFECOPY(str,fname[0]);
+			SAFECOPY(str,fname_list[0]);	/* we'll have at least one fname */
 			file_bytes=file_bytes_left=0x7fffffff;
 		}
 
-		else if(mode&YMODEM) {
-			lprintf(LOG_INFO,"Fetching Ymodem header block");
-			for(errors=0;errors<xm.max_errors;errors++) {
-				if(errors>(xm.max_errors/2) && mode&CRC && !(mode&GMODE))
-					mode&=~CRC;
-				xmodem_put_nak(&xm, /* expected_block: */ 0);
-				if(xmodem_get_block(&xm, block, /* expected_block: */ 0) == 0) {
-					putcom(ACK);
-					break; 
-				} 
+		else {
+			if(mode&YMODEM) {
+				lprintf(LOG_INFO,"Fetching Ymodem header block");
+				for(errors=0;errors<xm.max_errors;errors++) {
+					if(errors>(xm.max_errors/2) && mode&CRC && !(mode&GMODE))
+						mode&=~CRC;
+					xmodem_put_nak(&xm, /* expected_block: */ 0);
+					if(xmodem_get_block(&xm, block, /* expected_block: */ 0) == 0) {
+						putcom(ACK);
+						break; 
+					} 
+				}
+				if(errors>=xm.max_errors) {
+					lprintf(LOG_ERR,"Error fetching Ymodem header block");
+					xmodem_cancel(&xm);
+					return(1); 
+				}
+				if(!block[0]) {
+					lprintf(LOG_INFO,"Received Ymodem termination block");
+					return(0); 
+				}
+				file_bytes=ftime=total_files=total_bytes=0;
+				i=sscanf(block+strlen(block)+1,"%ld %lo %lo %lo %d %ld"
+					,&file_bytes			/* file size (decimal) */
+					,&ftime 				/* file time (octal unix format) */
+					,&fmode 				/* file mode (not used) */
+					,&serial_num			/* program serial number */
+					,&total_files			/* remaining files to be sent */
+					,&total_bytes			/* remaining bytes to be sent */
+					);
+				lprintf(LOG_DEBUG,"Ymodem header (%u fields): %s", i, block+strlen(block)+1);
+				SAFECOPY(fname,block);
+				fprintf(statfp,"Incoming filename: %.64s ",fname);
+
+			} else {	/* Zmodem */
+				i=zmodem_recv_init(&zm);
+				if(zm.cancelled)
+					return(1);
+				if(i<0)
+					return(-1);
+				lprintf(LOG_DEBUG,"Received header: %s",chr((uchar)i));
+				switch(i) {
+					case ZFREECNT:
+						zmodem_send_pos_header(&zm, ZACK, getfreediskspace(".",1), /* Hex? */ TRUE) ;
+						continue;
+					case ZCOMMAND:
+						lprintf(LOG_WARNING,"Remote command attempted and rejected");
+						zmodem_send_nak(&zm);
+						continue;
+					case ZFILE:
+						if(!zmodem_recv_file_info(&zm
+							,fname,sizeof(fname)
+							,&file_bytes
+							,&ftime
+							,&fmode
+							,&serial_num
+							,&total_files
+							,&total_bytes))
+							continue;
+						break;
+					case ZSINIT:
+						lprintf(LOG_WARNING,"Remote attempted ZSINIT (not supported)");
+						zmodem_send_nak(&zm);
+						break;
+					case ZFIN:
+						zmodem_send_zfin(&zm);
+						/* fall-through */
+					case ZCOMPL:
+						return(0);
+					case ZRQINIT:
+					case ZCAN:
+						return(-1);
+				}
 			}
-			if(errors==xm.max_errors) {
-				lprintf(LOG_ERR,"Error fetching Ymodem header block");
-				xmodem_cancel(&xm);
-				return(1); 
-			}
-			if(!block[0]) {
-				lprintf(LOG_INFO,"Received Ymodem termination block");
-				return(0); 
-			}
-			i=sscanf(block+strlen(block)+1,"%ld %lo %lo %lo %d %ld"
-				,&file_bytes			/* file size (decimal) */
-				,&ftime 				/* file time (octal unix format) */
-				,&fmode 				/* file mode (not used) */
-				,&serial_num			/* program serial number */
-				,&total_files			/* remaining files to be sent */
-				,&total_bytes			/* remaining bytes to be sent */
-				);
-			lprintf(LOG_DEBUG,"Ymodem header (%u fields): %s", i, block+strlen(block)+1);
+
 			if(!file_bytes)
 				file_bytes=0x7fffffff;
 			file_bytes_left=file_bytes;
@@ -872,30 +934,28 @@ static int receive_files(char** fname, int fnames)
 				total_files=1;
 			if(total_bytes<file_bytes)
 				total_bytes=file_bytes;
-			if(!serial_num)
-				serial_num=-1;
-			fprintf(statfp,"Incoming filename: %.64s ",block);
-			if(mode&DIR)
-				sprintf(str,"%s%s",fname[0],getfname(block));
+
+			if(mode&RECVDIR)
+				sprintf(str,"%s%s",fname_list[0],getfname(fname));
 			else {
-				SAFECOPY(str,getfname(block));
+				SAFECOPY(str,getfname(fname));
 				for(i=0;i<fnames;i++) {
-					if(!fname[i][0])	/* name blank or already used */
+					if(!fname_list[i][0])	/* name blank or already used */
 						continue;
-					if(!stricmp(getfname(fname[i]),str)) {
-						SAFECOPY(str,fname[i]);
-						fname[i][0]=0;
+					if(!stricmp(getfname(fname_list[i]),str)) {
+						SAFECOPY(str,fname_list[i]);
+						fname_list[i][0]=0;
 						break; 
 					} 
 				}
 				if(i==fnames) { 				/* Not found in list */
 					if(fnames)
 						fprintf(statfp," - Not in receive list!");
-					if(!fnames || fnum>=fnames || !fname[fnum][0])
-						SAFECOPY(str,getfname(block));	/* worst case */
+					if(!fnames || fnum>=fnames || !fname_list[fnum][0])
+						SAFECOPY(str,getfname(fname));	/* worst case */
 					else {
-						SAFECOPY(str,fname[fnum]);
-						fname[fnum][0]=0; 
+						SAFECOPY(str,fname_list[fnum]);
+						fname_list[fnum][0]=0; 
 					} 
 				} 
 			}
@@ -905,94 +965,10 @@ static int receive_files(char** fname, int fnames)
 //			getchar();
 		}
 
-		else {	/* Zmodem */
-#if 0
-			tryzhdrtype=ZRINIT;
-			while(1) {
-				Txhdr[ZF0]=(CANFC32|CANFDX|CANOVIO|CANRLE);
-				/* add CANBRK if we can send break signal */
-				if(zmode&CTRL_ESC)
-					Txhdr[ZF0]|=TESCCTL;
-				Txhdr[ZF1]=CANVHDR;
-				Txhdr[ZP0]=0;
-				Txhdr[ZP1]=0;
-				putzhhdr(tryzhdrtype);
-				done=0;
-				while(!done) {
-					done=1;
-					switch(getzhdr()) {
-						case ZRQINIT:
-							if(Rxhdr[ZF3]&0x80)
-								zmode|=VAR_HDRS;   /* we can var header */
-							break;
-						case ZFILE:
-							zconv=Rxhdr[ZF0];
-							zmanag=Rxhdr[ZF1];
-							ztrans=Rxhdr[ZF2];
-							if(Rxhdr[ZF3]&ZCANVHDR)
-								zmode|=VAR_HDRS;
-							tryzhdrtype=ZRINIT;
-							if(getzdata(block, 1024)==GOTCRCW) {
-								/* something */
-								done=1; 
-							}
-							putzhhdr(ZNAK);
-							done=0;
-							break;
-						case ZSINIT:
-							if(Rxhdr[ZF0]&TESCCTL)
-								zmode|=CTRL_ESC;
-							if (getzdata(attn,ZATTNLEN)==GOTCRCW) {
-								ltohdr(1L);
-								putzhhdr(ZACK); 
-							}
-							else
-								putzhhdr(ZNAK);
-							done=0;
-							break;
-						case ZFREECNT:
-							ltohdr(0);			/* should be free disk space */
-							putzhhdr(ZACK);
-							done=0;
-							break;
-						case ZCOMMAND:
-/***
-							cmdzack1flg = Rxhdr[ZF0];
-							if(getzdata(block,1024)==GOTCRCW) {
-								if (cmdzack1flg & ZCACK1)
-									ltohdr(0L);
-								else
-									ltohdr((long)sys2(block));
-								purgeline();	/* dump impatient questions */
-								do {
-									zshhdr(4,ZCOMPL, Txhdr);
-								}
-								while (++errors<20 && zgethdr(Rxhdr,1)!=ZFIN);
-								ackbibi();
-								if (cmdzack1flg & ZCACK1)
-									exec2(block);
-								return ZCOMPL;
-							}
-***/
-							putzhhdr(ZNAK);
-							done=0;
-							break;
-						case ZCOMPL:
-							done=0;
-							break;
-						case ZFIN:
-							ackbibi();
-							return ZCOMPL;
-						case ZCAN:
-							return ERROR; 
-				} 
-			}
-#endif
-		}
 
 		fnum++;
 
-		if(!(mode&DIR) && fnames && fnum>fnames) {
+		if(!(mode&RECVDIR) && fnames && fnum>fnames) {
 			lprintf(LOG_WARNING,"Attempt to send more files than specified");
 			xmodem_cancel(&xm);
 			break; 
@@ -1000,16 +976,23 @@ static int receive_files(char** fname, int fnames)
 
 		if(fexist(str) && !(mode&OVERWRITE)) {
 			lprintf(LOG_WARNING,"%s already exists",str);
+			if(mode&ZMODEM) {
+				zmodem_send_zskip(&zm);
+				continue;
+			}
 			xmodem_cancel(&xm);
 			return(1); 
 		}
 		if((fp=fopen(str,"wb"))==NULL) {
 			lprintf(LOG_ERR,"Error creating %s",str);
+			if(mode&ZMODEM) {
+				zmodem_send_zskip(&zm);
+				continue;
+			}
 			xmodem_cancel(&xm);
 			return(1); 
 		}
-		setvbuf(fp,NULL,_IOFBF,8*1024);
-		startfile=time(NULL);
+
 		if(mode&XMODEM)
 			lprintf(LOG_INFO,"Receiving %s via Xmodem %s"
 				,str
@@ -1021,55 +1004,76 @@ static int receive_files(char** fname, int fnames)
 				,mode&YMODEM ? mode&GMODE ? "Ymodem-G" : "Ymodem" :"Zmodem"
 				,mode&CRC ? "CRC-16" : "Checksum");
 
-		errors=0;
-		block_num=1;
+		startfile=time(NULL);
 		success=FALSE;
-		xmodem_put_nak(&xm, block_num);
-		while(1) {
-			xmodem_progress(NULL,block_num,ftell(fp),file_bytes,startfile);
-			i=xmodem_get_block(&xm, block, block_num); 	
+		if(mode&ZMODEM) {
 
-			if(i!=0) {
-				if(i==EOT)	{		/* end of transfer */
+			for(errors=0; errors<zm.max_errors 
+				&& (ulong)ftell(fp) < file_bytes && !zm.cancelled; errors++) {
+				if((i = zmodem_recv_file_data(&zm,fp,0,file_bytes,startfile)) == ZEOF)
+					break;
+				lprintf(LOG_WARNING,"Error at byte %lu: %s", ftell(fp), chr((uchar)i));
+			}
+
+			/*
+ 			 * wait for the eof header
+			 */
+
+			for(;errors<zm.max_errors && !success && !zm.cancelled; errors++) {
+				if(zmodem_rx_header_and_check(&zm,zm.recv_timeout))
 					success=TRUE;
-					xmodem_put_ack(&xm);
-					break;
-				}
-				if(i==CAN) {		/* Cancel */
-					cancelled=TRUE;
-					break;
-				}
+			} 
 
-				if(mode&GMODE)
-					return(-1);
+		} else {
+			errors=0;
+			block_num=1;
+			xmodem_put_nak(&xm, block_num);
+			while(1) {
+				xmodem_progress(NULL,block_num,ftell(fp),file_bytes,startfile);
+				i=xmodem_get_block(&xm, block, block_num); 	
 
-				if(++errors>=xm.max_errors) {
-					lprintf(LOG_ERR,"Too many errors (%u)",errors);
+				if(i!=0) {
+					if(i==EOT)	{		/* end of transfer */
+						success=TRUE;
+						xmodem_put_ack(&xm);
+						break;
+					}
+					if(i==CAN) {		/* Cancel */
+						cancelled=TRUE;
+						break;
+					}
+
+					if(mode&GMODE)
+						return(-1);
+
+					if(++errors>=xm.max_errors) {
+						lprintf(LOG_ERR,"Too many errors (%u)",errors);
+						xmodem_cancel(&xm);
+						break;
+					}
+					if(block_num==1 && errors>(xm.max_errors/2) && mode&CRC && !(mode&GMODE))
+						mode&=~CRC;
+					xmodem_put_nak(&xm, block_num);
+					continue;
+				}
+				if(!(mode&GMODE))
+					putcom(ACK);
+				if(file_bytes_left<=0L)  { /* No more bytes to send */
+					lprintf(LOG_WARNING,"Attempt to send more byte specified in header");
+					break; 
+				}
+				wr=xm.block_size;
+				if(wr>file_bytes_left)
+					wr=file_bytes_left;
+				if(fwrite(block,1,wr,fp)!=wr) {
+					lprintf(LOG_ERR,"Error writing %u bytes to file at offset %lu"
+						,wr,ftell(fp));
 					xmodem_cancel(&xm);
-					break;
+					return(1); 
 				}
-				if(block_num==1 && errors>(xm.max_errors/2) && mode&CRC && !(mode&GMODE))
-					mode&=~CRC;
-				xmodem_put_nak(&xm, block_num);
-				continue;
+				file_bytes_left-=wr; 
+				block_num++;
 			}
-			if(!(mode&GMODE))
-				putcom(ACK);
-			if(file_bytes_left<=0L)  { /* No more bytes to send */
-				lprintf(LOG_WARNING,"Attempt to send more byte specified in header");
-				break; 
-			}
-			wr=xm.block_size;
-			if(wr>file_bytes_left)
-				wr=file_bytes_left;
-			if(fwrite(block,1,wr,fp)!=wr) {
-				lprintf(LOG_ERR,"Error writing %u bytes to file at offset %lu"
-					,wr,ftell(fp));
-				xmodem_cancel(&xm);
-				return(1); 
-			}
-			file_bytes_left-=wr; 
-			block_num++;
 		}
 
 		/* Use correct file size */
@@ -1106,7 +1110,7 @@ static int receive_files(char** fname, int fnames)
 				,str
 				,serial_num); 
 		}
-		if(mode&XMODEM)
+		if(mode&XMODEM)	/* maximum of one file */
 			break;
 		if((cps=file_bytes/t)==0)
 			cps=1;
@@ -1351,7 +1355,7 @@ int main(int argc, char **argv)
 		}
 
 		else if(argv[i][0]=='+') {
-			if(mode&DIR) {
+			if(mode&RECVDIR) {
 				fprintf(statfp,"!Cannot specify both directory and filename\n");
 				exit(1); 
 			}
@@ -1371,7 +1375,7 @@ int main(int argc, char **argv)
 
 		else if(mode&(SEND|RECV)){
 			if(isdir(argv[i])) { /* is a directory */
-				if(mode&DIR) {
+				if(mode&RECVDIR) {
 					fprintf(statfp,"!Only one directory can be specified\n");
 					exit(1); 
 				}
@@ -1383,7 +1387,7 @@ int main(int argc, char **argv)
 					fprintf(statfp,"!Cannot send directory '%s'\n",argv[i]);
 					exit(1);
 				}
-				mode|=DIR; 
+				mode|=RECVDIR; 
 			}
 			strListAppend(&fname_list,argv[i],fnames++);
 		} 
@@ -1439,7 +1443,7 @@ int main(int argc, char **argv)
 	}
 #endif
 
-//	if(mode&DIR)
+//	if(mode&RECVDIR)
 //		backslash(fname[0]);
 
 	if(mode&ALARM) {
