@@ -14,6 +14,7 @@
 
 # Macros
 DEBUG	=	1				# Comment out for release (non-debug) version
+JS		=	1				# Comment out for non-JavaScript (v3.00) build
 CC		=	bcc32
 LD		=	ilink32
 SLASH	=	\\
@@ -22,7 +23,7 @@ LIBFILE	=	.dll
 EXEFILE	=	.exe
 LIBODIR	=	bcc.win32.dll	# Library output directory
 EXEODIR =	bcc.win32.exe	# Executable output directory
-CFLAGS	=	-M -g1
+CFLAGS	=	-M -g1 
 LFLAGS  =	-m -s -c -Tpd -Gi -I$(LIBODIR)
 DELETE	=	echo y | del 
 
@@ -40,6 +41,13 @@ LIBODIR	=	$(LIBODIR).release
 EXEODIR	=	$(EXEODIR).release
 !endif
 
+# JavaScript Support
+!ifdef JS
+CFLAGS	= 	$(CFLAGS) -DJAVASCRIPT -I../mozilla/js/src
+LIBS	=	js32.lib
+!endif
+
+# Cross platform/compiler definitions
 !include targets.mak	# defines all targets
 !include objects.mak	# defines $(OBJS)
 !include headers.mak	# defines $(HEADERS)
@@ -71,18 +79,18 @@ $(SBBSMONO): sbbscon.c $(OBJS) $(LIBODIR)\ver.$(OFILE) $(LIBODIR)\ftpsrvr.$(OFIL
 # SBBS DLL Link Rule
 $(SBBS): $(OBJS) $(LIBODIR)\ver.$(OFILE)
     @echo Linking $< ...
-	$(LD) $(LFLAGS) c0d32.obj $(OBJS) $(LIBODIR)\ver.$(OFILE), $*, $*, \
+	$(LD) $(LFLAGS) c0d32.obj $(LIBS) $(OBJS) $(LIBODIR)\ver.$(OFILE), $*, $*, \
 		import32.lib cw32mt.lib ws2_32.lib
 
 # Mail Server DLL Link Rule
 $(MAILSRVR): mailsrvr.c mxlookup.c crc32.c $(SBBSLIB)
     @echo Compiling $** ...
-	$(CC) $(CFLAGS) -WD -WM -lGi -n$(LIBODIR) -DMAILSRVR_EXPORTS -DSMBDLL $**
+	$(CC) $(CFLAGS) -WD -WM -lGi -n$(LIBODIR) -DMAILSRVR_EXPORTS -DSMBDLL $** $(LIBS)
 
 # FTP Server DLL Link Rule
 $(FTPSRVR): ftpsrvr.c $(SBBSLIB)
     @echo Compiling $** ...
-	$(CC) $(CFLAGS) -WD -WM -lGi -n$(LIBODIR) -DFTPSRVR_EXPORTS $**
+	$(CC) $(CFLAGS) -WD -WM -lGi -n$(LIBODIR) -DFTPSRVR_EXPORTS $** $(LIBS)
 
 # Synchronet Console Build Rule
 $(SBBSCON): sbbscon.c $(SBBSLIB)
