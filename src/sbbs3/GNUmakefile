@@ -368,7 +368,7 @@ $(SBBSECHO): $(SBBSECHO_OBJS)
 	@$(CC) -o $@ $^
 
 # SBBSecho Configuration Program
-$(ECHOCFG_OBJS) = \
+ECHOCFG_OBJS = \
 	$(EXEODIR)/echocfg.o \
 	$(EXEODIR)/rechocfg.o \
 	$(UIFC_OBJS) \
