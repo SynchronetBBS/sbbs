@@ -1124,7 +1124,8 @@ void qhub_sub_edit(uint num)
 k=0;
 while(1) {
 	for(j=0;j<cfg.qhub[num]->subs;j++)
-		sprintf(opt[j],"%-*.*s %-*.*s"
+		sprintf(opt[j],"%-5u %-*.*s %-*.*s"
+			,cfg.qhub[num]->conf[j]
 			,LEN_GSNAME,LEN_GSNAME
 			,cfg.grp[cfg.sub[cfg.qhub[num]->sub[j]]->grp]->sname
 			,LEN_SSNAME,LEN_SSNAME
