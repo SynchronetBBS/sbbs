@@ -35,8 +35,13 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
+#ifndef _CRC32_H_
+#define _CRC32_H_
+
 extern long crc32tbl[];
 
 #define ucrc32(ch,crc) (crc32tbl[(crc^ch)&0xff]^(crc>>8))
 
+unsigned long crc32(char *buf, unsigned long len);
 
+#endif
