@@ -1208,7 +1208,7 @@ static void smtp_thread(void* arg)
 			fprintf(spy,"%s\n",buf);
 		if(state>=SMTP_STATE_DATA_HEADER) {
 			if(!strcmp(buf,".")) {
-				lprintf("%04d SMTP End of message", socket);
+				lprintf("%04d SMTP End of message (%lu bytes)", socket, ftell(msgtxt));
 
 				if(sender[0]==0) {
 					lprintf("%04d !SMTP Mail header missing 'FROM' field", socket);
