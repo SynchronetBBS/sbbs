@@ -10,7 +10,7 @@
 
 :main
 cmd_home
-menu majro/main
+menu major/main
 getstr 10
 compare_str ""
 if_true
