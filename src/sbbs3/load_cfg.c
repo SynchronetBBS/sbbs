@@ -121,7 +121,7 @@ BOOL md(char *inpath)
 
 	dir=opendir(path);
 	if(dir==NULL) {
-		lprintf("Creating Directory %s... ",path);
+		lprintf("Creating directory: %s",path);
 		if(_mkdir(path)) {
 			lprintf("!Error %d: Fix configuration or make directory by "
 				"hand.",errno);
