@@ -573,13 +573,13 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 		|| (bar && ((*cur)-(*bar))+(height-4)<opts))) {
 		gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+height-2);
 		textattr(lclr|(bclr<<4));
-		putch(31);	   /* put down arrow */
+		putch(ACS_DARROW);	   /* put down arrow */
 		textattr(hclr|(bclr<<4)); }
 
 	if(bar && (*bar)!=(*cur)) {
 		gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+3);
 		textattr(lclr|(bclr<<4));
-		putch(30);	   /* put the up arrow */
+		putch(ACS_UARROW);	   /* put the up arrow */
 		textattr(hclr|(bclr<<4)); }
 
 	if(bclr==BLUE) {
@@ -625,7 +625,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							textattr(lclr|(bclr<<4));
 							putch(' ');    /* Delete the up arrow */
 							gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+height-2);
-							putch(31);	   /* put the down arrow */
+							putch(ACS_DARROW);	   /* put the down arrow */
 							uprintf(SCRN_LEFT+left+3,SCRN_TOP+top+3
 								,bclr|(LIGHTGRAY<<4)
 								,"%-*.*s",width-4,width-4,option[0]);
@@ -665,7 +665,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							hidemouse();
 							gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+3); /* like end */
 							textattr(lclr|(bclr<<4));
-							putch(30);	   /* put the up arrow */
+							putch(ACS_UARROW);	   /* put the up arrow */
 							gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+height-2);
 							putch(' ');    /* delete the down arrow */
 							for(i=(opts+4)-height,j=0;i<opts;i++,j++)
@@ -706,7 +706,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							if((*cur)+height-4==opts-1) {
 								gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+height-2);
 								textattr(lclr|(bclr<<4));
-								putch(31); }   /* put the dn arrow */
+								putch(ACS_DARROW); }   /* put the dn arrow */
 							y++;
 							scroll_text(SCRN_LEFT+left+2,SCRN_TOP+top+3
 								,SCRN_LEFT+left+width-3,SCRN_TOP+top+height-2,1);
@@ -764,7 +764,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							hidemouse();
 							gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+3);
 							textattr(lclr|(bclr<<4));
-							putch(30);	   /* put the up arrow */
+							putch(ACS_UARROW);	   /* put the up arrow */
 							gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+height-2);
 							putch(' ');    /* delete the down arrow */
 							for(i=(opts+4)-height,j=0;i<opts;i++,j++)
@@ -806,7 +806,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							textattr(lclr|(bclr<<4));
 							putch(' ');    /* Delete the up arrow */
 							gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+height-2);
-							putch(31);	   /* put the down arrow */
+							putch(ACS_DARROW);	   /* put the down arrow */
 							uprintf(SCRN_LEFT+left+3,SCRN_TOP+top+3
 								,bclr|(LIGHTGRAY<<4)
 								,"%-*.*s",width-4,width-4,option[0]);
@@ -849,7 +849,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							if((*cur)+4==height) {
 								gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+3);
 								textattr(lclr|(bclr<<4));
-								putch(30); }   /* put the up arrow */
+								putch(ACS_UARROW); }   /* put the up arrow */
 							y--;
 							/* gotoxy(1,1); cprintf("\rdebug: %4d ",__LINE__); */
 							scroll_text(SCRN_LEFT+left+2,SCRN_TOP+top+3
@@ -945,7 +945,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 								(*cur)=j;
 								gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+3);
 								textattr(lclr|(bclr<<4));
-								putch(30);	   /* put the up arrow */
+								putch(ACS_UARROW);	   /* put the up arrow */
 								if((*cur)==opts-1) {
 									gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+height-2);
 									putch(' '); }  /* delete the down arrow */
@@ -965,7 +965,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 								if(!(*cur))
 									putch(' ');    /* Delete the up arrow */
 								gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+height-2);
-								putch(31);	   /* put the down arrow */
+								putch(ACS_DARROW);	   /* put the down arrow */
 								uprintf(SCRN_LEFT+left+3,SCRN_TOP+top+3
 									,bclr|(LIGHTGRAY<<4)
 									,"%-*.*s",width-4,width-4,option[(*cur)]);
