@@ -46,6 +46,7 @@
 #include "sbbs.h"
 
 #define DEFAULT_LOG_MASK	0xff	/* Display all LOG levels */
+#define DEFAULT_ERR_LOG_LVL	LOG_WARNING
 
 JSRuntime*	js_runtime;
 JSContext*	js_cx;
@@ -66,6 +67,7 @@ BOOL		pause_on_error=FALSE;
 BOOL		terminated=FALSE;
 BOOL		terminate_immediately=FALSE;
 DWORD		log_mask=DEFAULT_LOG_MASK;
+int  		err_level=DEFAULT_ERR_LOG_LVL;
 
 void banner(FILE* fp)
 {
@@ -83,32 +85,54 @@ void usage(FILE* fp)
 
 	fprintf(fp,"\nusage: jsexec [-opts] [path]module[.js] [args]\n"
 		"\navailable opts:\n\n"
-		"\t-c <ctrl_dir>   specify path to Synchronet CTRL directory\n"
-		"\t-m <bytes>      set maximum heap size (default=%u bytes)\n"
-		"\t-s <bytes>      set context stack size (default=%u bytes)\n"
-		"\t-b <limit>      set branch limit (default=%u, 0=unlimited)\n"
-		"\t-y <interval>   set yield interval (default=%u, 0=never)\n"
-		"\t-g <interval>   set garbage collection interval (default=%u, 0=never)\n"
-		"\t-H              use local host name (instead of SCFG value)\n"
-		"\t-h <hostname>   use specified host name (instead of SCFG value)\n"
-		"\t-L <mask>       set log mask (default=0x%x)\n"
-		"\t-t <filename>   send console output to stdout and filename\n"
-		"\t-e              send error messages to console instead of stderr\n"
-		"\t-n              send status messages to %s instead of stdout\n"
-		"\t-q              send console messages to %s instead of stderr\n"
-		"\t-x              terminate immediately on local abort signal\n"
-		"\t-l              loop until intentionally terminated\n"
-		"\t-p              wait for keypress (pause) on exit\n"
-		"\t-!              wait for keypress (pause) on error\n"
+		"\t-c<ctrl_dir>   specify path to Synchronet CTRL directory\n"
+		"\t-m<bytes>      set maximum heap size (default=%u bytes)\n"
+		"\t-s<bytes>      set context stack size (default=%u bytes)\n"
+		"\t-b<limit>      set branch limit (default=%u, 0=unlimited)\n"
+		"\t-y<interval>   set yield interval (default=%u, 0=never)\n"
+		"\t-g<interval>   set garbage collection interval (default=%u, 0=never)\n"
+		"\t-h[hostname]   use local or specified host name (instead of SCFG value)\n"
+		"\t-L<mask>       set log level mask (default=0x%x)\n"
+		"\t-E<level>      set error log level threshold (default=%d)\n"
+		"\t-e<filename>   send error messages to file in addition to stderr\n"
+		"\t-o<filename>   send console messages to file instead of stdout\n"
+		"\t-n             send status messages to %s instead of stderr\n"
+		"\t-q             send console messages to %s instead of stdout\n"
+		"\t-x             terminate immediately on local abort signal\n"
+		"\t-l             loop until intentionally terminated\n"
+		"\t-p             wait for keypress (pause) on exit\n"
+		"\t-!             wait for keypress (pause) on error\n"
 		,JAVASCRIPT_MAX_BYTES
 		,JAVASCRIPT_CONTEXT_STACK
 		,JAVASCRIPT_BRANCH_LIMIT
 		,JAVASCRIPT_YIELD_INTERVAL
 		,JAVASCRIPT_GC_INTERVAL
 		,DEFAULT_LOG_MASK
+		,DEFAULT_ERR_LOG_LVL
 		,_PATH_DEVNULL
 		,_PATH_DEVNULL
 		);
+}
+
+/* Log printf */
+int lprintf(int level, char *fmt, ...)
+{
+	va_list argptr;
+	char sbuf[1024];
+	int ret;
+
+	if(!(log_mask&(1<<level)))
+		return(0);
+
+    va_start(argptr,fmt);
+    vsnprintf(sbuf,sizeof(sbuf),fmt,argptr);
+	sbuf[sizeof(sbuf)-1]=0;
+    va_end(argptr);
+	if(level<=err_level)
+		ret=fprintf(errfp,"%s",sbuf);
+	if(level>err_level || (errfp!=stderr && errfp!=confp))
+		ret=fprintf(confp,"%s",sbuf);
+    return(ret);
 }
 
 #if defined(_WINSOCKAPI_)
@@ -121,12 +145,12 @@ static BOOL winsock_startup(void)
 	int		status;             /* Status Code */
 
     if((status = WSAStartup(MAKEWORD(1,1), &WSAData))==0) {
-		fprintf(statfp,"%s %s\n",WSAData.szDescription, WSAData.szSystemStatus);
+/*		fprintf(statfp,"%s %s\n",WSAData.szDescription, WSAData.szSystemStatus); */
 		WSAInitialized=TRUE;
 		return(TRUE);
 	}
 
-    fprintf(errfp,"!WinSock startup ERROR %d\n", status);
+    lprintf(LOG_ERR,"!WinSock startup ERROR %d\n", status);
 	return(FALSE);
 }
 
@@ -141,7 +165,7 @@ void bail(int code)
 
 #if defined(_WINSOCKAPI_)
 	if(WSAInitialized && WSACleanup()!=0) 
-		fprintf(errfp,"!WSACleanup ERROR %d\n",ERROR_VALUE);
+		lprintf(LOG_ERR,"!WSACleanup ERROR %d\n",ERROR_VALUE);
 #endif
 
 	if(pause_on_exit || (code && pause_on_error)) {
@@ -164,15 +188,13 @@ js_log(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(JSVAL_IS_NUMBER(argv[i]))
 		JS_ValueToInt32(cx,argv[i++],&level);
 
-	if(log_mask&(1<<level)) {
-		for(; i<argc; i++) {
-			if((str=JS_ValueToString(cx, argv[i]))==NULL)
-				return(JS_FALSE);
-			fprintf(errfp,"%s",JS_GetStringBytes(str));
-		}
-		if(argc)
-			fprintf(errfp,"\n");
+	for(; i<argc; i++) {
+		if((str=JS_ValueToString(cx, argv[i]))==NULL)
+			return(JS_FALSE);
+		lprintf(level,"%s",JS_GetStringBytes(str));
 	}
+	if(argc)
+		lprintf(level,"\n");
 
 	*rval = JSVAL_VOID;
     return(JS_TRUE);
@@ -374,7 +396,7 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 	const char*	warning;
 
 	if(report==NULL) {
-		fprintf(errfp,"!JavaScript: %s\n", message);
+		lprintf(LOG_ERR,"!JavaScript: %s\n", message);
 		return;
     }
 
@@ -396,7 +418,7 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 	} else
 		warning="";
 
-	fprintf(errfp,"!JavaScript %s%s%s: %s\n",warning,file,line,message);
+	lprintf(LOG_ERR,"!JavaScript %s%s%s: %s\n",warning,file,line,message);
 }
 
 static JSBool
@@ -541,12 +563,12 @@ long js_exec(const char *fname, char** args)
 			SAFECOPY(path,fname);
 
 		if(!fexistcase(path)) {
-			fprintf(errfp,"!Module file (%s) doesn't exist\n",path);
+			lprintf(LOG_ERR,"!Module file (%s) doesn't exist\n",path);
 			return(-1); 
 		}
 
 		if((fp=fopen(path,"r"))==NULL) {
-			fprintf(errfp,"!Error %d (%s) opening %s\n",errno,STRERROR(errno),path);
+			lprintf(LOG_ERR,"!Error %d (%s) opening %s\n",errno,STRERROR(errno),path);
 			return(-1);
 		}
 	}
@@ -586,7 +608,7 @@ long js_exec(const char *fname, char** args)
 #endif
 		len=strlen(line);
 		if((js_buf=realloc(js_buf,js_buflen+len))==NULL) {
-			fprintf(errfp,"!Error allocating %u bytes of memory\n"
+			lprintf(LOG_ERR,"!Error allocating %u bytes of memory\n"
 				,js_buflen+len);
 			return(-1);
 		}
@@ -597,7 +619,7 @@ long js_exec(const char *fname, char** args)
 		fclose(fp);
 
 	if((js_script=JS_CompileScript(js_cx, js_glob, js_buf, js_buflen, fname==NULL ? NULL : path, 1))==NULL) {
-		fprintf(errfp,"!Error compiling script from %s\n",path);
+		lprintf(LOG_ERR,"!Error compiling script from %s\n",path);
 		return(-1);
 	}
 	JS_ExecuteScript(js_cx, js_glob, js_script, &rval);
@@ -621,7 +643,7 @@ long js_exec(const char *fname, char** args)
 
 void break_handler(int type)
 {
-	fprintf(stderr,"\n-> Terminated Locally (signal: %d)\n",type);
+	fprintf(statfp,"\n-> Terminated Locally (signal: %d)\n",type);
 	terminated=TRUE;
 }
 
@@ -668,33 +690,55 @@ int main(int argc, char **argv, char** environ)
 
 	for(argn=1;argn<argc && module==NULL;argn++) {
 		if(argv[argn][0]=='-') {
+			p=argv[argn]+2;
 			switch(argv[argn][1]) {
 				case 'm':
-					js_max_bytes=strtoul(argv[++argn],NULL,0);
+					if(*p==0) p=argv[++argn];
+					js_max_bytes=strtoul(p,NULL,0);
 					break;
 				case 's':
-					js_cx_stack=strtoul(argv[++argn],NULL,0);
+					if(*p==0) p=argv[++argn];
+					js_cx_stack=strtoul(p,NULL,0);
 					break;
 				case 'b':
-					branch.limit=strtoul(argv[++argn],NULL,0);
+					if(*p==0) p=argv[++argn];
+					branch.limit=strtoul(p,NULL,0);
 					break;
 				case 'y':
-					branch.yield_interval=strtoul(argv[++argn],NULL,0);
+					if(*p==0) p=argv[++argn];
+					branch.yield_interval=strtoul(p,NULL,0);
 					break;
 				case 'g':
-					branch.gc_interval=strtoul(argv[++argn],NULL,0);
+					if(*p==0) p=argv[++argn];
+					branch.gc_interval=strtoul(p,NULL,0);
 					break;
 				case 'h':
-					host_name=argv[++argn];
-					break;
-				case 'H':
-					gethostname(host_name=host_name_buf,sizeof(host_name_buf));
+					if(*p==0)
+						gethostname(host_name=host_name_buf,sizeof(host_name_buf));
+					else
+						host_name=p;
 					break;
 				case 'L':
-					log_mask=strtol(argv[++argn],NULL,0);
+					if(*p==0) p=argv[++argn];
+					log_mask=strtol(p,NULL,0);
+					break;
+				case 'E':
+					if(*p==0) p=argv[++argn];
+					err_level=strtol(p,NULL,0);
 					break;
 				case 'e':
-					errfp=confp;
+					if(*p==0) p=argv[++argn];
+					if((errfp=fopen(p,"a"))==NULL) {
+						perror(p);
+						bail(1);
+					}
+					break;
+				case 'o':
+					if(*p==0) p=argv[++argn];
+					if((confp=fopen(p,"a"))==NULL) {
+						perror(p);
+						bail(1);
+					}
 					break;
 				case 'q':
 					confp=nulfp;
@@ -715,7 +759,8 @@ int main(int argc, char **argv, char** environ)
 					pause_on_error=TRUE;
 					break;
 				case 'c':
-					SAFECOPY(scfg.ctrl_dir,argv[++argn]);
+					if(*p==0) p=argv[++argn];
+					SAFECOPY(scfg.ctrl_dir,p);
 					break;
 				default:
 					fprintf(errfp,"\n!Unsupported option: %s\n",argv[argn]);
@@ -730,16 +775,16 @@ int main(int argc, char **argv, char** environ)
 
 	if(scfg.ctrl_dir[0]==0) {
 		if((p=getenv("SBBSCTRL"))==NULL) {
-			fprintf(errfp,"\nSBBSCTRL environment variable not set and -c option not specified.\n");
-			fprintf(errfp,"\nExample: SET SBBSCTRL=/sbbs/ctrl\n");
-			fprintf(errfp,"\n     or: %s -c /sbbs/ctrl [module]\n",argv[0]);
+			lprintf(LOG_ERR,"\nSBBSCTRL environment variable not set and -c option not specified.\n");
+			lprintf(LOG_ERR,"\nExample: SET SBBSCTRL=/sbbs/ctrl\n");
+			lprintf(LOG_ERR,"\n     or: %s -c /sbbs/ctrl [module]\n",argv[0]);
 			bail(1); 
 		}
 		SAFECOPY(scfg.ctrl_dir,p);
 	}	
 
 	if(module==NULL && isatty(fileno(stdin))) {
-		fprintf(errfp,"\n!Module name not specified\n");
+		lprintf(LOG_ERR,"\n!Module name not specified\n");
 		usage(errfp);
 		bail(1); 
 	}
@@ -747,11 +792,11 @@ int main(int argc, char **argv, char** environ)
 	banner(statfp);
 
 	if(chdir(scfg.ctrl_dir)!=0)
-		fprintf(errfp,"!ERROR changing directory to: %s", scfg.ctrl_dir);
+		lprintf(LOG_ERR,"!ERROR changing directory to: %s", scfg.ctrl_dir);
 
 	fprintf(statfp,"\nLoading configuration files from %s\n",scfg.ctrl_dir);
 	if(!load_cfg(&scfg,NULL,TRUE,error)) {
-		fprintf(errfp,"!ERROR loading configuration files: %s\n",error);
+		lprintf(LOG_ERR,"!ERROR loading configuration files: %s\n",error);
 		bail(1);
 	}
 	prep_dir(scfg.data_dir, scfg.temp_dir, sizeof(scfg.temp_dir));
@@ -778,7 +823,7 @@ int main(int argc, char **argv, char** environ)
 	do {
 
 		if(!js_init(environ)) {
-			fprintf(errfp,"!JavaScript initialization failure\n");
+			lprintf(LOG_ERR,"!JavaScript initialization failure\n");
 			bail(1);
 		}
 		fprintf(statfp,"\n");
