@@ -107,18 +107,20 @@ check_code(FTP_t ftp, int var, int preferred)
 {
     ftp->error = 0;
     while (1) {
-	if (var == preferred)
-	    return 0;
-	else if (var == FTP_TRANSFER_HAPPY)	/* last operation succeeded */
-	    var = get_a_number(ftp, NULL);
-	else if (var == FTP_HAPPY_COMMENT)	/* chit-chat */
-	    var = get_a_number(ftp, NULL);
-	else if (var == FTP_GENERALLY_HAPPY)	/* general success code */
-	    var = get_a_number(ftp, NULL);
-	else {
-	    ftp->error = var;
-	    return 1;
-	}
+		if (var == preferred)
+			return 0;
+		else if (var == FTP_TRANSFER_HAPPY)	/* last operation succeeded */
+			var = get_a_number(ftp, NULL);
+		else if (var == FTP_HAPPY_COMMENT)	/* chit-chat */
+			var = get_a_number(ftp, NULL);
+		else if (var == FTP_GENERALLY_HAPPY)	/* general success code */
+			var = get_a_number(ftp, NULL);
+		else {
+			if (ftp->is_verbose)
+				fprintf(stderr, "!Received code %d instead of %d\n", var, preferred);
+			ftp->error = var;
+			return 1;
+		}
     }
 }
     
@@ -129,10 +131,10 @@ ftpBinary(ftp_FILE *fp)
     int i;
 
     if (ftp->is_binary)
-	return SUCCESS;
+		return SUCCESS;
     i = cmd(ftp, "TYPE I");
     if (i < 0 || check_code(ftp, i, FTP_BINARY_HAPPY))
-	return i;
+		return i;
     ftp->is_binary = TRUE;
     return SUCCESS;
 }
@@ -145,7 +147,7 @@ ftpChdir(ftp_FILE *fp, char *dir)
 
     i = cmd(ftp, "CWD %s", dir);
     if (i < 0 || check_code(ftp, i, FTP_CHDIR_HAPPY))
-	return i;
+		return i;
     return SUCCESS;
 }
 
@@ -162,13 +164,13 @@ ftpErrString(int error)
     int	k;
 
     if (error == -1)
-	return("connection in wrong state");
+		return("connection in wrong state");
     if (error < 100)
-	/* XXX soon UNIX errnos will catch up with FTP protocol errnos */
-	return strerror(error);
+		/* XXX soon UNIX errnos will catch up with FTP protocol errnos */
+		return strerror(error);
     for (k = 0; k < ftpErrListLength; k++)
       if (ftpErrList[k].num == error)
-	return(ftpErrList[k].string);
+		return(ftpErrList[k].string);
     return("Unknown error");
 }
 
@@ -206,10 +208,10 @@ ftpGet(ftp_FILE *fp, char *file, off_t *seekto)
 
     ftpPassive(fp,TRUE);
     if (ftpBinary(fp) != SUCCESS)
-	return NULL;
+		return NULL;
 
     if (ftp_file_op(ftp, "RETR", file, &fp2, "r", seekto) == SUCCESS)
-	return fp2;
+		return fp2;
     return NULL;
 }
 
@@ -573,10 +575,8 @@ static int
 ftp_login_session(FTP_t ftp, char *host, 
 		  char *user, char *passwd, int port, int verbose)
 {
-    char pbuf[10];
 	struct sockaddr_in addr;
 	u_long		ip_addr;
-    int			err;
     int 		s;
     int			i;
 
@@ -642,16 +642,19 @@ ftp_file_op(FTP_t ftp, char *operation, char *file, ftp_FILE **fp, char *mode, o
     } sin;
     char *cmdstr;
 
+	if (ftp->is_verbose)
+		fprintf(stderr, "ftp_file_op %s: %s\n", operation, file);
+
     if (!fp)
-	return FAILURE;
+		return FAILURE;
     *fp = NULL;
 
     if (ftp->con_state != isopen)
-	return botch("ftp_file_op", "open");
+		return botch("ftp_file_op", "open");
 
     if ((s = socket(ftp->addrtype, SOCK_STREAM, 0)) < 0) {
-	ftp->error = errno;
-	return FAILURE;
+		ftp->error = errno;
+		return FAILURE;
     }
 
     if (ftp->is_passive) {
