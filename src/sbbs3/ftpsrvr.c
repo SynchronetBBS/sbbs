@@ -3016,6 +3016,12 @@ static void ctrl_thread(void* arg)
 
 				p=cmd+4;
 				while(*p && *p<=' ') p++;
+
+				if(*p=='-') {	/* -Letc */
+					while(*p && *p>' ') p++;
+					while(*p && *p<=' ') p++;
+				}
+
 				SAFEPRINTF2(path,"%s%s",local_dir, *p ? p : "*");
 				lprintf(LOG_INFO,"%04d %s listing: %s", sock, user.alias, path);
 				sockprintf(sock, "150 Directory of %s%s", local_dir, p);
