@@ -33,14 +33,18 @@ while(request.charAt(0)==' ')	// skip prepended spaces
 
 if(request=="") {	/* no specific user requested, give list of active users */
 	log("client requested active user list");
-	write(format("%-25.25s %-40.40s Node Age Sex\r\n","Name","Action"));
-	write("-------------------------------------------------------------------------------\r\n");
+	write(format("%-25.25s %-40.40s Node Age Sex\r\n"
+		,"Name","Action"));
+	var dashes="---------------------------------------";
+	write(format("%-25.25s %-40.40s %.4s %.3s %.3s\r\n"
+		,dashes,dashes,dashes,dashes,dashes));
 	var user = new User(1);
 	for(n=0;n<system.node_list.length;n++) {
 		if(system.node_list[n].status!=NODE_INUSE)
 			continue;
 		user.number=system.node_list[n].useron;
-		var action=format(NodeAction[system.node_list[n].action],system.node_list[n].aux);
+		var action=format(NodeAction[system.node_list[n].action]
+			,system.node_list[n].aux);
 		write(format("%-25.25s %-40.40s %4d %3d %3s\r\n"
 			,user.alias
 			,action
