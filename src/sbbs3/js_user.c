@@ -738,8 +738,6 @@ JSObject* DLLCALL js_CreateUserClass(JSContext* cx, JSObject* parent, scfg_t* cf
 		,js_user_functions
 		,NULL,NULL);
 
-//	JS_SetPrivate(cx, userclass, cfg);	
-
 	return(userclass);
 }
 
