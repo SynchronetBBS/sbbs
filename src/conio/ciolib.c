@@ -139,7 +139,7 @@ int try_ansi_init(int mode)
 int try_ciolib_init(int mode)
 {
 	/* This should test for something or other */
-	if(1) {
+	if(isatty(fileno(stdout))) {
 		cio_api.mode=CIOLIB_CIOLIB_MODE;
 		cio_api.puttext=puttext;
 		cio_api.gettext=gettext;
@@ -158,7 +158,7 @@ int try_ciolib_init(int mode)
 		cio_api.textmode=textmode;
 		return(1);
 	}
-	fprintf(stderr,"CIOLIB init failed\n");
+	fprintf(stderr,"CONIO init failed\n");
 	return(0);
 }
 #endif
