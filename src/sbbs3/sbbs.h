@@ -768,7 +768,7 @@ extern "C" {
 	DLLEXPORT int		DLLCALL update_uldate(scfg_t* cfg, file_t* f);
 
 	/* str_util.c */
-	DLLEXPORT void		DLLCALL truncsp(char* str);
+	DLLEXPORT char *	DLLCALL truncsp(char* str);
 	DLLEXPORT char *	DLLCALL truncstr(char* str, const char* set);
 	DLLEXPORT char *	DLLCALL ascii_str(uchar* str);
 	DLLEXPORT BOOL		DLLCALL findstr(char *insearch, char *fname);

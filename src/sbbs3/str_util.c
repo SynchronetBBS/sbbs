@@ -232,13 +232,14 @@ char *ultoac(ulong l, char *string)
 /****************************************************************************/
 /* Truncates white-space chars off end of 'str'								*/
 /****************************************************************************/
-void DLLCALL truncsp(char *str)
+char* DLLCALL truncsp(char *str)
 {
 	uint c;
 
 	c=strlen(str);
-	while(c && (uchar)str[c-1]<=SP) c--;
+	while(c && (uchar)str[c-1]<=' ') c--;
 	str[c]=0;
+	return(str);
 }
 
 /****************************************************************************/
