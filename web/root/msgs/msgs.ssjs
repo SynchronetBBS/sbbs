@@ -99,6 +99,7 @@ for(displayed=0;displayed<max_messages && last_offset >= 0 && msgarray[last_offs
 		msgarray[last_offset].hdr.subject="-- No Subject --";
 	template.messages[displayed.toString()]=msgarray[last_offset].hdr;
 	template.messages[displayed.toString()].attachments=count_attachments(msgarray[last_offset].hdr,msgbase.get_msg_body(true,msgarray[last_offset].offset,true,true));
+	template.messages[displayed.toString()].offset=msgarray[last_offset].offset;
 	displayed++;
 }
 
