@@ -1484,7 +1484,7 @@ int SMBCALL smb_addmsghdr(smb_t* smb, smbmsg_t* msg, int storage)
 		smb->status.last_msg++;
 		smb->status.total_msgs++;
 		smb_putstatus(smb);
-/*		smb_hashmsg(smb,msg,NULL); */
+		smb_hashmsg(smb,msg,NULL,/* update? */TRUE);
 	}
 	smb_unlocksmbhdr(smb);
 	return(i);
@@ -2386,7 +2386,7 @@ int SMBCALL smb_findhash(smb_t* smb, hash_t** compare, hash_t* found_hash, BOOL 
 {
 	int		retval;
 	BOOL	found=FALSE;
-	size_t	c;
+	size_t	c,count;
 	hash_t	hash;
 
 	if(found_hash!=NULL)
@@ -2395,7 +2395,9 @@ int SMBCALL smb_findhash(smb_t* smb, hash_t** compare, hash_t* found_hash, BOOL 
 	if((retval=smb_open_hash(smb))!=SMB_SUCCESS)
 		return(retval);
 
-	if(compare!=NULL) {
+	COUNT_LIST_ITEMS(compare, count);
+
+	if(count) {
 
 		rewind(smb->hash_fp);
 		while(!feof(smb->hash_fp)) {
@@ -2458,22 +2460,23 @@ int SMBCALL smb_addhashes(smb_t* smb, hash_t** hashes)
 	int		retval;
 	size_t	h;
 
+	COUNT_LIST_ITEMS(hashes, h);
+	if(!h)	/* nothing to add */
+		return(SMB_SUCCESS);
+
 	if((retval=smb_open_hash(smb))!=SMB_SUCCESS)
 		return(retval);
 
-	if(hashes!=NULL) {
+	fseek(smb->hash_fp,0,SEEK_END);
 
-		fseek(smb->hash_fp,0,SEEK_END);
+	for(h=0;hashes[h]!=NULL;h++) {
 
-		for(h=0;hashes[h]!=NULL;h++) {
-
-			/* skip hashes marked by smb_findhash() */
-			if(hashes[h]->flags&SMB_HASH_MARKED)	
-				continue;	
-		
-			if(smb_fwrite(smb,hashes[h],sizeof(hash_t),smb->hash_fp)!=sizeof(hash_t))
-				return(SMB_ERR_WRITE);
-		}
+		/* skip hashes marked by smb_findhash() */
+		if(hashes[h]->flags&SMB_HASH_MARKED)	
+			continue;	
+	
+		if(smb_fwrite(smb,hashes[h],sizeof(hash_t),smb->hash_fp)!=sizeof(hash_t))
+			return(SMB_ERR_WRITE);
 	}
 
 	smb_close_hash(smb);
