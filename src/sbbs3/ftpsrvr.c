@@ -369,7 +369,7 @@ int getdir(char* p, user_t* user)
 		if(dir!=scfg.sysop_dir && dir!=scfg.upload_dir 
 			&& !chk_ar(&scfg,scfg.dir[dir]->ar,user))
 			continue;
-		if(!stricmp(scfg.dir[dir]->code,p))
+		if(!stricmp(scfg.dir[dir]->code_suffix,p))
 			break;
 	}
 	if(dir>=scfg.total_dirs) 
@@ -745,7 +745,7 @@ BOOL js_generate_index(JSContext* js_cx, JSObject* parent,
 		}
 
 		if(dir>=0) { /* 1st level */
-			strcat(vpath,scfg.dir[dir]->code);
+			strcat(vpath,scfg.dir[dir]->code_suffix);
 			strcat(vpath,"/");
 
 			if((js_str=JS_NewStringCopyZ(js_cx, scfg.dir[dir]->code))==NULL)
@@ -911,7 +911,7 @@ BOOL js_generate_index(JSContext* js_cx, JSObject* parent,
 					continue;
 				sprintf(vpath,"/%s/%s/%s"
 					,scfg.lib[scfg.dir[i]->lib]->sname
-					,scfg.dir[i]->code
+					,scfg.dir[i]->code_suffix
 					,startup->html_index_file);
 				js_add_file(js_cx
 					,dir_array 
@@ -951,7 +951,7 @@ BOOL js_generate_index(JSContext* js_cx, JSObject* parent,
 					}
 					sprintf(vpath,"/%s/%s/%s"
 						,scfg.lib[scfg.dir[dir]->lib]->sname
-						,scfg.dir[dir]->code
+						,scfg.dir[dir]->code_suffix
 						,getfname(g.gl_pathv[i]));
 					js_add_file(js_cx
 						,file_array 
@@ -2069,7 +2069,7 @@ void parsepath(char** pp, user_t* user, int* curlib, int* curdir)
 		if(dir!=scfg.sysop_dir && dir!=scfg.upload_dir 
 			&& !chk_ar(&scfg,scfg.dir[dir]->ar,user))
 			continue;
-		if(!stricmp(scfg.dir[dir]->code,p))
+		if(!stricmp(scfg.dir[dir]->code_suffix,p))
 			break;
 	}
 
@@ -2185,7 +2185,7 @@ char* vpath(int lib, int dir, char* str)
 	strcat(str,"/");
 	if(dir<0)
 		return(str);
-	strcat(str,scfg.dir[dir]->code);
+	strcat(str,scfg.dir[dir]->code_suffix);
 	strcat(str,"/");
 	return(str);
 }
@@ -3227,7 +3227,7 @@ static void ctrl_thread(void* arg)
 						,NAME_LEN
 						,scfg.sys_id
 						,lib<0 ? scfg.sys_id : dir<0 
-							? scfg.lib[lib]->sname : scfg.dir[dir]->code
+							? scfg.lib[lib]->sname : scfg.dir[dir]->code_suffix
 						,512L
 						,mon[cur_tm.tm_mon],cur_tm.tm_mday,cur_tm.tm_hour,cur_tm.tm_min
 						,startup->index_file_name);
@@ -3242,7 +3242,7 @@ static void ctrl_thread(void* arg)
 						,NAME_LEN
 						,scfg.sys_id
 						,lib<0 ? scfg.sys_id : dir<0 
-							? scfg.lib[lib]->sname : scfg.dir[dir]->code
+							? scfg.lib[lib]->sname : scfg.dir[dir]->code_suffix
 						,512L
 						,mon[cur_tm.tm_mon],cur_tm.tm_mday,cur_tm.tm_hour,cur_tm.tm_min
 						,startup->html_index_file);
@@ -3383,13 +3383,13 @@ static void ctrl_thread(void* arg)
 							,scfg.lib[lib]->sname
 							,512L
 							,mon[cur_tm.tm_mon],cur_tm.tm_mday,cur_tm.tm_hour,cur_tm.tm_min
-							,scfg.dir[i]->code);
+							,scfg.dir[i]->code_suffix);
 					else
-						fprintf(fp,"%s\r\n",scfg.dir[i]->code);
+						fprintf(fp,"%s\r\n",scfg.dir[i]->code_suffix);
 				}
 			} else if(chk_ar(&scfg,scfg.dir[dir]->ar,&user)) {
 				lprintf("%04d %s listing: %s/%s directory"
-					,sock,user.alias,scfg.lib[lib]->sname,scfg.dir[dir]->code);
+					,sock,user.alias,scfg.lib[lib]->sname,scfg.dir[dir]->code_suffix);
 
 				sprintf(path,"%s%s",scfg.dir[dir]->path,*p ? p : "*");
 				glob(path,0,NULL,&g);
@@ -3423,7 +3423,7 @@ static void ctrl_thread(void* arg)
 						fprintf(fp,"-r--r--r--   1 %-*s %-8s %9ld %s %2d "
 							,NAME_LEN
 							,str
-							,scfg.dir[dir]->code
+							,scfg.dir[dir]->code_suffix
 							,f.size
 							,mon[tm.tm_mon],tm.tm_mday);
 						if(tm.tm_year==cur_tm.tm_year)
@@ -3440,7 +3440,7 @@ static void ctrl_thread(void* arg)
 				globfree(&g);
 			} else 
 				lprintf("%04d %s listing: %s/%s directory (empty - no access)"
-					,sock,user.alias,scfg.lib[lib]->sname,scfg.dir[dir]->code);
+					,sock,user.alias,scfg.lib[lib]->sname,scfg.dir[dir]->code_suffix);
 
 			fclose(fp);
 			filexfer(&data_addr,sock,pasv_sock,&data_sock,fname,0L
@@ -3521,7 +3521,7 @@ static void ctrl_thread(void* arg)
 						continue;
 					if(!chk_ar(&scfg,scfg.dir[i]->ar,&user))
 						continue;
-					if(!stricmp(scfg.dir[i]->code,p))
+					if(!stricmp(scfg.dir[i]->code_suffix,p))
 						break;
 				}
 				if(i<scfg.total_dirs) 
@@ -3651,7 +3651,7 @@ static void ctrl_thread(void* arg)
 							&& !chk_ar(&scfg,scfg.dir[i]->ar,&user))
 							continue;
 						fprintf(fp,"%-*s %s\r\n"
-							,INDEX_FNAME_LEN,scfg.dir[i]->code,scfg.dir[i]->lname);
+							,INDEX_FNAME_LEN,scfg.dir[i]->code_suffix,scfg.dir[i]->lname);
 					}
 				} else if(chk_ar(&scfg,scfg.dir[dir]->ar,&user)){
 					sprintf(cmd,"%s*",scfg.dir[dir]->path);
@@ -3790,7 +3790,9 @@ static void ctrl_thread(void* arg)
 
 				if(!chk_ar(&scfg,scfg.dir[dir]->ar,&user)) {
 					lprintf("%04d !%s has insufficient access to /%s/%s"
-						,sock,user.alias,scfg.lib[scfg.dir[dir]->lib]->sname,scfg.dir[dir]->code);
+						,sock,user.alias
+						,scfg.lib[scfg.dir[dir]->lib]->sname
+						,scfg.dir[dir]->code_suffix);
 					sockprintf(sock,"550 Insufficient access.");
 					filepos=0;
 					continue;
@@ -3799,7 +3801,9 @@ static void ctrl_thread(void* arg)
 				if(!getsize && !getdate && !delecmd
 					&& !chk_ar(&scfg,scfg.dir[dir]->dl_ar,&user)) {
 					lprintf("%04d !%s has insufficient access to download from /%s/%s"
-						,sock,user.alias,scfg.lib[scfg.dir[dir]->lib]->sname,scfg.dir[dir]->code);
+						,sock,user.alias
+						,scfg.lib[scfg.dir[dir]->lib]->sname
+						,scfg.dir[dir]->code_suffix);
 					sockprintf(sock,"550 Insufficient access.");
 					filepos=0;
 					continue;
@@ -3807,7 +3811,9 @@ static void ctrl_thread(void* arg)
 
 				if(delecmd && !dir_op(&scfg,&user,dir)) {
 					lprintf("%04d !%s has insufficient access to delete files in /%s/%s"
-						,sock,user.alias,scfg.lib[scfg.dir[dir]->lib]->sname,scfg.dir[dir]->code);
+						,sock,user.alias
+						,scfg.lib[scfg.dir[dir]->lib]->sname
+						,scfg.dir[dir]->code_suffix);
 					sockprintf(sock,"550 Insufficient access.");
 					filepos=0;
 					continue;
@@ -3843,7 +3849,7 @@ static void ctrl_thread(void* arg)
 					if(f.cdt>(user.cdt+user.freecdt)) {
 						lprintf("%04d !%s has insufficient credit to download /%s/%s/%s (%lu credits)"
 							,sock,user.alias,scfg.lib[scfg.dir[dir]->lib]->sname
-							,scfg.dir[dir]->code
+							,scfg.dir[dir]->code_suffix
 							,p
 							,f.cdt);
 						sockprintf(sock,"550 Insufficient credit (%lu required).",f.cdt);
@@ -3983,7 +3989,7 @@ static void ctrl_thread(void* arg)
 					if(i!=scfg.sysop_dir && i!=scfg.upload_dir 
 						&& !chk_ar(&scfg,scfg.dir[i]->ar,&user))
 						continue;
-					if(!stricmp(scfg.dir[i]->code,p))
+					if(!stricmp(scfg.dir[i]->code_suffix,p))
 						break;
 				}
 				if(i<scfg.total_dirs) 
@@ -4009,7 +4015,9 @@ static void ctrl_thread(void* arg)
 			
 				if(!chk_ar(&scfg,scfg.dir[dir]->ul_ar,&user)) {
 					lprintf("%04d !%s has insufficient access to upload to /%s/%s"
-						,sock,user.alias,scfg.lib[scfg.dir[dir]->lib]->sname,scfg.dir[dir]->code);
+						,sock,user.alias
+						,scfg.lib[scfg.dir[dir]->lib]->sname
+						,scfg.dir[dir]->code_suffix);
 					sockprintf(sock,"553 Insufficient access.");
 					continue;
 				}
@@ -4180,7 +4188,7 @@ static void ctrl_thread(void* arg)
 					if(i!=scfg.sysop_dir && i!=scfg.upload_dir
 						&& !chk_ar(&scfg,scfg.dir[i]->ar,&user))
 						continue;
-					if(!stricmp(scfg.dir[i]->code,p))
+					if(!stricmp(scfg.dir[i]->code_suffix,p))
 						break;
 				}
 				if(i<scfg.total_dirs) {
@@ -4208,7 +4216,8 @@ static void ctrl_thread(void* arg)
 					,scfg.lib[curlib]->sname);
 			else
 				sockprintf(sock,"257 \"/%s/%s\" is current directory."
-					,scfg.lib[curlib]->sname,scfg.dir[curdir]->code);
+					,scfg.lib[curlib]->sname
+					,scfg.dir[curdir]->code_suffix);
 			continue;
 		}
 
@@ -4510,10 +4519,10 @@ void DLLCALL ftp_server(void* arg)
 			strlwr(scfg.lib[i]->sname);
 			dotname(scfg.lib[i]->sname,scfg.lib[i]->sname);
 		}
-
+#if 0	/* this is now handled by load_cfg()->prep_cfg() */
 		for(i=0;i<scfg.total_dirs;i++) 
-			strlwr(scfg.dir[i]->code);
-
+			strlwr(scfg.dir[i]->code_suffix);
+#endif
 		/* open a socket and wait for a client */
 
 		if((server_socket=ftp_open_socket(SOCK_STREAM))==INVALID_SOCKET) {
