@@ -122,11 +122,12 @@ fprintf(out,"\r\n\r\n");
 for(i=0;i<bbs.total_numbers;i++)
 	fprintf(out,"%-30.30s %12.12s %5u %-15.15s "
 		"Minimum: %u\r\n"
-		,i && !strcmp(bbs.number[i].location,bbs.number[i-1].location)
-			? nulstr : bbs.number[i].location
-		,bbs.number[i].number
-		,bbs.number[i].max_rate,bbs.number[i].modem
-		,bbs.number[i].min_rate);
+		,i && !strcmp(bbs.number[i].modem.location,bbs.number[i-1].modem.location)
+			? nulstr : bbs.number[i].modem.location
+		,bbs.number[i].modem.number
+		,bbs.number[i].modem.max_rate
+		,bbs.number[i].modem.desc
+		,bbs.number[i].modem.min_rate);
 
 fprintf(out,"\r\n");
 for(i=0;i<5;i++) {
@@ -169,9 +170,9 @@ while(!eof(in)) {
 	// long_bbs_info(out,bbs);
 	for(i=0;i<bbs.total_numbers;i++)
 		fprintf(out,"%-25.25s  %12.12s  %5u  %s\r\n"
-			,bbs.name,bbs.number[i].number
-			,bbs.number[i].max_rate
-			,bbs.number[i].modem);
+			,bbs.name,bbs.number[i].modem.number
+			,bbs.number[i].modem.max_rate
+			,bbs.number[i].modem.desc);
 	}
 close(in);
 fclose(out);
