@@ -489,7 +489,7 @@ export the current message group into.
 						,cfg.sub[j]->origline
 						,cfg.sub[j]->post_sem
 						,cfg.sub[j]->newsgroup
-						,faddrtoa(&cfg.sub[j]->faddr,tmp)
+						,smb_faddrtoa(&cfg.sub[j]->faddr,tmp)
 						);
 					fprintf(stream,"%lu\r\n%lu\r\n%u\r\n%u\r\n%s\r\n"
 						,cfg.sub[j]->maxmsgs

@@ -923,7 +923,7 @@ compatible mail programs you use support the LZH translation.
 					sprintf(opt[n++],"%-27.27s%s","FidoNet EchoMail"
 						,cfg.sub[i]->misc&SUB_FIDO ? "Yes":"No");
 					sprintf(opt[n++],"%-27.27s%s","FidoNet Address"
-                        ,faddrtoa(&cfg.sub[i]->faddr,tmp));
+                        ,smb_faddrtoa(&cfg.sub[i]->faddr,tmp));
 					sprintf(opt[n++],"EchoMail Origin Line");
 					opt[n][0]=0;
 					uifc.savnum=2;
@@ -1141,7 +1141,7 @@ option to Yes.
 								cfg.sub[i]->misc&=~SUB_FIDO; }
                             break;
 						case 8:
-							faddrtoa(&cfg.sub[i]->faddr,str);
+							smb_faddrtoa(&cfg.sub[i]->faddr,str);
 							SETHELP(WHERE);
 /*
 Sub-board FidoNet Address:
