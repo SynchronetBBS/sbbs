@@ -402,7 +402,7 @@ function Server_Work() {
 			}
 			break;
 		case "NICK":
-			if (!cmd[2] || ThisOrigin.server || (!cmd[8] && (cmd[2][0] != ":")) )
+			if (!cmd[2] || (!cmd[8] && (cmd[2][0] != ":")) )
 				break;
 			var collide = Users[cmd[1].toUpperCase()];
 			if ((collide) && (parseInt(collide.created) >
