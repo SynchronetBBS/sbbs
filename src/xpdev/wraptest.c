@@ -58,7 +58,7 @@ int main()
 		perror(LOCK_FNAME);
 		return(errno);
 	}
-	printf("%s is opened with an exclusive (read/write) lock",LOCK_FNAME);
+	printf("%s is opened with an exclusive (read/write) lock\n",LOCK_FNAME);
 	getkey();
 	if(_beginthread(
 		  sopen_test_thread	/* entry point */
