@@ -250,7 +250,8 @@ public:
 	long 	autoterm;		/* Autodetected terminal type */
 	char 	slbuf[SAVE_LINES][LINE_BUFSIZE+1]; /* Saved for redisplay */
 	char 	slatr[SAVE_LINES];	/* Starting attribute of each line */
-	char 	slcnt;			/* Number of lines currently saved */
+	char 	slcuratr[SAVE_LINES];	/* Ending attribute of each line */
+	int 	slcnt;			/* Number of lines currently saved */
 	char 	lbuf[LINE_BUFSIZE+1];/* Temp storage for each line output */
 	int		lbuflen;		/* Number of characters in line buffer */
 	char 	latr;			/* Starting attribute of line buffer */

@@ -800,12 +800,14 @@ enum {							/* Values of mode for userlist function     */
 #define CLS         	outchar(FF)
 #define WHERE       	__LINE__,__FILE__
 #define SAVELINE		{ slatr[slcnt]=latr; \
-							sprintf(slbuf[slcnt<SAVE_LINES ? slcnt++ : slcnt] \
-							,"%.*s",lbuflen,lbuf); \
+							slcuratr[slcnt]=curatr; \
+							sprintf(slbuf[slcnt],"%.*s",lbuflen,lbuf); \
+							if(slcnt<SAVE_LINES) slcnt++; \
 							lbuflen=0; }
-#define RESTORELINE 	{ lbuflen=0; attr(slatr[--slcnt]); \
+#define RESTORELINE 	{ lbuflen=0; if(slcnt) --slcnt; \
+							attr(slatr[slcnt]); \
 							rputs(slbuf[slcnt]); \
-							curatr=LIGHTGRAY /*lclatr(-1) */; }
+							curatr=slcuratr[slcnt]; }
 #define RIOSYNC(x)		{ if(online==ON_REMOTE) riosync(x); }
 #define SYNC			{ getnodedat(cfg.node_num,&thisnode,0); \
 						  RIOSYNC(0); \
