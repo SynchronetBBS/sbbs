@@ -309,6 +309,10 @@ public:
 	long*	getintvar(csi_t *bin, long name);
 	char*	copystrvar(csi_t *csi, char *p, char *str);
 	void	skipto(csi_t *csi, uchar inst);
+	bool	ftp_cmd(csi_t* csi, SOCKET ctrl_sock, char* cmdsrc, char* rsp);
+	bool	ftp_get(csi_t* csi, SOCKET ctrl_sock, char* src, char* dest, bool dir=false);
+	SOCKET	ftp_data_sock(csi_t* csi, SOCKET ctrl_sock, SOCKADDR_IN*);
+
 
 	void	reset_logon_vars(void);
 
@@ -658,6 +662,11 @@ public:
 	void	telnet_gate(char* addr, ulong mode);	// See TG_* for mode bits
 
 };
+
+extern SOCKET	open_socket(int type);
+extern int		close_socket(SOCKET);
+extern u_long	resolve_ip(char *addr);
+
 #endif
 
 #ifdef DLLEXPORT
