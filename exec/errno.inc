@@ -1,8 +1,14 @@
-# ERRNO.INC
+# errno.inc
 
 # 	 Defines the system error variable _errno and the error
 # 	 numbers set by system calls. Errors which exist in Unix(tm)
 # 	 but not MSDOS have value -1.
+
+# $id$
+
+# @format.tab-size 8, @format.use-tabs true
+
+!global _ERRNO
 
 !define EZERO 	 0			# Error 0
 !define EINVFNC  1			# Invalid function number
