@@ -1,2 +1,2 @@
 @echo off
-cl /AT dosxtrn.c
+cl /I\msvc15\include /I.. /I\ntddk\inc /AS dosxtrn.c
