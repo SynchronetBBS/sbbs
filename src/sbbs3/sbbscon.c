@@ -553,6 +553,7 @@ void _sighandler_quit(int sig)
     bbs_terminate();
     ftp_terminate();
     mail_terminate();
+	services_terminate();
     while(bbs_running || ftp_running || mail_running || services_running)
 		mswait(1);
 	if(is_daemon)
