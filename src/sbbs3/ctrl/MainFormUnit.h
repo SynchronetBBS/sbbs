@@ -373,6 +373,8 @@ public:		// User declarations
     void __fastcall WriteColor(TRegistry*, AnsiString, TColor);
     void __fastcall ReadFont(AnsiString, TFont*);
     void __fastcall WriteFont(AnsiString, TFont*);
+    void __fastcall FilterIP(char* ip_addr
+						,char* prot, char* username);
 };
 
 //---------------------------------------------------------------------------

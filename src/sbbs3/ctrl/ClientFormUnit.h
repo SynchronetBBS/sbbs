@@ -54,10 +54,12 @@ __published:	// IDE-managed Components
     TListView *ListView;
     TPopupMenu *PopupMenu;
     TMenuItem *CloseSocketMenuItem;
+	TMenuItem *FilterIpMenuItem;
     void __fastcall FormShow(TObject *Sender);
     void __fastcall FormHide(TObject *Sender);
     void __fastcall TimerTimer(TObject *Sender);
     void __fastcall CloseSocketMenuItemClick(TObject *Sender);
+	void __fastcall FilterIpMenuItemClick(TObject *Sender);
 private:	// User declarations
 public:		// User declarations
     __fastcall TClientForm(TComponent* Owner);
