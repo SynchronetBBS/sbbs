@@ -729,9 +729,10 @@ static BOOL send_headers(http_session_t *session, const char *status)
 			,get_header(HEAD_LASTMODIFIED)
 			,days[tm.tm_wday],tm.tm_mday,months[tm.tm_mon]
 			,tm.tm_year+1900,tm.tm_hour,tm.tm_min,tm.tm_sec);
-	} else 
-		if(ret && !session->req.was_cgi)
-			sockprintf(session->socket,"%s: 0",get_header(HEAD_LENGTH));
+	} 
+	else  {
+		session->req.keep_alive=FALSE;
+	}
 
 	if(session->req.was_cgi)  {
 		/* CGI-generated headers */
