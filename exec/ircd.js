@@ -1220,6 +1220,7 @@ function IRCClient(socket,new_id,local_client,do_newconn) {
 	this.finalize_server_connect=IRCClient_finalize_server_connect;
 	this.ip="";
 	this.linkparent="";
+	this.flagged_for_quit = false;
 	if (this.socket && local_client && do_newconn) {
 		log(format("%04u",this.socket.descriptor)
 			+ " Accepted new connection: " + this.socket.remote_ip_address
@@ -1503,7 +1504,7 @@ function IRCClient_rawout(str) {
 	}
 
 	if (!writeout(sendsock,str))
-		this.quit("Socket write failed miserably.");
+		this.flagged_for_quit = "Socket write failed miserably";
 }
 
 function IRCClient_originatorout(str,origin) {
@@ -1527,7 +1528,7 @@ function IRCClient_originatorout(str,origin) {
 	}
 
 	if (!writeout(sendsock,send_data))
-		this.quit("Socket write failed miserably.");
+		this.flagged_for_quit = "Socket write failed miserably";
 }
 
 function IRCClient_ircout(str) {
@@ -1546,7 +1547,7 @@ function IRCClient_ircout(str) {
 	}
 
 	if (!writeout(sendsock,":" + servername + " " + str))
-		this.quit("Socket write failed miserably.");
+		this.flagged_for_quit = "Socket write failed miserably";
 }
 
 function IRCClient_server_notice(str) {
@@ -5999,6 +6000,10 @@ function IRCClient_work() {
 				"Client has bogus conntype!");
 		}
 	}
+
+	// Take care of postponed quits now.
+	if (this.flagged_for_quit)
+		this.quit(this.flagged_for_quit);
 }
 
 function IRCClient_finalize_server_connect(states) {
