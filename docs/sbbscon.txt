@@ -139,7 +139,12 @@ You will particularily want to pay attention to the [UNIX] section of your
 Initialization file.
 
 If you do not want to run Synchronet (and all external programs/doors) as
-root, you will have to set the User and Group values.
+root, you will have to set the User and Group values.  Also, the file
+permissions/ownership should be such that the other user would have read
+and write access to them.  The best way to accomplish this is a command
+like:
+
+chown -R sbbsuser:sbbsgroup /sbbs
 
 If you want Synchronet to fork and run in the background as a daemon, logging
 via syslog rather than the local console, set Daemonize=True in this section.
