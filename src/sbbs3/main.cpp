@@ -2820,8 +2820,17 @@ time_t checktime(void)
     return(mktime(&tm)-0x2D24BD00L);
 }
 
+const char* DLLCALL js_ver(void)
+{
+#ifdef JAVASCRIPT
+	return(JS_GetImplementationVersion());
+#else
+	return("");
+#endif
+}
+
 /* Returns char string of version and revision */
-char* DLLCALL bbs_ver(void)
+const char* DLLCALL bbs_ver(void)
 {
 	static char ver[256];
 	char compiler[32];
@@ -2843,7 +2852,7 @@ char* DLLCALL bbs_ver(void)
 	return(ver);
 }
 
-/* Returns binary-coded version and revision (e.g. 0x31000|'A') */
+/* Returns binary-coded version and revision (e.g. 0x31000 == 3.10a) */
 long DLLCALL bbs_ver_num(void)
 {
 	char*	minor;
@@ -2852,7 +2861,7 @@ long DLLCALL bbs_ver_num(void)
 		return(0);
 	minor++;
 
-	return((strtoul(VERSION,NULL,16)<<16)|(strtoul(minor,NULL,16)<<8)|REVISION);
+	return((strtoul(VERSION,NULL,16)<<16)|(strtoul(minor,NULL,16)<<8)|(REVISION-'A'));
 }
 
 void DLLCALL bbs_terminate(void)
