@@ -1,4 +1,5 @@
 load("html_inc/msgslib.ssjs");
+load("html_inc/mime_decode.ssjs");
 
 if(msgbase.open!=undefined && msgbase.open()==false) {
 	error(msgbase.last_error);
@@ -87,7 +88,7 @@ var displayed=0;
 template.messages=new Array;
 template.group=msg_area.grp_list[g];
 
-for(;displayed<max_messages && (hdr=msgbase.get_msg_header(true,last_offset)) != null;last_offset--) {
+for(;displayed<max_messages && ((hdr=msgbase.get_msg_header(true,last_offset)) != null);last_offset--) {
 	if(hdr==null)
 		continue;
 	if(hdr.subject=='')
@@ -95,6 +96,7 @@ for(;displayed<max_messages && (hdr=msgbase.get_msg_header(true,last_offset)) !=
 	if(sub=='mail' && hdr.to!=user.alias && hdr.to!=user.name && hdr.to !=user.netmail)
 		continue;
 	template.messages[displayed.toString()]=hdr;
+ 	template.messages[displayed.toString()].attachments=count_attachments(hdr,msgbase.get_msg_body(true,last_offset,true,true));
 	displayed++;
 }
 write_template("msgs/msgs.inc");
