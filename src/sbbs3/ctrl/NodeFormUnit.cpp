@@ -355,8 +355,11 @@ void __fastcall TNodeForm::TimerTick(TObject *Sender)
         AnsiString Str=AnsiString(str);
         if(ListBox->Items->Count<n+1)
         	ListBox->Items->Add(Str);
-		else if(ListBox->Items->Strings[n]!=Str)
+		else if(ListBox->Items->Strings[n]!=Str) {
+            bool selected=ListBox->Selected[n]; // save selected state
         	ListBox->Items->Strings[n]=str;
+            ListBox->Selected[n]=selected;      // restore
+        }
     }
     Timer->Enabled=true;
 }
@@ -375,6 +378,7 @@ void __fastcall TNodeForm::InterruptNodeButtonClick(TObject *Sender)
             node.misc^=NODE_INTR;
             putnodedat(&MainForm->cfg,i+1,&node);
         }
+    TimerTick(Sender);
 }
 //---------------------------------------------------------------------------
 
@@ -389,6 +393,7 @@ void __fastcall TNodeForm::LockNodeButtonClick(TObject *Sender)
             node.misc^=NODE_LOCK;
             putnodedat(&MainForm->cfg,i+1,&node);
         }
+    TimerTick(Sender);
 }
 //---------------------------------------------------------------------------
 
@@ -403,16 +408,11 @@ void __fastcall TNodeForm::RerunNodeButtonClick(TObject *Sender)
             node.misc^=NODE_RRUN;
             putnodedat(&MainForm->cfg,i+1,&node);
         }
+    TimerTick(Sender);
 }
 
 //---------------------------------------------------------------------------
 
-void __fastcall TNodeForm::ListBoxKeyPress(TObject *Sender, char &Key)
-{
-	if(Key==1) // ctrl-a
-		SelectAllMenuItemClick(Sender);
-}
-//---------------------------------------------------------------------------
 
 void __fastcall TNodeForm::SelectAllMenuItemClick(TObject *Sender)
 {
@@ -440,6 +440,7 @@ void __fastcall TNodeForm::DownButtonClick(TObject *Sender)
 	            node.misc^=NODE_DOWN;
             putnodedat(&MainForm->cfg,i+1,&node);
         }
+    TimerTick(Sender);
 }
 //---------------------------------------------------------------------------
 
@@ -454,6 +455,7 @@ void __fastcall TNodeForm::ClearErrorButtonClick(TObject *Sender)
             node.errors=0;
             putnodedat(&MainForm->cfg,i+1,&node);
         }
+    TimerTick(Sender);
 }
 //---------------------------------------------------------------------------
 
@@ -478,6 +480,7 @@ void __fastcall TNodeForm::ChatButtonClick(TObject *Sender)
                 );
             WinExec(str,SW_SHOWNORMAL);
         }
+    TimerTick(Sender);
 }
 //---------------------------------------------------------------------------
 
@@ -495,6 +498,7 @@ void __fastcall TNodeForm::SpyButtonClick(TObject *Sender)
             }
             SpyForms[i]->Show();
         }
+    TimerTick(Sender);
 }
 //---------------------------------------------------------------------------
 
@@ -515,6 +519,7 @@ void __fastcall TNodeForm::UserEditButtonClick(TObject *Sender)
                 ,node.useron);
             WinExec(str,SW_SHOWNORMAL);
         }
+    TimerTick(Sender);
 }
 //---------------------------------------------------------------------------
 
@@ -538,6 +543,14 @@ void __fastcall TNodeForm::UserMsgButtonClick(TObject *Sender)
             }
     }
     delete UserMsgForm;
+    TimerTick(Sender);
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TNodeForm::RefreshMenuItemClick(TObject *Sender)
+{
+    ListBox->Clear();
+    TimerTick(Sender);
 }
 //---------------------------------------------------------------------------
 

@@ -1,6 +1,6 @@
 object NodeForm: TNodeForm
-  Left = 579
-  Top = 396
+  Left = 340
+  Top = 159
   Width = 277
   Height = 214
   Caption = 'Nodes'
@@ -10,15 +10,15 @@ object NodeForm: TNodeForm
   DragMode = dmAutomatic
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
-  Font.Height = -11
+  Font.Height = -14
   Font.Name = 'MS Sans Serif'
   Font.Style = []
   OldCreateOrder = False
   Position = poDefault
   OnHide = FormHide
   OnShow = FormShow
-  PixelsPerInch = 96
-  TextHeight = 13
+  PixelsPerInch = 120
+  TextHeight = 16
   object Toolbar: TToolBar
     Left = 0
     Top = 0
@@ -118,13 +118,12 @@ object NodeForm: TNodeForm
     Left = 0
     Top = 25
     Width = 269
-    Height = 162
+    Height = 157
     Align = alClient
-    ItemHeight = 13
+    ItemHeight = 16
     MultiSelect = True
     PopupMenu = PopupMenu
     TabOrder = 1
-    OnKeyPress = ListBoxKeyPress
   end
   object Timer: TTimer
     OnTimer = TimerTick
@@ -137,53 +136,68 @@ object NodeForm: TNodeForm
     object LockMenuItem: TMenuItem
       Caption = 'Lock Node'
       ImageIndex = 19
+      ShortCut = 16460
       OnClick = LockNodeButtonClick
     end
     object DownMenuItem: TMenuItem
       Caption = 'Down Node'
       ImageIndex = 21
+      ShortCut = 16452
       OnClick = DownButtonClick
     end
     object RerunMenuItem: TMenuItem
       Caption = 'Rerun Node'
       ImageIndex = 55
+      ShortCut = 16466
       OnClick = RerunNodeButtonClick
     end
     object InterruptMenuItem: TMenuItem
       Caption = 'Interrupt Node'
       ImageIndex = 17
+      ShortCut = 16457
       OnClick = InterruptNodeButtonClick
     end
     object ClearErrorsMenuItem: TMenuItem
       Caption = 'Clear Errors'
       ImageIndex = 33
+      ShortCut = 46
       OnClick = ClearErrorButtonClick
     end
     object ChatMenuItem: TMenuItem
       Caption = 'Chat w/User'
       ImageIndex = 39
+      ShortCut = 121
       OnClick = ChatButtonClick
     end
     object SendMsgMenuItem: TMenuItem
       Caption = 'Send User Msg'
+      ShortCut = 122
       OnClick = UserMsgButtonClick
     end
     object SpyMenuItem: TMenuItem
       Caption = 'Spy on Node'
       ImageIndex = 41
+      ShortCut = 123
       OnClick = SpyButtonClick
     end
     object EditUser1: TMenuItem
       Caption = 'Edit User'
       Hint = 'EditUserMenuItem'
       ImageIndex = 27
+      ShortCut = 113
       OnClick = UserEditButtonClick
     end
     object N1: TMenuItem
       Caption = '-'
     end
+    object RefreshMenuItem: TMenuItem
+      Caption = 'Refresh'
+      ShortCut = 116
+      OnClick = RefreshMenuItemClick
+    end
     object SelectAllMenuItem: TMenuItem
       Caption = 'Select &All'
+      ShortCut = 16449
       OnClick = SelectAllMenuItemClick
     end
   end

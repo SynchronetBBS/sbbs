@@ -78,12 +78,12 @@ __published:	// IDE-managed Components
     TMenuItem *EditUser1;
     TToolButton *UserMsgButton;
     TMenuItem *SendMsgMenuItem;
+    TMenuItem *RefreshMenuItem;
 	void __fastcall FormShow(TObject *Sender);
 	void __fastcall TimerTick(TObject *Sender);
     void __fastcall FormHide(TObject *Sender);
 	void __fastcall InterruptNodeButtonClick(TObject *Sender);
 	void __fastcall LockNodeButtonClick(TObject *Sender);
-	void __fastcall ListBoxKeyPress(TObject *Sender, char &Key);
 	void __fastcall SelectAllMenuItemClick(TObject *Sender);
 	void __fastcall DownButtonClick(TObject *Sender);
     void __fastcall ClearErrorButtonClick(TObject *Sender);
@@ -92,6 +92,7 @@ __published:	// IDE-managed Components
     void __fastcall RerunNodeButtonClick(TObject *Sender);
     void __fastcall UserEditButtonClick(TObject *Sender);
     void __fastcall UserMsgButtonClick(TObject *Sender);
+    void __fastcall RefreshMenuItemClick(TObject *Sender);
 private:	// User declarations
 public:		// User declarations
      __fastcall TNodeForm(TComponent* Owner);
