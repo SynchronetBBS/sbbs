@@ -946,7 +946,10 @@ void sbbs_t::qwkcfgline(char *buf,uint subnum)
 			else
 				addtobatdl(&f); } }
 
-	else bputs("\1r\1h\1iUnrecognized Control Command!\1n\r\n");
+	else {
+		attr(cfg.color[clr_err]);
+		bputs("Unrecognized Control Command!\1n\r\n");
+	}
 
 	if(qwk!=useron.qwk)
 		putuserrec(&cfg,useron.number,U_QWK,8,ultoa(useron.qwk,tmp,16));
