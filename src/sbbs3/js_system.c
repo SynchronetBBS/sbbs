@@ -712,6 +712,7 @@ js_spamlog(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	uintN		i;
 	char*		p;
 	char*		prot=NULL;
+	char*		action=NULL;
 	char*		reason=NULL;
 	char*		host=NULL;
 	char*		ip_addr=NULL;
@@ -729,6 +730,8 @@ js_spamlog(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 			continue;
 		if(prot==NULL)
 			prot=p;
+		else if(action==NULL)
+			action=p;
 		else if(reason==NULL)
 			reason=p;
 		else if(host==NULL)
@@ -738,7 +741,7 @@ js_spamlog(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		else if(to==NULL)
 			to=p;
 	}
-	*rval = BOOLEAN_TO_JSVAL(spamlog(cfg,prot,reason,host,ip_addr,to));
+	*rval = BOOLEAN_TO_JSVAL(spamlog(cfg,prot,action,reason,host,ip_addr,to));
 	return(JS_TRUE);
 }
 
@@ -794,7 +797,7 @@ static JSFunctionSpec js_system_functions[] = {
 	{"timestr",			js_timestr,			0},		// convert a time_t into a time string
 	{"datestr",			js_datestr,			0},		// convert a time_t into a date string
 	{"secondstr",		js_secondstr,		1},		// convert a time_t into a hh:mm:ss string
-	{"spamlog",			js_spamlog,			5},		// spamlog(prot,reason,host,ip,to)
+	{"spamlog",			js_spamlog,			6},		// spamlog(prot,action,reason,host,ip,to)
 	{"hacklog",			js_hacklog,			5},		// hacklog(prot,user,text,host,ip,port)
 	{0}
 };
