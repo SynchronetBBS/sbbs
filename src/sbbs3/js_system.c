@@ -175,10 +175,7 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 				val = getfreediskspace(cfg->temp_dir,0);
 			else
 				val = getfreediskspace(cfg->temp_dir,1024);
-			if(INT_FITS_IN_JSVAL(val) && !(val&0x80000000))
-				*vp = INT_TO_JSVAL(val);
-			else
-	            JS_NewDoubleValue(cx, val, vp);
+			JS_NewNumberValue(cx,val,vp);
 			break;
 
 		case SYS_PROP_NEW_PASS:
