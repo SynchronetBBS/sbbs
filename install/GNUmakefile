@@ -80,6 +80,7 @@ externals:	sbj sbl
 sbbs3:	$(SBBSDIR)/src/sbbs3 $(SBBSDIR)/src/uifc $(SBBSDIR)/src/xpdev \
 	$(SBBSDIR)/include \
 	$(SBBSDIR)/lib/mozilla/js/$(os).$(SUFFIX) \
+	$(SBBSDIR)/lib/mozilla/nspr/$(os).$(SUFFIX) \
 	$(SBBSDIR)/lib/fltk/$(os)
 	$(MAKE) -C $(SBBSDIR)/src/sbbs3 $(MKFLAGS)
 
