@@ -76,7 +76,8 @@ static BOOL find_section(FILE* fp, const char* section)
 		if(tp==NULL)
 			continue;
 		*tp=0;
-		return(TRUE);
+		if(stricmp(p,section)==0)
+			return(TRUE);
 	}
 	return(FALSE);
 }
@@ -118,8 +119,7 @@ static char* get_value(FILE* fp, const char* section, const char* key)
 	return(NULL);
 }
 
-char* DLLCALL
-iniReadString(FILE* fp, const char* section, const char* key, const char* deflt)
+char* iniReadString(FILE* fp, const char* section, const char* key, const char* deflt)
 {
 	char* value;
 
@@ -129,8 +129,7 @@ iniReadString(FILE* fp, const char* section, const char* key, const char* deflt)
 	return(value);
 }
 
-long DLLCALL
-iniReadInteger(FILE* fp, const char* section, const char* key, long deflt)
+long iniReadInteger(FILE* fp, const char* section, const char* key, long deflt)
 {
 	char* value;
 
@@ -140,14 +139,12 @@ iniReadInteger(FILE* fp, const char* section, const char* key, long deflt)
 	return(strtol(value,NULL,0));
 }
 
-ushort DLLCALL
-iniReadShortInt(FILE* fp, const char* section, const char* key, ushort deflt)
+ushort iniReadShortInt(FILE* fp, const char* section, const char* key, ushort deflt)
 {
 	return((ushort)iniReadInteger(fp, section, key, deflt));
 }
 
-ulong DLLCALL
-iniReadIpAddress(FILE* fp, const char* section, const char* key, ulong deflt)
+ulong iniReadIpAddress(FILE* fp, const char* section, const char* key, ulong deflt)
 {
 	char* value;
 
@@ -160,8 +157,7 @@ iniReadIpAddress(FILE* fp, const char* section, const char* key, ulong deflt)
 	return(inet_addr(value));
 }
 
-double DLLCALL
-iniReadFloat(FILE* fp, const char* section, const char* key, double deflt)
+double iniReadFloat(FILE* fp, const char* section, const char* key, double deflt)
 {
 	char* value;
 
@@ -171,8 +167,7 @@ iniReadFloat(FILE* fp, const char* section, const char* key, double deflt)
 	return(atof(value));
 }
 
-BOOL DLLCALL 
-iniReadBool(FILE* fp, const char* section, const char* key, BOOL deflt)
+BOOL iniReadBool(FILE* fp, const char* section, const char* key, BOOL deflt)
 {
 	char* value;
 
@@ -187,8 +182,7 @@ iniReadBool(FILE* fp, const char* section, const char* key, BOOL deflt)
 	return(strtol(value,NULL,0));
 }
 
-ulong DLLCALL
-iniReadBitField(FILE* fp, const char* section, const char* key, 
+ulong iniReadBitField(FILE* fp, const char* section, const char* key, 
 						ini_bitdesc_t* bitdesc, ulong deflt)
 {
 	int		b,i;
