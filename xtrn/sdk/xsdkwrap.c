@@ -143,14 +143,14 @@ char* strrev(char* str)
 /* This is a bit of a hack, but it works */
 char* _fullpath(char* absPath, const char* relPath, size_t maxLength)
 {
-	char *curdir = (char *) malloc(PATH_MAX+1);
+	char *curdir = (char *) malloc(MAX_PATH+1);
 
 	if(curdir == NULL) {
 		strcpy(absPath,relPath);
 		return(absPath);
 	}
 
-    getcwd(curdir, PATH_MAX);
+    getcwd(curdir, MAX_PATH);
     if(chdir(relPath)!=0) /* error, invalid dir */
 		strcpy(absPath,relPath);
 	else {

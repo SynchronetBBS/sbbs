@@ -69,6 +69,18 @@
 #define RIP 	(1<<2)		/* RIP compatible terminal detected */
 #define WIP 	(1<<3)		/* WIP compatible terminal detected */
 
+#ifndef MAX_PATH
+	#ifdef MAXPATHLEN
+		#define MAX_PATH MAXPATHLEN	/* clib.h */
+	#elif defined PATH_MAX
+		#define MAX_PATH PATH_MAX
+	#elif defined _MAX_PATH
+		#define MAX_PATH _MAX_PATH
+	#else
+		#define MAX_PATH 260		
+	#endif
+#endif
+
 #ifndef uchar				/* Short-hand for unsigned data types */
 #define uchar unsigned char
 #endif
