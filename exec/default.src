@@ -1,11 +1,12 @@
-# DEFAULT.SRC
+# default.src
 
-# Copyright 1994 Digital Dynamics
+# Default Command Shell for Synchronet Version 2.00a+
+
+# $id$
+
+# @format.tab-size 8, @format.use-tabs true
 
 ###############################################################################
-#									      #
-# Default Command Shell for Synchronet Version 2.00a			      #
-#									      #
 # This shell is an imitation of the Version 1c command set/structure	      #
 #									      #
 # It also serves as an example of a complex command shell using the Baja      #
@@ -151,7 +152,7 @@ cmdkey ;
 	end_cmd
 
 cmdkey T
-	chkfile "..\text\menu\tmessage.*"
+	chkfile "%zmenu\tmessage.*"
 	if_true
 		menu tmessage
 		end_if
@@ -786,7 +787,7 @@ cmdkey T
 
 cmdkey U
 	print "\r\nchUpload File\r\n"
-	chkfile "..\text\menu\upload.*"
+	chkfile "%zmenu\upload.*"
 	if_true
 		menu upload
 		end_if
