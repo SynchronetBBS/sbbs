@@ -80,27 +80,54 @@ BOOL DLLCALL save_cfg(scfg_t* cfg, int backup_level)
 	return(TRUE);
 }
 
-/****************************************************************************/
-/****************************************************************************/
-static void backup(char *org, int backup_level)
+static BOOL fcopy(char* src, char* dest)
 {
-	char old[128],newname[128];
-	int i,x;
+	int		ch;
+	FILE*	in;
+	FILE*	out;
 
-	x=strlen(org)-1;
-	if(x<=0)
-		return;
-	strcpy(old,org);
-	strcpy(newname,org);
+	if((in=fopen(src,"rb"))==NULL)
+		return(FALSE);
+	if((out=fopen(dest,"wb"))==NULL) {
+		fclose(in);
+		return(FALSE);
+	}
+
+	while(!feof(in)) {
+		ch=fgetc(in);
+		if(ch==EOF)
+			break;
+		fputc(ch,out);
+	}
+
+	fclose(in);
+	fclose(out);
+
+	return(TRUE);
+}
+
+/****************************************************************************/
+/****************************************************************************/
+void DLLCALL backup(char *fname, int backup_level, BOOL ren)
+{
+	char oldname[MAX_PATH+1];
+	char newname[MAX_PATH+1];
+	int i;
+
 	for(i=backup_level;i;i--) {
-		newname[x]=(i-1)+'0';
+		sprintf(newname,"%s.%d",fname,i-1);
 		if(i==backup_level)
 			remove(newname);
 		if(i==1) {
-			rename(org,newname);
-			continue; }
-		old[x]=(i-2)+'0';
-		rename(old,newname); }
+			if(ren == TRUE)
+				rename(fname,newname);
+			else
+				fcopy(fname,newname);
+			continue; 
+		}
+		sprintf(oldname,"%s.%d",fname,i-2);
+		rename(oldname,newname); 
+	}
 }
 
 /****************************************************************************/
@@ -122,7 +149,7 @@ BOOL DLLCALL write_node_cfg(scfg_t* cfg, int backup_level)
 	prep_dir(cfg->ctrl_dir,str);
 	md(str);
 	strcat(str,"node.cnf");
-	backup(str, backup_level);
+	backup(str, backup_level, TRUE);
 
 	if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1
 		|| (stream=fdopen(file,"wb"))==NULL) {
@@ -215,7 +242,7 @@ BOOL DLLCALL write_main_cfg(scfg_t* cfg, int backup_level)
 
 	upop("Writing MAIN.CNF...");
 	sprintf(str,"%smain.cnf",cfg->ctrl_dir);
-	backup(str, backup_level);
+	backup(str, backup_level, TRUE);
 
 	if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1
 		|| (stream=fdopen(file,"wb"))==NULL) {
@@ -368,7 +395,7 @@ BOOL DLLCALL write_msgs_cfg(scfg_t* cfg, int backup_level)
 
 	upop("Writing MSGS.CNF...");
 	sprintf(str,"%smsgs.cnf",cfg->ctrl_dir);
-	backup(str, backup_level);
+	backup(str, backup_level, TRUE);
 
 	if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1
 		|| (stream=fdopen(file,"wb"))==NULL) {
@@ -641,7 +668,7 @@ BOOL DLLCALL write_file_cfg(scfg_t* cfg, int backup_level)
 
 	upop("Writing FILE.CNF...");
 	sprintf(str,"%sfile.cnf",cfg->ctrl_dir);
-	backup(str, backup_level);
+	backup(str, backup_level, TRUE);
 
 	if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1
 		|| (stream=fdopen(file,"wb"))==NULL) {
@@ -848,7 +875,7 @@ BOOL DLLCALL write_chat_cfg(scfg_t* cfg, int backup_level)
 
 	upop("Writing CHAT.CNF...");
 	sprintf(str,"%schat.cnf",cfg->ctrl_dir);
-	backup(str, backup_level);
+	backup(str, backup_level, TRUE);
 
 	if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1
 		|| (stream=fdopen(file,"wb"))==NULL) {
@@ -924,7 +951,7 @@ BOOL DLLCALL write_xtrn_cfg(scfg_t* cfg, int backup_level)
 
 	upop("Writing XTRN.CNF...");
 	sprintf(str,"%sxtrn.cnf",cfg->ctrl_dir);
-	backup(str, backup_level);
+	backup(str, backup_level, TRUE);
 
 	if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1
 		|| (stream=fdopen(file,"wb"))==NULL) {
