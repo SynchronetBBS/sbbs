@@ -1557,6 +1557,8 @@ static void smtp_thread(void* arg)
 		}
 	}
 
+	srand(time(NULL));	/* Seed random number generator */
+	xp_random(10);		/* Throw away first number */
 	sprintf(session_id,"%d.%lx.%x",socket,clock()&0xffff,xp_random(0x10000));
 
 	sprintf(rcptlst_fname,"%sSMTP.%s.lst", scfg.data_dir, session_id);
