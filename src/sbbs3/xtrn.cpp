@@ -44,9 +44,11 @@
 #ifdef __unix__
 	#include <sys/wait.h>	// WEXITSTATUS
 
-#ifdef __FreeBSD__
+#if defined(__FreeBSD__)
 	#include <libutil.h>	// forkpty()
-#else
+#elif defined(__OpenBSD__)
+	#include <util.h>
+#elif defined(__linux__)
 	#include <pty.h>
 #endif
 	#include <termios.h>

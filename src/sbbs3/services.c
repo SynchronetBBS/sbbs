@@ -46,6 +46,9 @@
 
 #endif
 
+#ifdef __unix__
+	#include <sys/param.h>	/* BSD? */
+#endif
 
 /* ANSI C Library headers */
 #include <stdio.h>
@@ -1319,7 +1322,7 @@ void DLLCALL services_thread(void* arg)
 					close_socket(socket);
 					continue;
 				}
-			   #ifdef __FreeBSD__
+			   #ifdef BSD
 				if(setsockopt(socket,SOL_SOCKET,SO_REUSEPORT
 					,(char*)&optval,sizeof(optval))!=0) {
 					lprintf("%04d !ERROR %d setting %s socket option"
@@ -1502,7 +1505,7 @@ void DLLCALL services_thread(void* arg)
 						close_socket(client_socket);
 						continue;
 					}
-				   #ifdef __FreeBSD__
+				   #ifdef BSD
 					if(setsockopt(client_socket,SOL_SOCKET,SO_REUSEPORT
 						,(char*)&optval,sizeof(optval))!=0) {
 						FREE_AND_NULL(udp_buf);
