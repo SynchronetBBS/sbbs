@@ -76,7 +76,6 @@ int try_x_init(int mode)
 		cio_api.setcursortype=x_setcursortype;
 		cio_api.getch=x_getch;
 		cio_api.getche=x_getche;
-		cio_api.beep=x_beep;
 		cio_api.textmode=x_textmode;
 		return(1);
 	}
@@ -102,7 +101,6 @@ int try_curses_init(int mode)
 		cio_api.setcursortype=curs_setcursortype;
 		cio_api.getch=curs_getch;
 		cio_api.getche=curs_getche;
-		cio_api.beep=beep;
 		cio_api.textmode=curs_textmode;
 		return(1);
 	}
@@ -128,7 +126,6 @@ int try_ansi_init(int mode)
 		cio_api.setcursortype=ansi_setcursortype;
 		cio_api.getch=ansi_getch;
 		cio_api.getche=ansi_getche;
-		cio_api.beep=ansi_beep;
 		cio_api.textmode=ansi_textmode;
 		return(1);
 	}
@@ -139,6 +136,7 @@ int try_ansi_init(int mode)
 #ifdef _WIN32
 int try_conio_init(int mode)
 {
+	if(mode==CIOLIB_MODE_AUTO);	/* Shut up stupid warning */
 	/* This should test for something or other */
 	if(isatty(fileno(stdout))) {
 		cio_api.mode=CIOLIB_CONIO_MODE;
@@ -295,17 +293,13 @@ char *ciolib_cgets(char *str)
 	while((ch=ciolib_getche())!='\n') {
 		switch(ch) {
 			case 0:	/* Skip extended keys */
-				ch=ciolib_getche();
+				ciolib_getche();
 				break;
-			case '\n':
-				str[len+2]=0;
-				*((unsigned char *)(str+1))=(unsigned char)len;
-				return(&str[2]);
 			case '\r':	/* Skip \r (ToDo: Should this be treeated as a \n? */
 				break;
 			case '\b':
 				if(len==0) {
-					cio_api.beep();
+					putch(7);
 					break;
 				}
 				ciolib_putch('\b');
@@ -321,6 +315,9 @@ char *ciolib_cgets(char *str)
 				break;
 		}
 	}
+	str[len+2]=0;
+	*((unsigned char *)(str+1))=(unsigned char)len;
+	return(&str[2]);
 }
 
 int ciolib_cscanf (char *format , ...)
@@ -347,31 +344,31 @@ char *ciolib_getpass(const char *prompt)
 
 	if(!initialized)
 		initciolib(CIOLIB_AUTO_MODE);
+	cputs(prompt);
 	while((ch=getch())!='\n') {
 		switch(ch) {
 			case 0:	/* Skip extended keys */
-				ch=getch();
+				getch();
 				break;
-			case '\n':
-				pass[len]=0;
-				return(pass);
 			case '\r':	/* Skip \r (ToDo: Should this be treeated as a \n? */
 				break;
 			case '\b':
 				if(len==0) {
-					cio_api.beep();
+					putch(7);
 					break;
 				}
 				len--;
 				break;
 			default:
 				if(len==8)
-					cio_api.beep();
+					putch(7);
 				else
 					pass[len++]=ch;
 				break;
 		}
 	}
+	pass[len]=0;
+	return(pass);
 }
 
 void ciolib_gettextinfo(struct text_info *info)
