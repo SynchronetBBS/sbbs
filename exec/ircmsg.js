@@ -43,8 +43,17 @@ if (!my_server) {
         log("!Couldn't connect to " + server);
         exit();
 }
-while(my_server.poll(5) && (response=my_server.recvline()))
-	log(response);
+
+var done=0;
+while(!done) {
+	while(!done && (response=my_server.recvline())) {
+		var resp=response.split(/\s+/);
+log(resp[1]);
+		if(resp[1]=='433' || resp[1]=='422' || resp[1]=='376')
+			done=1;
+		log(response);
+	}
+}
 
 if(join) {
 	log("Joining: " + channel);
@@ -52,12 +61,13 @@ if(join) {
 	while(my_server.poll(5) && (response=my_server.recvline()))
 		log(response);
 }
+
 if(msg)
 	send(msg);
 else while(msg=readln())
 	send(msg);
 
-while(my_server.poll(5) && (response=my_server.recvline()))
+while(my_server.poll(0) && (response=my_server.recvline()))
 	log(response);
 
 IRC_quit(my_server);
