@@ -2676,6 +2676,9 @@ void http_session_thread(void* arg)
 	thread_up(TRUE /* setuid */);
 	session.finished=FALSE;
 
+	srand(time(NULL));	/* Seed random number generator */
+	sbbs_random(10);	/* Throw away first number */
+
 	if(startup->options&BBS_OPT_NO_HOST_LOOKUP)
 		host=NULL;
 	else
@@ -3046,9 +3049,6 @@ void DLLCALL web_server(void* arg)
 		DESCRIBE_COMPILER(compiler);
 
 		lprintf(LOG_INFO,"Compiled %s %s with %s", __DATE__, __TIME__, compiler);
-
-		srand(time(NULL));	/* Seed random number generator */
-		sbbs_random(10);	/* Throw away first number */
 
 		if(!winsock_startup()) {
 			cleanup(1);
