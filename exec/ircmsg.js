@@ -84,7 +84,7 @@ if(join) {
 
 if(msg)
 	send(msg);
-else while(msg=readln())	/* read from stdin */
+else while((msg=readln())!=undefined)	/* read from stdin */
 	send(msg);
 
 while(my_server.poll(0) && (response=my_server.recvline()))
@@ -96,23 +96,16 @@ exit();
 
 function send(msg)
 {
-	sendit=true;
-
 	if(msg==undefined || msg.search(/^[\r\n]*$/)!=-1) {
 		log("Not sending blank message");
-		sendit=false;
+		return;
 	}
-	for(i in exclude) {
-		if(msg.search(exclude[i])>=0) {
-			log("Excluding: " + msg);
-			sendit=false;
-		}
-	}
-	if(sendit) {
-		log("Sending: " + msg);
-		if(!my_server.send("PRIVMSG "+channel+" :"+expand_tabs(msg)+"\r\n"))
-			alert("send failure");
-	}
+	for(i in exclude)
+		if(msg.search(exclude[i])>=0)
+			return;
+	log("Sending: " + msg);
+	if(!my_server.send("PRIVMSG "+channel+" :"+expand_tabs(msg)+"\r\n"))
+		alert("send failure");
 }
 
 function expand_tabs(msg)
