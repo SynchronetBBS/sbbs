@@ -2022,7 +2022,7 @@ int SMBCALL smb_tzutc(short zone)
 {
 	int tz;
 
-	if(zone<=1000 && zone>=-1000)	/* 720 is 12 hours */
+	if(OTHER_ZONE(zone))
 		return(zone);
 
 	tz=zone&0xfff;
