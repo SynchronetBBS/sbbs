@@ -269,3 +269,14 @@ void x_settitle(const char *title)
 {
 	x_win_title(title);
 }
+
+void x_copytext(const char *text, size_t buflen)
+{
+	return;
+}
+
+char *x_getcliptext(void)
+{
+	return(NULL);
+}
+

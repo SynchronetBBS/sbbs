@@ -645,3 +645,47 @@ void win32_settitle(const char *title)
 {
 	SetConsoleTitle(title);
 }
+
+void win32_copytext(const char *text, size_t buflen)
+{
+	HGLOBAL	clipbuf;
+	LPTSTR	clip;
+
+	if(!OpenClipboard(NULL))
+		return;
+	EmptyClipboard();
+	clipbuf=GlobalAlloc(GMEM_MOVEABLE, buflen+1);
+	if(clipbuf==NULL) {
+		CloseClipboard();
+		return;
+	}
+	clip=GlobalLock(clipbuf);
+	memcpy(clip, text, buflen);
+	clip[buflen]=0;
+	GlobalUnlock(clipbuf);
+	SetClipboardData(CF_OEMTEXT, clipbuf);
+	CloseClipboard();
+}
+
+char *win32_getcliptext(void)
+{
+	HGLOBAL	clipbuf;
+	LPTSTR	clip;
+	char *ret;
+
+	if(!IsClipboardFormatAvailable(CF_OEMTEXT))
+		return(NULL);
+	if(!OpenClipboard(NULL))
+		return(NULL);
+	clipbuf=GetClipboardData(CF_OEMTEXT);
+	if(clipbuf!=NULL) {
+		clip=GlobalLock(clipbuf);
+		ret=(char *)malloc(strlen(clip)+1);
+		if(ret != NULL)
+			strcpy(ret, clip);
+		GlobalUnlock(clipbuf);
+	}
+	CloseClipboard();
+	
+	return(ret);
+}

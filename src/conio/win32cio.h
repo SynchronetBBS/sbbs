@@ -64,6 +64,8 @@ int	win32_wherex(void);
 int	win32_wherey(void);
 void	win32_settitle(const char *title);
 int	win32_initciolib(long inmode);
+void win32_copytext(const char *text, size_t buflen);
+char *win32_getcliptext(void);
 
 #ifdef __cplusplus
 }

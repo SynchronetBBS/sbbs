@@ -94,6 +94,8 @@ void ciolib_window(int sx, int sy, int ex, int ey);
 void ciolib_delline(void);
 void ciolib_insline(void);
 char *ciolib_getpass(const char *prompt);
+void ciolib_copytext(const char *text, size_t buflen);
+char *ciolib_getcliptext(void);
 
 #define CIOLIB_INIT()		{ if(!initialized) initciolib(CIOLIB_MODE_AUTO); }
 
@@ -121,6 +123,8 @@ int try_x_init(int mode)
 		cio_api.showmouse=NULL;
 		cio_api.hidemouse=NULL;
 		cio_api.settitle=x_settitle;
+		cio_api.copytext=x_copytext;
+		cio_api.getcliptext=x_getcliptext;
 		return(1);
 	}
 	return(0);
@@ -148,6 +152,8 @@ int try_curses_init(int mode)
 		cio_api.showmouse=curs_showmouse;
 		cio_api.hidemouse=curs_hidemouse;
 		cio_api.settitle=NULL;
+		cio_api.copytext=NULL;
+		cio_api.getcliptext=NULL;
 		return(1);
 	}
 	return(0);
@@ -176,6 +182,8 @@ int try_ansi_init(int mode)
 		cio_api.showmouse=NULL;
 		cio_api.hidemouse=NULL;
 		cio_api.settitle=NULL;
+		cio_api.copytext=NULL;
+		cio_api.getcliptext=NULL;
 		return(1);
 	}
 	return(0);
@@ -207,6 +215,8 @@ int try_conio_init(int mode)
 		cio_api.showmouse=win32_showmouse;
 		cio_api.hidemouse=win32_hidemouse;
 		cio_api.settitle=win32_settitle;
+		cio_api.copytext=win32_copytext;
+		cio_api.getcliptext=win32_getcliptext;
 		return(1);
 	}
 	return(0);
@@ -835,4 +845,22 @@ void ciolib_settitle(const char *title) {
 
 	if(cio_api.settitle!=NULL)
 		cio_api.settitle(title);
+}
+
+void ciolib_copytext(const char *text, size_t buflen)
+{
+	CIOLIB_INIT();
+
+	if(cio_api.copytext!=NULL)
+		cio_api.copytext(text,buflen);
+}
+
+char *ciolib_getcliptext(void)
+{
+	CIOLIB_INIT();
+
+	if(cio_api.getcliptext!=NULL)
+		return(cio_api.getcliptext());
+	else
+		return(NULL);
 }
