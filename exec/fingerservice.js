@@ -85,7 +85,7 @@ function send_file(fname)
 function test_port(port)
 {
 	sock = new Socket();
-	success = sock.connect("localhost",port);
+	success = sock.connect(system.host_name,port);
 	sock.close();
 
 	return(success);
