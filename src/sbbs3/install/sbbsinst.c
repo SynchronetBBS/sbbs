@@ -170,15 +170,14 @@ if(uifc.scrn(str)) {
 
 while(1) {
 	i=0;
-	sprintf(mopt[i++],"%-33.33s","Install");
 	sprintf(mopt[i++],"%-33.33s%s","Install Path",params.install_path);
 	sprintf(mopt[i++],"%-33.33s%s","Compiler",params.usebcc?"BCC":"GCC");
 	sprintf(mopt[i++],"%-33.33s%s","Compiler Flags",params.cflags);
 	sprintf(mopt[i++],"%-33.33s%s","Release Version",params.release?"Yes":"No");
 	sprintf(mopt[i++],"%-33.33s%s","Symlink Binaries",params.symlink?"Yes":"No");
 	sprintf(mopt[i++],"%-33.33s%s","Pull sources from CVS",params.cvs?"Yes":"No");
-	if(params.cvs)
-		sprintf(mopt[i++],"%-33.33s%s","CVS Tag",params.cvstag);
+	sprintf(mopt[i++],"%-33.33s%s","CVS Tag (e.g. sbbs310k)",params.cvstag);
+	sprintf(mopt[i++],"%-33.33s","Start Installation");
 	mopt[i][0]=0;
 
 	uifc.helpbuf=	"Main Installation Menu:\n"
@@ -186,11 +185,6 @@ while(1) {
 	switch(uifc.list(WIN_ORG|WIN_MID|WIN_ESC|WIN_ACT,0,0,60,&main_dflt,0
 		,"Configure",mopt)) {
 		case 0:
-			write_makefile();
-			install_sbbs();
-			bail(0);
-			break;
-		case 1:
 			uifc.helpbuf=	"Install Path\n"
 							"\n"
 							"\nPath to install the Synchronet BBS system into."
@@ -201,7 +195,7 @@ while(1) {
 							"\n	/home/bbs/sbbs";
 			uifc.input(WIN_MID,0,0,"Install Path",params.install_path,40,K_EDIT);
 			break;
-		case 2:
+		case 1:
 			strcpy(opt[0],"BCC");
 			strcpy(opt[1],"GCC");
 			opt[2][0]=0;
@@ -216,12 +210,12 @@ while(1) {
 				params.usebcc=FALSE;
 			i=0;
 			break;
-		case 3:
+		case 2:
 			uifc.helpbuf=	"Compiler Flags\n"
 							"\nToDo: Add help.";
 			uifc.input(WIN_MID,0,0,"Additional Compiler Flags",params.cflags,40,K_EDIT);
 			break;
-		case 4:
+		case 3:
 			strcpy(opt[0],"Yes");
 			strcpy(opt[1],"No");
 			opt[2][0]=0;
@@ -236,7 +230,7 @@ while(1) {
 				params.release=FALSE;
 			i=0;
 			break;
-		case 5:
+		case 4:
 			strcpy(opt[0],"Yes");
 			strcpy(opt[1],"No");
 			opt[2][0]=0;
@@ -253,7 +247,7 @@ while(1) {
 				params.symlink=FALSE;
 			i=0;
 			break;
-		case 6:
+		case 5:
 			strcpy(opt[0],"Yes");
 			strcpy(opt[1],"No");
 			opt[2][0]=0;
@@ -271,11 +265,16 @@ while(1) {
 				params.cvs=FALSE;
 			i=0;
 			break;
-		case 7:
+		case 6:
 			uifc.helpbuf=	"CVS Tag:\n"
 							"\n"
 							"\nCVS tag to use when updating sources.  Enter \"HEAD\" to use current sources.";
 			uifc.input(WIN_MID,0,0,"CVS Tag",params.cvstag,40,K_EDIT);
+			break;
+		case 7:
+			write_makefile();
+			install_sbbs();
+			bail(0);
 			break;
 		case -1:
 			i=0;
