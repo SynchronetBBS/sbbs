@@ -2012,7 +2012,7 @@ static void smtp_thread(void* arg)
 				lprintf("%04d !SMTP REFUSED MAIL from blacklisted server"
 					,socket);
 				sprintf(str,"Listed on %s as %s", dnsbl, inet_ntoa(dnsbl_result));
-				spamlog(&scfg, "SMTP", "MAIL REFUSED", str, host_name, host_ip, NULL);
+				spamlog(&scfg, "SMTP", "MAIL REFUSED", str, host_name, host_ip, rcpt_addr);
 				sockprintf(socket
 					,"550 Mail from %s refused due to listing at %s"
 					,host_ip, dnsbl);
