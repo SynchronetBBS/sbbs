@@ -1,10 +1,10 @@
 /* SBBSECHO.H */
 
-/* Developed 1990-1997 by Rob Swindell; PO Box 501, Yorba Linda, CA 92885 */
+/* Developed 1990-2000 by Rob Swindell; PO Box 501, Yorba Linda, CA 92885 */
 
 /* Portions written by Allen Christiansen 1994-1996 						*/
 
-#define SBBSECHO_VER "1.25"
+#define SBBSECHO_VER "1.29"
 
 #define IMPORT_NETMAIL  (1L<<0)
 #define IMPORT_PACKETS	(1L<<1)
