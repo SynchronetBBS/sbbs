@@ -341,6 +341,13 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 	if(JS_GetProperty(cx, hdr, "when_imported_zone", &val) && JSVAL_IS_INT(val)) 
 		msg->hdr.when_imported.zone=(short)JSVAL_TO_INT(val);
 
+	if(JS_GetProperty(cx, hdr, "thread_orig", &val) && JSVAL_IS_INT(val)) 
+		msg->hdr.thread_orig=JSVAL_TO_INT(val);
+	if(JS_GetProperty(cx, hdr, "thread_next", &val) && JSVAL_IS_INT(val)) 
+		msg->hdr.thread_next=JSVAL_TO_INT(val);
+	if(JS_GetProperty(cx, hdr, "thread_first", &val) && JSVAL_IS_INT(val)) 
+		msg->hdr.thread_first=JSVAL_TO_INT(val);
+
 	if(JS_GetProperty(cx, hdr, "field_list", &val) && JSVAL_IS_OBJECT(val)) {
 		array=JSVAL_TO_OBJECT(val);
 		len=0;
