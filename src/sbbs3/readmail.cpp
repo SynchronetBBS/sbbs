@@ -46,6 +46,7 @@ void sbbs_t::readmail(uint usernumber, int which)
 			,*p,*tp,*sp,ch;
 	char 	tmp[512];
 	int		i,j;
+	int		error;
 	int		mismatches=0,act;
 	ulong 	msgs,curmsg;
     long    length,l,lm_mode;
@@ -257,10 +258,10 @@ void sbbs_t::readmail(uint usernumber, int which)
 										&& chk_ar(cfg.prot[i]->ar,&useron))
 										break;
 								if(i<cfg.total_prots) {
-									j=protocol(cmdstr(cfg.prot[i]->dlcmd,str2,nulstr,NULL),false);
+									error=protocol(cmdstr(cfg.prot[i]->dlcmd,str2,nulstr,NULL),false);
 									if((cfg.prot[i]->misc&PROT_DSZLOG
 										&& checkprotlog(&fd))
-										|| (!(cfg.prot[i]->misc&PROT_DSZLOG) && !j)) {
+										|| (!(cfg.prot[i]->misc&PROT_DSZLOG) && !error)) {
 											if(which==MAIL_YOUR)
 												remove(str2);
 											logon_dlb+=length;	/* Update stats */

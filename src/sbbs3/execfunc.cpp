@@ -634,6 +634,7 @@ int sbbs_t::exec_function(csi_t *csi)
 
 		case CS_FILE_SEND:
 
+			csi->logic=LOGIC_FALSE;
 			menu("dlprot");
 			mnemonics(text[ProtocolOrQuit]);
 			strcpy(str,"Q");
@@ -648,15 +649,19 @@ int sbbs_t::exec_function(csi_t *csi)
 				if(cfg.prot[i]->mnemonic==ch && chk_ar(cfg.prot[i]->ar,&useron))
 					break;
 			if(i<cfg.total_prots) {
-				protocol(cmdstr(cfg.prot[i]->dlcmd,csi->str,csi->str,str),false);
-				autohangup(); }
+				if(protocol(cmdstr(cfg.prot[i]->dlcmd,csi->str,csi->str,str),false)==0)
+					csi->logic=LOGIC_TRUE;
+				autohangup(); 
+			}
 			return(0);
 
 		case CS_FILE_PUT:
+			csi->logic=LOGIC_FALSE;
 			if(!chksyspass())
 				return(0);
 
 		case CS_FILE_RECEIVE:
+			csi->logic=LOGIC_FALSE;
 			menu("ulprot");
 			mnemonics(text[ProtocolOrQuit]);
 			strcpy(str,"Q");
@@ -672,8 +677,10 @@ int sbbs_t::exec_function(csi_t *csi)
 				if(cfg.prot[i]->mnemonic==ch && chk_ar(cfg.prot[i]->ar,&useron))
 					break;
 			if(i<cfg.total_prots) {
-				protocol(cmdstr(cfg.prot[i]->ulcmd,csi->str,csi->str,str),true);
-				autohangup(); }
+				if(protocol(cmdstr(cfg.prot[i]->ulcmd,csi->str,csi->str,str),true)==0)
+					csi->logic=LOGIC_TRUE;
+				autohangup(); 
+			}
 			return(0);
 
 		case CS_FILE_UPLOAD_BULK:

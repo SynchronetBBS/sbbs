@@ -383,8 +383,9 @@ void sbbs_t::qwk_sec()
 	char	str[256],tmp2[256],ch,bi=0
 			,*AttemptedToDownloadQWKpacket="Attempted to download QWK packet";
 	char 	tmp[512];
+	int		error;
 	int 	s;
-	uint	i,j,k;
+	uint	i,k;
 	ulong	msgcnt;
 	time_t	*sav_ptr;
 	file_t	fd;
@@ -575,7 +576,7 @@ void sbbs_t::qwk_sec()
 				padfname(tmp2,fd.name);
 				sprintf(str,"%sBATCHDN.LST",cfg.node_dir);
 				sprintf(tmp2,"%sBATCHUP.LST",cfg.node_dir);
-				j=protocol(cmdstr(cfg.prot[i]->bicmd,str,tmp2,NULL),true);
+				error=protocol(cmdstr(cfg.prot[i]->bicmd,str,tmp2,NULL),true);
 				batdn_total=batup_total=0;
 				if(cfg.prot[i]->misc&PROT_DSZLOG) {
 					if(!checkprotlog(&fd)) {
@@ -587,7 +588,7 @@ void sbbs_t::qwk_sec()
 						qwk_success(msgcnt,1,0);
 						for(i=0;i<cfg.total_subs;i++)
 							sav_ptr[i]=sub_ptr[i]; } }
-				else if(j) {
+				else if(error) {
 					logline("D!",AttemptedToDownloadQWKpacket);
 					last_ns_time=ns_time;
 					for(i=0;i<cfg.total_subs;i++)
@@ -672,7 +673,7 @@ void sbbs_t::qwk_sec()
 				sprintf(str,"%s%s.qwk",cfg.temp_dir,cfg.sys_id);
 				sprintf(tmp2,"%s.qwk",cfg.sys_id);
 				padfname(tmp2,fd.name);
-				j=protocol(cmdstr(cfg.prot[i]->dlcmd,str,nulstr,NULL),false);
+				error=protocol(cmdstr(cfg.prot[i]->dlcmd,str,nulstr,NULL),false);
 				if(cfg.prot[i]->misc&PROT_DSZLOG) {
 					if(!checkprotlog(&fd)) {
 						last_ns_time=ns_time;
@@ -682,7 +683,7 @@ void sbbs_t::qwk_sec()
 						qwk_success(msgcnt,0,0);
 						for(i=0;i<cfg.total_subs;i++)
 							sav_ptr[i]=sub_ptr[i]; } }
-				else if(j) {
+				else if(error) {
 					logline("D!",AttemptedToDownloadQWKpacket);
 					last_ns_time=ns_time;
 					for(i=0;i<cfg.total_subs;i++)

@@ -825,6 +825,7 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 	char 	tmp[512];
 	uchar	*ixbbuf,*usrxfrbuf=NULL,*p;
 	int		file;
+	int		error;
 	int		found=0;
     uint	i,j;
 	long	usrxfrlen;
@@ -1247,7 +1248,7 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 						thisnode.aux=(tm->tm_hour*60)+tm->tm_min;
 						putnodedat(cfg.node_num,&thisnode); /* calculate ETA */
 						start=time(NULL);
-						j=protocol(cmdstr(cfg.prot[i]->dlcmd,path,nulstr,NULL),false);
+						error=protocol(cmdstr(cfg.prot[i]->dlcmd,path,nulstr,NULL),false);
 						end=time(NULL);
 						if(cfg.dir[f.dir]->misc&DIR_TFREE)
 							starttime+=end-start;
@@ -1257,7 +1258,7 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 							else
 								notdownloaded(f.size,start,end); }
 						else {
-							if(!j)
+							if(!error)
 								downloadfile(&f);
 							else {
 								bprintf(text[FileNotSent],f.name);
