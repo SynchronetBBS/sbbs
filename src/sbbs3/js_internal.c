@@ -130,9 +130,11 @@ static JSBool js_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 		case PROP_YIELD_INTERVAL:
 			JS_ValueToInt32(cx, *vp, (int32*)&branch->yield_interval);
 			break;
+#ifdef jscntxt_h___
 		case PROP_MAXBYTES:
 			JS_ValueToInt32(cx, *vp, (int32*)&cx->runtime->gcMaxBytes);
 			break;
+#endif
 	}
 
 	return(JS_TRUE);
