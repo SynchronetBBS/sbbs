@@ -604,6 +604,31 @@ static int close_socket(SOCKET sock)
 	return(result);
 }
 
+void free_request(void* arg)
+{
+	http_session_t	session=*(http_session_t*)arg;	/* copies arg BEFORE it's freed */
+	linked_list	*p;
+
+	while(session.req.dynamic_heads != NULL)  {
+		FREE_AND_NULL(session.req.dynamic_heads->val);
+		p=session.req.dynamic_heads->next;
+		FREE_AND_NULL(session.req.dynamic_heads);
+		session.req.dynamic_heads=p;
+	}
+	while(session.req.cgi_env != NULL)  {
+		FREE_AND_NULL(session.req.cgi_env->val);
+		p=session.req.cgi_env->next;
+		FREE_AND_NULL(session.req.cgi_env);
+		session.req.cgi_env=p;
+	}
+	FREE_AND_NULL(session.req.post_data);
+	if(!session.req.keep_alive || session.socket==INVALID_SOCKET) {
+		close_socket(session.socket);
+		session.socket=INVALID_SOCKET;
+		session.finished=TRUE;
+	}
+}
+
 static void close_request(http_session_t * session)
 {
 	linked_list	*p;
@@ -856,16 +881,17 @@ static BOOL check_ars(http_session_t * session)
 	if(ar!=NULL && ar!=nular)
 		free(ar);
 
+	if(session->req.dynamic==IS_SSJS)  {
+		if(!js_CreateUserObjects(session->js_cx, session->js_glob, &scfg, &session->user
+			,NULL /* ftp index file */, NULL /* subscan */)) 
+			lprintf("%04d !JavaScript ERROR creating user objects",session->socket);
+	}
+
 	if(authorized)  {
 		if(session->req.dynamic==IS_CGI)  {
 			add_env(session,"AUTH_TYPE","Basic");
 			/* Should use real name if set to do so somewhere ToDo */
 			add_env(session,"REMOTE_USER",session->user.alias);
-		}
-		if(session->req.dynamic==IS_SSJS)  {
-			if(!js_CreateUserObjects(session->js_cx, session->js_glob, &scfg, &session->user
-				,NULL /* ftp index file */, NULL /* subscan */)) 
-				lprintf("%04d !JavaScript ERROR creating user objects",session->socket);
 		}
 
 		return(TRUE);
@@ -1444,6 +1470,7 @@ static BOOL check_request(http_session_t * session)
 	if(strnicmp(path,root_dir,strlen(root_dir))) {
 		session->req.keep_alive=FALSE;
 		send_error(session,"400 Bad Request");
+		lprintf("%04d !ERROR Request for %s is outside of web root %s",session->socket,path,root_dir);
 		return(FALSE);
 	}
 	if(stat(path,&sb)) {
