@@ -446,8 +446,10 @@ js_format(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 			if (!str)
 			    return JS_FALSE;
 			arglist[i-1]=JS_GetStringBytes(str);
-		} else
+		} else if(JSVAL_IS_INT(argv[i]))
 			arglist[i-1]=(char *)JSVAL_TO_INT(argv[i]);
+		else
+			arglist[i-1]=NULL;
 	}
 	
 	vsprintf(tmp,JS_GetStringBytes(fmt),(char*)arglist);
@@ -833,9 +835,11 @@ BOOL js_generate_index(JSContext* js_cx, JSObject* js_glob,
 					if(!alias_dir && !fexist(np))
 						continue;
 
-					if(alias_dir)
+					if(alias_dir) {
+						if(!chk_ar(&scfg,scfg.dir[dir]->ar,user))
+							continue;
 						sprintf(vpath,"/%s/%s",p,startup->html_index_file);
-					else
+					} else
 						strcpy(vpath,p);
 					js_add_file(js_cx
 						,alias_dir ? dir_array : file_array
@@ -894,11 +898,12 @@ BOOL js_generate_index(JSContext* js_cx, JSObject* js_glob,
 					);
 			}
 		} else if(dir<0) {
+			/* Directories */
 			for(i=0;i<scfg.total_dirs;i++) {
 				if(scfg.dir[i]->lib!=lib)
 					continue;
-				if(i!=scfg.sysop_dir && i!=scfg.upload_dir
-					&& !chk_ar(&scfg,scfg.dir[i]->ar,user))
+				if(/* i!=scfg.sysop_dir && i!=scfg.upload_dir && */
+					!chk_ar(&scfg,scfg.dir[i]->ar,user))
 					continue;
 				sprintf(vpath,"/%s/%s/%s"
 					,scfg.lib[scfg.dir[i]->lib]->sname
@@ -909,7 +914,9 @@ BOOL js_generate_index(JSContext* js_cx, JSObject* js_glob,
 					,scfg.dir[i]->sname			/* filename */
 					,scfg.dir[i]->lname			/* description */
 					,NULL						/* extdesc */
-					,0,0,0,0,0,0,0				/* unused */
+					,getfiles(&scfg,i)			/* size */
+					,0,0,0,0,0					/* unused */
+					,scfg.dir[i]->misc			/* misc */
 					,scfg.sys_id				/* uploader */
 					,vpath						/* link */
 					);
@@ -1336,6 +1343,7 @@ static void send_thread(void* arg)
 			xfer.user->dls=(ushort)adjustuserrec(&scfg, xfer.user->number,U_DLS,5,1);
 			xfer.user->dlb=adjustuserrec(&scfg, xfer.user->number,U_DLB,10,total);
 			if(xfer.dir>=0 && !(scfg.dir[xfer.dir]->misc&DIR_FREE) 
+				/* && !chk_ar(&scfg, scfg.dir[xfer.dir]->ex_ar, xfer.user) */
 				&& !(xfer.user->exempt&FLAG('D')))
 				subtract_cdt(&scfg, xfer.user, xfer.credits);
 		}
@@ -1862,6 +1870,19 @@ char* root_dir(char* path)
 	return(root);
 }
 
+char* vpath(int lib, int dir, char* str)
+{
+	strcpy(str,"/");
+	if(lib<0)
+		return(str);
+	strcat(str,scfg.lib[lib]->sname);
+	if(dir<0)
+		return(str);
+	strcat(str,"/");
+	strcat(str,scfg.dir[dir]->code);
+	return(str);
+}
+
 static void ctrl_thread(void* arg)
 {
 	char		buf[512];
@@ -1882,6 +1903,7 @@ static void ctrl_thread(void* arg)
 	char		path[MAX_PATH+1];
 	char		local_dir[MAX_PATH+1];
 	char		ren_from[MAX_PATH+1]="";
+	char		html_index_ext[MAX_PATH+1];
 	WORD		port;
 	ulong		ip_addr;
 	int			addr_len;
@@ -1938,8 +1960,10 @@ static void ctrl_thread(void* arg)
 	struct tm *	tm_p;
 	struct tm 	cur_tm;
 #ifdef JAVASCRIPT
+	jsval		js_val;
 	JSContext*	js_cx;
 	JSObject*	js_glob;
+	JSObject*	js_user;
 #endif
 
 	thread_up();
@@ -2244,6 +2268,13 @@ static void ctrl_thread(void* arg)
 				}
 				fclose(fp);
 			}
+
+#ifdef JAVASCRIPT
+			if((js_user=CreateUserObject(&scfg, js_cx, js_glob, "user", &user))==NULL) {
+				lprintf("%04d !JavaScript ERROR creating user object",sock);
+			}
+#endif
+
 			if(sysop)
 				sockprintf(sock,"230-Sysop access granted.");
 			sockprintf(sock,"230-%s logged in.",user.alias);
@@ -2260,6 +2291,7 @@ static void ctrl_thread(void* arg)
 			putuserrec(&scfg,user.number,U_MODEM,LEN_MODEM,"FTP");
 			putuserrec(&scfg,user.number,U_COMP,LEN_COMP,host_name);
 			putuserrec(&scfg,user.number,U_NOTE,LEN_NOTE,host_ip);
+			getuserdat(&scfg, &user);	/* make user current */
 
 			continue;
 		}
@@ -3094,6 +3126,8 @@ static void ctrl_thread(void* arg)
 				p=tp+1;
 			}
 
+			sprintf(html_index_ext,"%s?",startup->html_index_file);
+
 			sprintf(str,"%s.qwk",scfg.sys_id);
 			if(lib<0 && startup->options&FTP_OPT_ALLOW_QWK 
 				&& !stricmp(p,str) && !delecmd) {
@@ -3143,7 +3177,8 @@ static void ctrl_thread(void* arg)
 					continue;
 				}
 				if(!getsize && !getdate)
-					lprintf("%04d %s downloading index",sock,user.alias);
+					lprintf("%04d %s downloading index for %s"
+						,sock,user.alias,vpath(lib,dir,str));
 				success=TRUE;
 				credits=FALSE;
 				tmpfile=TRUE;
@@ -3236,8 +3271,16 @@ static void ctrl_thread(void* arg)
 				fclose(fp);
 			/* HTML Index File */
 			} else if(startup->options&FTP_OPT_HTML_INDEX_FILE 
-				&& !stricmp(p,startup->html_index_file)
+				&& (!stricmp(p,startup->html_index_file) 
+				|| !strnicmp(p,html_index_ext,strlen(html_index_ext)))
 				&& !delecmd) {
+				if(!strnicmp(p,html_index_ext,strlen(html_index_ext))) {
+					p+=strlen(html_index_ext);
+					if(!stricmp(p,"ext=on"))
+						user.misc|=EXTDESC;
+					else if(!stricmp(p,"ext=off"))
+						user.misc&=~EXTDESC;
+				}
 				sprintf(fname,"%sftp%d.tx", scfg.data_dir, sock);
 				if((fp=fopen(fname,"w+b"))==NULL) {
 					lprintf("%04d !ERROR %d opening %s",sock,errno,fname);
@@ -3246,12 +3289,16 @@ static void ctrl_thread(void* arg)
 					continue;
 				}
 				if(!getsize && !getdate)
-					lprintf("%04d %s downloading HTML index",sock,user.alias);
+					lprintf("%04d %s downloading HTML index for %s"
+						,sock,user.alias,vpath(lib,dir,str));
 				success=TRUE;
 				credits=FALSE;
 				tmpfile=TRUE;
 				delfile=TRUE;
-#ifdef JAVASCRIPT				
+#ifdef JAVASCRIPT
+				js_val=INT_TO_JSVAL(timeleft);
+				if(!JS_SetProperty(js_cx, js_glob, "time_left", &js_val))
+					lprintf("%04d !JavaScript ERROR setting user.time_left",sock);
 				success=js_generate_index(js_cx, js_glob, sock, fp, lib, dir, &user);
 #endif
 				fclose(fp);
@@ -3303,7 +3350,8 @@ static void ctrl_thread(void* arg)
 
 				/* Verify credits */
 				if(!getsize && !getdate && !delecmd
-					&& !(scfg.dir[dir]->misc&DIR_FREE) && !(user.exempt&FLAG('D'))) {
+					&& !(scfg.dir[dir]->misc&DIR_FREE) 
+					&& !(user.exempt&FLAG('D'))) {
 					if(filedat)
 						getfiledat(&scfg,&f);
 					else
