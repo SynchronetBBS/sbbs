@@ -33,10 +33,10 @@ while(request.charAt(0)==' ')	// skip prepended spaces
 
 if(request=="") {	/* no specific user requested, give list of active users */
 	log("client requested active user list");
-	write(format("%-25.25s %-40.40s Node Age Sex\r\n"
-		,"Name","Action"));
-	var dashes="---------------------------------------";
-	write(format("%-25.25s %-40.40s %.4s %.3s %.3s\r\n"
+	write(format("%-25.25s %-40.40s Age Sex Node\r\n"
+		,"User","Action"));
+	var dashes="----------------------------------------";
+	write(format("%-25.25s %-40.40s %.3s %.3s %.4s\r\n"
 		,dashes,dashes,dashes,dashes,dashes));
 	var user = new User(1);
 	for(n=0;n<system.node_list.length;n++) {
@@ -45,12 +45,13 @@ if(request=="") {	/* no specific user requested, give list of active users */
 		user.number=system.node_list[n].useron;
 		var action=format(NodeAction[system.node_list[n].action]
 			,system.node_list[n].aux);
-		write(format("%-25.25s %-40.40s %4d %3d %3s\r\n"
+		write(format("%-25.25s %-40.40s %3d %3s %4d\r\n"
 			,user.alias
 			,action
-			,n+1
 			,user.age
-			,user.gender));
+			,user.gender
+			,n+1
+			));
 	}
 	exit();
 }
@@ -79,7 +80,7 @@ write(format("Login name: %-30s In real life: %s\r\n"
 	  ,user.alias,user.name));
 write(format("Shell: %s\r\n",user.command_shell));
 write(format("Last login %s via %s from %s [%s]\r\n"
-	  ,system.timestr()
+	  ,system.timestr(user.stats.laston_date)
 	  ,user.connection
 	  ,user.host_name
 	  ,user.ip_address));
