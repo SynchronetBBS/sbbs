@@ -172,7 +172,7 @@ $(FIXSMB): fixsmb.c \
 	$(LIBODIR)\str_util.obj \
 	$(LIBODIR)\dirwrap.obj
 	@echo Creating $@
-	$(QUIET)$(CC) $(CFLAGS) -n$(EXEODIR) $**
+	$(QUIET)$(CC) $(CFLAGS) -n$(EXEODIR) $** $(WILDARGS)
 
 # CHKSMB Utility
 $(CHKSMB): chksmb.c \

@@ -42,7 +42,9 @@
 
 #include "sbbs.h"
 
-smb_t smb;
+smb_t	smb;
+BOOL	renumber=FALSE;
+char*	usage="usage: fixsmb [-renumber] <smb_file> [[smb_file] [...]]\n";
 
 int compare_index(const idxrec_t* idx1, const idxrec_t* idx2)
 {
@@ -88,45 +90,27 @@ void sort_index(smb_t* smb)
 void unlock_msgbase(void)
 {
 	int i;
-	if((i=smb_unlock(&smb))!=0)
+	if(smb_islocked(&smb) && (i=smb_unlock(&smb))!=0)
 		printf("smb_unlock returned %d: %s\n",i,smb.last_error);
 }
 
-char *usage="usage: fixsmb [-renumber] <smb_file>\n";
-
-int main(int argc, char **argv)
+int fixsmb(char* sub)
 {
 	char*		p;
 	char*		text;
 	char		str[MAX_PATH+1],c;
-	char		revision[16];
 	int 		i,w;
 	ulong		l,length,size,n;
-	BOOL		renumber=FALSE;
 	smbmsg_t	msg;
-
-	sscanf("$Revision$", "%*s %s", revision);
-
-	printf("\nFIXSMB v2.10-%s (rev %s) SMBLIB %s - Rebuild Synchronet Message Base\n\n"
-		,PLATFORM_DESC,revision,smb_lib_ver());
 
 	memset(&smb,0,sizeof(smb));
 
-	smb.file[0]=0;
-	for(i=1;i<argc;i++) {
-		if(!stricmp(argv[i],"-renumber"))
-			renumber=TRUE;
-		else
-			SAFECOPY(smb.file,argv[i]);
-	}
+	SAFECOPY(smb.file,sub);
 
 	if((p=getfext(smb.file))!=NULL && stricmp(p,".shd")==0)
 		*p=0;	/* Chop off .shd extension, if supplied on command-line */
 
-	if(!smb.file[0]) {
-		printf(usage);
-		exit(1); 
-	}
+	printf("Opening %s\n",smb.file);
 
 	if((i=smb_open(&smb))!=0) {
 		printf("smb_open returned %d: %s\n",i,smb.last_error);
@@ -137,8 +121,6 @@ int main(int argc, char **argv)
 		printf("smb_lock returned %d: %s\n",i,smb.last_error);
 		exit(1);
 	}
-
-	atexit(unlock_msgbase);
 
 	if((i=smb_locksmbhdr(&smb))!=0) {
 		smb_close(&smb);
@@ -289,6 +271,41 @@ int main(int argc, char **argv)
 	smb_unlocksmbhdr(&smb);
 	printf("Closing message base.\n");
 	smb_close(&smb);
+	unlock_msgbase();
 	printf("Done.\n");
+	return(0);
+}
+
+int main(int argc, char **argv)
+{
+	char		revision[16];
+	int 		i;
+	str_list_t	list;
+
+	sscanf("$Revision$", "%*s %s", revision);
+
+	printf("\nFIXSMB v2.10-%s (rev %s) SMBLIB %s - Rebuild Synchronet Message Base\n\n"
+		,PLATFORM_DESC,revision,smb_lib_ver());
+
+	list=strListInit();
+
+	for(i=1;i<argc;i++) {
+		if(argv[i][0]=='-') {
+			if(!stricmp(argv[i],"-renumber"))
+				renumber=TRUE;
+		} else
+			strListPush(&list,argv[i]);
+	}
+
+	if(!strListCount(list)) {
+		printf(usage);
+		exit(1); 
+	}
+
+	atexit(unlock_msgbase);
+
+	for(i=0;list[i]!=NULL;i++)
+		fixsmb(list[i]);
+
 	return(0);
 }
