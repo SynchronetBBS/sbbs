@@ -49,10 +49,10 @@
 /* Definitions */
 /***************/
 #define DEFAULT_CVSROOT		":pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs"
-#define DIST_LIST_URL1		"ftp://freebsd.synchro.net/main/misc/sbbsdist.lst"
-#define DIST_LIST_URL2		"ftp://freebsd.synchro.net/main/misc/sbbsdist.lst"
-#define DIST_LIST_URL3		"ftp://freebsd.synchro.net/main/misc/sbbsdist.lst"
-#define DIST_LIST_URL4		"ftp://freebsd.synchro.net/main/misc/sbbsdist.lst"
+#define DIST_LIST_URL1		"ftp://vert.synchro.net/Synchronet/sbbsdist.lst"
+#define DIST_LIST_URL2		"ftp://rob.synchro.net/Synchronet/sbbsdist.lst"
+#define DIST_LIST_URL3		"ftp://cvs.synchro.net/Synchronet/sbbsdist.lst"
+#define DIST_LIST_URL4		"ftp://freebsd.synchro.net/Synchronet/sbbsdist.lst"
 #define DEFAULT_DISTFILE	"sbbs-src.tgz"
 #define DEFAULT_LIBFILE		"libs-%s.tgz"	/* MUST HAVE ONE %s */
 #define MAX_DISTRIBUTIONS	50
