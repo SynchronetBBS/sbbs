@@ -119,6 +119,8 @@
 
 #define SMB_EMAIL			1			/* User numbers stored in Indexes */
 
+#define SMB_ERR_NOT_OPEN	-100		/* Message base not open */
+
 										/* Time zone macros for when_t.zone */
 #define DAYLIGHT			0x8000		/* Daylight savings is active */
 #define US_ZONE 			0x4000		/* U.S. time zone */
