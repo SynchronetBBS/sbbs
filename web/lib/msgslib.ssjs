@@ -51,6 +51,7 @@ function get_my_message_offsets()
 		msg["hdr"]=hdr;
 		msg.idx=idx;
 		msg.offset=last_offset;
+		msg.number=idx.number;
 		offsets.push(msg);
 	}
 	return(offsets);
@@ -70,6 +71,7 @@ function get_all_message_offsets()
 		msg.hdr=hdr;
 		msg.idx=idx;
 		msg.offset=last_offset;
+		msg.number=idx.number;
 		offsets.push(msg);
 	}
 	return(offsets);
