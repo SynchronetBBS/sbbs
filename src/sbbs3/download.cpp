@@ -133,7 +133,9 @@ void sbbs_t::downloadfile(file_t* f)
 			sprintf(str,"%s%s",f->altpath>0 && f->altpath<=cfg.altpaths ?
 				cfg.altpath[f->altpath-1] : cfg.dir[f->dir]->path,unpadfname(f->name,tmp));
 			remove(str);
-			removefiledat(&cfg,f); } }
+			removefiledat(&cfg,f); 
+		} 
+	}
 }
 
 /****************************************************************************/
