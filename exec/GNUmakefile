@@ -6,6 +6,10 @@
 
 # $id$
 
+ifndef BAJAPATH
+ BAJAPATH	:=	./baja
+endif
+
 all : 	bullseye.bin \
         chat_sec.bin \
 	cntnodes.bin \
@@ -39,5 +43,5 @@ all : 	bullseye.bin \
 	wipshell.bin \
 	yesnobar.bin 
 
-%.bin : %.src
-	@./baja /q $<
+%.bin : %.src $(BAJAPATH)
+	@$(BAJAPATH) /q $<
