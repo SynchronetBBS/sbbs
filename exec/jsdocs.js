@@ -71,7 +71,7 @@ function document_methods(name,obj)
 	writeln("Returns".fontcolor("white"));
 	writeln("<th align=left width=200>");
 	writeln("Usage".fontcolor("white"));
-	if(obj._method_list[0].ver) {
+	if(!min_ver && obj._method_list[0].ver) {
 		writeln("<th align=left width=50>");
 		writeln("Ver".fontcolor("white"));
 	}
@@ -96,7 +96,7 @@ function document_methods(name,obj)
 			,func
 			,obj._method_list[method].args
 			));
-		if(obj._method_list[method].ver)
+		if(!min_ver && obj._method_list[method].ver)
 			writeln("<td>" + verstr(obj._method_list[method].ver));
 		writeln("<td>" + obj._method_list[method].desc);
 		total_methods++;
@@ -118,7 +118,7 @@ function object_header(name, obj, type)
 	writeln("<h2><a name=" + name + ">" + name + " " + type + "</a>");
 	if(obj._description!=undefined)
 		writeln("<br><font size=-1>"+obj._description+"</font>");
-	if(obj._ver>310)
+	if(!min_ver && obj._ver>310)
 		writeln("<font size=-1> - introduced in v"+verstr(obj._ver)+"</font>");
 	writeln("</h2>");
 	if(obj._constructor!=undefined)
@@ -144,7 +144,7 @@ function properties_header(name, obj)
 	writeln("Name".fontcolor("white"));
 	writeln("<th align=left width=100>");
 	writeln("Type".fontcolor("white"));
-	if(obj._property_ver_list && obj._property_ver_list.length) {
+	if(!min_ver && obj._property_ver_list && obj._property_ver_list.length) {
 		writeln("<th align=left width=50>");
 		writeln("Ver".fontcolor("white"));
 	}
@@ -164,12 +164,16 @@ function document_properties(name, obj)
 	for(prop in obj) {
 		prop_num=count++;
 
-		if(min_ver && (!obj._property_ver_list || !obj._property_ver_list[prop_num]))
+		if(min_ver && (!obj._property_ver_list || !obj._property_ver_list[prop_num])) {
+			p++;
 			continue;
+		}
 		if(obj._property_ver_list 
 			&& (obj._property_ver_list[prop_num] < min_ver 
-			||  obj._property_ver_list[prop_num] > max_ver))
+			||  obj._property_ver_list[prop_num] > max_ver)) {
+			p++;
 			continue;
+		}
 
 		prop_name=name + "." + prop;
 
@@ -186,7 +190,7 @@ function document_properties(name, obj)
 		}
 		write("<tr valign=top>");
 		writeln("<td>" + prop.bold() + "<td>" + typeof(obj[prop]) );
-		if(obj._property_ver_list)
+		if(!min_ver && obj._property_ver_list)
 			writeln("<td>" 
 				+ (obj._property_ver_list[p] ? verstr(obj._property_ver_list[p]) : "N/A"));
 		if(obj._property_desc_list!=undefined)
@@ -246,6 +250,13 @@ f.writeln("<font face=arial,helvetica>");
 f.writeln("<h1>Synchronet JavaScript Object Model Reference</h1>");
 f.printf("Generated for <b>Synchronet v%s</b>, compiled %s\n"
 		 ,system.full_version,system.compiled_when);
+f.writeln("<br><font size=-1>");
+if(min_ver)
+	f.writeln("Includes Properties and Methods added in Synchronet v" + verstr(min_ver) + " only.");
+else
+	f.writeln("Property and Method version numbers (when available) indicate the Synchronet version when the " +
+		  "item was added or modified.");
+f.writeln("</font>");
 
 f.writeln("<ol type=square>");
 
