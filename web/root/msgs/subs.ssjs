@@ -39,7 +39,7 @@ for(s in msg_area.grp[grp].sub_list) {
 	var thissub=msg_area.grp[grp].sub_list[s];
 	msgbase = new MsgBase(msg_area.grp[grp].sub_list[s].code);
 	if(msgbase.open()) {
-		var lastdate="No Msgs";
+		var lastdate="N/A";
         msgs=msgbase.total_msgs;
 		if(msgs != undefined && msgs > 0) {
 			lastdate=msgbase.get_msg_index(true,msgs-1);
