@@ -1058,6 +1058,7 @@ static void smtp_thread(void* arg)
 	int			i,j,x;
 	int			rd;
 	char		str[512];
+	char		tmp[128];
 	char		buf[1024],*p,*tp;
 	char		hdrfield[512];
 	char		alias_buf[128];
@@ -1833,9 +1834,10 @@ static void smtp_thread(void* arg)
 					if(!findstr(&scfg,host_name,relay_list) && 
 						!findstr(&scfg,host_ip,relay_list)) {
 						lprintf("%04d !SMTP ILLEGAL RELAY ATTEMPT from %s [%s] to %s"
-							,socket, host_name, host_ip, tp+1);
-						sprintf(str,"Illegal relay attempt to %s", tp+1);
-						spamlog(&scfg, str, host_name, host_ip);
+							,socket, reverse_path, host_ip, p);
+						sprintf(tmp,"SMTP Relay attempt from %s to %s"
+							,reverse_path, p);
+						spamlog(&scfg, tmp, host_name, host_ip);
 						sockprintf(socket, "550 Relay not allowed.");
 						continue;
 					}
