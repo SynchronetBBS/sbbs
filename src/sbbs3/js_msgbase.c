@@ -370,7 +370,7 @@ BOOL get_msg_by_id(scfg_t* scfg, smb_t* smb, char* id, smbmsg_t* msg)
 	int			ret;
 
 	for(n=0;n<smb->status.last_msg;n++) {
-		memset(&msg,0,sizeof(smbmsg_t));
+		memset(msg,0,sizeof(smbmsg_t));
 		msg->offset=n;
 		if(smb_getmsgidx(smb, msg)!=0)
 			break;
