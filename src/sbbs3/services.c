@@ -330,7 +330,7 @@ js_login(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	}
 
 	if(argc>2)
-		JS_ValueToInt32(cx,argv[2],&inc_logons);
+		JS_ValueToBoolean(cx,argv[2],&inc_logons);
 
 	if(client->client!=NULL) {
 		SAFECOPY(user.note,client->client->addr);
