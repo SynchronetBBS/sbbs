@@ -122,7 +122,7 @@ char sbbs_t::inkey(long mode)
 				CRLF; 
 			}
 			hotkey_inside++;
-			external(cfg.hotkey[i]->cmd,0);
+			external(cmdstr(cfg.hotkey[i]->cmd,nulstr,nulstr,NULL),0);
 			hotkey_inside--;
 			if(!(sys_status&SS_SPLITP)) {
 				CRLF;
