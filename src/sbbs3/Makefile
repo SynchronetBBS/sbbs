@@ -57,6 +57,10 @@ CFLAGS	= 	$(CFLAGS) -DJAVASCRIPT -I../../include/mozilla/js
 LIBS	=	..\..\lib\mozilla\js\win32.$(BUILD)\js32omf.lib
 !endif
 
+!ifndef VERBOSE
+QUIET	=	@
+!endif
+
 default: dlls mono utils
 
 # Cross platform/compiler definitions
@@ -73,17 +77,17 @@ $(SBBSLIB):	$(SBBS)
 
 # Implicit C Compile Rule for SBBS.DLL
 .c.obj:
-	@$(CC) $(CFLAGS) -WD -WM -n$(LIBODIR) -c $(SBBSDEFS) $<
+	$(QUIET)$(CC) $(CFLAGS) -WD -WM -n$(LIBODIR) -c $(SBBSDEFS) $<
 
 # Implicit C++ Compile Rule for SBBS.DLL
 .cpp.obj:
-	@$(CC) $(CFLAGS) -WD -WM -n$(LIBODIR) -c $(SBBSDEFS) $<
+	$(QUIET)$(CC) $(CFLAGS) -WD -WM -n$(LIBODIR) -c $(SBBSDEFS) $<
 
 # Create output directories if they don't exist
 $(LIBODIR):
-	@if not exist $(LIBODIR) mkdir $(LIBODIR)
+	$(QUIET)if not exist $(LIBODIR) mkdir $(LIBODIR)
 $(EXEODIR):
-	@if not exist $(EXEODIR) mkdir $(EXEODIR)
+	$(QUIET)if not exist $(EXEODIR) mkdir $(EXEODIR)
 
 # Monolithic Synchronet executable Build Rule
 $(SBBSMONO): $(OBJS) \
@@ -93,53 +97,53 @@ $(SBBSMONO): $(OBJS) \
 	$(LIBODIR)\websrvr.obj \
 	$(LIBODIR)\mailsrvr.obj $(LIBODIR)\mxlookup.obj $(LIBODIR)\mime.obj $(LIBODIR)\base64.obj \
 	$(LIBODIR)\services.obj
-	@$(CC) $(CFLAGS) -WM -e$(SBBSMONO) $(LIBS) @&&|
+	$(QUIET)$(CC) $(CFLAGS) -WM -e$(SBBSMONO) $(LIBS) @&&|
 	$**
 |
 
 # SBBS DLL Link Rule
 $(SBBS): $(OBJS)
     @echo Linking $< ...
-	@$(LD) $(LFLAGS) c0d32.obj $(LIBS) $(OBJS), $*, $*, \
+	$(QUIET)$(LD) $(LFLAGS) c0d32.obj $(LIBS) $(OBJS), $*, $*, \
 		import32.lib cw32mt.lib ws2_32.lib
 
 # Mail Server DLL Link Rule
 $(MAILSRVR): mailsrvr.c mxlookup.c mime.c base64.c md5.c crc32.c $(SBBSLIB)
     @echo Creating $@
-	@$(CC) $(CFLAGS) -WD -WM -lGi -n$(LIBODIR) \
+	$(QUIET)$(CC) $(CFLAGS) -WD -WM -lGi -n$(LIBODIR) \
 		-DMAILSRVR_EXPORTS -DSMB_IMPORTS -DWRAPPER_IMPORTS $** $(LIBS)
 
 # FTP Server DLL Link Rule
 $(FTPSRVR): ftpsrvr.c nopen.c $(SBBSLIB)
     @echo Creating $@
-	@$(CC) $(CFLAGS) -WD -WM -lGi -n$(LIBODIR) \
+	$(QUIET)$(CC) $(CFLAGS) -WD -WM -lGi -n$(LIBODIR) \
 		-DFTPSRVR_EXPORTS -DWRAPPER_IMPORTS $** $(LIBS)
 
 # FTP Server DLL Link Rule
 $(WEBSRVR): wesrvr.c $(XPDEV)sockwrap.c base64.c
     @echo Creating $@
-	@$(CC) $(CFLAGS) -WD -WM -lGi -n$(LIBODIR) \
+	$(QUIET)$(CC) $(CFLAGS) -WD -WM -lGi -n$(LIBODIR) \
 		-DWEBSRVR_EXPORTS -DWRAPPER_IMPORTS $** $(LIBS)
 
 # Services DLL Link Rule
 $(SERVICES): services.c $(SBBSLIB) $(LIBODIR)\ini_file.obj
     @echo Creating $@
-	@$(CC) $(CFLAGS) -WD -WM -lGi -n$(LIBODIR) \
+	$(QUIET)$(CC) $(CFLAGS) -WD -WM -lGi -n$(LIBODIR) \
 		-DSERVICES_EXPORTS -DWRAPPER_IMPORTS $** $(LIBS)
 
 # Synchronet Console Build Rule
 $(SBBSCON): sbbscon.c $(SBBSLIB)
-	@$(CC) $(CFLAGS) -n$(EXEODIR) $**
+	$(QUIET)$(CC) $(CFLAGS) -n$(EXEODIR) $**
 
 # Baja Utility
 $(BAJA): baja.c ars.c crc32.c
 	@echo Creating $@
-	@$(CC) $(CFLAGS) -n$(EXEODIR) $** 
+	$(QUIET)$(CC) $(CFLAGS) -n$(EXEODIR) $** 
 
 # Node Utility
 $(NODE): node.c 
 	@echo Creating $@
-	@$(CC) $(CFLAGS) -n$(EXEODIR) $** 
+	$(QUIET)$(CC) $(CFLAGS) -n$(EXEODIR) $** 
 
 SMBLIB = $(LIBODIR)\smblib.obj $(LIBODIR)\genwrap.obj $(LIBODIR)\filewrap.obj \
 	 $(LIBODIR)\crc16.obj
@@ -147,17 +151,17 @@ SMBLIB = $(LIBODIR)\smblib.obj $(LIBODIR)\genwrap.obj $(LIBODIR)\filewrap.obj \
 # FIXSMB Utility
 $(FIXSMB): fixsmb.c $(SMBLIB) $(LIBODIR)\str_util.obj
 	@echo Creating $@
-	@$(CC) $(CFLAGS) -n$(EXEODIR) $**
+	$(QUIET)$(CC) $(CFLAGS) -n$(EXEODIR) $**
 
 # CHKSMB Utility
 $(CHKSMB): chksmb.c $(SMBLIB) $(XPDEV)dirwrap.c
 	@echo Creating $@
-	@$(CC) $(CFLAGS) -n$(EXEODIR) $** $(WILDARGS)
+	$(QUIET)$(CC) $(CFLAGS) -n$(EXEODIR) $** $(WILDARGS)
 
 # SMB Utility
 $(SMBUTIL): smbutil.c smbtxt.c crc32.c lzh.c date_str.c str_util.c $(SMBLIB) $(XPDEV)dirwrap.c
 	@echo Creating $@
-	@$(CC) $(CFLAGS) -n$(EXEODIR) $** $(WILDARGS)
+	$(QUIET)$(CC) $(CFLAGS) -n$(EXEODIR) $** $(WILDARGS)
 
 # SBBSecho (FidoNet Packet Tosser)
 $(SBBSECHO): sbbsecho.c rechocfg.c smbtxt.c crc32.c lzh.c $(SMBLIB) \
@@ -172,7 +176,7 @@ $(SBBSECHO): sbbsecho.c rechocfg.c smbtxt.c crc32.c lzh.c $(SMBLIB) \
 	$(LIBODIR)\scfglib1.obj \
 	$(LIBODIR)\scfglib2.obj
 	@echo Creating $@
-	@$(CC) $(CFLAGS) -n$(EXEODIR) $** 
+	$(QUIET)$(CC) $(CFLAGS) -n$(EXEODIR) $** 
 
 # SBBSecho Configuration Program
 $(ECHOCFG): echocfg.c rechocfg.c \
@@ -186,7 +190,7 @@ $(ECHOCFG): echocfg.c rechocfg.c \
 	$(LIBODIR)\str_util.obj \
 	..\..\lib\fltk\win32\fltk.lib
 	@echo Creating $@
-	@$(CC) -DUSE_FLTK -I..\..\include\fltk $(CFLAGS) -n$(EXEODIR) $** 
+	$(QUIET)$(CC) -DUSE_FLTK -I..\..\include\fltk $(CFLAGS) -n$(EXEODIR) $** 
 
 # ADDFILES
 $(ADDFILES): addfiles.c \
@@ -204,7 +208,7 @@ $(ADDFILES): addfiles.c \
 	$(LIBODIR)\scfglib1.obj \
 	$(LIBODIR)\scfglib2.obj
 	@echo Creating $@
-	@$(CC) $(CFLAGS) -n$(EXEODIR) $** 
+	$(QUIET)$(CC) $(CFLAGS) -n$(EXEODIR) $** 
 
 # FILELIST
 $(FILELIST): filelist.c \
@@ -221,7 +225,7 @@ $(FILELIST): filelist.c \
 	$(LIBODIR)\scfglib1.obj \
 	$(LIBODIR)\scfglib2.obj
 	@echo Creating $@
-	@$(CC) $(CFLAGS) -n$(EXEODIR) $** 
+	$(QUIET)$(CC) $(CFLAGS) -n$(EXEODIR) $** 
 
 # MAKEUSER
 $(MAKEUSER): makeuser.c \
@@ -238,23 +242,23 @@ $(MAKEUSER): makeuser.c \
 	$(LIBODIR)\scfglib1.obj \
 	$(LIBODIR)\scfglib2.obj
 	@echo Creating $@
-	@$(CC) $(CFLAGS) -n$(EXEODIR) $** 
+	$(QUIET)$(CC) $(CFLAGS) -n$(EXEODIR) $** 
 
 # JSEXEC
 $(JSEXEC): jsexec.c \
 	$(LIBS) \
 	$(SBBSLIB)
 	@echo Creating $@
-	@$(CC) $(CFLAGS) -n$(EXEODIR) $** 
+	$(QUIET)$(CC) $(CFLAGS) -n$(EXEODIR) $** 
 
 # ANS2MSG
 $(ANS2MSG): ans2msg.c
 	@echo Creating $@
-	@$(CC) $(CFLAGS) -n$(EXEODIR) $** 
+	$(QUIET)$(CC) $(CFLAGS) -n$(EXEODIR) $** 
 
 # MSG2MSG
 $(MSG2ANS): msg2ans.c
 	@echo Creating $@
-	@$(CC) $(CFLAGS) -n$(EXEODIR) $** 
+	$(QUIET)$(CC) $(CFLAGS) -n$(EXEODIR) $** 
 
 
