@@ -163,7 +163,7 @@ if(p) {
 		return(1); }
 	t=time(NULL);
 	if(read(file,&last,sizeof(time_t))!=sizeof(time_t))
-		last=t;
+		last=0;
 	lseek(file,0L,SEEK_SET);
 	write(file,&t,sizeof(time_t));
 	close(file); }
