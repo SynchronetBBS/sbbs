@@ -254,6 +254,10 @@ SOURCE=.\js_bbs.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\js_branch.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\js_client.c
 # End Source File
 # Begin Source File
