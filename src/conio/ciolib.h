@@ -81,8 +81,15 @@ struct text_info {
 
 #endif
 
+struct cio_mouse_event {
+	int	x;
+	int	y;
+	int	button;
+};
+
 typedef struct {
 	int		mode;
+	int		mouse;
 	void	(*clreol)		(void);
 	int		(*puttext)		(int,int,int,int,void *);
 	int		(*gettext)		(int,int,int,int,void *);
@@ -116,6 +123,9 @@ typedef struct {
 	int		(*cputs)		(char *);
 	void	(*textbackground)	(int);
 	void	(*textcolor)	(int);
+	int		(*getmouse)		(struct cio_mouse_event *mevent);
+	int		(*hidemouse)	(void);
+	int		(*showmouse)	(void);
 } cioapi_t;
 
 extern cioapi_t cio_api;
@@ -197,8 +207,11 @@ char *ciolib_getpass(const char *prompt);
 	#define textmode(a)				ciolib_textmode(a)
 	#define window(a,b,c,d)			ciolib_window(a,b,c,d)
 	#define delline()				ciolib_delline()
-	#define insline					ciolib_insline()
-	#define getpass(a)				ciolib_getpass(a);
+	#define insline()				ciolib_insline()
+	#define getpass(a)				ciolib_getpass(a)
+	#define getmouse(a)				ciolib_getmouse(a)
+	#define	hidemouse()				ciolib_hidemouse()
+	#define showmouse()				ciolib_showmouse()
 #endif
 
 #endif	/* Do not add anything after this line */

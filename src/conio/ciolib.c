@@ -5,7 +5,9 @@
 #define CIOLIB_NO_MACROS
 #include "ciolib.h"
 
-#ifndef _WIN32
+#ifdef _WIN32
+ #include "win32cio.h"
+#else
  #ifndef NO_X
   #include "x_cio.h"
  #endif
@@ -65,6 +67,7 @@ int try_x_init(int mode)
 {
 	if(!console_init()) {
 		cio_api.mode=CIOLIB_MODE_X;
+		cio_api.mouse=0;
 		cio_api.puttext=x_puttext;
 		cio_api.gettext=x_gettext;
 		cio_api.textattr=x_textattr;
@@ -79,6 +82,9 @@ int try_x_init(int mode)
 		cio_api.getch=x_getch;
 		cio_api.getche=x_getche;
 		cio_api.textmode=x_textmode;
+		cio_api.getmouse=NULL;
+		cio_api.showmouse=NULL;
+		cio_api.hidemouse=NULL;
 		return(1);
 	}
 	fprintf(stderr,"X init failed\n");
@@ -104,6 +110,9 @@ int try_curses_init(int mode)
 		cio_api.getch=curs_getch;
 		cio_api.getche=curs_getche;
 		cio_api.textmode=curs_textmode;
+		cio_api.getmouse=curs_getmouse;
+		cio_api.showmouse=curs_showmouse;
+		cio_api.hidemouse=curs_hidemouse;
 		return(1);
 	}
 	fprintf(stderr,"Curses init failed\n");
@@ -115,6 +124,7 @@ int try_ansi_init(int mode)
 {
 	if(ansi_initciolib(mode)) {
 		cio_api.mode=CIOLIB_MODE_ANSI;
+		cio_api.mouse=0;
 		cio_api.puttext=ansi_puttext;
 		cio_api.gettext=ansi_gettext;
 		cio_api.textattr=ansi_textattr;
@@ -129,6 +139,9 @@ int try_ansi_init(int mode)
 		cio_api.getch=ansi_getch;
 		cio_api.getche=ansi_getche;
 		cio_api.textmode=ansi_textmode;
+		cio_api.getmouse=NULL;
+		cio_api.showmouse=NULL;
+		cio_api.hidemouse=NULL;
 		return(1);
 	}
 	fprintf(stderr,"ANSI init failed\n");
@@ -144,26 +157,29 @@ int try_conio_init(int mode)
 	/* This should test for something or other */
 	if(isatty(fileno(stdout))) {
 		cio_api.mode=CIOLIB_MODE_CONIO;
+		cio_api.mouse=1;
 		cio_api.puttext=puttext;
 		cio_api.gettext=gettext;
 		cio_api.textattr=textattr;
-		cio_api.kbhit=kbhit;
+		cio_api.kbhit=win32_kbhit;
 		cio_api.wherey=wherey;
 		cio_api.wherex=wherex;
 		cio_api.putch=putch;
 		cio_api.gotoxy=gotoxy;
 		cio_api.gettextinfo=gettextinfo;
 		cio_api.setcursortype=_setcursortype;
-		cio_api.getch=getch;
-		cio_api.getche=getche;
+		cio_api.getch=win32_getch;
+		cio_api.getche=win32_getche;
 		cio_api.textmode=textmode;
+		cio_api.getmouse=win32_getmouse;
+		cio_api.showmouse=win32_showmouse;
+		cio_api.hidemouse=win32_hidemouse;
 		return(1);
 	}
 	fprintf(stderr,"CONIO init failed\n");
 	return(0);
 }
 #endif
-
 
 int initciolib(int mode)
 {
@@ -718,4 +734,26 @@ void ciolib_setcursortype(int a)
 	CIOLIB_INIT();
 	
 	cio_api.setcursortype(a);
+}
+
+int ciolib_getmouse(struct cio_mouse_event *mevent) {
+	CIOLIB_INIT();
+
+	if(cio_api.getmouse!=NULL)
+		return(cio_api.getmouse(mevent));
+	return(-1);
+}
+
+int ciolib_showmouse(void) {
+	CIOLIB_INIT();
+
+	if(cio_api.showmouse!=NULL)
+		return(cio_api.showmouse());
+}
+
+int ciolib_hidemouse(void) {
+	CIOLIB_INIT();
+
+	if(cio_api.hidemouse!=NULL)
+		return(cio_api.hidemouse());
 }
