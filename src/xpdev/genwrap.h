@@ -40,29 +40,7 @@
 
 #include <stdio.h>		/* sprintf */
 #include "gen_defs.h"	/* ulong */
-
-#if defined(DLLEXPORT)
-	#undef DLLEXPORT
-#endif
-#if defined(DLLCALL)
-	#undef DLLCALL
-#endif
-
-#if defined(_WIN32)
-	#if defined(WRAPPER_DLL)
-		#define DLLEXPORT	__declspec(dllexport)
-	#else
-		#define DLLEXPORT	__declspec(dllimport)
-	#endif
-	#if defined(__BORLANDC__)
-		#define DLLCALL __stdcall
-	#else
-		#define DLLCALL
-	#endif
-#else	/* !_WIN32 */
-	#define DLLEXPORT
-	#define DLLCALL
-#endif
+#include "wrapdll.h"	/* DLLEXPORT and DLLCALL */
 
 #if defined(__cplusplus)
 extern "C" {
@@ -134,7 +112,7 @@ extern "C" {
 #if defined(__unix__)
 	DLLEXPORT char*	DLLCALL strupr(char* str);
 	DLLEXPORT char*	DLLCALL strlwr(char* str);
-	DLLEXPORT char* DLLCALL strrev(char* str);
+	DLLEXPORT char* DLLCALL	strrev(char* str);
 	#if !defined(stricmp)
 		#define stricmp(x,y)		strcasecmp(x,y)
 		#define strnicmp(x,y,z)		strncasecmp(x,y,z)
@@ -147,19 +125,19 @@ extern "C" {
 
 #if defined(_WIN32)
 
-	#define SLEEP(x)			Sleep(x)
-	#define BEEP(freq,dur)		Beep(freq,dur)
+	#define SLEEP(x)		Sleep(x)
+	#define BEEP(freq,dur)	Beep(freq,dur)
 
 #elif defined(__OS2__)
 
-	#define SLEEP(x)			DosSleep(x)
-	#define BEEP(freq,dur)		DosBeep(freq,dur)
+	#define SLEEP(x)		DosSleep(x)
+	#define BEEP(freq,dur)	DosBeep(freq,dur)
 
 #elif defined(__unix__)
 
-	#define SLEEP(x)			usleep(x*1000)
-	#define BEEP(freq,dur)		unix_beep(freq,dur)
-	DLLEXPORT void	DLLCALL		unix_beep(int freq, int dur);
+	#define SLEEP(x)		usleep(x*1000)
+	#define BEEP(freq,dur)	unix_beep(freq,dur)
+	DLLEXPORT void	DLLCALL	unix_beep(int freq, int dur);
 
 #else	/* Unsupported OS */
 
@@ -167,9 +145,7 @@ extern "C" {
 
 #endif
 
-#if defined(__BORLANDC__)
-	#define xp_random			random
-#endif
+DLLEXPORT int		DLLCALL	xp_random(int);
 
 #if defined(__cplusplus)
 }
