@@ -810,11 +810,12 @@ extern "C" {
 	DLLEXPORT char *	DLLCALL net_addr(net_t* net);
 	DLLEXPORT BOOL		DLLCALL validattr(char a);
 	DLLEXPORT size_t	DLLCALL strip_invalid_attr(char *str);
-	DLLEXPORT ushort	DLLCALL subject_crc(char *subj);
-	DLLEXPORT char *	DLLCALL ftn_msgid(sub_t* sub, smbmsg_t* msg);
-	DLLEXPORT char *	DLLCALL get_msgid(scfg_t* cfg, uint subnum, smbmsg_t* msg);
 	DLLEXPORT char *	DLLCALL ultoac(ulong l,char *str);
 	DLLEXPORT char *	DLLCALL rot13(char* str);
+
+	/* msg_id.c */
+	DLLEXPORT char *	DLLCALL ftn_msgid(sub_t* sub, smbmsg_t* msg);
+	DLLEXPORT char *	DLLCALL get_msgid(scfg_t* cfg, uint subnum, smbmsg_t* msg);
 
 
 	/* date_str.c */
