@@ -11,13 +11,12 @@ static int uifc_initialized=0;
 
 int	init_uifc(void) {
 	int	i;
+	struct	text_info txtinfo;
 
+    gettextinfo(&txtinfo);
 	if(uifc_initialized)
 		return(0);
-	uifc.size=sizeof(uifc);
-	uifc.mode=UIFC_IBM|UIFC_COLOR|UIFC_NOCTRL;
-	if(uifc.scrn_len)
-		uifc.scrn_len++;
+	uifc.scrn_len=txtinfo.screenheight;
 	if((i=uifcini32(&uifc))!=0) {
 		fprintf(stderr,"uifc library init returned error %d\n",i);
 		return(-1);
