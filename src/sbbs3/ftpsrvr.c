@@ -210,7 +210,7 @@ static void thread_down(void)
 		startup->thread_up(FALSE);
 }
 
-static SOCKET open_socket(int type)
+static SOCKET ftp_open_socket(int type)
 {
 	SOCKET sock;
 
@@ -229,7 +229,7 @@ static SOCKET open_socket(int type)
 #ifdef __BORLANDC__
 #pragma argsused
 #endif
-static int close_socket(SOCKET* sock, int line)
+static int ftp_close_socket(SOCKET* sock, int line)
 {
 	int		result;
 
@@ -260,13 +260,14 @@ static int close_socket(SOCKET* sock, int line)
 
 	sockets--;
 
-	if(result!=0)
-		lprintf("%04d !ERROR %d closing socket from line %d",*sock,ERROR_VALUE,line);
-	else {
+	if(result!=0) {
+		if(ERROR_VALUE!=ENOTSOCK)
+			lprintf("%04d !ERROR %d closing socket from line %d",*sock,ERROR_VALUE,line);
+	}
 #ifdef _DEBUG
+	else 
 		lprintf("%04d Socket closed (%d sockets in use) from line %d",*sock,sockets,line);
 #endif
-	}
 	*sock=INVALID_SOCKET;
 	ReleaseMutex(socket_mutex);
 
@@ -1126,7 +1127,7 @@ void DLLCALL ftp_terminate(void)
 {
 	if(server_socket!=INVALID_SOCKET) {
     	lprintf("%04d FTP Terminate: closing socket",server_socket);
-		close_socket(&server_socket,__LINE__);
+		ftp_close_socket(&server_socket,__LINE__);
 	    server_socket=INVALID_SOCKET;
     }
 }
@@ -1177,7 +1178,7 @@ static void send_thread(void* arg)
 		sockprintf(xfer.ctrl_sock,"450 ERROR %d opening %s.",errno,xfer.filename);
 		if(xfer.tmpfile && !(startup->options&FTP_OPT_KEEP_TEMP_FILES))
 			remove(xfer.filename);
-		close_socket(xfer.data_sock,__LINE__);
+		ftp_close_socket(xfer.data_sock,__LINE__);
 		*xfer.inprogress=FALSE;
 		return;
 	}
@@ -1252,7 +1253,7 @@ static void send_thread(void* arg)
 	if((i=ferror(fp))!=0) 
 		lprintf("%04d !FILE ERROR %d (%d)",xfer.ctrl_sock,i,errno);
 
-	close_socket(xfer.data_sock,__LINE__);	/* Signal end of file */
+	ftp_close_socket(xfer.data_sock,__LINE__);	/* Signal end of file */
 	if(startup->options&FTP_OPT_DEBUG_DATA)
 		lprintf("%04d DATA socket closed",xfer.ctrl_sock);
 	
@@ -1333,7 +1334,7 @@ static void receive_thread(void* arg)
 	if((fp=fopen(xfer.filename,xfer.append ? "ab" : "wb"))==NULL) {
 		lprintf("%04d !DATA ERROR %d opening %s",xfer.ctrl_sock,errno,xfer.filename);
 		sockprintf(xfer.ctrl_sock,"450 ERROR %d opening %s.",errno,xfer.filename);
-		close_socket(xfer.data_sock,__LINE__);
+		ftp_close_socket(xfer.data_sock,__LINE__);
 		return;
 	}
 
@@ -1412,7 +1413,7 @@ static void receive_thread(void* arg)
 	*xfer.inprogress=FALSE;
 	fclose(fp);
 
-	close_socket(xfer.data_sock,__LINE__);
+	ftp_close_socket(xfer.data_sock,__LINE__);
 	if(error && startup->options&FTP_OPT_DEBUG_DATA)
 		lprintf("%04d DATA socket %d closed",xfer.ctrl_sock,*xfer.data_sock);
 	
@@ -1502,7 +1503,7 @@ static void filexfer(SOCKADDR_IN* addr, SOCKET ctrl_sock, SOCKET pasv_sock, SOCK
 	*inprogress=TRUE;
 
 	if(*data_sock!=INVALID_SOCKET)
-		close_socket(data_sock,__LINE__);
+		ftp_close_socket(data_sock,__LINE__);
 
 	if(pasv_sock==INVALID_SOCKET) {	/* !PASV */
 
@@ -1538,7 +1539,7 @@ static void filexfer(SOCKADDR_IN* addr, SOCKET ctrl_sock, SOCKET pasv_sock, SOCK
 			if(tmpfile)
 				remove(filename);
 			*inprogress=FALSE;
-			close_socket(data_sock,__LINE__);
+			ftp_close_socket(data_sock,__LINE__);
 			return;
 		}
 
@@ -1554,7 +1555,7 @@ static void filexfer(SOCKADDR_IN* addr, SOCKET ctrl_sock, SOCKET pasv_sock, SOCK
 			if(tmpfile)
 				remove(filename);
 			*inprogress=FALSE;
-			close_socket(data_sock,__LINE__);
+			ftp_close_socket(data_sock,__LINE__);
 			return;
 		}
 		if(startup->options&FTP_OPT_DEBUG_DATA)
@@ -1944,7 +1945,7 @@ static void ctrl_thread(void* arg)
 	if(((js_cx=js_initcx(sock,&js_glob))==NULL)) {
 		lprintf("%04d !ERROR initializing JavaScript context",sock);
 		sockprintf(sock,"425 Error initializing JavaScript context");
-		close_socket(&sock,__LINE__);
+		ftp_close_socket(&sock,__LINE__);
 		thread_down();
 		return;
 	}
@@ -1960,7 +1961,7 @@ static void ctrl_thread(void* arg)
 			,sock, i, ERROR_VALUE);
 		sockprintf(sock,"425 Error %d disabling socket blocking"
 			,ERROR_VALUE);
-		close_socket(&sock,__LINE__);
+		ftp_close_socket(&sock,__LINE__);
 		thread_down();
 		return;
 	}
@@ -1988,7 +1989,7 @@ static void ctrl_thread(void* arg)
 	if(trashcan(&scfg,host_ip,"ip")) {
 		lprintf("%04d !Client blocked in ip.can: %s", sock, host_ip);
 		sockprintf(sock,"550 Access denied.");
-		close_socket(&sock,__LINE__);
+		ftp_close_socket(&sock,__LINE__);
 		thread_down();
 		return;
 	}
@@ -1996,7 +1997,7 @@ static void ctrl_thread(void* arg)
 	if(trashcan(&scfg,host_name,"host")) {
 		lprintf("%04d !Client blocked in host.can: %s", sock, host_name);
 		sockprintf(sock,"550 Access denied.");
-		close_socket(&sock,__LINE__);
+		ftp_close_socket(&sock,__LINE__);
 		thread_down();
 		return;
 	}
@@ -2006,7 +2007,7 @@ static void ctrl_thread(void* arg)
 	if((result=getsockname(sock, (struct sockaddr *)&pasv_addr,&addr_len))!=0) {
 		lprintf("%04d !ERROR %d (%d) getting address/port", sock, result, ERROR_VALUE);
 		sockprintf(sock,"425 Error %d getting address/port",ERROR_VALUE);
-		close_socket(&sock,__LINE__);
+		ftp_close_socket(&sock,__LINE__);
 		thread_down();
 		return;
 	} 
@@ -2321,9 +2322,9 @@ static void ctrl_thread(void* arg)
 		if(!stricmp(cmd, "PASV")) {
 
 			if(pasv_sock!=INVALID_SOCKET) 
-				close_socket(&pasv_sock,__LINE__);
+				ftp_close_socket(&pasv_sock,__LINE__);
 
-			if((pasv_sock=open_socket(SOCK_STREAM))==INVALID_SOCKET) {
+			if((pasv_sock=ftp_open_socket(SOCK_STREAM))==INVALID_SOCKET) {
 				lprintf("%04d !PASV ERROR %d opening socket", sock,ERROR_VALUE);
 				sockprintf(sock,"425 Error %d opening PASV data socket", ERROR_VALUE);
 				continue;
@@ -2337,7 +2338,7 @@ static void ctrl_thread(void* arg)
 			if((result=bind(pasv_sock, (struct sockaddr *) &pasv_addr,sizeof(pasv_addr)))!= 0) {
 				lprintf("%04d !PASV ERROR %d (%d) binding socket", sock, result, ERROR_VALUE);
 				sockprintf(sock,"425 Error %d binding data socket",ERROR_VALUE);
-				close_socket(&pasv_sock,__LINE__);
+				ftp_close_socket(&pasv_sock,__LINE__);
 				continue;
 			}
 
@@ -2345,14 +2346,14 @@ static void ctrl_thread(void* arg)
 			if((result=getsockname(pasv_sock, (struct sockaddr *)&addr,&addr_len))!=0) {
 				lprintf("%04d !PASV ERROR %d (%d) getting address/port", sock, result, ERROR_VALUE);
 				sockprintf(sock,"425 Error %d getting address/port",ERROR_VALUE);
-				close_socket(&pasv_sock,__LINE__);
+				ftp_close_socket(&pasv_sock,__LINE__);
 				continue;
 			} 
 
 			if((result=listen(pasv_sock, 1))!= 0) {
 				lprintf("%04d !PASV ERROR %d (%d) listening on socket", sock, result, ERROR_VALUE);
 				sockprintf(sock,"425 Error %d listening on data socket",ERROR_VALUE);
-				close_socket(&pasv_sock,__LINE__);
+				ftp_close_socket(&pasv_sock,__LINE__);
 				continue;
 			}
 
@@ -3713,14 +3714,14 @@ static void ctrl_thread(void* arg)
 			if(gettimeleft(&scfg,&user,logintime)<1) {
 				lprintf("%04d Out of time, disconnecting",sock);
 				sockprintf(sock,"421 Sorry, you've run out of time.");
-				close_socket(&data_sock,__LINE__);
+				ftp_close_socket(&data_sock,__LINE__);
 				transfer_aborted=TRUE;
 			}
 			if((time(NULL)-lastactive)>startup->max_inactivity) {
 				lprintf("%04d Disconnecting due to to inactivity.",sock);
 				sockprintf(sock,"421 Disconnecting due to inactivity (%u seconds)."
 					,startup->max_inactivity);
-				close_socket(&data_sock,__LINE__);
+				ftp_close_socket(&data_sock,__LINE__);
 				transfer_aborted=TRUE;
 			}
 		}
@@ -3758,11 +3759,11 @@ static void ctrl_thread(void* arg)
 	socket_debug[sock]&=~SOCKET_DEBUG_CTRL;
 
 	/* Free up resources here */
-	close_socket(&sock,__LINE__);
+	ftp_close_socket(&sock,__LINE__);
 	if(pasv_sock!=INVALID_SOCKET)
-		close_socket(&pasv_sock,__LINE__);
+		ftp_close_socket(&pasv_sock,__LINE__);
 	if(data_sock!=INVALID_SOCKET)
-		close_socket(&data_sock,__LINE__);
+		ftp_close_socket(&data_sock,__LINE__);
 
 	thread_down();
 }
@@ -3772,7 +3773,7 @@ static void cleanup(int code)
 	free_cfg(&scfg);
 
 	if(server_socket!=INVALID_SOCKET)
-		close_socket(&server_socket,__LINE__);
+		ftp_close_socket(&server_socket,__LINE__);
 	server_socket=INVALID_SOCKET;
 
 	update_clients();
@@ -3970,7 +3971,7 @@ void DLLCALL ftp_server(void* arg)
 
     /* open a socket and wait for a client */
 
-    if((server_socket=open_socket(SOCK_STREAM))==INVALID_SOCKET) {
+    if((server_socket=ftp_open_socket(SOCK_STREAM))==INVALID_SOCKET) {
 		lprintf("!ERROR %d opening socket", ERROR_VALUE);
 		cleanup(1);
 		return;
@@ -4067,7 +4068,7 @@ void DLLCALL ftp_server(void* arg)
 				,client_socket, startup->max_clients);
 			sockprintf(client_socket,"421 Maximum active clients reached, please try again later.");
 			mswait(3000);
-			close_socket(&client_socket,__LINE__);
+			ftp_close_socket(&client_socket,__LINE__);
 			continue;
 		}
 
@@ -4076,7 +4077,7 @@ void DLLCALL ftp_server(void* arg)
 				,client_socket,sizeof(ftp_t));
 			sockprintf(client_socket,"421 System error, please try again later.");
 			mswait(3000);
-			close_socket(&client_socket,__LINE__);
+			ftp_close_socket(&client_socket,__LINE__);
 			continue;
 		}
 
