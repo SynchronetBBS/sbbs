@@ -514,6 +514,13 @@ void sbbs_read_ini(
 		web->max_cgi_inactivity
 			=iniReadShortInt(fp,section,"MaxCgiInactivity",120);	/* seconds */
 
+		SAFECOPY(web->answer_sound
+			,iniReadString(fp,section,"AnswerSound",nulstr,value));
+		SAFECOPY(web->hangup_sound
+			,iniReadString(fp,section,"HangupSound",nulstr,value));
+		SAFECOPY(web->hack_sound
+			,iniReadString(fp,section,"HackAttemptSound",nulstr,value));
+
 		web->log_mask
 			=iniReadBitField(fp,section,strLogMask,log_mask_bits,global->log_mask);
 		web->options
@@ -1083,6 +1090,13 @@ BOOL sbbs_write_ini(
 		if(!iniSetShortInt(lp,section,"MaxInactivity",web->max_inactivity,&style))
 			break;
 		if(!iniSetShortInt(lp,section,"MaxCgiInactivity",web->max_cgi_inactivity,&style))
+			break;
+
+		if(!iniSetString(lp,section,"AnswerSound",web->answer_sound,&style))
+			break;
+		if(!iniSetString(lp,section,"HangupSound",web->hangup_sound,&style))
+			break;
+		if(!iniSetString(lp,section,"HackAttemptSound",web->hack_sound,&style))
 			break;
 
 		if(!iniSetBitField(lp,section,strOptions,web_options,web->options,&style))
