@@ -364,40 +364,47 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 	return(TRUE);
 }
 
-BOOL msg_offset_by_id(smb_t* smb, char* id, ulong* offset)
+BOOL get_msg_by_id(smb_t* smb, char* id, smbmsg_t* msg)
 {
 	ulong		n;
 	int			ret;
-	smbmsg_t	msg;
-	BOOL		match;
 
 	for(n=0;n<smb->status.last_msg;n++) {
-		memset(&msg,0,sizeof(msg));
-		msg.offset=n;
-		if(smb_getmsgidx(smb, &msg)!=0)
+		memset(&msg,0,sizeof(smbmsg_t));
+		msg->offset=n;
+		if(smb_getmsgidx(smb, msg)!=0)
 			break;
 
-		if(smb_lockmsghdr(smb,&msg)!=0)
+		if(smb_lockmsghdr(smb,msg)!=0)
 			continue;
 
-		ret=smb_getmsghdr(smb, &msg);
+		ret=smb_getmsghdr(smb,msg);
 
-		smb_unlockmsghdr(smb,&msg); 
+		smb_unlockmsghdr(smb,msg); 
 
 		if(ret!=SMB_SUCCESS)
 			continue;
 
-		match=(strcmp(msg.id,id)==0);
-
-		smb_freemsgmem(&msg);
-		
-		if(match) {
-			*offset = n;
+		if(strcmp(msg->id,id)==0)
 			return(TRUE);
-		}
+
+		smb_freemsgmem(msg);
 	}
 
 	return(FALSE);
+}
+
+BOOL msg_offset_by_id(smb_t* smb, char* id, ulong* offset)
+{
+	smbmsg_t msg;
+
+	if(!get_msg_by_id(smb,id,&msg))
+		return(FALSE);
+
+	smb_freemsgmem(&msg);
+
+	*offset = msg.offset;
+	return(TRUE);
 }
 
 static JSBool
@@ -440,28 +447,28 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 				msg.offset=JSVAL_TO_INT(argv[n]);
 			else									/* Get by number */
 				msg.hdr.number=JSVAL_TO_INT(argv[n]);
+
+			if(smb_getmsgidx(&(p->smb), &msg)!=0)
+				return(JS_TRUE);
+
+			if(smb_lockmsghdr(&(p->smb),&msg)!=0)
+				return(JS_TRUE);
+
+			if(smb_getmsghdr(&(p->smb), &msg)!=0) {
+				smb_unlockmsghdr(&(p->smb),&msg); 
+				return(JS_TRUE);
+			}
+
+			smb_unlockmsghdr(&(p->smb),&msg); 
 			break;
 		} else if(JSVAL_IS_STRING(argv[n]))	{		/* Get by ID */
-			if(!msg_offset_by_id(&(p->smb)
+			if(!get_msg_by_id(&(p->smb)
 				,JS_GetStringBytes(JSVAL_TO_STRING(argv[n]))
-				,&msg.offset))
+				,&msg))
 				return(JS_TRUE);	/* ID not found */
 			break;
 		}
 	}
-
-	if(smb_getmsgidx(&(p->smb), &msg)!=0)
-		return(JS_TRUE);
-
-	if(smb_lockmsghdr(&(p->smb),&msg)!=0)
-		return(JS_TRUE);
-
-	if(smb_getmsghdr(&(p->smb), &msg)!=0) {
-		smb_unlockmsghdr(&(p->smb),&msg); 
-		return(JS_TRUE);
-	}
-
-	smb_unlockmsghdr(&(p->smb),&msg); 
 
 	if((hdrobj=JS_NewObject(cx,&js_msghdr_class,NULL,obj))==NULL) {
 		smb_freemsgmem(&msg);
