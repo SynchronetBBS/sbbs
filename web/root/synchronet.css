@@ -40,12 +40,15 @@ a.grouplist:hover { color: #ccffdd; }
 
 table.sublist { margin-left: auto; margin-right: auto; background-color: #116677; }
 th.sublist { background-color: #007788; color: black; }
+th.sublistlft { text-align: left; background-color: #007788; color: black; }
 td.sublist { background-color: #007788; }
+td.sublistcntr { text-align: center; background-color: #007788; }
 
 table.msglist { margin-left: auto; margin-right: auto; background-color: #116677; }
 tr.msglist1 { background-color: #008699; }
 tr.msglist2 { background-color: #007688; }
 th.msglist { background-color: #007788; color: black; }
+a.msglistnu { text-decoration: none; }
 a.msglist:hover { color: #ccffdd; }
 
 table.subinfo { width: 45%; margin-left: auto; margin-right: auto; background-color: #116677; }
