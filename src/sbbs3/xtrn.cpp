@@ -799,7 +799,6 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 {
 	char	str[256];
 	char	fname[128];
-    char	fullcmdline[MAX_PATH*2];
 	char*	argv[30];
 	char*	p;
 	BYTE*	bp;
@@ -843,11 +842,6 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 		return(-1);
 	}
 
-	if(mode&EX_SH || strcspn(cmdline,"<>|")!=strlen(cmdline)) 
-		sprintf(fullcmdline,"%s -c \"%s\"", comspec,cmdline);
-	else
-		strcpy(fullcmdline,cmdline);
-
  	if(native) { // Native (32-bit) external
 
 		// Current environment passed to child process
@@ -880,7 +874,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 
 	if((pid=fork())==-1) {
 		pthread_mutex_unlock(&input_thread_mutex);
-		errormsg(WHERE,ERR_EXEC,fullcmdline,0);
+		errormsg(WHERE,ERR_EXEC,cmdline,0);
 		return(-1);
 	}
 	
@@ -888,16 +882,23 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 		if(startup_dir!=NULL && startup_dir[0])
 			chdir(startup_dir);
 
-		lprintf("Node %d executing external: %s",cfg.node_num,fullcmdline);
+		lprintf("Node %d executing external: %s",cfg.node_num,cmdline);
 
-		argv[0]=fullcmdline;	/* point to the beginning of the string */
-		argc=1;
-		for(i=0;fullcmdline[i];i++)	/* Break up command line */
-			if(fullcmdline[i]==SP) {
-				fullcmdline[i]=0;			/* insert nulls */
-				argv[argc++]=fullcmdline+i+1; /* point to the beginning of the next arg */
-			}
-		argv[argc]=0;
+		if(mode&EX_SH || strcspn(cmdline,"<>|")!=strlen(cmdline)) {
+			argv[0]=comspec;
+			argv[1]="-c";
+			argv[2]=cmdline;
+			argv[3]=NULL;
+		} else {
+			argv[0]=cmdline;	/* point to the beginning of the string */
+			argc=1;
+			for(i=0;cmdline[i];i++)	/* Break up command line */
+				if(cmdline[i]==SP) {
+					cmdline[i]=0;			/* insert nulls */
+					argv[argc++]=cmdline+i+1; /* point to the beginning of the next arg */
+				}
+			argv[argc]=NULL;
+		}
 
 		if(mode&EX_INR)  {
 			close(in_pipe[1]);		/* close write-end of pipe */
@@ -913,7 +914,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 		}	
 
 		execvp(argv[0],argv);
-		errormsg(WHERE,ERR_EXEC,fullcmdline,0);
+		errormsg(WHERE,ERR_EXEC,argv[0],0);
 		exit(-1);	/* should never get here */
 	}
 	
