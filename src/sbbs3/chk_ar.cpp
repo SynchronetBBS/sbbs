@@ -39,7 +39,7 @@
 
 bool sbbs_t::ar_exp(uchar **ptrptr, user_t* user)
 {
-	bool	result,not,or,equal;
+	bool	result,_not,_or,equal;
 	uint	i,n,artype,age;
 	ulong	l;
 	struct tm * tm;
@@ -51,29 +51,29 @@ bool sbbs_t::ar_exp(uchar **ptrptr, user_t* user)
 		if((**ptrptr)==AR_ENDNEST)
 			break;
 
-		not=or=equal = false;
+		_not=_or=equal = false;
 
 		if((**ptrptr)==AR_OR) {
-			or=true;
+			_or=true;
 			(*ptrptr)++; }
 		
 		if((**ptrptr)==AR_NOT) {
-			not=true;
+			_not=true;
 			(*ptrptr)++; }
 
 		if((**ptrptr)==AR_EQUAL) {
 			equal=true;
 			(*ptrptr)++; }
 
-		if((result && or) || (!result && !or))
+		if((result && _or) || (!result && !_or))
 			break;
 
 		if((**ptrptr)==AR_BEGNEST) {
 			(*ptrptr)++;
 			if(ar_exp(ptrptr,user))
-				result=!not;
+				result=!_not;
 			else
-				result=not;
+				result=_not;
 			while((**ptrptr)!=AR_ENDNEST && (**ptrptr)) /* in case of early exit */
 				(*ptrptr)++;
 			if(!(**ptrptr))
@@ -101,9 +101,9 @@ bool sbbs_t::ar_exp(uchar **ptrptr, user_t* user)
 		switch(artype) {
 			case AR_LEVEL:
 				if((equal && user->level!=n) || (!equal && user->level<n))
-					result=not;
+					result=_not;
 				else
-					result=!not;
+					result=!_not;
 				if(!result) {
 					noaccess_str=text[NoAccessLevel];
 					noaccess_val=n; }
@@ -111,18 +111,18 @@ bool sbbs_t::ar_exp(uchar **ptrptr, user_t* user)
 			case AR_AGE:
 				age=getage(&cfg,user->birth);
 				if((equal && age!=n) || (!equal && age<n))
-					result=not;
+					result=_not;
 				else
-					result=!not;
+					result=!_not;
 				if(!result) {
 					noaccess_str=text[NoAccessAge];
 					noaccess_val=n; }
 				break;
 			case AR_BPS:
 				if((equal && cur_rate!=i) || (!equal && cur_rate<i))
-					result=not;
+					result=_not;
 				else
-					result=!not;
+					result=!_not;
 				(*ptrptr)++;
 				if(!result) {
 					noaccess_str=text[NoAccessBPS];
@@ -130,82 +130,82 @@ bool sbbs_t::ar_exp(uchar **ptrptr, user_t* user)
 				break;
 			case AR_ANSI:
 				if(!(user->misc&ANSI))
-					result=not;
-				else result=!not;
+					result=_not;
+				else result=!_not;
 				break;
 			case AR_RIP:
 				if(!(user->misc&RIP))
-					result=not;
-				else result=!not;
+					result=_not;
+				else result=!_not;
 				break;
 			case AR_WIP:
 				if(!(user->misc&WIP))
-					result=not;
-				else result=!not;
+					result=_not;
+				else result=!_not;
 				break;
 			case AR_OS2:
 				#ifndef __OS2__
-					result=not;
+					result=_not;
 				#else
-					result=!not;
+					result=!_not;
 				#endif
 				break;
 			case AR_DOS:
 				#ifdef __FLAT__
-					result=not;
+					result=_not;
 				#else
-					result=!not;
+					result=!_not;
 				#endif
 				break;
 			case AR_WIN32:
 				#ifndef _WIN32
-					result=not;
+					result=_not;
 				#else
-					result=!not;
+					result=!_not;
 				#endif
 				break;
 			case AR_UNIX:
 				#ifndef __unix__
-					result=not;
+					result=_not;
 				#else
-					result=!not;
+					result=!_not;
 				#endif
 				break;
 			case AR_LINUX:
 				#ifndef __linux__
-					result=not;
+					result=_not;
 				#else
-					result=!not;
+					result=!_not;
 				#endif
 				break;
 			case AR_EXPERT:
 				if(!(user->misc&EXPERT))
-					result=not;
-				else result=!not;
+					result=_not;
+				else result=!_not;
 				break;
 			case AR_SYSOP:
 				if(!SYSOP)
-					result=not;
-				else result=!not;
+					result=_not;
+				else result=!_not;
 				break;
 			case AR_QUIET:
 				if(thisnode.status!=NODE_QUIET)
-					result=not;
-				else result=!not;
+					result=_not;
+				else result=!_not;
 				break;
 			case AR_LOCAL:
 				if(online!=ON_LOCAL)
-					result=not;
-				else result=!not;
+					result=_not;
+				else result=!_not;
 				break;
 			case AR_DAY:
 				now=time(NULL);
 				tm=localtime(&now);
 				if(tm==NULL || (equal && tm->tm_wday!=(int)n) 
 					|| (!equal && tm->tm_wday<(int)n))
-					result=not;
+					result=_not;
 				else
-					result=!not;
+					result=!_not;
 				if(!result) {
 					noaccess_str=text[NoAccessDay];
 					noaccess_val=n; }
@@ -214,9 +214,9 @@ bool sbbs_t::ar_exp(uchar **ptrptr, user_t* user)
 				l=(ulong)i*1024UL;
 				if((equal && user->cdt+user->freecdt!=l)
 					|| (!equal && user->cdt+user->freecdt<l))
-					result=not;
+					result=_not;
 				else
-					result=!not;
+					result=!_not;
 				(*ptrptr)++;
 				if(!result) {
 					noaccess_str=text[NoAccessCredit];
@@ -224,18 +224,18 @@ bool sbbs_t::ar_exp(uchar **ptrptr, user_t* user)
 				break;
 			case AR_NODE:
 				if((equal && cfg.node_num!=n) || (!equal && cfg.node_num<n))
-					result=not;
+					result=_not;
 				else
-					result=!not;
+					result=!_not;
 				if(!result) {
 					noaccess_str=text[NoAccessNode];
 					noaccess_val=n; }
 				break;
 			case AR_USER:
 				if((equal && user->number!=i) || (!equal && user->number<i))
-					result=not;
+					result=_not;
 				else
-					result=!not;
+					result=!_not;
 				(*ptrptr)++;
 				if(!result) {
 					noaccess_str=text[NoAccessUser];
@@ -247,9 +247,9 @@ bool sbbs_t::ar_exp(uchar **ptrptr, user_t* user)
 						|| cfg.sub[cursubnum]->grp!=i))
 					|| (!equal && cursubnum<cfg.total_subs
 						&& cfg.sub[cursubnum]->grp<i))
-					result=not;
+					result=_not;
 				else
-					result=!not;
+					result=!_not;
 				(*ptrptr)++;
 				if(!result) {
 					noaccess_str=text[NoAccessGroup];
@@ -257,9 +257,9 @@ bool sbbs_t::ar_exp(uchar **ptrptr, user_t* user)
 				break;
 			case AR_SUB:
 				if((equal && cursubnum!=i) || (!equal && cursubnum<i))
-					result=not;
+					result=_not;
 				else
-					result=!not;
+					result=!_not;
 				(*ptrptr)++;
 				if(!result) {
 					noaccess_str=text[NoAccessSub];
@@ -268,9 +268,9 @@ bool sbbs_t::ar_exp(uchar **ptrptr, user_t* user)
 			case AR_SUBCODE:
 				if(cursubnum>=cfg.total_subs
 					|| strcmp(cfg.sub[cursubnum]->code,(char*)*ptrptr))
-					result=not;
+					result=_not;
 				else
-					result=!not;
+					result=!_not;
 				while(*(*ptrptr))
 					(*ptrptr)++;
 				if(!result)
@@ -282,9 +282,9 @@ bool sbbs_t::ar_exp(uchar **ptrptr, user_t* user)
 						|| cfg.dir[curdirnum]->lib!=i))
 					|| (!equal && curdirnum<cfg.total_dirs
 						&& cfg.dir[curdirnum]->lib<i))
-					result=not;
+					result=_not;
 				else
-					result=!not;
+					result=!_not;
 				(*ptrptr)++;
 				if(!result) {
 					noaccess_str=text[NoAccessLib];
@@ -292,9 +292,9 @@ bool sbbs_t::ar_exp(uchar **ptrptr, user_t* user)
 				break;
 			case AR_DIR:
 				if((equal && curdirnum!=i) || (!equal && curdirnum<i))
-					result=not;
+					result=_not;
 				else
-					result=!not;
+					result=!_not;
 				(*ptrptr)++;
 				if(!result) {
 					noaccess_str=text[NoAccessDir];
@@ -303,9 +303,9 @@ bool sbbs_t::ar_exp(uchar **ptrptr, user_t* user)
 			case AR_DIRCODE:
 				if(curdirnum>=cfg.total_dirs
 					|| strcmp(cfg.dir[curdirnum]->code,(char *)*ptrptr))
-					result=not;
+					result=_not;
 				else
-					result=!not;
+					result=!_not;
 				while(*(*ptrptr))
 					(*ptrptr)++;
 				if(!result)
@@ -314,9 +314,9 @@ bool sbbs_t::ar_exp(uchar **ptrptr, user_t* user)
 			case AR_EXPIRE:
 				now=time(NULL);
 				if(!user->expire || now+((long)i*24L*60L*60L)>user->expire)
-					result=not;
+					result=_not;
 				else
-					result=!not;
+					result=!_not;
 				(*ptrptr)++;
 				if(!result) {
 					noaccess_str=text[NoAccessExpire];
@@ -325,54 +325,54 @@ bool sbbs_t::ar_exp(uchar **ptrptr, user_t* user)
 			case AR_RANDOM:
 				n=sbbs_random(i+1);
 				if((equal && n!=i) || (!equal && n<i))
-					result=not;
+					result=_not;
 				else
-					result=!not;
+					result=!_not;
 				(*ptrptr)++;
 				break;
 			case AR_LASTON:
 				now=time(NULL);
 				if((now-user->laston)/(24L*60L*60L)<(long)i)
-					result=not;
+					result=_not;
 				else
-					result=!not;
+					result=!_not;
 				(*ptrptr)++;
 				break;
 			case AR_LOGONS:
 				if((equal && user->logons!=i) || (!equal && user->logons<i))
-					result=not;
+					result=_not;
 				else
-					result=!not;
+					result=!_not;
 				(*ptrptr)++;
 				break;
 			case AR_MAIN_CMDS:
 				if((equal && main_cmds!=i) || (!equal && main_cmds<i))
-					result=not;
+					result=_not;
 				else
-					result=!not;
+					result=!_not;
 				(*ptrptr)++;
 				break;
 			case AR_FILE_CMDS:
 				if((equal && xfer_cmds!=i) || (!equal && xfer_cmds<i))
-					result=not;
+					result=_not;
 				else
-					result=!not;
+					result=!_not;
 				(*ptrptr)++;
 				break;
 			case AR_TLEFT:
 				if(timeleft/60<(ulong)n)
-					result=not;
+					result=_not;
 				else
-					result=!not;
+					result=!_not;
 				if(!result) {
 					noaccess_str=text[NoAccessTimeLeft];
 					noaccess_val=n; }
 				break;
 			case AR_TUSED:
 				if((time(NULL)-logontime)/60<(long)n)
-					result=not;
+					result=_not;
 				else
-					result=!not;
+					result=!_not;
 				if(!result) {
 					noaccess_str=text[NoAccessTimeUsed];
 					noaccess_val=n; }
@@ -381,9 +381,9 @@ bool sbbs_t::ar_exp(uchar **ptrptr, user_t* user)
 				now=time(NULL);
 				tm=gmtime(&now);
 				if(tm==NULL || (tm->tm_hour*60)+tm->tm_min<(int)i)
-					result=not;
+					result=_not;
 				else
-					result=!not;
+					result=!_not;
 				(*ptrptr)++;
 				if(!result) {
 					noaccess_str=text[NoAccessTime];
@@ -392,9 +392,9 @@ bool sbbs_t::ar_exp(uchar **ptrptr, user_t* user)
 			case AR_PCR:
 				if(user->logons>user->posts
 					&& (!user->posts || 100/(user->logons/user->posts)<(long)n))
-					result=not;
+					result=_not;
 				else
-					result=!not;
+					result=!_not;
 				if(!result) {
 					noaccess_str=text[NoAccessPCR];
 					noaccess_val=n; }
@@ -404,9 +404,9 @@ bool sbbs_t::ar_exp(uchar **ptrptr, user_t* user)
 				if(!l) l=1;
 				if(user->dlb>user->ulb
 					&& (!user->ulb || 100/(l/user->ulb)<n))
-					result=not;
+					result=_not;
 				else
-					result=!not;
+					result=!_not;
 				if(!result) {
 					noaccess_str=text[NoAccessUDR];
 					noaccess_val=n; }
@@ -416,9 +416,9 @@ bool sbbs_t::ar_exp(uchar **ptrptr, user_t* user)
 				if(!i) i=1;
 				if(user->dls>user->uls
 					&& (!user->uls || 100/(i/user->uls)<n))
-					result=not;
+					result=_not;
 				else
-					result=!not;
+					result=!_not;
 				if(!result) {
 					noaccess_str=text[NoAccessUDFR];
 					noaccess_val=n; }
@@ -426,9 +426,9 @@ bool sbbs_t::ar_exp(uchar **ptrptr, user_t* user)
 			case AR_FLAG1:
 				if((!equal && !(user->flags1&FLAG(n)))
 					|| (equal && user->flags1!=FLAG(n)))
-					result=not;
+					result=_not;
 				else
-					result=!not;
+					result=!_not;
 				if(!result) {
 					noaccess_str=text[NoAccessFlag1];
 					noaccess_val=n; }
@@ -436,9 +436,9 @@ bool sbbs_t::ar_exp(uchar **ptrptr, user_t* user)
 			case AR_FLAG2:
 				if((!equal && !(user->flags2&FLAG(n)))
 					|| (equal && user->flags2!=FLAG(n)))
-					result=not;
+					result=_not;
 				else
-					result=!not;
+					result=!_not;
 				if(!result) {
 					noaccess_str=text[NoAccessFlag2];
 					noaccess_val=n; }
@@ -446,9 +446,9 @@ bool sbbs_t::ar_exp(uchar **ptrptr, user_t* user)
 			case AR_FLAG3:
 				if((!equal && !(user->flags3&FLAG(n)))
 					|| (equal && user->flags3!=FLAG(n)))
-					result=not;
+					result=_not;
 				else
-					result=!not;
+					result=!_not;
 				if(!result) {
 					noaccess_str=text[NoAccessFlag3];
 					noaccess_val=n; }
@@ -456,9 +456,9 @@ bool sbbs_t::ar_exp(uchar **ptrptr, user_t* user)
 			case AR_FLAG4:
 				if((!equal && !(user->flags4&FLAG(n)))
 					|| (equal && user->flags4!=FLAG(n)))
-					result=not;
+					result=_not;
 				else
-					result=!not;
+					result=!_not;
 				if(!result) {
 					noaccess_str=text[NoAccessFlag4];
 					noaccess_val=n; }
@@ -466,9 +466,9 @@ bool sbbs_t::ar_exp(uchar **ptrptr, user_t* user)
 			case AR_REST:
 				if((!equal && !(user->rest&FLAG(n)))
 					|| (equal && user->rest!=FLAG(n)))
-					result=not;
+					result=_not;
 				else
-					result=!not;
+					result=!_not;
 				if(!result) {
 					noaccess_str=text[NoAccessRest];
 					noaccess_val=n; }
@@ -476,18 +476,18 @@ bool sbbs_t::ar_exp(uchar **ptrptr, user_t* user)
 			case AR_EXEMPT:
 				if((!equal && !(user->exempt&FLAG(n)))
 					|| (equal && user->exempt!=FLAG(n)))
-					result=not;
+					result=_not;
 				else
-					result=!not;
+					result=!_not;
 				if(!result) {
 					noaccess_str=text[NoAccessExempt];
 					noaccess_val=n; }
 				break;
 			case AR_SEX:
 				if(user->sex!=n)
-					result=not;
+					result=_not;
 				else
-					result=!not;
+					result=!_not;
 				if(!result) {
 					noaccess_str=text[NoAccessSex];
 					noaccess_val=n; }
