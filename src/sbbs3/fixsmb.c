@@ -119,7 +119,6 @@ if(!smb.file[0]) {
 	printf(usage);
 	exit(1); }
 
-strupr(smb.file);
 smb.retry_time=30;
 
 if((i=smb_open(&smb))!=0) {
