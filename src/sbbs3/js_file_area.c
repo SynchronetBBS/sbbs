@@ -94,6 +94,10 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 		if((libobj=JS_NewObject(cx, &js_file_area_class, NULL, NULL))==NULL)
 			return(NULL);
 
+		val=INT_TO_JSVAL(l);
+		if(!JS_SetProperty(cx, libobj, "number", &val))
+			return(NULL);
+
 		val=STRING_TO_JSVAL(JS_NewStringCopyZ(cx, cfg->lib[l]->sname));
 		if(!JS_SetProperty(cx, libobj, "name", &val))
 			return(NULL);
@@ -123,6 +127,10 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 				continue;
 
 			if((dirobj=JS_NewObject(cx, &js_file_area_class, NULL, NULL))==NULL)
+				return(NULL);
+
+			val=INT_TO_JSVAL(d);
+			if(!JS_SetProperty(cx, dirobj, "number", &val))
 				return(NULL);
 
 			val=STRING_TO_JSVAL(JS_NewStringCopyZ(cx, cfg->dir[d]->code));
