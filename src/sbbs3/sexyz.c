@@ -90,7 +90,6 @@ FILE*	statfp;
 char	revision[16];
 
 SOCKET	sock=INVALID_SOCKET;
-#define DCDHIGH		socket_check(sock, NULL, NULL, 0)
 
 #define getcom(t)	recv_byte(sock,t,mode)
 #define putcom(ch)	send_byte(sock,ch,10,mode)
@@ -146,7 +145,7 @@ void bail(int code)
 		fprintf(statfp,"  Flow restraint count: %u",flows);
 	fprintf(statfp,"\n");
 
-	if(1 /*code && mode&PAUSE_ABEND */) {
+	if(code && mode&PAUSE_ABEND) {
 		printf("Hit enter to continue...");
 		getchar();
 	}
@@ -206,6 +205,7 @@ void send_telnet_cmd(SOCKET sock, uchar cmd, uchar opt)
 uint recv_byte(SOCKET sock, int timeout, long mode)
 {
 	int			i;
+	long		t;
 	uchar		ch;
 	fd_set		socket_set;
 	time_t		end;
@@ -218,7 +218,8 @@ uint recv_byte(SOCKET sock, int timeout, long mode)
 
 		FD_ZERO(&socket_set);
 		FD_SET(sock,&socket_set);
-		tv.tv_sec=end-time(NULL);
+		if((t=end-time(NULL))<0) t=0;
+		tv.tv_sec=t;
 		tv.tv_usec=0;
 
 		if(select(sock+1,&socket_set,NULL,NULL,&tv)<1) {
@@ -1071,20 +1072,25 @@ void receive_files(char** fname, int fnames, FILE* log)
 }
 
 static const char* usage=
-	"usage: sexyz <socket> [opts] <cmd> [file | path | +list]\n\n"
+	"usage: sexyz <socket> [-opts] <cmd> [file | path | +list]\n"
+	"\n"
 	"socket = TCP socket descriptor\n"
-	"opts   = o  to overwrite files when receiving\n"
-	"         d  to disable dropped carrier detection\n"
-	"         a  to sound alarm at start and stop of transfer\n"
-	"         !  to pause after abnormal exit (error)\n"
+	"\n"
+	"opts   = -o  to overwrite files when receiving\n"
+	"         -a  to sound alarm at start and stop of transfer\n"
+	"         -!  to pause after abnormal exit (error)\n"
+	"         -telnet to enable Telnet mode\n"
+	"         -rlogin to enable RLogin (pass-through) mode\n"
+	"\n"
 	"cmd    = v  to display detailed version information\n"
 	"         sx to send Xmodem     rx to recv Xmodem\n"
 	"         sX to send Xmodem-1k  rc to recv Xmodem-CRC\n"
 	"         sy to send Ymodem     ry to recv Ymodem\n"
 	"         sY to send Ymodem-1k  rg to recv Ymodem-G\n"
 	"         sz to send Zmodem     rz to recv Zmodem\n"
+	"\n"
 	"file   = filename to send or receive\n"
-	"path   = path to receive files into\n"
+	"path   = directory to receive files into\n"
 	"list   = name of text file with list of filenames to send or receive\n";
 
 /***************/
@@ -1166,9 +1172,10 @@ int main(int argc, char **argv)
 						fprintf(statfp,usage);
 						exit(1); 
 				} 
+				continue;
 			}
 
-			else if(toupper(argv[i][0])=='V') {
+			if(toupper(argv[i][0])=='V') {
 
 				fprintf(statfp,"%-8s %s\n",getfname(__FILE__)		,revision);
 				fprintf(statfp,"%-8s %s\n",getfname(xmodem_source()),xmodem_ver(str));
@@ -1182,20 +1189,30 @@ int main(int argc, char **argv)
 			}
 
 
-			else if(toupper(argv[i][0])=='O')
-				mode|=OVERWRITE;
-
-			else if(toupper(argv[i][0])=='D')
-				mode|=IGNORE_DCD;
-
-			else if(toupper(argv[i][0])=='A')
-				mode|=ALARM;
-
-			else if(toupper(argv[i][0])=='!')
-				mode|=PAUSE_ABEND;
-
-			else if(argv[i][0]=='*')
-				mode|=DEBUG; 
+			if(argv[i][0]=='-') {
+				if(stricmp(argv[i]+1,"telnet")==0) {
+					mode|=TELNET;
+					continue;
+				}
+				if(stricmp(argv[i]+1,"rlogin")==0) {
+					mode&=~TELNET;
+					continue;
+				}
+				switch(toupper(argv[i][1])) {
+					case 'O':
+						mode|=OVERWRITE;
+						break;
+					case 'A':
+						mode|=ALARM;
+						break;
+					case '!':
+						mode|=PAUSE_ABEND;
+						break;
+					case 'D':
+						mode|=DEBUG; 
+						break;
+				}
+			}
 		}
 
 		else if(argv[i][0]=='+') {
@@ -1285,9 +1302,9 @@ int main(int argc, char **argv)
 	b=0;
 	setsockopt(sock,IPPROTO_TCP,TCP_NODELAY,(char*)&b,sizeof(b));
 
-	if(!DCDHIGH) {
+	if(!socket_check(sock, NULL, NULL, 0)) {
 		newline();
-		fprintf(statfp,"No carrier\n");
+		fprintf(statfp,"No socket connection\n");
 		bail(1); 
 	}
 
