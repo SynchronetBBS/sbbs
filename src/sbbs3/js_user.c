@@ -555,14 +555,14 @@ static struct JSPropertySpec js_user_properties[] = {
 static char* user_prop_desc[] = {
 
 	 "record number (1-based)"
-	,"alias"
+	,"alias/name"
 	,"real name"
 	,"chat handle"
 	,"IP address last logged on from"
 	,"AKA ip_address"
 	,"host name last logged on from"
-	,"AKA computer"
-	,"comment"
+	,"AKA host_name"
+	,"sysop's comment"
 	,"external e-mail address"
 	,"local Internet e-mail address	(READ ONLY)"
 	,"street address"
@@ -571,22 +571,22 @@ static char* user_prop_desc[] = {
 	,"phone number"
 	,"birth date"
 	,"calculated age in years (READ ONLY)"
-	,"previous connection type"
+	,"connection type"
 	,"AKA connection"
 	,"terminal rows (lines)"
-	,"gender"
-	,"settings"
+	,"gender type"
 	,"current message sub-board"
 	,"current file directory"
 	,"current external program being run"
 	,"external message editor"
 	,"command shell"
+	,"settings"
 	,"QWK packet settings"
-	,"temporary file extension"
 	,"chat settings"
-	,"new file scan time"
-	,"file transfer protocol"
-	,"logon time"
+	,"temporary file type (extension)"
+	,"new file scan date/time (time_t format)"
+	,"file transfer protocol (command key)"
+	,"logon time (time_t format)"
 	,NULL
 };
 #endif
@@ -629,7 +629,7 @@ static char* user_security_prop_desc[] = {
 	,"free credits (for today only)"
 	,"extra minutes (time bank)"
 	,"extra minutes (for today only)"
-	,"expiration date"
+	,"expiration date/time (time_t format)"
 	,NULL
 };
 #endif

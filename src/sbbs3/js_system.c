@@ -93,65 +93,7 @@ enum {
 	,SYS_PROP_TEMP_DIR
 	,SYS_PROP_EXEC_DIR
 
-	/* Must be last */
-	,SYS_PROPERTIES
 };
-
-#ifdef _DEBUG
-static char* sys_prop_desc[SYS_PROPERTIES+1] = {
-	 "BBS name"
-	,"operator name"
-	,"system QWK-ID (for QWK packets)"
-	,"settings (see SS_* in sbbsdefs.js)"
-	,"PostLink name"
-	,"PostLink system number"
-	,"Internet address (host name)"
-	,"location (city, state)"
-	,"timezone"
-	,"days between forced password changes"
-	,"days to preserve deleted user records"
-
-	,"last useron"
-	,"free disk space"
-
-	,"total number of BBS nodes"
-	,"last displayable node number"
-
-	,"new user password"
-	,"new user magic word"
-	,"new user level"
-	,"new user flag set #1"
-	,"new user flag set #2"
-	,"new user flag set #3"
-	,"new user flag set #4"
-	,"new user restriction flags"
-	,"new user exemption flags"
-	,"new user credits"
-	,"new user extra minutes"
-	,"new user command shell"
-	,"new user external editor"
-	,"new user settings"
-	,"new user file transfer protocol"
-	,"new user expiration date"
-	,"new user questions (see UQ_* in sbbsdefs.js)"
-
-	,"expired user level"
-	,"expired user flag set #1"
-	,"expired user flag set #2"
-	,"expired user flag set #3"
-	,"expired user flag set #4"
-	,"expired user restriction flags"
-	,"expired user exemption flags"
-
-	/* directories */
-	,"node directory"
-	,"control filedirectory"
-	,"data file directory"
-	,"text file directory"
-	,"tempory file directory"
-	,"executable file directory"
-};
-#endif
 
 static JSBool js_system_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
@@ -389,6 +331,65 @@ static struct JSPropertySpec js_system_properties[] = {
 	{0}
 };
 
+#ifdef _DEBUG
+static char* sys_prop_desc[] = {
+	 "BBS name"
+	,"operator name"
+	,"system QWK-ID (for QWK packets)"
+	,"settings (see SS_* in sbbsdefs.js)"
+	,"PostLink name"
+	,"PostLink system number"
+	,"Internet address (host name)"
+	,"location (city, state)"
+	,"timezone"
+	,"days between forced password changes"
+	,"days to preserve deleted user records"
+
+	,"last useron"
+	,"free disk space"
+
+	,"total number of BBS nodes"
+	,"last displayable node number"
+
+	,"new user password"
+	,"new user magic word"
+	,"new user level"
+	,"new user flag set #1"
+	,"new user flag set #2"
+	,"new user flag set #3"
+	,"new user flag set #4"
+	,"new user restriction flags"
+	,"new user exemption flags"
+	,"new user credits"
+	,"new user extra minutes"
+	,"new user command shell"
+	,"new user external editor"
+	,"new user settings"
+	,"new user file transfer protocol"
+	,"new user expiration date"
+	,"new user questions (see UQ_* in sbbsdefs.js)"
+
+	,"expired user level"
+	,"expired user flag set #1"
+	,"expired user flag set #2"
+	,"expired user flag set #3"
+	,"expired user flag set #4"
+	,"expired user restriction flags"
+	,"expired user exemption flags"
+
+	/* directories */
+	,"node directory"
+	,"control filedirectory"
+	,"data file directory"
+	,"text file directory"
+	,"tempory file directory"
+	,"executable file directory"
+
+	,NULL
+};
+#endif
+
+
 static JSClass js_system_class = {
      "System"				/* name			*/
     ,JSCLASS_HAS_PRIVATE	/* flags		*/
@@ -427,29 +428,6 @@ enum {
 
 	,SYSSTAT_PROPERTIES
 };
-
-#ifdef _DEBUG
-static char* sysstat_prop_desc[SYSSTAT_PROPERTIES+1] = {
-	 "total logons"
-	,"logons today"
-	,"total time used"
-	,"time used today"
-	,"files uploaded today"
-	,"bytes uploaded today"
-	,"files downloaded today"
-	,"bytes downloaded today"
-	,"messages posted today"
-	,"email sent today"
-	,"feedback sent today"
-	,"new users today"
-
-	,"total active user records"
-	,"total files in file bases"
-	,"total messages in message bases"
-	,"total messages in mail base"
-	,"total feedback messsages waiting"
-};
-#endif
 
 static JSBool js_sysstats_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
@@ -555,6 +533,29 @@ static struct JSPropertySpec js_sysstats_properties[] = {
 	{	"new_users_today",			SYSSTAT_PROP_NUSERS,		SYSSTAT_FLAGS,	NULL,	NULL },
 	{0}
 };
+
+#ifdef _DEBUG
+static char* sysstat_prop_desc[SYSSTAT_PROPERTIES+1] = {
+	 "total logons"
+	,"logons today"
+	,"total time used"
+	,"time used today"
+	,"total files in file bases"
+	,"files uploaded today"
+	,"bytes uploaded today"
+	,"files downloaded today"
+	,"bytes downloaded today"
+	,"total messages in message bases"
+	,"messages posted today"
+	,"total messages in mail base"
+	,"email sent today"
+	,"total feedback messsages waiting"
+	,"feedback sent today"
+	,"total active user records"
+	,"new users today"
+};
+#endif
+
 
 static JSClass js_sysstats_class = {
      "Stats"				/* name			*/
@@ -984,14 +985,14 @@ enum {
 
 #ifdef _DEBUG
 static char* node_prop_desc[] = {
-	 "status"
+	 "status (see nodedefs.js for valid values)"
 	,"error counter"
-	,"current user action"
+	,"current user action (see nodedefs.js)"
 	,"current user number"
-	,"connection speed (0xffff = TCP)"
-	,"settings"
-	,"auxillary bits"
-	,"extended auxillary bits"
+	,"connection speed (0xffff = Telnet or RLogin)"
+	,"miscellaneous flag bits (see nodedefs.js)"
+	,"auxillary field"
+	,"extended auxillary field"
 	,NULL
 };
 #endif

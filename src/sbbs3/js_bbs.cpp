@@ -123,43 +123,41 @@ enum {
 	,BBS_PROP_MSG_THREAD_ORIG
 	,BBS_PROP_MSG_THREAD_NEXT
 	,BBS_PROP_MSG_THREAD_FIRST
-	,BBS_PROP_MSG_DELIVERY_ATTEMPTS
 	,BBS_PROP_MSG_ID
 	,BBS_PROP_MSG_REPLY_ID
+	,BBS_PROP_MSG_DELIVERY_ATTEMPTS
 
-	/* MUST BE LAST */
-	,BBS_PROPERTIES
 };
 
 #ifdef _DEBUG
-	static char* bbs_prop_desc[BBS_PROPERTIES+1] = {
-	 "system status"
-	,"startup options"
-	,"answer time"
-	,"logon time"
-	,"file newscan time"
-	,"previous newscan time"
-	,"online"
+	static char* bbs_prop_desc[] = {
+	 "system status bitfield (see SS_* in sbbsdefs.js for bit definitions)"
+	,"startup options bitfield (see BBS_OPT_* in sbbsdefs.js for bit definitions)"
+	,"answer time, in time_t format"
+	,"logon time, in time_t format"
+	,"file newscan time, in time_t format"
+	,"previous newscan time, in time_t format"
+	,"online (see ON_* in sbbsdefs.js for valid values)"
 	,"timeleft (in seconds)"
 
-	,"node number"
-	,"node settings"
-	,"current node action"
-	,"validation feedback user for this node"
+	,"current node number"
+	,"current node settings bitfield (see NM_* in sbbsdefs.js for bit definitions)"
+	,"current node action (see nodedefs.js for valid values)"
+	,"validation feedback user for this node (or 0 for no validation feedback required)"
 
-	,"bytes uploaded during this logon"
-	,"bytes downloaded during this logon"
-	,"files uploaded during this logon"
-	,"files downloaded during this logon"
-	,"messages posted during this logon"
-	,"e-mails sent during this logon"
-	,"feedback messages sent during this logon"
-	,"messages read during this logon"
+	,"bytes uploaded during this session"
+	,"bytes downloaded during this session"
+	,"files uploaded during this session"
+	,"files downloaded during this session"
+	,"messages posted during this session"
+	,"e-mails sent during this session"
+	,"feedback messages sent during this session"
+	,"messages read during this session"
 
 	,"menu subdirectory (overrides default)"
 	,"menu file (overrides default)"
-	,"number of main menu commands received from user"
-	,"number of file menu commands received from user"
+	,"total main menu commands received from user during this session"
+	,"total file menu commands received from user during this session"
 
 	,"current message group"
 	,"current message sub-board"
@@ -171,52 +169,53 @@ enum {
 	,"client name"
 
 	,"current alternate upload path number"
-#if 0
-	/* READ ONLY */
-	,BBS_PROP_SMB_GROUP		
-	,BBS_PROP_SMB_GROUP_DESC
-	,BBS_PROP_SMB_GROUP_NUM
-	,BBS_PROP_SMB_SUB
-	,BBS_PROP_SMB_SUB_DESC
-	,BBS_PROP_SMB_SUB_CODE
-	,BBS_PROP_SMB_SUB_NUM
-	,BBS_PROP_SMB_ATTR
-	,BBS_PROP_SMB_LAST_MSG
-	,BBS_PROP_SMB_TOTAL_MSGS
-	,BBS_PROP_SMB_MSGS
-	,BBS_PROP_SMB_CURMSG
 
 	/* READ ONLY */
-	,BBS_PROP_MSG_TO
-	,BBS_PROP_MSG_TO_EXT
-	,BBS_PROP_MSG_TO_NET
-	,BBS_PROP_MSG_TO_AGENT
-	,BBS_PROP_MSG_FROM
-	,BBS_PROP_MSG_FROM_EXT
-	,BBS_PROP_MSG_FROM_NET
-	,BBS_PROP_MSG_FROM_AGENT
-	,BBS_PROP_MSG_REPLYTO
-	,BBS_PROP_MSG_REPLYTO_EXT
-	,BBS_PROP_MSG_REPLYTO_NET
-	,BBS_PROP_MSG_REPLYTO_AGENT
-	,BBS_PROP_MSG_SUBJECT
-	,BBS_PROP_MSG_DATE
-	,BBS_PROP_MSG_TIMEZONE
-	,BBS_PROP_MSG_DATE_IMPORTED
-	,BBS_PROP_MSG_ATTR
-	,BBS_PROP_MSG_AUXATTR
-	,BBS_PROP_MSG_NETATTR
-	,BBS_PROP_MSG_OFFSET
-	,BBS_PROP_MSG_NUMBER
-	,BBS_PROP_MSG_EXPIRATION
-	,BBS_PROP_MSG_FORWARDED
-	,BBS_PROP_MSG_THREAD_ORIG
-	,BBS_PROP_MSG_THREAD_NEXT
-	,BBS_PROP_MSG_THREAD_FIRST
-	,BBS_PROP_MSG_DELIVERY_ATTEMPTS
-	,BBS_PROP_MSG_ID
-	,BBS_PROP_MSG_REPLY_ID
-#endif
+	,"message group name of message being read"
+	,"message group description of message being read"
+	,"message group number of message being read"
+	,"sub-board name of message being read"
+	,"sub-board description of message being read"
+	,"sub-board internal code of message being read"
+	,"sub-board number of message being read"
+	,"message base attributes"
+	,"highest message number in message base"
+	,"total number of messages in message base"
+	,"number of messages loaded from message base"
+	,"current message number in message base"
+
+	/* READ ONLY */
+	,"message recipient name"
+	,"message recipient extension"
+	,"message recipient network type"
+	,"message recipient agent type"
+	,"message sender name"
+	,"message sender extension"
+	,"message sender network type"
+	,"message sender agent type"
+	,"message reply-to name"
+	,"message reply-to extension"
+	,"message reply-to network type"
+	,"message reply-to agent type"
+	,"message subject"
+	,"message date/time"
+	,"message time zone"
+	,"message date/time imported"
+	,"message attributes"
+	,"message auxillary attributes"
+	,"message network attributes"
+	,"message header offset"
+	,"message number"
+	,"message expiration"
+	,"message forwarded"
+	,"message thread, original message number"
+	,"message thread, next message number"
+	,"message thread, first reply to this message"
+	,"message identifier"
+	,"message replied-to identifier"
+	,"message delivery attempt counter"
+
+	,NULL
 	};
 #endif
 
@@ -811,8 +810,8 @@ static struct JSPropertySpec js_bbs_properties[] = {
 	{	"msg_expiration"	,BBS_PROP_MSG_EXPIRATION	,PROP_READONLY	,NULL,NULL},
 	{	"msg_forwarded"		,BBS_PROP_MSG_FORWARDED		,PROP_READONLY	,NULL,NULL},
 	{	"msg_thread_orig"	,BBS_PROP_MSG_THREAD_ORIG	,PROP_READONLY	,NULL,NULL},
-	{	"msg_thread_first"	,BBS_PROP_MSG_THREAD_FIRST	,PROP_READONLY	,NULL,NULL},
 	{	"msg_thread_next"	,BBS_PROP_MSG_THREAD_NEXT	,PROP_READONLY	,NULL,NULL},
+	{	"msg_thread_first"	,BBS_PROP_MSG_THREAD_FIRST	,PROP_READONLY	,NULL,NULL},
 	{	"msg_id"			,BBS_PROP_MSG_ID			,PROP_READONLY	,NULL,NULL},
 	{	"msg_reply_id"		,BBS_PROP_MSG_REPLY_ID		,PROP_READONLY	,NULL,NULL},
 	{	"msg_delivery_attempts"	,BBS_PROP_MSG_DELIVERY_ATTEMPTS
@@ -2452,13 +2451,13 @@ static jsMethodSpec js_bbs_functions[] = {
 	},
 	/* text.dat */
 	{"text",			js_text,			1,	JSTYPE_STRING,	JSDOCSTR("number line")
-	,JSDOCSTR("return text string from text.dat")
+	,JSDOCSTR("return a text string from text.dat")
 	},
 	{"replace_text",	js_replace_text,	2,	JSTYPE_BOOLEAN,	JSDOCSTR("number line, string text")
 	,JSDOCSTR("replace a text string")
 	},
-	{"revert_text",		js_revert_text,		0,	JSTYPE_BOOLEAN,	""
-	,JSDOCSTR("revert to original text string")
+	{"revert_text",		js_revert_text,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("[number line]")
+	,JSDOCSTR("revert to original text string, no argument indicates revert all text lines")
 	},
 	{"load_text",		js_load_text,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("string basefilename")
 	,JSDOCSTR("load an alternate text.dat from ctrl directory, automatically appends '.dat' to basefilename")
@@ -2484,82 +2483,82 @@ static jsMethodSpec js_bbs_functions[] = {
 	},
 	{"node_sync",		js_nodesync,		0,	JSTYPE_ALIAS },
 	{"nodesync",		js_nodesync,		0,	JSTYPE_VOID,	""
-	,JSDOCSTR("synchronize node with system (AKA node_sync)")
+	,JSDOCSTR("synchronize with node database, checks for messages, interruption, etc. (AKA node_sync)")
 	},
 	{"auto_msg",		js_automsg,			0,	JSTYPE_VOID,	""
-	,JSDOCSTR("edit/create auto-message")
+	,JSDOCSTR("edit/create the auto-message")
 	},		
 	{"time_bank",		js_time_bank,		0,	JSTYPE_VOID,	""
-	,JSDOCSTR("time bank")
+	,JSDOCSTR("enter the time banking system")
 	},		
 	{"qwk_sec",			js_qwk_sec,			0,	JSTYPE_VOID,	""
-	,JSDOCSTR("QWK section")
+	,JSDOCSTR("enter the QWK message packet section")
 	},		
 	{"text_sec",		js_text_sec,		0,	JSTYPE_VOID,	""
-	,JSDOCSTR("text section")
+	,JSDOCSTR("enter the text files section")
 	},		
 	{"xtrn_sec",		js_xtrn_sec,		0,	JSTYPE_VOID,	""
-	,JSDOCSTR("external programs section")
+	,JSDOCSTR("enter the external programs section")
 	},		
 	{"xfer_policy",		js_xfer_policy,		0,	JSTYPE_VOID,	""
-	,JSDOCSTR("display file transfer policy")
+	,JSDOCSTR("display the file transfer policy")
 	},		
 	{"batch_menu",		js_batchmenu,		0,	JSTYPE_VOID,	""
-	,JSDOCSTR("batch file transfer menu")
+	,JSDOCSTR("enter the batch file transfer menu")
 	},		
 	{"batch_download",	js_batchdownload,	0,	JSTYPE_VOID,	""
-	,JSDOCSTR("start batch download")
+	,JSDOCSTR("start the batch download")
 	},		
 	{"batch_add_list",	js_batchaddlist,	1,	JSTYPE_VOID,	JSDOCSTR("filename")
 	,JSDOCSTR("add file list to batch download queue")
 	},		
 	{"temp_xfer",		js_temp_xfer,		0,	JSTYPE_VOID,	""
-	,JSDOCSTR("temp xfer menu")
+	,JSDOCSTR("enter the temporary file tranfer menu")
 	},		
 	{"user_sync",		js_user_sync,		0,	JSTYPE_VOID,	""
-	,JSDOCSTR("getuserdat()")
+	,JSDOCSTR("read the current user data from the database")
 	},		
 	{"user_config",		js_user_config,		0,	JSTYPE_VOID,	""
-	,JSDOCSTR("user config")
+	,JSDOCSTR("enter the user settings configuration menu")
 	},		
 	{"sys_info",		js_sys_info,		0,	JSTYPE_VOID,	""
-	,JSDOCSTR("system info")
+	,JSDOCSTR("display system information")
 	},		
 	{"sub_info",		js_sub_info,		0,	JSTYPE_VOID,	""
-	,JSDOCSTR("sub-board info")
+	,JSDOCSTR("display current message sub-board information")
 	},		
 	{"dir_info",		js_dir_info,		0,	JSTYPE_VOID,	""
-	,JSDOCSTR("directory info")
+	,JSDOCSTR("display current file directory information")
 	},		
 	{"user_info",		js_user_info,		0,	JSTYPE_VOID,	""
-	,JSDOCSTR("current user info")
+	,JSDOCSTR("display current user information")
 	},		
 	{"ver",				js_ver,				0,	JSTYPE_VOID,	""
-	,JSDOCSTR("version info")
+	,JSDOCSTR("display software version information")
 	},		
 	{"sys_stats",		js_sys_stats,		0,	JSTYPE_VOID,	""
-	,JSDOCSTR("system stats")
+	,JSDOCSTR("display system statistics")
 	},		
 	{"node_stats",		js_node_stats,		0,	JSTYPE_VOID,	""
-	,JSDOCSTR("node stats")
+	,JSDOCSTR("display current node statistics")
 	},		
 	{"list_users",		js_userlist,		0,	JSTYPE_VOID,	""
-	,JSDOCSTR("user list")
+	,JSDOCSTR("display user list")
 	},		
 	{"edit_user",		js_useredit,		0,	JSTYPE_VOID,	""
-	,JSDOCSTR("user edit")
+	,JSDOCSTR("enter the user editor")
 	},		
 	{"change_user",		js_change_user,		0,	JSTYPE_VOID,	""
 	,JSDOCSTR("change to a different user")
 	},		
 	{"list_logons",		js_logonlist,		0,	JSTYPE_VOID,	""
-	,JSDOCSTR("logon list")
+	,JSDOCSTR("display the logon list")
 	},		
 	{"read_mail",		js_readmail,		0,	JSTYPE_VOID,	""
-	,JSDOCSTR("read private mail")
+	,JSDOCSTR("read private e-mail")
 	},		
 	{"email",			js_email,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("number user, [number mode, string top, string subject]")
-	,JSDOCSTR("send private e-mail")
+	,JSDOCSTR("send private e-mail or netmail")
 	},		
 	{"netmail",			js_netmail,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("string address, [number mode, string subject]")
 	,JSDOCSTR("send private netmail")
@@ -2568,44 +2567,44 @@ static jsMethodSpec js_bbs_functions[] = {
 	,JSDOCSTR("send bulk private e-mail")
 	},		
 	{"upload_file",		js_upload_file,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("directory")
-	,JSDOCSTR("upload of files to dirnum/code")
+	,JSDOCSTR("upload file to file directory number or internal code")
 	},		
 	{"bulk_upload",		js_bulkupload,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("directory")
-	,JSDOCSTR("local upload of files to dirnum/code")
+	,JSDOCSTR("add files (already in local storage path) to file directory number or internal code")
 	},		
 	{"resort_dir",		js_resort_dir,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("directory")
-	,JSDOCSTR("re-sort file directory")
+	,JSDOCSTR("re-sort the specified file directory (number or internal code)")
 	},		
 	{"list_files",		js_listfiles,		1,	JSTYPE_NUMBER,	JSDOCSTR("directory, [string filespec, number mode]")
-	,JSDOCSTR("listfiles(dirnum,filespec,mode)")
+	,JSDOCSTR("list files in the specified file directory, optionally specifying a file specification (wildcards) and mode")
 	},		
 	{"list_file_info",	js_listfileinfo,	1,	JSTYPE_NUMBER,	JSDOCSTR("directory, [string filespec, number mode]")
-	,JSDOCSTR("listfileinfo(dirnum,filespec,mode)")
+	,JSDOCSTR("list extended file information for files in the specified file directory")
 	},		
 	{"post_msg",		js_postmsg,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("sub-board, [number mode]")
-	,JSDOCSTR("postmsg(subnum/code, mode)")
+	,JSDOCSTR("post a message in the specified message sub-board (number or internal code) with optinal mode")
 	},		
-	{"cfg_msg_scan",	js_msgscan_cfg,		0,	JSTYPE_VOID,	JSDOCSTR("sub-board, [number mode]")
-	,JSDOCSTR("postmsg(subnum/code, mode)")
+	{"cfg_msg_scan",	js_msgscan_cfg,		0,	JSTYPE_VOID,	JSDOCSTR("[number mode]")
+	,JSDOCSTR("configure message scan")
 	},		
-	{"cfg_msg_ptrs",	js_msgscan_ptrs,	0,	JSTYPE_VOID,	JSDOCSTR("sub-board, [number mode]")
-	,JSDOCSTR("postmsg(subnum/code, mode)")
+	{"cfg_msg_ptrs",	js_msgscan_ptrs,	0,	JSTYPE_VOID,	JSDOCSTR("[number mode]")
+	,JSDOCSTR("change message scan pointers")
 	},		
 	{"reinit_msg_ptrs",	js_msgscan_reinit,	0,	JSTYPE_VOID,	""
-	,JSDOCSTR("re-init new-scan ptrs")
+	,JSDOCSTR("re-initialize new message scan pointers")
 	},		
 	{"scan_subs",		js_scansubs,		0,	JSTYPE_VOID,	JSDOCSTR("[number mode, boolean all]")
-	,JSDOCSTR("scansubs(mode,all)")
+	,JSDOCSTR("scan sub-boards for messages")
 	},		
 	{"scan_dirs",		js_scandirs,		0,	JSTYPE_VOID,	JSDOCSTR("[number mode, boolean all]")
-	,JSDOCSTR("scandirs(mode,all)")
+	,JSDOCSTR("scan directories for files")
 	},		
 	{"scan_posts",		js_scanposts,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("sub-board, [number mode, string find]")
-	,JSDOCSTR("scanposts(subnum/code, mode, findstr)")
+	,JSDOCSTR("scan posts in the specified message sub-board (number or internal code), optionally search for 'find' string")
 	},		
 	/* menuing */
 	{"menu",			js_menu,			1,	JSTYPE_VOID,	JSDOCSTR("base_filename")
-	,JSDOCSTR("show menu")
+	,JSDOCSTR("display a menu file")
 	},		
 	{"log_key",			js_logkey,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("key, [boolean comma]")
 	,JSDOCSTR("log key to node.log (comma optional)")
@@ -2615,75 +2614,75 @@ static jsMethodSpec js_bbs_functions[] = {
 	},		
 	/* users */
 	{"finduser",		js_finduser,		1,	JSTYPE_NUMBER,	JSDOCSTR("username_or_number")
-	,JSDOCSTR("find user (partial name support)")
+	,JSDOCSTR("find user name (partial name support)")
 	},		
-	{"trashcan",		js_trashcan,		2,	JSTYPE_BOOLEAN,	JSDOCSTR("can_file, search_string")
-	,JSDOCSTR("search file for psuedo-regexp")
+	{"trashcan",		js_trashcan,		2,	JSTYPE_BOOLEAN,	JSDOCSTR("base_filename, search_string")
+	,JSDOCSTR("search file for psuedo-regexp (search string) in trashcan file (text/base_filename.can)")
 	},		
 	/* xtrn programs/modules */
 	{"exec",			js_exec,			2,	JSTYPE_NUMBER,	JSDOCSTR("cmdline, [number mode, string startup_dir]")
-	,JSDOCSTR("execute command line with mode")
+	,JSDOCSTR("execute a program, optionally changing current directory to startup_dir (see EX_* in valid mode bits)")
 	},		
 	{"exec_xtrn",		js_exec_xtrn,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("xtrn_number_or_code")
-	,JSDOCSTR("execute external program by code")
+	,JSDOCSTR("execute external program by internal code")
 	},		
 	{"user_event",		js_user_event,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("number event_type")
-	,JSDOCSTR("execute user event by event type")
+	,JSDOCSTR("execute user event by event type (see EVENT_* in sbbsdefs.js)")
 	},		
 	{"telnet_gate",		js_telnet_gate,		1,	JSTYPE_VOID,	JSDOCSTR("string address, [number mode]")
-	,JSDOCSTR("external telnet gateway (w/opt mode)")
+	,JSDOCSTR("external telnet gateway (see TG_* in sbbsdefs.js for valid mode bits)")
 	},		
 	/* security */
 	{"check_syspass",	js_chksyspass,		0,	JSTYPE_BOOLEAN,	""
-	,JSDOCSTR("verify system password")
+	,JSDOCSTR("prompt for and verify system password")
 	},		
 	/* chat/node stuff */
 	{"page_sysop",		js_pagesysop,		0,	JSTYPE_BOOLEAN,	""
-	,JSDOCSTR("page sysop for chat")
+	,JSDOCSTR("page the sysop for chat")
 	},		
 	{"page_guru",		js_pageguru,		0,	JSTYPE_BOOLEAN,	""
-	,JSDOCSTR("page guru for chat")
+	,JSDOCSTR("page the guru for chat")
 	},		
 	{"multinode_chat",	js_multinode_chat,	0,	JSTYPE_VOID,	""
-	,JSDOCSTR("multi-node chat")
+	,JSDOCSTR("enter multi-node chat")
 	},		
 	{"private_message",	js_private_message,	0,	JSTYPE_VOID,	""
-	,JSDOCSTR("private inter-node message")
+	,JSDOCSTR("use the private inter-node message prompt")
 	},		
 	{"private_chat",	js_private_chat,	0,	JSTYPE_VOID,	""
-	,JSDOCSTR("private inter-node chat")
+	,JSDOCSTR("enter private inter-node chat")
 	},		
 	{"get_node_message",js_get_node_message,0,	JSTYPE_VOID,	""
-	,JSDOCSTR("getnmsg()")
+	,JSDOCSTR("receive and display an inter-node message")
 	},		
 	{"put_node_message",js_put_node_message,2,	JSTYPE_VOID,	JSDOCSTR("number node, string text")
-	,JSDOCSTR("putnmsg(nodenum,str)")
+	,JSDOCSTR("send an inter-node message")
 	},		
 	{"get_telegram",	js_get_telegram,	1,	JSTYPE_VOID,	JSDOCSTR("[number usernum]")
-	,JSDOCSTR("getsmsg(usernum)")
+	,JSDOCSTR("receive and display a telegram")
 	},		
 	{"put_telegram",	js_put_telegram,	2,	JSTYPE_VOID,	JSDOCSTR("number user, string text")
-	,JSDOCSTR("putsmsg(usernum,str)")
+	,JSDOCSTR("send a telegram to a user")
 	},		
 	{"list_nodes",		js_nodelist,		0,	JSTYPE_VOID,	""
 	,JSDOCSTR("list all nodes")
 	},		
 	{"whos_online",		js_whos_online,		0,	JSTYPE_VOID,	""
-	,JSDOCSTR("list active nodes")
+	,JSDOCSTR("list active nodes only")
 	},		
-	{"spy",				js_spy,				1,	JSTYPE_VOID,	""
-	,JSDOCSTR("spy on node")
+	{"spy",				js_spy,				1,	JSTYPE_VOID,	JSDOCSTR("node_number")
+	,JSDOCSTR("spy on a node")
 	},		
 	/* misc */
 	{"cmdstr",			js_cmdstr,			1,	JSTYPE_STRING,	JSDOCSTR("string str, [string fpath, string fspec]")
-	,JSDOCSTR("command string")
+	,JSDOCSTR("return command string using Synchronet command-line specifiers")
 	},		
 	/* input */
 	{"get_filespec",	js_getfilespec,		0,	JSTYPE_STRING,	""	
-	,JSDOCSTR("get file specification")
+	,JSDOCSTR("get a file specification from the user (wildcards)")
 	},		
 	{"get_newscantime",	js_getnstime,		1,	JSTYPE_NUMBER,	JSDOCSTR("number time")
-	,JSDOCSTR("get newscan time, returns new newscan time value")
+	,JSDOCSTR("get newscan time, returns new newscan time value (time_t)")
 	},		
 	{0}
 };
