@@ -78,7 +78,7 @@ bool sbbs_t::logon()
 			lprintf("!JavaScript ERROR creating file_area object");
 
 		/* msg_area object */
-		if(js_CreateMsgAreaObject(js_cx, js_glob, &cfg, &useron)==NULL) 
+		if(js_CreateMsgAreaObject(js_cx, js_glob, &cfg, &useron, subscan)==NULL) 
 			lprintf("!JavaScript ERROR creating msg_area object");
 	}
 #endif
