@@ -126,7 +126,8 @@ js_read(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	*rval = JSVAL_VOID;
 
-	JS_ValueToInt32(cx,argv[0],&len);
+	if(argc)
+		JS_ValueToInt32(cx,argv[0],&len);
 	if((buf=malloc(len))==NULL)
 		return(JS_TRUE);
 
@@ -148,7 +149,8 @@ js_readln(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	*rval = JSVAL_VOID;
 
-	JS_ValueToInt32(cx,argv[0],&len);
+	if(argc)
+		JS_ValueToInt32(cx,argv[0],&len);
 	if((buf=malloc(len+1))==NULL)
 		return(JS_TRUE);
 
