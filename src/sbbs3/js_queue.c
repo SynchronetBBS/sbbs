@@ -42,11 +42,9 @@ typedef struct
 {
 	char	name[128];
 	int		type;
-	size_t	length;
 	union {
 		JSBool		b;
-		int32		i;
-		jsdouble	d;
+		jsdouble	n;
 		char*		s;
 	} value;
 } queued_value_t;
@@ -71,32 +69,56 @@ static void js_finalize_queue(JSContext *cx, JSObject *obj)
 	JS_SetPrivate(cx, obj, NULL);
 }
 
-static void parse_queued_value(JSContext *cx, queued_value_t* v, jsval* rval, BOOL peek)
+static void parse_queued_value(JSContext *cx, JSObject *parent
+							   ,queued_value_t* v, jsval* rval, BOOL peek)
 {
+	queued_value_t* pv;
+	queued_value_t	term;
+	jsval	prop_val;
+	jsuint	index=0;
+	JSObject *obj;
+
+	ZERO_VAR(term);
+
 	*rval = JSVAL_VOID;
 
 	if(v==NULL)
 		return;
 
 	switch(v->type) {
-		case JSVAL_BOOLEAN:
+		case JSTYPE_BOOLEAN:
 			*rval = BOOLEAN_TO_JSVAL(v->value.b);
 			break;
-		case JSVAL_INT:
-			JS_NewNumberValue(cx,v->value.i,rval);
+		case JSTYPE_NUMBER:
+			JS_NewNumberValue(cx,v->value.n,rval);
 			break;
-		case JSVAL_DOUBLE:
-			JS_NewNumberValue(cx,v->value.d,rval);
-			break;
-		case JSVAL_STRING:
+		case JSTYPE_STRING:
 			if(v->value.s) {
 				*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,v->value.s));
 				if(!peek)
 					free(v->value.s);
 			}
 			break;
+		case JSTYPE_OBJECT:
+			obj = JS_DefineObject(cx, parent, v->name, NULL, NULL
+				,JSPROP_ENUMERATE);
+			for(pv=v+1;memcmp(pv,&term,sizeof(term));pv++) {
+				parse_queued_value(cx,obj,pv,&prop_val,peek);
+				JS_DefineProperty(cx, obj, pv->name, prop_val
+					,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+			}
+			*rval = OBJECT_TO_JSVAL(obj);
+			break;
+		case JSTYPE_ARRAY:
+			obj = JS_DefineObject(cx, parent, v->name, NULL, NULL
+				,JSPROP_ENUMERATE);
+			for(pv=v+1;memcmp(pv,&term,sizeof(term));pv++) {
+				parse_queued_value(cx,obj,pv,&prop_val,peek);
+				JS_SetElement(cx,obj,index++,&prop_val);
+			}
+			*rval = OBJECT_TO_JSVAL(obj);
+			break;
 	}
-	free(v);
 }
 
 /* Queue Object Methods */
@@ -145,7 +167,9 @@ js_read(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	} else
 		v=msgQueueRead(q, /* timeout */0);
 
-	parse_queued_value(cx, v, rval, /* peek */FALSE);
+	parse_queued_value(cx, obj, v, rval, /* peek */FALSE);
+
+	FREE_AND_NULL(v);
 
 	return(JS_TRUE);
 }
@@ -163,40 +187,96 @@ js_peek(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	v=msgQueuePeek(q, /* timeout */0);
 
-	parse_queued_value(cx, v, rval, /* peek */TRUE);
+	parse_queued_value(cx, obj, v, rval, /* peek */TRUE);
+
+	FREE_AND_NULL(v);
 
 	return(JS_TRUE);
 }
 
-BOOL js_enqueue_value(JSContext *cx, msg_queue_t* q, jsval val, char* name)
+static queued_value_t* js_encode_value(JSContext *cx, jsval val, char* name
+									   ,queued_value_t* v, size_t* count)
 {
-	queued_value_t v;
+	jsint       i;
+	jsval		prop_name;
+	jsval		prop_val;
+    JSObject*	obj;
+	JSIdArray*	id_array;
+	queued_value_t* nv;
 
-	ZERO_VAR(v);
+	if((nv=realloc(v,((*count)+1)*sizeof(queued_value_t)))==NULL) {
+		if(v) free(v);
+		return(NULL);
+	}
+	v=nv;
+	nv=v+(*count);
+	memset(nv,0,sizeof(queued_value_t));
+	(*count)++;
 
 	if(name!=NULL)
-		SAFECOPY(v.name,name);
+		SAFECOPY(nv->name,name);
 
-	switch(v.type=JSVAL_TAG(val)) {
+	switch(JSVAL_TAG(val)) {
 		case JSVAL_BOOLEAN:
-			v.length = sizeof(JSBool);
-			v.value.b=JSVAL_TO_BOOLEAN(val);
+			nv->type=JSTYPE_BOOLEAN;
+			nv->value.b=JSVAL_TO_BOOLEAN(val);
 			break;
-		case JSVAL_DOUBLE:
-			v.length =sizeof(jsdouble);
-			v.value.d = *JSVAL_TO_DOUBLE(val);
+		case JSVAL_OBJECT:
+			nv->type=JSTYPE_ARRAY;
+			obj = JSVAL_TO_OBJECT(val);
+
+			if(JSVAL_IS_NULL(val))
+				break;
+
+			if(JS_IsArrayObject(cx, obj))
+				nv->type=JSTYPE_ARRAY;
+
+			if((id_array=JS_Enumerate(cx,obj))==NULL) {
+				free(v);
+				return(NULL);
+			}
+			for(i=0; i<id_array->length; i++)  {
+				/* property name */
+				JS_IdToValue(cx,id_array->vector[i],&prop_name);
+				if(JSVAL_IS_STRING(prop_name)) {
+					name=JS_GetStringBytes(JSVAL_TO_STRING(prop_name));
+					/* value */
+					JS_GetProperty(cx,obj,name,&prop_val);
+				} else {
+					name=NULL;
+					JS_GetElement(cx,obj,i,&prop_val);
+				}
+				if((v=js_encode_value(cx,prop_val,name,v,count))==NULL)
+					break;
+			}
+			v=js_encode_value(cx,JSVAL_NULL,NULL,v,count);	/* terminate object */
 			break;
 		default:
 			if(JSVAL_IS_NUMBER(val)) {
-				v.type = JSVAL_INT;
-				JS_ValueToInt32(cx,val,&v.value.i);
+				nv->type = JSTYPE_NUMBER;
+				JS_ValueToNumber(cx,val,&nv->value.n);
 			} else {
-				v.type= JSVAL_STRING;
-				v.value.s = strdup(JS_GetStringBytes(JS_ValueToString(cx,val)));
+				nv->type= JSTYPE_STRING;
+				nv->value.s = strdup(JS_GetStringBytes(JS_ValueToString(cx,val)));
 			}
 			break;
 	}
-	return(msgQueueWrite(q,&v,sizeof(v)));
+
+	return(v);
+}
+
+BOOL js_enqueue_value(JSContext *cx, msg_queue_t* q, jsval val, char* name)
+{
+	queued_value_t* v;
+	size_t			count=0;
+	BOOL			result;
+
+	if((v=js_encode_value(cx,val,name,NULL,&count))==NULL || count<1)
+		return(FALSE);
+
+	result=msgQueueWrite(q,v,count*sizeof(queued_value_t));
+	free(v);
+	return(result);
 }
 
 static JSBool
