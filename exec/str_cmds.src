@@ -216,6 +216,7 @@ if_true
 		end_if
 
 	compare_str "SPY"
+	if_true
 		chksyspass
 		if_true
 			shift_str 3
