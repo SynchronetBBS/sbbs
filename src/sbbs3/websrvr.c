@@ -1337,19 +1337,57 @@ static void unescape(char *p)
 	*(dst)=0;
 }
 
-static void js_parse_post(http_session_t * session)
+static void js_add_queryval(http_session_t * session, char *key, char *value)
 {
+	JSObject*	keyarray;
+	jsval		val;
+	jsint		len;
+	int			alen;
+
+	/* Return existing object if it's already been created */
+	if(JS_GetProperty(session->js_cx,session->js_query,key,&val) && val!=JSVAL_VOID)  {
+		keyarray = JSVAL_TO_OBJECT(val);
+		alen=-1;
+	}
+	else {
+		keyarray = JS_NewArrayObject(session->js_cx, 0, NULL);
+		if(!JS_DefineProperty(session->js_cx, session->js_query, key, OBJECT_TO_JSVAL(keyarray)
+			, NULL, NULL, JSPROP_ENUMERATE))
+			return;
+		alen=0;
+	}
+
+	if(alen==-1) {
+		if(JS_GetArrayLength(session->js_cx, keyarray, &len)==JS_FALSE)
+			return;
+		alen=JSVAL_TO_INT(len)+1;
+	}
+
+	val=STRING_TO_JSVAL(JS_NewStringCopyZ(session->js_cx,value));
+	JS_SetElement(session->js_cx, keyarray, alen, &val);
+}
+
+static void js_add_header(http_session_t * session, char *key, char *value)  
+{
+	JSString*	js_str;
+
+	if((js_str=JS_NewStringCopyZ(session->js_cx, value))==NULL)
+		return;
+	JS_DefineProperty(session->js_cx, session->js_header, key, STRING_TO_JSVAL(js_str)
+		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+}
+
+static void js_parse_query(http_session_t * session, char *p)  {
 	size_t		key_len;
 	size_t		value_len;
 	char		*lp;
 	char		*key;
 	char		*value;
-	JSString*	js_str;
 
-	if(session->req.post_data == NULL)
+	if(p == NULL)
 		return;
 
-	lp=session->req.post_data;
+	lp=p;
 
 	while(key_len=strcspn(lp,"="))  {
 		key=lp;
@@ -1367,21 +1405,8 @@ static void js_parse_post(http_session_t * session)
 		}
 		unescape(value);
 		unescape(key);
-		if((js_str=JS_NewStringCopyZ(session->js_cx, value))==NULL)
-			return;
-		JS_DefineProperty(session->js_cx, session->js_query, key, STRING_TO_JSVAL(js_str)
-			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+		js_add_queryval(session, key, value);
 	}
-}
-
-static void js_add_header(http_session_t * session, char *key, char *value)  
-{
-	JSString*	js_str;
-
-	if((js_str=JS_NewStringCopyZ(session->js_cx, value))==NULL)
-		return;
-	JS_DefineProperty(session->js_cx, session->js_header, key, STRING_TO_JSVAL(js_str)
-		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 }
 
 static BOOL parse_headers(http_session_t * session)
@@ -1456,7 +1481,7 @@ static BOOL parse_headers(http_session_t * session)
 				session->req.post_len=0;
 			session->req.post_data[session->req.post_len]=0;
 			if(session->req.dynamic==IS_SSJS || session->req.dynamic==IS_JS)  {
-				js_parse_post(session);
+				js_parse_query(session,session->req.post_data);
 			}
 		}
 		else  {
@@ -1483,42 +1508,6 @@ static int get_version(char *p)
 		}
 	}
 	return(i-1);
-}
-
-static void js_parse_query(http_session_t * session, char *p)  {
-	size_t		key_len;
-	size_t		value_len;
-	char		*lp;
-	char		*key;
-	char		*value;
-	JSString*	js_str;
-
-	if(p == NULL)
-		return;
-
-	lp=p;
-
-	while(key_len=strcspn(lp,"="))  {
-		key=lp;
-		lp+=key_len;
-		if(*lp) {
-			*lp=0;
-			lp++;
-		}
-		value_len=strcspn(lp,"&");
-		value=lp;
-		lp+=value_len;
-		if(*lp) {
-			*lp=0;
-			lp++;
-		}
-		unescape(value);
-		unescape(key);
-		if((js_str=JS_NewStringCopyZ(session->js_cx, value))==NULL)
-			return;
-		JS_DefineProperty(session->js_cx, session->js_query, key, STRING_TO_JSVAL(js_str)
-			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
-	}
 }
 
 static int is_dynamic_req(http_session_t* session)
