@@ -66,12 +66,10 @@
 #ifdef __unix__
 char* SMBCALL strupr(char* str)
 {
-	char	ch;
 	char*	p=str;
 
 	while(*p) {
-		ch=toupper(*p);
-		*p=ch;
+		*p=toupper(*p);
 		p++;
 	}
 	return(str);
@@ -81,12 +79,10 @@ char* SMBCALL strupr(char* str)
 /****************************************************************************/
 char* SMBCALL strlwr(char* str)
 {
-	char	ch;
 	char*	p=str;
 
 	while(*p) {
-		ch=tolower(*p);
-		*p=ch;
+		*p=tolower(*p);
 		p++;
 	}
 	return(str);
