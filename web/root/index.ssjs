@@ -16,6 +16,7 @@ if(user.number==0 || user.security.restrictions&UFLAG_G) {
 	writeln('<a href="members/userlist.ssjs">User Listing</a><br />');
 	writeln('<a href="members/info.ssjs">Information Menu</a><br />');
 	writeln('<a href="members/themes.ssjs">Change Your HTML Theme</a><br />');
+    writeln('<a href="msgs/msgs.ssjs?msg_sub=mail">E-mail</q><br />');
 }
 if(user.number || (this.login!=undefined && system.matchuser("Guest")))
     writeln('<a href="msgs">Message Groups</a><br />');

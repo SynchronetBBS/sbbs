@@ -9,9 +9,5 @@
 	<td class="grouplist">%%groups:description%%</td>
 </tr>
 <<END REPEAT groups>>
-@@JS:user.security.restrictions&UFLAG_G ? '':'<tr>'+
-        '<td class="grouplist"><a class="grouplist" href="msgs.ssjs?msg_sub=mail">E-Mail</a></td>'+
-        '<td class="grouplist">Personal E-Mail</td>'+
-		'</tr>'@@
 </table>
 
