@@ -95,7 +95,6 @@
 	#else
 		#define XP_PC
 	#endif
-	#define JS_THREADSAFE	/* required for multi-thread support */
 	#include <jsapi.h>
 	#include <jsprf.h>		/* JS-safe sprintf functions */
 
