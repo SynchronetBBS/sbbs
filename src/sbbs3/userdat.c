@@ -503,42 +503,42 @@ int DLLCALL putuserdat(scfg_t* cfg, user_t* user)
 /* Returns the username in 'str' that corresponds to the 'usernumber'       */
 /* Called from functions everywhere                                         */
 /****************************************************************************/
-char* DLLCALL username(scfg_t* cfg, int usernumber, char *strin)
+char* DLLCALL username(scfg_t* cfg, int usernumber, char *name)
 {
     char	str[256];
     int		c;
     int		file;
 
-	if(strin==NULL)
+	if(name==NULL)
 		return(NULL);
 
 	if(!VALID_CFG(cfg) || usernumber<1) {
-		strin[0]=0;
-		return(strin); 
+		name[0]=0;
+		return(name); 
 	}
 	sprintf(str,"%suser/name.dat",cfg->data_dir);
 	if(flength(str)<1L) {
-		strin[0]=0;
-		return(strin); 
+		name[0]=0;
+		return(name); 
 	}
 	if((file=nopen(str,O_RDONLY))==-1) {
-		strin[0]=0;
-		return(strin); 
+		name[0]=0;
+		return(name); 
 	}
 	if(filelength(file)<(long)((long)usernumber*(LEN_ALIAS+2))) {
 		close(file);
-		strin[0]=0;
-		return(strin); 
+		name[0]=0;
+		return(name); 
 	}
 	lseek(file,(long)((long)(usernumber-1)*(LEN_ALIAS+2)),SEEK_SET);
-	read(file,strin,LEN_ALIAS);
+	read(file,name,LEN_ALIAS);
 	close(file);
 	for(c=0;c<LEN_ALIAS;c++)
-		if(strin[c]==ETX) break;
-	strin[c]=0;
+		if(name[c]==ETX) break;
+	name[c]=0;
 	if(!c)
-		strcpy(strin,"DELETED USER");
-	return(strin);
+		strcpy(name,"DELETED USER");
+	return(name);
 }
 
 /****************************************************************************/
@@ -1035,6 +1035,9 @@ int DLLCALL putsmsg(scfg_t* cfg, int usernumber, char *strin)
 	if(!VALID_CFG(cfg) || usernumber<1 || strin==NULL)
 		return(-1);
 
+	if(*strin==0)
+		return(0);
+
 	sprintf(str,"%smsgs/%4.4u.msg",cfg->data_dir,usernumber);
 	if((file=nopen(str,O_WRONLY|O_CREAT|O_APPEND))==-1) {
 		return(errno); 
@@ -1157,6 +1160,9 @@ int DLLCALL putnmsg(scfg_t* cfg, int num, char *strin)
 
 	if(!VALID_CFG(cfg) || num<1 || strin==NULL)
 		return(-1);
+
+	if(*strin==0)
+		return(0);
 
 	sprintf(str,"%smsgs/n%3.3u.msg",cfg->data_dir,num);
 	if((file=nopen(str,O_WRONLY|O_CREAT))==-1)
