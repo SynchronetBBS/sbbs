@@ -37,6 +37,7 @@
 
 #include "uifc.h"
 #include <share.h>
+#include <conio.h>
 
 #if defined(__OS2__)
 
