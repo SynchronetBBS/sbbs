@@ -425,7 +425,7 @@ void sbbs_t::qwk_sec()
 		ch=(char)getkeys(str,0);
 		if(ch>' ')
 			logch(ch,0);
-		if(sys_status&SS_ABORT || ch=='Q' || ch==CR)
+		if(sys_status&SS_ABORT || ch=='Q' || ch==CR || !online)
 			break;
 		if(ch=='?') {
 			if((useron.misc&(WIP|RIP|HTML) || !(useron.misc&EXPERT))
@@ -491,7 +491,7 @@ void sbbs_t::qwk_sec()
 					,useron.qwk&QWK_EXT ? text[Yes]:text[No]);
 				bputs(text[UserDefaultsWhich]);
 				ch=(char)getkeys("AEDFIOQTYMNCXZV",0);
-				if(sys_status&SS_ABORT || !ch || ch=='Q')
+				if(sys_status&SS_ABORT || !ch || ch=='Q' || !online)
 					break;
 				switch(ch) {
 					case 'A':
@@ -573,7 +573,7 @@ void sbbs_t::qwk_sec()
 					sprintf(tmp,"%c",cfg.prot[i]->mnemonic);
 					strcat(tmp2,tmp); }
 			ch=(char)getkeys(tmp2,0);
-			if(ch=='Q' || sys_status&SS_ABORT) {
+			if(ch=='Q' || sys_status&SS_ABORT || !online) {
 				for(i=0;i<cfg.total_subs;i++)
 					subscan[i].ptr=sav_ptr[i];	/* re-load saved pointers */
 				last_ns_time=ns_time;
@@ -675,7 +675,7 @@ void sbbs_t::qwk_sec()
 					strcat(tmp2,tmp); }
 			ungetkey(useron.prot);
 			ch=(char)getkeys(tmp2,0);
-			if(ch=='Q' || sys_status&SS_ABORT) {
+			if(ch=='Q' || sys_status&SS_ABORT || !online) {
 				for(i=0;i<cfg.total_subs;i++)
 					subscan[i].ptr=sav_ptr[i];   /* re-load saved pointers */
 				last_ns_time=ns_time;
@@ -749,7 +749,7 @@ void sbbs_t::qwk_sec()
 					sprintf(tmp,"%c",cfg.prot[i]->mnemonic);
 					strcat(tmp2,tmp); }
 			ch=(char)getkeys(tmp2,0);
-			if(ch=='Q' || sys_status&SS_ABORT)
+			if(ch=='Q' || sys_status&SS_ABORT || !online)
 				continue;
 			for(i=0;i<cfg.total_prots;i++)
 				if(cfg.prot[i]->ulcmd[0] && cfg.prot[i]->mnemonic==ch
