@@ -49,6 +49,7 @@ OBJS	=	$(LIBODIR)$(SLASH)ansiterm.$(OFILE)\
 			$(LIBODIR)$(SLASH)js_socket.$(OFILE)\
 			$(LIBODIR)$(SLASH)js_system.$(OFILE)\
 			$(LIBODIR)$(SLASH)js_user.$(OFILE)\
+			$(LIBODIR)$(SLASH)js_xtrn_area.$(OFILE)\
 			$(LIBODIR)$(SLASH)listfile.$(OFILE)\
 			$(LIBODIR)$(SLASH)load_cfg.$(OFILE)\
 			$(LIBODIR)$(SLASH)logfile.$(OFILE)\
