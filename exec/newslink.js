@@ -378,7 +378,7 @@ for(i in area) {
 		else
 			body="";
 		header=true;
-		var hdr={ from: "", to: "", subject: "", id: "" };
+		var hdr={ from: "", to: newsgroup, subject: "", id: "" };
 		while(socket.is_connected) {
 
 			line = socket.recvline(512 /*maxlen*/, 300 /*timeout*/);
