@@ -175,21 +175,21 @@ char *faddrtoa(faddr_t addr)
 if(addr.zone==0xffff)
 	strcpy(str,"ALL");
 else {
-	sprintf(str,"%u:",addr.zone);
+	sprintf(str,"%hu:",addr.zone);
 	if(addr.net==0xffff)
 		strcat(str,"ALL");
 	else {
-		sprintf(tmp,"%u/",addr.net);
+		sprintf(tmp,"%hu/",addr.net);
 		strcat(str,tmp);
 		if(addr.node==0xffff)
 			strcat(str,"ALL");
 		else {
-			sprintf(tmp,"%u",addr.node);
+			sprintf(tmp,"%hu",addr.node);
 			strcat(str,tmp);
 			if(addr.point==0xffff)
 				strcat(str,".ALL");
 			else if(addr.point) {
-				sprintf(tmp,".%u",addr.point);
+				sprintf(tmp,".%hu",addr.point);
 				strcat(str,tmp); } } } }
 return(str);
 }

@@ -382,9 +382,9 @@ char *faddrtoa(faddr_t* addr, char* outstr)
 
 	if(addr==NULL)
 		return("0:0/0");
-	sprintf(str,"%u:%u/%u",addr->zone,addr->net,addr->node);
+	sprintf(str,"%hu:%hu/%hu",addr->zone,addr->net,addr->node);
 	if(addr->point) {
-		sprintf(point,".%u",addr->point);
+		sprintf(point,".%hu",addr->point);
 		strcat(str,point); }
 	if(outstr==NULL)
 		return(str);

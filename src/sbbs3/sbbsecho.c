@@ -410,7 +410,7 @@ do {
 	sprintf(hdr.subj,"%.71s",subject);
 
 	fwrite(&hdr,sizeof(fmsghdr_t),1,fstream);
-	sprintf(str,"\1INTL %u:%u/%u %u:%u/%u\r"
+	sprintf(str,"\1INTL %hu:%hu/%hu %hu:%hu/%hu\r"
 		,hdr.destzone,hdr.destnet,hdr.destnode
 		,hdr.origzone,hdr.orignet,hdr.orignode);
 	fwrite(str,strlen(str),1,fstream);
@@ -421,10 +421,10 @@ do {
 		else
 			fwrite("\r",1,1,fstream); }
 	if(hdr.destpoint) {
-		sprintf(str,"\1TOPT %u\r",hdr.destpoint);
+		sprintf(str,"\1TOPT %hu\r",hdr.destpoint);
 		fwrite(str,strlen(str),1,fstream); }
 	if(hdr.origpoint) {
-		sprintf(str,"\1FMPT %u\r",hdr.origpoint);
+		sprintf(str,"\1FMPT %hu\r",hdr.origpoint);
 		fwrite(str,strlen(str),1,fstream); }
 	if(!file || (!(attr&ATTR_DIRECT) && file))
 		fwrite(body,strlen(body)+1,1,fstream);	/* Write additional NULL */
@@ -3232,7 +3232,7 @@ int import_netmail(char *path,fmsghdr_t hdr, FILE *fidomsg)
 	else
 		str[0]=0;
 	printf("import_netmail line %d\n",__LINE__);
-	sprintf(info,"%s%s%s (%u:%u/%u%s) To: %s (%u:%u/%u%s)"
+	sprintf(info,"%s%s%s (%hu:%hu/%hu%s) To: %s (%hu:%hu/%hu%s)"
 		,path,path[0] ? " ":""
 		,hdr.from,hdr.origzone,hdr.orignet,hdr.orignode,tmp
 		,hdr.to,hdr.destzone,hdr.destnet,hdr.destnode,str);

@@ -73,7 +73,7 @@ char *faddrtoa(fidoaddr_t addr)
 	static char str[25];
 	char point[25];
 
-	sprintf(str,"%u:%u/%u",addr.zone,addr.net,addr.node);
+	sprintf(str,"%hu:%hu/%hu",addr.zone,addr.net,addr.node);
 	if(addr.point) {
 		sprintf(point,".%u",addr.point);
 		strcat(str,point); }

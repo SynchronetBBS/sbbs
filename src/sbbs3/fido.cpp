@@ -43,18 +43,18 @@ void pt_zone_kludge(fmsghdr_t hdr,int fido)
 {
 	char str[256];
 
-	sprintf(str,"\1INTL %u:%u/%u %u:%u/%u\r"
+	sprintf(str,"\1INTL %hu:%hu/%hu %hu:%hu/%hu\r"
 		,hdr.destzone,hdr.destnet,hdr.destnode
 		,hdr.origzone,hdr.orignet,hdr.orignode);
 	write(fido,str,strlen(str));
 
 	if(hdr.destpoint) {
-		sprintf(str,"\1TOPT %u\r"
+		sprintf(str,"\1TOPT %hu\r"
 			,hdr.destpoint);
 		write(fido,str,strlen(str)); }
 
 	if(hdr.origpoint) {
-		sprintf(str,"\1FMPT %u\r"
+		sprintf(str,"\1FMPT %hu\r"
 			,hdr.origpoint);
 		write(fido,str,strlen(str)); }
 }
