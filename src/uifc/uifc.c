@@ -1447,13 +1447,13 @@ i+=6;
 if(line&BL_GET) {
 	uprintf(i,scrn_len+1,bclr|(cclr<<4),"F5 ");
 	i+=3;
-	uprintf(i,scrn_len+1,BLACK|(cclr<<4),"Get Item  ");
-	i+=10; }
+	uprintf(i,scrn_len+1,BLACK|(cclr<<4),"Copy Item  ");
+	i+=11; }
 if(line&BL_PUT) {
 	uprintf(i,scrn_len+1,bclr|(cclr<<4),"F6 ");
 	i+=3;
-	uprintf(i,scrn_len+1,BLACK|(cclr<<4),"Put Item  ");
-    i+=10; }
+	uprintf(i,scrn_len+1,BLACK|(cclr<<4),"Paste Item  ");
+    i+=12; }
 if(line&BL_INS) {
 	uprintf(i,scrn_len+1,bclr|(cclr<<4),"INS ");
 	i+=4;
