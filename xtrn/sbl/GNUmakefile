@@ -62,4 +62,5 @@ smb2sbl: smb2sbl.o $(SMBIO)
 
 sblpack: sblpack.o $(XPDEV)/filewrap.o
 
-clean: rm -f *.o
+clean:
+	rm -f *.o
