@@ -1784,6 +1784,31 @@ BOOL unpack_bundle(void)
 	static int		gi;
 
 	for(i=0;i<7;i++) {
+#if defined(__unix__)	/* support upper or lower case */
+		switch(i) {
+			case 0:
+				p="[Ss][Uu]";
+				break;
+			case 1:
+				p="[Mm][Oo]";
+				break;
+			case 2:
+				p="[Tt][Uu]";
+				break;
+			case 3:
+				p="[Ww][Ee]";
+				break;
+			case 4:
+				p="[Tt][Hh]";
+				break;
+			case 5:
+				p="[Ff][Rr]";
+				break;
+			default:
+				p="[Ss][Aa]";
+				break;
+		}
+#else
 		switch(i) {
 			case 0:
 				p="su";
@@ -1807,6 +1832,7 @@ BOOL unpack_bundle(void)
 				p="sa";
 				break;
 		}
+#endif
 		sprintf(str,"%s*.%s?",secure ? cfg.secure : cfg.inbound,p);
 		if(gi>=g.gl_pathc) {
 			gi=0;
