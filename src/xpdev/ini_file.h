@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -39,6 +39,7 @@
 #define _INI_FILE_H
 
 #include "genwrap.h"
+#include "str_list.h"	/* strList_t */
 
 #define INI_MAX_VALUE_LEN	128		/* Maximum value length, includes '\0' */
 
@@ -53,9 +54,9 @@ extern "C" {
 
 /* Read all section names and return as an allocated string list */
 /* Optionally (if prefix!=NULL), returns a subset of section names */
-char**		iniGetSectionList		(FILE* fp, const char* prefix);
+str_list_t	iniGetSectionList		(FILE* fp, const char* prefix);
 /* Read all key names and return as an allocated string list */
-char**		iniGetKeyList			(FILE* fp, const char* section);
+str_list_t	iniGetKeyList			(FILE* fp, const char* section);
 /* Read all key and value pairs and return as a named string list */
 named_string_t**
 			iniGetNamedStringList	(FILE* fp, const char* section);
@@ -63,7 +64,7 @@ named_string_t**
 /* These functions read a single key of the specified type */
 char*		iniGetString	(FILE* fp, const char* section, const char* key, 
 							 const char* deflt, char* value);
-char**		iniGetStringList(FILE* fp, const char* section, const char* key
+str_list_t	iniGetStringList(FILE* fp, const char* section, const char* key
 							,const char* sep, const char* deflt);
 long		iniGetInteger	(FILE* fp, const char* section, const char* key, 
 							 long deflt);
@@ -79,7 +80,7 @@ ulong		iniGetBitField	(FILE* fp, const char* section, const char* key,
 							 ini_bitdesc_t* bitdesc, ulong deflt);
 
 /* Free string list returned from iniGet*List functions */
-void*		iniFreeStringList(char** list);
+void*		iniFreeStringList(str_list_t list);
 
 /* Free named string list returned from iniGetNamedStringList */
 void*		iniFreeNamedStringList(named_string_t** list);

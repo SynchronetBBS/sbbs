@@ -38,18 +38,18 @@
 #include <stdlib.h>		/* malloc */
 #include "str_list.h"
 
-char** strListAlloc()
+str_list_t strListAlloc()
 {
-	char** list;
+	str_list_t list;
 
-	if((list=malloc(sizeof(char*)))==NULL)
+	if((list=(str_list_t)malloc(sizeof(char*)))==NULL)
 		return(NULL);
 
 	list[0]=NULL;	/* terminated by default */
 	return(list);
 }
 
-size_t strListCount(char** list)
+size_t strListCount(str_list_t list)
 {
 	size_t i;
 
@@ -62,15 +62,15 @@ size_t strListCount(char** list)
 	return(i);
 }
 
-char** strListAddAt(char*** list, char* str, size_t count)
+str_list_t strListAddAt(str_list_t* list, char* str, size_t count)
 {
-	char**	lp;
+	str_list_t lp;
 
-	if((lp=realloc(*list,sizeof(char*)*(count+2)))==NULL)
+	if((lp=(str_list_t)realloc(*list,sizeof(char*)*(count+2)))==NULL)
 		return(NULL);
 
 	*list=lp;
-	if((lp[count]=malloc(strlen(str)+1))==NULL)
+	if((lp[count]=(char*)malloc(strlen(str)+1))==NULL)
 		return(NULL);
 
 	strcpy(lp[count++],str);
@@ -80,12 +80,12 @@ char** strListAddAt(char*** list, char* str, size_t count)
 }
 
 
-char** strListAdd(char*** list, char* str)
+str_list_t strListAdd(str_list_t* list, char* str)
 {
 	return strListAddAt(list,str,strListCount(*list));
 }
 
-void strListFree(char*** list)
+void strListFree(str_list_t* list)
 {
 	size_t i;
 

@@ -40,7 +40,6 @@
 #include <ctype.h>		/* isdigit */
 #include "sockwrap.h"	/* inet_addr */
 #include "ini_file.h"
-#include "str_list.h"	/* strList functions */
 
 #define INI_MAX_LINE_LEN	256		/* Maximum length of entire line, includes '\0' */
 
@@ -132,15 +131,15 @@ char* iniGetString(FILE* fp, const char* section, const char* key, const char* d
 	return(value);
 }
 
-char** iniGetStringList(FILE* fp, const char* section, const char* key
+str_list_t iniGetStringList(FILE* fp, const char* section, const char* key
 						 ,const char* sep, const char* deflt)
 {
 	char*	value;
 	char	buf[INI_MAX_VALUE_LEN];
-	char**	lp;
 	char*	token;
 	char	list[INI_MAX_VALUE_LEN];
 	ulong	items=0;
+	str_list_t	lp;
 
 	if((value=get_value(fp,section,key,buf))==NULL || *value==0 /* blank */)
 		value=(char*)deflt;
@@ -160,7 +159,7 @@ char** iniGetStringList(FILE* fp, const char* section, const char* key
 	return(lp);
 }
 
-void* iniFreeStringList(char** list)
+void* iniFreeStringList(str_list_t list)
 {
 	strListFree(&list);
 	return(list);
@@ -185,13 +184,13 @@ void* iniFreeNamedStringList(named_string_t** list)
 	return(NULL);
 }
 
-char** iniGetSectionList(FILE* fp, const char* prefix)
+str_list_t iniGetSectionList(FILE* fp, const char* prefix)
 {
 	char*	p;
 	char*	tp;
-	char**	lp;
 	char	str[INI_MAX_LINE_LEN];
 	ulong	items=0;
+	str_list_t	lp;
 
 	if((lp=strListAlloc())==NULL)
 		return(NULL);
@@ -223,13 +222,13 @@ char** iniGetSectionList(FILE* fp, const char* prefix)
 	return(lp);
 }
 
-char** iniGetKeyList(FILE* fp, const char* section)
+str_list_t iniGetKeyList(FILE* fp, const char* section)
 {
 	char*	p;
 	char*	tp;
-	char**	lp;
 	char	str[INI_MAX_LINE_LEN];
 	ulong	items=0;
+	str_list_t	lp;
 
 	if((lp=strListAlloc())==NULL)
 		return(NULL);
