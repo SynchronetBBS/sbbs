@@ -111,10 +111,11 @@ else
 	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(os).exe.$(SUFFIX)/chksmb $(SBBSDIR)/exec/chksmb
 	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(os).exe.$(SUFFIX)/fixsmb $(SBBSDIR)/exec/fixsmb
 	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(os).exe.$(SUFFIX)/addfiles $(SBBSDIR)/exec/addfiles
+	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(os).exe.$(SUFFIX)/makeuser $(SBBSDIR)/exec/makeuser
 	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(os).exe.$(SUFFIX)/smbutil $(SBBSDIR)/exec/smbutil
 	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(os).exe.$(SUFFIX)/sbbs $(SBBSDIR)/exec/sbbs
 	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(os).exe.$(SUFFIX)/sbbsecho $(SBBSDIR)/exec/sbbsecho
-	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(os).exe.$(SUFFIX)/sbbsecho $(SBBSDIR)/exec/filelist
+	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(os).exe.$(SUFFIX)/filelist $(SBBSDIR)/exec/filelist
 	$(INSBIN) $(SBBSDIR)/src/sbbs3/scfg/$(CCPRE).$(os).$(SUFFIX)/scfg $(SBBSDIR)/exec/scfg
 	$(INSBIN) $(SBBSDIR)/src/sbbs3/scfg/$(CCPRE).$(os).$(SUFFIX)/scfghelp.ixb $(SBBSDIR)/exec/scfghelp.ixb
 	$(INSBIN) $(SBBSDIR)/src/sbbs3/scfg/$(CCPRE).$(os).$(SUFFIX)/scfghelp.dat $(SBBSDIR)/exec/scfghelp.dat
