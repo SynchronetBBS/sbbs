@@ -202,7 +202,7 @@ If you want to delete all the messages for this sub-board, select Yes.
 		if(j==-1)
 			continue;
 		if(j==0) {
-				sprintf(str,"%s%s.s*"
+				sprintf(str,"%s%s.*"
 					,cfg.grp[cfg.sub[i]->grp]->code_prefix
 					,cfg.sub[i]->code_suffix);
 				strlwr(str);
@@ -1276,7 +1276,7 @@ by entering the conference number you want to use.
 									sprintf(str,"%s",cfg.sub[i]->data_dir);
 								else
 									sprintf(str,"%ssubs/",cfg.data_dir);
-								sprintf(str2,"%s%s.s*"
+								sprintf(str2,"%s%s.*"
 									,cfg.grp[cfg.sub[i]->grp]->code_prefix
 									,cfg.sub[i]->code_suffix);
 								strlwr(str2);
