@@ -357,6 +357,10 @@ SOURCE=.\scfglib2.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\scfgsave.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\smblib.c
 # End Source File
 # Begin Source File
