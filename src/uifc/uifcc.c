@@ -2,6 +2,8 @@
 
 /* Curses implementation of UIFC (user interface) library based on uifc.c */
 
+/* $Id$ */
+
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*

@@ -1,3 +1,5 @@
+/* $Id$ */
+
 #include <curses.h>
 
 #ifndef	ACS_SBSD

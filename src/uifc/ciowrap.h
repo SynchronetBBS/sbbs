@@ -1,3 +1,5 @@
+/* $Id$ */
+
 #include "curs_fix.h"
 
 #define MONO	1

@@ -1,3 +1,5 @@
+/* $Id$ */
+
 #define KEY_HOME      0x47 << 8
 #define KEY_UP        72   << 8
 #define KEY_END       0x4f << 8
