@@ -137,8 +137,7 @@ int lprintf(char *fmat, ...)
 
 	va_start(argptr,fmat);
 	chcount=vsnprintf(sbuf,sizeof(sbuf),fmat,argptr);
-	if(chcount<0)
-		sbuf[sizeof(sbuf)-1]=0;
+	sbuf[sizeof(sbuf)-1]=0;
 	va_end(argptr);
 	lputs(sbuf);
 	return(chcount);
@@ -238,18 +237,19 @@ void logprintf(char *str, ...)
     time_t now;
     struct tm *gm;
 
-if(!(misc&LOGFILE) || fidologfile==NULL)
-    return;
-va_start(argptr,str);
-vsprintf(buf,str,argptr);
-va_end(argptr);
-now=time(NULL);
-gm=localtime(&now);
-fseek(fidologfile,0L,SEEK_END);
-fprintf(fidologfile,"%02u/%02u/%02u %02u:%02u:%02u %s\r\n"
-    ,gm->tm_mon+1,gm->tm_mday,TM_YEAR(gm->tm_year),gm->tm_hour,gm->tm_min,gm->tm_sec
-    ,buf);
-fflush(fidologfile);
+	if(!(misc&LOGFILE) || fidologfile==NULL)
+		return;
+	va_start(argptr,str);
+	vsnprintf(buf,sizeof(buf),str,argptr);
+	buf[sizeof(buf)-1]=0;
+	va_end(argptr);
+	now=time(NULL);
+	gm=localtime(&now);
+	fseek(fidologfile,0L,SEEK_END);
+	fprintf(fidologfile,"%02u/%02u/%02u %02u:%02u:%02u %s\r\n"
+		,gm->tm_mon+1,gm->tm_mday,TM_YEAR(gm->tm_year),gm->tm_hour,gm->tm_min,gm->tm_sec
+		,buf);
+	fflush(fidologfile);
 }
 
 /*****************************************************************************/

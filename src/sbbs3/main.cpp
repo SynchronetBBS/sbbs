@@ -152,8 +152,8 @@ int lprintf(char *fmt, ...)
         return(0);
 
     va_start(argptr,fmt);
-    if(vsnprintf(sbuf,sizeof(sbuf),fmt,argptr)<0)
-		sbuf[sizeof(sbuf)-1]=0;
+    vsnprintf(sbuf,sizeof(sbuf),fmt,argptr);
+	sbuf[sizeof(sbuf)-1]=0;
     va_end(argptr);
     return(startup->lputs(sbuf));
 }
@@ -167,8 +167,8 @@ int eprintf(char *fmt, ...)
         return(0);
 
     va_start(argptr,fmt);
-    if(vsnprintf(sbuf,sizeof(sbuf),fmt,argptr)<0)
-		sbuf[sizeof(sbuf)-1]=0;
+    vsnprintf(sbuf,sizeof(sbuf),fmt,argptr);
+	sbuf[sizeof(sbuf)-1]=0;
     va_end(argptr);
     return(startup->event_log(sbuf));
 }
