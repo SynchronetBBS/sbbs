@@ -8,15 +8,9 @@
 <TR><TD COLSPAN=2><HR></TD></TR>
 <TR>
 <TD COLSPAN=2>
-<!-- <OBJECT TYPE="text/html" DATA="msgframe.ssjs/^^group:number^^/^^sub:code^^/^^hdr:number^^" STANDBY="Loading Message..." WIDTH="95%" HEIGHT="500"> -->
 <IFRAME SRC="msgframe.ssjs/^^group:number^^/^^sub:code^^/^^hdr:number^^" WIDTH="95%" HEIGHT="75%" SCROLLING="auto">
-@@JS:if(msg.type!="html") ''; else '<!--';@@
-<PRE><FONT FACE="Courier New">
-@@JS:if(msg.type!="html") ''; else '-->';@@
+<!-- <OBJECT TYPE="text/html" DATA="msgframe.ssjs/^^group:number^^/^^sub:code^^/^^hdr:number^^" STANDBY="Loading Message..." WIDTH="95%" HEIGHT="500"> -->
 @@body@@
-@@JS:if(msg.type!="html") ''; else '<!--';@@
-</FONT></PRE>
-@@JS:if(msg.type!="html") ''; else '-->';@@
 <!-- </OBJECT> -->
 </IFRAME>
 </TD>
