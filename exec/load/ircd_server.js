@@ -72,6 +72,7 @@ function IRC_Server() {
 	this.synchronize=IRCClient_synchronize;
 	this.reintroduce_nick=IRCClient_reintroduce_nick;
 	this.finalize_server_connect=IRCClient_finalize_server_connect;
+	this.do_msg=IRCClient_do_msg;
 	// Global Functions
 	this.check_timeout=IRCClient_check_timeout;
 	this.set_chanmode=IRCClient_set_chanmode;
@@ -636,7 +637,7 @@ function Server_Work() {
 			} else {
 				break;
 			}
-			this.bcast_to_servers_raw(":" + newsrv.linkparent + " SERVER " + newsrv.nick + " " + (parseInt(newsrv.hops)+1) + " :" + newsrv.realname);
+			this.bcast_to_servers_raw(":" + newsrv.linkparent + " SERVER " + newsrv.nick + " " + (parseInt(newsrv.hops)+1) + " :" + newsrv.info);
 			break;
 		case "SJOIN":
 			if (!cmd[2])
