@@ -165,7 +165,8 @@ static char* strip_chars(uchar* str, uchar* set)
 			*(dst++)=*src;
 	}
 	*dst=0;
-	
+	free(tmp);
+
 	return(str);
 }
 
