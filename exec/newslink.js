@@ -130,8 +130,11 @@ var host;
 var port=119;
 var username;
 var password;
-var interface_ip_address=server.interface_ip_address;
+var interface_ip_address=0;
 area = new Array();
+
+if(this.server!=undefined)
+	interface_ip_address=server.interface_ip_address;
 
 /******************************/
 /* Read/Parse the Config File */
