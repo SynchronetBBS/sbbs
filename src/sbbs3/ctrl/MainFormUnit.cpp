@@ -1579,18 +1579,6 @@ void __fastcall TMainForm::UpTimerTick(TObject *Sender)
     AnsiString Str=AnsiString(str);
     if(MainForm->StatusBar->Panels->Items[4]->Text!=Str)
 		MainForm->StatusBar->Panels->Items[4]->Text=Str;
-
-    /* Memory allocated for this process */
-    MEMORYSTATUS memstat;
-
-    memstat.dwLength=sizeof(memstat);
-    GlobalMemoryStatus(&memstat);
-
-    sprintf(str,"Memory Used: %ld"
-        ,memstat.dwTotalVirtual-memstat.dwAvailVirtual);
-    Str=AnsiString(str);
-    if(MainForm->StatusBar->Panels->Items[5]->Text!=Str)
-		MainForm->StatusBar->Panels->Items[5]->Text=Str;
 }
 //---------------------------------------------------------------------------
 
