@@ -20,6 +20,11 @@ endif
 SBBS_SRC	:=	$(XPDEV)../sbbs3/
 NEED_THREADS	:=	1
 include $(XPDEV)Common.gmake
+include $(SBBS_SRC)Common.gmake
+
+ifeq ($(os),sunos)
+ LDFLAGS	+=	-lsocket -lnsl
+endif
 
 vpath %.c $(XSDK)
 
@@ -32,7 +37,13 @@ SMBIO	=	$(LIBODIR)/genwrap.o $(LIBODIR)/filewrap.o $(LIBODIR)/dirwrap.o \
 		$(LIBODIR)/smblib.o $(LIBODIR)/lzh.o
 
 $(EXEODIR)$(SLASH)sbl2smb: $(LIBODIR)$(SLASH)sbl2smb.o $(SMBIO)
+	@echo Linking $@
+	$(QUIET)$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@ $(LIBS)
 
 $(EXEODIR)$(SLASH)smb2sbl: $(LIBODIR)$(SLASH)smb2sbl.o $(SMBIO)
+	@echo Linking $@
+	$(QUIET)$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@ $(LIBS)
 
 $(EXEODIR)$(SLASH)sblpack: $(LIBODIR)$(SLASH)sblpack.o $(LIBODIR)$(SLASH)/filewrap.o
+	@echo Linking $@
+	$(QUIET)$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@ $(LIBS)
