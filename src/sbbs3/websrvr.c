@@ -1365,10 +1365,10 @@ static void send_cgi_response(http_session_t *session,FILE *output)  {
 	FREE_AND_NULL(session->req.cgi_heads);
 	session->req.cgi_heads_size=0;
 	
-	content=malloc(stats.st_size-filepos+1);
+	content=malloc(stats.st_size-filepos);
 	if(content!=NULL)  {
-		fread(content,stats.st_size-filepos+1,1,output);
-		write(session->socket,content,stats.st_size-filepos+1);
+		fread(content,stats.st_size-filepos,1,output);
+		write(session->socket,content,stats.st_size-filepos);
 		free(content);
 	}
 }
