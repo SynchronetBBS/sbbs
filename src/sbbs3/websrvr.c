@@ -1041,10 +1041,12 @@ void http_session_thread(void* arg)
 	char			host_ip[64];
 	char*			host_name;
 	HOSTENT*		host;
+	SOCKET			socket;
 	http_session_t	session=*(http_session_t*)arg;
 
 	free(arg);	/* now we don't need to worry about freeing the session */
 
+	socket=session.socket;
 	lprintf("%04d Session thread started", session.socket);
 
 	thread_up(FALSE /* setuid */);
@@ -1101,7 +1103,7 @@ void http_session_thread(void* arg)
 
 	thread_down();
 	lprintf("%04d Session thread terminated (%u clients, %u threads remain)"
-		,session.socket, active_clients, thread_count);
+		,socket, active_clients, thread_count);
 }
 
 void DLLCALL web_terminate(void)
