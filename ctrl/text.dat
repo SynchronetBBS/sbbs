@@ -182,7 +182,7 @@
 "Feedback Today  : %s\r\n"                              153 StatsFeedbacksToday
 "_\r\nyhChange to (User Name or Number): n"         154 ChUserPrompt
 "PW: "                                                  155 ChUserPwPrompt
-"\r\n%ld bytes free\r\n"                                156 NBytesFreeMemory
+"<UNUSED156>"                                           156 Unused156
 "\r\nError log:\r\n"                                    157 ErrorLogHdr
 "Delete error log"                                      158 DeleteErrorLogQ
 "\r\nNo error log exists.\r\n"                          159 NoErrorLogExists
@@ -234,7 +234,7 @@
 "_\r\nyhFilespec [\1wAll Files\1y]: n"              199 FileSpecStarDotStar
 "\r\n\r\nrhiNot enough free disk space.n\r\n"\      200 LowDiskSpace
 	"\r\nhThe sysop has been notified.n\r\n"
-"\r\n%s bytes free\r\n\r\n"                             201 DiskNBytesFree
+"\r\n%s kilobytes free\r\n\r\n"                         201 DiskNBytesFree
 "_yhFilename: n"                                    202 Filename
 "\r\nrhBad filename.\r\n"                             203 BadFilename
 "Upload '%s' to Sysop directory"                        204 UploadToSysopDirQ
