@@ -1020,30 +1020,51 @@ void SMBCALL smb_freemsgmem(smbmsg_t* msg)
 /****************************************************************************/
 /* Copies memory allocated for 'srcmsg' to 'msg'							*/
 /****************************************************************************/
-int SMBCALL smb_copymsgmem(smbmsg_t* msg, smbmsg_t* srcmsg)
+int SMBCALL smb_copymsgmem(smb_t* smb, smbmsg_t* msg, smbmsg_t* srcmsg)
 {
 	int i;
 
 	memcpy(msg,srcmsg,sizeof(smbmsg_t));
 
 	/* data field types/lengths */
-	if((msg->dfield=(dfield_t *)MALLOC(msg->hdr.total_dfields*sizeof(dfield_t)))==NULL)
-		return(SMB_ERR_MEM);
-	memcpy(msg->dfield,srcmsg->dfield,msg->hdr.total_dfields*sizeof(dfield_t));
+	if(msg->hdr.total_dfields>0) {
+		if((msg->dfield=(dfield_t *)MALLOC(msg->hdr.total_dfields*sizeof(dfield_t)))==NULL) {
+			sprintf(smb->last_error
+				,"malloc failure of %d bytes for %d data fields"
+				,msg->hdr.total_dfields*sizeof(dfield_t), msg->hdr.total_dfields);
+			return(SMB_ERR_MEM);
+		}
+		memcpy(msg->dfield,srcmsg->dfield,msg->hdr.total_dfields*sizeof(dfield_t));
+	}
 
 	/* header field types/lengths */
-	if((msg->hfield=(hfield_t *)MALLOC(msg->total_hfields*sizeof(hfield_t)))==NULL)
-		return(SMB_ERR_MEM);
-	memcpy(msg->hfield,srcmsg->hfield,msg->total_hfields*sizeof(hfield_t));
-
-	/* header field data */
-	if((msg->hfield_dat=(void**)MALLOC(msg->total_hfields*sizeof(void*)))==NULL)
-		return(SMB_ERR_MEM);
-
-	for(i=0;i<msg->total_hfields;i++) {
-		if((msg->hfield_dat[i]=(void*)MALLOC(msg->hfield[i].length))==NULL)
+	if(msg->total_hfields>0) {
+		if((msg->hfield=(hfield_t *)MALLOC(msg->total_hfields*sizeof(hfield_t)))==NULL) {
+			sprintf(smb->last_error
+				,"malloc failure of %d bytes for %d header fields"
+				,msg->total_hfields*sizeof(hfield_t), msg->total_hfields);
 			return(SMB_ERR_MEM);
-		memcpy(msg->hfield_dat[i],srcmsg->hfield_dat[i],msg->hfield[i].length);
+		}
+		memcpy(msg->hfield,srcmsg->hfield,msg->total_hfields*sizeof(hfield_t));
+
+		/* header field data */
+		if((msg->hfield_dat=(void**)MALLOC(msg->total_hfields*sizeof(void*)))==NULL) {
+			sprintf(smb->last_error
+				,"malloc failure of %d bytes for %d header fields"
+				,msg->total_hfields*sizeof(void*), msg->total_hfields);
+			return(SMB_ERR_MEM);
+		}
+
+		for(i=0;i<msg->total_hfields;i++) {
+			if((msg->hfield_dat[i]=(void*)MALLOC(msg->hfield[i].length+1))==NULL) {
+				sprintf(smb->last_error
+					,"malloc failure of %d bytes for header field #%d"
+					,msg->hfield[i].length+1, i+1);
+				return(SMB_ERR_MEM);
+			}
+			memset(msg->hfield_dat[i],0,msg->hfield[i].length+1);
+			memcpy(msg->hfield_dat[i],srcmsg->hfield_dat[i],msg->hfield[i].length);
+		}
 	}
 
 	return(SMB_SUCCESS);

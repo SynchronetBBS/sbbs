@@ -2019,7 +2019,7 @@ static void smtp_thread(void* arg)
 
 				rcpt_count=0;
 				while(!feof(rcptlst) && rcpt_count<startup->max_recipients) {
-					if((i=smb_copymsgmem(&newmsg,&msg))!=0) {
+					if((i=smb_copymsgmem(&smb,&newmsg,&msg))!=0) {
 						lprintf("%04d !SMTP ERROR %d (%s) copying message"
 							,socket, i, smb.last_error);
 						break;
