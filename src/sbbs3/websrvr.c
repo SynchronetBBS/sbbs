@@ -96,8 +96,10 @@
 #define JAVASCRIPT
 #endif
 
+#include "link_list.h"
 #include "sbbs.h"
 #include "sockwrap.h"		/* sendfilesocket() */
+#include "semwrap.h"
 #include "websrvr.h"
 #include "base64.h"
 
@@ -133,6 +135,22 @@ static DWORD	served=0;
 static web_startup_t* startup=NULL;
 static js_server_props_t js_server_props;
 
+/* Logging stuff */
+sem_t	log_sem;
+pthread_mutex_t	log_mutex;
+link_list_t	*log_list;
+struct log_data {
+	char	*hostname;
+	char	*ident;
+	char	*user;
+	char	*request;
+	char	*referrer;
+	char	*agent;
+	int		status;
+	unsigned int	size;
+	struct tm completed;
+};
+
 typedef struct  {
 	char	*val;
 	void	*next;
@@ -162,6 +180,7 @@ typedef struct  {
 	char *		post_data;
 	size_t		post_len;
 	int			dynamic;
+	struct log_data	*ld;
 
 	/* Dynamically (sever-side JS) generated HTML parameters */
 	FILE*	fp;
@@ -176,7 +195,7 @@ typedef struct  {
 	char			host_name[128];	/* Resolved remote host */
 	int				http_ver;       /* HTTP version.  0 = HTTP/0.9, 1=HTTP/1.0, 2=HTTP/1.1 */
 	BOOL			finished;		/* Do not accept any more imput from client */
-	user_t			user;
+	user_t			user;	
 
 	/* JavaScript parameters */
 	JSRuntime*		js_runtime;
@@ -241,6 +260,8 @@ enum {
 	,HEAD_LOCATION
 	,HEAD_PRAGMA
 	,HEAD_SERVER
+	,HEAD_REFERER
+	,HEAD_AGENT
 };
 
 static struct {
@@ -262,6 +283,8 @@ static struct {
 	{ HEAD_LOCATION,		"Location"				},
 	{ HEAD_PRAGMA,			"Pragma"				},
 	{ HEAD_SERVER,			"Server"				},
+	{ HEAD_REFERER,			"Referer"				},
+	{ HEAD_AGENT,			"User-Agent"			},
 	{ -1,					NULL /* terminator */	},
 };
 
@@ -432,7 +455,7 @@ static void init_enviro(http_session_t *session)  {
 	sprintf(str,"%d",startup->port);
 	add_env(session,"SERVER_PORT",str);
 	add_env(session,"GATEWAY_INTERFACE","CGI/1.1");
-	if(!strcmp(session->host_name,"<no name>"))
+	if(!strcmp(session->host_name,session->host_ip))
 		add_env(session,"REMOTE_HOST",session->host_name);
 	add_env(session,"REMOTE_ADDR",session->host_ip);
 }
@@ -807,21 +830,25 @@ static BOOL send_headers(http_session_t *session, const char *status)
 	return(send_file);
 }
 
-static void sock_sendfile(SOCKET socket,char *path)
+static int sock_sendfile(SOCKET socket,char *path)
 {
 	int		file;
 	long	offset=0;
+	int		ret=0;
 
 	if(startup->options&WEB_OPT_DEBUG_TX)
 		lprintf(LOG_DEBUG,"%04d Sending %s",socket,path);
 	if((file=open(path,O_RDONLY|O_BINARY))==-1)
 		lprintf(LOG_WARNING,"%04d !ERROR %d opening %s",socket,errno,path);
 	else {
-		if(sendfilesocket(socket, file, &offset, 0) < 1)
+		if((ret=sendfilesocket(socket, file, &offset, 0)) < 1) {
 			lprintf(LOG_DEBUG,"%04d !ERROR %d sending %s"
 				, socket, errno, path);
+			ret=0;
+		}
 		close(file);
 	}
+	return(ret);
 }
 
 static void send_error(http_session_t * session, const char* message)
@@ -829,18 +856,23 @@ static void send_error(http_session_t * session, const char* message)
 	char	error_code[4];
 	struct stat	sb;
 	char	sbuf[1024];
+	time_t	now;
 
 	lprintf(LOG_INFO,"%04d !ERROR %s",session->socket,message);
 	session->req.keep_alive=FALSE;
 	session->req.send_location=NO_LOCATION;
 	SAFECOPY(error_code,message);
 	sprintf(session->req.physical_path,"%s%s.html",error_dir,error_code);
+	session->req.ld->status=atoi(message);
 	if(session->http_ver > HTTP_0_9)  {
 		session->req.mime_type=get_mime_type(strrchr(session->req.physical_path,'.'));
 		send_headers(session,message);
 	}
-	if(!stat(session->req.physical_path,&sb))
-		sock_sendfile(session->socket,session->req.physical_path);
+	if(!stat(session->req.physical_path,&sb)) {
+		session->req.ld->size=sock_sendfile(session->socket,session->req.physical_path);
+		if(session->req.ld->size<0)
+			session->req.ld->size=0;
+	}
 	else {
 		lprintf(LOG_NOTICE,"%04d Error message file %s doesn't exist."
 			,session->socket,session->req.physical_path);
@@ -852,7 +884,14 @@ static void send_error(http_session_t * session, const char* message)
 			"%s</a></BODY></HTML>"
 			,error_code,error_code,error_code,scfg.sys_inetaddr,scfg.sys_op);
 		sockprint(session->socket,sbuf);
+		session->req.ld->size=strlen(sbuf);
 	}
+	now=time(NULL);
+	localtime_r(&now,&session->req.ld->completed);
+	pthread_mutex_lock(&log_mutex);
+	listPushNode(log_list,session->req.ld);
+	pthread_mutex_unlock(&log_mutex);
+	sem_post(&log_sem);
 	close_request(session);
 }
 
@@ -917,6 +956,7 @@ static BOOL check_ars(http_session_t * session)
 			/* Should use real name if set to do so somewhere ToDo */
 			add_env(session,"REMOTE_USER",session->user.alias);
 		}
+		session->req.ld->user=strdup(username);
 
 		return(TRUE);
 	}
@@ -1217,6 +1257,12 @@ static BOOL parse_headers(http_session_t * session)
 								,session->socket,value);
 					}
 					break;
+				case HEAD_REFERER:
+					session->req.ld->referrer=strdup(value);
+					break;
+				case HEAD_AGENT:
+					session->req.ld->agent=strdup(value);
+					break;
 				default:
 					break;
 			}
@@ -1414,6 +1460,7 @@ static BOOL get_req(http_session_t * session, char *request_line)
 		lprintf(LOG_DEBUG,"%04d Handling Internal Redirect to: %s",session->socket,request_line);
 		SAFECOPY(req_line,request_line);
 	}
+	session->req.ld->request=strdup(req_line);
 	if(req_line[0]) {
 		if(startup->options&WEB_OPT_DEBUG_RX)
 			lprintf(LOG_DEBUG,"%04d Got request line: %s",session->socket,req_line);
@@ -1643,7 +1690,7 @@ static BOOL check_request(http_session_t * session)
 		SAFECOPY(str,path);
 	}
 	
-	if(session->req.ars[0] && !(check_ars(session))) {
+	if(session->req.ars[0] && (!check_ars(session))) {
 			/* No authentication provided */
 			sprintf(str,"401 Unauthorized%s%s: Basic realm=\"%s\""
 				,newline,get_header(HEAD_WWWAUTH),scfg.sys_name);
@@ -1810,8 +1857,11 @@ static BOOL exec_cgi(http_session_t *session)
 				if(done_parsing_headers && got_valid_headers)  {
 					i=read(out_pipe[0],buf,MAX_REQUEST_LINE);
 					if(i>0)  {
+						int snt=0;
 						start=time(NULL);
-						write(session->socket,buf,i);
+						snt=write(session->socket,buf,i);
+						if(snt>0)
+							session->req.ld->size+=snt;
 					}
 					else
 						done_reading=TRUE;
@@ -1864,6 +1914,7 @@ static BOOL exec_cgi(http_session_t *session)
 							session->req.dynamic=IS_CGI;
 							if(cgi_status[0]==0)
 								SAFECOPY(cgi_status,"200 OK");
+							session->req.ld->status=200;
 							send_headers(session,cgi_status);
 						}
 						done_parsing_headers=TRUE;
@@ -1910,7 +1961,7 @@ static BOOL exec_cgi(http_session_t *session)
 			done_wait = (waitpid(child,&status,0)==child);
 		}
 	}
-			
+
 	close(in_pipe[1]);		/* close write-end of pipe */
 	close(out_pipe[0]);		/* close read-end of pipe */
 	close(err_pipe[0]);		/* close read-end of pipe */
@@ -2372,13 +2423,16 @@ static void respond(http_session_t * session)
 			,"%s/SBBS_SSJS.%d.html",startup->cgi_temp_dir,session->socket);
 	}
 
+	session->req.ld->status=atoi(session->req.status);
 	if(session->http_ver > HTTP_0_9)  {
 		session->req.mime_type=get_mime_type(strrchr(session->req.physical_path,'.'));
 		send_file=send_headers(session,session->req.status);
 	}
 	if(send_file)  {
 		lprintf(LOG_INFO,"%04d Sending file: %s",session->socket, session->req.physical_path);
-		sock_sendfile(session->socket,session->req.physical_path);
+		session->req.ld->size=sock_sendfile(session->socket,session->req.physical_path);
+		if(session->req.ld->size<0)
+			session->req.ld->size=0;
 		lprintf(LOG_INFO,"%04d Sent file: %s",session->socket, session->req.physical_path);
 	}
 	close_request(session);
@@ -2412,11 +2466,12 @@ void http_session_thread(void* arg)
 	if(host!=NULL && host->h_name!=NULL)
 		host_name=host->h_name;
 	else
-		host_name="<no name>";
+		host_name=session.host_ip;
+
+	SAFECOPY(session.host_name,host_name);
 
 	if(!(startup->options&BBS_OPT_NO_HOST_LOOKUP))  {
 		lprintf(LOG_INFO,"%04d Hostname: %s", session.socket, host_name);
-		SAFECOPY(session.host_name,host_name);
 		for(i=0;host!=NULL && host->h_aliases!=NULL 
 			&& host->h_aliases[i]!=NULL;i++)
 			lprintf(LOG_INFO,"%04d HostAlias: %s", session.socket, host->h_aliases[i]);
@@ -2427,7 +2482,6 @@ void http_session_thread(void* arg)
 			lprintf(LOG_DEBUG,"%04d Free()ing session",socket);
 			return;
 		}
-
 	}
 
 	/* host_ip wasn't defined in http_session_thread */
@@ -2451,15 +2505,37 @@ void http_session_thread(void* arg)
 		while((redirp==NULL || session.req.send_location >= MOVED_TEMP)
 				 && !session.finished && server_socket!=INVALID_SOCKET) {
 			session.req.send_location=NO_LOCATION;
+			session.req.ld=malloc(sizeof(struct log_data));
+			if(session.req.ld==NULL)
+				lprintf(LOG_ERR,"Cannot allocate memory for log data!");
+			else {
+				memset(session.req.ld,0,sizeof(struct log_data));
+				session.req.ld->hostname=strdup(session.host_name);
+			}
 			if(get_req(&session,redirp)) {
 				/* At this point, if redirp is non-NULL then the headers have already been parsed */
 				if((session.http_ver<HTTP_1_0)||redirp!=NULL||parse_headers(&session)) {
 					if(check_request(&session)) {
-						if(session.req.send_location < MOVED_TEMP || session.req.virtual_path[0]!='/' || loop_count++ >= MAX_REDIR_LOOPS)
+						time_t	now;
+						if(session.req.send_location < MOVED_TEMP || session.req.virtual_path[0]!='/' || loop_count++ >= MAX_REDIR_LOOPS) {
 							respond(&session);
+							now=time(NULL);
+							localtime_r(&now,&session.req.ld->completed);
+							pthread_mutex_lock(&log_mutex);
+							listPushNode(log_list,session.req.ld);
+							pthread_mutex_unlock(&log_mutex);
+							sem_post(&log_sem);
+						}
 						else {
 							snprintf(redir_req,MAX_REQUEST_LINE,"%s %s%s%s",methods[session.req.method]
 								,session.req.virtual_path,session.http_ver<HTTP_1_0?"":" ",http_vers[session.http_ver]);
+							now=time(NULL);
+							localtime_r(&now,&session.req.ld->completed);
+							session.req.ld->status=302;
+							pthread_mutex_lock(&log_mutex);
+							listPushNode(log_list,session.req.ld);
+							pthread_mutex_unlock(&log_mutex);
+							sem_post(&log_sem);
 							redir_req[MAX_REQUEST_LINE]=0;
 							lprintf(LOG_DEBUG,"%04d Internal Redirect to: %s",socket,redir_req);
 							redirp=redir_req;
@@ -2545,6 +2621,86 @@ const char* DLLCALL web_ver(void)
 	return(ver);
 }
 
+void http_logging_thread(void* arg)
+{
+	char	base[128];
+	char	filename[128+14];
+	char	newfilename[128+14];
+	FILE*	logfile=NULL;
+
+	SAFECOPY(base,arg);
+	if(!base[0])
+		return;
+	free(arg);
+	filename[0]=0;
+	newfilename[0]=0;
+
+	thread_up(TRUE /* setuid */);
+
+	lprintf(LOG_DEBUG,"http logging thread started");
+
+	for(;!terminate_server;) {
+		struct log_data *ld;
+		char	timestr[27];
+		char	sizestr[100];
+
+		sem_wait(&log_sem);
+
+		pthread_mutex_lock(&log_mutex);
+		ld=listRemoveNode(log_list, FIRST_NODE);
+		pthread_mutex_unlock(&log_mutex);
+		if(ld==NULL) {
+			lprintf(LOG_ERR,"Received NULL linked list log entry",filename);
+			continue;
+		}
+		SAFECOPY(newfilename,base);
+		strftime(strchr(newfilename,0),14,"%G-%m-%d.log",&ld->completed);
+		if(strcmp(newfilename,filename)) {
+			if(logfile!=NULL)
+				fclose(logfile);
+			SAFECOPY(filename,newfilename);
+			logfile=fopen(filename,"ab");
+			lprintf(LOG_INFO,"http logfile is now: %s",filename);
+		}
+		if(logfile!=NULL) {
+			sprintf(sizestr,"%d",ld->size);
+			strftime(timestr,sizeof(timestr),"%d/%b/%G:%H:%M:%S %z",&ld->completed);
+			fprintf(logfile,"%s %s %s [%s] \"%s\" %d %s \"%s\" \"%s\"\n"
+					,ld->hostname?(ld->hostname[0]?ld->hostname:"-"):"-"
+					,ld->ident?(ld->ident[0]?ld->ident:"-"):"-"
+					,ld->user?(ld->user[0]?ld->user:"-"):"-"
+					,timestr
+					,ld->request?(ld->request[0]?ld->request:"-"):"-"
+					,ld->status
+					,ld->size?sizestr:"-"
+					,ld->referrer?(ld->referrer[0]?ld->referrer:"-"):"-"
+					,ld->agent?(ld->agent[0]?ld->agent:"-"):"-");
+			fflush(logfile);
+			if(ld->hostname!=NULL)
+				free(ld->hostname);
+			if(ld->ident!=NULL)
+				free(ld->ident);
+			if(ld->user!=NULL)
+				free(ld->user);
+			if(ld->request!=NULL)
+				free(ld->request);
+			if(ld->referrer!=NULL)
+				free(ld->referrer);
+			if(ld->agent!=NULL)
+				free(ld->agent);
+			if(ld!=NULL)
+				free(ld);
+		}
+		else {
+			logfile=fopen(filename,"ab");
+			lprintf(LOG_ERR,"logfile %s was not open!",filename);
+		}
+	}
+	if(logfile!=NULL)
+		fclose(logfile);
+	thread_down();
+}
+
 void DLLCALL web_server(void* arg)
 {
 	int				i;
@@ -2621,6 +2777,17 @@ void DLLCALL web_server(void* arg)
 	served=0;
 	startup->recycle_now=FALSE;
 	terminate_server=FALSE;
+
+
+	/********************/
+	/* Start log thread */
+	/********************/
+	sem_init(&log_sem,0,0);
+	pthread_mutex_init(&log_mutex,NULL);
+	log_list=malloc(sizeof(link_list_t));
+	listInit(log_list,LINK_LIST_NEVER_FREE);
+	_beginthread(http_logging_thread, 0, strdup(startup->logfile_base));
+
 	do {
 
 		thread_up(FALSE /* setuid */);

@@ -75,6 +75,7 @@ typedef struct {
     char	error_dir[128];			/* relative to root_dir */
     char	cgi_temp_dir[128];
     char**	index_file_name;		/* Index filenames */
+	char	logfile_base[128];	/* Logfile base name (date is appended) */
 
 	/* Misc */
     char	host_name[128];
@@ -92,6 +93,7 @@ typedef struct {
 #define WEB_DEFAULT_ROOT_DIR		"../html"
 #define WEB_DEFAULT_ERROR_DIR		"error"
 #define WEB_DEFAULT_CGI_DIR			"cgi-bin"
+#define WEB_DEFAULT_LOGFILE			"../data/httpd-"
 
 #ifdef DLLEXPORT
 #undef DLLEXPORT

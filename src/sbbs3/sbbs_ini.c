@@ -434,6 +434,8 @@ void sbbs_read_ini(
 			,iniReadString(fp,section,"ErrorDirectory",WEB_DEFAULT_ERROR_DIR,value));
 		SAFECOPY(web->cgi_dir
 			,iniReadString(fp,section,"CGIDirectory",WEB_DEFAULT_CGI_DIR,value));
+		SAFECOPY(web->logfile_base
+			,iniReadString(fp,section,"LogFile",WEB_DEFAULT_LOGFILE,value));
 
 		iniFreeStringList(web->index_file_name);
 		web->index_file_name
