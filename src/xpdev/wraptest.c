@@ -10,30 +10,12 @@
 #include "threadwrap.h"
 
 static void getkey(void);
-
+static void thread_test(void* arg);
 
 typedef struct {
 	sem_t parent_sem;
 	sem_t child_sem;
 } thread_data_t;
-
-static void thread_test(void* arg)
-{
-	ulong i;
-	thread_data_t* data = (thread_data_t*)arg;
-
-	printf("thread_test entry\n");
-	sem_post(&data->child_sem);
-
-	for(i=0;i<10;i++) {
-		sem_wait(&data->parent_sem);
-		printf(" <child>\n");
-		sem_post(&data->child_sem);
-	}
-
-	printf("thread_test exit\n");
-	sem_post(&data->child_sem);
-}
 
 int main()
 {
@@ -63,7 +45,8 @@ int main()
 	printf("\nkbhit() test (any key to continue)\n");
 	while(!kbhit()) {
 		printf(".");
-		SLEEP(1000);
+		fflush(stdout);
+		SLEEP(500);
 	}
 	getch();	/* remove character from keyboard buffer */
 
@@ -155,4 +138,22 @@ static void getkey(void)
 	getch();
 	printf("\r%20s\r","");
 	fflush(stdout);
+}
+
+static void thread_test(void* arg)
+{
+	ulong i;
+	thread_data_t* data = (thread_data_t*)arg;
+
+	printf("thread_test entry\n");
+	sem_post(&data->child_sem);
+
+	for(i=0;i<10;i++) {
+		sem_wait(&data->parent_sem);
+		printf(" <child>\n");
+		sem_post(&data->child_sem);
+	}
+
+	printf("thread_test exit\n");
+	sem_post(&data->child_sem);
 }
