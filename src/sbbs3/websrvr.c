@@ -1453,7 +1453,7 @@ static BOOL check_request(http_session_t * session)
 	SAFECOPY(str,path);
 	last_slash=str+strlen(root_dir)-1;
 	/* Loop while there's more /s in path*/
-	while((last_slash=strchr(last_slash+1,'/'))!=NULL) {
+	while(((last_slash=strchr(last_slash+1,'/'))!=NULL) || ((last_slash=strchr(last_slash+1,'\\'))!=NULL)) {
 		/* Terminate the path after the slash */
 		*(last_slash+1)=0;
 		strcat(str,"access.ars");
