@@ -1697,7 +1697,8 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		_exit(-1);	/* should never get here */
 	}
 
-	lprintf(LOG_INFO,"Node %d executing external: %s",cfg.node_num,fullcmdline);
+	if(online!=ON_LOCAL)
+		lprintf(LOG_INFO,"Node %d executing external: %s",cfg.node_num,fullcmdline);
 
 	/* Disable Ctrl-C checking */
 	if(!(mode&EX_OFFLINE))
