@@ -101,6 +101,21 @@ int sbbs_t::atcodes(char *instr)
 		bputs(str2);
 	}
 
+	else if(!strcmp(sp,"UPTIME")) {
+		extern time_t uptime;
+		time_t up=time(NULL)-uptime;
+		char   days[64]="";
+		if((up/(24*60*60))>=2) {
+	        sprintf(days,"%u days ",up/(24*60*60));
+			up%=(24*60*60);
+		}
+		bprintf("%s%u:%02u"
+	        ,days
+			,up/(60*60)
+			,(up/60)%60
+			);
+	}
+
 	else if(!strcmp(sp,"SOCKET_LIB")) 
 		bputs(socklib_version(str2));
 
