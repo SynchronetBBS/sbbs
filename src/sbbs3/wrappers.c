@@ -289,6 +289,11 @@ char* _fullpath(char* absPath, const char* relPath, size_t maxLength)
 {
 	char *curdir = (char *) malloc(PATH_MAX+1);
 
+	if(curdir == NULL) {
+		strcpy(absPath,relPath);
+		return(absPath);
+	}
+
     getcwd(curdir, PATH_MAX);
     chdir(relPath);
     getcwd(absPath, maxLength);
