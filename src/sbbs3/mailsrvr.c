@@ -96,6 +96,7 @@ static int		active_sendmail=0;
 static DWORD	thread_count=0;
 static BOOL		sendmail_running=FALSE;
 static DWORD	sockets=0;
+static BOOL		recycle_server=FALSE;
 
 typedef struct {
 	SOCKET			socket;
@@ -1676,7 +1677,7 @@ static void smtp_thread(void* arg)
 					if(tp) *tp=0;
 					sprintf(rcpt_name,"%.*s",sizeof(rcpt_name)-1,p);
 				}
-				smb_hfield(&msg, RFC822HEADER, (ushort)strlen(buf), buf);
+				smb_hfield(&msg, RFC822TO, (ushort)strlen(buf), buf);
 				continue;
 			}
 			if(!strnicmp(buf, "REPLY-TO:",9)) {
@@ -2650,6 +2651,7 @@ static void sendmail_thread(void* arg)
 
 void DLLCALL mail_terminate(void)
 {
+	recycle_server=FALSE;
 	if(server_socket!=INVALID_SOCKET) {
     	lprintf("%04d MAIL Terminate: closing socket",server_socket);
 		mail_close_socket(server_socket);
@@ -2709,6 +2711,7 @@ const char* DLLCALL mail_ver(void)
 
 void DLLCALL mail_server(void* arg)
 {
+	char			path[MAX_PATH+1];
 	char			error[256];
 	char			compiler[32];
 	SOCKADDR_IN		server_addr;
@@ -2720,6 +2723,7 @@ void DLLCALL mail_server(void* arg)
 	ulong			l;
 	time_t			t;
 	time_t			start;
+	time_t			initialized;
 	LINGER			linger;
 	fd_set			socket_set;
 	SOCKET			high_socket_set;
@@ -2751,151 +2755,108 @@ void DLLCALL mail_server(void* arg)
 	if(startup->max_delivery_attempts==0)	startup->max_delivery_attempts=50;
 	if(startup->max_inactivity==0) 			startup->max_inactivity=120; /* seconds */
 
-	thread_up(FALSE /* setuid */);
+	recycle_server=TRUE;
+	do {
 
-	status("Initializing");
+		thread_up(FALSE /* setuid */);
 
-    memset(&scfg, 0, sizeof(scfg));
+		status("Initializing");
+
+		memset(&scfg, 0, sizeof(scfg));
 
 #ifdef __unix__		/* Ignore "Broken Pipe" signal */
-	signal(SIGPIPE,SIG_IGN);
+		signal(SIGPIPE,SIG_IGN);
 #endif
 
-	lprintf("Synchronet Mail Server Version %s%s"
-		,MAIL_VERSION
+		lprintf("Synchronet Mail Server Version %s%s"
+			,MAIL_VERSION
 #ifdef _DEBUG
-		," Debug"
+			," Debug"
 #else
-		,""
+			,""
 #endif
-		);
+			);
 
-	COMPILER_DESC(compiler);
+		COMPILER_DESC(compiler);
 
-	lprintf("Compiled %s %s with %s", __DATE__, __TIME__, compiler);
+		lprintf("Compiled %s %s with %s", __DATE__, __TIME__, compiler);
 
-	lprintf("SMBLIB v%s (format %x.%02x)",smb_lib_ver(),smb_ver()>>8,smb_ver()&0xff);
+		lprintf("SMBLIB v%s (format %x.%02x)",smb_lib_ver(),smb_ver()>>8,smb_ver()&0xff);
 
-	srand(time(NULL));
+		srand(time(NULL));
 
-	if(!(startup->options&MAIL_OPT_LOCAL_TIMEZONE)) {
-		if(PUTENV("TZ=UTC0"))
-			lprintf("!putenv() FAILED");
-		tzset();
+		if(!(startup->options&MAIL_OPT_LOCAL_TIMEZONE)) {
+			if(PUTENV("TZ=UTC0"))
+				lprintf("!putenv() FAILED");
+			tzset();
 
-		if((t=checktime())!=0) {   /* Check binary time */
-			lprintf("!TIME PROBLEM (%ld)",t);
+			if((t=checktime())!=0) {   /* Check binary time */
+				lprintf("!TIME PROBLEM (%ld)",t);
+				cleanup(1);
+				return;
+			}
+		}
+
+		if(!winsock_startup()) {
 			cleanup(1);
 			return;
 		}
-	}
 
-	if(!winsock_startup()) {
-		cleanup(1);
-		return;
-	}
+		t=time(NULL);
+		lprintf("Initializing on %.24s with options: %lx"
+			,ctime(&t),startup->options);
 
-	t=time(NULL);
-	lprintf("Initializing on %.24s with options: %lx"
-		,ctime(&t),startup->options);
+		/* Initial configuration and load from CNF files */
+		sprintf(scfg.ctrl_dir, "%.*s", (int)sizeof(scfg.ctrl_dir)-1
+    		,startup->ctrl_dir);
+		lprintf("Loading configuration files from %s", scfg.ctrl_dir);
+		scfg.size=sizeof(scfg);
+		if(!load_cfg(&scfg, NULL, TRUE, error)) {
+			lprintf("!ERROR %s",error);
+			lprintf("!Failed to load configuration files");
+			cleanup(1);
+			return;
+		}
 
-	/* Initial configuration and load from CNF files */
-    sprintf(scfg.ctrl_dir, "%.*s", (int)sizeof(scfg.ctrl_dir)-1
-    	,startup->ctrl_dir);
-    lprintf("Loading configuration files from %s", scfg.ctrl_dir);
-	scfg.size=sizeof(scfg);
-	if(!load_cfg(&scfg, NULL, TRUE, error)) {
-		lprintf("!ERROR %s",error);
-		lprintf("!Failed to load configuration files");
-		cleanup(1);
-		return;
-	}
+		if(startup->max_clients==0) {
+			startup->max_clients=scfg.sys_nodes;
+			if(startup->max_clients<10)
+				startup->max_clients=10;
+		}
 
-	if(startup->max_clients==0) {
-		startup->max_clients=scfg.sys_nodes;
-		if(startup->max_clients<10)
-			startup->max_clients=10;
-	}
+		lprintf("Maximum clients: %u",startup->max_clients);
 
-	lprintf("Maximum clients: %u",startup->max_clients);
+		lprintf("Maximum inactivity: %u seconds",startup->max_inactivity);
 
-	lprintf("Maximum inactivity: %u seconds",startup->max_inactivity);
-
-	active_clients=0;
-	update_clients();
-
-    /* open a socket and wait for a client */
-
-    server_socket = mail_open_socket(SOCK_STREAM);
-
-	if (server_socket == INVALID_SOCKET) {
-		lprintf("!ERROR %d opening socket", ERROR_VALUE);
-		cleanup(1);
-		return;
-	}
-
-    lprintf("%04d SMTP socket opened",server_socket);
-
-#if 1
-	linger.l_onoff=TRUE;
-    linger.l_linger=5;	/* seconds */
-
-	result = setsockopt (server_socket, SOL_SOCKET, SO_LINGER
-    	,(char *)&linger, sizeof(linger));
-
-	if (result != 0) {
-		lprintf("%04d !ERROR %d (%d) setting socket options"
-			,server_socket, result, ERROR_VALUE);
-		cleanup(1);
-		return;
-	}
-#endif
-
-	/*****************************/
-	/* Listen for incoming calls */
-	/*****************************/
-    memset(&server_addr, 0, sizeof(server_addr));
-
-	server_addr.sin_addr.s_addr = htonl(startup->interface_addr);
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_port   = htons(startup->smtp_port);
-
-    result = bind(server_socket, (struct sockaddr *) &server_addr
-    	,sizeof (server_addr));
-
-	if (result != 0) {
-		lprintf("%04d !ERROR %d (%d) binding SMTP socket to port %u"
-			,server_socket, result, ERROR_VALUE, startup->smtp_port);
-		lprintf("%04d %s",server_socket, BIND_FAILURE_HELP);
-		cleanup(1);
-		return;
-	}
-
-    lprintf("%04d SMTP socket bound to port %u"
-		,server_socket, startup->smtp_port);
-
-    result = listen (server_socket, 1);
-
-	if (result != 0) {
-		lprintf("%04d !ERROR %d (%d) listening on socket"
-			,server_socket, result, ERROR_VALUE);
-		cleanup(1);
-		return;
-	}
-
-	if(startup->options&MAIL_OPT_ALLOW_POP3) {
+		active_clients=0;
+		update_clients();
 
 		/* open a socket and wait for a client */
 
-		pop3_socket = mail_open_socket(SOCK_STREAM);
+		server_socket = mail_open_socket(SOCK_STREAM);
 
-		if (pop3_socket == INVALID_SOCKET) {
-			lprintf("!ERROR %d opening POP3 socket", ERROR_VALUE);
+		if (server_socket == INVALID_SOCKET) {
+			lprintf("!ERROR %d opening socket", ERROR_VALUE);
 			cleanup(1);
 			return;
 		}
 
-		lprintf("%04d POP3 socket opened",pop3_socket);
+		lprintf("%04d SMTP socket opened",server_socket);
+
+#if 1
+		linger.l_onoff=TRUE;
+		linger.l_linger=5;	/* seconds */
+
+		result = setsockopt (server_socket, SOL_SOCKET, SO_LINGER
+    		,(char *)&linger, sizeof(linger));
+
+		if (result != 0) {
+			lprintf("%04d !ERROR %d (%d) setting socket options"
+				,server_socket, result, ERROR_VALUE);
+			cleanup(1);
+			return;
+		}
+#endif
 
 		/*****************************/
 		/* Listen for incoming calls */
@@ -2904,203 +2865,267 @@ void DLLCALL mail_server(void* arg)
 
 		server_addr.sin_addr.s_addr = htonl(startup->interface_addr);
 		server_addr.sin_family = AF_INET;
-		server_addr.sin_port   = htons(startup->pop3_port);
+		server_addr.sin_port   = htons(startup->smtp_port);
 
-		result = bind(pop3_socket, (struct sockaddr *) &server_addr
+		result = bind(server_socket, (struct sockaddr *) &server_addr
     		,sizeof (server_addr));
 
 		if (result != 0) {
-			lprintf("%04d !ERROR %d (%d) binding POP3 socket to port %u"
-				,pop3_socket, result, ERROR_VALUE, startup->pop3_port);
-			lprintf("%04d %s",pop3_socket,BIND_FAILURE_HELP);
+			lprintf("%04d !ERROR %d (%d) binding SMTP socket to port %u"
+				,server_socket, result, ERROR_VALUE, startup->smtp_port);
+			lprintf("%04d %s",server_socket, BIND_FAILURE_HELP);
 			cleanup(1);
 			return;
 		}
 
-	    lprintf("%04d POP3 socket bound to port %u"
-			,pop3_socket, startup->pop3_port);
+		lprintf("%04d SMTP socket bound to port %u"
+			,server_socket, startup->smtp_port);
 
-		result = listen (pop3_socket, 1);
+		result = listen (server_socket, 1);
 
 		if (result != 0) {
-			lprintf("%04d !ERROR %d (%d) listening on POP3 socket"
-				,pop3_socket, result, ERROR_VALUE);
+			lprintf("%04d !ERROR %d (%d) listening on socket"
+				,server_socket, result, ERROR_VALUE);
 			cleanup(1);
 			return;
 		}
-	}
 
-	if(startup->setuid!=NULL)
-		startup->setuid();
-
-	/* signal caller that we've started up successfully */
-    if(startup->started!=NULL)
-    	startup->started();
-
-	if(!(startup->options&MAIL_OPT_NO_SENDMAIL))
-		_beginthread (sendmail_thread, 0, NULL);
-
-	lprintf("%04d Mail Server thread started",server_socket);
-	status(STATUS_WFC);
-
-	while (server_socket!=INVALID_SOCKET) {
-
-		/* now wait for connection */
-
-		FD_ZERO(&socket_set);
-		FD_SET(server_socket,&socket_set);
-		high_socket_set=server_socket+1;
 		if(startup->options&MAIL_OPT_ALLOW_POP3) {
-			FD_SET(pop3_socket,&socket_set);
-			if(pop3_socket+1>high_socket_set)
-				high_socket_set=pop3_socket+1;
-		}
 
-		tv.tv_sec=2;
-		tv.tv_usec=0;
+			/* open a socket and wait for a client */
 
-		if((i=select(high_socket_set,&socket_set,NULL,NULL,&tv))<1) {
-			if(i==0) {
-				mswait(1);
-				continue;
+			pop3_socket = mail_open_socket(SOCK_STREAM);
+
+			if (pop3_socket == INVALID_SOCKET) {
+				lprintf("!ERROR %d opening POP3 socket", ERROR_VALUE);
+				cleanup(1);
+				return;
 			}
-			if(ERROR_VALUE==EINTR)
-				lprintf("0000 Mail Server listening interrupted");
-			else if(ERROR_VALUE == ENOTSOCK)
-            	lprintf("0000 Mail Server sockets closed");
-			else
-				lprintf("0000 !ERROR %d selecting sockets",ERROR_VALUE);
-			break;
+
+			lprintf("%04d POP3 socket opened",pop3_socket);
+
+			/*****************************/
+			/* Listen for incoming calls */
+			/*****************************/
+			memset(&server_addr, 0, sizeof(server_addr));
+
+			server_addr.sin_addr.s_addr = htonl(startup->interface_addr);
+			server_addr.sin_family = AF_INET;
+			server_addr.sin_port   = htons(startup->pop3_port);
+
+			result = bind(pop3_socket, (struct sockaddr *) &server_addr
+    			,sizeof (server_addr));
+
+			if (result != 0) {
+				lprintf("%04d !ERROR %d (%d) binding POP3 socket to port %u"
+					,pop3_socket, result, ERROR_VALUE, startup->pop3_port);
+				lprintf("%04d %s",pop3_socket,BIND_FAILURE_HELP);
+				cleanup(1);
+				return;
+			}
+
+			lprintf("%04d POP3 socket bound to port %u"
+				,pop3_socket, startup->pop3_port);
+
+			result = listen (pop3_socket, 1);
+
+			if (result != 0) {
+				lprintf("%04d !ERROR %d (%d) listening on POP3 socket"
+					,pop3_socket, result, ERROR_VALUE);
+				cleanup(1);
+				return;
+			}
 		}
 
+		if(startup->setuid!=NULL)
+			startup->setuid();
 
-		if(FD_ISSET(server_socket,&socket_set)) {
+		/* signal caller that we've started up successfully */
+		if(startup->started!=NULL)
+    		startup->started();
 
-			client_addr_len = sizeof (client_addr);
-			client_socket = accept(server_socket, (struct sockaddr *)&client_addr
-        		,&client_addr_len);
+		if(!(startup->options&MAIL_OPT_NO_SENDMAIL))
+			_beginthread (sendmail_thread, 0, NULL);
 
-			if (client_socket == INVALID_SOCKET)
-			{
-				if(ERROR_VALUE == ENOTSOCK)
-            		lprintf("%04d SMTP socket closed while listening",server_socket);
+		lprintf("%04d Mail Server thread started",server_socket);
+		status(STATUS_WFC);
+
+		initialized=time(NULL);
+
+		while (server_socket!=INVALID_SOCKET) {
+
+			sprintf(path,"%smailsrvr.rec",scfg.ctrl_dir);
+			if(fdate(path)>initialized) {
+				lprintf("0000 Recycle semaphore detected");
+				break;
+			}
+
+			/* now wait for connection */
+
+			FD_ZERO(&socket_set);
+			FD_SET(server_socket,&socket_set);
+			high_socket_set=server_socket+1;
+			if(startup->options&MAIL_OPT_ALLOW_POP3) {
+				FD_SET(pop3_socket,&socket_set);
+				if(pop3_socket+1>high_socket_set)
+					high_socket_set=pop3_socket+1;
+			}
+
+			tv.tv_sec=5;
+			tv.tv_usec=0;
+
+			if((i=select(high_socket_set,&socket_set,NULL,NULL,&tv))<1) {
+				if(i==0) {
+					mswait(1);
+					continue;
+				}
+				if(ERROR_VALUE==EINTR)
+					lprintf("0000 Mail Server listening interrupted");
+				else if(ERROR_VALUE == ENOTSOCK)
+            		lprintf("0000 Mail Server sockets closed");
 				else
-					lprintf("%04d !ERROR %d accept failed", server_socket, ERROR_VALUE);
+					lprintf("0000 !ERROR %d selecting sockets",ERROR_VALUE);
 				break;
 			}
-			if(startup->socket_open!=NULL)
-				startup->socket_open(TRUE);
-			sockets++;
 
-			if(active_clients>=startup->max_clients) {
-				lprintf("%04d !MAXMIMUM CLIENTS (%u) reached, access denied"
-					,client_socket, startup->max_clients);
-				sockprintf(client_socket,"421 Maximum active clients reached, please try again later.");
-				mswait(3000);
-				mail_close_socket(client_socket);
-				continue;
+
+			if(FD_ISSET(server_socket,&socket_set)) {
+
+				client_addr_len = sizeof (client_addr);
+				client_socket = accept(server_socket, (struct sockaddr *)&client_addr
+        			,&client_addr_len);
+
+				if (client_socket == INVALID_SOCKET)
+				{
+					if(ERROR_VALUE == ENOTSOCK)
+            			lprintf("%04d SMTP socket closed while listening",server_socket);
+					else
+						lprintf("%04d !ERROR %d accept failed", server_socket, ERROR_VALUE);
+					break;
+				}
+				if(startup->socket_open!=NULL)
+					startup->socket_open(TRUE);
+				sockets++;
+
+				if(active_clients>=startup->max_clients) {
+					lprintf("%04d !MAXMIMUM CLIENTS (%u) reached, access denied"
+						,client_socket, startup->max_clients);
+					sockprintf(client_socket,"421 Maximum active clients reached, please try again later.");
+					mswait(3000);
+					mail_close_socket(client_socket);
+					continue;
+				}
+
+				l=1;
+
+				if((i=ioctlsocket(client_socket, FIONBIO, &l))!=0) {
+					lprintf("%04d !ERROR %d (%d) disabling blocking on socket"
+						,client_socket, i, ERROR_VALUE);
+					mail_close_socket(client_socket);
+					continue;
+				}
+
+				if((smtp=malloc(sizeof(smtp_t)))==NULL) {
+					lprintf("%04d !ERROR allocating %u bytes of memory for smtp_t"
+						,client_socket, sizeof(smtp_t));
+					mail_close_socket(client_socket);
+					continue;
+				}
+
+				smtp->socket=client_socket;
+				smtp->client_addr=client_addr;
+				_beginthread (smtp_thread, 0, smtp);
 			}
 
-			l=1;
+			if(FD_ISSET(pop3_socket,&socket_set)) {
 
-			if((i=ioctlsocket(client_socket, FIONBIO, &l))!=0) {
-				lprintf("%04d !ERROR %d (%d) disabling blocking on socket"
-					,client_socket, i, ERROR_VALUE);
-				mail_close_socket(client_socket);
-				continue;
+				client_addr_len = sizeof (client_addr);
+				client_socket = accept(pop3_socket, (struct sockaddr *)&client_addr
+        			,&client_addr_len);
+
+				if (client_socket == INVALID_SOCKET)
+				{
+					if(ERROR_VALUE == ENOTSOCK)
+            			lprintf("%04d POP3 socket closed while listening",pop3_socket);
+					else
+						lprintf("%04d !ERROR %d accept failed", pop3_socket, ERROR_VALUE);
+					break;
+				}
+				if(startup->socket_open!=NULL)
+					startup->socket_open(TRUE);
+				sockets++;
+
+				if(active_clients>=startup->max_clients) {
+					lprintf("%04d !MAXMIMUM CLIENTS (%u) reached, access denied"
+						,client_socket, startup->max_clients);
+					sockprintf(client_socket,"-ERR Maximum active clients reached, please try again later.");
+					mswait(3000);
+					mail_close_socket(client_socket);
+					continue;
+				}
+
+
+				l=1;
+
+				if((i=ioctlsocket(client_socket, FIONBIO, &l))!=0) {
+					lprintf("%04d !ERROR %d (%d) disabling blocking on socket"
+						,client_socket, i, ERROR_VALUE);
+					sockprintf(client_socket,"-ERR System error, please try again later.");
+					mswait(3000);
+					mail_close_socket(client_socket);
+					continue;
+				}
+
+				if((pop3=malloc(sizeof(pop3_t)))==NULL) {
+					lprintf("%04d !ERROR allocating %u bytes of memory for pop3_t"
+						,client_socket,sizeof(pop3_t));
+					sockprintf(client_socket,"-ERR System error, please try again later.");
+					mswait(3000);
+					mail_close_socket(client_socket);
+					continue;
+				}
+
+				pop3->socket=client_socket;
+				pop3->client_addr=client_addr;
+
+				_beginthread (pop3_thread, 0, pop3);
 			}
-
-			if((smtp=malloc(sizeof(smtp_t)))==NULL) {
-				lprintf("%04d !ERROR allocating %u bytes of memory for smtp_t"
-					,client_socket, sizeof(smtp_t));
-				mail_close_socket(client_socket);
-				continue;
-			}
-
-			smtp->socket=client_socket;
-			smtp->client_addr=client_addr;
-			_beginthread (smtp_thread, 0, smtp);
 		}
 
-		if(FD_ISSET(pop3_socket,&socket_set)) {
-
-			client_addr_len = sizeof (client_addr);
-			client_socket = accept(pop3_socket, (struct sockaddr *)&client_addr
-        		,&client_addr_len);
-
-			if (client_socket == INVALID_SOCKET)
-			{
-				if(ERROR_VALUE == ENOTSOCK)
-            		lprintf("%04d POP3 socket closed while listening",pop3_socket);
-				else
-					lprintf("%04d !ERROR %d accept failed", pop3_socket, ERROR_VALUE);
-				break;
+		if(active_clients) {
+			lprintf("0000 Waiting for %d active clients to disconnect...", active_clients);
+			start=time(NULL);
+			while(active_clients) {
+				if(time(NULL)-start>TIMEOUT_THREAD_WAIT) {
+					lprintf("!TIMEOUT waiting for %u active clients ",active_clients);
+					break;
+				}
+				mswait(100);
 			}
-			if(startup->socket_open!=NULL)
-				startup->socket_open(TRUE);
-			sockets++;
-
-			if(active_clients>=startup->max_clients) {
-				lprintf("%04d !MAXMIMUM CLIENTS (%u) reached, access denied"
-					,client_socket, startup->max_clients);
-				sockprintf(client_socket,"-ERR Maximum active clients reached, please try again later.");
-				mswait(3000);
-				mail_close_socket(client_socket);
-				continue;
-			}
-
-
-			l=1;
-
-			if((i=ioctlsocket(client_socket, FIONBIO, &l))!=0) {
-				lprintf("%04d !ERROR %d (%d) disabling blocking on socket"
-					,client_socket, i, ERROR_VALUE);
-				sockprintf(client_socket,"-ERR System error, please try again later.");
-				mswait(3000);
-				mail_close_socket(client_socket);
-				continue;
-			}
-
-			if((pop3=malloc(sizeof(pop3_t)))==NULL) {
-				lprintf("%04d !ERROR allocating %u bytes of memory for pop3_t"
-					,client_socket,sizeof(pop3_t));
-				sockprintf(client_socket,"-ERR System error, please try again later.");
-				mswait(3000);
-				mail_close_socket(client_socket);
-				continue;
-			}
-
-			pop3->socket=client_socket;
-			pop3->client_addr=client_addr;
-
-			_beginthread (pop3_thread, 0, pop3);
 		}
-	}
 
-	if(active_clients) {
-		lprintf("0000 Waiting for %d active clients to disconnect...", active_clients);
-		start=time(NULL);
-		while(active_clients) {
-			if(time(NULL)-start>TIMEOUT_THREAD_WAIT) {
-				lprintf("!TIMEOUT waiting for %u active clients ",active_clients);
-				break;
-			}
-			mswait(100);
+		if(sendmail_running) {
+			mail_close_socket(server_socket);
+			server_socket=INVALID_SOCKET; /* necessary to terminate sendmail_thread */
+			mswait(2000);
 		}
-	}
-
-	if(sendmail_running) {
-		lprintf("0000 Waiting for SendMail thread to terminate...");
-		start=time(NULL);
-		while(sendmail_running) {
-			if(time(NULL)-start>TIMEOUT_THREAD_WAIT) {
-				lprintf("!TIMEOUT waiting for sendmail thread to "
-            		"terminate");
-				break;
+		if(sendmail_running) {
+			lprintf("0000 Waiting for SendMail thread to terminate...");
+			start=time(NULL);
+			while(sendmail_running) {
+				if(time(NULL)-start>TIMEOUT_THREAD_WAIT) {
+					lprintf("!TIMEOUT waiting for sendmail thread to "
+            			"terminate");
+					break;
+				}
+				mswait(100);
 			}
-			mswait(100);
 		}
-	}
 
-	cleanup(0);
+		cleanup(0);
+
+		if(recycle_server) 
+			lprintf("Recycling server...");
+
+	} while(recycle_server);
 }
