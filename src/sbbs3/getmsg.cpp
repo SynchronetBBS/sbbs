@@ -41,15 +41,6 @@
 
 #include "sbbs.h"
 
-#define LZH TRUE
-
-void lfputs(char HUGE16 *buf, FILE *fp)
-{
-	while(*buf) {
-		fputc(*buf,fp);
-		buf++; }
-}
-
 /****************************************************************************/
 /* Loads an SMB message from the open msg base the fastest way possible 	*/
 /* first by offset, and if that's the wrong message, then by number.        */
@@ -187,96 +178,20 @@ void sbbs_t::show_msghdr(smbmsg_t* msg)
 	current_msg=NULL;
 }
 
-#if !LZH
-
-/****************************************************************************/
-/* Displays message header and text (if not deleted)                        */
-/****************************************************************************/
-void sbbs_t::show_msg(smbmsg_t msg, long mode)
-{
-	ushort xlat;
-    int i;
-
-	show_msghdr(msg);
-	for(i=0;i<msg.hdr.total_dfields;i++)
-		switch(msg.dfield[i].type) {
-			case TEXT_BODY:
-			case TEXT_TAIL:
-				smb_fseek(smb.sdt_fp,msg.hdr.offset+msg.dfield[i].offset
-					,SEEK_SET);
-				smb_fread(&xlat,sizeof(xlat),1,smb.sdt_fp);
-				if(xlat!=XLAT_NONE) 		/* no translations supported */
-					continue;
-				putmsg_fp(smb.sdt_fp,msg.dfield[i].length-sizeof(xlat),mode);
-				CRLF;
-				break; }
-}
-
-#else
-
 /****************************************************************************/
 /* Displays message header and text (if not deleted)                        */
 /****************************************************************************/
 void sbbs_t::show_msg(smbmsg_t* msg, long mode)
 {
-	uchar *inbuf,*lzhbuf;
-	ushort xlat;
-	int i,lzh;
-	long lzhlen,length;
+	char*	text;
 
 	show_msghdr(msg);
 
-    for(i=0;i<msg->total_hfields;i++) 			/* delivery failure notification? */
-		if(msg->hfield[i].type==SMTPSYSMSG || msg->hfield[i].type==SMB_COMMENT)
-			bprintf("%s\r\n",(char*)msg->hfield_dat[i]);
-
-	for(i=0;i<msg->hdr.total_dfields;i++)
-		switch(msg->dfield[i].type) {
-			case TEXT_BODY:
-			case TEXT_TAIL:
-				if(msg->dfield[i].length < sizeof(xlat))	/* Invalid length */
-					continue;
-				fseek(smb.sdt_fp,msg->hdr.offset+msg->dfield[i].offset
-					,SEEK_SET);
-				fread(&xlat,sizeof(xlat),1,smb.sdt_fp);
-				lzh=0;
-				if(xlat==XLAT_LZH) {
-					lzh=1;
-					fread(&xlat,sizeof(xlat),1,smb.sdt_fp); }
-				if(xlat!=XLAT_NONE) 		/* no translations supported */
-					continue;
-				if(lzh) {
-					length=msg->dfield[i].length-4;
-					if((inbuf=(uchar *)MALLOC(length))==NULL) {
-						errormsg(WHERE,ERR_ALLOC,nulstr,length);
-						continue; }
-					fread(inbuf,length,1,smb.sdt_fp);
-					lzhlen=*(long *)inbuf;
-	/**
-					if(SYSOP)
-					bprintf("Decoding %lu bytes of LZH into %lu bytes of text "
-						"(%d%% compression)"
-						,length,lzhlen
-						,(int)(((float)(lzhlen-length)/lzhlen)*100.0));
-	**/
-					if((lzhbuf=(uchar *)MALLOC(lzhlen+2L))==NULL) {
-						FREE(inbuf);
-						errormsg(WHERE,ERR_ALLOC,nulstr,lzhlen+2L);
-						continue; }
-					lzh_decode(inbuf,length,lzhbuf);
-					lzhbuf[lzhlen]=0;
-	//				  CRLF;
-					putmsg((char *)lzhbuf,P_NOATCODES);
-					FREE(lzhbuf);
-					FREE(inbuf); }
-				else
-					putmsg_fp(smb.sdt_fp,msg->dfield[i].length-sizeof(xlat),mode);
-				CRLF;
-				break; 
+	if((text=smb_getmsgtxt(&smb,msg,GETMSGTXT_ALL))!=NULL) {
+		putmsg(text, mode);
+		smb_freemsgtxt(text);
 	}
 }
-
-#endif
 
 void sbbs_t::quotemsg(smbmsg_t* msg, int tails)
 {
@@ -324,8 +239,8 @@ void sbbs_t::msgtotxt(smbmsg_t* msg, char *str, int header, int tails)
 
 	buf=smb_getmsgtxt(&smb,msg,tails);
 	if(buf!=NULL) {
-		lfputs(buf,out);
-		LFREE(buf); 
+		fputs(buf,out);
+		smb_freemsgtxt(buf); 
 	} else if(smb_getmsgdatlen(msg)>2)
 		errormsg(WHERE,ERR_READ,smb.file,smb_getmsgdatlen(msg));
 	fclose(out);
