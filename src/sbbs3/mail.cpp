@@ -86,10 +86,10 @@ extern "C" void delfattach(scfg_t* cfg, smbmsg_t* msg)
 	char *tp,*sp,*p;
 
 	if(msg->idx.to==0) {	/* netmail */
-		sprintf(str,"%s%04u.out/%s"
+		sprintf(str,"%sfile/%04u.out/%s"
 			,cfg->data_dir,msg->idx.from,getfname(msg->subj));
 		remove(str);
-		sprintf(str,"%s%04u.out"
+		sprintf(str,"%sfile/%04u.out"
 			,cfg->data_dir,msg->idx.from);
 		rmdir(str);
 		return;
