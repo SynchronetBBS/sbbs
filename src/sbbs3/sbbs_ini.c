@@ -140,6 +140,21 @@ static ini_bitdesc_t service_options[] = {
 	{ -1							,NULL					}
 };
 
+static ini_bitdesc_t log_mask_bits[] = {
+	{ (1<<LOG_EMERG)				,"EMERG"				},
+	{ (1<<LOG_ALERT)				,"ALERT"				},
+	{ (1<<LOG_CRIT)					,"CRIT"					},
+	{ (1<<LOG_ERR)					,"ERR"					},
+	{ (1<<LOG_WARNING)				,"WARNING"				},
+	{ (1<<LOG_NOTICE)				,"NOTICE"				},
+	{ (1<<LOG_INFO)					,"INFO"					},
+	{ (1<<LOG_DEBUG)				,"DEBUG"				},
+	/* the Gubinator */				
+	{ -1							,NULL					}
+};
+
+#define DEFAULT_LOG_MASK		0x3f	/* LOG_EMERG|LOG_ALERT|LOG_CRIT|LOG_ERR|LOG_WARNING|LOG_NOTICE */
+
 void sbbs_get_ini_fname(char* ini_file, char* ctrl_dir, char* host_name)
 {
 	sprintf(ini_file,"%s%c%s.ini",ctrl_dir,PATH_DELIM,host_name);
@@ -169,11 +184,15 @@ void sbbs_read_ini(
 	const char* default_term_ansi;
 	const char*	default_cgi_temp;
 	const char*	default_dosemu_path;
+	const char* strOptions="Options";
 	const char* strInterface="Interface";
+	const char* strHostName="HostName";
+	const char* strLogMask="LogMask";
 	char*		ctrl_dir;
 	char*		temp_dir;
 	char		host_name[128];
 	char		value[INI_MAX_VALUE_LEN];
+	DWORD		log_mask;
 	ulong		interface_addr;
 	ulong		js_max_bytes;
 	ulong		js_cx_stack;
@@ -199,9 +218,10 @@ void sbbs_read_ini(
 		if(ftp!=NULL)		SAFECOPY(ftp->temp_dir,temp_dir);
 	}
 
-	SAFECOPY(host_name,iniGetString(fp,section,"HostName",nulstr,value));
+	SAFECOPY(host_name,iniGetString(fp,section,strHostName,nulstr,value));
 	sem_chk_freq=iniGetShortInt(fp,section,strSemFileCheckFrequency,0);
 	interface_addr=iniGetIpAddress(fp,section,strInterface,INADDR_ANY);
+	log_mask=iniGetBitField(fp,section,strLogMask,log_mask_bits,DEFAULT_LOG_MASK);
 
 	/* Global JavaScript defaults */
 	js_max_bytes		= iniGetInteger(fp,section,strJavaScriptMaxBytes		,JAVASCRIPT_MAX_BYTES);
@@ -257,7 +277,7 @@ void sbbs_read_ini(
 			=iniGetInteger(fp,section,strJavaScriptYieldInterval,js_yield_interval);
 
 		SAFECOPY(bbs->host_name
-			,iniGetString(fp,section,"HostName",host_name,value));
+			,iniGetString(fp,section,strHostName,host_name,value));
 
 		/* Set default terminal type to "stock" termcap closest to "ansi-bbs" */
 	#if defined(__FreeBSD__)
@@ -285,8 +305,10 @@ void sbbs_read_ini(
 		SAFECOPY(bbs->hangup_sound
 			,iniGetString(fp,section,"HangupSound",nulstr,value));
 
+		bbs->log_mask
+			=iniGetBitField(fp,section,strLogMask,log_mask_bits,log_mask);
 		bbs->options
-			=iniGetBitField(fp,section,"Options",bbs_options
+			=iniGetBitField(fp,section,strOptions,bbs_options
 				,BBS_OPT_XTRN_MINIMIZED|BBS_OPT_SYSOP_AVAILABLE);
 	}
 
@@ -318,7 +340,7 @@ void sbbs_read_ini(
 			=iniGetInteger(fp,section,strJavaScriptContextStack	,js_cx_stack);
 
 		SAFECOPY(ftp->host_name
-			,iniGetString(fp,section,"HostName",host_name,value));
+			,iniGetString(fp,section,strHostName,host_name,value));
 
 		SAFECOPY(ftp->index_file_name
 			,iniGetString(fp,section,"IndexFileName","00index",value));
@@ -334,8 +356,10 @@ void sbbs_read_ini(
 		SAFECOPY(ftp->hack_sound
 			,iniGetString(fp,section,"HackAttemptSound",nulstr,value));
 
+		ftp->log_mask
+			=iniGetBitField(fp,section,strLogMask,log_mask_bits,log_mask);
 		ftp->options
-			=iniGetBitField(fp,section,"Options",ftp_options
+			=iniGetBitField(fp,section,strOptions,ftp_options
 				,FTP_OPT_INDEX_FILE|FTP_OPT_HTML_INDEX_FILE|FTP_OPT_ALLOW_QWK);
 	}
 
@@ -373,7 +397,7 @@ void sbbs_read_ini(
 			=iniGetInteger(fp,section,"MaxMsgSize",10*1024*1024);	/* 10MB */
 
 		SAFECOPY(mail->host_name
-			,iniGetString(fp,section,"HostName",host_name,value));
+			,iniGetString(fp,section,strHostName,host_name,value));
 
 		SAFECOPY(mail->relay_server
 			,iniGetString(fp,section,"RelayServer",mail->relay_server,value));
@@ -398,8 +422,10 @@ void sbbs_read_ini(
 		SAFECOPY(mail->proc_cfg_file
 			,iniGetString(fp,section,"ProcessConfigFile","mailproc.cfg",value));
 
+		mail->log_mask
+			=iniGetBitField(fp,section,strLogMask,log_mask_bits,log_mask);
 		mail->options
-			=iniGetBitField(fp,section,"Options",mail_options
+			=iniGetBitField(fp,section,strOptions,mail_options
 				,MAIL_OPT_ALLOW_POP3);
 	}
 
@@ -430,7 +456,7 @@ void sbbs_read_ini(
 			=iniGetInteger(fp,section,strJavaScriptYieldInterval,js_yield_interval);
 
 		SAFECOPY(services->host_name
-			,iniGetString(fp,section,"HostName",host_name,value));
+			,iniGetString(fp,section,strHostName,host_name,value));
 
 		SAFECOPY(services->ini_file
 			,iniGetString(fp,section,"iniFile","services.ini",value));
@@ -443,8 +469,10 @@ void sbbs_read_ini(
 		SAFECOPY(services->hangup_sound
 			,iniGetString(fp,section,"HangupSound",nulstr,value));
 
+		services->log_mask
+			=iniGetBitField(fp,section,strLogMask,log_mask_bits,log_mask);
 		services->options
-			=iniGetBitField(fp,section,"Options",service_options
+			=iniGetBitField(fp,section,strOptions,service_options
 				,BBS_OPT_NO_HOST_LOOKUP);
 	}
 
@@ -470,7 +498,7 @@ void sbbs_read_ini(
 			=iniGetInteger(fp,section,strJavaScriptContextStack	,js_cx_stack);
 
 		SAFECOPY(web->host_name
-			,iniGetString(fp,section,"HostName",host_name,value));
+			,iniGetString(fp,section,strHostName,host_name,value));
 
 		SAFECOPY(web->root_dir
 			,iniGetString(fp,section,"RootDirectory","../html",value));
@@ -496,8 +524,10 @@ void sbbs_read_ini(
 		SAFECOPY(web->cgi_temp_dir
 			,iniGetString(fp,section,"CGITempDirectory",default_cgi_temp,value));
 
+		web->log_mask
+			=iniGetBitField(fp,section,strLogMask,log_mask_bits,log_mask);
 		web->options
-			=iniGetBitField(fp,section,"Options",web_options
+			=iniGetBitField(fp,section,strOptions,web_options
 				,BBS_OPT_NO_HOST_LOOKUP);
 	}
 }
