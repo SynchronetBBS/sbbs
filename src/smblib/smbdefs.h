@@ -45,12 +45,12 @@
 /**********/
 
 										/* Control characters */
-#define TAB 				0x09		/* Horizontal tabulation	^I */
-#define LF					0x0a		/* Line feed				^J */
+#define TAB 				'\t'		/* Horizontal tabulation	^I */
+#define LF					'\n'		/* Line feed				^J */
+#define CR					'\r'		/* Carriage return			^M */
+#define SP					' '			/* Space					   */
 #define FF					0x0c		/* Form feed				^L */
-#define CR					0x0d		/* Carriage return			^M */
 #define ESC 				0x1b		/* Escape					^[ */
-#define SP					0x20		/* Space					   */
 
 #ifndef uchar
 	#define uchar				unsigned char
