@@ -924,6 +924,15 @@ char * sbbs_t::cmdstr(char *instr, char *fpath, char *fspec, char *outstr)
                 case '%':   /* %% for percent sign */
                     strcat(cmd,"%");
                     break;
+				case '?':	/* Platform */
+#ifdef __OS2__
+					strcpy(str,"OS2");
+#else
+					strcat(str,PLATFORM_DESC);
+#endif
+					strlwr(str);
+					strcat(cmd,str);
+					break;
                 default:    /* unknown specification */
                     if(isdigit(instr[i])) {
                         sprintf(str,"%0*d",instr[i]&0xf,useron.number);
