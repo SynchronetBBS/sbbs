@@ -33,11 +33,13 @@ function get_my_message_offsets()
 	var idx;
 	var hdr;
 
-	for(last_offset=0; (hdr=msgbase.get_msg_header(true,last_offset)) != null;last_offset++) {
-		if(hdr.attr&MSG_DELETE)
+	for(last_offset=0; (idx=msgbase.get_msg_index(true,last_offset)) != null;last_offset++) {
+		if(idx.attr&MSG_DELETE)
 			continue;
-		if((idx=msgbase.get_msg_index(true,last_offset))==null || idx.to!=user.number)
+		if(idx.to!=user.number)
 			continue;
+		if((hdr=msgbase.get_msg_header(true,last_offset))==null)
+			continuel
 		msg=new Array;
 		msg["hdr"]=hdr;
 		msg.idx=idx;
@@ -53,10 +55,10 @@ function get_all_message_offsets()
 	var last_offset;
 	var hdr;
 
-	for(last_offset=0; (hdr=msgbase.get_msg_header(true,last_offset)) != null;last_offset++) {
-		if(hdr.attr&MSG_DELETE)
+	for(last_offset=0; (idx=msgbase.get_msg_index(true,last_offset)) != null;last_offset++) {
+		if(idx.attr&MSG_DELETE)
 			continue;
-		idx=msgbase.get_msg_index(true,last_offset);
+		hdr=msgbase.get_msg_header(true,last_offset);
 		msg=new Object;
 		msg.hdr=hdr;
 		msg.idx=idx;
