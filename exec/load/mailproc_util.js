@@ -24,3 +24,20 @@ function parse_msg_header(msgtxt)
 		
 	return(hdr);
 }
+
+function get_msg_body(msgtxt)
+{
+	var body = new Array();
+	var hdr = true;
+
+	for(i in msgtxt) {
+		if(msgtxt[i].length==0)	{ // Header terminator
+			hdr = false;
+			continue;
+		}
+		if(!hdr)
+			body.push(msgtxt[i]);
+	}
+	return(body);
+}
+		
