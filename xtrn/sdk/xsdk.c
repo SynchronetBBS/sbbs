@@ -352,8 +352,8 @@ void output_thread(void* arg)
 
 	while(client_socket!=INVALID_SOCKET) {
 		if(outbufbot==outbuftop) {
-			sem_init(&sbbs->output_sem,0,0);
-			sem_wait(&sbbs->output_sem);
+			sem_init(&output_sem,0,0);
+			sem_wait(&output_sem);
 			continue; 
 		}
 
