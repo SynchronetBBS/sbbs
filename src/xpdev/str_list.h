@@ -108,8 +108,12 @@ void		strListSortAlphaReverse(str_list_t);
 void		strListSortAlphaCase(str_list_t);
 void		strListSortAlphaCaseReverse(str_list_t);
 
-/* Create/free NULL-terminated string block (e.g. for environment variable blocks) */
+/* Create/Copy/Append/Free NULL-terminated string block */
+/* (e.g. for environment variable blocks) */
 char*		strListCreateBlock(str_list_t);
+char*		strListCopyBlock(char* block);
+char*		strListAppendBlock(char* block, str_list_t);
+size_t		strListBlockLength(char* block);
 void		strListFreeBlock(char*);
 
 /************/

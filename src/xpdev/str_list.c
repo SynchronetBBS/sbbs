@@ -393,13 +393,51 @@ size_t strListWriteFile(FILE* fp, const str_list_t list, const char* separator)
 	return(i);
 }
 
-char* strListCreateBlock(str_list_t list)
+size_t strListBlockLength(char* block)
 {
-	char*	block=NULL;
+	char*	p=block;
+	size_t	str_len;
+	size_t	block_len=0;
+
+	if(block==NULL)
+		return(0);
+
+	/* calculate total block length */
+	while((str_len=strlen(p))!=0) {
+		block_len+=(str_len + 1);
+		p+=(str_len + 1);
+	}
+	/* block must be double-NULL terminated */
+	if(!block_len)
+		block_len=1;
+	block_len++;
+
+	return(block_len);
+}
+
+char* strListCopyBlock(char* block)
+{
+	char*	p;
+	size_t	block_len;
+	
+	if((block_len=strListBlockLength(block))==0)
+		return(NULL);
+
+	if((p=(char*)malloc(block_len))==NULL)
+		return(NULL);
+	memcpy(p, block, block_len);
+	return(p);
+}
+
+char* strListAppendBlock(char* block, str_list_t list)
+{
 	char*	p;
 	size_t	str_len;
-	size_t	block_len=0;	
+	size_t	block_len;	
 	size_t	i;
+
+	if((block_len=strListBlockLength(block))!=0)
+		block_len--;	/* Over-write existing NULL terminator */
 
 	for(i=0; list[i]!=NULL; i++) {
 		str_len=strlen(list[i]);
@@ -426,6 +464,11 @@ char* strListCreateBlock(str_list_t list)
 	memset(block + (block_len-2), 0, 2);
 
 	return(block);
+}
+
+char* strListCreateBlock(str_list_t list)
+{
+	return(strListAppendBlock(NULL,list));
 }
 
 void strListFreeBlock(char* block)
