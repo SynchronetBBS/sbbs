@@ -47,7 +47,7 @@
 				<td class="newuser">@@gender_list@@</td>
 			</tr>
 			<tr>
-				<td class="newuser" align="right">%%errs:editor%% %%editor_required%% External Editor:</td>
+				<td class="newuser" align="right">%%errs:editor%% Message Editor:</td>
 				<td class="newuser">@@editor_list@@</td>
 			</tr>
             <tr>
