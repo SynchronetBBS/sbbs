@@ -1097,6 +1097,29 @@ js_getfname(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 }
 
 static JSBool
+js_getfcase(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		str;
+	char		path[MAX_PATH+1];
+	JSString*	js_str;
+
+	if((str=JS_GetStringBytes(JS_ValueToString(cx, argv[0])))==NULL) 
+		return(JS_FALSE);
+
+	*rval = JSVAL_VOID;
+
+	SAFECOPY(path,str);
+	if(fexistcase(path)) {
+		js_str = JS_NewStringCopyZ(cx, path);
+		if(js_str==NULL)
+			return(JS_FALSE);
+
+		*rval = STRING_TO_JSVAL(js_str);
+	}
+	return(JS_TRUE);
+}
+
+static JSBool
 js_fexist(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char*		p;
@@ -1508,9 +1531,13 @@ static jsMethodSpec js_global_functions[] = {
 	{"lfexpand",		js_lfexpand,		1,	JSTYPE_STRING,	JSDOCSTR("string text")
 	,JSDOCSTR("expand line-feeds (LF) to carriage-return/line-feeds (CRLF)")
 	},		
-	{"file_getname",	js_getfname,		1,	JSTYPE_STRING,	JSDOCSTR("string text")
+	{"file_getname",	js_getfname,		1,	JSTYPE_STRING,	JSDOCSTR("string path")
 	,JSDOCSTR("returns filename portion of passed path string")
-	},		
+	},
+	{"file_getcase",	js_getfcase,		1,	JSTYPE_STRING,	JSDOCSTR("string filename")
+	,JSDOCSTR("returns correct case of filename (long version of filename on Win32) "
+		"or <i>undefined</i> if the file doesn't exist")
+	},
 	{"file_exists",		js_fexist,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("string filename")
 	,JSDOCSTR("verify a file's existence")
 	},		
