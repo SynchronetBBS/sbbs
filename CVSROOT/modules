@@ -24,7 +24,6 @@
 # character to interpose another module into the current module.  This
 # can be useful for creating a module that consists of many directories
 # spread out over the entire source repository.
-src src
-lib lib
-include include
-src_sbbs3 -a src/sbbs3 src/xpdev src/uifc
+lib_win32 lib/fltk lib/mozilla/*/win32.release
+sbbs3_src -a src/sbbs3 src/xpdev src/uifc include
+sbbs3_win32 &sbbs_src &lib_win32
