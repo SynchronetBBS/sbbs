@@ -23,6 +23,14 @@ if(request==null) {
 	exit();
 }
 
+log(format("client request: '%s'",request));
+
+if(request.substr(0,2).toUpperCase()=="/W")	// "higher level of verbosity"
+	request=request.slice(2);
+
+while(request.charAt(0)==' ')	// skip prepended spaces
+	request=request.slice(1);
+
 if(request=="") {	/* no specific user requested, give list of active users */
 	log("client requested active user list");
 	write(format("%-25.25s %-40.40s Node Age Sex\r\n","Name","Action"));
@@ -43,8 +51,6 @@ if(request=="") {	/* no specific user requested, give list of active users */
 	exit();
 }
 
-log(format("client request: '%s'",request));
-
 var usernum=Number(request);
 if(!usernum) {
 	var at = request.indexOf('@');
@@ -53,7 +59,7 @@ if(!usernum) {
 
 	usernum = system.matchuser(request);
 	if(!usernum) {
-		log("!UNKNOWN USER: " + request);
+		log(format("!UNKNOWN USER: '%s'",request));
 		exit();
 	}
 }
