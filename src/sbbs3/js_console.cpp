@@ -60,6 +60,11 @@ enum {
 	,CON_PROP_TELNET_MODE
 	,CON_PROP_GETSTR_OFFSET
 	,CON_PROP_CTRLKEY_PASSTHRU
+	/* read only */
+	,CON_PROP_INBUF_LEVEL
+	,CON_PROP_INBUF_SPACE
+	,CON_PROP_OUTBUF_LEVEL
+	,CON_PROP_OUTBUF_SPACE
 };
 
 static JSBool js_console_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
@@ -108,11 +113,11 @@ static JSBool js_console_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			val=sbbs->timeleft_warn;
 			break;
 		case CON_PROP_ABORTED:
-			val=BOOLEAN_TO_JSVAL(sbbs->sys_status&SS_ABORT ? true:false);
-			break;
+			*vp=BOOLEAN_TO_JSVAL(INT_TO_BOOL(sbbs->sys_status&SS_ABORT));
+			return(JS_TRUE);
 		case CON_PROP_ABORTABLE:
-			val=sbbs->rio_abortable;
-			break;
+			*vp=BOOLEAN_TO_JSVAL(INT_TO_BOOL(sbbs->rio_abortable));
+			return(JS_TRUE);
 		case CON_PROP_TELNET_MODE:
 			val=sbbs->telnet_mode;
 			break;
@@ -131,6 +136,18 @@ static JSBool js_console_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			return(JS_TRUE);
 		case CON_PROP_CTRLKEY_PASSTHRU:
 			val=sbbs->cfg.ctrlkey_passthru;
+			break;
+		case CON_PROP_INBUF_LEVEL:
+			val=RingBufFull(&sbbs->inbuf);
+			break;
+		case CON_PROP_INBUF_SPACE:
+			val=RingBufFree(&sbbs->inbuf);
+			break;
+		case CON_PROP_OUTBUF_LEVEL:
+			val=RingBufFull(&sbbs->outbuf);
+			break;
+		case CON_PROP_OUTBUF_SPACE:
+			val=RingBufFree(&sbbs->outbuf);
 			break;
 		default:
 			return(JS_TRUE);
@@ -247,6 +264,10 @@ static jsSyncPropertySpec js_console_properties[] = {
 	{	"question"			,CON_PROP_QUESTION			,CON_PROP_FLAGS ,310},
 	{	"getstr_offset"		,CON_PROP_GETSTR_OFFSET		,CON_PROP_FLAGS ,311},
 	{	"ctrlkey_passthru"	,CON_PROP_CTRLKEY_PASSTHRU	,CON_PROP_FLAGS	,310},
+	{	"input_buffer_level",CON_PROP_INBUF_LEVEL		,JSPROP_ENUMERATE|JSPROP_READONLY, 312},
+	{	"input_buffer_space",CON_PROP_INBUF_SPACE		,JSPROP_ENUMERATE|JSPROP_READONLY, 312},
+	{	"output_buffer_level",CON_PROP_OUTBUF_LEVEL		,JSPROP_ENUMERATE|JSPROP_READONLY, 312},
+	{	"output_buffer_space",CON_PROP_OUTBUF_SPACE		,JSPROP_ENUMERATE|JSPROP_READONLY, 312},
 	{0}
 };
 
@@ -266,11 +287,15 @@ static char* con_prop_desc[] = {
 	,"input/output has been aborted"
 	,"output can be aborted with Ctrl-C"
 	,"current telnet mode bitfield (see <tt>TELNET_MODE_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
-	,"word-wrap buffer (used by getstr)	- <small>READ ONLY</small>"
+	,"word-wrap buffer (used by getstr) - <small>READ ONLY</small>"
 	,"current yes/no question (set by yesno and noyes)"
 	,"cursor position offset for use with <tt>getstr(K_USEOFFSET)</tt>"
 	,"control key pass-through bitmask, set bits represent control key combinations "
 		"<i>not</i> handled by <tt>inkey()</tt> method"
+	,"number of bytes currently in the input buffer (from the remote client) - <small>READ ONLY</small>"
+	,"number of bytes available in the input buffer	- <small>READ ONLY</small>"
+	,"number of bytes currently in the output buffer (from the local server) - <small>READ ONLY</small>"
+	,"number of bytes available in the output buffer - <small>READ ONLY</small>"
 	,NULL
 };
 #endif
