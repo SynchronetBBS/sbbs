@@ -2788,10 +2788,12 @@ void node_thread(void* arg)
 		if((i=smb_open(&sbbs->smb))!=0)
 			sbbs->errormsg(WHERE,ERR_OPEN,sbbs->smb.file,i,sbbs->smb.last_error);
 		else {
-			if((i=smb_locksmbhdr(&sbbs->smb))!=0)
-				sbbs->errormsg(WHERE,ERR_LOCK,sbbs->smb.file,i,sbbs->smb.last_error);
-			else
-				sbbs->delmail(0,MAIL_ALL);
+			if(filelength(fileno(sbbs->smb.shd_fp))>0) {
+				if((i=smb_locksmbhdr(&sbbs->smb))!=0)
+					sbbs->errormsg(WHERE,ERR_LOCK,sbbs->smb.file,i,sbbs->smb.last_error);
+				else
+					sbbs->delmail(0,MAIL_ALL);
+			}
 			smb_close(&sbbs->smb); 
 		}
 
