@@ -786,10 +786,6 @@ extern "C" {
 	DLLEXPORT when_t	DLLCALL rfc822date(char* p);
 	DLLEXPORT char *	DLLCALL msgdate(when_t when, char* buf);
 
-	/* nopen.c */
-	DLLEXPORT int		DLLCALL nopen(char *str, int access);
-	DLLEXPORT FILE *	DLLCALL fnopen(int *file, char *str, int access);
-
 	/* load_cfg.c */
 	DLLEXPORT BOOL		DLLCALL load_cfg(scfg_t* cfg, char* text[], BOOL prep, char* error);
 	DLLEXPORT void		DLLCALL free_cfg(scfg_t* cfg);
@@ -877,6 +873,10 @@ uint	hptoi(char *str);
 int		pstrcmp(char **str1, char **str2);  /* Compares pointers to pointers */
 int		strsame(char *str1, char *str2);	/* Compares number of same chars */
 void	ucrc16(uchar ch, ushort *rcrc);
+
+/* nopen.c */
+int		nopen(char *str, int access);
+FILE *	fnopen(int *file, char *str, int access);
 
 /* load_cfg.c */
 BOOL 	md(char *path);
