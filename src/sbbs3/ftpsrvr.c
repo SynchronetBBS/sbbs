@@ -1455,7 +1455,7 @@ static void send_thread(void* arg)
 #ifdef _DEBUG
 		socket_debug[xfer.ctrl_sock]&=~SOCKET_DEBUG_SEND;
 #endif
-		if(wr!=rd) {
+		if(wr<1) {
 			if(wr==SOCKET_ERROR) {
 				if(ERROR_VALUE==EWOULDBLOCK) {
 					/*lprintf("%04d DATA send would block, retrying",xfer.ctrl_sock);*/
@@ -1483,13 +1483,11 @@ static void send_thread(void* arg)
 				error=TRUE;
 				break;
 			}
-			lprintf("%04d !DATA ERROR sent %d instead of %d on socket %d"
-				,xfer.ctrl_sock,wr,rd,*xfer.data_sock);
-#if 0 /* Removed Mar-11-2003, this is apparently normal in Linux */
-			sockprintf(xfer.ctrl_sock,"451 Short DATA transfer");
+			lprintf("%04d !DATA SEND ERROR %d (%d) on socket %d"
+				,xfer.ctrl_sock, wr, ERROR_VALUE, *xfer.data_sock);
+			sockprintf(xfer.ctrl_sock,"451 DATA send error");
 			error=TRUE;
 			break;
-#endif
 		}
 		total+=wr;
 		*xfer.lastactive=time(NULL);
