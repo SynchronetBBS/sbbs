@@ -1590,6 +1590,10 @@ void DLLCALL services_thread(void* arg)
 		return;
 	}
 
+#ifdef _THREAD_SUID_BROKEN
+	startup->seteuid(TRUE);
+#endif
+
 	/* Setup intelligent defaults */
 	if(startup->sem_chk_freq==0)			startup->sem_chk_freq=5;
 	if(startup->js_max_bytes==0)			startup->js_max_bytes=JAVASCRIPT_MAX_BYTES;
@@ -1769,10 +1773,6 @@ void DLLCALL services_thread(void* arg)
 				_beginthread(js_static_service_thread, 0, &service[i]);
 		}
 
-		/* signal caller that we've started up successfully */
-		if(startup->started!=NULL)
-    		startup->started();
-
 		status("Listening");
 
 		if(initialized==0) {
@@ -1784,6 +1784,10 @@ void DLLCALL services_thread(void* arg)
 		}
 			
 		terminated=FALSE;
+
+		/* signal caller that we've started up successfully */
+		if(startup->started!=NULL)
+    		startup->started();
 
 		/* Main Server Loop */
 		while(!terminated) {

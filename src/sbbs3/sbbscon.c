@@ -232,25 +232,6 @@ static int lputs(char *str)
 /**********************************************************
 * Change uid of the calling process to the user if specified
 * **********************************************************/
-static BOOL do_setuid(void) 
-{
-	BOOL	result=FALSE;
-
-	setregid(-1,old_gid);
-	setreuid(-1,old_uid);
-	if(!setregid(new_gid,new_gid) && !setreuid(new_uid,new_uid)) 
-		result=TRUE;
-
-	if(!result) {
-		lputs("!setuid FAILED");
-		lputs(strerror(errno));
-	}
-	return result;
-}
-
-/**********************************************************
-* Change uid of the calling process to the user if specified
-* **********************************************************/
 static BOOL do_seteuid(BOOL to_new) 
 {
 	BOOL	result=FALSE;
@@ -286,6 +267,29 @@ static BOOL do_seteuid(BOOL to_new)
 		lputs(strerror(errno));
 	}
 	return result;
+}
+
+/**********************************************************
+* Change uid of the calling process to the user if specified
+* **********************************************************/
+static BOOL do_setuid(void) 
+{
+#if defined(_THREAD_SUID_BROKEN) || defined(DONT_BLAME_SYNCHRONET)
+	return(do_seteuid(TRUE));
+#else
+	BOOL	result=FALSE;
+
+	setregid(-1,old_gid);
+	setreuid(-1,old_uid);
+	if(!setregid(new_gid,new_gid) && !setreuid(new_uid,new_uid)) 
+		result=TRUE;
+
+	if(!result) {
+		lputs("!setuid FAILED");
+		lputs(strerror(errno));
+	}
+	return result;
+#endif
 }
 #endif   /* __unix__ */
 
@@ -1537,6 +1541,7 @@ int main(int argc, char** argv)
 			/* ToDo: Something seems to be broken here on FreeBSD now */
 			/* ToDo: Now, they try to re-bind on FreeBSD */
 			/* ToDo: Seems like I switched problems with Linux */
+#if defined(DONT_BLAME_SYNCHRONET) || defined(_THREAD_SUID_BROKEN)
  			if(bbs_startup.telnet_port < IPPORT_RESERVED
 				|| (bbs_startup.options & BBS_OPT_ALLOW_RLOGIN
 					&& bbs_startup.rlogin_port < IPPORT_RESERVED))
@@ -1551,6 +1556,7 @@ int main(int argc, char** argv)
 				mail_startup.options|=MAIL_OPT_NO_RECYCLE;
 			/* Perhaps a BBS_OPT_NO_RECYCLE_LOW option? */
 			services_startup.options|=BBS_OPT_NO_RECYCLE;
+#endif
 		}
 	}
 

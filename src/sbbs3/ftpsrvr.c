@@ -4495,6 +4495,10 @@ void DLLCALL ftp_server(void* arg)
 
 	startup=(ftp_startup_t*)arg;
 
+#ifdef _THREAD_SUID_BROKEN
+	startup->seteuid(TRUE);
+#endif
+
     if(startup==NULL) {
     	sbbs_beep(100,500);
     	fprintf(stderr, "No startup structure passed!\n");
@@ -4531,6 +4535,7 @@ void DLLCALL ftp_server(void* arg)
 	served=0;
 	startup->recycle_now=FALSE;
 	recycle_server=TRUE;
+
 	do {
 
 		thread_up(FALSE /* setuid */);
@@ -4660,10 +4665,6 @@ void DLLCALL ftp_server(void* arg)
 			return;
 		}
 
-		/* signal caller that we've started up successfully */
-		if(startup->started!=NULL)
-    		startup->started();
-
 		lprintf("%04d FTP Server thread started on port %d",server_socket,startup->port);
 		status(STATUS_WFC);
 
@@ -4674,6 +4675,10 @@ void DLLCALL ftp_server(void* arg)
 			if(t!=-1 && t>initialized)
 				initialized=t;
 		}
+
+		/* signal caller that we've started up successfully */
+		if(startup->started!=NULL)
+    		startup->started();
 
 		while(server_socket!=INVALID_SOCKET) {
 

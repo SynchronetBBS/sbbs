@@ -2264,7 +2264,7 @@ void http_session_thread(void* arg)
 	socket=session.socket;
 	lprintf("%04d Session thread started", session.socket);
 
-	thread_up(FALSE /* setuid */);
+	thread_up(TRUE /* setuid */);
 	session.finished=FALSE;
 
 	if(startup->options&BBS_OPT_NO_HOST_LOOKUP)
@@ -2435,6 +2435,10 @@ void DLLCALL web_server(void* arg)
 		return;
 	}
 
+#ifdef _THREAD_SUID_BROKEN
+	startup->seteuid(TRUE);
+#endif
+
 	/* Setup intelligent defaults */
 	if(startup->port==0)					startup->port=IPPORT_HTTP;
 	if(startup->root_dir[0]==0)				SAFECOPY(startup->root_dir,"../html");
@@ -2582,13 +2586,13 @@ void DLLCALL web_server(void* arg)
 		lprintf("Web Server listening on port %d",startup->port);
 		status("Listening");
 
-		/* signal caller that we've started up successfully */
-		if(startup->started!=NULL)
-    		startup->started();
-
 		lprintf("Web Server thread started");
 
 		sprintf(path,"%swebsrvr.rec",scfg.ctrl_dir);
+
+		/* signal caller that we've started up successfully */
+		if(startup->started!=NULL)
+    		startup->started();
 
 		while(server_socket!=INVALID_SOCKET) {
 

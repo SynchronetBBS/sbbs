@@ -164,6 +164,10 @@ ifndef NSPRDIR
  NSPRDIR := ../../lib/mozilla/nspr/$(os).$(BUILD)
 endif
 
+ifdef DONT_BLAME_SYNCHRONET
+ LFLAGS += -DDONT_BLAME_SYNCHRONET
+endif
+
 LFLAGS += -L$(JSLIBDIR) -l$(JSLIB)
 
 # The following are needed for echocfg (uses UIFC)

@@ -3540,6 +3540,10 @@ void DLLCALL bbs_thread(void* arg)
 		return;
 	}
 
+#ifdef _THREAD_SUID_BROKEN
+	startup->seteuid(TRUE);
+#endif
+
 	/* Setup intelligent defaults */
 	if(startup->telnet_port==0)				startup->telnet_port=IPPORT_TELNET;
 	if(startup->rlogin_port==0)				startup->rlogin_port=513;
@@ -3806,10 +3810,6 @@ void DLLCALL bbs_thread(void* arg)
 		lprintf("RLogin server listening on port %d",startup->rlogin_port);
 	}
 
-	/* signal caller that we've started up successfully */
-    if(startup->started!=NULL)
-    	startup->started();
-
 	sbbs = new sbbs_t(0, server_addr.sin_addr.s_addr
 		,"BBS System", telnet_socket, &scfg, text, NULL);
     sbbs->online = 0;
@@ -3929,6 +3929,11 @@ void DLLCALL bbs_thread(void* arg)
 	    }
 	}
 #endif // __unix__ (unix-domain spy sockets)
+
+	/* signal caller that we've started up successfully */
+    if(startup->started!=NULL)
+    	startup->started();
+
 
 	while(telnet_socket!=INVALID_SOCKET) {
 
