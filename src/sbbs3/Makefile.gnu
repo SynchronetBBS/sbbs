@@ -57,7 +57,7 @@ ifeq ($(os),freebsd)	# FreeBSD
 LIBS	=	-pthread
 CFLAGS	:=	-pthread
 else			        # Linux / Other UNIX
-CFLAGS	:=	
+CFLAGS	:=	-DJAVASCRIPT
 LIBS	=	$(LIBDIR)/libpthread.a
 endif
 
@@ -67,10 +67,12 @@ ifdef DEBUG
 CFLAGS	:=	$(CFLAGS) -g -O0 -D_DEBUG 
 LIBODIR	:=	$(LIBODIR).debug
 EXEODIR	:=	$(EXEODIR).debug
+LIBS	=	$(LIBS) ../mozilla/js/src/Linux_All_DBG.OBJ/libjs.a
 else
 LFLAGS	:=	$(LFLAGS) -S
 LIBODIR	:=	$(LIBODIR).release
 EXEODIR	:=	$(EXEODIR).release
+LIBS	=	$(LIBS) ../mozilla/js/src/Linux_All_OPT.OBJ/libjs.a
 endif
 
 include targets.mak		# defines all targets
@@ -98,6 +100,7 @@ $(EXEODIR):
 
 # Monolithic Synchronet executable Build Rule
 $(SBBSMONO): sbbscon.c conwrap.c $(OBJS) $(LIBODIR)/ver.o $(LIBODIR)/ftpsrvr.o $(LIBODIR)/mailsrvr.o $(LIBODIR)/mxlookup.o
+#	$(CC) $(CFLAGS) -o $(SBBSMONO) $^ $(LIBS)
 	$(CC) -o $(SBBSMONO) $^ $(LIBS)
 
 # Synchronet BBS library Link Rule
