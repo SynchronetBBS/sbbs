@@ -116,6 +116,7 @@ int sbbs_t::putnodeext(uint number, char *ext)
 {
     char	str[MAX_PATH+1];
     int		count;
+	int		wr;
 
 	if(!number || number>cfg.sys_nodes) {
 		errormsg(WHERE,ERR_CHK,"node number",number);
@@ -134,10 +135,11 @@ int sbbs_t::putnodeext(uint number, char *ext)
 		lseek(node_ext,(long)number*128L,SEEK_SET);
 		if(lock(node_ext,(long)number*128L,128)==-1) 
 			continue; 
-		if(write(node_ext,ext,128)==128)
+		wr=write(node_ext,ext,128);
+		unlock(node_ext,(long)number*128L,128);
+		if(wr==128)
 			break;
 	}
-	unlock(node_ext,(long)number*128L,128);
 	close(node_ext);
 	node_ext=-1;
 
