@@ -71,6 +71,7 @@ typedef struct {
 	char*					display_name;
 	char*					description;
 	void*					startup;
+	DWORD*					options;
 	BOOL*					recycle_now;
 	DWORD*					log_mask;
 	void					(*thread)(void* arg);
@@ -90,6 +91,7 @@ sbbs_ntsvc_t bbs ={
 	"Provides support for Telnet and RLogin clients and executes timed events. " \
 		"This service provides the critical functions of your Synchronet BBS.",
 	&bbs_startup,
+	&bbs_startup.options,
 	&bbs_startup.recycle_now,
 	&bbs_startup.log_mask,
 	bbs_thread,
@@ -101,6 +103,7 @@ sbbs_ntsvc_t bbs ={
 /* This is not (currently) a separate service, use this for logging only */
 sbbs_ntsvc_t event ={	
 	NTSVC_NAME_EVENT,
+	NULL,
 	NULL,
 	NULL,
 	NULL,
@@ -117,6 +120,7 @@ sbbs_ntsvc_t ftp = {
 	"Synchronet FTP Server",
 	"Provides support for FTP clients (including web browsers) for file transfers.",
 	&ftp_startup,
+	&ftp_startup.options,
 	&ftp_startup.recycle_now,
 	&ftp_startup.log_mask,
 	ftp_server,
@@ -130,6 +134,7 @@ sbbs_ntsvc_t web = {
 	"Synchronet Web Server",
 	"Provides support for Web (HTML/HTTP) clients (browsers).",
 	&web_startup,
+	&web_startup.options,
 	&web_startup.recycle_now,
 	&web_startup.log_mask,
 	web_server,
@@ -144,6 +149,7 @@ sbbs_ntsvc_t mail = {
 	"Sends and receives Internet e-mail (using SMTP) and allows users to remotely " \
 		"access their e-mail using an Internet mail client (using POP3).",
 	&mail_startup,
+	&mail_startup.options,
 	&mail_startup.recycle_now,
 	&mail_startup.log_mask,
 	mail_server,
@@ -159,6 +165,7 @@ sbbs_ntsvc_t services = {
 		"Stock services include Finger, Gopher, NNTP, and IRC. Edit your ctrl/services.ini " \
 		"file for configuration of individual Synchronet Services.",
 	&services_startup,
+	&services_startup.options,
 	&services_startup.recycle_now,
 	&services_startup.log_mask,
 	services_thread,
@@ -188,6 +195,12 @@ static void svc_ctrl_handler(sbbs_ntsvc_t* svc, DWORD dwCtrlCode)
 		case SERVICE_CONTROL_RECYCLE:
 			*svc->recycle_now=TRUE;
 			break;
+		case SERVICE_CONTROL_MUTE:
+			*svc->options|=BBS_OPT_MUTE;
+			break;
+		case SERVICE_CONTROL_UNMUTE:
+			*svc->options&=~BBS_OPT_MUTE;
+			break;
 		case SERVICE_CONTROL_STOP:
 		case SERVICE_CONTROL_SHUTDOWN:
 			svc->terminate();
@@ -201,7 +214,17 @@ static void svc_ctrl_handler(sbbs_ntsvc_t* svc, DWORD dwCtrlCode)
 /* Service-specific control handler stub functions */
 static void WINAPI bbs_ctrl_handler(DWORD dwCtrlCode)
 {
-	svc_ctrl_handler(&bbs, dwCtrlCode);
+	switch(dwCtrlCode) {
+		case SERVICE_CONTROL_SYSOP_AVAILABLE:
+			bbs_startup.options|=BBS_OPT_SYSOP_AVAILABLE;
+			break;
+		case SERVICE_CONTROL_SYSOP_UNAVAILABLE:
+			bbs_startup.options&=~BBS_OPT_SYSOP_AVAILABLE;
+			break;
+		default:
+			svc_ctrl_handler(&bbs, dwCtrlCode);
+			break;
+	}
 }
 
 static void WINAPI ftp_ctrl_handler(DWORD dwCtrlCode)
@@ -232,7 +255,7 @@ static WORD event_type(int level)
 		case LOG_NOTICE:
 		case LOG_INFO:
 		case LOG_DEBUG:
-			return(EVENTLOG_INFORMATION_TYPE);
+			return(EVENTLOG_INFORMATION_TYPE);	/* same as EVENT_LOG_SUCCESS */
 	}
 /*
 	LOG_EMERG
