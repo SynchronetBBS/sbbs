@@ -1016,6 +1016,21 @@ js_chksyspass(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 }
 
 static JSBool
+js_chkpass(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	JSString* str=JS_ValueToString(cx,argv[0]);
+
+	*rval = BOOLEAN_TO_JSVAL(sbbs->chkpass(JS_GetStringBytes(str),&sbbs->useron,true));
+	return(JS_TRUE);
+}
+
+
+static JSBool
 js_text(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	int32		i=0;
@@ -2651,7 +2666,10 @@ static jsMethodSpec js_bbs_functions[] = {
 	/* security */
 	{"check_syspass",	js_chksyspass,		0,	JSTYPE_BOOLEAN,	""
 	,JSDOCSTR("prompt for and verify system password")
-	},		
+	},
+	{"good_password",	js_chkpass,			1,	JSTYPE_STRING,	JSDOCSTR("string password")
+	,JSDOCSTR("check if requested user password meets minimum password requirements (length, uniqueness, etc.)")
+	},
 	/* chat/node stuff */
 	{"page_sysop",		js_pagesysop,		0,	JSTYPE_BOOLEAN,	""
 	,JSDOCSTR("page the sysop for chat")
