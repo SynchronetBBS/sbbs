@@ -51,7 +51,7 @@
 	#define REVISION	'A'
 #else
 	#define VERSION 	"3.00"  /* Version: Major.minor  */
-	#define REVISION	'D'
+	#define REVISION	'E'
 #endif
 
 #define VERSION_NOTICE		"Synchronet BBS for "PLATFORM_DESC\
