@@ -93,7 +93,7 @@ if(qnet) {
 
 if(ask_sysop 
 	&& !console.noyes("\r\n\1bAre you a sysop of a \1wSynchronet\1b BBS (unsure, hit '\1wN\1b')")) {
-	user.flags1|=UFLAG_S;
+	user.security.flags1|=UFLAG_S;
 	if(!qnet && console.yesno("\r\nDo you wish to access the Synchronet BBS List database"))
 		bbs.exec_xtrn("SBL");
 }
