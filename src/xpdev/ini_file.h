@@ -39,7 +39,6 @@
 #define _INI_FILE_H
 
 #include "genwrap.h"
-#include "wrapdll.h"	/* DLLEXPORT and DLLCALL */
 
 typedef struct {
 	ulong		bit;
@@ -50,30 +49,20 @@ typedef struct {
 extern "C" {
 #endif
 
-//DLLEXPORT 
-char*		DLLCALL iniReadString	(FILE* fp, const char* section, const char* key, 
-											 const char* deflt);
-//DLLEXPORT 
-long		DLLCALL	iniReadInteger	(FILE* fp, const char* section, const char* key, 
-											 long deflt);
-
-//DLLEXPORT 
-ushort		DLLCALL	iniReadShortInt	(FILE* fp, const char* section, const char* key, 
-											 ushort deflt);
-
-//DLLEXPORT 
-ulong		DLLCALL	iniReadIpAddress	(FILE* fp, const char* section, const char* key, 
-											 ulong deflt);
-
-//DLLEXPORT 
-double	DLLCALL	iniReadFloat	(FILE* fp, const char* section, const char* key, 
-											 double deflt);
-//DLLEXPORT 
-BOOL		DLLCALL iniReadBool		(FILE* fp, const char* section, const char* key, 
-											 BOOL deflt);
-//DLLEXPORT 
-ulong		DLLCALL	iniReadBitField	(FILE* fp, const char* section, const char* key, 
-											 ini_bitdesc_t* bitdesc, ulong deflt);
+char*		iniReadString	(FILE* fp, const char* section, const char* key, 
+							 const char* deflt);
+long		iniReadInteger	(FILE* fp, const char* section, const char* key, 
+							 long deflt);
+ushort		iniReadShortInt	(FILE* fp, const char* section, const char* key, 
+							 ushort deflt);
+ulong		iniReadIpAddress(FILE* fp, const char* section, const char* key, 
+							 ulong deflt);
+double		iniReadFloat	(FILE* fp, const char* section, const char* key, 
+							 double deflt);
+BOOL		iniReadBool		(FILE* fp, const char* section, const char* key, 
+							 BOOL deflt);
+ulong		iniReadBitField	(FILE* fp, const char* section, const char* key, 
+							 ini_bitdesc_t* bitdesc, ulong deflt);
 
 #if defined(__cplusplus)
 }
