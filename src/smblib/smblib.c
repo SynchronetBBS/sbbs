@@ -1215,7 +1215,7 @@ int SMBCALL smb_putmsghdr(smb_t* smb, smbmsg_t* msg)
 			,msg->hdr.length, smb_hdrblocks(msg->hdr.length));
 		return(-8);
 	}
-	msg->hdr.length=hdrlen; /* store the actual header length */
+	msg->hdr.length=(ushort)hdrlen; /* store the actual header length */
 
 	/**********************************/
 	/* Set the message header ID here */
