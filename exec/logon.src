@@ -88,9 +88,9 @@ set i 0
 	add i 1
 	compare i 1
 	if_equal
-		set str "LOGON"
+		set str "logon"
 	else
-		sprintf str "LOGON%ld" i
+		sprintf str "logon%ld" i
 		end_if
 	chkfile "%zmenu/%s.*"
 	if_false
@@ -111,7 +111,7 @@ user_event event_logon
 clear_abort
 cls
 str logonlst
-set logonlst "%jLOGON.LST"
+set logonlst "%jlogon.lst"
 get_file_length i logonlst
 compare i 1
 if_less
