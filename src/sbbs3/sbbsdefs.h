@@ -750,6 +750,7 @@ enum {							/* readmail and delmailidx which types		*/
 #define TG_PASSTHRU		(1<<5)	/* Pass-through telnet commands/responses	*/
 #define TG_RLOGIN		(1<<6)	/* Use BSD RLogin protocol					*/
 #define TG_NOCHKTIME	(1<<7)	/* Don't check time left while gated		*/
+#define TG_NOTERMTYPE	(1<<8)	/* Request client "DONT TERM_TYPE"			*/
 								
 enum {							/* Values for 'mode' in listfileinfo        */
 	 FI_INFO            		/* Just list file information               */

@@ -192,6 +192,7 @@
 !define TG_PASSTHRU	.5	# Pass-through telnet commands/responses
 !define TG_RLOGIN	.6	# Use BSD RLogin protocol
 !define TG_NOCHKTIME	.7	# Don't check time left online
+!define TG_NOTERMTYPE	.8	# Request client "DONT TERM_TYPE"
 
 				# Bits for _FTP_MODE
 !define FTP_ECHO_CMD	.0	# Echo commands to user (debug)
