@@ -1549,6 +1549,11 @@ void pack_bundle(char *infile,faddr_t dest)
 	int i,j,file,node;
 	time_t now;
 
+	if(infile==NULL || infile[0]==0) {
+		logprintf("ERROR line %d invalid filename",__LINE__);
+		bail(1);
+	}
+
 	node=matchnode(dest,0);
 	strcpy(str,infile);
 	str[strlen(str)-1]='T';
