@@ -1052,7 +1052,7 @@ static BOOL parse_headers(http_session_t * session)
 	if((incgi=open(session->req.cgi_infile,O_WRONLY|O_CREAT|O_TRUNC,S_IRUSR|S_IWUSR))>0)  {
 		lprintf("%04d Created %s",session->socket,session->req.cgi_infile);
 		if(content_len)  {
-			getfilesock(session->socket,incgi,NULL,content_len);
+			recvfilesocket(session->socket,incgi,NULL,content_len);
 		}
 		close(incgi);
 	} else  {
