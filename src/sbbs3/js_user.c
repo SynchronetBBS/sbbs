@@ -844,7 +844,8 @@ JSObject* DLLCALL js_CreateUserClass(JSContext* cx, JSObject* parent, scfg_t* cf
 	return(userclass);
 }
 
-JSObject* DLLCALL js_CreateUserObject(JSContext* cx, JSObject* parent, scfg_t* cfg, char* name, uint usernumber)
+JSObject* DLLCALL js_CreateUserObject(JSContext* cx, JSObject* parent, scfg_t* cfg, char* name
+									  , uint usernumber)
 {
 	JSObject*	userobj;
 	JSObject*	statsobj;
@@ -919,6 +920,23 @@ JSObject* DLLCALL js_CreateUserObject(JSContext* cx, JSObject* parent, scfg_t* c
 #endif
 
 	return(userobj);
+}
+
+/****************************************************************************/
+/* Creates all the user-specific objects: user, msg_area, file_area			*/
+/****************************************************************************/
+JSBool DLLCALL
+js_CreateUserObjects(JSContext* cx, JSObject* parent, scfg_t* cfg, user_t* user
+					 ,char* html_index_file, subscan_t* subscan)
+{
+	if(js_CreateUserObject(cx,parent,cfg,"user",user->number)==NULL)
+		return(JS_FALSE);
+	if(js_CreateFileAreaObject(cx,parent,cfg,user,html_index_file)==NULL) 
+		return(JS_FALSE);
+	if(js_CreateMsgAreaObject(cx,parent,cfg,user,subscan)==NULL) 
+		return(JS_FALSE);
+
+	return(JS_TRUE);
 }
 
 #endif	/* JAVSCRIPT */
