@@ -228,7 +228,7 @@ typedef struct {
 	int n_bytes_remaining;
 	unsigned char tx_data_subpacket[MAX_SUBPACKETSIZE];
 
-	long current_file_size;
+	ulong current_file_size;
 	time_t transfer_start;
 	time_t last_status;
 
@@ -243,19 +243,39 @@ typedef struct {
 	int n_cans;
 
 	/* Stuff added by RRS */
-	void*	cbdata;
-	long*	mode;
-	FILE*	statfp;
-	FILE*	errfp;
+
+	/* Status */
+	BOOL		cancelled;
+	BOOL		file_skipped;
+	ulong		sent_successfully;
+
+	/* Configuration */
+	long*		mode;
+	unsigned	send_timeout;
+	unsigned	recv_timeout;
+	unsigned	max_errors;
+	time_t		progress_interval;
+
+	/* Callbacks */
+	void*		cbdata;
+	int			(*lputs)(void*, int level, const char* str);
+	int			(*send_byte)(void*, uchar ch, unsigned timeout);
+	int			(*recv_byte)(void*, unsigned timeout);
+	void		(*progress)(void*, ulong offset, ulong fsize, time_t t);
 
 } zmodem_t;
 
+void		zmodem_init(zmodem_t*, void* cbdata, long* mode
+						,int	(*lputs)(void*, int level, const char* str)
+						,void	(*progress)(void*, ulong offset, ulong fsize, time_t t)
+						,int	(*send_byte)(void*, uchar ch, unsigned timeout)
+						,int	(*recv_byte)(void*, unsigned timeout));
 char*		zmodem_ver(char *buf);
 const char* zmodem_source(void);
-int			zmodem_get_zrinit(zmodem_t* zm);
-void		zmodem_parse_zrinit(zmodem_t* zm);
-int			zmodem_send_zfin(zmodem_t* zm);
-int			zmodem_send_file(zmodem_t* zm, char* name, FILE* fp);
+int			zmodem_get_zrinit(zmodem_t*);
+void		zmodem_parse_zrinit(zmodem_t*);
+int			zmodem_send_zfin(zmodem_t*);
+int			zmodem_send_file(zmodem_t*, char* name, FILE* fp, BOOL request_init);
 
 #endif
 
