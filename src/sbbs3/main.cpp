@@ -2209,7 +2209,7 @@ sbbs_t::sbbs_t(ushort node_num, DWORD addr, char* name, SOCKET sd,
     	strcpy(nodestr,name);
 
 	lprintf(LOG_DEBUG,"%s constructor using socket %d (settings=%lx)"
-		, nodestr, sd, global_cfg->node_misc);
+		,nodestr, sd, global_cfg->node_misc);
 
 	startup = ::startup;	// Convert from global to class member
 
@@ -2226,10 +2226,16 @@ sbbs_t::sbbs_t(ushort node_num, DWORD addr, char* name, SOCKET sd,
 			SAFECOPY(cfg.temp_dir,"../temp");
     	prep_dir(cfg.ctrl_dir, cfg.temp_dir, sizeof(cfg.temp_dir));
 		md(cfg.temp_dir);
-		SAFEPRINTF2(path,"%sevent%u",cfg.temp_dir,startup->first_node);
-		backslash(path);
-		SAFECOPY(cfg.temp_dir,path);
+		if(sd==INVALID_SOCKET) {	/* events thread */
+			if(startup->first_node==1)
+				SAFEPRINTF(path,"%sevent",cfg.temp_dir);
+			else
+				SAFEPRINTF2(path,"%sevent%u",cfg.temp_dir,startup->first_node);
+			backslash(path);
+			SAFECOPY(cfg.temp_dir,path);
+		}
 	}
+	lprintf(LOG_DEBUG,"%s temporary file directory: %s", nodestr, cfg.temp_dir);
 
 	terminated = false;
 	event_thread_running = false;

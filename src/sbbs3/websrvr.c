@@ -2726,7 +2726,7 @@ static BOOL exec_ssjs(http_session_t* session, char *script)  {
 	char		str[MAX_REQUEST_LINE+1];
 	int			i;
 
-	sprintf(path,"%sSBBS_SSJS.%d.html",temp_dir,session->socket);
+	sprintf(path,"%sSBBS_SSJS.%u.%u.html",temp_dir,getpid(),session->socket);
 	if((session->req.fp=fopen(path,"wb"))==NULL) {
 		lprintf(LOG_ERR,"%04d !ERROR %d opening/creating %s", session->socket, errno, path);
 		return(FALSE);
@@ -2811,7 +2811,7 @@ static void respond(http_session_t * session)
 			return;
 		}
 		sprintf(session->req.physical_path
-			,"%sSBBS_SSJS.%d.html",temp_dir,session->socket);
+			,"%sSBBS_SSJS.%u.%u.html",temp_dir,getpid(),session->socket);
 	}
 
 	session->req.mime_type=get_mime_type(strrchr(session->req.physical_path,'.'));
@@ -3217,8 +3217,11 @@ void DLLCALL web_server(void* arg)
 		/* Copy html directories */
 		SAFECOPY(root_dir,startup->root_dir);
 		SAFECOPY(error_dir,startup->error_dir);
-		SAFECOPY(temp_dir,startup->temp_dir);
 		SAFECOPY(cgi_dir,startup->cgi_dir);
+		if(startup->temp_dir[0])
+			SAFECOPY(temp_dir,startup->temp_dir);
+		else
+			SAFECOPY(temp_dir,"../temp");
 
 		/* Change to absolute path */
 		prep_dir(startup->ctrl_dir, root_dir, sizeof(root_dir));
@@ -3228,8 +3231,6 @@ void DLLCALL web_server(void* arg)
 
 		/* Trim off trailing slash/backslash */
 		if(IS_PATH_DELIM(*(p=lastchar(root_dir))))	*p=0;
-
-		backslash(temp_dir);	/* Add trailing slash/backslash if missing */
 
 		memset(&scfg, 0, sizeof(scfg));
 
@@ -3259,16 +3260,6 @@ void DLLCALL web_server(void* arg)
 		if(chdir(startup->ctrl_dir)!=0)
 			lprintf(LOG_ERR,"!ERROR %d changing directory to: %s", errno, startup->ctrl_dir);
 
-		lprintf(LOG_DEBUG,"Root HTML directory: %s", root_dir);
-		lprintf(LOG_DEBUG,"Error HTML directory: %s", error_dir);
-		lprintf(LOG_DEBUG,"Temporary file directory: %s", temp_dir);
-		MKDIR(temp_dir);
-		if(!isdir(temp_dir)) {
-			lprintf(LOG_ERR,"!Invalid temp directory: %s", temp_dir);
-			cleanup(1);
-			return;
-		}
-
 		/* Initial configuration and load from CNF files */
 		SAFECOPY(scfg.ctrl_dir,startup->ctrl_dir);
 		lprintf(LOG_INFO,"Loading configuration files from %s", scfg.ctrl_dir);
@@ -3281,6 +3272,19 @@ void DLLCALL web_server(void* arg)
 			return;
 		}
 		scfg_reloaded=TRUE;
+
+		lprintf(LOG_DEBUG,"Temporary file directory: %s", temp_dir);
+		MKDIR(temp_dir);
+		if(!isdir(temp_dir)) {
+			lprintf(LOG_ERR,"!Invalid temp directory: %s", temp_dir);
+			cleanup(1);
+			return;
+		}
+		lprintf(LOG_DEBUG,"Root directory: %s", root_dir);
+		lprintf(LOG_DEBUG,"Error directory: %s", error_dir);
+#if defined(__unix__)
+		lprintf(LOG_DEBUG,"CGI directory: %s", cgi_dir);
+#endif
 
 		iniFileName(path,sizeof(path),scfg.ctrl_dir,"mime_types.ini");
 		if(!read_mime_types(path)) {

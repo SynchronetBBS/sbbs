@@ -69,6 +69,7 @@ typedef struct {
 
 	/* Paths */
     char    ctrl_dir[128];
+	char    temp_dir[128];
 	char	answer_sound[128];
 	char	hangup_sound[128];
 

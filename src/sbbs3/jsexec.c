@@ -889,7 +889,8 @@ int main(int argc, char **argv, char** environ)
 		fprintf(errfp,"!ERROR loading configuration files: %s\n",error);
 		bail(1);
 	}
-	prep_dir(scfg.data_dir, scfg.temp_dir, sizeof(scfg.temp_dir));
+	SAFECOPY(scfg.temp_dir,"../temp");
+	prep_dir(scfg.ctrl_dir, scfg.temp_dir, sizeof(scfg.temp_dir));
 
 	if(host_name==NULL)
 		host_name=scfg.sys_inetaddr;

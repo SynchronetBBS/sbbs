@@ -94,7 +94,6 @@ static DWORD	thread_count=0;
 static time_t	uptime=0;
 static DWORD	served=0;
 static BOOL		terminate_server=FALSE;
-static char		local_hostname[128];
 static char		revision[16];
 static char 	*text[TOTAL_TEXT];
 static link_list_t recycle_semfiles;
@@ -2267,7 +2266,7 @@ static BOOL badlogin(SOCKET sock, ulong* login_attempts)
 
 static char* ftp_tmpfname(char* str, SOCKET sock)
 {
-	safe_snprintf(str,MAX_PATH,"%sSBBS_FTP.%s.%u.tx",scfg.temp_dir,local_hostname,sock);
+	safe_snprintf(str,MAX_PATH,"%sSBBS_FTP.%u.%u.tx",scfg.temp_dir,getpid(),sock);
 	return(str);
 }
 
@@ -4555,8 +4554,6 @@ void DLLCALL ftp_server(void* arg)
 
 		status("Initializing");
 
-		gethostname(local_hostname,sizeof(local_hostname));
-
 		memset(&scfg, 0, sizeof(scfg));
 
 		lprintf(LOG_INFO,"Synchronet FTP Server Revision %s%s"
@@ -4616,8 +4613,8 @@ void DLLCALL ftp_server(void* arg)
 		if(startup->temp_dir[0])
 			SAFECOPY(scfg.temp_dir,startup->temp_dir);
 		else
-	    	prep_dir(scfg.data_dir, scfg.temp_dir, sizeof(scfg.temp_dir));
-		backslash(scfg.temp_dir);
+			SAFECOPY(scfg.temp_dir,"../temp");
+	   	prep_dir(scfg.ctrl_dir, scfg.temp_dir, sizeof(scfg.temp_dir));
 		MKDIR(scfg.temp_dir);
 		lprintf(LOG_DEBUG,"Temporary file directory: %s", scfg.temp_dir);
 		if(!isdir(scfg.temp_dir)) {

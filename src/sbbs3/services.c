@@ -1644,13 +1644,18 @@ void DLLCALL services_thread(void* arg)
 			return;
 		}
 
-#if 0	/* ToDo */
-		if(startup->temp_dir[0]) {
+		if(startup->temp_dir[0])
 			SAFECOPY(scfg.temp_dir,startup->temp_dir);
-			backslash(scfg.temp_dir);
-		} else
-#endif
-			prep_dir(scfg.data_dir, scfg.temp_dir, sizeof(scfg.temp_dir));
+		else
+			SAFECOPY(scfg.temp_dir,"../temp");
+	   	prep_dir(scfg.ctrl_dir, scfg.temp_dir, sizeof(scfg.temp_dir));
+		MKDIR(scfg.temp_dir);
+		lprintf(LOG_DEBUG,"Temporary file directory: %s", scfg.temp_dir);
+		if(!isdir(scfg.temp_dir)) {
+			lprintf(LOG_ERR,"!Invalid temp directory: %s", scfg.temp_dir);
+			cleanup(1);
+			return;
+		}
 
 		if(startup->host_name[0]==0)
 			SAFECOPY(startup->host_name,scfg.sys_inetaddr);

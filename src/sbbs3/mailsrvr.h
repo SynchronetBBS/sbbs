@@ -75,8 +75,11 @@ typedef struct {
     BOOL	(*seteuid)(BOOL user);
 	BOOL	(*setuid)(BOOL force);
 
-	/* Strings */
+	/* Paths */
     char    ctrl_dir[128];
+	char    temp_dir[128];
+
+	/* Strings */
     char	dns_server[128];
     char	default_user[128];
     char	dnsbl_tag[32];		// Tag to add to blacklisted subject

@@ -168,7 +168,8 @@ int main(int argc, char **argv)
 		fprintf(stderr,"!ERROR loading configuration files: %s\n",error);
 		exit(1);
 	}
-	prep_dir(scfg.data_dir, scfg.temp_dir, sizeof(scfg.temp_dir));
+	SAFECOPY(scfg.temp_dir,"../temp");
+	prep_dir(scfg.ctrl_dir, scfg.temp_dir, sizeof(scfg.temp_dir));
 
 	if(!(scfg.sys_misc&SM_LOCAL_TZ))
 		putenv("TZ=UTC0");
