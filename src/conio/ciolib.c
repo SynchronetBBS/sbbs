@@ -158,7 +158,7 @@ int try_ansi_init(int mode)
 int try_conio_init(int mode)
 {
 	/* This should test for something or other */
-	if(isatty(fileno(stdout))) {
+	if(win32_initciolib(mode)) {
 		cio_api.mode=CIOLIB_MODE_CONIO;
 		cio_api.mouse=1;
 		cio_api.puttext=puttext;
