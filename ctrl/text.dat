@@ -1,12 +1,15 @@
-"\1n\1cSubj : \1h%s\r\n"                                001 MsgSubj
-"\1n\1cAttr : \1h%s%s%s%s%s%s%s%s%s%s\r\n"              002 MsgAttr
-"\1n\1cTo   : \1h%s"                                    003 MsgTo
+"nhcÚÄÄÄÄÄÄnÄÄÄÄÄÄhkÄÄÄÄÄÄÄncÄÄÄÄÄúúúú\r\n"\	001 MsgSubj
+	"h³ bSubjnb: hc%s\r\n"
+"³ bAttrnb: hc%s%s%s%s%s%s%s%s%s%s\r\n"            002 MsgAttr
+"³ bTo  nb: hc%s"                                  003 MsgTo
 " #%s"                                                  004 MsgToExt
 " (%s)"                                                 005 MsgToNet
-"\1n\1c\r\nFrom : \1h%s"                                006 MsgFrom
+"\r\nw³ bFromnb: hc%s"                            006 MsgFrom
 " #%s"                                                  007 MsgFromExt
 " (%s)"                                                 008 MsgFromNet
-"\1n\1c\r\nDate : \1h%.24s %s\1n"                       009 MsgDate
+"\r\nw³ bDatenb: hc%.24s %s\r\n"\                 009 MsgDate
+	"wÀÄÄÄÄÄÄcÄÄÄÄÄÄÄÄÄnÄÄÄÄÄÄÄÄÄÄhkÄÄÄÄ"\
+	"ÄÄÄÄncÄÄÄÄÄÄÄbÄÄÄÄÄÄÄúúúúúún"
 "_\r\nbhE-mail (User name or number): w"            010 Email
 "\r\nPost on %s %s"                                     011 PostQ
 "rh\r\n\7You have sent too many E-mails today.\r\n"   012 TooManyEmailsToday
@@ -52,10 +55,12 @@
 "-\r\ngReading E-mail (h?ng=Menu) (h%ung of "\  049 ReadingMail
 	"h%ung): n"
 "n\r\nYou can't reply to an anonymous message.\r\n"    050 CantReplyToAnonMsg
-"ncRE: h%sn\r\n\r\n"                                051 Regarding
-"ncRE: h%s\r\nncBY: h%s ncon h%sn\r\n\r\n"    052 RegardingByOn
-"ncRE: h%s\r\nncBY: h%s ncto h%s ncon "\     053 RegardingByToOn
-	"h%sn\r\n\r\n"
+"  hbRenb: hc%sn\r\n\r\n"                        051 Regarding
+"  hbRenb: hc%s\r\n  "\				052 RegardingByOn
+	"bBynb: hc%s bon c%sn\r\n\r\n"    	053 RegardingByToOn
+"  hbRenb: hc%s\r\n  "\  
+	"bBynb: hc%s bto c%s bon "\       
+	"c%sn\r\n\r\n"
 "Delete %s's mail"                                      054 DeleteMailQ
 "OK"                                                    055 OK
 "\r\n_bhForward mail to: w"                         056 ForwardMailTo
@@ -391,16 +396,16 @@
 "whPassword changed.\r\n"                             335 PasswordChanged
 "Sorry, you have no more logons allowed today.\r\n"     336 NoMoreLogons
 "You can only logon once a day.\r\n"                    337 R_Logons
-"_bh[wûb] yEnter your full name or alias: w"     338 EnterYourAlias
-"_bh[wûb] yEnter your full real name: w"         339 EnterYourRealName
-"_bh[wûb] yEnter your company name: w"           340 EnterYourCompany
-"_bh[wûb] yEnter your chat handle: w"            341 EnterYourHandle
-"_bh[wûb] yEnter your sex (M/F): w"              342 EnterYourSex
-"_bh[wûb] yEnter your street address: w"         343 EnterYourAddress
-"_bh[wûb] yEnter your voice phone number: w"     344 EnterYourPhoneNumber
-"_bh[wûb] yEnter your birthday (%s): w"          345 EnterYourBirthday
-"_bh[wûb] yEnter your city, state: w"            346 EnterYourCityState
-"_bh[wûb] yEnter your zip (or postal) code: w"   347 EnterYourZipCode
+"_bh[cûb] yEnter your full name or alias: w"     338 EnterYourAlias
+"_bh[cûb] yEnter your full real name: w"         339 EnterYourRealName
+"_bh[cûb] yEnter your company name: w"           340 EnterYourCompany
+"_bh[cûb] yEnter your chat handle: w"            341 EnterYourHandle
+"_bh[cûb] yEnter your sex (M/F): w"              342 EnterYourSex
+"_bh[cûb] yEnter your street address: w"         343 EnterYourAddress
+"_bh[cûb] yEnter your voice phone number: w"     344 EnterYourPhoneNumber
+"_bh[cûb] yEnter your birthday (%s): w"          345 EnterYourBirthday
+"_bh[cûb] yEnter your city, state: w"            346 EnterYourCityState
+"_bh[cûb] yEnter your zip (or postal) code: w"   347 EnterYourZipCode
 "_yhEnter a description of your computer: w"        348 EnterYourComputer
 "Are you calling from North America"                    349 CallingFromNAmericaQ
 "Is the above information correct"                      350 UserInfoCorrectQ
@@ -563,35 +568,35 @@
 	"Mega/Kilobytes, or $): n"
 "_yhAdjust Minutes (- to subtract, H = Hours): n"   472 ModifyMinutes
 "\r\nDelete Questionaire"                               473 DeleteQuestionaireQ
-"-gDefault settings for hw%s #%d\r\n\r\nn"         474 UserDefaultsHdr
-"nhTng) Terminal Mode                 : h%s\r\n"   475 UserDefaultsTerminal
-"nhEng) External Editor               : h%s\r\n"   476 UserDefaultsXeditor
-"nhLng) Screen Length                 : h%s\r\n"   477 UserDefaultsRows
-"nhXng) Expert Menu Mode              : h%s\r\n"   478 UserDefaultsMenuMode
-"nhPng) Screen Pause                  : h%s\r\n"   479 UserDefaultsPause
-"nhHng) Hot Keys                      : h%s\r\n"   480 UserDefaultsHotKey
-"nhSng) Spinning Cursor               : h%s\r\n"   481 UserDefaultsCursor
-"nhCng) Clear Screen Between Messages : h%s\r\n"   482 UserDefaultsCLS
-"nhNng) Ask For New Message/File Scan : h%s\r\n"   483 UserDefaultsAskNScan
-"nhYng) Ask For Your Un-read Msg Scan : h%s\r\n"   484 UserDefaultsAskSScan
-"nhFng) Automatic New File Scan       : h%s\r\n"   485 UserDefaultsANFS
-"nhRng) Remember Current Sub-board    : h%s\r\n"   486 UserDefaultsRemember
-"nhBng) Batch Download File Flagging  : h%s\r\n"   487 UserDefaultsBatFlag
-"nhMng) Forward E-mail to NetMail     : h%s\r\n"   488 UserDefaultsNetMail
-"nhKng) Command Shell                 : h%s\r\n"   489 UserDefaultsCmdShell
-"nhDng) Default to Quiet Mode         : h%s\r\n"   490 UserDefaultsQuiet
-"nhWng) Change Password\r\n"                        491 UserDefaultsPassword
-"nhAng) Temporary/QWK Archive Type    : h%s\r\n"   492 UserDefualtsArcType
-"nhZng) Default Download Protocol     : h%s "\     493 UserDefaultsProtocol
-	"ng%s\r\n"
-"\r\n_gWhich or [hwQng]uit: n"                   494 UserDefaultsWhich
+"hbDefault settings for w%s #%d\r\n\r\n"             474 UserDefaultsHdr
+"nb[hwTnb] hTerminal Mode                 nb: c%s\r\n"475 UserDefaultsTerminal
+"nb[hwEnb] hExternal Editor               nb: c%s\r\n"   476 UserDefaultsXeditor
+"nb[hwLnb] hScreen Length                 nb: c%s\r\n"   477 UserDefaultsRows
+"nb[hwXnb] hExpert Menu Mode              nb: c%s\r\n"   478 UserDefaultsMenuMode
+"nb[hwPnb] hScreen Pause                  nb: c%s\r\n"   479 UserDefaultsPause
+"nb[hwHnb] hHot Keys                      nb: c%s\r\n"   480 UserDefaultsHotKey
+"nb[hwSnb] hSpinning Cursor               nb: c%s\r\n"   481 UserDefaultsCursor
+"nb[hwCnb] hClear Screen Between Messages nb: c%s\r\n"   482 UserDefaultsCLS
+"nb[hwNnb] hAsk For New Message/File Scan nb: c%s\r\n"   483 UserDefaultsAskNScan
+"nb[hwYnb] hAsk For Your Un-read Msg Scan nb: c%s\r\n"   484 UserDefaultsAskSScan
+"nb[hwFnb] hAutomatic New File Scan       nb: c%s\r\n"   485 UserDefaultsANFS
+"nb[hwRnb] hRemember Current Sub-board    nb: c%s\r\n"   486 UserDefaultsRemember
+"nb[hwBnb] hBatch Download File Flagging  nb: c%s\r\n"   487 UserDefaultsBatFlag
+"nb[hwMnb] hForward E-mail to NetMail     nb: c%s\r\n"   488 UserDefaultsNetMail
+"nb[hwKnb] hCommand Shell                 nb: c%s\r\n"   489 UserDefaultsCmdShell
+"nb[hwDnb] hDefault to Quiet Mode         nb: c%s\r\n"   490 UserDefaultsQuiet
+"nb[hwWnb] hChange Password\r\n"                        491 UserDefaultsPassword
+"nb[hwAnb] hTemporary/QWK Archive Type    nb: c%s\r\n"   492 UserDefualtsArcType
+"nb[hwZnb] hDefault Download Protocol     nb: c%s "\     493 UserDefaultsProtocol
+	"b%s\r\n"
+"\r\nnhbWhich or [wQb]uit: c"                   494 UserDefaultsWhich
 "On"                                                    495 On
 "Off"                                                   496 Off
-"\r\n_bh[wûb] yHow many rows on your monitor "\   497 HowManyRows
+"\r\n_bh[cûb] yHow many rows on your monitor "\   497 HowManyRows
 	"[\1wAuto Detect\1y]: "
 "\r\n_yhCurrent Password: w"                        498 CurrentPassword
 "Forward personal e-mail to network mail address"       499 ForwardMailQ
-"_bh[wûb] yNetwork mail address "\                500 EnterNetMailAddress
+"_bh[cûb] yNetwork mail address "\                500 EnterNetMailAddress
 	"(Example: user@domain)\r\n: "
 "nlgSelect h%sng:\r\n\r\n"                        501 SelectItemHdr
 "gh%3d: ng%s\r\n"                                   502 SelectItemFmt
