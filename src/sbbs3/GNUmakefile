@@ -92,7 +92,12 @@ EXEODIR :=	$(CCPRE).$(os).exe.$(BUILD)
 
 DELETE	=	rm -f
 
-CFLAGS	+=	-DJAVASCRIPT -I../../include/mozilla/js -I$(XPDEV) -I$(UIFC)
+CFLAGS  +=  -I$(XPDEV) -I$(UIFC) -DJAVASCRIPT
+ifdef JSINCLUDE
+ CFLAGS += -I$(JSINCLUDE)
+else
+ CFLAGS += -I../../include/mozilla/js
+endif
 
 ifdef BSD	# BSD
  # Math libraries needed and uses pthread
