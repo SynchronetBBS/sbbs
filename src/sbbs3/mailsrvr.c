@@ -3339,7 +3339,7 @@ static void sendmail_thread(void* arg)
 				smb_unlockmsghdr(&smb,&msg);
 				continue;
 			}
-			if(msg.hdr.netattr&MSG_INTRANSIT) {
+			if(!(startup->options&MAIL_OPT_SEND_INTRANSIT) && msg.hdr.netattr&MSG_INTRANSIT) {
 				smb_unlockmsghdr(&smb,&msg);
 				lprintf(LOG_ERR,"0000 SEND Message #%lu from %s to %s - in transit"
 					,msg.hdr.number, msg.from, msg.to_net.addr);
