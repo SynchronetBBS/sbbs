@@ -1335,9 +1335,8 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 			FD_ZERO(&ibits);
 			FD_SET(out_pipe[0],&ibits);
 			timeout.tv_sec=0;
-			timeout.tv_usec=0;
+			timeout.tv_usec=1000;
 			if(!select(out_pipe[0]+1,&ibits,NULL,NULL,&timeout))  {
-				YIELD();
 				continue;
 			}
 
