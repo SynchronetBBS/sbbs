@@ -185,7 +185,7 @@ if(msgbase.open()) {
             writeln('\t\t\t\t<link>' + link_root + '&amp;item=' + hdr.number + '</link>');
         else    // v3.12b
             writeln('\t\t\t\t<link>' + 'http://' + http_request.header.host + '/msgs/msg.ssjs?msg_sub=' + 
-                    channel.name + '&amp;mesage=' + hdr.number + '</link>');
+                    channel.name + '&amp;message=' + hdr.number + '</link>');
 		writeln('\t\t\t</item>');
 		msgs++;
 		if(msgs>=channel.maxmessages)
