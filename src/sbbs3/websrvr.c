@@ -2716,7 +2716,7 @@ void http_session_thread(void* arg)
 	SAFECOPY(session.client.host,session.host_name);
 	session.client.port=ntohs(session.addr.sin_port);
 	session.client.time=time(NULL);
-	session.client.protocol="http";
+	session.client.protocol="HTTP";
 	session.client.user=session.username;
 	session.client.size=sizeof(session.client);
 	client_on(session.socket, &session.client, /* update existing client record? */FALSE);
@@ -2784,7 +2784,7 @@ void http_session_thread(void* arg)
 
 	active_clients--;
 	update_clients();
-	client_off(session.socket);
+	client_off(socket);
 	if(startup!=NULL && startup->socket_open!=NULL)
 		startup->socket_open(startup->cbdata,FALSE);
 
