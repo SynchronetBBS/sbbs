@@ -87,7 +87,7 @@ typedef struct {
 	char	inbound_sound[128];
 	char	outbound_sound[128];
     char	pop3_sound[128];
-    char	reserved_path1[128];
+    char	host_name[128];
 	BOOL	recycle_now;
 
 } mail_startup_t;
