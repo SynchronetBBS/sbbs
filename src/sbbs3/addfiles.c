@@ -215,7 +215,9 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 		dir=opendir(str);
 
 		while(dir!=NULL && (dirent=readdir(dir))!=NULL) {
-			sprintf(tmp,"%s%s",str,dirent->d_name);
+			sprintf(tmp,"%s%s"
+				,cur_altpath ? scfg.altpath[cur_altpath-1] : scfg.dir[f.dir]->path
+				,dirent->d_name);
 			if(isdir(tmp))
 				continue;
 #ifdef _WIN32
