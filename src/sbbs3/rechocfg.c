@@ -45,7 +45,6 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <fcntl.h>
-#include <malloc.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
