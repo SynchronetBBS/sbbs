@@ -1,12 +1,6 @@
 load("../web/lib/template.ssjs");
 
-load("sbbsdefs.js");
-
 var sub='';
-var start=new Date();
-load("nodedefs.js");
-
-var include_statistics=true;
 
 http_reply.header.pragma='no-cache';
 http_reply.header.expires='0';
@@ -15,58 +9,31 @@ http_reply.header['cache-control']='must-revalidate';
 write_template("header.inc");
 load("../web/lib/topnav_html.ssjs");
 load("../web/lib/leftnav_html.ssjs");
-write_template("main.inc");
 
-if(include_statistics) {
+/* Main Page Stats */
+
     total=time()-system.uptime;
-	days   = Math.floor(total/(24*60*60));
-	if(days) 
-		total%=(24*60*60);
-	hours  = Math.floor(total/(60*60));
-	min     =(Math.floor(total/60))%60;
+    days   = Math.floor(total/(24*60*60));
+    if(days) 
+        total%=(24*60*60);
+    hours  = Math.floor(total/(60*60));
+    min     =(Math.floor(total/60))%60;
     sec=total%60;
 
-    // Table
-	writeln("<table class=\"main_stats\">");
-	writeln("<tr>");
-    writeln("<td class=\"main_stats\">Up Time</td><td class=\"main_stats_bold\">" 
-		+ format("%u days, %u:%02u:%02u",days,hours,min,sec) + "</td>");
-	writeln("<td class=\"main_stats\">Logons</td><td class=\"main_stats_bold\">" + system.stats.logons_today + "</td>");
-	writeln("<td class=\"main_stats\">Posts</td><td class=\"main_stats_bold\">" + system.stats.messages_posted_today + "</td>");
-	writeln("<td class=\"main_stats\">Uploads</td><td class=\"main_stats_bold\">" 
-		+ format("%lu bytes in %lu files"
-			,system.stats.bytes_uploaded_today
-			,system.stats.files_uploaded_today) + "</td>");
-	writeln("</tr>");
-	writeln("<tr>");
-	writeln("<td class=\"main_stats\">Time On</td><td class=\"main_stats_bold\">" + system.stats.timeon_today + " minutes</td>");
-	writeln("<td class=\"main_stats\">New Users</td><td class=\"main_stats_bold\">" + system.stats.new_users_today + "</td>");
-	writeln("<td class=\"main_stats\">Emails</td><td class=\"main_stats_bold\">" + system.stats.email_sent_today + "</td>");
-	writeln("<td class=\"main_stats\">Downloads</td><td class=\"main_stats_bold\">" 
-		+ format("%lu bytes in %lu files"
-			,system.stats.bytes_downloaded_today
-			,system.stats.files_downloaded_today) + "</td>");
-	
-    writeln("</tr>");
-    writeln("</table><br />");
-   writeln("</td></tr><tr>");
-    writeln("<td align=\"center\">System Totals<br /><br />");
-    
-    writeln("<table class=\"main_stats\">");
-    writeln("<tr>");
-    writeln("<td class=\"main_stats\">Time On</td><td class=\"main_stats_bold\">" + system.stats.total_timeon + " minutes</td>");writeln("<td class=\"main_stats\">Logons</td><td class=\"main_stats_bold\">" + system.stats.total_logons + "</td>");
-    writeln("<td class=\"main_stats\">Messages</td><td class=\"main_stats_bold\">" + system.stats.total_messages + "</td>");
-    writeln("</tr>");
-    writeln("<tr>");
-    writeln("<td class=\"main_stats\">Users</td><td class=\"main_stats_bold\">" + system.stats.total_users + "</td>");
-    writeln("<td class=\"main_stats\">Emails</td><td class=\"main_stats_bold\">" + system.stats.total_email + "</td>");
-    writeln("<td class=\"main_stats\">Files</td><td class=\"main_stats_bold\">"  + system.stats.total_files + "</td>");
-    writeln("</tr>");
-    writeln("</table>");
-    writeln("</td>");
-    writeln("</tr>");
-	writeln("</table>");
-	writeln("<br />");
-}
+    template.uptime = format("%u days, %u:%02u:%02u",days,hours,min,sec);
+    template.logons_today = system.stats.logons_today;
+    template.posted_today = system.stats.messages_posted_today;
+    template.uploaded_today = format("%lu bytes in %lu files" ,system.stats.bytes_uploaded_today ,system.stats.files_uploaded_today);
+    template.timeon_today = system.stats.timeon_today;
+    template.new_users_today = system.stats.new_users_today;
+    template.email_sent_today = system.stats.email_sent_today;
+    template.downloaded_today = format("%lu bytes in %lu files" ,system.stats.bytes_downloaded_today ,system.stats.files_downloaded_today);
+    template.total_timeon = system.stats.total_timeon;
+    template.total_logons = system.stats.total_logons;
+    template.total_messages = system.stats.total_messages;
+    template.total_users = system.stats.total_users;
+    template.total_email = system.stats.total_email;
+    template.total_files = system.stats.total_files;
 
+write_template("main.inc");
 write_template("footer.inc");
