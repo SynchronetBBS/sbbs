@@ -24,7 +24,7 @@ DELETE	=	echo y | del
 !ifdef msc	# Microsoft Visual C++
 CC		=	cl
 LD		=	link
-ODIR	=	msvc.win32
+ODIR	=	msvc.Win32
 OUTPUT	=	-Fo
 LOUTPUT	=	-Fe
 CFLAGS  =	-nologo -MTd
@@ -37,7 +37,7 @@ CFLAGS	=	$(CFLAGS) -Yd
 
 CC		=	bcc32
 LD		=	ilink32
-ODIR	=	bcc.win32		# Output directory
+ODIR	=	bcc.Win32		# Output directory
 OUTPUT	=	-o
 LOUTPUT	=	$(OUTPUT)
 CFLAGS	=	-n$(ODIR) -WM -q 
