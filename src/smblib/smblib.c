@@ -348,6 +348,10 @@ int SMBCALL smb_trunchdr(smb_t* smb)
 {
 	time_t	start=0;
 
+	if(smb->shd_fp==NULL) {
+		sprintf(smb->last_error,"msgbase not open");
+		return(SMB_ERR_NOT_OPEN);
+	}
 	rewind(smb->shd_fp);
 	while(1) {
 		if(!chsize(fileno(smb->shd_fp),0L))
@@ -380,6 +384,10 @@ int SMBCALL smb_locksmbhdr(smb_t* smb)
 {
 	time_t	start=0;
 
+	if(smb->shd_fp==NULL) {
+		sprintf(smb->last_error,"msgbase not open");
+		return(SMB_ERR_NOT_OPEN);
+	}
 	while(1) {
 		if(!lock(fileno(smb->shd_fp),0L,sizeof(smbhdr_t)+sizeof(smbstatus_t)))
 			return(0);
@@ -403,6 +411,10 @@ int SMBCALL smb_getstatus(smb_t* smb)
 {
 	int 	i;
 
+	if(smb->shd_fp==NULL) {
+		sprintf(smb->last_error,"msgbase not open");
+		return(SMB_ERR_NOT_OPEN);
+	}
 	setvbuf(smb->shd_fp,smb->shd_buf,_IONBF,SHD_BLOCK_LEN);
 	clearerr(smb->shd_fp);
 	fseek(smb->shd_fp,sizeof(smbhdr_t),SEEK_SET);
@@ -421,6 +433,10 @@ int SMBCALL smb_putstatus(smb_t* smb)
 {
 	int i;
 
+	if(smb->shd_fp==NULL) {
+		sprintf(smb->last_error,"msgbase not open");
+		return(SMB_ERR_NOT_OPEN);
+	}
 	clearerr(smb->shd_fp);
 	fseek(smb->shd_fp,sizeof(smbhdr_t),SEEK_SET);
 	i=fwrite(&(smb->status),1,sizeof(smbstatus_t),smb->shd_fp);
@@ -436,6 +452,10 @@ int SMBCALL smb_putstatus(smb_t* smb)
 /****************************************************************************/
 int SMBCALL smb_unlocksmbhdr(smb_t* smb)
 {
+	if(smb->shd_fp==NULL) {
+		sprintf(smb->last_error,"msgbase not open");
+		return(SMB_ERR_NOT_OPEN);
+	}
 	return(unlock(fileno(smb->shd_fp),0L,sizeof(smbhdr_t)+sizeof(smbstatus_t)));
 }
 
@@ -450,6 +470,10 @@ int SMBCALL smb_lockmsghdr(smb_t* smb, smbmsg_t* msg)
 {
 	time_t	start=0;
 
+	if(smb->shd_fp==NULL) {
+		sprintf(smb->last_error,"msgbase not open");
+		return(SMB_ERR_NOT_OPEN);
+	}
 	while(1) {
 		if(!lock(fileno(smb->shd_fp),msg->idx.offset,sizeof(msghdr_t)))
 			return(0);
@@ -481,7 +505,7 @@ int SMBCALL smb_getmsgidx(smb_t* smb, smbmsg_t* msg)
 
 	if(smb->sid_fp==NULL) {
 		sprintf(smb->last_error,"index not open");
-		return(1);
+		return(SMB_ERR_NOT_OPEN);
 	}
 	clearerr(smb->sid_fp);
 	if(!msg->hdr.number) {
@@ -539,6 +563,10 @@ int SMBCALL smb_getmsgidx(smb_t* smb, smbmsg_t* msg)
 /****************************************************************************/
 int SMBCALL smb_getfirstidx(smb_t* smb, idxrec_t *idx)
 {
+	if(smb->sid_fp==NULL) {
+		sprintf(smb->last_error,"index not open");
+		return(SMB_ERR_NOT_OPEN);
+	}
 	clearerr(smb->sid_fp);
 	fseek(smb->sid_fp,0,SEEK_SET);
 	if(!fread(idx,sizeof(idxrec_t),1,smb->sid_fp)) {
@@ -555,6 +583,10 @@ int SMBCALL smb_getlastidx(smb_t* smb, idxrec_t *idx)
 {
 	long length;
 
+	if(smb->sid_fp==NULL) {
+		sprintf(smb->last_error,"index not open");
+		return(SMB_ERR_NOT_OPEN);
+	}
 	clearerr(smb->sid_fp);
 	length=filelength(fileno(smb->sid_fp));
 	if(length<sizeof(idxrec_t)) {
@@ -616,6 +648,10 @@ int SMBCALL smb_getmsghdr(smb_t* smb, smbmsg_t* msg)
 	ulong	l,offset;
 	idxrec_t idx;
 
+	if(smb->shd_fp==NULL) {
+		sprintf(smb->last_error,"msgbase not open");
+		return(SMB_ERR_NOT_OPEN);
+	}
 	rewind(smb->shd_fp);
 	fseek(smb->shd_fp,msg->idx.offset,SEEK_SET);
 	idx=msg->idx;
@@ -839,6 +875,10 @@ int SMBCALL smb_copymsgmem(smbmsg_t* msg, smbmsg_t* srcmsg)
 /****************************************************************************/
 int SMBCALL smb_unlockmsghdr(smb_t* smb, smbmsg_t* msg)
 {
+	if(smb->shd_fp==NULL) {
+		sprintf(smb->last_error,"msgbase not open");
+		return(SMB_ERR_NOT_OPEN);
+	}
 	return(unlock(fileno(smb->shd_fp),msg->idx.offset,sizeof(msghdr_t)));
 }
 
@@ -1050,7 +1090,10 @@ int SMBCALL smb_putmsg(smb_t* smb, smbmsg_t* msg)
 /****************************************************************************/
 int SMBCALL smb_putmsgidx(smb_t* smb, smbmsg_t* msg)
 {
-
+	if(smb->sid_fp==NULL) {
+		sprintf(smb->last_error,"index not open");
+		return(SMB_ERR_NOT_OPEN);
+	}
 	clearerr(smb->sid_fp);
 	fseek(smb->sid_fp,msg->offset*sizeof(idxrec_t),SEEK_SET);
 	if(!fwrite(&msg->idx,sizeof(idxrec_t),1,smb->sid_fp)) {
@@ -1073,6 +1116,10 @@ int SMBCALL smb_putmsghdr(smb_t* smb, smbmsg_t* msg)
 	ushort	i;
 	ulong	l;
 
+	if(smb->shd_fp==NULL) {
+		sprintf(smb->last_error,"msgbase not open");
+		return(SMB_ERR_NOT_OPEN);
+	}
 	if(msg->idx.offset<sizeof(smbhdr_t)+sizeof(smbstatus_t) 
 		|| msg->idx.offset<smb->status.header_offset) {
 		sprintf(smb->last_error,"invalid header offset: %ld",msg->idx.offset);
@@ -1142,6 +1189,10 @@ int SMBCALL smb_create(smb_t* smb)
     char        str[128];
 	smbhdr_t	hdr;
 
+	if(smb->shd_fp==NULL || smb->sdt_fp==NULL || smb->sid_fp==NULL) {
+		sprintf(smb->last_error,"msgbase not open");
+		return(SMB_ERR_NOT_OPEN);
+	}
 	if(filelength(fileno(smb->shd_fp))>=sizeof(smbhdr_t)+sizeof(smbstatus_t)
 		&& smb_locksmbhdr(smb))  /* header exists, so lock it */
 		return(1);
@@ -1213,6 +1264,10 @@ long SMBCALL smb_allocdat(smb_t* smb, ulong length, ushort headers)
     ushort  i,j;
 	ulong	l,blocks,offset=0L;
 
+	if(smb->sda_fp==NULL) {
+		sprintf(smb->last_error,"msgbase not open");
+		return(SMB_ERR_NOT_OPEN);
+	}
 	blocks=smb_datblocks(length);
 	j=0;	/* j is consecutive unused block counter */
 	fflush(smb->sda_fp);
@@ -1247,6 +1302,10 @@ long SMBCALL smb_fallocdat(smb_t* smb, ulong length, ushort headers)
 {
 	ulong	l,blocks,offset;
 
+	if(smb->sda_fp==NULL) {
+		sprintf(smb->last_error,"msgbase not open");
+		return(SMB_ERR_NOT_OPEN);
+	}
 	fflush(smb->sda_fp);
 	clearerr(smb->sda_fp);
 	blocks=smb_datblocks(length);
@@ -1322,6 +1381,10 @@ int SMBCALL smb_incdat(smb_t* smb, ulong offset, ulong length, ushort headers)
 	ushort	i;
 	ulong	l,blocks;
 
+	if(smb->sda_fp==NULL) {
+		sprintf(smb->last_error,"msgbase not open");
+		return(SMB_ERR_NOT_OPEN);
+	}
 	clearerr(smb->sda_fp);
 	blocks=smb_datblocks(length);
 	for(l=0;l<blocks;l++) {
@@ -1350,6 +1413,10 @@ int SMBCALL smb_freemsghdr(smb_t* smb, ulong offset, ulong length)
 	uchar	c=0;
 	ulong	l,blocks;
 
+	if(smb->sha_fp==NULL) {
+		sprintf(smb->last_error,"msgbase not open");
+		return(SMB_ERR_NOT_OPEN);
+	}
 	clearerr(smb->sha_fp);
 	blocks=smb_hdrblocks(length);
 	fseek(smb->sha_fp,offset/SHD_BLOCK_LEN,SEEK_SET);
@@ -1397,6 +1464,10 @@ long SMBCALL smb_allochdr(smb_t* smb, ulong length)
 	ushort	i;
 	ulong	l,blocks,offset=0;
 
+	if(smb->sha_fp==NULL) {
+		sprintf(smb->last_error,"msgbase not open");
+		return(SMB_ERR_NOT_OPEN);
+	}
 	blocks=smb_hdrblocks(length);
 	i=0;	/* i is consecutive unused block counter */
 	fflush(smb->sha_fp);
@@ -1433,6 +1504,10 @@ long SMBCALL smb_fallochdr(smb_t* smb, ulong length)
 	uchar	c=1;
 	ulong	l,blocks,offset;
 
+	if(smb->sha_fp==NULL) {
+		sprintf(smb->last_error,"msgbase not open");
+		return(SMB_ERR_NOT_OPEN);
+	}
 	blocks=smb_hdrblocks(length);
 	fflush(smb->sha_fp);
 	clearerr(smb->sha_fp);
@@ -1456,6 +1531,10 @@ long SMBCALL smb_hallochdr(smb_t* smb)
 {
 	ulong l;
 
+	if(smb->shd_fp==NULL) {
+		sprintf(smb->last_error,"msgbase not open");
+		return(SMB_ERR_NOT_OPEN);
+	}
 	fflush(smb->shd_fp);
 	fseek(smb->shd_fp,0L,SEEK_END);
 	l=ftell(smb->shd_fp);
@@ -1476,6 +1555,10 @@ long SMBCALL smb_hallocdat(smb_t* smb)
 {
 	long l;
 
+	if(smb->sdt_fp==NULL) {
+		sprintf(smb->last_error,"msgbase not open");
+		return(SMB_ERR_NOT_OPEN);
+	}
 	fflush(smb->sdt_fp);
 	fseek(smb->sdt_fp,0L,SEEK_END);
 	l=ftell(smb->sdt_fp);
