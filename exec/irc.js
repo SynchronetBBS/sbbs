@@ -1223,6 +1223,9 @@ function Screen_update()  {
 	if(key!="")  {
 		this.handle_key(key);
 	}
+	else {
+		sleep(1);
+	}
 }
 
 function Screen_handle_key(key)  {
