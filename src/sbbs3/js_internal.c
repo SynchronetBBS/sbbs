@@ -40,7 +40,8 @@
 #include <jscntxt.h>	/* Needed for Context-private data structure */
 
 enum {
-	 PROP_TERMINATED
+	 PROP_VERSION
+	,PROP_TERMINATED
 	,PROP_AUTO_TERMINATE
 	,PROP_BRANCH_COUNTER
 	,PROP_BRANCH_LIMIT
@@ -66,6 +67,9 @@ static JSBool js_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
     tiny = JSVAL_TO_INT(id);
 
 	switch(tiny) {
+		case PROP_VERSION:
+			*vp=STRING_TO_JSVAL(JS_NewStringCopyZ(cx,(char *)JS_GetImplementationVersion()));
+			break;
 		case PROP_TERMINATED:
 			if(branch->terminated!=NULL)
 				*vp=BOOLEAN_TO_JSVAL(*branch->terminated);
@@ -147,22 +151,23 @@ static JSBool js_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	return(JS_TRUE);
 }
 
-#define RT_PROP_FLAGS	JSPROP_ENUMERATE|JSPROP_READONLY
+#define PROP_FLAGS	JSPROP_ENUMERATE|JSPROP_READONLY
 
 static jsSyncPropertySpec js_properties[] = {
 /*		 name,				tinyid,						flags,		ver	*/
 
+	{	"version",			PROP_VERSION,		PROP_FLAGS,			311 },
 	{	"auto_terminate",	PROP_AUTO_TERMINATE,JSPROP_ENUMERATE,	311 },
 	{	"terminated",		PROP_TERMINATED,	JSPROP_ENUMERATE,	311 },
 	{	"branch_counter",	PROP_BRANCH_COUNTER,JSPROP_ENUMERATE,	311 },
 	{	"branch_limit",		PROP_BRANCH_LIMIT,	JSPROP_ENUMERATE,	311 },
 	{	"yield_interval",	PROP_YIELD_INTERVAL,JSPROP_ENUMERATE,	311 },
 	{	"gc_interval",		PROP_GC_INTERVAL,	JSPROP_ENUMERATE,	311 },
-	{	"gc_attempts",		PROP_GC_ATTEMPTS,	RT_PROP_FLAGS,		311 },
+	{	"gc_attempts",		PROP_GC_ATTEMPTS,	PROP_FLAGS,			311 },
 #ifdef jscntxt_h___
-	{	"gc_counter",		PROP_GC_COUNTER,	RT_PROP_FLAGS,		311 },
-	{	"gc_last_bytes",	PROP_GC_LASTBYTES,	RT_PROP_FLAGS,		311 },
-	{	"bytes",			PROP_BYTES,			RT_PROP_FLAGS,		311 },
+	{	"gc_counter",		PROP_GC_COUNTER,	PROP_FLAGS,			311 },
+	{	"gc_last_bytes",	PROP_GC_LASTBYTES,	PROP_FLAGS,			311 },
+	{	"bytes",			PROP_BYTES,			PROP_FLAGS,			311 },
 	{	"max_bytes",		PROP_MAXBYTES,		JSPROP_ENUMERATE,	311 },
 #endif
 	{0}
@@ -170,7 +175,8 @@ static jsSyncPropertySpec js_properties[] = {
 
 #ifdef _DEBUG
 static char* prop_desc[] = {
-	 "set to <i>false</i> to disable the automatic termination of the script upon external request"
+	 "JavaScript engine version information (AKA system.js_version)"
+	,"set to <i>false</i> to disable the automatic termination of the script upon external request"
 	,"termination has been requested (stop execution as soon as possible)"
 	,"number of branch operations performed in this runtime"
 	,"maximum number of branches, used for infinite-loop detection (0=disabled)"
