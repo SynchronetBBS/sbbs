@@ -181,7 +181,7 @@ struct x11 {
 	int		(*XMapWindow)	(Display*, Window);
 	int		(*XFree)		(void *data);
 	int		(*XFreePixmap)	(Display*, Pixmap);
-	int		(*XCreateBitmapFromData)	(Display*, Drawable, _Xconst char*, unsigned int, unsigned int);
+	Pixmap	(*XCreateBitmapFromData)	(Display*, Drawable, _Xconst char*, unsigned int, unsigned int);
 	Status	(*XAllocColor)	(Display*, Colormap, XColor*);
 	Display*(*XOpenDisplay)	(_Xconst char*);
 	Window	(*XCreateSimpleWindow)	(Display*, Window, int, int, unsigned int, unsigned int, unsigned int, unsigned long, unsigned long);
@@ -1306,7 +1306,7 @@ console_init()
 	x11.XAllocColor=XAllocColor;
 	x11.XOpenDisplay=XOpenDisplay;
 	x11.XCreateSimpleWindow=XCreateSimpleWindow;
-	x11.XCreateGC=dlsym(dl,"XCreateGC");
+	x11.XCreateGC=XCreateGC;
 	x11.XSelectInput=XSelectInput;
 	x11.XStoreName=XStoreName;
 	x11.XGetSelectionOwner=XGetSelectionOwner;
