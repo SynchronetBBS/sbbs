@@ -92,11 +92,11 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 		mode=A_LEAVE;
 	else mode=0;
 	if(useron.qwk&QWK_TZ)
-		mode|=TZ;
+		mode|=QM_TZ;
 	if(useron.qwk&QWK_VIA)
-		mode|=VIA;
+		mode|=QM_VIA;
 	if(useron.qwk&QWK_MSGID)
-		mode|=MSGID;
+		mode|=QM_MSGID;
 
 	(*msgcnt)=0L;
 	if(/* !prepack && */ !(useron.qwk&QWK_NOCTRL)) {
@@ -266,9 +266,9 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 				ndx=NULL;
 
 			if(useron.rest&FLAG('Q'))
-				mode|=TO_QNET;
+				mode|=QM_TO_QNET;
 			else
-				mode&=~TO_QNET;
+				mode&=~QM_TO_QNET;
 
 			for(l=0;(ulong)l<mailmsgs;l++) {
 				bprintf("\b\b\b\b\b\b\b\b\b\b\b\b%4lu of %-4lu"
@@ -394,16 +394,16 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 							smb_freemsgmem(&msg);			 /* net, don't gate */
 							smb_unlockmsghdr(&smb,&msg);
 							continue; }
-						mode|=(TO_QNET|TAGLINE);
+						mode|=(QM_TO_QNET|QM_TAGLINE);
 						if(msg.from_net.type==NET_QWK) {
-							mode&=~TAGLINE;
+							mode&=~QM_TAGLINE;
 							if(route_circ((char *)msg.from_net.addr,useron.alias)
 								|| !strnicmp(msg.subj,"NE:",3)) {
 								smb_freemsgmem(&msg);
 								smb_unlockmsghdr(&smb,&msg);
 								continue; } } }
 					else
-						mode&=~(TAGLINE|TO_QNET);
+						mode&=~(QM_TAGLINE|QM_TO_QNET);
 
 					size=msgtoqwk(&msg,qwk,mode,usrsub[i][j],conf);
 					smb_unlockmsghdr(&smb,&msg);
