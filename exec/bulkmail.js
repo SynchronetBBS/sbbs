@@ -27,7 +27,7 @@ file_remove(fname)
 
 console.editfile(fname);
 
-if(!fexist(fname))	// Edit aborted
+if(!file_exists(fname))	// Edit aborted
 	exit();
 
 file = new File(fname);
