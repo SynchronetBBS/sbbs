@@ -615,6 +615,12 @@ while(client.socket.is_connected && !quit) {
 				hdr.from_ext=user.number;
 			}
 
+			/* Security logging */
+			hdr.from_ip_addr	= client.ip_address;
+			hdr.from_host_name	= client.host_name;
+			hdr.from_protocol	= client.protocol;
+			hdr.from_port		= client.port;
+
 			if(system.trashcan("subject",hdr.subject)) {
 				log(format("!BLOCKED subject: %s",hdr.subject));
 				var reason = format("Blocked subject from %s (%s): %s"
