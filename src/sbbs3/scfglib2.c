@@ -647,6 +647,11 @@ BOOL read_xtrn_cfg(scfg_t* cfg, char* error)
 		}
 	cfg->total_hotkeys=i;
 
+	/************************************/
+	/* External Program-related Toggles */
+	/************************************/
+	get_int(cfg->xtrn_misc,instream);
+
 	fclose(instream);
 	return(TRUE);
 }

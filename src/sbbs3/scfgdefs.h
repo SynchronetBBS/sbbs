@@ -449,6 +449,7 @@ typedef struct
 	uchar * sys_chat_ar;
 
 	long 	file_misc;			/* File Misc Settings */
+	long	xtrn_misc;			/* External Programs Misc Settings */
 
 	char	node_comspec[LEN_CMD+1];	/* DOS COMMAND.COM to use */
 	char	node_editor[LEN_CMD+1]; /* Local text editor command line to use */
