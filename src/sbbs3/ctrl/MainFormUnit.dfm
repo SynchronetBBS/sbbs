@@ -2468,6 +2468,11 @@ object MainForm: TMainForm
           Hint = 'SPAMBAIT.CFG'
           OnClick = CtrlMenuItemEditClick
         end
+        object SpamBlockList: TMenuItem
+          Caption = 'Spam Block List'
+          Hint = 'SPAMBLOCK.CFG'
+          OnClick = CtrlMenuItemEditClick
+        end
         object AllowedRelayList: TMenuItem
           Caption = 'Allowed Relay List'
           Hint = 'RELAY.CFG'
