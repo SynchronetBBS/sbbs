@@ -1268,21 +1268,21 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		 * door. */
 
 		sprintf(str,"%sdosemu.conf",startup_dir);
-		if (access(str, R_OK) < 0) {
+		if (!fexist(str)) {
 
 		/* If we can't find it in the door dir, look for a global one
 		 * in the ctrl dir. */
 
 			sprintf(str,"%sdosemu.conf",cfg.ctrl_dir);
-			if (access(str, R_OK < 0)) {
+			if (!fexist(str)) {
 
 		/* If we couldn't find either, try for the system one, then
 		 * error out. */
 				SAFECOPY(str,"/etc/dosemu/dosemu.conf");
-				if (access(str, R_OK < 0)) {
+				if (!fexist(str)) {
 				
 					SAFECOPY(str,"/etc/dosemu.conf");
-					if (access(str, R_OK < 0)) {
+					if (!fexist(str)) {
 						errormsg(WHERE,ERR_READ,str,0);
 						return(-1);
 					}
@@ -1298,13 +1298,13 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 
 		sprintf(str,"%semusetup.bat",startup_dir);
 		fprintf(stderr, str);
-		if (access(str, R_OK) < 0) {
+		if (!fexist(str)) {
 
 		/* If we can't find it in the door dir, look for a global one
 		 * in the ctrl dir. */
 
 			sprintf(str,"%semusetup.bat",cfg.ctrl_dir);
-			if (access(str, R_OK) < 0) {
+			if (!fexist(str)) {
 
 		/* If we couldn't find either, set an error condition. */
 				setup_override = -1;
@@ -1399,19 +1399,20 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		 */
  
 		sprintf(str,"%sdosemu.bin",startup_dir);
-		if (access(str,R_OK) < 0)
+		if (!fexist(str)) {
 			SAFECOPY(dosemubinloc,(cmdstr(startup->dosemu_path,nulstr,nulstr,tok)));
-		else
+		}
+		else {
 			SAFECOPY(dosemubinloc,str);
+		}
 
 		/* Attempt to keep dosemu from prompting for a disclaimer. */
 
 		sprintf(str, "%s/.dosemu", cfg.ctrl_dir);
-		if (access(str,R_OK) < 0) {
+		if (!isdir(str) {
 			mkdir(str, 0755);
 		}
 
-		/* Touch the disclaimer file. */
 		strcat(str, "/disclaimer");
 		ftouch(str);
 
