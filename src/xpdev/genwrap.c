@@ -56,6 +56,20 @@
 #include "genwrap.h"	/* Verify prototypes */
 
 /****************************************************************************/
+/* Return last character of string											*/
+/****************************************************************************/
+char DLLCALL lastchar(const char* str)
+{
+	size_t	len;
+
+	len = strlen(str);
+
+	if(len)
+		return(str[len-1]);
+	return(0);
+}
+
+/****************************************************************************/
 /* Convert ASCIIZ string to upper case										*/
 /****************************************************************************/
 #if defined(__unix__)
