@@ -226,7 +226,7 @@ outgoing network packets and must be accurate.
 							strcpy(cfg.qhub[i]->id,str);
 							strcpy(cfg.qhub[i]->pack,"%!pkzip %f %s");
 							strcpy(cfg.qhub[i]->unpack,"%!pkunzip -o %f %g %s");
-							strcpy(cfg.qhub[i]->call,"%!qnet");
+							strcpy(cfg.qhub[i]->call,"*qnet-ftp VERT vert.synchro.net YOURPASS");
 							cfg.qhub[i]->node=1;
 							cfg.qhub[i]->days=0xff; /* all days */
 							cfg.total_qhubs++;
