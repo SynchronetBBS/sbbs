@@ -353,11 +353,11 @@ function wallopers(str) {
 function push_nickbuf(oldnick,newnick) {
 	NickHistory.unshift(new NickBuf(oldnick,newnick));
 	if(NickHistory.length >= nick_buffer)
-		NickHistory.pop;
+		NickHistory.pop();
 }
 
 function search_nickbuf(bufnick) {
-	for (nb=0;nb<nick_buffer;nb++) {
+	for (nb=0;nb<NickHistory.length;nb++) {
 		if (NickHistory[nb] && (bufnick.toUpperCase() == NickHistory[nb].oldnick.toUpperCase())) {
 			if (!searchbynick(NickHistory[nb].newnick))
 				return search_nickbuf(NickHistory[nb].newnick);
