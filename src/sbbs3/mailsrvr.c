@@ -2754,6 +2754,7 @@ void DLLCALL mail_server(void* arg)
 		SAFECOPY(scfg.ctrl_dir,startup->ctrl_dir);
 		lprintf("Loading configuration files from %s", scfg.ctrl_dir);
 		scfg.size=sizeof(scfg);
+		error[0]=0;
 		if(!load_cfg(&scfg, NULL, TRUE, error)) {
 			lprintf("!ERROR %s",error);
 			lprintf("!Failed to load configuration files");

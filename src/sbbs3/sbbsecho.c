@@ -428,90 +428,90 @@ int create_netmail(char *to,char *subject,char *body,faddr_t dest,int file)
 	fmsghdr_t hdr;
 	struct tm *tm;
 
-if(!startmsg) startmsg=1;
-i=matchnode(dest,0);
-if(i<cfg.nodecfgs) {
-	attr=cfg.nodecfg[i].attr;
-	if(!attr) {
-		i=matchnode(dest,2);
-		if(i<cfg.nodecfgs)
-			attr=cfg.nodecfg[i].attr; } }
+	if(!startmsg) startmsg=1;
+	i=matchnode(dest,0);
+	if(i<cfg.nodecfgs) {
+		attr=cfg.nodecfg[i].attr;
+		if(!attr) {
+			i=matchnode(dest,2);
+			if(i<cfg.nodecfgs)
+				attr=cfg.nodecfg[i].attr; } }
 
-do {
-	for(i=startmsg;i;i++) {
-		sprintf(fname,"%s%u.MSG",scfg.netmail_dir,i);
-		if(!fexist(fname))
-			break; }
-	if(!i) {
-		printf("\7%s directory full!\n",scfg.netmail_dir);
-		logprintf("Directory full: %s",scfg.netmail_dir);
-		return(-1); }
-	startmsg=i+1;
-	strupr(fname);
-	if((fstream=fnopen(&fmsg,fname,O_RDWR|O_CREAT))==NULL) {
-		printf("\7ERROR line %d opening %s %s\n",__LINE__,fname,sys_errlist[errno]);
-		logprintf("ERROR line %d opening %s %s",__LINE__,fname,sys_errlist[errno]);
-		return(-1); }
+	do {
+		for(i=startmsg;i;i++) {
+			sprintf(fname,"%s%u.MSG",scfg.netmail_dir,i);
+			if(!fexist(fname))
+				break; }
+		if(!i) {
+			printf("\7%s directory full!\n",scfg.netmail_dir);
+			logprintf("Directory full: %s",scfg.netmail_dir);
+			return(-1); }
+		startmsg=i+1;
+		strupr(fname);
+		if((fstream=fnopen(&fmsg,fname,O_RDWR|O_CREAT))==NULL) {
+			printf("\7ERROR line %d opening %s %s\n",__LINE__,fname,sys_errlist[errno]);
+			logprintf("ERROR line %d opening %s %s",__LINE__,fname,sys_errlist[errno]);
+			return(-1); }
 
-	faddr=getsysfaddr(dest.zone);
-	memset(&hdr,0,sizeof(fmsghdr_t));
-	hdr.origzone=faddr.zone;
-	hdr.orignet=faddr.net;
-	hdr.orignode=faddr.node;
-	hdr.origpoint=faddr.point;
-	hdr.destzone=dest.zone;
-	hdr.destnet=dest.net;
-	hdr.destnode=dest.node;
-	hdr.destpoint=dest.point;
+		faddr=getsysfaddr(dest.zone);
+		memset(&hdr,0,sizeof(fmsghdr_t));
+		hdr.origzone=faddr.zone;
+		hdr.orignet=faddr.net;
+		hdr.orignode=faddr.node;
+		hdr.origpoint=faddr.point;
+		hdr.destzone=dest.zone;
+		hdr.destnet=dest.net;
+		hdr.destnode=dest.node;
+		hdr.destpoint=dest.point;
 
-	hdr.attr=(FIDO_PRIVATE|FIDO_KILLSENT|FIDO_LOCAL);
-	if(file)
-		hdr.attr|=FIDO_FILE;
-
-	if(attr&ATTR_HOLD)
-		hdr.attr|=FIDO_HOLD;
-	if(attr&ATTR_CRASH)
-		hdr.attr|=FIDO_CRASH;
-
-	sprintf(hdr.from,"SBBSecho");
-
-	t=time(NULL);
-	tm=localtime(&t);
-	sprintf(hdr.time,"%02u %3.3s %02u  %02u:%02u:%02u"
-		,tm->tm_mday,mon[tm->tm_mon],TM_YEAR(tm->tm_year)
-		,tm->tm_hour,tm->tm_min,tm->tm_sec);
-
-	if(to)
-		sprintf(hdr.to,"%s",to);
-	else
-		sprintf(hdr.to,"SYSOP");
-
-	sprintf(hdr.subj,"%.71s",subject);
-
-	fwrite(&hdr,sizeof(fmsghdr_t),1,fstream);
-	sprintf(str,"\1INTL %hu:%hu/%hu %hu:%hu/%hu\r"
-		,hdr.destzone,hdr.destnet,hdr.destnode
-		,hdr.origzone,hdr.orignet,hdr.orignode);
-	fwrite(str,strlen(str),1,fstream);
-	if(attr&ATTR_DIRECT) {
-		fwrite("\1FLAGS DIR",10,1,fstream);
+		hdr.attr=(FIDO_PRIVATE|FIDO_KILLSENT|FIDO_LOCAL);
 		if(file)
-			fwrite(" KFS\r",5,1,fstream);
+			hdr.attr|=FIDO_FILE;
+
+		if(attr&ATTR_HOLD)
+			hdr.attr|=FIDO_HOLD;
+		if(attr&ATTR_CRASH)
+			hdr.attr|=FIDO_CRASH;
+
+		sprintf(hdr.from,"SBBSecho");
+
+		t=time(NULL);
+		tm=localtime(&t);
+		sprintf(hdr.time,"%02u %3.3s %02u  %02u:%02u:%02u"
+			,tm->tm_mday,mon[tm->tm_mon],TM_YEAR(tm->tm_year)
+			,tm->tm_hour,tm->tm_min,tm->tm_sec);
+
+		if(to)
+			sprintf(hdr.to,"%s",to);
 		else
-			fwrite("\r",1,1,fstream); }
-	if(hdr.destpoint) {
-		sprintf(str,"\1TOPT %hu\r",hdr.destpoint);
-		fwrite(str,strlen(str),1,fstream); }
-	if(hdr.origpoint) {
-		sprintf(str,"\1FMPT %hu\r",hdr.origpoint);
-		fwrite(str,strlen(str),1,fstream); }
-	if(!file || (!(attr&ATTR_DIRECT) && file))
-		fwrite(body,strlen(body)+1,1,fstream);	/* Write additional NULL */
-	else
-		fwrite("\0",1,1,fstream);               /* Write NULL */
-	fclose(fstream);
-} while(!fexist(fname));
-return(0);
+			sprintf(hdr.to,"SYSOP");
+
+		sprintf(hdr.subj,"%.71s",subject);
+
+		fwrite(&hdr,sizeof(fmsghdr_t),1,fstream);
+		sprintf(str,"\1INTL %hu:%hu/%hu %hu:%hu/%hu\r"
+			,hdr.destzone,hdr.destnet,hdr.destnode
+			,hdr.origzone,hdr.orignet,hdr.orignode);
+		fwrite(str,strlen(str),1,fstream);
+		if(attr&ATTR_DIRECT) {
+			fwrite("\1FLAGS DIR",10,1,fstream);
+			if(file)
+				fwrite(" KFS\r",5,1,fstream);
+			else
+				fwrite("\r",1,1,fstream); }
+		if(hdr.destpoint) {
+			sprintf(str,"\1TOPT %hu\r",hdr.destpoint);
+			fwrite(str,strlen(str),1,fstream); }
+		if(hdr.origpoint) {
+			sprintf(str,"\1FMPT %hu\r",hdr.origpoint);
+			fwrite(str,strlen(str),1,fstream); }
+		if(!file || (!(attr&ATTR_DIRECT) && file))
+			fwrite(body,strlen(body)+1,1,fstream);	/* Write additional NULL */
+		else
+			fwrite("\0",1,1,fstream);               /* Write NULL */
+		fclose(fstream);
+	} while(!fexist(fname));
+	return(0);
 }
 
 /******************************************************************************
@@ -523,30 +523,30 @@ void file_to_netmail(FILE *infile,char *title,faddr_t addr,char *to)
 	char *buf,*p;
 	long l,m,len;
 
-l=len=ftell(infile);
-if(len>8192L)
-	len=8192L;
-rewind(infile);
-if((buf=(char *)MALLOC(len+1))==NULL) {
-	printf("ERROR allocating %lu bytes for file to netmail buffer.\n",len);
-	logprintf("ERROR line %d allocating %lu for file to netmail buf",__LINE__
-		,len);
-	return; }
-while((m=fread(buf,1,(len>8064L) ? 8064L:len,infile))>0) {
-	buf[m]=0;
-	if(l>8064L && (p=strrchr(buf,'\n'))!=NULL) {
-		p++;
-		if(*p) {
-			*p=0;
+	l=len=ftell(infile);
+	if(len>8192L)
+		len=8192L;
+	rewind(infile);
+	if((buf=(char *)MALLOC(len+1))==NULL) {
+		printf("ERROR allocating %lu bytes for file to netmail buffer.\n",len);
+		logprintf("ERROR line %d allocating %lu for file to netmail buf",__LINE__
+			,len);
+		return; }
+	while((m=fread(buf,1,(len>8064L) ? 8064L:len,infile))>0) {
+		buf[m]=0;
+		if(l>8064L && (p=strrchr(buf,'\n'))!=NULL) {
 			p++;
-			fseek(infile,-1L,SEEK_CUR);
-			while(*p) { 			/* Seek back to end of last line */
+			if(*p) {
+				*p=0;
 				p++;
-				fseek(infile,-1L,SEEK_CUR); } } }
-	if(ftell(infile)<l)
-		strcat(buf,"\r\nContinued in next message...\r\n");
-	create_netmail(to,title,buf,addr,0); }
-FREE(buf);
+				fseek(infile,-1L,SEEK_CUR);
+				while(*p) { 			/* Seek back to end of last line */
+					p++;
+					fseek(infile,-1L,SEEK_CUR); } } }
+		if(ftell(infile)<l)
+			strcat(buf,"\r\nContinued in next message...\r\n");
+		create_netmail(to,title,buf,addr,0); }
+	FREE(buf);
 }
 /******************************************************************************
  This function sends a notify list to applicable nodes, this list includes the
@@ -692,27 +692,25 @@ void netmail_arealist(char type,faddr_t addr)
 /******************************************************************************
  Imitation of Borland's tempnam function because Watcom doesn't have it
 ******************************************************************************/
-//#ifdef __WATCOMC__
 char *tempname(char *dir, char *prefix)
 {
 	char str[256],*p;
 	int i;
 
-for(i=0;i<1000;i++) {
-	sprintf(str,"%s%s%03u.$$$",dir,prefix,i);
-	if(!fexist(str))
-		break; }
-if(i>=1000) {
-	logprintf("tempnam: too many files");
-	return(NULL); }
-p=malloc(strlen(str)+1);
-if(!p) {
-	logprintf("tempnam: couldn't malloc %u",strlen(str)+1);
-	return(NULL); }
-strcpy(p,str);
-return(p);
+	for(i=0;i<1000;i++) {
+		sprintf(str,"%s%s%03u.$$$",dir,prefix,i);
+		if(!fexist(str))
+			break; }
+	if(i>=1000) {
+		logprintf("tempnam: too many files");
+		return(NULL); }
+	p=malloc(strlen(str)+1);
+	if(!p) {
+		logprintf("tempnam: couldn't malloc %u",strlen(str)+1);
+		return(NULL); }
+	strcpy(p,str);
+	return(p);
 }
-//#endif
 
 int check_elists(char *areatag,faddr_t addr)
 {
@@ -772,245 +770,245 @@ void alter_areas(area_t add_area,area_t del_area,faddr_t addr)
 	int i,j,k,x,y,file;
 	ulong tagcrc;
 
-_splitpath(cfg.areafile,drive,dir,name,ext);
-sprintf(outpath,"%s%s",drive,dir);
-if((outname=tempname(outpath,"AREAS"))==NULL) {
-	printf("\7ERROR creating temp file name for %s.\n",outpath);
-	logprintf("ERROR tempnam(%s,AREAS)",outpath);
-	return; }
-if((nmfile=tmpfile())==NULL) {
-	printf("\7ERROR couldn't open NetMail temp file.\n");
-	logprintf("ERROR in tmpfile()");
-	free(outname);
-	return; }
-if((afileout=fopen(outname,"w+b"))==NULL) {
-	printf("\7ERROR couldn't open %s.\n",outname);
-	logprintf("ERROR line %d opening %s %s",__LINE__,outname
-		,sys_errlist[errno]);
-	fclose(nmfile);
-	free(outname);
-    return; }
-if((afilein=fnopen(&file,cfg.areafile,O_RDONLY))==NULL) {
-	printf("\7ERROR couldn't open %s.\n",cfg.areafile);
-	logprintf("ERROR line %d opening %s %s",__LINE__,cfg.areafile
-		,sys_errlist[errno]);
-	fclose(afileout);
-	fclose(nmfile);
-	free(outname);
-	return; }
-while(!feof(afilein)) {
-	if(!fgets(fields,1024,afilein))
-		break;
-	truncsp(fields);
-	strcat(fields,"\r\n");
-	p=fields;
-	while(*p && *p<=SP) p++;
-	if(*p==';') {    /* Skip Comment Lines */
-		fprintf(afileout,"%s",fields);
-		continue; }
-	sprintf(field1,"%-.81s",p);         /* Internal Code Field */
-	tp=field1;
-	while(*tp && *tp>SP) tp++;
-	*tp=0;
-	while(*p && *p>SP) p++;
-	while(*p && *p<=SP) p++;
-	sprintf(field2,"%-.81s",p);         /* Areatag Field */
-	tp=field2;
-	while(*tp && *tp>SP) tp++;
-	*tp=0;
-	while(*p && *p>SP) p++;
-	while(*p && *p<=SP) p++;
-	if((tp=strchr(p,';'))!=NULL) {
-		sprintf(field3,"%-.81s",p);     /* Comment Field (if any) */
+	_splitpath(cfg.areafile,drive,dir,name,ext);
+	sprintf(outpath,"%s%s",drive,dir);
+	if((outname=tempname(outpath,"AREAS"))==NULL) {
+		printf("\7ERROR creating temp file name for %s.\n",outpath);
+		logprintf("ERROR tempnam(%s,AREAS)",outpath);
+		return; }
+	if((nmfile=tmpfile())==NULL) {
+		printf("\7ERROR couldn't open NetMail temp file.\n");
+		logprintf("ERROR in tmpfile()");
+		free(outname);
+		return; }
+	if((afileout=fopen(outname,"w+b"))==NULL) {
+		printf("\7ERROR couldn't open %s.\n",outname);
+		logprintf("ERROR line %d opening %s %s",__LINE__,outname
+			,sys_errlist[errno]);
+		fclose(nmfile);
+		free(outname);
+		return; }
+	if((afilein=fnopen(&file,cfg.areafile,O_RDONLY))==NULL) {
+		printf("\7ERROR couldn't open %s.\n",cfg.areafile);
+		logprintf("ERROR line %d opening %s %s",__LINE__,cfg.areafile
+			,sys_errlist[errno]);
+		fclose(afileout);
+		fclose(nmfile);
+		free(outname);
+		return; }
+	while(!feof(afilein)) {
+		if(!fgets(fields,1024,afilein))
+			break;
+		truncsp(fields);
+		strcat(fields,"\r\n");
+		p=fields;
+		while(*p && *p<=SP) p++;
+		if(*p==';') {    /* Skip Comment Lines */
+			fprintf(afileout,"%s",fields);
+			continue; }
+		sprintf(field1,"%-.81s",p);         /* Internal Code Field */
+		tp=field1;
 		while(*tp && *tp>SP) tp++;
-		*tp=0; }
-	else
-		field3[0]=0;
-	if(del_area.tags) { 				/* Check for areas to remove */
-		for(i=0;i<del_area.tags;i++) {
-			if(!stricmp(del_area.tag[i],field2) ||
-				!stricmp(del_area.tag[0],"-ALL"))     /* Match Found */
-				break; }
-		if(i<del_area.tags) {
-			for(i=0;i<cfg.areas;i++) {
-				if(!stricmp(field2,cfg.area[i].name)) {
-					for(j=0;j<cfg.area[i].uplinks;j++)
-						if(!memcmp(&cfg.area[i].uplink[j],&addr
-							,sizeof(faddr_t)))
-							break;
-					if(j==cfg.area[i].uplinks &&
-						stricmp(del_area.tag[0],"-ALL")) {
-						fprintf(afileout,"%s",fields);
-						fprintf(nmfile,"%s not connected.\r\n",field2);
-						break; }
-
-					/* Added 12/4/95 to remove uplink from connected uplinks */
-
-					for(k=j;k<cfg.area[i].uplinks-1;k++)
-						memcpy(&cfg.area[i].uplink[k],&cfg.area[i].uplink[k+1]
-							,sizeof(faddr_t));
-					--cfg.area[i].uplinks;
-					if((cfg.area[i].uplink=(faddr_t *)
-						REALLOC(cfg.area[i].uplink,sizeof(faddr_t)
-						*(cfg.area[i].uplinks)))==NULL) {
-						printf("ERROR allocating memory for area #%u "
-							"uplinks.\n",i+1);
-						logprintf("ERROR line %d allocating memory for area "
-							"#%u uplinks.\n",__LINE__,i+1);
-						bail(1); }
-
-					fprintf(afileout,"%-16s%-23s ",field1,field2);
-					for(j=0;j<cfg.area[i].uplinks;j++) {
-						if(!memcmp(&cfg.area[i].uplink[j],&addr
-							,sizeof(faddr_t)))
-							continue;
-						fprintf(afileout,"%s "
-							,faddrtoa(&cfg.area[i].uplink[j],NULL)); }
-					if(field3[0])
-						fprintf(afileout,"%s",field3);
-					fprintf(afileout,"\r\n");
-					fprintf(nmfile,"%s removed.\r\n",field2);
-					break; } }
-			if(i==cfg.areas)			/* Something screwy going on */
-				fprintf(afileout,"%s",fields);
-			continue; } }				/* Area match so continue on */
-	if(add_area.tags) { 				/* Check for areas to add */
-		for(i=0;i<add_area.tags;i++)
-			if(!stricmp(add_area.tag[i],field2) ||
-				!stricmp(add_area.tag[0],"+ALL"))      /* Match Found */
-				break;
-		if(i<add_area.tags) {
-			if(stricmp(add_area.tag[i],"+ALL"))
-				add_area.tag[i][0]=0;  /* So we can check other lists */
-			for(i=0;i<cfg.areas;i++) {
-				if(!stricmp(field2,cfg.area[i].name)) {
-					for(j=0;j<cfg.area[i].uplinks;j++)
-						if(!memcmp(&cfg.area[i].uplink[j],&addr
-							,sizeof(faddr_t)))
-							break;
-					if(j<cfg.area[i].uplinks) {
-						fprintf(afileout,"%s",fields);
-						fprintf(nmfile,"%s already connected.\r\n",field2);
-						break; }
-					if(misc&ELIST_ONLY && !check_elists(field2,addr)) {
-						fprintf(afileout,"%s",fields);
-						break; }
-
-					/* Added 12/4/95 to add uplink to connected uplinks */
-
-					++cfg.area[i].uplinks;
-					if((cfg.area[i].uplink=(faddr_t *)
-						REALLOC(cfg.area[i].uplink,sizeof(faddr_t)
-						*(cfg.area[i].uplinks)))==NULL) {
-						printf("ERROR allocating memory for area #%u "
-							"uplinks.\n",i+1);
-						logprintf("ERROR line %d allocating memory for area "
-							"#%u uplinks.\n",__LINE__,i+1);
-                        bail(1); }
-					memcpy(&cfg.area[i].uplink[j],&addr,sizeof(faddr_t));
-
-					fprintf(afileout,"%-16s%-23s ",field1,field2);
-					for(j=0;j<cfg.area[i].uplinks;j++)
-						fprintf(afileout,"%s "
-							,faddrtoa(&cfg.area[i].uplink[j],NULL));
-					if(field3[0])
-						fprintf(afileout,"%s",field3);
-					fprintf(afileout,"\r\n");
-					fprintf(nmfile,"%s added.\r\n",field2);
-					break; } }
-			if(i==cfg.areas)			/* Something screwy going on */
-				fprintf(afileout,"%s",fields);
-			continue; } 				/* Area match so continue on */
-		nomatch=1; }					/* This area wasn't in there */
-	fprintf(afileout,"%s",fields); }    /* No match so write back line */
-fclose(afilein);
-if(nomatch || (add_area.tags && !stricmp(add_area.tag[0],"+ALL"))) {
-	i=matchnode(addr,0);
-	if(i<cfg.nodecfgs) {
-		for(j=0;j<cfg.listcfgs;j++) {
-			match=0;
-			for(k=0;k<cfg.listcfg[j].numflags;k++) {
-				if(match) break;
-				for(x=0;x<cfg.nodecfg[i].numflags;x++)
-					if(!stricmp(cfg.listcfg[j].flag[k].flag
-						,cfg.nodecfg[i].flag[x].flag)) {
-						if((fwdfile=tmpfile())==NULL) {
-							printf("\7ERROR couldn't open forwarding temp "
-								"file.\n");
-							logprintf("ERROR line %d opening forward temp "
-								"file",__LINE__);
-							match=1;
+		*tp=0;
+		while(*p && *p>SP) p++;
+		while(*p && *p<=SP) p++;
+		sprintf(field2,"%-.81s",p);         /* Areatag Field */
+		tp=field2;
+		while(*tp && *tp>SP) tp++;
+		*tp=0;
+		while(*p && *p>SP) p++;
+		while(*p && *p<=SP) p++;
+		if((tp=strchr(p,';'))!=NULL) {
+			sprintf(field3,"%-.81s",p);     /* Comment Field (if any) */
+			while(*tp && *tp>SP) tp++;
+			*tp=0; }
+		else
+			field3[0]=0;
+		if(del_area.tags) { 				/* Check for areas to remove */
+			for(i=0;i<del_area.tags;i++) {
+				if(!stricmp(del_area.tag[i],field2) ||
+					!stricmp(del_area.tag[0],"-ALL"))     /* Match Found */
+					break; }
+			if(i<del_area.tags) {
+				for(i=0;i<cfg.areas;i++) {
+					if(!stricmp(field2,cfg.area[i].name)) {
+						for(j=0;j<cfg.area[i].uplinks;j++)
+							if(!memcmp(&cfg.area[i].uplink[j],&addr
+								,sizeof(faddr_t)))
+								break;
+						if(j==cfg.area[i].uplinks &&
+							stricmp(del_area.tag[0],"-ALL")) {
+							fprintf(afileout,"%s",fields);
+							fprintf(nmfile,"%s not connected.\r\n",field2);
 							break; }
-						if((afilein=fnopen(&file
-							,cfg.listcfg[j].listpath,O_RDONLY))==NULL) {
-							printf("\7ERROR couldn't open %s.\n"
-								,cfg.listcfg[j].listpath);
-							logprintf("ERROR line %d opening %s"
-								,__LINE__,cfg.listcfg[j].listpath);
+
+						/* Added 12/4/95 to remove uplink from connected uplinks */
+
+						for(k=j;k<cfg.area[i].uplinks-1;k++)
+							memcpy(&cfg.area[i].uplink[k],&cfg.area[i].uplink[k+1]
+								,sizeof(faddr_t));
+						--cfg.area[i].uplinks;
+						if((cfg.area[i].uplink=(faddr_t *)
+							REALLOC(cfg.area[i].uplink,sizeof(faddr_t)
+							*(cfg.area[i].uplinks)))==NULL) {
+							printf("ERROR allocating memory for area #%u "
+								"uplinks.\n",i+1);
+							logprintf("ERROR line %d allocating memory for area "
+								"#%u uplinks.\n",__LINE__,i+1);
+							bail(1); }
+
+						fprintf(afileout,"%-16s%-23s ",field1,field2);
+						for(j=0;j<cfg.area[i].uplinks;j++) {
+							if(!memcmp(&cfg.area[i].uplink[j],&addr
+								,sizeof(faddr_t)))
+								continue;
+							fprintf(afileout,"%s "
+								,faddrtoa(&cfg.area[i].uplink[j],NULL)); }
+						if(field3[0])
+							fprintf(afileout,"%s",field3);
+						fprintf(afileout,"\r\n");
+						fprintf(nmfile,"%s removed.\r\n",field2);
+						break; } }
+				if(i==cfg.areas)			/* Something screwy going on */
+					fprintf(afileout,"%s",fields);
+				continue; } }				/* Area match so continue on */
+		if(add_area.tags) { 				/* Check for areas to add */
+			for(i=0;i<add_area.tags;i++)
+				if(!stricmp(add_area.tag[i],field2) ||
+					!stricmp(add_area.tag[0],"+ALL"))      /* Match Found */
+					break;
+			if(i<add_area.tags) {
+				if(stricmp(add_area.tag[i],"+ALL"))
+					add_area.tag[i][0]=0;  /* So we can check other lists */
+				for(i=0;i<cfg.areas;i++) {
+					if(!stricmp(field2,cfg.area[i].name)) {
+						for(j=0;j<cfg.area[i].uplinks;j++)
+							if(!memcmp(&cfg.area[i].uplink[j],&addr
+								,sizeof(faddr_t)))
+								break;
+						if(j<cfg.area[i].uplinks) {
+							fprintf(afileout,"%s",fields);
+							fprintf(nmfile,"%s already connected.\r\n",field2);
+							break; }
+						if(misc&ELIST_ONLY && !check_elists(field2,addr)) {
+							fprintf(afileout,"%s",fields);
+							break; }
+
+						/* Added 12/4/95 to add uplink to connected uplinks */
+
+						++cfg.area[i].uplinks;
+						if((cfg.area[i].uplink=(faddr_t *)
+							REALLOC(cfg.area[i].uplink,sizeof(faddr_t)
+							*(cfg.area[i].uplinks)))==NULL) {
+							printf("ERROR allocating memory for area #%u "
+								"uplinks.\n",i+1);
+							logprintf("ERROR line %d allocating memory for area "
+								"#%u uplinks.\n",__LINE__,i+1);
+							bail(1); }
+						memcpy(&cfg.area[i].uplink[j],&addr,sizeof(faddr_t));
+
+						fprintf(afileout,"%-16s%-23s ",field1,field2);
+						for(j=0;j<cfg.area[i].uplinks;j++)
+							fprintf(afileout,"%s "
+								,faddrtoa(&cfg.area[i].uplink[j],NULL));
+						if(field3[0])
+							fprintf(afileout,"%s",field3);
+						fprintf(afileout,"\r\n");
+						fprintf(nmfile,"%s added.\r\n",field2);
+						break; } }
+				if(i==cfg.areas)			/* Something screwy going on */
+					fprintf(afileout,"%s",fields);
+				continue; } 				/* Area match so continue on */
+			nomatch=1; }					/* This area wasn't in there */
+		fprintf(afileout,"%s",fields); }    /* No match so write back line */
+	fclose(afilein);
+	if(nomatch || (add_area.tags && !stricmp(add_area.tag[0],"+ALL"))) {
+		i=matchnode(addr,0);
+		if(i<cfg.nodecfgs) {
+			for(j=0;j<cfg.listcfgs;j++) {
+				match=0;
+				for(k=0;k<cfg.listcfg[j].numflags;k++) {
+					if(match) break;
+					for(x=0;x<cfg.nodecfg[i].numflags;x++)
+						if(!stricmp(cfg.listcfg[j].flag[k].flag
+							,cfg.nodecfg[i].flag[x].flag)) {
+							if((fwdfile=tmpfile())==NULL) {
+								printf("\7ERROR couldn't open forwarding temp "
+									"file.\n");
+								logprintf("ERROR line %d opening forward temp "
+									"file",__LINE__);
+								match=1;
+								break; }
+							if((afilein=fnopen(&file
+								,cfg.listcfg[j].listpath,O_RDONLY))==NULL) {
+								printf("\7ERROR couldn't open %s.\n"
+									,cfg.listcfg[j].listpath);
+								logprintf("ERROR line %d opening %s"
+									,__LINE__,cfg.listcfg[j].listpath);
+								fclose(fwdfile);
+								match=1;
+								break; }
+							while(!feof(afilein)) {
+								if(!fgets(str,255,afilein))
+									break;
+								truncsp(str);
+								strcat(str,"\r\n");
+								p=str;
+								while(*p && *p<=SP) p++;
+								if(*p==';')     /* Ignore Comment Lines */
+									continue;
+								strcpy(str,p);
+								p=str;
+								while(*p && *p>SP) p++;
+								*p=0;
+								if(!stricmp(add_area.tag[0],"+ALL")) {
+									sprintf(fields,"%.1024s",str);
+									tagcrc=crc32(strupr(fields),0);
+									for(y=0;y<cfg.areas;y++)
+										if(tagcrc==cfg.area[y].tag)
+											break;
+									if(y<cfg.areas)
+										continue; }
+								for(y=0;y<add_area.tags;y++)
+									if((!stricmp(add_area.tag[y],str) &&
+										add_area.tag[y][0]) ||
+										!stricmp(add_area.tag[0],"+ALL"))
+										break;
+								if(y<add_area.tags) {
+									fprintf(afileout,"%-16s%-23s","P",str);
+									if(cfg.listcfg[j].forward.zone)
+										fprintf(afileout," %s"
+											,faddrtoa(&cfg.listcfg[j].forward,NULL));
+									fprintf(afileout," %s\r\n",faddrtoa(&addr,NULL));
+									fprintf(nmfile,"%s added.\r\n",str);
+									if(stricmp(add_area.tag[0],"+ALL"))
+										add_area.tag[y][0]=0;
+									if(!(cfg.listcfg[j].misc&NOFWD)
+										&& cfg.listcfg[j].forward.zone)
+										fprintf(fwdfile,"%s\r\n",str); } }
+							fclose(afilein);
+							if(!(cfg.listcfg[j].misc&NOFWD) && ftell(fwdfile)>0)
+								file_to_netmail(fwdfile,cfg.listcfg[j].password
+									,cfg.listcfg[j].forward,"Areafix");
 							fclose(fwdfile);
 							match=1;
-							break; }
-						while(!feof(afilein)) {
-							if(!fgets(str,255,afilein))
-								break;
-							truncsp(str);
-							strcat(str,"\r\n");
-							p=str;
-							while(*p && *p<=SP) p++;
-							if(*p==';')     /* Ignore Comment Lines */
-								continue;
-							strcpy(str,p);
-							p=str;
-							while(*p && *p>SP) p++;
-							*p=0;
-							if(!stricmp(add_area.tag[0],"+ALL")) {
-								sprintf(fields,"%.1024s",str);
-								tagcrc=crc32(strupr(fields),0);
-								for(y=0;y<cfg.areas;y++)
-									if(tagcrc==cfg.area[y].tag)
-										break;
-								if(y<cfg.areas)
-									continue; }
-							for(y=0;y<add_area.tags;y++)
-								if((!stricmp(add_area.tag[y],str) &&
-									add_area.tag[y][0]) ||
-									!stricmp(add_area.tag[0],"+ALL"))
-									break;
-							if(y<add_area.tags) {
-								fprintf(afileout,"%-16s%-23s","P",str);
-								if(cfg.listcfg[j].forward.zone)
-									fprintf(afileout," %s"
-										,faddrtoa(&cfg.listcfg[j].forward,NULL));
-								fprintf(afileout," %s\r\n",faddrtoa(&addr,NULL));
-								fprintf(nmfile,"%s added.\r\n",str);
-								if(stricmp(add_area.tag[0],"+ALL"))
-									add_area.tag[y][0]=0;
-								if(!(cfg.listcfg[j].misc&NOFWD)
-									&& cfg.listcfg[j].forward.zone)
-									fprintf(fwdfile,"%s\r\n",str); } }
-						fclose(afilein);
-						if(!(cfg.listcfg[j].misc&NOFWD) && ftell(fwdfile)>0)
-							file_to_netmail(fwdfile,cfg.listcfg[j].password
-								,cfg.listcfg[j].forward,"Areafix");
-						fclose(fwdfile);
-						match=1;
-                        break; } } } } }
-if(add_area.tags && stricmp(add_area.tag[0],"+ALL")) {
-	for(i=0;i<add_area.tags;i++)
-		if(add_area.tag[i][0])
-			fprintf(nmfile,"%s not found.\r\n",add_area.tag[i]); }
-if(!ftell(nmfile))
-	create_netmail(0,"Area Change Request","No changes made.",addr,0);
-else
-	file_to_netmail(nmfile,"Area Change Request",addr,0);
-fclose(nmfile);
-fclose(afileout);
-if(delfile(cfg.areafile))					/* Delete AREAS.BBS */
-	logprintf("ERROR line %d removing %s %s",__LINE__,cfg.areafile
-		,sys_errlist[errno]);
-if(rename(outname,cfg.areafile))		   /* Rename new AREAS.BBS file */
-	logprintf("ERROR line %d renaming %s to %s",__LINE__,outname,cfg.areafile);
-free(outname);
+							break; } } } } }
+	if(add_area.tags && stricmp(add_area.tag[0],"+ALL")) {
+		for(i=0;i<add_area.tags;i++)
+			if(add_area.tag[i][0])
+				fprintf(nmfile,"%s not found.\r\n",add_area.tag[i]); }
+	if(!ftell(nmfile))
+		create_netmail(0,"Area Change Request","No changes made.",addr,0);
+	else
+		file_to_netmail(nmfile,"Area Change Request",addr,0);
+	fclose(nmfile);
+	fclose(afileout);
+	if(delfile(cfg.areafile))					/* Delete AREAS.BBS */
+		logprintf("ERROR line %d removing %s %s",__LINE__,cfg.areafile
+			,sys_errlist[errno]);
+	if(rename(outname,cfg.areafile))		   /* Rename new AREAS.BBS file */
+		logprintf("ERROR line %d renaming %s to %s",__LINE__,outname,cfg.areafile);
+	free(outname);
 }
 /******************************************************************************
  Used by AREAFIX to add/remove/change uplink info in the configuration file
@@ -3973,6 +3971,7 @@ int main(int argc, char **argv)
 
     printf("\nLoading configuration files from %s\n", scfg.ctrl_dir);
 	scfg.size=sizeof(scfg);
+	str[0]=0;
 	if(!load_cfg(&scfg, NULL, TRUE, str)) {
 		printf("!ERROR %s\n",str);
 		printf("!Failed to load configuration files\n");

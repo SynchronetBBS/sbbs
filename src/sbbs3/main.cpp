@@ -3140,6 +3140,7 @@ void DLLCALL bbs_thread(void* arg)
     lprintf("Loading configuration files from %s", scfg.ctrl_dir);
 	scfg.size=sizeof(scfg);
 	scfg.node_num=startup->first_node;
+	logstr[0]=0;
 	if(!load_cfg(&scfg, text, TRUE, logstr)) {
 		lprintf("!ERROR %s",logstr);
 		lprintf("!FAILED to load configuration files");
@@ -3433,6 +3434,7 @@ void DLLCALL bbs_thread(void* arg)
 				lprintf("Loading configuration files from %s", scfg.ctrl_dir);
 				scfg.node_num=first_node;
 				pthread_mutex_lock(&event_mutex);
+				logstr[0]=0;
 				if(!load_cfg(&scfg, text, TRUE, logstr)) {
 					lprintf("!ERROR %s",logstr);
 					lprintf("!FAILED to load configuration files");
