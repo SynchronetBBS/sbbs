@@ -1,19 +1,36 @@
-			       nch1 ๙ Synchronet ๙ n
-			    yhMultinode BBS Software
+@CLS@nhThis BBS is running...
 
-           bDeveloped 1990-2000 by Rob Swindell - whttp://www.synchro.net
+y .|'''.|                        '||                    c                  .   
+y ||..  ' .... ..... ...    ....  || ..  ... ..   ...   c.. ...    ....  .||.  
+y  ''|||.  '|.  |  ||  || .|   '' ||' ||  ||' ''.|  '|. c ||  || .|...||  ||   
+y.     '||  '|.|   ||  || ||      ||  ||  ||    ||   || c ||  || ||       ||   
+y|'....|'    '|   .||. ||. '|...'.||. ||..||.    '|..|' c.||. ||. '|...'  '|.' 
+y         .. |
+y          ''
+n              Synchronet BBS for @PLATFORM@-@FULL_VER@
+n              @COPYRIGHT@ - http://www.synchro.net
+gh
+32-bit Multi-threaded Bulletin Board Sytem Software for the Internet Age
+ng
+Integerated TCP/IP Servers: hong Telnet/RLogin
+                            hong SMTP/POP3 (inbound and outbound e-mail)
+                            hong FTP (with dynamic ASCII and HTML index files)
+                            hong Network News Transfer Protocol (USENET)
+                            hong Finger (with real-time node listings)
+                            hong Gopher (browse message areas online)
+h
+Native versions for Win32 and Unix-x86 (Linux, FreeBSD, and OpenBSD)
+n@CLS@hcRememering these tips will help you enjoy your wSynchronetc Telnet experience:
+nc
+At hr[Hit a key]nc prompts, you can hit hCtrl-Cnc or 'hQnc' to stop listing text.
+Hitting hEnternc (<CR>) at auto-pause prompts will continue one page at a time, 
+while hitting hDown Arrownc (or Ctrl-J) will scroll one line at a time.
 
-			     ngีออออออออออออออออออธ
-			     ณ hKeys to Rememberng ณ
-			     ฦออออออออออออออออออต
-			     ณ	whCtrl-C ngAbort    ณ
-			     ณ	whCtrl-S ngPause    ณ
-			     ณ	whCtrl-Q ngContinue ณ
-			     ณ       wh? ngMenu     ณ
-			     ภฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤู
+The global rhABORT OPERATIONnc key sequence is hCtrl-Cnc.
 
-		     hExample Prompt: wOngne, hwTngwo, or [Three]:
+Other global ctrl-key sequences include:   hCtrl-Uy: List users onlinenc
+					   hCtrl-Py: Send a private messagenc
+                                           hCtrl-Ty: Show time informationnc
 
-			  hIndicates: wO ngOne
-				     whT ngTwo
-				 whEnter ngThree
+Use 'h?nc' to display help menus, and use 'hQnc' to quit.
+
