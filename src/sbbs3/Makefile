@@ -22,6 +22,12 @@ CFLAGS = $(CFLAGS) -DJAVASCRIPT
 !else
 	CFLAGS = $(CFLAGS) -I$(SRC_ROOT)$(DIRSEP)..$(DIRSEP)include$(DIRSEP)mozilla$(DIRSEP)js
 !endif
+!ifdef NSPRINCLUDE
+	CFLAGS = $(CFLAGS) -I$(NSPRINCLUDE)
+!else
+	CFLAGS = $(CFLAGS) -I$(SRC_ROOT)$(DIRSEP)..$(DIRSEP)include$(DIRSEP)mozilla$(DIRSEP)nspr
+!endif
+
 !ifndef JSLIBDIR
 	JSLIBDIR = $(SRC_ROOT)$(DIRSEP)..$(DIRSEP)lib$(DIRSEP)mozilla$(DIRSEP)js$(DIRSEP)win32.$(BUILDPATH)
 !endif
