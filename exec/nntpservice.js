@@ -409,7 +409,8 @@ while(client.socket.is_connected) {
 				else
 					current_article=Number(cmd[1]);
 			}
-			if(typeof(current_article)=="number" && current_article<1) {
+			if(typeof(current_article)=="number" 
+				&& (current_article<1 || isNaN(current_article))) {
 				writeln("420 no current article has been selected");
 				break;
 			}
@@ -419,7 +420,7 @@ while(client.socket.is_connected) {
 			hdr=msgbase.get_msg_header(false,current_article);
 
 			if(hdr==null) {
-				writeln("430 no such article found");
+				writeln("430 no such article found: " + current_article);
 				break;
 			}
 
