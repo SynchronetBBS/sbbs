@@ -2781,6 +2781,33 @@ void node_thread(void* arg)
 		sbbs->putnodedat(sbbs->cfg.node_num,&node);
 
 		sbbs->logentry("!:","Ran system daily maintenance");
+
+		if(sbbs->cfg.user_backup_level) {
+			lprintf("Node %d Backing-up user data..."
+				,sbbs->cfg.node_num);
+			sprintf(str,"%suser/user.dat",sbbs->cfg.data_dir);
+			backup(str,sbbs->cfg.user_backup_level,FALSE);
+			sprintf(str,"%suser/name.dat",sbbs->cfg.data_dir);
+			backup(str,sbbs->cfg.user_backup_level,FALSE);
+		}
+
+		if(sbbs->cfg.mail_backup_level) {
+			lprintf("Node %d Backing-up mail data..."
+				,sbbs->cfg.node_num);
+			sprintf(str,"%smail.shd",sbbs->cfg.data_dir);
+			backup(str,sbbs->cfg.mail_backup_level,FALSE);
+			sprintf(str,"%smail.sha",sbbs->cfg.data_dir);
+			backup(str,sbbs->cfg.mail_backup_level,FALSE);
+			sprintf(str,"%smail.sdt",sbbs->cfg.data_dir);
+			backup(str,sbbs->cfg.mail_backup_level,FALSE);
+			sprintf(str,"%smail.sda",sbbs->cfg.data_dir);
+			backup(str,sbbs->cfg.mail_backup_level,FALSE);
+			sprintf(str,"%smail.sid",sbbs->cfg.data_dir);
+			backup(str,sbbs->cfg.mail_backup_level,FALSE);
+			sprintf(str,"%smail.sch",sbbs->cfg.data_dir);
+			backup(str,sbbs->cfg.mail_backup_level,FALSE);
+		}
+
 		lprintf("Node %d Checking for inactive/expired user records..."
 			,sbbs->cfg.node_num);
 		j=lastuser(&sbbs->cfg);
