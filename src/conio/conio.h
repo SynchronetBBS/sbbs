@@ -4,13 +4,9 @@
 #define _CIOWRAP_H_
 
 #ifndef __unix__
-#include "conio.h"
+#include <conio.h>
 #define initciowrap(x)
 #else
-#include "curs_fix.h"
-#ifndef NEED_CURSES_GETCH
- #undef getch
-#endif
 
 #ifndef BOOL
 #define BOOL    int
@@ -111,7 +107,7 @@ int movetext(int sx, int sy, int ex, int ey, int dx, int dy);
 char *cgets(char *str);
 int cscanf (char *format , ...);
 int kbhit(void);
-#ifndef NEED_CURSES_GETCH
+#ifndef NEEC_CURSES_GETCH
  int getch(void);
 #endif
 int getche(void);

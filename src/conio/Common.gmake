@@ -1,0 +1,56 @@
+# Available Options:
+# NEED_CURSES       = Set flags suitable for building with the curses lib
+# XCURSES			= Use XCurses
+# NEED_CIOWRAP		= Set flage suitable for using with ciowrap lib
+# NO_X				= Don't use X version of ciowrap
+
+# You really should set this first.
+CONIO_SRC	?=	$(XPDEV)../conio/
+UIFC_SRC	?=	$(XPDEV)../uifc/
+
+CIOWRAP_CFLAGS	+=	-I$(CONIO_SRC)
+# ciowrap stuff
+ifndef NO_X
+ X_DIR	?=	/usr/X11R6/
+ CIOWRAP_CFLAGS	+=	-I${X_DIR}include
+ CIOWRAP_LDFLAGS	+=	-L${X_DIR}lib -lX11
+ CIOWRAP_OBJS	+=	$(LIBODIR)/console.o $(LIBODIR)/x_cio.o
+endif
+CIOWRAP_OBJS	+=	$(LIBODIR)/curs_cio.o $(LIBODIR)/conio.o
+CIOWRAP_CFLAGS	+=	-I$(UIFC_SRC)
+
+# Curses Stuff
+ifdef XCURSES
+ CURSES_LDFLAGS += -lXCurses -L/usr/local/lib -lXaw -lXmu -lXt -lX11 -lSM -lICE -lXext -L/usr/X11R6/lib
+ CURSES_CFLAGS	+= -DXCURSES -I/usr/local/include
+else
+ ifeq ($(os),qnx)
+  CURSES_LDFLAGS += -lncurses
+  CURSES_CFLAGS	+= -DN_CURSES_LIB
+ else
+  CURSES_LDFLAGS += -lcurses
+  CURSES_CFLAGS	+= -DCURSES_LIB
+ endif
+endif
+
+CIOWRAP_CFLAGS	+=	$(CURSES_CFLAGS)
+CIOWRAP_LDFLAGS	+=	$(CURSES_LDFLAGS)
+
+ifdef NEED_CIOWRAP
+ CFLAGS +=	$(CIOWRAP_CFLAGS)
+ LDFLAGS	+=	$(CIOWRAP_LDFLAGS)
+ OBJS	+=	$(CIOWRAP_OBJS)
+endif
+ifdef UIFC_NEED_CIOWRAP
+ UIFC_CFLAGS	+=	$(CIOWRAP_CFLAGS)
+ UIFC_LDFLAGS	+=	$(CIOWRAP_LDFLAGS)
+ UIFC_OBJS		+=	$(CIOWRAP_OBJS)
+endif
+
+ifdef NEED_CURSES
+ CFLAGS	+=	$(CURSES_CFLAGS)
+ LDFLAGS	+=	$(CURSES_LDFLAGS)
+endif
+
+vpath %.c $(CONIO_SRC)
+vpath %.cpp $(CONIO_SRC)

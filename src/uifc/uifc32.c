@@ -48,7 +48,7 @@
 	#define mswait(x) Sleep(x)
 #endif
 
-#include "ciowrap.h"
+#include "conio.h"
 #include "keys.h"
 #include "uifc.h"
 #define MAX_GETSTR	5120
@@ -289,7 +289,6 @@ int uifcini32(uifcapi_t* uifcapi)
  */
 #endif
 #ifdef __unix__
-	initciowrap(api->mode);
 	#ifdef NCURSES_VERSION_MAJOR
 		if(cio_api.mode==CURSES_MODE) {
 			ESCDELAY=api->esc_delay;

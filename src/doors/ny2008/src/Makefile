@@ -1,11 +1,11 @@
 CC	= gcc
 CXX	= g++
-UIFC_SRC	=	../../../uifc
+CONIO_SRC	=	../../../conio
 XPDEV_SRC	=	../../../xpdev
 ODOOR_SRC	=	../../../odoors
 CFLAGS += -O2
 CFLAGS += -g
-CFLAGS += -I${ODOOR_SRC} -I${XPDEV_SRC} -I${UIFC_SRC}
+CFLAGS += -I${ODOOR_SRC} -I${XPDEV_SRC} -I${CONIO_SRC}
 # Needed for struct alignment!
 CFLAGS += -fshort-enums
 LDFLAGS += -L${ODOOR_SRC}
@@ -21,8 +21,14 @@ dirwrap.o:
 genwrap.o:
 	$(CC) $(CFLAGS) -c ${XPDEV_SRC}/genwrap.c
 
-ciowrap.o:
-	$(CC) $(CFLAGS) -c ${UIFC_SRC}/ciowrap.c
+conio.o: curs_cio.o x_cio.o
+	$(CC) $(CFLAGS) -c ${CONIO_SRC}/conio.c
+
+curs_cio.o:
+	$(CC) $(CFLAGS) -c ${CONIO_SRC}/curs_cio.c
+
+x_cio.o:
+	$(CC) $(CFLAGS) -c ${CONIO_SRC}/x_cio.c
 
 fights.o : fights.cpp fights.h ny2008.h
 	$(CXX) $(CFLAGS) -c fights.cpp
@@ -42,8 +48,8 @@ chatadd.o : chatadd.cpp ny2008.h
 ny2008.o : ny2008.cpp
 	$(CXX) $(CFLAGS) -c ny2008.cpp
 
-ny2008 : ny2008.o ibbsny.o second.o igmsup.o ibbsny.o fights.o dirwrap.o filewrap.o genwrap.o ciowrap.o chatadd.o
-	$(CXX) $(CFLAGS) ${LDFLAGS} ciowrap.o ny2008.o chatadd.o dirwrap.o filewrap.o genwrap.o fights.o ibbsny.o igmsup.o second.o -lcurses -lODoors -lm -o ../ny2008
+ny2008 : ny2008.o ibbsny.o second.o igmsup.o ibbsny.o fights.o dirwrap.o filewrap.o genwrap.o conio.o chatadd.o
+	$(CXX) $(CFLAGS) ${LDFLAGS} conio.o curs_cio.o x_cio.o ny2008.o chatadd.o dirwrap.o filewrap.o genwrap.o fights.o ibbsny.o igmsup.o second.o -lcurses -lODoors -lm -o ../ny2008
 
 aedit : aedit.cpp
 	$(CXX) $(CFLAGS) ${LDFLAGS} aedit.cpp -o ../aedit
@@ -54,8 +60,8 @@ medit : medit.cpp
 nyibbs : nyibbs.cpp ibbsny.o filewrap.o genwrap.o dirwrap.o
 	$(CXX) $(CFLAGS) ${LDFLAGS} nyibbs.cpp ibbsny.o filewrap.o genwrap.o dirwrap.o -o ../nyibbs
 
-nyedit : nyedit.cpp nyedit.h filewrap.o genwrap.o dirwrap.o ciowrap.o
-	$(CXX) $(CFLAGS) ${LDFLAGS} nyedit.cpp filewrap.o genwrap.o dirwrap.o ciowrap.o -lcurses -lODoors -lm -o ../nyedit
+nyedit : nyedit.cpp nyedit.h filewrap.o genwrap.o dirwrap.o conio.o curs_cio.o x_cio.o
+	$(CXX) $(CFLAGS) ${LDFLAGS} nyedit.cpp filewrap.o genwrap.o dirwrap.o conio.o curs_cio.o x_cio.o -lcurses -lODoors -lm -o ../nyedit
 
 clean :
 	rm -f *.o

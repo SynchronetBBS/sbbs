@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-#include <ciowrap.h>
+#include <conio.h>
 #include <uifc.h>
 
 #include "uifcinit.h"
@@ -34,7 +34,6 @@ void uifcbail(void)
 {
 	if(uifc_initialized) {
 		uifc.bail();
-		initciowrap(UIFC_IBM|COLOR_MODE);
 	}
 	uifc_initialized=0;
 }

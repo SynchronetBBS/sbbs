@@ -1,6 +1,6 @@
 #include <stdarg.h>
 
-#include "ciowrap.h"
+#include "conio.h"
 #include "x_cio.h"
 #include "console.h"
 WORD	x_curr_attr=0x0700;

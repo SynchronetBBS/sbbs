@@ -1,5 +1,5 @@
 #include <genwrap.h>
-#include <ciowrap.h>
+#include <conio.h>
 
 #include "term.h"
 #include "uifcinit.h"

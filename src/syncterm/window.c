@@ -1,4 +1,4 @@
-#include <ciowrap.h>
+#include <conio.h>
 #include "uifcinit.h"
 #include "term.h"
 

@@ -1,13 +1,10 @@
 /* $Id$ */
-#define NEED_CURSES_GETCH
-
 #include <sys/time.h>
 #include <stdarg.h>
 #include <unistd.h>
 
-#include "ciowrap.h"
+#include "conio.h"
 #include "curs_cio.h"
-#include "uifc.h"		/* UIFC_IBM */
 
 static unsigned char curs_nextgetch=0;
 const int curs_tabs[10]={9,17,25,33,41,49,57,65,73,80};

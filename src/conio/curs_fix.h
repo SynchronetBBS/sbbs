@@ -8,7 +8,7 @@
  #include <ncurses.h>
 #endif
 
-#ifdef CURSES_LIB
+#if defined(CURSES_LIB) || (!defined(XCURSES)&&!defined(N_CURSES_LIB))
  #include <curses.h>
 #endif
 

@@ -1,11 +1,12 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-#include "ciowrap.h"
+#include "conio.h"
 #ifndef NO_X
  #include "x_cio.h"
 #endif
 #include "curs_cio.h"
+#undef getch
 
 cioapi_t	cio_api;
 

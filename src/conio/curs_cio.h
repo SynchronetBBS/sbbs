@@ -1,7 +1,8 @@
 /* $Id$ */
 
 #ifdef __unix__
-#include "ciowrap.h"
+#include "conio.h"
+#include "curs_fix.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -26,5 +27,7 @@ void curs_textmode(int mode);
 #ifdef __cplusplus
 }
 #endif
+
+#define UIFC_IBM	(1<<4)  /* Force use of IBM charset     */
 
 #endif
