@@ -7,6 +7,7 @@
 #include "ftpsrvr.h"	/* ftp_startup_t */
 #include "mailsrvr.h"	/* mail_startup_t */
 #include "services.h"	/* services_startup_t */
+#include "websrvr.h"	/* services_startup_t */
 #include "ini_file.h"
 
 #if defined(__cplusplus)
@@ -19,6 +20,8 @@ void sbbs_read_ini(
 	,bbs_startup_t*			bbs_startup
 	,BOOL*					run_ftp
 	,ftp_startup_t*			ftp_startup
+	,BOOL*					run_web
+	,web_startup_t*			web_startup
 	,BOOL*					run_mail		
 	,mail_startup_t*		mail_startup
 	,BOOL*					run_services

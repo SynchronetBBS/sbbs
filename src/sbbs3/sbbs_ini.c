@@ -44,6 +44,22 @@ static ini_bitdesc_t ftp_options[] = {
 	{ -1							,NULL					}
 };
 
+static ini_bitdesc_t web_options[] = {
+
+	{ WEB_OPT_DEBUG_TX				,"DEBUG_TX"				},
+
+	/* shared bits */
+	{ BBS_OPT_NO_HOST_LOOKUP		,"NO_HOST_LOOKUP"		},
+	{ BBS_OPT_NO_RECYCLE			,"NO_RECYCLE"			},
+	{ BBS_OPT_GET_IDENT				,"GET_IDENT"			},
+	{ BBS_OPT_NO_JAVASCRIPT			,"NO_JAVASCRIPT"		},
+	{ BBS_OPT_LOCAL_TIMEZONE		,"LOCAL_TIMEZONE"		},
+	{ BBS_OPT_MUTE					,"MUTE"					},
+
+	/* terminator */										
+	{ -1							,NULL					}
+};
+
 static ini_bitdesc_t mail_options[] = {
 
 	{ MAIL_OPT_DEBUG_RX_HEADER		,"DEBUG_RX_HEADER"		},
@@ -85,6 +101,8 @@ void sbbs_read_ini(
 	,bbs_startup_t*			bbs
 	,BOOL*					run_ftp
 	,ftp_startup_t*			ftp
+	,BOOL*					run_web
+	,web_startup_t*			web
 	,BOOL*					run_mail		
 	,mail_startup_t*		mail
 	,BOOL*					run_services
@@ -277,4 +295,26 @@ void sbbs_read_ini(
 		=iniReadBitField(fp,section,"Options",service_options
 			,BBS_OPT_NO_HOST_LOOKUP);
 
+	/***********************************************************************/
+	section = "Web";
+
+	*run_web
+		=iniReadBool(fp,section,"AutoStart",TRUE);
+
+	web->interface_addr
+		=iniReadIpAddress(fp,section,"Interface",INADDR_ANY);
+	web->port
+		=iniReadShortInt(fp,section,"Port",IPPORT_HTTP);
+
+	SAFECOPY(web->host_name
+		,iniReadString(fp,section,"HostName",host_name));
+
+	SAFECOPY(web->root_dir
+		,iniReadString(fp,section,"RootDirectory","../html"));
+	SAFECOPY(web->error_dir
+		,iniReadString(fp,section,"ErrorDirectory","../html/error"));
+
+	web->options
+		=iniReadBitField(fp,section,"Options",web_options
+			,BBS_OPT_NO_HOST_LOOKUP);
 }
