@@ -1,8 +1,0 @@
-README.FreeBSD for Synchronet v3
---------------------------------
-Make sure you have GNU make installed.  
-
-Change to the /src/sbbs3 directory and run:
-gmake -f Makefile.gnu os=freebsd
-
-- Deuce (deuce@lordlegacy.org)

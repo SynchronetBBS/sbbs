@@ -1,6 +1,0 @@
-# This is for Aceex 9600 modems
-# Updated 03/23/96 Digital Dynamics: Now uses verbal result codes
-
-INCLUDE 	GEN2400
-COM_RATE	19200
-SPEC_INIT	ATW1&K3&M5%C0\N3S95=4

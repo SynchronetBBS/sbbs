@@ -1,7 +1,0 @@
-# This is for the USRobotics Dual Standard 28800bps modem
-# Updated 09/10/94 Digital Dynamics
-# Updated 03/23/96 Digital Dynamics: Now uses verbal result codes
-
-INCLUDE 	USR216DS
-COM_RATE	115200
-

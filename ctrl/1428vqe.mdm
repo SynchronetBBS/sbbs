@@ -1,6 +1,0 @@
-# This is for 1428VQE (Generic AT&T chipset) 28800bps modems
-# Updated 03/23/96 Digital Dynamics: Now uses verbal result codes
-
-INCLUDE 	GEN14400
-SPEC_INIT	ATW2
-COM_RATE	115200
