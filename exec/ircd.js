@@ -22,6 +22,8 @@ load("sbbsdefs.js");
 load("sockdefs.js");
 load("nodedefs.js");
 
+// CVS revision
+const REVISION = "$Revision$".split(' ')[1];
 // Please don't play with this, unless you're making custom hacks.
 // IF you're making a custom version, it'd be appreciated if you left the
 // version number alone, and add a token in the form of +hack (i.e. 1.0+cyan)
@@ -711,9 +713,10 @@ while (!server.terminated) {
 	// FIXME: connect retry interval is 30 seconds, but should be set
 	// to something else as per a Y:Line
 	for(thisCL in CLines) {
-		if (CLines[thisCL].port &&
-		    !(searchbyserver(CLines[thisCL].servername)) &&
-		    ((time() - CLines[thisCL].lastconnect) > 30) ) {
+		var my_cline = CLines[thisCL];
+		if (my_cline.port && YLines[my_cline.ircclass].connfreq &&
+		    !(searchbyserver(my_cline.servername)) &&
+		    ((time() - my_cline.lastconnect) > YLines[my_cline.ircclass].connfreq) ) {
 			oper_notice("Routing","Auto-connecting to " + CLines[thisCL].servername);
 			connect_to_server(CLines[thisCL]);
 		}
@@ -2669,7 +2672,13 @@ function IRCClient_registered_commands(command, cmdline) {
 					break;
 				case "I":
 				case "i":
-					this.numeric(215,"I * * * * *");
+					for (iline in ILines) {
+						if (!ILines[iline].port)
+							var my_port = "*";
+						else
+							var my_port = ILines[iline].port;
+						this.numeric(215,"I " + ILines[iline].ipmask + " * " + ILines[iline].hostmask + " " + my_port + " " + ILines[iline].ircclass);
+					}
 					break;
 				case "K":
 				case "k":
