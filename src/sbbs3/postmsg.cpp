@@ -37,6 +37,26 @@
 
 #include "sbbs.h"
 
+extern const char* beta_version;
+
+static char* program_id()
+{
+	static char str[128];
+	char compiler[64];
+
+	DESCRIBE_COMPILER(compiler);
+	sprintf(str,"%.10s v%s%c-%s%s%s %s %s\r"
+		,VERSION_NOTICE,VERSION,REVISION,PLATFORM_DESC
+		,beta_version
+#ifdef _DEBUG
+		," Debug"
+#else
+		,""
+#endif
+		,__DATE__,compiler);
+	return(str);
+}
+
 /****************************************************************************/
 /* Posts a message on subboard number sub, with 'top' as top of message.    */
 /* Returns 1 if posted, 0 if not.                                           */
@@ -46,10 +66,11 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 	char	str[256],touser[256],title[LEN_TITLE+1],buf[SDT_BLOCK_LEN]
 			,top[256];
 	char	msg_id[256];
+	char*	pid;
 	ushort	xlat,msgattr;
 	int 	i,j,x,file,storage;
 	ulong	l,length,offset,crc=0xffffffff;
-	FILE	*instream;
+	FILE*	instream;
 	smbmsg_t msg,tmpmsg;
 
 	if(remsg) {
@@ -271,6 +292,9 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 	msg.idx.time=msg.hdr.when_imported.time;
 	msg.idx.number=smb.status.last_msg+1; /* this *should* be the new message number */
 
+	pid=program_id();
+	smb_hfield(&msg,FIDOPID,strlen(pid),pid);
+
 	/* Generate default (RFC822) message-id (always) */
 	SAFECOPY(msg_id,get_msgid(&cfg,subnum,&msg));
 	smb_hfield(&msg,RFC822MSGID,strlen(msg_id),msg_id);
@@ -375,6 +399,7 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, char* msgbuf)
 {
 	char	pad=0;
+	char*	pid;
 	char	msg_id[256];
 	ushort	xlat;
 	int 	i;
@@ -478,6 +503,9 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, char* msg
 			msg->hdr.attr|=MSG_ANONYMOUS;
 	}
 	smb_dfield(msg,TEXT_BODY,length);
+
+	pid=program_id();
+	smb_hfield(msg,FIDOPID,strlen(pid),pid);
 
 	/* Generate default (RFC822) message-id  */
 	if(smb_get_hfield(msg,RFC822MSGID,NULL)==NULL) {

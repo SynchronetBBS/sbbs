@@ -36,6 +36,8 @@
  ****************************************************************************/
 
 #define SMBUTIL_VER "2.31"
+char	revision[16];
+char	compiler[32];
 
 #define NOANALYSIS		(1L<<0)
 
@@ -320,6 +322,15 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 		fprintf(stderr,"\n\7!smb_dfield returned %d: %s\n",i,smb.last_error);
 		smb_freemsgdat(&smb,offset,length,1);
 		exit(1); }
+
+	sprintf(str,"SMBUTIL v%s-%s r%s %s %s"
+		,SMBUTIL_VER
+		,PLATFORM_DESC
+		,revision
+		,__DATE__
+		,compiler
+		);
+	smb_hfield(&msg,FIDOPID,(ushort)strlen(str),str);
 
 	i=smb_addmsghdr(&smb,&msg,smb.status.attr&SMB_HYPERALLOC);
 
@@ -1259,7 +1270,6 @@ int main(int argc, char **argv)
 {
 	char	cmd[128]="",*p,*s;
 	char	path[MAX_PATH+1];
-	char	revision[16];
 	char*	to=NULL;
 	char*	to_number=NULL;
 	char*	to_address=NULL;
@@ -1273,6 +1283,8 @@ int main(int argc, char **argv)
 	setvbuf(stdout,0,_IONBF,0);
 
 	sscanf("$Revision$" + 11, "%s", revision);
+
+	DESCRIBE_COMPILER(compiler);
 
 	smb.file[0]=0;
 	fprintf(stderr,"\nSMBUTIL v%s-%s (rev %s) SMBLIB %s - Synchronet Message Base "\
