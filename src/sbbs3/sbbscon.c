@@ -215,6 +215,7 @@ int main(int argc, char** argv)
     bbs_startup.last_node=4;
     bbs_startup.telnet_port=IPPORT_TELNET;
     bbs_startup.telnet_interface=INADDR_ANY;
+	bbs_startup.options|=BBS_OPT_NO_QWK_EVENTS;
 
 #ifdef USE_RLOGIN
     bbs_startup.rlogin_port=513;

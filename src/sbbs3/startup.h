@@ -96,5 +96,7 @@ typedef struct {
 #define BBS_OPT_SYSOP_AVAILABLE		(1<<4)	// Available for chat
 #define BBS_OPT_ALLOW_RLOGIN		(1<<5)	// Allow logins via BSD RLogin
 #define BBS_OPT_USE_2ND_RLOGIN		(1<<6)	// Use 2nd username in BSD RLogin
+#define BBS_OPT_NO_QWK_EVENTS		(1<<7)	// Don't run QWK-related events
 #define BBS_OPT_NO_HOST_LOOKUP		(1<<11)
 #define BBS_OPT_MUTE				(1<<31)	// Mute sounds
+
