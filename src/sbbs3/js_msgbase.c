@@ -914,6 +914,79 @@ js_put_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 	return(JS_TRUE);
 }
 
+static JSBool
+js_remove_msg(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	uintN		n;
+	JSBool		by_offset=JS_FALSE;
+	JSBool		msg_specified=JS_FALSE;
+	smbmsg_t	msg;
+	private_t*	p;
+
+	*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx,getprivate_failure,WHERE);
+		return(JS_FALSE);
+	}
+
+	if(!SMB_IS_OPEN(&(p->smb)))
+		return(JS_TRUE);
+
+	memset(&msg,0,sizeof(msg));
+
+	for(n=0;n<argc;n++) {
+		if(JSVAL_IS_BOOLEAN(argv[n]))
+			by_offset=JSVAL_TO_BOOLEAN(argv[n]);
+		else if(JSVAL_IS_INT(argv[n])) {
+			if(by_offset)							/* Get by offset */
+				msg.offset=JSVAL_TO_INT(argv[n]);
+			else									/* Get by number */
+				msg.hdr.number=JSVAL_TO_INT(argv[n]);
+			msg_specified=JS_TRUE;
+			n++;
+			break;
+		} else if(JSVAL_IS_STRING(argv[n]))	{		/* Get by ID */
+			if(!msg_offset_by_id(scfg,&(p->smb)
+				,JS_GetStringBytes(JSVAL_TO_STRING(argv[n]))
+				,&msg.offset))
+				return(JS_TRUE);	/* ID not found */
+			msg_specified=JS_TRUE;
+			n++;
+			break;
+		}
+	}
+
+	if(!msg_specified)
+		return(JS_TRUE);
+
+	if(smb_getmsgidx(&(p->smb), &msg)!=0)
+		return(JS_TRUE);
+
+	if(smb_lockmsghdr(&(p->smb),&msg)!=0)
+		return(JS_TRUE);
+
+	do {
+		if(smb_getmsghdr(&(p->smb), &msg)!=0)
+			break;
+
+		smb_freemsghdrmem(&msg);	/* prevent duplicate header fields */
+
+		msg.hdr.attr|=MSG_DELETE;
+
+		if(smb_putmsg(&(p->smb), &msg)!=0)
+			break;
+
+		*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
+	} while(0);
+
+	smb_unlockmsghdr(&(p->smb),&msg); 
+	smb_freemsgmem(&msg);
+
+	return(JS_TRUE);
+}
+
+
 static char* get_msg_text(smb_t* smb, smbmsg_t* msg, BOOL strip_ctrl_a, BOOL rfc822, ulong mode)
 {
 	char*		buf;
@@ -1351,19 +1424,19 @@ static jsMethodSpec js_msgbase_functions[] = {
 	{"close",			js_close,			0, JSTYPE_BOOLEAN,	JSDOCSTR("")
 	,JSDOCSTR("close message base (if open)")
 	},
-	{"get_msg_header",	js_get_msg_header,	2, JSTYPE_OBJECT,	JSDOCSTR("boolean by_offset, number_or_id")
+	{"get_msg_header",	js_get_msg_header,	2, JSTYPE_OBJECT,	JSDOCSTR("[boolean by_offset,] number_or_id")
 	,JSDOCSTR("returns a specific message header, <i>null</i> on failure")
 	},
-	{"put_msg_header",	js_put_msg_header,	2, JSTYPE_BOOLEAN,	JSDOCSTR("boolean by_offset, number, object header")
+	{"put_msg_header",	js_put_msg_header,	2, JSTYPE_BOOLEAN,	JSDOCSTR("[boolean by_offset,] number, object header")
 	,JSDOCSTR("write a message header")
 	},
-	{"get_msg_body",	js_get_msg_body,	2, JSTYPE_STRING,	JSDOCSTR("boolean by_offset, number_or_id [,boolean strip_ctrl_a]")
+	{"get_msg_body",	js_get_msg_body,	2, JSTYPE_STRING,	JSDOCSTR("[boolean by_offset,] number_or_id [,boolean strip_ctrl_a]")
 	,JSDOCSTR("returns the body text of a specific message, <i>null</i> on failure")
 	},
-	{"get_msg_tail",	js_get_msg_tail,	2, JSTYPE_STRING,	JSDOCSTR("boolean by_offset, number_or_id [,boolean strip_ctrl_a]")
+	{"get_msg_tail",	js_get_msg_tail,	2, JSTYPE_STRING,	JSDOCSTR("[boolean by_offset,] number_or_id [,boolean strip_ctrl_a]")
 	,JSDOCSTR("returns the tail text of a specific message, <i>null</i> on failure")
 	},
-	{"get_msg_index",	js_get_msg_index,	2, JSTYPE_OBJECT,	JSDOCSTR("boolean by_offset, number")
+	{"get_msg_index",	js_get_msg_index,	2, JSTYPE_OBJECT,	JSDOCSTR("[boolean by_offset,] number")
 	,JSDOCSTR("returns a specific message index, <i>null</i> on failure. "
 	"The index object will contain the following properties:<br>"
 	"<table>"
@@ -1375,6 +1448,9 @@ static jsMethodSpec js_msgbase_functions[] = {
 	"<tr><td><tt>number</tt><td>Message number"
 	"<tr><td><tt>offset</tt><td>Byte-offset into header file"
 	"</table>")
+	},
+	{"remove_msg",		js_remove_msg,		2, JSTYPE_BOOLEAN,	JSDOCSTR("[boolean by_offset,] number_or_id")
+	,JSDOCSTR("mark message as deleted")
 	},
 	{"save_msg",		js_save_msg,		2, JSTYPE_BOOLEAN,	JSDOCSTR("object header, string body_text")
 	,JSDOCSTR("create a new message in message base, the <i>header</i> object may contain the following properties:<br>"
