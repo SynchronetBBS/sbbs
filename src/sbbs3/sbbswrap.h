@@ -62,17 +62,17 @@ extern "C" {
 /* OS-specific */
 /***************/
 
-#ifdef _WIN32
+#if defined(_WIN32)
 
 	#define mswait(x)			Sleep(x)
 	#define sbbs_beep(freq,dur)	Beep(freq,dur)
 
-#elif defined __OS2__
+#elif defined(__OS2__)
 
 	#define mswait(x)			DosSleep(x)
 	#define sbbs_beep(freq,dur)	DosBeep(freq,dur)
 
-#elif defined __unix__
+#elif defined(__unix__)
 
 	#define mswait(x)			usleep(x*1000)
 	#define stricmp(x,y)		strcasecmp(x,y)
@@ -122,12 +122,28 @@ extern "C" {
 
 #endif
 
+/* Macros */
+#if defined(_MSC_VER) || defined(__MINGW32__)
 
-#ifdef _MSC_VER
-	#define snprintf			_snprintf
+#define CHMOD(s,m)		_chmod(s,m)
+#define PUTENV  		_putenv
+#define GETCWD  		_getcwd
+
+#elif defined(__BORLANDC__)
+
+#define CHMOD(s,m)		_chmod(s,1,m)
+#define PUTENV  		putenv
+#define GETCWD  		getcwd
+
+#else	/* ??? */
+
+#define CHMOD(s,m)		chmod(s,m)
+#define PUTENV  		putenv
+#define GETCWD  		getcwd
+
 #endif
 
-#ifdef __BORLANDC__
+#if defined(__BORLANDC__)
 	#define sbbs_random(x)		random(x)
 #else 
 	DLLEXPORT int	sbbs_random(int n);
@@ -137,8 +153,8 @@ extern "C" {
 	#define _chmod(p,f,a)		_rtl_chmod(p,f,a) 	/* _chmod obsolete in 4.x */
 #endif
 
-#if !defined _MSC_VER && !defined __BORLANDC__
-DLLEXPORT char* ultoa(ulong, char*, int radix);
+#if !defined(_MSC_VER) && !defined(__BORLANDC__)
+	DLLEXPORT char* ultoa(ulong, char*, int radix);
 #endif
 
 

@@ -766,26 +766,6 @@ enum {						/* Values of mode for userlist function     */
 #define GOTOXY(x,y)     rprintf("\x1b[%d;%dH",y,x);
 #define TM_YEAR(yy)		((yy)%100)
 
-#if defined(_MSC_VER)		/* Visual C++ */
-
-#define CHMOD(s,m)		_chmod(s,m)
-#define PUTENV  		_putenv
-#define GETCWD  		_getcwd
-
-#elif defined(__BORLANDC__)	/* Borland C++ */
-
-#define CHMOD(s,m)		_chmod(s,1,m)
-#define PUTENV  		putenv
-#define GETCWD  		getcwd
-
-#else	/* ??? */
-
-#define CHMOD(s,m)		chmod(s,m)
-#define PUTENV  		putenv
-#define GETCWD  		getcwd
-
-#endif
-
 #ifdef __cplusplus
 extern "C" {
 #endif
