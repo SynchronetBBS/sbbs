@@ -1315,7 +1315,7 @@ static void smtp_thread(void* arg)
 						truncsp(rcpt_name);
 						truncsp(rcpt_addr);
 
-						_snprintf(hdrfield,sizeof(hdrfield),
+						snprintf(hdrfield,sizeof(hdrfield),
 							"Received: from %s (%s [%s])\r\n"
 							"          by %s [%s] (Synchronet Mail Server for %s v%s) with %s\r\n"
 							"          for %s; %s"

@@ -234,6 +234,7 @@ extern "C" {
 #define CHMOD(s,m)		_chmod(s,m)
 #define PUTENV  		_putenv
 #define GETCWD  		_getcwd
+#define snprintf		_snprintf
 
 #elif defined(__BORLANDC__)
 
