@@ -135,11 +135,7 @@ else
  CFLAGS	+= -O3
 endif
 
-ifdef JSLIB
- LIBS	+=	$(JSLIB)
-else
- LIBS	+=	../../lib/mozilla/js/$(os).$(BUILD)/libjs.a ../../lib/mozilla/nspr/$(os).$(BUILD)/libnspr4.a
-endif
+JSLIB	:=	-L../../lib/mozilla/js/$(os).$(BUILD) -ljs
 
 # The following are needed for echocfg (uses UIFC)
 UIFC_OBJS =	$(LIBODIR)/uifcx.o
@@ -188,6 +184,10 @@ LFLAGS		+=	-Xlinker .
 ifneq ($(os),openbsd)
 LFLAGS		+=	-Xlinker -rpath-link
 LFLAGS		+=	-Xlinker ./$(LIBODIR)
+LFLAGS		+=	-Xlinker -rpath-link
+LFLAGS		+=	-Xlinker ../../lib/mozilla/js/$(os).$(BUILD)
+LFLAGS		+=	-Xlinker -rpath-link
+LFLAGS		+=	-Xlinker ../../lib/mozilla/nspr/$(os).$(BUILD)
 endif
 ifeq ($(os),freebsd)
 LFLAGS		+=	-pthread
@@ -235,8 +235,6 @@ SMBLIB_OBJS = \
 
 # Monolithic Synchronet executable Build Rule
 FORCE$(SBBSMONO): $(MONO_OBJS) $(OBJS) $(LIBS)
-
-$(SBBSMONO): $(MONO_OBJS) $(OBJS) $(LIBS)
 	@echo Linking $@
 	$(QUIET)$(CCPP) -o $@ $(LFLAGS) $^
 
@@ -245,35 +243,35 @@ FORCE$(SBBS): $(OBJS) $(LIBS)
 
 $(SBBS): $(OBJS) $(LIBS)
 	@echo Linking $@
-	$(QUIET)$(CCPP) $(LFLAGS) -o $(SBBS) $^ -shared -o $@
+	$(QUIET)$(CCPP) $(LFLAGS) -o $(SBBS) $(JSLIB) $^ -shared -o $@
 
 # FTP Server Link Rule
 FORCE$(FTPSRVR): $(LIBODIR)/ftpsrvr.o $(SBBSLIB)
 
 $(FTPSRVR): $(LIBODIR)/ftpsrvr.o $(SBBSLIB)
 	@echo Linking $@
-	$(QUIET)$(CC) $(LFLAGS) $^ -shared -o $@ 
+	$(QUIET)$(CC) $(LFLAGS) $^ $(JSLIB) -shared -o $@ 
 
 # Mail Server Link Rule
 FORCE$(MAILSRVR): $(MAIL_OBJS) $(LIBODIR)$(SLASH)$(SBBSLIB)
 
 $(MAILSRVR): $(MAIL_OBJS) $(SBBSLIB)
 	@echo Linking $@
-	$(QUIET)$(CC) $(LFLAGS) $^ -shared -o $@
+	$(QUIET)$(CC) $(LFLAGS) $^ $(JSLIB) -shared -o $@
 
 # Mail Server Link Rule
 FORCE$(WEBSRVR): $(WEB_OBJS) $(SBBSLIB)
 
 $(WEBSRVR): $(WEB_OBJS) $(SBBSLIB)
 	@echo Linking $@
-	$(QUIET)$(CC) $(LFLAGS) $^ -shared -o $@
+	$(QUIET)$(CC) $(LFLAGS) $^ $(JSLIB) -shared -o $@
 
 # Services Link Rule
 FORCE$(SERVICES): $(WEB_OBJS) $(SBBSLIB)
 
 $(SERVICES): $(SERVICE_OBJS) $(SBBSLIB)
 	@echo Linking $@
-	$(QUIET)$(CC) $(LFLAGS) $^ -shared -o $@
+	$(QUIET)$(CC) $(LFLAGS) $^ $(JSLIB) -shared -o $@
 
 # Synchronet Console Build Rule
 FORCE$(SBBSCON): $(CON_OBJS) $(SBBSLIB) $(FTP_OBJS) $(MAIL_OBJS) $(WEB_OBJS) $(SERVICE_OBJS)
