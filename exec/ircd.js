@@ -913,6 +913,8 @@ while (!server.terminated) {
 
 	if(server.terminated)
 		break;
+	if(this.js!=undefined && js.terminated)
+		break;
 
 	// Setup a new socket if a connection is accepted.
 	for (pl in open_plines) {
@@ -3229,7 +3231,9 @@ function IRCClient_registered_commands(command, cmdline) {
 				break;
 			}
 			log("!ERROR! Shutting down the ircd as per " + this.ircnuh);
-			js.terminated = true;
+			if(this.js!=undefined)
+				js.terminated = true;
+			server.terminated = true;
 			break;
 		case "REHASH":
 			if (!((this.mode&USERMODE_OPER) &&
