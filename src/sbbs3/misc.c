@@ -39,6 +39,23 @@
 #include "crc32.h"
 
 /****************************************************************************/
+/* Return the filename portion of a full pathname							*/
+/****************************************************************************/
+char* DLLCALL getfname(char* path)
+{
+	char *fname;
+
+	fname=strrchr(path,'/');
+	if(fname==NULL) 
+		fname=strrchr(path,'\\');
+	if(fname!=NULL) 
+		fname++;
+	else 
+		fname=path;
+	return(fname);
+}
+
+/****************************************************************************/
 /* Network open function. Opens all files DENYALL and retries LOOP_NOPEN    */
 /* number of times if the attempted file is already open or denying access  */
 /* for some other reason.	All files are opened in BINARY mode.			*/

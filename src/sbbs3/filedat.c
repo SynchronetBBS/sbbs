@@ -546,21 +546,6 @@ char* DLLCALL padfname(char *filename, char *str)
 	return(str);
 }
 
-char* DLLCALL getfname(char* path)
-{
-	char *fname;
-
-	fname=strrchr(path,'/');
-	if(fname==NULL) 
-		fname=strrchr(path,'\\');
-	if(fname!=NULL) 
-		fname++;
-	else 
-		fname=path;
-	return(fname);
-}
-
-
 /****************************************************************************/
 /* Turns FILE    .EXT into FILE.EXT                                         */
 /****************************************************************************/
