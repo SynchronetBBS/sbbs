@@ -448,7 +448,7 @@ function add_part(list,sub_code,hdr
 			printf("!Failed to parse part number from: %s\r\n",hdr.subject);
 			return(false);
 		}
-		printf("Parsed part number: %u\r\n",part);
+//		printf("Parsed part number: %u\r\n",part);
 	}
 	if(total==undefined || total<part) {	/* must parse from subject (yuck) */
 		total=hdr.subject.lastIndexOf('(');
@@ -464,7 +464,7 @@ function add_part(list,sub_code,hdr
 			printf("!Failed to parse total parts from: %s\r\n",hdr.subject);
 			return(false);
 		}
-		printf("Parsed total parts: %u\r\n",total);
+//		printf("Parsed total parts: %u\r\n",total);
 	}
 
 	/* Search database for existing file object */
