@@ -146,7 +146,7 @@ OBJECTS := ${OBJDIR}ODAuto${OBJFILE}\
 
 ${LIBDIR}ODoors62${SHLIB} : ${OBJECTS}
 	gcc -shared -o ${LIBDIR}libODoors${SHLIB}.6.2 ${OBJECTS}
-	ln -s ${LIBDIR}libODoors${SHLIB}.6.2 ${LIBDIR}ODoors62${SHLIB}
+	ln -fs ${LIBDIR}libODoors${SHLIB}.6.2 ${LIBDIR}ODoors62${SHLIB}
 
 ${LIBDIR}ODoors62${STATICLIB} : ${OBJECTS}
 	ar -r ${LIBDIR}libODoors${STATICLIB} ${OBJECTS}
