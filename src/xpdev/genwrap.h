@@ -274,13 +274,14 @@ DLLEXPORT char*		DLLCALL os_version(char *str);
 DLLEXPORT char*		DLLCALL	lastchar(const char* str);
 DLLEXPORT int		DLLCALL safe_snprintf(char *dst, size_t size, const char *fmt, ...);
 
-#if defined(_WIN32)
-#define		msclock()	clock()
-#define		MSCLOCKS_PER_SEC	CLOCKS_PER_SEC
+#if !defined(__unix__)
+	#define		msclock()			clock()
+	#define		MSCLOCKS_PER_SEC	CLOCKS_PER_SEC
 #else
-#define		MSCLOCKS_PER_SEC	1000
-clock_t		msclock(void);
+	#define		MSCLOCKS_PER_SEC	1000
+	clock_t		msclock(void);
 #endif
+
 #if defined(__cplusplus)
 }
 #endif
