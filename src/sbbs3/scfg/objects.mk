@@ -24,6 +24,7 @@ OBJS	=	$(ODIR)$(SLASH)scfg.$(OFILE)\
             $(ODIR)$(SLASH)ars.$(OFILE)\
             $(ODIR)$(SLASH)load_cfg.$(OFILE)\
             $(ODIR)$(SLASH)nopen.$(OFILE)\
+            $(ODIR)$(SLASH)crc16.$(OFILE)\
             $(ODIR)$(SLASH)crc32.$(OFILE)\
             $(ODIR)$(SLASH)dat_rec.$(OFILE)\
             $(ODIR)$(SLASH)userdat.$(OFILE)\
