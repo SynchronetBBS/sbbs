@@ -813,7 +813,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
         native=true;
 
 	if(!native) {
-		bprintf("\r\nExternal DOS programs are not yet supported in %s\r\n",VERSION_NOTICE);
+		bprintf("\r\nExternal DOS programs are not yet supported in\r\n%s\r\n",VERSION_NOTICE);
 		return(-1);
 	}
 
