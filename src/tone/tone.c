@@ -58,6 +58,8 @@ int octave=4;	/* Default octave */
 
 double pitch=523.50/32.0;	 /* low 'C' */
 
+BOOL use_xp_beep=FALSE;
+
 void play(char *freq, char *dur)
 {
 	char*	notes="c d ef g a b";
@@ -142,8 +144,12 @@ void play(char *freq, char *dur)
 		len=(d*t)-(d*s);
 	else
 		len=(d*t);
-	if(f)
-		BEEP(f,len);
+	if(f) {
+		if(use_xp_beep)
+			xpbeep(f,len);
+		else
+			BEEP(f,len);
+	}
 	else
 		SLEEP(len);
 	if(s) {
@@ -213,6 +219,9 @@ int main(int argc, char **argv)
 						break;
 					case 'V':
 						mode^=NO_VISUAL;
+						break;
+					case 'X':
+						use_xp_beep=TRUE;
 						break;
 					default:
 						usage();
