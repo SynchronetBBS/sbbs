@@ -40,11 +40,10 @@
 #include "link_list.h"
 
 #if defined(LINK_LIST_THREADSAFE)
-	#define MUTEX_INIT(list)	{ if(list->flags&LINK_LIST_MUTEX) pthread_mutex_init(&list->mutex,NULL);	}
-	#define MUTEX_DESTROY(list)	{ if(list->flags&LINK_LIST_MUTEX) pthread_mutex_destroy(&list->mutex);		}
-	#define MUTEX_LOCK(list)	{ if(list->flags&LINK_LIST_MUTEX) pthread_mutex_lock(&list->mutex);			}
-	#define MUTEX_UNLOCK(list)	{ if(list->flags&LINK_LIST_MUTEX) pthread_mutex_unlock(&list->mutex);		}
-
+	#define MUTEX_INIT(list)	{ if(list->flags&LINK_LIST_MUTEX) pthread_mutex_init((pthread_mutex_t*)&list->mutex,NULL);	}
+	#define MUTEX_DESTROY(list)	{ if(list->flags&LINK_LIST_MUTEX) pthread_mutex_destroy((pthread_mutex_t*)&list->mutex);	}
+	#define MUTEX_LOCK(list)	{ if(list->flags&LINK_LIST_MUTEX) pthread_mutex_lock((pthread_mutex_t*)&list->mutex);		}
+	#define MUTEX_UNLOCK(list)	{ if(list->flags&LINK_LIST_MUTEX) pthread_mutex_unlock((pthread_mutex_t*)&list->mutex);		}
 #else
 	#define MUTEX_INIT(list)
 	#define MUTEX_DESTROY(list)
@@ -65,6 +64,11 @@ link_list_t* listInit(link_list_t* list, long flags)
 	list->flags = flags;
 
 	MUTEX_INIT(list);
+
+#if defined(LINK_LIST_THREADSAFE)
+	if(list->flags&LINK_LIST_SEMAPHORE) 
+		sem_init(&list->sem,0,0);
+#endif
 
 	return(list);
 }
@@ -118,11 +122,73 @@ BOOL listFree(link_list_t* list)
 
 	MUTEX_DESTROY(list);
 
+#if defined(LINK_LIST_THREADSAFE)
+	if(list->sem!=NULL) {
+		sem_destroy(&list->sem);
+		list->sem=NULL;
+	}
+#endif
+
 	if(list->flags&LINK_LIST_MALLOC)
 		free(list);
 
 	return(TRUE);
 }
+
+void* listSetPrivateData(link_list_t* list, void* p)
+{
+	void* old;
+
+	if(list==NULL)
+		return(NULL);
+
+	old=list->private_data;
+	list->private_data=p;
+	return(old);
+}
+
+void* listGetPrivateData(link_list_t* list)
+{
+	if(list==NULL)
+		return(NULL);
+	return(list->private_data);
+}
+
+#if defined(LINK_LIST_THREADSAFE)
+
+BOOL listSemPost(const link_list_t* list)
+{
+	if(list==NULL)
+		return(FALSE);
+
+	return(sem_post(&list->sem)==0);
+}
+
+BOOL listSemWait(const link_list_t* list)
+{
+	if(list==NULL)
+		return(FALSE);
+
+	return(sem_wait(&list->sem)==0);
+}
+
+BOOL listSemTryWait(const link_list_t* list)
+{
+	if(list==NULL)
+		return(FALSE);
+
+	return(sem_trywait(&list->sem)==0);
+}
+
+BOOL listSemTryWaitBlock(const link_list_t* list, unsigned long timeout)
+{
+	if(list==NULL)
+		return(FALSE);
+
+	return(sem_trywait_block(&list->sem,timeout));
+}
+
+#endif
 
 #if defined(__BORLANDC__)
 	#pragma argsused
@@ -214,14 +280,14 @@ str_list_t listSubStringList(const list_node_t* node, long max)
 	if((str_list=strListInit())==NULL)
 		return(NULL);
 
-	MUTEX_LOCK(list);
+	MUTEX_LOCK(node->list);
 
 	for(count=0; count<max && node!=NULL; node=node->next) {
 		if(node->data!=NULL)
 			strListAppend(&str_list, (char*)node->data, count++);
 	}
 
-	MUTEX_UNLOCK(list);
+	MUTEX_UNLOCK(node->list);
 
 	return(str_list);
 }
@@ -372,6 +438,9 @@ static list_node_t* list_add_node(link_list_t* list, list_node_t* node, list_nod
 	list->count++;
 
 	MUTEX_UNLOCK(list);
+
+	if(list->sem!=NULL)
+		listSemPost(list);
 
 	return(node);
 }

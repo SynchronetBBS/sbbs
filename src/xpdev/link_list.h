@@ -42,7 +42,8 @@
 #include "str_list.h"	/* string list functions and types */
 
 #if defined(LINK_LIST_THREADSAFE)
-	#include "threadwrap.h"
+	#include "threadwrap.h"	/* mutexes */
+	#include "semwrap.h"	/* semaphores */
 #endif
 
 #if defined(__cplusplus)
@@ -55,24 +56,27 @@ extern "C" {
 #define LINK_LIST_MALLOC		(1<<0)	/* List/node allocated with malloc() */
 #define LINK_LIST_ALWAYS_FREE	(1<<1)	/* ALWAYS free node data when removing */
 #define LINK_LIST_NEVER_FREE	(1<<2)	/* NEVER free node data when removing */
-#define LINK_LIST_MUTEX			(1<<3)	/* Mutex protected linked-list */
-#define LINK_LIST_NODE_LOCKED	(1<<4)	/* Node is locked */
+#define LINK_LIST_MUTEX			(1<<3)	/* Mutex-protected linked-list */
+#define LINK_LIST_SEMAPHORE		(1<<4)	/* Semaphore attached to linked-list */
+#define LINK_LIST_NODE_LOCKED	(1<<5)	/* Node is locked */
 
 typedef struct list_node {
-	void*				data;		/* pointer to some kind of data */
-	struct list_node*	next;		/* next node in list (or NULL) */
-	struct list_node*	prev;		/* previous node in list (or NULL) */
+	void*				data;			/* pointer to some kind of data */
+	struct list_node*	next;			/* next node in list (or NULL) */
+	struct list_node*	prev;			/* previous node in list (or NULL) */
 	struct link_list*	list;
-	unsigned long		flags;		/* private use flags */
+	unsigned long		flags;			/* private use flags */
 } list_node_t;
 
 typedef struct link_list {
-	list_node_t*		first;		/* first node in list (or NULL) */
-	list_node_t*		last;		/* last node in list (or NULL) */
-	unsigned long		flags;		/* private use flags */
-	long				count;		/* number of nodes in list */
+	list_node_t*		first;			/* first node in list (or NULL) */
+	list_node_t*		last;			/* last node in list (or NULL) */
+	unsigned long		flags;			/* private use flags */
+	long				count;			/* number of nodes in list */
+	void*				private_data;	/* for use by the application only */
 #if defined(LINK_LIST_THREADSAFE)
 	pthread_mutex_t		mutex;
+	sem_t				sem;
 #endif
 } link_list_t;
 
@@ -82,6 +86,11 @@ BOOL			listFree(link_list_t*);
 long			listFreeNodes(link_list_t*);
 BOOL			listFreeNodeData(list_node_t* node);
 
+BOOL			listSemPost(const link_list_t*);
+BOOL			listSemWait(const link_list_t*);
+BOOL			listSemTryWait(const link_list_t*);
+BOOL			listSemTryWaitBlock(const link_list_t*, unsigned long timeout);
+
 /* Lock/unlock mutex-protected linked lists (no-op for unprotected lists) */
 void			listLock(const link_list_t*);
 void			listUnlock(const link_list_t*);
@@ -89,6 +98,10 @@ void			listUnlock(const link_list_t*);
 /* Return count or index of nodes, or -1 on error */
 long			listCountNodes(const link_list_t*);
 long			listNodeIndex(const link_list_t*, list_node_t*);
+
+/* Get/Set list private data */
+void*			listSetPrivateData(link_list_t*, void*);
+void*			listGetPrivateData(link_list_t*);
 
 /* Return an allocated string list (which must be freed), array of all strings in linked list */
 str_list_t		listStringList(const link_list_t*);
