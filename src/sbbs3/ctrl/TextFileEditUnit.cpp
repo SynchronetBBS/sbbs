@@ -64,27 +64,12 @@ void __fastcall TTextFileEditForm::FormShow(TObject *Sender)
         EditReplaceMenuItem->Enabled=false;
         ReplacePopupMenuItem->Enabled=false;
     }
-    Caption=Caption+AnsiString(" - ")+Filename;
-//	Screen->Cursor=crAppStart;
-#if 0
-    Memo->Lines->Clear();
-	FILE* fp;
-    if((fp=fopen(Filename.c_str(),"r"))!=NULL) {
-    	while(!feof(fp)) {
-        	if(!fgets(str,sizeof(str),fp))
-            	break;
-            Memo->Lines->Add(AnsiString(str).TrimRight());
-        }
-    	fclose(fp);
-    }
-#else
+    Caption=Caption+AnsiString(" - ")+Filename.UpperCase();
     try {
         Memo->Lines->LoadFromFile(Filename);
     } catch(...) { }
-#endif
     ActiveControl=Memo;
     Memo->SelStart=0;
-//	Screen->Cursor=crDefault;
 }
 //---------------------------------------------------------------------------
 void __fastcall TTextFileEditForm::FontButtonClick(TObject *Sender)
