@@ -922,10 +922,12 @@ static void show_usage(char *cmd)
 		printf(services_usage);
 }
 
+#if SBBS_MAGIC_FILENAMES
 static int command_is(char *cmdline, char *cmd)
 {
 	return(strnicmp(getfname(cmdline),cmd,strlen(cmd))==0);
 }
+#endif
 
 /****************************************************************************/
 /* Main Entry Point															*/
@@ -1099,7 +1101,7 @@ int main(int argc, char** argv)
 
 	read_startup_ini();
 
-#if 0	/* This stuff is just broken */
+#if SBBS_MAGIC_FILENAMES	/* This stuff is just broken */
 
 	if(!command_is(argv[0],"sbbs"))  {
 		run_bbs=has_bbs=FALSE;
