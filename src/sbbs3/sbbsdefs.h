@@ -432,7 +432,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define LINE_BUFSIZE 512	/* Size of line output buffer					*/
 																			
 																			
-#define TABSIZE		4		/* Tab Size										*/
+#define EDIT_TABSIZE 4		/* Tab size for internal message/line editor	*/
 																			
 #define SWAP_NONE	0x80	/* Allow no swapping for executables			*/
 																			
@@ -949,8 +949,7 @@ typedef struct {						/* Users information */
 typedef struct {						/* File (transfers) Data */
 	char    name[13],					/* Name of file FILENAME.EXT */
 			desc[LEN_FDESC+1],			/* Uploader's Description */
-			uler[LEN_ALIAS+1],			/* User who uploaded */
-			path[LEN_DIR+1];			/* Alternate DOS path */
+			uler[LEN_ALIAS+1];			/* User who uploaded */
 	uchar	opencount;					/* Times record is currently open */
 	time_t  date,						/* File date/time */
 			dateuled,					/* Date/Time (Unix) Uploaded */

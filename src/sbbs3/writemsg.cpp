@@ -581,7 +581,7 @@ ulong sbbs_t::msgeditor(char *buf, char *top, char *title)
 		menu("msgtabs");
 	else {
 		for(i=0;i<79;i++) {
-			if(i%TABSIZE || !i)
+			if(i%EDIT_TABSIZE || !i)
 				outchar('-');
 			else 
 				outchar('+');

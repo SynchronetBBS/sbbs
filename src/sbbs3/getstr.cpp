@@ -214,7 +214,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 					bputs("\b \b");
 				break;
 			case CTRL_I:	/* Ctrl-I/TAB */
-				if(!(i%TABSIZE)) {
+				if(!(i%EDIT_TABSIZE)) {
 					if(ins) {
 						if(l<maxlen)
 							l++;
@@ -225,7 +225,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 					str1[i++]=SP;
 					if(!(mode&K_NOECHO))
 						outchar(SP); }
-				while(i<maxlen && i%TABSIZE) {
+				while(i<maxlen && i%EDIT_TABSIZE) {
 					if(ins) {
 						if(l<maxlen)
 							l++;
