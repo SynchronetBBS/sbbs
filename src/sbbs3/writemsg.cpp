@@ -281,7 +281,7 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 		|| useron.xedit) {
 
 		if(useron.xedit && cfg.xedit[useron.xedit-1]->misc&IO_INTS) {
-			ex_mode|=EX_OUTL;
+			ex_mode|=EX_SH;
 			if(online==ON_REMOTE)
 				ex_mode|=(EX_OUTR|EX_INR);
 			if(cfg.xedit[useron.xedit-1]->misc&WWIVCOLOR)
@@ -745,7 +745,7 @@ ulong sbbs_t::msgeditor(char *buf, char *top, char *title)
 /****************************************************************************/
 void sbbs_t::editfile(char *str)
 {
-	char *buf,str2[128],mode=0;   /* EX_SH */
+	char *buf,str2[128],mode=0;
     int file;
 	long length,maxlines,lines,l;
 
@@ -758,7 +758,7 @@ void sbbs_t::editfile(char *str)
 	if(useron.xedit) {
 		editor_inf(useron.xedit,nulstr,nulstr,0,INVALID_SUB);
 		if(cfg.xedit[useron.xedit-1]->misc&IO_INTS) {
-			mode|=EX_OUTL;
+			mode|=EX_SH;
 			if(online==ON_REMOTE)
 				mode|=(EX_OUTR|EX_INR);
 			if(cfg.xedit[useron.xedit-1]->misc&WWIVCOLOR)
