@@ -507,15 +507,15 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 					wordwrap[z]=0;
 					if(!(mode&K_NOECHO))
 						while(z--) {
-							bputs("\b \b");
+							rputs("\b \b");
 							i--; 
 						}
 					strrev(wordwrap);
 					str1[x]=0;
 					strcpy(strout,str1);
 					if(strip_invalid_attr(strout) && !(mode&K_NOECHO))
-						redrwstr(strout,i,x,(char)mode);
-					if(!(mode&K_NOECHO|K_NOCRLF))
+						redrwstr(strout,i,x,mode);
+					if(!(mode&(K_NOECHO|K_NOCRLF)))
 						CRLF;
 					return(x); 
 				}
