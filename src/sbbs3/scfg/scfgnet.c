@@ -35,10 +35,6 @@
 
 #include "scfg.h"
 
-const char *wday[]={"Sun","Mon","Tue","Wed","Thu","Fri","Sat"};
-const char *mon[]={"Jan","Feb","Mar","Apr","May","Jun"
-            ,"Jul","Aug","Sep","Oct","Nov","Dec"};
-
 char *daystr(char days);
 
 void qhub_edit(int num);
