@@ -6,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -315,19 +315,19 @@ static void bbs_start(void)
 	Screen->Cursor=crAppStart;
     bbs_status(NULL,"Starting");
     SAFECOPY(MainForm->bbs_startup.ctrl_dir
-        ,MainForm->CtrlDirectory.c_str());
+        ,MainForm->global.ctrl_dir);
     SAFECOPY(MainForm->bbs_startup.temp_dir
-        ,MainForm->TempDirectory.c_str());
+        ,MainForm->global.temp_dir);
     SAFECOPY(MainForm->bbs_startup.host_name
-        ,MainForm->Hostname.c_str());
-    MainForm->bbs_startup.sem_chk_freq=MainForm->SemFileCheckFrequency;
+        ,MainForm->global.host_name);
+    MainForm->bbs_startup.sem_chk_freq=MainForm->global.sem_chk_freq;
 
     /* JavaScript operational parameters */
-    MainForm->bbs_startup.js_max_bytes=MainForm->js_max_bytes;
-    MainForm->bbs_startup.js_cx_stack=MainForm->js_cx_stack;
-    MainForm->bbs_startup.js_branch_limit=MainForm->js_branch_limit;
-    MainForm->bbs_startup.js_gc_interval=MainForm->js_gc_interval;
-    MainForm->bbs_startup.js_yield_interval=MainForm->js_yield_interval;
+    MainForm->bbs_startup.js_max_bytes=MainForm->global.js.max_bytes;
+    MainForm->bbs_startup.js_cx_stack=MainForm->global.js.cx_stack;
+    MainForm->bbs_startup.js_branch_limit=MainForm->global.js.branch_limit;
+    MainForm->bbs_startup.js_gc_interval=MainForm->global.js.gc_interval;
+    MainForm->bbs_startup.js_yield_interval=MainForm->global.js.yield_interval;
 
 	_beginthread((void(*)(void*))bbs_thread,0,&MainForm->bbs_startup);
     Application->ProcessMessages();
@@ -503,10 +503,10 @@ static void mail_start(void)
 	Screen->Cursor=crAppStart;
     mail_status(NULL, "Starting");
     SAFECOPY(MainForm->mail_startup.ctrl_dir
-        ,MainForm->CtrlDirectory.c_str());
+        ,MainForm->global.ctrl_dir);
     SAFECOPY(MainForm->mail_startup.host_name
-        ,MainForm->Hostname.c_str());
-    MainForm->mail_startup.sem_chk_freq=MainForm->SemFileCheckFrequency;
+        ,MainForm->global.host_name);
+    MainForm->mail_startup.sem_chk_freq=MainForm->global.sem_chk_freq;
 	_beginthread((void(*)(void*))mail_server,0,&MainForm->mail_startup);
     Application->ProcessMessages();
 }
@@ -627,16 +627,16 @@ static void ftp_start(void)
 	Screen->Cursor=crAppStart;
     ftp_status(NULL, "Starting");
     SAFECOPY(MainForm->ftp_startup.ctrl_dir
-        ,MainForm->CtrlDirectory.c_str());
+        ,MainForm->global.ctrl_dir);
     SAFECOPY(MainForm->ftp_startup.temp_dir
-        ,MainForm->TempDirectory.c_str());
+        ,MainForm->global.temp_dir);
     SAFECOPY(MainForm->ftp_startup.host_name
-        ,MainForm->Hostname.c_str());
-    MainForm->ftp_startup.sem_chk_freq=MainForm->SemFileCheckFrequency;
+        ,MainForm->global.host_name);
+    MainForm->ftp_startup.sem_chk_freq=MainForm->global.sem_chk_freq;
 
     /* JavaScript operational parameters */
-    MainForm->ftp_startup.js_max_bytes=MainForm->js_max_bytes;
-    MainForm->ftp_startup.js_cx_stack=MainForm->js_cx_stack;
+    MainForm->ftp_startup.js_max_bytes=MainForm->global.js.max_bytes;
+    MainForm->ftp_startup.js_cx_stack=MainForm->global.js.cx_stack;
 
 	_beginthread((void(*)(void*))ftp_server,0,&MainForm->ftp_startup);
     Application->ProcessMessages();
@@ -648,28 +648,30 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
         : TForm(Owner)
 {
     /* Defaults */
-    CtrlDirectory="c:\\sbbs\\ctrl\\";
+    SAFECOPY(global.ctrl_dir,"c:\\sbbs\\ctrl\\");
+    global.js.max_bytes=JAVASCRIPT_MAX_BYTES;
+    global.js.cx_stack=JAVASCRIPT_CONTEXT_STACK;
+    global.js.branch_limit=JAVASCRIPT_BRANCH_LIMIT;
+    global.js.gc_interval=JAVASCRIPT_GC_INTERVAL;
+    global.js.yield_interval=JAVASCRIPT_YIELD_INTERVAL;
+    global.sem_chk_freq=5;		/* seconds */
+
+    /* These are SBBSCTRL-specific */
     LoginCommand="telnet://localhost";
     ConfigCommand="%sscfg.exe %s -l25";
-    js_max_bytes=JAVASCRIPT_MAX_BYTES;
-    js_cx_stack=JAVASCRIPT_CONTEXT_STACK;
-    js_branch_limit=JAVASCRIPT_BRANCH_LIMIT;
-    js_gc_interval=JAVASCRIPT_GC_INTERVAL;
-    js_yield_interval=JAVASCRIPT_YIELD_INTERVAL;
-    MinimizeToSysTray=false;
-    UndockableForms=false;
     NodeDisplayInterval=1;  	/* seconds */
     ClientDisplayInterval=5;    /* seconds */
-    SemFileCheckFrequency=5;	/* seconds */
+    MinimizeToSysTray=false;
+    UndockableForms=false;
     Initialized=false;
 
     char* p;
     if((p=getenv("SBBSCTRL"))!=NULL)
-        CtrlDirectory=p;
-    char ch=*lastchar(CtrlDirectory.c_str());
-    if(ch!='\\' && ch!='/')
-        CtrlDirectory+="\\";
-
+        SAFECOPY(global.ctrl_dir,p);
+   	p=lastchar(global.ctrl_dir);
+	if(*p!='/' && *p!='\\')
+    	strcat(global.ctrl_dir,"\\");
+        
     memset(&bbs_startup,0,sizeof(bbs_startup));
     bbs_startup.size=sizeof(bbs_startup);
     bbs_startup.first_node=1;
@@ -954,17 +956,17 @@ void __fastcall TMainForm::ServicesStartExecute(TObject *Sender)
     services_status(NULL, "Starting");
 
     SAFECOPY(MainForm->services_startup.ctrl_dir
-        ,MainForm->CtrlDirectory.c_str());
+        ,MainForm->global.ctrl_dir);
     SAFECOPY(MainForm->services_startup.host_name
-        ,MainForm->Hostname.c_str());
-    MainForm->services_startup.sem_chk_freq=SemFileCheckFrequency;
+        ,MainForm->global.host_name);
+    MainForm->services_startup.sem_chk_freq=global.sem_chk_freq;
 
     /* JavaScript operational parameters */
-    MainForm->services_startup.js_max_bytes=MainForm->js_max_bytes;
-    MainForm->services_startup.js_cx_stack=MainForm->js_cx_stack;
-    MainForm->services_startup.js_branch_limit=MainForm->js_branch_limit;
-    MainForm->services_startup.js_gc_interval=MainForm->js_gc_interval;
-    MainForm->services_startup.js_yield_interval=MainForm->js_yield_interval;
+    MainForm->services_startup.js_max_bytes=MainForm->global.js.max_bytes;
+    MainForm->services_startup.js_cx_stack=MainForm->global.js.cx_stack;
+    MainForm->services_startup.js_branch_limit=MainForm->global.js.branch_limit;
+    MainForm->services_startup.js_gc_interval=MainForm->global.js.gc_interval;
+    MainForm->services_startup.js_yield_interval=MainForm->global.js.yield_interval;
 
 	_beginthread((void(*)(void*))services_thread,0,&MainForm->services_startup);
     Application->ProcessMessages();
@@ -1554,30 +1556,30 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     ViewStatusBarMenuItem->Checked=StatusBar->Visible;
 
     if(Registry->ValueExists("Hostname"))
-    	Hostname=Registry->ReadString("Hostname");
+    	SAFECOPY(global.host_name,Registry->ReadString("Hostname"));
     if(Registry->ValueExists("CtrlDirectory"))
-    	CtrlDirectory=Registry->ReadString("CtrlDirectory");
+    	SAFECOPY(global.ctrl_dir,Registry->ReadString("CtrlDirectory"));
     if(Registry->ValueExists("TempDirectory"))
-    	TempDirectory=Registry->ReadString("TempDirectory");
+    	SAFECOPY(global.temp_dir,Registry->ReadString("TempDirectory"));
 
     if(Registry->ValueExists("MaxLogLen"))
     	MaxLogLen=Registry->ReadInteger("MaxLogLen");
 
     /* JavaScript Operating Parameters */
     if(Registry->ValueExists("JS_MaxBytes"))
-    	js_max_bytes=Registry->ReadInteger("JS_MaxBytes");
-    if(js_max_bytes==0)
-        js_max_bytes=JAVASCRIPT_MAX_BYTES;
+    	global.js.max_bytes=Registry->ReadInteger("JS_MaxBytes");
+    if(global.js.max_bytes==0)
+        global.js.max_bytes=JAVASCRIPT_MAX_BYTES;
     if(Registry->ValueExists("JS_ContextStack"))
-    	js_cx_stack=Registry->ReadInteger("JS_ContextStack");
-    if(js_cx_stack==0)
-        js_cx_stack=JAVASCRIPT_CONTEXT_STACK;
+    	global.js.cx_stack=Registry->ReadInteger("JS_ContextStack");
+    if(global.js.cx_stack==0)
+        global.js.cx_stack=JAVASCRIPT_CONTEXT_STACK;
     if(Registry->ValueExists("JS_BranchLimit"))
-    	js_branch_limit=Registry->ReadInteger("JS_BranchLimit");
+    	global.js.branch_limit=Registry->ReadInteger("JS_BranchLimit");
     if(Registry->ValueExists("JS_GcInterval"))
-    	js_gc_interval=Registry->ReadInteger("JS_GcInterval");
+    	global.js.gc_interval=Registry->ReadInteger("JS_GcInterval");
     if(Registry->ValueExists("JS_YieldInterval"))
-    	js_yield_interval=Registry->ReadInteger("JS_YieldInterval");
+    	global.js.yield_interval=Registry->ReadInteger("JS_YieldInterval");
 
     if(Registry->ValueExists("LoginCommand"))
     	LoginCommand=Registry->ReadString("LoginCommand");
@@ -1592,7 +1594,7 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
 	if(Registry->ValueExists("ClientDisplayInterval"))
     	ClientDisplayInterval=Registry->ReadInteger("ClientDisplayInterval");
 	if(Registry->ValueExists("SemFileCheckFrequency"))
-    	SemFileCheckFrequency=Registry->ReadInteger("SemFileCheckFrequency");
+    	global.sem_chk_freq=Registry->ReadInteger("SemFileCheckFrequency");
 
     if(Registry->ValueExists("MailLogFile"))
     	MailLogFile=Registry->ReadInteger("MailLogFile");
@@ -1780,6 +1782,7 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     Registry->CloseKey();
     delete Registry;
 
+    AnsiString CtrlDirectory = AnsiString(global.ctrl_dir);
     if(!FileExists(CtrlDirectory+"MAIN.CNF")) {
 		Application->CreateForm(__classid(TCtrlPathDialog), &CtrlPathDialog);
     	if(CtrlPathDialog->ShowModal()!=mrOk) {
@@ -1791,8 +1794,9 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     }
     if(CtrlDirectory.UpperCase().AnsiPos("MAIN.CNF"))
 		CtrlDirectory.SetLength(CtrlDirectory.Length()-8);
+    SAFECOPY(global.ctrl_dir,CtrlDirectory.c_str());
     memset(&cfg,0,sizeof(cfg));
-    strcpy(cfg.ctrl_dir,CtrlDirectory.c_str());
+    SAFECOPY(cfg.ctrl_dir,global.ctrl_dir);
     cfg.size=sizeof(cfg);
     cfg.node_num=bbs_startup.first_node;
     char error[256];
@@ -2032,17 +2036,17 @@ void __fastcall TMainForm::SaveSettings(TObject* Sender)
     Registry->WriteBool("ToolBarVisible",Toolbar->Visible);
     Registry->WriteBool("StatusBarVisible",StatusBar->Visible);
 
-    Registry->WriteString("Hostname",Hostname);
-    Registry->WriteString("CtrlDirectory",CtrlDirectory);
-    Registry->WriteString("TempDirectory",TempDirectory);
+    Registry->WriteString("Hostname",global.host_name);
+    Registry->WriteString("CtrlDirectory",global.ctrl_dir);
+    Registry->WriteString("TempDirectory",global.temp_dir);
     Registry->WriteInteger("MaxLogLen",MaxLogLen);
 
     /* JavaScript Operating Parameters */
-    Registry->WriteInteger("JS_MaxBytes",js_max_bytes);
-    Registry->WriteInteger("JS_ContextStack",js_cx_stack);
-    Registry->WriteInteger("JS_BranchLimit",js_branch_limit);
-    Registry->WriteInteger("JS_GcInterval",js_gc_interval);
-    Registry->WriteInteger("JS_YieldInterval",js_yield_interval);
+    Registry->WriteInteger("JS_MaxBytes",global.js.max_bytes);
+    Registry->WriteInteger("JS_ContextStack",global.js.cx_stack);
+    Registry->WriteInteger("JS_BranchLimit",global.js.branch_limit);
+    Registry->WriteInteger("JS_GcInterval",global.js.gc_interval);
+    Registry->WriteInteger("JS_YieldInterval",global.js.yield_interval);
 
     Registry->WriteString("LoginCommand",LoginCommand);
     Registry->WriteString("ConfigCommand",ConfigCommand);
@@ -2050,7 +2054,7 @@ void __fastcall TMainForm::SaveSettings(TObject* Sender)
     Registry->WriteBool("MinimizeToSysTray",MinimizeToSysTray);
     Registry->WriteInteger("NodeDisplayInterval",NodeDisplayInterval);
     Registry->WriteInteger("ClientDisplayInterval",ClientDisplayInterval);
-    Registry->WriteInteger("SemFileCheckFrequency",SemFileCheckFrequency);
+    Registry->WriteInteger("SemFileCheckFrequency",global.sem_chk_freq);
 
     Registry->WriteInteger("SysAutoStart",SysAutoStart);
     Registry->WriteInteger("MailAutoStart",MailAutoStart);
@@ -2145,13 +2149,24 @@ void __fastcall TMainForm::SaveSettings(TObject* Sender)
     Registry->CloseKey();
     delete Registry;
 
+    FILE* fp=NULL;
+   	if(ini_file[0] && (fp=fopen(ini_file,"r+"))!=NULL) {
+        sbbs_write_ini(fp    	,&global
+            ,SysAutoStart		,&bbs_startup
+            ,FtpAutoStart		,&ftp_startup
+            ,WebAutoStart		,&web_startup
+            ,MailAutoStart		,&mail_startup
+            ,ServicesAutoStart	,&services_startup
+            );
+    	fclose(fp);
+    }
 }
 
 //---------------------------------------------------------------------------
 void __fastcall TMainForm::ImportSettings(TObject* Sender)
 {
     OpenDialog->Filter="Settings files (*.ini)|*.ini|All files|*.*";
-    OpenDialog->FileName=CtrlDirectory+"sbbs.ini";
+    OpenDialog->FileName=AnsiString(global.ctrl_dir)+"sbbs.ini";
     if(!OpenDialog->Execute())
     	return;
 
@@ -2171,6 +2186,7 @@ void __fastcall TMainForm::ImportSettings(TObject* Sender)
 	StatusBar->Panels->Items[4]->Text="Importing Settings...";
 
     sbbs_read_ini(fp
+		,NULL	/* global_startup */
     	,(BOOL*)&SysAutoStart   		,&bbs_startup
     	,(BOOL*)&FtpAutoStart 			,&ftp_startup
     	,(BOOL*)&WebAutoStart 			,&web_startup
@@ -2333,8 +2349,8 @@ void __fastcall TMainForm::ImportSettings(TObject* Sender)
     	,NodeDisplayInterval);
    	ClientDisplayInterval=IniFile->ReadInteger(section,"ClientDisplayInterval"
     	,ClientDisplayInterval);
-    SemFileCheckFrequency=IniFile->ReadInteger(section,"SemFileCheckFrequency"
-    	,SemFileCheckFrequency);
+    global.sem_chk_freq=IniFile->ReadInteger(section,"SemFileCheckFrequency"
+    	,global.sem_chk_freq);
 
    	MailLogFile=IniFile->ReadInteger(section,"MailLogFile",true);
    	FtpLogFile=IniFile->ReadInteger(section,"FtpLogFile",true);
@@ -2350,7 +2366,7 @@ void __fastcall TMainForm::ExportSettings(TObject* Sender)
 	char str[128];
 
     SaveDialog->Filter="Settings files (*.ini)|*.ini|All files|*.*";
-    SaveDialog->FileName=CtrlDirectory+"sbbs.ini";
+    SaveDialog->FileName=AnsiString(global.ctrl_dir)+"sbbs.ini";
     if(!SaveDialog->Execute())
     	return;
 
@@ -2495,14 +2511,14 @@ void __fastcall TMainForm::ExportSettings(TObject* Sender)
 
 	/***********************************************************************/
     section = "Global";
-    IniFile->WriteString(section,"Hostname",Hostname);
-    IniFile->WriteString(section,"CtrlDirectory",CtrlDirectory);
-    IniFile->WriteString(section,"TempDirectory",TempDirectory);
-    IniFile->WriteInteger(section,strJavaScriptMaxBytes,js_max_bytes);
-    IniFile->WriteInteger(section,strJavaScriptContextStack,js_cx_stack);
-    IniFile->WriteInteger(section,strJavaScriptBranchLimit,js_branch_limit);
-    IniFile->WriteInteger(section,strJavaScriptGcInterval,js_gc_interval);
-    IniFile->WriteInteger(section,strJavaScriptYieldInterval,js_yield_interval);
+    IniFile->WriteString(section,"Hostname",global.host_name);
+    IniFile->WriteString(section,"CtrlDirectory",global.ctrl_dir);
+    IniFile->WriteString(section,"TempDirectory",global.temp_dir);
+    IniFile->WriteInteger(section,strJavaScriptMaxBytes,global.js.max_bytes);
+    IniFile->WriteInteger(section,strJavaScriptContextStack,global.js.cx_stack);
+    IniFile->WriteInteger(section,strJavaScriptBranchLimit,global.js.branch_limit);
+    IniFile->WriteInteger(section,strJavaScriptGcInterval,global.js.gc_interval);
+    IniFile->WriteInteger(section,strJavaScriptYieldInterval,global.js.yield_interval);
 
     /***********************************************************************/
 	section = "BBS";
@@ -2969,20 +2985,20 @@ void __fastcall TMainForm::PropertiesExecute(TObject *Sender)
     Application->CreateForm(__classid(TPropertiesDlg), &PropertiesDlg);
     PropertiesDlg->LoginCmdEdit->Text=LoginCommand;
     PropertiesDlg->ConfigCmdEdit->Text=ConfigCommand;
-    PropertiesDlg->HostnameEdit->Text=Hostname;
-    PropertiesDlg->CtrlDirEdit->Text=CtrlDirectory;
-    PropertiesDlg->TempDirEdit->Text=TempDirectory;    
+    PropertiesDlg->HostnameEdit->Text=global.host_name;
+    PropertiesDlg->CtrlDirEdit->Text=global.ctrl_dir;
+    PropertiesDlg->TempDirEdit->Text=global.temp_dir;
     PropertiesDlg->NodeIntUpDown->Position=NodeDisplayInterval;
     PropertiesDlg->ClientIntUpDown->Position=ClientDisplayInterval;
-    PropertiesDlg->SemFreqUpDown->Position=SemFileCheckFrequency;
+    PropertiesDlg->SemFreqUpDown->Position=global.sem_chk_freq;
     PropertiesDlg->TrayIconCheckBox->Checked=MinimizeToSysTray;
     PropertiesDlg->UndockableCheckBox->Checked=UndockableForms;
     PropertiesDlg->PasswordEdit->Text=Password;
-    PropertiesDlg->JS_MaxBytesEdit->Text=IntToStr(js_max_bytes);
-    PropertiesDlg->JS_ContextStackEdit->Text=IntToStr(js_cx_stack);
-    PropertiesDlg->JS_BranchLimitEdit->Text=IntToStr(js_branch_limit);
-    PropertiesDlg->JS_GcIntervalEdit->Text=IntToStr(js_gc_interval);
-    PropertiesDlg->JS_YieldIntervalEdit->Text=IntToStr(js_yield_interval);
+    PropertiesDlg->JS_MaxBytesEdit->Text=IntToStr(global.js.max_bytes);
+    PropertiesDlg->JS_ContextStackEdit->Text=IntToStr(global.js.cx_stack);
+    PropertiesDlg->JS_BranchLimitEdit->Text=IntToStr(global.js.branch_limit);
+    PropertiesDlg->JS_GcIntervalEdit->Text=IntToStr(global.js.gc_interval);
+    PropertiesDlg->JS_YieldIntervalEdit->Text=IntToStr(global.js.yield_interval);
 
     if(MaxLogLen==0)
 		PropertiesDlg->MaxLogLenEdit->Text="<unlimited>";
@@ -2991,24 +3007,24 @@ void __fastcall TMainForm::PropertiesExecute(TObject *Sender)
 	if(PropertiesDlg->ShowModal()==mrOk) {
         LoginCommand=PropertiesDlg->LoginCmdEdit->Text;
         ConfigCommand=PropertiesDlg->ConfigCmdEdit->Text;
-        Hostname=PropertiesDlg->HostnameEdit->Text;
-        CtrlDirectory=PropertiesDlg->CtrlDirEdit->Text;
-        TempDirectory=PropertiesDlg->TempDirEdit->Text;
+        SAFECOPY(global.host_name,PropertiesDlg->HostnameEdit->Text.c_str());
+        SAFECOPY(global.ctrl_dir,PropertiesDlg->CtrlDirEdit->Text.c_str());
+        SAFECOPY(global.temp_dir,PropertiesDlg->TempDirEdit->Text.c_str());
         Password=PropertiesDlg->PasswordEdit->Text;
         NodeDisplayInterval=PropertiesDlg->NodeIntUpDown->Position;
         ClientDisplayInterval=PropertiesDlg->ClientIntUpDown->Position;
-        SemFileCheckFrequency=PropertiesDlg->SemFreqUpDown->Position;
+        global.sem_chk_freq=PropertiesDlg->SemFreqUpDown->Position;
         MinimizeToSysTray=PropertiesDlg->TrayIconCheckBox->Checked;
         UndockableForms=PropertiesDlg->UndockableCheckBox->Checked;
-        js_max_bytes
+        global.js.max_bytes
         	=PropertiesDlg->JS_MaxBytesEdit->Text.ToIntDef(JAVASCRIPT_MAX_BYTES);
-        js_cx_stack
+        global.js.cx_stack
         	=PropertiesDlg->JS_ContextStackEdit->Text.ToIntDef(JAVASCRIPT_CONTEXT_STACK);
-        js_branch_limit
+        global.js.branch_limit
         	=PropertiesDlg->JS_BranchLimitEdit->Text.ToIntDef(JAVASCRIPT_BRANCH_LIMIT);
-        js_gc_interval
+        global.js.gc_interval
         	=PropertiesDlg->JS_GcIntervalEdit->Text.ToIntDef(JAVASCRIPT_GC_INTERVAL);
-        js_yield_interval
+        global.js.yield_interval
         	=PropertiesDlg->JS_YieldIntervalEdit->Text.ToIntDef(JAVASCRIPT_YIELD_INTERVAL);
 
         MaxLogLen

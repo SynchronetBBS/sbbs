@@ -6,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -140,7 +140,7 @@ void __fastcall TConfigWizard::FormShow(TObject *Sender)
    	Application->BringToFront();
 
     memset(&scfg,0,sizeof(scfg));
-    SAFECOPY(scfg.ctrl_dir,MainForm->CtrlDirectory.c_str());
+    SAFECOPY(scfg.ctrl_dir,MainForm->global.ctrl_dir);
     scfg.size=sizeof(scfg);
     char error[256];
 	SAFECOPY(error,UNKNOWN_LOAD_ERROR);

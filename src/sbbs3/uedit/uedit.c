@@ -1760,7 +1760,13 @@ int main(int argc, char** argv)  {
 	}
 	/* We call this function to set defaults, even if there's no .ini file */
 	sbbs_read_ini(fp, 
-		NULL, &bbs_startup, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+		NULL,		/* global_startup */
+		NULL, &bbs_startup, 
+		NULL, NULL, /* ftp_startup */
+		NULL, NULL, /* web_startup */ 
+		NULL, NULL, /* mail_startup */
+		NULL, NULL  /* services_startup */
+		);
 
 	/* close .ini file here */
 	if(fp!=NULL)

@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -45,6 +45,27 @@
 #include "client.h"
 #include "ringbuf.h"
 #include "threadwrap.h"	/* sem_t */
+#include "ini_file.h"	/* INI_MAX_VALUE_LEN */
+
+typedef struct {
+	ulong	max_bytes;
+	ulong	cx_stack;
+	ulong	branch_limit;
+	ulong	gc_interval;
+	ulong	yield_interval;
+} js_startup_t;
+
+typedef struct {
+
+	char	ctrl_dir[INI_MAX_VALUE_LEN];
+	char	temp_dir[INI_MAX_VALUE_LEN];
+	char	host_name[INI_MAX_VALUE_LEN];
+	ushort	sem_chk_freq;
+	ulong	interface_addr;
+	ulong	log_mask;
+	js_startup_t js;
+
+} global_startup_t;
 
 typedef struct {
 

@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -871,6 +871,7 @@ int main(int argc, char** argv)
 
 	/* We call this function to set defaults, even if there's no .ini file */
 	sbbs_read_ini(fp 
+		,NULL	/* global_startup */
 		,&bbs.autostart			,&bbs_startup
 		,&ftp.autostart			,&ftp_startup 
 #if defined(NO_WEB_SERVER
