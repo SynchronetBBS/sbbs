@@ -60,6 +60,7 @@ __published:	// IDE-managed Components
 	TToolButton *ToolButton3;
 	TProgressBar *ProgressBar;
 	TMemo *Log;
+	TToolButton *RecycleButton;
 	void __fastcall FormShow(TObject *Sender);
 	void __fastcall FormHide(TObject *Sender);
 private:	// User declarations

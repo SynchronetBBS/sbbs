@@ -63,7 +63,7 @@ object MainForm: TMainForm
     Left = 0
     Top = 196
     Width = 632
-    Height = 123
+    Height = 121
     Align = alClient
     Center = True
     IncrementalDisplay = True
@@ -1950,6 +1950,7 @@ object MainForm: TMainForm
     object ReloadConfigButton: TToolButton
       Left = 256
       Top = 0
+      Hint = 'Reload Configuration Files and Recycle All Servers and Services'
       Action = ReloadConfig
     end
   end
@@ -1999,7 +2000,7 @@ object MainForm: TMainForm
     Left = 0
     Top = 196
     Width = 632
-    Height = 123
+    Height = 121
     Align = alClient
     BevelOuter = bvNone
     TabOrder = 2
@@ -2008,7 +2009,7 @@ object MainForm: TMainForm
       Left = 289
       Top = 0
       Width = 3
-      Height = 123
+      Height = 121
       Cursor = crHSplit
       MinSize = 1
     end
@@ -2016,7 +2017,7 @@ object MainForm: TMainForm
       Left = 0
       Top = 0
       Width = 289
-      Height = 123
+      Height = 121
       Align = alLeft
       DockSite = True
       TabOrder = 0
@@ -2027,7 +2028,7 @@ object MainForm: TMainForm
       Left = 292
       Top = 0
       Width = 340
-      Height = 123
+      Height = 121
       Align = alClient
       DockSite = True
       TabOrder = 1
@@ -2037,7 +2038,7 @@ object MainForm: TMainForm
   end
   object StatusBar: TStatusBar
     Left = 0
-    Top = 319
+    Top = 317
     Width = 632
     Height = 25
     Panels = <
@@ -2361,6 +2362,9 @@ object MainForm: TMainForm
         Action = MailStop
         Caption = 'S&top'
       end
+      object Recycle1: TMenuItem
+        Action = MailRecycle
+      end
       object N2: TMenuItem
         Caption = '-'
       end
@@ -2429,6 +2433,9 @@ object MainForm: TMainForm
         Action = FtpStop
         Caption = 'S&top'
       end
+      object Recycle2: TMenuItem
+        Action = FtpRecycle
+      end
       object N3: TMenuItem
         Caption = '-'
       end
@@ -2493,6 +2500,9 @@ object MainForm: TMainForm
       end
       object ServicesStopMenuItem: TMenuItem
         Action = ServicesStop
+      end
+      object Recycle3: TMenuItem
+        Action = ServicesRecycle
       end
     end
     object ViewMenuItem: TMenuItem
@@ -2602,6 +2612,13 @@ object MainForm: TMainForm
       ImageIndex = 2
       OnExecute = MailStopExecute
     end
+    object MailRecycle: TAction
+      Caption = 'Recycle'
+      Enabled = False
+      Hint = 'Recycle Mail Server'
+      ImageIndex = 55
+      OnExecute = MailRecycleExecute
+    end
     object MailConfigure: TAction
       Hint = 'Configure Mail Server'
       ImageIndex = 4
@@ -2646,6 +2663,13 @@ object MainForm: TMainForm
       Hint = 'Stop FTP Server'
       ImageIndex = 2
       OnExecute = FtpStopExecute
+    end
+    object FtpRecycle: TAction
+      Caption = 'Recycle'
+      Enabled = False
+      Hint = 'Recycle FTP Sever'
+      ImageIndex = 55
+      OnExecute = FtpRecycleExecute
     end
     object FtpConfigure: TAction
       Hint = 'Configure FTP Server'
@@ -2711,6 +2735,13 @@ object MainForm: TMainForm
       Hint = 'Stop Services'
       ImageIndex = 2
       OnExecute = ServicesStopExecute
+    end
+    object ServicesRecycle: TAction
+      Caption = 'Recycle'
+      Enabled = False
+      Hint = 'Recycle Services'
+      ImageIndex = 55
+      OnExecute = ServicesRecycleExecute
     end
     object ServicesConfigure: TAction
       Caption = 'Configure'

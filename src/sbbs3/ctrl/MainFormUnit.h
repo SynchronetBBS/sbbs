@@ -246,6 +246,12 @@ __published:	// IDE-managed Components
     TAction *ServicesConfigure;
     TMenuItem *UserTruncateMenuItem;
 	TMenuItem *HelpFAQMenuItem;
+	TAction *MailRecycle;
+	TAction *FtpRecycle;
+	TAction *ServicesRecycle;
+	TMenuItem *Recycle1;
+	TMenuItem *Recycle2;
+	TMenuItem *Recycle3;
     void __fastcall FileExitMenuItemClick(TObject *Sender);
 	void __fastcall ViewToolbarMenuItemClick(TObject *Sender);
 	void __fastcall FormClose(TObject *Sender, TCloseAction &Action);
@@ -310,6 +316,9 @@ __published:	// IDE-managed Components
     void __fastcall ServicesStopExecute(TObject *Sender);
     void __fastcall ServicesConfigureExecute(TObject *Sender);
     void __fastcall UserTruncateMenuItemClick(TObject *Sender);
+	void __fastcall MailRecycleExecute(TObject *Sender);
+	void __fastcall FtpRecycleExecute(TObject *Sender);
+	void __fastcall ServicesRecycleExecute(TObject *Sender);
 private:	// User declarations
 public:		// User declarations
     __fastcall TMainForm(TComponent* Owner);

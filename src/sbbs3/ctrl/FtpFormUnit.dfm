@@ -1,6 +1,6 @@
 object FtpForm: TFtpForm
-  Left = 322
-  Top = 143
+  Left = 475
+  Top = 427
   Width = 350
   Height = 150
   Caption = 'FTP Server'
@@ -9,14 +9,14 @@ object FtpForm: TFtpForm
   DragMode = dmAutomatic
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
-  Font.Height = -10
+  Font.Height = -13
   Font.Name = 'MS Sans Serif'
   Font.Style = []
   OldCreateOrder = False
   OnHide = FormHide
   OnShow = FormShow
-  PixelsPerInch = 96
-  TextHeight = 13
+  PixelsPerInch = 120
+  TextHeight = 16
   object ToolBar: TToolBar
     Left = 0
     Top = 0
@@ -40,8 +40,13 @@ object FtpForm: TFtpForm
       Top = 0
       Action = MainForm.FtpStop
     end
-    object ToolButton1: TToolButton
+    object RecycleButton: TToolButton
       Left = 46
+      Top = 0
+      Action = MainForm.FtpRecycle
+    end
+    object ToolButton1: TToolButton
+      Left = 69
       Top = 0
       Width = 8
       Caption = 'ToolButton1'
@@ -49,12 +54,12 @@ object FtpForm: TFtpForm
       Style = tbsSeparator
     end
     object ConfigureButton: TToolButton
-      Left = 54
+      Left = 77
       Top = 0
       Action = MainForm.FtpConfigure
     end
     object ToolButton2: TToolButton
-      Left = 77
+      Left = 100
       Top = 0
       Width = 8
       Caption = 'ToolButton2'
@@ -62,7 +67,7 @@ object FtpForm: TFtpForm
       Style = tbsSeparator
     end
     object Status: TStaticText
-      Left = 85
+      Left = 108
       Top = 0
       Width = 150
       Height = 22
@@ -75,7 +80,7 @@ object FtpForm: TFtpForm
       TabOrder = 0
     end
     object ToolButton3: TToolButton
-      Left = 235
+      Left = 258
       Top = 0
       Width = 8
       Caption = 'ToolButton3'
@@ -83,7 +88,7 @@ object FtpForm: TFtpForm
       Style = tbsSeparator
     end
     object ProgressBar: TProgressBar
-      Left = 243
+      Left = 266
       Top = 0
       Width = 75
       Height = 22
@@ -99,7 +104,7 @@ object FtpForm: TFtpForm
     Left = 0
     Top = 25
     Width = 342
-    Height = 98
+    Height = 92
     Align = alClient
     ReadOnly = True
     ScrollBars = ssBoth

@@ -329,6 +329,7 @@ static void services_terminated(int code)
 	Screen->Cursor=crDefault;
 	MainForm->ServicesStart->Enabled=true;
 	MainForm->ServicesStop->Enabled=false;
+    MainForm->ServicesRecycle->Enabled=false;
     Application->ProcessMessages();
 }
 static void services_started(void)
@@ -336,6 +337,7 @@ static void services_started(void)
 	Screen->Cursor=crDefault;
 	MainForm->ServicesStart->Enabled=false;
     MainForm->ServicesStop->Enabled=true;
+    MainForm->ServicesRecycle->Enabled=true;
     Application->ProcessMessages();
 }
 
@@ -427,6 +429,7 @@ static void mail_terminated(int code)
 	Screen->Cursor=crDefault;
 	MainForm->MailStart->Enabled=true;
 	MainForm->MailStop->Enabled=false;
+    MainForm->MailRecycle->Enabled=false;
     Application->ProcessMessages();
 }
 static void mail_started(void)
@@ -434,6 +437,7 @@ static void mail_started(void)
 	Screen->Cursor=crDefault;
 	MainForm->MailStart->Enabled=false;
     MainForm->MailStop->Enabled=true;
+    MainForm->MailRecycle->Enabled=true;
     Application->ProcessMessages();
 }
 static void mail_start(void)
@@ -545,6 +549,7 @@ static void ftp_terminated(int code)
 	Screen->Cursor=crDefault;
 	MainForm->FtpStart->Enabled=true;
 	MainForm->FtpStop->Enabled=false;
+    MainForm->FtpRecycle->Enabled=false;
     Application->ProcessMessages();
 }
 static void ftp_started(void)
@@ -552,6 +557,7 @@ static void ftp_started(void)
 	Screen->Cursor=crDefault;
 	MainForm->FtpStart->Enabled=false;
     MainForm->FtpStop->Enabled=true;
+    MainForm->FtpRecycle->Enabled=true;
     Application->ProcessMessages();
 }
 static void ftp_start(void)
@@ -2322,6 +2328,10 @@ void __fastcall TMainForm::PageControlUnDock(TObject *Sender,
 
 void __fastcall TMainForm::ReloadConfigExecute(TObject *Sender)
 {
+	FtpRecycleExecute(Sender);
+	MailRecycleExecute(Sender);
+	ServicesRecycleExecute(Sender);
+
 	char error[256];
 	if(!load_cfg(&cfg, NULL, TRUE, error)) {
     	Application->MessageBox(error,"ERROR Re-loading Configuration"
@@ -2380,4 +2390,25 @@ void __fastcall TMainForm::UserTruncateMenuItemClick(TObject *Sender)
 }
 //---------------------------------------------------------------------------
 
+
+void __fastcall TMainForm::MailRecycleExecute(TObject *Sender)
+{
+	mail_startup.recycle_now=true;
+    MailRecycle->Enabled=false;
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TMainForm::FtpRecycleExecute(TObject *Sender)
+{
+	ftp_startup.recycle_now=true;
+    FtpRecycle->Enabled=false;
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TMainForm::ServicesRecycleExecute(TObject *Sender)
+{
+	services_startup.recycle_now=true;
+    ServicesRecycle->Enabled=false;
+}
+//---------------------------------------------------------------------------
 
