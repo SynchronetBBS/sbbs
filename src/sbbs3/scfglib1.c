@@ -775,6 +775,7 @@ void make_data_dirs(scfg_t* cfg)
 	sprintf(str,"%sfile",cfg->data_dir);
 	md(str);
 
+#if 0
 	for(i=0;i<cfg->total_subs;i++) {
 		if(cfg->sub[i]->data_dir[0]) {
 			backslash(cfg->sub[i]->data_dir);
@@ -795,4 +796,5 @@ void make_data_dirs(scfg_t* cfg)
 		sprintf(str,"%stext/%s",cfg->data_dir,cfg->txtsec[i]->code);
 		md(str);
 	}
+#endif
 }
