@@ -433,6 +433,7 @@ video_update_text()
     static char buf[256];
     int r, c;
     int attr = vmem[0] & 0xff00;
+	int flush=0;
     XGCValues v;
 
 	wakeup_poll();	/* Wake up anyone waiting on kbd poll */
@@ -449,6 +450,7 @@ video_update_text()
 					setgc(vmem[r * DpyCols + c]  & 0xff00);
 					x11.XCopyPlane(dpy,pfnt,win,gc,0,FH*(vmem[r * DpyCols + c]&0xff),FW,FH,c*FW+2,r*FH+2,1);
 					lines[r].changed = 2;
+					flush=1;
 				}
 			}
 	    }
@@ -465,6 +467,7 @@ video_update_text()
 				setgc(vmem[r * DpyCols + c]  & 0xff00);
 				x11.XCopyPlane(dpy,pfnt,win,gc,0,FH*(vmem[r * DpyCols + c]&0xff),FW,FH,c*FW+2,r*FH+2,1);
 			}
+			flush=1;
 		}
 		lines[r].changed = 0;
 		memset(lines[r].exposed,0,CONSOLE_MAX_COLS * sizeof(u_char));
@@ -487,13 +490,15 @@ video_update_text()
 			   2 +CursCol * FW,
 			   2 + CursRow * FH + CursStart * FS,
 			   FW, (CursEnd + 1)*FS - (CursStart*FS));
+		flush=1;
 	}
 
 	or =CursRow;
 	oc =CursCol;
 	os =show;
 
-	x11.XFlush(dpy);
+	if(flush)
+		x11.XFlush(dpy);
 }
 
 void
@@ -692,7 +697,6 @@ video_event(XEvent *ev)
 				respond.xselection.target=req->target;
 				respond.xselection.time=req->time;
 				x11.XSendEvent(dpy,req->requestor,0,0,&respond);
-				x11.XFlush(dpy);
 				pthread_mutex_unlock(&copybuf_mutex);
 				break;
 		}
@@ -1132,7 +1136,6 @@ video_async_event(void *crap)
 					}
 					else if(sowner!=None) {
 						x11.XConvertSelection(dpy, CONSOLE_CLIPBOARD, XA_STRING, None, win, CurrentTime);
-						x11.XFlush(dpy);
 					}
 					else {
 						/* Set paste buffer */
@@ -1179,7 +1182,6 @@ resize_window()
     x11.XSetWMNormalHints(dpy, win, sh);
     x11.XResizeWindow(dpy, win, sh->base_width, sh->base_height);
     x11.XMapWindow(dpy, win);
-    x11.XFlush(dpy);
 
     x11.XFree(sh);
 
