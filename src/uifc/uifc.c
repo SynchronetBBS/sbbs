@@ -1,5 +1,7 @@
 /* uifc.c */
 
+/* Original implementation of UIFC (user interface) library based on conio */
+
 /* $Id$ */
 
 /****************************************************************************
@@ -59,8 +61,6 @@ DosSleep(msec ? msec : 1);
 #define BL_GET      (1<<2)  /* Get key */
 #define BL_PUT      (1<<3)  /* Put key */
 
-#define HELP 1
-
 static char hclr,lclr,bclr,cclr,show_free_mem=0;
 static int cursor;
 static char* helpfile=0;
@@ -111,7 +111,10 @@ return(bioskey(0));
 
 static uint mousecursor=0x28;
 
-/* Returns 0 on success */
+/****************************************************************************/
+/* Initialization function, see uifc.h for details.							*/
+/* Returns 0 on success.													*/
+/****************************************************************************/
 int uifcini(uifcapi_t* uifcapi)
 {
 	int 	i;
@@ -271,6 +274,10 @@ textattr(LIGHTGRAY);
 clrscr();
 }
 
+/****************************************************************************/
+/* Clear screen, fill with background attribute, display application title.	*/
+/* Returns 0 on success.													*/
+/****************************************************************************/
 int uscrn(char *str)
 {
     textattr(bclr|(cclr<<4));
@@ -285,6 +292,8 @@ int uscrn(char *str)
     return(0);
 }
 
+/****************************************************************************/
+/****************************************************************************/
 static void scroll_text(int x1, int y1, int x2, int y2, int down)
 {
 	uchar buf[MAX_BFLN];
@@ -311,15 +320,9 @@ if(difftime(now,savetime)>=60) {
 	savetime=now; }
 }
 
-/**************************************************************************/
-/* General menu display function. SCRN_* macros define virtual screen     */
-/* limits. *cur is a pointer to the current option. Returns option number */
-/* positive value for selected option or -1 for ESC, -2 for INS or -3 for */
-/* DEL. Menus can centered left to right and top to bottom automatically. */
-/* mode bits are set with macros WIN_*									  */
-/* option is an array of char arrays, first element of last char array    */
-/* must be NULL.                                                          */
-/**************************************************************************/
+/****************************************************************************/
+/* General menu function, see uifc.h for details.							*/
+/****************************************************************************/
 int ulist(int mode, char left, int top, char width, int *cur, int *bar
 	, char *title, char **option)
 {
@@ -955,12 +958,7 @@ hitesc:
 						showmouse(); }
 					break;
 				case 0x3b:	/* F1 */
-#if !HELP
-					umsg("Help Not Yet Implemented");
-					bottomline(bline);
-#else
 					help();
-#endif
 					break;
 				case 0x3f:	/* F5 */
 					if(mode&WIN_GET && !(mode&WIN_XTR && (*cur)==opts-1))
@@ -1339,9 +1337,7 @@ while(1) {
 		if(!ch) {
 			switch(k>>8) {
 				case 0x3b:	/* F1 Help */
-					#if HELP
 					help();
-					#endif
 					continue;
 				case 0x4b:	/* left arrow */
 					if(i) {
@@ -1470,7 +1466,7 @@ static int uprintf(char x, char y, char attr, char *fmat, ...)
 
 
 /****************************************************************************/
-/* display bottom line of screen in inverse                                 */
+/* Display bottom line of screen in inverse                                 */
 /****************************************************************************/
 void bottomline(int line)
 {
@@ -1592,6 +1588,7 @@ sprintf(str,"%s %s %02d %4d %02d:%02d %s",wday,mon,gm->tm_mday,1900+gm->tm_year
 	,hour,gm->tm_min,mer);
 return(str);
 }
+
 #if 0
 /****************************************************************************/
 /* Truncates white-space chars off end of 'str' and terminates at first tab */
@@ -1600,53 +1597,58 @@ void truncsp(char *str)
 {
 	char c,tmp[256];
 
-tmp[0]=TAB;
-tmp[1]=0;
-str[strcspn(str,tmp)]=0;
-c=strlen(str);
-while(c && (uchar)str[c-1]<=SP) c--;
-str[c]=0;
+	tmp[0]=TAB;
+	tmp[1]=0;
+	str[strcspn(str,tmp)]=0;
+	c=strlen(str);
+	while(c && (uchar)str[c-1]<=SP) c--;
+	str[c]=0;
 }
 #endif
+
+/****************************************************************************/
+/* Status popup/down function, see uifc.h for details.						*/
+/****************************************************************************/
 void upop(char *str)
 {
 	static char sav[26*3*2];
 	char buf[26*3*2];
 	int i,j,k;
 
-hidemouse();
-if(!str) {
-	puttext(28,12,53,14,sav);
-	showmouse();
-	return; }
-gettext(28,12,53,14,sav);
-memset(buf,SP,25*3*2);
-for(i=1;i<26*3*2;i+=2)
-	buf[i]=(hclr|(bclr<<4));
-buf[0]='Ú';
-for(i=2;i<25*2;i+=2)
-    buf[i]='Ä';
-buf[i]='¿'; i+=2;
-buf[i]='³'; i+=2;
-i+=2;
-k=strlen(str);
-i+=(((23-k)/2)*2);
-for(j=0;j<k;j++,i+=2) {
-	buf[i]=str[j];
-	buf[i+1]|=BLINK; }
-i=((25*2)+1)*2;
-buf[i]='³'; i+=2;
-buf[i]='À'; i+=2;
-for(;i<((26*3)-1)*2;i+=2)
-	buf[i]='Ä';
-buf[i]='Ù';
+	hidemouse();
+	if(!str) {
+		puttext(28,12,53,14,sav);
+		showmouse();
+		return; }
+	gettext(28,12,53,14,sav);
+	memset(buf,SP,25*3*2);
+	for(i=1;i<26*3*2;i+=2)
+		buf[i]=(hclr|(bclr<<4));
+	buf[0]='Ú';
+	for(i=2;i<25*2;i+=2)
+		buf[i]='Ä';
+	buf[i]='¿'; i+=2;
+	buf[i]='³'; i+=2;
+	i+=2;
+	k=strlen(str);
+	i+=(((23-k)/2)*2);
+	for(j=0;j<k;j++,i+=2) {
+		buf[i]=str[j];
+		buf[i+1]|=BLINK; }
+	i=((25*2)+1)*2;
+	buf[i]='³'; i+=2;
+	buf[i]='À'; i+=2;
+	for(;i<((26*3)-1)*2;i+=2)
+		buf[i]='Ä';
+	buf[i]='Ù';
 
-puttext(28,12,53,14,buf);
-showmouse();
+	puttext(28,12,53,14,buf);
+	showmouse();
 }
 
-#if HELP
-
+/****************************************************************************/
+/* Sets the current help index by source code file and line number.			*/
+/****************************************************************************/
 void sethelp(int line, char* file)
 {
     helpline=line;
@@ -1668,159 +1670,158 @@ void help()
 	union  REGS r;
 #endif
 
-_setcursortype(_NOCURSOR);
+	_setcursortype(_NOCURSOR);
 
-if((savscrn=(char *)MALLOC(80*25*2))==NULL) {
-	cprintf("UIFC line %d: error allocating %u bytes\r\n"
-        ,__LINE__,80*25*2);
-	_setcursortype(cursor);
-	return; }
-if((buf=(char *)MALLOC(76*21*2))==NULL) {
-	cprintf("UIFC line %d: error allocating %u bytes\r\n"
-        ,__LINE__,76*21*2);
-	FREE(savscrn);
-	_setcursortype(cursor);
-	return; }
-hidemouse();
-gettext(1,1,80,25,savscrn);
-memset(buf,SP,76*21*2);
-for(i=1;i<76*21*2;i+=2)
-	buf[i]=(hclr|(bclr<<4));
-buf[0]='Ú';
-for(i=2;i<30*2;i+=2)
-	buf[i]='Ä';
-buf[i]='´'; i+=4;
-buf[i]='O'; i+=2;
-buf[i]='n'; i+=2;
-buf[i]='l'; i+=2;
-buf[i]='i'; i+=2;
-buf[i]='n'; i+=2;
-buf[i]='e'; i+=4;
-buf[i]='H'; i+=2;
-buf[i]='e'; i+=2;
-buf[i]='l'; i+=2;
-buf[i]='p'; i+=4;
-buf[i]='Ã'; i+=2;
-for(j=i;j<i+(30*2);j+=2)
-    buf[j]='Ä';
-i=j;
-buf[i]='¿'; i+=2;
-j=i;	/* leave i alone */
-for(k=0;k<19;k++) { 		/* the sides of the box */
-	buf[j]='³'; j+=2;
-	j+=(74*2);
-	buf[j]='³'; j+=2; }
-buf[j]='À'; j+=2;
-for(k=j;k<j+(23*2);k+=2)
-	buf[k]='Ä';
-buf[k]='´'; k+=4;
-buf[k]='H'; k+=2;
-buf[k]='i'; k+=2;
-buf[k]='t'; k+=4;
-buf[k]='a'; k+=2;
-buf[k]='n'; k+=2;
-buf[k]='y'; k+=4;
-buf[k]='k'; k+=2;
-buf[k]='e'; k+=2;
-buf[k]='y'; k+=4;
-buf[k]='t'; k+=2;
-buf[k]='o'; k+=4;
-buf[k]='c'; k+=2;
-buf[k]='o'; k+=2;
-buf[k]='n'; k+=2;
-buf[k]='t'; k+=2;
-buf[k]='i'; k+=2;
-buf[k]='n'; k+=2;
-buf[k]='u'; k+=2;
-buf[k]='e'; k+=4;
-buf[k]='Ã'; k+=2;
-for(j=k;j<k+(24*2);j+=2)
-	buf[j]='Ä';
-buf[j]='Ù';
+	if((savscrn=(char *)MALLOC(80*25*2))==NULL) {
+		cprintf("UIFC line %d: error allocating %u bytes\r\n"
+			,__LINE__,80*25*2);
+		_setcursortype(cursor);
+		return; }
+	if((buf=(char *)MALLOC(76*21*2))==NULL) {
+		cprintf("UIFC line %d: error allocating %u bytes\r\n"
+			,__LINE__,76*21*2);
+		FREE(savscrn);
+		_setcursortype(cursor);
+		return; }
+	hidemouse();
+	gettext(1,1,80,25,savscrn);
+	memset(buf,SP,76*21*2);
+	for(i=1;i<76*21*2;i+=2)
+		buf[i]=(hclr|(bclr<<4));
+	buf[0]='Ú';
+	for(i=2;i<30*2;i+=2)
+		buf[i]='Ä';
+	buf[i]='´'; i+=4;
+	buf[i]='O'; i+=2;
+	buf[i]='n'; i+=2;
+	buf[i]='l'; i+=2;
+	buf[i]='i'; i+=2;
+	buf[i]='n'; i+=2;
+	buf[i]='e'; i+=4;
+	buf[i]='H'; i+=2;
+	buf[i]='e'; i+=2;
+	buf[i]='l'; i+=2;
+	buf[i]='p'; i+=4;
+	buf[i]='Ã'; i+=2;
+	for(j=i;j<i+(30*2);j+=2)
+		buf[j]='Ä';
+	i=j;
+	buf[i]='¿'; i+=2;
+	j=i;	/* leave i alone */
+	for(k=0;k<19;k++) { 		/* the sides of the box */
+		buf[j]='³'; j+=2;
+		j+=(74*2);
+		buf[j]='³'; j+=2; }
+	buf[j]='À'; j+=2;
+	for(k=j;k<j+(23*2);k+=2)
+		buf[k]='Ä';
+	buf[k]='´'; k+=4;
+	buf[k]='H'; k+=2;
+	buf[k]='i'; k+=2;
+	buf[k]='t'; k+=4;
+	buf[k]='a'; k+=2;
+	buf[k]='n'; k+=2;
+	buf[k]='y'; k+=4;
+	buf[k]='k'; k+=2;
+	buf[k]='e'; k+=2;
+	buf[k]='y'; k+=4;
+	buf[k]='t'; k+=2;
+	buf[k]='o'; k+=4;
+	buf[k]='c'; k+=2;
+	buf[k]='o'; k+=2;
+	buf[k]='n'; k+=2;
+	buf[k]='t'; k+=2;
+	buf[k]='i'; k+=2;
+	buf[k]='n'; k+=2;
+	buf[k]='u'; k+=2;
+	buf[k]='e'; k+=4;
+	buf[k]='Ã'; k+=2;
+	for(j=k;j<k+(24*2);j+=2)
+		buf[j]='Ä';
+	buf[j]='Ù';
 
-if(!api->helpbuf) {
-	if((fp=_fsopen(api->helpixbfile,"rb",SH_DENYWR))==NULL)
-		sprintf(hbuf," ERROR  Cannot open help index:\r\n          %s"
-			,api->helpixbfile);
-    else {
-        p=strrchr(helpfile,'/');
-        if(p==NULL)
-            p=strrchr(helpfile,'\\');
-        if(p==NULL)
-            p=helpfile;
-        else
-            p++;
-		l=-1L;
-		while(!feof(fp)) {
-			if(!fread(str,12,1,fp))
-                break;
-			str[12]=0;
-			fread(&k,2,1,fp);
-			if(stricmp(str,p) || k!=helpline) {
-				fseek(fp,4,SEEK_CUR);
-				continue; }
-			fread(&l,4,1,fp);
-			break; }
-		fclose(fp);
-		if(l==-1L)
-			sprintf(hbuf," ERROR  Cannot locate help key (%s:%u) in:\r\n"
-				"         %s",p,helpline,api->helpixbfile);
+	if(!api->helpbuf) {
+		if((fp=_fsopen(api->helpixbfile,"rb",SH_DENYWR))==NULL)
+			sprintf(hbuf," ERROR  Cannot open help index:\r\n          %s"
+				,api->helpixbfile);
 		else {
-			if((fp=_fsopen(api->helpdatfile,"rb",SH_DENYWR))==NULL)
-				sprintf(hbuf," ERROR  Cannot open help file:\r\n          %s"
-					,api->helpdatfile);
+			p=strrchr(helpfile,'/');
+			if(p==NULL)
+				p=strrchr(helpfile,'\\');
+			if(p==NULL)
+				p=helpfile;
+			else
+				p++;
+			l=-1L;
+			while(!feof(fp)) {
+				if(!fread(str,12,1,fp))
+					break;
+				str[12]=0;
+				fread(&k,2,1,fp);
+				if(stricmp(str,p) || k!=helpline) {
+					fseek(fp,4,SEEK_CUR);
+					continue; }
+				fread(&l,4,1,fp);
+				break; }
+			fclose(fp);
+			if(l==-1L)
+				sprintf(hbuf," ERROR  Cannot locate help key (%s:%u) in:\r\n"
+					"         %s",p,helpline,api->helpixbfile);
 			else {
-				fseek(fp,l,SEEK_SET);
-				fread(hbuf,HELPBUF_SIZE,1,fp);
-				fclose(fp); } } } }
-else
-    strcpy(hbuf,api->helpbuf);
+				if((fp=_fsopen(api->helpdatfile,"rb",SH_DENYWR))==NULL)
+					sprintf(hbuf," ERROR  Cannot open help file:\r\n          %s"
+						,api->helpdatfile);
+				else {
+					fseek(fp,l,SEEK_SET);
+					fread(hbuf,HELPBUF_SIZE,1,fp);
+					fclose(fp); } } } }
+	else
+		strcpy(hbuf,api->helpbuf);
 
-len=strlen(hbuf);
+	len=strlen(hbuf);
 
-i+=78*2;
-for(j=0;j<len;j++,i+=2) {
-	if(hbuf[j]==LF) {
-		while(i%(76*2)) i++;
-		i+=2; }
-	else if(hbuf[j]==2) {		 /* Ctrl-b toggles inverse */
-		inverse=!inverse;
-		i-=2; }
-	else if(hbuf[j]==1) {		 /* Ctrl-a toggles high intensity */
-		high=!high;
-        i-=2; }
-	else if(hbuf[j]!=CR) {
-		buf[i]=hbuf[j];
-		buf[i+1]=inverse ? (bclr|(cclr<<4))
-			: high ? (hclr|(bclr<<4)) : (lclr|(bclr<<4)); } }
-puttext(3,3,78,23,buf);
-showmouse();
-while(1) {
-	if(inkey(1)) {
-		inkey(0);
-		break; }
-#ifndef __FLAT__
-	if(api->mode&UIFC_MOUSE) {
-		r.w.ax=0x0006;		/* Get button release information */
-		r.w.bx=0x0000;		/* Left button */
-		INT_86(0x33,&r,&r);
-		if(r.w.bx)			/* Left button release same as CR */
-			break;
-		r.w.ax=0x0006;		/* Get button release information */
-		r.w.bx=0x0001;		/* Right button */
-		INT_86(0x33,&r,&r);
-		if(r.w.bx)			/* Left button release same as CR */
+	i+=78*2;
+	for(j=0;j<len;j++,i+=2) {
+		if(hbuf[j]==LF) {
+			while(i%(76*2)) i++;
+			i+=2; }
+		else if(hbuf[j]==2) {		 /* Ctrl-b toggles inverse */
+			inverse=!inverse;
+			i-=2; }
+		else if(hbuf[j]==1) {		 /* Ctrl-a toggles high intensity */
+			high=!high;
+			i-=2; }
+		else if(hbuf[j]!=CR) {
+			buf[i]=hbuf[j];
+			buf[i+1]=inverse ? (bclr|(cclr<<4))
+				: high ? (hclr|(bclr<<4)) : (lclr|(bclr<<4)); } }
+	puttext(3,3,78,23,buf);
+	showmouse();
+	while(1) {
+		if(inkey(1)) {
+			inkey(0);
 			break; }
-#endif
-	mswait(1);
-	}
+	#ifndef __FLAT__
+		if(api->mode&UIFC_MOUSE) {
+			r.w.ax=0x0006;		/* Get button release information */
+			r.w.bx=0x0000;		/* Left button */
+			INT_86(0x33,&r,&r);
+			if(r.w.bx)			/* Left button release same as CR */
+				break;
+			r.w.ax=0x0006;		/* Get button release information */
+			r.w.bx=0x0001;		/* Right button */
+			INT_86(0x33,&r,&r);
+			if(r.w.bx)			/* Left button release same as CR */
+				break; }
+	#endif
+		mswait(1);
+		}
 
-hidemouse();
-puttext(1,1,80,25,savscrn);
-showmouse();
-FREE(savscrn);
-FREE(buf);
-_setcursortype(cursor);
+	hidemouse();
+	puttext(1,1,80,25,savscrn);
+	showmouse();
+	FREE(savscrn);
+	FREE(buf);
+	_setcursortype(cursor);
 }
-#endif
 
