@@ -432,10 +432,9 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 	}
 
 	if(msg.reply_id!=NULL 
-		&& get_msg_by_id(&cfg, &smb, msg.reply_id, &remsg)==TRUE) {
-		msg.hdr.thread_back=remsg.hdr.number;	/* needed for threading backward */
-		smb_freemsgmem(&remsg);
-	}
+		&& smb_getmsgidx_by_msgid(&smb,&remsg,msg.reply_id)==SMB_SUCCESS)
+		msg.hdr.thread_back=remsg.idx.number;	/* needed for threading backward */
+
 	if(msg.hdr.thread_back
 		&& smb_getstatus(&smb)==SMB_SUCCESS) {
 

@@ -465,10 +465,8 @@ BOOL msg_offset_by_id(scfg_t* scfg, smb_t* smb, char* id, ulong* offset)
 {
 	smbmsg_t msg;
 
-	if(!get_msg_by_id(scfg,smb,id,&msg))
+	if(smb_getmsgidx_by_msgid(smb,&msg,id)!=SMB_SUCCESS)
 		return(FALSE);
-
-	smb_freemsgmem(&msg);
 
 	*offset = msg.offset;
 	return(TRUE);
@@ -614,11 +612,9 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 			smb_unlockmsghdr(&(p->smb),&msg); 
 			break;
 		} else if(JSVAL_IS_STRING(argv[n]))	{		/* Get by ID */
-			if(!get_msg_by_id(scfg,&(p->smb)
-				,JS_GetStringBytes(JSVAL_TO_STRING(argv[n]))
-				,&msg))
+			if(smb_getmsghdr_by_msgid(&(p->smb),&msg
+				,JS_GetStringBytes(JSVAL_TO_STRING(argv[n])))!=SMB_SUCCESS)
 				return(JS_TRUE);	/* ID not found */
-
 			break;
 		}
 	}

@@ -2249,37 +2249,6 @@ char* getfmsg(FILE *stream, ulong *outlen)
 	return(fbuf);
 }
 
-/****************************************************************************/
-/* Retrieve a message by FTN message-ID										*/
-/* Leaves message header in locked stated!									*/
-/****************************************************************************/
-BOOL DLLCALL get_msg_by_ftn_id(smb_t* smb, char* id, smbmsg_t* msg)
-{
-	ulong		n;
-	
-	for(n=0;n<smb->status.total_msgs;n++) {
-		memset(msg,0,sizeof(smbmsg_t));
-		msg->offset=n;
-		if(smb_getmsgidx(smb, msg)!=0)
-			break;
-
-		if(smb_lockmsghdr(smb,msg)!=0)
-			continue;
-
-		/* should this be case sensitive? */
-		if(smb_getmsghdr(smb,msg)==SMB_SUCCESS 
-			&& msg->ftn_msgid!=NULL
-			&& stricmp(msg->ftn_msgid,id)==0)
-			return(TRUE);
-
-		smb_unlockmsghdr(smb,msg); 
-
-		smb_freemsgmem(msg);
-	}
-
-	return(FALSE);
-}
-
 #define MAX_TAILLEN 1024
 
 /****************************************************************************/
@@ -2646,9 +2615,9 @@ int fmsgtosmsg(uchar* fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 	if(msg.ftn_reply!=NULL) {	/* auto-thread linkage */
 
 		if(smb_getstatus(smbfile)==SMB_SUCCESS
-			&& get_msg_by_ftn_id(smbfile, msg.ftn_reply, &remsg)==TRUE) {
+			&& smb_getmsghdr_by_ftnid(smbfile, &remsg, msg.ftn_reply)==SMB_SUCCESS) {
 
-			msg.hdr.thread_back=remsg.hdr.number;	/* needed for threading backward */
+			msg.hdr.thread_back=remsg.idx.number;	/* needed for threading backward */
 
 			/* Add RFC-822 Reply-ID (generate if necessary) */
 			smb_hfield_str(&msg,RFC822REPLYID,get_msgid(&scfg,smbfile->subnum,&remsg));

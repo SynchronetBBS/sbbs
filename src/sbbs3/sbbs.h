@@ -813,7 +813,6 @@ extern "C" {
 	DLLEXPORT ushort	DLLCALL subject_crc(char *subj);
 	DLLEXPORT char *	DLLCALL ftn_msgid(sub_t* sub, smbmsg_t* msg);
 	DLLEXPORT char *	DLLCALL get_msgid(scfg_t* cfg, uint subnum, smbmsg_t* msg);
-	DLLEXPORT BOOL		DLLCALL get_msg_by_id(scfg_t* scfg, smb_t* smb, char* id, smbmsg_t* msg);
 	DLLEXPORT char *	DLLCALL ultoac(ulong l,char *str);
 	DLLEXPORT char *	DLLCALL rot13(char* str);
 
