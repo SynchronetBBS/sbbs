@@ -45,7 +45,6 @@
 #include LOCKED_DATA_SEGMENT
 #endif
 
-#include "genwrap.h" /* YIELD() */ 
 #include "ringbuf.h"
 
 #ifdef RINGBUF_USE_STD_RTL
@@ -187,8 +186,6 @@ DWORD RINGBUFCALL RingBufWrite( RingBuf* rb, BYTE* src,  DWORD cnt )
 	pthread_mutex_unlock(&rb->mutex);
 #endif
 
-	YIELD();
-
 	return(cnt);
 }
 
@@ -196,8 +193,6 @@ DWORD RINGBUFCALL RingBufWrite( RingBuf* rb, BYTE* src,  DWORD cnt )
 DWORD RINGBUFCALL RingBufRead( RingBuf* rb, BYTE* dst,  DWORD cnt )
 {
 	DWORD max, first, remain, len;
-
-	YIELD();
 
 	len = RingBufFull( rb );
 	if( len == 0 )
@@ -248,8 +243,6 @@ DWORD RINGBUFCALL RingBufRead( RingBuf* rb, BYTE* dst,  DWORD cnt )
 DWORD RINGBUFCALL RingBufPeek( RingBuf* rb, BYTE* dst,  DWORD cnt)
 {
 	DWORD max, first, remain, len;
-
-	YIELD();
 
 	len = RingBufFull( rb );
 	if( len == 0 )
