@@ -21,7 +21,6 @@ all : 	bullseye.bin \
 	mudgate.bin \
 	noyesbar.bin \
 	pcboard.bin \
-	qnet.bin \
         qnet-ftp.bin \
 	ra_emu.bin \
 	renegade.bin \
