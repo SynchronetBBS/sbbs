@@ -79,7 +79,7 @@ typedef struct {
     char	relay_server[128];
     char	dns_server[128];
     char	default_user[128];
-    char	reserved_path7[128];
+    char	smtp_sem_path[128];
     char	reserved_path6[128];
     char	reserved_path5[128];
     char	reserved_path4[128];
