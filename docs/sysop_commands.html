@@ -19,20 +19,20 @@
 
 <p><a name="top"></a><a href="sysop.html#TOC">Back to Table of Contents</a></p>
 
-<h2><u>[5.1] - </u><a name="Sysop Definition"><u>Sysop Definition</u></a></h2>
+<h2>[5.1] - <a name="Sysop Definition">Sysop Definition</a></h2>
 
 <pre>There is usually one sysop (System Operator) per BBS - the owner and operator
 of the hardware which Synchronet is running on and accepting remote users.
 Quite often systems require more than one sysop and Synchronet is flexible in
 this respect. Within Synchronet, a sysop is defined as any user with a main
 level of 90 or above. Any user that qualifies as a sysop, is prompted with an
-&quot;SY:&quot; to enter the system password at logon. Any time a sysop attempts to
+&quot;<b>SY:</b>&quot; to enter the system password at logon. Any time a sysop attempts to
 perform a sysop function that may breach the system security, he is prompted
-with an &quot;SY:&quot; to enter the system password before he can proceed. Users with
+with an &quot;<b>SY:</b>&quot; to enter the system password before he can proceed. Users with
 sysop access can cause serious damage to the system. Give out this ability with
 caution.</pre>
 
-<h2><u>[5.2] - </u><a name="Multiple Sysops"><u>Multiple Sysops</u></a></h2>
+<h2>[5.2] - <a name="Multiple Sysops">Multiple Sysops</a></h2>
 
 <pre>As stated above, any user with a security level of 90 or greater can perform
 sysop functions, &quot;So why have levels 91-99?&quot; you might ask yourself. Well, you
@@ -42,14 +42,15 @@ level above that user's level. For example: If you have a remote sysop with a
 security level of 90, you can still have a Message Group or Sub-board with a
 minimum required level of 91. Now this remote sysop will not be able to access
 that Group or Sub-board. While it is true that sysops can edit their own
-and subbordinate user's accounts, they can not edit a sysop of higher level's
+and subordinate user's accounts, they can not edit a sysop of higher level's
 account (when calling remotely). A remote sysop can't raise any user's level
 above his own, or add flags or exemptions that he himself doesn't have.</pre>
 
-<h2><u>[5.3] - </u><a name="Local Sysop"><u>Local Sysop</u></a></h2>
+<h2>[5.3] - <a name="Local Sysop">Local Sysop </a><i><font color="#CC0000"><b>(v2
+Only)</b></font></i></h2>
 
 <pre>Most sysop functions will be performed locally, while some sysop functions can
-only be performed locally. The following special key combination are only
+<u>only</u> be performed locally. The following special key combination are only
 available while online locally (not from the Waiting for Call screen).
 
 <u><b>Macros:</b>
@@ -168,7 +169,7 @@ available while online locally (not from the Waiting for Call screen).
 <b>        Alt-Z           (Local Key Menu)
 </b>        Displays the local key menu.
 
-<b><u>Status Line:
+<b>Status Line:<u>
 </u></b>
         The status line displays one line of user information at any given
         time. To change the current line, use CTRL and the UP and DOWN arrow
@@ -211,7 +212,7 @@ available while online locally (not from the Waiting for Call screen).
         E       Run node daily event when user logs off
         L       This node is locked for sysop logons only</pre>
 
-<h2><u>[5.4] - </u><a name="Extra Online Sysop Commands"><u>Extra Online Sysop Commands</u></a></h2>
+<h2>[5.4] - <a name="Extra Online Sysop Commands">Extra Online Sysop Commands</a></h2>
 
 <pre>Most of the additional commands available to sysops online (local or remote)
 are initiated from the main or transfer sections. A menu of the available
@@ -223,7 +224,7 @@ sections of the Synchronet Classic command shell begin with a semicolon (';')
 character, end with CR (ENTER), and some have optional parameters (shown in
 square brackets). Users with certain exemptions can use some of these commands
 and have access to the menus via the '!' command using the Synchronet Classic
-command shell.
+command shell. 
 
 
 <b>        UEDIT [x]       (User Edit)
@@ -232,16 +233,20 @@ command shell.
         User Edit starts, otherwise the user online will be the current user.
         This command is also available from the transfer menu. Locally, Alt-U
         is the preferred method of initiating User Edit.
-        See the chapter on User Edit for more information.
+        See the chapter on User Edit for more information.</pre>
 
-<b>        CHUSER          (Change into Another User)
+<pre><b>        SPY [n]        	(Spy on Another User) <font color="#CC0000"><i>(v3.00c+ Only)</i></font>
+</b>        This command allows the sysop to remotely monitor or control another node
+	running in the same instance as the node the sysop is logged into.</pre>
+
+<pre><b>        CHUSER          (Change into Another User)
 </b>        This command allows the sysop to temporarily change to another user
         account. If changing to an account with a higher level, the password
         of that user must be given. Changing to an account of non-sysop status
         automatically enables Temp Sysop mode so that the sysop can change back
         to his/her own account before logging off (a suggested action).
 
-<b>        ANSCAP          (Toggle ANSI Capture Mode)
+<b>        ANSCAP          (Toggle ANSI Capture Mode) <font color="#CC0000"><i>(v2 Only)</i></font>
 </b>        Normal ANSI escape sequences are not written to the capture file. The
         sysop can use this command to enable all characters (including ANSI
         escape sequences) to be written.
@@ -334,7 +339,7 @@ command shell.
 </b>        Using this command, a sysop can view the history of statistics
         information for the system. Same as 'S' from the wait for call screen.
 
-<b>        MEM             (Available Memory)
+<b>        MEM             (Available Memory) <font color="#CC0000"><i>(v2 for DOS Only)</i></font>
 </b>        This command dispays the amount of memory available to Synchronet and
         any external programs it executes (without swapping).
 
@@ -428,6 +433,8 @@ command shell.
 <b>	PUT [s] 	(Upload File to Anywhere)
 </b>        A sysop can use this command to upload a file to a local disk without
         having to add it to the file database.</pre>
+
+<pre>Note: The Baja source code file for these commands is: <b>exec/str_cmds.src</b></pre>
 
 <p><a href="#top"><b>Back to Top</b></a></p>
 

@@ -18,38 +18,50 @@
 <!--webbot bot="Include" endspan i-checksum="23126" -->
 
 <p><b><a name="top"></a></b><a href="sysop.html#TOC">Back to Table of Contents</a></p>
-<h2><u>[2.0] - </u><a name="System Configuration"><u>System Configuration</u></a></h2>
-<pre>To run SCFG from the GUI in v3.0 you can load it from the 
-Synchronet Control Panel (SBBSCTRL) by selecting BBS and then
-Configure from the Pull Down Menu at the top of SBSCTRL.</pre>
+<h2>[2.0] - <a name="System Configuration">System Configuration</a></h2>
+<pre>SCFG is the Synchronet Configuration Utility. It is a stand-alone console mode 
+application currently available in the following forms:</pre>
+<ul>
+  <li>
+<pre>SCFG.EXE - 16-bit DOS application</pre>
+  </li>
+  <li>
+<pre>SCFG32.EXE - 32-bit extended-DOS/Win32 application</pre>
+  </li>
+  <li>
+<pre>SCFG4OS2.EXE - 32-bit OS/2 application</pre>
+  </li>
+</ul>
+<pre>To run SCFG from Synchronet for Win32 Control Panel, select <i>Configure</i> from the <i>
+BBS</i> sub-menu on the menu bar.</pre>
 <pre><img border="0" src="images/sbbsctrl_configure.gif" width="301" height="192"></pre>
-<pre>SCFG is the Synchronet Configuration Utility which can be executed from the
-&quot;Waiting for call&quot; screen by hitting 'C' or from DOS by typing SCFG from any
-node directory. Example:</pre>
+<pre>SCFG can be executed from the <b>v2</b> &quot;<i>Waiting for call</i>&quot; screen by 
+hitting '<b>C</b>' or from DOS by typing <b>SCFG</b> from any node directory. 
+Example:</pre>
 <pre><img border="0" src="images/scfg_dos_startup.gif" width="500" height="150"></pre>
-<pre>SCFG is a separate executable program. Once SCFG has initialized, you
-will see a main menu titled &quot;Configure&quot; which looks something like this:</pre>
+<pre>Once SCFG has initialized, you will see a main menu titled &quot;Configure&quot; which looks 
+something like this:</pre>
 <pre><img border="0" src="images/scfg_main.gif" width="572" height="331">
 			
-To manipulate the lightbar, use the up and down arrow keys or type a letter or
+To manipulate the light-bar, use the <i>UP</i> and <i>DOWN ARROW</i> keys or type a letter or
 number in the option you wish to highlight. To highlight the first option of
-the menu, hit HOME. To highlight the last option of the menu, hit END. You'll
-notice that if you hit up arrow when the lightbar is at the first option of
-the menu, the last option will become highlighted. This wrap effect also
-occurs when hitting the down arrow when the lightbar is at the last option of
-the menu. To select the current highlighted option, hit ENTER. To exit SCFG,
-hit ESC.</pre>
+the menu, hit the <i>HOME</i> key. To highlight the last option of the menu, hit the 
+<i>END</i> key. You'll notice that if you hit <i>UP ARROW</i> key when the light-bar is at the 
+first option of the menu, the last option will become highlighted. This wrap effect 
+also occurs when hitting the DOWN ARROW key when the light-bar is at the last option 
+of the menu. To select the current highlighted option, hit <i>ENTER</i>. To exit SCFG,
+hit the <i>ESC</i> key.</pre>
 <pre>Under &quot;System&quot;, set your system's name (BBS Name), the sysop's name (You), the
 system location (City, State), and system password. The system password you
 enter here will be required for any remote sysop operations and is prompted
-for with an &quot;SY:&quot; prompt. Under &quot;<a href="#Message Options">Message Options</a>&quot;, set your system's QWK ID
+for with an &quot;<b>SY:</b>&quot; prompt. Under &quot;<a href="#Message Options">Message Options</a>&quot;, set your system's QWK ID
 (Up to 8 character BBS name abbreviation). Under &quot;Toggle Options&quot; set
 &quot;Allow Aliases&quot; to &quot;Yes&quot; or &quot;No&quot; depending on if you want users to be known
 by their real names on your BBS or a personal alias.</pre>
-<pre>Remember that at any time within SCFG, you can hit the F1 key to get online
+<pre>Remember that at any time within SCFG, you can hit the <i>F1</i> key to get online
 help about the current configuration window. Following is a more specific list
 of the commands available in the SCFG under System options.</pre>
-<h2><b><u>[2.1] - </u></b><a name="Message Options"><b><u>Message Options</u></b></a>
+<h2><b>[2.1] - </b><a name="Message Options"><b>Message Options</b></a>
 <br>
 <br>
 <img border="0" src="images/scfg_msg_options.gif" width="572" height="331"></h2>
@@ -144,7 +156,7 @@ of the commands available in the SCFG under System options.</pre>
 <br>
 
 			
-<u>[2.2] - <a name="System Options">System Options</a></u></h2>
+[2.2] - <a name="System Options">System Options</a></h2>
 <pre><img border="0" src="images/scfg_system.gif" width="572" height="331">
 
 <b>BBS Name:</b>
@@ -182,7 +194,7 @@ of the commands available in the SCFG under System options.</pre>
 <b>New User Password:</b>
         If this field has a value, new users will have to enter this password
         correctly before being able apply for access.</pre>
-<h2><b><u>[2.3] - </u></b><a name="System Toggle Options"><b><u>System Toggle Options</u></b></a></h2>
+<h2><b>[2.3] - </b><a name="System Toggle Options"><b>System Toggle Options</b></a></h2>
 <pre>Selecting this option will bring you to the following sub-menu:</pre>
 <pre><img border="0" src="images/scfg_system_toggle.gif" width="572" height="331"></pre>
 <pre><b>Allow Aliases:</b>
@@ -197,7 +209,7 @@ of the commands available in the SCFG under System options.</pre>
 	Setting this option to Yes will allow users to be able to convert
 	credits to time.
 
-<b>Allow Local Sysop Access:</b>
+<b>Allow Local Sysop Access <i><font color="#FF0000">(v2 Only)</font></i>:</b>
 	To be able to perform sysop actions locally, this option should be set
 	to Yes.
 
@@ -205,13 +217,13 @@ of the commands available in the SCFG under System options.</pre>
 	To be able to perform sysop actions remotely, this option should be set
 	to Yes.
 
-<b>Echo Passwords Locally:</b>
+<b>Echo Passwords Locally <i><font color="#FF0000">(v2 Only)</font></i>:</b>
 	If this option is set to No, all BBS passwords will not be displayed
 	locally (characters will be replaced by an X). This includes passwords
 	entered during logon, passwords in the user editor, as well as
 	passwords normally displayed on the status line.
 
-<b>Require Passwords Locally:</b>
+<b>Require Passwords Locally <i><font color="#FF0000">(v2 Only)</font></i>:</b>
 	If this option is set to No the BBS will not ask for a password to be
 	entered when performing local operations.
 
@@ -254,10 +266,10 @@ of the commands available in the SCFG under System options.</pre>
 	to Yes, will set a user to the expired account values once the user's
 	time runs out.
 
-<b>Quick Validation Hot-Keys:
+<b>Quick Validation Hot-Keys <i><font color="#FF0000">(v2 Only)</font></i>:
 </b>	If this option is set to No, the quick validation hot keys will be
 	disabled.</pre>
-<h2><b><u>[2.4] - </u></b><a name="New User Values"><b><u>New User Values</u></b></a>
+<h2><b>[2.4] - </b><a name="New User Values"><b>New User Values</b></a>
 </h2>
 <pre><img border="0" src="images/scfg_system_newvalues.gif" width="572" height="331"></pre>
 <pre>This option allows you to modifiy the security values assigned to a new user
@@ -276,8 +288,8 @@ menu.</pre>
 new users will be asked when logging on to the BBS. The 'Force Unique...'
 question toggles are used to force users to pick a string that is not being
 used by any of the other users currently in the sytem user list.</pre>
-<h2><b><u>[2.5] - <a name="Advanced Options">Advanced Options</a>
-</u></b></h2>
+<h2><b>[2.5] - <a name="Advanced Options">Advanced Options</a>
+</b></h2>
 <pre><img border="0" src="images/scfg_system_advanced.gif" width="572" height="331">
 
 <b>New User Magic Word:
@@ -336,7 +348,7 @@ used by any of the other users currently in the sytem user list.</pre>
 	expiration warning messages to the users notifying them this many days
 	in advance.
 
-<b>Default Status Line:</b>
+<b>Default Status Line <i><font color="#FF0000">(v2 Only)</font></i>:</b>
 	This is the number of the status line that will be displayed by default
 	at the bottom of the screen while the user is online.
 
@@ -345,7 +357,7 @@ used by any of the other users currently in the sytem user list.</pre>
 	Any nodes which exist above this number will be &quot;invisible&quot; nodes and
 	cannot be seen by anyone.
 
-<b>First Local Auto-Node:</b>
+<b>First Local Auto-Node <i><font color="#FF0000">(v2 Only)</font></i>:</b>
 	When using the AUTONODE utility, this is the node number to begin
 	searching at for an available (offline) node.
 
@@ -355,9 +367,9 @@ used by any of the other users currently in the sytem user list.</pre>
 
 <b>Sysop Chat Requirements:
 </b>	Any user meeting the criteria set here will be able to page the sysop
-	regardless of the status of the scroll lock.</pre>
-<h2><b><u>[2.6] - <a name="Loadable Modules">Loadable Modules</a>
-</u></b></h2>
+	regardless of the status of the sysop availability (Scroll Lock in v2.3).</pre>
+<h2><b>[2.6] - <a name="Loadable Modules">Loadable Modules</a>
+</b></h2>
 <pre><img border="0" src="images/scfg_system_loadablemods.gif" width="572" height="331">
 
 The Loadable Modules options are used for loading Baja .BIN modules during
@@ -369,7 +381,7 @@ Following is a brief description of when each of the Loadable Modules occur
 during the BBS operation:
 
 <b>Login:</b>
-	This module is REQUIRED for remote and local logins.  Occurs when a
+	This module is <b>REQUIRED</b> for remote and local logins.  Occurs when a
 	user is connected, immediately after the Synchronet copyright notice is
 	displayed.
 
@@ -396,8 +408,8 @@ during the BBS operation:
 
 <b>Expired User:
 </b>	This is an offline event that occurs during Synchronet's internal daily
-	event (after the first caller at the beginning of a new day</pre>
-<h2><b><u>[2.7] - </u></b><a name="Security Values"><b><u>Security Values</u></b></a></h2>
+	event (after the first caller at the beginning of a new day).</pre>
+<h2><b>[2.7] - </b><a name="Security Values"><b>Security Values</b></a></h2>
 <pre><img border="0" src="images/scfg_system_securityvalues.gif" width="572" height="331"></pre>
 <pre>This option allows you to define the values of the Security Levels (0-99).
 Selecting the desired security level will bring you to another menu similar to
@@ -407,14 +419,14 @@ the following:</pre>
 level.	These values will be given to ALL users who have the selected security
 level.	Many of these values may be overridden by giving certain users the
 necessary exemptions (if required).</pre>
-<h2><b><u>[2.8] - </u></b><a name="Expired Account Values"><b><u>Expired Account Values</u></b></a>
+<h2><b>[2.8] - </b><a name="Expired Account Values"><b>Expired Account Values</b></a>
 </h2>
 <pre><img border="0" src="images/scfg_system_expired.gif" width="572" height="331">
 
 This sub-menu contains the account values for expired user accounts. When
 a user account expires, the information contained here will be applied to
 that user account.</pre>
-<h2><b><u>[2.9] - </u></b><a name="Quick Validation Values"><b><u>Quick Validation Values</u></b></a></h2>
+<h2><b>[2.9] - </b><a name="Quick Validation Values"><b>Quick Validation Values</b></a></h2>
 <pre><img border="0" src="images/scfg_system_quickval.gif" width="572" height="331">
 
 This is where you define the values of the quick-validation sets (0-9).
@@ -426,8 +438,8 @@ These are used to quickly set a user's Level, Flags, Restrictions and
 Exemptions, as well as extend their expiration date and add credits to their
 account.  A user can be quick-validated by hitting Alt-(0-9) while the user is
 online, or with the 'V' command from User Edit.</pre>
-<h2><b><u>[2.10] - </u></b><a name="Creating User Accounts Locally"><b><u>Creating User Accounts
-Locally</u></b></a></h2>
+<h2><b>[2.10] - </b><a name="Creating User Accounts Locally"><b>Creating User Accounts
+Locally</b></a><b> <i><font color="#FF0000">(v2 Only)</font></i></b></h2>
 <pre>Exit the configuration program and run SBBS from your NODE1 directory. When you
 get a menu that says &quot;Synchronet Version xx&quot; (Wait For Call screen), hit
 SPACE BAR to logon. Answer 'Y' to the Logon (Y/N) prompt. At the NN: prompt,
@@ -436,7 +448,7 @@ BBS main menu and then logoff the BBS.
 
 Repeat this process for any other user accounts you wish to create. Be sure
 to give out high access levels and exemptions very carefully.</pre>
-<h3><b><u>[2.10.1] - </u></b><a name="Creating a Sysop Account"><b><u>Creating a Sysop Account</u></b></a></h3>
+<h3><b>[2.10.1] - </b><a name="Creating a Sysop Account"><b>Creating a Sysop Account</b></a></h3>
 <pre>Follow the above steps to create a user account. Once you are back at the WFC
 (Wait For Call) screen, press 'U' and go to the account that you've created.
 You should give this account (the main sysop account) all of the different
@@ -452,7 +464,7 @@ find the keys to select the different options).
         &quot;Default to quiet mode&quot; on from the Default Configuration menu. If
         you want users to see that you're online, you can toggle quiet mode
         off/on with the &quot;;QUIET&quot; sysop command from the Synchronet main menu.</pre>
-<h3><b><u>[2.10.2] - </u></b><a name="Creating a Guest Account"><b><u>Creating a Guest Account</u></b></a></h3>
+<h3><b>[2.10.2] - </b><a name="Creating a Guest Account"><b>Creating a Guest Account</b></a></h3>
 <pre>Follow the above steps to create a user account.  Once you are back at the WFC
 (Wait For Call) screen, press 'U' and go to the account that you've created to
 be used as your Guest account. Change the Real Name field of the account to
@@ -462,7 +474,7 @@ the Password field, and make it blank (this will allow Guests to log on by
 simply entering GUEST at the NN: prompt without the need for a password).
 
 If you have certain areas on your BBS which are restricted by age, you may wish
-to modify the Birthdate field of the Guest account as necessary.
+to modify the Birth-date field of the Guest account as necessary.
 
 You may also wish to (from the SCFG program under Nodes-&gt;Node#-&gt;Logon Prompt)
 modify the logon prompts of your nodes to read something along the lines of
