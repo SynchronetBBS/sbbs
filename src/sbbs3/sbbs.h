@@ -750,12 +750,13 @@ extern "C" {
 	/* main.cpp */
 	DLLEXPORT BOOL		DLLCALL getstats(scfg_t* cfg, char node, stats_t* stats);
 
-	/* mail.cpp */
+	/* getmail.c */
 	DLLEXPORT int		DLLCALL getmail(scfg_t* cfg, int usernumber, BOOL sent);
 	DLLEXPORT mail_t *	DLLCALL loadmail(smb_t* smb, ulong* msgs, uint usernumber
 										,int which, long mode);
 	DLLEXPORT void		DLLCALL freemail(mail_t* mail);
 	DLLEXPORT void		DLLCALL delfattach(scfg_t*, smbmsg_t*);
+
 	/* postmsg.cpp */
 	DLLEXPORT int		DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, char* msgbuf);
 	DLLEXPORT void		DLLCALL signal_sub_sem(scfg_t* cfg, uint subnum);
