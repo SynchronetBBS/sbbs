@@ -1160,7 +1160,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 
 		fclose(doscmdrc);
 		SAFECOPY(str,cmdline);
-		sprintf(cmdline,"/usr/bin/doscmd -xFQ %s",str);
+		sprintf(cmdline,"/usr/bin/doscmd -F %s",str);
 #endif
 	}
 
