@@ -2,7 +2,7 @@
 
 /* Base64 encoding/decoding routines */
 
-/* $Id $ */
+/* $Id$ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
