@@ -117,13 +117,40 @@ int bstrlen(char *str)
 	return(i);
 }
 
-void DLLCALL strip_ctrl(char *str)
+char* DLLCALL strip_ctrl(char *str)
 {
 	char tmp[1024];
-	int i,j,k;
+	int i,j;
 
-	k=strlen(str);
-	for(i=j=0;i<k;i++)
+	for(i=j=0;str[i];i++)
+		if(str[i]==CTRL_A)
+			i++;
+		else if((uchar)str[i]>=SP)
+			tmp[j++]=str[i];
+	tmp[j]=0;
+	strcpy(str,tmp);
+	return(str);
+}
+
+char* DLLCALL strip_exascii(char *str)
+{
+	char tmp[1024];
+	int i,j;
+
+	for(i=j=0;str[i];i++)
+		if(!(str[i]&0x80))
+			tmp[j++]=str[i];
+	tmp[j]=0;
+	strcpy(str,tmp);
+	return(str);
+}
+
+char* DLLCALL prep_file_desc(char *str)
+{
+	char tmp[1024];
+	int i,j;
+
+	for(i=j=0;str[i];i++)
 		if(str[i]==CTRL_A)
 			i++;
 		else if(j && str[i]<=SP && tmp[j-1]==SP)
@@ -136,19 +163,7 @@ void DLLCALL strip_ctrl(char *str)
 			tmp[j++]=SP;
 	tmp[j]=0;
 	strcpy(str,tmp);
-}
-
-void DLLCALL strip_exascii(char *str)
-{
-	char tmp[1024];
-	int i,j,k;
-
-	k=strlen(str);
-	for(i=j=0;i<k;i++)
-		if(!(str[i]&0x80))
-			tmp[j++]=str[i];
-	tmp[j]=0;
-	strcpy(str,tmp);
+	return(str);
 }
 
 /****************************************************************************/
@@ -228,7 +243,7 @@ void ucrc16(uchar ch, ushort *rcrc)
 }
 
 /****************************************************************************/
-/* Returns CRC-16 of string (not including terminating NULL)				*/
+/* Returns CRC-16 of ASCIIZ string (not including terminating NULL)			*/
 /****************************************************************************/
 ushort DLLCALL crc16(char *str)
 {
@@ -244,12 +259,16 @@ ushort DLLCALL crc16(char *str)
 }
 
 /****************************************************************************/
-/* Returns CRC-32 of string (not including terminating NULL)				*/
+/* Returns CRC-32 of sequence of bytes (binary or ASCIIZ)					*/
+/* Pass len of 0 to auto-determine ASCIIZ string length						*/
+/* or non-zero for arbitrary binary data									*/
 /****************************************************************************/
 ulong crc32(char *buf, ulong len)
 {
 	ulong l,crc=0xffffffff;
 
+	if(len==0) 
+		len=strlen(buf);
 	for(l=0;l<len;l++)
 		crc=ucrc32(buf[l],crc);
 	return(~crc);
