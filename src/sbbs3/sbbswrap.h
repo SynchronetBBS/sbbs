@@ -121,7 +121,7 @@ extern "C" {
 
 #ifdef __unix__
 
-	#include <semaphores.h>	/* POSIX 1003.1b semaphores */
+	#include <semaphore.h>	/* POSIX 1003.1b semaphores */
 
 #elif defined(_WIN32)	/* semaphores */
 
