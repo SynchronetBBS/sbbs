@@ -516,7 +516,7 @@ bool sbbs_t::js_init()
 			break;
 
 		/* MsgBase Class */
-		if(js_CreateMsgBaseClass(js_cx, js_glob, &cfg)==NULL)
+		if(js_CreateMsgBaseClass(js_cx, js_glob, &scfg)==NULL)
 			break;
 
 		/* File Class */
@@ -2607,7 +2607,7 @@ void node_thread(void* arg)
 #ifdef JAVASCRIPT
 		if(sbbs->js_cx!=NULL) {
 			/* User class */
-			if(js_CreateUserClass(sbbs->js_cx, sbbs->js_glob, &sbbs->cfg)==NULL) 
+			if(js_CreateUserClass(sbbs->js_cx, sbbs->js_glob, &scfg)==NULL) 
 				lprintf("!JavaScript ERROR creating user class");
 
 			/* user object */
