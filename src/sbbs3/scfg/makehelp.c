@@ -53,7 +53,7 @@ int main(void)
 				break;
 			line++;
 			if(strstr(str,"SETHELP(WHERE);")) {
-				printf("%s:%u\n",files[i],line);
+				/* printf("%s:%u\n",files[i],line); */
 				l=ftell(out);
 				write(ixb,files[i],12);
 				write(ixb,&line,2);
