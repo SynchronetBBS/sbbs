@@ -727,6 +727,7 @@ js_chk_ar(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	return(JS_TRUE);
 }
 
+
 static jsMethodSpec js_user_functions[] = {
 	{"compare_ars",	js_chk_ar,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("string ars")
 	,JSDOCSTR("Verify user meets access requirements string")
@@ -787,7 +788,7 @@ js_user_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval
 
 	JS_ValueToInt32(cx,argv[0],&val);
 	user.number=(ushort)val;
-	if(getuserdat(scfg,&user)!=0)
+	if(user.number!=0 && getuserdat(scfg,&user)!=0)
 		return(JS_FALSE);
 
 	/* user.stats */
