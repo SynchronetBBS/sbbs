@@ -857,9 +857,15 @@ void __fastcall TMainForm::TelnetStopExecute(TObject *Sender)
 
 void __fastcall TMainForm::TelnetConfigureExecute(TObject *Sender)
 {
+    static inside;
+    if(inside) return;
+    inside=true;
+
 	Application->CreateForm(__classid(TTelnetCfgDlg), &TelnetCfgDlg);
 	TelnetCfgDlg->ShowModal();
     delete TelnetCfgDlg;
+    
+    inside=false;
 }
 //---------------------------------------------------------------------------
 
@@ -883,9 +889,15 @@ void __fastcall TMainForm::NodeListStopExecute(TObject *Sender)
 
 void __fastcall TMainForm::MailConfigureExecute(TObject *Sender)
 {
+    static inside;
+    if(inside) return;
+    inside=true;
+
 	Application->CreateForm(__classid(TMailCfgDlg), &MailCfgDlg);
 	MailCfgDlg->ShowModal();
     delete MailCfgDlg;
+
+    inside=false;
 }
 //---------------------------------------------------------------------------
 
@@ -955,9 +967,15 @@ void __fastcall TMainForm::FtpStopExecute(TObject *Sender)
 
 void __fastcall TMainForm::FtpConfigureExecute(TObject *Sender)
 {
+    static inside;
+    if(inside) return;
+    inside=true;
+
 	Application->CreateForm(__classid(TFtpCfgDlg), &FtpCfgDlg);
 	FtpCfgDlg->ShowModal();
     delete FtpCfgDlg;
+
+    inside=false;
 }
 //---------------------------------------------------------------------------
 
@@ -2220,11 +2238,15 @@ void __fastcall TMainForm::FormMinimize(TObject *Sender)
     if(MinimizeToSysTray) {
     	if(Password.Length()) {
         	TrayIcon->RestoreOn=imNone;
-            TrayIcon->PopupMenuOn=imNone;
+            CloseTrayMenuItem->Enabled=false;
+            ConfigureTrayMenuItem->Enabled=false;
+            UserEditTrayMenuItem->Enabled=false;
         } else {
         	TrayIcon->RestoreOn=imDoubleClick;
-			TrayIcon->PopupMenuOn=imRightClickUp;
-            }
+            CloseTrayMenuItem->Enabled=true;
+            ConfigureTrayMenuItem->Enabled=true;
+            UserEditTrayMenuItem->Enabled=true;
+        }
         TrayIcon->Visible=true;
         TrayIcon->Minimize();
     }
@@ -2238,6 +2260,10 @@ void __fastcall TMainForm::TrayIconRestore(TObject *Sender)
 
 void __fastcall TMainForm::PropertiesExecute(TObject *Sender)
 {
+    static inside;
+    if(inside) return;
+    inside=true;
+
     Application->CreateForm(__classid(TPropertiesDlg), &PropertiesDlg);
     PropertiesDlg->LoginCmdEdit->Text=LoginCommand;
     PropertiesDlg->ConfigCmdEdit->Text=ConfigCommand;
@@ -2259,6 +2285,8 @@ void __fastcall TMainForm::PropertiesExecute(TObject *Sender)
         SaveSettings(Sender);
     }
     delete PropertiesDlg;
+    
+    inside=false;
 }
 //---------------------------------------------------------------------------
 
@@ -2270,13 +2298,37 @@ void __fastcall TMainForm::CloseTrayMenuItemClick(TObject *Sender)
 
 void __fastcall TMainForm::RestoreTrayMenuItemClick(TObject *Sender)
 {
+#if 0
     TrayIcon->Visible=false;
     Application->Restore();
+#else
+	static inside;
+    if(inside)
+    	return;
+    inside=true;
+    
+	if(Password.Length()) {
+    	Application->CreateForm(__classid(TCodeInputForm), &CodeInputForm);
+    	CodeInputForm->Label->Caption="Password";
+        CodeInputForm->Edit->Visible=true;
+        CodeInputForm->Edit->PasswordChar='*';
+	    if(CodeInputForm->ShowModal()==mrOk
+        	&& CodeInputForm->Edit->Text.AnsiCompareIC(Password)==0)
+            TrayIcon->Restore();
+        delete CodeInputForm;
+    } else
+        TrayIcon->Restore();
+
+    inside=false;
+#endif
 }
 //---------------------------------------------------------------------------
 void __fastcall TMainForm::BBSConfigWizardMenuItemClick(TObject *Sender)
 {
     TConfigWizard* ConfigWizard;
+    static inside;
+    if(inside) return;
+    inside=true;
 
     Application->CreateForm(__classid(TConfigWizard), &ConfigWizard);
 	if(ConfigWizard->ShowModal()==mrOk) {
@@ -2284,6 +2336,8 @@ void __fastcall TMainForm::BBSConfigWizardMenuItemClick(TObject *Sender)
         ReloadConfigExecute(Sender);
     }
     delete ConfigWizard;
+
+    inside=false;
 }
 //---------------------------------------------------------------------------
 
@@ -2318,9 +2372,15 @@ void __fastcall TMainForm::ReloadConfigExecute(TObject *Sender)
 
 void __fastcall TMainForm::ServicesConfigureExecute(TObject *Sender)
 {
+    static inside;
+    if(inside) return;
+    inside=true;
+
 	Application->CreateForm(__classid(TServicesCfgDlg), &ServicesCfgDlg);
 	ServicesCfgDlg->ShowModal();
     delete ServicesCfgDlg;
+
+    inside=false;
 }
 //---------------------------------------------------------------------------
 
@@ -2346,24 +2406,5 @@ void __fastcall TMainForm::UserTruncateMenuItemClick(TObject *Sender)
    	Application->MessageBox(str,"Users Truncated",MB_OK);
 }
 //---------------------------------------------------------------------------
-void __fastcall TMainForm::TrayIconClick(TObject *Sender)
-{
-	static inside;
 
-    if(inside)
-    	return;
-    inside=true;
-	if(Password.Length()) {
-    	Application->CreateForm(__classid(TCodeInputForm), &CodeInputForm);
-    	CodeInputForm->Label->Caption="Password";
-        CodeInputForm->Edit->Visible=true;
-        CodeInputForm->Edit->PasswordChar='*';
-	    if(CodeInputForm->ShowModal()==mrOk
-        	&& CodeInputForm->Edit->Text.AnsiCompareIC(Password)==0)
-            TrayIcon->Restore();
-        delete CodeInputForm;
-    }
-    inside=false;
-}
-//---------------------------------------------------------------------------
 
