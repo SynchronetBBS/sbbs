@@ -79,11 +79,23 @@ int DLLCALL getmail(scfg_t* cfg, int usernumber, BOOL sent)
 /***************************/
 /* Delete file attachments */
 /***************************/
-void sbbs_t::delfattach(uint to, char *title)
+extern "C" void delfattach(scfg_t* cfg, smbmsg_t* msg)
 {
-    char str[128],str2[128],*tp,*sp,*p;
+    char str[MAX_PATH+1];
+	char str2[MAX_PATH+1];
+	char *tp,*sp,*p;
 
-	strcpy(str,title);
+	if(msg->idx.to==0) {	/* netmail */
+		sprintf(str,"%s%04u.out/%s"
+			,cfg->data_dir,msg->idx.from,getfname(msg->subj));
+		remove(str);
+		sprintf(str,"%s%04u.out"
+			,cfg->data_dir,msg->idx.from);
+		rmdir(str);
+		return;
+	}
+		
+	strcpy(str,msg->subj);
 	tp=str;
 	while(1) {
 		p=strchr(tp,SP);
@@ -92,12 +104,12 @@ void sbbs_t::delfattach(uint to, char *title)
 		if(!sp) sp=strrchr(tp,'\\');
 		if(sp) tp=sp+1;
 		sprintf(str2,"%sfile/%04u.in/%s"  /* str2 is path/fname */
-			,cfg.data_dir,to,tp);
+			,cfg->data_dir,msg->idx.to,tp);
 		remove(str2);
 		if(!p)
 			break;
 		tp=p+1; }
-	sprintf(str,"%sfile/%04u.in",cfg.data_dir,to);
+	sprintf(str,"%sfile/%04u.in",cfg->data_dir,msg->idx.to);
 	rmdir(str);                     /* remove the dir if it's empty */
 }
 
@@ -157,7 +169,7 @@ int sbbs_t::delmail(uint usernumber, int which)
 				if((i=smb_freemsg(&smb,&msg))!=0)
 					errormsg(WHERE,ERR_REMOVE,smb.file,i,smb.last_error);
 				if(msg.hdr.auxattr&MSG_FILEATTACH)
-					delfattach(msg.idx.to,msg.subj);
+					delfattach(&cfg,&msg);
 				smb_freemsgmem(&msg); }
 			continue; }
 		idxbuf[l]=msg.idx;
