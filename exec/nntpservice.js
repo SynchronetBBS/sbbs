@@ -391,7 +391,10 @@ while(client.socket.is_connected) {
 				writeln("Subject: " + hdr.subject);
 				writeln("Message-ID: " + hdr.id);
 				writeln("Date: " + hdr.date);
-				writeln("Newsgroups: " + selected.newsgroup);
+				if(hdr.newsgroups!=undefined)
+					writeln("Newsgroups: " + hdr.newsgroups);
+				else
+					writeln("Newsgroups: " + selected.newsgroup);
 				if(hdr.reply_id!=undefined)
 					writeln("References: " + hdr.reply_id);
 				/* FidoNet header */
