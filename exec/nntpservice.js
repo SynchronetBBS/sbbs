@@ -153,6 +153,8 @@ while(client.socket.is_connected) {
 				hdr=msgbase.get_msg_header(false,i);
 				if(hdr==null)
 					continue;
+				if(hdr.attr&MSG_DELETE)	/* marked for deletion */
+					continue;
 				writeln(format("%u\t%s\t%s\t%s\t%u\t%u\t%u\t%u"
 					,i
 					,hdr.subject
@@ -183,6 +185,8 @@ while(client.socket.is_connected) {
 			for(i=first;i<=last;i++) {
 				hdr=msgbase.get_msg_header(false,i);
 				if(hdr==null)
+					continue;
+				if(hdr.attr&MSG_DELETE)	/* marked for deletion */
 					continue;
 				var field="";
 				switch(cmd[1].toLowerCase()) {	/* header */
@@ -244,6 +248,10 @@ while(client.socket.is_connected) {
 			}
 			if(hdr.attr&MSG_MODERATED && !(hdr.attr&MSG_VALIDATED)) {
 				writeln("430 unvalidated message");
+				break;
+			}
+			if(hdr.attr&MSG_DELETE) {
+				writeln("430 deleted message");
 				break;
 			}
 			if(hdr.attr&MSG_PRIVATE 
