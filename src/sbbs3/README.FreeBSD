@@ -1,0 +1,35 @@
+README.FreeBSD for Synchronet v3
+--------------------------------
+To compile under FreeBSD, the linuxthreads library is required to be installed.
+The easiest way to install it is from the packages collection as follows:
+
+/stand/sysinstall
+Select Configure
+Select Packages
+Select FTP (or CDROM if you have it)
+Select the mirrors, etc if applicable
+Wait.  ;-)
+Select devel
+Go down to linuxthreads-WHATEVER
+Hit the space bar to select it
+Select OK
+Select Install
+Exit sysinstall
+
+Now, make sure you have GNU make installed.  
+If you don't the procedure is pretty much the same as above.
+
+Now, you can build it... change to the /src/sbbs3 directory and run:
+gmake -f Makefile.gnu os=freebsd
+
+
+
+Why did I use linuxthreads you ask?  I'm just too lazy to figure out the 
+malloc() problem properly.  If you're a better FreeBSD programmer than 
+I am and/or have more time on your hands, you can try building it with 
+pthreads, a couple of tweaks in the Makefile to remove 
+/usr/local/include/pthread/linuxthreads from the include path will do that.  
+Once that's done, you'll notice that you get a segfault in main.cpp whenever 
+you try to use malloec'ed memory... good luck!
+
+- Deuce (deuce@lordlegacy.org)
