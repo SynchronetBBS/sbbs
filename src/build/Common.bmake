@@ -217,6 +217,10 @@ UIFC_SRC	=	$(SRC_ROOT)$(DIRSEP)uifc
 
 xpdev:
 	$(COMSPEC) <<|
+	set VERSION=$(VERSION)
+	set DEBUG=$(DEBUG)
+	set RELEASE=$(RELEASE)
+	set VERBOSE=$(VERBOSE)
 	cd $(XPDEV_SRC)
 	$(MAKE) -$(MAKEFLAGS) lib
 	exit
@@ -224,6 +228,10 @@ xpdev:
 
 xpdev-mt:
 	$(COMSPEC) <<|
+	set VERSION=$(VERSION)
+	set DEBUG=$(DEBUG)
+	set RELEASE=$(RELEASE)
+	set VERBOSE=$(VERBOSE)
 	cd $(XPDEV_SRC)
 	$(MAKE) -$(MAKEFLAGS) mtlib
 	exit
@@ -231,6 +239,10 @@ xpdev-mt:
 
 smblib:
 	$(COMSPEC) <<|
+	set VERSION=$(VERSION)
+	set DEBUG=$(DEBUG)
+	set RELEASE=$(RELEASE)
+	set VERBOSE=$(VERBOSE)
 	cd $(SMBLIB_SRC)
 	$(MAKE) -$(MAKEFLAGS) lib
 	exit
@@ -238,6 +250,10 @@ smblib:
 
 ciolib-mt:
 	$(COMSPEC) <<|
+	set VERSION=$(VERSION)
+	set DEBUG=$(DEBUG)
+	set RELEASE=$(RELEASE)
+	set VERBOSE=$(VERBOSE)
 	cd $(CIOLIB_SRC)
 	$(MAKE) -$(MAKEFLAGS) mtlib
 	exit
@@ -245,6 +261,10 @@ ciolib-mt:
 
 uifc:
 	$(COMSPEC) <<|
+	set VERSION=$(VERSION)
+	set DEBUG=$(DEBUG)
+	set RELEASE=$(RELEASE)
+	set VERBOSE=$(VERBOSE)
 	cd $(UIFC_SRC)
 	$(MAKE) -$(MAKEFLAGS) lib
 	exit
@@ -252,6 +272,10 @@ uifc:
 
 uifc-mt:
 	$(COMSPEC) <<|
+	set VERSION=$(VERSION)
+	set DEBUG=$(DEBUG)
+	set RELEASE=$(RELEASE)
+	set VERBOSE=$(VERBOSE)
 	cd $(UIFC_SRC)
 	$(MAKE) -$(MAKEFLAGS) mtlib
 	exit
