@@ -179,8 +179,10 @@ select No or hit  ESC .
 		i=ulist(WIN_MID,0,0,0,&i,0,str,opt);
 		if(!i) {
 			--cfg.sys_nodes;
-			FREE(cfg.node_path[cfg.sys_nodes]);
-			write_main_cfg(&cfg,backup_level); }
+/*			FREE(cfg.node_path[cfg.sys_nodes]); */
+			write_main_cfg(&cfg,backup_level);
+            rerun_nodes();
+        }
 		continue; }
 	if((i&MSK_ON)==MSK_INS) {
 		strcpy(cfg.node_dir,cfg.node_path[cfg.sys_nodes-1]);
@@ -227,7 +229,9 @@ If you want to abort the creation of this new node, hit  ESC .
 		write_node_cfg(&cfg,backup_level);
 		write_main_cfg(&cfg,backup_level);
 		free_node_cfg(&cfg);
-		continue; }
+        rerun_nodes();
+		continue;
+    }
 	if((i&MSK_ON)==MSK_GET) {
 		if(savnode)
 			free_node_cfg(&cfg);
@@ -243,8 +247,10 @@ If you want to abort the creation of this new node, hit  ESC .
 		strcpy(cfg.node_dir,cfg.node_path[i]);
 		cfg.node_num=i+1;
 		write_node_cfg(&cfg,backup_level);
+        rerun_nodes();
 		changes=1;
-		continue; }
+		continue;
+    }
 
 	if(savnode) {
 		free_node_cfg(&cfg);
@@ -301,8 +307,10 @@ Options with a trailing ... will produce a sub-menu of more options.
 		,str,opt)) {
 		case -1:
 			i=save_changes(WIN_MID);
-			if(!i)
+			if(!i) {
 				write_node_cfg(&cfg,backup_level);
+                rerun_nodes();
+            }
 			if(i!=-1)
 				return;
 			break;

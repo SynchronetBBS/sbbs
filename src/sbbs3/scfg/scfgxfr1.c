@@ -89,8 +89,10 @@ file transfer section of the BBS.
 			i=save_changes(WIN_MID);
 			if(i==-1)
 				break;
-			if(!i)
+			if(!i) {
 				write_file_cfg(&cfg,backup_level);
+                rerun_nodes();
+            }
             return;
 		case 0:
 			SETHELP(WHERE);

@@ -80,6 +80,7 @@ extern read_cfg_text_t txt;
 void bail(int code);
 void errormsg(int line, char *source,  char action, char *object, ulong access);
 int  save_changes(int mode);
+void rerun_nodes();
 void node_menu();
 void node_cfg();
 void results(int i);

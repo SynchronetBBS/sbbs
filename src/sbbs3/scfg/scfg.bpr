@@ -8,7 +8,7 @@
       scfgsub.obj scfgsys.obj scfgxfr1.obj scfgxfr2.obj scfgchat.obj 
       ..\..\uifc\uifc.obj ..\scfgsave.obj ..\scfglib1.obj ..\smblib.obj 
       ..\scfglib2.obj ..\smbwrap.obj ..\ars.obj ..\load_cfg.obj ..\misc.obj 
-      ..\crc32.obj"/>
+      ..\crc32.obj ..\userdat.obj ..\date_str.obj"/>
     <RESFILES value=""/>
     <IDLFILES value=""/>
     <IDLGENFILES value=""/>
@@ -37,8 +37,8 @@
     <WARNINGS value="-w-8065 -w-8064 -w-par -w-csu"/>
   </MACROS>
   <OPTIONS>
-    <IDLCFLAGS value="-I..\. -I.. -I$(BCB)\include -I$(BCB)\include\vcl -I..\..\uifc 
-      -I..\..\spawno -src_suffix cpp -D_DEBUG -boa"/>
+    <IDLCFLAGS value="-src_suffix cpp -D_DEBUG -I..\. -I.. -I$(BCB)\include -I$(BCB)\include\vcl 
+      -I..\..\uifc -I..\..\spawno -boa"/>
     <CFLAG1 value="-Od -H=$(BCB)\lib\vcl50.csm -Hc -Vx -Ve -X- -r- -a8 -b- -k -y -v -vi- -tWC 
       -tWM- -c"/>
     <PFLAGS value="-$YD -$W -$O- -v -JPHNE -M"/>
@@ -107,7 +107,7 @@ Item1=_DEBUG;JAVASCRIPT
 DebugSourceDirs=$(BCB)\source\vcl
 
 [Parameters]
-RunParams=c:\sbbs\ctrl
+RunParams=c:\sbbs\ctrl -l25
 HostApplication=
 RemoteHost=
 RemotePath=

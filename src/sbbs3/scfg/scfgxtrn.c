@@ -73,7 +73,9 @@ online external programs (doors).
                 break;
 			if(!i) {
                 write_xtrn_cfg(&cfg,backup_level);
-				write_main_cfg(&cfg,backup_level); }
+				write_main_cfg(&cfg,backup_level);
+                rerun_nodes();
+            }
 			return;
 		case 0:
 			fevents_cfg();

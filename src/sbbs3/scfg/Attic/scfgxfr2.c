@@ -79,8 +79,10 @@ directories for a more organized file structure.
 		j=save_changes(WIN_MID);
 		if(j==-1)
 			continue;
-		if(!j)
+		if(!j) {
 			write_file_cfg(&cfg,backup_level);
+            rerun_nodes();
+        }
 		return; }
 	if((i&MSK_ON)==MSK_INS) {
 		i&=MSK_OFF;

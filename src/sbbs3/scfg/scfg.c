@@ -43,7 +43,6 @@
 	unsigned _stklen=32000;
 #endif
 
-//extern char *wday[];	/* names of weekdays (3 char) */
 extern char uifc_status;
 
 /********************/
@@ -57,7 +56,6 @@ extern int all_msghdr;
 extern int no_msghdr;
 char **opt;
 char tmp[256];
-char *nulstr="";
 char **mdm_type;
 char **mdm_file;
 int  mdm_types;
@@ -381,9 +379,12 @@ Use the arrow keys and  ENTER  to select an option, or  ESC  to exit.
                     j=save_changes(WIN_MID);
                     if(j==-1)
                         continue;
-                    if(!j)
+                    if(!j) {
                         write_chat_cfg(&cfg,backup_level);
-                    break; }
+                        rerun_nodes();
+                    }
+                    break;
+                }
                 switch(j) {
                     case 0:
                         guru_cfg();
@@ -497,6 +498,20 @@ if(i!=-1)
 return(i);
 }
 
+void rerun_nodes()
+{
+    int i;
+    node_t node;
+    
+    for(i=0;i<cfg.sys_nodes;i++) {
+       	if(getnodedat(&cfg,i+1,&node,TRUE))
+            break;
+        node.misc|=NODE_RRUN;
+        if(putnodedat(&cfg,i+1,&node))
+            break;
+    }
+}
+
 void txt_cfg()
 {
 	static int txt_dflt,bar;
@@ -538,9 +553,12 @@ To configure a text file, select it and hit  ENTER .
 		j=save_changes(WIN_MID);
 		if(j==-1)
 			continue;
-		if(!j)
+		if(!j) {
 			write_file_cfg(&cfg,backup_level);
-		return; }
+            rerun_nodes();
+        }
+		return;
+    }
 	if((i&MSK_ON)==MSK_INS) {
 		i&=MSK_OFF;
 		strcpy(str,"ANSI Artwork");
@@ -700,9 +718,12 @@ To configure a command shell, select it and hit  ENTER .
 		j=save_changes(WIN_MID);
 		if(j==-1)
 			continue;
-		if(!j)
+		if(!j) {
 			write_main_cfg(&cfg,backup_level);
-		return; }
+            rerun_nodes();
+        }
+		return;
+    }
 	if((i&MSK_ON)==MSK_INS) {
 		i&=MSK_OFF;
 		strcpy(str,"Menu Shell");
