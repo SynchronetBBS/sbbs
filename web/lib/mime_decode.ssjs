@@ -91,7 +91,7 @@ function decode_body(TE, heads, body)
 	
 	if(tmp==undefined)
 		tmp="";
-	if(tmp.search(/quoted-principle/i)!=-1) {
+	if(tmp.search(/quoted-printable/i)!=-1) {
 		body=body.replace(/=(\r?\n)/g,"$1");
 		body=body.replace(/=([A-Z0-9]{2})/ig,function (str,p1,offset,s)
 			{
