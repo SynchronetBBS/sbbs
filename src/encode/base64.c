@@ -64,12 +64,13 @@ int b64_decode(char *target, size_t tlen, const char *source, size_t slen)
 		if(i==NULL) {
 			break;
 		}
-		if(*i=='=') i=(char*)base64alphabet; /* pad char */
-		working |= (i-base64alphabet);
-		bits+=6;
-		if(bits>8) {
-			*(outp++)=(char)((working&(0xFF<<(bits-8)))>>(bits-8));
-			bits-=8;
+		if(*i!='=')  { /* pad char */
+			working |= (i-base64alphabet);
+			bits+=6;
+			if(bits>8) {
+				*(outp++)=(char)((working&(0xFF<<(bits-8)))>>(bits-8));
+				bits-=8;
+			}
 		}
 	}
 	if(bits)
@@ -165,12 +166,12 @@ int b64_encode(char *target, size_t tlen, const char *source, size_t slen)  {
 #ifdef BASE64_TEST
 int main(int argc, char**argv)
 {
-	int i;
+	int i,j;
 	char buf[512];
 
 	for(i=1;i<argc;i++) {
-		b64_decode(buf,sizeof(buf),argv[i],0);
-		printf("%s\n",buf);
+		j=b64_decode(buf,sizeof(buf),argv[i],0);
+		printf("%s (%d)\n",buf,j);
 	}
 
 	return 0;
