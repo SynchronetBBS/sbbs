@@ -1,3 +1,23 @@
+/* 
+ * ToDo:
+ * Deal with 
+ * var   SUB_PRIV          =(1<<6)         * Allow private posts on sub
+ * var   SUB_PONLY         =(1<<7)         * Private posts only
+ * var   SUB_ANON          =(1<<8)         * Allow anonymous posts on sub
+ * var   SUB_AONLY         =(1<<9)         * Anonymous only
+ * var   SUB_NAME          =(1<<10)        * Must use real names
+ * var   SUB_FORCED        =(1<<13)        * Sub-board is forced scanning
+ * var   SUB_NOTAG         =(1<<14)        * Don't add tag or origin lines
+ * var   SUB_TOUSER        =(1<<15)        * Prompt for to user on posts
+ * var   SUB_ASCII         =(1<<16)        * ASCII characters only
+ * var   SUB_QUOTE         =(1<<17)        * Allow online quoting
+ * var   SUB_KILL          =(1<<21)        * Kill read messages automatically
+ * var   SUB_KILLP         =(1<<22)        * Kill read pvt messages automatically
+ * var   SUB_EDIT          =(1<<28)        * Users can edit msg text after posting
+ * var   SUB_EDITLAST      =(1<<29)        * Users can edit last message only
+ * var   SUB_NOUSERSIG     =(1<<30)        * Suppress user signatures
+ */
+
 load("html_inc/msgslib.ssjs");
 
 if(sub=='mail') {
