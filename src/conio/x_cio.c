@@ -1,4 +1,5 @@
 #include <stdarg.h>
+#include <stdio.h>
 
 #include "conio.h"
 #include "x_cio.h"
