@@ -19,7 +19,7 @@ template.hdr=msgbase.get_msg_header(false,m);
 template.body=msgbase.get_msg_body(false,m,true,true);
 
 if(template.body.indexOf('\x1b[')>=0 || template.body.indexOf('\x01')>=0)
-	template.body=html_encode(body,true,false,true,true);
+	template.body=html_encode(template.body,true,false,true,true);
 else  {
 	template.body=word_wrap(template.body,79);
 	template.body=html_encode(template.body,true,false,false,false);
