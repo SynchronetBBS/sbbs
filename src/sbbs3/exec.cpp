@@ -567,8 +567,6 @@ long sbbs_t::js_execfile(char *cmd)
 		return(-1); 
 	}
 
-	JS_BeginRequest(js_cx);	/* Required for multi-thread support */
-
 	js_scope=JS_NewObject(js_cx, &js_scope_class, NULL, js_glob);
 
 	if(js_scope!=NULL) {
@@ -600,8 +598,6 @@ long sbbs_t::js_execfile(char *cmd)
 
 		js_script=JS_CompileFile(js_cx, js_scope, path);
 	}
-
-	JS_EndRequest(js_cx);	/* Required for multi-thread support */
 
 	if(js_scope==NULL || js_script==NULL) {
 		errormsg(WHERE,ERR_EXEC,path,0);

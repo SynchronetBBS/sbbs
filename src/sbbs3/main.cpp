@@ -237,7 +237,6 @@ u_long resolve_ip(char *addr)
 } /* extern "C" */
 
 #ifdef JAVASCRIPT
-JSRuntime* js_runtime=NULL;
 
 static JSBool
 js_log(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
@@ -457,7 +456,7 @@ static JSClass js_server_class = {
         JS_EnumerateStub,JS_ResolveStub,JS_ConvertStub,JS_FinalizeStub 
 }; 
 
-bool sbbs_t::js_initcx()
+bool sbbs_t::js_init()
 {
 	char		node[128];
 	char		ver[256];
@@ -469,14 +468,19 @@ bool sbbs_t::js_initcx()
     else
     	strcpy(node,client_name);
 
-	lprintf("%s JavaScript: Initializing context",node);
+	lprintf("%s JavaScript: Creating runtime: %lu bytes"
+		,node,JAVASCRIPT_RUNTIME_MEMORY);
+
+	if((js_runtime = JS_NewRuntime(JAVASCRIPT_RUNTIME_MEMORY))==NULL)
+		return(false);
+
+	lprintf("%s JavaScript: Initializing context (stack: %lu bytes)"
+		,node,JAVASCRIPT_CONTEXT_STACK);
 
     if((js_cx = JS_NewContext(js_runtime, JAVASCRIPT_CONTEXT_STACK))==NULL)
 		return(false);
 
 	bool success=false;
-
-	JS_BeginRequest(js_cx);	/* Required for multi-thread support */
 
 	do {
 
@@ -537,8 +541,6 @@ bool sbbs_t::js_initcx()
 		success=true;
 
 	} while(0);
-
-	JS_EndRequest(js_cx);	/* Required for multi-thread support */
 
 	if(!success) {
 		JS_DestroyContext(js_cx);
@@ -958,8 +960,10 @@ void event_thread(void* arg)
 	thread_up();
 
 #ifdef JAVASCRIPT
-	if(js_runtime!=NULL) 
-		sbbs->js_initcx();	/* This must be done in the context of the event thread */
+	if(!(startup->options&BBS_OPT_NO_JAVASCRIPT)) {
+		if(!sbbs->js_init())	/* This must be done in the context of the node thread */
+			lprintf("!JavaScript Initialization FAILURE");
+	}
 #endif
 
 	while(!sbbs->terminated && telnet_socket!=INVALID_SOCKET) {
@@ -1573,7 +1577,8 @@ sbbs_t::sbbs_t(ushort node_num, DWORD addr, char* name, SOCKET sd,
 	node_ext_fp=NULL;
 
 #ifdef JAVASCRIPT
-	js_cx=NULL;	/* context */
+	js_runtime=NULL;	/* runtime */
+	js_cx=NULL;			/* context */
 #endif
 
 	for(i=0;i<TOTAL_TEXT;i++)
@@ -2007,6 +2012,12 @@ sbbs_t::~sbbs_t()
 		lprintf("%s JavaScript: Destroying context",node);
 		JS_DestroyContext(js_cx);
 		js_cx=NULL;
+	}
+
+	if(js_runtime!=NULL) {
+		lprintf("%s JavaScript: Destroying runtime",node);
+		JS_DestroyRuntime(js_runtime);
+		js_runtime=NULL;
 	}
 #endif
 
@@ -2585,16 +2596,16 @@ void node_thread(void* arg)
 	sbbs_random(10);	/* Throw away first number */
 
 #ifdef JAVASCRIPT
-	if(js_runtime!=NULL) 
-		sbbs->js_initcx();	/* This must be done in the context of the node thread */
+	if(!(startup->options&BBS_OPT_NO_JAVASCRIPT)) {
+		if(!sbbs->js_init())	/* This must be done in the context of the node thread */
+			lprintf("!JavaScript Initialization FAILURE");
+	}
 #endif
 
 	if(sbbs->answer()) {
 
 #ifdef JAVASCRIPT
 		if(sbbs->js_cx!=NULL) {
-			JS_BeginRequest(sbbs->js_cx);	/* Required for multi-thread support */
-
 			/* User class */
 			if(js_CreateUserClass(sbbs->js_cx, sbbs->js_glob, &sbbs->cfg)==NULL) 
 				lprintf("!JavaScript ERROR creating user class");
@@ -2610,8 +2621,6 @@ void node_thread(void* arg)
 			/* msg_area object */
 			if(js_CreateMsgAreaObject(sbbs->js_cx, sbbs->js_glob, &sbbs->cfg, &sbbs->useron)==NULL) 
 				lprintf("!JavaScript ERROR createing msg_area object");
-
-			JS_EndRequest(sbbs->js_cx);	/* Required for multi-thread support */
 		}
 #endif
 
@@ -2950,14 +2959,6 @@ static void cleanup(int code)
 
 	pthread_mutex_destroy(&event_mutex);
 
-#ifdef JAVASCRIPT
-	if(js_runtime!=NULL) {
-		lprintf("BBS JavaScript: Destroying runtime");
-		JS_DestroyRuntime(js_runtime);
-		js_runtime=NULL;
-	}
-#endif
-
     lputs("BBS System thread terminated");
 	status("Down");
 	if(startup->terminated!=NULL)
@@ -3144,19 +3145,6 @@ void DLLCALL bbs_thread(void* arg)
 	}
 
 	startup->node_inbuf=node_inbuf;
-
-#ifdef JAVASCRIPT
-	if(!(startup->options&BBS_OPT_NO_JAVASCRIPT)) {
-		lprintf("JavaScript: %s",JS_GetImplementationVersion());
-		lprintf("JavaScript: Creating runtime: %lu bytes", JAVASCRIPT_RUNTIME_MEMORY);
-		if((js_runtime = JS_NewRuntime(JAVASCRIPT_RUNTIME_MEMORY))==NULL) {
-			lprintf("!JS_NewRuntime failed");
-			cleanup(1);
-			return;
-		}
-		lprintf("JavaScript: Context stack: %lu bytes", JAVASCRIPT_CONTEXT_STACK);
-	}
-#endif
 
     /* open a socket and wait for a client */
 
