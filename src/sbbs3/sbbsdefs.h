@@ -47,7 +47,7 @@
 /*************/
 
 #define VERSION 	"3.10"  /* Version: Major.minor  */
-#define REVISION	'i'     /* Revision: lowercase letter */
+#define REVISION	'j'     /* Revision: lowercase letter */
 
 #define VERSION_NOTICE		"Synchronet BBS for "PLATFORM_DESC\
 								"  Version " VERSION
