@@ -2286,9 +2286,10 @@ BOOL DLLCALL getstats(scfg_t* cfg, char node, stats_t* stats)
 
 void sbbs_t::hangup(void)
 {
-	mswait(1000);	/* Give socket output buffer time to flush */
-	riosync(0);
 	if(client_socket!=INVALID_SOCKET) {
+		mswait(1000);	/* Give socket output buffer time to flush */
+		riosync(0);
+		client_off(client_socket);
 		close_socket(client_socket);
 		client_socket=INVALID_SOCKET;
 	}
@@ -2335,8 +2336,8 @@ void sbbs_t::putcom(char *str, int len)
 void sbbs_t::riosync(char abortable)
 {
 	if(useron.misc&(RIP|WIP))	/* don't allow abort with RIP or WIP */
-		abortable=0;		/* mainly because of ANSI cursor posistion response */
-	if(sys_status&SS_ABORT)	/* no need to sync if already aborting */
+		abortable=0;			/* mainly because of ANSI cursor position response */
+	if(sys_status&SS_ABORT)		/* no need to sync if already aborting */
 		return;
 	time_t start=time(NULL);
 	while(online && rioctl(TXBC)) {				/* wait up to three minutes for tx buf empty */
@@ -2346,7 +2347,7 @@ void sbbs_t::riosync(char abortable)
 			break;								/* abort sync */
 		}
 		if(time(NULL)-start>180) {				/* timeout */
-			rioctl(IOCS|PAUSE); 
+			errorlog("riosync timeout"); 
 			break;
 		}
 		mswait(100);
@@ -2604,7 +2605,6 @@ void node_thread(void* arg)
 	time_t			now;
 	node_t			node;
 	user_t			user;
-	SOCKET			client_socket;
 	sbbs_t*			sbbs = (sbbs_t*) arg;
 
 	update_clients();
@@ -2616,8 +2616,6 @@ void node_thread(void* arg)
 
 	srand(clock());		/* Seed random number generator */
 	sbbs_random(10);	/* Throw away first number */
-
-	client_socket = node_socket[sbbs->cfg.node_num-1];
 
 #ifdef JAVASCRIPT
 	if(!(startup->options&BBS_OPT_NO_JAVASCRIPT)) {
@@ -2686,8 +2684,7 @@ void node_thread(void* arg)
 		PlaySound(startup->hangup_sound, NULL, SND_ASYNC|SND_FILENAME);
 #endif
 
-	client_off(client_socket);
-	sbbs->hangup();	/* just to be sure we shut down the output_thread */
+	sbbs->hangup();	/* closes sockets, calls client_off, and shuts down the output_thread */
     node_socket[sbbs->cfg.node_num-1]=INVALID_SOCKET;
 
 	sbbs->logout();
