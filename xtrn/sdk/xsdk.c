@@ -213,15 +213,8 @@
 WSADATA WSAData;		// WinSock data
 #endif
 
-char *xsdk_ver="3.10"
-#ifdef _WIN32
-	"/Win32"
-#elif defined(__linux__)
-	"/Linux"
-#elif defined(__unix__)
-	"/Unix"
-#endif
-	;
+char *xsdk_ver="3.10";
+ulong xsdk_mode=XSDK_MODE_NOCONSOLE;
 
 #ifndef __16BIT__	/* Sockets */
 
@@ -399,7 +392,8 @@ void outchar(char ch)
 
 #endif
 
-	write(fileno(con_fp),&ch,1);
+	if(con_fp!=NULL)
+		write(fileno(con_fp),&ch,1);
 
 	if(ch==LF) {
 		lncntr++;
@@ -638,6 +632,11 @@ char inkey(long mode)
 		RESTORELINE;
 		lncntr=0;
 		return(0); }
+
+#ifndef __16BIT__
+	if(ch==LF) 
+		ch=0;		/* Ignore LF of Telnet CR/LF sequence */
+#endif
 
 	if(ch==3)
 		aborted=1;
@@ -1942,6 +1941,12 @@ void initdata(void)
 #endif
 	}
 
+	if(xsdk_mode&XSDK_MODE_NOCONSOLE) {
+		con_fp=NULL;
+#ifdef _WIN32
+		FreeConsole();
+#endif
+	}
 }
 
 /****************************************************************************/
@@ -2110,7 +2115,7 @@ char *ultoac(ulong l, char *string)
 	char str[81];
 	char i,j,k;
 
-	sprintf(str,"%lu",10);
+	sprintf(str,"%lu",l);
 	i=strlen(str)-1;
 	j=i/3+1+i;
 	string[j--]=0;
