@@ -527,6 +527,18 @@ var	SCAN_FIND		=(1<<4)		/* Scan for text in messages				*/
 var	SCAN_UNREAD		=(1<<5)		/* Find un-read messages to you 			*/
 					    		/********************************************/
 
+								/********************************************/
+								/* Bits in mode for bbs.scan_dirs()			*/
+								/* bbs.list_files() & bbs.list_file_info()	*/
+								/********************************************/
+var FL_ULTIME		=(1<<0)		/* List files by upload time                */
+var FL_DLTIME		=(1<<1)		/* List files by download time              */
+var FL_NO_HDR		=(1<<2)		/* Don't list directory header              */
+var FL_FINDDESC		=(1<<3)		/* Find text in description                 */
+var FL_EXFIND		=(1<<4)		/* Find text in description - extended info */
+var FL_VIEW			=(1<<5)		/* View ZIP/ARC/GIF etc. info               */
+								/********************************************/
+
 					    		/********************************************/
 								/* Values of mode for bbs.list_users()		*/
 					    		/********************************************/
