@@ -875,6 +875,9 @@ static void handle_sigs(void)  {
 			default:
 				sprintf(str,"     Signal has no handler (unexpected)");
 				log_puts(LOG_NOTICE,str);
+				sprintf(str,"     Sleeping for 1 second");
+				log_puts(LOG_NOTICE,str);
+				SLEEP(1000);
 		}
 	}
 }
