@@ -6,8 +6,15 @@
 	#include <mmsystem.h>
 #elif defined(__unix__)
 	#include <fcntl.h>
-	#include <soundcard.h>
-	#include <sys/soundcard.h>
+	#if SOUNDCARD_H_IN==SYS
+		#include <sys/soundcard.h>
+	#elif SOUNDCARD_H_IN==INCLUDE
+		#include <soundcard.h>
+	#elif SOUNDCARD_H_IN==LINUX
+		#include <linux/soundcard.h>
+	#else
+		#warning Cannot find soundcard.h
+	#endif
 	/* KIOCSOUND */
 	#if defined(__FreeBSD__)
 		#include <sys/kbio.h>
