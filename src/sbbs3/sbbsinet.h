@@ -62,9 +62,10 @@
 #include <sys/time.h>	/* struct timeval */
 #include <arpa/inet.h>	/* inet_ntoa */
 #include <unistd.h>		/* close */
-#include <errno.h>		/* errno */
 
 #endif
+
+#include <errno.h>		/* errno */
 
 /**********************************/
 /* Socket Implementation-specific */
