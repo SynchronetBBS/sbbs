@@ -113,7 +113,7 @@ int sbbs_t::login(char *str, char *pw)
 			useron.number=0;
 			useron.misc=useron_misc;
 			return(LOGIC_FALSE); }
-		if(REALSYSOP && !chksyspass(0)) {
+		if(REALSYSOP && !chksyspass()) {
 			bputs(text[InvalidLogon]);
 			useron.number=0;
 			useron.misc=useron_misc;
