@@ -45,13 +45,13 @@ include targets.mk		# defines all targets
 include objects.mk		# defines $(OBJS)
 
 ifdef USE_DIALOG		
- LFLAGS	+=	-L../../libdialog -ldialog -lncurses
+ LFLAGS	+=	-L../../libdialog -ldialog -lcurses
  CFLAGS	+=	-I../../libdialog -DUSE_DIALOG
  OBJS += $(ODIR)$(SLASH)uifcd.$(OFILE)
 endif
 
 ifdef USE_CURSES		
- LFLAGS	+=	-lncurses
+ LFLAGS	+=	-lcurses
  CFLAGS	+=	-DUSE_CURSES
  OBJS += $(ODIR)$(SLASH)uifcc.$(OFILE)
 endif
