@@ -105,4 +105,4 @@ for(displayed=0;displayed<max_messages && last_offset >= 0 && msgarray[last_offs
 
 write_template("msgs/msgs.inc");
 write_template("footer.inc");
-msgbase.close();
+msgs_done();

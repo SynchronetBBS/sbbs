@@ -52,3 +52,5 @@ if(template.hdr != null)  {
 write_template("header.inc");
 write_template("msgs/msg.inc");
 write_template("footer.inc");
+
+msgs_done();

@@ -36,3 +36,5 @@ else {
 write_template("header.inc");
 write_template("msgs/subinfo.inc");
 write_template("footer.inc");
+
+msgs_done();

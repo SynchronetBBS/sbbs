@@ -20,3 +20,5 @@ template.title="Post a message";
 write_template("header.inc");
 write_template("msgs/post.inc");
 write_template("footer.inc");
+
+msgs_done();

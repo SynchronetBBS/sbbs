@@ -8,3 +8,5 @@ template.group=msg_area.grp_list[g];
 template.subs=msg_area.grp_list[g].sub_list;
 write_template("msgs/subs.inc");
 write_template("footer.inc");
+
+msgs_done();

@@ -34,9 +34,10 @@ if(msgbase.open!=undefined && msgbase.open()==false) {
 if(!msgbase.save_msg(hdrs,http_request.query.body))  {
 	error(msgbase.last_error);
 }
-msgbase.close();
 http_reply.status="201 Created";
 title="Message posted";
 write_template("header.inc");
 write_template("msgs/posted.inc");
 write_template("footer.inc");
+
+msgs_done();

@@ -32,8 +32,9 @@ if(this.word_wrap != undefined)  {
 else  {
 	template.body=template.body.replace(/^(.)/mg,"> $1");
 }
-msgbase.close();
 title="Reply to message";
 write_template("header.inc");
 write_template("msgs/reply.inc");
 write_template("footer.inc");
+
+msgs_done();
