@@ -1,6 +1,6 @@
-/* csv_file.c */
+/* dat_file.c */
 
-/* Functions to deal with comma-separated value (CSV) files and lists */
+/* Functions that deal with line-based (text) data files and lists */
 
 /* $Id$ */
 
@@ -35,12 +35,19 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#include "csv_file.h"
+#include "dat_file.h"
 #include "genwrap.h"	/* lastchar */
+#include "filewrap.h"	/* chsize */
 #include <stdlib.h>		/* malloc */
 #include <string.h>		/* strdup */
 
-char* csvEncode(char* field)
+#include "truncsp.c"	/* truncsp() and truncnl() */
+
+/***********************************/
+/* CSV (Comma Separated Value) API */
+/***********************************/
+
+static char* csvEncode(char* field)
 {
 	char* dst;
 	char* src;
@@ -80,7 +87,7 @@ char* csvEncode(char* field)
 	return(buf);
 }
 
-char* csvLine(str_list_t columns)
+char* csvLineCreator(str_list_t columns)
 {
 	char*	str=NULL;
 	char*	p;
@@ -108,35 +115,7 @@ char* csvLine(str_list_t columns)
 	return(str);
 }
 
-str_list_t csvCreate(str_list_t records[], str_list_t columns)
-{
-	char*		p;
-	str_list_t	list;
-	size_t		i;
-	size_t		li=0;
-
-	if((list=strListInit())==NULL)
-		return(NULL);
-
-	if(columns!=NULL) {
-		p=csvLine(columns);
-		strListAppend(&list,p,li++);
-		free(p);
-	}
-		
-	if(records!=NULL)
-		for(i=0;records[i]!=NULL;i++) {
-			p=csvLine(records[i]);
-			strListAppend(&list,p,li++);
-			free(p);
-		}
-
-	return(list);
-}
-
-#include "truncsp.c"
-
-str_list_t csvParseLine(char* line)
+str_list_t csvLineParser(char* line)
 {
 	char*		p;
 	char*		buf;
@@ -151,6 +130,8 @@ str_list_t csvParseLine(char* line)
 		return(NULL);
 	}
 
+	truncsp(buf);
+
 	for(p=strtok(buf,",");p;p=strtok(NULL,","))
 		strListAppend(&list,p,count++);
 
@@ -159,9 +140,109 @@ str_list_t csvParseLine(char* line)
 	return(list);
 }
 
-str_list_t* csvParseList(str_list_t records, str_list_t* columns)
+/*********************/
+/* Tab-Delimited API */
+/*********************/
+
+char* tabLineCreator(str_list_t columns)
 {
-	size_t		i=0;
+	char*	str=NULL;
+	char*	p;
+	size_t	i,len;
+
+	if(columns==NULL)
+		return(NULL);
+
+	for(i=0;columns[i]!=NULL;i++) {
+		len=strlen(columns[i])*2;
+		if(str)
+			len+=strlen(str);
+		if((p=realloc(str,len))==NULL)
+			break;
+		str=p;
+		if(i) strcat(str,"\t");
+		else  *str=0;
+		strcat(str,columns[i]);
+	}
+
+	return(str);
+}
+
+str_list_t tabLineParser(char* line)
+{
+	char*		p;
+	char*		buf;
+	size_t		count=0;
+	str_list_t	list;
+
+	if((list=strListInit())==NULL)
+		return(NULL);
+
+	if((buf=strdup(line))==NULL) {
+		strListFree(&list);
+		return(NULL);
+	}
+
+	for(p=strtok(buf,"\t");p;p=strtok(NULL,"\t"))
+		strListAppend(&list,p,count++);
+
+	free(buf);
+
+	return(list);
+}
+
+/* Generic API */
+
+str_list_t dataCreateList(str_list_t records[], str_list_t columns, dataLineCreator_t lineCreator)
+{
+	char*		p;
+	str_list_t	list;
+	size_t		i;
+	size_t		li=0;
+
+	if((list=strListInit())==NULL)
+		return(NULL);
+
+	if(columns!=NULL) {
+		p=lineCreator(columns);
+		strListAppend(&list,p,li++);
+		free(p);
+	}
+		
+	if(records!=NULL)
+		for(i=0;records[i]!=NULL;i++) {
+			p=lineCreator(records[i]);
+			strListAppend(&list,p,li++);
+			free(p);
+		}
+
+	return(list);
+}
+
+BOOL dataWriteFile(FILE* fp, str_list_t records[], str_list_t columns, dataLineCreator_t lineCreator)
+{
+	size_t		count,total;
+	str_list_t	list;
+
+	rewind(fp);
+
+	if(chsize(fileno(fp),0)!=0)	/* truncate */
+		return(FALSE);
+
+	if((list=dataCreateList(records,columns,lineCreator))==NULL)
+		return(FALSE);
+
+	total = strListCount(list);
+	count = strListWriteFile(fp,list,"\n");
+	strListFree(&list);
+
+	return(count == total);
+}
+
+str_list_t* dataParseList(str_list_t records, str_list_t* columns, dataLineParser_t lineParser)
+{
+	size_t		ri=0;
+	size_t		li=0;
 	str_list_t* list;
 
 	if(records==NULL)
@@ -171,21 +252,19 @@ str_list_t* csvParseList(str_list_t records, str_list_t* columns)
 		return(NULL);
 
 	if(columns!=NULL) {
-		if((*columns=csvParseLine(records[i++]))==NULL)
+		if((*columns=lineParser(records[ri++]))==NULL)
 			return(NULL);
 	}
 
-	while(records[i]!=NULL) {
-		list[i]=csvParseLine(records[i]);
-		i++;
-	}
+	while(records[ri]!=NULL)
+		list[li++]=lineParser(records[ri++]);
 
-	list[i]=NULL; /* terminate */
+	list[li]=NULL; /* terminate */
 
 	return(list);
 }
 
-str_list_t*	csvReadFile(FILE* fp, str_list_t* columns)
+str_list_t*	dataReadFile(FILE* fp, str_list_t* columns, dataLineParser_t lineParser)
 {
 	str_list_t*	records;
 	str_list_t	lines;
@@ -196,71 +275,13 @@ str_list_t*	csvReadFile(FILE* fp, str_list_t* columns)
 	if((lines=strListReadFile(fp, NULL, 0))==NULL)
 		return(NULL);
 
-	/* truncate white-space off end of strings */
+	/* truncate line-feed chars off end of strings */
 	for(i=0; lines[i]!=NULL; i++)
-		truncsp(lines[i]);
+		truncnl(lines[i]);
 
-	records=csvParseList(lines,columns);
+	records=dataParseList(lines,columns,lineParser);
 
 	strListFree(&lines);
 
 	return(records);
 }
-
-#if 0
-
-int main()
-{
-	char* columns[] =	{"name", "rank", "serial number", NULL};
-	str_list_t	data[3];
-	str_list_t	list;
-	size_t		i;
-
-	data[0]=strListInit();
-	strListPush(&data[0],"rob \"the stud\"");
-	strListPush(&data[0],"general");
-	strListPush(&data[0],"549-71-1344");
-
-	data[1]=strListInit();
-	strListPush(&data[1],"mark");
-	strListPush(&data[1]," colonel");
-	strListPush(&data[1],"x,xx");
-
-	data[2]=NULL;
-
-	list=csvCreate(data, columns);
-
-	for(i=0;list[i];i++)
-		printf("%s\n",list[i]);
-}
-
-#elif 0	/* decode and display .csv file */
-
-void main(int argc, char** argv)
-{
-	str_list_t*	records;
-	str_list_t	columns;
-	FILE*		fp;
-	size_t		i,j;
-
-	if(argc<2) {
-		printf("usage: csv_file <file.csv>\n");
-		exit(0);
-	}
-
-	if((fp=fopen(argv[1],"r"))==NULL) {
-		printf("Error opening %s\n",argv[1]);
-		exit(0);
-	}
-
-	if((records=csvReadFile(fp, &columns))==NULL) {
-		printf("Error reading %s\n",argv[1]);
-		exit(0);
-	}
-
-	for(i=0;records[i];i++)
-		for(j=0;records[i][j];j++)
-			printf("%s[%d]=%s\n",columns[j],i,records[i][j]);
-}
-
-#endif

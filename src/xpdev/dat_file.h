@@ -1,6 +1,6 @@
-/* tab_file.h */
+/* dat_file.h */
 
-/* Functions to deal with tab-delimited files and lists */
+/* Functions to deal with comma-separated value (CSV) files and lists */
 
 /* $Id$ */
 
@@ -35,8 +35,8 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#ifndef _TAB_FILE_H
-#define _TAB_FILE_H
+#ifndef _DAT_FILE_H
+#define _DAT_FILE_H
 
 #include "str_list.h"
 
@@ -44,10 +44,35 @@
 extern "C" {
 #endif
 
-str_list_t	tabCreateList(str_list_t records[], str_list_t columns /* optional */);
-str_list_t	tabParseLine(char* line);
-str_list_t*	tabParseList(str_list_t list, str_list_t* columns /* optional */);
-str_list_t*	tabReadFile(FILE* fp, str_list_t* columns /* optional */);
+/***************/
+/* Generic API */
+/***************/
+
+typedef str_list_t	(*dataLineParser_t)(char*);
+typedef char*		(*dataLineCreator_t)(str_list_t);
+
+/* columns arguments are optional (may be NULL) */
+str_list_t*	dataParseList(str_list_t list, str_list_t* columns, dataLineParser_t);
+str_list_t*	dataReadFile(FILE* fp, str_list_t* columns, dataLineParser_t);
+
+str_list_t	dataCreateList(str_list_t records[], str_list_t columns, dataLineCreator_t);
+BOOL		dataWriteFile(FILE* fp, str_list_t records[], str_list_t columns, dataLineCreator_t);
+
+/* CSV (comma separated value) API */
+char*		csvLineCreator(str_list_t);
+str_list_t	csvLineParser(char* line);
+#define		csvParseList(list,col)		dataParseList(list,col,csvLineParser)
+#define		csvCreateList(rec,col)		dataCreateList(rec,col,csvLineCreator)
+#define		csvReadFile(fp,col)			dataReadFile(fp,col,csvLineParser)
+#define		csvWriteFile(fp,rec,col)	dataWriteFile(fp,rec,col,csvLineCreator)
+
+/* Tab-delimited API */
+char*		tabLineCreator(str_list_t);
+str_list_t	tabLineParser(char* line);
+#define		tabParseList(list,col)		dataParseList(list,col,tabLineParser)
+#define		tabCreateList(rec,col)		dataCreateList(rec,col,tabLineCreator)
+#define		tabReadFile(fp,col)			dataReadFile(fp,col,tabLineParser)
+#define		tabWriteFile(fp,rec,col)	dataWriteFile(fp,rec,col,tabLineCreator)
 
 #if defined(__cplusplus)
 }
