@@ -96,9 +96,9 @@ void __fastcall TAboutBoxForm::FormShow(TObject *Sender)
         ,Ver->dwFileVersionLS>>16
         ,Ver->dwFileVersionLS&0xffff
         ,Ver->dwFileFlags&VS_FF_DEBUG ?
-            " debug" : ""
+            " Debug" : ""
         ,Ver->dwFileFlags&VS_FF_PRERELEASE ?
-            " pre-release" : ""
+            " Pre-release" : ""
         ,__DATE__, __TIME__, compiler
         );
 
