@@ -1452,6 +1452,6 @@ function User_Quit(str,suppress_bcast,is_netsplit,origin) {
 	delete Local_Users[this.id];
 	delete Users[this.nick.toUpperCase()];
 	delete this;
-	rebuild_socksel_array();
+	rebuild_socksel_array = true;
 }
 

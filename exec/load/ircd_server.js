@@ -1023,7 +1023,7 @@ function Server_Quit(str,suppress_bcast,is_netsplit,origin) {
 	delete Local_Servers[this.id];
 	delete Servers[this.nick.toLowerCase()];
 	delete this;
-	rebuild_socksel_array();
+	rebuild_socksel_array = true;
 }
 
 function IRCClient_synchronize() {

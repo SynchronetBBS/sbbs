@@ -111,18 +111,6 @@ function true_array_len(my_array) {
 	return counter;
 }
 
-// Sigh, socket_select only accepts a sequential array with numerical indexes.
-// This rebuilds the array whenever someone connects or disconnects.
-function rebuild_socksel_array() {
-	Selectable_Sockets = new Array;
-	Selectable_Sockets_Map = new Array;
-	for (i in Local_Sockets) {
-		Selectable_Sockets.push(Local_Sockets[i]);
-		Selectable_Sockets_Map.push(Local_Sockets_Map[i]);
-	}
-	restart_socksel_loop = true;
-}
-
 function ip_to_int(ip) {
 	var quads = ip.split(".");
 	var addr = (quads[0]&0xff)<<24;
@@ -667,7 +655,7 @@ Local_Unreg = new Array;
 Local_Users = new Array;
 Local_Servers = new Array;
 
-restart_socksel_loop = false;
+rebuild_socksel_array = false;
 
 sync_310 = false;
 network_debug = false;
@@ -760,24 +748,33 @@ while (!server.terminated) {
 		}
 	}
 
+	if (rebuild_socksel_array) {
+		Selectable_Sockets = new Array;
+		Selectable_Sockets_Map = new Array
+		for (i in Local_Sockets) {
+			Selectable_Sockets.push(Local_Sockets[i]);
+			Selectable_Sockets_Map.push(Local_Sockets_Map[i]);
+		}
+		rebuild_socksel_array = false;
+	}
+
 	// Check for ping timeouts, and, do work on the sockets if we're 3.10
 	for(this_sock in Selectable_Sockets) {
-		if (Selectable_Sockets_Map[this_sock].check_timeout())
+		if (Selectable_Sockets_Map[this_sock] &&
+		    Selectable_Sockets_Map[this_sock].check_timeout())
 			continue;
 		if(this.socket_select==undefined)
 			Selectable_Sockets_Map[this_sock].work();
 	}
 
 	// do some work.
-	restart_socksel_loop = false;
 	if (!Selectable_Sockets.length) {
 		mswait(1000);
 	} else if (this.socket_select!=undefined) {
 		var readme = socket_select(Selectable_Sockets, 1 /*secs*/);
 		for(thisPolled in readme) {
-			Selectable_Sockets_Map[readme[thisPolled]].work();
-			if (restart_socksel_loop)
-				break;
+			if (Selectable_Sockets_Map[readme[thisPolled]])
+				Selectable_Sockets_Map[readme[thisPolled]].work();
 		}
 	}
 
@@ -3160,7 +3157,7 @@ function IRCClient_setusermode(modestr) {
 		bcast_modestr += "+" + bcast_addmodes;
 	if (bcast_delmodes)
 		bcast_modestr += "-" + bcast_delmodes;
-	if (!this.local) {
+	if (this.local) {
 		this.originatorout("MODE "+this.nick+" "+final_modestr,this);
 		if (bcast_addmodes || bcast_delmodes)
 			this.bcast_to_servers("MODE "+this.nick+" "+bcast_modestr,this);

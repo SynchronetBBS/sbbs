@@ -60,7 +60,7 @@ function Unregistered_Client(id,socket) {
 	// We're a local socket that must be polled.
 	Local_Sockets[id] = socket.descriptor;
 	Local_Sockets_Map[id] = this;
-	rebuild_socksel_array();
+	rebuild_socksel_array = true;
 	log(format("%04u",socket.descriptor)
 		+ " Accepted new connection: " + socket.remote_ip_address
 		+ " port " + socket.remote_port);
@@ -217,7 +217,7 @@ function Unregistered_Commands() {
 			var new_server = Servers[cmd[1].toLowerCase()];
 			Local_Servers[this.id] = new_server;
 			Local_Sockets_Map[this.id] = new_server;
-			rebuild_socksel_array();
+			rebuild_socksel_array = true;
 			new_server.socket = this.socket;
 			new_server.hops = cmd[2];
 			new_server.info = IRC_string(cmdline);
@@ -317,7 +317,7 @@ function Unregistered_Commands() {
 		new_user = Users[this.nick.toUpperCase()];
 		Local_Sockets_Map[this.id] = new_user;
 		Local_Users[this.id] = new_user;
-		rebuild_socksel_array();
+		rebuild_socksel_array = true;
 		new_user.socket = this.socket;
 		new_user.nick = this.nick;
 		new_user.uprefix = this.uprefix;
@@ -356,6 +356,6 @@ function Unregistered_Quit(msg) {
 	delete Local_Sockets_Map[this.id];
 	delete Unregistered[this.id];
 	delete this;
-	rebuild_socksel_array();
+	rebuild_socksel_array = true;
 }
 
