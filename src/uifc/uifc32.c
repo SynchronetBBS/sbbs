@@ -1613,7 +1613,7 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 		if(i>j) j=i;
 		str[j]=0;
 		getstrupd(left, top, width, str, i, &soffset);
-		if(f || (ch=inkey()))
+		if(f || (ch=inkey())!=0)
 		{
 			if(f)
 				ch=f;
