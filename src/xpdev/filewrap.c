@@ -275,16 +275,16 @@ FILE *_fsopen(char *pszFilename, char *pszMode, int shmode)
 			Mode=O_RDONLY;
 			break;
 		case 2:
-			Mode=O_WRONLY|O_CREAT;
+			Mode=O_WRONLY|O_CREAT|O_TRUNC;
 			break;
 		case 4:
 			Mode=O_APPEND|O_WRONLY|O_CREAT;
 			break;
 		case 9:
-			Mode=O_RDWR;
+			Mode=O_RDWR|O_CREAT;
 			break;
 		case 10:
-			Mode=O_RDWR|O_CREAT;
+			Mode=O_RDWR|O_CREAT|O_TRUNC;
 			break;
 		case 12:
 			Mode=O_RDWR|O_APPEND|O_CREAT;
