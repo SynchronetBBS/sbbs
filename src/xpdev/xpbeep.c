@@ -130,7 +130,7 @@ void makesine(double freq, unsigned char *wave, int samples)
 
 #ifdef _WIN32
 
-void SineBeep(double freq, DWORD duration)
+void xpbeep(double freq, DWORD duration)
 {
 	WAVEFORMATEX	w;
 	WAVEHDR			wh;
@@ -212,7 +212,7 @@ void DLLCALL unix_beep(int freq, int dur)
 #endif
 }
 
-void DLLCALL SineBeep(double freq, DWORD duration)
+void DLLCALL xpbeep(double freq, DWORD duration)
 {
 #ifdef AFMT_U8
 	int dsp;

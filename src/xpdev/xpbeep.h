@@ -3,14 +3,14 @@
 
 #if defined(_WIN32)
 	#if 0
-	#define BEEP(freq,dur)	SineBeep((double)(freq),(DWORD)(dur))
+	#define BEEP(freq,dur)	xpbeep((double)(freq),(DWORD)(dur))
 	#else
 	#define BEEP(freq,dur)	Beep((DWORD)(freq),(DWORD)(dur))
 	#endif
 #elif defined(__OS2__)
 	#define BEEP(freq,dur)	DosBeep(freq,dur)
 #elif defined(__unix__) || defined(__APPLE__)
-	#define BEEP(freq,dur)	SineBeep((double)(freq),(DWORD)(dur))
+	#define BEEP(freq,dur)	xpbeep((double)(freq),(DWORD)(dur))
 #else
 	#error "Unsupported Target: Need some macros and/or function prototypes here."
 #endif
@@ -18,7 +18,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-void SineBeep(double freq, DWORD duration);
+void xpbeep(double freq, DWORD duration);
 #ifdef __unix__
 void unix_beep(int freq, int dur);
 #endif
