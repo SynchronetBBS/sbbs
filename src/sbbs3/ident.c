@@ -67,7 +67,7 @@ char* identify(SOCKADDR_IN* client_addr, u_short local_port, char* buf, size_t m
 		}
 		rd=recv(sock,buf,maxlen,0);
 		if(rd<1) {
-			sprintf(buf,"ERROR %d receving response",ERROR_VALUE);
+			sprintf(buf,"ERROR %d receiving response",ERROR_VALUE);
 			break;
 		}
 		buf[rd]=0;
