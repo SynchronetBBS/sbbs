@@ -1,4 +1,4 @@
-ifeq ($os),sunos)
+ifeq ($(os),sunos)
  X_PATH	?=	/usr/X
 else
  X_PATH ?=	/usr/X11R6
@@ -26,4 +26,6 @@ ifndef NO_X
    CIOLIB-MT_LIBS		+=  $(UL_PRE)dl$(UL_SUF)
   endif
  endif
+else
+ CFLAGS	+=	$(os)
 endif
