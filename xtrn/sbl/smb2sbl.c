@@ -176,12 +176,16 @@ return(crc);
 
 /****************************************************************************/
 /* Truncates white-space chars off end of 'str'								*/
+/* This is a *special* version of truncsp that truncates at first CR char	*/
 /****************************************************************************/
 static void truncsp(char *str)
 {
-	uint c;
+	uint org,c;
 
+	org=strlen(str);
+    str[strcspn(str,"\r")]=0;
 	c=strlen(str);
+	memset(str+c,0,org-c);	/* clear the remainder of the buffer */
 	while(c && (uchar)str[c-1]<=SP) c--;
 	str[c]=0;
 }
@@ -314,11 +318,12 @@ int main(int argc, char **argv)
 			bbs.created=time(NULL);
 			if(!bbs.birth)
 				bbs.birth=bbs.created;
-			sprintf(bbs.user,"%-.25s",msg.from); }
-		sprintf(bbs.name,"%-.25s",msg.subj);
+			SAFECOPY(bbs.user,msg.from); 
+		}
+		SAFECOPY(bbs.name,msg.subj);
 		bbs.updated=time(NULL);
 		bbs.misc|=FROM_SMB;
-		sprintf(bbs.userupdated,"%-.25s",msg.from);
+		SAFECOPY(bbs.userupdated,msg.from);
 		buf=loadmsgtxt(msg,0);
 		sysop=number=network=terminal=desc=0;
 		l=0;
@@ -329,8 +334,9 @@ int main(int argc, char **argv)
 				l+=5;
 				while(buf[l] && buf[l]<=SP && buf[l]!=CR)
 					l++;
-				sprintf(bbs.name,"%-.25s",buf+l);
-				truncsp(bbs.name); }
+				SAFECOPY(bbs.name,buf+l);
+				truncsp(bbs.name); 
+			}
 			if(!strnicmp(buf+l,"BIRTH:",6)) {
 				l+=6;
 				while(buf[l] && buf[l]<=SP && buf[l]!=CR)
@@ -340,26 +346,26 @@ int main(int argc, char **argv)
 				l+=9;
 				while(buf[l] && buf[l]<=SP && buf[l]!=CR)
 					l++;
-				sprintf(bbs.software,"%-.15s",buf+l);
+				SAFECOPY(bbs.software,buf+l);
 				truncsp(bbs.software); }
 			if(!strnicmp(buf+l,"WEB-SITE:",9)) {
 				l+=9;
 				while(buf[l] && buf[l]<=SP && buf[l]!=CR)
 					l++;
-				sprintf(bbs.web_url,"%-.60s",buf+l);
+				SAFECOPY(bbs.web_url,buf+l);
 				truncsp(bbs.web_url); }
 			if(!strnicmp(buf+l,"E-MAIL:",7)) {
 				l+=7;
 				while(buf[l] && buf[l]<=SP && buf[l]!=CR)
 					l++;
-				sprintf(bbs.sysop_email,"%-.60s",buf+l);
+				SAFECOPY(bbs.sysop_email,buf+l);
 				truncsp(bbs.sysop_email); }
 
 			if(!strnicmp(buf+l,"SYSOP:",6)) {
 				l+=6;
 				while(buf[l] && buf[l]<=SP && buf[l]!=CR)
 					l++;
-				sprintf(bbs.sysop[sysop],"%-.25s",buf+l);
+				SAFECOPY(bbs.sysop[sysop],buf+l);
 				truncsp(bbs.sysop[sysop]);
 				if(sysop<MAX_SYSOPS-1)
 					sysop++; }
@@ -367,7 +373,7 @@ int main(int argc, char **argv)
 				l+=7;
 				while(buf[l] && buf[l]<=SP && buf[l]!=CR)
 					l++;
-				sprintf(bbs.number[number].modem.number,"%-.28s",buf+l);
+				SAFECOPY(bbs.number[number].modem.number,buf+l);
 				truncsp(bbs.number[number].modem.number);
 				if(number<MAX_NUMBERS-1)
 					number++; }
@@ -377,7 +383,7 @@ int main(int argc, char **argv)
 					l++;
 				i=number;
 				if(i) i--;
-				sprintf(bbs.number[i].modem.desc,"%-.15s",buf+l);
+				SAFECOPY(bbs.number[i].modem.desc,buf+l);
 				truncsp(bbs.number[i].modem.desc); }
 			if(!strnicmp(buf+l,"LOCATION:",9)) {
 				l+=9;
@@ -385,7 +391,7 @@ int main(int argc, char **argv)
 					l++;
 				i=number;
 				if(i) i--;
-				sprintf(bbs.number[i].modem.location,"%-.30s",buf+l);
+				SAFECOPY(bbs.number[i].modem.location,buf+l);
 				truncsp(bbs.number[i].modem.location); }
 			if(!strnicmp(buf+l,"MINRATE:",8)) {
 				l+=8;
@@ -405,7 +411,7 @@ int main(int argc, char **argv)
 				l+=8;
 				while(buf[l] && buf[l]<=SP && buf[l]!=CR)
 					l++;
-				sprintf(bbs.network[network],"%-.15s",buf+l);
+				SAFECOPY(bbs.network[network],buf+l);
 				truncsp(bbs.network[network]);
 				if(network<MAX_NETS-1)
 					network++; }
@@ -415,13 +421,13 @@ int main(int argc, char **argv)
 					l++;
 				i=network;
 				if(i) i--;
-				sprintf(bbs.address[i],"%-.25s",buf+l);
+				SAFECOPY(bbs.address[i],buf+l);
 				truncsp(bbs.address[i]); }
 			if(!strnicmp(buf+l,"TERMINAL:",9)) {
 				l+=9;
 				while(buf[l] && buf[l]<=SP && buf[l]!=CR)
 					l++;
-				sprintf(bbs.terminal[terminal],"%-.15s",buf+l);
+				SAFECOPY(bbs.terminal[terminal],buf+l);
 				truncsp(bbs.terminal[terminal]);
 				if(terminal<MAX_TERMS-1)
 					terminal++; }
@@ -429,7 +435,7 @@ int main(int argc, char **argv)
 				l+=5;
 				while(buf[l] && buf[l]<=SP && buf[l]!=CR)
 					l++;
-				sprintf(bbs.desc[desc],"%-.50s",buf+l);
+				SAFECOPY(bbs.desc[desc],buf+l);
 				truncsp(bbs.desc[desc]);
 				if(desc<4)
 					desc++; }
@@ -476,16 +482,14 @@ int main(int argc, char **argv)
 				bbs.xtrns=atoi(buf+l); }
 			while(buf[l] && buf[l]>=SP) {	 /* Go to end of line */
 				putchar(buf[l]);
-				l++; }
-			printf("\n"); }
-	//	if(bbs.total_sysops<sysop)
-			bbs.total_sysops=sysop;
-	//	if(bbs.total_networks<network)
-			bbs.total_networks=network;
-	//	if(bbs.total_terminals<terminal)
-			bbs.total_terminals=terminal;
-	//	if(bbs.total_numbers<number)
-			bbs.total_numbers=number;
+				l++; 
+			}
+			printf("\n"); 
+		}
+		bbs.total_sysops=sysop;
+		bbs.total_networks=network;
+		bbs.total_terminals=terminal;
+		bbs.total_numbers=number;
 		fwrite(&bbs,sizeof(bbs_t),1,stream);
 		FREE(buf);
 		smb_freemsgmem(&msg);
