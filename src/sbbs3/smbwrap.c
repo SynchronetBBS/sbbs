@@ -214,10 +214,6 @@ int SMBCALL sopen(char *fn, int access, int share)
 	int fd;
 	struct flock alock;
 
-	if (share == SH_DENYNO	/* we're going to be using lock/unlock later */
-		&& access == O_RDONLY)
-		access = O_RDWR;	/* must have write access to set exclusive lock */
-
 	if ((fd = open(fn, access, S_IREAD|S_IWRITE)) < 0)
 		return -1;
 
