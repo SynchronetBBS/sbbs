@@ -1584,7 +1584,6 @@ ansi-bbs|ANSI terminals (emulators):\
         :k0=\EOP:k1=\EOQ:k2=\EOR:k3=\EOS:k4=\EOT:\
         :k5=\EOU:k6=\EOV:k7=\EOW:k8=\EOX:k9=\EOY:\
         :gb=\332\300\277\331\304\263:\
-	:ac=l\332m\300k\277j\331u\264t\303v\301w\302q\304x\263n\305`^Da\260f\370g\361~\371.^Y-^Xh\261i^U0\333y\363z\362:\
         :Co#8:pa#64:so=\E[7m:se=\E[27m:AF=\E[3%dm:AB=\E[4%dm:op=\E[39;49m:
 
 <---SNIP--->
