@@ -139,7 +139,10 @@ int SMBCALL smb_open(smb_t* smb)
 			smb_close(smb);
 			return(SMB_ERR_READ); 
 		}
-		smb_unlocksmbhdr(smb);
+		if((i=smb_unlocksmbhdr(smb))!=SMB_SUCCESS) {
+			smb_close(smb);
+			return(i);
+		}
 		rewind(smb->shd_fp); 
 	}
 
@@ -300,7 +303,7 @@ int SMBCALL smb_trunchdr(smb_t* smb)
 	}
 	rewind(smb->shd_fp);
 	while(1) {
-		if(!chsize(fileno(smb->shd_fp),0L))
+		if(chsize(fileno(smb->shd_fp),0L)==0)
 			break;
 		if(get_errno()!=EACCES && get_errno()!=EAGAIN) {
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
@@ -412,20 +415,21 @@ int SMBCALL smb_putstatus(smb_t* smb)
 }
 
 /****************************************************************************/
-/* Unlocks previously locks message base header 							*/
+/* Unlocks previously locked message base header 							*/
 /****************************************************************************/
 int SMBCALL smb_unlocksmbhdr(smb_t* smb)
 {
-	int result;
-
 	if(smb->shd_fp==NULL) {
 		safe_snprintf(smb->last_error,sizeof(smb->last_error),"msgbase not open");
 		return(SMB_ERR_NOT_OPEN);
 	}
-	result = unlock(fileno(smb->shd_fp),0L,sizeof(smbhdr_t)+sizeof(smbstatus_t));
-	if(result==0)
-		smb->locked=FALSE;
-	return(result);
+	if(unlock(fileno(smb->shd_fp),0L,sizeof(smbhdr_t)+sizeof(smbstatus_t))!=0) {
+		safe_snprintf(smb->last_error,sizeof(smb->last_error)
+			,"%d (%s) unlocking message base header",get_errno(),STRERROR(get_errno()));
+		return(SMB_ERR_UNLOCK);
+	}
+	smb->locked=FALSE;
+	return(SMB_SUCCESS);
 }
 
 /********************************/
@@ -462,7 +466,7 @@ int SMBCALL smb_lockmsghdr(smb_t* smb, smbmsg_t* msg)
 		return(SMB_ERR_HDR_OFFSET);
 
 	while(1) {
-		if(!lock(fileno(smb->shd_fp),msg->idx.offset,sizeof(msghdr_t)))
+		if(lock(fileno(smb->shd_fp),msg->idx.offset,sizeof(msghdr_t))==0)
 			return(SMB_SUCCESS);
 		if(!start)
 			start=time(NULL);
