@@ -123,9 +123,9 @@ char HUGE16*  SMBCALL smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, ulong mode)
 		l--;
 		while(l && buf[l]==0) l--;
 		l++;
-		*(buf+l)=CR;
+		*(buf+l)='\r';	/* CR */
 		l++;
-		*(buf+l)=LF;
+		*(buf+l)='\n';	/* LF */
 		l++;
 		*(buf+l)=0; 
 	}
