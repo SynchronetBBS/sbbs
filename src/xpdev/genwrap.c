@@ -334,3 +334,18 @@ char* DLLCALL asctime_r(const struct tm *tm, char *buf)
 }
 
 #endif	/* !defined(__unix__) */
+
+/********************************************/
+/* Hi-res real-time clock implementation.	*/
+/********************************************/
+#ifdef __unix__
+clock_t DLLCALL msclock(void)
+{
+	long long int usecs;
+	struct timeval tv;
+	if(gettimeofday(&tv,NULL)==1)
+		return(-1);
+	usecs=tv.tv_sec*1000000+tv.tv_usec;
+	return((clock_t)(usecs/(1000000/MSCLOCKS_PER_SEC)));
+}
+#endif

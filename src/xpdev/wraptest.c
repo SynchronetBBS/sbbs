@@ -49,6 +49,7 @@ int main()
 	int	fd;
 	int	fd2;
 	int	canrelock=0;
+	clock_t	ticks;
 
 	/* Show platform details */
 	DESCRIBE_COMPILER(compiler);
@@ -171,8 +172,9 @@ int main()
 	t=time(NULL);
 	printf("sleeping... ");
 	fflush(stdout);
+	ticks=msclock();
 	SLEEP(5000);
-	printf("slept %ld seconds\n",time(NULL)-t);
+	printf("slept %ld seconds (%ld according to msclock)\n",time(NULL)-t,(msclock()-ticks)/MSCLOCKS_PER_SEC);
 
 	/* Thread SLEEP test */
 	printf("\nThread SLEEP(5 second) test\n");
