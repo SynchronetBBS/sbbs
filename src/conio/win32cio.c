@@ -506,6 +506,7 @@ void win32_setcursortype(int type)
 	switch(type) {
 		case _NOCURSOR:
 			ci.bVisible=FALSE;
+			ci.dwSize=1;
 			break;
 		
 		case _SOLIDCURSOR:
