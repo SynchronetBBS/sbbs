@@ -396,6 +396,7 @@ function write_user_list(user_list, user_file)
 		user_file.writeln("[" + user_list[u].name + "]");
 		for(var p in user_list[u])
 			user_file.writeln(p + " = " + user_list[u][p]);
+		user_file.writeln();
 	}
 }
 
