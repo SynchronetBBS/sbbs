@@ -1477,7 +1477,7 @@ void getstrupd(int left, int top, int width, char *outstr, int cursoffset, int *
 	gotoxy(left,top);
 	cprintf("%-*.*s",width,width,outstr+*scrnoffset);
 	gotoxy(left+(cursoffset-*scrnoffset),top);
-	_setcursortype(_NORMALCURSOR);
+	_setcursortype(cursor);
 }
 
 /****************************************************************************/
