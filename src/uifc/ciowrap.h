@@ -1,5 +1,9 @@
 /* $Id$ */
 
+#ifndef __unix__
+#include "conio.h"
+#define initciowrap(x)
+#else
 #include "curs_fix.h"
 
 #define MONO	1
@@ -76,4 +80,6 @@ void textbackground(int colour);
 void textcolor(int colour);
 #ifdef __cplusplus
 }
+#endif
+
 #endif
