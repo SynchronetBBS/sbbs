@@ -73,7 +73,7 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	return(JS_TRUE);
 }
 
-#define GLOBOBJ_FLAGS JSPROP_ENUMERATE|JSPROP_READONLY
+#define GLOBOBJ_FLAGS JSPROP_ENUMERATE|JSPROP_READONLY|JSPROP_SHARED
 
 static struct JSPropertySpec js_global_properties[] = {
 /*		 name,		tinyid,				flags */

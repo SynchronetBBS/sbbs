@@ -293,9 +293,9 @@ static JSBool js_sub_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 static struct JSPropertySpec js_sub_properties[] = {
 /*		 name				,tinyid		,flags	*/
 
-	{	"scan_ptr"	,SUB_PROP_SCAN_PTR	,JSPROP_ENUMERATE },
-	{	"scan_cfg"	,SUB_PROP_SCAN_CFG	,JSPROP_ENUMERATE },
-	{	"lead_read"	,SUB_PROP_LAST_READ	,JSPROP_ENUMERATE },
+	{	"scan_ptr"	,SUB_PROP_SCAN_PTR	,JSPROP_ENUMERATE|JSPROP_SHARED },
+	{	"scan_cfg"	,SUB_PROP_SCAN_CFG	,JSPROP_ENUMERATE|JSPROP_SHARED },
+	{	"lead_read"	,SUB_PROP_LAST_READ	,JSPROP_ENUMERATE|JSPROP_SHARED },
 	{0}
 };
 

@@ -374,8 +374,8 @@ DLLCALL js_DefineSyncProperties(JSContext *cx, JSObject *obj, jsSyncPropertySpec
 		return(JS_FALSE);
 
 	for(i=0;props[i].name;i++) {
-		if(!JS_DefinePropertyWithTinyId(cx, obj, 
-			props[i].name,props[i].tinyid, JSVAL_VOID, NULL, NULL, props[i].flags))
+		if(!JS_DefinePropertyWithTinyId(cx, obj, /* Never reserve any "slots" for properties */
+			props[i].name,props[i].tinyid, JSVAL_VOID, NULL, NULL, props[i].flags|JSPROP_SHARED))
 			return(JS_FALSE);
 		if(props[i].flags&JSPROP_ENUMERATE) {	/* No need to version invisible props */
 			val = INT_TO_JSVAL(props[i].ver);
@@ -477,7 +477,7 @@ DLLCALL js_DefineSyncProperties(JSContext *cx, JSObject *obj, jsSyncPropertySpec
 
 	for(i=0;props[i].name;i++) 
 		if(!JS_DefinePropertyWithTinyId(cx, obj, 
-			props[i].name,props[i].tinyid, JSVAL_VOID, NULL, NULL, props[i].flags))
+			props[i].name,props[i].tinyid, JSVAL_VOID, NULL, NULL, props[i].flags|JSPROP_SHARED))
 			return(JS_FALSE);
 
 	return(JS_TRUE);
