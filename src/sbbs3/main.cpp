@@ -877,15 +877,17 @@ void event_thread(void* arg)
 	int			i,j,k;
 	int			file;
 	int			offset;
+	bool		check_semaphores;
 	ulong		l;
 	time_t		now;
-	struct tm	now_tm;
-	struct tm*	tm;
-	time_t		lastnodechk;
+	time_t		lastsemchk=0;
+	time_t		lastnodechk=0;
 	time_t		lastprepack=0;
 	node_t		node;
 	glob_t		g;
 	sbbs_t*		sbbs = (sbbs_t*) arg;
+	struct tm	now_tm;
+	struct tm*	tm;
 
 	eprintf("BBS Events thread started");
 
@@ -901,12 +903,18 @@ void event_thread(void* arg)
 		sbbs->js_initcx();	/* This must be done in the context of the event thread */
 #endif
 
-	while(1) {
+	while(!sbbs->terminated && telnet_socket!=INVALID_SOCKET) {
+
+		now=time(NULL);
+		now_tm=*gmtime(&now);
+
+		if(now-lastsemchk>=sbbs->cfg.node_sem_check) {
+			check_semaphores=true;
+			lastsemchk=now;
+		} else
+			check_semaphores=false;
 
 		pthread_mutex_lock(&event_mutex);
-
-		if(sbbs->terminated || telnet_socket==INVALID_SOCKET)
-			break;
 
 		sbbs->online=0;	/* reset this from ON_LOCAL */
 
@@ -968,11 +976,8 @@ void event_thread(void* arg)
 			scfg_reloaded=false;
 		}
 
-		now=time(NULL);
-		now_tm=*gmtime(&now);
-
 		/* QWK events */
-		if(!(startup->options&BBS_OPT_NO_QWK_EVENTS)) {
+		if(check_semaphores && !(startup->options&BBS_OPT_NO_QWK_EVENTS)) {
 			/* Import any REP files that have magically appeared (via FTP perhaps) */
 			sprintf(str,"%sfile/",sbbs->cfg.data_dir);
 			offset=strlen(str);
@@ -1084,52 +1089,56 @@ void event_thread(void* arg)
 			}
 		}
 
-		/* Node Daily Events */
-		for(i=first_node;i<=last_node;i++) {
-			// Node Daily Event
-			sbbs->getnodedat(i,&node,0);
-			if(node.misc&NODE_EVENT && node.status==NODE_WFC) {
-				sbbs->getnodedat(i,&node,1);
-				node.status=NODE_EVENT_RUNNING;
-				sbbs->putnodedat(i,&node);
-				if(sbbs->cfg.node_daily[0]) {
-					sbbs->cfg.node_num=i;
-					strcpy(sbbs->cfg.node_dir, sbbs->cfg.node_path[i-1]);
+		if(check_semaphores) {
+			/* Node Daily Events */
+			for(i=first_node;i<=last_node;i++) {
+				// Node Daily Event
+				sbbs->getnodedat(i,&node,0);
+				if(node.misc&NODE_EVENT && node.status==NODE_WFC) {
+					sbbs->getnodedat(i,&node,1);
+					node.status=NODE_EVENT_RUNNING;
+					sbbs->putnodedat(i,&node);
+					if(sbbs->cfg.node_daily[0]) {
+						sbbs->cfg.node_num=i;
+						strcpy(sbbs->cfg.node_dir, sbbs->cfg.node_path[i-1]);
 
-					eprintf("Running node %u daily event",i);
-					// status("Running node daily event");
-					sbbs->logentry("!:","Run node daily event");
-					sbbs->external(
-						 sbbs->cmdstr(sbbs->cfg.node_daily,nulstr,nulstr,NULL)
-						,EX_OFFLINE);
-					// status(STATUS_WFC);
+						eprintf("Running node %u daily event",i);
+						// status("Running node daily event");
+						sbbs->logentry("!:","Run node daily event");
+						sbbs->external(
+							 sbbs->cmdstr(sbbs->cfg.node_daily,nulstr,nulstr,NULL)
+							,EX_OFFLINE);
+						// status(STATUS_WFC);
+					}
+					sbbs->getnodedat(i,&node,1);
+					node.misc&=~NODE_EVENT;
+					node.status=NODE_WFC;
+					node.useron=0;
+					sbbs->putnodedat(i,&node); 
 				}
-				sbbs->getnodedat(i,&node,1);
-				node.misc&=~NODE_EVENT;
-				node.status=NODE_WFC;
-				node.useron=0;
-				sbbs->putnodedat(i,&node); 
+			}
+
+			/* QWK Networking Call-out sempahores */
+			for(i=0;i<sbbs->cfg.total_qhubs;i++) {
+				if(sbbs->cfg.qhub[i]->node>=first_node 
+					&& sbbs->cfg.qhub[i]->node<=last_node) {
+					sprintf(str,"%sqnet/%s.now",sbbs->cfg.data_dir,sbbs->cfg.qhub[i]->id);
+					if(fexist(str))
+						sbbs->cfg.qhub[i]->last=-1; 
+				}
+			}
+
+			/* Timed Event sempahores */
+			for(i=0;i<sbbs->cfg.total_events;i++) {
+				if((sbbs->cfg.event[i]->node>=first_node
+					&& sbbs->cfg.event[i]->node<=last_node)
+					|| sbbs->cfg.event[i]->misc&EVENT_EXCL) {
+					sprintf(str,"%s%s.now",sbbs->cfg.data_dir,sbbs->cfg.event[i]->code);
+					if(fexist(str))
+						sbbs->cfg.event[i]->last=-1; 
+				}
 			}
 		}
-
-		/* QWK Networking Call-out sempahores */
-		for(i=0;i<sbbs->cfg.total_qhubs;i++)
-			if(sbbs->cfg.qhub[i]->node>=first_node 
-				&& sbbs->cfg.qhub[i]->node<=last_node) {
-				sprintf(str,"%sqnet/%s.now",sbbs->cfg.data_dir,sbbs->cfg.qhub[i]->id);
-				if(fexist(str))
-					sbbs->cfg.qhub[i]->last=-1; 
-			}
-
-		/* Timed Event sempahores */
-		for(i=0;i<sbbs->cfg.total_events;i++)
-			if((sbbs->cfg.event[i]->node>=first_node
-				&& sbbs->cfg.event[i]->node<=last_node)
-				|| sbbs->cfg.event[i]->misc&EVENT_EXCL) {
-				sprintf(str,"%s%s.now",sbbs->cfg.data_dir,sbbs->cfg.event[i]->code);
-				if(fexist(str))
-					sbbs->cfg.event[i]->last=-1; 
-			}
 
 		/* QWK Networking Call-out Events */
 		for(i=0;i<sbbs->cfg.total_qhubs;i++) {
@@ -1137,25 +1146,27 @@ void event_thread(void* arg)
 				sbbs->cfg.qhub[i]->node>last_node)
 				continue;
 
-			// See if any packets have come in
-			for(j=0;j<101;j++) {
-				sprintf(str,"%s%s.q%c%c",sbbs->cfg.data_dir,sbbs->cfg.qhub[i]->id
-					,j>10 ? ((j-1)/10)+'0' : 'w'
-					,j ? ((j-1)%10)+'0' : 'k');
-				if(fexist(str)) {
-					sbbs->delfiles(sbbs->cfg.temp_dir,ALLFILES);
-					if(sbbs->unpack_qwk(str,i)==false) {
-						char newname[MAX_PATH+1];
-						sprintf(newname,"%s.%lx.bad",str,now);
-						remove(newname);
-						if(rename(str,newname)==0) {
-							char logmsg[MAX_PATH*3];
-							sprintf(logmsg,"%s renamed to %s",str,newname);
-							sbbs->logline("Q!",logmsg);
+			if(check_semaphores) {
+				// See if any packets have come in
+				for(j=0;j<101;j++) {
+					sprintf(str,"%s%s.q%c%c",sbbs->cfg.data_dir,sbbs->cfg.qhub[i]->id
+						,j>10 ? ((j-1)/10)+'0' : 'w'
+						,j ? ((j-1)%10)+'0' : 'k');
+					if(fexist(str)) {
+						sbbs->delfiles(sbbs->cfg.temp_dir,ALLFILES);
+						if(sbbs->unpack_qwk(str,i)==false) {
+							char newname[MAX_PATH+1];
+							sprintf(newname,"%s.%lx.bad",str,now);
+							remove(newname);
+							if(rename(str,newname)==0) {
+								char logmsg[MAX_PATH*3];
+								sprintf(logmsg,"%s renamed to %s",str,newname);
+								sbbs->logline("Q!",logmsg);
+							}
 						}
-					}
-					remove(str);
-				} 
+						remove(str);
+					} 
+				}
 			}
 
 			tm=gmtime(&sbbs->cfg.qhub[i]->last); /* Qnet call out based on time */
@@ -1280,7 +1291,7 @@ void event_thread(void* arg)
 						// status(str);
 						lastnodechk=0;	 /* really last event time check */
 						while(!sbbs->terminated) {
-							mswait(sbbs->cfg.node_sem_check*1000);
+							mswait(1000);
 							now=time(NULL);
 							if(now-lastnodechk<10)
 								continue;
@@ -1316,7 +1327,7 @@ void event_thread(void* arg)
 							"running timed event.");
 						lastnodechk=0;
 						while(!sbbs->terminated) {
-							mswait(sbbs->cfg.node_sem_check*1000);
+							mswait(1000);
 							now=time(NULL);
 							if(now-lastnodechk<10)
 								continue;
@@ -1415,7 +1426,7 @@ void event_thread(void* arg)
 		}
 		pthread_mutex_unlock(&event_mutex);
 
-		mswait(sbbs->cfg.node_sem_check*1000);
+		mswait(1000);
 	}
 	sbbs->cfg.node_num=0;
     sbbs->event_thread_running = false;
