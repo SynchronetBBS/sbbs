@@ -97,7 +97,7 @@ int main(int argc, char **argv)
     BOOL    door_mode=FALSE;
 	FILE	*instream;
 
-    printf("\r\nSynchronet Configuration Util (%s)  v%s  Copyright 2002 "
+    printf("\r\nSynchronet Configuration Utility (%s)  v%s  Copyright 2002 "
         "Rob Swindell\r\n",PLATFORM_DESC,VERSION);
 
     memset(&uifc,0,sizeof(uifc));
@@ -174,14 +174,18 @@ if(backup_level>10) backup_level=10;
 backslashcolon(cfg.ctrl_dir);
 
 uifc.size=sizeof(uifc);
-#if !defined(__unix__)
+#if defined(USE_DIALOG)
 if(!door_mode)
-    i=uifcini(&uifc);
+    i=uifcinid(&uifc);  /* libdialog */
+else    
+#elif !defined(__unix__)
+if(!door_mode)
+    i=uifcini(&uifc);   /* conio */
 else
 #endif
-    i=uifcinix(&uifc);
+    i=uifcinix(&uifc);  /* stdio */
 if(i!=0) {
-    printf("uifcini returned error %d\n",i);
+    printf("uifc library init returned error %d\n",i);
     exit(1);
 }
 
