@@ -379,17 +379,18 @@ void outchar(char ch)
 {
 
 #ifndef __16BIT__
-	ulong	top=outbuftop+1;
+	if(client_socket!=INVALID_SOCKET) {
+		ulong	top=outbuftop+1;
 
-	if(top==sizeof(outbuf))
-		top=0;
-	if(top!=outbufbot) {
-		outbuf[outbuftop++]=ch;
-		if(outbuftop==sizeof(outbuf))
-			outbuftop=0;
-		sem_post(&output_sem);
+		if(top==sizeof(outbuf))
+			top=0;
+		if(top!=outbufbot) {
+			outbuf[outbuftop++]=ch;
+			if(outbuftop==sizeof(outbuf))
+				outbuftop=0;
+			sem_post(&output_sem);
+		}
 	}
-
 #endif
 
 	if(con_fp!=NULL)
