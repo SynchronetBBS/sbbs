@@ -1212,6 +1212,7 @@ void input_thread(void *arg)
 				&& FD_ISSET(uspy_socket[sbbs->cfg.node_num-1],&socket_set))  {
 			if(!socket_check(uspy_socket[sbbs->cfg.node_num-1],NULL,NULL,0)) {
 				close_socket(uspy_socket[sbbs->cfg.node_num-1]);
+				lprintf(LOG_NOTICE,"Closing local spy socket: %d",uspy_socket[sbbs->cfg.node_num-1]);
 				uspy_socket[sbbs->cfg.node_num-1]=INVALID_SOCKET;
 				continue;
 			}
@@ -4185,7 +4186,7 @@ void DLLCALL bbs_thread(void* arg)
 						close_socket(new_socket);
 					}
 					else  {
-						lprintf(LOG_ERR,"!Spy socket %s connected",uspy_addr.sun_path);
+						lprintf(LOG_ERR,"!Spy socket %s (%d) connected",uspy_addr.sun_path,new_socket);
 						uspy_socket[i-1]=new_socket;
 						sprintf(str,"Spy connection established to node %d\r\n",i);
 						send(uspy_socket[i-1],str,strlen(str),0);
