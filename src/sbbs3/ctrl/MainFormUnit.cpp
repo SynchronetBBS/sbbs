@@ -2364,10 +2364,11 @@ void __fastcall TMainForm::ReloadConfigExecute(TObject *Sender)
 
     node_t node;
     for(int i=0;i<cfg.sys_nodes;i++) {
-       	if(NodeForm->getnodedat(i+1,&node,true))
+    	int file;
+       	if(NodeForm->getnodedat(i+1,&node,&file))
             break;
         node.misc|=NODE_RRUN;
-        if(NodeForm->putnodedat(i+1,&node))
+        if(NodeForm->putnodedat(i+1,&node,file))
             break;
     }
 }

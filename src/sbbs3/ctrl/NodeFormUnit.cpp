@@ -83,12 +83,12 @@ void __fastcall TNodeForm::FormShow(TObject *Sender)
     MainForm->ViewNodesButton->Down=true;
 }
 //---------------------------------------------------------------------------
-int __fastcall TNodeForm::getnodedat(int node_num, node_t* node, bool lockit)
+int __fastcall TNodeForm::getnodedat(int node_num, node_t* node, int* file)
 {
     char    errmsg[128];
     int     err;
 
-    if((err=::getnodedat(&MainForm->cfg,node_num,node,lockit))!=0) {
+    if((err=::getnodedat(&MainForm->cfg,node_num,node,file))!=0) {
         sprintf(errmsg,"getnodedat returned %d",err);
     	Application->MessageBox(errmsg
             ,"ERROR",MB_OK|MB_ICONEXCLAMATION);
@@ -97,13 +97,13 @@ int __fastcall TNodeForm::getnodedat(int node_num, node_t* node, bool lockit)
     return(err);
 }
 //---------------------------------------------------------------------------
-int __fastcall TNodeForm::putnodedat(int node_num, node_t* node)
+int __fastcall TNodeForm::putnodedat(int node_num, node_t* node, int file)
 {
     char    errmsg[128];
     int     err;
 
-    if((err=::putnodedat(&MainForm->cfg,node_num,node))!=0) {
-        sprintf(errmsg,"putnodedat returned %d",err);
+    if((err=::putnodedat(&MainForm->cfg,node_num,node, file))!=0) {
+        sprintf(errmsg,"putnodedat(%d) returned %d",file,err);
     	Application->MessageBox(errmsg
             ,"ERROR",MB_OK|MB_ICONEXCLAMATION);
     }
