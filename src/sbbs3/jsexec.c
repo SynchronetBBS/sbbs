@@ -550,7 +550,7 @@ int main(int argc, char **argv, char** environ)
 	if(chdir(scfg.ctrl_dir)!=0)
 		fprintf(errfp,"!ERROR changing directory to: %s", scfg.ctrl_dir);
 
-	fprintf(errfp,"\nLoading configuration files from %s\n",scfg.ctrl_dir);
+	fprintf(statfp,"\nLoading configuration files from %s\n",scfg.ctrl_dir);
 	if(!load_cfg(&scfg,NULL,TRUE,error)) {
 		fprintf(errfp,"!ERROR loading configuration files: %s\n",error);
 		bail(1);
@@ -564,7 +564,7 @@ int main(int argc, char **argv, char** environ)
 		fprintf(errfp,"!JavaScript initialization failure\n");
 		bail(1);
 	}
-	fprintf(errfp,"\n");
+	fprintf(statfp,"\n");
 
 	bail(js_exec(module,&argv[argn]));
 
