@@ -506,7 +506,7 @@ void doterm(void)
 							#ifdef __unix__
 								beep();
 							#else
-								BEEP(2000,200);
+								MessageBeep(MB_OK);
 							#endif
 							break;
 						case 12:		/* ^L - Clear screen */
