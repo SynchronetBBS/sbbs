@@ -1030,7 +1030,10 @@ int sbbs_t::exec(csi_t *csi)
 				putmsg(cmdstr((char*)csi->ip,path,csi->str,(char*)buf),P_SAVEATR|P_NOABORT);
 				break;
 			case CS_PRINT_LOCAL:
-				lputs(cmdstr((char*)csi->ip,path,csi->str,(char*)buf));
+				if(online==ON_LOCAL)
+					eprintf("%s",cmdstr((char*)csi->ip,path,csi->str,(char*)buf));
+				else
+					lputs(cmdstr((char*)csi->ip,path,csi->str,(char*)buf));
 				break;
 			case CS_PRINT_REMOTE:
 				putcom(cmdstr((char*)csi->ip,path,csi->str,(char*)buf));

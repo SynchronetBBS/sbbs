@@ -83,8 +83,12 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 					vsprintf(tmp,str,(char*)arglist);
 					if(op==VAR_PRINTF)
 						putmsg(cmdstr(tmp,path,csi->str,buf),P_SAVEATR|P_NOABORT);
-					else
-						lputs(cmdstr(tmp,path,csi->str,buf));
+					else {
+						if(online==ON_LOCAL)
+							eprintf("%s",cmdstr(tmp,path,csi->str,buf));
+						else
+							lputs(cmdstr(tmp,path,csi->str,buf));
+					}
 					return(0);
 				case SHOW_VARS:
 					bprintf("shell     str=(%08lX) %s\r\n"
