@@ -67,8 +67,7 @@ uint				socket_count=0;
 uint				client_count=0;
 ulong				served=0;
 int					prompt_len=0;
-
-char* new_uid_name;
+char*				new_uid_name=NULL;
 
 static const char* prompt = 
 "[Threads: %d  Sockets: %d  Clients: %d  Served: %lu] (?=Help): ";
@@ -232,7 +231,9 @@ static int bbs_lputs(char *str)
 static void bbs_started(void)
 {
 	bbs_running=TRUE;
+#ifdef __unix__
 	do_setuid("bbs");
+#endif
 }
 
 static void bbs_terminated(int code)
@@ -269,7 +270,9 @@ static int ftp_lputs(char *str)
 static void ftp_started(void)
 {
 	ftp_running=TRUE;
+#ifdef __unix__
 	do_setuid("ftp");
+#endif
 }
 
 static void ftp_terminated(int code)
@@ -306,7 +309,9 @@ static int mail_lputs(char *str)
 static void mail_started(void)
 {
 	mail_running=TRUE;
+#ifdef __unix__
 	do_setuid("mail");
+#endif
 }
 
 static void mail_terminated(int code)
@@ -343,7 +348,9 @@ static int services_lputs(char *str)
 static void services_started(void)
 {
 	services_running=TRUE;
+#ifdef __unix__
 	do_setuid("services");
+#endif
 }
 
 static void services_terminated(int code)
