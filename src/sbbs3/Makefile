@@ -169,6 +169,7 @@ SMBLIB = $(LIBODIR)\smblib.obj $(LIBODIR)\smbdump.obj $(LIBODIR)\smbtxt.obj \
 # FIXSMB Utility
 $(FIXSMB): fixsmb.c \
 	$(SMBLIB) \
+	$(LIBODIR)\str_list.obj \
 	$(LIBODIR)\str_util.obj \
 	$(LIBODIR)\dirwrap.obj
 	@echo Creating $@
