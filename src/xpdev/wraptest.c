@@ -21,6 +21,8 @@ int main()
 {
 	char	compiler[128];
 	char*	glob_pattern = "*wrap*";
+	char*	path = ".";
+	char	fullpath[MAX_PATH+1];
 	int		i;
 	int		ch;
 	uint	u;
@@ -60,7 +62,7 @@ int main()
 		BEEP(i,15);
 
 	/* SLEEP test */
-	printf("\nSLEEP() test\n");
+	printf("\nSLEEP(5 second) test\n");
 	getkey();
 	t=time(NULL);
 	printf("sleeping... ");
@@ -69,7 +71,7 @@ int main()
 	printf("slept %d seconds\n",time(NULL)-t);
 
 	/* glob test */
-	printf("\nglob() test\n");
+	printf("\nglob(%s) test\n",glob_pattern);
 	getkey();
 	i=glob(glob_pattern,GLOB_MARK,NULL,&g);
 	if(i==0) {
@@ -80,9 +82,10 @@ int main()
 		printf("glob(%s) returned %d\n",glob_pattern,i);
 
 	/* opendir (and other directory functions) test */
-	printf("\nopendir() test\n");
+	printf("\nopendir(%s) test\n",path);
 	getkey();
-	dir=opendir(".");
+	printf("\nDirectory of %s\n\n",FULLPATH(fullpath,path,sizeof(fullpath)));
+	dir=opendir(path);
 	while(dir!=NULL && (dirent=readdir(dir))!=NULL) {
 		t=fdate(dirent->d_name);
 		printf("%.24s %10lu  %06o  %s%c\n"
@@ -95,7 +98,7 @@ int main()
 	}
 	if(dir!=NULL)
 		closedir(dir);
-	printf("\nFree disk space: %lu bytes\n",getfreediskspace("."));
+	printf("\nFree disk space: %lu bytes\n",getfreediskspace(path));
 #endif
 
 #if 1
