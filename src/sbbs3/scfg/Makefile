@@ -11,7 +11,7 @@
 # $Id$
 
 # Macros
-DEBUG	=	1				# Comment out for release (non-debug) version
+#DEBUG	=	1				# Comment out for release (non-debug) version
 CC		=	bcc32
 LD		=	ilink32
 SLASH	=	\\
@@ -45,7 +45,6 @@ ODIR	=	$(ODIR).release
 # Cross platform/compiler definitions
 !include targets.mk	# defines all targets
 !include objects.mk	# defines $(OBJS)
-!include headers.mk	# defines $(HEADERS)
 
 OBJS = $(OBJS) $(ODIR)\uifc.$(OFILE)
 

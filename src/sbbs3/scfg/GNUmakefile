@@ -67,7 +67,6 @@ endif
 
 include targets.mk		# defines all targets
 include objects.mk		# defines $(OBJS)
-include headers.mk		# defines $(HEADERS)
 
 ifdef USE_DIALOG		
  OBJS := $(OBJS)			$(ODIR)$(SLASH)uifcd.$(OFILE)
