@@ -141,7 +141,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC);
 			return(false); }
 		p="CONTROLTYPE = ";
-		fprintf(stream,"DOOR = %.10s\r\nVERSION = %s\r\n"
+		fprintf(stream,"DOOR = %.10s\r\nVERSION = %s%c\r\n"
 			"SYSTEM = %s\r\n"
 			"CONTROLNAME = SBBS\r\n"
 			"%sADD\r\n"
@@ -162,7 +162,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 			"%sCONTROL\r\n"
 			"MIXEDCASE = YES\r\n"
 			,VERSION_NOTICE
-			,VERSION
+			,VERSION,REVISION
 			,VERSION_NOTICE
 			,p,p,p,p
 			,p,p,p,p
@@ -194,7 +194,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 		return(false); }
 	l=filelength(file);
 	if(l<1) {
-		fprintf(qwk,"%-128s",QWK_HEADER);
+		fprintf(qwk,"%-128.128s","Produced by " VERSION_NOTICE "  " COPYRIGHT_NOTICE);
 		msgndx=1; }
 	else
 		msgndx=l/128L;
