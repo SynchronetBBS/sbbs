@@ -54,18 +54,17 @@ enum {
     ALIVE
     ,DEAD
 };
-
-enum {
-	PLAYER
-	,MONSTER
-};
+/* Status for opponent != a player */
+#define		MONSTER		0
 
 struct playertype {
     char            name[31];	       /* Name from BBS drop file */
     char            pseudo[31];	       /* In-game pseudonym */
     char            killer[31];	       /* Person killed by (if status==DEAD) */
     char            gaspd[61];	       /* Dying curse */
-    WORD            status;	       /* Status alive or dead for player records, PLAYER or MONSTER for opponent record (record 0) */
+    DWORD           status;	       /* Status alive or dead for player
+				        * records, player number or MONSTER
+				        * for opponent record (record 0) */
     /* ToDo make configurable */
     WORD            flights;	       /* Weird thing... may be number of
 				        * times can run */
@@ -94,6 +93,9 @@ struct playertype {
      * player is feeling. Is set at start and not modified */
     double          vary;
 };
+
+struct playertype player[31];
+#define user	player[player_num]
 /* player[0] is the current enemy */
 #define opp	player[0]
 
@@ -101,24 +103,19 @@ const char      dots[] = "...............................................";
 /* In these arrays, 0 isn't actually used */
 QWORD           required[29];	       /* Experience required for each level */
 char            wname[26][31];	       /* Array of weapon names */
+DWORD           w2[26];		       /* Weapon "attack" values */
+DWORD           w3[26];		       /* Weapon "power" values */
 char            sname[26][31];	       /* Array of shield names */
 char            temp[81];
 DWORD           cost[26];	       /* Array of weapon/shield costs */
-DWORD           w2[26];		       /* Weapon "attack" values */
-DWORD           w3[26];		       /* Weapon "power" values */
 FILE           *infile;		       /* Current input file */
 DWORD           player_num;	       /* Current Player Number */
-DWORD           curr_opp;	       /* Player number who is currently
-				        * being fought */
-DWORD           number_of_players;
-				        * between players */
-struct playertype player[31];
+DWORD           number_of_players;     /* Number of players in player[] */
 /**********************************************************/
 /* These variables are used for the stat adjustment stuff */
 /**********************************************************/
 BOOL            partone;
 BOOL            bothover;
-WORD            temp1a, temp1b, temp1c, temp1d, temp1e, temp1f;
 /************************/
 /* Functions from xpdev */
 /************************/
@@ -193,14 +190,14 @@ pausescr(void)
 double
 playerattack(void)
 {
-    return ((player[player_num].attack * player[player_num].strength * player[player_num].dexterity * (xp_random(5) + 1) * player[player_num].vary) /
+    return ((user.attack * user.strength * user.dexterity * (xp_random(5) + 1) * user.vary) /
 	    (opp.armour * opp.dexterity * opp.luck * opp.vary));
 }
 
 double
 playerattack2(void)
 {
-    return ((player[player_num].power * player[player_num].strength * (xp_random(5) + 1) * (xp_random(5) + 1) * player[player_num].vary) /
+    return ((user.power * user.strength * (xp_random(5) + 1) * (xp_random(5) + 1) * user.vary) /
 	    ((opp.armour) * opp.luck * opp.vary));
 }
 
@@ -208,14 +205,14 @@ double
 opponentattack(void)
 {
     return ((opp.attack * opp.strength * opp.dexterity * (xp_random(5) + 1) * opp.vary) /
-	    (player[player_num].armour * player[player_num].dexterity * player[player_num].luck * player[player_num].vary));
+	    (user.armour * user.dexterity * user.luck * user.vary));
 }
 
 double
 opponentattack2(void)
 {
     return ((opp.power * opp.strength * (xp_random(5) + 1) * (xp_random(5) + 1) * opp.vary) /
-	    ((player[player_num].armour) * player[player_num].luck * player[player_num].vary));
+	    ((user.armour) * user.luck * user.vary));
 }
 
 double
@@ -228,24 +225,24 @@ void
 depobank(void)
 {
     QWORD           tempbank;
-    tempbank = player[player_num].gold;
-    player[player_num].gold = player[player_num].gold - tempbank;
-    player[player_num].bank = player[player_num].bank + tempbank;
+    tempbank = user.gold;
+    user.gold = user.gold - tempbank;
+    user.bank = user.bank + tempbank;
     nl();
     od_set_color(L_CYAN, D_BLACK);
-    od_printf("%" QWORDFORMAT " Steel pieces are in the bank.\r\n", player[player_num].bank);
+    od_printf("%" QWORDFORMAT " Steel pieces are in the bank.\r\n", user.bank);
 }
 
 void
 withdrawbank(void)
 {
     QWORD           tempbank;
-    tempbank = player[player_num].bank;
-    player[player_num].gold = player[player_num].gold + tempbank;
-    player[player_num].bank = player[player_num].bank - tempbank;
+    tempbank = user.bank;
+    user.gold = user.gold + tempbank;
+    user.bank = user.bank - tempbank;
     nl();
     od_set_color(D_MAGENTA, D_BLACK);
-    od_printf("You are now carrying %" QWORDFORMAT " Steel pieces.\r\n", player[player_num].gold);
+    od_printf("You are now carrying %" QWORDFORMAT " Steel pieces.\r\n", user.gold);
 }
 
 char           *
@@ -349,23 +346,23 @@ heal(void)
     WORD            opt;
     od_clr_scr();
     od_set_color(D_MAGENTA, D_BLACK);
-    od_printf("Clerics want %u Steel pieces per wound.\r\n", 8 * player[player_num].r);
+    od_printf("Clerics want %u Steel pieces per wound.\r\n", 8 * user.r);
     od_set_color(L_YELLOW, D_BLACK);
-    od_printf("You have %u points of damage to heal.\r\n", player[player_num].damage);
+    od_printf("You have %u points of damage to heal.\r\n", user.damage);
     od_set_color(L_CYAN, D_BLACK);
     od_disp_str("How many do points do you want healed? ");
     od_input_str(temp, 3, '0', '9');
     opt = strtoul(temp, NULL, 10);
     if (!temp[0])
-	opt = player[player_num].damage;
-    if (((opt) * (player[player_num].r) * 10) > player[player_num].gold) {
+	opt = user.damage;
+    if (((opt) * (user.r) * 10) > user.gold) {
 	od_set_color(L_RED, B_BLACK);
 	od_disp_str("Sorry, you do not have enough Steel.\r\n");
 	opt = 0;
-    } else if (opt > player[player_num].damage)
-	opt = player[player_num].damage;
-    player[player_num].damage = player[player_num].damage - opt;
-    player[player_num].gold = player[player_num].gold - 8 * opt * player[player_num].r;
+    } else if (opt > user.damage)
+	opt = user.damage;
+    user.damage = user.damage - opt;
+    user.gold = user.gold - 8 * opt * user.r;
     od_printf("%u hit points healed.\r\n", opt);
 }
 
@@ -380,12 +377,12 @@ findo(void)
     if (od_get_answer("YN") == 'Y') {
 	od_disp_str("Yes\r\n");
 	okea = xp_random(99) + 1;
-	if ((okea < 10) && (player[player_num].weapon >= 25)) {
-	    player[player_num].weapon++;
-	    od_printf("You have found a %s.\r\n", wname[player[player_num].weapon]);
+	if ((okea < 10) && (user.weapon >= 25)) {
+	    user.weapon++;
+	    od_printf("You have found a %s.\r\n", wname[user.weapon]);
 	}
 	if ((okea > 11) && (okea < 40)) {
-	    player[player_num].gold = player[player_num].gold + 40;
+	    user.gold = user.gold + 40;
 	    od_disp_str("You have come across 40 Steel pieces\r\n");
 	} else
 	    od_disp_str("It's gone!!!!\r\n");
@@ -403,50 +400,48 @@ mutantvictory(void)
     int             bt;
     int             d;
     FILE           *outfile;
-    if (opp.status==MONSTER)
+    if (opp.status == MONSTER)
 	opp.gold = opp.gold * supplant();
     nl();
     od_printf("You take his %" QWORDFORMAT " Steel pieces.\r\n", opp.gold);
-    player[player_num].gold = player[player_num].gold + opp.gold;
-    if (opp.status==PLAYER) {
-	int             i;
-	i = curr_opp;
+    user.gold = user.gold + opp.gold;
+    if (opp.status != MONSTER) {
 	nl();
 	od_set_color(D_GREEN, D_BLACK);
 	od_disp_str("The Last Words He Utters Are...\r\n");
 	nl();
-	od_printf("\"%s\"\r\n", player[i].gaspd);
+	od_printf("\"%s\"\r\n", player[opp.status].gaspd);
 	nl();
-	player[player_num].wins++;
-	player[i].loses++;
-	SAFECOPY(player[i].killer, player[player_num].name);
-	player[i].status = DEAD;
-	player[i].gold = 0;
-	if (player[i].weapon > player[player_num].weapon) {
-	    d = player[player_num].weapon;
-	    player[player_num].weapon = player[i].weapon;
-	    player[i].weapon = d;
-	    bt = player[player_num].plus;
-	    player[player_num].plus = player[i].plus;
-	    player[i].plus = bt;
+	user.wins++;
+	player[opp.status].loses++;
+	SAFECOPY(player[opp.status].killer, user.name);
+	player[opp.status].status = DEAD;
+	player[opp.status].gold = 0;
+	if (player[opp.status].weapon > user.weapon) {
+	    d = user.weapon;
+	    user.weapon = player[opp.status].weapon;
+	    player[opp.status].weapon = d;
+	    bt = user.plus;
+	    user.plus = player[opp.status].plus;
+	    player[opp.status].plus = bt;
 	    od_set_color(D_GREEN, D_BLACK);
 	    od_disp_str("You Hath Taken His Weapon.\r\n");
 	}
-	if (player[i].armour > player[player_num].armour) {
-	    d = player[player_num].armour;
-	    player[player_num].armour = player[i].armour;
-	    player[i].armour = d;
+	if (player[opp.status].armour > user.armour) {
+	    d = user.armour;
+	    user.armour = player[opp.status].armour;
+	    player[opp.status].armour = d;
 	    od_set_color(L_YELLOW, D_BLACK);
 	    od_disp_str("You Hath Taken His Armour.\r\n");
 	}
-	player[player_num].attack = w2[player[player_num].weapon];
-	player[player_num].power = w3[player[player_num].weapon];
+	user.attack = w2[user.weapon];
+	user.power = w3[user.weapon];
 	outfile = fopen("data/record.lan", "ab");
-	fprintf(outfile, "%s conquered %s\r\n", player[player_num].pseudo, player[i].pseudo);
+	fprintf(outfile, "%s conquered %s\r\n", user.pseudo, player[opp.status].pseudo);
 	fclose(outfile);
     }
     opp.experience *= supplant();
-    player[player_num].experience += opp.experience;
+    user.experience += opp.experience;
     od_printf("You obtain %" QWORDFORMAT " exp points.\r\n", opp.experience);
 }
 
@@ -454,32 +449,32 @@ void
 levelupdate(void)
 {
     int             x;
-    if (player[player_num].experience > required[player[player_num].r + 1]) {
-	player[player_num].r++;
+    if (user.experience > required[user.r + 1]) {
+	user.r++;
 	od_set_color(L_YELLOW, D_BLACK);
-	od_printf("Welcome to level %u!\r\n", player[player_num].r);
+	od_printf("Welcome to level %u!\r\n", user.r);
 	x = xp_random(6) + 1;
 	switch (x) {
 	    case 1:
-		player[player_num].strength++;
+		user.strength++;
 		break;
 	    case 2:
-		player[player_num].intelligence++;
+		user.intelligence++;
 		break;
 	    case 3:
-		player[player_num].luck++;
+		user.luck++;
 		break;
 	    case 4:
-		player[player_num].dexterity++;
+		user.dexterity++;
 		break;
 	    case 5:
-		player[player_num].constitution++;
+		user.constitution++;
 		break;
 	    case 6:
-		player[player_num].charisma++;
+		user.charisma++;
 		break;
 	}
-	player[player_num].hps = player[player_num].hps + (xp_random(5) + 1) + (player[player_num].constitution / 4);
+	user.hps = user.hps + (xp_random(5) + 1) + (user.constitution / 4);
     }
 }
 
@@ -515,8 +510,8 @@ amode(void)
 	}
     } else {
 	roll = playerattack2();
-	if (roll > 5 * player[player_num].power)
-	    roll = 5 * player[player_num].power;
+	if (roll > 5 * user.power)
+	    roll = 5 * user.power;
 	if (roll < 1)
 	    roll = 1;
 	opp.damage += roll;
@@ -564,7 +559,7 @@ bmode(void)
     FILE           *outfile;
     int             okea;
     int             tint;
-    if ((opp.hps > opp.damage) && player[player_num].damage < player[player_num].hps) {
+    if ((opp.hps > opp.damage) && user.damage < user.hps) {
 	roll = opponentattack();
 	if (roll < 1.5) {
 	    od_set_color(D_GREEN, D_BLACK);
@@ -587,8 +582,8 @@ bmode(void)
 		    od_printf("You are surprised when he hits you for %1.0f.\r\n", roll);
 		    break;
 	    }
-	    player[player_num].damage = player[player_num].damage + roll;
-	    if (player[player_num].damage >= player[player_num].hps) {
+	    user.damage = user.damage + roll;
+	    if (user.damage >= user.hps) {
 		nl();
 		tint = xp_random(3) + 1;
 		switch (tint) {
@@ -605,13 +600,13 @@ bmode(void)
 			od_disp_str("May Palidine Be With You!!\r\n");
 			break;
 		}
-		if (opp.status==PLAYER) {
-		    player[curr_opp].wins++;
-		    player[player_num].loses++;
-		    player[curr_opp].gold += player[player_num].gold;
-		    player[player_num].gold = 0;
+		if (opp.status != MONSTER) {
+		    player[opp.status].wins++;
+		    user.loses++;
+		    player[opp.status].gold += user.gold;
+		    user.gold = 0;
 		    outfile = fopen("data/record.lan", "ab");
-		    fprintf(outfile, "%s killed %s\r\n", player[player_num].name, player[curr_opp].name);
+		    fprintf(outfile, "%s killed %s\r\n", user.name, player[opp.status].name);
 		    fclose(outfile);
 		}
 	    }
@@ -625,19 +620,19 @@ statshow(void)
     od_clr_scr();
 
     od_set_color(D_MAGENTA, D_BLACK);
-    od_printf("Name: %s   Level: %d\r\n", player[player_num].pseudo, player[player_num].r);
+    od_printf("Name: %s   Level: %d\r\n", user.pseudo, user.r);
     od_set_color(L_CYAN, D_BLACK);
-    od_printf("W/L: %" QWORDFORMAT "/%" QWORDFORMAT "   Exp: %" QWORDFORMAT "\r\n", player[player_num].wins, player[player_num].loses, player[player_num].experience);
+    od_printf("W/L: %" QWORDFORMAT "/%" QWORDFORMAT "   Exp: %" QWORDFORMAT "\r\n", user.wins, user.loses, user.experience);
     nl();
     od_set_color(L_YELLOW, D_BLACK);
-    od_printf("Steel  (in hand): %" QWORDFORMAT "\r\n", player[player_num].gold);
-    od_printf("Steel  (in bank): %" QWORDFORMAT "\r\n", player[player_num].bank);
+    od_printf("Steel  (in hand): %" QWORDFORMAT "\r\n", user.gold);
+    od_printf("Steel  (in bank): %" QWORDFORMAT "\r\n", user.bank);
     nl();
     od_set_color(L_BLUE, D_BLACK);
-    od_printf("Battles: %u   Retreats: %u    Fights: %u   Hps: %u(%u)\r\n", player[player_num].battles, player[player_num].flights, player[player_num].fights, player[player_num].hps - player[player_num].damage, player[player_num].hps);
+    od_printf("Battles: %u   Retreats: %u    Fights: %u   Hps: %u(%u)\r\n", user.battles, user.flights, user.fights, user.hps - user.damage, user.hps);
     nl();
     od_set_color(L_CYAN, D_BLACK);
-    od_printf("Weapon: %s     Armor: %s\r\n", wname[player[player_num].weapon], sname[player[player_num].armour]);
+    od_printf("Weapon: %s     Armor: %s\r\n", wname[user.weapon], sname[user.armour]);
 }
 
 void
@@ -647,27 +642,27 @@ incre(void)
     switch (od_get_answer("123456Q")) {
 	case '1':
 	    od_disp_str("Strength\r\n");
-	    player[player_num].strength++;
+	    user.strength++;
 	    break;
 	case '2':
 	    od_disp_str("Intelligence\r\n");
-	    player[player_num].intelligence++;
+	    user.intelligence++;
 	    break;
 	case '3':
 	    od_disp_str("Dexterity\r\n");
-	    player[player_num].dexterity++;
+	    user.dexterity++;
 	    break;
 	case '4':
 	    od_disp_str("Luck\r\n");
-	    player[player_num].luck++;
+	    user.luck++;
 	    break;
 	case '5':
 	    od_disp_str("Constitution\r\n");
-	    player[player_num].constitution++;
+	    user.constitution++;
 	    break;
 	case '6':
 	    od_disp_str("Charisma\r\n");
-	    player[player_num].charisma++;
+	    user.charisma++;
 	    break;
 	case 'Q':
 	    od_disp_str("Quit\r\n");
@@ -683,27 +678,27 @@ decre(void)
     switch (od_get_answer("123456")) {
 	case '1':
 	    od_disp_str("Strength\r\n");
-	    player[player_num].strength -= 2;
+	    user.strength -= 2;
 	    break;
 	case '2':
 	    od_disp_str("Intelligence\r\n");
-	    player[player_num].intelligence -= 2;
+	    user.intelligence -= 2;
 	    break;
 	case '3':
 	    od_disp_str("Dexterity\r\n");
-	    player[player_num].dexterity -= 2;
+	    user.dexterity -= 2;
 	    break;
 	case '4':
 	    od_disp_str("Luck\r\n");
-	    player[player_num].luck -= 2;
+	    user.luck -= 2;
 	    break;
 	case '5':
 	    od_disp_str("Constitution\r\n");
-	    player[player_num].constitution -= 2;
+	    user.constitution -= 2;
 	    break;
 	case '6':
 	    od_disp_str("Charisma\r\n");
-	    player[player_num].charisma -= 2;
+	    user.charisma -= 2;
 	    break;
     }
 }
@@ -716,39 +711,39 @@ ministat(void)
     nl();
     od_disp_str("Status Change:\r\n");
     od_disp_str("^^^^^^^^^^^^^^\r\n");
-    od_printf("1> Str: %u\r\n", player[player_num].strength);
-    od_printf("2> Int: %u\r\n", player[player_num].intelligence);
-    od_printf("3> Dex: %u\r\n", player[player_num].dexterity);
-    od_printf("4> Luk: %u\r\n", player[player_num].luck);
-    od_printf("5> Con: %u\r\n", player[player_num].constitution);
-    od_printf("6> Chr: %u\r\n", player[player_num].charisma);
+    od_printf("1> Str: %u\r\n", user.strength);
+    od_printf("2> Int: %u\r\n", user.intelligence);
+    od_printf("3> Dex: %u\r\n", user.dexterity);
+    od_printf("4> Luk: %u\r\n", user.luck);
+    od_printf("5> Con: %u\r\n", user.constitution);
+    od_printf("6> Chr: %u\r\n", user.charisma);
     nl();
-    if (player[player_num].strength < 6) {
+    if (user.strength < 6) {
 	yaya = FALSE;
 	nl();
 	od_disp_str("Strength cannot go below 6\r\n");
     }
-    if (player[player_num].intelligence < 6) {
+    if (user.intelligence < 6) {
 	yaya = FALSE;
 	nl();
 	od_disp_str("Intelligence cannot go below 6\r\n");
     }
-    if (player[player_num].dexterity < 6) {
+    if (user.dexterity < 6) {
 	yaya = FALSE;
 	nl();
 	od_disp_str("Dexterity cannot go below 6\r\n");
     }
-    if (player[player_num].luck < 6) {
+    if (user.luck < 6) {
 	yaya = FALSE;
 	nl();
 	od_disp_str("Luck cannot go below 6\r\n");
     }
-    if (player[player_num].constitution < 6) {
+    if (user.constitution < 6) {
 	yaya = FALSE;
 	nl();
 	od_disp_str("Constitution cannot go below 6\r\n");
     }
-    if (player[player_num].charisma < 6) {
+    if (user.charisma < 6) {
 	yaya = FALSE;
 	nl();
 	od_disp_str("Charisma cannot go below 6\r\n");
@@ -759,22 +754,12 @@ ministat(void)
 	    od_disp_str("Yes\r\n");
 	} else {
 	    od_disp_str("No\r\n");
-	    player[player_num].strength = temp1a;
-	    player[player_num].intelligence = temp1b;
-	    player[player_num].dexterity = temp1d;
-	    player[player_num].luck = temp1c;
-	    player[player_num].constitution = temp1e;
-	    player[player_num].charisma = temp1f;
+	    user = opp;
 	    bothover = FALSE;
 	    bothover = FALSE;
 	}
     } else {
-	player[player_num].strength = temp1a;
-	player[player_num].intelligence = temp1b;
-	player[player_num].dexterity = temp1d;
-	player[player_num].luck = temp1c;
-	player[player_num].constitution = temp1e;
-	player[player_num].charisma = temp1f;
+	user = opp;
 	bothover = FALSE;
     }
 }
@@ -784,12 +769,7 @@ chstats(void)
 {
     od_clr_scr();
     bothover = FALSE;
-    temp1a = player[player_num].strength;
-    temp1b = player[player_num].intelligence;
-    temp1c = player[player_num].luck;
-    temp1d = player[player_num].dexterity;
-    temp1e = player[player_num].constitution;
-    temp1f = player[player_num].charisma;
+    opp = user;
 
     for (;;) {
 	partone = TRUE;
@@ -798,12 +778,12 @@ chstats(void)
 	od_disp_str("You may increase any stat by one,\r\n");
 	od_disp_str("yet you must decrease another by two.\r\n");
 	nl();
-	od_printf("1> Str: %u\r\n", player[player_num].strength);
-	od_printf("2> Int: %u\r\n", player[player_num].intelligence);
-	od_printf("3> Dex: %u\r\n", player[player_num].dexterity);
-	od_printf("4> Luk: %u\r\n", player[player_num].luck);
-	od_printf("5> Con: %u\r\n", player[player_num].constitution);
-	od_printf("6> Chr: %u\r\n", player[player_num].charisma);
+	od_printf("1> Str: %u\r\n", user.strength);
+	od_printf("2> Int: %u\r\n", user.intelligence);
+	od_printf("3> Dex: %u\r\n", user.dexterity);
+	od_printf("4> Luk: %u\r\n", user.luck);
+	od_printf("5> Con: %u\r\n", user.constitution);
+	od_printf("6> Chr: %u\r\n", user.charisma);
 	nl();
 	incre();
 	if (partone)
@@ -824,20 +804,20 @@ chstats(void)
 void
 attackmodes(void)
 {
-    if (opp.dexterity > player[player_num].dexterity) {
-	if (player[player_num].damage < player[player_num].hps && opp.damage < opp.hps)
+    if (opp.dexterity > user.dexterity) {
+	if (user.damage < user.hps && opp.damage < opp.hps)
 	    bmode();
-	if (player[player_num].damage < player[player_num].hps && opp.damage < opp.hps)
+	if (user.damage < user.hps && opp.damage < opp.hps)
 	    amode();
-    } else if (opp.dexterity < player[player_num].dexterity) {
-	if (player[player_num].damage < player[player_num].hps && opp.damage < opp.hps)
+    } else if (opp.dexterity < user.dexterity) {
+	if (user.damage < user.hps && opp.damage < opp.hps)
 	    amode();
-	if (player[player_num].damage < player[player_num].hps && opp.damage < opp.hps)
+	if (user.damage < user.hps && opp.damage < opp.hps)
 	    bmode();
     } else {
-	if (player[player_num].damage < player[player_num].hps && opp.damage < opp.hps)
+	if (user.damage < user.hps && opp.damage < opp.hps)
 	    amode();
-	if (player[player_num].damage < player[player_num].hps && opp.damage < opp.hps)
+	if (user.damage < user.hps && opp.damage < opp.hps)
 	    bmode();
     }
 }
@@ -915,7 +895,7 @@ searcher(void)
 {
     int             a;
     int             rd;
-    player[player_num].fights--;
+    user.fights--;
     rd = xp_random(readnumb(0) - 1) + 1;
     endofline();
     for (a = 1; a <= rd; a++) {
@@ -930,7 +910,7 @@ searcher(void)
 	opp.dexterity = readnumb(6);
 	opp.gold = readnumb(0);
 	opp.experience = readnumb(0);
-	opp.status=MONSTER;
+	opp.status = MONSTER;
 	endofline();
     }
     fclose(infile);
@@ -973,7 +953,7 @@ doggie(void)
     int             a;
     DWORD           enemy;
     BOOL            finder;
-    if (player[player_num].battles == 0) {
+    if (user.battles == 0) {
 	nl();
 	checkday();
 	for (finder = FALSE; finder == FALSE;) {
@@ -988,7 +968,7 @@ doggie(void)
 		} else {
 		    a = 1;
 		    for (a = 1; a <= number_of_players;) {
-			if (player[a].r > player[player_num].r - 4) {
+			if (player[a].r > user.r - 4) {
 			    nl();
 			    od_set_color(D_MAGENTA, D_BLACK);
 			    od_printf("%2u.  `bright cyan`%.30s%.*s`bright blue`Lev=%-2u  W=%-2" QWORDFORMAT "  L=%-2" QWORDFORMAT "  S=%s"
@@ -1003,33 +983,32 @@ doggie(void)
 		    od_disp_str("Enter the rank # of your opponent: ");
 		    od_input_str(tmphh, 2, '0', '9');
 		    enemy = strtoul(tmphh, NULL, 10);
-		    if ((enemy == 0) || (!strcmp(player[enemy].pseudo, player[player_num].pseudo)) || (player[enemy].status == DEAD))
+		    if ((enemy == 0) || (!strcmp(player[enemy].pseudo, user.pseudo)) || (player[enemy].status == DEAD))
 			return;
 		}
 	    }
 	    for (a = 1; a <= number_of_players; a++) {
 		if (enemy == a) {
-		    if (player[a].r > (player[player_num].r - 4)) {
+		    if (player[a].r > (user.r - 4)) {
 			finder = TRUE;
-			curr_opp = a;
+			opp.status = a;
 		    }
 		}
 	    }
 	}
-	SAFECOPY(opp.name, player[curr_opp].pseudo);
-	opp.hps = player[curr_opp].hps;
-	opp.damage = player[curr_opp].hps;
-	opp.vary = player[curr_opp].vary;
-	opp.status = PLAYER;
-	player[player_num].battles--;
-	opp.attack = w2[player[curr_opp].weapon];
-	opp.power = w3[player[curr_opp].weapon];
-	opp.armour = player[curr_opp].armour;
-	opp.luck = player[curr_opp].luck;
-	opp.strength = player[curr_opp].strength;
-	opp.dexterity = player[curr_opp].dexterity;
-	opp.gold = player[curr_opp].gold;
-	opp.experience = player[curr_opp].experience / 10;
+	SAFECOPY(opp.name, player[opp.status].pseudo);
+	opp.hps = player[opp.status].hps;
+	opp.damage = player[opp.status].hps;
+	opp.vary = player[opp.status].vary;
+	user.battles--;
+	opp.attack = w2[player[opp.status].weapon];
+	opp.power = w3[player[opp.status].weapon];
+	opp.armour = player[opp.status].armour;
+	opp.luck = player[opp.status].luck;
+	opp.strength = player[opp.status].strength;
+	opp.dexterity = player[opp.status].dexterity;
+	opp.gold = player[opp.status].gold;
+	opp.experience = player[opp.status].experience / 10;
 	finder = FALSE;
 	battle();
     }
@@ -1041,8 +1020,8 @@ battle(void)
     WORD            playerrem;
     char            option;
     nl();
-    while (player[player_num].damage < player[player_num].hps && opp.damage < opp.hps) {
-	playerrem = player[player_num].hps - player[player_num].damage;
+    while (user.damage < user.hps && opp.damage < opp.hps) {
+	playerrem = user.hps - user.damage;
 	nl();
 	od_set_color(L_YELLOW, D_BLACK);
 	od_printf("You are attacked by a %s.\r\n", opp.name);
@@ -1071,7 +1050,7 @@ battle(void)
 		break;
 	    case 'F':
 		od_disp_str("Flee\r\n");
-		if ((xp_random(4) + 1) + player[player_num].dexterity > opp.dexterity) {
+		if ((xp_random(4) + 1) + user.dexterity > opp.dexterity) {
 		    nl();
 		    od_set_color(D_GREEN, D_BLACK);
 		    od_disp_str("You Ride away on a Silver Dragon.\r\n");
@@ -1211,7 +1190,7 @@ weaponshop(void)
 		buy = strtoul(temp, NULL, 10);
 		if (buy == 0)
 		    return;
-		if (cost[buy] > player[player_num].gold)
+		if (cost[buy] > user.gold)
 		    od_disp_str("You do not have enough Steel.\r\n");
 		else {
 		    nl();
@@ -1222,13 +1201,13 @@ weaponshop(void)
 			    od_disp_str("Are you sure you want buy it? ");
 			    if (od_get_answer("YN") == 'Y') {
 				od_disp_str("Yes\r\n");
-				player[player_num].gold -= cost[buy];
-				player[player_num].weapon = buy;
+				user.gold -= cost[buy];
+				user.weapon = buy;
 				nl();
 				od_set_color(D_MAGENTA, D_BLACK);
 				od_printf("You've bought a %s\r\n", wname[buy]);
-				player[player_num].attack = w2[player[player_num].weapon];
-				player[player_num].power = w3[player[player_num].weapon];
+				user.attack = w2[user.weapon];
+				user.power = w3[user.weapon];
 			    } else
 				od_disp_str("No\r\n");
 			    break;
@@ -1237,8 +1216,8 @@ weaponshop(void)
 			    od_disp_str("Are you sure you want buy it? ");
 			    if (od_get_answer("YN") == 'Y') {
 				od_disp_str("Yes\r\n");
-				player[player_num].gold -= cost[buy];
-				player[player_num].armour = buy;
+				user.gold -= cost[buy];
+				user.armour = buy;
 				nl();
 				od_set_color(D_MAGENTA, D_BLACK);
 				od_printf("You've bought a %s\r\n", sname[buy]);
@@ -1258,8 +1237,8 @@ weaponshop(void)
 			return;
 		    case 'W':
 			od_disp_str("Weapon\r\n");
-			buyprice = player[player_num].charisma;
-			buyprice = buyprice * cost[player[player_num].weapon];
+			buyprice = user.charisma;
+			buyprice = buyprice * cost[user.weapon];
 			buyprice = (buyprice / 20);
 			nl();
 			od_printf("I will purchase it for %u, okay? ", buyprice);
@@ -1267,21 +1246,21 @@ weaponshop(void)
 			    od_disp_str("Yes\r\n");
 			    od_set_color(D_GREEN, D_BLACK);
 			    od_disp_str("Is it Dwarven Made?\r\n");
-			    player[player_num].weapon = 1;
-			    player[player_num].gold = player[player_num].gold + buyprice;
+			    user.weapon = 1;
+			    user.gold = user.gold + buyprice;
 			} else
 			    od_disp_str("No\r\n");
 			break;
 		    case 'A':
 			od_disp_str("Armour\r\n");
-			buyprice = player[player_num].charisma * cost[player[player_num].armour] / 20;
+			buyprice = user.charisma * cost[user.armour] / 20;
 			nl();
 			od_printf("I will purchase it for %u, okay? ", buyprice);
 			if (od_get_answer("YN") == 'Y') {
 			    od_disp_str("Yes\r\n");
 			    od_disp_str("Fine Craftsmanship!\r\n");
-			    player[player_num].armour = 1;
-			    player[player_num].gold = player[player_num].gold + buyprice;
+			    user.armour = 1;
+			    user.gold = user.gold + buyprice;
 			} else
 			    od_disp_str("No\r\n");
 			break;
@@ -1317,11 +1296,11 @@ spy(void)
     od_input_str(aa, sizeof(aa) - 1, ' ', '~');
     for (a = 1; a <= number_of_players; a++) {
 	if (!stricmp(player[a].pseudo, aa)) {
-	    if (player[player_num].gold < 20) {
+	    if (user.gold < 20) {
 		od_set_color(L_RED, B_BLACK);
 		od_disp_str("You do not have enough Steel!\r\n");
 	    } else {
-		player[player_num].gold -= 20;
+		user.gold -= 20;
 		nl();
 		od_set_color(L_RED, B_BLACK);
 		od_printf("%s\r\n", player[a].pseudo);
@@ -1352,7 +1331,7 @@ gamble(void)
     INT32           realgold;
     int             okea;
     nl();
-    if (player[player_num].fights == 0)
+    if (user.fights == 0)
 	od_disp_str("The Shooting Gallery is closed until tomorrow!\r\n");
     else {
 	od_clr_scr();
@@ -1364,26 +1343,26 @@ gamble(void)
 	od_set_color(D_GREY, D_BLACK);
 	od_input_str(tempgd, sizeof(tempgd) - 1, '0', '9');
 	realgold = strtoull(tempgd, NULL, 10);
-	if (realgold > player[player_num].gold) {
+	if (realgold > user.gold) {
 	    nl();
 	    od_disp_str("You do not have enough Steel!\r\n");
 	}
-	if ((realgold != 0) && ((player[player_num].gold >= realgold) && (realgold <= 25000) && (realgold >= 1))) {
+	if ((realgold != 0) && ((user.gold >= realgold) && (realgold <= 25000) && (realgold >= 1))) {
 	    okea = xp_random(99) + 1;
 	    if (okea <= 3) {
 		realgold *= 100;
-		player[player_num].gold += realgold;
+		user.gold += realgold;
 		od_printf("You shot all the targets and win %u Steel pieces!\r\n", realgold);
 	    } else if ((okea > 3) && (okea <= 15)) {
 		realgold *= 10;
-		player[player_num].gold += realgold;
+		user.gold += realgold;
 		od_printf("You shot 50%% if the targets and win %u Steel pieces!\r\n", realgold);
 	    } else if ((okea > 15) && (okea <= 30)) {
 		realgold *= 3;
-		player[player_num].gold += realgold;
+		user.gold += realgold;
 		od_printf("You shot 25%% if the targets and win %u Steel pieces!\r\n", realgold);
 	    } else {
-		player[player_num].gold -= realgold;
+		user.gold -= realgold;
 		od_disp_str("Sorry You Hath Lost!\r\n");
 	    }
 	}
@@ -1394,7 +1373,7 @@ void
 afight(int lev)
 {
     char            fname[32];
-    if (player[player_num].fights == 0) {
+    if (user.fights == 0) {
 	nl();
 	od_set_color(D_MAGENTA, D_BLACK);
 	od_disp_str("It's Getting Dark Out!\r\n");
@@ -1462,7 +1441,7 @@ training(void)
     int             realtrain;
     int             tttgld;
     nl();
-    if (player[player_num].fights == 0)
+    if (user.fights == 0)
 	od_disp_str("The Training Grounds are closed until tomorrow!\r\n");
     else {
 	od_clr_scr();
@@ -1475,7 +1454,7 @@ training(void)
 	od_disp_str("Do you wish to upgrade a stat? ");
 	if (od_get_answer("YN") == 'Y') {
 	    od_disp_str("Yes\r\n");
-	    if (player[player_num].gold < (tttgld * 100))
+	    if (user.gold < (tttgld * 100))
 		od_disp_str("Sorry, but you do not have enough Steel!\r\n");
 	    else {
 		nl();
@@ -1511,25 +1490,25 @@ training(void)
 		od_disp_str("Are you sure? ");
 		if (od_get_answer("YN") == 'Y') {
 		    od_disp_str("Yes\r\n");
-		    player[player_num].gold -= tttgld * 100;
+		    user.gold -= tttgld * 100;
 		    switch (realtrain) {
 			case 1:
-			    player[player_num].strength++;
+			    user.strength++;
 			    break;
 			case 2:
-			    player[player_num].intelligence++;
+			    user.intelligence++;
 			    break;
 			case 3:
-			    player[player_num].dexterity++;
+			    user.dexterity++;
 			    break;
 			case 4:
-			    player[player_num].luck++;
+			    user.luck++;
 			    break;
 			case 5:
-			    player[player_num].constitution++;
+			    user.constitution++;
 			    break;
 			case 6:
-			    player[player_num].charisma++;
+			    user.charisma++;
 			    break;
 		    }
 		} else
@@ -1622,17 +1601,17 @@ main(int argc, char **argv)
 	else
 	    create(TRUE);
     }
-    if (player[player_num].status == DEAD) {
+    if (user.status == DEAD) {
 	nl();
 	od_set_color(L_CYAN, D_BLACK);
-	od_printf("A defeat was lead over you by %s.", player[player_num].killer);
+	od_printf("A defeat was lead over you by %s.", user.killer);
     }
     checkday();
-    if (player[player_num].flights < 1) {
-	player[player_num].fights = 0;
-	player[player_num].battles = 0;
+    if (user.flights < 1) {
+	user.fights = 0;
+	user.battles = 0;
     } else
-	player[player_num].flights--;
+	user.flights--;
     nl();
     pausescr();
     od_clr_scr();
@@ -1656,8 +1635,8 @@ main(int argc, char **argv)
 	endofline();
     }
     fclose(infile);
-    player[player_num].attack = w2[player[player_num].weapon];
-    player[player_num].power = w3[player[player_num].weapon];
+    user.attack = w2[user.weapon];
+    user.power = w3[user.weapon];
     infile = fopen("data/experience.lan", "rb");
     for (i = 1; i <= 28; i++) {
 	required[i] = readnumb(100000000);
@@ -1665,11 +1644,11 @@ main(int argc, char **argv)
     }
     fclose(infile);
     od_set_color(L_YELLOW, D_BLACK);
-    player[player_num].status = ALIVE;
+    user.status = ALIVE;
     statshow();
-    while (player[player_num].damage < player[player_num].hps) {
+    while (user.damage < user.hps) {
 	levelupdate();
-	if (((player[player_num].wins + 1) * 4) < (player[player_num].loses)) {
+	if (((user.wins + 1) * 4) < (user.loses)) {
 	    nl();
 	    od_disp_str("As you were Travelling along a Wilderness Path an   \r\n");
 	    od_disp_str("Evil Wizard Confronted You.  When you tried to fight\r\n");
@@ -1679,8 +1658,8 @@ main(int argc, char **argv)
 	    nl();
 	    pausescr();
 	    create(FALSE);
-	    if (player[player_num].flights)
-		player[player_num].flights--;
+	    if (user.flights)
+		user.flights--;
 	}
 	nl();
 	nl();
@@ -1769,8 +1748,8 @@ main(int argc, char **argv)
 		if (od_get_answer("YN") == 'Y') {
 		    od_disp_str("Yes\r\n");
 		    create(FALSE);
-		    if (player[player_num].flights)
-			player[player_num].flights--;
+		    if (user.flights)
+			user.flights--;
 		} else
 		    od_disp_str("No\r\n");
 		break;
@@ -1817,14 +1796,14 @@ main(int argc, char **argv)
 		if (od_get_answer("YN") == 'Y') {
 		    od_disp_str("Yes\r\n");
 		    if (strlen(temp))
-			SAFECOPY(player[player_num].pseudo, temp);
+			SAFECOPY(user.pseudo, temp);
 		} else
 		    od_disp_str("No\r\n");
 		break;
 	    case '#':
 		od_disp_str("Change Battle Cry\r\n");
 		vic();
-		SAFECOPY(player[player_num].gaspd, temp);
+		SAFECOPY(user.gaspd, temp);
 		break;
 	}
     }
