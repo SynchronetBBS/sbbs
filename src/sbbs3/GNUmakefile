@@ -126,7 +126,7 @@ $(LIBODIR)/%.o : %.cpp
 ifndef bcc
 	@echo Compiling $<
 endif
-	@$(CC) $(CFLAGS) $(SBBSDEFS) -o $@ -c $<
+	@$(CCPP) $(CFLAGS) $(SBBSDEFS) -o $@ -c $<
 
 # Create output directories
 $(LIBODIR):
