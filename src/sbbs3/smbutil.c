@@ -53,6 +53,7 @@
 /* ANSI */
 #include <time.h>	/* time */
 #include <errno.h>	/* errno */
+#include <string.h>	/* strrchr */
 
 #include "smblib.h"
 #include "smbwrap.h"
@@ -205,7 +206,7 @@ if(smb.status.max_crcs) {
 msg.hdr.offset=offset;
 
 printf("To User Name: ");
-gets(str);
+fgets(str,sizeof(str)-1,stdin);
 i=smb_hfield(&msg,RECIPIENT,(ushort)strlen(str),str);
 if(i) {
 	printf("\n\7!smb_hfield returned %d\n",i);
