@@ -784,7 +784,7 @@ void sbbs_t::privchat(bool local)
 				checkline();
 				gettimeleft();
 				SYNC; 
-				SLEEP(500);
+				inkey(K_NONE,500);
 			} 
 		}
 	}
