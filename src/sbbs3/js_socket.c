@@ -111,10 +111,10 @@ static void js_finalize_socket(JSContext *cx, JSObject *obj)
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
 		return;
 
-	if(p->external==JS_FALSE && p->sock!=INVALID_SOCKET)
+	if(p->external==JS_FALSE && p->sock!=INVALID_SOCKET) {
 		close_socket(p->sock);
-
-	dbprintf(FALSE, p, "closed/deleted");
+		dbprintf(FALSE, p, "closed/deleted");
+	}
 
 	free(p);
 
@@ -410,7 +410,7 @@ js_recvline(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 		if(!rd) {
 			if(time(NULL)-start>timeout) {
-				dbprintf(FALSE, p, "recvline timeout");
+				dbprintf(FALSE, p, "recvline timeout (received: %d)",i);
 				*rval = JSVAL_NULL;
 				return(JS_TRUE);	/* time-out */
 			}
@@ -569,7 +569,7 @@ static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
     tiny = JSVAL_TO_INT(id);
 
 #if 0 /* just too much */
-	dbprintf(FALSE, sock, "getting property %d",tiny);
+	dbprintf(FALSE, p, "getting property %d",tiny);
 #endif
 
 	switch(tiny) {
