@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -69,10 +69,11 @@ void sbbs_t::multinodechat(int channel)
 		return;
 	if(useron.misc&(RIP|WIP|HTML) ||!(useron.misc&EXPERT))
 		menu("multchat");
-	getnodedat(cfg.node_num,&thisnode,1);
 	bputs(text[WelcomeToMultiChat]);
-	thisnode.aux=channel;		
-	putnodedat(cfg.node_num,&thisnode);
+	if(getnodedat(cfg.node_num,&thisnode,true)==0) {
+		thisnode.aux=channel;		
+		putnodedat(cfg.node_num,&thisnode);
+	}
 	bprintf(text[WelcomeToChannelN],channel,cfg.chan[channel-1]->name);
 	if(gurubuf) {
 		FREE(gurubuf);
@@ -239,14 +240,14 @@ void sbbs_t::multinodechat(int channel)
 						&& !noyes(text[PasswordProtectChanQ])) {
 						bputs(text[PasswordPrompt]);
 						if(getstr(str,8,K_UPPER|K_ALPHA|K_LINE)) {
-							getnodedat(cfg.node_num,&thisnode,1);
+							getnodedat(cfg.node_num,&thisnode,true);
 							thisnode.aux=channel;
 							packchatpass(str,&thisnode); }
 						else {
-							getnodedat(cfg.node_num,&thisnode,1);
+							getnodedat(cfg.node_num,&thisnode,true);
 							thisnode.aux=channel; } }
 					else {
-						getnodedat(cfg.node_num,&thisnode,1);
+						getnodedat(cfg.node_num,&thisnode,true);
 						thisnode.aux=channel; }
 					putnodedat(cfg.node_num,&thisnode);
 					bputs(text[YoureOnTheAir]);
@@ -268,9 +269,10 @@ void sbbs_t::multinodechat(int channel)
 							printnodedat(i,&node);
 							preusr[usrs]=usr[usrs++]=(char)i; }
 						preusrs=usrs;
-						getnodedat(cfg.node_num,&thisnode,1);
-						thisnode.aux=channel=0;
-						putnodedat(cfg.node_num,&thisnode);
+						if(getnodedat(cfg.node_num,&thisnode,true)==0) {
+							thisnode.aux=channel=0;
+							putnodedat(cfg.node_num,&thisnode);
+						}
 						break;
 					case 'A':   /* Action commands */
 						useron.chat^=CHAT_ACTION;
@@ -578,9 +580,10 @@ void sbbs_t::chatsection()
 				useron.chat^=CHAT_NOACT;
 				putuserrec(&cfg,useron.number,U_CHAT,8
 					,ultoa(useron.chat,str,16));
-				getnodedat(cfg.node_num,&thisnode,1);
-				thisnode.misc^=NODE_AOFF;
-				printnodedat(cfg.node_num,&thisnode);
+				if(getnodedat(cfg.node_num,&thisnode,true)==0) {
+					thisnode.misc^=NODE_AOFF;
+					printnodedat(cfg.node_num,&thisnode);
+				}
 				putnodedat(cfg.node_num,&thisnode);
 				no_rip_menu=true;
 				break;
@@ -589,9 +592,10 @@ void sbbs_t::chatsection()
 				useron.chat^=CHAT_NOPAGE;
 				putuserrec(&cfg,useron.number,U_CHAT,8
 					,ultoa(useron.chat,str,16));
-				getnodedat(cfg.node_num,&thisnode,1);
-				thisnode.misc^=NODE_POFF;
-				printnodedat(cfg.node_num,&thisnode);
+				if(getnodedat(cfg.node_num,&thisnode,true)==0) {
+					thisnode.misc^=NODE_POFF;
+					printnodedat(cfg.node_num,&thisnode);
+				}
 				putnodedat(cfg.node_num,&thisnode);
 				no_rip_menu=true;
 				break;
@@ -751,10 +755,11 @@ void sbbs_t::privchat(bool local)
 				,useron.alias,username(&cfg,node.useron,tmp),n);
 			logline("C",str); }
 
-		getnodedat(cfg.node_num,&thisnode,1);
-		thisnode.action=action=NODE_PAGE;
-		thisnode.aux=n;
-		putnodedat(cfg.node_num,&thisnode);
+		if(getnodedat(cfg.node_num,&thisnode,true)==0) {
+			thisnode.action=action=NODE_PAGE;
+			thisnode.aux=n;
+			putnodedat(cfg.node_num,&thisnode);
+		}
 
 		if(node.action!=NODE_PAGE || node.aux!=cfg.node_num) {
 			bprintf(text[WaitingForNodeInPChat],n);
@@ -774,11 +779,12 @@ void sbbs_t::privchat(bool local)
 				SYNC; } }
 	}
 
-	getnodedat(cfg.node_num,&thisnode,1);
-	thisnode.action=action=NODE_PCHT;
-	thisnode.aux=n;
-	thisnode.misc&=~NODE_LCHAT;
-	putnodedat(cfg.node_num,&thisnode);
+	if(getnodedat(cfg.node_num,&thisnode,true)==0) {
+		thisnode.action=action=NODE_PCHT;
+		thisnode.aux=n;
+		thisnode.misc&=~NODE_LCHAT;
+		putnodedat(cfg.node_num,&thisnode);
+	}
 
 	if(!online || sys_status&SS_ABORT)
 		return;
@@ -798,9 +804,10 @@ void sbbs_t::privchat(bool local)
 	}
 
 	sprintf(str,"%schat.dab",cfg.node_dir);
-	if((out=sopen(str,O_RDWR|O_CREAT|O_BINARY,SH_DENYNO))==-1) {
+	if((out=sopen(str,O_RDWR|O_CREAT|O_BINARY,SH_DENYNO,S_IREAD|S_IWRITE))==-1) {
 		errormsg(WHERE,ERR_OPEN,str,O_RDWR|O_DENYNONE|O_CREAT);
-		return; }
+		return; 
+	}
 
 	if(local)
 		sprintf(str,"%slchat.dab",cfg.node_dir);
@@ -808,7 +815,7 @@ void sbbs_t::privchat(bool local)
 		sprintf(str,"%schat.dab",cfg.node_path[n-1]);
 	if(!fexist(str))		/* Wait while it's created for the first time */
 		mswait(2000);
-	if((in=sopen(str,O_RDWR|O_CREAT|O_BINARY,SH_DENYNO))==-1) {
+	if((in=sopen(str,O_RDWR|O_CREAT|O_BINARY,SH_DENYNO,S_IREAD|S_IWRITE))==-1) {
 		close(out);
 		errormsg(WHERE,ERR_OPEN,str,O_RDWR|O_DENYNONE|O_CREAT);
 		return; }
@@ -825,14 +832,16 @@ void sbbs_t::privchat(bool local)
 	lseek(in,0L,SEEK_SET);
 	lseek(out,0L,SEEK_SET);
 
-	getnodedat(cfg.node_num,&thisnode,1);
-	thisnode.misc&=~NODE_RPCHT; 		/* Clear "reset pchat flag" */
-	putnodedat(cfg.node_num,&thisnode);
+	if(getnodedat(cfg.node_num,&thisnode,true)==0) {
+		thisnode.misc&=~NODE_RPCHT; 		/* Clear "reset pchat flag" */
+		putnodedat(cfg.node_num,&thisnode);
+	}
 
 	if(!local) {
-		getnodedat(n,&node,1);
-		node.misc|=NODE_RPCHT;				/* Set "reset pchat flag" */
-		putnodedat(n,&node); 				/* on other node */
+		if(getnodedat(n,&node,true)==0) {
+			node.misc|=NODE_RPCHT;				/* Set "reset pchat flag" */
+			putnodedat(n,&node); 				/* on other node */
+		}
 
 											/* Wait for other node */
 											/* to acknowledge and reset */
@@ -883,9 +892,12 @@ void sbbs_t::privchat(bool local)
 					break;
 				if(thisnode.misc&NODE_UDAT && !(useron.rest&FLAG('G'))) {
 					getuserdat(&cfg,&useron);
-					getnodedat(cfg.node_num,&thisnode,1);
-					thisnode.misc&=~NODE_UDAT;
-					putnodedat(cfg.node_num,&thisnode); } }
+					if(getnodedat(cfg.node_num,&thisnode,true)==0) {
+						thisnode.misc&=~NODE_UDAT;
+						putnodedat(cfg.node_num,&thisnode); 
+					}
+				} 
+			}
 			else
 				nodesync(); }
 		activity=0;
@@ -1087,9 +1099,10 @@ void sbbs_t::privchat(bool local)
 			if(thisnode.misc&NODE_RPCHT) {		/* pchat has been reset */
 				lseek(in,0L,SEEK_SET);			/* so seek to beginning */
 				lseek(out,0L,SEEK_SET);
-				getnodedat(cfg.node_num,&thisnode,1);
-				thisnode.misc&=~NODE_RPCHT;
-				putnodedat(cfg.node_num,&thisnode); 
+				if(getnodedat(cfg.node_num,&thisnode,true)==0) {
+					thisnode.misc&=~NODE_RPCHT;
+					putnodedat(cfg.node_num,&thisnode); 
+				}
 			}
 			mswait(1); }
 		checkline();
@@ -1367,11 +1380,12 @@ void sbbs_t::nodemsg()
 	nodemsg_inside--;
 	if(!nodemsg_inside)
 		sys_status&=~SS_IN_CTRLP;
-	getnodedat(cfg.node_num,&thisnode,1);
-	thisnode.action=action=savenode.action;
-	thisnode.aux=savenode.aux;
-	thisnode.extaux=savenode.extaux;
-	putnodedat(cfg.node_num,&thisnode);
+	if(getnodedat(cfg.node_num,&thisnode,true)==0) {
+		thisnode.action=action=savenode.action;
+		thisnode.aux=savenode.aux;
+		thisnode.extaux=savenode.extaux;
+		putnodedat(cfg.node_num,&thisnode);
+	}
 }
 
 /****************************************************************************/
@@ -1771,9 +1785,10 @@ void sbbs_t::localguru(char *gurubuf, int gurunum)
 			mswait(200);
 			outchar('.'); } }
 	bprintf(text[SysopIsHere],cfg.guru[gurunum]->name);
-	getnodedat(cfg.node_num,&thisnode,1);
-	thisnode.aux=gurunum;
-	putnodedat(cfg.node_num,&thisnode);
+	if(getnodedat(cfg.node_num,&thisnode,true)==0) {
+		thisnode.aux=gurunum;
+		putnodedat(cfg.node_num,&thisnode);
+	}
 	attr(cfg.color[clr_chatlocal]);
 	strcpy(str,"HELLO");
 	guruchat(str,gurubuf,gurunum);
