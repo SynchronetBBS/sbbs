@@ -36,6 +36,7 @@
  ****************************************************************************/
 
 #include <stdlib.h>		/* malloc and qsort */
+#include <string.h>		/* strtok */
 #include "genwrap.h"	/* stricmp */
 #include "str_list.h"
 
