@@ -285,8 +285,14 @@ static void bbs_start(void)
     SAFECOPY(MainForm->bbs_startup.host_name
         ,MainForm->Hostname.c_str());
     MainForm->bbs_startup.sem_chk_freq=MainForm->SemFileCheckFrequency;
+
+    /* JavaScript operational parameters */
     MainForm->bbs_startup.js_max_bytes=MainForm->js_max_bytes;
     MainForm->bbs_startup.js_cx_stack=MainForm->js_cx_stack;
+    MainForm->bbs_startup.js_branch_limit=MainForm->js_branch_limit;
+    MainForm->bbs_startup.js_gc_interval=MainForm->js_gc_interval;
+    MainForm->bbs_startup.js_yield_interval=MainForm->js_yield_interval;
+
 	_beginthread((void(*)(void*))bbs_thread,0,&MainForm->bbs_startup);
     Application->ProcessMessages();
 }
@@ -591,8 +597,11 @@ static void ftp_start(void)
     SAFECOPY(MainForm->ftp_startup.host_name
         ,MainForm->Hostname.c_str());
     MainForm->ftp_startup.sem_chk_freq=MainForm->SemFileCheckFrequency;
+
+    /* JavaScript operational parameters */
     MainForm->ftp_startup.js_max_bytes=MainForm->js_max_bytes;
     MainForm->ftp_startup.js_cx_stack=MainForm->js_cx_stack;
+
 	_beginthread((void(*)(void*))ftp_server,0,&MainForm->ftp_startup);
     Application->ProcessMessages();
 }
@@ -851,9 +860,15 @@ void __fastcall TMainForm::ServicesStartExecute(TObject *Sender)
         ,MainForm->CtrlDirectory.c_str());
     SAFECOPY(MainForm->services_startup.host_name
         ,MainForm->Hostname.c_str());
-    MainForm->services_startup.sem_chk_freq=SemFileCheckFrequency;        
+    MainForm->services_startup.sem_chk_freq=SemFileCheckFrequency;
+
+    /* JavaScript operational parameters */
     MainForm->services_startup.js_max_bytes=MainForm->js_max_bytes;
-    MainForm->services_startup.js_cx_stack=MainForm->js_cx_stack;    
+    MainForm->services_startup.js_cx_stack=MainForm->js_cx_stack;
+    MainForm->services_startup.js_branch_limit=MainForm->js_branch_limit;
+    MainForm->services_startup.js_gc_interval=MainForm->js_gc_interval;
+    MainForm->services_startup.js_yield_interval=MainForm->js_yield_interval;
+
 	_beginthread((void(*)(void*))services_thread,0,&MainForm->services_startup);
     Application->ProcessMessages();
 }
