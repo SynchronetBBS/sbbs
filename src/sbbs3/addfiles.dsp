@@ -64,7 +64,7 @@ LINK32=link.exe
 # PROP Intermediate_Dir "msvc.win32.exe.debug"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /GZ /c
-# ADD CPP /nologo /W3 /Gm /GX /ZI /Od /I "..\xpdev" /D "_DEBUG" /D "WRAPPER_EXPORTS" /D "WIN32" /D "_CONSOLE" /D "_MBCS" /D "SBBS_EXPORTS" /YX /FD /GZ /c
+# ADD CPP /nologo /W3 /Gm /GX /ZI /Od /I "..\xpdev" /D "_DEBUG" /D "WRAPPER_EXPORTS" /D "WIN32" /D "_CONSOLE" /D "_MBCS" /D "SBBS_EXPORTS" /FR /YX /FD /GZ /c
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
 # ADD RSC /l 0x409 /d "_DEBUG"
 BSC32=bscmake.exe
@@ -87,6 +87,10 @@ SOURCE=.\addfiles.c
 # Begin Source File
 
 SOURCE=.\ars.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\crc16.c
 # End Source File
 # Begin Source File
 

@@ -86,6 +86,10 @@ SOURCE=.\ars.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\crc16.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\dat_rec.c
 # End Source File
 # Begin Source File

@@ -134,6 +134,10 @@ SOURCE=.\con_out.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\crc16.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\crc32.c
 # End Source File
 # Begin Source File
