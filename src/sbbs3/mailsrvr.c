@@ -1032,7 +1032,7 @@ static void pop3_thread(void* arg)
 	thread_down();
 }
 
-BOOL rblchk(DWORD mail_addr_n, char* rbl_addr)
+static BOOL rblchk(DWORD mail_addr_n, char* rbl_addr)
 {
 	char		name[256];
 	DWORD		mail_addr;
@@ -1052,6 +1052,30 @@ BOOL rblchk(DWORD mail_addr_n, char* rbl_addr)
 	return(TRUE);
 }
 
+
+static BOOL chk_email_addr(SOCKET socket, char* p, char* host_name, char* host_ip)
+{
+	char	addr[64];
+	char	tmp[128];
+	char*	tp;
+
+	while(*p && *p<=' ') p++;
+	if(*p=='<') p++;		/* Skip '<' */
+	sprintf(addr,"%.*s",sizeof(addr)-1,p);
+	tp=strchr(addr,'>');
+	if(tp!=NULL) *tp=0;
+
+	if(!trashcan(&scfg,addr,"email"))
+		return(TRUE);
+
+	lprintf("%04d !SMTP BLOCKED e-mail address: %s"
+		,socket, addr);
+	sprintf(tmp,"Blocked e-mail address: %s", addr);
+	spamlog(&scfg, "SMTP", tmp, host_name, host_ip);
+	sockprintf(socket, "554 Sender not allowed.");
+
+	return(FALSE);
+}
 
 static void smtp_thread(void* arg)
 {
@@ -1191,7 +1215,7 @@ static void smtp_thread(void* arg)
 			)==TRUE) {
 		lprintf("%04d !SMTP SPAM server filtered (RBL): %s [%s]"
 			,socket, host_name, host_ip);
-		spamlog(&scfg, "Listed on RBL (http://mail-abuse.org/rbl)"
+		spamlog(&scfg, "SMTP", "Listed on RBL (http://mail-abuse.org/rbl)"
 			,host_name, host_ip);
 		sockprintf(socket
 			,"571 Mail from %s refused, see http://mail-abuse.org/rbl"
@@ -1206,7 +1230,7 @@ static void smtp_thread(void* arg)
 			)==TRUE) {
 		lprintf("%04d !SMTP SPAM server filtered (DUL): %s [%s]"
 			,socket, host_name, host_ip);
-		spamlog(&scfg, "Listed on DUL (http://mail-abuse.org/dul)"
+		spamlog(&scfg, "SMTP", "Listed on DUL (http://mail-abuse.org/dul)"
 			,host_name, host_ip);
 		sockprintf(socket
 			,"571 Mail from %s refused, see http://mail-abuse.org/dul"
@@ -1221,7 +1245,7 @@ static void smtp_thread(void* arg)
 			)==TRUE) {
 		lprintf("%04d !SMTP SPAM server filtered (RSS): %s [%s]"
 			,socket, host_name, host_ip);
-		spamlog(&scfg, "Listed on RSS (http://mail-abuse.org/rss)"
+		spamlog(&scfg, "SMTP", "Listed on RSS (http://mail-abuse.org/rss)"
 			,host_name, host_ip);
 		sockprintf(socket
 			,"571 Mail from %s refused, see http://mail-abuse.org/rss"
@@ -1530,6 +1554,15 @@ static void smtp_thread(void* arg)
 			if(!strnicmp(buf, "SUBJECT:",8)) {
 				p=buf+8;
 				while(*p && *p<=' ') p++;
+				if(trashcan(&scfg,p,"subject")) {
+					lprintf("%04d !SMTP ILLEGAL SUBJECT '%s' from %s [%s]"
+						,socket, p, reverse_path);
+					sprintf(tmp,"Blocked subject '%s' from %s"
+						,p, reverse_path);
+					spamlog(&scfg, "SMTP", tmp, host_name, host_ip);
+					sockprintf(socket, "554 Subject not allowed.");
+					break;
+				}
 				smb_hfield(&msg, SUBJECT, (ushort)strlen(p), p);
 				strlwr(p);
 				msg.idx.subj=crc16(p);
@@ -1558,7 +1591,9 @@ static void smtp_thread(void* arg)
 				smb_hfield(&msg, REPLYTONETADDR, (ushort)strlen(p), p);
 				continue;
 			}
-			if(!strnicmp(buf, "FROM:",5)) {
+			if(!strnicmp(buf, "FROM:", 5)) {
+				if(!chk_email_addr(socket,buf+5,host_name,host_ip))
+					break;
 				p=strchr(buf+5,'<');
 				if(p) {
 					p++;
@@ -1737,24 +1772,29 @@ static void smtp_thread(void* arg)
 			continue;
 		}
 		if(!strnicmp(buf,"MAIL FROM:",10)) {
+			p=buf+10;
+			if(!chk_email_addr(socket,p,host_name,host_ip))
+				break;
+			while(*p && *p<=' ') p++;
+			sprintf(reverse_path,"%.*s",(int)sizeof(reverse_path)-1,p);
+			sockprintf(socket,SMTP_OK);
+			state=SMTP_STATE_MAIL_FROM;
+			cmd=SMTP_CMD_MAIL;
+
 			smb_freemsgmem(&msg);
 			memset(&msg,0,sizeof(smbmsg_t));		/* Initialize message header */
 			memcpy(msg.hdr.id,"SHD\x1a",4);
 			msg.hdr.version=smb_ver();
 			msg.hdr.when_imported.time=time(NULL);
 			msg.hdr.when_imported.zone=scfg.sys_timezone;
-			p=buf+10;
-			while(*p && *p<=' ') p++;
-			sprintf(reverse_path,"%.*s",(int)sizeof(reverse_path)-1,p);
-			sockprintf(socket,SMTP_OK);
-			state=SMTP_STATE_MAIL_FROM;
-			cmd=SMTP_CMD_MAIL;
 			continue;
 		}
 
 		/* Send a Message (Telegram) to a local ONLINE user */
 		if(!strnicmp(buf,"SEND FROM:",10)) {
 			p=buf+10;
+			if(!chk_email_addr(socket,p,host_name,host_ip))
+				break;
 			while(*p && *p<=' ') p++;
 			sprintf(reverse_path,"%.*s",(int)sizeof(reverse_path)-1,p);
 			sockprintf(socket,SMTP_OK);
@@ -1765,6 +1805,8 @@ static void smtp_thread(void* arg)
 		/* Send OR Mail a Message to a local user */
 		if(!strnicmp(buf,"SOML FROM:",10)) {
 			p=buf+10;
+			if(!chk_email_addr(socket,p,host_name,host_ip))
+				break;
 			while(*p && *p<=' ') p++;
 			sprintf(reverse_path,"%.*s",(int)sizeof(reverse_path)-1,p);
 			sockprintf(socket,SMTP_OK);
@@ -1775,6 +1817,8 @@ static void smtp_thread(void* arg)
 		/* Send AND Mail a Message to a local user */
 		if(!strnicmp(buf,"SAML FROM:",10)) {
 			p=buf+10;
+			if(!chk_email_addr(socket,p,host_name,host_ip))
+				break;
 			while(*p && *p<=' ') p++;
 			sprintf(reverse_path,"%.*s",(int)sizeof(reverse_path)-1,p);
 			sockprintf(socket,SMTP_OK);
@@ -1835,9 +1879,9 @@ static void smtp_thread(void* arg)
 						!findstr(&scfg,host_ip,relay_list)) {
 						lprintf("%04d !SMTP ILLEGAL RELAY ATTEMPT from %s [%s] to %s"
 							,socket, reverse_path, host_ip, p);
-						sprintf(tmp,"SMTP Relay attempt from %s to %s"
+						sprintf(tmp,"Relay attempt from %s to %s"
 							,reverse_path, p);
-						spamlog(&scfg, tmp, host_name, host_ip);
+						spamlog(&scfg, "SMTP", tmp, host_name, host_ip);
 						sockprintf(socket, "550 Relay not allowed.");
 						continue;
 					}
