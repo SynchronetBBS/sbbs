@@ -753,7 +753,6 @@ void free_msgs_cfg(scfg_t* cfg)
 void make_data_dirs(scfg_t* cfg)
 {
 	char	str[MAX_PATH+1];
-	int		i;
 
 	md(cfg->data_dir);
 	sprintf(str,"%ssubs",cfg->data_dir);
@@ -776,6 +775,8 @@ void make_data_dirs(scfg_t* cfg)
 	md(str);
 
 #if 0
+	int		i;
+
 	for(i=0;i<cfg->total_subs;i++) {
 		if(cfg->sub[i]->data_dir[0]) {
 			backslash(cfg->sub[i]->data_dir);
