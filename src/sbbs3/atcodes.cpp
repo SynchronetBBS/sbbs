@@ -708,6 +708,51 @@ int sbbs_t::syncatcodes(char *sp, int len)
 			bprintf("%u",stats.nusers);
 	}
 
+	/* Message header codes */
+	else if(!strcmp(sp,"MSG_TO") && current_msg!=NULL)
+		bputs(current_msg->to);
+	else if(!strcmp(sp,"MSG_TO_EXT") && current_msg!=NULL)
+		bputs(current_msg->to_ext);
+	else if(!strcmp(sp,"MSG_TO_NET") && current_msg!=NULL)
+		bputs(current_msg->to_net.type==NET_FIDO
+			? faddrtoa(*(faddr_t *)current_msg->to_net.addr) 
+			: (char*)current_msg->to_net.addr);
+	if(current_msg!=NULL && (!(current_msg->hdr.attr&MSG_ANONYMOUS) || SYSOP)) {	
+		if(!strcmp(sp,"MSG_FROM")) {
+			bputs(current_msg->from);
+			return(0);
+		}
+		if(!strcmp(sp,"MSG_FROM_EXT")) {
+			bputs(current_msg->from_ext);
+			return(0);
+		}
+		if(!strcmp(sp,"MSG_FROM_NET")) {
+			bputs(current_msg->from_net.type==NET_FIDO
+				? faddrtoa(*(faddr_t *)current_msg->from_net.addr) 
+				: (char*)current_msg->from_net.addr);
+			return(0);
+		}
+	}
+	else if(!strcmp(sp,"MSG_SUBJECT") && current_msg!=NULL)
+		bputs(current_msg->subj);
+	else if(!strcmp(sp,"MSG_DATE") && current_msg!=NULL)
+		bputs(timestr((time_t *)&current_msg->hdr.when_written.time));
+	else if(!strcmp(sp,"MSG_TIMEZONE") && current_msg!=NULL)
+		bputs(zonestr(current_msg->hdr.when_written.zone));
+	else if(!strcmp(sp,"MSG_ATTR") && current_msg!=NULL)
+		bprintf("%s%s%s%s%s%s%s%s%s%s"
+			,current_msg->hdr.attr&MSG_PRIVATE		? "Private  "   :nulstr
+			,current_msg->hdr.attr&MSG_READ			? "Read  "      :nulstr
+			,current_msg->hdr.attr&MSG_DELETE		? "Deleted  "   :nulstr
+			,current_msg->hdr.attr&MSG_KILLREAD		? "Kill  "      :nulstr
+			,current_msg->hdr.attr&MSG_ANONYMOUS	? "Anonymous  " :nulstr
+			,current_msg->hdr.attr&MSG_LOCKED		? "Locked  "    :nulstr
+			,current_msg->hdr.attr&MSG_PERMANENT	? "Permanent  " :nulstr
+			,current_msg->hdr.attr&MSG_MODERATED	? "Moderated  " :nulstr
+			,current_msg->hdr.attr&MSG_VALIDATED	? "Validated  " :nulstr
+			,current_msg->hdr.attr&MSG_REPLIED		? "Replied  "	:nulstr
+			);
+
 	else return(0);
 
 	return(len);
