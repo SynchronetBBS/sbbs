@@ -105,6 +105,7 @@ int main(int argc, char **argv)
             switch(toupper(argv[i][1])) {
                 case 'N':   /* Set "New Installation" flag */
 					new_install=TRUE;
+					forcesave=TRUE;
                     continue;
 		        case 'M':   /* Monochrome mode */
         			uifc.mode|=UIFC_MONO;
@@ -128,7 +129,7 @@ int main(int argc, char **argv)
         			all_msghdr=!all_msghdr;
                     break;
                 case 'F':
-                	forcesave=!forcesave;
+                	forcesave=TRUE;
                     break;
                 case 'L':
                     uifc.scrn_len=atoi(argv[i]+2);
