@@ -38,10 +38,7 @@ void spyon(char *sockname)  {
 
 	tcgetattr(STDIN_FILENO,&old_tio);
 	tcgetattr(STDIN_FILENO,&tio);
-//	cfmakeraw(&tio);
-	tio.c_cc[VMIN] = 1;
-	tio.c_cc[VTIME] = 0;
-	tio.c_lflag &= ~(ICANON | ECHO);
+	cfmakeraw(&tio);
 	tcsetattr(STDIN_FILENO,TCSANOW,&tio);
 	pset[0].fd=STDIN_FILENO;
 	pset[0].events=POLLIN;
@@ -58,10 +55,19 @@ void spyon(char *sockname)  {
 				spy_sock=INVALID_SOCKET;
 			}
 			else  {
-				if(read(STDIN_FILENO,&key,1)==1)  {
-					write(spy_sock,&key,1);
+				if((i=read(STDIN_FILENO,&key,1))==1)  {
+					/* Check for control keys */
+					switch(key)  {
+						case CTRL('c'):
+							printf("\r\n\r\nConnection closed.\r\n");
+							close(spy_sock);
+							spy_sock=INVALID_SOCKET;
+							return;
+						default:
+							write(spy_sock,&key,1);
+					}
 				}
-				else  {
+				else if(i<0) {
 					close(spy_sock);
 					spy_sock=INVALID_SOCKET;
 				}
@@ -73,15 +79,15 @@ void spyon(char *sockname)  {
 				spy_sock=INVALID_SOCKET;
 			}
 			else  {
-				if(read(spy_sock,&buf,1)==1)
+				if((i=read(spy_sock,&buf,1))==1)  {
 					write(STDOUT_FILENO,buf,1);
-				else  {
+				}
+				else if(i<0) {
 					close(spy_sock);
 					spy_sock=INVALID_SOCKET;
 				}
 			}
 		}
-		fflush(stdout);
 	}
 	tcsetattr(STDIN_FILENO,TCSANOW,&old_tio);
 }
