@@ -133,7 +133,7 @@ int main(int argc, char **argv)
 				,acthdrblocks,actdatblocks
 				,dfieldlength,dfieldoffset
 				,dupenum,dupenumhdr,dupeoff,attr,actalloc
-				,datactalloc,misnumbered,timeerr,idxofferr,idxerr
+				,datactalloc,misnumbered,timeerr,idxofferr,idxerr,subjcrc
 				,zeronum,idxzeronum,idxnumerr,packable=0L,totallzhsaved=0L
 				,totalmsgs=0,totallzhmsgs=0,totaldelmsgs=0,totalmsgbytes=0L
 				,lzhblocks,lzhsaved;
@@ -257,6 +257,7 @@ int main(int argc, char **argv)
 	}
 
 	headers=deleted=orphan=dupenumhdr=attr=zeronum=timeerr=lockerr=hdrerr=0;
+	subjcrc=0;
 	hdrnumerr=hdrlenerr=0;
 	actalloc=datactalloc=deldatblocks=delhdrblocks=xlaterr=0;
 	lzhblocks=lzhsaved=acthdrblocks=actdatblocks=0;
@@ -416,6 +417,15 @@ int main(int argc, char **argv)
 					printf("MSGERR: Header import date/time does not match "
 						"index import date/time\n");
 				timeerr++; 
+			}
+			else if(msg.idx.subj!=smb_subject_crc(msg.subj)) {
+				fprintf(stderr,"%sSubject CRC mismatch index\n",beep);
+				msgerr=TRUE;
+				if(extinfo)
+					printf("MSGERR: Subject (%04X) does not match index "
+						"CRC (%04X)\n"
+						,smb_subject_crc(msg.subj),msg.idx.subj);
+				subjcrc++; 
 			}
 			if(msg.hdr.number==0) {
 				fprintf(stderr,"%sZero message number\n",beep);
@@ -767,6 +777,10 @@ int main(int argc, char **argv)
 		printf("%-35.35s (!): %lu\n"
 			,"Mismatched Header Import Time"
 			,timeerr);
+	if(subjcrc)
+		printf("%-35.35s (!): %lu\n"
+			,"Mismatched Subject CRCs"
+			,subjcrc);
 	if(getbodyerr)
 		printf("%-35.35s (!): %lu\n"
 			,"Message Body Text Read Failures"
@@ -818,7 +832,7 @@ int main(int argc, char **argv)
 		|| getbodyerr || gettailerr
 		|| orphan || dupenumhdr || dupenum || dupeoff || attr
 		|| lockerr || hdrerr || hdrnumerr || idxnumerr || idxofferr
-		|| actalloc || datactalloc || misnumbered || timeerr
+		|| actalloc || datactalloc || misnumbered || timeerr || subjcrc
 		|| dfieldoffset || dfieldlength || xlaterr || idxerr) {
 		printf("%shas Errors!\n",beep);
 		errors++; 
