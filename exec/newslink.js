@@ -14,7 +14,7 @@
 
 const VERSION="1.00 Beta"
 
-printf("Synchronet NewsLink session started (v%s)", VERSION);
+printf("Synchronet NewsLink session started (v%s)\r\n", VERSION);
 
 var tearline = format("--- Synchronet NewsLink v%s\r\n",VERSION);
 var tagline	=  format(" *  %s - %s - telnet://%s\r\n"
@@ -32,6 +32,7 @@ var update_import_ptrs = false;		// Update import pointers, don't import anythin
 var reset_export_ptrs = false;		// Reset export pointers, export all messages
 var update_export_ptrs = false;		// Update export pointers, don't export anything
 var email_addresses = true;			// Include e-mail addresses in headers
+var import_amount = 0;				// Import a fixed number of messages per group
 
 // Parse arguments
 for(i=0;i<argc;i++) {
@@ -49,6 +50,14 @@ for(i=0;i<argc;i++) {
 		email_addresses = false;
 	else if(argv[i].toLowerCase()=="-nm")	// no mangling of e-mail addresses
 		antispam = "";
+	else if(argv[i].toLowerCase()=="-ix") 	// import a fixed number of messages
+	{
+		import_amount = Number(argv[i+1]);
+		if(import_amount)
+			i++;
+		else
+			import_amount = 500;			// default 500
+	}
 	else
 		cfg_fname = argv[i];
 }
@@ -62,7 +71,7 @@ function write(str)
 function writeln(str)
 {
 	if(debug)
-		printf("cmd: %s",str);
+		printf("cmd: %s\r\n",str);
 	write(str + "\r\n");
 }
 
@@ -70,7 +79,7 @@ function readln(str)
 {
 	rsp = socket.readln();
 	if(debug)
-		printf("rsp: %s",rsp);
+		printf("rsp: %s\r\n",rsp);
 	return(rsp);
 }
 
@@ -86,7 +95,7 @@ area = new Array();
 
 cfg_file = new File(cfg_fname);
 if(!cfg_file.open("r")) {
-	printf("!Error %d opening %s",errno,cfg_fname);
+	printf("!Error %d opening %s\r\n",errno,cfg_fname);
 	delete cfg_file;
 	exit();
 }
@@ -113,53 +122,53 @@ while(!cfg_file.eof) {
 			area.push(str);
 			break;
 		default:
-			printf("!UNRECOGNIZED configuration keyword: %s",str[0]);
+			printf("!UNRECOGNIZED configuration keyword: %s\r\n",str[0]);
 			break;
 	}
 }
 delete cfg_file;
 
-printf("server: %s",server);
+printf("server: %s\r\n",server);
 if(debug) {
-	printf("username: %s",username);
-	printf("password: %s",password);
+	printf("username: %s\r\n",username);
+	printf("password: %s\r\n",password);
 }
-printf("%ld areas",area.length);
+printf("%ld areas\r\n",area.length);
 
 if(server==undefined || !server.length) {
-	printf("!No news server specified");
+	print("!No news server specified");
 	exit();
 }
 
-printf("Connecting to %s port %d ...",server,port);
+printf("Connecting to %s port %d ...\r\n",server,port);
 socket = new Socket();
 //socket.debug=true;
 if(!socket.connect(server,port)) {
-	printf("!Error %d connecting to %s port %d"
+	printf("!Error %d connecting to %s port %d\r\n"
 		,socket.last_error,server,port);
 	delete socket;
 	exit();
 }
-printf("Connected");
+print("Connected");
 readln();
 
 writeln("slave");
 readln();
 
 if(username!=undefined && username.length) {
-	printf("Authenticating...");
+	print("Authenticating...");
 	writeln(format("AUTHINFO USER %s",username));
 	readln();
 	if(password!=undefined && password.length) {
 		writeln(format("AUTHINFO PASS %s",password));
 		rsp = readln();
 		if(rsp==null || rsp[0]!='2') {
-			printf("!Authentication failure: %s", rsp);
+			printf("!Authentication failure: %s\r\n", rsp);
 			delete socket;
 			exit();
 		}
 	}
-	printf("Authenticated");
+	print("Authenticated");
 }
 
 /******************************/
@@ -168,22 +177,22 @@ if(username!=undefined && username.length) {
 var exported=0;
 var imported=0;
 
-printf("Scanning %lu message bases...",area.length);
+printf("Scanning %lu message bases...\r\n",area.length);
 for(i in area) {
 	
 	if(!socket.is_connected) {
-		printf("Disconnected");
+		print("Disconnected");
 		break;
 	}
 
-//	printf("%s",area[i].toString());
+//	printf("%s\r\n",area[i].toString());
 	
 	sub = area[i][1];
 	newsgroup = area[i][2];
-	printf("sub: %s, newsgroup: %s",sub,newsgroup);
+	printf("sub: %s, newsgroup: %s\r\n",sub,newsgroup);
 	msgbase = new MsgBase(sub);
 	if(msgbase == null) {
-		printf("!ERROR opening msgbase: %s",sub);
+		printf("!ERROR opening msgbase: %s\r\n",sub);
 		continue;
 	}
 
@@ -196,9 +205,9 @@ for(i in area) {
 	ptr_file = new File(ptr_fname);
 	if(ptr_file.open("rb")) {
 		export_ptr = ptr_file.readBin();
-		printf("%s export ptr: %ld",sub,export_ptr);
+		printf("%s export ptr: %ld\r\n",sub,export_ptr);
 		import_ptr = ptr_file.readBin();
-		printf("%s import ptr: %ld",sub,import_ptr);
+		printf("%s import ptr: %ld\r\n",sub,import_ptr);
 	}
 	ptr_file.close();
 
@@ -218,6 +227,7 @@ for(i in area) {
 	/* EXPORT Local Messages */
 	/*************************/
 	for(;socket.is_connected && ptr<=msgbase.last_msg;ptr++) {
+		console.line_counter = 0;
 		hdr = msgbase.get_msg_header(false,ptr);
 		if(hdr == null)
 			continue;
@@ -235,7 +245,7 @@ for(i in area) {
 				,true	/* rfc822 formatted text */
 				,true	/* include tails */);
 		if(body == null) {
-			printf("!FAILED to read message number %ld",ptr);
+			printf("!FAILED to read message number %ld\r\n",ptr);
 			continue;
 		}
 		body = ascii_str(body);
@@ -249,7 +259,7 @@ for(i in area) {
 
 		rsp = readln();
 		if(rsp==null || rsp[0]!='3') {
-			printf("!POST failure: %s",rsp);
+			printf("!POST failure: %s\r\n",rsp);
 			break;
 		}
 
@@ -302,10 +312,10 @@ for(i in area) {
 		writeln(".");
 		rsp = readln();
 		if(rsp==null || rsp[0]!='2') {
-			printf("!POST failure: %s",rsp);
+			printf("!POST failure: %s\r\n",rsp);
 			break;
 		}
-		printf("Exported message %lu to newsgroup: %s",ptr,newsgroup);
+		printf("Exported message %lu to newsgroup: %s\r\n",ptr,newsgroup);
 		exported++;
 	}
 	if(ptr > msgbase.last_msg)
@@ -319,7 +329,7 @@ for(i in area) {
 	writeln(format("GROUP %s",newsgroup));
 	rsp = readln();
 	if(rsp==null || rsp[0]!='2') {
-		printf("!GROUP %s failure: %s",newsgroup,rsp);
+		printf("!GROUP %s failure: %s\r\n",newsgroup,rsp);
 		delete ptr_file;
 		delete msgbase;
 		continue;
@@ -333,10 +343,12 @@ for(i in area) {
 		ptr = 0;
 	else if(update_import_ptrs)
 		ptr = last_msg;
+	else if(import_amount)
+		ptr = last_msg - import_amount;
 	else
 		ptr = import_ptr;
 
-	printf("%s import ptr: %ld, last_msg: %ld",newsgroup,ptr,last_msg);
+	printf("%s import ptr: %ld, last_msg: %ld\r\n",newsgroup,ptr,last_msg);
 
 	if(ptr < first_msg)
 		ptr = first_msg;
@@ -346,10 +358,11 @@ for(i in area) {
 		ptr++;
 	}
 	for(;socket.is_connected && ptr<=last_msg;ptr++) {
+		console.line_counter = 0;
 		writeln(format("ARTICLE %lu",ptr));
 		rsp = readln();
 		if(rsp==null || rsp[0]!='2') {
-			printf("!ARTICLE %lu failure: %s",ptr,rsp);
+			printf("!ARTICLE %lu failure: %s\r\n",ptr,rsp);
 			continue;
 		}
 		body=format("\1n\1b\1hFrom Newsgroup\1n\1b: \1h\1c%s\1n\r\n\r\n",newsgroup);
@@ -360,14 +373,14 @@ for(i in area) {
 			line = socket.recvline(512 /*maxlen*/, 300 /*timeout*/);
 
 			if(line==null) {
-				printf("!TIMEOUT waiting for text line");
+				print("!TIMEOUT waiting for text line");
 				break;
 			}
 
-			//printf("msgtxt: %s",line);
+			//printf("msgtxt: %s\r\n",line);
 
 			if(line==".") {
-//				printf("End of message text");
+//				print("End of message text");
 				break;
 			}
 			if(line=="" && header) {
@@ -382,7 +395,7 @@ for(i in area) {
 				body += "\r\n";
 				continue;
 			}
-			//printf(line);
+			//print(line);
 
 			/* Parse header lines */
 			if((sp=line.indexOf(':'))==-1)
@@ -438,7 +451,7 @@ for(i in area) {
 		if(hdr.id.indexOf('@' + system.inetaddr)!=-1)	// avoid dupe loop
 			continue;
 		if(system.trashcan("subject",hdr.subject)) {
-			printf("!BLOCKED subject: %s",hdr.subject);
+			printf("!BLOCKED subject: %s\r\n",hdr.subject);
 			var reason = format("Blocked subject (%s)",hdr.subject);
 			system.spamlog("NNTP",reason,hdr.from,server,hdr.to);
 			continue;
@@ -448,7 +461,7 @@ for(i in area) {
 //		hdr.from_net_addr=hdr.from;
 		body += tearline;
 		if(msgbase.save_msg(hdr,body)) {
-			printf("Message %lu imported into %s",ptr,sub);
+			printf("Message %lu imported into %s\r\n",ptr,sub);
 			imported++;
 		}
 	}
@@ -458,7 +471,7 @@ for(i in area) {
 
 	/* Save Pointers */
 	if(!ptr_file.open("wb"))
-		printf("!ERROR %d creating/opening %s",errno,ptr_fname);
+		printf("!ERROR %d creating/opening %s\r\n",errno,ptr_fname);
 	else {
 		ptr_file.writeBin(export_ptr);
 		ptr_file.writeBin(import_ptr);
@@ -473,7 +486,7 @@ readln();
 
 delete socket;
 
-printf("Synchronet NewsLink session complete (%lu exported, %lu imported)"
+printf("Synchronet NewsLink session complete (%lu exported, %lu imported)\r\n"
 	   ,exported, imported);
 
 /* End of newslink.js */
