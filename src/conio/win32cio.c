@@ -185,13 +185,12 @@ int win32_getch(void)
 				OutputDebugString(str);
 #endif
 
-				if(input.Event.KeyEvent.dwControlKeyState & (LEFT_ALT_PRESSED|RIGHT_ALT_PRESSED)) {
-					if(input.Event.KeyEvent.uChar.AsciiChar) {
-						lastch=altkeys[toupper(input.Event.KeyEvent.uChar.AsciiChar)-'A']<<8;
-						break;
-					}
+				if(input.Event.KeyEvent.dwControlKeyState & (LEFT_ALT_PRESSED|RIGHT_ALT_PRESSED)
+						&& isalpha(input.Event.KeyEvent.uChar.AsciiChar)) {
+					lastch=altkeys[toupper(input.Event.KeyEvent.uChar.AsciiChar)-'A']<<8;
+					break;
 				}
-					
+
 				if(input.Event.KeyEvent.uChar.AsciiChar)
 					lastch=input.Event.KeyEvent.uChar.AsciiChar;
 				else
