@@ -99,7 +99,10 @@ void sbbs_t::log(char *str)
 /****************************************************************************/
 void sbbs_t::logline(char *code, char *str)
 {
-	lprintf("Node %d %s", cfg.node_num, str);
+	if(online==ON_LOCAL)
+		eprintf("%s",str);
+	else
+		lprintf("Node %d %s", cfg.node_num, str);
 	if(logfile_fp==NULL || (online==ON_LOCAL && strcmp(code,"!!"))) return;
 	if(logcol!=1)
 		fprintf(logfile_fp,"\r\n");
