@@ -1,4 +1,6 @@
 
 
-This file was downloaded from a Synchronet BBS - use PKUNZIP -D <filename>
+This file was downloaded from a Synchronet BBS. 
+For a complete list of active Synchronet systems, 
+see http://synchro.net/sbbslist.html
 
