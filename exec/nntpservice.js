@@ -451,7 +451,7 @@ while(client.socket.is_connected) {
 			}
 			writeln("340 send article to be posted. End with <CR-LF>.<CR-LF>");
 
-			var hdr={ from: "", subject: "", id: "" };
+			var hdr={ from: "", subject: "" };
 			if(!(user.security.restrictions&(UFLAG_G|UFLAG_Q))) {	// !Guest and !Network Node
 				hdr.from=user.alias;
 				hdr.from_ext=user.number;
@@ -531,8 +531,6 @@ while(client.socket.is_connected) {
 							hdr.to=getReferenceTo(data);
 						break;
 					case "newsgroups":
-						if(hdr.to==undefined)
-							hdr.to=data;
 						newsgroups=data.split(',');
 						hdr.newsgroups=data;
 						break;
@@ -553,6 +551,8 @@ while(client.socket.is_connected) {
 						break;
 				}
 			}
+			if(hdr.to==undefined && hdr.newsgroups!=undefined)
+				hdr.to=hdr.newsgroups;
 
 			if(system.trashcan("subject",hdr.subject)) {
 				log(format("!BLOCKED subject: %s",hdr.subject));
