@@ -54,6 +54,7 @@
  *              Mar 13, 1996  6.10  BP   Added od_local_win_col.
  *              Mar 17, 1996  6.10  BP   Terminate string in ODScrnLocalInput()
  *              Mar 19, 1996  6.10  BP   MSVC15 source-level compatibility.
+ *              Aug 10, 2003  6.23  SH   *nix support
  */
 
 #define BUILDING_OPENDOORS

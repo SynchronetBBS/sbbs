@@ -1,4 +1,4 @@
-#  OpenDoors 6.30
+#  OpenDoors 6.23
 #  (C} Copyright 1991 - 1997 by Brian Pirie. All Rights Reserved.
 #
 #  Oct-2001 door32.sys/socket modifications by Rob Swindell (www.synchro.net}
@@ -146,6 +146,7 @@ OBJECTS := ${OBJDIR}ODAuto${OBJFILE}\
 
 ${LIBDIR}ODoors62${SHLIB} : ${OBJECTS}
 	gcc -shared -o ${LIBDIR}libODoors${SHLIB}.6.2 ${OBJECTS}
+	ln -s ${LIBDIR}libODoors${SHLIB}.6.2 ${LIBDIR}ODoors62${SHLIB}
 
 ${LIBDIR}ODoors62${STATICLIB} : ${OBJECTS}
 	ar -r ${LIBDIR}libODoors${STATICLIB} ${OBJECTS}

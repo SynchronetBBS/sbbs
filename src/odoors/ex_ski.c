@@ -18,7 +18,7 @@
 
 
 /* Header file for the OpenDoors API */
-#include "opendoor.h"
+#include "OpenDoor.h"
 
 /* Other required C header files */
 #include <string.h>

@@ -36,6 +36,7 @@
  *              Feb 19, 1996  6.00  BP   Changed version number to 6.00.
  *              Mar 03, 1996  6.10  BP   Begin version 6.10.
  *              Sep 01, 1996  6.10  BP   Update output area on od_set_per...().
+ *              Aug 10, 2003  6.23  SH   *nix support
  */
 
 #define BUILDING_OPENDOORS

@@ -67,6 +67,7 @@
  *              Sep 01, 1996  6.10  BP   Update output area on od_set_per...().
  *              Oct 19, 2001  6.20  RS   od_get_key now ignores linefeeds.
  *              Mar 14, 2002  6.22  RS   Fixed od_get_key(bWait=FALSE)
+ *              Aug 10, 2003  6.23  SH   *nix support
  */
 
 #define BUILDING_OPENDOORS

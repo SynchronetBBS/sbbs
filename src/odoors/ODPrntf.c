@@ -33,6 +33,7 @@
  *              Jan 04, 1996  6.00  BP   Add missing OD_API_EXIT() at end.
  *              Feb 19, 1996  6.00  BP   Changed version number to 6.00.
  *              Mar 03, 1996  6.10  BP   Begin version 6.10.
+ *              Aug 10, 2003  6.23  SH   *nix support
  */
 
 #define BUILDING_OPENDOORS

@@ -39,6 +39,7 @@
  *              Feb 23, 1996  6.00  BP   Properly update when toolbar turned on
  *              Mar 03, 1996  6.10  BP   Begin version 6.10.
  *              Mar 14, 1996  6.10  BP   Added configuration menu option.
+ *              Aug 10, 2003  6.23  SH   *nix support
  */
 
 #define BUILDING_OPENDOORS

@@ -35,6 +35,7 @@
  *              Feb 25, 1996  6.00  BP   Added new control sequences to table.
  *              Feb 27, 1996  6.00  BP   Added od_max_key_latency.
  *              Mar 03, 1996  6.10  BP   Begin version 6.10.
+ *              Aug 10, 2003  6.23  SH   *nix support
  */
 
 #define BUILDING_OPENDOORS

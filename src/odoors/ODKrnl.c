@@ -59,6 +59,7 @@
  *              Mar 13, 1996  6.10  BP   bOnlyShiftArrow -> nArrowUseCount.
  *              Mar 19, 1996  6.10  BP   MSVC15 source-level compatibility.
  *              Oct 22, 2001  6.21  RS   Lowered thread priorities to normal.
+ *              Aug 10, 2003  6.23  SH   *nix support
  */
 
 #define BUILDING_OPENDOORS

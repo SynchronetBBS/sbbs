@@ -41,6 +41,7 @@
  *              Mar 03, 1996  6.10  BP   Begin version 6.10.
  *              Apr 08, 1996  6.10  BP   Added command-line parsing callbacks.
  *					 Apr 24, 2002  6.22  RS   Added -SOCKET parameter.
+ *              Aug 10, 2003  6.23  SH   *nix support
  */
 
 #define BUILDING_OPENDOORS

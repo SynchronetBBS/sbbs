@@ -33,6 +33,7 @@
  *              Mar 03, 1996  6.10  BP   Begin version 6.10.
  *              Mar 13, 1996  6.10  BP   bOnlyShiftArrow -> nArrowUseCount.
  *              Mar 19, 1996  6.10  BP   MSVC15 source-level compatibility.
+ *              Aug 10, 2003  6.23  SH   *nix support
  */
 
 #define BUILDING_OPENDOORS

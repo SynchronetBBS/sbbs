@@ -43,6 +43,7 @@
  *              Feb 27, 1996  6.00  BP   Store screen info in our own struct.
  *              Mar 03, 1996  6.10  BP   Begin version 6.10.
  *              Mar 19, 1996  6.10  BP   MSVC15 source-level compatibility.
+ *              Aug 10, 2003  6.23  SH   *nix support - some functions not supported (Yet)
  */
 
 #define BUILDING_OPENDOORS
@@ -216,6 +217,10 @@ ODAPIDEF BOOL ODCALL od_spawn(char *pszCommandLine)
    /* Now, call od_spawnvpe(). */
    return(od_spawnvpe(P_WAIT, *apszArgs, apszArgs, NULL) != -1);
 #endif /* ODPLAT_WIN32 */
+
+#ifdef ODPLAT_NIX
+   return(system(pszCommandLine)==-1);
+#endif
 }
 
 

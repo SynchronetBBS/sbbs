@@ -50,6 +50,7 @@
  *              Aug 22, 2002  6.22  RS   Fixed bugs in ODComCarrier and ODComWaitEvent
  *              Aug 22, 2002  6.22  MD   Modified socket functions for non-blocking use.
  *              Sep 18, 2002  6.22  MD   Fixed bugs in ODComWaitEvent for non-blocking sockets.
+ *              Aug 10, 2003  6.23  SH   *nix support
  */
 
 #define BUILDING_OPENDOORS

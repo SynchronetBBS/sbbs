@@ -46,6 +46,7 @@
  *              Mar 03, 1996  6.10  BP   Begin version 6.10.
  *              Mar 06, 1996  6.10  BP   Prevent TC calls N_LXMUL@ & N_LXDIV@.
  *              Mar 19, 1996  6.10  BP   MSVC15 source-level compatibility.
+ *              Aug 10, 2003  6.23  SH   *nix support
  */
 
 #define BUILDING_OPENDOORS

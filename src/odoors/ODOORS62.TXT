@@ -1,6 +1,10 @@
 **************************************************************************
-* OpenDoors v6.22 C/C++ Door Development Kit for DOS and Win32 Platforms *
+* OpenDoors v6.23 C/C++ Door Development Kit for DOS and Win32 Platforms *
 **************************************************************************
+
+August 10, 2003
+
+*nix (using StdIO only) update to Brian Pirie's OpenDoors Library 
 
 August 22, 2002
 
@@ -84,5 +88,8 @@ Another bug fixed in socket disconnection ("carrier-loss") detection.
 Added support for non-blocking sockets (e.g. EleBBS) - thanks to GSValore.
 Added support for the "-SOCKET" command-line option to specify the socket
 descriptor on the command-line.
+
+v6.23 changes:
+*nix support using stdio
 
 /* End of ODOORS62.TXT */

@@ -42,6 +42,7 @@
  *              Mar 19, 1996  6.10  BP   MSVC15 source-level compatibility.
  *              Jun 08, 1996  6.10  BP   Added cast in call to alloc function.
  *              Oct 19, 2001  6.20  RS   Eliminated MSVC 6.0 warning.
+ *              Aug 10, 2003  6.23  SH   *nix support
  */
 
 #define BUILDING_OPENDOORS

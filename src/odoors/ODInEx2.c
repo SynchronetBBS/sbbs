@@ -60,6 +60,7 @@
  *              Mar 27, 1996  6.10  BP   Added WCNODEID to
  *              Jan 13, 1997  6.10  BP   Fixes for Door32 support.
  *              Oct 19, 2001  6.20  RS   Added TCP/IP socket (telnet) support.
+ *              Aug 10, 2003  6.23  SH   *nix support
  */
 
 #define BUILDING_OPENDOORS

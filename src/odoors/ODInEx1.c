@@ -74,6 +74,7 @@
  *              Apr 08, 1996  6.10  BP   Store local login name in user_handle.
  *              Jan 13, 1997  6.10  BP   Fixes for Door32 support.
  *              Oct 19, 2001  6.20  RS   Added door32.sys and socket support.
+ *              Aug 10, 2003  6.23  SH   *nix support
  */
 
 #define BUILDING_OPENDOORS

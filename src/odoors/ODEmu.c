@@ -44,6 +44,7 @@
  *              Mar 06, 1996  6.10  BP   Prevent TC generated N_LXMUL@ call.
  *              Mar 19, 1996  6.10  BP   MSVC15 source-level compatibility.
  *              Oct 18, 2001  6.11  MD   Added od_send_file_section()
+ *              Aug 10, 2003  6.23  SH   *nix support
  */
 
 #define BUILDING_OPENDOORS
