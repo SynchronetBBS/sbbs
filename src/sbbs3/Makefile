@@ -24,8 +24,9 @@ EXEFILE	=	.exe
 LIBODIR	=	bcc.win32.dll	# Library output directory
 EXEODIR =	bcc.win32.exe	# Executable output directory
 UIFC	=	..\uifc\		# Path to User Interfce library
+CIOLIB	=	..\conio\		# Path to Console I/O library
 XPDEV	=	..\xpdev\		# Path to Cross-platform wrappers
-CFLAGS	=	-M -I$(XPDEV) -I$(UIFC)
+CFLAGS	=	-M -I$(XPDEV) -I$(UIFC) -I$(CIOLIB)
 LFLAGS  =	-m -s -c -Tpd -Gi -I$(LIBODIR)
 DELETE	=	echo y | del 
 WILDARGS=	$(MAKEDIR)\..\lib\wildargs.obj
@@ -63,17 +64,20 @@ QUIET	=	@
 
 default: dlls mono utils
 
+IFNOTEXIST = if not exist $@
+
 # Cross platform/compiler definitions
-!include targets.mk		# defines all targets
-!include objects.mk		# defines $(OBJS)
-!include sbbsdefs.mk	# defines $(SBBSDEFS)
+!include targets.mk			# defines all targets
+!include objects.mk			# defines $(OBJS)
+!include sbbsdefs.mk		# defines $(SBBSDEFS)
+!include $(XPDEV)rules.mk	# defines clean and output directory rules
 
 SBBSLIB	=	$(LIBODIR)\sbbs.lib
 
 $(SBBSLIB):	$(SBBS)
 
-.path.c = .;$(XPDEV)
-.path.cpp = .;$(XPDEV)
+.path.c = .;$(XPDEV);$(UIFC);$(CIOLIB)
+.path.cpp = .;$(XPDEV);$(UIFC);$(CIOLIB)
 
 # Implicit C Compile Rule for SBBS.DLL
 .c.obj:
@@ -82,12 +86,6 @@ $(SBBSLIB):	$(SBBS)
 # Implicit C++ Compile Rule for SBBS.DLL
 .cpp.obj:
 	$(QUIET)$(CC) $(CFLAGS) -WD -WM -n$(LIBODIR) -c $(SBBSDEFS) $<
-
-# Create output directories if they don't exist
-$(LIBODIR):
-	$(QUIET)if not exist $(LIBODIR) mkdir $(LIBODIR)
-$(EXEODIR):
-	$(QUIET)if not exist $(EXEODIR) mkdir $(EXEODIR)
 
 # Monolithic Synchronet executable Build Rule
 $(SBBSMONO): $(OBJS) \
@@ -108,25 +106,40 @@ $(SBBS): $(OBJS)
 		import32.lib cw32mt.lib ws2_32.lib
 
 # Mail Server DLL Link Rule
-$(MAILSRVR): mailsrvr.c mxlookup.c mime.c base64.c md5.c crc32.c ini_file.c str_list.c $(SBBSLIB)
+$(MAILSRVR): mailsrvr.c \
+	$(LIBODIR)\mxlookup.obj \
+	$(LIBODIR)\mime.obj \
+	$(LIBODIR)\base64.obj \
+	$(LIBODIR)\md5.obj \
+	$(LIBODIR)\crc32.obj \
+	$(LIBODIR)\ini_file.obj \
+	$(LIBODIR)\str_list.obj \
+	$(SBBSLIB)
     @echo Creating $@
 	$(QUIET)$(CC) $(CFLAGS) -WD -WM -lGi -n$(LIBODIR) \
 		-DMAILSRVR_EXPORTS -DSMB_IMPORTS -DWRAPPER_IMPORTS $** $(LIBS)
 
 # FTP Server DLL Link Rule
-$(FTPSRVR): ftpsrvr.c nopen.c $(SBBSLIB)
+$(FTPSRVR): ftpsrvr.c \
+	$(LIBODIR)\nopen.obj \
+	$(SBBSLIB)
     @echo Creating $@
 	$(QUIET)$(CC) $(CFLAGS) -WD -WM -lGi -n$(LIBODIR) \
 		-DFTPSRVR_EXPORTS -DWRAPPER_IMPORTS $** $(LIBS)
 
 # FTP Server DLL Link Rule
-$(WEBSRVR): wesrvr.c $(XPDEV)sockwrap.c base64.c
+$(WEBSRVR): wesrvr.c \
+	$(LIBODIR)\sockwrap.obj \
+	$(LIBODIR)\base64.obj
     @echo Creating $@
 	$(QUIET)$(CC) $(CFLAGS) -WD -WM -lGi -n$(LIBODIR) \
 		-DWEBSRVR_EXPORTS -DWRAPPER_IMPORTS $** $(LIBS)
 
 # Services DLL Link Rule
-$(SERVICES): services.c $(SBBSLIB) $(LIBODIR)\ini_file.obj $(LIBODIR)\str_list.obj
+$(SERVICES): services.c \
+	$(LIBODIR)\ini_file.obj \
+	$(LIBODIR)\str_list.obj \
+	$(SBBSLIB)
     @echo Creating $@
 	$(QUIET)$(CC) $(CFLAGS) -WD -WM -lGi -n$(LIBODIR) \
 		-DSERVICES_EXPORTS -DWRAPPER_IMPORTS $** $(LIBS)
@@ -136,7 +149,11 @@ $(SBBSCON): sbbscon.c $(SBBSLIB)
 	$(QUIET)$(CC) $(CFLAGS) -n$(EXEODIR) $**
 
 # Baja Utility
-$(BAJA): baja.c ars.c crc32.c $(LIBODIR)\genwrap.obj $(LIBODIR)\dirwrap.obj
+$(BAJA): baja.c \
+	$(LIBODIR)\ars.obj \
+	$(LIBODIR)\crc32.obj \
+	$(LIBODIR)\genwrap.obj \
+	$(LIBODIR)\dirwrap.obj
 	@echo Creating $@
 	$(QUIET)$(CC) $(CFLAGS) -n$(EXEODIR) $** 
 
@@ -149,46 +166,67 @@ SMBLIB = $(LIBODIR)\smblib.obj $(LIBODIR)\genwrap.obj $(LIBODIR)\filewrap.obj \
 	 $(LIBODIR)\crc16.obj $(LIBODIR)\smbdump.obj
 
 # FIXSMB Utility
-$(FIXSMB): fixsmb.c $(SMBLIB) $(LIBODIR)\str_util.obj $(LIBODIR)\dirwrap.obj
+$(FIXSMB): fixsmb.c \
+	$(SMBLIB) \
+	$(LIBODIR)\str_util.obj \
+	$(LIBODIR)\dirwrap.obj
 	@echo Creating $@
 	$(QUIET)$(CC) $(CFLAGS) -n$(EXEODIR) $**
 
 # CHKSMB Utility
-$(CHKSMB): chksmb.c $(SMBLIB) $(XPDEV)dirwrap.c
+$(CHKSMB): chksmb.c \
+	$(SMBLIB) \
+	$(LIBODIR)\dirwrap.obj
 	@echo Creating $@
 	$(QUIET)$(CC) $(CFLAGS) -n$(EXEODIR) $** $(WILDARGS)
 
 # SMB Utility
-$(SMBUTIL): smbutil.c smbtxt.c crc32.c lzh.c date_str.c str_util.c $(SMBLIB) $(XPDEV)dirwrap.c
+$(SMBUTIL): smbutil.c \
+	$(LIBODIR)\smbtxt.obj \
+	$(LIBODIR)\crc32.obj \
+	$(LIBODIR)\lzh.obj \
+	$(LIBODIR)\date_str.obj \
+	$(LIBODIR)\str_util.obj \
+	$(LIBODIR)\dirwrap.obj \
+	$(SMBLIB) 
 	@echo Creating $@
 	$(QUIET)$(CC) $(CFLAGS) -n$(EXEODIR) $** $(WILDARGS)
 
 # SBBSecho (FidoNet Packet Tosser)
-$(SBBSECHO): sbbsecho.c rechocfg.c smbtxt.c crc32.c lzh.c $(SMBLIB) \
+$(SBBSECHO): sbbsecho.c \
+	$(LIBODIR)\rechocfg.obj \
+	$(LIBODIR)\smbtxt.obj \
+	$(LIBODIR)\crc32.obj \
+	$(LIBODIR)\lzh.obj \
 	$(LIBODIR)\ars.obj \
 	$(LIBODIR)\nopen.obj \
 	$(LIBODIR)\str_util.obj \
 	$(LIBODIR)\date_str.obj \
-	userdat.c \
-	dat_rec.c \
-	dirwrap.c \
+	$(LIBODIR)\userdat.obj \
+	$(LIBODIR)\dat_rec.obj \
+	$(LIBODIR)\dirwrap.obj \
 	$(LIBODIR)\load_cfg.obj \
 	$(LIBODIR)\scfglib1.obj \
-	$(LIBODIR)\scfglib2.obj
+	$(LIBODIR)\scfglib2.obj \
+	$(SMBLIB)
 	@echo Creating $@
 	$(QUIET)$(CC) $(CFLAGS) -n$(EXEODIR) $** 
 
 # SBBSecho Configuration Program
-$(ECHOCFG): echocfg.c rechocfg.c \
-	$(UIFC)uifc.c \
-	$(UIFC)uifcx.c \
+$(ECHOCFG): echocfg.c \
+	$(LIBODIR)\rechocfg.obj \
+	$(LIBODIR)\uifc32.obj \
+	$(LIBODIR)\ciolib.obj \
+	$(LIBODIR)\win32cio.obj \
+	$(LIBODIR)\ansi_cio.obj \
+	$(LIBODIR)\uifcx.obj \
 	$(LIBODIR)\genwrap.obj \
 	$(LIBODIR)\dirwrap.obj \
 	$(LIBODIR)\nopen.obj \
 	$(LIBODIR)\crc16.obj \
 	$(LIBODIR)\str_util.obj
 	@echo Creating $@
-	$(QUIET)$(CC) $(CFLAGS) -n$(EXEODIR) $** 
+	$(QUIET)$(CC) $(CFLAGS) -WM -n$(EXEODIR) $** 
 
 # ADDFILES
 $(ADDFILES): addfiles.c \
@@ -198,10 +236,10 @@ $(ADDFILES): addfiles.c \
 	$(LIBODIR)\str_util.obj \
 	$(LIBODIR)\date_str.obj \
 	$(LIBODIR)\userdat.obj \
-	dat_rec.c \
-	filedat.c \
-	genwrap.c \
-	dirwrap.c \
+	$(LIBODIR)\dat_rec.obj \
+	$(LIBODIR)\filedat.obj \
+	$(LIBODIR)\genwrap.obj \
+	$(LIBODIR)\dirwrap.obj \
 	$(LIBODIR)\load_cfg.obj \
 	$(LIBODIR)\scfglib1.obj \
 	$(LIBODIR)\scfglib2.obj
@@ -215,10 +253,10 @@ $(FILELIST): filelist.c \
 	$(LIBODIR)\crc16.obj \
 	$(LIBODIR)\str_util.obj \
 	$(LIBODIR)\date_str.obj \
-	dat_rec.c \
-	filedat.c \
-	genwrap.c \
-	dirwrap.c \
+	$(LIBODIR)\dat_rec.obj \
+	$(LIBODIR)\filedat.obj \
+	$(LIBODIR)\genwrap.obj \
+	$(LIBODIR)\dirwrap.obj \
 	$(LIBODIR)\load_cfg.obj \
 	$(LIBODIR)\scfglib1.obj \
 	$(LIBODIR)\scfglib2.obj
@@ -232,10 +270,10 @@ $(MAKEUSER): makeuser.c \
 	$(LIBODIR)\crc16.obj \
 	$(LIBODIR)\str_util.obj \
 	$(LIBODIR)\date_str.obj \
-	dat_rec.c \
-	userdat.c \
-	genwrap.c \
-	dirwrap.c \
+	$(LIBODIR)\dat_rec.obj \
+	$(LIBODIR)\userdat.obj \
+	$(LIBODIR)\genwrap.obj \
+	$(LIBODIR)\dirwrap.obj \
 	$(LIBODIR)\load_cfg.obj \
 	$(LIBODIR)\scfglib1.obj \
 	$(LIBODIR)\scfglib2.obj
