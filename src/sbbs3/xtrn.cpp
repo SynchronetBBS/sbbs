@@ -813,7 +813,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
         native=true;
 
 	if(!native) {
-		bprintf("\r\nExternal DOS programs are not yet supported in Synchronet for Linux\r\n");
+		bprintf("\r\nExternal DOS programs are not yet supported in %s\r\n",VERSION_NOTICE);
 		return(-1);
 	}
 
@@ -844,7 +844,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 		if(startup_dir!=NULL && startup_dir[0])
 			chdir(startup_dir);
 
-		lprintf("Node %02d executing external: %s",cfg.node_num,cmdline);
+		lprintf("Node %d executing external: %s",cfg.node_num,cmdline);
 
 		argv[0]=cmdline;	/* point to the beginning of the string */
 		argc=1;
