@@ -150,6 +150,26 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 			if(!JS_SetProperty(cx, subobj, "settings", &val))
 				return(NULL);
 
+			val=INT_TO_JSVAL(cfg->sub[d]->ptridx);
+			if(!JS_SetProperty(cx, subobj, "ptridx", &val))
+				return(NULL);
+
+			val=INT_TO_JSVAL(cfg->sub[d]->qwkconf);
+			if(!JS_SetProperty(cx, subobj, "qwk_conf", &val))
+				return(NULL);
+
+			val=INT_TO_JSVAL(cfg->sub[d]->maxage);
+			if(!JS_SetProperty(cx, subobj, "max_age", &val))
+				return(NULL);
+
+			val=INT_TO_JSVAL(cfg->sub[d]->maxmsgs);
+			if(!JS_SetProperty(cx, subobj, "max_msgs", &val))
+				return(NULL);
+
+			val=INT_TO_JSVAL(cfg->sub[d]->maxcrcs);
+			if(!JS_SetProperty(cx, subobj, "max_crcs", &val))
+				return(NULL);
+
 			sprintf(str,"%s.%s",cfg->grp[l]->sname,cfg->sub[d]->sname);
 			for(c=0;str[c];c++)
 				if(str[c]==' ')
