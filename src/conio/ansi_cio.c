@@ -8,7 +8,7 @@
 
 #include <genwrap.h>
 #include <threadwrap.h>
-#include <xpsem.h>
+#include <semwrap.h>
 
 #ifdef __unix__
 	#include <termios.h>
@@ -653,6 +653,8 @@ int ansi_initciolib(long inmode)
 	char *init="\033[0m\033[2J\033[1;1H";
 
 #ifdef _WIN32
+	DWORD conmode;
+
 	if(isatty(fileno(stdin))) {
 		if(!GetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), &conmode))
 			return(0);
