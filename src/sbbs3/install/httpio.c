@@ -198,8 +198,8 @@ int http_get_fd(char *URL, size_t *len, char *error)
 			close(s);
 			return(-1);
 		}
-		if(len != NULL && !strncasecmp(header,"content-length: ",16))  {
-			*len=atoi(header+16);
+		if(len != NULL && strncasecmp(header,"content-length:",15)==0)  {
+			*len=atol(header+15);
 		}
 	}
 	return(s);
