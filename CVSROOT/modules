@@ -27,5 +27,4 @@
 lib-linux -d lib &lib/mozilla/js/linux.release &lib/mozilla/nspr/linux.release
 lib-win32 -d lib &lib/fltk/win32 &lib/mozilla/js/win32.release &lib/mozilla/nspr/win32.release
 src-sbbs3 -a src/build src/sbbs3 src/xpdev src/uifc include
-sbbs3-win32 &src-sbbs3 &lib-win32
-sbbs3-linux &src-sbbs3 &lib-linux
+run-sbbs3 -a ctrl text exec xtrn node1 node2 node3 node4 docs
