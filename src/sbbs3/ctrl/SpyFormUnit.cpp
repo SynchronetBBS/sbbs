@@ -38,6 +38,7 @@
 
 #include "MainFormUnit.h"
 #include "SpyFormUnit.h"
+#include "telnet.h"
 
 #define SPYBUF_LEN  10000
 //---------------------------------------------------------------------------
@@ -60,9 +61,37 @@ __fastcall TSpyForm::TSpyForm(TComponent* Owner)
     ActiveControl=Terminal;
 }
 //---------------------------------------------------------------------------
+int strip_telnet(uchar *buf, int len)
+{
+    int i;
+    int telnet_cmd=0;
+    int newlen=0;
+
+    for(i=0;i<len;i++) {
+        if(buf[i]==TELNET_IAC || telnet_cmd) {
+            if(telnet_cmd==1 && buf[i]==TELNET_IAC) {
+                telnet_cmd=0;   /* escape IAC */
+                continue;
+            }
+            if(telnet_cmd==1 && buf[i]<TELNET_WILL) {
+                telnet_cmd=0;   /* single byte command */
+                continue;
+            }
+            if(telnet_cmd>=2) {
+                telnet_cmd=0;   /* two byte command */
+                continue;
+            }
+            telnet_cmd++;
+            continue;
+        }
+        buf[newlen++]=buf[i];
+    }
+    return(newlen);
+}
+//---------------------------------------------------------------------------
 void __fastcall TSpyForm::SpyTimerTick(TObject *Sender)
 {
-    char    buf[1024];
+    uchar   buf[1024];
     int     rd;
 
     if(*outbuf==NULL)
@@ -70,6 +99,7 @@ void __fastcall TSpyForm::SpyTimerTick(TObject *Sender)
 
     rd=RingBufRead(*outbuf,buf,sizeof(buf)-1);
     if(rd) {
+        rd=strip_telnet(buf,rd);
         Terminal->WriteBuffer(buf,rd);
         Timer->Interval=1;
     } else
