@@ -45,7 +45,7 @@
 
 void xmodem_put_nak(xmodem_t* xm)
 {
-	while(getcom(1)!=NOINP && (xm->mode&NO_LOCAL || kbhit()!=LOC_ABORT))
+	while(getcom(1)!=NOINP)
 		;				/* wait for any trailing data */
 	putcom(NAK);
 }
@@ -263,6 +263,11 @@ int xmodem_get_ack(xmodem_t* xm, int tries)
 	return(0);
 }
 
+const char* xmodem_source(void)
+{
+	return(__FILE__);
+}
+
 char* xmodem_ver(char *buf)
 {
 	sscanf("$Revision$", "%*s %s", buf);
@@ -270,7 +275,3 @@ char* xmodem_ver(char *buf)
 	return(buf);
 }
 
-const char* xmodem_source(void)
-{
-	return(__FILE__);
-}
