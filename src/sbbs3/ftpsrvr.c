@@ -2781,6 +2781,12 @@ static void ctrl_thread(void* arg)
 			sockprintf(sock,"211 ALL servers/nodes will recycle when not in-use");
 			continue;
 		}
+		if(!strnicmp(cmd,"SITE EXEC ",10) && sysop) {
+			p=cmd+10;
+			while(*p && *p<=' ') p++;
+			sockprintf(sock,"211 system(%s) returned %d",p,system(p));
+			continue;
+		}
 
 
 #ifdef SOCKET_DEBUG_CTRL
