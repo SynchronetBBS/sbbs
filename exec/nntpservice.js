@@ -10,7 +10,6 @@
 const VERSION = "1.00 Alpha";
 
 var debug = false;
-var authenticated = false;
 
 // Parse arguments
 for(i=0;i<argc;i++)
@@ -40,7 +39,7 @@ writeln(format("200 %s News (Synchronet NNTP Service v%s)",system.name,VERSION))
 while(client.socket.is_connected) {
 
 	// Get Request
-	cmdline = client.socket.recvline(512 /*maxlen*/, 10 /*timeout*/);
+	cmdline = client.socket.recvline(512 /*maxlen*/, 300 /*timeout*/);
 
 	if(cmdline==null) {
 		log("!TIMEOUT waiting for request");
@@ -67,11 +66,9 @@ while(client.socket.is_connected) {
 					writeln("381 More authentication required");
 					break;
 				case "PASS":
-					log(format("login(%s,%s)",username,cmd[2]));
-					if(login(username,cmd[2])) {
+					if(login(username,cmd[2])) 
 						writeln("281 Authentication successful");
-						authenticated=true;
-					} else
+					else
 						writeln("502 Authentication failure");
 					break;
 				default:
@@ -88,7 +85,7 @@ while(client.socket.is_connected) {
 			break;
 	}
 
-	if(!authenticated) {
+	if(!logged_in) {
 		writeln("502 Authentication required");
 		continue;
 	}
