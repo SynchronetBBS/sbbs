@@ -338,16 +338,14 @@ struct bbslist *show_bbslist(int mode, char *path)
 								j=0;
 							list[listcount-1]->port=j;
 						}
-						if(list[listcount-1]->port != 513) {
-							uifc.helpbuf=	"`Connection Type`\n\n"
-											"Select the type of connection you wish to make:\n"
-											"~ RLogin:~ Auto-login with RLogin protocol\n"
-											"~ Telnet:~ Use more common Telnet protocol (experimental)\n"
-											"~ Raw:   ~ Make a raw socket connection (experimental)\n";
-							list[listcount-1]->conn_type=CONN_TYPE_RLOGIN;
-							uifc.list(WIN_MID|WIN_SAV,0,0,0,&list[listcount-1]->conn_type,NULL,"Connection Type",&conn_types[1]);
-							list[listcount-1]->conn_type++;
-						}
+						uifc.helpbuf=	"`Connection Type`\n\n"
+										"Select the type of connection you wish to make:\n"
+										"~ RLogin:~ Auto-login with RLogin protocol\n"
+										"~ Telnet:~ Use more common Telnet protocol (experimental)\n"
+										"~ Raw:   ~ Make a raw socket connection (experimental)\n";
+						list[listcount-1]->conn_type=CONN_TYPE_RLOGIN;
+						uifc.list(WIN_MID|WIN_SAV,0,0,0,&list[listcount-1]->conn_type,NULL,"Connection Type",&conn_types[1]);
+						list[listcount-1]->conn_type++;
 						if(list[listcount-1]->conn_type==CONN_TYPE_RLOGIN) {
 							uifc.helpbuf=	"`Username`\n\n"
 											"Enter the username to attempt auto-login to the remote with.";
