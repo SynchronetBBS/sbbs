@@ -101,7 +101,7 @@ typedef struct
 #define ANSI_KEY_INSERT	0x52<<8
 #define ANSI_KEY_DELETE	0x53<<8
 
-tODKeySequence aKeySequences[] =
+tODKeySequence ODaKeySequences[] =
 {
    /* VT-52 control sequences. */
    {"\033A", ANSI_KEY_UP},
@@ -412,9 +412,9 @@ static void ansi_keyparse(void *par)
 					unknown=1;
 					gotesc=0;
 					timeout=0;
-					for(i=0;aKeySequences[i].pszSequence[0];i++) {
-						if(!strcmp(seq,aKeySequences[i].pszSequence)) {
-							ansi_inch=aKeySequences[i].chExtendedKey;
+					for(i=0;ODaKeySequences[i].pszSequence[0];i++) {
+						if(!strcmp(seq,ODaKeySequences[i].pszSequence)) {
+							ansi_inch=ODaKeySequences[i].chExtendedKey;
 							sem_post(&got_input);
 							/* Two-byte code, need to post twice and wait for one to
 							   be received */
