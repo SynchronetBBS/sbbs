@@ -107,10 +107,10 @@ $(ODIR):
 	mkdir $(ODIR)
 
 $(MAKEHELP): makehelp.c
-	$(CC) makehelp.c -o $(MAKEHELP)
+	@$(CC) makehelp.c -o $(MAKEHELP)
 
 $(SCFGHELP): $(OBJS) $(MAKEHELP)
-	$(MAKEHELP) $(ODIR)
+	@$(MAKEHELP) $(ODIR)
 
 # Monolithic Synchronet executable Build Rule
 $(SCFG): $(OBJS)
