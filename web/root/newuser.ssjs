@@ -129,7 +129,7 @@ else
 if(system.newuser_questions & UQ_NONETMAIL)
 	template.email_required=optional_str;
 else {
-	required.push("email");
+	required.push("netmail");
 	template.email_required=required_str;
 }
 
