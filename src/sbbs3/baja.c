@@ -56,6 +56,7 @@
 #include "ars_defs.h"
 #include "crc32.h"
 #include "genwrap.h"	/* portability wrappers */
+#include "dirwrap.h"	/* MAX_PATH */
 
 #ifdef __BORLANDC__
 unsigned _stklen=20000;	/* Set stack size in code, not header */
