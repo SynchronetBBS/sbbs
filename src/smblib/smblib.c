@@ -35,29 +35,13 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#if defined __WATCOMC__ || defined __TURBOC__
-	#include <mem.h>
-#else
-	#include <memory.h>
-#endif
-
-#ifdef __WATCOMC__
-	#include <dos.h>
-#elif defined __TURBOC__
-	#include <dir.h>
-#endif
-
 /* ANSI C Library headers */
-
-#ifndef __unix__
-	#include <malloc.h>
-#endif
 
 #include <time.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
-#include <stdlib.h>
+#include <stdlib.h>		/* malloc */
 #include <string.h>
 #include <ctype.h>		/* isdigit */
 #include <sys/types.h>
