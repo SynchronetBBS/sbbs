@@ -3239,6 +3239,10 @@ void DLLCALL web_server(void* arg)
 
 			if(client_socket == INVALID_SOCKET)	{
 				lprintf(LOG_WARNING,"!ERROR %d accepting connection", ERROR_VALUE);
+#ifdef _WIN32
+				if(WSAGetLastError()==WSAENOBUFS)	/* recycle (re-init WinSock) on this error */
+					break;
+#endif
 				continue;
 			}
 

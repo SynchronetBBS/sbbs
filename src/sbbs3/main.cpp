@@ -4260,12 +4260,18 @@ void DLLCALL bbs_thread(void* arg)
 			continue;
 
 		if(client_socket == INVALID_SOCKET)	{
+#if 0	/* is this necessary still? */
 			if(ERROR_VALUE == ENOTSOCK || ERROR_VALUE == EINTR || ERROR_VALUE == EINVAL) {
             	lputs(LOG_NOTICE,"BBS socket closed");
 				break;
 			}
+#endif
 			lprintf(LOG_ERR,"!ERROR %d accepting connection", ERROR_VALUE);
-			break;	// was continue, July-01-2002
+#ifdef _WIN32
+			if(WSAGetLastError()==WSAENOBUFS)	/* recycle (re-init WinSock) on this error */
+				break;
+#endif
+			continue;
 		}
 		char host_ip[32];
 

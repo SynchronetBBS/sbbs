@@ -1964,9 +1964,13 @@ void DLLCALL services_thread(void* arg)
             				lprintf(LOG_NOTICE,"%04d %s socket closed while listening"
 								,service[i].socket, service[i].protocol);
 						else
-							lprintf(LOG_WARNING,"%04d %s !ERROR %d accept failed" 
+							lprintf(LOG_WARNING,"%04d %s !ERROR %d accepting connection" 
 								,service[i].socket, service[i].protocol, ERROR_VALUE);
-						break;
+#ifdef _WIN32
+						if(WSAGetLastError()==WSAENOBUFS)	/* recycle (re-init WinSock) on this error */
+							break;
+#endif
+						continue;
 					}
 					sockets++;
 #if 0 /*def _DEBUG */

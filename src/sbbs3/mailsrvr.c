@@ -4259,11 +4259,20 @@ void DLLCALL mail_server(void* arg)
 
 				if(client_socket == INVALID_SOCKET)
 				{
-					if(ERROR_VALUE == ENOTSOCK || ERROR_VALUE == EINVAL)
-            			lprintf(LOG_NOTICE,"0000 SMTP socket closed while listening");
-					else
-						lprintf(LOG_WARNING,"%04d !ERROR %d accept failed", server_socket, ERROR_VALUE);
-					break;
+#if 0	/* is this necessary still? */
+					if(ERROR_VALUE == ENOTSOCK || ERROR_VALUE == EINVAL) {
+            			lprintf(LOG_NOTICE,"%04d SMTP socket closed while listening"
+							,server_socket);
+						break;
+					}
+#endif
+					lprintf(LOG_WARNING,"%04d SMTP !ERROR %d accepting connection"
+						,server_socket, ERROR_VALUE);
+#ifdef _WIN32
+					if(WSAGetLastError()==WSAENOBUFS)	/* recycle (re-init WinSock) on this error */
+						break;
+#endif
+					continue;
 				}
 				if(startup->socket_open!=NULL)
 					startup->socket_open(startup->cbdata,TRUE);
@@ -4275,7 +4284,7 @@ void DLLCALL mail_server(void* arg)
 				}
 
 				if(active_clients>=startup->max_clients) {
-					lprintf(LOG_WARNING,"%04d !MAXMIMUM CLIENTS (%u) reached, access denied"
+					lprintf(LOG_WARNING,"%04d SMTP !MAXMIMUM CLIENTS (%u) reached, access denied"
 						,client_socket, startup->max_clients);
 					sockprintf(client_socket,"421 Maximum active clients reached, please try again later.");
 					mswait(3000);
@@ -4286,14 +4295,14 @@ void DLLCALL mail_server(void* arg)
 				l=1;
 
 				if((i=ioctlsocket(client_socket, FIONBIO, &l))!=0) {
-					lprintf(LOG_ERR,"%04d !ERROR %d (%d) disabling blocking on socket"
+					lprintf(LOG_ERR,"%04d SMTP !ERROR %d (%d) disabling blocking on socket"
 						,client_socket, i, ERROR_VALUE);
 					mail_close_socket(client_socket);
 					continue;
 				}
 
 				if((smtp=malloc(sizeof(smtp_t)))==NULL) {
-					lprintf(LOG_CRIT,"%04d !ERROR allocating %u bytes of memory for smtp_t"
+					lprintf(LOG_CRIT,"%04d SMTP !ERROR allocating %u bytes of memory for smtp_t"
 						,client_socket, sizeof(smtp_t));
 					mail_close_socket(client_socket);
 					continue;
@@ -4314,11 +4323,19 @@ void DLLCALL mail_server(void* arg)
 
 				if(client_socket == INVALID_SOCKET)
 				{
-					if(ERROR_VALUE == ENOTSOCK || ERROR_VALUE == EINVAL)
+#if 0	/* is this necessary still? */
+					if(ERROR_VALUE == ENOTSOCK || ERROR_VALUE == EINVAL) {
             			lprintf(LOG_NOTICE,"%04d POP3 socket closed while listening",pop3_socket);
-					else
-						lprintf(LOG_WARNING,"%04d !ERROR %d accept failed", pop3_socket, ERROR_VALUE);
-					break;
+						break;
+					}
+#endif
+					lprintf(LOG_WARNING,"%04d POP3 !ERROR %d accepting connection"
+						,pop3_socket, ERROR_VALUE);
+#ifdef _WIN32
+					if(WSAGetLastError()==WSAENOBUFS)	/* recycle (re-init WinSock) on this error */
+						break;
+#endif
+					continue;
 				}
 				if(startup->socket_open!=NULL)
 					startup->socket_open(startup->cbdata,TRUE);
@@ -4330,7 +4347,7 @@ void DLLCALL mail_server(void* arg)
 				}
 
 				if(active_clients>=startup->max_clients) {
-					lprintf(LOG_WARNING,"%04d !MAXMIMUM CLIENTS (%u) reached, access denied"
+					lprintf(LOG_WARNING,"%04d POP3 !MAXMIMUM CLIENTS (%u) reached, access denied"
 						,client_socket, startup->max_clients);
 					sockprintf(client_socket,"-ERR Maximum active clients reached, please try again later.");
 					mswait(3000);
@@ -4342,7 +4359,7 @@ void DLLCALL mail_server(void* arg)
 				l=1;
 
 				if((i=ioctlsocket(client_socket, FIONBIO, &l))!=0) {
-					lprintf(LOG_ERR,"%04d !ERROR %d (%d) disabling blocking on socket"
+					lprintf(LOG_ERR,"%04d POP3 !ERROR %d (%d) disabling blocking on socket"
 						,client_socket, i, ERROR_VALUE);
 					sockprintf(client_socket,"-ERR System error, please try again later.");
 					mswait(3000);
@@ -4351,7 +4368,7 @@ void DLLCALL mail_server(void* arg)
 				}
 
 				if((pop3=malloc(sizeof(pop3_t)))==NULL) {
-					lprintf(LOG_CRIT,"%04d !ERROR allocating %u bytes of memory for pop3_t"
+					lprintf(LOG_CRIT,"%04d POP3 !ERROR allocating %u bytes of memory for pop3_t"
 						,client_socket,sizeof(pop3_t));
 					sockprintf(client_socket,"-ERR System error, please try again later.");
 					mswait(3000);

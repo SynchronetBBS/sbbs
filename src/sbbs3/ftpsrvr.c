@@ -4763,11 +4763,19 @@ void DLLCALL ftp_server(void* arg)
 
 			if(client_socket == INVALID_SOCKET)
 			{
-				if(ERROR_VALUE == ENOTSOCK || ERROR_VALUE == EINTR || ERROR_VALUE == EINVAL) 
+#if 0	/* is this necessary still? */
+				if(ERROR_VALUE == ENOTSOCK || ERROR_VALUE == EINTR || ERROR_VALUE == EINVAL) {
             		lprintf(LOG_NOTICE,"0000 FTP socket closed while listening");
-				else
-					lprintf(LOG_WARNING,"0000 !ERROR %d accepting connection", ERROR_VALUE);
-				break;
+					break;
+				}
+#endif
+				lprintf(LOG_WARNING,"%04d !ERROR %d accepting connection"
+					,server_socket, ERROR_VALUE);
+#ifdef _WIN32
+				if(WSAGetLastError()==WSAENOBUFS)	/* recycle (re-init WinSock) on this error */
+					break;
+#endif
+				continue;
 			}
 			if(startup->socket_open!=NULL)
 				startup->socket_open(startup->cbdata,TRUE);
