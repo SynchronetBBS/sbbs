@@ -1240,6 +1240,11 @@ char * sbbs_t::cmdstr(char *instr, char *fpath, char *fspec, char *outstr)
                 case '%':   /* %% for percent sign */
                     strcat(cmd,"%");
                     break;
+				case '.':	/* .exe for DOS/OS2/Win32, blank for Unix */
+#ifndef __unix__
+					strcat(cmd,".exe");
+#endif
+					break;
 				case '?':	/* Platform */
 #ifdef __OS2__
 					strcpy(str,"OS2");
