@@ -1643,7 +1643,7 @@ bool sbbs_t::init()
 
 	JSObject* sysobj;
 	
-	if((sysobj=CreateSystemObject(&cfg, js_cx, js_glob))==NULL)
+	if((sysobj=js_CreateSystemObject(&cfg, js_cx, js_glob))==NULL)
 		return(false);
 
 	char	ver[256];
