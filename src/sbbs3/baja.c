@@ -440,7 +440,7 @@ void expdefs(uchar *line)
 
 void compile(char *src)
 {
-	uchar *str,*save,*p,*sp,*tp,*arg,*arg2,*arg3,*ar,ch;
+	uchar *str,*save,*p,*sp,*tp,*arg,*arg2,*arg3,*arg4,*ar,ch;
     ushort i,j;
 	long l,savline;
 	FILE *in;
@@ -478,7 +478,7 @@ void compile(char *src)
 		if(display)
 			printf("%s\n",p);
 		sp=strchr(p,SP);
-		arg=arg2=arg3="";
+		arg=arg2=arg3=arg4="";
 		if(sp) {
 			*sp=0;
 			arg=sp+1;
@@ -490,7 +490,11 @@ void compile(char *src)
 				sp=strchr(arg2,SP);
 				if(sp) {
 					arg3=sp+1;
-					while(*arg3 && *arg3<=SP) arg3++; } } }
+					while(*arg3 && *arg3<=SP) arg3++; 
+					sp=strchr(arg3,SP);
+					if(sp) {
+						arg4=sp+1;
+						while(*arg4 && *arg4<=SP) arg4++; } } } }
 
 		if(!stricmp(p,"!INCLUDE")) {
 			savline=line;
@@ -622,6 +626,19 @@ void compile(char *src)
 			fprintf(out,"%c%c",CS_ONE_MORE_BYTE,CS_EXIT);
 			continue; }
 
+		if(!stricmp(p,"LOOP") || !stricmp(p,"LOOP_BEGIN")) {
+			fprintf(out,"%c%c",CS_ONE_MORE_BYTE,CS_LOOP_BEGIN);
+			continue; }
+		if(!stricmp(p,"CONTINUE") || !stricmp(p,"CONTINUE_LOOP")) {
+			fprintf(out,"%c%c",CS_ONE_MORE_BYTE,CS_CONTINUE_LOOP);
+			continue; }
+		if(!stricmp(p,"BREAK") || !stricmp(p,"BREAK_LOOP")) {
+			fprintf(out,"%c%c",CS_ONE_MORE_BYTE,CS_BREAK_LOOP);
+			continue; }
+		if(!stricmp(p,"END_LOOP")) {
+			fprintf(out,"%c%c",CS_ONE_MORE_BYTE,CS_END_LOOP);
+			continue; }
+
 		if(!stricmp(p,"USER_EVENT")) {
 			if(!(*arg))
 				break;
@@ -646,8 +663,8 @@ void compile(char *src)
 		if(!stricmp(p,"ASYNC")) {
 			fprintf(out,"%c",CS_ASYNC);
 			continue; }
-		if(!stricmp(p,"RIOSYNC")) {
-			fprintf(out,"%c",CS_RIOSYNC);
+		if(!stricmp(p,"RIOSYNC")) {		/* deprecated */
+			fprintf(out,"%c",CS_SYNC);
 			continue; }
 		if(!stricmp(p,"GETTIMELEFT")) {
 			fprintf(out,"%c",CS_GETTIMELEFT);
@@ -942,13 +959,20 @@ void compile(char *src)
 			writecrc(src,arg);
 			writecrc(src,arg2);
 			continue; }
+		if(!stricmp(p,"COPY_CHAR") || !stricmp(p,"COPY_KEY")) {
+			if(!(*arg)) break;
+			fprintf(out,"%c%c",CS_VAR_INSTRUCTION,COPY_CHAR);
+			writecrc(src,arg);
+			continue; }
 		if(!stricmp(p,"COPY_FIRST_CHAR")) {
+			if(!(*arg) || !(*arg2)) break;
 			fputc(CS_VAR_INSTRUCTION,out);
 			fputc(COPY_FIRST_CHAR,out);
 			writecrc(src,arg);
 			writecrc(src,arg2);
 			continue; }
 		if(!stricmp(p,"COMPARE_FIRST_CHAR")) {
+			if(!(*arg) || !(*arg2)) break;
 			fputc(CS_VAR_INSTRUCTION,out);
 			fputc(COMPARE_FIRST_CHAR,out);
 			writecrc(src,arg);
@@ -1406,6 +1430,24 @@ void compile(char *src)
 			writecrc(src,arg);
 			writecrc(src,arg2);
 			continue; }
+
+		if(!stricmp(p,"COMPARE_ANY_BITS") || !stricmp(p,"COMPARE_ALL_BITS")) {
+			if(!(*arg) || !(*arg2))
+				break;
+			if((l=isvar(arg2))!=0) {
+				fputc(CS_USE_INT_VAR,out);
+				fwrite(&l,4,1,out); // variable
+				fputc(6,out);		// int offset
+				fputc(4,out);		// int length
+				l=0; }				// place holder
+			else
+				l=val(src,arg2);
+			fprintf(out,"%c%c",CS_VAR_INSTRUCTION
+				,!stricmp(p,"COMPARE_ANY_BITS") ? COMPARE_ANY_BITS : COMPARE_ALL_BITS);
+			writecrc(src,arg);
+			fwrite(&l,sizeof(l),1,out);
+			continue;
+		}
 
 		if(!stricmp(p,"OR_INT_VAR")
 			|| (!stricmp(p,"OR")
@@ -1972,6 +2014,175 @@ void compile(char *src)
 			writecrc(src,arg);			/* int var */
 			continue; }
 
+		/* NET_FUNCTIONS */
+
+		if(!stricmp(p,"SOCKET_OPEN")) {
+			if(!(*arg)) break;
+			fprintf(out,"%c%c",CS_NET_FUNCTION,CS_SOCKET_OPEN);
+			writecrc(src,arg);			/* int var (socket) */
+			continue;
+		}
+		if(!stricmp(p,"SOCKET_CLOSE")) {
+			if(!(*arg)) break;
+			fprintf(out,"%c%c",CS_NET_FUNCTION,CS_SOCKET_CLOSE);
+			writecrc(src,arg);			/* int var (socket) */
+			continue;
+		}
+		if(!stricmp(p,"SOCKET_CHECK")) {
+			if(!(*arg)) break;
+			fprintf(out,"%c%c",CS_NET_FUNCTION,CS_SOCKET_CHECK);
+			writecrc(src,arg);			/* int var (socket) */
+			continue;
+		}
+		if(!stricmp(p,"SOCKET_CONNECT")) {
+			if(!(*arg) || !(*arg2) || !(*arg3)) break;
+
+			/* TCP port */
+			if((l=isvar(arg3))!=0) {
+				fputc(CS_USE_INT_VAR,out);
+				fwrite(&l,4,1,out); // variable
+				fputc(10,out);		// int offset
+				fputc(2,out);		// int length
+				i=0; }				// place holder
+			else
+				i=val(src,arg3);
+
+			fprintf(out,"%c%c",CS_NET_FUNCTION,CS_SOCKET_CONNECT);
+			writecrc(src,arg);			/* int var (socket) */
+			writecrc(src,arg2);			/* str var (address) */
+			fwrite(&i,2,1,out);
+			continue;
+		}
+		if(!stricmp(p,"SOCKET_ACCEPT")) {
+			if(!(*arg)) break;
+			fprintf(out,"%c%c",CS_NET_FUNCTION,CS_SOCKET_ACCEPT);
+			writecrc(src,arg);			/* int var (socket) */
+			continue;
+		}
+		if(!stricmp(p,"SOCKET_NREAD")) {
+			if(!(*arg) || !(*arg2)) break;
+			fprintf(out,"%c%c",CS_NET_FUNCTION,CS_SOCKET_NREAD);
+			writecrc(src,arg);			/* int var (socket) */
+			writecrc(src,arg2);			/* int var (nbytes) */
+			continue;
+		}
+		if(!stricmp(p,"SOCKET_PEEK")) {
+			if(!(*arg) || !(*arg2)) break;
+
+			/* length */
+			if(!(*arg3))
+				i=0;
+			else if((l=isvar(arg3))!=0) {
+				fputc(CS_USE_INT_VAR,out);
+				fwrite(&l,4,1,out); // variable
+				fputc(10,out);		// int offset
+				fputc(2,out);		// int length
+				i=0; }				// place holder
+			else
+				i=val(src,arg3);
+
+			fprintf(out,"%c%c",CS_NET_FUNCTION,CS_SOCKET_PEEK);
+			writecrc(src,arg);			/* int var (socket) */
+			writecrc(src,arg2);			/* str var (buffer) */
+			fwrite(&i,sizeof(i),1,out);	/* word (length) */
+			continue;
+		}
+		if(!stricmp(p,"SOCKET_READ")) {
+			if(!(*arg) || !(*arg2)) break;
+
+			/* length */
+			if(!(*arg3))
+				i=0;
+			else if((l=isvar(arg3))!=0) {
+				fputc(CS_USE_INT_VAR,out);
+				fwrite(&l,4,1,out); // variable
+				fputc(10,out);		// int offset
+				fputc(2,out);		// int length
+				i=0; }				// place holder
+			else 
+				i=val(src,arg3);
+
+			fprintf(out,"%c%c",CS_NET_FUNCTION,CS_SOCKET_READ);
+			writecrc(src,arg);			/* int var (socket) */
+			writecrc(src,arg2);			/* str var (buffer) */
+			fwrite(&i,sizeof(i),1,out);	/* word (length) */
+			continue;
+		}
+		if(!stricmp(p,"SOCKET_WRITE")) {
+			if(!(*arg) || !(*arg2)) break;
+			fprintf(out,"%c%c",CS_NET_FUNCTION,CS_SOCKET_WRITE);
+			writecrc(src,arg);			/* int var (socket) */
+			writecrc(src,arg2);			/* str var (buffer) */
+			continue;
+		}
+
+		/* FTP functions */
+		if(!stricmp(p,"FTP_LOGIN")) {
+			if(!(*arg) || !(*arg2) || !(*arg3)) break;
+			fprintf(out,"%c%c",CS_NET_FUNCTION,CS_FTP_LOGIN);
+			writecrc(src,arg);			/* int var (socket) */
+			writecrc(src,arg2);			/* int var (user) */
+			writecrc(src,arg3);			/* int var (password) */
+			continue;
+		}
+		if(!stricmp(p,"FTP_LOGOUT")) {
+			if(!(*arg)) break;
+			fprintf(out,"%c%c",CS_NET_FUNCTION,CS_FTP_LOGOUT);
+			writecrc(src,arg);			/* int var (socket) */
+			continue;
+		}
+		if(!stricmp(p,"FTP_PWD")) {
+			if(!(*arg)) break;
+			fprintf(out,"%c%c",CS_NET_FUNCTION,CS_FTP_PWD);
+			writecrc(src,arg);			/* int var (socket) */
+			continue;
+		}
+		if(!stricmp(p,"FTP_CWD")) {
+			if(!(*arg) || !(*arg2)) break;
+			fprintf(out,"%c%c",CS_NET_FUNCTION,CS_FTP_CWD);
+			writecrc(src,arg);			/* int var (socket) */
+			writecrc(src,arg2);			/* str var (path)	*/
+			continue;
+		}
+		if(!stricmp(p,"FTP_DIR")) {
+			if(!(*arg) || !(*arg2)) break;
+			fprintf(out,"%c%c",CS_NET_FUNCTION,CS_FTP_DIR);
+			writecrc(src,arg);			/* int var (socket) */
+			writecrc(src,arg2);			/* str var (path)	*/
+			continue;
+		}
+		if(!stricmp(p,"FTP_GET")) {
+			if(!(*arg) || !(*arg2) || !(*arg3)) break;
+			fprintf(out,"%c%c",CS_NET_FUNCTION,CS_FTP_GET);
+			writecrc(src,arg);			/* int var (socket) */
+			writecrc(src,arg2);			/* str var (src path) */
+			writecrc(src,arg3);			/* str var (dest path) */
+			continue;
+		}
+		if(!stricmp(p,"FTP_PUT")) {
+			if(!(*arg) || !(*arg2) || !(*arg3)) break;
+			fprintf(out,"%c%c",CS_NET_FUNCTION,CS_FTP_PUT);
+			writecrc(src,arg);			/* int var (socket) */
+			writecrc(src,arg2);			/* str var (src path) */
+			writecrc(src,arg3);			/* str var (dest path) */
+			continue;
+		}
+		if(!stricmp(p,"FTP_DELETE")) {
+			if(!(*arg) || !(*arg2)) break;
+			fprintf(out,"%c%c",CS_NET_FUNCTION,CS_FTP_DELETE);
+			writecrc(src,arg);			/* int var (socket) */
+			writecrc(src,arg2);			/* str var (path)	*/
+			continue;
+		}
+		if(!stricmp(p,"FTP_RENAME")) {
+			if(!(*arg) || !(*arg2) || !(*arg3)) break;
+			fprintf(out,"%c%c",CS_NET_FUNCTION,CS_FTP_RENAME);
+			writecrc(src,arg);			/* int var (socket) */
+			writecrc(src,arg2);			/* str var (org name) */
+			writecrc(src,arg3);			/* str var (new name) */
+			continue;
+		}
+
 		if(!stricmp(p,"NODE_ACTION")) {
 			if(!(*arg)) break;
 			if((l=isvar(arg))!=0) {
@@ -2438,7 +2649,7 @@ void compile(char *src)
 			if(!(*arg)) break;
 			p=strchr(arg,SP);
 			if(p) *p=0;
-			if(!(*arg) || isdigit(*arg))
+			if(isdigit(*arg))
 				fprintf(out,"%c%c",CS_SHIFT_STR,atoi(arg));
 			else {
 				if((l=isvar(arg2))!=0) {
@@ -2455,6 +2666,23 @@ void compile(char *src)
 				if(!i) i=128;
 				fwrite(&i,1,1,out); }
 			continue; }
+		if(!stricmp(p,"SHIFT_TO_FIRST_CHAR") || !stricmp(p,"SHIFT_TO_LAST_CHAR")) {
+			if(!(*arg) || !(*arg2)) break;
+			if((l=isvar(arg2))!=0) {
+				fputc(CS_USE_INT_VAR,out);
+				fwrite(&l,4,1,out); // variable
+				fputc(6,out);		// int offset
+				fputc(1,out);		// int length
+				ch=0; }				// place holder
+			else
+				ch=val(src,arg2);
+
+			fprintf(out,"%c%c",CS_VAR_INSTRUCTION
+				,!stricmp(p,"SHIFT_TO_FIRST_CHAR") ? SHIFT_TO_FIRST_CHAR : SHIFT_TO_LAST_CHAR);
+			writecrc(src,arg);
+			fwrite(&ch,sizeof(ch),1,out);
+			continue;
+		}
 		if(!stricmp(p,"TRUNCSP")) {
 			fprintf(out,"%c%c",CS_VAR_INSTRUCTION,TRUNCSP_STR_VAR);
 			writecrc(src,arg);
@@ -2745,6 +2973,9 @@ void compile(char *src)
 			continue; }
 		if(!stricmp(p,"INKEY")) {
 			fprintf(out,"%c",CS_INKEY);
+			continue; }
+		if(!stricmp(p,"INCHAR")) {
+			fprintf(out,"%c",CS_INCHAR);
 			continue; }
 		if(!stricmp(p,"GETKEY")) {
 			fprintf(out,"%c",CS_GETKEY);
@@ -3119,8 +3350,8 @@ void compile(char *src)
 }
 
 char *banner=	"\n"
-				"BAJA v2.20 - Synchronet Shell/Module Compiler - "
-				"Copyright 2000 Rob Swindell\n";
+				"BAJA v2.30 - Synchronet Shell/Module Compiler - "
+				"Copyright 2001 Rob Swindell\n";
 
 char *usage=	"\n"
 				"usage: baja [/opts] file[.src]\n"

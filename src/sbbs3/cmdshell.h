@@ -81,7 +81,7 @@ enum {
 	,CS_SELECT_EDITOR
 	,CS_SET_EDITOR			// 0x20
 	,CS_INKEY
-	,CS_RIOSYNC
+	,CS_INCHAR				// Was RIOSYNC (now deprecated) 02/18/01
 	,CS_GETTIMELEFT
 	,CS_SAVELINE
 	,CS_RESTORELINE
@@ -174,6 +174,10 @@ enum {
 	,CS_SWITCH
 	,CS_CASE
 	,CS_USE_INT_VAR 		// 0x7a
+
+/* Network (TCP/IP) Functions */
+
+	,CS_NET_FUNCTION=0x7d
 
 /* File I/O Functions */
 
@@ -403,8 +407,8 @@ enum {
 	,VAR_RESERVED_L1
 	,AND_INT_VAR					// Bit-wise AND int variable (static)
 	,AND_INT_VARS		// 0x50 	// Bit-wise AND int variable (dynamic)
-	,VAR_RESERVED_M4
-	,VAR_RESERVED_M3
+	,COMPARE_ANY_BITS
+	,COMPARE_ALL_BITS
 	,VAR_RESERVED_M2
 	,VAR_RESERVED_M1
 	,OR_INT_VAR 					// Bit-wise OR int variable (static)
@@ -450,11 +454,14 @@ enum {
 	,SEND_FILE_VIA_VAR				// Send file (dynamic) via protocol
 	,FTIME_TO_INT					// Put time of str var file into int
 	,RECEIVE_FILE_VIA				// Receive file (static) via protocol
-	,RECEIVE_FILE_VIA_VAR			// Receive file (dynamic) via protocol
+	,RECEIVE_FILE_VIA_VAR // 0x80	// Receive file (dynamic) via protocol
 	,TELNET_GATE_STR				// Run telnet gateway to static address with mode
 	,TELNET_GATE_VAR				// Run telnet gateway to variable address with mode
 	,COPY_FIRST_CHAR				// Copy first char of str var to int var
 	,COMPARE_FIRST_CHAR				// Compare first char of str var to static char
+	,COPY_CHAR						// Copy cmdkey to int var or str var
+	,SHIFT_TO_FIRST_CHAR			// Shift str var to first occurance of static char
+	,SHIFT_TO_LAST_CHAR				// Shift str var to last occurance of static char
 	};
 
 /* Preceeded by CS_STR_FUNCTION */
@@ -472,11 +479,39 @@ enum {								// More single byte instructions
 	,CS_LOGON						// Logon procedure
 	,CS_LOGOUT						// Logout procedure
 	,CS_EXIT						// Exit current module immediately
+	,CS_LOOP_BEGIN					// Looping anchor
+	,CS_CONTINUE_LOOP				// "next" loop
+	,CS_BREAK_LOOP					// Stop executing loop
+	,CS_END_LOOP					// End of looping code block
 	};
 
 /* Preceeded by CS_TWO_MORE_BYTES */
 enum {								// More two byte instructions
 	 CS_USER_EVENT					// External user event
+	};
+
+/* Preceeded by CS_NET_FUNCTION */
+
+enum {
+	 CS_SOCKET_OPEN					// Open a socket
+	,CS_SOCKET_CLOSE				// Close a socket
+	,CS_SOCKET_CONNECT				// Outbound connection
+	,CS_SOCKET_ACCEPT				// Accept an incomming connection
+	,CS_SOCKET_NREAD				// Get number of bytes in input buffer
+	,CS_SOCKET_PEEK					// Peek at input buffer
+	,CS_SOCKET_READ					// Read input buffer
+	,CS_SOCKET_WRITE				// Write to socket
+	,CS_SOCKET_CHECK				// Check connection
+
+	,CS_FTP_LOGIN					// socket, username, password
+	,CS_FTP_LOGOUT
+	,CS_FTP_PWD						// print working dir
+	,CS_FTP_CWD						// change working dir
+	,CS_FTP_DIR						// path
+	,CS_FTP_PUT						// path
+	,CS_FTP_GET						// path, offset
+	,CS_FTP_RENAME					
+	,CS_FTP_DELETE
 	};
 
 /* Preceeded by CS_FIO_FUNCTION */
@@ -562,12 +597,21 @@ enum {
 #define CS_IN_SWITCH	(1L<<0) 	/* Inside active switch statement */
 #define CS_OFFLINE_EXEC (1L<<1) 	/* Offline execution */
 
+									/* Bits for csi_t.ftp_mode */
+#define CS_FTP_ECHO_CMD	(1L<<0)		/* Echo command lines to user (for debug) */
+#define CS_FTP_ECHO_RSP	(1L<<1)		/* Echo response lines to user */
+#define CS_FTP_PASV		(1L<<2)		/* Use PASV mode transfers */
+#define CS_FTP_ASCII	(1L<<3)		/* Use ASCII file transfers */
+#define CS_FTP_HASH		(1L<<4)		/* Hash marks printing during xfers */
+
 #define MAX_RETS		50	/* maximum nested call depth */
 #define MAX_CMDRETS		50	/* maximum nested cmd depth */
+#define MAX_LOOPDEPTH	50	/* maximum nested loop depth */
 #define MAX_STRVARS		26
 #define MAX_INTVARS		26
 #define MAX_STRLEN		81
 #define MAX_FOPENS		10	/* maximum open files */
+#define MAX_SOCKETS		10	/* maximum open sockets */
 #define MAX_SYSVARS		16	/* maximum system variable saves */
 
 #define LOGIC_LESS		-1
@@ -586,20 +630,26 @@ typedef struct {					/* Command shell image */
 			cmd,					/* Current command key */
 			etx,					/* End-of-text character */
 			*ret[MAX_RETS], 		/* Return address stack */
-			rets,					/* Returns on stack */
 			*cmdret[MAX_CMDRETS],	/* Command return address stack */
-			cmdrets;				/* Command returns on stack */
+			*loop_home[MAX_LOOPDEPTH];	/* Loop home address stack */
 
 	int 	logic;					/* Current logic */
 	
 	FILE	*file[MAX_FOPENS];		/* Each file ptr */
+	int		socket[MAX_SOCKETS];	/* Open socket descriptors */
+	long	socket_error;			/* Last socket error */
 
 	uint	str_vars,				/* Total number of string variables */
 			int_vars,				/* Total number of integer variables */
-			files;					/* Open files */
+			files,					/* Open files */
+			sockets,				/* Open sockets */
+			rets,					/* Returns on stack */
+			loops,					/* Nested loop depth (loops on stack) */
+			cmdrets;				/* Command returns on stack */
 
 	long	retval, 				/* Return value */
 			misc,					/* Misc bits */
+			ftp_mode,				/* FTP operation mode */
 			switch_val, 			/* Current switch value */
 			*int_var,				/* Integer variables */
 			*str_var_name,			/* String variable names (CRC-32) */

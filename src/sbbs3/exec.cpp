@@ -427,6 +427,19 @@ long * sbbs_t::getintvar(csi_t *bin, long name)
 		case 0x430178ec:
 			return((long *)&cfg.uq);
 
+		case 0x455CB929:
+			return(&bin->ftp_mode);
+
+		case 0x2105D2B9:
+			return(&bin->socket_error);
+
+		case 0xA0023A2E:
+			return((long *)&cfg.startup->options);
+
+		case 0x16E2585F:
+			sysvar_l[sysvar_li]=client_socket;
+			break;
+
 		default:
 			if(bin->int_var && bin->int_var_name)
 				for(i=0;i<bin->int_vars;i++)
@@ -450,6 +463,8 @@ void sbbs_t::clearvars(csi_t *bin)
 	bin->int_var=NULL;
 	bin->int_var_name=NULL;
 	bin->files=0;
+	bin->loops=0;
+	bin->sockets=0;
 	bin->retval=0;
 }
 
@@ -473,6 +488,12 @@ void sbbs_t::freevars(csi_t *bin)
 		if(bin->file[i]) {
 			fclose((FILE *)bin->file[i]);
 			bin->file[i]=0; 
+		}
+	}
+	for(i=0;i<bin->sockets;i++) {
+		if(bin->socket[i]) {
+			close_socket((SOCKET)bin->socket[i]);
+			bin->socket[i]=0; 
 		}
 	}
 }
@@ -616,6 +637,7 @@ void sbbs_t::skipto(csi_t *csi, uchar inst)
 						case STRLWR_VAR:
 						case TRUNCSP_STR_VAR:
 						case CHKFILE_VAR:
+						case COPY_CHAR:
 						case STRIP_CTRL_STR_VAR:
 							csi->ip+=4; /* Skip variable name */
 							continue;
@@ -627,6 +649,8 @@ void sbbs_t::skipto(csi_t *csi, uchar inst)
 						case SEND_FILE_VIA_VAR:
 						case RECEIVE_FILE_VIA_VAR:
 						case COMPARE_FIRST_CHAR:
+						case SHIFT_TO_FIRST_CHAR:
+						case SHIFT_TO_LAST_CHAR:
 							csi->ip+=4; /* Skip variable name */
 							csi->ip++;	/* Skip char */
 							continue;
@@ -721,6 +745,48 @@ void sbbs_t::skipto(csi_t *csi, uchar inst)
 							csi->ip+=4;             /* Variable */
 							continue; }
 
+				case CS_NET_FUNCTION:
+					csi->ip++;
+					switch(*(csi->ip++)) {
+						case CS_SOCKET_CONNECT:
+							csi->ip+=4;				/* socket */
+							csi->ip+=4;				/* address */
+							csi->ip+=2;				/* port */
+							continue;
+						case CS_SOCKET_NREAD:
+							csi->ip+=4;				/* socket */
+							csi->ip+=4;				/* intvar */
+							continue;
+						case CS_SOCKET_READ:
+						case CS_SOCKET_PEEK:
+							csi->ip+=4;				/* socket */
+							csi->ip+=4;				/* buffer */
+							csi->ip+=2;				/* length */
+							continue;
+						case CS_SOCKET_WRITE:
+							csi->ip+=4;				/* socket */
+							csi->ip+=4;				/* strvar */
+							continue;
+
+						case CS_FTP_LOGIN:
+						case CS_FTP_GET:
+						case CS_FTP_PUT:
+						case CS_FTP_RENAME:
+							csi->ip+=4;				/* socket */
+							csi->ip+=4;				/* username/path */
+							csi->ip+=4;				/* password/path */
+							continue;
+						case CS_FTP_DIR:
+						case CS_FTP_CWD:
+						case CS_FTP_DELETE:
+							csi->ip+=4;				/* socket */
+							csi->ip+=4;				/* path */
+							continue;
+
+						default:
+							csi->ip+=4;				/* socket */
+							continue; }
+
 				case CS_COMPARE_ARS:
 					csi->ip++;
 					csi->ip+=(*csi->ip);
@@ -746,8 +812,17 @@ void sbbs_t::skipto(csi_t *csi, uchar inst)
 			continue; }
 
 		if(*csi->ip==CS_ONE_MORE_BYTE) {
+			if(inst==CS_END_LOOP && *(csi->ip+1)==CS_END_LOOP)
+				break;
+
 			csi->ip++;				/* skip extension */
 			csi->ip++;				/* skip instruction */
+
+			if(*(csi->ip-1)==CS_LOOP_BEGIN) {	/* nested loop */
+				skipto(csi,CS_END_LOOP);
+				csi->ip+=2;
+			}
+
 			continue; }
 
 		if(*csi->ip==CS_TWO_MORE_BYTES) {
@@ -1000,8 +1075,10 @@ int sbbs_t::exec(csi_t *csi)
 				csi->ip=csi->cs+*((ushort *)(csi->ip));
 				return(0);
 			case CS_CALL:
-				csi->ret[csi->rets++]=csi->ip+2;
-				csi->ip=csi->cs+*((ushort *)(csi->ip));
+				if(csi->rets<MAX_RETS) {
+					csi->ret[csi->rets++]=csi->ip+2;
+					csi->ip=csi->cs+*((ushort *)(csi->ip));
+				}
 				return(0);
 			case CS_MSWAIT:
 				mswait(*(ushort *)csi->ip);
@@ -1179,10 +1256,12 @@ int sbbs_t::exec(csi_t *csi)
 					csi->str[0]=0;
 				return(0);
 			case CS_SHIFT_STR:
-				if(strlen(csi->str)>=*csi->ip)
-					memmove(csi->str,csi->str+(*csi->ip)
-						,strlen(csi->str)+1);
-				csi->ip++;
+				i=*(csi->ip++);
+				j=strlen(csi->str);
+				if(i>j) 
+					i=j;
+				if(i) 
+					memmove(csi->str,csi->str+i,j+1);
 				return(0);
 			case CS_COMPARE_KEY:
 				if( ((*csi->ip)==CS_DIGIT && isdigit(csi->cmd))
@@ -1353,6 +1432,22 @@ int sbbs_t::exec(csi_t *csi)
 					return(0);
 				case CS_EXIT:
 					return(1);
+				case CS_LOOP_BEGIN:
+					if(csi->loops<MAX_LOOPDEPTH)
+						csi->loop_home[csi->loops++]=(csi->ip-1);
+					return(0);
+				case CS_BREAK_LOOP:
+					if(csi->loops) {
+						skipto(csi,CS_END_LOOP);
+						csi->ip+=2;
+						csi->loops--;
+					}
+					return(0);
+				case CS_END_LOOP:
+				case CS_CONTINUE_LOOP:
+					if(csi->loops)
+						csi->ip=csi->loop_home[csi->loops-1];
+					return(0);
 				default:
 					errormsg(WHERE,ERR_CHK,"one byte extended function"
 						,*(csi->ip-1));
@@ -1397,9 +1492,11 @@ int sbbs_t::exec(csi_t *csi)
 		case CS_ASYNC:
 			ASYNC;
 			return(0);
+#if 0 /* Removed 02/18/01 - never used, officially deprecated for INCHAR */
 		case CS_RIOSYNC:
 			RIOSYNC(0);
 			return(0);
+#endif
 		case CS_GETTIMELEFT:
 			gettimeleft();
 			return(0);
@@ -1412,10 +1509,17 @@ int sbbs_t::exec(csi_t *csi)
 			csi->cmd=getkey(K_UPPER);
 			return(0);
 		case CS_GETCHAR:
-			csi->cmd=csi->str[0]=getkey(0);
+			csi->cmd=getkey(0);
 			return(0);
 		case CS_INKEY:
 			csi->cmd=toupper(inkey(K_GETSTR));
+			if(csi->cmd)
+				csi->logic=LOGIC_TRUE;
+			else
+				csi->logic=LOGIC_FALSE;
+			return(0);
+		case CS_INCHAR:
+			csi->cmd=inkey(K_GETSTR);
 			if(csi->cmd)
 				csi->logic=LOGIC_TRUE;
 			else
@@ -1514,15 +1618,12 @@ int sbbs_t::exec(csi_t *csi)
 			putmsg(csi->str,P_SAVEATR|P_NOABORT);
 			return(0);
 		case CS_CMD_HOME:
-			csi->cmdret[csi->cmdrets++]=(csi->ip-1);
+			if(csi->cmdrets<MAX_CMDRETS)
+				csi->cmdret[csi->cmdrets++]=(csi->ip-1);
 			return(0);
 		case CS_END_CMD:
 			if(csi->cmdrets)
 				csi->ip=csi->cmdret[--csi->cmdrets];
-	/*													Removed 06/07/95
-			else
-				errormsg(WHERE,ERR_CHK,"misplaced end_cmd",(csi->ip-csi->cs)-1);
-	*/
 			return(0);
 		case CS_CMD_POP:
 			if(csi->cmdrets)
