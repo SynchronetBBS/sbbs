@@ -408,9 +408,6 @@ void sbbs_read_ini(
 	SAFECOPY(web->ssjs_ext
 		,iniReadString(fp,section,"JavaScriptExtension",".ssjs"));
 
-	SAFECOPY(web->index_file_name
-		,iniReadString(fp,section,"IndexFileName1","index.html"));
-
 	web->max_inactivity
 		=iniReadShortInt(fp,section,"MaxInactivity",120);		/* seconds */
 	web->max_cgi_inactivity
