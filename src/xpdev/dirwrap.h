@@ -155,7 +155,7 @@ extern "C" {
 
 #if defined(_MSC_VER) || defined(__MINGW32__)
 	#define CHMOD(s,m)		_chmod(s,m)
-#elif defined(__BORLANDC__)
+#elif defined(__BORLANDC__) && !defined(__unix__)
 	#define CHMOD(p,a)		_rtl_chmod(p,1,a) 	/* _chmod obsolete in 4.x */
 #else	
 	#define CHMOD(s,m)		chmod(s,m)

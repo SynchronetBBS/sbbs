@@ -117,7 +117,7 @@ extern "C" {
 	DLLEXPORT char*	DLLCALL strupr(char* str);
 	DLLEXPORT char*	DLLCALL strlwr(char* str);
 	DLLEXPORT char* DLLCALL	strrev(char* str);
-	#if !defined(__BORLANDC__) && !defined(stricmp)
+	#if !defined(stricmp)
 		#define stricmp(x,y)		strcasecmp(x,y)
 		#define strnicmp(x,y,z)		strncasecmp(x,y,z)
 	#endif

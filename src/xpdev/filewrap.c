@@ -63,7 +63,7 @@ time_t DLLCALL filetime(int fd)
 	return(st.st_mtime);
 }
 
-#if defined(__unix__)
+#if defined(__unix__) && !defined(__BORLANDC__)
 
 /****************************************************************************/
 /* Returns the length of the file in 'fd'									*/
