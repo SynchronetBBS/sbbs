@@ -283,6 +283,8 @@ void sbbs_read_ini(
 		=iniReadShortInt(fp,section,"LinesPerYield",10);
 	mail->max_recipients
 		=iniReadShortInt(fp,section,"MaxRecipients",100);
+	mail->max_msg_size
+		=iniReadInteger(fp,section,"MaxMsgSize",10*1024*1024);	/* 10MB */
 
 	SAFECOPY(mail->host_name
 		,iniReadString(fp,section,"HostName",host_name));
