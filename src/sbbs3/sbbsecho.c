@@ -3375,7 +3375,7 @@ int import_netmail(char *path,fmsghdr_t hdr, FILE *fidomsg)
 		return(4); }
 
 	if(email->shd_fp==NULL) {
-		sprintf(email->file,"%sMAIL",scfg.data_dir);
+		sprintf(email->file,"%smail",scfg.data_dir);
 		email->retry_time=scfg.smb_retry_time;
 		if((i=smb_open(email))!=0) {
 			printf("ERROR %d opening %s\n",i,email->file);
