@@ -294,6 +294,22 @@ post_t HUGE16 * sbbs_t::loadposts(long *posts, uint subnum, ulong ptr, long mode
 	return(post);
 }
 
+static int get_start_msg(sbbs_t* sbbs, smb_t* smb)
+{
+	int i,j=smb->curmsg+1;
+
+	if(j<smb->msgs)
+		j++;
+	else
+		j=1;
+	sbbs->bprintf(sbbs->text[StartWithN],j);
+	if((i=sbbs->getnum(smb->msgs))<0)
+		return(i);
+	if(i==0)
+		return(j-1);
+	return(i-1);
+}
+
 /****************************************************************************/
 /* Reads posts on subboard sub. 'mode' determines new-posts only, browse,   */
 /* or continuous read.                                                      */
@@ -500,17 +516,23 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 			if(!reread && mode&SCAN_FIND) { 			/* Find text in messages */
 				buf=smb_getmsgtxt(&smb,&msg,GETMSGTXT_TAILS);
 				if(!buf) {
-					if(smb.curmsg<smb.msgs-1) smb.curmsg++;
-					else done=1;
-					continue; }
+					if(smb.curmsg<smb.msgs-1) 
+						smb.curmsg++;
+					else if(org_mode&SCAN_FIND)  
+						done=1;
+					else if(smb.curmsg>=smb.msgs-1)
+							domsg=0;
+					continue; 
+				}
 				strupr((char *)buf);
 				if(!strstr((char *)buf,find) && !strstr(msg.subj,find)) {
 					FREE(buf);
 					if(smb.curmsg<smb.msgs-1) 
 						smb.curmsg++;
-					else 
-						if(org_mode&SCAN_FIND) 
+					else if(org_mode&SCAN_FIND) 
 							done=1;
+					else if(smb.curmsg>=smb.msgs-1)
+							domsg=0;
 					continue; 
 				}
 				FREE(buf); 
@@ -697,13 +719,8 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 			case 'F':   /* find text in messages */
 				domsg=0;
 				mode&=~SCAN_FIND;	/* turn off find mode */
-				bprintf(text[StartWithN],smb.curmsg+2);
-				if((i=getnum(smb.msgs))<0)
+				if((i=get_start_msg(this,&smb))<0)
 					break;
-				if(i)
-					i--;
-				else
-					i=smb.curmsg+1;
 				bputs(text[SearchStringPrompt]);
 				if(!getstr(find_buf,40,K_LINE|K_UPPER))
 					break;
@@ -722,12 +739,10 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 				break;
 			case 'L':   /* List messages */
 				domsg=0;
-				bprintf(text[StartWithN],smb.curmsg+1);
-				if((i=getnum(smb.msgs))<0)
+				if((i=get_start_msg(this,&smb))<0)
 					break;
-				if(i) i--;
-				else i=smb.curmsg;
 				listmsgs(subnum,post,i,smb.msgs);
+				sys_status&=~SS_ABORT;
 				break;
 			case 'M':   /* Reply to last post in mail */
 				domsg=0;
