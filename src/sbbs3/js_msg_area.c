@@ -86,7 +86,7 @@ static char* msg_area_prop_desc[] = {
 	,"user has operator access to this message area"
 	,"user's posts are moderated"
 	,"user's current new message scan pointer (highest-read message number)"
-	,"user's message scan configuration (bitfield) see <tt>SUB_SCAN_*</tt> in <tt>sbbsdefs.js</tt> for valid bits"
+	,"user's message scan configuration (bitfield) see <tt>SCAN_CFG_*</tt> in <tt>sbbsdefs.js</tt> for valid bits"
 	,"user's last-read message number"
 	,NULL
 };
