@@ -8,41 +8,17 @@ var who_online=false;
 
 template.title=system.name+" Home Page";
 
-function xtrn_name(code)
-{
-    if(this.xtrn_area==undefined)
-        return(code);
-
-    for(s in xtrn_area.sec_list)
-        for(p in xtrn_area.sec_list[s].prog_list)
-            if(xtrn_area.sec_list[s].prog_list[p].code.toLowerCase()==code.toLowerCase())
-                return(xtrn_area.sec_list[s].prog_list[p].name);
-    return(code);
-}
-
+template.node_list = [];
+var u = new User(0);
+var n;
 for(n=0;n<system.node_list.length;n++) {
     if(system.node_list[n].status==NODE_INUSE) {
-            template.show_nodelist=true;
-    }
-}
-
-var u = new User(0);
-    for(n=0;n<system.node_list.length;n++) {
-    if(system.node_list[n].status==NODE_INUSE) {    
-    if(system.node_list[n].status==NODE_INUSE) {
         u.number=system.node_list[n].useron;
-        if(system.node_list[n].action==NODE_XTRN && system.node_list[n].aux)
-            action=format("running %s",xtrn_name(u.curxtrn));
+        if(system.node_list[n].action==NODE_XTRN && system.node_list[n].aux && xtrn_area.prog[u.curxtrn])
+            action=format("running %s",xtrn_area.prog[u.curxtrn].name);
         else
             action=format(NodeAction[system.node_list[n].action]
                 ,system.node_list[n].aux);
-        if(system.node_list[n].status==NODE_INUSE && system.node_list[n].useron) {
-        template.user_email=u.email;
-        template.user_name=u.alias;
-        }
-        if(system.node_list[n].status==NODE_INUSE && system.node_list[n].useron) {
-            template.node_action=action;
-        }
-     }
-   }
+        template.node_list.push({ name: u.alias, email: u.email, action: action});
+    }
 }
