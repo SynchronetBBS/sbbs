@@ -99,6 +99,9 @@ long SMBCALL flength(char *filename)
 	long	handle;
 	struct _finddata_t f;
 
+	if(access(filename,0)==-1)
+		return(-1L);
+
 	if((handle=_findfirst(filename,&f))==-1)
 		return(-1);
 
@@ -109,6 +112,9 @@ long SMBCALL flength(char *filename)
 #else 
 
 	STAT st;
+
+	if(access(filename,0)==-1)
+		return(-1L);
 
 	if(stat(filename, &st)!=0)
 		return(-1L);
@@ -130,6 +136,9 @@ BOOL SMBCALL fexist(char *filespec)
 	long	handle;
 	struct _finddata_t f;
 
+	if(access(filespec,0)==-1 && !strchr(filespec,'*') && !strchr(filespec,'?'))
+		return(FALSE);
+
 	if((handle=_findfirst(filespec,&f))==-1)
 		return(FALSE);
 
@@ -145,6 +154,9 @@ BOOL SMBCALL fexist(char *filespec)
 	glob_t g;
     int c;
     int l;
+
+	if(access(filespec,0)==-1 && !strchr(filespec,'*') && !strchr(filespec,'?'))
+		return(FALSE);
 
     // start the search
     glob(filespec, GLOB_MARK | GLOB_NOSORT, NULL, &g);
