@@ -108,15 +108,17 @@ enum {                              /* Node Action */
 #pragma pack(1)
 #endif
 
-typedef struct {						/* Node information kept in NODE.DAB */
-    uchar   status,                     /* Current Status of Node */
-            errors,                     /* Number of Critical Errors */
-            action;                     /* Action User is doing on Node */
-    ushort  useron,                     /* User on Node */
-            connection,                 /* Connection rate of Node */
-            misc,                       /* Miscellaneous bits for node */
-            aux;                        /* Auxillary word for node */
-    ulong   extaux;                     /* Extended aux dword for node */
+#define SIZEOF_NODE_T	15			/* Must == sizeof(node_t) */
+
+typedef struct {					/* Node information kept in NODE.DAB */
+    uchar   status,                 /* Current Status of Node */
+            errors,                 /* Number of Critical Errors */
+            action;                 /* Action User is doing on Node */
+    ushort  useron,                 /* User on Node */
+            connection,             /* Connection rate of Node */
+            misc,                   /* Miscellaneous bits for node */
+            aux;                    /* Auxillary word for node */
+    ulong   extaux;                 /* Extended aux dword for node */
             } node_t;
 
 #ifdef _WIN32
