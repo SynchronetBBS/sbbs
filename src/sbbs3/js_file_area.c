@@ -57,6 +57,7 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 {
 	char		vpath[MAX_PATH+1];
 	JSObject*	areaobj;
+	JSObject*	alldirs;
 	JSObject*	libobj;
 	JSObject*	dirobj;
 	JSObject*	lib_list;
@@ -73,6 +74,9 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 		areaobj = JS_DefineObject(cx, parent, "file_area", &js_file_area_class
 								, NULL, JSPROP_ENUMERATE);
 	if(areaobj==NULL)
+		return(NULL);
+
+	if((alldirs=JS_NewObject(cx, NULL, NULL, areaobj))==NULL)
 		return(NULL);
 
 	val=INT_TO_JSVAL(cfg->min_dspace);
@@ -284,6 +288,10 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 			if(!JS_SetElement(cx, dir_list, index, &val))
 				return(NULL);
 
+			/* Add as property (associative array element) */
+			if(!JS_SetProperty(cx, alldirs, cfg->dir[d]->code, &val))
+				return(NULL);
+
 #ifdef _DEBUG
 			js_DescribeObject(cx,dirobj,"File Transfer Directories");
 #endif
@@ -295,7 +303,12 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 		val=OBJECT_TO_JSVAL(libobj);
 		if(!JS_SetElement(cx, lib_list, index, &val))
 			return(NULL);
+
 	}
+
+	val=OBJECT_TO_JSVAL(alldirs);
+	if(!JS_SetProperty(cx, areaobj, "dir", &val))
+		return(NULL);
 
 	return(areaobj);
 }
