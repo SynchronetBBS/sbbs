@@ -2679,7 +2679,8 @@ void node_thread(void* arg)
 		sbbs->putnodedat(sbbs->cfg.node_num,&node);
 
 		sbbs->logentry("!:","Ran system daily maintenance");
-		lprintf("Checking users...");
+		lprintf("Node %d Checking for inactive/expired user records..."
+			,sbbs->cfg.node_num);
 		j=lastuser(&sbbs->cfg);
 		for(i=1;i<=j;i++) {
 
@@ -2760,7 +2761,7 @@ void node_thread(void* arg)
 				putuserrec(&sbbs->cfg,i,U_MISC,8,ultoa(user.misc|DELETED,str,16)); }
 		}
 
-		lprintf("Purging deleted/expired e-mail");
+		lprintf("Node %d Purging deleted/expired e-mail",sbbs->cfg.node_num);
 		sprintf(sbbs->smb.file,"%smail",sbbs->cfg.data_dir);
 		sbbs->smb.retry_time=sbbs->cfg.smb_retry_time;
 		sbbs->smb.subnum=INVALID_SUB;
@@ -2773,7 +2774,6 @@ void node_thread(void* arg)
 				sbbs->delmail(0,MAIL_ALL);
 			smb_close(&sbbs->smb); 
 		}
-
 
 		sbbs->sys_status&=~SS_DAILY;
 		if(sbbs->cfg.sys_daily[0]) {
@@ -2805,7 +2805,7 @@ void node_thread(void* arg)
 
     // Wait for all node threads to terminate
 	if(sbbs->input_thread_running || sbbs->output_thread_running) {
-		lprintf("Waiting for node %d %s to terminate..."
+		lprintf("Node %d Waiting for %s to terminate..."
 			,sbbs->cfg.node_num
 			,(sbbs->input_thread_running && sbbs->output_thread_running) ?
                	"I/O threads" : sbbs->input_thread_running
@@ -2814,8 +2814,8 @@ void node_thread(void* arg)
 		while(sbbs->input_thread_running
     		|| sbbs->output_thread_running) {
 			if(time(NULL)-start>TIMEOUT_THREAD_WAIT) {
-				lprintf("!TIMEOUT waiting for node %d "
-               		"%s to terminate", sbbs->cfg.node_num
+				lprintf("Node %d !TIMEOUT waiting for %s to terminate"
+					, sbbs->cfg.node_num
 					,(sbbs->input_thread_running && sbbs->output_thread_running) ?
                   		"I/O threads"
 					: sbbs->input_thread_running
