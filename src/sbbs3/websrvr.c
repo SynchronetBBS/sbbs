@@ -47,7 +47,6 @@
 
 #include "sbbs.h"
 #include "sockwrap.h"		/* sendfilesocket() */
-#include "threadwrap.h"		/* _beginthread() */
 #include "websrvr.h"
 
 static const char*	server_name="Synchronet Web Server";
