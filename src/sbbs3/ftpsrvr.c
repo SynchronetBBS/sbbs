@@ -307,7 +307,7 @@ static int sockprintf(SOCKET sock, char *fmt, ...)
 			,sock, result, ERROR_VALUE, sock);
 		return(0);
 	}
-	while((result=send(sock,sbuf,len,0))!=len) {
+	while((result=sendsocket(sock,sbuf,len))!=len) {
 		if(result==SOCKET_ERROR) {
 			if(ERROR_VALUE==EWOULDBLOCK) {
 				mswait(1);
@@ -1427,7 +1427,7 @@ static void send_thread(void* arg)
 #ifdef _DEBUG
 		socket_debug[xfer.ctrl_sock]|=SOCKET_DEBUG_SEND;
 #endif
-		wr=send(*xfer.data_sock,buf,rd,0);
+		wr=sendsocket(*xfer.data_sock,buf,rd);
 #ifdef _DEBUG
 		socket_debug[xfer.ctrl_sock]&=~SOCKET_DEBUG_SEND;
 #endif

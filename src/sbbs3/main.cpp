@@ -880,7 +880,7 @@ void output_thread(void* arg)
             buftop=RingBufRead(&sbbs->outbuf, buf, avail);
             bufbot=0;
         }
-		i=send(sbbs->client_socket, (char*)buf+bufbot, buftop-bufbot, 0);
+		i=sendsocket(sbbs->client_socket, (char*)buf+bufbot, buftop-bufbot);
 		if(i==SOCKET_ERROR) {
         	if(ERROR_VALUE == ENOTSOCK)
                 lprintf("%s client socket closed on send", node);
@@ -904,7 +904,7 @@ void output_thread(void* arg)
 
 			/* Spy on the user remotely */
 			if(spy_socket[sbbs->cfg.node_num-1]!=INVALID_SOCKET) 
-				send(spy_socket[sbbs->cfg.node_num-1],(char*)buf+bufbot,i,0);
+				sendsocket(spy_socket[sbbs->cfg.node_num-1],(char*)buf+bufbot,i);
 		}
 
 		bufbot+=i;
@@ -2136,7 +2136,7 @@ void sbbs_t::spymsg(char*msg)
 		RingBufWrite(startup->node_spybuf[cfg.node_num-1],(uchar*)str,strlen(str));
 
 	if(cfg.node_num && spy_socket[cfg.node_num-1]!=INVALID_SOCKET) 
-		send(spy_socket[cfg.node_num-1],str,strlen(str),0);
+		sendsocket(spy_socket[cfg.node_num-1],str,strlen(str));
 }
 
 #define MV_BUFLEN	4096

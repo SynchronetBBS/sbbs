@@ -240,7 +240,7 @@ static int sockprintf(SOCKET sock, char *fmt, ...)
 		return(0);
 	}
 
-	while((result=send(sock,sbuf,len,0))!=len) {
+	while((result=sendsocket(sock,sbuf,len))!=len) {
 		if(result==SOCKET_ERROR) {
 			if(ERROR_VALUE==EWOULDBLOCK) {
 				mswait(1);
@@ -1318,16 +1318,18 @@ static void smtp_thread(void* arg)
 				lprintf("%04d SMTP End of message (%lu bytes)", socket, ftell(msgtxt));
 
 				if(telegram==TRUE) {		/* Telegram */
+					const char* head="\1n\1h\1cInstant Message\1n from \1h\1y";
+					const char* tail="\1n:\r\n\1h";
 					rewind(msgtxt);
 					length=filelength(fileno(msgtxt));
 					
 					p=strchr(sender_addr,'@');
 					if(p==NULL || resolve_ip(p+1)!=smtp.client_addr.sin_addr.s_addr) 
 						/* Append real IP and hostname if different */
-						sprintf(str,"\1n\1h%s [\1n%s\1h] (\1n%s\1h)\1n: "
-							,sender_addr,host_ip,host_name);
+						sprintf(str,"%s%s \1w[\1n%s\1h] (\1n%s\1h)%s"
+							,head,sender_addr,host_ip,host_name,tail);
 					else
-						sprintf(str,"\1n\1h%s\1n: ",sender_addr);
+						sprintf(str,"%s%s%s",head,sender_addr,tail);
 					
 					if((telegram_buf=(char*)malloc(length+strlen(str)+1))==NULL) {
 						lprintf("%04d !SMTP ERROR allocating %lu bytes of memory for telegram from %s"

@@ -131,7 +131,7 @@ void sbbs_t::telnet_gate(char* destaddr, ulong mode)
 		strcpy(p,"vt100/57600");
 		p+=strlen(p)+1;
 		l=p-(char*)buf;
-		send(remote_socket,(char*)buf,l,0);
+		sendsocket(remote_socket,(char*)buf,l);
 	}
 
 	while(online) {
@@ -190,7 +190,7 @@ void sbbs_t::telnet_gate(char* destaddr, ulong mode)
 					sem_post(&output_sem);
 				}
 			}
-			if((i=send(remote_socket,(char*)buf,rd,0))<0) {
+			if((i=sendsocket(remote_socket,(char*)buf,rd))<0) {
 				lprintf("!TELGATE ERROR %d sending on socket %d",ERROR_VALUE,remote_socket);
 				break;
 			}

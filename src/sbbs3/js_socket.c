@@ -239,7 +239,7 @@ js_send(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	cp=JS_GetStringBytes(str);
 	len=strlen(cp);
 
-	if(send(p->sock,cp,len,0)==len) {
+	if(sendsocket(p->sock,cp,len)==len) {
 		dbprintf(FALSE, p, "sent %u bytes",len);
 		*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
 	} else {
