@@ -38,6 +38,10 @@
 #include "sbbs.h"
 #include "md5.h"
 #include "base64.h"
+#include "htmlansi.h"
+
+#define MAX_ANSI_SEQ	16
+#define MAX_ANSI_PARAMS	8
 
 #ifdef JAVASCRIPT
 
@@ -798,10 +802,39 @@ js_html_encode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 	int			ch;
 	ulong		i,j;
 	uchar*		inbuf;
+	uchar*		tmpbuf;
 	uchar*		outbuf;
+	uchar*		param;
+	char*		lastparam;
 	JSBool		exascii=JS_TRUE;
 	JSBool		wsp=JS_TRUE;
+	JSBool		ansi=JS_TRUE;
+	JSBool		ctrl_a=JS_TRUE;
 	JSString*	js_str;
+	int			fg=7;
+	int			bg=0;
+	BOOL		blink=FALSE;
+	BOOL		bold=FALSE;
+	int			esccount=0;
+	char		ansi_seq[MAX_ANSI_SEQ+1];
+	int			ansi_param[MAX_ANSI_PARAMS];
+	int			k,l;
+	ulong		savepos;
+	int			hpos=0;
+	int			currrow=0;
+	int			savehpos;
+	int			savevpos;
+	BOOL		extchar=FALSE;
+	ulong		obsize;
+	int			lastcolor;
+	char		tmp1[128];
+	struct		tm tm;
+	time_t		now;
+	BOOL		nodisplay=FALSE;
+	scfg_t*		cfg;
+
+	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)		/* Will this work?  Ask DM */
+		return(JS_FALSE);
 
 	if((inbuf=JS_GetStringBytes(JS_ValueToString(cx, argv[0])))==NULL) 
 		return(JS_FALSE);
@@ -812,7 +845,17 @@ js_html_encode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 	if(argc>2 && JSVAL_IS_BOOLEAN(argv[2]))
 		wsp=JSVAL_TO_BOOLEAN(argv[2]);
 
-	if((outbuf=(char*)malloc((strlen(inbuf)*10)+1))==NULL)
+	if(argc>3 && JSVAL_IS_BOOLEAN(argv[3]))
+		ansi=JSVAL_TO_BOOLEAN(argv[3]);
+
+	if(argc>4 && JSVAL_IS_BOOLEAN(argv[4]))
+	{
+		ctrl_a=JSVAL_TO_BOOLEAN(argv[4]);
+		if(ctrl_a)
+			ansi=ctrl_a;
+	}
+
+	if((tmpbuf=(char*)malloc((strlen(inbuf)*10)+1))==NULL)
 		return(JS_FALSE);
 
 	for(i=j=0;inbuf[i];i++) {
@@ -821,53 +864,466 @@ js_html_encode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 			case LF:
 			case CR:
 				if(wsp)
-					j+=sprintf(outbuf+j,"&#%u;",inbuf[i]);
+					j+=sprintf(tmpbuf+j,"&#%u;",inbuf[i]);
 				else
-					outbuf[j++]=inbuf[i];
+					tmpbuf[j++]=inbuf[i];
 				break;
 			case '"':
-				j+=sprintf(outbuf+j,"&quot;");
+				j+=sprintf(tmpbuf+j,"&quot;");
 				break;
 			case '&':
-				j+=sprintf(outbuf+j,"&amp;");
+				j+=sprintf(tmpbuf+j,"&amp;");
 				break;
 			case '<':
-				j+=sprintf(outbuf+j,"&lt;");
+				j+=sprintf(tmpbuf+j,"&lt;");
 				break;
 			case '>':
-				j+=sprintf(outbuf+j,"&gt;");
+				j+=sprintf(tmpbuf+j,"&gt;");
+				break;
+			case '\b':
+				j--;
 				break;
 			default:
 				if(inbuf[i]&0x80) {
 					if(exascii) {
 						ch=inbuf[i]^0x80;
 						if(exasctbl[ch].name!=NULL)
-							j+=sprintf(outbuf+j,"&%s;",exasctbl[ch].name);
+							j+=sprintf(tmpbuf+j,"&%s;",exasctbl[ch].name);
 						else
-							j+=sprintf(outbuf+j,"&#%u;",exasctbl[ch].value);
+							j+=sprintf(tmpbuf+j,"&#%u;",exasctbl[ch].value);
 					} else
-						outbuf[j++]=inbuf[i];
+						tmpbuf[j++]=inbuf[i];
 				}
 				else if(inbuf[i]>=' ' && inbuf[i]<DEL)
-					outbuf[j++]=inbuf[i];
-				else if(inbuf[i]>' ') /* unknown control chars */
+					tmpbuf[j++]=inbuf[i];
+				else if(inbuf[i]<' ') /* unknown control chars */
 				{
-					if(exascii) {
+					if(ansi && inbuf[i]=='\e')
+					{
+						esccount++;
+						tmpbuf[j++]=inbuf[i];
+					}
+					else if(ctrl_a && inbuf[i]==1)
+					{
+						esccount++;
+						tmpbuf[j++]=inbuf[i];
+					}
+					else if(exascii) {
 						ch=inbuf[i];
 						if(lowasctbl[ch].name!=NULL)
-							j+=sprintf(outbuf+j,"&%s;",lowasctbl[ch].name);
+							j+=sprintf(tmpbuf+j,"&%s;",lowasctbl[ch].name);
 						else
-							j+=sprintf(outbuf+j,"&#%u;",lowasctbl[ch].value);
+							j+=sprintf(tmpbuf+j,"&#%u;",lowasctbl[ch].value);
 					} else
-						j+=sprintf(outbuf+j,"&#%u;",inbuf[i]);
+						j+=sprintf(tmpbuf+j,"&#%u;",inbuf[i]);
 				}
 				break;
 		}
 	}
-	outbuf[j]=0;
+	tmpbuf[j]=0;
 
-	js_str = JS_NewStringCopyZ(cx, outbuf);
-	free(outbuf);
+	if(ansi)
+	{
+		obsize=(strlen(tmpbuf)+(esccount+1)*MAX_COLOR_STRING)+1;
+		if(obsize<2048)
+			obsize=2048;
+		if((outbuf=(uchar*)malloc(obsize))==NULL)
+		{
+			free(tmpbuf);
+			return(JS_FALSE);
+		}
+		j=sprintf(outbuf,"<DIV STYLE=\"%s\"><SPAN STYLE=\"%s\">",htmlansi[7],htmlansi[7]);
+		for(i=0;tmpbuf[i];i++) {
+			if(j>(obsize/2))		/* Completely arbitrary here... must be carefull with this eventually ToDo */
+			{
+				obsize+=(obsize/2);
+				if((param=realloc(outbuf,obsize))==NULL)
+				{
+					free(tmpbuf);
+					free(outbuf);
+					return(JS_FALSE);
+				}
+				outbuf=param;
+			}
+			if(tmpbuf[i]=='\e' && tmpbuf[i+1]=='[')
+			{
+				if(nodisplay)
+					continue;
+				k=0;
+				memset(&ansi_param,0xff,sizeof(int)*MAX_ANSI_PARAMS);
+				strncpy(ansi_seq, tmpbuf+i+2, MAX_ANSI_SEQ);
+				ansi_seq[MAX_ANSI_SEQ]=0;
+				for(lastparam=ansi_seq;*lastparam;lastparam++)
+				{
+					if(isalpha(*lastparam))
+					{
+						*(++lastparam)=0;
+						break;
+					}
+				}
+				k=0;
+				param=ansi_seq;
+				if(*param=='?')		/* This is to fix ESC[?7 whatever that is */
+					param++;
+				if(isdigit(*param))
+					ansi_param[k++]=atoi(ansi_seq);
+				while(isspace(*param) || isdigit(*param))
+					param++;
+				lastparam=param;
+				while((param=strchr(param,';'))!=NULL)
+				{
+					param++;
+					ansi_param[k++]=atoi(param);
+					while(isspace(*param) || isdigit(*param))
+						param++;
+					lastparam=param;
+				}
+				switch(*lastparam)
+				{
+					case 'm':
+						for(k=0;ansi_param[k]>=0;k++)
+						{
+							switch(ansi_param[k])
+							{
+								case 0:
+									fg=7;
+									bg=0;
+									blink=FALSE;
+									bold=FALSE;
+									break;
+								case 1:
+									bold=TRUE;
+									break;
+								case 2:
+									bold=FALSE;
+									break;
+								case 5:
+									blink=TRUE;
+									break;
+								case 6:
+									blink=TRUE;
+									break;
+								case 7:
+									l=fg;
+									fg=bg;
+									bg=l;
+									break;
+								case 8:
+									fg=bg;
+									blink=FALSE;
+									bold=FALSE;
+									break;
+								case 30:
+								case 31:
+								case 32:
+								case 33:
+								case 34:
+								case 35:
+								case 36:
+								case 37:
+									fg=ansi_param[k]-30;
+									break;
+								case 40:
+								case 41:
+								case 42:
+								case 43:
+								case 44:
+								case 45:
+								case 46:
+								case 47:
+									bg=ansi_param[k]-40;
+									break;
+							}
+						}
+						break;
+					case 'C':
+						j+=sprintf(outbuf+j,"%s%s%s",HTML_COLOR_PREFIX,htmlansi[0],HTML_COLOR_SUFFIX);
+						lastcolor=0;
+						l=ansi_param[0]>0?ansi_param[0]:1;
+						if(l>81-hpos)
+							l=81-hpos;
+						for(k=0; k<l; k++)
+						{
+							j+=sprintf(outbuf+j,"%s","&nbsp;");
+							hpos++;
+						}
+						break;
+					case 's':
+						savepos=j;
+						savehpos=hpos;
+						savevpos=currrow;
+						break;
+					case 'u':
+						j=savepos;
+						hpos=savehpos;
+						currrow=savevpos;
+						break;
+					case 'H':
+						k=ansi_param[0];
+						if(k<=0)
+							k=1;
+						k--;
+						l=ansi_param[1];
+						if(l<=0)
+							l=1;
+						l--;
+						while(k>currrow)
+						{
+							hpos=0;
+							currrow++;
+							outbuf[j++]='\r';
+							outbuf[j++]='\n';
+						}
+						if(l>hpos)
+						{
+							j+=sprintf(outbuf+j,"%s%s%s",HTML_COLOR_PREFIX,htmlansi[0],HTML_COLOR_SUFFIX);
+							lastcolor=0;
+							while(l>hpos)
+							{
+								j+=sprintf(outbuf+j,"%s","&nbsp;");
+								hpos++;
+							}
+						}
+						break;
+					case 'B':
+						l=ansi_param[0];
+						if(l<=0)
+							l=1;
+						for(k=0; k < l; k++)
+						{
+							currrow++;
+							outbuf[j++]='\r';
+							outbuf[j++]='\n';
+						}
+						if(hpos!=0 && tmpbuf[i+1]!=CR)
+						{
+							j+=sprintf(outbuf+j,"%s%s%s",HTML_COLOR_PREFIX,htmlansi[0],HTML_COLOR_SUFFIX);
+							lastcolor=0;
+							for(k=0; k<hpos ; k++)
+							{
+								j+=sprintf(outbuf+j,"%s","&nbsp;");
+							}
+							break;
+						}
+						break;
+				}
+				i+=(int)(lastparam-ansi_seq)+2;
+			}
+			else if(ctrl_a && tmpbuf[i]==1)		/* CTRL-A codes */
+			{
+				if(nodisplay && tmpbuf[i+1] != ')')
+					continue;
+				switch(toupper(tmpbuf[i+1]))
+				{
+					case 'K':
+						fg=0;
+						break;
+					case 'R':
+						fg=1;
+						break;
+					case 'G':
+						fg=2;
+						break;
+					case 'Y':
+						fg=3;
+						break;
+					case 'B':
+						fg=4;
+						break;
+					case 'M':
+						fg=5;
+						break;
+					case 'C':
+						fg=6;
+						break;
+					case 'W':
+						fg=7;
+						break;
+					case '0':
+						bg=0;
+						break;
+					case '1':
+						bg=1;
+						break;
+					case '2':
+						bg=2;
+						break;
+					case '3':
+						bg=3;
+						break;
+					case '4':
+						bg=4;
+						break;
+					case '5':
+						bg=5;
+						break;
+					case '6':
+						bg=6;
+						break;
+					case '7':
+						bg=7;
+						break;
+					case 'H':
+						bold=TRUE;
+						break;
+					case 'I':
+						blink=TRUE;
+						break;
+					case 'N':
+						bold=FALSE;
+						blink=FALSE;
+						fg=7;
+						bg=0;
+						break;
+					case 'P':
+					case 'Q':
+					case ',':
+					case ';':
+					case '.':
+					case 'S':
+					case '>':
+					case '<':
+						break;
+
+					case '!':		/* This needs to be fixed! (Somehow) */
+					case '@':
+					case '#':
+					case '$':
+					case '%':
+					case '^':
+					case '&':
+					case '*':
+					case '(':
+						nodisplay=TRUE;
+						break;
+					case ')':
+						nodisplay=FALSE;
+						break;
+
+					case 'D':
+						now=time(NULL);
+						j+=sprintf(outbuf+j,"%s",unixtodstr(cfg,now,tmp1));
+						break;
+					case 'T':
+						now=time(NULL);
+						localtime_r(&now,&tm);
+						j+=sprintf(outbuf+j,"%02d:%02d %s"
+							,tm.tm_hour==0 ? 12
+							: tm.tm_hour>12 ? tm.tm_hour-12
+							: tm.tm_hour, tm.tm_min, tm.tm_hour>11 ? "pm":"am");
+						break;
+						
+					case 'L':
+						currrow=0;
+						hpos=0;
+						outbuf[j++]='\r';
+						outbuf[j++]='\n';
+						break;
+					case ']':
+						currrow++;
+						if(hpos!=0 && tmpbuf[i+2]!=CR && !(tmpbuf[i+2]==1 && tmpbuf[i+3]=='['))
+						{
+							outbuf[j++]='\r';
+							outbuf[j++]='\n';
+							j+=sprintf(outbuf+j,"%s%s%s",HTML_COLOR_PREFIX,htmlansi[0],HTML_COLOR_SUFFIX);
+							lastcolor=0;
+							for(k=0; k<hpos ; k++)
+							{
+								j+=sprintf(outbuf+j,"%s","&nbsp;");
+							}
+							break;
+						}
+						outbuf[j++]='\n';
+						break;
+					case '[':
+						outbuf[j++]='\r';
+						hpos=0;
+						break;
+					case 'Z':
+						outbuf[j++]=0;
+						break;
+					case 'A':
+					default:
+						if(exascii) {
+							ch=tmpbuf[i];
+							if(lowasctbl[ch].name!=NULL)
+								j+=sprintf(outbuf+j,"&%s;",lowasctbl[ch].name);
+							else
+								j+=sprintf(outbuf+j,"&#%u;",lowasctbl[ch].value);
+						} else
+							j+=sprintf(outbuf+j,"&#%u;",inbuf[i]);
+						i--;
+				}
+				i++;
+			}
+			else
+			{
+				if(nodisplay)
+					continue;
+				switch(tmpbuf[i])
+				{
+					case TAB:			/* This assumes that tabs do NOT use the current background. */
+						l=hpos%8;
+						if(l==0)
+							l=8;
+						j+=sprintf(outbuf+j,"%s%s%s",HTML_COLOR_PREFIX,htmlansi[0],HTML_COLOR_SUFFIX);
+						lastcolor=0;
+						for(k=0; k<l ; k++)
+						{
+							j+=sprintf(outbuf+j,"%s","&nbsp;");
+							hpos++;
+						}
+						break;
+					case LF:
+						currrow++;
+						if(hpos!=0 && tmpbuf[i+1]!=CR)
+						{
+							outbuf[j++]='\r';
+							outbuf[j++]='\n';
+							j+=sprintf(outbuf+j,"%s%s%s",HTML_COLOR_PREFIX,htmlansi[0],HTML_COLOR_SUFFIX);
+							lastcolor=0;
+							for(k=0; k<hpos ; k++)
+							{
+								j+=sprintf(outbuf+j,"%s","&nbsp;");
+							}
+							break;
+						}
+					case CR:
+						outbuf[j++]=tmpbuf[i];
+						hpos=0;
+						break;
+					default:
+						if(lastcolor != ((blink?(1<<7):0) | (bg << 4) | (bold?(1<<3):0) | fg))
+						{
+							lastcolor=(blink?(1<<7):0) | (bg << 4) | (bold?(1<<3):0) | fg;
+							j+=sprintf(outbuf+j,"%s%s%s",HTML_COLOR_PREFIX,htmlansi[lastcolor],HTML_COLOR_SUFFIX);
+						}
+						if(hpos>=79 && tmpbuf[i+1] != '\r' && tmpbuf[i+1] != '\n' && tmpbuf[i+1] != '\e')
+						{
+							hpos=0;
+							currrow++;
+							outbuf[j++]='\r';
+							outbuf[j++]='\n';
+						}
+						outbuf[j++]=tmpbuf[i];
+						if(tmpbuf[i]=='&')
+							extchar=TRUE;
+						if(tmpbuf[i]==';')
+							extchar=FALSE;
+						if(!extchar)
+							hpos++;
+				}
+			}
+		}
+		strcpy(outbuf+j,"</SPAN></DIV>");
+
+		js_str = JS_NewStringCopyZ(cx, outbuf);
+		free(outbuf);
+	}
+	else
+		js_str = JS_NewStringCopyZ(cx, tmpbuf);
+
+	free(tmpbuf);
 	if(js_str==NULL)
 		return(JS_FALSE);
 
@@ -1762,9 +2218,9 @@ static jsMethodSpec js_global_functions[] = {
 	,JSDOCSTR("return a formatted string (ala sprintf) - "
 		"<small>CAUTION: for experienced C programmers ONLY</small>")
 	},
-	{"html_encode",		js_html_encode,		1,	JSTYPE_STRING,	JSDOCSTR("string text [,bool ex_ascii] [,bool white_space]")
+	{"html_encode",		js_html_encode,		1,	JSTYPE_STRING,	JSDOCSTR("string text [,bool ex_ascii] [,bool white_space] [,bool ansi] [,bool ctrl_a]")
 	,JSDOCSTR("return an HTML-encoded text string (using standard HTML character entities), "
-		"escaping IBM extended-ASCII and white-space characters by default")
+		"escaping IBM extended-ASCII, white-space characters, ANSI codes, and CTRL-A codes by default")
 	},
 	{"html_decode",		js_html_decode,		1,	JSTYPE_STRING,	JSDOCSTR("string text")
 	,JSDOCSTR("return a decoded HTML-encoded text string")
