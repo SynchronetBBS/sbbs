@@ -127,7 +127,7 @@ uint DLLCALL lastuser(scfg_t* cfg)
 }
 
 /****************************************************************************/
-/* Returns the number of the last user in user.dat (deleted ones too)		*/
+/* Deletes last user record in user.dat										*/
 /****************************************************************************/
 BOOL DLLCALL del_lastuser(scfg_t* cfg)
 {
