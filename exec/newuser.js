@@ -12,14 +12,21 @@ load("sbbsdefs.js");
 
 console.clear();
 
+ask_qnet=false;
+ask_sysop=false;
+qnet=false;
+
+if(system.name=="Vertrauen") {
+	ask_qnet=true;
+	ask_sysop=true;
+}
+
 if(!user.address.length && user.number>1) {
 	printf("\1y\1hWhere did you hear about this BBS? ");
 	user.address=console.getstr(30,K_LINE);
 }
 
-qnet=false;
-
-if(system.name=="Vertrauen"
+if(ask_qnet 
 	&& !console.noyes("\r\nIs this account to be used for QWK Networking (DOVE-Net)\1b")
 	&& !console.noyes("\r\n\1bARE YOU \1wPOSITIVE\1n\1h\1b (If you're unsure, press '\1wN\1b')"))
 	qnet=true;
@@ -85,9 +92,8 @@ if(qnet) {
 	user.security.exemptions|=UFLAG_M;
 }
 
-if(system.name=="Vertrauen" &&
-   !console.noyes("\r\n\1bAre you a sysop of a \1wSynchronet\1b BBS (unsure, hit '\1wN\1b')")) 
-{
+if(ask_sysop 
+	&& !console.noyes("\r\n\1bAre you a sysop of a \1wSynchronet\1b BBS (unsure, hit '\1wN\1b')")) {
 	user.flags1|=UFLAG_S;
 	if(!qnet && console.yesno("\r\nDo you wish to access the Synchronet BBS List database"))
 		bbs.exec_xtrn("SBL");
