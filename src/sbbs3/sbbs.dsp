@@ -454,6 +454,10 @@ SOURCE=.\str.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=..\xpdev\str_list.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\str_util.c
 # End Source File
 # Begin Source File
