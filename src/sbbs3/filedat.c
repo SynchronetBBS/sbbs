@@ -182,8 +182,7 @@ BOOL DLLCALL addfiledat(scfg_t* cfg, file_t* f)
 	/* Add data to DAT File */
 	/************************/
 	sprintf(str,"%s%s.DAT",cfg->dir[f->dir]->data_dir,cfg->dir[f->dir]->code);
-	if((file=sopen(str,O_RDWR|O_BINARY|O_CREAT,SH_DENYRW
-		,S_IREAD|S_IWRITE))==-1) {
+	if((file=sopen(str,O_RDWR|O_BINARY|O_CREAT,SH_DENYRW))==-1) {
 //		errormsg(WHERE,ERR_OPEN,str,O_RDWR|O_CREAT);
 		return(FALSE); 
 	}
@@ -245,8 +244,7 @@ BOOL DLLCALL addfiledat(scfg_t* cfg, file_t* f)
 	/* Update last upload date/time stamp file */
 	/*******************************************/
 	sprintf(str,"%s%s.DAB",cfg->dir[f->dir]->data_dir,cfg->dir[f->dir]->code);
-	if((file=sopen(str,O_WRONLY|O_CREAT|O_BINARY,SH_DENYRW
-		,S_IREAD|S_IWRITE))!=-1) {
+	if((file=sopen(str,O_WRONLY|O_CREAT|O_BINARY,SH_DENYRW))!=-1) {
 		now=time(NULL);
 		write(file,&now,4);
 		close(file); 
@@ -259,8 +257,7 @@ BOOL DLLCALL addfiledat(scfg_t* cfg, file_t* f)
 	for(i=8;i<12;i++)   /* Turn FILENAME.EXT into FILENAMEEXT */
 		fname[i]=fname[i+1];
 	sprintf(str,"%s%s.IXB",cfg->dir[f->dir]->data_dir,cfg->dir[f->dir]->code);
-	if((file=sopen(str,O_RDWR|O_CREAT|O_BINARY,SH_DENYRW
-		,S_IREAD|S_IWRITE))==-1) {
+	if((file=sopen(str,O_RDWR|O_CREAT|O_BINARY,SH_DENYRW))==-1) {
 //		errormsg(WHERE,ERR_OPEN,str,O_RDWR|O_CREAT);
 		return(FALSE); 
 	}
@@ -576,8 +573,7 @@ BOOL DLLCALL rmuserxfers(scfg_t* cfg, int fromuser, int destuser, char *fname)
 		remove(str);
 		return(FALSE); 
 	}
-	if((file=sopen(str,O_RDONLY|O_BINARY,SH_DENYWR
-		,S_IREAD|S_IWRITE))==-1) {
+	if((file=sopen(str,O_RDONLY|O_BINARY,SH_DENYWR))==-1) {
 //		errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
 		return(FALSE); 
 	}

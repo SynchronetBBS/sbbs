@@ -302,7 +302,7 @@ int nopen(char *str, int access)
         access&=~O_DENYNONE; }
     else if(access==O_RDONLY) share=SH_DENYWR;
     else share=SH_DENYRW;
-    while(((file=_sopen(str,O_BINARY|access,share,S_IWRITE|S_IREAD))==-1)
+    while(((file=sopen(str,O_BINARY|access,share))==-1)
         && errno==EACCES && count++<LOOP_NOPEN)
         if(count>10)
             mswait(55);
@@ -755,8 +755,7 @@ static void receive_thread(void* arg)
 			if(!addfiledat(&scfg,&f))
 				lprintf("%04d !ERROR adding file (%s) to database",xfer.ctrl_sock,f.name);
 			if(scfg.dir[f.dir]->upload_sem[0])
-				if((file=sopen(scfg.dir[f.dir]->upload_sem,O_WRONLY|O_CREAT|O_TRUNC
-					,SH_DENYNO,S_IREAD|S_IWRITE))!=-1)
+				if((file=sopen(scfg.dir[f.dir]->upload_sem,O_WRONLY|O_CREAT|O_TRUNC,SH_DENYNO))!=-1)
 					close(file);
 			/**************************/
 			/* Update Uploader's Info */

@@ -52,7 +52,7 @@ int nopen(char *str, int access)
         access&=~O_DENYNONE; }
     else if(access==O_RDONLY) share=SH_DENYWR;
     else share=SH_DENYRW;
-    while(((file=_sopen(str,O_BINARY|access,share,S_IWRITE|S_IREAD))==-1)
+    while(((file=sopen(str,O_BINARY|access,share))==-1)
         && errno==EACCES && count++<LOOP_NOPEN)
         if(count>10)
             mswait(55);

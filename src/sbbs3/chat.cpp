@@ -741,8 +741,7 @@ void sbbs_t::privchat(bool local)
 	}
 
 	sprintf(str,"%sCHAT.DAB",cfg.node_dir);
-	if((out=_sopen(str,O_RDWR|O_CREAT|O_BINARY,O_DENYNONE
-		,S_IREAD|S_IWRITE))==-1) {
+	if((out=sopen(str,O_RDWR|O_CREAT|O_BINARY,SH_DENYNO))==-1) {
 		errormsg(WHERE,ERR_OPEN,str,O_RDWR|O_DENYNONE|O_CREAT);
 		return; }
 
@@ -752,8 +751,7 @@ void sbbs_t::privchat(bool local)
 		sprintf(str,"%sCHAT.DAB",cfg.node_path[n-1]);
 	if(!fexist(str))		/* Wait while it's created for the first time */
 		mswait(2000);
-	if((in=_sopen(str,O_RDWR|O_CREAT|O_BINARY,O_DENYNONE
-		,S_IREAD|S_IWRITE))==-1) {
+	if((in=sopen(str,O_RDWR|O_CREAT|O_BINARY,SH_DENYNO))==-1) {
 		close(out);
 		errormsg(WHERE,ERR_OPEN,str,O_RDWR|O_DENYNONE|O_CREAT);
 		return; }
