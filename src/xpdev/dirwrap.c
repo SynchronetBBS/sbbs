@@ -465,7 +465,30 @@ BOOL DLLCALL fexist(const char *filespec)
 /****************************************************************************/
 BOOL DLLCALL fexistcase(char *path)
 {
-#if defined(__unix__)
+#if defined(_WIN32)
+
+	char*	fname;
+	long	handle;
+	struct _finddata_t f;
+
+	if(access(path,0)==-1 && !strchr(path,'*') && !strchr(path,'?'))
+		return(FALSE);
+
+	if((handle=_findfirst((char*)path,&f))==-1)
+		return(FALSE);
+
+ 	_findclose(handle);
+
+ 	if(f.attrib&_A_SUBDIR)
+		return(FALSE);
+
+	fname=getfname(path);	/* Find filename in path */
+	strcpy(fname,f.name);	/* Correct filename */
+
+	return(TRUE);
+
+#else /* Unix or OS/2 */
+
 	char globme[MAX_PATH*4+1];
 	char fname[MAX_PATH+1];
 	char tmp[5];
@@ -507,8 +530,6 @@ BOOL DLLCALL fexistcase(char *path)
 	globfree(&glb);
 	return FALSE;
 	
-#else
-	return(fexist(path));
 #endif
 }
 
