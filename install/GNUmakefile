@@ -80,7 +80,7 @@ ifdef JSLIB
  MKFLAGS	+=	JSLIB=$(JSLIB)
 endif
 
-all: binaries baja externals $(SBBSDIR)/docs
+all: binaries baja externals
 
 binaries:	sbbs3 scfg umonitor uedit
 
@@ -152,11 +152,6 @@ endif
 run: cvslogin
 ifndef NOCVS
 	$(CVS_CO) run-sbbs3
-endif
-
-$(SBBSDIR)/docs: cvslogin
-ifndef NOCVS
-	$(CVS_CO) docs
 endif
 
 $(SBBSDIR)/lib/mozilla/js/$(machine).$(SUFFIX): cvslogin
