@@ -2239,6 +2239,7 @@ static void ctrl_thread(void* arg)
 	ulong		l;
 	ulong		login_attempts=0;
 	ulong		avail;	/* disk space */
+	ulong		count;
 	BOOL		detail;
 	BOOL		success;
 	BOOL		getdate;
@@ -4206,6 +4207,7 @@ static void ctrl_thread(void* arg)
 
 	if(transfer_inprogress==TRUE) {
 		lprintf("%04d Waiting for transfer to complete...",sock);
+		count=0;
 		while(transfer_inprogress==TRUE) {
 			if(server_socket==INVALID_SOCKET) {
 				mswait(2000);	/* allow xfer threads to terminate */
@@ -4226,7 +4228,12 @@ static void ctrl_thread(void* arg)
 					transfer_aborted=TRUE;
 				}
 			}
-			mswait(500);
+			if(count && (count%60)==0)
+				lprintf("%04d Still waiting for transfer to complete "
+					"(count=%lu, aborted=%d, lastactive=%lX) ..."
+					,sock,count,transfer_aborted,lastactive);
+			count++;
+			mswait(1000);
 		}
 		lprintf("%04d Done waiting for transfer to complete",sock);
 	}
