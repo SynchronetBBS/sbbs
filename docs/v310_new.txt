@@ -1435,4 +1435,75 @@ o Rearranged termination sequence at end of ctrl_thread to fix race conditions
 o Added wait at end of ftp_server thread for other threads to terminate
 
 
+***********************************************************
+* What's New in Synchronet Version 3.10 Revision I (Beta) *
+***********************************************************
+
+General
+~~~~~~~
+o Additional "buffer overflow" precautions
+
+o Better random number "seeding"
+
+o Better/early detection of corrupt message base headers 
+
+o Fixed long message header field support in message base utilities
+  - smbutil, chksmb, and fixsmb
+
+
+Configuration Utility (SCFG) Updated for Version 3.x
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+o Fixed bug that was corrupting message headers (build problem?)
+
+o Increased maximum SCFG->Security Levels->Time Per Call/Day to 1440 minutes
+
+o Uses SBBSEXEC environment variable for help file location (if set)
+
+
+Control Panel (Win32)
+~~~~~~~~~~~~~~~~~~~~~
+o Fixed bug with reporting incorrect "up time" in daylight savings time
+
+o GUI user editor now saves changes to Note field
+  - Deleted/inactive user record status is displayed as red/yellow
+
+
+Console Mode (sbbs.exe)
+~~~~~~~~~~~~~~~~~~~~~~~
+o New command-line options:
+	-ma			allow SMTP relays from authenticated users
+	-md<addr>	set DNS server address for MX-record lookups
+	-mr<addr>	set SMTP relay server (and enable SMTP relay)
+	            (supports address:port syntax)
+
+
+Telnet Server
+~~~~~~~~~~~~~
+o Added optional text/menu/msghdr.* file (actually a couple of revs back)
+  - Replaces built-in/text.dat message headers
+  - Use new message header @-codes to display message details
+
+o Errno descriptions are now included in error log
+
+o exec_mutex is no longer used for NT-based OSes and native 32-bit executables
+
+
+Mail Server
+~~~~~~~~~~~
+o New mail server option to allow SMTP relay to authenticated users
+  - Requires user's last logon to be within the hour (via Telnet/FTP/POP3)
+
+o Immediately disconnects upon illegal relay attempt
+
+o More detailed message base error messages
+
+o Reduced maximum SMTP recipients from 1000 to 100 (RFC minimum)
+
+o Improved tracking of number of recipients and enforcement of maximum
+
+o Logs maximum recipients reached error in spam.log
+
+o SMTP MAIL command now resets recipient list per RFC 821
+
+
 /* End of V310_NEW.TXT */
