@@ -28,7 +28,7 @@ if(http_request.method=='GET') {
 else {
 	/* Create gender list drop-down */
 	if(http_request.query["gender"] != undefined)
-		gender=http_request.query["gender"].toUpperCase();
+		gender=http_request.query["gender"].toString().toUpperCase();
 	template.gender_list='<select name="gender">\n';
 	template.gender_list+='<option value="M"'+(gender=='M'?' selected':'')+'>Male</option>\n';
 	template.gender_list+='<option value="F"'+(gender=='F'?' selected':'')+'>Female</option>\n</select>';
