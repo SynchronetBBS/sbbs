@@ -230,7 +230,7 @@ void sbbs_t::gettimeleft(void)
 		sys_status|=SS_EVENT; }
 #endif
 
-	if(timeleft<0)  /* timeleft can't go negative */
+	if((long)timeleft<0)  /* timeleft can't go negative */
 		timeleft=0;
 	if(thisnode.status==NODE_NEWUSER) {
 		timeleft=cfg.level_timepercall[cfg.new_level];
