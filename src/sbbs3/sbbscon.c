@@ -771,7 +771,8 @@ static void terminate(void)
 	}
 }
 
-static void read_startup_ini(bbs_startup_t* bbs, ftp_startup_t* ftp, web_startup_t* web
+static void read_startup_ini(BOOL recycle
+							 ,bbs_startup_t* bbs, ftp_startup_t* ftp, web_startup_t* web
 							 ,mail_startup_t* mail, services_startup_t* services)
 {
 	FILE*	fp=NULL;
@@ -802,7 +803,8 @@ static void read_startup_ini(bbs_startup_t* bbs, ftp_startup_t* ftp, web_startup
 		char	value[INI_MAX_VALUE_LEN];
 		SAFECOPY(new_uid_name,iniReadString(fp,"UNIX","User","",value));
 		SAFECOPY(new_gid_name,iniReadString(fp,"UNIX","Group","",value));
-		is_daemon=iniReadBool(fp,"UNIX","Daemonize",FALSE);
+		if(!recycle)
+			is_daemon=iniReadBool(fp,"UNIX","Daemonize",FALSE);
 		SAFECOPY(daemon_type,iniReadString(fp,"UNIX","LogFacility","U",value));
 		umask(iniReadInteger(fp,"UNIX","umask",077));
 	}
@@ -832,7 +834,7 @@ void recycle(void* cbdata)
 	else if(cbdata==&services_startup)
 		services=cbdata;
 
-	read_startup_ini(bbs,ftp,web,mail,services);
+	read_startup_ini(/* recycle? */TRUE,bbs,ftp,web,mail,services);
 }
 
 void cleanup(void)
@@ -876,9 +878,6 @@ void _sighandler_rerun(int sig)
 
 	lputs(LOG_NOTICE,"     Got HUP (rerun) signal");
 
-	/*
-	Currently, rereading the ini appears to case 100% CPU issues. - ToDo
-		read_startup_ini(); */
 	bbs_startup.recycle_now=TRUE;
 	ftp_startup.recycle_now=TRUE;
 	web_startup.recycle_now=TRUE;
@@ -1147,7 +1146,8 @@ int main(int argc, char** argv)
 		}
 	}
 
-	read_startup_ini(&bbs_startup, &ftp_startup, &web_startup, &mail_startup, &services_startup);
+	read_startup_ini(/* recycle? */FALSE
+		,&bbs_startup, &ftp_startup, &web_startup, &mail_startup, &services_startup);
 
 #if SBBS_MAGIC_FILENAMES	/* This stuff is just broken */
 
