@@ -653,6 +653,7 @@ int main(int argc, char **argv)
 	uchar *p,exist,listgiven=0,namegiven=0,ext[513]
 		,auto_name[MAX_PATH+1]="FILES.BBS";
 	int i,j,file;
+	uint desc_offset=0, size_offset=0;
 	long l;
 	file_t	f;
 
@@ -680,7 +681,11 @@ int main(int argc, char **argv)
 	memset(&scfg,0,sizeof(scfg));
 	scfg.size=sizeof(scfg);
 	SAFECOPY(scfg.ctrl_dir,p);
-	printf("\nReading configuration files from %s\n",scfg.ctrl_dir);
+
+	if(chdir(scfg.ctrl_dir)!=0)
+		fprintf(stderr,"!ERROR changing directory to: %s", scfg.ctrl_dir);
+
+	printf("\nLoading configuration files from %s\n",scfg.ctrl_dir);
 	if(!load_cfg(&scfg,NULL,TRUE,error)) {
 		fprintf(stderr,"!ERROR loading configuration files: %s\n",error);
 		exit(1);
@@ -770,6 +775,13 @@ int main(int argc, char **argv)
 						printf(usage);
 						return(1); 
 			} 
+		}
+		else if(isdigit(argv[j][0])) {
+			if(desc_offset==0)
+				desc_offset=atoi(argv[j]);
+			else
+				size_offset=atoi(argv[j]);
+			continue;
 		}
 		else if(argv[j][0]=='+') {      /* filelist - FILES.BBS */
 			listgiven=1;
@@ -888,13 +900,13 @@ int main(int argc, char **argv)
 				continue;
 			f.dir=i;
 			if(mode&SEARCH_DIR) {
-				addlist("",f,0,0);
+				addlist("",f,desc_offset,size_offset);
 				continue; 
 			}
 			sprintf(str,"%s.lst",scfg.dir[f.dir]->code);
 			if(fexistcase(str) && flength(str)>0L) {
 				printf("Auto-adding %s\n",str);
-				addlist(str,f,0,0);
+				addlist(str,f,desc_offset,size_offset);
 				if(mode&SYNC_LIST)
 					synclist(str,i);
 				continue; 
@@ -902,7 +914,7 @@ int main(int argc, char **argv)
 			sprintf(str,"%s%s",scfg.dir[f.dir]->path,auto_name);
 			if(fexistcase(str) && flength(str)>0L) {
 				printf("Auto-adding %s\n",str);
-				addlist(str,f,0,0);
+				addlist(str,f,desc_offset,size_offset);
 				if(mode&SYNC_LIST)
 					synclist(str,i);
 				continue; 
@@ -915,7 +927,7 @@ int main(int argc, char **argv)
 			sprintf(str,"%s.lst",scfg.dir[f.dir]->code);
 			if(!fexistcase(str) || flength(str)<=0L)
 				strcpy(str,"FILES.BBS");
-			addlist(str,f,0,0);
+			addlist(str,f,desc_offset,size_offset);
 			if(mode&SYNC_LIST)
 				synclist(str,f.dir); 
 		} 
