@@ -1452,7 +1452,7 @@ sbbs_t::sbbs_t(ushort node_num, DWORD addr, char* name, SOCKET sd,
 	uint	i;
 
     if(node_num)
-    	sprintf(nodestr,"BBS Node %d",node_num);
+    	sprintf(nodestr,"Node %d",node_num);
     else
     	strcpy(nodestr,name);
 
@@ -1909,10 +1909,6 @@ sbbs_t::~sbbs_t()
 
 	lprintf("%s destructor begin", node);
 
-#if 0	// Removed Jun-07-2001 causing long delay when shutting down 
-    hangup();	/* close socket handle */
-#endif
-
 	if(client_socket_dup!=INVALID_SOCKET)
 		closesocket(client_socket_dup);	/* close duplicate handle */
 
@@ -1947,7 +1943,7 @@ sbbs_t::~sbbs_t()
 #ifdef JAVASCRIPT
 	/* Free Context */
 	if(js_cx!=NULL) {	
-		lprintf("JavaScript: Destroying context for %s",node);
+		lprintf("%s JavaScript: Destroying context",node);
 		JS_DestroyContext(js_cx);
 		js_cx=NULL;
 	}
@@ -2322,53 +2318,26 @@ int sbbs_t::rioctl(ushort action)
 	if((action&0xff)==IOSM) {	/* Get/Set/Clear mode */
 		if(action&ABORT)
 			rio_abortable=true;
-		return(0); }
-
+		return(0); 
+	}
 
 	if((action&0xff)==IOCM) {	/* Get/Set/Clear mode */
 		if(action&ABORT)
 			rio_abortable=false;
-		return(0); }
+		return(0); 
+	}
 
 	if((action&0xff)==IOSS) {	/* Set state */
 		if(action&ABORT)
 			sys_status|=SS_ABORT;
-		return(0); }
+		return(0); 
+	}
 
 	if((action&0xff)==IOCS) {	/* Clear state */
 		if(action&ABORT)
 			sys_status&=~SS_ABORT;
-		return(0); }
-
-	if((action&0xff)==TXSYNC) { /* Synchronize transmition */
-	#if 0 /* TXSYNC */
-
-		c=action>>8;            /* Number of seconds */
-		w=110+(c*1000); 		/* Number of milliseconds */
-		start=clock();
-		while(clock()-start<w) {
-			if(!outbufcnt()) {
-	#ifdef __OS2__
-				DosDevIOCtl(rio_handle
-					,IOCTL_ASYNC, 0x69	/* Query # of chars in tx queue */
-					,NULL
-					,0
-					,NULL
-					,&getqueue
-					,sizeof(getqueue)
-					,NULL);
-				if(getqueue.cur==0) 	/* Empty outbound queue */
-					return(0);
-	#else // Win32
-				ClearCommError((HANDLE)rio_handle,&l,&comstat);
-				if(comstat.cbOutQue==0) /* Empty outbound queue */
-					return(0);
-	#endif
-				}
-			mswait(1);
-			}
-	#endif
-		return(1); }
+		return(0); 
+	}
 
 	return(0);
 }
@@ -2917,7 +2886,7 @@ static void cleanup(int code)
 
 #ifdef JAVASCRIPT
 	if(js_runtime!=NULL) {
-		lprintf("JavaScript: Destroying runtime");
+		lprintf("BBS JavaScript: Destroying runtime");
 		JS_DestroyRuntime(js_runtime);
 		js_runtime=NULL;
 	}
@@ -3393,16 +3362,21 @@ void DLLCALL bbs_thread(void* arg)
 			continue;
 		}
 
-
-		if(client_socket == INVALID_SOCKET)
-		{
+		if(client_socket == INVALID_SOCKET)	{
 			if(ERROR_VALUE == ENOTSOCK || ERROR_VALUE == EINTR)
             	lputs("BBS socket closed");
             else
 				lprintf("!ERROR %d accept failed", ERROR_VALUE);
 			break;
 		}
-		lprintf("New client socket: %d",client_socket);
+		char host_ip[32];
+
+		strcpy(host_ip,inet_ntoa(client_addr.sin_addr));
+
+		lprintf("%04d %s connection accepted from: %s port %u"
+			,client_socket
+			,rlogin ? "RLogin" : "Telnet", host_ip, ntohs(client_addr.sin_port));
+
 		if(startup->socket_open!=NULL)
 			startup->socket_open(TRUE);
 
@@ -3422,13 +3396,6 @@ void DLLCALL bbs_thread(void* arg)
 			close_socket(client_socket);
 			continue;
 		}
-
-		char host_ip[32];
-
-		strcpy(host_ip,inet_ntoa(client_addr.sin_addr));
-
-		lprintf("%s connection accepted from: %s port %u"
-			, rlogin ? "RLogin" : "Telnet", host_ip, ntohs(client_addr.sin_port));
 
    		sbbs->client_socket=client_socket;	// require for output to the user
         sbbs->online=ON_REMOTE;
@@ -3471,7 +3438,7 @@ void DLLCALL bbs_thread(void* arg)
 		else
 			host_name="<no name>";
 
-		lprintf("Host name: %s", host_name);
+		lprintf("%04d Host name: %s", client_socket, host_name);
 
 		if(sbbs->trashcan(host_name,"host")) {
 			close_socket(client_socket);
@@ -3490,9 +3457,6 @@ void DLLCALL bbs_thread(void* arg)
 		client.protocol=rlogin ? "RLogin":"Telnet";
 		client.user="<unknown>";
 		client_on(client_socket,&client);
-
-		sprintf(logstr, "%s %s", host_name, host_ip);
-		sbbs->logline("@*",logstr);
 
 		for(i=first_node;i<=last_node;i++) {
 			sbbs->getnodedat(i,&node,1);
@@ -3520,8 +3484,6 @@ void DLLCALL bbs_thread(void* arg)
 		}
 
         node_socket[i-1]=client_socket;
-
-		lprintf("Connecting client to node %d",i);
 
 		sbbs_t* new_node = new sbbs_t(i, client_addr.sin_addr.s_addr, host_name
         	,client_socket, &scfg, text, &client);
