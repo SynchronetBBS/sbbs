@@ -1503,6 +1503,10 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		}
 	}
 	if(pid==0) {	/* child process */
+		/* Give away all privs for good now */
+		if(startup->setuid!=NULL)
+			startup->setuid(TRUE);
+
 		sigset_t        sigs;
 		sigfillset(&sigs);
 		sigprocmask(SIG_UNBLOCK,&sigs,NULL);

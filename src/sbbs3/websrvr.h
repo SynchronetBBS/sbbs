@@ -60,6 +60,7 @@ typedef struct {
 	void	(*socket_open)(BOOL open);
     void	(*client_on)(BOOL on, int sock, client_t*, BOOL update);
     BOOL	(*seteuid)(BOOL user);
+	BOOL	(*setuid)(BOOL);
 	char	ssjs_ext[16];			/* Server-Side JavaScript file extension */
 	char**	cgi_ext;				/* CGI Extensions */
     char    ctrl_dir[128];

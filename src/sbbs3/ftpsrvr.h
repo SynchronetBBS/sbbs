@@ -61,6 +61,7 @@ typedef struct {
 	void	(*socket_open)(BOOL open);
     void	(*client_on)(BOOL on, int sock, client_t*, BOOL update);
     BOOL	(*seteuid)(BOOL user);
+    BOOL	(*setuid)(BOOL force);
     char    ctrl_dir[128];
     char	index_file_name[64];
     char	html_index_file[64];

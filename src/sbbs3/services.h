@@ -64,6 +64,7 @@ typedef struct {
 	void	(*socket_open)(BOOL open);
     void	(*client_on)(BOOL on, int sock, client_t*, BOOL update);
     BOOL	(*seteuid)(BOOL user);
+	BOOL	(*setuid)(BOOL force);
     char    ctrl_dir[128];
     char	cfg_file[128];
 	char	ini_file[128];

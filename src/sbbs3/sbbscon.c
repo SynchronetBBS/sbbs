@@ -274,24 +274,32 @@ static BOOL do_seteuid(BOOL to_new)
 /**********************************************************
 * Change uid of the calling process to the user if specified
 * **********************************************************/
-static BOOL do_setuid(void) 
+BOOL do_setuid(BOOL force)
 {
-#if defined(_THREAD_SUID_BROKEN) || defined(DONT_BLAME_SYNCHRONET)
-	return(do_seteuid(TRUE));
-#else
-	BOOL	result=FALSE;
-
+	BOOL result=TRUE;
+#if defined(DONT_BLAME_SYNCHRONET) || defined(_THREAD_SUID_BROKEN)
+	if(!force)
+		return(do_seteuid(TRUE));
+#endif
 	setregid(-1,old_gid);
 	setreuid(-1,old_uid);
-	if(!setregid(new_gid,new_gid) && !setreuid(new_uid,new_uid)) 
-		result=TRUE;
+	if(setregid(new_gid,new_gid))
+	{
+		lputs("!setgid FAILED");
+		lputs(strerror(errno));
+		result=FALSE;
+	}
 
-	if(!result) {
+	if(setreuid(new_uid,new_uid))
+	{
 		lputs("!setuid FAILED");
 		lputs(strerror(errno));
+		result=FALSE;
 	}
-	return result;
-#endif
+	if(force && (!result))
+		exit(1);
+
+	return(result);
 }
 #endif   /* __unix__ */
 
@@ -334,7 +342,7 @@ static void thread_up(BOOL up, BOOL setuid)
 #ifdef _THREAD_SUID_BROKEN
 	if(up && setuid) {
 		do_seteuid(FALSE);
-		do_setuid();
+		do_setuid(FALSE);
 	}
 #endif
 
@@ -434,7 +442,7 @@ static void bbs_started(void)
 	bbs_stopped=FALSE;
 	#ifdef _THREAD_SUID_BROKEN
 	    do_seteuid(FALSE);
-	    do_setuid();
+	    do_setuid(FALSE);
 	#endif
 }
 
@@ -491,7 +499,7 @@ static void ftp_started(void)
 	ftp_stopped=FALSE;
 	#ifdef _THREAD_SUID_BROKEN
 	    do_seteuid(FALSE);
-	    do_setuid();
+	    do_setuid(FALSE);
 	#endif
 }
 
@@ -544,7 +552,7 @@ static void mail_started(void)
 	mail_stopped=FALSE;
 	#ifdef _THREAD_SUID_BROKEN
 	    do_seteuid(FALSE);
-	    do_setuid();
+	    do_setuid(FALSE);
 	#endif
 }
 
@@ -597,7 +605,7 @@ static void services_started(void)
 	services_stopped=FALSE;
 	#ifdef _THREAD_SUID_BROKEN
 	    do_seteuid(FALSE);
-	    do_setuid();
+	    do_setuid(FALSE);
 	#endif
 }
 
@@ -687,7 +695,7 @@ static void web_started(void)
 	web_stopped=FALSE;
 	#ifdef _THREAD_SUID_BROKEN
 	    do_seteuid(FALSE);
-	    do_setuid();
+	    do_setuid(FALSE);
 	#endif
 }
 
@@ -957,6 +965,7 @@ int main(int argc, char** argv)
     bbs_startup.client_on=client_on;
 #ifdef __unix__
 	bbs_startup.seteuid=do_seteuid;
+	bbs_startup.setuid=do_setuid;
 #endif
 /*	These callbacks haven't been created yet
     bbs_startup.status=bbs_status;
@@ -975,6 +984,7 @@ int main(int argc, char** argv)
     ftp_startup.client_on=client_on;
 #ifdef __unix__
 	ftp_startup.seteuid=do_seteuid;
+	ftp_startup.setuid=do_setuid;
 #endif
     strcpy(ftp_startup.index_file_name,"00index");
     strcpy(ftp_startup.ctrl_dir,ctrl_dir);
@@ -989,6 +999,7 @@ int main(int argc, char** argv)
     web_startup.socket_open=socket_open;
 #ifdef __unix__
 	web_startup.seteuid=do_seteuid;
+	web_startup.setuid=do_setuid;
 #endif
     strcpy(web_startup.ctrl_dir,ctrl_dir);
 
@@ -1003,6 +1014,7 @@ int main(int argc, char** argv)
     mail_startup.client_on=client_on;
 #ifdef __unix__
 	mail_startup.seteuid=do_seteuid;
+	mail_startup.setuid=do_setuid;
 #endif
     strcpy(mail_startup.ctrl_dir,ctrl_dir);
 
@@ -1042,6 +1054,7 @@ int main(int argc, char** argv)
     services_startup.client_on=client_on;
 #ifdef __unix__
 	services_startup.seteuid=do_seteuid;
+	services_startup.setuid=do_setuid;
 #endif
     strcpy(services_startup.ctrl_dir,ctrl_dir);
 
@@ -1555,7 +1568,7 @@ int main(int argc, char** argv)
 				bbs_lputs("Waiting for Services thread");
 		}
 
-		if(!do_setuid())
+		if(!do_setuid(FALSE))
 				/* actually try to change the uid of this process */
 			bbs_lputs("!Setting new user_id failed!  (Does the user exist?)");
 	
