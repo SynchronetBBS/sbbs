@@ -2257,7 +2257,7 @@ BOOL DLLCALL get_msg_by_ftn_id(smb_t* smb, char* id, smbmsg_t* msg)
 {
 	ulong		n;
 	
-	for(n=0;n<smb->status.last_msg;n++) {
+	for(n=0;n<smb->status.total_msgs;n++) {
 		memset(msg,0,sizeof(smbmsg_t));
 		msg->offset=n;
 		if(smb_getmsgidx(smb, msg)!=0)
@@ -4125,14 +4125,8 @@ int main(int argc, char **argv)
 #endif
 		,revision
 		);
-#if 0
-	putenv("TZ=UTC0");
-#endif
 
 	putenv("TMP=");
-#if !defined(__unix__)
-	_fmode=O_BINARY;
-#endif
 	setvbuf(stdout,NULL,_IONBF,0);
 
 	sub_code[0]=0;
