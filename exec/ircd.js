@@ -468,7 +468,7 @@ function read_config_file() {
 	QLines = new Array();
 	ULines = new Array();
 	fname="";
-	if (config_filename)
+	if (config_filename && config_filename.length)
 		fname=system.ctrl_dir + config_filename;
 	else {
 		fname=system.ctrl_dir + "ircd." + system.local_host_name + ".conf";
@@ -479,6 +479,7 @@ function read_config_file() {
 	}
 	conf = new File(fname);
 	if (conf.open("r")) {
+		log("Reading " + fname);
 		while (!conf.eof) {
 			conf_line = conf.readln();
 			if (conf_line == null)
