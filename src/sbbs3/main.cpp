@@ -91,9 +91,13 @@ js_print(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		str = JS_ValueToString(cx, argv[i]);
 		if (!str)
 		    return JS_FALSE;
-		sbbs->bputs(JS_GetStringBytes(str));
+		if(sbbs->online==ON_LOCAL)
+			eprintf("%s",JS_GetStringBytes(str));
+		else
+			sbbs->bputs(JS_GetStringBytes(str));
 		}
-	sbbs->bputs(crlf);
+	if(sbbs->online==ON_REMOTE)
+		sbbs->bputs(crlf);
     return JS_TRUE;
 }
 
@@ -299,6 +303,10 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 	char	line[64];
 	char	file[MAX_PATH+1];
 	char*	warning;
+	sbbs_t*	sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return;
 	
 	if(report==NULL) {
 		lprintf("!JavaScript: %s", message);
@@ -323,10 +331,15 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 	} else
 		warning=nulstr;
 
-	lprintf("!JavaScript %s%s%s: %s",warning,file,line,message);
+	if(sbbs->online==ON_LOCAL) 
+		eprintf("!JavaScript %s%s%s: %s",warning,file,line,message);
+	else {
+		lprintf("!JavaScript %s%s%s: %s",warning,file,line,message);
+		sbbs->bprintf("!JavaScript %s%s%s: %s",warning,file,line,message);
+	}
 }
 
-#endif
+#endif	/* JAVASCRIPT */
 
 #ifdef _WINSOCKAPI_
 
@@ -1657,7 +1670,7 @@ bool sbbs_t::init()
 	if(!JS_SetProperty(js_cx, sysobj, "version_detail", &val))
 		return(FALSE);
 
-#endif
+#endif /* JAVASCRIPT */
 
 	/* Reset COMMAND SHELL */
 
