@@ -13,12 +13,12 @@ load("sbbsdefs.js");
 load("nodedefs.js");
 load("sockdefs.js");	// SOCK_DGRAM
 
+load("irclib.js");
+
 // Global vars
-//var irc_server="irc.lordlegacy.org";
-var irc_server="irc.thebbs.org";
-//var irc_server="irc.nexushosting.biz";
-var irc_port=6669;
-var default_channel="&"+system.name;
+var irc_server="irc.synchro.net";
+var irc_port=6667;
+var default_channel="#synchronet";
 var connect_timeout=15;	// Seconds
 var connected=0;
 var quit=0;
@@ -30,25 +30,40 @@ var real_names=true;
 console.ctrlkey_passthru=~(134217728);
 
 /* Command-line options go BEFORE command-line args */
-LOOP :
-while(1)  {
-	switch(argv[0])  {
+/* FIXME: there's got to be a better way to copy an array. */
+var irc_args = argv.join(" ").split(" ");
+var irc_theme = "irc-default.js";
+for (cmdarg=0;cmdarg<argc;cmdarg++) {
+	switch(argv[cmdarg]) {
 		case "-A":
 		case "-a":
 			real_names=false;
-			argv.shift();
+			irc_args.shift();
+			break;
+		case "-T":
+		case "-t":
+			irc_theme=argv[++cmdarg];
+			irc_args.shift();
+			irc_args.shift();
 			break;
 		default:
-			break LOOP;
+			break;
 	}
 }
+
+/* Where we store sysop-defined numeric formats */
+Numeric_Format = new Array;
+
+/* Load the defined theme. -- Cyan */
+load(irc_theme);
+
 /* Command-line args can override default server values */
-if(argv[0]!=undefined)
-	irc_server=argv[0];
-if(argv[1]!=undefined)
-	irc_port=Number(argv[1]);
-if(argv[2]!=undefined)
-	default_channel=argv[2];
+if(irc_args[0]!=undefined)
+	irc_server=irc_args[0];
+if(irc_args[1]!=undefined)
+	irc_port=Number(irc_args[1]);
+if(irc_args[2]!=undefined)
+	default_channel=irc_args[2];
 
 default_channel=default_channel.replace(/\s+/g,"_");
 
@@ -71,8 +86,7 @@ if(!sock.connect(irc_server,irc_port)) {
 	clean_exit();
 }
 
-// sock.send("PASS "+user.security.password+"\r\n");	// for futire use with JS IRC server
-sock.send("PASS \r\n");
+sock.send("PASS "+user.security.password+"\r\n");	// for use with JS IRC server
 if (nick=="")
 	nick=user.alias;
 nick=nick.replace(/\s+/g,"_");
@@ -125,6 +139,12 @@ function handle_command(prefix,command,message)  {
 	var tmp_str2=null;
 	var	i=0;
 
+	if (command.match(/^[0-9]+/) && Numeric_Format[command]) {
+		var narg = message.split(" ");
+		var narg_string = IRC_string(message);
+		return 0;
+	}
+
 	switch(command)  {
 		case "PING":
 			sock.send("PONG "+message[0]+"\r\n");
@@ -135,7 +155,7 @@ function handle_command(prefix,command,message)  {
 			full_message=message.join(" ");
 			full_message=full_message.substr(1);
 			full_message=full_message.replace(/\x01/g,"");
-			screen.print_line("\x01N\x01R$\x01N\x01W"+from_nick+"\x01N\x01R$\x01N\x01W "+full_message);
+			screen.print_line(printf(NOTICE_FORMAT,from_nick,full_message));
 			break;
 		case "KICK":
 			tmp_str=message.shift();
@@ -145,7 +165,7 @@ function handle_command(prefix,command,message)  {
 			if(tmp_str2.toUpperCase()==nick.toUpperCase())  {
 				channels.part(tmp_str,"");
 			}
-			screen.print_line("\x01N\x01R-\x01H\x01R- "+tmp_str2+" has been kicked from "+tmp_str+" ("+full_message+")");
+			screen.print_line(printf(KICK_FORMAT,tmp_str2,tmp_str,full_message));
 			break;
 		case "PRIVMSG":
 			if(message[1].substr(0,2)==":\x01")  {
@@ -160,17 +180,17 @@ function handle_command(prefix,command,message)  {
 					message[0]=message[0].toUpperCase();
 					if(channels.current != undefined)  {
 						if(message[0]==channels.current.name)  {
-							from_nick="\x01N\x01B<\x01N\x01W"+from_nick+"\x01N\x01B>\x01N\x01W";
+							from_nick=printf(FROM_NICK_CURCHAN,from_nick);
 						}
 						else  {
-							from_nick=from_nick+"\x01N\x01C-\x01H\x01C>\x01N\x01W";
+							from_nick=printf(MSG_FORMAT,from_nick);
 							if(message[0].slice(0,1)=="#" || message[0].slice(0,1)=="&")  {
 								from_nick=from_nick+"\x01N\x01C"+message[0]+":\x01N\x01W ";
 							}
 						}
 					}
 					else  {
-						from_nick="\x01N\x01B<\x01N\x01W"+from_nick+"\x01N\x01B>\x01N\x01W";
+						from_nick=printf(FROM_NICK_CURCHAN,from_nick);
 					}
 				}
 				message.shift();
@@ -187,26 +207,26 @@ function handle_command(prefix,command,message)  {
 			else  {
 				channels.nick_add(tmp_str,message[0].substr(1));
 			}
-			prefix=prefix.substr(1);
-			screen.print_line("\x01N\x01C"+from_nick+" ("+prefix+")"+" has joined "+message[0].substr(1));
+			prefix=prefix.split("!")[1];
+			screen.print_line(printf(JOIN_FORMAT,from_nick,prefix,message[0].substr(1)));
 			break;
 		case "QUIT":
 			from_nick=get_highlighted_nick(prefix,message);
 			tmp_str=get_nick(prefix);
-			prefix=prefix.substr(1);
+			prefix=prefix.split("!")[1];
 			full_message=message.shift();
 			full_message=full_message.substr(1);
-			screen.print_line(from_nick+" has quit "+channels.current.display+" ( "+full_message+" "+message.join(" ")+")");
+			screen.print_line(printf(QUIT_FORMAT,from_nick,channels.current.display,full_message+" "+message.join(" ")));
 			channels.nick_quit(tmp_str);
 			break;
 		case "NICK":
 			from_nick=get_highlighted_nick(prefix,message);
 			tmp_str2=get_nick(prefix);
-			prefix=prefix.substr(1);
+			prefix=prefix.split("!")[1];
 			tmp_str=message.shift();
 			tmp_str=tmp_str.substr(1);
 			tmp_str=tmp_str.split("!",1)[0]
-			screen.print_line(from_nick+" has changed nick to "+tmp_str);
+			screen.print_line(printf(NICK_FORMAT,from_nick,tmp_str));
 			if(tmp_str2.toUpperCase()==nick.toUpperCase())  {
 				nick=tmp_str;
 				screen.update_statline();
@@ -219,35 +239,31 @@ function handle_command(prefix,command,message)  {
 				tmp_str=message.shift();
 				tmp_str2=message.shift();
 				tmp_str2=tmp_str2.substr(1);
-				screen.print_line(from_nick+" has disconnected the server "+tmp_str+" ( "+tmp_str2+message.join(" ")+" )");
+				screen.print_line(printf(SQUIT_FROM_NICK,from_nick,tmp_str,tmp_str2+message.join(" ")));
 			}
 			else  {
 				tmp_str=message.shift();
 				tmp_str2=message.shift();
 				tmp_str2=tmp_str2.substr(1);
-				screen.print_line("The server "+tmp_str+" has disconnected ( "+tmp_str2+message.join(" ")+" )");
+				screen.print_line(SQUIT_FROM_SERVER,tmp_str,tmp_str2+message.join(" "));
 			}
 		case "PART":
 			from_nick=get_highlighted_nick(prefix,message);
 			tmp_str=get_nick(prefix);
-			prefix=prefix.substr(1);
-			screen.print_line(from_nick+" ("+prefix+")"+" has left "+message[0].substr(1));
+			prefix=prefix.split("!")[1];
+			screen.print_line(printf(PART_FORMAT,from_nick,prefix,message[0].substr(1)));
 			channels.nick_part(tmp_str,message[0].substr(1));
 			break;
 		case "MODE":
 			from_nick=get_highlighted_nick(prefix,message);
-			prefix=prefix.substr(1);
-			tmp_str=from_nick+" has set MODE "+message[0]+" for "+message[1];
-			if(message.length>1)  {
-				tmp_str=tmp_str+" Limit: "+message[1];
+			prefix=prefix.split("!")[1];
+			modestr="";
+			for (modeidx=1;modeidx<message.length;modeidx++) {
+				if (modeidx > 1)
+					modestr += " ";
+				modestr += message[modeidx];
 			}
-			if(message.length>2)  {
-				tmp_str=tmp_str+" User: "+message[2];
-			}
-			if(message.length>3)  {
-				tmp_str=tmp_str+" ("+message[3]+")";
-			}
-			screen.print_line(tmp_str);
+			screen.print_line(printf(MODE_FORMAT,from_nick,message[0],modestr));
 			break;
 		case "TOPIC":
 			from_nick=get_highlighted_nick(prefix,message);
@@ -258,7 +274,7 @@ function handle_command(prefix,command,message)  {
 				if(tmp_str.toUpperCase()==channels.channel[i].name)  {
 					channels.channel[i].topic=tmp_str2;
 					screen.update_statline();
-					screen.print_line(from_nick+" has changed the topic of "+tmp_str+" to '"+tmp_str2+"'");
+					screen.print_line(printf(TOPIC_FORMAT,from_nick,tmp_str,tmp_str2));
 				}
 			}
 			break;
@@ -1322,6 +1338,9 @@ function Screen_handle_key(key)  {
 			break;
 		case "\t":			// Tab
 			this.input_buffer=channels.current.matchnick(this.input_buffer);
+			// Always go to the end of the line on a tab. -- Cyan
+			var my_eol = this.input_buffer.length;
+			this.input_pos = my_eol;
 			this.update_input_line();
 			break;
 		default:
