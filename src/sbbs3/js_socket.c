@@ -753,7 +753,7 @@ js_recvline(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 			break;
 		}
 
-		if(ch=='\n' && i>=1) 
+		if(ch=='\n' /* && i>=1 */) /* Mar-9-2003: terminate on sole LF */
 			break;
 
 		buf[i++]=ch;
