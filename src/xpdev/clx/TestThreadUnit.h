@@ -20,7 +20,6 @@ public:
 	TSimpleEvent*	 ChildEvent;
     TSimpleEvent*	 ParentEvent;
 	__fastcall TTestThread(bool CreateSuspended);
-    __fastcall ~TTestThread();
 };
 //---------------------------------------------------------------------------
 #endif

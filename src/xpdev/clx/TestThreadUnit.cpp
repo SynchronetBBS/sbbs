@@ -12,12 +12,6 @@ __fastcall TTestThread::TTestThread(bool CreateSuspended)
     ParentEvent = new TSimpleEvent();
 }
 //---------------------------------------------------------------------------
-__fastcall TTestThread::~TTestThread()
-{
-	delete ChildEvent;
-    delete ParentEvent;
-}
-//---------------------------------------------------------------------------
 void __fastcall TTestThread::Execute()
 {
 	printf("TestThread::Execute() entry\n");
