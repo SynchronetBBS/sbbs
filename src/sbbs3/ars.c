@@ -263,6 +263,27 @@ uchar* arstr(ushort* count, char* str, scfg_t* cfg)
 				not=0;
 				ar[j++]=artype;
 				i+=2; }
+			else if(!strncmp(str+i,"WIN32",5)) {
+				artype=AR_WIN32;
+				if(not)
+					ar[j++]=AR_NOT;
+				not=0;
+				ar[j++]=artype;
+				i+=2; }
+			else if(!strncmp(str+i,"UNIX",4)) {
+				artype=AR_UNIX;
+				if(not)
+					ar[j++]=AR_NOT;
+				not=0;
+				ar[j++]=artype;
+				i+=2; }
+			else if(!strncmp(str+i,"LINUX",5)) {
+				artype=AR_LINUX;
+				if(not)
+					ar[j++]=AR_NOT;
+				not=0;
+				ar[j++]=artype;
+				i+=2; }
 			else if(!strncmp(str+i,"SUBCODE",7)) {
 				artype=AR_SUBCODE;
 				i+=6; }

@@ -789,6 +789,27 @@ static BOOL ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user)
 					result=!not;
 				#endif
 				break;
+			case AR_WIN32:
+				#ifndef _WIN32
+					result=not;
+				#else
+					result=!not;
+				#endif
+				break;
+			case AR_UNIX:
+				#ifndef __unix__
+					result=not;
+				#else
+					result=!not;
+				#endif
+				break;
+			case AR_LINUX:
+				#ifndef __linux__
+					result=not;
+				#else
+					result=!not;
+				#endif
+				break;
 			case AR_EXPERT:
 				if(!(user->misc&EXPERT))
 					result=not;
