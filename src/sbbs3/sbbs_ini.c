@@ -156,11 +156,14 @@ void sbbs_read_ini(
 	const char* default_term_ansi;
 	const char*	default_cgi_temp;
 	const char*	default_dosemu_path;
+	const char* strJavaScriptMaxBytes="JavaScriptMaxBytes";
+	const char* strSemFileCheckFrequency="SemFileCheckFrequency";
 	char*		ctrl_dir;
 	char*		temp_dir;
 	char		host_name[128];
 	char		value[MAX_VALUE_LEN];
 	ulong		js_max_bytes;
+	ushort		sem_chk_freq;
 
 	section = "Global";
 
@@ -180,7 +183,8 @@ void sbbs_read_ini(
 	}
 
 	SAFECOPY(host_name,iniGetString(fp,section,"HostName",nulstr,value));
-	js_max_bytes=iniGetInteger(fp,section,"JavaScriptMaxBytes",0);
+	js_max_bytes=iniGetInteger(fp,section,strJavaScriptMaxBytes,0);
+	sem_chk_freq=iniGetShortInt(fp,section,strSemFileCheckFrequency,0);
 																		
 	/***********************************************************************/
 	if(bbs!=NULL) {
@@ -210,10 +214,13 @@ void sbbs_read_ini(
 		bbs->outbuf_drain_timeout
 			=iniGetShortInt(fp,section,"OutbufDrainTimeout",10);
 
+		bbs->sem_chk_freq
+			=iniGetShortInt(fp,section,strSemFileCheckFrequency,sem_chk_freq);
+
 		bbs->xtrn_polls_before_yield
 			=iniGetInteger(fp,section,"ExternalYield",10);
 		bbs->js_max_bytes
-			=iniGetInteger(fp,section,"JavaScriptMaxBytes",js_max_bytes);
+			=iniGetInteger(fp,section,strJavaScriptMaxBytes,js_max_bytes);
 
 		SAFECOPY(bbs->host_name
 			,iniGetString(fp,section,"HostName",host_name,value));
@@ -267,8 +274,10 @@ void sbbs_read_ini(
 			=iniGetShortInt(fp,section,"MaxInactivity",300);	/* seconds */
 		ftp->qwk_timeout
 			=iniGetShortInt(fp,section,"QwkTimeout",600);		/* seconds */
+		ftp->sem_chk_freq
+			=iniGetShortInt(fp,section,strSemFileCheckFrequency,sem_chk_freq);
 		ftp->js_max_bytes
-			=iniGetInteger(fp,section,"JavaScriptMaxBytes",js_max_bytes);
+			=iniGetInteger(fp,section,strJavaScriptMaxBytes,js_max_bytes);
 
 		SAFECOPY(ftp->host_name
 			,iniGetString(fp,section,"HostName",host_name,value));
@@ -316,6 +325,8 @@ void sbbs_read_ini(
 			=iniGetShortInt(fp,section,"MaxDeliveryAttempts",50);
 		mail->rescan_frequency
 			=iniGetShortInt(fp,section,"RescanFrequency",3600);	/* 60 minutes */
+		mail->sem_chk_freq
+			=iniGetShortInt(fp,section,strSemFileCheckFrequency,sem_chk_freq);
 		mail->lines_per_yield
 			=iniGetShortInt(fp,section,"LinesPerYield",10);
 		mail->max_recipients
@@ -365,8 +376,11 @@ void sbbs_read_ini(
 		services->interface_addr
 			=iniGetIpAddress(fp,section,"Interface",INADDR_ANY);
 
+		services->sem_chk_freq
+			=iniGetShortInt(fp,section,strSemFileCheckFrequency,sem_chk_freq);
+
 		services->js_max_bytes
-			=iniGetInteger(fp,section,"JavaScriptMaxBytes",js_max_bytes);
+			=iniGetInteger(fp,section,strJavaScriptMaxBytes,js_max_bytes);
 
 		SAFECOPY(services->host_name
 			,iniGetString(fp,section,"HostName",host_name,value));
@@ -396,8 +410,10 @@ void sbbs_read_ini(
 			=iniGetIpAddress(fp,section,"Interface",INADDR_ANY);
 		web->port
 			=iniGetShortInt(fp,section,"Port",IPPORT_HTTP);
+		web->sem_chk_freq
+			=iniGetShortInt(fp,section,strSemFileCheckFrequency,sem_chk_freq);
 		web->js_max_bytes
-			=iniGetInteger(fp,section,"JavaScriptMaxBytes",js_max_bytes);
+			=iniGetInteger(fp,section,strJavaScriptMaxBytes,js_max_bytes);
 
 		SAFECOPY(web->host_name
 			,iniGetString(fp,section,"HostName",host_name,value));

@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -53,16 +53,10 @@ typedef struct {
 	WORD	relay_port;
 	WORD	lines_per_yield;
 	WORD	max_recipients;
+	WORD	sem_chk_freq;		/* semaphore file checking frequency (in seconds) */
     DWORD   interface_addr;
     DWORD	options;			/* See MAIL_OPT definitions */
     DWORD	max_msg_size;
-    DWORD	reserved_dword7;
-    DWORD	reserved_dword6;
-    DWORD	reserved_dword5;
-    DWORD	reserved_dword4;
-    DWORD	reserved_dword3;
-    DWORD	reserved_dword2;
-    DWORD	reserved_dword1;
 	int 	(*lputs)(char*);
 	void	(*status)(char*);
     void	(*started)(void);
@@ -72,19 +66,12 @@ typedef struct {
 	void	(*socket_open)(BOOL open);
     void	(*client_on)(BOOL on, int sock, client_t*, BOOL update);
     BOOL	(*seteuid)(BOOL user);
-    void	(*reserved_fptr3)(void);
-    void	(*reserved_fptr2)(void);
-    void	(*reserved_fptr1)(void);
     char    ctrl_dir[128];
     char	relay_server[128];
     char	dns_server[128];
     char	default_user[128];
     char	dnsbl_tag[32];		// Tag to add to blacklisted subject
 	char	dnsbl_hdr[32];		// Header field to add to msg header
-	char	reserved_string[64];
-    char	reserved_path6[128];
-    char	reserved_path5[128];
-    char	reserved_path4[128];
     char	proc_cfg_file[128];
 	char	inbound_sound[128];
 	char	outbound_sound[128];

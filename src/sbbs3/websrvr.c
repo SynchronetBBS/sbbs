@@ -2446,6 +2446,7 @@ void DLLCALL web_server(void* arg)
 	if(startup->root_dir[0]==0)				SAFECOPY(startup->root_dir,"../html");
 	if(startup->error_dir[0]==0)			SAFECOPY(startup->error_dir,"../html/error");
 	if(startup->max_inactivity==0) 			startup->max_inactivity=120; /* seconds */
+	if(startup->sem_chk_freq==0)			startup->sem_chk_freq=5; /* seconds */
 	if(startup->js_max_bytes==0)			startup->js_max_bytes=JAVASCRIPT_MAX_BYTES;
 	if(startup->ssjs_ext[0]==0)				SAFECOPY(startup->ssjs_ext,"ssjs");
 
@@ -2618,7 +2619,7 @@ void DLLCALL web_server(void* arg)
 			FD_SET(server_socket,&socket_set);
 			high_socket_set=server_socket+1;
 
-			tv.tv_sec=2;
+			tv.tv_sec=startup->sem_chk_freq;
 			tv.tv_usec=0;
 
 			if((i=select(high_socket_set,&socket_set,NULL,NULL,&tv))<1) {

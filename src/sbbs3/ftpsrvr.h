@@ -1,4 +1,4 @@
-/* FTPSRVR.H */
+/* ftpsrvr.h */
 
 /* Synchronet FTP server */
 
@@ -47,20 +47,10 @@ typedef struct {
 	WORD	max_clients;
 	WORD	max_inactivity;
 	WORD	qwk_timeout;
-	WORD	reserved_word4;
-	WORD	reserved_word3;
-	WORD	reserved_word2;
-	WORD	reserved_word1;
+	WORD	sem_chk_freq;		/* semaphore file checking frequency (in seconds) */
     DWORD   interface_addr;
     DWORD	options;			/* See FTP_OPT definitions */
     DWORD	js_max_bytes;
-    DWORD	reserved_dword7;
-    DWORD	reserved_dword6;
-    DWORD	reserved_dword5;
-    DWORD	reserved_dword4;
-    DWORD	reserved_dword3;
-    DWORD	reserved_dword2;
-    DWORD	reserved_dword1;
 	int 	(*lputs)(char*);
 	void	(*status)(char*);
     void	(*started)(void);
@@ -70,19 +60,11 @@ typedef struct {
 	void	(*socket_open)(BOOL open);
     void	(*client_on)(BOOL on, int sock, client_t*, BOOL update);
     BOOL	(*seteuid)(BOOL user);
-    void	(*reserved_fptr3)(void);
-    void	(*reserved_fptr2)(void);
-    void	(*reserved_fptr1)(void);
     char    ctrl_dir[128];
     char	index_file_name[64];
     char	html_index_file[64];
     char	html_index_script[64];
-    char	reserved_path8[64];
     char	temp_dir[128];
-    char	reserved_path6[128];
-    char	reserved_path5[128];
-    char	reserved_path4[128];
-    char	reserved_path3[128];
 	char	answer_sound[128];
 	char	hangup_sound[128];
     char	hack_sound[128];

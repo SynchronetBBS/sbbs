@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -46,19 +46,10 @@ typedef struct {
 	WORD	max_clients;
 	WORD	max_inactivity;
 	WORD	max_cgi_inactivity;
-	WORD	reserved_word3;
-	WORD	reserved_word2;
-	WORD	reserved_word1;
+	WORD	sem_chk_freq;		/* semaphore file checking frequency (in seconds) */
     DWORD   interface_addr;
     DWORD	options;
     DWORD	js_max_bytes;
-    DWORD	reserved_dword7;
-    DWORD	reserved_dword6;
-    DWORD	reserved_dword5;
-    DWORD	reserved_dword4;
-    DWORD	reserved_dword3;
-    DWORD	reserved_dword2;
-    DWORD	reserved_dword1;
 	int 	(*lputs)(char*);
 	void	(*status)(char*);
     void	(*started)(void);
@@ -68,23 +59,13 @@ typedef struct {
 	void	(*socket_open)(BOOL open);
     void	(*client_on)(BOOL on, int sock, client_t*, BOOL update);
     BOOL	(*seteuid)(BOOL user);
-    void	(*reserved_fptr3)(void);
-    void	(*reserved_fptr2)(void);
-    void	(*reserved_fptr1)(void);
-    char	reserved_filename[64];
 	char	ssjs_ext[16];			/* Server-Side JavaScript file extension */
-	char	reserved_ext[16];
 	char**	cgi_ext;				/* CGI Extensions */
     char    ctrl_dir[128];
     char	root_dir[128];
     char	error_dir[128];
     char	cgi_temp_dir[128];
     char**	index_file_name;		/* Index filenames */
-    char	reserved_path5[128];
-    char	reserved_path4[128];
-    char	reserved_path3[128];
-    char	reserved_path2[128];
-    char	reserved_path1[128];
     char	host_name[128];
 	BOOL	recycle_now;
 } web_startup_t;

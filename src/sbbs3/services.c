@@ -1299,6 +1299,7 @@ void DLLCALL services_thread(void* arg)
 	}
 
 	/* Setup intelligent defaults */
+	if(startup->sem_chk_freq==0)			startup->sem_chk_freq=5;
 	if(startup->js_max_bytes==0)			startup->js_max_bytes=JAVASCRIPT_MAX_BYTES;
 
 	uptime=0;
@@ -1519,7 +1520,7 @@ void DLLCALL services_thread(void* arg)
 				if(service[i].socket>high_socket)
 					high_socket=service[i].socket;
 			}
-			tv.tv_sec=2;
+			tv.tv_sec=startup->sem_chk_freq;
 			tv.tv_usec=0;
 			if((result=select(high_socket+1,&socket_set,NULL,NULL,&tv))<1) {
 				if(result==0)

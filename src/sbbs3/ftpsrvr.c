@@ -4472,6 +4472,7 @@ void DLLCALL ftp_server(void* arg)
 	if(startup->port==0)					startup->port=IPPORT_FTP;
 	if(startup->qwk_timeout==0)				startup->qwk_timeout=600;		/* seconds */
 	if(startup->max_inactivity==0)			startup->max_inactivity=300;	/* seconds */
+	if(startup->sem_chk_freq==0)			startup->sem_chk_freq=5;		/* seconds */
 	if(startup->index_file_name[0]==0)		SAFECOPY(startup->index_file_name,"00index");
 	if(startup->html_index_file[0]==0)		SAFECOPY(startup->html_index_file,"00index.html");
 	if(startup->html_index_script[0]==0) {	SAFECOPY(startup->html_index_script,"ftp-html.js");
@@ -4649,7 +4650,7 @@ void DLLCALL ftp_server(void* arg)
 			}
 			/* now wait for connection */
 
-			tv.tv_sec=2;
+			tv.tv_sec=startup->sem_chk_freq;
 			tv.tv_usec=0;
 
 			FD_ZERO(&socket_set);
