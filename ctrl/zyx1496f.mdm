@@ -1,6 +1,0 @@
-# This is for the ZyXEL U-1496 modem with FAX enabled
-# Updated 03/23/96 Digital Dynamics: Now uses verbal result codes
-
-INCLUDE 	ZYX1496
-INIT_STR	AT&FS0=0S2=128E0V1X4&C1&D2N0X6S35.7=1S38.5=1#B1
-SPEC_INIT	AT+FCLASS=6

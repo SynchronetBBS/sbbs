@@ -1,7 +1,0 @@
-# This is for the ViVa 9624E modem
-# Updated 03/23/96 Digital Dynamics: Now uses verbal result codes
-
-INCLUDE         GEN2400
-COM_RATE	57600
-LOCKED_RATE     YES
-FLOW_CONTROL    BOTH
