@@ -460,14 +460,14 @@ JSContext* js_initcx(SOCKET sock, JSObject** glob)
 	do {
 
 		lprintf("%04d JavaScript: Initializing Global object",sock);
-		if((js_glob=js_CreateGlobalObject(&scfg, js_cx))==NULL) 
+		if((js_glob=js_CreateGlobalObject(js_cx, &scfg))==NULL) 
 			break;
 
 		if (!JS_DefineFunctions(js_cx, js_glob, js_global_functions)) 
 			break;
 
 		lprintf("%04d JavaScript: Initializing System object",sock);
-		if((sysobj=js_CreateSystemObject(&scfg, js_cx, js_glob))==NULL) 
+		if((sysobj=js_CreateSystemObject(js_cx, js_glob, &scfg))==NULL) 
 			break;
 
 		sprintf(ver,"%s v%s",FTP_SERVER,FTP_VERSION);
@@ -2227,10 +2227,10 @@ static void ctrl_thread(void* arg)
 #ifdef JAVASCRIPT
 			JS_BeginRequest(js_cx);	/* Required for multi-thread support */
 
-			if((js_user=js_CreateUserObject(&scfg, js_cx, js_glob, "user", &user))==NULL) {
+			if((js_user=js_CreateUserObject(js_cx, js_glob, &scfg, "user", &user))==NULL) {
 				lprintf("%04d !JavaScript ERROR creating user object",sock);
 			}
-			if(js_CreateFileAreaObject(&scfg, js_cx, js_glob, &user
+			if(js_CreateFileAreaObject(js_cx, js_glob, &scfg, &user
 				,startup->html_index_file)==NULL) {
 				lprintf("%04d !JavaScript ERROR creating file area object",sock);
 			}
