@@ -1,15 +1,64 @@
 #include <windows.h>	/* INPUT_RECORD, etc. */
 #include <stdio.h>		/* stdin */
-#include "conio.h"
-#define CIOLIB_NO_MACROS
 #include "ciolib.h"
 #include "keys.h"
+#include "win32cio.h"
+
+const int 	cio_tabs[10]={9,17,25,33,41,49,57,65,73,80};
 
 static struct cio_mouse_event	cio_last_button_press;
 static struct cio_mouse_event	last_mouse_click;
 
 static int lastch=0;
 static int domouse=0;
+
+static int currattr=7;
+
+WORD DOStoWinAttr(int newattr)
+{
+	WORD ret=0;
+
+	if(newattr&0x01)
+		ret|=FOREGROUND_BLUE;
+	if(newattr&0x02)
+		ret|=FOREGROUND_GREEN;
+	if(newattr&0x04)
+		ret|=FOREGROUND_RED;
+	if(newattr&0x08)
+		ret|=FOREGROUND_INTENSITY;
+	if(newattr&0x10)
+		ret|=BACKGROUND_BLUE;
+	if(newattr&0x20)
+		ret|=BACKGROUND_GREEN;
+	if(newattr&0x40)
+		ret|=BACKGROUND_RED;
+	if(newattr&0x80)
+		ret|=BACKGROUND_INTENSITY;
+	return(ret);
+}
+
+unsigned char WintoDOSAttr(WORD newattr)
+{
+	unsigned char ret=0;
+
+	if(newattr&FOREGROUND_BLUE)
+		ret|=0x01;
+	if(newattr&FOREGROUND_GREEN)
+		ret|=0x02;
+	if(newattr&FOREGROUND_RED)
+		ret|=0x04;
+	if(newattr&FOREGROUND_INTENSITY)
+		ret|=0x08;
+	if(newattr&BACKGROUND_BLUE)
+		ret|=0x10;
+	if(newattr&BACKGROUND_GREEN)
+		ret|=0x20;
+	if(newattr&BACKGROUND_RED)
+		ret|=0x40;
+	if(newattr&BACKGROUND_INTENSITY)
+		ret|=0x80;
+	return(ret);
+}
 
 int win32_kbhit(void)
 {
@@ -141,7 +190,7 @@ int win32_initciolib(long inmode)
 
 	if(!isatty(fileno(stdin)))
 		return(0);
-	textmode(inmode);
+	win32_textmode(inmode);
 	if(!GetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), &conmode))
 		return(0);
 	conmode&=~ENABLE_PROCESSED_INPUT;
@@ -172,102 +221,198 @@ int win32_showmouse(void)
 	return(0);
 }
 
-#if !defined(__BORLANDC__)
-
-void textmode(int mode)
+void win32_textmode(int mode)
 {
 }
 
-void clreol(void)
+int win32_gettext(int left, int top, int right, int bottom, void* buf)
 {
-}
+	CHAR_INFO *ci;
+	int	x;
+	int	y;
+	COORD	bs;
+	COORD	bc;
+	SMALL_RECT	reg;
+	unsigned char	*bu;
 
-void clrscr(void)
-{
-}
-
-void delline(void)
-{
-}
-
-
-int gettext(int left, int top, int right, int bottom, void* buf)
-{
+	bu=buf;
+	bs.X=right-left+1;
+	bs.Y=bottom-top+1;
+	bc.X=0;
+	bc.Y=0;
+	reg.Left=left-1;
+	reg.Right=right-1;
+	reg.Top=top-1;
+	reg.Bottom=bottom-1;
+	ci=(CHAR_INFO *)malloc(sizeof(CHAR_INFO)*(bs.X*bs.Y));
+	ReadConsoleOutput(GetStdHandle(STD_OUTPUT_HANDLE),ci,bs,bc,&reg);
+	for(y=0;y<=(bottom-top);y++) {
+		for(x=0;x<=(right-left);x++) {
+			bu[((y*bs.X)+x)*2]=ci[(y*bs.X)+x].Char.AsciiChar;
+			bu[(((y*bs.X)+x)*2)+1]=WintoDOSAttr(ci[(y*bs.X)+x].Attributes);
+		}
+	}
+	free(ci);
 	return 1;
 }
 
-void gettextinfo(struct text_info* info)
+void win32_gettextinfo(struct text_info* info)
 {
+	CONSOLE_SCREEN_BUFFER_INFO bi;
+
+	GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE),&bi);
+
+	/* ToDo Fix this! */
+	info->currmode=C80;
+	info->curx=bi.dwCursorPosition.X+1;
+	info->cury=bi.dwCursorPosition.Y+1;
+	info->attribute=currattr;
+	info->screenheight=bi.dwSize.Y;
+	info->screenwidth=bi.dwSize.X;
+}
+
+void win32_gotoxy(int x, int y)
+{
+	COORD	cp;
+
+	cp.X=x-1;
+	cp.Y=y-1;
+	SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE),cp);
+}
+
+void win32_highvideo(void)
+{
+	win32_textattr(currattr|0x08);
 }
 
 
-void gotoxy(int x, int y)
+void win32_lowvideo(void)
 {
+	win32_textattr(currattr&0xf8);
 }
 
 
-void highvideo(void)
+void win32_normvideo(void)
 {
+	win32_textattr(7);
 }
 
-
-void insline(void)
+int win32_puttext(int left, int top, int right, int bottom, void* buf)
 {
-}
+	CHAR_INFO *ci;
+	int	x;
+	int	y;
+	COORD	bs;
+	COORD	bc;
+	SMALL_RECT	reg;
+	unsigned char	*bu;
 
-
-void lowvideo(void)
-{
-}
-
-
-int movetext(int left, int top, int right, int bottom, int destleft, int desttop)
-{
+	bu=buf;
+	bs.X=right-left+1;
+	bs.Y=bottom-top+1;
+	bc.X=0;
+	bc.Y=0;
+	reg.Left=left-1;
+	reg.Right=right-1;
+	reg.Top=top-1;
+	reg.Bottom=bottom-1;
+	ci=(CHAR_INFO *)malloc(sizeof(CHAR_INFO)*(bs.X*bs.Y));
+	for(y=0;y<bs.Y;y++) {
+		for(x=0;x<bs.X;x++) {
+			ci[(y*bs.X)+x].Char.AsciiChar=bu[((y*bs.X)+x)*2];
+			ci[(y*bs.X)+x].Attributes=DOStoWinAttr(bu[(((y*bs.X)+x)*2)+1]);
+		}
+	}
+	WriteConsoleOutput(GetStdHandle(STD_OUTPUT_HANDLE),ci,bs,bc,&reg);
+	free(ci);
 	return 1;
 }
 
-
-void normvideo(void)
+void win32_textattr(int newattr)
 {
+	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE),DOStoWinAttr(newattr));
+	currattr=newattr;
 }
 
 
-int puttext(int left, int top, int right, int bottom, void* buf)
+void win32_textbackground(int newcolor)
 {
-	return 1;
+	win32_textattr((currattr&0x0f)|((newcolor&0xf0)<<4));
 }
 
 
-void textattr(int newattr)
+void win32_textcolor(int newcolor)
 {
+	win32_textattr((currattr&0xf0)|((newcolor&0x0f)<<4));
 }
 
-
-void textbackground(int newcolor)
+void win32_setcursortype(int type)
 {
+	CONSOLE_CURSOR_INFO	ci;
+
+	switch(type) {
+		case _NOCURSOR:
+			ci.bVisible=FALSE;
+			break;
+		
+		case _SOLIDCURSOR:
+			ci.bVisible=TRUE;
+			ci.dwSize=100;
+			break;
+		
+		default:	/* Normal cursor */
+			ci.bVisible=TRUE;
+			ci.dwSize=13;
+			break;
+	}
+	SetConsoleCursorInfo(GetStdHandle(STD_OUTPUT_HANDLE),&ci);
 }
 
-
-void textcolor(int newcolor)
+int win32_wherex(void)
 {
+	CONSOLE_SCREEN_BUFFER_INFO bi;
+
+	GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE),&bi);
+	return bi.dwCursorPosition.X+1;
 }
 
-void window(int left, int top, int right, int bottom)
+int win32_wherey(void)
 {
+	CONSOLE_SCREEN_BUFFER_INFO bi;
+
+	GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE),&bi);
+	return bi.dwCursorPosition.Y+1;
 }
 
-void _setcursortype(int type)
+int win32_putch(int ch)
 {
-}
+	struct text_info ti;
+	WORD sch;
+	int i;
+	unsigned char buf[2];
+	DWORD wr;
 
-int wherex(void)
-{
-	return 0;
-}
+	buf[0]=ch;
+	buf[1]=currattr;
 
-int wherey(void)
-{
-	return 0;
+	win32_gettextinfo(&ti);
+	switch(ch) {
+		case '\r':
+			gotoxy(1,ti.cury);
+			return('\r');
+		case '\n':
+			if(ti.cury==ti.screenheight) {
+				if(_wscroll)
+					wscroll();
+				gotoxy(ti.curx,ti.cury);
+				return('\n');
+			}
+			gotoxy(ti.curx,ti.cury+1);
+			return('\n');
+		default:
+			if(ti.curx==ti.screenwidth && ti.cury==ti.screenheight && !_wscroll)
+				return(0);
+			WriteConsole(GetStdHandle(STD_OUTPUT_HANDLE),buf,1,&wr,NULL);
+			return(ch);
+	}
 }
-
-#endif

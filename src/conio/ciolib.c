@@ -161,19 +161,19 @@ int try_conio_init(int mode)
 	if(win32_initciolib(mode)) {
 		cio_api.mode=CIOLIB_MODE_CONIO;
 		cio_api.mouse=1;
-		cio_api.puttext=puttext;
-		cio_api.gettext=gettext;
-		cio_api.textattr=textattr;
+		cio_api.puttext=win32_puttext;
+		cio_api.gettext=win32_gettext;
+		cio_api.textattr=win32_textattr;
 		cio_api.kbhit=win32_kbhit;
-		cio_api.wherey=wherey;
-		cio_api.wherex=wherex;
-		cio_api.putch=putch;
-		cio_api.gotoxy=gotoxy;
-		cio_api.gettextinfo=gettextinfo;
-		cio_api.setcursortype=_setcursortype;
+		cio_api.wherey=win32_wherey;
+		cio_api.wherex=win32_wherex;
+		cio_api.putch=win32_putch;
+		cio_api.gotoxy=win32_gotoxy;
+		cio_api.gettextinfo=win32_gettextinfo;
+		cio_api.setcursortype=win32_setcursortype;
 		cio_api.getch=win32_getch;
 		cio_api.getche=win32_getche;
-		cio_api.textmode=textmode;
+		cio_api.textmode=win32_textmode;
 		cio_api.getmouse=win32_getmouse;
 		cio_api.showmouse=win32_showmouse;
 		cio_api.hidemouse=win32_hidemouse;
@@ -729,7 +729,7 @@ void ciolib_delay(long a)
 int ciolib_putch(unsigned char a)
 {
 	CIOLIB_INIT();
-	
+
 	return(cio_api.putch(a));
 }
 
