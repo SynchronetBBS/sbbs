@@ -36,7 +36,6 @@
  ****************************************************************************/
 
 #include "sbbs.h"
-#include "post.h"
 #include "qwk.h"
 
 /****************************************************************************/
@@ -102,7 +101,8 @@ bool sbbs_t::pack_rep(uint hubnum)
 		for(l=0;(ulong)l<mailmsgs;l++) {
 	//		bprintf("\b\b\b\b\b%-5lu",l+1);
 
-			msg.idx.offset=mail[l].offset;
+			memset(&msg,0,sizeof(msg));
+			msg.idx=mail[l];
 			if(!loadmsg(&msg,mail[l].number))
 				continue;
 
@@ -161,7 +161,8 @@ bool sbbs_t::pack_rep(uint hubnum)
 		for(l=0;l<posts;l++) {
 	//		bprintf("\b\b\b\b\b%-5lu",l+1);
 
-			msg.idx.offset=post[l].offset;
+			memset(&msg,0,sizeof(msg));
+			msg.idx=post[l];
 			if(!loadmsg(&msg,post[l].number))
 				continue;
 
@@ -270,7 +271,8 @@ bool sbbs_t::pack_rep(uint hubnum)
 		for(l=0;(ulong)l<mailmsgs;l++) {
 			if(mail[l].time>qwkmail_time)
 				continue;
-			msg.idx.offset=0;
+			memset(&msg,0,sizeof(msg));
+			msg.idx=mail[l];
 			if(!loadmsg(&msg,mail[l].number))
 				continue;
 
