@@ -90,7 +90,15 @@ bool sbbs_t::answer()
 				str2[i]=in;
 			}
 			str2[i]=0;
-			lprintf("Node %d RLogin: '%s' / '%s'",cfg.node_num,str,str2);
+			for(i=0;i<sizeof(terminal)-1;i++) {
+				in=incom(1000);
+				if(in==0 || in==NOINP)
+					break;
+				terminal[i]=in;
+			}
+			terminal[i]=0;
+			truncstr(terminal,"/");
+			lprintf("Node %d RLogin: '%s' / '%s / %s'",cfg.node_num,str,str2,terminal);
 			strcpy(rlogin_name
 				,startup->options&BBS_OPT_USE_2ND_RLOGIN ? str2 : str);
 			useron.number=userdatdupe(0, U_ALIAS, LEN_ALIAS, rlogin_name, 0);
@@ -159,6 +167,8 @@ bool sbbs_t::answer()
 
     if(l) {
         if(str[0]==ESC && str[1]=='[') {
+			if(terminal[0]==0)
+				SAFECOPY(terminal,"ansi");
 			autoterm|=(ANSI|COLOR);
             rows=atoi(str+2);
 			lprintf("Node %d ANSI cursor position report: %u rows"
@@ -167,17 +177,26 @@ bool sbbs_t::answer()
 		}
 		truncsp(str);
 		if(strstr(str,"RIPSCRIP")) {
+			if(terminal[0]==0)
+				SAFECOPY(terminal,"rip");
 			logline("@R",strstr(str,"RIPSCRIP"));
 			autoterm|=(RIP|COLOR|ANSI); }
 		else if(strstr(str,"DC-TERM")
 			&& toupper(*(strstr(str,"DC-TERM")+12))=='W') {
+			if(terminal[0]==0)
+				SAFECOPY(terminal,"wip");
 			logline("@W",strstr(str,"DC-TERM"));
 			autoterm|=(WIP|COLOR|ANSI); }
 		else if(strstr(str,"!HTML!"))  {
+			if(terminal[0]==0)
+				SAFECOPY(terminal,"html");
 			logline("@H",strstr(str,"!HTML!"));
 			autoterm|=HTML;
 		} 
 	}
+	else if(terminal[0]==0)
+		SAFECOPY(terminal,"dumb");
+
 	rioctl(IOFI); /* flush left-over or late response chars */
 
 	if(!autoterm && str[0]) {
