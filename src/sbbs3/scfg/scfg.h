@@ -110,7 +110,6 @@ char code_ok(char *str);
 int  bits(long l);
 char oneflag(long l);
 void getar(char *desc, char *ar);
-char *ultoac(ulong l,char *str);
 
 /* scfgnet.h */
 faddr_t atofaddr(char *str);
