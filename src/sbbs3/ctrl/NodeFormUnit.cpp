@@ -196,8 +196,9 @@ void __fastcall TNodeForm::TimerTick(TObject *Sender)
                 strcat(str,"Waiting for all nodes to become inactive");
                 break;
             case NODE_EVENT_LIMBO:
-                sprintf(str,"Waiting for node %d to finish external event"
+                sprintf(tmp,"Waiting for node %d to finish external event"
                 	,node.aux);
+                strcat(str,tmp);
                 break;
             case NODE_EVENT_RUNNING:
                 strcat(str,"Running external event");
