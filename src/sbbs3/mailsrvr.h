@@ -55,7 +55,7 @@ typedef struct {
 	WORD	max_recipients;
     DWORD   interface_addr;
     DWORD	options;			/* See MAIL_OPT definitions */
-    DWORD	reserved_dword8;
+    DWORD	max_msg_size;
     DWORD	reserved_dword7;
     DWORD	reserved_dword6;
     DWORD	reserved_dword5;
