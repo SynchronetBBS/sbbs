@@ -1962,12 +1962,6 @@ ulong loadmsgs(post_t HUGE16 **post, ulong ptr)
 	return(l);
 }
 
-void allocfail(uint size)
-{
-	printf("\7ERROR allocating %u bytes of memory.\n",size);
-	bail(1);
-}
-
 void bail(int code)
 {
 	if(code || pause_on_exit) {

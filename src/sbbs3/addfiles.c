@@ -167,12 +167,6 @@ char *cmdstr(char *instr, char *fpath, char *fspec, char *outstr)
 	return(cmd);
 }
 
-void allocfail(uint size)
-{
-	lprintf("\7Error allocating %u bytes of memory.\r\n",size);
-	exit(1);
-}
-
 /****************************************************************************/
 /* Updates dstst.dab file													*/
 /****************************************************************************/
