@@ -494,11 +494,13 @@ typedef struct _PACK {
 
 	ulong	number;					/* Message number */
 	ulong	time;					/* Local time of fingerprinting */
+	ulong	length;					/* Length (in bytes) of source */
 	uchar	source;					/* SMB_HASH_SOURCE* (in low 5-bits) */
 	uchar	flags;					/* indications of valid hashes and pre-processing */
 	ushort	crc16;					/* CRC-16 of source */
 	ulong	crc32;					/* CRC-32 of source */
 	uchar	md5[MD5_DIGEST_SIZE];	/* MD5 digest of source */
+	uchar	reserved[28];			/* sizeof(hash_t) = 64 */
 
 } hash_t;
 

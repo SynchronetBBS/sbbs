@@ -78,6 +78,8 @@ int SMBCALL smb_findhash(smb_t* smb, hash_t** compare, hash_t* found_hash,
 
 				if(compare[c]->source!=hash.source)
 					continue;	/* wrong source */
+				if(compare[c]->length!=hash.length)
+					continue;	/* wrong source length */
 				if(compare[c]->flags&SMB_HASH_MARKED)
 					continue;	/* already marked */
 				if((compare[c]->flags&SMB_HASH_PROC_MASK)!=(hash.flags&SMB_HASH_PROC_MASK))
@@ -180,6 +182,7 @@ hash_t* SMBCALL smb_hash(ulong msgnum, ulong t, unsigned source, unsigned flags
 
 	hash->number=msgnum;
 	hash->time=t;
+	hash->length=length;
 	hash->source=source;
 	hash->flags=flags;
 	if(flags&SMB_HASH_CRC16)
