@@ -1166,7 +1166,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 
 		fclose(doscmdrc);
 		SAFECOPY(str,cmdline);
-		sprintf(cmdline,"/usr/bin/doscmd -F %s",str);
+		sprintf(cmdline,"%s -F %s",startup->dosemu_path,str);
 #endif
 	}
 
@@ -1222,7 +1222,10 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 		sigprocmask(SIG_UNBLOCK,&sigs,NULL);
 		if(!(mode&EX_BIN))  {
 			static char	term_env[256];
-			sprintf(term_env,"TERM=%s",startup->xtrn_term);
+			if(useron.misc&ANSI)
+				sprintf(term_env,"TERM=%s",startup->xtrn_term_ansi);
+			else
+				sprintf(term_env,"TERM=%s",startup->xtrn_term_dumb);
 			putenv(term_env);
 		}
 #ifdef __FreeBSD__

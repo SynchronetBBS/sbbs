@@ -80,7 +80,7 @@ typedef struct {
     void	(*reserved_fptr2)(void);
     void	(*reserved_fptr1)(void);
     char    ctrl_dir[128];
-    char	reserved_path8[128];
+    char	dosemu_path[128];
     char	reserved_path7[128];
     char	reserved_path6[128];
     char	reserved_path5[128];
@@ -88,8 +88,8 @@ typedef struct {
     char	reserved_path3[128];
 	char	answer_sound[128];
 	char	hangup_sound[128];
-	char	xtrn_term[32];			/* external terminal type (e.g. "ansi-bbs") */
-	char	reserved_str2[32];
+	char	xtrn_term_ansi[32];		/* external ANSI terminal type (e.g. "ansi-bbs") */
+	char	xtrn_term_dumb[32];		/* external dumb terminal type (e.g. "dumb") */
     char	reserved_str1[64];
     char	host_name[128];
 	BOOL	recycle_now;

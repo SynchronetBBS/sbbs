@@ -150,7 +150,7 @@ void sbbs_read_ini(
 	)
 {
 	const char*	section;
-	const char* default_term;
+	const char* default_term_ansi;
 	const char*	default_cgi_temp;
 	char*		ctrl_dir;
 	char		host_name[128];
@@ -183,7 +183,7 @@ void sbbs_read_ini(
 	bbs->rlogin_interface
 		=iniReadIpAddress(fp,section,"RLoginInterface",INADDR_ANY);
 	bbs->rlogin_port
-		=iniReadShortInt(fp,section,"RloginPort",513);
+		=iniReadShortInt(fp,section,"RLoginPort",513);
 
 	bbs->first_node
 		=iniReadShortInt(fp,section,"FirstNode",1);
@@ -197,16 +197,27 @@ void sbbs_read_ini(
 
 	/* Set default terminal type to "stock" termcap closest to "ansi-bbs" */
 #if defined(__FreeBSD__)
-	default_term="cons25";
+	default_term_ansi="cons25";
 #else
-	default_term="pc3";
+	default_term_ansi="pc3";
 #endif
 
 	SAFECOPY(bbs->host_name
 		,iniReadString(fp,section,"HostName",host_name));
 
-	SAFECOPY(bbs->xtrn_term
-		,iniReadString(fp,section,"ExternalTerm",default_term));
+	SAFECOPY(bbs->xtrn_term_ansi
+		,iniReadString(fp,section,"ExternalTermANSI",default_term_ansi));
+	SAFECOPY(bbs->xtrn_term_dumb
+		,iniReadString(fp,section,"ExternalTermDumb","dumb"));
+
+	SAFECOPY(bbs->dosemu_path
+		,iniReadString(fp,section,"DOSemuPath"
+#if defined(__FreeBSD__)
+		,"/usr/bin/doscmd"
+#else
+		,"/usr/bin/dosemu"
+#endif
+		);
 
 	SAFECOPY(bbs->answer_sound
 		,iniReadString(fp,section,"AnswerSound",nulstr));
