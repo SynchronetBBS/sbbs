@@ -10,7 +10,7 @@ const REVISION = "$Revision$".split(' ')[1];
 
 printf("Synchronet Dynamic DNS Client %s\r\n", REVISION);
 
-host_list=["cvs.synchro.net", "vert.synchro.net", "rob.synchro.net"];
+host_list=["vert.synchro.net", "rob.synchro.net", "bbs.synchro.net", "cvs.synchro.net"];
 
 function writeln(str)
 {
