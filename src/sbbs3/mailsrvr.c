@@ -677,10 +677,15 @@ static void pop3_thread(void* arg)
 		sockprintf(socket,"+OK Synchronet POP3 Server for %s v%s Ready"
 			,PLATFORM_DESC,MAIL_VERSION);
 
-		if(!sockgetrsp(socket,"USER ",buf,sizeof(buf))) {
+		/* Requires USER command first */
+		for(i=3;i;i--) {
+			if(sockgetrsp(socket,"USER ",buf,sizeof(buf)))
+				break;
 			sockprintf(socket,"-ERR USER command expected");
-			break;
 		}
+		if(!i)	/* no USER command received */
+			break;
+
 		p=buf+5;
 		while(*p && *p<=' ') p++;
 		SAFECOPY(username,p);
