@@ -17,7 +17,9 @@ Answers to Frequently Asked Questions
 =====================================
 
 Q. What flavors of Unix (and Unix-like operating systems) are supported?
-A. Currently, Linux, FreeBSD, OpenBSD, NetBSD, QNX and Solaris-x86.
+A. Currently, Linux, FreeBSD, OpenBSD, and NetBSD are actively supported.
+   Additionally, QNX and Solaris-x86 have been known to work in the past,
+   but are not actively maintained.
 
 Q. What distributions of Linux are supported?
 A. Should work with any GNU/Linux-x86 distribution (e.g. RedHat, Mandrake, 
