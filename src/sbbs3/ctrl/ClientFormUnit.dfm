@@ -49,8 +49,8 @@ object ClientForm: TClientForm
         Width = 55
       end
       item
+        AutoSize = True
         Caption = 'Time'
-        Width = 55
       end>
     MultiSelect = True
     ReadOnly = True
