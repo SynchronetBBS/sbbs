@@ -55,6 +55,7 @@
 #define NTSVC_TIMEOUT_STARTUP	30000	/* Milliseconds */
 #define NTSVC_TIMEOUT_TERMINATE	30000	/* Milliseconds */
 
+
 static void WINAPI bbs_ctrl_handler(DWORD dwCtrlCode);
 static void WINAPI ftp_ctrl_handler(DWORD dwCtrlCode);
 static void WINAPI web_ctrl_handler(DWORD dwCtrlCode);
@@ -75,10 +76,12 @@ typedef struct {
 	char*					description;
 	void*					startup;
 	BOOL*					recycle_now;
+	DWORD*					log_mask;
 	void					(*thread)(void* arg);
 	void					(*terminate)(void);
 	void					(WINAPI *ctrl_handler)(DWORD);
 	HANDLE					log_handle;
+	HANDLE					event_handle;
 	BOOL					autostart;
 	BOOL					debug;
 	SERVICE_STATUS			status;
@@ -92,6 +95,7 @@ sbbs_ntsvc_t bbs ={
 		"This service provides the critical functions of your Synchronet BBS.",
 	&bbs_startup,
 	&bbs_startup.recycle_now,
+	&bbs_startup.log_mask,
 	bbs_thread,
 	bbs_terminate,
 	bbs_ctrl_handler,
@@ -108,6 +112,7 @@ sbbs_ntsvc_t event ={
 	NULL,
 	NULL,
 	NULL,
+	NULL,
 	INVALID_HANDLE_VALUE
 };
 
@@ -117,6 +122,7 @@ sbbs_ntsvc_t ftp = {
 	"Provides support for FTP clients (including web browsers) for file transfers.",
 	&ftp_startup,
 	&ftp_startup.recycle_now,
+	&ftp_startup.log_mask,
 	ftp_server,
 	ftp_terminate,
 	ftp_ctrl_handler,
@@ -130,6 +136,7 @@ sbbs_ntsvc_t web = {
 	"Provides support for Web (HTML/HTTP) clients (browsers).",
 	&web_startup,
 	&web_startup.recycle_now,
+	&web_startup.log_mask,
 	web_server,
 	web_terminate,
 	web_ctrl_handler,
@@ -144,6 +151,7 @@ sbbs_ntsvc_t mail = {
 		"access their e-mail using an Internet mail client (using POP3).",
 	&mail_startup,
 	&mail_startup.recycle_now,
+	&mail_startup.log_mask,
 	mail_server,
 	mail_terminate,
 	mail_ctrl_handler,
@@ -159,6 +167,7 @@ sbbs_ntsvc_t services = {
 		"file for configuration of individual Synchronet Services.",
 	&services_startup,
 	&services_startup.recycle_now,
+	&services_startup.log_mask,
 	services_thread,
 	services_terminate,
 	services_ctrl_handler,
@@ -253,6 +262,26 @@ static void WINAPI services_ctrl_handler(DWORD dwCtrlCode)
 }
 #endif
 
+static WORD event_type(int level)
+{
+	switch(level) {
+		case LOG_WARNING:
+			return(EVENTLOG_WARNING_TYPE);
+		case LOG_NOTICE:
+			return(EVENTLOG_SUCCESS);
+		case LOG_INFO:
+		case LOG_DEBUG:
+			return(EVENTLOG_INFORMATION_TYPE);
+	}
+/*
+	LOG_EMERG
+	LOG_ALERT
+	LOG_CRIT
+	LOG_ERR
+*/
+	return(EVENTLOG_ERROR_TYPE);
+}
+
 /**************************************/
 /* Common Service Log Ouptut Function */
 /**************************************/
@@ -264,6 +293,7 @@ static int svc_lputs(void* p, int level, char* str)
 	DWORD	wr;
 	sbbs_ntsvc_t* svc = (sbbs_ntsvc_t*)p;
 
+	/* Debug Logging */
 	if(svc==NULL || svc->debug) {
 		snprintf(debug,sizeof(debug),"%s: %s",svc==NULL ? "Synchronet" : svc->name, str);
 		OutputDebugString(debug);
@@ -273,8 +303,8 @@ static int svc_lputs(void* p, int level, char* str)
 
 	len = strlen(str);
 
-	/* Invalid log handle? */
-	if(svc->log_handle != INVALID_HANDLE_VALUE
+	/* Mailslot Logging (for sbbsctrl) */
+	if(svc->log_handle != INVALID_HANDLE_VALUE /* Invalid log handle? */
 		&& !GetMailslotInfo(svc->log_handle, NULL, NULL, NULL, NULL)) {
 		/* Close and try to re-open */
 		CloseHandle(svc->log_handle);
@@ -304,6 +334,26 @@ static int svc_lputs(void* p, int level, char* str)
 			svc->log_handle=INVALID_HANDLE_VALUE;
 		}
 	}
+	
+	/* Event Logging */
+	if((*svc->log_mask)&(1<<level)) {
+		if(svc->event_handle == NULL)
+			svc->event_handle = RegisterEventSource(
+				NULL,		// server name for source (NULL = local computer)
+				svc->name   // source name for registered handle
+				);
+		if(svc->event_handle != NULL)
+			ReportEvent(svc->event_handle,  // event log handle
+				event_type(level),		// event type
+				0,						// category zero
+				0,						// event identifier
+				NULL,					// no user security identifier
+				1,						// one string
+				0,						// no data
+				&str,					// pointer to string array
+				NULL);					// pointer to data
+	}
+
     return(0);
 }
 
@@ -362,6 +412,8 @@ static void WINAPI svc_main(sbbs_ntsvc_t* svc, DWORD argc, LPTSTR *argv)
 			arg++;
 		if(!stricmp(arg,"debug"))
 			svc->debug=TRUE;
+		if(!stricmp(arg,"logmask") && i+1<argc)
+			(*svc->log_mask)=strtol(argv[++i],NULL,0);
 	}
 
 	sprintf(str,"Starting NT Service: %s",svc->display_name);
@@ -389,6 +441,11 @@ static void WINAPI svc_main(sbbs_ntsvc_t* svc, DWORD argc, LPTSTR *argv)
 	if(svc->log_handle!=INVALID_HANDLE_VALUE) {
 		CloseHandle(svc->log_handle);
 		svc->log_handle=INVALID_HANDLE_VALUE;
+	}
+
+	if(svc->event_handle!=NULL) {
+		DeregisterEventSource(svc->event_handle);
+		svc->event_handle=NULL;
 	}
 }
 
