@@ -43,14 +43,16 @@
 #include "ini_file.h"
 
 /* Maximum length of entire line, includes '\0' */
-#define INI_MAX_LINE_LEN	(INI_MAX_VALUE_LEN*2)
-
-#define NEW_SECTION	((char*)~0)
+#define INI_MAX_LINE_LEN		(INI_MAX_VALUE_LEN*2)
+#define INI_COMMENT_CHAR		';'
+#define INI_OPEN_SECTION_CHAR	'['
+#define INI_CLOSE_SECTION_CHAR	']'
+#define INI_NEW_SECTION			((char*)~0)
 
 static ini_style_t default_style;
 
 /****************************************************************************/
-/* Truncates white-space chars off end of 'str'								*/
+/* Truncates all white-space chars off end of 'str'							*/
 /****************************************************************************/
 static void truncsp(char *str)
 {
@@ -61,16 +63,28 @@ static void truncsp(char *str)
 	str[c]=0;
 }
 
+/****************************************************************************/
+/* Truncates carriage-return and line-feed chars off end of 'str'			*/
+/****************************************************************************/
+static void truncnl(char *str)
+{
+	uint c;
+
+	c=strlen(str);
+	while(c && (str[c-1]=='\r' || str[c-1]=='\n')) c--;
+	str[c]=0;
+}
+
 static char* section_name(char* p)
 {
 	char*	tp;
 
 	SKIP_WHITESPACE(p);
-	if(*p!='[')
+	if(*p!=INI_OPEN_SECTION_CHAR)
 		return(NULL);
 	p++;
 	SKIP_WHITESPACE(p);
-	tp=strchr(p,']');
+	tp=strrchr(p,INI_CLOSE_SECTION_CHAR);
 	if(tp==NULL)
 		return(NULL);
 	*tp=0;
@@ -120,22 +134,36 @@ static size_t find_section_index(str_list_t list, const char* section)
 
 static char* key_name(char* p, char** vp)
 {
+	char* equal;
+	char* colon;
+
 	/* Parse value name */
 	SKIP_WHITESPACE(p);
-	if(*p==';')
+	if(*p==INI_COMMENT_CHAR)
 		return(NULL);
-	if(*p=='[')
-		return(NEW_SECTION);
-	*vp=strchr(p,'=');
+	if(*p==INI_OPEN_SECTION_CHAR)
+		return(INI_NEW_SECTION);
+	equal=strchr(p,'=');
+	colon=strchr(p,':');
+	if(colon==NULL || (equal!=NULL && equal<colon)) {
+		*vp=equal;
+		colon=NULL;
+	} else
+		*vp=colon;
+
 	if(*vp==NULL)
 		return(NULL);
+
 	*(*vp)=0;
 	truncsp(p);
 
 	/* Parse value */
 	(*vp)++;
 	SKIP_WHITESPACE(*vp);
-	truncsp(*vp);
+	if(colon!=NULL)			
+		truncnl(*vp);		/* "key : value" - truncate new-line chars only */
+	else	
+		truncsp(*vp);		/* "key = value" - truncate all white-space chars */
 
 	return(p);
 }
@@ -157,7 +185,7 @@ static char* get_value(FILE* fp, const char* section, const char* key, char* val
 			break;
 		if((p=key_name(str,&vp))==NULL)
 			continue;
-		if(p==NEW_SECTION)
+		if(p==INI_NEW_SECTION)
 			break;
 		if(stricmp(p,key)!=0)
 			continue;
@@ -181,7 +209,7 @@ static size_t find_value_index(str_list_t list, const char* section, const char*
 		SAFECOPY(str, list[i]);
 		if((p=key_name(str,&vp))==NULL)
 			continue;
-		if(p==NEW_SECTION)
+		if(p==INI_NEW_SECTION)
 			break;
 		if(stricmp(p,key)!=0)
 			continue;
@@ -460,7 +488,7 @@ str_list_t iniGetKeyList(FILE* fp, const char* section)
 			break;
 		if((p=key_name(str,&vp))==NULL)
 			continue;
-		if(p==NEW_SECTION)
+		if(p==INI_NEW_SECTION)
 			break;
 		if(strListAppend(&lp,p,items++)==NULL)
 			break;
@@ -497,7 +525,7 @@ iniGetNamedStringList(FILE* fp, const char* section)
 			break;
 		if((name=key_name(str,&value))==NULL)
 			continue;
-		if(name==NEW_SECTION)
+		if(name==INI_NEW_SECTION)
 			break;
 		if((np=(named_string_t**)realloc(lp,sizeof(named_string_t*)*(items+2)))==NULL)
 			break;
