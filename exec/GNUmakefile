@@ -19,7 +19,6 @@ all : 	bullseye.bin \
         ftp.bin \
         getimlst.bin \
 	login.bin \
-	logon.bin \
 	major.bin \
 	matrix.bin \
 	mudgate.bin \
