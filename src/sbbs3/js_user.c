@@ -41,6 +41,8 @@
 
 static scfg_t* scfg=NULL;
 
+static const char* getprivate_failure = "line %d %s JS_GetPrivate failed";
+
 typedef struct
 {
 	uint	usernumber;
@@ -124,7 +126,7 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	private_t*	p;
 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
-		JS_ReportError(cx,"JS_GetPrivate failed");
+		JS_ReportError(cx,getprivate_failure,WHERE);
 		return(JS_FALSE);
 	}
 
@@ -348,7 +350,7 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	private_t*	p;
 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
-		JS_ReportError(cx,"JS_GetPrivate failed");
+		JS_ReportError(cx,getprivate_failure,WHERE);
 		return(JS_FALSE);
 	}
 
