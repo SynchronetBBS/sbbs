@@ -778,7 +778,6 @@ static JSBool js_file_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	long		len;
 	long		offset;
 	ulong		sum;
-	ushort		crc;
 	BYTE		digest[MD5_DIGEST_SIZE];
     jsint       tiny;
 	JSString*	js_str=NULL;
@@ -884,13 +883,7 @@ static JSBool js_file_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 					JS_NewNumberValue(cx,sum,vp);
 					break;
 				case FILE_PROP_CRC16:
-					crc=0;
-					ucrc16(0,&crc);
-					for(l=0;l<len;l++)
-						ucrc16(buf[l],&crc);
-					ucrc16(0,&crc);
-					ucrc16(0,&crc);
-					JS_NewNumberValue(cx,crc,vp);
+					JS_NewNumberValue(cx,crc16(buf,len),vp);
 					break;
 				case FILE_PROP_CRC32:
 					JS_NewNumberValue(cx,crc32(buf,len),vp);
