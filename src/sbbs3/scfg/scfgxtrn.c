@@ -342,7 +342,7 @@ This is the internal code for the timed event.
 		sprintf(opt[k++],"%-32.32s%.40s","Command Line",cfg.event[i]->cmd);
 		sprintf(opt[k++],"%-32.32s%u","Execution Node",cfg.event[i]->node);
 		sprintf(opt[k++],"%-32.32s%s","Execution Day of Month"
-			,cfg.event[i]->mday==0 ? "Any" : itoa(cfg.event[i]->mday,tmp,10));
+			,cfg.event[i]->mday==0 ? "Any" : ultoa(cfg.event[i]->mday,tmp,10));
 		sprintf(opt[k++],"%-32.32s%s","Execution Days of Week",daystr(cfg.event[i]->days));
         if(cfg.event[i]->freq) {
             sprintf(str,"%u times a day",1440/cfg.event[i]->freq);
@@ -449,7 +449,7 @@ Specifies a day of the month (`1-31`) on which to execute this event,
 or `Any` to execute event on any and all days of the month.
 */
 				if(cfg.event[i]->mday)
-					itoa(cfg.event[i]->mday,str,10);
+					ultoa(cfg.event[i]->mday,str,10);
 				else
 					strcpy(str,"Any");
 				uifc.input(WIN_MID|WIN_SAV,0,0,"Day of Month to Execute Event (or Any)"
