@@ -41,7 +41,6 @@
 void sbbs_t::telnet_gate(char* destaddr, ulong mode)
 {
 	char*	p;
-	char	str[128];
 	uchar	buf[512];
 	int		i;
 	int		rd;
