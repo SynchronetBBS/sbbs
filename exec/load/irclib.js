@@ -140,7 +140,7 @@ function IRC_match(mtchstr,mask) {
 	var final_mask="^";
 	mask=mask.replace(/[.]/g,"\\\.");
 	mask=mask.replace(/[?]/g,".");
-	mask=mask.replace(/[*]/g,".*?");
+	mask=mask.replace(/[*]/g,"(.*)?");
 	final_mask=final_mask + mask + "$";
 	return mtchstr.toUpperCase().match(final_mask.toUpperCase());
 }
