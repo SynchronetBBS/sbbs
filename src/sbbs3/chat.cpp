@@ -724,6 +724,7 @@ void sbbs_t::privchat(bool local)
 	int 	in,out,i,n,echo=1,x,y,activity,remote_activity;
     int		local_y=1,remote_y=1;
 	node_t	node;
+	time_t	last_nodechk=0;
 
 	if(useron.rest&FLAG('C')) {
 		bputs(text[R_Chat]);
@@ -887,26 +888,11 @@ void sbbs_t::privchat(bool local)
 		local_y=14; }
 
 	while(online && (local || !(sys_status&SS_ABORT))) {
-		RIOSYNC(0);
+//		RIOSYNC(0);
 		lncntr=0;
 		if(sys_status&SS_SPLITP)
 			lbuflen=0;
 		action=NODE_PCHT;
-		if(!localchar) {
-			if(sys_status&SS_SPLITP) {
-				getnodedat(cfg.node_num,&thisnode,0);
-				if(thisnode.misc&NODE_INTR)
-					break;
-				if(thisnode.misc&NODE_UDAT && !(useron.rest&FLAG('G'))) {
-					getuserdat(&cfg,&useron);
-					if(getnodedat(cfg.node_num,&thisnode,true)==0) {
-						thisnode.misc&=~NODE_UDAT;
-						putnodedat(cfg.node_num,&thisnode); 
-					}
-				} 
-			}
-			else
-				nodesync(); }
 		activity=0;
 		remote_activity=0;
 		if((ch=inkey(K_GETSTR,100))!=0) {
@@ -992,9 +978,12 @@ void sbbs_t::privchat(bool local)
 							CRLF;
 		            		local_y++;
 							if(sys_status&SS_SPLITP)
-								bputs("\x1b[K"); } }
+								bputs("\x1b[K"); 
+						} 
+					}
 					// SYNC;
-					} }
+				} 
+			}
 
 			read(out,&c,1);
 			lseek(out,-1L,SEEK_CUR);
@@ -1009,7 +998,7 @@ void sbbs_t::privchat(bool local)
 				lseek(out,-1L,SEEK_CUR); }
 			if(tell(out)>=PCHAT_LEN)
 				lseek(out,0L,SEEK_SET);
-			}
+		}
 		else while(online) {
 			if(!(sys_status&SS_SPLITP))
 				remotechar=localchar;
@@ -1087,7 +1076,26 @@ void sbbs_t::privchat(bool local)
 			GOTOXY(x,y); 
 		}
 
-		if(!activity) { 						/* no activity so chk node.dab */
+		now=time(NULL);
+		if(!activity && now!=last_nodechk) {	/* no activity so chk node.dab */
+
+			if(!localchar) {
+				if(sys_status&SS_SPLITP) {
+					getnodedat(cfg.node_num,&thisnode,0);
+					if(thisnode.misc&NODE_INTR)
+						break;
+					if(thisnode.misc&NODE_UDAT && !(useron.rest&FLAG('G'))) {
+						getuserdat(&cfg,&useron);
+						if(getnodedat(cfg.node_num,&thisnode,true)==0) {
+							thisnode.misc&=~NODE_UDAT;
+							putnodedat(cfg.node_num,&thisnode); 
+						}
+					} 
+				}
+				else
+					nodesync(); 
+			}
+
 			if(!local) {
 				getnodedat(n,&node,0);
 				if((node.action!=NODE_PCHT && node.action!=NODE_PAGE)
@@ -1112,9 +1120,9 @@ void sbbs_t::privchat(bool local)
 					putnodedat(cfg.node_num,&thisnode); 
 				}
 			}
+			last_nodechk=now;
+			gettimeleft(); 
 		}
-		checkline();
-		gettimeleft(); 
 	}
 	if(sys_status&SS_SPLITP)
 		CLS;
