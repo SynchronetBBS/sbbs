@@ -48,6 +48,14 @@
 #include <unistd.h>
 #include <pwd.h>
 #include <grp.h>
+#include <syslog.h>
+#include <stdarg.h>
+#include <stdlib.h>  /* Is this included from somewhere else? */
+
+#ifndef __FreeBSD__
+#include <fcntl.h>	/* Used for daemonizing */
+#include <paths.h>	/* Used for daemonizing */
+#endif
 
 #endif
 
@@ -78,6 +86,8 @@ uid_t				new_uid;
 uid_t				old_uid;
 gid_t				new_gid;
 gid_t				old_gid;
+BOOL				is_daemon=FALSE;
+BOOL				use_facilities=FALSE;
 #endif
 
 static const char* prompt = 
@@ -115,6 +125,10 @@ static const char* usage  = "usage: %s [[option] [...]]\n"
 #ifdef __unix__
 							"\tun<user>   set username for BBS to run as\n"
 							"\tug<group>  set group for BBS to run as\n"
+							"\tad<X>      run as daemon, log using syslog <X> is the\n"
+							"\t           option LOCALx facility to use if none is\n"
+							"\t           specified, uses USER\n"
+							"\t           if 'f' is specified, uses standard facilities\n"
 #endif
 							"\tgi         get user identity (using IDENT protocol)\n"
 							"\tnh         disable hostname lookups\n"
@@ -128,21 +142,54 @@ static void lputs(char *str)
 {
 	static pthread_mutex_t mutex;
 	static BOOL mutex_initialized;
+	BOOL	logged;
 
 	if(!mutex_initialized) {
 		pthread_mutex_init(&mutex,NULL);
 		mutex_initialized=TRUE;
 	}
 
-	pthread_mutex_lock(&mutex);
-	/* erase prompt */
-	printf("\r%*s\r",prompt_len,"");
-	if(str!=NULL)
-		printf("%s\n",str);
-	/* re-display prompt with current stats */
-	prompt_len = printf(prompt, thread_count, socket_count, client_count, served);
-	fflush(stdout);
-	pthread_mutex_unlock(&mutex);
+	if (is_daemon)  {
+		logged=FALSE;
+		if(str!=NULL)  {
+			if (use_facilities)  {
+				if(!strncmp("ftp  ",str,5))  {
+					syslog(LOG_INFO|LOG_FTP,"%s",str+5);
+					logged=TRUE;
+				}
+				if(!strncmp("mail ",str,5))  {
+					syslog(LOG_INFO|LOG_MAIL,"%s",str+5);
+					logged=TRUE;
+				}
+				if(!strncmp("srvc ",str,5))  {
+					syslog(LOG_INFO|LOG_DAEMON,"%s",str+5);
+					logged=TRUE;
+				}
+				if(!strncmp("evnt ",str,5))  {
+					syslog(LOG_INFO|LOG_CRON,"%s",str+5);
+					logged=TRUE;
+				}
+				if(!strncmp("     ",str,5))  {
+					syslog(LOG_INFO|LOG_AUTH,"%s",str+5);
+					logged=TRUE;
+				}
+			}
+			if(!logged)  {
+				syslog(LOG_INFO,"%s",str);
+			}
+		}
+	}
+	else  {
+		pthread_mutex_lock(&mutex);
+		/* erase prompt */
+		printf("\r%*s\r",prompt_len,"");
+		if(str!=NULL)
+			printf("%s\n",str);
+		/* re-display prompt with current stats */
+		prompt_len = printf(prompt, thread_count, socket_count, client_count, served);
+		fflush(stdout);
+		pthread_mutex_unlock(&mutex);
+	}	
 }
 
 #ifdef __unix__
@@ -283,16 +330,21 @@ static int bbs_lputs(char *str)
 	time_t		t;
 	struct tm*	tm_p;
 
-	t=time(NULL);
-	tm_p=localtime(&t);
-	if(tm_p==NULL)
-		tstr[0]=0;
-	else
-		sprintf(tstr,"%d/%d %02d:%02d:%02d "
-			,tm_p->tm_mon+1,tm_p->tm_mday
-			,tm_p->tm_hour,tm_p->tm_min,tm_p->tm_sec);
+	if(is_daemon)  {
+		sprintf(logline,"     %.*s",sizeof(logline)-2,str);
+	}
+	else  {
+		t=time(NULL);
+		tm_p=localtime(&t);
+		if(tm_p==NULL)
+			tstr[0]=0;
+		else
+			sprintf(tstr,"%d/%d %02d:%02d:%02d "
+				,tm_p->tm_mon+1,tm_p->tm_mday
+				,tm_p->tm_hour,tm_p->tm_min,tm_p->tm_sec);
 
-	sprintf(logline,"%s     %.*s",tstr,sizeof(logline)-2,str);
+		sprintf(logline,"%s     %.*s",tstr,sizeof(logline)-2,str);
+	}
 	truncsp(logline);
 	lputs(logline);
 	
@@ -321,16 +373,21 @@ static int ftp_lputs(char *str)
 	time_t		t;
 	struct tm*	tm_p;
 
-	t=time(NULL);
-	tm_p=localtime(&t);
-	if(tm_p==NULL)
-		tstr[0]=0;
-	else
-		sprintf(tstr,"%d/%d %02d:%02d:%02d "
-			,tm_p->tm_mon+1,tm_p->tm_mday
-			,tm_p->tm_hour,tm_p->tm_min,tm_p->tm_sec);
+	if(is_daemon)  {
+		sprintf(logline,"ftp  %.*s",sizeof(logline)-2,str);
+	}
+	else  {
+		t=time(NULL);
+		tm_p=localtime(&t);
+		if(tm_p==NULL)
+			tstr[0]=0;
+		else
+			sprintf(tstr,"%d/%d %02d:%02d:%02d "
+				,tm_p->tm_mon+1,tm_p->tm_mday
+				,tm_p->tm_hour,tm_p->tm_min,tm_p->tm_sec);
 
-	sprintf(logline,"%sftp  %.*s",tstr,sizeof(logline)-2,str);
+		sprintf(logline,"%sftp  %.*s",tstr,sizeof(logline)-2,str);
+	}
 	truncsp(logline);
 	lputs(logline);
 	
@@ -359,16 +416,21 @@ static int mail_lputs(char *str)
 	time_t		t;
 	struct tm*	tm_p;
 
-	t=time(NULL);
-	tm_p=localtime(&t);
-	if(tm_p==NULL)
-		tstr[0]=0;
-	else
-		sprintf(tstr,"%d/%d %02d:%02d:%02d "
-			,tm_p->tm_mon+1,tm_p->tm_mday
-			,tm_p->tm_hour,tm_p->tm_min,tm_p->tm_sec);
+	if(is_daemon)  {
+		sprintf(logline,"mail %.*s",sizeof(logline)-2,str);
+	}
+	else  {
+		t=time(NULL);
+		tm_p=localtime(&t);
+		if(tm_p==NULL)
+			tstr[0]=0;
+		else
+			sprintf(tstr,"%d/%d %02d:%02d:%02d "
+				,tm_p->tm_mon+1,tm_p->tm_mday
+				,tm_p->tm_hour,tm_p->tm_min,tm_p->tm_sec);
 
-	sprintf(logline,"%smail %.*s",tstr,sizeof(logline)-2,str);
+		sprintf(logline,"%smail %.*s",tstr,sizeof(logline)-2,str);
+	}
 	truncsp(logline);
 	lputs(logline);
 	
@@ -397,16 +459,21 @@ static int services_lputs(char *str)
 	time_t		t;
 	struct tm*	tm_p;
 
-	t=time(NULL);
-	tm_p=localtime(&t);
-	if(tm_p==NULL)
-		tstr[0]=0;
-	else
-		sprintf(tstr,"%d/%d %02d:%02d:%02d "
-			,tm_p->tm_mon+1,tm_p->tm_mday
-			,tm_p->tm_hour,tm_p->tm_min,tm_p->tm_sec);
+	if(is_daemon)  {
+		sprintf(logline,"srvc %.*s",sizeof(logline)-2,str);
+	}
+	else  {
+		t=time(NULL);
+		tm_p=localtime(&t);
+		if(tm_p==NULL)
+			tstr[0]=0;
+		else
+			sprintf(tstr,"%d/%d %02d:%02d:%02d "
+				,tm_p->tm_mon+1,tm_p->tm_mday
+				,tm_p->tm_hour,tm_p->tm_min,tm_p->tm_sec);
 
-	sprintf(logline,"%ssrvc %.*s",tstr,sizeof(logline)-2,str);
+		sprintf(logline,"%ssrvc %.*s",tstr,sizeof(logline)-2,str);
+	}
 	truncsp(logline);
 	lputs(logline);
 	
@@ -435,16 +502,21 @@ static int event_lputs(char *str)
 	time_t		t;
 	struct tm*	tm_p;
 
-	t=time(NULL);
-	tm_p=localtime(&t);
-	if(tm_p==NULL)
-		tstr[0]=0;
-	else
-		sprintf(tstr,"%d/%d %02d:%02d:%02d "
-			,tm_p->tm_mon+1,tm_p->tm_mday
-			,tm_p->tm_hour,tm_p->tm_min,tm_p->tm_sec);
+	if(is_daemon)  {
+		sprintf(logline,"evnt %.*s",sizeof(logline)-2,str);
+	}
+	else  {
+		t=time(NULL);
+		tm_p=localtime(&t);
+		if(tm_p==NULL)
+			tstr[0]=0;
+		else
+			sprintf(tstr,"%d/%d %02d:%02d:%02d "
+				,tm_p->tm_mon+1,tm_p->tm_mday
+				,tm_p->tm_hour,tm_p->tm_min,tm_p->tm_sec);
 
-	sprintf(logline,"%sevnt %.*s",tstr,sizeof(logline)-2,str);
+		sprintf(logline,"%sevnt %.*s",tstr,sizeof(logline)-2,str);
+	}
 	truncsp(logline);
 	lputs(logline);
 	
@@ -462,11 +534,48 @@ void _sighandler_quit(int sig)
     mail_terminate();
     while(bbs_running || ftp_running || mail_running || services_running)
 		mswait(1);
+	if(is_daemon)
+		unlink("/var/run/sbbs.pid");
 
     exit(0);
 }
 #endif
 
+#ifndef __FreeBSD__
+/****************************************************************************/
+/* Daemonizes the process													*/
+/****************************************************************************/
+int
+daemon(nochdir, noclose)
+	int nochdir, noclose;
+{
+	int fd;
+
+	switch (fork()) {
+	case -1:
+		return (-1);
+	case 0:
+		break;
+	default:
+		_exit(0);
+	}
+
+	if (setsid() == -1)
+		return (-1);
+
+	if (!nochdir)
+		(void)chdir("/");
+
+	if (!noclose && (fd = _open(_PATH_DEVNULL, O_RDWR, 0)) != -1) {
+		(void)dup2(fd, STDIN_FILENO);
+		(void)dup2(fd, STDOUT_FILENO);
+		(void)dup2(fd, STDERR_FILENO);
+		if (fd > 2)
+			(void)_close(fd);
+	}
+	return (0);
+}
+#endif
 
 /****************************************************************************/
 /* Main Entry Point															*/
@@ -481,6 +590,7 @@ int main(int argc, char** argv)
 #ifdef __unix__
 	char*	new_uid_name=NULL;
 	char*	new_gid_name=NULL;
+	FILE *pidfile;
 	struct passwd* pw_entry;
 	struct group*  gr_entry;
 #endif
@@ -616,6 +726,47 @@ int main(int argc, char** argv)
 					case 'L': /* Auto-logon via IP */
 						bbs_startup.options|=BBS_OPT_AUTO_LOGON;
 						break;
+#ifdef __unix__
+					case 'D': /* Run as daemon */
+						printf("Running as daemon\n");
+						if(!daemon(TRUE,FALSE))  { /* Daemonize, DON'T switch to / and DO close descriptors */
+							is_daemon=TRUE;
+							switch(toupper(*(arg++))) {
+								case '0':
+									openlog("synchronet",LOG_CONS,LOG_LOCAL0);
+									break;
+								case '1':
+									openlog("synchronet",LOG_CONS,LOG_LOCAL1);
+									break;
+								case '2':
+									openlog("synchronet",LOG_CONS,LOG_LOCAL2);
+									break;
+								case '3':
+									openlog("synchronet",LOG_CONS,LOG_LOCAL3);
+									break;
+								case '4':
+									openlog("synchronet",LOG_CONS,LOG_LOCAL4);
+									break;
+								case '5':
+									openlog("synchronet",LOG_CONS,LOG_LOCAL5);
+									break;
+								case '6':
+									openlog("synchronet",LOG_CONS,LOG_LOCAL6);
+									break;
+								case '7':
+									openlog("synchronet",LOG_CONS,LOG_LOCAL7);
+									break;
+								case 'F':
+									/* Use appropriate facilities */
+									openlog("synchronet",LOG_CONS,LOG_USER);
+									use_facilities = TRUE;
+									break;
+								default:
+									openlog("synchronet",LOG_CONS,LOG_USER);
+							}
+						}
+						break;
+#endif
 					default:
 						printf(usage,argv[0]);
 						return(0);
@@ -813,6 +964,16 @@ int main(int argc, char** argv)
 				return(0);
 		}
 	}
+
+
+#ifdef __unix__
+	/* Write the standard .pid file if running as a daemon */
+	if(is_daemon)  {
+		pidfile=fopen("/var/run/sbbs.pid","w");
+		fprintf(pidfile,"%d",getpid());
+		fclose(pidfile);
+	}
+#endif
 
 	_beginthread((void(*)(void*))bbs_thread,0,&bbs_startup);
 	if(run_ftp)
