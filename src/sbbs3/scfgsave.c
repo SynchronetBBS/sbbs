@@ -1059,3 +1059,28 @@ BOOL DLLCALL write_xtrn_cfg(scfg_t* cfg, int backup_level)
 	return(TRUE);
 }
 
+void DLLCALL refresh_cfg(scfg_t* cfg)
+{
+	char	str[MAX_PATH+1];
+    int		i;
+	int		file;
+    node_t	node;
+    
+    for(i=0;i<cfg->sys_nodes;i++) {
+       	if(getnodedat(cfg,i+1,&node,&file))
+            break;
+        node.misc|=NODE_RRUN;
+        if(putnodedat(cfg,i+1,&node,file))
+            break;
+    }
+
+	sprintf(str,"%sftpsrvr.rec",cfg->ctrl_dir);
+	if((file=open(str,O_WRONLY|O_CREAT|O_TRUNC,S_IWRITE|S_IREAD))!=-1)
+		close(file);
+	sprintf(str,"%smailsrvr.rec",cfg->ctrl_dir);
+	if((file=open(str,O_WRONLY|O_CREAT|O_TRUNC,S_IWRITE|S_IREAD))!=-1)
+		close(file);
+	sprintf(str,"%sservices.rec",cfg->ctrl_dir);
+	if((file=open(str,O_WRONLY|O_CREAT|O_TRUNC,S_IWRITE|S_IREAD))!=-1)
+		close(file);
+}
