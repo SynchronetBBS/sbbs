@@ -43,6 +43,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <stdlib.h>
+/* OS Specific */
 #if defined(_WIN32)
     #include <windows.h>
 #endif
@@ -56,7 +57,6 @@
     #include <dos.h>
 #endif
 
-/* OS Specific */
 #if defined(__FLAT__)
 	#define far
 #endif
@@ -65,6 +65,9 @@
     #include <bios.h>
 #endif
 
+#if defined(__unix__) && !defined(stricmp)
+    #define stricmp strcasecmp
+#endif
 
 /****************************************************************************/
 /* MALLOC/FREE Macros for various compilers and environments				*/
