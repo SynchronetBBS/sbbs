@@ -68,9 +68,11 @@
 #include "filewrap.h"
 
 /* Use smb_ver() and smb_lib_ver() to obtain these values */
-#define SMBLIB_VERSION		"2.21"      /* SMB library version */
+#define SMBLIB_VERSION		"2.22"      /* SMB library version */
 #define SMB_VERSION 		0x0121		/* SMB format version */
 										/* High byte major, low byte minor */
+
+static char* nulstr="";
 
 int SMBCALL smb_ver(void)
 {
@@ -967,11 +969,10 @@ int SMBCALL smb_getmsghdr(smb_t* smb, smbmsg_t* msg)
 		l+=msg->hfield[i].length; 
 	}
 
-	if(!msg->from || !msg->to || !msg->subj) {
-		sprintf(smb->last_error,"missing required header field (from/to/subj)");
-		smb_freemsgmem(msg);
-		return(SMB_ERR_HDR_FIELD); 
-	}
+	/* These convenience pointers must point to something */
+	if(msg->from==NULL)	msg->from=nulstr;
+	if(msg->to==NULL)	msg->to=nulstr;
+	if(msg->subj==NULL)	msg->subj=nulstr;
 
 	/* If no reverse path specified, use sender's address */
 	if(msg->reverse_path == NULL)
