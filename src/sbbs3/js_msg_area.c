@@ -60,6 +60,7 @@ static char* msg_area_prop_desc[] = {
 	,"sub-board name"
 	,"sub-board description"
 	,"sub-board QWK name"
+	,"newsgroup name (as configured or dymamically generated)"
 	,"sub-board data storage location"
 	,"FidoNet origin line"
 	,"QWK Network tagline"
@@ -70,7 +71,6 @@ static char* msg_area_prop_desc[] = {
 	,"configured maximum number of messages before purging"
 	,"configured maximum age (in days) of messages before expiration"
 	/* Insert here */
-	,"newsgroup name (as configured or dymamically generated)"
 	,"user has sufficient access to read messages"
 	,"user has sufficient access to post messages"
 	,"user has operator access to this message area"
@@ -82,10 +82,24 @@ static char* msg_area_prop_desc[] = {
 };
 #endif
 
-BOOL DLLCALL js_CreateMsgAreaProperties(JSContext* cx, JSObject* subobj, sub_t* sub)
+BOOL DLLCALL js_CreateMsgAreaProperties(JSContext* cx, scfg_t* cfg, JSObject* subobj, uint subnum)
 {
+	char		str[128];
+	int			c;
 	JSString*	js_str;
 	jsval		val;
+	sub_t*		sub;
+
+	if(subnum==INVALID_SUB || subnum>=cfg->total_subs)
+		return(FALSE);
+
+	sub=cfg->sub[subnum];
+
+	JS_DefineProperty(cx, subobj, "number", INT_TO_JSVAL(subnum)
+		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+
+	JS_DefineProperty(cx, subobj, "grp_number", INT_TO_JSVAL(sub->grp)
+		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 
 	if((js_str=JS_NewStringCopyZ(cx, sub->code))==NULL)
 		return(FALSE);
@@ -105,6 +119,19 @@ BOOL DLLCALL js_CreateMsgAreaProperties(JSContext* cx, JSObject* subobj, sub_t* 
 	if((js_str=JS_NewStringCopyZ(cx, sub->qwkname))==NULL)
 		return(FALSE);
 	JS_DefineProperty(cx, subobj, "qwk_name", STRING_TO_JSVAL(js_str)
+		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+
+	if(sub->newsgroup[0])
+		SAFECOPY(str,sub->newsgroup);
+	else {
+		sprintf(str,"%s.%s",cfg->grp[sub->grp]->sname,sub->sname);
+		for(c=0;str[c];c++)
+			if(str[c]==' ')
+				str[c]='_';
+	}
+	if((js_str=JS_NewStringCopyZ(cx, str))==NULL)
+		return(FALSE);
+	JS_DefineProperty(cx, subobj, "newsgroup", STRING_TO_JSVAL(js_str)
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 
 	if((js_str=JS_NewStringCopyZ(cx, sub->data_dir))==NULL)
@@ -152,7 +179,6 @@ BOOL DLLCALL js_CreateMsgAreaProperties(JSContext* cx, JSObject* subobj, sub_t* 
 JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t* cfg
 										  ,user_t* user, subscan_t* subscan)
 {
-	char		str[128];
 	JSObject*	areaobj;
 	JSObject*	allsubs;
 	JSObject*	grpobj;
@@ -162,7 +188,7 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 	JSString*	js_str;
 	jsval		val;
 	jsuint		index;
-	uint		c,l,d;
+	uint		l,d;
 
 	/* Return existing object if it's already been created */
 	if(JS_GetProperty(cx,parent,"msg_area",&val) && val!=JSVAL_VOID)
@@ -241,29 +267,7 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 			if((subobj=JS_NewObject(cx, NULL, NULL, NULL))==NULL)
 				return(NULL);
 
-			val=INT_TO_JSVAL(d);
-			if(!JS_SetProperty(cx, subobj, "number", &val))
-				return(NULL);
-
-			val=INT_TO_JSVAL(cfg->sub[d]->grp);
-			if(!JS_SetProperty(cx, subobj, "grp_number", &val))
-				return(NULL);
-
-			if(!js_CreateMsgAreaProperties(cx, subobj, cfg->sub[d]))
-				return(NULL);
-			
-			if(cfg->sub[d]->newsgroup[0])
-				SAFECOPY(str,cfg->sub[d]->newsgroup);
-			else {
-				sprintf(str,"%s.%s",cfg->grp[l]->sname,cfg->sub[d]->sname);
-				for(c=0;str[c];c++)
-					if(str[c]==' ')
-						str[c]='_';
-			}
-			if((js_str=JS_NewStringCopyZ(cx, str))==NULL)
-				return(NULL);
-			val=STRING_TO_JSVAL(js_str);
-			if(!JS_SetProperty(cx, subobj, "newsgroup", &val))
+			if(!js_CreateMsgAreaProperties(cx, cfg, subobj, d))
 				return(NULL);
 			
 			if(user==NULL || chk_ar(cfg,cfg->sub[d]->read_ar,user))
