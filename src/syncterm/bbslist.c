@@ -198,7 +198,7 @@ void add_bbs(char *listpath, struct bbslist *bbs)
 	 */
 	iniSetString(&inifile,bbs->name,"Address",bbs->addr,NULL);
 	iniSetShortInt(&inifile,bbs->name,"Port",bbs->port,NULL);
-	iniSetInteger(&inifile,bbs->name,"Added",bbs->added,NULL);
+	iniSetInteger(&inifile,bbs->name,"Added",time(NULL),NULL);
 	iniSetInteger(&inifile,bbs->name,"LastConnected",bbs->connected,NULL);
 	iniSetInteger(&inifile,bbs->name,"TotalCalls",bbs->calls,NULL);
 	iniSetString(&inifile,bbs->name,"UserName",bbs->user,NULL);
