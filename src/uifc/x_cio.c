@@ -115,7 +115,7 @@ int x_wherex(void)
  * The special characters return, linefeed, bell, and backspace are handled
  * properly, as is line wrap and scrolling. The cursor position is updated. 
  */
-void x_putch(unsigned char ch)
+int x_putch(unsigned char ch)
 {
 	WORD sch;
 
@@ -153,6 +153,8 @@ void x_putch(unsigned char ch)
 				}
 			}
 	}
+
+	return(ch);
 }
 
 int x_cprintf(char *fmat, ...)

@@ -443,8 +443,9 @@ int curs_wherex(void)
 	return(x+1);
 }
 
-void _putch(unsigned char ch, BOOL refresh_now)
+int _putch(unsigned char ch, BOOL refresh_now)
 {
+	int		ret;
 	chtype	cha;
 
 	if(!(mode&UIFC_IBM))
@@ -597,17 +598,19 @@ void _putch(unsigned char ch, BOOL refresh_now)
 		cha=ch;
 
 	if(ch == ' ')
-		addch(A_BOLD|' ');
+		ret=addch(A_BOLD|' ');
 	else if (cha<' ') {
  		attron(A_REVERSE);
-		addch(cha+'A'-1);
+		ret=addch(cha+'A'-1);
 		attroff(A_REVERSE);
 	}
 	else
-		addch(cha);
+		ret=addch(cha);
 
 	if(refresh_now)
 		refresh();
+
+	return(ret);
 }
 
 int curs_cprintf(char *fmat, ...)
@@ -712,10 +715,12 @@ void curs_clreol(void)
 	clrtoeol();
 }
 
-void curs_putch(unsigned char c)
+int curs_putch(unsigned char c)
 {
 	struct text_info ti;
+	int		ret;
 
+	ret=c;
 	switch(c) {
 		case '\r':
 			curs_gotoxy(1,curs_wherey());
@@ -740,7 +745,8 @@ void curs_putch(unsigned char c)
 			curs_gotoxy(curs_wherex()-1,curs_wherey());
 			break;
 		default:
-			_putch(c,TRUE);
+			if(_putch(c,TRUE)==ERR)
+				ret=EOF;
 	}
 }
 

@@ -72,7 +72,7 @@ typedef struct {
 	void	(*delay)		(long);
 	int		(*wherex)		(void);
 	int		(*wherey)		(void);
-	void	(*putch)		(unsigned char);
+	int		(*putch)		(unsigned char);
 	int		(*c_printf)		(char *fmat, ...);
 	int		(*cputs)		(unsigned char *);
 	void	(*gotoxy)		(int,int);

@@ -13,7 +13,7 @@ int x_kbhit(void);
 void x_delay(long msec);
 int x_wherey(void);
 int x_wherex(void);
-void x_putch(unsigned char ch);
+int x_putch(unsigned char ch);
 int x_cprintf(char *fmat, ...);
 int x_cputs(unsigned char *str);
 void x_gotoxy(int x, int y);
