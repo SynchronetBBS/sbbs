@@ -186,7 +186,7 @@ extern "C" {
 								select(0,NULL,NULL,NULL,&tv); })
 	#endif
 
-	#define YIELD			SLEEP(1)
+	#define YIELD()			SLEEP(1)
 
 	#if defined(_THREAD_SAFE)
 		#if defined(__FreeBSD__)
