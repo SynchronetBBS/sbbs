@@ -1,9 +1,10 @@
 object ConfigWizard: TConfigWizard
   Left = 489
   Top = 424
-  Width = 599
-  Height = 408
+  BorderStyle = bsDialog
   Caption = 'Configuration Wizard'
+  ClientHeight = 376
+  ClientWidth = 591
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -558,16 +559,16 @@ object ConfigWizard: TConfigWizard
   object NextButton: TButton
     Left = 393
     Top = 327
-    Width = 89
+    Width = 88
     Height = 31
     Caption = '&Next >'
     TabOrder = 1
     OnClick = NextButtonClick
   end
   object CancelButton: TButton
-    Left = 495
+    Left = 487
     Top = 327
-    Width = 89
+    Width = 88
     Height = 31
     Cancel = True
     Caption = '&Cancel'
@@ -764,7 +765,7 @@ object ConfigWizard: TConfigWizard
           Width = 185
           Height = 24
           Style = csDropDownList
-          ItemHeight = 0
+          ItemHeight = 16
           ParentShowHint = False
           ShowHint = True
           TabOrder = 0
@@ -814,7 +815,7 @@ object ConfigWizard: TConfigWizard
         Top = 40
         Width = 241
         Height = 24
-        ItemHeight = 0
+        ItemHeight = 16
         TabOrder = 0
         OnChange = VerifyInternetAddresses
       end
