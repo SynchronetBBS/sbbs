@@ -13,14 +13,14 @@ if(user.number || (this.login!=undefined && system.matchuser("Guest")))
 if( sub != 'mail' && (http_request.virtual_path == '/msgs/msg.ssjs' || http_request.virtual_path == '/msgs/msgs.ssjs'  || http_request.virtual_path == '/msgs/post.ssjs' || http_request.virtual_path == '/msgs/reply.ssjs' || http_request.virtual_path == '/msgs/savemsg.ssjs' || http_request.virtual_path == '/msgs/subinfo.ssjs' || http_request.virtual_path == '/msgs/subs.ssjs')) {
   template.leftnav.push({ html: '<span id="sectionSubLinks">' });
   for(s in msg_area.grp_list)
-        template.leftnav.push({html: '<a href="/msgs/subs.ssjs?msg_grp=' + msg_area.grp_list[s].description + '">' + msg_area.grp_list[s].description + '</a>' });
+        template.leftnav.push({html: '<a href="/msgs/subs.ssjs?msg_grp=' + msg_area.grp_list[s].name + '">' + msg_area.grp_list[s].description + '</a>' });
   template.leftnav.push({ html: '</span>' });
 }
 
 if( sub != 'mail' && (http_request.virtual_path == '/msgs/choosesubs.ssjs' || http_request.virtual_path == '/msgs/updatesubs.ssjs')) {
     template.leftnav.push({ html: '<span id="sectionSubLinks">' });
     for(s in msg_area.grp_list)
-            template.leftnav.push({html: '<a href="/msgs/choosesubs.ssjs?msg_grp=' + msg_area.grp_list[s].description + '">' + msg_area.grp_list[s].description + '</a>' });
+            template.leftnav.push({html: '<a href="/msgs/choosesubs.ssjs?msg_grp=' + msg_area.grp_list[s].name + '">' + msg_area.grp_list[s].description + '</a>' });
     template.leftnav.push({ html: '</span>' });
 }
       
