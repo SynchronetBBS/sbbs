@@ -1815,3 +1815,96 @@ int DLLCALL newuserdat(scfg_t* cfg, user_t* user)
 
 	return(0);
 }
+
+/* Returns length of specified user record 'field', or -1 if invalid */
+int DLLCALL user_rec_len(int offset)
+{
+	switch(offset) {
+
+		/* Strings (of different lengths) */
+		case U_ALIAS:		return(LEN_ALIAS);
+		case U_NAME:		return(LEN_NAME);
+		case U_HANDLE:		return(LEN_HANDLE);
+		case U_NOTE:		return(LEN_NOTE);
+		case U_COMP:		return(LEN_COMP);
+		case U_COMMENT:		return(LEN_COMMENT);
+		case U_NETMAIL:		return(LEN_NETMAIL);
+		case U_ADDRESS:		return(LEN_ADDRESS);
+		case U_LOCATION:	return(LEN_LOCATION);
+		case U_ZIPCODE:		return(LEN_ZIPCODE);
+		case U_PASS:		return(LEN_PASS);
+		case U_PHONE:		return(LEN_PHONE);
+		case U_BIRTH:		return(LEN_BIRTH);
+		case U_MODEM:		return(LEN_MODEM);
+
+		/* Dates in time_t format (8 hex digits) */
+		case U_LASTON:
+		case U_FIRSTON:
+		case U_EXPIRE:
+		case U_PWMOD:
+		case U_NS_TIME:
+		case U_LOGONTIME:
+
+		/* 32-bit integers (8 hex digits) */
+		case U_FLAGS1:
+		case U_FLAGS2:
+		case U_FLAGS3:
+		case U_FLAGS4:
+		case U_EXEMPT:
+		case U_REST:
+		case U_MISC:
+		case U_QWK:
+		case U_CHAT:
+
+		/* Internal codes (8 chars) */
+		case U_CURSUB:
+		case U_CURDIR:
+		case U_CURXTRN:
+		case U_XEDIT:
+		case U_SHELL:
+
+			return(8);
+
+		/* 16-bit integers (5 decimal digits) */
+		case U_LOGONS:
+		case U_LTODAY:
+		case U_TIMEON:
+		case U_TEXTRA:
+		case U_TTODAY:
+		case U_TLAST:
+		case U_POSTS:
+		case U_EMAILS:
+		case U_FBACKS:
+		case U_ETODAY:
+		case U_PTODAY:
+		case U_ULS:
+		case U_DLS:
+			return(5);
+
+		/* 32-bit integers (10 decimal digits) */
+		case U_ULB:
+		case U_DLB:
+		case U_CDT:
+		case U_MIN:
+		case U_FREECDT:
+			return(10);
+
+		/* 3 char strings */
+		case U_TMPEXT:
+			return(3);
+
+		/* 2 digits integers (0-99) */
+		case U_LEVEL:
+		case U_TL:
+		case U_ROWS:
+		case U_LEECH:	/* actually, 2 hex digits */
+			return(2);
+
+		/* Single digits chars */
+		case U_SEX:
+		case U_PROT:
+			return(1);
+	}
+
+	return(-1);
+}
