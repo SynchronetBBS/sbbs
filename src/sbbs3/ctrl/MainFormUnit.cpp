@@ -2981,12 +2981,6 @@ void __fastcall TMainForm::TelnetRecycleExecute(TObject *Sender)
     TelnetRecycle->Enabled=false;
 }
 //---------------------------------------------------------------------------
-void __fastcall TMainForm::FilterIP(char* ip_addr
-	,char* prot, char* username)
-{
-	filter_ip(&cfg,prot,"abuse",ip_addr,username);
-}
-//---------------------------------------------------------------------------
 
 void __fastcall TMainForm::FileEditTextFilesClick(TObject *Sender)
 {

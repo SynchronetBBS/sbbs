@@ -41,6 +41,7 @@
 #include <stdio.h>      // sprintf
 #include <winsock.h>    // closesocket
 #include "ClientFormUnit.h"
+#include "sbbs.h"		// filter_ip
 
 void socket_open(BOOL open);
 //---------------------------------------------------------------------------
@@ -118,6 +119,7 @@ void __fastcall TClientForm::FilterIpMenuItemClick(TObject *Sender)
    	    AnsiString prot 	= ListItem->SubItems->Strings[0];
 	    AnsiString username = ListItem->SubItems->Strings[1];
     	AnsiString ip_addr 	= ListItem->SubItems->Strings[2];
+		AnsiString hostname = ListItem->SubItems->Strings[3];
 
     	wsprintf(str,"Disallow future connections from %s"
         	,ip_addr);
@@ -126,7 +128,8 @@ void __fastcall TClientForm::FilterIpMenuItemClick(TObject *Sender)
         if(res==IDCANCEL)
     		break;
     	if(res==IDYES)
-	        MainForm->FilterIP(ip_addr.c_str(),prot.c_str(),username.c_str());
+			filter_ip(&MainForm->cfg,prot.c_str(),"abuse",hostname.c_str()
+				,ip_addr.c_str(),username.c_str());
         if(ListView->Selected == NULL)
         	break;
         ListItem=ListView->GetNextItem(ListItem,sdAll,State);
