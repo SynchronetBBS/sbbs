@@ -39,6 +39,7 @@
 #include "md5.h"
 #include "base64.h"
 #include "uucode.h"
+#include "yenc.h"
 #include "ini_file.h"
 
 #ifdef JAVASCRIPT
@@ -52,6 +53,7 @@ typedef struct
 	BOOL	external;	/* externally created, don't close */
 	BOOL	debug;
 	BOOL	rot13;
+	BOOL	yencoded;
 	BOOL	uuencoded;
 	BOOL	b64encoded;
 	BOOL	network_byte_order;
@@ -246,12 +248,14 @@ js_read(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(p->rot13)
 		rot13(buf);
 
-	if(p->uuencoded || p->b64encoded) {
+	if(p->uuencoded || p->b64encoded || p->yencoded) {
 		uulen=len*2;
 		if((uubuf=malloc(uulen))==NULL)
 			return(JS_TRUE);
 		if(p->uuencoded)
 			uulen=uuencode(uubuf,uulen,buf,len);
+		else if(p->yencoded)
+			uulen=yencode(uubuf,uulen,buf,len);
 		else
 			uulen=b64_encode(uubuf,uulen,buf,len);
 		if(uulen>=0) {
@@ -577,10 +581,12 @@ js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	cp=JS_GetStringBytes(JS_ValueToString(cx, argv[0]));
 	len=strlen(cp);
 
-	if((p->uuencoded || p->b64encoded)
+	if((p->uuencoded || p->b64encoded || p->yencoded)
 		&& len && (uubuf=malloc(len))!=NULL) {
 		if(p->uuencoded)
 			len=uudecode(uubuf,len,cp,len);
+		else if(p->yencoded)
+			len=ydecode(uubuf,len,cp,len);
 		else
 			len=b64_decode(uubuf,len,cp,len);
 		if(len<0) {
@@ -948,6 +954,7 @@ enum {
 	,FILE_PROP_POSITION	
 	,FILE_PROP_LENGTH	
 	,FILE_PROP_ATTRIBUTES
+	,FILE_PROP_YENCODED
 	,FILE_PROP_UUENCODED
 	,FILE_PROP_B64ENCODED
 	,FILE_PROP_ROT13
@@ -978,6 +985,9 @@ static JSBool js_file_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	switch(tiny) {
 		case FILE_PROP_DEBUG:
 			JS_ValueToBoolean(cx,*vp,&(p->debug));
+			break;
+		case FILE_PROP_YENCODED:
+			JS_ValueToBoolean(cx,*vp,&(p->yencoded));
 			break;
 		case FILE_PROP_UUENCODED:
 			JS_ValueToBoolean(cx,*vp,&(p->uuencoded));
@@ -1086,6 +1096,9 @@ static JSBool js_file_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 		case FILE_PROP_DEBUG:
 			*vp = BOOLEAN_TO_JSVAL(p->debug);
 			break;
+		case FILE_PROP_YENCODED:
+			*vp = BOOLEAN_TO_JSVAL(p->yencoded);
+			break;
 		case FILE_PROP_UUENCODED:
 			*vp = BOOLEAN_TO_JSVAL(p->uuencoded);
 			break;
@@ -1182,6 +1195,7 @@ static struct JSPropertySpec js_file_properties[] = {
 	{	"network_byte_order",FILE_PROP_NETWORK_ORDER,JSPROP_ENUMERATE,	NULL,NULL},
 	{	"rot13"				,FILE_PROP_ROT13		,JSPROP_ENUMERATE,	NULL,NULL},
 	{	"uue"				,FILE_PROP_UUENCODED	,JSPROP_ENUMERATE,	NULL,NULL},
+	{	"yenc"				,FILE_PROP_YENCODED		,JSPROP_ENUMERATE,	NULL,NULL},
 	{	"base64"			,FILE_PROP_B64ENCODED	,JSPROP_ENUMERATE,	NULL,NULL},
 	/* dynamically calculated */
 	{	"crc16"				,FILE_PROP_CRC16		,FILE_PROP_FLAGS,	NULL,NULL},
@@ -1209,8 +1223,9 @@ static char* file_prop_desc[] = {
 	,"file mode/attributes"
 	,"set to <i>true</i> if binary data is to be written and read in Network Byte Order (big end first)"
 	,"set to <i>true</i> to enable automatic ROT13 translatation of text"
-	,"set to <i>true</i> to enable automatic unix-to-unix encode and decode on <tt>read</tt> and <tt>write</tt> calls"
-	,"set to <i>true</i> to enable automatic base64 encode and decode on <tt>read</tt> and <tt>write</tt> calls"
+	,"set to <i>true</i> to enable automatic Unix-to-Unix encode and decode on <tt>read</tt> and <tt>write</tt> calls"
+	,"set to <i>true</i> to enable automatic yEnc encode and decode on <tt>read</tt> and <tt>write</tt> calls"
+	,"set to <i>true</i> to enable automatic Base64 encode and decode on <tt>read</tt> and <tt>write</tt> calls"
 	,"calculated 16-bit CRC of file contents - <small>READ ONLY</small>"
 	,"calculated 32-bit CRC of file contents - <small>READ ONLY</small>"
 	,"calculated 32-bit checksum of file contents - <small>READ ONLY</small>"
@@ -1376,7 +1391,7 @@ js_file_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval
 				"</ol>"
 			"<li>Support for binary files<ol type=circle>"
 				"<li>native or network byte order (endian)"
-				"<li>automatic Unix-to-Unix (<i>uue</i>) or Base64 encoding/decoding"
+				"<li>automatic Unix-to-Unix (<i>UUE</i>), yEncode (<i>yEnc</i>) or Base64 encoding/decoding"
 				"</ol>"
 			"<li>Support for ASCII text files<ol type=circle>"
 				"<li>supports line-based I/O<ol type=square>"
