@@ -141,8 +141,8 @@ static int save_menu_cur=-1;
 static int save_menu_bar=-1;
 
 void reset_dynamic(void) {
-	*last_menu_cur=NULL;
-	*last_menu_bar=NULL;
+	last_menu_cur=NULL;
+	last_menu_bar=NULL;
 	save_menu_cur=-1;
 	save_menu_bar=-1;
 }
