@@ -267,9 +267,13 @@ list_node_t* listFindNode(const link_list_t* list, const void* data, size_t leng
 
 	MUTEX_LOCK(list);
 
-	for(node=list->first; node!=NULL; node=node->next)
-		if(node->data!=NULL && memcmp(node->data,data,length)==0)
+	for(node=list->first; node!=NULL; node=node->next) {
+		if(length==0) {
+			if(node->data==data)
+				break;
+		} else if(node->data!=NULL && memcmp(node->data,data,length)==0)
 			break;
+	}
 
 	MUTEX_UNLOCK(list);
 
