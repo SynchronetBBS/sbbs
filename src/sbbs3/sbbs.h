@@ -987,7 +987,8 @@ extern "C" {
 	DLLEXPORT JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t* cfg
 													,user_t* user, subscan_t* subscan);
 	DLLEXPORT BOOL		DLLCALL js_CreateMsgAreaProperties(JSContext* cx, scfg_t* cfg
-													,JSObject* subobj, uint subnum);
+													,JSObject* subobj, uint subnum
+													,uint usrgrpnum, uint usrsubnum);
 
 	/* js_xtrn_area.c */
 	DLLEXPORT JSObject* DLLCALL js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_t* cfg

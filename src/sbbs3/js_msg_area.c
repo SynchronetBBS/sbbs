@@ -89,7 +89,8 @@ static char* msg_area_prop_desc[] = {
 };
 #endif
 
-BOOL DLLCALL js_CreateMsgAreaProperties(JSContext* cx, scfg_t* cfg, JSObject* subobj, uint subnum)
+BOOL DLLCALL js_CreateMsgAreaProperties(JSContext* cx, scfg_t* cfg, JSObject* subobj, uint subnum
+										,uint usrgrpnum, uint usrsubnum)
 {
 	char		str[128];
 	int			c;
@@ -102,11 +103,11 @@ BOOL DLLCALL js_CreateMsgAreaProperties(JSContext* cx, scfg_t* cfg, JSObject* su
 
 	sub=cfg->sub[subnum];
 
-	if(!JS_DefineProperty(cx, subobj, "number", INT_TO_JSVAL(subnum)
+	if(!JS_DefineProperty(cx, subobj, "number", INT_TO_JSVAL(usrsubnum)
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
 		return(FALSE);
 
-	if(!JS_DefineProperty(cx, subobj, "grp_number", INT_TO_JSVAL(sub->grp)
+	if(!JS_DefineProperty(cx, subobj, "grp_number", INT_TO_JSVAL(usrgrpnum)
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
 		return(FALSE);
 
@@ -324,8 +325,8 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 										  ,user_t* user, subscan_t* subscan)
 {
 	JSObject*	areaobj;
-	JSObject*	allsubs;
 	JSObject*	allgrps;
+	JSObject*	allsubs;
 	JSObject*	grpobj;
 	JSObject*	subobj;
 	JSObject*	grp_list;
@@ -333,7 +334,7 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 	JSString*	js_str;
 	jsval		val;
 	jsuint		index;
-	uint		l,d,gn;
+	uint		l,d,gn,sn;
 
 	/* Return existing object if it's already been created */
 	if(JS_GetProperty(cx,parent,"msg_area",&val) && val!=JSVAL_VOID)
@@ -349,13 +350,7 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 	js_DescribeSyncObject(cx,areaobj,"Message Areas",310);
 #endif
 
-	if((allsubs=JS_NewObject(cx, NULL, NULL, areaobj))==NULL)
-		return(NULL);
-
-	val=OBJECT_TO_JSVAL(allsubs);
-	if(!JS_SetProperty(cx, areaobj, "sub", &val))
-		return(NULL);
-
+	/* msg_area.grp[] */
 	if((allgrps=JS_NewObject(cx, NULL, NULL, areaobj))==NULL)
 		return(NULL);
 
@@ -363,7 +358,15 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 	if(!JS_SetProperty(cx, areaobj, "grp", &val))
 		return(NULL);
 
-	/* grp_list[] */
+	/* msg_area.sub[] */
+	if((allsubs=JS_NewObject(cx, NULL, NULL, areaobj))==NULL)
+		return(NULL);
+
+	val=OBJECT_TO_JSVAL(allsubs);
+	if(!JS_SetProperty(cx, areaobj, "sub", &val))
+		return(NULL);
+
+	/* msg_area.grp_list[] */
 	if((grp_list=JS_NewArrayObject(cx, 0, NULL))==NULL) 
 		return(NULL);
 
@@ -398,7 +401,6 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 		val=INT_TO_JSVAL(gn);
 		if(!JS_SetProperty(cx, grpobj, "number", &val))
 			return(NULL);
-		gn++;
 
 		if((js_str=JS_NewStringCopyZ(cx, cfg->grp[l]->sname))==NULL)
 			return(NULL);
@@ -458,7 +460,7 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 				,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE))
 				return(NULL);
 
-			if(!js_CreateMsgAreaProperties(cx, cfg, subobj, d))
+			if(!js_CreateMsgAreaProperties(cx, cfg, subobj, d, gn, sn++))
 				return(NULL);
 			
 			if(user==NULL || chk_ar(cfg,cfg->sub[d]->read_ar,user))
@@ -513,17 +515,17 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 #ifdef _DEBUG
 		js_CreateArrayOfStrings(cx, grpobj, "_property_desc_list", msg_grp_prop_desc, JSPROP_READONLY);
 #endif
-
+		gn++;
 	}
-
-#ifdef _DEBUG
-	js_DescribeSyncObject(cx,allsubs,"Associative array of all sub-boards (use internal code as index)",311);
-	JS_DefineProperty(cx,allsubs,"_dont_document",JSVAL_TRUE,NULL,NULL,JSPROP_READONLY);
-#endif
 
 #ifdef _DEBUG
 	js_DescribeSyncObject(cx,allsubs,"Associative array of all groups (use name as index)",312);
 	JS_DefineProperty(cx,allgrps,"_dont_document",JSVAL_TRUE,NULL,NULL,JSPROP_READONLY);
+#endif
+
+#ifdef _DEBUG
+	js_DescribeSyncObject(cx,allsubs,"Associative array of all sub-boards (use internal code as index)",311);
+	JS_DefineProperty(cx,allsubs,"_dont_document",JSVAL_TRUE,NULL,NULL,JSPROP_READONLY);
 #endif
 
 	return(areaobj);

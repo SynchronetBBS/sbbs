@@ -54,6 +54,7 @@ static char* dir_prop_desc[] = {
 
 	 "directory number"
 	,"library number"
+	,"library name"
 	,"directory internal code"
 	,"directory name"
 	,"directory description"
@@ -88,6 +89,7 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 {
 	char		vpath[MAX_PATH+1];
 	JSObject*	areaobj;
+	JSObject*	alllibs;
 	JSObject*	alldirs;
 	JSObject*	libobj;
 	JSObject*	dirobj;
@@ -96,7 +98,7 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 	JSString*	js_str;
 	jsval		val;
 	jsuint		index;
-	uint		l,d;
+	uint		l,d,ln,dn;
 
 	/* Return existing object if it's already been created */
 	if(JS_GetProperty(cx,parent,"file_area",&val) && val!=JSVAL_VOID)
@@ -107,6 +109,15 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 	if(areaobj==NULL)
 		return(NULL);
 
+	/* file_area.lib[] */
+	if((alllibs=JS_NewObject(cx, NULL, NULL, areaobj))==NULL)
+		return(NULL);
+
+	val=OBJECT_TO_JSVAL(alllibs);
+	if(!JS_SetProperty(cx, areaobj, "lib", &val))
+		return(NULL);
+
+	/* file_area.dir[] */
 	if((alldirs=JS_NewObject(cx, NULL, NULL, areaobj))==NULL)
 		return(NULL);
 
@@ -114,6 +125,7 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 	if(!JS_SetProperty(cx, areaobj, "dir", &val))
 		return(NULL);
 
+	/* file_area.properties */
 	if(!JS_NewNumberValue(cx,cfg->min_dspace,&val))
 		return(NULL);
 	if(!JS_SetProperty(cx, areaobj, "min_diskspace", &val)) 
@@ -131,7 +143,7 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 	js_DescribeSyncObject(cx,areaobj,"File Transfer Areas",310);
 #endif
 
-	/* lib_list[] */
+	/* file_area.lib_list[] */
 	if((lib_list=JS_NewArrayObject(cx, 0, NULL))==NULL) 
 		return(NULL);
 
@@ -139,7 +151,7 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 	if(!JS_SetProperty(cx, areaobj, "lib_list", &val)) 
 		return(NULL);
 
-	for(l=0;l<cfg->total_libs;l++) {
+	for(l=ln=0;l<cfg->total_libs;l++) {
 #if 0
 		if(user==NULL && (*cfg->lib[l]->ar)!=AR_NULL)
 			continue;
@@ -157,7 +169,12 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 		if(!JS_SetElement(cx, lib_list, index, &val))
 			return(NULL);
 
-		val=INT_TO_JSVAL(l);
+		/* Add as property (associative array element) */
+		if(!JS_DefineProperty(cx, alllibs, cfg->lib[l]->sname, val
+			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE))
+			return(NULL);
+
+		val=INT_TO_JSVAL(ln);
 		if(!JS_SetProperty(cx, libobj, "number", &val))
 			return(NULL);
 
@@ -223,12 +240,19 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 				,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE))
 				return(NULL);
 
-			val=INT_TO_JSVAL(d);
+			val=INT_TO_JSVAL(dn);
 			if(!JS_SetProperty(cx, dirobj, "number", &val))
 				return(NULL);
+			dn++;
 
-			val=INT_TO_JSVAL(cfg->dir[d]->lib);
+			val=INT_TO_JSVAL(ln);
 			if(!JS_SetProperty(cx, dirobj, "lib_number", &val))
+				return(NULL);
+
+			if((js_str=JS_NewStringCopyZ(cx, cfg->lib[cfg->dir[d]->lib]->sname))==NULL)
+				return(NULL);
+			val=STRING_TO_JSVAL(js_str);
+			if(!JS_SetProperty(cx, dirobj, "lib_name", &val))
 				return(NULL);
 
 			if((js_str=JS_NewStringCopyZ(cx, cfg->dir[d]->code))==NULL)
@@ -382,7 +406,13 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 #ifdef _DEBUG
 		js_CreateArrayOfStrings(cx, libobj, "_property_desc_list", lib_prop_desc, JSPROP_READONLY);
 #endif
+		ln++;
 	}
+
+#ifdef _DEBUG
+	js_DescribeSyncObject(cx,alldirs,"Associative array of all libraries (use name as index)",312);
+	JS_DefineProperty(cx,alldirs,"_dont_document",JSVAL_TRUE,NULL,NULL,JSPROP_READONLY);
+#endif
 
 #ifdef _DEBUG
 	js_DescribeSyncObject(cx,alldirs,"Associative array of all directories (use internal code as index)",311);
