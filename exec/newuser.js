@@ -107,7 +107,7 @@ function send_newuser_welcome_msg(fname)
 		log("!ERROR " + errno_str + " opening " + fname);
 		return(false);
 	}
-	msgtxt = lfexpand(file.read(file_size(fname)));
+	msgtxt = lfexpand(file.read(file.length));
 	file.close();
 	delete file;
 
