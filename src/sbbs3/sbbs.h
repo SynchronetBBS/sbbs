@@ -829,7 +829,7 @@ extern "C" {
 #ifdef JAVASCRIPT
 
 	typedef struct {
-		const char      *name;
+		const char*		name;
 		JSNative        call;
 		uint8           nargs;
 		const char*		type;		/* return type */
@@ -838,10 +838,21 @@ extern "C" {
 		const char**	alias;		/* aliases */
 	} jsMethodSpec;
 
-	const char* jstype_void		= "void";
-	const char* jstype_bool		= "boolean";
-	const char* jstype_str		= "string";
-	const char* jstype_num		= "number";
+	#ifdef __cplusplus
+
+		const char* jstype_void		= "void";
+		const char* jstype_bool		= "boolean";
+		const char* jstype_str		= "string";
+		const char* jstype_num		= "number";
+
+	#else
+
+		#define		jstype_void		"void"
+		#define		jstype_bool		"boolean"
+		#define		jstype_str		"string"
+		#define		jstype_num		"number"
+
+	#endif
 
 	/* main.cpp */
 	DLLEXPORT int		DLLCALL js_MethodsToFunctions(jsMethodSpec meth[], JSFunctionSpec func[]);
