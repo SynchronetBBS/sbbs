@@ -1214,6 +1214,8 @@ static JSBool
 js_utime(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char*			fname;
+	int32			actime;
+	int32			modtime;
 	struct utimbuf	tbuf;
 	struct utimbuf*	t=NULL;
 
@@ -1224,9 +1226,11 @@ js_utime(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	if(argc>1) {
 		memset(&tbuf,0,sizeof(tbuf));
-		tbuf.actime=tbuf.modtime=time(NULL);
-		JS_ValueToInt32(cx,argv[1],&tbuf.actime);
-		JS_ValueToInt32(cx,argv[2],&tbuf.modtime);
+		actime=modtime=time(NULL);
+		JS_ValueToInt32(cx,argv[1],&actime);
+		JS_ValueToInt32(cx,argv[2],&modtime);
+		tbuf.actime=actime;
+		tbuf.modtime=modtime;
 		t=&tbuf;
 	}
 
