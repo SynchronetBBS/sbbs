@@ -483,6 +483,10 @@ void sbbs_t::newuser()
 	sprintf(str,"%suser/%04u.sig",cfg.data_dir,useron.number); /* delete signature */
 	remove(str);
 
+#ifdef JAVASCRIPT
+	js_create_user_objects();
+#endif
+
 	if(cfg.newuser_mod[0])
 		exec_bin(cfg.newuser_mod,&main_csi);
 	user_event(EVENT_NEWUSER);

@@ -68,19 +68,7 @@ bool sbbs_t::logon()
 	client_on(client_socket,&client,TRUE /* update */);
 
 #ifdef JAVASCRIPT
-	if(js_cx!=NULL) {
-		/* user object */
-		if(js_CreateUserObject(js_cx, js_glob, &cfg, "user", useron.number)==NULL) 
-			lprintf("!JavaScript ERROR creating user object");
-
-		/* file_area object */
-		if(js_CreateFileAreaObject(js_cx, js_glob, &cfg, &useron, "")==NULL) 
-			lprintf("!JavaScript ERROR creating file_area object");
-
-		/* msg_area object */
-		if(js_CreateMsgAreaObject(js_cx, js_glob, &cfg, &useron, subscan)==NULL) 
-			lprintf("!JavaScript ERROR creating msg_area object");
-	}
+	js_create_user_objects();
 #endif
 
 	if(useron.rest&FLAG('Q'))

@@ -186,6 +186,7 @@ public:
 	ulong		js_loop;
 	long		js_execfile(char *fname);
 	bool		js_init(void);
+	void		js_create_user_objects(void);
 
 #endif
 
