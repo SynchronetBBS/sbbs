@@ -65,7 +65,7 @@ ifeq ($(shell uname -m),ppc)
  os		:=	$(os)-ppc
 endif
 # this line wont work with solaris unless awk in path is actually gawk 
-os      :=	$(shell echo $(os) | tr "[ A-Z]" "[-a-z]")
+os      :=	$(shell echo $(os) | tr "[ A-Z]" "[\-a-z]")
 # remove '/' from "os/2"
 os      :=  $(shell echo $(os) | tr -d "/")
 
