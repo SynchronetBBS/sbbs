@@ -85,7 +85,6 @@ static int add_char(char *pos, char ch, int done, char *end)
 	if(pos>=end)  {
 		return(1);
 	}
-	printf("Adding %d\n",ch);
 	if(done)
 		*pos=base64alphabet[64];
 	else
@@ -114,22 +113,17 @@ char * b64_encode(char *target, const char *source, size_t tlen, size_t slen)  {
 		write=target;
 
 	tend=write+tlen;
-	printf("TEND: %u\n",tend);
-	printf("WRITE: %u\n",write);
-	printf("TLEN: %u\n",tlen);
 	send=read+slen;
 	for(;(read < send) && !done;)  {
 		enc=*(read++);
 		buf=(enc & 0x03)<<4;
 		enc=(enc&0xFC)>>2;
-		printf("1: ");
 		if(add_char(write++, enc, done, tend))  {
 			if(target==source)
 				free(tmpbuf);
 			return(NULL);
 		}
 		enc=buf|((*read & 0xF0) >> 4);
-		printf("2: ");
 		if(add_char(write++, enc, done, tend))  {
 			if(target==source)
 				free(tmpbuf);
@@ -139,7 +133,6 @@ char * b64_encode(char *target, const char *source, size_t tlen, size_t slen)  {
 			done=1;
 		buf=(*(read++)<<2)&0x3C;
 		enc=buf|((*read & 0xC0)>>6);
-		printf("3: ");
 		if(add_char(write++, enc, done, tend))  {
 			if(target==source)
 				free(tmpbuf);
@@ -148,7 +141,6 @@ char * b64_encode(char *target, const char *source, size_t tlen, size_t slen)  {
 		if(read==send)
 			done=1;
 		enc=((int)*(read++))&0x3F;
-		printf("4: ");
 		if(add_char(write++, enc, done, tend))  {
 			if(target==source)
 				free(tmpbuf);
