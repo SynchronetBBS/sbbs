@@ -40,75 +40,6 @@
 
 const char *scfgnulstr="";
 
-void DLLEXPORT prep_dir(char* base, char* path)
-{
-#ifdef __unix__
-	char	*p;
-#endif
-	char	str[LEN_DIR*2];
-
-	if(!path[0])
-		return;
-	if(path[0]!='\\' && path[0]!='/' && path[1]!=':')           /* Relative to NODE directory */
-		sprintf(str,"%s%s",base,path);
-	else
-		strcpy(str,path);
-
-#ifdef __unix__				/* Change backslashes to forward slashes on Unix */
-	for(p=str;*p;p++)
-		if(*p=='\\') 
-			*p='/';
-	strlwr(str);	/* temporary hack */
-#endif
-
-	backslashcolon(str);
-	strcat(str,".");                // Change C: to C:. and C:\SBBS\ to C:\SBBS\.
-	_fullpath(path,str,LEN_DIR+1);	// Change C:\SBBS\NODE1\..\EXEC to C:\SBBS\EXEC
-	backslash(path);
-}
-
-void prep_path(char* path)
-{
-#ifdef __unix__				/* Change backslashes to forward slashes on Unix */
-	char	*p;
-
-	for(p=path;*p;p++)
-		if(*p=='\\') 
-			*p='/';
-#endif
-}
-
-char * get_alloc(long *offset, char *outstr, int maxlen, FILE *instream)
-{
-
-#ifdef SCFG
-	fread(outstr,1,maxlen+1,instream);
-	(*offset)+=maxlen+1;
-#else
-	char str[257];
-
-	fread(str,1,maxlen+1,instream);
-//	  lprintf("%s %d %p\r\n",__FILE__,__LINE__,offset);
-	(*offset)+=maxlen+1;	// this line was commented out (04/12/97) why?
-	if(!str[0]) 			/* Save memory */
-		return((char *)scfgnulstr);
-	if((outstr=(char *)MALLOC(strlen(str)+1))==NULL)
-		return(NULL);
-	strcpy(outstr,str);
-#endif
-
-return(outstr);
-}
-
-#ifdef SCFG 	/* SCFG allocate max length */
-	#define readline_alloc(l,s,m,i) readline(l,s,m,i)
-#else
-	char *readline_alloc(long *offset, char *outstr, int maxline
-		, FILE *instream);
-	#define readline_alloc(l,s,m,i) s=readline_alloc(l,s,m,i)
-	#define get_alloc(o,s,l,i) s=get_alloc(o,s,l,i)
-#endif
-
 /***********************************************************/
 /* These functions are called from here and must be linked */
 /***********************************************************/
@@ -123,8 +54,6 @@ BOOL allocerr(read_cfg_text_t* txt, long offset, char *fname, uint size)
 	lprintf(txt->allocerr,size);
 	return(FALSE);
 }
-
-#ifndef NO_NODE_CFG
 
 /****************************************************************************/
 /* Reads in NODE.CNF and initializes the associated variables				*/
@@ -164,13 +93,9 @@ BOOL read_node_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 	get_str(cfg->node_swapdir,instream);
 	get_int(cfg->node_valuser,instream);
 	get_int(cfg->node_minbps,instream);
-	#ifdef SCFG
-	get_str(cfg->node_ar,instream);
-	#else
-	fread(str,1,LEN_ARSTR+1,instream);
-	offset+=LEN_ARSTR+1;
-	cfg->node_ar=arstr(0, str, cfg);
-	#endif
+	get_str(cfg->node_arstr,instream);
+	cfg->node_ar=arstr(0, cfg->node_arstr, cfg);
+
 	get_int(cfg->node_dollars_per_call,instream);
 	get_str(cfg->node_editor,instream);
 	get_str(cfg->node_viewer,instream);
@@ -184,17 +109,10 @@ BOOL read_node_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 	if(!cfg->temp_dir[0])
 		strcpy(cfg->temp_dir,"temp");
 
-	strlwr(cfg->text_dir);	/* temporary Unix-compatibility hack */
-	strlwr(cfg->temp_dir);	/* temporary Unix-compatibility hack */
-
-	#ifndef SCFG
-	prep_dir(cfg->ctrl_dir, cfg->text_dir);
-	#endif
-
-	for(i=0;i<10;i++) { 						/* WFC 0-9 DOS commands */
-		get_alloc(&offset,cfg->wfc_cmd[i],LEN_CMD,instream); }
-	for(i=0;i<12;i++) { 						/* WFC F1-F12 shrinking DOS cmds */
-		get_alloc(&offset,cfg->wfc_scmd[i],LEN_CMD,instream); }
+	for(i=0;i<10;i++)  						/* WFC 0-9 DOS commands */
+		get_str(cfg->wfc_cmd[i],instream); 
+	for(i=0;i<12;i++)  						/* WFC F1-F12 shrinking DOS cmds */
+		get_str(cfg->wfc_scmd[i],instream); 
 	get_str(cfg->mdm_hang,instream);
 	get_int(cfg->node_sem_check,instream);
 	if(!cfg->node_sem_check) cfg->node_sem_check=60;
@@ -249,17 +167,14 @@ BOOL read_node_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 		get_int(cfg->mdm_result[i].code,instream);
 		get_int(cfg->mdm_result[i].rate,instream);
 		get_int(cfg->mdm_result[i].cps,instream);
-		get_alloc(&offset,cfg->mdm_result[i].str,LEN_MODEM,instream); }
+		get_str(cfg->mdm_result[i].str,instream); 
+	}
 	cfg->mdm_results=i;
 	fclose(instream);
 	if(txt->readit && txt->readit[0])
 		lprintf(txt->readit,fname);
 	return(TRUE);
 }
-
-#endif
-
-#ifndef NO_MAIN_CFG
 
 /****************************************************************************/
 /* Reads in MAIN.CNF and initializes the associated variables				*/
@@ -310,19 +225,10 @@ BOOL read_main_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 		if((cfg->node_path[i]=(char *)MALLOC(strlen(str)+1))==NULL)
 			return allocerr(txt,offset,fname,strlen(str)+1);
 		strcpy(cfg->node_path[i],str); 
-		strlwr(cfg->node_path[i]); /* temporary Unix-compatibility hack */
 	}
 
 	get_str(cfg->data_dir,instream); 			  /* data directory */
 	get_str(cfg->exec_dir,instream); 			  /* exec directory */
-
-	strlwr(cfg->data_dir);		/* temporary Unix-compatibility hack */
-	strlwr(cfg->exec_dir);		/* temporary Unix-compatibility hack */
-
-	#ifndef SCFG
-	prep_dir(cfg->ctrl_dir, cfg->data_dir);
-	prep_dir(cfg->ctrl_dir, cfg->exec_dir);
-	#endif
 
 	get_str(cfg->sys_logon,instream);
 	get_str(cfg->sys_logout,instream);
@@ -338,13 +244,8 @@ BOOL read_main_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 	get_int(cfg->sys_autodel,instream);
 	get_int(cfg->sys_def_stat,instream); 	/* default status line */
 
-	#ifdef SCFG
-	get_str(cfg->sys_chat_ar,instream);
-	#else
-	fread(str,1,LEN_ARSTR+1,instream);
-	offset+=LEN_ARSTR+1;
-	cfg->sys_chat_ar=arstr(0,str,cfg);
-	#endif
+	get_str(cfg->sys_chat_arstr,instream);
+	cfg->sys_chat_ar=arstr(0,cfg->sys_chat_arstr,cfg);
 
 	get_int(cfg->cdt_min_value,instream);
 	get_int(cfg->max_minutes,instream);
@@ -402,16 +303,6 @@ BOOL read_main_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 	get_str(cfg->expire_mod,instream);
 	get_int(c,instream);
 
-#if	1	/* temporary hack for Unix compatibility */
-	strlwr (cfg->logon_mod);
-	strlwr (cfg->logoff_mod);
-	strlwr (cfg->newuser_mod);
-	strlwr (cfg->login_mod);
-	strlwr (cfg->logout_mod);
-	strlwr (cfg->sync_mod);
-	strlwr (cfg->expire_mod);
-#endif
-
 	for(i=0;i<224;i++)					/* unused - initialized to NULL */
 		get_int(n,instream);
 	for(i=0;i<256;i++)					/* unused - initialized to 0xff */
@@ -454,19 +345,22 @@ BOOL read_main_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 		get_int(cfg->level_expireto[i],instream);
 		get_int(c,instream);
 		for(j=0;j<5;j++)
-			get_int(n,instream); }
+			get_int(n,instream); 
+	}
 	if(i!=100) {
 		lprintf(txt->error,offset,fname);
 		lprintf("Insufficient User Level Information"
 			"%d user levels read, 100 needed.",i);
-		return(FALSE); }
+		return(FALSE); 
+	}
 
 	get_int(cfg->total_shells,instream);
 	#ifdef SBBS
 	if(!cfg->total_shells) {
 		lprintf(txt->error,offset,fname);
 		lprintf("At least one command shell must be configured.");
-		return(FALSE); }
+		return(FALSE); 
+	}
 	#endif
 
 	if(cfg->total_shells) {
@@ -481,33 +375,21 @@ BOOL read_main_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 			return allocerr(txt,offset,fname,sizeof(shell_t));
 		memset(cfg->shell[i],0,sizeof(shell_t));
 
-		get_alloc(&offset,cfg->shell[i]->name,40,instream);
+		get_str(cfg->shell[i]->name,instream);
 		get_str(cfg->shell[i]->code,instream);
-		strlwr(cfg->shell[i]->code);	/* temporary Unix-compatibility hack */
-	#ifdef SCFG
-		get_str(cfg->shell[i]->ar,instream);
-	#else
-		fread(str,1,LEN_ARSTR+1,instream);
-		offset+=LEN_ARSTR+1;
-		cfg->shell[i]->ar=arstr(0,str,cfg);
-	#endif
+		get_str(cfg->shell[i]->arstr,instream);
+		cfg->shell[i]->ar=arstr(0,cfg->shell[i]->arstr,cfg);
 		get_int(cfg->shell[i]->misc,instream);
 		for(j=0;j<8;j++)
 			get_int(n,instream);
-		}
+	}
 	cfg->total_shells=i;
-
 
 	fclose(instream);
 	if(txt->readit && txt->readit[0])
 		lprintf(txt->readit,fname);
 	return(TRUE);
 }
-
-#endif
-
-#ifndef NO_MSGS_CFG
-
 
 /****************************************************************************/
 /* Reads in MSGS.CNF and initializes the associated variables				*/
@@ -518,13 +400,6 @@ BOOL read_msgs_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 	short	i,j,k,n;
 	long	offset=0;
 	FILE	*instream;
-
-#ifndef SCFG
-
-	sprintf(cfg->data_dir_subs,"%ssubs/",cfg->data_dir);
-	prep_dir(cfg->ctrl_dir, cfg->data_dir_subs);
-
-#endif
 
 	strcpy(fname,"msgs.cnf");
 	sprintf(str,"%s%s",cfg->ctrl_dir,fname);
@@ -542,13 +417,9 @@ BOOL read_msgs_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 	get_int(cfg->max_qwkmsgs,instream);
 	get_int(cfg->mail_maxcrcs,instream);
 	get_int(cfg->mail_maxage,instream);
-	#ifdef SCFG
-		get_str(cfg->preqwk_ar,instream);
-	#else
-		fread(str,1,LEN_ARSTR+1,instream);
-		offset+=LEN_ARSTR+1;
-		cfg->preqwk_ar=arstr(0,str,cfg);
-	#endif
+	get_str(cfg->preqwk_arstr,instream);
+	cfg->preqwk_ar=arstr(0,cfg->preqwk_arstr,cfg);
+
 	get_int(cfg->smb_retry_time,instream);	 /* odd byte */
 	if(!cfg->smb_retry_time)
 		cfg->smb_retry_time=30;
@@ -564,13 +435,11 @@ BOOL read_msgs_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 
 	get_int(cfg->total_grps,instream);
 
-
 	if(cfg->total_grps) {
 		if((cfg->grp=(grp_t **)MALLOC(sizeof(grp_t *)*cfg->total_grps))==NULL)
 			return allocerr(txt,offset,fname,sizeof(grp_t *)*cfg->total_grps); }
 	else
 		cfg->grp=NULL;
-
 
 	for(i=0;i<cfg->total_grps;i++) {
 
@@ -579,22 +448,12 @@ BOOL read_msgs_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 			return allocerr(txt,offset,fname,sizeof(grp_t));
 		memset(cfg->grp[i],0,sizeof(grp_t));
 
-		get_alloc(&offset,cfg->grp[i]->lname,LEN_GLNAME,instream);
-		get_alloc(&offset,cfg->grp[i]->sname,LEN_GSNAME,instream);
+		get_str(cfg->grp[i]->lname,instream);
+		get_str(cfg->grp[i]->sname,instream);
 
-	#if !defined(SCFG) && defined(SAVE_MEMORY)	  /* Save memory */
-		if(!strcmp(cfg->grp[i]->lname,cfg->grp[i]->sname) && cfg->grp[i]->sname!=scfgnulstr) {
-			FREE(cfg->grp[i]->sname);
-			cfg->grp[i]->sname=cfg->grp[i]->lname; }
-	#endif
+		get_str(cfg->grp[i]->arstr,instream);
+		cfg->grp[i]->ar=arstr(0,cfg->grp[i]->arstr,cfg);
 
-	#ifdef SCFG
-		get_str(cfg->grp[i]->ar,instream);
-	#else
-		fread(str,1,LEN_ARSTR+1,instream);
-		offset+=LEN_ARSTR+1;
-		cfg->grp[i]->ar=arstr(0,str,cfg);
-	#endif
 		for(j=0;j<48;j++)
 			get_int(n,instream);
 		}
@@ -619,126 +478,49 @@ BOOL read_msgs_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 		memset(cfg->sub[i],0,sizeof(sub_t));
 
 		get_int(cfg->sub[i]->grp,instream);
-		get_alloc(&offset,cfg->sub[i]->lname,LEN_SLNAME,instream);
-		get_alloc(&offset,cfg->sub[i]->sname,LEN_SSNAME,instream);
-
-	#if !defined(SCFG) && defined(SAVE_MEMORY) /* Save memory */
-		if(!strcmp(cfg->sub[i]->lname,cfg->sub[i]->sname) && cfg->sub[i]->sname!=scfgnulstr) {
-			FREE(cfg->sub[i]->sname);
-			cfg->sub[i]->sname=cfg->sub[i]->lname; }
-	#endif
-
-		get_alloc(&offset,cfg->sub[i]->qwkname,10,instream);
-
-	#if !defined(SCFG) && defined(SAVE_MEMORY)	/* Save memory */
-		if(!strcmp(cfg->sub[i]->qwkname,cfg->sub[i]->sname) && cfg->sub[i]->qwkname!=scfgnulstr) {
-			FREE(cfg->sub[i]->qwkname);
-			cfg->sub[i]->qwkname=cfg->sub[i]->sname; }
-	#endif
-
+		get_str(cfg->sub[i]->lname,instream);
+		get_str(cfg->sub[i]->sname,instream);
+		get_str(cfg->sub[i]->qwkname,instream);
 		get_str(cfg->sub[i]->code,instream);
-		strlwr(cfg->sub[i]->code); /* temporary Unix-compatibility hack */
-
-	#ifdef SCFG
 		get_str(cfg->sub[i]->data_dir,instream);
-	#else
-		fread(str,LEN_DIR+1,1,instream);   /* substitute data dir */
-		offset+=LEN_DIR+1;
-		if(str[0]) {
-			prep_dir(cfg->ctrl_dir, str);
-			if((cfg->sub[i]->data_dir=(char *)MALLOC(strlen(str)+1))==NULL)
-				return allocerr(txt,offset,fname,strlen(str)+1);
-			strcpy(cfg->sub[i]->data_dir,str); }
-		else
-			cfg->sub[i]->data_dir=cfg->data_dir_subs;
-	#endif
 
+		get_str(cfg->sub[i]->arstr,instream);
+		get_str(cfg->sub[i]->read_arstr,instream);
+		get_str(cfg->sub[i]->post_arstr,instream);
+		get_str(cfg->sub[i]->op_arstr,instream);
 
-	#ifdef SCFG
-		get_str(cfg->sub[i]->ar,instream);
-		get_str(cfg->sub[i]->read_ar,instream);
-		get_str(cfg->sub[i]->post_ar,instream);
-		get_str(cfg->sub[i]->op_ar,instream);
-	#else
-		fread(str,1,LEN_ARSTR+1,instream);
-		offset+=LEN_ARSTR+1;
-		cfg->sub[i]->ar=arstr(0,str,cfg);
-		fread(str,1,LEN_ARSTR+1,instream);
-		offset+=LEN_ARSTR+1;
-		cfg->sub[i]->read_ar=arstr(0,str,cfg);
-		fread(str,1,LEN_ARSTR+1,instream);
-		offset+=LEN_ARSTR+1;
-		cfg->sub[i]->post_ar=arstr(0,str,cfg);
-		fread(str,1,LEN_ARSTR+1,instream);
-		offset+=LEN_ARSTR+1;
-		cfg->sub[i]->op_ar=arstr(0,str,cfg);
-	#endif
+		cfg->sub[i]->ar=arstr(0,cfg->sub[i]->arstr,cfg);
+		cfg->sub[i]->read_ar=arstr(0,cfg->sub[i]->read_arstr,cfg);
+		cfg->sub[i]->post_ar=arstr(0,cfg->sub[i]->post_arstr,cfg);
+		cfg->sub[i]->op_ar=arstr(0,cfg->sub[i]->op_arstr,cfg);
+
 		get_int(cfg->sub[i]->misc,instream);
 
-
-	#ifdef SCFG
 		get_str(cfg->sub[i]->tagline,instream);
-	#else
-		fread(str,81,1,instream);	/* substitute tagline */
-		offset+=81;
-		if(str[0]) {
-			if((cfg->sub[i]->tagline=(char *)MALLOC(strlen(str)+1))==NULL)
-				return allocerr(txt,offset,fname,strlen(str)+1);
-			strcpy(cfg->sub[i]->tagline,str); }
-		else
-			cfg->sub[i]->tagline=cfg->qnet_tagline;
-	#endif
-
-	#ifdef SCFG
 		get_str(cfg->sub[i]->origline,instream);
-	#else
-		fread(str,1,51,instream);	/* substitute origin line */
-		offset+=51;
-		if(str[0]) {
-			if((cfg->sub[i]->origline=(char *)MALLOC(strlen(str)+1))==NULL)
-				return allocerr(txt,offset,fname,strlen(str)+1);
-			strcpy(cfg->sub[i]->origline,str); }
-		else
-			cfg->sub[i]->origline=cfg->origline;
-	#endif
-
-	#ifdef SCFG
 		get_str(cfg->sub[i]->echomail_sem,instream);
-	#else
-		fread(str,1,LEN_DIR+1,instream);   /* substitute echomail semaphore */
-		offset+=LEN_DIR+1;
-		if(str[0]) {
-			prep_path(str);
-			if((cfg->sub[i]->echomail_sem=(char *)MALLOC(strlen(str)+1))==NULL)
-				return allocerr(txt,offset,fname,strlen(str)+1);
-			strcpy(cfg->sub[i]->echomail_sem,str); 
-		} else
-			cfg->sub[i]->echomail_sem=cfg->echomail_sem;
-	#endif
-		fread(str,1,LEN_DIR+1,instream);   /* substitute EchoMail path */
-		offset+=LEN_DIR+1;
-		get_int(cfg->sub[i]->faddr,instream);			/* FidoNet address */
 
+		fread(str,1,LEN_DIR+1,instream);				/* skip EchoMail path */
+		offset+=LEN_DIR+1;
+
+		get_int(cfg->sub[i]->faddr,instream);			/* FidoNet address */
 		get_int(cfg->sub[i]->maxmsgs,instream);
 		get_int(cfg->sub[i]->maxcrcs,instream);
 		get_int(cfg->sub[i]->maxage,instream);
 		get_int(cfg->sub[i]->ptridx,instream);
-	#ifdef SBBS
+#ifdef SBBS
 		for(j=0;j<i;j++)
 			if(cfg->sub[i]->ptridx==cfg->sub[j]->ptridx) {
 				lprintf(txt->error,offset,fname);
 				lprintf("Duplicate pointer index for subs #%d and #%d"
 					,i+1,j+1);
-				return(FALSE); }
-	#endif
+				return(FALSE); 
+			}
+#endif
 
-	#ifdef SCFG
-		get_str(cfg->sub[i]->mod_ar,instream);
-	#else
-		fread(str,1,LEN_ARSTR+1,instream);
-		offset+=LEN_ARSTR+1;
-		cfg->sub[i]->mod_ar=arstr(0,str,cfg);
-	#endif
+		get_str(cfg->sub[i]->mod_arstr,instream);
+		cfg->sub[i]->mod_ar=arstr(0,cfg->sub[i]->mod_arstr,cfg);
+
 		get_int(cfg->sub[i]->qwkconf,instream);
 		get_int(c,instream);
 		for(j=0;j<26;j++)
@@ -773,13 +555,6 @@ BOOL read_msgs_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 	for(i=0;i<28;i++)
 		get_int(n,instream);
 
-	/* Fix-up paths */
-	prep_path(cfg->netmail_sem);
-	prep_path(cfg->echomail_sem);
-	prep_dir(cfg->netmail_dir,cfg->data_dir);
-	prep_dir(cfg->echomail_dir,cfg->data_dir);
-	prep_dir(cfg->fidofile_dir,cfg->data_dir);
-
 	/**********/
 	/* QWKnet */
 	/**********/
@@ -805,9 +580,9 @@ BOOL read_msgs_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 		get_int(cfg->qhub[i]->freq,instream);
 		get_int(cfg->qhub[i]->days,instream);
 		get_int(cfg->qhub[i]->node,instream);
-		get_alloc(&offset,cfg->qhub[i]->call,LEN_CMD,instream);
-		get_alloc(&offset,cfg->qhub[i]->pack,LEN_CMD,instream);
-		get_alloc(&offset,cfg->qhub[i]->unpack,LEN_CMD,instream);
+		get_str(cfg->qhub[i]->call,instream);
+		get_str(cfg->qhub[i]->pack,instream);
+		get_str(cfg->qhub[i]->unpack,instream);
 		get_int(k,instream);
 
 		if(k) {
@@ -857,17 +632,13 @@ BOOL read_msgs_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 		if((cfg->phub[i]=(phub_t *)MALLOC(sizeof(phub_t)))==NULL)
 			return allocerr(txt,offset,fname,sizeof(phub_t));
 		memset(cfg->phub[i],0,sizeof(phub_t));
-	#ifdef SCFG
+
 		get_str(cfg->phub[i]->name,instream);
-	#else
-		fread(str,11,1,instream);
-		offset+=11;
-	#endif
 		get_int(cfg->phub[i]->time,instream);
 		get_int(cfg->phub[i]->freq,instream);
 		get_int(cfg->phub[i]->days,instream);
 		get_int(cfg->phub[i]->node,instream);
-		get_alloc(&offset,cfg->phub[i]->call,LEN_CMD,instream);
+		get_str(cfg->phub[i]->call,instream);
 		for(j=0;j<32;j++)
 			get_int(n,instream); }
 
@@ -882,7 +653,6 @@ BOOL read_msgs_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 
 	get_str(cfg->sys_inetaddr,instream); /* Internet address */
 	get_str(cfg->inetmail_sem,instream);
-	prep_path(cfg->inetmail_sem);
 	get_int(cfg->inetmail_misc,instream);
 	get_int(cfg->inetmail_cost,instream);
 
@@ -892,26 +662,12 @@ BOOL read_msgs_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 	return(TRUE);
 }
 
-#endif
-
 void free_node_cfg(scfg_t* cfg)
 {
-	int i;
-
 	FREE_AR(cfg->node_ar);
 
 	if(cfg->mdm_result!=NULL) {
-		for(i=0;i<cfg->mdm_results;i++) {
-			FREE_ALLOC(cfg->mdm_result[i].str);
-		}
 		FREE_AND_NULL(cfg->mdm_result);
-	}
-
-	for(i=0;i<10;i++) { 						/* WFC 0-9 DOS commands */
-		FREE_ALLOC(cfg->wfc_cmd[i]); 
-	}
-	for(i=0;i<12;i++) { 						/* WFC F1-F12 shrinking DOS cmds */
-		FREE_ALLOC(cfg->wfc_scmd[i]); 
 	}
 }
 
@@ -929,7 +685,6 @@ void free_main_cfg(scfg_t* cfg)
 	if(cfg->shell!=NULL) {
 		for(i=0;i<cfg->total_shells;i++) {
 			FREE_AR(cfg->shell[i]->ar);
-			FREE_ALLOC(cfg->shell[i]->name);
 			FREE_AND_NULL(cfg->shell[i]);
 		}
 		FREE_AND_NULL(cfg->shell);
@@ -944,8 +699,6 @@ void free_msgs_cfg(scfg_t* cfg)
 	if(cfg->grp!=NULL) {
 		for(i=0;i<cfg->total_grps;i++) {
 			FREE_AR(cfg->grp[i]->ar);
-			FREE_ALLOC(cfg->grp[i]->lname);
-			FREE_ALLOC(cfg->grp[i]->sname);
 			FREE_AND_NULL(cfg->grp[i]);
 		}
 		FREE_AND_NULL(cfg->grp);
@@ -953,24 +706,11 @@ void free_msgs_cfg(scfg_t* cfg)
 
 	if(cfg->sub!=NULL) {
 		for(i=0;i<cfg->total_subs;i++) {
-#ifndef SCFG
-			if(cfg->sub[i]->data_dir!=cfg->data_dir_subs)
-				FREE_AND_NULL(cfg->sub[i]->data_dir);
-			if(cfg->sub[i]->tagline!=cfg->qnet_tagline)
-				FREE_AND_NULL(cfg->sub[i]->tagline);
-			if(cfg->sub[i]->origline!=cfg->origline)
-				FREE_AND_NULL(cfg->sub[i]->origline);
-			if(cfg->sub[i]->echomail_sem!=cfg->echomail_sem)
-				FREE_AND_NULL(cfg->sub[i]->echomail_sem);
-#endif
 			FREE_AR(cfg->sub[i]->ar);
 			FREE_AR(cfg->sub[i]->read_ar);
 			FREE_AR(cfg->sub[i]->post_ar);
 			FREE_AR(cfg->sub[i]->op_ar);
 			FREE_AR(cfg->sub[i]->mod_ar);
-			FREE_ALLOC(cfg->sub[i]->lname);
-			FREE_ALLOC(cfg->sub[i]->sname);
-			FREE_ALLOC(cfg->sub[i]->qwkname);
 			FREE_AND_NULL(cfg->sub[i]);
 		}
 		FREE_AND_NULL(cfg->sub);
@@ -981,9 +721,6 @@ void free_msgs_cfg(scfg_t* cfg)
 
 	if(cfg->qhub!=NULL) {
 		for(i=0;i<cfg->total_qhubs;i++) {
-			FREE_ALLOC(cfg->qhub[i]->call);
-			FREE_ALLOC(cfg->qhub[i]->pack);
-			FREE_ALLOC(cfg->qhub[i]->unpack);
 			FREE_AND_NULL(cfg->qhub[i]->mode);
 			FREE_AND_NULL(cfg->qhub[i]->conf);
 			FREE_AND_NULL(cfg->qhub[i]->sub);
@@ -993,7 +730,6 @@ void free_msgs_cfg(scfg_t* cfg)
 
 	if(cfg->phub!=NULL) {
 		for(i=0;i<cfg->total_phubs;i++) {
-			FREE_ALLOC(cfg->phub[i]->call);
 			FREE_AND_NULL(cfg->phub[i]);
 		}
 		FREE_AND_NULL(cfg->phub);

@@ -38,17 +38,6 @@
 #include "sbbs.h"
 #include "scfglib.h"
 
-#ifdef SCFG 	/* SCFG allocate max length */
-	#define readline_alloc(l,s,m,i) readline(l,s,m,i)
-#else
-	char *readline_alloc(long *offset, char *outstr, int maxline
-		, FILE *instream);
-	#define readline_alloc(l,s,m,i) s=readline_alloc(l,s,m,i)
-	#define get_alloc(o,s,l,i) s=get_alloc(o,s,l,i)
-#endif
-
-#ifndef NO_FILE_CFG
-
 /****************************************************************************/
 /* Reads in LIBS.CNF and initializes the associated variables				*/
 /****************************************************************************/
@@ -58,12 +47,6 @@ BOOL read_file_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 	short	i,j,n;
 	long	offset=0,t;
 	FILE	*instream;
-
-#ifndef SCFG
-
-	sprintf(cfg->data_dir_dirs,"%sdirs/",cfg->data_dir);
-
-#endif
 
 	strcpy(fname,"file.cnf");
 	sprintf(str,"%s%s",cfg->ctrl_dir,fname);
@@ -111,14 +94,10 @@ BOOL read_file_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 			return allocerr(txt,offset,fname,sizeof(fextr_t));
 		memset(cfg->fextr[i],0,sizeof(fextr_t));
 		get_str(cfg->fextr[i]->ext,instream);
-		get_alloc(&offset,cfg->fextr[i]->cmd,LEN_CMD,instream);
-	#ifdef SCFG
-		get_str(cfg->fextr[i]->ar,instream);
-	#else
-		fread(str,LEN_ARSTR+1,1,instream);
-		offset+=LEN_ARSTR+1;
-		cfg->fextr[i]->ar=arstr(0,str,cfg);
-	#endif
+		get_str(cfg->fextr[i]->cmd,instream);
+		get_str(cfg->fextr[i]->arstr,instream);
+		cfg->fextr[i]->ar=arstr(0,cfg->fextr[i]->arstr,cfg);
+
 		for(j=0;j<8;j++)
 			get_int(n,instream);
 		}
@@ -143,14 +122,10 @@ BOOL read_file_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 			return allocerr(txt,offset,fname,sizeof(fcomp_t));
 		memset(cfg->fcomp[i],0,sizeof(fcomp_t));
 		get_str(cfg->fcomp[i]->ext,instream);
-		get_alloc(&offset,cfg->fcomp[i]->cmd,LEN_CMD,instream);
-	#ifdef SCFG
-		get_str(cfg->fcomp[i]->ar,instream);
-	#else
-		fread(str,LEN_ARSTR+1,1,instream);
-		offset+=LEN_ARSTR+1;
-		cfg->fcomp[i]->ar=arstr(0,str,cfg);
-	#endif
+		get_str(cfg->fcomp[i]->cmd,instream);
+		get_str(cfg->fcomp[i]->arstr,instream);
+		cfg->fcomp[i]->ar=arstr(0,cfg->fcomp[i]->arstr,cfg);
+
 		for(j=0;j<8;j++)
 			get_int(n,instream);
 		}
@@ -174,14 +149,10 @@ BOOL read_file_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 			return allocerr(txt,offset,fname,sizeof(fview_t));
 		memset(cfg->fview[i],0,sizeof(fview_t));
 		get_str(cfg->fview[i]->ext,instream);
-		get_alloc(&offset,cfg->fview[i]->cmd,LEN_CMD,instream);
-	#ifdef SCFG
-		get_str(cfg->fview[i]->ar,instream);
-	#else
-		fread(str,LEN_ARSTR+1,1,instream);
-		offset+=LEN_ARSTR+1;
-		cfg->fview[i]->ar=arstr(0,str,cfg);
-	#endif
+		get_str(cfg->fview[i]->cmd,instream);
+		get_str(cfg->fview[i]->arstr,instream);
+		cfg->fview[i]->ar=arstr(0,cfg->fview[i]->arstr,cfg);
+
 		for(j=0;j<8;j++)
 			get_int(n,instream);
 		}
@@ -205,15 +176,11 @@ BOOL read_file_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 			return allocerr(txt,offset,fname,sizeof(ftest_t));
 		memset(cfg->ftest[i],0,sizeof(ftest_t));
 		get_str(cfg->ftest[i]->ext,instream);
-		get_alloc(&offset,cfg->ftest[i]->cmd,LEN_CMD,instream);
-		get_alloc(&offset,cfg->ftest[i]->workstr,40,instream);
-	#ifdef SCFG
-		get_str(cfg->ftest[i]->ar,instream);
-	#else
-		fread(str,LEN_ARSTR+1,1,instream);
-		offset+=LEN_ARSTR+1;
-		cfg->ftest[i]->ar=arstr(0,str,cfg);
-	#endif
+		get_str(cfg->ftest[i]->cmd,instream);
+		get_str(cfg->ftest[i]->workstr,instream);
+		get_str(cfg->ftest[i]->arstr,instream);
+		cfg->ftest[i]->ar=arstr(0,cfg->ftest[i]->arstr,cfg);
+
 		for(j=0;j<8;j++)
 			get_int(n,instream);
 		}
@@ -238,15 +205,11 @@ BOOL read_file_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 			return allocerr(txt,offset,fname,sizeof(dlevent_t));
 		memset(cfg->dlevent[i],0,sizeof(dlevent_t));
 		get_str(cfg->dlevent[i]->ext,instream);
-		get_alloc(&offset,cfg->dlevent[i]->cmd,LEN_CMD,instream);
-		get_alloc(&offset,cfg->dlevent[i]->workstr,40,instream);
-	#ifdef SCFG
-		get_str(cfg->dlevent[i]->ar,instream);
-	#else
-		fread(str,LEN_ARSTR+1,1,instream);
-		offset+=LEN_ARSTR+1;
-		cfg->dlevent[i]->ar=arstr(0,str,cfg);
-	#endif
+		get_str(cfg->dlevent[i]->cmd,instream);
+		get_str(cfg->dlevent[i]->workstr,instream);
+		get_str(cfg->dlevent[i]->arstr,instream);
+		cfg->dlevent[i]->ar=arstr(0,cfg->dlevent[i]->arstr,cfg);
+
 		for(j=0;j<8;j++)
 			get_int(n,instream);
 		}
@@ -272,21 +235,17 @@ BOOL read_file_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 		memset(cfg->prot[i],0,sizeof(prot_t));
 
 		get_int(cfg->prot[i]->mnemonic,instream);
-		get_alloc(&offset,cfg->prot[i]->name,25,instream);
-		get_alloc(&offset,cfg->prot[i]->ulcmd,LEN_CMD,instream);
-		get_alloc(&offset,cfg->prot[i]->dlcmd,LEN_CMD,instream);
-		get_alloc(&offset,cfg->prot[i]->batulcmd,LEN_CMD,instream);
-		get_alloc(&offset,cfg->prot[i]->batdlcmd,LEN_CMD,instream);
-		get_alloc(&offset,cfg->prot[i]->blindcmd,LEN_CMD,instream);
-		get_alloc(&offset,cfg->prot[i]->bicmd,LEN_CMD,instream);
+		get_str(cfg->prot[i]->name,instream);
+		get_str(cfg->prot[i]->ulcmd,instream);
+		get_str(cfg->prot[i]->dlcmd,instream);
+		get_str(cfg->prot[i]->batulcmd,instream);
+		get_str(cfg->prot[i]->batdlcmd,instream);
+		get_str(cfg->prot[i]->blindcmd,instream);
+		get_str(cfg->prot[i]->bicmd,instream);
 		get_int(cfg->prot[i]->misc,instream);
-	#ifdef SCFG
-		get_str(cfg->prot[i]->ar,instream);
-	#else
-		fread(str,LEN_ARSTR+1,1,instream);
-		offset+=LEN_ARSTR+1;
-		cfg->prot[i]->ar=arstr(0,str,cfg);
-	#endif
+		get_str(cfg->prot[i]->arstr,instream);
+		cfg->prot[i]->ar=arstr(0,cfg->prot[i]->arstr,cfg);
+
 		for(j=0;j<8;j++)
 			get_int(n,instream);
 		}
@@ -308,11 +267,7 @@ BOOL read_file_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 		fread(str,LEN_DIR+1,1,instream);
 		offset+=LEN_DIR+1;
 		backslash(str);
-	#ifdef SCFG
 		j=LEN_DIR+1;
-	#else
-		j=strlen(str)+1;
-	#endif
 		if((cfg->altpath[i]=(char *)MALLOC(j))==NULL)
 			return allocerr(txt,offset,fname,j);
 		memset(cfg->altpath[i],0,j);
@@ -342,22 +297,12 @@ BOOL read_file_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 		memset(cfg->lib[i],0,sizeof(lib_t));
 		cfg->lib[i]->offline_dir=INVALID_DIR;
 
-		get_alloc(&offset,cfg->lib[i]->lname,LEN_GLNAME,instream);
-		get_alloc(&offset,cfg->lib[i]->sname,LEN_GSNAME,instream);
+		get_str(cfg->lib[i]->lname,instream);
+		get_str(cfg->lib[i]->sname,instream);
 
-	#if !defined(SCFG) && defined(SAVE_MEMORY)	  /* Save memory */
-		if(!strcmp(cfg->lib[i]->lname,cfg->lib[i]->sname) && cfg->lib[i]->sname!=scfgnulstr) {
-			FREE(cfg->lib[i]->sname);
-			cfg->lib[i]->sname=cfg->lib[i]->lname; }
-	#endif
+		get_str(cfg->lib[i]->arstr,instream);
+		cfg->lib[i]->ar=arstr(0,cfg->lib[i]->arstr,cfg);
 
-	#ifdef SCFG
-		get_str(cfg->lib[i]->ar,instream);
-	#else
-		fread(str,1,LEN_ARSTR+1,instream);
-		offset+=LEN_ARSTR+1;
-		cfg->lib[i]->ar=arstr(0,str,cfg);
-	#endif
 		for(j=0;j<48;j++)
 			get_int(n,instream);
 		}
@@ -383,14 +328,8 @@ BOOL read_file_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 		memset(cfg->dir[i],0,sizeof(dir_t));
 
 		get_int(cfg->dir[i]->lib,instream);
-		get_alloc(&offset,cfg->dir[i]->lname,LEN_SLNAME,instream);
-		get_alloc(&offset,cfg->dir[i]->sname,LEN_SSNAME,instream);
-
-	#if !defined(SCFG) && defined(SAVE_MEMORY)	  /* Save memory */
-		if(!strcmp(cfg->dir[i]->lname,cfg->dir[i]->sname) && cfg->dir[i]->sname!=scfgnulstr) {
-			FREE(cfg->dir[i]->sname);
-			cfg->dir[i]->sname=cfg->dir[i]->lname; }
-	#endif
+		get_str(cfg->dir[i]->lname,instream);
+		get_str(cfg->dir[i]->sname,instream);
 
 		if(!stricmp(cfg->dir[i]->sname,"SYSOP"))			/* Sysop upload directory */
 			cfg->sysop_dir=i;
@@ -402,11 +341,10 @@ BOOL read_file_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 			cfg->lib[cfg->dir[i]->lib]->offline_dir=i;
 
 		get_str(cfg->dir[i]->code,instream);
-		strlwr(cfg->dir[i]->code); 	/* temporary Unix-compatibility hack */
 
-	#ifdef SCFG
 		get_str(cfg->dir[i]->data_dir,instream);
-	#else
+
+#if 0 /* default data dir stuff */
 		fread(str,LEN_DIR+1,1,instream);   /* substitute data dir */
 		offset+=LEN_DIR+1;
 		if(str[0]) {
@@ -416,54 +354,32 @@ BOOL read_file_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 			strcpy(cfg->dir[i]->data_dir,str); }
 		else
 			cfg->dir[i]->data_dir=cfg->data_dir_dirs;
-	#endif
+#endif
 
-	#ifdef SCFG
-		get_str(cfg->dir[i]->ar,instream);
-		get_str(cfg->dir[i]->ul_ar,instream);
-		get_str(cfg->dir[i]->dl_ar,instream);
-		get_str(cfg->dir[i]->op_ar,instream);
-	#else
-		fread(str,1,LEN_ARSTR+1,instream);
-		offset+=LEN_ARSTR+1;
-		cfg->dir[i]->ar=arstr(0,str,cfg);
-		fread(str,1,LEN_ARSTR+1,instream);
-		offset+=LEN_ARSTR+1;
-		cfg->dir[i]->ul_ar=arstr(0,str,cfg);
-		fread(str,1,LEN_ARSTR+1,instream);
-		offset+=LEN_ARSTR+1;
-		cfg->dir[i]->dl_ar=arstr(0,str,cfg);
-		fread(str,1,LEN_ARSTR+1,instream);
-		offset+=LEN_ARSTR+1;
-		cfg->dir[i]->op_ar=arstr(0,str,cfg);
-	#endif
-		fread(str,1,LEN_DIR+1,instream);
-		offset+=LEN_DIR+1;
-		if(!str[0]) 				   /* no path specified */
-			sprintf(str,"%sdirs/%s/",cfg->data_dir,cfg->dir[i]->code);
-		prep_dir(cfg->ctrl_dir, str);
+		get_str(cfg->dir[i]->arstr,instream);
+		get_str(cfg->dir[i]->ul_arstr,instream);
+		get_str(cfg->dir[i]->dl_arstr,instream);
+		get_str(cfg->dir[i]->op_arstr,instream);
 
-	#ifndef SCFG
-		if((cfg->dir[i]->path=(char *)MALLOC(strlen(str)+1))==NULL)
-			return allocerr(txt,offset,fname,strlen(str)+1);
-	#endif
-		strcpy(cfg->dir[i]->path,str);
-		get_alloc(&offset,cfg->dir[i]->upload_sem,LEN_DIR,instream);
-		prep_path(cfg->dir[i]->upload_sem);
+		cfg->dir[i]->ar=arstr(0,cfg->dir[i]->arstr,cfg);
+		cfg->dir[i]->ul_ar=arstr(0,cfg->dir[i]->ul_arstr,cfg);
+		cfg->dir[i]->dl_ar=arstr(0,cfg->dir[i]->dl_arstr,cfg);
+		cfg->dir[i]->op_ar=arstr(0,cfg->dir[i]->op_arstr,cfg);
+
+		get_str(cfg->dir[i]->path,instream);
+
+		get_str(cfg->dir[i]->upload_sem,instream);
+
 		get_int(cfg->dir[i]->maxfiles,instream);
 		if(cfg->dir[i]->maxfiles>MAX_FILES)
 			cfg->dir[i]->maxfiles=MAX_FILES;
-		get_alloc(&offset,cfg->dir[i]->exts,40,instream);
+		get_str(cfg->dir[i]->exts,instream);
 		get_int(cfg->dir[i]->misc,instream);
 		get_int(cfg->dir[i]->seqdev,instream);
 		get_int(cfg->dir[i]->sort,instream);
-	#ifdef SCFG
-		get_str(cfg->dir[i]->ex_ar,instream);
-	#else
-		fread(str,1,LEN_ARSTR+1,instream);
-		offset+=LEN_ARSTR+1;
-		cfg->dir[i]->ex_ar=arstr(0,str,cfg);
-	#endif
+		get_str(cfg->dir[i]->ex_arstr,instream);
+		cfg->dir[i]->ex_ar=arstr(0,cfg->dir[i]->ex_arstr,cfg);
+
 		get_int(cfg->dir[i]->maxage,instream);
 		get_int(cfg->dir[i]->up_pct,instream);
 		get_int(cfg->dir[i]->dn_pct,instream);
@@ -472,8 +388,6 @@ BOOL read_file_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 			get_int(n,instream); }
 
 	cfg->total_dirs=i;
-
-	#ifndef NO_TEXT_CFG 		/* This must be the last section in CFG file */
 
 	/**********************/
 	/* Text File Sections */
@@ -494,22 +408,15 @@ BOOL read_file_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 			return allocerr(txt,offset,fname,sizeof(txtsec_t));
 		memset(cfg->txtsec[i],0,sizeof(txtsec_t));
 
-		get_alloc(&offset,cfg->txtsec[i]->name,40,instream);
+		get_str(cfg->txtsec[i]->name,instream);
 		get_str(cfg->txtsec[i]->code,instream);
-		strlwr(cfg->txtsec[i]->code); 	/* temporary Unix-compatibility hack */
-	#ifdef SCFG
-		get_str(cfg->txtsec[i]->ar,instream);
-	#else
-		fread(str,LEN_ARSTR+1,1,instream);
-		offset+=LEN_ARSTR+1;
-		cfg->txtsec[i]->ar=arstr(0,str,cfg);
-	#endif
+		get_str(cfg->txtsec[i]->arstr,instream);
+		cfg->txtsec[i]->ar=arstr(0,cfg->txtsec[i]->arstr,cfg);
+
 		for(j=0;j<8;j++)
 			get_int(n,instream);
 		}
 	cfg->total_txtsecs=i;
-
-	#endif
 
 	fclose(instream);
 	if(txt->readit && txt->readit[0])
@@ -517,11 +424,6 @@ BOOL read_file_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 
 	return (TRUE);
 }
-
-#endif
-
-
-#ifndef NO_XTRN_CFG
 
 /****************************************************************************/
 /* Reads in XTRN.CNF and initializes the associated variables				*/
@@ -558,7 +460,7 @@ BOOL read_xtrn_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 		if(feof(instream)) break;
 		if((cfg->swap[i]=(swap_t *)MALLOC(sizeof(swap_t)))==NULL)
 			return allocerr(txt,offset,fname,sizeof(swap_t));
-		get_alloc(&offset,cfg->swap[i]->cmd,LEN_CMD,instream); }
+		get_str(cfg->swap[i]->cmd,instream); }
 	cfg->total_swaps=i;
 
 	/********************/
@@ -579,25 +481,15 @@ BOOL read_xtrn_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 			return allocerr(txt,offset,fname,sizeof(xedit_t));
 		memset(cfg->xedit[i],0,sizeof(xedit_t));
 
-		get_alloc(&offset,cfg->xedit[i]->name,40,instream);
+		get_str(cfg->xedit[i]->name,instream);
 		get_str(cfg->xedit[i]->code,instream);
-		get_alloc(&offset,cfg->xedit[i]->lcmd,LEN_CMD,instream);
-		get_alloc(&offset,cfg->xedit[i]->rcmd,LEN_CMD,instream);
-
-	#if !defined(SCFG) && defined(SAVE_MEMORY)	  /* Save memory */
-		if(!strcmp(cfg->xedit[i]->lcmd,cfg->xedit[i]->rcmd) && cfg->xedit[i]->rcmd!=scfgnulstr) {
-			FREE(cfg->xedit[i]->rcmd);
-			cfg->xedit[i]->rcmd=cfg->xedit[i]->lcmd; }
-	#endif
+		get_str(cfg->xedit[i]->lcmd,instream);
+		get_str(cfg->xedit[i]->rcmd,instream);
 
 		get_int(cfg->xedit[i]->misc,instream);
-	#ifdef SCFG
-		get_str(cfg->xedit[i]->ar,instream);
-	#else
-		fread(str,LEN_ARSTR+1,1,instream);
-		offset+=LEN_ARSTR+1;
-		cfg->xedit[i]->ar=arstr(0,str,cfg);
-	#endif
+		get_str(cfg->xedit[i]->arstr,instream);
+		cfg->xedit[i]->ar=arstr(0,cfg->xedit[i]->arstr,cfg);
+
 		get_int(cfg->xedit[i]->type,instream);
 		get_int(c,instream);
 		for(j=0;j<7;j++)
@@ -625,16 +517,11 @@ BOOL read_xtrn_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 			return allocerr(txt,offset,fname,sizeof(xtrnsec_t));
 		memset(cfg->xtrnsec[i],0,sizeof(xtrnsec_t));
 
-		get_alloc(&offset,cfg->xtrnsec[i]->name,40,instream);
+		get_str(cfg->xtrnsec[i]->name,instream);
 		get_str(cfg->xtrnsec[i]->code,instream);
-		strlwr(cfg->xtrnsec[i]->code); 	/* temporary Unix-compatibility hack */
-	#ifdef SCFG
-		get_str(cfg->xtrnsec[i]->ar,instream);
-	#else
-		fread(str,LEN_ARSTR+1,1,instream);
-		offset+=LEN_ARSTR+1;
-		cfg->xtrnsec[i]->ar=arstr(0,str,cfg);
-	#endif
+		get_str(cfg->xtrnsec[i]->arstr,instream);
+		cfg->xtrnsec[i]->ar=arstr(0,cfg->xtrnsec[i]->arstr,cfg);
+
 		for(j=0;j<8;j++)
 			get_int(n,instream);
 		}
@@ -660,38 +547,20 @@ BOOL read_xtrn_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 		memset(cfg->xtrn[i],0,sizeof(xtrn_t));
 
 		get_int(cfg->xtrn[i]->sec,instream);
-		get_alloc(&offset,cfg->xtrn[i]->name,40,instream);
+		get_str(cfg->xtrn[i]->name,instream);
 		get_str(cfg->xtrn[i]->code,instream);
-	#ifdef SCFG
-		get_str(cfg->xtrn[i]->ar,instream);
-		get_str(cfg->xtrn[i]->run_ar,instream);
-	#else
-		fread(str,LEN_ARSTR+1,1,instream);
-		offset+=LEN_ARSTR+1;
-		cfg->xtrn[i]->ar=arstr(0,str,cfg);
-		fread(str,LEN_ARSTR+1,1,instream);
-		offset+=LEN_ARSTR+1;
-		cfg->xtrn[i]->run_ar=arstr(0,str,cfg);
-	#endif
+		get_str(cfg->xtrn[i]->arstr,instream);
+		get_str(cfg->xtrn[i]->run_arstr,instream);
+		cfg->xtrn[i]->ar=arstr(0,cfg->xtrn[i]->arstr,cfg);
+		cfg->xtrn[i]->run_ar=arstr(0,cfg->xtrn[i]->run_arstr,cfg);
+
 		get_int(cfg->xtrn[i]->type,instream);
 		get_int(cfg->xtrn[i]->misc,instream);
 		get_int(cfg->xtrn[i]->event,instream);
 		get_int(cfg->xtrn[i]->cost,instream);
-		get_alloc(&offset,cfg->xtrn[i]->cmd,LEN_CMD,instream);
-		get_alloc(&offset,cfg->xtrn[i]->clean,LEN_CMD,instream);
-		fread(str,LEN_DIR+1,1,instream);
-		offset+=LEN_DIR+1;
-		if(strcmp(str+1,":\\") && strcmp(str+1,":/") && 
-			(str[strlen(str)-1]=='\\' || str[strlen(str)-1]=='/')) // C:\ is valid
-			str[strlen(str)-1]=0;		// C:\SBBS\XTRN\GAME\ is not
-	#ifdef SBBS
-		if(!str[0]) 			  /* Minimum path of '.' */
-			strcpy(str,".");
-		prep_dir(cfg->ctrl_dir, str);
-		if((cfg->xtrn[i]->path=(char *)MALLOC(strlen(str)+1))==NULL)
-			return allocerr(txt,offset,fname,strlen(str)+1);
-	#endif
-		strcpy(cfg->xtrn[i]->path,str);
+		get_str(cfg->xtrn[i]->cmd,instream);
+		get_str(cfg->xtrn[i]->clean,instream);
+		get_str(cfg->xtrn[i]->path,instream);
 		get_int(cfg->xtrn[i]->textra,instream);
 		get_int(cfg->xtrn[i]->maxtime,instream);
 		for(j=0;j<7;j++)
@@ -719,20 +588,12 @@ BOOL read_xtrn_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 		memset(cfg->event[i],0,sizeof(event_t));
 
 		get_str(cfg->event[i]->code,instream);
-		strlwr (cfg->event[i]->code); 	/* temporary Unix-compatibility hack */
-		get_alloc(&offset,cfg->event[i]->cmd,LEN_CMD,instream);
+		get_str(cfg->event[i]->cmd,instream);
 		get_int(cfg->event[i]->days,instream);
 		get_int(cfg->event[i]->time,instream);
 		get_int(cfg->event[i]->node,instream);
 		get_int(cfg->event[i]->misc,instream);
-		fread(str,LEN_DIR+1,1,instream);
-		offset+=LEN_DIR+1;
-	#ifdef SBBS
-		prep_dir(cfg->ctrl_dir, str);
-		if((cfg->event[i]->dir=(char *)MALLOC(strlen(str)+1))==NULL)
-			return allocerr(txt,offset,fname,strlen(str)+1);
-	#endif
-		strcpy(cfg->event[i]->dir,str);
+		get_str(cfg->event[i]->dir,instream);
 
 		for(j=0;j<8;j++)
 			get_int(n,instream);
@@ -755,7 +616,7 @@ BOOL read_xtrn_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 		if(feof(instream)) break;
 		if((cfg->natvpgm[i]=(natvpgm_t *)MALLOC(sizeof(natvpgm_t)))==NULL)
 			return allocerr(txt,offset,fname,sizeof(natvpgm_t));
-		get_alloc(&offset,cfg->natvpgm[i]->name,12,instream);
+		get_str(cfg->natvpgm[i]->name,instream);
 		cfg->natvpgm[i]->misc=0; }
 	cfg->total_natvpgms=i;
 	for(i=0;i<cfg->total_natvpgms;i++) {
@@ -769,11 +630,6 @@ BOOL read_xtrn_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 
 	return(TRUE);
 }
-
-#endif
-
-
-#ifndef NO_CHAT_CFG
 
 /****************************************************************************/
 /* Reads in CHAT.CNF and initializes the associated variables				*/
@@ -812,17 +668,12 @@ BOOL read_chat_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 			return allocerr(txt,offset,fname,sizeof(guru_t));
 		memset(cfg->guru[i],0,sizeof(guru_t));
 
-		get_alloc(&offset,cfg->guru[i]->name,25,instream);
+		get_str(cfg->guru[i]->name,instream);
 		get_str(cfg->guru[i]->code,instream);
-		strlwr (cfg->guru[i]->code); 	/* temporary Unix-compatibility hack */
 
-	#ifdef SCFG
-		get_str(cfg->guru[i]->ar,instream);
-	#else
-		fread(str,LEN_ARSTR+1,1,instream);
-		offset+=LEN_ARSTR+1;
-		cfg->guru[i]->ar=arstr(0,str,cfg);
-	#endif
+		get_str(cfg->guru[i]->arstr,instream);
+		cfg->guru[i]->ar=arstr(0,cfg->guru[i]->arstr,cfg);
+
 		for(j=0;j<8;j++)
 			get_int(n,instream);
 		}
@@ -845,7 +696,7 @@ BOOL read_chat_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 		if(feof(instream)) break;
 		if((cfg->actset[i]=(actset_t *)MALLOC(sizeof(actset_t)))==NULL)
 			return allocerr(txt,offset,fname,sizeof(actset_t));
-		get_alloc(&offset,cfg->actset[i]->name,25,instream);
+		get_str(cfg->actset[i]->name,instream);
 		}
 	cfg->total_actsets=i;
 
@@ -870,8 +721,8 @@ BOOL read_chat_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 		memset(cfg->chatact[i],0,sizeof(chatact_t));
 
 		get_int(cfg->chatact[i]->actset,instream);
-		get_alloc(&offset,cfg->chatact[i]->cmd,LEN_CHATACTCMD,instream);
-		get_alloc(&offset,cfg->chatact[i]->out,LEN_CHATACTOUT,instream);
+		get_str(cfg->chatact[i]->cmd,instream);
+		get_str(cfg->chatact[i]->out,instream);
 		for(j=0;j<8;j++)
 			get_int(n,instream);
 		}
@@ -898,17 +749,13 @@ BOOL read_chat_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 		memset(cfg->chan[i],0,sizeof(chan_t));
 
 		get_int(cfg->chan[i]->actset,instream);
-		get_alloc(&offset,cfg->chan[i]->name,25,instream);
+		get_str(cfg->chan[i]->name,instream);
 
 		get_str(cfg->chan[i]->code,instream);
 
-	#ifdef SCFG
-		get_str(cfg->chan[i]->ar,instream);
-	#else
-		fread(str,LEN_ARSTR+1,1,instream);
-		offset+=LEN_ARSTR+1;
-		cfg->chan[i]->ar=arstr(0,str,cfg);
-	#endif
+		get_str(cfg->chan[i]->arstr,instream);
+		cfg->chan[i]->ar=arstr(0,cfg->chan[i]->arstr,cfg);
+
 		get_int(cfg->chan[i]->cost,instream);
 		get_int(cfg->chan[i]->guru,instream);
 		get_int(cfg->chan[i]->misc,instream);
@@ -935,15 +782,11 @@ BOOL read_chat_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 			return allocerr(txt,offset,fname,sizeof(page_t));
 		memset(cfg->page[i],0,sizeof(page_t));
 
-		get_alloc(&offset,cfg->page[i]->cmd,LEN_CMD,instream);
+		get_str(cfg->page[i]->cmd,instream);
 
-	#ifdef SCFG
-		get_str(cfg->page[i]->ar,instream);
-	#else
-		fread(str,LEN_ARSTR+1,1,instream);
-		offset+=LEN_ARSTR+1;
-		cfg->page[i]->ar=arstr(0,str,cfg);
-	#endif
+		get_str(cfg->page[i]->arstr,instream);
+		cfg->page[i]->ar=arstr(0,cfg->page[i]->arstr,cfg);
+
 		get_int(cfg->page[i]->misc,instream);
 		for(j=0;j<8;j++)
 			get_int(n,instream);
@@ -957,8 +800,6 @@ BOOL read_chat_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 
 	return(TRUE);
 }
-
-#endif
 
 /****************************************************************************/
 /* Read one line of up to 256 characters from the file pointed to by		*/
@@ -1100,7 +941,6 @@ void free_file_cfg(scfg_t* cfg)
 	if(cfg->fextr!=NULL) {
 		for(i=0;i<cfg->total_fextrs;i++) {
 			FREE_AR(cfg->fextr[i]->ar);
-			FREE_ALLOC(cfg->fextr[i]->cmd);
 			FREE_AND_NULL(cfg->fextr[i]);
 		}
 		FREE_AND_NULL(cfg->fextr);
@@ -1109,7 +949,6 @@ void free_file_cfg(scfg_t* cfg)
 	if(cfg->fcomp!=NULL) {
 		for(i=0;i<cfg->total_fcomps;i++) {
 			FREE_AR(cfg->fcomp[i]->ar);
-			FREE_ALLOC(cfg->fcomp[i]->cmd);
 			FREE_AND_NULL(cfg->fcomp[i]);
 		}
 		FREE_AND_NULL(cfg->fcomp);
@@ -1118,7 +957,6 @@ void free_file_cfg(scfg_t* cfg)
 	if(cfg->fview!=NULL) {
 		for(i=0;i<cfg->total_fviews;i++) {
 			FREE_AR(cfg->fview[i]->ar);
-			FREE_ALLOC(cfg->fview[i]->cmd);
 			FREE_AND_NULL(cfg->fview[i]);
 		}
 		FREE_AND_NULL(cfg->fview);
@@ -1127,8 +965,6 @@ void free_file_cfg(scfg_t* cfg)
 	if(cfg->ftest!=NULL) {
 		for(i=0;i<cfg->total_ftests;i++) {
 			FREE_AR(cfg->ftest[i]->ar);
-			FREE_ALLOC(cfg->ftest[i]->cmd);
-			FREE_ALLOC(cfg->ftest[i]->workstr);
 			FREE_AND_NULL(cfg->ftest[i]);
 		}
 		FREE_AND_NULL(cfg->ftest);
@@ -1137,8 +973,6 @@ void free_file_cfg(scfg_t* cfg)
 	if(cfg->dlevent!=NULL) {
 		for(i=0;i<cfg->total_dlevents;i++) {
 			FREE_AR(cfg->dlevent[i]->ar);
-			FREE_ALLOC(cfg->dlevent[i]->cmd);
-			FREE_ALLOC(cfg->dlevent[i]->workstr);
 			FREE_AND_NULL(cfg->dlevent[i]);
 		}
 		FREE_AND_NULL(cfg->dlevent);
@@ -1147,13 +981,6 @@ void free_file_cfg(scfg_t* cfg)
 	if(cfg->prot!=NULL) {
 		for(i=0;i<cfg->total_prots;i++) {
 			FREE_AR(cfg->prot[i]->ar);
-			FREE_ALLOC(cfg->prot[i]->name);
-			FREE_ALLOC(cfg->prot[i]->ulcmd);
-			FREE_ALLOC(cfg->prot[i]->dlcmd);
-			FREE_ALLOC(cfg->prot[i]->batulcmd);
-			FREE_ALLOC(cfg->prot[i]->batdlcmd);
-			FREE_ALLOC(cfg->prot[i]->blindcmd);
-			FREE_ALLOC(cfg->prot[i]->bicmd);
 			FREE_AND_NULL(cfg->prot[i]);
 		}
 		FREE_AND_NULL(cfg->prot);
@@ -1168,8 +995,6 @@ void free_file_cfg(scfg_t* cfg)
 	if(cfg->lib!=NULL) {
 		for(i=0;i<cfg->total_libs;i++) {
 			FREE_AR(cfg->lib[i]->ar);
-			FREE_ALLOC(cfg->lib[i]->lname);
-			FREE_ALLOC(cfg->lib[i]->sname);
 			FREE_AND_NULL(cfg->lib[i]);
 		}
 		FREE_AND_NULL(cfg->lib);
@@ -1177,20 +1002,15 @@ void free_file_cfg(scfg_t* cfg)
 
 	if(cfg->dir!=NULL) {
 		for(i=0;i<cfg->total_dirs;i++) {
-#ifndef SCFG
+#if 0 //ndef SCFG
 			if(cfg->dir[i]->data_dir!=cfg->data_dir_dirs) 
 				FREE_AND_NULL(cfg->dir[i]->data_dir);
-			FREE_AND_NULL(cfg->dir[i]->path);
 #endif
 			FREE_AR(cfg->dir[i]->ar);
 			FREE_AR(cfg->dir[i]->ul_ar);
 			FREE_AR(cfg->dir[i]->dl_ar);
 			FREE_AR(cfg->dir[i]->op_ar);
 			FREE_AR(cfg->dir[i]->ex_ar);
-			FREE_ALLOC(cfg->dir[i]->lname);
-			FREE_ALLOC(cfg->dir[i]->sname);
-			FREE_ALLOC(cfg->dir[i]->exts);
-			FREE_ALLOC(cfg->dir[i]->upload_sem);
 			FREE_AND_NULL(cfg->dir[i]);
 		}
 		FREE_AND_NULL(cfg->dir);
@@ -1199,7 +1019,6 @@ void free_file_cfg(scfg_t* cfg)
 	if(cfg->txtsec!=NULL) {
 		for(i=0;i<cfg->total_txtsecs;i++) {
 			FREE_AR(cfg->txtsec[i]->ar);
-			FREE_ALLOC(cfg->txtsec[i]->name);
 			FREE_AND_NULL(cfg->txtsec[i]);
 		}
 		FREE_AND_NULL(cfg->txtsec);
@@ -1212,7 +1031,6 @@ void free_chat_cfg(scfg_t* cfg)
 
 	if(cfg->actset!=NULL) {
 		for(i=0;i<cfg->total_actsets;i++) {
-			FREE_ALLOC(cfg->actset[i]->name);
 			FREE_AND_NULL(cfg->actset[i]);
 		}
 		FREE_AND_NULL(cfg->actset);
@@ -1220,8 +1038,6 @@ void free_chat_cfg(scfg_t* cfg)
 
 	if(cfg->chatact!=NULL) {
 		for(i=0;i<cfg->total_chatacts;i++) {
-			FREE_ALLOC(cfg->chatact[i]->cmd);
-			FREE_ALLOC(cfg->chatact[i]->out);
 			FREE_AND_NULL(cfg->chatact[i]);
 		}
 		FREE_AND_NULL(cfg->chatact);
@@ -1230,7 +1046,6 @@ void free_chat_cfg(scfg_t* cfg)
 	if(cfg->chan!=NULL) {
 		for(i=0;i<cfg->total_chans;i++) {
 			FREE_AR(cfg->chan[i]->ar);
-			FREE_ALLOC(cfg->chan[i]->name);
 			FREE_AND_NULL(cfg->chan[i]);
 		}
 		FREE_AND_NULL(cfg->chan);
@@ -1239,7 +1054,6 @@ void free_chat_cfg(scfg_t* cfg)
 	if(cfg->guru!=NULL) {
 		for(i=0;i<cfg->total_gurus;i++) {
 			FREE_AR(cfg->guru[i]->ar);
-			FREE_ALLOC(cfg->guru[i]->name);
 			FREE_AND_NULL(cfg->guru[i]);
 		}
 		FREE_AND_NULL(cfg->guru);
@@ -1248,7 +1062,6 @@ void free_chat_cfg(scfg_t* cfg)
 	if(cfg->page!=NULL) {
 		for(i=0;i<cfg->total_pages;i++) {
 			FREE_AR(cfg->page[i]->ar);
-			FREE_ALLOC(cfg->page[i]->cmd);
 			FREE_AND_NULL(cfg->page[i]);
 		}
 		FREE_AND_NULL(cfg->page);
@@ -1262,7 +1075,6 @@ void free_xtrn_cfg(scfg_t* cfg)
 
 	if(cfg->swap!=NULL) {
 		for(i=0;i<cfg->total_swaps;i++) {
-			FREE_ALLOC(cfg->swap[i]->cmd);
 			FREE_AND_NULL(cfg->swap[i]);
 		}
 		FREE_AND_NULL(cfg->swap);
@@ -1271,9 +1083,6 @@ void free_xtrn_cfg(scfg_t* cfg)
 	if(cfg->xedit!=NULL) {
 		for(i=0;i<cfg->total_xedits;i++) {
 			FREE_AR(cfg->xedit[i]->ar);
-			FREE_ALLOC(cfg->xedit[i]->name);
-			FREE_ALLOC(cfg->xedit[i]->lcmd);
-			FREE_ALLOC(cfg->xedit[i]->rcmd);
 			FREE_AND_NULL(cfg->xedit[i]);
 		}
 		FREE_AND_NULL(cfg->xedit);
@@ -1282,7 +1091,6 @@ void free_xtrn_cfg(scfg_t* cfg)
 	if(cfg->xtrnsec!=NULL) {
 		for(i=0;i<cfg->total_xtrnsecs;i++) {
 			FREE_AR(cfg->xtrnsec[i]->ar);
-			FREE_ALLOC(cfg->xtrnsec[i]->name);
 			FREE_AND_NULL(cfg->xtrnsec[i]);
 		}
 		FREE_AND_NULL(cfg->xtrnsec);
@@ -1290,14 +1098,8 @@ void free_xtrn_cfg(scfg_t* cfg)
 
 	if(cfg->xtrn!=NULL) {
 		for(i=0;i<cfg->total_xtrns;i++) {
-#ifndef SCFG
-			FREE_AND_NULL(cfg->xtrn[i]->path);
-#endif
 			FREE_AR(cfg->xtrn[i]->ar);
 			FREE_AR(cfg->xtrn[i]->run_ar);
-			FREE_ALLOC(cfg->xtrn[i]->name);
-			FREE_ALLOC(cfg->xtrn[i]->cmd);
-			FREE_ALLOC(cfg->xtrn[i]->clean);
 			FREE_AND_NULL(cfg->xtrn[i]);
 		}
 		FREE_AND_NULL(cfg->xtrn);
@@ -1305,10 +1107,6 @@ void free_xtrn_cfg(scfg_t* cfg)
 
 	if(cfg->event!=NULL) {
 		for(i=0;i<cfg->total_events;i++) {
-#ifndef SCFG
-			FREE_AND_NULL(cfg->event[i]->dir);
-#endif
-			FREE_ALLOC(cfg->event[i]->cmd);
 			FREE_AND_NULL(cfg->event[i]);
 		}
 		FREE_AND_NULL(cfg->event);
@@ -1316,7 +1114,6 @@ void free_xtrn_cfg(scfg_t* cfg)
 
 	if(cfg->natvpgm!=NULL) {
 		for(i=0;i<cfg->total_natvpgms;i++) {
-			FREE_ALLOC(cfg->natvpgm[i]->name);
 			FREE_AND_NULL(cfg->natvpgm[i]);
 		}
 		FREE_AND_NULL(cfg->natvpgm);
