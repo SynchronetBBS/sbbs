@@ -900,28 +900,14 @@ js_BranchCallback(JSContext *cx, JSScript *script)
 	if((client=(service_client_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	client->branch.counter++;
-
 	/* Terminated? */ 
-	if(client->branch.auto_terminate && terminated) {
+	if(terminated) {
 		JS_ReportError(cx,"Terminated");
 		client->branch.counter=0;
 		return(JS_FALSE);
 	}
-	/* Infinite loop? */
-	if(client->branch.limit && client->branch.counter > client->branch.limit) {
-		JS_ReportError(cx,"Infinite loop (%lu branches) detected",client->branch.counter);
-		client->branch.counter=0;
-		return(JS_FALSE);
-	}
-	/* Give up timeslices every once in a while */
-	if(client->branch.yield_interval && (client->branch.counter%client->branch.yield_interval)==0)
-		YIELD();
 
-	if(client->branch.gc_interval && (client->branch.counter%client->branch.gc_interval)==0)
-		JS_MaybeGC(cx), client->branch.gc_attempts++;
-
-    return(JS_TRUE);
+	return js_GenericBranchCallback(cx,&client->branch);
 }
 
 static void js_init_args(JSContext* js_cx, JSObject* js_obj, const char* cmdline)
