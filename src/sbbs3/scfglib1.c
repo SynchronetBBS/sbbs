@@ -512,7 +512,7 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error)
 
 		get_str(cfg->sub[i]->tagline,instream);
 		get_str(cfg->sub[i]->origline,instream);
-		get_str(cfg->sub[i]->echomail_sem,instream);
+		get_str(cfg->sub[i]->post_sem,instream);
 
 #if 0
 		fread(str,1,LEN_DIR+1,instream);				/* skip EchoMail path */

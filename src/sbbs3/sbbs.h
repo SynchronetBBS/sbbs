@@ -424,7 +424,6 @@ public:
 	bool	msgabort(void);
 	bool	email(int usernumber, char *top, char *title, long mode);
 	void	forwardmail(smbmsg_t* msg, int usernum);
-	bool	postmsg(uint subnum, smbmsg_t* msg, long wm_mode);
 	void	removeline(char *str, char *str2, char num, char skip);
 	ulong	msgeditor(char *buf, char *top, char *title);
 	void	editfile(char *path);
@@ -441,6 +440,10 @@ public:
 				,uint subnum);
 	void	copyfattach(uint to, uint from, char *title);
 	bool	movemsg(smbmsg_t* msg, uint subnum);
+
+	/* postmsg.cpp */
+	bool	postmsg(uint subnum, smbmsg_t* msg, long wm_mode);
+	void	signal_sub_sem(uint subnum);
 
 	/* mail.cpp */
 	int		delmail(uint usernumber,int which);

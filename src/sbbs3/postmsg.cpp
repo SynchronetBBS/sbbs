@@ -389,11 +389,28 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 	sprintf(str,"%s posted on %s %s"
 		,useron.alias,cfg.grp[cfg.sub[subnum]->grp]->sname,cfg.sub[subnum]->lname);
 	logline("P+",str);
-	if(cfg.sub[subnum]->misc&SUB_FIDO && cfg.sub[subnum]->echomail_sem[0]) /* semaphore */
-		if((file=nopen(cmdstr(cfg.sub[subnum]->echomail_sem,nulstr,nulstr,NULL)
+
+	signal_sub_sem(subnum);
+
+	return(true);
+}
+
+void sbbs_t::signal_sub_sem(uint subnum)
+{
+	int file;
+
+	if(subnum==INVALID_SUB || subnum>=cfg.total_subs)	/* e-mail? */
+		return;
+
+	/* signal semaphore files */
+	if(cfg.sub[subnum]->misc&SUB_FIDO && cfg.echomail_sem[0])		
+		if((file=nopen(cmdstr(cfg.echomail_sem,nulstr,nulstr,NULL)
 			,O_WRONLY|O_CREAT|O_TRUNC))!=-1)
 			close(file);
-	return(true);
+	if(cfg.sub[subnum]->post_sem[0]) 
+		if((file=nopen(cmdstr(cfg.sub[subnum]->post_sem,nulstr,nulstr,NULL)
+			,O_WRONLY|O_CREAT|O_TRUNC))!=-1)
+			close(file);
 }
 
 extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, char* msgbuf)
@@ -642,5 +659,20 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, char* msg
 	if((i=smb_addmsghdr(smb,msg,storage))!=0) // calls smb_unlocksmbhdr() 
 		smb_freemsgdat(smb,offset,length,1);
 
+#if 0
+	/* signal semaphore files */
+	if(smb->subnum!=INVALID_SUB) {
+		if(cfg->sub[smb->subnum]->misc&SUB_FIDO && cfg->echomail_sem[0])		
+			if((file=nopen(cmdstr(cfg->echomail_sem,nulstr,nulstr,NULL)
+				,O_WRONLY|O_CREAT|O_TRUNC))!=-1)
+				close(file);
+		if(cfg->sub[smb->subnum]->sem_file[0]) 
+			if((file=nopen(cmdstr(cfg->sub[smb->subnum]->sem_file,nulstr,nulstr,NULL)
+				,O_WRONLY|O_CREAT|O_TRUNC))!=-1)
+				close(file);
+	}
+#endif
+
 	return(i);
 }
+

@@ -256,10 +256,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 			continue;
 		}
 
-		if(cfg.sub[j]->misc&SUB_FIDO && cfg.sub[j]->echomail_sem[0]) /* update semaphore */
-			if((file=nopen(cmdstr(cfg.sub[j]->echomail_sem,nulstr,nulstr,NULL)
-				,O_WRONLY|O_CREAT|O_TRUNC))!=-1)
-				close(file);
+		signal_sub_sem(j);
 /*
 		eprintf("Message from %s Posted on %s %s"
 			,cfg.qhub[hubnum]->id,cfg.grp[cfg.sub[j]->grp]->sname,cfg.sub[j]->lname); 

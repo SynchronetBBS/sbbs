@@ -55,7 +55,7 @@ typedef struct {                        /* Message sub board info */
 			qwkname[11],				/* QWK name - only 10 chars */
 			data_dir[LEN_DIR+1],		/* Data file directory */
 			origline[51],				/* Optional EchoMail origin line */
-			echomail_sem[LEN_DIR+1],	/* EchoMail semaphore for this sub */
+			post_sem[LEN_DIR+1],		/* Semaphore file for this sub */
 			tagline[81],				/* Optional QWK net tag line */
 			newsgroup[LEN_DIR+1];		/* Newsgroup name */
 	uchar	*ar,
