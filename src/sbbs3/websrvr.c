@@ -894,9 +894,17 @@ static BOOL check_ars(http_session_t * session)
 		free(ar);
 
 	if(authorized)  {
-		add_env(session,"AUTH_TYPE","Basic");
-		/* Should use real name if set to do so somewhere ToDo */
-		add_env(session,"REMOTE_USER",session->user.alias);
+		if(session->req.dynamic==IS_CGI)  {
+			add_env(session,"AUTH_TYPE","Basic");
+			/* Should use real name if set to do so somewhere ToDo */
+			add_env(session,"REMOTE_USER",session->user.alias);
+		}
+		if(session->req.dynamic==IS_SSJS)  {
+			if(!js_CreateUserObjects(session->js_cx, session->js_glob, &scfg, &session->user
+				,NULL /* ftp index file */, NULL /* subscan */)) 
+				lprintf("%04d !JavaScript ERROR creating user objects",session->socket);
+		}
+
 		return(TRUE);
 	}
 
@@ -2079,9 +2087,6 @@ static BOOL js_setup(http_session_t* session)
 		if(js_CreateMsgBaseClass(session->js_cx, session->js_glob, &scfg)==NULL)
 			lprintf("%04d !JavaScript ERROR creating MsgBase class",session->socket);
 
-		if(!js_CreateUserObjects(session->js_cx, session->js_glob, &scfg, &session->user
-			,NULL /* ftp index file */, NULL /* subscan */)) 
-			lprintf("%04d !JavaScript ERROR creating user objects",session->socket);
 #if 0
 		if(js_CreateClientObject(session->js_cx, session->js_glob, "client", &client
 			,session->socket)==NULL) 
