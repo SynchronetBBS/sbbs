@@ -87,6 +87,8 @@ int main(int argc, char **argv)
     printf("\r\nSynchronet Configuration Utility (%s)  v%s  Copyright 2003 "
         "Rob Swindell\r\n",PLATFORM_DESC,VERSION);
 
+	cfg.size=sizeof(cfg);
+
     memset(&uifc,0,sizeof(uifc));
     p=getenv("SBBSCTRL");
     if(p!=NULL)
