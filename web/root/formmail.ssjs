@@ -73,7 +73,7 @@ var body="Form fields follow:\r\n\r\n";
 for(i in http_request.query) {
 	if(hidden_fields[i])
 		continue;
-	if(http_request.query[i].length)
+	if(String(http_request.query[i]).length)
 		body += format("%-10s = %s\r\n", i, http_request.query[i]);
 }
 	
