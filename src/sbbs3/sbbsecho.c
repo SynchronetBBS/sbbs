@@ -1807,14 +1807,6 @@ BOOL unpack_bundle(void)
 	return(FALSE);
 }
 
-void remove_re(char *str)
-{
-	while(!strnicmp(str,"RE:",3)) {
-		strcpy(str,str+3);
-		while(str[0]==SP)
-			strcpy(str,str+1); }
-}
-
 /****************************************************************************/
 /* Moves or copies a file from one dir to another                           */
 /* both 'src' and 'dest' must contain full path and filename                */
@@ -2261,9 +2253,8 @@ if(user) {
 	msg.idx.to=user; }
 
 smb_hfield(&msg,SUBJECT,(ushort)strlen(fmsghdr.subj),fmsghdr.subj);
-remove_re(fmsghdr.subj);
-strlwr(fmsghdr.subj);
-msg.idx.subj=crc16(fmsghdr.subj);
+msg.idx.subj=subject_crc(fmsghdr.subj);
+
 if(fbuf==NULL) {
 	printf("ERROR allocating fbuf\n");
 	logprintf("ERROR line %d allocating fbuf",__LINE__);

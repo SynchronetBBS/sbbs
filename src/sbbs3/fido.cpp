@@ -552,8 +552,8 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 
 		sprintf(str,"%.25s",block+71);              /* Title */
 		smb_hfield(&msg,SUBJECT,strlen(str),str);
-		strlwr(str);
-		msg.idx.subj=crc16(str); }
+		msg.idx.subj=subject_crc(str); 
+	}
 
 	if(qnet) {
 
@@ -574,8 +574,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 			strcpy(fulladdr,senderaddr);
 			sprintf(str,"BADADDR: %s",addr);
 			smb_hfield(&msg,SUBJECT,strlen(str),str);
-			strlwr(str);
-			msg.idx.subj=crc16(str);
+			msg.idx.subj=subject_crc(str);
 			net=NET_NONE;
 			smb_hfield(&msg,SENDERNETTYPE,sizeof(net),&net);
 		}

@@ -324,10 +324,7 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 	smb_hfield(&msg,SENDEREXT,strlen(str),str);
 
 	smb_hfield(&msg,SUBJECT,strlen(title),title);
-	strcpy(str,title);
-	strlwr(str);
-	remove_re(str);
-	msg.idx.subj=crc16(str);
+	msg.idx.subj=subject_crc(title);
 
 	smb_dfield(&msg,TEXT_BODY,length);
 

@@ -123,10 +123,8 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 
 	sprintf(str,"%25.25s",hdrblk+71);   /* Subject */
 	truncsp(str);
-	remove_re(str);
 	smb_hfield(&msg,SUBJECT,strlen(str),str);
-	strlwr(str);
-	msg.idx.subj=crc16(str);
+	msg.idx.subj=subject_crc(str);
 
 	/********************************/
 	/* Convert the QWK message text */

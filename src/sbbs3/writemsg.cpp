@@ -423,14 +423,6 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 	return(true);
 }
 
-void remove_re(char *str)
-{
-	while(!strnicmp(str,"RE:",3)) {
-		strcpy(str,str+3);
-		while(str[0]==SP)
-			strcpy(str,str+1); }
-}
-
 /****************************************************************************/
 /* Modify 'str' to for quoted format. Remove ^A codes, etc.                 */
 /****************************************************************************/

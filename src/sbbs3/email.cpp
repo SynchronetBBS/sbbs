@@ -269,8 +269,7 @@ bool sbbs_t::email(int usernumber, char *top, char *subj, long mode)
 	msg.idx.from=useron.number;
 
 	smb_hfield(&msg,SUBJECT,strlen(title),title);
-	strlwr(title);
-	msg.idx.subj=crc16(title);
+	msg.idx.subj=subject_crc(title);
 
 	smb_dfield(&msg,TEXT_BODY,length);
 

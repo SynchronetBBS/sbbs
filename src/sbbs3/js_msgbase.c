@@ -166,8 +166,7 @@ static BOOL parse_header_object(JSContext* cx, JSObject* hdr, uint subnum, smbms
 	} else
 		cp="";
 	smb_hfield(msg, SUBJECT, (ushort)strlen(cp), cp);
-	strlwr(cp);
-	msg->idx.subj=crc16(cp);
+	msg->idx.subj=subject_crc(cp);
 
 	if(JS_GetProperty(cx, hdr, "to", &val) && val!=JSVAL_VOID) {
 		if((js_str=JS_ValueToString(cx,val))==NULL)

@@ -1501,7 +1501,7 @@ static void smtp_thread(void* arg)
 				if(msg.idx.subj==0) {
 					p="";
 					smb_hfield(&msg, SUBJECT, 0, p);
-					msg.idx.subj=crc16(p);
+					msg.idx.subj=subject_crc(p);
 				}
 
 				rewind(msgtxt);
@@ -1750,8 +1750,7 @@ static void smtp_thread(void* arg)
 						,socket, startup->dnsbl_tag);
 				}
 				smb_hfield(&msg, SUBJECT, (ushort)strlen(p), p);
-				strlwr(p);
-				msg.idx.subj=crc16(p);
+				msg.idx.subj=subject_crc(p);
 				continue;
 			}
 			if(!strnicmp(buf, "TO:",3)) {
