@@ -412,7 +412,7 @@ BOOL read_file_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 		fread(str,LEN_DIR+1,1,instream);   /* substitute data dir */
 		offset+=LEN_DIR+1;
 		if(str[0]) {
-			prep_path(cfg->ctrl_dir, str);
+			prep_dir(cfg->ctrl_dir, str);
 			if((cfg->dir[i]->data_dir=(char *)MALLOC(strlen(str)+1))==NULL)
 				return allocerr(txt,offset,fname,strlen(str)+1);
 			strcpy(cfg->dir[i]->data_dir,str); }
@@ -443,7 +443,7 @@ BOOL read_file_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 		offset+=LEN_DIR+1;
 		if(!str[0]) 				   /* no path specified */
 			sprintf(str,"%sdirs/%s/",cfg->data_dir,cfg->dir[i]->code);
-		prep_path(cfg->ctrl_dir, str);
+		prep_dir(cfg->ctrl_dir, str);
 
 	#ifndef SCFG
 		if((cfg->dir[i]->path=(char *)MALLOC(strlen(str)+1))==NULL)
@@ -451,6 +451,7 @@ BOOL read_file_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 	#endif
 		strcpy(cfg->dir[i]->path,str);
 		get_alloc(&offset,cfg->dir[i]->upload_sem,LEN_DIR,instream);
+		prep_path(cfg->dir[i]->upload_sem);
 		get_int(cfg->dir[i]->maxfiles,instream);
 		if(cfg->dir[i]->maxfiles>MAX_FILES)
 			cfg->dir[i]->maxfiles=MAX_FILES;
@@ -688,7 +689,7 @@ BOOL read_xtrn_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 	#ifdef SBBS
 		if(!str[0]) 			  /* Minimum path of '.' */
 			strcpy(str,".");
-		prep_path(cfg->ctrl_dir, str);
+		prep_dir(cfg->ctrl_dir, str);
 		if((cfg->xtrn[i]->path=(char *)MALLOC(strlen(str)+1))==NULL)
 			return allocerr(txt,offset,fname,strlen(str)+1);
 	#endif
@@ -729,7 +730,7 @@ BOOL read_xtrn_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 		fread(str,LEN_DIR+1,1,instream);
 		offset+=LEN_DIR+1;
 	#ifdef SBBS
-		prep_path(cfg->ctrl_dir, str);
+		prep_dir(cfg->ctrl_dir, str);
 		if((cfg->event[i]->dir=(char *)MALLOC(strlen(str)+1))==NULL)
 			return allocerr(txt,offset,fname,strlen(str)+1);
 	#endif

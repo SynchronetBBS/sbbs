@@ -40,7 +40,7 @@
 
 const char *scfgnulstr="";
 
-void prep_path(char* base, char* path)
+void prep_dir(char* base, char* path)
 {
 #ifdef __unix__
 	char	*p;
@@ -65,6 +65,15 @@ void prep_path(char* base, char* path)
 	strcat(str,".");                // Change C: to C:. and C:\SBBS\ to C:\SBBS\.
 	_fullpath(path,str,LEN_DIR+1);	// Change C:\SBBS\NODE1\..\EXEC to C:\SBBS\EXEC
 	backslash(path);
+}
+
+void prep_path(char* path)
+{
+#ifdef __unix__				/* Change backslashes to forward slashes on Unix */
+	for(p=path;*p;p++)
+		if(*p=='\\') 
+			*p='/';
+#endif
 }
 
 char * get_alloc(long *offset, char *outstr, int maxlen, FILE *instream)
@@ -177,7 +186,7 @@ BOOL read_node_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 	strlwr(cfg->temp_dir);	/* temporary Unix-compatibility hack */
 
 	#ifndef SCFG
-	prep_path(cfg->ctrl_dir, cfg->text_dir);
+	prep_dir(cfg->ctrl_dir, cfg->text_dir);
 	#endif
 
 	for(i=0;i<10;i++) { 						/* WFC 0-9 DOS commands */
@@ -294,7 +303,7 @@ BOOL read_main_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 	for(i=0;i<cfg->sys_nodes;i++) {
 		if(feof(instream)) break;
 		fread(str,LEN_DIR+1,1,instream);
-		prep_path(cfg->ctrl_dir, str);
+		prep_dir(cfg->ctrl_dir, str);
 		offset+=LEN_DIR+1;
 		if((cfg->node_path[i]=(char *)MALLOC(strlen(str)+1))==NULL)
 			return allocerr(txt,offset,fname,strlen(str)+1);
@@ -309,8 +318,8 @@ BOOL read_main_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 	strlwr(cfg->exec_dir);		/* temporary Unix-compatibility hack */
 
 	#ifndef SCFG
-	prep_path(cfg->ctrl_dir, cfg->data_dir);
-	prep_path(cfg->ctrl_dir, cfg->exec_dir);
+	prep_dir(cfg->ctrl_dir, cfg->data_dir);
+	prep_dir(cfg->ctrl_dir, cfg->exec_dir);
 	#endif
 
 	get_str(cfg->sys_logon,instream);
@@ -511,7 +520,7 @@ BOOL read_msgs_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 #ifndef SCFG
 
 	sprintf(cfg->data_dir_subs,"%ssubs/",cfg->data_dir);
-	prep_path(cfg->ctrl_dir, cfg->data_dir_subs);
+	prep_dir(cfg->ctrl_dir, cfg->data_dir_subs);
 
 #endif
 
@@ -634,7 +643,7 @@ BOOL read_msgs_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 		fread(str,LEN_DIR+1,1,instream);   /* substitute data dir */
 		offset+=LEN_DIR+1;
 		if(str[0]) {
-			prep_path(cfg->ctrl_dir, str);
+			prep_dir(cfg->ctrl_dir, str);
 			if((cfg->sub[i]->data_dir=(char *)MALLOC(strlen(str)+1))==NULL)
 				return allocerr(txt,offset,fname,strlen(str)+1);
 			strcpy(cfg->sub[i]->data_dir,str); }
@@ -697,10 +706,11 @@ BOOL read_msgs_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 		fread(str,1,LEN_DIR+1,instream);   /* substitute echomail semaphore */
 		offset+=LEN_DIR+1;
 		if(str[0]) {
+			prep_path(str);
 			if((cfg->sub[i]->echomail_sem=(char *)MALLOC(strlen(str)+1))==NULL)
 				return allocerr(txt,offset,fname,strlen(str)+1);
-			strcpy(cfg->sub[i]->echomail_sem,str); }
-		else
+			strcpy(cfg->sub[i]->echomail_sem,str); 
+		} else
 			cfg->sub[i]->echomail_sem=cfg->echomail_sem;
 	#endif
 		fread(str,1,LEN_DIR+1,instream);   /* substitute EchoMail path */
@@ -765,6 +775,12 @@ BOOL read_msgs_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 	for(i=0;i<28;i++)
 		get_int(n,instream);
 
+	/* Fix-up paths */
+	prep_path(cfg->netmail_sem);
+	prep_path(cfg->echomail_sem);
+	prep_dir(cfg->netmail_dir,cfg->data_dir);
+	prep_dir(cfg->echomail_dir,cfg->data_dir);
+	prep_dir(cfg->fidofile_dir,cfg->data_dir);
 
 	/**********/
 	/* QWKnet */
@@ -868,6 +884,7 @@ BOOL read_msgs_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 
 	get_str(cfg->sys_inetaddr,instream); /* Internet address */
 	get_str(cfg->inetmail_sem,instream);
+	prep_path(cfg->inetmail_sem);
 	get_int(cfg->inetmail_misc,instream);
 	get_int(cfg->inetmail_cost,instream);
 

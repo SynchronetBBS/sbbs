@@ -72,7 +72,8 @@ BOOL read_file_cfg(scfg_t* cfg, read_cfg_text_t* txt);
 BOOL read_msgs_cfg(scfg_t* cfg, read_cfg_text_t* txt);
 BOOL read_chat_cfg(scfg_t* cfg, read_cfg_text_t* txt);
 BOOL read_attr_cfg(scfg_t* cfg, read_cfg_text_t* txt);
-void prep_path(char* base, char* path);
+void prep_dir(char* base, char* dir);
+void prep_path(char* path); 
 void make_data_dirs(scfg_t* cfg);
 
 void free_node_cfg(scfg_t* cfg);
