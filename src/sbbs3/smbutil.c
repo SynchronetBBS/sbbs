@@ -322,7 +322,7 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 	}
 	msg.idx.subj=smb_subject_crc(str);
 
-	sprintf(str,"SMBUTIL %s-%s r%s %s %s"
+	safe_snprintf(str,sizeof(str),"SMBUTIL %s-%s r%s %s %s"
 		,SMBUTIL_VER
 		,PLATFORM_DESC
 		,revision
