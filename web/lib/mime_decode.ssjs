@@ -20,7 +20,7 @@ function count_attachments(hdr, body)
 		return(0);
 
 	if(CT.search(/multipart\/[^\s;]*/i)!=-1) {
-		var bound=CT.match(/;[ \r\n]*boundary="{0,1}([^";\r\n]*)"{0,1}/);
+		var bound=CT.match(/;[\s\r\n]*boundary="{0,1}([^";\r\n]*)"{0,1}/i);
 		bound[1]=regex_escape(bound[1]);
 		re=new RegExp ("--"+bound[1]+"-{0,2}","");
 		msgbits=body.split(re);
@@ -63,7 +63,7 @@ function mime_decode(hdr, body)
 		return(Message);
 	}
 	if(CT.search(/multipart\/[^\s;]*/i)!=-1) {
-		var bound=CT.match(/;[ \r\n]*boundary="{0,1}([^";\r\n]*)"{0,1}/);
+		var bound=CT.match(/;[\s\r\n]*boundary="{0,1}([^";\r\n]*)"{0,1}/i);
 		bound[1]=regex_escape(bound[1]);
 		re=new RegExp ("--"+bound[1]+"-{0,2}");
 		msgbits=body.split(re);
@@ -144,7 +144,7 @@ function decode_body(TE, heads, body)
 			tmp=tmp[1];
 		else {
 			if(TE!=undefined) {
-				tmp=TE.match(/content-transfer-encoding: ([^;\r\n]*)/);
+				tmp=TE.match(/content-transfer-encoding: ([^;\r\n]*)/i);
 				if(tmp!=undefined)
 					tmp=tmp[1];
 			}
@@ -152,7 +152,7 @@ function decode_body(TE, heads, body)
 	}
 	else {
 		if(TE!=undefined) {
-			tmp=TE.match(/content-transfer-encoding: ([^;\r\n]*)/);
+			tmp=TE.match(/content-transfer-encoding: ([^;\r\n]*)/i);
 			if(tmp!=undefined)
 				tmp=tmp[1];
 		}
@@ -201,7 +201,7 @@ function mime_get_attach(hdr, body, filename)
 		return(undefined);
 	}
 	if(CT.search(/multipart\/[^\s;]*/i)!=-1) {
-		var bound=CT.match(/;[ \r\n]*boundary="{0,1}([^";\r\n]*)"{0,1}/);
+		var bound=CT.match(/;[\s\r\n]*boundary="{0,1}([^";\r\n]*)"{0,1}/i);
 		bound[1]=regex_escape(bound[1]);
 		re=new RegExp ("--"+bound[1]+"-{0,2}");
 		msgbits=body.split(re);
@@ -243,7 +243,7 @@ function mime_get_cid_attach(hdr, body, cid)
 		return(undefined);
 	}
 	if(CT.search(/multipart\/[^\s;]*/i)!=-1) {
-		var bound=CT.match(/;[ \r\n]*boundary="{0,1}([^";\r\n]*)"{0,1}/);
+		var bound=CT.match(/;[\s\r\n]*boundary="{0,1}([^";\r\n]*)"{0,1}/i);
 		bound[1]=regex_escape(bound[1]);
 		re=new RegExp ("--"+bound[1]+"-{0,2}");
 		msgbits=body.split(re);
