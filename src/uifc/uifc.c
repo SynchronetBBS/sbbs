@@ -1132,6 +1132,7 @@ hitesc:
 							api->savdepth--; }
 						return(*cur);
 					case ESC:
+					case '\b':	/* backspace */
 						if(mode&WIN_ESC || (mode&WIN_CHE && api->changes)
 							&& !(mode&WIN_SAV)) {
 							hidemouse();
