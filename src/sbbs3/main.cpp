@@ -1096,11 +1096,10 @@ void input_thread(void *arg)
 		total_pkts++;
 
         // telbuf and wr are modified to reflect telnet escaped data
+		wr=rd;
 #ifdef __unix__
-		if(sock!=sbbs->client_socket)  {
-			wr=rd;
+		if(sock!=sbbs->client_socket)
 			wrbuf=inbuf;
-		}
 		else
 #endif
 		if(sbbs->telnet_mode&TELNET_MODE_OFF)
