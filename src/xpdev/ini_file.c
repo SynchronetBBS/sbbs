@@ -926,7 +926,7 @@ double iniGetFloat(str_list_t* list, const char* section, const char* key, doubl
 
 static BOOL parseBool(const char* value)
 {
-	if(!stricmp(value,"TRUE") || !stricmp(value,"YES"))
+	if(stricmp(value,"TRUE")==0 || stricmp(value,"YES")==0 || stricmp(value,"ON")==0)
 		return(TRUE);
 
 	return(INT_TO_BOOL(strtol(value,NULL,0)));
