@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -76,7 +76,8 @@ void sbbs_t::listmsgs(int subnum, post_t HUGE16 *post, long i, long posts)
 			,msg.subj);
 		smb_freemsgmem(&msg);
 		msg.total_hfields=0;
-		i++; }
+		i++; 
+	}
 }
 
 char *binstr(uchar *buf, ushort length)
@@ -177,13 +178,15 @@ post_t HUGE16 * sbbs_t::loadposts(long *posts, uint subnum, ulong ptr, long mode
 
 	if((i=smb_locksmbhdr(&smb))!=0) {				/* Be sure noone deletes or */
 		errormsg(WHERE,ERR_LOCK,smb.file,i);		/* adds while we're reading */
-		return(NULL); }
+		return(NULL); 
+	}
 
 	total=filelength(fileno(smb.sid_fp))/sizeof(idxrec_t); /* total msgs in sub */
 
 	if(!total) {			/* empty */
 		smb_unlocksmbhdr(&smb);
-		return(NULL); }
+		return(NULL); 
+	}
 
 	strcpy(name,useron.name);
 	strlwr(name);
@@ -203,7 +206,8 @@ post_t HUGE16 * sbbs_t::loadposts(long *posts, uint subnum, ulong ptr, long mode
 	if((post=(post_t HUGE16 *)LMALLOC(alloc_len))==NULL) {	/* alloc for max */
 		smb_unlocksmbhdr(&smb);
 		errormsg(WHERE,ERR_ALLOC,smb.file,sizeof(post_t *)*cfg.sub[subnum]->maxmsgs);
-		return(NULL); }
+		return(NULL); 
+	}
 	while(!feof(smb.sid_fp)) {
 		skip=0;
 		if(smb_fread(&idx,sizeof(idx),smb.sid_fp) != sizeof(idx))
@@ -228,7 +232,8 @@ post_t HUGE16 * sbbs_t::loadposts(long *posts, uint subnum, ulong ptr, long mode
 				continue;
 			if(!sub_op(subnum)			/* not sub-op */
 				&& idx.from!=namecrc && idx.from!=aliascrc) /* not for you */
-				continue; }
+				continue; 
+		}
 
 		if(idx.attr&MSG_MODERATED && !(idx.attr&MSG_VALIDATED)
 			&& (mode&LP_REP || !sub_op(subnum)))
@@ -249,10 +254,13 @@ post_t HUGE16 * sbbs_t::loadposts(long *posts, uint subnum, ulong ptr, long mode
 						&& (useron.number!=1 || stricmp(msg.to,"sysop")
 						|| msg.from_net.type))
 						skip=1;
-					smb_freemsgmem(&msg); }
-				smb_unlockmsghdr(&smb,&msg); }
+					smb_freemsgmem(&msg); 
+				}
+				smb_unlockmsghdr(&smb,&msg); 
+			}
 			if(skip)
-				continue; }
+				continue; 
+		}
 
 
 		if(!(mode&LP_BYSELF) && (idx.from==namecrc || idx.from==aliascrc)) {
@@ -262,10 +270,13 @@ post_t HUGE16 * sbbs_t::loadposts(long *posts, uint subnum, ulong ptr, long mode
 					if(!stricmp(msg.from,useron.alias)
 						|| !stricmp(msg.from,useron.name))
 						skip=1;
-					smb_freemsgmem(&msg); }
-				smb_unlockmsghdr(&smb,&msg); }
+					smb_freemsgmem(&msg); 
+				}
+				smb_unlockmsghdr(&smb,&msg); 
+			}
 			if(skip)
-				continue; }
+				continue; 
+		}
 
 		if(!(mode&LP_OTHERS)) {
 			if(idx.to!=namecrc && idx.to!=aliascrc
@@ -278,10 +289,13 @@ post_t HUGE16 * sbbs_t::loadposts(long *posts, uint subnum, ulong ptr, long mode
 						&& (useron.number!=1 || stricmp(msg.to,"sysop")
 						|| msg.from_net.type))
 						skip=1;
-					smb_freemsgmem(&msg); }
-				smb_unlockmsghdr(&smb,&msg); }
+					smb_freemsgmem(&msg); 
+				}
+				smb_unlockmsghdr(&smb,&msg); 
+			}
 			if(skip)
-				continue; }
+				continue; 
+		}
 
 		memcpy(&post[l],&idx,sizeof(idx));
 		l++; 
@@ -334,7 +348,8 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 	if(!chk_ar(cfg.sub[subnum]->read_ar,&useron)) {
 		bprintf("\1n\r\nYou can't read messages on %s %s\r\n"
 				,cfg.grp[cfg.sub[subnum]->grp]->sname,cfg.sub[subnum]->sname);
-		return(0); }
+		return(0); 
+	}
 	msg.total_hfields=0;				/* init to NULL, specify not-allocated */
 	if(!(mode&SCAN_CONST))
 		lncntr=0;
@@ -345,24 +360,28 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 		else
 			bprintf(text[NoMsgsOnSub]
 				,cfg.grp[cfg.sub[subnum]->grp]->sname,cfg.sub[subnum]->sname);
-		return(0); }
+		return(0); 
+	}
 	if(mode&SCAN_NEW && subscan[subnum].ptr>=last && !(mode&SCAN_BACK)) {
 		if(subscan[subnum].ptr>last)
 			subscan[subnum].ptr=subscan[subnum].last=last;
 		bprintf(text[NScanStatusFmt]
 			,cfg.grp[cfg.sub[subnum]->grp]->sname,cfg.sub[subnum]->lname,0L,msgs);
-		return(0); }
+		return(0); 
+	}
 
 	if((i=smb_stack(&smb,SMB_STACK_PUSH))!=0) {
 		errormsg(WHERE,ERR_OPEN,cfg.sub[subnum]->code,i);
-		return(0); }
+		return(0); 
+	}
 	sprintf(smb.file,"%s%s",cfg.sub[subnum]->data_dir,cfg.sub[subnum]->code);
 	smb.retry_time=cfg.smb_retry_time;
 	smb.subnum=subnum;
 	if((i=smb_open(&smb))!=0) {
 		smb_stack(&smb,SMB_STACK_POP);
 		errormsg(WHERE,ERR_OPEN,smb.file,i,smb.last_error);
-		return(0); }
+		return(0); 
+	}
 
 	if(!(mode&SCAN_TOYOU)
 		&& (!mode || mode&SCAN_FIND || !(subscan[subnum].cfg&SUB_CFG_YSCAN)))
@@ -379,15 +398,19 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 		if(!smb.msgs) {		  /* no messages at all */
 			smb_close(&smb);
 			smb_stack(&smb,SMB_STACK_POP);
-			return(0); }
+			return(0); 
+		}
 		if(smb.curmsg==smb.msgs) {  /* no new messages */
 			if(!(mode&SCAN_BACK)) {
 				if(post)
 					LFREE(post);
 				smb_close(&smb);
 				smb_stack(&smb,SMB_STACK_POP);
-				return(0); }
-			smb.curmsg=smb.msgs-1; } }
+				return(0); 
+			}
+			smb.curmsg=smb.msgs-1; 
+		} 
+	}
 	else {
 		if(mode&SCAN_TOYOU)
 			bprintf(text[NScanStatusFmt]
@@ -398,12 +421,14 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 					,cfg.grp[cfg.sub[subnum]->grp]->sname,cfg.sub[subnum]->sname);
 			smb_close(&smb);
 			smb_stack(&smb,SMB_STACK_POP);
-			return(0); }
+			return(0); 
+		}
 		if(mode&SCAN_FIND) {
 			bprintf(text[SearchSubFmt]
 				,cfg.grp[cfg.sub[subnum]->grp]->sname,cfg.sub[subnum]->lname,smb.msgs);
 			domsg=1;
-			smb.curmsg=0; }
+			smb.curmsg=0; 
+		}
 		else if(mode&SCAN_TOYOU)
 			smb.curmsg=0;
 		else {
@@ -413,7 +438,9 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 			if(smb.curmsg==smb.msgs)
 				smb.curmsg=smb.msgs-1;
 
-			domsg=1; } }
+			domsg=1; 
+		} 
+	}
 
 	if(useron.misc&RIP)
 		menu("msgscan");
@@ -422,12 +449,14 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 		smb_close(&smb);
 		smb_stack(&smb,SMB_STACK_POP);
 		errormsg(WHERE,ERR_LOCK,smb.file,i);
-		return(0); }
+		return(0); 
+	}
 	if((i=smb_getstatus(&smb))!=0) {
 		smb_close(&smb);
 		smb_stack(&smb,SMB_STACK_POP);
 		errormsg(WHERE,ERR_READ,smb.file,i);
-		return(0); }
+		return(0); 
+	}
 	smb_unlocksmbhdr(&smb);
 	last=smb.status.last_msg;
 
@@ -435,7 +464,8 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 	if(mode&SCAN_CONST) {   /* update action */
 		getnodedat(cfg.node_num,&thisnode,1);
 		thisnode.action=NODE_RMSG;
-		putnodedat(cfg.node_num,&thisnode); }
+		putnodedat(cfg.node_num,&thisnode); 
+	}
 	while(online && !done) {
 
 		action=NODE_RMSG;
@@ -448,7 +478,8 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 
 		if(!smb.msgs) {
 			done=1;
-			continue; }
+			continue; 
+		}
 
 		while(smb.curmsg>=smb.msgs) smb.curmsg--;
 
@@ -469,17 +500,20 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 
 		if((i=smb_locksmbhdr(&smb))!=0) {
 			errormsg(WHERE,ERR_LOCK,smb.file,i);
-			break; }
+			break; 
+		}
 		if((i=smb_getstatus(&smb))!=0) {
 			smb_unlocksmbhdr(&smb);
 			errormsg(WHERE,ERR_READ,smb.file,i);
-			break; }
+			break; 
+		}
 		smb_unlocksmbhdr(&smb);
 
 		if(smb.status.last_msg!=last) { 	/* New messages */
 			last=smb.status.last_msg;
 			if(post) {
-				LFREE((void *)post); }
+				LFREE((void *)post); 
+			}
 			post=loadposts(&smb.msgs,subnum,0,lp);   /* So re-load */
 			if(!smb.msgs)
 				break;
@@ -488,7 +522,8 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 					break;
 			if(smb.curmsg>(smb.msgs-1))
 				smb.curmsg=(smb.msgs-1);
-			continue; }
+			continue; 
+		}
 
 		if(msg.total_hfields)
 			smb_freemsgmem(&msg);
@@ -497,7 +532,8 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 		if(!loadmsg(&msg,post[smb.curmsg].number)) {
 			if(mismatches>5) {	/* We can't do this too many times in a row */
 				errormsg(WHERE,ERR_CHK,smb.file,post[smb.curmsg].number);
-				break; }
+				break; 
+			}
 			if(post)
 				LFREE(post);
 			post=loadposts(&smb.msgs,subnum,0,lp);
@@ -506,12 +542,13 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 			if(smb.curmsg>(smb.msgs-1))
 				smb.curmsg=(smb.msgs-1);
 			mismatches++;
-			continue; }
+			continue; 
+		}
 		smb_unlockmsghdr(&smb,&msg);
 
 		mismatches=0;
 
-		if(domsg) {
+		if(domsg && !(sys_status&SS_ABORT)) {
 
 			if(!reread && mode&SCAN_FIND) { 			/* Find text in messages */
 				buf=smb_getmsgtxt(&smb,&msg,GETMSGTXT_TAILS);
@@ -565,22 +602,29 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 						msg.idx.attr=msg.hdr.attr;
 						if((i=smb_putmsg(&smb,&msg))!=0)
 							errormsg(WHERE,ERR_WRITE,smb.file,i);
-						smb_unlockmsghdr(&smb,&msg); }
-					smb_unlocksmbhdr(&smb); }
+						smb_unlockmsghdr(&smb,&msg); 
+					}
+					smb_unlocksmbhdr(&smb); 
+				}
 				if(!msg.total_hfields) {				/* unsuccessful reload */
 					domsg=0;
-					continue; } }
+					continue; 
+				} 
+			}
 
 			subscan[subnum].last=post[smb.curmsg].number;
 
 			if(subscan[subnum].ptr<post[smb.curmsg].number && !(mode&SCAN_TOYOU)) {
 				posts_read++;
-				subscan[subnum].ptr=post[smb.curmsg].number; } }
+				subscan[subnum].ptr=post[smb.curmsg].number; 
+			} 
+		}
 		else domsg=1;
 		if(mode&SCAN_CONST) {
 			if(smb.curmsg<smb.msgs-1) smb.curmsg++;
 				else done=1;
-			continue; }
+			continue; 
+		}
 		if(useron.misc&WIP)
 			menu("msgscan");
 		ASYNC;
@@ -599,10 +643,12 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 					LFREE(post);
 				smb_close(&smb);
 				smb_stack(&smb,SMB_STACK_POP);
-				return(1); }
+				return(1); 
+			}
 			smb.curmsg=(l&~0x80000000L)-1;
 			reread=1;
-			continue; }
+			continue; 
+		}
 		switch(l) {
 			case 'A':   
 			case 'R':   
@@ -614,7 +660,8 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 				domsg=0;
 				if(!chk_ar(cfg.sub[subnum]->post_ar,&useron)) {
 					bputs(text[CantPostOnSub]);
-					break; }
+					break; 
+				}
 				quotemsg(&msg,0);
 				FREE_AND_NULL(post);
 				postmsg(subnum,&msg,WM_QUOTE);
@@ -683,7 +730,9 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 						if(!stricmp(cfg.sub[subnum]->misc&SUB_NAME
 							? useron.name : useron.alias, msg.from))
 							useron.posts=(ushort)adjustuserrec(&cfg,useron.number
-								,U_POSTS,5,-1); } }
+								,U_POSTS,5,-1); 
+					} 
+				}
 				domsg=1;
 				if((cfg.sys_misc&SM_SYSVDELM		// anyone can view delete msgs
 					|| (cfg.sys_misc&SM_USRVDELM	// sys/subops can view deleted msgs
@@ -748,7 +797,8 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 				domsg=0;
 				if(msg.hdr.attr&MSG_ANONYMOUS && !sub_op(subnum)) {
 					bputs(text[CantReplyToAnonMsg]);
-					break; }
+					break; 
+				}
 				if(!sub_op(subnum) && msg.hdr.attr&MSG_PRIVATE
 					&& stricmp(msg.to,useron.name)
 					&& stricmp(msg.to,useron.alias))
@@ -783,8 +833,11 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 							if(cfg.sub[subnum]->misc&SUB_NAME)
 								i=userdatdupe(0,U_NAME,LEN_NAME,str,0);
 							else
-								i=matchuser(&cfg,str,TRUE /* sysop_alias */); }
-						email(i,str2,msg.subj,WM_EMAIL|WM_QUOTE); } }
+								i=matchuser(&cfg,str,TRUE /* sysop_alias */); 
+						}
+						email(i,str2,msg.subj,WM_EMAIL|WM_QUOTE); 
+					} 
+				}
 				break;
 			case 'P':   /* Post message on sub-board */
 				domsg=0;
@@ -809,7 +862,8 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 					break;
 				if(smb.curmsg>=smb.msgs-1) {
 					 done=1;
-					 break; }
+					 break; 
+				}
 				i=smb.curmsg+11;
 				if(i>smb.msgs)
 					i=smb.msgs;
@@ -856,7 +910,8 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 								msg.hdr.attr=msg.idx.attr=i;
 								if((i=smb_putmsg(&smb,&msg))!=0)
 									errormsg(WHERE,ERR_WRITE,smb.file,i);
-								smb_unlockmsghdr(&smb,&msg); }
+								smb_unlockmsghdr(&smb,&msg); 
+							}
 							break;
 						case 'E':   /* edit last post */
 							FREE_AND_NULL(post);
@@ -875,13 +930,15 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 							msg.idx.offset=0;
 							if(!loadmsg(&msg,msg.idx.number)) {
 								errormsg(WHERE,ERR_READ,smb.file,msg.idx.number);
-								break; }
+								break; 
+							}
 							sprintf(str,text[DeletePostQ],msg.hdr.number,msg.subj);
 							if(movemsg(&msg,subnum) && yesno(str)) {
 								msg.idx.attr|=MSG_DELETE;
 								msg.hdr.attr=msg.idx.attr;
 								if((i=smb_putmsg(&smb,&msg))!=0)
-									errormsg(WHERE,ERR_WRITE,smb.file,i); }
+									errormsg(WHERE,ERR_WRITE,smb.file,i); 
+							}
 							smb_unlockmsghdr(&smb,&msg);
 							break;
 
@@ -911,18 +968,22 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 								msg.hdr.attr=msg.idx.attr;
 								if((i=smb_putmsg(&smb,&msg))!=0)
 									errormsg(WHERE,ERR_WRITE,smb.file,i);
-								smb_unlockmsghdr(&smb,&msg); }
+								smb_unlockmsghdr(&smb,&msg); 
+							}
 							break;
 						default:
-							continue; }
-					break; }
+							continue; 
+					}
+					break; 
+				}
 				break;
 			case '.':   /* Thread forward */
 				l=msg.hdr.thread_first;
 				if(!l) l=msg.hdr.thread_next;
 				if(!l) {
 					domsg=0;
-					break; }
+					break; 
+				}
 				for(i=0;i<smb.msgs;i++)
 					if(l==post[i].number)
 						break;
@@ -932,7 +993,8 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 			case ',':   /* Thread backwards */
 				if(!msg.hdr.thread_orig) {
 					domsg=0;
-					break; }
+					break; 
+				}
 				for(i=0;i<smb.msgs;i++)
 					if(msg.hdr.thread_orig==post[i].number)
 						break;
@@ -1016,7 +1078,8 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 		sprintf(str,text[Post],cfg.grp[cfg.sub[subnum]->grp]->sname
 			,cfg.sub[subnum]->lname);
 		if(!noyes(str))
-			postmsg(subnum,0,0); }
+			postmsg(subnum,0,0); 
+	}
 	smb_close(&smb);
 	smb_stack(&smb,SMB_STACK_POP);
 	return(0);
@@ -1036,7 +1099,8 @@ int sbbs_t::searchsub(uint subnum, char *search)
 
 	if((i=smb_stack(&smb,SMB_STACK_PUSH))!=0) {
 		errormsg(WHERE,ERR_OPEN,cfg.sub[subnum]->code,i);
-		return(0); }
+		return(0); 
+	}
 	total=getposts(&cfg,subnum);
 	sprintf(smb.file,"%s%s",cfg.sub[subnum]->data_dir,cfg.sub[subnum]->code);
 	smb.retry_time=cfg.smb_retry_time;
@@ -1044,7 +1108,8 @@ int sbbs_t::searchsub(uint subnum, char *search)
 	if((i=smb_open(&smb))!=0) {
 		smb_stack(&smb,SMB_STACK_POP);
 		errormsg(WHERE,ERR_OPEN,smb.file,i,smb.last_error);
-		return(0); }
+		return(0); 
+	}
 	post=loadposts(&posts,subnum,0,LP_BYSELF|LP_OTHERS);
 	bprintf(text[SearchSubFmt]
 		,cfg.grp[cfg.sub[subnum]->grp]->sname,cfg.sub[subnum]->lname,posts,total);
@@ -1078,7 +1143,8 @@ int sbbs_t::searchposts(uint subnum, post_t HUGE16 *post, long start, long posts
 		buf=smb_getmsgtxt(&smb,&msg,1);
 		if(!buf) {
 			smb_freemsgmem(&msg);
-			continue; }
+			continue; 
+		}
 		strupr((char *)buf);
 		if(strstr((char *)buf,search) || strstr(msg.subj,search)) {
 			if(!found)
@@ -1098,9 +1164,11 @@ int sbbs_t::searchposts(uint subnum, post_t HUGE16 *post, long start, long posts
 				,msg.to
 				,ch
 				,msg.subj);
-			found++; }
+			found++; 
+		}
 		FREE(buf);
-		smb_freemsgmem(&msg); }
+		smb_freemsgmem(&msg); 
+	}
 
 	return(found);
 }
@@ -1147,7 +1215,9 @@ void sbbs_t::showposts_toyou(post_t HUGE16 *post, ulong start, long posts)
 				? text[Anonymous] : msg.from
 				,msg.to
 				,msg.hdr.attr&MSG_DELETE ? '-' : msg.hdr.attr&MSG_READ ? ' ' : '*'
-				,msg.subj); } }
+				,msg.subj); 
+		} 
+	}
 
 	if(msg.total_hfields)
 		smb_freemsgmem(&msg);
@@ -1167,7 +1237,8 @@ int sbbs_t::searchsub_toyou(uint subnum)
 
 	if((i=smb_stack(&smb,SMB_STACK_PUSH))!=0) {
 		errormsg(WHERE,ERR_OPEN,cfg.sub[subnum]->code,i);
-		return(0); }
+		return(0); 
+	}
 	total=getposts(&cfg,subnum);
 	sprintf(smb.file,"%s%s",cfg.sub[subnum]->data_dir,cfg.sub[subnum]->code);
 	smb.retry_time=cfg.smb_retry_time;
@@ -1175,7 +1246,8 @@ int sbbs_t::searchsub_toyou(uint subnum)
 	if((i=smb_open(&smb))!=0) {
 		smb_stack(&smb,SMB_STACK_POP);
 		errormsg(WHERE,ERR_OPEN,smb.file,i,smb.last_error);
-		return(0); }
+		return(0); 
+	}
 	post=loadposts(&posts,subnum,0,0);
 	bprintf(text[SearchSubFmt]
 		,cfg.grp[cfg.sub[subnum]->grp]->sname,cfg.sub[subnum]->lname,total);
@@ -1183,7 +1255,8 @@ int sbbs_t::searchsub_toyou(uint subnum)
 		if(post)
 			LFREE(post);
 		post=loadposts(&posts,subnum,0,LP_BYSELF|LP_OTHERS);
-		showposts_toyou(post,0,posts); }
+		showposts_toyou(post,0,posts); 
+	}
 	if(post)
 		LFREE(post);
 	smb_close(&smb);
