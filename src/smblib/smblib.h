@@ -104,6 +104,7 @@ SMBEXPORT int 	SMBCALL smb_getstatus(smb_t* smb);
 SMBEXPORT int 	SMBCALL smb_putstatus(smb_t* smb);
 SMBEXPORT int 	SMBCALL smb_unlocksmbhdr(smb_t* smb);
 SMBEXPORT int 	SMBCALL smb_getmsgidx(smb_t* smb, smbmsg_t* msg);
+SMBEXPORT int 	SMBCALL smb_getfirstidx(smb_t* smb, idxrec_t *idx);
 SMBEXPORT int 	SMBCALL smb_getlastidx(smb_t* smb, idxrec_t *idx);
 SMBEXPORT uint	SMBCALL smb_getmsghdrlen(smbmsg_t* msg);
 SMBEXPORT ulong	SMBCALL smb_getmsgdatlen(smbmsg_t* msg);
@@ -171,6 +172,7 @@ SMBEXPORT void	SMBCALL smb_clearerr(FILE* fp);
 #pragma aux smb_putstatus		"_*"
 #pragma aux smb_unlocksmbhdr	"_*"
 #pragma aux smb_getmsgidx		"_*"
+#pragma aux smb_getfirstidx		"_*"
 #pragma aux smb_getlastidx		"_*"
 #pragma aux smb_getmsghdrlen	"_*"
 #pragma aux smb_getmsgdatlen	"_*"

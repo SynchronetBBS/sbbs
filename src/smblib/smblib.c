@@ -535,6 +535,20 @@ int SMBCALL smb_getmsgidx(smb_t* smb, smbmsg_t* msg)
 }
 
 /****************************************************************************/
+/* Reads the first index record in the open message base 					*/
+/****************************************************************************/
+int SMBCALL smb_getfirstidx(smb_t* smb, idxrec_t *idx)
+{
+	clearerr(smb->sid_fp);
+	fseek(smb->sid_fp,0,SEEK_SET);
+	if(!fread(idx,sizeof(idxrec_t),1,smb->sid_fp)) {
+		sprintf(smb->last_error,"reading index");
+		return(-2);
+	}
+	return(0);
+}
+
+/****************************************************************************/
 /* Reads the last index record in the open message base 					*/
 /****************************************************************************/
 int SMBCALL smb_getlastidx(smb_t* smb, idxrec_t *idx)
