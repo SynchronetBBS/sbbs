@@ -35,6 +35,11 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
+/* ANSI headers */
+#include <string.h>
+#include <signal.h>
+#include <ctype.h>
+
 /* Synchronet-specific headers */
 #include "sbbsdefs.h"	/* VERSION, REVISION, and COPYRIGHT_NOTICE */
 #include "conwrap.h"	/* kbhit/getch */
