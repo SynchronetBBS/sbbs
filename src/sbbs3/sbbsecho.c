@@ -74,6 +74,7 @@ faddr_t		sys_faddr;
 config_t	cfg;
 scfg_t		scfg;
 
+BOOL pause_on_exit=FALSE;
 
 #ifdef __WATCOMC__
 /******************************************************************************
@@ -2050,8 +2051,10 @@ void allocfail(uint size)
 
 void bail(int code)
 {
-	if(code)
+	if(code || pause_on_exit) {
+		printf("\nHit any key...");
 		getch();
+	}
 	exit(code);
 }
 
@@ -3318,15 +3321,18 @@ int import_netmail(char *path,fmsghdr_t hdr, FILE *fidomsg)
 	ulong l;
 	faddr_t addr;
 
+	printf("import_netmail line %d\n",__LINE__);
 	hdr.destzone=hdr.origzone=sys_faddr.zone;
 	hdr.destpoint=hdr.origpoint=0;
 	getzpt(fidomsg,&hdr);				/* use kludge if found */
+	printf("import_netmail line %d\n",__LINE__);
 	for(match=0;match<scfg.total_faddrs;match++)
 		if((hdr.destzone==scfg.faddr[match].zone || misc&FUZZY_ZONE)
 			&& hdr.destnet==scfg.faddr[match].net
 			&& hdr.destnode==scfg.faddr[match].node
 			&& hdr.destpoint==scfg.faddr[match].point)
 			break;
+	printf("import_netmail line %d\n",__LINE__);
 	if(match<scfg.total_faddrs && misc&FUZZY_ZONE)
 		hdr.origzone=hdr.destzone=scfg.faddr[match].zone;
 	if(hdr.origpoint)
@@ -3337,13 +3343,17 @@ int import_netmail(char *path,fmsghdr_t hdr, FILE *fidomsg)
 		sprintf(str,".%u",hdr.destpoint);
 	else
 		str[0]=0;
+	printf("import_netmail line %d\n",__LINE__);
 	sprintf(info,"%s%s%s (%u:%u/%u%s) To: %s (%u:%u/%u%s)"
 		,path,path[0] ? " ":""
 		,hdr.from,hdr.origzone,hdr.orignet,hdr.orignode,tmp
 		,hdr.to,hdr.destzone,hdr.destnet,hdr.destnode,str);
+	printf("import_netmail line %d\n",__LINE__);
 	printf("%s ",info);
+	printf("import_netmail line %d\n",__LINE__);
 
 	if(!(misc&IMPORT_NETMAIL)) {
+	printf("import_netmail line %d\n",__LINE__);
 		if(!path[0]) {
 			fmsgbuf=getfmsg(fidomsg,&l);
 			if(!fmsgbuf) {
@@ -3375,6 +3385,7 @@ int import_netmail(char *path,fmsghdr_t hdr, FILE *fidomsg)
 			logprintf("%s Ignored",info);
 		return(-1); }
 
+	printf("import_netmail line %d\n",__LINE__);
 	if(hdr.attr&FIDO_ORPHAN) {
 		printf("Orphaned");
 		return(1); }
@@ -3407,6 +3418,7 @@ int import_netmail(char *path,fmsghdr_t hdr, FILE *fidomsg)
 			logprintf(str);
 			bail(1); } }
 
+	printf("import_netmail line %d\n",__LINE__);
 	if(!stricmp(hdr.to,"AREAFIX") || !stricmp(hdr.to,"SBBSECHO")) {
 		fmsgbuf=getfmsg(fidomsg,NULL);
 		if(path[0]) {
@@ -3440,6 +3452,7 @@ int import_netmail(char *path,fmsghdr_t hdr, FILE *fidomsg)
 			logprintf(info);
 		return(-2); }
 
+	printf("import_netmail line %d\n",__LINE__);
 	usernumber=atoi(hdr.to);
 	if(!stricmp(hdr.to,"SYSOP"))  /* NetMail to "sysop" goes to #1 */
 		usernumber=1;
@@ -3491,6 +3504,7 @@ int import_netmail(char *path,fmsghdr_t hdr, FILE *fidomsg)
 	/* Importing NetMail */
 	/*********************/
 
+	printf("import_netmail line %d\n",__LINE__);
 	fmsgbuf=getfmsg(fidomsg,&l);
 
 	if(!l && misc&KILL_EMPTY_MAIL) {
@@ -3537,6 +3551,7 @@ int import_netmail(char *path,fmsghdr_t hdr, FILE *fidomsg)
 			tp=p+1; } }
 	netmail++;
 
+	printf("import_netmail line %d\n",__LINE__);
 	if(fmsgbuf)
 		FREE(fmsgbuf);
 
@@ -3551,6 +3566,7 @@ int import_netmail(char *path,fmsghdr_t hdr, FILE *fidomsg)
 	***/
 	if(cfg.log&LOG_IMPORTED)
 		logprintf("%s Imported",info);
+	printf("import_netmail line %d\n",__LINE__);
 	return(0);
 }
 
@@ -3870,14 +3886,14 @@ int main(int argc, char **argv)
 	"i: do not import echomail                e: do not export echomail\n"
 	"m: ignore echomail ptrs (export all)     u: update echomail ptrs (export none)\n"
 	"j: ignore recieved bit on netmail        t: do not update echomail ptrs\n"
-	"l: create log file (data\\sbbsecho.log)   r: create report of import totals\n"
+	"l: create log file (data/sbbsecho.log)   r: create report of import totals\n"
 	"h: export all echomail (hub rescan)      b: import locally created netmail too\n"
 	"a: export ASCII characters only          f: create packets for outbound netmail\n"
 	"g: generate notify lists                 =: change existing tear lines to ===\n"
 	"y: import netmail for unknown users to sysop\n"
 	"o: import all netmail regardless of destination address\n"
 	"s: import private echomail override (strip private status)\n"
-	"!: notify users of received echomail\n";
+	"!: notify users of received echomail     @: prompt for key upon exiting (debug)\n";
 
 	if((email=(smb_t *)MALLOC(sizeof(smb_t)))==NULL) {
 		printf("ERROR allocating memory for email.\n");
@@ -3925,6 +3941,7 @@ int main(int argc, char **argv)
 	txt.error="\7\nERROR: Offset %lu in %s\n\n";
 
 	sub_code[0]=0;
+
 	for(i=1;i<argc;i++) {
 		if(argv[i][0]=='/') {
 			j=1;
@@ -3996,6 +4013,9 @@ int main(int argc, char **argv)
 						break;
 					case '!':
 						misc|=NOTIFY_RECEIPT;
+						break;
+					case '@':
+						pause_on_exit=TRUE;
 						break;
 					case 'Q':
 						bail(0);
@@ -4381,6 +4401,7 @@ int main(int argc, char **argv)
 			strupr(str);
 			p=strstr(str,"AREA:");
 			if(!p) {					/* Netmail */
+				printf("AREA tag not found, calling import_netmail\n");
 				start_tick=0;
 				if(import_netmail("",hdr,fidomsg))
 					seektonull(fidomsg);
@@ -4879,5 +4900,6 @@ if(email->shd_fp)
 
 FREE(smb);
 FREE(email);
-return(0);
+
+bail(0);
 }
