@@ -57,6 +57,8 @@ enum {                              /* Node Status */
     ,NODE_EVENT_LIMBO               /* Allowing another node to run an event */
     };
 
+#define NODE_INVALID_STATUS	0xff	/* Invalid status value */
+
                                     /* Bit values for node.misc */
 #define NODE_ANON   (1<<0)          /* Anonymous User */
 #define NODE_LOCK   (1<<1)          /* Locked for sysops only */
