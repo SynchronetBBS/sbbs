@@ -178,10 +178,11 @@ public:
 
 #ifdef JAVASCRIPT
 
+	JSRuntime*	js_runtime;
 	JSContext*	js_cx;
 	JSObject*	js_glob;
 	long		js_execfile(char *fname);
-	bool		js_initcx(void);
+	bool		js_init(void);
 
 #endif
 
