@@ -221,10 +221,12 @@ void sbbs_t::gettimeleft(void)
 		sys_status|=SS_EVENT;
 		timeleft=eventtime-now; }
 
+#if 0	// We don't support front-end mailers anymore
 	/* Event time passed by front-end */
 	if(next_event && (next_event<now || next_event-now<(time_t)timeleft)) {
 		timeleft=next_event-now;
 		sys_status|=SS_EVENT; }
+#endif
 
 	if(timeleft<0)  /* timeleft can't go negative */
 		timeleft=0;
