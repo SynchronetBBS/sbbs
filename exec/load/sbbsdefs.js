@@ -211,6 +211,35 @@ var   USER_WIP 		=(1<<21)	/* Supports WIP terminal emulation			*/
 var   USER_AUTOLOGON=(1<<22)	/* AutoLogon via IP							*/
 					    		/********************************************/
 
+					    		/********************************************/
+								/* user.qwk_settings 						*/
+					    		/********************************************/
+var   QWK_FILES		=(1L<<0) 	/* Include new files list					*/
+var   QWK_EMAIL		=(1L<<1) 	/* Include unread e-mail					*/
+var   QWK_ALLMAIL	=(1L<<2) 	/* Include ALL e-mail						*/
+var   QWK_DELMAIL	=(1L<<3) 	/* Delete e-mail after download 			*/
+var   QWK_BYSELF	=(1L<<4) 	/* Include messages from self				*/
+var   QWK_UNUSED	=(1L<<5) 	/* Currently unused 						*/
+var   QWK_EXPCTLA	=(1L<<6) 	/* Expand ctrl-a codes to ascii 			*/
+var   QWK_RETCTLA	=(1L<<7) 	/* Retain ctrl-a codes						*/
+var   QWK_ATTACH	=(1L<<8) 	/* Include file attachments 				*/
+var   QWK_NOINDEX	=(1L<<9) 	/* Do not create index files in QWK			*/
+var   QWK_TZ		=(1L<<10)	/* Include "@TZ" time zone in msgs			*/
+var   QWK_VIA 		=(1L<<11)	/* Include "@VIA" seen-bys in msgs			*/
+var   QWK_NOCTRL	=(1L<<12)	/* No extraneous control files				*/
+					    		/********************************************/
+
+					    		/********************************************/
+								/* user.chat_settings						*/
+					    		/********************************************/
+var   CHAT_ECHO		=(1<<0)		/* Multinode chat echo						*/
+var   CHAT_ACTION	=(1<<1)		/* Chat actions 							*/
+var   CHAT_NOPAGE	=(1<<2)		/* Can't be paged                           */
+var   CHAT_NOACT	=(1<<3)		/* No activity alerts						*/
+var   CHAT_SPLITP	=(1<<4)		/* Split screen private chat				*/
+					    		/********************************************/
+
+
 /************************************************************************/
 /* Valid flags for user.security.exempt/restrict/flags					*/
 /************************************************************************/
@@ -428,4 +457,12 @@ var   TG_NODESYNC	=(1<<3)		/* Call Nodesync, get msgs, etc.			*/
 var   TG_CTRLKEYS	=(1<<4)		/* Interpret ^P ^U ^T, etc locally			*/
 var   TG_PASSTHRU	=(1<<5)		/* Pass-through telnet commands/responses	*/
 var   TG_RLOGIN		=(1<<6)		/* Use BSD RLogin protocol					*/
+					    		/********************************************/
+
+					    		/********************************************/
+								/* Bits in console.telnet_mode				*/
+					    		/********************************************/
+var   TELNET_MODE_BIN_RX=(1<<0) /* Binary receive (no CR to CRLF xlat)		*/
+var   TELNET_MODE_ECHO	=(1<<1)	/* Echo remotely							*/
+var   TELNET_MODE_GATE	=(1<<2)	/* Pass-through telnet commands/responses	*/
 					    		/********************************************/
