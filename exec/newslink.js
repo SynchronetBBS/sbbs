@@ -254,6 +254,8 @@ file_remove(stop_semaphore);
 /******************************/
 var exported=0;
 var imported=0;
+var twitlist_fname = system.ctrl_dir + "twitlist.cfg";
+var use_twitlist = file_exists(twitlist_fname);
 
 printf("Scanning %lu message bases...\r\n",area.length);
 for(i in area) {
@@ -721,6 +723,12 @@ for(i in area) {
 			var reason = format("Blocked subject (%s)",hdr.subject);
 			printf("!%s\r\n",reason);
 			system.spamlog("NNTP","NOT IMPORTED",reason,hdr.from,server,hdr.to);
+			continue;
+		}
+		if(use_twitlist 
+			&& (system.findstr(twitlist_fname,hdr.from) 
+				|| system.findstr(twitlist_fname,hdr.to)) {
+			printf("Filtering message from %s to %s\r\n", hdr.from, hdr.to);
 			continue;
 		}
 
