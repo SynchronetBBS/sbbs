@@ -1025,6 +1025,7 @@ static void js_static_service_thread(void* arg)
 
 		do {
 			JS_ExecuteScript(js_cx, js_glob, js_script, &rval);
+			JS_GC(js_cx);
 		} while(!service->terminated && service->options&SERVICE_OPT_STATIC_LOOP);
 
 		JS_DestroyScript(js_cx, js_script);
