@@ -87,6 +87,7 @@ static int		active_sendmail=0;
 static DWORD	thread_count=0;
 static BOOL		sendmail_running=FALSE;
 static DWORD	sockets=0;
+static DWORD	served=0;
 static BOOL		recycle_server=FALSE;
 static char		revision[16];
 
@@ -1139,8 +1140,8 @@ static void pop3_thread(void* arg)
 
 	thread_down();
 	if(startup->options&MAIL_OPT_DEBUG_POP3)
-		lprintf("%04d POP3 session thread terminated (%u threads remain)"
-			,socket, thread_count);
+		lprintf("%04d POP3 session thread terminated (%u threads remain, %lu clients served)"
+			,socket, thread_count, served);
 
 	/* Must be last */
 	mail_close_socket(socket);
@@ -2603,8 +2604,8 @@ static void smtp_thread(void* arg)
 	client_off(socket);
 
 	thread_down();
-	lprintf("%04d SMTP RX Session thread terminated (%u threads remain)"
-		,socket, thread_count);
+	lprintf("%04d SMTP RX Session thread terminated (%u threads remain, %lu clients served)"
+		,socket, thread_count, served);
 
 	/* Must be last */
 	mail_close_socket(socket);
@@ -3101,7 +3102,8 @@ static void cleanup(int code)
 
 	thread_down();
 	status("Down");
-    lprintf("#### Mail Server thread terminated (%u threads remain)", thread_count);
+    lprintf("#### Mail Server thread terminated (%u threads remain, %lu clients served)"
+		,thread_count, served);
 	if(startup!=NULL && startup->terminated!=NULL)
 		startup->terminated(code);
 }
@@ -3181,6 +3183,7 @@ void DLLCALL mail_server(void* arg)
 	if(startup->proc_cfg_file[0]==0)			
 		sprintf(startup->proc_cfg_file,"%smailproc.cfg",scfg.ctrl_dir);
 
+	served=0;
 	startup->recycle_now=FALSE;
 	recycle_server=TRUE;
 	do {
@@ -3462,6 +3465,7 @@ void DLLCALL mail_server(void* arg)
 				smtp->socket=client_socket;
 				smtp->client_addr=client_addr;
 				_beginthread (smtp_thread, 0, smtp);
+				served++;
 			}
 
 			if(pop3_socket!=INVALID_SOCKET
@@ -3517,6 +3521,7 @@ void DLLCALL mail_server(void* arg)
 				pop3->client_addr=client_addr;
 
 				_beginthread (pop3_thread, 0, pop3);
+				served++;
 			}
 		}
 
