@@ -43,29 +43,32 @@ if(platform=="win32") {
 }
 
 var builds
-	=	[/* sub-dir */		/* cmd-line */
-		["",				"cvs co src-sbbs3"],
-		["",				"cvs co lib-" + platform + ".debug"],
-		["",				"cvs co lib-" + platform + ".release"],
-		["",				archive_cmd],
-		["src/sbbs3",		make + " DEBUG=1"],
-		["src/sbbs3",		make + " RELEASE=1"],
-		["src/sbbs3/scfg",	make + " DEBUG=1"],
-		["src/sbbs3/scfg",	make + " RELEASE=1"],
+	=	[/* sub-dir */		/* cmd-line */						/* redirect */
+		[""					,"cvs co src-sbbs3"					,"2> " + build_output],
+		[""					,"cvs co lib-"+platform+".debug"	,"2> " + build_output],
+		[""					,"cvs co lib-"+platform+".release"	,"2> " + build_output],
+		[""					,archive_cmd						,"2> " + build_output],
+		["src/sbbs3"		,make + " DEBUG=1"					,"2> " + build_output],
+		["src/sbbs3"		,make + " RELEASE=1"				,"2> " + build_output],
+		["src/sbbs3/scfg"	,make + " DEBUG=1"					,"2> " + build_output],
+		["src/sbbs3/scfg"	,make + " RELEASE=1"				,"2> " + build_output],
 	];
 
 /* Platform-specific (or non-ported) projects */
 if(platform=="win32") {
 	/* Requires C++Builder */
-	builds.push(["src/sbbs3/ctrl",		"makelibs.bat"]);
-	builds.push(["src/sbbs3/ctrl",		"bpr2mak sbbsctrl.bpr & make -f sbbsctrl.mak"]);
-	builds.push(["src/sbbs3/chat",		"bpr2mak chat.bpr     & make -f chat.mak"]);
+	builds.push(["src/sbbs3/ctrl"		,"makelibs.bat"			,"> " + build_output]);
+	builds.push(["src/sbbs3/ctrl"		,"bpr2mak sbbsctrl.bpr & make -f sbbsctrl.mak"
+																,"> " + build_output]);
+	builds.push(["src/sbbs3/chat"		,"bpr2mak chat.bpr     & make -f chat.mak"
+																,"> " + build_output]);
 	/* Requires Visual C++ */
-	builds.push(["src/sbbs3",			msdev + " sbbs3.dsw /MAKE ALL /OUT "+ build_output]);
+	builds.push(["src/sbbs3"			,"msdev sbbs3.dsw /MAKE ALL"
+																,"/OUT "+ build_output]);
 } else {	/* Unix */
-	builds.push(["src/sbbs3/install",	"gmake"]);
-	builds.push(["src/sbbs3/umonitor",	"gmake"]);
-	builds.push(["src/sbbs3/uedit",		"gmake"]);
+	builds.push(["src/sbbs3/install"	,"gmake"				,"2> " + build_output]);
+	builds.push(["src/sbbs3/umonitor"	,"gmake"				,"2> " + build_output]);
+	builds.push(["src/sbbs3/uedit"		,"gmake"				,"2> " + build_output]);
 }
 
 chdir(temp_dir);
@@ -123,10 +126,10 @@ for(i in builds) {
 	builds[i].start = time();
 
 	var cmd_line = builds[i][1];
-	if(cmd_line.indexOf(build_output)<0)
-		cmd_line += " 2> " + build_output;
+	if(builds[i][2])
+		cmd_line += " " + builds[i][2];
 	log(LOG_INFO, "Executing: " + cmd_line);
-	var retval=system.exec(cmd_line);
+	var retval=system.exec(cmd_line.replace(/msdev/, msdev));
 	if(retval) {
 		send_email(subject, 
 			log(LOG_ERR,"!ERROR " + retval + " executing: '" + cmd_line + "' in " + sub_dir) 
