@@ -53,7 +53,7 @@ typedef struct {
 	WORD	reserved_word1;
     DWORD   interface_addr;
     DWORD	options;			/* See FTP_OPT definitions */
-    DWORD	reserved_dword8;
+    DWORD	js_max_bytes;
     DWORD	reserved_dword7;
     DWORD	reserved_dword6;
     DWORD	reserved_dword5;

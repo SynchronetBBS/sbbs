@@ -469,9 +469,9 @@ bool sbbs_t::js_init()
     	strcpy(node,client_name);
 
 	lprintf("%s JavaScript: Creating runtime: %lu bytes"
-		,node,JAVASCRIPT_RUNTIME_MEMORY);
+		,node,startup->js_max_bytes);
 
-	if((js_runtime = JS_NewRuntime(JAVASCRIPT_RUNTIME_MEMORY))==NULL)
+	if((js_runtime = JS_NewRuntime(startup->js_max_bytes))==NULL)
 		return(false);
 
 	lprintf("%s JavaScript: Initializing context (stack: %lu bytes)"
@@ -2616,11 +2616,11 @@ void node_thread(void* arg)
 
 			/* file_area object */
 			if(js_CreateFileAreaObject(sbbs->js_cx, sbbs->js_glob, &sbbs->cfg, &sbbs->useron, "")==NULL) 
-				lprintf("!JavaScript ERROR createing file_area object");
+				lprintf("!JavaScript ERROR creating file_area object");
 
 			/* msg_area object */
 			if(js_CreateMsgAreaObject(sbbs->js_cx, sbbs->js_glob, &sbbs->cfg, &sbbs->useron)==NULL) 
-				lprintf("!JavaScript ERROR createing msg_area object");
+				lprintf("!JavaScript ERROR creating msg_area object");
 		}
 #endif
 
@@ -3007,6 +3007,7 @@ void DLLCALL bbs_thread(void* arg)
 	if(startup->telnet_port==0)				startup->telnet_port=IPPORT_TELNET;
 	if(startup->rlogin_port==0)				startup->rlogin_port=513;
 	if(startup->xtrn_polls_before_yield==0)	startup->xtrn_polls_before_yield=10;
+	if(startup->js_max_bytes==0)			startup->js_max_bytes=JAVASCRIPT_MAX_BYTES;
 
 	thread_up();
 

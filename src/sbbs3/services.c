@@ -359,12 +359,12 @@ js_login(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	/* file_area object */
 	if(js_CreateFileAreaObject(cx, obj, &scfg, &user, "")==NULL) 
-		lprintf("%04d %s !JavaScript ERROR createing file_area object"
+		lprintf("%04d %s !JavaScript ERROR creating file_area object"
 			,client->socket,client->service->protocol);
 
 	/* msg_area object */
 	if(js_CreateMsgAreaObject(cx, obj, &scfg, &user)==NULL) 
-		lprintf("%04d %s !JavaScript ERROR createing file_area object"
+		lprintf("%04d %s !JavaScript ERROR creating msg_area object"
 			,client->socket,client->service->protocol);
 
 	client->client->user=user.alias;
@@ -652,7 +652,7 @@ static void js_service_thread(void* arg)
 	/* Initialize client display */
 	client_on(socket,&client);
 
-	if((js_runtime=JS_NewRuntime(JAVASCRIPT_RUNTIME_MEMORY))==NULL
+	if((js_runtime=JS_NewRuntime(startup->js_max_bytes))==NULL
 		|| (js_cx=js_initcx(js_runtime,socket,&service_client,&js_glob))==NULL) {
 		lprintf("%04d !%s ERROR initializing JavaScript context"
 			,socket,service->protocol);
@@ -1005,6 +1005,7 @@ void DLLCALL services_thread(void* arg)
 	}
 
 	/* Setup intelligent defaults */
+	if(startup->js_max_bytes==0)			startup->js_max_bytes=JAVASCRIPT_MAX_BYTES;
 
 	thread_up();
 

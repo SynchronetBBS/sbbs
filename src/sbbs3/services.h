@@ -49,7 +49,7 @@ typedef struct {
 	DWORD	size;				// sizeof(bbs_struct_t)
     DWORD   interface_addr;
     DWORD	options;			// See BBS_OPT definitions
-    DWORD	reserved_dword5;
+    DWORD	js_max_bytes;
     DWORD	reserved_dword4;
     DWORD	reserved_dword3;
     DWORD	reserved_dword2;

@@ -60,7 +60,7 @@ typedef struct {
     DWORD	options;			// See BBS_OPT definitions
     DWORD	rlogin_interface;
     DWORD	xtrn_polls_before_yield;
-    DWORD	reserved_dword6;
+    DWORD	js_max_bytes;
     RingBuf** node_spybuf;		// Spy output buffer (each node)
     RingBuf** node_inbuf;		// User input buffer (each node)
     DWORD	reserved_dword2;
