@@ -1188,7 +1188,7 @@ int SMBCALL smb_putmsgidx(smb_t* smb, smbmsg_t* msg)
 int SMBCALL smb_putmsghdr(smb_t* smb, smbmsg_t* msg)
 {
 	ushort	i;
-	ulong	l;
+	ulong	hdrlen;
 
 	if(smb->shd_fp==NULL) {
 		sprintf(smb->last_error,"msgbase not open");
@@ -1204,6 +1204,18 @@ int SMBCALL smb_putmsghdr(smb_t* smb, smbmsg_t* msg)
 		sprintf(smb->last_error,"seeking to %ld in index",msg->idx.offset);
 		return(-1);
 	}
+
+	/* Verify that the number of blocks required to stored the actual 
+	   (calculated) header length does not exceed the number allocated. */
+	hdrlen=smb_getmsghdrlen(msg);
+	if(smb_hdrblocks(hdrlen) > smb_hdrblocks(msg->hdr.length)) {
+		sprintf(smb->last_error,"illegal header length increase: "
+			"%lu (%lu blocks) vs %hu (%lu blocks)"
+			,hdrlen, smb_hdrblocks(hdrlen)
+			,msg->hdr.length, smb_hdrblocks(msg->hdr.length));
+		return(-8);
+	}
+	msg->hdr.length=hdrlen; /* store the actual header length */
 
 	/**********************************/
 	/* Set the message header ID here */
@@ -1242,13 +1254,12 @@ int SMBCALL smb_putmsghdr(smb_t* smb, smbmsg_t* msg)
 		}
 	}
 
-	l=smb_getmsghdrlen(msg);
-	while(l%SHD_BLOCK_LEN) {
+	while(hdrlen%SHD_BLOCK_LEN) {
 		if(fputc(0,smb->shd_fp)==EOF) {
 			sprintf(smb->last_error,"padding header block");
 			return(-6); 			   /* pad block with NULL */
 		}
-		l++; 
+		hdrlen++; 
 	}
 	fflush(smb->shd_fp);
 	return(0);
