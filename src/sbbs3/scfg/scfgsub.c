@@ -125,13 +125,13 @@ This is the name of the sub-board used for QWK off-line readers.
 		strupr(code);
 		SETHELP(WHERE);
 /*
-Sub-board Internal Code:
+Sub-board Internal Code Suffix:
 
 Every sub-board must have its own unique code for Synchronet to refer to
 it internally. This code should be descriptive of the sub-board's topic,
 usually an abreviation of the sub-board's name.
 */
-		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Sub-board Internal Code",code,8
+		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Sub-board Internal Code Suffix",code,LEN_CODE
 			,K_EDIT|K_UPPER)<1)
 			continue;
 		if(!code_ok(code)) {
@@ -245,7 +245,8 @@ If you want to delete all the messages for this sub-board, select Yes.
 		sprintf(opt[n++],"%-27.27s%s","Long Name",cfg.sub[i]->lname);
 		sprintf(opt[n++],"%-27.27s%s","Short Name",cfg.sub[i]->sname);
 		sprintf(opt[n++],"%-27.27s%s","QWK Name",cfg.sub[i]->qwkname);
-		sprintf(opt[n++],"%-27.27s%s","Internal Code",cfg.sub[i]->code_suffix);
+		sprintf(opt[n++],"%-27.27s%s%s","Internal Code"
+			,cfg.grp[cfg.sub[i]->grp]->code_prefix, cfg.sub[i]->code_suffix);
 		sprintf(opt[n++],"%-27.27s%s","Newsgroup Name",cfg.sub[i]->newsgroup);
 		sprintf(opt[n++],"%-27.27s%.40s","Access Requirements"
 			,cfg.sub[i]->arstr);
@@ -325,21 +326,22 @@ This is the name of the sub-board used for QWK off-line readers.
 			case 3:
                 SETHELP(WHERE);
 /*
-Sub-board Internal Code:
+Sub-board Internal Code Suffix:
 
 Every sub-board must have its own unique code for Synchronet to refer
 to it internally. This code should be descriptive of the sub-board's
 topic, usually an abreviation of the sub-board's name.
 */
                 strcpy(str,cfg.sub[i]->code_suffix);
-                uifc.input(WIN_MID|WIN_SAV,0,17,"Internal Code (unique)"
-                    ,str,8,K_EDIT|K_UPPER);
+                uifc.input(WIN_MID|WIN_SAV,0,17,"Internal Code Suffix (unique)"
+                    ,str,LEN_CODE,K_EDIT|K_UPPER);
                 if(code_ok(str))
                     strcpy(cfg.sub[i]->code_suffix,str);
                 else {
                     uifc.helpbuf=invalid_code;
                     uifc.msg("Invalid Code");
-                    uifc.helpbuf=0; }
+                    uifc.helpbuf=0; 
+				}
                 break;
 			case 4:
 				SETHELP(WHERE);

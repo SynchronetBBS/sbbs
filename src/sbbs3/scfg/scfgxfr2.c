@@ -671,13 +671,13 @@ the file transfer prompt.
 		strupr(code);
 		SETHELP(WHERE);
 /*
-Directory Internal Code:
+Directory Internal Code Suffix:
 
 Every directory must have its own unique code for Synchronet to refer to
 it internally. This code should be descriptive of the directory's
 contents, usually an abreviation of the directory's name.
 */
-		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Directory Internal Code",code,8
+		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Directory Internal Code Suffix",code,LEN_CODE
 			,K_EDIT|K_UPPER)<1)
             continue;
 		if(!code_ok(code)) {
@@ -772,7 +772,8 @@ select Yes.
 		n=0;
 		sprintf(opt[n++],"%-27.27s%s","Long Name",cfg.dir[i]->lname);
 		sprintf(opt[n++],"%-27.27s%s","Short Name",cfg.dir[i]->sname);
-		sprintf(opt[n++],"%-27.27s%s","Internal Code Suffix",cfg.dir[i]->code_suffix);
+		sprintf(opt[n++],"%-27.27s%s%s","Internal Code"
+			,cfg.lib[cfg.dir[i]->lib]->code_prefix, cfg.dir[i]->code_suffix);
 		sprintf(opt[n++],"%-27.27s%.40s","Access Requirements"
 			,cfg.dir[i]->arstr);
 		sprintf(opt[n++],"%-27.27s%.40s","Upload Requirements"
@@ -840,21 +841,22 @@ the file transfer prompt.
 			case 2:
                 SETHELP(WHERE);
 /*
-Directory Internal Code:
+Directory Internal Code Suffix:
 
 Every directory must have its own unique code for Synchronet to refer to
 it internally. This code should be descriptive of the directory's
 contents, usually an abreviation of the directory's name.
 */
                 strcpy(str,cfg.dir[i]->code_suffix);
-                uifc.input(WIN_L2R|WIN_SAV,0,17,"Internal Code Suffix"
-                    ,str,sizeof(cfg.dir[i]->code_suffix),K_EDIT|K_UPPER);
+                uifc.input(WIN_L2R|WIN_SAV,0,17,"Internal Code Suffix (unique)"
+                    ,str,LEN_CODE,K_EDIT|K_UPPER);
                 if(code_ok(str))
                     strcpy(cfg.dir[i]->code_suffix,str);
                 else {
                     uifc.helpbuf=invalid_code;
                     uifc.msg("Invalid Code");
-                    uifc.helpbuf=0; }
+                    uifc.helpbuf=0; 
+				}
                 break;
 			case 3:
 				uifc.savnum=2;
