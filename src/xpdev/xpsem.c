@@ -251,12 +251,12 @@ xp_sem_timedwait(xp_sem_t *sem, const struct timespec *abs_timeout)
 
 	while ((*sem)->count == 0) {
 		(*sem)->nwaiters++;
-		retval=retval=pthread_cond_timedwait(&(*sem)->gtzero, &(*sem)->lock, abs_timeout);
+		retval=pthread_cond_timedwait(&(*sem)->gtzero, &(*sem)->lock, abs_timeout);
 		(*sem)->nwaiters--;
 		if(retval)
 			break;
 	}
-	if(!retval)
+	if(retval==0)
 		(*sem)->count--;
 
 	pthread_mutex_unlock(&(*sem)->lock);
