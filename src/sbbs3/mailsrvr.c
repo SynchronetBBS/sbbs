@@ -1482,7 +1482,7 @@ static void smtp_thread(void* arg)
 		}
 	}
 
-	sprintf(rcptlst_fname,"%sSMTP%d.LST", scfg.data_dir, socket);
+	sprintf(rcptlst_fname,"%sSMTP.%d.%x.lst", scfg.data_dir, socket, xp_random(0x10000));
 	rcptlst=fopen(rcptlst_fname,"w+");
 	if(rcptlst==NULL) {
 		lprintf("%04d !SMTP ERROR %d creating recipient list: %s"
@@ -2332,7 +2332,7 @@ static void smtp_thread(void* arg)
 				if(!(startup->options&MAIL_OPT_DEBUG_RX_BODY))
 					unlink(msgtxt_fname);
 			}
-			sprintf(msgtxt_fname,"%sSMTP%u.RX", scfg.data_dir, socket);
+			sprintf(msgtxt_fname,"%sSMTP.%u.%x.msg", scfg.data_dir, socket, xp_random(0x10000));
 			if((msgtxt=fopen(msgtxt_fname,"w+b"))==NULL) {
 				lprintf("%04d !SMTP ERROR %d opening %s"
 					,socket, errno, msgtxt_fname);
