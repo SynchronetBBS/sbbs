@@ -98,7 +98,7 @@ if(!(user.security.restrictions&UFLAG_G)) {	/* !Guest or Anonymous */
 	writeln("<table align=right>");
 	writeln("<form>");
 	writeln("<input type=button value=Logout onclick='location=\"ftp://" 
-		+ format("%s/%s?$%s",system.inetaddr,html_index_file,time_stamp)
+		+ format("%s/%s?$%s",system.host_name,html_index_file,time_stamp)
 		+ "\";'>");
 	writeln("</form>");
 	writeln("</table>");
@@ -137,7 +137,7 @@ if(!(user.security.restrictions&UFLAG_G)) {	/* !Guest or Anonymous */
 } else if(ftp.curlib.name==undefined) {	/* Login */
 	writeln("<table align=right>");
 	writeln("<td><input type=button value='New User' onClick='location=\"telnet://" 
-		+ system.inetaddr + "\";'>");
+		+ system.host_name + "\";'>");
 	writeln("</table>");
 
 	writeln("<form name='login'>");
@@ -156,7 +156,7 @@ if(!(user.security.restrictions&UFLAG_G)) {	/* !Guest or Anonymous */
 		write("var url='ftp://'"); 
 		write("+ escape(document.login.username.value) + ':'");
 		write("+ escape(document.login.password.value) + '@'");
-		write(format("+ '%s/%s?$%s'\r\n",system.inetaddr,html_index_file,time_stamp));
+		write(format("+ '%s/%s?$%s'\r\n",system.host_name,html_index_file,time_stamp));
 //		writeln("alert(url);");
 		writeln("location = url;");
 		writeln("}");
