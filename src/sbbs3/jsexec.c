@@ -660,6 +660,9 @@ int main(int argc, char **argv, char** environ)
 	memset(&scfg,0,sizeof(scfg));
 	scfg.size=sizeof(scfg);
 
+	if(!winsock_startup())
+		bail(2);
+
 	for(argn=1;argn<argc && module==NULL;argn++) {
 		if(argv[argn][0]=='-') {
 			switch(argv[argn][1]) {
@@ -752,9 +755,6 @@ int main(int argc, char **argv, char** environ)
 
 	if(!(scfg.sys_misc&SM_LOCAL_TZ))
 		putenv("TZ=UTC0");
-
-	if(!winsock_startup())
-		bail(2);
 
 	/* Install Ctrl-C/Break signal handler here */
 #if defined(_WIN32)
