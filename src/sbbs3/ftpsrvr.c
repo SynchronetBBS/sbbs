@@ -4298,7 +4298,7 @@ void DLLCALL ftp_server(void* arg)
 	int				result;
 	time_t			t;
 	time_t			start;
-	time_t			initialized;
+	time_t			initialized=0;
 	LINGER			linger;
 	fd_set			socket_set;
 	ftp_t*			ftp;
@@ -4493,13 +4493,15 @@ void DLLCALL ftp_server(void* arg)
 		lprintf("%04d FTP Server thread started on port %d",server_socket,startup->port);
 		status(STATUS_WFC);
 
-		initialized=time(NULL);
+		if(initialized==0)
+			initialized=time(NULL);
 
 		while(server_socket!=INVALID_SOCKET) {
 
 			sprintf(path,"%sftpsrvr.rec",scfg.ctrl_dir);
 			if(!active_clients && fdate(path)>initialized) {
-				lprintf("0000 Recycle semaphore file detected");
+				lprintf("0000 Recycle semaphore file (%s) detected", path);
+				initialized=fdate(path);
 				break;
 			}
 			if(!active_clients && startup->recycle_now==TRUE) {

@@ -2622,7 +2622,7 @@ void DLLCALL mail_server(void* arg)
 	ulong			l;
 	time_t			t;
 	time_t			start;
-	time_t			initialized;
+	time_t			initialized=0;
 	LINGER			linger;
 	fd_set			socket_set;
 	SOCKET			high_socket_set;
@@ -2849,13 +2849,15 @@ void DLLCALL mail_server(void* arg)
 		lprintf("%04d Mail Server thread started",server_socket);
 		status(STATUS_WFC);
 
-		initialized=time(NULL);
+		if(initialized==0)
+			initialized=time(NULL);
 
 		while (server_socket!=INVALID_SOCKET) {
 
 			sprintf(path,"%smailsrvr.rec",scfg.ctrl_dir);
 			if(!active_clients && fdate(path)>initialized) {
-				lprintf("0000 Recycle semaphore detected");
+				lprintf("0000 Recycle semaphore file (%s) detected",path);
+				initialized=fdate(path);
 				break;
 			}
 			if(!active_clients && startup->recycle_now==TRUE) {

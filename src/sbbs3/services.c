@@ -1004,7 +1004,7 @@ void DLLCALL services_thread(void* arg)
 	int				result;
 	ulong			total_clients;
 	time_t			t;
-	time_t			initialized;
+	time_t			initialized=0;
 	fd_set			socket_set;
 	SOCKET			high_socket;
 	ulong			total_sockets;
@@ -1158,7 +1158,8 @@ void DLLCALL services_thread(void* arg)
 
 		status("Listening");
 
-		initialized=time(NULL);
+		if(initialized==0)
+			initialized=time(NULL);
 			
 		terminated=FALSE;
 
@@ -1171,7 +1172,8 @@ void DLLCALL services_thread(void* arg)
 
 			sprintf(path,"%sservices.rec",scfg.ctrl_dir);
 			if(!total_clients && fdate(path)>initialized) {
-				lprintf("0000 Recycle semaphore file detected");
+				lprintf("0000 Recycle semaphore file (%s) detected",path);
+				initialized=fdate(path);
 				break;
 			}
 			if(!total_clients && startup->recycle_now==TRUE) {
