@@ -50,6 +50,7 @@ enum {
 	,CON_PROP_ROWS
 	,CON_PROP_AUTOTERM
 	,CON_PROP_WORDWRAP
+	,CON_PROP_QUESTION
 	,CON_PROP_TIMEOUT			/* User inactivity timeout reference */
 	,CON_PROP_TIMELEFT_WARN		/* low timeleft warning flag */
 	,CON_PROP_ABORTABLE
@@ -100,6 +101,9 @@ static JSBool js_console_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			break;
 		case CON_PROP_WORDWRAP:
 			*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, sbbs->wordwrap));
+			return(JS_TRUE);
+		case CON_PROP_QUESTION:
+			*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, sbbs->question));
 			return(JS_TRUE);
 		default:
 			return(JS_TRUE);
@@ -179,6 +183,7 @@ static struct JSPropertySpec js_console_properties[] = {
 	{	"rio_abortable"		,CON_PROP_ABORTABLE		,CON_PROP_FLAGS	,NULL,NULL},
 	{	"telnet_mode"		,CON_PROP_TELNET_MODE	,CON_PROP_FLAGS	,NULL,NULL},
 	{	"wordwrap"			,CON_PROP_WORDWRAP		,JSPROP_ENUMERATE|JSPROP_READONLY ,NULL,NULL},
+	{	"question"			,CON_PROP_WORDWRAP		,JSPROP_ENUMERATE|JSPROP_READONLY ,NULL,NULL},
 	{0}
 };
 
