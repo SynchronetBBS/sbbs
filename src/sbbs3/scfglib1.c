@@ -212,7 +212,10 @@ BOOL read_main_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 		else
 			lprintf("Total nodes (%u) < node number in NODE.CNF (%u)"
 				,cfg->sys_nodes,cfg->node_num);
-		return(FALSE); }
+		return(FALSE); 
+	}
+
+#if 0	/* old dynamic way */
 
 	if((cfg->node_path=(char **)MALLOC(sizeof(char *)*cfg->sys_nodes))==NULL)
 		return allocerr(txt,offset,fname,sizeof(char *)*cfg->sys_nodes);
@@ -226,6 +229,13 @@ BOOL read_main_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 			return allocerr(txt,offset,fname,strlen(str)+1);
 		strcpy(cfg->node_path[i],str); 
 	}
+
+#else
+
+	for(i=0;i<cfg->sys_nodes;i++) 
+		get_str(cfg->node_path[i],instream);
+
+#endif
 
 	get_str(cfg->data_dir,instream); 			  /* data directory */
 	get_str(cfg->exec_dir,instream); 			  /* exec directory */
@@ -676,12 +686,13 @@ void free_main_cfg(scfg_t* cfg)
 	int i;
 
 	FREE_AR(cfg->sys_chat_ar);
-
+#if 0
 	if(cfg->node_path!=NULL) {
 		for(i=0;i<cfg->sys_nodes;i++)
 			FREE_AND_NULL(cfg->node_path[i]);
 		FREE_AND_NULL(cfg->node_path);
 	}
+#endif
 	if(cfg->shell!=NULL) {
 		for(i=0;i<cfg->total_shells;i++) {
 			FREE_AR(cfg->shell[i]->ar);
@@ -741,7 +752,8 @@ void free_msgs_cfg(scfg_t* cfg)
 /************************************************************/
 void make_data_dirs(scfg_t* cfg)
 {
-	char str[MAX_PATH+1];
+	char	str[MAX_PATH+1];
+	int		i;
 
 	md(cfg->data_dir);
 	sprintf(str,"%ssubs",cfg->data_dir);
@@ -762,4 +774,25 @@ void make_data_dirs(scfg_t* cfg)
 	md(str);
 	sprintf(str,"%sfile",cfg->data_dir);
 	md(str);
+
+	for(i=0;i<cfg->total_subs;i++) {
+		if(cfg->sub[i]->data_dir[0]) {
+			backslash(cfg->sub[i]->data_dir);
+			md(cfg->sub[i]->data_dir);
+		}
+	}
+
+	for(i=0;i<cfg->total_dirs;i++) {
+		if(cfg->dir[i]->data_dir[0]) {
+			backslash(cfg->dir[i]->data_dir);
+			md(cfg->dir[i]->data_dir);
+		}
+		if(cfg->dir[i]->misc&DIR_FCHK) 
+			md(cfg->dir[i]->path); 
+	}
+
+	for(i=0;i<cfg->total_txtsecs;i++) {
+		sprintf(str,"%stext/%s",cfg->data_dir,cfg->txtsec[i]->code);
+		md(str);
+	}
 }
