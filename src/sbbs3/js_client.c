@@ -54,12 +54,12 @@ enum {
 
 #ifdef _DEBUG
 	static char* client_prop_desc[CLIENT_PROPERTIES+1] = {
-	 "IP address"
-	,"host name"
-	,"TCP/UDP port number"
-	,"connect time"
-	,"protocol description"
-	,"user name"
+	 "client's IP address (in dotted-decimal format)"
+	,"client's host name (up to 64 characters)"
+	,"client's TCP or UDP port number"
+	,"date/time of initial connection (in time_t format)"
+	,"protocol description (e.g. 'Telnet', 'FTP', etc.)"
+	,"user's name/alias (if logged in)"
 	};
 #endif
 
