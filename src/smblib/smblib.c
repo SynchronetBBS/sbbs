@@ -1725,4 +1725,20 @@ long SMBCALL smb_fwrite(void HUGE16* buf, long bytes, FILE* fp)
 #endif
 }
 
+/************************************************************************/
+/* Returns difference from specified timezone and UTC/GMT				*/
+/************************************************************************/
+int SMBCALL smb_tzutc(short zone)
+{
+	int tz;
+
+	if(zone<=1000 && zone>=-1000)	/* 720 is 12 hours */
+		return(zone);
+
+	tz=zone&0xfff;
+	if(zone&(WESTERN_ZONE|US_ZONE))	/* West of UTC? */
+		return(-tz);
+	return(tz);
+}
+
 /* End of SMBLIB.C */

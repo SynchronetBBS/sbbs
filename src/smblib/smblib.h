@@ -130,9 +130,10 @@ SMBEXPORT int 	SMBCALL smb_incdat(smb_t* smb, ulong offset, ulong length, ushort
 SMBEXPORT int 	SMBCALL smb_freemsg(smb_t* smb, smbmsg_t* msg);
 SMBEXPORT int 	SMBCALL smb_freemsgdat(smb_t* smb, ulong offset, ulong length, ushort headers);
 SMBEXPORT int 	SMBCALL smb_freemsghdr(smb_t* smb, ulong offset, ulong length);
-SMBEXPORT void	SMBCALL smb_freemsgtxt(char HUGE16* buf);
+SMBEXPORT void	SMBCALL smb_freemsgtxt(char* buf);
 SMBEXPORT int	SMBCALL	smb_copymsgmem(smbmsg_t* destmsg, smbmsg_t* srcmsg);
-SMBEXPORT char HUGE16*  SMBCALL smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, ulong mode);
+SMBEXPORT char* SMBCALL smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, ulong mode);
+SMBEXPORT int	SMBCALL smb_tzutc(short timezone);
 
 /* FILE pointer I/O functions */
 
