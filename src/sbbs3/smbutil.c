@@ -1393,6 +1393,7 @@ time_t checktime(void)
 int main(int argc, char **argv)
 {
 	char	cmd[128]="",*p,*s;
+	char	path[MAX_PATH+1];
 	char*	to=NULL;
 	char*	to_number=NULL;
 	char*	to_address=NULL;
@@ -1511,6 +1512,11 @@ int main(int argc, char **argv)
 				if(s==NULL)
 					s=strrchr(smb.file,'\\');
 				if(p>s) *p=0;
+				sprintf(path,"%s.shd",smb.file);
+				if(!fexist(path) && !create) {
+					fprintf(stderr,"\n%s doesn't exist (use -c to create)\n",path);
+					exit(1);
+				}
 				smb.retry_time=30;
 				fprintf(stderr,"Opening %s\r\n",smb.file);
 				if((i=smb_open(&smb))!=0) {
