@@ -377,13 +377,6 @@ public:
 
 	int		dir_op(uint dirnum);
 	int		getuserxfers(int fromuser, int destuser, char *fname);
-	void	getnodeext(uint number, char * str);
-	void	putnodeext(uint number, char * str);
-	void	getnodedat(uint number, node_t * node, bool lock);
-	void	putnodedat(uint number, node_t * node);
-	void	nodesync(void);
-	user_t	nodesync_user;
-	bool	nodesync_inside;
 
 	void	getmsgptrs(void);
 	void	putmsgptrs(void);
@@ -427,9 +420,6 @@ public:
 	void	removeline(char *str, char *str2, char num, char skip);
 	ulong	msgeditor(char *buf, char *top, char *title);
 	void	editfile(char *path);
-	void	getsmsg(int usernumber);
-	void	getnmsg(void);
-	void	putnmsg(int num, char *strin);
 	int		loadmsg(smbmsg_t *msg, ulong number);
 	ushort	chmsgattr(ushort attr);
 	void	show_msgattr(ushort attr);
@@ -505,8 +495,20 @@ public:
 	char*	atcode(char* sp, char* str);
 
 	/* getnode.cpp */
+	int		getsmsg(int usernumber);
+	int		getnmsg(void);
 	int		whos_online(bool listself);/* Lists active nodes, returns active nodes */
 	void	nodelist(void);
+	int		getnodeext(uint number, char * str);
+	int		getnodedat(uint number, node_t * node, bool lock);
+	void	nodesync(void);
+	user_t	nodesync_user;
+	bool	nodesync_inside;
+
+	/* putnode.cpp */
+	int		putnodedat(uint number, node_t * node);
+	int		putnodeext(uint number, char * str);
+	int		putnmsg(int num, char *strin);
 
 	/* logonoff.cpp */
 	bool	answer();
