@@ -137,6 +137,9 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 	JSObject*	field;
 	jsuint		i,len;
 
+	if(hdr==NULL)
+		return(FALSE);
+
 	/* Required Header Fields */
 	if(JS_GetProperty(cx, hdr, "subject", &val) && JSVAL_IS_STRING(val)) {
 		if((cp=JS_GetStringBytes(JSVAL_TO_STRING(val)))==NULL)
@@ -471,6 +474,9 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 		}
 	}
 
+	if(msg.hdr.number==0)	/* No valid message number/id/offset specified */
+		return(JS_TRUE);
+
 	if((hdrobj=JS_NewObject(cx,&js_msghdr_class,NULL,obj))==NULL) {
 		smb_freemsgmem(&msg);
 		return(JS_TRUE);
@@ -747,8 +753,9 @@ js_put_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 {
 	uintN		n;
 	JSBool		by_offset=JS_FALSE;
+	JSBool		msg_specified=JS_FALSE;
 	smbmsg_t	msg;
-	JSObject*	hdr;
+	JSObject*	hdr=NULL;
 	private_t*	p;
 
 	*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
@@ -757,10 +764,6 @@ js_put_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 		JS_ReportError(cx,getprivate_failure,WHERE);
 		return(JS_FALSE);
 	}
-
-	if(!JSVAL_IS_OBJECT(argv[2]))
-		return(JS_TRUE);
-	hdr = JSVAL_TO_OBJECT(argv[2]);
 
 	if(!SMB_IS_OPEN(&(p->smb)))
 		return(JS_TRUE);
@@ -775,15 +778,27 @@ js_put_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 				msg.offset=JSVAL_TO_INT(argv[n]);
 			else									/* Get by number */
 				msg.hdr.number=JSVAL_TO_INT(argv[n]);
+			msg_specified=JS_TRUE;
+			n++;
 			break;
 		} else if(JSVAL_IS_STRING(argv[n]))	{		/* Get by ID */
 			if(!msg_offset_by_id(scfg,&(p->smb)
 				,JS_GetStringBytes(JSVAL_TO_STRING(argv[n]))
 				,&msg.offset))
 				return(JS_TRUE);	/* ID not found */
+			msg_specified=JS_TRUE;
+			n++;
 			break;
 		}
 	}
+
+	if(!msg_specified)
+		return(JS_TRUE);
+
+	if(n==argc || !JSVAL_IS_OBJECT(argv[n])) /* no header supplied? */
+		return(JS_TRUE);
+
+	hdr = JSVAL_TO_OBJECT(argv[n++]);
 
 	if(smb_getmsgidx(&(p->smb), &msg)!=0)
 		return(JS_TRUE);
@@ -879,6 +894,7 @@ js_get_msg_body(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 	JSBool		strip_ctrl_a=JS_FALSE;
 	JSBool		tails=JS_TRUE;
 	JSBool		rfc822=JS_FALSE;
+	JSBool		msg_specified=JS_FALSE;
 	JSString*	js_str;
 	private_t*	p;
 
@@ -902,6 +918,7 @@ js_get_msg_body(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 				msg.offset=JSVAL_TO_INT(argv[n]);
 			else									/* Get by number */
 				msg.hdr.number=JSVAL_TO_INT(argv[n]);
+			msg_specified=JS_TRUE;
 			n++;
 			break;
 		} else if(JSVAL_IS_STRING(argv[n]))	{		/* Get by ID */
@@ -909,10 +926,14 @@ js_get_msg_body(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 				,JS_GetStringBytes(JSVAL_TO_STRING(argv[n]))
 				,&msg.offset))
 				return(JS_TRUE);	/* ID not found */
+			msg_specified=JS_TRUE;
 			n++;
 			break;
 		}
 	}
+
+	if(!msg_specified)	/* No message number or id specified */
+		return(JS_TRUE);
 
 	if(n<argc && JSVAL_IS_BOOLEAN(argv[n]))
 		strip_ctrl_a=JSVAL_TO_BOOLEAN(argv[n++]);
@@ -944,6 +965,7 @@ js_get_msg_tail(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 	JSBool		by_offset=JS_FALSE;
 	JSBool		strip_ctrl_a=JS_FALSE;
 	JSBool		rfc822=JS_FALSE;
+	JSBool		msg_specified=JS_FALSE;
 	JSString*	js_str;
 	private_t*	p;
 
@@ -967,6 +989,7 @@ js_get_msg_tail(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 				msg.offset=JSVAL_TO_INT(argv[n]);
 			else									/* Get by number */
 				msg.hdr.number=JSVAL_TO_INT(argv[n]);
+			msg_specified=JS_TRUE;
 			n++;
 			break;
 		} else if(JSVAL_IS_STRING(argv[n]))	{		/* Get by ID */
@@ -974,10 +997,14 @@ js_get_msg_tail(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 				,JS_GetStringBytes(JSVAL_TO_STRING(argv[n]))
 				,&msg.offset))
 				return(JS_TRUE);	/* ID not found */
+			msg_specified=JS_TRUE;
 			n++;
 			break;
 		}
 	}
+
+	if(!msg_specified)	/* No message number or id specified */
+		return(JS_TRUE);
 
 	if(n<argc && JSVAL_IS_BOOLEAN(argv[n]))
 		strip_ctrl_a=JSVAL_TO_BOOLEAN(argv[n++]);
@@ -1000,8 +1027,9 @@ js_get_msg_tail(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 static JSBool
 js_save_msg(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	char*		body;
-	JSObject*	hdr;
+	char*		body=NULL;
+	uintN		n;
+	JSObject*	hdr=NULL;
 	smbmsg_t	msg;
 	jsval		open_rval;
 	private_t*	p;
@@ -1025,16 +1053,19 @@ js_save_msg(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	memset(&msg,0,sizeof(msg));
 
-	if(!JSVAL_IS_OBJECT(argv[0]))
-		return(JS_TRUE);
-	hdr = JSVAL_TO_OBJECT(argv[0]);
-
-	if(!JSVAL_IS_STRING(argv[1]))
-		return(JS_TRUE);
-	if((body=JS_GetStringBytes(JSVAL_TO_STRING(argv[1])))==NULL) {
-		JS_ReportError(cx,"JS_GetStringBytes failed");
-		return(JS_FALSE);
+	for(n=0;n<argc;n++) {
+		if(JSVAL_IS_OBJECT(argv[n]))
+			hdr = JSVAL_TO_OBJECT(argv[n]);
+		else if(JSVAL_IS_STRING(argv[n])) {
+			if((body=JS_GetStringBytes(JSVAL_TO_STRING(argv[n])))==NULL) {
+				JS_ReportError(cx,"JS_GetStringBytes failed");
+				return(JS_FALSE);
+			}
+		}
 	}
+
+	if(hdr==NULL || body==NULL)
+		return(JS_TRUE);
 
 	if(!parse_header_object(cx, p, hdr, &msg))
 		return(JS_TRUE);
