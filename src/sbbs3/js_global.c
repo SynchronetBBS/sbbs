@@ -36,6 +36,7 @@
  ****************************************************************************/
 
 #include "sbbs.h"
+#include "base64.h"
 
 #ifdef JAVASCRIPT
 
@@ -879,6 +880,73 @@ js_html_decode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 	return(JS_TRUE);
 }
 
+static JSBool
+js_b64_encode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	int			res;
+	size_t		len;
+	uchar*		inbuf;
+	uchar*		outbuf;
+	JSString*	js_str;
+
+	*rval = JSVAL_NULL;
+
+	if((inbuf=JS_GetStringBytes(JS_ValueToString(cx, argv[0])))==NULL) 
+		return(JS_FALSE);
+
+	len=(strlen(inbuf)*10)+1;
+	if((outbuf=(char*)malloc(len))==NULL)
+		return(JS_FALSE);
+
+	res=b64_encode(outbuf,len,inbuf,strlen(inbuf));
+
+	if(res<1) {
+		free(outbuf);
+		return(JS_TRUE);
+	}
+
+	js_str = JS_NewStringCopyZ(cx, outbuf);
+	free(outbuf);
+	if(js_str==NULL)
+		return(JS_FALSE);
+
+	*rval = STRING_TO_JSVAL(js_str);
+	return(JS_TRUE);
+}
+
+static JSBool
+js_b64_decode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	int			res;
+	size_t		len;
+	uchar*		inbuf;
+	uchar*		outbuf;
+	JSString*	js_str;
+
+	*rval = JSVAL_NULL;
+
+	if((inbuf=JS_GetStringBytes(JS_ValueToString(cx, argv[0])))==NULL) 
+		return(JS_FALSE);
+
+	len=strlen(inbuf)+1;
+	if((outbuf=(char*)malloc(len))==NULL)
+		return(JS_FALSE);
+
+	res=b64_decode(outbuf,len,inbuf,strlen(inbuf));
+
+	if(res<1) {
+		free(outbuf);
+		return(JS_TRUE);
+	}
+
+	js_str = JS_NewStringCopyZ(cx, outbuf);
+	free(outbuf);
+	if(js_str==NULL)
+		return(JS_FALSE);
+
+	*rval = STRING_TO_JSVAL(js_str);
+	return(JS_TRUE);
+}
 
 static JSBool
 js_truncsp(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
@@ -1254,6 +1322,12 @@ static jsMethodSpec js_global_functions[] = {
 	{"quote_msg",		js_quote_msg,		1,	JSTYPE_STRING,	JSDOCSTR("string text [,line_length] [,prefix]")
 	,JSDOCSTR("returns a quoted version of the message text string argumnet, <i>line_length</i> defaults to <i>79</i>, "
 	"<i>prefix</i> defaults to <tt>\" > \"</tt>")
+	},
+	{"base64_encode",	js_b64_encode,		1,	JSTYPE_STRING,	JSDOCSTR("string text")
+	,JSDOCSTR("returns base64-encoded version of text string or <i>null</i> on error")
+	},
+	{"base64_decode",	js_b64_decode,		1,	JSTYPE_STRING,	JSDOCSTR("string text")
+	,JSDOCSTR("returns base64-decoded string or <i>null</i> on error")
 	},
 	{0}
 };
