@@ -52,7 +52,7 @@ EXEODIR	=	$(EXEODIR).release
 # JavaScript Support
 !ifdef JS
 CFLAGS	= 	$(CFLAGS) -DJAVASCRIPT -I../mozilla/js/src
-LIBS	=	..\mozilla\js\src\Debug\js32omf.lib
+LIBS	=	..\..\lib\mozilla\js\win32.debug\js32omf.lib
 !endif
 
 # Cross platform/compiler definitions
