@@ -750,12 +750,14 @@ js_restoreline(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 static JSBool
 js_ansi(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
+	int32		attr=0;
 	sbbs_t*		sbbs;
 
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,sbbs->ansi(JSVAL_TO_INT(argv[0]))));
+	JS_ValueToInt32(cx,argv[0],&attr);
+	*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,sbbs->ansi(attr)));
     return(JS_TRUE);
 }
 
@@ -788,6 +790,7 @@ js_ansi_restore(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 static JSBool
 js_ansi_gotoxy(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
+	int32		x=1,y=1;
 	sbbs_t*		sbbs;
 
 	if(argc<2)
@@ -796,7 +799,10 @@ js_ansi_gotoxy(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	sbbs->GOTOXY(JSVAL_TO_INT(argv[0]),JSVAL_TO_INT(argv[1]));
+	JS_ValueToInt32(cx,argv[0],&x);
+	JS_ValueToInt32(cx,argv[1],&y);
+
+	sbbs->GOTOXY(x,y);
 	*rval=JSVAL_VOID;
     return(JS_TRUE);
 }
@@ -843,14 +849,16 @@ js_ansi_getxy(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 static JSBool
 js_ansi_up(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
+	int32		val=1;
 	sbbs_t*		sbbs;
 
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	if(argc)
-		sbbs->rprintf("\x1b[%dA",JSVAL_TO_INT(argv[0]));
-	else
+	if(argc) {
+		JS_ValueToInt32(cx,argv[0],&val);
+		sbbs->rprintf("\x1b[%dA",val);
+	} else
 		sbbs->rputs("\x1b[A");
 	*rval=JSVAL_VOID;
     return(JS_TRUE);
@@ -859,14 +867,16 @@ js_ansi_up(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 static JSBool
 js_ansi_down(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
+	int32		val=1;
 	sbbs_t*		sbbs;
 
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	if(argc)
-		sbbs->rprintf("\x1b[%dB",JSVAL_TO_INT(argv[0]));
-	else
+	if(argc) {
+		JS_ValueToInt32(cx,argv[0],&val);
+		sbbs->rprintf("\x1b[%dB",val);
+	} else
 		sbbs->rputs("\x1b[B");
 	*rval=JSVAL_VOID;
     return(JS_TRUE);
@@ -875,14 +885,16 @@ js_ansi_down(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 static JSBool
 js_ansi_right(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
+	int32		val=1;
 	sbbs_t*		sbbs;
 
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	if(argc)
-		sbbs->rprintf("\x1b[%dC",JSVAL_TO_INT(argv[0]));
-	else
+	if(argc) {
+		JS_ValueToInt32(cx,argv[0],&val);
+		sbbs->rprintf("\x1b[%dC",val);
+	} else
 		sbbs->rputs("\x1b[C");
 	*rval=JSVAL_VOID;
     return(JS_TRUE);
@@ -891,14 +903,16 @@ js_ansi_right(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 static JSBool
 js_ansi_left(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
+	int32		val=1;
 	sbbs_t*		sbbs;
 
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	if(argc)
-		sbbs->rprintf("\x1b[%dD",JSVAL_TO_INT(argv[0]));
-	else
+	if(argc) {
+		JS_ValueToInt32(cx,argv[0],&val);
+		sbbs->rprintf("\x1b[%dD",val);
+	} else
 		sbbs->rputs("\x1b[D");
 	*rval=JSVAL_VOID;
     return(JS_TRUE);
