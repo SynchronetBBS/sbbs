@@ -84,7 +84,34 @@ char *faddrtoa(fidoaddr_t addr)
 	return(str);
 }
 
-char *usage="\nusage: chksmb [/opts] <filespec.SHD>\n"
+/****************************************************************************/
+/* Truncates white-space chars off end of 'str'								*/
+/****************************************************************************/
+void truncsp(char *str)
+{
+	uint c;
+
+	c=strlen(str);
+	while(c && (uchar)str[c-1]<=SP) c--;
+	str[c]=0;
+}
+
+char* DLLCALL strip_ctrl(char *str)
+{
+	char tmp[1024];
+	int i,j;
+
+	for(i=j=0;str[i] && j<sizeof(tmp)-1;i++)
+		if(str[i]==CTRL_A && str[i+1]!=0)
+			i++;
+		else if((uchar)str[i]>=SP)
+			tmp[j++]=str[i];
+	tmp[j]=0;
+	strcpy(str,tmp);
+	return(str);
+}
+
+char *usage="\nusage: chksmb [-opts] <filespec.SHD>\n"
 			"\n"
 			" opts:\n"
 			"       s - stop after errored message base\n"
@@ -115,8 +142,8 @@ int main(int argc, char **argv)
 	idxrec_t	idx;
 	smbmsg_t	msg;
 
-	fprintf(stderr,"\nCHKSMB v2.10 - Check Synchronet Message Base - "
-		"Copyright 2000 Rob Swindell\n");
+	fprintf(stderr,"\nCHKSMB v2.11 - Check Synchronet Message Base - "
+		"Copyright 2002 Rob Swindell\n");
 
 	if(argc<2) {
 		printf("%s",usage);
@@ -132,7 +159,11 @@ int main(int argc, char **argv)
 				getch();
 			printf("\n"); }
 		errlast=errors;
-		if(argv[x][0]=='/') {
+		if(argv[x][0]=='-'
+#if !defined(__unix__)	/* just for backwards compatibility */
+			|| argv[x][0]=='/'
+#endif
+			) {
 			for(y=1;argv[x][y];y++)
 				switch(toupper(argv[x][y])) {
 					case 'Q':
@@ -158,7 +189,7 @@ int main(int argc, char **argv)
 						exit(1); }
 			continue; }
 
-	strcpy(smb.file,argv[x]);
+	SAFECOPY(smb.file,argv[x]);
 	p=strrchr(smb.file,'.');
 	s=strrchr(smb.file,'\\');
 	if(p>s) *p=0;
@@ -237,6 +268,8 @@ int main(int argc, char **argv)
 			size=SHD_BLOCK_LEN;
 			continue; }
 		smb_unlockmsghdr(&smb,&msg);
+		truncsp(msg.from);
+		strip_ctrl(msg.from);
 		fprintf(stderr,"#%-5lu (%06lX) %-25.25s ",msg.hdr.number,l,msg.from);
 
 		lzhmsg=0;

@@ -101,7 +101,7 @@ int main(int argc, char **argv)
 	smb_t		smb;
 	smbmsg_t	msg;
 
-	printf("\nFIXSMB v1.23 - Rebuild Synchronet Message Base Index - by Rob Swindell\n");
+	printf("\nFIXSMB v1.24 - Rebuild Synchronet Message Base Index - by Rob Swindell\n");
 
 	smb.file[0]=0;
 	for(i=1;i<argc;i++)
@@ -250,13 +250,14 @@ int main(int argc, char **argv)
 			}
 
 		smb_freemsgmem(&msg); }
+	printf("\r%79s\r100%%\n","");
 	smb.status.total_msgs=smb.status.last_msg=n-1;
-	printf("\nSaving message base status.\n");
+	printf("Saving message base status.\n");
 	if((i=smb_putstatus(&smb))!=0)
 		printf("\nsmb_putstatus returned %d\n",i);
 	smb_unlocksmbhdr(&smb);
-	printf("\nClosing message base.\n");
+	printf("Closing message base.\n");
 	smb_close(&smb);
-	printf("\nDone.\n");
+	printf("Done.\n");
 	return(0);
 }
