@@ -2145,6 +2145,7 @@ static void ctrl_thread(void* arg)
 #endif
 
 #ifdef JAVASCRIPT
+#ifdef JS_CX_PER_SESSION
 	if(js_runtime!=NULL) {
 		if(((js_cx=js_initcx(sock,&js_glob,&js_ftp))==NULL)) {
 			lprintf("%04d !ERROR initializing JavaScript context",sock);
@@ -2154,6 +2155,7 @@ static void ctrl_thread(void* arg)
 			return;
 		}
 	}
+#endif
 #endif
 
 	transfer_inprogress = FALSE;
@@ -2441,6 +2443,7 @@ static void ctrl_thread(void* arg)
 			}
 
 #ifdef JAVASCRIPT
+#ifdef JS_CX_PER_SESSION
 			if(js_cx!=NULL) {
 				JS_BeginRequest(js_cx);	/* Required for multi-thread support */
 
@@ -2459,6 +2462,7 @@ static void ctrl_thread(void* arg)
 
 				JS_EndRequest(js_cx);	/* Required for multi-thread support */
 			}
+#endif
 #endif
 
 			if(sysop)
@@ -3476,11 +3480,35 @@ static void ctrl_thread(void* arg)
 				|| !strnicmp(p,html_index_ext,strlen(html_index_ext)))
 				&& !delecmd) {
 #ifdef JAVASCRIPT
-				if(js_cx==NULL) {
+				if(js_runtime==NULL) {
 					lprintf("%04d !JavaScript disabled, cannot generate %s",sock,fname);
 					sockprintf(sock, "451 JavaScript disabled");
 					filepos=0;
 					continue;
+				}
+				if(js_cx==NULL) {	/* Context not yet created, create it now */
+					if(((js_cx=js_initcx(sock,&js_glob,&js_ftp))==NULL)) {
+						lprintf("%04d !ERROR initializing JavaScript context",sock);
+						sockprintf(sock,"451 Error initializing JavaScript context");
+						filepos=0;
+						continue;
+					}
+					JS_BeginRequest(js_cx);	/* Required for multi-thread support */
+
+					if(js_CreateUserClass(js_cx, js_glob, &scfg)==NULL) 
+						lprintf("%04d !JavaScript ERROR creating user class",sock);
+
+					if(js_CreateUserObject(js_cx, js_glob, &scfg, "user", user.number)==NULL) 
+						lprintf("%04d !JavaScript ERROR creating user object",sock);
+
+					if(js_CreateClientObject(js_cx, js_glob, "client", &client, sock)==NULL) 
+						lprintf("%04d !JavaScript ERROR creating client object",sock);
+
+					if(js_CreateFileAreaObject(js_cx, js_glob, &scfg, &user
+						,startup->html_index_file)==NULL) 
+						lprintf("%04d !JavaScript ERROR creating file area object",sock);
+
+					JS_EndRequest(js_cx);	/* Required for multi-thread support */
 				}
 
 				JS_BeginRequest(js_cx);	/* Required for multi-thread support */
@@ -3945,8 +3973,8 @@ static void ctrl_thread(void* arg)
 			!strnicmp(cmd,"SITE EXEC",9)) {
 			hacklog(&scfg, "FTP", user.alias, cmd, host_name, &ftp.client_addr);
 #ifdef _WIN32
-					if(startup->hack_sound[0] && !(startup->options&FTP_OPT_MUTE)) 
-						PlaySound(startup->hack_sound, NULL, SND_ASYNC|SND_FILENAME);
+			if(startup->hack_sound[0] && !(startup->options&FTP_OPT_MUTE)) 
+				PlaySound(startup->hack_sound, NULL, SND_ASYNC|SND_FILENAME);
 #endif
 		}		
 		sockprintf(sock,"500 Syntax error: '%s'",cmd);
