@@ -54,7 +54,6 @@ while(!done) {
 			my_server.send("NICK " + nick + "\r\n");
 			
 		}
-log(resp[1]);
 		if(resp[1]=='422' || resp[1]=='376')
 			done=1;
 		log(response);
