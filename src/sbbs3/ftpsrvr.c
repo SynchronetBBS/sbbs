@@ -1382,7 +1382,7 @@ static void send_thread(void* arg)
 
 	length=flength(xfer.filename);
 
-	if((fp=fopen(xfer.filename,"rb"))==NULL) {
+	if((fp=fnopen(NULL,xfer.filename,O_RDONLY|O_BINARY))==NULL) {	/* was fopen(...,"rb") */
 		lprintf(LOG_ERR,"%04d !DATA ERROR %d opening %s",xfer.ctrl_sock,errno,xfer.filename);
 		sockprintf(xfer.ctrl_sock,"450 ERROR %d opening %s.",errno,xfer.filename);
 		if(xfer.tmpfile && !(startup->options&FTP_OPT_KEEP_TEMP_FILES))
