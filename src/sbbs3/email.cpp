@@ -87,9 +87,9 @@ bool sbbs_t::email(int usernumber, char *top, char *subj, long mode)
 	action=NODE_SMAL;
 	nodesync();
 
-	sprintf(str,"%sFEEDBACK.BIN", cfg.exec_dir);
+	sprintf(str,"%sfeedback.*", cfg.exec_dir);
 	if(usernumber==1 && useron.fbacks && fexist(str)) {
-		exec_bin("FEEDBACK",&main_csi);
+		exec_bin("feedback",&main_csi);
 		if(main_csi.logic!=LOGIC_TRUE)
 			return(false); }
 
