@@ -991,7 +991,8 @@ enum {
 static char* socket_prop_desc[] = {
 	 "error status for the last socket operation that failed - <small>READ ONLY</small>"
 	,"<i>true</i> if socket is in a connected state - <small>READ ONLY</small>"
-	,"<i>true</i> if data is waiting to be read - <small>READ ONLY</small>"
+	,"<i>true</i> if socket can accept written data - <small>READ ONLY</small>"
+	,"<i>true</i> if data is waiting to be read from socket - <small>READ ONLY</small>"
 	,"number of bytes waiting to be read - <small>READ ONLY</small>"
 	,"enable debug logging"
 	,"socket descriptor (advanced uses only)"
