@@ -259,6 +259,8 @@ js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if((client=(service_client_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
+	*rval = argv[0];
+
 	for(i=0; i<argc; i++) {
 		if((str=JS_ValueToString(cx, argv[i]))==NULL)
 			continue;
@@ -273,21 +275,13 @@ js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 static JSBool
 js_writeln(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	uintN		i;
 	char*		cp;
-	JSString*	str;
 	service_client_t* client;
 
 	if((client=(service_client_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
-
-	for(i=0; i<argc; i++) {
-		if((str=JS_ValueToString(cx, argv[i]))==NULL)
-			continue;
-		if((cp=JS_GetStringBytes(str))==NULL)
-			continue;
-		sendsocket(client->socket,cp,strlen(cp));
-	}
+	
+	js_write(cx,obj,argc,argv,rval);
 
 	cp="\r\n";
 	sendsocket(client->socket,cp,2);
@@ -322,7 +316,8 @@ js_log(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	else
 		lprintf("%04d %s %s",client->socket,client->service->protocol,str);
 
-	*rval = JSVAL_VOID;
+	*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, str));
+
     return(JS_TRUE);
 }
 
