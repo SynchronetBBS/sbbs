@@ -571,7 +571,9 @@ BOOL send_headers(http_session_t *session, const char *status)
 			,get_header(HEAD_LASTMODIFIED)
 			,days[t->tm_wday],t->tm_mday,months[t->tm_mon]
 			,t->tm_year+1900,t->tm_hour,t->tm_min,t->tm_sec);
-	}
+	} else 
+		sockprintf(session->socket,"%s: 0",get_header(HEAD_LENGTH));
+
 	sendsocket(session->socket,newline,2);
 	return(send_file);
 }
@@ -956,9 +958,8 @@ static BOOL check_request(http_session_t * session)
 		return(FALSE);
 	}
 	if(!fexist(path)) {
-		if(path[strlen(path)-1]!='/')  {
+		if(*lastchar(path)!='/')
 			strcat(path,"/");
-		}
 		strcat(path,startup->index_file_name);
 		session->req.send_location=TRUE;
 	}
