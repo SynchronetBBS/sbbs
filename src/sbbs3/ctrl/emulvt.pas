@@ -311,6 +311,7 @@ type
     procedure   SetFont(Value : TFont);
     procedure   SetAutoLF(Value : Boolean);
     procedure   SetAutoCR(Value : Boolean);
+    procedure   SetAutoWrap(Value : Boolean);    
     procedure   SetXlat(Value : Boolean);
     procedure   SetLog(Value : Boolean);
     procedure   SetRows(Value : Integer);
@@ -322,6 +323,7 @@ type
     procedure   SetLineHeight(Value : Integer);
     function    GetAutoLF : Boolean;
     function    GetAutoCR : Boolean;
+    function    GetAutoWrap : Boolean;
     function    GetXlat : Boolean;
     function    GetRows : Integer;
     function    GetCols : Integer;
@@ -395,6 +397,7 @@ type
     property LocalEcho : Boolean       read FLocalEcho   write FLocalEcho;
     property AutoLF : Boolean          read GetAutoLF    write SetAutoLF;
     property AutoCR : Boolean          read GetAutoCR    write SetAutoCR;
+    property AutoWrap : Boolean        read GetAutoWrap  write SetAutoWrap;
     property Xlat : Boolean            read GetXlat      write SetXlat;
     property MonoChrome : Boolean      read FMonoChrome  write FMonoChrome;
     property Log : Boolean             read FLog         write SetLog;
@@ -430,6 +433,7 @@ type
     property LocalEcho;
     property AutoLF;
     property AutoCR;
+    property AutoWrap;
     property Xlat;
     property MonoChrome;
     property Log;
@@ -2613,6 +2617,11 @@ begin
     FScreen.FAutoCR := Value;
 end;
 
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+procedure TCustomEmulVT.SetAutoWrap(Value : Boolean);
+begin
+    FScreen.FAutoWrap := Value;
+end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 procedure TCustomEmulVT.SetLog(Value : Boolean);
@@ -2666,6 +2675,11 @@ begin
     Result := FScreen.FAutoCR;
 end;
 
+{* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
+function TCustomEmulVT.GetAutoWrap : Boolean;
+begin
+    Result := FScreen.FAutoWrap;
+end;
 
 {* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *}
 destructor TCustomEmulVT.Destroy;

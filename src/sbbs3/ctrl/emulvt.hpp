@@ -2,10 +2,10 @@
 // Copyright (c) 1995, 2002 by Borland Software Corporation
 // All rights reserved
 
-// (DO NOT EDIT: machine generated header) 'Emulvt.pas' rev: 6.00
+// (DO NOT EDIT: machine generated header) 'EmulVT.pas' rev: 6.00
 
-#ifndef EmulvtHPP
-#define EmulvtHPP
+#ifndef EmulVTHPP
+#define EmulVTHPP
 
 #pragma delphiheader begin
 #pragma option push -w-
@@ -70,8 +70,8 @@ class PASCALIMPLEMENTATION TLine : public System::TObject
 	typedef System::TObject inherited;
 	
 public:
-	char Txt[133];
-	Byte Att[133];
+	char Txt[161];
+	Byte Att[161];
 	__fastcall TLine(void);
 	void __fastcall Clear(Byte Attr);
 public:
@@ -206,7 +206,8 @@ class PASCALIMPLEMENTATION TCustomEmulVT : public Controls::TCustomControl
 	typedef Controls::TCustomControl inherited;
 	
 private:
-	TScreen* FScreen;
+	int FCharPos[162];
+	int FLinePos[52];
 	TextFile FFileHandle;
 	bool FCursorVisible;
 	bool FCaretShown;
@@ -236,8 +237,13 @@ private:
 	Types::TRect FSelectRect;
 	#pragma pack(pop)
 	
+	int FTopMargin;
+	int FLeftMargin;
+	int FRightMargin;
+	int FBottomMargin;
 	HPALETTE FPal;
 	tagPALETTEENTRY FPaletteEntries[16];
+	int FMarginColor;
 	HIDESBASE MESSAGE void __fastcall WMPaint(Messages::TWMPaint &Message);
 	HIDESBASE MESSAGE void __fastcall WMSetFocus(Messages::TWMSetFocus &Message);
 	HIDESBASE MESSAGE void __fastcall WMKillFocus(Messages::TWMKillFocus &Message);
@@ -252,6 +258,7 @@ private:
 	HIDESBASE void __fastcall SetFont(Graphics::TFont* Value);
 	void __fastcall SetAutoLF(bool Value);
 	void __fastcall SetAutoCR(bool Value);
+	void __fastcall SetAutoWrap(bool Value);
 	void __fastcall SetXlat(bool Value);
 	void __fastcall SetLog(bool Value);
 	void __fastcall SetRows(int Value);
@@ -263,14 +270,21 @@ private:
 	void __fastcall SetLineHeight(int Value);
 	bool __fastcall GetAutoLF(void);
 	bool __fastcall GetAutoCR(void);
+	bool __fastcall GetAutoWrap(void);
 	bool __fastcall GetXlat(void);
 	int __fastcall GetRows(void);
 	int __fastcall GetCols(void);
 	int __fastcall GetBackRows(void);
 	TBackColors __fastcall GetBackColor(void);
 	TScreenOptions __fastcall GetOptions(void);
+	void __fastcall SetMarginColor(const int Value);
+	void __fastcall SetLeftMargin(const int Value);
+	void __fastcall SetBottomMargin(const int Value);
+	void __fastcall SetRightMargin(const int Value);
+	void __fastcall SetTopMargin(const int Value);
 	
 protected:
+	TScreen* FScreen;
 	void __fastcall AppMessageHandler(tagMSG &Msg, bool &Handled);
 	virtual void __fastcall DoKeyBuffer(char * Buffer, int Len);
 	void __fastcall PaintGraphicChar(HDC DC, int X, int Y, Types::PRect rc, char ch);
@@ -302,9 +316,14 @@ public:
 	__property bool GraphicDraw = {read=FGraphicDraw, write=FGraphicDraw, nodefault};
 	__property int TopLine = {read=FTopLine, write=SetTopLine, nodefault};
 	__property Stdctrls::TScrollBar* VScrollBar = {read=FVScrollBar};
+	__property int TopMargin = {read=FTopMargin, write=SetTopMargin, nodefault};
+	__property int LeftMargin = {read=FLeftMargin, write=SetLeftMargin, nodefault};
+	__property int RightMargin = {read=FRightMargin, write=SetRightMargin, nodefault};
+	__property int BottomMargin = {read=FBottomMargin, write=SetBottomMargin, nodefault};
+	__property int MarginColor = {read=FMarginColor, write=SetMarginColor, nodefault};
 	
 private:
-	void __fastcall PaintOneLine(HDC DC, int Y, int Y1, const TLine* Line, int nColFrom, int nColTo);
+	void __fastcall PaintOneLine(HDC DC, int Y, int Y1, const TLine* Line, int nColFrom, int nColTo, bool Blank);
 	void __fastcall SetupFont(void);
 	__property AnsiString Text = {read=ReadStr, write=WriteStr};
 	__property OnMouseMove ;
@@ -324,6 +343,7 @@ private:
 	__property bool LocalEcho = {read=FLocalEcho, write=FLocalEcho, nodefault};
 	__property bool AutoLF = {read=GetAutoLF, write=SetAutoLF, nodefault};
 	__property bool AutoCR = {read=GetAutoCR, write=SetAutoCR, nodefault};
+	__property bool AutoWrap = {read=GetAutoWrap, write=SetAutoWrap, nodefault};
 	__property bool Xlat = {read=GetXlat, write=SetXlat, nodefault};
 	__property bool MonoChrome = {read=FMonoChrome, write=FMonoChrome, nodefault};
 	__property bool Log = {read=FLog, write=SetLog, nodefault};
@@ -369,6 +389,7 @@ __published:
 	__property LocalEcho ;
 	__property AutoLF ;
 	__property AutoCR ;
+	__property AutoWrap ;
 	__property Xlat ;
 	__property MonoChrome ;
 	__property Log ;
@@ -382,6 +403,11 @@ __published:
 	__property TabStop  = {default=0};
 	__property TabOrder  = {default=-1};
 	__property FKeys ;
+	__property TopMargin ;
+	__property LeftMargin ;
+	__property RightMargin ;
+	__property BottomMargin ;
+	__property MarginColor ;
 public:
 	#pragma option push -w-inl
 	/* TCustomEmulVT.Create */ inline __fastcall virtual TEmulVT(Classes::TComponent* AOwner) : TCustomEmulVT(AOwner) { }
@@ -399,14 +425,10 @@ public:
 
 
 //-- var, const, procedure ---------------------------------------------------
-static const Byte EmulVTVersion = 0xd8;
+static const Byte EmulVTVersion = 0xdb;
 extern PACKAGE AnsiString CopyRight;
 static const Shortint MAX_ROW = 0x32;
-static const Byte MAX_COL = 0x84;
-static const Shortint TopMargin = 0x4;
-static const Shortint LeftMargin = 0x6;
-static const Shortint RightMargin = 0x6;
-static const Shortint BottomMargin = 0x4;
+static const Byte MAX_COL = 0xa0;
 static const Shortint NumPaletteEntries = 0x10;
 static const Shortint F_BLACK = 0x0;
 static const Shortint F_BLUE = 0x1;
@@ -444,4 +466,4 @@ using namespace Emulvt;
 
 #pragma delphiheader end.
 //-- end unit ----------------------------------------------------------------
-#endif	// Emulvt
+#endif	// EmulVT
