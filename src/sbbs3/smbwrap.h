@@ -65,7 +65,9 @@
 
 	#define O_BINARY		0
 	#define SH_DENYNO		0
-	#define SH_DENYRW		0
+	#define SH_DENYRW		F_WRLCK
+	#define SH_DENYRD       F_RDLCK
+	#define SH_DENYWR       F_WRLCK
 
 #endif
 
