@@ -413,7 +413,7 @@ static jsval get_value(JSContext *cx, char* value)
 
 	/* integer or float? */
 	for(p=value;*p;p++) {
-		if(*p=='.')
+		if(*p=='.' && !f)
 			f=TRUE;
 		else if(!isdigit(*p))
 			break;
