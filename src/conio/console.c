@@ -476,7 +476,7 @@ video_event(XEvent *ev)
 		case MotionNotify: {
 				XMotionEvent *me = (XMotionEvent *)ev;
 				me->x -= 2;
-				me->y -= 8;
+				me->y -= 2;
 				me->x/=FW;
 				me->y/=FH;
 				me->x++;
@@ -495,7 +495,7 @@ video_event(XEvent *ev)
 		case ButtonRelease: {
 				XButtonEvent *be = (XButtonEvent *)ev;
 				be->x -= 2;
-				be->y -= 8;
+				be->y -= 2;
 				be->x/=FW;
 				be->y/=FH;
 				be->x++;
@@ -516,7 +516,7 @@ video_event(XEvent *ev)
 		case ButtonPress: {
 				XButtonEvent *be = (XButtonEvent *)ev;
 				be->x -= 2;
-				be->y -= 8;
+				be->y -= 2;
 				be->x/=FW;
 				be->y/=FH;
 				be->x++;
