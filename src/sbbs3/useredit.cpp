@@ -781,7 +781,7 @@ void sbbs_t::maindflts(user_t* user)
 		bprintf(text[UserDefaultsHotKey]
 			,user->misc&COLDKEYS ? text[Off] : text[On]);
 		bprintf(text[UserDefaultsCursor]
-			,user->misc&SPIN ? text[On] : text[Off]);
+			,user->misc&SPIN ? text[On] : user->misc&NOPAUSESPIN ? text[Off] : "Pause Prompt Only");
 		bprintf(text[UserDefaultsCLS]
 			,user->misc&CLRSCRN ? text[On] : text[Off]);
 		bprintf(text[UserDefaultsAskNScan]
@@ -905,6 +905,9 @@ void sbbs_t::maindflts(user_t* user)
 				break;
 			case 'S':
 				user->misc^=SPIN;
+				if(!(user->misc&SPIN))
+					if(!yesno("Spinning cursor on pause prompts"))
+						user->misc|=NOPAUSESPIN;
 				putuserrec(&cfg,user->number,U_MISC,8,ultoa(user->misc,str,16));
 				break;
 			case 'F':

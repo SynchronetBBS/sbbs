@@ -517,7 +517,7 @@ void sbbs_t::pause()
 		rioctl(IOFI);
 	bputs(text[Pause]);
 	j=bstrlen(text[Pause]);
-	if(sys_status&SS_USERON && !(useron.misc&WIP)
+	if(sys_status&SS_USERON && !(useron.misc&(WIP|NOPAUSESPIN))
 		&& !(cfg.node_misc&NM_NOPAUSESPIN))
 		l|=K_SPIN;
 	ch=getkey(l);
