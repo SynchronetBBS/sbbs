@@ -101,6 +101,7 @@ function decode_body(TE, heads, body)
 		return body;
 	}
 	if(tmp.search(/base64/i)!=-1) {
+		body=body.replace(/[^A-Za-z0-9\+\/\=]/g,'');
 		return base64_decode(body);
 	}
 
