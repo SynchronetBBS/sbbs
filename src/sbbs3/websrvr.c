@@ -109,6 +109,8 @@ static const char*	server_name="Synchronet Web Server";
 static const char*	newline="\r\n";
 static const char*	http_scheme="http://";
 static const size_t	http_scheme_len=7;
+static const char*	error_301="301 Moved Permanently";
+static const char*	error_302="302 Moved Temporarily";
 static const char*	error_404="404 Not Found";
 static const char*	error_500="500 Internal Server Error";
 static const char*	unknown="<unknown>";
@@ -866,12 +868,12 @@ static BOOL send_headers(http_session_t *session, const char *status)
 		send_file=FALSE;
 	}
 	if(session->req.send_location==MOVED_PERM)  {
-		status_line="301 Moved Permanently";
+		status_line=error_301;
 		ret=-1;
 		send_file=FALSE;
 	}
 	if(session->req.send_location==MOVED_TEMP)  {
-		status_line="302 Moved Temporarily";
+		status_line=error_302;
 		ret=-1;
 		send_file=FALSE;
 	}
@@ -1097,13 +1099,13 @@ void http_logon(http_session_t * session, user_t *usr)
 	session->last_user_num=session->user.number;
 }
 
-void http_logoff(http_session_t * session, int line)
+void http_logoff(http_session_t* session, SOCKET socket, int line)
 {
 	if(session->last_user_num<=0)
 		return;
 
 	lprintf(LOG_DEBUG,"%04d HTTP Logoff (user #%d) from line %d"
-		,session->socket,session->user.number, line);
+		,socket,session->user.number, line);
 
 	SAFECOPY(session->username,unknown);
 	logoutuserdat(&scfg, &session->user, time(NULL), session->logon_time);
@@ -1152,7 +1154,7 @@ static BOOL check_ars(http_session_t * session)
 		/* No authentication information... */
 		if(session->last_user_num!=0) {
 			if(session->last_user_num>0)
-				http_logoff(session,__LINE__);
+				http_logoff(session,session->socket,__LINE__);
 			session->user.number=0;
 			http_logon(session,NULL);
 		}
@@ -1180,7 +1182,7 @@ static BOOL check_ars(http_session_t * session)
 	if(i==0) {
 		if(session->last_user_num!=0) {
 			if(session->last_user_num>0)
-				http_logoff(session,__LINE__);
+				http_logoff(session,session->socket,__LINE__);
 			session->user.number=0;
 			http_logon(session,NULL);
 		}
@@ -1199,7 +1201,7 @@ static BOOL check_ars(http_session_t * session)
 	if(thisuser.pass[0] && stricmp(thisuser.pass,password)) {
 		if(session->last_user_num!=0) {
 			if(session->last_user_num>0)
-				http_logoff(session,__LINE__);
+				http_logoff(session,session->socket,__LINE__);
 			session->user.number=0;
 			http_logon(session,NULL);
 		}
@@ -1220,7 +1222,7 @@ static BOOL check_ars(http_session_t * session)
 	}
 
 	if(i != session->last_user_num) {
-		http_logoff(session,__LINE__);
+		http_logoff(session,session->socket,__LINE__);
 		session->user.number=i;
 		http_logon(session,&thisuser);
 	}
@@ -1318,7 +1320,11 @@ static int sockreadline(http_session_t * session, char *buf, size_t length)
 	return(i);
 }
 
+#if defined(_WIN32)
+static int pipereadline(HANDLE pipe, char *buf, size_t length)
+#else
 static int pipereadline(int pipe, char *buf, size_t length)
+#endif
 {
 	char	ch;
 	DWORD	i;
@@ -1330,7 +1336,12 @@ static int pipereadline(int pipe, char *buf, size_t length)
 		if(time(NULL)-start>startup->max_cgi_inactivity)
 			return(-1);
 
+#if defined(_WIN32)
+		ret=0;
+		ReadFile(pipe, &ch, 1, &ret, NULL);
+#else
 		ret=read(pipe, &ch, 1);
+#endif
 		if(ret==1)  {
 			start=time(NULL);
 
@@ -1613,7 +1624,9 @@ static int is_dynamic_req(http_session_t* session)
 {
 	int		i=0;
 	char	drive[4];
+	char	cgidrive[4];
 	char	dir[MAX_PATH+1];
+	char	cgidir[MAX_PATH+1];
 	char	fname[MAX_PATH+1];
 	char	ext[MAX_PATH+1];
 
@@ -1642,7 +1655,8 @@ static int is_dynamic_req(http_session_t* session)
 				return(IS_CGI);
 			}
 		}
-		if(stricmp(dir,cgi_dir)==0)  {
+		_splitpath(cgi_dir, cgidrive, cgidir, fname, ext);
+		if(stricmp(dir,cgidir)==0 && stricmp(drive,cgidrive)==0)  {
 			init_enviro(session);
 			return(IS_CGI);
 		}
@@ -2057,8 +2071,8 @@ static BOOL check_request(http_session_t * session)
 
 static BOOL exec_cgi(http_session_t *session)
 {
-	char	cmdline[MAX_PATH+256];
 #ifdef __unix__
+	char	cmdline[MAX_PATH+256];
 	/* ToDo: Damn, that's WAY too many variables */
 	int		i=0;
 	int		status=0;
@@ -2084,13 +2098,10 @@ static BOOL exec_cgi(http_session_t *session)
 	char	ch;
 	list_node_t	*node;
 	BOOL	orig_keep=FALSE;
-#endif
 
 	SAFECOPY(cmdline,session->req.physical_path);
-	
-#ifdef __unix__
 
-	lprintf(LOG_INFO,"%04d Executing %s",session->socket,cmdline);
+	lprintf(LOG_INFO,"%04d Executing CGI: %s",session->socket,cmdline);
 
 	orig_keep=session->req.keep_alive;
 	session->req.keep_alive=FALSE;
@@ -2152,7 +2163,6 @@ static BOOL exec_cgi(http_session_t *session)
 
 	start=time(NULL);
 
-
 	high_fd=out_pipe[0];
 	if(err_pipe[0]>high_fd)
 		high_fd=err_pipe[0];
@@ -2209,12 +2219,12 @@ static BOOL exec_cgi(http_session_t *session)
 										SAFECOPY(session->req.virtual_path,value);
 										session->req.send_location=MOVED_STAT;
 										if(cgi_status[0]==0)
-											SAFECOPY(cgi_status,"302 Moved Temporarily");
+											SAFECOPY(cgi_status,error_302);
 									} else  {
 										SAFECOPY(session->req.virtual_path,value);
 										session->req.send_location=MOVED_STAT;
 										if(cgi_status[0]==0)
-											SAFECOPY(cgi_status,"302 Moved Temporarily");
+											SAFECOPY(cgi_status,error_302);
 									}
 									break;
 								case HEAD_STATUS:
@@ -2257,7 +2267,7 @@ static BOOL exec_cgi(http_session_t *session)
 		}
 		else  {
 			if((time(NULL)-start) >= startup->max_cgi_inactivity)  {
-				lprintf(LOG_ERR,"%04d CGI Script %s Timed out",session->socket,cmdline);
+				lprintf(LOG_ERR,"%04d CGI Process %s Timed out",session->socket,cmdline);
 				done_reading=TRUE;
 				start=0;
 			}
@@ -2279,7 +2289,8 @@ static BOOL exec_cgi(http_session_t *session)
 		done_wait = (waitpid(child,&status,WNOHANG)==child);
 	if(!done_wait)  {
 		if(start)
-			lprintf(LOG_NOTICE,"%04d CGI Script %s still alive on client exit",session->socket,cmdline);
+			lprintf(LOG_NOTICE,"%04d CGI Process %s still alive on client exit"
+				,session->socket,cmdline);
 		kill(child,SIGTERM);
 		mswait(1000);
 		done_wait = (waitpid(child,&status,WNOHANG)==child);
@@ -2292,22 +2303,240 @@ static BOOL exec_cgi(http_session_t *session)
 	close(out_pipe[0]);		/* close read-end of pipe */
 	close(err_pipe[0]);		/* close read-end of pipe */
 	if(!got_valid_headers) {
-		lprintf(LOG_ERR,"%04d CGI Script %s did not generate valid headers",session->socket,cmdline);
+		lprintf(LOG_ERR,"%04d CGI Process %s did not generate valid headers",session->socket,cmdline);
 		return(FALSE);
 	}
 
 	if(!done_parsing_headers) {
-		lprintf(LOG_ERR,"%04d CGI Script %s did not send data header termination",session->socket,cmdline);
+		lprintf(LOG_ERR,"%04d CGI Process %s did not send data header termination",session->socket,cmdline);
 		return(FALSE);
 	}
 
-	if(!done_parsing_headers || !got_valid_headers) {
-		return(FALSE);
-	}
 	return(TRUE);
 #else
 	/* Win32 exec_cgi() */
-	return(FALSE);
+
+	/* These are (more or less) copied from the Unix version */
+	char*	p;
+	char	cmdline[MAX_PATH+256];
+	char	buf[4096];
+	int		i;
+	BOOL	orig_keep;
+	BOOL	done_parsing_headers=FALSE;
+	BOOL	got_valid_headers=FALSE;
+	char	cgi_status[MAX_REQUEST_LINE+1];
+	char	header[MAX_REQUEST_LINE+1];
+	char	*directive=NULL;
+	char	*value=NULL;
+	time_t	start;
+
+	/* Win32-specific */
+	char	startup_dir[MAX_PATH+1];
+	int		wr;
+	HANDLE	rdpipe=INVALID_HANDLE_VALUE;
+	HANDLE	wrpipe=INVALID_HANDLE_VALUE;
+	HANDLE	rdoutpipe;
+	HANDLE	wrinpipe;
+	DWORD	waiting;
+	DWORD	msglen;
+	DWORD	retval;
+    PROCESS_INFORMATION process_info;
+	SECURITY_ATTRIBUTES sa;
+    STARTUPINFO startup_info={0};
+
+    startup_info.cb=sizeof(startup_info);
+	startup_info.dwFlags|=STARTF_USESTDHANDLES|STARTF_USESHOWWINDOW;
+    startup_info.wShowWindow=SW_HIDE;
+
+	SAFECOPY(cmdline,session->req.physical_path);
+
+	lprintf(LOG_INFO,"%04d Executing CGI: %s",session->socket,cmdline);
+
+	orig_keep=session->req.keep_alive;
+	session->req.keep_alive=FALSE;
+
+	memset(&sa,0,sizeof(sa));
+	sa.nLength= sizeof(SECURITY_ATTRIBUTES);
+	sa.lpSecurityDescriptor = NULL;
+	sa.bInheritHandle = TRUE;
+
+	// Create the child output pipe (override default 4K buffer size)
+	if(!CreatePipe(&rdoutpipe,&startup_info.hStdOutput,&sa,sizeof(buf))) {
+		lprintf(LOG_ERR,"%04d !ERROR %d creating stdout pipe",session->socket,GetLastError());
+		return(FALSE);
+	}
+	startup_info.hStdError=startup_info.hStdOutput;
+
+	// Create the child input pipe.
+	if(!CreatePipe(&startup_info.hStdInput,&wrinpipe,&sa,0 /* default buffer size */)) {
+		lprintf(LOG_ERR,"%04d !ERROR %d creating stdin pipe",session->socket,GetLastError());
+		return(FALSE);
+	}
+
+	DuplicateHandle(
+		GetCurrentProcess(), rdoutpipe,
+		GetCurrentProcess(), &rdpipe, 0, FALSE, DUPLICATE_SAME_ACCESS);
+
+	DuplicateHandle(
+		GetCurrentProcess(), wrinpipe,
+		GetCurrentProcess(), &wrpipe, 0, FALSE, DUPLICATE_SAME_ACCESS);
+
+	CloseHandle(rdoutpipe);
+	CloseHandle(wrinpipe);
+
+	SAFECOPY(startup_dir,cmdline);
+	if((p=strrchr(startup_dir,'/'))!=NULL || (p=strrchr(startup_dir,'\\'))!=NULL)
+		*p=0;
+	else
+		SAFECOPY(startup_dir,cgi_dir);
+
+	lprintf(LOG_DEBUG,"%04d CGI startup dir: %s", session->socket, startup_dir);
+
+    if(!CreateProcess(
+		NULL,			// pointer to name of executable module
+		cmdline,  		// pointer to command line string
+		NULL,  			// process security attributes
+		NULL,   		// thread security attributes
+		TRUE,	 		// handle inheritance flag
+		CREATE_NEW_CONSOLE, // creation flags
+        NULL,  			// pointer to new environment block
+		startup_dir,	// pointer to current directory name
+		&startup_info,  // pointer to STARTUPINFO
+		&process_info  	// pointer to PROCESS_INFORMATION
+		)) {
+		lprintf(LOG_ERR,"%04d !ERROR %d running %s",session->socket,GetLastError(),cmdline);
+		return(FALSE);
+    }
+
+	start=time(NULL);
+
+	cgi_status[0]=0;
+	while(server_socket!=INVALID_SOCKET) {
+
+		if((time(NULL)-start) >= startup->max_cgi_inactivity)  {
+			lprintf(LOG_WARNING,"%04d CGI Process %s Timed out",session->socket,cmdline);
+			break;
+		}
+
+		waiting = 0;
+		PeekNamedPipe(
+			rdpipe,             // handle to pipe to copy from
+			NULL,               // pointer to data buffer
+			0,					// size, in bytes, of data buffer
+			NULL,				// pointer to number of bytes read
+			&waiting,			// pointer to total number of bytes available
+			NULL				// pointer to unread bytes in this message
+			);
+		if(waiting) {
+			if(done_parsing_headers && got_valid_headers)  {
+				msglen=0;
+				if(ReadFile(rdpipe,buf,sizeof(buf),&msglen,NULL)==FALSE) {
+					lprintf(LOG_ERR,"%04d !ERROR %d reading from pipe"
+						,session->socket,GetLastError());
+					break;
+				}
+				if(msglen) {
+					lprintf(LOG_DEBUG,"%04d Sending %d bytes"
+						,session->socket,msglen);
+					wr=sendsocket(session->socket,buf,msglen);
+					/* log actual bytes sent */
+					if(session->req.ld!=NULL && wr>0)
+						session->req.ld->size+=wr;	
+					/* reset inactivity timer */
+					start=time(NULL);	
+					continue;
+				}
+			} else  {
+				/* This is the tricky part */
+				i=pipereadline(rdpipe,buf,sizeof(buf));
+				if(i<0)  {
+					got_valid_headers=FALSE;
+					break;
+				}
+				start=time(NULL);
+
+				if(!done_parsing_headers && *buf)  {
+					SAFECOPY(header,buf);
+					directive=strtok(header,":");
+					if(directive != NULL)  {
+						value=strtok(NULL,"");
+						i=get_header_type(directive);
+						switch (i)  {
+							case HEAD_LOCATION:
+								got_valid_headers=TRUE;
+								if(*value=='/')  {
+									unescape(value);
+									SAFECOPY(session->req.virtual_path,value);
+									session->req.send_location=MOVED_STAT;
+									if(cgi_status[0]==0)
+										SAFECOPY(cgi_status,error_302);
+								} else  {
+									SAFECOPY(session->req.virtual_path,value);
+									session->req.send_location=MOVED_STAT;
+									if(cgi_status[0]==0)
+										SAFECOPY(cgi_status,error_302);
+								}
+								break;
+							case HEAD_STATUS:
+								SAFECOPY(cgi_status,value);
+								break;
+							case HEAD_LENGTH:
+								session->req.keep_alive=orig_keep;
+								listPushNodeString(&session->req.dynamic_heads,buf);
+								break;
+							case HEAD_TYPE:
+								got_valid_headers=TRUE;
+								listPushNodeString(&session->req.dynamic_heads,buf);
+								break;
+							default:
+								listPushNodeString(&session->req.dynamic_heads,buf);
+						}
+					}
+				}
+				else  {
+					if(got_valid_headers)  {
+						session->req.dynamic=IS_CGI;
+						if(cgi_status[0]==0)
+							SAFECOPY(cgi_status,session->req.status);
+						send_headers(session,cgi_status);
+					}
+					done_parsing_headers=TRUE;
+				}
+				continue;
+			}
+		}
+		Sleep(1);
+
+		if(WaitForSingleObject(process_info.hProcess,0)==WAIT_OBJECT_0)
+			break;
+	}
+
+    if(GetExitCodeProcess(process_info.hProcess, &retval)==FALSE)
+	    lprintf(LOG_ERR,"%04d !ERROR GetExitCodeProcess(%s) returned %d"
+			,session->socket,cmdline,GetLastError());
+
+	if(retval==STILL_ACTIVE) {
+		lprintf(LOG_WARNING,"%04d Terminating CGI process: %s",session->socket,cmdline);
+		TerminateProcess(process_info.hProcess, GetLastError());
+	}	
+
+	if(rdpipe!=INVALID_HANDLE_VALUE)
+		CloseHandle(rdpipe);
+	if(wrpipe!=INVALID_HANDLE_VALUE)
+		CloseHandle(wrpipe);
+	CloseHandle(process_info.hProcess);
+
+	if(!got_valid_headers) {
+		lprintf(LOG_ERR,"%04d CGI Process %s did not generate valid headers",session->socket,cmdline);
+		return(FALSE);
+	}
+
+	if(!done_parsing_headers) {
+		lprintf(LOG_ERR,"%04d CGI Process %s did not send data header termination",session->socket,cmdline);
+		return(FALSE);
+	}
+
+	return(TRUE);
 #endif
 }
 
@@ -2975,7 +3204,7 @@ void http_session_thread(void* arg)
 		}
 	}
 
-	http_logoff(&session,__LINE__);
+	http_logoff(&session,socket,__LINE__);
 
 	if(session.js_cx!=NULL) {
 		lprintf(LOG_INFO,"%04d JavaScript: Destroying context",socket);
@@ -3211,6 +3440,7 @@ void DLLCALL web_server(void* arg)
 	if(startup->error_dir[0]==0)			SAFECOPY(startup->error_dir,WEB_DEFAULT_ERROR_DIR);
 	if(startup->cgi_dir[0]==0)				SAFECOPY(startup->cgi_dir,WEB_DEFAULT_CGI_DIR);
 	if(startup->max_inactivity==0) 			startup->max_inactivity=120; /* seconds */
+	if(startup->max_cgi_inactivity==0) 		startup->max_cgi_inactivity=120; /* seconds */
 	if(startup->sem_chk_freq==0)			startup->sem_chk_freq=2; /* seconds */
 	if(startup->js_max_bytes==0)			startup->js_max_bytes=JAVASCRIPT_MAX_BYTES;
 	if(startup->js_cx_stack==0)				startup->js_cx_stack=JAVASCRIPT_CONTEXT_STACK;
@@ -3303,9 +3533,7 @@ void DLLCALL web_server(void* arg)
 		}
 		lprintf(LOG_DEBUG,"Root directory: %s", root_dir);
 		lprintf(LOG_DEBUG,"Error directory: %s", error_dir);
-#if defined(__unix__)
 		lprintf(LOG_DEBUG,"CGI directory: %s", cgi_dir);
-#endif
 
 		iniFileName(path,sizeof(path),scfg.ctrl_dir,"mime_types.ini");
 		if(!read_mime_types(path)) {
