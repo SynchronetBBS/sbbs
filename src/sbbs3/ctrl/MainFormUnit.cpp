@@ -1662,6 +1662,8 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     StatsTimer->Interval=cfg.node_stat_check*1000;
 	StatsTimer->Enabled=true;
     Initialized=true;
+
+    UpTimer->Enabled=true; /* Start updating the status bar */
 }
 //---------------------------------------------------------------------------
 void __fastcall TMainForm::SaveSettings(TObject* Sender)
