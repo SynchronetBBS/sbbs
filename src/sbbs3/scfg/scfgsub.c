@@ -170,7 +170,7 @@ usually an abreviation of the sub-board's name.
 		else
 			memset(&cfg.sub[subnum[i]]->faddr,0,sizeof(faddr_t));
 		cfg.sub[subnum[i]]->maxmsgs=500;
-		strcpy(cfg.sub[subnum[i]]->code,code);
+		strcpy(cfg.sub[subnum[i]]->code_suffix,code);
 		strcpy(cfg.sub[subnum[i]]->lname,str);
 		strcpy(cfg.sub[subnum[i]]->sname,str2);
 		strcpy(cfg.sub[subnum[i]]->qwkname,str3);
@@ -197,14 +197,17 @@ If you want to delete all the messages for this sub-board, select Yes.
 		if(j==-1)
 			continue;
 		if(j==0) {
-				sprintf(str,"%s.s*",cfg.sub[subnum[i]]->code);
+				sprintf(str,"%s%s.s*"
+					,cfg.grp[cfg.sub[i]->grp]->code_prefix
+					,cfg.sub[i]->code_suffix);
 				strlwr(str);
 				if(!cfg.sub[subnum[i]]->data_dir[0])
 					sprintf(tmp,"%ssubs/",cfg.data_dir);
 				else
 					strcpy(tmp,cfg.sub[subnum[i]]->data_dir);
 				delfiles(tmp,str);
-				clearptrs(subnum[i]); }
+				clearptrs(subnum[i]); 
+		}
 		FREE(cfg.sub[subnum[i]]);
 		cfg.total_subs--;
 		for(j=subnum[i];j<cfg.total_subs;j++)
@@ -237,7 +240,7 @@ If you want to delete all the messages for this sub-board, select Yes.
 		sprintf(opt[n++],"%-27.27s%s","Long Name",cfg.sub[i]->lname);
 		sprintf(opt[n++],"%-27.27s%s","Short Name",cfg.sub[i]->sname);
 		sprintf(opt[n++],"%-27.27s%s","QWK Name",cfg.sub[i]->qwkname);
-		sprintf(opt[n++],"%-27.27s%s","Internal Code",cfg.sub[i]->code);
+		sprintf(opt[n++],"%-27.27s%s","Internal Code",cfg.sub[i]->code_suffix);
 		sprintf(opt[n++],"%-27.27s%s","Newsgroup Name",cfg.sub[i]->newsgroup);
 		sprintf(opt[n++],"%-27.27s%.40s","Access Requirements"
 			,cfg.sub[i]->arstr);
@@ -323,11 +326,11 @@ Every sub-board must have its own unique code for Synchronet to refer
 to it internally. This code should be descriptive of the sub-board's
 topic, usually an abreviation of the sub-board's name.
 */
-                strcpy(str,cfg.sub[i]->code);
+                strcpy(str,cfg.sub[i]->code_suffix);
                 uifc.input(WIN_MID|WIN_SAV,0,17,"Internal Code (unique)"
                     ,str,8,K_EDIT|K_UPPER);
                 if(code_ok(str))
-                    strcpy(cfg.sub[i]->code,str);
+                    strcpy(cfg.sub[i]->code_suffix,str);
                 else {
                     uifc.helpbuf=invalid_code;
                     uifc.msg("Invalid Code");
@@ -1281,9 +1284,12 @@ by entering the conference number you want to use.
 									sprintf(str,"%s",cfg.sub[i]->data_dir);
 								else
 									sprintf(str,"%ssubs/",cfg.data_dir);
-								sprintf(str2,"%s.*",cfg.sub[i]->code);
+								sprintf(str2,"%s%s.s*"
+									,cfg.grp[cfg.sub[i]->grp]->code_prefix
+									,cfg.sub[i]->code_suffix);
 								strlwr(str2);
-								delfiles(str,str2); }
+								delfiles(str,str2); 
+							}
 
 							if(cfg.sub[i]->misc&SUB_HYPER)
 								cfg.sub[i]->misc|=SUB_HDRMOD;
@@ -1291,11 +1297,13 @@ by entering the conference number you want to use.
 								uifc.changes=1;
 								cfg.sub[i]->misc|=SUB_FAST;
 								cfg.sub[i]->misc&=~SUB_HYPER;
-								break; }
+								break; 
+							}
 							if(n==2 && cfg.sub[i]->misc&(SUB_FAST|SUB_HYPER)) {
 								uifc.changes=1;
 								cfg.sub[i]->misc&=~(SUB_FAST|SUB_HYPER);
-								break; }
+								break; 
+							}
 							break;
 						case 2:
 							SETHELP(WHERE);
