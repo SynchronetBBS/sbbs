@@ -71,6 +71,7 @@
 int dns_getmx(char* name, char* mx, char* mx2
 			  ,DWORD intf, DWORD ip_addr, BOOL use_tcp, int timeout);
 
+static char* pop_err	=	"-ERR";
 static char* ok_rsp		=	"250 OK";
 static char* auth_ok	=	"235 User Authenticated";
 static char* sys_error	=	"421 System error";
@@ -439,7 +440,7 @@ static BOOL sockgetrsp(SOCKET socket, char* rsp, char *buf, int len)
 				lprintf("%04d RX: %s",socket,buf);
 			continue;
 		}
-		if(strnicmp(buf,rsp,strlen(rsp))) {
+		if(rsp!=NULL && strnicmp(buf,rsp,strlen(rsp))) {
 			lprintf("%04d !INVALID RESPONSE: '%s' Expected: '%s'", socket, buf, rsp);
 			return(FALSE);
 		}
@@ -634,10 +635,14 @@ static void pop3_thread(void* arg)
 	char		host_ip[64];
 	char		username[LEN_ALIAS+1];
 	char		password[LEN_PASS+1];
+	char		challenge[256];
+	char		digest[MD5_DIGEST_SIZE];
+	char*		response;
 	char*		msgtxt;
 	int			i;
 	int			rd;
 	BOOL		activity=FALSE;
+	BOOL		apop=FALSE;
 	ulong		l;
 	ulong		lines;
 	ulong		lines_sent;
@@ -738,29 +743,48 @@ static void pop3_thread(void* arg)
 			break;
 		}
 
-		sockprintf(socket,"+OK Synchronet POP3 Server %s-%s Ready"
-			,revision,PLATFORM_DESC);
+		srand(time(NULL));	/* seed random number generator */
+		rand();	/* throw-away first result */
+		sprintf(challenge,"<%x%x%lx%lx@%s>"
+			,rand(),socket,time(NULL),clock(),startup->host_name);
+
+		sockprintf(socket,"+OK Synchronet POP3 Server %s-%s Ready %s"
+			,revision,PLATFORM_DESC,challenge);
 
 		/* Requires USER command first */
 		for(i=3;i;i--) {
-			if(sockgetrsp(socket,"USER ",buf,sizeof(buf)))
+			if(!sockgetrsp(socket,NULL,buf,sizeof(buf)))
 				break;
-			sockprintf(socket,"-ERR USER command expected");
+			if(!strnicmp(buf,"USER ",5))
+				break;
+			if(!strnicmp(buf,"APOP ",5)) {
+				apop=TRUE;
+				break;
+			}
+			sockprintf(socket,"-ERR USER or APOP command expected");
 		}
-		if(!i)	/* no USER command received */
+		if(!i || buf[0]==0)	/* no USER or APOP command received */
 			break;
 
 		p=buf+5;
 		while(*p && *p<=' ') p++;
-		SAFECOPY(username,p);
-		sockprintf(socket,"+OK");
-		if(!sockgetrsp(socket,"PASS ",buf,sizeof(buf))) {
-			sockprintf(socket,"-ERR PASS command expected");
-			break;
+		if(apop) {
+			if((response=strrchr(p,' '))!=NULL)
+				*(response++)=0;
+			else
+				response=p;
 		}
-		p=buf+5;
-		while(*p && *p<=' ') p++;
-		SAFECOPY(password,p);
+		SAFECOPY(username,p);
+		if(!apop) {
+			sockprintf(socket,"+OK");
+			if(!sockgetrsp(socket,"PASS ",buf,sizeof(buf))) {
+				sockprintf(socket,"-ERR PASS command expected");
+				break;
+			}
+			p=buf+5;
+			while(*p && *p<=' ') p++;
+			SAFECOPY(password,p);
+		}
 		user.number=matchuser(&scfg,username,FALSE /*sysop_alias*/);
 		if(!user.number) {
 			if(scfg.sys_misc&SM_ECHO_PW)
@@ -769,29 +793,45 @@ static void pop3_thread(void* arg)
 			else
 				lprintf("%04d !POP3 UNKNOWN USER: %s"
 					,socket, username);
-			sockprintf(socket,"-ERR");
+			sockprintf(socket,pop_err);
 			break;
 		}
 		if((i=getuserdat(&scfg, &user))!=0) {
 			lprintf("%04d !POP3 ERROR %d getting data on user (%s)"
 				,socket, i, username);
-			sockprintf(socket, "-ERR");
+			sockprintf(socket, pop_err);
 			break;
 		}
 		if(user.misc&(DELETED|INACTIVE)) {
 			lprintf("%04d !POP3 DELETED or INACTIVE user #%u (%s)"
 				,socket, user.number, username);
-			sockprintf(socket, "-ERR");
+			sockprintf(socket, pop_err);
 			break;
 		}
-		if(stricmp(password,user.pass)) {
+		if(apop) {
+			strlwr(user.pass);	/* this is case-sensitive, so convert to lowercase */
+			strcat(challenge,user.pass);
+			MD5_calc(digest,challenge,strlen(challenge));
+			MD5_hex(str,digest);
+			if(strcmp(str,response)) {
+				lprintf("%04d !POP3 %s FAILED APOP authentication"
+					,socket,username);
+#if 0
+				lprintf("%04d !POP3 digest data: %s",socket,challenge);
+				lprintf("%04d !POP3 calc digest: %s",socket,str);
+				lprintf("%04d !POP3 resp digest: %s",socket,response);
+#endif
+				sockprintf(socket,pop_err);
+				break;
+			}
+		} else if(stricmp(password,user.pass)) {
 			if(scfg.sys_misc&SM_ECHO_PW)
 				lprintf("%04d !POP3 FAILED Password attempt for user %s: '%s' expected '%s'"
 					,socket, username, password, user.pass);
 			else
 				lprintf("%04d !POP3 FAILED Password attempt for user %s"
 					,socket, username);
-			sockprintf(socket, "-ERR");
+			sockprintf(socket, pop_err);
 			break;
 		}
 		putuserrec(&scfg,user.number,U_COMP,LEN_COMP,host_name);
@@ -802,11 +842,9 @@ static void pop3_thread(void* arg)
 		client_on(socket,&client,TRUE /* update */);
 
 		if(startup->options&MAIL_OPT_DEBUG_POP3)		
-			lprintf("%04d POP3 %s logged in", socket, user.alias);
+			lprintf("%04d POP3 %s logged in %s", socket, user.alias, apop ? "via APOP":"");
 		sprintf(str,"POP3: %s",user.alias);
 		status(str);
-
-		sockprintf(socket,"+OK User verified");
 
 		mail=loadmail(&smb,&msgs,user.number,MAIL_YOUR,0);
 
@@ -834,6 +872,14 @@ static void pop3_thread(void* arg)
 					bytes+=msg.dfield[i].length;
 			smb_freemsgmem(&msg);
 		}			
+
+		if(l<msgs) {
+			sockprintf(socket,"-ERR message #%d: %d (%s)"
+				,mail[l].number,i,smb.last_error);
+			break;
+		}
+
+		sockprintf(socket,"+OK %lu messages (%lu bytes)",msgs,bytes);
 
 		while(1) {	/* TRANSACTION STATE */
 			rd = sockreadline(socket, buf, sizeof(buf));
