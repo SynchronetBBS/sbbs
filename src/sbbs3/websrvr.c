@@ -2719,7 +2719,7 @@ void http_session_thread(void* arg)
 	session.client.protocol="http";
 	session.client.user=session.username;
 	session.client.size=sizeof(session.client);
-	client_on(session.socket, &session.client, TRUE);
+	client_on(session.socket, &session.client, /* update existing client record? */FALSE);
 	if(session.socket!=INVALID_SOCKET && startup!=NULL && startup->socket_open!=NULL)
 		startup->socket_open(startup->cbdata,TRUE);
 
