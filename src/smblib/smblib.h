@@ -40,45 +40,46 @@
 
 #include "lzh.h"
 
-#if defined(__WATCOMC__) || defined(__TURBOC__) || defined(_MSC_VER)
-#	include <io.h>
-#	include <share.h>
+#if defined __WATCOMC__ || defined __TURBOC__ || defined _MSC_VER
+	#include <io.h>
+	#include <share.h>
 #endif
 
-#if defined(__WATCOMC__) || defined(__TURBOC__)
-#	include <mem.h>
+#if defined __WATCOMC__ || defined __TURBOC__
+	#include <mem.h>
 #else
-#	include <memory.h>
+	#include <memory.h>
 #endif
 
-#if defined(__WATCOMC__)
-#	include <dos.h>
-#elif defined(__TURBOC__)
-#	include <dir.h>
+#ifdef __WATCOMC__
+	#include <dos.h>
+#elif defined __TURBOC__
+	#include <dir.h>
 #endif
 
-#if defined(_WIN32)
-#	ifndef __FLAT__
-#	define __FLAT__
-#	endif
-#	define SMBCALL __stdcall	/* VB Compatible */
-#	if defined (EXPORT32)
-#		undef EXPORT32
-#	endif
-#	if defined(SMBDLL)
-#		define EXPORT32 __declspec( dllexport )
-#	else
-#		define EXPORT32 __declspec( dllimport )
-#	endif
-#elif defined(__FLAT__)
-#	define SMBCALL	_pascal
-#	define EXPORT32	_export
+#ifdef EXPORT32
+	#undef EXPORT32
+#endif
+
+#ifdef _WIN32
+	#ifndef __FLAT__
+		#define __FLAT__
+	#endif
+	#define SMBCALL __stdcall	/* VB Compatible */
+	#ifdef SMBDLL
+		#define EXPORT32 __declspec( dllexport )
+	#else
+		#define EXPORT32 __declspec( dllimport )
+	#endif
+#elif defined __unix__
+	#define SMBCALL
+	#define EXPORT32
+#elif defined __FLAT__
+	#define SMBCALL	_pascal
+	#define EXPORT32	_export
 #else
-#	define SMBCALL
-#	if defined (EXPORT32)
-#		undef EXPORT32
-#	endif
-#	define EXPORT32
+	#define SMBCALL
+	#define EXPORT32
 #endif
 
 #include <malloc.h>
