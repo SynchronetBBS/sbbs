@@ -483,6 +483,36 @@ static JSClass js_sysstats_class = {
 };
 
 static JSBool
+js_alias(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		p;
+	char		buf[80];
+	JSString*	js_str;
+	scfg_t*		cfg;
+
+	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
+		return(JS_FALSE);
+
+	if((js_str=JS_ValueToString(cx, argv[0]))==NULL) {
+		*rval = INT_TO_JSVAL(0);
+		return(JS_TRUE);
+	}
+
+	if((p=JS_GetStringBytes(js_str))==NULL) {
+		*rval = INT_TO_JSVAL(0);
+		return(JS_TRUE);
+	}
+
+	p=alias(cfg,p,buf);
+
+	js_str = JS_NewStringCopyZ(cx, p);
+
+	*rval = STRING_TO_JSVAL(js_str);
+
+	return(JS_TRUE);
+}
+
+static JSBool
 js_matchuser(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char*		p;
@@ -587,6 +617,7 @@ js_timestr(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 }
 
 static JSFunctionSpec js_system_functions[] = {
+	{"alias",			js_alias,			1},		// return user name for alias
 	{"matchuser",		js_matchuser,		1},		// exact user name matching
 	{"trashcan",		js_trashcan,		2},		// search file for pseudo-regexp
 	{"zonestr",			js_zonestr,			0},		// convert zone int to string
