@@ -182,7 +182,7 @@ var   BG_RED		=(RED<<4)
 var   BG_MAGENTA	=(MAGENTA<<4)
 var   BG_BROWN		=(BROWN<<4)
 var   BG_LIGHTGRAY	=(LIGHTGRAY<<4)
-						
+
 					    		/********************************************/
 						    	/* user.settings							*/
 							    /********************************************/
@@ -295,7 +295,7 @@ var   K_COLD		=(1<<16)	/* Possible cold key mode					*/
 var   K_NOECHO		=(1<<17)	/* Don't echo input                         */
 var   K_TAB			=(1<<18)	/* Treat TAB key as CR						*/
 					    		/********************************************/
-						
+
 						    	/********************************************/
     							/* Bits in 'mode' for putmsg and printfile  */
 							    /********************************************/
@@ -328,7 +328,7 @@ var   UQ_XEDIT		=(1<<15)	/* Ask for external editor					*/
 var   UQ_NODEF		=(1<<16)	/* Don't ask for default settings			*/
 var   UQ_NOCOMMAS	=(1<<17)	/* Do not require commas in location		*/
 					    		/********************************************/
-				
+
 							    /********************************************/
 							    /* node.settings							*/
 							    /********************************************/
@@ -439,6 +439,26 @@ var XTRN_NATIVE		=(1<<14)	/* Native application (EX_NATIVE)			*/
 var XTRN_STRIPKLUDGE=(1<<15)	/* Strip FTN Kludge lines from msg			*/
 var XTRN_CHKTIME	=(1<<16)	/* Check time online (EX_CHKTIME)			*/
 					    		/********************************************/
+
+								/********************************************/
+								/* Xtrn Drop file representations			*/
+								/********************************************/
+var XTRN_NONE		= 0			/* No data file needed						*/
+var XTRN_SBBS		= 1			/* Synchronet external						*/
+var XTRN_WWIV		= 2			/* WWIV external							*/
+var XTRN_GAP		= 3			/* Gap door 								*/
+var XTRN_RBBS		= 4			/* RBBS, QBBS, or Remote Access 			*/
+var XTRN_WILDCAT	= 5			/* Wildcat									*/
+var XTRN_PCBOARD	= 6			/* PCBoard									*/
+var XTRN_SPITFIRE	= 7			/* SpitFire 								*/
+var XTRN_UTI		= 8			/* UTI Doors - MegaMail 					*/
+var XTRN_SR			= 9			/* Solar Realms 							*/
+var XTRN_RBBS1 		= 10		/* DORINFO1.DEF always						*/
+var XTRN_TRIBBS		= 11		/* TRIBBS.SYS								*/
+var XTRN_DOOR32		= 12		/* DOOR32.SYS								*/
+								/********************************************/
+
+
 
     							/********************************************/
 				                /* Bit values for file.settings				*/
@@ -564,7 +584,7 @@ var MSG_TYPEECHO		=(1<<13)// Msg is for conference distribution
 var MSG_TYPENET 		=(1<<14)// Msg is direct network mail
 
 								/* Net types */
-var NET_NONE			=0		// Local message	
+var NET_NONE			=0		// Local message
 var NET_UNKNOWN			=1		// Networked, but unknown type
 var NET_FIDO			=2		// FidoNet
 var NET_POSTLINK		=3		// PostLink
