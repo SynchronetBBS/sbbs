@@ -1646,6 +1646,7 @@ int edit_user(scfg_t *cfg, int usernum)
 			case 0:
 				user.misc ^= DELETED;
 				putuserrec(cfg,user.number,U_MISC,8,ultoa(user.misc,str,16));
+				putusername(cfg,user.number,nulstr);
 				break;
 
 			case 1:
