@@ -141,10 +141,10 @@ char* sbbs_t::atcode(char* sp, char* str)
 			up=0;
 		char   days[64]="";
 		if((up/(24*60*60))>=2) {
-	        sprintf(days,"%lu days ",up/(24*60*60));
+	        sprintf(days,"%u days ",up/(24*60*60));
 			up%=(24*60*60);
 		}
-		sprintf(str,"%s%lu:%02lu"
+		sprintf(str,"%s%u:%02u"
 	        ,days
 			,up/(60*60)
 			,(up/60)%60
@@ -384,7 +384,7 @@ char* sbbs_t::atcode(char* sp, char* str)
 
 	if(!strcmp(sp,"TIMEON") || !strcmp(sp,"TIMEUSED")) {
 		now=time(NULL);
-		sprintf(str,"%lu",(now-logontime)/60); 
+		sprintf(str,"%lu",(now-logontime)/60L); 
 		return(str);
 	}
 

@@ -1503,7 +1503,7 @@ void event_thread(void* arg)
 						delfiles(sbbs->cfg.temp_dir,ALLFILES);
 						if(sbbs->unpack_qwk(str,i)==false) {
 							char newname[MAX_PATH+1];
-							sprintf(newname,"%s.%lx.bad",str,now);
+							sprintf(newname,"%s.%x.bad",str,now);
 							remove(newname);
 							if(rename(str,newname)==0) {
 								char logmsg[MAX_PATH*3];
