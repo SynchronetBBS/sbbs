@@ -269,10 +269,9 @@ BOOL md(char *inpath)
 
 	dir=opendir(path);
 	if(dir==NULL) {
-		lprintf("Creating directory: %s",path);
+		/* lprintf("Creating directory: %s",path); */
 		if(MKDIR(path)) {
-			lprintf("!Error %d: Fix configuration or make directory by "
-				"hand.",errno);
+			lprintf("!ERROR %d creating directory: %s",errno,path);
 			return(FALSE); 
 		} 
 	}
