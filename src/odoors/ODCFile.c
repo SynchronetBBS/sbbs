@@ -391,7 +391,11 @@ ODAPIDEF void ODCALL ODConfigInit(void)
                                     case 4:
                                        if(ODCfgIsTrue(szTempString))
                                        {
+#ifdef ODPLAT_NIX
+                                          od_control.baud = 1;
+#else
                                           od_control.baud = 0;
+#endif
                                        }
                                        break;
 

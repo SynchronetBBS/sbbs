@@ -476,7 +476,11 @@ malloc_error:
       /* variables that we must initialize if they weren't already set */
       /* when the custom drop file was read.                           */
       if(od_control.user_timelimit == 0) od_control.user_timelimit = 60;
+#ifdef ODPLAT_NIX
+      if(od_control.port == -1) od_control.baud = 1L;
+#else
       if(od_control.port == -1) od_control.baud = 0L;
+#endif
    }
 
    /* Setup inbound local/remote buffer. */
@@ -505,7 +509,11 @@ force_local:
       od_control.od_info_type = NO_DOOR_FILE;
 
       /* Operate in local mode. */
+#ifdef ODPLAT_NIX
+      od_control.baud = 1L;
+#else
       od_control.baud = 0L;
+#endif
 
       if(!bParsedCmdLine)
       {
@@ -835,7 +843,11 @@ read_dorinfox:
                 od_control.baud = atol(szIFTemp);
              }
 
+#ifdef ODPLAT_NIX
+             if(od_control.port == -1) od_control.baud = 1L;
+#else
              if(od_control.port == -1) od_control.baud = 0L;
+#endif
 
              /* Read line 6. */
              if(fgets((char *)apszDropFileInfo[3],80,pfDropFile)==NULL) goto DropFileFail;
