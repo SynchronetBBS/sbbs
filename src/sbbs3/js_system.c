@@ -346,10 +346,12 @@ static struct JSPropertySpec js_system_properties[] = {
 	{	"pwdays",	SYS_PROP_PWDAYS,	SYSOBJ_FLAGS,		NULL,	NULL },
 	{	"deldays",	SYS_PROP_DELDAYS,	SYSOBJ_FLAGS,		NULL,	NULL },
 
-	{	"nodes",	SYS_PROP_NODES,		SYSOBJ_FLAGS,		NULL,	NULL },
-	{	"lastnode",	SYS_PROP_LASTNODE,	SYSOBJ_FLAGS,		NULL,	NULL },
-
+	{	"lastuseron",				SYS_PROP_LASTUSERON		,SYSOBJ_FLAGS,	NULL,	NULL },
 	{	"freediskspace",			SYS_PROP_FREEDISKSPACE	,SYSOBJ_FLAGS,	NULL,	NULL },
+
+	{	"nodes",					SYS_PROP_NODES,		SYSOBJ_FLAGS,		NULL,	NULL },
+	{	"lastnode",					SYS_PROP_LASTNODE,	SYSOBJ_FLAGS,		NULL,	NULL },
+
 	{	"newuser_password",			SYS_PROP_NEW_PASS		,SYSOBJ_FLAGS,	NULL,	NULL },
 	{	"newuser_magic_word",		SYS_PROP_NEW_MAGIC		,SYSOBJ_FLAGS,	NULL,	NULL },
 	{	"newuser_level",			SYS_PROP_NEW_LEVEL		,SYSOBJ_FLAGS,	NULL,	NULL },
