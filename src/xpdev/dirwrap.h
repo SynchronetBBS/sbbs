@@ -61,8 +61,9 @@ extern "C" {
 	#include <glob.h>		/* POSIX.2 directory pattern matching function */
 	#define MKDIR(dir)		mkdir(dir,0777)
 
-	#if defined(__OpenBSD__) && defined(_THREADWRAP_H)
-		/* realpath() not threadsafe on OpenBSD */
+	#if defined(BSD) && defined(_THREADWRAP_H)
+		/* realpath() not threadsafe on OpenBSD -or- FreeBSD */
+		/* (On FreeBSD it only fails in release builds!		 */
 	    #define FULLPATH(a,r,l) realpath_r(r,a)	/* defined in threadwrap.c */
 	#else
 		#define FULLPATH(a,r,l)	realpath(r,a)
