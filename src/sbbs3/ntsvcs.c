@@ -659,7 +659,7 @@ int main(int argc, char** argv)
     bbs_startup.size=sizeof(bbs_startup);
 	bbs_startup.cbdata=&bbs;
 	bbs_startup.lputs=svc_lputs;
-	bbs_startup.event_log=event_lputs;
+	bbs_startup.event_lputs=event_lputs;
     bbs_startup.started=svc_started;
     bbs_startup.terminated=svc_terminated;
 	bbs_startup.clients=svc_clients;
