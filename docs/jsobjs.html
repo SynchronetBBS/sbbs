@@ -10,7 +10,7 @@
 <body>
 <font face=arial,helvetica>
 <h1>Synchronet JavaScript Object Model Reference</h1>
-Generated for <b>Synchronet v3.11a beta Debug</b>, compiled Sep 10 2003 01:03
+Generated for <b>Synchronet v3.11a alpha Debug</b>, compiled Sep 26 2003 15:56
 <ol type=square>
 <li onclick = 'this.className = (this.className == "showList") ? "defaultStyles" : "showList";'
 	onselectstart = 'event.returnValue = false;'>
@@ -624,6 +624,8 @@ Generated for <b>Synchronet v3.11a beta Debug</b>, compiled Sep 10 2003 01:03
 <td>Synchronet version number (e.g. '3.10')</td>
 <tr valign=top><td><b>revision</b><td>string
 <td>Synchronet revision letter (e.g. 'k')</td>
+<tr valign=top><td><b>beta_version</b><td>string
+<td>Synchronet alpha/beta designation (e.g. ' beta')</td>
 <tr valign=top><td><b>full_version</b><td>string
 <td>Synchronet full version information (e.g. '3.10k Beta Debug')</td>
 <tr valign=top><td><b>version_notice</b><td>string
@@ -867,7 +869,7 @@ Generated for <b>Synchronet v3.11a beta Debug</b>, compiled Sep 10 2003 01:03
 <td>chat settings bitfield</td>
 <tr valign=top><td><b>temp_file_ext</b><td>string
 <td>temporary file type (extension)</td>
-<tr valign=top><td><b>newscan_date</b><td>number
+<tr valign=top><td><b>new_file_time</b><td>number
 <td>new file scan date/time (time_t format)</td>
 <tr valign=top><td><b>download_protocol</b><td>string
 <td>file transfer protocol (command key)</td>
@@ -1101,10 +1103,10 @@ Generated for <b>Synchronet v3.11a beta Debug</b>, compiled Sep 10 2003 01:03
 <td>list extended file information for files in the specified file directory
 <tr valign=top><td><b>post_msg</b><td>boolean<td><tt>bbs.post_msg(sub-board [,number mode])
 <td>post a message in the specified message sub-board (number or internal code) with optinal <i>mode</i> (bitfield)
-<tr valign=top><td><b>cfg_msg_scan</b><td>void<td><tt>bbs.cfg_msg_scan([number mode])
-<td>configure message scan
-<tr valign=top><td><b>cfg_msg_ptrs</b><td>void<td><tt>bbs.cfg_msg_ptrs([number mode])
-<td>change message scan pointers
+<tr valign=top><td><b>cfg_msg_scan</b><td>void<td><tt>bbs.cfg_msg_scan([number type])
+<td>configure message scan (<i>type</i> is either <tt>SCAN_CFG_NEW</tt> or <tt>SCAN_CFG_TOYOU</tt>)
+<tr valign=top><td><b>cfg_msg_ptrs</b><td>void<td><tt>bbs.cfg_msg_ptrs([number type])
+<td>change message scan pointer values (<i>type</i> is either <tt>SCAN_CFG_NEW</tt> or <tt>SCAN_CFG_TOYOU</tt>)
 <tr valign=top><td><b>reinit_msg_ptrs</b><td>void<td><tt>bbs.reinit_msg_ptrs()
 <td>re-initialize new message scan pointers
 <tr valign=top><td><b>scan_subs</b><td>void<td><tt>bbs.scan_subs([number mode, boolean all])
@@ -1513,7 +1515,7 @@ Generated for <b>Synchronet v3.11a beta Debug</b>, compiled Sep 10 2003 01:03
 <td>group access requirements</td>
 </table>
 <h2><a name=msg_area.grp_list.sub_list>msg_area.grp_list.sub_list array</a>
-<br><font size=-1>Message Sub-boards</font>
+<br><font size=-1>Message Sub-boards</h2>(all properties are <small>READ ONLY</small> except for <i>scan_ptr</i>, <i>scan_cfg</i>, and <i>last_read</i>)</font>
 </h2>
 <table border=1 width=100%>
 <caption align=left><b><tt>msg_area.grp_list.sub_list</tt>
@@ -1577,10 +1579,10 @@ Generated for <b>Synchronet v3.11a beta Debug</b>, compiled Sep 10 2003 01:03
 <tr valign=top><td><b>is_moderated</b><td>boolean
 <td>user's posts are moderated</td>
 <tr valign=top><td><b>scan_ptr</b><td>number
-<td>user's current new message scan pointer</td>
+<td>user's current new message scan pointer (highest-read message number)</td>
 <tr valign=top><td><b>scan_cfg</b><td>number
-<td>user's message scan configuration (bitfield)</td>
-<tr valign=top><td><b>last_read</b><td>number
+<td>user's message scan configuration (bitfield) see <tt>SUB_SCAN_*</tt> in <tt>sbbsdefs.js</tt> for valid bits</td>
+<tr valign=top><td><b>lead_read</b><td>number
 <td>user's last-read message number</td>
 </table>
 <h2><a name=file_area>file_area object</a>
@@ -2178,4 +2180,4 @@ Generated for <b>Synchronet v3.11a beta Debug</b>, compiled Sep 10 2003 01:03
 <td><i>true</i> if binary data is to be sent in Network Byte Order (big end first), default is <i>true</i></td>
 </table>
 <p><small>
-Totals: 444 properties, 247 methods
+Totals: 445 properties, 247 methods
