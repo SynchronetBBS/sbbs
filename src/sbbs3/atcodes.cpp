@@ -212,8 +212,11 @@ int sbbs_t::atcodes(char *instr)
 				p++;
 			bputs(p); } }
 
-	else if(!strcmp(sp,"CPU") || !strcmp(sp,"HOST"))
+	else if(!strcmp(sp,"CPU"))
 		bputs(useron.comp);
+		
+	else if(!strcmp(sp,"HOST"))
+		bputs(client_name);
 
 	else if(!strcmp(sp,"BDATE"))
 		bputs(useron.birth);
