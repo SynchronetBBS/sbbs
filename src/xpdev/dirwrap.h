@@ -116,7 +116,7 @@ extern "C" {
 /*****************************/
 /* POSIX Directory Functions */
 /*****************************/
-#if defined(_MSC_VER)
+#if defined(_MSC_VER) || defined(__DMC__)
 	#include <io.h>		/* _finddata_t */
 
 	/* dirent structure returned by readdir().

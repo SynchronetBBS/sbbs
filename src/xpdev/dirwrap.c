@@ -283,7 +283,7 @@ void DLLCALL globfree(glob_t* glob)
 /****************************************************************************/
 /* POSIX directory operations using Microsoft _findfirst/next API.			*/
 /****************************************************************************/
-#if defined(_MSC_VER)
+#if defined(_MSC_VER) || defined(__DMC__)
 DIR* opendir(const char* dirname)
 {
 	DIR*	dir;
