@@ -354,6 +354,9 @@ bool sbbs_t::js_initcx()
 		if(!JS_SetProperty(js_cx, sysobj, "version_detail", &val))
 			break;
 #endif
+		/* BBS Object */
+		if(js_CreateBbsObject(js_cx, js_glob)==NULL)
+			break;
 
 		/* Console Object */
 		if(js_CreateConsoleObject(js_cx, js_glob)==NULL)
