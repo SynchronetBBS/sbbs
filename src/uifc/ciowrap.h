@@ -11,7 +11,6 @@
 #ifndef NEED_CURSES_GETCH
  #undef getch
 #endif
-#include "keys.h"
 
 #ifndef BOOL
 #define BOOL    int
