@@ -338,7 +338,7 @@ int main(int argc, char **argv)
 #define SBJ_INDENT "                                "
 	while(1) {
 		cls();
-		sprintf(str,"\1n\1h\1cSynchronet \1rBlackjack! \1cv3.11 for %s\r\n"
+		sprintf(str,"\1n\1h\1cSynchronet \1rBlackjack! \1cv3.20 for %s\r\n"
 			,PLATFORM_DESC);
 		center(str);
 		sprintf(str,"\1w(XSDK v%s %s %s)\r\n\r\n"
