@@ -104,7 +104,7 @@ int b64_encode(char *target, size_t tlen, const char *source, size_t slen)  {
 	char	*tmpbuf=NULL;
 	int		done=0;
 	char	enc;
-	int		buf=0;
+	int		buf;
 	
 	if(slen==0)
 		slen=strlen(source);
