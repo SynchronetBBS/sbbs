@@ -566,6 +566,7 @@ static JSBool
 js_iniGetAllObjects(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char*		name="name";
+	char*		sec_name;
 	char*		prefix=NULL;
 	char**		sec_list;
     jsint       i,k;
@@ -594,8 +595,11 @@ js_iniGetAllObjects(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval
     for(i=0;sec_list && sec_list[i];i++) {
 	    object = JS_NewObject(cx, NULL, NULL, obj);
 
+		sec_name=sec_list[i];
+		if(prefix!=NULL)
+			sec_name+=strlen(prefix);
 		JS_DefineProperty(cx, object, name
-			,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,sec_list[i]))
+			,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,sec_name))
 			,NULL,NULL,JSPROP_ENUMERATE);
 
 		key_list = iniGetNamedStringList(p->fp,sec_list[i]);
@@ -1079,6 +1083,7 @@ static JSBool js_file_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 
 static JSBool js_file_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
+	char		str[128];
 	BYTE*		buf;
 	long		l;
 	long		len;
@@ -1205,20 +1210,23 @@ static JSBool js_file_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 						JS_NewNumberValue(cx,sum,vp);
 						break;
 					case FILE_PROP_CRC16:
-						JS_NewNumberValue(cx,crc16(buf,len),vp);
+						if(!JS_NewNumberValue(cx,crc16(buf,len),vp))
+							*vp=JSVAL_ZERO;
 						break;
 					case FILE_PROP_CRC32:
-						JS_NewNumberValue(cx,crc32(buf,len),vp);
+						sum=crc32(buf,len);
+						if(!JS_NewNumberValue(cx,sum,vp))
+							*vp=JSVAL_ZERO;
 						break;
 					case FILE_PROP_MD5_HEX:
 						MD5_calc(digest,buf,len);
-						MD5_hex(buf,digest);
-						js_str=JS_NewStringCopyZ(cx, buf);
+						MD5_hex(str,digest);
+						js_str=JS_NewStringCopyZ(cx, str);
 						break;
 					case FILE_PROP_MD5_B64:
 						MD5_calc(digest,buf,len);
-						b64_encode(buf,len*2,digest,sizeof(digest));
-						js_str=JS_NewStringCopyZ(cx, buf);
+						b64_encode(str,sizeof(str)-1,digest,sizeof(digest));
+						js_str=JS_NewStringCopyZ(cx, str);
 						break;
 				}
 			free(buf);
@@ -1378,7 +1386,8 @@ static jsMethodSpec js_file_functions[] = {
 		"an array of objects with each section's keys as properties of each section object, "
 		"<i>name_property</i> is the name of the property to create to contain the section's name "
 		"(default is <tt>\"name\"</tt>), "
-		"the optional <i>prefix</i> has the same use as in the <tt>iniGetSections</tt> method")
+		"the optional <i>prefix</i> has the same use as in the <tt>iniGetSections</tt> method, "
+		"if a <i>prefix</i> is specified, it is removed from each section's name" )
 	},
 	{0}
 };
