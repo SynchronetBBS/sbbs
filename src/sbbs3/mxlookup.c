@@ -294,6 +294,7 @@ int dns_getmx(char* name, char* mx, char* mx2
 			result=ERROR_VALUE;
 		else
 			result=-2;
+		mail_close_socket(sock);
 		return(result);
 	}
 
