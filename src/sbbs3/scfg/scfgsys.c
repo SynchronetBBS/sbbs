@@ -958,6 +958,9 @@ user.
 							sprintf(opt[i++],"%-27.27s %-3.3s"
 								,"Force Unique Chat Handle"
 								,cfg.uq&UQ_DUPHAND ? "Yes":"No");
+                            sprintf(opt[i++],"%-27.27s %-3.3s"
+                                ,"E-mail/NetMail Address"
+                                ,cfg.uq&UQ_NONETMAIL ? "No":"Yes");
 							sprintf(opt[i++],"%-27.27s %-3.3s"
 								,"Sex (Gender)"
 								,cfg.uq&UQ_SEX ? "Yes":"No");
@@ -1016,40 +1019,43 @@ user.
 								case 4:
 									cfg.uq^=UQ_DUPHAND;
 									break;
-								case 5:
+                                case 5:
+                                    cfg.uq^=UQ_NONETMAIL;
+                                    break;
+								case 6:
 									cfg.uq^=UQ_SEX;
 									break;
-								case 6:
+								case 7:
 									cfg.uq^=UQ_BIRTH;
 									break;
-								case 7:
+								case 8:
 									cfg.uq^=UQ_ADDRESS;
 									break;
-								case 8:
+								case 9:
 									cfg.uq^=UQ_LOCATION;
 									break;
-								case 9:
+								case 10:
 									cfg.uq^=UQ_NOCOMMAS;
 									break;
-								case 10:
+								case 11:
 									cfg.uq^=UQ_PHONE;
 									break;
-								case 11:
+								case 12:
 									cfg.uq^=UQ_COMP;
 									break;
-								case 12:
+								case 13:
 									cfg.uq^=UQ_MC_COMP;
 									break;
-								case 13:
+								case 14:
 									cfg.uq^=UQ_NOEXASC;
 									break;
-								case 14:
+								case 15:
 									cfg.uq^=UQ_XEDIT;
                                     break;
-								case 15:
+								case 16:
 									cfg.uq^=UQ_CMDSHELL;
                                     break;
-								case 16:
+								case 17:
 									cfg.uq^=UQ_NODEF;
                                     break;
 									} }
