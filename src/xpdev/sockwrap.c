@@ -253,7 +253,8 @@ int retry_bind(SOCKET s, const struct sockaddr *addr, socklen_t addrlen
 				,"%04d !ERROR %d binding %s socket%s", s, ERROR_VALUE, prot, port_str);
 		if(i<retries) {
 			if(lprintf!=NULL)
-				lprintf(LOG_WARNING,"%04d Will retry in %u seconds", s, wait_secs);
+				lprintf(LOG_WARNING,"%04d Will retry in %u seconds (%u of %u)"
+					,s, wait_secs, i+1, retries);
 			SLEEP(wait_secs*1000);
 		}
 	}
