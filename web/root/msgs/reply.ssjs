@@ -1,7 +1,5 @@
 load("html_inc/msgslib.ssjs");
 
-template.group=msg_area.grp[msg_area.sub[sub].grp_name];
-
 if(sub=='mail') {
 	template.sub=new Object;
 	template.sub.description="Personal E-Mail";
@@ -23,7 +21,19 @@ hdr=msgbase.get_msg_header(false,parseInt(http_request.query.reply_to));
 template.subject=hdr.subject;
 if(template.subject.search(/^re:\s+/i)==-1)
 	template.subject='Re: '+template.subject;
-template.from=hdr.from;
+if(sub=='mail') {
+	if(hdr.replyto_net_addr!=undefined && hdr.replyto_net_addr != '')
+		template.from=hdr.replyto_net_addr;
+	else {
+		if(hdr.from_net_addr != undefined && hdr.from_net_addr != '')
+			template.from=hdr.from_net_addr;
+		else
+			template.from=hdr.from;
+	}
+}
+else
+	template.from=hdr.from;
+
 template.number=hdr.number;
 
 template.body=msgbase.get_msg_body(false,parseInt(http_request.query.reply_to),true,true);
