@@ -209,7 +209,7 @@ int sbbs_t::protocol(prot_t* prot, enum XFER_TYPE type
 		autohang=1;
 	else
 		autohang=yesno(text[HangUpAfterXferQ]);
-	if(sys_status&SS_ABORT) {				/* if ctrl-c */
+	if(sys_status&SS_ABORT || !online) {	/* if ctrl-c or hangup */
 		autohang=0;
 		return(-1); 
 	}
