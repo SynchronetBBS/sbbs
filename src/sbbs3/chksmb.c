@@ -35,18 +35,14 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-/* OS-specific */
-#if defined(__MSDOS__) || defined (_WIN32)
-	#include <dos.h>
-	#include <conio.h>	/* getch */
-#endif
-
 /* ANSI */
+#include <string.h>		/* strrchr */
 #include <time.h>		/* ctime */
 
 /* SMB-specific */
 #include "smblib.h"
 #include "smbwrap.h"
+#include "conwrap.h"	/* getch */
 
 /****************************************************************************/
 /* Returns in 'string' a character representation of the number in l with   */
