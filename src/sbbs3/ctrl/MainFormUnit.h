@@ -405,6 +405,7 @@ public:		// User declarations
     HANDLE			bbs_log;
     HANDLE			event_log;
     HANDLE			ftp_log;
+    HANDLE			web_log;
     HANDLE			mail_log;
     HANDLE			services_log;
     int             NodeDisplayInterval;

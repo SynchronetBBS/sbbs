@@ -862,6 +862,7 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
     bbs_log=INVALID_HANDLE_VALUE;
     event_log=INVALID_HANDLE_VALUE;
     ftp_log=INVALID_HANDLE_VALUE;
+    web_log=INVALID_HANDLE_VALUE;    
     mail_log=INVALID_HANDLE_VALUE;
     services_log=INVALID_HANDLE_VALUE;
 
@@ -1062,7 +1063,12 @@ BOOL StartNTsvc(SC_HANDLE svc, SERVICE_STATUS* status, QUERY_SERVICE_CONFIG* con
     	return(FALSE);
     if(status->dwCurrentState!=SERVICE_STOPPED)
     	return(TRUE);
-    return startService(svc,0,NULL);
+    if(!startService(svc,0,NULL))
+       	Application->MessageBox(AnsiString("ERROR " + IntToStr(GetLastError()) +
+            " starting " + config->lpDisplayName).c_str()
+            ,"ERROR"
+            ,MB_OK|MB_ICONEXCLAMATION);
+    return(TRUE);
 }
 //---------------------------------------------------------------------------
 void __fastcall TMainForm::TelnetStartExecute(TObject *Sender)
@@ -3608,6 +3614,9 @@ void __fastcall TMainForm::LogTimerTick(TObject *Sender)
 
 	while(GetServerLogLine(ftp_log,NTSVC_NAME_FTP,line,sizeof(line)))
     	ftp_lputs(NULL,LOG_INFO,line);
+
+	while(GetServerLogLine(web_log,NTSVC_NAME_WEB,line,sizeof(line)))
+    	web_lputs(NULL,LOG_INFO,line);
 
 	while(GetServerLogLine(mail_log,NTSVC_NAME_MAIL,line,sizeof(line)))
     	mail_lputs(NULL,LOG_INFO,line);
