@@ -887,7 +887,7 @@ void sbbs_t::errormsg(int line, char *source, char action, char *object
 	bprintf("\7\r\n          object: %s",object);
 	bprintf("\7\r\n          access: %ld",access);
 	if(access>9 && (long)access!=-1 && (short)access!=-1 && (char)access!=-1)
-		bprintf(" (%lXh)",access);
+		bprintf(" (0x%lX)",access);
 	if(cfg.sys_misc&SM_ERRALARM) {
 		sbbs_beep(500,220); sbbs_beep(250,220);
 		sbbs_beep(500,220); sbbs_beep(250,220);
@@ -900,7 +900,7 @@ void sbbs_t::errormsg(int line, char *source, char action, char *object
 		"    object: %s\r\n    access: %ld"
 		,source,line,actstr,object,access);
 	if(access>9 && (long)access!=-1 && (short)access!=-1 && (char)access!=-1) {
-		sprintf(tmp," (%lXh)",access);
+		sprintf(tmp," (0x%lX)",access);
 		strcat(str,tmp); }
 	if(extinfo!=NULL) {
 		sprintf(tmp,"\r\n      info: %s",extinfo);
