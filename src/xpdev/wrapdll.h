@@ -45,8 +45,8 @@
 	#undef DLLCALL
 #endif
 
-#if defined(_WIN32) && defined(_DLL)
-	#if defined(WRAPPER_DLL)
+#if defined(_WIN32) && defined(WRAPPER_DLL)
+	#if defined(WRAPPER_EXPORTS)
 		#define DLLEXPORT	__declspec(dllexport)
 	#else
 		#define DLLEXPORT	__declspec(dllimport)
