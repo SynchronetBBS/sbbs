@@ -1626,7 +1626,7 @@ BOOL DLLCALL chk_ar(scfg_t* cfg, uchar *ar, user_t* user)
 
 	if(ar==NULL)
 		return(TRUE);
-	if(!VALID_CFG(cfg) || user==NULL)
+	if(!VALID_CFG(cfg))
 		return(FALSE);
 	p=ar;
 	return(ar_exp(cfg,&p,user));
