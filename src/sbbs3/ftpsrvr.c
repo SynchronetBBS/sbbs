@@ -2956,7 +2956,7 @@ static void ctrl_thread(void* arg)
 
 			if(!stricmp(cmd,"CDUP") || !stricmp(cmd,"XCUP")) {
 				sprintf(path,"%s..",local_dir);
-				if(_fullpath(local_dir,path,sizeof(local_dir))==NULL)
+				if(FULLPATH(local_dir,path,sizeof(local_dir))==NULL)
 					sockprintf(sock,"550 Directory does not exist.");
 				else
 					sockprintf(sock,"200 CDUP command successful.");

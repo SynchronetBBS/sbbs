@@ -407,7 +407,7 @@ read_node_cfg(&cfg,txt);
 if(ctrl_dir[0]=='.') {   /* Relative path */
 	strcpy(str,ctrl_dir);
 	sprintf(ctrl_dir,"%s%s",node_dir,str);
-	if(_fullpath(str,ctrl_dir,40))
+	if(FULLPATH(str,ctrl_dir,40))
 		strcpy(ctrl_dir,str); }
 backslash(ctrl_dir);
 
@@ -415,7 +415,7 @@ read_main_cfg(&cfg,txt);
 if(data_dir[0]=='.') {   /* Relative path */
 	strcpy(str,data_dir);
 	sprintf(data_dir,"%s%s",node_dir,str);
-	if(_fullpath(str,data_dir,40))
+	if(FULLPATH(str,data_dir,40))
 		strcpy(data_dir,str); }
 backslash(data_dir);
 read_msgs_cfg(txt);

@@ -272,7 +272,7 @@ for(i=j=0;i<len && j<128;i++) {
                 if(cfg->temp_dir[0]!='\\' && cfg->temp_dir[1]!=':') {
                     strcpy(str,cfg->node_dir);
                     strcat(str,cfg->temp_dir);
-                    if(_fullpath(str2,str,40))
+                    if(FULLPATH(str2,str,40))
                         strcpy(str,str2);
                     backslash(str);
                     strcat(cmd,str);}
@@ -283,7 +283,7 @@ for(i=j=0;i<len && j<128;i++) {
                 if(cfg->data_dir[0]!='\\' && cfg->data_dir[1]!=':') {
                     strcpy(str,cfg->node_dir);
                     strcat(str,cfg->data_dir);
-                    if(_fullpath(str2,str,40))
+                    if(FULLPATH(str2,str,40))
                         strcpy(str,str2);
                     backslash(str);
                     strcat(cmd,str); }
@@ -294,7 +294,7 @@ for(i=j=0;i<len && j<128;i++) {
                 if(cfg->ctrl_dir[0]!='\\' && cfg->ctrl_dir[1]!=':') {
                     strcpy(str,cfg->node_dir);
                     strcat(str,cfg->ctrl_dir);
-                    if(_fullpath(str2,str,40))
+                    if(FULLPATH(str2,str,40))
                         strcpy(str,str2);
                     backslash(str);
                     strcat(cmd,str); }
@@ -317,7 +317,7 @@ for(i=j=0;i<len && j<128;i++) {
                 if(cfg->exec_dir[0]!='\\' && cfg->exec_dir[1]!=':') {
                     strcpy(str,cfg->node_dir);
                     strcat(str,cfg->exec_dir);
-                    if(_fullpath(str2,str,40))
+                    if(FULLPATH(str2,str,40))
                         strcpy(str,str2);
                     backslash(str);
                     strcat(cmd,str); }
