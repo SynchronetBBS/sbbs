@@ -95,7 +95,7 @@ int main()
 	}
 	write(fd,"lock testing\n",LOCK_LEN);
 	if(lock(fd,LOCK_OFFSET,LOCK_LEN)==0)
-		printf("SUCCESS: lock() succeeds\n");
+		printf("lock() succeeds\n");
 	else
 		printf("!FAILURE: lock() non-functional (or file already locked)\n");
 	if(lock(fd,LOCK_OFFSET,LOCK_LEN)==0)  {
@@ -115,16 +115,16 @@ int main()
 		printf("?? Skipping some tests due to inability to detect own locks\n");
 	else  {
 		if(lock(fd,LOCK_OFFSET,LOCK_LEN))
-			printf("SUCCESS: Locks in first thread survive open()/close() in other thread\n");
+			printf("Locks in first thread survive open()/close() in other thread\n");
 		else
 			printf("!FAILURE: lock() in first thread lost by open()/close() in other thread\n");
 		if(lock(fd,LOCK_OFFSET+LOCK_LEN+1,LOCK_LEN))
 			printf("!FAILURE: file locking\n");
 		else
-			printf("SUCCESS: Record locking\n");
+			printf("Record locking\n");
 	}
 	if((fd2=sopen(LOCK_FNAME,O_RDWR,SH_DENYRW))==-1) {
-		printf("SUCCESS: Cannot reopen SH_DENYRW while lock is held\n");
+		printf("Cannot reopen SH_DENYRW while lock is held\n");
 		close(fd2);
 	}
 	else  {
@@ -133,7 +133,7 @@ int main()
 	if(unlock(fd,LOCK_OFFSET,LOCK_LEN))
 		printf("!FAILURE: unlock() non-functional\n");
 	if(lock(fd,LOCK_OFFSET+LOCK_LEN+1,LOCK_LEN))
-		printf("SUCCESS: Cannot re-lock after non-overlapping unlock()\n");
+		printf("Cannot re-lock after non-overlapping unlock()\n");
 	else
 		printf("!FAILURE: can re-lock after non-overlappping unlock()\n");
 	if(lock(fd,LOCK_OFFSET,LOCK_LEN))
@@ -299,11 +299,11 @@ static void lock_test_thread(void* arg)
 	if(lock(fd,LOCK_OFFSET,LOCK_LEN)==0)
 		printf("!FAILURE: Lock not effective between threads\n");
 	else
-		printf("SUCCESS: Locks effective between threads\n");
+		printf("Locks effective between threads\n");
 	close(fd);
 	fd=sopen(LOCK_FNAME,O_RDWR,SH_DENYNO);
 	if(lock(fd,LOCK_OFFSET,LOCK_LEN))
-		printf("SUCCESS: Locks survive file open()/close() in other thread\n");
+		printf("Locks survive file open()/close() in other thread\n");
 	else
 		printf("!FAILURE: Locks do not survive file open()/close() in other thread\n");
 	close(fd);
@@ -318,7 +318,7 @@ static void sopen_test_thread(void* arg)
 	else if((fd=sopen(LOCK_FNAME,O_RDWR,SH_DENYRW))!=-1)
 		printf("!FAILURE: allowed to reopen with SH_DENYRW\n");
 	else
-		printf("SUCCESS: reopen disallowed\n");
+		printf("reopen disallowed\n");
 
 	if(fd!=-1)
 		close(fd);
