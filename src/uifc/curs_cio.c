@@ -5,10 +5,11 @@
 
 #include "ciowrap.h"
 #undef getch			/* I'm going to need to use the real getch() in here */
+#undef beep				/* I'm going to need to use the real beep() in here */
 #include "curs_cio.h"
 #include "uifc.h"		/* UIFC_IBM */
 
-static int curs_nextgetch=0;
+static unsigned char curs_nextgetch=0;
 
 static int lastattr=0;
 static long mode;
@@ -588,9 +589,8 @@ int curs_cprintf(char *fmat, ...)
     va_end(argptr);
 	for(pos=0;str[pos];pos++)
 	{
-		_putch(str[pos],FALSE);
+		putch(str[pos]);
 	}
-	refresh();
     return(1);
 }
 
@@ -600,9 +600,8 @@ void curs_cputs(unsigned char *str)
 
 	for(pos=0;str[pos];pos++)
 	{
-		_putch(str[pos],FALSE);
+		putch(str[pos]);
 	}
-	refresh();
 }
 
 void curs_gotoxy(int x, int y)
@@ -679,7 +678,34 @@ void curs_clreol(void)
 
 void curs_putch(unsigned char c)
 {
-	_putch(c,TRUE);
+	struct text_info ti;
+
+	switch(c) {
+		case '\r':
+			curs_gotoxy(1,curs_wherey());
+			break;
+		case '\n':
+			curs_gettextinfo(&ti);
+			if(curs_wherey()==ti.screenheight) {
+				scrollok(stdscr,TRUE);
+				scroll(stdscr);
+				scrollok(stdscr,FALSE);
+			}
+			else {
+				curs_gotoxy(curs_wherex(),curs_wherey()+1);
+			}
+			break;
+		case 0x07:
+			beep();
+			break;
+		case 0x08:
+			curs_gotoxy(curs_wherex()-1,curs_wherey());
+			_putch(' ',FALSE);
+			curs_gotoxy(curs_wherex()-1,curs_wherey());
+			break;
+		default:
+			_putch(c,TRUE);
+	}
 }
 
 int curs_getch(void)
@@ -692,8 +718,180 @@ int curs_getch(void)
 	}
 	else {
 		while((ch=getch())==ERR) {
-			SLEEP(1);
+			curs_delay(1);
 		}
-		
+		if(ch & KEY_CODE_YES) {
+			switch(ch) {
+				case KEY_DOWN:            /* Down-arrow */
+					curs_nextgetch=0x50;
+					ch=0;
+					break;
+
+				case KEY_UP:		/* Up-arrow */
+					curs_nextgetch=0x48;
+					ch=0;
+					break;
+
+				case KEY_LEFT:		/* Left-arrow */
+					curs_nextgetch=0x4b;
+					ch=0;
+					break;
+
+				case KEY_RIGHT:            /* Right-arrow */
+					curs_nextgetch=0x4d;
+					ch=0;
+					break;
+
+				case KEY_HOME:            /* Home key (upward+left arrow) */
+					curs_nextgetch=0x47;
+					ch=0;
+					break;
+
+				case KEY_BACKSPACE:            /* Backspace (unreliable) */
+					ch=8;
+					break;
+
+				case KEY_F(1):			/* Function Key */
+					curs_nextgetch=0x3b;
+					ch=0;
+					break;
+
+				case KEY_F(2):			/* Function Key */
+					curs_nextgetch=0x3c;
+					ch=0;
+					break;
+
+				case KEY_F(3):			/* Function Key */
+					curs_nextgetch=0x3d;
+					ch=0;
+					break;
+
+				case KEY_F(4):			/* Function Key */
+					curs_nextgetch=0x3e;
+					ch=0;
+					break;
+
+				case KEY_F(5):			/* Function Key */
+					curs_nextgetch=0x3f;
+					ch=0;
+					break;
+
+				case KEY_F(6):			/* Function Key */
+					curs_nextgetch=0x40;
+					ch=0;
+					break;
+
+				case KEY_F(7):			/* Function Key */
+					curs_nextgetch=0x41;
+					ch=0;
+					break;
+
+				case KEY_F(8):			/* Function Key */
+					curs_nextgetch=0x42;
+					ch=0;
+					break;
+
+				case KEY_F(9):			/* Function Key */
+					curs_nextgetch=0x43;
+					ch=0;
+					break;
+
+				case KEY_F(10):			/* Function Key */
+					curs_nextgetch=0x44;
+					ch=0;
+					break;
+
+				case KEY_F(11):			/* Function Key */
+					curs_nextgetch=0x57;
+					ch=0;
+					break;
+
+				case KEY_F(12):			/* Function Key */
+					curs_nextgetch=0x58;
+					ch=0;
+					break;
+
+				case KEY_DC:            /* Delete character */
+					curs_nextgetch=0x53;
+					ch=0;
+					break;
+
+				case KEY_IC:            /* Insert char or enter insert mode */
+					curs_nextgetch=0x52;
+					ch=0;
+					break;
+
+				case KEY_EIC:            /* Exit insert char mode */
+					curs_nextgetch=0x52;
+					ch=0;
+					break;
+
+				case KEY_NPAGE:            /* Next page */
+					curs_nextgetch=0x51;
+					ch=0;
+					break;
+
+				case KEY_PPAGE:            /* Previous page */
+					curs_nextgetch=0x49;
+					ch=0;
+					break;
+
+				case KEY_ENTER:            /* Enter or send (unreliable) */
+					curs_nextgetch=0x0d;
+					ch=0;
+					break;
+
+				case KEY_A1:		/* Upper left of keypad */
+					curs_nextgetch=0x47;
+					ch=0;
+					break;
+
+				case KEY_A3:		/* Upper right of keypad */
+					curs_nextgetch=0x49;
+					ch=0;
+					break;
+
+				case KEY_B2:		/* Center of keypad */
+					curs_nextgetch=0x4c;
+					ch=0;
+					break;
+
+				case KEY_C1:		/* Lower left of keypad */
+					curs_nextgetch=0x4f;
+					ch=0;
+					break;
+
+				case KEY_C3:		/* Lower right of keypad */
+					curs_nextgetch=0x51;
+					ch=0;
+					break;
+
+				case KEY_BEG:		/* Beg (beginning) */
+					curs_nextgetch=0x47;
+					ch=0;
+					break;
+
+				case KEY_CANCEL:		/* Cancel */
+					curs_nextgetch=0x03;
+					ch=0;
+					break;
+
+				case KEY_END:		/* End */
+					curs_nextgetch=0x4f;
+					ch=0;
+					break;
+
+				case KEY_SELECT:		/* Select  - Is "End" in X */
+					curs_nextgetch=0x4f;
+					ch=0;
+					break;
+
+				default:
+					curs_nextgetch=0xff;
+					ch=0;
+					break;
+			}
+		}
 	}
+	return(ch);
 }

@@ -26,6 +26,7 @@ void curs_setcursortype(int type);
 void curs_textbackground(int colour);
 void curs_textcolor(int colour);
 void curs_clreol(void);
+int curs_getch(void);
 #ifdef __cplusplus
 }
 #endif
