@@ -24,7 +24,7 @@ endif
 #USE_FLTK =	1	# Use Windowed version
 USE_CURSES	=	1	# Curses version of UIFC
 CC		=	gcc
-CCPP		=	gcc
+CCPP		=	g++
 SLASH	=	/
 OFILE	=	o
 UIFC	=	../../uifc
@@ -115,7 +115,7 @@ $(SCFG): $(OBJS)
 	@$(MAKE) --no-print-directory -C ../../libdialog
    endif
 	@echo Linking $@
-	@$(CC) -o $@ $(OBJS) $(LFLAGS)
+	@$(CCPP) -o $@ $(OBJS) $(LFLAGS)
 
 # Auto-dependency files (should go in output dir, but gcc v2.9.5 puts in cwd)
 -include ./*.d
