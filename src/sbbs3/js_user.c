@@ -639,8 +639,8 @@ js_chk_ar(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 }
 
 static jsMethodSpec js_user_functions[] = {
-	{"compare_ars",	js_chk_ar,			1,	JSTYPE_BOOLEAN,	"string ars"
-	,"Verify user meets access requirements string"
+	{"compare_ars",	js_chk_ar,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("string ars")
+	,JSDOCSTR("Verify user meets access requirements string")
 	},		
 	{0}
 };

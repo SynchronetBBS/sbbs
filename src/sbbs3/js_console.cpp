@@ -1014,14 +1014,14 @@ static jsMethodSpec js_console_functions[] = {
 	{"ansi",			js_ansi,			1, JSTYPE_STRING,	JSDOCSTR("number attribute")
 	,JSDOCSTR("returns ANSI encoding of specified attribute")
 	},		
-	{"ansi_save",		js_ansi_save,		0, JSTYPE_VOID,		""
-	,JSDOCSTR("Save current cursor position")
-	},
 	{"ansi_pushxy",		js_ansi_save,		0, JSTYPE_ALIAS	},
-	{"ansi_restore",	js_ansi_restore,	0, JSTYPE_VOID,		""
-	,JSDOCSTR("Restore saved cursor position")
+	{"ansi_save",		js_ansi_save,		0, JSTYPE_VOID,		""
+	,JSDOCSTR("save current cursor position (AKA ansi_pushxy)")
 	},
 	{"ansi_popxy",		js_ansi_restore,	0, JSTYPE_ALIAS },
+	{"ansi_restore",	js_ansi_restore,	0, JSTYPE_VOID,		""
+	,JSDOCSTR("restore saved cursor position (AKA ansi_popxy)")
+	},
 	{"ansi_gotoxy",		js_ansi_gotoxy,		2, JSTYPE_VOID,		JSDOCSTR("number x,y")
 	,JSDOCSTR("Move cursor to a specific screen coordinate (ANSI)")
 	},

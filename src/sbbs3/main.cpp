@@ -562,12 +562,24 @@ js_prompt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 }
 
 static jsMethodSpec js_global_functions[] = {
-	{"log",				js_log,				1,	JSTYPE_VOID,	"string text [,text]",				"Log a string"								},
-    {"print",           js_print,           0,	JSTYPE_VOID,	"string text [,test]",				"Print a string, auto-crlf"					},
-    {"printf",          js_printf,          1,	JSTYPE_VOID,	"string format [,value][,value]",	"Print a formatted string"					},	
-	{"alert",			js_alert,			1,	JSTYPE_VOID,	"string text",						"Print an alert message (ala client-side)"	},
-	{"prompt",			js_prompt,			1,	JSTYPE_STRING,	"string text",						"Prompt for a user string  (ala clent-side)"},
-	{"confirm",			js_confirm,			1,	JSTYPE_BOOLEAN,	"string text",						"Confirm a question (ala client-side)"		},
+	{"log",				js_log,				1,	JSTYPE_VOID,	JSDOCSTR("string text [,text]")
+	,JSDOCSTR("Log a string")
+	},
+    {"print",           js_print,           0,	JSTYPE_VOID,	JSDOCSTR("string text [,test]")
+	,JSDOCSTR("Print a string, auto-crlf")
+	},
+    {"printf",          js_printf,          1,	JSTYPE_VOID,	JSDOCSTR("string format [,value][,value]")
+	,JSDOCSTR("Print a formatted string")
+	},	
+	{"alert",			js_alert,			1,	JSTYPE_VOID,	JSDOCSTR("string text")
+	,JSDOCSTR("Print an alert message (ala client-side)")
+	},
+	{"prompt",			js_prompt,			1,	JSTYPE_STRING,	JSDOCSTR("string text")
+	,JSDOCSTR("Prompt for a user string  (ala clent-side)")
+	},
+	{"confirm",			js_confirm,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("string text")
+	,JSDOCSTR("Confirm a question (ala client-side)")
+	},
     {0}
 };
 

@@ -1273,7 +1273,7 @@ JSObject* DLLCALL js_CreateSystemObject(JSContext* cx, JSObject* parent
 			return(NULL);
 
 #ifdef _DEBUG
-		js_CreateArrayOfStrings(cx, sysobj, "_property_desc_list", node_prop_desc, JSPROP_READONLY);
+		js_CreateArrayOfStrings(cx, nodeobj, "_property_desc_list", node_prop_desc, JSPROP_READONLY);
 #endif
 
 		val=OBJECT_TO_JSVAL(nodeobj);

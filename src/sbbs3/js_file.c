@@ -871,55 +871,55 @@ static JSClass js_file_class = {
 };
 
 static jsMethodSpec js_file_functions[] = {
-	{"open",			js_open,			1,	JSTYPE_BOOLEAN,	"[string mode, boolean shareable, number buflen]"
-	,"open file (w/mode) [buffered]"
+	{"open",			js_open,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("[string mode, boolean shareable, number buflen]")
+	,JSDOCSTR("open file (w/mode) [buffered]")
 	},		
 	{"close",			js_close,			0,	JSTYPE_VOID,	""
-	,"close file"
+	,JSDOCSTR("close file")
 	},		
-	{"delete",			js_delete,			0,	JSTYPE_BOOLEAN, ""
-	,"Remove the file from the disk"
-	},
 	{"remove",			js_delete,			0,	JSTYPE_ALIAS },
-	{"clear_error",		js_clear_error,		0,	JSTYPE_BOOLEAN, ""
-	,"Clears the current error value"
+	{"delete",			js_delete,			0,	JSTYPE_BOOLEAN, ""
+	,JSDOCSTR("Remove the file from the disk (AKA remove)")
 	},
 	{"clearError",		js_clear_error,		0,	JSTYPE_ALIAS },
+	{"clear_error",		js_clear_error,		0,	JSTYPE_BOOLEAN, ""
+	,JSDOCSTR("Clears the current error value (AKA clearError)")
+	},
 	{"flush",			js_flush,			0,	JSTYPE_BOOLEAN,	""
-	,"flush buffers"
+	,JSDOCSTR("flush buffers")
 	},
-	{"lock",			js_lock,			2,	JSTYPE_BOOLEAN,	"[offset, length]"
-	,"lock file record"
+	{"lock",			js_lock,			2,	JSTYPE_BOOLEAN,	JSDOCSTR("[offset, length]")
+	,JSDOCSTR("lock file record")
 	},		
-	{"unlock",			js_unlock,			2,	JSTYPE_BOOLEAN,	"[offset, length]"
-	,"unlock file record"
+	{"unlock",			js_unlock,			2,	JSTYPE_BOOLEAN,	JSDOCSTR("[offset, length]")
+	,JSDOCSTR("unlock file record")
 	},		
-	{"read",			js_read,			0,	JSTYPE_STRING,	"[number maxlen]"
-	,"read a string from file, maxlen defaults to 512 characters"
+	{"read",			js_read,			0,	JSTYPE_STRING,	JSDOCSTR("[number maxlen]")
+	,JSDOCSTR("read a string from file, maxlen defaults to 512 characters")
 	},
-	{"readln",			js_readln,			0,	JSTYPE_STRING,	"[number maxlen]"
-	,"read a line-feed terminated string, maxlen defaults 512 characters"
+	{"readln",			js_readln,			0,	JSTYPE_STRING,	JSDOCSTR("[number maxlen]")
+	,JSDOCSTR("read a line-feed terminated string, maxlen defaults 512 characters")
 	},		
-	{"readBin",			js_readbin,			0,	JSTYPE_NUMBER,	"[number bytes]"
-	,"read a binary integer from the file, default number of bytes is 4 (32-bits)"
+	{"readBin",			js_readbin,			0,	JSTYPE_NUMBER,	JSDOCSTR("[number bytes]")
+	,JSDOCSTR("read a binary integer from the file, default number of bytes is 4 (32-bits)")
 	},
 	{"readAll",			js_readall,			0,	JSTYPE_ARRAY,	""
-	,"read all lines into an array of strings"
+	,JSDOCSTR("read all lines into an array of strings")
 	},
-	{"write",			js_write,			1,	JSTYPE_BOOLEAN,	"string text [,number len]"
-	,"write a string to the file"
+	{"write",			js_write,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("string text [,number len]")
+	,JSDOCSTR("write a string to the file")
 	},
-	{"writeln",			js_writeln,			0,	JSTYPE_BOOLEAN, "[string text]"
-	,"write a line-feed terminated string to the file"
+	{"writeln",			js_writeln,			0,	JSTYPE_BOOLEAN, JSDOCSTR("[string text]")
+	,JSDOCSTR("write a line-feed terminated string to the file")
 	},
-	{"writeBin",		js_writebin,		1,	JSTYPE_BOOLEAN,	"number value [,number bytes]"
-	,"write a binary integer to the file, default number of bytes is 4 (32-bits)"
+	{"writeBin",		js_writebin,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("number value [,number bytes]")
+	,JSDOCSTR("write a binary integer to the file, default number of bytes is 4 (32-bits)")
 	},
-	{"writeAll",		js_writeall,		0,	JSTYPE_BOOLEAN,	"array lines"
-	,"write an array of strings to file"
+	{"writeAll",		js_writeall,		0,	JSTYPE_BOOLEAN,	JSDOCSTR("array lines")
+	,JSDOCSTR("write an array of strings to file")
 	},		
-	{"printf",			js_fprintf,			0,	JSTYPE_NUMBER,	"string format [,args]"
-	,"write a formatted string to the file"
+	{"printf",			js_fprintf,			0,	JSTYPE_NUMBER,	JSDOCSTR("string format [,args]")
+	,JSDOCSTR("write a formatted string to the file")
 	},		
 	{0}
 };
