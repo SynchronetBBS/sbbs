@@ -277,8 +277,8 @@ time_t juliantounix(ulong j)
 static void lfexpand(char *str, ulong misc)
 {
 	char *p;
-	char len=0;
 	char newstr[1024];
+	size_t len=0;
 
 	if(misc&XTRN_NATIVE)
 		return;
