@@ -1269,7 +1269,7 @@ int main(int argc, char** argv)
 		while(!bbs_stopped && !ftp_stopped && !mail_stopped && !services_stopped
 			&& ((run_bbs && !bbs_running) 
 				|| (run_ftp && !ftp_running) 
-				|| (web_ftp && !web_running) 
+				|| (run_web && !web_running) 
 				|| (run_mail && !mail_running) 
 				|| (run_services && !services_running)))
 			mswait(1);
