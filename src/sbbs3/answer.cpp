@@ -104,11 +104,9 @@ bool sbbs_t::answer()
 
 	if(!(sys_status&SS_RLOGIN)) {
 		/* Disable Telnet Terminal Echo */
-		sprintf(str,"%c%c%c",TELNET_IAC,TELNET_WILL,TELNET_ECHO);
-		putcom(str,3);
+		send_telnet_cmd(TELNET_WILL,TELNET_ECHO);
 		/* Will suppress Go Ahead */
-		sprintf(str,"%c%c%c",TELNET_IAC,TELNET_WILL,TELNET_SUP_GA);
-		putcom(str,3);
+		send_telnet_cmd(TELNET_WILL,TELNET_SUP_GA);
 	}
 
 	/* Detect terminal type */

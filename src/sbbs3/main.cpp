@@ -787,8 +787,7 @@ static BOOL winsock_startup(void)
 
 #endif
 
-
-BYTE* telnet_interpret(sbbs_t* sbbs, BYTE* inbuf, int inlen,
+static BYTE* telnet_interpret(sbbs_t* sbbs, BYTE* inbuf, int inlen,
   									BYTE* outbuf, int& outlen)
 {
 	char	str[32];
@@ -862,10 +861,8 @@ BYTE* telnet_interpret(sbbs_t* sbbs, BYTE* inbuf, int inlen,
 						sbbs->telnet_mode|=TELNET_MODE_ECHO;
 					else if(sbbs->telnet_cmd[1]==TELNET_DONT) {
 						sbbs->telnet_mode&=~TELNET_MODE_ECHO;
-						if(!(sbbs->telnet_mode&TELNET_MODE_GATE)) {
-							sprintf(str,"%c%c%c",TELNET_IAC,TELNET_WILL,TELNET_ECHO);
-							sbbs->putcom(str,3);
-						}
+						if(!(sbbs->telnet_mode&TELNET_MODE_GATE))
+							sbbs->send_telnet_cmd(TELNET_WILL,TELNET_ECHO);
 					}
 				}
 				if(startup->options&BBS_OPT_DEBUG_TELNET)
@@ -882,6 +879,28 @@ BYTE* telnet_interpret(sbbs_t* sbbs, BYTE* inbuf, int inlen,
         	outbuf[outlen++]=inbuf[i];
     }
     return(outbuf);
+}
+
+void sbbs_t::send_telnet_cmd(uchar cmd, uchar opt)
+{
+	char buf[16];
+
+	if(cmd<TELNET_WILL) {
+		if(startup->options&BBS_OPT_DEBUG_TELNET)
+            lprintf("Node %d sending telnet cmd: %s"
+	            ,cfg.node_num
+                ,telnet_cmd_desc(cmd));
+		sprintf(buf,"%c%c",TELNET_IAC,cmd);
+		putcom(buf,2);
+	} else {
+		if(startup->options&BBS_OPT_DEBUG_TELNET)
+			lprintf("Node %d sending telnet cmd: %s %s"
+				,cfg.node_num
+				,telnet_cmd_desc(cmd)
+				,telnet_opt_desc(opt));
+		sprintf(buf,"%c%c%c",TELNET_IAC,cmd,opt);
+		putcom(buf,3);
+	}
 }
 
 void input_thread(void *arg)

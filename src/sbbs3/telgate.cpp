@@ -223,8 +223,7 @@ void sbbs_t::telnet_gate(char* destaddr, ulong mode)
 	telnet_mode&=~TELNET_MODE_GATE;
 
 	/* Disable Telnet Terminal Echo */
-	sprintf(str,"%c%c%c",TELNET_IAC,TELNET_WILL,TELNET_ECHO);
-	putcom(str,3);
+	send_telnet_cmd(TELNET_WILL,TELNET_ECHO);
 
 	close_socket(remote_socket);
 

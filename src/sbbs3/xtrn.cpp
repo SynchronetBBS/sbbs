@@ -838,8 +838,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 
 						// Let's make sure the socket is up
 						// Sending will trigger a socket d/c detection
-						sprintf(str,"%c%c",TELNET_IAC,TELNET_GA);
-						putcom(str,2);
+						send_telnet_cmd(TELNET_GA,0);
 
 						// Check if the node has been interrupted
 						getnodedat(cfg.node_num,&thisnode,0);
@@ -898,8 +897,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 		rio_abortable=rio_abortable_save;	// Restore abortable state
 
 		/* Got back to Text/NVT mode */
-		sprintf(str,"%c%c%c",TELNET_IAC,TELNET_DONT,TELNET_BINARY);
-		putcom(str,3);
+		send_telnet_cmd(TELNET_DONT,TELNET_BINARY);
 		telnet_mode&=~TELNET_MODE_BIN_RX;
 	}
 
