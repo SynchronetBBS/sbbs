@@ -177,7 +177,7 @@ vpath %.c $(XPDEV) $(UIFC)
 vpath %.cpp $(UIFC)
 
 LFLAGS		+=	-L./$(LIBODIR)
-LDFLAGS		:=	$(LFLAGS) -rpath-link ./$(LIBODIR) -rpath ./
+SBBSLDFLAGS	:=	$(LFLAGS) -rpath-link ./$(LIBODIR) -rpath ./
 LFLAGS		+=	-Wl,-rpath-link,./$(LIBODIR),-rpath,./
 
 # Implicit C Compile Rule for utils
@@ -216,6 +216,10 @@ $(EXEODIR):
 
 CON_OBJS	= $(EXEODIR)/sbbscon.o $(EXEODIR)/conwrap.o \
 		  $(EXEODIR)/sbbs_ini.o
+FTPCON_OBJS	= $(EXEODIR)/sbbsftp.o $(EXEODIR)/conwrap.o \
+		  $(EXEODIR)/sbbs_ini.o
+WEBCON_OBJS	= $(EXEODIR)/sbbsweb.o $(EXEODIR)/conwrap.o \
+		  $(EXEODIR)/sbbs_ini.o
 CON_LDFLAGS	= -lftpsrvr -lwebsrvr -lmailsrvr -lservices
 FTP_OBJS	= $(LIBODIR)/ftpsrvr.o
 MAIL_OBJS	= $(LIBODIR)/mailsrvr.o $(LIBODIR)/mxlookup.o \
@@ -243,35 +247,35 @@ FORCE$(SBBS): $(OBJS) $(LIBS)
 
 $(SBBS): $(OBJS) $(LIBS)
 	@echo Linking $@
-	@$(LD) $(LDFLAGS) -S -o $(SBBS) $^ -shared -o $@
+	@$(CCPP) $(LFLAGS) -o $(SBBS) $^ -shared -o $@
 
 # FTP Server Link Rule
 FORCE$(FTPSRVR): $(LIBODIR)/ftpsrvr.o $(SBBSLIB)
 
 $(FTPSRVR): $(LIBODIR)/ftpsrvr.o $(SBBSLIB)
 	@echo Linking $@
-	$(LD) $(LDFLAGS) -S $^ $(LIBS) -shared -o $@ 
+	$(LD) $(SBBSLDFLAGS) -S $^ $(LIBS) -shared -o $@ 
 
 # Mail Server Link Rule
 FORCE$(MAILSRVR): $(MAIL_OBJS) $(LIBODIR)$(SLASH)$(SBBSLIB)
 
 $(MAILSRVR): $(MAIL_OBJS) $(SBBSLIB)
 	@echo Linking $@
-	@$(LD) $(LDFLAGS) -S $^ $(LIBS) -shared -o $@
+	@$(LD) $(SBBSLDFLAGS) -S $^ $(LIBS) -shared -o $@
 
 # Mail Server Link Rule
 FORCE$(WEBSRVR): $(WEB_OBJS) $(SBBSLIB)
 
 $(WEBSRVR): $(WEB_OBJS) $(SBBSLIB)
 	@echo Linking $@
-	@$(LD) $(LDFLAGS) -S $^ $(LIBS) -shared -o $@
+	@$(LD) $(SBBSLDFLAGS) -S $^ $(LIBS) -shared -o $@
 
 # Services Link Rule
 FORCE$(SERVICES): $(WEB_OBJS) $(SBBSLIB)
 
 $(SERVICES): $(SERVICE_OBJS) $(SBBSLIB)
 	@echo Linking $@
-	@$(LD) $(LDFLAGS) -S $^ $(LIBS) -shared -o $@
+	@$(LD) $(SBBSLDFLAGS) -S $^ $(LIBS) -shared -o $@
 
 # Synchronet Console Build Rule
 FORCE$(SBBSCON): $(CON_OBJS) $(SBBSLIB) $(FTP_OBJS) $(MAIL_OBJS) $(WEB_OBJS) $(SERVICE_OBJS)
