@@ -1,6 +1,6 @@
 // Use guest user if the current user is super-duper
-if(user.number==0)
-	login("Guest");
+if(user.number==0 && this.login!=undefined)
+	login("Guest");	// requires v3.12b+
 if(user.number==0)
 	exit();
 
