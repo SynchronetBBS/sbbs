@@ -254,7 +254,6 @@ typedef struct {
 	unsigned	send_timeout;
 	unsigned	recv_timeout;
 	unsigned	max_errors;
-	time_t		progress_interval;
 
 	/* Callbacks */
 	void*		cbdata;
