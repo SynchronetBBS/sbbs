@@ -916,6 +916,19 @@ js_xtrn_sec(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	return(JS_TRUE);
 }
 
+static JSBool
+js_xfer_policy(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	sbbs->xfer_policy();
+
+	*rval = JSVAL_VOID;
+	return(JS_TRUE);
+}
 
 static JSBool
 js_user_config(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
@@ -1330,6 +1343,7 @@ static JSFunctionSpec js_bbs_functions[] = {
 	{"automsg",			js_automsg,			0},		// edit/create auto-message
 	{"text_sec",		js_text_sec,		0},		// text section
 	{"xtrn_sec",		js_xtrn_sec,		0},		// external programs section
+	{"xfer_policy",		js_xfer_policy,		0},		// display file transfer policy
 	{"user_config",		js_user_config,		0},		// user config
 	{"sys_info",		js_sys_info,		0},		// system info
 	{"sub_info",		js_sub_info,		0},		// sub-board info
