@@ -253,8 +253,14 @@ This is the internal code for the timed event.
 		sprintf(opt[k++],"%-32.32s%.40s","Command Line",cfg.event[i]->cmd);
 		sprintf(opt[k++],"%-32.32s%u","Execution Node",cfg.event[i]->node);
 		sprintf(opt[k++],"%-32.32s%s","Execution Days",daystr(cfg.event[i]->days));
-		sprintf(opt[k++],"%-32.32s%02u:%02u","Execution Time"
-			,cfg.event[i]->time/60,cfg.event[i]->time%60);
+        if(cfg.event[i]->freq) {
+            sprintf(str,"%u times a day",1440/cfg.event[i]->freq);
+            sprintf(opt[k++],"%-32.32s%s","Execution Frequency",str);
+        } else {
+            sprintf(str,"%2.2u:%2.2u"
+                ,cfg.event[i]->time/60,cfg.event[i]->time%60);
+            sprintf(opt[k++],"%-32.32s%s","Execution Time",str);
+        }
 		sprintf(opt[k++],"%-32.32s%s","Requires Exclusive Execution"
 			,cfg.event[i]->misc&EVENT_EXCL ? "Yes":"No");
 		sprintf(opt[k++],"%-32.32s%s","Force Users Off-line For Event"
@@ -360,6 +366,7 @@ These are the days of the week that this event will be executed.
 					changes=1; }
 				break;
 			case 5:
+#if 0
 				sprintf(str,"%2.2d:%2.2d",cfg.event[i]->time/60
 					,cfg.event[i]->time%60);
 				SETHELP(WHERE);
@@ -375,6 +382,65 @@ This is the time (in 24 hour HH:MM format) to execute the event.
 					if((p=strchr(str,':'))!=NULL)
 						cfg.event[i]->time+=atoi(p+1); }
 				break;
+#else
+                if(cfg.event[i]->freq==0)
+                    k=0;
+                else
+                    k=1;
+                strcpy(opt[0],"Yes");
+                strcpy(opt[1],"No");
+                opt[2][0]=0;
+                savnum=2;
+                SETHELP(WHERE);
+/*
+Execute Event at a Specific Time:
+
+If you want the system execute this event at a specific time, set
+this option to Yes. If you want the system to execute this event more
+than once a day at predetermined intervals, set this option to No.
+*/
+                k=ulist(WIN_MID|WIN_SAV,0,0,0,&k,0
+                    ,"Execute Event at a Specific Time",opt);
+                if(k==0) {
+                    sprintf(str,"%2.2u:%2.2u",cfg.event[i]->time/60
+                        ,cfg.event[i]->time%60);
+                    SETHELP(WHERE);
+/*
+Time to Execute Event:
+
+This is the time (in 24 hour HH:MM format) to execute the event.
+*/
+                    if(uinput(WIN_MID|WIN_SAV,0,0
+                        ,"Time to Execute Event (HH:MM)"
+                        ,str,5,K_UPPER|K_EDIT)>0) {
+                        cfg.event[i]->freq=0;
+                        cfg.event[i]->time=atoi(str)*60;
+                        if((p=strchr(str,':'))!=NULL)
+                            cfg.event[i]->time+=atoi(p+1); } }
+                else if(k==1) {
+                    sprintf(str,"%u"
+                        ,cfg.event[i]->freq && cfg.event[i]->freq<=1440
+                            ? 1440/cfg.event[i]->freq : 0);
+                    SETHELP(WHERE);
+/*
+Number of Executions Per Day:
+
+This is the maximum number of times the system will execute this event
+per day.
+*/
+                    if(uinput(WIN_MID|WIN_SAV,0,0
+                        ,"Number of Executions Per Day"
+                        ,str,4,K_NUMBER|K_EDIT)>0) {
+                        cfg.event[i]->time=0;
+                        k=atoi(str);
+                        if(k && k<=1440)
+                            cfg.event[i]->freq=1440/k;
+                        else
+                            cfg.event[i]->freq=0;
+                        }
+                    }
+                break;
+#endif
 			case 6:
 				k=1;
 				strcpy(opt[0],"Yes");
@@ -1900,3 +1966,4 @@ abreviation of the name.
 				xtrn_cfg(i);
 				break; } } }
 }
+
