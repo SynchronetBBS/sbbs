@@ -1897,6 +1897,7 @@ static void smtp_thread(void* arg)
 						remove(proc_err_fname);
 						continue;
 					}
+					remove(proc_err_fname);	/* Remove 0-byte error file here */
 					if(!fexist(msgtxt_fname) || !fexist(rcptlst_fname)) {
 						lprintf("%04d SMTP external process removed %s"
 							,socket, fexist(msgtxt_fname)==FALSE ? "message text" : "recipient list");
