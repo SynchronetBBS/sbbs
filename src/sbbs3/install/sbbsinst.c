@@ -159,7 +159,8 @@ void allocfail(uint size)
 
 int main(int argc, char **argv)
 {
-	char	**mopt;
+	char**	mopt;
+	char*	p;
 	int 	i=0;
 	int		main_dflt=0;
 	char 	str[129];
@@ -180,8 +181,10 @@ int main(int argc, char **argv)
 	params.cvs=TRUE;
 	SAFECOPY(params.cvstag,"HEAD");
 	SAFECOPY(params.cvsroot,DEFAULT_CVSROOT);
-	SAFECOPY(params.sbbsuser,getenv("USER"));
-	SAFECOPY(params.sbbsgroup,getenv("GROUP"));
+	if((p=getenv("USER"))!=NULL)
+		SAFECOPY(params.sbbsuser,p);
+	if((p=getenv("GROUP"))!=NULL)
+		SAFECOPY(params.sbbsgroup,p);
 
     printf("\r\nSynchronet Installation Utility (%s)  v%s  Copyright 2003 "
         "Rob Swindell\r\n",PLATFORM_DESC,VERSION);
@@ -319,7 +322,7 @@ int main(int argc, char **argv)
 				if(distlist[dist]->type != LOCAL_FILE)  {
 					i=choose_server((char **)distlist[dist]->servers);
 					if(i>=0)
-						server=0;
+						server=i;
 				}
 				break;
 			case 2:
@@ -426,6 +429,13 @@ int main(int argc, char **argv)
 	}
 }
 
+/* Little wrapper for system calls */
+int exec(char* cmd)
+{
+	printf("%s\n",cmd);
+	return(system(cmd));
+}
+
 		/* Some jiggery-pokery here to avoid having to enter the CVS password */
 /*		fprintf(makefile,"\tif(grep '%s' -q ~/.cvspass) then echo \"%s A\" >> ~/.cvspass; fi\n",
  *				params.cvsroot,params.cvsroot);
@@ -440,13 +450,15 @@ void install_sbbs(dist_t *dist,struct server_ent_t *server)  {
 	char	dstfname[MAX_PATH+1];
 	char	sbbsdir[9+MAX_PATH];
 	char	cvstag[7+MAX_PATH];
-	char	buf[1024];
+	char	buf[4096];
 	char	url[MAX_PATH+1];
 	char	path[MAX_PATH+1];
-	char	sbbsuser[18];
-	char	sbbsgroup[43];
+	char	sbbsuser[128];
+	char	sbbsgroup[128];
 	int		i;
 	int		fout,ret1,ret2;
+	long	flen;
+	long	offset;
 	ftp_FILE	*remote;
 
 	if(params.debug)
@@ -459,11 +471,14 @@ void install_sbbs(dist_t *dist,struct server_ent_t *server)  {
 	
 	sprintf(sbbsdir,"SBBSDIR=%s",params.install_path);
 	putenv(sbbsdir);
-
-	sprintf(sbbsuser,"SBBSUSER=%s",params.sbbsuser);
-	putenv(sbbsuser);
-	sprintf(sbbsgroup,"SBBSGROUP=%s",params.sbbsgroup);
-	putenv(sbbsgroup);
+	if(params.sbbsuser[0]) {
+		sprintf(sbbsuser,"SBBSUSER=%s",params.sbbsuser);
+		putenv(sbbsuser);
+	}
+	if(params.sbbsgroup[0]) {
+		sprintf(sbbsgroup,"SBBSGROUP=%s",params.sbbsgroup);
+		putenv(sbbsgroup);
+	}
 
 	if(params.usebcc)
 		putenv("bcc=1");
@@ -485,12 +500,12 @@ void install_sbbs(dist_t *dist,struct server_ent_t *server)  {
 			sprintf(cvstag,"CVSTAG=%s",dist->tag);
 			putenv(cvstag);
 			sprintf(cmd,"cvs -d %s co -r %s install",server->addr,dist->tag);
-			if(system(cmd))  {
+			if(exec(cmd))  {
 				printf("Could not checkout install makefile.\n");
 				exit(EXIT_FAILURE);
 			}
 			sprintf(cmd,"%s %s",params.make_cmdline,dist->make_opts);
-			if(system(cmd))  {
+			if(exec(cmd))  {
 				printf(MAKE_ERROR);
 				exit(EXIT_FAILURE);
 			}
@@ -523,24 +538,37 @@ void install_sbbs(dist_t *dist,struct server_ent_t *server)  {
 						}
 					}
 				}
+				if((flen=ftpGetSize(remote,fname))<1)  {
+					printf("Cannot get size of distribution file: %s!\n",fname);
+					close(fout);
+					unlink(dstfname);
+					exit(EXIT_FAILURE);
+				}
+				printf("Downloading %s     ",url);
+				offset=0;
 				while((ret1=remote->read(remote,buf,sizeof(buf)))>0)  {
 					ret2=write(fout,buf,ret1);
 					if(ret2!=ret1)  {
-						printf("Error writing to %s\n",dstfname);
+						printf("\n!ERROR %d writing to %s\n",errno,dstfname);
 						close(fout);
 						unlink(dstfname);
 						exit(EXIT_FAILURE);
 					}
+					offset+=ret2;
+					printf("\b\b\b\b%3lu%%",(long)(((float)offset/(float)flen)*100.0));
+					fflush(stdout);
 				}
+				printf("\n");
+				fflush(stdout);
 				if(ret1<0)  {
-					printf("Error downloading %s\n",fname);
+					printf("!ERROR downloading %s\n",fname);
 					close(fout);
 					unlink(dstfname);
 					exit(EXIT_FAILURE);
 				}
 				close(fout);
 				sprintf(cmd,"gzip -dc %s | tar -xvf -",dstfname);
-				if(system(cmd))  {
+				if(exec(cmd))  {
 					printf("Error extracting %s\n",dstfname);
 					unlink(dstfname);
 					exit(EXIT_FAILURE);
@@ -548,7 +576,7 @@ void install_sbbs(dist_t *dist,struct server_ent_t *server)  {
 				unlink(dstfname);
 			}
 			sprintf(cmd,"%s %s",params.make_cmdline,dist->make_opts);
-			if(system(cmd))  {
+			if(exec(cmd))  {
 				printf(MAKE_ERROR);
 				exit(EXIT_FAILURE);
 			}
@@ -557,13 +585,13 @@ void install_sbbs(dist_t *dist,struct server_ent_t *server)  {
 		case LOCAL_FILE:
 			for(i=0;dist->files[i][0];i++)  {
 				sprintf(cmd,"gzip -dc %s/%s | tar -xvf -",path,dist->files[i]);
-				if(system(cmd))  {
+				if(exec(cmd))  {
 					printf("Error extracting %s/%s\n",path,dist->files[i]);
 					exit(EXIT_FAILURE);
 				}
 			}
 			sprintf(cmd,"%s %s",params.make_cmdline,dist->make_opts);
-			if(system(cmd))  {
+			if(exec(cmd))  {
 				printf(MAKE_ERROR);
 				exit(EXIT_FAILURE);
 			}
