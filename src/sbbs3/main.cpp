@@ -910,8 +910,8 @@ void sbbs_t::send_telnet_cmd(uchar cmd, uchar opt)
 {
 	char buf[16];
 	
-	if(sys_status&SS_RLOGIN)	
-		return; /* RLogin does not use Telnet commands */
+	if(telnet_mode&TELNET_MODE_OFF)	
+		return;
 
 	if(cmd<TELNET_WILL) {
 		if(startup->options&BBS_OPT_DEBUG_TELNET)
@@ -1103,6 +1103,9 @@ void input_thread(void *arg)
 		}
 		else
 #endif
+		if(sbbs->telnet_mode&TELNET_MODE_OFF)
+			wrbuf=inbuf;
+		else
 			wrbuf=telnet_interpret(sbbs, inbuf, rd, telbuf, wr);
 		if(wr > (int)sizeof(telbuf)) 
 			lprintf("!TELBUF OVERFLOW (%d>%d)",wr,sizeof(telbuf));
@@ -4152,6 +4155,7 @@ void DLLCALL bbs_thread(void* arg)
 		if(rlogin==true) {
 			new_node->connection="RLogin";
 			new_node->sys_status|=SS_RLOGIN;
+			new_node->telnet_mode|=TELNET_MODE_OFF; // RLogin does not use Telnet commands
 		}
 
 	    node_threads_running++;

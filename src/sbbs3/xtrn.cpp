@@ -796,6 +796,8 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
                 		bp=wwiv_expand(buf, rd, wwiv_buf, rd, useron.misc, wwiv_flag);
 						if(rd>sizeof(wwiv_buf))
 							errorlog("WWIV_BUF OVERRUN");
+					} else if(telnet_mode&TELNET_MODE_OFF) {
+						bp=buf;
 					} else {
                 		bp=telnet_expand(buf, rd, telnet_buf, rd);
 						if(rd>sizeof(telnet_buf))
@@ -861,6 +863,8 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
                 		bp=wwiv_expand(buf, rd, wwiv_buf, rd, useron.misc, wwiv_flag);
 						if(rd>sizeof(wwiv_buf))
 							errorlog("WWIV_BUF OVERRUN");
+					} else if(telnet_mode&TELNET_MODE_OFF) {
+						bp=buf;
 					} else {
                 		bp=telnet_expand(buf, rd, telnet_buf, rd);
 						if(rd>sizeof(telnet_buf))
@@ -873,7 +877,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 					RingBufWrite(&outbuf, bp, rd);
 				}
 			}
-#ifdef _DEBUG
+#if defined(_DEBUG) && 0
 			if(rd>1) {
 				sprintf(str,"Node %d read %5d bytes from xtrn", cfg.node_num, rd);
 				OutputDebugString(str);
@@ -899,7 +903,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 
 				/* only send telnet GA every 30 seconds of no I/O */
 				if((loop_since_io%300)==0) {
-#ifdef _DEBUG
+#if defined(_DEBUG)
 					sprintf(str,"Node %d xtrn idle\n",cfg.node_num);
 					OutputDebugString(str);
 #endif
@@ -1363,9 +1367,12 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 			if((rd=read(out_pipe[0],buf,rd))<1)
 				continue;
 				
-			if(mode&EX_BIN)	/* telnet IAC expansion */
-   	       		bp=telnet_expand(buf, rd, output_buf, output_len);
-			else			/* LF to CRLF expansion */
+			if(mode&EX_BIN) {
+				if(telnet_mode&TELNET_MODE_OFF)
+					bp=buf;
+				else
+   	       			bp=telnet_expand(buf, rd, output_buf, output_len);
+			} else			/* LF to CRLF expansion */
 				bp=lf_expand(buf, rd, output_buf, output_len);
 
 			/* Did expansion overrun the output buffer? */
