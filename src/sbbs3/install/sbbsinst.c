@@ -50,10 +50,10 @@
 /***************/
 #define DEFAULT_CVSROOT		":pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs"
 #define DIST_LIST_URL1		"http://www.synchro.net/sbbsdist.lst"
-#define DIST_LIST_URL2		"http://rob.synchro.net/Synchronet/sbbsdist.lst"
-#define DIST_LIST_URL3		"http://cvs.synchro.net/Synchronet/sbbsdist.lst"
-#define DIST_LIST_URL4		"http://vert.synchro.net/Synchronet/sbbsdist.lst"
-#define DIST_LIST_URL5		"http://freebsd.synchro.net:2327/synchronet/sbbsdist.lst"
+#define DIST_LIST_URL2		"http://rob.synchro.net/sbbsdist.lst"
+#define DIST_LIST_URL3		"http://cvs.synchro.net/sbbsdist.lst"
+#define DIST_LIST_URL4		"http://bbs.synchro.net/sbbsdist.lst"
+#define DIST_LIST_URL5		"http://freebsd.synchro.net/sbbsdist.lst"
 #define DEFAULT_DISTFILE	"sbbs_src.tgz"
 #define DEFAULT_LIBFILE		"lib-%s.tgz"	/* MUST HAVE ONE %s for system type (os-machine or just os) */
 #define DEFAULT_SYSTYPE		"unix"			/* If no other system type available, use this one */
