@@ -1,3 +1,5 @@
+/* $Id$ */
+
 load("../web/lib/template.ssjs");
 
 var sub='';
@@ -35,12 +37,12 @@ load("../web/lib/leftnav_html.ssjs");
     template.total_email = system.stats.total_email;
     template.total_files = system.stats.total_files;
 
-	template.additional_services ='[' + ("telnet".link("telnet://"+http_request.host)) + '] ';
-	template.additional_services+='[' + ("rlogin".link("rlogin://"+http_request.host)) + '] ';
-	template.additional_services+='[' + ("ftp".link("ftp://"+http_request.host)) + '] ';
-	template.additional_services+='[' + ("irc".link("irc://"+http_request.host)) + '] ';
-	template.additional_services+='[' + ("news".link("news://"+http_request.host)) + '] ';
-	template.additional_services+='[' + ("gopher".link("gopher://"+http_request.host)) + '] ';
+    template.additional_services ='[' + ("telnet".link("telnet://"+system.inetaddr)) + '] ';
+    template.additional_services+='[' + ("rlogin".link("rlogin://"+system.inetaddr)) + '] ';
+    template.additional_services+='[' + ("ftp".link("ftp://"+system.inetaddr)) + '] ';
+    template.additional_services+='[' + ("irc".link("irc://"+system.inetaddr)) + '] ';
+    template.additional_services+='[' + ("news".link("news://"+system.inetaddr)) + '] ';
+    template.additional_services+='[' + ("gopher".link("gopher://"+system.inetaddr)) + '] ';
 
 write_template("main.inc");
 write_template("footer.inc");
