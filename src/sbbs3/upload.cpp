@@ -45,15 +45,16 @@
 /****************************************************************************/
 bool sbbs_t::uploadfile(file_t *f)
 {
-	char path[MAX_PATH+1];
-	char str[MAX_PATH+1],fname[25];
-	char ext[F_EXBSIZE+1];
-	char desc[F_EXBSIZE+1];
-	char tmp[MAX_PATH+1];
-	int  file;
-    uint i;
-    long length;
-	FILE *stream;
+	char*	p;
+	char	path[MAX_PATH+1];
+	char	str[MAX_PATH+1],fname[25];
+	char	ext[F_EXBSIZE+1];
+	char	desc[F_EXBSIZE+1];
+	char	tmp[MAX_PATH+1];
+	int		file;
+    uint	i;
+    long	length;
+	FILE*	stream;
 
 	// f->misc=0; Removed AUG-22-2001 - broken anonymous uploads
 	curdirnum=f->dir;
@@ -144,7 +145,8 @@ bool sbbs_t::uploadfile(file_t *f)
 			sprintf(str,"%sFILE_ID.DIZ",cfg.temp_dir);
 			if(fexistcase(str))
 				remove(str);
-			external(cmdstr(cfg.fextr[i]->cmd,path,"FILE_ID.DIZ",NULL),EX_OUTL);
+			p=cmdstr(cfg.fextr[i]->cmd,path,"FILE_ID.DIZ",NULL);
+			external(p,EX_OUTL);
 			if(!fexistcase(str)) {
 				sprintf(str,"%sDESC.SDI",cfg.temp_dir);
 				if(fexistcase(str))
@@ -530,7 +532,7 @@ bool sbbs_t::bulkupload(uint dirnum)
 		if(findfile(&cfg,f.dir,str)==0) {
 			strcpy(f.name,str);
 			f.cdt=flength(spath);
-			bprintf(text[BulkUploadDescPrompt],f.name,f.cdt);
+			bprintf(text[BulkUploadDescPrompt],f.name,f.cdt/1024);
 			getstr(f.desc,LEN_FDESC,K_LINE);
 			if(sys_status&SS_ABORT)
 				break;
