@@ -298,6 +298,9 @@ BOOL read_main_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 	get_str(cfg->data_dir,instream); 			  /* data directory */
 	get_str(cfg->exec_dir,instream); 			  /* exec directory */
 
+	strlwr(cfg->data_dir);		/* temporary Unix-compatibility hack */
+	strlwr(cfg->exec_dir);		/* temporary Unix-compatibility hack */
+
 	#ifndef SCFG
 	prep_path(cfg->ctrl_dir, cfg->data_dir);
 	prep_path(cfg->ctrl_dir, cfg->exec_dir);
