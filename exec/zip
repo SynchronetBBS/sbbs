@@ -1,4 +1,0 @@
-#!/bin/sh
-# This script is necessary for wildcard expansion
-#/usr/local/bin/zip $@
-/usr/bin/zip $@
