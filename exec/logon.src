@@ -64,12 +64,19 @@ if_true
 #		end_if
 #	end_if
 
+# Force split-screen chat on ANSI users
 compare_user_misc UM_ANSI
 if_true
 	compare_user_chat CHAT_SPLITP
 	if_false
 		toggle_user_chat CHAT_SPLITP
 		end_if
+	end_if
+
+# Inactivity exemption
+compare_ars exempt H
+if_true
+	or _console CON_NO_INACT
 	end_if
 
 ###############################################################################
@@ -137,3 +144,4 @@ if_true
 	setstr "WIPSHELL"
 	set_shell
 	end_if
+
