@@ -58,7 +58,6 @@ LIBS	=	..\mozilla\js\src\Debug\js32omf.lib
 # Cross platform/compiler definitions
 !include targets.mk		# defines all targets
 !include objects.mk		# defines $(OBJS)
-!include headers.mk		# defines $(HEADERS)
 !include sbbsdefs.mk	# defines $(SBBSDEFS)
 
 SBBSLIB	=	$(LIBODIR)\sbbs.lib

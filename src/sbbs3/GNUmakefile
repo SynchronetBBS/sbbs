@@ -141,7 +141,6 @@ endif
 
 include targets.mk		# defines all targets
 include objects.mk		# defines $(OBJS)
-include headers.mk		# defines $(HEADERS)
 include sbbsdefs.mk		# defines $(SBBSDEFS)
 
 SBBSLIB	=	$(LIBODIR)/sbbs.a
