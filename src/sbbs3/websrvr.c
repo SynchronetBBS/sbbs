@@ -1187,28 +1187,32 @@ static int pipereadline(int pipe, char *buf, size_t length)
 	char	ch;
 	DWORD	i;
 	time_t	start;
+	int		ret=0;
 
 	start=time(NULL);
 	for(i=0;TRUE;) {
-		if(time(NULL)-start>startup->max_cgi_inactivity) {
+		if(time(NULL)-start>startup->max_cgi_inactivity)
 			return(-1);
-		}
-		
-		if(read(pipe, &ch, 1)==1)  {
+
+		ret=read(pipe, &ch, 1);
+
+		if(ret==1)  {
 			start=time(NULL);
-			
+
 			if(ch=='\n')
 				break;
 
 			if(i<length)
 				buf[i++]=ch;
 		}
+		else
+			return(-1);
 	}
 
 	/* Terminate at length if longer */
 	if(i>length)
 		i=length;
-		
+
 	if(i>0 && buf[i-1]=='\r')
 		buf[--i]=0;
 	else
@@ -1947,9 +1951,6 @@ static BOOL exec_cgi(http_session_t *session)
 	/* ToDo: Magically set done_parsing_headers for nph-* scripts */
 	cgi_status[0]=0;
 	while(!done_reading)  {
-		if(!done_wait)
-			done_wait = (waitpid(child,&status,WNOHANG)==child);
-
 		tv.tv_sec=startup->max_cgi_inactivity;
 		tv.tv_usec=0;
 
@@ -2062,9 +2063,6 @@ static BOOL exec_cgi(http_session_t *session)
 			}
 		}
 		else  {
-			if(!done_wait)
-				done_wait = (waitpid(child,&status,WNOHANG)==child);
-
 			if((time(NULL)-start) >= startup->max_cgi_inactivity)  {
 				/* timeout */
 				lprintf(LOG_ERR,"%04d CGI Script %s Timed out",session->socket,cmdline);
@@ -2078,9 +2076,12 @@ static BOOL exec_cgi(http_session_t *session)
 					}
 				}
 			}
-			if(done_wait)
-				done_reading=TRUE;
 		}
+
+		if(!done_wait)
+			done_wait = (waitpid(child,&status,WNOHANG)==child);
+		if(done_wait)
+			done_reading=TRUE;
 	}
 	if(!done_wait)  {
 		lprintf(LOG_NOTICE,"%04d CGI Script %s still alive on client exit",session->socket,cmdline);
