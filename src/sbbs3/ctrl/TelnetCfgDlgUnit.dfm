@@ -35,7 +35,7 @@ object TelnetCfgDlg: TTelnetCfgDlg
         Width = 78
         Height = 20
         AutoSize = False
-        Caption = 'Port'
+        Caption = 'Listening Port'
       end
       object FirstNodeLabel: TLabel
         Left = 7
@@ -58,9 +58,7 @@ object TelnetCfgDlg: TTelnetCfgDlg
         Top = 5
         Width = 117
         Height = 19
-        Hint = 
-          'Check this box if you want the Telnet server to automatically st' +
-          'art'
+        Hint = 'Automatically start Telnet server'
         Caption = 'Auto Startup'
         ParentShowHint = False
         ShowHint = True
@@ -83,6 +81,7 @@ object TelnetCfgDlg: TTelnetCfgDlg
         Top = 55
         Width = 39
         Height = 21
+        Hint = 'TCP port for incoming connections (default=23)'
         ParentShowHint = False
         ShowHint = True
         TabOrder = 2
@@ -92,10 +91,8 @@ object TelnetCfgDlg: TTelnetCfgDlg
         Top = 55
         Width = 117
         Height = 20
-        Hint = 
-          'Check this box if you want to configure WinSock to keep your dia' +
-          'l-up connection active'
-        Caption = 'Send Keep Alives'
+        Hint = 'Instruct WinSock to keep your dial-up connection active'
+        Caption = 'Send Keep-Alives'
         ParentShowHint = False
         ShowHint = True
         TabOrder = 3
@@ -105,6 +102,7 @@ object TelnetCfgDlg: TTelnetCfgDlg
         Top = 81
         Width = 39
         Height = 21
+        Hint = 'First node number available for Telnet logins'
         ParentShowHint = False
         ShowHint = True
         TabOrder = 4
@@ -114,10 +112,8 @@ object TelnetCfgDlg: TTelnetCfgDlg
         Top = 80
         Width = 117
         Height = 20
-        Hint = 
-          'Check this box if you want external programs to run in a minimiz' +
-          'ed window'
-        Caption = 'Minimize externals'
+        Hint = 'External programs run in a minimized window'
+        Caption = 'Minimize Externals'
         ParentShowHint = False
         ShowHint = True
         TabOrder = 5
@@ -127,6 +123,7 @@ object TelnetCfgDlg: TTelnetCfgDlg
         Top = 107
         Width = 39
         Height = 21
+        Hint = 'Last node number available for Telnet logins'
         ParentShowHint = False
         ShowHint = True
         TabOrder = 6
@@ -136,9 +133,7 @@ object TelnetCfgDlg: TTelnetCfgDlg
         Top = 106
         Width = 117
         Height = 19
-        Hint = 
-          'Check this box if you want your V exempt users to be able to aut' +
-          'o-logon based on their IP address'
+        Hint = 'Allow V-exempt users to auto-logon based on their IP address'
         Caption = 'AutoLogon via IP'
         ParentShowHint = False
         ShowHint = True
@@ -149,9 +144,7 @@ object TelnetCfgDlg: TTelnetCfgDlg
         Top = 5
         Width = 117
         Height = 19
-        Hint = 
-          'Check this box if you want to automatically lookup client'#39's host' +
-          'names via DNS'
+        Hint = 'Automatically lookup client'#39's hostnames via DNS'
         Caption = 'Hostname Lookup'
         ParentShowHint = False
         ShowHint = True
@@ -166,9 +159,7 @@ object TelnetCfgDlg: TTelnetCfgDlg
         Top = 5
         Width = 169
         Height = 19
-        Hint = 
-          'Check this box if you want to log (debug) all received Telnet co' +
-          'mmands'
+        Hint = 'Log (debug) all received Telnet commands'
         Caption = 'Received Commands'
         ParentShowHint = False
         ShowHint = True
@@ -180,7 +171,7 @@ object TelnetCfgDlg: TTelnetCfgDlg
       ImageIndex = 2
       object AnswerSoundLabel: TLabel
         Left = 7
-        Top = 11
+        Top = 10
         Width = 52
         Height = 20
         AutoSize = False
@@ -188,7 +179,7 @@ object TelnetCfgDlg: TTelnetCfgDlg
       end
       object HnagupSoundLabel: TLabel
         Left = 7
-        Top = 37
+        Top = 36
         Width = 52
         Height = 20
         AutoSize = False
@@ -196,14 +187,17 @@ object TelnetCfgDlg: TTelnetCfgDlg
       end
       object AnswerSoundEdit: TEdit
         Left = 72
-        Top = 11
+        Top = 10
         Width = 169
         Height = 21
+        Hint = 'Sound file to play when accepting an incoming connection'
+        ParentShowHint = False
+        ShowHint = True
         TabOrder = 0
       end
       object AnswerSoundButton: TButton
         Left = 247
-        Top = 11
+        Top = 10
         Width = 20
         Height = 21
         Caption = '...'
@@ -212,14 +206,17 @@ object TelnetCfgDlg: TTelnetCfgDlg
       end
       object HangupSoundEdit: TEdit
         Left = 72
-        Top = 37
+        Top = 36
         Width = 169
         Height = 21
+        Hint = 'Sound file to play when disconnecting'
+        ParentShowHint = False
+        ShowHint = True
         TabOrder = 2
       end
       object HangupSoundButton: TButton
         Left = 247
-        Top = 37
+        Top = 36
         Width = 20
         Height = 21
         Caption = '...'

@@ -1,6 +1,6 @@
 object FtpCfgDlg: TFtpCfgDlg
-  Left = 812
-  Top = 620
+  Left = 466
+  Top = 622
   BorderStyle = bsDialog
   Caption = 'FTP Server Configuration'
   ClientHeight = 234
@@ -17,7 +17,7 @@ object FtpCfgDlg: TFtpCfgDlg
     Top = 3
     Width = 278
     Height = 186
-    ActivePage = GeneralTabSheet
+    ActivePage = SoundTabSheet
     TabOrder = 0
     object GeneralTabSheet: TTabSheet
       Caption = 'General'
@@ -58,7 +58,7 @@ object FtpCfgDlg: TFtpCfgDlg
         Top = 5
         Width = 117
         Height = 19
-        Hint = 'Automatically start'
+        Hint = 'Automatically start FTP server'
         Caption = 'Auto Startup'
         ParentShowHint = False
         ShowHint = True
@@ -91,7 +91,7 @@ object FtpCfgDlg: TFtpCfgDlg
         Top = 55
         Width = 39
         Height = 21
-        Hint = 'FTP control port (default=21)'
+        Hint = 'TCP port to use for FTP control connections (default=21)'
         ParentShowHint = False
         ShowHint = True
         TabOrder = 3
@@ -122,6 +122,8 @@ object FtpCfgDlg: TFtpCfgDlg
         Width = 156
         Height = 21
         Hint = 'Name of auto-index file (default=00index)'
+        ParentShowHint = False
+        ShowHint = True
         TabOrder = 6
       end
       object AllowQWKCheckBox: TCheckBox
@@ -140,7 +142,9 @@ object FtpCfgDlg: TFtpCfgDlg
         Top = 81
         Width = 119
         Height = 20
-        Hint = 'Allow sysop access to local file system'
+        Hint = 
+          'Allow sysop access to local file system (requires sysop password' +
+          ')'
         Caption = 'Local File System'
         ParentShowHint = False
         ShowHint = True
@@ -222,7 +226,7 @@ object FtpCfgDlg: TFtpCfgDlg
       ImageIndex = 2
       object AnswerSoundLabel: TLabel
         Left = 7
-        Top = 11
+        Top = 10
         Width = 65
         Height = 20
         AutoSize = False
@@ -230,7 +234,7 @@ object FtpCfgDlg: TFtpCfgDlg
       end
       object HnagupSoundLabel: TLabel
         Left = 7
-        Top = 37
+        Top = 36
         Width = 65
         Height = 20
         AutoSize = False
@@ -238,15 +242,17 @@ object FtpCfgDlg: TFtpCfgDlg
       end
       object AnswerSoundEdit: TEdit
         Left = 72
-        Top = 11
+        Top = 10
         Width = 169
         Height = 21
-        Hint = 'WAV file to play when users connect'
+        Hint = 'Sound file to play when users connect'
+        ParentShowHint = False
+        ShowHint = True
         TabOrder = 0
       end
       object AnswerSoundButton: TButton
         Left = 247
-        Top = 11
+        Top = 10
         Width = 20
         Height = 21
         Caption = '...'
@@ -255,15 +261,17 @@ object FtpCfgDlg: TFtpCfgDlg
       end
       object HangupSoundEdit: TEdit
         Left = 72
-        Top = 37
+        Top = 36
         Width = 169
         Height = 21
-        Hint = 'WAV file to play when users disconnect'
+        Hint = 'Sound file to play when users disconnect'
+        ParentShowHint = False
+        ShowHint = True
         TabOrder = 2
       end
       object HangupSoundButton: TButton
         Left = 247
-        Top = 37
+        Top = 36
         Width = 20
         Height = 21
         Caption = '...'
