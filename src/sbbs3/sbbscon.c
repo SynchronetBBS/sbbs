@@ -67,11 +67,6 @@
 
 #endif
 
-/* Temporary: Do not include web server in 3.1x-Win32 release build */
-#if defined(_MSC_VER)
-	#define NO_WEB_SERVER
-#endif
-
 /* Services doesn't work without JavaScript support */
 #if !defined(JAVASCRIPT)
 	#define	NO_SERVICES
