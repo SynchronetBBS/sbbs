@@ -566,7 +566,7 @@ long js_exec(const char *fname, char** args)
 				,js_buflen+strlen(line));
 			return(-1);
 		}
-		strcpy(js_buf+js_buflen,line);
+		memcpy(js_buf+js_buflen,line,strlen(line));
 		js_buflen+=strlen(line);
 	}
 	if((js_script=JS_CompileScript(js_cx, js_scope, js_buf, js_buflen, fname==NULL ? NULL : path, 1))==NULL) {
