@@ -41,12 +41,14 @@
 #include "websrvr.h"
 
 static const char* server_name="Synchronet Web Server";
-char* crlf="\r\n";
 
-#define TIMEOUT_THREAD_WAIT		60		// Seconds (was 15)
+#ifdef WEBSRVR_EXPORTS
+	char* crlf="\r\n";
+#endif
+
+#define TIMEOUT_THREAD_WAIT		60		/* Seconds */
 #define MAX_MIME_TYPES			128
 #define MAX_REQUEST_LINE		1024
-#define MAX_ARS_LEN				256
 
 static scfg_t	scfg;
 static BOOL		scfg_reloaded=TRUE;
@@ -67,7 +69,7 @@ typedef struct  {
 	BOOL    expect_go_ahead;
 	time_t	if_modified_since;
 	BOOL	keep_alive;
-	char	ars[MAX_ARS_LEN];
+	char	ars[256];
 	char    auth[128];				/* UserID:Password */
 	BOOL	send_location;
 } http_request_t;
@@ -98,14 +100,18 @@ enum {
 static char* http_vers[] = {
 	 ""
 	,"HTTP/1.0"
-	,NULL
+	,NULL	/* terminator */
 };
 
 enum { 
 	 HTTP_HEAD
 	,HTTP_GET
 };
-static char* methods[]={"HEAD","GET"};
+static char* methods[] = {
+	 "HEAD"
+	,"GET"
+	,NULL	/* terminator */
+};
 
 enum { 
 	 HEAD_ALLOW
@@ -150,7 +156,7 @@ static struct {
 	{ HEAD_WWWAUTH,		"WWW-Authenticate"		},
 	{ HEAD_CONNECTION,	"Connection"			},
 	{ HEAD_HOST,		"Host"					},
-	{ -1,				NULL					},
+	{ -1,				NULL /* terminator */	},
 };
 
 static char	*days[]={"Sun","Mon","Tue","Wed","Thu","Fri","Sat"};
@@ -595,7 +601,7 @@ static void b64_decode (uchar *p)
 		if(i==NULL) {
 			break;
 		}
-		if(*i=='=') i=(char*)base64alphabet; // pad char
+		if(*i=='=') i=(char*)base64alphabet; /* pad char */
 		working |= (i-base64alphabet);
 		bits+=6;
 		if(bits>8) {
@@ -922,7 +928,7 @@ static BOOL check_request(http_session_t * session)
 			}
 			/* Read access.ars file */
 			if((file=fopen(str,"r"))!=NULL) {
-				fgets(session->req.ars,MAX_ARS_LEN,file);
+				fgets(session->req.ars,sizeof(session->req.ars),file);
 				fclose(file);
 			}
 			else  {
@@ -938,7 +944,8 @@ static BOOL check_request(http_session_t * session)
 	
 	if(session->req.ars[0] && !(check_ars(session->req.ars,session))) {
 		/* No authentication provided */
-		sprintf(str,"401 Unauthorised%s%s: Basic realm=\"%s\"",crlf,get_header(HEAD_WWWAUTH),scfg.sys_name);
+		sprintf(str,"401 Unauthorized%s%s: Basic realm=\"%s\""
+			,crlf,get_header(HEAD_WWWAUTH),scfg.sys_name);
 		send_error(str,session);
 		return(FALSE);
 	}
@@ -963,10 +970,11 @@ void http_session_thread(void* arg)
 	thread_up(FALSE /* setuid */);
 	session->finished=FALSE;
 
-	while(!session->finished) {
+	while(!session->finished && server_socket!=INVALID_SOCKET) {
 	    memset(&(session->req), 0, sizeof(session->req));
 		if(get_req(session)) {
-			lprintf("Got request %s method %d version %d",session->req.request,session->req.method,session->http_ver);
+			lprintf("Got request %s method %d version %d"
+				,session->req.request,session->req.method,session->http_ver);
 			if((session->http_ver<HTTP_1_0)||parse_headers(session)) {
 				if(check_request(session)) {
 					respond(session);
@@ -1058,7 +1066,7 @@ void DLLCALL web_server(void* arg)
 	struct hostent* h;
 	startup=(web_startup_t*)arg;
 
-	web_ver();
+	web_ver();	/* get CVS revision */
 
     if(startup==NULL) {
     	sbbs_beep(100,500);
@@ -1066,7 +1074,7 @@ void DLLCALL web_server(void* arg)
     	return;
     }
 
-	if(startup->size!=sizeof(web_startup_t)) {	// verify size
+	if(startup->size!=sizeof(web_startup_t)) {	/* verify size */
 		sbbs_beep(100,500);
 		sbbs_beep(300,500);
 		sbbs_beep(100,500);
@@ -1088,7 +1096,8 @@ void DLLCALL web_server(void* arg)
 
 		memset(&scfg, 0, sizeof(scfg));
 
-		lprintf("Synchronet Web Server Revision %s%s"
+		lprintf("%s Revision %s%s"
+			,server_name
 			,revision
 #ifdef _DEBUG
 			," Debug"
@@ -1248,7 +1257,7 @@ void DLLCALL web_server(void* arg)
 					break;
 				}
 				lprintf("!ERROR %d accepting connection", ERROR_VALUE);
-				break;	// was continue, July-01-2002
+				break;
 			}
 
 			strcpy(host_ip,inet_ntoa(client_addr.sin_addr));
@@ -1318,12 +1327,12 @@ void DLLCALL web_server(void* arg)
 			_beginthread(http_session_thread, 0, session);
 		}
 
-		// Close all open sockets
+		/* Close all open sockets  */
 		lprintf("Closing HTTP socket %d", server_socket);
 		close_socket(server_socket);
 		server_socket=INVALID_SOCKET;
 
-		// Wait for all node threads to terminate
+		/* Wait for all node threads to terminate */
 		if(http_threads_running) {
 			lprintf("Waiting for %d connection threads to terminate...", http_threads_running);
 			start=time(NULL);
@@ -1337,7 +1346,6 @@ void DLLCALL web_server(void* arg)
 			}
 		}
 
-
 		cleanup(0);
 
 		if(recycle_server) {
@@ -1346,7 +1354,5 @@ void DLLCALL web_server(void* arg)
 		}
 
 	} while(recycle_server);
-
-
 }
 
