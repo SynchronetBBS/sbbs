@@ -58,14 +58,18 @@ CFLAGS	+=	-DJAVASCRIPT -I../mozilla/js/src -I$(XPDEV) -I$(UIFC)
 ifeq ($(os),FreeBSD)	# FreeBSD
 CFLAGS	+= -D_THREAD_SAFE
 # Math libraries needed and uses pthread
-LFLAGS	:=	-lm -pthread
+LFLAGS	:=	-lm -pthread -lutil
 else			# Linux / Other UNIX
 # Math and pthread libraries needed
 ifdef bcc
 LFLAGS	:=	libpthread.so
 else
-LFLAGS	:=	-lm -lpthread
+LFLAGS	:=	-lm -lpthread -lutil
 endif
+endif
+
+ifeq ($(os),Linux)    # Linux
+CFLAGS	+= -D_THREAD_SUID_BROKEN
 endif
 
 ifdef DEBUG
