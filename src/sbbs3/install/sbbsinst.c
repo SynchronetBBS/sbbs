@@ -49,12 +49,12 @@
 /* Definitions */
 /***************/
 #define DEFAULT_CVSROOT		":pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs"
-#define RELEASE_LIST_URL1	"ftp://freebsd.synchro.net/main/misc/sbbs-rel.lst"
-#define RELEASE_LIST_URL2	"ftp://freebsd.synchro.net/main/misc/sbbs-rel.lst"
-#define RELEASE_LIST_URL3	"ftp://freebsd.synchro.net/main/misc/sbbs-rel.lst"
-#define RELEASE_LIST_URL4	"ftp://freebsd.synchro.net/main/misc/sbbs-rel.lst"
-#define MAX_RELEASES		50
-#define	MAX_DIST_FILES			10
+#define DIST_LIST_URL1		"ftp://freebsd.synchro.net/main/misc/sbbs-rel.lst"
+#define DIST_LIST_URL2		"ftp://freebsd.synchro.net/main/misc/sbbs-rel.lst"
+#define DIST_LIST_URL3		"ftp://freebsd.synchro.net/main/misc/sbbs-rel.lst"
+#define DIST_LIST_URL4		"ftp://freebsd.synchro.net/main/misc/sbbs-rel.lst"
+#define MAX_DISTRIBUTIONS	50
+#define	MAX_DIST_FILES		10
 #define MAX_SERVERS			100
 #define MAX_FILELEN			32
 
@@ -119,7 +119,7 @@ char *ftp_pass="new@synchro.net";
 /**************/
 void install_sbbs(struct dist_t *, struct server_ent_t *);
 struct dist_t **get_distlist(void);
-int choose_release(char **opts);
+int choose_dist(char **opts);
 int choose_server(char **opts);
 
 void bail(int code)
@@ -147,7 +147,7 @@ int main(int argc, char **argv)
 	char 	str[129];
 	BOOL    door_mode=FALSE;
 	struct dist_t 	**distlist;
-	int		release;
+	int		dist;
 	int		server;
 
 	/************/
@@ -259,11 +259,11 @@ int main(int argc, char **argv)
 		bail(1);
 	}
 
-release=-2;
+dist=-2;
 while(1) {
-	if(release==-2)
-		release=choose_release((char **)distlist);
-	if(release==-1)  {
+	if(dist==-2)
+		dist=choose_dist((char **)distlist);
+	if(dist==-1)  {
 		i=0;
 		strcpy(opt[0],"Yes");
 		strcpy(opt[1],"No");
@@ -275,16 +275,16 @@ while(1) {
 		i=uifc.list(WIN_MID,0,0,0,&i,0,"Exit SBBSINST",opt);
 		if(!i)
 			bail(0);
-		release=-2;
+		dist=-2;
 	}
 
-	if(release>=0)  {
-		server=choose_server((char **)(((struct dist_t **)distlist)[release]->servers));
+	if(dist>=0)  {
+		server=choose_server((char **)(((struct dist_t **)distlist)[dist]->servers));
 		if(server==-1)
-			release=-2;
+			dist=-2;
 	}
 
-	while(release>=0 && server>=0) {
+	while(dist>=0 && server>=0) {
 		i=0;
 		sprintf(mopt[i++],"%-33.33s%s","Install Path",params.install_path);
 		sprintf(mopt[i++],"%-33.33s%s","Compiler",params.usebcc?"BCC":"GCC");
@@ -362,7 +362,7 @@ while(1) {
 				i=0;
 				break;
 			case 5:
-				install_sbbs(distlist[release],distlist[release]->servers[server]);
+				install_sbbs(distlist[dist],distlist[dist]->servers[server]);
 				bail(0);
 				break;
 			case -1:
@@ -380,7 +380,7 @@ while(1) {
  *		Actually, it looks like you don't NEED to login if the password is blank... huh.
  */
 
-void install_sbbs(struct dist_t *release,struct server_ent_t *server)  {
+void install_sbbs(struct dist_t *dist,struct server_ent_t *server)  {
 	char	cmd[MAX_PATH+1];
 	char	str[1024];
 	char	sbbsdir[9+MAX_PATH];
@@ -416,11 +416,11 @@ void install_sbbs(struct dist_t *release,struct server_ent_t *server)  {
 		bail(EXIT_FAILURE);
 	}
 	uifc.bail();
-	switch (release->type)  {
+	switch (dist->type)  {
 		case CVS_SERVER:
-			sprintf(cvstag,"CVSTAG=%s",release->tag);
+			sprintf(cvstag,"CVSTAG=%s",dist->tag);
 			putenv(cvstag);
-			sprintf(cmd,"cvs -d %s co -r %s install",server->addr,release->tag);
+			sprintf(cmd,"cvs -d %s co -r %s install",server->addr,dist->tag);
 			if(system(cmd))  {
 				printf("Could not checkout install makefile.\n");
 				exit(EXIT_FAILURE);
@@ -432,38 +432,38 @@ void install_sbbs(struct dist_t *release,struct server_ent_t *server)  {
 			}
 			exit(EXIT_SUCCESS);
 		case DIST_SET:
-			for(i=0;release->files[i][0];i++)  {
-				if((fout=open(release->files[i],O_WRONLY|O_TRUNC|O_CREAT,S_IRUSR|S_IWUSR))<0)  {
-					printf("Could not download distfile to %s (%d)\n",release->files[i],errno);
+			for(i=0;dist->files[i][0];i++)  {
+				if((fout=open(dist->files[i],O_WRONLY|O_TRUNC|O_CREAT,S_IRUSR|S_IWUSR))<0)  {
+					printf("Could not download distfile to %s (%d)\n",dist->files[i],errno);
 					exit(EXIT_FAILURE);
 				}
-				sprintf(url,"%s%s",server->addr,release->files[i]);
+				sprintf(url,"%s%s",server->addr,dist->files[i]);
 				if((remote=ftpGetURL(url,ftp_user,ftp_pass,&ret1))==NULL)  {
-					printf("Cannot get distribution file %s!\n",release->files[i]);
+					printf("Cannot get distribution file %s!\n",dist->files[i]);
 					printf("%s\n- %s\n",url,ftpErrString(ret1));
-					unlink(release->files[i]);
+					unlink(dist->files[i]);
 					exit(EXIT_FAILURE);
 				}
 				while((ret1=remote->read(remote,buf,sizeof(buf)))>0)  {
 					ret2=write(fout,buf,ret1);
 					if(ret2!=ret1)  {
-						printf("Error writing to %s\n",release->files[i]);
-						unlink(release->files[i]);
+						printf("Error writing to %s\n",dist->files[i]);
+						unlink(dist->files[i]);
 						exit(EXIT_FAILURE);
 					}
 				}
 				if(ret1<0)  {
-					printf("Error downloading %s\n",release->files[i]);
-					unlink(release->files[i]);
+					printf("Error downloading %s\n",dist->files[i]);
+					unlink(dist->files[i]);
 					exit(EXIT_FAILURE);
 				}
-				sprintf(cmd,"gzip -dc %s | tar -xvf -",release->files[i]);
+				sprintf(cmd,"gzip -dc %s | tar -xvf -",dist->files[i]);
 				if(system(cmd))  {
-					printf("Error extracting %s\n",release->files[i]);
-					unlink(release->files[i]);
+					printf("Error extracting %s\n",dist->files[i]);
+					unlink(dist->files[i]);
 					exit(EXIT_FAILURE);
 				}
-				unlink(release->files[i]);
+				unlink(dist->files[i]);
 			}
 			sprintf(cmd,"gmake install -f install/GNUmakefile");
 			if(system(cmd))  {
@@ -481,7 +481,7 @@ get_distlist(void)
 	int ret1,ret2,ret3,ret4;
 	int i,j;
 	char	in_line[256];
-	struct dist_t	**release;
+	struct dist_t	**dist;
 	char	**file=NULL;
 	struct server_ent_t	**server=NULL;
 	int		r=0;
@@ -501,25 +501,25 @@ get_distlist(void)
 	sprintf(sys_desc,"%s-%s",name.sysname,name.machine);
 	printf("Sys: %s\n",sys_desc);
 
-	uifc.pop("Fetching distribution list");
-	if((list=ftpGetURL(RELEASE_LIST_URL1,ftp_user,ftp_pass,&ret1))==NULL
-			&& (list=ftpGetURL(RELEASE_LIST_URL2,ftp_user,ftp_pass,&ret2))==NULL
-			&& (list=ftpGetURL(RELEASE_LIST_URL3,ftp_user,ftp_pass,&ret3))==NULL
-			&& (list=ftpGetURL(RELEASE_LIST_URL4,ftp_user,ftp_pass,&ret4))==NULL)  {
+	uifc.pop("Getting distribution list");
+	if((list=ftpGetURL(DIST_LIST_URL1,ftp_user,ftp_pass,&ret1))==NULL
+			&& (list=ftpGetURL(DIST_LIST_URL2,ftp_user,ftp_pass,&ret2))==NULL
+			&& (list=ftpGetURL(DIST_LIST_URL3,ftp_user,ftp_pass,&ret3))==NULL
+			&& (list=ftpGetURL(DIST_LIST_URL4,ftp_user,ftp_pass,&ret4))==NULL)  {
 		uifc.pop(NULL);
 		uifc.bail();
 		printf("Cannot get distribution list!\n%s\n- %s\n%s\n- %s\n%s\n- %s\n%s\n- %s\n",
-				RELEASE_LIST_URL1,ftpErrString(ret1),
-				RELEASE_LIST_URL2,ftpErrString(ret1),
-				RELEASE_LIST_URL3,ftpErrString(ret1),
-				RELEASE_LIST_URL4,ftpErrString(ret1));
+				DIST_LIST_URL1,ftpErrString(ret1),
+				DIST_LIST_URL2,ftpErrString(ret1),
+				DIST_LIST_URL3,ftpErrString(ret1),
+				DIST_LIST_URL4,ftpErrString(ret1));
 		exit(EXIT_FAILURE);
 	}
 
-	if((release=(struct dist_t **)MALLOC(sizeof(void *)*MAX_RELEASES))==NULL)
-		allocfail(sizeof(void *)*MAX_RELEASES);
-	for(i=0;i<MAX_RELEASES;i++)
-		if((release[i]=(void *)MALLOC(sizeof(struct dist_t)))==NULL)
+	if((dist=(struct dist_t **)MALLOC(sizeof(void *)*MAX_DISTRIBUTIONS))==NULL)
+		allocfail(sizeof(void *)*MAX_DISTRIBUTIONS);
+	for(i=0;i<MAX_DISTRIBUTIONS;i++)
+		if((dist[i]=(void *)MALLOC(sizeof(struct dist_t)))==NULL)
 			allocfail(sizeof(struct dist_t));
 
 	while((list->gets(in_line,sizeof(in_line),list))!=NULL)  {
@@ -556,10 +556,10 @@ get_distlist(void)
 				f=0;
 				s=0;
 
-				memset(release[r],0,sizeof(struct dist_t));
-				strcpy(release[r]->version,in_line+2);
-				release[r]->type=CVS_SERVER;
-				release[r]->servers=server;
+				memset(dist[r],0,sizeof(struct dist_t));
+				strcpy(dist[r]->version,in_line+2);
+				dist[r]->type=CVS_SERVER;
+				dist[r]->servers=server;
 				r++;
 				break;
 			case 'T':
@@ -582,11 +582,11 @@ get_distlist(void)
 				f=0;
 				s=0;
 
-				memset(release[r],0,sizeof(struct dist_t));
-				strcpy(release[r]->version,in_line+2);
-				release[r]->type=DIST_SET;
-				release[r]->servers=server;
-				release[r]->files=file;
+				memset(dist[r],0,sizeof(struct dist_t));
+				strcpy(dist[r]->version,in_line+2);
+				dist[r]->type=DIST_SET;
+				dist[r]->servers=server;
+				dist[r]->files=file;
 				r++;
 				break;
 			case 'f':
@@ -603,7 +603,7 @@ get_distlist(void)
 				f++;
 				break;
 			case 't':
-				strcpy(release[r-1]->tag,in_line+2);
+				strcpy(dist[r-1]->tag,in_line+2);
 				break;
 			case 's':
 				p=in_line+2;
@@ -614,29 +614,36 @@ get_distlist(void)
 				break;
 		}
 	}
-	memset(release[r],0,sizeof(struct dist_t));
+	memset(dist[r],0,sizeof(struct dist_t));
 	uifc.pop(NULL);
-	return(release);
+	return(dist);
 }
 
-int choose_release(char **opts)
+int choose_dist(char **opts)
 {
+	int	i;
 	static int		dist_dflt=0;
 
 	uifc.helpbuf=	"`Distribution List:`\n"
 			"\nToDo: Add help.";
-	return(uifc.list(WIN_ESC|WIN_ORG|WIN_MID|WIN_ACT|WIN_SAV,0,0,0,&dist_dflt,0
-			,"Select Distribution",opts));
+
+	i=uifc.list(WIN_ESC|WIN_ORG|WIN_MID|WIN_ACT,0,0,0,&dist_dflt,0
+			,"Select Distribution",opts);
+	return(i);
 }
 
 int choose_server(char **opts)
 {
+	int i;
 	static int		srvr_dflt=0;
 
 	uifc.helpbuf=	"`Server List:`\n"
 				"\nToDo: Add help.";
-	return(uifc.list(WIN_MID|WIN_ACT|WIN_SAV,0,0,0,&srvr_dflt,0
-		,"Select Server",opts));
+	uifc.savnum++;
+	i=uifc.list(WIN_MID|WIN_ACT|WIN_SAV,0,0,0,&srvr_dflt,0
+		,"Select Server",opts)
+	uifc.savnum--;
+	return(i);
 
 }
 /* End of SBBSINST.C */
