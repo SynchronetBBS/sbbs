@@ -1238,7 +1238,7 @@ int main(int argc, char** argv)
 						break;
 					default:
 						show_usage(argv[0]);
-						return(0);
+						return(1);
 				}
 				break;
 			case 'R':	/* RLogin */
@@ -1252,7 +1252,7 @@ int main(int argc, char** argv)
 						break;
 					default:
 						show_usage(argv[0]);
-						return(0);
+						return(1);
 				}
 				break;
 			case 'F':	/* FTP */
@@ -1268,7 +1268,7 @@ int main(int argc, char** argv)
 						break;
 					default:
 						show_usage(argv[0]);
-						return(0);
+						return(1);
 				}
 				break;
 			case 'M':	/* Mail */
@@ -1290,7 +1290,7 @@ int main(int argc, char** argv)
 								break;
 							default:
 								show_usage(argv[0]);
-								return(0);
+								return(1);
 						}
 						break;
 					case 'P':	/* POP3 */
@@ -1304,7 +1304,7 @@ int main(int argc, char** argv)
 								break;
 							default:
 								show_usage(argv[0]);
-								return(0);
+								return(1);
 						}
 						break;
 					case 'R':	/* Relay */
@@ -1324,7 +1324,7 @@ int main(int argc, char** argv)
 						break;
 					default:
 						show_usage(argv[0]);
-						return(0);
+						return(1);
 				}
 				break;
 			case 'S':	/* Services */
@@ -1337,7 +1337,7 @@ int main(int argc, char** argv)
 						break;
 					default:
 						show_usage(argv[0]);
-						return(0);
+						return(1);
 				}
 				break;
 			case 'G':	/* GET */
@@ -1350,7 +1350,7 @@ int main(int argc, char** argv)
 						break;
 					default:
 						show_usage(argv[0]);
-						return(0);
+						return(1);
 				}
 				break;
 			case 'H':	/* Host */
@@ -1371,7 +1371,7 @@ int main(int argc, char** argv)
 						break;
 					default:
 						show_usage(argv[0]);
-						return(0);
+						return(1);
 				}
 				break;
 			case 'U':	/* runtime UID */
@@ -1394,7 +1394,7 @@ int main(int argc, char** argv)
 						break;
 					default:
 						show_usage(argv[0]);
-						return(0);
+						return(1);
 				}
 				break;
 			case 'N':	/* No */
@@ -1438,7 +1438,7 @@ int main(int argc, char** argv)
 						break;
 					default:
 						show_usage(argv[0]);
-						return(0);
+						return(1);
 				}
 				break;
 			case 'L':	/* Local */
@@ -1451,13 +1451,13 @@ int main(int argc, char** argv)
 						break;
 					default:
 						show_usage(argv[0]);
-						return(0);
+						return(1);
 				}
 				break;
 
 			default:
 				show_usage(argv[0]);
-				return(0);
+				return(1);
 		}
 	}
 
