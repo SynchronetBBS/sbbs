@@ -106,9 +106,8 @@ void actsets_cfg(void);
 void chan_cfg(void);
 void mdm_cfg(int mdmnum);
 int export_mdm(char *fname);
-char code_ok(char *str);
+int code_ok(char *str);
 int  bits(long l);
-char oneflag(long l);
 void getar(char *desc, char *ar);
 
 /* scfgnet.h */

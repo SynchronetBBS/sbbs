@@ -1874,14 +1874,14 @@ user's account will expire.
 sprintf(inar,"%.*s",LEN_ARSTR,ar);
 }
 
-char code_ok(char *str)
+int code_ok(char *str)
 {
 
-if(!strlen(str))
-    return(0);
-if(strcspn(str," \\/.|<>*?+[]:=\";,")!=strlen(str))
-    return(0);
-return(1);
+	if(!strlen(str))
+		return(0);
+	if(strcspn(str," \\/|<>*?+[]:=\";,")!=strlen(str))
+		return(0);
+	return(1);
 }
 
 int lprintf(char *fmt, ...)
