@@ -1,5 +1,5 @@
 	  Synchronet External Program Software Developer's Kit (XSDK)
-		  Version 3.1O - December 2000 - Rob Swindell
+		  Version 3.11 - March 2001 - Rob Swindell
 
 
 What is it?
@@ -31,6 +31,8 @@ o Automatic terminal type detection
 o Intelligent Ctrl-A code expansion for Color/ANSI users
 
 o Automatic screen pausing based on screen length (optional)
+
+o 32-bit programs will default to no local console I/O (new in v3.11)
 
 
 Supported Compilers
@@ -78,11 +80,11 @@ How do I use it?
 
 3. Compile your main .c file to verify that you do not have any
    incompatibilities with the contents of xsdk.h. If you receive any
-   compilation errors, you'll need to resolve these errors (by editing
-   xsdk*.c or xsdk*.h) before you can continue.
+   compilation errors, you'll need to resolve these errors (possibly by
+   editing xsdk*.c or xsdk*.h) before you can continue.
 
 4. Add a call to the XSDK "initdata" function to your program's entry point
-   (typically main()). The XSDK "initdata" fucntion will read in the BBS drop
+   (typically main()). The XSDK "initdata" function will read in the BBS drop
    file (XTRN.DAT) and initialize the appropriate variables. See xsdk.h for a
    complete list of functions available to you and their descriptions.
 
@@ -90,6 +92,9 @@ How do I use it?
    code:
 
    bprintf("XSDK v%s",xsdk_ver);
+
+   Note: You may also want to use the COMPILER_DESC and PLATFORM_DESC macros
+         (new in v3.11) to describe the compiler used and the target platform.
 
 6. Include xsdk.c, xsdkwrap.c and xsdkvars.c in your project or "make" file.
 
@@ -113,11 +118,10 @@ drop file in the Node Directory.
 
 32-bit Programs
 ---------------
-32-bit XSDK programs are only supported by Synchronet version 3 for Win32
-(currently) and only support telnet users. To configure a 32-bit program with
-Synchronet v3.0b, add the program's base filename to the OS/2 program list
-in SCFG (this will be replaced with a toggle option in the extenral program
-configuration menu in the future).
+32-bit XSDK programs are only supported by Synchronet version 3. To configure 
+a 32-bit program with Synchronet v3.0b, add the program's base filename to the
+OS/2 program list in SCFG (this will be replaced with a toggle option in the 
+extenral program configuration menu in the future).
 
 
 /* End of XSDK.TXT */
