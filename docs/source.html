@@ -1,7 +1,7 @@
 <HTML><HEAD>
 <title>Synchronet Source Code</title>
 <META http-equiv=Content-Type content="text/html; charset=windows-1252">
-<META content="Microsoft FrontPage 4.0" name=GENERATOR></HEAD>
+<META content="Microsoft FrontPage 5.0" name=GENERATOR></HEAD>
 <BODY>
 <font face="Arial", "Helvetica">
 <H1 align="center">Synchronet Source Code</H1>
@@ -14,7 +14,8 @@
 		<LI><A href="ftp://vert.synchro.net/Synchronet/ssrc230c.zip">v2.30c for DOS and OS/2</A> (1997)
 		<LI><A href="ftp://vert.synchro.net/Synchronet/ssrc300c.zip">v3.00c for Win32</A> (2001) 
 		<LI><A href="ftp://vert.synchro.net/sbbs_src.tgz">v3.10L for Unix</A> (2003)
-		<br>Required libraries:
+		<br>Required libraries<br>
+        (unless you already have <tt>/usr/lib/libjs.so</tt> or <tt>/usr/lib/libmozjs.so</tt>):
 		<ul>
 			<li><A href="ftp://vert.synchro.net/lib-linux.tgz">Linux-x86</A>
 			<li><A href="ftp://vert.synchro.net/lib-freebsd.tgz">FreeBSD-x86</A>
@@ -37,7 +38,7 @@
 			<li>lib/mozilla/js/<i><b>os</b></i>.release (or .debug)
 				<br>example: lib/mozilla/js/linux.release
 			<li>lib/mozilla/nspr/<i><b>os</b></i>.release
-				<br>example: lib/mozilla/js/win32.release</tt>
+				<br>example: lib/mozilla/nspr/win32.release</tt>
 		</ul>
 		<li>Required modules (for running Synchronet):
 		<ul><tt>
@@ -65,19 +66,26 @@
 	    <LI><tt>cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs co 
 	    	src/sbbs3</tt>
 	</ul>
+	    <li>Win32 batch file to get/update required modules using
+        <a href="ftp://ftp.cvshome.org/release/binary/win32/latest.zip">
+        command-line CVS client</a>:<ul>
+  		<li>
+        <a href="http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/install/checkout.bat">
+        checkout.bat</a> (requires <tt>cvs-<i>version</i>.exe</tt> be renamed to just <tt>cvs.exe</tt>)</li>
+	</UL>
+	    </li>
 	</UL>
 	<p>
     <LI>Web-based CVS access, particularly useful for browsing the repository and visually comparing revisions of files ("diff'ing")
-    <br>
-    <a href="http://cvs.synchro.net/cgi-bin/cvsweb.cgi">http://cvs.synchro.net/cgi-bin/cvsweb.cgi</a>
- 
-	<p>
-    &nbsp;
-  	<li>Step-by-step instructions on how to download, build, and run the current
+    <a href="http://cvs.synchro.net/cgi-bin/viewcvs.cgi">
+    http://cvs.synchro.net/cgi-bin/viewcvs.cgi</a>
+    <br><br>
+	<li>Step-by-step instructions on how to download, build, and run the current
     	source code on Unix (Linux, FreeBSD, and OpenBSD), 
-		see<br><a href="ftp://vert.synchro.net/Synchronet/sbbsunix.txt">ftp://vert.synchro.net/Synchronet/sbbsunix.txt</a></li>
-	<p>
-	<li>Or you can also run the Unix installer to get and build the current or released source code:<br>
+		see<br><a href="ftp://vert.synchro.net/Synchronet/sbbsunix.txt">ftp://vert.synchro.net/Synchronet/sbbsunix.txt</a></li><br>
+	<br>
+	<li>Or you can also run the Unix installer to get and build the current or released source code 
+    (does <b>not</b> currently run on <i>RedHat Linux 9</i>):<br>
 		<a href="ftp://vert.synchro.net/Synchronet/sbbsunix.tgz">ftp://vert.synchro.net/Synchronet/sbbsunix.tgz</a>
 </UL>
 <hr>
