@@ -1,39 +1,41 @@
 a:link { color: yellow; }
 a:visited { color: lime; }
-a:hover { color: #ccffdd }
+a:hover { color: #ccffdd; }
  
 body { background-color: teal; color: white; font-family: Arial, Helvetica, sans-serif; }
+
+table.main { background-color: teal; margin-left: auto; margin-right: auto; margin-top: 0; margin-bottom: 0; }
 
 pre { background-color: black; color: #aaaaaa; font-family: monospace; }
 pre.leftalign { background-color: black; color: #aaaaaa; text-align: left; }
 
-table.newuser { margin-left: auto; margin-right: auto; background-color: #116677 }
+table.newuser { margin-left: auto; margin-right: auto; background-color: #116677; }
 td.newuser { background-color: #007788; }
 
-table.userlist { margin-left: auto; margin-right: auto; background-color: #116677 }
+table.userlist { margin-left: auto; margin-right: auto; background-color: #116677; }
 th.userlist { background-color: #007788; color: black; }
 td.userlist { background-color: #007788; }
 a.userlist { text-decoration: none; color: black; }
 a.userlist:hover { text-decoration: underline; }
 
-table.userstats { margin-left: auto; margin-right: auto; background-color: #116677 }
+table.userstats { margin-left: auto; margin-right: auto; background-color: #116677; }
 td.userstats { background-color: #007788; } 
 
-table.sysinfo { margin-left: auto; margin-right: auto; background-color: #116677 }
+table.sysinfo { margin-left: auto; margin-right: auto; background-color: #116677; }
 td.sysinfo { background-color: #007788; } 
 
-table.grouplist { margin-left: auto; margin-right: auto; background-color: #116677 }
+table.grouplist { margin-left: auto; margin-right: auto; background-color: #116677; }
 th.grouplist { background-color: #007788; color: black; }
 td.grouplist { background-color: #007788; }
-a.grouplist:hover { color: #ccffdd }
+a.grouplist:hover { color: #ccffdd; }
 
-table.sublist { margin-left: auto; margin-right: auto; background-color: #116677 }
+table.sublist { margin-left: auto; margin-right: auto; background-color: #116677; }
 th.sublist { background-color: #007788; color: black; }
 td.sublist { background-color: #007788; }
 
-table.msglist { margin-left: auto; margin-right: auto; background-color: #116677 }
+table.msglist { margin-left: auto; margin-right: auto; background-color: #116677; }
 th.msglist { background-color: #007788; color: black; }
-a.msglist:hover { color: #ccffdd }
+a.msglist:hover { color: #ccffdd; }
 
 body.msg { background-color: black; }
 table.msg { margin-left: auto; margin-right: auto; }
@@ -41,18 +43,18 @@ td.msgheader { font-weight: bold; }
 object.msg { margin: 0%; background-color: black; color: #aaaaaa; }
 p.msgcenter { text-align: center; }
 
-table.postmsg { margin-left: auto; margin-right: auto; background-color: #116677 }
+table.postmsg { margin-left: auto; margin-right: auto; background-color: #116677; }
 td.postmsg { background-color: #007788; }
 textarea.postmsg { background-color: black; color: #aaaaaa; }
 input.postmsg { background-color: black; color: #aaaaaa; }
 
-table.replymsg { margin-left: auto; margin-right: auto; background-color: #116677 }
+table.replymsg { margin-left: auto; margin-right: auto; background-color: #116677; }
 td.replymsg { background-color: #007788; }
 textarea.replymsg { background-color: black; color: #aaaaaa; }
 input.replymsg { background-color: black; color: #aaaaaa; }
 
 p.navigation { text-align: center; font-style: italic; font-weight: bold; }
 a.navigation { font-style: normal; font-weight: normal; }
-a.navigation:hover { font-style: normal; font-weight: normal; color: #ccffdd }
+a.navigation:hover { font-style: normal; font-weight: normal; color: #ccffdd; }
 
 
