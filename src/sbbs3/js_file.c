@@ -325,7 +325,8 @@ static JSBool
 js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char*		cp;
-	size_t		len;
+	size_t		len;	/* string length */
+	size_t		tlen;	/* total length to write (may be greater than len) */
 	JSString*	str;
 	private_t*	p;
 
@@ -343,12 +344,25 @@ js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	str = JS_ValueToString(cx, argv[0]);
 	cp = JS_GetStringBytes(str);
 	len = strlen(cp);
-/*  need etx support
-	if(argc>1)
-		len=JSVAL_TO_INT(argv[1]);
-*/
+	tlen = len;
+	if(argc>1) {
+		tlen=JSVAL_TO_INT(argv[1]);
+		if(len>tlen)
+			len=tlen;
+	}
 	if(fwrite(cp,1,len,p->fp)==len) {
-		dbprintf(FALSE, p, "wrote %u bytes",len);
+		if(tlen>len) {
+			len=tlen-len;
+			if((cp=malloc(len))==NULL) {
+				dbprintf(TRUE, p, "malloc failure of %u bytes", len);
+				*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+				return(JS_TRUE);
+			}
+			memset(cp,p->etx,len);
+			fwrite(cp,1,len,p->fp);
+			free(cp);
+		}
+		dbprintf(FALSE, p, "wrote %u bytes",tlen);
 		*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
 	} else 
 		dbprintf(TRUE, p, "write of %u bytes failed",len);
