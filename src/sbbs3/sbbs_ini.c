@@ -364,7 +364,7 @@ void sbbs_read_ini(
 	SAFECOPY(web->index_file_name
 		,iniReadString(fp,section,"IndexFileName","index.html"));
 	SAFECOPY(web->js_ext
-		,iniReadString(fp,section,"JavaScriptExtension",".js"));
+		,iniReadString(fp,section,"JavaScriptExtension",".ssjs"));
 
 	web->max_inactivity
 		=iniReadShortInt(fp,section,"MaxInactivity",120);		/* seconds */
@@ -376,7 +376,7 @@ void sbbs_read_ini(
 	default_cgi_temp = "/tmp";
 #else
 	if((default_cgi_temp = getenv("TEMP")) == NULL)
-		default_cgi_temp = "";
+		default_cgi_temp = nulstr;
 #endif
 	SAFECOPY(web->cgi_temp_dir
 		,iniReadString(fp,section,"CGITempDirectory",default_cgi_temp));
