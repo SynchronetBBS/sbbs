@@ -427,7 +427,163 @@ js_chksyspass(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 	return(JS_TRUE);
 }
 
+static JSBool
+js_text(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	int			i;
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	i=JSVAL_TO_INT(argv[0]);
+	i--;
+
+	if(i<0 || i>=TOTAL_TEXT)
+		*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, "-Invalid Text Index-"));
+	else
+		*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, sbbs->text[i]));
+
+	return(JS_TRUE);
+}
+
+static JSBool
+js_replace_text(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		p;
+	int			i,len;
+	JSString*	js_str;
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	i=JSVAL_TO_INT(argv[0]);
+	i--;
+
+	if(i<0 || i>=TOTAL_TEXT) {
+		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+		return(JS_TRUE);
+	}
+
+	if(sbbs->text[i]!=sbbs->text_sav[i] && sbbs->text[i]!=nulstr)
+		FREE(sbbs->text[i]);
+
+	if((js_str=JS_ValueToString(cx, argv[1]))==NULL) {
+		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+		return(JS_TRUE);
+	}
+
+	if((p=JS_GetStringBytes(js_str))==NULL) {
+		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+		return(JS_TRUE);
+	}
+
+	len=strlen(p);
+	if(!len)
+		sbbs->text[i]=nulstr;
+	else
+		sbbs->text[i]=(char *)MALLOC(len+1);
+	if(sbbs->text[i]==NULL) {
+		sbbs->text[i]=sbbs->text_sav[i];
+		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+	} else {
+		strcpy(sbbs->text[i],p);
+		*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
+	}
+
+	return(JS_TRUE);
+}
+
+static JSBool
+js_revert_text(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	int			i;
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	i=JSVAL_TO_INT(argv[0]);
+	i--;
+
+	if(i<0 || i>=TOTAL_TEXT) {
+		for(i=0;i<TOTAL_TEXT;i++) {
+			if(sbbs->text[i]!=sbbs->text_sav[i] && sbbs->text[i]!=nulstr)
+				FREE(sbbs->text[i]);
+			sbbs->text[i]=sbbs->text_sav[i]; 
+		}
+	} else {
+		if(sbbs->text[i]!=sbbs->text_sav[i] && sbbs->text[i]!=nulstr)
+			FREE(sbbs->text[i]);
+		sbbs->text[i]=sbbs->text_sav[i];
+	}
+
+	*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
+
+	return(JS_TRUE);
+}
+
+static JSBool
+js_load_text(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	int			i;
+	char		path[MAX_PATH+1];
+	FILE*		stream;
+	JSString*	js_str;
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	if((js_str=JS_ValueToString(cx, argv[0]))==NULL) {
+		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+		return(JS_TRUE);
+	}
+
+	for(i=0;i<TOTAL_TEXT;i++) {
+		if(sbbs->text[i]!=sbbs->text_sav[i]) {
+			if(sbbs->text[i]!=nulstr)
+				FREE(sbbs->text[i]);
+			sbbs->text[i]=sbbs->text_sav[i]; 
+		}
+	}
+	sprintf(path,"%s%s.dat"
+		,sbbs->cfg.ctrl_dir,JS_GetStringBytes(js_str));
+
+	if((stream=fnopen(NULL,path,O_RDONLY))==NULL) {
+		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+		return(JS_TRUE);
+	}
+	for(i=0;i<TOTAL_TEXT && !feof(stream);i++) {
+		if((sbbs->text[i]=readtext((long *)NULL,stream))==NULL) {
+			i--;
+			continue; 
+		}
+		if(!strcmp(sbbs->text[i],sbbs->text_sav[i])) {	/* If identical */
+			FREE(sbbs->text[i]);					/* Don't alloc */
+			sbbs->text[i]=sbbs->text_sav[i]; 
+		}
+		else if(sbbs->text[i][0]==0) {
+			FREE(sbbs->text[i]);
+			sbbs->text[i]=nulstr; 
+		} 
+	}
+	if(i<TOTAL_TEXT) 
+		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+	else
+		*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
+
+	fclose(stream);
+
+	return(JS_TRUE);
+}
+
 static JSFunctionSpec js_bbs_functions[] = {
+	{"text",			js_text,			1},		// return text string from text.dat
+	{"replace_text",	js_replace_text,	2},		// replace a text string
+	{"revert_text",		js_revert_text,		0},		// revert to original text string
+	{"load_text",		js_load_text,		1},		// load an alternate text.dat
 	{"menu",			js_menu,			1},		// show menu
 	{"hangup",			js_hangup,			0},		// hangup immediately
 	{"exec",			js_exec,			2},		// execute command line with mode
