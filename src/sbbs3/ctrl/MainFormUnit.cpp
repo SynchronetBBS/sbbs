@@ -166,8 +166,11 @@ static void client_on(BOOL on, int sock, client_t* client, BOOL update)
         if(ClientForm->ListView->Items->Item[i]->Caption.ToIntDef(0)==sock)
             break;
     }
-    if(i>=ClientForm->ListView->Items->Count)
+    if(i>=ClientForm->ListView->Items->Count) {
+		if(update)	/* Can't update a non-existing entry */
+			return;
         i=-1;
+	}
 
     if(on) {
 	    if(!update)
