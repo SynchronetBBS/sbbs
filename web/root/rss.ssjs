@@ -171,7 +171,7 @@ if(msgbase.open()) {
 		writeln('\t\t\t\t<author>' + encode(hdr.from) + '</author>');
 		writeln('\t\t\t\t<guid>' + encode(hdr.id) + '</guid>');
 		writeln('\t\t\t\t<description>' + encode(body.slice(0,500)) + '</description>');
-		writeln('\t\t\t\t<link>' + link_root + '&item=' + hdr.number + '</link>');
+		writeln('\t\t\t\t<link>' + encodeURI(link_root + '&item=' + hdr.number) + '</link>');
 		writeln('\t\t\t</item>');
 	}
     msgbase.close();
