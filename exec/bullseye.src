@@ -65,7 +65,7 @@ if_true	# not end of file
 		if_true
 			exec_bin typehtml
 		else
-			printfile_str
+			printfile str 0
 			end_if
 		sprintf str "Node %d %s viewed bulletin #%d: %s" _node_num _useron.alias i fname
 		print_local "%s"
