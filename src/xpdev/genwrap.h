@@ -123,8 +123,6 @@ extern "C" {
 	#endif
 #endif
 
-DLLEXPORT char*	DLLCALL	lastchar(const char* str);
-
 /****************************/
 /* Common Utility Functions */
 /****************************/
@@ -153,6 +151,7 @@ DLLEXPORT char*	DLLCALL	lastchar(const char* str);
 
 DLLEXPORT int		DLLCALL	xp_random(int);
 DLLEXPORT char*		DLLCALL os_version(char *str);
+DLLEXPORT char*		DLLCALL	lastchar(const char* str);
 
 #if defined(__cplusplus)
 }
