@@ -63,7 +63,6 @@
 #include <errno.h>		/* ENOENT definitions */
 
 #include "sbbs.h"		/* getfname */
-#include "smbwrap.h"    /* SH_DENY* */
 
 #ifdef _WIN32
 #define stat(f,s)	_stat(f,s)
@@ -336,8 +335,11 @@ ulong _beginthread(void( *start_address )( void * )
 
 	return(-1);	/* error */
 }
-#endif  // _POSIX_THREADS
-#endif
+#else	/* _POSIX_THREADS */
+
+#error "Need _beginthread implementation for non-POSIX thread library."
+
+#endif	/* __unix__ */
 
 /****************************************************************************/
 /* Return free disk space in bytes (up to a maximum of 4GB)					*/
