@@ -882,12 +882,6 @@ video_event(XEvent *ev)
 			goto docode;
 
 		default:
-    	    	    	if ((K1_STATUS&(K1_ALT|K1_CTRL)) == (K1_ALT|K1_CTRL)) {
-				if (ks == 'R' || ks == 'r') {
-                                    kill(getpid(), SIGALRM);	/* redraw */
-				    break;
-				}
-			}
 			if (ks < ' ' || ks > '~')
 				break;
 			scan = Ascii2Scan[ks]; 
