@@ -172,7 +172,7 @@ BUILDPATH	=	release
 !endif
 
 OBJODIR =	$(CCPRE).win32.obj.$(BUILDPATH)
-MTOBJODIR =	$(CCPRE).win32.obj.$(BUILDPATH)-mt
+MTOBJODIR =	$(CCPRE).win32.obj.$(BUILDPATH)_mt
 LIBODIR =	$(CCPRE).win32.lib.$(BUILDPATH)
 EXEODIR =	$(CCPRE).win32.exe.$(BUILDPATH)
 
