@@ -356,7 +356,7 @@ DLLCALL js_DefineMethods(JSContext* cx, JSObject* obj, jsMethodSpec *funcs, BOOL
 		if(funcs[i].type==JSTYPE_ALIAS)
 			continue;
 
-		method = JS_NewObject(cx, NULL, NULL, method_array);
+		method = JS_NewObject(cx, NULL, NULL, method_array);	/* exception here June-7-2003 */
 
 		if(method==NULL)
 			return(JS_FALSE);
@@ -2833,7 +2833,8 @@ void sbbs_t::reset_logon_vars(void)
     question[0]=0;
     menu_dir[0]=0;
     menu_file[0]=0;
-    rows=0;
+    rows=24;
+	cols=80;
     lncntr=0;
     autoterm=0;
     keybufbot=keybuftop=lbuflen=0;
