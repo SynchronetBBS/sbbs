@@ -78,7 +78,7 @@
 
 smb_t smb;
 ulong mode=0L;
-ushort tzone=PST;
+ushort tzone=0;
 
 /************************/
 /* Program usage/syntax */
@@ -1192,7 +1192,7 @@ void packmsgs(ulong packable)
 		msg.idx.number=msg.hdr.number;
 		msg.idx.attr=msg.hdr.attr;
 		msg.idx.time=msg.hdr.when_imported.time;
-		sprintf(str,"%.128s",msg.subj);
+		SAFECOPY(str,msg.subj);
 		strlwr(str);
 		remove_re(str);
 		msg.idx.subj=crc16(str);
@@ -1206,10 +1206,10 @@ void packmsgs(ulong packable)
 			else
 				msg.idx.from=0; }
 		else {
-			sprintf(str,"%.128s",msg.to);
+			SAFECOPY(str,msg.to);
 			strlwr(str);
 			msg.idx.to=crc16(str);
-			sprintf(str,"%.128s",msg.from);
+			SAFECOPY(str,msg.from);
 			strlwr(str);
 			msg.idx.from=crc16(str); }
 		fwrite(&msg.idx,1,sizeof(idxrec_t),tmp_sid);
@@ -1406,7 +1406,6 @@ int main(int argc, char **argv)
 	char*	subj=NULL;
 	FILE*	fp;
 	int		i,j,x,y;
-	time_t	t;
 	BOOL	create=FALSE;
 
 	setvbuf(stdout,0,_IONBF,0);
@@ -1432,7 +1431,7 @@ int main(int argc, char **argv)
 #endif
 		,smb_lib_ver()
 		);
-
+#if 0
 	putenv("TZ=UTC0");
 	tzset();
 
@@ -1440,6 +1439,7 @@ int main(int argc, char **argv)
 		fprintf(stderr,"!TIME PROBLEM (%ld)\n",t);
 		return(-1);
 	}
+#endif
 
 	for(x=1;x<argc && x>0;x++) {
 		if(
@@ -1508,9 +1508,9 @@ int main(int argc, char **argv)
 						break; } }
 		else {
 			if(!cmd[0])
-				strcpy(cmd,argv[x]);
+				SAFECOPY(cmd,argv[x]);
 			else {
-				sprintf(smb.file,"%.64s",argv[x]);
+				SAFECOPY(smb.file,argv[x]);
 				p=strrchr(smb.file,'.');
 				s=strrchr(smb.file,'/');
 				if(s==NULL)
