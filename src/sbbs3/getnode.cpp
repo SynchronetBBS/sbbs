@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -48,7 +48,7 @@ int sbbs_t::getnodedat(uint number, node_t *node, bool lockit)
 	char	str[MAX_PATH+1];
 	int		count;
 
-	if(!number)
+	if(node==NULL || number<1)
 		return(-1);
 
 	if(number>cfg.sys_nodes) {
@@ -56,11 +56,11 @@ int sbbs_t::getnodedat(uint number, node_t *node, bool lockit)
 		return(-1); 
 	}
 
+	memset(node,0,sizeof(node_t));
 	if(nodefile==-1) {
 		sprintf(str,"%snode.dab",cfg.ctrl_dir);
 		if((nodefile=nopen(str,O_RDWR|O_DENYNONE))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_RDWR|O_DENYNONE);
-			memset(node,0,sizeof(node_t));
 			return(errno); 
 		}
 	}
