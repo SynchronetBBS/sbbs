@@ -1147,7 +1147,7 @@ void sbbs_t::moduserdat(uint xtrnnum)
 			putuserrec(&cfg,useron.number,U_FLAGS1,8,ultoa(useron.flags1,tmp,16));
 			lseek(file,373,SEEK_SET);
 			read(file,&i,2);			/* SecLvl */
-			if(i<90) {
+			if(i<SYSOP_LEVEL) {
 				useron.level=i;
 				putuserrec(&cfg,useron.number,U_LEVEL,2,ultoa(useron.level,tmp,10)); }
 			close(file);
@@ -1162,7 +1162,7 @@ void sbbs_t::moduserdat(uint xtrnnum)
 					break;
 			if(i==15 && isdigit(str[0])) {
 				mod=atoi(str);
-				if(mod<90) {
+				if(mod<SYSOP_LEVEL) {
 					useron.level=(char)mod;
 					putuserrec(&cfg,useron.number,U_LEVEL,2,ultoa(useron.level,tmp,10)); } }
 
@@ -1219,7 +1219,7 @@ void sbbs_t::moduserdat(uint xtrnnum)
 			if(c==1) {	 /* file has been updated */
 				lseek(file,105,SEEK_CUR);	/* read security level */
 				read(file,&i,2);
-				if(i<90) {
+				if(i<SYSOP_LEVEL) {
 					useron.level=i;
 					putuserrec(&cfg,useron.number,U_LEVEL,2,ultoa(useron.level,tmp,10)); }
 				lseek(file,75,SEEK_CUR);	/* read in expiration date */
@@ -1249,7 +1249,7 @@ void sbbs_t::moduserdat(uint xtrnnum)
 				subtract_cdt(&cfg,&useron,-mod); }	/* subtract from free cdt first */
 		if(fgets(str,81,stream)) {		/* main level */
 			mod=atoi(str);
-			if(isdigit(str[0]) && mod<90) {
+			if(isdigit(str[0]) && mod<SYSOP_LEVEL) {
 				useron.level=(uchar)mod;
 				putuserrec(&cfg,useron.number,U_LEVEL,2,ultoa(useron.level,tmp,10)); } }
 		fgets(str,81,stream);		 /* was transfer level, now ignored */

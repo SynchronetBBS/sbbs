@@ -744,8 +744,9 @@ enum {						/* Values of mode for userlist function     */
 /**********/
 
 #define CRLF			{ outchar(CR); outchar(LF); }
-#define SYSOP			(useron.level>=90 || sys_status & SS_TMPSYSOP)
-#define REALSYSOP		(useron.level>=90)
+#define SYSOP_LEVEL		90
+#define SYSOP			(useron.level>=SYSOP_LEVEL || sys_status & SS_TMPSYSOP)
+#define REALSYSOP		(useron.level>=SYSOP_LEVEL)
 #define FLAG(x) 		(ulong)(1UL<<(x-'A'))
 #define CLS         	outchar(FF)
 #define WHERE       	__LINE__,__FILE__

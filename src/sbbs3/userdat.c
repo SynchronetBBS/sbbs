@@ -813,7 +813,7 @@ static BOOL ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user)
 				else result=!not;
 				break;
 			case AR_SYSOP:
-				if(user->level<90)
+				if(user->level<SYSOP_LEVEL)
 					result=not;
 				else result=!not;
 				break;
