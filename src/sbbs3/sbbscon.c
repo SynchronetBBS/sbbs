@@ -55,17 +55,18 @@ mail_startup_t	mail_startup;
 
 static const char* prompt = "Command (?=Help): ";
 
-static const char* usage  = "\r\nusage: %s [[option] [...]]\r\n"
-							"\r\noptions:\r\n\r\n"
-							"defaults   show default settings\r\n"
-							"tf<node>   set First Telnet Node Number\r\n"
-							"tl<node>   set Last Telnet Node Number\r\n"
-							"tp<port>   set Telnet Server Port\r\n"
-							"rp<port>   set RLogin Server Port (and enable RLogin Server)\r\n"
-							"fp<port>   set FTP Server Port\r\n"
-							"sp<port>   set SMTP Server Port\r\n"
-							"sr<port>   set SMTP Relay Port\r\n"
-							"pp<port>   set POP3 Server Port\r\n"
+static const char* usage  = "\nusage: %s [[option] [...]]\n"
+							"\noptions:\n\n"
+							"defaults   show default settings\n"
+							"tf<node>   set First Telnet Node Number\n"
+							"tl<node>   set Last Telnet Node Number\n"
+							"tp<port>   set Telnet Server Port\n"
+							"rp<port>   set RLogin Server Port (and enable RLogin Server)\n"
+							"fp<port>   set FTP Server Port\n"
+							"sp<port>   set SMTP Server Port\n"
+							"sr<port>   set SMTP Relay Port\n"
+							"pp<port>   set POP3 Server Port\n"
+							"\n"
 							;
 
 static void lputs(char *str)
@@ -228,12 +229,8 @@ int main(int argc, char** argv)
     bbs_startup.size=sizeof(bbs_startup);
     bbs_startup.first_node=1;
     bbs_startup.last_node=4;
-    bbs_startup.telnet_port=IPPORT_TELNET;
     bbs_startup.telnet_interface=INADDR_ANY;
 	bbs_startup.options|=BBS_OPT_NO_QWK_EVENTS;
-
-    bbs_startup.rlogin_port=513;
-    bbs_startup.rlogin_interface=INADDR_ANY;
 
 #ifdef USE_RLOGIN
 	bbs_startup.options|=BBS_OPT_ALLOW_RLOGIN;
@@ -254,8 +251,6 @@ int main(int argc, char** argv)
 	/* Initialize FTP startup structure */
     memset(&ftp_startup,0,sizeof(ftp_startup));
     ftp_startup.size=sizeof(ftp_startup);
-    ftp_startup.port=IPPORT_FTP;
-    ftp_startup.interface_addr=INADDR_ANY;
 	ftp_startup.lputs=ftp_lputs;
     ftp_startup.started=ftp_started;
     ftp_startup.terminated=ftp_terminated;
@@ -266,14 +261,6 @@ int main(int argc, char** argv)
 	/* Initialize Mail Server startup structure */
     memset(&mail_startup,0,sizeof(mail_startup));
     mail_startup.size=sizeof(mail_startup);
-    mail_startup.smtp_port=IPPORT_SMTP;
-    mail_startup.pop3_port=110;
-    mail_startup.max_clients=10;
-    mail_startup.max_inactivity=120;
-    mail_startup.max_delivery_attempts=10;
-    mail_startup.rescan_frequency=300;	/* In seconds */
-    mail_startup.relay_port=IPPORT_SMTP;
-    mail_startup.interface_addr=INADDR_ANY;
 	mail_startup.lputs=mail_lputs;
     mail_startup.started=mail_started;
     mail_startup.terminated=mail_terminated;
@@ -286,7 +273,7 @@ int main(int argc, char** argv)
 		if(*arg=='-')/* ignore prepended slashes */
 			arg++;
 		if(!stricmp(arg,"defaults")) {
-			printf("default settings\r\n");
+			printf("default settings\n");
 			return(0);
 		}
 		switch(toupper(*(arg++))) {
