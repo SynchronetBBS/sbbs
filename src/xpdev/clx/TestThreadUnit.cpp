@@ -1,6 +1,5 @@
 //---------------------------------------------------------------------------
 #include <stdio.h>	/* printf */
-#include <vcl.h>
 #pragma hdrstop
 
 #include "TestThreadUnit.h"
