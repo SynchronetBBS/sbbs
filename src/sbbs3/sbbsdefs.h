@@ -48,7 +48,7 @@
 
 #ifdef JAVASCRIPT
 	#define VERSION 	"3.10"  /* Version: Major.minor  */
-	#define REVISION	'B'
+	#define REVISION	'C'
 #else
 	#define VERSION 	"3.00"  /* Version: Major.minor  */
 	#define REVISION	'G'
@@ -56,7 +56,9 @@
 
 #define VERSION_NOTICE		"Synchronet BBS for "PLATFORM_DESC\
 								"  Version " VERSION "  "
+#define SYNCHRONET_CRC		0x9BCDD162
 #define COPYRIGHT_NOTICE	"Copyright 2001 Rob Swindell"
+#define COPYRIGHT_CRC		0x84A7C601
 #define QWK_HEADER			"Produced by Synchronet BBS  Version 3  "\
 								COPYRIGHT_NOTICE
 
