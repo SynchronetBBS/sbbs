@@ -435,10 +435,10 @@ function push_nickbuf(oldnick,newnick) {
 }
 
 function search_nickbuf(bufnick) {
-	for (nb=0;nb<NickHistory.length;nb++) {
-		if (NickHistory[nb] && (bufnick.toUpperCase() == NickHistory[nb].oldnick.toUpperCase())) {
+	for (nb=NickHistory.length-1;nb>-1;nb--) {
+		if (bufnick.toUpperCase() == NickHistory[nb].oldnick.toUpperCase()) {
 			if (!Users[NickHistory[nb].newnick.toUpperCase()])
-				return search_nickbuf(NickHistory[nb].newnick);
+				bufnick = NickHistory[nb].newnick;
 			else
 				return Users[NickHistory[nb].newnick.toUpperCase()];
 		}
