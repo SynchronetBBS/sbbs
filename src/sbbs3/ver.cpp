@@ -59,6 +59,12 @@ void sbbs_t::ver()
 		,__BORLANDC__&0xff);
 #elif defined(_MSC_VER)
 	sprintf(compiler,"MSC %u", _MSC_VER);
+#elif defined(__GNUC__) && defined(__GLIBC__)
+	sprintf(compiler,"GCC %u.%02u (GLIBC %u.%u)"
+		,__GNUC__
+		,__GNUC_MINOR__
+		,__GLIBC__
+		,__GLIBC_MINOR__);
 #else
 	strcpy(compiler,"UNKNOWN COMPILER");
 #endif
@@ -75,7 +81,7 @@ void sbbs_t::ver()
 	center(str);
 	CRLF;
 
-#if defined(__OS2__)
+#if defined(__OS2__) && defined(__BORLANDC__)
 
 	sprintf(str,"OS/2 %u.%u (%u.%u)",_osmajor/10,_osminor/10,_osmajor,_osminor);
 
@@ -108,7 +114,15 @@ void sbbs_t::ver()
 			,winver.dwMajorVersion, winver.dwMinorVersion
 			,winver.dwBuildNumber,winver.szCSDVersion);
 
-#else	/* DOS */
+#elif defined(__linux__)
+
+	sprintf(str,"Linux");
+
+#elif defined(__unix__)
+
+	sprintf(str,"Unix");
+
+#else	/* DOS && __BORLANDC__*/
 
 	sprintf(str,"DOS %u.%02u",_osmajor,_osminor);
 
