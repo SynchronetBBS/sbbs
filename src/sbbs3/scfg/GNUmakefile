@@ -14,7 +14,12 @@
 # $Id$
 
 # Macros
-DEBUG	=	1		# Comment out for release (non-debug) version
+ifndef DEBUG
+ ifndef RELEASE
+  DEBUG	:=	1
+ endif
+endif
+
 #USE_DIALOG =	1	# Dialog vesrion of UIFC
 USE_CURSES	=	1	# Curses version of UIFC
 CC		=	gcc
@@ -23,44 +28,40 @@ OFILE	=	o
 UIFC	=	../../uifc
 XPDEV	=	../../xpdev
 
-ifndef $(os)
-os		=	$(shell uname)
-$(warning OS not specified on command line, setting to '$(os)'.)
+ifndef os
+ os		=	$(shell uname)
+ $(warning OS not specified on command line, setting to '$(os)'.)
 endif
+os      :=	$(shell echo $(os) | awk '/.*/ { print tolower($$1)}')
 
-ifeq ($(os),FreeBSD)	# FreeBSD
-ODIR	:=	gcc.freebsd
-else                    # Linux
-ODIR	:=	gcc.linux
-endif
+ODIR	:=	gcc.$(os)
 
 LIBDIR	:=	/usr/lib
 DELETE	=	rm -f -v
 OUTLIB	=	-o
 
-CFLAGS	:=	-Wall -I$(UIFC) -I$(XPDEV) -I/usr/local/include -I../  -D_THREAD_SAFE
+CFLAGS	+=	-Wall -I$(UIFC) -I$(XPDEV) -I/usr/local/include -I../  -D_THREAD_SAFE
 
 LFLAGS	:=	-L/usr/local/lib
 
 ifdef USE_DIALOG
-LFLAGS	:=	$(LFLAGS) -L../../libdialog -ldialog -lcurses
-CFLAGS	:=	$(CFLAGS) -I../../libdialog -DUSE_DIALOG
+ LFLAGS	:=	$(LFLAGS) -L../../libdialog -ldialog -lcurses
+ CFLAGS	+=	-I../../libdialog -DUSE_DIALOG
 endif
 
 ifdef USE_CURSES
-LFLAGS	:=	$(LFLAGS) -lcurses
-CFLAGS	:=	$(CFLAGS) -DUSE_CURSES
+ LFLAGS	:=	$(LFLAGS) -lcurses
+ CFLAGS	+=	-DUSE_CURSES
 endif
 
 # Math library needed
 LFLAGS	:=	$(LFLAGS) -lm
 
 ifdef DEBUG
-CFLAGS	:=	$(CFLAGS) -g -O0 -D_DEBUG 
-ODIR	:=	$(ODIR).debug
+ CFLAGS	+=	-ggdb -O0 -D_DEBUG 
+ ODIR	:=	$(ODIR).debug
 else # RELEASE
-LFLAGS	:=	$(LFLAGS)
-ODIR	:=	$(ODIR).release
+ ODIR	:=	$(ODIR).release
 endif
 
 include targets.mk		# defines all targets
@@ -68,11 +69,11 @@ include objects.mk		# defines $(OBJS)
 include headers.mk		# defines $(HEADERS)
 
 ifdef USE_DIALOG		
-OBJS := $(OBJS)			$(ODIR)$(SLASH)uifcd.$(OFILE)
+ OBJS := $(OBJS)			$(ODIR)$(SLASH)uifcd.$(OFILE)
 endif
 
 ifdef USE_CURSES		
-OBJS := $(OBJS)			$(ODIR)$(SLASH)uifcc.$(OFILE)
+ OBJS := $(OBJS)			$(ODIR)$(SLASH)uifcc.$(OFILE)
 endif
 
 vpath %.c ..
@@ -96,9 +97,9 @@ $(SCFGHELP): $(OBJS) makehelp
 
 # Monolithic Synchronet executable Build Rule
 $(SCFG): $(OBJS)
-ifdef USE_DIALOG
+   ifdef USE_DIALOG
 	@$(MAKE) --no-print-directory -C ../../libdialog
-endif
+   endif
 	@echo Linking $@
 	@$(CC) -o $@ $(OBJS) $(LFLAGS)
 

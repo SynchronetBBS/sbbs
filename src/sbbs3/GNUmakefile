@@ -14,17 +14,24 @@
 # $Id$
 
 # Macros
-DEBUG	=	1		# Comment out for release (non-debug) version
+ifndef DEBUG
+ ifndef RELEASE
+  DEBUG	:=	1
+ endif
+endif
+
 ifdef bcc
-CC		=	bc++ -q
-CCPP	=	bc++ -q
-LD		=	ilink -q
-CFLAGS 	=	-D__unix__ -w-csu -w-pch -w-ccc -w-rch -w-par -w-aus
+ CC		=	bc++ -q
+ CCPRE	:=	bcc
+ CCPP	=	bc++ -q
+ LD		=	ilink -q
+ CFLAGS 	+=	-D__unix__ -w-csu -w-pch -w-ccc -w-rch -w-par -w-aus
 else
-CC		=	gcc
-CCPP	=	g++
-LD		=	ld
-CFLAGS	=	-Wall
+ CC		=	gcc
+ CCPRE	:=	gcc
+ CCPP	=	g++
+ LD		=	ld
+ CFLAGS	+=	-Wall
 endif
 SLASH	=	/
 OFILE	=	o
@@ -33,69 +40,92 @@ LIBFILE	=	.a
 UIFC	=	../uifc/
 XPDEV	=	../xpdev/
 
-ifndef $(os)
-os		=	$(shell uname)
-$(warning OS not specified on command line, setting to '$(os)'.)
+ifndef os
+ os		:=	$(shell uname)
+ $(warning OS not specified on command line, setting to '$(os)'.)
 endif
+os      :=	$(shell echo $(os) | awk '/.*/ { print tolower($$1)}')
 
-ifeq ($(os),FreeBSD)	# FreeBSD
-LIBODIR	:=	gcc.freebsd.lib
-EXEODIR	:=	gcc.freebsd.exe
-else                    # Linux
-ifdef bcc
-LIBODIR	:=	bcc.linux.lib
-EXEODIR	:=	bcc.linux.exe
+ifeq ($(os),freebsd)
+ BSD	=	1
 else
-# -O doesn't work on FreeBSD (possible conflict with -g)
-# CFLAGS	+=	-O
-LIBODIR	:=	gcc.linux.lib
-EXEODIR	:=	gcc.linux.exe
-endif
+ ifeq ($(os),openbsd)
+  BSD	=	1
+ endif
 endif
 
-DELETE	=	rm -fv
+LIBODIR :=	$(CCPRE).$(os).lib
+EXEODIR :=	$(CCPRE).$(os).exe
+
+DELETE	=	rm -f
 
 CFLAGS	+=	-DJAVASCRIPT -I../mozilla/js/src -I$(XPDEV) -I$(UIFC)
 
-ifeq ($(os),FreeBSD)	# FreeBSD
-CFLAGS	+= -D_THREAD_SAFE
-# Math libraries needed and uses pthread
-LFLAGS	:=	-lm -pthread -lutil
+ifdef BSD	# BSD
+ CFLAGS	+=	-D_THREAD_SAFE
+ # Math libraries needed and uses pthread
+ LFLAGS	:=	-lm -pthread -lutil
 else			# Linux / Other UNIX
-# Math and pthread libraries needed
-ifdef bcc
-LFLAGS	:=	libpthread.so
-else
-LFLAGS	:=	-lm -lpthread -lutil
-endif
+ # Math and pthread libraries needed
+ ifdef bcc
+  LFLAGS	:=	libpthread.so
+ else
+  LFLAGS	:=	-lm -lpthread -lutil
+ endif
 endif
 
-ifeq ($(os),Linux)    # Linux
-CFLAGS	+= -D_THREAD_SUID_BROKEN
+ifeq ($(os),linux)    # Linux
+ CFLAGS	+= -D_THREAD_SUID_BROKEN
 endif
 
 ifdef DEBUG
-ifdef bcc
-CFLAGS	+=	-y -v -Od
-else
-CFLAGS	+=	-g
-endif
-CFLAGS  +=	-D_DEBUG
-LIBODIR	:=	$(LIBODIR).debug
-EXEODIR	:=	$(EXEODIR).debug
-ifeq ($(os),FreeBSD)	# FreeBSD
-LIBS	+=	../mozilla/js/src/FreeBSD4.3-RELEASE_DBG.OBJ/libjs.a
-else			# Linux
-LIBS	+=	../mozilla/js/src/Linux_All_DBG.OBJ/libjs.a
-endif
+ ifdef bcc
+  CFLAGS	+=	-y -v -Od
+ else
+  CFLAGS	+=	-ggdb
+ endif
+ CFLAGS  +=	-D_DEBUG
+ LIBODIR	:=	$(LIBODIR).debug
+ EXEODIR	:=	$(EXEODIR).debug
+
+ ifdef JSLIB
+  LIBS	+=	$(JSLIB)
+ else
+  ifeq ($(os),freebsd)
+   LIBS	+=	../mozilla/js/src/FreeBSD4.3-RELEASE_DBG.OBJ/libjs.a
+  else
+   ifeq ($(os),openbsd)
+    LIBS	+=	../mozilla/js/src/OpenBSD3.1_DBG.OBJ/libjs.a
+   else
+    ifeq ($(os),linux)
+     LIBS	+=	../mozilla/js/src/Linux_All_DBG.OBJ/libjs.a
+    else
+     $(warning JavaScript library path for '$(os)' not defined.)
+    endif
+   endif
+  endif
+ endif
+
 else # RELEASE
-LIBODIR	:=	$(LIBODIR).release
-EXEODIR	:=	$(EXEODIR).release
-ifeq ($(os),FreeBSD)	# FreeBSD
-LIBS	+=	../mozilla/js/src/FreeBSD4.3-RELEASE_OPT.OBJ/libjs.a
-else
-LIBS	+=	../mozilla/js/src/Linux_All_OPT.OBJ/libjs.a
-endif
+ LIBODIR	:=	$(LIBODIR).release
+ EXEODIR	:=	$(EXEODIR).release
+ ifdef JSLIB
+  LIBS	+=	$(JSLIB)
+ else
+  ifeq ($(os),freebsd)
+   LIBS	+=	../mozilla/js/src/FreeBSD4.3-RELEASE_OPT.OBJ/libjs.a
+  else
+   ifeq ($(os),openbsd)
+    LIBS	+=	../mozilla/js/src/OpenBSD3.1_OPT.OBJ/libjs.a
+   else
+    ifeq ($(os),linux)
+     LIBS	+=	../mozilla/js/src/Linux_All_OPT.OBJ/libjs.a
+    else
+     $(warning JavaScript library path for '$(os)' not defined.)
+    endif
+   endif
+  endif
+ endif
 endif
 
 include targets.mk		# defines all targets
@@ -109,23 +139,23 @@ vpath %.c $(XPDEV) $(UIFC)
 
 # Implicit C Compile Rule for utils
 $(EXEODIR)/%.o : %.c
-ifndef bcc
+   ifndef bcc
 	@echo Compiling $<
-endif
+   endif
 	@$(CC) $(CFLAGS) -o $@ -c $<
 
 # Implicit C Compile Rule for SBBS
 $(LIBODIR)/%.o : %.c
-ifndef bcc
+   ifndef bcc
 	@echo Compiling $<
-endif
+   endif
 	@$(CC) $(CFLAGS) $(SBBSDEFS) -o $@ -c $<
 
 # Implicit C++ Compile Rule for SBBS
 $(LIBODIR)/%.o : %.cpp
-ifndef bcc
+   ifndef bcc
 	@echo Compiling $<
-endif
+   endif
 	@$(CCPP) $(CFLAGS) $(SBBSDEFS) -o $@ -c $<
 
 # Create output directories
@@ -165,7 +195,7 @@ $(MAILSRVR): $(MAIL_OBJS) $(SBBSLIB)
 
 # Synchronet Console Build Rule
 $(SBBSCON): $(CON_OBJS) $(SBBSLIB)
-	$(CC) $(CFLAGS) -o $@ $^
+	@$(CC) $(CFLAGS) -o $@ $^
 
 # Specifc Compile Rules
 $(LIBODIR)/ftpsrvr.o: ftpsrvr.c ftpsrvr.h

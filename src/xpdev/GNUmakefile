@@ -13,51 +13,65 @@
 # $Id$
 
 # Macros
-DEBUG	=	1		# Comment out for release (non-debug) version
-ifdef bcc
-CC	=	bc++
-CFLAGS	=	-q -w -D__unix__
-else
-CC	=	gcc
-CFLAGS	=	-Wall -O
+ifndef DEBUG
+ifndef RELEASE
+DEBUG	:=	1
 endif
+endif
+
+ifdef bcc
+ CC		:=	bc++
+ CCPRE	:=	bcc
+ CFLAGS	+=	-q -w -D__unix__
+else
+ CC		:=	gcc
+ CCPRE	:=	gcc
+ CFLAGS	+=	-Wall -O
+endif
+
 SLASH	=	/
 OFILE	=	o
 
-ifndef $(os)
-os		=	$(shell uname)
-$(warning OS not specified on command line, setting to '$(os)'.)
+ifndef os
+ os		=	$(shell uname)
+ $(warning OS not specified on command line, setting to '$(os)'.)
 endif
+os      :=	$(shell echo $(os) | awk '/.*/ { print tolower($$1)}')
 
 ifdef bcc
-ODIR	:=	bcc.$(os)
+ ODIR	:=	bcc.$(os)
 else
-ODIR	:=	gcc.$(os)
+ ODIR	:=	gcc.$(os)
 endif
 
 DELETE	=	rm -fv
 
-ifeq ($(os),FreeBSD)	# FreeBSD
-CFLAGS	+= -D_THREAD_SAFE
-LFLAGS	:=	-pthread
-else					# Linux / Other UNIX
-ifdef bcc
-LFLAGS	:=	libpthread.a
+ifeq ($(os),freebsd)	# FreeBSD
+ CFLAGS	+= -D_THREAD_SAFE
+ LFLAGS	:=	-pthread
 else
-LFLAGS	:=	-lpthread
-endif
-endif
+ ifeq ($(os),openbsd)	# OpenBSD
+  CFLAGS	+= -D_THREAD_SAFE
+  LFLAGS	:=	-pthread
+ else					# Linux / Other UNIX
+  ifdef bcc
+   LFLAGS	:=	libpthread.a
+  else
+   LFLAGS	:=	-lpthread
+  endif	!bcc
+ endif	!OpenBSD
+endif	!FreeBSD
 
 ifdef DEBUG
-ifdef bcc
-CFLAGS	+=	-v -y
-else
-CFLAGS	+=	-g
-endif
-CFLAGS	+=	-D_DEBUG
-ODIR	:=	$(ODIR).debug
+ ifdef bcc
+  CFLAGS	+=	-v -y
+ else
+  CFLAGS	+=	-g
+ endif
+ CFLAGS	+=	-D_DEBUG
+ ODIR	:=	$(ODIR).debug
 else # RELEASE
-ODIR	:=	$(ODIR).release
+ ODIR	:=	$(ODIR).release
 endif
 
 include objects.mk		# defines $(OBJS)
