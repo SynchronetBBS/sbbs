@@ -83,7 +83,7 @@ static const char* usage  = "\nusage: %s [[option] [...]]\n"
 							"sp<port>   set SMTP Server Port\n"
 							"sr<port>   set SMTP Relay Port\n"
 							"pp<port>   set POP3 Server Port\n"
-							"u<user>    set username for BBS to run as"
+							"u<user>    set username for BBS to run as\n"
 							"\n"
 							;
 
@@ -108,6 +108,28 @@ static void lputs(char *str)
 	pthread_mutex_unlock(&mutex);
 }
 
+#ifdef __unix__
+
+/**********************************************************
+* Change uid of the calling process to the user if specified
+* **********************************************************/
+
+BOOL do_setuid() 
+{
+	uid_t new_uid;
+	struct passwd* pw_entry;
+
+	if(new_uid_name==NULL)	/* unspecified */
+		return TRUE;
+	if((pw_entry=getpwnam(new_uid_name)) && (new_uid=pw_entry->pw_uid))
+		if(!setuid(new_uid)) 
+			return TRUE;
+
+	return FALSE;
+}
+
+#endif   /* __unix__ */
+
 static void thread_up(BOOL up)
 {
    	static pthread_mutex_t mutex;
@@ -119,8 +141,13 @@ static void thread_up(BOOL up)
 	}
 
 	pthread_mutex_lock(&mutex);
-	if(up)
+	if(up) {
 	    thread_count++;
+#ifdef __unix__
+		do_setuid();
+#endif
+	}
+
     else if(thread_count>0)
     	thread_count--;
 	pthread_mutex_unlock(&mutex);
@@ -166,30 +193,6 @@ static void client_on(BOOL on, int sock, client_t* client, BOOL update)
 	lputs(NULL); /* update displayed stats */
 }
 
-#ifdef __unix__
-
-/**********************************************************
-* Change uid of the calling process to the user if specified
-* **********************************************************/
-
-int do_setuid(char* caller) {
-
-	uid_t new_uid;
-	struct passwd* pw_entry;
-
-if ((pw_entry=getpwnam(new_uid_name)) && (new_uid=pw_entry->pw_uid))
-       if(!setuid(new_uid)) {
-		printf("Setuid for -%s- successful.\n",caller);
-		return 1;
-	}
-
-return 0;
-
-}
-
-#endif   /* __unix__ */
-				
-
 /************************************************/
 /* Truncates white-space chars off end of 'str' */
 /************************************************/
@@ -231,9 +234,6 @@ static int bbs_lputs(char *str)
 static void bbs_started(void)
 {
 	bbs_running=TRUE;
-#ifdef __unix__
-	do_setuid("bbs");
-#endif
 }
 
 static void bbs_terminated(int code)
@@ -270,9 +270,6 @@ static int ftp_lputs(char *str)
 static void ftp_started(void)
 {
 	ftp_running=TRUE;
-#ifdef __unix__
-	do_setuid("ftp");
-#endif
 }
 
 static void ftp_terminated(int code)
@@ -309,9 +306,6 @@ static int mail_lputs(char *str)
 static void mail_started(void)
 {
 	mail_running=TRUE;
-#ifdef __unix__
-	do_setuid("mail");
-#endif
 }
 
 static void mail_terminated(int code)
@@ -348,9 +342,6 @@ static int services_lputs(char *str)
 static void services_started(void)
 {
 	services_running=TRUE;
-#ifdef __unix__
-	do_setuid("services");
-#endif
 }
 
 static void services_terminated(int code)
@@ -611,7 +602,7 @@ int main(int argc, char** argv)
 		fprintf(stderr,
 	"*** No user account specified and started as root.  HAZARDOUS!\n");
 	
-	else if (!do_setuid("main"))
+	else if (!do_setuid())
 			/* actually try to change the uid of this process */
 		fprintf(stderr,
 	"*** Setting new uid failed!  (Does the user exist?)\n");
