@@ -4029,12 +4029,16 @@ function IRCClient_server_commands(origin, command, cmdline) {
 			this.ircout("PONG " + servername + " :" + cmd[1]);
 			break;
 		case "PONG":
-			if (cmd[2] && !match_irc_mask(servername, cmd[2])) {
-				var dest_server = searchbyserver(cmd[2]);
-				if (!dest_server)
+			if (cmd[2]) {
+				if (cmd[2][0] == ":")
+					cmd[2] = cmd[2].slice(1);
+				if (!match_irc_mask(servername, cmd[2])) {
+					var dest_server = searchbyserver(cmd[2]);
+					if (!dest_server)
+						break;
+					dest_server.rawout(":" + ThisOrigin.nick + " PONG " + cmd[1] + " " + dest_server.nick);
 					break;
-				dest_server.rawout(":" + ThisOrigin.nick + " PONG " + cmd[1] + " " + dest_server.nick);
-				break;
+				}
 			}
 			this.pinged = false;
 			break;
