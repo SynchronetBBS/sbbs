@@ -2,7 +2,8 @@
 
 /* $Id$ */
 
-load("irclib.js");	// Thanks Cyan!
+if(this.IRCLIB_REVISION==undefined)
+	load("irclib.js");	// Thanks Cyan!
 
 var ircserver="vert.synchro.net";
 var channel="#synchronet";
