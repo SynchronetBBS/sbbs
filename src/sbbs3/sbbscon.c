@@ -852,6 +852,7 @@ int main(int argc, char** argv)
 	node_t	node;
 #ifdef __unix__
 	char	daemon_type[2];
+	char	value[MAX_VALUE_LEN];
 	struct passwd* pw_entry;
 	struct group*  gr_entry;
 	sigset_t			sigs;
@@ -1023,10 +1024,10 @@ int main(int argc, char** argv)
 
 	/* read/default any sbbscon-specific .ini keys here */
 #if defined(__unix__)
-	SAFECOPY(new_uid_name,iniGetString(fp,"UNIX","User",""));
-	SAFECOPY(new_gid_name,iniGetString(fp,"UNIX","Group",""));
+	SAFECOPY(new_uid_name,iniGetString(fp,"UNIX","User","",value));
+	SAFECOPY(new_gid_name,iniGetString(fp,"UNIX","Group","",value));
 	is_daemon=iniGetBool(fp,"UNIX","Daemonize",FALSE);
-	SAFECOPY(daemon_type,iniGetString(fp,"UNIX","LogFacility","U"));
+	SAFECOPY(daemon_type,iniGetString(fp,"UNIX","LogFacility","U",value));
 #endif			
 	/* close .ini file here */
 	if(fp!=NULL)
