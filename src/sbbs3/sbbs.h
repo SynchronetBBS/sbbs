@@ -592,7 +592,8 @@ public:
 	int		protocol(char *cmdline, bool cd);
 	void	seqwait(uint devnum);
 	void	autohangup(void);
-	bool	checkprotlog(file_t* f);
+	bool	checkdszlog(file_t*);
+	bool	checkprotresult(prot_t*, int error, file_t*);
 
 	/* file.cpp */
 	void	fileinfo(file_t* f);

@@ -180,18 +180,12 @@ void sbbs_t::temp_xfer()
 					end=time(NULL);
 					if(cfg.dir[temp_dirnum]->misc&DIR_TFREE)
 						starttime+=end-start;
-					if(cfg.prot[i]->misc&PROT_DSZLOG) {
-						if(checkprotlog(&f))
-							downloadfile(&f);
-						else
-							notdownloaded(f.size,start,end); }
-					else {
-						if(!error)
-							downloadfile(&f);
-						else {
-							bprintf(text[FileNotSent],f.name);
-							notdownloaded(f.size,start,end); } }
-					autohangup(); }
+					if(checkprotresult(cfg.prot[i],error,&f))
+						downloadfile(&f);
+					else
+						notdownloaded(f.size,start,end);
+					autohangup(); 
+				}
 				removefiledat(&cfg,&f);
 				break;
 			case 'E':

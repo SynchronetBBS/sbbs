@@ -1295,19 +1295,15 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 						end=time(NULL);
 						if(cfg.dir[f.dir]->misc&DIR_TFREE)
 							starttime+=end-start;
-						if(cfg.prot[i]->misc&PROT_DSZLOG) {
-							if(checkprotlog(&f))
-								downloadfile(&f);
-							else
-								notdownloaded(f.size,start,end); }
-						else {
-							if(!error)
-								downloadfile(&f);
-							else {
-								bprintf(text[FileNotSent],f.name);
-								notdownloaded(f.size,start,end); } }
+						if(checkprotresult(cfg.prot[i],error,&f))
+							downloadfile(&f);
+						else
+							notdownloaded(f.size,start,end); 
 						delfiles(cfg.temp_dir,ALLFILES);
-						autohangup(); } } }
+						autohangup(); 
+					} 
+				} 
+			}
 			closefile(&f); }
 		if(filespec[0] && !strchr(filespec,'*') && !strchr(filespec,'?')) 
 			break; 

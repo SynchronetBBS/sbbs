@@ -662,13 +662,8 @@ void sbbs_t::batch_download(int xfrprot)
 		strcpy(f.name,batdn_name[i]);
 		f.datoffset=batdn_offset[i];
 		f.size=batdn_size[i];
-	/*											   Removed 05/18/95
-		if(cfg.dir[f.dir]->misc&DIR_TFREE && cur_cps)  Looks like it gave back double
-			starttime+=f.size/(ulong)cur_cps;
-	*/
 		f.altpath=batdn_alt[i];
-		if(xfrprot==-1 || (cfg.prot[xfrprot]->misc&PROT_DSZLOG && checkprotlog(&f))
-			|| !(cfg.prot[xfrprot]->misc&PROT_DSZLOG)) {
+		if(xfrprot==-1 || checkprotresult(cfg.prot[xfrprot],0,&f)) {
 			if(cfg.dir[f.dir]->misc&DIR_TFREE && cur_cps)
 				starttime+=f.size/(ulong)cur_cps;
 			downloadfile(&f);

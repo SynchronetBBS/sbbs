@@ -388,8 +388,7 @@ void sbbs_t::qwk_success(ulong msgcnt, char bi, char prepack)
 /****************************************************************************/
 void sbbs_t::qwk_sec()
 {
-	char	str[256],tmp2[256],ch,bi=0
-			,*AttemptedToDownloadQWKpacket="Attempted to download QWK packet";
+	char	str[256],tmp2[256],ch,bi=0;
 	char 	tmp[512];
 	int		error;
 	int 	s;
@@ -599,25 +598,16 @@ void sbbs_t::qwk_sec()
 				sprintf(tmp2,"%sBATCHUP.LST",cfg.node_dir);
 				error=protocol(cmdstr(cfg.prot[i]->bicmd,str,tmp2,NULL),true);
 				batdn_total=batup_total=0;
-				if(cfg.prot[i]->misc&PROT_DSZLOG) {
-					if(!checkprotlog(&fd)) {
-						logline("D!",AttemptedToDownloadQWKpacket);
-						last_ns_time=ns_time;
-						for(i=0;i<cfg.total_subs;i++)
-							subscan[i].ptr=sav_ptr[i]; } /* re-load saved pointers */
-					else {
-						qwk_success(msgcnt,1,0);
-						for(i=0;i<cfg.total_subs;i++)
-							sav_ptr[i]=subscan[i].ptr; } }
-				else if(error) {
-					logline("D!",AttemptedToDownloadQWKpacket);
+				if(!checkprotresult(cfg.prot[i],error,&fd)) {
 					last_ns_time=ns_time;
 					for(i=0;i<cfg.total_subs;i++)
-						subscan[i].ptr=sav_ptr[i]; }
+						subscan[i].ptr=sav_ptr[i]; /* re-load saved pointers */
+				} 
 				else {
 					qwk_success(msgcnt,1,0);
 					for(i=0;i<cfg.total_subs;i++)
-						sav_ptr[i]=subscan[i].ptr; }
+						sav_ptr[i]=subscan[i].ptr; 
+				} 
 				sprintf(str,"%s%s.qwk",cfg.temp_dir,cfg.sys_id);
 				if(fexistcase(str))
 					remove(str);
@@ -696,29 +686,23 @@ void sbbs_t::qwk_sec()
 				sprintf(tmp2,"%s.qwk",cfg.sys_id);
 				padfname(tmp2,fd.name);
 				error=protocol(cmdstr(cfg.prot[i]->dlcmd,str,nulstr,NULL),false);
-				if(cfg.prot[i]->misc&PROT_DSZLOG) {
-					if(!checkprotlog(&fd)) {
-						last_ns_time=ns_time;
-						for(i=0;i<cfg.total_subs;i++)
-							subscan[i].ptr=sav_ptr[i]; } /* re-load saved pointers */
-					else {
-						qwk_success(msgcnt,0,0);
-						for(i=0;i<cfg.total_subs;i++)
-							sav_ptr[i]=subscan[i].ptr; } }
-				else if(error) {
-					logline("D!",AttemptedToDownloadQWKpacket);
+				if(!checkprotresult(cfg.prot[i],error,&fd)) {
 					last_ns_time=ns_time;
 					for(i=0;i<cfg.total_subs;i++)
-						subscan[i].ptr=sav_ptr[i]; }
-				else {
+						subscan[i].ptr=sav_ptr[i]; /* re-load saved pointers */
+				} else {
 					qwk_success(msgcnt,0,0);
 					for(i=0;i<cfg.total_subs;i++)
-						sav_ptr[i]=subscan[i].ptr; }
-				autohangup(); }
+						sav_ptr[i]=subscan[i].ptr; 
+				} 
+				autohangup(); 
+			}
 			else {	 /* if not valid protocol (hungup?) */
 				for(i=0;i<cfg.total_subs;i++)
 					subscan[i].ptr=sav_ptr[i];
-				last_ns_time=ns_time; } }
+				last_ns_time=ns_time; 
+			} 
+		}
 
 		else if(ch=='U') { /* Upload REP Packet */
 	/*

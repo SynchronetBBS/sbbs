@@ -292,24 +292,61 @@ void sbbs_t::autohangup()
 		CRLF;
 }
 
+bool sbbs_t::checkdszlog(file_t* f)
+{
+	char*	p;
+	char	path[MAX_PATH+1];
+	char	str[512];
+	char	fname[128];
+	FILE*	fp;
+
+	sprintf(path,"%sPROTOCOL.LOG",cfg.node_dir);
+	if((fp=fopen(path,"r"))==NULL)
+		return(false);
+
+	unpadfname(f->name,fname);
+	p=lastchar(fname);
+	if(*p=='.')     /* DSZ log uses FILE instead of FILE. */
+		*p=0;       /* when there isn't an extension.     */
+	strupr(fname);
+	while(!ferror(fp)) {
+		if(!fgets(str,sizeof(str),fp))
+			break;
+		truncstr(str,"\r\n");	/* chop off CRLF */
+		strupr(str);
+		if(strstr(str,fname)) {   /* Only check for name, Bimodem doesn't put path */
+			if(str[0]=='E' || str[0]=='L' || (str[6]==' ' && str[7]=='0'))
+				break;          /* E for Error or L for Lost Carrier */
+			fclose(fp);			/* or only sent 0 bytes! */
+			return(true); 
+		} 
+	}
+	fclose(fp);
+	return(false);
+}
+
+
 /****************************************************************************/
 /* Checks dsz compatible log file for errors in transfer                    */
 /* Returns 1 if the file in the struct file_t was successfuly transfered    */
 /****************************************************************************/
-bool sbbs_t::checkprotlog(file_t* f)
+bool sbbs_t::checkprotresult(prot_t* prot, int error, file_t* f)
 {
-	char	str[256],size[128];
-	char 	tmp[512];
-    int		file;
-    FILE *	stream;
+	char str[512];
+	char tmp[128];
+	bool success;
 
-	sprintf(str,"%sPROTOCOL.LOG",cfg.node_dir);
-	if((stream=fnopen(&file,str,O_RDONLY))==NULL) {
+	if(prot->misc&PROT_DSZLOG)
+		success=checkdszlog(f);
+	else
+		success=(error==0);
+
+	if(!success) {
 		bprintf(text[FileNotSent],f->name);
 		if(f->dir<cfg.total_dirs)
 			sprintf(str,"%s attempted to download %s (%s) from %s %s"
 				,useron.alias
-				,f->name,ultoac(f->size,size)
+				,f->name,ultoac(f->size,tmp)
 				,cfg.lib[cfg.dir[f->dir]->lib]->sname,cfg.dir[f->dir]->sname);
 		else if(f->dir==cfg.total_dirs)
 			sprintf(str,"%s attempted to download QWK packet"
@@ -318,39 +355,9 @@ bool sbbs_t::checkprotlog(file_t* f)
 			sprintf(str,"%s attempted to download attached file: %s"
 				,useron.alias,f->name);
 		logline("D!",str);
-		return(0); 
+		return(false); 
 	}
-	unpadfname(f->name,tmp);
-	if(tmp[strlen(tmp)-1]=='.')     /* DSZ log uses FILE instead of FILE. */
-		tmp[strlen(tmp)-1]=0;       /* when there isn't an extension.     */
-	strupr(tmp);
-	while(!ferror(stream)) {
-		if(!fgets(str,256,stream))
-			break;
-		if(str[strlen(str)-2]==CR)
-			str[strlen(str)-2]=0;       /* chop off CRLF */
-		strupr(str);
-		if(strstr(str,tmp)) {   /* Only check for name, Bimodem doesn't put path */
-	//        logline(nulstr,str); now handled by protocol()
-			if(str[0]=='E' || str[0]=='L' || (str[6]==SP && str[7]=='0'))
-				break;          /* E for Error or L for Lost Carrier */
-			fclose(stream);     /* or only sent 0 bytes! */
-			return(true); 
-		} 
-	}
-	fclose(stream);
-	bprintf(text[FileNotSent],f->name);
-	if(f->dir<cfg.total_dirs)
-		sprintf(str,"%s attempted to download %s (%s) from %s %s"
-			,useron.alias
-			,f->name
-			,ultoac(f->size,tmp)
-			,cfg.lib[cfg.dir[f->dir]->lib]->sname
-			,cfg.dir[f->dir]->sname);
-	else
-		sprintf(str,"%s attempted to download QWK packet",useron.alias);
-	logline("D!",str);
-	return(false);
+	return(true);
 }
 
 
