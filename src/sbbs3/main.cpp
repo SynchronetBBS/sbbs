@@ -213,12 +213,6 @@ js_prompt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     return JS_TRUE;
 }
 
-static JSClass js_global_class ={
-        "Global",0, 
-        JS_PropertyStub,JS_PropertyStub,JS_PropertyStub,JS_PropertyStub, 
-        JS_EnumerateStub,JS_ResolveStub,JS_ConvertStub,JS_FinalizeStub 
-    }; 
-
 static JSFunctionSpec js_global_functions[] = {
     {"print",           js_print,           0},		/* Print a string, auto-crlf */
     {"printf",          js_printf,          1},		/* Print a formatted string */
@@ -285,10 +279,7 @@ bool sbbs_t::js_initcx()
 
 		JS_SetContextPrivate(js_cx, this);	/* Store a pointer to sbbs_t instance */
 
-		if((js_glob = JS_NewObject(js_cx, &js_global_class, NULL, NULL)) ==NULL)
-			break;
-
-		if (!JS_InitStandardClasses(js_cx, js_glob))
+		if((js_glob=js_CreateGlobalObject(&cfg, js_cx))==NULL)
 			break;
 
 		if (!JS_DefineFunctions(js_cx, js_glob, js_global_functions))
@@ -705,8 +696,9 @@ void input_thread(void *arg)
 		if(sbbs->rio_abortable 
 			&& !(sbbs->telnet_mode&(TELNET_MODE_BIN_RX|TELNET_MODE_GATE))
 			&& memchr(wrbuf, 3, wr)) {	
-    		lprintf("Node %d Ctrl-C hit with %lu bytes in output buffer"
-				,sbbs->cfg.node_num,RingBufFull(&sbbs->outbuf));
+			if(RingBufFull(&sbbs->outbuf))
+    			lprintf("Node %d Ctrl-C hit with %lu bytes in output buffer"
+					,sbbs->cfg.node_num,RingBufFull(&sbbs->outbuf));
 			sbbs->sys_status|=SS_ABORT;
     		RingBufReInit(&sbbs->outbuf);	/* Flush output buffer */
 		}
