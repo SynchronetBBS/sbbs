@@ -458,11 +458,11 @@ js_get_msg_index(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 	for(n=0;n<argc;n++) {
 		if(JSVAL_IS_BOOLEAN(argv[n]))
 			by_offset=JSVAL_TO_BOOLEAN(argv[n]);
-		else if(JSVAL_IS_INT(argv[n])) {
+		else if(JSVAL_IS_NUMBER(argv[n])) {
 			if(by_offset)							/* Get by offset */
-				msg.offset=JSVAL_TO_INT(argv[n]);
+				JS_ValueToInt32(cx,argv[n],(int32*)&msg.offset);
 			else									/* Get by number */
-				msg.hdr.number=JSVAL_TO_INT(argv[n]);
+				JS_ValueToInt32(cx,argv[n],(int32*)&msg.hdr.number);
 
 			if(smb_getmsgidx(&(p->smb), &msg)!=0)
 				return(JS_TRUE);
@@ -537,11 +537,11 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 	for(n=0;n<argc;n++) {
 		if(JSVAL_IS_BOOLEAN(argv[n]))
 			by_offset=JSVAL_TO_BOOLEAN(argv[n]);
-		else if(JSVAL_IS_INT(argv[n])) {
+		else if(JSVAL_IS_NUMBER(argv[n])) {
 			if(by_offset)							/* Get by offset */
-				msg.offset=JSVAL_TO_INT(argv[n]);
+				JS_ValueToInt32(cx,argv[n],(int32*)&msg.offset);
 			else									/* Get by number */
-				msg.hdr.number=JSVAL_TO_INT(argv[n]);
+				JS_ValueToInt32(cx,argv[n],(int32*)&msg.hdr.number);
 
 			if(smb_getmsgidx(&(p->smb), &msg)!=0)
 				return(JS_TRUE);
@@ -566,7 +566,7 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 		}
 	}
 
-	if(msg.hdr.number==0)	/* No valid message number/id/offset specified */
+	if(msg.hdr.number==0) /* No valid message number/id/offset specified */
 		return(JS_TRUE);
 
 	if((hdrobj=JS_NewObject(cx,NULL,NULL,obj))==NULL) {
@@ -864,11 +864,11 @@ js_put_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 	for(n=0;n<argc;n++) {
 		if(JSVAL_IS_BOOLEAN(argv[n]))
 			by_offset=JSVAL_TO_BOOLEAN(argv[n]);
-		else if(JSVAL_IS_INT(argv[n])) {
+		else if(JSVAL_IS_NUMBER(argv[n])) {
 			if(by_offset)							/* Get by offset */
-				msg.offset=JSVAL_TO_INT(argv[n]);
+				JS_ValueToInt32(cx,argv[n],(int32*)&msg.offset);
 			else									/* Get by number */
-				msg.hdr.number=JSVAL_TO_INT(argv[n]);
+				JS_ValueToInt32(cx,argv[n],(int32*)&msg.hdr.number);
 			msg_specified=JS_TRUE;
 			n++;
 			break;
@@ -942,11 +942,11 @@ js_remove_msg(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 	for(n=0;n<argc;n++) {
 		if(JSVAL_IS_BOOLEAN(argv[n]))
 			by_offset=JSVAL_TO_BOOLEAN(argv[n]);
-		else if(JSVAL_IS_INT(argv[n])) {
+		else if(JSVAL_IS_NUMBER(argv[n])) {
 			if(by_offset)							/* Get by offset */
-				msg.offset=JSVAL_TO_INT(argv[n]);
+				JS_ValueToInt32(cx,argv[n],(int32*)&msg.offset);
 			else									/* Get by number */
-				msg.hdr.number=JSVAL_TO_INT(argv[n]);
+				JS_ValueToInt32(cx,argv[n],(int32*)&msg.hdr.number);
 			msg_specified=JS_TRUE;
 			n++;
 			break;
@@ -1078,11 +1078,11 @@ js_get_msg_body(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 	for(n=0;n<argc;n++) {
 		if(JSVAL_IS_BOOLEAN(argv[n]))
 			by_offset=JSVAL_TO_BOOLEAN(argv[n]);
-		else if(JSVAL_IS_INT(argv[n])) {
+		else if(JSVAL_IS_NUMBER(argv[n])) {
 			if(by_offset)							/* Get by offset */
-				msg.offset=JSVAL_TO_INT(argv[n]);
+				JS_ValueToInt32(cx,argv[n],(int32*)&msg.offset);
 			else									/* Get by number */
-				msg.hdr.number=JSVAL_TO_INT(argv[n]);
+				JS_ValueToInt32(cx,argv[n],(int32*)&msg.hdr.number);
 			msg_specified=JS_TRUE;
 			n++;
 			break;
@@ -1149,11 +1149,11 @@ js_get_msg_tail(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 	for(n=0;n<argc;n++) {
 		if(JSVAL_IS_BOOLEAN(argv[n]))
 			by_offset=JSVAL_TO_BOOLEAN(argv[n]);
-		else if(JSVAL_IS_INT(argv[n])) {
+		else if(JSVAL_IS_NUMBER(argv[n])) {
 			if(by_offset)							/* Get by offset */
-				msg.offset=JSVAL_TO_INT(argv[n]);
+				JS_ValueToInt32(cx,argv[n],(int32*)&msg.offset);
 			else									/* Get by number */
-				msg.hdr.number=JSVAL_TO_INT(argv[n]);
+				JS_ValueToInt32(cx,argv[n],(int32*)&msg.hdr.number);
 			msg_specified=JS_TRUE;
 			n++;
 			break;
