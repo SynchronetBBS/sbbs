@@ -108,16 +108,23 @@ BOOL DLLCALL load_cfg(scfg_t* cfg, char* text[])
 /****************************************************************************/
 /* If the directory 'path' doesn't exist, create it.                      	*/
 /****************************************************************************/
-BOOL md(char *path)
+BOOL md(char *inpath)
 {
 	DIR*	dir;
+	char	path[MAX_PATH+1];
+
+	sprintf(path,"%.*s",MAX_PATH,inpath);
+
+	/* Truncate '.' if present */
+	if(path[0]!=0 && path[strlen(path)-1]=='.')
+		path[strlen(path)-1]=0;
 
 	dir=opendir(path);
 	if(dir==NULL) {
 		lprintf("Creating Directory %s... ",path);
 		if(_mkdir(path)) {
-			lprintf("!Fix configuration or make directory by "
-				"hand.");
+			lprintf("!Error %d: Fix configuration or make directory by "
+				"hand.",errno);
 			return(FALSE); 
 		} 
 	}
