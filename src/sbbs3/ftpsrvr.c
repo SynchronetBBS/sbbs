@@ -3779,6 +3779,13 @@ static void cleanup(int code)
 		lprintf("0000 !WSACleanup ERROR %d",ERROR_VALUE);
 #endif
 
+#ifdef _WIN32
+	if(socket_mutex!=NULL) {
+		CloseHandle(socket_mutex);
+		socket_mutex=NULL;
+	}
+#endif
+
 #ifdef JAVASCRIPT
 	lprintf("0000 JavaScript: Destroying runtime");
 	if(js_runtime!=NULL) {
