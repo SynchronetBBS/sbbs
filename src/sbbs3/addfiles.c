@@ -176,7 +176,7 @@ void updatestats(ulong size)
 	ulong	l;
 
 	sprintf(str,"%sdsts.dab",scfg.ctrl_dir);
-	if((file=nopen(str,O_RDWR))==-1) {
+	if((file=nopen(str,O_RDWR|O_BINARY))==-1) {
 		printf("ERR_OPEN %s\n",str);
 		return; 
 	}
@@ -258,7 +258,7 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 						system(cmdstr(scfg.fextr[i]->cmd,filepath,"DESC.SDI",NULL)); 
 						fexistcase(tmp);
 					}
-					if((file=nopen(tmp,O_RDONLY))!=-1) {
+					if((file=nopen(tmp,O_RDONLY|O_BINARY))!=-1) {
 						memset(ext,0,513);
 						read(file,ext,512);
 						for(i=512;i;i--)
@@ -439,7 +439,7 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 					system(cmdstr(scfg.fextr[i]->cmd,filepath,"DESC.SDI",NULL)); 
 					fexistcase(tmp);
 				}
-				if((file=nopen(tmp,O_RDONLY))!=-1) {
+				if((file=nopen(tmp,O_RDONLY|O_BINARY))!=-1) {
 					memset(ext,0,513);
 					read(file,ext,512);
 					for(i=512;i;i--)
@@ -503,7 +503,7 @@ void synclist(char *inpath, int dirnum)
 	file_t	f;
 
 	sprintf(str,"%s%s.ixb",scfg.dir[dirnum]->data_dir,scfg.dir[dirnum]->code);
-	if((file=nopen(str,O_RDONLY))==-1) {
+	if((file=nopen(str,O_RDONLY|O_BINARY))==-1) {
 		printf("ERR_OPEN %s\n",str);
 		return; }
 	length=filelength(file);
@@ -788,7 +788,7 @@ int main(int argc, char **argv)
 						system(cmdstr(scfg.fextr[i]->cmd,str,"DESC.SDI",NULL)); 
 						fexistcase(tmp);
 					}
-					if((file=nopen(tmp,O_RDONLY))!=-1) {
+					if((file=nopen(tmp,O_RDONLY|O_BINARY))!=-1) {
 						memset(ext,0,513);
 						read(file,ext,512);
 						if(!(mode&KEEP_DESC)) {
