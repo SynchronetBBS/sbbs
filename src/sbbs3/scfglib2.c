@@ -302,8 +302,10 @@ BOOL read_file_cfg(scfg_t* cfg, char* error)
 		get_str(cfg->lib[i]->arstr,instream);
 		cfg->lib[i]->ar=arstr(NULL,cfg->lib[i]->arstr,cfg);
 
-		for(j=0;j<48;j++)
-			get_int(n,instream);
+		get_str(cfg->lib[i]->root,instream);
+
+		for(j=0;j<16;j++)
+			get_int(n,instream);	/* 0xffff */
 		}
 	cfg->total_libs=i;
 
