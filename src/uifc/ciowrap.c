@@ -305,11 +305,11 @@ void textmode(mode)
 	if(mode==-1) {
 		gettextinfo(&cio_textinfo);
 		cio_api.textmode(lastmode);
-		lastmode=cio_textinfo.videomode;
+		lastmode=cio_textinfo.currmode;
 	}
 	else {
 		gettextinfo(&cio_textinfo);
-		lastmode=cio_textinfo.videomode;
+		lastmode=cio_textinfo.currmode;
 		cio_api.textmode(mode);
 	}
 	gettextinfo(&cio_textinfo);
