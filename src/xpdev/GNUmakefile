@@ -47,7 +47,7 @@ endif
 
 include objects.mk		# defines $(OBJS)
 
-all: $(ODIR) $(ODIR)/wraptest.exe
+all: $(ODIR) $(ODIR)/wraptest
 
 # Implicit C Compile Rule
 $(ODIR)/%.o : %.c
@@ -59,7 +59,7 @@ $(ODIR):
 	mkdir $(ODIR)
 
 # Executable Build Rule
-$(ODIR)/wraptest: $(ODIR)\wraptest.o $(OBJS)
+$(ODIR)/wraptest: $(ODIR)/wraptest.o $(OBJS)
 	@echo Linking $@
 	@$(CC) $(LFLAGS) $^ -o $@
 
