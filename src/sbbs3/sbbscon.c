@@ -898,12 +898,18 @@ void show_usage(char *cmd)
 
 int command_is(char *cmdline, char *cmd)
 {
-	char *p;
+	char	cmdexe[64];
 
-	while((p=strcasestr(cmdline,cmd))!=NULL) {
-		if(*(p+strlen(cmd))==0 || !stricmp(".EXE",p+strlen(cmd)))
-			return 1;
-	}
+	SAFECOPY(cmdexe,cmd);
+	strcat(cmdexe,".exe");
+	if(strlen(cmdline)<strlen(cmd))
+		return(0);
+	if(!stricmp(cmd,(cmdline+strlen(cmdline)-strlen(cmd))))
+		return(1);
+	if(strlen(cmdline)<strlen(cmdexe))
+		return(0);
+	if(!stricmp(cmdexe,(cmdline+strlen(cmdline)-strlen(cmdexe))))
+		return(1);
 	return(0);
 }
 
