@@ -1412,7 +1412,7 @@ int main(int argc, char **argv)
 	RingBufInit(&inbuf, IO_THREAD_BUF_SIZE);
 	RingBufInit(&outbuf, IO_THREAD_BUF_SIZE);
 
-	xmodem_init(&xm,INVALID_SOCKET,&mode,lputs,send_byte,recv_byte);
+	xmodem_init(&xm,NULL,&mode,lputs,send_byte,recv_byte);
 
 	/* Generate path/sexyz[.host].ini from path/sexyz[.exe] */
 	SAFECOPY(str,argv[0]);
