@@ -217,14 +217,12 @@ static int close_socket(SOCKET sock)
 
 	shutdown(sock,SHUT_RDWR);	/* required on Unix */
 	result=closesocket(sock);
-	if(/* result==0 && */ startup!=NULL && startup->socket_open!=NULL) 
+	if(result==0 && startup!=NULL && startup->socket_open!=NULL) 
 		startup->socket_open(FALSE);
 	sockets--;
-	if(result!=0) {
-		if(ERROR_VALUE!=ENOTSOCK)
-			lprintf("%04d !ERROR %d closing socket",sock, ERROR_VALUE);
-	}
-#ifdef _DEBUG
+	if(result!=0)
+		lprintf("%04d !ERROR %d closing socket",sock, ERROR_VALUE);
+#if 0 /*def _DEBUG */
 	else 
 		lprintf("%04d Socket closed (%d sockets in use)",sock,sockets);
 #endif
@@ -1644,7 +1642,7 @@ void DLLCALL services_thread(void* arg)
 						break;
 					}
 					sockets++;
-#ifdef _DEBUG
+#if 0 /*def _DEBUG */
 					lprintf("%04d Socket opened (%d sockets in use)",client_socket,sockets);
 #endif
 					if(startup->socket_open!=NULL)
