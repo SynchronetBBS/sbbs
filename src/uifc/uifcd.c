@@ -133,7 +133,7 @@ int ulist(int mode, char left, int top, char width, int *cur, int *bar
 		if(option[cnt][0]==0)
 	   		break;
 	options=cnt;
-	freecnt=cnt+5;	/* Help, Add, Delete, Copy, Paste */
+	freecnt=cnt+4;	/* Add, Delete, Copy, Paste */
 
     // Allocate and fill **it
     it=(char **)MALLOC(sizeof(char *)*2*(freecnt));
@@ -164,10 +164,6 @@ int ulist(int mode, char left, int top, char width, int *cur, int *bar
 		i /= 10;
 		width+=1;
 	}
-
-	strcpy(it[cnt2++],"H");
-	strcpy(it[cnt2++],"Help");
-	cnt++;
 
     if(mode&WIN_INS)  {
 		strcpy(it[cnt2++],"A");	/* Changed from "I" */
@@ -228,7 +224,7 @@ int ulist(int mode, char left, int top, char width, int *cur, int *bar
 		}
 		if(ret==-1)		/* ESC */
 			break;
-		if(ret==-2 || str[0]=='H')	{	/* Help */
+		if(ret==-2)	{	/* Help */
 			help();
 			continue;
 		}
@@ -316,7 +312,8 @@ int uinput(int mode, char left, char top, char *prompt, char *outstr,
 {
 	char str[256];
 	sprintf(str,"%.*s",sizeof(str)-1,outstr);
-    dialog_inputbox((char*)NULL, prompt, 9, max+4, outstr);
+    while(dialog_inputbox((char*)NULL, prompt, 9, max+4, outstr)==-2)
+		help();
 	if(strcmp(str,outstr))
 		api->changes=TRUE;
     return strlen(outstr);
