@@ -2850,7 +2850,7 @@ static void cleanup(int code)
 void DLLCALL bbs_thread(void* arg)
 {
 	char *			host_name;
-    char			str[256];
+    char			str[MAX_PATH];
 	char			logstr[256];
 	SOCKADDR_IN		server_addr={0};
 	SOCKADDR_IN		client_addr;
@@ -3407,9 +3407,14 @@ void DLLCALL bbs_thread(void* arg)
 		}
 
 		if(i>startup->last_node) {
-			sbbs->putcom("\r\nSorry, all telnet nodes are in use or otherwise unavailable.\r\n");
-			sbbs->putcom("Please try again later.\r\n");
 			lprintf("No nodes available for login.");
+			sprintf(str,"%snonodes.txt",scfg.text_dir);
+			if(fexist(str))
+				sbbs->printfile(str,P_NOABORT);
+			else {
+				sbbs->putcom("\r\nSorry, all telnet nodes are in use or otherwise unavailable.\r\n");
+				sbbs->putcom("Please try again later.\r\n");
+			}
 			mswait(3000);
 			close_socket(client_socket);
 			client_off(client_socket);
@@ -3427,7 +3432,11 @@ void DLLCALL bbs_thread(void* arg)
 
 		if(new_node->init()==false) {
 			lprintf("!Node %d Initialization failure",new_node->cfg.node_num);
-			sbbs->putcom("\r\nSorry, initialization failed. Try again later.\r\n");
+			sprintf(str,"%snonodes.txt",scfg.text_dir);
+			if(fexist(str))
+				sbbs->printfile(str,P_NOABORT);
+			else 
+				sbbs->putcom("\r\nSorry, initialization failed. Try again later.\r\n");
 			mswait(3000);
 			sbbs->getnodedat(new_node->cfg.node_num,&node,1);
 			node.status=NODE_WFC;
