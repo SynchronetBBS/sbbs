@@ -116,7 +116,7 @@ int main()
 		printf("!FAILURE file locking\n");
 	else
 		printf("SUCCESS!  Record locking\n");
-	if((fd2=sopen(LOCK_FNAME,O_RDWR,SH_DENYRW))!=-1) {
+	if((fd2=sopen(LOCK_FNAME,O_RDWR,SH_DENYRW))==-1) {
 		printf("SUCCESS!  Cannot reopen SH_DENYRW while lock is held\n");
 		close(fd2);
 	}
