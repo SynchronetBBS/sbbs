@@ -40,6 +40,24 @@ A: First get your BBS on the Synchronet BBS List (sbbslist.html), and if your
    List (http://synchro.net/sbbslist.html).
    See docs/imsgdocs.txt for more details.
 
+Q: How do I know what ports Synchronet needs opened through my firewall?
+A: The answer depends on what Synchronet servers and services you have enabled
+   and whatever ports you have configured Synchronet to use for each.
+
+   The default port values for Synchronet servers and services are:
+   Telnet: 23 (TCP)
+   RLogin: 513 (TCP)
+   FTP: 21 (TCP)
+   SMTP: 25 (TCP)
+   POP3: 110 (TCP)
+   NNTP: 119 (TCP)
+   Gopher: 70 (TCP)
+   Finger: 79 (UDP and TCP)
+   HTTP: 80 (TCP)
+   IRC: 6667 (TCP)
+
+   You can check your configured port values in ctrl/sbbs.ini and services.ini.
+
 Q: How do I join DOVE-Net?
 A: If you've installed v3.10, Telnet to vert.synchro.net and create a new
    account for your QWKnet transfers (using your system's QWK-ID for the user
