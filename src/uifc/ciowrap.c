@@ -28,6 +28,7 @@ void initciowrap(int mode)
 		cio_api.setcursortype=x_setcursortype;
 		cio_api.clreol=x_clreol;
 		cio_api.getch=x_getch;
+		cio_api.beep=x_beep;
 		return;
 	}
 	fprintf(stderr,"X init failed\n");
@@ -51,4 +52,5 @@ void initciowrap(int mode)
 	cio_api.setcursortype=curs_setcursortype;
 	cio_api.clreol=curs_clreol;
 	cio_api.getch=getch;
+	cio_api.beep=beep;
 }

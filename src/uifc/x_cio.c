@@ -214,3 +214,9 @@ int x_getch(void)
 {
 	return(tty_read(0));
 }
+
+int x_beep(void)
+{
+	tty_beep();
+	return(0);
+}
