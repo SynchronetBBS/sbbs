@@ -678,13 +678,13 @@ int main(int argc, char** argv)  {
 		}
 		if(j<cfg.sys_nodes && j>=0) {
 			i=0;
-			getnodedat(&cfg,j+1,&node,&nodefile)
 			strcpy(opt[i++],"Spy on node");
 			strcpy(opt[i++],"Node toggles");
 			strcpy(opt[i++],"Clear Errors");
-			if(NODE_INUSE && node.useron)
+			getnodedat(&cfg,j+1,&node,NULL);
+			if((node.status&NODE_INUSE) && node.useron) {
 				strcpy(opt[i++],"Send message to user");
-				strcpy(opt[i++],"Char with user");
+				strcpy(opt[i++],"Chat with user");
 			}
 			opt[i][0]=0;
 			i=0;
