@@ -133,17 +133,7 @@ str_list_t csvCreate(str_list_t records[], str_list_t columns)
 	return(list);
 }
 
-/****************************************************************************/
-/* Truncates all white-space chars off end of 'str'							*/
-/****************************************************************************/
-static void truncsp(char *str)
-{
-	uint c;
-
-	c=strlen(str);
-	while(c && (uchar)str[c-1]<=' ') c--;
-	str[c]=0;
-}
+#include "truncsp.c"
 
 str_list_t csvParseLine(char* line)
 {

@@ -53,29 +53,7 @@
 
 static ini_style_t default_style;
 
-/****************************************************************************/
-/* Truncates all white-space chars off end of 'str'							*/
-/****************************************************************************/
-static void truncsp(char *str)
-{
-	uint c;
-
-	c=strlen(str);
-	while(c && (uchar)str[c-1]<=' ') c--;
-	str[c]=0;
-}
-
-/****************************************************************************/
-/* Truncates carriage-return and line-feed chars off end of 'str'			*/
-/****************************************************************************/
-static void truncnl(char *str)
-{
-	uint c;
-
-	c=strlen(str);
-	while(c && (str[c-1]=='\r' || str[c-1]=='\n')) c--;
-	str[c]=0;
-}
+#include "truncsp.c"	/* truncsp() and truncnl() */
 
 static char* section_name(char* p)
 {
