@@ -404,7 +404,8 @@ void sbbs_t::newuser()
 	useron.number=i;
 	putuserdat(&cfg,&useron);
 	putusername(&cfg,useron.number,useron.alias);
-	logline(nulstr,"Wrote user data");
+	sprintf(str,"Created user record #%u: %s",useron.number,useron.alias);
+	logline(nulstr,str);
 	if(cfg.new_sif[0]) {
 		sprintf(str,"%suser/%4.4u.dat",cfg.data_dir,useron.number);
 		create_sif_dat(cfg.new_sif,str); }
