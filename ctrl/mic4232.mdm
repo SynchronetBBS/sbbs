@@ -1,5 +1,0 @@
-# This is for the Microcom QX/4232hs modem
-# Updated 03/23/96 Digital Dynamics: Now uses verbal result codes
-
-INCLUDE 	MICV32C
-SPEC_INIT	AT\J0\G0\N3\Q3\V2\%C2\%D5

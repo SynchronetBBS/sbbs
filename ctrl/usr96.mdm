@@ -1,8 +1,0 @@
-# This is for USRobotics 9600bps modems
-# Updated 03/23/96 Digital Dynamics: Now uses verbal result codes
-
-INCLUDE 	GEN9600
-DIAL_STR	ATX4DT
-TERM_INIT	ATE1V1X7
-SPEC_INIT	ATS15=8&A1&B1&H1&I0&M4&R2&S0&K0
-COM_RATE	19200

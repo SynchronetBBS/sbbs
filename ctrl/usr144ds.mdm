@@ -1,5 +1,0 @@
-# This is for USRobotics Dual Standard 14400bps modem
-# Updated 03/23/96 Digital Dynamics: Now uses verbal result codes
-
-INCLUDE 	USR96DS
-COM_RATE	38400

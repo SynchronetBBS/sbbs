@@ -1,6 +1,0 @@
-# This is for USRobotics Dual Standard 9600bps modems
-# Updated 03/23/96 Digital Dynamics: Now uses verbal result codes
-
-INCLUDE 	USR96
-COM_RATE	19200
-SPEC_INIT	ATS15=8B0&A2&B1&H1&I0&K3&M4&R2&S0

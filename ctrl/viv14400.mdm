@@ -1,6 +1,0 @@
-# This is for Viva 14400/FAX modems
-# Updated 03/23/96 Digital Dynamics: Now uses verbal result codes
-
-INCLUDE 	GEN14400
-SPEC_INIT	ATS95=3%C2
-COM_RATE	38400
