@@ -203,7 +203,7 @@ int sbbs_t::listfiles(uint dirnum, char *filespec, int tofile, long mode)
 			if((!mode || !(useron.misc&EXPERT)) && !tofile && (!filespec[0]
 				|| (strchr(filespec,'*') || strchr(filespec,'?')))) {
 				sprintf(hdr,"%s%s.hdr",cfg.dir[dirnum]->data_dir,cfg.dir[dirnum]->code);
-				if(fexist(hdr))
+				if(fexistcase(hdr))
 					printfile(hdr,0);	/* Use DATA\DIRS\<CODE>.HDR */
 				else {
 					if(useron.misc&BATCHFLAG)
@@ -405,7 +405,7 @@ bool sbbs_t::listfile(char *fname, char HUGE16 *buf, uint dirnum
 	if(useron.misc&BATCHFLAG) {
 		attr(cfg.color[clr_filedesc]);
 		bprintf("%c",letter); }
-	if(cfg.dir[dirnum]->misc&DIR_FCHK && !fexist(path)) {
+	if(cfg.dir[dirnum]->misc&DIR_FCHK && !fexistcase(path)) {
 		exist=0;
 		attr(cfg.color[clr_err]); }
 	else
@@ -574,7 +574,7 @@ bool sbbs_t::movefile(file_t* f, int newdir)
 	logline(nulstr,str);
 	if(!f->altpath) {	/* move actual file */
 		sprintf(str,"%s%s",cfg.dir[olddir]->path,fname);
-		if(fexist(str)) {
+		if(fexistcase(str)) {
 			sprintf(path,"%s%s",cfg.dir[f->dir]->path,fname);
 			mv(str,path,0); } }
 	if(f->misc&FM_EXTDESC)
@@ -1062,7 +1062,7 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 					break;
 				case 'F':   /* delete file only */
 					sprintf(str,"%s%s",dirpath,fname);
-					if(!fexist(str))
+					if(!fexistcase(str))
 						bputs(text[FileNotThere]);
 					else {
 						if(!noyes(text[AreYouSureQ])) {
@@ -1087,7 +1087,7 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 						,cfg.lib[cfg.dir[f.dir]->lib]->sname,cfg.dir[f.dir]->sname);
 					logline("U-",str);
 					sprintf(str,"%s%s",dirpath,fname);
-					if(fexist(str)) {
+					if(fexistcase(str)) {
 						if(dir_op(dirnum)) {
 							if(!noyes(text[DeleteFileQ])) {
 								if(remove(str))
@@ -1185,7 +1185,7 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 					logline(nulstr,str);
 					if(!f.altpath) {    /* move actual file */
 						sprintf(str,"%s%s",cfg.dir[dirnum]->path,fname);
-						if(fexist(str)) {
+						if(fexistcase(str)) {
 							sprintf(path,"%s%s",cfg.dir[f.dir]->path,fname);
 							mv(str,path,0); } }
 					if(f.misc&FM_EXTDESC)
@@ -1348,7 +1348,7 @@ void sbbs_t::listfiletofile(char *fname, char HUGE16 *buf, uint dirnum, int file
 	alt=(uchar)ahtoul(str);
 	sprintf(str,"%s%s",alt>0 && alt<=cfg.altpaths ? cfg.altpath[alt-1]
 		: cfg.dir[dirnum]->path,unpadfname(fname,tmp));
-	if(cfg.dir[dirnum]->misc&DIR_FCHK && !fexist(str))
+	if(cfg.dir[dirnum]->misc&DIR_FCHK && !fexistcase(str))
 		exist=false;
 	getrec((char *)buf,F_CDT,LEN_FCDT,str);
 	cdt=atol(str);
