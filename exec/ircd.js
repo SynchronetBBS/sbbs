@@ -2323,6 +2323,8 @@ function IRCClient_do_complex_list(cmd) {
 	var listmask;
 	var listmask_items;
 
+	this.numeric321();
+
 	for (lc in cmd[1]) {
 		switch(cmd[1][lc]) {
 			case "+":
