@@ -96,14 +96,14 @@ CFLAGS	+=	-DJAVASCRIPT -I../../include/mozilla/js -I$(XPDEV) -I$(UIFC)
 
 ifdef BSD	# BSD
  # Math libraries needed and uses pthread
- LFLAGS	:=	-lm -lutil -lc_r
+ LFLAGS	:=	-lm -lutil
  CFLAGS +=	-pthread 
 else			# Linux / Other UNIX
  # Math and pthread libraries needed
  ifdef bcc
-  LFLAGS	:=	libpthread.so -lc
+  LFLAGS	:=	libpthread.so
  else
-  LFLAGS	:=	-lm -lpthread -lutil -lc
+  LFLAGS	:=	-lm -lpthread -lutil
  endif
 endif
 
@@ -246,14 +246,14 @@ FORCE$(SBBSMONO): $(MONO_OBJS) $(OBJS) $(LIBS)
 
 $(SBBSMONO): $(MONO_OBJS) $(OBJS) $(LIBS)
 	@echo Linking $@
-	$(QUIET)$(CCPP) -o $@ $(LFLAGS) $(JSLIB) $^
+	$(QUIET)$(CCPP) -o $@ $(LFLAGS) $^ $(JSLIB)
 
 # Synchronet BBS library Link Rule
 FORCE$(SBBS): $(OBJS) $(LIBS)
 
 $(SBBS): $(OBJS) $(LIBS)
 	@echo Linking $@
-	$(QUIET)$(CCPP) $(LFLAGS) -o $(SBBS) $(JSLIB) $^ $(SHLIBOPTS) -o $@
+	$(QUIET)$(CCPP) $(LFLAGS) -o $@ $(JSLIB) $^ $(SHLIBOPTS)
 
 # FTP Server Link Rule
 FORCE$(FTPSRVR): $(LIBODIR)/ftpsrvr.o $(SBBSLIB)
@@ -510,7 +510,7 @@ FORCE$(JSEXEC): $(JSEXEC_OBJS)
 
 $(JSEXEC): $(JSEXEC_OBJS)
 	@echo Linking $@
-	$(QUIET)$(CCPP) -o $@ $(LFLAGS) $^
+	$(QUIET)$(CCPP) -o $@ $^ $(LFLAGS)
 	
 # ANS2MSG
 $(ANS2MSG): $(LIBODIR)/ans2msg.o
