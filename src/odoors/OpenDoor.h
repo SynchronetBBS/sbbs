@@ -175,6 +175,8 @@ typedef unsigned char      BYTE;                        /* Unsigned, 8 bits. */
 typedef unsigned short     WORD;                       /* Unsigned, 16 bits. */
 typedef unsigned long      DWORD;                      /* Unsigned, 32 bits. */
 typedef char               CHAR;         /* Native character representation. */
+#define DWORD_DEFINED
+#define WORD_DEFINED
 #endif /* !ODPLAT_WIN32 */
 
 typedef signed char        INT8;                          /* Signed, 8 bits. */
