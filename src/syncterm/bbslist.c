@@ -22,6 +22,8 @@ struct bbslist_file {
 	char			user[MAX_USER_LEN+1];
 	char			password[MAX_PASSWD_LEN+1];
 	int				dumb;
+	int				reversed;
+	char			padding[256];
 };
 
 void sort_list(struct bbslist **list)  {
@@ -118,13 +120,13 @@ void read_list(char *listpath, struct bbslist **list, int *i, int type)
 
 int edit_list(struct bbslist *item)
 {
-	char	opt[7][80];
-	char	*opts[7];
+	char	opt[8][80];
+	char	*opts[8];
 	int		changed=0;
 	int		copt=0,i,j;
 	char	str[6];
 
-	for(i=0;i<7;i++)
+	for(i=0;i<8;i++)
 		opts[i]=opt[i];
 	if(item->type==SYSTEM_BBSLIST) {
 		uifc.helpbuf=	"`Cannot edit system BBS list`\n\n"
@@ -135,7 +137,7 @@ int edit_list(struct bbslist *item)
 		uifc.msg("Cannot edit system BBS list");
 		return(0);
 	}
-	opt[6][0]=0;
+	opt[7][0]=0;
 	for(;;) {
 		sprintf(opt[0],"BBS Name:       %s",item->name);
 		sprintf(opt[1],"RLogin Address: %s",item->addr);
@@ -143,6 +145,7 @@ int edit_list(struct bbslist *item)
 		sprintf(opt[3],"Username:       %s",item->user);
 		sprintf(opt[4],"Password");
 		sprintf(opt[5],"Be Dumb:        %s",item->dumb?"Yes":"No");
+		sprintf(opt[6],"Reversed:       %s",item->reversed?"Yes":"No");
 		uifc.changes=0;
 
 		uifc.helpbuf=	"`Edit BBS`\n\n"
@@ -193,6 +196,10 @@ int edit_list(struct bbslist *item)
 				break;
 			case 5:
 				item->dumb=!item->dumb;
+				changed=1;
+				break;
+			case 6:
+				item->reversed=!item->reversed;
 				changed=1;
 				break;
 		}
@@ -317,18 +324,27 @@ struct bbslist *show_bbslist(int mode)
 											"Select this option if attempting to connect to a dumb telnet BBS";
 							list[listcount-1]->dumb=0;
 							uifc.list(WIN_MID|WIN_SAV,0,0,0,&list[listcount-1]->dumb,NULL,"Be Dumb",YesNo);
+							list[listcount-1]->dumb=!list[listcount-1]->dumb;
 						}
-						if(list[listcount-1]->dumb) {
+						if(!list[listcount-1]->dumb) {
 							uifc.helpbuf=	"`Username`\n\n"
 											"Enter the username to attempt auto-login to the remote with.";
 							uifc.input(WIN_MID|WIN_SAV,0,0,"User Name",list[listcount-1]->user,MAX_USER_LEN,K_EDIT);
 							uifc.helpbuf=	"`Password`\n\n"
 											"Enter your password for auto-login.";
 							uifc.input(WIN_MID|WIN_SAV,0,0,"Password",list[listcount-1]->password,MAX_PASSWD_LEN,K_EDIT);
+							uifc.helpbuf=	"`Reversed`\n\n"
+											"Select this option if you wish to send the username and password in the wrong\n"
+											"order (usefull for connecting to v3.11 and lower systems with the default"
+											"config)";
+							list[listcount-1]->reversed=0;
+							uifc.list(WIN_MID|WIN_SAV,0,0,0,&list[listcount-1]->reversed,NULL,"Reversed",YesNo);
+							list[listcount-1]->reversed=!list[listcount-1]->reversed;
 						}
 						else {
 							list[listcount-1]->user[0]=0;
 							list[listcount-1]->password[0]=0;
+							list[listcount-1]->reversed=0;
 						}
 						sort_list(list);
 						for(j=0;list[j]->name[0];j++) {
