@@ -470,17 +470,17 @@ js_login(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		lprintf("%04d %s !JavaScript ERROR creating user objects"
 			,client->socket,client->service->protocol);
 
+	memcpy(&client->user,&user,sizeof(user));
+
 	if(client->client!=NULL) {
-		client->client->user=user.alias;
+		client->client->user=client->user.alias;
 		client_on(client->socket,client->client,TRUE /* update */);
 	}
-
-	memcpy(&client->user,&user,sizeof(user));
 
 	client->logintime=time(NULL);
 
 	lprintf("%04d %s Logging in %s"
-		,client->socket,client->service->protocol,user.alias);
+		,client->socket,client->service->protocol,client->user.alias);
 
 	val = BOOLEAN_TO_JSVAL(JS_TRUE);
 	JS_SetProperty(cx, obj, "logged_in", &val);
