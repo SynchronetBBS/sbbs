@@ -60,7 +60,7 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 							bprintf("%ld",*lp); }
 					else
 						putmsg(cmdstr(*pp,path,csi->str,buf)
-							,P_SAVEATR|P_NOABORT);
+							,P_SAVEATR|P_NOABORT|P_NOATCODES);
 					csi->ip+=4;
 					return(0);
 				case VAR_PRINTF:
@@ -83,7 +83,7 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 					vsnprintf(tmp,sizeof(tmp),str,(char*)arglist);
 					tmp[sizeof(tmp)-1]=0;
 					if(op==VAR_PRINTF)
-						putmsg(cmdstr(tmp,path,csi->str,buf),P_SAVEATR|P_NOABORT);
+						putmsg(cmdstr(tmp,path,csi->str,buf),P_SAVEATR|P_NOABORT|P_NOATCODES);
 					else {
 						if(online==ON_LOCAL)
 							eprintf(LOG_INFO,"%s",cmdstr(tmp,path,csi->str,buf));
