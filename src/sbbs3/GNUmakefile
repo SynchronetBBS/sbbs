@@ -57,7 +57,7 @@ endif
 LIBODIR :=	$(CCPRE).$(os).lib
 EXEODIR :=	$(CCPRE).$(os).exe
 
-DELETE	=	rm -fv
+DELETE	=	rm -f -v
 
 CFLAGS	+=	-DJAVASCRIPT -I../mozilla/js/src -I$(XPDEV) -I$(UIFC)
 
