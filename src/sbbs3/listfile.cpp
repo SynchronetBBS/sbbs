@@ -994,10 +994,12 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 					if(dir_op(dirnum)) {
 						bputs(text[EditFilename]);
 						strcpy(str,fname);
-						getstr(str,12,K_EDIT|K_AUTODEL|K_UPPER);
+						if(!getstr(str,12,K_EDIT|K_AUTODEL))
+							break;
 						if(strcmp(str,fname)) { /* rename */
 							padfname(str,path);
-							if(findfile(&cfg,f.dir,path))
+							if(stricmp(str,fname)
+								&& findfile(&cfg,f.dir,path))
 								bprintf(text[FileAlreadyThere],path);
 							else {
 								sprintf(path,"%s%s",dirpath,fname);
@@ -1009,9 +1011,15 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 									strcpy(fname,str);
 									removefiledat(&cfg,&f);
 									strcpy(f.name,padfname(str,tmp));
-									addfiledat(&cfg,&f); } } } }
+									addfiledat(&cfg,&f); 
+								} 
+							} 
+						} 
+					}
 					bputs(text[EditDescription]);
 					getstr(f.desc,LEN_FDESC,K_LINE|K_EDIT|K_AUTODEL);
+					if(sys_status&SS_ABORT)
+						break;
 					if(f.misc&FM_EXTDESC) {
 						if(!noyes(text[DeleteExtDescriptionQ])) {
 							remove(str);
@@ -1020,14 +1028,19 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 						putfiledat(&cfg,&f);
 						break; }
 					bputs(text[EditUploader]);
-					getstr(f.uler,LEN_ALIAS,K_UPRLWR|K_EDIT|K_AUTODEL);
+					if(!getstr(f.uler,LEN_ALIAS,K_EDIT|K_AUTODEL))
+						break;
 					ultoa(f.cdt,str,10);
 					bputs(text[EditCreditValue]);
 					getstr(str,7,K_NUMBER|K_EDIT|K_AUTODEL);
+					if(sys_status&SS_ABORT)
+						break;
 					f.cdt=atol(str);
 					ultoa(f.timesdled,str,10);
 					bputs(text[EditTimesDownloaded]);
 					getstr(str,5,K_NUMBER|K_EDIT|K_AUTODEL);
+					if(sys_status&SS_ABORT)
+						break;
 					f.timesdled=atoi(str);
 					if(f.opencount) {
 						ultoa(f.opencount,str,10);
@@ -1041,6 +1054,8 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 						f.altpath=atoi(str);
 						if(f.altpath>cfg.altpaths)
 							f.altpath=0; }
+					if(sys_status&SS_ABORT)
+						break;
 					putfiledat(&cfg,&f);
 					inputnstime(&f.dateuled);
 					update_uldate(&cfg, &f);
@@ -1243,7 +1258,7 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 				if(i<cfg.total_prots) {
 					if(online==ON_LOCAL) {
 						bputs(text[EnterPath]);
-						if(getstr(path,60,K_UPPER|K_LINE)) {
+						if(getstr(path,60,K_LINE)) {
 							backslash(path);
 							strcat(path,fname);
 							sprintf(str,"%s%s",dirpath,fname);
