@@ -3010,8 +3010,6 @@ void DLLCALL bbs_thread(void* arg)
 
 	thread_up();
 
-	uptime=time(NULL);
-
 	status("Initializing");
 
 	/* Defeat the lameo hex0rs - the name and copyright must remain intact */
@@ -3073,6 +3071,8 @@ void DLLCALL bbs_thread(void* arg)
 			return;
 		}
 	}
+
+	uptime=time(NULL);
 
 #ifdef _WIN32
     if((exec_mutex=CreateMutex(NULL,false,NULL))==NULL) {
