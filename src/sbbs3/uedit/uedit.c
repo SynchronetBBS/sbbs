@@ -138,6 +138,40 @@ int check_save(scfg_t *cfg,user_t *user)
 	return(i);
 }
 
+/****************************************************************************/
+/* Takes a string in the format HH:MM:SS and returns in seconds             */
+/****************************************************************************/
+time_t DLLCALL strtosec(char *str)
+{
+	char *p1;
+	char *p2;
+	long int hour=0;
+	long int min=0;
+	long int sec2=0;
+	time_t	sec=0;
+
+	hour=strtol(str,&p1,10);
+	if(hour<0 || hour > 24)
+		return(-1);
+	if(*p1==':') {
+		p1++;
+		min=strtol(p1,&p2,10);
+		if(min<0 || min > 59)
+			return(-1);
+		if(*p2==':') {
+			p2++;
+			sec2=strtol(p2,&p1,10);
+			if(sec2 < 0 || sec2 > 59)
+				return(-1);
+		}
+	}
+
+	sec=hour*60*60;
+	sec+=min*60;
+	sec+=sec2;
+	return(sec);
+}
+
 /* Edit "Extended comment" */
 int edit_comment(scfg_t *cfg, user_t *user)
 {
@@ -176,7 +210,7 @@ int edit_settings(scfg_t *cfg, user_t *user)
  *     Todays Uploads
  *     Total Time On
  *     Todays Time On
- *     Last Call
+ *     Last Call Time On
  *     Extra
  *     Total Downloads
  *     Bytes
@@ -187,6 +221,235 @@ int edit_settings(scfg_t *cfg, user_t *user)
  */
 int edit_stats(scfg_t *cfg, user_t *user)
 {
+	int 	i,j;
+	char 	**opt;
+	char	str[256];
+	time_t	temptime,temptime2;
+
+	if((opt=(char **)MALLOC(sizeof(char *)*(MAX_OPTS+1)))==NULL)
+		allocfail(sizeof(char *)*(MAX_OPTS+1));
+	for(i=0;i<(MAX_OPTS+1);i++)
+		if((opt[i]=(char *)MALLOC(MAX_OPLN))==NULL)
+			allocfail(MAX_OPLN);
+
+	j=0;
+	while(1) {
+		i=0;
+		sprintf(opt[i++],"First On:          %s",user->firston?timestr(cfg, &user->firston, str):"Never");
+		sprintf(opt[i++],"Last On:           %s",user->laston?timestr(cfg, &user->laston, str):"Never");
+		sprintf(opt[i++],"Logon Time:        %s",user->laston?timestr(cfg, &user->logontime, str):"Not On");
+		sprintf(opt[i++],"Total Logons:      %hu",user->logons);
+		sprintf(opt[i++],"Todays Logons:     %hu",user->ltoday);
+		sprintf(opt[i++],"Total Posts:       %hu",user->posts);
+		sprintf(opt[i++],"Todays Posts:      %hu",user->ptoday);
+		sprintf(opt[i++],"Total Email:       %hu",user->emails);
+		sprintf(opt[i++],"Todays Email:      %hu",user->etoday);
+		sprintf(opt[i++],"Email To Sysop:    %hu",user->fbacks);
+		sprintf(opt[i++],"Total Time On:     %hu",user->timeon);
+		sprintf(opt[i++],"Time On Today:     %hu",user->ttoday);
+		sprintf(opt[i++],"Time On Last Call: %hu",user->tlast);
+		sprintf(opt[i++],"Extra Time Today:  %hu",user->textra);
+		sprintf(opt[i++],"Total Downloads:   %hu",user->dls);
+		sprintf(opt[i++],"Downloaded Bytes:  %lu",user->dlb);
+		sprintf(opt[i++],"Total Uploads:     %hu",user->uls);
+		sprintf(opt[i++],"Uploaded Bytes:    %lu",user->ulb);
+		sprintf(opt[i++],"Leech:             %u",user->leech);
+		switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&j,0,"Statistics",opt)) {
+			case -1:
+				freeopt(opt);
+				return(0);
+				break;
+			case 0:
+				/* First On */
+				temptime=user->firston;
+				unixtodstr(cfg,temptime,str);
+				uifc.input(WIN_MID|WIN_SAV,0,0,"First On Date",str,8,K_EDIT);
+				user->firston=dstrtounix(cfg, str);
+				temptime2=temptime-user->firston;
+				sectostr(temptime2,str);
+				uifc.input(WIN_MID|WIN_SAV,0,0,"First On Time",str,8,K_EDIT);
+				temptime2=strtosec(str);
+				if(temptime2!=-1)
+					user->firston += temptime2;
+				if(temptime!=user->firston)
+					modified=1;
+				break;
+			case 1:
+				/* Last On */
+				temptime=user->laston;
+				unixtodstr(cfg,temptime,str);
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Last On Date",str,8,K_EDIT);
+				user->laston=dstrtounix(cfg, str);
+				temptime2=temptime-user->laston;
+				sectostr(temptime2,str);
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Last On Time",str,8,K_EDIT);
+				temptime2=strtosec(str);
+				if(temptime2!=-1)
+					user->laston += temptime2;
+				if(temptime!=user->laston)
+					modified=1;
+				break;
+			case 2:
+				/* Logon Time */
+				temptime=user->logontime;
+				unixtodstr(cfg,temptime,str);
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Logon Date",str,8,K_EDIT);
+				user->logontime=dstrtounix(cfg, str);
+				temptime2=temptime-user->logontime;
+				sectostr(temptime2,str);
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Logon Time",str,8,K_EDIT);
+				temptime2=strtosec(str);
+				if(temptime2!=-1)
+					user->logontime += temptime2;
+				if(temptime!=user->logontime)
+					modified=1;
+				break;
+			case 3:
+				/* Total Logons */
+				sprintf(str,"%hu",user->logons);
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Total Logons",str,5,K_EDIT|K_NUMBER);
+				if(uifc.changes) {
+					modified=1;
+					user->logons=strtoul(str,NULL,10);
+				}
+				break;
+			case 4:
+				/* Todays Logons */
+				sprintf(str,"%hu",user->ltoday);
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Todays Logons",str,5,K_EDIT|K_NUMBER);
+				if(uifc.changes) {
+					modified=1;
+					user->ltoday=strtoul(str,NULL,10);
+				}
+				break;
+			case 5:
+				/* Total Posts */
+				sprintf(str,"%hu",user->posts);
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Total Posts",str,5,K_EDIT|K_NUMBER);
+				if(uifc.changes) {
+					modified=1;
+					user->posts=strtoul(str,NULL,10);
+				}
+				break;
+			case 6:
+				/* Todays Posts */
+				sprintf(str,"%hu",user->ptoday);
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Todays Posts",str,5,K_EDIT|K_NUMBER);
+				if(uifc.changes) {
+					modified=1;
+					user->ptoday=strtoul(str,NULL,10);
+				}
+				break;
+			case 7:
+				/* Total Emails */
+				sprintf(str,"%hu",user->emails);
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Total Emails",str,5,K_EDIT|K_NUMBER);
+				if(uifc.changes) {
+					modified=1;
+					user->emails=strtoul(str,NULL,10);
+				}
+				break;
+			case 8:
+				/* Todays Emails */
+				sprintf(str,"%hu",user->etoday);
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Todays Emails",str,5,K_EDIT|K_NUMBER);
+				if(uifc.changes) {
+					modified=1;
+					user->etoday=strtoul(str,NULL,10);
+				}
+				break;
+			case 9:
+				/* Emails to Sysop */
+				sprintf(str,"%hu",user->fbacks);
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Emails to Sysop",str,5,K_EDIT|K_NUMBER);
+				if(uifc.changes) {
+					modified=1;
+					user->fbacks=strtoul(str,NULL,10);
+				}
+				break;
+			case 10:
+				/* Total Time On */
+				sprintf(str,"%hu",user->timeon);
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Total Time On",str,5,K_EDIT|K_NUMBER);
+				if(uifc.changes) {
+					modified=1;
+					user->timeon=strtoul(str,NULL,10);
+				}
+				break;
+			case 11:
+				/* Time On Today */
+				sprintf(str,"%hu",user->ttoday);
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Time On Today",str,5,K_EDIT|K_NUMBER);
+				if(uifc.changes) {
+					modified=1;
+					user->ttoday=strtoul(str,NULL,10);
+				}
+				break;
+			case 12:
+				/* Time On Last Call */
+				sprintf(str,"%hu",user->tlast);
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Time On Last Call",str,5,K_EDIT|K_NUMBER);
+				if(uifc.changes) {
+					modified=1;
+					user->tlast=strtoul(str,NULL,10);
+				}
+				break;
+			case 13:
+				/* Extra Time Today */
+				sprintf(str,"%hu",user->textra);
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Extra Time Today",str,5,K_EDIT|K_NUMBER);
+				if(uifc.changes) {
+					modified=1;
+					user->textra=strtoul(str,NULL,10);
+				}
+				break;
+			case 14:
+				/* Total Downloads */
+				sprintf(str,"%hu",user->dls);
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Total Downloads",str,5,K_EDIT|K_NUMBER);
+				if(uifc.changes) {
+					modified=1;
+					user->dls=strtoul(str,NULL,10);
+				}
+				break;
+			case 15:
+				/* Downloaded Bytes */
+				sprintf(str,"%lu",user->dlb);
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Downloaded Bytes",str,10,K_EDIT|K_NUMBER);
+				if(uifc.changes) {
+					modified=1;
+					user->dlb=strtoul(str,NULL,10);
+				}
+				break;
+			case 16:
+				/* Total Uploads */
+				sprintf(str,"%hu",user->uls);
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Total Uploads",str,5,K_EDIT|K_NUMBER);
+				if(uifc.changes) {
+					modified=1;
+					user->uls=strtoul(str,NULL,10);
+				}
+				break;
+			case 17:
+				/* Uploaded Bytes */
+				sprintf(str,"%lu",user->ulb);
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Uploaded Bytes",str,10,K_EDIT|K_NUMBER);
+				if(uifc.changes) {
+					modified=1;
+					user->ulb=strtoul(str,NULL,10);
+				}
+				break;
+			case 18:
+				/* Leech Counter */
+				sprintf(str,"%u",user->leech);
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Leech Counter",str,3,K_EDIT|K_NUMBER);
+				if(uifc.changes) {
+					modified=1;
+					user->leech=strtoul(str,NULL,10);
+				}
+				break;
+		}
+	}
 	return(0);
 }
 
@@ -218,7 +481,7 @@ int edit_security(scfg_t *cfg, user_t *user)
 	j=0;
 	while(1) {
 		i=0;
-		sprintf(opt[i++],"Level:        %-d",user->level);
+		sprintf(opt[i++],"Level:        %d",user->level);
 		sprintf(opt[i++],"Expiration:   %s",user->expire?unixtodstr(cfg, user->expire, str):"Never");
 		sprintf(opt[i++],"Flag Set 1:   %s",ltoaf(user->flags1,str));
 		sprintf(opt[i++],"Flag Set 2:   %s",ltoaf(user->flags2,str));
@@ -226,9 +489,9 @@ int edit_security(scfg_t *cfg, user_t *user)
 		sprintf(opt[i++],"Flag Set 4:   %s",ltoaf(user->flags4,str));
 		sprintf(opt[i++],"Exemptions:   %s",ltoaf(user->exempt,str));
 		sprintf(opt[i++],"Restrictions: %s",ltoaf(user->rest,str));
-		sprintf(opt[i++],"Credits:      %-lu",user->cdt);
-		sprintf(opt[i++],"Free Credits: %-lu",user->freecdt);
-		sprintf(opt[i++],"Minutes:      %-lu",user->min);
+		sprintf(opt[i++],"Credits:      %lu",user->cdt);
+		sprintf(opt[i++],"Free Credits: %lu",user->freecdt);
+		sprintf(opt[i++],"Minutes:      %lu",user->min);
 		opt[i][0]=0;
 		switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&j,0,"Security Settings",opt)) {
 			case -1:
@@ -351,7 +614,6 @@ int edit_security(scfg_t *cfg, user_t *user)
  *     Gender
  *     Connection
  *     Handle
- *     Bitrate
  *     Password
  *     Address 1
  *     Address 2
@@ -381,7 +643,6 @@ int edit_personal(scfg_t *cfg, user_t *user)
 		sprintf(opt[i++],"Gender:     %c",user->sex);
 		sprintf(opt[i++],"Connection: %s",user->modem);
 		sprintf(opt[i++],"Handle:     %s",user->alias);
-		sprintf(opt[i++],"Bitrate:    Hrm...");
 		sprintf(opt[i++],"Password:   %s",user->pass);
 		sprintf(opt[i++],"Location:   %s",user->location);
 		sprintf(opt[i++],"Address:    %s",user->address);
@@ -450,27 +711,24 @@ int edit_personal(scfg_t *cfg, user_t *user)
 					modified=1;
 				break;
 			case 9:
-				/* Bitrate */
-				break;
-			case 10:
 				/* Password */
 				uifc.input(WIN_MID|WIN_SAV,0,0,"Password",user->pass,LEN_PASS,K_EDIT);
 				if(uifc.changes)
 					modified=1;
 				break;
-			case 11:
+			case 10:
 				/* Location */
 				uifc.input(WIN_MID|WIN_SAV,0,0,"Location",user->location,LEN_LOCATION,K_EDIT);
 				if(uifc.changes)
 					modified=1;
 				break;
-			case 12:
+			case 11:
 				/* Address */
 				uifc.input(WIN_MID|WIN_SAV,0,0,"Address",user->address,LEN_ADDRESS,K_EDIT);
 				if(uifc.changes)
 					modified=1;
 				break;
-			case 13:
+			case 12:
 				/* Postal/Zip */
 				uifc.input(WIN_MID|WIN_SAV,0,0,"Postal/Zip Code",user->zipcode,LEN_ZIPCODE,K_EDIT);
 				if(uifc.changes)
