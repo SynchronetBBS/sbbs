@@ -792,12 +792,13 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 		/* setup DOSemu env here */
 	}
 
+	pthread_mutex_lock(&input_thread_mutex);
+
 	if((pid=fork())==-1) {
+		pthread_mutex_unlock(&input_thread_mutex);
 		errormsg(WHERE,ERR_EXEC,cmdline,0);
 		return(-1);
 	}
-
-	pthread_mutex_lock(&input_thread_mutex);
 
 	if(pid==0) {	/* child process */
 		if(startup_dir!=NULL && startup_dir[0])
