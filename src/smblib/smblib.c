@@ -625,7 +625,7 @@ int SMBCALL smb_getmsgidx(smb_t* smb, smbmsg_t* msg)
 	}
 
 	if(!msg->hdr.number) {
-		if(msg->offset%sizeof(idxrec_t) || msg->offset*sizeof(idxrec_t)>=length) {
+		if(msg->offset*sizeof(idxrec_t)>=length) {
 			sprintf(smb->last_error,"invalid index offset: %lu, byte offset: %lu, length: %lu"
 				,msg->offset, msg->offset*sizeof(idxrec_t), length);
 			return(SMB_ERR_HDR_OFFSET);
