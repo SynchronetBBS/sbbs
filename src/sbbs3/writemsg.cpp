@@ -84,17 +84,19 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 
 		if(useron.xedit && cfg.xedit[useron.xedit-1]->misc&QUOTEALL) {
 			sprintf(str,"%sQUOTES.TXT",cfg.node_dir);
-			if((stream=fnopen(&file,str,O_RDONLY))==NULL) {
+			if((stream=fnopen(NULL,str,O_RDONLY))==NULL) {
 				errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
 				LFREE(buf);
-				return(false); }
+				return(false); 
+			}
 
 			sprintf(str,"%s%s",cfg.node_dir,msgtmp);    /* file for quoted msg */
 			if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
 				errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC);
 				LFREE(buf);
 				fclose(stream);
-				return(false); }
+				return(false); 
+			}
 
 			while(!feof(stream) && !ferror(stream)) {
 				if(!fgets(str,255,stream))
@@ -102,9 +104,11 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 				quotestr(str);
 				sprintf(tmp,qstr,str);
 				write(file,tmp,strlen(tmp));
-				linesquoted++; }
+				linesquoted++; 
+			}
 			fclose(stream);
-			close(file); }
+			close(file); 
+		}
 
 		/* Quote nothing to MSGTMP or INPUT.MSG automatically */
 
