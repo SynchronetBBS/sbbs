@@ -8,11 +8,9 @@
 <TR><TD COLSPAN=2><HR></TD></TR>
 <TR>
 <TD COLSPAN=2>
-<IFRAME SRC="msgframe.ssjs/^^group:number^^/^^sub:code^^/^^hdr:number^^" WIDTH="95%" HEIGHT="75%" SCROLLING="auto">
-<!-- <OBJECT TYPE="text/html" DATA="msgframe.ssjs/^^group:number^^/^^sub:code^^/^^hdr:number^^" STANDBY="Loading Message..." WIDTH="95%" HEIGHT="500"> -->
+<OBJECT TYPE="text/html" DATA="msgframe.ssjs/^^group:number^^/^^sub:code^^/^^hdr:number^^" STANDBY="Loading Message..." WIDTH="95%" HEIGHT="425">
 @@body@@
-<!-- </OBJECT> -->
-</IFRAME>
+</OBJECT>
 </TD>
 </TR>
 </TABLE>
