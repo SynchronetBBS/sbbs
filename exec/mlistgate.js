@@ -159,7 +159,7 @@ for(i in area) {
 		delete hdr.thread_next;
 		delete hdr.thread_first;
 
-		var listservers = area[i];
+		var listservers = new Array(area[i]);
 		while(listservers.length) {	/* For each list server... */
 
 			listserv=listservers.shift();
