@@ -86,43 +86,28 @@ binaries:	sbbs3 scfg umonitor uedit
 
 externals:	sbj sbl
 
-sbbs3:	$(SBBSDIR)/src/sbbs3 $(SBBSDIR)/src/uifc $(SBBSDIR)/src/xpdev \
-	$(SBBSDIR)/src/conio $(SBBSDIR)/include \
-	$(SBBSDIR)/lib/mozilla/js/$(machine).$(SUFFIX) \
-	$(SBBSDIR)/lib/mozilla/nspr/$(machine).$(SUFFIX) \
-	$(SBBSDIR)/lib/fltk/$(machine)
+sbbs3:	src $(SBBSDIR)/lib/mozilla/js/$(machine).$(SUFFIX) $(SBBSDIR)/lib/mozilla/nspr/$(machine).$(SUFFIX)
 	$(MAKE) -C $(SBBSDIR)/src/sbbs3 $(MKFLAGS)
 
-scfg:	$(SBBSDIR)/src/sbbs3 $(SBBSDIR)/src/uifc $(SBBSDIR)/src/xpdev \
-	$(SBBSDIR)/src/conio $(SBBSDIR)/include \
-	$(SBBSDIR)/lib/fltk/$(machine)
+scfg:	src
 	$(MAKE) -C $(SBBSDIR)/src/sbbs3/scfg $(MKFLAGS)
 
-umonitor:	$(SBBSDIR)/src/sbbs3 \
-	$(SBBSDIR)/src/uifc $(SBBSDIR)/src/xpdev \
-	$(SBBSDIR)/src/conio $(SBBSDIR)/include \
-	$(SBBSDIR)/lib/fltk/$(machine)
+umonitor:	src
 	$(MAKE) -C $(SBBSDIR)/src/sbbs3/umonitor $(MKFLAGS)
 
-uedit:	$(SBBSDIR)/src/sbbs3 \
-	$(SBBSDIR)/src/uifc $(SBBSDIR)/src/xpdev \
-	$(SBBSDIR)/src/conio $(SBBSDIR)/include \
-	$(SBBSDIR)/lib/fltk/$(machine)
-
+uedit:	src
 	$(MAKE) -C $(SBBSDIR)/src/sbbs3/uedit $(MKFLAGS)
 
-baja:	$(SBBSDIR)/exec binaries
+baja:	run sbbs3
 	$(MAKE) -C $(SBBSDIR)/exec $(MKFLAGS) BAJAPATH=$(SBBSDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(SUFFIX)/baja
 
-sbj:	$(SBBSDIR)/xtrn
+sbj:	run
 	$(MAKE) -C $(SBBSDIR)/xtrn/sbj $(MKFLAGS)
 
-sbl:	$(SBBSDIR)/xtrn
+sbl:	run
 	$(MAKE) -C $(SBBSDIR)/xtrn/sbl $(MKFLAGS) SBBS_SRC=$(SBBSDIR)/src/sbbs3/ XPDEV=$(SBBSDIR)/src/xpdev/
 
-node_dirs:	$(SBBSDIR)/node1 $(SBBSDIR)/node2 $(SBBSDIR)/node3 $(SBBSDIR)/node4
-
-install: all $(SBBSDIR)/ctrl $(SBBSDIR)/text node_dirs
+install: all
 ifeq ($(INSTALL),UNIX)
 	@echo ERROR: UNIX Install type not yet supported.
 	fail
@@ -157,91 +142,31 @@ else
 endif
 
 # CVS checkout command-line
-CVS_CO = @cd $(SBBSDIR); cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs co
+CVS_CO = @cd $(SBBSDIR); cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs co -r $(CVSTAG)
 
-$(SBBSDIR)/ctrl: cvslogin
+src: cvslogin
 ifndef NOCVS
-	$(CVS_CO) -r $(CVSTAG) ctrl
+	$(CVS_CO) src-sbbs3
 endif
 
-$(SBBSDIR)/text: cvslogin
+run: cvslogin
 ifndef NOCVS
-	$(CVS_CO) -r $(CVSTAG) text
+	$(CVS_CO) run-sbbs3
 endif
 
 $(SBBSDIR)/docs: cvslogin
 ifndef NOCVS
-	$(CVS_CO) -r $(CVSTAG) docs
-endif
-
-$(SBBSDIR)/exec: cvslogin
-ifndef NOCVS
-	$(CVS_CO) -r $(CVSTAG) exec
-endif
-
-$(SBBSDIR)/node1: cvslogin
-ifndef NOCVS
-	$(CVS_CO) -r $(CVSTAG) node1
-endif
-
-$(SBBSDIR)/node2: cvslogin
-ifndef NOCVS
-	$(CVS_CO) -r $(CVSTAG) node2
-endif
-
-$(SBBSDIR)/node3: cvslogin
-ifndef NOCVS
-	$(CVS_CO) -r $(CVSTAG) node3
-endif
-
-$(SBBSDIR)/node4: cvslogin
-ifndef NOCVS
-	$(CVS_CO) -r $(CVSTAG) node4
-endif
-
-$(SBBSDIR)/xtrn: cvslogin
-ifndef NOCVS
-	$(CVS_CO) -r $(CVSTAG) -N xtrn
-endif
-
-$(SBBSDIR)/src/sbbs3: cvslogin
-ifndef NOCVS
-	$(CVS_CO) -r $(CVSTAG)  src/sbbs3
-endif
-
-$(SBBSDIR)/src/uifc: cvslogin
-ifndef NOCVS
-	$(CVS_CO) -r $(CVSTAG)  src/uifc
-endif
-
-$(SBBSDIR)/src/conio: cvslogin
-ifndef NOCVS
-	$(CVS_CO) -r $(CVSTAG)  src/conio
-endif
-
-$(SBBSDIR)/src/xpdev: cvslogin
-ifndef NOCVS
-	$(CVS_CO) -r $(CVSTAG)  src/xpdev
-endif
-
-$(SBBSDIR)/include: cvslogin
-ifndef NOCVS
-	$(CVS_CO) -r $(CVSTAG)  include
+	$(CVS_CO) docs
 endif
 
 $(SBBSDIR)/lib/mozilla/js/$(machine).$(SUFFIX): cvslogin
 ifndef NOCVS
-	$(CVS_CO) -r $(CVSTAG) lib/mozilla/js/$(machine).$(SUFFIX)
+	$(CVS_CO) lib/mozilla/js/$(machine).$(SUFFIX)
 endif
 
 $(SBBSDIR)/lib/mozilla/nspr/$(machine).$(SUFFIX): cvslogin
 ifndef NOCVS
-	$(CVS_CO) -r $(CVSTAG) lib/mozilla/nspr/$(machine).$(SUFFIX)
-endif
-
-$(SBBSDIR)/lib/fltk/$(machine): cvslogin
-ifndef NOCVS
-	$(CVS_CO) -r $(CVSTAG) lib/fltk/$(machine)
+	$(CVS_CO) lib/mozilla/nspr/$(machine).$(SUFFIX)
 endif
 
 cvslogin: $(SBBSDIR)
@@ -252,4 +177,3 @@ endif
 
 $(SBBSDIR):
 	@[ ! -e $(SBBSDIR) ] && mkdir $(SBBSDIR);
-
