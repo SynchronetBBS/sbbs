@@ -1067,6 +1067,14 @@ js_socket_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsv
 		return(JS_FALSE);
 	}
 
+#ifdef _DEBUG
+	js_DescribeObject(cx,obj,"Class used for TCP/IP socket communications");
+	js_DescribeConstructor(cx,obj,"To create a new Socket object: "
+		"<tt>load('sockdefs.js'); var s = new Socket(<i>type</i>)</tt><br>"
+		"where <i>type</i> = <tt>SOCK_STREAM</tt> for TCP (default) or <tt>SOCK_DGRAM</tt> for UDP");
+	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", socket_prop_desc, JSPROP_READONLY);
+#endif
+
 	dbprintf(FALSE, p, "object constructed");
 	return(JS_TRUE);
 }
@@ -1113,15 +1121,6 @@ JSObject* DLLCALL js_CreateSocketObject(JSContext* cx, JSObject* parent, char *n
 
 	if (!js_DefineMethods(cx, obj, js_socket_functions)) 
 		return(NULL);
-
-#ifdef _DEBUG
-	js_DescribeObject(cx,obj,"Instance of <i>Socket</i> class, "
-		"used for TCP/IP socket communications");
-	js_DescribeConstructor(cx,obj,"To create a new Socket object: "
-		"<tt>load('sockdefs.js'); var s = new Socket(<i>type</i>)</tt><br>"
-		"where <i>type</i> = <tt>SOCK_STREAM</tt> for TCP (default) or <tt>SOCK_DGRAM</tt> for UDP");
-	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", socket_prop_desc, JSPROP_READONLY);
-#endif
 
 	dbprintf(FALSE, p, "object created");
 
