@@ -9,13 +9,15 @@
 
 <body>
 
-<!--webbot bot="Include" U-Include="_borders/top.htm" TAG="BODY" startspan -->
+<!--webbot bot="Include" U-Include="_borders/top.htm" TAG="BODY" startspan --><p>
 
-<a href="http://www.synchro.net"><img border="0" src="images/synclogo_fancyred.png" alt="Synchronet BBS - Multinode Bulletin Board Software" width="626" height="86"></a>
+<a href="http://www.synchro.net">
+<img border="0" src="images/synclogo_fancyred.png" alt="Synchronet BBS - Multinode Bulletin Board Software" width="626" height="86"></a>
+</p>
 
 <hr>
 
-<!--webbot bot="Include" i-checksum="23172" endspan -->
+<!--webbot bot="Include" i-checksum="56836" endspan -->
 
 <p><a name="top"></a><a href="sysop.html#TOC">Back to Table of Contents</a></p>
 <h2>[15.1] - <a name="CHKSMB">CHKSMB</a>  - Checks mail/message base for
@@ -1131,7 +1133,7 @@ Synchronet Blackjack, Dice War, and Domain Poker.
 
 	<b>	totals *.log
 		totals 06*.log 07*.log 080192.log</b></pre>
-<h2>[15.17] - <a name="ANS2MSG">ANS2MSG</a></h2>
+<h2>[15.17] - <a name="ANS2ASC">ANS2ASC</a></h2>
 <pre>ANSI to Synchronet Ctrl-A message format conversion utility 
 
 This utility will convert basic non-animated ANSI files into Synchronet Ctrl-A
@@ -1144,12 +1146,12 @@ a directory other than TEXT\MENU.
 
 If, for example, you create a main menu with an ANSI drawing program that you
 want your ASCII and monochrome ANSI users to see with attractive output, use
-ANS2MSG to create the .MON and .ASC versions.
+ANS2ASC to create the .MON and .ASC versions.
 
-Type: <b>ANS2MSG MAIN.ANS MAIN.MON</b>
+Type: <b>ans2asc main.ans main.mon</b>
 in your TEXT\MENU directory to create the monochrome version. 
 
-Type: <b>ANS2MSG MAIN.ANS MAIN.ASC</b>
+Type: <b>ans2asc main.ans main.asc</b>
 in your TEXT\MENU directory to create the ASCII version.
 
 If you rename MAIN.ANS or move into a directory other than TEXT\MENU, then
@@ -1159,7 +1161,7 @@ terminal types.
 This utility is also useful for creating colorful system, newuser, feedback
 and other Synchronet .MSG files for display. For example, create 
 TEXT\SYSTEM.ANS with your favorite ANSI editor and then convert to .MSG by
-typing: <b>ANS2MSG SYSTEM.ANS SYSTEM.MSG</b>
+typing: <b>ans2asc system.ans system.msg</b>
 
 Be aware that ANSI animation codes are NOT supported since there aren't Ctrl-A
 equivalents. The following ANSI codes (preceded by &lt;ESC&gt;[) are supported:
@@ -1192,13 +1194,13 @@ equivalents. The following ANSI codes (preceded by &lt;ESC&gt;[) are supported:
 45m		5		Foreground magenta
 46m		6		Foreground cyan
 47m		7		Foreground white</pre>
-<h2>[15.18] - <a name="MSG2ANS">MSG2ANS</a></h2>
+<h2>[15.18] - <a name="ASC2ANS">ASC2ANS</a></h2>
 <pre>Converts Synchronet Ctrl-A file to ANSI escape sequences.
 
 This utility allows you to convert files that use Ctrl-A codes into ANSI files.
-(the opposite of the ANS2MSG utility).
+(the opposite of the ANS2ASC utility).
 
-The syntax is: <b>MSG2ANS infile.ext outfile.ext</b>
+The syntax is: <b>asc2ans main.asc main.ans</b>
 
 The extension for the input file will most likely be .ASC or .MSG and the
 output file should be .ANS.
@@ -1206,13 +1208,12 @@ output file should be .ANS.
 This utility is also useful for viewing files with Synchronet Ctrl-A codes from
 the DOS prompt.
 
-Example: <b>MSG2ANS MAIN.ASC CON</b>
+Example: <b>asc2ans main.asc con</b>
 
 This will read from the Ctrl-A file MAIN.ASC and write to your screen using
 ANSI escape sequences.</pre>
 <p><a href="#top"><b>Back to Top</b></a></p>
 <!--webbot bot="Include" U-Include="_borders/bottom.htm" TAG="BODY" startspan -->
-
 <hr>
 <p><b><a href="http://www.synchro.net/copyright.html">Copyright</a> © 2000 by </b> <a href="http://www.synchro.net/author.htm"><b>Rob Swindell</b><br>
 </a>
@@ -1242,7 +1243,7 @@ http://www.synchro.net</a>
 read the <a href="http://www.synchro.net/copyright.html">Copyright Documentation</a>
 .</font></p>
 
-<!--webbot bot="Include" i-checksum="55766" endspan -->
+<!--webbot bot="Include" i-checksum="52953" endspan -->
 
 </body>
 
