@@ -62,7 +62,7 @@
 #endif
 
 /* Do not include web server in 3.10-Win32 release build */
-#if defined(__unix__) || defined(_DEBUG)
+#if !defined(_MSC_VER)
 	#define WEB_SERVER
 #endif
 
