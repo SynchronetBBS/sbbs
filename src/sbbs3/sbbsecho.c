@@ -2138,6 +2138,48 @@ time_t fmsgtime(char *str)
 	return(mktime(&tm));
 }
 
+static short fmsgzone(char* p)
+{
+	char hr[4];
+	char min[4];
+	short val;
+	BOOL west=TRUE;
+
+	if(*p=='-')
+		p++;
+	else
+		west=FALSE;
+
+	sprintf(hr,"%.2s",p);
+	sprintf(min,"%.2s",p+1);
+
+	val=atoi(hr)*60;
+	val+=atoi(min);
+
+	if(west)
+		switch(val) {
+			case 0x0F0:
+				return(AST);
+			case 0x12C:
+				return(EST);
+			case 0x168:
+				return(CST);
+			case 0x1A4:
+				return(MST);
+			case 0x1E0:
+				return(PST);
+			case 0x21C:
+				return(YST);
+			case 0x258:
+				return(HST);
+			case 0x294:
+				return(BST);
+			default: 
+				return(-val);
+		}
+	return(val);
+}
+
 #if 1		/* Old way */
 
 char HUGE16 *getfmsg(FILE *stream, ulong *outlen)
@@ -2380,6 +2422,18 @@ int fmsgtosmsg(uchar HUGE16 *fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 				while(m && fbuf[m-1]<=SP) m--;
 				if(m>l)
 					smb_hfield(&msg,FIDOPID,(ushort)(m-l),fbuf+l); }
+
+			else if(!strncmp((char *)fbuf+l+1,"TZUTC:",6)) {		/* FSP-1001 */
+				l+=7;
+				while(l<length && fbuf[l]<=SP) l++;
+				msg.hdr.when_written.zone = fmsgzone(fbuf+l);
+			}
+
+			else if(!strncmp((char *)fbuf+l+1,"TZUTCINFO:",10)) {	/* non-standard */
+				l+=11;
+				while(l<length && fbuf[l]<=SP) l++;
+				msg.hdr.when_written.zone = fmsgzone(fbuf+l);
+			}
 
 			else {		/* Unknown kludge line */
 				while(l<length && fbuf[l]<=SP) l++;
@@ -3501,9 +3555,10 @@ void export_echomail(char *sub_code,faddr_t addr)
 	char*	buf=NULL;
 	uchar*	fmsgbuf=NULL;
 	ulong	fmsgbuflen;
-	int g,i,j,k=0,file;
-	ulong f,l,m,exp,ptr,msgs,lastmsg,posts,exported=0;
-	float export_time;
+	short	tzone;
+	int		g,i,j,k=0,file;
+	ulong	f,l,m,exp,ptr,msgs,lastmsg,posts,exported=0;
+	float	export_time;
 	smbmsg_t msg;
 	smbmsg_t orig_msg;
 	fmsghdr_t hdr;
@@ -3672,6 +3727,11 @@ void export_echomail(char *sub_code,faddr_t addr)
 
 				tear=0;
 				f=0;
+
+				tzone=msg.hdr.when_written.zone;
+				f+=sprintf(fmsgbuf+f,"\1TZUTC: %02d%02u\r"		/* TZUTC (FSP-1001) */
+					,tzone/60,tzone<0 ? (-tzone)%60 : tzone%60);
+
 				if(msg.ftn_flags!=NULL)
 					f+=sprintf(fmsgbuf+f,"\1FLAGS %.256s\r", msg.ftn_flags);
 
