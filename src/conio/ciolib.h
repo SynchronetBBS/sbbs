@@ -3,7 +3,7 @@
 #ifndef _CIOLIB_H_
 #define _CIOLIB_H_
 
-#include <mouse.h>
+#include "mouse.h"
 
 enum {
 	 CIOLIB_MODE_AUTO
