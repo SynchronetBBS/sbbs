@@ -1,6 +1,10 @@
-# STR_CMDS.SRC
+# str_cmds.src
 
 # Global String Command Module for Synchronet
+
+# $id$
+
+# @format.tab-size 8, @format.use-tabs true
 
 # This is NOT a command shell, DO NOT add to SCFG->Command Shells
 
@@ -47,9 +51,14 @@ if_true
 		return
 		end_if
 
-	compare_str "LIST"
+	compare_word "LIST"
 	if_true
-		list_text_file
+		chksyspass
+		if_true
+			shift_str 4
+			call get_arg
+			printfile_str
+			end_if
 		return
 		end_if
 
@@ -96,19 +105,35 @@ if_true
 
 	compare_word "EXEC"
 	if_true
-		shift_str 4
-		compare_word " "
+		chksyspass
 		if_true
-			shift_str 1
+			shift_str 4
+			call get_arg
+			exec_int %s
 			end_if
-		exec_int %s
 		return
 		end_if
 
-	compare_word "CALL "
+	compare_word "FOSSIL"
 	if_true
-		shift_str 5
-		exec command /c rem >> %jQNET\%s.NOW
+		chksyspass
+		if_true
+			shift_str 6
+			call get_arg
+			exec %s
+			end_if
+		return
+		end_if
+
+	compare_word "CALL"
+	if_true
+		chksyspass
+		if_true
+			shift_str 4
+			call get_arg
+			exec command /c rem >> %jQNET\%s.NOW
+			end_if
+		return
 		end_if
 
 	compare_word "NODE"
@@ -117,16 +142,18 @@ if_true
 		return
 		end_if
 
-	compare_word "DOWN "
+	compare_word "DOWN"
 	if_true
-		shift_str 5
+		shift_str 4
+		call get_arg
 		exec_int %!node down %s
 		return
                 end_if
 
-	compare_word "RERUN "
+	compare_word "RERUN"
 	if_true
-		shift_str 6
+		shift_str 5
+		call get_arg
 		exec_int %!node rerun %s
 		return
                 end_if
@@ -185,7 +212,7 @@ if_true
 		return
 		end_if
 
-	compare_str "DIR"
+	compare_str "DIR"	# directory of current lib/dir
 	if_true
 		chksyspass
 		if_true
@@ -194,18 +221,19 @@ if_true
 		return
                 end_if
 
-	compare_word "LOAD "
+	compare_word "LOAD"
 	if_true
 		shift_str 5
 		load_text %s
 		return
 		end_if
 
-	compare_word "DIR "
+	compare_word "DIR"	# directory of user specified location
 	if_true
 		chksyspass
 		if_true
-			shift_str 4
+			shift_str 3
+			call get_arg
 			exec_int command /c dir %s /p
 			end_if
 		return
@@ -364,4 +392,18 @@ if_true
 	end_if
 
 # None of the above (unrecognized)
+return
+
+### Generic routine to ask user for parameter if one wasn't specified ###
+
+:get_arg
+	compare_word " "
+	if_true
+		shift_str 1
+		end_if
+	compare_str ""
+	if_true
+		print "Parameter(s): "
+		getstr
+		end_if
 return
