@@ -233,6 +233,33 @@ u_long resolve_ip(char *addr)
 
 } /* extern "C" */
 
+#ifdef _WINSOCKAPI_
+
+WSADATA WSAData;
+#define SOCKLIB_DESC WSAData.szDescription
+static BOOL WSAInitialized=FALSE;
+
+static BOOL winsock_startup(void)
+{
+	int		status;             /* Status Code */
+
+    if((status = WSAStartup(MAKEWORD(1,1), &WSAData))==0) {
+		lprintf(LOG_INFO,"%s %s",WSAData.szDescription, WSAData.szSystemStatus);
+		WSAInitialized=TRUE;
+		return(TRUE);
+	}
+
+    lprintf(LOG_ERR,"!WinSock startup ERROR %d", status);
+	return(FALSE);
+}
+
+#else /* No WINSOCK */
+
+#define winsock_startup()	(TRUE)
+#define SOCKLIB_DESC NULL
+
+#endif
+
 #ifdef JAVASCRIPT
 
 static js_server_props_t js_server_props;
@@ -863,7 +890,7 @@ bool sbbs_t::js_init()
 #endif
 
 		/* System Object */
-		if(js_CreateSystemObject(js_cx, js_glob, &cfg, uptime, startup->host_name)==NULL)
+		if(js_CreateSystemObject(js_cx, js_glob, &cfg, uptime, startup->host_name, SOCKLIB_DESC)==NULL)
 			break;
 
 		/* Internal JS Object */
@@ -959,31 +986,6 @@ void sbbs_t::js_create_user_objects(void)
 }
 
 #endif	/* JAVASCRIPT */
-
-#ifdef _WINSOCKAPI_
-
-WSADATA WSAData;
-static BOOL WSAInitialized=FALSE;
-
-static BOOL winsock_startup(void)
-{
-	int		status;             /* Status Code */
-
-    if((status = WSAStartup(MAKEWORD(1,1), &WSAData))==0) {
-		lprintf(LOG_INFO,"%s %s",WSAData.szDescription, WSAData.szSystemStatus);
-		WSAInitialized=TRUE;
-		return(TRUE);
-	}
-
-    lprintf(LOG_ERR,"!WinSock startup ERROR %d", status);
-	return(FALSE);
-}
-
-#else /* No WINSOCK */
-
-#define winsock_startup()	(TRUE)	
-
-#endif
 
 static BYTE* telnet_interpret(sbbs_t* sbbs, BYTE* inbuf, int inlen,
   									BYTE* outbuf, int& outlen)

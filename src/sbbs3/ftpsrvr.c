@@ -153,6 +153,8 @@ static int lprintf(int level, char *fmt, ...)
 #ifdef _WINSOCKAPI_
 
 static WSADATA WSAData;
+#define SOCKLIB_DESC WSAData.szDescription
+
 static BOOL WSAInitialized=FALSE;
 
 static BOOL winsock_startup(void)
@@ -172,6 +174,7 @@ static BOOL winsock_startup(void)
 #else /* No WINSOCK */
 
 #define winsock_startup()	(TRUE)
+#define SOCKLIB_DESC		NULL
 
 #endif
 
@@ -491,7 +494,7 @@ js_initcx(JSRuntime* runtime, SOCKET sock, JSObject** glob, JSObject** ftp)
 			break;
 
 		lprintf(LOG_DEBUG,"%04d JavaScript: Initializing System object",sock);
-		if(js_CreateSystemObject(js_cx, js_glob, &scfg, uptime, startup->host_name)==NULL) 
+		if(js_CreateSystemObject(js_cx, js_glob, &scfg, uptime, startup->host_name, SOCKLIB_DESC)==NULL) 
 			break;
 
 		if((*ftp=JS_DefineObject(js_cx, js_glob, "ftp", NULL

@@ -931,7 +931,9 @@ extern "C" {
 
 	/* js_system.c */
 	DLLEXPORT JSObject* DLLCALL js_CreateSystemObject(JSContext* cx, JSObject* parent
-													,scfg_t* cfg, time_t uptime, char* host_name);
+													,scfg_t* cfg, time_t uptime
+													,char* host_name
+													,char* socklib_desc);
 
 	/* js_client.c */
 	DLLEXPORT JSObject* DLLCALL js_CreateClientObject(JSContext* cx, JSObject* parent
@@ -1010,7 +1012,7 @@ BOOL 	md(char *path);
 	char *	readtext(long *line, FILE *stream);
 
 	/* ver.cpp */
-	char*	socklib_version(char* str);
+	char*	socklib_version(char* str, char* winsock_ver);
 	
 	/* sortdir.cpp */
 	int		fnamecmp_a(char **str1, char **str2);	 /* for use with resort() */

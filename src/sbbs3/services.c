@@ -160,6 +160,7 @@ static int lprintf(int level, char *fmt, ...)
 #ifdef _WINSOCKAPI_
 
 static WSADATA WSAData;
+#define SOCKLIB_DESC WSAData.szDescription
 static BOOL WSAInitialized=FALSE;
 
 static BOOL winsock_startup(void)
@@ -179,6 +180,7 @@ static BOOL winsock_startup(void)
 #else /* No WINSOCK */
 
 #define winsock_startup()	(TRUE)
+#define SOCKLIB_DESC NULL
 
 #endif
 
@@ -811,7 +813,7 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 		if(!js_CreateUserObjects(js_cx, js_glob, &scfg, NULL, NULL, NULL)) 
 			break;
 
-		if(js_CreateSystemObject(js_cx, js_glob, &scfg, uptime, startup->host_name)==NULL) 
+		if(js_CreateSystemObject(js_cx, js_glob, &scfg, uptime, startup->host_name, SOCKLIB_DESC)==NULL) 
 			break;
 #if 0		
 		char		ver[256];

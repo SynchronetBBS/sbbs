@@ -38,6 +38,13 @@
 #include "sbbs.h"
 #include "cmdshell.h"
 
+#if defined(_WINSOCKAPI_)
+	extern WSADATA WSAData;
+	#define SOCKLIB_DESC WSAData.szDescription
+#else
+	#define	SOCKLIB_DESC NULL
+#endif
+
 /****************************************************************************/
 /* Returns 0 if invalid @ code. Returns length of @ code if valid.          */
 /****************************************************************************/
@@ -157,7 +164,7 @@ char* sbbs_t::atcode(char* sp, char* str)
 	}
 
 	if(!strcmp(sp,"SOCKET_LIB")) 
-		return(socklib_version(str));
+		return(socklib_version(str,SOCKLIB_DESC));
 
 	if(!strcmp(sp,"MSG_LIB")) {
 		sprintf(str,"SMBLIB %s",smb_lib_ver());

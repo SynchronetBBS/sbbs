@@ -125,6 +125,7 @@ static int lprintf(int level, char *fmt, ...)
 #ifdef _WINSOCKAPI_
 
 static WSADATA WSAData;
+#define SOCKLIB_DESC WSAData.szDescription
 static BOOL WSAInitialized=FALSE;
 
 static BOOL winsock_startup(void)
@@ -144,6 +145,7 @@ static BOOL winsock_startup(void)
 #else /* No WINSOCK */
 
 #define winsock_startup()	(TRUE)
+#define SOCKLIB_DESC NULL
 
 #endif
 
@@ -1437,7 +1439,7 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user
 			break;
 
 		/* System Object */
-		if(js_CreateSystemObject(js_cx, js_glob, &scfg, uptime, startup->host_name)==NULL)
+		if(js_CreateSystemObject(js_cx, js_glob, &scfg, uptime, startup->host_name, SOCKLIB_DESC)==NULL)
 			break;
 
 		/* Socket Class */

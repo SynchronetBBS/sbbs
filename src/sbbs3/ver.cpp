@@ -41,17 +41,20 @@ extern "C" const char* beta_version = " alpha"; /* Space if non-beta, " beta" ot
 
 #if defined(_WINSOCKAPI_)
 	extern WSADATA WSAData;
+	#define SOCKLIB_DESC WSAData.szDescription
+#else
+	#define	SOCKLIB_DESC NULL
 #endif
 
 #if defined(__unix__)
 	#include <sys/utsname.h>	/* uname() */
 #endif
 
-char* socklib_version(char* str)
+char* socklib_version(char* str, char* winsock_ver)
 {
 #if defined(_WINSOCKAPI_)
 
-	strcpy(str,WSAData.szDescription);
+	strcpy(str,winsock_ver);
 
 #elif defined(__GLIBC__)
 
@@ -101,7 +104,7 @@ void sbbs_t::ver()
 	}
 #endif
 
-	center(socklib_version(str));
+	center(socklib_version(str,SOCKLIB_DESC));
 	CRLF;
 
 	center(os_version(str));

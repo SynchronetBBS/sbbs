@@ -1587,7 +1587,7 @@ static JSClass js_node_class = {
 };
 
 JSObject* DLLCALL js_CreateSystemObject(JSContext* cx, JSObject* parent
-										,scfg_t* cfg, time_t uptime, char* host_name)
+										,scfg_t* cfg, time_t uptime, char* host_name, char* socklib_desc)
 {
 	char		str[256];
 	uint		i;
@@ -1671,7 +1671,7 @@ JSObject* DLLCALL js_CreateSystemObject(JSContext* cx, JSObject* parent
 	if(!JS_SetProperty(cx, sysobj, "platform", &val))
 		return(NULL);
 
-	if((js_str=JS_NewStringCopyZ(cx, socklib_version(str)))==NULL)
+	if((js_str=JS_NewStringCopyZ(cx, socklib_version(str, socklib_desc)))==NULL)
 		return(NULL);
 	val = STRING_TO_JSVAL(js_str);
 	if(!JS_SetProperty(cx, sysobj, "socket_lib", &val))

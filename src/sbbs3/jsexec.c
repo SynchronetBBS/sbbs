@@ -138,6 +138,7 @@ int lprintf(int level, char *fmt, ...)
 #if defined(_WINSOCKAPI_)
 
 WSADATA WSAData;
+#define SOCKLIB_DESC WSAData.szDescription
 static BOOL WSAInitialized=FALSE;
 
 static BOOL winsock_startup(void)
@@ -156,7 +157,8 @@ static BOOL winsock_startup(void)
 
 #else /* No WINSOCK */
 
-#define winsock_startup()	(TRUE)	
+#define winsock_startup()	(TRUE)
+#define SOCKLIB_DESC NULL
 
 #endif
 
@@ -502,7 +504,7 @@ static BOOL js_init(char** environ)
 		return(FALSE);
 
 	/* System Object */
-	if(js_CreateSystemObject(js_cx, js_glob, &scfg, time(NULL), host_name)==NULL)
+	if(js_CreateSystemObject(js_cx, js_glob, &scfg, time(NULL), host_name, SOCKLIB_DESC)==NULL)
 		return(FALSE);
 
 	/* Socket Class */
