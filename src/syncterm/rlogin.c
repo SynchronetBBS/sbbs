@@ -5,15 +5,16 @@
 
 static SOCKET	rlogin_socket=INVALID_SOCKET;
 
-int rlogin_recv(char *buffer, size_t buflen, unsigned int timeout)
+int rlogin_recv(char *buffer, size_t buflen)
 {
 	int	r;
 
-	if(!socket_check(rlogin_socket, &r, NULL, timeout))
+	if(!socket_check(rlogin_socket, NULL, NULL, 0))
 		return(-1);
-	if(!r)
-		return(0);
-	return(recv(rlogin_socket,buffer,buflen,0));
+	r=recv(rlogin_socket,buffer,buflen,0);
+	if(r==-1 && (errno==EAGAIN || errno==EINTR))
+		r=0;
+	return(r);
 }
 
 int rlogin_send(char *buffer, size_t buflen, unsigned int timeout)
@@ -50,6 +51,7 @@ int rlogin_connect(char *addr, int port, char *ruser, char *passwd)
 	char	nil=0;
 	char	*p;
 	unsigned int	neta;
+	struct	timeval	tv;
 
 	for(p=addr;*p;p++)
 		if(*p!='.' && !isdigit(*p))
@@ -89,6 +91,11 @@ int rlogin_connect(char *addr, int port, char *ruser, char *passwd)
 						"Cannot connect to the remost system... it is down or unreachable.");
 		return(-1);
 	}
+
+	tv.tv_sec=0;
+	tv.tv_usec=100000;
+
+	setsockopt(rlogin_socket, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
 
 	rlogin_send("",1,1000);
 	rlogin_send(passwd,strlen(passwd)+1,1000);

@@ -5,6 +5,8 @@
 #include "uifcinit.h"
 #include "menu.h"
 
+#define	BUFSIZE	2048
+
 struct terminal term;
 
 const int tabs[11]={1,8,16,24,32,40,48,56,64,72,80};
@@ -495,8 +497,10 @@ void do_ansi(void)
 void doterm(void)
 {
 	unsigned char ch[2];
+	unsigned char buf[BUFSIZE];
+	unsigned char prn[BUFSIZE];
 	int	key;
-	int i;
+	int i,j;
 
 	term.xpos=1;
 	term.ypos=1;
@@ -516,86 +520,110 @@ void doterm(void)
 	/* Main input loop */
 	for(;;) {
 		/* Get remote input */
-		i=rlogin_recv(ch,1,100);
+		i=rlogin_recv(buf,sizeof(buf));
 		switch(i) {
 			case -1:
 				uifcmsg("Disconnected","`Disconnected`\n\nRemote host dropped connection");
 				return;
-			case 1:
-				if(term.sequence) {
-					strcat(term.escbuf,ch);
-					if((ch[0]>='@' && ch[0]<='Z')
-							|| (ch[0]>='a' && ch[0]<='z')) {
-						do_ansi();
+			case 0:
+				break;
+			default:
+				prn[0]=0;
+				for(j=0;j<i;j++) {
+					ch[0]=buf[j];
+					if(term.sequence) {
+						strcat(term.escbuf,ch);
+						if((ch[0]>='@' && ch[0]<='Z')
+								|| (ch[0]>='a' && ch[0]<='z')) {
+							do_ansi();
+						}
 					}
-				}
-				else if (term.music) {
-					strcat(term.musicbuf,ch);
-					if(ch[0]==14)
-						play_music();
-				}
-				else {
-					switch(ch[0]) {
-						case 0:
-							break;
-						case 7:			/* Beep */
-							#ifdef __unix__
-								beep();
-							#else
-								MessageBeep(MB_OK);
-							#endif
-							break;
-						case 12:		/* ^L - Clear screen */
-							clearscreen(term.attr);
-							term.ypos=1;
-							term.xpos=1;
-							set_cursor();
-							break;
-						case 27:		/* ESC */
-							term.sequence=1;
-							break;
-						case '\n':
-							term.ypos++;
-							if(term.ypos>term.height) {
-								term.ypos=term.height;
-								scrollup();
-							}
-							set_cursor();
-							break;
-						case '\t':
-							for(i=0;i<11;i++) {
-								if(tabs[i]>term.xpos) {
-									term.xpos=tabs[i];
-									break;
-								}
-							}
-							set_cursor();
-							break;
-						case '\r':
-							term.xpos=1;
-							set_cursor();
-							break;
-						case '\b':
-							term.xpos--;
-							if(term.xpos<1)
+					else if (term.music) {
+						strcat(term.musicbuf,ch);
+						if(ch[0]==14)
+							play_music();
+					}
+					else {
+						switch(buf[j]) {
+							case 0:
+								break;
+							case 7:			/* Beep */
+								cprintf(prn);
+								prn[0]=0;
+								#ifdef __unix__
+									beep();
+								#else
+									MessageBeep(MB_OK);
+								#endif
+								break;
+							case 12:		/* ^L - Clear screen */
+								cprintf(prn);
+								prn[0]=0;
+								clearscreen(term.attr);
+								term.ypos=1;
 								term.xpos=1;
-							putch(' ');
-							set_cursor();
-							break;
-						default:
-							putch(ch[0]);
-							term.xpos++;
-							if(term.xpos>term.width) {
-								term.xpos=1;
+								set_cursor();
+								break;
+							case 27:		/* ESC */
+								cprintf(prn);
+								prn[0]=0;
+								term.sequence=1;
+								break;
+							case '\n':
+								cprintf(prn);
+								prn[0]=0;
 								term.ypos++;
 								if(term.ypos>term.height) {
 									term.ypos=term.height;
 									scrollup();
 								}
 								set_cursor();
-							}
+								break;
+							case '\t':
+								cprintf(prn);
+								prn[0]=0;
+								for(i=0;i<11;i++) {
+									if(tabs[i]>term.xpos) {
+										term.xpos=tabs[i];
+										break;
+									}
+								}
+								set_cursor();
+								break;
+							case '\r':
+								cprintf(prn);
+								prn[0]=0;
+								term.xpos=1;
+								set_cursor();
+								break;
+							case '\b':
+								cprintf(prn);
+								prn[0]=0;
+								term.xpos--;
+								if(term.xpos<1)
+									term.xpos=1;
+								putch(' ');
+								set_cursor();
+								break;
+							default:
+								strcat(prn,ch);
+								term.xpos++;
+								if(term.xpos>term.width) {
+									cprintf(prn);
+									prn[0]=0;
+									term.xpos=1;
+									term.ypos++;
+									if(term.ypos>term.height) {
+										term.ypos=term.height;
+										scrollup();
+									}
+									set_cursor();
+								}
+						}
 					}
 				}
+				cprintf(prn);
+				prn[0]=0;
 				break;
 		}
 		
