@@ -1385,10 +1385,13 @@ char* DLLCALL usermailaddr(scfg_t* cfg, char* addr, char* name)
 char* DLLCALL alias(scfg_t* cfg, char* name, char* buf)
 {
 	int		file;
+	char	line[128];
 	char*	p;
 	char*	np;
 	char*	tp;
 	char	fname[MAX_PATH+1];
+	size_t	namelen;
+	size_t	cmplen;
 	FILE*	fp;
 
 	p=name;
@@ -1403,20 +1406,39 @@ char* DLLCALL alias(scfg_t* cfg, char* name, char* buf)
 	}
 
 	while(!feof(fp)) {
-		if(!fgets(buf,80,fp))
+		if(!fgets(line,sizeof(line),fp))
 			break;
-		np=buf;
+		np=line;
 		while(*np && *np<=' ') np++;
 		if(*np==';')
 			continue;
 		tp=np;
 		while(*tp && *tp>' ') tp++;
 		if(*tp) *tp=0;
+		if(*np=='*') {
+			np++;
+			cmplen=strlen(np);
+			namelen=strlen(name);
+			if(namelen<cmplen)
+				continue;
+			if(strnicmp(np,name+(namelen-cmplen),cmplen))
+				continue;
+			np=tp+1;
+			while(*np && *np<=' ') np++;
+			truncsp(np);
+			if(*np=='*') 
+				sprintf(buf,"%.*s%s",namelen-cmplen,name,np+1);
+			else
+				strcpy(buf,np);
+			p=buf;
+			break;
+		}
 		if(!stricmp(np,name)) {
 			np=tp+1;
 			while(*np && *np<=' ') np++;
-			p=np;
-			truncsp(p);
+			truncsp(np);
+			strcpy(buf,np);
+			p=buf;
 			break;
 		}
 	}
