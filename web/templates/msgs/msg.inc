@@ -22,12 +22,19 @@
         </object>
     </td>
 </tr>
-<tr class="msg"><td colspan="2">@@prevlink@@</td><td colspan="2" align="right">@@nextlink@@</td></tr>
-@@JS:if(template.replyto!=undefined) '<tr class="msg"><td colspan="4"><b>Reply To: </b><a href="msg.ssjs?msg_sub='+sub+'&amp;message='+template.replyto.number+'">'+template.replyto.subject+'</a> ('+template.replyto.from+')</td></tr>'; else '';@@
-@@JS:if(template.replies.length>0) '<tr class="msg"><td colspan="4"><b>Replies:</b></td></tr>'; else '';@@
+<tr>
+<td class="msgnavleft">@@prevlink@@</td>
+<td class="msgnavmid"><a href="reply.ssjs?msg_sub=^^sub:code^^&amp;reply_to=^^hdr:number^^">Reply</a></td>
+@@JS:template.can_delete?'<td class="msgnavmid"><a href="management.ssjs?Action=Delete+Message%28s%29&amp;msg_sub=^^sub:code^^&amp;number=^^hdr:number^^">Delete</a></td>':'<td class="msgnavmid">Delete</td>'@@
+<td class="msgnavright">@@nextlink@@</td>
+</tr>
+@@JS:if(template.replyto!=undefined) '<tr class="msg"><td colspan="4"><b>In Reply To: </b><a href="msg.ssjs?msg_sub='+sub+'&amp;message='+template.replyto.number+'">'+template.replyto.subject+'</a> ('+template.replyto.from+')</td></tr>'; else '';@@
+@@JS:if(template.replies.length>0) '<tr class="msg"><td colspan="4"><b>Replies: </b>'; else '';@@
 <<REPEAT replies>>
-<tr class="msg"><td colspan="4"><a href="msg.ssjs?msg_sub=^^sub:code^^&amp;message=^^replies:number^^">%%replies:subject%%</a> (%%replies:from%%)</td></tr>
+<a href="msg.ssjs?msg_sub=^^sub:code^^&amp;message=^^replies:number^^">%%replies:subject%%</a> (%%replies:from%%)
 <<END REPEAT replies>>
+</td>
+</tr>
 </table>
 @@JS:if(template.attachments==undefined) '<!--'; else '';@@
 <b>Attachments:</b><br />
@@ -35,4 +42,4 @@
 <a href="attachments.ssjs/^^sub:code^^/^^hdr:number^^/^^attachments:name^^">%%attachments:name%%</a><br />
 <<END REPEAT attachments>>
 @@JS:if(template.attachments==undefined) '-->'; else '';@@
-<p class="msgcenter"><a href="reply.ssjs?msg_sub=^^sub:code^^&amp;reply_to=^^hdr:number^^">Reply</a> <a href="management.ssjs?Action=Delete+Message%28s%29&amp;msg_sub=^^sub:code^^&amp;number=^^hdr:number^^">Delete</a></p>
+<p class="msgcenter"> </p>
