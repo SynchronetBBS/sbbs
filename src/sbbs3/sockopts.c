@@ -49,7 +49,6 @@ static const sockopt_name option_names[] = {
 	{ "KEEPALIVE",		SO_KEEPALIVE	},
 	{ "DONTROUTE",		SO_DONTROUTE	},
 	{ "BROADCAST",		SO_BROADCAST	},
-	{ "USELOOPBACK",	SO_USELOOPBACK	},
 	{ "OOBINLINE",		SO_OOBINLINE	},
 	{ "SNDBUF",			SO_SNDBUF		},
 	{ "RCVBUF",			SO_RCVBUF		},
