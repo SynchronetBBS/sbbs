@@ -346,7 +346,7 @@ int SMBCALL smb_stack(smb_t* smb, int op)
 			return(SMB_FAILURE);
 		}
 		if(smb->shd_fp==NULL || smb->sdt_fp==NULL || smb->sid_fp==NULL)
-			return(SMB_ERR_NOT_OPEN);	  /* Msg base not open */
+			return(SMB_SUCCESS);	  /* Msg base not open, do nothing */
 		memcpy(&stack[stack_idx],smb,sizeof(smb_t));
 		stack_idx++;
 		return(SMB_SUCCESS); 
