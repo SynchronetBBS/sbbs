@@ -85,7 +85,10 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 		/* Quote entire message to MSGTMP or INPUT.MSG */
 
 		if(useron.xedit && cfg.xedit[useron.xedit-1]->misc&QUOTEALL) {
-			sprintf(str,"%sQUOTES.TXT",cfg.node_dir);
+			strcpy(tmp,"QUOTES.TXT");
+			if(cfg.xedit[useron.xedit-1]->misc&XTRN_LWRCASE)
+				strlwr(tmp);
+			sprintf(str,"%s%s",cfg.node_dir,tmp);
 			if((stream=fnopen(NULL,str,O_RDONLY))==NULL) {
 				errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
 				LFREE(buf);
@@ -117,7 +120,10 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 			;
 
 		else if(yesno(text[QuoteMessageQ])) {
-			sprintf(str,"%sQUOTES.TXT",cfg.node_dir);
+			strcpy(tmp,"QUOTES.TXT");
+			if(cfg.xedit[useron.xedit-1]->misc&XTRN_LWRCASE)
+				strlwr(tmp);
+			sprintf(str,"%s%s",cfg.node_dir,tmp);
 			if((stream=fnopen(&file,str,O_RDONLY))==NULL) {
 				errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
 				LFREE(buf);
@@ -204,7 +210,10 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 			fclose(stream);
 			close(file); } }
 	else {
-		sprintf(str,"%sQUOTES.TXT",cfg.node_dir);
+		strcpy(tmp,"QUOTES.TXT");
+		if(cfg.xedit[useron.xedit-1]->misc&XTRN_LWRCASE)
+			strlwr(tmp);
+		sprintf(str,"%s%s",cfg.node_dir,tmp);
 		remove(str); }
 
 	if(!online || sys_status&SS_ABORT) {
@@ -431,6 +440,7 @@ void sbbs_t::editor_inf(int xeditnum,char *dest, char *title, long mode
 {
 	char str[512];
 	int file;
+	char tmp[13];
 
 	xeditnum--;
 
@@ -451,7 +461,10 @@ void sbbs_t::editor_inf(int xeditnum,char *dest, char *title, long mode
 		write(file,str,strlen(str));
 		close(file); }
 	else {
-		sprintf(str,"%sEDITOR.INF",cfg.node_dir);
+		strcpy(tmp,"EDITOR.INF");
+		if(cfg.xedit[useron.xedit-1]->misc&XTRN_LWRCASE)
+			strlwr(tmp);
+		sprintf(str,"%s%s",cfg.node_dir,tmp);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC);
 			return; }

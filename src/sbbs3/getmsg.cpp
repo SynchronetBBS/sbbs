@@ -270,8 +270,12 @@ void sbbs_t::show_msg(smbmsg_t* msg, long mode)
 void sbbs_t::quotemsg(smbmsg_t* msg, int tails)
 {
 	char	str[256];
+	char	tmp[13];
 
-	sprintf(str,"%sQUOTES.TXT",cfg.node_dir);
+	strcpy(tmp,"QUOTES.TXT");
+	if(cfg.xedit[useron.xedit-1]->misc&XTRN_LWRCASE)
+		strlwr(tmp);
+	sprintf(str,"%s%s",cfg.node_dir,tmp);
 	remove(str);
 	msgtotxt(msg,str,0,tails);
 }
