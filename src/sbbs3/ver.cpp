@@ -152,10 +152,10 @@ void sbbs_t::ver()
 	CRLF;
 
 #ifdef JAVASCRIPT
-
-	center((char *)JS_GetImplementationVersion());
-	CRLF;
-
+	if(!(startup->options&BBS_OPT_NO_JAVASCRIPT)) {
+		center((char *)JS_GetImplementationVersion());
+		CRLF;
+	}
 #endif
 
 	center(socklib_version(str));
