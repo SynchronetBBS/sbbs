@@ -1,5 +1,25 @@
 /* $Id$ */
 
+/* FTP link */
+
+ if(user.number || system.matchuser("Guest")) {
+    template.ftp_url="ftp://";
+    if(user.number && !(user.security.restrictions&UFLAG_G))
+            template.ftp_url=template.ftp_url + user.alias + ":" + user.security.password + "&#064;";
+
+    var host = http_request.host;
+    if(!host || !host.length)
+            host = system.host_name;
+    var port = host.indexOf(':');
+    if(port>=0)
+            host=host.slice(0,port);
+    else
+        host=host;
+    template.ftp_url=template.ftp_url + host; 
+    template.ftpidx="/00index.html?$" + new Date().valueOf().toString(36);
+    template.ftpqwk = "/" + system.qwk_id.toLowerCase() + ".qwk";
+ }
+
 template.leftnav=new Array;
 
 if(user.number==0 || user.security.restrictions&UFLAG_G)
