@@ -2322,7 +2322,6 @@ static void ctrl_thread(void* arg)
 	u_short		p1,p2;	/* For PORT command */
 	int			i;
 	int			rd;
-	int			file;
 	int			result;
 	int			lib;
 	int			dir;
@@ -3368,7 +3367,7 @@ static void ctrl_thread(void* arg)
 				/* QWK Packet */
 				if(startup->options&FTP_OPT_ALLOW_QWK/* && fexist(qwkfile)*/) {
 					if(detail) {
-						if(fexist(qwkfile)) {
+						if(fexistcase(qwkfile)) {
 							t=fdate(qwkfile);
 							l=flength(qwkfile);
 						} else {
@@ -3645,41 +3644,40 @@ static void ctrl_thread(void* arg)
 			sprintf(str,"%s.qwk",scfg.sys_id);
 			if(lib<0 && startup->options&FTP_OPT_ALLOW_QWK 
 				&& !stricmp(p,str) && !delecmd) {
-				lprintf(LOG_INFO,"%04d %s creating/updating QWK packet...",sock,user.alias);
-				sprintf(str,"%spack%04u.now",scfg.data_dir,user.number);
-				if((file=open(str,O_WRONLY|O_CREAT,S_IWRITE))==-1) {
-					lprintf(LOG_ERR,"%04d !ERROR %d opening %s",sock, errno, str);
-					sockprintf(sock, "451 !ERROR %d creating semaphore file",errno);
-					filepos=0;
-					continue;
-				}
-				close(file);
-				t=time(NULL);
-				while(fexist(str)) {
-					if(time(NULL)-t>startup->qwk_timeout)
-						break;
-					mswait(1000);
-				}
-				if(fexist(str)) {
-					lprintf(LOG_WARNING,"%04d !TIMEOUT waiting for QWK packet creation",sock);
-					sockprintf(sock,"451 Time-out waiting for packet creation.");
-					remove(str);
-					filepos=0;
-					continue;
-				}
-				if(!fexist(qwkfile)) {
-					lprintf(LOG_INFO,"%04d No QWK Packet created (no new messages)",sock);
-					sockprintf(sock,"550 No QWK packet created (no new messages)");
-					filepos=0;
-					continue;
+				if(!fexistcase(qwkfile)) {
+					lprintf(LOG_INFO,"%04d %s creating QWK packet...",sock,user.alias);
+					sprintf(str,"%spack%04u.now",scfg.data_dir,user.number);
+					if(!ftouch(str))
+						lprintf(LOG_ERR,"%04d !ERROR creating semaphore file: %s"
+							,sock, str);
+					t=time(NULL);
+					while(fexist(str)) {
+						if(time(NULL)-t>startup->qwk_timeout)
+							break;
+						mswait(1000);
+					}
+					if(fexist(str)) {
+						lprintf(LOG_WARNING,"%04d !TIMEOUT waiting for QWK packet creation",sock);
+						sockprintf(sock,"451 Time-out waiting for packet creation.");
+						remove(str);
+						filepos=0;
+						continue;
+					}
+					if(!fexistcase(qwkfile)) {
+						lprintf(LOG_INFO,"%04d No QWK Packet created (no new messages)",sock);
+						sockprintf(sock,"550 No QWK packet created (no new messages)");
+						filepos=0;
+						continue;
+					}
 				}
 				SAFECOPY(fname,qwkfile);
 				success=TRUE;
 				delfile=TRUE;
 				credits=FALSE;
-				lprintf(LOG_INFO,"%04d %s downloading QWK packet (%lu bytes) in %s mode"
-					,sock,user.alias,flength(fname)
-					,pasv_sock==INVALID_SOCKET ? "active":"passive");
+				if(!getsize && !getdate)
+					lprintf(LOG_INFO,"%04d %s downloading QWK packet (%lu bytes) in %s mode"
+						,sock,user.alias,flength(fname)
+						,pasv_sock==INVALID_SOCKET ? "active":"passive");
 			/* ASCII Index File */
 			} else if(startup->options&FTP_OPT_INDEX_FILE 
 				&& !stricmp(p,startup->index_file_name)
