@@ -1,3 +1,5 @@
+/* $Id$ */
+
 #ifndef _XPBEEP_H_
 #define _XPBEEP_H_
 
