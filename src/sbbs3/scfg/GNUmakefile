@@ -87,7 +87,7 @@ $(SCFGHELP): $(OBJS) makehelp
 # Monolithic Synchronet executable Build Rule
 $(SCFG): $(OBJS)
 ifdef USE_DIALOG
-	@$(MAKE) -C ../../libdialog
+	@$(MAKE) --no-print-directory -C ../../libdialog
 endif
 	@echo Linking $@
 	@$(CC) -o $@ $(OBJS) $(LFLAGS)
