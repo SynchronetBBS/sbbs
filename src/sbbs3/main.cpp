@@ -1350,6 +1350,9 @@ void event_thread(void* arg)
 					write(file,&sbbs->cfg.event[i]->last,sizeof(time_t));
 				else
 					read(file,&sbbs->cfg.event[i]->last,sizeof(time_t)); 
+				/* Event always runs after initialization? */
+				if(sbbs->cfg.event[i]->misc&EVENT_INIT)
+					sbbs->cfg.event[i]->last=-1;
 			}
 			read(file,&lastprepack,sizeof(time_t));
 			close(file);
