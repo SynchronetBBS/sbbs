@@ -55,14 +55,17 @@ USEFORM("AboutBoxFormUnit.cpp", AboutBoxForm);
 USEFORM("StatsLogFormUnit.cpp", StatsLogForm);
 USEFORM("CodeInputFormUnit.cpp", CodeInputForm);
 USEFORM("ClientFormUnit.cpp", ClientForm);
-USEFORM("SpyFormUnit.cpp", SpyForm);
+USEFORM("SpyFormUnit.cpp",SpyForm);
 USEUNIT("..\ringbuf.c");
 //---------------------------------------------------------------------------
 #include "MainFormUnit.h"
+#include "SpyFormUnit.h"
 #include "CtrlPathDialogUnit.h"
+TSpyForm *SpyForms[MAX_NODES];
 //---------------------------------------------------------------------------
 WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 {
+    memset(SpyForms,0,sizeof(SpyForms));
     try
     {
         Application->Initialize();
