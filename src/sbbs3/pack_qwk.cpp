@@ -50,7 +50,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 	int 	mode;
 	uint	i,j,k,conf;
 	long	l,size,msgndx,posts,ex;
-	ulong	mailmsgs=0;
+	long	mailmsgs=0;
 	ulong	totalcdt,totaltime,lastmsg
 			,files,submsgs,msgs,netfiles=0,preqwk=0;
 	ulong	subs_scanned=0;
@@ -284,7 +284,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 			else
 				mode&=~QM_TO_QNET;
 
-			for(l=0;(ulong)l<mailmsgs;l++) {
+			for(l=0;l<mailmsgs;l++) {
 				bprintf("\b\b\b\b\b\b\b\b\b\b\b\b%4lu of %-4lu"
 					,l+1,mailmsgs);
 

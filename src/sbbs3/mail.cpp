@@ -151,7 +151,7 @@ void sbbs_t::telluser(smbmsg_t* msg)
 void sbbs_t::delallmail(uint usernumber)
 {
 	int 	i;
-	ulong	l,msgs,deleted=0;
+	long	l,msgs,deleted=0;
 	mail_t	*mail;
 	smbmsg_t msg;
 

@@ -505,7 +505,7 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 	return(TRUE);
 }
 
-BOOL msg_offset_by_id(private_t* p, char* id, ulong* offset)
+static BOOL msg_offset_by_id(private_t* p, char* id, long* offset)
 {
 	smbmsg_t msg;
 

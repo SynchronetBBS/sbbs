@@ -783,7 +783,7 @@ extern "C" {
 
 	/* getmail.c */
 	DLLEXPORT int		DLLCALL getmail(scfg_t* cfg, int usernumber, BOOL sent);
-	DLLEXPORT mail_t *	DLLCALL loadmail(smb_t* smb, ulong* msgs, uint usernumber
+	DLLEXPORT mail_t *	DLLCALL loadmail(smb_t* smb, long* msgs, uint usernumber
 										,int which, long mode);
 	DLLEXPORT void		DLLCALL freemail(mail_t* mail);
 	DLLEXPORT void		DLLCALL delfattach(scfg_t*, smbmsg_t*);

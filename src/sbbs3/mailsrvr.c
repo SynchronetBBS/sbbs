@@ -641,7 +641,8 @@ static void pop3_thread(void* arg)
 	ulong		l;
 	ulong		lines;
 	ulong		lines_sent;
-	ulong		msgs,bytes,msgnum;
+	long		msgs;
+	ulong		bytes,msgnum;
 	SOCKET		socket;
 	HOSTENT*	host;
 	smb_t		smb;
