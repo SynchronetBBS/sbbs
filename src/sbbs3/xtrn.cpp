@@ -433,7 +433,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
         startup_info.dwFlags|=STARTF_USESHOWWINDOW;
     }
 
-	if(native) {
+	if(native && !(mode&EX_OFFLINE)) {
 		/* temporary */
 		FILE* fp;
 		sprintf(fname,"%sDOOR32.SYS",cfg.node_dir);
@@ -460,7 +460,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 		fullcmdline,  	// pointer to command line string
 		NULL,  			// process security attributes
 		NULL,   		// thread security attributes
-		TRUE,  			// handle inheritance flag
+		native && !(mode&EX_OFFLINE),	 			// handle inheritance flag
 		CREATE_NEW_CONSOLE|CREATE_SEPARATE_WOW_VDM, // creation flags
         NULL,  			// pointer to new environment block
 		p_startup_dir,	// pointer to current directory name
@@ -468,7 +468,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 		&process_info  	// pointer to PROCESS_INFORMATION
 		)) {
 		XTRN_CLEANUP;
-		if(native)
+		if(native && !(mode&EX_OFFLINE))
 			pthread_mutex_unlock(&input_thread_mutex);
 		SetLastError(last_error);	/* Restore LastError */
         errormsg(WHERE, ERR_EXEC, realcmdline, mode);
@@ -712,14 +712,12 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 		}
 	}
 
-    if(!(mode&EX_BG) && retval==STILL_ACTIVE)
-	    TerminateProcess(process_info.hProcess, GetLastError());
+    if(!(mode&EX_BG)) {			/* !background execution */
 
-	XTRN_CLEANUP;
+		if(retval==STILL_ACTIVE)
+			TerminateProcess(process_info.hProcess, GetLastError());
 
-	if(native)
-		pthread_mutex_unlock(&input_thread_mutex);
-	else {	// Get return value
+	 	// Get return value
     	sprintf(str,"%sDOSXTRN.RET", cfg.node_dir);
         FILE* fp=fopen(str,"r");
         if(fp!=NULL) {
@@ -728,7 +726,12 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 		}
 	}
 
-	if(!(mode&EX_OFFLINE)) {
+	XTRN_CLEANUP;
+
+	if(!(mode&EX_OFFLINE)) {	/* !off-line execution */
+
+		if(native)
+			pthread_mutex_unlock(&input_thread_mutex);
 
 		curatr=0;	// Can't guarantee current attributes
 
