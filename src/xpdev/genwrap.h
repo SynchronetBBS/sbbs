@@ -163,34 +163,18 @@ extern "C" {
 #if defined(_WIN32)
 
 	#define YIELD()			Sleep(1) /* Must sleep at least 1ms to avoid 100% CPU utilization */
+	#define	MAYBE_YIELD()	Sleep(0)
 	#define SLEEP(x)		Sleep(x)
 	#define BEEP(freq,dur)	Beep(freq,dur)
 
 #elif defined(__OS2__)
 
 	#define YIELD()			DosSleep(1)	/* Must sleep at least 1ms to avoid 100% CPU utilization */
+	#define	MAYBE_YIELD()	DosSleep(0)
 	#define SLEEP(x)		DosSleep(x)
 	#define BEEP(freq,dur)	DosBeep(freq,dur)
 
 #elif defined(__unix__)
-
-	#if defined(_THREAD_SAFE)
-		#if defined(__FreeBSD__)
-			#define YIELD()         pthread_yield()
-		#elif defined(_PTH_PTHREAD_H_)
-			#define YIELD()         pth_yield(NULL)
-		#elif defined(_POSIX_PRIORITY_SCHEDULING)
-			#define YIELD()         sched_yield()
-		#else
-			#define YIELD()
-		#endif
-	#else
-		#if defined(_POSIX_PRIORITY_SCHEDULING)
-			#define	YIELD()			sched_yield()
-		#else
-			#define YIELD()
-		#endif
-	#endif
 
 	#if defined(_PTH_PTHREAD_H_)
 		#define SLEEP(x)  ({ int y=x; struct timeval tv; \
@@ -200,6 +184,26 @@ extern "C" {
 		#define SLEEP(x)		({	int y=x; struct timeval tv; \
 								tv.tv_sec=(y/1000); tv.tv_usec=((y%1000)*1000); \
 								select(0,NULL,NULL,NULL,&tv); })
+	#endif
+
+	#define YIELD			SLEEP(1)
+
+	#if defined(_THREAD_SAFE)
+		#if defined(__FreeBSD__)
+			#define MAYBE_YIELD()			pthread_yield()
+		#elif defined(_PTH_PTHREAD_H_)
+			#define MAYBE_YIELD()			pth_yield(NULL)
+		#elif defined(_POSIX_PRIORITY_SCHEDULING)
+			#define MAYBE_YIELD()			sched_yield()
+		#else
+			#define MAYBE_YIELD()			YIELD()
+		#endif
+	#else
+		#if defined(_POSIX_PRIORITY_SCHEDULING)
+			#define	MAYBE_YIELD()			sched_yield()
+		#else
+			#define MAYBE_YIELD()			YIELD()
+		#endif
 	#endif
 
 	/*
