@@ -679,7 +679,6 @@ ulong DLLCALL getfreediskspace(const char* path, ulong unit)
 char * DLLCALL _fullpath(char *target, const char *path, size_t size)  {
 	char	*out;
 	char	*p;
-	struct stat	sb;
 	
 	if(target==NULL)  {
 		if((target=malloc(MAX_PATH+1))==NULL) {
