@@ -25,18 +25,25 @@ from the last node. Make any configuration changes (including modem/com port
 configuration) necessary.
 
 <font color="#FF0000"><i><b>v2 Only:</b></i></font> Copy *.BAT from your NODE1 directory into each added node directory.</pre>
+<pre><font color="#FF0000"><i><b>v3 Only:</b></i></font> If you'd like all nodes to be available for telnet logins, set the
+	 <b>Last Node</b> in the telnet configuration dialog to your highest 
+	 configured node number.</pre>
+<pre>	 <img border="0" src="images/sbbsctrl_telnet_cfg_gen.gif" width="358" height="318"></pre>
+<pre>	 All nodes controlled by the same instance of SBBSCTRL will use the
+	 configuration information for the node specified as the <b>First Node
+</b>	 in the telnet configuration dialog.</pre>
 <h2><a name="ConfiguringNodes">[3.1] - Configuring Nodes</a></h2>
 <pre>You can configure any node from within SCFG regardless of what computer
-(or virtual computer) you're using. To configure a node, select &quot;Nodes&quot; from
-the SCFG &quot;Configure&quot; menu. You will then see a list of all the nodes installed
+(or virtual computer) you're using. To configure a node, select &quot;<i>Nodes</i>&quot; from
+the SCFG &quot;<i>Configure</i>&quot; menu. You will then see a list of all the nodes installed
 on your system. You will also see the bottom line of the screen now has two
-additional key commands added, INS and DEL. INS and DEL are used to add and
-delete nodes from the system. If you select one of the nodes listed, you will
-receive another menu as follows:</pre>
+additional key commands added, <i>INS</i> (Insert) and <i>DEL</i> (Delete). INS and DEL are
+used to add and delete nodes from the system. If you select one of the nodes
+listed, you will receive another menu as follows:</pre>
 <pre><img border="0" src="images/scfg_node1.gif" width="652" height="331"></pre>
 <pre>We will now discuss the options of this menu.
 
-<b>Name:</b>
+<b>Name <i><font color="#FF0000">(v2 Only)</font></i>:</b>
         This is the name of the node. This parameter is not used for anything
         but documentary purposes in the BBS.
 
@@ -200,24 +207,25 @@ del list.tmp</pre>
 </b>	This option defaults to 'Yes'. You should not change this setting.
 
 <b>Low Priority String Input:
-</b>	Normally Synchronet does not give up timeslices under multitaskers
+</b>	Normally Synchronet does not give up time-slices under multi-taskers
 	when waiting for string input from the user.  Setting this option to
-	'Yes' will for Synchronet to give up timeslices when waiting for
+	'Yes' will for Synchronet to give up time-slices when waiting for
 	string input, this may cause &quot;jerky&quot; keyboard response but will
-	improve overall system performance under multitaskers.
+	improve overall system performance under multi-taskers. This option
+	should normally be set to 'Yes'.
 
 <b>Allow Logon by Number:
 </b>	Setting this option to 'Yes' will allow users to logon by typing their
-	user number at the 'NN:' logon prompt.
+	user number at the login logon prompt.
 
 <b>Allow Logon by Real Name:
 </b>	When set to 'Yes' this option allows users to enter their real name
-	(or company name) at the 'NN:' prompt to logon to the BBS.
+	(or company name) at the login prompt to logon to the BBS.
 
 <b>Always Prompt for Password:
 </b>	When set to 'Yes' this option will cause the user to ALWAYS be prompted
 	for a password at logon, even if they have entered an incorrect (non-
-	existent) name at the 'NN:' prompt.
+	existent) name at the login prompt.
 
 <b>Disable Local Inactivity <i><font color="#FF0000">(v2 Only)</font></i>:
 </b>	If you wish to disable the user inactivity warning and auto-logoff
