@@ -47,6 +47,7 @@ typedef struct
 	BOOL	nonblocking;
 	BOOL	is_connected;
 	int		last_error;
+	int		type;
 
 } private_t;
 
@@ -90,6 +91,7 @@ js_socket_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsv
 		dbprintf(TRUE, 0, "open_socket failed with error %d",ERROR_VALUE);
 		return(JS_FALSE);
 	}
+	p->type = type;
 
 	if(!JS_SetPrivate(cx, obj, p)) {
 		dbprintf(TRUE, p, "JS_SetPrivate failed");
@@ -147,11 +149,28 @@ js_close(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	return(JS_TRUE);
 }
 
+static ushort js_port(JSContext* cx, jsval val, int type)
+{
+	JSString*		str;
+	struct servent*	serv;
+
+	if(JSVAL_IS_INT(val))
+		return((ushort)JSVAL_TO_INT(val));
+	if(JSVAL_IS_STRING(val)) {
+		str = JS_ValueToString(cx,val);
+		serv = getservbyname(JS_GetStringBytes(str),type==SOCK_STREAM ? "tcp":"udp");
+		if(serv!=NULL)
+			return(htons(serv->s_port));
+	}
+	return(0);
+}
+
 static JSBool
 js_bind(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	SOCKADDR_IN	addr;
 	private_t*	p;
+	ushort		port;
 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_FALSE);
@@ -160,7 +179,8 @@ js_bind(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	addr.sin_family = AF_INET;
 
 	if(argc)
-		addr.sin_port = (ushort)JSVAL_TO_INT(argv[0]);
+		port = js_port(cx,argv[0],p->type);
+	addr.sin_port = htons(port);
 
 	if(bind(p->sock, (struct sockaddr *) &addr, sizeof(addr))!=0) {
 		p->last_error=ERROR_VALUE;
@@ -169,7 +189,7 @@ js_bind(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_TRUE);
 	}
 
-	dbprintf(FALSE, p, "bound to port %u",addr.sin_port);
+	dbprintf(FALSE, p, "bound to port %u",port);
 	*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
 	return(JS_TRUE);
 }
@@ -198,7 +218,7 @@ js_connect(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_TRUE);
 	}
 
-	port = (ushort)JSVAL_TO_INT(argv[1]);
+	port = js_port(cx,argv[1],p->type);
 
 	dbprintf(FALSE, p, "connecting to port %u at %s", port, JS_GetStringBytes(str));
 
@@ -698,6 +718,7 @@ enum {
 	,SOCK_PROP_LOCAL_PORT
 	,SOCK_PROP_REMOTE_IP
 	,SOCK_PROP_REMOTE_PORT
+	,SOCK_PROP_TYPE
 };
 
 static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
@@ -811,7 +832,9 @@ static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			} else
 				*vp = INT_TO_JSVAL(ntohs(addr.sin_port));
 			break;
-
+		case SOCK_PROP_TYPE:
+			*vp = INT_TO_JSVAL(p->type);
+			break;
 	}
 
 	return(TRUE);
@@ -833,6 +856,7 @@ static struct JSPropertySpec js_socket_properties[] = {
 	{	"local_port"		,SOCK_PROP_LOCAL_PORT	,SOCK_PROP_FLAGS,	NULL,NULL},
 	{	"remote_ip_address"	,SOCK_PROP_REMOTE_IP	,SOCK_PROP_FLAGS,	NULL,NULL},
 	{	"remote_port"		,SOCK_PROP_REMOTE_PORT	,SOCK_PROP_FLAGS,	NULL,NULL},
+	{	"type"				,SOCK_PROP_TYPE			,SOCK_PROP_FLAGS,	NULL,NULL},
 	{0}
 };
 
