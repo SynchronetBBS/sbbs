@@ -207,6 +207,7 @@ DLLEXPORT BOOL		DLLCALL fexist(const char *filespec);
 DLLEXPORT BOOL		DLLCALL fexistcase(char *filespec);	/* fixes upr/lwr case fname */
 DLLEXPORT long		DLLCALL flength(const char *filename);
 DLLEXPORT time_t	DLLCALL fdate(const char *filename);
+DLLEXPORT int		DLLCALL setfdate(const char* filename, time_t t);
 DLLEXPORT BOOL		DLLCALL	isdir(const char *filename);
 DLLEXPORT char*		DLLCALL getfname(const char* path);
 DLLEXPORT int		DLLCALL getfattr(const char* filename);

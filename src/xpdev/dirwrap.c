@@ -338,7 +338,7 @@ void rewinddir(DIR* dir)
 /****************************************************************************/
 /* Returns the time/date of the file in 'filename' in time_t (unix) format  */
 /****************************************************************************/
-time_t DLLCALL fdate(const char *filename)
+time_t DLLCALL fdate(const char* filename)
 {
 	struct stat st;
 
@@ -349,6 +349,21 @@ time_t DLLCALL fdate(const char *filename)
 		return(-1);
 
 	return(st.st_mtime);
+}
+
+/****************************************************************************/
+/* Change the access and modification times for specified filename			*/
+/****************************************************************************/
+int DLLCALL setfdate(const char* filename, time_t t)
+{
+	struct utimbuf ut;
+
+	memset(&ut,0,sizeof(ut));
+
+	ut.actime=t;
+	ut.modtime=t;
+
+	return(utime(filename,&ut));
 }
 
 /****************************************************************************/
