@@ -176,14 +176,15 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 				continue; 
 			}
 			smb_unlocksmbhdr(&smb);
-			qwktomsg(qwk,(char *)block,hubnum+1,INVALID_SUB,j);
+			if(qwktomsg(qwk,(char *)block,hubnum+1,INVALID_SUB,j)) {
+				sprintf(tmp,"%-25.25s",block+46);
+				truncsp(tmp);
+				sprintf(str,text[UserSentYouMail],tmp);
+				putsmsg(&cfg,j,str);
+				msgs++;
+			}
 			smb_close(&smb);
 			smb_stack(&smb,SMB_STACK_POP);
-			sprintf(tmp,"%-25.25s",block+46);
-			truncsp(tmp);
-			sprintf(str,text[UserSentYouMail],tmp);
-			putsmsg(&cfg,j,str);
-			msgs++;
 			continue;
 		}
 
