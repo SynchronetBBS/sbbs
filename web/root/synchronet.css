@@ -116,9 +116,10 @@ td.subinfonwr { white-space: nowrap; }
 
 table.msg { color: black; margin-left: auto; margin-right: auto; background-color: #BBBBBB; }
 tr.msg {  background-color: #DDDDDD; }
-td.msgnavleft { width: 25%;  background-color: #DDDDDD; text-align: left; }
-td.msgnavmid { width: 25%; text-align: center;  background-color: #DDDDDD; }
-td.msgnavright { width: 25%;  background-color: #DDDDDD; text-align: right; }
+td.msg { padding: 4.px; }
+td.msgnavleft { width: 25%;  background-color: #DDDDDD; text-align: left; padding: 4px; }
+td.msgnavmid { width: 25%; text-align: center;  background-color: #DDDDDD; padding: 4px;}
+td.msgnavright { width: 25%;  background-color: #DDDDDD; text-align: right; padding: 4px; }
 td.msgheader { font-weight: bold; }
 p.msgcenter { text-align: center; }
 
