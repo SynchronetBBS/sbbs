@@ -387,7 +387,7 @@ void sbbs_t::useredit(int usernumber, int local)
 				break;
 			case 'M':
 				bputs(text[UeditML]);
-				itoa(user.level,str,10);
+				ultoa(user.level,str,10);
 				if(getstr(str,2,K_NUMBER|K_LINE))
 					if(!(atoi(str)>useron.level && console&CON_R_INPUT))
 						putuserrec(&cfg,user.number,U_LEVEL,2,str);
@@ -525,7 +525,7 @@ void sbbs_t::useredit(int usernumber, int local)
 			case '~':
 				bputs(text[UeditLeech]);
 				if(getstr(str,2,K_NUMBER|K_LINE))
-					putuserrec(&cfg,user.number,U_LEECH,2,itoa(atoi(str),tmp,16));
+					putuserrec(&cfg,user.number,U_LEECH,2,ultoa(atoi(str),tmp,16));
 				break;
 			case '+':
 				bputs(text[ModifyCredits]);
@@ -635,15 +635,18 @@ int sbbs_t::searchup(char *search,int usernum)
 	char userdat[U_LEN+1];
 	int file,count;
 	uint i=usernum+1;
+	long flen;
 
 	if(!search[0])
 		return(usernum);
 	sprintf(userdat,"%sUSER/USER.DAT", cfg.data_dir);
 	if((file=nopen(userdat,O_RDONLY|O_DENYNONE))==-1)
 		return(usernum);
+
+	flen=filelength(file);
 	lseek(file,(long)((long)usernum*U_LEN),0);
 
-	while(!eof(file)) {
+	while(i*U_LEN<=flen) {
 		count=0;
 		while(count<LOOP_NODEDAB
 			&& lock(file,(long)((long)(i-1)*U_LEN),U_LEN)==-1) {
@@ -750,7 +753,7 @@ void sbbs_t::maindflts(user_t* user)
 			bprintf(text[UserDefaultsXeditor]
 				,user->xedit ? cfg.xedit[user->xedit-1]->name : "None");
 		if(user->rows)
-			itoa(user->rows,tmp,10);
+			ultoa(user->rows,tmp,10);
 		else
 			sprintf(tmp,"Auto Detect (%d)",rows);
 		bprintf(text[UserDefaultsRows],tmp);
@@ -876,7 +879,7 @@ void sbbs_t::maindflts(user_t* user)
 			case 'L':
 				bputs(text[HowManyRows]);
 				if((ch=(char)getnum(99))!=-1)
-					putuserrec(&cfg,user->number,U_ROWS,2,itoa(ch,tmp,10));
+					putuserrec(&cfg,user->number,U_ROWS,2,ultoa(ch,tmp,10));
 				break;
 			case 'P':
 				user->misc^=UPAUSE;
