@@ -265,7 +265,7 @@ void sbbs_t::useredit(int usernumber)
 						break;
 					if(c==CR) break;
 					if(c=='?') {
-						sprintf(str,"FLAGS%d",i);
+						sprintf(str,"flags%d",i);
 						menu(str);
 						continue; }
 					if(isdigit(c)) {
