@@ -74,7 +74,6 @@ typedef struct {
 	char*					display_name;
 	char*					description;
 	void*					startup;
-	HANDLE*					recycle_sem;
 	void					(*thread)(void* arg);
 	void					(WINAPI *ctrl_handler)(DWORD);
 	HANDLE					log_handle;
@@ -90,7 +89,6 @@ sbbs_ntsvc_t bbs ={
 	"Provides support for Telnet and RLogin clients and executes timed events. " \
 		"This service provides the critical functions of your Synchronet BBS.",
 	&bbs_startup,
-	&bbs_startup.recycle_sem,
 	bbs_thread,
 	bbs_ctrl_handler,
 	INVALID_HANDLE_VALUE
@@ -104,7 +102,6 @@ sbbs_ntsvc_t event ={
 	NULL,
 	NULL,
 	NULL,
-	NULL,
 	INVALID_HANDLE_VALUE
 };
 
@@ -113,7 +110,6 @@ sbbs_ntsvc_t ftp = {
 	"Synchronet FTP Server",
 	"Provides support for FTP clients (including web browsers) for file transfers.",
 	&ftp_startup,
-	&ftp_startup.recycle_sem,
 	ftp_server,
 	ftp_ctrl_handler,
 	INVALID_HANDLE_VALUE
@@ -125,7 +121,6 @@ sbbs_ntsvc_t web = {
 	"Synchronet Web Server",
 	"Provides support for Web (HTML/HTTP) clients (browsers).",
 	&web_startup,
-	&web_startup.recycle_sem,
 	web_server,
 	web_ctrl_handler,
 	INVALID_HANDLE_VALUE
@@ -138,7 +133,6 @@ sbbs_ntsvc_t mail = {
 	"Sends and receives Internet e-mail (using SMTP) and allows users to remotely " \
 		"access their e-mail using an Internet mail client (using POP3).",
 	&mail_startup,
-	&mail_startup.recycle_sem,
 	mail_server,
 	mail_ctrl_handler,
 	INVALID_HANDLE_VALUE
@@ -152,7 +146,6 @@ sbbs_ntsvc_t services = {
 		"Stock services include Finger, Gopher, NNTP, and IRC. Edit your ctrl/services.ini " \
 		"file for configuration of individual Synchronet Services.",
 	&services_startup,
-	&services_startup.recycle_sem,
 	services_thread,
 	services_ctrl_handler,
 	INVALID_HANDLE_VALUE
@@ -216,6 +209,9 @@ static void svc_ctrl_handler(sbbs_ntsvc_t* svc, DWORD dwCtrlCode)
 static void WINAPI bbs_ctrl_handler(DWORD dwCtrlCode)
 {
 	switch(dwCtrlCode) {
+		case SERVICE_CONTROL_RECYCLE:
+			bbs_startup.recycle_now=TRUE;
+			break;
 		case SERVICE_CONTROL_STOP:
 		case SERVICE_CONTROL_SHUTDOWN:
 			bbs_terminate();
@@ -227,6 +223,9 @@ static void WINAPI bbs_ctrl_handler(DWORD dwCtrlCode)
 static void WINAPI ftp_ctrl_handler(DWORD dwCtrlCode)
 {
 	switch(dwCtrlCode) {
+		case SERVICE_CONTROL_RECYCLE:
+			ftp_startup.recycle_now=TRUE;
+			break;
 		case SERVICE_CONTROL_STOP:
 		case SERVICE_CONTROL_SHUTDOWN:
 			ftp_terminate();
@@ -239,6 +238,9 @@ static void WINAPI ftp_ctrl_handler(DWORD dwCtrlCode)
 static void WINAPI web_ctrl_handler(DWORD dwCtrlCode)
 {
 	switch(dwCtrlCode) {
+		case SERVICE_CONTROL_RECYCLE:
+			web_startup.recycle_now=TRUE;
+			break;
 		case SERVICE_CONTROL_STOP:
 		case SERVICE_CONTROL_SHUTDOWN:
 			web_terminate();
@@ -251,6 +253,9 @@ static void WINAPI web_ctrl_handler(DWORD dwCtrlCode)
 static void WINAPI mail_ctrl_handler(DWORD dwCtrlCode)
 {
 	switch(dwCtrlCode) {
+		case SERVICE_CONTROL_RECYCLE:
+			mail_startup.recycle_now=TRUE;
+			break;
 		case SERVICE_CONTROL_STOP:
 		case SERVICE_CONTROL_SHUTDOWN:
 			mail_terminate();
@@ -263,6 +268,9 @@ static void WINAPI mail_ctrl_handler(DWORD dwCtrlCode)
 static void WINAPI services_ctrl_handler(DWORD dwCtrlCode)
 {
 	switch(dwCtrlCode) {
+		case SERVICE_CONTROL_RECYCLE:
+			services_startup.recycle_now=TRUE;
+			break;
 		case SERVICE_CONTROL_STOP:
 		case SERVICE_CONTROL_SHUTDOWN:
 			services_terminate();
@@ -359,18 +367,21 @@ static void svc_terminated(void* p, int code)
 	}
 }
 
+static void svc_clients(void* p, int active)
+{
+	sbbs_ntsvc_t* svc = (sbbs_ntsvc_t*)p;
+}
+
 /***************/
 /* ServiceMain */
 /***************/
 
 /* Common ServiceMain for all services */
-static void WINAPI svc_start(sbbs_ntsvc_t* svc, DWORD argc, LPTSTR *argv)
+static void WINAPI svc_main(sbbs_ntsvc_t* svc, DWORD argc, LPTSTR *argv)
 {
+	char	str[256];
 	DWORD	i;
 	char*	arg;
-	char	name[256];
-	SECURITY_ATTRIBUTES secattr;
-	SECURITY_DESCRIPTOR secdesc;
 
 	for(i=0;i<argc;i++) {
 		arg=argv[i];
@@ -380,20 +391,13 @@ static void WINAPI svc_start(sbbs_ntsvc_t* svc, DWORD argc, LPTSTR *argv)
 			svc->debug=TRUE;
 	}
 
-	svc_lputs(svc,"Starting service");
+	sprintf(str,"Starting NT Service: %s",svc->display_name);
+	svc_lputs(svc,str);
 
     if((svc->status_handle = RegisterServiceCtrlHandler(svc->name, svc->ctrl_handler))==0) {
-		svc_lputs(NULL,"!ERROR registering service control handler");
+		sprintf(str,"!ERROR %d registering service control handler",GetLastError());
+		svc_lputs(NULL,str);
 		return;
-	}
-
-	if(svc->recycle_sem!=NULL) {
-		InitializeSecurityDescriptor(&secdesc,SECURITY_DESCRIPTOR_REVISION);
-		secattr.nLength=sizeof(secattr);
-		secattr.lpSecurityDescriptor=&secdesc;
-		sprintf(name,"%sRecycle",svc->name);
-		if(((*svc->recycle_sem)=CreateSemaphore(&secattr,0,1,name))==NULL)
-			svc_lputs(NULL,"!ERROR creating recycle semaphore");
 	}
 
 	memset(&svc->status,0,sizeof(SERVICE_STATUS));
@@ -419,7 +423,7 @@ static void WINAPI svc_start(sbbs_ntsvc_t* svc, DWORD argc, LPTSTR *argv)
 
 static void WINAPI bbs_start(DWORD dwArgc, LPTSTR *lpszArgv)
 {
-	svc_start(&bbs, dwArgc, lpszArgv);
+	svc_main(&bbs, dwArgc, lpszArgv);
 
 	/* Events are (currently) part of the BBS service */
 	if(event.log_handle!=INVALID_HANDLE_VALUE) {
@@ -430,25 +434,25 @@ static void WINAPI bbs_start(DWORD dwArgc, LPTSTR *lpszArgv)
 
 static void WINAPI ftp_start(DWORD dwArgc, LPTSTR *lpszArgv)
 {
-	svc_start(&ftp, dwArgc, lpszArgv);
+	svc_main(&ftp, dwArgc, lpszArgv);
 }
 
 #if !defined(NO_WEB_SERVER)
 static void WINAPI web_start(DWORD dwArgc, LPTSTR *lpszArgv)
 {
-	svc_start(&web, dwArgc, lpszArgv);
+	svc_main(&web, dwArgc, lpszArgv);
 }
 #endif
 
 static void WINAPI mail_start(DWORD dwArgc, LPTSTR *lpszArgv)
 {
-	svc_start(&mail, dwArgc, lpszArgv);
+	svc_main(&mail, dwArgc, lpszArgv);
 }
 
 #if !defined(NO_SERVICES)
 static void WINAPI services_start(DWORD dwArgc, LPTSTR *lpszArgv)
 {
-	svc_start(&services, dwArgc, lpszArgv);
+	svc_main(&services, dwArgc, lpszArgv);
 }
 #endif
 
@@ -685,6 +689,7 @@ int main(int argc, char** argv)
 	bbs_startup.event_log=event_lputs;
     bbs_startup.started=svc_started;
     bbs_startup.terminated=svc_terminated;
+	bbs_startup.clients=svc_clients;
     strcpy(bbs_startup.ctrl_dir,ctrl_dir);
 
 	/* Initialize FTP startup structure */
@@ -694,6 +699,7 @@ int main(int argc, char** argv)
 	ftp_startup.lputs=svc_lputs;
     ftp_startup.started=svc_started;
     ftp_startup.terminated=svc_terminated;
+	ftp_startup.clients=svc_clients;
     strcpy(ftp_startup.ctrl_dir,ctrl_dir);
 
 #if !defined(NO_WEB_SERVER)
@@ -704,6 +710,7 @@ int main(int argc, char** argv)
 	web_startup.lputs=svc_lputs;
     web_startup.started=svc_started;
     web_startup.terminated=svc_terminated;
+	web_startup.clients=svc_clients;
     strcpy(web_startup.ctrl_dir,ctrl_dir);
 #endif
 
@@ -714,6 +721,7 @@ int main(int argc, char** argv)
 	mail_startup.lputs=svc_lputs;
     mail_startup.started=svc_started;
     mail_startup.terminated=svc_terminated;
+	mail_startup.clients=svc_clients;
     strcpy(mail_startup.ctrl_dir,ctrl_dir);
 
 #if !defined(NO_SERVICES)
@@ -724,6 +732,7 @@ int main(int argc, char** argv)
 	services_startup.lputs=svc_lputs;
     services_startup.started=svc_started;
     services_startup.terminated=svc_terminated;
+	services_startup.clients=svc_clients;
     strcpy(services_startup.ctrl_dir,ctrl_dir);
 #endif
 
