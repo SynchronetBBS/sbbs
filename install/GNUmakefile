@@ -72,10 +72,9 @@ endif
 
 all: binaries baja externals $(SBBSDIR)/docs
 
-binaries:	sbbs3 scfg
+binaries:	sbbs3 scfg umonitor uedit
 
 externals:	sbj sbl
-
 
 sbbs3:	$(SBBSDIR)/src/sbbs3 $(SBBSDIR)/src/uifc $(SBBSDIR)/src/xpdev \
 	$(SBBSDIR)/include \
@@ -88,6 +87,18 @@ scfg:	$(SBBSDIR)/src/sbbs3 $(SBBSDIR)/src/uifc $(SBBSDIR)/src/xpdev \
 	$(SBBSDIR)/include \
 	$(SBBSDIR)/lib/fltk/$(os)
 	$(MAKE) -C $(SBBSDIR)/src/sbbs3/scfg $(MKFLAGS)
+
+umonitor:	$(SBBSDIR)/src/sbbs3 \
+	$(SBBSDIR)/src/uifc $(SBBSDIR)/src/xpdev \
+	$(SBBSDIR)/include \
+	$(SBBSDIR)/lib/fltk/$(os)
+	$(MAKE) -C $(SBBSDIR)/src/sbbs3/umonitor $(MKFLAGS)
+
+uedit:	$(SBBSDIR)/src/sbbs3 \
+	$(SBBSDIR)/src/uifc $(SBBSDIR)/src/xpdev \
+	$(SBBSDIR)/include \
+	$(SBBSDIR)/lib/fltk/$(os)
+	$(MAKE) -C $(SBBSDIR)/src/sbbs3/uedit $(MKFLAGS)
 
 baja:	$(SBBSDIR)/exec binaries
 	$(MAKE) -C $(SBBSDIR)/exec $(MKFLAGS) BAJAPATH=$(SBBSDIR)/src/sbbs3/$(CCPRE).$(os).exe.$(SUFFIX)/baja
@@ -121,6 +132,8 @@ else
 	$(INSBIN) $(SBBSDIR)/src/sbbs3/scfg/$(CCPRE).$(os).$(SUFFIX)/scfg $(SBBSDIR)/exec/scfg
 	$(INSBIN) $(SBBSDIR)/src/sbbs3/scfg/$(CCPRE).$(os).$(SUFFIX)/scfghelp.ixb $(SBBSDIR)/exec/scfghelp.ixb
 	$(INSBIN) $(SBBSDIR)/src/sbbs3/scfg/$(CCPRE).$(os).$(SUFFIX)/scfghelp.dat $(SBBSDIR)/exec/scfghelp.dat
+	$(INSBIN) $(SBBSDIR)/src/sbbs3/umonitor/$(CCPRE).$(os).$(SUFFIX)/umonitor $(SBBSDIR)/exec/umonitor
+	$(INSBIN) $(SBBSDIR)/src/sbbs3/uedit/$(CCPRE).$(os).$(SUFFIX)/uedit $(SBBSDIR)/exec/uedit
 	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(os).lib.$(SUFFIX)/libsbbs.so $(SBBSDIR)/exec/libsbbs.so
 	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(os).lib.$(SUFFIX)/libftpsrvr.so $(SBBSDIR)/exec/libftpsrvr.so
 	$(INSBIN) $(SBBSDIR)/src/sbbs3/$(CCPRE).$(os).lib.$(SUFFIX)/libmailsrvr.so $(SBBSDIR)/exec/libmailsrvr.so
