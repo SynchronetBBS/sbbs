@@ -708,7 +708,7 @@ BOOL sbbs_write_ini(
 		else if(!iniSetInteger(lp,section,strBindRetryCount,bbs->bind_retry_count,&style))
 			break;
 		if(bbs->bind_retry_delay==global->bind_retry_delay)
-			iniRemoveValue(lp,section,strBindRetryCount);
+			iniRemoveValue(lp,section,strBindRetryDelay);
 		else if(!iniSetInteger(lp,section,strBindRetryDelay,bbs->bind_retry_delay,&style))
 			break;
 	}
@@ -784,7 +784,7 @@ BOOL sbbs_write_ini(
 		else if(!iniSetInteger(lp,section,strBindRetryCount,ftp->bind_retry_count,&style))
 			break;
 		if(ftp->bind_retry_delay==global->bind_retry_delay)
-			iniRemoveValue(lp,section,strBindRetryCount);
+			iniRemoveValue(lp,section,strBindRetryDelay);
 		else if(!iniSetInteger(lp,section,strBindRetryDelay,ftp->bind_retry_delay,&style))
 			break;
 	}
@@ -883,7 +883,7 @@ BOOL sbbs_write_ini(
 		else if(!iniSetInteger(lp,section,strBindRetryCount,mail->bind_retry_count,&style))
 			break;
 		if(mail->bind_retry_delay==global->bind_retry_delay)
-			iniRemoveValue(lp,section,strBindRetryCount);
+			iniRemoveValue(lp,section,strBindRetryDelay);
 		else if(!iniSetInteger(lp,section,strBindRetryDelay,mail->bind_retry_delay,&style))
 			break;
 	}
@@ -956,7 +956,7 @@ BOOL sbbs_write_ini(
 		else if(!iniSetInteger(lp,section,strBindRetryCount,services->bind_retry_count,&style))
 			break;
 		if(services->bind_retry_delay==global->bind_retry_delay)
-			iniRemoveValue(lp,section,strBindRetryCount);
+			iniRemoveValue(lp,section,strBindRetryDelay);
 		else if(!iniSetInteger(lp,section,strBindRetryDelay,services->bind_retry_delay,&style))
 			break;
 	}
@@ -1054,7 +1054,7 @@ BOOL sbbs_write_ini(
 		else if(!iniSetInteger(lp,section,strBindRetryCount,web->bind_retry_count,&style))
 			break;
 		if(web->bind_retry_delay==global->bind_retry_delay)
-			iniRemoveValue(lp,section,strBindRetryCount);
+			iniRemoveValue(lp,section,strBindRetryDelay);
 		else if(!iniSetInteger(lp,section,strBindRetryDelay,web->bind_retry_delay,&style))
 			break;
 	}
