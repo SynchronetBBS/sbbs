@@ -79,7 +79,7 @@ int DLLCALL getmail(scfg_t* cfg, int usernumber, BOOL sent)
 /***************************/
 /* Delete file attachments */
 /***************************/
-extern "C" void delfattach(scfg_t* cfg, smbmsg_t* msg)
+extern "C" void DLLCALL delfattach(scfg_t* cfg, smbmsg_t* msg)
 {
     char str[MAX_PATH+1];
 	char str2[MAX_PATH+1];
