@@ -67,7 +67,7 @@ void sbbs_get_ini_fname(char* ini_file, char* ctrl_dir, char* pHostName)
     }
 	SAFECOPY(path,ctrl_dir);
 	backslash(path);
-	sprintf(ini_file,"%s.ini",path,pHostName);
+	sprintf(ini_file,"%s%s.ini",path,pHostName);
 #if defined(__unix__) && defined(PREFIX)
 	if(!fexistcase(ini_file))
 		sprintf(ini_file,PREFIX"/etc/sbbs.ini");
