@@ -986,7 +986,7 @@ char *cterm_write(unsigned char *buf, int buflen, char *retbuf, int retsize)
 	cterm.xpos=wherex();
 	cterm.ypos=wherey();
 #if 0
-	window(ti.winleft,ti.wintop,ti.winright,ti.wintop);
+	window(ti.winleft,ti.wintop,ti.winright,ti.winbottom);
 	gotoxy(ti.curx,ti.cury);
 	textattr(ti.attribute);
 #endif
