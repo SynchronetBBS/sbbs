@@ -96,8 +96,23 @@ int sem_post(sem_t* psem)
 
 int sem_getvalue(sem_t* psem, int* vp)
 {
+#if 0		/* This only works on 9x *sniff* */
 	ReleaseSemaphore(*(psem),0,(LPLONG)vp);
 	return 0;
+#else
+	/* Note, this should REALLY be in a critical section... */
+	int	retval=0;
+
+	if(WaitForSingleObject(*(psem),0)!=WAIT_OBJECT_0)
+		*vp=0;
+	else {
+		if(ReleaseSemaphore(*(psem),1,(LPLONG)vp))
+			(*vp)++;
+		else
+			retval=-1;
+	}
+	return(retval);
+#endif
 }
 
 int sem_destroy(sem_t* psem)
