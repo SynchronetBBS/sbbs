@@ -31,7 +31,7 @@ $(SMBLIB_ODIR)/%.o : %.c $(BUILD_DEPENDS)
 	@echo $(COMPILE_MSG) $<
 	$(QUIET)$(CC) $(CFLAGS) -o $@ -c $<
 
-$(SMBLIB_TARGET): $(SMBLIB_OBJS) $(BUILD_DEPENDS) $(SMBLIB_ODIR)
+$(SMBLIB_TARGET): $(SMBLIB_ODIR) $(SMBLIB_OBJS) $(BUILD_DEPENDS)
 	@echo Creating $<
 	@(QUIET)ar rc $@ $(SMBLIB_OBJS)
 	@(QUIET)ranlib $@
