@@ -1072,7 +1072,7 @@ js_html_encode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 			free(tmpbuf);
 			return(JS_FALSE);
 		}
-		j=sprintf(outbuf,"<span style=\"%s\">",htmlansi[7],htmlansi[7]);
+		j=sprintf(outbuf,"<span style=\"%s\">",htmlansi[7]);
 		clear_screen=j;
 		for(i=0;tmpbuf[i];i++) {
 			if(j>(obsize/2))		/* Completely arbitrary here... must be carefull with this eventually ToDo */
