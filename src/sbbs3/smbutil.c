@@ -1422,6 +1422,7 @@ int main(int argc, char **argv)
 {
 	char	cmd[128]="",*p,*s;
 	char	path[MAX_PATH+1];
+	char	revision[16];
 	char*	to=NULL;
 	char*	to_number=NULL;
 	char*	to_address=NULL;
@@ -1434,25 +1435,14 @@ int main(int argc, char **argv)
 
 	setvbuf(stdout,0,_IONBF,0);
 
+	sscanf("$Revision$" + 11, "%s", revision);
+
 	smb.file[0]=0;
-	fprintf(stderr,"\nSMBUTIL Version %s (%s) SMBLIB %s - Synchronet Message Base "\
+	fprintf(stderr,"\nSMBUTIL v%s-%s (rev %s) SMBLIB %s - Synchronet Message Base "\
 		"Utility\n\n"
 		,SMBUTIL_VER
-#if defined(__linux__)
-		,"Linux"
-#elif defined(__unix__)
-		,"Unix"
-#elif defined(__OS2__)
-		,"OS/2"
-#elif defined(_WIN32)
-		,"Win32"
-#elif defined(__DOS4G__)
-		,"DOS4G"
-#elif defined(__FLAT__)
-		,"DOS32"
-#else
-		,"DOS16"
-#endif
+		,PLATFORM_DESC
+		,revision
 		,smb_lib_ver()
 		);
 #if 0
