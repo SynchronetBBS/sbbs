@@ -131,7 +131,11 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 	char		to[256];
 	char		from[256];
 	ushort		nettype;
+	ushort		type;
 	jsval		val;
+	JSObject*	array;
+	JSObject*	field;
+	jsuint		i,len;
 
 	/* Required Header Fields */
 	if(JS_GetProperty(cx, hdr, "subject", &val) && JSVAL_IS_STRING(val)) {
@@ -254,6 +258,12 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 		smb_hfield(msg, RFC822REPLYID, (ushort)strlen(cp), cp);
 	}
 
+	if(JS_GetProperty(cx, hdr, "reverse_path", &val) && JSVAL_IS_STRING(val)) {
+		if((cp=JS_GetStringBytes(JSVAL_TO_STRING(val)))==NULL)
+			return(FALSE);
+		smb_hfield(msg, SMTPREVERSEPATH, (ushort)strlen(cp), cp);
+	}
+
 	/* USENET headers */
 	if(JS_GetProperty(cx, hdr, "path", &val) && JSVAL_IS_STRING(val)) {
 		if((cp=JS_GetStringBytes(JSVAL_TO_STRING(val)))==NULL)
@@ -328,6 +338,28 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 	if(JS_GetProperty(cx, hdr, "when_imported_zone", &val) && JSVAL_IS_INT(val)) 
 		msg->hdr.when_imported.zone=(short)JSVAL_TO_INT(val);
 
+	if(JS_GetProperty(cx, hdr, "field_list", &val) && JSVAL_IS_OBJECT(val)) {
+		array=JSVAL_TO_OBJECT(val);
+		len=0;
+		JS_GetArrayLength(cx, array, &len);
+
+		for(i=0;i<len;i++) {
+			if(!JS_GetElement(cx, array, i, &val))
+				continue;
+			if(!JSVAL_IS_OBJECT(val))
+				continue;
+			field=JSVAL_TO_OBJECT(val);
+			if(!JS_GetProperty(cx, field, "type", &val) || !JSVAL_IS_INT(val))
+				continue;
+			type=(ushort)JSVAL_TO_INT(val);
+			if(!JS_GetProperty(cx, field, "data", &val) || !JSVAL_IS_STRING(val))
+				continue;
+			if((cp=JS_GetStringBytes(JSVAL_TO_STRING(val)))==NULL)
+				return(FALSE);
+			smb_hfield(msg, type, (ushort)strlen(cp), cp);
+		}
+	}
+
 	return(TRUE);
 }
 
@@ -338,10 +370,14 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 	char		msg_id[256];
 	char		reply_id[256];
 	char*		val;
+	int			i;
 	ulong		l;
 	smbmsg_t	msg;
 	smbmsg_t	orig_msg;
 	JSObject*	hdrobj;
+	JSObject*	array;
+	JSObject*	field;
+	jsint		items;
 	private_t*	p;
 
 	*rval = JSVAL_NULL;
@@ -413,6 +449,10 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 	if(msg.replyto_ext!=NULL)
 		JS_DefineProperty(cx, hdrobj, "replyto_ext"
 			,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,truncsp(msg.replyto_ext)))
+			,NULL,NULL,JSPROP_ENUMERATE);
+	if(msg.reverse_path!=NULL)
+		JS_DefineProperty(cx, hdrobj, "reverse_path"
+			,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,truncsp(msg.reverse_path)))
 			,NULL,NULL,JSPROP_ENUMERATE);
 
 	JS_DefineProperty(cx, hdrobj, "to_agent",INT_TO_JSVAL(msg.to_agent)
@@ -557,6 +597,49 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 		JS_DefineProperty(cx, hdrobj, "ftn_flags"
 			,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,truncsp(msg.ftn_flags)))
 			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+
+	/* Create hdr.field_list[] with repeating header fields (including type and data) */
+	if((array=JS_NewArrayObject(cx,0,NULL))!=NULL) {
+		items=0;
+		for(i=0;i<msg.total_hfields;i++) {
+			switch(msg.hfield[i].type) {
+				case SMB_COMMENT:
+				case SMB_CARBONCOPY:
+				case SMB_GROUP:
+				case FILEATTACH:
+				case DESTFILE:
+				case FILEATTACHLIST:
+				case DESTFILELIST:
+				case FILEREQUEST:
+				case FILEPASSWORD:
+				case FILEREQUESTLIST:
+				case FILEPASSWORDLIST:
+				case FIDOCTRL:
+				case FIDOSEENBY:
+				case FIDOPATH:
+				case RFC822HEADER:
+				case UNKNOWNASCII:
+					/* only support these header field types */
+					break;
+				default:
+					/* dupe or possibly binary header field */
+					continue;
+			}
+			if((field=JS_NewObject(cx,NULL,NULL,array))==NULL)
+				continue;
+			JS_DefineProperty(cx,field,"type"
+				,INT_TO_JSVAL(msg.hfield[i].type)
+				,NULL,NULL,JSPROP_ENUMERATE);
+			JS_DefineProperty(cx,field,"data"
+				,STRING_TO_JSVAL(JS_NewStringCopyN(cx,msg.hfield_dat[i],msg.hfield[i].length))
+				,NULL,NULL,JSPROP_ENUMERATE);
+			JS_DefineElement(cx,array,items,OBJECT_TO_JSVAL(field)
+				,NULL,NULL,JSPROP_ENUMERATE);
+			items++;
+		}
+		JS_DefineProperty(cx,hdrobj,"field_list",OBJECT_TO_JSVAL(array)
+			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+	}
 
 	smb_freemsgmem(&msg);
 
