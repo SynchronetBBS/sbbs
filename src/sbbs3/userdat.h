@@ -106,6 +106,7 @@ DLLEXPORT BOOL	DLLCALL logoutuserdat(scfg_t*, user_t*, time_t now, time_t logont
 DLLEXPORT void	DLLCALL resetdailyuserdat(scfg_t*, user_t*);
 DLLEXPORT void	DLLCALL subtract_cdt(scfg_t*, user_t*, long amt);
 DLLEXPORT int	DLLCALL user_rec_len(int offset);
+DLLEXPORT BOOL	DLLCALL is_download_free(scfg_t* cfg, uint dirnum, user_t* user);
 
 #ifdef __cplusplus
 }

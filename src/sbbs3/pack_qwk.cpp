@@ -541,9 +541,9 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 
 	if(batdn_total) {
 		for(i=0,totalcdt=0;i<batdn_total;i++)
+			if(!is_download_free(&cfg,batdn_dir[i],&useron))
 				totalcdt+=batdn_cdt[i];
-		if(!(useron.exempt&FLAG('D'))
-			&& totalcdt>useron.cdt+useron.freecdt) {
+		if(totalcdt>useron.cdt+useron.freecdt) {
 			bprintf(text[YouOnlyHaveNCredits]
 				,ultoac(useron.cdt+useron.freecdt,tmp)); 
 		}

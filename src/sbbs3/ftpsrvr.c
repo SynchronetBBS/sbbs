@@ -1335,7 +1335,6 @@ static void send_thread(void* arg)
 	ulong		dur;
 	ulong		cps;
 	ulong		length;
-	BOOL		exempt;
 	BOOL		error=FALSE;
 	FILE*		fp;
 	file_t		f;
@@ -1553,13 +1552,7 @@ static void send_thread(void* arg)
 		if(xfer.credits) {
 			xfer.user->dls=(ushort)adjustuserrec(&scfg, xfer.user->number,U_DLS,5,1);
 			xfer.user->dlb=adjustuserrec(&scfg, xfer.user->number,U_DLB,10,total);
-			exempt=FALSE;
-			if(xfer.user->exempt&FLAG('D'))
-				exempt=TRUE;
-			if(scfg.dir[xfer.dir]->ex_ar[0]!=0
-				&& chk_ar(&scfg, scfg.dir[xfer.dir]->ex_ar, xfer.user))
-				exempt=TRUE;
-			if(xfer.dir>=0 && !(scfg.dir[xfer.dir]->misc&DIR_FREE) && !exempt)
+			if(xfer.dir>=0 && !is_download_free(&scfg,xfer.dir,xfer.user))
 				subtract_cdt(&scfg, xfer.user, xfer.credits);
 		}
 		if(!xfer.tmpfile && !xfer.delfile)
@@ -3900,8 +3893,7 @@ static void ctrl_thread(void* arg)
 
 				/* Verify credits */
 				if(!getsize && !getdate && !delecmd
-					&& !(scfg.dir[dir]->misc&DIR_FREE) 
-					&& !(user.exempt&FLAG('D'))) {
+					&& !is_download_free(&scfg,dir,&user)) {
 					if(filedat)
 						getfiledat(&scfg,&f);
 					else

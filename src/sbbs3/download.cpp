@@ -67,7 +67,7 @@ void sbbs_t::downloadfile(file_t* f)
 	/****************************/
 	useron.dls=(ushort)adjustuserrec(&cfg,useron.number,U_DLS,5,1);
 	useron.dlb=adjustuserrec(&cfg,useron.number,U_DLB,10,length);
-	if(!(cfg.dir[f->dir]->misc&DIR_FREE) && !(useron.exempt&FLAG('D')))
+	if(!is_download_free(&cfg,f->dir,&useron))
 		subtract_cdt(&cfg,&useron,f->cdt);
 	/**************************/
 	/* Update Uploader's Info */

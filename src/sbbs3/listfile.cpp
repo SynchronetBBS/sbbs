@@ -1207,7 +1207,7 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 					found=-1;
 					break; }
 				continue; }
-			if(!(cfg.dir[f.dir]->misc&DIR_FREE) && !(useron.exempt&FLAG('D'))
+			if(!is_download_free(&cfg,f.dir,&useron)
 				&& f.cdt>(useron.cdt+useron.freecdt)) {
 				SYNC;
 				bprintf(text[YouOnlyHaveNCredits]
