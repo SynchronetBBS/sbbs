@@ -154,7 +154,7 @@ static BOOL list_wait(link_list_t* list, long timeout)
 	if(timeout==0)	/* poll */
 		return listSemTryWait(list)==0;
 
-	return listSemTryWaitBlock(list,timeout)==0);
+	return listSemTryWaitBlock(list,timeout)==0;
 #else
 	clock_t	start;
 	long	count;
