@@ -48,6 +48,7 @@ typedef union {
 #define REP 		(1<<7)	/* It's a REP packet */
 #define VIA 		(1<<8)	/* Include VIA */
 #define TZ			(1<<9)	/* Include TZ */
+#define MSGID		(1<<10)	/* Include MSGID and REPLY */
 
 float	ltomsbin(long val);
 bool	route_circ(char *via, char *id);
