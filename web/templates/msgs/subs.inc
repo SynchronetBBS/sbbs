@@ -5,7 +5,7 @@
     <th class="sublist">Info</th>
     <th class="sublist">Description</th>
     <th class="sublist">Total Msgs</th>
-    <th class="sublist">Lastest Msg</th>
+    <th class="sublist">Latest Msg</th>
 </tr>
 <<REPEAT subs>>
 <tr>
