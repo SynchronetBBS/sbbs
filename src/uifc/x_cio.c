@@ -182,8 +182,8 @@ void x_setcursortype(int type)
 			CursEnd=FH;
 			break;
 		default:
-			CursStart=FH-1;
-			CursEnd=FH;
+		    CursStart = VGA_CRTC[CRTC_CursStart];
+		    CursEnd = VGA_CRTC[CRTC_CursEnd];
 			break;
 	}
 }

@@ -395,6 +395,7 @@ video_update_text()
 {
     static int or = -1;
     static int oc = -1;
+	static int os = -1;
 
     static char buf[256];
     int r, c;
@@ -411,65 +412,64 @@ video_update_text()
 	    int cc = 0;
 
 	    if (!lines[r].changed) {
-		if ((r == or || r == CursRow0) && (or != CursRow0 || oc !=CursCol0))
-		    lines[r].changed = 1;
-		else {
-		    for (c = 0; c < DpyCols; ++c) {
-			if (lines[r].data[c] != vmem[r * DpyCols + c]) {
-			    lines[r].changed = 1;
-			    break;
+			if ((r == or || r == CursRow0) && (or != CursRow0 || oc !=CursCol0))
+				lines[r].changed=1;
+			else {
+			    for (c = 0; c < DpyCols; ++c) {
+					if (lines[r].data[c] != vmem[r * DpyCols + c]) {
+					    lines[r].changed = 1;
+					    break;
+					}
+					if (blink && lines[r].data[c] & 0x8000 && show != os) {
+					    lines[r].changed = 1;
+					    break;
+					}
+			    }
 			}
-			if (blink && lines[r].data[c] & 0x8000) {
-			    lines[r].changed = 1;
-			    break;
-			}
-		    }
-		}
 	    }
 
 	    if (!lines[r].changed)
-		continue;
+			continue;
 
-	    reset_poll();
-	    lines[r].changed = 0;
-	    memcpy(lines[r].data,
-		   &vmem[r * DpyCols], sizeof(u_short) * DpyCols);
+		reset_poll();
+		lines[r].changed = 0;
+		memcpy(lines[r].data,
+			&vmem[r * DpyCols], sizeof(u_short) * DpyCols);
 
 	    for (c = 0; c < DpyCols; ++c) {
-		int cv = vmem[r * DpyCols + c];
-		if ((cv & 0xff00) != attr) {
-		    if (cc < c)
-			XDrawImageString(dpy, win, gc,
-					 2 + cc * FW,
-					 2 + (r + 1) * FH,
-					 buf + cc, c - cc);
-		    cc = c;
-		    attr = cv  & 0xff00;
-		    setgc(attr);
-		}
-		buf[c] = (cv & 0xff) ? cv & 0xff : ' ';
+			int cv = vmem[r * DpyCols + c];
+			if ((cv & 0xff00) != attr) {
+				if (cc < c)
+					XDrawImageString(dpy, win, gc,
+						2 + cc * FW,
+						2 + (r + 1) * FH,
+						buf + cc, c - cc);
+					cc = c;
+					attr = cv  & 0xff00;
+					setgc(attr);
+			}
+			buf[c] = (cv & 0xff) ? cv & 0xff : ' ';
 	    }
 	    if (cc < c) {
-		XDrawImageString(dpy, win, gc,
-				 2 + cc * FW,
-				 2 + (r + 1) * FH,
-				 buf + cc, c - cc);
+			XDrawImageString(dpy, win, gc,
+				2 + cc * FW,
+				2 + (r + 1) * FH,
+				buf + cc, c - cc);
 	    }
 	}
-	or =CursRow0;
-	oc =CursCol0;
+
 
 	if (CursStart <= CursEnd && CursEnd <= FH &&
-	    show &&CursRow0 < (DpyRows+1) &&CursCol0 < DpyCols) {
+	    (show != os) && CursRow0 < (DpyRows+1) &&CursCol0 < DpyCols) {
 
 	    attr = vmem[CursRow0 * DpyCols +CursCol0] & 0xff00;
 	    v.foreground = pixels[(attr >> 8) & 0x0f] ^
-		pixels[(attr >> 12) & (blink ? 0x07 : 0x0f)];
+			pixels[(attr >> 12) & (blink ? 0x07 : 0x0f)];
 	    if (v.foreground) {
-		v.function = GXxor;
+			v.function = GXxor;
 	    } else {
-		v.foreground = pixels[7];
-		v.function = GXcopy;
+			v.foreground = pixels[7];
+			v.function = GXcopy;
 	    }
 	    XChangeGC(dpy, cgc, GCForeground | GCFunction, &v);
 	    XFillRectangle(dpy, win, cgc,
@@ -477,6 +477,10 @@ video_update_text()
 			   2 + CursRow0 * FH + CursStart + FD,
 			   FW, CursEnd + 1 - CursStart);
 	}
+
+	or =CursRow0;
+	oc =CursCol0;
+	os =show;
 
 	XFlush(dpy);
 }
@@ -976,7 +980,7 @@ video_async_event(int sig)
 
                 x = select(xfd+1, &fdset, 0, 0, &tv);
 
-                switch (x) {  
+                switch (x) {
                 case -1:
                         /*
                          * Errno might be wrong, so we just select again.

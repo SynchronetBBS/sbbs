@@ -202,6 +202,8 @@ extern BYTE DpyRows;
 
 extern int FH;
 
+extern BYTE VGA_CRTC[CRTC_Size];
+
 int init_window();
 int video_init();
 int init_mode(int mode);
