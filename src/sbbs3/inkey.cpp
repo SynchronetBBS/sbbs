@@ -74,6 +74,11 @@ char sbbs_t::inkey(long mode)
 		ch&=0x7f; 
 
 	timeout=time(NULL);
+
+	/* Is this control key flagged as passthru? */
+	if(ch<' ' && cfg.ctrlkey_passthru&(1<<ch))
+		return(ch);	/* do not handle here */
+
 	if(ch==CTRL_C) {  /* Ctrl-C Abort */
 		sys_status|=SS_ABORT;
 		if(mode&K_SPIN) /* back space once if on spinning cursor */

@@ -55,6 +55,7 @@ enum {
 	,CON_PROP_TIMELEFT_WARN		/* low timeleft warning flag */
 	,CON_PROP_ABORTABLE
 	,CON_PROP_TELNET_MODE
+	,CON_PROP_CTRLKEY_PASSTHRU
 };
 
 static JSBool js_console_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
@@ -110,6 +111,9 @@ static JSBool js_console_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 				return(JS_FALSE);
 			*vp = STRING_TO_JSVAL(js_str);
 			return(JS_TRUE);
+		case CON_PROP_CTRLKEY_PASSTHRU:
+			val=sbbs->cfg.ctrlkey_passthru;
+			break;
 		default:
 			return(JS_TRUE);
 	}
@@ -171,6 +175,9 @@ static JSBool js_console_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 				break;
 			SAFECOPY(sbbs->question,JS_GetStringBytes(str));
 			break;
+		case CON_PROP_CTRLKEY_PASSTHRU:
+			sbbs->cfg.ctrlkey_passthru=val;
+			break;
 		default:
 			return(JS_TRUE);
 	}
@@ -181,20 +188,21 @@ static JSBool js_console_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 #define CON_PROP_FLAGS JSPROP_ENUMERATE
 
 static struct JSPropertySpec js_console_properties[] = {
-/*		 name				,tinyid					,flags			,getter,setter	*/
+/*		 name				,tinyid						,flags			,getter,setter	*/
 
-	{	"status"			,CON_PROP_STATUS		,CON_PROP_FLAGS	,NULL,NULL},
-	{	"line_counter"		,CON_PROP_LNCNTR 		,CON_PROP_FLAGS	,NULL,NULL},
-	{	"attributes"		,CON_PROP_ATTR			,CON_PROP_FLAGS	,NULL,NULL},
-	{	"top_of_screen"		,CON_PROP_TOS			,CON_PROP_FLAGS	,NULL,NULL},
-	{	"screen_rows"		,CON_PROP_ROWS			,CON_PROP_FLAGS	,NULL,NULL},
-	{	"autoterm"			,CON_PROP_AUTOTERM		,CON_PROP_FLAGS	,NULL,NULL},
-	{	"timeout"			,CON_PROP_TIMEOUT		,CON_PROP_FLAGS	,NULL,NULL},
-	{	"timeleft_warning"	,CON_PROP_TIMELEFT_WARN	,CON_PROP_FLAGS	,NULL,NULL},
-	{	"rio_abortable"		,CON_PROP_ABORTABLE		,CON_PROP_FLAGS	,NULL,NULL},
-	{	"telnet_mode"		,CON_PROP_TELNET_MODE	,CON_PROP_FLAGS	,NULL,NULL},
-	{	"wordwrap"			,CON_PROP_WORDWRAP		,JSPROP_ENUMERATE|JSPROP_READONLY ,NULL,NULL},
-	{	"question"			,CON_PROP_QUESTION		,CON_PROP_FLAGS ,NULL,NULL},
+	{	"status"			,CON_PROP_STATUS			,CON_PROP_FLAGS	,NULL,NULL},
+	{	"line_counter"		,CON_PROP_LNCNTR 			,CON_PROP_FLAGS	,NULL,NULL},
+	{	"attributes"		,CON_PROP_ATTR				,CON_PROP_FLAGS	,NULL,NULL},
+	{	"top_of_screen"		,CON_PROP_TOS				,CON_PROP_FLAGS	,NULL,NULL},
+	{	"screen_rows"		,CON_PROP_ROWS				,CON_PROP_FLAGS	,NULL,NULL},
+	{	"autoterm"			,CON_PROP_AUTOTERM			,CON_PROP_FLAGS	,NULL,NULL},
+	{	"timeout"			,CON_PROP_TIMEOUT			,CON_PROP_FLAGS	,NULL,NULL},
+	{	"timeleft_warning"	,CON_PROP_TIMELEFT_WARN		,CON_PROP_FLAGS	,NULL,NULL},
+	{	"rio_abortable"		,CON_PROP_ABORTABLE			,CON_PROP_FLAGS	,NULL,NULL},
+	{	"telnet_mode"		,CON_PROP_TELNET_MODE		,CON_PROP_FLAGS	,NULL,NULL},
+	{	"wordwrap"			,CON_PROP_WORDWRAP			,JSPROP_ENUMERATE|JSPROP_READONLY ,NULL,NULL},
+	{	"question"			,CON_PROP_QUESTION			,CON_PROP_FLAGS ,NULL,NULL},
+	{	"ctrlkey_passthru"	,CON_PROP_CTRLKEY_PASSTHRU	,CON_PROP_FLAGS	,NULL,NULL},
 	{0}
 };
 
@@ -212,6 +220,7 @@ static char* con_prop_desc[] = {
 	,"current telnet mode (see TELNET_MODE_* in sbbsdefs.js for valid values)"
 	,"word-wrap buffer (used by getstr)"
 	,"current yes/no question (set by yesno and noyes)"
+	,"control key pass-through bitmask, set bits represent control key combinations <b>not</b> handled by inkey() method"
 	,NULL
 };
 #endif

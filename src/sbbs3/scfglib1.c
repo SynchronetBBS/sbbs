@@ -294,9 +294,10 @@ BOOL read_main_cfg(scfg_t* cfg, char* error)
 	get_str(cfg->logout_mod,instream);
 	get_str(cfg->sync_mod,instream);
 	get_str(cfg->expire_mod,instream);
+	get_int(cfg->ctrlkey_passthru,instream);
 	get_int(c,instream);
 
-	for(i=0;i<224;i++)					/* unused - initialized to NULL */
+	for(i=0;i<222;i++)					/* unused - initialized to NULL */
 		get_int(n,instream);
 	for(i=0;i<254;i++)					/* unused - initialized to 0xff */
 		get_int(n,instream);

@@ -575,6 +575,7 @@ typedef struct
 	ushort	sec_hangup; 			/* Seconds before inactivity hang-up */
 
 	char 	color[TOTAL_COLORS];	/* Different colors for the BBS */
+	ulong	ctrlkey_passthru;		/* Bits represent control keys NOT handled by inkey() */
 
 	char 	wfc_cmd[10][LEN_CMD+1];    /* 0-9 WFC DOS commands */
 	char 	wfc_scmd[12][LEN_CMD+1];   /* F1-F12 WFC shrinking DOS commands */
