@@ -60,7 +60,7 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 	fwrite(str,QWK_BLOCK_LEN,1,qwk_fp);		/* Init header to space */
 
 	if(msg->from_net.addr && (uint)subnum==INVALID_SUB) {
-		if(mode&TO_QNET)
+		if(mode&QM_TO_QNET)
 			sprintf(from,"%.128s",msg->from);
 		else if(msg->from_net.type==NET_FIDO)
 			sprintf(from,"%.128s@%.128s"
@@ -85,7 +85,7 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 		else if(msg->to_net.type==NET_INTERNET)
 			sprintf(to,"%.128s",(char*)msg->to_net.addr);
 		else if(msg->to_net.type==NET_QWK) {
-			if(mode&TO_QNET) {
+			if(mode&QM_TO_QNET) {
 				p=strchr((char *)msg->to_net.addr,'/');
 				if(p) { 	/* Another hop */
 					p++;
@@ -110,13 +110,13 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 	else
 		sprintf(to,"%.128s",msg->to);
 
-	if(msg->from_net.type==NET_QWK && mode&VIA && !msg->forwarded) {
+	if(msg->from_net.type==NET_QWK && mode&QM_VIA && !msg->forwarded) {
 		sprintf(str,"@VIA: %.*s%c"
 			,(int)(sizeof(str)-12),(char*)msg->from_net.addr,QWK_NEWLINE);
 		fwrite(str,strlen(str),1,qwk_fp);
 		size+=strlen(str); }
 	
-	if(mode&MSGID && (uint)subnum!=INVALID_SUB) {
+	if(mode&QM_MSGID && (uint)subnum!=INVALID_SUB) {
 		sprintf(str,"@MSGID: %.*s%c"
 			,(int)(sizeof(str)-12),get_msgid(&cfg,subnum,msg),QWK_NEWLINE);
 		fwrite(str,strlen(str),1,qwk_fp);
@@ -144,10 +144,18 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 		}
 	}
 
-	if(msg->hdr.when_written.zone && mode&TZ) {
+	if(msg->hdr.when_written.zone && mode&QM_TZ) {
 		sprintf(str,"@TZ: %04x%c",msg->hdr.when_written.zone,QWK_NEWLINE);
 		fwrite(str,strlen(str),1,qwk_fp);
-		size+=strlen(str); }
+		size+=strlen(str); 
+	}
+
+	if(msg->replyto!=NULL && mode&QM_REPLYTO) {
+		sprintf(str,"@REPLYTO: %.*s%c"
+			,(int)(sizeof(str)-12),msg->replyto,QWK_NEWLINE);
+		fwrite(str,strlen(str),1,qwk_fp);
+		size+=strlen(str); 
+	}
 
 	p=0;
 	for(i=0;i<msg->total_hfields;i++) {
@@ -158,7 +166,9 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 				,timestr((time_t *)msg->hfield_dat[i])
 				,QWK_NEWLINE);
 			fwrite(str,strlen(str),1,qwk_fp);
-			size+=strlen(str); } }
+			size+=strlen(str); 
+		} 
+	}
 
 	buf=smb_getmsgtxt(&smb,msg,1);
 	if(!buf)
@@ -302,7 +312,7 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 		fputc(QWK_NEWLINE,qwk_fp); 		/* make sure it ends in CRLF */
 		size++; }
 
-	if(mode&TAGLINE && !(cfg.sub[subnum]->misc&SUB_NOTAG)) {
+	if(mode&QM_TAGLINE && !(cfg.sub[subnum]->misc&SUB_NOTAG)) {
 		if(!tear)										/* no tear line */
 			sprintf(str,"\1n---%c",QWK_NEWLINE);        /* so add one */
 		else
@@ -346,7 +356,7 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 	sprintf(str,"%c%-7lu%-13.13s%-25.25s"
 		"%-25.25s%-25.25s%12s%-8lu%-6lu\xe1%c%c%c%c%c"
 		,ch                     /* message status flag */
-		,mode&REP ? (ulong)conf /* conference or */
+		,mode&QM_REP ? (ulong)conf /* conference or */
 			: msg->hdr.number&MAX_MSGNUM	/* message number */
 		,tmp					/* date and time */
 		,to 					/* To: */
