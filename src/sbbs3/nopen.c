@@ -50,10 +50,13 @@ int nopen(const char* str, int access)
     if(access&O_DENYNONE) {
         share=SH_DENYNO;
         access&=~O_DENYNONE; }
-    else if(access==O_RDONLY) share=SH_DENYWR;
+    else if((access&~O_BINARY)==O_RDONLY) share=SH_DENYWR;
     else share=SH_DENYRW;
+
+#if !defined(__unix__)	/* Basically, a no-op on Unix anyway */
 	if(!(access&O_TEXT))
 		access|=O_BINARY;
+#endif
     while(((file=sopen(str,access,share,S_IREAD|S_IWRITE))==-1)
         && (errno==EACCES || errno==EAGAIN || errno==EDEADLOCK) && count++<LOOP_NOPEN)
         if(count)
