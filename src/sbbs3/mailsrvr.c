@@ -1949,6 +1949,7 @@ static void smtp_thread(void* arg)
 					if(p!=alias_buf /* forced relay by alias */ &&
 						(!(startup->options&MAIL_OPT_ALLOW_RELAY)
 							|| relay_user.number==0
+							|| relay_user.laston < time(NULL)-(60*60)
 							|| relay_user.rest&(FLAG('G')|FLAG('M'))) &&
 						!findstr(&scfg,host_name,relay_list) && 
 						!findstr(&scfg,host_ip,relay_list)) {
