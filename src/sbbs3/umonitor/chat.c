@@ -126,7 +126,7 @@ int chatchar(WINDOW *win, int ch, box_t *boxch) {
 			wmove(win,cury,curx);
 			wrefresh(win);
 			break;
-		
+
 		case '\r':
 		case '\n':
 			curx=2;
@@ -145,6 +145,11 @@ int chatchar(WINDOW *win, int ch, box_t *boxch) {
 			wrefresh(win);
 			break;
 			
+		case TAB:
+			curx+=8;
+			curx-=((curx-2)%8)+1;
+			wmove(win,cury,curx);
+			ch=' ';
 		default:
 			waddch(win,ch);
 			getyx(win,cury,curx);

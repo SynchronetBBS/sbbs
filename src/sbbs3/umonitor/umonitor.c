@@ -227,7 +227,7 @@ int sendmessage(scfg_t *cfg, int nodenum,node_t *node)  {
 	char str[80],str2[80];
 
 	uifc.input(WIN_MID,0,0,"Telegram",str2,58,K_WRAP|K_MSG);
-	sprintf(str,"\1n\1y\1hMessage From Sysop:\1w %s",str2);
+	sprintf(str,"\1n\1y\1hMessage From Sysop:\1w %s\r\n",str2);
 	if(getnodedat(cfg,nodenum,node,NULL))
 		return(-1);
 	if(node->useron==0)
