@@ -2348,7 +2348,7 @@ static void ctrl_thread(void* arg)
 	client.user="<unknown>";
 	client_on(sock,&client,FALSE /* update */);
 
-	sockprintf(sock,"220-%s (%s)",scfg.sys_name, scfg.sys_inetaddr);
+	sockprintf(sock,"220-%s (%s)",scfg.sys_name, startup->host_name);
 	sockprintf(sock," Synchronet FTP Server %s/%s Ready"
 		,revision,PLATFORM_DESC);
 	sprintf(str,"%sftplogin.txt",scfg.text_dir);
