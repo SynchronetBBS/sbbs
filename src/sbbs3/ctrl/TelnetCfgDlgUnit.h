@@ -94,6 +94,7 @@ __published:
     TLabel *XtrnPollsLabel;
     TEdit *XtrnYieldEdit;
     TCheckBox *IdentityCheckBox;
+	TCheckBox *EventsCheckBox;
 	void __fastcall FormShow(TObject *Sender);
 	void __fastcall OKBtnClick(TObject *Sender);
 	void __fastcall AnswerSoundButtonClick(TObject *Sender);
