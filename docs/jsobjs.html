@@ -10,7 +10,7 @@
 <body>
 <font face=arial,helvetica>
 <h1>Synchronet JavaScript Object Model Reference</h1>
-Generated for <b>Synchronet v3.10m beta Debug</b>, compiled Jun 25 2003 19:19
+Generated for <b>Synchronet v3.11a beta Debug</b>, compiled Sep 10 2003 01:03
 <ol type=square>
 <li onclick = 'this.className = (this.className == "showList") ? "defaultStyles" : "showList";'
 	onselectstart = 'event.returnValue = false;'>
@@ -22,6 +22,14 @@ Generated for <b>Synchronet v3.10m beta Debug</b>, compiled Jun 25 2003 19:19
 <li onclick = 'this.className = (this.className == "showList") ? "defaultStyles" : "showList";'
 	onselectstart = 'event.returnValue = false;'>
 <a href=#global_properties>properties</a>
+</ul>
+<li onclick = 'this.className = (this.className == "showList") ? "defaultStyles" : "showList";'
+	onselectstart = 'event.returnValue = false;'>
+[+] &nbsp<a href="#js"><b>js</b></a> object
+<ul>
+<li onclick = 'this.className = (this.className == "showList") ? "defaultStyles" : "showList";'
+	onselectstart = 'event.returnValue = false;'>
+<a href=#js_properties>properties</a>
 </ul>
 <li onclick = 'this.className = (this.className == "showList") ? "defaultStyles" : "showList";'
 	onselectstart = 'event.returnValue = false;'>
@@ -129,6 +137,9 @@ Generated for <b>Synchronet v3.10m beta Debug</b>, compiled Jun 25 2003 19:19
 <ul>
 <li onclick = 'this.className = (this.className == "showList") ? "defaultStyles" : "showList";'
 	onselectstart = 'event.returnValue = false;'>
+<a href="#msg_area.sub"><b>msg_area.sub</b></a> object
+<li onclick = 'this.className = (this.className == "showList") ? "defaultStyles" : "showList";'
+	onselectstart = 'event.returnValue = false;'>
 <a href="#msg_area.grp_list"><b>msg_area.grp_list</b></a> array
 <ul>
 <li onclick = 'this.className = (this.className == "showList") ? "defaultStyles" : "showList";'
@@ -143,14 +154,14 @@ Generated for <b>Synchronet v3.10m beta Debug</b>, compiled Jun 25 2003 19:19
 <a href=#msg_area.grp_list.sub_list_properties>properties</a>
 </ul>
 </ul>
-<li onclick = 'this.className = (this.className == "showList") ? "defaultStyles" : "showList";'
-	onselectstart = 'event.returnValue = false;'>
-<a href="#msg_area.sub"><b>msg_area.sub</b></a> object
 </ul>
 <li onclick = 'this.className = (this.className == "showList") ? "defaultStyles" : "showList";'
 	onselectstart = 'event.returnValue = false;'>
 [+] &nbsp<a href="#file_area"><b>file_area</b></a> object
 <ul>
+<li onclick = 'this.className = (this.className == "showList") ? "defaultStyles" : "showList";'
+	onselectstart = 'event.returnValue = false;'>
+<a href="#file_area.dir"><b>file_area.dir</b></a> object
 <li onclick = 'this.className = (this.className == "showList") ? "defaultStyles" : "showList";'
 	onselectstart = 'event.returnValue = false;'>
 <a href=#file_area_properties>properties</a>
@@ -170,14 +181,14 @@ Generated for <b>Synchronet v3.10m beta Debug</b>, compiled Jun 25 2003 19:19
 <a href=#file_area.lib_list.dir_list_properties>properties</a>
 </ul>
 </ul>
-<li onclick = 'this.className = (this.className == "showList") ? "defaultStyles" : "showList";'
-	onselectstart = 'event.returnValue = false;'>
-<a href="#file_area.dir"><b>file_area.dir</b></a> object
 </ul>
 <li onclick = 'this.className = (this.className == "showList") ? "defaultStyles" : "showList";'
 	onselectstart = 'event.returnValue = false;'>
 [+] &nbsp<a href="#xtrn_area"><b>xtrn_area</b></a> object
 <ul>
+<li onclick = 'this.className = (this.className == "showList") ? "defaultStyles" : "showList";'
+	onselectstart = 'event.returnValue = false;'>
+<a href="#xtrn_area.prog"><b>xtrn_area.prog</b></a> object
 <li onclick = 'this.className = (this.className == "showList") ? "defaultStyles" : "showList";'
 	onselectstart = 'event.returnValue = false;'>
 <a href="#xtrn_area.sec_list"><b>xtrn_area.sec_list</b></a> array
@@ -194,9 +205,6 @@ Generated for <b>Synchronet v3.10m beta Debug</b>, compiled Jun 25 2003 19:19
 <a href=#xtrn_area.sec_list.prog_list_properties>properties</a>
 </ul>
 </ul>
-<li onclick = 'this.className = (this.className == "showList") ? "defaultStyles" : "showList";'
-	onselectstart = 'event.returnValue = false;'>
-<a href="#xtrn_area.prog"><b>xtrn_area.prog</b></a> object
 <li onclick = 'this.className = (this.className == "showList") ? "defaultStyles" : "showList";'
 	onselectstart = 'event.returnValue = false;'>
 <a href="#xtrn_area.event"><b>xtrn_area.event</b></a> object
@@ -272,11 +280,17 @@ Generated for <b>Synchronet v3.10m beta Debug</b>, compiled Jun 25 2003 19:19
 <font color="white">Usage</font>
 <th align=left>
 <font color="white">Description</font>
-<tr valign=top><td><b>log</b><td>void<td><tt>log(value [,value])
+<tr valign=top><td><b>log</b><td>string<td><tt>log(value [,value])
 <td>add a line of text to the server and/or system log, <i>values</i> are typically string constants or variables
-<tr valign=top><td><b>print</b><td>void<td><tt>print(value [,value])
-<td>print a line of text to the console or event log with automatic line termination (CRLF), <i>values</i> are typically string constants or variables
-<tr valign=top><td><b>printf</b><td>void<td><tt>printf(string format [,value][,value])
+<tr valign=top><td><b>read</b><td>string<td><tt>read([count])
+<td>read up to count characters from input stream
+<tr valign=top><td><b>readln</b><td>string<td><tt>readln([count])
+<td>read a single line, up to count characters, from input stream
+<tr valign=top><td><b>write</b><td>void<td><tt>write(value [,value])
+<td>send one or more values (typically strings) to the server output
+<tr valign=top><td><b>writeln</b><td>void<td><tt>writeln(value [,value])
+<td>send a line of text to the console or event log with automatic line termination (CRLF), <i>values</i> are typically string constants or variables (AKA print)
+<tr valign=top><td><b>printf</b><td>string<td><tt>printf(string format [,value][,value])
 <td>print a formatted string - <small>CAUTION: for experienced C programmers ONLY</small>
 <tr valign=top><td><b>alert</b><td>void<td><tt>alert(value)
 <td>print an alert message (ala client-side JS)
@@ -284,8 +298,8 @@ Generated for <b>Synchronet v3.10m beta Debug</b>, compiled Jun 25 2003 19:19
 <td>displays a prompt (<i>value</i>) and returns a string of user input (ala clent-side JS)
 <tr valign=top><td><b>confirm</b><td>boolean<td><tt>confirm(value)
 <td>displays a Yes/No prompt and returns <i>true</i> or <i>false</i> based on users confirmation (ala client-side JS)
-<tr valign=top><td><b>exit</b><td>void<td><tt>exit()
-<td>stop execution
+<tr valign=top><td><b>exit</b><td>void<td><tt>exit([number exit_code])
+<td>stop script execution, optionally setting the global property <tt>exit_code</tt> to the specified numeric value
 <tr valign=top><td><b>load</b><td>boolean<td><tt>load(string filename [,args])
 <td>load and execute a JavaScript file, returns <i>true</i> if the execution was successful
 <tr valign=top><td><b>mswait</b><td>void<td><tt>mswait([number milliseconds])
@@ -316,8 +330,12 @@ Generated for <b>Synchronet v3.10m beta Debug</b>, compiled Jun 25 2003 19:19
 <td>truncate string at first char in <i>charset</i>
 <tr valign=top><td><b>lfexpand</b><td>string<td><tt>lfexpand(string text)
 <td>expand line-feeds (LF) to carriage-return/line-feeds (CRLF)
-<tr valign=top><td><b>file_getname</b><td>string<td><tt>file_getname(string text)
+<tr valign=top><td><b>file_getname</b><td>string<td><tt>file_getname(string path)
 <td>returns filename portion of passed path string
+<tr valign=top><td><b>file_getext</b><td>string<td><tt>file_getext(string path)
+<td>returns file extension portion of passed path/filename string (including '.') or <i>undefined</i> if no extension is found
+<tr valign=top><td><b>file_getcase</b><td>string<td><tt>file_getcase(string filename)
+<td>returns correct case of filename (long version of filename on Win32) or <i>undefined</i> if the file doesn't exist
 <tr valign=top><td><b>file_exists</b><td>boolean<td><tt>file_exists(string filename)
 <td>verify a file's existence
 <tr valign=top><td><b>file_remove</b><td>boolean<td><tt>file_remove(string filename)
@@ -373,7 +391,9 @@ Generated for <b>Synchronet v3.10m beta Debug</b>, compiled Jun 25 2003 19:19
 <tr valign=top><td><b>md5_calc</b><td>string<td><tt>md5_calc(string text [,bool hex])
 <td>calculate and return 128-bit MD5 digest of text string, result encoded in base64 (default) or hexadecimal
 <tr valign=top><td><b>resolve_ip</b><td>string<td><tt>resolve_ip(string hostname)
-<td>resolve IP address of specified hostname
+<td>resolve IP address of specified hostname (AKA gethostbyname)
+<tr valign=top><td><b>resolve_host</b><td>string<td><tt>resolve_host(string ip_address)
+<td>resolve hostname of specified IP address (AKA gethostbyaddr)
 </table>
 <br>
 <table border=1 width=100%>
@@ -391,6 +411,41 @@ Generated for <b>Synchronet v3.10m beta Debug</b>, compiled Jun 25 2003 19:19
 <tr><td><b>argv</b><td>array<td>array of argument strings (argv.length == argc)</td>
 <tr><td><b>errno</b><td>number<td>last system error number</td>
 <tr><td><b>errno_str</b><td>string<td>description of last system error</td>
+</table>
+<h2><a name=js>js object</a>
+<br><font size=-1>JavaScript execution and garbage collection control object</font>
+</h2>
+<table border=1 width=100%>
+<caption align=left><b><tt>js</tt>
+<a name=js_properties> properties</a>
+</b></caption>
+<tr bgcolor=gray>
+<th align=left width=100>
+<font color="white">Name</font>
+<th align=left width=100>
+<font color="white">Type</font>
+<th align=left>
+<font color="white">Description</font>
+<tr valign=top><td><b>terminated</b><td>boolean
+<td>termination has been requested (stop execution as soon as possible)</td>
+<tr valign=top><td><b>branch_counter</b><td>number
+<td>number of branch operations performed in this runtime</td>
+<tr valign=top><td><b>branch_limit</b><td>number
+<td>maximum number of branches, used for infinite-loop detection (0=disabled)</td>
+<tr valign=top><td><b>yield_interval</b><td>number
+<td>interval of periodic time-slice yields (lower number=higher frequency, 0=disabled)</td>
+<tr valign=top><td><b>gc_interval</b><td>number
+<td>interval of periodic garbage collection attempts (lower number=higher frequency, 0=disabled)</td>
+<tr valign=top><td><b>gc_attempts</b><td>number
+<td>number of garbage collections attempted in this runtime - <small>READ ONLY</small></td>
+<tr valign=top><td><b>gc_counter</b><td>number
+<td>number of garbage collections performed in this runtime - <small>READ ONLY</small></td>
+<tr valign=top><td><b>gc_last_bytes</b><td>number
+<td>number of heap bytes in use after last garbage collection - <small>READ ONLY</small></td>
+<tr valign=top><td><b>bytes</b><td>number
+<td>number of heap bytes currently in use - <small>READ ONLY</small></td>
+<tr valign=top><td><b>max_bytes</b><td>number
+<td>maximum number of bytes available for heap</td>
 </table>
 <h2><a name=system>system object</a>
 <br><font size=-1>Global system-related properties and methods</font>
@@ -432,6 +487,8 @@ Generated for <b>Synchronet v3.10m beta Debug</b>, compiled Jun 25 2003 19:19
 <td>log a suspected SPAM attempt
 <tr valign=top><td><b>hacklog</b><td>boolean<td><tt>system.hacklog([protocol, user, text, host, ip, port])
 <td>log a suspected hack attempt
+<tr valign=top><td><b>filter_ip</b><td>boolean<td><tt>system.filter_ip([protocol, reason, host, ip, username])
+<td>add an IP address (with comment) to the system's IP filter file
 <tr valign=top><td><b>get_node_message</b><td>string<td><tt>system.get_node_message(number node)
 <td>read any messages waiting for the specified node and return in a single string
 <tr valign=top><td><b>put_node_message</b><td>boolean<td><tt>system.put_node_message(number node, string message)
@@ -444,6 +501,8 @@ Generated for <b>Synchronet v3.10m beta Debug</b>, compiled Jun 25 2003 19:19
 <td>creates a new user record, returns a new <a href=#User>User</a> object representing the new user account
 <tr valign=top><td><b>exec</b><td>number<td><tt>system.exec(command-line)
 <td>executes a native system/shell command-line, returns 0 on success
+<tr valign=top><td><b>check_syspass</b><td>boolean<td><tt>system.check_syspass(string password)
+<td>compares the supplied <i>password</i> against the system password and return's <i>true</i> if it matches
 </table>
 <br>
 <table border=1 width=100%>
@@ -555,8 +614,12 @@ Generated for <b>Synchronet v3.10m beta Debug</b>, compiled Jun 25 2003 19:19
 <td>modified modules directory (optional)</td>
 <tr valign=top><td><b>logs_dir</b><td>string
 <td>log file directory</td>
+<tr valign=top><td><b>devnull</b><td>string
+<td>null device filename</td>
+<tr valign=top><td><b>local_host_name</b><td>string
+<td>private host name that uniquely identifies this system on the local network</td>
 <tr valign=top><td><b>host_name</b><td>string
-<td>server's host name (usually the same as <i>system.inetaddr</i>)</td>
+<td>public host name that uniquely identifies this system on the Internet (usually the same as <i>system.inetaddr</i>)</td>
 <tr valign=top><td><b>version</b><td>string
 <td>Synchronet version number (e.g. '3.10')</td>
 <tr valign=top><td><b>revision</b><td>string
@@ -1311,13 +1374,19 @@ Generated for <b>Synchronet v3.10m beta Debug</b>, compiled Jun 25 2003 19:19
 <tr valign=top><td><b>mnemonics</b><td>void<td><tt>console.mnemonics(string text)
 <td>print a mnemonics string
 <tr valign=top><td><b>clear</b><td>void<td><tt>console.clear()
-<td>clear screen
+<td>clear screen and home cursor
+<tr valign=top><td><b>home</b><td>void<td><tt>console.home()
+<td>send cursor to home position (x,y:1,1)
 <tr valign=top><td><b>clearline</b><td>void<td><tt>console.clearline()
 <td>clear current line
+<tr valign=top><td><b>cleartoeol</b><td>void<td><tt>console.cleartoeol()
+<td>clear to end-of-line (ANSI)
 <tr valign=top><td><b>crlf</b><td>void<td><tt>console.crlf()
 <td>output a carriage-return/line-feed pair (new-line)
 <tr valign=top><td><b>pause</b><td>void<td><tt>console.pause()
 <td>display pause prompt and wait for key hit
+<tr valign=top><td><b>beep</b><td>void<td><tt>console.beep([number count])
+<td>beep for count number of times (default count is 1)
 <tr valign=top><td><b>print</b><td>void<td><tt>console.print(string text)
 <td>display a string (supports Ctrl-A codes)
 <tr valign=top><td><b>write</b><td>void<td><tt>console.write(string text)
@@ -1333,7 +1402,7 @@ Generated for <b>Synchronet v3.10m beta Debug</b>, compiled Jun 25 2003 19:19
 <tr valign=top><td><b>printtail</b><td>void<td><tt>console.printtail(string text, number lines [,number mode])
 <td>print last x lines of file with optional mode
 <tr valign=top><td><b>editfile</b><td>void<td><tt>console.editfile(string filename)
-<td>edit a text file
+<td>edit/create a text file using the user's preferred message editor
 <tr valign=top><td><b>uselect</b><td>number<td><tt>console.uselect([number, string title, string item, string ars])
 <td>user selection menu, call for each item, then with no args to display select menu
 <tr valign=top><td><b>saveline</b><td>void<td><tt>console.saveline()
@@ -1342,23 +1411,23 @@ Generated for <b>Synchronet v3.10m beta Debug</b>, compiled Jun 25 2003 19:19
 <td>restore last output line
 <tr valign=top><td><b>ansi</b><td>string<td><tt>console.ansi(number attribute)
 <td>returns ANSI encoding of specified attribute
-<tr valign=top><td><b>ansi_save</b><td>void<td><tt>console.ansi_save()
-<td>save current cursor position (AKA ansi_pushxy)
-<tr valign=top><td><b>ansi_restore</b><td>void<td><tt>console.ansi_restore()
-<td>restore saved cursor position (AKA ansi_popxy)
-<tr valign=top><td><b>ansi_gotoxy</b><td>void<td><tt>console.ansi_gotoxy(number x,y)
-<td>Move cursor to a specific screen coordinate (ANSI)
-<tr valign=top><td><b>ansi_up</b><td>void<td><tt>console.ansi_up([number rows])
+<tr valign=top><td><b>pushxy</b><td>void<td><tt>console.pushxy()
+<td>save current cursor position (AKA ansi_save)
+<tr valign=top><td><b>popxy</b><td>void<td><tt>console.popxy()
+<td>restore saved cursor position (AKA ansi_restore)
+<tr valign=top><td><b>gotoxy</b><td>void<td><tt>console.gotoxy(number x,y)
+<td>Move cursor to a specific screen coordinate (ANSI), arguments can be separate x and y cooridinates or an object with x and y properites (like that returned from <tt>console.getxy()</tt>)
+<tr valign=top><td><b>up</b><td>void<td><tt>console.up([number rows])
 <td>Move cursor up one or more rows (ANSI)
-<tr valign=top><td><b>ansi_down</b><td>void<td><tt>console.ansi_down([number rows])
+<tr valign=top><td><b>down</b><td>void<td><tt>console.down([number rows])
 <td>Move cursor down one or more rows (ANSI)
-<tr valign=top><td><b>ansi_right</b><td>void<td><tt>console.ansi_right([number columns])
+<tr valign=top><td><b>right</b><td>void<td><tt>console.right([number columns])
 <td>Move cursor right one or more columns (ANSI)
-<tr valign=top><td><b>ansi_left</b><td>void<td><tt>console.ansi_left([number columns])
+<tr valign=top><td><b>left</b><td>void<td><tt>console.left([number columns])
 <td>Move cursor left one or more columns (ANSI)
-<tr valign=top><td><b>ansi_getlines</b><td>void<td><tt>console.ansi_getlines()
+<tr valign=top><td><b>getlines</b><td>void<td><tt>console.getlines()
 <td>Auto-detect the number of rows/lines on the user's terminal (ANSI)
-<tr valign=top><td><b>ansi_getxy</b><td>object<td><tt>console.ansi_getxy()
+<tr valign=top><td><b>getxy</b><td>object<td><tt>console.getxy()
 <td>Returns the current cursor position as an object (with x and y properties)
 <tr valign=top><td><b>lock_input</b><td>void<td><tt>console.lock_input([boolean lock])
 <td>Lock the user input thread (allowing direct client socket access)
@@ -1388,7 +1457,9 @@ Generated for <b>Synchronet v3.10m beta Debug</b>, compiled Jun 25 2003 19:19
 <tr valign=top><td><b>top_of_screen</b><td>number
 <td>set to 1 if the terminal cursor is already at the top of the screen</td>
 <tr valign=top><td><b>screen_rows</b><td>number
-<td>number of terminal rows</td>
+<td>number of terminal screen rows (in lines)</td>
+<tr valign=top><td><b>screen_columns</b><td>number
+<td>number of terminal screen columns (in character cells)</td>
 <tr valign=top><td><b>autoterm</b><td>number
 <td>bitfield of automatically detected terminal settings (see <tt>USER_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)</td>
 <tr valign=top><td><b>terminal</b><td>string
@@ -1407,11 +1478,16 @@ Generated for <b>Synchronet v3.10m beta Debug</b>, compiled Jun 25 2003 19:19
 <td>word-wrap buffer (used by getstr)	- <small>READ ONLY</small></td>
 <tr valign=top><td><b>question</b><td>string
 <td>current yes/no question (set by yesno and noyes)</td>
+<tr valign=top><td><b>getstr_offset</b><td>number
+<td>cursor position offset for use with <tt>getstr(K_USEOFFSET)</tt></td>
 <tr valign=top><td><b>ctrlkey_passthru</b><td>number
 <td>control key pass-through bitmask, set bits represent control key combinations <i>not</i> handled by <tt>inkey()</tt> method</td>
 </table>
 <h2><a name=msg_area>msg_area object</a>
 <br><font size=-1>Message Areas</font>
+</h2>
+<h2><a name=msg_area.sub>msg_area.sub object</a>
+<br><font size=-1>Associative array of all sub-boards (use internal code as index)</font>
 </h2>
 <h2><a name=msg_area.grp_list>msg_area.grp_list array</a>
 <br><font size=-1>Message Groups</font>
@@ -1433,6 +1509,8 @@ Generated for <b>Synchronet v3.10m beta Debug</b>, compiled Jun 25 2003 19:19
 <td>group name</td>
 <tr valign=top><td><b>description</b><td>string
 <td>group description</td>
+<tr valign=top><td><b>ars</b><td>string
+<td>group access requirements</td>
 </table>
 <h2><a name=msg_area.grp_list.sub_list>msg_area.grp_list.sub_list array</a>
 <br><font size=-1>Message Sub-boards</font>
@@ -1462,6 +1540,16 @@ Generated for <b>Synchronet v3.10m beta Debug</b>, compiled Jun 25 2003 19:19
 <td>sub-board QWK name</td>
 <tr valign=top><td><b>newsgroup</b><td>string
 <td>newsgroup name (as configured or dymamically generated)</td>
+<tr valign=top><td><b>ars</b><td>string
+<td>sub-board access requirements</td>
+<tr valign=top><td><b>read_ars</b><td>string
+<td>sub-board reading requirements</td>
+<tr valign=top><td><b>post_ars</b><td>string
+<td>sub-board posting requirements</td>
+<tr valign=top><td><b>operator_ars</b><td>string
+<td>sub-board operator requirements</td>
+<tr valign=top><td><b>moderated_ars</b><td>string
+<td>sub-board moderated-user requirements (if non-blank)</td>
 <tr valign=top><td><b>data_dir</b><td>string
 <td>sub-board data storage location</td>
 <tr valign=top><td><b>fidonet_origin</b><td>string
@@ -1495,11 +1583,11 @@ Generated for <b>Synchronet v3.10m beta Debug</b>, compiled Jun 25 2003 19:19
 <tr valign=top><td><b>last_read</b><td>number
 <td>user's last-read message number</td>
 </table>
-<h2><a name=msg_area.sub>msg_area.sub object</a>
-<br><font size=-1>Associative array of all sub-boards (use internal code as index)</font>
-</h2>
 <h2><a name=file_area>file_area object</a>
 <br><font size=-1>File Transfer Areas</font>
+</h2>
+<h2><a name=file_area.dir>file_area.dir object</a>
+<br><font size=-1>Associative array of all directories (use internal code as index)</font>
 </h2>
 <table border=1 width=100%>
 <caption align=left><b><tt>file_area</tt>
@@ -1535,6 +1623,8 @@ Generated for <b>Synchronet v3.10m beta Debug</b>, compiled Jun 25 2003 19:19
 <td>library name</td>
 <tr valign=top><td><b>description</b><td>string
 <td>library description</td>
+<tr valign=top><td><b>ars</b><td>string
+<td>library access requirements</td>
 <tr valign=top><td><b>link</b><td>string
 <td>library link (for HTML index)</td>
 </table>
@@ -1564,6 +1654,16 @@ Generated for <b>Synchronet v3.10m beta Debug</b>, compiled Jun 25 2003 19:19
 <td>directory description</td>
 <tr valign=top><td><b>path</b><td>string
 <td>directory file storage location</td>
+<tr valign=top><td><b>ars</b><td>string
+<td>directory access requirements</td>
+<tr valign=top><td><b>upload_ars</b><td>string
+<td>directory upload requirements</td>
+<tr valign=top><td><b>download_ars</b><td>string
+<td>directory download requirements</td>
+<tr valign=top><td><b>exempt_ars</b><td>string
+<td>directory exemption requirements</td>
+<tr valign=top><td><b>operator_ars</b><td>string
+<td>directory operator requirements</td>
 <tr valign=top><td><b>extensions</b><td>string
 <td>allowed file extensions (comma delimited)</td>
 <tr valign=top><td><b>upload_sem</b><td>string
@@ -1595,11 +1695,11 @@ Generated for <b>Synchronet v3.10m beta Debug</b>, compiled Jun 25 2003 19:19
 <tr valign=top><td><b>is_operator</b><td>boolean
 <td>user has operator access to this directory</td>
 </table>
-<h2><a name=file_area.dir>file_area.dir object</a>
-<br><font size=-1>Associative array of all directories (use internal code as index)</font>
-</h2>
 <h2><a name=xtrn_area>xtrn_area object</a>
 <br><font size=-1>External Program Areas</font>
+</h2>
+<h2><a name=xtrn_area.prog>xtrn_area.prog object</a>
+<br><font size=-1>Associative array of all external programs (use internal code as index)</font>
 </h2>
 <h2><a name=xtrn_area.sec_list>xtrn_area.sec_list array</a>
 <br><font size=-1>Online Program (door) Sections</font>
@@ -1621,6 +1721,8 @@ Generated for <b>Synchronet v3.10m beta Debug</b>, compiled Jun 25 2003 19:19
 <td>external program section internal code</td>
 <tr valign=top><td><b>name</b><td>string
 <td>external program section name</td>
+<tr valign=top><td><b>ars</b><td>string
+<td>external program section access requirements</td>
 </table>
 <h2><a name=xtrn_area.sec_list.prog_list>xtrn_area.sec_list.prog_list array</a>
 <br><font size=-1>Online External Programs (doors)</font>
@@ -1646,6 +1748,10 @@ Generated for <b>Synchronet v3.10m beta Debug</b>, compiled Jun 25 2003 19:19
 <td>clean-up command-line</td>
 <tr valign=top><td><b>startup_dir</b><td>string
 <td>startup directory</td>
+<tr valign=top><td><b>ars</b><td>string
+<td>access requirements</td>
+<tr valign=top><td><b>execution_ars</b><td>string
+<td>execution requirements</td>
 <tr valign=top><td><b>settings</b><td>number
 <td>toggle options (bitfield)</td>
 <tr valign=top><td><b>type</b><td>number
@@ -1657,7 +1763,7 @@ Generated for <b>Synchronet v3.10m beta Debug</b>, compiled Jun 25 2003 19:19
 <tr valign=top><td><b>max_time</b><td>number
 <td>maximum time allowed in program</td>
 <tr valign=top><td><b>cost</b><td>number
-<td>cost (in credits) to run this program</td>
+<td>execution cost (credits to run this program)</td>
 <tr valign=top><td><b>number</b><td>number
 <td>program number</td>
 <tr valign=top><td><b>sec_number</b><td>number
@@ -1665,9 +1771,6 @@ Generated for <b>Synchronet v3.10m beta Debug</b>, compiled Jun 25 2003 19:19
 <tr valign=top><td><b>can_run</b><td>boolean
 <td>user has sufficient access to run this program</td>
 </table>
-<h2><a name=xtrn_area.prog>xtrn_area.prog object</a>
-<br><font size=-1>Associative array of all external programs (use internal code as index)</font>
-</h2>
 <h2><a name=xtrn_area.event>xtrn_area.event object</a>
 <br><font size=-1>Associative array of all timed events (use internal code as index)</font>
 </h2>
@@ -1719,6 +1822,8 @@ Generated for <b>Synchronet v3.10m beta Debug</b>, compiled Jun 25 2003 19:19
 <td>name</td>
 <tr valign=top><td><b>cmd</b><td>string
 <td>command-line</td>
+<tr valign=top><td><b>ars</b><td>string
+<td>access requirements</td>
 <tr valign=top><td><b>settings</b><td>number
 <td>toggle options (bitfield)</td>
 <tr valign=top><td><b>type</b><td>number
@@ -1827,6 +1932,16 @@ Generated for <b>Synchronet v3.10m beta Debug</b>, compiled Jun 25 2003 19:19
 <td>sub-board QWK name</td>
 <tr valign=top><td><b>newsgroup</b><td>string
 <td>newsgroup name (as configured or dymamically generated)</td>
+<tr valign=top><td><b>ars</b><td>string
+<td>sub-board access requirements</td>
+<tr valign=top><td><b>read_ars</b><td>string
+<td>sub-board reading requirements</td>
+<tr valign=top><td><b>post_ars</b><td>string
+<td>sub-board posting requirements</td>
+<tr valign=top><td><b>operator_ars</b><td>string
+<td>sub-board operator requirements</td>
+<tr valign=top><td><b>moderated_ars</b><td>string
+<td>sub-board moderated-user requirements (if non-blank)</td>
 <tr valign=top><td><b>data_dir</b><td>string
 <td>sub-board data storage location</td>
 <tr valign=top><td><b>fidonet_origin</b><td>string
@@ -1926,8 +2041,6 @@ Generated for <b>Synchronet v3.10m beta Debug</b>, compiled Jun 25 2003 19:19
 <td>mode string specified in <i>open</i> call - <small>READ ONLY</small></td>
 <tr valign=top><td><b>exists</b><td>boolean
 <td><i>true</i> if the file exists - <small>READ ONLY</small></td>
-<tr valign=top><td><b>date</b><td>number
-<td>last modified date/time (time_t format) - <small>READ ONLY</small></td>
 <tr valign=top><td><b>is_open</b><td>boolean
 <td><i>true</i> if the file has been opened successfully - <small>READ ONLY</small></td>
 <tr valign=top><td><b>eof</b><td>boolean
@@ -1942,6 +2055,8 @@ Generated for <b>Synchronet v3.10m beta Debug</b>, compiled Jun 25 2003 19:19
 <td>set to <i>true</i> to enable debug log output</td>
 <tr valign=top><td><b>position</b><td>number
 <td>the current file position (offset in bytes), change value to seek within file</td>
+<tr valign=top><td><b>date</b><td>number
+<td>last modified date/time (in time_t format)</td>
 <tr valign=top><td><b>length</b><td>number
 <td>the current length of the file (in bytes)</td>
 <tr valign=top><td><b>attributes</b><td>number
@@ -2033,27 +2148,27 @@ Generated for <b>Synchronet v3.10m beta Debug</b>, compiled Jun 25 2003 19:19
 <font color="white">Type</font>
 <th align=left>
 <font color="white">Description</font>
-<tr valign=top><td><b>error</b><td>number
-<td>error status for the last socket operation that failed - <small>READ ONLY</small></td>
-<tr valign=top><td><b>is_connected</b><td>boolean
-<td><i>true</i> if socket is in a connected state - <small>READ ONLY</small></td>
-<tr valign=top><td><b>is_writeable</b><td>boolean
-<td><i>true</i> if socket can accept written data - <small>READ ONLY</small></td>
-<tr valign=top><td><b>data_waiting</b><td>boolean
-<td><i>true</i> if data is waiting to be read from socket - <small>READ ONLY</small></td>
-<tr valign=top><td><b>nread</b><td>number
-<td>number of bytes waiting to be read - <small>READ ONLY</small></td>
-<tr valign=top><td><b>debug</b><td>number
-<td>enable debug logging</td>
 <tr valign=top><td><b>descriptor</b><td>number
+<td>error status for the last socket operation that failed - <small>READ ONLY</small></td>
+<tr valign=top><td><b>error</b><td>number
+<td><i>true</i> if socket is in a connected state - <small>READ ONLY</small></td>
+<tr valign=top><td><b>is_connected</b><td>boolean
+<td><i>true</i> if socket can accept written data - <small>READ ONLY</small></td>
+<tr valign=top><td><b>is_writeable</b><td>boolean
+<td><i>true</i> if data is waiting to be read from socket - <small>READ ONLY</small></td>
+<tr valign=top><td><b>data_waiting</b><td>boolean
+<td>number of bytes waiting to be read - <small>READ ONLY</small></td>
+<tr valign=top><td><b>nread</b><td>number
+<td>enable debug logging</td>
+<tr valign=top><td><b>debug</b><td>number
 <td>socket descriptor (advanced uses only)</td>
 <tr valign=top><td><b>nonblocking</b><td>boolean
 <td>use non-blocking operation (default is <i>false</i>)</td>
-<tr valign=top><td><b>local_ip_address</b><td>undefined
+<tr valign=top><td><b>local_ip_address</b><td>string
 <td>local IP address (string in dotted-decimal format)</td>
 <tr valign=top><td><b>local_port</b><td>number
 <td>local TCP or UDP port number</td>
-<tr valign=top><td><b>remote_ip_address</b><td>undefined
+<tr valign=top><td><b>remote_ip_address</b><td>string
 <td>remote IP address (string in dotted-decimal format)</td>
 <tr valign=top><td><b>remote_port</b><td>number
 <td>remote TCP or UDP port number</td>
@@ -2063,4 +2178,4 @@ Generated for <b>Synchronet v3.10m beta Debug</b>, compiled Jun 25 2003 19:19
 <td><i>true</i> if binary data is to be sent in Network Byte Order (big end first), default is <i>true</i></td>
 </table>
 <p><small>
-Totals: 409 properties, 236 methods
+Totals: 444 properties, 247 methods
