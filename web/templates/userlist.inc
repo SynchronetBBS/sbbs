@@ -1,6 +1,6 @@
-<CENTER>
-<TABLE>
-<TR bgcolor=white><TH><a href="userlist.ssjs?sort=alias"><font color=black>Alias</font></a></TH><TH><a href="userlist.ssjs?sort=location"><font color=black>Location</font></a></TH><TH><a href="userlist.ssjs?sort=connection"><font color=black>Connection</font></a></TH><TH><a href="userlist.ssjs?sort=laston"><font color=black>Last On</font></a></TH></TR>
+<div align="center"><P><A HREF="http://^^JS:system.inet_addr^^/">Home</A> : <A href="/members/">Members</A> : <B>User List</B></P></div>
+<TABLE class="centeralign">
+<TR class="userlist"><TH><a class="userlist" href="userlist.ssjs?sort=alias">Alias</a></TH><TH><a class="userlist" href="userlist.ssjs?sort=location">Location</a></TH><TH><a class="userlist" href="userlist.ssjs?sort=connection">Connection</a></TH><TH><a class="userlist" href="userlist.ssjs?sort=laston">Last On</a></TH></TR>
 <<REPEAT users>>
 <TR>
   <TD>
@@ -18,4 +18,4 @@
 </TR>
 <<END REPEAT users>>
 </TABLE>
-</CENTER>
+

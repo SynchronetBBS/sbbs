@@ -6,5 +6,5 @@
 <META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=ISO-8859-1">
 <link rel="stylesheet" href="/synchronet.css" type="text/css">
 </HEAD>
-<body bgcolor="teal" text="white" link="yellow" vlink="lime" alink="white">
-<center><H3>%%JS:system.name%%</H3></center>
+<body>
+<div align="center"><H3>%%JS:system.name%%</H3></div>

@@ -1,4 +1,5 @@
 <!-- $Id$ -->
+<div align="center"><P><A HREF="http://^^JS:system.inet_addr^^/">Home</A> : <B>New User Application</B></P></div>
 <CENTER>
 	%%err_message%%
 	<FORM ACTION="newuser.ssjs" METHOD="POST">
@@ -43,7 +44,13 @@
 				<TD align="right">%%errs:gender%% Gender:</TD>
 				<TD>@@gender_list@@</TD>
 			</TR>
+            <tr>
+            <TD>&nbsp;</TD>
+            <td>
+            <br />
+            <button TYPE="SUBMIT">Join!</button>
+            </td>
 		</TABLE>
-		<INPUT TYPE="SUBMIT">
+
 	</FORM>
 </CENTER>
