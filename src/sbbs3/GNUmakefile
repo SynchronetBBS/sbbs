@@ -44,7 +44,9 @@ ifndef os
  os		:=	$(shell uname)
  $(warning OS not specified on command line, setting to '$(os)'.)
 endif
-os      :=	$(shell echo $(os) | awk '/.*/ { print tolower($$1)}')
+# this line wont work with solaris unless awk in path is actually gawk 
+os      :=	$(shell echo $(os) | tr "[A-Z]" "[a-z]")
+#os      :=	$(shell echo $(os) | awk '/.*/ { print tolower($$1)}')
 
 ifeq ($(os),freebsd)
  BSD	=	1
@@ -57,7 +59,7 @@ endif
 LIBODIR :=	$(CCPRE).$(os).lib
 EXEODIR :=	$(CCPRE).$(os).exe
 
-DELETE	=	rm -f -v
+DELETE	=	rm -f
 
 CFLAGS	+=	-DJAVASCRIPT -I../mozilla/js/src -I$(XPDEV) -I$(UIFC)
 
@@ -76,6 +78,11 @@ endif
 
 ifeq ($(os),linux)    # Linux
  CFLAGS	+= -D_THREAD_SUID_BROKEN
+endif
+
+ifeq ($(os),sunos)    # Solaris
+ CFLAGS	+= -D_REENTRANT -D__solaris__ -DNEEDS_DAEMON -D_POSIX_PTHREAD_SEMANTICS -DNEEDS_FORKPTY
+ LFLAGS := -lm -lpthread -lsocket -lnsl -lrt
 endif
 
 ifdef DEBUG
@@ -99,12 +106,16 @@ ifdef DEBUG
    else
     ifeq ($(os),linux)
      LIBS	+=	../mozilla/js/src/Linux_All_DBG.OBJ/libjs.a
+   else
+    ifeq ($(os),sunos)
+     LIBS	+=	../mozilla/js/src/SunOS5.8_i86pc_DBG.OBJ/libjs.a
     else
      $(warning JavaScript library path for '$(os)' not defined.)
     endif
    endif
   endif
  endif
+endif
 
 else # RELEASE
  LIBODIR	:=	$(LIBODIR).release
