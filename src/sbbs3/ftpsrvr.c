@@ -1091,20 +1091,20 @@ BOOL download_stats(ulong bytes)
 void recverror(SOCKET socket, int rd, int line)
 {
 	if(rd==0) 
-		lprintf(LOG_WARNING,"%04d Socket closed by peer on receive (line %u)"
+		lprintf(LOG_NOTICE,"%04d Socket closed by peer on receive (line %u)"
 			,socket, line);
 	else if(rd==SOCKET_ERROR) {
 		if(ERROR_VALUE==ECONNRESET) 
-			lprintf(LOG_WARNING,"%04d Connection reset by peer on receive (line %u)"
+			lprintf(LOG_NOTICE,"%04d Connection reset by peer on receive (line %u)"
 				,socket, line);
 		else if(ERROR_VALUE==ECONNABORTED) 
-			lprintf(LOG_WARNING,"%04d Connection aborted by peer on receive (line %u)"
+			lprintf(LOG_NOTICE,"%04d Connection aborted by peer on receive (line %u)"
 				,socket, line);
 		else
-			lprintf(LOG_WARNING,"%04d !ERROR %d receiving on socket (line %u)"
+			lprintf(LOG_NOTICE,"%04d !ERROR %d receiving on socket (line %u)"
 				,socket, ERROR_VALUE, line);
 	} else
-		lprintf(LOG_ERR,"%04d !ERROR: recv on socket returned unexpected value: %d (line %u)"
+		lprintf(LOG_WARNING,"%04d !ERROR: recv on socket returned unexpected value: %d (line %u)"
 			,socket, rd, line);
 }
 
