@@ -11,7 +11,7 @@
     Expire:
   </td>
   <td>
-    %%JS:strftime("%m/%d/%y",user.security.expiration_date)%%
+    %%JS:user.security.expiration_date?strftime("%m/%d/%y",user.security.expiration_date):"Never"%%
   </td>
   <td>
     Last on:
