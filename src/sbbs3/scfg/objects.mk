@@ -23,10 +23,11 @@ OBJS	=	$(ODIR)$(SLASH)scfg.$(OFILE)\
             $(ODIR)$(SLASH)scfglib2.$(OFILE)\
             $(ODIR)$(SLASH)ars.$(OFILE)\
             $(ODIR)$(SLASH)load_cfg.$(OFILE)\
-            $(ODIR)$(SLASH)misc.$(OFILE)\
+            $(ODIR)$(SLASH)nopen.$(OFILE)\
             $(ODIR)$(SLASH)crc32.$(OFILE)\
             $(ODIR)$(SLASH)userdat.$(OFILE)\
             $(ODIR)$(SLASH)date_str.$(OFILE)\
+			$(ODIR)$(SLASH)str_util.$(OFILE)\
 			$(ODIR)$(SLASH)genwrap.$(OFILE)\
 			$(ODIR)$(SLASH)dirwrap.$(OFILE)\
 			$(ODIR)$(SLASH)filewrap.$(OFILE)\

@@ -550,8 +550,6 @@ public:
 	void	printstatslog(uint node);
 	ulong	logonstats(void);
 	void	logoffstats(void);
-
-	/* misc.cpp */
 	int		nopen(char *str, int access);
 	int		mv(char *src, char *dest, char copy); /* fast file move/copy function */
 	bool	chksyspass(void);
@@ -767,21 +765,30 @@ extern "C" {
 	DLLEXPORT ulong		DLLCALL	getposts(scfg_t* cfg, uint subnum);
 	DLLEXPORT long		DLLCALL getfiles(scfg_t* cfg, uint dirnum);
 
-	/* str.cpp */
+	/* str_util.c */
+	DLLEXPORT void		DLLCALL truncsp(char *str);		/* Truncates white spaces off end of str */
 	DLLEXPORT char *	DLLCALL ascii_str(uchar* str);
-	DLLEXPORT ushort	DLLCALL crc16(char *str);
 	DLLEXPORT BOOL		DLLCALL findstr(scfg_t* cfg, char *insearch, char *fname);
 	DLLEXPORT BOOL		DLLCALL trashcan(scfg_t* cfg, char *insearch, char *name);
-	DLLEXPORT int		DLLCALL putsmsg(scfg_t* cfg, int usernumber, char *strin);
-	DLLEXPORT char *	DLLCALL strip_ctrl(char *str);
 	DLLEXPORT char *	DLLCALL strip_exascii(char *str);
 	DLLEXPORT char *	DLLCALL prep_file_desc(char *str);
-
-	/* misc.c */
-	DLLEXPORT char *	DLLCALL zonestr(short zone);
+	DLLEXPORT char *	DLLCALL strip_ctrl(char *str);
 	DLLEXPORT char *	DLLCALL net_addr(net_t* net);
+	DLLEXPORT ushort	DLLCALL crc16(char *str);
+
+	/* date_str.c */
+	DLLEXPORT char *	DLLCALL zonestr(short zone);
+	DLLEXPORT time_t	DLLCALL dstrtounix(scfg_t*, char *str);	
+	DLLEXPORT char *	DLLCALL unixtodstr(scfg_t*, time_t, char *str);
+	DLLEXPORT char *	DLLCALL sectostr(uint sec, char *str);		
+	DLLEXPORT char *	DLLCALL hhmmtostr(scfg_t* cfg, struct tm* tm, char* str);
+	DLLEXPORT char *	DLLCALL timestr(scfg_t* cfg, time_t *intime, char* str);
+	DLLEXPORT when_t	DLLCALL rfc822date(char* p);
+	DLLEXPORT char *	DLLCALL msgdate(when_t when, char* buf);
+
+	/* nopen.c */
 	DLLEXPORT int		DLLCALL nopen(char *str, int access);
-	DLLEXPORT void		DLLCALL truncsp(char *str);		/* Truncates white spaces off end of str */
+	DLLEXPORT FILE *	DLLCALL fnopen(int *file, char *str, int access);
 
 	/* load_cfg.c */
 	DLLEXPORT BOOL		DLLCALL load_cfg(scfg_t* cfg, char* text[], BOOL prep, char* error);
@@ -799,22 +806,6 @@ extern "C" {
 
 	/* scfglib1.c */
 	DLLEXPORT char *	DLLCALL prep_dir(char* base, char* dir);
-
-	/* date_str.c */
-	/* ASCII date (MM/DD/YY) to unix conversion */
-	DLLEXPORT time_t	DLLCALL dstrtounix(scfg_t*, char *str);	
-	 /* Unix time to ASCII date */
-	DLLEXPORT char *	DLLCALL unixtodstr(scfg_t*, time_t, char *str);
-	/* seconds to HH:MM:SS */
-	DLLEXPORT char *	DLLCALL sectostr(uint sec, char *str);		
-	/* struct tm to HH:MMa/p */
-	DLLEXPORT char *	DLLCALL hhmmtostr(scfg_t* cfg, struct tm* tm, char* str);
-	/* time_t to ctime()-like string */
-	DLLEXPORT char *	DLLCALL timestr(scfg_t* cfg, time_t *intime, char* str);
-	/* RFC822 date header to when_t */
-	DLLEXPORT when_t	DLLCALL rfc822date(char* p);
-	/* when_t to RFC822 date header */
-	DLLEXPORT char *	DLLCALL msgdate(when_t when, char* buf);
 
 	/* logfile.cpp */
 	DLLEXPORT BOOL		DLLCALL hacklog(scfg_t* cfg, char* prot, char* user, char* text 
@@ -872,8 +863,10 @@ extern "C" {
 
 #endif
 
-/* misc.c */
-FILE *	fnopen(int *file, char *str, int access);
+/* crc32.c */
+ulong	crc32(char *buf, ulong len);
+
+/* str_util.c */
 int		bstrlen(char *str);
 void	backslashcolon(char *str);
 void	backslash(char *str);
@@ -881,10 +874,9 @@ ulong	ahtoul(char *str);	/* Converts ASCII hex to ulong */
 char *	ultoac(ulong l,char *str);
 char *	hexplus(uint num, char *str); 	/* Hex plus for 3 digits up to 9000 */
 uint	hptoi(char *str);
-ulong	crc32(char *buf, ulong len);
-void	ucrc16(uchar ch, ushort *rcrc);
 int		pstrcmp(char **str1, char **str2);  /* Compares pointers to pointers */
 int		strsame(char *str1, char *str2);	/* Compares number of same chars */
+void	ucrc16(uchar ch, ushort *rcrc);
 
 /* load_cfg.c */
 BOOL 	md(char *path);

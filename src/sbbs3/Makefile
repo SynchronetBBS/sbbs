@@ -135,7 +135,8 @@ $(SMBUTIL): smbutil.c smbtxt.c crc32.c lzh.c $(SMBLIB) $(XPDEV)dirwrap.c
 # SBBSecho (FidoNet Packet Tosser)
 $(SBBSECHO): sbbsecho.c rechocfg.c smbtxt.c crc32.c lzh.c $(SMBLIB) \
 	$(LIBODIR)\ars.obj \
-	$(LIBODIR)\misc.obj \
+	$(LIBODIR)\nopen.obj \
+	$(LIBODIR)\str_util.obj \
 	$(LIBODIR)\date_str.obj \
 	userdat.c \
 	genwrap.c \

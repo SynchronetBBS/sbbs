@@ -187,7 +187,8 @@ $(SBBSECHO): \
 	$(EXEODIR)/load_cfg.o \
 	$(EXEODIR)/scfglib1.o \
 	$(EXEODIR)/scfglib2.o \
-	$(EXEODIR)/misc.o \
+	$(EXEODIR)/nopen.o \
+	$(EXEODIR)/str_util.o \
 	$(EXEODIR)/userdat.o \
 	$(EXEODIR)/rechocfg.o \
 	$(EXEODIR)/conwrap.o \

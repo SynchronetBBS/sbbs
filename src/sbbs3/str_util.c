@@ -1,6 +1,6 @@
-/* misc.cpp */
+/* str_util.c */
 
-/* Synchronet miscellaneous utility-type routines (exported) */
+/* Synchronet string utility routines */
 
 /* $Id$ */
 
@@ -36,69 +36,159 @@
  ****************************************************************************/
 
 #include "sbbs.h"
-#include "crc32.h"
 
 /****************************************************************************/
-/* Network open function. Opens all files DENYALL and retries LOOP_NOPEN    */
-/* number of times if the attempted file is already open or denying access  */
-/* for some other reason.	All files are opened in BINARY mode.			*/
+/* Removes ctrl-a codes from the string 'instr'                             */
 /****************************************************************************/
-int DLLCALL nopen(char *str, int access)
+char* DLLCALL remove_ctrl_a(char *instr, char *outstr)
 {
-	int file,share,count=0;
+	char str[1024],*p;
+	uint i,j;
 
-    if(access&O_DENYNONE) {
-        share=SH_DENYNO;
-        access&=~O_DENYNONE; }
-    else if(access==O_RDONLY) share=SH_DENYWR;
-    else share=SH_DENYRW;
-	if(!(access&O_TEXT))
-		access|=O_BINARY;
-    while(((file=sopen(str,access,share))==-1)
-        && (errno==EACCES || errno==EAGAIN) && count++<LOOP_NOPEN)
-        if(count)
-            mswait(100);
-    return(file);
+	for(i=j=0;instr[i] && j<sizeof(str)-1;i++) {
+		if(instr[i]==CTRL_A && instr[i+1]!=0)
+			i++;
+		else str[j++]=instr[i]; 
+	}
+	str[j]=0;
+	if(outstr!=NULL)
+		p=outstr;
+	else
+		p=instr;
+	strcpy(p,str);
+	return(p);
 }
-/****************************************************************************/
-/* This function performs an nopen, but returns a file stream with a buffer */
-/* allocated.																*/
-/****************************************************************************/
-FILE * fnopen(int *fd, char *str, int access)
+
+char* DLLCALL strip_ctrl(char *str)
 {
-	char	mode[128];
-	int		file;
-	FILE *	stream;
+	char tmp[1024];
+	int i,j;
 
-    if((file=nopen(str,access))==-1)
-        return(NULL);
+	for(i=j=0;str[i] && j<(int)sizeof(tmp)-1;i++)
+		if(str[i]==CTRL_A && str[i+1]!=0)
+			i++;
+		else if((uchar)str[i]>=SP)
+			tmp[j++]=str[i];
+	tmp[j]=0;
+	strcpy(str,tmp);
+	return(str);
+}
 
-    if(fd!=NULL)
-        *fd=file;
+char* DLLCALL strip_exascii(char *str)
+{
+	char tmp[1024];
+	int i,j;
 
-    if(access&O_APPEND) {
-        if(access&O_RDONLY)
-            strcpy(mode,"a+");
-        else
-            strcpy(mode,"a"); 
-	} else if(access&O_CREAT) {
-		if(access&O_TRUNC)
-			strcpy(mode,"w");
-		else
-			strcpy(mode,"w+");
-	} else {
-        if(access&O_WRONLY || (access&O_RDWR)==O_RDWR)
-            strcpy(mode,"r+");
-        else
-            strcpy(mode,"r"); 
+	for(i=j=0;str[i] && j<(int)sizeof(tmp)-1;i++)
+		if(!(str[i]&0x80))
+			tmp[j++]=str[i];
+	tmp[j]=0;
+	strcpy(str,tmp);
+	return(str);
+}
+
+char* DLLCALL prep_file_desc(char *str)
+{
+	char tmp[1024];
+	int i,j;
+
+	for(i=j=0;str[i];i++)
+		if(str[i]==CTRL_A && str[i+1]!=0)
+			i++;
+		else if(j && str[i]<=SP && tmp[j-1]==SP)
+			continue;
+		else if(i && !isalnum(str[i]) && str[i]==str[i-1])
+			continue;
+		else if((uchar)str[i]>=SP)
+			tmp[j++]=str[i];
+		else if(str[i]==TAB || (str[i]==CR && str[i+1]==LF))
+			tmp[j++]=SP;
+	tmp[j]=0;
+	strcpy(str,tmp);
+	return(str);
+}
+
+/****************************************************************************/
+/* Pattern matching string search of 'insearchof' in 'fname'.				*/
+/****************************************************************************/
+BOOL DLLCALL findstr(scfg_t* cfg, char* insearchof, char* fname)
+{
+	char*	p;
+	char	str[128];
+	char	search[81];
+	int		c;
+	int		i;
+	BOOL	found;
+	FILE*	stream;
+
+	if((stream=fopen(fname,"r"))==NULL)
+		return(FALSE); 
+
+	SAFECOPY(search,insearchof);
+	strupr(search);
+
+	found=FALSE;
+
+	while(!feof(stream) && !ferror(stream) && !found) {
+		if(!fgets(str,sizeof(str),stream))
+			break;
+		
+		found=FALSE;
+
+		p=str;	
+		while(*p && *p<=' ') p++; /* Skip white-space */
+
+		if(*p==';')		/* comment */
+			continue;
+
+		if(*p=='!')	{	/* !match */
+			found=TRUE;
+			p++;
+		}
+
+		truncsp(p);
+		c=strlen(p);
+		if(c) {
+			c--;
+			strupr(p);
+			if(p[c]=='~') {
+				p[c]=0;
+				if(strstr(search,p))
+					found=!found; 
+			}
+
+			else if(p[c]=='^' || p[c]=='*') {
+				p[c]=0;
+				if(!strncmp(p,search,c))
+					found=!found; 
+			}
+
+			else if(p[0]=='*') {
+				i=strlen(search);
+				if(i<c)
+					continue;
+				if(!strncmp(p+1,search+(i-c),c))
+					found=!found; 
+			}
+
+			else if(!strcmp(p,search))
+				found=!found; 
+		} 
 	}
-    stream=fdopen(file,mode);
-    if(stream==NULL) {
-        close(file);
-        return(NULL); 
-	}
-    setvbuf(stream,NULL,_IOFBF,FNOPEN_BUF_SIZE);
-    return(stream);
+	fclose(stream);
+	return(found);
+}
+
+/****************************************************************************/
+/* Searches the file <name>.can in the TEXT directory for matches			*/
+/* Returns TRUE if found in list, FALSE if not.								*/
+/****************************************************************************/
+BOOL DLLCALL trashcan(scfg_t* cfg, char* insearchof, char* name)
+{
+	char fname[MAX_PATH+1];
+
+	sprintf(fname,"%s%s.can",cfg->text_dir,name);
+	return(findstr(cfg,insearchof,fname));
 }
 
 /****************************************************************************/
@@ -180,54 +270,6 @@ void backslashcolon(char *str)
 }
 
 /****************************************************************************/
-/* Updates 16-bit "rcrc" with character 'ch'                                */
-/****************************************************************************/
-void ucrc16(uchar ch, ushort *rcrc) 
-{
-	ushort i, cy;
-    uchar nch=ch;
- 
-	for (i=0; i<8; i++) {
-		cy=*rcrc & 0x8000;
-		*rcrc<<=1;
-		if (nch & 0x80) *rcrc |= 1;
-		nch<<=1;
-		if (cy) *rcrc ^= 0x1021; }
-}
-
-/****************************************************************************/
-/* Returns CRC-16 of ASCIIZ string (not including terminating NULL)			*/
-/****************************************************************************/
-ushort DLLCALL crc16(char *str)
-{
-	int 	i=0;
-	ushort	crc=0;
-
-	ucrc16(0,&crc);
-	while(str[i])
-		ucrc16(str[i++],&crc);
-	ucrc16(0,&crc);
-	ucrc16(0,&crc);
-	return(crc);
-}
-
-/****************************************************************************/
-/* Returns CRC-32 of sequence of bytes (binary or ASCIIZ)					*/
-/* Pass len of 0 to auto-determine ASCIIZ string length						*/
-/* or non-zero for arbitrary binary data									*/
-/****************************************************************************/
-ulong crc32(char *buf, ulong len)
-{
-	ulong l,crc=0xffffffff;
-
-	if(len==0) 
-		len=strlen(buf);
-	for(l=0;l<len;l++)
-		crc=ucrc32(buf[l],crc);
-	return(~crc);
-}
-
-/****************************************************************************/
 /* Compares pointers to pointers to char. Used in conjuction with qsort()   */
 /****************************************************************************/
 int pstrcmp(char **str1, char **str2)
@@ -246,8 +288,6 @@ int strsame(char *str1, char *str2)
 		if(str1[i]==str2[i]) j++;
 	return(j);
 }
-
-#define MV_BUFLEN	4096
 
 /****************************************************************************/
 /* Returns an ASCII string for FidoNet address 'addr'                       */
@@ -301,6 +341,9 @@ ulong ahtoul(char *str)
 	return(val);
 }
 
+/****************************************************************************/
+/* Converts hex-plus string to integer										*/
+/****************************************************************************/
 uint hptoi(char *str)
 {
 	char tmp[128];
@@ -314,4 +357,36 @@ uint hptoi(char *str)
 	return(i);
 }
 
+
+/****************************************************************************/
+/* Updates 16-bit "rcrc" with character 'ch'                                */
+/****************************************************************************/
+void ucrc16(uchar ch, ushort *rcrc) 
+{
+	ushort i, cy;
+    uchar nch=ch;
+ 
+	for (i=0; i<8; i++) {
+		cy=*rcrc & 0x8000;
+		*rcrc<<=1;
+		if (nch & 0x80) *rcrc |= 1;
+		nch<<=1;
+		if (cy) *rcrc ^= 0x1021; }
+}
+
+/****************************************************************************/
+/* Returns CRC-16 of ASCIIZ string (not including terminating NULL)			*/
+/****************************************************************************/
+ushort DLLCALL crc16(char *str)
+{
+	int 	i=0;
+	ushort	crc=0;
+
+	ucrc16(0,&crc);
+	while(str[i])
+		ucrc16(str[i++],&crc);
+	ucrc16(0,&crc);
+	ucrc16(0,&crc);
+	return(crc);
+}
 
