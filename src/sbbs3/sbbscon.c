@@ -99,37 +99,45 @@ BOOL				use_facilities=FALSE;
 static const char* prompt = 
 "[Threads: %d  Sockets: %d  Clients: %d  Served: %lu] (?=Help): ";
 
-static const char* usage  = "usage: %s [[option] [...]]\n"
+static const char* usage  = "usage: %s [[setting] [...]]\n"
 							"\n"
-							"Telnet server options:\n\n"
+							"Telnet server settings:\n\n"
 							"\ttf<node>   set first Telnet node number\n"
 							"\ttl<node>   set last Telnet node number\n"
 							"\ttp<port>   set Telnet server port\n"
 							"\trp<port>   set RLogin server port (and enable RLogin server)\n"
 							"\tr2         use second RLogin name in BSD RLogin\n"
-							"\tal         enable auto-logon via IP address\n"
-							"\ttd         enable Telnet option debug output\n"
-							"\tnq         disable QWK events\n"
-							"\tsa         sysop available for chat\n"
+							"\tto<value>  set Telnet server options value (advanced)\n"
+							"\tta         enable auto-logon via IP address\n"
+							"\ttd         enable Telnet command debug output\n"
+							"\ttc         emabble sysop availability for chat\n"
+							"\ttq         disable QWK events\n"
 							"\n"
-							"FTP server options:\n"
+							"FTP server settings:\n"
 							"\n"
 							"\tfp<port>   set FTP server port\n"
+							"\tfo<value>  set FTP server options value (advanced)\n"
 							"\tf-         disable FTP server\n"
 							"\n"
-							"Mail server options:\n"
+							"Mail server settings:\n"
 							"\n"
-							"\tsp<port>   set SMTP server port\n"
-							"\tsr<port>   set SMTP relay port\n"
-							"\tpp<port>   set POP3 server port\n"
-							"\tm-         disable Mail server\n"
-							"\tp-         disable POP3 server\n"
-							"\ts-         disable SendMail thread\n"
+							"\tms<port>   set SMTP server port\n"
+							"\tmp<port>   set POP3 server port\n"
+							"\tmr<port>   set SMTP relay port (and enable SMTP relay)\n"
+							"\tmo<value>  set Mail server options value (advanced)\n"
+							"\tm-         disable Mail server (entirely)\n"
+							"\tmp-        disable POP3 server\n"
+							"\tms-        disable SendMail thread\n"
 							"\n"
-							"Global options:\n"
+							"Services settings:\n"
+							"\n"
+							"\tso<value>  set Services option value (advanced)\n"
+							"\ts-         disable Services (no services module)\n"
+							"\n"
+							"Global settings:\n"
 							"\n"
 							"\thn[host]   set hostname for this instance\n"
-							"             if host not specified, uses gethostname\n"
+							"\t           if host not specified, uses gethostname\n"
 #ifdef __unix__
 							"\tun<user>   set username for BBS to run as\n"
 							"\tug<group>  set group for BBS to run as\n"
@@ -141,9 +149,8 @@ static const char* usage  = "usage: %s [[option] [...]]\n"
 							"\tgi         get user identity (using IDENT protocol)\n"
 							"\tnh         disable hostname lookups\n"
 							"\tnj         disable JavaScript support\n"
-							"\tns         disable Services (no services module)\n"
-							"\tlt         use local timezone (do not assume UTC/GMT)\n"
-							"\tdefaults   show default settings\n"
+							"\tlt         use local timezone (do not force UTC/GMT)\n"
+							"\tdefaults   show default settings and options\n"
 							;
 
 static void lputs(char *str)
@@ -736,10 +743,14 @@ int main(int argc, char** argv)
 			printf("Telnet server port:\t%u\n",IPPORT_TELNET);
 			printf("Telnet first node:\t%u\n",bbs_startup.first_node);
 			printf("Telnet last node:\t%u\n",bbs_startup.last_node);
+			printf("Telnet server options:\t0x%08lX\n",bbs_startup.options);
 			printf("FTP server port:\t%u\n",IPPORT_FTP);
-			printf("SMTP server port:\t%u\n",IPPORT_SMTP);
-			printf("SMTP relay port:\t%u\n",IPPORT_SMTP);
-			printf("POP3 server port:\t%u\n",IPPORT_POP3);
+			printf("FTP server options:\t0x%08lX\n",ftp_startup.options);
+			printf("Mail SMTP server port:\t%u\n",IPPORT_SMTP);
+			printf("Mail SMTP relay port:\t%u\n",IPPORT_SMTP);
+			printf("Mail POP3 server port:\t%u\n",IPPORT_POP3);
+			printf("Mail server options:\t0x%08lX\n",mail_startup.options);
+			printf("Services options:\t0x%08lX\n",services_startup.options);
 			return(0);
 		}
 		switch(toupper(*(arg++))) {
@@ -784,20 +795,22 @@ int main(int argc, char** argv)
 					}
 				break;
 #endif
-			case 'A':
-				switch(toupper(*(arg++))) {
-					case 'L': /* Auto-logon via IP */
-						bbs_startup.options|=BBS_OPT_AUTO_LOGON;
-						break;
-					default:
-						printf(usage,argv[0]);
-						return(0);
-				}
-				break;
 			case 'T':	/* Telnet settings */
 				switch(toupper(*(arg++))) {
 					case 'D': /* debug output */
 						bbs_startup.options|=BBS_OPT_DEBUG_TELNET;
+						break;
+					case 'A': /* Auto-logon via IP */
+						bbs_startup.options|=BBS_OPT_AUTO_LOGON;
+						break;
+					case 'Q': /* No QWK events */
+						bbs_startup.options|=BBS_OPT_NO_QWK_EVENTS;
+						break;
+					case 'C': /* Sysop available for chat */
+						bbs_startup.options|=BBS_OPT_SYSOP_AVAILABLE;
+						break;
+					case 'O': /* Set options */
+						bbs_startup.options=strtoul(arg,NULL,0);
 						break;
 					case 'P':
 						bbs_startup.telnet_port=atoi(arg);
@@ -834,6 +847,67 @@ int main(int argc, char** argv)
 						break;
 					case 'P':
 						ftp_startup.port=atoi(arg);
+						break;
+					case 'O': /* Set options */
+						ftp_startup.options=strtoul(arg,NULL,0);
+						break;
+					default:
+						printf(usage,argv[0]);
+						return(0);
+				}
+				break;
+			case 'M':	/* Mail */
+				switch(toupper(*(arg++))) {
+					case '-':
+						run_mail=FALSE;
+						break;
+					case 'O': /* Set options */
+						mail_startup.options=strtoul(arg,NULL,0);
+						break;
+					case 'S':	/* SMTP/SendMail */
+						if(isdigit(*arg)) {
+							mail_startup.smtp_port=atoi(arg);
+							break;
+						}
+						switch(toupper(*(arg++))) {
+							case '-':
+								mail_startup.options|=MAIL_OPT_NO_SENDMAIL;
+								break;
+							default:
+								printf(usage,argv[0]);
+								return(0);
+						}
+						break;
+					case 'P':	/* POP3 */
+						if(isdigit(*arg)) {
+							mail_startup.pop3_port=atoi(arg);
+							break;
+						}
+						switch(toupper(*(arg++))) {
+							case '-':
+								mail_startup.options&=~MAIL_OPT_ALLOW_POP3;
+								break;
+							default:
+								printf(usage,argv[0]);
+								return(0);
+						}
+						break;
+					case 'R': /* Relay */
+						mail_startup.relay_port=atoi(arg);
+						mail_startup.options|=MAIL_OPT_RELAY_TX;
+						break;
+					default:
+						printf(usage,argv[0]);
+						return(0);
+				}
+				break;
+			case 'S':	/* Services */
+				switch(toupper(*(arg++))) {
+					case '-':
+						run_services=FALSE;
+						break;
+					case 'O': /* Set options */
+						services_startup.options=strtoul(arg,NULL,0);
 						break;
 					default:
 						printf(usage,argv[0]);
@@ -872,38 +946,6 @@ int main(int argc, char** argv)
 								,sizeof(services_startup.host_name)-1);
 						}
 						printf("Setting hostname: %s\n",bbs_startup.host_name);
-						break;
-					default:
-						printf(usage,argv[0]);
-						return(0);
-				}
-				break;
-			case 'S':	/* SMTP/SendMail */
-				switch(toupper(*(arg++))) {
-					case '-':
-						mail_startup.options|=MAIL_OPT_NO_SENDMAIL;
-						break;
-					case 'P':
-						mail_startup.smtp_port=atoi(arg);
-						break;
-					case 'R':
-					    mail_startup.relay_port=atoi(arg);
-						break;
-					case 'A': /* Sysop available for chat */
-						bbs_startup.options|=BBS_OPT_SYSOP_AVAILABLE;
-						break;
-					default:
-						printf(usage,argv[0]);
-						return(0);
-				}
-				break;
-			case 'P':	/* POP3 */
-				switch(toupper(*(arg++))) {
-					case '-':
-						mail_startup.options&=~MAIL_OPT_ALLOW_POP3;
-						break;
-					case 'P':
-						mail_startup.pop3_port=atoi(arg);
 						break;
 					default:
 						printf(usage,argv[0]);
@@ -951,16 +993,6 @@ int main(int argc, char** argv)
 						return(0);
 				}
 				break;
-			case 'M':	/* Mail */
-				switch(toupper(*(arg++))) {
-					case '-':
-						run_mail=FALSE;
-						break;
-					default:
-						printf(usage,argv[0]);
-						return(0);
-				}
-				break;
 			case 'N':	/* No */
 				switch(toupper(*(arg++))) {
 					case 'F':	/* FTP Server */
@@ -972,7 +1004,7 @@ int main(int argc, char** argv)
 					case 'S':	/* Services */
 						run_services=FALSE;
 						break;
-					case 'Q':	/* QWK events */
+					case 'Q': /* No QWK events */
 						bbs_startup.options		|=BBS_OPT_NO_QWK_EVENTS;
 						break;
 					case 'H':	/* Hostname lookup */
