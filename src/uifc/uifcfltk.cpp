@@ -1268,7 +1268,7 @@ void help()
 					"         %s",p,helpline,api->helpixbfile);
 			else {
 				if((fp=fopen(api->helpdatfile,"rb"))==NULL)
-					sprintf(hbuf," ERROR  Cannot open help file:\r\n          %s"
+					sprintf(hbuf," ERROR  Cannot open help file:\n          %s"
 						,api->helpdatfile);
 				else {
 					fseek(fp,l,SEEK_SET);
@@ -1321,6 +1321,8 @@ void help()
 	HelpWin->show();
 
 	for(j=0;j<len;j++) {
+		if(hbuf[j]=='\r')	/* don't display <cr> */
+			continue;
 		if(hbuf[j]==2 || hbuf[j]=='~') { /* Ctrl-b toggles inverse */
 			if(inverse)
 				inverse=0;
