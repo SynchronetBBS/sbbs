@@ -688,7 +688,8 @@ js_strftime(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	struct tm*	tm_p;
 
 	fmt=JS_GetStringBytes(JS_ValueToString(cx, argv[0]));
-	JS_ValueToInt32(cx,argv[1],&t);
+	if(argc)
+		JS_ValueToInt32(cx,argv[1],(int32*)&t);
 
 	strcpy(str,"-Invalid time-");
 	tm_p=localtime(&t);

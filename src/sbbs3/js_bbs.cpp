@@ -2438,7 +2438,7 @@ js_getnstime(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_FALSE);
 
 	if(argc)
-		JS_ValueToInt32(cx,argv[0],&t);
+		JS_ValueToInt32(cx,argv[0],(int32*)&t);
 
 	if(sbbs->inputnstime(&t)==true)
 		*rval = INT_TO_JSVAL(t);
