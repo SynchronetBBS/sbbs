@@ -169,6 +169,7 @@ public:
 	void	hangup(void);		   // Hangup modem
 
 
+	void	send_telnet_cmd(uchar cmd, uchar opt);
     uchar	telnet_cmd[10];
     int		telnet_cmdlen;
 	ulong	telnet_mode;
