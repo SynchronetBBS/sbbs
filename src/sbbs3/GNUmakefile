@@ -1,7 +1,7 @@
 # GNUmakefile
 
 #########################################################################
-# Makefile for Synchronet BBS 											#
+# Makefile for Synchronet BBS for Unix									#
 # For use with GNU make and GNU C Compiler or Borland Kylix C++			#
 # @format.tab-size 4, @format.use-tabs true								#
 #																		#
@@ -18,6 +18,12 @@ ifndef DEBUG
  ifndef RELEASE
   DEBUG	:=	1
  endif
+endif
+
+ifdef DEBUG
+ BUILD	=	"debug"
+else
+ BUILD	=	"release"
 endif
 
 ifdef bcc
@@ -56,8 +62,8 @@ else
  endif
 endif
 
-LIBODIR :=	$(CCPRE).$(os).lib
-EXEODIR :=	$(CCPRE).$(os).exe
+LIBODIR :=	$(CCPRE).$(os).lib.$(BUILD)
+EXEODIR :=	$(CCPRE).$(os).exe.$(BUILD)
 
 DELETE	=	rm -f
 
@@ -92,51 +98,12 @@ ifdef DEBUG
   CFLAGS	+=	-ggdb
  endif
  CFLAGS  +=	-D_DEBUG
- LIBODIR	:=	$(LIBODIR).debug
- EXEODIR	:=	$(EXEODIR).debug
-
- ifdef JSLIB
-  LIBS	+=	$(JSLIB)
- else
-  ifeq ($(os),freebsd)
-   LIBS	+=	../mozilla/js/src/FreeBSD4.3-RELEASE_DBG.OBJ/libjs.a
-  else
-   ifeq ($(os),openbsd)
-    LIBS	+=	../mozilla/js/src/OpenBSD3.1_DBG.OBJ/libjs.a
-   else
-    ifeq ($(os),linux)
-     LIBS	+=	../mozilla/js/src/Linux_All_DBG.OBJ/libjs.a
-   else
-    ifeq ($(os),sunos)
-     LIBS	+=	../mozilla/js/src/SunOS5.8_i86pc_DBG.OBJ/libjs.a
-    else
-     $(warning JavaScript library path for '$(os)' not defined.)
-    endif
-   endif
-  endif
- endif
 endif
 
-else # RELEASE
- LIBODIR	:=	$(LIBODIR).release
- EXEODIR	:=	$(EXEODIR).release
- ifdef JSLIB
-  LIBS	+=	$(JSLIB)
- else
-  ifeq ($(os),freebsd)
-   LIBS	+=	../mozilla/js/src/FreeBSD4.3-RELEASE_OPT.OBJ/libjs.a
-  else
-   ifeq ($(os),openbsd)
-    LIBS	+=	../mozilla/js/src/OpenBSD3.1_OPT.OBJ/libjs.a
-   else
-    ifeq ($(os),linux)
-     LIBS	+=	../mozilla/js/src/Linux_All_OPT.OBJ/libjs.a
-    else
-     $(warning JavaScript library path for '$(os)' not defined.)
-    endif
-   endif
-  endif
- endif
+ifdef JSLIB
+ LIBS	+=	$(JSLIB)
+else
+ LIBS	+=	../../lib/mozilla/js/$(os).$(BUILD)/libjs.a
 endif
 
 include targets.mk		# defines all targets
