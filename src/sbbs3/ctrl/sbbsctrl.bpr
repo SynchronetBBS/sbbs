@@ -24,7 +24,7 @@
     <PACKAGES value="vcl50.bpi vclx50.bpi vcljpg50.bpi bcbsmp50.bpi vclmid50.bpi vcldb50.bpi 
       vclbde50.bpi inet50.bpi inetdb50.bpi vcldbx50.bpi qrpt50.bpi teeui50.bpi 
       teedb50.bpi tee50.bpi dss50.bpi nmfast50.bpi dclocx50.bpi"/>
-    <PATHCPP value=".;..\..\sbbs3"/>
+    <PATHCPP value=".;.."/>
     <PATHPAS value=".;"/>
     <PATHRC value=".;"/>
     <PATHASM value=".;"/>
@@ -34,14 +34,14 @@
     <USERDEFINES value="SBBS;SMB_GETMSGTXT;_DEBUG"/>
     <SYSDEFINES value="NO_STRICT;_VIS_NOLIB"/>
     <MAINSOURCE value="sbbsctrl.cpp"/>
-    <INCLUDEPATH value="C:\Borland\CBuilder5\Projects;..;$(BCB)\include;$(BCB)\include\vcl"/>
+    <INCLUDEPATH value="..\;C:\Borland\CBuilder5\Projects;..;$(BCB)\include;$(BCB)\include\vcl"/>
     <LIBPATH value="..\;C:\Borland\CBuilder5\Projects;$(BCB)\lib\obj;$(BCB)\lib"/>
     <WARNINGS value="-w-par -w-csu"/>
     <WARNOPTSTR value=""/>
   </MACROS>
   <OPTIONS>
-    <IDLCFLAGS value="-IC:\Borland\CBuilder5\Projects -I.. -I$(BCB)\include -I$(BCB)\include\vcl 
-      -src_suffix cpp -DSBBS -DSMB_GETMSGTXT -D_DEBUG -boa"/>
+    <IDLCFLAGS value="-I..\. -IC:\Borland\CBuilder5\Projects -I.. -I$(BCB)\include 
+      -I$(BCB)\include\vcl -src_suffix cpp -DSBBS -DSMB_GETMSGTXT -D_DEBUG -boa"/>
     <CFLAG1 value="-Od -H=$(BCB)\lib\vcl50.csm -Hc -Vx -Ve -X- -r- -a8 -b- -k -y -v -vi- -c 
       -tW -tWM"/>
     <PFLAGS value="-$Y+ -$W -$O- -v -JPHNE -M"/>
