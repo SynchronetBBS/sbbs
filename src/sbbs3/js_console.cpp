@@ -1010,6 +1010,25 @@ js_lock_input(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
     return(JS_TRUE);
 }
 
+static JSBool
+js_telnet_cmd(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	sbbs_t*		sbbs;
+	int32		cmd,opt;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	JS_ValueToInt32(cx,argv[0],&cmd);
+	JS_ValueToInt32(cx,argv[0],&opt);
+
+	sbbs->send_telnet_cmd((uchar)cmd,(uchar)opt);
+
+	*rval=JSVAL_VOID;
+    return(JS_TRUE);
+}
+
+
 static jsMethodSpec js_console_functions[] = {
 	{"inkey",			js_inkey,			0, JSTYPE_STRING,	JSDOCSTR("[number mode]")
 	,JSDOCSTR("get a single key, no wait")
@@ -1120,6 +1139,9 @@ static jsMethodSpec js_console_functions[] = {
 	},
 	{"lock_input",		js_lock_input,		1, JSTYPE_VOID,		JSDOCSTR("[boolean lock]")
 	,JSDOCSTR("Lock the user input thread (allowing direct client socket access)")
+	},
+	{"telnet_cmd",		js_telnet_cmd,		2, JSTYPE_VOID,		JSDOCSTR("number cmd [,number option]")
+	,JSDOCSTR("Send telnet command (with optional command option) to remote client")
 	},
 	{0}
 };
