@@ -588,6 +588,19 @@ js_clear(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 }
 
 static JSBool
+js_home(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	sbbs->cursor_home();
+	*rval=JSVAL_VOID;
+    return(JS_TRUE);
+}
+
+static JSBool
 js_clearline(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	sbbs_t*		sbbs;
@@ -596,6 +609,19 @@ js_clearline(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_FALSE);
 
 	sbbs->clearline();
+	*rval=JSVAL_VOID;
+    return(JS_TRUE);
+}
+
+static JSBool
+js_cleartoeol(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	sbbs->cleartoeol();
 	*rval=JSVAL_VOID;
     return(JS_TRUE);
 }
@@ -900,7 +926,7 @@ js_ansi(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 }
 
 static JSBool
-js_ansi_save(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+js_pushxy(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	sbbs_t*		sbbs;
 
@@ -913,7 +939,7 @@ js_ansi_save(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 }
 
 static JSBool
-js_ansi_restore(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+js_popxy(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	sbbs_t*		sbbs;
 
@@ -926,7 +952,7 @@ js_ansi_restore(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 }
 
 static JSBool
-js_ansi_gotoxy(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+js_gotoxy(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	int32		x=1,y=1;
 	jsval		val;
@@ -952,7 +978,7 @@ js_ansi_gotoxy(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 
 
 static JSBool
-js_ansi_getxy(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+js_getxy(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	sbbs_t*		sbbs;
 	int			x,y;
@@ -975,9 +1001,21 @@ js_ansi_getxy(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
     return(JS_TRUE);
 }
 
+static JSBool
+js_cursor_home(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	sbbs->cursor_home();
+	*rval=JSVAL_VOID;
+    return(JS_TRUE);
+}
 
 static JSBool
-js_ansi_up(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+js_cursor_up(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	int32		val=1;
 	sbbs_t*		sbbs;
@@ -985,17 +1023,14 @@ js_ansi_up(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	if(argc) {
-		JS_ValueToInt32(cx,argv[0],&val);
-		sbbs->rprintf("\x1b[%dA",val);
-	} else
-		sbbs->rputs("\x1b[A");
+	JS_ValueToInt32(cx,argv[0],&val);
+	sbbs->cursor_up(val);
 	*rval=JSVAL_VOID;
     return(JS_TRUE);
 }
 
 static JSBool
-js_ansi_down(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+js_cursor_down(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	int32		val=1;
 	sbbs_t*		sbbs;
@@ -1003,17 +1038,14 @@ js_ansi_down(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	if(argc) {
-		JS_ValueToInt32(cx,argv[0],&val);
-		sbbs->rprintf("\x1b[%dB",val);
-	} else
-		sbbs->rputs("\x1b[B");
+	JS_ValueToInt32(cx,argv[0],&val);
+	sbbs->cursor_down(val);
 	*rval=JSVAL_VOID;
     return(JS_TRUE);
 }
 
 static JSBool
-js_ansi_right(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+js_cursor_right(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	int32		val=1;
 	sbbs_t*		sbbs;
@@ -1021,17 +1053,14 @@ js_ansi_right(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	if(argc) {
-		JS_ValueToInt32(cx,argv[0],&val);
-		sbbs->rprintf("\x1b[%dC",val);
-	} else
-		sbbs->rputs("\x1b[C");
+	JS_ValueToInt32(cx,argv[0],&val);
+	sbbs->cursor_right(val);
 	*rval=JSVAL_VOID;
     return(JS_TRUE);
 }
 
 static JSBool
-js_ansi_left(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+js_cursor_left(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	int32		val=1;
 	sbbs_t*		sbbs;
@@ -1039,17 +1068,14 @@ js_ansi_left(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	if(argc) {
-		JS_ValueToInt32(cx,argv[0],&val);
-		sbbs->rprintf("\x1b[%dD",val);
-	} else
-		sbbs->rputs("\x1b[D");
+	JS_ValueToInt32(cx,argv[0],&val);
+	sbbs->cursor_left(val);
 	*rval=JSVAL_VOID;
     return(JS_TRUE);
 }
 
 static JSBool
-js_ansi_getlines(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+js_getlines(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	sbbs_t*		sbbs;
 
@@ -1140,10 +1166,16 @@ static jsMethodSpec js_console_functions[] = {
 	,JSDOCSTR("print a mnemonics string")
 	},		
 	{"clear",           js_clear,			0, JSTYPE_VOID,		""
-	,JSDOCSTR("clear screen")
-	},		
+	,JSDOCSTR("clear screen and home cursor")
+	},
+	{"home",            js_cursor_home,		0, JSTYPE_VOID,		""
+	,JSDOCSTR("send cursor to home position (x,y:1,1)")
+	},
 	{"clearline",       js_clearline,		0, JSTYPE_VOID,		""
 	,JSDOCSTR("clear current line")
+	},		
+	{"cleartoeol",      js_cleartoeol,		0, JSTYPE_VOID,		""
+	,JSDOCSTR("clear to end-of-line (ANSI)")
 	},		
 	{"crlf",            js_crlf,			0, JSTYPE_VOID,		""
 	,JSDOCSTR("output a carriage-return/line-feed pair (new-line)")
@@ -1191,44 +1223,44 @@ static jsMethodSpec js_console_functions[] = {
 	{"ansi",			js_ansi,			1, JSTYPE_STRING,	JSDOCSTR("number attribute")
 	,JSDOCSTR("returns ANSI encoding of specified attribute")
 	},		
-	{"pushxy",			js_ansi_save,		0, JSTYPE_ALIAS	},
-	{"ansi_pushxy",		js_ansi_save,		0, JSTYPE_ALIAS	},
-	{"ansi_save",		js_ansi_save,		0, JSTYPE_VOID,		""
-	,JSDOCSTR("save current cursor position (AKA ansi_pushxy)")
+	{"ansi_save",		js_pushxy,			0, JSTYPE_ALIAS	},
+	{"ansi_pushxy",		js_pushxy,			0, JSTYPE_ALIAS	},
+	{"pushxy",			js_pushxy,			0, JSTYPE_VOID,		""
+	,JSDOCSTR("save current cursor position (AKA ansi_save)")
 	},
-	{"popxy",			js_ansi_restore,	0, JSTYPE_ALIAS },
-	{"ansi_popxy",		js_ansi_restore,	0, JSTYPE_ALIAS },
-	{"ansi_restore",	js_ansi_restore,	0, JSTYPE_VOID,		""
-	,JSDOCSTR("restore saved cursor position (AKA ansi_popxy)")
+	{"ansi_restore",	js_popxy,			0, JSTYPE_ALIAS },
+	{"ansi_popxy",		js_popxy,			0, JSTYPE_ALIAS },
+	{"popxy",			js_popxy,			0, JSTYPE_VOID,		""
+	,JSDOCSTR("restore saved cursor position (AKA ansi_restore)")
 	},
-	{"gotoxy",			js_ansi_gotoxy,		1, JSTYPE_ALIAS },
-	{"ansi_gotoxy",		js_ansi_gotoxy,		1, JSTYPE_VOID,		JSDOCSTR("number x,y")
+	{"ansi_gotoxy",		js_gotoxy,			1, JSTYPE_ALIAS },
+	{"gotoxy",			js_gotoxy,			1, JSTYPE_VOID,		JSDOCSTR("number x,y")
 	,JSDOCSTR("Move cursor to a specific screen coordinate (ANSI), "
 	"arguments can be separate x and y cooridinates or an object with x and y properites "
 	"(like that returned from <tt>console.getxy()</tt>)")
 	},
-	{"up",				js_ansi_up,			0, JSTYPE_ALIAS },
-	{"ansi_up",			js_ansi_up,			0, JSTYPE_VOID,		JSDOCSTR("[number rows]")
+	{"ansi_up",			js_cursor_up,		0, JSTYPE_ALIAS },
+	{"up",				js_cursor_up,		0, JSTYPE_VOID,		JSDOCSTR("[number rows]")
 	,JSDOCSTR("Move cursor up one or more rows (ANSI)")
 	},
-	{"down",			js_ansi_down,		0, JSTYPE_ALIAS },
-	{"ansi_down",		js_ansi_down,		0, JSTYPE_VOID,		JSDOCSTR("[number rows]")
+	{"ansi_down",		js_cursor_down,		0, JSTYPE_ALIAS },
+	{"down",			js_cursor_down,		0, JSTYPE_VOID,		JSDOCSTR("[number rows]")
 	,JSDOCSTR("Move cursor down one or more rows (ANSI)")
 	},
-	{"right",			js_ansi_right,		0, JSTYPE_ALIAS },
-	{"ansi_right",		js_ansi_right,		0, JSTYPE_VOID,		JSDOCSTR("[number columns]")
+	{"ansi_right",		js_cursor_right,	0, JSTYPE_ALIAS },
+	{"right",			js_cursor_right,	0, JSTYPE_VOID,		JSDOCSTR("[number columns]")
 	,JSDOCSTR("Move cursor right one or more columns (ANSI)")
 	},
-	{"left",			js_ansi_left,		0, JSTYPE_ALIAS },
-	{"ansi_left",		js_ansi_left,		0, JSTYPE_VOID,		JSDOCSTR("[number columns]")
+	{"ansi_left",		js_cursor_left,		0, JSTYPE_ALIAS },
+	{"left",			js_cursor_left,		0, JSTYPE_VOID,		JSDOCSTR("[number columns]")
 	,JSDOCSTR("Move cursor left one or more columns (ANSI)")
 	},
-	{"getlines",		js_ansi_getlines,	0, JSTYPE_ALIAS },
-	{"ansi_getlines",	js_ansi_getlines,	0, JSTYPE_VOID,		""
+	{"ansi_getlines",	js_getlines,		0, JSTYPE_ALIAS },
+	{"getlines",		js_getlines,		0, JSTYPE_VOID,		""
 	,JSDOCSTR("Auto-detect the number of rows/lines on the user's terminal (ANSI)")
 	},
-	{"getxy",			js_ansi_getxy,		0, JSTYPE_ALIAS },
-	{"ansi_getxy",		js_ansi_getxy,		0, JSTYPE_OBJECT,	""
+	{"ansi_getxy",		js_getxy,			0, JSTYPE_ALIAS },
+	{"getxy",			js_getxy,			0, JSTYPE_OBJECT,	""
 	,JSDOCSTR("Returns the current cursor position as an object (with x and y properties)")
 	},
 	{"lock_input",		js_lock_input,		1, JSTYPE_VOID,		JSDOCSTR("[boolean lock]")
