@@ -121,6 +121,8 @@ int ulist(int mode, char left, int top, char width, int *cur, int *bar
     int freecnt;
     int i;
 	int	scrollpos;
+	int height=14;	/* default menu height */
+	size_t app_title_len;
     char **it;
     char str[128];
     int ret;
@@ -146,7 +148,7 @@ int ulist(int mode, char left, int top, char width, int *cur, int *bar
 
     cnt2 = 0;
     for(i=0;i<cnt;i++)  {
-		sprintf(it[cnt2++],"%d",i+1);
+		sprintf(it[cnt2++],"%u",i+1);
 		strcpy(it[cnt2++],option[i]);
 
 		/* Adjust width if it's too small */
@@ -162,7 +164,7 @@ int ulist(int mode, char left, int top, char width, int *cur, int *bar
 	}
 
     if(mode&WIN_INS)  {
-		strcpy(it[cnt2++],"I");
+		strcpy(it[cnt2++],"A");	/* Changed from "I" */
         strcpy(it[cnt2++],"Add New");
 		cnt++;
     }
@@ -181,9 +183,14 @@ int ulist(int mode, char left, int top, char width, int *cur, int *bar
         strcpy(it[cnt2++],"Paste");
 		cnt++;
     }
-    if(width<strlen(title)+4) width=strlen(title)+4;
+    if(width<strlen(title)+4) 
+		width=strlen(title)+4;
+	app_title_len=strlen(app_title);
 
     if(*cur<0 || *cur>cnt)*cur=0;
+
+	if(height>cnt)
+		height=cnt; /* no reason to display overly "tall" menus */
 
     do {
         i=*cur;
@@ -194,7 +201,7 @@ int ulist(int mode, char left, int top, char width, int *cur, int *bar
 	    	else
 				ret=dialog_noyes((char*)NULL,title,5,width);
 	
-/*          what is this line doing? -1 is ESC, which should not be the same as "No".
+/*          What is this line doing? -1 is ESC, which should not be the same as "No".
  *	    	if(ret) ret=1; else ret=0;
  */
 		}
@@ -209,19 +216,19 @@ int ulist(int mode, char left, int top, char width, int *cur, int *bar
 #endif
 		else  {
 			/* make sure we're wide enough to display the application title */
-			if(width<strlen(app_title))
-				width=strlen(app_title);
+			if(width<app_title_len+4)
+				width=app_title_len+4;
             dialog_clear_norefresh();
 			scrollpos=0;
-			if(i>14)
-				scrollpos=i-14;
-            ret=dialog_menu(app_title, title, 22, width, 14, cnt, it, str, &i, &scrollpos);
+			if(i>height)
+				scrollpos=i-height;
+            ret=dialog_menu(app_title, title, 22, width, height, cnt, it, str, &i, &scrollpos);
             if(ret==1)  {
 				ret = -1;
 				*cur = -1;
 			}
             if(ret==0)  {
-				if(str[0]=='I') ret=-2;
+				if(str[0]=='A') ret=-2;
 				else if(str[0]=='D') ret=-3;
 				else if(str[0]=='C') ret=-4;
 				else if(str[0]=='P') ret=-5;
@@ -234,7 +241,7 @@ int ulist(int mode, char left, int top, char width, int *cur, int *bar
         if(ret==-2)  {
             dialog_clear_norefresh();
 			if(freecnt-4>0)  {
-	        	ret=dialog_menu(title, "Insert Where?", 22, width, 14, freecnt-4, it, str, 0, 0);
+	        	ret=dialog_menu(title, "Insert Where?", 22, width, height, freecnt-4, it, str, 0, 0);
 				if(ret==0)  {
 					*cur=atoi(str)-1;
 					ret=*cur|MSK_INS;
@@ -248,7 +255,7 @@ int ulist(int mode, char left, int top, char width, int *cur, int *bar
         if(ret==-3)  {
             dialog_clear_norefresh();
 			if(freecnt-4>0)  {
-	        	ret=dialog_menu(title, "Delete Which?", 22, width, 14, freecnt-4, it, str, 0, 0);
+	        	ret=dialog_menu(title, "Delete Which?", 22, width, height, freecnt-4, it, str, 0, 0);
 				if(ret==0)  {
 					*cur=atoi(str)-1;
 					ret=*cur|MSK_DEL;
@@ -262,7 +269,7 @@ int ulist(int mode, char left, int top, char width, int *cur, int *bar
         if(ret==-4)  {
             dialog_clear_norefresh();
 			if(freecnt-4>0)  {
-	        	ret=dialog_menu(title, "Copy Which?", 22, width, 14, freecnt-4, it, str, 0, 0);
+	        	ret=dialog_menu(title, "Copy Which?", 22, width, height, freecnt-4, it, str, 0, 0);
 				if(ret==0)  {
 					*cur=atoi(str)-1;
 					ret=*cur|MSK_GET;
@@ -276,7 +283,7 @@ int ulist(int mode, char left, int top, char width, int *cur, int *bar
         if(ret==-5)  {
             dialog_clear_norefresh();
 			if(freecnt-4>0)  {
-	        	ret=dialog_menu(title, "Paste Where?", 22, width, 14, freecnt-4, it, str, 0, 0);
+	        	ret=dialog_menu(title, "Paste Where?", 22, width, height, freecnt-4, it, str, 0, 0);
 				if(ret==0)  {
 					*cur=atoi(str)-1;
 					ret=*cur|MSK_PUT;
