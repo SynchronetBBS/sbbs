@@ -98,6 +98,7 @@ struct {
 	BOOL cvs;
 	char cvstag[256];
 	char cvsroot[256];
+	char make_cmdline[128];
 } params; /* Build parameters */
 
 #define MAKEFILE "/tmp/SBBSmakefile"
@@ -109,13 +110,6 @@ char tmp[256];
 char error[256];
 char cflags[MAX_PATH+1];
 char cvsroot[MAX_PATH+1];
-char make_cmdline[128]=
-#if defined(__linux__)
-	"make"
-#else
-	"gmake"
-#endif
-	" install -f install/GNUmakefile";
 
 int  backup_level=5;
 BOOL keep_makefile=FALSE;
@@ -165,14 +159,21 @@ int main(int argc, char **argv)
 	/************/
 	/* Defaults */
 	/************/
-	strcpy(params.install_path,"/usr/local/sbbs");
+	SAFECOPY(params.install_path,"/usr/local/sbbs");
+	SAFECOPY(params.make_cmdline,
+#if defined(__linux__)
+		"make"
+#else
+		"gmake"
+#endif
+		" install -f install/GNUmakefile";
 	params.usebcc=FALSE;
-	strcpy(params.cflags,"");
+	SAFECOPY(params.cflags,"");
 	params.debug=FALSE;
 	params.symlink=TRUE;
 	params.cvs=TRUE;
-	strcpy(params.cvstag,"HEAD");
-	strcpy(params.cvsroot,DEFAULT_CVSROOT);
+	SAFECOPY(params.cvstag,"HEAD");
+	SAFECOPY(params.cvsroot,DEFAULT_CVSROOT);
 
     printf("\r\nSynchronet Installation Utility (%s)  v%s  Copyright 2003 "
         "Rob Swindell\r\n",PLATFORM_DESC,VERSION);
@@ -282,7 +283,7 @@ int main(int argc, char **argv)
 		sprintf(mopt[i++],"%-27.27s%s","Compiler Flags",params.cflags);
 		sprintf(mopt[i++],"%-27.27s%s","Debug Build",params.debug?"Yes":"No");
 		sprintf(mopt[i++],"%-27.27s%s","Symlink Binaries",params.symlink?"Yes":"No");
-		sprintf(mopt[i++],"%-27.27s%s","Make Command-line",make_cmdline);
+		sprintf(mopt[i++],"%-27.27s%s","Make Command-line",params.make_cmdline);
 		sprintf(mopt[i++],"%-27.27s","Start Installation...");
 		mopt[i][0]=0;
 
@@ -370,7 +371,7 @@ int main(int argc, char **argv)
 			case 7:
 				uifc.helpbuf=	"`Make Command-line`\n"
 								"\n";
-				uifc.input(WIN_MID,0,0,"Make Command-line",params.install_path,60,K_EDIT);
+				uifc.input(WIN_MID,0,0,"Command",params.make_cmdline,60,K_EDIT);
 				break;
 			case 8:
 				install_sbbs(distlist[dist],distlist[dist]->type==LOCAL_FILE?NULL:distlist[dist]->servers[server]);
@@ -447,7 +448,7 @@ void install_sbbs(struct dist_t *dist,struct server_ent_t *server)  {
 				printf("Could not checkout install makefile.\n");
 				exit(EXIT_FAILURE);
 			}
-			if(system(make_cmdline))  {
+			if(system(params.make_cmdline))  {
 				printf(MAKE_ERROR);
 				exit(EXIT_FAILURE);
 			}
@@ -487,7 +488,7 @@ void install_sbbs(struct dist_t *dist,struct server_ent_t *server)  {
 				}
 				unlink(dist->files[i]);
 			}
-			if(system(make_cmdline))  {
+			if(system(params.make_cmdline))  {
 				printf(MAKE_ERROR);
 				exit(EXIT_FAILURE);
 			}
@@ -501,7 +502,7 @@ void install_sbbs(struct dist_t *dist,struct server_ent_t *server)  {
 					exit(EXIT_FAILURE);
 				}
 			}
-			if(system(make_cmdline))  {
+			if(system(params.make_cmdline))  {
 				printf(MAKE_ERROR);
 				exit(EXIT_FAILURE);
 			}
