@@ -11,7 +11,7 @@ function mail_get_name(strIn) {
 	var reName1 = /[^\"]*\"([^\"]*)\".*/	//quoted name
 	var reName2 = /(\S[^<]+)\s+<.*/			//unquoted name
 	var reName3 = /[^<]*<([^@>]+).*/		//first part of <email address>
-	var reName4 = /([^@]+)*@.*/				//first part of email address
+	var reName4 = /([^@]+)@.*/				//first part of email address
 	if (reName1.test(strIn)) return strIn.replace(reName1,"$1");
 	if (reName2.test(strIn)) return strIn.replace(reName2,"$1");
 	if (reName3.test(strIn)) return strIn.replace(reName3,"$1");
