@@ -1582,7 +1582,8 @@ int main(int argc, char **argv)
 						smb_close(&smb);
 						continue; 
 					}
-					smb.status.max_msgs=count;
+					smb.status.max_msgs=strtoul(cmd+1,NULL,0);
+					smb.status.max_crcs=count;
 					if((i=smb_create(&smb))!=0) {
 						smb_close(&smb);
 						printf("!Error %d (%s) creating %s\n",i,smb.last_error,smb.file);
