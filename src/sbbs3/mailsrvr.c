@@ -188,9 +188,9 @@ static void thread_down(void)
 		startup->thread_up(FALSE);
 }
 
-int open_socket(int type)
+SOCKET open_socket(int type)
 {
-	int sock;
+	SOCKET sock;
 
 	sock=socket(AF_INET, type, IPPROTO_IP);
 	if(sock!=INVALID_SOCKET && startup!=NULL && startup->socket_open!=NULL) 
