@@ -85,7 +85,7 @@ int DLLCALL lock(int fd, long pos, int len)
 	int	flags;
  	struct flock alock;
 
-	if((flags=fcntl(fd,F_GETFL))<0)
+	if((flags=fcntl(fd,F_GETFL))==-1)
 		return -1;
 
 	if(flags==O_RDONLY)
@@ -96,7 +96,9 @@ int DLLCALL lock(int fd, long pos, int len)
 	alock.l_start = pos;
 	alock.l_len = len;
 
-	return fcntl(fd, F_SETLK, &alock);
+	if(fcntl(fd, F_SETLK, &alock)==-1)
+		return(-1);
+	return(0);
 }
 
 /* Removes a lock from a file record */
@@ -108,7 +110,9 @@ int DLLCALL unlock(int fd, long pos, int len)
 	alock.l_whence = L_SET;
 	alock.l_start = pos;
 	alock.l_len = len;
-	return fcntl(fd, F_SETLK, &alock);
+	if(fcntl(fd, F_SETLK, &alock)==-1)
+		return(-1);
+	return(0);
 }
 
 /* Opens a file in specified sharing (file-locking) mode */
@@ -129,7 +133,7 @@ int DLLCALL sopen(char *fn, int access, int share)
 	alock.l_start = 0;
 	alock.l_len = 0;       // lock to EOF
 
-	if (fcntl(fd, F_SETLK, &alock) < 0) {
+	if (fcntl(fd, F_SETLK, &alock) == -1) {
 		close(fd);
 		return -1;
 	}
