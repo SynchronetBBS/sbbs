@@ -49,11 +49,6 @@
 /* Definitions */
 /***************/
 #define DEFAULT_CVSROOT		":pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs"
-#define DIST_LIST_URL1		"http://www.synchro.net/sbbsdist.lst"
-#define DIST_LIST_URL2		"http://rob.synchro.net/sbbsdist.lst"
-#define DIST_LIST_URL3		"http://cvs.synchro.net/sbbsdist.lst"
-#define DIST_LIST_URL4		"http://bbs.synchro.net/sbbsdist.lst"
-#define DIST_LIST_URL5		"http://freebsd.synchro.net/sbbsdist.lst"
 #define DEFAULT_DISTFILE	"sbbs_src.tgz"
 #define DEFAULT_LIBFILE		"lib-%s.tgz"	/* MUST HAVE ONE %s for system type (os-machine or just os) */
 #define DEFAULT_SYSTYPE		"unix"			/* If no other system type available, use this one */
@@ -67,6 +62,15 @@
 #else
 #define MAKE				"gmake"
 #endif
+
+char *distlists[]={
+	 "http://www.synchro.net/sbbsdist.lst"
+	,"http://rob.synchro.net/sbbsdist.lst"
+	,"http://cvs.synchro.net/sbbsdist.lst"
+	,"http://bbs.synchro.net/sbbsdist.lst"
+	,"http://freebsd.synchro.net/sbbsdist.lst"
+	,NULL	/* terminator */
+};
 
 /*******************/
 /* DistList Format */
@@ -658,12 +662,9 @@ get_distlist(void)
 	int		list=-1;
 	char	sep[2]={'\t',0};
 	char	str[1024];
-	char	error1[128];
-	char	error2[128];
-	char	error3[128];
-	char	error4[128];
-	char	error5[128];
+	char	errors[sizeof(distlists)/sizeof(char*)][128];
 
+	memset(errors,0,sizeof(errors));
 	if((dist=(dist_t **)MALLOC(sizeof(void *)*MAX_DISTRIBUTIONS))==NULL)
 		allocfail(sizeof(void *)*MAX_DISTRIBUTIONS);
 	for(i=0;i<MAX_DISTRIBUTIONS;i++)
@@ -698,28 +699,18 @@ get_distlist(void)
 
 	if(http_distlist) {
 		uifc.pop("Getting distributions");
-		if((list=http_get_fd(DIST_LIST_URL1,NULL,error1))<0
-				&& (list=http_get_fd(DIST_LIST_URL2,NULL,error2))<0
-				&& (list=http_get_fd(DIST_LIST_URL3,NULL,error3))<0
-				&& (list=http_get_fd(DIST_LIST_URL4,NULL,error4))<0
-				&& (list=http_get_fd(DIST_LIST_URL5,NULL,error5))<0
-				&& r==0)  {
-			uifc.pop(NULL);
-			uifc.bail();
-			printf("Cannot get distribution list!\n"
-				"%s\n- %s\n"
-				"%s\n- %s\n"
-				"%s\n- %s\n"
-				"%s\n- %s\n"
-				"%s\n- %s\n"
-				,DIST_LIST_URL1,error1
-				,DIST_LIST_URL2,error2
-				,DIST_LIST_URL3,error3
-				,DIST_LIST_URL4,error4
-				,DIST_LIST_URL5,error5
-				);
-			exit(EXIT_FAILURE);
+		for(i=0;distlists[i]!=NULL;i++)  {
+			if(http_get_fd(distlists[i],NULL,errors[i])>=0)
+				break;
 		}
+	}
+	uifc.pop(NULL);
+	if(list<0)  {
+		uifc.bail();
+		printf("Cannot get distribution list!\n");
+		for(i=0;distlists[i]!=NULL;i++)
+			printf("%s\n- %s\n",distlists[i],errors[i]);
+		exit(EXIT_FAILURE);
 	}
 
 	while(list>=0 && (sockreadline(list,in_line,sizeof(in_line),NULL)>=0))  {

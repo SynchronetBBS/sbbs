@@ -39,7 +39,8 @@ s ftp://ftp.synchro.net/			Official FTP server (T1)
 s ftp://vert.synchro.net/			Vertrauen FTP server (256kbps)
 s ftp://rob.synchro.net/			Vertrauen FTP server (256kbps)
 s ftp://cvs.synchro.net/			Vertrauen FTP server (256kbps)
-s ftp://freebsd.synchro.net/Synchronet/        	Deuce's FTP server (128kbps)
+s ftp://freebsd.synchro.net/Synchronet/			Deuce's FTP server (128kbps)
+s http://freebsd.synchro.net:2327/synchronet/		Deuce's FTP server (128kbps)
 
 C Version 3.10L beta from CVS (stable)
 t sbbs310L
