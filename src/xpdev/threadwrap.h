@@ -54,8 +54,12 @@ extern "C" {
 	#else
 		#include <semaphore.h>	/* POSIX semaphores */
 	#endif
-		ulong _beginthread(void( *start_address )( void * )
+
+	/* Win32 thread API wrappers */
+	ulong _beginthread(void( *start_address )( void * )
 			,unsigned stack_size, void *arglist);
+
+	#define GetCurrentThreadId()		pthread_self()
 
 #elif defined(_WIN32)	
 
@@ -63,12 +67,16 @@ extern "C" {
 	#include <limits.h>		/* INT_MAX */
 	#include <errno.h>		/* EAGAIN and EBUSY */
 
+	/* POSIX threads */
+	typedef DWORD pthread_t;
+	#define pthread_self()				GetCurrentThreadId()
+
 	/* POSIX semaphores */
 	typedef HANDLE sem_t;
 	#define sem_init(psem,ps,v)			*(psem)=CreateSemaphore(NULL,v,INT_MAX,NULL)
 	#define sem_wait(psem)				WaitForSingleObject(*(psem),INFINITE)
-	#define sem_trywait(psem)			(WaitForSingleObject(*(psem),0)==WAIT_OBJECT_0?0:EAGAIN)
-	#define sem_trywait_block(psem,t)	(WaitForSingleObject(*(psem),t)==WAIT_OBJECT_0?0:EAGAIN)
+	#define sem_trywait(psem)			(WaitForSingleObject(*(psem),0)==WAIT_OBJECT_0?0:(errno=EAGAIN,-1))
+	#define sem_trywait_block(psem,t)	(WaitForSingleObject(*(psem),t)==WAIT_OBJECT_0?0:(errno=EAGAIN,-1))
 	#define sem_post(psem)				ReleaseSemaphore(*(psem),1,NULL)
 	#define sem_destroy(psem)			CloseHandle(*(psem))
 	/* No Win32 implementation for sem_getvalue() */
