@@ -1175,6 +1175,7 @@ enum {
 	,SMB_PROP_FILE		
 	,SMB_PROP_DEBUG		
 	,SMB_PROP_RETRY_TIME
+	,SMB_PROP_RETRY_DELAY
 	,SMB_PROP_FIRST_MSG		// first message number
 	,SMB_PROP_LAST_MSG		// last message number
 	,SMB_PROP_TOTAL_MSGS 	// total messages
@@ -1200,7 +1201,10 @@ static JSBool js_msgbase_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 
 	switch(tiny) {
 		case SMB_PROP_RETRY_TIME:
-			p->smb.retry_time = JSVAL_TO_BOOLEAN(*vp);
+			p->smb.retry_time = JSVAL_TO_INT(*vp);
+			break;
+		case SMB_PROP_RETRY_DELAY:
+			p->smb.retry_delay = JSVAL_TO_INT(*vp);
 			break;
 		case SMB_PROP_DEBUG:
 			p->debug = JSVAL_TO_BOOLEAN(*vp);
@@ -1234,6 +1238,9 @@ static JSBool js_msgbase_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			break;
 		case SMB_PROP_RETRY_TIME:
 			*vp = INT_TO_JSVAL(p->smb.retry_time);
+			break;
+		case SMB_PROP_RETRY_DELAY:
+			*vp = INT_TO_JSVAL(p->smb.retry_delay);
 			break;
 		case SMB_PROP_DEBUG:
 			*vp = INT_TO_JSVAL(p->debug);
@@ -1290,6 +1297,7 @@ static struct JSPropertySpec js_msgbase_properties[] = {
 	{	"file"				,SMB_PROP_FILE			,SMB_PROP_FLAGS,	NULL,NULL},
 	{	"debug"				,SMB_PROP_DEBUG			,0,					NULL,NULL},
 	{	"retry_time"		,SMB_PROP_RETRY_TIME	,JSPROP_ENUMERATE,	NULL,NULL},
+	{	"retry_delay"		,SMB_PROP_RETRY_DELAY	,JSPROP_ENUMERATE,	NULL,NULL},
 	{	"first_msg"			,SMB_PROP_FIRST_MSG		,SMB_PROP_FLAGS,	NULL,NULL},
 	{	"last_msg"			,SMB_PROP_LAST_MSG		,SMB_PROP_FLAGS,	NULL,NULL},
 	{	"total_msgs"		,SMB_PROP_TOTAL_MSGS	,SMB_PROP_FLAGS,	NULL,NULL},
@@ -1308,6 +1316,7 @@ static char* msgbase_prop_desc[] = {
 	 "last occurred message base error - <small>READ ONLY</small>"
 	,"base path and filename of message base - <small>READ ONLY</small>"
 	,"message base open/lock retry timeout (in seconds)"
+	,"delay between message base open/lock retries (in milliseconds)"
 	,"first message number - <small>READ ONLY</small>"
 	,"last message number - <small>READ ONLY</small>"
 	,"total number of messages - <small>READ ONLY</small>"
@@ -1368,7 +1377,7 @@ static jsMethodSpec js_msgbase_functions[] = {
 	"</table>")
 	},
 	{"save_msg",		js_save_msg,		2, JSTYPE_BOOLEAN,	JSDOCSTR("object header, string body_text")
-	,JSDOCSTR("create a new message in message base, the header object may contain the following properties:<br>"
+	,JSDOCSTR("create a new message in message base, the <i>header</i> object may contain the following properties:<br>"
 	"<table>"
 	"<tr><td><tt>subject</tt><td>Message subject <i>(required)</i>"
 	"<tr><td><tt>to</tt><td>Recipient's name <i>(required)</i>"
