@@ -1486,8 +1486,10 @@ int main(int argc, char** argv)
 #endif
 
 #ifdef __unix__
-	if(getuid())  /*  are we running as a normal user?  */
-		bbs_lputs("!Started as non-root user.  Cannot bind() to ports below %u.", IPPORT_RESERVED);
+	if(getuid())  { /*  are we running as a normal user?  */
+		sprintf(str,"!Started as non-root user.  Cannot bind() to ports below %u.", IPPORT_RESERVED);
+		bbs_lputs(str);
+	}
 	
 	else if(new_uid_name[0]==0)   /*  check the user arg, if we have uid 0 */
 		bbs_lputs("Warning: No user account specified, running as root.");
