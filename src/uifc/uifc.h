@@ -42,6 +42,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <stdlib.h>
+#include <sys/param.h>	/* PATH_MAX */
 /* OS Specific */
 #if defined(_WIN32)
     #include <windows.h>
@@ -49,7 +50,6 @@
 #if !defined(__unix__)
     #include <io.h>
 	#include <malloc.h>		/* malloc prototype */
-	#include <sys/param.h>	/* PATH_MAX */
 #endif
 #if (defined(__unix__) || defined(_WIN32)) && !defined(__FLAT__)
     #define __FLAT__
