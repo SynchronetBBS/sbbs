@@ -1,8 +1,8 @@
 // Borland C++ Builder
-// Copyright (c) 1995, 1999 by Borland International
+// Copyright (c) 1995, 2002 by Borland Software Corporation
 // All rights reserved
 
-// (DO NOT EDIT: machine generated header) 'Emulvt.pas' rev: 5.00
+// (DO NOT EDIT: machine generated header) 'Emulvt.pas' rev: 6.00
 
 #ifndef EmulvtHPP
 #define EmulvtHPP
@@ -60,11 +60,9 @@ typedef TFuncKey TFuncKeysTable[64];
 
 typedef TFuncKey *PFuncKeysTable;
 
-typedef void __fastcall (__closure *TKeyBufferEvent)(System::TObject* Sender, char * Buffer, int Len
-	);
+typedef void __fastcall (__closure *TKeyBufferEvent)(System::TObject* Sender, char * Buffer, int Len);
 
-typedef void __fastcall (__closure *TKeyDownEvent)(System::TObject* Sender, int &VirtKey, Classes::TShiftState 
-	&Shift, bool &ShiftLock, char &ScanCode, bool &Ext);
+typedef void __fastcall (__closure *TKeyDownEvent)(System::TObject* Sender, int &VirtKey, Classes::TShiftState &Shift, bool &ShiftLock, char &ScanCode, bool &Ext);
 
 class DELPHICLASS TLine;
 class PASCALIMPLEMENTATION TLine : public System::TObject 
@@ -130,7 +128,10 @@ public:
 	char FCharSetG2;
 	char FCharSetG3;
 	bool FAllInvalid;
-	Windows::TRect FInvRect;
+	#pragma pack(push, 1)
+	Types::TRect FInvRect;
+	#pragma pack(pop)
+	
 	Classes::TNotifyEvent FOnCursorVisible;
 	__fastcall TScreen(void);
 	__fastcall virtual ~TScreen(void);
@@ -144,7 +145,7 @@ public:
 	TLine* __fastcall GetLines(int I);
 	void __fastcall WriteChar(char Ch);
 	void __fastcall WriteStr(AnsiString Str);
-	AnsiString __fastcall ReadStr(void);
+	AnsiString __fastcall ReadStr();
 	void __fastcall GotoXY(int X, int Y);
 	void __fastcall WriteLiteralChar(char Ch);
 	void __fastcall ProcessEscape(char EscCmd);
@@ -195,7 +196,6 @@ public:
 	void __fastcall InvalidEscape(char EscCmd);
 	int __fastcall GetEscapeParam(int From, int &Value);
 	__property Classes::TNotifyEvent OnCursorVisible = {read=FOnCursorVisible, write=FOnCursorVisible};
-		
 	__property TLine* Lines[int I] = {read=GetLines, write=SetLines};
 };
 
@@ -232,7 +232,10 @@ private:
 	Forms::TMessageEvent FAppOnMessage;
 	bool FFlagCirconflexe;
 	bool FFlagTrema;
-	Windows::TRect FSelectRect;
+	#pragma pack(push, 1)
+	Types::TRect FSelectRect;
+	#pragma pack(pop)
+	
 	HPALETTE FPal;
 	tagPALETTEENTRY FPaletteEntries[16];
 	HIDESBASE MESSAGE void __fastcall WMPaint(Messages::TWMPaint &Message);
@@ -240,8 +243,7 @@ private:
 	HIDESBASE MESSAGE void __fastcall WMKillFocus(Messages::TWMKillFocus &Message);
 	HIDESBASE MESSAGE void __fastcall WMLButtonDown(Messages::TWMMouse &Message);
 	HIDESBASE MESSAGE void __fastcall WMPaletteChanged(Messages::TMessage &Message);
-	void __fastcall VScrollBarScroll(System::TObject* Sender, Stdctrls::TScrollCode ScrollCode, int &ScrollPos
-		);
+	void __fastcall VScrollBarScroll(System::TObject* Sender, Stdctrls::TScrollCode ScrollCode, int &ScrollPos);
 	void __fastcall SetCaret(void);
 	void __fastcall AdjustScrollBar(void);
 	bool __fastcall ProcessFKeys(char ScanCode, Classes::TShiftState Shift, bool Ext);
@@ -271,7 +273,7 @@ private:
 protected:
 	void __fastcall AppMessageHandler(tagMSG &Msg, bool &Handled);
 	virtual void __fastcall DoKeyBuffer(char * Buffer, int Len);
-	void __fastcall PaintGraphicChar(HDC DC, int X, int Y, Windows::PRect rc, char ch);
+	void __fastcall PaintGraphicChar(HDC DC, int X, int Y, Types::PRect rc, char ch);
 	
 public:
 	__fastcall virtual TCustomEmulVT(Classes::TComponent* AOwner);
@@ -281,7 +283,7 @@ public:
 	void __fastcall WriteChar(char Ch);
 	void __fastcall WriteStr(AnsiString Str);
 	void __fastcall WriteBuffer(void * Buffer, int Len);
-	AnsiString __fastcall ReadStr(void);
+	AnsiString __fastcall ReadStr();
 	void __fastcall CopyHostScreen(void);
 	void __fastcall Clear(void);
 	void __fastcall UpdateScreen(void);
@@ -313,9 +315,9 @@ private:
 	__property TKeyBufferEvent OnKeyBuffer = {read=FOnKeyBuffer, write=FOnKeyBuffer};
 	__property TKeyDownEvent OnKeyDown = {read=FOnKeyDown, write=FOnKeyDown};
 	__property Ctl3D ;
-	__property Align ;
-	__property TabStop ;
-	__property TabOrder ;
+	__property Align  = {default=0};
+	__property TabStop  = {default=0};
+	__property TabOrder  = {default=-1};
 	__property Forms::TBorderStyle BorderStyle = {read=FBorderStyle, write=FBorderStyle, nodefault};
 	__property bool AutoRepaint = {read=FAutoRepaint, write=FAutoRepaint, nodefault};
 	__property Graphics::TFont* Font = {read=FFont, write=SetFont};
@@ -329,14 +331,13 @@ private:
 	__property int Cols = {read=GetCols, write=SetCols, nodefault};
 	__property int LineHeight = {read=FLineHeight, write=SetLineHeight, nodefault};
 	__property int FKeys = {read=FFKeys, write=FFKeys, nodefault};
-	__property Windows::TRect SelectRect = {read=FSelectRect, write=FSelectRect};
+	__property Types::TRect SelectRect = {read=FSelectRect, write=FSelectRect};
 	__property int BackRows = {read=GetBackRows, write=SetBackRows, nodefault};
 	__property TBackColors BackColor = {read=GetBackColor, write=SetBackColor, nodefault};
 	__property TScreenOptions Options = {read=GetOptions, write=SetOptions, nodefault};
 public:
 	#pragma option push -w-inl
-	/* TWinControl.CreateParented */ inline __fastcall TCustomEmulVT(HWND ParentWindow) : Controls::TCustomControl(
-		ParentWindow) { }
+	/* TWinControl.CreateParented */ inline __fastcall TCustomEmulVT(HWND ParentWindow) : Controls::TCustomControl(ParentWindow) { }
 	#pragma option pop
 	
 };
@@ -361,7 +362,7 @@ __published:
 	__property OnKeyDown ;
 	__property OnKeyBuffer ;
 	__property Ctl3D ;
-	__property Align ;
+	__property Align  = {default=0};
 	__property BorderStyle ;
 	__property AutoRepaint ;
 	__property Font ;
@@ -378,13 +379,12 @@ __published:
 	__property Options ;
 	__property LineHeight ;
 	__property CharWidth ;
-	__property TabStop ;
-	__property TabOrder ;
+	__property TabStop  = {default=0};
+	__property TabOrder  = {default=-1};
 	__property FKeys ;
 public:
 	#pragma option push -w-inl
-	/* TCustomEmulVT.Create */ inline __fastcall virtual TEmulVT(Classes::TComponent* AOwner) : TCustomEmulVT(
-		AOwner) { }
+	/* TCustomEmulVT.Create */ inline __fastcall virtual TEmulVT(Classes::TComponent* AOwner) : TCustomEmulVT(AOwner) { }
 	#pragma option pop
 	#pragma option push -w-inl
 	/* TCustomEmulVT.Destroy */ inline __fastcall virtual ~TEmulVT(void) { }
@@ -392,8 +392,7 @@ public:
 	
 public:
 	#pragma option push -w-inl
-	/* TWinControl.CreateParented */ inline __fastcall TEmulVT(HWND ParentWindow) : TCustomEmulVT(ParentWindow
-		) { }
+	/* TWinControl.CreateParented */ inline __fastcall TEmulVT(HWND ParentWindow) : TCustomEmulVT(ParentWindow) { }
 	#pragma option pop
 	
 };
@@ -434,15 +433,12 @@ extern PACKAGE char ibm_iso8859_1_G0[256];
 extern PACKAGE char ibm_iso8859_1_G1[256];
 extern PACKAGE char Output[256];
 extern PACKAGE void __fastcall Register(void);
-extern PACKAGE bool __fastcall AddFKey(TFuncKey * FKeys, char ScanCode, Classes::TShiftState Shift, 
-	bool Ext,  TFuncKeyValue &Value);
+extern PACKAGE bool __fastcall AddFKey(TFuncKey * FKeys, char ScanCode, Classes::TShiftState Shift, bool Ext,  TFuncKeyValue &Value);
 extern PACKAGE void __fastcall FKeysToFile(TFuncKey * FKeys, AnsiString FName);
 extern PACKAGE void __fastcall FileToFKeys(TFuncKey * FKeys, AnsiString FName);
 
 }	/* namespace Emulvt */
-#if !defined(NO_IMPLICIT_NAMESPACE_USE)
 using namespace Emulvt;
-#endif
 #pragma option pop	// -w-
 #pragma option pop	// -Vx
 
