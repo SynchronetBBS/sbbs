@@ -162,7 +162,7 @@ SMBEXPORT int		SMBCALL smb_tzutc(short timezone);
 SMBEXPORT int		SMBCALL smb_updatethread(smb_t* smb, smbmsg_t* remsg, ulong newmsgnum);
 
 /* hash-related functions */
-SMBEXPORT int		SMBCALL smb_findhash(smb_t* smb, hash_t** compare_list, hash_t* found);
+SMBEXPORT int		SMBCALL smb_findhash(smb_t* smb, hash_t** compare_list, hash_t* found, BOOL mark);
 SMBEXPORT int		SMBCALL smb_hashmsg(smb_t* smb, smbmsg_t* msg, uchar* text, BOOL update);
 SMBEXPORT hash_t*	SMBCALL	smb_hash(ulong msgnum, ulong time, unsigned source, unsigned flags, uchar* data, size_t length);
 SMBEXPORT hash_t*	SMBCALL	smb_hashstr(ulong msgnum, ulong time, unsigned source, unsigned flags, uchar* str);

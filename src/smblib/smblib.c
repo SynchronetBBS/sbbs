@@ -2363,7 +2363,7 @@ int SMBCALL smb_updatethread(smb_t* smb, smbmsg_t* remsg, ulong newmsgnum)
 /**************************/
 
 /* If return value is SMB_ERROR_NOT_FOUND, hash file is left open */
-int SMBCALL smb_findhash(smb_t* smb, hash_t** compare, hash_t* found_hash)
+int SMBCALL smb_findhash(smb_t* smb, hash_t** compare, hash_t* found_hash, BOOL mark)
 {
 	int		retval;
 	BOOL	found=FALSE;
@@ -2384,13 +2384,15 @@ int SMBCALL smb_findhash(smb_t* smb, hash_t** compare, hash_t* found_hash)
 			if(smb_fread(smb,&hash,sizeof(hash),smb->hash_fp)!=sizeof(hash))
 				break;
 
-			if(hash.number==0 || hash.flags==0)
+			if(hash.flags==0)
 				continue;		/* invalid hash record (!?) */
 
 			for(c=0;compare[c]!=NULL;c++) {
 
-				if(compare[c]->source!=hash.source)	
+				if(compare[c]->source!=hash.source)
 					continue;	/* wrong source */
+				if(compare[c]->flags&SMB_HASH_MARKED)
+					continue;	/* already marked */
 				if((compare[c]->flags&SMB_HASH_PROC_MASK)!=(hash.flags&SMB_HASH_PROC_MASK))
 					continue;	/* wrong pre-process flags */
 				if((compare[c]->flags&hash.flags&SMB_HASH_MASK)==0)	
@@ -2417,7 +2419,7 @@ int SMBCALL smb_findhash(smb_t* smb, hash_t** compare, hash_t* found_hash)
 			if(found_hash!=NULL)
 				memcpy(found_hash,&hash,sizeof(hash));
 
-			if(!(compare[c]->flags&SMB_HASH_MARK))
+			if(!mark)
 				break;
 
 			compare[c]->flags|=SMB_HASH_MARKED;
@@ -2525,7 +2527,6 @@ hash_t* SMBCALL smb_hashstr(ulong msgnum, ulong t, unsigned source, unsigned fla
 	return(hash);
 }
 
-
 /* Allocatese and calculates all hashes for a single message				*/
 /* Returns NULL on failure													*/
 hash_t** SMBCALL smb_msghashes(smb_t* smb, smbmsg_t* msg, uchar* text)
@@ -2567,12 +2568,7 @@ int SMBCALL smb_hashmsg(smb_t* smb, smbmsg_t* msg, uchar* text, BOOL update)
 
 	hashes=smb_msghashes(smb,msg,text);
 
-	if(update) {
-		for(n=0;hashes[n]!=NULL;n++)
-			hashes[n]->flags|=SMB_HASH_MARK;
-	}
-
-	if(smb_findhash(smb, hashes, NULL)==SMB_SUCCESS && !update)
+	if(smb_findhash(smb, hashes, NULL, update)==SMB_SUCCESS && !update)
 		retval=SMB_DUPE_MSG;
 	else
 		retval=smb_addhashes(smb,hashes);

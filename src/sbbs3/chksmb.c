@@ -334,7 +334,7 @@ int main(int argc, char **argv)
 
 		/* Look-up the message hashes */
 		hashes=smb_msghashes(&smb,&msg,body);
-		if((i=smb_findhash(&smb,hashes,NULL))!=SMB_SUCCESS) {
+		if((i=smb_findhash(&smb,hashes,NULL,FALSE /* mark */))!=SMB_SUCCESS) {
 			fprintf(stderr,"%sFailed to find hash\n",beep);
 			msgerr=1;
 			if(extinfo)
@@ -366,7 +366,6 @@ int main(int argc, char **argv)
 						,msg.hdr.number,smb.status.last_msg);
 				hdrnumerr++; 
 			}
-
 			if(smb_getmsgidx(&smb,&msg)) {
 				fprintf(stderr,"%sNot found in index\n",beep);
 				msgerr=1;
@@ -392,7 +391,6 @@ int main(int argc, char **argv)
 						"index import date/time\n");
 				timeerr++; 
 			}
-
 			if(msg.hdr.number==0) {
 				fprintf(stderr,"%sZero message number\n",beep);
 				msgerr=1;
