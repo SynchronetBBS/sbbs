@@ -679,6 +679,7 @@ void sbbs_t::skipto(csi_t *csi, uchar inst)
 						case FORMAT_STR_VAR:	/* SPRINTF */
 							csi->ip+=4; /* Skip destination variable */
 						case VAR_PRINTF:
+						case VAR_PRINTF_LOCAL:
 							while(*(csi->ip++));	/* Skip string */
 							j=*(csi->ip++); /* Skip number of arguments */
 							for(i=0;i<j;i++)
