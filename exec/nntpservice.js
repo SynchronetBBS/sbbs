@@ -6,15 +6,19 @@
 
 // NNTP		119	0-unlimited	0		nntpservice.js
 
+load("sbbsdefs.js");
 
 const VERSION = "1.00 Alpha";
 
 var debug = false;
+var no_anonymous = false;
 
 // Parse arguments
 for(i=0;i<argc;i++)
 	if(argv[i].toLowerCase()=="-d")
 		debug = true;
+	else if(argv[i].toLowerCase()=="-na")
+		no_anonymous = true;
 
 // Write a string to the client socket
 function write(str)
@@ -35,6 +39,9 @@ var selected=null;
 var current_article=0;
 
 writeln(format("200 %s News (Synchronet NNTP Service v%s)",system.name,VERSION));
+
+if(!no_anonymous)	
+	login("guest");	// Login as guest/anonymous by default
 
 while(client.socket.is_connected) {
 
@@ -288,8 +295,10 @@ while(client.socket.is_connected) {
 			writeln("340 send article to be posted. End with <CR-LF>.<CR-LF>");
 
 			var hdr=new Object();
-			hdr.from=user.alias;
-			log(hdr);
+			if(!(user.security.restrictions&UFLAG_G)) {	// !Guest
+				hdr.from=user.alias;
+				hdr.from_ext=user.number;
+			}
 
 			var posted=false;
 			var header=true;
@@ -322,6 +331,7 @@ while(client.socket.is_connected) {
 					body += "\r\n";
 					continue;
 				}
+				log(line);
 
 				/* Parse header lines */
 				if(line.indexOf(':')==-1)
@@ -331,6 +341,10 @@ while(client.socket.is_connected) {
 					field[1]=field[1].slice(1);
 
 				switch(field[0].toLowerCase()) {
+					case "from":
+						if(user.security.restrictions&UFLAG_G) 	// Guest
+							hdr.from=field[1];
+						break;
 					case "subject":
 						hdr.subject=field[1];
 						break;
