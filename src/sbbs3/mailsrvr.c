@@ -291,6 +291,11 @@ int sockprintf(SOCKET sock, char *fmt, ...)
 	len+=2;
     va_end(argptr);
 
+	if(sock==INVALID_SOCKET) {
+		lprintf("!INVALID SOCKET in call to sockprintf");
+		return(0);
+	}
+
 	/* Check socket for writability (using select) */
 	tv.tv_sec=60;
 	tv.tv_usec=0;
@@ -362,7 +367,14 @@ static int sockreadline(SOCKET socket, char* buf, int len)
 	struct	timeval	tv;
 	time_t	start;
 
+	buf[0]=0;
+
 	start=time(NULL);
+
+	if(socket==INVALID_SOCKET) {
+		lprintf("!INVALID SOCKET in call to sockreadline");
+		return(0);
+	}
 	
 	while(rd<len-1) {
 
@@ -3015,7 +3027,8 @@ void DLLCALL mail_server(void* arg)
 			FD_ZERO(&socket_set);
 			FD_SET(server_socket,&socket_set);
 			high_socket_set=server_socket+1;
-			if(startup->options&MAIL_OPT_ALLOW_POP3) {
+			if(startup->options&MAIL_OPT_ALLOW_POP3 
+				&& pop3_socket!=INVALID_SOCKET) {
 				FD_SET(pop3_socket,&socket_set);
 				if(pop3_socket+1>high_socket_set)
 					high_socket_set=pop3_socket+1;

@@ -314,6 +314,11 @@ static int sockprintf(SOCKET sock, char *fmt, ...)
 	len+=2;
     va_end(argptr);
 
+	if(sock==INVALID_SOCKET) {
+		lprintf("!INVALID SOCKET in call to sockprintf");
+		return(0);
+	}
+
 	/* Check socket for writability (using select) */
 	tv.tv_sec=60;
 	tv.tv_usec=0;
@@ -1098,6 +1103,13 @@ int sockreadline(SOCKET socket, char* buf, int len, time_t* lastactive)
 	int		i,rd=0;
 	fd_set	socket_set;
 	struct timeval	tv;
+
+	buf[0]=0;
+
+	if(socket==INVALID_SOCKET) {
+		lprintf("INVALID SOCKET in call to sockreadline");
+		return(0);
+	}
 	
 	while(rd<len-1) {
 
