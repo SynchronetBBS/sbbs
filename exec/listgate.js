@@ -83,6 +83,9 @@ for(i in area) {
 
 	from = area[i].from;
 
+	if(from.indexOf('@')<0)	// automaticalliy append system's e-mail host/domain name
+		from+=('@'+system.inet_addr);
+
 	msgbase = new MsgBase(sub);
 	if(msgbase.open!=undefined && msgbase.open()==false) {
 		log(LOG_ERR,format("!ERROR %s opening msgbase: %s\r\n",msgbase.last_error,sub));
