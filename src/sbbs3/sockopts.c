@@ -76,6 +76,8 @@ int DLLCALL sockopt(char* str, int* level)
 			return(option_names[i].value);
 		}
 	}
+	if(!isdigit(str[0]))	/* unknown option name */
+		return(-1);
 	return(strtoul(str,NULL,0));
 }
 
@@ -118,7 +120,8 @@ int DLLCALL set_socket_options(scfg_t* cfg, SOCKET sock, char* error)
 		p=name;
 		while(*p && *p>' ') p++;
 		if(*p) *(p++)=0;
-		option=sockopt(name,&level);
+		if((option=sockopt(name,&level))==-1)
+			continue;
 		while(*p && *p<=' ') p++;
 		len=sizeof(value);
 		value=strtol(p,NULL,0);
