@@ -3050,7 +3050,7 @@ void DLLCALL bbs_thread(void* arg)
 		,ctime(&t),startup->options);
 
 	if(chdir(startup->ctrl_dir)!=0)
-		lprintf("!ERROR changing directory to: %s", startup->ctrl_dir);
+		lprintf("!ERROR %d changing directory to: %s", errno, startup->ctrl_dir);
 
 	/* Initial configuration and load from CNF files */
     sprintf(scfg.ctrl_dir, "%.*s", (int)sizeof(scfg.ctrl_dir)-1
@@ -3059,7 +3059,7 @@ void DLLCALL bbs_thread(void* arg)
 	scfg.size=sizeof(scfg);
 	scfg.node_num=startup->first_node;
 	if(!load_cfg(&scfg, text, TRUE)) {
-		lprintf("!Failed to load configuration files");
+		lprintf("!FAILED to load configuration files");
 		cleanup(1);
 		return;
 	}
@@ -3083,8 +3083,7 @@ void DLLCALL bbs_thread(void* arg)
 		sprintf(str,"%sdsts.dab",i ? scfg.node_path[i-1] : scfg.ctrl_dir);
 		if(flength(str)<DSTSDABLEN) {
 			if((file=sopen(str,O_WRONLY|O_CREAT|O_APPEND, SH_DENYNO))==-1) {
-            	close(file);
-				lprintf("!Error creating %s",str);
+				lprintf("!ERROR %d creating %s",errno, str);
 				cleanup(1);
 				return; }
 			while(filelength(file)<DSTSDABLEN)
@@ -3334,7 +3333,7 @@ void DLLCALL bbs_thread(void* arg)
 				scfg.node_num=first_node;
 				pthread_mutex_lock(&event_mutex);
 				if(!load_cfg(&scfg, text, TRUE)) {
-					lprintf("!Failed to load configuration files");
+					lprintf("!FAILED to load configuration files");
 					break;
 				}
 				scfg_reloaded=true;
@@ -3386,7 +3385,7 @@ void DLLCALL bbs_thread(void* arg)
 	        	,&client_addr_len);
 			rlogin = true;
 		} else {
-			lprintf("!No sockets set by select");
+			lprintf("!NO SOCKETS set by select");
 			continue;
 		}
 
@@ -3432,7 +3431,7 @@ void DLLCALL bbs_thread(void* arg)
 
 		if(sbbs->trashcan(host_ip,"ip")) {
 			close_socket(client_socket);
-			lprintf("IP blocked in ip.can");
+			lprintf("!CLIENT BLOCKED in ip.can");
 			sprintf(logstr, "Blocked IP: %s",host_ip);
 			sbbs->logline("@!",logstr);
 			continue;
@@ -3441,7 +3440,7 @@ void DLLCALL bbs_thread(void* arg)
 		if(rlogin) {
 			if(!sbbs->trashcan(host_ip,"rlogin")) {
 				close_socket(client_socket);
-				lprintf("IP not listed in rlogin.can");
+				lprintf("!CLIENT IP NOT LISTED in rlogin.can");
 				sprintf(logstr, "Invalid RLogin from: %s",host_ip);
 				sbbs->logline("@!",logstr);
 				continue;
@@ -3472,7 +3471,7 @@ void DLLCALL bbs_thread(void* arg)
 
 		if(sbbs->trashcan(host_name,"host")) {
 			close_socket(client_socket);
-			lprintf("Host name blocked in host.can");
+			lprintf("!CLIENT BLOCKED in host.can");
 			sprintf(logstr, "Blocked Host Name: %s",host_name);
 			sbbs->logline("@!",logstr);
 			continue;
