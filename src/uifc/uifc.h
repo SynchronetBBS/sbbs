@@ -35,8 +35,6 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#include <io.h>
-#include <dos.h>
 #include <time.h>
 #include <fcntl.h>
 #include <alloc.h>
@@ -45,8 +43,17 @@
 #include <string.h>
 #include <stdarg.h>
 #include <stdlib.h>
+#if defined(_WIN32)
+    #include <windows.h>
+#endif
 #if !defined(__unix__)
+    #include <io.h>
     #include <conio.h>
+#endif
+#if (defined(__unix__) || defined(_WIN32)) && !defined(__FLAT__)
+    #define __FLAT__
+#else
+    #include <dos.h>
 #endif
 
 /* OS Specific */
@@ -102,7 +109,7 @@
 #endif
 
 #ifdef __FLAT__
-	#define MAX_OPTS	1000
+	#define MAX_OPTS	10000
 	#define MSK_ON		0xf0000000
 	#define MSK_OFF 	0x0fffffff
 	#define MSK_INS 	0x10000000
@@ -128,11 +135,13 @@
 #define uint unsigned int
 #endif
 
+                            /* Bits in uifcapi_t.mode */
 #define UIFC_INMSG	(1<<0)	/* Currently in Message Routine non-recursive */
 #define UIFC_MOUSE	(1<<1)	/* Mouse installed and available */
 #define UIFC_MONO	(1<<2)	/* Force monochrome mode */
 #define UIFC_COLOR	(1<<3)	/* Force color mode */
 
+                            /* Bits in uifcapi_t.list mode */
 #define WIN_ORG 	(1<<0)	/* Original menu - destroy valid screen area */
 #define WIN_SAV 	(1<<1)	/* Save existing text and replace when finished */
 #define WIN_ACT 	(1<<2)	/* Menu remains active after a selection */
@@ -171,8 +180,6 @@
 
 #define HELPBUF_SIZE 4000
 
-#define SETHELP(where)	helpline=__LINE__; helpfile=__FILE__
-
 #ifndef TAB
 									/* Control characters */
 #define STX 	0x02				/* Start of text			^B	*/
@@ -199,46 +206,53 @@
 #define ulong unsigned long
 #endif
 
+#ifndef BOOL
+#define BOOL    int
+#define TRUE    1
+#define FALSE   0
+#endif
 
 typedef struct {
-	char	left,top,right,bot,*buf;
-	} win_t;
+	uint    left,top,right,bot;
+    uchar   *buf;
+} win_t;
 
-
-/* LCLOLL.ASM */
-int lclini(int);
-void lclxy(int,int);
-int lclwx(void);
-int lclwy(void);
-int lclatr(int);
-void lputc(int);
-long lputs(char far *);
+#if !defined(__FLAT__)
+    /* LCLOLL.ASM */
+    int lclini(int);
+    void lclxy(int,int);
+    int lclwx(void);
+    int lclwy(void);
+    int lclatr(int);
+    void lputc(int);
+    long lputs(char far *);
+#endif    
 
 #if defined(__OS2__) || !defined(__FLAT__)
 void mswait(int msecs);
 extern mswtyp;
 #endif
 
-extern char lclr,hclr,bclr,cclr,blk_scrn[MAX_BFLN],savdepth
-	,changes,show_free_mem,savnum,uifc_status,*helpfile,*helpbuf
-	,helpdatfile[256]
-	,helpixbfile[256];
-extern win_t sav[MAX_BUFS];
-extern uint cursor,helpline,scrn_len;
+typedef struct {
+    size_t  size;
+    long    mode;
+    BOOL    changes;
+    uint    savdepth;
+    uint    savnum;
+    uint    scrn_len;
+    char*   helpbuf;
+    char    helpdatfile[256];
+    char    helpixbfile[256];
+    void    (*bail) (void);
+    int     (*scrn) (char* str);
+    void    (*msg)  (char* str);
+    void    (*pop)  (char* str);
+    int     (*list) (int mode, char left, int top, char width, int* dflt
+                        ,int* bar, char *title, char** option);
+    int     (*input)(int imode, char left, char top, char* prompt, char* str
+            	        ,char len, int kmode);
+    void    (*sethelp)(int line, char* file);
+} uifcapi_t;
 
-int uifcini(void);
-int uscrn(char *str);
-int ulist(int mode, char left, int top, char width, int *dflt, int *bar
-	,char *title, char **option);
-int uinput(int imode, char left, char top, char *prompt, char *str
-	,char len ,int kmode);
-int  uprintf(char x, char y, char attr, char *fmt,...);
-void umsg(char *str);
-void upop(char *str);
-int  getstr(char *str, int maxlen, long mode);
-void timedisplay();
-int  lprintf(char *fmt,...);
-char *utimestr(time_t *intime);
-void help(void);
-void truncsp(char *str);
-void uifcbail(void);
+int uifcini(uifcapi_t*);
+int uifcinix(uifcapi_t*);

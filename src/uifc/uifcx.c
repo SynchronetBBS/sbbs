@@ -36,20 +36,45 @@
 #include "uifc.h"
 #include <share.h>
 
-char helpdatfile[256]=""
-	,helpixbfile[256]=""
-	,*helpfile=0,*helpbuf=0
-	,changes=0,uifc_status=0;
-char savnum, savdepth;   /* unused */    
-uint scrn_len;
-uint cursor,helpline=0,max_opts=MAX_OPTS;
+static char *helpfile=0;
+static uint helpline=0;
+static uifcapi_t* api;
 
-int uifcini()
+/* Prototypes */
+static void help();
+
+/* API routines */
+static void uifcbail(void);
+static int uscrn(char *str);
+static int ulist(int mode, char left, int top, char width, int *dflt, int *bar
+	,char *title, char **option);
+static int uinput(int imode, char left, char top, char *prompt, char *str
+	,char len ,int kmode);
+static void umsg(char *str);
+static void upop(char *str);
+static void sethelp(int line, char* file);
+
+int uifcinix(uifcapi_t* uifcapi)
 {
+
+    if(uifcapi==NULL || uifcapi->size!=sizeof(uifcapi_t))
+        return(-1);
+
+    api=uifcapi;
+
+    /* install function handlers */
+    api->bail=uifcbail;
+    api->scrn=uscrn;
+    api->msg=umsg;
+    api->pop=upop;
+    api->list=ulist;
+    api->input=uinput;
+    api->sethelp=sethelp;
+
     setvbuf(stdout,NULL,_IONBF,0);
-    scrn_len=24;
-    
-    return(scrn_len);
+    api->scrn_len=24;
+
+    return(0);
 }
 
 
@@ -94,7 +119,7 @@ int ulist(int mode, char left, int top, char width, int *cur, int *bar
     int optnumlen;
     int yesno=0;
 
-    for(opts=0;opts<max_opts && opts<MAX_OPTS;opts++)
+    for(opts=0;opts<MAX_OPTS;opts++)
     	if(option[opts][0]==0)
     		break;
 
@@ -120,7 +145,7 @@ int ulist(int mode, char left, int top, char width, int *cur, int *bar
             printf("\n[%s]\n",title);
             for(i=0;i<opts;i++) {
                 printf("%*d: %s\n",optnumlen,i+1,option[i]);
-                if(i && !(i%(scrn_len-2))) {
+                if(i && !(i%(api->scrn_len-2))) {
                     printf("More? ");
                     str[0]=0;
                     fgets(str,sizeof(str)-1,stdin);
@@ -176,7 +201,6 @@ int ulist(int mode, char left, int top, char width, int *cur, int *bar
                 if(i>0 && i<=opts+1)
         			return((i-1)|MSK_INS);
                 return(which("Add before",opts+1)|MSK_INS);
-                break;
             case 'D':   /* Delete */
 				if(!opts)
     				break;
@@ -185,7 +209,6 @@ int ulist(int mode, char left, int top, char width, int *cur, int *bar
                 if(opts==1)
                     return(MSK_DEL);
                 return(which("Delete",opts)|MSK_DEL);
-                break;
             case 'C':   /* Copy/Get */
 				if(!opts)
     				break;
@@ -194,7 +217,6 @@ int ulist(int mode, char left, int top, char width, int *cur, int *bar
                 if(opts==1)
                     return(MSK_GET);
                 return(which("Copy",opts)|MSK_GET);
-                break;
             case 'P':   /* Paste/Put */
 				if(!opts)
     				break;
@@ -203,7 +225,6 @@ int ulist(int mode, char left, int top, char width, int *cur, int *bar
                 if(opts==1)
                     return(MSK_PUT);
                 return(which("Paste",opts)|MSK_PUT);
-                break;
         }
     }
 }
@@ -212,13 +233,23 @@ int ulist(int mode, char left, int top, char width, int *cur, int *bar
 /*************************************************************************/
 /* This function is a windowed input string input routine.               */
 /*************************************************************************/
-int uinput(int mode, char left, char top, char *prompt, char *str,
+int uinput(int mode, char left, char top, char *prompt, char *outstr,
 	char max, int kmode)
 {
-    printf("%s (maxlen=%u): ",prompt,max);
-    fgets(str,max,stdin);
-    truncsp(str);
-    return(strlen(str));
+    char str[256];
+    
+    while(1) {
+        printf("%s (maxlen=%u): ",prompt,max);
+        fgets(str,max,stdin);
+        truncsp(str);
+        if(strcmp(str,"?"))
+            break;
+        help();
+    }
+	if(strcmp(outstr,str))
+		api->changes=1;
+    strcpy(outstr,str);    
+    return(strlen(outstr));
 }
 
 /****************************************************************************/
@@ -252,6 +283,12 @@ void upop(char *str)
         printf("\r%-79s",str);
 }
 
+void sethelp(int line, char* file)
+{
+    helpline=line;
+    helpfile=file;
+}
+
 /************************************************************/
 /* Help (F1) key function. Uses helpbuf as the help input.	*/
 /************************************************************/
@@ -264,10 +301,10 @@ void help()
 	FILE *fp;
 
     printf("\n");
-    if(!helpbuf) {
-        if((fp=_fsopen(helpixbfile,"rb",SH_DENYWR))==NULL)
+    if(!api->helpbuf) {
+        if((fp=_fsopen(api->helpixbfile,"rb",SH_DENYWR))==NULL)
             sprintf(hbuf,"ERROR: Cannot open help index: %s"
-                ,helpixbfile);
+                ,api->helpixbfile);
         else {
             p=strrchr(helpfile,'/');
             if(p==NULL)
@@ -290,18 +327,23 @@ void help()
             fclose(fp);
             if(l==-1L)
                 sprintf(hbuf,"ERROR: Cannot locate help key (%s:%u) in: %s"
-                    ,p,helpline,helpixbfile);
+                    ,p,helpline,api->helpixbfile);
             else {
-                if((fp=_fsopen(helpdatfile,"rb",SH_DENYWR))==NULL)
+                if((fp=_fsopen(api->helpdatfile,"rb",SH_DENYWR))==NULL)
                     sprintf(hbuf,"ERROR: Cannot open help file: %s"
-                        ,helpdatfile);
+                        ,api->helpdatfile);
                 else {
                     fseek(fp,l,SEEK_SET);
                     fread(hbuf,HELPBUF_SIZE,1,fp);
                     fclose(fp); } } } }
     else
-        strcpy(hbuf,helpbuf);
+        strcpy(hbuf,api->helpbuf);
 
     puts(hbuf);
+    if(strlen(hbuf)>200) {
+        printf("Hit enter");
+        getc(stdin);
+    }
 }
+
 

@@ -61,19 +61,31 @@ DosSleep(msec ? msec : 1);
 
 #define HELP 1
 
-char hclr,lclr,bclr,cclr,savnum=0,show_free_mem=0
-	,helpdatfile[256]=""
-	,helpixbfile[256]=""
-	,*helpfile=0,*helpbuf=0
-	,blk_scrn[MAX_BFLN],savdepth=0,changes=0,uifc_status=0;
-uint scrn_len;
-win_t sav[MAX_BUFS];
-uint cursor,helpline=0,max_opts=MAX_OPTS;
+static char hclr,lclr,bclr,cclr,show_free_mem=0;
+static int cursor;
+static char* helpfile=0;
+static uint helpline=0;
+static char blk_scrn[MAX_BFLN];
+static win_t sav[MAX_BUFS];
+static uint max_opts=MAX_OPTS;
+static uifcapi_t* api;
 
-extern int daylight=0;
-extern long timezone=0;
+/* Prototypes */
+static int  uprintf(char x, char y, char attr, char *fmt,...);
+static void bottomline(int line);
+static char *utimestr(time_t *intime);
+static void help();
 
-void bottomline(int line);
+/* API routines */
+static void uifcbail(void);
+static int uscrn(char *str);
+static int ulist(int mode, char left, int top, char width, int *dflt, int *bar
+	,char *title, char **option);
+static int uinput(int imode, char left, char top, char *prompt, char *str
+	,char len ,int kmode);
+static void umsg(char *str);
+static void upop(char *str);
+static void sethelp(int line, char* file);
 
 #ifdef __FLAT__
 int inkey(int mode)
@@ -97,15 +109,30 @@ return(bioskey(0));
 }
 #endif
 
-uint mousecursor=0x28;
+static uint mousecursor=0x28;
 
-int uifcini()
+/* Returns 0 on success */
+int uifcini(uifcapi_t* uifcapi)
 {
 	int 	i;
 	struct	text_info txtinfo;
 #ifndef __FLAT__
 	union	REGS r;
 #endif
+
+    if(uifcapi==NULL || uifcapi->size!=sizeof(uifcapi_t))
+        return(-1);
+
+    api=uifcapi;
+
+    /* install function handlers */            
+    api->bail=uifcbail;
+    api->scrn=uscrn;
+    api->msg=umsg;
+    api->pop=upop;
+    api->list=ulist;
+    api->input=uinput;
+    api->sethelp=sethelp;
 
     clrscr();
     gettextinfo(&txtinfo);
@@ -117,18 +144,18 @@ int uifcini()
         gettextinfo(&txtinfo);
     }
 
-    scrn_len=txtinfo.screenheight;
-    if(scrn_len<MIN_LINES || scrn_len>MAX_LINES) {
+    api->scrn_len=txtinfo.screenheight;
+    if(api->scrn_len<MIN_LINES || api->scrn_len>MAX_LINES) {
         cprintf("\7UIFC: Screen length (%u) must be between %d and %d lines\r\n"
-            ,scrn_len,MIN_LINES,MAX_LINES);
-        exit(1);
+            ,api->scrn_len,MIN_LINES,MAX_LINES);
+        return(-2);
     }
-    scrn_len--; /* account for status line */
+    api->scrn_len--; /* account for status line */
 
     if(txtinfo.screenwidth<80) {
         cprintf("\7UIFC: Screen width (%u) must be at least 80 characters\r\n"
             ,txtinfo.screenwidth);
-        exit(1);
+        return(-3);
     }
 
 #ifndef __FLAT__
@@ -159,8 +186,8 @@ int uifcini()
     #endif
 
 
-    if(!(uifc_status&UIFC_COLOR)
-        && (uifc_status&UIFC_MONO
+    if(!(api->mode&UIFC_COLOR)
+        && (api->mode&UIFC_MONO
             || txtinfo.currmode==MONO || txtinfo.currmode==BW80)) {
         bclr=BLACK;
         hclr=WHITE;
@@ -180,10 +207,10 @@ int uifcini()
     cursor=_NOCURSOR;
     _setcursortype(cursor);
 
-    return(scrn_len);
+    return(0);
 }
 
-void hidemouse(void)
+static void hidemouse(void)
 {
 #ifndef __FLAT__
 	union  REGS r;
@@ -194,7 +221,7 @@ if(uifc_status&UIFC_MOUSE) {
 #endif
 }
 
-void showmouse(void)
+static void showmouse(void)
 {
 #ifndef __FLAT__
 	union  REGS r;
@@ -222,14 +249,14 @@ int uscrn(char *str)
     clreol();
     gotoxy(3,1);
     cputs(str);
-    if(!puttext(1,2,80,scrn_len,blk_scrn))
+    if(!puttext(1,2,80,api->scrn_len,blk_scrn))
         return(-1);
-    gotoxy(1,scrn_len+1);
+    gotoxy(1,api->scrn_len+1);
     clreol();
     return(0);
 }
 
-void scroll_text(int x1, int y1, int x2, int y2, int down)
+static void scroll_text(int x1, int y1, int x2, int y2, int down)
 {
 	uchar buf[MAX_BFLN];
 
@@ -244,7 +271,7 @@ else
 /* Updates time in upper left corner of screen with current time in ASCII/  */
 /* Unix format																*/
 /****************************************************************************/
-void timedisplay()
+static void timedisplay()
 {
 	static time_t savetime;
 	time_t now;
@@ -287,7 +314,7 @@ INT_86(0x33,&r,&r);  /* Clears any buffered mouse clicks */
 
 #endif
 
-if(mode&WIN_SAV && savnum>=MAX_BUFS-1)
+if(mode&WIN_SAV && api->savnum>=MAX_BUFS-1)
 	putch(7);
 i=0;
 if(mode&WIN_INS) bline|=BL_INS;
@@ -302,8 +329,8 @@ while(opts<max_opts && opts<MAX_OPTS)
 if(mode&WIN_XTR && opts<max_opts && opts<MAX_OPTS)
 	option[opts++][0]=0;
 height=opts+4;
-if(top+height>scrn_len-3)
-	height=(scrn_len-3)-top;
+if(top+height>api->scrn_len-3)
+	height=(api->scrn_len-3)-top;
 if(!width || width<strlen(title)+6) {
 	width=strlen(title)+6;
 	for(i=0;i<opts;i++) {
@@ -317,39 +344,39 @@ if(mode&WIN_L2R)
 else if(mode&WIN_RHT)
 	left=SCRN_RIGHT-(width+4+left);
 if(mode&WIN_T2B)
-	top=(scrn_len/2)-(height/2)-2;
+	top=(api->scrn_len/2)-(height/2)-2;
 else if(mode&WIN_BOT)
-	top=scrn_len-height-3-top;
-if(mode&WIN_SAV && savdepth==savnum) {
-	if((sav[savnum].buf=(char *)MALLOC((width+3)*(height+2)*2))==NULL) {
+	top=api->scrn_len-height-3-top;
+if(mode&WIN_SAV && api->savdepth==api->savnum) {
+	if((sav[api->savnum].buf=(char *)MALLOC((width+3)*(height+2)*2))==NULL) {
 		cprintf("UIFC line %d: error allocating %u bytes."
             ,__LINE__,(width+3)*(height+2)*2);
 		return(-1); }
 	gettext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT+left+width+1
-		,SCRN_TOP+top+height,sav[savnum].buf);
-	sav[savnum].left=SCRN_LEFT+left;
-	sav[savnum].top=SCRN_TOP+top;
-	sav[savnum].right=SCRN_LEFT+left+width+1;
-	sav[savnum].bot=SCRN_TOP+top+height;
-	savdepth++; }
+		,SCRN_TOP+top+height,sav[api->savnum].buf);
+	sav[api->savnum].left=SCRN_LEFT+left;
+	sav[api->savnum].top=SCRN_TOP+top;
+	sav[api->savnum].right=SCRN_LEFT+left+width+1;
+	sav[api->savnum].bot=SCRN_TOP+top+height;
+	api->savdepth++; }
 else if(mode&WIN_SAV
-	&& (sav[savnum].left!=SCRN_LEFT+left
-	|| sav[savnum].top!=SCRN_TOP+top
-	|| sav[savnum].right!=SCRN_LEFT+left+width+1
-	|| sav[savnum].bot!=SCRN_TOP+top+height)) { /* dimensions have changed */
-	puttext(sav[savnum].left,sav[savnum].top,sav[savnum].right,sav[savnum].bot
-		,sav[savnum].buf);	/* put original window back */
-	FREE(sav[savnum].buf);
-	if((sav[savnum].buf=(char *)MALLOC((width+3)*(height+2)*2))==NULL) {
+	&& (sav[api->savnum].left!=SCRN_LEFT+left
+	|| sav[api->savnum].top!=SCRN_TOP+top
+	|| sav[api->savnum].right!=SCRN_LEFT+left+width+1
+	|| sav[api->savnum].bot!=SCRN_TOP+top+height)) { /* dimensions have changed */
+	puttext(sav[api->savnum].left,sav[api->savnum].top,sav[api->savnum].right,sav[api->savnum].bot
+		,sav[api->savnum].buf);	/* put original window back */
+	FREE(sav[api->savnum].buf);
+	if((sav[api->savnum].buf=(char *)MALLOC((width+3)*(height+2)*2))==NULL) {
 		cprintf("UIFC line %d: error allocating %u bytes."
             ,__LINE__,(width+3)*(height+2)*2);
 		return(-1); }
 	gettext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT+left+width+1
-		,SCRN_TOP+top+height,sav[savnum].buf);	  /* save again */
-	sav[savnum].left=SCRN_LEFT+left;
-	sav[savnum].top=SCRN_TOP+top;
-	sav[savnum].right=SCRN_LEFT+left+width+1;
-	sav[savnum].bot=SCRN_TOP+top+height; }
+		,SCRN_TOP+top+height,sav[api->savnum].buf);	  /* save again */
+	sav[api->savnum].left=SCRN_LEFT+left;
+	sav[api->savnum].top=SCRN_TOP+top;
+	sav[api->savnum].right=SCRN_LEFT+left+width+1;
+	sav[api->savnum].bot=SCRN_TOP+top+height; }
 
 
 #ifndef __FLAT__
@@ -366,8 +393,8 @@ if(show_free_mem) {
 if(mode&WIN_ORG) { /* Clear around menu */
 	if(top)
 		puttext(SCRN_LEFT,SCRN_TOP,SCRN_RIGHT+2,SCRN_TOP+top-1,blk_scrn);
-	if(SCRN_TOP+height+top<=scrn_len)
-		puttext(SCRN_LEFT,SCRN_TOP+height+top,SCRN_RIGHT+2,scrn_len,blk_scrn);
+	if(SCRN_TOP+height+top<=api->scrn_len)
+		puttext(SCRN_LEFT,SCRN_TOP+height+top,SCRN_RIGHT+2,api->scrn_len,blk_scrn);
 	if(left)
 		puttext(SCRN_LEFT,SCRN_TOP+top,SCRN_LEFT+left-1,SCRN_TOP+height+top
 			,blk_scrn);
@@ -378,7 +405,7 @@ ptr=win;
 *(ptr++)='É';
 *(ptr++)=hclr|(bclr<<4);
 
-if(uifc_status&UIFC_MOUSE) {
+if(api->mode&UIFC_MOUSE) {
 	*(ptr++)='[';
 	*(ptr++)=hclr|(bclr<<4);
 	*(ptr++)='þ';
@@ -524,12 +551,12 @@ while(1) {
 #if 0					/* debug */
 	gotoxy(30,1);
 	cprintf("y=%2d h=%2d c=%2d b=%2d s=%2d o=%2d"
-		,y,height,*cur,bar ? *bar :0xff,savdepth,opts);
+		,y,height,*cur,bar ? *bar :0xff,api->savdepth,opts);
 #endif
 	if(!show_free_mem)
 		timedisplay();
 #ifndef __FLAT__
-	if(uifc_status&UIFC_MOUSE) {
+	if(api->mode&UIFC_MOUSE) {
 
 		r.w.ax=0x0003;		/* Get button status and mouse position */
 		INT_86(0x33,&r,&r);
@@ -596,12 +623,12 @@ while(1) {
 					showmouse(); }
 				else if(mode&WIN_SAV) {
 					hidemouse();
-					puttext(sav[savnum].left,sav[savnum].top
-						,sav[savnum].right,sav[savnum].bot
-						,sav[savnum].buf);
+					puttext(sav[api->savnum].left,sav[api->savnum].top
+						,sav[api->savnum].right,sav[api->savnum].bot
+						,sav[api->savnum].buf);
 					showmouse();
-					FREE(sav[savnum].buf);
-					savdepth--; }
+					FREE(sav[api->savnum].buf);
+					api->savdepth--; }
 				return(*cur); }
 			else if(r.w.cx/8>=SCRN_LEFT+left+3
 				&& r.w.cx/8<=SCRN_LEFT+left+5
@@ -616,7 +643,7 @@ while(1) {
 
 		if(r.w.bx) {	  /* Right button down, same as ESC */
 hitesc:
-            if(mode&WIN_ESC || (mode&WIN_CHE && changes)
+            if(mode&WIN_ESC || (mode&WIN_CHE && api->changes)
                 && !(mode&WIN_SAV)) {
                 hidemouse();
                 gettext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT
@@ -628,12 +655,12 @@ hitesc:
                 showmouse(); }
             else if(mode&WIN_SAV) {
 				hidemouse();
-                puttext(sav[savnum].left,sav[savnum].top
-                    ,sav[savnum].right,sav[savnum].bot
-                    ,sav[savnum].buf);
+                puttext(sav[api->savnum].left,sav[api->savnum].top
+                    ,sav[api->savnum].right,sav[api->savnum].bot
+                    ,sav[api->savnum].buf);
 				showmouse();
-                FREE(sav[savnum].buf);
-                savdepth--; }
+                FREE(sav[api->savnum].buf);
+                api->savdepth--; }
             return(-1); }
 				}
 #endif
@@ -1057,15 +1084,15 @@ hitesc:
 							showmouse(); }
 						else if(mode&WIN_SAV) {
 							hidemouse();
-							puttext(sav[savnum].left,sav[savnum].top
-								,sav[savnum].right,sav[savnum].bot
-								,sav[savnum].buf);
+							puttext(sav[api->savnum].left,sav[api->savnum].top
+								,sav[api->savnum].right,sav[api->savnum].bot
+								,sav[api->savnum].buf);
 							showmouse();
-							FREE(sav[savnum].buf);
-							savdepth--; }
+							FREE(sav[api->savnum].buf);
+							api->savdepth--; }
 						return(*cur);
 					case ESC:
-						if(mode&WIN_ESC || (mode&WIN_CHE && changes)
+						if(mode&WIN_ESC || (mode&WIN_CHE && api->changes)
 							&& !(mode&WIN_SAV)) {
 							hidemouse();
 							gettext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT
@@ -1077,12 +1104,12 @@ hitesc:
 							showmouse(); }
 						else if(mode&WIN_SAV) {
 							hidemouse();
-							puttext(sav[savnum].left,sav[savnum].top
-								,sav[savnum].right,sav[savnum].bot
-								,sav[savnum].buf);
+							puttext(sav[api->savnum].left,sav[api->savnum].top
+								,sav[api->savnum].right,sav[api->savnum].bot
+								,sav[api->savnum].buf);
 							showmouse();
-							FREE(sav[savnum].buf);
-							savdepth--; }
+							FREE(sav[api->savnum].buf);
+							api->savdepth--; }
 						return(-1); } } }
 	else
 		mswait(1);
@@ -1108,7 +1135,7 @@ else
 	slen=6;
 width=plen+slen+max;
 if(mode&WIN_T2B)
-	top=(scrn_len/2)-(height/2)-2;
+	top=(api->scrn_len/2)-(height/2)-2;
 if(mode&WIN_L2R)
 	left=36-(width/2);
 if(mode&WIN_SAV)
@@ -1189,13 +1216,13 @@ void umsg(char *str)
 	int i=0;
 	char *ok[2]={"OK",""};
 
-if(uifc_status&UIFC_INMSG)	/* non-cursive */
+if(api->mode&UIFC_INMSG)	/* non-cursive */
 	return;
-uifc_status|=UIFC_INMSG;
-if(savdepth) savnum++;
+api->mode|=UIFC_INMSG;
+if(api->savdepth) api->savnum++;
 ulist(WIN_SAV|WIN_MID,0,0,0,&i,0,str,ok);
-if(savdepth) savnum--;
-uifc_status&=~UIFC_INMSG;
+if(api->savdepth) api->savnum--;
+api->mode&=~UIFC_INMSG;
 }
 
 /****************************************************************************/
@@ -1203,7 +1230,7 @@ uifc_status&=~UIFC_INMSG;
 /* Different modes - K_* macros. ESC aborts input.                          */
 /* Cursor should be at END of where string prompt will be placed.           */
 /****************************************************************************/
-int getstr(char *outstr, int max, long mode)
+static int getstr(char *outstr, int max, long mode)
 {
 	uchar   ch,str[256],ins=0,buf[256],y;
 	int     i,j,k,f=0;	/* i=offset, j=length */
@@ -1226,7 +1253,7 @@ if(mode&K_EDIT) {
 	i=j=strlen(str);
 	while(inkey(1)==0) {
 #ifndef __FLAT__
-		if(uifc_status&UIFC_MOUSE) {
+		if(api->mode&UIFC_MOUSE) {
 			r.w.ax=0x0006;		/* Get button release information */
 			r.w.bx=0x0000;		/* Left button */
 			INT_86(0x33,&r,&r);
@@ -1261,7 +1288,7 @@ while(1) {
 
 	if(i>j) j=i;
 #ifndef __FLAT__
-	if(uifc_status&UIFC_MOUSE) {
+	if(api->mode&UIFC_MOUSE) {
 		r.w.ax=0x0006;		/* Get button release information */
 		r.w.bx=0x0000;		/* Left button */
 		INT_86(0x33,&r,&r);
@@ -1383,53 +1410,33 @@ str[j]=0;
 if(mode&K_EDIT) {
 	truncsp(str);
 	if(strcmp(outstr,str))
-		changes=1; }
+		api->changes=1; }
 else {
 	if(j)
-		changes=1; }
+		api->changes=1; }
 strcpy(outstr,str);
 cursor=_NOCURSOR;
 _setcursortype(cursor);
 return(j);
 }
 
-#if defined(SCFG)
-/****************************************************************************/
-/* Performs printf() through local assembly routines                        */
-/* Called from everywhere                                                   */
-/****************************************************************************/
-int lprintf(char *fmat, ...)
-{
-	va_list argptr;
-	char sbuf[512];
-	int chcount;
-
-va_start(argptr,fmat);
-chcount=vsprintf(sbuf,fmat,argptr);
-va_end(argptr);
-cputs(sbuf);
-return(chcount);
-}
-
-#endif
-
 /****************************************************************************/
 /* Performs printf() through puttext() routine								*/
 /****************************************************************************/
-int uprintf(char x, char y, char attr, char *fmat, ...)
+static int uprintf(char x, char y, char attr, char *fmat, ...)
 {
 	va_list argptr;
 	char str[256],buf[512];
 	int i,j;
 
-va_start(argptr,fmat);
-vsprintf(str,fmat,argptr);
-va_end(argptr);
-for(i=j=0;str[i];i++) {
-	buf[j++]=str[i];
-	buf[j++]=attr; }
-puttext(x,y,x+(i-1),y,buf);
-return(i);
+    va_start(argptr,fmat);
+    vsprintf(str,fmat,argptr);
+    va_end(argptr);
+    for(i=j=0;str[i];i++) {
+        buf[j++]=str[i];
+        buf[j++]=attr; }
+    puttext(x,y,x+(i-1),y,buf);
+    return(i);
 }
 
 
@@ -1439,35 +1446,35 @@ return(i);
 void bottomline(int line)
 {
 	int i=4;
-uprintf(i,scrn_len+1,bclr|(cclr<<4),"F1 ");
+uprintf(i,api->scrn_len+1,bclr|(cclr<<4),"F1 ");
 i+=3;
-uprintf(i,scrn_len+1,BLACK|(cclr<<4),"Help  ");
+uprintf(i,api->scrn_len+1,BLACK|(cclr<<4),"Help  ");
 i+=6;
 if(line&BL_GET) {
-	uprintf(i,scrn_len+1,bclr|(cclr<<4),"F5 ");
+	uprintf(i,api->scrn_len+1,bclr|(cclr<<4),"F5 ");
 	i+=3;
-	uprintf(i,scrn_len+1,BLACK|(cclr<<4),"Copy Item  ");
+	uprintf(i,api->scrn_len+1,BLACK|(cclr<<4),"Copy Item  ");
 	i+=11; }
 if(line&BL_PUT) {
-	uprintf(i,scrn_len+1,bclr|(cclr<<4),"F6 ");
+	uprintf(i,api->scrn_len+1,bclr|(cclr<<4),"F6 ");
 	i+=3;
-	uprintf(i,scrn_len+1,BLACK|(cclr<<4),"Paste  ");
+	uprintf(i,api->scrn_len+1,BLACK|(cclr<<4),"Paste  ");
     i+=7; }
 if(line&BL_INS) {
-	uprintf(i,scrn_len+1,bclr|(cclr<<4),"INS ");
+	uprintf(i,api->scrn_len+1,bclr|(cclr<<4),"INS ");
 	i+=4;
-	uprintf(i,scrn_len+1,BLACK|(cclr<<4),"Add Item  ");
+	uprintf(i,api->scrn_len+1,BLACK|(cclr<<4),"Add Item  ");
 	i+=10; }
 if(line&BL_DEL) {
-	uprintf(i,scrn_len+1,bclr|(cclr<<4),"DEL ");
+	uprintf(i,api->scrn_len+1,bclr|(cclr<<4),"DEL ");
     i+=4;
-	uprintf(i,scrn_len+1,BLACK|(cclr<<4),"Delete Item  ");
+	uprintf(i,api->scrn_len+1,BLACK|(cclr<<4),"Delete Item  ");
 	i+=13; }
-uprintf(i,scrn_len+1,bclr|(cclr<<4),"ESC ");
+uprintf(i,api->scrn_len+1,bclr|(cclr<<4),"ESC ");
 i+=4;
-uprintf(i,scrn_len+1,BLACK|(cclr<<4),"Exit");
+uprintf(i,api->scrn_len+1,BLACK|(cclr<<4),"Exit");
 i+=4;
-gotoxy(i,scrn_len+1);
+gotoxy(i,api->scrn_len+1);
 textattr(BLACK|(cclr<<4));
 clreol();
 }
@@ -1610,6 +1617,13 @@ showmouse();
 }
 
 #if HELP
+
+void sethelp(int line, char* file)
+{
+    helpline=line;
+    helpfile=file;
+}
+
 /************************************************************/
 /* Help (F1) key function. Uses helpbuf as the help input.	*/
 /************************************************************/
@@ -1695,10 +1709,10 @@ for(j=k;j<k+(24*2);j+=2)
 	buf[j]='Ä';
 buf[j]='Ù';
 
-if(!helpbuf) {
-	if((fp=_fsopen(helpixbfile,"rb",SH_DENYWR))==NULL)
+if(!api->helpbuf) {
+	if((fp=_fsopen(api->helpixbfile,"rb",SH_DENYWR))==NULL)
 		sprintf(hbuf," ERROR  Cannot open help index:\r\n          %s"
-			,helpixbfile);
+			,api->helpixbfile);
     else {
         p=strrchr(helpfile,'/');
         if(p==NULL)
@@ -1721,17 +1735,17 @@ if(!helpbuf) {
 		fclose(fp);
 		if(l==-1L)
 			sprintf(hbuf," ERROR  Cannot locate help key (%s:%u) in:\r\n"
-				"         %s",p,helpline,helpixbfile);
+				"         %s",p,helpline,api->helpixbfile);
 		else {
-			if((fp=_fsopen(helpdatfile,"rb",SH_DENYWR))==NULL)
+			if((fp=_fsopen(api->helpdatfile,"rb",SH_DENYWR))==NULL)
 				sprintf(hbuf," ERROR  Cannot open help file:\r\n          %s"
-					,helpdatfile);
+					,api->helpdatfile);
 			else {
 				fseek(fp,l,SEEK_SET);
 				fread(hbuf,HELPBUF_SIZE,1,fp);
 				fclose(fp); } } } }
 else
-    strcpy(hbuf,helpbuf);
+    strcpy(hbuf,api->helpbuf);
 
 len=strlen(hbuf);
 
@@ -1757,7 +1771,7 @@ while(1) {
 		inkey(0);
 		break; }
 #ifndef __FLAT__
-	if(uifc_status&UIFC_MOUSE) {
+	if(api->mode&UIFC_MOUSE) {
 		r.w.ax=0x0006;		/* Get button release information */
 		r.w.bx=0x0000;		/* Left button */
 		INT_86(0x33,&r,&r);
