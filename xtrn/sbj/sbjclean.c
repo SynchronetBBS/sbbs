@@ -31,8 +31,8 @@ int main(int argc, char **argv)
 		&& node_dir[strlen(node_dir)-1]!='/')  /* make sure node_dir ends in '/' */
 		strcat(node_dir,"/");
 
-	if((gamedab=open("GAME.DAB",O_RDWR|O_DENYNONE|O_BINARY))==-1) {
-		printf("Error opening GAME.DAB\r\n");                /* open deny none */
+	if((gamedab=sopen("GAME.DAB",O_RDWR|O_BINARY,SH_DENYNO))==-1) {
+		fprintf(stderr,"Error opening GAME.DAB\r\n");  /* open deny none */
 		return(1); 
 	}
 	getgamedat(1);
