@@ -44,10 +44,14 @@
 	#else
 		#define LZHCALL
 	#endif
-	#ifdef LZHDLL
-		#define LZHEXPORT __declspec( dllexport )
-	#else
-		#define LZHEXPORT __declspec( dllimport )
+	#ifdef LZHDLL	/* LZH functions in DLL */
+		#ifdef LZH_EXPORTS
+			#define LZHEXPORT __declspec( dllexport )
+		#else
+			#define LZHEXPORT __declspec( dllimport )
+		#endif
+	#else			/* self-contained executable */
+		#define LZHEXPORT
 	#endif
 #else	/* !_WIN32 */
 	#define LZHCALL
