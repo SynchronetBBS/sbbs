@@ -1158,8 +1158,13 @@ void DLLCALL services_thread(void* arg)
 
 		status("Listening");
 
-		if(initialized==0)
+		if(initialized==0) {
 			initialized=time(NULL);
+			sprintf(path,"%sservices.rec",scfg.ctrl_dir);
+			t=fdate(path);
+			if(t!=-1 && t>initialized)
+				initialized=t;
+		}
 			
 		terminated=FALSE;
 
@@ -1171,9 +1176,10 @@ void DLLCALL services_thread(void* arg)
 				total_clients+=service[i].clients;
 
 			sprintf(path,"%sservices.rec",scfg.ctrl_dir);
-			if(!total_clients && fdate(path)>initialized) {
+			t=fdate(path);
+			if(!total_clients && t!=-1 && t>initialized) {
 				lprintf("0000 Recycle semaphore file (%s) detected",path);
-				initialized=fdate(path);
+				initialized=t;
 				break;
 			}
 			if(!total_clients && startup->recycle_now==TRUE) {

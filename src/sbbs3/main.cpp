@@ -3397,8 +3397,13 @@ void DLLCALL bbs_thread(void* arg)
 
 #endif // _WIN32 && _DEBUG && _MSC_VER
 
-	if(!initialized)
+	if(!initialized) {
 		initialized=time(NULL);
+		sprintf(str,"%stelnet.rec",scfg.ctrl_dir);
+		t=fdate(str);
+		if(t!=-1 && t>initialized)
+			initialized=t;
+	}
 
 	while(telnet_socket!=INVALID_SOCKET) {
 
@@ -3428,9 +3433,10 @@ void DLLCALL bbs_thread(void* arg)
 				pthread_mutex_unlock(&event_mutex);
 			}
 			sprintf(str,"%stelnet.rec",scfg.ctrl_dir);
-			if(fdate(str)>initialized) {
+			t=fdate(str);
+			if(t!=-1 && t>initialized) {
 				lprintf("0000 Recycle semaphore file (%s) detected",str);
-				initialized=fdate(str);
+				initialized=t;
 				break;
 			}
 			if(startup->recycle_now==TRUE) {
