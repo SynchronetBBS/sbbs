@@ -48,6 +48,7 @@
 
 #include "MainFormUnit.h"
 #include "TelnetFormUnit.h"
+#include "EventsFormUnit.h"
 #include "FtpFormUnit.h"
 #include "MailFormUnit.h"
 #include "NodeFormUnit.h"
@@ -72,9 +73,6 @@
 #pragma resource "*.dfm"
 TMainForm *MainForm;
 
-extern "C" __declspec(dllimport) BOOL __stdcall load_cfg(scfg_t* cfg, char* text[]);
-extern "C" __declspec(dllimport) BOOL __stdcall getstats(scfg_t* cfg, char node, stats_t* stats);
-extern "C" __declspec(dllimport) int  __stdcall getmail(scfg_t* cfg, int usernumber, BOOL sent);
 #define MAX_LOGLEN 20000
 
 #define LOG_TIME_FMT "  m/d  hh:mm:ssa/p"
@@ -271,6 +269,24 @@ static void bbs_start(void)
     bbs_status("Starting");
     strcpy(MainForm->bbs_startup.ctrl_dir,MainForm->CtrlDirectory.c_str());
 	_beginthread((void(*)(void*))bbs_thread,0,&MainForm->bbs_startup);
+}
+
+static int event_log(char *str)
+{
+	static HANDLE mutex;
+
+    if(!mutex)
+    	mutex=CreateMutex(NULL,false,NULL);
+	WaitForSingleObject(mutex,INFINITE);
+
+    while(EventsForm->Log->Text.Length()>=MAX_LOGLEN)
+        EventsForm->Log->Lines->Delete(0);
+
+    AnsiString Line=Now().FormatString(LOG_TIME_FMT)+"  ";
+    Line+=AnsiString(str).Trim();
+	EventsForm->Log->Lines->Add(Line);
+    ReleaseMutex(mutex);
+    return(Line.Length());
 }
 
 static int mail_lputs(char *str)
@@ -517,6 +533,7 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
     bbs_startup.thread_up=thread_up;
     bbs_startup.client_on=client_on;
     bbs_startup.socket_open=socket_open;
+    bbs_startup.event_log=event_log;
 
     memset(&mail_startup,0,sizeof(mail_startup));
     mail_startup.size=sizeof(mail_startup);
@@ -533,8 +550,8 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
     mail_startup.thread_up=thread_up;
     mail_startup.client_on=client_on;
     mail_startup.socket_open=socket_open;
-    mail_startup.max_delivery_attempts=10;
-    mail_startup.rescan_frequency=300;  /* 5 minutes */
+    mail_startup.max_delivery_attempts=50;
+    mail_startup.rescan_frequency=3600;  /* 60 minutes */
 
     memset(&ftp_startup,0,sizeof(ftp_startup));
     ftp_startup.size=sizeof(ftp_startup);
@@ -665,6 +682,11 @@ void __fastcall TMainForm::SaveSettings(TObject* Sender)
     Registry->WriteInteger("TelnetFormHeight",TelnetForm->Height);
     Registry->WriteInteger("TelnetFormWidth",TelnetForm->Width);
 
+    Registry->WriteInteger("EventsFormTop",EventsForm->Top);
+    Registry->WriteInteger("EventsFormLeft",EventsForm->Left);
+    Registry->WriteInteger("EventsFormHeight",EventsForm->Height);
+    Registry->WriteInteger("EventsFormWidth",EventsForm->Width);
+
     Registry->WriteInteger("FtpFormTop",FtpForm->Top);
     Registry->WriteInteger("FtpFormLeft",FtpForm->Left);
     Registry->WriteInteger("FtpFormHeight",FtpForm->Height);
@@ -682,6 +704,7 @@ void __fastcall TMainForm::SaveSettings(TObject* Sender)
     	,LowerLeftPageControl->Width);
 
     Registry->WriteBool("TelnetFormFloating",TelnetForm->Floating);
+    Registry->WriteBool("EventsFormFloating",EventsForm->Floating);
     Registry->WriteBool("NodeFormFloating",NodeForm->Floating);
     Registry->WriteBool("StatsFormFloating",StatsForm->Floating);
     Registry->WriteBool("ClientFormFloating",ClientForm->Floating);
@@ -690,6 +713,8 @@ void __fastcall TMainForm::SaveSettings(TObject* Sender)
 
     Registry->WriteInteger("TelnetFormPage"
 	    ,PageNum((TPageControl*)TelnetForm->HostDockSite));
+    Registry->WriteInteger("EventsFormPage"
+	    ,PageNum((TPageControl*)EventsForm->HostDockSite));
     Registry->WriteInteger("NodeFormPage"
     	,PageNum((TPageControl*)NodeForm->HostDockSite));
     Registry->WriteInteger("MailFormPage"
@@ -803,8 +828,10 @@ void __fastcall TMainForm::FormCloseQuery(TObject *Sender, bool &CanClose)
         FtpStopExecute(Sender);
     }
 
-	while(TelnetStop->Enabled || MailStop->Enabled || FtpStop->Enabled)
-        Application->HandleMessage(); 
+	while(TelnetStop->Enabled || MailStop->Enabled || FtpStop->Enabled) {
+        Application->ProcessMessages();
+        Sleep(1);
+    }
 
     CanClose=true;
 }
@@ -876,6 +903,12 @@ void __fastcall TMainForm::ViewTelnetExecute(TObject *Sender)
 {
 	TelnetForm->Visible=!TelnetForm->Visible;
     ViewTelnet->Checked=TelnetForm->Visible;
+}
+//---------------------------------------------------------------------------
+void __fastcall TMainForm::ViewEventsExecute(TObject *Sender)
+{
+	EventsForm->Visible=!EventsForm->Visible;
+    ViewEvents->Checked=EventsForm->Visible;
 }
 //---------------------------------------------------------------------------
 
@@ -1128,6 +1161,7 @@ int __fastcall TMainForm::PageNum(TPageControl* obj)
 void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
 {
     bool	TelnetFormFloating=false;
+    bool	EventsFormFloating=false;
     bool 	NodeFormFloating=false;
     bool	StatsFormFloating=false;
     bool	ClientFormFloating=false;
@@ -1137,6 +1171,7 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     int		StatsFormPage=PAGE_UPPERLEFT;
     int		ClientFormPage=PAGE_UPPERLEFT;
     int		TelnetFormPage=PAGE_LOWERLEFT;
+    int		EventsFormPage=PAGE_LOWERLEFT;
     int		MailFormPage=PAGE_UPPERRIGHT;
     int		FtpFormPage=PAGE_LOWERRIGHT;
 
@@ -1167,6 +1202,8 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
 
     if(Registry->ValueExists("TelnetFormFloating"))
     	TelnetFormFloating=Registry->ReadBool("TelnetFormFloating");
+    if(Registry->ValueExists("EventsFormFloating"))
+    	EventsFormFloating=Registry->ReadBool("EventsFormFloating");
     if(Registry->ValueExists("NodeFormFloating"))
     	NodeFormFloating=Registry->ReadBool("NodeFormFloating");
     if(Registry->ValueExists("StatsFormFloating"))
@@ -1180,6 +1217,8 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
 
     if(Registry->ValueExists("TelnetFormPage"))
     	TelnetFormPage=Registry->ReadInteger("TelnetFormPage");
+    if(Registry->ValueExists("EventsFormPage"))
+    	EventsFormPage=Registry->ReadInteger("EventsFormPage");
     if(Registry->ValueExists("NodeFormPage"))
     	NodeFormPage=Registry->ReadInteger("NodeFormPage");
     if(Registry->ValueExists("StatsFormPage"))
@@ -1199,6 +1238,15 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     	TelnetForm->Width=Registry->ReadInteger("TelnetFormWidth");
 	if(Registry->ValueExists("TelnetFormHeight"))
     	TelnetForm->Height=Registry->ReadInteger("TelnetFormHeight");
+
+	if(Registry->ValueExists("EventsFormTop"))
+    	EventsForm->Top=Registry->ReadInteger("EventsFormTop");
+	if(Registry->ValueExists("EventsFormLeft"))
+    	EventsForm->Left=Registry->ReadInteger("EventsFormLeft");
+	if(Registry->ValueExists("EventsFormWidth"))
+    	EventsForm->Width=Registry->ReadInteger("EventsFormWidth");
+	if(Registry->ValueExists("EventsFormHeight"))
+    	EventsForm->Height=Registry->ReadInteger("EventsFormHeight");
 
 	if(Registry->ValueExists("FtpFormTop"))
     	FtpForm->Top=Registry->ReadInteger("FtpFormTop");
@@ -1438,6 +1486,8 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     	MailForm->ManualDock(PageControl(MailFormPage),NULL,alClient);
 	if(!TelnetFormFloating)
     	TelnetForm->ManualDock(PageControl(TelnetFormPage),NULL,alClient);
+	if(!EventsFormFloating)
+    	EventsForm->ManualDock(PageControl(EventsFormPage),NULL,alClient);
 	if(!FtpFormFloating)
     	FtpForm->ManualDock(PageControl(FtpFormPage),NULL,alClient);
 
@@ -1445,6 +1495,7 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     ClientForm->Show();
     StatsForm->Show();
     TelnetForm->Show();
+    EventsForm->Show();
     FtpForm->Show();
     MailForm->Show();
 
@@ -1648,7 +1699,7 @@ void __fastcall TMainForm::UpTimerTick(TObject *Sender)
         /* Animate TrayIcon when in use */
         AnsiString NumClients;
         if(clients) {
-            TrayIcon->IconIndex^=1;
+            TrayIcon->IconIndex=(TrayIcon->IconIndex==4) ? 59 : 4;
             NumClients=" ("+AnsiString(clients)+" client";
             if(clients>1)
                 NumClients+="s";
@@ -1793,7 +1844,7 @@ void __fastcall TMainForm::HelpIndexMenuItemClick(TObject *Sender)
 {
     char str[512];
 
-    sprintf(str,"start http://synchro.net/docs");
+    sprintf(str,"start http://synchro.net/docs/");
     WinExec(str,SW_SHOWMINNOACTIVE);
 }
 //---------------------------------------------------------------------------
@@ -1829,4 +1880,29 @@ void __fastcall TMainForm::PropertiesExecute(TObject *Sender)
     delete PropertiesDlg;
 }
 //---------------------------------------------------------------------------
+
+void __fastcall TMainForm::CloseMenuItemClick(TObject *Sender)
+{
+    Close();
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TMainForm::RestoreMenuItemClick(TObject *Sender)
+{
+    TrayIcon->Visible=false;
+    Application->Restore();
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TMainForm::HelpSysopMenuItemClick(TObject *Sender)
+{
+    char str[512];
+
+    sprintf(str,"start http://synchro.net/docs/sysop.html");
+    WinExec(str,SW_SHOWMINNOACTIVE);
+}
+//---------------------------------------------------------------------------
+
+
+
 
