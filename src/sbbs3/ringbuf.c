@@ -45,6 +45,7 @@
 #include LOCKED_DATA_SEGMENT
 #endif
 
+#include "genwrap.h" /* YIELD() */ 
 #include "ringbuf.h"
 
 #ifdef RINGBUF_USE_STD_RTL
