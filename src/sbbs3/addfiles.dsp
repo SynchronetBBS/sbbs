@@ -136,5 +136,9 @@ SOURCE=.\scfglib2.c
 
 SOURCE=.\str_util.c
 # End Source File
+# Begin Source File
+
+SOURCE=.\userdat.c
+# End Source File
 # End Target
 # End Project

@@ -189,6 +189,7 @@ $(ADDFILES): addfiles.c \
 	$(LIBODIR)\crc16.obj \
 	$(LIBODIR)\str_util.obj \
 	$(LIBODIR)\date_str.obj \
+	$(LIBODIR)\userdat.obj \
 	dat_rec.c \
 	filedat.c \
 	genwrap.c \

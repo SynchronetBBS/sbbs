@@ -37,9 +37,7 @@
 
 #include "sbbs.h"
 
-#define ADDFILES_VER "3.00"
-
-char *crlf="\r\n";
+#define ADDFILES_VER "3.01"
 
 scfg_t scfg;
 
@@ -278,7 +276,7 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 
 			if(mode&FILE_ID) {
 				for(i=0;i<scfg.total_fextrs;i++)
-					if(!stricmp(scfg.fextr[i]->ext,f.name+9))
+					if(!stricmp(scfg.fextr[i]->ext,f.name+9) && chk_ar(&scfg,scfg.fextr[i]->ar,NULL))
 						break;
 				if(i<scfg.total_fextrs) {
 					sprintf(tmp,"%sFILE_ID.DIZ",scfg.temp_dir);
@@ -481,7 +479,7 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 
 		if(mode&FILE_ID) {
 			for(i=0;i<scfg.total_fextrs;i++)
-				if(!stricmp(scfg.fextr[i]->ext,f.name+9))
+				if(!stricmp(scfg.fextr[i]->ext,f.name+9) && chk_ar(&scfg,scfg.fextr[i]->ar,NULL))
 					break;
 			if(i<scfg.total_fextrs) {
 				sprintf(tmp,"%sFILE_ID.DIZ",scfg.temp_dir);
@@ -894,7 +892,7 @@ int main(int argc, char **argv)
 			printf("%s %7lu %s\n",f.name,f.cdt,f.desc);
 			if(mode&FILE_ID) {
 				for(i=0;i<scfg.total_fextrs;i++)
-					if(!stricmp(scfg.fextr[i]->ext,f.name+9))
+					if(!stricmp(scfg.fextr[i]->ext,f.name+9) && chk_ar(&scfg,scfg.fextr[i]->ar,NULL))
 						break;
 				if(i<scfg.total_fextrs) {
 					sprintf(tmp,"%sFILE_ID.DIZ",scfg.temp_dir);

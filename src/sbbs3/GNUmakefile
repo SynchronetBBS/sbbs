@@ -401,6 +401,7 @@ ADDFILES_OBJS = \
 	$(EXEODIR)/crc16.o \
 	$(EXEODIR)/str_util.o \
 	$(EXEODIR)/dat_rec.o \
+	$(EXEODIR)/userdat.o \
 	$(EXEODIR)/filedat.o \
 	$(EXEODIR)/filewrap.o \
 	$(EXEODIR)/dirwrap.o \
