@@ -61,8 +61,11 @@ XPDEV	=	../xpdev/
 ifndef os
  os		:=	$(shell uname)
 endif
+ifeq ($(shell uname -m),ppc)
+ os		:=	$(os)-ppc
+endif
 # this line wont work with solaris unless awk in path is actually gawk 
-os      :=	$(shell echo $(os) | tr "[A-Z]" "[a-z]")
+os      :=	$(shell echo $(os) | tr "[ A-Z]" "[-a-z]")
 # remove '/' from "os/2"
 os      :=  $(shell echo $(os) | tr -d "/")
 
@@ -104,7 +107,7 @@ endif
 
 ifeq ($(os),netbsd)
  CFLAGS += -D_REENTRANT -D__unix__ -I/usr/pkg/include -DNEEDS_FORKPTY
- LFLAGS := -lm -lpthread -L/usr/pkg/lib
+ LFLAGS := -lm -lpthread -L/usr/pkg/lib -L/usr/pkg/pthreads/lib
 endif
 
 # So far, only QNX has sem_timedwait()
