@@ -151,6 +151,7 @@ js_close(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 static ushort js_port(JSContext* cx, jsval val, int type)
 {
+	char*			cp;
 	JSString*		str;
 	struct servent*	serv;
 
@@ -158,7 +159,10 @@ static ushort js_port(JSContext* cx, jsval val, int type)
 		return((ushort)JSVAL_TO_INT(val));
 	if(JSVAL_IS_STRING(val)) {
 		str = JS_ValueToString(cx,val);
-		serv = getservbyname(JS_GetStringBytes(str),type==SOCK_STREAM ? "tcp":"udp");
+		cp = JS_GetStringBytes(str);
+		if(isdigit(*cp))
+			return((ushort)strtol(cp,NULL,0));
+		serv = getservbyname(cp,type==SOCK_STREAM ? "tcp":"udp");
 		if(serv!=NULL)
 			return(htons(serv->s_port));
 	}
