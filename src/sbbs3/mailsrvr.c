@@ -3459,14 +3459,14 @@ static void sendmail_thread(void* arg)
 			msg.offset=offset;
 
 			if((i=smb_lockmsghdr(&smb,&msg))!=0) {
-				lprintf(LOG_WARNING,"0000 !SEND ERROR %d (%s) locking message header #%lu"
-					,i, smb.last_error, msg.idx.number);
+				lprintf(LOG_WARNING,"0000 !SEND ERROR %d (%s) locking message header #%lu (offset %lu)"
+					,i, smb.last_error, msg.idx.number, offset);
 				continue;
 			}
 			if((i=smb_getmsghdr(&smb,&msg))!=0) {
 				smb_unlockmsghdr(&smb,&msg);
-				lprintf(LOG_ERR,"0000 !SEND ERROR %d (%s) reading message header #%lu"
-					,i, smb.last_error, msg.idx.number);
+				lprintf(LOG_ERR,"0000 !SEND ERROR %d (%s) reading message header #%lu (offset %lu)"
+					,i, smb.last_error, msg.idx.number, offset);
 				continue; 
 			}
 			if(msg.to_net.type!=NET_INTERNET || msg.to_net.addr==NULL) {
