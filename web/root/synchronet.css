@@ -63,6 +63,10 @@ td.postmsg { background-color: #007788; }
 textarea.postmsg { background-color: black; color: #aaaaaa; }
 input.postmsg { background-color: black; color: #aaaaaa; }
 
+table.posted { margin-left: auto; margin-right: auto; background-color: #116677; }
+td.posted { background-color: #007788; }
+p.posted { text-align: center; }
+
 table.replymsg { margin-left: auto; margin-right: auto; background-color: #116677; }
 td.replymsg { background-color: #007788; }
 textarea.replymsg { background-color: black; color: #aaaaaa; }
