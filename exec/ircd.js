@@ -28,8 +28,8 @@ const REVISION = "$Revision$".split(' ')[1];
 // IF you're making a custom version, it'd be appreciated if you left the
 // version number alone, and add a token in the form of +hack (i.e. 1.0+cyan)
 // This is so everyone knows your revision base, AND type of hack used.
-const VERSION = "1.0b";
-const VERSION_STR = "Synchronet IRC Daemon by Randy Sommerfeld <sysop@rrx.ca>";
+const VERSION = "SynchronetIRCd-1.0b(" + REVISION + ")";
+const VERSION_STR = "Synchronet " + system.version + system.revision + "-" + system.platform + " (IRCd by Randy Sommerfeld)";
 // This will dump all I/O to and from the server to your Synchronet console.
 // It also enables some more verbose WALLOPS, especially as they pertain to
 // blocking functions.
@@ -531,6 +531,8 @@ function read_config_file() {
 	OLines = new Array();
 	QLines = new Array();
 	ULines = new Array();
+	diepass = "";
+	restartpass = "";
 	YLines = new Array();
 	ZLines = new Array();
 	fname="";
@@ -614,6 +616,10 @@ function read_config_file() {
 							break;
 						ULines.push(arg[1]);
 						break;
+					case "X":
+						diepass = arg[1];
+						restartpass = arg[2];
+						break;
 					case "Y":
 						if (!arg[5])
 							break;
@@ -673,7 +679,7 @@ for (cmdarg=0;cmdarg<argc;cmdarg++) {
 }
 
 read_config_file();
-log("Synchronet IRC Daemon (" + VERSION + ") started.");
+log(VERSION + " started.");
 
 ///// Main Loop /////
 while (!server.terminated) {
@@ -710,8 +716,6 @@ while (!server.terminated) {
 	}
 
 	// Scan C:Lines for servers to connect to automatically.
-	// FIXME: connect retry interval is 30 seconds, but should be set
-	// to something else as per a Y:Line
 	for(thisCL in CLines) {
 		var my_cline = CLines[thisCL];
 		if (my_cline.port && YLines[my_cline.ircclass].connfreq &&
@@ -847,7 +851,7 @@ function IRCClient(socket,new_id,local_client,do_newconn) {
 		this.idletime = time();
 		this.talkidle = time();
 		this.conntype = TYPE_UNREGISTERED;
-		this.server_notice("*** Synchronet IRC Daemon (" + serverdesc + ") Ready.");
+		this.server_notice("*** " + VERSION + " (" + serverdesc + ") Ready.");
 	}
 }
 
@@ -1038,7 +1042,7 @@ function IRCClient_numeric(num, str) {
 
 //////////////////// Numeric Functions ////////////////////
 function IRCClient_numeric351() {
-	this.numeric(351, VERSION + " " + servername + " :(REV:" + REVISION + ") " + VERSION_STR);
+	this.numeric(351, VERSION + " " + servername + " :" + VERSION_STR);
 }
 
 function IRCClient_numeric353(chan, str) {
@@ -2058,7 +2062,7 @@ function IRCClient_unregistered_commands(command, cmdline) {
 		hcc_counter++;
 		this.conntype = TYPE_USER;
 		this.numeric("001", ":Welcome to the Synchronet IRC Service, " + this.ircnuh);
-		this.numeric("002", ":Your host is " + servername + ", running Synchronet IRCD " + VERSION);
+		this.numeric("002", ":Your host is " + servername + ", running " + VERSION);
 		this.numeric("003", ":This server was created " + strftime("%a %b %e %Y at %H:%M:%S %Z",server_uptime));
 		this.numeric("004", servername + " " + VERSION + " oi biklmnopstv");
 		this.numeric("005", "MODES=" + max_modes + " MAXCHANNELS=" + max_user_chans + " CHANNELLEN=" + max_chanlen + " MAXBANS=" + max_bans + " NICKLEN=" + max_nicklen + " TOPICLEN=" + max_topiclen + " KICKLEN=" + max_kicklen + " CHANTYPES=#& PREFIX=(ov)@+ NETWORK=Synchronet CASEMAPPING=ascii CHANMODES=b,k,l,imnpst STATUSMSG=@+ :are available on this server.");
@@ -2166,7 +2170,7 @@ function IRCClient_registered_commands(command, cmdline) {
 			}
 			break;
 		case "INFO":
-			this.numeric("371", ":IRC Daemon for Synchronet Version " + VERSION + " Copyright 2003 Randy Sommerfeld.");
+			this.numeric("371", ":" + VERSION + " Copyright 2003 Randy Sommerfeld.");
 			this.numeric("371", ":" + system.version_notice + " " + system.copyright + ".");
 			this.numeric("371", ": ");
 			this.numeric("371", ":--- A big thanks to the following for their assistance: ---");
@@ -2606,6 +2610,13 @@ function IRCClient_registered_commands(command, cmdline) {
 				this.numeric481();
 				break;
 			}
+			if (diepass && !cmd[1]) {
+				this.numeric461("DIE");
+				break;
+			} else if (diepass && (cmd[1] != diepass)) {
+				this.server_notice("Invalid DIE password.");
+				break;
+			}
 			log("!ERROR! Shutting down the ircd as per " + this.ircnuh);
 			terminated = true;
 			break;
@@ -2622,6 +2633,13 @@ function IRCClient_registered_commands(command, cmdline) {
 		case "RESTART":
 			if (!(this.mode&USERMODE_OPER)) {
 				this.numeric481();
+				break;
+			}
+			if (restartpass && !cmd[1]) {
+				this.numeric461("RESTART");
+				break;
+			} else if (restartpass && (cmd[1] != restartpass)) {
+				this.server_notice("Invalid RESTART password.");
 				break;
 			}
 			rs_str = "Aieeeee!!!  Restarting server...";
