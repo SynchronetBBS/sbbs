@@ -2459,7 +2459,7 @@ static void smtp_thread(void* arg)
 
 			/* Check for SPAM bait recipient */
 			sprintf(str,"%sspambait.cfg",scfg.ctrl_dir);
-			if(findstr(str,rcpt_addr)) {
+			if(findstr(rcpt_addr,str)) {
 				sprintf(str,"SPAM BAIT (%s) taken", rcpt_addr);
 				lprintf("%04d !SMTP %s by: %s"
 					,socket, str, reverse_path);
