@@ -1000,6 +1000,8 @@ are later downloaded, set this value to 0.
 						,cfg.dir[i]->misc&DIR_CDTDL ? "Yes":"No");
 					sprintf(opt[n++],"%-27.27s%s","Credit with Minutes"
 						,cfg.dir[i]->misc&DIR_CDTMIN ? "Yes":"No");
+					sprintf(opt[n++],"%-27.27s%s","Download Notifications"
+						,cfg.dir[i]->misc&DIR_QUIET ? "No":"Yes");
 					sprintf(opt[n++],"%-27.27s%s","Anonymous Uploads"
 						,cfg.dir[i]->misc&DIR_ANON ? cfg.dir[i]->misc&DIR_AONLY
 						? "Only":"Yes":"No");
@@ -1025,7 +1027,7 @@ more states, such as Yes and No.
 					uifc.savnum=3;
 					switch(n) {
 						case 0:
-							n=0;
+							n=cfg.dir[i]->misc&DIR_FCHK ? 0:1;
 							strcpy(opt[0],"Yes");
 							strcpy(opt[1],"No");
 							opt[2][0]=0;
@@ -1049,7 +1051,7 @@ this option set to No.
 								uifc.changes=1; }
 							break;
 						case 1:
-                            n=0;
+                            n=cfg.dir[i]->seqdev ? 0:1;
                             strcpy(opt[0],"Yes");
                             strcpy(opt[1],"No");
                             opt[2][0]=0;
@@ -1084,7 +1086,7 @@ device number.
                                 uifc.changes=1; }
                             break;
 						case 2:
-							n=1;
+							n=cfg.dir[i]->misc&DIR_RATE ? 0:1;
 							strcpy(opt[0],"Yes");
 							strcpy(opt[1],"No");
 							opt[2][0]=0;
@@ -1105,7 +1107,7 @@ content rating (G, R, or X), set this value to Yes.
 								uifc.changes=1; }
 							break;
 						case 3:
-							n=1;
+							n=cfg.dir[i]->misc&DIR_ULDATE ? 0:1;
 							strcpy(opt[0],"Yes");
 							strcpy(opt[1],"No");
 							opt[2][0]=0;
@@ -1127,7 +1129,7 @@ automatically included in the file description, set this option to
 								uifc.changes=1; }
                             break;
 						case 4:
-							n=0;
+							n=cfg.dir[i]->misc&DIR_MULT ? 0:1;
 							strcpy(opt[0],"Yes");
 							strcpy(opt[1],"No");
 							opt[2][0]=0;
@@ -1148,7 +1150,7 @@ file (disk) numbers, set this value to Yes.
 								uifc.changes=1; }
 							break;
 						case 5:
-							n=0;
+							n=cfg.dir[i]->misc&DIR_DUPES ? 0:1;
 							strcpy(opt[0],"Yes");
 							strcpy(opt[1],"No");
 							opt[2][0]=0;
@@ -1169,7 +1171,7 @@ filenames when a user attempts to upload a file, set this option to Yes.
 								uifc.changes=1; }
 							break;
 						case 6:
-							n=0;
+							n=cfg.dir[i]->misc&DIR_NOSCAN ? 1:0;
 							strcpy(opt[0],"Yes");
 							strcpy(opt[1],"No");
 							opt[2][0]=0;
@@ -1195,7 +1197,7 @@ if this option is set to No.
 								uifc.changes=1; }
                             break;
 						case 7:
-							n=0;
+							n=cfg.dir[i]->misc&DIR_NOAUTO ? 1:0;
 							strcpy(opt[0],"Yes");
 							strcpy(opt[1],"No");
 							opt[2][0]=0;
@@ -1217,7 +1219,7 @@ set this option to Yes.
 								uifc.changes=1; }
                             break;
 						case 8:
-							n=0;
+							n=cfg.dir[i]->misc&DIR_DIZ ? 0:1;
 							strcpy(opt[0],"Yes");
 							strcpy(opt[1],"No");
 							opt[2][0]=0;
@@ -1239,7 +1241,7 @@ description, set this option to Yes.
 								uifc.changes=1; }
                             break;
 						case 9:
-							n=1;
+							n=cfg.dir[i]->misc&DIR_FREE ? 0:1;
 							strcpy(opt[0],"Yes");
 							strcpy(opt[1],"No");
 							opt[2][0]=0;
@@ -1260,7 +1262,7 @@ no credits), set this option to Yes.
 								uifc.changes=1; }
                             break;
 						case 10:
-							n=1;
+							n=cfg.dir[i]->misc&DIR_TFREE ? 0:1;
 							strcpy(opt[0],"Yes");
 							strcpy(opt[1],"No");
 							opt[2][0]=0;
@@ -1281,7 +1283,7 @@ time from the user, set this option to Yes.
 								uifc.changes=1; }
                             break;
 						case 11:
-							n=1;
+							n=cfg.dir[i]->misc&DIR_ULTIME ? 0:1;
 							strcpy(opt[0],"Yes");
 							strcpy(opt[1],"No");
 							opt[2][0]=0;
@@ -1302,7 +1304,7 @@ uploading subtracted from their time online, set this option to Yes.
 								uifc.changes=1; }
                             break;
 						case 12:
-							n=0;
+							n=cfg.dir[i]->misc&DIR_CDTUL ? 0:1;
 							strcpy(opt[0],"Yes");
 							strcpy(opt[1],"No");
 							opt[2][0]=0;
@@ -1323,7 +1325,7 @@ initial upload, set this option to Yes.
 								uifc.changes=1; }
                             break;
 						case 13:
-							n=0;
+							n=cfg.dir[i]->misc&DIR_CDTDL ? 0:1;
 							strcpy(opt[0],"Yes");
 							strcpy(opt[1],"No");
 							opt[2][0]=0;
@@ -1344,16 +1346,16 @@ files are downloaded, set this optin to Yes.
 								uifc.changes=1; }
                             break;
 						case 14:
-							n=1;
+							n=cfg.dir[i]->misc&DIR_CDTMIN ? 0:1;
 							strcpy(opt[0],"Yes");
 							strcpy(opt[1],"No");
 							opt[2][0]=0;
 							SETHELP(WHERE);
 /*
-Credit Uploader with Minutes instead of Credits:
+`Credit Uploader with Minutes instead of Credits:`
 
 If you wish to give the uploader of files to this directory minutes,
-intead of credits, set this option to Yes.
+intead of credits, set this option to `Yes`.
 */
 							n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
 								,"Credit Uploader with Minutes",opt);
@@ -1364,9 +1366,32 @@ intead of credits, set this option to Yes.
 								cfg.dir[i]->misc&=~DIR_CDTMIN;
 								uifc.changes=1; }
                             break;
-
 						case 15:
-							n=1;
+							n=cfg.dir[i]->misc&DIR_QUIET ? 1:0;
+							strcpy(opt[0],"Yes");
+							strcpy(opt[1],"No");
+							opt[2][0]=0;
+							SETHELP(WHERE);
+/*
+`Send Download Notifications:`
+
+If you wish the BBS to send download notification messages to the
+uploader of a file do this directory, set this option to `Yes`.
+*/
+							n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
+								,"Send Download Notifications",opt);
+							if(n==1 && !(cfg.dir[i]->misc&DIR_QUIET)) {
+								cfg.dir[i]->misc|=DIR_QUIET;
+								uifc.changes=1; 
+							} else if(n==0 && cfg.dir[i]->misc&DIR_QUIET){
+								cfg.dir[i]->misc&=~DIR_QUIET;
+								uifc.changes=1; 
+							}
+                            break;
+
+
+						case 16:
+							n=cfg.dir[i]->misc&DIR_ANON ? (cfg.dir[i]->misc&DIR_AONLY ? 2:0):1;
 							strcpy(opt[0],"Yes");
 							strcpy(opt[1],"No");
 							strcpy(opt[2],"Only");
@@ -1394,8 +1419,8 @@ this directory to be forced anonymous, set this option to Only.
 								cfg.dir[i]->misc|=(DIR_ANON|DIR_AONLY);
 								uifc.changes=1; }
 							break;
-						case 16:
-                            n=0;
+						case 17:
+                            n=cfg.dir[i]->misc&DIR_SINCEDL ? 0:1;
                             strcpy(opt[0],"Yes");
                             strcpy(opt[1],"No");
                             opt[2][0]=0;
@@ -1418,8 +1443,8 @@ by setting this option to Yes.
 								cfg.dir[i]->misc&=~DIR_SINCEDL;
                                 uifc.changes=1; }
                             break;
-						case 17:
-                            n=0;
+						case 18:
+                            n=cfg.dir[i]->misc&DIR_MOVENEW ? 0:1;
                             strcpy(opt[0],"Yes");
                             strcpy(opt[1],"No");
                             opt[2][0]=0;
