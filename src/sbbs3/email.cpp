@@ -78,10 +78,11 @@ bool sbbs_t::email(int usernumber, char *top, char *subj, long mode)
 	if(l&(DELETED|INACTIVE)) {              /* Deleted or Inactive User */
 		bputs(text[UnknownUser]);
 		return(false); }
-	if(l&NETMAIL && cfg.sys_misc&SM_FWDTONET
-		&& yesno(text[ForwardMailQ])) { /* Forward to netmail address */
+	if(l&NETMAIL && cfg.sys_misc&SM_FWDTONET) {
 		getuserrec(&cfg,usernumber,U_NETMAIL,LEN_NETMAIL,str);
-		return(netmail(str,subj,mode));
+		bprintf(text[UserNetMail],str);
+		if(yesno(text[ForwardMailQ])) /* Forward to netmail address */
+			return(netmail(str,subj,mode));
 	}
 	bprintf(text[Emailing],username(&cfg,usernumber,tmp),usernumber);
 	action=NODE_SMAL;
