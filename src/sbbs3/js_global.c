@@ -626,7 +626,7 @@ js_html_encode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 					else
 						j+=sprintf(outbuf+j,"&#%u;",exasctbl[ch].value);
 				}
-				else if(inbuf[i]>=' ') /* strip unknown control chars */
+				else if((uchar)inbuf[i]>=' ') /* strip unknown control chars */
 					j+=sprintf(outbuf+j,"&#%u;",inbuf[i]);
 				break;
 		}
