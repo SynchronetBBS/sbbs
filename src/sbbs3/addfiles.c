@@ -689,7 +689,7 @@ int main(int argc, char **argv)
 	long l;
 	file_t	f;
 
-	sscanf("$Revision$" + 11, "%s", revision);
+	sscanf("$Revision$", "%*s %s", revision);
 
 	fprintf(stderr,"\nADDFILES v%s-%s (rev %s) - Adds Files to Synchronet "
 		"Filebase\n"

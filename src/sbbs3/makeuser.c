@@ -87,7 +87,7 @@ int main(int argc, char **argv)
 	time_t	now;
 	user_t	user;
 
-	sscanf("$Revision$" + 11, "%s", revision);
+	sscanf("$Revision$", "%*s %s", revision);
 
 	fprintf(stderr,"\nMAKEUSER v%s-%s - Adds User to Synchronet User Database\n"
 		,revision

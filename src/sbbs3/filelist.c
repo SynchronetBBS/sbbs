@@ -126,7 +126,7 @@ int main(int argc, char **argv)
 	time_t	uld,dld;
 	FILE	*in,*out=NULL;
 
-	sscanf("$Revision$" + 11, "%s", revision);
+	sscanf("$Revision$", "%*s %s", revision);
 
 	fprintf(stderr,"\nFILELIST v%s-%s (rev %s) - Generate Synchronet File "
 		"Directory Lists\n"

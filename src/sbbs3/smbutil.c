@@ -1285,7 +1285,7 @@ int main(int argc, char **argv)
 
 	setvbuf(stdout,0,_IONBF,0);
 
-	sscanf("$Revision$" + 11, "%s", revision);
+	sscanf("$Revision$", "%*s %s", revision);
 
 	DESCRIBE_COMPILER(compiler);
 

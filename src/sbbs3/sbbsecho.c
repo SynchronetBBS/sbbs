@@ -4036,7 +4036,7 @@ int main(int argc, char **argv)
 	memset(&msg_path,0,sizeof(addrlist_t));
 	memset(&fakearea,0,sizeof(areasbbs_t));
 
-	sscanf("$Revision$" + 11, "%s", revision);
+	sscanf("$Revision$", "%*s %s", revision);
 
 	DESCRIBE_COMPILER(compiler);
 
