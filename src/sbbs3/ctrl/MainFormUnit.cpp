@@ -602,6 +602,9 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
     char* p;
     if((p=getenv("SBBSCTRL"))!=NULL)
         CtrlDirectory=p;
+    char ch=*lastchar(CtrlDirectory);
+    if(ch!='\\' && ch!='/')
+        CtrlDirectory+="\\";
 
     memset(&bbs_startup,0,sizeof(bbs_startup));
     bbs_startup.size=sizeof(bbs_startup);
