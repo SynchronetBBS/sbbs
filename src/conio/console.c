@@ -34,6 +34,7 @@
 #include <sys/types.h>
 #include <sys/user.h>
 
+#include <dlfcn.h>
 #include <fcntl.h>
 #include <limits.h>
 #include <paths.h>
@@ -92,6 +93,7 @@ GC cgc;
 int xfd;
 
 /* X functions */
+#if 0
 struct x11 {
 	int		(*XChangeGC)	(Display*, GC, unsigned long, XGCValues);
 	int		(*XCopyPlane)	(Display*, Drawable, Drawable, GC, int, int, unsigned int, unsigned int, int, int, unsigned long);
@@ -114,6 +116,8 @@ struct x11 {
 	int		(*XSelectInput)	(Display*, Window, long);
 	int		(*XStoreName)	(Display*, Window, _Xconst char*);
 };
+struct x11 x11;
+#endif
 
 /* X pixel values for the RGB triples */
 struct dac_colors *dac_rgb;
@@ -1173,6 +1177,92 @@ console_init()
 {
     int fd;
     int i;
+	void *dl;
+
+#if 0
+	if((dl=dlopen("libX11.so",RTLD_LAZY))==NULL)
+		return(-1);
+	if((x11.XChangeGC=dlsym(dl,XChangeGC)==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
+	if((x11.XCopyPlane=dlsym(dl,XCopyPlane)==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
+	if((x11.XFillRectangle=dlsym(dl,XFillRectangle)==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
+	if((x11.XFlush=dlsym(dl,XFlush)==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
+	if((x11.XBell=dlsym(dl,XBell)==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
+	if((x11.XLookupString=dlsym(dl,XLookupString)==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
+	if((x11.XNextEvent=dlsym(dl,XNextEvent)==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
+	if((x11.XAllocSizeHints=dlsym(dl,XAllocSizeHints)==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
+	if((x11.XSetWMNormalHints=dlsym(dl,XSetWMNormalHints)==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
+	if((x11.XResizeWindow=dlsym(dl,XResizeWindow)==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
+	if((x11.XMapWindow=dlsym(dl,XMapWindow)==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
+	if((x11.XFree=dlsym(dl,XFree)==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
+	if((x11.XFreePixmap=dlsym(dl,XFreePixmap)==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
+	if((x11.XCreateBitmapFromData=dlsym(dl,XCreateBitmapFromData)==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
+	if((x11.XAllocColor=dlsym(dl,XAllocColor)==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
+	if((x11.XOpenDisplay=dlsym(dl,XOpenDisplay)==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
+	if((x11.XCreateSimpleWindow=dlsym(dl,XCreateSimpleWindow)==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
+	if((x11.XCreateGC=dlsym(dl,XCreateGC)==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
+	if((x11.XSelectInput=dlsym(dl,XSelectInput)==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
+	if((x11.XStoreName=dlsym(dl,XStoreName)==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
+#endif
 
 	if(dpy!=NULL)
 		return(0);
