@@ -1,23 +1,20 @@
 Synchronet for Unix
 -=-=-=-=-=-=-=-=-=-
 
-Created: Mar 15, 2002
-Updated: Jan 22, 2003
-
 By: Rob Swindell
 http://www.synchro.net
 
 $Id$
 
-The information in this file is current as of the "updated" date above. The
-answers and instructions in this file may change over time, so be sure to get
-the current version of this file at
-ftp://vert.synchro.net/Synchronet/sbbsunix.txt
-or via CVSweb at
+The information in this file is current as of the date above. The answers and
+instructions in this file may change over time, so be sure to get the current
+version of this file at ftp://vert.synchro.net/Synchronet/sbbsunix.txt
+or via CVSweb at 
 http://cvs.synchro.net/cgi-bin/cvsweb.cgi/~checkout~/docs/sbbsunix.txt
 
-For additional tips on running Synchronet on FreeBSD, see
-http://sync.bbsdev.net/tips.html
+Note: For additional tips on running Synchronet on FreeBSD, see
+      http://sync.bbsdev.net/tips.html
+
 
 Answers to Frequently Asked Questions
 =====================================
@@ -94,18 +91,22 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
       export CVSROOT=:pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs 
       cvs login
       (no password - just hit enter)
-      cvs -z3 co ctrl text exec xtrn node1 node2 node3 node4
+      cvs co ctrl text exec xtrn node1 node2 node3 node4
 
    D. Get the required source code modules from the CVS repository:
-      cvs -z3 co src/sbbs3 src/uifc src/xpdev src/mozilla
+      cvs co src/sbbs3 src/uifc src/xpdev src/mozilla
 
    E. Get the required JavaScript library for your platform and build type:
-      cvs -z3 co lib/mozilla/js/linux.debug
+      cvs co lib/mozilla/js/linux.debug
       or:
-      cvs -z3 co lib/mozilla/js/linux.release
+      cvs co lib/mozilla/js/linux.release
       or:
-      cvs -z3 co lib/mozilla/js/freebsd.debug
+      cvs co lib/mozilla/js/freebsd.debug
       etc.
+      Note: If you want to get the full source code to the Mozilla JavaScript
+	        library to build it yourself, the cvs repository is:
+            :pserver:anonymous@cvs-mirror.mozilla.org:/cvsroot
+            the module name is mozilla/js/src.
 
 2. Build Synchronet:
 
