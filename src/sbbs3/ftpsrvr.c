@@ -314,6 +314,53 @@ while(c && (uchar)str[c-1]<=' ') c--;
 str[c]=0;
 }
 
+/* Returns the directory index of a virtual lib/dir path (e.g. main/games/filename) */
+int getdir(char* p, user_t* user)
+{
+	char*	tp;
+	char	path[MAX_PATH+1];
+	int		dir;
+	int		lib;
+
+	sprintf(path,"%.*s",(int)sizeof(path)-1,p);
+	p=path;
+
+	if(*p=='/') 
+		p++;
+	else if(!strncmp(p,"./",2))
+		p+=2;
+
+	tp=strchr(p,'/');
+	if(tp) *tp=0;
+	for(lib=0;lib<scfg.total_libs;lib++) {
+		if(!chk_ar(&scfg,scfg.lib[lib]->ar,user))
+			continue;
+		if(!stricmp(scfg.lib[lib]->sname,p))
+			break;
+	}
+	if(lib>=scfg.total_libs) 
+		return(-1);
+
+	if(tp!=NULL)
+		p=tp+1;
+
+	tp=strchr(p,'/');
+	if(tp) *tp=0;
+	for(dir=0;dir<scfg.total_dirs;dir++) {
+		if(scfg.dir[dir]->lib!=lib)
+			continue;
+		if(dir!=scfg.sysop_dir && dir!=scfg.upload_dir 
+			&& !chk_ar(&scfg,scfg.dir[dir]->ar,user))
+			continue;
+		if(!stricmp(scfg.dir[dir]->code,p))
+			break;
+	}
+	if(dir>=scfg.total_dirs) 
+		return(-1);
+
+	return(dir);
+}
+
 /*********************************/
 /* JavaScript Data and Functions */
 /*********************************/
@@ -512,10 +559,12 @@ static JSClass js_file_class = {
 }; 
 
 BOOL js_add_file(JSContext* js_cx, JSObject* array, 
-				 char* name, char* desc, ulong size, time_t t, ulong credits,
-				 time_t last_downloaded, ulong times_downloaded, char* uploader, char* vpath)
+				 char* name, char* desc, char* ext_desc,
+				 ulong size, ulong credits, 
+				 time_t time, time_t uploaded, time_t last_downloaded, 
+				 ulong times_downloaded, ulong misc, 
+				 char* uploader, char* link)
 {
-	char		link[1024];
 	JSObject*	file;
 	jsval		val;
 	jsint		index;
@@ -531,8 +580,8 @@ BOOL js_add_file(JSContext* js_cx, JSObject* array,
 	if(!JS_SetProperty(js_cx, file, "description", &val))
 		return(FALSE);
 
-	val=INT_TO_JSVAL(t);
-	if(!JS_SetProperty(js_cx, file, "time", &val))
+	val=STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, ext_desc));
+	if(!JS_SetProperty(js_cx, file, "extended_description", &val))
 		return(FALSE);
 
 	val=INT_TO_JSVAL(size);
@@ -541,6 +590,14 @@ BOOL js_add_file(JSContext* js_cx, JSObject* array,
 
 	val=INT_TO_JSVAL(credits);
 	if(!JS_SetProperty(js_cx, file, "credits", &val))
+		return(FALSE);
+
+	val=INT_TO_JSVAL(time);
+	if(!JS_SetProperty(js_cx, file, "time", &val))
+		return(FALSE);
+
+	val=INT_TO_JSVAL(uploaded);
+	if(!JS_SetProperty(js_cx, file, "uploaded", &val))
 		return(FALSE);
 
 	val=INT_TO_JSVAL(last_downloaded);
@@ -555,7 +612,10 @@ BOOL js_add_file(JSContext* js_cx, JSObject* array,
 	if(!JS_SetProperty(js_cx, file, "uploader", &val))
 		return(FALSE);
 
-	sprintf(link,"ftp://%s%s",scfg.sys_inetaddr,vpath);
+	val=INT_TO_JSVAL(misc);
+	if(!JS_SetProperty(js_cx, file, "misc", &val))
+		return(FALSE);
+
 	val=STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, link));
 	if(!JS_SetProperty(js_cx, file, "link", &val))
 		return(FALSE);
@@ -574,14 +634,14 @@ BOOL js_generate_index(JSContext* js_cx, JSObject* js_glob,
 	char		path[MAX_PATH+1];
 	char		spath[MAX_PATH+1];	/* script path */
 	char		vpath[MAX_PATH+1];	/* virtual path */
-	char*		libname;
-	char*		dirname;
-	char*		libdesc;
-	char*		dirdesc;
+	char		aliasfile[MAX_PATH+1];
+	char		extdesc[513];
 	char*		p;
 	char*		tp;
 	char*		np;
+	char*		dp;
 	char		aliasline[512];
+	BOOL		alias_dir;
 	BOOL		success=FALSE;
 	FILE*		alias_fp;
 	uint		i;
@@ -589,6 +649,8 @@ BOOL js_generate_index(JSContext* js_cx, JSObject* js_glob,
 	glob_t		g;
 	jsval		val;
 	jsval		rval;
+	JSObject*	lib_obj=NULL;
+	JSObject*	dir_obj=NULL;
 	JSObject*	file_array=NULL;
 	JSObject*	dir_array=NULL;
 	JSScript*	js_script=NULL;
@@ -620,61 +682,101 @@ BOOL js_generate_index(JSContext* js_cx, JSObject* js_glob,
 			break;
 		}
 
+		val=STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, startup->html_index_file));
+		if(!JS_SetProperty(js_cx, js_glob, "html_index_file", &val)) {
+			lprintf("%04d !JavaScript FAILED to set html_index_file property",sock);
+			break;
+		}
+
+		/* file[] */
 		val=OBJECT_TO_JSVAL(file_array);
 		if(!JS_SetProperty(js_cx, js_glob, "file", &val)) {
 			lprintf("%04d !JavaScript FAILED to set file property",sock);
 			break;
 		}
+
+		/* dir[] */
 		val=OBJECT_TO_JSVAL(dir_array);
 		if(!JS_SetProperty(js_cx, js_glob, "dir", &val)) {
 			lprintf("%04d !JavaScript FAILED to set dir property",sock);
 			break;
 		}
 
+		/* curlib */
+		if((lib_obj=JS_NewObject(js_cx, &js_global_class, 0, NULL))==NULL) {
+			lprintf("%04d !JavaScript FAILED to create lib_obj",sock);
+			break;
+		}
+
+		val=OBJECT_TO_JSVAL(lib_obj);
+		if(!JS_SetProperty(js_cx, js_glob, "curlib", &val)) {
+			lprintf("%04d !JavaScript FAILED to set curlib property",sock);
+			break;
+		}
+
+		/* curdir */
+		if((dir_obj=JS_NewObject(js_cx, &js_global_class, 0, NULL))==NULL) {
+			lprintf("%04d !JavaScript FAILED to create dir_obj",sock);
+			break;
+		}
+
+		val=OBJECT_TO_JSVAL(dir_obj);
+		if(!JS_SetProperty(js_cx, js_glob, "curdir", &val)) {
+			lprintf("%04d !JavaScript FAILED to set curdir property",sock);
+			break;
+		}
+
 		strcpy(vpath,"/");
 
-		if(lib<0) { /* root */
-			libname=NULL;
-			libdesc=NULL;
-		} else {
-			libname=scfg.lib[lib]->sname;
-			libdesc=scfg.lib[lib]->lname;
-			strcat(vpath,libname);
+		if(lib>=0) { /* root */
+
+			strcat(vpath,scfg.lib[lib]->sname);
 			strcat(vpath,"/");
-		}
-		val=STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, libname));
-		if(!JS_SetProperty(js_cx, js_glob, "libname", &val)) {
-			lprintf("%04d !JavaScript FAILED to set libname property",sock);
-			break;
-		}
-		val=STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, libdesc));
-		if(!JS_SetProperty(js_cx, js_glob, "libdesc", &val)) {
-			lprintf("%04d !JavaScript FAILED to set libdesc property",sock);
-			break;
+
+			val=STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, scfg.lib[lib]->sname));
+			if(!JS_SetProperty(js_cx, lib_obj, "name", &val)) {
+				lprintf("%04d !JavaScript FAILED to set curlib.name property",sock);
+				break;
+			}
+
+			val=STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, scfg.lib[lib]->lname));
+			if(!JS_SetProperty(js_cx, lib_obj, "description", &val)) {
+				lprintf("%04d !JavaScript FAILED to set curlib.desc property",sock);
+				break;
+			}
 		}
 
-		if(dir<0) { /* 1st level */
-			dirname=NULL;
-			dirdesc=NULL;
-		} else {
-			dirname=scfg.dir[dir]->code;
-			dirdesc=scfg.dir[dir]->lname;
-			strcat(vpath,dirname);
+		if(dir>=0) { /* 1st level */
+			strcat(vpath,scfg.dir[dir]->code);
 			strcat(vpath,"/");
-		}
-		val=STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, dirname));
-		if(!JS_SetProperty(js_cx, js_glob, "dirname", &val)) {
-			lprintf("%04d !JavaScript FAILED to set dirname property",sock);
-			break;
-		}
-		val=STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, dirdesc));
-		if(!JS_SetProperty(js_cx, js_glob, "dirdesc", &val)) {
-			lprintf("%04d !JavaScript FAILED to set dirdesc property",sock);
-			break;
+
+			val=STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, scfg.dir[dir]->code));
+			if(!JS_SetProperty(js_cx, dir_obj, "code", &val)) {
+				lprintf("%04d !JavaScript FAILED to set curdir.code property",sock);
+				break;
+			}
+
+			val=STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, scfg.dir[dir]->sname));
+			if(!JS_SetProperty(js_cx, dir_obj, "name", &val)) {
+				lprintf("%04d !JavaScript FAILED to set curdir.name property",sock);
+				break;
+			}
+
+			val=STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, scfg.dir[dir]->lname));
+			if(!JS_SetProperty(js_cx, dir_obj, "description", &val)) {
+				lprintf("%04d !JavaScript FAILED to set curdir.desc property",sock);
+				break;
+			}
+
+			val=INT_TO_JSVAL(scfg.dir[dir]->misc);
+			if(!JS_SetProperty(js_cx, dir_obj, "misc", &val)) {
+				lprintf("%04d !JavaScript FAILED to set curdir.misc property",sock);
+				break;
+			}
 		}
 
 		val=STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, vpath));
-		if(!JS_SetProperty(js_cx, js_glob, "curdir", &val)) {
+		if(!JS_SetProperty(js_cx, js_glob, "path", &val)) {
 			lprintf("%04d !JavaScript FAILED to set curdir property",sock);
 			break;
 		}
@@ -702,25 +804,53 @@ BOOL js_generate_index(JSContext* js_cx, JSObject* js_glob,
 					np=tp+1;	/* filename pointer */
 					while(*np && *np<=' ') np++;
 
-					np++;		/* description pointer */
-					while(*np && *np>' ') np++;
+					tp=np;		/* terminator pointer */
+					while(*tp && *tp>' ') tp++;
+					if(*tp) *tp=0;
 
-					while(*np && *np<' ') np++;
+					dp=tp+1;	/* description pointer */
+					while(*dp && *dp<=' ') dp++;
+					truncsp(dp);
 
-					truncsp(np);
+					alias_dir=FALSE;
 
-					sprintf(vpath,"/%s",p);
+					/* Virtual Path? */
+					if(!strnicmp(np,BBS_VIRTUAL_PATH,strlen(BBS_VIRTUAL_PATH))) {
+						if((dir=getdir(np+strlen(BBS_VIRTUAL_PATH),user))<0)
+							continue; /* No access or invalid virtual path */
+						tp=strrchr(np,'/');
+						if(tp==NULL) 
+							continue;
+						tp++;
+						if(*tp) {
+							sprintf(aliasfile,"%s%s",scfg.dir[dir]->path,tp);
+							np=aliasfile;
+						}
+						else 
+							alias_dir=TRUE;
+					}
+
+					if(!alias_dir && !fexist(np))
+						continue;
+
+					if(alias_dir)
+						sprintf(vpath,"/%s/%s",p,startup->html_index_file);
+					else
+						strcpy(vpath,p);
 					js_add_file(js_cx
-						,file_array
+						,alias_dir ? dir_array : file_array
 						,p				/* filename */
-						,np				/* description */
-						,1024			/* size */
-						,time(NULL)		/* time */
+						,dp				/* description */
+						,NULL			/* extdesc */
+						,flength(np)	/* size */
 						,0				/* credits */
+						,fdate(np)		/* time */
+						,fdate(np)		/* uploaded */
 						,0				/* last downloaded */
 						,0				/* times downloaded */
+						,0				/* misc */
 						,scfg.sys_id	/* uploader */
-						,vpath			/* path */
+						,vpath			/* link */
 						);
 				}
 
@@ -735,13 +865,16 @@ BOOL js_generate_index(JSContext* js_cx, JSObject* js_glob,
 					,file_array 
 					,str						/* filename */
 					,"QWK Message Packet"		/* description */
+					,NULL						/* extdesc */
 					,10240						/* size */
-					,time(NULL)					/* time */
 					,0							/* credits */
+					,time(NULL)					/* time */
+					,0							/* uploaded */
 					,0							/* last downloaded */
 					,0							/* times downloaded */
+					,0							/* misc */
 					,scfg.sys_id				/* uploader */
-					,vpath						/* path */
+					,str						/* link */
 					);
 			}
 
@@ -754,9 +887,10 @@ BOOL js_generate_index(JSContext* js_cx, JSObject* js_glob,
 					,dir_array 
 					,scfg.lib[i]->sname			/* filename */
 					,scfg.lib[i]->lname			/* description */
-					,0,0,0,0,0					/* unused */
+					,NULL						/* extdesc */
+					,0,0,0,0,0,0,0				/* unused */
 					,scfg.sys_id				/* uploader */
-					,vpath						/* path */
+					,vpath						/* link */
 					);
 			}
 		} else if(dir<0) {
@@ -772,11 +906,12 @@ BOOL js_generate_index(JSContext* js_cx, JSObject* js_glob,
 					,startup->html_index_file);
 				js_add_file(js_cx
 					,dir_array 
-					,scfg.dir[i]->code			/* filename */
+					,scfg.dir[i]->sname			/* filename */
 					,scfg.dir[i]->lname			/* description */
-					,0,0,0,0,0					/* unused */
+					,NULL						/* extdesc */
+					,0,0,0,0,0,0,0				/* unused */
 					,scfg.sys_id				/* uploader */
-					,vpath						/* path */
+					,vpath						/* link */
 					);
 
 			}
@@ -797,6 +932,8 @@ BOOL js_generate_index(JSContext* js_cx, JSObject* js_glob,
 				if(getfileixb(&scfg,&f)) {
 					f.size=0; /* flength(g.gl_pathv[i]); */
 					getfiledat(&scfg,&f);
+					if(f.misc&FM_EXTDESC) 
+						getextdesc(&scfg, dir, f.datoffset, extdesc);
 					sprintf(vpath,"/%s/%s/%s"
 						,scfg.lib[scfg.dir[dir]->lib]->sname
 						,scfg.dir[dir]->code
@@ -805,13 +942,16 @@ BOOL js_generate_index(JSContext* js_cx, JSObject* js_glob,
 						,file_array 
 						,getfname(g.gl_pathv[i])	/* filename */
 						,f.desc						/* description */
+						,f.misc&FM_EXTDESC ? extdesc : NULL
 						,f.size						/* size */
-						,f.date						/* time */
 						,f.cdt						/* credits */
+						,f.date						/* time */
+						,f.dateuled					/* uploaded */
 						,f.datedled					/* last downloaded */
 						,f.timesdled				/* times downloaded */
+						,f.misc						/* misc */
 						,f.uler						/* uploader */
-						,vpath						/* path */
+						,getfname(g.gl_pathv[i])	/* link */
 						);
 				}
 			}
@@ -835,13 +975,12 @@ BOOL js_generate_index(JSContext* js_cx, JSObject* js_glob,
 	if(js_script!=NULL)
 		JS_DestroyScript(js_cx, js_script);
 
-	JS_DeleteProperty(js_cx, js_glob, "curdir");
+	JS_DeleteProperty(js_cx, js_glob, "path");
 	JS_DeleteProperty(js_cx, js_glob, "file");
 	JS_DeleteProperty(js_cx, js_glob, "dir");
-	JS_DeleteProperty(js_cx, js_glob, "libname");
-	JS_DeleteProperty(js_cx, js_glob, "libdesc");
-	JS_DeleteProperty(js_cx, js_glob, "dirname");
-	JS_DeleteProperty(js_cx, js_glob, "dirdesc");
+	JS_DeleteProperty(js_cx, js_glob, "curlib");
+	JS_DeleteProperty(js_cx, js_glob, "curdir");
+	JS_DeleteProperty(js_cx, js_glob, "html_index_file");
 
 	return(success);
 }
@@ -905,7 +1044,7 @@ static time_t checktime(void)
 
 BOOL upload_stats(ulong bytes)
 {
-	char	str[MAX_PATH];
+	char	str[MAX_PATH+1];
 	int		file;
 	ulong	val;
 
@@ -928,7 +1067,7 @@ BOOL upload_stats(ulong bytes)
 
 BOOL download_stats(ulong bytes)
 {
-	char	str[MAX_PATH];
+	char	str[MAX_PATH+1];
 	int		file;
 	ulong	val;
 
@@ -1048,7 +1187,7 @@ typedef struct {
 	BOOL	credits;
 	BOOL	append;
 	long	filepos;
-	char	filename[MAX_PATH];
+	char	filename[MAX_PATH+1];
 	time_t*	lastactive;
 	user_t*	user;
 	int		dir;
@@ -1058,7 +1197,7 @@ typedef struct {
 static void send_thread(void* arg)
 {
 	char		buf[8192];
-	char		fname[MAX_PATH];
+	char		fname[MAX_PATH+1];
 	int			i;
 	int			rd;
 	int			wr;
@@ -1219,7 +1358,7 @@ static void send_thread(void* arg)
 static void receive_thread(void* arg)
 {
 	char		buf[8192];
-	char		fname[MAX_PATH];
+	char		fname[MAX_PATH+1];
 	int			rd;
 	int			file;
 	ulong		total=0;
@@ -1549,58 +1688,11 @@ char* dotname(char* in, char* out)
 	return(out);
 }
 
-/* Returns the directory index of a virtual lib/dir path (e.g. main/games/filename) */
-int getdir(char* p, user_t* user)
-{
-	char*	tp;
-	char	path[MAX_PATH];
-	int		dir;
-	int		lib;
-
-	sprintf(path,"%.*s",(int)sizeof(path)-1,p);
-	p=path;
-
-	if(*p=='/') 
-		p++;
-	else if(!strncmp(p,"./",2))
-		p+=2;
-
-	tp=strchr(p,'/');
-	if(tp) *tp=0;
-	for(lib=0;lib<scfg.total_libs;lib++) {
-		if(!chk_ar(&scfg,scfg.lib[lib]->ar,user))
-			continue;
-		if(!stricmp(scfg.lib[lib]->sname,p))
-			break;
-	}
-	if(lib>=scfg.total_libs) 
-		return(-1);
-
-	if(tp!=NULL)
-		p=tp+1;
-
-	tp=strchr(p,'/');
-	if(tp) *tp=0;
-	for(dir=0;dir<scfg.total_dirs;dir++) {
-		if(scfg.dir[dir]->lib!=lib)
-			continue;
-		if(dir!=scfg.sysop_dir && dir!=scfg.upload_dir 
-			&& !chk_ar(&scfg,scfg.dir[dir]->ar,user))
-			continue;
-		if(!stricmp(scfg.dir[dir]->code,p))
-			break;
-	}
-	if(dir>=scfg.total_dirs) 
-		return(-1);
-
-	return(dir);
-}
-
 void parsepath(char** pp, user_t* user, int* curlib, int* curdir)
 {
 	char*	p;
 	char*	tp;
-	char	path[MAX_PATH];
+	char	path[MAX_PATH+1];
 	int		dir=*curdir;
 	int		lib=*curlib;
 
@@ -1685,7 +1777,7 @@ BOOL alias(char* fullalias, char* filename, user_t* user, int* curdir)
 	char*	fname="";
 	char	line[512];
 	char	alias[512];
-	char	aliasfile[MAX_PATH];
+	char	aliasfile[MAX_PATH+1];
 	int		dir=-1;
 	FILE*	fp;
 	BOOL	result=FALSE;
@@ -1753,7 +1845,7 @@ BOOL alias(char* fullalias, char* filename, user_t* user, int* curdir)
 char* root_dir(char* path)
 {
 	char*	p;
-	static char	root[MAX_PATH];
+	static char	root[MAX_PATH+1];
 
 	sprintf(root,"%.*s",(int)sizeof(root)-1,path);
 
@@ -1779,17 +1871,17 @@ static void ctrl_thread(void* arg)
 	char*		np;
 	char*		tp;
 	char		password[64];
-	char		fname[MAX_PATH];
-	char		qwkfile[MAX_PATH];
-	char		aliasfile[MAX_PATH];
+	char		fname[MAX_PATH+1];
+	char		qwkfile[MAX_PATH+1];
+	char		aliasfile[MAX_PATH+1];
 	char		aliasline[512];
 	char		desc[501]="";
 	char		sys_pass[128];
 	char*		host_name;
 	char		host_ip[64];
-	char		path[MAX_PATH];
-	char		local_dir[MAX_PATH];
-	char		ren_from[MAX_PATH]="";
+	char		path[MAX_PATH+1];
+	char		local_dir[MAX_PATH+1];
+	char		ren_from[MAX_PATH+1]="";
 	WORD		port;
 	ulong		ip_addr;
 	int			addr_len;
