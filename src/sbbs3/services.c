@@ -77,7 +77,6 @@ static scfg_t	scfg;
 static int		active_clients=0;
 static DWORD	sockets=0;
 static BOOL		terminated=FALSE;
-static JSRuntime* js_runtime=NULL;
 static time_t	uptime;
 
 typedef struct {
@@ -95,6 +94,8 @@ typedef struct {
 typedef struct {
 	SOCKET			socket;
 	SOCKADDR_IN		addr;
+	time_t			logintime;
+	user_t			user;
 	client_t*		client;
 	service_t*		service;
 } service_client_t;
@@ -287,7 +288,9 @@ static JSBool
 js_login(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char*		p;
+	JSBool		inc_logons=JS_FALSE;
 	user_t		user;
+	jsval		val;
 	JSString*	js_str;
 	service_client_t* client;
 
@@ -328,10 +331,19 @@ js_login(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 			return(JS_TRUE);
 		}
 	}
+
+	if(argc>2)
+		inc_logons=JSVAL_TO_BOOLEAN(argv[2]);
+
 	sprintf(user.note,"%.*s",sizeof(user.note)-1,client->client->addr);
 	sprintf(user.comp,"%.*s",sizeof(user.comp)-1,client->client->host);
 	sprintf(user.modem,"%.*s",sizeof(user.modem)-1,client->service->protocol);
-	user.logons++;
+
+	if(inc_logons) {
+		user.logons++;
+		user.ltoday++;
+	}	
+
 	putuserdat(&scfg,&user);
 
 	/* user object */
@@ -352,6 +364,45 @@ js_login(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	client->client->user=user.alias;
 	client_on(client->socket,client->client);
 
+	memcpy(&client->user,&user,sizeof(user));
+
+	client->logintime=time(NULL);
+
+	lprintf("%04d %s Logging in %s"
+		,client->socket,client->service->protocol,user.alias);
+
+	val = BOOLEAN_TO_JSVAL(JS_TRUE);
+	JS_SetProperty(cx, obj, "logged_in", &val);
+
+	*rval=BOOLEAN_TO_JSVAL(JS_TRUE);
+
+	return(JS_TRUE);
+}
+
+static JSBool
+js_logout(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	jsval val;
+	service_client_t* client;
+
+	*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+
+	if((client=(service_client_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	if(client->user.number<1)	/* Not logged in */
+		return(JS_TRUE);
+
+	logoutuserdat(&scfg,&client->user,time(NULL),client->logintime);
+
+	lprintf("%04d %s Logging out %s"
+		,client->socket,client->service->protocol,client->user.alias);
+
+	memset(&client->user,0,sizeof(client->user));
+
+	val = BOOLEAN_TO_JSVAL(JS_FALSE);
+	JS_SetProperty(cx, obj, "logged_in", &val);
+
 	*rval=BOOLEAN_TO_JSVAL(JS_TRUE);
 
 	return(JS_TRUE);
@@ -360,6 +411,7 @@ js_login(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 static JSFunctionSpec js_global_functions[] = {
 	{"log",				js_log,				1},		/* Log a string */
  	{"login",			js_login,			2},		/* Login specified username and password */
+	{"logout",			js_logout,			0},		/* Logout user */
     {0}
 };
 
@@ -368,10 +420,18 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 {
 	char	line[64];
 	char	file[MAX_PATH+1];
+	char*	prot="???";
+	SOCKET	sock=0;
 	char*	warning;
+	service_client_t* client;
+
+	if((client=(service_client_t*)JS_GetContextPrivate(cx))!=NULL) {
+		prot=client->service->protocol;
+		sock=client->socket;
+	}
 
 	if(report==NULL) {
-		lprintf("!JavaScript: %s", message);
+		lprintf("%04d %s !JavaScript: %s", sock,prot,message);
 		return;
     }
 
@@ -393,11 +453,11 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 	} else
 		warning="";
 
-	lprintf("!JavaScript %s%s%s: %s",warning,file,line,message);
+	lprintf("%04d %s !JavaScript %s%s%s: %s",sock,prot,warning,file,line,message);
 }
 
 static JSContext* 
-js_initcx(SOCKET sock, service_client_t* service_client, JSObject** glob)
+js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, JSObject** glob)
 {
 	JSContext*	js_cx;
 	JSObject*	js_glob;
@@ -410,8 +470,11 @@ js_initcx(SOCKET sock, service_client_t* service_client, JSObject** glob)
 
 //	lprintf("%04d JavaScript: Context created",sock);
 
+#if 0
+	lprintf("%04d %s JS_BeginRequest"
+		,sock,service_client->service->protocol);
 	JS_BeginRequest(js_cx);	/* Required for multi-thread support */
-
+#endif
     JS_SetErrorReporter(js_cx, js_ErrorReporter);
 
 	do {
@@ -458,6 +521,7 @@ js_initcx(SOCKET sock, service_client_t* service_client, JSObject** glob)
 
 
 	if(!success) {
+		lprintf("%04d JS_EndRequest",sock);
 		JS_EndRequest(js_cx);		/* Required for multi-thread support */
 		JS_DestroyContext(js_cx);
 		return(NULL);
@@ -475,7 +539,7 @@ static void js_service_thread(void* arg)
 	SOCKET					socket;
 	client_t				client;
 	service_t*				service;
-	service_client_t		service_client=*(service_client_t*)arg;
+	service_client_t		service_client;
 	/* JavaScript-specific */
 	char					spath[MAX_PATH];
 	char*					args=NULL;
@@ -484,17 +548,20 @@ static void js_service_thread(void* arg)
 	JSObject*				argv;
 	JSObject*				js_glob;
 	JSScript*				js_script;
+	JSRuntime*				js_runtime;
 	JSContext*				js_cx;
 	jsval					val;
 	jsval					rval;
 
+	// Copy service_client arg
+	service_client=*(service_client_t*)arg;
+	// Free original
 	free(arg);
 
 	socket=service_client.socket;
 	service=service_client.service;
 
 	lprintf("%04d %s JavaScript service thread started", socket, service->protocol);
-
 
 	thread_up();
 
@@ -517,6 +584,8 @@ static void js_service_thread(void* arg)
 		lprintf("%04d !%s CLIENT BLOCKED in host.can: %s"
 			,socket, service->protocol, host_name);
 		close_socket(socket);
+		if(service->clients)
+			service->clients--;
 		thread_down();
 		return;
 	}
@@ -546,19 +615,25 @@ static void js_service_thread(void* arg)
 	client.user="<unknown>";
 	service_client.client=&client;
 
-	if(((js_cx=js_initcx(socket,&service_client,&js_glob))==NULL)) {
-		lprintf("%04d !%s ERROR initializing JavaScript context"
-			,socket,service->protocol);
-		close_socket(socket);
-		thread_down();
-		return;
-	}
-
 	active_clients++;
 	update_clients();
 
 	/* Initialize client display */
 	client_on(socket,&client);
+
+	if((js_runtime=JS_NewRuntime(JAVASCRIPT_RUNTIME_MEMORY))==NULL
+		|| (js_cx=js_initcx(js_runtime,socket,&service_client,&js_glob))==NULL) {
+		lprintf("%04d !%s ERROR initializing JavaScript context"
+			,socket,service->protocol);
+		close_socket(socket);
+		client_off(socket);
+		active_clients--;
+		update_clients();
+		if(service->clients)
+			service->clients--;
+		thread_down();
+		return;
+	}
 
 	/* RUN SCRIPT */
 	sprintf(spath,"%s%s",scfg.exec_dir,service->cmd);
@@ -594,24 +669,43 @@ static void js_service_thread(void* arg)
 	JS_DefineProperty(js_cx, js_glob, "argc", INT_TO_JSVAL(argc)
 		,NULL,NULL,JSPROP_READONLY);
 
+	val = BOOLEAN_TO_JSVAL(JS_FALSE);
+	JS_SetProperty(js_cx, js_glob, "logged_in", &val);
+
 	js_script=JS_CompileFile(js_cx, js_glob, spath);
 
 	if(js_script==NULL) 
 		lprintf("%04d !JavaScript FAILED to compile script (%s)",socket,spath);
 	else  {
 		JS_ExecuteScript(js_cx, js_glob, js_script, &rval);
+		lprintf("%04d %s JS_DestroyScript",socket,service->protocol);
 		JS_DestroyScript(js_cx, js_script);
+//		lprintf("%04d JS_GC",socket);
+//		JS_GC(js_cx);
 	}
 	close_socket(socket);
 
-	JS_EndRequest(js_cx);
+//	lprintf("%04d JS_EndRequest",socket);
+//	JS_EndRequest(js_cx);
 
-//	lprintf("%04d JavaScript: Destroying context",socket);
+
+	lprintf("%04d %s JS_DestroyContext",socket,service->protocol);
 	JS_DestroyContext(js_cx);	/* Free Context */
 
-	lprintf("%04d %s JavaScript service thread terminated", socket, service->protocol);
+	lprintf("%04d %s JS_DestroyRuntime",socket,service->protocol);
+	JS_DestroyRuntime(js_runtime);
+
+	if(service_client.user.number) {
+		lprintf("%04d %s Logging out %s"
+			,socket, service->protocol, service_client.user.alias);
+		logoutuserdat(&scfg,&service_client.user,time(NULL),service_client.logintime);
+	}
+
 	if(service->clients)
 		service->clients--;
+
+	lprintf("%04d %s JavaScript service thread terminated (%u clients remain)"
+		, socket, service->protocol, service->clients);
 
 	active_clients--;
 	update_clients();
@@ -724,9 +818,11 @@ static void native_service_thread(void* arg)
 	close_socket(socket);
 	closesocket(socket_dup);	/* close duplicate handle */
 
-	lprintf("%04d %s service thread terminated", socket, service->protocol);
 	if(service->clients)
 		service->clients--;
+
+	lprintf("%04d %s service thread terminated (%u clients remain)"
+		,socket, service->protocol, service->clients);
 
 	active_clients--;
 	update_clients();
@@ -805,12 +901,6 @@ static void cleanup(int code)
 	if(WSAInitialized && WSACleanup()!=0) 
 		lprintf("0000 !WSACleanup ERROR %d",ERROR_VALUE);
 #endif
-
-	if(js_runtime!=NULL) {
-		lprintf("0000 JavaScript: Destroying runtime");
-		JS_DestroyRuntime(js_runtime);
-		js_runtime=NULL;
-	}
 
     lprintf("#### Services thread terminated");
 	status("Down");
@@ -935,16 +1025,6 @@ void DLLCALL services_thread(void* arg)
 		cleanup(1);
 		return;
 	}
-
-	lprintf("JavaScript: Creating runtime: %lu bytes"
-		,JAVASCRIPT_RUNTIME_MEMORY);
-
-	if((js_runtime = JS_NewRuntime(JAVASCRIPT_RUNTIME_MEMORY))==NULL) {
-		lprintf("!JS_NewRuntime failed");
-		cleanup(1);
-		return;
-	}
-	lprintf("JavaScript: Context stack: %lu bytes", JAVASCRIPT_CONTEXT_STACK);
 
 	active_clients=0;
 	update_clients();
@@ -1078,6 +1158,7 @@ void DLLCALL services_thread(void* arg)
 			if(startup->socket_open!=NULL)
 				startup->socket_open(TRUE);	/* Callback */
 
+			memset(client,0,sizeof(service_client_t));
 			client->socket=client_socket;
 			client->addr=client_addr;
 			client->service=&service[i];
