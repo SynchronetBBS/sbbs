@@ -1210,7 +1210,7 @@ static ulong dns_blacklisted(IN_ADDR addr, char* host_name, char* list)
 }
 
 
-static BOOL chk_email_addr(SOCKET socket, char* p, char* host_name, char* host_ip, char* to)
+static BOOL chk_email_addr(SOCKET socket, char* p, char* host_name, char* host_ip, char* to, char* from)
 {
 	char	addr[64];
 	char	tmp[128];
@@ -1226,7 +1226,7 @@ static BOOL chk_email_addr(SOCKET socket, char* p, char* host_name, char* host_i
 	lprintf("%04d !SMTP BLOCKED SOURCE: %s"
 		,socket, addr);
 	sprintf(tmp,"Blocked source e-mail address: %s", addr);
-	spamlog(&scfg, "SMTP", "REFUSED", tmp, host_name, host_ip, to);
+	spamlog(&scfg, "SMTP", "REFUSED", tmp, host_name, host_ip, to, from);
 	sockprintf(socket, "554 Sender not allowed.");
 
 	return(FALSE);
@@ -1399,7 +1399,7 @@ static void smtp_thread(void* arg)
 			,socket, dnsbl, host_name, host_ip, inet_ntoa(dnsbl_result));
 		if(startup->options&MAIL_OPT_DNSBL_REFUSE) {
 			sprintf(str,"Listed on %s as %s", dnsbl, inet_ntoa(dnsbl_result));
-			spamlog(&scfg, "SMTP", "SESSION REFUSED", str, host_name, host_ip, NULL);
+			spamlog(&scfg, "SMTP", "SESSION REFUSED", str, host_name, host_ip, NULL, NULL);
 			sockprintf(socket
 				,"550 Mail from %s refused due to listing at %s"
 				,host_ip, dnsbl);
@@ -1480,7 +1480,7 @@ static void smtp_thread(void* arg)
 						lprintf("%04d !SMTP IGNORED MAIL from blacklisted server"
 							,socket);
 						sprintf(str,"Listed on %s as %s", dnsbl, inet_ntoa(dnsbl_result));
-						spamlog(&scfg, "SMTP", "IGNORED", str, host_name, host_ip, rcpt_addr);
+						spamlog(&scfg, "SMTP", "IGNORED", str, host_name, host_ip, rcpt_addr, reverse_path);
 						/* pretend we received it */
 						sockprintf(socket,ok_rsp);
 						continue;
@@ -1496,7 +1496,7 @@ static void smtp_thread(void* arg)
 					}
 					if(startup->dnsbl_hdr[0] || startup->dnsbl_tag[0]) {
 						sprintf(str,"Listed on %s as %s", dnsbl, inet_ntoa(dnsbl_result));
-						spamlog(&scfg, "SMTP", "TAGGED", str, host_name, host_ip, rcpt_addr);
+						spamlog(&scfg, "SMTP", "TAGGED", str, host_name, host_ip, rcpt_addr, reverse_path);
 					}
 				}
 
@@ -1803,7 +1803,7 @@ static void smtp_thread(void* arg)
 						,socket, p, reverse_path);
 					sprintf(tmp,"Blocked subject (%s) from: %s"
 						,p, reverse_path);
-					spamlog(&scfg, "SMTP", "REFUSED", tmp, host_name, host_ip, rcpt_addr);
+					spamlog(&scfg, "SMTP", "REFUSED", tmp, host_name, host_ip, rcpt_addr, reverse_path);
 					sockprintf(socket, "554 Subject not allowed.");
 					break;
 				}
@@ -1849,7 +1849,7 @@ static void smtp_thread(void* arg)
 				continue;
 			}
 			if(!strnicmp(buf, "FROM:", 5)) {
-				if(!chk_email_addr(socket,buf+5,host_name,host_ip,rcpt_addr))
+				if(!chk_email_addr(socket,buf+5,host_name,host_ip,rcpt_addr,reverse_path))
 					break;
 
 				p=buf+5;
@@ -1981,7 +1981,7 @@ static void smtp_thread(void* arg)
 			|| !strnicmp(buf,"SAML FROM:",10)	/* Send AND Mail a Message to a local user */
 			) {
 			p=buf+10;
-			if(!chk_email_addr(socket,p,host_name,host_ip,NULL))
+			if(!chk_email_addr(socket,p,host_name,host_ip,NULL,NULL))
 				break;
 			while(*p && *p<=' ') p++;
 			SAFECOPY(reverse_path,p);
@@ -2071,9 +2071,9 @@ static void smtp_thread(void* arg)
 			if(rcpt_count>=startup->max_recipients) {
 				lprintf("%04d !SMTP MAXIMUM RECIPIENTS (%d) REACHED"
 					,socket, startup->max_recipients);
-				sprintf(tmp,"Maximum recipient count (%d) from: %s"
-					,startup->max_recipients, reverse_path);
-				spamlog(&scfg, "SMTP", "REFUSED", tmp, host_name, host_ip, rcpt_addr);
+				sprintf(tmp,"Maximum recipient count (%d)",startup->max_recipients);
+				spamlog(&scfg, "SMTP", "REFUSED", tmp
+					,host_name, host_ip, rcpt_addr, reverse_path);
 				sockprintf(socket, "552 Too many recipients");
 				continue;
 			}
@@ -2082,9 +2082,8 @@ static void smtp_thread(void* arg)
 			if(trashcan(&scfg,rcpt_addr,"email")) {
 				lprintf("%04d !SMTP BLOCKED RECIPIENT (%s) from: %s"
 					,socket, rcpt_addr, reverse_path);
-				sprintf(str,"Blocked recipient e-mail address from: %s"
-					,reverse_path);
-				spamlog(&scfg, "SMTP", "REFUSED", str, host_name, host_ip, rcpt_addr);
+				spamlog(&scfg, "SMTP", "REFUSED", "Blocked recipient e-mail address"
+					,host_name, host_ip, rcpt_addr, reverse_path);
 				sockprintf(socket, "550 Unknown User:%s", buf+8);
 				continue;
 			}
@@ -2093,7 +2092,7 @@ static void smtp_thread(void* arg)
 				lprintf("%04d !SMTP REFUSED MAIL from blacklisted server"
 					,socket);
 				sprintf(str,"Listed on %s as %s", dnsbl, inet_ntoa(dnsbl_result));
-				spamlog(&scfg, "SMTP", "REFUSED", str, host_name, host_ip, rcpt_addr);
+				spamlog(&scfg, "SMTP", "REFUSED", str, host_name, host_ip, rcpt_addr, reverse_path);
 				sockprintf(socket
 					,"550 Mail from %s refused due to listing at %s"
 					,host_ip, dnsbl);
@@ -2136,9 +2135,8 @@ static void smtp_thread(void* arg)
 						!findstr(host_ip,relay_list)) {
 						lprintf("%04d !SMTP ILLEGAL RELAY ATTEMPT from %s [%s] to %s"
 							,socket, reverse_path, host_ip, p);
-						sprintf(tmp,"Relay attempt from: %s to: %s"
-							,reverse_path, p);
-						spamlog(&scfg, "SMTP", "REFUSED", tmp, host_name, host_ip, rcpt_addr);
+						sprintf(tmp,"Relay attempt to: %s", p);
+						spamlog(&scfg, "SMTP", "REFUSED", tmp, host_name, host_ip, rcpt_addr, reverse_path);
 						if(startup->options&MAIL_OPT_ALLOW_RELAY)
 							sockprintf(socket, "553 Relaying through this server "
 							"requires authentication.  "

@@ -871,6 +871,7 @@ js_spamlog(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	char*		host=NULL;
 	char*		ip_addr=NULL;
 	char*		to=NULL;
+	char*		from=NULL;
 	scfg_t*		cfg;
 
 	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
@@ -894,8 +895,10 @@ js_spamlog(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 			ip_addr=p;
 		else if(to==NULL)
 			to=p;
+		else if(from==NULL)
+			from=p;
 	}
-	*rval = BOOLEAN_TO_JSVAL(spamlog(cfg,prot,action,reason,host,ip_addr,to));
+	*rval = BOOLEAN_TO_JSVAL(spamlog(cfg,prot,action,reason,host,ip_addr,to,from));
 	return(JS_TRUE);
 }
 
@@ -1090,7 +1093,7 @@ static jsMethodSpec js_system_functions[] = {
 	{"secondstr",		js_secondstr,		1,	JSTYPE_STRING,	JSDOCSTR("[number time]")
 	,JSDOCSTR("convert time_t into a hh:mm:ss string")
 	},		
-	{"spamlog",			js_spamlog,			6,	JSTYPE_BOOLEAN,	JSDOCSTR("[protocol, action, reason, host, ip, to]")
+	{"spamlog",			js_spamlog,			6,	JSTYPE_BOOLEAN,	JSDOCSTR("[protocol, action, reason, host, ip, to, from]")
 	,JSDOCSTR("log a suspected SPAM attempt")
 	},		
 	{"hacklog",			js_hacklog,			5,	JSTYPE_BOOLEAN,	JSDOCSTR("[protocol, user, text, host, ip, port]")
