@@ -86,7 +86,7 @@ TextLine *lines = NULL;
 #define MiscOutput_Ofs	9
 
 /* X Variables */
-Display *dpy;
+Display *dpy=NULL;
 Window win;
 XFontStruct *font;
 XImage *xi = 0;
@@ -501,7 +501,7 @@ video_update(void *unused)
     sigprocmask(SIG_BLOCK, &sigset, 0);
 
     	if (--icnt == 0) {
-	    icnt = 3;
+	    icnt = 6;
 	show ^= 1;
 
 	}
@@ -1347,6 +1347,9 @@ console_init()
     int i;    
     sigset_t sigset;
     
+	if(dpy!=NULL)
+		return(0);
+
     sigemptyset(&sigset);
     sigaddset(&sigset, SIGIO);
     sigaddset(&sigset, SIGALRM);
@@ -1468,9 +1471,7 @@ tty_peek(int flag)
 int
 tty_kbhit(void)
 {
-	video_async_event(0);
-
-	if(!nextchar && KbdEmpty())
-		return(0);
-	return(1);
+	if(nextchar || !KbdEmpty())
+		return(1);
+	return(0);
 }
