@@ -13,6 +13,7 @@ object WebCfgDlg: TWebCfgDlg
   Font.Style = []
   OldCreateOrder = False
   Position = poScreenCenter
+  ShowHint = True
   OnShow = FormShow
   DesignSize = (
     352
@@ -231,6 +232,9 @@ object WebCfgDlg: TWebCfgDlg
         Top = 76
         Width = 193
         Height = 24
+        Hint = 
+          'List of filenames that will be automatically sent to client (e.g' +
+          '. index.html)'
         TabOrder = 5
       end
     end
