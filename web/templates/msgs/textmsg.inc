@@ -2,7 +2,7 @@
 <head>
 <title>%%title%%</title>
 </head>
-<body>
+<body text="#ffffff" bgcolor="#000000">
 <PRE><FONT NAME="Courier New">@@body@@</FONT></PRE>
 </body>
 </html>
