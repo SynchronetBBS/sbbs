@@ -5,7 +5,7 @@
 
 static SOCKET	rlogin_socket=INVALID_SOCKET;
 
-int	rcvtimeo=1;
+int	rcvtimeo=0;
 
 int rlogin_recv(char *buffer, size_t buflen)
 {
