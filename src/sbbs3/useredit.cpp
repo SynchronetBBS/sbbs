@@ -905,9 +905,12 @@ void sbbs_t::maindflts(user_t* user)
 				break;
 			case 'S':
 				user->misc^=SPIN;
-				if(!(user->misc&SPIN))
+				if(!(user->misc&SPIN)) {
 					if(!yesno("Spinning cursor on pause prompts"))
 						user->misc|=NOPAUSESPIN;
+					else
+						user->misc&=~NOPAUSESPIN;
+				}
 				putuserrec(&cfg,user->number,U_MISC,8,ultoa(user->misc,str,16));
 				break;
 			case 'F':
