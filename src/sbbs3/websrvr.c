@@ -73,6 +73,7 @@ static char		revision[16];
 static char		root_dir[MAX_PATH+1];
 static char		error_dir[MAX_PATH+1];
 static time_t	uptime=0;
+static DWORD	served=0;
 static web_startup_t* startup=NULL;
 
 typedef struct  {
@@ -1147,8 +1148,10 @@ static char *get_request(http_session_t * session, char *req_line)
 			p=session->req.physical_path+http_scheme_len;
 		}
 		offset=p-session->req.physical_path;
-		p=session->req.physical_path;
-		do { *p=*((p++)+offset); } while(*p);
+		memmove(session->req.physical_path
+			,session->req.physical_path+offset
+			,strlen(session->req.physical_path+offset)+1	/* move '\0' terminator too */
+			);
 	}
 	return(retval);
 }
@@ -1977,8 +1980,8 @@ void http_session_thread(void* arg)
 	/* client_off(session.socket); */
 
 	thread_down();
-	lprintf("%04d Session thread terminated (%u clients, %u threads remain)"
-		,socket, active_clients, thread_count);
+	lprintf("%04d Session thread terminated (%u clients, %u threads remain, %lu served)"
+		,socket, active_clients, thread_count, served);
 
 }
 
@@ -2010,7 +2013,8 @@ static void cleanup(int code)
 
 	thread_down();
 	status("Down");
-    lprintf("#### Web Server thread terminated (%u threads remain)", thread_count);
+    lprintf("#### Web Server thread terminated (%u threads remain, %lu clients served)"
+		,thread_count, served);
 	if(startup!=NULL && startup->terminated!=NULL)
 		startup->terminated(code);
 }
@@ -2097,6 +2101,8 @@ void DLLCALL web_server(void* arg)
 	if(*(p=lastchar(root_dir))==BACKSLASH)	*p=0;
 	if(*(p=lastchar(error_dir))==BACKSLASH)	*p=0;
 
+	uptime=0;
+	served=0;
 	startup->recycle_now=FALSE;
 	recycle_server=TRUE;
 	do {
@@ -2166,7 +2172,7 @@ void DLLCALL web_server(void* arg)
 		}
 
 		if(uptime==0)
-			uptime=time(NULL);
+			uptime=time(NULL);	/* this must be done *after* setting the timezone */
 
 		active_clients=0;
 		update_clients();
@@ -2315,6 +2321,7 @@ void DLLCALL web_server(void* arg)
    			session->socket=client_socket;
 
 			_beginthread(http_session_thread, 0, session);
+			served++;
 		}
 
 #if 0	/* this is handled in cleanup() */
