@@ -46,6 +46,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 	char	str[MAX_PATH+1],ch,*p;
 	char 	tmp[MAX_PATH+1],tmp2[MAX_PATH+1];
 	char*	fname;
+	char*	fmode;
 	int 	mode;
 	uint	i,j,k,conf;
 	long	l,size,msgndx,posts,ex;
@@ -202,7 +203,11 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 	/* Create MESSAGES.DAT, write header and leave open */
 	/****************************************************/
 	sprintf(str,"%sMESSAGES.DAT",cfg.temp_dir);
-	if((qwk=fopen(str,"ab"))==NULL) {
+	if(fexistcase(str))
+		fmode="r+b";
+	else
+		fmode="w+b";
+	if((qwk=fopen(str,fmode))==NULL) {
 		errormsg(WHERE,ERR_OPEN,str,0);
 		return(false); 
 	}
