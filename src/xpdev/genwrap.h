@@ -160,6 +160,19 @@ extern "C" {
 
 #endif
 
+/* Win32 implementations of recursive (thread-safe) std C time functions on Unix */
+
+#if !defined(__unix__)	
+
+	#include <time.h>		/* time_t, etc. */
+
+	DLLEXPORT struct tm*    DLLCALL		gmtime_r(time_t* t, struct tm* tm);
+	DLLEXPORT struct tm*    DLLCALL		localtime_r(time_t* t, struct tm* tm);
+	DLLEXPORT char*	        DLLCALL		ctime_r(const time_t *t, char *buf, int buflen);
+	DLLEXPORT char*	        DLLCALL		asctime_r(const struct tm *tm, char *buf, int buflen);
+#endif
+
+
 DLLEXPORT int		DLLCALL	xp_random(int);
 DLLEXPORT char*		DLLCALL os_version(char *str);
 DLLEXPORT char*		DLLCALL	lastchar(const char* str);

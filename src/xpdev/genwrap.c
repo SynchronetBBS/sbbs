@@ -234,3 +234,57 @@ char* DLLCALL os_version(char *str)
 
 	return(str);
 }
+
+#if !defined(__unix__)
+
+/****************************************************************************/
+/* Win32 implementations of the recursive (thread-safe) versions of std C	*/
+/* time functions (gmtime, localtime, ctime, and asctime) used in Unix.		*/
+/* The native Win32 versions of these functions are already thread-safe.	*/
+/****************************************************************************/
+
+struct tm* DLLCALL gmtime_r(time_t* t, struct tm* tm)
+{
+	struct tm* tmp = gmtime(t);
+
+	if(tmp==NULL)
+		return(NULL);
+
+	*tm = *tmp;
+	return(tm);
+}
+
+struct tm* DLLCALL localtime_r(time_t* t, struct tm* tm)
+{
+	struct tm* tmp = localtime(t);
+
+	if(tmp==NULL)
+		return(NULL);
+
+	*tm = *tmp;
+	return(tm);
+}
+
+char* DLLCALL ctime_r(const time_t *t, char *buf, int buflen)
+{
+	char* p = ctime(t);
+
+	if(p==NULL)
+		return(NULL);
+
+	strncpy(buf,p,buflen);
+	return(buf);
+}
+
+char* DLLCALL asctime_r(const struct tm *tm, char *buf, int buflen)
+{
+	char* p = asctime(tm);
+
+	if(p==NULL)
+		return(NULL);
+
+	strncpy(buf,p,buflen);
+	return(buf);
+}
+
+#endif	/* !defined(__unix__) */
