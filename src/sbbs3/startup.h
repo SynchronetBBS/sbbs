@@ -45,6 +45,12 @@
 #include "client.h"
 #include "ringbuf.h"
 #include "threadwrap.h"	/* sem_t */
+#if defined(_PTH_PTHREAD_H_) && ! defined(SBBS) /* Ugly hack around the use of startup.h including threadwrap.h */
+	/* Leave the warning here as incentive to fix it correctly! */
+	#define SLEEP(x)		({	int y=x; struct timeval tv; \
+								tv.tv_sec=(y/1000); tv.tv_usec=((y%1000)*1000); \
+								select(0,NULL,NULL,NULL,&tv); })
+#endif
 
 typedef struct {
 
