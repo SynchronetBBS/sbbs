@@ -43,14 +43,9 @@
 #include <gen_defs.h>
 #include <semwrap.h>
 
-extern sem_t	console_mode_changed;
+#include "vidmodes.h"
 
-/* Entry type for the DAC table. Each value is actually 6 bits wide. */
-struct dac_colors {
-    BYTE red;
-    BYTE green;
-    BYTE blue;
-};
+extern sem_t	console_mode_changed;
 
 extern int CurrMode;
 

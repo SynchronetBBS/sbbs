@@ -31,8 +31,10 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
+#ifndef _VIDMODES_H_
+#define _VIDMODES_H_
+
 #include "ciolib.h"
-#include "console.h"
 
 struct  video_params {
 	int	mode;
@@ -143,6 +145,13 @@ static unsigned char palettes[][16] = {
 	}
 };
 
+/* Entry type for the DAC table. Each value is actually 6 bits wide. */
+struct dac_colors {
+	BYTE red;
+	BYTE green;
+	BYTE blue;
+};
+
 static struct dac_colors dac_default16[] = {
 	{0, 0, 0},    {0, 0, 42},   {0, 42, 0},   {0, 42, 42},
 	{42, 0, 0},   {42, 0, 42},  {42, 21, 0},  {42, 42, 42},
@@ -161,3 +170,4 @@ static int find_vmode(int mode)
 	return -1;
 }
 
+#endif
