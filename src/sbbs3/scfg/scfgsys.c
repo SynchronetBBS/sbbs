@@ -1081,9 +1081,14 @@ user.
 			while(!done) {
 				i=0;
 				sprintf(opt[i++],"%-27.27s%s","New User Magic Word",cfg.new_magic);
-				sprintf(opt[i++],"%-27.27s%.40s","Data Directory",cfg.data_dir);
-				sprintf(opt[i++],"%-27.27s%.40s","Executables Directory"
+				sprintf(opt[i++],"%-27.27s%.40s","Data Directory"
+					,cfg.data_dir);
+				sprintf(opt[i++],"%-27.27s%.40s","Logs Directory"
+					,cfg.logs_dir);
+				sprintf(opt[i++],"%-27.27s%.40s","Exec Directory"
 					,cfg.exec_dir);
+				sprintf(opt[i++],"%-27.27s%.40s","Mods Directory"
+					,cfg.mods_dir);
 				sprintf(opt[i++],"%-27.27s%s","Input SIF Questionnaire"
 					,cfg.new_sif);
 				sprintf(opt[i++],"%-27.27s%s","Output SIF Questionnaire"
@@ -1148,11 +1153,11 @@ displayed to them.
 					case 1:
 						SETHELP(WHERE);
 /*
-Data Directory:
+`Data File Directory:`
 
 The Synchronet data directory contains almost all the data for your BBS.
-This directory must be located where ALL nodes can access it and
-MUST NOT be placed on a RAM disk or other volatile media.
+This directory must be located where `ALL` nodes can access it and
+`MUST NOT` be placed on a RAM disk or other volatile media.
 
 This option allows you to change the location of your data directory.
 */
@@ -1166,12 +1171,26 @@ This option allows you to change the location of your data directory.
 					case 2:
 						SETHELP(WHERE);
 /*
-Exec Directory:
+`Log File Directory:`
+
+Log files will be stored in this directory.
+*/
+						strcpy(str,cfg.logs_dir);
+						if(uifc.input(WIN_MID|WIN_SAV,0,9,"Logs Directory"
+							,str,50,K_EDIT)>0) {
+							backslash(str);
+							SAFECOPY(cfg.logs_dir,str); 
+						}
+                        break;
+					case 3:
+						SETHELP(WHERE);
+/*
+`Executable/Module File Directory:`
 
 The Synchronet exec directory contains executable files that your BBS
-executes. This directory does not need to be in your DOS search path.
+executes. This directory does `not` need to be in your DOS search path.
 If you place programs in this directory for the BBS to execute, you
-should place the %! abreviation for this exec directory at the
+should place the `%!` abreviation for this exec directory at the
 beginning of the command line.
 
 This option allows you to change the location of your exec directory.
@@ -1183,7 +1202,27 @@ This option allows you to change the location of your exec directory.
 							SAFECOPY(cfg.exec_dir,str); 
 						}
                         break;
-					case 3:
+					case 4:
+						SETHELP(WHERE);
+/*
+`Modified Modules Directory:`
+
+This optional directory can be used to specify a location where modified
+module files are stored. These modified modules will take precedence over
+stock modules with the same filename (in the exec directory) and will
+not be overwritten by future updates/upgrades.
+
+If this directory is `blank`, then this feature is not used and all modules
+are assumed to be located in the `exec` directory.
+*/
+						strcpy(str,cfg.mods_dir);
+						if(uifc.input(WIN_MID|WIN_SAV,0,9,"Mods Directory"
+							,str,50,K_EDIT)>0) {
+							backslash(str);
+							SAFECOPY(cfg.mods_dir,str); 
+						}
+                        break;
+					case 5:
 						strcpy(str,cfg.new_sif);
 						SETHELP(WHERE);
 /*
@@ -1200,7 +1239,7 @@ directory that all users will be prompted to answer.
 						else
 							uifc.msg("Invalid SIF Name");
 						break;
-					case 4:
+					case 6:
 						strcpy(str,cfg.new_sof);
 						SETHELP(WHERE);
 /*
@@ -1217,7 +1256,7 @@ edit function.
 						else
 							uifc.msg("Invalid SIF Name");
 						break;
-					case 5:
+					case 7:
 						SETHELP(WHERE);
 /*
 Credits Per Dollar:
@@ -1233,7 +1272,7 @@ To make a dollar worth two megabytes of credits, set this value to
 							,"Credits Per Dollar",str,10,K_NUMBER|K_EDIT);
 						cfg.cdt_per_dollar=atol(str);
 						break;
-					case 6:
+					case 8:
 						SETHELP(WHERE);
 /*
 Minutes Per 100K Credits:
@@ -1246,7 +1285,7 @@ of minutes to give the user in exchange for each 100K credit block.
 							,"Minutes Per 100K Credits",str,5,K_NUMBER|K_EDIT);
 						cfg.cdt_min_value=atoi(str);
 						break;
-					case 7:
+					case 9:
 						SETHELP(WHERE);
 /*
 Maximum Number of Minutes User Can Have:
@@ -1264,7 +1303,7 @@ will have no limit on the total number of minutes they can have.
 							,str,10,K_NUMBER|K_EDIT);
 						cfg.max_minutes=atol(str);
 						break;
-					case 8:
+					case 10:
 						SETHELP(WHERE);
 /*
 Warning Days Till Expire:
@@ -1278,7 +1317,7 @@ completely.
 							,"Warning Days Till Expire",str,5,K_NUMBER|K_EDIT);
 						cfg.sys_exp_warn=atoi(str);
                         break;
-					case 9:
+					case 11:
 						SETHELP(WHERE);
 /*
 Last Displayed Node:
@@ -1292,7 +1331,7 @@ to users.
 							,"Last Displayed Node",str,5,K_NUMBER|K_EDIT);
 						cfg.sys_lastnode=atoi(str);
                         break;
-					case 10:
+					case 12:
 						SETHELP(WHERE);
 /*
 Phone Number Format:
@@ -1306,10 +1345,10 @@ format. An example for North American phone numbers is NNN-NNN-NNNN.
 							,"Phone Number Format",cfg.sys_phonefmt
 							,LEN_PHONE,K_UPPER|K_EDIT);
                         break;
-					case 11:
+					case 13:
 						getar("Sysop Chat",cfg.sys_chat_arstr);
 						break;
-					case 12:
+					case 14:
 						SETHELP(WHERE);
 /*
 `User Database Backups:`
@@ -1324,7 +1363,7 @@ to keep on disk.
 							,str,4,K_NUMBER|K_EDIT);
 						cfg.user_backup_level=atoi(str);
                         break;
-					case 13:
+					case 15:
 						SETHELP(WHERE);
 /*
 `Mail Database Backups:`
@@ -1339,7 +1378,7 @@ to keep on disk.
 							,str,4,K_NUMBER|K_EDIT);
 						cfg.mail_backup_level=atoi(str);
                         break;
-					case 14:
+					case 16:
 						SETHELP(WHERE);
 /*
 `Control Key Pass-through:`
