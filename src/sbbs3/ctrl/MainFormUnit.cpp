@@ -529,6 +529,7 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
     SpyTerminalFont=new TFont;
     SpyTerminalFont->Name="Terminal";
     SpyTerminalFont->Size=9;
+    SpyTerminalFont->Pitch=fpFixed;
     SpyTerminalWidth=434;
     SpyTerminalHeight=364;
 }
