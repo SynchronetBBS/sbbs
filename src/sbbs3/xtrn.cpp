@@ -240,6 +240,9 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 	sbbsexec_start_t start;
 	OPENVXDHANDLE OpenVxDHandle;
 
+	if(online==ON_LOCAL)
+		eprintf("Executing external: %s",cmdline);
+
 	XTRN_LOADABLE_MODULE;
 	XTRN_LOADABLE_JS_MODULE;
 
