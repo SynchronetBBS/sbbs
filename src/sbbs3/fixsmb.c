@@ -40,6 +40,7 @@
 #include <string.h>	/* strnicmp */
 #include <ctype.h>	/* toupper */
 
+#include "genwrap.h"	/* strnicmp */
 #include "filewrap.h"
 #include "smblib.h"
 
