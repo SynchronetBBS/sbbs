@@ -96,7 +96,7 @@ static void js_finalize_socket(JSContext *cx, JSObject *obj)
 
 	close_socket(sock);
 
-	dbprintf(FALSE, sock, "closed");
+	dbprintf(FALSE, sock, "closed/deleted");
 
 	sock=INVALID_SOCKET;
 
@@ -105,6 +105,27 @@ static void js_finalize_socket(JSContext *cx, JSObject *obj)
 
 
 /* Socket Object Methods */
+
+static JSBool
+js_close(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	SOCKET	sock;
+	
+	sock=(uint)JS_GetPrivate(cx,obj)>>1;
+
+	if(sock==INVALID_SOCKET || sock==0)
+		return(JS_TRUE);
+
+	close_socket(sock);
+
+	dbprintf(FALSE, sock, "closed");
+
+	sock=INVALID_SOCKET;
+
+	JS_SetPrivate(cx, obj, (char*)(sock<<1));
+
+	return(JS_TRUE);
+}
 
 static JSBool
 js_bind(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
@@ -378,6 +399,7 @@ enum {
 	,SOCK_PROP_DATA_WAITING
 	,SOCK_PROP_NREAD
 	,SOCK_PROP_DEBUG
+	,SOCK_PROP_DESCRIPTOR
 };
 
 static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
@@ -394,6 +416,10 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	switch(tiny) {
 		case SOCK_PROP_DEBUG:
 			debug = JSVAL_TO_BOOLEAN(*vp);
+			break;
+		case SOCK_PROP_DESCRIPTOR:
+			sock = JSVAL_TO_INT(*vp);
+			JS_SetPrivate(cx, obj, (char*)(sock<<1));
 			break;
 	}
 
@@ -436,21 +462,25 @@ static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 		case SOCK_PROP_DEBUG:
 			*vp = INT_TO_JSVAL(debug);
 			break;
+		case SOCK_PROP_DESCRIPTOR:
+			*vp = INT_TO_JSVAL(sock);
+			break;
 	}
 
 	return(TRUE);
 }
 
-#define OBJ_FLAGS JSPROP_ENUMERATE|JSPROP_READONLY
+#define SOCK_PROP_FLAGS JSPROP_ENUMERATE|JSPROP_READONLY
 
 static struct JSPropertySpec js_socket_properties[] = {
 /*		 name				,tinyid					,flags,				getter,	setter	*/
 
-	{	"last_error"		,SOCK_PROP_LAST_ERROR	,OBJ_FLAGS,			NULL,NULL},
-	{	"is_connected"		,SOCK_PROP_IS_CONNECTED	,OBJ_FLAGS,			NULL,NULL},
-	{	"data_waiting"		,SOCK_PROP_DATA_WAITING	,OBJ_FLAGS,			NULL,NULL},
-	{	"nread"				,SOCK_PROP_NREAD		,OBJ_FLAGS,			NULL,NULL},
+	{	"last_error"		,SOCK_PROP_LAST_ERROR	,SOCK_PROP_FLAGS,	NULL,NULL},
+	{	"is_connected"		,SOCK_PROP_IS_CONNECTED	,SOCK_PROP_FLAGS,	NULL,NULL},
+	{	"data_waiting"		,SOCK_PROP_DATA_WAITING	,SOCK_PROP_FLAGS,	NULL,NULL},
+	{	"nread"				,SOCK_PROP_NREAD		,SOCK_PROP_FLAGS,	NULL,NULL},
 	{	"debug"				,SOCK_PROP_DEBUG		,JSPROP_ENUMERATE,	NULL,NULL},
+	{	"descriptor"		,SOCK_PROP_DESCRIPTOR	,JSPROP_ENUMERATE,	NULL,NULL},
 	{0}
 };
 
@@ -468,6 +498,7 @@ static JSClass js_socket_class = {
 };
 
 static JSFunctionSpec js_socket_functions[] = {
+	{"close",			js_close,			0},		/* close socket */
 	{"bind",			js_bind,			0},		/* bind to a port */
 	{"connect",         js_connect,         2},		/* connect to an IP address and port */
 	{"send",			js_send,			1},		/* send a string */
