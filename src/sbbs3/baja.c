@@ -3107,113 +3107,123 @@ free(str);
 free(save);
 }
 
-char *usage="\n"
-			"usage: baja [/opts] file[.src]\n"
-			"\n"
-			" opts: /d display debug during compile\n"
-			"       /c case sensitive variables, labels, and macros\n"
-			"       /o set output directory (e.g. /o\\sbbs\\exec)\n"
-			;
+char *banner=	"\n"
+				"BAJA v2.20 - Synchronet Shell/Module Compiler - "
+				"Copyright 2000 Rob Swindell\n";
+
+char *usage=	"\n"
+				"usage: baja [/opts] file[.src]\n"
+				"\n"
+				" opts: /d display debug during compile\n"
+				"       /c case sensitive variables, labels, and macros\n"
+				"       /o set output directory (e.g. /o\\sbbs\\exec)\n"
+				"       /q quiet mode (no banner)\n"
+				;
+
 int main(int argc, char **argv)
 {
 	uchar str[128],src[128]="",*p,outdir[128]="",outfname[128]="";
 	int i,j;
+	int show_banner=1;
 
-printf("\nBAJA v2.10 ú Synchronet Shell/Module Compiler ú "
-	"Copyright 2000 Rob Swindell\n");
+	for(i=1;i<argc;i++)
+		if(argv[i][0]=='/')
+			switch(toupper(argv[i][1])) {
+				case 'D':
+					display=1;
+					break;
+				case 'C':
+					case_sens=1;
+					break;
+				case 'O':
+					strcpy(outdir,argv[i]+2);
+					break;
+				case 'Q':
+					show_banner=0;
+					break;
+				default:
+					printf(banner);
+					printf(usage);
+					exit(1); }
+		else
+			strcpy(src,argv[i]);
 
-for(i=1;i<argc;i++)
-	if(argv[i][0]=='/')
-		switch(toupper(argv[i][1])) {
-			case 'D':
-				display=1;
-				break;
-			case 'C':
-				case_sens=1;
-				break;
-			case 'O':
-				strcpy(outdir,argv[i]+2);
-				break;
-			default:
-				printf(usage);
-				exit(1); }
-	else
-		strcpy(src,argv[i]);
+	if(show_banner)
+		printf(banner);
 
-if(!src[0]) {
-	printf(usage);
-	exit(1); }
+	if(!src[0]) {
+		printf(usage);
+		exit(1); }
 
-strupr(src);
-strcpy(str,src);
-if(!strchr(str,'.'))
-	sprintf(src,"%s.SRC",str);
+	strcpy(str,src);
+	if(!strchr(str,'.'))
+		sprintf(src,"%s.SRC",str);
 
-strcpy(str,src);
-p=strrchr(str,'.');
-if(p)
-	*p=0;
-strcat(str,".BIN");
-
-if(outdir[0]) {
-	p=strrchr(str,'\\');
-	if(!p)
-		p=strrchr(str,':');
+	strcpy(str,src);
+	p=strrchr(str,'.');
 	if(p)
-		strcpy(outfname,p+1);
-	else
-		strcpy(outfname,str);
-	if(outdir[strlen(outdir)-1]!='\\'
-		&& outdir[strlen(outdir)-1]!=':')
-		strcat(outdir,"\\");
-	sprintf(str,"%s%s",outdir,outfname); }
+		*p=0;
+	strcat(str,".BIN");
 
-if((out=fopen(str,"wb"))==NULL) {
-	printf("error opening %s for write\n",str);
-	exit(1); }
+	if(outdir[0]) {
+		p=strrchr(str,'\\');
+		if(!p)
+			p=strrchr(str,':');
+		if(p)
+			strcpy(outfname,p+1);
+		else
+			strcpy(outfname,str);
+		if(outdir[strlen(outdir)-1]!='\\'
+			&& outdir[strlen(outdir)-1]!=':')
+			strcat(outdir,"\\");
+		sprintf(str,"%s%s",outdir,outfname); }
 
-atexit(bail);
-
-printf("\nCompiling %s...\n",src);
-
-compile(src);
-
-/****************************/
-/* Resolve GOTOS and CALLS */
-/****************************/
-
-printf("Resolving labels...\n");
-
-for(i=0;i<gotos;i++) {
-	for(j=0;j<labels;j++)
-		if(!stricmp(goto_label[i],label_name[j]))
-			break;
-	if(j>=labels) {
-		printf("%s line %d: label (%s) not found.\n"
-			,goto_file[i],goto_line[i],goto_label[i]);
+	if((out=fopen(str,"wb"))==NULL) {
+		printf("error opening %s for write\n",str);
 		exit(1); }
-	fseek(out,(long)(goto_indx[i]+1),SEEK_SET);
-	fwrite(&label_indx[j],2,1,out); }
 
-for(i=0;i<calls;i++) {
-	for(j=0;j<labels;j++)
-		if((!case_sens
-			&& !strnicmp(call_label[i],label_name[j],strlen(call_label[i])))
-		|| (case_sens
-			&& !strncmp(call_label[i],label_name[j],strlen(call_label[i]))))
-			break;
-	if(j>=labels) {
-		printf("%s line %d: label (%s) not found.\n"
-			,call_file[i],call_line[i],call_label[i]);
-		exit(1); }
-	fseek(out,(long)(call_indx[i]+1),SEEK_SET);
-	fwrite(&label_indx[j],2,1,out); }
+	atexit(bail);
 
-fclose(out);
-out=NULL; /* so bail() won't truncate */
+	printf("\nCompiling %s...\n",src);
 
-printf("\nDone.\n");
-return(0);
+	compile(src);
+
+	/****************************/
+	/* Resolve GOTOS and CALLS */
+	/****************************/
+
+	printf("Resolving labels...\n");
+
+	for(i=0;i<gotos;i++) {
+		for(j=0;j<labels;j++)
+			if(!stricmp(goto_label[i],label_name[j]))
+				break;
+		if(j>=labels) {
+			printf("%s line %d: label (%s) not found.\n"
+				,goto_file[i],goto_line[i],goto_label[i]);
+			exit(1); }
+		fseek(out,(long)(goto_indx[i]+1),SEEK_SET);
+		fwrite(&label_indx[j],2,1,out); }
+
+	for(i=0;i<calls;i++) {
+		for(j=0;j<labels;j++)
+			if((!case_sens
+				&& !strnicmp(call_label[i],label_name[j],strlen(call_label[i])))
+			|| (case_sens
+				&& !strncmp(call_label[i],label_name[j],strlen(call_label[i]))))
+				break;
+		if(j>=labels) {
+			printf("%s line %d: label (%s) not found.\n"
+				,call_file[i],call_line[i],call_label[i]);
+			exit(1); }
+		fseek(out,(long)(call_indx[i]+1),SEEK_SET);
+		fwrite(&label_indx[j],2,1,out); }
+
+	fclose(out);
+	out=NULL; /* so bail() won't truncate */
+
+	printf("\nDone.\n");
+	return(0);
 }
 
 
