@@ -64,8 +64,7 @@ ulong _beginthread(void( *start_address )( void * )
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 
 	/* Default stack size in BSD is too small for JS stuff */
-/* #ifdef BSD */
-#if 0
+#ifdef BSD
 	if(stack_size==0)
 		stack_size=1<<17;
 #endif
