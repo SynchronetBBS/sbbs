@@ -755,10 +755,10 @@ int main(int argc, char **argv)
 		printf("\nSBBSNODE environment variable must be set\n");
 		exit(0); }
 
-	if(node_dir[strlen(node_dir)-1]!='\\')
-		strcat(node_dir,"\\");
+	if(node_dir[strlen(node_dir)-1]!='\\' && node_dir[strlen(node_dir)-1]!='/')
+		strcat(node_dir,"/");
 
-	strcpy(str,"SBL.CFG");
+	strcpy(str,"sbl.cfg");
 	if((file=sopen(str,O_RDONLY,SH_DENYNO))==-1) {
 		printf("error opening %s\r\n",str);
 		exit(1); }
@@ -786,17 +786,17 @@ int main(int argc, char **argv)
 	if(maint)
 		user_misc=(ANSI|COLOR);
 
-	if((file=sopen("SBL.DAB",O_RDWR|O_BINARY|O_CREAT,SH_DENYNO))==-1) {
-		bprintf("\r\n\7Error opening/creating SBL.DAB\r\n");
+	if((file=sopen("sbl.dab",O_RDWR|O_BINARY|O_CREAT,SH_DENYNO))==-1) {
+		bprintf("\r\n\7Error opening/creating sbl.dab\r\n");
 		exit(1); }
 	if((stream=fdopen(file,"w+b"))==NULL) {
-		bprintf("\r\n\7Error converting SBL.DAB file handle to stream\r\n");
+		bprintf("\r\n\7Error converting sbl.dab file handle to stream\r\n");
 		exit(1); }
 	setvbuf(stream,0L,_IOFBF,2048);
 
 	if(del_days) {
 		now=time(NULL);
-		strcpy(str,"SBLPURGE.DAB");
+		strcpy(str,"sblpurge.dab");
 		if((file=nopen(str,O_RDWR|O_CREAT))==-1) {
 			printf("Error creating %s\r\n",str);
 			exit(1); }
@@ -1196,7 +1196,7 @@ int main(int argc, char **argv)
 						,(int(*)(const void *, const void *))sortint_cmp);
 
 				bprintf("\r\n\r\n\1h\1gCreating index...");
-				sprintf(str,"SORT_%03d.NDX",node_num);
+				sprintf(str,"sort_%03d.ndx",node_num);
 				if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
 					bprintf("\r\n\7Error creating %s\r\n",str);
 					if(sort_by_str)
@@ -1220,7 +1220,7 @@ int main(int argc, char **argv)
 				break;
 			case 'D':
 				cls();
-				sprintf(str,"SORT_%03d.NDX",node_num);
+				sprintf(str,"sort_%03d.ndx",node_num);
 				if((file=nopen(str,O_RDONLY))==-1) {
 					bputs("\1n\1r\1hSorted list not generated.\r\n");
 					pause(); }
