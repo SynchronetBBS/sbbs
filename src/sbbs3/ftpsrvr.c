@@ -92,7 +92,7 @@ static DWORD	sockets=0;
 static DWORD	thread_count=0;
 static time_t	uptime=0;
 static DWORD	served=0;
-static BOOL		recycle_server=FALSE;
+static BOOL		terminate_server=FALSE;
 static char		revision[16];
 static char 	*text[TOTAL_TEXT];
 #if 0 //def _DEBUG
@@ -1147,7 +1147,7 @@ int sockreadline(SOCKET socket, char* buf, int len, time_t* lastactive)
 
 		i=select(socket+1,&socket_set,NULL,NULL,&tv);
 
-		if(server_socket==INVALID_SOCKET) {
+		if(server_socket==INVALID_SOCKET || terminate_server) {
 			sockprintf(socket,"421 Server downed, aborting.");
 			lprintf(LOG_WARNING,"%04d Server downed, aborting",socket);
 			return(0);
@@ -1320,11 +1320,8 @@ static char* cmdstr(user_t* user, char *instr, char *fpath, char *fspec, char *c
 
 void DLLCALL ftp_terminate(void)
 {
-	recycle_server=FALSE;
-	if(server_socket!=INVALID_SOCKET) {
-    	lprintf(LOG_DEBUG,"%04d FTP Terminate: closing socket",server_socket);
-		ftp_close_socket(&server_socket,__LINE__);
-    }
+   	lprintf(LOG_DEBUG,"%04d FTP Server terminate",server_socket);
+	terminate_server=TRUE;
 }
 
 
@@ -1428,7 +1425,7 @@ static void send_thread(void* arg)
 			error=TRUE;
 			break;
 		}
-		if(server_socket==INVALID_SOCKET) {
+		if(server_socket==INVALID_SOCKET || terminate_server) {
 			lprintf(LOG_WARNING,"%04d !DATA Transfer locally aborted",xfer.ctrl_sock);
 			sockprintf(xfer.ctrl_sock,"426 Transfer locally aborted.");
 			error=TRUE;
@@ -1588,7 +1585,7 @@ static void send_thread(void* arg)
 	}
 
 	fclose(fp);
-	if(server_socket!=INVALID_SOCKET)
+	if(server_socket!=INVALID_SOCKET && !terminate_server)
 		*xfer.inprogress=FALSE;
 	if(xfer.tmpfile) {
 		if(!(startup->options&FTP_OPT_KEEP_TEMP_FILES))
@@ -1680,7 +1677,7 @@ static void receive_thread(void* arg)
 			error=TRUE;
 			break;
 		}
-		if(server_socket==INVALID_SOCKET) {
+		if(server_socket==INVALID_SOCKET || terminate_server) {
 			lprintf(LOG_WARNING,"%04d !DATA Transfer locally aborted",xfer.ctrl_sock);
 			/* Send NAK */
 			sockprintf(xfer.ctrl_sock,"426 Transfer locally aborted.");
@@ -1754,7 +1751,7 @@ static void receive_thread(void* arg)
 		YIELD();
 	}
 
-	if(server_socket!=INVALID_SOCKET)
+	if(server_socket!=INVALID_SOCKET && !terminate_server)
 		*xfer.inprogress=FALSE;
 	fclose(fp);
 
@@ -4349,7 +4346,7 @@ static void ctrl_thread(void* arg)
 		lprintf(LOG_DEBUG,"%04d Waiting for transfer to complete...",sock);
 		count=0;
 		while(transfer_inprogress==TRUE) {
-			if(server_socket==INVALID_SOCKET) {
+			if(server_socket==INVALID_SOCKET || terminate_server) {
 				mswait(2000);	/* allow xfer threads to terminate */
 				break;
 			}
@@ -4452,7 +4449,7 @@ static void cleanup(int code, int line)
 
 	thread_down();
 	status("Down");
-	if(code)
+	if(terminate_server || code)
 		lprintf(LOG_INFO,"#### FTP Server thread terminated (%u threads remain, %lu clients served)"
 			,thread_count, served);
 	if(startup!=NULL && startup->terminated!=NULL)
@@ -4527,7 +4524,7 @@ void DLLCALL ftp_server(void* arg)
 	if(startup->port==0)					startup->port=IPPORT_FTP;
 	if(startup->qwk_timeout==0)				startup->qwk_timeout=600;		/* seconds */
 	if(startup->max_inactivity==0)			startup->max_inactivity=300;	/* seconds */
-	if(startup->sem_chk_freq==0)			startup->sem_chk_freq=5;		/* seconds */
+	if(startup->sem_chk_freq==0)			startup->sem_chk_freq=2;		/* seconds */
 	if(startup->index_file_name[0]==0)		SAFECOPY(startup->index_file_name,"00index");
 	if(startup->html_index_file[0]==0)		SAFECOPY(startup->html_index_file,"00index.html");
 	if(startup->html_index_script[0]==0) {	SAFECOPY(startup->html_index_script,"ftp-html.js");
@@ -4552,7 +4549,7 @@ void DLLCALL ftp_server(void* arg)
 	uptime=0;
 	served=0;
 	startup->recycle_now=FALSE;
-	recycle_server=TRUE;
+	terminate_server=FALSE;
 
 	do {
 
@@ -4698,7 +4695,7 @@ void DLLCALL ftp_server(void* arg)
 		if(startup->started!=NULL)
     		startup->started(startup->cbdata);
 
-		while(server_socket!=INVALID_SOCKET) {
+		while(server_socket!=INVALID_SOCKET && !terminate_server) {
 
 			if(!(startup->options&FTP_OPT_NO_RECYCLE)) {
 				sprintf(path,"%sftpsrvr.rec",scfg.ctrl_dir);
@@ -4736,7 +4733,7 @@ void DLLCALL ftp_server(void* arg)
 				break;
 			}
 
-			if(server_socket==INVALID_SOCKET)	/* terminated */
+			if(server_socket==INVALID_SOCKET || terminate_server)	/* terminated */
 				break;
 
 			client_addr_len = sizeof(client_addr);
@@ -4813,12 +4810,10 @@ void DLLCALL ftp_server(void* arg)
 
 		cleanup(0,__LINE__);
 
-		if(recycle_server) {
+		if(!terminate_server) {
 			lprintf(LOG_INFO,"Recycling server...");
 			mswait(2000);
 		}
 
-	} while(recycle_server);
-
-    lprintf(LOG_INFO,"#### FTP Server thread terminated (%u threads remain, %lu clients served)", thread_count, served);
+	} while(!terminate_server);
 }
