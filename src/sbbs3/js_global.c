@@ -796,7 +796,7 @@ static struct {
 	{ 8595	,"darr"		}, /* downwards arrow */
 	{ 8594	,"rarr"		}, /* rightwards arrow */
 	{ 8592	,"larr"		}, /* leftwards arrow */
-	{ 8976	,NULL		}, /* reversed not sign */
+	{ 8985	,NULL		}, /* turned not sign */
 	{ 8596	,"harr"		}, /* left right arrow */
 	{ 9650	,NULL		}, /* black up-pointing triangle */
 	{ 9660	,NULL		}  /* black down-pointing triangle */
