@@ -82,7 +82,7 @@ char *loadmsgtxt(smbmsg_t msg, int tails)
 			lzhlen=*(long *)lzhbuf;
 			if((buf=REALLOC(buf,l+lzhlen+3))==NULL) {
 				FREE(lzhbuf);
-				printf("ERR_ALLOC lzhoutbuf of %l\n",l+lzhlen+1);
+				printf("ERR_ALLOC lzhoutbuf of %ld\n",l+lzhlen+1);
 				return(buf); }
 			lzh_decode(lzhbuf,length,buf+l);
 			FREE(lzhbuf);
