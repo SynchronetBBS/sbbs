@@ -143,7 +143,7 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 		return(FALSE);
 
 	/* Required Header Fields */
-	if(JS_GetProperty(cx, hdr, "subject", &val)) {
+	if(JS_GetProperty(cx, hdr, "subject", &val) && val!=JSVAL_VOID) {
 		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
 	} else
@@ -151,7 +151,7 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 	smb_hfield(msg, SUBJECT, (ushort)strlen(cp), cp);
 	msg->idx.subj=subject_crc(cp);
 
-	if(JS_GetProperty(cx, hdr, "to", &val)) {
+	if(JS_GetProperty(cx, hdr, "to", &val) && val!=JSVAL_VOID) {
 		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
 	} else {
@@ -166,7 +166,7 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 		msg->idx.to=crc16(to);
 	}
 
-	if(JS_GetProperty(cx, hdr, "from", &val)) {
+	if(JS_GetProperty(cx, hdr, "from", &val) && val!=JSVAL_VOID) {
 		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
 	} else
@@ -179,7 +179,7 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 	}
 
 	/* Optional Header Fields */
-	if(JS_GetProperty(cx, hdr, "from_ext", &val)) {
+	if(JS_GetProperty(cx, hdr, "from_ext", &val) && val!=JSVAL_VOID) {
 		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
 		smb_hfield(msg, SENDEREXT, (ushort)strlen(cp), cp);
@@ -187,13 +187,13 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 			msg->idx.from=atoi(cp);
 	}
 
-	if(JS_GetProperty(cx, hdr, "from_org", &val)) {
+	if(JS_GetProperty(cx, hdr, "from_org", &val) && val!=JSVAL_VOID) {
 		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
 		smb_hfield(msg, SENDERORG, (ushort)strlen(cp), cp);
 	}
 
-	if(JS_GetProperty(cx, hdr, "from_net_type", &val)) {
+	if(JS_GetProperty(cx, hdr, "from_net_type", &val) && val!=JSVAL_VOID) {
 		JS_ValueToInt32(cx,val,&i32);
 		nettype=(ushort)i32;
 		smb_hfield(msg, SENDERNETTYPE, sizeof(nettype), &nettype);
@@ -201,19 +201,19 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 			msg->idx.from=0;
 	}
 
-	if(JS_GetProperty(cx, hdr, "from_net_addr", &val)) {
+	if(JS_GetProperty(cx, hdr, "from_net_addr", &val) && val!=JSVAL_VOID) {
 		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
 		smb_hfield(msg, SENDERNETADDR, (ushort)strlen(cp), cp);
 	}
 
-	if(JS_GetProperty(cx, hdr, "from_agent", &val)) {
+	if(JS_GetProperty(cx, hdr, "from_agent", &val) && val!=JSVAL_VOID) {
 		JS_ValueToInt32(cx,val,&i32);
 		agent=(ushort)i32;
 		smb_hfield(msg, SENDERAGENT, sizeof(agent), &agent);
 	}
 
-	if(JS_GetProperty(cx, hdr, "to_ext", &val)) {
+	if(JS_GetProperty(cx, hdr, "to_ext", &val) && val!=JSVAL_VOID) {
 		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
 		smb_hfield(msg, RECIPIENTEXT, (ushort)strlen(cp), cp);
@@ -221,13 +221,13 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 			msg->idx.to=atoi(cp);
 	}
 
-	if(JS_GetProperty(cx, hdr, "to_org", &val)) {
+	if(JS_GetProperty(cx, hdr, "to_org", &val) && val!=JSVAL_VOID) {
 		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
 		smb_hfield(msg, RECIPIENTORG, (ushort)strlen(cp), cp);
 	}
 
-	if(JS_GetProperty(cx, hdr, "to_net_type", &val)) {
+	if(JS_GetProperty(cx, hdr, "to_net_type", &val) && val!=JSVAL_VOID) {
 		JS_ValueToInt32(cx,val,&i32);
 		nettype=(ushort)i32;
 		smb_hfield(msg, RECIPIENTNETTYPE, sizeof(nettype), &nettype);
@@ -235,169 +235,169 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 			msg->idx.to=0;
 	}
 
-	if(JS_GetProperty(cx, hdr, "to_net_addr", &val)) {
+	if(JS_GetProperty(cx, hdr, "to_net_addr", &val) && val!=JSVAL_VOID) {
 		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
 		smb_hfield(msg, RECIPIENTNETADDR, (ushort)strlen(cp), cp);
 	}
 
-	if(JS_GetProperty(cx, hdr, "to_agent", &val)) {
+	if(JS_GetProperty(cx, hdr, "to_agent", &val) && val!=JSVAL_VOID) {
 		JS_ValueToInt32(cx,val,&i32);
 		agent=(ushort)i32;
 		smb_hfield(msg, RECIPIENTAGENT, sizeof(agent), &agent);
 	}
 
-	if(JS_GetProperty(cx, hdr, "replyto", &val)) {
+	if(JS_GetProperty(cx, hdr, "replyto", &val) && val!=JSVAL_VOID) {
 		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
 		smb_hfield(msg, REPLYTO, (ushort)strlen(cp), cp);
 	}
 
-	if(JS_GetProperty(cx, hdr, "replyto_ext", &val)) {
+	if(JS_GetProperty(cx, hdr, "replyto_ext", &val) && val!=JSVAL_VOID) {
 		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
 		smb_hfield(msg, REPLYTOEXT, (ushort)strlen(cp), cp);
 	}
 
-	if(JS_GetProperty(cx, hdr, "replyto_org", &val)) {
+	if(JS_GetProperty(cx, hdr, "replyto_org", &val) && val!=JSVAL_VOID) {
 		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
 		smb_hfield(msg, REPLYTOORG, (ushort)strlen(cp), cp);
 	}
 
-	if(JS_GetProperty(cx, hdr, "replyto_net_type", &val)) {
+	if(JS_GetProperty(cx, hdr, "replyto_net_type", &val) && val!=JSVAL_VOID) {
 		JS_ValueToInt32(cx,val,&i32);
 		nettype=(ushort)i32;
 		smb_hfield(msg, REPLYTONETTYPE, sizeof(nettype), &nettype);
 	}
 
-	if(JS_GetProperty(cx, hdr, "replyto_net_addr", &val)) {
+	if(JS_GetProperty(cx, hdr, "replyto_net_addr", &val) && val!=JSVAL_VOID) {
 		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
 		smb_hfield(msg, REPLYTONETADDR, (ushort)strlen(cp), cp);
 	}
 
-	if(JS_GetProperty(cx, hdr, "replyto_agent", &val)) {
+	if(JS_GetProperty(cx, hdr, "replyto_agent", &val) && val!=JSVAL_VOID) {
 		JS_ValueToInt32(cx,val,&i32);
 		agent=(ushort)i32;
 		smb_hfield(msg, REPLYTOAGENT, sizeof(agent), &agent);
 	}
 
 	/* RFC822 headers */
-	if(JS_GetProperty(cx, hdr, "id", &val)) {
+	if(JS_GetProperty(cx, hdr, "id", &val) && val!=JSVAL_VOID) {
 		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
 		smb_hfield(msg, RFC822MSGID, (ushort)strlen(cp), cp);
 	}
 
-	if(JS_GetProperty(cx, hdr, "reply_id", &val)) {
+	if(JS_GetProperty(cx, hdr, "reply_id", &val) && val!=JSVAL_VOID) {
 		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
 		smb_hfield(msg, RFC822REPLYID, (ushort)strlen(cp), cp);
 	}
 
-	if(JS_GetProperty(cx, hdr, "reverse_path", &val)) {
+	if(JS_GetProperty(cx, hdr, "reverse_path", &val) && val!=JSVAL_VOID) {
 		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
 		smb_hfield(msg, SMTPREVERSEPATH, (ushort)strlen(cp), cp);
 	}
 
 	/* USENET headers */
-	if(JS_GetProperty(cx, hdr, "path", &val)) {
+	if(JS_GetProperty(cx, hdr, "path", &val) && val!=JSVAL_VOID) {
 		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
 		smb_hfield(msg, USENETPATH, (ushort)strlen(cp), cp);
 	}
 
-	if(JS_GetProperty(cx, hdr, "newsgroups", &val)) {
+	if(JS_GetProperty(cx, hdr, "newsgroups", &val) && val!=JSVAL_VOID) {
 		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
 		smb_hfield(msg, USENETNEWSGROUPS, (ushort)strlen(cp), cp);
 	}
 
 	/* FTN headers */
-	if(JS_GetProperty(cx, hdr, "ftn_msgid", &val)) {
+	if(JS_GetProperty(cx, hdr, "ftn_msgid", &val) && val!=JSVAL_VOID) {
 		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
 		smb_hfield(msg, FIDOMSGID, (ushort)strlen(cp), cp);
 	}
 
-	if(JS_GetProperty(cx, hdr, "ftn_reply", &val)) {
+	if(JS_GetProperty(cx, hdr, "ftn_reply", &val) && val!=JSVAL_VOID) {
 		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
 		smb_hfield(msg, FIDOREPLYID, (ushort)strlen(cp), cp);
 	}
 
-	if(JS_GetProperty(cx, hdr, "ftn_area", &val)) {
+	if(JS_GetProperty(cx, hdr, "ftn_area", &val) && val!=JSVAL_VOID) {
 		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
 		smb_hfield(msg, FIDOAREA, (ushort)strlen(cp), cp);
 	}
 
-	if(JS_GetProperty(cx, hdr, "ftn_flags", &val)) {
+	if(JS_GetProperty(cx, hdr, "ftn_flags", &val) && val!=JSVAL_VOID) {
 		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
 		smb_hfield(msg, FIDOFLAGS, (ushort)strlen(cp), cp);
 	}
 
-	if(JS_GetProperty(cx, hdr, "ftn_pid", &val)) {
+	if(JS_GetProperty(cx, hdr, "ftn_pid", &val) && val!=JSVAL_VOID) {
 		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
 		smb_hfield(msg, FIDOPID, (ushort)strlen(cp), cp);
 	}
 
-	if(JS_GetProperty(cx, hdr, "ftn_tid", &val)) {
+	if(JS_GetProperty(cx, hdr, "ftn_tid", &val) && val!=JSVAL_VOID) {
 		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
 		smb_hfield(msg, FIDOTID, (ushort)strlen(cp), cp);
 	}
 
-	if(JS_GetProperty(cx, hdr, "date", &val)) {
+	if(JS_GetProperty(cx, hdr, "date", &val) && val!=JSVAL_VOID) {
 		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
 			return(FALSE);
 		msg->hdr.when_written=rfc822date(cp);
 	}
 	
 	/* Numeric Header Fields */
-	if(JS_GetProperty(cx, hdr, "attr", &val)) {
+	if(JS_GetProperty(cx, hdr, "attr", &val) && val!=JSVAL_VOID) {
 		JS_ValueToInt32(cx,val,&i32);
 		msg->hdr.attr=(ushort)i32;
 		msg->idx.attr=msg->hdr.attr;
 	}
-	if(JS_GetProperty(cx, hdr, "auxattr", &val)) {
+	if(JS_GetProperty(cx, hdr, "auxattr", &val) && val!=JSVAL_VOID) {
 		JS_ValueToInt32(cx,val,&i32);
 		msg->hdr.auxattr=i32;
 	}
-	if(JS_GetProperty(cx, hdr, "netattr", &val)) {
+	if(JS_GetProperty(cx, hdr, "netattr", &val) && val!=JSVAL_VOID) {
 		JS_ValueToInt32(cx,val,&i32);
 		msg->hdr.netattr=i32;
 	}
-	if(JS_GetProperty(cx, hdr, "when_written_time", &val))  {
+	if(JS_GetProperty(cx, hdr, "when_written_time", &val) && val!=JSVAL_VOID)  {
 		JS_ValueToInt32(cx,val,&i32);
 		msg->hdr.when_written.time=i32;
 	}
-	if(JS_GetProperty(cx, hdr, "when_written_zone", &val)) {
+	if(JS_GetProperty(cx, hdr, "when_written_zone", &val) && val!=JSVAL_VOID) {
 		JS_ValueToInt32(cx,val,&i32);
 		msg->hdr.when_written.zone=(short)i32;
 	}
-	if(JS_GetProperty(cx, hdr, "when_imported_time", &val)) {
+	if(JS_GetProperty(cx, hdr, "when_imported_time", &val) && val!=JSVAL_VOID) {
 		JS_ValueToInt32(cx,val,&i32);
 		msg->hdr.when_imported.time=i32;
 	}
-	if(JS_GetProperty(cx, hdr, "when_imported_zone", &val)) {
+	if(JS_GetProperty(cx, hdr, "when_imported_zone", &val) && val!=JSVAL_VOID) {
 		JS_ValueToInt32(cx,val,&i32);
 		msg->hdr.when_imported.zone=(short)i32;
 	}
 
-	if(JS_GetProperty(cx, hdr, "thread_orig", &val)) {
+	if(JS_GetProperty(cx, hdr, "thread_orig", &val) && val!=JSVAL_VOID) {
 		JS_ValueToInt32(cx,val,&i32);
 		msg->hdr.thread_orig=i32;
 	}
-	if(JS_GetProperty(cx, hdr, "thread_next", &val)) {
+	if(JS_GetProperty(cx, hdr, "thread_next", &val) && val!=JSVAL_VOID) {
 		JS_ValueToInt32(cx,val,&i32);
 		msg->hdr.thread_next=i32;
 	}
-	if(JS_GetProperty(cx, hdr, "thread_first", &val)) {
+	if(JS_GetProperty(cx, hdr, "thread_first", &val) && val!=JSVAL_VOID) {
 		JS_ValueToInt32(cx,val,&i32);
 		msg->hdr.thread_first=i32;
 	}
