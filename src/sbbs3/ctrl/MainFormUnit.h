@@ -260,6 +260,7 @@ __published:	// IDE-managed Components
 	TMenuItem *DNSBLExemptions;
 	TMenuItem *BBSEditIPFilterSilent;
 	TMenuItem *ExternalMailProc;
+	TMenuItem *BBSEditNewUserEmail;
     void __fastcall FileExitMenuItemClick(TObject *Sender);
 	void __fastcall ViewToolbarMenuItemClick(TObject *Sender);
 	void __fastcall FormClose(TObject *Sender, TCloseAction &Action);
