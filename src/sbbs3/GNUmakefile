@@ -530,31 +530,31 @@ $(LIBODIR)/sbbsweb.o : sbbscon.c
    ifndef bcc
 	@echo $(COMPILE_MSG) $<
    endif
-	$(QUIET)$(CC) $(CFLAGS) -o $@ -c $^ -DNO_TELNET_SERVER -DNO_FTP_SERVER -DNO_MAIL_SERVER -DNO_SERVICES
+	$(QUIET)$(CC) $(CFLAGS) -o $@ -c $< -DNO_TELNET_SERVER -DNO_FTP_SERVER -DNO_MAIL_SERVER -DNO_SERVICES
 
 $(LIBODIR)/sbbsftp.o : sbbscon.c
    ifndef bcc
 	@echo $(COMPILE_MSG) $<
    endif
-	$(QUIET)$(CC) $(CFLAGS) -o $@ -c $^ -DNO_TELNET_SERVER -DNO_MAIL_SERVER -DNO_SERVICES -DNO_WEB_SERVER
+	$(QUIET)$(CC) $(CFLAGS) -o $@ -c $< -DNO_TELNET_SERVER -DNO_MAIL_SERVER -DNO_SERVICES -DNO_WEB_SERVER
 
 $(LIBODIR)/sbbsmail.o : sbbscon.c
    ifndef bcc
 	@echo $(COMPILE_MSG) $<
    endif
-	$(QUIET)$(CC) $(CFLAGS) -o $@ -c $^ -DNO_TELNET_SERVER -DNO_FTP_SERVER -DNO_SERVICES -DNO_WEB_SERVER
+	$(QUIET)$(CC) $(CFLAGS) -o $@ -c $< -DNO_TELNET_SERVER -DNO_FTP_SERVER -DNO_SERVICES -DNO_WEB_SERVER
 
 $(LIBODIR)/sbbssrvc.o : sbbscon.c
    ifndef bcc
 	@echo $(COMPILE_MSG) $<
    endif
-	$(QUIET)$(CC) $(CFLAGS) -o $@ -c $^ -DNO_TELNET_SERVER -DNO_FTP_SERVER -DNO_MAIL_SERVER -DNO_WEB_SERVER
+	$(QUIET)$(CC) $(CFLAGS) -o $@ -c $< -DNO_TELNET_SERVER -DNO_FTP_SERVER -DNO_MAIL_SERVER -DNO_WEB_SERVER
 
 $(LIBODIR)/sbbs_bbs.o : sbbscon.c
    ifndef bcc
 	@echo $(COMPILE_MSG) $<
    endif
-	$(QUIET)$(CC) $(CFLAGS) -o $@ -c $^ -DNO_FTP_SERVER -DNO_MAIL_SERVER -DNO_SERVICES -DNO_WEB_SERVER
+	$(QUIET)$(CC) $(CFLAGS) -o $@ -c $< -DNO_FTP_SERVER -DNO_MAIL_SERVER -DNO_SERVICES -DNO_WEB_SERVER
 
 $(SBBSWEB): $(WEBCON_OBJS) $(SBBSLIB) $(WEBSRVR)
 	@echo Linking $@
