@@ -70,8 +70,6 @@ ifdef JSLIB
  MKFLAGS	+=	JSLIB=$(JSLIB)
 endif
 
-MKFLAGS	+=	BAJAPATH=../src/sbbs3/$(CCPRE).$(os).exe.$(SUFFIX)/baja
-
 all: binaries baja externals $(SBBSDIR)/docs
 
 binaries:	sbbs3 scfg
@@ -87,7 +85,7 @@ scfg:	$(SBBSDIR)/src/sbbs3 $(SBBSDIR)/src/uifc $(SBBSDIR)/src/xpdev
 	$(MAKE) -C $(SBBSDIR)/src/sbbs3/scfg $(MKFLAGS)
 
 baja:	$(SBBSDIR)/exec binaries
-	$(MAKE) -C $(SBBSDIR)/exec $(MKFLAGS)
+	$(MAKE) -C $(SBBSDIR)/exec $(MKFLAGS) BAJAPATH=$(SBBSDIR)/src/sbbs3/$(CCPRE).$(os).exe.$(SUFFIX)/baja
 
 sbj:	$(SBBSDIR)/xtrn
 	$(MAKE) -C $(SBBSDIR)/xtrn/sbj $(MKFLAGS)
