@@ -52,6 +52,10 @@ extern "C" {
 	ulong _beginthread(void( *start_address )( void * )
 		,unsigned stack_size, void *arglist);
 
+	#if defined(__OpenBSD__)	/* thread-safe version of realpath for OpenBSD */
+		char* realpath_r(const char *pathname, char *resolvedname);
+	#endif
+
 #elif defined(_WIN32)	
 
 	#include <process.h>	/* _beginthread */
