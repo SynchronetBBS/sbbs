@@ -728,23 +728,20 @@ import into the current message group.
 							errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_subs+1);
 							cfg.total_subs=0;
 							bail(1);
-							break; }
-
-						for(ptridx=0;ptridx>-1;ptridx++) {
-							for(n=0;n<cfg.total_subs;n++)
-								if(cfg.sub[n]->ptridx==ptridx)
-									break;
-							if(n==cfg.total_subs)
-								break; }
+							break; 
+						}
 
 						if((cfg.sub[j]=(sub_t *)MALLOC(sizeof(sub_t)))
 							==NULL) {
 							errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(sub_t));
-							break; }
+							break; 
+						}
 						memset(cfg.sub[j],0,sizeof(sub_t)); }
-					if(!k)
+					if(!k) {
+						ptridx=cfg.sub[j]->ptridx;	/* save original ptridx */
 						memcpy(cfg.sub[j],&tmpsub,sizeof(sub_t));
-					else {
+						cfg.sub[j]->ptridx=ptridx;	/* restore original ptridx */
+					} else {
                         cfg.sub[j]->grp=i;
 						if(cfg.total_faddrs)
 							cfg.sub[j]->faddr=cfg.faddr[0];
@@ -752,16 +749,24 @@ import into the current message group.
 						strcpy(cfg.sub[j]->sname,tmpsub.sname);
 						strcpy(cfg.sub[j]->lname,tmpsub.lname);
 						strcpy(cfg.sub[j]->qwkname,tmpsub.qwkname);
-						//strcpy(cfg.sub[j]->echopath,tmpsub.echopath);
 						strcpy(cfg.sub[j]->data_dir,tmpsub.data_dir);
 						if(j==cfg.total_subs)
 							cfg.sub[j]->maxmsgs=1000;
+					}
+					if(j==cfg.total_subs) {	/* adding new sub-board */
+						for(ptridx=0;ptridx>-1;ptridx++) {
+							for(n=0;n<cfg.total_subs;n++)
+								if(cfg.sub[n]->ptridx==ptridx)
+									break;
+							if(n==cfg.total_subs)
+								break; 
 						}
-					if(j==cfg.total_subs) {
-						cfg.sub[j]->ptridx=ptridx;
+						cfg.sub[j]->ptridx=ptridx;	/* use new ptridx */
 						cfg.sub[j]->misc=tmpsub.misc;
-						cfg.total_subs++; }
-					uifc.changes=1; }
+						cfg.total_subs++; 
+					}
+					uifc.changes=1; 
+				}
 				fclose(stream);
 				uifc.pop(0);
 				sprintf(str,"%lu Message Areas Imported Successfully",ported);
