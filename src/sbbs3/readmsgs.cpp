@@ -309,6 +309,7 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 	int		i;
 	uint 	usub,ugrp,reads=0;
 	uint	lp=0;
+	long	org_mode=mode;
 	ulong	msgs,last,l;
 	post_t	HUGE16 *post;
 	smbmsg_t	msg;
@@ -505,10 +506,15 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 				strupr((char *)buf);
 				if(!strstr((char *)buf,find) && !strstr(msg.subj,find)) {
 					FREE(buf);
-					if(smb.curmsg<smb.msgs-1) smb.curmsg++;
-					else done=1;
-					continue; }
-				FREE(buf); }
+					if(smb.curmsg<smb.msgs-1) 
+						smb.curmsg++;
+					else 
+						if(org_mode&SCAN_FIND) 
+							done=1;
+					continue; 
+				}
+				FREE(buf); 
+			}
 
 			if(mode&SCAN_CONST)
 				bprintf(text[ZScanPostHdr],ugrp,usub,smb.curmsg+1,smb.msgs);
@@ -989,7 +995,7 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 		smb_freemsgmem(&msg);
 	if(post)
 		LFREE(post);
-	if(!(mode&(SCAN_CONST|SCAN_TOYOU|SCAN_FIND)) && !(cfg.sub[subnum]->misc&SUB_PONLY)
+	if(!(org_mode&(SCAN_CONST|SCAN_TOYOU|SCAN_FIND)) && !(cfg.sub[subnum]->misc&SUB_PONLY)
 		&& reads && chk_ar(cfg.sub[subnum]->post_ar,&useron)
 		&& !(useron.rest&FLAG('P'))) {
 		sprintf(str,text[Post],cfg.grp[cfg.sub[subnum]->grp]->sname
