@@ -39,7 +39,7 @@
 #include <string.h>		/* memset */
 
 #include "genwrap.h"	/* msclock() */
-#include "threadwrap.h"	/* GetCurrentThreadId */
+#include "threadwrap.h"	/* pthread_self */
 #include "msg_queue.h"
 
 msg_queue_t* msgQueueInit(msg_queue_t* q, long flags)
@@ -54,7 +54,7 @@ msg_queue_t* msgQueueInit(msg_queue_t* q, long flags)
 
 	q->flags = flags;
 	q->refs = 1;
-	q->owner_thread_id = GetCurrentThreadId();
+	q->owner_thread_id = pthread_self();
 
 	if(q->flags&MSG_QUEUE_BIDIR)
 		listInit(&q->in,LINK_LIST_SEMAPHORE);
@@ -125,7 +125,7 @@ static link_list_t* msgQueueReadList(msg_queue_t* q)
 		return(NULL);
 
 	if((q->flags&MSG_QUEUE_BIDIR)
-		&& q->owner_thread_id == GetCurrentThreadId())
+		&& q->owner_thread_id == pthread_self())
 		return(&q->in);
 	return(&q->out);
 }
@@ -136,7 +136,7 @@ static link_list_t* msgQueueWriteList(msg_queue_t* q)
 		return(NULL);
 
 	if(!(q->flags&MSG_QUEUE_BIDIR)
-		|| q->owner_thread_id == GetCurrentThreadId())
+		|| q->owner_thread_id == pthread_self())
 		return(&q->out);
 	return(&q->in);
 }
