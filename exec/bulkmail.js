@@ -61,6 +61,9 @@ for(i=1; i<=lastuser; i++)
 {
     u = new User(i);
 
+	if(u.settings&(USER_DELETED|USER_INACTIVE))
+		continue;
+
     if(!u.compare_ars(ars))
 		continue;
 
