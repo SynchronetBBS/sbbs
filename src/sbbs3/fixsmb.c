@@ -249,7 +249,7 @@ int main(int argc, char **argv)
 		smb.status.last_msg=n;
 	else
 		sort_index(&smb);
-	printf("Saving message base status (%u total messages).\n",n);
+	printf("Saving message base status (%lu total messages).\n",n);
 	if((i=smb_putstatus(&smb))!=0)
 		printf("\nsmb_putstatus returned %d: %s\n",i,smb.last_error);
 	smb_unlocksmbhdr(&smb);
