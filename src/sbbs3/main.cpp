@@ -1953,6 +1953,10 @@ void event_thread(void* arg)
 						|| sbbs->cfg.event[i]->node>last_node) {
 						eprintf(LOG_INFO,"Waiting for node %d to run timed event: %s"
 							,sbbs->cfg.event[i]->node,sbbs->cfg.event[i]->code);
+						eprintf(LOG_DEBUG,"%s event last run: %s (0x%lx)"
+							,sbbs->cfg.event[i]->code
+							,timestr(&sbbs->cfg, &sbbs->cfg.event[i]->last, str)
+							,sbbs->cfg.event[i]->last);
 						lastnodechk=0;	 /* really last event time check */
 						start=time(NULL);
 						while(!sbbs->terminated) {
