@@ -16,6 +16,10 @@
 # or similar function) before this module is loaded.
 
 !include nodedefs.inc
+!include file_io.inc
+
+str fname
+int file
 
 # Remove any trailing spaces
 
@@ -134,7 +138,11 @@ if_true
 		if_true
 			shift_str 4
 			call get_arg
-			exec command /c rem >> %jqnet/%s.now
+			set fname "%jqnet/%s.now"
+			fopen file O_WRONLY|O_CREAT|O_DENYNONE fname
+			if_true
+				fclose file
+				end_if
 			end_if
 		return
 		end_if
