@@ -15,7 +15,7 @@
 //
 // Synchronet IRC Daemon as per RFC 1459, link compatible with Bahamut 1.4
 //
-// Copyright 2003-2004 Randolph Erwin Sommerfeld <sysop@rrx.ca>
+// Copyright 2003-2005 Randolph Erwin Sommerfeld <sysop@rrx.ca>
 //
 
 load("sbbsdefs.js");
@@ -46,18 +46,6 @@ const VERSION_STR = "Synchronet "
 // blocking functions.
 // The special "DEBUG" oper command also switches this value.
 var debug = false;
-
-// Resolve connecting clients' hostnames?  If set to false, everyone will have
-// an IP address instead of a hostname in their nick!user@host identifier.
-// Resolving hostnames is a BLOCKING operation, so your IRCD *will* freeze for
-// the amount of time it takes to resolve a host.
-// If you have a local (caching) name server, this shouldn't be a problem, but
-// the slower your connection to the net and the further away your named is,
-// the longer lookups will block for.  Busy servers should almost always
-// disable this.
-// Exception: 'localhost' and '127.0.0.1' always get resolved internally to
-// the hostname defined on the M:Line regardless of this setting.
-var resolve_hostnames = true;
 
 // The number of seconds to block before giving up on outbound CONNECT
 // attempts (when connecting to another IRC server -- i.e. a hub)  This value
@@ -653,13 +641,11 @@ next_client_id = 0;
 
 // An array containing all the objects containing local sockets that we need
 // to poll.
-Local_Unreg = new Array;
 Local_Users = new Array;
 Local_Servers = new Array;
 
 rebuild_socksel_array = false;
 
-sync_310 = false;
 network_debug = false;
 
 // Parse command-line arguments.
@@ -680,16 +666,6 @@ for (cmdarg=0;cmdarg<argc;cmdarg++) {
 }
 
 read_config_file();
-
-if(this.js==undefined) {		// v3.10?
-	js = { terminated: false };
-	sync_310 = true;
-}
-
-if(this.resolve_host==undefined) {	// v3.10?
-	resolve_hostnames = false;
-	sync_310 = true;
-}
 
 if(this.server==undefined) {		// Running from JSexec?
 	if (!jsexec_revision_detail)
@@ -752,13 +728,18 @@ while (!server.terminated) {
 		}
 	}
 
-	// Check for ping timeouts, and, do work on the sockets if we're 3.10
+	// Check for ping timeouts
 	for(this_sock in Selectable_Sockets) {
 		if (Selectable_Sockets_Map[this_sock] &&
 		    Selectable_Sockets_Map[this_sock].check_timeout())
 			continue;
-		if(sync_310)
-			Selectable_Sockets_Map[this_sock].work();
+	}
+
+	// Check for pending DNS hostname resolutions.
+	for(this_unreg in Unregistered) {
+		if (Unregistered[this_unreg] &&
+		    Unregistered[this_unreg].pending_resolve)
+			Unregistered[this_unreg].resolve_check();
 	}
 
 	// Only rebuild our selectable sockets if required.
@@ -1546,7 +1527,7 @@ function IRCClient_do_info() {
 		" (" + this.uprefix + "@" + this.hostname + ") [" +
 		this.servername + "]");
 	this.numeric(371, ":--=-=-=-=-=-=-=-=-=*[ The Synchronet IRCd v1.1b ]*=-=-=-=-=-=-=-=-=--");
-	this.numeric(371, ":  IRCd Copyright 2003-2004 by Randolph E. Sommerfeld <cyan@rrx.ca>");
+	this.numeric(371, ":  IRCd Copyright 2003-2005 by Randolph E. Sommerfeld <cyan@rrx.ca>");
 	this.numeric(371, ":" + system.version_notice + " " + system.copyright + ".");
 	this.numeric(371, ":--=-=-=-=-=-=-=-=-( A big thanks to the following )-=-=-=-=-=-=-=-=--");
 	this.numeric(371, ":DigitalMan (Rob Swindell): Resident coder god, various hacking all");
