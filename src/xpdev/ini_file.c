@@ -272,6 +272,22 @@ BOOL iniRemoveSection(str_list_t* list, const char* section)
 	return(TRUE);
 }
 
+BOOL iniRenameSection(str_list_t* list, const char* section, const char* newname)
+{
+	char	str[INI_MAX_LINE_LEN];
+	size_t	i;
+
+	if(section==ROOT_SECTION)
+		return(FALSE);
+
+	i=find_section_index(*list,section);
+	if((*list)[i]==NULL)	/* not found */
+		return(FALSE);
+
+	sprintf(str,"[%s]",newname);
+	return(strListReplace(*list, i, str)!=NULL);
+}
+
 size_t iniAddSection(str_list_t* list, const char* section
 					,ini_style_t* style)
 {

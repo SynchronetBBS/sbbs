@@ -126,6 +126,7 @@ BOOL		iniValueExists(str_list_t*, const char* section, const char* key);
 BOOL		iniRemoveKey(str_list_t*, const char* section, const char* key);
 BOOL		iniRemoveValue(str_list_t*, const char* section, const char* key);
 BOOL		iniRemoveSection(str_list_t*, const char* section);
+BOOL		iniRenameSection(str_list_t*, const char* section, const char* newname);
 
 #if defined(__cplusplus)
 }
