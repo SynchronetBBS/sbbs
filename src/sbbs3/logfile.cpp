@@ -287,21 +287,22 @@ void sbbs_t::errormsg(int line, char *source, char action, char *object
 		,cfg.node_num, errno, src, line, actstr, object, access);
 	if(online==ON_LOCAL)
 		eprintf("%s",str);
-	else
+	else {
 		lprintf("%s",str);
-	bprintf("\7\r\nERROR -   action: %s",actstr);   /* tell user about error */
-	bprintf("\7\r\n          object: %s",object);
-	bprintf("\7\r\n          access: %ld",access);
-	if(access>9 && (long)access!=-1 && (short)access!=-1 && (char)access!=-1)
-		bprintf(" (0x%lX)",access);
-	if(cfg.sys_misc&SM_ERRALARM) {
-		sbbs_beep(500,220); sbbs_beep(250,220);
-		sbbs_beep(500,220); sbbs_beep(250,220);
-		sbbs_beep(500,220); sbbs_beep(250,220);
-		nosound(); }
-	bputs("\r\n\r\nThe sysop has been notified. <Hit a key>");
-	getkey(0);
-	CRLF;
+		bprintf("\7\r\nERROR -   action: %s",actstr);   /* tell user about error */
+		bprintf("\7\r\n          object: %s",object);
+		bprintf("\7\r\n          access: %ld",access);
+		if(access>9 && (long)access!=-1 && (short)access!=-1 && (char)access!=-1)
+			bprintf(" (0x%lX)",access);
+		if(cfg.sys_misc&SM_ERRALARM) {
+			sbbs_beep(500,220); sbbs_beep(250,220);
+			sbbs_beep(500,220); sbbs_beep(250,220);
+			sbbs_beep(500,220); sbbs_beep(250,220);
+			nosound(); }
+		bputs("\r\n\r\nThe sysop has been notified. <Hit a key>");
+		getkey(0);
+		CRLF;
+	}
 	sprintf(str,"\r\n    source: %s\r\n      line: %d\r\n    action: %s\r\n"
 		"    object: %s\r\n    access: %ld"
 		,src,line,actstr,object,access);
