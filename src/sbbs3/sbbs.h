@@ -773,13 +773,15 @@ extern "C" {
 	DLLEXPORT BOOL		DLLCALL findstr(scfg_t* cfg, char *insearch, char *fname);
 	DLLEXPORT BOOL		DLLCALL trashcan(scfg_t* cfg, char *insearch, char *name);
 	DLLEXPORT int		DLLCALL putsmsg(scfg_t* cfg, int usernumber, char *strin);
-
-	/* misc.c */
-	DLLEXPORT char *	DLLCALL zonestr(short zone);
 	DLLEXPORT char *	DLLCALL strip_ctrl(char *str);
 	DLLEXPORT char *	DLLCALL strip_exascii(char *str);
 	DLLEXPORT char *	DLLCALL prep_file_desc(char *str);
+
+	/* misc.c */
+	DLLEXPORT char *	DLLCALL zonestr(short zone);
 	DLLEXPORT char *	DLLCALL net_addr(net_t* net);
+	DLLEXPORT int		DLLCALL nopen(char *str, int access);
+	DLLEXPORT void		DLLCALL truncsp(char *str);		/* Truncates white spaces off end of str */
 
 	/* load_cfg.c */
 	DLLEXPORT BOOL		DLLCALL load_cfg(scfg_t* cfg, char* text[], BOOL prep, char* error);
@@ -871,19 +873,16 @@ extern "C" {
 #endif
 
 /* misc.c */
-int		nopen(char *str, int access);
 FILE *	fnopen(int *file, char *str, int access);
 int		bstrlen(char *str);
 void	backslashcolon(char *str);
 void	backslash(char *str);
 ulong	ahtoul(char *str);	/* Converts ASCII hex to ulong */
 char *	ultoac(ulong l,char *str);
-void	truncsp(char *str);		/* Truncates white spaces off end of str */
 char *	hexplus(uint num, char *str); 	/* Hex plus for 3 digits up to 9000 */
 uint	hptoi(char *str);
 ulong	crc32(char *buf, ulong len);
 void	ucrc16(uchar ch, ushort *rcrc);
-int 	lprintf(char *fmt, ...);	/* telnet log */
 int		pstrcmp(char **str1, char **str2);  /* Compares pointers to pointers */
 int		strsame(char *str1, char *str2);	/* Compares number of same chars */
 
@@ -893,6 +892,7 @@ BOOL 	md(char *path);
 #ifdef SBBS /* These aren't exported */
 
 	/* main.c */
+	int 	lprintf(char *fmt, ...);	/* telnet log */
 	SOCKET	open_socket(int type);
 	int		close_socket(SOCKET);
 	BOOL	socket_check(SOCKET sock, BOOL *rd);
