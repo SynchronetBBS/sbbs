@@ -79,7 +79,7 @@ JS_LDFLAGS += -L$(JSLIBDIR) -l$(JSLIB)
 ifeq ($(os),linux)
  JS_LDFLAGS	+=	-ldl
 endif
-JS_LDFLAGS	+=	-L$(NSPRDIR) -lnspr4
+JS_LDFLAGS	+=	-L/usr/local/lib -L$(NSPRDIR) -lnspr4
 
 CFLAGS	+=	$(JS_CFLAGS)
 LDFLAGS	+=	$(JS_LDFLAGS)
