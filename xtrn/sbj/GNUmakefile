@@ -20,7 +20,7 @@ include $(XPDEV)Common.gmake
 CFLAGS	+=	-I$(XSDK)
 
 ifeq ($(os),sunos)
- LDFLAGS	+=	-lsocket -lnsl
+ LDFLAGS	+=	-lsocket -lnsl -lrt
 endif
 
 $(EXEODIR)$(SLASH)sbj: $(LIBODIR)$(SLASH)sbj.o $(OBJS)

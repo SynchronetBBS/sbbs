@@ -23,7 +23,7 @@ include $(XPDEV)Common.gmake
 include $(SBBS_SRC)Common.gmake
 
 ifeq ($(os),sunos)
- LDFLAGS	+=	-lsocket -lnsl
+ LDFLAGS	+=	-lsocket -lnsl -lrt
 endif
 
 vpath %.c $(XSDK)
