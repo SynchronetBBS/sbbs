@@ -259,9 +259,8 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 			}
 			if(status->inbuf_full==MAILSLOT_NO_MESSAGE)
 				status->inbuf_full=0;
+			status->inbuf_full*=msgs;
 			status->inbuf_full+=RingBufFull(&rdbuf);
-			if(msgs)
-				status->inbuf_full+=(msgs-1);
 			
 
 			/* OUTBUF FULL/SIZE */
@@ -277,8 +276,7 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 			}
 			if(status->outbuf_full==MAILSLOT_NO_MESSAGE)
 				status->outbuf_full=0;
-			if(msgs)
-				status->outbuf_full+=(msgs-1);
+			status->outbuf_full*=msgs;
 			
 			/* ONLINE */
 			if(WaitForSingleObject(hungup_event,0)==WAIT_OBJECT_0)
@@ -313,9 +311,8 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 				retval=0;
 			if(retval==MAILSLOT_NO_MESSAGE)
 				retval=0;
+			retval*=msgs;
 			retval+=RingBufFull(&rdbuf);
-			if(msgs)
-				retval+=(msgs-1);
 			inbuf_poll++;
 			break;
 
@@ -341,8 +338,7 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 				retval=0;
 			if(retval==MAILSLOT_NO_MESSAGE)
 				retval=0;
-			if(msgs)
-				retval+=(msgs-1);
+			retval*=msgs;
 			break;
 
 		case VDD_OUTBUF_SIZE:
