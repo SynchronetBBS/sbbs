@@ -2,6 +2,8 @@
 
 // Synchronet Service for the Network News Transfer Protocol (RFC 977)
 
+// $Id$
+
 // Example configuration (in ctrl/services.cfg):
 
 // NNTP		119	0-unlimited	0		nntpservice.js
