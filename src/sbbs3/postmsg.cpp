@@ -37,7 +37,7 @@
 
 #include "sbbs.h"
 
-extern const char* beta_version;
+extern "C" const char* beta_version;
 
 static char* program_id()
 {
