@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -76,7 +76,6 @@ long	mode=0;							/* Program mode 					*/
 long	zmode=0L;						/* Zmodem mode						*/
 uchar	block[1024];					/* Block buffer 					*/
 ulong	block_num;						/* Block number 					*/
-ulong	last_block_num; 				/* Last block number sent			*/
 time_t	startall;
 char*	dszlog;
 
@@ -379,7 +378,7 @@ int send_byte(void* unused, uchar ch, unsigned timeout)
 /*************************/
 /* Send a byte to remote */
 /*************************/
-int send_byte(void* unused, uchar ch, unsigned timeout, long mode)
+int send_byte(void* unused, uchar ch, unsigned timeout)
 {
 	uchar		buf[2] = { TELNET_IAC, TELNET_IAC };
 	int			len=1;
@@ -411,6 +410,8 @@ int send_byte(void* unused, uchar ch, unsigned timeout, long mode)
 	return(-1);
 }
 #endif
+
+#if 1
 
 void output_thread(void* arg)
 {
@@ -506,6 +507,96 @@ void output_thread(void* arg)
 	fprintf(errfp,"output thread terminated\n%s\n", stats);
 }
 
+#else
+
+void output_thread(void* arg)
+{
+	char		stats[128];
+    BYTE		buf[IO_THREAD_BUF_SIZE];
+	int			i;
+    ulong		avail;
+	ulong		total_sent=0;
+	ulong		total_pkts=0;
+	ulong		short_sends=0;
+	ulong	    select_errors=0;
+	ulong		buftop=0;
+	fd_set		socket_set;
+	struct timeval tv;
+
+#ifdef _DEBUG
+	fprintf(statfp,"output thread started\n");
+#endif
+
+	while(sock!=INVALID_SOCKET && !terminate) {
+
+    	avail=RingBufFull(&outbuf);
+
+		if(!avail) {
+			sem_wait(&outbuf.sem);
+			if(outbuf.highwater_mark)
+				sem_trywait_block(&outbuf.highwater_sem,outbuf_drain_timeout);
+			SetEvent(outbuf_empty);
+			continue; 
+		}
+
+		/* Check socket for writability (using select) */
+		tv.tv_sec=0;
+		tv.tv_usec=1000;
+
+		FD_ZERO(&socket_set);
+		FD_SET(sock,&socket_set);
+
+		i=select(sock+1,NULL,&socket_set,NULL,&tv);
+		if(i==SOCKET_ERROR) {
+			fprintf(errfp,"!ERROR %d selecting socket %u for send\n"
+				,ERROR_VALUE,sock);
+			break;
+		}
+		if(i<1) {
+			select_errors++;
+			continue;
+		}
+
+        if(avail>sizeof(buf)) {
+            fprintf(errfp,"!Insufficient linear output buffer (%lu > %lu)\n"
+				,avail, sizeof(buf));
+            avail=sizeof(buf);
+        }
+        buftop=RingBufRead(&outbuf, buf, avail);
+		i=sendsocket(sock, (char*)buf, buftop);
+		if(i==SOCKET_ERROR) {
+        	if(ERROR_VALUE == ENOTSOCK)
+                fprintf(errfp,"!client socket closed on send\n");
+            else if(ERROR_VALUE==ECONNRESET) 
+				fprintf(errfp,"!connection reset by peer on send\n");
+            else if(ERROR_VALUE==ECONNABORTED) 
+				fprintf(errfp,"!connection aborted by peer on send\n");
+			else
+				fprintf(errfp,"!ERROR %d sending on socket %d\n"
+                	,ERROR_VALUE, sock);
+			break;
+		}
+
+		if(i!=(int)(buftop)) {
+			fprintf(errfp,"!Short socket send (%u instead of %u)\n"
+				,i ,buftop);
+			short_sends++;
+		}
+		total_sent+=i;
+		total_pkts++;
+    }
+
+	if(total_sent)
+		sprintf(stats,"(sent %lu bytes in %lu blocks, %lu average, %lu short, %lu errors)"
+			,total_sent, total_pkts, total_sent/total_pkts, short_sends, select_errors);
+	else
+		stats[0]=0;
+
+	fprintf(errfp,"output thread terminated\n%s\n", stats);
+}
+
+#endif
+
 /****************************************************************************/
 /* Returns the number of blocks required to send len bytes					*/
 /****************************************************************************/
@@ -549,6 +640,7 @@ void send_files(char** fname, uint fnames, FILE* log)
 	uint	total_files=0,sent_files=0;
 	ulong	total_bytes=0,sent_bytes=0;
 	ulong	total_blocks;
+	size_t	n;
 	time_t	t,startfile;
 	time_t	now;
 	time_t	last_status;
@@ -572,7 +664,7 @@ void send_files(char** fname, uint fnames, FILE* log)
 	}
 
 	if(fnames>1)
-		fprintf(statfp,"Sending %u files (%luk bytes total)\n"
+		fprintf(statfp,"Sending %u files (%lu KB total)\n"
 			,total_files,total_bytes/1024);
 
 	zm.n_files_remaining = total_files;
@@ -657,7 +749,7 @@ void send_files(char** fname, uint fnames, FILE* log)
 
 			fsize=filelength(fileno(fp));
 
-			fprintf(statfp,"\nSending %s (%luk bytes) via %s %s\n"
+			fprintf(statfp,"\nSending %s (%lu KB) via %s %s\n"
 				,path,fsize/1024
 				,mode&XMODEM ? "Xmodem" : mode&YMODEM ? mode&GMODE ? "Ymodem-G"
 					: "Ymodem" : "Zmodem"
@@ -750,18 +842,19 @@ void send_files(char** fname, uint fnames, FILE* log)
 						bail(1); 
 					} 
 				}
-				last_block_num=block_num=1;
+				block_num=1;
 				errors=0;
 				while((block_num-1)*xm.block_size<(ulong)fsize && errors<xm.max_errors) {
-					if(last_block_num==block_num) {  /* block_num didn't increment */
-						fseek(fp,(block_num-1)*(long)xm.block_size,SEEK_SET);
-						memset(block,CPMEOF,xm.block_size);
-						fread(block,1,xm.block_size,fp);
-					}
-					last_block_num=block_num;
-					xmodem_put_block(&xm, block, xm.block_size, block_num);
+					fseek(fp,(block_num-1)*(long)xm.block_size,SEEK_SET);
 					memset(block,CPMEOF,xm.block_size);
-					fread(block,1,xm.block_size,fp); /* read next block from disk */
+					if((n=fread(block,1,xm.block_size,fp))!=xm.block_size
+						&& block_num*xm.block_size<(ulong)fsize) {
+						fprintf(errfp,"\n!READ ERROR %d instead of %d at offset %lu\n"
+							,n,xm.block_size,(block_num-1)*(long)xm.block_size);
+						errors++;
+						continue;
+					}
+					xmodem_put_block(&xm, block, xm.block_size, block_num);
 					now=time(NULL);
 					t=now-startfile;
 					if(!t) t=1; 		/* t is time so far */
@@ -790,8 +883,10 @@ void send_files(char** fname, uint fnames, FILE* log)
 					}
 					if(!xmodem_get_ack(&xm,5,block_num)) {
 						errors++;
-						if(debug_tx)
-							dump_block(xm.block_size);
+#if 0
+						dump_block(xm.block_size);
+#endif
+						fprintf(errfp,"!Error #%d at offset %ld\n",errors,ftell(fp)-xm.block_size);
 					} else
 						block_num++; 
 				}
@@ -833,7 +928,7 @@ void send_files(char** fname, uint fnames, FILE* log)
 			}
 
 			if(total_files>1)
-				fprintf(statfp,"Remaining - Time: %lu:%02lu  Files: %u  Bytes: %luk\n"
+				fprintf(statfp,"Remaining - Time: %lu:%02lu  Files: %u  KBytes: %lu\n"
 					,((total_bytes-sent_bytes)/cps)/60
 					,((total_bytes-sent_bytes)/cps)%60
 					,total_files-sent_files
@@ -899,7 +994,7 @@ void send_files(char** fname, uint fnames, FILE* log)
 		t=time(NULL)-startall;
 		if(!t) t=1;
 		newline();
-		fprintf(statfp,"Overall - Time %02lu:%02lu  Bytes: %luk  CPS: %lu\n"
+		fprintf(statfp,"Overall - Time %02lu:%02lu  KBytes: %lu  CPS: %lu\n"
 			,t/60,t%60,sent_bytes/1024,sent_bytes/t); 
 	}
 }
@@ -1114,7 +1209,7 @@ void receive_files(char** fname, int fnames, FILE* log)
 		}
 		setvbuf(fp,NULL,_IOFBF,8*1024);
 		startfile=time(NULL);
-		fprintf(statfp,"Receiving %s (%luk bytes) via %s %s\n"
+		fprintf(statfp,"Receiving %s (%lu KB) via %s %s\n"
 			,str
 			,mode&XMODEM ? 0 : file_bytes/1024
 			,mode&XMODEM ? "Xmodem" : mode&YMODEM ? mode&GMODE ? "Ymodem-G"
@@ -1253,7 +1348,7 @@ void receive_files(char** fname, int fnames, FILE* log)
 		total_files--;
 		total_bytes-=file_bytes;
 		if(total_files>1 && total_bytes)
-			fprintf(statfp,"Remaining - Time: %lu:%02lu  Files: %u  Bytes: %luk\n"
+			fprintf(statfp,"Remaining - Time: %lu:%02lu  Files: %u  KBytes: %lu\n"
 				,(total_bytes/cps)/60
 				,(total_bytes/cps)%60
 				,total_files
