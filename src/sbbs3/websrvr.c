@@ -2628,8 +2628,8 @@ const char* DLLCALL web_ver(void)
 void http_logging_thread(void* arg)
 {
 	char	base[128];
-	char	filename[128+14];
-	char	newfilename[128+14];
+	char	filename[128+15];
+	char	newfilename[128+15];
 	FILE*	logfile=NULL;
 
 	SAFECOPY(base,arg);
@@ -2658,7 +2658,7 @@ void http_logging_thread(void* arg)
 			continue;
 		}
 		SAFECOPY(newfilename,base);
-		strftime(strchr(newfilename,0),14,"%G-%m-%d.log",&ld->completed);
+		strftime(strchr(newfilename,0),15,"%G-%m-%d.log",&ld->completed);
 		if(strcmp(newfilename,filename)) {
 			if(logfile!=NULL)
 				fclose(logfile);
