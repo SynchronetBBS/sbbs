@@ -87,11 +87,11 @@ bool sbbs_t::uploadfile(file_t *f)
 			putenv(sbbsfilename);
 			sprintf(sbbsfiledesc,"SBBSFILEDESC=%.*s",LEN_FDESC,f->desc);
 			putenv(sbbsfiledesc);
-			sprintf(str,"%sSBBSFILE.NAM",cfg.node_dir);
+			sprintf(str,"%ssbbsfile.nam",cfg.node_dir);
 			if((stream=fopen(str,"w"))!=NULL) {
 				fwrite(fname,1,strlen(fname),stream);
 				fclose(stream); }
-			sprintf(str,"%sSBBSFILE.DES",cfg.node_dir);
+			sprintf(str,"%ssbbsfile.des",cfg.node_dir);
 			if((stream=fopen(str,"w"))!=NULL) {
 				fwrite(f->desc,1,strlen(f->desc),stream);
 				fclose(stream); }
