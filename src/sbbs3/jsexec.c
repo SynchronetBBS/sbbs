@@ -51,7 +51,7 @@ JSObject*	js_glob;
 js_branch_t	branch;
 scfg_t		scfg;
 ulong		js_max_bytes=JAVASCRIPT_MAX_BYTES;
-ulong		js_context_stack=JAVASCRIPT_CONTEXT_STACK;
+ulong		js_cx_stack=JAVASCRIPT_CONTEXT_STACK;
 FILE*		confp;
 FILE*		errfp;
 FILE*		nulfp;
@@ -457,9 +457,9 @@ static BOOL js_init(char** environ)
 		return(FALSE);
 
 	fprintf(statfp,"JavaScript: Initializing context (stack: %lu bytes)\n"
-		,js_context_stack);
+		,js_cx_stack);
 
-    if((js_cx = JS_NewContext(js_runtime, js_context_stack))==NULL)
+    if((js_cx = JS_NewContext(js_runtime, js_cx_stack))==NULL)
 		return(FALSE);
 
 	JS_SetErrorReporter(js_cx, js_ErrorReporter);
@@ -673,7 +673,7 @@ int main(int argc, char **argv, char** environ)
 					js_max_bytes=strtoul(argv[++argn],NULL,0);
 					break;
 				case 's':
-					js_context_stack=strtoul(argv[++argn],NULL,0);
+					js_cx_stack=strtoul(argv[++argn],NULL,0);
 					break;
 				case 'b':
 					branch.limit=strtoul(argv[++argn],NULL,0);
