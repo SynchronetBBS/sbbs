@@ -177,13 +177,7 @@ zmodem_tx_hex_header(zmodem_t* zm, unsigned char * p)
 	zmodem_tx_raw(zm, ZPAD);
 	zmodem_tx_raw(zm, ZDLE);
 
-	if(zm->use_variable_headers) {
-		zmodem_tx_raw(zm, ZVHEX);
-		zmodem_tx_hex(zm, HDRLEN);
-	}
-	else {
-		zmodem_tx_raw(zm, ZHEX);
-	}
+	zmodem_tx_raw(zm, ZHEX);
 
 	/*
  	 * initialise the crc
@@ -249,13 +243,7 @@ zmodem_tx_bin32_header(zmodem_t* zm, unsigned char * p)
 	zmodem_tx_raw(zm, ZPAD);
 	zmodem_tx_raw(zm, ZDLE);
 
-	if(zm->use_variable_headers) {
-		zmodem_tx_raw(zm, ZVBIN32);
-		zmodem_tx(zm, HDRLEN);
-	}
-	else {
-		zmodem_tx_raw(zm, ZBIN32);
-	}
+	zmodem_tx_raw(zm, ZBIN32);
 
 	crc = 0xffffffffL;
 
@@ -286,13 +274,7 @@ zmodem_tx_bin16_header(zmodem_t* zm, unsigned char * p)
 	zmodem_tx_raw(zm, ZPAD);
 	zmodem_tx_raw(zm, ZDLE);
 
-	if(zm->use_variable_headers) {
-		zmodem_tx_raw(zm, ZVBIN);
-		zmodem_tx(zm, HDRLEN);
-	}
-	else {
-		zmodem_tx_raw(zm, ZBIN);
-	}
+	zmodem_tx_raw(zm, ZBIN);
 
 	crc = 0;
 
@@ -1527,7 +1509,7 @@ zmodem_send_files(char** fname, int total_files)
 	zmodem_escape_all_control_characters	= (zm->rxd_header[ZF0] & ZF0_ESCCTL)  != 0;
 	zmodem_escape_8th_bit					= (zm->rxd_header[ZF0] & ZF0_ESC8)    != 0;
 
-	zm->use_variable_headers			= (zm->rxd_header[ZF1] & ZF1_CANVHDR) != 0;
+	zm->use_variable_headers				= (zm->rxd_header[ZF1] & ZF1_CANVHDR) != 0;
 
 	if(*(zm->mode)&DEBUG) {
 		lprintf(zm,LOG_INFO,"receiver %s full duplex"          ,zmodem_can_full_duplex               ? "can"      : "can't");
