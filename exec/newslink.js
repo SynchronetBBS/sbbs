@@ -5,11 +5,11 @@
 // Configuration file (in ctrl/newslink.cfg) format:
 
 // ;this line is a comment
-// server
-// username
-// password
-// subboard	newsgroup
-// subboard newsgroup
+// server	servername
+// port		TCP port number (defaults to 119)
+// user		username (optional)
+// pass		password (optional)
+// area		subboard (internal code) newsgroup
 // ...
 
 const VERSION="1.00 Alpha"
@@ -17,7 +17,10 @@ const VERSION="1.00 Alpha"
 printf("Synchronet NewsLink session started (v%s)", VERSION);
 
 var tearline = format("--- Synchronet NewsLink v%s\r\n",VERSION);
-var tagline	=  format(" *  %s telnet://%s\r\n",system.name,system.inetaddr);
+var tagline	=  format(" *  %s, %s telnet://%s\r\n"
+					  ,system.name,system.location,system.inetaddr);
+var antispam = format("remove-%s-this."
+					  ,random(50000).toString(36));
 
 var cfg_fname = system.ctrl_dir + "newslink.cfg";
 
@@ -30,14 +33,16 @@ var email_addresses = true;	// Include e-mail addresses in headers
 
 // Parse arguments
 for(i=0;i<argc;i++) {
-	if(argv[i].toLowerCase()=="-d")
+	if(argv[i].toLowerCase()=="-d")			// debug
 		debug = true;
-	else if(argv[i].toLowerCase()=="-r")
+	else if(argv[i].toLowerCase()=="-r")	// reset export pointers (export all)
 		reset_ptrs = true;
-	else if(argv[i].toLowerCase()=="-u")
+	else if(argv[i].toLowerCase()=="-u")	// update export pointers (export none)
 		update_ptrs = true;
-	else if(argv[i].toLowerCase()=="-ne")
+	else if(argv[i].toLowerCase()=="-ne")	// no e-mail addresses
 		email_addresses = false;
+	else if(argv[i].toLowerCase()=="-nm")	// no mangling of e-mail addresses
+		antispam = "";
 	else
 		cfg_fname = argv[i];
 }
@@ -232,7 +237,7 @@ for(i in area) {
 			body += tagline;
 		}
 
-		if(1) 
+		if(0) 
 			writeln(format("IHAVE %s",hdr.id));
 		else
 			writeln("POST");
@@ -246,21 +251,28 @@ for(i in area) {
 		if(!email_addresses)
 			writeln(format("From: %s@%s",hdr.from,newsgroup));
 		else if(hdr.from.indexOf('@')!=-1)
-			writeln(format("From: %s",hdr.from));
+			writeln(format("From: %s%s",antispam,hdr.from));
 		else if(hdr.from_net_type && hdr.from_net_addr!=null) {
 			if(hdr.from_net_addr.indexOf('@')!=-1)
-				writeln(format("From: \"%s\" <%s>"
-					,hdr.from,hdr.from_net_addr));
+				writeln(format("From: \"%s\" <%s%s>"
+					,hdr.from
+					,antispam,hdr.from_net_addr));
 			else
-				writeln(format("From: \"%s\" <%s@%s>"
-					,hdr.from,hdr.from,hdr.from_net_addr));
+				writeln(format("From: \"%s\" <%s%s@%s%s>"
+					,hdr.from
+					,antispam,hdr.from
+					,antispam,hdr.from_net_addr));
 		}
 		else if(hdr.from.indexOf(' ')>0)
-			writeln(format("From: \"%s\"@%s"
-				,hdr.from,system.inetaddr));
+			writeln(format("From: \"%s\" <\"%s%s\"@%s%s>"
+				,hdr.from
+				,antispam,hdr.from
+				,antispam,system.inetaddr));
 		else
-			writeln(format("From: %s@%s"
-				,hdr.from,system.inetaddr));
+			writeln(format("From: \"%s\" <%s%s@%s%s>"
+				,hdr.from
+				,antispam,hdr.from
+				,antispam,system.inetaddr));
 		writeln("Subject: " + hdr.subject);
 		writeln("Message-ID: " + hdr.id);
 		writeln("Date: " + hdr.date);
