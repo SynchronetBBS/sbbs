@@ -1166,7 +1166,7 @@ void DLLCALL services_thread(void* arg)
 		while(!terminated) {
 
 			sprintf(path,"%sservices.rec",scfg.ctrl_dir);
-			if(fdate(path)>initialized) {
+			if(!total_clients && fdate(path)>initialized) {
 				lprintf("0000 Recycle semaphore detected");
 				break;
 			}

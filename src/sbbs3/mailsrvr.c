@@ -2854,7 +2854,7 @@ void DLLCALL mail_server(void* arg)
 		while (server_socket!=INVALID_SOCKET) {
 
 			sprintf(path,"%smailsrvr.rec",scfg.ctrl_dir);
-			if(fdate(path)>initialized) {
+			if(!active_clients && fdate(path)>initialized) {
 				lprintf("0000 Recycle semaphore detected");
 				break;
 			}
