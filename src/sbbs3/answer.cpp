@@ -68,7 +68,7 @@ bool sbbs_t::answer()
 
 	rlogin_name[0]=0;
 	if(sys_status&SS_RLOGIN) {
-		mswait(100);	/* Give input_thread time to start */
+		mswait(1000);	/* Give input_thread time to start */
 		if(incom()==0) {
 			for(i=0;i<LEN_ALIAS;i++) {
 				in=incom();
