@@ -335,6 +335,14 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 		smb_hfield(msg, FIDOPID, (ushort)strlen(cp), cp);
 	}
 
+	if(JS_GetProperty(cx, hdr, "ftn_tid", &val) && val!=JSVAL_VOID) {
+		if((js_str=JS_ValueToString(cx,val))==NULL)
+			return(FALSE);
+		if((cp=JS_GetStringBytes(js_str))==NULL)
+			return(FALSE);
+		smb_hfield(msg, FIDOTID, (ushort)strlen(cp), cp);
+	}
+
 	if(JS_GetProperty(cx, hdr, "date", &val) && val!=JSVAL_VOID) {
 		if((js_str=JS_ValueToString(cx,val))==NULL)
 			return(FALSE);
@@ -566,6 +574,10 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 	if(msg.ftn_pid!=NULL)
 		JS_DefineProperty(cx, hdrobj, "ftn_pid"
+			,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,msg.ftn_pid))
+			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+	if(msg.ftn_tid!=NULL)
+		JS_DefineProperty(cx, hdrobj, "ftn_tid"
 			,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,msg.ftn_pid))
 			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 	if(msg.ftn_area!=NULL)

@@ -2420,6 +2420,15 @@ int fmsgtosmsg(uchar HUGE16 *fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 				if(m>l)
 					smb_hfield(&msg,FIDOPID,(ushort)(m-l),fbuf+l); }
 
+			else if(!strncmp((char *)fbuf+l+1,"TID:",4)) {
+				l+=5;
+				while(l<length && fbuf[l]<=SP) l++;
+				m=l;
+				while(m<length && fbuf[m]!=CR) m++;
+				while(m && fbuf[m-1]<=SP) m--;
+				if(m>l)
+					smb_hfield(&msg,FIDOTID,(ushort)(m-l),fbuf+l); }
+
 			else if(!strncmp((char *)fbuf+l+1,"TZUTC:",6)) {		/* FSP-1001 */
 				l+=7;
 				while(l<length && fbuf[l]<=SP) l++;
@@ -3761,8 +3770,10 @@ void export_echomail(char *sub_code,faddr_t addr)
 				}
 				if(msg.ftn_pid!=NULL)	/* use original PID */
 					f+=sprintf(fmsgbuf+f,"\1PID: %.256s\r", msg.ftn_pid);
-				else					/* generate PID */
-					f+=sprintf(fmsgbuf+f,"\1PID: SBBSecho v%s-%s r%s %s %s\r"
+				if(msg.ftn_tid!=NULL)	/* use original TID */
+					f+=sprintf(fmsgbuf+f,"\1TID: %.256s\r", msg.ftn_tid);
+				else					/* generate TID */
+					f+=sprintf(fmsgbuf+f,"\1TID: SBBSecho v%s-%s r%s %s %s\r"
 						,SBBSECHO_VER,PLATFORM_DESC,revision,__DATE__,compiler);
 
 				/* Unknown kludge lines are added here */

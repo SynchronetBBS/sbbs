@@ -265,6 +265,7 @@
 #define FIDOREPLYID 		0xa5
 #define FIDOPID 			0xa6
 #define FIDOFLAGS			0xa7
+#define FIDOTID 			0xa8
 
 #define RFC822HEADER		0xb0
 #define RFC822MSGID 		0xb1
@@ -518,6 +519,7 @@ typedef struct {				// Message
 				*path,			// USENET Path
 				*newsgroups,	// USENET Newsgroups
 				*ftn_pid,		// FTN PID
+				*ftn_tid,		// FTN TID
 				*ftn_area,		// FTN AREA
 				*ftn_flags,		// FTN FLAGS
 				*ftn_msgid,		// FTN MSGID
