@@ -89,8 +89,8 @@ ulong				served=0;
 int					prompt_len=0;
 
 #ifdef __unix__
-char*				new_uid_name=NULL;
-char*				new_gid_name=NULL;
+char				new_uid_name[32];
+char				new_gid_name[32];
 uid_t				new_uid;
 uid_t				old_uid;
 gid_t				new_gid;
@@ -155,6 +155,9 @@ static const char* usage  = "usage: %s [[setting] [...]]\n"
 							"\tnh         disable hostname lookups\n"
 							"\tnj         disable JavaScript support\n"
 							"\tni         do not read settings from .ini file\n"
+#ifdef __unix__
+							"\tnd         do not read run as daemon - overrides .ini file\n"
+#endif
 							"\tlt         use local timezone (do not force UTC/GMT)\n"
 							"\tdefaults   show default settings and options\n"
 							;
@@ -222,7 +225,7 @@ static BOOL do_seteuid(BOOL to_new)
 	static pthread_mutex_t mutex;
 	static BOOL mutex_initialized;
 
-	if(new_uid_name==NULL)	/* not set? */
+	if(new_uid_name[0]==0)	/* not set? */
 		return(TRUE);		/* do nothing */
 
 	if(!mutex_initialized) {
@@ -623,45 +626,6 @@ void _sighandler_quit(int sig)
 
     exit(0);
 }
-
-#if 0 // Apparently, Linux hasa daemon call too!
-#ifndef __FreeBSD__
-/****************************************************************************/
-/* Daemonizes the process													*/
-/****************************************************************************/
-int
-daemon(nochdir, noclose)
-	int nochdir, noclose;
-{
-	int fd;
-
-	switch (fork()) {
-	case -1:
-		return (-1);
-	case 0:
-		break;
-	default:
-		_exit(0);
-	}
-
-	if (setsid() == -1)
-		return (-1);
-
-	if (!nochdir)
-		(void)chdir("/");
-
-	if (!noclose && (fd = open(_PATH_DEVNULL, O_RDWR, 0)) != -1) {
-		(void)dup2(fd, STDIN_FILENO);
-		(void)dup2(fd, STDOUT_FILENO);
-		(void)dup2(fd, STDERR_FILENO);
-		if (fd > 2)
-			(void)close(fd);
-	}
-	return (0);
-}
-#endif	/* !__FreeBSD__ */
-#endif /* 0 */
-
 #endif	/* __unix__ */
 
 /****************************************************************************/
@@ -685,7 +649,8 @@ int main(int argc, char** argv)
 	scfg_t	scfg;
 	node_t	node;
 #ifdef __unix__
-	FILE *pidfile;
+	char	daemon_type[2];
+	FILE*	pidfile;
 	struct passwd* pw_entry;
 	struct group*  gr_entry;
 #endif
@@ -826,7 +791,12 @@ int main(int argc, char** argv)
 		&run_services,	&services_startup);
 
 	/* read/default any sbbscon-specific .ini keys here */
-
+#if defined(__unix__)
+	SAFECOPY(new_uid_name,iniReadString(fp,"UNIX","User",""));
+	SAFECOPY(new_gid_name,iniReadString(fp,"UNIX","Group",""));
+	is_daemon=iniReadBool(fp,"UNIX","Daemonize",FALSE);
+	SAFECOPY(daemon_type,iniReadString(fp,"UNIX","Facility","U"));
+#endif			
 	/* close .ini file here */
 	if(fp!=NULL)
 		fclose(fp);
@@ -857,43 +827,8 @@ int main(int argc, char** argv)
 		switch(toupper(*(arg++))) {
 #ifdef __unix__
 				case 'D': /* Run as daemon */
-					printf("Running as daemon\n");
-					if(!daemon(TRUE,FALSE))  { /* Daemonize, DON'T switch to / and DO close descriptors */
-						is_daemon=TRUE;
-						switch(toupper(*(arg++))) {
-							case '0':
-								openlog(SBBS_LOG_NAME,LOG_CONS,LOG_LOCAL0);
-								break;
-							case '1':
-								openlog(SBBS_LOG_NAME,LOG_CONS,LOG_LOCAL1);
-								break;
-							case '2':
-								openlog(SBBS_LOG_NAME,LOG_CONS,LOG_LOCAL2);
-								break;
-							case '3':
-								openlog(SBBS_LOG_NAME,LOG_CONS,LOG_LOCAL3);
-								break;
-							case '4':
-								openlog(SBBS_LOG_NAME,LOG_CONS,LOG_LOCAL4);
-								break;
-							case '5':
-								openlog(SBBS_LOG_NAME,LOG_CONS,LOG_LOCAL5);
-								break;
-							case '6':
-								openlog(SBBS_LOG_NAME,LOG_CONS,LOG_LOCAL6);
-								break;
-							case '7':
-								openlog(SBBS_LOG_NAME,LOG_CONS,LOG_LOCAL7);
-								break;
-							case 'F':
-								/* Use appropriate facilities */
-								openlog(SBBS_LOG_NAME,LOG_CONS,LOG_USER);
-								use_facilities = TRUE;
-								break;
-							default:
-								openlog(SBBS_LOG_NAME,LOG_CONS,LOG_USER);
-						}
-					}
+					is_daemon=true;
+					SAFECOPY(daemon_type,arg++);
 				break;
 #endif
 			case 'T':	/* Telnet settings */
@@ -1064,24 +999,9 @@ int main(int argc, char** argv)
 				switch(toupper(*(arg++))) {
 					case 'N': /* username */
 #ifdef __unix__
-						if(new_gid_name!=NULL) {
-							printf("!Must specify user before group");
-							break;
-						}
 						if(strlen(arg) > 1)
 						{
-							new_uid_name=arg;
-							old_uid = getuid();
-							if((pw_entry=getpwnam(new_uid_name))!=0)
-							{
-								new_uid=pw_entry->pw_uid;
-								new_gid=pw_entry->pw_gid;
-								do_seteuid(TRUE);
-							}
-							else  {
-								new_uid=getuid();
-								new_gid=getgid();
-							}
+							SAFECOPY(new_uid_name,arg);
 						}
 #endif			
 						break;
@@ -1089,10 +1009,7 @@ int main(int argc, char** argv)
 #ifdef __unix__
 						if(strlen(arg) > 1)
 						{
-							new_gid_name=arg;
-							old_gid = getgid();
-							if((gr_entry=getgrnam(new_gid_name))!=0 && (new_gid=gr_entry->gr_gid)!=0)
-								do_seteuid(TRUE);
+							SAFECOPY(new_gid_name,arg);
 						}
 #endif			
 						break;
@@ -1129,6 +1046,11 @@ int main(int argc, char** argv)
 						break;
 					case 'I':	/* no .ini file */
 						break;
+					case 'D':
+#if defined(__unix__)
+						is_daemon=FALSE;
+#endif
+						break;
 					default:
 						printf(usage,argv[0]);
 						return(0);
@@ -1153,6 +1075,65 @@ int main(int argc, char** argv)
 				return(0);
 		}
 	}
+
+/* Daemonize / Set uid/gid */
+#ifdef __unix__
+
+	if(is_daemon) {
+		switch(toupper(daemon_type[0])) {
+			case '0':
+				openlog(SBBS_LOG_NAME,LOG_CONS,LOG_LOCAL0);
+				break;
+			case '1':
+				openlog(SBBS_LOG_NAME,LOG_CONS,LOG_LOCAL1);
+				break;
+			case '2':
+				openlog(SBBS_LOG_NAME,LOG_CONS,LOG_LOCAL2);
+				break;
+			case '3':
+				openlog(SBBS_LOG_NAME,LOG_CONS,LOG_LOCAL3);
+				break;
+			case '4':
+				openlog(SBBS_LOG_NAME,LOG_CONS,LOG_LOCAL4);
+				break;
+			case '5':
+				openlog(SBBS_LOG_NAME,LOG_CONS,LOG_LOCAL5);
+				break;
+			case '6':
+				openlog(SBBS_LOG_NAME,LOG_CONS,LOG_LOCAL6);
+				break;
+			case '7':
+				openlog(SBBS_LOG_NAME,LOG_CONS,LOG_LOCAL7);
+				break;
+			case 'F':
+				/* Use appropriate facilities */
+				openlog(SBBS_LOG_NAME,LOG_CONS,LOG_USER);
+				use_facilities = TRUE;
+				break;
+			default:
+				openlog(SBBS_LOG_NAME,LOG_CONS,LOG_USER);
+		}
+
+		printf("Running as daemon\n");
+		if(daemon(TRUE,FALSE))  /* Daemonize, DON'T switch to / and DO close descriptors */
+			is_daemon=FALSE;
+	}
+
+	old_uid = getuid();
+	if((pw_entry=getpwnam(new_uid_name))!=0)
+	{
+		new_uid=pw_entry->pw_uid;
+		new_gid=pw_entry->pw_gid;
+	}
+	else  {
+		new_uid=getuid();
+		new_gid=getgid();
+	}
+	old_gid = getgid();
+	if((gr_entry=getgrnam(new_gid_name))!=0)
+		new_gid=gr_entry->gr_gid;
+	
+#endif
 
 	/* Read in configuration files */
     memset(&scfg,0,sizeof(scfg));
@@ -1201,7 +1182,7 @@ int main(int argc, char** argv)
 	if(getuid())  /*  are we running as a normal user?  */
 		bbs_lputs("!Started as non-root user.  Cannot bind() to ports below 1024.");
 	
-	else if(new_uid_name==NULL)   /*  check the user arg, if we have uid 0 */
+	else if(new_uid_name[0]==0)   /*  check the user arg, if we have uid 0 */
 		bbs_lputs("Warning: No user account specified, running as root.");
 	
 	else 
