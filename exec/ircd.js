@@ -1781,6 +1781,7 @@ function IRCClient_do_info() {
 	this.numeric(371, ":     Deuce: Hacking and OOP conversions.");
 	this.numeric(371, ":DigitalMan: Additional hacking and API stuff.");
 	this.numeric(371, ": ");
+	this.numeric(371, ":Synchronet " + system.full_version);
 	this.numeric(371, ":Running on " + system.os_version);
 	this.numeric(371, ":Compiled with " + system.compiled_with + " at " + system.compiled_when);
 	this.numeric(371, ":Socket Library: " + system.socket_lib);
