@@ -1377,7 +1377,7 @@ static BOOL get_req(http_session_t * session, char *request_line)
 			req_line[0]=0;
 	}
 	else {
-		lprintf(LOG_DEBUG,"%04d Handling Internal Redirect to: %s",socket,request_line);
+		lprintf(LOG_DEBUG,"%04d Handling Internal Redirect to: %s",session->socket,request_line);
 		SAFECOPY(req_line,request_line);
 	}
 	if(req_line[0]) {
