@@ -382,7 +382,7 @@ static int sockreadline(SOCKET socket, char* buf, int len)
 			return(-1);
 		}
 
-		tv.tv_sec=0;
+		tv.tv_sec=startup->max_inactivity;
 		tv.tv_usec=0;
 
 		FD_ZERO(&socket_set);

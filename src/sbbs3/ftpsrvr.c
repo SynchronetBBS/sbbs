@@ -1124,7 +1124,7 @@ int sockreadline(SOCKET socket, char* buf, int len, time_t* lastactive)
 	
 	while(rd<len-1) {
 
-		tv.tv_sec=0;
+		tv.tv_sec=startup->max_inactivity;
 		tv.tv_usec=0;
 
 		FD_ZERO(&socket_set);
@@ -1411,7 +1411,7 @@ static void send_thread(void* arg)
 		}
 
 		/* Check socket for writability (using select) */
-		tv.tv_sec=0;
+		tv.tv_sec=1;
 		tv.tv_usec=0;
 
 		FD_ZERO(&socket_set);
@@ -1625,7 +1625,7 @@ static void receive_thread(void* arg)
 		}
 
 		/* Check socket for readability (using select) */
-		tv.tv_sec=0;
+		tv.tv_sec=1;
 		tv.tv_usec=0;
 
 		FD_ZERO(&socket_set);
