@@ -74,6 +74,7 @@ typedef struct {
 	char*					display_name;
 	char*					description;
 	void*					startup;
+	HANDLE*					recycle_sem;
 	void					(*thread)(void* arg);
 	void					(WINAPI *ctrl_handler)(DWORD);
 	HANDLE					log_handle;
@@ -89,6 +90,7 @@ sbbs_ntsvc_t bbs ={
 	"Provides support for Telnet and RLogin clients and executes timed events. " \
 		"This service provides the critical functions of your Synchronet BBS.",
 	&bbs_startup,
+	&bbs_startup.recycle_sem,
 	bbs_thread,
 	bbs_ctrl_handler,
 	INVALID_HANDLE_VALUE
@@ -102,6 +104,7 @@ sbbs_ntsvc_t event ={
 	NULL,
 	NULL,
 	NULL,
+	NULL,
 	INVALID_HANDLE_VALUE
 };
 
@@ -110,6 +113,7 @@ sbbs_ntsvc_t ftp = {
 	"Synchronet FTP Server",
 	"Provides support for FTP clients (including web browsers) for file transfers.",
 	&ftp_startup,
+	&ftp_startup.recycle_sem,
 	ftp_server,
 	ftp_ctrl_handler,
 	INVALID_HANDLE_VALUE
@@ -121,6 +125,7 @@ sbbs_ntsvc_t web = {
 	"Synchronet Web Server",
 	"Provides support for Web (HTML/HTTP) clients (browsers).",
 	&web_startup,
+	&web_startup.recycle_sem,
 	web_server,
 	web_ctrl_handler,
 	INVALID_HANDLE_VALUE
@@ -133,6 +138,7 @@ sbbs_ntsvc_t mail = {
 	"Sends and receives Internet e-mail (using SMTP) and allows users to remotely " \
 		"access their e-mail using an Internet mail client (using POP3).",
 	&mail_startup,
+	&mail_startup.recycle_sem,
 	mail_server,
 	mail_ctrl_handler,
 	INVALID_HANDLE_VALUE
@@ -146,6 +152,7 @@ sbbs_ntsvc_t services = {
 		"Stock services include Finger, Gopher, NNTP, and IRC. Edit your ctrl/services.ini " \
 		"file for configuration of individual Synchronet Services.",
 	&services_startup,
+	&services_startup.recycle_sem,
 	services_thread,
 	services_ctrl_handler,
 	INVALID_HANDLE_VALUE
@@ -376,6 +383,10 @@ static void WINAPI svc_start(sbbs_ntsvc_t* svc, DWORD argc, LPTSTR *argv)
 		fprintf(stderr,"!ERROR %d registering service control handler\n",GetLastError());
 		return;
 	}
+
+	if(svc->recycle_sem!=NULL 
+		&& ((*svc->recycle_sem)=CreateSemaphore(NULL,0,1,svc->name))==NULL)
+		svc_lputs(svc,"!Error creating recycle semaphore");
 
 	memset(&svc->status,0,sizeof(SERVICE_STATUS));
 	svc->status.dwServiceType=SERVICE_WIN32_SHARE_PROCESS;
