@@ -502,7 +502,7 @@ function create_ban_mask(str,kline) {
 }
 
 function match_irc_mask(mtchstr,mask) {
-	final_mask="^";
+	var final_mask="^";
 	mask=mask.replace(/[.]/g,"\\\.");
 	mask=mask.replace(/[?]/g,".");
 	mask=mask.replace(/[*]/g,".*?");
@@ -1005,29 +1005,26 @@ while (!server.terminated) {
 	}
 
 	// Poll all sockets for commands, then pass to the appropriate func.
-    poll_clients=new Array;
-    poll_client_map=new Array;
-    for(thisClient in Clients) {
-        ClientObject=Clients[thisClient];
-        if ( (ClientObject != undefined) &&
-             ClientObject.socket && ClientObject.conntype &&
-             ClientObject.local )
-		{
-			ClientObject.check_timeout();
-			if(this.socket_select==undefined)
-			{
+	poll_clients=new Array;
+	poll_client_map=new Array;
+	for(thisClient in Clients) {
+		var ClientObject=Clients[thisClient];
+		if ( (ClientObject != undefined) &&
+		    ClientObject.socket && ClientObject.conntype &&
+		    ClientObject.local ) {
+			if (ClientObject.check_timeout())
+				continue;
+			if(this.socket_select==undefined) {
 				ClientObject.work();
 			} else {
 				poll_clients.push(ClientObject.socket.descriptor);
 				poll_client_map.push(thisClient);
 			}
 		}
-    }
-	if(poll_clients.length && this.socket_select!=undefined)
-	{
+	}
+	if(poll_clients.length && this.socket_select!=undefined) {
 		readme=socket_select(poll_clients, 1 /* seconds */);
-		for(thisPolled in readme)
-		{
+		for(thisPolled in readme) {
 			Clients[poll_client_map[readme[thisPolled]]].work();
 		}
 	} else
@@ -1753,12 +1750,12 @@ function IRCClient_bcast_to_servers_raw(str) {
 }
 
 function IRCClient_bcast_to_uchans_unique(str) {
-	already_bcast = new Array();
+	var already_bcast = new Array();
 	for(thisChannel in this.channels) {
-		userchannel=this.channels[thisChannel];
+		var userchannel=this.channels[thisChannel];
 		if(userchannel) {
 			for (j in Channels[userchannel].users) {
-				did_i_already_broadcast = false;
+				var did_i_already_broadcast = false;
 				for (alb in already_bcast) {
 					if (already_bcast[alb] == Channels[userchannel].users[j]) {
 						did_i_already_broadcast = true;
@@ -1781,7 +1778,7 @@ function IRCClient_bcast_to_uchans_unique(str) {
 function IRCClient_bcast_to_list(chan, str, bounce, list_bit) {
 	if (chan != undefined) {
 		for (thisUser in chan.users) {
-			aUser = chan.users[thisUser];
+			var aUser = chan.users[thisUser];
 			if (aUser && ( aUser != this.id || (bounce) ) &&
 			    ( chan.ismode(aUser,list_bit) ) )
 				Clients[aUser].originatorout(str,this);
@@ -1792,10 +1789,10 @@ function IRCClient_bcast_to_list(chan, str, bounce, list_bit) {
 }
 
 function IRCClient_bcast_to_channel(chan_str, str, bounce) {
-	chan_tuc = chan_str.toUpperCase();
+	var chan_tuc = chan_str.toUpperCase();
 	if (Channels[chan_tuc] != undefined) {
 		for(thisUser in Channels[chan_tuc].users) {
-			aUser=Channels[chan_tuc].users[thisUser];
+			var aUser=Channels[chan_tuc].users[thisUser];
 			if (aUser && ( aUser != this.id || (bounce) ) &&
 			    !Clients[aUser].parent && !Clients[aUser].server ) {
 				Clients[aUser].originatorout(str,this);
@@ -1811,7 +1808,7 @@ function IRCClient_bcast_to_channel_servers(chan_str, str) {
 	var chan_tuc = chan_str.toUpperCase();
 	if (Channels[chan_tuc] != undefined) {
 		for(thisUser in Channels[chan_tuc].users) {
-			aUser=Channels[chan_tuc].users[thisUser];
+			var aUser=Channels[chan_tuc].users[thisUser];
 			if (aUser && ( Clients[aUser].parent ) &&
 			    !sent_to_servers[Clients[aUser].parent] &&
 			    (Clients[aUser].parent != this.parent) ) {
@@ -3201,7 +3198,7 @@ function IRCClient_unregistered_commands(command, cmdline) {
 				this.numeric(431, ":No nickname given.");
 				break;
 			}
-			the_nick = ircstring(cmd[1]).slice(0,max_nicklen);
+			var the_nick = ircstring(cmd[1]).slice(0,max_nicklen);
 			if (this.check_nickname(the_nick))
 				this.nick = the_nick;
 			break;
@@ -5183,11 +5180,13 @@ function IRCClient_check_timeout() {
 		if ( (this.pinged) && ((time() - this.pinged) > YLines[this.ircclass].pingfreq) ) {
 			this.pinged = false;
 			this.quit("Ping Timeout");
+			return 1; // ping timeout
 		} else if (!this.pinged && ((time() - this.idletime) > YLines[this.ircclass].pingfreq)) {
 			this.pinged = time();
 			this.rawout("PING :" + servername);
 		}
 	}
+	return 0; // no ping timeout
 }
 
 function IRCClient_work() {
