@@ -51,10 +51,14 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 	uint	i,j,n,lastsub=INVALID_SUB;
 	uint	blocks;
 	long	l,size,misc;
+	ulong	t;
+	ulong	msgs=0;
+	time_t	start;
 	DIR*	dir;
 	DIRENT*	dirent;
 	FILE*	qwk;
 
+	start=time(NULL);
 	if((l=flength(packet))<1) {
 		errormsg(WHERE,ERR_LEN,packet,l);
 		return(false);
@@ -173,8 +177,9 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 			truncsp(tmp);
 			sprintf(str,text[UserSentYouMail],tmp);
 			putsmsg(&cfg,j,str);
+			msgs++;
 			continue;
-			}
+		}
 
 		for(j=0;j<cfg.qhub[hubnum]->subs;j++)
 			if(cfg.qhub[hubnum]->conf[j]==n)
@@ -188,6 +193,10 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 		j=cfg.qhub[hubnum]->sub[j];
 
 		if(j!=lastsub) {
+
+			eprintf("Importing messages from %s into %s %s"
+				,cfg.qhub[hubnum]->id, cfg.grp[cfg.sub[j]->grp]->sname,cfg.sub[j]->lname);
+
 			if(lastsub!=INVALID_SUB)
 				smb_close(&smb);
 			lastsub=INVALID_SUB;
@@ -223,10 +232,8 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 			lastsub=j; 
 		}
 
-		eprintf("Importing message from %s on %s %s"
-			,cfg.qhub[hubnum]->id, cfg.grp[cfg.sub[j]->grp]->sname,cfg.sub[j]->lname);
 		if(!qwktomsg(qwk,(char *)block,hubnum+1,j,0)) {
-			eprintf("!QWKTOMSG failed");
+//			eprintf("!QWKTOMSG failed");
 			continue;
 		}
 
@@ -234,8 +241,11 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 			if((file=nopen(cmdstr(cfg.sub[j]->echomail_sem,nulstr,nulstr,NULL)
 				,O_WRONLY|O_CREAT|O_TRUNC))!=-1)
 				close(file);
+/*
 		eprintf("Message from %s Posted on %s %s"
 			,cfg.qhub[hubnum]->id,cfg.grp[cfg.sub[j]->grp]->sname,cfg.sub[j]->lname); 
+*/
+		msgs++;
 	}
 
 	update_qwkroute(NULL);		/* Write ROUTE.DAT */
@@ -274,7 +284,12 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 	if(dir!=NULL)
 		closedir(dir);
 
-	eprintf("Finished Importing QWK Network Packet: %s",packet);
+	t=time(NULL)-start;
+	if(t) {
+		eprintf("Finished Importing QWK Network Packet from %s: "
+			"(%lu msgs) in %lu seconds (%lu msgs/sec)"
+			,cfg.qhub[hubnum]->id, msgs, t, msgs/t);
+	}
 	delfiles(cfg.temp_dir,ALLFILES);
 	return(true);
 }
