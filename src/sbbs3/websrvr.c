@@ -2375,9 +2375,15 @@ js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_FALSE);
 
     for(i=0; i<argc; i++) {
+#if 0
 		if((str=JS_ValueToString(cx, argv[i]))==NULL)
 			continue;
 		fprintf(session->req.fp,"%s",JS_GetStringBytes(str));
+#else
+		if((str=JS_ValueToString(cx, argv[i]))==NULL)
+			continue;
+		fwrite(JS_GetStringBytes(str),1,JS_GetStringLength(str),session->req.fp);
+#endif
 	}
 
 	return(JS_TRUE);
@@ -2397,9 +2403,15 @@ js_writeln(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_FALSE);
 
     for (i=0; i<argc;i++) {
+#if 0
 		if((str=JS_ValueToString(cx, argv[i]))==NULL)
 			continue;
 		fprintf(session->req.fp,"%s",JS_GetStringBytes(str));
+#else
+		if((str=JS_ValueToString(cx, argv[i]))==NULL)
+			continue;
+		fwrite(JS_GetStringBytes(str),1,JS_GetStringLength(str),session->req.fp);
+#endif
 	}
 
 	fprintf(session->req.fp,"\n");
