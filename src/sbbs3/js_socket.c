@@ -284,6 +284,7 @@ js_sendfile(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_TRUE);
 	}
 	if(read(file,buf,len)!=len) {
+		free(buf);
 		close(file);
 		return(JS_TRUE);
 	}
