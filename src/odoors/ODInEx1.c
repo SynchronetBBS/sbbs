@@ -2221,16 +2221,16 @@ malloc_error:
    if(bPromptForUserName)
    {
       od_control.od_com_method=COM_STDIO;
-      od_control.baud=300;
+      od_control.baud=19200;
       gethostname(od_control.system_name,sizeof(od_control.system_name));
       od_control.system_name[sizeof(od_control.system_name)-1]=0;
-      if (isatty(fileno(stdin)))  {
-        tcgetattr(fileno(stdin),&term);
+      if (isatty(STDIN_FILENO))  {
+        tcgetattr(STDIN_FILENO,&term);
    	  od_control.baud=cfgetispeed(&term);
         if(!od_control.baud)
    	    od_control.baud=cfgetispeed(&term);
         if(!od_control.baud)
-   		 od_control.baud=300;
+   		 od_control.baud=19200;
       }
       uinfo=getpwuid(getuid());
       ODStringCopy(od_control.user_handle, uinfo->pw_name,sizeof(od_control.user_handle));

@@ -189,7 +189,7 @@ tODResult ODKrnlInitialize(void)
    /* HUP Detection */
    act.sa_handler=sig_no_carrier;
    /* If two HUP signals are recieved, die on the second */
-   act.sa_flags=SA_RESETHAND;
+   act.sa_flags=SA_RESETHAND|SA_RESTART;
    sigemptyset(&(act.sa_mask));
    sigaction(SIGHUP,&act,NULL);
 

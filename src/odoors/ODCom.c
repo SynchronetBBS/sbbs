@@ -1771,11 +1771,12 @@ no_fossil:
    if(pPortInfo->Method == kComMethodStdIO ||
       pPortInfo->Method == kComMethodUnspecified)
    {
-		if (isatty(fileno(stdin)))  {
-			tcgetattr(fileno(stdin),&tio_default);
+		if (isatty(STDIN_FILENO))  {
+			tcgetattr(STDIN_FILENO,&tio_default);
 			tio_raw = tio_default;
 			cfmakeraw(&tio_raw);
-			tcsetattr(fileno(stdin),TCSANOW,&tio_raw);
+			tcsetattr(STDIN_FILENO,TCSANOW,&tio_raw);
+			setvbuf(stdout, NULL, _IONBF, 0);
 		}
 
       /* Set port state as open. */
@@ -1960,7 +1961,7 @@ tODResult ODComClose(tPortHandle hPort)
 
 #ifdef INCLUDE_STDIO_COM
 	  case kComMethodStdIO:
-		 tcsetattr(fileno(stdin),TCSANOW,&tio_default);
+		 tcsetattr(STDIN_FILENO,TCSANOW,&tio_default);
 	     break;
 #endif
 
@@ -2975,6 +2976,7 @@ keep_going:
 
 		    if((send_ret=fwrite(&btToSend,1,1,stdout))!=1)
 			   return(kODRCGeneralFailure);
+
 			break;
 		}
 #endif
@@ -3439,7 +3441,6 @@ try_again:
       case kComMethodStdIO:
 	    {
 			int pos=0;
-			int oldpos=-1;
 			fd_set  fdset;
 			struct  timeval tv;
 			int     send_ret;
@@ -3455,22 +3456,10 @@ try_again:
 					return(kODRCGeneralFailure);
 
 				send_ret=fwrite(pbtBuffer+pos,1,nSize-pos,stdout);
-				/* send_ret=fwrite(pbtBuffer+pos,1,1,stdout); */
-				if(send_ret==0)
-					return (kODRCGeneralFailure);
-				if(send_ret==-1) {
-					switch(errno) {
-						case EINTR:
-						case EAGAIN:
-							od_sleep(1);
-							send_ret=0;
-							break;
-						default:
-							return (kODRCGeneralFailure);
-					}
+				if(send_ret!=nSize-pos) {
+					od_sleep(1);
 				}
 
-				oldpos=pos;
 				pos+=send_ret;
 			}
 		    break;
