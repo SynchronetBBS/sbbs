@@ -396,7 +396,7 @@ void quotestr(char *str)
 	j=strlen(str);
 	while(j && (str[j-1]==SP || str[j-1]==LF || str[j-1]==CR)) j--;
 	str[j]=0;
-	remove_ctrl_a(str);
+	remove_ctrl_a(str,NULL);
 }
 
 void sbbs_t::editor_inf(int xeditnum,char *dest, char *title, long mode
