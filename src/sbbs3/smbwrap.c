@@ -40,6 +40,8 @@
 
 #include <glob.h>       /* glob() wildcard matching */
 #include <string.h>     /* strlen() */
+#include <unistd.h>     /* getpid() */
+#include <fcntl.h>      /* fcntl() file/record locking */
 
 #endif
 
@@ -133,9 +135,6 @@ BOOL SMBCALL fexist(char *filespec)
 
 #if defined(__unix__)
 
-#include <unistd.h>
-#include <fcntl.h>
-
 /****************************************************************************/
 /* Returns the length of the file in 'fd'									*/
 /****************************************************************************/
@@ -152,19 +151,55 @@ long filelength(int fd)
 /* Sets a lock on a portion of a file */
 int lock(int fd, long pos, int len)
 {
-	return 0;
+ 	struct flock alock;
+
+	alock.l_type = F_WRLCK;   // set a write lock to prevent all access
+	alock.l_whence = L_SET;	  // SEEK_SET
+	alock.l_start = pos;
+	alock.l_len = len;
+	alock.l_pid = getpid();   // current process ID
+
+	return fcntl(fd, F_SETLK, &alock);
 }
 
 /* Removes a lock from a file record */
 int unlock(int fd, long pos, int len)
 {
-	return 0;
+	struct flock alock;
+
+	alock.l_type = F_UNLCK;   // remove the lock
+	alock.l_whence = L_SET;
+	alock.l_start = pos;
+	alock.l_len = len;
+	alock.l_pid = getpid();   // current process ID
+	return fcntl(fd, F_SETLK, &alock);
 }
 
 /* Opens a file in specified sharing (file-locking) mode */
 int sopen(char *fn, int access, int share)
 {
-	return(open(fn,access,S_IREAD|S_IWRITE));
+	int fd;
+	struct flock alock;
+
+	if ((fd = open(fn, access)) < 0)
+		return -1;
+
+	if (share == SH_DENYNO)
+		// no lock needed
+		return fd;
+
+	alock.l_type = share;
+	alock.l_whence = L_SET;
+	alock.l_start = 0;
+	alock.l_len = 0;       // lock to EOF
+	alock.l_pid = getpid();
+
+	if (fcntl(fd, F_SETLK, &alock) < 0) {
+		close(fd);
+		return -1;
+	}
+
+	return fd;
 }
 
 #elif defined _MSC_VER || defined __MINGW32__
