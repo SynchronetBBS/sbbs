@@ -43,6 +43,7 @@ typedef struct
 {
 	char	name[MAX_PATH+1];
 	char	mode[4];
+	uchar	etx;
 	FILE*	fp;
 	BOOL	external;	/* externally created, don't close */
 	BOOL	debug;
@@ -62,7 +63,7 @@ static void dbprintf(BOOL error, private_t* p, char* fmt, ...)
     vsprintf(sbuf,fmt,argptr);
     va_end(argptr);
 	
-	lprintf("%04u File %s%s",fileno(p->fp),error ? "ERROR: ":"",sbuf);
+	lprintf("%04u File %s%s",p->fp ? fileno(p->fp) : 0,error ? "ERROR: ":"",sbuf);
 }
 
 /* File Constructor (creates file descriptor) */
@@ -108,7 +109,7 @@ static void js_finalize_file(JSContext *cx, JSObject *obj)
 	if(p->external==JS_FALSE && p->fp!=NULL)
 		fclose(p->fp);
 
-	dbprintf(FALSE, p, "closed");
+	dbprintf(FALSE, p, "closed: %s",p->name);
 
 	free(p);
 
@@ -142,8 +143,10 @@ js_open(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	}
 	sprintf(p->mode,"%.*s",sizeof(p->mode)-1,mode);
 
-	if((p->fp=fopen(p->name,p->mode))!=NULL)
+	if((p->fp=fopen(p->name,p->mode))==NULL)
 		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+	else
+		dbprintf(FALSE, p, "opened: %s",p->name);
 
 	return(JS_TRUE);
 }
@@ -171,6 +174,152 @@ js_close(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	return(JS_TRUE);
 }
 
+static JSBool
+js_read(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		cp;
+	char*		buf;
+	int			len=512;
+	JSString*	str;
+	private_t*	p;
+
+	*rval = JSVAL_NULL;
+
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+		return(JS_FALSE);
+
+	if(p->fp==NULL)
+		return(JS_TRUE);
+
+	if(argc)
+		len = JSVAL_TO_INT(argv[0]);
+
+	if((buf=malloc(len+1))==NULL)
+		return(JS_TRUE);
+
+	len = fread(buf,1,len,p->fp);
+	if(len<0) 
+		len=0;
+	buf[len]=0;
+
+	if(p->etx) {
+		cp=strchr(buf,p->etx);
+		if(cp) *cp=0; 
+	}
+
+	str = JS_NewStringCopyZ(cx, buf);
+
+	free(buf);
+
+	*rval = STRING_TO_JSVAL(str);
+
+	dbprintf(FALSE, p, "read %u bytes",len);
+		
+	return(JS_TRUE);
+}
+
+static JSBool
+js_readln(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		cp;
+	char*		buf;
+	ulong		len=512;
+	private_t*	p;
+
+	*rval = JSVAL_NULL;
+
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+		return(JS_FALSE);
+
+	if(p->fp==NULL)
+		return(JS_TRUE);
+	
+	if(argc)
+		len = JSVAL_TO_INT(argv[0]);
+
+	if((buf=malloc(len))==NULL)
+		return(JS_TRUE);
+
+	if(fgets(buf,len,p->fp)!=NULL) {
+		truncsp(buf);
+		if(p->etx) {
+			cp=strchr(buf,p->etx);
+			if(cp) *cp=0; 
+		}
+		*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,buf));
+	}
+
+	free(buf);
+
+	return(JS_TRUE);
+}
+
+static JSBool
+js_readbin(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	BYTE		b;
+	WORD		w;
+	DWORD		l;
+	size_t		size=sizeof(DWORD);
+	private_t*	p;
+
+	*rval = JSVAL_NULL;
+
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+		return(JS_FALSE);
+
+	if(p->fp==NULL)
+		return(JS_TRUE);
+
+	if(argc>1) 
+		size = JSVAL_TO_INT(argv[1]);
+
+	switch(size) {
+		case sizeof(BYTE):
+			fread(&b,1,size,p->fp);
+			*rval = INT_TO_JSVAL(b);
+			break;
+		case sizeof(WORD):
+			fread(&w,1,size,p->fp);
+			*rval = INT_TO_JSVAL(w);
+			break;
+		case sizeof(DWORD):
+			fread(&l,1,size,p->fp);
+			*rval = INT_TO_JSVAL(l);
+			break;
+	}
+		
+	return(JS_TRUE);
+}
+
+static JSBool
+js_readall(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+    jsint       len=0;
+    jsval       line;
+    JSObject*	array;
+	private_t*	p;
+
+	*rval = JSVAL_NULL;
+
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+		return(JS_FALSE);
+
+	if(p->fp==NULL)
+		return(JS_TRUE);
+
+    array = JS_NewArrayObject(cx, 0, NULL);
+
+    while(!feof(p->fp)) {
+		js_readln(cx, obj, 0, NULL, &line); 
+		if(line==JSVAL_NULL)
+			break;
+        JS_SetElement(cx, array, len++, &line);
+	}
+    *rval = OBJECT_TO_JSVAL(array);
+
+    return(JS_TRUE);
+}
 
 static JSBool
 js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
@@ -180,17 +329,24 @@ js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	JSString*	str;
 	private_t*	p;
 
+	*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_FALSE);
 
-	*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+	if(p->fp==NULL)
+		return(JS_TRUE);
 
 	if(!argc)
 		return(JS_FALSE);
 
 	str = JS_ValueToString(cx, argv[0]);
-	cp=JS_GetStringBytes(str);
-	len=strlen(cp);
+	cp = JS_GetStringBytes(str);
+	len = strlen(cp);
+/*  need etx support
+	if(argc>1)
+		len=JSVAL_TO_INT(argv[1]);
+*/
 	if(fwrite(cp,1,len,p->fp)==len) {
 		dbprintf(FALSE, p, "wrote %u bytes",len);
 		*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
@@ -223,16 +379,17 @@ js_writeln(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	if(fprintf(p->fp,"%s\n",cp)!=0)
 		*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
-		
+
 	return(JS_TRUE);
 }
 
 static JSBool
-js_writeint(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+js_writebin(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	BYTE		b;
 	WORD		w;
 	DWORD		l;
+	size_t		wr=0;
 	size_t		size=sizeof(DWORD);
 	private_t*	p;
 
@@ -247,79 +404,41 @@ js_writeint(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(argc>1) 
 		size = JSVAL_TO_INT(argv[1]);
 
-	*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
-
 	switch(size) {
 		case sizeof(BYTE):
 			b = (BYTE)JSVAL_TO_INT(argv[0]);
-			fwrite(&b,1,size,p->fp);
+			wr=fwrite(&b,1,size,p->fp);
 			break;
 		case sizeof(WORD):
 			w = (SHORT)JSVAL_TO_INT(argv[0]);
-			fwrite(&w,1,size,p->fp);
+			wr=fwrite(&w,1,size,p->fp);
 			break;
 		case sizeof(DWORD):
 			l = JSVAL_TO_INT(argv[0]);
-			fwrite(&l,1,size,p->fp);
+			wr=fwrite(&l,1,size,p->fp);
 			break;
-		default:	/* unknown size */
-			*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+		default:	
+			/* unknown size */
+			dbprintf(TRUE, p, "unsupported binary write size: %d",size);
 			break;
 	}
-		
-	return(JS_TRUE);
-}
-
-
-static JSBool
-js_read(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
-{
-	char		buf[513];
-	int			len;
-	JSString*	str;
-	private_t*	p;
-
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
-		return(JS_FALSE);
-
-	if(argc)
-		len = JSVAL_TO_INT(argv[0]);
-	else
-		len = sizeof(buf)-1;
-
-	len = len > sizeof(buf)-1 ? sizeof(buf)-1 : len;
-
-	len = fread(buf,1,len,p->fp);
-	if(len<0) {
-		len=0;
-	}
-	buf[len]=0;
-
-	str = JS_NewStringCopyZ(cx, buf);
-
-	*rval = STRING_TO_JSVAL(str);
-
-	dbprintf(FALSE, p, "read %u bytes",len);
+	if(wr==size)
+		*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
 		
 	return(JS_TRUE);
 }
 
 static JSBool
-js_readln(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+js_writeall(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	return(JS_TRUE);
-}
-	
-static JSBool
-js_readint(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
-{
-	BYTE		b;
-	WORD		w;
-	DWORD		l;
-	size_t		size=sizeof(DWORD);
+    jsuint      i;
+    jsuint      limit;
+    JSObject*	array;
+    JSObject*	elem;
+    jsval       elemval;
 	private_t*	p;
 
-	*rval = JSVAL_VOID;
+	*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_FALSE);
@@ -327,25 +446,23 @@ js_readint(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(p->fp==NULL)
 		return(JS_TRUE);
 
-	if(argc>1) 
-		size = JSVAL_TO_INT(argv[1]);
+    if(!JS_IsArrayObject(cx, JSVAL_TO_OBJECT(argv[0])))
+		return(JS_TRUE);
 
-	switch(size) {
-		case sizeof(BYTE):
-			fread(&b,1,size,p->fp);
-			*rval = INT_TO_JSVAL(b);
+    array = JSVAL_TO_OBJECT(argv[0]);
+
+    JS_GetArrayLength(cx, array, &limit);
+
+    for(i=0;i<limit;i++) {
+        if(!JS_GetElement(cx, array, i, &elemval))
 			break;
-		case sizeof(WORD):
-			fread(&w,1,size,p->fp);
-			*rval = INT_TO_JSVAL(w);
-			break;
-		case sizeof(DWORD):
-			fread(&l,1,size,p->fp);
-			*rval = INT_TO_JSVAL(l);
-			break;
-	}
-		
-	return(JS_TRUE);
+        elem = JSVAL_TO_OBJECT(elemval);
+        js_writeln(cx, obj, 1, &elemval, rval);
+    }
+
+    *rval = BOOLEAN_TO_JSVAL(JSVAL_TRUE);
+
+    return(JS_TRUE);
 }
 
 static JSBool
@@ -442,7 +559,8 @@ js_clear_error(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 /* File Object Properites */
 enum {
 	 FILE_PROP_NAME		
-	,FILE_PROP_MODE		
+	,FILE_PROP_MODE
+	,FILE_PROP_ETX
 	,FILE_PROP_EXISTS	
 	,FILE_PROP_DATE		
 	,FILE_PROP_IS_OPEN	
@@ -481,6 +599,9 @@ static JSBool js_file_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			break;
 		case FILE_PROP_ATTRIBUTES:
 			CHMOD(p->name,JSVAL_TO_INT(*vp));
+			break;
+		case FILE_PROP_ETX:
+			p->etx = (uchar)JSVAL_TO_INT(*vp);
 			break;
 	}
 
@@ -544,6 +665,9 @@ static JSBool js_file_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 		case FILE_PROP_DESCRIPTOR:
 			*vp = INT_TO_JSVAL(fileno(p->fp));
 			break;
+		case FILE_PROP_ETX:
+			*vp = INT_TO_JSVAL(p->etx);
+			break;
 	}
 
 	return(TRUE);
@@ -588,15 +712,18 @@ static JSFunctionSpec js_file_functions[] = {
 	{"delete",			js_delete,			0},		/* delete the file */
 	{"remove",			js_delete,			0},		/* delete the file */
 	{"clear_error",		js_clear_error,		0},		/* clear error */
+	{"clearError",		js_clear_error,		0},		/* clear error */
 	{"flush",			js_flush,			0},		/* flush buffers */
 	{"lock",			js_lock,			2},		/* lock offset, length */
 	{"unlock",			js_unlock,			2},		/* unlock offset, length */
 	{"read",			js_read,			0},		/* read a string */
 	{"readln",			js_readln,			0},		/* read a \n terminated string	*/
-	{"readint",			js_readint,			0},		/* read an integer (length) */
+	{"readBin",			js_readbin,			0},		/* read an integer (length) */
+	{"readAll",			js_readall,			0},		/* read all lines into an array */
 	{"write",			js_write,			1},		/* write a string */
 	{"writeln",			js_writeln,			0},		/* write a \n terminated string */
-	{"writeint",		js_writeint,		1},		/* read an integer (length) */
+	{"writeBin",		js_writebin,		1},		/* read an integer (length) */
+	{"writeAll",		js_writeall,		0},		/* write array of strings to file */
 	{0}
 };
 
