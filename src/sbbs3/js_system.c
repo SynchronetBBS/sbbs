@@ -1051,7 +1051,7 @@ js_new_user(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	user.shell=cfg->new_shell;
 	user.misc=cfg->new_misc|(AUTOTERM|COLOR);
 	user.prot=cfg->new_prot;
-	user.qwk=(QWK_FILES|QWK_ATTACH|QWK_EMAIL|QWK_DELMAIL);
+	user.qwk=QWK_DEFAULT;
 
 	i=newuserdat(cfg,&user);
 

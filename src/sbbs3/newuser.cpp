@@ -104,7 +104,7 @@ BOOL sbbs_t::newuser()
 
 	/* Sets defaults per sysop config */
 	useron.misc|=(cfg.new_misc&~(DELETED|INACTIVE|QUIET|NETMAIL));
-	useron.qwk=(QWK_FILES|QWK_ATTACH|QWK_EMAIL|QWK_DELMAIL);
+	useron.qwk=QWK_DEFAULT;
 	useron.firston=useron.laston=useron.pwmod=time(NULL);
 	if(cfg.new_expire) {
 		now=time(NULL);
