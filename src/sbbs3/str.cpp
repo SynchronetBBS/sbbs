@@ -42,6 +42,28 @@ const char *mon[]={"Jan","Feb","Mar","Apr","May","Jun"
             ,"Jul","Aug","Sep","Oct","Nov","Dec"};
 
 /****************************************************************************/
+/* Removes ctrl-a codes from the string 'instr'                             */
+/****************************************************************************/
+char* DLLCALL remove_ctrl_a(char *instr, char *outstr)
+{
+	char str[1024],*p;
+	uint i,j,k;
+
+	j=strlen(instr);
+	for(k=i=0;i<j;i++) {
+		if(instr[i]==1)
+			i++;
+		else str[k++]=instr[i]; }
+	str[k]=0;
+	if(outstr!=NULL)
+		p=outstr;
+	else
+		p=instr;
+	strcpy(p,str);
+	return(p);
+}
+
+/****************************************************************************/
 /* Lists all users who have access to the current sub.                      */
 /****************************************************************************/
 void sbbs_t::userlist(char mode)

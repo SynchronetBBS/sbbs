@@ -40,29 +40,6 @@
 #include "qwk.h"
 
 /****************************************************************************/
-/* Removes ctrl-a codes from the string 'instr'                             */
-/****************************************************************************/
-char* remove_ctrl_a(char *instr, char *outstr)
-{
-	char str[512],*p;
-	uint i,j,k;
-
-	j=strlen(instr);
-	for(k=i=0;i<j;i++) {
-		if(instr[i]==1)
-			i++;
-		else str[k++]=instr[i]; }
-	str[k]=0;
-	if(outstr!=NULL)
-		p=outstr;
-	else
-		p=instr;
-	strcpy(p,str);
-	return(p);
-}
-
-
-/****************************************************************************/
 /* Converts a long to an msbin real number. required for QWK NDX file		*/
 /****************************************************************************/
 float ltomsbin(long val)
