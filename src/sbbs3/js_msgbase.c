@@ -183,6 +183,14 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 			msg->idx.from=atoi(cp);
 	}
 
+	if(JS_GetProperty(cx, hdr, "from_org", &val) && val!=JSVAL_VOID) {
+		if((js_str=JS_ValueToString(cx,val))==NULL)
+			return(FALSE);
+		if((cp=JS_GetStringBytes(js_str))==NULL)
+			return(FALSE);
+		smb_hfield(msg, SENDERORG, (ushort)strlen(cp), cp);
+	}
+
 	if(JS_GetProperty(cx, hdr, "from_net_type", &val) && val!=JSVAL_VOID) {
 		nettype=(ushort)JSVAL_TO_INT(val);
 		smb_hfield(msg, SENDERNETTYPE, sizeof(nettype), &nettype);
@@ -421,6 +429,8 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 	JS_DefineProperty(cx, hdrobj, "to_ext",STRING_TO_JSVAL(JS_NewStringCopyZ(cx,msg.to_ext))
 		,NULL,NULL,JSPROP_ENUMERATE);
 	JS_DefineProperty(cx, hdrobj, "from_ext",STRING_TO_JSVAL(JS_NewStringCopyZ(cx,msg.from_ext))
+		,NULL,NULL,JSPROP_ENUMERATE);
+	JS_DefineProperty(cx, hdrobj, "from_org",STRING_TO_JSVAL(JS_NewStringCopyZ(cx,msg.from_org))
 		,NULL,NULL,JSPROP_ENUMERATE);
 	JS_DefineProperty(cx, hdrobj, "replyto",STRING_TO_JSVAL(JS_NewStringCopyZ(cx,msg.replyto))
 		,NULL,NULL,JSPROP_ENUMERATE);
