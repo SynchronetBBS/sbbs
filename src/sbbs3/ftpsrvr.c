@@ -1176,6 +1176,7 @@ static void ctrl_thread(void* arg)
 	BOOL		delfile;
 	BOOL		tmpfile;
 	BOOL		credits;
+	BOOL		filedat;
 	BOOL		transfer_inprogress;
 	BOOL		transfer_aborted;
 	BOOL		sysop=FALSE;
@@ -1491,7 +1492,11 @@ static void ctrl_thread(void* arg)
 			}
 			if(sysop)
 				sockprintf(sock,"230-Sysop access granted.");
-			sockprintf(sock,"230 User logged in. You are allowed %ld minutes of use for this connection."
+			sockprintf(sock,"230-User logged in.");
+			if(!(user.exempt&FLAG('D')) && (user.cdt+user.freecdt)>0)
+				sockprintf(sock,"230-You have %lu download credits."
+					,user.cdt+user.freecdt);
+			sockprintf(sock,"230 You are allowed %ld minutes of use for this session."
 				,timeleft/60);
 			sprintf(qwkfile,"%sFILE/%04d.QWK",scfg.data_dir,user.number);
 
@@ -2182,7 +2187,9 @@ static void ctrl_thread(void* arg)
 					padfname(p,f.name);
 					strupr(f.name);
 					f.dir=dir;
-					if(!(ff.attrib&_A_SUBDIR) && getfileixb(&scfg,&f)) { /* not a directory */
+					if(!(ff.attrib&_A_SUBDIR) /* not a directory */
+						&& ((filedat=getfileixb(&scfg,&f))==TRUE 
+							|| startup->options&FTP_OPT_DIR_FILES)) { 
 						if(detail) {
 							f.size=ff.size;
 							getfiledat(&scfg,&f);
@@ -2193,7 +2200,7 @@ static void ctrl_thread(void* arg)
 								tm=*tm_p;
 							fprintf(fp,"-rw-r--r--   1 %-*s %-8s %9ld %s %2d "
 								,NAME_LEN
-								,dotname(f.uler,str)
+								,filedat ? dotname(f.uler,str) : scfg.sys_id
 								,scfg.dir[dir]->code
 								,f.size
 								,mon[tm.tm_mon],tm.tm_mday);
@@ -2455,23 +2462,36 @@ static void ctrl_thread(void* arg)
 				}
 				sprintf(fname,"%s%s",scfg.dir[dir]->path,p);
 
-				if(!(scfg.dir[dir]->misc&DIR_FREE)) {
-					GetShortPathName(fname, str, sizeof(str));
-					np=strrchr(str,'\\');
-					if(np==NULL) np=str;
-					else np++;
-					padfname(np,f.name);
-					strupr(f.name);
-					f.dir=dir;
-					getfileixb(&scfg,&f);
-					f.size=-1;
-					getfiledat(&scfg,&f);
+				GetShortPathName(fname, str, sizeof(str));
+				np=strrchr(str,'\\');
+				if(np==NULL) 
+					np=str;
+				else 
+					np++;
+				padfname(np,f.name);
+				strupr(f.name);
+				f.dir=dir;
+				f.cdt=0;
+				f.size=-1;
+				filedat=getfileixb(&scfg,&f);
+				if(!filedat && !(startup->options&FTP_OPT_DIR_FILES)) {
+					sockprintf(sock,"550 File not found: %s",p);
+					lprintf("%04d %s file not found: %s",sock,user.alias,fname);
+					filepos=0;
+					continue;
+				}
+				if(!(scfg.dir[dir]->misc&DIR_FREE) && !(user.exempt&FLAG('D'))) {
+					if(filedat)
+						getfiledat(&scfg,&f);
+					else
+						f.cdt=flength(fname);
 					if(f.cdt>(user.cdt+user.freecdt)) {
-						lprintf("%04d !%s has insufficient credit to download /%s/%s/%s"
+						lprintf("%04d !%s has insufficient credit to download /%s/%s/%s (%lu credits)"
 							,sock,user.alias,scfg.lib[scfg.dir[dir]->lib]->sname
 							,scfg.dir[dir]->code
-							,p);
-						sockprintf(sock,"550 Insufficient credit.");
+							,p
+							,f.cdt);
+						sockprintf(sock,"550 Insufficient credit (%lu required).",f.cdt);
 						filepos=0;
 						continue;
 					}
@@ -2897,8 +2917,6 @@ void ftp_server(void* arg)
 	}
 
 	thread_up();
-
-	startup->options|=FTP_OPT_ALLOW_QWK;
 
 	status("Initializing");
 
