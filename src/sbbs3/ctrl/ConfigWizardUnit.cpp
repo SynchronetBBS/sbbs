@@ -123,6 +123,18 @@ char* tz_str[]={
     ,"Wellington"
 };
 
+/****************************************************************************/
+/* Truncates white-space chars off end of 'str'								*/
+/****************************************************************************/
+void truncsp(char *str)
+{
+	uint c;
+
+	c=strlen(str);
+	while(c && (uchar)str[c-1]<=SP) c--;
+	str[c]=0;
+}
+
 //---------------------------------------------------------------------------
 __fastcall TConfigWizard::TConfigWizard(TComponent* Owner)
     : TForm(Owner)
@@ -131,7 +143,7 @@ __fastcall TConfigWizard::TConfigWizard(TComponent* Owner)
 //---------------------------------------------------------------------------
 void __fastcall TConfigWizard::FormShow(TObject *Sender)
 {
-    char str[128];
+    char str[512];
     int i;
     int status;
 
@@ -152,6 +164,30 @@ void __fastcall TConfigWizard::FormShow(TObject *Sender)
         GetTimeZoneInformation(&tz);
         /* How to convert to SMB tz format? */
         scfg.sys_timezone=0;
+        /* Get DNS Server Address */
+        sprintf(str,"%s /c ipconfig /all > %sipconfig.txt"
+            ,getenv("COMSPEC"),scfg.ctrl_dir);
+        WinExec(str,SW_HIDE);   /* there's got to be a better way! */
+        sprintf(str,"%sipconfig.txt",scfg.ctrl_dir);
+        FILE*   fp=fopen(str,"r");
+        char*   p;
+        if(fp!=NULL) {
+            while(!feof(fp)) {
+                if(!fgets(str,sizeof(str)-1,fp))
+                    break;
+                p=str;
+                while(*p && *p<=' ') p++;
+                if(!strnicmp(p,"DNS Servers",11) && (p=strchr(p,':'))!=NULL) {
+                    p++;
+                    while(*p && *p<=' ') p++;
+                    truncsp(p);
+                    sprintf(MainForm->mail_startup.dns_server,"%.*s"
+                        ,sizeof(MainForm->mail_startup.dns_server),p);
+                    break;
+                }
+            }
+            fclose(fp);
+        }
     } else {
         SystemNameEdit->Text=AnsiString(scfg.sys_name);
         SystemLocationEdit->Text=AnsiString(scfg.sys_location);
@@ -198,7 +234,10 @@ void __fastcall TConfigWizard::FormShow(TObject *Sender)
         if((scfg.sys_timezone&((short)~DAYLIGHT))==tz_val[i])
             break;
 
-    TimeZoneComboBox->ItemIndex=i;
+    if(i<sizeof(tz_val)/sizeof(tz_val[0]))
+        TimeZoneComboBox->ItemIndex=i;
+    else
+        TimeZoneComboBox->ItemIndex=0;
     DaylightCheckBox->Enabled=scfg.sys_timezone&US_ZONE;
     DaylightCheckBox->Checked=scfg.sys_timezone&DAYLIGHT;
     if(scfg.sys_misc&SM_MILITARY)
@@ -238,7 +277,8 @@ void __fastcall TConfigWizard::NextButtonClick(TObject *Sender)
         strcpy(scfg.sys_inetaddr,InternetAddressComboBox->Text.c_str());
         strcpy(scfg.qnet_tagline,QNetTaglineEdit->Text.c_str());
         scfg.sys_nodes=NodesUpDown->Position;
-        scfg.sys_timezone=tz_val[TimeZoneComboBox->ItemIndex];
+        if(TimeZoneComboBox->ItemIndex>=0)
+            scfg.sys_timezone=tz_val[TimeZoneComboBox->ItemIndex];
         if(DaylightCheckBox->Checked)
             scfg.sys_timezone|=DAYLIGHT;
         if(Time24hrRadioButton->Checked)
@@ -340,18 +380,24 @@ void __fastcall TConfigWizard::WizNotebookPageChanged(TObject *Sender)
         case 3:
             current=InternetLabel->Font;
             if(!InternetAddressComboBox->Items->Count) {
+                WSADATA WSAData;
+                WSAStartup(MAKEWORD(1,1), &WSAData); /* req'd for gethostname */
                 if(scfg.sys_inetaddr[0])
                     InternetAddressComboBox->Items->Add(scfg.sys_inetaddr);
                 char hostname[128];
                 gethostname(hostname,sizeof(hostname)-1);
-                InternetAddressComboBox->Items->Add(hostname);
-                HOSTENT* host=gethostbyname(hostname);
-                SOCKADDR_IN addr;
-                for(int i=0;host->h_addr_list[i];i++) {
-                    addr.sin_addr.s_addr
-                        =*((DWORD*)host->h_addr_list[i]);
-                    InternetAddressComboBox->Items->Add(inet_ntoa(addr.sin_addr));
+                if(hostname[0]) {
+                    InternetAddressComboBox->Items->Add(hostname);
+                    HOSTENT* host=gethostbyname(hostname);
+                    SOCKADDR_IN addr;
+                    for(int i=0;host && host->h_addr_list[i];i++) {
+                        addr.sin_addr.s_addr
+                            =*((DWORD*)host->h_addr_list[i]);
+                        InternetAddressComboBox->Items->Add(inet_ntoa(addr.sin_addr));
+                    }
                 }
+                WSACleanup();
+                InternetAddressComboBox->ItemIndex=0;
             }
             VerifyInternetAddresses(Sender);
             break;
@@ -461,7 +507,8 @@ void __fastcall TConfigWizard::VerifyInternetAddresses(TObject *Sender)
 //---------------------------------------------------------------------------
 void __fastcall TConfigWizard::TimeZoneComboBoxChange(TObject *Sender)
 {
-    DaylightCheckBox->Enabled=tz_val[TimeZoneComboBox->ItemIndex]&US_ZONE;
+    if(TimeZoneComboBox->ItemIndex>=0)
+        DaylightCheckBox->Enabled=tz_val[TimeZoneComboBox->ItemIndex]&US_ZONE;
     if(!DaylightCheckBox->Enabled)
         DaylightCheckBox->Checked=false;
 }
