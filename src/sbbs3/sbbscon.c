@@ -40,6 +40,9 @@
 #include <string.h>
 #include <signal.h>
 #include <ctype.h>
+#ifdef __QNX__
+#include <locale.h>
+#endif
 
 /* Synchronet-specific headers */
 #include "conwrap.h"	/* kbhit/getch */
@@ -854,6 +857,9 @@ int main(int argc, char** argv)
 	sigset_t			sigs;
 #endif
 
+#ifdef __QNX__
+	setlocale( LC_ALL, "C-TRADITIONAL" );
+#endif
 	printf("\nSynchronet Console for %s  Version %s%c  %s\n\n"
 		,PLATFORM_DESC,VERSION,REVISION,COPYRIGHT_NOTICE);
 

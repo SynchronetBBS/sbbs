@@ -130,7 +130,7 @@ int sbbs_t::bprintf(char *fmt, ...)
 	va_list argptr;
 	char sbuf[4096];
 
-	if(!strchr(fmt,'%'))
+	if(strchr(fmt,'%')==NULL)
 		return(bputs(fmt));
 	va_start(argptr,fmt);
 	vsnprintf(sbuf,sizeof(sbuf),fmt,argptr);
