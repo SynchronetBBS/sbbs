@@ -234,7 +234,7 @@ static int sockprintf(SOCKET sock, char *fmt, ...)
 	while((result=send(sock,sbuf,len,0))!=len) {
 		if(result==SOCKET_ERROR) {
 			if(ERROR_VALUE==EWOULDBLOCK) {
-				Sleep(1);
+				mswait(1);
 				continue;
 			}
 			if(ERROR_VALUE==ECONNRESET) 
@@ -287,7 +287,7 @@ static int sockreadline(SOCKET socket, char* buf, int len)
 					lprintf("!Socket %d inactive",socket);
 					return(0);
 				}
-				Sleep(1);
+				mswait(1);
 				continue;
 			}
 			recverror(socket,i);
@@ -480,7 +480,7 @@ static void sockmsgtxt(SOCKET socket, smbmsg_t* msg, char* msgtxt, char* fromadd
 			break;
 		p=tp+1;
 		line++;
-		Sleep(1);
+		mswait(1);
 	}
 	sockprintf(socket,".");	/* End of text */
 }
@@ -1953,7 +1953,7 @@ static void sendmail_thread(void* arg)
 
 		smb_freemsgmem(&msg);
 
-		Sleep(3000);
+		mswait(3000);
 
 		sprintf(smb.file,"%sMAIL",scfg.data_dir);
 		if((i=smb_open(&smb))!=0) 
@@ -2552,7 +2552,7 @@ void mail_server(void* arg)
 			if(active_clients>=startup->max_clients) {
 				lprintf("!MAXMIMUM CLIENTS (%u) reached, access denied",startup->max_clients);
 				sockprintf(client_socket,"421 Maximum active clients reached, please try again later.");
-				Sleep(3000);
+				mswait(3000);
 				close_socket(client_socket);
 				continue;
 			}
@@ -2599,7 +2599,7 @@ void mail_server(void* arg)
 			if(active_clients>=startup->max_clients) {
 				lprintf("!MAXMIMUM CLIENTS (%u) reached, access denied",startup->max_clients);
 				sockprintf(client_socket,"-ERR Maximum active clients reached, please try again later.");
-				Sleep(3000);
+				mswait(3000);
 				close_socket(client_socket);
 				continue;
 			}
@@ -2611,7 +2611,7 @@ void mail_server(void* arg)
 				lprintf("!ERROR %d (%d) disabling blocking on socket %d"
 					,i, ERROR_VALUE, client_socket);
 				sockprintf(client_socket,"-ERR System error, please try again later.");
-				Sleep(3000);
+				mswait(3000);
 				close_socket(client_socket);
 				continue;
 			}
@@ -2620,7 +2620,7 @@ void mail_server(void* arg)
 				lprintf("!ERROR allocating %u bytes of memory for pop3_t"
 					,sizeof(pop3_t));
 				sockprintf(client_socket,"-ERR System error, please try again later.");
-				Sleep(3000);
+				mswait(3000);
 				close_socket(client_socket);
 				continue;
 			}
@@ -2640,7 +2640,7 @@ void mail_server(void* arg)
 				lprintf("!TIMEOUT waiting for %u active clients ",active_clients);
 				break;
 			}
-			Sleep(100);
+			mswait(100);
 		}
 	}
 
@@ -2653,7 +2653,7 @@ void mail_server(void* arg)
             		"terminate");
 				break;
 			}
-			Sleep(100);
+			mswait(100);
 		}
 	}
 

@@ -286,7 +286,7 @@ static int sockprintf(SOCKET sock, char *fmt, ...)
 	while((result=send(sock,sbuf,len,0))!=len) {
 		if(result==SOCKET_ERROR) {
 			if(ERROR_VALUE==EWOULDBLOCK) {
-				Sleep(1);
+				mswait(1);
 				continue;
 			}
 			if(ERROR_VALUE==ECONNRESET) 
@@ -325,7 +325,7 @@ int nopen(char *str, int access)
     while(((file=_sopen(str,O_BINARY|access,share,S_IWRITE|S_IREAD))==-1)
         && errno==EACCES && count++<LOOP_NOPEN)
         if(count>10)
-            Sleep(55);
+            mswait(55);
     return(file);
 }
 
@@ -446,7 +446,7 @@ int sockreadline(SOCKET socket, char* buf, int len, time_t* lastactive)
 						,startup->max_inactivity);
 					return(0);
 				}
-				Sleep(1);
+				mswait(1);
 				continue;
 			}
 			recverror(socket,i);
@@ -583,7 +583,7 @@ static void send_thread(void* arg)
 		}
 		total+=wr;
 		*xfer.lastactive=time(NULL);
-		Sleep(1);
+		mswait(1);
 	}
 
 	close_socket(xfer.data_sock,__LINE__);	/* Signal end of file */
@@ -725,7 +725,7 @@ static void receive_thread(void* arg)
 		fwrite(buf,1,rd,fp);
 		total+=rd;
 		*xfer.lastactive=time(NULL);
-		Sleep(1);
+		mswait(1);
 	}
 
 	close_socket(xfer.data_sock,__LINE__);
@@ -1691,7 +1691,7 @@ static void ctrl_thread(void* arg)
 				sockprintf(sock,"226 No tranfer in progress.");
 			else {
 				transfer_aborted=TRUE;
-				Sleep(1); /* give send thread time to abort */
+				mswait(1); /* give send thread time to abort */
 				sockprintf(sock,"226 Transfer aborted.");
 			}
 			continue;
@@ -2347,7 +2347,7 @@ static void ctrl_thread(void* arg)
 				while(fexist(str)) {
 					if(time(NULL)-t>300)
 						break;
-					Sleep(500);
+					mswait(500);
 				}
 				if(fexist(str)) {
 					lprintf("%04d !TIMEOUT waiting for QWK packet creation",sock);
@@ -2844,7 +2844,7 @@ static void ctrl_thread(void* arg)
 	if(transfer_inprogress==TRUE) {
 		lprintf("%04d Waiting for transfer to complete...",sock);
 		while(data_sock!=INVALID_SOCKET && transfer_inprogress==TRUE) {
-			Sleep(500);
+			mswait(500);
 			if(gettimeleft(&scfg,&user,logintime)<1) {
 				lprintf("%04d Out of time, disconnecting",sock);
 				sockprintf(sock,"421 Sorry, you've run out of time.");
@@ -3136,7 +3136,7 @@ void ftp_server(void* arg)
 		if(active_clients>=startup->max_clients) {
 			lprintf("!MAXMIMUM CLIENTS (%d) reached, access denied",startup->max_clients);
 			sockprintf(client_socket,"421 Maximum active clients reached, please try again later.");
-			Sleep(3000);
+			mswait(3000);
 			close_socket(&client_socket,__LINE__);
 			continue;
 		}
@@ -3144,7 +3144,7 @@ void ftp_server(void* arg)
 		if((ftp=malloc(sizeof(ftp_t)))==NULL) {
 			lprintf("!ERROR allocating %d bytes of memory for ftp_t",sizeof(ftp_t));
 			sockprintf(client_socket,"421 System error, please try again later.");
-			Sleep(3000);
+			mswait(3000);
 			close_socket(&client_socket,__LINE__);
 			continue;
 		}
@@ -3163,7 +3163,7 @@ void ftp_server(void* arg)
 				lprintf("!TIMEOUT waiting for %d active clients ",active_clients);
 				break;
 			}
-			Sleep(100);
+			mswait(100);
 		}
 	}
 
