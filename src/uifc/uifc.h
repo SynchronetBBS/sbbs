@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -131,7 +131,7 @@
 	#define MSK_DEL 	0x20000000
 	#define MSK_GET 	0x30000000
 	#define MSK_PUT 	0x40000000
-	/* Dont forget, negative return values are used for extended keys! */
+	/* Dont forget, negative return values are used for extended keys (if WIN_EXTKEYS used)! */
 #else
 	#define MAX_OPTS	500 	/* Maximum number of options per menu call */
 	#define MSK_ON		0xf000
