@@ -97,8 +97,7 @@ extern "C" {
 #elif defined(__unix__)
 	#define PLATFORM_DESC	"Unix"
 #else
-	#warning "Need to describe target platform"
-	#define PLATFORM_DESC	"UNKNOWN"
+	#error "Need to describe target platform"
 #endif
 
 /*********************/
@@ -118,7 +117,7 @@ extern "C" {
 	DLLEXPORT char*	DLLCALL strupr(char* str);
 	DLLEXPORT char*	DLLCALL strlwr(char* str);
 	DLLEXPORT char* DLLCALL	strrev(char* str);
-	#if !defined(stricmp)
+	#if !defined(__BORLANDC__) && !defined(stricmp)
 		#define stricmp(x,y)		strcasecmp(x,y)
 		#define strnicmp(x,y,z)		strncasecmp(x,y,z)
 	#endif
@@ -146,7 +145,7 @@ extern "C" {
 
 #else	/* Unsupported OS */
 
-	#warning "Unsupported Target: Need some macros and/or function prototypes here."
+	#error "Unsupported Target: Need some macros and/or function prototypes here."
 
 #endif
 
