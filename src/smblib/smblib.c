@@ -96,12 +96,15 @@ int SMBCALL smb_open(smb_t* smb)
 	smb->shd_fp=smb->sdt_fp=smb->sid_fp=NULL;
 	smb->last_error[0]=0;
 	sprintf(str,"%s.shd",smb->file);
-	if((file=sopen(str,O_RDWR|O_CREAT|O_BINARY,SH_DENYNO))==-1
-		|| (smb->shd_fp=fdopen(file,"r+b"))==NULL) {
+	if((file=sopen(str,O_RDWR|O_CREAT|O_BINARY,SH_DENYNO))==-1) {
 		sprintf(smb->last_error,"%d opening %s",errno,str);
-		if(file!=-1)
-			close(file);
 		return(2); 
+	}
+
+	if((smb->shd_fp=fdopen(file,"r+b"))==NULL) {
+		sprintf(smb->last_error,"%d fdopening %s (%d)",errno,str,file);
+		close(file);
+		return(4); 
 	}
 
 	if(filelength(file)>=sizeof(smbhdr_t)) {
@@ -140,25 +143,35 @@ int SMBCALL smb_open(smb_t* smb)
 	setvbuf(smb->shd_fp,smb->shd_buf,_IOFBF,SHD_BLOCK_LEN);
 
 	sprintf(str,"%s.sdt",smb->file);
-	if((file=sopen(str,O_RDWR|O_CREAT|O_BINARY,SH_DENYNO))==-1
-		|| (smb->sdt_fp=fdopen(file,"r+b"))==NULL) {
+	if((file=sopen(str,O_RDWR|O_CREAT|O_BINARY,SH_DENYNO))==-1) {
 		sprintf(smb->last_error,"%d opening %s",errno,str);
-		if(file!=-1)
-			close(file);
 		smb_close(smb);
 		return(1); 
 	}
+
+	if((smb->sdt_fp=fdopen(file,"r+b"))==NULL) {
+		sprintf(smb->last_error,"%d fdopening %s (%d)",errno,str,file);
+		close(file);
+		smb_close(smb);
+		return(5);
+	}
+
 	setvbuf(smb->sdt_fp,NULL,_IOFBF,2*1024);
 
 	sprintf(str,"%s.sid",smb->file);
-	if((file=sopen(str,O_RDWR|O_CREAT|O_BINARY,SH_DENYNO))==-1
-		|| (smb->sid_fp=fdopen(file,"r+b"))==NULL) {
+	if((file=sopen(str,O_RDWR|O_CREAT|O_BINARY,SH_DENYNO))==-1) {
 		sprintf(smb->last_error,"%d opening %s",errno,str);
-		if(file!=-1)
-			close(file);
 		smb_close(smb);
 		return(3); 
 	}
+
+	if((smb->sid_fp=fdopen(file,"r+b"))==NULL) {
+		sprintf(smb->last_error,"%d fdopening %s (%d)",errno,str,file);
+		close(file);
+		smb_close(smb);
+		return(6); 
+	}
+
 	setvbuf(smb->sid_fp,NULL,_IOFBF,2*1024);
 
 	return(0);
@@ -208,7 +221,7 @@ int SMBCALL smb_open_da(smb_t* smb)
 			}
 	}
 	if((smb->sda_fp=fdopen(file,"r+b"))==NULL) {
-		sprintf(smb->last_error,"%d fdopening %s",errno,str);
+		sprintf(smb->last_error,"%d fdopening %s (%d)",errno,str,file);
 		close(file);
 		return(-3); 
 	}
@@ -251,7 +264,7 @@ int SMBCALL smb_open_ha(smb_t* smb)
 			}
 	}
 	if((smb->sha_fp=fdopen(file,"r+b"))==NULL) {
-		sprintf(smb->last_error,"%d opening %s",errno,str);
+		sprintf(smb->last_error,"%d fdopening %s (%d)",errno,str,file);
 		close(file);
 		return(-3); 
 	}
