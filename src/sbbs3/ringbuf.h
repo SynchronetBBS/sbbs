@@ -42,9 +42,10 @@
 #ifndef _RINGBUF_H_
 #define _RINGBUF_H_
 
-#ifdef RINGBUF_MUTEX
+/* #ifdef RINGBUF_MUTEX */
+/* Needed for YIELD() definition also are ringbuffers ever used in non-threaded bits? */
 #include "threadwrap.h"
-#endif
+/* #endif */
 
 #ifndef DWORD
 #define DWORD unsigned long
