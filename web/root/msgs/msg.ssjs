@@ -37,7 +37,6 @@ if(msg.type=="plain") {
 		template.body=word_wrap(template.body,79);
 		template.body=html_encode(template.body,true,false,false,false);
 	}
-	template.body="<PRE>"+template.body+"</PRE>";
 }
 if(msg.attachments!=undefined) {
 	template.attachments=new Object;
