@@ -6,8 +6,69 @@ template.sysinfo="";
 f=new File(system.text_dir+"system.msg");
 if(f.open("rb",true)) {
 	template.sysinfo=f.read();
+	template.sysinfo=template.sysinfo.replace(/@([^@]*)@/g,
+		function(matched, code) {
+			var fmt="%s";
+			ma=new Array();
+			if((ma=code.match(/^(.*)-L.*$/))!=undefined) {
+				fmt="%-"+(code.length)+"s";
+				code=ma[1];
+			}
+			if((ma=code.match(/^(.*)-R.*$/))!=undefined) {
+				fmt="%"+(code.length)+"s";
+				code=ma[1];
+			}
+			switch(code.toUpperCase()) {
+				case 'BBS':
+					return(format(fmt,system.name.toString()));
+				case 'LOCATION':
+					return(format(fmt,system.location.toString()));
+				case 'SYSOP':
+					return(format(fmt,system.operator.toString()));
+				case 'HOSTNAME':
+					return(format(fmt,system.host_name.toString()));
+				case 'OS_VER':
+					return(format(fmt,system.os_version.toString()));
+				case 'UPTIME':
+					return(format(fmt,system.uptime.toString()));
+				case 'TUSER':
+					return(format(fmt,system.stats.total_users.toString()));
+				case 'STATS.NUSERS':
+					return(format(fmt,system.stats.new_users_today.toString()));
+				case 'STATS.LOGONS':
+					return(format(fmt,system.stats.total_logons.toString()));
+				case 'STATS.LTODAY':
+					return(format(fmt,system.stats.logons_today.toString()));
+				case 'STATS.TIMEON':
+					return(format(fmt,system.stats.total_timeon.toString()));
+				case 'STATS.TTODAY':
+					return(format(fmt,system.stats.timeon_today.toString()));
+				case 'TMSG':
+					return(format(fmt,system.stats.total_messages.toString()));
+				case 'STATS.PTODAY':
+					return(format(fmt,system.stats.messages_posted_today.toString()));
+				case 'MAILW:0':
+					return(format(fmt,system.stats.total_email.toString()));
+				case 'STATS.ETODAY':
+					return(format(fmt,system.stats.email_sent_today.toString()));
+				case 'MAILW:1':
+					return(format(fmt,system.stats.total_feedback.toString()));
+				case 'STATS.FTODAY':
+					return(format(fmt,system.stats.feedback_sent_today.toString()));
+				case 'TFILE':
+					return(format(fmt,system.stats.total_files.toString()));
+				case 'STATS.ULS':
+					return(format(fmt,system.stats.files_uploaded_today.toString()));
+				case 'STATS.DLS':
+					return(format(fmt,system.stats.files_downloaded_today.toString()));
+				case 'STATS.DLB':
+					return(format(fmt,system.stats.bytes_downloaded_today.toString()));
+				default:
+					return('@'+code+'@');
+			}
+		});
 	template.sysinfo=lfexpand(template.sysinfo);
-	template.sysinfo=html_encode(template.sysinfo,true,true,true,true);
+	template.sysinfo=html_encode(template.sysinfo,true,false,true,true);
 }
 
 template.logon="";
