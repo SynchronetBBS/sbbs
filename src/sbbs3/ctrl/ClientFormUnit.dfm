@@ -52,8 +52,10 @@ object ClientForm: TClientForm
         AutoSize = True
         Caption = 'Time'
       end>
+    ColumnClick = False
     MultiSelect = True
     ReadOnly = True
+    RowSelect = True
     PopupMenu = PopupMenu
     TabOrder = 0
     ViewStyle = vsReport
