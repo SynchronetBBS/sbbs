@@ -1,5 +1,28 @@
 load("html_inc/msgslib.ssjs");
 
+var ShowAll=(http_request.query.show_all_subs != undefined
+		&& http_request.query.show_all_subs == 'Yes');
+
+var new_query='';
+for(key in http_request.query) {
+	if(key != 'show_all_subs') {
+		if(new_query.length>0)
+			new_query+='&';
+		new_query+=encodeURIComponent(key);
+		new_query+='=';
+		new_query+=encodeURIComponent(http_request.query[key]);
+	}
+}
+if(new_query.length>0)
+	new_query+='&';
+new_query+='show_all_subs=';
+template.showall_toggle='<a href="'+http_request.virtual_path+'?'+new_query
+if(ShowAll)
+	template.showall_toggle+='No">'+showall_subs_disable_html;
+else
+	template.showall_toggle+='Yes">'+showall_subs_enable_html;
+template.showall_toggle+='</a>';
+
 template.title="Message Subs in Group: "+msg_area.grp[grp].description;
 
 write_template("header.inc");
@@ -8,9 +31,7 @@ template.group=msg_area.grp[grp];
 template.subs=new Array;
 
 for(s in msg_area.grp[grp].sub_list) {
-	if(!(msg_area.grp[grp].sub_list[s].scan_cfg&(SCAN_CFG_YONLY|SCAN_CFG_NEW))
-			&& (http_request.query.show_all_subs == undefined 
-				|| http_request.query.show_all_subs != 'Yes'))
+	if(!ShowAll && !(msg_area.grp[grp].sub_list[s].scan_cfg&(SCAN_CFG_YONLY|SCAN_CFG_NEW)))
 		continue;
 	var thissub=msg_area.grp[grp].sub_list[s];
 	msgbase = new MsgBase(msg_area.grp[grp].sub_list[s].code);
