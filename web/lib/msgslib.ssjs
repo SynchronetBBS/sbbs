@@ -1,3 +1,9 @@
+// Use guest user if the current user is super-duper
+if(user.number==0)
+	login("Guest");
+if(user.number==0)
+	exit();
+
 load("sbbsdefs.js");
 load("../web/lib/template.ssjs");
 load("../web/lib/msgsconfig.ssjs");
