@@ -750,18 +750,21 @@ function read_config_file() {
 	YLines = new Array();
 	ZLines = new Array();
 	var fname="";
-	if (config_filename && config_filename.length)
-		fname=system.ctrl_dir + config_filename;
-	else {
+	if (config_filename && config_filename.length) {
+		if(config_filename.indexOf('/')>=0 || config_filename.indexOf('\\')>=0)
+			fname=config_filename;
+		else
+			fname=system.ctrl_dir + config_filename;
+	} else {
 		fname=system.ctrl_dir + "ircd." + system.local_host_name + ".conf";
 		if(!file_exists(fname))
 			fname=system.ctrl_dir + "ircd." + system.host_name + ".conf";
 		if(!file_exists(fname))
 			fname=system.ctrl_dir + "ircd.conf";
 	}
+	log("Reading Config: " + fname);
 	var conf = new File(fname);
 	if (conf.open("r")) {
-		log("Reading Config: " + fname);
 		while (!conf.eof) {
 			var conf_line = conf.readln();
 			if ((conf_line != null) && conf_line.match("[:]")) {
@@ -978,8 +981,6 @@ js.branch_limit=0; // we're not an infinite loop.
 ///// Main Loop /////
 while (!server.terminated) {
 
-//	mswait(1); // don't peg the CPU
-
 	if(server.terminated)
 		break;
 	if(js.terminated)
@@ -1022,14 +1023,15 @@ while (!server.terminated) {
 			}
 		}
     }
-	if(this.socket_select!=undefined)
+	if(poll_clients.length && this.socket_select!=undefined)
 	{
 		readme=socket_select(poll_clients, 1 /* seconds */);
 		for(thisPolled in readme)
 		{
 			Clients[poll_client_map[readme[thisPolled]]].work();
 		}
-	}
+	} else
+		mswait(1);	// yield, don't peg the CPU
 
 	// Scan C:Lines for servers to connect to automatically.
 	var my_cline;
