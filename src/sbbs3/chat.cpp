@@ -1362,7 +1362,8 @@ void sbbs_t::guruchat(char *line, char *gurubuf, int gurunum)
 			continue;
 		cstr[k++]=line[i]; }
 	cstr[k]=0;
-	while(--k) {
+	while(k) {
+		k--;
 		if(!isalnum(cstr[k]))
 			continue;
 		break; }
