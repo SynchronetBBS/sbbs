@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -133,28 +133,34 @@ bool sbbs_t::unpack_rep(char* repfile)
 			sprintf(str,"%s.msg blocks (read '%s' at offset %ld)", cfg.sys_id, tmp, l);
 			errormsg(WHERE,ERR_CHK,str,i);
 			i=1;
-			continue; }
+			continue; 
+		}
 		if(atoi(block+1)==0) {					/**********/
 			if(useron.rest&FLAG('E')) {         /* E-mail */
 				bputs(text[R_Email]);			/**********/
-				continue; }
+				continue; 
+			}
 
 			sprintf(str,"%25.25s",block+21);
 			truncsp(str);
 			if(!stricmp(str,"NETMAIL")) {  /* QWK to FidoNet NetMail */
 				qwktonetmail(rep,block,NULL,0);
-				continue; }
+				continue; 
+			}
 			if(strchr(str,'@')) {
 				qwktonetmail(rep,block,str,0);
-				continue; }
+				continue; 
+			}
 			if(!stricmp(str,"SBBS")) {    /* to SBBS, config stuff */
 				qwkcfgline(block+71,INVALID_SUB);
-				continue; }
+				continue; 
+			}
 
 			if(useron.etoday>=cfg.level_emailperday[useron.level]
 				&& !(useron.rest&FLAG('Q'))) {
 				bputs(text[TooManyEmailsToday]);
-				continue; }
+				continue; 
+			}
 			j=atoi(str);
 			if(j && j>lastuser(&cfg))
 				j=0;
@@ -162,29 +168,34 @@ bool sbbs_t::unpack_rep(char* repfile)
 				j=matchuser(&cfg,str,TRUE /* sysop_alias */);
 			if(!j) {
 				bputs(text[UnknownUser]);
-				continue; }
+				continue; 
+			}
 			if(j==1 && useron.rest&FLAG('S')) {
 				bprintf(text[R_Feedback],cfg.sys_op);
-				continue; }
+				continue; 
+			}
 
 			getuserrec(&cfg,j,U_MISC,8,str);
 			misc=ahtoul(str);
 			if(misc&NETMAIL && cfg.sys_misc&SM_FWDTONET) {
 				getuserrec(&cfg,j,U_NETMAIL,LEN_NETMAIL,str);
 				qwktonetmail(rep,block,str,0);
-				continue; }
+				continue; 
+			}
 
 			sprintf(smb.file,"%smail",cfg.data_dir);
 			smb.retry_time=cfg.smb_retry_time;
 
 			if(lastsub!=INVALID_SUB) {
 				smb_close(&smb);
-				lastsub=INVALID_SUB; }
+				lastsub=INVALID_SUB; 
+			}
 
 			smb.subnum=INVALID_SUB;
 			if((k=smb_open(&smb))!=0) {
 				errormsg(WHERE,ERR_OPEN,smb.file,k,smb.last_error);
-				continue; }
+				continue; 
+			}
 
 			if(!filelength(fileno(smb.shd_fp))) {
 				smb.status.max_crcs=cfg.mail_maxcrcs;
@@ -194,35 +205,42 @@ bool sbbs_t::unpack_rep(char* repfile)
 				if((k=smb_create(&smb))!=0) {
 					smb_close(&smb);
 					errormsg(WHERE,ERR_CREATE,smb.file,k);
-					continue; } }
+					continue; 
+				} 
+			}
 
 			if((k=smb_locksmbhdr(&smb))!=0) {
 				smb_close(&smb);
 				errormsg(WHERE,ERR_LOCK,smb.file,k);
-				continue; }
+				continue; 
+			}
 
 			if((k=smb_getstatus(&smb))!=0) {
 				smb_close(&smb);
 				errormsg(WHERE,ERR_READ,smb.file,k);
-				continue; }
+				continue; 
+			}
 
 			smb_unlocksmbhdr(&smb);
 
 			if(!qwktomsg(rep,block,0,INVALID_SUB,j)) {
 				smb_close(&smb);
-				continue; }
+				continue; 
+			}
 			smb_close(&smb);
 
 			if(j==1) {
 				useron.fbacks++;
 				logon_fbacks++;
 				putuserrec(&cfg,useron.number,U_FBACKS,5
-					,ultoa(useron.fbacks,tmp,10)); }
+					,ultoa(useron.fbacks,tmp,10)); 
+			}
 			else {
 				useron.emails++;
 				logon_emails++;
 				putuserrec(&cfg,useron.number,U_EMAILS,5
-					,ultoa(useron.emails,tmp,10)); }
+					,ultoa(useron.emails,tmp,10)); 
+			}
 			useron.etoday++;
 			putuserrec(&cfg,useron.number,U_ETODAY,5
 				,ultoa(useron.etoday,tmp,10));
@@ -232,7 +250,8 @@ bool sbbs_t::unpack_rep(char* repfile)
 			logline("E+",str);
 			if(useron.rest&FLAG('Q')) {
 				sprintf(tmp,"%-25.25s",block+46);
-				truncsp(tmp); }
+				truncsp(tmp); 
+			}
 			else
 				strcpy(tmp,useron.alias);
 			for(k=1;k<=cfg.sys_nodes;k++) { /* Tell user, if online */
@@ -243,10 +262,14 @@ bool sbbs_t::unpack_rep(char* repfile)
 					sprintf(str,text[EmailNodeMsg]
 						,cfg.node_num,tmp);
 					putnmsg(&cfg,k,str);
-					break; } }
+					break; 
+				} 
+			}
 			if(k>cfg.sys_nodes) {
 				sprintf(str,text[UserSentYouMail],tmp);
-				putsmsg(&cfg,j,str); } }    /* end of email */
+				putsmsg(&cfg,j,str); 
+			} 
+		}    /* end of email */
 
 				/**************************/
 		else {	/* message on a sub-board */
@@ -257,22 +280,27 @@ bool sbbs_t::unpack_rep(char* repfile)
 					if(cfg.sub[usrsub[j][k]]->qwkconf==n)
 						break;
 				if(k<usrsubs[j])
-					break; }
+					break; 
+			}
 
 			if(j>=usrgrps) {
 				if(n<1000) {			 /* version 1 method, start at 101 */
 					j=n/100;
-					k=n-(j*100); }
+					k=n-(j*100); 
+				}
 				else {					 /* version 2 method, start at 1001 */
 					j=n/1000;
-					k=n-(j*1000); }
+					k=n-(j*1000); 
+				}
 				j--;	/* j is group */
 				k--;	/* k is sub */
 				if(j>=usrgrps || k>=usrsubs[j] || cfg.sub[usrsub[j][k]]->qwkconf) {
 					bprintf(text[QWKInvalidConferenceN],n);
 					sprintf(str,"%s: Invalid conference number %lu",useron.alias,n);
 					logline("P!",str);
-					continue; } }
+					continue; 
+				} 
+			}
 
 			n=usrsub[j][k];
 
@@ -283,7 +311,8 @@ bool sbbs_t::unpack_rep(char* repfile)
 			sprintf(str,"%-25.25s","SBBS");
 			if(!strnicmp((char *)block+21,str,25)) {	/* to SBBS, config stuff */
 				qwkcfgline((char *)block+71,n);
-				continue; }
+				continue; 
+			}
 
 			if(!SYSOP && cfg.sub[n]->misc&SUB_QNET) {	/* QWK Netted */
 				sprintf(str,"%-25.25s","DROP");         /* Drop from new-scan? */
@@ -291,39 +320,46 @@ bool sbbs_t::unpack_rep(char* repfile)
 					continue;
 				sprintf(str,"%-25.25s","ADD");          /* Add to new-scan? */
 				if(!strnicmp((char *)block+71,str,25))	/* don't allow post */
-					continue; }
+					continue; 
+			}
 
 			if(useron.rest&FLAG('Q') && !(cfg.sub[n]->misc&SUB_QNET)) {
 				bputs(text[CantPostOnSub]);
 				logline("P!","Attempted to post on non-QWKnet sub");
-				continue; }
+				continue; 
+			}
 
 			if(useron.rest&FLAG('P')) {
 				bputs(text[R_Post]);
 				logline("P!","Post attempted");
-				continue; }
+				continue; 
+			}
 
 			if(useron.ptoday>=cfg.level_postsperday[useron.level]
 				&& !(useron.rest&FLAG('Q'))) {
 				bputs(text[TooManyPostsToday]);
-				continue; }
+				continue; 
+			}
 
 			if(useron.rest&FLAG('N')
 				&& cfg.sub[n]->misc&(SUB_FIDO|SUB_PNET|SUB_QNET|SUB_INET)) {
 				bputs(text[CantPostOnSub]);
 				logline("P!","Networked post attempted");
-				continue; }
+				continue; 
+			}
 
 			if(!chk_ar(cfg.sub[n]->post_ar,&useron)) {
 				bputs(text[CantPostOnSub]);
 				logline("P!","Post attempted");
-				continue; }
+				continue; 
+			}
 
 			if((block[0]=='*' || block[0]=='+')
 				&& !(cfg.sub[n]->misc&SUB_PRIV)) {
 				bputs(text[PrivatePostsNotAllowed]);
 				logline("P!","Private post attempt");
-				continue; }
+				continue; 
+			}
 
 			if(block[0]=='*' || block[0]=='+'           /* Private post */
 				|| cfg.sub[n]->misc&SUB_PONLY) {
@@ -332,14 +368,17 @@ bool sbbs_t::unpack_rep(char* repfile)
 				if(!strnicmp((char *)block+21,str,25)
 					|| !strnicmp((char *)block+21,tmp,25)) {	/* to blank */
 					bputs(text[NoToUser]);						/* or all */
-					continue; } }
+					continue; 
+				} 
+			}
 
 			if(!SYSOP && !(useron.rest&FLAG('Q'))) {
 				sprintf(str,"%-25.25s","SYSOP");
 				if(!strnicmp((char *)block+21,str,25)) {
 					sprintf(str,"%-25.25s",username(&cfg,1,tmp));
-					memcpy((char *)block+21,str,25); } }	/* change from sysop */
-															/* to user name */
+					memcpy((char *)block+21,str,25);		/* change from sysop */
+				}											/* to user name */
+			}
 
 			/* TWIT FILTER */
 			if(twit_list) {
@@ -368,7 +407,8 @@ bool sbbs_t::unpack_rep(char* repfile)
 				smb.subnum=n;
 				if((j=smb_open(&smb))!=0) {
 					errormsg(WHERE,ERR_OPEN,smb.file,j,smb.last_error);
-					continue; }
+					continue; 
+				}
 
 				if(!filelength(fileno(smb.shd_fp))) {
 					smb.status.max_crcs=cfg.sub[n]->maxcrcs;
@@ -379,20 +419,25 @@ bool sbbs_t::unpack_rep(char* repfile)
 						smb_close(&smb);
 						lastsub=INVALID_SUB;
 						errormsg(WHERE,ERR_CREATE,smb.file,j);
-						continue; } }
+						continue; 
+					} 
+				}
 
 				if((j=smb_locksmbhdr(&smb))!=0) {
 					smb_close(&smb);
 					lastsub=INVALID_SUB;
 					errormsg(WHERE,ERR_LOCK,smb.file,j);
-					continue; }
+					continue; 
+				}
 				if((j=smb_getstatus(&smb))!=0) {
 					smb_close(&smb);
 					lastsub=INVALID_SUB;
 					errormsg(WHERE,ERR_READ,smb.file,j);
-					continue; }
+					continue; 
+				}
 				smb_unlocksmbhdr(&smb);
-				lastsub=n; }
+				lastsub=n; 
+			}
 
 			if(!qwktomsg(rep,block,0,n,0))
 				continue;

@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -181,21 +181,26 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 				strcpy(tail,"--- ");
 				taillen=4;
 				col++;
-				continue; }
+				continue; 
+			}
 			if(qwkbuf[k]==QWK_NEWLINE) {		/* expand QWK_NEWLINE to crlf */
 				if(!taillen && col==3 && bodylen>=3 && body[bodylen-3]=='-'
 					&& body[bodylen-2]=='-' && body[bodylen-1]=='-') {
 					bodylen-=3;
 					strcpy(tail,"---");
-					taillen=3; }
+					taillen=3; 
+				}
 				col=0;
 				if(taillen) {
 					tail[taillen++]=CR;
-					tail[taillen++]=LF; }
+					tail[taillen++]=LF; 
+				}
 				else {
 					body[bodylen++]=CR;
-					body[bodylen++]=LF; }
-				continue; }
+					body[bodylen++]=LF; 
+				}
+				continue; 
+			}
 			/* beep restrict */
 			if(!fromhub && qwkbuf[k]==BEL && useron.rest&FLAG('B'))   
 				continue;
@@ -209,7 +214,8 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 				if(taillen) taillen--;
 				else		bodylen--;
 				lastch=0;
-				continue; }
+				continue; 
+			}
 			lastch=qwkbuf[k];
 			if(taillen)
 				tail[taillen++]=qwkbuf[k];
@@ -246,16 +252,19 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 				sprintf(str,"Circular message path: %s from %s"
 					,p,fromhub ? cfg.qhub[fromhub-1]->id:useron.alias);
 				errorlog(str);
-				return(false); }
+				return(false); 
+			}
 			sprintf(str,"%s/%s"
 				,fromhub ? cfg.qhub[fromhub-1]->id : useron.alias,p);
 			strupr(str);
-			update_qwkroute(str); }
+			update_qwkroute(str); 
+		}
 		else {
 			if(fromhub)
 				strcpy(str,cfg.qhub[fromhub-1]->id);
 			else
-				strcpy(str,useron.alias); }
+				strcpy(str,useron.alias); 
+		}
 		strupr(str);
 		j=NET_QWK;
 		smb_hfield(&msg,SENDERNETTYPE,2,&j);
@@ -371,7 +380,9 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 			smb_freemsgmem(&msg);
 			LFREE(body);
 			LFREE(tail);
-			return(false); } }
+			return(false); 
+		} 
+	}
 
 	if(online==ON_REMOTE)
 		bputs(text[WritingIndx]);
@@ -391,10 +402,13 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 			length+=4L;
 			lzh=1;
 			LFREE(body);
-			body=lzhbuf; }
+			body=lzhbuf; 
+		}
 		else {					/* Non-compressable */
 			length=bodylen+2L;
-			LFREE(lzhbuf); } }
+			LFREE(lzhbuf); 
+		} 
+	}
 	else
 		length=bodylen+2L;					 /* +2 for translation string */
 
@@ -406,42 +420,51 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 		smb_freemsgmem(&msg);
 		LFREE(body);
 		LFREE(tail);
-		return(false); }
+		return(false); 
+	}
 
 	if((i=smb_locksmbhdr(&smb))!=0) {
 		errormsg(WHERE,ERR_LOCK,smb.file,i);
 		FREE(body);
 		FREE(tail);
-		return(false); }
+		return(false); 
+	}
 
 	if(smb.status.attr&SMB_HYPERALLOC) {
 		msg.hdr.offset=smb_hallocdat(&smb);
-		storage=SMB_HYPERALLOC; }
+		storage=SMB_HYPERALLOC; 
+	}
 	else {
 		if((i=smb_open_da(&smb))!=0) {
 			errormsg(WHERE,ERR_OPEN,smb.file,i);
 			FREE(body);
 			FREE(tail);
-			return(false); }
+			return(false); 
+		}
 		if((subnum==INVALID_SUB && cfg.sys_misc&SM_FASTMAIL)
 			|| (subnum!=INVALID_SUB && cfg.sub[subnum]->misc&SUB_FAST)) {
 			msg.hdr.offset=smb_fallocdat(&smb,length,1);
-			storage=SMB_FASTALLOC; }
+			storage=SMB_FASTALLOC; 
+		}
 		else {
 			msg.hdr.offset=smb_allocdat(&smb,length,1);
-			storage=SMB_SELFPACK; }
-		smb_close_da(&smb); }
+			storage=SMB_SELFPACK; 
+		}
+		smb_close_da(&smb); 
+	}
 
 	if(msg.hdr.offset && msg.hdr.offset<1L) {
 		smb_unlocksmbhdr(&smb);
 		errormsg(WHERE,ERR_READ,smb.file,msg.hdr.offset);
 		smb_freemsgmem(&msg);
 		FREE(body);
-		FREE(tail); }
+		FREE(tail); 
+	}
 	fseek(smb.sdt_fp,msg.hdr.offset,SEEK_SET);
 	if(lzh) {
 		xlat=XLAT_LZH;
-		fwrite(&xlat,2,1,smb.sdt_fp); }
+		fwrite(&xlat,2,1,smb.sdt_fp); 
+	}
 	xlat=XLAT_NONE;
 	fwrite(&xlat,2,1,smb.sdt_fp);
 	fwrite(body,bodylen,1,smb.sdt_fp);
@@ -449,7 +472,8 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 	if(taillen) {
 		fwrite(&xlat,2,1,smb.sdt_fp);
 		fwrite(tail,taillen,1,smb.sdt_fp);
-		smb_dfield(&msg,TEXT_TAIL,taillen+2); }
+		smb_dfield(&msg,TEXT_TAIL,taillen+2); 
+	}
 	fflush(smb.sdt_fp);
 
 	if((i=smb_addmsghdr(&smb,&msg,storage))!=0)	// calls smb_unlocksmbhdr() 
