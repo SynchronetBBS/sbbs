@@ -422,6 +422,7 @@ static ulong sockmsgtxt(SOCKET socket, smbmsg_t* msg, char* msgtxt, ulong maxlin
 	char*		p;
 	char*		tp;
 	char*		boundary=NULL;
+	char*		content_type=NULL;
 	int			i;
 	int			s;
 	ulong		lines;
@@ -491,11 +492,20 @@ static ulong sockmsgtxt(SOCKET socket, smbmsg_t* msg, char* msgtxt, ulong maxlin
 			return(0);
     for(i=0;i<msg->total_hfields;i++) { 
 		if(msg->hfield[i].type==RFC822HEADER) { 
+			if(strnicmp((char*)msg->hfield_dat[i],"Content-Type:",13)==0)
+				content_type=msg->hfield_dat[i];
 			if(!sockprintf(socket,"%s",(char*)msg->hfield_dat[i]))
 				return(0);
         } else if(msg->hdr.auxattr&MSG_FILEATTACH && msg->hfield[i].type==FILEATTACH) 
             strncpy(filepath,(char*)msg->hfield_dat[i],sizeof(filepath)-1);
     }
+	/* Default MIME Content-Type for non-Internet messages */
+	if(msg->from_net.type!=NET_INTERNET && content_type==NULL) {
+		/* No content-type specified, so assume IBM code-page 437 (full ex-ASCII) */
+		sockprintf(socket,"Content-Type: text/plain; charset=IBM437");
+		sockprintf(socket,"Content-Transfer-Encoding: 8bit");
+	}
+
 	if(msg->hdr.auxattr&MSG_FILEATTACH) {
 		if(filepath[0]==0) { /* filename stored in subject */
 			if(msg->idx.to!=0)
