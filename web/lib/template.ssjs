@@ -129,7 +129,7 @@ if(user.number==0)
 	template.user_greeting="Welcome, Guest.";
 else
 	if(!(user.security.restrictions&UFLAG_G))
-		template.user_greeting="Welcome, "+user.alias+ ".<br> You last visited on " +strftime("%A, %B %d, %Y",user.stats.laston_date);
+		template.user_greeting="Welcome, "+user.alias+ ".<br /> You last visited on " +strftime("%A, %B %d, %Y",user.stats.laston_date);
 	else
 		template.user_greeting="Welcome, "+user.alias+ ".";
 	
