@@ -455,7 +455,7 @@ int close_socket(SOCKET sock)
 
 	shutdown(sock,SHUT_RDWR);	/* required on Unix */
 	result=closesocket(sock);
-	if(/* result==0 && */ startup!=NULL && startup->socket_open!=NULL) 
+	if(result==0 && startup!=NULL && startup->socket_open!=NULL) 
 		startup->socket_open(FALSE);
 	if(result!=0 && ERROR_VALUE!=ENOTSOCK)
 		lprintf("!ERROR %d closing socket %d",ERROR_VALUE,sock);
