@@ -241,9 +241,15 @@ ODAPIDEF void ODCALL od_clr_scr(void)
          od_disp("!|w0000270M12", 13, FALSE);
       }
    }
-
-   /* Send ascii 12 to modem, no local echo. */
-   od_disp(szClearScreen, 1, FALSE);
+   
+   if(od_control.user_ansi)
+   {
+      od_disp("\x1b[2J\x1b[1;1H", 10, FALSE);
+   }
+   else {
+	   /* Send ascii 12 to modem, no local echo. */
+	   od_disp(szClearScreen, 1, FALSE);
+   }
 
    /* Clear local window. */
    ODScrnClear();
