@@ -111,6 +111,14 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
             :pserver:anonymous@cvs-mirror.mozilla.org:/cvsroot
             the module name is mozilla/js/src.
 
+   F. Get the required NSPR library for your platform and build type:
+      cvs co lib/mozilla/nspr/linux.debug
+      or:
+      cvs co lib/mozilla/nspr/linux.release
+      or:
+      cvs co lib/mozilla/nspr/freebsd.debug
+      etc.
+
 
 2. Build Synchronet:
 
