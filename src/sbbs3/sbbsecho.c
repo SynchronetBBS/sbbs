@@ -136,7 +136,9 @@ int lprintf(char *fmat, ...)
 	int chcount;
 
 	va_start(argptr,fmat);
-	chcount=vsprintf(sbuf,fmat,argptr);
+	chcount=vsnprintf(sbuf,sizeof(sbuf),fmat,argptr);
+	if(chcount<0)
+		sbuf[sizeof(sbuf)-1]=0;
 	va_end(argptr);
 	lputs(sbuf);
 	return(chcount);

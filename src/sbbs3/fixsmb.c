@@ -105,7 +105,7 @@ int main(int argc, char **argv)
 
 	smb.file[0]=0;
 	for(i=1;i<argc;i++)
-		if(argv[i][0]=='/')
+		if(argv[i][0]=='-')
 			switch(toupper(argv[i][1])) {
 				case 'M':
 					mode|=MAIL;

@@ -155,7 +155,8 @@ static int lprintf(char *fmt, ...)
 #endif
 
     va_start(argptr,fmt);
-    vsprintf(sbuf,fmt,argptr);
+    if(vsnprintf(sbuf,sizeof(sbuf),fmt,argptr)<0)
+		sbuf[sizeof(sbuf)-1]=0;
     va_end(argptr);
     result=startup->lputs(sbuf);
 
@@ -302,7 +303,9 @@ static int sockprintf(SOCKET sock, char *fmt, ...)
 	struct timeval tv;
 
     va_start(argptr,fmt);
-    len=vsprintf(sbuf,fmt,argptr);
+    len=vsnprintf(sbuf,sizeof(sbuf),fmt,argptr);
+	if(len<0)
+		sbuf[sizeof(sbuf)-1]=0;
 	if(startup!=NULL && startup->options&FTP_OPT_DEBUG_TX)
 		lprintf("%04d TX: %s", sock, sbuf);
 	strcat(sbuf,"\r\n");

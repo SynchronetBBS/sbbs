@@ -225,15 +225,17 @@ int lprintf(char *fmat, ...)
 	char sbuf[256];
 	int chcount;
 
-va_start(argptr,fmat);
-chcount=vsprintf(sbuf,fmat,argptr);
-va_end(argptr);
-lputs(sbuf);
-return(chcount);
+	va_start(argptr,fmat);
+	chcount=vsnprintf(sbuf,sizeof(sbuf),fmat,argptr);
+	if(chcount<0)
+		sbuf[sizeof(sbuf)-1]=0;
+	va_end(argptr);
+	lputs(sbuf);
+	return(chcount);
 }
 void bail(int code)
 {
-exit(code);
+	exit(code);
 }
 
 

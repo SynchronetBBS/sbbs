@@ -122,12 +122,13 @@ int sbbs_t::rputs(char *str)
 int sbbs_t::bprintf(char *fmt, ...)
 {
 	va_list argptr;
-	char sbuf[1024];
+	char sbuf[4096];
 
 	if(!strchr(fmt,'%'))
 		return(bputs(fmt));
 	va_start(argptr,fmt);
-	vsprintf(sbuf,fmt,argptr);
+	if(vsnprintf(sbuf,sizeof(sbuf),fmt,argptr)<0)
+		sbuf[sizeof(sbuf)-1]=0;	/* force termination */
 	va_end(argptr);
 	return(bputs(sbuf));
 }
@@ -138,10 +139,11 @@ int sbbs_t::bprintf(char *fmt, ...)
 int sbbs_t::rprintf(char *fmt, ...)
 {
 	va_list argptr;
-	char sbuf[1024];
+	char sbuf[4096];
 
 	va_start(argptr,fmt);
-	vsprintf(sbuf,fmt,argptr);
+	if(vsnprintf(sbuf,sizeof(sbuf),fmt,argptr)<0)
+		sbuf[sizeof(sbuf)-1]=0;	/* force termination */
 	va_end(argptr);
 	return(rputs(sbuf));
 }

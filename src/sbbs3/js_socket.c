@@ -60,7 +60,8 @@ static void dbprintf(BOOL error, private_t* p, char* fmt, ...)
 		return;
 
     va_start(argptr,fmt);
-    vsprintf(sbuf,fmt,argptr);
+    if(vsnprintf(sbuf,sizeof(sbuf),fmt,argptr)<0)
+		sbuf[sizeof(sbuf)-1]=0;
     va_end(argptr);
 	
 	lprintf("%04d Socket %s%s",p->sock,error ? "ERROR: ":"",sbuf);

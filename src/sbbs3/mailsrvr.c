@@ -115,7 +115,8 @@ static int lprintf(char *fmt, ...)
 #endif
 
 	va_start(argptr,fmt);
-    vsprintf(sbuf,fmt,argptr);
+    if(vsnprintf(sbuf,sizeof(sbuf),fmt,argptr)<0)
+		sbuf[sizeof(sbuf)-1]=0;
     va_end(argptr);
     return(startup->lputs(sbuf));
 }
@@ -273,7 +274,9 @@ int sockprintf(SOCKET sock, char *fmt, ...)
 	struct timeval tv;
 
     va_start(argptr,fmt);
-    len=vsprintf(sbuf,fmt,argptr);
+    len=vsnprintf(sbuf,sizeof(sbuf),fmt,argptr);
+	if(len<0)
+		sbuf[sizeof(sbuf)-1]=0;
 	if(startup->options&MAIL_OPT_DEBUG_TX)
 		lprintf("%04d TX: %s", sock, sbuf);
 	strcat(sbuf,"\r\n");

@@ -80,7 +80,8 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 						else
 							arglist[i]=*(char **)vp;
 						csi->ip+=4; }
-					vsprintf(tmp,str,(char*)arglist);
+					if(vsnprintf(tmp,sizeof(tmp),str,(char*)arglist)<0)
+						tmp[sizeof(tmp)-1]=0;
 					if(op==VAR_PRINTF)
 						putmsg(cmdstr(tmp,path,csi->str,buf),P_SAVEATR|P_NOABORT);
 					else {
@@ -503,7 +504,8 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 						else
 							arglist[i]=*(char **)vp;
 						csi->ip+=4; }
-					vsprintf(tmp,str,(char *)arglist);
+					if(vsnprintf(tmp,sizeof(tmp),str,(char *)arglist)<0)
+						tmp[sizeof(tmp)-1]=0;
 					cmdstr(tmp,path,csi->str,str);
 					if(pp)
 						*pp=copystrvar(csi,*pp,str);
@@ -1312,7 +1314,8 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 							arglist[i]=*(char **)vp;
 						csi->ip+=4; 
 					}
-					vsprintf(tmp,str,(char *)arglist);
+					if(vsnprintf(tmp,sizeof(tmp),str,(char *)arglist)<0)
+						tmp[sizeof(tmp)-1]=0;
 					if(lp1 && *lp1) {
 						cmdstr(tmp,path,csi->str,str);
 						fwrite(str,1,strlen(str),(FILE *)*lp1); 
