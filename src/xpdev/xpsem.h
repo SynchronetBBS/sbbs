@@ -54,36 +54,26 @@ typedef struct xp_sem *xp_sem_t;
 #define SEM_FAILED	((xp_sem_t *)0)
 #define SEM_VALUE_MAX	UINT_MAX
 
-#if defined(__cplusplus)
-#define __BEGIN_DECLS   extern "C" {
-#define __END_DECLS     }
-#else
-#define __BEGIN_DECLS
-#define __END_DECLS
-#endif
-#define __P(protos)     ()              /* traditional C preprocessor */
-/* full-blown ANSI C */
-/* #define __P(protos)     protos */
-
 #ifdef __solaris__
 typedef unsigned int	u_int32_t;
 #endif
 
-#ifndef KERNEL
-
-__BEGIN_DECLS
-int	 xp_sem_init __P((xp_sem_t *, int, unsigned int));
-int	 xp_sem_destroy __P((xp_sem_t *));
-xp_sem_t	*sem_open __P((const char *, int, ...));
-int	 xp_sem_close __P((xp_sem_t *));
-int	 xp_sem_unlink __P((const char *));
-int	 xp_sem_wait __P((xp_sem_t *));
-int	 xp_sem_trywait __P((xp_sem_t *));
-int	 xp_sem_post __P((xp_sem_t *));
-int	 xp_sem_getvalue __P((xp_sem_t *, int *));
-int  xp_sem_timedwait __P((xp_sem_t *sem, const struct timespec *abs_timeout));
-__END_DECLS
-#endif /* KERNEL */
+#if defined(__cplusplus)
+extern "C" {
+#endif
+int	 xp_sem_init (xp_sem_t *, int, unsigned int);
+int	 xp_sem_destroy (xp_sem_t *);
+xp_sem_t	*sem_open (const char *, int, ...);
+int	 xp_sem_close (xp_sem_t *);
+int	 xp_sem_unlink (const char *);
+int	 xp_sem_wait (xp_sem_t *);
+int	 xp_sem_trywait (xp_sem_t *);
+int	 xp_sem_post (xp_sem_t *);
+int	 xp_sem_getvalue (xp_sem_t *, int *);
+int  xp_sem_timedwait (xp_sem_t *sem, const struct timespec *abs_timeout);
+#if defined(__cplusplus)
+}
+#endif
 
 /*
 * $Id$
@@ -107,7 +97,7 @@ struct xp_sem {
 
 extern pthread_once_t _thread_init_once;
 extern int _threads_initialized;
-extern void  _thread_init __P((void));
+extern void  _thread_init (void);
 #define THREAD_INIT() \
 	(void) pthread_once(&_thread_init_once, _thread_init)
 #define THREAD_SAFE() \
