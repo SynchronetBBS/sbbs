@@ -734,6 +734,10 @@ int main(int argc, char** argv)
 		return(-1);
 
 	sprintf(ini_file,"%s%c%s.ini",ctrl_dir,BACKSLASH,host_name);
+#if defined(__unix__) && defined(PREFIX)
+	if(!fexist(ini_file))
+		sprintf(ini_file,"%s/etc/sbbs.ini",PREFIX);
+#endif
 	if(!fexist(ini_file))
 		sprintf(ini_file,"%s%csbbs.ini",ctrl_dir,BACKSLASH);
 
