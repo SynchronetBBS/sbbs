@@ -201,7 +201,7 @@ strcpy(str,out);
 }
 
 
-long lputs(char FAR16 *str)
+int lputs(char* str)
 {
     char tmp[256];
     int i,j,k;

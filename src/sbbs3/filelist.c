@@ -47,7 +47,7 @@ scfg_t scfg;
 
 char *crlf="\r\n";
 
-long lputs(char *str)
+int lputs(char* str)
 {
     char tmp[256];
     int i,j,k;

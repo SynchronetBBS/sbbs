@@ -63,7 +63,7 @@ char lib[LEN_GSNAME+1];
 #define SYNC_LIST	(1L<<13)
 #define KEEP_SPACE	(1L<<14)
 
-long lputs(char FAR16 *str)
+int lputs(char* str)
 {
     char tmp[512];
     int i,j,k;
