@@ -890,6 +890,28 @@ js_ansi_getlines(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
     return(JS_TRUE);
 }
 
+static JSBool
+js_lock_input(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	sbbs_t*		sbbs;
+	JSBool		lock=TRUE;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	if(argc)
+		JS_ValueToBoolean(cx, argv[0], &lock);
+
+	if(lock)
+		pthread_mutex_lock(&sbbs->input_thread_mutex);
+	else
+		pthread_mutex_unlock(&sbbs->input_thread_mutex);
+
+	*rval=JSVAL_VOID;
+    return(JS_TRUE);
+}
+
+
 static JSFunctionSpec js_console_functions[] = {
 	{"inkey",			js_inkey,			0},		// get key - no wait 
 	{"getkey",			js_getkey,			0},		// get key - with wait 
@@ -927,6 +949,7 @@ static JSFunctionSpec js_console_functions[] = {
 	{"ansi_left",		js_ansi_left,		0},
 	{"ansi_getlines",	js_ansi_getlines,	0},
 	{"ansi_getxy",		js_ansi_getxy,		0},
+	{"lock_input",		js_lock_input,		1},
 	{0}
 };
 
