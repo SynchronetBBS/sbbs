@@ -403,7 +403,6 @@ static int sockreadline(SOCKET socket, char* buf, int len)
 					lprintf("%04d !SOCKET INACTIVE",socket);
 					return(-1);
 				}
-				YIELD();
 				continue;
 			}
 			recverror(socket,i,__LINE__);
@@ -3687,10 +3686,8 @@ void DLLCALL mail_server(void* arg)
 			tv.tv_usec=0;
 
 			if((i=select(high_socket_set,&socket_set,NULL,NULL,&tv))<1) {
-				if(i==0) {
-					YIELD();
+				if(i==0)
 					continue;
-				}
 				if(ERROR_VALUE==EINTR)
 					lprintf("0000 Mail Server listening interrupted");
 				else if(ERROR_VALUE == ENOTSOCK)
