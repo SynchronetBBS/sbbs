@@ -94,13 +94,10 @@ static char* DLLCALL truncsp(char *str)
 /****************************************************************************/
 int SMBCALL smb_open(smb_t* smb)
 {
-    int file;
-    char str[MAX_PATH+1];
-	smbhdr_t hdr;
-
-	/* Check for message-base lock semaphore file (under maintenance?) */
-	if(smb_islocked(smb))
-		return(SMB_ERR_OPEN);
+    int			file;
+    char		path[MAX_PATH+1];
+	time_t		start=0;
+	smbhdr_t	hdr;
 
 	/* Set default values, if uninitialized */
 	if(!smb->retry_time)
@@ -111,18 +108,29 @@ int SMBCALL smb_open(smb_t* smb)
 	smb->shd_fp=smb->sdt_fp=smb->sid_fp=NULL;
 	smb->sha_fp=smb->sda_fp=smb->hash_fp=NULL;
 	smb->last_error[0]=0;
-	SAFEPRINTF(str,"%s.shd",smb->file);
-	if((file=sopen(str,O_RDWR|O_CREAT|O_BINARY,SH_DENYNO,S_IREAD|S_IWRITE))==-1) {
+
+	/* Check for message-base lock semaphore file (under maintenance?) */
+	while(smb_islocked(smb)) {
+		if(!start)
+			start=time(NULL);
+		else
+			if(time(NULL)-start>=(time_t)smb->retry_time)
+				return(SMB_ERR_TIMEOUT); 
+		SLEEP(smb->retry_delay);
+	}
+
+	SAFEPRINTF(path,"%s.shd",smb->file);
+	if((file=sopen(path,O_RDWR|O_CREAT|O_BINARY,SH_DENYNO,S_IREAD|S_IWRITE))==-1) {
 		safe_snprintf(smb->last_error,sizeof(smb->last_error)
 			,"%d (%s) opening %s"
-			,errno,STRERROR(errno),str);
+			,errno,STRERROR(errno),path);
 		return(SMB_ERR_OPEN); 
 	}
 
 	if((smb->shd_fp=fdopen(file,"r+b"))==NULL) {
 		safe_snprintf(smb->last_error,sizeof(smb->last_error)
 			,"%d (%s) fdopening %s (%d)"
-			,errno,STRERROR(errno),str,file);
+			,errno,STRERROR(errno),path,file);
 		close(file);
 		return(SMB_ERR_OPEN); 
 	}
@@ -169,11 +177,11 @@ int SMBCALL smb_open(smb_t* smb)
 
 	setvbuf(smb->shd_fp,smb->shd_buf,_IOFBF,SHD_BLOCK_LEN);
 
-	SAFEPRINTF(str,"%s.sdt",smb->file);
-	if((file=sopen(str,O_RDWR|O_CREAT|O_BINARY,SH_DENYNO,S_IREAD|S_IWRITE))==-1) {
+	SAFEPRINTF(path,"%s.sdt",smb->file);
+	if((file=sopen(path,O_RDWR|O_CREAT|O_BINARY,SH_DENYNO,S_IREAD|S_IWRITE))==-1) {
 		safe_snprintf(smb->last_error,sizeof(smb->last_error)
 			,"%d (%s) opening %s"
-			,errno,STRERROR(errno),str);
+			,errno,STRERROR(errno),path);
 		smb_close(smb);
 		return(SMB_ERR_OPEN); 
 	}
@@ -181,7 +189,7 @@ int SMBCALL smb_open(smb_t* smb)
 	if((smb->sdt_fp=fdopen(file,"r+b"))==NULL) {
 		safe_snprintf(smb->last_error,sizeof(smb->last_error)
 			,"%d (%s) fdopening %s (%d)"
-			,errno,STRERROR(errno),str,file);
+			,errno,STRERROR(errno),path,file);
 		close(file);
 		smb_close(smb);
 		return(SMB_ERR_OPEN);
@@ -189,11 +197,11 @@ int SMBCALL smb_open(smb_t* smb)
 
 	setvbuf(smb->sdt_fp,NULL,_IOFBF,2*1024);
 
-	SAFEPRINTF(str,"%s.sid",smb->file);
-	if((file=sopen(str,O_RDWR|O_CREAT|O_BINARY,SH_DENYNO,S_IREAD|S_IWRITE))==-1) {
+	SAFEPRINTF(path,"%s.sid",smb->file);
+	if((file=sopen(path,O_RDWR|O_CREAT|O_BINARY,SH_DENYNO,S_IREAD|S_IWRITE))==-1) {
 		safe_snprintf(smb->last_error,sizeof(smb->last_error)
 			,"%d (%s) opening %s"
-			,errno,STRERROR(errno),str);
+			,errno,STRERROR(errno),path);
 		smb_close(smb);
 		return(SMB_ERR_OPEN); 
 	}
@@ -201,7 +209,7 @@ int SMBCALL smb_open(smb_t* smb)
 	if((smb->sid_fp=fdopen(file,"r+b"))==NULL) {
 		safe_snprintf(smb->last_error,sizeof(smb->last_error)
 			,"%d (%s) fdopening %s (%d)"
-			,errno,STRERROR(errno),str,file);
+			,errno,STRERROR(errno),path,file);
 		close(file);
 		smb_close(smb);
 		return(SMB_ERR_OPEN); 
@@ -310,17 +318,28 @@ static char* smb_lockfname(smb_t* smb, char* fname, size_t maxlen)
 	return(fname);
 }
 
+/****************************************************************************/
+/* This function is used to lock an entire message base for exclusive		*/
+/* (typically for maintenance/repair)										*/
+/****************************************************************************/
 int SMBCALL smb_lock(smb_t* smb)
 {
-	char	str[MAX_PATH+1];
+	char	path[MAX_PATH+1];
 	int		file;
+	time_t	start=0;
 
-	smb_lockfname(smb,str,sizeof(str)-1);
-	if((file=open(str,O_CREAT|O_EXCL|O_RDWR,S_IREAD|S_IWRITE))==-1) {
-		safe_snprintf(smb->last_error,sizeof(smb->last_error)
-			,"%d (%s) creating %s"
-			,errno,STRERROR(errno),str);
-		return(SMB_ERR_LOCK);
+	smb_lockfname(smb,path,sizeof(path)-1);
+	while((file=open(path,O_CREAT|O_EXCL|O_RDWR,S_IREAD|S_IWRITE))==-1) {
+		if(!start)
+			start=time(NULL);
+		else
+			if(time(NULL)-start>=(time_t)smb->retry_time) {
+				safe_snprintf(smb->last_error,sizeof(smb->last_error)
+					,"%d (%s) creating %s"
+					,errno,STRERROR(errno),path);
+				return(SMB_ERR_LOCK);
+			}
+		SLEEP(smb->retry_delay);
 	}
 	close(file);
 	return(SMB_SUCCESS);
@@ -328,13 +347,13 @@ int SMBCALL smb_lock(smb_t* smb)
 
 int SMBCALL smb_unlock(smb_t* smb)
 {
-	char	str[MAX_PATH+1];
+	char	path[MAX_PATH+1];
 
-	smb_lockfname(smb,str,sizeof(str)-1);
-	if(remove(str)!=0) {
+	smb_lockfname(smb,path,sizeof(path)-1);
+	if(remove(path)!=0) {
 		safe_snprintf(smb->last_error,sizeof(smb->last_error)
 			,"%d (%s) removing %s"
-			,errno,STRERROR(errno),str);
+			,errno,STRERROR(errno),path);
 		return(SMB_ERR_DELETE);
 	}
 	return(SMB_SUCCESS);
@@ -342,11 +361,11 @@ int SMBCALL smb_unlock(smb_t* smb)
 
 BOOL SMBCALL smb_islocked(smb_t* smb)
 {
-	char	str[MAX_PATH+1];
+	char	path[MAX_PATH+1];
 
-	if(access(smb_lockfname(smb,str,sizeof(str)-1),0)!=0)
+	if(access(smb_lockfname(smb,path,sizeof(path)-1),0)!=0)
 		return(FALSE);
-	safe_snprintf(smb->last_error,sizeof(smb->last_error),"%s exists",str);
+	safe_snprintf(smb->last_error,sizeof(smb->last_error),"%s exists",path);
 	return(TRUE);
 }
 
@@ -1681,7 +1700,7 @@ int SMBCALL smb_create(smb_t* smb)
 		return(SMB_ERR_NOT_OPEN);
 	}
 	if(filelength(fileno(smb->shd_fp))>=sizeof(smbhdr_t)+sizeof(smbstatus_t)
-		&& smb_locksmbhdr(smb))  /* header exists, so lock it */
+		&& smb_locksmbhdr(smb)!=SMB_SUCCESS)  /* header exists, so lock it */
 		return(SMB_ERR_LOCK);
 	memset(&hdr,0,sizeof(smbhdr_t));
 	memcpy(hdr.id,SMB_HEADER_ID,LEN_HEADER_ID);     
