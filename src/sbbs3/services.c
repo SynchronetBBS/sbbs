@@ -575,6 +575,7 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 /* Server Object Properites */
 enum {
 	 SERVER_PROP_TERMINATED
+	,SERVER_PROP_CLIENTS
 };
 
 
@@ -596,6 +597,25 @@ static JSBool js_server_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 #endif
 			*vp = BOOLEAN_TO_JSVAL(client->service->terminated);
 			break;
+		case SERVER_PROP_CLIENTS:
+			*vp = INT_TO_JSVAL(active_clients);
+			break;
+	}
+
+	return(JS_TRUE);
+}
+
+static JSBool js_server_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
+{
+    jsint       tiny;
+
+    tiny = JSVAL_TO_INT(id);
+
+	switch(tiny) {
+		case SERVER_PROP_CLIENTS:
+			JS_ValueToInt32(cx,*vp,&active_clients);
+			update_clients();
+			break;
 	}
 
 	return(JS_TRUE);
@@ -607,6 +627,7 @@ static struct JSPropertySpec js_server_properties[] = {
 /*		 name				,tinyid					,flags,				getter,	setter	*/
 
 	{	"terminated"		,SERVER_PROP_TERMINATED	,SERVER_PROP_FLAGS,	NULL,NULL},
+	{	"clients"			,SERVER_PROP_CLIENTS	,JSPROP_ENUMERATE,	NULL,NULL},
 	{0}
 };
 
@@ -616,7 +637,7 @@ static JSClass js_server_class = {
         ,JS_PropertyStub	/* addProperty	*/
 		,JS_PropertyStub	/* delProperty	*/
 		,js_server_get		/* getProperty	*/
-		,JS_PropertyStub	/* setProperty	*/
+		,js_server_set		/* setProperty	*/
 		,JS_EnumerateStub	/* enumerate	*/
 		,JS_ResolveStub		/* resolve		*/
 		,JS_ConvertStub		/* convert		*/
