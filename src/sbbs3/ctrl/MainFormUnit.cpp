@@ -847,7 +847,8 @@ void __fastcall TMainForm::FormCloseQuery(TObject *Sender, bool &CanClose)
             return;
         FtpStopExecute(Sender);
     }
-    ServicesStopExecute(Sender);
+    if(ServicesStop->Enabled)
+	    ServicesStopExecute(Sender);
 
     CanClose=true;
 }
@@ -3025,32 +3026,66 @@ void __fastcall TMainForm::UserTruncateMenuItemClick(TObject *Sender)
 }
 //---------------------------------------------------------------------------
 
-
 void __fastcall TMainForm::MailRecycleExecute(TObject *Sender)
 {
-	mail_startup.recycle_now=true;
-    MailRecycle->Enabled=false;
+	HANDLE recycle_sem;
+    char name[256];
+    sprintf(name,"%sRecycle",NTSVC_NAME_MAIL);
+	if((recycle_sem=OpenSemaphore(SEMAPHORE_MODIFY_STATE,FALSE,name))!=NULL) {
+		ReleaseSemaphore(recycle_sem,1,NULL);
+        CloseHandle(recycle_sem);
+    } else {
+		mail_startup.recycle_now=true;
+	    MailRecycle->Enabled=false;
+    }
 }
 //---------------------------------------------------------------------------
 
 void __fastcall TMainForm::FtpRecycleExecute(TObject *Sender)
 {
-	ftp_startup.recycle_now=true;
-    FtpRecycle->Enabled=false;
+	HANDLE recycle_sem;
+    char name[256];
+    sprintf(name,"%sRecycle",NTSVC_NAME_FTP);
+	if((recycle_sem=OpenSemaphore(SEMAPHORE_MODIFY_STATE,FALSE,name))!=NULL) {
+		ReleaseSemaphore(recycle_sem,1,NULL);
+        CloseHandle(recycle_sem);
+    } else {
+		ftp_startup.recycle_now=true;
+	    FtpRecycle->Enabled=false;
+    }
 }
 //---------------------------------------------------------------------------
 
 void __fastcall TMainForm::ServicesRecycleExecute(TObject *Sender)
 {
-	services_startup.recycle_now=true;
-    ServicesRecycle->Enabled=false;
+	HANDLE recycle_sem;
+    char name[256];
+    sprintf(name,"%sRecycle",NTSVC_NAME_SERVICES);
+	if((recycle_sem=OpenSemaphore(SEMAPHORE_MODIFY_STATE,FALSE,name))!=NULL) {
+		ReleaseSemaphore(recycle_sem,1,NULL);
+        CloseHandle(recycle_sem);
+    } else {
+		services_startup.recycle_now=true;
+	    ServicesRecycle->Enabled=false;
+    }
 }
 //---------------------------------------------------------------------------
 
 void __fastcall TMainForm::TelnetRecycleExecute(TObject *Sender)
 {
-	bbs_startup.recycle_now=true;
-    TelnetRecycle->Enabled=false;
+	HANDLE recycle_sem;
+    char name[256];
+    sprintf(name,"%sRecycle",NTSVC_NAME_BBS);
+	if((recycle_sem=OpenSemaphore(SEMAPHORE_MODIFY_STATE,FALSE,name))!=NULL) {
+		ReleaseSemaphore(recycle_sem,1,NULL);
+        CloseHandle(recycle_sem);
+    } else {
+    	char error[256];
+        sprintf(error,"ERROR %d opening semaphore: %s",GetLastError(),NTSVC_NAME_BBS);
+        bbs_lputs(NULL,error);
+		bbs_startup.recycle_now=true;
+	    TelnetRecycle->Enabled=false;
+    }
 }
 //---------------------------------------------------------------------------
 
