@@ -89,7 +89,6 @@ static SOCKET	server_socket=INVALID_SOCKET;
 static DWORD	active_clients=0;
 static DWORD	sockets=0;
 static DWORD	thread_count=0;
-static HANDLE	socket_mutex=NULL;
 static time_t	uptime=0;
 static BOOL		recycle_server=FALSE;
 static char		revision[16];
@@ -245,22 +244,7 @@ static int ftp_close_socket(SOCKET* sock, int line)
 {
 	int		result;
 
-#ifndef _WIN32
-#define ReleaseMutex(x)
-#else
-	if(socket_mutex!=NULL
-		&& (result=WaitForSingleObject(socket_mutex,5000))!=WAIT_OBJECT_0) 
-		lprintf("%04d !ERROR %d getting socket mutex from line %u"
-			,*sock,ERROR_VALUE,line);
-
-	if(IsBadWritePtr(sock,sizeof(SOCKET))) {
-		ReleaseMutex(socket_mutex);
-		lprintf("0000 !BAD socket pointer in close_socket from line %u",line);
-		return(-1);
-	}
-#endif
 	if((*sock)==INVALID_SOCKET) {
-		ReleaseMutex(socket_mutex);
 		lprintf("0000 !INVALID_SOCKET in close_socket from line %u",line);
 		return(-1);
 	}
@@ -283,7 +267,6 @@ static int ftp_close_socket(SOCKET* sock, int line)
 		lprintf("%04d Socket closed (%u sockets in use) from line %u",*sock,sockets,line);
 #endif
 	*sock=INVALID_SOCKET;
-	ReleaseMutex(socket_mutex);
 
 	return(result);
 }
@@ -1750,7 +1733,7 @@ static void receive_thread(void* arg)
 			if(f.desc[0]==0) 	/* no description given, use (long) filename */
 				SAFECOPY(f.desc,getfname(xfer.filename));
 
-			SAFECOPY(f.uler,xfer.user->alias);
+			SAFECOPY(f.uler,xfer.user->alias);	/* exception here, Aug-27-2002 */
 			if(!addfiledat(&scfg,&f))
 				lprintf("%04d !ERROR adding file (%s) to database",xfer.ctrl_sock,f.name);
 
@@ -4250,13 +4233,6 @@ static void cleanup(int code, int line)
 		lprintf("0000 !WSACleanup ERROR %d",ERROR_VALUE);
 #endif
 
-#ifdef _WIN32
-	if(socket_mutex!=NULL) {
-		CloseHandle(socket_mutex);
-		socket_mutex=NULL;
-	}
-#endif
-
 	thread_down();
 	status("Down");
     lprintf("#### FTP Server thread terminated (%u threads remain)", thread_count);
@@ -4375,14 +4351,6 @@ void DLLCALL ftp_server(void* arg)
 		lprintf("Initializing on %.24s with options: %lx"
 			,ctime(&t),startup->options);
 
-#ifdef _WIN32
-		if((socket_mutex=CreateMutex(NULL,FALSE,NULL))==NULL) {
-    		lprintf("!ERROR %d creating socket_mutex", GetLastError());
-			cleanup(1,__LINE__);
-			return;
-		}
-
-#endif
 		/* Initial configuration and load from CNF files */
 		SAFECOPY(scfg.ctrl_dir, startup->ctrl_dir);
 		lprintf("Loading configuration files from %s", scfg.ctrl_dir);
