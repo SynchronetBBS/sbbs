@@ -1244,4 +1244,195 @@ o Added support for server recycle semaphore file (ctrl/ftpsrvr.rec)
 o Automatic server recycling upon socket select or accept failure
 
 
+***********************************************************
+* What's New in Synchronet Version 3.10 Revision H (Beta) *
+***********************************************************
+
+General
+~~~~~~~
+o New NewsLink event module (exec/newslink.js)
+  - used to link sub-boards with newsgroups (e.g. USENET)
+  - requires ctrl/newslink.cfg
+  - create a timed event with command line of "?newslink"
+
+o Changed use of gmtime() to localtime() for systems using local/system
+  time zone rather than GMT/UTC (the default)
+
+o Including Win32 console-mode version of Synchronet (sbbs.exe)
+  - less overhead
+  - more ideally suited to run as an NT service
+  - identical to Unix version
+
+o Better error reporting (includes text description of errno)
+
+o All TCP servers support recycling via semaphore and semaphore files
+  - ctrl/telnet.rec, ftpsrvr.rec, mailsrvr.rec, and services.rec
+  - waits until server is not in-use before recycling
+  - re-loads config files
+  - re-binds sockets
+
+o Fixed bugs in parsing ARS keywords: UNIX, LINUX, and WIN32
+  - any additional ARS keywords in the same string were corrupted
+
+
+Configuration Utility (SCFG) Updated for Version 3.x
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+o Changed default QWKnet call-out command line to use QNET-FTP module
+
+o Fixed access violations/segfaults when adding file options:
+  protocols, download events, viewable/testable/compressable/extractable file
+  types, and alternate file paths, at the end of the list
+
+o New System "Toggle Option" to use local/system time zone instead of
+  GMT/UTC
+
+o New Node "Toggle Option" to leave NODE.DAB open (defaults to "Yes")
+  - This is how Synchronet operated prior to v3, but was changed in the
+    interest of Linux/smbfs-compatibility
+  - In the interest of performance and reliability, I've changed the default
+    behavior back to leaving the file open and added an option to disable
+	this behavior (and make it behave like Synchronet v3.0)
+
+o System toggles default to previously configured state
+
+o Added External Program "Time Option" to enable "Monitor Time Left"
+  - Synchronet will automatically disconnect the user if they run out of time
+
+o New "Newsgroup Name" for sub-boards (used by NNTP service)
+
+
+Control Panel (Win32)
+~~~~~~~~~~~~~~~~~~~~~
+o Fixed resource (thread and process handle) leak when using BBS->Configure
+
+o Fixed potentially incorrect client counter in status bar
+
+o New File->Properties->Advanced tab to set control directory and host name
+  - Host name should be set only if different for this instance of sbbsctrl
+
+
+JavaScript (http://synchro.net/docs/js.html)
+~~~~~~~~~~
+o Added BranchCallback for detecting infinite loops and releasing timeslices
+  while executing scripts
+
+o New MsgBase.subnum (0-based sub-board number) property
+
+o New message hdr.date property for proper RFC822 date representation
+
+o Added time to message-id for messages in sub-boards (for more uniqueness)
+
+o Added extra bool param to MsgBase.get_msg_body() method (tails)
+  - defaults to true if unspecified
+
+o New MsgBase.get_msg_tail() method
+  - returns message tail (tear/taglines) only
+
+o New global properties:
+  - errno     (mirrors C RTL "errno" variable)
+  - errno_str (String description of errno value)
+
+o New global methods: 
+  - ascii_str(String)	  return ex-ascii string converted to pure ascii
+  - strip_exascii(String) return string with ex-ascii chars removed
+
+o New system methods:
+  - system.spamlog(prot, reason, host, ip_addr, to)
+  - system.hacklog(prot, user, text, host, ip_addr, port)
+
+o New system.host_name property 
+  - may be different from Internet address configured in SCFG->Networks->
+    Internet e-mail
+  - configured with sbbsctrl->File->Properites->Advanced
+  - only required for multiple machine BBSes (e.g. vert/rob/cvs.synchro.net)
+
+o New socket method:
+  - socket.sendfile(filename)
+
+o Global printf() function outputs to event log when appropriate
+
+o Fixed JavaScript context corruption caused by bbs.login() method
+
+o Fixed null pointer dereferences when accessing properites of unopen JS file
+
+o Fixed bug in File.writeAll() method (would stop writing prematurely)
+
+o File.readln() and readAll() methods no longer truncate trailing whitespace
+
+o Doesn't ask for new/your message scan if user has access to no message areas
+
+
+Telnet Server
+~~~~~~~~~~~~~
+o Added QWK config menu option to toggle QWK_EXT flag
+
+o Added support for long conference names in CONTROL.DAT if QWK_EXT flag set
+
+o Now detects if new user record number (determined by name.dat) is beyond
+  the valid size of the user.dat, generates an error log message, and fixes the
+  user number so the record can be created successfully
+
+o Added code to putusername() to automatically fix a corrupted name.dat file
+
+o Added error report if failed to create new user record
+
+o Fixed output_sem re-initialization bug that caused segfaults in Linux and
+  *may* have been a cause of occasional output blocks in Win32
+
+o Mail maintenance/purge event no longer tries to delete msgs in an empty base
+
+o No longer clears useron number in node.dab when logging off
+  - multinode chat users need this value to display the user name that left 
+    chat channel (disconnected)
+
+o New toggle option to check time left online while executing doors
+  - fix for doors that fail to check user's time left online
+
+o Switched back to using DOSXTRN for offline events
+  - executing events without DOSXTRN caused too many problems
+
+o Fixed Win32 resource leaks when executing external programs
+
+o Fixed CR to CRLF expansion for intercepted standard I/O in Win32 programs
+
+o Fixed condition in node.dab where a node status could be left as "in use"
+
+o New command-line specifier (%.) expands to ".exe" for non-Unix platforms
+  - Allows Unix and Win32 executables to reside in the same directory
+
+o NT FOSSIL driver no longer creates sbbsexec*.log files
+
+
+Synchronet Services
+~~~~~~~~~~~~~~~~~~~
+o NNTP Service (exec/nntpservice.js)
+  - Added log output for rejected commands when not authenticated
+  - Handles P (post) user restriction more gracefully
+  - Served message headers now include properly formatted date field
+  - Posted messages now use original date/time in header
+  - Added support for SLAVE and IHAVE commands
+  - Updated From: headers to include user name separate from address
+  - Added subject trashcan (text/subject.can) checking (spam filtering/log)
+
+o Finger Service
+  - Fixed negative time online values
+
+o Fixed buffer overflow bug in JavaScript global log() method
+
+o Support for unique host names per Synchronet instance (system.host_name)
+
+
+FTP Server
+~~~~~~~~~~
+o Fixed race condition that caused client transfer threads to be orphaned
+
+o Eliminated warning when attempting to close socket after sock_mutex is gone
+
+o Added special log output to ftp_close_socket when closing the server socket
+
+o Rearranged termination sequence at end of ctrl_thread to fix race conditions
+
+o Added wait at end of ftp_server thread for other threads to terminate
+
+
 /* End of V310_NEW.TXT */

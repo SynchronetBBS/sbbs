@@ -1166,6 +1166,7 @@ static void smtp_thread(void* arg)
 	ulong		lines=0;
 	ulong		length;
 	ulong		offset;
+	ulong		badcmds=0;
 	BOOL		esmtp=FALSE;
 	BOOL		telegram=FALSE;
 	uint		subnum=INVALID_SUB;
@@ -1796,6 +1797,7 @@ static void smtp_thread(void* arg)
 		} 
 		if(!stricmp(buf,"NOOP")) {
 			sockprintf(socket, SMTP_OK);
+			badcmds=0;
 			continue;
 		}
 		if(state<SMTP_STATE_HELO) {
@@ -1806,6 +1808,7 @@ static void smtp_thread(void* arg)
 		}
 		if(!stricmp(buf,"TURN")) {
 			sockprintf(socket,"502 command not supported");
+			badcmds=0;
 			continue;
 		}
 		if(!stricmp(buf,"RSET")) {
@@ -1819,6 +1822,7 @@ static void smtp_thread(void* arg)
 			cmd=SMTP_CMD_NONE;
 			telegram=FALSE;
 			subnum=INVALID_SUB;
+			badcmds=0;
 			continue;
 		}
 		if(!strnicmp(buf,"MAIL FROM:",10)) {
@@ -1842,6 +1846,7 @@ static void smtp_thread(void* arg)
 			msg.hdr.version=smb_ver();
 			msg.hdr.when_imported.time=time(NULL);
 			msg.hdr.when_imported.zone=scfg.sys_timezone;
+			badcmds=0;
 			continue;
 		}
 
@@ -1855,6 +1860,7 @@ static void smtp_thread(void* arg)
 			sockprintf(socket,SMTP_OK);
 			state=SMTP_STATE_MAIL_FROM;
 			cmd=SMTP_CMD_SEND;
+			badcmds=0;
 			continue;
 		}
 		/* Send OR Mail a Message to a local user */
@@ -2150,6 +2156,10 @@ static void smtp_thread(void* arg)
 		}
 		sockprintf(socket,"500 Syntax error");
 		lprintf("%04d !SMTP UNSUPPORTED COMMAND: '%s'", socket, buf);
+		if(++badcmds>10) {
+			lprintf("%04d !TOO MANY INVALID COMMANDS (%u)",socket,badcmds);
+			break;
+		}
 	}
 
 	/* Free up resources here */

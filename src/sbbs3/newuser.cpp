@@ -389,7 +389,7 @@ void sbbs_t::newuser()
 
 	i=1;
 	bputs(text[CheckingSlots]);
-	sprintf(str,"%s/user/name.dat",cfg.data_dir);
+	sprintf(str,"%suser/name.dat",cfg.data_dir);
 	if(fexist(str)) {
 		if((stream=fnopen(&file,str,O_RDONLY))==NULL) {
 			errormsg(WHERE,ERR_OPEN,str,O_RDONLY);

@@ -252,7 +252,10 @@ js_readln(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_TRUE);
 
 	if(fgets(buf,len,p->fp)!=NULL) {
-		truncsp(buf);
+		len=strlen(buf);
+		while(len>0 && (buf[len-1]=='\r' || buf[len-1]=='\n'))
+			len--;
+		buf[len]=0;
 		if(p->etx) {
 			cp=strchr(buf,p->etx);
 			if(cp) *cp=0; 
