@@ -93,6 +93,8 @@ enum {
 	,BBS_PROP_SMB_ATTR
 	,BBS_PROP_SMB_LAST_MSG
 	,BBS_PROP_SMB_TOTAL_MSGS
+	,BBS_PROP_SMB_MSGS
+	,BBS_PROP_SMB_CURMSG
 
 	/* READ ONLY */
 	,BBS_PROP_MSG_TO
@@ -122,6 +124,8 @@ enum {
 	,BBS_PROP_MSG_THREAD_NEXT
 	,BBS_PROP_MSG_THREAD_FIRST
 	,BBS_PROP_MSG_DELIVERY_ATTEMPTS
+	,BBS_PROP_MSG_ID
+	,BBS_PROP_MSG_REPLY_ID
 
 };
 
@@ -306,6 +310,12 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 		case BBS_PROP_SMB_TOTAL_MSGS:
 			val=sbbs->smb.status.total_msgs;
 			break;
+		case BBS_PROP_SMB_MSGS:
+			val=sbbs->smb.msgs;
+			break;
+		case BBS_PROP_SMB_CURMSG:
+			val=sbbs->smb.curmsg;
+			break;
 
 		/* Currently Displayed Message Header (sbbs.current_msg) */
 		case BBS_PROP_MSG_TO:
@@ -436,6 +446,18 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 		case BBS_PROP_MSG_DELIVERY_ATTEMPTS:
 			if(sbbs->current_msg!=NULL)
 				val=sbbs->current_msg->hdr.delivery_attempts;
+			break;
+		case BBS_PROP_MSG_ID:
+			if(sbbs->current_msg==NULL || sbbs->current_msg->id==NULL)
+				p=nulstr;
+			else
+				p=sbbs->current_msg->id;
+			break;
+		case BBS_PROP_MSG_REPLY_ID:
+			if(sbbs->current_msg==NULL || sbbs->current_msg->reply_id==NULL)
+				p=nulstr;
+			else
+				p=sbbs->current_msg->reply_id;
 			break;
 
 		default:
@@ -671,6 +693,8 @@ static struct JSPropertySpec js_bbs_properties[] = {
 	{	"smb_attr"			,BBS_PROP_SMB_ATTR			,PROP_READONLY	,NULL,NULL},
 	{	"smb_last_msg"		,BBS_PROP_SMB_LAST_MSG		,PROP_READONLY	,NULL,NULL},
 	{	"smb_total_msgs"	,BBS_PROP_SMB_TOTAL_MSGS	,PROP_READONLY	,NULL,NULL},
+	{	"smb_msgs"			,BBS_PROP_SMB_MSGS			,PROP_READONLY	,NULL,NULL},
+	{	"smb_curmsg"		,BBS_PROP_SMB_CURMSG		,PROP_READONLY	,NULL,NULL},
 																		
 	{	"msg_to"			,BBS_PROP_MSG_TO			,PROP_READONLY	,NULL,NULL},
 	{	"msg_to_ext"		,BBS_PROP_MSG_TO_EXT		,PROP_READONLY	,NULL,NULL},
@@ -698,6 +722,8 @@ static struct JSPropertySpec js_bbs_properties[] = {
 	{	"msg_thread_orig"	,BBS_PROP_MSG_THREAD_ORIG	,PROP_READONLY	,NULL,NULL},
 	{	"msg_thread_first"	,BBS_PROP_MSG_THREAD_FIRST	,PROP_READONLY	,NULL,NULL},
 	{	"msg_thread_next"	,BBS_PROP_MSG_THREAD_NEXT	,PROP_READONLY	,NULL,NULL},
+	{	"msg_id"			,BBS_PROP_MSG_ID			,PROP_READONLY	,NULL,NULL},
+	{	"msg_reply_id"		,BBS_PROP_MSG_REPLY_ID		,PROP_READONLY	,NULL,NULL},
 	{	"msg_delivery_attempts"	,BBS_PROP_MSG_DELIVERY_ATTEMPTS
 														,PROP_READONLY	,NULL,NULL},
 	{0}
