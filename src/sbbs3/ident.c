@@ -64,6 +64,18 @@ char* identify(SOCKADDR_IN* client_addr, u_short local_port, char* buf, size_t m
 			break;
 		}
 
+		tv.tv_sec=10;
+		tv.tv_usec=0;
+
+		FD_ZERO(&socket_set);
+		FD_SET(sock,&socket_set);
+
+		i=select(sock+1,NULL,&socket_set,NULL,&tv);
+		if(i<1) {
+			sprintf(buf,"ERROR %d selecting socket for send",ERROR_VALUE);
+			break;
+		}
+
 		sprintf(req,"%u, %u\r\n", ntohs(client_addr->sin_port), local_port);
 		if(send(sock,req,strlen(req),0)!=(int)strlen(req)) {
 			sprintf(buf,"ERROR %d sending request",ERROR_VALUE);

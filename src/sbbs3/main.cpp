@@ -795,6 +795,8 @@ void output_thread(void* arg)
     ulong		bufbot=0;
     ulong		buftop=0;
 	sbbs_t*		sbbs = (sbbs_t*) arg;
+	fd_set		socket_set;
+	struct timeval tv;
 
 	thread_up();
 
@@ -818,7 +820,27 @@ void output_thread(void* arg)
 		if(!avail) {
 			sem_init(&sbbs->output_sem,0,0);
 			sem_wait(&sbbs->output_sem);
-			continue; }
+			continue; 
+		}
+
+		/* Check socket for writability (using select) */
+		tv.tv_sec=0;
+		tv.tv_usec=0;
+
+		FD_ZERO(&socket_set);
+		FD_SET(sbbs->client_socket,&socket_set);
+
+		i=select(sbbs->client_socket+1,NULL,&socket_set,NULL,&tv);
+		if(i==SOCKET_ERROR) {
+			lprintf("!%s: ERROR %d selecting socket %u for send"
+				,node,ERROR_VALUE,sbbs->client_socket);
+			mswait(1);
+			continue;
+		}
+		if(i<1) {
+			mswait(1);
+			continue;
+		}
 
         if(bufbot==buftop) { // linear buf empty, read from ring buf
             if(avail>sizeof(buf)) {
@@ -828,9 +850,8 @@ void output_thread(void* arg)
             buftop=RingBufRead(&sbbs->outbuf, buf, avail);
             bufbot=0;
         }
-		i = send(sbbs->client_socket, (char*)buf+bufbot, buftop-bufbot, 0);
-		if(i == SOCKET_ERROR)
-		{
+		i=send(sbbs->client_socket, (char*)buf+bufbot, buftop-bufbot, 0);
+		if(i==SOCKET_ERROR) {
         	if(ERROR_VALUE == ENOTSOCK)
                 lprintf("%s client socket closed on send", node);
             else if(ERROR_VALUE==ECONNRESET) 
