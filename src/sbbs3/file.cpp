@@ -250,7 +250,7 @@ char * sbbs_t::getfilespec(char *str)
 /****************************************************************************/
 /* Checks to see if filename matches filespec. Returns 1 if yes, 0 if no    */
 /****************************************************************************/
-BOOL filematch(char *filename, char *filespec)
+extern "C" BOOL filematch(char *filename, char *filespec)
 {
     char c;
 
@@ -270,7 +270,7 @@ BOOL filematch(char *filename, char *filespec)
 /****************************************************************************/
 /* Deletes all files in dir 'path' that match file spec 'spec'              */
 /****************************************************************************/
-uint delfiles(char *inpath, char *spec)
+extern "C" uint delfiles(char *inpath, char *spec)
 {
 	char	path[MAX_PATH+1];
     uint	i,files=0;
