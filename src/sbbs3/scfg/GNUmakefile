@@ -37,7 +37,7 @@ LIBDIR	:=	/usr/lib
 DELETE	=	rm -f -v
 OUTLIB	=	-o
 
-CFLAGS	:=	-I$(UIFC) -I$(XPDEV) -I/usr/local/include -I../  -D_THREAD_SAFE
+CFLAGS	:=	-Wall -I$(UIFC) -I$(XPDEV) -I/usr/local/include -I../  -D_THREAD_SAFE
 
 LFLAGS	:=	-L/usr/local/lib
 
