@@ -173,7 +173,7 @@ extern "C" {
 #elif defined(__unix__)
 
 
-	#if
+	#if defined(_PTH_PTHREAD_H_)
 		#define SLEEP(x)  ({ int y=x; struct timeval tv; \
 			tv.tv_sec=(y/1000); tv.tv_usec=((y%1000)*1000); \
 			pth_nap(tv); })
