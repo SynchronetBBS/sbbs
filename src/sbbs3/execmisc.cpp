@@ -1186,11 +1186,8 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 					csi->ip+=4;
 					lp2=getintvar(csi,*(long *)csi->ip);
 					csi->ip+=4;
-	#if 0 /* ftime */
-					if(lp1 && *lp1 && lp2) {
-						getftime(fileno((FILE *)*lp1),&ft);
-						*lp2=ftimetounix(ft); }
-	#endif
+					if(lp1 && *lp1 && lp2) 
+						*lp2=filetime(fileno((FILE *)*lp1));
 					return(0);
 				case FIO_SET_TIME:
 					lp1=getintvar(csi,*(long *)csi->ip);
