@@ -170,7 +170,7 @@ int sbbs_t::uselect(int add, uint n, char *title, char *item, uchar *ar)
 /****************************************************************************/
 bool sbbs_t::chksyspass()
 {
-	char	str[256],str2[256] /*,x,y,atr */;
+	char	str[256],str2[256];
 	int 	orgcon=console;
 
 	if(online==ON_REMOTE && !(cfg.sys_misc&SM_R_SYSOP))
