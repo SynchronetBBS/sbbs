@@ -21,7 +21,7 @@ OFILE	=	o
 
 LD		=	ld
 LIBFILE	=	.a
-XPDEV	=	../xpdev
+XPDEV	=	../xpdev/
 
 ifndef $(os)
 os		=	$(shell uname)

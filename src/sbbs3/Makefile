@@ -23,7 +23,7 @@ LIBFILE	=	.dll
 EXEFILE	=	.exe
 LIBODIR	=	bcc.win32.dll	# Library output directory
 EXEODIR =	bcc.win32.exe	# Executable output directory
-XPDEV	=	..\xpdev
+XPDEV	=	..\xpdev\		# Path to Cross-platform wrappers
 CFLAGS	=	-M -I$(XPDEV)
 LFLAGS  =	-m -s -c -Tpd -Gi -I$(LIBODIR)
 DELETE	=	echo y | del 
@@ -123,12 +123,12 @@ $(FIXSMB): fixsmb.c $(SMBLIB)
 	@$(CC) $(CFLAGS) -n$(EXEODIR) $** 
 
 # CHKSMB Utility
-$(CHKSMB): chksmb.c $(SMBLIB) $(XPDEV)\dirwrap.c
+$(CHKSMB): chksmb.c $(SMBLIB) $(XPDEV)dirwrap.c
 	@echo Creating $@
 	@$(CC) $(CFLAGS) -n$(EXEODIR) $** 
 
 # SMB Utility
-$(SMBUTIL): smbutil.c smbtxt.c crc32.c lzh.c $(SMBLIB) $(XPDEV)\dirwrap.c
+$(SMBUTIL): smbutil.c smbtxt.c crc32.c lzh.c $(SMBLIB) $(XPDEV)dirwrap.c
 	@echo Creating $@
 	@$(CC) $(CFLAGS) -n$(EXEODIR) $** 
 
