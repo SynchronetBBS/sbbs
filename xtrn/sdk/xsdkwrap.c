@@ -58,6 +58,7 @@
 	#include <sys/types.h>
 	#include <signal.h>
 	#include <errno.h>
+	#include <sys/file.h>	/* L_SET in SunOS (!) */
 
 #endif
 
@@ -380,7 +381,7 @@ int lock(int fd, long pos, long len)
 			return(-1);
 	#endif
 
-	#if !defined(F_SANEWRLCKNO) && !defined(__QNX__)
+	#if !defined(F_SANEWRLCKNO) && !defined(__QNX__) && !defined(__solaris__)
 		/* use flock (doesn't work over NFS) */
 		if(flock(fd,LOCK_EX|LOCK_NB)!=0 && errno != EOPNOTSUPP)
 			return(-1);
@@ -407,7 +408,7 @@ int unlock(int fd, long pos, long len)
 		return(-1);
 #endif
 
-#if !defined(F_SANEUNLCK) && !defined(__QNX__)
+#if !defined(F_SANEUNLCK) && !defined(__QNX__) && !defined(__solaris__)
 	/* use flock (doesn't work over NFS) */
 	if(flock(fd,LOCK_UN|LOCK_NB)!=0 && errno != EOPNOTSUPP)
 		return(-1);
@@ -422,7 +423,7 @@ int sopen(const char *fn, int access, int share, ...)
 {
 	int pmode=S_IREAD;
 	int fd;
-#ifndef F_SANEWRLCKNO
+#if !defined(F_SANEWRLCKNO) && !defined(__QNX__) && !defined(__solaris__)
 	int	flock_op=LOCK_NB;	/* non-blocking */
 #endif
 #if defined(F_SANEWRLCKNO) || !defined(BSD)
@@ -454,7 +455,7 @@ int sopen(const char *fn, int access, int share, ...)
 	}
 #endif
 
-#ifndef F_SANEWRLCKNO
+#if !defined(F_SANEWRLCKNO) && !defined(__QNX__) && !defined(__solaris__)
 	/* use flock (doesn't work over NFS) */
 	if(share==SH_DENYRW)
 		flock_op|=LOCK_EX;
