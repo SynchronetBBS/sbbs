@@ -84,6 +84,14 @@ LINK32=link.exe
 # Name "sexyz - Win32 Debug"
 # Begin Source File
 
+SOURCE=..\smblib\crc16.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\smblib\crc32.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\sexyz.c
 # End Source File
 # Begin Source File
