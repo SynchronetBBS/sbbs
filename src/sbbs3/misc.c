@@ -373,16 +373,25 @@ char* DLLCALL zonestr(short zone)
 /****************************************************************************/
 /* Returns an ASCII string for FidoNet address 'addr'                       */
 /****************************************************************************/
-char *faddrtoa(faddr_t addr)
+char *faddrtoa(faddr_t* addr, char* str)
 {
-    static char str[25];
     char point[25];
 
-	sprintf(str,"%u:%u/%u",addr.zone,addr.net,addr.node);
-	if(addr.point) {
-		sprintf(point,".%u",addr.point);
+	if(addr==NULL)
+		return("0:0/0");
+	sprintf(str,"%u:%u/%u",addr->zone,addr->net,addr->node);
+	if(addr->point) {
+		sprintf(point,".%u",addr->point);
 		strcat(str,point); }
 	return(str);
+}
+
+char* net_addr(net_t* net)
+{
+	static char faddr[64];
+	if(net->type==NET_FIDO)
+		return(faddrtoa((faddr_t*)net->addr,faddr));
+	return(net->addr);
 }
 
 /****************************************************************************/

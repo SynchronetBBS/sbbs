@@ -251,7 +251,6 @@ post_t HUGE16 * sbbs_t::loadposts(long *posts, uint subnum, ulong ptr, long mode
 	return(post);
 }
 
-
 /****************************************************************************/
 /* Reads posts on subboard sub. 'mode' determines new-posts only, browse,   */
 /* or continuous read.                                                      */
@@ -262,6 +261,7 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 {
 	char	str[256],str2[256],reread=0,mismatches=0
 			,done=0,domsg=1,HUGE16 *buf,*p;
+	char	tmp[128];
 	int		i;
 	uint 	usub,ugrp,reads=0;
 	uint	lp=0;
@@ -659,7 +659,7 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 					,timestr((time_t *)&msg.hdr.when_written.time));
 				if(msg.from_net.type==NET_FIDO)
 					sprintf(str,"%s @%s",msg.from
-						,faddrtoa(*(faddr_t *)msg.from_net.addr));
+						,faddrtoa((faddr_t *)msg.from_net.addr,tmp));
 				else if(msg.from_net.type==NET_INTERNET)
 					strcpy(str,(char *)msg.from_net.addr);
 				else if(msg.from_net.type)

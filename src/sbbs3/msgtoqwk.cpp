@@ -63,7 +63,7 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 			sprintf(from,"%.128s",msg->from);
 		else if(msg->from_net.type==NET_FIDO)
 			sprintf(from,"%.128s@%.128s"
-				,msg->from,faddrtoa(*(faddr_t *)msg->from_net.addr));
+				,msg->from,faddrtoa((faddr_t *)msg->from_net.addr,tmp));
 		else if(msg->from_net.type==NET_INTERNET)
 			sprintf(from,"%.128s",msg->from_net.addr);
 		else
@@ -80,7 +80,7 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 
 	if(msg->to_net.addr && (uint)subnum==INVALID_SUB) {
 		if(msg->to_net.type==NET_FIDO)
-			sprintf(to,"%.128s@%s",msg->to,faddrtoa(*(faddr_t *)msg->to_net.addr));
+			sprintf(to,"%.128s@%s",msg->to,faddrtoa((faddr_t *)msg->to_net.addr,tmp));
 		else if(msg->to_net.type==NET_INTERNET)
 			sprintf(to,"%.128s",msg->to_net.addr);
 		else if(msg->to_net.type==NET_QWK) {

@@ -195,8 +195,8 @@ bool sbbs_t::netmail(char *into, char *title, long mode)
 	hdr.orignode	=cfg.faddr[i].node;
 	hdr.origpoint	=cfg.faddr[i].point;
 
-	strcpy(str,faddrtoa(cfg.faddr[i]));
-	bprintf(text[NetMailing],hdr.to,faddrtoa(addr),hdr.from,str);
+	faddrtoa(&cfg.faddr[i],str);
+	bprintf(text[NetMailing],hdr.to,faddrtoa(&addr,tmp),hdr.from,str);
 
 	hdr.attr=(FIDO_LOCAL|FIDO_PRIVATE);
 
@@ -352,11 +352,11 @@ bool sbbs_t::netmail(char *into, char *title, long mode)
 		if(mode&WM_FILE)
 			sprintf(str,"%s sent NetMail file attachment to %s (%s)"
 				,useron.alias
-				,hdr.to,faddrtoa(addr));
+				,hdr.to,faddrtoa(&addr,tmp));
 		else
 			sprintf(str,"%s sent NetMail to %s (%s)"
 				,useron.alias
-				,hdr.to,faddrtoa(addr));
+				,hdr.to,faddrtoa(&addr,tmp));
 		logline("EN",str);
 
 		cc_found=0;
@@ -777,8 +777,8 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 	hdr.orignode	=cfg.faddr[i].node;
 	hdr.origpoint   =cfg.faddr[i].point;
 
-	strcpy(str,faddrtoa(cfg.faddr[i]));
-	bprintf(text[NetMailing],hdr.to,faddrtoa(fidoaddr),hdr.from,str);
+	faddrtoa(&cfg.faddr[i],str);
+	bprintf(text[NetMailing],hdr.to,faddrtoa(&fidoaddr,tmp),hdr.from,str);
 	tm.tm_mon=((qwkbuf[8]&0xf)*10)+(qwkbuf[9]&0xf);
 	if (tm.tm_mon) tm.tm_mon--;
 	tm.tm_mday=((qwkbuf[11]&0xf)*10)+(qwkbuf[12]&0xf);
@@ -876,7 +876,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 
 	sprintf(str,"%s sent NetMail to %s @%s via QWK"
 		,useron.alias
-		,hdr.to,faddrtoa(fidoaddr));
+		,hdr.to,faddrtoa(&fidoaddr,tmp));
 	logline("EN",str);
 	}
 

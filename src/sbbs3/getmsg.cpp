@@ -148,16 +148,14 @@ void sbbs_t::show_msghdr(smbmsg_t* msg)
 	if(msg->to_ext)
 		bprintf(text[MsgToExt],msg->to_ext);
 	if(msg->to_net.addr)
-		bprintf(text[MsgToNet],msg->to_net.type==NET_FIDO
-			? faddrtoa(*(faddr_t *)msg->to_net.addr) : msg->to_net.addr);
+		bprintf(text[MsgToNet],net_addr(&msg->to_net));
 	if(!(msg->hdr.attr&MSG_ANONYMOUS) || SYSOP) {
 		bprintf(text[MsgFrom],msg->from);
 		if(msg->from_ext)
 			bprintf(text[MsgFromExt],msg->from_ext);
 		if(msg->from_net.addr && !strchr(msg->from,'@'))
-			bprintf(text[MsgFromNet],msg->from_net.type==NET_FIDO
-				? faddrtoa(*(faddr_t *)msg->from_net.addr)
-					: msg->from_net.addr); }
+			bprintf(text[MsgFromNet],net_addr(&msg->from_net)); 
+	}
 	bprintf(text[MsgDate]
 		,timestr((time_t *)&msg->hdr.when_written.time)
 		,zonestr(msg->hdr.when_written.zone));
@@ -293,15 +291,12 @@ void sbbs_t::msgtotxt(smbmsg_t* msg, char *str, int header, int tails)
 		if(msg->to_ext)
 			fprintf(out," #%s",msg->to_ext);
 		if(msg->to_net.addr)
-			fprintf(out," (%s)",msg->to_net.type==NET_FIDO
-				? faddrtoa(*(faddr_t *)msg->to_net.addr) : msg->to_net.addr);
+			fprintf(out," (%s)",net_addr(&msg->to_net));
 		fprintf(out,"\r\nFrom : %s",msg->from);
 		if(msg->from_ext && !(msg->hdr.attr&MSG_ANONYMOUS))
 			fprintf(out," #%s",msg->from_ext);
 		if(msg->from_net.addr)
-			fprintf(out," (%s)",msg->from_net.type==NET_FIDO
-				? faddrtoa(*(faddr_t *)msg->from_net.addr)
-					: msg->from_net.addr);
+			fprintf(out," (%s)",net_addr(&msg->from_net));
 		fprintf(out,"\r\nDate : %.24s %s"
 			,timestr((time_t *)&msg->hdr.when_written.time)
 			,zonestr(msg->hdr.when_written.zone));
