@@ -44,15 +44,19 @@
 /****************************************************************************/
 void sbbs_t::printfile(char *str, long mode)
 {
-	char HUGE16 *buf;
+	char* buf;
+	char* p;
 	int file,wip=0,rip=0;
 	long length,savcon=console;
 	FILE *stream;
 
-	if(strstr(str,".WIP"))
-		wip=1;
-	if(strstr(str,".RIP"))
-		rip=1;
+	p=strrchr(str,'.');
+	if(p!=NULL) {
+		if(stricmp(p,".wip")==0)
+			wip=1;
+		else if(stricmp(p,".rip")==0)
+			rip=1;
+	}
 
 	if(mode&P_NOABORT || wip || rip) {
 		if(online==ON_REMOTE && console&CON_R_ECHO) {
