@@ -1154,18 +1154,16 @@ void event_thread(void* arg)
 					sprintf(str,"%s%s.q%c%c",sbbs->cfg.data_dir,sbbs->cfg.qhub[i]->id
 						,j>10 ? ((j-1)/10)+'0' : 'w'
 						,j ? ((j-1)%10)+'0' : 'k');
-					if(fexist(str)) {
-						if(flength(str)>0) {	/* silently ignore 0-byte QWK packets */
-							sbbs->delfiles(sbbs->cfg.temp_dir,ALLFILES);
-							if(sbbs->unpack_qwk(str,i)==false) {
-								char newname[MAX_PATH+1];
-								sprintf(newname,"%s.%lx.bad",str,now);
-								remove(newname);
-								if(rename(str,newname)==0) {
-									char logmsg[MAX_PATH*3];
-									sprintf(logmsg,"%s renamed to %s",str,newname);
-									sbbs->logline("Q!",logmsg);
-								}
+					if(flength(str)>0) {	/* silently ignore 0-byte QWK packets */
+						sbbs->delfiles(sbbs->cfg.temp_dir,ALLFILES);
+						if(sbbs->unpack_qwk(str,i)==false) {
+							char newname[MAX_PATH+1];
+							sprintf(newname,"%s.%lx.bad",str,now);
+							remove(newname);
+							if(rename(str,newname)==0) {
+								char logmsg[MAX_PATH*3];
+								sprintf(logmsg,"%s renamed to %s",str,newname);
+								sbbs->logline("Q!",logmsg);
 							}
 						}
 						remove(str);
