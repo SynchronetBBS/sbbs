@@ -65,12 +65,12 @@ else {
 		template.errs["gender"]="Male or Female";
 	}
 	/* Validate date */
-	if(http_request.query["birthdate"].length<8) {
+	    if(http_request.query["birthdate"].toString().length<8) {
 		err=1;
 		template.err_message+="Bad date format (ie: 12/19/75)\r\n";
 	}
 	else {
-		brokendate=http_request.query["birthdate"].split('/');
+		brokendate=http_request.query["birthdate"].toString().split('/');
 		if(brokendate.length!=3) {
 			err=1;
 			template.err_message="Bad date format\r\n";
