@@ -89,7 +89,7 @@ function find_np_message(offset,next)
 			return(last_offset);
 		if((idx=msgbase.get_msg_index(true,last_offset))==null || idx.to!=user.number)
 			continue;
-		return(last_offset);
+		return(hdr.number);
 	}
 	return(undefined);
 }
