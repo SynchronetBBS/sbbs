@@ -41,6 +41,8 @@ char *daystr(char days);
 
 #include "scfg.h"
 
+static void hotkey_cfg(void);
+
 void xprogs_cfg()
 {
 	static int xprogs_dflt;
@@ -53,6 +55,7 @@ while(1) {
 	strcpy(opt[i++],"Timed Events");
 	strcpy(opt[i++],"Native Program List");
 	strcpy(opt[i++],"External Editors");
+	strcpy(opt[i++],"Online Hot Key Events");
 	strcpy(opt[i++],"Online Programs (Doors)");
 	opt[i][0]=0;
 	SETHELP(WHERE);
@@ -86,7 +89,10 @@ online external programs (doors).
 		case 3:
 			xedit_cfg();
 			break;
-		case 4:
+        case 4:
+            hotkey_cfg();
+            break;
+		case 5:
 			xtrnsec_cfg();
 			break; } }
 }
@@ -1281,6 +1287,8 @@ This is the internal code for the external editor.
 			,cfg.xedit[i]->misc&QUICKBBS ? "Yes":"No");
 		sprintf(opt[k++],"%-32.32s%s","Expand Line Feeds to CRLF"
 			,cfg.xedit[i]->misc&EXPANDLF ? "Yes":"No");
+		sprintf(opt[k++],"%-32.32s%s","Strip FidoNet Kludge Lines"
+			,cfg.xedit[i]->misc&STRIPKLUDGE ? "Yes":"No");
 		switch(cfg.xedit[i]->type) {
 			case XTRN_SBBS:
 				sprintf(str,"%-15s %s","Synchronet","XTRN.DAT");
@@ -1533,6 +1541,29 @@ instead of a carriage return/line feed pair, set this option to Yes.
                     uifc.changes=TRUE; }
 				break;
 			case 9:
+				k=cfg.xedit[i]->misc&STRIPKLUDGE ? 0:1;
+				strcpy(opt[0],"Yes");
+				strcpy(opt[1],"No");
+				opt[2][0]=0;
+				uifc.savnum=2;
+				SETHELP(WHERE);
+/*
+Strip FidoNet Kludge Lines From Messages:
+
+If this external editor adds FidoNet Kludge lines to the message text,
+set this option to Yes to strip those lines from the message.
+*/
+				k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
+                	,"Strip FidoNet Kludge Lines"
+					,opt);
+				if(!k && !(cfg.xedit[i]->misc&STRIPKLUDGE)) {
+					cfg.xedit[i]->misc|=STRIPKLUDGE;
+					uifc.changes=TRUE; }
+				else if(k==1 && cfg.xedit[i]->misc&STRIPKLUDGE) {
+					cfg.xedit[i]->misc&=~STRIPKLUDGE;
+                    uifc.changes=TRUE; }
+				break;
+			case 10:
 				k=0;
 				strcpy(opt[k++],"None");
 				sprintf(opt[k++],"%-15s %s","Synchronet","XTRN.DAT");
@@ -1569,92 +1600,6 @@ format, select the file format from the list.
 				break;
 
 				} } }
-}
-
-
-void swap_cfg()
-{
-	static int dflt,bar;
-	char str[81];
-	int j,k;
-	uint i;
-
-while(1) {
-	for(i=0;i<MAX_OPTS && i<cfg.total_swaps;i++)
-		sprintf(opt[i],"%-25s",cfg.swap[i]->cmd);
-	opt[i][0]=0;
-	j=WIN_ACT|WIN_CHE|WIN_L2R|WIN_SAV;
-	uifc.savnum=0;
-	if(cfg.total_swaps)
-		j|=WIN_DEL;
-	if(cfg.total_swaps<MAX_OPTS)
-		j|=WIN_INS|WIN_INSACT|WIN_XTR;
-	SETHELP(WHERE);
-/*
-External Program Global Swap List:
-
-This is a list of the external program (executable file) names to swap
-the BBS out of memory for. They are termed Global because if you add
-a program name to this list, the BBS will swap to run it regardless of
-when, where, or why the program is run from the BBS.
-
-Use  INS  and  DELETE  to add and remove swappable programs.
-
-To change the filename of a program, hit  ENTER .
-
-To swap whenever PKZIP is run, add PKZIP to the list.
-
-To swap for all DOS Shells, add COMMAND.COM to the list.
-*/
-	i=uifc.list(j,0,0,17,&dflt,&bar,"Global Swap List",opt);
-	if((signed)i==-1)
-		return;
-	if((i&MSK_ON)==MSK_INS) {
-		i&=MSK_OFF;
-		SETHELP(WHERE);
-/*
-Swappable Program Name:
-
-This is the executable filename of the external program.
-*/
-		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Program Name",str,12
-			,0)<1)
-            continue;
-		if((cfg.swap=(swap_t **)REALLOC(cfg.swap
-			,sizeof(swap_t *)*(cfg.total_swaps+1)))==NULL) {
-			errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_swaps+1);
-			cfg.total_swaps=0;
-			bail(1);
-            continue; }
-		if(cfg.total_swaps)
-			for(j=cfg.total_swaps;j>i;j--)
-				cfg.swap[j]=cfg.swap[j-1];
-		if((cfg.swap[i]=(swap_t *)MALLOC(sizeof(swap_t)))==NULL) {
-			errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(swap_t));
-			continue; }
-		memset((swap_t *)cfg.swap[i],0,sizeof(swap_t));
-		strcpy(cfg.swap[i]->cmd,str);
-		cfg.total_swaps++;
-		uifc.changes=TRUE;
-		continue; }
-	if((i&MSK_ON)==MSK_DEL) {
-		i&=MSK_OFF;
-		FREE(cfg.swap[i]);
-		cfg.total_swaps--;
-		for(j=i;j<cfg.total_swaps;j++)
-			cfg.swap[j]=cfg.swap[j+1];
-		uifc.changes=TRUE;
-		continue; }
-	SETHELP(WHERE);
-/*
-Swappable Program Name:
-
-This is the executable filename of the external program.
-*/
-	strcpy(str,cfg.swap[i]->cmd);
-	if(uifc.input(WIN_MID|WIN_SAV,0,5,"Program Name",str,12
-		,K_EDIT)>0)
-		strcpy(cfg.swap[i]->cmd,str); }
 }
 
 int natvpgm_cfg()
@@ -1918,3 +1863,135 @@ abreviation of the name.
 				break; } } }
 }
 
+void hotkey_cfg(void)
+{
+	static int dflt,dfltopt,bar;
+	char str[81],done=0,*p;
+	int j,k;
+	uint i;
+	static hotkey_t savhotkey;
+
+while(1) {
+	for(i=0;i<cfg.total_hotkeys && i<MAX_OPTS;i++)
+		sprintf(opt[i],"Ctrl-%c    %.40s"
+            ,cfg.hotkey[i]->key+'@'
+            ,cfg.hotkey[i]->cmd);
+	opt[i][0]=0;
+	j=WIN_SAV|WIN_ACT|WIN_CHE|WIN_RHT;
+	uifc.savnum=0;
+	if(cfg.total_hotkeys)
+		j|=WIN_DEL|WIN_GET;
+	if(cfg.total_hotkeys<MAX_OPTS)
+		j|=WIN_INS|WIN_INSACT|WIN_XTR;
+	if(savhotkey.cmd[0])
+		j|=WIN_PUT;
+	SETHELP(WHERE);
+/*
+Online (Global) Hot Key Events:
+
+This is a list of programs or loadable modules that can be executed by
+anyone on the BBS at any time (while the BBS has control of user input).
+
+To add a hot key event, select the desired location and hit  INS .
+
+To delete a hot key event, select it and hit  DEL .
+
+To configure a hot key event, select it and hit  ENTER .
+*/
+	i=uifc.list(j,0,0,45,&dflt,&bar,"Online (Global) Hot Key Events",opt);
+	if((signed)i==-1)
+		return;
+	if((i&MSK_ON)==MSK_INS) {
+		i&=MSK_OFF;
+		SETHELP(WHERE);
+/*
+Global Hot Key:
+
+This is the control key used to trigger the hot key event. Example, A
+indicates a Ctrl-A hot key event.
+*/
+		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Control Key",str,1
+			,K_UPPER)<1)
+            continue;
+
+		if((cfg.hotkey=(hotkey_t **)REALLOC(cfg.hotkey
+            ,sizeof(hotkey_t *)*(cfg.total_hotkeys+1)))==NULL) {
+            errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_hotkeys+1);
+			cfg.total_hotkeys=0;
+			bail(1);
+            continue; }
+		if(cfg.total_hotkeys)
+			for(j=cfg.total_hotkeys;j>i;j--)
+				cfg.hotkey[j]=cfg.hotkey[j-1];
+		if((cfg.hotkey[i]=(hotkey_t *)MALLOC(sizeof(hotkey_t)))==NULL) {
+			errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(hotkey_t));
+			continue; }
+		memset((hotkey_t *)cfg.hotkey[i],0,sizeof(hotkey_t));
+		cfg.hotkey[i]->key=str[0]-'@';
+		cfg.total_hotkeys++;
+		uifc.changes=TRUE;
+		continue; }
+	if((i&MSK_ON)==MSK_DEL) {
+		i&=MSK_OFF;
+		FREE(cfg.hotkey[i]);
+		cfg.total_hotkeys--;
+		for(j=i;j<cfg.total_hotkeys;j++)
+			cfg.hotkey[j]=cfg.hotkey[j+1];
+		uifc.changes=TRUE;
+		continue; }
+	if((i&MSK_ON)==MSK_GET) {
+		i&=MSK_OFF;
+		savhotkey=*cfg.hotkey[i];
+		continue; }
+	if((i&MSK_ON)==MSK_PUT) {
+		i&=MSK_OFF;
+		*cfg.hotkey[i]=savhotkey;
+		uifc.changes=TRUE;
+        continue; }
+	done=0;
+	while(!done) {
+		k=0;
+		sprintf(opt[k++],"%-27.27sCtrl-%c","Global Hot Key"
+            ,cfg.hotkey[i]->key+'@');
+		sprintf(opt[k++],"%-27.27s%.40s","Command Line",cfg.hotkey[i]->cmd);
+        opt[k][0]=0;
+		SETHELP(WHERE);
+/*
+Online Hot Key Event:
+
+This menu allows you to change the settings for the selected online
+hot key event. Hot key events are control characters that are used to
+execute an external program or module anywhere in the BBS.
+*/
+		uifc.savnum=1;
+		sprintf(str,"Ctrl-%C Hot Key Event",cfg.hotkey[i]->key+'@');
+		switch(uifc.list(WIN_SAV|WIN_ACT|WIN_L2R|WIN_BOT,0,0,60,&dfltopt,0
+			,str,opt)) {
+			case -1:
+				done=1;
+				break;
+			case 0:
+				SETHELP(WHERE);
+/*
+Global Hot-Ctrl Key:
+
+This is the global control key used to execute this event.
+*/
+				sprintf(str,"%c",cfg.hotkey[i]->key+'@');
+				if(uifc.input(WIN_MID|WIN_SAV,0,10,"Global Hot Ctrl-Key"
+					,str,1,K_EDIT|K_UPPER)>0)
+					cfg.hotkey[i]->key=str[0]-'@';
+				break;
+		   case 1:
+				SETHELP(WHERE);
+/*
+Hot Key Event Command Line:
+
+This is the command line to execute when this hot key is pressed.
+*/
+				uifc.input(WIN_MID|WIN_SAV,0,10,"Command Line"
+					,cfg.hotkey[i]->cmd,50,K_EDIT);
+				break;
+				} } }
+
+}
