@@ -1452,8 +1452,10 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 #endif
 	}
 
-	if(!(mode&EX_INR) && input_thread_running)
+	if(!(mode&EX_INR) && input_thread_running) {
 		pthread_mutex_lock(&input_thread_mutex);
+		input_thread_mutex_locked=true;
+	}
 
 	if(pipe(err_pipe)!=0) {
 		errormsg(WHERE,ERR_CREATE,"err_pipe",0);
@@ -1478,7 +1480,10 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		winsize.ws_row=rows;
 		winsize.ws_col=cols;
 		if((pid=forkpty(&in_pipe[1],NULL,&term,&winsize))==-1) {
-			pthread_mutex_unlock(&input_thread_mutex);
+			if(input_thread_mutex_locked && input_thread_running) {
+				pthread_mutex_unlock(&input_thread_mutex);
+				input_thread_mutex_locked=false;
+			}
 			errormsg(WHERE,ERR_EXEC,fullcmdline,0);
 			return(-1);
 		}
@@ -1498,7 +1503,10 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 
 
 		if((pid=FORK())==-1) {
-			pthread_mutex_unlock(&input_thread_mutex);
+			if(input_thread_mutex_locked && input_thread_running) {
+				pthread_mutex_unlock(&input_thread_mutex);
+				input_thread_mutex_locked=false;
+			}
 			errormsg(WHERE,ERR_EXEC,fullcmdline,0);
 			return(-1);
 		}
@@ -1747,7 +1755,10 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 
 	close(err_pipe[0]);
 
-	pthread_mutex_unlock(&input_thread_mutex);
+	if(input_thread_mutex_locked && input_thread_running) {
+		pthread_mutex_unlock(&input_thread_mutex);
+		input_thread_mutex_locked=false;
+	}
 
 	return(WEXITSTATUS(i));
 }
