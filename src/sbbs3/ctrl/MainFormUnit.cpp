@@ -234,7 +234,7 @@ static void client_on(void* p, BOOL on, int sock, client_t* client, BOOL update)
     ReleaseMutex(ClientForm->ListMutex);
 }
 
-static int bbs_lputs(void* p, char *str)
+static int bbs_lputs(void* p, int level, char *str)
 {
 	static HANDLE mutex;
 
@@ -323,7 +323,7 @@ static void bbs_start(void)
     Application->ProcessMessages();
 }
 
-static int event_lputs(char *str)
+static int event_lputs(int level, char *str)
 {
 	static HANDLE mutex;
 
@@ -341,7 +341,7 @@ static int event_lputs(char *str)
     return(Line.Length());
 }
 
-static int service_lputs(void* p, char *str)
+static int service_lputs(void* p, int level, char *str)
 {
 	static HANDLE mutex;
 
@@ -393,7 +393,7 @@ static void services_clients(void* p, int clients)
 {
 }
 
-static int mail_lputs(void* p, char *str)
+static int mail_lputs(void* p, int level, char *str)
 {
 	static HANDLE mutex;
 	static FILE* LogStream;
@@ -501,7 +501,7 @@ static void mail_start(void)
     Application->ProcessMessages();
 }
 
-static int ftp_lputs(void* p, char *str)
+static int ftp_lputs(void* p, int level, char *str)
 {
 	static HANDLE mutex;
 	static FILE* LogStream;
@@ -677,7 +677,7 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
     bbs_startup.thread_up=thread_up;
     bbs_startup.client_on=client_on;
     bbs_startup.socket_open=socket_open;
-    bbs_startup.event_log=event_lputs;
+    bbs_startup.event_lputs=event_lputs;
 
     memset(&mail_startup,0,sizeof(mail_startup));
     mail_startup.size=sizeof(mail_startup);
@@ -2874,8 +2874,8 @@ void __fastcall TMainForm::ViewLogClick(TObject *Sender)
         return;
 
     /* Close Mail/FTP logs */
-    mail_lputs(NULL,NULL);
-    ftp_lputs(NULL,NULL);
+    mail_lputs(NULL,0,NULL);
+    ftp_lputs(NULL,0,NULL);
 
     sprintf(filename,"%sLOGS\\%s%02d%02d%02d.LOG"
     	,MainForm->cfg.logs_dir
@@ -3307,19 +3307,19 @@ void __fastcall TMainForm::LogTimerTick(TObject *Sender)
 	char line[1024];
 
 	while(GetServerLogLine(bbs_log,NTSVC_NAME_BBS,line,sizeof(line)))
-    	bbs_lputs(NULL,line);
+    	bbs_lputs(NULL,LOG_INFO,line);
 
 	while(GetServerLogLine(event_log,NTSVC_NAME_EVENT,line,sizeof(line)))
-    	event_lputs(line);
+    	event_lputs(LOG_INFO,line);
 
 	while(GetServerLogLine(ftp_log,NTSVC_NAME_FTP,line,sizeof(line)))
-    	ftp_lputs(NULL,line);
+    	ftp_lputs(NULL,LOG_INFO,line);
 
 	while(GetServerLogLine(mail_log,NTSVC_NAME_MAIL,line,sizeof(line)))
-    	mail_lputs(NULL,line);
+    	mail_lputs(NULL,LOG_INFO,line);
 
 	while(GetServerLogLine(services_log,NTSVC_NAME_SERVICES,line,sizeof(line)))
-    	service_lputs(NULL,line);
+    	service_lputs(NULL,LOG_INFO,line);
 }
 
 //---------------------------------------------------------------------------
