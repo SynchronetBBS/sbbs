@@ -3519,9 +3519,10 @@ void export_echomail(char *sub_code,faddr_t addr)
 					printf("Fixing new-scan pointer.");
 					sprintf(str,"%s%s.sfp",scfg.sub[i]->data_dir,scfg.sub[i]->code);
 					if((file=nopen(str,O_WRONLY|O_CREAT))==-1) {
-						printf("\7ERROR line %d opening/creating %s",__LINE__,str);
-						logprintf("ERROR line %d opening/creating %s"
-							,__LINE__,str); }
+						printf("\7ERROR %d line %d opening/creating %s"
+							,errno,__LINE__,str);
+						logprintf("ERROR %d line %d opening/creating %s"
+							,errno,__LINE__,str); }
 					else {
 						write(file,&lastmsg,4);
 						close(file); } }
@@ -3697,8 +3698,10 @@ void export_echomail(char *sub_code,faddr_t addr)
 			if(!addr.zone && !(misc&LEAVE_MSGPTRS) && lastmsg>ptr) {
 				sprintf(str,"%s%s.sfp",scfg.sub[i]->data_dir,scfg.sub[i]->code);
 				if((file=nopen(str,O_WRONLY|O_CREAT))==-1) {
-					printf("\7ERROR line %d opening/creating %s",__LINE__,str);
-					logprintf("ERROR line %d opening/creating %s",__LINE__,str); }
+					printf("\7ERROR %d line %d opening/creating %s"
+						,errno,__LINE__,str);
+					logprintf("ERROR %d line %d opening/creating %s"
+						,errno,__LINE__,str); }
 				else {
 					write(file,&lastmsg,4);
 					close(file); } } }
@@ -4743,8 +4746,10 @@ for(i=0;i<scfg.total_subs;i++)
 		getlastmsg(i,&l,0);
 		sprintf(str,"%s%s.sfp",scfg.sub[i]->data_dir,scfg.sub[i]->code);
 		if((file=nopen(str,O_WRONLY|O_CREAT))==-1) {
-			printf("\7ERROR line %d opening/creating %s",__LINE__,str);
-			logprintf("ERROR line %d opening/creating %s",__LINE__,str); }
+			printf("\7ERROR %d line %d opening/creating %s"
+				,errno,__LINE__,str);
+			logprintf("ERROR %d line %d opening/creating %s"
+				,errno,__LINE__,str); }
 		else {
 			write(file,&l,sizeof(time_t));
 			close(file); } } 

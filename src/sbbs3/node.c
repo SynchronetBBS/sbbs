@@ -476,7 +476,7 @@ int main(int argc, char **argv)
 
 	sprintf(str,"%snode.dab",ctrl_dir);
 	if((nodefile=sopen(str,O_RDWR|O_BINARY,SH_DENYNO))==-1) {
-		printf("\7\nError opening %s.\n",str);
+		printf("\7\nError %d opening %s.\n",errno,str);
 		exit(1); }
 
 	sys_nodes=filelength(nodefile)/sizeof(node_t);
