@@ -1087,7 +1087,7 @@ static BOOL chk_email_addr(SOCKET socket, char* p, char* host_name, char* host_i
 	if(!trashcan(&scfg,addr,"email"))
 		return(TRUE);
 
-	lprintf("%04d !SMTP BLOCKED SOURCE E-MAIL ADDRESS: %s"
+	lprintf("%04d !SMTP BLOCKED SOURCE: %s"
 		,socket, addr);
 	sprintf(tmp,"Blocked source e-mail address: %s", addr);
 	spamlog(&scfg, "SMTP", tmp, host_name, host_ip, to);
@@ -1970,7 +1970,7 @@ static void smtp_thread(void* arg)
 
 			/* Check for blocked recipients */
 			if(trashcan(&scfg,rcpt_addr,"email")) {
-				lprintf("%04d !SMTP BLOCKED RECIPIENT E-MAIL (%s) from: %s"
+				lprintf("%04d !SMTP BLOCKED RECIPIENT (%s) from: %s"
 					,socket, rcpt_addr, reverse_path);
 				sprintf(str,"Blocked recipient e-mail address from: %s",reverse_path);
 				spamlog(&scfg, "SMTP", str, host_name, host_ip, rcpt_addr);
