@@ -1,6 +1,6 @@
 /* mime.c */
 
-/* Synchronet message creation routines */
+/* Synchronet MIME functions */
 
 /* $Id$ */
 
