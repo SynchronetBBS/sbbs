@@ -175,8 +175,8 @@ typedef struct  {
 	const char*	mime_type;
 
 	/* CGI parameters */
-	char		query_str[MAX_REQUEST_LINE];
-	char		extra_path_info[MAX_REQUEST_LINE];
+	char		query_str[MAX_REQUEST_LINE+1];
+	char		extra_path_info[MAX_REQUEST_LINE+1];
 
 	linked_list*	cgi_env;
 	linked_list*	dynamic_heads;
@@ -739,7 +739,7 @@ static BOOL send_headers(http_session_t *session, const char *status)
 	struct tm	tm;
 	linked_list	*p;
 	char	*headers;
-	char	header[MAX_REQUEST_LINE];
+	char	header[MAX_REQUEST_LINE+1];
 
 	status_line=status;
 	ret=stat(session->req.physical_path,&stats);
@@ -771,61 +771,61 @@ static BOOL send_headers(http_session_t *session, const char *status)
 	}
 	*headers=0;
 	/* Status-Line */
-	snprintf(header,MAX_REQUEST_LINE,"%s %s",http_vers[session->http_ver],status_line);
+	safe_snprintf(header,sizeof(header),"%s %s",http_vers[session->http_ver],status_line);
 	safecat(headers,header,MAX_HEADERS_SIZE);
 
 	/* General Headers */
 	ti=time(NULL);
 	if(gmtime_r(&ti,&tm)==NULL)
 		memset(&tm,0,sizeof(tm));
-	snprintf(header,MAX_REQUEST_LINE,"%s: %s, %02d %s %04d %02d:%02d:%02d GMT"
+	safe_snprintf(header,sizeof(header),"%s: %s, %02d %s %04d %02d:%02d:%02d GMT"
 		,get_header(HEAD_DATE)
 		,days[tm.tm_wday],tm.tm_mday,months[tm.tm_mon]
 		,tm.tm_year+1900,tm.tm_hour,tm.tm_min,tm.tm_sec);
 	safecat(headers,header,MAX_HEADERS_SIZE);
 	if(session->req.keep_alive) {
-		snprintf(header,MAX_REQUEST_LINE,"%s: %s",get_header(HEAD_CONNECTION),"Keep-Alive");
+		safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_CONNECTION),"Keep-Alive");
 		safecat(headers,header,MAX_HEADERS_SIZE);
 	}
 	else {
-		snprintf(header,MAX_REQUEST_LINE,"%s: %s",get_header(HEAD_CONNECTION),"Close");
+		safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_CONNECTION),"Close");
 		safecat(headers,header,MAX_HEADERS_SIZE);
 	}
 
 	/* Response Headers */
-	snprintf(header,MAX_REQUEST_LINE,"%s: %s",get_header(HEAD_SERVER),VERSION_NOTICE);
+	safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_SERVER),VERSION_NOTICE);
 	safecat(headers,header,MAX_HEADERS_SIZE);
 	
 	/* Entity Headers */
 	if(session->req.dynamic) {
-		snprintf(header,MAX_REQUEST_LINE,"%s: %s",get_header(HEAD_ALLOW),"GET, HEAD, POST");
+		safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_ALLOW),"GET, HEAD, POST");
 		safecat(headers,header,MAX_HEADERS_SIZE);
 	}
 	else {
-		snprintf(header,MAX_REQUEST_LINE,"%s: %s",get_header(HEAD_ALLOW),"GET, HEAD");
+		safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_ALLOW),"GET, HEAD");
 		safecat(headers,header,MAX_HEADERS_SIZE);
 	}
 
 	if(session->req.send_location) {
-		snprintf(header,MAX_REQUEST_LINE,"%s: %s",get_header(HEAD_LOCATION),(session->req.virtual_path));
+		safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_LOCATION),(session->req.virtual_path));
 		safecat(headers,header,MAX_HEADERS_SIZE);
 	}
 	if(session->req.keep_alive) {
 		if(ret)  {
-			snprintf(header,MAX_REQUEST_LINE,"%s: %s",get_header(HEAD_LENGTH),"0");
+			safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_LENGTH),"0");
 			safecat(headers,header,MAX_HEADERS_SIZE);
 		}
 		else  {
-			snprintf(header,MAX_REQUEST_LINE,"%s: %d",get_header(HEAD_LENGTH),(int)stats.st_size);
+			safe_snprintf(header,sizeof(header),"%s: %d",get_header(HEAD_LENGTH),(int)stats.st_size);
 			safecat(headers,header,MAX_HEADERS_SIZE);
 		}
 	}
 
 	if(!ret && !session->req.dynamic)  {
-		snprintf(header,MAX_REQUEST_LINE,"%s: %s",get_header(HEAD_TYPE),session->req.mime_type);
+		safe_snprintf(header,sizeof(header),"%s: %s",get_header(HEAD_TYPE),session->req.mime_type);
 		safecat(headers,header,MAX_HEADERS_SIZE);
 		gmtime_r(&stats.st_mtime,&tm);
-		snprintf(header,MAX_REQUEST_LINE,"%s: %s, %02d %s %04d %02d:%02d:%02d GMT"
+		safe_snprintf(header,sizeof(header),"%s: %s, %02d %s %04d %02d:%02d:%02d GMT"
 			,get_header(HEAD_LASTMODIFIED)
 			,days[tm.tm_wday],tm.tm_mday,months[tm.tm_mon]
 			,tm.tm_year+1900,tm.tm_hour,tm.tm_min,tm.tm_sec);
@@ -897,7 +897,7 @@ static void send_error(http_session_t * session, const char* message)
 	else {
 		lprintf(LOG_NOTICE,"%04d Error message file %s doesn't exist"
 			,session->socket,session->req.physical_path);
-		snprintf(sbuf,1024
+		safe_snprintf(sbuf,sizeof(sbuf)
 			,"<HTML><HEAD><TITLE>%s Error</TITLE></HEAD>"
 			"<BODY><H1>%s Error</H1><BR><H3>In addition, "
 			"I can't seem to find the %s error file</H3><br>"
@@ -917,7 +917,7 @@ static BOOL check_ars(http_session_t * session)
 	char	*password;
 	uchar	*ar;
 	BOOL	authorized;
-	char	auth_req[MAX_REQUEST_LINE];
+	char	auth_req[MAX_REQUEST_LINE+1];
 
 	if(session->req.auth[0]==0) {
 		if(startup->options&WEB_OPT_DEBUG_RX)
@@ -1223,7 +1223,7 @@ static void js_add_header(http_session_t * session, char *key, char *value)
 
 static BOOL parse_headers(http_session_t * session)
 {
-	char	req_line[MAX_REQUEST_LINE];
+	char	req_line[MAX_REQUEST_LINE+1];
 	char	next_char[2];
 	char	*value;
 	char	*p;
@@ -1474,7 +1474,7 @@ static char *get_method(http_session_t * session, char *req_line)
 
 static BOOL get_req(http_session_t * session, char *request_line)
 {
-	char	req_line[MAX_REQUEST_LINE];
+	char	req_line[MAX_REQUEST_LINE+1];
 	char *	p;
 
 	req_line[0]=0;
@@ -1747,7 +1747,7 @@ static BOOL exec_cgi(http_session_t *session)
 	fd_set	read_set;
 	fd_set	write_set;
 	int		high_fd=0;
-	char	buf[MAX_REQUEST_LINE+1];
+	char	buf[1024];
 	size_t	post_offset=0;
 	BOOL	done_parsing_headers=FALSE;
 	BOOL	done_reading=FALSE;
@@ -1887,7 +1887,7 @@ static BOOL exec_cgi(http_session_t *session)
 			}
 			if(FD_ISSET(out_pipe[0],&read_set))  {
 				if(done_parsing_headers && got_valid_headers)  {
-					i=read(out_pipe[0],buf,MAX_REQUEST_LINE);
+					i=read(out_pipe[0],buf,sizeof(buf));
 					if(i>0)  {
 						int snt=0;
 						start=time(NULL);
@@ -1903,7 +1903,7 @@ static BOOL exec_cgi(http_session_t *session)
 				}
 				else  {
 					/* This is the tricky part */
-					i=pipereadline(out_pipe[0],buf,MAX_REQUEST_LINE);
+					i=pipereadline(out_pipe[0],buf,sizeof(buf));
 					if(i<0)  {
 						done_reading=TRUE;
 						got_valid_headers=FALSE;
@@ -1958,7 +1958,7 @@ static BOOL exec_cgi(http_session_t *session)
 				}
 			}
 			if(FD_ISSET(err_pipe[0],&read_set))  {
-				i=read(err_pipe[0],buf,MAX_REQUEST_LINE);
+				i=read(err_pipe[0],buf,sizeof(buf));
 				buf[i]=0;
 				if(i>0)
 					start=time(NULL);
@@ -2418,7 +2418,7 @@ static BOOL exec_ssjs(http_session_t* session)  {
 		JS_IdToValue(session->js_cx,heads->vector[i],&val);
 		js_str=JSVAL_TO_STRING(val);
 		JS_GetProperty(session->js_cx,headers,JS_GetStringBytes(js_str),&val);
-		snprintf(str,MAX_REQUEST_LINE+1,"%s: %s"
+		safe_snprintf(str,sizeof(str),"%s: %s"
 			,JS_GetStringBytes(js_str),JS_GetStringBytes(JSVAL_TO_STRING(val)));
 		session->req.dynamic_heads=add_list(session->req.dynamic_heads,str);
 	}
@@ -2575,9 +2575,8 @@ void http_session_thread(void* arg)
 							respond(&session);
 						}
 						else {
-							snprintf(redir_req,MAX_REQUEST_LINE,"%s %s%s%s",methods[session.req.method]
+							safe_snprintf(redir_req,sizeof(redir_req),"%s %s%s%s",methods[session.req.method]
 								,session.req.virtual_path,session.http_ver<HTTP_1_0?"":" ",http_vers[session.http_ver]);
-							redir_req[MAX_REQUEST_LINE]=0;
 							lprintf(LOG_DEBUG,"%04d Internal Redirect to: %s",socket,redir_req);
 							redirp=redir_req;
 						}
