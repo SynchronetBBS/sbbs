@@ -69,11 +69,12 @@ int sendfilesocket(int sock, int file, long *offset, long count)
 		return((int)count);
 	return(i);
 #else
-	char*	buf;
+	char	buf[1024*16];
 	long	len;
 	int		rd;
 	int		wr;
 	int		total;
+	int		i;
 
 	if(offset!=NULL)
 		if(lseek(file,*offset,SEEK_SET)<0)
@@ -86,30 +87,28 @@ int sendfilesocket(int sock, int file, long *offset, long count)
 		count-=tell(file);		/* don't try to read beyond EOF */
 	}
 
-	if((buf=(char*)malloc(count))==NULL) {
-		errno=ENOMEM;
-		return(-1);
-	}
-
-	rd=read(file,buf,count);
-	if(rd!=count) {
-		free(buf);
-		return(-1);
-	}
-
-	for(total=wr=0;total<count;total+=wr) {
-		wr=sendsocket(sock,buf+total,count-total);
-		if(wr>0)
-			continue;
-		if(wr==SOCKET_ERROR && ERROR_VALUE==EWOULDBLOCK) {
-			wr=0;
-			SLEEP(1);
-			continue;
+	total=0;
+	while(total!=count) {
+		rd=read(file,buf,sizeof(buf));
+		if(rd==-1)
+			return(-1);
+		if(rd==0)
+			break;
+		for(i=wr=0;i<rd;i+=wr) {
+			wr=sendsocket(sock,buf+i,rd-i);
+			if(wr>0)
+				continue;
+			if(wr==SOCKET_ERROR && ERROR_VALUE==EWOULDBLOCK) {
+				wr=0;
+				SLEEP(1);
+				continue;
+			}
+			return(wr);
 		}
-		break;
+		if(i!=rd)
+			return(-1);
+		total+=rd;
 	}
-
-	free(buf);
 
 	if(offset!=NULL)
 		(*offset)+=total;
