@@ -8,7 +8,7 @@ template.group=msg_area.grp[grp];
 template.subs=msg_area.grp[grp].sub_list;
 
 for(s in msg_area.grp[grp].sub_list) {
-msgbase = new MsgBase(msg_area.grp[grp].sub_list[s].code);
+	msgbase = new MsgBase(msg_area.grp[grp].sub_list[s].code);
 	if(msgbase.open()) {
 		var lastdate="Unknown";
         msgs=msgbase.total_msgs;
