@@ -36,10 +36,12 @@ for(i=0;i<argc;i++) {
 	}
 }
 
-msg.replace(/\t/,
-	function(str,offset,s) {
-		return('        '.substr(0,(offset % 8)));
+if(msg!=undefined) {
+	msg.replace(/\t/,
+		function(str,offset,s) {
+			return('        '.substr(0,(offset % 8)));
 	});
+}
 
 log("Using nick: " + nick);
 log("Connecting to: " +server+ " port " + port);
