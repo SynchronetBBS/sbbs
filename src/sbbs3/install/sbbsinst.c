@@ -53,6 +53,8 @@
 #define DIST_LIST_URL2		"ftp://freebsd.synchro.net/main/misc/sbbs-rel.lst"
 #define DIST_LIST_URL3		"ftp://freebsd.synchro.net/main/misc/sbbs-rel.lst"
 #define DIST_LIST_URL4		"ftp://freebsd.synchro.net/main/misc/sbbs-rel.lst"
+#define DEFAULT_DISTFILE	"sbbs-src.tgz"
+#define DEFAULT_LIBFILE		"libs-%s.tgz"	/* MUST HAVE ONE %s */
 #define MAX_DISTRIBUTIONS	50
 #define	MAX_DIST_FILES		10
 #define MAX_SERVERS			100
@@ -78,6 +80,7 @@ struct dist_t {
 enum {
 	 CVS_SERVER
 	,DIST_SET
+	,LOCAL_FILE
 };
 
 /********************/
@@ -147,8 +150,8 @@ int main(int argc, char **argv)
 	char 	str[129];
 	BOOL    door_mode=FALSE;
 	struct dist_t 	**distlist;
-	int		dist;
-	int		server;
+	int		dist=0;
+	int		server=0;
 
 	/************/
 	/* Defaults */
@@ -259,33 +262,10 @@ int main(int argc, char **argv)
 		bail(1);
 	}
 
-dist=-2;
-while(1) {
-	if(dist==-2)
-		dist=choose_dist((char **)distlist);
-	if(dist==-1)  {
+	while(1) {
 		i=0;
-		strcpy(opt[0],"Yes");
-		strcpy(opt[1],"No");
-		opt[2][0]=0;
-		uifc.helpbuf=	"`Exit SBBSINST:`\n"
-						"\n"
-						"\nIf you want to exit the Synchronet installation utility, select `Yes`."
-						"\nOtherwise, select `No` or hit ~ ESC ~.";
-		i=uifc.list(WIN_MID,0,0,0,&i,0,"Exit SBBSINST",opt);
-		if(!i)
-			bail(0);
-		dist=-2;
-	}
-
-	if(dist>=0)  {
-		server=choose_server((char **)(((struct dist_t **)distlist)[dist]->servers));
-		if(server==-1)
-			dist=-2;
-	}
-
-	while(dist>=0 && server>=0) {
-		i=0;
+		sprintf(mopt[i++],"%-33.33s%s","Distribution",distlist[dist]->version);
+		sprintf(mopt[i++],"%-33.33s%s","Server",(distlist[dist]->type==LOCAL_FILE?"Local Files":distlist[dist]->servers[server]->desc));
 		sprintf(mopt[i++],"%-33.33s%s","Install Path",params.install_path);
 		sprintf(mopt[i++],"%-33.33s%s","Compiler",params.usebcc?"BCC":"GCC");
 		sprintf(mopt[i++],"%-33.33s%s","Compiler Flags",params.cflags);
@@ -299,6 +279,20 @@ while(1) {
 		switch(uifc.list(WIN_MID|WIN_ACT,0,0,60,&main_dflt,0
 			,"Configure",mopt)) {
 			case 0:
+				i=choose_dist((char **)distlist);
+				if(i>=0)  {
+					server=0;
+					dist=i;
+				}
+				break;
+			case 1:
+				if(distlist[dist]->type != LOCAL_FILE)  {
+					i=choose_server((char **)distlist[dist]->servers);
+					if(i>=0)
+						server=0;
+				}
+				break;
+			case 2:
 				uifc.helpbuf=	"`Install Path`\n"
 								"\n"
 								"\nPath to install the Synchronet BBS system into."
@@ -309,7 +303,7 @@ while(1) {
 								"\n	/home/bbs/sbbs";
 				uifc.input(WIN_MID,0,0,"Install Path",params.install_path,40,K_EDIT);
 				break;
-			case 1:
+			case 3:
 				strcpy(opt[0],"BCC");
 				strcpy(opt[1],"GCC");
 				opt[2][0]=0;
@@ -324,12 +318,12 @@ while(1) {
 					params.usebcc=FALSE;
 				i=0;
 				break;
-			case 2:
+			case 4:
 				uifc.helpbuf=	"`Compiler Flags`\n"
 								"\nToDo: Add help.";
 				uifc.input(WIN_MID,0,0,"Additional Compiler Flags",params.cflags,40,K_EDIT);
 				break;
-			case 3:
+			case 5:
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
 				opt[2][0]=0;
@@ -344,7 +338,7 @@ while(1) {
 					params.debug=FALSE;
 				i=0;
 				break;
-			case 4:
+			case 6:
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
 				opt[2][0]=0;
@@ -361,16 +355,25 @@ while(1) {
 					params.symlink=FALSE;
 				i=0;
 				break;
-			case 5:
-				install_sbbs(distlist[dist],distlist[dist]->servers[server]);
+			case 7:
+				install_sbbs(distlist[dist],distlist[dist]->type==LOCAL_FILE?NULL:distlist[dist]->servers[server]);
 				bail(0);
 				break;
 			case -1:
-				server=-2;
+				i=0;
+				strcpy(opt[0],"Yes");
+				strcpy(opt[1],"No");
+				opt[2][0]=0;
+				uifc.helpbuf=	"`Exit SBBSINST:`\n"
+								"\n"
+								"\nIf you want to exit the Synchronet installation utility, select `Yes`."
+								"\nOtherwise, select `No` or hit ~ ESC ~.";
+				i=uifc.list(WIN_MID,0,0,0,&i,0,"Exit SBBSINST",opt);
+				if(!i)
+					bail(0);
 				break; 
 		} 
 	}
-}
 }
 
 		/* Some jiggery-pokery here to avoid having to enter the CVS password */
@@ -387,6 +390,7 @@ void install_sbbs(struct dist_t *dist,struct server_ent_t *server)  {
 	char	cvstag[7+MAX_PATH];
 	char	buf[1024];
 	char	url[MAX_PATH+1];
+	char	path[MAX_PATH+1];
 	int		i;
 	int		fout,ret1,ret2;
 	ftp_FILE	*remote;
@@ -401,10 +405,11 @@ void install_sbbs(struct dist_t *dist,struct server_ent_t *server)  {
 	
 	sprintf(sbbsdir,"SBBSDIR=%s",params.install_path);
 	putenv(sbbsdir);
-	
+
 	if(params.usebcc)
 		putenv("bcc=1");
-	
+
+	sprintf(path,"%s",FULLPATH(str,"./",sizeof(str)));
 	if(mkdir(params.install_path,0777)&&errno!=EEXIST)  {
 		sprintf(str,"Could not create install %s!",params.install_path);
 		uifc.msg(str);
@@ -472,6 +477,21 @@ void install_sbbs(struct dist_t *dist,struct server_ent_t *server)  {
 			}
 			exit(EXIT_SUCCESS);
 			break;
+		case LOCAL_FILE:
+			for(i=0;dist->files[i][0];i++)  {
+				sprintf(cmd,"gzip -dc %s/%s | tar -xvf -",path,dist->files[i]);
+				if(system(cmd))  {
+					printf("Error extracting %s/%s\n",path,dist->files[i]);
+					exit(EXIT_FAILURE);
+				}
+			}
+			sprintf(cmd,"gmake install -f install/GNUmakefile");
+			if(system(cmd))  {
+				printf("'Nuff said.\n");
+				exit(EXIT_FAILURE);
+			}
+			exit(EXIT_SUCCESS);
+			break;
 	}
 }
 
@@ -501,6 +521,33 @@ get_distlist(void)
 	sprintf(sys_desc,"%s-%s",name.sysname,name.machine);
 	printf("Sys: %s\n",sys_desc);
 
+	if((dist=(struct dist_t **)MALLOC(sizeof(void *)*MAX_DISTRIBUTIONS))==NULL)
+		allocfail(sizeof(void *)*MAX_DISTRIBUTIONS);
+	for(i=0;i<MAX_DISTRIBUTIONS;i++)
+		if((dist[i]=(void *)MALLOC(sizeof(struct dist_t)))==NULL)
+			allocfail(sizeof(struct dist_t));
+
+	sprintf(str,DEFAULT_LIBFILE,sys_desc);
+	if(fexist(DEFAULT_DISTFILE) && fexist(str))  {
+		if((file=(char **)MALLOC(sizeof(char *)*MAX_DIST_FILES))==NULL)
+			allocfail(sizeof(char *)*MAX_DIST_FILES);
+		for(i=0;i<MAX_DIST_FILES;i++)
+			if((file[i]=(char *)MALLOC(MAX_FILELEN))==NULL)
+				allocfail(MAX_FILELEN);
+		server=NULL;
+		f=0;
+		s=0;
+
+		memset(dist[r],0,sizeof(struct dist_t));
+		sprintf(dist[r]->version,"%s (Local)",VERSION);
+		dist[r]->type=LOCAL_FILE;
+		dist[r]->servers=server;
+		dist[r]->files=file;
+		r++;
+		strcpy(file[f++],DEFAULT_DISTFILE);
+		strcpy(file[f++],str);
+	}
+
 	uifc.pop("Getting distribution list");
 	if((list=ftpGetURL(DIST_LIST_URL1,ftp_user,ftp_pass,&ret1))==NULL
 			&& (list=ftpGetURL(DIST_LIST_URL2,ftp_user,ftp_pass,&ret2))==NULL
@@ -514,13 +561,19 @@ get_distlist(void)
 				DIST_LIST_URL3,ftpErrString(ret1),
 				DIST_LIST_URL4,ftpErrString(ret1));
 		exit(EXIT_FAILURE);
+		strcpy(file[f],DEFAULT_DISTFILE);
+		for(j=0,i=2;in_line[i];i++)  {
+			if(in_line[i]=='%' && in_line[i+1]=='s')  {
+				file[f][j]=0;
+				strcat(file[f],sys_desc);
+				j=strlen(file[f]);
+				i++;
+			}
+			else
+				file[f][j++]=in_line[i];
+		}
+		f++;
 	}
-
-	if((dist=(struct dist_t **)MALLOC(sizeof(void *)*MAX_DISTRIBUTIONS))==NULL)
-		allocfail(sizeof(void *)*MAX_DISTRIBUTIONS);
-	for(i=0;i<MAX_DISTRIBUTIONS;i++)
-		if((dist[i]=(void *)MALLOC(sizeof(struct dist_t)))==NULL)
-			allocfail(sizeof(struct dist_t));
 
 	while((list->gets(in_line,sizeof(in_line),list))!=NULL)  {
 		i=strlen(in_line);
