@@ -1455,9 +1455,11 @@ static BOOL check_request(http_session_t * session)
 	last_slash=str+strlen(root_dir)-1;
 	/* Loop while there's more /s in path*/
 	p=last_slash;
+
+	/* This is bad... fix it.  ToDo */
 	while(((last_slash=strchr(p+1,'/'))!=NULL) || ((last_slash=strchr(p+1,'\\'))!=NULL)) {
-		/* Terminate the path after the slash */
 		p=last_slash;
+		/* Terminate the path after the slash */
 		*(last_slash+1)=0;
 		strcat(str,"access.ars");
 		if(!stat(str,&sb)) {
