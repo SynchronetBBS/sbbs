@@ -326,7 +326,7 @@ void newvar(uchar *in)
 	if(i<vars)
 		return;
 	if((var_name=(ulong *)REALLOC(var_name,sizeof(long)*(vars+1)))==NULL) {
-		printf("Too many (%lu) variables!\r\n",vars);
+		printf("Too many (%lu) variables!\n",vars);
 		exit(1); }
 	var_name[vars]=l;
 	if(display)
@@ -516,17 +516,17 @@ void compile(char *src)
 			truncsp(arg2);
 			if((define_str=(char **)REALLOC(define_str,sizeof(char *)*(defines+1)))
 				==NULL) {
-				printf("Too many defines.\r\n");
+				printf("Too many defines.\n");
 				exit(1); }
 			if((define_str[defines]=(char *)MALLOC(strlen(arg)+1))==NULL) {
-				printf("Too many defines.\r\n");
+				printf("Too many defines.\n");
 				exit(1); }
 			if((define_val=(char **)REALLOC(define_val,sizeof(char *)*(defines+1)))
 				==NULL) {
-				printf("Too many defines.\r\n");
+				printf("Too many defines.\n");
 				exit(1); }
 			if((define_val[defines]=(char *)MALLOC(strlen(arg2)+1))==NULL) {
-				printf("Too many defines.\r\n");
+				printf("Too many defines.\n");
 				exit(1); }
 			strcpy(define_str[defines],arg);
 			strcpy(define_val[defines],arg2);
@@ -707,7 +707,7 @@ void compile(char *src)
 				printf("Too many labels.\n");
 				exit(1); }
 			if((label_name[labels]=(char *)MALLOC(strlen(p)+1))==NULL) {
-				printf("Too many labels.\r\n");
+				printf("Too many labels.\n");
 				exit(1); }
 			strcpy(label_name[labels],p);
 			label_indx[labels]=ftell(out);
@@ -720,25 +720,25 @@ void compile(char *src)
 				*sp=0;
 			if((goto_label=(char **)REALLOC(goto_label,sizeof(char *)*(gotos+1)))
 				==NULL) {
-				printf("Too many gotos.\r\n");
+				printf("Too many gotos.\n");
 				exit(1); }
 			if((goto_file=(char **)REALLOC(goto_file,sizeof(char *)*(gotos+1)))
 				==NULL) {
-				printf("Too many gotos.\r\n");
+				printf("Too many gotos.\n");
 				exit(1); }
 			if((goto_indx=(uint *)REALLOC(goto_indx,sizeof(int)*(gotos+1)))
 				==NULL) {
-				printf("Too many gotos.\r\n");
+				printf("Too many gotos.\n");
 				exit(1); }
 			if((goto_line=(uint *)REALLOC(goto_line,sizeof(int)*(gotos+1)))
 				==NULL) {
-				printf("Too many gotos.\r\n");
+				printf("Too many gotos.\n");
 				exit(1); }
 			if((goto_label[gotos]=(char *)MALLOC(strlen(arg)+1))==NULL) {
-				printf("Too many gotos.\r\n");
+				printf("Too many gotos.\n");
 				exit(1); }
 			if((goto_file[gotos]=(char *)MALLOC(strlen(str)+1))==NULL) {
-				printf("Too many gotos.\r\n");
+				printf("Too many gotos.\n");
 				exit(1); }
 			strcpy(goto_label[gotos],arg);
 			strcpy(goto_file[gotos],str);
@@ -754,25 +754,25 @@ void compile(char *src)
 				*sp=0;
 			if((call_label=(char **)REALLOC(call_label,sizeof(char *)*(calls+1)))
 				==NULL) {
-				printf("Too many calls.\r\n");
+				printf("Too many calls.\n");
 				exit(1); }
 			if((call_file=(char **)REALLOC(call_file,sizeof(char *)*(calls+1)))
 				==NULL) {
-				printf("Too many calls.\r\n");
+				printf("Too many calls.\n");
 				exit(1); }
 			if((call_indx=(uint *)REALLOC(call_indx,sizeof(int)*(calls+1)))
 				==NULL) {
-				printf("Too many calls.\r\n");
+				printf("Too many calls.\n");
 				exit(1); }
 			if((call_line=(uint *)REALLOC(call_line,sizeof(int)*(calls+1)))
 				==NULL) {
-				printf("Too many calls.\r\n");
+				printf("Too many calls.\n");
 				exit(1); }
 			if((call_label[calls]=(char *)MALLOC(strlen(arg)+1))==NULL) {
-				printf("Too many calls.\r\n");
+				printf("Too many calls.\n");
 				exit(1); }
 			if((call_file[calls]=(char *)MALLOC(strlen(src)+1))==NULL) {
-				printf("Too many calls.\r\n");
+				printf("Too many calls.\n");
 				exit(1); }
 
 			strcpy(call_label[calls],arg);
@@ -3129,7 +3129,7 @@ char *usage=	"\n"
 				"\n"
 				" opts: /d display debug during compile\n"
 				"       /c case sensitive variables, labels, and macros\n"
-				"       /o set output directory (e.g. /o\\sbbs\\exec)\n"
+				"       /o set output directory (e.g. /o/sbbs/exec)\n"
 				"       /q quiet mode (no banner)\n"
 				;
 
