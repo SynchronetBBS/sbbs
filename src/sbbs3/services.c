@@ -61,7 +61,9 @@
 #include <errno.h>			/* errno */
 
 /* Synchronet-specific headers */
+#ifndef JAVASCRIPT
 #define JAVASCRIPT	/* required to include JS API headers */
+#endif
 #include "sbbs.h"
 #include "services.h"
 #include "ident.h"	/* identify() */
