@@ -672,13 +672,13 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 
 		smb_fseek(smb.sdt_fp,offset,SEEK_SET);
 		xlat=XLAT_NONE;
-		smb_fwrite(&xlat,2,smb.sdt_fp);
+		smb_fwrite(&smb,&xlat,2,smb.sdt_fp);
 		m=2;
 		for(;l<n*QWK_BLOCK_LEN && m<length;l++) {
 			if(qwkbuf[l]==0 || qwkbuf[l]==LF)
 				continue;
 			if(qwkbuf[l]==QWK_NEWLINE) {
-				smb_fwrite(crlf,2,smb.sdt_fp);
+				smb_fwrite(&smb,crlf,2,smb.sdt_fp);
 				m+=2;
 				continue; }
 			smb_fputc(qwkbuf[l],smb.sdt_fp);

@@ -190,10 +190,10 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 
 	fseek(smb.sdt_fp,offset,SEEK_SET);
 	xlat=XLAT_NONE;
-	smb_fwrite(&xlat,sizeof(xlat),smb.sdt_fp);
-	smb_fwrite(msgtxt,msgtxtlen,smb.sdt_fp);
+	smb_fwrite(&smb,&xlat,sizeof(xlat),smb.sdt_fp);
+	smb_fwrite(&smb,msgtxt,msgtxtlen,smb.sdt_fp);
 	for(l=length;l%SDT_BLOCK_LEN;l++)
-		smb_fwrite(&pad,1,smb.sdt_fp);
+		smb_fwrite(&smb,&pad,sizeof(pad),smb.sdt_fp);
 	fflush(smb.sdt_fp);
 
 	memset(&msg,0,sizeof(smbmsg_t));

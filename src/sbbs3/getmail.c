@@ -62,7 +62,7 @@ int DLLCALL getmail(scfg_t* cfg, int usernumber, BOOL sent)
 	if(smb_open(&smb)!=0) 
 		return(0); 
 	while(!smb_feof(smb.sid_fp)) {
-		if(smb_fread(&idx,sizeof(idx),smb.sid_fp) != sizeof(idx))
+		if(smb_fread(&smb,&idx,sizeof(idx),smb.sid_fp) != sizeof(idx))
 			break;
 		if(idx.number==0)	/* invalid message number, ignore */
 			continue;
@@ -139,7 +139,7 @@ mail_t* DLLCALL loadmail(smb_t* smb, ulong* msgs, uint usernumber
 
 	smb_rewind(smb->sid_fp);
 	while(!smb_feof(smb->sid_fp)) {
-		if(smb_fread(&idx,sizeof(idx),smb->sid_fp) != sizeof(idx))
+		if(smb_fread(smb,&idx,sizeof(idx),smb->sid_fp) != sizeof(idx))
 			break;
 		if(idx.number==0)	/* invalid message number, ignore */
 			continue;

@@ -3313,7 +3313,7 @@ static void sendmail_thread(void* arg)
 			smb_freemsgmem(&msg);
 
 			smb_fseek(smb.sid_fp, offset*sizeof(msg.idx), SEEK_SET);
-			if(smb_fread(&msg.idx, sizeof(msg.idx), smb.sid_fp) != sizeof(msg.idx))
+			if(smb_fread(&smb, &msg.idx, sizeof(msg.idx), smb.sid_fp) != sizeof(msg.idx))
 				break;
 			if(msg.idx.attr&MSG_DELETE)	/* Marked for deletion */
 				continue;

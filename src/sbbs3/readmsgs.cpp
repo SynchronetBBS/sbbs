@@ -210,7 +210,7 @@ post_t HUGE16 * sbbs_t::loadposts(long *posts, uint subnum, ulong ptr, long mode
 	}
 	while(!feof(smb.sid_fp)) {
 		skip=0;
-		if(smb_fread(&idx,sizeof(idx),smb.sid_fp) != sizeof(idx))
+		if(smb_fread(&smb, &idx,sizeof(idx),smb.sid_fp) != sizeof(idx))
 			break;
 
 		if(idx.number==0)	/* invalid message number, ignore */

@@ -67,7 +67,7 @@ int sbbs_t::delmail(uint usernumber, int which)
 		return(i); }
 	smb_rewind(smb.sid_fp);
 	for(l=0;l<smb.status.total_msgs;) {
-		if(!smb_fread(&msg.idx,sizeof(idxrec_t),smb.sid_fp))
+		if(!smb_fread(&smb,&msg.idx,sizeof(idxrec_t),smb.sid_fp))
 			break;
 		if(which==MAIL_ALL && !(msg.idx.attr&MSG_PERMANENT)
 			&& smb.status.max_age && now>msg.idx.time
@@ -100,7 +100,7 @@ int sbbs_t::delmail(uint usernumber, int which)
 	smb_rewind(smb.sid_fp);
 	smb_fsetlength(smb.sid_fp,0);
 	for(i=0;i<l;i++)
-		smb_fwrite(&idxbuf[i],sizeof(idxrec_t),smb.sid_fp);
+		smb_fwrite(&smb,&idxbuf[i],sizeof(idxrec_t),smb.sid_fp);
 	LFREE(idxbuf);
 	smb.status.total_msgs=l;
 	smb_putstatus(&smb);

@@ -117,7 +117,7 @@ char* SMBCALL smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, ulong mode)
 					,length);
 				return(buf);
 			}
-			smb_fread(lzhbuf,length,smb->sdt_fp);
+			smb_fread(smb,lzhbuf,length,smb->sdt_fp);
 			lzhlen=*(long*)lzhbuf;
 			if((p=(char*)REALLOC(buf,l+lzhlen+3L))==NULL) {
 				sprintf(smb->last_error
