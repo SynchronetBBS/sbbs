@@ -1,6 +1,6 @@
-a:link { color: yellow; }
-a:visited { color: lime; }
-a:hover { color: #ccffdd; }
+a:link { color: #42FDC8; }
+a:visited { color: #2CD8E4; }
+a:hover { color: #ffffff; }
  
 body { background-color: teal; color: white; font-family: Arial, Helvetica, sans-serif; }
 
@@ -36,7 +36,6 @@ td.sysinfo { background-color: #007788; }
 table.grouplist { margin-left: auto; margin-right: auto; background-color: #116677; }
 th.grouplist { background-color: #007788; color: black; }
 td.grouplist { background-color: #007788; }
-a.grouplist:hover { color: #ccffdd; }
 
 table.sublist { margin-left: auto; margin-right: auto; background-color: #116677; }
 th.sublist { background-color: #007788; color: black; }
@@ -49,7 +48,6 @@ tr.msglist1 { background-color: #008699; }
 tr.msglist2 { background-color: #007688; }
 th.msglist { background-color: #007788; color: black; }
 a.msglistnu { text-decoration: none; }
-a.msglist:hover { color: #ccffdd; }
 
 table.subinfo { width: 45%; margin-left: auto; margin-right: auto; background-color: #116677; }
 tr.subinfo { white-space: nowrap;  background-color: #007788; }
@@ -83,6 +81,6 @@ input.replymsg { background-color: black; color: #aaaaaa; }
 
 p.navigation { text-align: center; font-style: italic; font-weight: bold; }
 a.navigation { font-style: normal; font-weight: normal; }
-a.navigation:hover { font-style: normal; font-weight: normal; color: #ccffdd; }
+a.navigation:hover { font-style: normal; font-weight: normal; }
 
 
