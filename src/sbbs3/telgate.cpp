@@ -65,7 +65,7 @@ void sbbs_t::telnet_gate(char* destaddr, ulong mode)
 
 	ip_addr=resolve_ip(destaddr);
 	if(ip_addr==INADDR_NONE) {
-		lprintf("!Failed to resolve address: %s",destaddr);
+		lprintf("!TELGATE Failed to resolve address: %s",destaddr);
 		bprintf("!Failed to resolve address: %s\r\n",destaddr);
 		return;
 	}
@@ -80,7 +80,7 @@ void sbbs_t::telnet_gate(char* destaddr, ulong mode)
 	addr.sin_family = AF_INET;
 
 	if((i=bind(remote_socket, (struct sockaddr *) &addr, sizeof (addr)))!=0) {
-		lprintf("!ERROR %d (%d) binding to socket %d",i, ERROR_VALUE, remote_socket);
+		lprintf("!TELGATE ERROR %d (%d) binding to socket %d",i, ERROR_VALUE, remote_socket);
 		bprintf("!ERROR %d (%d) binding to socket\r\n",i, ERROR_VALUE);
 		close_socket(remote_socket);
 		return;
@@ -92,7 +92,7 @@ void sbbs_t::telnet_gate(char* destaddr, ulong mode)
 	addr.sin_port   = htons(port);
 
 	if((i=connect(remote_socket, (struct sockaddr *)&addr, sizeof(addr)))!=0) {
-		lprintf("!ERROR %d (%d) connecting to server: %s"
+		lprintf("!TELGATE ERROR %d (%d) connecting to server: %s"
 			,i,ERROR_VALUE, destaddr);
 		bprintf("!ERROR %d (%d) connecting to server: %s\r\n"
 			,i,ERROR_VALUE, destaddr);
@@ -103,7 +103,7 @@ void sbbs_t::telnet_gate(char* destaddr, ulong mode)
 	l=1;
 
 	if((i = ioctlsocket(remote_socket, FIONBIO, &l))!=0) {
-		lprintf("!ERROR %d (%d) disabling socket blocking"
+		lprintf("!TELGATE ERROR %d (%d) disabling socket blocking"
 			,i, ERROR_VALUE);
 		close_socket(remote_socket);
 		return;
@@ -132,6 +132,10 @@ void sbbs_t::telnet_gate(char* destaddr, ulong mode)
 		l=p-(char*)buf;
 		sendsocket(remote_socket,(char*)buf,l);
 	}
+
+	/* Text/NVT mode by default */
+	send_telnet_cmd(TELNET_DONT,TELNET_BINARY);
+	telnet_mode&=~TELNET_MODE_BIN_RX;
 
 	while(online) {
 		gettimeleft();
