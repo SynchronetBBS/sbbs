@@ -38,7 +38,7 @@
 /*             line.                                                         */
 
 /* Include required header files. */
-#include "opendoor.h"
+#include "OpenDoor.h"
 #include <string.h>
 
 
