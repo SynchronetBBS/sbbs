@@ -187,6 +187,7 @@
 #define WIN_EXTKEYS	(1<<23) /* Return on any keypress... if it's not handled internally
 							 * Return value is -2 - keyvalue */
 #define WIN_NOBRDR	(1<<24)	/* Do not draw a border around the window */
+#define WIN_FIXEDHEIGHT	(1<<25)	/* Use list_height from uifc struct */
 
 #define WIN_MID WIN_L2R|WIN_T2B  /* Place window in middle of screen */
 
@@ -348,6 +349,10 @@ typedef struct {
 	int		exitend;
 	int		helpstart;
 	int		helpend;
+/****************************************************************************/
+/* List height for WIN_FIXEDHEIGHT lists.									*/
+/****************************************************************************/
+	int		list_height;
 /****************************************************************************/
 /* Exit/uninitialize function.												*/
 /****************************************************************************/

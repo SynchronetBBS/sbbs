@@ -498,15 +498,11 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 	int bbrdrwidth=1;
 	uint title_len;
 	struct mouse_event mevnt;
-	char	*title;
+	char	*title=NULL;
 	int	a,b,c,longopt;
 
-	if((title=(char *)MALLOC(strlen(initial_title)+1))==NULL) {
-		cprintf("UIFC line %d: error allocating %u bytes."
-			,__LINE__,strlen(title)+1);
-		return(-1);
-	}
-	strcpy(title,initial_title);
+	title=strdup(initial_title==NULL?"":initial_title);
+
 	uifc_mouse_disable();
 
 	title_len=strlen(title);
@@ -540,6 +536,11 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 	if(mode&WIN_XTR && opts<MAX_OPTS)
 		opts++;
 	height=opts+hbrdrsize+2;
+	if(mode&WIN_FIXEDHEIGHT) {
+gotoxy(30,1);
+cprintf("Height is: %d",api->list_height);
+		height=api->list_height;
+	}
 	if(top+height>s_bottom)
 		height=(s_bottom)-top;
 	if(!width || width<title_len+hbrdrsize+2) {
