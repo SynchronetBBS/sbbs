@@ -126,7 +126,7 @@ BOOL listFree(link_list_t* list)
 	MUTEX_DESTROY(list);
 
 #if defined(LINK_LIST_THREADSAFE)
-	if(list->sem!=NULL) {
+	if(list->flags&LINK_LIST_SEMAPHORE) {
 		sem_destroy(&list->sem);
 		list->sem=NULL;
 	}
@@ -189,7 +189,7 @@ void* listGetPrivateData(link_list_t* list)
 
 BOOL listSemPost(link_list_t* list)
 {
-	if(list==NULL || list->sem==NULL)
+	if(list==NULL || !(list->flags&LINK_LIST_SEMAPHORE))
 		return(FALSE);
 
 	return(sem_post(&list->sem)==0);
@@ -197,7 +197,7 @@ BOOL listSemPost(link_list_t* list)
 
 BOOL listSemWait(link_list_t* list)
 {
-	if(list==NULL || list->sem==NULL)
+	if(list==NULL || !(list->flags&LINK_LIST_SEMAPHORE))
 		return(FALSE);
 
 	return(sem_wait(&list->sem)==0);
@@ -205,7 +205,7 @@ BOOL listSemWait(link_list_t* list)
 
 BOOL listSemTryWait(link_list_t* list)
 {
-	if(list==NULL || list->sem==NULL)
+	if(list==NULL || !(list->flags&LINK_LIST_SEMAPHORE))
 		return(FALSE);
 
 	return(sem_trywait(&list->sem)==0);
@@ -213,7 +213,7 @@ BOOL listSemTryWait(link_list_t* list)
 
 BOOL listSemTryWaitBlock(link_list_t* list, unsigned long timeout)
 {
-	if(list==NULL || list->sem==NULL)
+	if(list==NULL || !(list->flags&LINK_LIST_SEMAPHORE))
 		return(FALSE);
 
 	return(sem_trywait_block(&list->sem,timeout));
@@ -475,7 +475,7 @@ static list_node_t* list_add_node(link_list_t* list, list_node_t* node, list_nod
 	MUTEX_UNLOCK(list);
 
 #if defined(LINK_LIST_THREADSAFE)
-	if(list->sem!=NULL)
+	if(list->flags&LINK_LIST_SEMAPHORE)
 		listSemPost(list);
 #endif
 
