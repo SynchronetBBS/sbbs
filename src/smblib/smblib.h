@@ -78,6 +78,8 @@
 #define SMB_STACK_PUSH      1           /* Push a msg base onto smb_stack() */
 #define SMB_STACK_XCHNG     2           /* Exchange msg base w/last pushed	*/
 
+#define SMB_ALL_REFS		0			/* Free all references to data		*/
+
 #define GETMSGTXT_TAILS 	(1<<0)		/* Get message tail(s)				*/
 #define GETMSGTXT_NO_BODY	(1<<1)		/* Do not retrieve message body		*/
 
@@ -128,13 +130,14 @@ SMBEXPORT ulong	SMBCALL smb_datblocks(ulong length);
 SMBEXPORT long	SMBCALL smb_allochdr(smb_t* smb, ulong length);
 SMBEXPORT long	SMBCALL smb_fallochdr(smb_t* smb, ulong length);
 SMBEXPORT long	SMBCALL smb_hallochdr(smb_t* smb);
-SMBEXPORT long	SMBCALL smb_allocdat(smb_t* smb, ulong length, ushort headers);
-SMBEXPORT long	SMBCALL smb_fallocdat(smb_t* smb, ulong length, ushort headers);
+SMBEXPORT long	SMBCALL smb_allocdat(smb_t* smb, ulong length, ushort refs);
+SMBEXPORT long	SMBCALL smb_fallocdat(smb_t* smb, ulong length, ushort refs);
 SMBEXPORT long	SMBCALL smb_hallocdat(smb_t* smb);
 SMBEXPORT int	SMBCALL smb_incmsg(smb_t* smb, smbmsg_t* msg);
-SMBEXPORT int 	SMBCALL smb_incdat(smb_t* smb, ulong offset, ulong length, ushort headers);
+SMBEXPORT int 	SMBCALL smb_incdat(smb_t* smb, ulong offset, ulong length, ushort refs);
 SMBEXPORT int 	SMBCALL smb_freemsg(smb_t* smb, smbmsg_t* msg);
-SMBEXPORT int 	SMBCALL smb_freemsgdat(smb_t* smb, ulong offset, ulong length, ushort headers);
+SMBEXPORT int	SMBCALL smb_freemsg_dfields(smb_t* smb, smbmsg_t* msg, ushort refs);
+SMBEXPORT int 	SMBCALL smb_freemsgdat(smb_t* smb, ulong offset, ulong length, ushort refs);
 SMBEXPORT int 	SMBCALL smb_freemsghdr(smb_t* smb, ulong offset, ulong length);
 SMBEXPORT void	SMBCALL smb_freemsgtxt(char* buf);
 SMBEXPORT int	SMBCALL	smb_copymsgmem(smb_t* smb, smbmsg_t* destmsg, smbmsg_t* srcmsg);

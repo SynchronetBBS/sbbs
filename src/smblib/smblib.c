@@ -68,7 +68,7 @@
 #include "filewrap.h"
 
 /* Use smb_ver() and smb_lib_ver() to obtain these values */
-#define SMBLIB_VERSION		"2.22"      /* SMB library version */
+#define SMBLIB_VERSION		"2.23"      /* SMB library version */
 #define SMB_VERSION 		0x0121		/* SMB format version */
 										/* High byte major, low byte minor */
 
@@ -1041,9 +1041,10 @@ int SMBCALL smb_copymsgmem(smb_t* smb, smbmsg_t* msg, smbmsg_t* srcmsg)
 	/* data field types/lengths */
 	if(msg->hdr.total_dfields>0) {
 		if((msg->dfield=(dfield_t *)MALLOC(msg->hdr.total_dfields*sizeof(dfield_t)))==NULL) {
-			sprintf(smb->last_error
-				,"malloc failure of %d bytes for %d data fields"
-				,msg->hdr.total_dfields*sizeof(dfield_t), msg->hdr.total_dfields);
+			if(smb!=NULL)
+				sprintf(smb->last_error
+					,"malloc failure of %d bytes for %d data fields"
+					,msg->hdr.total_dfields*sizeof(dfield_t), msg->hdr.total_dfields);
 			return(SMB_ERR_MEM);
 		}
 		memcpy(msg->dfield,srcmsg->dfield,msg->hdr.total_dfields*sizeof(dfield_t));
@@ -1052,26 +1053,29 @@ int SMBCALL smb_copymsgmem(smb_t* smb, smbmsg_t* msg, smbmsg_t* srcmsg)
 	/* header field types/lengths */
 	if(msg->total_hfields>0) {
 		if((msg->hfield=(hfield_t *)MALLOC(msg->total_hfields*sizeof(hfield_t)))==NULL) {
-			sprintf(smb->last_error
-				,"malloc failure of %d bytes for %d header fields"
-				,msg->total_hfields*sizeof(hfield_t), msg->total_hfields);
+			if(smb!=NULL)
+				sprintf(smb->last_error
+					,"malloc failure of %d bytes for %d header fields"
+					,msg->total_hfields*sizeof(hfield_t), msg->total_hfields);
 			return(SMB_ERR_MEM);
 		}
 		memcpy(msg->hfield,srcmsg->hfield,msg->total_hfields*sizeof(hfield_t));
 
 		/* header field data */
 		if((msg->hfield_dat=(void**)MALLOC(msg->total_hfields*sizeof(void*)))==NULL) {
-			sprintf(smb->last_error
-				,"malloc failure of %d bytes for %d header fields"
-				,msg->total_hfields*sizeof(void*), msg->total_hfields);
+			if(smb!=NULL)
+				sprintf(smb->last_error
+					,"malloc failure of %d bytes for %d header fields"
+					,msg->total_hfields*sizeof(void*), msg->total_hfields);
 			return(SMB_ERR_MEM);
 		}
 
 		for(i=0;i<msg->total_hfields;i++) {
 			if((msg->hfield_dat[i]=(void*)MALLOC(msg->hfield[i].length+1))==NULL) {
-				sprintf(smb->last_error
-					,"malloc failure of %d bytes for header field #%d"
-					,msg->hfield[i].length+1, i+1);
+				if(smb!=NULL)
+					sprintf(smb->last_error
+						,"malloc failure of %d bytes for header field #%d"
+						,msg->hfield[i].length+1, i+1);
 				return(SMB_ERR_MEM);
 			}
 			memset(msg->hfield_dat[i],0,msg->hfield[i].length+1);
@@ -1596,7 +1600,7 @@ ulong SMBCALL smb_hdrblocks(ulong length)
 /* smb_close_da() should be called after									*/
 /* Returns negative on error												*/
 /****************************************************************************/
-long SMBCALL smb_allocdat(smb_t* smb, ulong length, ushort headers)
+long SMBCALL smb_allocdat(smb_t* smb, ulong length, ushort refs)
 {
     ushort  i,j;
 	ulong	l,blocks,offset=0L;
@@ -1629,7 +1633,7 @@ long SMBCALL smb_allocdat(smb_t* smb, ulong length, ushort headers)
 		return(SMB_ERR_SEEK);
 	}
 	for(l=0;l<blocks;l++)
-		if(!fwrite(&headers,2,1,smb->sda_fp)) {
+		if(!fwrite(&refs,2,1,smb->sda_fp)) {
 			sprintf(smb->last_error,"%d (%s) writing allocation bytes"
 				,errno,STRERROR(errno));
 			return(SMB_ERR_WRITE);
@@ -1642,7 +1646,7 @@ long SMBCALL smb_allocdat(smb_t* smb, ulong length, ushort headers)
 /* Allocates space for data, but doesn't search for unused blocks           */
 /* Returns negative on error												*/
 /****************************************************************************/
-long SMBCALL smb_fallocdat(smb_t* smb, ulong length, ushort headers)
+long SMBCALL smb_fallocdat(smb_t* smb, ulong length, ushort refs)
 {
 	ulong	l,blocks,offset;
 
@@ -1662,7 +1666,7 @@ long SMBCALL smb_fallocdat(smb_t* smb, ulong length, ushort headers)
 		return(SMB_ERR_DAT_OFFSET);
 	}
 	for(l=0;l<blocks;l++)
-		if(!fwrite(&headers,2,1,smb->sda_fp))
+		if(!fwrite(&refs,2,1,smb->sda_fp))
 			break;
 	fflush(smb->sda_fp);
 	if(l<blocks) {
@@ -1677,8 +1681,7 @@ long SMBCALL smb_fallocdat(smb_t* smb, ulong length, ushort headers)
 /* De-allocates space for data												*/
 /* Returns non-zero on error												*/
 /****************************************************************************/
-int SMBCALL smb_freemsgdat(smb_t* smb, ulong offset, ulong length
-			, ushort headers)
+int SMBCALL smb_freemsgdat(smb_t* smb, ulong offset, ulong length, ushort refs)
 {
 	int		da_opened=0;
 	int		retval=0;
@@ -1714,10 +1717,10 @@ int SMBCALL smb_freemsgdat(smb_t* smb, ulong offset, ulong length
 			retval=SMB_ERR_READ;
 			break;
 		}
-		if(!headers || headers>i)
+		if(refs==SMB_ALL_REFS || refs>i)
 			i=0;			/* don't want to go negative */
 		else
-			i-=headers;
+			i-=refs;
 		if(fseek(smb->sda_fp,-2L,SEEK_CUR)) {
 			sprintf(smb->last_error,"%d (%s) seeking backwards 2 bytes in allocation file"
 				,errno,STRERROR(errno));
@@ -1741,7 +1744,7 @@ int SMBCALL smb_freemsgdat(smb_t* smb, ulong offset, ulong length
 /* Adds to data allocation records for blocks starting at 'offset'          */
 /* Returns non-zero on error												*/
 /****************************************************************************/
-int SMBCALL smb_incdat(smb_t* smb, ulong offset, ulong length, ushort headers)
+int SMBCALL smb_incdat(smb_t* smb, ulong offset, ulong length, ushort refs)
 {
 	ushort	i;
 	ulong	l,blocks;
@@ -1761,7 +1764,7 @@ int SMBCALL smb_incdat(smb_t* smb, ulong offset, ulong length, ushort headers)
 				,errno,STRERROR(errno));
 			return(SMB_ERR_READ);
 		}
-		i+=headers;
+		i+=refs;
 		if(fseek(smb->sda_fp,-2L,SEEK_CUR)) {
 			return(SMB_ERR_SEEK);
 		}
@@ -1834,21 +1837,33 @@ int SMBCALL smb_freemsghdr(smb_t* smb, ulong offset, ulong length)
 }
 
 /****************************************************************************/
-/* Frees all allocated header and data blocks for 'msg'                     */
+/****************************************************************************/
+int SMBCALL smb_freemsg_dfields(smb_t* smb, smbmsg_t* msg, ushort refs)
+{
+	int		i;
+	ushort	x;
+
+	for(x=0;x<msg->hdr.total_dfields;x++) {
+		if((i=smb_freemsgdat(smb,msg->hdr.offset+msg->dfield[x].offset
+			,msg->dfield[x].length,refs))!=0)
+			return(i); 
+	}
+	return(0);
+}
+
+/****************************************************************************/
+/* Frees all allocated header and data blocks (1 reference) for 'msg'       */
 /****************************************************************************/
 int SMBCALL smb_freemsg(smb_t* smb, smbmsg_t* msg)
 {
 	int 	i;
-	ushort	x;
 
 	if(smb->status.attr&SMB_HYPERALLOC)  /* Nothing to do */
 		return(SMB_SUCCESS);
 
-	for(x=0;x<msg->hdr.total_dfields;x++) {
-		if((i=smb_freemsgdat(smb,msg->hdr.offset+msg->dfield[x].offset
-			,msg->dfield[x].length,1))!=0)
-			return(i); 
-	}
+	if((i=smb_freemsg_dfields(smb,msg,1))!=0)
+		return(i);
+
 	return(smb_freemsghdr(smb,msg->idx.offset-smb->status.header_offset
 		,msg->hdr.length));
 }
