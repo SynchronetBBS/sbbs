@@ -706,6 +706,84 @@ js_secondstr(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	return(JS_TRUE);
 }
 
+static JSBool
+js_spamlog(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	uintN		i;
+	char*		p;
+	char*		prot=NULL;
+	char*		reason=NULL;
+	char*		host=NULL;
+	char*		ip_addr=NULL;
+	char*		to=NULL;
+	scfg_t*		cfg;
+
+	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
+		return(JS_FALSE);
+
+	for(i=0;i<argc;i++) {
+		if(!JSVAL_IS_STRING(argv[i]))
+			continue;
+		p=JS_GetStringBytes(JS_ValueToString(cx, argv[i]));
+		if(p==NULL)
+			continue;
+		if(prot==NULL)
+			prot=p;
+		else if(reason==NULL)
+			reason=p;
+		else if(host==NULL)
+			host=p;
+		else if(ip_addr==NULL)
+			ip_addr=p;
+		else if(to==NULL)
+			to=p;
+	}
+	*rval = BOOLEAN_TO_JSVAL(spamlog(cfg,prot,reason,host,ip_addr,to));
+	return(JS_TRUE);
+}
+
+static JSBool
+js_hacklog(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	uintN		i;
+	char*		p;
+	char*		prot=NULL;
+	char*		user=NULL;
+	char*		text=NULL;
+	char*		host=NULL;
+	SOCKADDR_IN	addr;
+	scfg_t*		cfg;
+
+	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
+		return(JS_FALSE);
+
+	memset(&addr,0,sizeof(addr));
+	for(i=0;i<argc;i++) {
+		if(JSVAL_IS_INT(argv[i])) {
+			if(addr.sin_addr.S_un.S_addr==0)
+				addr.sin_addr.S_un.S_addr=JSVAL_TO_INT(argv[i]);
+			else
+				addr.sin_port=(ushort)JSVAL_TO_INT(argv[i]);
+			continue;
+		}
+		if(!JSVAL_IS_STRING(argv[i]))
+			continue;
+		p=JS_GetStringBytes(JS_ValueToString(cx, argv[i]));
+		if(p==NULL)
+			continue;
+		if(prot==NULL)
+			prot=p;
+		else if(user==NULL)
+			user=p;
+		else if(text==NULL)
+			text=p;
+		else if(host==NULL)
+			host=p;
+	}
+	*rval = BOOLEAN_TO_JSVAL(hacklog(cfg,prot,user,text,host,&addr));
+	return(JS_TRUE);
+}
+
 
 static JSFunctionSpec js_system_functions[] = {
 	{"alias",			js_alias,			1},		// return user name for alias
@@ -716,6 +794,8 @@ static JSFunctionSpec js_system_functions[] = {
 	{"timestr",			js_timestr,			0},		// convert a time_t into a time string
 	{"datestr",			js_datestr,			0},		// convert a time_t into a date string
 	{"secondstr",		js_secondstr,		1},		// convert a time_t into a hh:mm:ss string
+	{"spamlog",			js_spamlog,			5},		// spamlog(prot,reason,host,ip,to)
+	{"hacklog",			js_hacklog,			5},		// hacklog(prot,user,text,host,ip,port)
 	{0}
 };
 
