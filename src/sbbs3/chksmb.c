@@ -135,6 +135,7 @@ int main(int argc, char **argv)
 				,dupenum,dupenumhdr,dupeoff,attr,actalloc
 				,datactalloc,misnumbered,timeerr,idxofferr,idxerr
 				,subjcrc,fromcrc,tocrc
+				,intransit,unvalidated
 				,zeronum,idxzeronum,idxnumerr,packable=0L,totallzhsaved=0L
 				,totalmsgs=0,totallzhmsgs=0,totaldelmsgs=0,totalmsgbytes=0L
 				,lzhblocks,lzhsaved;
@@ -142,9 +143,12 @@ int main(int argc, char **argv)
 	idxrec_t	idx;
 	smbmsg_t	msg;
 	hash_t**	hashes;
+	char		revision[16];
 
-	fprintf(stderr,"\nCHKSMB v2.20 - Check Synchronet Message Base - "
-		"Copyright 2004 Rob Swindell\n");
+	sscanf("$Revision$", "%*s %s", revision);
+
+	fprintf(stderr,"\nCHKSMB v2.20-%s (rev %s) SMBLIB %s - Check Synchronet Message Base\n"
+		,PLATFORM_DESC,revision,smb_lib_ver());
 
 	if(argc<2) {
 		printf("%s",usage);
@@ -264,6 +268,8 @@ int main(int argc, char **argv)
 	lzhblocks=lzhsaved=acthdrblocks=actdatblocks=0;
 	getbodyerr=gettailerr=0;
 	hasherr=0;
+	unvalidated=0;
+	intransit=0;
 	acthdrblocks=actdatblocks=0;
 	dfieldlength=dfieldoffset=0;
 
@@ -468,6 +474,20 @@ int main(int argc, char **argv)
 							"CRC (%04X)\n"
 							,smb_name_crc(msg.to),msg.idx.to);
 					tocrc++; 
+				}
+				if(msg.hdr.netattr&MSG_INTRANSIT) {
+					fprintf(stderr,"%sIn transit\n",beep);
+					msgerr=TRUE;
+					if(extinfo)
+						printf("MSGERR: Flagged 'in transit'\n");
+					intransit++;
+				}
+				if((msg.hdr.attr&(MSG_MODERATED|MSG_VALIDATED)) == MSG_MODERATED) {
+					fprintf(stderr,"%sUnvalidated\n",beep);
+					msgerr=TRUE;
+					if(extinfo)
+						printf("MSGERR: Flagged 'moderated', but not yet 'validated'\n");
+					unvalidated++;
 				}
 			}
 			if(msg.hdr.number==0) {
@@ -833,6 +853,14 @@ int main(int argc, char **argv)
 		printf("%-35.35s (!): %lu\n"
 			,smb.status.attr&SMB_EMAIL ? INDXERR "To Ext" : INDXERR "To CRCs"
 			,tocrc);
+	if(intransit)
+		printf("%-35.35s (?): %lu\n"
+			,"Message flagged as 'In Transit'"
+			,intransit);
+	if(unvalidated)
+		printf("%-35.35s (?): %lu\n"
+			,"Moderated message not yet validated"
+			,unvalidated);
 	if(getbodyerr)
 		printf("%-35.35s (!): %lu\n"
 			,"Message Body Text Read Failures"
@@ -885,6 +913,7 @@ int main(int argc, char **argv)
 		|| orphan || dupenumhdr || dupenum || dupeoff || attr
 		|| lockerr || hdrerr || hdrnumerr || idxnumerr || idxofferr
 		|| actalloc || datactalloc || misnumbered || timeerr 
+		|| intransit || unvalidated
 		|| subjcrc || fromcrc || tocrc
 		|| dfieldoffset || dfieldlength || xlaterr || idxerr) {
 		printf("%shas Errors!\n",beep);
