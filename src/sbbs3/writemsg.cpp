@@ -84,7 +84,7 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 		/* Quote entire message to MSGTMP or INPUT.MSG */
 
 		if(useron.xedit && cfg.xedit[useron.xedit-1]->misc&QUOTEALL) {
-			sprintf(str,"%sQUOTES.TXT",cfg.temp_dir);
+			sprintf(str,"%sQUOTES.TXT",cfg.node_dir);
 			if((stream=fnopen(NULL,str,O_RDONLY))==NULL) {
 				errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
 				LFREE(buf);
@@ -117,7 +117,7 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 			;
 
 		else if(yesno(text[QuoteMessageQ])) {
-			sprintf(str,"%sQUOTES.TXT",cfg.temp_dir);
+			sprintf(str,"%sQUOTES.TXT",cfg.node_dir);
 			if((stream=fnopen(&file,str,O_RDONLY))==NULL) {
 				errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
 				LFREE(buf);
@@ -205,7 +205,7 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 			fclose(stream);
 			close(file); } }
 	else {
-		sprintf(str,"%sQUOTES.TXT",cfg.temp_dir);
+		sprintf(str,"%sQUOTES.TXT",cfg.node_dir);
 		remove(str); }
 
 	if(!online || sys_status&SS_ABORT) {
@@ -295,14 +295,14 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 		if(online==ON_LOCAL) {
 			if(cfg.node_misc&NM_LCL_EDIT && cfg.node_editor[0])
 				external(cmdstr(cfg.node_editor,str,nulstr,NULL)
-					,0,cfg.temp_dir); 
+					,0,cfg.node_dir); 
 			else
 				external(cmdstr(cfg.xedit[useron.xedit-1]->lcmd,str,nulstr,NULL)
-					,ex_mode,cfg.temp_dir); }
+					,ex_mode,cfg.node_dir); }
 
 		else {
 			rioctl(IOCM|PAUSE|ABORT);
-			external(cmdstr(cfg.xedit[useron.xedit-1]->rcmd,str,nulstr,NULL),ex_mode,cfg.temp_dir);
+			external(cmdstr(cfg.xedit[useron.xedit-1]->rcmd,str,nulstr,NULL),ex_mode,cfg.node_dir);
 			rioctl(IOSM|PAUSE|ABORT); }
 		checkline();
 		if(!fexist(str) || !online
@@ -749,10 +749,10 @@ void sbbs_t::editfile(char *str)
 	long length,maxlines,lines,l;
 
 	maxlines=cfg.level_linespermsg[useron.level];
-	sprintf(str2,"%sQUOTES.TXT",cfg.temp_dir);
+	sprintf(str2,"%sQUOTES.TXT",cfg.node_dir);
 	remove(str2);
 	if(cfg.node_editor[0] && online==ON_LOCAL) {
-		external(cmdstr(cfg.node_editor,str,nulstr,NULL),0,cfg.temp_dir);
+		external(cmdstr(cfg.node_editor,str,nulstr,NULL),0,cfg.node_dir);
 		return; }
 	if(useron.xedit) {
 		editor_inf(useron.xedit,nulstr,nulstr,0,INVALID_SUB);
@@ -762,10 +762,10 @@ void sbbs_t::editfile(char *str)
 			if(cfg.xedit[useron.xedit-1]->misc&WWIVCOLOR)
 				mode|=EX_WWIV; }
 		if(online==ON_LOCAL)
-			external(cmdstr(cfg.xedit[useron.xedit-1]->lcmd,str,nulstr,NULL),mode,cfg.temp_dir);
+			external(cmdstr(cfg.xedit[useron.xedit-1]->lcmd,str,nulstr,NULL),mode,cfg.node_dir);
 		else {
 			rioctl(IOCM|PAUSE|ABORT);
-			external(cmdstr(cfg.xedit[useron.xedit-1]->rcmd,str,nulstr,NULL),mode,cfg.temp_dir);
+			external(cmdstr(cfg.xedit[useron.xedit-1]->rcmd,str,nulstr,NULL),mode,cfg.node_dir);
 			rioctl(IOSM|PAUSE|ABORT); }
 		return; }
 	if((buf=(char *)MALLOC(maxlines*MAX_LINE_LEN))==NULL) {
