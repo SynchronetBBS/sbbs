@@ -1,10 +1,20 @@
 // binarydecoder.js
 
-// Synchronet Binary Attachment Decoder 
+// Synchronet (single or multi-part) Binary Attachment Decoder 
 // for UUE and yEnc encoded binary attachments
 // Requires Synchronet v3.10m or later
 
 // $Id$
+
+// The default attachment storage directory is data/subs/attach
+
+// Format of the ctrl/binarydecoder.ini file (optional):
+//
+// [subcode]
+// attachment_dir = /override/path/to/store/attachments
+// [anothersubcode]
+// [yetanothersubcode]
+// etc.
 
 load("sbbsdefs.js");
 
@@ -31,7 +41,7 @@ if(argc) {
 		if(re.test(i))
 			sub.push(msg_area.sub[i]);
 } else
-	sub = file.iniGetAllObjects("code","sub:");
+	sub = file.iniGetAllObjects("code");
 
 // get global ini settings here
 file.close();
