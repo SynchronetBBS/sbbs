@@ -111,8 +111,6 @@ static const char* usage  = "usage: %s [[option] [...]]\n"
 #ifdef __unix__
 							"\tun<user>   set username for BBS to run as\n"
 							"\tug<group>  set group for BBS to run as\n"
-							"\t           must NOT be followed by un\n"
-							"\t           ie: put un first or not at all\n"
 #endif
 							"\tgi         get user identity (using IDENT protocol)\n"
 							"\tnh         disable hostname lookups\n"
@@ -179,7 +177,7 @@ static BOOL do_seteuid(BOOL to_new)
 
 	pthread_mutex_lock(&mutex);
 
-	if (to_new)
+	if(to_new)
 		if(!setegid(new_gid) && !seteuid(new_uid))
 			result=TRUE;
 		else
@@ -469,8 +467,8 @@ int main(int argc, char** argv)
 	char*	ctrl_dir;
 	BOOL	quit=FALSE;
 #ifdef __unix__
-	char*	new_uid_name;
-	char*	new_gid_name;
+	char*	new_uid_name=NULL;
+	char*	new_gid_name=NULL;
 	struct passwd* pw_entry;
 	struct group*  gr_entry;
 #endif
@@ -706,7 +704,11 @@ int main(int argc, char** argv)
 				switch(toupper(*(arg++))) {
 					case 'N': /* username */
 #ifdef __unix__
-						if (strlen(arg) > 1)
+						if(new_gid_name!=NULL) {
+							printf("!Must specify user before group");
+							break;
+						}
+						if(strlen(arg) > 1)
 						{
 							new_uid_name=arg;
 							old_uid = getuid();
@@ -725,7 +727,7 @@ int main(int argc, char** argv)
 						break;
 					case 'G': /* groupname */
 #ifdef __unix__
-						if (strlen(arg) > 1)
+						if(strlen(arg) > 1)
 						{
 							new_gid_name=arg;
 							old_gid = getgid();
@@ -828,7 +830,7 @@ int main(int argc, char** argv)
 			|| (run_mail && !mail_running) || (run_services && !services_running))
 			mswait(1);
 
-		if (!do_setuid())
+		if(!do_setuid())
 				/* actually try to change the uid of this process */
 			bbs_lputs("!Setting new user_id failed!  (Does the user exist?)");
 	
