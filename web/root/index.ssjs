@@ -29,7 +29,7 @@ if(user.number || system.matchuser("Guest")) {
     if(port>=0)
         write(http_request.host.slice(0,port));
     else
-        write(http_reuqest.host);
+        write(http_request.host);
     writeln('/00index.html">File Libraries</a>');
     writeln('<br />');
 }
