@@ -63,16 +63,37 @@
 #include <sys/types.h>
 
 									/* Control characters */
+#ifndef STX
 #define STX 	0x02				/* Start of text			^B	*/
+#endif
+#ifndef ETX
 #define ETX 	0x03				/* End of text				^C	*/
+#endif
+#ifndef BEL
 #define BEL		0x07				/* Bell/beep				^G	*/
+#endif
+#ifndef FF
 #define FF		0x0c				/* Form feed				^L	*/
+#endif
+#ifndef ESC
 #define ESC 	0x1b				/* Escape					^[	*/
+#endif
+#ifndef DEL
 #define DEL		0x7f				/* Delete					^BS	*/
+#endif
+#ifndef BS
 #define BS		'\b'				/* Back space				^H	*/
+#endif
+#ifndef TAB
 #define TAB 	'\t'				/* Horizontal tabulation	^I	*/
+#endif
+#ifndef LF
 #define LF		'\n'				/* Line feed				^J	*/
+#endif
+#ifndef CR
 #define CR		'\r'				/* Carriage return			^M	*/
+#endif
+
 
 enum {
 	 CTRL_A=1
