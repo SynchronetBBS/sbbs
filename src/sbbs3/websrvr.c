@@ -453,8 +453,9 @@ static int sockprintf(SOCKET sock, char *fmt, ...)
 	while((result=sendsocket(sock,sbuf,len))!=len) {
 		if(result==SOCKET_ERROR) {
 			if(ERROR_VALUE==EWOULDBLOCK) {
-				YIELD();
-				continue;
+				/* Do a select() instead of an arbitrary YIELD() */
+				if(select(sock+1,NULL,&socket_set,NULL,&tv)>=0)
+					continue;
 			}
 			if(ERROR_VALUE==ECONNRESET) 
 				lprintf("%04d Connection reset by peer on send",sock);
