@@ -43,6 +43,10 @@
 #define GLOBAL
 #endif
 
+#ifdef __cplusplus
+	extern "C" {
+#endif
+
 /*******************************/
 /* Global Variable Definitions */
 /*******************************/
@@ -127,3 +131,7 @@ GLOBAL uchar	name_len;		/* Length of name field in NAME.DAT */
 GLOBAL char 	aborted;		/* Aborted flag - if ctrl-c hit */
 GLOBAL char 	sysop_level;	/* Sysop Level */
 GLOBAL FILE 	*con_fp;		/* Console file pointer (stdout/stderr) */
+
+#ifdef __cplusplus
+	}
+#endif
