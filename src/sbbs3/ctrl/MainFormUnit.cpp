@@ -256,12 +256,14 @@ static void bbs_terminated(int code)
 	Screen->Cursor=crDefault;
 	MainForm->TelnetStart->Enabled=true;
 	MainForm->TelnetStop->Enabled=false;
+    Application->ProcessMessages();
 }
 static void bbs_started(void)
 {
 	Screen->Cursor=crDefault;
 	MainForm->TelnetStart->Enabled=false;
     MainForm->TelnetStop->Enabled=true;
+    Application->ProcessMessages();
 }
 static void bbs_start(void)
 {
@@ -269,6 +271,7 @@ static void bbs_start(void)
     bbs_status("Starting");
     strcpy(MainForm->bbs_startup.ctrl_dir,MainForm->CtrlDirectory.c_str());
 	_beginthread((void(*)(void*))bbs_thread,0,&MainForm->bbs_startup);
+    Application->ProcessMessages();
 }
 
 static int event_log(char *str)
@@ -380,12 +383,14 @@ static void mail_terminated(int code)
 	Screen->Cursor=crDefault;
 	MainForm->MailStart->Enabled=true;
 	MainForm->MailStop->Enabled=false;
+    Application->ProcessMessages();
 }
 static void mail_started(void)
 {
 	Screen->Cursor=crDefault;
 	MainForm->MailStart->Enabled=false;
     MainForm->MailStop->Enabled=true;
+    Application->ProcessMessages();
 }
 static void mail_start(void)
 {
@@ -393,6 +398,7 @@ static void mail_start(void)
     mail_status("Starting");
     strcpy(MainForm->mail_startup.ctrl_dir,MainForm->CtrlDirectory.c_str());
 	_beginthread((void(*)(void*))mail_server,0,&MainForm->mail_startup);
+    Application->ProcessMessages();
 }
 
 static int ftp_lputs(char *str)
@@ -487,12 +493,14 @@ static void ftp_terminated(int code)
 	Screen->Cursor=crDefault;
 	MainForm->FtpStart->Enabled=true;
 	MainForm->FtpStop->Enabled=false;
+    Application->ProcessMessages();
 }
 static void ftp_started(void)
 {
 	Screen->Cursor=crDefault;
 	MainForm->FtpStart->Enabled=false;
     MainForm->FtpStop->Enabled=true;
+    Application->ProcessMessages();
 }
 static void ftp_start(void)
 {
@@ -500,6 +508,7 @@ static void ftp_start(void)
     ftp_status("Starting");
     strcpy(MainForm->ftp_startup.ctrl_dir,MainForm->CtrlDirectory.c_str());
 	_beginthread((void(*)(void*))ftp_server,0,&MainForm->ftp_startup);
+    Application->ProcessMessages();
 }
 //---------------------------------------------------------------------------
 
@@ -515,6 +524,8 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
     LoginCommand="start telnet://localhost";
     ConfigCommand="%sSCFG %s /T2";
     MinimizeToSysTray=false;
+    NodeDisplayInterval=1;  /* seconds */
+    Initialized=false;
 
     memset(&bbs_startup,0,sizeof(bbs_startup));
     bbs_startup.size=sizeof(bbs_startup);
@@ -644,8 +655,12 @@ void __fastcall TMainForm::ViewToolbarMenuItemClick(TObject *Sender)
 //---------------------------------------------------------------------------
 void __fastcall TMainForm::FormClose(TObject *Sender, TCloseAction &Action)
 {
-    SaveSettings(Sender);
+    UpTimer->Enabled=false; /* Stop updating the status bar */
 
+    if(Initialized) /* Don't overwrite registry settings with defaults */
+        SaveSettings(Sender);
+
+	StatusBar->Panels->Items[4]->Text="Closing...";
     time_t start=time(NULL);
 	while(TelnetStop->Enabled || MailStop->Enabled || FtpStop->Enabled) {
         if(time(NULL)-start>30)
@@ -657,6 +672,10 @@ void __fastcall TMainForm::FormClose(TObject *Sender, TCloseAction &Action)
 //---------------------------------------------------------------------------
 void __fastcall TMainForm::SaveSettings(TObject* Sender)
 {
+	StatusBar->Panels->Items[4]->Text="Saving Settings...";
+
+    NodeForm->Timer->Interval=NodeDisplayInterval*1000;
+    
     // Write Registry keys
 	TRegistry* Registry=new TRegistry;
     if(!Registry->OpenKey(REG_KEY,true)) {
@@ -741,6 +760,7 @@ void __fastcall TMainForm::SaveSettings(TObject* Sender)
     Registry->WriteString("LoginCommand",LoginCommand);
     Registry->WriteString("ConfigCommand",ConfigCommand);
     Registry->WriteBool("MinimizeToSysTray",MinimizeToSysTray);
+    Registry->WriteInteger("NodeDisplayInterval",NodeDisplayInterval);
 
     Registry->WriteInteger("SysAutoStart",SysAutoStart);
     Registry->WriteInteger("MailAutoStart",MailAutoStart);
@@ -860,6 +880,7 @@ void __fastcall TMainForm::TelnetStopExecute(TObject *Sender)
 	Screen->Cursor=crAppStart;
     bbs_status("Terminating");
 	bbs_terminate();
+    Application->ProcessMessages();
 }
 //---------------------------------------------------------------------------
 
@@ -908,6 +929,7 @@ void __fastcall TMainForm::MailStopExecute(TObject *Sender)
 	Screen->Cursor=crAppStart;
     mail_status("Terminating");
 	mail_terminate();
+    Application->ProcessMessages();
 }
 //---------------------------------------------------------------------------
 
@@ -956,6 +978,7 @@ void __fastcall TMainForm::FtpStopExecute(TObject *Sender)
 	Screen->Cursor=crAppStart;
     ftp_status("Terminating");
 	ftp_terminate();
+    Application->ProcessMessages();
 }
 //---------------------------------------------------------------------------
 
@@ -1334,6 +1357,8 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     	ConfigCommand=Registry->ReadString("ConfigCommand");
     if(Registry->ValueExists("MinimizeToSysTray"))
     	MinimizeToSysTray=Registry->ReadBool("MinimizeToSysTray");
+	if(Registry->ValueExists("NodeDisplayInterval"))
+    	NodeDisplayInterval=Registry->ReadInteger("NodeDisplayInterval");
 
     if(Registry->ValueExists("MailLogFile"))
     	MailLogFile=Registry->ReadInteger("MailLogFile");
@@ -1547,8 +1572,10 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     if(FtpAutoStart) {
         ftp_start();
     }
+    NodeForm->Timer->Interval=NodeDisplayInterval*1000;
     NodeForm->Timer->Enabled=true;
 	StatsTimer->Enabled=true;
+    Initialized=true;
 }
 //---------------------------------------------------------------------------
 
@@ -1881,11 +1908,13 @@ void __fastcall TMainForm::PropertiesExecute(TObject *Sender)
     PropertiesDlg->LoginCmdEdit->Text=LoginCommand;
     PropertiesDlg->ConfigCmdEdit->Text=ConfigCommand;
     PropertiesDlg->CtrlDirEdit->Text=CtrlDirectory;
+    PropertiesDlg->NodeIntEdit->Text=AnsiString(NodeDisplayInterval);
     PropertiesDlg->TrayIconCheckBox->Checked=MinimizeToSysTray;
 	if(PropertiesDlg->ShowModal()==mrOk) {
         LoginCommand=PropertiesDlg->LoginCmdEdit->Text;
         ConfigCommand=PropertiesDlg->ConfigCmdEdit->Text;
         CtrlDirectory=PropertiesDlg->CtrlDirEdit->Text;
+        NodeDisplayInterval=StrToIntDef(PropertiesDlg->NodeIntEdit->Text,1);
         MinimizeToSysTray=PropertiesDlg->TrayIconCheckBox->Checked;
         SaveSettings(Sender);
     }

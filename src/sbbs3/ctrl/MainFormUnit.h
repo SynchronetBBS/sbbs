@@ -209,6 +209,7 @@ __published:	// IDE-managed Components
     TMenuItem *HelpSysopMenuItem;
     TAction *ViewEvents;
     TMenuItem *ViewEventsMenuItem;
+    TMenuItem *ConfigureBBSMenuItem;
     void __fastcall FileExitMenuItemClick(TObject *Sender);
 	void __fastcall ViewToolbarMenuItemClick(TObject *Sender);
 	void __fastcall FormClose(TObject *Sender, TCloseAction &Action);
@@ -268,6 +269,7 @@ __published:	// IDE-managed Components
 private:	// User declarations
 public:		// User declarations
     __fastcall TMainForm(TComponent* Owner);
+    bool            Initialized;
     bool			SysAutoStart;
     bool            MailAutoStart;
     bool            FtpAutoStart;
@@ -281,6 +283,7 @@ public:		// User declarations
     bbs_startup_t 	bbs_startup;
     mail_startup_t 	mail_startup;
     ftp_startup_t	ftp_startup;
+    int             NodeDisplayInterval;
     int             SpyTerminalWidth;
     int             SpyTerminalHeight;
     TFont*          SpyTerminalFont;
