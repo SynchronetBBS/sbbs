@@ -69,6 +69,7 @@ extern "C" {
 DLLEXPORT void	DLLCALL bbs_thread(void* arg);
 DLLEXPORT void	DLLCALL bbs_terminate(void);
 DLLEXPORT char*	DLLCALL bbs_ver(void);
+DLLEXPORT long	DLLCALL	bbs_ver_num(void);
 
 #ifdef __cplusplus
 }
