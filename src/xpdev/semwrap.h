@@ -60,7 +60,7 @@ extern "C" {
 	#else
 		#include <semaphore.h>	/* POSIX semaphores */
 	#endif
-	#include "xpbsem.h"
+	#include "xpevent.h"
 
 #elif defined(_WIN32)	
 
