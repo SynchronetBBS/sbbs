@@ -42,12 +42,6 @@
 const char *qstr=" > %.76s\r\n";
 void quotestr(char *str);
 
-#ifdef __unix__
-	#define DEBUG_ME lprintf("%s %d",__FILE__,__LINE__);
-#else
-	#define DEBUG_ME
-#endif
-
 /****************************************************************************/
 /* Creates a message (post or mail) using standard line editor. 'fname' is  */
 /* is name of file to create, 'top' is a buffer to place at beginning of    */
@@ -230,12 +224,10 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 			c=25;
 		if(mode&WM_QWKNET)
 			c=25;
-		DEBUG_ME
 		if(!getstr(title,c,mode&WM_FILE ? K_LINE|K_UPPER : K_LINE|K_EDIT|K_AUTODEL)
 			&& useron_level && useron.logons) {
 			LFREE(buf);
 			return(false); }
-		DEBUG_ME
 		if(!(mode&(WM_EMAIL|WM_NETMAIL)) && cfg.sub[subnum]->misc&SUB_QNET
 			&& !SYSOP
 			&& (!stricmp(title,"DROP") || !stricmp(title,"ADD")
@@ -250,15 +242,12 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 	/* Create WWIV compatible EDITOR.INF file */
 
 	if(useron.xedit) {
-		DEBUG_ME
 		editor_inf(useron.xedit,dest,title,mode,subnum);
-		DEBUG_ME
 		if(cfg.xedit[useron.xedit-1]->type) {
 			gettimeleft();
 			xtrndat(useron.alias,cfg.node_dir,cfg.xedit[useron.xedit-1]->type
  			   ,timeleft,cfg.xedit[useron.xedit-1]->misc); 
 		}
-		DEBUG_ME
 	}
 
 	if(console&CON_RAW_IN) {
@@ -291,7 +280,6 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 	else if((online==ON_LOCAL && cfg.node_misc&NM_LCL_EDIT && cfg.node_editor[0])
 		|| useron.xedit) {
 
-		DEBUG_ME
 		if(useron.xedit && cfg.xedit[useron.xedit-1]->misc&IO_INTS) {
 			if(online==ON_REMOTE)
 				ex_mode|=(EX_OUTR|EX_INR);
@@ -307,7 +295,6 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 		if(linesquoted) {
 			qlen=flength(msgtmp);
 			qtime=fdate(msgtmp); }
-		DEBUG_ME
 		if(online==ON_LOCAL) {
 			if(cfg.node_misc&NM_LCL_EDIT && cfg.node_editor[0])
 				external(cmdstr(cfg.node_editor,msgtmp,nulstr,NULL)
@@ -343,10 +330,8 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 		// remove(msgtmp); 	   /* no need to save the temp input file */
 		buf[l+length]=0; }
 	else {
-		DEBUG_ME
 		buf[0]=0;
 		if(linesquoted) {
-			DEBUG_ME
 			if((file=nopen(msgtmp,O_RDONLY))!=-1) {
 				length=filelength(file);
 				l=length>cfg.level_linespermsg[useron_level]*MAX_LINE_LEN
@@ -356,7 +341,6 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 				close(file);
 				// remove(msgtmp);
 			} 
-			DEBUG_ME
 		}
 		if(!(msgeditor((char *)buf,mode&WM_NOTOP ? nulstr : top,title))) {
 			LFREE(buf);
