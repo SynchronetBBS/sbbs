@@ -822,7 +822,7 @@ static JSClass js_file_class = {
 	,js_finalize_file		/* finalize		*/
 };
 
-static JSFunctionSpec js_file_functions[] = {
+static jsMethodSpec js_file_functions[] = {
 	{"open",			js_open,			1},		/* open file (w/mode) [buffered] */
 	{"close",			js_close,			0},		/* close file */
 	{"delete",			js_delete,			0},		/* delete the file */
@@ -847,13 +847,17 @@ static JSFunctionSpec js_file_functions[] = {
 JSObject* DLLCALL js_CreateFileClass(JSContext* cx, JSObject* parent)
 {
 	JSObject*	sockobj;
+	JSFunctionSpec	funcs[sizeof(js_file_functions)/sizeof(jsMethodSpec)];
+
+	memset(funcs,0,sizeof(funcs));
+	js_MethodsToFunctions(js_file_functions,funcs);
 
 	sockobj = JS_InitClass(cx, parent, NULL
 		,&js_file_class
 		,js_file_constructor
 		,0	/* number of constructor args */
 		,js_file_properties
-		,js_file_functions
+		,funcs
 		,NULL,NULL);
 
 	return(sockobj);
