@@ -128,6 +128,8 @@ static const char* usage  = "usage: %s [[option] [...]]\n"
 							"\n"
 							"Global options:\n"
 							"\n"
+							"\thn[host]   set hostname for this instance\n"
+							"             if host not specified, uses gethostname\n"
 #ifdef __unix__
 							"\tun<user>   set username for BBS to run as\n"
 							"\tug<group>  set group for BBS to run as\n"
@@ -701,8 +703,7 @@ int main(int argc, char** argv)
 					continue;
 				p+=10;	/* skip "nameserver" */
 				while(*p && *p<=' ') p++;	/* skip more white-space */
-				sprintf(mail_startup.dns_server,"%.*s"
-					,sizeof(mail_startup.dns_server)-1,p);
+				SAFECOPY(mail_startup.dns_server,p);
 				break;
 			}
 			fclose(fp);
@@ -847,6 +848,29 @@ int main(int argc, char** argv)
 						mail_startup.options|=BBS_OPT_GET_IDENT;
 						services_startup.options|=BBS_OPT_GET_IDENT;
 						break;
+					default:
+						printf(usage,argv[0]);
+						return(0);
+				}
+				break;
+			case 'H':	/* Host */
+				switch(toupper(*(arg++))) {
+					case 'N':	/* Name */
+						if(*arg) {
+							SAFECOPY(bbs_startup.host_name,arg);
+							SAFECOPY(ftp_startup.host_name,arg);
+							SAFECOPY(mail_startup.host_name,arg);
+							SAFECOPY(services_startup.host_name,arg);
+						} else {
+							gethostname(bbs_startup.host_name
+								,sizeof(bbs_startup.host_name)-1);
+							gethostname(ftp_startup.host_name
+								,sizeof(ftp_startup.host_name)-1);
+							gethostname(mail_startup.host_name
+								,sizeof(mail_startup.host_name)-1);
+							gethostname(services_startup.host_name
+								,sizeof(services_startup.host_name)-1);
+						}
 					default:
 						printf(usage,argv[0]);
 						return(0);
