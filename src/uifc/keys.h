@@ -10,5 +10,7 @@
 #define KEY_PPAGE     0x49 << 8
 #define KEY_NPAGE     0x51 << 8
 
-/* #define KEY_BACKSPACE '\b' << 8     This is most likely wrong */
-#define KEY_BACKSPACE    0xff << 8     /* Just a placeholder for now */
+#define KEY_BACKSPACE    0xff01   /* Windows never differentiates between a
+				   * backspace keypress and the backspace
+				   * char
+				   */
