@@ -256,13 +256,15 @@ typedef struct {
 /* Handy Pointer-freeing Macros */
 /********************************/
 #define FREE_AND_NULL(x)			if(x!=NULL) { FREE(x); x=NULL; }
-#define FREE_LIST_ITEMS(list,i)		for(i=0;list!=NULL && list[i]!=NULL;i++) \
-										{ FREE_AND_NULL(list[i]); }
+#define FREE_LIST_ITEMS(list,i)		if(list!=NULL) {				\
+										for(i=0;list[i]!=NULL;i++)	\
+											FREE_AND_NULL(list[i]);	\
+									}
 #define FREE_LIST(list,i)			FREE_LIST_ITEMS(list,i) FREE_AND_NULL(list)
 
 /********************************/
 /* Other Pointer-List Macros	*/
 /********************************/
-#define COUNT_LIST_ITEMS(list,i)	for(i=0;list!=NULL && list[i]!=NULL;i++);
+#define COUNT_LIST_ITEMS(list,i)	{ i=0; if(list!=NULL) while(list[i]!=NULL) i++; }
 
 #endif /* Don't add anything after this #endif statement */
