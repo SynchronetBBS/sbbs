@@ -27,6 +27,6 @@ CFLAGS = $(CFLAGS) -I$(XPDEV_SRC)
 $(SMBLIB): $(OBJS)
     @echo Creating $< ...
 	-$(QUIET)$(DELETE) $@
-	$(QUIET)for %f in ($(OBJS)) do $(QUIET)tlib $@ +%f
+	&$(QUIET)tlib $@ +$**
 
 
