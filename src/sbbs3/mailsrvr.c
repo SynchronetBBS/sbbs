@@ -3462,7 +3462,9 @@ static void sendmail_thread(void* arg)
 				break;
 			if(msg.idx.attr&MSG_DELETE)	/* Marked for deletion */
 				continue;
-			if(msg.idx.to)	/* Local */
+			if(msg.idx.to)			/* Local */
+				continue;
+			if(msg.idx.number==0)	/* Invalid message number */
 				continue;
 			msg.offset=offset;
 
