@@ -36,6 +36,7 @@
 #undef getch
 #undef ungetch
 #undef getmouse
+#undef ungetmouse
 #include "curs_fix.h"
 
 #ifdef __cplusplus
