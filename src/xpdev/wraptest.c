@@ -35,7 +35,7 @@ int main()
 {
 	char	str[128];
 	char	compiler[128];
-	char	fullpath[MAX_PATH+1];
+	char	fpath[MAX_PATH+1];
 	char*	path = ".";
 	char*	glob_pattern = "*wrap*";
 	int		i;
@@ -207,7 +207,7 @@ int main()
 	/* opendir (and other directory functions) test */
 	printf("\nopendir(%s) test\n",path);
 	getkey();
-	printf("\nDirectory of %s\n\n",FULLPATH(fullpath,path,sizeof(fullpath)));
+	printf("\nDirectory of %s\n\n",FULLPATH(fpath,path,sizeof(fpath)));
 	dir=opendir(path);
 	while(dir!=NULL && (dirent=readdir(dir))!=NULL) {
 		t=fdate(dirent->d_name);
