@@ -6,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2002 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -831,13 +831,10 @@ This is a list of file transfer protocols that can be used to transfer
 files either to or from a remote user. For each protocol, you can
 specify the mnemonic (hot-key) to use to specify that protocol, the
 command line to use for uploads, downloads, batch uploads, batch
-downloads, bidirectional file transfers, and the support of DSZLOG. If
+downloads, bi-directional file transfers, and the support of DSZLOG. If
 the protocol doesn't support a certain method of transfer, or you don't
 wish it to be available for a certain method of transfer, leave the
-command line for that method blank. Be advised, that if you add or
-remove any transfer protocols, you will need to edit the protocol menus
-(ULPROT, DLPROT, BATUPROT, BATDPROT, and BIPROT) in the TEXT\MENU
-directory accordingly.
+command line for that method blank.
 */
 				i=uifc.list(i,0,0,50,&prot_dflt,NULL,"File Transfer Protocols",opt);
 				if(i==-1)
@@ -865,18 +862,8 @@ directory accordingly.
 							errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(prot_t));
 							continue; }
 						memset(cfg.prot[0],0,sizeof(prot_t));
-						cfg.prot[0]->mnemonic='Y';
-						cfg.prot[0]->misc=PROT_DSZLOG;
-						strcpy(cfg.prot[0]->ulcmd
-							,"%!dsz port %p estimate 0 %e rb %f");
-						strcpy(cfg.prot[0]->dlcmd
-							,"%!dsz port %p estimate 0 %e sb %f");
-						strcpy(cfg.prot[0]->batulcmd
-							,"%!dsz port %p estimate 0 %e rb %f");
-						strcpy(cfg.prot[0]->batdlcmd
-							,"%!dsz port %p estimate 0 %e sb @%f"); }
-					else {
-
+						cfg.prot[0]->mnemonic='?';
+					} else {
 						for(j=cfg.total_prots;j>i;j--)
 							cfg.prot[j]=cfg.prot[j-1];
 						if((cfg.prot[i]=(prot_t *)MALLOC(
@@ -903,27 +890,29 @@ directory accordingly.
 				done=0;
 				while(!done) {
 					j=0;
-					sprintf(opt[j++],"%-25.25s%c","Mnemonic (Command Key)"
+					sprintf(opt[j++],"%-30.30s%c","Mnemonic (Command Key)"
 						,cfg.prot[i]->mnemonic);
-					sprintf(opt[j++],"%-25.25s%-40s","Protocol Name"
+					sprintf(opt[j++],"%-30.30s%-40s","Protocol Name"
 						,cfg.prot[i]->name);
-					sprintf(opt[j++],"%-25.25s%-40s","Access Requirements"
+					sprintf(opt[j++],"%-30.30s%-40s","Access Requirements"
 						,cfg.prot[i]->arstr);
-					sprintf(opt[j++],"%-25.25s%-40s","Upload Command Line"
+					sprintf(opt[j++],"%-30.30s%-40s","Upload Command Line"
 						,cfg.prot[i]->ulcmd);
-					sprintf(opt[j++],"%-25.25s%-40s","Download Command Line"
+					sprintf(opt[j++],"%-30.30s%-40s","Download Command Line"
 						,cfg.prot[i]->dlcmd);
-					sprintf(opt[j++],"%-25.25s%-40s","Batch UL Command Line"
+					sprintf(opt[j++],"%-30.30s%-40s","Batch Upload Command Line"
 						,cfg.prot[i]->batulcmd);
-					sprintf(opt[j++],"%-25.25s%-40s","Batch DL Command Line"
+					sprintf(opt[j++],"%-30.30s%-40s","Batch Download Command Line"
 						,cfg.prot[i]->batdlcmd);
-					sprintf(opt[j++],"%-25.25s%-40s","Bidir Command Line"
+					sprintf(opt[j++],"%-30.30s%-40s","Bi-dir Command Line"
 						,cfg.prot[i]->bicmd);
-					sprintf(opt[j++],"%-25.25s%s","Uses DSZLOG"
+					sprintf(opt[j++],"%-30.30s%s",   "Native (32-bit) Executable"
+						,cfg.prot[i]->misc&PROT_NATIVE ? "Yes" : "No");
+					sprintf(opt[j++],"%-30.30s%s",	 "Supports DSZLOG"
 						,cfg.prot[i]->misc&PROT_DSZLOG ? "Yes":"No");
 					opt[j][0]=0;
 					uifc.savnum=1;
-					switch(uifc.list(WIN_RHT|WIN_BOT|WIN_SAV|WIN_ACT,0,0,0,&prot_opt,0
+					switch(uifc.list(WIN_RHT|WIN_BOT|WIN_SAV|WIN_ACT,0,0,70,&prot_opt,0
 						,"File Transfer Protocol",opt)) {
 						case -1:
 							done=1;
@@ -973,19 +962,32 @@ directory accordingly.
 								,cfg.prot[i]->bicmd,sizeof(cfg.prot[i]->bicmd)-1,K_EDIT);
                             break;
 						case 8:
+							l=cfg.prot[i]->misc&PROT_NATIVE ? 0:1;
 							strcpy(opt[0],"Yes");
 							strcpy(opt[1],"No");
 							opt[2][0]=0;
-							l=0;
+							uifc.savnum=2;
+							l=uifc.list(WIN_MID|WIN_SAV,0,0,0,&l,0
+								,"Native (32-bit) Executable",opt);
+							if((l==0 && !(cfg.prot[i]->misc&PROT_NATIVE))
+								|| (l==1 && cfg.prot[i]->misc&PROT_NATIVE)) {
+								cfg.prot[i]->misc^=PROT_NATIVE;
+								uifc.changes=1; 
+							}
+							break; 
+						case 9:
+							l=cfg.prot[i]->misc&PROT_DSZLOG ? 0:1;
+							strcpy(opt[0],"Yes");
+							strcpy(opt[1],"No");
+							opt[2][0]=0;
 							uifc.savnum=2;
 							l=uifc.list(WIN_MID|WIN_SAV,0,0,0,&l,0
 								,"Uses DSZLOG",opt);
-							if(!l && !(cfg.prot[i]->misc&PROT_DSZLOG)) {
-								cfg.prot[i]->misc|=PROT_DSZLOG;
-								uifc.changes=1; }
-							else if(l==1 && cfg.prot[i]->misc&PROT_DSZLOG) {
-								cfg.prot[i]->misc&=~PROT_DSZLOG;
-								uifc.changes=1; }
+							if((l==0 && !(cfg.prot[i]->misc&PROT_DSZLOG))
+								|| (l==1 && cfg.prot[i]->misc&PROT_DSZLOG)) {
+								cfg.prot[i]->misc^=PROT_DSZLOG;
+								uifc.changes=1; 
+							}
 							break; 
 					} 
 				} 
