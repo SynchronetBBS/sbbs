@@ -433,7 +433,6 @@ video_update_text()
     static char buf[256];
     int r, c;
     int attr = vmem[0] & 0xff00;
-	int flush=0;
     XGCValues v;
 
 	wakeup_poll();	/* Wake up anyone waiting on kbd poll */
@@ -450,7 +449,6 @@ video_update_text()
 					setgc(vmem[r * DpyCols + c]  & 0xff00);
 					x11.XCopyPlane(dpy,pfnt,win,gc,0,FH*(vmem[r * DpyCols + c]&0xff),FW,FH,c*FW+2,r*FH+2,1);
 					lines[r].changed = 2;
-					flush=1;
 				}
 			}
 	    }
@@ -467,13 +465,10 @@ video_update_text()
 				setgc(vmem[r * DpyCols + c]  & 0xff00);
 				x11.XCopyPlane(dpy,pfnt,win,gc,0,FH*(vmem[r * DpyCols + c]&0xff),FW,FH,c*FW+2,r*FH+2,1);
 			}
-			flush=1;
 		}
 		lines[r].changed = 0;
 		memset(lines[r].exposed,0,CONSOLE_MAX_COLS * sizeof(u_char));
-		if(flush)
-			x11.XFlush(dpy);
-		flush=0;
+		x11.XFlush(dpy);
 	}
 
 	if (CursStart <= CursEnd && CursEnd <= FH &&
@@ -499,7 +494,6 @@ video_update_text()
 	or =CursRow;
 	oc =CursCol;
 	os =show;
-
 }
 
 void
