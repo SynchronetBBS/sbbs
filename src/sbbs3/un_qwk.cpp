@@ -41,7 +41,7 @@
 /****************************************************************************/
 /* Unpacks .QWK packet, hubnum is the number of the QWK net hub 			*/
 /****************************************************************************/
-void sbbs_t::unpack_qwk(char *packet,uint hubnum)
+bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 {
 	char	str[256],fname[128];
 	uchar	block[128];
@@ -53,28 +53,25 @@ void sbbs_t::unpack_qwk(char *packet,uint hubnum)
 	DIRENT*	dirent;
 	FILE*	qwk;
 
-	#if 0
-	useron.number=1;
-	getuserdat(&useron);
-	console=CON_L_ECHO;
-	#endif
 	if((l=flength(packet))<1) {
 		errormsg(WHERE,ERR_LEN,packet,l);
-		remove(packet);
-		return;
+		return(false);
 	}
 	i=external(cmdstr(cfg.qhub[hubnum]->unpack,packet,"*.*",NULL),EX_OFFLINE);
 	if(i) {
 		errormsg(WHERE,ERR_EXEC,cmdstr(cfg.qhub[hubnum]->unpack,packet,"*.*",NULL),i);
-		return; }
+		return(false); 
+	}
 	sprintf(str,"%sMESSAGES.DAT",cfg.temp_dir);
 	if(!fexist(str)) {
 		sprintf(str,"%s doesn't contain MESSAGES.DAT",packet);
 		errorlog(str);
-		return; }
+		return(false); 
+	}
 	if((qwk=fnopen(&file,str,O_RDONLY))==NULL) {
 		errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
-		return; }
+		return(false); 
+	}
 	size=filelength(file);
 	/********************/
 	/* Process messages */
@@ -109,10 +106,12 @@ void sbbs_t::unpack_qwk(char *packet,uint hubnum)
 			lprintf("NetMail from %s to %s", cfg.qhub[hubnum]->id, str);
 			if(!stricmp(str,"NETMAIL")) {  /* QWK to FidoNet NetMail */
 				qwktonetmail(qwk,(char *)block,NULL,hubnum+1);
-				continue; }
+				continue; 
+			}
 			if(strchr(str,'@')) {
 				qwktonetmail(qwk,(char *)block,str,hubnum+1);
-				continue; }
+				continue; 
+			}
 			j=atoi(str);
 			if(j && j>lastuser(&cfg))
 				j=0;
@@ -124,14 +123,16 @@ void sbbs_t::unpack_qwk(char *packet,uint hubnum)
 				j=1;
 			if(!j) {
 				lprintf("!NetMail from %s to UNKNOWN USER: %s", cfg.qhub[hubnum]->id, str);
-				continue; }
+				continue; 
+			}
 
 			getuserrec(&cfg,j,U_MISC,8,str);
 			misc=ahtoul(str);
 			if(misc&NETMAIL && cfg.sys_misc&SM_FWDTONET) {
 				getuserrec(&cfg,j,U_NETMAIL,LEN_NETMAIL,str);
 				qwktonetmail(qwk,(char*)block,str,hubnum+1);
-				continue; }
+				continue; 
+			}
 
 			smb_stack(&smb,SMB_STACK_PUSH);
 			sprintf(smb.file,"%smail",cfg.data_dir);
@@ -139,7 +140,8 @@ void sbbs_t::unpack_qwk(char *packet,uint hubnum)
 			if((k=smb_open(&smb))!=0) {
 				errormsg(WHERE,ERR_OPEN,smb.file,k,smb.last_error);
 				smb_stack(&smb,SMB_STACK_POP);
-				continue; }
+				continue; 
+			}
 			if(!filelength(fileno(smb.shd_fp))) {
 				smb.status.max_crcs=cfg.mail_maxcrcs;
 				smb.status.max_msgs=MAX_SYSMAIL;
@@ -149,17 +151,21 @@ void sbbs_t::unpack_qwk(char *packet,uint hubnum)
 					smb_close(&smb);
 					errormsg(WHERE,ERR_CREATE,smb.file,k);
 					smb_stack(&smb,SMB_STACK_POP);
-					continue; } }
+					continue; 
+				} 
+			}
 			if((k=smb_locksmbhdr(&smb))!=0) {
 				smb_close(&smb);
 				errormsg(WHERE,ERR_LOCK,smb.file,k);
 				smb_stack(&smb,SMB_STACK_POP);
-				continue; }
+				continue; 
+			}
 			if((k=smb_getstatus(&smb))!=0) {
 				smb_close(&smb);
 				errormsg(WHERE,ERR_READ,smb.file,k);
 				smb_stack(&smb,SMB_STACK_POP);
-				continue; }
+				continue; 
+			}
 			smb_unlocksmbhdr(&smb);
 			qwktomsg(qwk,(char *)block,hubnum+1,INVALID_SUB,j);
 			smb_close(&smb);
@@ -190,7 +196,8 @@ void sbbs_t::unpack_qwk(char *packet,uint hubnum)
 			smb.retry_time=cfg.smb_retry_time;
 			if((k=smb_open(&smb))!=0) {
 				errormsg(WHERE,ERR_OPEN,smb.file,k,smb.last_error);
-				continue; }
+				continue; 
+			}
 			if(!filelength(fileno(smb.shd_fp))) {
 				smb.status.max_crcs=cfg.sub[j]->maxcrcs;
 				smb.status.max_msgs=cfg.sub[j]->maxmsgs;
@@ -199,17 +206,22 @@ void sbbs_t::unpack_qwk(char *packet,uint hubnum)
 				if((k=smb_create(&smb))!=0) {
 					smb_close(&smb);
 					errormsg(WHERE,ERR_CREATE,smb.file,k);
-					continue; } }
+					continue; 
+				} 
+			}
 			if((k=smb_locksmbhdr(&smb))!=0) {
 				smb_close(&smb);
 				errormsg(WHERE,ERR_LOCK,smb.file,k);
-				continue; }
+				continue; 
+			}
 			if((k=smb_getstatus(&smb))!=0) {
 				smb_close(&smb);
 				errormsg(WHERE,ERR_READ,smb.file,k);
-				continue; }
+				continue; 
+			}
 			smb_unlocksmbhdr(&smb);
-			lastsub=j; }
+			lastsub=j; 
+		}
 
 		lprintf("Importing message from %s on %s %s"
 			,cfg.qhub[hubnum]->id, cfg.grp[cfg.sub[j]->grp]->sname,cfg.sub[j]->lname);
@@ -259,6 +271,6 @@ void sbbs_t::unpack_qwk(char *packet,uint hubnum)
 	closedir(dir);
 
 	lprintf("Finished Importing QWK Network Packet: %s",packet);
-	remove(packet);
 	delfiles(cfg.temp_dir,"*.*");
+	return(true);
 }
