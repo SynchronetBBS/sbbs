@@ -42,6 +42,14 @@
 #include "mailsrvr.h"	/* mail_startup_t, mail_server */
 #include "services.h"	/* services_startup_t, services_thread */
 
+#ifdef __unix__
+
+#include <sys/types.h>
+#include <unistd.h>
+#include <pwd.h>
+
+#endif
+
 /* Constants */
 #define SBBSCON_VERSION		"1.20"
 
@@ -60,6 +68,8 @@ uint				client_count=0;
 ulong				served=0;
 int					prompt_len=0;
 
+char* new_uid_name;
+
 static const char* prompt = 
 "[Threads: %d  Sockets: %d  Clients: %d  Served: %lu] (?=Help): ";
 
@@ -74,6 +84,7 @@ static const char* usage  = "\nusage: %s [[option] [...]]\n"
 							"sp<port>   set SMTP Server Port\n"
 							"sr<port>   set SMTP Relay Port\n"
 							"pp<port>   set POP3 Server Port\n"
+							"u<user>    set username for BBS to run as"
 							"\n"
 							;
 
@@ -156,6 +167,30 @@ static void client_on(BOOL on, int sock, client_t* client, BOOL update)
 	lputs(NULL); /* update displayed stats */
 }
 
+#ifdef __unix__
+
+/**********************************************************
+* Change uid of the calling process to the user if specified
+* **********************************************************/
+
+int do_setuid(char* caller) {
+
+	uid_t new_uid;
+	struct passwd* pw_entry;
+
+if ((pw_entry=getpwnam(new_uid_name)) && (new_uid=pw_entry->pw_uid))
+       if(!setuid(new_uid)) {
+		printf("Setuid for -%s- successful.\n",caller);
+		return 1;
+	}
+
+return 0;
+
+}
+
+#endif   /* __unix__ */
+				
+
 /************************************************/
 /* Truncates white-space chars off end of 'str' */
 /************************************************/
@@ -197,6 +232,7 @@ static int bbs_lputs(char *str)
 static void bbs_started(void)
 {
 	bbs_running=TRUE;
+	do_setuid("bbs");
 }
 
 static void bbs_terminated(int code)
@@ -233,6 +269,7 @@ static int ftp_lputs(char *str)
 static void ftp_started(void)
 {
 	ftp_running=TRUE;
+	do_setuid("ftp");
 }
 
 static void ftp_terminated(int code)
@@ -269,6 +306,7 @@ static int mail_lputs(char *str)
 static void mail_started(void)
 {
 	mail_running=TRUE;
+	do_setuid("mail");
 }
 
 static void mail_terminated(int code)
@@ -305,6 +343,7 @@ static int services_lputs(char *str)
 static void services_started(void)
 {
 	services_running=TRUE;
+	do_setuid("services");
 }
 
 static void services_terminated(int code)
@@ -533,6 +572,11 @@ int main(int argc, char** argv)
 						return(0);
 				}
 				break;
+#ifdef __unix__
+			case 'U':	/* runtime UID */
+				if (strlen(arg) > 1) new_uid_name=arg;
+				break;
+#endif			
 			default:
 				printf(usage,argv[0]);
 				return(0);
@@ -552,6 +596,22 @@ int main(int argc, char** argv)
 	signal(SIGABRT, _sighandler_quit);
 	signal(SIGTERM, _sighandler_quit);
 
+	if(getuid())  /*  are we running as a normal user?  */
+		fprintf(stderr,
+	"*** Started as non-root user.  Cannot bind() to ports below 1024.\n");
+	
+	else if(!new_uid_name)   /*  check the user arg, if we have uid 0 */
+		fprintf(stderr,
+	"*** No user account specified and started as root.  HAZARDOUS!\n");
+	
+	else if (!do_setuid("main"))
+			/* actually try to change the uid of this process */
+		fprintf(stderr,
+	"*** Setting new uid failed!  (Does the user exist?)\n");
+	
+	else
+		printf("*** Successfully changed to user %s.\n", new_uid_name);
+	
 	if(!isatty(fileno(stdin)))			/* redirected */
 		select(0,NULL,NULL,NULL,NULL);	/* so wait here until signaled */
 	else								/* interactive */
