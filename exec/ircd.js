@@ -2562,12 +2562,8 @@ function IRCClient_unregistered_commands(command, cmdline) {
 			}
 			var this_nline = 0;
 			for (nl in NLines) {
-				if ((NLines[nl].password == this.password) &&
-				    (NLines[nl].servername == cmd[1])) {
-					this_nline = NLines[nl];
-					break;
-				} else if ((NLines[nl].flags&NLINE_CHECK_QWKPASSWD) &&
-				           match_irc_mask(cmd[1],NLines[nl].servername)) {
+				if ((NLines[nl].flags&NLINE_CHECK_QWKPASSWD) &&
+				    match_irc_mask(cmd[1],NLines[nl].servername)) {
 					var qwkid = cmd[1].slice(0,cmd[1].indexOf(".")).toUpperCase();
 					var usernum = system.matchuser(qwkid);
 					var bbsuser = new User(usernum);
@@ -2578,6 +2574,11 @@ function IRCClient_unregistered_commands(command, cmdline) {
 						this_nline = NLines[nl];
 						break;
 					}
+				} else if ((NLines[nl].password == this.password) &&
+				           (match_irc_mask(cmd[1],NLines[nl].servername))
+				          ) {
+						this_nline = NLines[nl];
+						break;
 				}
 			}
 			if (!this_nline || ((this_nline.password == "*") &&
