@@ -150,6 +150,9 @@ void __fastcall TNodeForm::TimerTick(TObject *Sender)
     int		i,n,rd,digits=1;
     node_t	node;
 
+	if(!Visible)
+		return;
+
     if(nodedab<1) {
     	nodedab=_sopen(AnsiString(MainForm->CtrlDirectory+"NODE.DAB").c_str()
         	,O_RDONLY|O_BINARY|O_CREAT, SH_DENYNONE, S_IREAD|S_IWRITE);
