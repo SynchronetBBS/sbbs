@@ -244,6 +244,33 @@ static void services_terminated(int code)
 	services_running=FALSE;
 }
 
+/****************************************************************************/
+/* Event thread local/log print routine										*/
+/****************************************************************************/
+static int event_lputs(char *str)
+{
+	char		logline[512];
+	char		tstr[64];
+	time_t		t;
+	struct tm*	tm_p;
+
+	t=time(NULL);
+	tm_p=localtime(&t);
+	if(tm_p==NULL)
+		tstr[0]=0;
+	else
+		sprintf(tstr,"%d/%d %02d:%02d:%02d "
+			,tm_p->tm_mon+1,tm_p->tm_mday
+			,tm_p->tm_hour,tm_p->tm_min,tm_p->tm_sec);
+
+	sprintf(logline,"%evnt  %.*s",tstr,sizeof(logline)-2,str);
+	truncsp(logline);
+	lputs(logline);
+	
+    return(strlen(logline)+1);
+}
+
+
 
 #ifdef __unix__
 void _sighandler_quit(int sig)
@@ -291,6 +318,7 @@ int main(int argc, char** argv)
 #endif
 
 	bbs_startup.lputs=bbs_lputs;
+	bbs_startup.event_log=event_lputs;
     bbs_startup.started=bbs_started;
     bbs_startup.terminated=bbs_terminated;
 /*	These callbacks haven't been created yet
