@@ -1751,7 +1751,7 @@ static BOOL check_request(http_session_t * session)
 			,session->socket,path,root_dir);
 		return(FALSE);
 	}
-	if(stat(path,&sb)) {
+	if(stat(path,&sb) || IS_PATH_DELIM(*(lastchar(path)))) {
 		/* Check if sneaky CGI script */
 		if(!check_extra_path(session,path))
 		{
