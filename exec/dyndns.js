@@ -29,7 +29,8 @@ for(h in host_list) {
 		printf("Error %lu connecting to %s\r\n",sock.last_error,host_list[h]);
 		continue;
 	}
-	while(sock.is_connected) {
+	var count=0;
+	while(sock.is_connected && count++<10) {
 		str=sock.readline();
 		print(str);
 		switch(str) {
