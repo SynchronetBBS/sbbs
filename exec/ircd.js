@@ -938,10 +938,13 @@ for (cmdarg=0;cmdarg<argc;cmdarg++) {
 
 read_config_file();
 
-if(this.js==undefined)			// v3.10?
+if(this.js==undefined)				// v3.10?
 	js = { terminated: false };
 
-if(this.server==undefined) {	// Running from JSexec?
+if(this.resolve_host==undefined)	// v3.10?
+	resolve_hostnames = false;
+
+if(this.server==undefined) {		// Running from JSexec?
 	if (cmdline_port)
 		default_port = cmdline_port;
 	else if (mline_port)
