@@ -1079,6 +1079,21 @@ js_remove(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	return(JS_TRUE);
 }
 
+static JSBool
+js_rename(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		oldname;
+	char*		newname;
+
+	*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+	if((oldname=JS_GetStringBytes(JS_ValueToString(cx, argv[0])))==NULL)
+		return(JS_TRUE);
+	if((newname=JS_GetStringBytes(JS_ValueToString(cx, argv[1])))==NULL)
+		return(JS_TRUE);
+
+	*rval = BOOLEAN_TO_JSVAL(rename(oldname,newname)==0);
+	return(JS_TRUE);
+}
 
 static JSBool
 js_isdir(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
@@ -1325,6 +1340,9 @@ static jsMethodSpec js_global_functions[] = {
 	{"file_remove",		js_remove,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("string filename")
 	,JSDOCSTR("delete a file")
 	},		
+	{"file_rename",		js_rename,			2,	JSTYPE_BOOLEAN,	JSDOCSTR("oldname newname")
+	,JSDOCSTR("rename a file")
+	},
 	{"file_isdir",		js_isdir,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("string filename")
 	,JSDOCSTR("check if directory")
 	},		
@@ -1375,16 +1393,16 @@ static jsMethodSpec js_global_functions[] = {
 	{"base64_decode",	js_b64_decode,		1,	JSTYPE_STRING,	JSDOCSTR("string text")
 	,JSDOCSTR("returns base64-decoded text string or <i>null</i> on error")
 	},
-	{"md5",				js_md5_calc,		1,	JSTYPE_STRING,	JSDOCSTR("string text [,bool hex]")
+	{"md5_calc",		js_md5_calc,		1,	JSTYPE_STRING,	JSDOCSTR("string text [,bool hex]")
 	,JSDOCSTR("calculate and return MD5 digest of string encoded in base64 (default) or hexadecimal")
 	},
-	{"crc16",			js_crc16,			1,	JSTYPE_NUMBER,	JSDOCSTR("string text")
+	{"crc16_calc",		js_crc16,			1,	JSTYPE_NUMBER,	JSDOCSTR("string text")
 	,JSDOCSTR("calculate and return 16-bit CRC of text string")
 	},		
-	{"crc32",			js_crc32,			1,	JSTYPE_NUMBER,	JSDOCSTR("string text")
+	{"crc32_calc",		js_crc32,			1,	JSTYPE_NUMBER,	JSDOCSTR("string text")
 	,JSDOCSTR("calculate and return 32-bit CRC of text string")
 	},		
-	{"chksum",			js_chksum,			1,	JSTYPE_NUMBER,	JSDOCSTR("string text")
+	{"chksum_calc",		js_chksum,			1,	JSTYPE_NUMBER,	JSDOCSTR("string text")
 	,JSDOCSTR("calculate and return 32-bit checksum of text string")
 	},
 	{0}
