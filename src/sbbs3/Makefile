@@ -135,10 +135,11 @@ $(NODE): node.c
 	@echo Creating $@
 	@$(CC) $(CFLAGS) -n$(EXEODIR) $** 
 
-SMBLIB = $(LIBODIR)\smblib.obj $(LIBODIR)\genwrap.obj $(LIBODIR)\filewrap.obj
+SMBLIB = $(LIBODIR)\smblib.obj $(LIBODIR)\genwrap.obj $(LIBODIR)\filewrap.obj \
+	 $(LIBODIR)\crc16.obj
 
 # FIXSMB Utility
-$(FIXSMB): fixsmb.c $(SMBLIB)
+$(FIXSMB): fixsmb.c $(SMBLIB) $(LIBODIR)\str_util.obj
 	@echo Creating $@
 	@$(CC) $(CFLAGS) -n$(EXEODIR) $** 
 
@@ -173,6 +174,7 @@ $(ECHOCFG): echocfg.c rechocfg.c \
 	$(UIFC)uifcx.c \
 	$(UIFC)uifcfltk.cpp \
 	$(LIBODIR)\nopen.obj \
+	$(LIBODIR)\crc16.obj \
 	$(LIBODIR)\str_util.obj \
 	..\..\lib\fltk\win32\fltk.lib
 	@echo Creating $@
@@ -182,6 +184,7 @@ $(ECHOCFG): echocfg.c rechocfg.c \
 $(ADDFILES): addfiles.c \
 	$(LIBODIR)\ars.obj \
 	$(LIBODIR)\nopen.obj \
+	$(LIBODIR)\crc16.obj \
 	$(LIBODIR)\str_util.obj \
 	$(LIBODIR)\date_str.obj \
 	dat_rec.c \
@@ -198,6 +201,7 @@ $(ADDFILES): addfiles.c \
 $(FILELIST): filelist.c \
 	$(LIBODIR)\ars.obj \
 	$(LIBODIR)\nopen.obj \
+	$(LIBODIR)\crc16.obj \
 	$(LIBODIR)\str_util.obj \
 	$(LIBODIR)\date_str.obj \
 	dat_rec.c \
@@ -214,6 +218,7 @@ $(FILELIST): filelist.c \
 $(MAKEUSER): makeuser.c \
 	$(LIBODIR)\ars.obj \
 	$(LIBODIR)\nopen.obj \
+	$(LIBODIR)\crc16.obj \
 	$(LIBODIR)\str_util.obj \
 	$(LIBODIR)\date_str.obj \
 	dat_rec.c \
