@@ -146,7 +146,7 @@ $(NODE): node.c
 	$(QUIET)$(CC) $(CFLAGS) -n$(EXEODIR) $** 
 
 SMBLIB = $(LIBODIR)\smblib.obj $(LIBODIR)\genwrap.obj $(LIBODIR)\filewrap.obj \
-	 $(LIBODIR)\crc16.obj
+	 $(LIBODIR)\crc16.obj $(LIBODIR)\smbdump.obj
 
 # FIXSMB Utility
 $(FIXSMB): fixsmb.c $(SMBLIB) $(LIBODIR)\str_util.obj $(LIBODIR)\dirwrap.obj

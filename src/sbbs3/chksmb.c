@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -149,7 +149,7 @@ int main(int argc, char **argv)
 	smbmsg_t	msg;
 
 	fprintf(stderr,"\nCHKSMB v2.12 - Check Synchronet Message Base - "
-		"Copyright 2003 Rob Swindell\n");
+		"Copyright 2004 Rob Swindell\n");
 
 	if(argc<2) {
 		printf("%s",usage);
@@ -263,6 +263,7 @@ int main(int argc, char **argv)
 	for(l=smb.status.header_offset;l<length;l+=size) {
 		size=SHD_BLOCK_LEN;
 		fprintf(stderr,"\r%2lu%%  ",(long)(100.0/((float)length/l)));
+		memset(&msg,0,sizeof(msg));
 		msg.idx.offset=l;
 		msgerr=0;
 		if((i=smb_lockmsghdr(&smb,&msg))!=0) {
@@ -480,53 +481,8 @@ int main(int argc, char **argv)
 		headers++;
 		if(msgerr && extinfo) {
 			printf("\n");
-			printf("%-20s: %s\n","Message Base",smb.file);
-			printf("%-20s: %lu (%lu)\n","Message Number"
-				,msg.hdr.number,msg.offset+1);
-			printf("%-20s: %s\n","Subject",msg.subj);
-			printf("%-20s: %s","To",msg.to);
-			if(msg.to_net.type && msg.to_net.addr)
-				printf(" (%s)",msg.to_net.type==NET_FIDO
-					? faddrtoa(*(fidoaddr_t *)msg.to_net.addr) : (char*)msg.to_net.addr);
-			printf("\n%-20s: %s","From",msg.from);
-			if(msg.from_net.type && msg.from_net.addr)
-				printf(" (%s)",msg.from_net.type==NET_FIDO
-					? faddrtoa(*(fidoaddr_t *)msg.from_net.addr)
-						: (char*)msg.from_net.addr);
-			printf("\n");
-			printf("%-20s: %.24s  tz: %04hXh\n","When Written"
-				,ctime((time_t *)&msg.hdr.when_written.time)
-				,msg.hdr.when_written.zone);
-			printf("%-20s: %.24s  tz: %04hXh\n","When Imported"
-				,ctime((time_t *)&msg.hdr.when_imported.time)
-				,msg.hdr.when_imported.zone);
-			printf("%-20s: %04hXh\n","Type"
-				,msg.hdr.type);
-			printf("%-20s: %04hXh\n","Version"
-				,msg.hdr.version);
-			printf("%-20s: %u\n","Length"
-				,msg.hdr.length);
-			printf("%-20s: %lu\n","Calculated Length"
-				,smb_getmsghdrlen(&msg));
-			printf("%-20s: %04hXh\n","Attributes"
-				,msg.hdr.attr);
-			printf("%-20s: %08lXh\n","Auxilary Attributes"
-				,msg.hdr.auxattr);
-			printf("%-20s: %08lXh\n","Network Attributes"
-				,msg.hdr.netattr);
-			printf("%-20s: %06lXh\n","Header Offset"
-				,msg.idx.offset);
-			printf("%-20s: %06lXh\n","Data Offset"
-				,msg.hdr.offset);
-			printf("%-20s: %u\n","Total Data Fields"
-				,msg.hdr.total_dfields);
-			for(i=0;i<msg.hdr.total_dfields;i++)
-				printf("dfield[%u].type      : %02Xh\n"
-					   "dfield[%u].offset    : %lu (%lXh)\n"
-					   "dfield[%u].length    : %lu\n"
-					   ,i,msg.dfield[i].type
-					   ,i,msg.dfield[i].offset, msg.dfield[i].offset
-					   ,i,msg.dfield[i].length);
+			printf("%-20s %s\n","message base",smb.file);
+			smb_dump_msghdr(stdout,&msg);
 			printf("\n"); 
 		}
 

@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -571,88 +571,9 @@ void viewmsgs(ulong start, ulong count)
 			break; 
 		}
 
-		printf("%-16.16s %ld\n"		,"index record",ftell(smb.sid_fp)/sizeof(idxrec_t));
-		printf("%-16.16s %ld\n"		,"number"			,msg.hdr.number);
-
-		/* convenience strings */
-		if(msg.subj)
-			printf("%-16.16s %s\n"	,"subject"			,msg.subj);
-		if(msg.to) {
-			printf("%-16.16s %s"	,"to"				,msg.to);
-			if(msg.to_net.addr && strchr(msg.to,'@')==NULL)
-				printf(" (%s)",net_addr(&msg.to_net)); 
-			if(msg.to_ext)
-				printf(" #%s",msg.to_ext);
-			printf("\n");
-		}
-		if(msg.from) {
-			printf("%-16.16s %s"	,"from"				,msg.from);
-			if(msg.from_net.addr && strchr(msg.from,'@')==NULL)
-				printf(" (%s)",net_addr(&msg.from_net)); 
-			if(msg.from_ext)
-				printf(" #%s",msg.from_ext);
-			printf("\n");
-		}
-		if(msg.replyto) {
-			printf("%-16.16s %s"	,"reply-to"			,msg.replyto);
-			if(msg.replyto_net.addr && strchr(msg.replyto,'@')==NULL)
-				printf(" (%s)",net_addr(&msg.replyto_net)); 
-			if(msg.replyto_ext)
-				printf(" #%s",msg.replyto_ext);
-			printf("\n");
-		}
-		if(msg.summary)
-			printf("%-16.16s %s\n"	,"summary"			,msg.summary);
-
-		/* optional fixed fields */
-		if(msg.hdr.thread_orig)
-			printf("%-16.16s %ld\n"	,"thread_orig"		,msg.hdr.thread_orig);
-		if(msg.hdr.thread_next)
-			printf("%-16.16s %ld\n"	,"thread_next"		,msg.hdr.thread_next);
-		if(msg.hdr.thread_first)
-			printf("%-16.16s %ld\n"	,"thread_first"		,msg.hdr.thread_first);
-		if(msg.hdr.delivery_attempts)
-			printf("%-16.16s %hu\n"	,"delivery_attempts",msg.hdr.delivery_attempts);
-		if(msg.hdr.times_downloaded)
-			printf("%-16.16s %lu\n"	,"times_downloaded"	,msg.hdr.times_downloaded);
-		if(msg.hdr.last_downloaded)
-			printf("%-16.16s %s\n"	,"last_downloaded"	,my_timestr((time_t*)&msg.hdr.last_downloaded));
-
-		/* convenience integers */
-		if(msg.cost)
-			printf("%-16.16s %lu\n"	,"cost"				,msg.cost);
-		if(msg.priority)
-			printf("%-16.16s %lu\n"	,"priority"			,msg.priority);
-		if(msg.expiration)
-			printf("%-16.16s %s\n"	,"expiration"	
-				,my_timestr((time_t *)&msg.expiration));
-
-		printf("%-16.16s %s %s\n"	,"when_written"	
-			,my_timestr((time_t *)&msg.hdr.when_written.time), zonestr(msg.hdr.when_written.zone));
-		printf("%-16.16s %s %s\n"	,"when_imported"	
-			,my_timestr((time_t *)&msg.hdr.when_imported.time), zonestr(msg.hdr.when_imported.zone));
-		printf("%-16.16s %04Xh\n"	,"type"				,msg.hdr.type);
-		printf("%-16.16s %04Xh\n"	,"version"			,msg.hdr.version);
-		printf("%-16.16s %04Xh\n"	,"attr"				,msg.hdr.attr);
-		printf("%-16.16s %08lXh\n"	,"auxattr"			,msg.hdr.auxattr);
-		printf("%-16.16s %08lXh\n"	,"netattr"			,msg.hdr.netattr);
-		printf("%-16.16s %06lXh\n"	,"header offset"	,msg.idx.offset);
-		printf("%-16.16s %u\n"		,"header length"	,msg.hdr.length);
-
-		/* variable fields */
-		for(i=0;i<msg.total_hfields;i++)
-			printf("%-16.16s %s\n"
-				,smb_hfieldtype(msg.hfield[i].type)
-				,binstr((uchar *)msg.hfield_dat[i],msg.hfield[i].length));
-
-		printf("%-16.16s %06lXh\n"	,"data offset"		,msg.hdr.offset);
-		for(i=0;i<msg.hdr.total_dfields;i++)
-			printf("data field[%u]    %s, offset %lu, length %lu\n"
-				,i
-				,smb_dfieldtype(msg.dfield[i].type)
-				,msg.dfield[i].offset
-				,msg.dfield[i].length);
-
+		printf("--------------------\n");
+		printf("%-20.20s %ld\n"		,"index record",ftell(smb.sid_fp)/sizeof(idxrec_t));
+		smb_dump_msghdr(stdout,&msg);
 		printf("\n");
 		smb_freemsgmem(&msg);
 		l++; 
