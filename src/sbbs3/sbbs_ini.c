@@ -31,7 +31,7 @@ static ini_bitdesc_t ftp_options[] = {
 	{ FTP_OPT_INDEX_FILE			,"INDEX_FILE"			},
 	{ FTP_OPT_DEBUG_TX				,"DEBUG_TX"				},
 	{ FTP_OPT_ALLOW_QWK				,"ALLOW_QWK"			},
-	{ FTP_OPT_NO_LOCAL_FSYS			,"LOCAL_FSYS"			},
+	{ FTP_OPT_NO_LOCAL_FSYS			,"NO_LOCAL_FSYS"		},
 	{ FTP_OPT_DIR_FILES				,"DIR_FILES"			},
 	{ FTP_OPT_KEEP_TEMP_FILES		,"KEEP_TEMP_FILES"		},
 	{ FTP_OPT_HTML_INDEX_FILE		,"HTML_INDEX_FILE"		},
