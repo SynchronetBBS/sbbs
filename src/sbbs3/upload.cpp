@@ -45,7 +45,6 @@
 /****************************************************************************/
 bool sbbs_t::uploadfile(file_t *f)
 {
-	char*	p;
 	char	path[MAX_PATH+1];
 	char	str[MAX_PATH+1],fname[25];
 	char	ext[F_EXBSIZE+1];
@@ -96,7 +95,7 @@ bool sbbs_t::uploadfile(file_t *f)
 			if((stream=fopen(str,"w"))!=NULL) {
 				fwrite(f->desc,1,strlen(f->desc),stream);
 				fclose(stream); }
-			if(external(cmdstr(cfg.ftest[i]->cmd,path,f->desc,NULL),0)) { /* EX_OUTL */
+			if(external(cmdstr(cfg.ftest[i]->cmd,path,f->desc,NULL),EX_OFFLINE)) {
 				bprintf(text[FileHadErrors],f->name,cfg.ftest[i]->ext);
 				if(SYSOP) {
 					if(!yesno(text[DeleteFileQ])) return(0); }
@@ -145,13 +144,12 @@ bool sbbs_t::uploadfile(file_t *f)
 			sprintf(str,"%sFILE_ID.DIZ",cfg.temp_dir);
 			if(fexistcase(str))
 				remove(str);
-			p=cmdstr(cfg.fextr[i]->cmd,path,"FILE_ID.DIZ",NULL);
-			external(p,EX_OUTL);
+			external(cmdstr(cfg.fextr[i]->cmd,path,"FILE_ID.DIZ",NULL),EX_OFFLINE);
 			if(!fexistcase(str)) {
 				sprintf(str,"%sDESC.SDI",cfg.temp_dir);
 				if(fexistcase(str))
 					remove(str);
-				external(cmdstr(cfg.fextr[i]->cmd,path,"DESC.SDI",NULL),EX_OUTL); 
+				external(cmdstr(cfg.fextr[i]->cmd,path,"DESC.SDI",NULL),EX_OFFLINE); 
 				fexistcase(str);
 			}
 			if((file=nopen(str,O_RDONLY))!=-1) {
