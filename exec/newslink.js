@@ -325,9 +325,10 @@ for(i in area) {
 				,hdr.from
 				,hdr.from.replace(/ /g,".").toLowerCase()
 				,system.inetaddr,antispam));
-		if(hdr.from_org!=undefined)
+		if(hdr.from_org==undefined && !hdr.from_net_type)
 			hdr.from_org=system.name;
-		writeln("Organization: " + hdr.from_org);
+		if(hdr.from_org!=undefined)
+			writeln("Organization: " + hdr.from_org);
 		writeln("To: " + hdr.to);
 		writeln("X-Comment-To: " + hdr.to);
 		writeln("Subject: " + hdr.subject);
