@@ -436,7 +436,7 @@ js_writebin(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 			wr=fwrite(&b,1,size,p->fp);
 			break;
 		case sizeof(WORD):
-			w = (SHORT)JSVAL_TO_INT(argv[0]);
+			w = (WORD)JSVAL_TO_INT(argv[0]);
 			wr=fwrite(&w,1,size,p->fp);
 			break;
 		case sizeof(DWORD):
