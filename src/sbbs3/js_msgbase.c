@@ -1285,7 +1285,8 @@ static JSBool js_msgbase_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 static struct JSPropertySpec js_msgbase_properties[] = {
 /*		 name				,tinyid					,flags,				getter,	setter	*/
 
-	{	"last_error"		,SMB_PROP_LAST_ERROR	,SMB_PROP_FLAGS,	NULL,NULL},
+	{	"error"				,SMB_PROP_LAST_ERROR	,SMB_PROP_FLAGS,	NULL,NULL},
+	{	"last_error"		,SMB_PROP_LAST_ERROR	,JSPROP_READONLY,	NULL,NULL},		/* alias */
 	{	"file"				,SMB_PROP_FILE			,SMB_PROP_FLAGS,	NULL,NULL},
 	{	"debug"				,SMB_PROP_DEBUG			,0,					NULL,NULL},
 	{	"retry_time"		,SMB_PROP_RETRY_TIME	,JSPROP_ENUMERATE,	NULL,NULL},

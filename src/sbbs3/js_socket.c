@@ -1147,7 +1147,8 @@ static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 static struct JSPropertySpec js_socket_properties[] = {
 /*		 name				,tinyid					,flags,				getter,	setter	*/
 
-	{	"last_error"		,SOCK_PROP_LAST_ERROR	,SOCK_PROP_FLAGS,	NULL,NULL},
+	{	"error"				,SOCK_PROP_LAST_ERROR	,SOCK_PROP_FLAGS,	NULL,NULL},
+	{	"last_error"		,SOCK_PROP_LAST_ERROR	,JSPROP_READONLY,	NULL,NULL},	/* alias */
 	{	"is_connected"		,SOCK_PROP_IS_CONNECTED	,SOCK_PROP_FLAGS,	NULL,NULL},
 	{	"data_waiting"		,SOCK_PROP_DATA_WAITING	,SOCK_PROP_FLAGS,	NULL,NULL},
 	{	"nread"				,SOCK_PROP_NREAD		,SOCK_PROP_FLAGS,	NULL,NULL},
