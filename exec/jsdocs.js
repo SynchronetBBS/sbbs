@@ -8,8 +8,20 @@ function document_methods(name,obj)
 	if(obj._method_list == undefined)
 		return;
 
-	for(method in obj._method_list)
-		printf("%-8s %s.%s()\r\n","",name,obj._method_list[method].name);
+	for(method in obj._method_list) {
+		printf("%-8s %s.%s(%s)\r\n"
+			,obj._method_list[method].type
+			,name
+			,obj._method_list[method].name
+			,obj._method_list[method].args
+			);
+		if(obj._method_list[method].desc != undefined)
+			print(obj._method_list[method].desc);
+		if(obj._method_list[method].alias_list != undefined)
+			print(obj._method_list[method].alias_list)
+			//for(a in obj._method_list[method].alias_list)
+				;
+	}
 }
 
 function document_object(name,obj)
