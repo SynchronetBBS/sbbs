@@ -215,7 +215,7 @@ if_true
 		return
 		end_if
 
-	compare_str "SPY"
+	compare_word "SPY"
 	if_true
 		chksyspass
 		if_true
