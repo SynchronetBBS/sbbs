@@ -32,6 +32,8 @@ documentation and/or software.
 #ifndef H__MD5
 #define H__MD5
 
+#include <stddef.h>		/* size_t */
+
 #define MD5_DIGEST_SIZE		16
 
 #ifndef UINT4
