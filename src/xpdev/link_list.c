@@ -123,11 +123,13 @@ BOOL listFree(link_list_t* list)
 	return(TRUE);
 }
 
+#pragma argsused
 void listLock(const link_list_t* list)
 {
 	MUTEX_LOCK(list);
 }
 
+#pragma argsused
 void listUnlock(const link_list_t* list)
 {
 	MUTEX_UNLOCK(list);
@@ -188,7 +190,7 @@ str_list_t listStringList(const link_list_t* list)
 
 	for(node=list->first; node!=NULL; node=node->next) {
 		if(node->data!=NULL)
-			strListAppend(&str_list, node->data, count++);
+			strListAppend(&str_list, (char*)node->data, count++);
 	}
 
 	MUTEX_UNLOCK(list);
@@ -198,7 +200,7 @@ str_list_t listStringList(const link_list_t* list)
 
 str_list_t listSubStringList(const list_node_t* node, long max)
 {
-	long			count=0;
+	long			count;
 	str_list_t		str_list;
 
 	if(node==NULL)
@@ -211,7 +213,7 @@ str_list_t listSubStringList(const list_node_t* node, long max)
 
 	for(count=0; count<max && node!=NULL; node=node->next) {
 		if(node->data!=NULL)
-			strListAppend(&str_list, node->data, count++);
+			strListAppend(&str_list, (char*)node->data, count++);
 	}
 
 	MUTEX_UNLOCK(list);
@@ -419,7 +421,7 @@ list_node_t* listAddNodeString(link_list_t* list, const char* str, list_node_t* 
 
 	length = strlen(str)+1;
 
-	if((buf=malloc(length))==NULL)
+	if((buf=(char*)malloc(length))==NULL)
 		return(NULL);
 	memcpy(buf,str,length);
 
@@ -483,7 +485,7 @@ long listMerge(link_list_t* list, const link_list_t* src, list_node_t* after)
 
 link_list_t* listExtract(link_list_t* dest_list, const list_node_t* node, long max)
 {
-	long			count=0;
+	long			count;
 	link_list_t*	list;
 
 	if(node==NULL)

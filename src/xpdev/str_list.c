@@ -238,7 +238,7 @@ str_list_t strListSplitCopy(str_list_t* list, const char* str, const char* delim
 {
 	char*	buf;
 
-	if((buf=malloc(strlen(str)+1))==NULL)
+	if((buf=(char*)malloc(strlen(str)+1))==NULL)
 		return(NULL);
 
 	strcpy(buf,str);
@@ -338,7 +338,7 @@ str_list_t strListReadFile(FILE* fp, str_list_t* lp, size_t max_line_len)
 
 	count = strListCount(*lp);
 	while(!feof(fp)) {
-		if(buf==NULL && (buf=malloc(max_line_len+1))==NULL)
+		if(buf==NULL && (buf=(char*)malloc(max_line_len+1))==NULL)
 			return(NULL);
 		
 		if(fgets(buf,max_line_len+1,fp)==NULL)

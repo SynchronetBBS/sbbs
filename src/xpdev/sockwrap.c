@@ -85,7 +85,7 @@ int sendfilesocket(int sock, int file, long *offset, long count)
 		count-=tell(file);		/* don't try to read beyond EOF */
 	}
 
-	if((buf=malloc(count))==NULL) {
+	if((buf=(char*)malloc(count))==NULL) {
 		errno=ENOMEM;
 		return(-1);
 	}
@@ -146,7 +146,7 @@ int recvfilesocket(int sock, int file, long *offset, long count)
 		return(-1);
 	}
 		
-	if((buf=malloc(count))==NULL) {
+	if((buf=(char*)malloc(count))==NULL) {
 		errno=ENOMEM;
 		return(-1);
 	}
