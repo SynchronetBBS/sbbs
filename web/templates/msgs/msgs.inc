@@ -5,16 +5,14 @@
 <INPUT TYPE="hidden" NAME="msg_grp" VALUE="^^group:number^^">
 <INPUT TYPE="hidden" NAME="msg_sub" VALUE="^^sub:code^^">
 <TABLE class="msglist" cellpadding=5 CELLSPACING=0 BORDER=1 WIDTH="100%">
-<TR class="msglist"><TH class="msglist"><font color=black>X</FONT></TH><TH class="msglist"><font color=black>A</font></TH><TH class="msglist"><font color=black>Subject</font></TH><TH class="msglist"><font color=black>From</font></TH><TH class="msglist"><font color=black>To</font></TH><TH class="msglist"><font color=black>Date</font></TH></TR>
+<TR class="msglist">
+@@JS:template.can_delete?'<TH class="msglist"><font color=black>X</FONT></TH>':''@@
+<TH class="msglist"><font color=black>A</font></TH><TH class="msglist"><font color=black>Subject</font></TH><TH class="msglist"><font color=black>From</font></TH><TH class="msglist"><font color=black>To</font></TH><TH class="msglist"><font color=black>Date</font></TH></TR>
 <!-- %%JS:template.color=0%% -->
 <<REPEAT messages>>
 <TR bgcolor=@@JS:((template.color++)%2==0)?'"#00868B"':'"#007979"';@@>
-	<TD class="msglist">
-		<INPUT name="number" value="%%messages:number%%" type="checkbox">
-	</TD>
-	<TD class="msglist">
-		@@JS:if(@@messages:attachments@@>0) '<img alt="Attachment" src="/graphics/attach.gif">'; else '&nbsp;';@@
-	</TD>
+@@JS:template.can_delete?'<TD class="msglist"><INPUT name="number" value="%%messages:number%%" type="checkbox"></TD>':''@@
+	<TD class="msglist">@@JS:if(@@messages:attachments@@>0) '<img alt="Attachment" src="/graphics/attach.gif">'; else '&nbsp;';@@</TD>
 	<TD>
 		<A HREF="msg.ssjs?msg_grp=^^group:number^^&amp;msg_sub=^^sub:code^^&amp;message=^^messages:number^^">%%messages:subject%%</A>
 	</TD>
