@@ -1485,9 +1485,11 @@ static void send_thread(void* arg)
 			}
 			lprintf("%04d !DATA ERROR sent %d instead of %d on socket %d"
 				,xfer.ctrl_sock,wr,rd,*xfer.data_sock);
+#if 0 /* Removed Mar-11-2003, this is apparently normal in Linux */
 			sockprintf(xfer.ctrl_sock,"451 Short DATA transfer");
 			error=TRUE;
 			break;
+#endif
 		}
 		total+=wr;
 		*xfer.lastactive=time(NULL);
