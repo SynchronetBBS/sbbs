@@ -745,6 +745,7 @@ extern "C" BOOL DLLCALL trashcan(scfg_t* cfg, char* insearch, char* name)
 	char	str[128];
 	char	search[81];
 	int		c;
+	int		i;
 	BOOL	found;
 	FILE*	stream;
 
@@ -786,9 +787,17 @@ extern "C" BOOL DLLCALL trashcan(scfg_t* cfg, char* insearch, char* name)
 					found=!found; 
 			}
 
-			else if(p[c]=='^') {
+			else if(p[c]=='^' || p[c]=='*') {
 				p[c]=0;
 				if(!strncmp(p,search,c))
+					found=!found; 
+			}
+
+			else if(p[0]=='*') {
+				i=strlen(search);
+				if(i<c)
+					continue;
+				if(!strncmp(p+1,search+(i-c),c))
 					found=!found; 
 			}
 
