@@ -110,26 +110,31 @@ earlier.  While care has been taken to ensure backwards compatibility with
 may include retrieving the latest version of Synchronet from the Synchronet
 CVS (if you're familiar with building from CVS), from the Synchronet web site
 (http://www.synchro.net), or elsewhere.  Synchronet 3.11 is the minimum 
-required version to run version 1.0 of the Synchronet IRCd.
+required version to run version 1.0 (or higher) of the Synchronet IRCd.
 
 	Older versions of Synchronet also come packaged with older Javascript
 libraries.  The Synchronet IRCd makes use of some of the newer Javascript
 library features (such as the ability to treat strings as an array of
 characters), therefore it's critical to have a modern JS library.  If your
-Javascript library is from 2001 or so (you can check this in the 'system
+Javascript library is from 2002 or earlier (you can check this in the 'system
 information' part of your BBS main menu), then it's too old.  Time to upgrade.
 
 	(2) Check to make sure that all of the components of the Synchronet
 IRCd are resting in their correct directories.  While you're at it, check the
-file sizes to make sure they're relatively normal.  Make sure that all of the
-files are readable by the user you're intending to run the IRCd as.  Here's a
-chart to help:
+file sizes to make sure they're relatively normal (i.e. not 0 bytes long.)
+Make sure that all of the files are readable by the user you're intending to
+run the IRCd as.  Here's a chart to help:
 
-	File		Synchronet Directory	Approximate Size
+	File		Synchronet Dir.	Description
 
-	ircd.js		exec			200KB
-	ircd.conf	ctrl			 12KB
-	ircmotd.txt	text			180bytes
+	irclib.js	exec		Javascript IRC library functions
+	ircd.js		exec		IRCd core
+	ircd_channel.js	exec		Channel functions/objects
+	ircd_server.js	exec		Functions/objects for servers
+	ircd_unreg.js	exec		Handling of unregistered connections
+	ircd_user.js	exec		Functions/objects for users
+	ircd.conf	ctrl		Primary configuration file
+	ircmotd.txt	text		Message users see upon connect
 
 	(3) Edit your relevant services configuration file (in the Synchronet
 'ctrl' directory.)  For Synchronet 3.11, this is most likely "services.ini",
@@ -150,8 +155,9 @@ so that a completed services.cfg line should look like this:
 IRC             6667    0               806             ircd.js
 
 	An example IRC section from services.ini looks like this, and should
-already be present (but commented out) in services.ini for Synchronet 3.11
-and above:
+already be present in services.ini for Synchronet 3.11 and above.  The IRCd is
+enabled by default in Synchronet 3.11, so, it's likely that it's already
+operating:
 
 [IRC]
 Port=6667
@@ -186,7 +192,7 @@ you find an ircd.conf from another daemon that works, let us know about it!
 service is brought online with your BBS.  Watch your BBS console carefully,
 as you should see something similar to the following messages:
 
-srvc 0007 IRC SynchronetIRCd-1.0b(1.79) started.
+srvc 0007 IRC SynchronetIRCd-1.1b(1.102) started.
 srvc 0007 IRC Reading Config: /sbbs/ctrl/ircd.conf
 
 	You may have to scroll up to see the message.  Any errors should be
@@ -195,14 +201,17 @@ file.)  If you get an error about not being able to bind to a socket, or that
 a socket is already in use, then you already have something running on the
 port you defined in your services configuration.  Could it be another IRC
 server running?  Try disabling any other IRC servers or proxies and restart
-the BBS.  Repeat this process of elimination until your IRCd starts
+the BBS.  If you recently restarted Synchronet with users connected to an
+already operating IRCd, then it's likely that some of your sockets are in a
+'TIME_WAIT' state.  Wait a minute or two for the condition to clear up, then
+try again.  Repeat this process of elimination until your IRCd starts
 successfully.
 
 	(6) Test your new IRCd by connecting to it with an IRC client.
 At the very least, using 'telnet' to connect to the IRCd port should give you
 something similar to the following line:
 
-:rrx.synchro.net NOTICE * :*** SynchronetIRCd-1.0b(1.76) (RoadRunner X) Ready.
+:rrx.synchro.net NOTICE * :*** SynchronetIRCd-1.1b(1.102) (RoadRunner X) Ready.
 
 	Which is the standard Synchronet IRCd banner, informing you that the
 IRCd is accepting new connections correctly.
@@ -210,7 +219,15 @@ IRCd is accepting new connections correctly.
 	At this point, you should have a working, fully-functional IRC server
 available for users to use.  You may want to point Synchronet's internal IRC
 client to your local IRC server (just 'localhost' or '127.0.0.1'), so that
-your BBS users will be able to make use of your new IRCd.
+your BBS users will be able to make use of your new IRCd.  By default, an
+O:Line has been added so that anyone connecting either from the BBS itself, or
+your internal network will be able to make use of the /OPER command to become
+an IRC Operator.  To become an IRC Operator, first /WHOIS yourself to make
+sure that your hostname is your local BBS's hostname (i.e. mybbs.synchro.net)
+If so, execute '/OPER Sysop <pass>', where <pass> is your local BBS system
+password.  If your hostname isn't the local BBS's hostname, go ahead and edit
+ircd.conf (in the Synchronet 'ctrl' directory) and add an O:Line for your
+hostname as directed by the instructions inside of the configuration file.
 
 [3.2] - Linking to the Synchronet IRC Network (irc.synchro.net)
 
@@ -242,7 +259,7 @@ taken to ensure a smooth link to the Synchronet IRC Network:
 	(1) Ensure that you have a DOVE-Net node established.  Although you
 aren't required to be a member of DOVE-Net to be a member of the Synchronet IRC
 Network, you need to at least go through the same automatic registration
-process to obtain and configure your QWK-ID.   Instructions about obtaining
+process to obtain and configure your QWK-ID.  Instructions about obtaining
 your QWK-ID can be found here: http://www.synchro.net/docs/dove-net.txt
 Only steps 1 and 2 need be followed, but heed the document's warning:
 "Remember the password you used to create this account, you'll need it later."
@@ -462,7 +479,7 @@ the following way beyond the standard behavior:
 
 	The Synchronet IRCd has only been tested to be link compatible with:
 
-	* Bahamut 1.4.35, 1.4.36-rc1		http://bahamut.dal.net
+	* Bahamut 1.4.35, 1.4.36		http://bahamut.dal.net
 	* Andy Church's IRC Services 5.0	http://www.ircservices.za.net
 
 	The IRCd should be compatible with any other daemon that supports the
@@ -506,6 +523,9 @@ sort of thing.
 	   Synchronet 3.11, which contains sufficiently modern Javascript
 	   libraries.  If you're certain that you're running new libraries,
 	   double-check your I:Lines and Y:Lines inside the ircd.conf.
+	   Javascript libraries before the year 2003 are considered to be too
+	   old; you can check your Javascript library version from the 'system
+	   information' portion of your BBS main menu.
 
 	Q: I try to connect and it tells me "Password Incorrect" or "Denied."
 	   (Numeric 464)
@@ -542,6 +562,26 @@ sort of thing.
 	   Furthermore, any services package which is compatible with the
 	   Bahamut inter-server protocol should work.  There *may* be an IRC
 	   services package written in Javascript for Synchronet later.
+
+	Q: I've linked to the Synchronet IRC Network, and now I'm getting all
+	   sorts of weird 'Routing' messages.
+
+	A: These messages are sent whenever an 'important' event occurs on the
+	   IRC network.  This includes whenever a server links or delinks from
+	   the network, which occurs with quite a bit of regularity.  These
+	   messages are informational only, and simply indicate that your IRCd
+	   (and the network at large) are operating correctly.
+
+	Q: I've successfully installed my IRCd, now how do I become an IRC
+	   Operator?
+
+	A: Use the /OPER command, which has a syntax of '/OPER <nick> <pass>'.
+	   By default, the Synchronet IRCd configuration file is already pre-
+	   configured so that you may OPER to a nickname of 'Sysop' with the
+	   BBS system password so long as you're connecting from the BBS
+	   machine itself, or a system on your local network.  This means you
+	   would execute the command like this: '/OPER Sysop <syspass>'.
+	   Also check out the O:Line section in ircd.conf.
 
 	Q: My question isn't answered in this document, where can I go?
 
