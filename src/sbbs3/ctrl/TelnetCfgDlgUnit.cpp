@@ -180,7 +180,7 @@ void __fastcall TTelnetCfgDlg::OKBtnClick(TObject *Sender)
     	MainForm->bbs_startup.options|=BBS_OPT_ALLOW_RLOGIN;
     else
 	    MainForm->bbs_startup.options&=~BBS_OPT_ALLOW_RLOGIN;
-	if(RLoginEnabledCheckBox->Checked==true)
+	if(RLogin2ndNameCheckBox->Checked==true)
     	MainForm->bbs_startup.options|=BBS_OPT_USE_2ND_RLOGIN;
     else
 	    MainForm->bbs_startup.options&=~BBS_OPT_USE_2ND_RLOGIN;
