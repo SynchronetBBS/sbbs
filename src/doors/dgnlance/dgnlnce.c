@@ -98,7 +98,12 @@ struct weapon {
     char            name[31];
     WORD            attack;
     WORD            power;
-    DWORD	    cost;
+    DWORD           cost;
+};
+
+struct armour {
+    char            name[31];
+    DWORD           cost;
 };
 
 struct playertype player[31];
@@ -110,7 +115,7 @@ const char      dots[] = "...............................................";
 /* In these arrays, 0 isn't actually used */
 QWORD           required[29];	       /* Experience required for each level */
 struct weapon   weapon[26];
-char            sname[26][31];	       /* Array of shield names */
+struct armour   armour[26];
 char            temp[81];
 FILE           *infile;		       /* Current input file */
 DWORD           player_num;	       /* Current Player Number */
@@ -631,7 +636,7 @@ statshow(void)
     od_printf("Battles: %u   Retreats: %u    Fights: %u   Hps: %u(%u)\r\n", user.battles, user.flights, user.fights, user.hps - user.damage, user.hps);
     nl();
     od_set_color(L_CYAN, D_BLACK);
-    od_printf("Weapon: %s     Armor: %s\r\n", weapon[user.weapon].name, sname[user.armour]);
+    od_printf("Weapon: %s     Armor: %s\r\n", weapon[user.weapon].name, armour[user.armour].name);
 }
 BOOL
 incre(void)
@@ -1146,7 +1151,7 @@ weaponlist(void)
     od_disp_str("(-------------------------------------------------------------------------)\r\n");
     od_set_color(L_YELLOW, D_BLACK);
     for (i = 1; i <= 25; i++)
-	od_printf("  %2d>  %-25.25s   %-25.25s   %9u\r\n", i, weapon[i].name, sname[i], weapon[i].cost);
+	od_printf("  %2d>  %-25.25s   %-25.25s   %9u\r\n", i, weapon[i].name, armour[i].name, weapon[i].cost);
 }
 
 void
@@ -1205,11 +1210,11 @@ weaponshop(void)
 			    od_disp_str("Are you sure you want buy it? ");
 			    if (od_get_answer("YN") == 'Y') {
 				od_disp_str("Yes\r\n");
-				user.gold -= weapon[buy].cost;
+				user.gold -= armour[buy].cost;
 				user.armour = buy;
 				nl();
 				od_set_color(D_MAGENTA, D_BLACK);
-				od_printf("You've bought a %s\r\n", sname[buy]);
+				od_printf("You've bought a %s\r\n", armour[buy].name);
 			    } else
 				od_disp_str("No\r\n");
 			    break;
@@ -1242,7 +1247,7 @@ weaponshop(void)
 			break;
 		    case 'A':
 			od_disp_str("Armour\r\n");
-			buyprice = user.charisma * weapon[user.armour].cost / 20;
+			buyprice = user.charisma * armour[user.armour].cost / 20;
 			nl();
 			od_printf("I will purchase it for %u, okay? ", buyprice);
 			if (od_get_answer("YN") == 'Y') {
@@ -1301,7 +1306,7 @@ spy(void)
 		nl();
 		od_set_color(D_MAGENTA, D_BLACK);
 		od_printf("Weapon : %s\r\n", weapon[player[a].weapon].name);
-		od_printf("Armour : %s\r\n", sname[player[a].armour]);
+		od_printf("Armour : %s\r\n", armour[player[a].armour].name);
 		nl();
 		od_set_color(L_YELLOW, D_BLACK);
 		od_printf("Steel  (in hand): %" QWORDFORMAT "\r\n", player[a].gold);
@@ -1616,11 +1621,12 @@ main(int argc, char **argv)
     infile = fopen("data/armor.lan", "rb");
     od_set_color(L_BLUE, D_BLACK);
     for (i = 1; i <= 25; i++)
-	readline(sname[i], sizeof(sname[i]));
+	readline(armour[i].name, sizeof(armour[i].name));
     fclose(infile);
     infile = fopen("data/prices.lan", "rb");
     for (i = 1; i <= 25; i++) {
 	weapon[i].cost = readnumb(100000000);
+	armour[i].cost = weapon[i].cost;
 	endofline();
     }
     fclose(infile);
