@@ -33,46 +33,59 @@ function getsizestr(size, bytes)
 
 	if(bytes) {
 		if(size < 1000) {       /* Bytes */
-			outstr=format("%ld bytes",size);
+			outstr=format("%ldB",size);
 			return(outstr);
 		}
 		if(size<10000) {        /* Bytes with comma */
-			outstr=format("%ld,%03ld bytes",(size/1000),(size%1000));
+			outstr=format("%ld,%03ldB",(size/1000),(size%1000));
 			return(outstr);
 		}
 		size = size/1024;
 	}
 	if(size<1000) { /* KB */
-		outstr=format("%ld KB",size);
+		outstr=format("%ldK",size);
 		return(outstr);
 	}
 	if(size<999999) { /* KB With comma */
-		outstr=format("%ld,%03ld KB",(size/1000),(size%1000));
+		outstr=format("%ld,%03ldK",(size/1000),(size%1000));
 		return(outstr);
 	}
 	size = size/1024;
 	if(size<1000) { /* MB */
-		outstr=format("%ld MB",size);
+		outstr=format("%ldM",size);
 		return(outstr);
 	}
 	if(size<999999) { /* MB With comma */
-		outstr=format("%ld,%03ld MB",(size/1000),(size%1000));
+		outstr=format("%ld,%03ldM",(size/1000),(size%1000));
 		return(outstr);
 	}
 	size = size/1024;
 	if(size<1000) { /* GB */
-		outstr=format("%ld GB",size);
+		outstr=format("%ldG",size);
 		return(outstr);
 	}
 	if(size<999999) { /* GB With comma */
-		outstr=format("%ld,%03ld GB",(size/1000),(size%1000));
+		outstr=format("%ld,%03ldG",(size/1000),(size%1000));
 		return(outstr);
 	}
 	size = size/1024;
 	if(size<1000) { /* TB (Yeah, right) */
-		outstr=format("%ld TB",size);
+		outstr=format("%ldT",size);
 		return(outstr);
 	}
-	sprintf(outstr,"Plenty");
+	if(size<999999) { /* TB With comma (Whee!) */
+		outstr=format("%ld,%03ldT",(size/1000),(size%1000));
+		return(outstr);
+	}
+	size = size/1024;
+	if(size<1000) { /* PB (Snicker) */
+		outstr=format("%ldP",size);
+		return(outstr);
+	}
+	if(size<999999) { /* PB With comma (Cough!) */
+		outstr=format("%ld,%03ldP",(size/1000),(size%1000));
+		return(outstr);
+	}
+	sprintf(outstr,"Too damn big to download.");
 	return(outstr);
 }
