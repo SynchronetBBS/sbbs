@@ -1,6 +1,8 @@
 #include <stdlib.h>
 #include <ciolib.h>
 
+#include <dirwrap.h>
+
 #include "bbslist.h"
 #include "rlogin.h"
 #include "uifcinit.h"
@@ -36,18 +38,24 @@ int main(int argc, char **argv)
 {
 	struct bbslist *bbs;
 	struct	text_info txtinfo;
+	char	drive[MAX_PATH];
+	char	path[MAX_PATH];
+	char	fname[MAX_PATH];
+	char	ext[MAX_PATH];
 
 	if(!winsock_startup())
 		return(1);
 
     gettextinfo(&txtinfo);
 	if((txtinfo.screenwidth<40) || txtinfo.screenheight<24) {
-		fputs("Window too small, must be at lest 80x24\n",stderr);
+		fputs("Window too small, must be at least 80x24\n",stderr);
 		return(1);
 	}
-
+	_splitpath(argv[0],drive,path,fname,ext);
+	strcat(drive,path);
+	FULLPATH(path,drive,sizeof(path));
 	atexit(uifcbail);
-	while((bbs=show_bbslist(BBSLIST_SELECT))!=NULL) {
+	while((bbs=show_bbslist(BBSLIST_SELECT,path))!=NULL) {
 		if(!rlogin_connect(bbs->addr,bbs->port,bbs->reversed?bbs->password:bbs->user,bbs->reversed?bbs->user:bbs->password,bbs->dumb)) {
 			/* ToDo: Update the entry with new lastconnected */
 			/* ToDo: Disallow duplicate entries */

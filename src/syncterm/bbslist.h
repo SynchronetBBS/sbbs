@@ -28,6 +28,6 @@ struct bbslist {
 	int				reversed;
 };
 
-struct bbslist *show_bbslist(int mode);
+struct bbslist *show_bbslist(int mode,char *path);
 
 #endif
