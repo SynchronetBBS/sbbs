@@ -156,6 +156,11 @@ function parse_news_header(hdr, line)
 			hdr.ftn_reply=data;
 			break;
 
+		/* NNTP control messages */
+		case "control":
+			hdr.control=data;
+			break;
+
 		default:
 			if(hdr.field_list==undefined)
 				hdr.field_list=new Array();
