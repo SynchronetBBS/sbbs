@@ -53,6 +53,7 @@ enum {
 	,SYS_PROP_PWDAYS
 	,SYS_PROP_DELDAYS
 
+	,SYS_PROP_LASTUSER
 	,SYS_PROP_LASTUSERON
 	,SYS_PROP_FREEDISKSPACE
 	,SYS_PROP_FREEDISKSPACEK
@@ -152,7 +153,9 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 		case SYS_PROP_DELDAYS:
 			*vp = INT_TO_JSVAL(cfg->sys_deldays);
 			break;
-
+		case SYS_PROP_LASTUSER:
+			*vp = INT_TO_JSVAL(lastuser(cfg));
+			break;
 		case SYS_PROP_LASTUSERON:
 			p=lastuseron;
 			break;
@@ -365,16 +368,17 @@ static char* sys_prop_desc[] = {
 	 "BBS name"
 	,"operator name"
 	,"system QWK-ID (for QWK packets)"
-	,"settings (see <tt>SS_*</tt> in <tt>sbbsdefs.js</tt>)"
+	,"settings bitfield (see <tt>SS_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
 	,"PostLink name"
 	,"PostLink system number"
-	,"Internet address (host name)"
+	,"Internet address (host or domain name)"
 	,"location (city, state)"
-	,"timezone"
+	,"timezone (use <i>system.zonestr()</i> to get string representation)"
 	,"days between forced password changes"
 	,"days to preserve deleted user records"
 
-	,"last useron"
+	,"last user record number in user database (includes deleted and inactive user records)"
+	,"name of last user to logoff"
 	,"amount of free disk space (in bytes)"
 	,"amount of free disk space (in kilobytes)"
 
@@ -395,9 +399,9 @@ static char* sys_prop_desc[] = {
 	,"new user command shell"
 	,"new user external editor"
 	,"new user settings"
-	,"new user file transfer protocol"
-	,"new user expiration date"
-	,"new user questions (see <tt>UQ_*</tt> in <tt>sbbsdefs.js</tt>)"
+	,"new user file transfer protocol (command key)"
+	,"new user expiration days"
+	,"new user questions bitfield (see <tt>UQ_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
 
 	,"expired user level"
 	,"expired user flag set #1"
@@ -409,21 +413,21 @@ static char* sys_prop_desc[] = {
 
 	/* directories */
 	,"node directory"
-	,"control filedirectory"
+	,"control file directory"
 	,"data file directory"
 	,"text file directory"
-	,"tempory file directory"
+	,"temporary file directory"
 	,"executable file directory"
-	,"modified modules directory"
+	,"modified modules directory (optional)"
 	,"log file directory"
 
 	/* INSERT new tabled properties here */
 
 	/* Manually created (non-tabled) properties */
-	,"server's host name"
+	,"server's host name (usually the same as <i>system.inetaddr</i>)"
 	,"Synchronet version number (e.g. '3.10')"
 	,"Synchronet revision letter (e.g. 'k')"
-	,"full Synchronet version information (e.g. '3.10k Beta Debug')"
+	,"Synchronet full version information (e.g. '3.10k Beta Debug')"
 	,"Synchronet version notice (includes version and platform)"
 	,"platform description (e.g. 'Win32', 'Linux', 'FreeBSD')"
 	,"socket library version information"
@@ -530,7 +534,7 @@ static JSBool js_sysstats_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			break;
 
 		case SYSSTAT_PROP_TOTALUSERS:
-			*vp = INT_TO_JSVAL(lastuser(cfg));
+			*vp = INT_TO_JSVAL(total_users(cfg));
 			break;
 		case SYSSTAT_PROP_TOTALMSGS:
 			l=0;
@@ -595,9 +599,9 @@ static char* sysstat_prop_desc[] = {
 	,"messages posted today"
 	,"total messages in mail base"
 	,"email sent today"
-	,"total feedback messsages waiting"
+	,"total feedback messages waiting"
 	,"feedback sent today"
-	,"total active user records"
+	,"total user records (does not include deleted or inactive user records)"
 	,"new users today"
 	,NULL
 };
@@ -880,7 +884,6 @@ js_datestr(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	return(JS_TRUE);
 }
 
-// Returns a mm/dd/yy or dd/mm/yy formated string
 static JSBool
 js_secondstr(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
@@ -888,10 +891,12 @@ js_secondstr(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	time_t		t=0;
 	JSString*	js_str;
 
+	*rval = JSVAL_NULL;
+
 	if(argc<1)
-		t=time(NULL);	/* use current time */
-	else
-		JS_ValueToInt32(cx,argv[0],(int32*)&t);
+		return(JS_TRUE);
+
+	JS_ValueToInt32(cx,argv[0],(int32*)&t);
 	sectostr(t,str);
 	if((js_str = JS_NewStringCopyZ(cx, str))==NULL)
 		return(JS_FALSE);
@@ -1167,16 +1172,18 @@ js_new_user(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 static jsMethodSpec js_system_functions[] = {
 	{"username",		js_username,		1,	JSTYPE_STRING,	JSDOCSTR("number")
-	,JSDOCSTR("return user name for specified user number")
+	,JSDOCSTR("returns name of user in specified user record <i>number</i>, or empty string if not found")
 	},
 	{"alias",			js_alias,			1,	JSTYPE_STRING,	JSDOCSTR("string alias")
-	,JSDOCSTR("return user name for alias")
+	,JSDOCSTR("returns name of user that matches alias (if found in <tt>ctrl/alias.cfg</tt>)")
 	},		
-	{"matchuser",		js_matchuser,		1,	JSTYPE_NUMBER,	JSDOCSTR("string username [bool sysop_alias]")
-	,JSDOCSTR("exact user name matching, returns number of user whose name/alias matches <i>username</i>")
+	{"matchuser",		js_matchuser,		1,	JSTYPE_NUMBER,	JSDOCSTR("string username [,bool sysop_alias]")
+	,JSDOCSTR("exact user name matching, returns number of user whose name/alias matches <i>username</i> "
+		" or 0 if not found, matches well-known sysop aliases by default")
 	},		
 	{"matchuserdata",	js_matchuserdata,	2,	JSTYPE_NUMBER,	JSDOCSTR("field, data [,usernumber]")
-	,JSDOCSTR("search user database for data in a specific field (specified by offset), returns first matching user number")
+	,JSDOCSTR("search user database for data in a specific field (specified by offset), "
+		"returns first matching user record number, optional <i>usernumber</i> specifies user record to skip")
 	},
 	{"trashcan",		js_trashcan,		2,	JSTYPE_BOOLEAN,	JSDOCSTR("string filename, search")
 	,JSDOCSTR("search text/filename.can for pseudo-regexp")
@@ -1184,16 +1191,18 @@ static jsMethodSpec js_system_functions[] = {
 	{"findstr",			js_findstr,			2,	JSTYPE_BOOLEAN,	JSDOCSTR("string filename, search")
 	,JSDOCSTR("search any file for pseudo-regexp")
 	},		
-	{"zonestr",			js_zonestr,			0,	JSTYPE_STRING,	JSDOCSTR("[number timezone]")
-	,JSDOCSTR("convert time zone int to string")
+	{"zonestr",			js_zonestr,			0,	JSTYPE_STRING,	JSDOCSTR("[timezone]")
+	,JSDOCSTR("convert time zone integer to string, defaults to system timezone if <i>timezone</i> not specified")
 	},		
-	{"timestr",			js_timestr,			0,	JSTYPE_STRING,	JSDOCSTR("[number time]")
-	,JSDOCSTR("convert time_t into a time string")
+	{"timestr",			js_timestr,			0,	JSTYPE_STRING,	JSDOCSTR("[time]")
+	,JSDOCSTR("convert time_t integer into a time string, "
+		"defaults to current time if <i>time</i> not specified")
 	},		
-	{"datestr",			js_datestr,			0,	JSTYPE_STRING,	JSDOCSTR("[number time]")
-	,JSDOCSTR("convert time_t into a date string")
+	{"datestr",			js_datestr,			0,	JSTYPE_STRING,	JSDOCSTR("[time]")
+	,JSDOCSTR("convert time_t integer into a date string (in either MM/DD/YY or DD/MM/YY format), "
+		"defaults to current date if <i>time</i> not specified")
 	},		
-	{"secondstr",		js_secondstr,		1,	JSTYPE_STRING,	JSDOCSTR("[number seconds]")
+	{"secondstr",		js_secondstr,		0,	JSTYPE_STRING,	JSDOCSTR("seconds")
 	,JSDOCSTR("convert elapsed time in seconds into a string in <tt>hh:mm:ss</tt> format")
 	},		
 	{"spamlog",			js_spamlog,			6,	JSTYPE_BOOLEAN,	JSDOCSTR("[protocol, action, reason, host, ip, to, from]")
@@ -1202,7 +1211,7 @@ static jsMethodSpec js_system_functions[] = {
 	{"hacklog",			js_hacklog,			5,	JSTYPE_BOOLEAN,	JSDOCSTR("[protocol, user, text, host, ip, port]")
 	,JSDOCSTR("log a suspected hack attempt")
 	},		
-	{"get_node_message",js_get_node_message,0,	JSTYPE_STRING,	JSDOCSTR("[number node]")
+	{"get_node_message",js_get_node_message,0,	JSTYPE_STRING,	JSDOCSTR("number node")
 	,JSDOCSTR("read any messages waiting for the specified node and return in a single string")
 	},		
 	{"put_node_message",js_put_node_message,2,	JSTYPE_BOOLEAN,	JSDOCSTR("number node, string message")
@@ -1216,7 +1225,7 @@ static jsMethodSpec js_system_functions[] = {
 	},		
 	{"newuser",			js_new_user,		1,	JSTYPE_ALIAS },
 	{"new_user",		js_new_user,		1,	JSTYPE_OBJECT,	JSDOCSTR("name/alias")
-	,JSDOCSTR("Create a new user record, returns a <a href=#User>User</a> object")
+	,JSDOCSTR("Create a new user record, returns a new <a href=#User>User</a> object representing the new user account")
 	},
 	{0}
 };
