@@ -810,7 +810,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 		argc=1;
 		for(i=0;cmdline[i];i++)	/* Break up command line */
 			if(cmdline[i]==SP) {
-				argv[i]=0;			/* insert nulls */
+				cmdline[i]=0;			/* insert nulls */
 				argv[argc++]=cmdline+i+1; /* point to the beginning of the next arg */
 			}
 		argv[argc]=0;
