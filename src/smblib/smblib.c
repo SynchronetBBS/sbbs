@@ -1498,6 +1498,28 @@ int SMBCALL smb_incdat(smb_t* smb, ulong offset, ulong length, ushort headers)
 }
 
 /****************************************************************************/
+/* Increments data allocation records (message references) by number of		*/
+/* headers specified (usually 1)											*/
+/* The opposite function of smb_freemsg()									*/
+/****************************************************************************/
+int SMBCALL smb_incmsg(smb_t* smb, smbmsg_t* msg)
+{
+	int		i;
+	ushort	x;
+
+	if(smb->status.attr&SMB_HYPERALLOC)  /* Nothing to do */
+		return(0);
+
+	for(x=0;x<msg->hdr.total_dfields;x++) {
+		if((i=smb_incdat(smb,msg->hdr.offset+msg->dfield[x].offset
+			,msg->dfield[x].length,1))!=0)
+			return(i); 
+	}
+
+	return(0);
+}
+
+/****************************************************************************/
 /* De-allocates blocks for header record									*/
 /* Returns non-zero on error												*/
 /****************************************************************************/

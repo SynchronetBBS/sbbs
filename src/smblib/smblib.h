@@ -127,6 +127,7 @@ SMBEXPORT long	SMBCALL smb_hallochdr(smb_t* smb);
 SMBEXPORT long	SMBCALL smb_allocdat(smb_t* smb, ulong length, ushort headers);
 SMBEXPORT long	SMBCALL smb_fallocdat(smb_t* smb, ulong length, ushort headers);
 SMBEXPORT long	SMBCALL smb_hallocdat(smb_t* smb);
+SMBEXPORT int	SMBCALL smb_incmsg(smb_t* smb, smbmsg_t* msg);
 SMBEXPORT int 	SMBCALL smb_incdat(smb_t* smb, ulong offset, ulong length, ushort headers);
 SMBEXPORT int 	SMBCALL smb_freemsg(smb_t* smb, smbmsg_t* msg);
 SMBEXPORT int 	SMBCALL smb_freemsgdat(smb_t* smb, ulong offset, ulong length, ushort headers);
