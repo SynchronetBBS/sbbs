@@ -71,12 +71,24 @@ buf=buf.replace(/<\/strong>/gi,"</b>");
 buf=buf.replace(/<strike>/gi,"<s>");
 buf=buf.replace(/<\/strike>/gi,"</s>");
 
-// Reduce white-space
+// Pre block (defeat white-space condensation)
+buf=buf.replace(/<pre>([^<]*)<\/pre>/gi
+					,function (str, text) { 
+						return  text.replace(/ /gi,"&#32;")
+//									.replace(/\r/gi,"&#13;")
+									.replace(/\n/gi,"&#10;"); 
+					} 
+				);
+
+// Condense white-space
 buf=buf.replace(/>\s*\n/g,">");					// Replace >\r\n with >
 buf=buf.replace(/\s+/g," ");					// Replace white-space with single space
 
-// Strip
+// Strip blocks
 buf=buf.replace(/<head[^<]*>.*<\/head>/gi,"");	// Strip the header
+
+// Links
+buf=buf.replace(/<a\s+[^<]*href\s*=\s*([^> ]*)[^>]*>([^<]*)<\/a>/gi,"$2 [$1]");
 
 // Visual white-space
 buf=buf.replace(/<br>/gi,"\r\n");				// Replace <br> with \r\n
@@ -98,12 +110,12 @@ buf=buf.replace(/<u>([^<]*)<\/u>/gi,UNDERLINE			+ "$1" + NORMAL);
 buf=buf.replace(/<s>([^<]*)<\/s>/gi,STRIKE_THROUGH		+ "$1" + NORMAL);
 
 // Headings
-buf=buf.replace(/<h1>([^<]*)<\/h1>/gi,"\r\n" + HEADING1 + "*** $1 ***" + NORMAL + "\r\n\r\n");
-buf=buf.replace(/<h2>([^<]*)<\/h2>/gi,"\r\n" + HEADING2 + "%%% $1 %%%" + NORMAL + "\r\n");
-buf=buf.replace(/<h3>([^<]*)<\/h3>/gi,"\r\n" + HEADING3 + "--- $1 ---" + NORMAL + "\r\n");
-buf=buf.replace(/<h4>([^<]*)<\/h4>/gi,"\r\n" + HEADING4 + "-=< $1 >=-" + NORMAL + "\r\n");
-buf=buf.replace(/<h5>([^<]*)<\/h5>/gi,"\r\n" + HEADING5 + "... $1 ..." + NORMAL + "\r\n");
-buf=buf.replace(/<h6>([^<]*)<\/h6>/gi,"\r\n" + HEADING6 + "___ $1 ___" + NORMAL + "\r\n");
+buf=buf.replace(/<h1[^<]*>([^<]*)<\/h1>/gi,"\r\n" + HEADING1 + "*** $1 ***" + NORMAL + "\r\n\r\n");
+buf=buf.replace(/<h2[^<]*>([^<]*)<\/h2>/gi,"\r\n" + HEADING2 + "%%% $1 %%%" + NORMAL + "\r\n");
+buf=buf.replace(/<h3[^<]*>([^<]*)<\/h3>/gi,"\r\n" + HEADING3 + "--- $1 ---" + NORMAL + "\r\n");
+buf=buf.replace(/<h4[^<]*>([^<]*)<\/h4>/gi,"\r\n" + HEADING4 + "-=< $1 >=-" + NORMAL + "\r\n");
+buf=buf.replace(/<h5[^<]*>([^<]*)<\/h5>/gi,"\r\n" + HEADING5 + "... $1 ..." + NORMAL + "\r\n");
+buf=buf.replace(/<h6[^<]*>([^<]*)<\/h6>/gi,"\r\n" + HEADING6 + "___ $1 ___" + NORMAL + "\r\n");
 
 // Lists
 buf=buf.replace(/<li[^<]*>/gi,LIST_ITEM);
