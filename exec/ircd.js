@@ -915,8 +915,8 @@ function check_qwk_passwd(qwkid,password) {
 	var usernum = system.matchuser(qwkid);
 	var bbsuser = new User(usernum);
 	if ((password.toUpperCase() ==
-	     bbsuser.security.password.toUpperCase())  ) //&&
-//	    (bbsuser.security.restrictions&UFLAG_Q) )
+	     bbsuser.security.password.toUpperCase()) &&
+	    (bbsuser.security.restrictions&UFLAG_Q) )
 		return 1;
 	return 0;
 }
