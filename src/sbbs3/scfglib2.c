@@ -596,8 +596,10 @@ BOOL read_xtrn_cfg(scfg_t* cfg, char* error)
 		get_int(cfg->event[i]->misc,instream);
 		get_str(cfg->event[i]->dir,instream);
 		get_int(cfg->event[i]->freq,instream);
+		get_int(cfg->event[i]->mday,instream);
 
-		for(j=0;j<7;j++)
+		get_int(c,instream);
+		for(j=0;j<6;j++)
 			get_int(n,instream);
 		}
 	cfg->total_events=i;

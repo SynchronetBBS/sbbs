@@ -1639,7 +1639,8 @@ void event_thread(void* arg)
 				|| 	(!sbbs->cfg.event[i]->freq 
 					&& (now_tm.tm_hour*60)+now_tm.tm_min>=sbbs->cfg.event[i]->time
 				&& (now_tm.tm_mday!=tm.tm_mday || now_tm.tm_mon!=tm.tm_mon)))
-				&& sbbs->cfg.event[i]->days&(1<<now_tm.tm_wday))) 
+				&& sbbs->cfg.event[i]->days&(1<<now_tm.tm_wday)
+				&& (sbbs->cfg.event[i]->mday==0 || sbbs->cfg.event[i]->mday==now_tm.tm_mday))) 
 			{
 				if(sbbs->cfg.event[i]->misc&EVENT_EXCL) { /* exclusive event */
 
