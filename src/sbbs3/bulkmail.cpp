@@ -120,7 +120,6 @@ bool sbbs_t::bulkmail(uchar *ar)
 	}
 
 	j=lastuser(&cfg);
-	x=0;
 
 	if(*ar)
 		for(i=1;i<=j;i++) {
