@@ -471,9 +471,9 @@
 "\r\nSort alphabetically"                               394 SortAlphaQ
 "\r\nmhChecking Slots..."                             395 CheckingSlots
 "nh%-32.32snm%-30.30sh%-8.8s nm%-8.8s\r\n"       396 UserListFmt
-"\rh%dnb Total users.        \r\n"                   397 NTotalUsers
-"%d Users with access to current sub.\r\n"              398 NUsersOnCurSub
-"%d Users with access to current dir.\r\n"              399 NUsersOnCurDir
+"\r\1h\1w%d\b total users.        \r\n"                 397 NTotalUsers
+"\1w%d \1busers with access to current sub-board.\r\n"  398 NUsersOnCurSub
+"\1w%d \1busers with access to current directory.\r\n"  399 NUsersOnCurDir
 "\r\n-cCurrent New-Scan date/time: h"                400 NScanDate
 "yhYear: w"                                          401 NScanYear
 "  yMonth: w"                                         402 NScanMonth
