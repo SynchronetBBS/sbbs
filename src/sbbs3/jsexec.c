@@ -559,7 +559,7 @@ long js_exec(const char *fname, char** args)
 		line_no++;
 #ifdef __unix__	/* Support Unix Shell Scripts that start with #!/path/to/jsexec */
 		if(line_no==1 && strncmp(line,"#!",2)==0)
-			continue;
+			strcpy(line,"\n");	/* To keep line count correct */
 #endif
 		if((js_buf=realloc(js_buf,js_buflen+strlen(line)))==NULL) {
 			fprintf(errfp,"!Error allocating %u bytes of memory\n"
