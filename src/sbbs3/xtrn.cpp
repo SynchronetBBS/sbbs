@@ -1355,6 +1355,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 			/* Error Output */
 			FD_ZERO(&ibits);
 			FD_SET(err_pipe[0],&ibits);
+			FD_SET(out_pipe[0],&ibits);
 			timeout.tv_sec=0;
 			timeout.tv_usec=1000;
 			bp=buf;
@@ -1455,7 +1456,31 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		close(out_pipe[0]);
 	}
 
-	waitpid(pid, &i, 0); /* Wait for child to terminate */
+	while(waitpid(pid, &i, WNOHANG)==0)  {
+		FD_ZERO(&ibits);
+		FD_SET(err_pipe[0],&ibits);
+		timeout.tv_sec=1;
+		timeout.tv_usec=0;
+		bp=buf;
+		i=0;
+		while ((select(err_pipe[0]+1,&ibits,NULL,NULL,&timeout)>0) && (i<XTRN_IO_BUF_LEN-1))  {
+			if((rd=read(err_pipe[0],bp,1))>0)  {
+				i+=rd;
+				if(*bp=='\n') {
+					lprintf("%.*s",i-1,buf);
+					i=0;
+					bp=buf;
+				}
+				else
+					bp++;
+			}
+			else
+				break;
+		}
+		if(i)
+			lprintf("%.*s",i,buf);
+	}
+	
 
 	if(!(mode&EX_OFFLINE)) {	/* !off-line execution */
 
@@ -1471,33 +1496,9 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		}
 	}
 
-	pthread_mutex_unlock(&input_thread_mutex);
-
-	/* Final Error Output */
-	FD_ZERO(&ibits);
-	FD_SET(err_pipe[0],&ibits);
-	timeout.tv_sec=0;
-	timeout.tv_usec=0;
-	bp=buf;
-	i=0;
-	while ((select(err_pipe[0]+1,&ibits,NULL,NULL,&timeout)>0) && (i<XTRN_IO_BUF_LEN-1))  {
-		if((rd=read(err_pipe[0],bp,1))>0)  {
-			i+=rd;
-			if(*bp=='\n') {
-				lprintf("%.*s",i-1,buf);
-				i=0;
-				bp=buf;
-			}
-			else
-				bp++;
-		}
-		else
-			break;
-	}
-	if(i)
-		lprintf("%.*s",i,buf);
-
 	close(err_pipe[0]);
+
+	pthread_mutex_unlock(&input_thread_mutex);
 
 	return(WEXITSTATUS(i));
 }
