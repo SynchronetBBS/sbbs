@@ -59,6 +59,7 @@
 
 /* Synchronet-specific headers */
 #include "sbbs.h"
+#include "text.h"			/* TOTAL_TEXT */
 #include "ftpsrvr.h"
 #include "telnet.h"
 
