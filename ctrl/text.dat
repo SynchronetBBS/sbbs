@@ -225,7 +225,7 @@
 "nc(h%unc) %s"                                     196 ShortHdrDir
 "rhFilenames, specs, or flags [None]: mh"           197 BatchDlFlags
 "\r\n\7rhiBatch download queue is full.n\r\n"       198 BatchDlQueueIsFull
-"_\r\nyhFilespec [*.*]: n"                          199 FileSpecStarDotStar
+"_\r\nyhFilespec [\1wAll Files\1y]: n"              199 FileSpecStarDotStar
 "\r\n\r\nrhiNot enough free disk space.n\r\n"\      200 LowDiskSpace
 	"\r\nhThe sysop has been notified.n\r\n"
 "\r\n%s bytes free\r\n\r\n"                             201 DiskNBytesFree
