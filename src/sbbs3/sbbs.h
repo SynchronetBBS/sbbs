@@ -127,6 +127,8 @@ public:
 		,scfg_t*, char* text[], client_t* client_info);
 	~sbbs_t();
 
+	bbs_startup_t*	startup;
+
 	bool	init(void);
 	bool	terminated;
 
@@ -134,7 +136,7 @@ public:
 	SOCKET	client_socket;
 	SOCKET	client_socket_dup;
 	DWORD	client_addr;
-	char	client_name[61];
+	char	client_name[128];
 	DWORD	local_addr;
 
 	scfg_t	cfg;
@@ -183,7 +185,7 @@ public:
 	user_t	useron; 		/* User currently online */
 	node_t	thisnode;		/* Node information */
 	smb_t	smb;			/* Currently open message base */
-	char	rlogin_name[LEN_ALIAS];
+	char	rlogin_name[LEN_ALIAS+1];
 
 	uint	temp_dirnum;
 
@@ -597,8 +599,8 @@ public:
 	int		xtrn_sec(void);					/* The external program section  */
 	void	xtrndat(char* name, char* dropdir, uchar type, ulong tleft
 				,ulong misc);
-	void	exec_xtrn(uint xtrnnum);			/* Executes online external program */
-	void	user_event(char event);			/* Executes user event(s) */
+	bool	exec_xtrn(uint xtrnnum);			/* Executes online external program */
+	bool	user_event(user_event_t);			/* Executes user event(s) */
 	char	xtrn_access(uint xnum);			/* Does useron have access to xtrn? */
 	void	moduserdat(uint xtrnnum);
 
