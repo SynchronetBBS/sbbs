@@ -303,7 +303,7 @@ while(client.socket.is_connected) {
 			if(user.security.restrictions&UFLAG_Q && hdr!=null)
 */
 			if(hdr==null) {
-				writeln("430 no such arctile found");
+				writeln("430 no such article found");
 				break;
 			}
 			if(hdr.attr&MSG_MODERATED && !(hdr.attr&MSG_VALIDATED)) {
