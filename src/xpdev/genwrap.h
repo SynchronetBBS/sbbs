@@ -42,6 +42,10 @@
 #include "gen_defs.h"	/* ulong */
 #include "wrapdll.h"	/* DLLEXPORT and DLLCALL */
 
+#if defined(__unix__)
+	#include <unistd.h>	/* usleep */
+#endif
+
 #if defined(__cplusplus)
 extern "C" {
 #endif

@@ -40,6 +40,10 @@
 
 #include "wrapdll.h"	/* DLLEXPORT and DLLCALL */
 
+#if defined(__unix__)
+	#include <unistd.h>	/* read, write, close, ftruncate, lseek, etc. */
+#endif
+
 /**********/
 /* Macros */
 /**********/

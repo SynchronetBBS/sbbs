@@ -40,8 +40,10 @@
 #include <fcntl.h>		/* O_NOCTTY */
 #include <time.h>		/* clock() */
 #include <errno.h>		/* errno */
+#include <ctype.h>		/* toupper/tolower */
 
 #if defined(__unix__)
+	#include <sys/ioctl.h>		/* ioctl() */
 	#include <sys/utsname.h>	/* uname() */
 	/* KIOCSOUND */
 	#if defined(__FreeBSD__)
