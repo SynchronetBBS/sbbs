@@ -137,15 +137,8 @@ static void thread_down()
 
 int lputs(char* str)
 {
-	if(startup==NULL || startup->lputs==NULL)
+	if(startup==NULL || startup->lputs==NULL || str==NULL)
     	return(0);
-
-#if defined(_WIN32) && defined(_DEBUG)
-	if(IsBadCodePtr((FARPROC)startup->lputs)) {
-		DebugBreak();
-		return(0);
-	}
-#endif
 
     return(startup->lputs(startup->cbdata,LOG_INFO,str));
 }
@@ -155,14 +148,11 @@ int lprintf(char *fmt, ...)
 	va_list argptr;
 	char sbuf[1024];
 
-    if(startup==NULL || startup->lputs==NULL)
-        return(0);
-
     va_start(argptr,fmt);
     vsnprintf(sbuf,sizeof(sbuf),fmt,argptr);
 	sbuf[sizeof(sbuf)-1]=0;
     va_end(argptr);
-    return(startup->lputs(startup->cbdata,LOG_INFO,sbuf));
+    return(lputs(sbuf));
 }
 
 int eprintf(char *fmt, ...)
