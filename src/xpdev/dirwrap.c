@@ -364,7 +364,7 @@ BOOL DLLCALL fexist(const char *filespec)
     // make sure it's not a directory
 	c = g.gl_pathc;
     while (c--) {
-    	if (lastchar(g.gl_pathv[c]) != '/') {
+    	if (*lastchar(g.gl_pathv[c]) != '/') {
         	globfree(&g);
             return TRUE;
         }
