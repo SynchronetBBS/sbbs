@@ -150,7 +150,7 @@ if(request.charAt(0)=='?') {	// Handle "special" requests
 			}			
 			break;
 
-		case "caps":	/* Capabilities */
+		case "services":	/* Services running on this host */
 			if(test_port(23))
 				writeln("Telnet");
 			if(test_port(513))
