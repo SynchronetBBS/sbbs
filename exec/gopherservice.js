@@ -63,6 +63,13 @@ if(request==null) {
 
 log(format("client request: '%s'",request));
 
+var gopher_plus=false;
+if((term=request.indexOf("\t+"))>=0) {
+	gopher_plus=true;
+	request=request.substr(0,term);
+	writeln("+-2");
+}
+
 if(request=="") { /* blank = "root" */
 	for(g in msg_area.grp_list) 
 		writeln(format("1%s\tgrp:%s\t%s\t%u"
@@ -71,6 +78,7 @@ if(request=="") { /* blank = "root" */
 			,system.inetaddr
 			,GOPHER_PORT
 			));
+/** to-do
 	for(l in file_area.lib_list) 
 		writeln(format("1%s\tlib:%s\t%s\t%u"
 			,file_area.lib_list[l].description
@@ -78,6 +86,7 @@ if(request=="") { /* blank = "root" */
 			,system.inetaddr
 			,GOPHER_PORT
 			));
+**/
 	writeln(format("0%s\t%s\t%s\t%u"
 		,"Node List"
 		,"nodelist"
@@ -108,7 +117,10 @@ switch(request) {
 			if(system.node_list[n].status==NODE_INUSE) {
 				user.number=system.node_list[n].useron;
 				write(format("%s (%u %s) ", user.alias, user.age, user.gender));
-				write(format(NodeAction[system.node_list[n].action],system.node_list[n].aux));
+				if(system.node_list[n].action==NODE_XTRN && system.node_list[n].aux)
+					write(format("running %s",user.curxtrn));
+				else
+					write(format(NodeAction[system.node_list[n].action],system.node_list[n].aux));
 			} else
 				write(format(NodeStatus[system.node_list[n].status],system.node_list[n].aux));
 
@@ -198,6 +210,8 @@ switch(field[0]) {
 		msgbase.close();
 		break;
 	case "dir":
+		/* to-do */
+		break;
 }
 
 /* End of gopherservice.js */
