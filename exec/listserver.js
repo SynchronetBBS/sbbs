@@ -44,13 +44,13 @@ for(var l in list_array) {
 	/* Set default list addresses */
 	if(!list.address)
 		list.address = format("%s@%s", list.name, system.inet_addr);
-	if(!msg_area.sub[list.sub]) {
+	if(!msg_area.sub[list.sub.toLowerCase()]) {
 		log(LOG_WARNING,"ListServer: !Unrecognized sub-board internal code: '" + list.sub + "'");
 		list.disabled=true;
 		continue;
 	}
 	if(!list.description)
-		list.description = msg_area.sub[list.sub].description;
+		list.description = msg_area.sub[list.sub.toLowerCase()].description;
 	if(list.confirm==undefined)
 		list.confirm=true;
 
