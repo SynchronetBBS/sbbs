@@ -80,7 +80,7 @@ extern "C" {
 
 	/* No Win32 implementation for sem_getvalue() */
 	/* How about this? */
-	#define sem_getvalue(psem,val)			ReleaseSemaphore(*(psem),0,val)
+	#define sem_getvalue(psem,val)			ReleaseSemaphore(*(psem),0,(LPLONG)val)
 
 	/* NOT POSIX */
 	#define sem_trywait_block(psem,t)	(WaitForSingleObject(*(psem),t)==WAIT_OBJECT_0?0:(errno=EAGAIN,-1))
