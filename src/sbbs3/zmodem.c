@@ -208,9 +208,8 @@ zmodem_rx_purge(zmodem_t* zm)
 void
 zmodem_tx_raw(zmodem_t* zm, unsigned char ch)
 {
-
 	if(zm->raw_trace)
-		fprintf(zm->statfp,"%02x ",ch);
+		fprintf(zm->statfp,"%s ",chr(ch));
 
 	if(send_byte(zm->sock,ch,10,*zm->mode))
 		fprintf(zm->errfp,"!Send error: %u\n",ERROR_VALUE);
@@ -317,9 +316,11 @@ zmodem_tx(zmodem_t* zm, unsigned char c)
 /* Output single byte as two hex ASCII digits */
 /**********************************************/
 void
-zmodem_tx_hex(zmodem_t* zm, char val)
+zmodem_tx_hex(zmodem_t* zm, uchar val)
 {
 	char* xdigit="0123456789abcdef";
+
+	fprintf(zm->statfp,"%02X ",val);
 
 	zmodem_tx_raw(zm, xdigit[val>>4]);
 	zmodem_tx_raw(zm, xdigit[val&0xf]);
@@ -338,6 +339,9 @@ zmodem_tx_hex_header(zmodem_t* zm, unsigned char * p)
 
 #if 0 /* def _DEBUG */
 	fprintf(zm->statfp,"tx_hheader : ");
+	for (i=0;i<HDRLEN;i++)
+		fprintf(zm->statfp,"%02X ",*(p+i));
+	fprintf(zm->statfp,"\n");
 #endif
 
 	zmodem_tx_raw(zm, ZPAD);
@@ -579,13 +583,13 @@ zmodem_tx_data(zmodem_t* zm, uchar sub_frame_type,unsigned char * p, int l)
 	if(sub_frame_type == ZCRCW) {
 		zmodem_tx_raw(zm, XON);
 	}
-
+//	YIELD();
 }
 
 void
 zmodem_tx_pos_header(zmodem_t* zm, int type,long pos) 
 {
-	char header[5];
+	uchar header[5];
 
 	header[0]   = type;
 	header[ZP0] =  pos        & 0xff;
@@ -1356,10 +1360,10 @@ show_progress(zmodem_t* zm, ulong offset)
 	l=zm->current_file_size/cps;		/* total transfer est time */
 	l-=t;								/* now, it's est time left */
 
-	fprintf(zm->statfp,"\rByte: %lu/%lu  "
+	fprintf(zm->statfp,"\rByte: %lu/%luk  "
 		"Time: %lu:%02lu/%lu:%02lu  CPS: %u  %lu%% "
-		,offset
-		,zm->current_file_size
+		,offset/1024
+		,zm->current_file_size/1024
 		,t/60L
 		,t%60L
 		,l/60L
@@ -1383,7 +1387,7 @@ send_from(zmodem_t* zm, FILE * fp)
 	int n;
 	long pos;
 	uchar type = ZCRCG;
-	char zdata_frame[] = { ZDATA, 0, 0, 0, 0 };
+	uchar zdata_frame[] = { ZDATA, 0, 0, 0, 0 };
 
 	/*
  	 * put the file position in the ZDATA frame
@@ -1480,9 +1484,10 @@ zmodem_send_file(zmodem_t* zm, char* name, FILE* fp)
 	long pos;
 	struct stat s;
 	unsigned char * p;
-	char zfile_frame[] = { ZFILE, 0, 0, 0, 0 };
-	char zeof_frame[] = { ZEOF, 0, 0, 0, 0 };
+	uchar zfile_frame[] = { ZFILE, 0, 0, 0, 0 };
+	uchar zeof_frame[] = { ZEOF, 0, 0, 0, 0 };
 	int type;
+	int i;
 
 	fstat(fileno(fp),&s);
 	zm->current_file_size = s.st_size;
@@ -1635,10 +1640,13 @@ zmodem_send_file(zmodem_t* zm, char* name, FILE* fp)
 	zeof_frame[ZP2] = (s.st_size >> 16) & 0xff;
 	zeof_frame[ZP3] = (s.st_size >> 24) & 0xff;
 
-	zm->raw_trace = TRUE;
+	zm->raw_trace = FALSE;
 	do {
-		if(opt_v)
+		if(opt_v) {
 			fprintf(zm->statfp,"\nzmtx: sending EOF frame... ");
+			for(i=0;i<sizeof(zeof_frame);i++)
+				fprintf(zm->statfp,"%02X ",zeof_frame[i]);
+		}
 		zmodem_tx_hex_header(zm,zeof_frame);
 		type = zmodem_rx_header(zm,10);
 		if(opt_v)
