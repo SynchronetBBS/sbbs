@@ -22,9 +22,15 @@ if(!ini_file.open("r")) {
 }
 
 var channel_list = ini_file.iniGetAllObjects();
+var defaults = ini_file.iniGetObject();
 
 ini_file.close();
 
+/* Set default max from the NetScapes original RSS 0.91 implementation
+http://my.netscape.com/publish/formats/rss-spec-0.91.html#item */
+
+if(defaults.maxmessages==undefined)
+	defaults.maxmessages=15;
 
 var channel;
 for(c in channel_list)
@@ -125,6 +131,7 @@ if(channel.language==undefined)		channel.language		='en-us';
 if(channel.image_url==undefined)	channel.image_url		='graphics/sync_pbgj1_white_bg.gif';
 if(channel.image_title==undefined)	channel.image_title		=channel.title;
 if(channel.image_link==undefined)	channel.image_link		=channel.link;
+if(channel.maxmessages==undefined)	channel.maxmessages		=defaults.maxmessages;
 
 http_reply.header["Content-Type"]='application/rss+xml';
 writeln('<?xml version="1.0" ?>');
@@ -154,16 +161,17 @@ var msgbase=new MsgBase(channel.sub);
 if(msgbase.open()) {
 
 	var last_msg;
+	var msgs=0;
 
 	if(last_msg = msgbase.get_msg_header(false, msgbase.last_msg)) {
 		writeln('\t\t<lastBuildDate>' + last_msg.date + '</lastBuildDate>');
 	}
 	var total_msgs = msgbase.total_msgs;
 	for(i=0;i<total_msgs;i++) {
-		var hdr = msgbase.get_msg_header(true,i);
+		var hdr = msgbase.get_msg_header(true,total_msgs-i);
 		if(!hdr || hdr.attr&MSG_DELETE)
 			continue;
-		var body = msgbase.get_msg_body(true,i);
+		var body = msgbase.get_msg_body(true,total_msgs-i);
 		if(!body)
 			continue;
 		writeln('\t\t\t<item>');
@@ -174,6 +182,9 @@ if(msgbase.open()) {
 		writeln('\t\t\t\t<description>' + encode(body.slice(0,500)) + '</description>');
 		writeln('\t\t\t\t<link>' + link_root + '&amp;item=' + hdr.number + '</link>');
 		writeln('\t\t\t</item>');
+		msgs++;
+		if(msgs>=channel.maxmessages)
+			break;
 	}
     msgbase.close();
 }
