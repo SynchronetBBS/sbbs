@@ -63,6 +63,7 @@ OBJS	=	$(ODIR)$(SLASH)ansiterm.$(OFILE)\
 			$(ODIR)$(SLASH)scfglib1.$(OFILE)\
 			$(ODIR)$(SLASH)scfglib2.$(OFILE)\
 			$(ODIR)$(SLASH)smblib.$(OFILE)\
+			$(ODIR)$(SLASH)smbwrap.$(OFILE)\
 			$(ODIR)$(SLASH)sortdir.$(OFILE)\
 			$(ODIR)$(SLASH)str.$(OFILE)\
 			$(ODIR)$(SLASH)telgate.$(OFILE)\

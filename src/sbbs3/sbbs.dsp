@@ -321,6 +321,10 @@ SOURCE=.\smblib.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\smbwrap.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\sortdir.cpp
 # End Source File
 # Begin Source File
