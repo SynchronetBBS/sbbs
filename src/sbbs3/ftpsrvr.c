@@ -1821,9 +1821,7 @@ static void receive_thread(void* arg)
 				putextdesc(&scfg,f.dir,f.datoffset,ext);
 
 			if(scfg.dir[f.dir]->upload_sem[0])
-				if((file=sopen(scfg.dir[f.dir]->upload_sem,O_WRONLY|O_CREAT|O_TRUNC
-					,SH_DENYNO,S_IREAD|S_IWRITE))!=-1)
-					close(file);
+				ftouch(scfg.dir[f.dir]->upload_sem);
 			/**************************/
 			/* Update Uploader's Info */
 			/**************************/

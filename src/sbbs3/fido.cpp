@@ -394,9 +394,7 @@ bool sbbs_t::netmail(char *into, char *title, long mode)
 		cc_sent++; }
 
 	if(cfg.netmail_sem[0])		/* update semaphore file */
-		if((file=nopen(cmdstr(cfg.netmail_sem,nulstr,nulstr,NULL)
-				,O_WRONLY|O_CREAT|O_TRUNC))!=-1)
-			close(file);
+		ftouch(cmdstr(cfg.netmail_sem,nulstr,nulstr,NULL));
 
 	FREE(buf);
 	return(true);
@@ -705,9 +703,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 		else {		/* Successful */
 			if(inet) {
 				if(cfg.inetmail_sem[0]) 	 /* update semaphore file */
-					if((fido=nopen(cmdstr(cfg.inetmail_sem,nulstr,nulstr,NULL)
-						,O_WRONLY|O_CREAT|O_TRUNC))!=-1)
-						close(fido);
+					ftouch(cmdstr(cfg.inetmail_sem,nulstr,nulstr,NULL));
 				if(!(useron.exempt&FLAG('S')))
 					subtract_cdt(&cfg,&useron,cfg.inetmail_cost); }
 
@@ -864,9 +860,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 	close(fido);
 	FREE((char *)qwkbuf);
 	if(cfg.netmail_sem[0])		/* update semaphore file */
-		if((fido=nopen(cmdstr(cfg.netmail_sem,nulstr,nulstr,NULL)
-			,O_WRONLY|O_CREAT|O_TRUNC))!=-1)
-			close(fido);
+		ftouch(cmdstr(cfg.netmail_sem,nulstr,nulstr,NULL));
 	if(!(useron.exempt&FLAG('S')))
 		subtract_cdt(&cfg,&useron,cfg.netmail_cost);
 

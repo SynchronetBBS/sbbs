@@ -195,9 +195,7 @@ bool sbbs_t::uploadfile(file_t *f)
 		,f->name,cfg.lib[cfg.dir[f->dir]->lib]->sname
 		,cfg.dir[f->dir]->sname);
 	if(cfg.dir[f->dir]->upload_sem[0])
-		if((file=nopen(cmdstr(cfg.dir[f->dir]->upload_sem,nulstr,nulstr,NULL)
-			,O_WRONLY|O_CREAT|O_TRUNC))!=-1)
-			close(file);
+		ftouch(cmdstr(cfg.dir[f->dir]->upload_sem,nulstr,nulstr,NULL));
 	logline("U+",str);
 	/**************************/
 	/* Update Uploader's Info */
