@@ -27,3 +27,8 @@
 C Current Beta (CVS)
 t HEAD
 s :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs	Official Synchronet Server (256kbps)
+
+T 3.10l Source tarball
+f sbbs310-src.tgz
+f lib-%s.tgz
+s ftp://freebsd.synchro.net/main/misc/	Deuce's FTP server (128kbps);

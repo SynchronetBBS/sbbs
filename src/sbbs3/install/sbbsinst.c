@@ -385,6 +385,11 @@ void install_sbbs(struct dist_t *release,struct server_ent_t *server)  {
 	char	str[1024];
 	char	sbbsdir[9+MAX_PATH];
 	char	cvstag[7+MAX_PATH];
+	char	buf[1024];
+	char	url[MAX_PATH+1];
+	int		i;
+	int		fout,ret1,ret2;
+	ftp_FILE	*remote;
 
 	if(params.release)
 		putenv("RELEASE=1");
@@ -427,21 +432,54 @@ void install_sbbs(struct dist_t *release,struct server_ent_t *server)  {
 			}
 			exit(EXIT_SUCCESS);
 		case DIST_SET:
-			
+			for(i=0;release->files[i][0];i++)  {
+				if((fout=open(release->files[i],O_WRONLY|O_TRUNC|O_CREAT,S_IRUSR|S_IWUSR))<0)  {
+					printf("Could not download distfile to %s (%d)\n",release->files[i],errno);
+					exit(EXIT_FAILURE);
+				}
+				sprintf(url,"%s%s",server->addr,release->files[i]);
+				if((remote=ftpGetURL(url,ftp_user,ftp_pass,&ret1))==NULL)  {
+					printf("Cannot get distribution file %s!\n",release->files[i]);
+					printf("%s\n- %s\n",url,ftpErrString(ret1));
+					unlink(release->files[i]);
+					exit(EXIT_FAILURE);
+				}
+				while((ret1=remote->read(remote,buf,sizeof(buf)))>0)  {
+					ret2=write(fout,buf,ret1);
+					if(ret2!=ret1)  {
+						printf("Error writing to %s\n",release->files[i]);
+						unlink(release->files[i]);
+						exit(EXIT_FAILURE);
+					}
+				}
+				if(ret1<0)  {
+					printf("Error downloading %s\n",release->files[i]);
+					unlink(release->files[i]);
+					exit(EXIT_FAILURE);
+				}
+				sprintf(cmd,"gzip -dc %s | tar -xvf -",release->files[i]);
+				if(system(cmd))  {
+					printf("Error extracting %s\n",release->files[i]);
+					unlink(release->files[i]);
+					exit(EXIT_FAILURE);
+				}
+				unlink(release->files[i]);
+			}
+			sprintf(cmd,"gmake install -f install/GNUmakefile");
+			if(system(cmd))  {
+				printf("'Nuff said.\n");
+				exit(EXIT_FAILURE);
+			}
+			exit(EXIT_SUCCESS);
 			break;
 	}
-
-	uifc.bail();
-	system("gmake -f " MAKEFILE " install");
-	if(!keep_makefile)
-		unlink(MAKEFILE);
 }
 
 struct dist_t **
 get_distlist(void)
 {
 	int ret1,ret2,ret3,ret4;
-	int i;
+	int i,j;
 	char	in_line[256];
 	struct dist_t	**release;
 	char	**file=NULL;
@@ -468,15 +506,14 @@ get_distlist(void)
 			&& (list=ftpGetURL(RELEASE_LIST_URL2,ftp_user,ftp_pass,&ret2))==NULL
 			&& (list=ftpGetURL(RELEASE_LIST_URL3,ftp_user,ftp_pass,&ret3))==NULL
 			&& (list=ftpGetURL(RELEASE_LIST_URL4,ftp_user,ftp_pass,&ret4))==NULL)  {
-		printf("Cannot get distribution list!\n");
-		sprintf(str,"%s - %s\n%s - %s\n%s - %s\n%s - %s\n",
+		uifc.pop(NULL);
+		uifc.bail();
+		printf("Cannot get distribution list!\n%s\n- %s\n%s\n- %s\n%s\n- %s\n%s\n- %s\n",
 				RELEASE_LIST_URL1,ftpErrString(ret1),
 				RELEASE_LIST_URL2,ftpErrString(ret1),
 				RELEASE_LIST_URL3,ftpErrString(ret1),
 				RELEASE_LIST_URL4,ftpErrString(ret1));
-		uifc.pop(NULL);
-		uifc.msg(str);
-		bail(EXIT_FAILURE);
+		exit(EXIT_FAILURE);
 	}
 
 	if((release=(struct dist_t **)MALLOC(sizeof(void *)*MAX_RELEASES))==NULL)
@@ -553,7 +590,17 @@ get_distlist(void)
 				r++;
 				break;
 			case 'f':
-				strcpy(file[f++],in_line+2);
+				for(j=0,i=2;in_line[i];i++)  {
+					if(in_line[i]=='%' && in_line[i+1]=='s')  {
+						file[f][j]=0;
+						strcat(file[f],sys_desc);
+						j=strlen(file[f]);
+						i++;
+					}
+					else
+						file[f][j++]=in_line[i];
+				}
+				f++;
 				break;
 			case 't':
 				strcpy(release[r-1]->tag,in_line+2);

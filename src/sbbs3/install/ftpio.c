@@ -675,9 +675,11 @@ ftp_file_op(FTP_t ftp, char *operation, char *file, ftp_FILE **fp, char *mode, o
 	*fp = ftpdopen(s, mode);
     }
     else {
-	int fd,portrange;
+	int fd;
 
 #ifdef IP_PORTRANGE
+	int portrange;
+
 	if (ftp->addrtype == AF_INET) {
 		portrange = IP_PORTRANGE_HIGH;
 		if (setsockopt(s, IPPROTO_IP, IP_PORTRANGE, (char *)
@@ -822,6 +824,12 @@ ftpgets(char *str, int size, void *stream)
     return(NULL);
 }
 
+ssize_t
+ftpread(void *stream, void *buf, size_t nbytes)
+{
+	return(read(((ftp_FILE *)stream)->_file,buf,nbytes));
+}
+
 ftp_FILE *
 ftpopen(void *cookie, int (*readfn)(void *, char *, int),
          int (*writefn)(void *, const char *, int),
@@ -836,6 +844,7 @@ ftpopen(void *cookie, int (*readfn)(void *, char *, int),
     f->seekfn=seekfn;
     f->closefn=closefn;
     f->gets=ftpgets;
+	f->read=ftpread;
     return(f);
 }
 
@@ -852,5 +861,6 @@ ftpdopen(int filedes, const char *mode)
     f->seekfn=NULL;
     f->closefn=ftp_close_method;
     f->gets=ftpgets;
+	f->read=ftpread;
     return(f);
 }

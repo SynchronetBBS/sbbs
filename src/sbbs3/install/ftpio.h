@@ -25,16 +25,15 @@
  * $FreeBSD: src/lib/libftpio/ftpio.h,v 1.17 2002/03/25 13:49:48 phk Exp $
  */
 
-
 typedef struct {
 	void	*_cookie;
 	int		_file;
-	void	*read;
 	int (*readfn)(void *, char *, int);
 	int (*writefn)(void *, const char *, int);
 	fpos_t (*seekfn)(void *, fpos_t, int);
 	int (*closefn)(void *);
 	char* (*gets)(char *,int,void *);
+	ssize_t (*read)(void *, void *, size_t);
 } ftp_file_t;
 #define ftp_FILE ftp_file_t
 
