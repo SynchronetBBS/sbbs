@@ -900,7 +900,8 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 			pthread_mutex_unlock(&input_thread_mutex);
 		}
 
-		curatr=0;	// Can't guarantee current attributes
+		curatr=~0;			// Can't guarantee current attributes
+		attr(LIGHTGRAY);	// Force to "normal"
 
 		rio_abortable=rio_abortable_save;	// Restore abortable state
 
