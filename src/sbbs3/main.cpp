@@ -1472,6 +1472,7 @@ void event_thread(void* arg)
 	int			file;
 	int			offset;
 	bool		check_semaphores;
+	bool		packed_rep;
 	ulong		l;
 	time_t		now;
 	time_t		start;
@@ -1816,7 +1817,10 @@ void event_thread(void* arg)
 				}
 				if(file!=-1)
 					close(file);
-				if(sbbs->pack_rep(i)) {
+				sbbs->console|=CON_L_ECHO;
+				packed_rep=sbbs->pack_rep(i);
+				sbbs->console&=~CON_L_ECHO;
+				if(packed_rep) {
 					if((file=sbbs->nopen(str,O_WRONLY|O_CREAT))==-1)
 						sbbs->errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT);
 					else {
@@ -3163,7 +3167,9 @@ void node_thread(void* arg)
 	char			str[128];
 	char			uname[LEN_ALIAS+1];
 	int				file;
-	uint			i,j;
+	uint			i;
+	uint			usernum;
+	uint			lastusernum;
 	uint			curshell=0;
 	time_t			now;
 	node_t			node;
@@ -3290,30 +3296,34 @@ void node_thread(void* arg)
 
 		lprintf(LOG_INFO,"Node %d Checking for inactive/expired user records..."
 			,sbbs->cfg.node_num);
-		j=lastuser(&sbbs->cfg);
-		for(i=1;i<=j;i++) {
+		lastusernum=lastuser(&sbbs->cfg);
+		for(usernum=2;usernum<=lastusernum;usernum++) {
 
-			sprintf(str,"%5u of %-5u",i,j);
+			sprintf(str,"%5u of %-5u",usernum,lastusernum);
 			status(str);
-			user.number=i;
-			getuserdat(&sbbs->cfg,&user);
+			user.number=usernum;
+			if((i=getuserdat(&sbbs->cfg,&user))!=0) {
+				sprintf(str,"user record %u",usernum);
+				sbbs->errormsg(WHERE,ERR_READ,str,i);
+				continue;
+			}
 
 			/***********************************************/
 			/* Fix name (name.dat and user.dat) mismatches */
 			/***********************************************/
-			username(&sbbs->cfg,i,uname);
+			username(&sbbs->cfg,user.number,uname);
 			if(user.misc&DELETED) {
 				if(strcmp(uname,"DELETED USER"))
-					putusername(&sbbs->cfg,i,nulstr);
+					putusername(&sbbs->cfg,user.number,nulstr);
 				continue; 
 			}
 
 			if(strcmp(user.alias,uname))
-				putusername(&sbbs->cfg,i,user.alias);
+				putusername(&sbbs->cfg,user.number,user.alias);
 
 			if(!(user.misc&(DELETED|INACTIVE))
 				&& user.expire && (ulong)user.expire<=(ulong)now) {
-				putsmsg(&sbbs->cfg,i,sbbs->text[AccountHasExpired]);
+				putsmsg(&sbbs->cfg,user.number,sbbs->text[AccountHasExpired]);
 				sprintf(str,"%s #%u Expired",user.alias,user.number);
 				sbbs->logentry("!%",str);
 				if(sbbs->cfg.level_misc[user.level]&LEVEL_EXPTOVAL
@@ -3344,14 +3354,14 @@ void node_thread(void* arg)
 					user.rest|=sbbs->cfg.expired_rest;
 					user.expire=0; 
 				}
-				putuserrec(&sbbs->cfg,i,U_LEVEL,2,ultoa(user.level,str,10));
-				putuserrec(&sbbs->cfg,i,U_FLAGS1,8,ultoa(user.flags1,str,16));
-				putuserrec(&sbbs->cfg,i,U_FLAGS2,8,ultoa(user.flags2,str,16));
-				putuserrec(&sbbs->cfg,i,U_FLAGS3,8,ultoa(user.flags3,str,16));
-				putuserrec(&sbbs->cfg,i,U_FLAGS4,8,ultoa(user.flags4,str,16));
-				putuserrec(&sbbs->cfg,i,U_EXPIRE,8,ultoa(user.expire,str,16));
-				putuserrec(&sbbs->cfg,i,U_EXEMPT,8,ultoa(user.exempt,str,16));
-				putuserrec(&sbbs->cfg,i,U_REST,8,ultoa(user.rest,str,16));
+				putuserrec(&sbbs->cfg,user.number,U_LEVEL,2,ultoa(user.level,str,10));
+				putuserrec(&sbbs->cfg,user.number,U_FLAGS1,8,ultoa(user.flags1,str,16));
+				putuserrec(&sbbs->cfg,user.number,U_FLAGS2,8,ultoa(user.flags2,str,16));
+				putuserrec(&sbbs->cfg,user.number,U_FLAGS3,8,ultoa(user.flags3,str,16));
+				putuserrec(&sbbs->cfg,user.number,U_FLAGS4,8,ultoa(user.flags4,str,16));
+				putuserrec(&sbbs->cfg,user.number,U_EXPIRE,8,ultoa(user.expire,str,16));
+				putuserrec(&sbbs->cfg,user.number,U_EXEMPT,8,ultoa(user.exempt,str,16));
+				putuserrec(&sbbs->cfg,user.number,U_REST,8,ultoa(user.rest,str,16));
 				if(sbbs->cfg.expire_mod[0]) {
 					sbbs->useron=user;
 					sbbs->online=ON_LOCAL;
@@ -3369,9 +3379,9 @@ void node_thread(void* arg)
 				> sbbs->cfg.sys_autodel)) {			/* Inactive too long */
 				sprintf(str,"Auto-Deleted %s #%u",user.alias,user.number);
 				sbbs->logentry("!*",str);
-				sbbs->delallmail(i);
-				putusername(&sbbs->cfg,i,nulstr);
-				putuserrec(&sbbs->cfg,i,U_MISC,8,ultoa(user.misc|DELETED,str,16)); 
+				sbbs->delallmail(user.number);
+				putusername(&sbbs->cfg,user.number,nulstr);
+				putuserrec(&sbbs->cfg,user.number,U_MISC,8,ultoa(user.misc|DELETED,str,16)); 
 			}
 		}
 
