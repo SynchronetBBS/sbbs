@@ -1832,6 +1832,7 @@ BOOL unpack_bundle(void)
 		}
 		if(gi<g.gl_pathc) {
 			SAFECOPY(fname,g.gl_pathv[gi]);
+			logprintf("Unpacking bundle: %s",fname);
 			if(unpack(fname)) {	/* failure */
 				if(fdate(fname)+(48L*60L*60L)>time(NULL)) {
 					SAFECOPY(str,fname);
@@ -1845,9 +1846,12 @@ BOOL unpack_bundle(void)
 							,__LINE__,fname,str); 
 				} 
 			}
-			else if(delfile(fname))	/* successful, so delete bundle */
-				logprintf("ERROR line %d removing %s %s",__LINE__,fname
-					,strerror(errno));
+			else {
+				logprintf("Deleting bundle: %s", fname);
+				if(delfile(fname))	/* successful, so delete bundle */
+					logprintf("ERROR line %d removing %s %s",__LINE__,fname
+						,strerror(errno));
+			}
 			gi++;
 			return(TRUE); 
 		} 
