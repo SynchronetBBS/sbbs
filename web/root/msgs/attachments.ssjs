@@ -33,7 +33,7 @@ if(path==undefined) {
 att=mime_get_attach(hdr,body,filename);
 if(att!=undefined) {
 	if(att.content_type != undefined) {
-		http_reply.content_type=att.content_type;
+		http_reply.header["Content-Type"]=att.content_type;
 	}
 	write(att.body);
 }
