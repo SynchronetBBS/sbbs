@@ -364,6 +364,42 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 	return(TRUE);
 }
 
+BOOL msg_offset_by_id(smb_t* smb, char* id, ulong* offset)
+{
+	ulong		n;
+	int			ret;
+	smbmsg_t	msg;
+	BOOL		match;
+
+	for(n=0;n<smb->status.last_msg;n++) {
+		memset(&msg,0,sizeof(msg));
+		msg.offset=n;
+		if(smb_getmsgidx(smb, &msg)!=0)
+			break;
+
+		if(smb_lockmsghdr(smb,&msg)!=0)
+			continue;
+
+		ret=smb_getmsghdr(smb, &msg);
+
+		smb_unlockmsghdr(smb,&msg); 
+
+		if(ret!=SMB_SUCCESS)
+			continue;
+
+		match=(strcmp(msg.id,id)==0);
+
+		smb_freemsgmem(&msg);
+		
+		if(match) {
+			*offset = n;
+			return(TRUE);
+		}
+	}
+
+	return(FALSE);
+}
+
 static JSBool
 js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
@@ -373,6 +409,7 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 	char*		val;
 	int			i;
 	ulong		l;
+	uintN		n;
 	smbmsg_t	msg;
 	smbmsg_t	orig_msg;
 	JSObject*	hdrobj;
@@ -380,6 +417,7 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 	JSObject*	field;
 	JSString*	js_str;
 	jsint		items;
+	JSBool		by_offset=JS_FALSE;
 	private_t*	p;
 
 	*rval = JSVAL_NULL;
@@ -394,10 +432,23 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 
 	memset(&msg,0,sizeof(msg));
 
-	if(JSVAL_TO_BOOLEAN(argv[0])==JS_TRUE)	/* Get by offset */
-		msg.offset=JSVAL_TO_INT(argv[1]);
-	else									/* Get by number */
-		msg.hdr.number=JSVAL_TO_INT(argv[1]);
+	for(n=0;n<argc;n++) {
+		if(JSVAL_IS_BOOLEAN(argv[n]))
+			by_offset=JSVAL_TO_BOOLEAN(argv[n]);
+		else if(JSVAL_IS_INT(argv[n])) {
+			if(by_offset)							/* Get by offset */
+				msg.offset=JSVAL_TO_INT(argv[n]);
+			else									/* Get by number */
+				msg.hdr.number=JSVAL_TO_INT(argv[n]);
+			break;
+		} else if(JSVAL_IS_STRING(argv[n]))	{		/* Get by ID */
+			if(!msg_offset_by_id(&(p->smb)
+				,JS_GetStringBytes(JSVAL_TO_STRING(argv[n]))
+				,&msg.offset))
+				return(JS_TRUE);	/* ID not found */
+			break;
+		}
+	}
 
 	if(smb_getmsgidx(&(p->smb), &msg)!=0)
 		return(JS_TRUE);
@@ -686,6 +737,8 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 static JSBool
 js_put_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
+	uintN		n;
+	JSBool		by_offset=JS_FALSE;
 	smbmsg_t	msg;
 	JSObject*	hdr;
 	private_t*	p;
@@ -706,10 +759,23 @@ js_put_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 
 	memset(&msg,0,sizeof(msg));
 
-	if(JSVAL_TO_BOOLEAN(argv[0])==JS_TRUE)	/* Get by offset */
-		msg.offset=JSVAL_TO_INT(argv[1]);
-	else									/* Get by number */
-		msg.hdr.number=JSVAL_TO_INT(argv[1]);
+	for(n=0;n<argc;n++) {
+		if(JSVAL_IS_BOOLEAN(argv[n]))
+			by_offset=JSVAL_TO_BOOLEAN(argv[n]);
+		else if(JSVAL_IS_INT(argv[n])) {
+			if(by_offset)							/* Get by offset */
+				msg.offset=JSVAL_TO_INT(argv[n]);
+			else									/* Get by number */
+				msg.hdr.number=JSVAL_TO_INT(argv[n]);
+			break;
+		} else if(JSVAL_IS_STRING(argv[n]))	{		/* Get by ID */
+			if(!msg_offset_by_id(&(p->smb)
+				,JS_GetStringBytes(JSVAL_TO_STRING(argv[n]))
+				,&msg.offset))
+				return(JS_TRUE);	/* ID not found */
+			break;
+		}
+	}
 
 	if(smb_getmsgidx(&(p->smb), &msg)!=0)
 		return(JS_TRUE);
@@ -799,7 +865,9 @@ static JSBool
 js_get_msg_body(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char*		buf;
+	uintN		n;
 	smbmsg_t	msg;
+	JSBool		by_offset=JS_FALSE;
 	JSBool		strip_ctrl_a=JS_FALSE;
 	JSBool		tails=JS_TRUE;
 	JSBool		rfc822=JS_FALSE;
@@ -818,19 +886,32 @@ js_get_msg_body(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 
 	memset(&msg,0,sizeof(msg));
 
-	if(JSVAL_TO_BOOLEAN(argv[0])==JS_TRUE)	/* Get by offset */
-		msg.offset=JSVAL_TO_INT(argv[1]);
-	else									/* Get by number */
-		msg.hdr.number=JSVAL_TO_INT(argv[1]);
+	for(n=0;n<argc;n++) {
+		if(JSVAL_IS_BOOLEAN(argv[n]))
+			by_offset=JSVAL_TO_BOOLEAN(argv[n]);
+		else if(JSVAL_IS_INT(argv[n])) {
+			if(by_offset)							/* Get by offset */
+				msg.offset=JSVAL_TO_INT(argv[n]);
+			else									/* Get by number */
+				msg.hdr.number=JSVAL_TO_INT(argv[n]);
+			break;
+		} else if(JSVAL_IS_STRING(argv[n]))	{		/* Get by ID */
+			if(!msg_offset_by_id(&(p->smb)
+				,JS_GetStringBytes(JSVAL_TO_STRING(argv[n]))
+				,&msg.offset))
+				return(JS_TRUE);	/* ID not found */
+			break;
+		}
+	}
 
-	if(argc>2)
-		strip_ctrl_a=JSVAL_TO_BOOLEAN(argv[2]);
+	if(n<argc && JSVAL_IS_BOOLEAN(argv[n]))
+		strip_ctrl_a=JSVAL_TO_BOOLEAN(argv[n++]);
 
-	if(argc>3)
-		rfc822=JSVAL_TO_BOOLEAN(argv[3]);
+	if(n<argc && JSVAL_IS_BOOLEAN(argv[n]))
+		rfc822=JSVAL_TO_BOOLEAN(argv[n++]);
 
-	if(argc>4)
-		tails=JSVAL_TO_BOOLEAN(argv[4]);
+	if(n<argc && JSVAL_IS_BOOLEAN(argv[n]))
+		tails=JSVAL_TO_BOOLEAN(argv[n++]);
 
 	buf = get_msg_text(&(p->smb), &msg, strip_ctrl_a, rfc822, tails ? GETMSGTXT_TAILS : 0);
 	if(buf==NULL)
@@ -848,7 +929,9 @@ static JSBool
 js_get_msg_tail(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char*		buf;
+	uintN		n;
 	smbmsg_t	msg;
+	JSBool		by_offset=JS_FALSE;
 	JSBool		strip_ctrl_a=JS_FALSE;
 	JSBool		rfc822=JS_FALSE;
 	JSString*	js_str;
@@ -866,16 +949,29 @@ js_get_msg_tail(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 
 	memset(&msg,0,sizeof(msg));
 
-	if(JSVAL_TO_BOOLEAN(argv[0])==JS_TRUE)	/* Get by offset */
-		msg.offset=JSVAL_TO_INT(argv[1]);
-	else									/* Get by number */
-		msg.hdr.number=JSVAL_TO_INT(argv[1]);
+	for(n=0;n<argc;n++) {
+		if(JSVAL_IS_BOOLEAN(argv[n]))
+			by_offset=JSVAL_TO_BOOLEAN(argv[n]);
+		else if(JSVAL_IS_INT(argv[n])) {
+			if(by_offset)							/* Get by offset */
+				msg.offset=JSVAL_TO_INT(argv[n]);
+			else									/* Get by number */
+				msg.hdr.number=JSVAL_TO_INT(argv[n]);
+			break;
+		} else if(JSVAL_IS_STRING(argv[n]))	{		/* Get by ID */
+			if(!msg_offset_by_id(&(p->smb)
+				,JS_GetStringBytes(JSVAL_TO_STRING(argv[n]))
+				,&msg.offset))
+				return(JS_TRUE);	/* ID not found */
+			break;
+		}
+	}
 
-	if(argc>2)
-		strip_ctrl_a=JSVAL_TO_BOOLEAN(argv[2]);
+	if(n<argc && JSVAL_IS_BOOLEAN(argv[n]))
+		strip_ctrl_a=JSVAL_TO_BOOLEAN(argv[n++]);
 
-	if(argc>3)
-		rfc822=JSVAL_TO_BOOLEAN(argv[3]);
+	if(n<argc && JSVAL_IS_BOOLEAN(argv[n]))
+		rfc822=JSVAL_TO_BOOLEAN(argv[n++]);
 
 	buf = get_msg_text(&(p->smb), &msg, strip_ctrl_a, rfc822, GETMSGTXT_TAILS|GETMSGTXT_NO_BODY);
 	if(buf==NULL)
