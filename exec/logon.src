@@ -1,6 +1,14 @@
+# logon.src
+
 # Synchronet v2.20 Logon Module
 
+# $id$
+
+# @format.tab-size 8, @format.use-tabs true
+
 !include sbbsdefs.inc
+
+or _node_misc NM_NOPAUSESPIN	# Disable spinning cursor at pause prompts
 
 compare_ars rest G
 if_true
@@ -26,16 +34,16 @@ if_true
 	logstr
 	set_user_string user_string_location
 
-	:get_phone
-	print "\1y\1hPlease enter your voice telephone number: "
-	get_template nnn-nnn-nnnn
-	compare_str ""
-	if_true
-		goto get_phone
-		end_if
-	log "  "
-	logstr
-	set_user_string user_string_phone
+#	:get_phone
+#	print "\1y\1hPlease enter your voice telephone number: "
+#	get_template nnn-nnn-nnnn
+#	compare_str ""
+#	if_true
+#		goto get_phone
+#		end_if
+#	log "  "
+#	logstr
+#	set_user_string user_string_phone
 	log "\r\n"
 	:get_mag
 	print "yhWhere did you hear about this BBS?\r\n: w"
@@ -48,7 +56,7 @@ if_true
 	log "\r\n"
 	end_if
 
-compare_ars rest G or rest X or local
+compare_ars rest G or rest X or flag S
 if_false
 	no_yes Do you want to enter the \1cSynchronet Match Maker\1b
 	if_false
@@ -102,14 +110,15 @@ user_event event_logon
 # Last few callers
 clear_abort
 cls
-setstr "%jLOGON.LST"
-get_file_length i str
+str logonlst
+set logonlst "%jLOGON.LST"
+get_file_length i logonlst
 compare i 1
 if_less
 	print "\1n\1g\1hYou are the first caller of the day!\r\n"
 else
 	print "\1n\1g\1hLast few callers:\1n\r\n"
-	printtail str P_NOATCODES 4
+	printtail logonlst P_NOATCODES 4
 	crlf
 	endif
 
