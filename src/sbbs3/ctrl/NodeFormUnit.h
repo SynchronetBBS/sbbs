@@ -94,12 +94,13 @@ __published:	// IDE-managed Components
     void __fastcall UserMsgButtonClick(TObject *Sender);
     void __fastcall RefreshMenuItemClick(TObject *Sender);
 private:	// User declarations
-    int __fastcall getnodedat(int node_num, node_t* node, bool lockit);
-    int __fastcall putnodedat(int node_num, node_t* node);
 
 public:		// User declarations
      __fastcall TNodeForm(TComponent* Owner);
      TMainForm* MainForm;
+    int __fastcall getnodedat(int node_num, node_t* node, bool lockit);
+    int __fastcall putnodedat(int node_num, node_t* node);
+
 };
 //---------------------------------------------------------------------------
 extern PACKAGE TNodeForm *NodeForm;
