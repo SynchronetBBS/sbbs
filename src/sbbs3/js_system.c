@@ -336,7 +336,8 @@ static struct JSPropertySpec js_system_properties[] = {
 	{	"settings",	SYS_PROP_MISC,		JSPROP_ENUMERATE,	NULL,	NULL },
 	{	"psname",	SYS_PROP_PSNAME,	SYSOBJ_FLAGS,		NULL,	NULL },
 	{	"psnum",	SYS_PROP_PSNUM,		SYSOBJ_FLAGS,		NULL,	NULL },
-	{	"inetaddr",	SYS_PROP_INETADDR,	SYSOBJ_FLAGS,		NULL,	NULL },
+	{	"inetaddr",	SYS_PROP_INETADDR,	JSPROP_READONLY,	NULL,	NULL },	/* alias */
+	{	"inet_addr",SYS_PROP_INETADDR,	SYSOBJ_FLAGS,		NULL,	NULL },
 	{	"location",	SYS_PROP_LOCATION,	SYSOBJ_FLAGS,		NULL,	NULL },
 	{	"timezone",	SYS_PROP_TIMEZONE,	SYSOBJ_FLAGS,		NULL,	NULL },
 	{	"pwdays",	SYS_PROP_PWDAYS,	SYSOBJ_FLAGS,		NULL,	NULL },
