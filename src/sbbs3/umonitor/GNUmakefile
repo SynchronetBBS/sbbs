@@ -73,7 +73,15 @@ CFLAGS	+=	-I../../include/mozilla/js -I$(XPDEV) -I$(UIFC) -I$(SBBS3)
 LFLAGS	+=	-lcurses
 
 ifeq ($(os),netbsd)
- CFLAGS	+=	-D__unix__
+ CFLAGS	+=	-D__unix__ -I/usr/pkg/include
+endif
+
+# So far, only QNX has sem_timedwait() 
+ifeq ($(os),qnx)
+ LFLAGS := -lm -lsocket
+else
+ CFLAGS +=      -DUSE_XP_SEMAPHORES
+ USE_XP_SEMAPHORES      :=      1
 endif
 
 vpath %.c $(UIFC) $(XPDEV) $(SBBS3)
