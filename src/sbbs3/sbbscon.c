@@ -860,6 +860,9 @@ int main(int argc, char** argv)
 #ifdef __QNX__
 	setlocale( LC_ALL, "C-TRADITIONAL" );
 #endif
+#ifdef __unix__
+	umask(077);
+#endif
 	printf("\nSynchronet Console for %s  Version %s%c  %s\n\n"
 		,PLATFORM_DESC,VERSION,REVISION,COPYRIGHT_NOTICE);
 
