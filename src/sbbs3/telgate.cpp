@@ -133,6 +133,9 @@ void sbbs_t::telnet_gate(char* destaddr, ulong mode)
 		l=p-(char*)buf;
 		sendsocket(remote_socket,(char*)buf,l);
 	}
+	
+	/* This is required for gating to Unix telnetd */
+	send_telnet_cmd(TELNET_DONT,TELNET_TERM_TYPE);	// Re-negotiation of terminal type
 
 	/* Text/NVT mode by default */
 	send_telnet_cmd(TELNET_DONT,TELNET_BINARY);
@@ -143,6 +146,16 @@ void sbbs_t::telnet_gate(char* destaddr, ulong mode)
 			gettimeleft();
 		rd=RingBufRead(&inbuf,buf,sizeof(buf));
 		if(rd) {
+#if 0
+			if(memchr(buf,TELNET_IAC,rd)) {
+				char dump[2048];
+				dump[0];
+				p=dump;
+				for(int i=0;i<rd;i++)
+					p+=sprintf(p,"%u ",buf[i]);
+				lprintf(LOG_DEBUG,"Node %d Telnet cmd from client: %s", cfg.node_num, dump);
+			}
+#endif
 			if(!(telnet_mode&TELNET_MODE_BIN_RX)) {
 				if(*buf==0x1d) { // ^]
 					save_console=console;
@@ -228,6 +241,16 @@ void sbbs_t::telnet_gate(char* destaddr, ulong mode)
 			lprintf(LOG_INFO,"Node %d Telnet gate disconnected",cfg.node_num);
 			break;
 		}
+#if 0
+		if(memchr(buf,TELNET_IAC,rd)) {
+			char dump[2048];
+			dump[0];
+			p=dump;
+			for(int i=0;i<rd;i++)
+				p+=sprintf(p,"%u ",buf[i]);
+			lprintf(LOG_DEBUG,"Node %d Telnet cmd from remote: %s", cfg.node_num, dump);
+		}
+#endif
 		RingBufWrite(&outbuf,buf,rd);
 	}
 	console&=~CON_RAW_IN;
