@@ -40,8 +40,6 @@
 
 #include "scfgdefs.h"	/* scfg_t */
 
-/* #define SAVE_MEMORY /* This makes it difficult to free */
-
 #define get_int(var,stream) { if(!fread(&var,1,sizeof(var),stream)) \
 								memset(&var,0,sizeof(var)); \
 							  offset+=sizeof(var); }
@@ -56,10 +54,8 @@ extern const uchar* nular;
 
 #ifdef SCFG
 #define FREE_AR(x)		/* static */
-#define FREE_ALLOC(x)	/* static */
 #else
 #define FREE_AR(x)		if(x!=NULL && x!=nular)	{ FREE(x); }		/* allocated with arstr() */	
-#define FREE_ALLOC(x)	if(x!=NULL && x!=scfgnulstr) { FREE(x); }	/* allocated with get_alloc() */
 #endif
 
 typedef struct {
