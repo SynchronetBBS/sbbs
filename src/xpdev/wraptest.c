@@ -298,7 +298,7 @@ static void sopen_child_thread(void* arg)
 	int fd;
 
 	printf("sopen_child_thread: %d begin\n",(int)arg);
-	if((fd=sopen(LOCK_FNAME,O_RDWR,SH_DENYWR))!=-1) {
+	if((fd=sopen(LOCK_FNAME,O_RDWR,SH_DENYRW))!=-1) {
 		if(arg)
 			printf("!FAILURE: was able to reopen in child thread\n");
 		else {
