@@ -223,4 +223,5 @@ SEXYZ_OBJS = \
 			$(MTOBJODIR)$(DIRSEP)sexyz$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)xmodem$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)zmodem$(OFILE) \
+			$(MTOBJODIR)$(DIRSEP)ringbuf$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)telnet$(OFILE)
