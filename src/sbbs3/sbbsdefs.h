@@ -595,6 +595,7 @@ enum {								/* Values for xtrn_t.event			*/
 #define SS_DCDHIGH	(1L<<23) /* Assume DCD is high always				*/
 #define SS_SPLITP	(1L<<24) /* Split-screen private chat				*/
 #define SS_NEWDAY	(1L<<25) /* Date changed while online				*/
+#define SS_RLOGIN	(1L<<26) /* Current login via BSD RLogin			*/
 
 								/* Bits in 'mode' for getkey and getstr     */
 #define K_UPPER 	(1L<<0) 	/* Converts all letters to upper case		*/

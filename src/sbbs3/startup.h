@@ -47,14 +47,14 @@ typedef struct {
     WORD	first_node;
     WORD	last_node;
 	WORD	telnet_port;
-	WORD	reserved_word5;
+	WORD	rlogin_port;
 	WORD	reserved_word4;
 	WORD	reserved_word3;
 	WORD	reserved_word2;
 	WORD	reserved_word1;
-    DWORD   interface_addr;
+    DWORD   telnet_interface;
     DWORD	options;			// See BBS_OPT definitions
-    DWORD	reserved_dword8;
+    DWORD	rlogin_interface;
     DWORD	reserved_dword7;
     DWORD	reserved_dword6;
     DWORD	reserved_dword5;
@@ -93,5 +93,7 @@ typedef struct {
 #define BBS_OPT_AUTO_LOGON			(1<<2)	// Auto-logon via IP
 #define BBS_OPT_DEBUG_TELNET		(1<<3)	// Debug telnet commands
 #define BBS_OPT_SYSOP_AVAILABLE		(1<<4)	// Available for chat
+#define BBS_OPT_ALLOW_RLOGIN		(1<<5)	// Allow logins via BSD RLogin
+#define BBS_OPT_USE_2ND_RLOGIN		(1<<6)	// Use 2nd username in BSD RLogin
 #define BBS_OPT_NO_HOST_LOOKUP		(1<<11)
 #define BBS_OPT_MUTE				(1<<31)	// Mute sounds

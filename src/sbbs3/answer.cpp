@@ -41,10 +41,11 @@
 bool sbbs_t::answer()
 {
 	char	str[256],str2[256],c;
-	int		i,l;
+	int		i,l,in;
 	struct tm * tm;
 	struct in_addr addr;
 
+	useron.number=0;
 	answertime=logontime=starttime=now=time(NULL);
 	/* Caller ID is IP address */
 	addr.s_addr=client_addr;
@@ -64,6 +65,35 @@ bool sbbs_t::answer()
 	logline("@+:",str);
 
 	online=ON_REMOTE;
+
+	rlogin_name[0]=0;
+	if(!useron.number && sys_status&SS_RLOGIN) {
+		if(incom()==0) {
+			for(i=0;i<LEN_ALIAS;i++) {
+				in=incom();
+				if(in==0 || in==NOINP)
+					break;
+				str[i]=in;
+			}
+			str[i]=0;
+			for(i=0;i<LEN_ALIAS;i++) {
+				in=incom();
+				if(in==0 || in==NOINP)
+					break;
+				str2[i]=in;
+			}
+			str2[i]=0;
+			outcom(0);	/* acknowledge receipt per RFC 1282 */
+			lprintf("Node %d RLogin: '%s' / '%s'",cfg.node_num,str,str2);
+			strcpy(rlogin_name
+				,cfg.startup->options&BBS_OPT_USE_2ND_RLOGIN ? str2 : str);
+			useron.number=userdatdupe(0, U_ALIAS, LEN_ALIAS, rlogin_name, 0);
+			if(useron.number)
+				getuserdat(&cfg,&useron);
+		}
+	}
+	if(rlogin_name[0]==0)
+		sys_status&=~SS_RLOGIN;
 
 	/* Detect terminal type */
     mswait(200);
@@ -142,9 +172,8 @@ bool sbbs_t::answer()
 	putcom(str,3);
 
 	/* AutoLogon via IP or Caller ID here */
-	useron.number=0;
-
-	if(cfg.startup->options&BBS_OPT_AUTO_LOGON && cid[0]) {
+	if(!useron.number && !(sys_status&SS_RLOGIN)
+		&& cfg.startup->options&BBS_OPT_AUTO_LOGON && cid[0]) {
 		useron.number=userdatdupe(0, U_NOTE, LEN_NOTE, cid, 0);
 		if(useron.number) {
 			getuserdat(&cfg, &useron);
@@ -160,6 +189,10 @@ bool sbbs_t::answer()
 	useron.misc|=autoterm;
 	sprintf(useron.comp, "%.*s", sizeof(useron.comp)-1, client_name);
 
+	if(!useron.number && sys_status&SS_RLOGIN) {
+		CRLF;
+		newuser();
+	}
 
 	if(!useron.number) {	/* manual/regular logon */
 

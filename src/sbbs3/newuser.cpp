@@ -158,21 +158,25 @@ void sbbs_t::newuser()
 
 	useron.alias[0]=0;
 	while(online) {
-		while(online) {
-			if(cfg.uq&UQ_ALIASES)
-				bputs(text[EnterYourAlias]);
-			else
-				bputs(text[EnterYourRealName]);
-			getstr(useron.alias,LEN_ALIAS
-				,K_UPRLWR|(cfg.uq&UQ_NOEXASC)|K_EDIT|K_AUTODEL);
-			truncsp(useron.alias);
-			if(useron.alias[0]<=SP || !isalpha(useron.alias[0])
-				|| strchr(useron.alias,0xff)
-				|| matchuser(&cfg,useron.alias) || trashcan(useron.alias,"NAME")
-				|| (!(cfg.uq&UQ_ALIASES) && !strchr(useron.alias,SP))) {
-				bputs(text[YouCantUseThatName]);
-				continue; }
-			break; }
+		if(sys_status&SS_RLOGIN && rlogin_name[0])
+			strcpy(useron.alias,rlogin_name);
+		else {
+			while(online) {
+				if(cfg.uq&UQ_ALIASES)
+					bputs(text[EnterYourAlias]);
+				else
+					bputs(text[EnterYourRealName]);
+				getstr(useron.alias,LEN_ALIAS
+					,K_UPRLWR|(cfg.uq&UQ_NOEXASC)|K_EDIT|K_AUTODEL);
+				truncsp(useron.alias);
+				if(useron.alias[0]<=SP || !isalpha(useron.alias[0])
+					|| strchr(useron.alias,0xff)
+					|| matchuser(&cfg,useron.alias) || trashcan(useron.alias,"NAME")
+					|| (!(cfg.uq&UQ_ALIASES) && !strchr(useron.alias,SP))) {
+					bputs(text[YouCantUseThatName]);
+					continue; }
+				break; }
+		}
 		if(!online) return;
 		if(cfg.uq&UQ_ALIASES && cfg.uq&UQ_REALNAME) {
 			while(online) {
@@ -208,7 +212,7 @@ void sbbs_t::newuser()
 			else
 				break; }
 		if(!online) return;
-		while(/* cfg.uq&UQ_EMAIL && */ online) {
+		while(!(sys_status&SS_RLOGIN) && /* cfg.uq&UQ_EMAIL && */ online) {
 			bputs(text[EnterNetMailAddress]);
 			if(getstr(useron.netmail,LEN_NETMAIL,K_EDIT|K_AUTODEL|K_LINE))
 				break;
@@ -304,38 +308,42 @@ void sbbs_t::newuser()
 		if(isalnum(useron.pass[c]))
 			c++; }
 	useron.pass[c]=0;
-	bprintf(text[YourPasswordIs],useron.pass);
 
-	if(cfg.sys_misc&SM_PWEDIT && yesno(text[NewPasswordQ]))
+	if(!(sys_status&SS_RLOGIN)) {
+		bprintf(text[YourPasswordIs],useron.pass);
+
+		if(cfg.sys_misc&SM_PWEDIT && yesno(text[NewPasswordQ]))
+			while(online) {
+				bputs(text[NewPassword]);
+				getstr(str,LEN_PASS,K_UPPER|K_LINE);
+				truncsp(str);
+				if(chkpass(str,&useron,true)) {
+					strcpy(useron.pass,str);
+					CRLF;
+					bprintf(text[YourPasswordIs],useron.pass);
+					break; }
+				CRLF; }
+
+		c=0;
 		while(online) {
-			bputs(text[NewPassword]);
-			getstr(str,LEN_PASS,K_UPPER|K_LINE);
-			truncsp(str);
-			if(chkpass(str,&useron,true)) {
-				strcpy(useron.pass,str);
-				CRLF;
-				bprintf(text[YourPasswordIs],useron.pass);
-				break; }
-			CRLF; }
+			bprintf(text[NewUserPasswordVerify]);
+			console|=CON_R_ECHOX;
+			if(!(cfg.sys_misc&SM_ECHO_PW))
+				console|=CON_L_ECHOX;
+			str[0]=0;
+			getstr(str,LEN_PASS,K_UPPER);
+			console&=~(CON_R_ECHOX|CON_L_ECHOX);
+			if(!strcmp(str,useron.pass)) break;
+			sprintf(tmp,"Failed PW verification: '%s' instead of '%s'",str
+				,useron.pass);
+			logline(nulstr,tmp);
+			if(++c==4) {
+				logline("N!","Couldn't figure out password.");
+				hangup(); }
+			bputs(text[IncorrectPassword]);
+			bprintf(text[YourPasswordIs],useron.pass); }
+	}
 
-	c=0;
-	while(online) {
-		bprintf(text[NewUserPasswordVerify]);
-		console|=CON_R_ECHOX;
-		if(!(cfg.sys_misc&SM_ECHO_PW))
-			console|=CON_L_ECHOX;
-		str[0]=0;
-		getstr(str,LEN_PASS,K_UPPER);
-		console&=~(CON_R_ECHOX|CON_L_ECHOX);
-		if(!strcmp(str,useron.pass)) break;
-		sprintf(tmp,"Failed PW verification: '%s' instead of '%s'",str
-			,useron.pass);
-		logline(nulstr,tmp);
-		if(++c==4) {
-			logline("N!","Couldn't figure out password.");
-			hangup(); }
-		bputs(text[IncorrectPassword]);
-		bprintf(text[YourPasswordIs],useron.pass); }
 	if(!online) return;
 	if(cfg.new_magic[0]) {
 		bputs(text[MagicWordPrompt]);

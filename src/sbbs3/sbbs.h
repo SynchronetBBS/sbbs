@@ -146,6 +146,7 @@ public:
 	user_t	useron; 		/* User currently online */
 	node_t	thisnode;		/* Node information */
 	smb_t	smb;			/* Currently open message base */
+	char	rlogin_name[LEN_ALIAS];
 
 	uint	temp_dirnum;
 
