@@ -82,7 +82,7 @@ enum {
 
 #define BLINK	128
 
-static char  hfclr,hbclr,hclr,lclr,bclr,cclr;
+static char  hfclr,hbclr,hclr,lclr,bclr,cclr,lbclr;
 static int   cursor;
 static char* helpfile=0;
 static uint  helpline=0;
@@ -256,6 +256,8 @@ int uifcini32(uifcapi_t* uifcapi)
 		hbclr=LIGHTGRAY;
 		hfclr=YELLOW;
     }
+	lbclr=bclr|(hbclr<<4);	/* lightbar color */
+
     for(i=0;i<MAX_BFLN;i+=2) {
         blk_scrn[i]='°';
         blk_scrn[i+1]=cclr|(bclr<<4);
@@ -532,7 +534,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 				*(ptr++)='³';
 				*(ptr++)=lclr|(bclr<<4);
 				if(i==(*cur))
-					a=hfclr|(hbclr<<4);
+					a=lbclr;
 				else
 					a=lclr|(bclr<<4);
 				b=strlen(option[i]);
@@ -606,7 +608,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 		while(j<height-2 && i<opts) {
 			ptr=win;
 			if(i==(*cur))
-				a=hfclr|(hbclr<<4);
+				a=lbclr;
 			else
 				a=lclr|(bclr<<4);
 			b=strlen(option[i]);
@@ -662,7 +664,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+height-2);
 							putch(31);	   /* put the down arrow */
 							uprintf(SCRN_LEFT+left+3,SCRN_TOP+top+3
-								,hfclr|(hbclr<<4)
+								,lbclr
 								,"%-*.*s",width-4,width-4,option[0]);
 							for(i=1;i<height-4;i++)    /* re-display options */
 								uprintf(SCRN_LEFT+left+3,SCRN_TOP+top+3+i
@@ -687,7 +689,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 						gettext(SCRN_LEFT+3+left,SCRN_TOP+y
 							,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
 						for(i=1;i<width*2;i+=2)
-							line[i]=hfclr|(hbclr<<4);
+							line[i]=lbclr;
 						puttext(SCRN_LEFT+3+left,SCRN_TOP+y
 							,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
 						break;
@@ -702,7 +704,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							putch(' ');    /* delete the down arrow */
 							for(i=(opts+4)-height,j=0;i<opts;i++,j++)
 								uprintf(SCRN_LEFT+left+3,SCRN_TOP+top+3+j
-									,i==opts-1 ? hfclr|(hbclr<<4)
+									,i==opts-1 ? lbclr
 										: lclr|(bclr<<4)
 									,"%-*.*s",width-4,width-4,option[i]);
 							(*cur)=opts-1;
@@ -744,14 +746,14 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							scroll_text(SCRN_LEFT+left+2,SCRN_TOP+top+3
 								,SCRN_LEFT+left+width-3,SCRN_TOP+top+height-2,1);
 							uprintf(SCRN_LEFT+left+3,SCRN_TOP+top+3
-								,hfclr|(hbclr<<4)
+								,lbclr
 								,"%-*.*s",width-4,width-4,option[*cur]);
 						}
 						else {
 							gettext(SCRN_LEFT+3+left,SCRN_TOP+y
 								,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
 							for(i=1;i<width*2;i+=2)
-								line[i]=hfclr|(hbclr<<4);
+								line[i]=lbclr;
 							puttext(SCRN_LEFT+3+left,SCRN_TOP+y
 								,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
 						}
@@ -774,7 +776,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 
 						for(i=(opts+4)-height,j=0;i<opts;i++,j++)
 							uprintf(SCRN_LEFT+left+3,SCRN_TOP+top+3+j
-								,i==(*cur) hfclr|(hbclr<<4) : lclr|(bclr<<4)
+								,i==(*cur) lbclr : lclr|(bclr<<4)
 								,"%-*.*s",width-4,width-4,option[i]);
 						y=top+height-2;
 						if(bar)
@@ -782,7 +784,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 						gettext(SCRN_LEFT+3+left,SCRN_TOP+y
 							,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
 						for(i=1;i<148;i+=2)
-							line[i]=hfclr|(hbclr<<4);
+							line[i]=lbclr;
 						puttext(SCRN_LEFT+3+left,SCRN_TOP+y
 							,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
 						break;
@@ -798,7 +800,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							putch(' ');    /* delete the down arrow */
 							for(i=(opts+4)-height,j=0;i<opts;i++,j++)
 								uprintf(SCRN_LEFT+left+3,SCRN_TOP+top+3+j
-									,i==opts-1 ? hfclr|(hbclr<<4)
+									,i==opts-1 ? lbclr
 										: lclr|(bclr<<4)
 									,"%-*.*s",width-4,width-4,option[i]);
 							(*cur)=opts-1;
@@ -820,7 +822,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 						gettext(SCRN_LEFT+3+left,SCRN_TOP+y
 							,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
 						for(i=1;i<148;i+=2)
-							line[i]=hfclr|(hbclr<<4);
+							line[i]=lbclr;
 						puttext(SCRN_LEFT+3+left,SCRN_TOP+y
 							,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
 						break;
@@ -834,7 +836,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+height-2);
 							putch(31);	   /* put the down arrow */
 							uprintf(SCRN_LEFT+left+3,SCRN_TOP+top+3
-								,hfclr|(hbclr<<4)
+								,lbclr
 								,"%-*.*s",width-4,width-4,option[0]);
 							for(i=1;i<height-4;i++)    /* re-display options */
 								uprintf(SCRN_LEFT+left+3,SCRN_TOP+top+3+i
@@ -885,7 +887,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 								,SCRN_LEFT+left+width-3,SCRN_TOP+top+height-2,0);
 							/* gotoxy(1,1); cprintf("\rdebug: %4d ",__LINE__); */
 							uprintf(SCRN_LEFT+left+3,SCRN_TOP+top+height-2
-								,hfclr|(hbclr<<4)
+								,lbclr
 								,"%-*.*s",width-4,width-4,option[*cur]);
 						}
 						else {
@@ -893,7 +895,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 								,SCRN_LEFT+left+width-2,SCRN_TOP+y
 								,line);
 							for(i=1;i<width*2;i+=2)
-								line[i]=hfclr|(hbclr<<4);
+								line[i]=lbclr;
 							puttext(SCRN_LEFT+3+left,SCRN_TOP+y
 								,SCRN_LEFT+left+width-2,SCRN_TOP+y
 								,line);
@@ -989,7 +991,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 								}
 								for(i=((*cur)+5)-height,j=0;i<(*cur)+1;i++,j++)
 									uprintf(SCRN_LEFT+left+3,SCRN_TOP+top+3+j
-										,i==(*cur) ? hfclr|(hbclr<<4)
+										,i==(*cur) ? lbclr
 											: lclr|(bclr<<4)
 										,"%-*.*s",width-4,width-4,option[i]);
 								y=top+height-2;
@@ -1006,7 +1008,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 								gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+height-2);
 								putch(31);	   /* put the down arrow */
 								uprintf(SCRN_LEFT+left+3,SCRN_TOP+top+3
-									,hfclr|(hbclr<<4)
+									,lbclr
 									,"%-*.*s",width-4,width-4,option[(*cur)]);
 								for(i=1;i<height-4;i++) 	/* re-display options */
 									uprintf(SCRN_LEFT+left+3,SCRN_TOP+top+3+i
@@ -1038,7 +1040,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							gettext(SCRN_LEFT+3+left,SCRN_TOP+y
 								,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
 							for(i=1;i<width*2;i+=2)
-								line[i]=hfclr|(hbclr<<4);
+								line[i]=lbclr;
 							puttext(SCRN_LEFT+3+left,SCRN_TOP+y
 								,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
 							break; 
@@ -1238,7 +1240,7 @@ static int ugetstr(char *outstr, int max, long mode)
 		truncsp(outstr);
 	***/
 		outstr[max]=0;
-		textattr(hfclr|(hbclr<<4));
+		textattr(lbclr);
 		cputs(outstr);
 		textattr(lclr|(bclr<<4));
 		strcpy(str,outstr);
