@@ -106,6 +106,10 @@ SOURCE=.\msg_queue.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\semwrap.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\sockwrap.c
 # End Source File
 # Begin Source File
