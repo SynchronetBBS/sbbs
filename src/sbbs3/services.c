@@ -1563,7 +1563,13 @@ void DLLCALL services_thread(void* arg)
 					if(startup->socket_open!=NULL)
 						startup->socket_open(TRUE);	/* Callback, increments socket counter */
 				}
-				strcpy(host_ip,inet_ntoa(client_addr.sin_addr));
+				SAFECOPY(host_ip,inet_ntoa(client_addr.sin_addr));
+
+				if(trashcan(&scfg,host_ip,"ip-silent")) {
+					FREE_AND_NULL(udp_buf);
+					close_socket(client_socket);
+					continue;
+				}
 
 				lprintf("%04d %s connection accepted from: %s port %u"
 					,client_socket

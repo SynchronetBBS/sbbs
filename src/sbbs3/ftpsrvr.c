@@ -2292,6 +2292,12 @@ static void ctrl_thread(void* arg)
 
 	SAFECOPY(host_ip,inet_ntoa(ftp.client_addr.sin_addr));
 
+	if(trashcan(&scfg,host_ip,"ip-silent")) {
+		ftp_close_socket(&sock,__LINE__);
+		thread_down();
+		return;
+	}
+
 	lprintf ("%04d CTRL connection accepted from: %s port %u"
 		,sock, host_ip, ntohs(ftp.client_addr.sin_port));
 

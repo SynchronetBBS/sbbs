@@ -644,6 +644,12 @@ static void pop3_thread(void* arg)
 
 	SAFECOPY(host_ip,inet_ntoa(pop3.client_addr.sin_addr));
 
+	if(trashcan(&scfg,host_ip,"ip-silent")) {
+		mail_close_socket(socket);
+		thread_down();
+		return;
+	}
+
 	if(startup->options&MAIL_OPT_DEBUG_POP3)
 		lprintf("%04d POP3 connection accepted from: %s port %u"
 			,socket, host_ip, ntohs(pop3.client_addr.sin_port));
@@ -1330,6 +1336,12 @@ static void smtp_thread(void* arg)
 	memset(&user,0,sizeof(user));
 
 	SAFECOPY(host_ip,inet_ntoa(smtp.client_addr.sin_addr));
+
+	if(trashcan(&scfg,host_ip,"ip-silent")) {
+		mail_close_socket(socket);
+		thread_down();
+		return;
+	}
 
 	lprintf("%04d SMTP connection accepted from: %s port %u"
 		, socket, host_ip, ntohs(smtp.client_addr.sin_port));
