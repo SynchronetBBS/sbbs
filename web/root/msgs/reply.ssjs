@@ -17,7 +17,26 @@ if(sub!='mail') {
 if(msgbase.open!=undefined && msgbase.open()==false) {
 	error(msgbase.last_error);
 }
-hdr=clean_msg_headers(msgbase.get_msg_header(false,parseInt(http_request.query.reply_to)),CLEAN_MSG_REPLY);
+hdr=msgbase.get_msg_header(false,parseInt(http_request.query.reply_to));
+hdr=clean_msg_headers(hdr,CLEAN_MSG_REPLY);
+if(sub!='mail') {
+	if(msg_area.sub[sub].settings&SUB_AONLY)
+		template.anonnote=anon_only_message;
+	else if(msg_area.sub[sub].settings&SUB_ANON) {
+		if(hdr.attr&MSG_ANONYMOUS)
+			template.anonnote=anon_reply_message;
+		else
+			template.anonnote=anon_allowed_message;
+	}
+	if(msg_area.sub[sub].settings&SUB_PONLY)
+		template.privnote=private_only_message;
+	else if(msg_area.sub[sub].settings&SUB_PRIV) {
+		if(hdr.attr&MSG_PRIVATE)
+			template.privnote=private_reply_message;
+		else
+			template.privnote=private_allowed_message;
+	}
+}
 template.subject=hdr.subject;
 if(template.subject.search(/^re:\s+/i)==-1)
 	template.subject='Re: '+template.subject;

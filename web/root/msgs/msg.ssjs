@@ -29,7 +29,14 @@ else {
 template.idx=msgbase.get_msg_index(false,m);
 if(sub=='mail' && template.idx.to!=user.number)
 	error("You can only read e-mail messages addressed to yourself!");
-template.hdr=clean_msg_headers(msgbase.get_msg_header(false,m),0);
+template.hdr=msgbase.get_msg_header(false,m);
+if(idx_to_user(template.idx)) {
+	template.hdr.attr|=MSG_READ;
+	if(template.hdr.attr&MSG_KILLREAD)
+		template.hdr.attr|=MSG_DELETE;
+	msgbase.put_msg_header(false,m,template.hdr);
+}
+template.hdr=clean_msg_headers(template.hdr,0);
 template.body=msgbase.get_msg_body(false,m);
 
 msg=mime_decode(template.hdr,template.body);

@@ -1,11 +1,6 @@
 /* 
  * ToDo:
  * Deal with 
- * var   SUB_PRIV          =(1<<6)         * Allow private posts on sub
- * var   SUB_PONLY         =(1<<7)         * Private posts only
- * var   SUB_ANON          =(1<<8)         * Allow anonymous posts on sub
- * var   SUB_AONLY         =(1<<9)         * Anonymous only
- * var   SUB_NAME          =(1<<10)        * Must use real names
  * var   SUB_FORCED        =(1<<13)        * Sub-board is forced scanning
  * var   SUB_NOTAG         =(1<<14)        * Don't add tag or origin lines
  * var   SUB_TOUSER        =(1<<15)        * Prompt for to user on posts
@@ -20,6 +15,9 @@
 
 load("html_inc/msgslib.ssjs");
 
+template.anonnote='';
+template.privnote='';
+
 if(sub=='mail') {
 	template.sub=new Object;
 	template.sub.description="Personal E-Mail";
@@ -28,6 +26,14 @@ if(sub=='mail') {
 else {
 	template.sub=msg_area.sub[sub];
 	template.group=msg_area.grp_list[msg_area.sub[sub].grp_name];
+	if(msg_area.sub[sub].settings&SUB_AONLY)
+		template.anonnote=anon_only_message;
+	else if(msg_area.sub[sub].settings&SUB_ANON)
+		template.anonnote=anon_allowed_message;
+	if(msg_area.sub[sub].settings&SUB_PONLY)
+		template.privnote=private_only_message;
+	else if(msg_area.sub[sub].settings&SUB_PRIV)
+		template.privnote=private_allowed_message;
 }
 
 if(sub!='mail') {

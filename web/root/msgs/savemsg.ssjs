@@ -39,15 +39,46 @@ body=word_wrap(body, 80);
 hdrs.from=user.alias;
 hdrs.to=http_request.query.to;
 hdrs.subject=http_request.query.subject;
-if(http_request.query.reply_to != undefined)  {
+if(http_request.query.reply_to != undefined) {
 	hdrs.thread_orig=parseInt(http_request.query.reply_to);
 }
 if(msgbase.open!=undefined && msgbase.open()==false) {
 	error(msgbase.last_error);
 }
-if(!msgbase.save_msg(hdrs,body))  {
+
+/* Anonymous/Real Name/etc stuff */
+if(msgbase.cfg.settings&SUB_AONLY || (msgbase.cfg.settings&SUB_ANON && http_request.query.anonymous != undefined && http_request.query.anonymous[0]=='Yes'))
+	hdrs.attr|=MSG_ANONYMOUS;
+if(msgbase.cfg.settings&SUB_NAME)
+	hdrs.from=user.name;
+
+/* Private message stuff */
+/* Note, apparently, "private" is a magical property... */
+if(msgbase.cfg.settings&SUB_PONLY || (msgbase.cfg.settings&SUB_PRIV && http_request.query['private']!=undefined && http_request.query['private'][0]=='Yes'))
+	hdrs.attr|=MSG_PRIVATE;
+
+/* Moderated stuff */
+if(msgbase.cfg.moderated_ars!='')
+	hdrs.attr|=MSG_MODERATED;
+
+/* Set kill when read flag */
+if(sub=="mail" && hdrs.to_net_type==NET_NONE && system.settings&SYS_DELREADM)
+	hdrs.attr|=MSG_KILLREAD;
+
+if(!msgbase.save_msg(hdrs,body)) {
 	error(msgbase.last_error);
 }
+
+/* Mark original message for replied */
+if(hdrs.thread_orig!=undefined)  {
+	var orig_idx=msgbase.get_msg_index(false,hdrs.thread_orig);
+	if(idx_to_user(orig_idx)) {
+		var orig_hdrs=msgbase.get_msg_header(false,hdrs.thread_orig);
+		orig_hdrs.attr|=MSG_REPLIED;
+		msgbase.put_msg_header(false,hdrs.thread_orig,orig_hdrs);
+	}
+}
+
 http_reply.status="201 Created";
 title="Message posted";
 write_template("header.inc");

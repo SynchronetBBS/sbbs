@@ -7,6 +7,12 @@
       <td class="replymsg">Subject: <input class="replymsg" type="text" name="subject" value="%%subject%%" /></td>
       <td class="replymsg">To: <input class="replymsg" type="text" name="to" value="%%from%%" /></td>
     </tr>
+	<tr>
+	  <td class="postmsg" colspan="2">@@anonnote@@</td>
+	</tr>
+	<tr>
+	  <td class="postmsg" colspan="2">@@privnote@@</td>
+	</tr>
     <tr>
       <td class="replymsg" colspan="2"><textarea class="replymsg" name=body rows="20" cols="80" wrap="hard">%%body%%</textarea></td>
       </tr>

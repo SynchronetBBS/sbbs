@@ -39,8 +39,10 @@ function get_my_message_offsets()
 	for(last_offset=0; (idx=msgbase.get_msg_index(true,last_offset)) != null;last_offset++) {
 		if(idx.attr&MSG_DELETE)
 			continue;
-		if(idx.to!=user.number)
+		if(!idx_to_user(idx))
 			continue;
+		if(idx.attr&MSG_MODERATED && !(idx.attr&MSG_VALIDATED))
+			break;
 		msg=new Array;
 		msg.idx=idx;
 		msg.offset=last_offset;
@@ -58,7 +60,11 @@ function get_all_message_offsets()
 	for(last_offset=0; (idx=msgbase.get_msg_index(true,last_offset)) != null;last_offset++) {
 		if(idx.attr&MSG_DELETE)
 			continue;
-		if(idx.attr&MSG_PRIVATE && idx.to!=user.number)
+		if(idx.attr&MSG_PRIVATE && !idx_to_user(idx))
+			continue;
+		if(idx.attr&MSG_MODERATED && !(idx.attr&MSG_VALIDATED))
+			break;
+		if(sub=='mail' && idx.to!=user.number)
 			continue;
 		msg=new Object;
 		msg.idx=idx;
@@ -86,11 +92,17 @@ function find_np_message(offset,next)
 	for(last_offset=parseInt(offset)+step;last_offset>0 && (idx=msgbase.get_msg_index(true,last_offset))!=null;last_offset+=step) {
 		if(idx.attr&MSG_DELETE)
 			continue;
-		if(idx.attr&MSG_PRIVATE && idx.to!=user.number)
+		if(idx.attr&MSG_PRIVATE && !idx_to_user(idx))
 			continue;
+		if(idx.attr&MSG_MODERATED && !(idx.attr&MSG_VALIDATED)) {
+			if(step==1)
+				break;
+			else
+				continue;
+		}
 		if(sub!='mail')
 			return(idx.number);
-		if(idx.to!=user.number)
+		if(!idx_to_user(idx))
 			continue;
 		return(idx.number);
 	}
@@ -130,10 +142,41 @@ function clean_msg_headers(hdr,flags)
 	if(hdr.subject=='')
 		hdr.subject="-- No Subject --";
 	if(hdr.attr&MSG_ANONYMOUS) {
-		if((!(flags&CLEAN_MSG_REPLY)) && user.security.level>=90)
-			hdr.from='Anonymous ('+hdr.from+')';
+		if((!(flags&CLEAN_MSG_REPLY))) {
+			if(user.security.level>=90)
+				hdr.from='Anonymous ('+hdr.from+')';
+			else
+				hdr.from="Anonymous";
+		}
 		else
-			hdr.from="Anonymous";
+			hdr.from="All";
 	}
+
 	return(hdr);
+}
+
+function idx_to_user(fromidx)
+{
+	var istouser=0;
+
+	if(sub=='mail') {
+		if(fromidx.to==user.number)
+			istouser=true;
+	}
+	else {
+		var aliascrc=crc16_calc(user.alias.toLowerCase());
+		var namecrc=crc16_calc(user.name.toLowerCase());
+		var sysopcrc=crc16_calc((user.number==1?'sysop':user.name.toLowerCase()));
+		if(fromidx.to==aliascrc || fromidx.to==namecrc || fromidx.to==sysopcrc) {
+			/* Could be to this user */
+			var fromhdr=msgbase.get_msg_header(true,fromidx.offset);
+			if(user.alias.toLowerCase()==fromhdr.to.toLowerCase())
+				istouser=true;
+			else if(user.name.toLowerCase()==fromhdr.to.toLowerCase())
+				istouser=true;
+			else if(user.number==1 && fromhdr.to.toLowerCase()=='sysop' && fromhdr.from_net_type==0)
+				istouser=true;
+		}
+	}
+	return(istouser);
 }
