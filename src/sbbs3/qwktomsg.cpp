@@ -99,7 +99,8 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 	msg.hdr.when_imported.zone=cfg.sys_timezone;
 
 	hdrblk[116]=0;	// don't include number of blocks in "re: msg number"
-	msg.hdr.thread_orig=atol((char *)hdrblk+108);
+	if(!(useron.rest&FLAG('Q')) && !fromhub)
+		msg.hdr.thread_orig=atol((char *)hdrblk+108);
 
 	if((uint)subnum==INVALID_SUB) { 		/* E-mail */
 		msg.idx.to=touser;
