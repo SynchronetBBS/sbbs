@@ -38,12 +38,15 @@
 #include <string.h>     /* strlen() */
 #include <stdlib.h>	/* RAND_MAX */
 #include <fcntl.h>	/* O_NOCTTY */
+
+#ifdef __unix__
 #ifndef __FreeBSD__
 #include <sys/kd.h>	/* KIOCSOUND */
 #endif
 #ifdef __FreeBSD__
 #include <sys/kbio.h>
 #endif
+#endif	/* __unix__ */
 
 #include "genwrap.h"	/* Verify prototypes */
 
