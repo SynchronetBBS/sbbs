@@ -77,7 +77,9 @@ $(EXEODIR):
 
 # Monolithic Synchronet executable Build Rule
 $(SBBSMONO): sbbscon.c sbbs_ini.c $(XPDEV)ini_file.c $(OBJS) \
-	$(LIBODIR)\ver.$(OFILE) $(LIBODIR)\ftpsrvr.$(OFILE) \
+	$(LIBODIR)\ver.$(OFILE) \
+	$(LIBODIR)\ftpsrvr.$(OFILE) \
+	$(LIBODIR)\websrvr.$(OFILE) \
 	$(LIBODIR)\mailsrvr.$(OFILE) $(LIBODIR)\mxlookup.$(OFILE) $(LIBODIR)\mime.$(OFILE) \
 	$(LIBODIR)\services.$(OFILE)
 	@$(CC) $(CFLAGS) -DWRAPPER_EXPORTS -WM -e$(SBBSMONO) $** $(LIBS)
@@ -99,6 +101,12 @@ $(FTPSRVR): ftpsrvr.c nopen.c $(SBBSLIB)
     @echo Creating $@
 	@$(CC) $(CFLAGS) -WD -WM -lGi -n$(LIBODIR) \
 		-DFTPSRVR_EXPORTS -DWRAPPER_IMPORTS $** $(LIBS)
+
+# FTP Server DLL Link Rule
+$(WEBSRVR): wesrvr.c $(XPDEV)sockwrap.c
+    @echo Creating $@
+	@$(CC) $(CFLAGS) -WD -WM -lGi -n$(LIBODIR) \
+		-DWEBSRVR_EXPORTS -DWRAPPER_IMPORTS $** $(LIBS)
 
 # Services DLL Link Rule
 $(SERVICES): services.c $(SBBSLIB)
