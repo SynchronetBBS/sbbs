@@ -629,7 +629,7 @@ void synclist(char *inpath, int dirnum)
 			continue; 
 		}
 		removefiledat(&scfg,&f);
-		if(remove(getfilepath(&scfg,&f,str))
+		if(remove(getfilepath(&scfg,&f,str)))
 			printf("Error removing %s\n",str);
 		removed++;
 		printf("Removed from database\n"); 
