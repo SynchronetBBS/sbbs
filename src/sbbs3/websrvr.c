@@ -1009,6 +1009,7 @@ static void send_error(http_session_t * session, const char* message)
 		sprintf(sbuf,"%s%s.ssjs",error_dir,error_code);
 		if(!stat(sbuf,&sb)) {
 			lprintf(LOG_INFO,"%04d Using SSJS error page",session->socket);
+			session->req.dynamic=IS_SSJS;
 			if(js_setup(session)) {
 				sent_ssjs=exec_ssjs(session,sbuf);
 				if(sent_ssjs) {
@@ -1021,7 +1022,11 @@ static void send_error(http_session_t * session, const char* message)
 					if(session->req.ld!=NULL)
 						session->req.ld->size=snt;
 				}
+				else
+					 session->req.dynamic=IS_STATIC;
 			}
+			else
+				session->req.dynamic=IS_STATIC;
 		}
 	}
 	if(!sent_ssjs) {
