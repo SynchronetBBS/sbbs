@@ -1066,7 +1066,34 @@ static BYTE* telnet_interpret(sbbs_t* sbbs, BYTE* inbuf, int inlen,
 	                		,sbbs->cfg.node_num
 							,sbbs->telnet_mode&TELNET_MODE_GATE ? "passed-through" : "received"
 							,sbbs->terminal);
-					}
+
+					} else if(option==TELNET_TERM_SPEED
+						&& sbbs->telnet_cmd[3]==TELNET_TERM_IS) {
+						char speed[128];
+						sprintf(speed,"%.*s",(int)sbbs->telnet_cmdlen-6,sbbs->telnet_cmd+4);
+						lprintf(LOG_DEBUG,"Node %d %s telnet terminal speed: %s"
+	                		,sbbs->cfg.node_num
+							,sbbs->telnet_mode&TELNET_MODE_GATE ? "passed-through" : "received"
+							,speed);
+
+					} else if(option==TELNET_NEGOTIATE_WINDOW_SIZE) {
+						long cols = (sbbs->telnet_cmd[3]<<8) | sbbs->telnet_cmd[4];
+						long rows = (sbbs->telnet_cmd[5]<<8) | sbbs->telnet_cmd[6];
+						lprintf(LOG_DEBUG,"Node %d %s telnet window size: %ux%u"
+	                		,sbbs->cfg.node_num
+							,sbbs->telnet_mode&TELNET_MODE_GATE ? "passed-through" : "received"
+							,sbbs->cols
+							,sbbs->rows);
+						if(rows && !sbbs->useron.rows)	/* auto-detect rows */
+							sbbs->rows=rows;
+						if(cols)
+							sbbs->cols=cols;
+
+					} else if(startup->options&BBS_OPT_DEBUG_TELNET)
+            			lprintf(LOG_DEBUG,"Node %d %s unsupported telnet sub-negotiation cmd: %s"
+	                		,sbbs->cfg.node_num
+							,sbbs->telnet_mode&TELNET_MODE_GATE ? "passed-through" : "received"
+                			,telnet_opt_desc(option));
 					sbbs->telnet_cmdlen=0;
 				}
 			}
@@ -1099,7 +1126,9 @@ static BYTE* telnet_interpret(sbbs_t* sbbs, BYTE* inbuf, int inlen,
 							case TELNET_BINARY_TX:
 							case TELNET_ECHO:
 							case TELNET_TERM_TYPE:
+							case TELNET_TERM_SPEED:
 							case TELNET_SUP_GA:
+							case TELNET_NEGOTIATE_WINDOW_SIZE:
 								sbbs->telnet_remote_option[option]=command;
 								sbbs->send_telnet_cmd(telnet_opt_ack(command),option);
 								break;
@@ -1122,6 +1151,19 @@ static BYTE* telnet_interpret(sbbs_t* sbbs, BYTE* inbuf, int inlen,
 							,TELNET_IAC,TELNET_SE);
 						sbbs->putcom(buf,6);
 					}
+					else if(command==TELNET_WILL && option==TELNET_TERM_SPEED) {
+						if(startup->options&BBS_OPT_DEBUG_TELNET)
+							lprintf(LOG_DEBUG,"Node %d requesting telnet terminal speed"
+								,sbbs->cfg.node_num);
+
+						char	buf[64];
+						sprintf(buf,"%c%c%c%c%c%c"
+							,TELNET_IAC,TELNET_SB
+							,TELNET_TERM_SPEED,TELNET_TERM_SEND
+							,TELNET_IAC,TELNET_SE);
+						sbbs->putcom(buf,6);
+					}
+
 				}
 
                 sbbs->telnet_cmdlen=0;
