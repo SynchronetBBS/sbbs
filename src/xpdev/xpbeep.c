@@ -152,11 +152,9 @@ void SineBeep(double freq, DWORD duration)
 		goto abrt;
 	if(waveOutWrite(waveOut, &wh, sizeof(wh))!=MMSYSERR_NOERROR)
 		goto abrt;
-	while(!(wh.dwFlags&WHDR_DONE))
-		SLEEP(1);
 abrt:
-	waveOutUnprepareHeader(waveOut, &wh, sizeof(wh));
-	waveOutReset(waveOut);
+	while(waveOutUnprepareHeader(waveOut, &wh, sizeof(wh))==WAVERR_STILLPLAYING)
+		SLEEP(1);
 	waveOutClose(waveOut);
 }
 
