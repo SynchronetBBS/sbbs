@@ -155,7 +155,7 @@ static const char* usage  = "usage: %s [[setting] [...]]\n"
 							"\tdefaults   show default settings and options\n"
 							;
 
-static void lputs(char *str)
+static int lputs(char *str)
 {
 	static pthread_mutex_t mutex;
 	static BOOL mutex_initialized;
@@ -169,7 +169,7 @@ static void lputs(char *str)
 			else
 				syslog(LOG_INFO,"%s",str);
 		}
-		return;
+		return(0);
 	}
 #endif
 	if(!mutex_initialized) {
@@ -185,6 +185,8 @@ static void lputs(char *str)
 	prompt_len = printf(prompt, thread_count, socket_count, client_count, served);
 	fflush(stdout);
 	pthread_mutex_unlock(&mutex);
+
+    return(prompt_len);
 }
 
 #ifdef __unix__
@@ -553,7 +555,9 @@ void _sighandler_quit(int sig)
     bbs_terminate();
     ftp_terminate();
     mail_terminate();
+#ifdef JAVASCRIPT
 	services_terminate();
+#endif
     while(bbs_running || ftp_running || mail_running || services_running)
 		mswait(1);
 	if(is_daemon)
@@ -1061,8 +1065,10 @@ int main(int argc, char** argv)
 		_beginthread((void(*)(void*))ftp_server,0,&ftp_startup);
 	if(run_mail)
 		_beginthread((void(*)(void*))mail_server,0,&mail_startup);
+#ifdef JAVASCRIPT
 	if(run_services)
 		_beginthread((void(*)(void*))services_thread,0,&services_startup);
+#endif
 
 #ifdef __unix__
 	// Set up QUIT-type signals so they clean up properly.
@@ -1130,7 +1136,9 @@ int main(int argc, char** argv)
 	bbs_terminate();
 	ftp_terminate();
 	mail_terminate();
+#ifdef JAVASCRIPT
 	services_terminate();
+#endif
 
 	while(bbs_running || ftp_running || mail_running || services_running)
 		mswait(1);
