@@ -1,0 +1,9 @@
+        These files will allow you to add WWIV to your command shells.  Create
+a WWIV subdirectory in your \SBBS\TEXT\MENU directory and put all of the .ASC
+files in it.  Put the WWIV.SRC file in your \SBBS\EXEC dir and compile it with
+the command BAJA WWIV.  Go into SCFG, select Command Shells, hit the <ins>
+key, type in WWIV, and save the changes.  You also need to have Synchronet BBS
+List installed with the internal code of SBL, I don't know what it will do if
+someone tries to hit the BBS List key and it's not installed.  If you have any
+problems or have comments, I can be reached either at my BBS, The Matrix, at
+(804) 323-6635 or through FidoNet as Kitsune@1:264/227.
