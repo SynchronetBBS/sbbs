@@ -1206,6 +1206,7 @@ static void smtp_thread(void* arg)
 	char		domain_list[MAX_PATH+1];
 	char		host_name[128];
 	char		host_ip[64];
+	char		dnsbl[256];
 	char*		telegram_buf;
 	char*		msgbuf;
 	char		dest_host[128];
@@ -1241,7 +1242,7 @@ static void smtp_thread(void* arg)
 	client_t	client;
 	smtp_t		smtp=*(smtp_t*)arg;
 	SOCKADDR_IN server_addr;
-	IN_ADDR		dns_result;
+	IN_ADDR		dnsbl_result;
 	enum {
 			 SMTP_STATE_INITIAL
 			,SMTP_STATE_HELO
@@ -1328,63 +1329,22 @@ static void smtp_thread(void* arg)
 	}
 
 	/*  SPAM Filters (mail-abuse.org) */
-	if(startup->options&MAIL_OPT_USE_RBL
-		&& rblchk(smtp.client_addr.sin_addr.s_addr
-			,"blackholes.mail-abuse.org"
-			)!=0) {
-		lprintf("%04d !SMTP SPAM server filtered (RBL): %s [%s]"
-			,socket, host_name, host_ip);
-		spamlog(&scfg, "SMTP", "Listed on RBL (http://mail-abuse.org/rbl)"
-			,host_name, host_ip, NULL);
-		sockprintf(socket
-			,"550 Mail from %s refused, see http://mail-abuse.org/rbl"
-			,host_ip);
-		mail_close_socket(socket);
-		thread_down();
-		return;
-	}
-	if(startup->options&MAIL_OPT_USE_DUL
-		&& rblchk(smtp.client_addr.sin_addr.s_addr
-			,"dialups.mail-abuse.org"
-			)!=0) {
-		lprintf("%04d !SMTP SPAM server filtered (DUL): %s [%s]"
-			,socket, host_name, host_ip);
-		spamlog(&scfg, "SMTP", "Listed on DUL (http://mail-abuse.org/dul)"
-			,host_name, host_ip, NULL);
-		sockprintf(socket
-			,"550 Mail from %s refused, see http://mail-abuse.org/dul"
-			,host_ip);
-		mail_close_socket(socket);
-		thread_down();
-		return;
-	}
-	if(startup->options&MAIL_OPT_USE_RSS
-		&& rblchk(smtp.client_addr.sin_addr.s_addr
-			,"relays.mail-abuse.org"
-			)!=0) {
-		lprintf("%04d !SMTP SPAM server filtered (RSS): %s [%s]"
-			,socket, host_name, host_ip);
-		spamlog(&scfg, "SMTP", "Listed on RSS (http://mail-abuse.org/rss)"
-			,host_name, host_ip, NULL);
-		sockprintf(socket
-			,"550 Mail from %s refused, see http://mail-abuse.org/rss"
-			,host_ip);					
-		mail_close_socket(socket);
-		thread_down();
-		return;
-	}
-	dns_result.s_addr = dns_blacklisted(smtp.client_addr.sin_addr.s_addr,tmp);
-	if(dns_result.s_addr) {
-		lprintf("%04d !SMTP SPAM server listed on %s: %s [%s] = %s"
-			,socket, tmp, host_name, host_ip, inet_ntoa(dns_result));
-		sprintf(str,"Listed on %s as %s", tmp, inet_ntoa(dns_result));
+	dnsbl_result.s_addr = dns_blacklisted(smtp.client_addr.sin_addr.s_addr,dnsbl);
+	if(dnsbl_result.s_addr) {
+		lprintf("%04d SMTP BLACKLISTED SERVER on %s: %s [%s] = %s"
+			,socket, dnsbl, host_name, host_ip, inet_ntoa(dnsbl_result));
+		sprintf(str,"Listed on %s as %s", dnsbl, inet_ntoa(dnsbl_result));
 		spamlog(&scfg, "SMTP", str, host_name, host_ip, NULL);
-		sockprintf(socket
-			,"550 Mail from %s refused due to listing at %s"
-			,host_ip, tmp);
-		mail_close_socket(socket);
-		thread_down();
-		return;
+		if(startup->options&MAIL_OPT_DNSBL_REFUSE) {
+			sockprintf(socket
+				,"550 Mail from %s refused due to listing at %s"
+				,host_ip, dnsbl);
+			mail_close_socket(socket);
+			thread_down();
+			lprintf("%04d !SMTP REFUSED MAIL from blacklisted server"
+				,socket);
+			return;
+		}
 	}
 
 	sprintf(rcptlst_fname,"%sSMTP%d.LST", scfg.data_dir, socket);
@@ -1450,6 +1410,21 @@ static void smtp_thread(void* arg)
 
 				lprintf("%04d SMTP End of message (%lu lines, %lu bytes)"
 					, socket, lines, ftell(msgtxt));
+
+				if(dnsbl_result.s_addr) {
+					if(startup->options&MAIL_OPT_DNSBL_IGNORE) {
+						/* pretend we received it */
+						sockprintf(socket,SMTP_OK);
+						lprintf("%04d SMTP IGNORED MAIL from blacklisted server"
+							,socket);
+						continue;
+					}
+					sprintf(str,"X-RBL: %s is listed on %s as %s"
+						,host_ip, dnsbl, inet_ntoa(dnsbl_result));
+					smb_hfield(&msg,RFC822HEADER,strlen(str),str);
+					lprintf("%04d SMTP FLAGGED MAIL from blacklisted server"
+						,socket);
+				}
 
 				if(telegram==TRUE) {		/* Telegram */
 					const char* head="\1n\1h\1cInstant Message\1n from \1h\1y";
@@ -1754,6 +1729,12 @@ static void smtp_thread(void* arg)
 					spamlog(&scfg, "SMTP", tmp, host_name, host_ip, rcpt_addr);
 					sockprintf(socket, "554 Subject not allowed.");
 					break;
+				}
+				if(dnsbl_result.s_addr && startup->dnsbl_flag[0]) {
+					sprintf(str,"%.*s: %.*s"
+						,sizeof(str)/2, startup->dnsbl_flag
+						,sizeof(str)/2, p);
+					p=str;
 				}
 				smb_hfield(&msg, SUBJECT, (ushort)strlen(p), p);
 				strlwr(p);
