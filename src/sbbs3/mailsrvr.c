@@ -98,7 +98,8 @@ static DWORD	thread_count=0;
 static BOOL		sendmail_running=FALSE;
 static DWORD	sockets=0;
 static DWORD	served=0;
-static BOOL		recycle_server=FALSE;
+static BOOL		terminate_server=FALSE;
+static BOOL		terminate_sendmail=FALSE;
 static sem_t	sendmail_wakeup_sem;
 static char		revision[16];
 static time_t	uptime;
@@ -345,7 +346,7 @@ static int sockreadline(SOCKET socket, char* buf, int len)
 	
 	while(rd<len-1) {
 
-		if(server_socket==INVALID_SOCKET) {
+		if(server_socket==INVALID_SOCKET || terminate_server) {
 			lprintf(LOG_WARNING,"%04d !ABORTING sockreadline",socket);
 			return(-1);
 		}
@@ -577,10 +578,19 @@ static ulong sockmsgtxt(SOCKET socket, smbmsg_t* msg, char* msgtxt, ulong maxlin
 	return(lines);
 }
 
-static u_long resolve_ip(char *addr)
+static u_long resolve_ip(char *inaddr)
 {
 	char*		p;
+	char*		addr;
+	char		buf[128];
 	HOSTENT*	host;
+
+	SAFECOPY(buf,inaddr);
+	addr=buf;
+	if(*addr=='[' && *(p=lastchar(addr))==']')	{ /* Support [addr] notation */
+		addr++;
+		*p=0;
+	}
 
 	if(*addr==0)
 		return((u_long)INADDR_NONE);
@@ -706,6 +716,7 @@ static void pop3_thread(void* arg)
 		memset(&smb,0,sizeof(smb));
 		memset(&msg,0,sizeof(msg));
 		memset(&user,0,sizeof(user));
+		password[0]=0;
 
 		srand(time(NULL));	/* seed random number generator */
 		rand();	/* throw-away first result */
@@ -3183,23 +3194,26 @@ BOOL bounce(smb_t* smb, smbmsg_t* msg, char* err, BOOL immediate)
 	ushort		agent=AGENT_SMTPSYSMSG;
 	smbmsg_t	newmsg;
 
+	msg->hdr.delivery_attempts++;
+	lprintf(LOG_WARNING,"0000 !Delivery attempt #%u FAILED (%s) for message #%lu from %s to %s"
+		,msg->hdr.delivery_attempts
+		,err
+		,msg->hdr.number
+		,msg->from
+		,msg->to_net.addr);
+
 	if((i=smb_lockmsghdr(smb,msg))!=0) {
 		lprintf(LOG_WARNING,"0000 !BOUNCE ERROR %d (%s) locking message header #%lu"
 			,i, smb->last_error, msg->hdr.number);
 		return(FALSE);
 	}
 
-	msg->hdr.delivery_attempts++;
 	if((i=smb_putmsg(smb,msg))!=0) {
 		lprintf(LOG_ERR,"0000 !BOUNCE ERROR %d (%s) incrementing delivery attempt counter"
 			,i, smb->last_error);
 		smb_unlockmsghdr(smb,msg);
 		return(FALSE);
 	}
-
-	lprintf(LOG_WARNING,"0000 !Delivery attempt #%u FAILED for message #%lu from %s to %s"
-		,msg->hdr.delivery_attempts, msg->hdr.number
-		,msg->from, msg->to_net.addr);
 
 	if(!immediate && msg->hdr.delivery_attempts<startup->max_delivery_attempts) {
 		smb_unlockmsghdr(smb,msg);
@@ -3342,13 +3356,14 @@ static void sendmail_thread(void* arg)
 	thread_up(TRUE /* setuid */);
 
 	sendmail_running=TRUE;
+	terminate_sendmail=FALSE;
 
 	lprintf(LOG_DEBUG,"0000 SendMail thread started");
 
 	memset(&msg,0,sizeof(msg));
 	memset(&smb,0,sizeof(smb));
 
-	while(server_socket!=INVALID_SOCKET) {
+	while(server_socket!=INVALID_SOCKET && !terminate_sendmail) {
 
 		if(startup->options&MAIL_OPT_NO_SENDMAIL) {
 			sem_trywait_block(&sendmail_wakeup_sem,1000);
@@ -3400,7 +3415,7 @@ static void sendmail_thread(void* arg)
 			if(active_sendmail!=0)
 				active_sendmail=0, update_clients();
 
-			if(server_socket==INVALID_SOCKET)	/* server stopped */
+			if(server_socket==INVALID_SOCKET || terminate_sendmail)	/* server stopped */
 				break;
 
 			if(sock!=INVALID_SOCKET) {
@@ -3680,12 +3695,8 @@ static void sendmail_thread(void* arg)
 
 void DLLCALL mail_terminate(void)
 {
-	recycle_server=FALSE;
-	if(server_socket!=INVALID_SOCKET) {
-    	lprintf(LOG_DEBUG,"%04d MAIL Terminate: closing socket",server_socket);
-		mail_close_socket(server_socket);
-	    server_socket=INVALID_SOCKET;
-    }
+  	lprintf(LOG_DEBUG,"%04d Mail Server terminate",server_socket);
+	terminate_server=TRUE;
 }
 
 static void cleanup(int code)
@@ -3711,8 +3722,9 @@ static void cleanup(int code)
 
 	thread_down();
 	status("Down");
-    lprintf(LOG_INFO,"#### Mail Server thread terminated (%u threads remain, %lu clients served)"
-		,thread_count, served);
+	if(terminate_server || code)
+		lprintf(LOG_INFO,"#### Mail Server thread terminated (%u threads remain, %lu clients served)"
+			,thread_count, served);
 	if(startup!=NULL && startup->terminated!=NULL)
 		startup->terminated(startup->cbdata,code);
 }
@@ -3793,7 +3805,7 @@ void DLLCALL mail_server(void* arg)
 	if(startup->max_delivery_attempts==0)	startup->max_delivery_attempts=50;
 	if(startup->max_inactivity==0) 			startup->max_inactivity=120; /* seconds */
 	if(startup->max_recipients==0) 			startup->max_recipients=100;
-	if(startup->sem_chk_freq==0)			startup->sem_chk_freq=5;
+	if(startup->sem_chk_freq==0)			startup->sem_chk_freq=2;
 	if(startup->proc_cfg_file[0]==0)			
 		sprintf(startup->proc_cfg_file,"%smailproc.cfg",scfg.ctrl_dir);
 
@@ -3805,7 +3817,7 @@ void DLLCALL mail_server(void* arg)
 	uptime=0;
 	served=0;
 	startup->recycle_now=FALSE;
-	recycle_server=TRUE;
+	terminate_server=FALSE;
 
 	do {
 
@@ -3998,7 +4010,7 @@ void DLLCALL mail_server(void* arg)
 		if(startup->started!=NULL)
     		startup->started(startup->cbdata);
 
-		while(server_socket!=INVALID_SOCKET) {
+		while(server_socket!=INVALID_SOCKET && !terminate_server) {
 
 			if(!(startup->options&MAIL_OPT_NO_RECYCLE)) {
 				sprintf(path,"%smailsrvr.rec",scfg.ctrl_dir);
@@ -4043,7 +4055,7 @@ void DLLCALL mail_server(void* arg)
 				break;
 			}
 
-			if(server_socket!=INVALID_SOCKET
+			if(server_socket!=INVALID_SOCKET && !terminate_server
 				&& FD_ISSET(server_socket,&socket_set)) {
 
 				client_addr_len = sizeof(client_addr);
@@ -4173,8 +4185,7 @@ void DLLCALL mail_server(void* arg)
 		}
 
 		if(sendmail_running) {
-			mail_close_socket(server_socket);
-			server_socket=INVALID_SOCKET; /* necessary to terminate sendmail_thread */
+			terminate_sendmail=TRUE;
 			sem_post(&sendmail_wakeup_sem);
 			mswait(100);
 		}
@@ -4195,10 +4206,10 @@ void DLLCALL mail_server(void* arg)
 
 		cleanup(0);
 
-		if(recycle_server) {
+		if(!terminate_server) {
 			lprintf(LOG_INFO,"Recycling server...");
 			mswait(2000);
 		}
 
-	} while(recycle_server);
+	} while(!terminate_server);
 }
