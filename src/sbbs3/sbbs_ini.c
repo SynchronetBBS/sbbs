@@ -95,7 +95,7 @@ void sbbs_get_ini_fname(char* ini_file, char* ctrl_dir, char* pHostName)
 		return;
 #endif
 	iniFileName(ini_file,MAX_PATH,ctrl_dir,"sbbs.ini");
-	if(fexistCase(ini_file))
+	if(fexistcase(ini_file))
 		return;
 	iniFileName(ini_file,MAX_PATH,ctrl_dir,"startup.ini");
 }
