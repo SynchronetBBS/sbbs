@@ -806,6 +806,21 @@ enum {							/* Values of mode for userlist function     */
 								
 #define BO_OPENFILE 0			/* Backout types */
 
+#if defined(__unix__)
+	#include <syslog.h>
+#else
+	/*
+	 * log priorities (copied from BSD syslog.h)
+	 */
+	#define LOG_EMERG       0       /* system is unusable */
+	#define LOG_ALERT       1       /* action must be taken immediately */
+	#define LOG_CRIT        2       /* critical conditions */
+	#define LOG_ERR         3       /* error conditions */
+	#define LOG_WARNING     4       /* warning conditions */
+	#define LOG_NOTICE      5       /* normal but significant condition */
+	#define LOG_INFO        6       /* informational */
+	#define LOG_DEBUG       7       /* debug-level messages */
+#endif
 
 /**********/
 /* Macros */
@@ -841,16 +856,6 @@ enum {							/* Values of mode for userlist function     */
 #define sbbs_beep(f,d)	BEEP(f,d)
 #define mswait(x)		SLEEP(x)
 #define sbbs_random(x)	xp_random(x)
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-extern long crc32tbl[];
-#ifdef __cplusplus
-}
-#endif
-
-#define ucrc32(ch,crc)	(crc32tbl[(crc^ch)&0xff]^(crc>>8))
 
 /**************************************/
 /* Text Attribute (color) Definitions */
