@@ -52,7 +52,7 @@ __fastcall TClientForm::TClientForm(TComponent* Owner)
     : TForm(Owner)
 {
 	MainForm=(TMainForm*)Application->MainForm;
-    pthread_mutex_init(&ListMutex,NULL);
+    ListMutex=CreateMutex(NULL,false,NULL);
 }
 //---------------------------------------------------------------------------
 void __fastcall TClientForm::FormShow(TObject *Sender)
@@ -71,7 +71,8 @@ void __fastcall TClientForm::TimerTimer(TObject *Sender)
     int     i;
     time_t  t;
 
-    pthread_mutex_lock(&ListMutex);
+    if(WaitForSingleObject(ListMutex,1)!=WAIT_OBJECT_0)
+        return;
     for(i=0;i<ListView->Items->Count;i++) {
         t=time(NULL)-(ulong)ListView->Items->Item[i]->Data;
         if(t/(60*60))
@@ -81,7 +82,7 @@ void __fastcall TClientForm::TimerTimer(TObject *Sender)
         ListView->Items->Item[i]->SubItems->Strings[5]=str;
 
     }
-    pthread_mutex_unlock(&ListMutex);
+    ReleaseMutex(ListMutex);
 
 }
 //---------------------------------------------------------------------------
@@ -130,5 +131,4 @@ void __fastcall TClientForm::FilterIpMenuItemClick(TObject *Sender)
     }
 }
 //---------------------------------------------------------------------------
-
 

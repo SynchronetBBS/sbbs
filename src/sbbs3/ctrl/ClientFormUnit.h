@@ -64,7 +64,7 @@ private:	// User declarations
 public:		// User declarations
     __fastcall TClientForm(TComponent* Owner);
     TMainForm* 		MainForm;
-    pthread_mutex_t ListMutex;
+    HANDLE          ListMutex;
 };
 //---------------------------------------------------------------------------
 extern PACKAGE TClientForm *ClientForm;
