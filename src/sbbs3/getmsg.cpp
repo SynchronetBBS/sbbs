@@ -144,8 +144,7 @@ void sbbs_t::show_msghdr(smbmsg_t* msg)
 	if(msg->hdr.attr)
 		show_msgattr(msg->hdr.attr);
 
-	if(msg->to[0])
-		bprintf(text[MsgTo],msg->to);
+	bprintf(text[MsgTo],msg->to);
 	if(msg->to_ext)
 		bprintf(text[MsgToExt],msg->to_ext);
 	if(msg->to_net.addr)
