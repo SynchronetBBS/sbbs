@@ -87,6 +87,12 @@
 #include <time.h>
 
 #include "OpenDoor.h"
+#ifdef ODPLAT_NIX
+#include <termios.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <pwd.h>
+#endif
 #include "ODStr.h"
 #include "ODCore.h"
 #include "ODGen.h"
@@ -1821,6 +1827,10 @@ static void ODInitReadExitInfo(void)
 static void ODInitPartTwo(void)
 {
    BYTE btCount;
+#ifdef ODPLAT_NIX
+   struct termios term;
+   struct passwd  *uinfo;
+#endif
 
    /* Initialize any colors that haven't already been set. */
    if(!od_control.od_list_title_col) od_control.od_list_title_col = 0x0f;
@@ -1974,7 +1984,9 @@ static void ODInitPartTwo(void)
    }
 
    /* If we are not operating in local mode, then setup for serial I/O. */
+#ifndef ODPLAT_NIX
    if(od_control.baud != 0)
+#endif
    {
       tComMethod ComMethod;
 
@@ -2160,7 +2172,6 @@ malloc_error:
       }
    }
 
-
    /* If we are operating in local mode, then disable silent mode. */
    if(od_control.baud == 0)
    {
@@ -2206,6 +2217,20 @@ malloc_error:
    ODKrnlInitialize();
 
 #ifndef ODPLAT_WIN32
+#ifdef ODPLAT_NIX
+   od_control.od_com_method=COM_STDIO;
+   od_control.baud=300;
+   gethostname(od_control.system_name,sizeof(od_control.system_name));
+   od_control.system_name[sizeof(od_control.system_name)-1]=0;
+   if (isatty(fileno(stdin)))  {
+      tcgetattr(fileno(stdin),&term);
+	  od_control.baud=term.c_ispeed;
+	  od_control.baud=term.c_ospeed;
+   }
+   uinfo=getpwuid(getuid());
+   ODStringCopy(od_control.user_handle, uinfo->pw_name,sizeof(od_control.user_handle));
+   ODStringCopy(od_control.user_name, uinfo->pw_gecos,sizeof(od_control.user_name));
+#else
    if(bPromptForUserName)
    {
       void *pWindow = ODScrnCreateWindow(10, 8, 70, 15,
@@ -2232,6 +2257,7 @@ malloc_error:
          ODScrnSetAttribute(0x07);
       }
    }
+#endif /* !ODPLAT_NIX */
 #endif /* !ODPLAT_WIN32 */
 
 #ifdef OD_TEXTMODE
