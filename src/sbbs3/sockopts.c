@@ -56,6 +56,7 @@ static const sockopt_name option_names[] = {
 	{ "RCVLOWAT",		SO_RCVLOWAT		},
 	{ "SNDTIMEO",		SO_SNDTIMEO		},
 	{ "RCVTIMEO",		SO_RCVTIMEO		},
+	{ "LINGER",			SO_LINGER		},
 	{ NULL }
 };
 
@@ -75,23 +76,13 @@ int DLLCALL set_socket_options(scfg_t* cfg, SOCKET sock, char* error)
 	char	cfgfile[MAX_PATH+1];
 	char	str[256];
 	char*	p;
+	BYTE*	vp;
 	FILE*	fp;
 	int		option;
 	int		value;
+	int		len;
 	int		result=0;
 	LINGER	linger;
-
-	/* Set linger socket option ON by default */
-	linger.l_onoff=TRUE;
-	linger.l_linger=5;	/* seconds */
-
-	result = setsockopt(sock, SOL_SOCKET, SO_LINGER
-    	,(char *)&linger, sizeof(linger));
-
-	if(result != 0) {
-		sprintf(error,"%d (%d) setting LINGER socket options", result, ERROR_VALUE);
-		return(result);
-	}
 
 	/* Set user defined socket options */
 	sprintf(cfgfile,"%ssockopts.cfg",cfg->ctrl_dir);
@@ -106,13 +97,24 @@ int DLLCALL set_socket_options(scfg_t* cfg, SOCKET sock, char* error)
 		while(*p && *p>' ') p++;
 		if(*p) *p=0;
 		option=sockopt(str);
-		p++;
+		if(*p) p++;
 		while(*p && *p<=' ') p++;
-		value=strtoul(p,NULL,0);
+		len=sizeof(value);
+		value=strtol(p,NULL,0);
+		vp=(BYTE*)&value;
+		while(*p && *p>' ') p++;
+		if(*p) p++;
+		while(*p && *p<=' ') p++;
+		if(option==SO_LINGER) {
+			linger.l_onoff = value;
+			linger.l_linger = (int)strtol(p,NULL,0);
+			vp=(BYTE*)&linger;
+			len=sizeof(linger);
+		}
 #if 0
 		lprintf("%04d setting socket option: %s to %d", sock, str, value);
 #endif
-		result=setsockopt(sock,SOL_SOCKET,option,(char*)&value,sizeof(value));
+		result=setsockopt(sock,SOL_SOCKET,option,vp,len);
 		if(result) {
 			sprintf(error,"%d (%d) setting socket option (%s) to %d"
 				,result, ERROR_VALUE, str, value);
