@@ -1510,7 +1510,7 @@ static service_t* read_services_ini(service_t* service, char* services_ini, DWOR
 			lprintf("Ignoring service (%s) for host: %s", sec_list[i], host);
 			continue;
 		}
-		if(stricmp(iniGetString(fp,sec_list[i],"NotHost",startup->host_name,host), startup->host_name)==0) {
+		if(stricmp(iniGetString(fp,sec_list[i],"NotHost","",host), startup->host_name)==0) {
 			lprintf("Ignoring service (%s) for host: %s", sec_list[i], host);
 			continue;
 		}
