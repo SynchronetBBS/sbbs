@@ -42,6 +42,7 @@
 
 static const char* server_name="Synchronet Web Server";
 static const char* newline="\r\n";
+static const char* unknown_mime_type="application/octet-stream";
 
 extern const uchar* nular;
 
@@ -345,8 +346,7 @@ static time_t decode_date(char *date)
 	ti.tm_gmtoff=0;		/* offset from UTC in seconds */
 #endif
 
-	lprintf("Parsing date: %s",date);
-
+/**	lprintf("Parsing date: %s",date); **/
 	token=strtok(date,",");
 	/* This probobly only needs to be 9, but the extra one is for luck. */
 	if(strlen(date)>15) {
@@ -423,7 +423,7 @@ static time_t decode_date(char *date)
 	}
 
 	t=time_gm(&ti);
-	lprintf("Parsed date as: %d",t);
+/**	lprintf("Parsed date as: %d",t); **/
 	return(t);
 }
 
@@ -497,17 +497,18 @@ static char *get_header(int id)
 	return(NULL);
 }
 
-static int	get_mime_type(char *ext)
+static const char* get_mime_type(char *ext)
 {
 	uint i;
 
 	if(ext==NULL)
-		return(mime_count-1);
-	for(i=0;i<mime_count;i++) {
+		return(unknown_mime_type);
+
+	for(i=0;i<mime_count;i++)
 		if(!stricmp(ext+1,mime_types[i].ext))
-			return i;
-	}
-	return(i);
+			return(mime_types[i].type);
+
+	return(unknown_mime_type);
 }
 
 BOOL send_headers(http_session_t *session, const char *status)
@@ -526,13 +527,13 @@ BOOL send_headers(http_session_t *session, const char *status)
 		SAFECOPY(status_line,"304 Not Modified");
 		ret=-1;
 		send_file=FALSE;
-		lprintf("Not modified");
+		lprintf("%04d Not modified",session->socket);
 	}
 	if(session->req.send_location)  {
 		SAFECOPY(status_line,"301 Moved Permanently");
 		ret=-1;
 		send_file=FALSE;
-		lprintf("Moved Permanently");
+		lprintf("%04d Moved Permanently",session->socket);
 	}
 	/* Status-Line */
 	sockprintf(session->socket,"%s %s",http_vers[session->http_ver],status_line);
@@ -560,7 +561,7 @@ BOOL send_headers(http_session_t *session, const char *status)
 	if(!ret) {
 		sockprintf(session->socket,"%s: %d",get_header(HEAD_LENGTH),stats.st_size);
 		
-		sockprintf(session->socket,"%s: %s",get_header(HEAD_TYPE),mime_types[get_mime_type(strrchr(session->req.request,'.'))].type);
+		sockprintf(session->socket,"%s: %s",get_header(HEAD_TYPE),get_mime_type(strrchr(session->req.request,'.')));
 		t=gmtime(&stats.st_mtime);
 		sockprintf(session->socket,"%s: %s, %02d %s %04d %02d:%02d:%02d GMT",get_header(HEAD_LASTMODIFIED),days[t->tm_wday],t->tm_mday,months[t->tm_mon],t->tm_year+1900,t->tm_hour,t->tm_min,t->tm_sec);
 	}
@@ -572,9 +573,10 @@ static void sock_sendfile(SOCKET socket,char *path)
 {
 	int		file;
 
-	lprintf("Sending %s",path);
-	file=open(path,O_RDONLY);
-	if(file>=0) {
+	lprintf("%04d Sending %s",socket,path);
+	if((file=open(path,O_RDONLY|O_RDONLY))==-1)
+		lprintf("%04d !ERROR %d opening %s",socket,errno,path);
+	else {
 		sendfilesocket(socket, file, 0, 0);
 		close(file);
 	}
@@ -611,11 +613,12 @@ static BOOL check_ars(char *ars,http_session_t * session)
 	if(password==NULL)
 		return(FALSE);
 	user.number=matchuser(&scfg, username, FALSE);
-	lprintf("User number: %d",user.number);
+	lprintf("%04d User number: %d",session->socket,user.number);
 	getuserdat(&scfg, &user);
 	if(strnicmp(user.pass,password,LEN_PASS)) {
 		/* Should go to the hack log? */
-		lprintf("Incorrect password for: %s Password: %s Should be: ",username,password,user.pass);
+		lprintf("%04d Incorrect password for: %s Password: %s Should be: "
+			,session->socket,username,password,user.pass);
 		return(FALSE);
 	}
 	ar = arstr(NULL,session->req.ars,&scfg);
@@ -627,7 +630,8 @@ static BOOL check_ars(char *ars,http_session_t * session)
 		return(TRUE);
 
 	/* Should go to the hack log? */
-	lprintf("Failed ARS Auth: %s Password: %s ARS: %s",username,password,ars);
+	lprintf("%04d Failed ARS Auth: %s Password: %s ARS: %s"
+		,session->socket,username,password,ars);
 
 	return(FALSE);
 }
@@ -692,9 +696,7 @@ static BOOL read_mime_types(char* fname)
 		}
 	}
 	fclose(mime_config);
-	lprintf("Loaded %d mime types",mime_count+1);
-	strcpy(mime_types[mime_count].ext,"unknown");
-	strcpy(mime_types[mime_count].type,"application/octet-stream");
+	lprintf("Loaded %d mime types",mime_count);
 	return(mime_count>0);
 }
 
@@ -740,7 +742,7 @@ static int sockreadline(SOCKET socket, time_t timeout, char *buf, size_t length)
 	else
 		buf[i]=0;
 
-	lprintf("Recieved: %s",buf);
+	lprintf("%04d RX: %s",socket,buf);
 	return(0);
 }
 
@@ -752,7 +754,7 @@ static BOOL parse_headers(http_session_t * session)
 	char	*p;
 	int		i;
 
-	lprintf("Parsing headers");
+	lprintf("%04d Parsing headers",session->socket);
 	while(!sockreadline(session->socket,TIMEOUT_THREAD_WAIT,req_line,sizeof(req_line))&&strlen(req_line)) {
 		/* Check this... SHOULD append lines starting with spaces or horizontal tabs. */
 		while((recvfrom(session->socket,next_char,1,MSG_PEEK,NULL,0)>0) && (next_char[0]=='\t' || next_char[0]==' ')) {
@@ -805,7 +807,8 @@ static BOOL parse_headers(http_session_t * session)
 				case HEAD_HOST:
 					if(session->host[0]==0) {
 						SAFECOPY(session->host,value);
-						lprintf("Grabbing from virtual host: %s",value);
+						lprintf("%04d Grabbing from virtual host: %s"
+							,session->socket,value);
 					}
 				default:
 					/* Should store for HTTP_* env variables in CGI */
@@ -813,7 +816,7 @@ static BOOL parse_headers(http_session_t * session)
 			}
 		}
 	}
-	lprintf("Done parsing headers");
+	lprintf("%04d Done parsing headers",session->socket);
 	return TRUE;
 }
 
@@ -906,14 +909,17 @@ static BOOL get_req(http_session_t * session)
 	char *	p;
 	
 	if(!sockreadline(session->socket,TIMEOUT_THREAD_WAIT,req_line,sizeof(req_line))) {
-		lprintf("Got request line: %s",req_line);
+		lprintf("%04d Got request line: %s",session->socket,req_line);
 		p=get_method(req_line,session);
 		if(p!=NULL) {
-			lprintf("Method: %s",methods[session->req.method]);
+			lprintf("%04d Method: %s"
+				,session->socket,methods[session->req.method]);
 			p=get_request(p,session);
-			lprintf("Request: %s",session->req.request);
+			lprintf("%04d Request: %s"
+				,session->socket,session->req.request);
 			session->http_ver=get_version(p);
-			lprintf("Version: %s",http_vers[session->http_ver]);
+			lprintf("%04d Version: %s"
+				,session->socket,http_vers[session->http_ver]);
 			return(TRUE);
 		}
 	}
@@ -928,7 +934,8 @@ static BOOL check_request(http_session_t * session)
 	char	*last_slash;
 	FILE*	file;
 	
-	lprintf("Validating request: %s",session->req.request);
+	lprintf("%04d Validating request: %s"
+		,session->socket,session->req.request);
 	if(!(startup->options&WEB_OPT_VIRTUAL_HOSTS))
 		session->host[0]=0;
 	if(session->host[0]) {
@@ -1057,7 +1064,8 @@ void http_session_thread(void* arg)
 	while(!session.finished && server_socket!=INVALID_SOCKET) {
 	    memset(&(session.req), 0, sizeof(session.req));
 		if(get_req(&session)) {
-			lprintf("Got request %s method %d version %d"
+			lprintf("%04d Got request %s method %d version %d"
+				,session.socket
 				,session.req.request,session.req.method,session.http_ver);
 			if((session.http_ver<HTTP_1_0)||parse_headers(&session)) {
 				if(check_request(&session)) {
@@ -1251,7 +1259,7 @@ void DLLCALL web_server(void* arg)
 			return;
 		}
 
-		lprintf("HTTP socket %d opened",server_socket);
+		lprintf("Web Server socket %d opened",server_socket);
 
 		/*****************************/
 		/* Listen for incoming calls */
@@ -1344,7 +1352,7 @@ void DLLCALL web_server(void* arg)
 
 			if(client_socket == INVALID_SOCKET)	{
 				if(ERROR_VALUE == ENOTSOCK || ERROR_VALUE == EINTR) {
-            		lprintf("HTTP socket closed");
+            		lprintf("Web Server socket closed");
 					break;
 				}
 				lprintf("!ERROR %d accepting connection", ERROR_VALUE);
@@ -1376,10 +1384,12 @@ void DLLCALL web_server(void* arg)
 			_beginthread(http_session_thread, 0, session);
 		}
 
+#if 0	/* this is handled in cleanup()
 		/* Close all open sockets  */
-		lprintf("Closing HTTP socket %d", server_socket);
+		lprintf("Closing Server Socket %d", server_socket);
 		close_socket(server_socket);
 		server_socket=INVALID_SOCKET;
+#endif
 
 		/* Wait for all node threads to terminate */
 		if(http_threads_running) {
