@@ -92,38 +92,63 @@ char * b64_encode(char *target, const char *source, size_t tlen)  {
 	const char	*read;
 	char	*write;
 	char	*end;
+	char	*tmpbuf;
 	int		done=0;
 	int		enc;
 	int		buf=0;
 	
 	read=source;
-	write=target;
-	end=target+tlen;
+	if(source==target)  {
+		tmpbuf=malloc(tlen);
+		if(tmpbuf==NULL)
+			return(NULL);
+		write=tmpbuf;
+	}
+	else
+		write=target;
+
+	end=write+tlen;
 	for(;*read && !done;)  {
 		if(! *read)
 			done=1;
 		enc=(int)*(read++);
 		buf=(enc & 0x03)<<4;
 		enc=(enc&0xFC)>>2;
-		if(add_char(write++, enc, done, end))
+		if(add_char(write++, enc, done, end))  {
+			if(target==source)
+				free(tmpbuf);
 			return(NULL);
+		}
 		enc=buf|(*read >> 4);
-		if(add_char(write++, enc, done, end))
+		if(add_char(write++, enc, done, end))  {
+			if(target==source)
+				free(tmpbuf);
 			return(NULL);
+		}
 		if(! *read)
 			done=1;
 		buf=(*(read++)<<2)&0x3C;
 		enc=buf|(*read>>6);
-		if(add_char(write++, enc, done, end))
+		if(add_char(write++, enc, done, end))  {
+			if(target==source)
+				free(tmpbuf);
 			return(NULL);
+		}
 		if(! *read)
 			done=1;
 		enc=((int)*(read++))&0x3F;
-		if(add_char(write++, enc, done, end))
+		if(add_char(write++, enc, done, end))  {
+			if(target==source)
+				free(tmpbuf);
 			return(NULL);
+		}
 		if(! *read)
 			done=1;
 	}
 	*write=0;
+	if(target==source)  {
+		memcpy(target,tmpbuf,tlen);
+		free(tmpbuf);
+	}
 	return(target);
 }
