@@ -3274,6 +3274,9 @@ void DLLCALL bbs_thread(void* arg)
 		lprintf("RLogin server listening on port %d",startup->rlogin_port);
 	}
 
+	/* signal caller that we've started up successfully */
+    if(startup->started!=NULL)
+    	startup->started();
 
 	sbbs = new sbbs_t(0, server_addr.sin_addr.s_addr
 		,"BBS System", telnet_socket, &scfg, text, NULL);
@@ -3309,10 +3312,6 @@ void DLLCALL bbs_thread(void* arg)
 
 	lprintf("BBS System thread started for nodes %d through %d", first_node, last_node);
 	status(STATUS_WFC);
-
-	/* signal caller that we've started up successfully */
-    if(startup->started!=NULL)
-    	startup->started();
 
 #if defined(_WIN32) && defined(_DEBUG) && defined(_MSC_VER)
 	
