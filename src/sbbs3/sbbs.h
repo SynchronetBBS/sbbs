@@ -713,6 +713,15 @@ extern "C" {
 
 	DLLEXPORT BOOL		DLLCALL load_cfg(scfg_t* cfg, char* text[]);
 
+	/* date_str.c */
+
+	/* ASCII date (MM/DD/YY) to unix conversion */
+	DLLEXPORT time_t	DLLCALL dstrtounix(scfg_t*, char *str);	
+	 /* Unix time to ASCII date */
+	DLLEXPORT char *	DLLCALL unixtodstr(scfg_t*, time_t, char *str);
+	/* seconds to HH:MM:SS */
+	DLLEXPORT char *	DLLCALL sectostr(uint sec, char *str);		
+
 #ifdef SBBS /* These aren't exported */
 
 	/* misc.c */
@@ -738,12 +747,6 @@ extern "C" {
 
 	int 	lprintf(char *fmt, ...);
 	int 	lputs(char *);
-
-	/* date_str.c */
-
-	time_t	dstrtounix(scfg_t*, char *str);	/* ASCII date (MM/DD/YY) to unix conversion */
-	char *	unixtodstr(scfg_t*, time_t, char *str); /* Unix time to ASCII date */
-	char *	sectostr(uint sec, char *str);		/* seconds to HH:MM:SS */
 
 	/* qwk.cpp */
 	void	remove_re(char *str);

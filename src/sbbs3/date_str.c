@@ -40,7 +40,7 @@
 /****************************************************************************/
 /* Converts a date string in format MM/DD/YY into unix time format			*/
 /****************************************************************************/
-time_t dstrtounix(scfg_t* cfg, char *str)
+time_t DLLCALL dstrtounix(scfg_t* cfg, char *str)
 {
 	struct tm tm;
 
@@ -64,7 +64,7 @@ time_t dstrtounix(scfg_t* cfg, char *str)
 /****************************************************************************/
 /* Converts unix time format (long - time_t) into a char str MM/DD/YY		*/
 /****************************************************************************/
-char * unixtodstr(scfg_t* cfg, time_t unix_time, char *str)
+char* DLLCALL unixtodstr(scfg_t* cfg, time_t unix_time, char *str)
 {
 	struct tm* tm;
 
@@ -93,7 +93,7 @@ char * unixtodstr(scfg_t* cfg, time_t unix_time, char *str)
 /****************************************************************************/
 /* Takes the value 'sec' and makes a string the format HH:MM:SS             */
 /****************************************************************************/
-char * sectostr(uint sec,char *str)
+char* DLLCALL sectostr(uint sec,char *str)
 {
     uchar hour,min,sec2;
 
