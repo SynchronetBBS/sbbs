@@ -81,9 +81,11 @@ ulong _beginthread(void( *start_address )( void * )
 
 #endif
 
+
 /****************************************************************************/
 /* Thread-safe (reentrant) version of realpath() - required for OpenBSD		*/
 /****************************************************************************/
+#if defined(__OpenBSD__)
 char* realpath_r(const char *pathname, char *resolvedname)  
 {
     static pthread_mutex_t mutex=PTHREAD_MUTEX_INITIALIZER;
@@ -94,6 +96,6 @@ char* realpath_r(const char *pathname, char *resolvedname)
     pthread_mutex_unlock(&mutex);
     return p;
 }
-
+#endif
 
 #endif	/* __unix__ */
