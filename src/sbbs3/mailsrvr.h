@@ -51,7 +51,7 @@ typedef struct {
 	WORD	max_delivery_attempts;
 	WORD	rescan_frequency;	/* In seconds */
 	WORD	relay_port;
-	WORD	reserved_word2;
+	WORD	lines_per_yield;
 	WORD	reserved_word1;
     DWORD   interface_addr;
     DWORD	options;			/* See MAIL_OPT definitions */

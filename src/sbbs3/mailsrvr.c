@@ -80,8 +80,6 @@ int dns_getmx(char* name, char* mx, char* mx2
 
 #define MAX_RECIPIENTS			100		/* 0xffff = abs max */
 
-#define LINES_PER_YIELD			100		/* Yield every this many lines of text */
-
 #define STATUS_WFC	"Listening"
 
 static mail_startup_t* startup=NULL;
@@ -529,7 +527,9 @@ static ulong sockmsgtxt(SOCKET socket, smbmsg_t* msg, char* msgtxt, char* fromad
 			break;
 		p=tp+1;
 		lines++;
-		if(!(lines%LINES_PER_YIELD))	/* release time-slices every x lines */
+		/* release time-slices every x lines */
+		if(startup->lines_per_yield
+			&& !(lines%startup->lines_per_yield))	
 			mswait(1);
 	}
     if(msg->hdr.auxattr&MSG_FILEATTACH) { 
@@ -1720,7 +1720,9 @@ static void smtp_thread(void* arg)
 				if(msgtxt!=NULL) 
 					fprintf(msgtxt, "%s\r\n", p);
 				lines++;
-				if(!(lines%LINES_PER_YIELD))		/* release time-slices every x lines */
+				/* release time-slices every x lines */
+				if(startup->lines_per_yield &&
+					!(lines%startup->lines_per_yield))	
 					mswait(1);
 				continue;
 			}
