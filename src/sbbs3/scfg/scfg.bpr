@@ -30,15 +30,15 @@
     <RELEASELIBPATH value="$(BCB)\lib\release"/>
     <LINKER value="tlink32"/>
     <USERDEFINES value="_DEBUG"/>
-    <SYSDEFINES value="NO_STRICT;_NO_VCL;_RTLDLL;USEPACKAGES"/>
+    <SYSDEFINES value="NO_STRICT;_NO_VCL;USEPACKAGES"/>
     <MAINSOURCE value="scfg.bpf"/>
-    <INCLUDEPATH value="..\;$(BCB)\include;$(BCB)\include\vcl;..;..\..\uifc;..\..\spawno"/>
-    <LIBPATH value="..\;..\..\uifc;$(BCB)\lib\obj;$(BCB)\lib"/>
+    <INCLUDEPATH value="..\;..;$(BCB)\include;$(BCB)\include\vcl;..\..\uifc;..\..\spawno"/>
+    <LIBPATH value="..\;..;..\..\uifc;$(BCB)\lib\obj;$(BCB)\lib"/>
     <WARNINGS value="-w-8065 -w-8064 -w-par -w-csu"/>
   </MACROS>
   <OPTIONS>
-    <IDLCFLAGS value="-src_suffix cpp -D_DEBUG -I..\. -I$(BCB)\include -I$(BCB)\include\vcl -I.. 
-      -I..\..\uifc -I..\..\spawno -boa"/>
+    <IDLCFLAGS value="-I..\. -I.. -I$(BCB)\include -I$(BCB)\include\vcl -I..\..\uifc 
+      -I..\..\spawno -src_suffix cpp -D_DEBUG -boa"/>
     <CFLAG1 value="-Od -H=$(BCB)\lib\vcl50.csm -Hc -Vx -Ve -X- -r- -a8 -b- -k -y -v -vi- -tWC 
       -tWM- -c"/>
     <PFLAGS value="-$YD -$W -$O- -v -JPHNE -M"/>
@@ -49,7 +49,7 @@
   <LINKER>
     <ALLOBJ value="c0x32.obj $(PACKAGES) $(OBJFILES)"/>
     <ALLRES value="$(RESFILES)"/>
-    <ALLLIB value="$(LIBFILES) $(LIBRARIES) import32.lib cw32i.lib"/>
+    <ALLLIB value="$(LIBFILES) $(LIBRARIES) import32.lib cw32.lib"/>
   </LINKER>
   <IDEOPTIONS>
 [Version Info]
@@ -80,25 +80,28 @@ ProductVersion=1.0.0.0
 Comments=
 
 [HistoryLists\hlIncludePath]
-Count=5
-Item0=..\;$(BCB)\include;$(BCB)\include\vcl;..;..\..\uifc;..\..\spawno
-Item1=$(BCB)\include;$(BCB)\include\vcl;..;..\..\uifc;..\..\spawno
-Item2=$(BCB)\include;$(BCB)\include\vcl;..;..\..\uifc
-Item3=$(BCB)\include;$(BCB)\include\vcl;..\..\uifc
-Item4=$(BCB)\include;$(BCB)\include\vcl
+Count=6
+Item0=..\;..;$(BCB)\include;$(BCB)\include\vcl;..\..\uifc;..\..\spawno
+Item1=..\;$(BCB)\include;$(BCB)\include\vcl;..;..\..\uifc;..\..\spawno
+Item2=$(BCB)\include;$(BCB)\include\vcl;..;..\..\uifc;..\..\spawno
+Item3=$(BCB)\include;$(BCB)\include\vcl;..;..\..\uifc
+Item4=$(BCB)\include;$(BCB)\include\vcl;..\..\uifc
+Item5=$(BCB)\include;$(BCB)\include\vcl
 
 [HistoryLists\hlLibraryPath]
-Count=2
-Item0=..\;..\..\uifc;$(BCB)\lib\obj;$(BCB)\lib
-Item1=$(BCB)\lib\obj;$(BCB)\lib
+Count=3
+Item0=..\;..;..\..\uifc;$(BCB)\lib\obj;$(BCB)\lib
+Item1=..\;..\..\uifc;$(BCB)\lib\obj;$(BCB)\lib
+Item2=$(BCB)\lib\obj;$(BCB)\lib
 
 [HistoryLists\hlDebugSourcePath]
 Count=1
 Item0=$(BCB)\source\vcl
 
 [HistoryLists\hlConditionals]
-Count=1
+Count=2
 Item0=_DEBUG
+Item1=_DEBUG;JAVASCRIPT
 
 [Debugging]
 DebugSourceDirs=$(BCB)\source\vcl
