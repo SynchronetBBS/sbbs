@@ -2480,6 +2480,10 @@ static void smtp_thread(void* arg)
 				relay_user.number=0;
 				break;
 			}
+			/* Update client display */
+			client.user=relay_user.alias;
+			client_on(socket,&client,TRUE /* update */);
+
 			lprintf(LOG_INFO,"%04d SMTP %s authenticated using %s authentication"
 				,socket,relay_user.alias,auth_login ? "LOGIN" : "PLAIN");
 			sockprintf(socket,auth_ok);
@@ -2560,6 +2564,10 @@ static void smtp_thread(void* arg)
 				relay_user.number=0;
 				continue;
 			}
+			/* Update client display */
+			client.user=relay_user.alias;
+			client_on(socket,&client,TRUE /* update */);
+
 			lprintf(LOG_INFO,"%04d SMTP %s authenticated using CRAM-MD5 authentication"
 				,socket,relay_user.alias);
 			sockprintf(socket,auth_ok);
@@ -2624,8 +2632,10 @@ static void smtp_thread(void* arg)
 			SAFECOPY(reverse_path,p);
 
 			/* Update client display */
-			client.user=reverse_path;
-			client_on(socket,&client,TRUE /* update */);
+			if(relay_user.number==0) {
+				client.user=reverse_path;
+				client_on(socket,&client,TRUE /* update */);
+			}
 
 			/* Setup state */
 			state=SMTP_STATE_MAIL_FROM;
