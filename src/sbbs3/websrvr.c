@@ -2308,7 +2308,6 @@ JSObject* DLLCALL js_CreateHttpRequestObject(JSContext* cx
 											 ,JSObject* parent, http_session_t *session)
 {
 /*	JSObject*	cookie; */
-	JSString*	js_str;
 	jsval		val;
 
 	/* Return existing object if it's already been created */
