@@ -51,6 +51,7 @@ char* SMBCALL smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, ulong mode)
 	char*	buf;
 	char*	lzhbuf;
 	char*	p;
+	char*	str;
 	ushort	xlat;
 	uint 	i;
 	int		lzh;	/* BOOL */
@@ -63,6 +64,21 @@ char* SMBCALL smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, ulong mode)
 		return(NULL);
 	}
 	*buf=0;
+
+    for(i=0;i<msg->total_hfields;i++) {			/* comment headers are part of text */
+		if(msg->hfield[i].type!=SMB_COMMENT && msg->hfield[i].type!=SMTPSYSMSG)
+			continue;
+		str=(char*)msg->hfield_dat[i];
+		length=strlen(str)+2;	/* +2 for crlf */
+		if((p=(char*)REALLOC(buf,l+length+1))==NULL) {
+			sprintf(smb->last_error
+				,"realloc failure of %ld bytes for comment buffer"
+				,l+length+1);
+			return(buf);
+		}
+		buf=p;
+		l+=sprintf(buf+l,"%s\r\n",str);
+	}
 
 	for(i=0;i<msg->hdr.total_dfields;i++) {
 		if(msg->dfield[i].length<=sizeof(xlat))
