@@ -113,6 +113,9 @@
 #endif
 
 /* xpdev */
+#ifndef LINK_LIST_THREADSAFE
+ #define LINK_LIST_THREADSAFE
+#endif
 #include "genwrap.h"
 #include "dirwrap.h"
 #include "filewrap.h"
