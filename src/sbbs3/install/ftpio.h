@@ -71,7 +71,7 @@ extern int	ftpAscii(ftp_FILE *fp);
 extern int	ftpBinary(ftp_FILE *fp);
 extern int	ftpPassive(ftp_FILE *fp, int status);
 extern void	ftpVerbose(ftp_FILE *fp, int status);
-extern ftp_FILE	*ftpGetURL(char	*url, char *user, char *passwd,	int *retcode);
+extern ftp_FILE	*ftpGetURL(char	*url, char *user, char *passwd,	int verbose, int *retcode);
 extern ftp_FILE	*ftpPutURL(char	*url, char *user, char *passwd,	int *retcode);
 extern time_t	ftpGetModtime(ftp_FILE *fp, char *s);
 extern const	char *ftpErrString(int error);

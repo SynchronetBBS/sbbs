@@ -261,7 +261,7 @@ ftpPassive(ftp_FILE *fp, int st)
 }
 
 ftp_FILE *
-ftpGetURL(char *url, char *user, char *passwd, int *retcode)
+ftpGetURL(char *url, char *user, char *passwd, int verbose, int *retcode)
 {
     char host[255], name[255];
     int port;
@@ -292,7 +292,7 @@ ftpGetURL(char *url, char *user, char *passwd, int *retcode)
 		prev_host = NULL;
 	    }
 	}
-	fp = ftpLogin(host, user, passwd, port, 0, retcode);
+	fp = ftpLogin(host, user, passwd, port, verbose, retcode);
 	if (fp) {
 	    fp2 = ftpGet(fp, name, NULL);
 	    if (!fp2) {
