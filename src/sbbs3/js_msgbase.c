@@ -443,6 +443,72 @@ BOOL msg_offset_by_id(scfg_t* scfg, smb_t* smb, char* id, ulong* offset)
 }
 
 static JSBool
+js_get_msg_index(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	uintN		n;
+	smbmsg_t	msg;
+	JSObject*	idxobj;
+	JSBool		by_offset=JS_FALSE;
+	private_t*	p;
+
+	*rval = JSVAL_NULL;
+	
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx,getprivate_failure,WHERE);
+		return(JS_FALSE);
+	}
+
+	if(!SMB_IS_OPEN(&(p->smb)))
+		return(JS_TRUE);
+
+	memset(&msg,0,sizeof(msg));
+
+	for(n=0;n<argc;n++) {
+		if(JSVAL_IS_BOOLEAN(argv[n]))
+			by_offset=JSVAL_TO_BOOLEAN(argv[n]);
+		else if(JSVAL_IS_INT(argv[n])) {
+			if(by_offset)							/* Get by offset */
+				msg.offset=JSVAL_TO_INT(argv[n]);
+			else									/* Get by number */
+				msg.hdr.number=JSVAL_TO_INT(argv[n]);
+
+			if(smb_getmsgidx(&(p->smb), &msg)!=0)
+				return(JS_TRUE);
+
+			break;
+		}
+	}
+
+	if((idxobj=JS_NewObject(cx,NULL,NULL,obj))==NULL)
+		return(JS_TRUE);
+
+	JS_DefineProperty(cx, idxobj, "number", INT_TO_JSVAL(msg.idx.number)
+		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+
+	JS_DefineProperty(cx, idxobj, "to" ,INT_TO_JSVAL(msg.idx.to)
+		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+
+	JS_DefineProperty(cx, idxobj, "from" ,INT_TO_JSVAL(msg.idx.from)
+		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+
+	JS_DefineProperty(cx, idxobj, "subject" ,INT_TO_JSVAL(msg.idx.subj)
+		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+
+	JS_DefineProperty(cx, idxobj, "attr" ,INT_TO_JSVAL(msg.idx.attr)
+		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+
+	JS_DefineProperty(cx, idxobj, "offset" ,INT_TO_JSVAL(msg.idx.offset)
+		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+
+	JS_DefineProperty(cx, idxobj, "time" ,INT_TO_JSVAL(msg.idx.time)
+		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+
+	*rval = OBJECT_TO_JSVAL(idxobj);
+
+	return(JS_TRUE);
+}
+
+static JSBool
 js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char		date[128];
@@ -1286,17 +1352,30 @@ static jsMethodSpec js_msgbase_functions[] = {
 	{"close",			js_close,			0, JSTYPE_BOOLEAN,	JSDOCSTR("")
 	,JSDOCSTR("close message base (if open)")
 	},
-	{"get_msg_header",	js_get_msg_header,	2, JSTYPE_OBJECT,	JSDOCSTR("boolean by_offset, number")
+	{"get_msg_header",	js_get_msg_header,	2, JSTYPE_OBJECT,	JSDOCSTR("boolean by_offset, number_or_id")
 	,JSDOCSTR("returns a specific message header, <i>null</i> on failure")
 	},
 	{"put_msg_header",	js_put_msg_header,	2, JSTYPE_BOOLEAN,	JSDOCSTR("boolean by_offset, number, object header")
 	,JSDOCSTR("write a message header")
 	},
-	{"get_msg_body",	js_get_msg_body,	2, JSTYPE_STRING,	JSDOCSTR("boolean by_offset, number [,boolean strip_ctrl_a]")
+	{"get_msg_body",	js_get_msg_body,	2, JSTYPE_STRING,	JSDOCSTR("boolean by_offset, number_or_id [,boolean strip_ctrl_a]")
 	,JSDOCSTR("returns the body text of a specific message, <i>null</i> on failure")
 	},
-	{"get_msg_tail",	js_get_msg_tail,	2, JSTYPE_STRING,	JSDOCSTR("boolean by_offset, number [,boolean strip_ctrl_a]")
+	{"get_msg_tail",	js_get_msg_tail,	2, JSTYPE_STRING,	JSDOCSTR("boolean by_offset, number_or_id [,boolean strip_ctrl_a]")
 	,JSDOCSTR("returns the tail text of a specific message, <i>null</i> on failure")
+	},
+	{"get_msg_index",	js_get_msg_index,	2, JSTYPE_OBJECT,	JSDOCSTR("boolean by_offset, number")
+	,JSDOCSTR("returns a specific message index, <i>null</i> on failure. "
+	"The index object will contain the following properties:<br>"
+	"<table>"
+	"<tr><td><tt>subject</tt><td>CRC-16 of lowercase message subject"
+	"<tr><td><tt>to</tt><td>CRC-16 of lowercase recipient's name (or user number if e-mail)"
+	"<tr><td><tt>from</tt><td>CRC-16 of lowercase sender's name (or user number if e-mail)"
+	"<tr><td><tt>attr</tt><td>Attribute bit-field"
+	"<tr><td><tt>time</tt><td>Date/time (in time_t format)"
+	"<tr><td><tt>number</tt><td>Message number"
+	"<tr><td><tt>offset</tt><td>Byte-offset into header file"
+	"</table>")
 	},
 	{"save_msg",		js_save_msg,		2, JSTYPE_BOOLEAN,	JSDOCSTR("object header, string body_text")
 	,JSDOCSTR("create a new message in message base, the header object may contain the following properties:<br>"
