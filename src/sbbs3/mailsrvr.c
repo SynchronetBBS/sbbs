@@ -66,7 +66,7 @@
 #include "crc32.h"
 
 /* Constants */
-#define MAIL_VERSION "1.10"
+#define MAIL_VERSION "1.11"
 
 int dns_getmx(char* name, char* mx, char* mx2, DWORD intf, DWORD ip_addr, BOOL use_tcp);
 
