@@ -44,14 +44,14 @@
 #include <time.h>		/* time_t */
 
 typedef struct {
-	size_t	size;		/* size of this struct */
-	char	addr[16];	/* IP address */
-	char	host[64];	/* host name */
-	WORD	port;		/* TCP port number */
-	time_t	time;		/* connect time */
-	char*	protocol;	/* protocol description */
-	char*	user;		/* user name */
-	char	pad[32];	/* padding for future expansion */
+	size_t		size;		/* size of this struct */
+	char		addr[16];	/* IP address */
+	char		host[64];	/* host name */
+	WORD		port;		/* TCP port number */
+	time_t		time;		/* connect time */
+	const char*	protocol;	/* protocol description */
+	char*		user;		/* user name */
+	char		pad[32];	/* padding for future expansion */
 } client_t;
 
 #endif /* Don't add anything after this line */
