@@ -5,6 +5,8 @@
 
 // $Id$
 
+load("mailproc_util.js");
+
 // Set to false at any time to indicate a processing failure
 var success=true;
 
@@ -25,19 +27,27 @@ var recipient=rcptlst.iniGetAllObjects("number");
 
 // These lines open the message text file in append mode (writing to the end)
 var msgtxt = new File(message_text_filename);
-if(!msgtxt.open("a"))	// Change thie mode to "r+" for "read/update" access
+if(!msgtxt.open("a+"))	// Change the mode to "r+" for "read/update" access
 	exit();
+
+// Create an object (associative array) of header field strings
+var header = parse_msg_header(msgtxt.readAll());
 
 // This an example of modifying the message text.
 // In this case, we're adding some text (a dump of the recipient object array)
 // to the end of the message.
-msgtxt.writeln("\r\nHello from mailproc_example.js\r\n");
-msgtxt.writeln("Array of recipient objects (message envelopes):\r\n");
+msgtxt.writeln("\r\nHello from mailproc_example.js");
 
 // Dump recipient object array
+msgtxt.writeln("\r\nArray of recipient objects (message envelopes):\r\n");
 for(i in recipient)			// For each recipient object...
 	for(j in recipient[i])	// For each property...			
-		msgtxt.writeln("recipient[" +i+ "]." +j+ "=" + recipient[i][j]);
+		msgtxt.writeln("recipient[" +i+ "]." +j+ " = " + recipient[i][j]);
+
+// Dump header field strings
+msgtxt.writeln("\r\nArray of RFC822 header fields:\r\n");
+for(i in header)
+	msgtxt.writeln("header." +i+ " = " + header[i]);
 
 // If there were any processing errors... reject the message
 if(!success)
