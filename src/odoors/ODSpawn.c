@@ -224,7 +224,14 @@ ODAPIDEF BOOL ODCALL od_spawn(char *pszCommandLine)
 #endif /* ODPLAT_WIN32 */
 
 #ifdef ODPLAT_NIX
+   sigset_t		block;
+
+   /* Suspend kernel */
+   sigemptyset(&block);
+   sigaddset(&block,SIGALRM);
+   sigprocmask(SIG_BLOCK,&block,NULL);
    return(system(pszCommandLine)==-1);
+   sigprocmask(SIG_UNBLOCK,&block,NULL);
 #endif
 }
 
