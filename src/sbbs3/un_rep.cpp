@@ -43,10 +43,10 @@
 /****************************************************************************/
 bool sbbs_t::unpack_rep(char* repfile)
 {
-	char	str[256],fname[128]
+	char	str[MAX_PATH+1],fname[MAX_PATH+1]
 			,*AttemptedToUploadREPpacket="Attempted to upload REP packet";
 	char 	tmp[512];
-	char	block[128];
+	char	block[QWK_BLOCK_LEN];
 	int 	file;
 	uint	i,j,k,lastsub=INVALID_SUB;
 	long	l,size,misc;
@@ -94,7 +94,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 		return(false); 
 	}
 	size=filelength(file);
-	fread(block,128,1,rep);
+	fread(block,QWK_BLOCK_LEN,1,rep);
 	if(strnicmp((char *)block,cfg.sys_id,strlen(cfg.sys_id))) {
 		fclose(rep);
 		bputs(text[QWKReplyNotReceived]);
@@ -108,20 +108,20 @@ bool sbbs_t::unpack_rep(char* repfile)
 	/********************/
 	bputs(text[QWKUnpacking]);
 
-	for(l=128;l<size;l+=i*128) {
+	for(l=QWK_BLOCK_LEN;l<size;l+=i*QWK_BLOCK_LEN) {
 		lncntr=0;					/* defeat pause */
 		if(fseek(rep,l,SEEK_SET)!=0) {
 			sprintf(str,"%s.msg", cfg.sys_id);
 			errormsg(WHERE,ERR_SEEK,str,l);
 			break;
 		}
-		if(fread(block,1,128,rep)!=128) {
+		if(fread(block,1,QWK_BLOCK_LEN,rep)!=QWK_BLOCK_LEN) {
 			sprintf(str,"%s.msg", cfg.sys_id);
 			errormsg(WHERE,ERR_READ,str,ftell(rep));
 			break;
 		}
 		sprintf(tmp,"%.6s",block+116);
-		i=atoi(tmp);  /* i = number of 128 byte records */
+		i=atoi(tmp);  /* i = number of blocks */
 		if(i<2) {
 			sprintf(str,"%s.msg blocks (read '%s' at offset %ld)", cfg.sys_id, tmp, l);
 			errormsg(WHERE,ERR_CHK,str,i);

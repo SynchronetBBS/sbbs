@@ -44,8 +44,8 @@
 /****************************************************************************/
 bool sbbs_t::pack_rep(uint hubnum)
 {
-	char	str[256],tmp2[256];
-	char 	tmp[512];
+	char	str[MAX_PATH+1];
+	char 	tmp[MAX_PATH+1],tmp2[MAX_PATH+1];
 	int 	file,mode;
 	uint	i,j,k;
 	long	l,msgcnt,submsgs,posts,packedmail,netfiles=0,deleted;
@@ -74,8 +74,10 @@ bool sbbs_t::pack_rep(uint hubnum)
 		errormsg(WHERE,ERR_CREATE,str,O_CREAT|O_WRONLY|O_TRUNC);
 		return(false); }
 	if(filelength(file)<1) { 							/* New REP packet */
-		sprintf(str,"%-128s",cfg.qhub[hubnum]->id);     /* So write header */
-		fwrite(str,128,1,rep); }
+		sprintf(str,"%-*s"
+			,QWK_BLOCK_LEN,cfg.qhub[hubnum]->id);		/* So write header */
+		fwrite(str,QWK_BLOCK_LEN,1,rep); 
+	}
 	fseek(rep,0L,SEEK_END);
 	/*********************/
 	/* Pack new messages */

@@ -36,6 +36,7 @@
  ****************************************************************************/
 
 #include "sbbs.h"
+#include "qwk.h"
 
 faddr_t atofaddr(scfg_t* cfg, char *str);
 
@@ -424,18 +425,18 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 	if(n<2L || n>999999L) {
 		errormsg(WHERE,ERR_CHK,"QWK blocks",n);
 		return; }
-	if((qwkbuf=(char *)MALLOC(n*128L))==NULL) {
-		errormsg(WHERE,ERR_ALLOC,nulstr,n*128L);
+	if((qwkbuf=(char *)MALLOC(n*QWK_BLOCK_LEN))==NULL) {
+		errormsg(WHERE,ERR_ALLOC,nulstr,n*QWK_BLOCK_LEN);
 		return; }
-	memcpy((char *)qwkbuf,block,128);
-	fread(qwkbuf+128,n-1,128,rep);
+	memcpy((char *)qwkbuf,block,QWK_BLOCK_LEN);
+	fread(qwkbuf+QWK_BLOCK_LEN,n-1,QWK_BLOCK_LEN,rep);
 
 	if(into==NULL)
-		sprintf(to,"%-128.128s",(char *)qwkbuf+128);  /* To user on first line */
+		sprintf(to,"%-128.128s",(char *)qwkbuf+QWK_BLOCK_LEN);  /* To user on first line */
 	else
 		strcpy(to,into);
 
-	p=strchr(to,0xe3);		/* chop off at first CR */
+	p=strchr(to,QWK_NEWLINE);		/* chop off at first CR */
 	if(p) *p=0;
 
 	strcpy(name,to);
@@ -478,12 +479,12 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 		FREE(qwkbuf);
 		return; }
 
-	l=128;					/* Start of message text */
+	l=QWK_BLOCK_LEN;		/* Start of message text */
 
 	if(qnet || inet) {
 
 		if(into==NULL) {	  /* If name@addr on first line, skip first line */
-			while(l<(n*128L) && (uchar)qwkbuf[l]!=0xe3) l++;
+			while(l<(n*QWK_BLOCK_LEN) && qwkbuf[l]!=QWK_NEWLINE) l++;
 			l++; }
 
 		memset(&msg,0,sizeof(smbmsg_t));
@@ -496,7 +497,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 			smb_hfield(&msg,SENDERNETTYPE,sizeof(net),&net);
 			if(!strncmp(qwkbuf+l,"@VIA:",5)) {
 				sprintf(str,"%.128s",qwkbuf+l+5);
-				cp=strchr(str,0xe3);
+				cp=strchr(str,QWK_NEWLINE);
 				if(cp) *cp=0;
 				l+=strlen(str)+1;
 				cp=str;
@@ -528,7 +529,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 			msg.idx.from=useron.number;
 		if(!strncmp(qwkbuf+l,"@TZ:",4)) {
 			sprintf(str,"%.128s",qwkbuf+l);
-			cp=strchr(str,0xe3);
+			cp=strchr(str,QWK_NEWLINE);
 			if(cp) *cp=0;
 			l+=strlen(str)+1;
 			cp=str+4;
@@ -673,10 +674,10 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 		xlat=XLAT_NONE;
 		smb_fwrite(&xlat,2,smb.sdt_fp);
 		m=2;
-		for(;l<n*128L && m<length;l++) {
+		for(;l<n*QWK_BLOCK_LEN && m<length;l++) {
 			if(qwkbuf[l]==0 || qwkbuf[l]==LF)
 				continue;
-			if((uchar)qwkbuf[l]==0xe3) {
+			if(qwkbuf[l]==QWK_NEWLINE) {
 				smb_fwrite(crlf,2,smb.sdt_fp);
 				m+=2;
 				continue; }
@@ -842,17 +843,17 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 		sprintf(str,"\1FLAGS DIR\r\n");
 		write(fido,str,strlen(str)); }
 
-	l=128L;
+	l=QWK_BLOCK_LEN;
 
 	if(into==NULL) {	  /* If name@addr on first line, skip first line */
-		while(l<n*128L && (uchar)qwkbuf[l]!=0xe3) l++;
+		while(l<n*QWK_BLOCK_LEN && qwkbuf[l]!=QWK_NEWLINE) l++;
 		l++; }
 
-	while(l<n*128L) {
+	while(l<n*QWK_BLOCK_LEN) {
 		if(qwkbuf[l]==CTRL_A)   /* Ctrl-A, so skip it and the next char */
 			l++;
 		else if(qwkbuf[l]!=LF) {
-			if((uchar)qwkbuf[l]==0xe3) /* QWK cr/lf char converted to hard CR */
+			if(qwkbuf[l]==QWK_NEWLINE) /* QWK cr/lf char converted to hard CR */
 				qwkbuf[l]=CR;
 			write(fido,(char *)qwkbuf+l,1); }
 		l++; }

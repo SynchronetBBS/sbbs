@@ -43,9 +43,9 @@
 /****************************************************************************/
 bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 {
-	char	str[256],fname[128];
+	char	str[MAX_PATH+1],fname[MAX_PATH+1];
 	char 	tmp[512];
-	uchar	block[128];
+	uchar	block[QWK_BLOCK_LEN];
 	int 	k,file;
 	uint	i,j,n,lastsub=INVALID_SUB;
 	uint	blocks;
@@ -79,9 +79,9 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 	/********************/
 	eprintf("Importing QWK Network Packet: %s",packet);
 
-	for(l=128;l<size;l+=blocks*128) {
+	for(l=QWK_BLOCK_LEN;l<size;l+=blocks*QWK_BLOCK_LEN) {
 		fseek(qwk,l,SEEK_SET);
-		fread(block,128,1,qwk);
+		fread(block,QWK_BLOCK_LEN,1,qwk);
 		if(block[0]<' ' || block[0]&0x80) {
 			eprintf("!Invalid message status (%02X) at offset %lu in %s"
 				,block[0], l, packet);
@@ -89,7 +89,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 			continue;
 		}
 		sprintf(tmp,"%.6s",block+116);
-		blocks=atoi(tmp);  /* i = number of 128 byte records */
+		blocks=atoi(tmp);  /* i = number of blocks */
 		if(blocks<2) {
 			eprintf("!Invalid number of blocks (%d) at offset %lu in %s"
 				,blocks, l+116, packet);

@@ -43,8 +43,8 @@
 /****************************************************************************/
 bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 {
-	char	str[256],tmp2[256],ch,*p;
-	char 	tmp[512];
+	char	str[MAX_PATH+1],ch,*p;
+	char 	tmp[MAX_PATH+1],tmp2[MAX_PATH+1];
 	char*	fname;
 	int 	file,mode;
 	uint	i,j,k,conf;
@@ -64,7 +64,6 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 	DIRENT*	dirent;
 	struct	tm* tm;
 	smbmsg_t msg;
-
 
 	ex=EX_OUTL|EX_OUTR;	/* Need sh for wildcard expansion */
 	if(prepack)
@@ -207,9 +206,9 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 	l=filelength(file);
 	if(l<1) {
 		fprintf(qwk,"%-128.128s","Produced by " VERSION_NOTICE "  " COPYRIGHT_NOTICE);
-		msgndx=1; }
-	else
-		msgndx=l/128L;
+		msgndx=1; 
+	} else
+		msgndx=l/QWK_BLOCK_LEN;
 	fseek(qwk,0,SEEK_END);
 	sprintf(str,"%sNEWFILES.DAT",cfg.temp_dir);
 	remove(str);
@@ -299,7 +298,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 						fwrite(&ch,1,1,personal); }
 					fwrite(&f,4,1,ndx);
 					fwrite(&ch,1,1,ndx);
-					msgndx+=size/128L; 
+					msgndx+=size/QWK_BLOCK_LEN; 
 				} 
 				mswait(1);	/* yield */
 			}
@@ -420,7 +419,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 							fwrite(&ch,1,1,personal); }
 						fwrite(&f,4,1,ndx);
 						fwrite(&ch,1,1,ndx);
-						msgndx+=size/128L; }
+						msgndx+=size/QWK_BLOCK_LEN; }
 
 					smb_freemsgmem(&msg);
 					(*msgcnt)++;

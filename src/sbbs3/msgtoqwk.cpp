@@ -56,8 +56,8 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 	smbmsg_t	orig_msg;
 
 	offset=ftell(qwk_fp);
-	memset(str,SP,128);
-	fwrite(str,128,1,qwk_fp);		/* Init header to space */
+	memset(str,SP,QWK_BLOCK_LEN);
+	fwrite(str,QWK_BLOCK_LEN,1,qwk_fp);		/* Init header to space */
 
 	if(msg->from_net.addr && (uint)subnum==INVALID_SUB) {
 		if(mode&TO_QNET)
@@ -70,7 +70,7 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 		else
 			sprintf(from,"%.128s@%.128s",msg->from,(char*)msg->from_net.addr);
 		if(strlen(from)>25) {
-			sprintf(str,"From: %.128s\xe3\xe3",from);
+			sprintf(str,"From: %.128s%c%c",from,QWK_NEWLINE,QWK_NEWLINE);
 			fwrite(str,strlen(str),1,qwk_fp);
 			size+=strlen(str);
 			sprintf(from,"%.128s",msg->from); } }
@@ -90,7 +90,7 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 				if(p) { 	/* Another hop */
 					p++;
 					strcpy(to,"NETMAIL");
-					sprintf(str,"%.128s@%.128s\xe3",msg->to,p);
+					sprintf(str,"%.128s@%.128s%c",msg->to,p,QWK_NEWLINE);
 					fwrite(str,strlen(str),1,qwk_fp);
 					size+=strlen(str); }
 				else
@@ -100,7 +100,7 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 		else
 			sprintf(to,"%.128s@%.128s",msg->to,(char*)msg->to_net.addr);
 		if(strlen(to)>25) {
-			sprintf(str,"To: %.128s\xe3\xe3",to);
+			sprintf(str,"To: %.128s%c%c",to,QWK_NEWLINE,QWK_NEWLINE);
 			fwrite(str,strlen(str),1,qwk_fp);
 			size+=strlen(str);
 			if(msg->to_net.type==NET_QWK)
@@ -111,34 +111,36 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 		sprintf(to,"%.128s",msg->to);
 
 	if(msg->from_net.type==NET_QWK && mode&VIA && !msg->forwarded) {
-		sprintf(str,"@VIA: %.128s\xe3",(char*)msg->from_net.addr);
+		sprintf(str,"@VIA: %.128s%c",(char*)msg->from_net.addr,QWK_NEWLINE);
 		fwrite(str,strlen(str),1,qwk_fp);
 		size+=strlen(str); }
 	
 	if(mode&MSGID && (uint)subnum!=INVALID_SUB) {
 		if(msg->id)
-			sprintf(str,"@MSGID: %.128s\xe3",msg->id);
+			sprintf(str,"@MSGID: %.128s%c",msg->id,QWK_NEWLINE);
 		else
-			sprintf(str,"@MSGID: <%08lX.%lu.%s@%s>\xe3"
+			sprintf(str,"@MSGID: <%08lX.%lu.%s@%s>%c"
 				,msg->idx.time,msg->idx.number
 				,cfg.sub[subnum]->code
-				,cfg.sys_inetaddr);
+				,cfg.sys_inetaddr
+				,QWK_NEWLINE);
 		fwrite(str,strlen(str),1,qwk_fp);
 		size+=strlen(str); 
 
 		str[0]=0;
 		if(msg->reply_id)
-			sprintf(str,"@REPLY: %.128s\xe3",msg->reply_id);
+			sprintf(str,"@REPLY: %.128s%c",msg->reply_id,QWK_NEWLINE);
 		else if(msg->hdr.thread_orig) {
 			memset(&orig_msg,0,sizeof(orig_msg));
 			orig_msg.hdr.number=msg->hdr.thread_orig;
 			if(smb_getmsgidx(&smb, &orig_msg))
-				sprintf(str,"@REPLY: <%s>\xe3",smb.last_error);
+				sprintf(str,"@REPLY: <%s>%c",smb.last_error,QWK_NEWLINE);
 			else
-				sprintf(str,"@REPLY: <%08lX.%lu.%s@%s>\xe3"
+				sprintf(str,"@REPLY: <%08lX.%lu.%s@%s>%c"
 					,orig_msg.idx.time,msg->hdr.thread_orig
 					,cfg.sub[subnum]->code
-					,cfg.sys_inetaddr);
+					,cfg.sys_inetaddr
+					,QWK_NEWLINE);
 		}
 		if(str[0]) {
 			fwrite(str,strlen(str),1,qwk_fp);
@@ -147,7 +149,7 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 	}
 
 	if(msg->hdr.when_written.zone && mode&TZ) {
-		sprintf(str,"@TZ: %04x\xe3",msg->hdr.when_written.zone);
+		sprintf(str,"@TZ: %04x%c",msg->hdr.when_written.zone,QWK_NEWLINE);
 		fwrite(str,strlen(str),1,qwk_fp);
 		size+=strlen(str); }
 
@@ -156,8 +158,9 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 		if(msg->hfield[i].type==SENDER)
 			p=(char *)msg->hfield_dat[i];
 		if(msg->hfield[i].type==FORWARDED && p) {
-			sprintf(str,"Forwarded from %s on %s\xe3",p
-				,timestr((time_t *)msg->hfield_dat[i]));
+			sprintf(str,"Forwarded from %s on %s%c",p
+				,timestr((time_t *)msg->hfield_dat[i])
+				,QWK_NEWLINE);
 			fwrite(str,strlen(str),1,qwk_fp);
 			size+=strlen(str); } }
 
@@ -180,7 +183,7 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 				tearwatch=1;
 			else
 				tearwatch=0;
-			ch='\xe3';
+			ch=QWK_NEWLINE;
 			fputc(ch,qwk_fp);		  /* Replace LF with funky char */
 			size++;
 			continue; }
@@ -208,7 +211,7 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 			else if((uchar)ch>0x7f)
 				ch='*'; }
 
-		if((uchar)ch==0xE3)					/* funky char */
+		if(ch==QWK_NEWLINE)					/* funky char */
 			ch='*';
 
 		if(ch==CTRL_A) {
@@ -299,26 +302,26 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 		size++; }
 
 	LFREE(buf);
-	if((uchar)ch!=0xE3) {
-		fputc(0xE3,qwk_fp); 		/* make sure it ends in CRLF */
+	if(ch!=QWK_NEWLINE) {
+		fputc(QWK_NEWLINE,qwk_fp); 		/* make sure it ends in CRLF */
 		size++; }
 
 	if(mode&TAGLINE && !(cfg.sub[subnum]->misc&SUB_NOTAG)) {
 		if(!tear)										/* no tear line */
-			strcpy(str,"\1n---\xe3");                   /* so add one */
+			sprintf(str,"\1n---%c",QWK_NEWLINE);        /* so add one */
 		else
 			strcpy(str,"\1n");
 		if(cfg.sub[subnum]->misc&SUB_ASCII) ch='*';
 		else ch='þ';
-		sprintf(tmp," %c \1g%.10s\1n %c %.127s\xe3"
-			,ch,VERSION_NOTICE,ch,cfg.sub[subnum]->tagline);
+		sprintf(tmp," %c \1g%.10s\1n %c %.127s%c"
+			,ch,VERSION_NOTICE,ch,cfg.sub[subnum]->tagline,QWK_NEWLINE);
 		strcat(str,tmp);
 		if(!(mode&A_LEAVE))
 			remove_ctrl_a(str,NULL);
 		fwrite(str,strlen(str),1,qwk_fp);
 		size+=strlen(str); }
 
-	while(size%128L) {				 /* Pad with spaces */
+	while(size%QWK_BLOCK_LEN) {				 /* Pad with spaces */
 		size++;
 		fputc(SP,qwk_fp); }
 
@@ -355,7 +358,7 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 		,msg->subj              /* Subject */
 		,nulstr                 /* Password */
 		,msg->hdr.thread_orig&MAX_MSGNUM   /* Message Re: Number */
-		,(size/128L)+1			/* Number of 128byte blocks */
+		,(size/QWK_BLOCK_LEN)+1	/* Number of blocks */
 		,(char)conf&0xff        /* Conference number lo byte */
 		,(ushort)conf>>8		/*					 hi byte */
 		,SP                     /* not used */
@@ -364,7 +367,7 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 		);
 
 	fseek(qwk_fp,offset,SEEK_SET);
-	fwrite(str,128,1,qwk_fp);
+	fwrite(str,QWK_BLOCK_LEN,1,qwk_fp);
 	fseek(qwk_fp,size,SEEK_CUR);
 
 	return(size);
