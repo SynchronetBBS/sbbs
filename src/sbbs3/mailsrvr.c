@@ -481,9 +481,14 @@ static void sockmsgtxt(SOCKET socket, smbmsg_t* msg, char* msgtxt, char* fromadd
 static u_long resolve_ip(char *addr)
 {
 	HOSTENT*	host;
+	char*		p;
 
-	if(isdigit(addr[0]) && strchr(addr,'.'))
+	for(p=addr;*p;p++)
+		if(*p!='.' && !isdigit(*p))
+			break;
+	if(!(*p))
 		return(inet_addr(addr));
+
 	if ((host=gethostbyname(addr))==NULL) {
 		lprintf("0000 !ERROR resolving host name: %s",addr);
 		return(0);
