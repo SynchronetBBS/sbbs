@@ -171,6 +171,9 @@
 #define WIN_PUT 	(1<<13) /* Allows F6 to Put a menu item */
 #define WIN_CHE 	(1<<14) /* Stay active after escape if changes */
 #define WIN_XTR 	(1<<15) /* Add extra line at end for inserting at end */
+#ifdef __unix__
+#define WIN_DYN 	(1<<16) /* Dynamic menu - return at least every second */
+#endif
 
 #define WIN_MID WIN_L2R|WIN_T2B  /* Place window in middle of screen */
 

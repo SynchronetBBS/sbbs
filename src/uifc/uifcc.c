@@ -42,10 +42,6 @@
 #include <strings.h>
 #endif
 
-#ifdef USE_SIGNALS
-#include <signal.h>
-#endif
-
 #if defined(__OS2__)
 
 #define INCL_BASE
@@ -138,19 +134,11 @@ static void umsg(char *str);
 static void upop(char *str);
 static void sethelp(int line, char* file);
 
-/* Signal Thing */
-int	force_return=0;
-#ifdef USE_SIGNALS
-	struct sigaction act;
-	struct sigaction oact;
-#endif
-
-#ifdef USE_SIGNALS
-void handle_alarm(int sig)  {
-	sigaction(SIGALRM,&oact,NULL);
-	force_return=1;
-}
-#endif
+/* Dynamic menu support */
+static int *last_menu_cur;
+static int *last_menu_bar;
+static int save_menu_cur=-1;
+static int save_menu_bar=-1;
 
 int inkey(int mode)
 {
@@ -405,6 +393,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 		,search[MAX_OPLN],bline=0;
 	int height,y;
 	int i,j,opts=0,s=0; /* s=search index into options */
+	int	is_redraw=0;
 
 	#ifndef __FLAT__
 	/* ToDo Mouse stuff */
@@ -443,36 +432,50 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 		top=(api->scrn_len/2)-(height/2)-2;
 	else if(mode&WIN_BOT)
 		top=api->scrn_len-height-3-top;
-	if(mode&WIN_SAV && api->savdepth==api->savnum) {
-		if((sav[api->savnum].buf=(char *)MALLOC((width+3)*(height+2)*2))==NULL) {
-			cprintf("UIFC line %d: error allocating %u bytes."
-				,__LINE__,(width+3)*(height+2)*2);
-			return(-1); }
-		gettext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT+left+width+1
-			,SCRN_TOP+top+height,sav[api->savnum].buf);
-		sav[api->savnum].left=SCRN_LEFT+left;
-		sav[api->savnum].top=SCRN_TOP+top;
-		sav[api->savnum].right=SCRN_LEFT+left+width+1;
-		sav[api->savnum].bot=SCRN_TOP+top+height;
-		api->savdepth++; }
-	else if(mode&WIN_SAV
-		&& (sav[api->savnum].left!=SCRN_LEFT+left
-		|| sav[api->savnum].top!=SCRN_TOP+top
-		|| sav[api->savnum].right!=SCRN_LEFT+left+width+1
-		|| sav[api->savnum].bot!=SCRN_TOP+top+height)) { /* dimensions have changed */
-		puttext(sav[api->savnum].left,sav[api->savnum].top,sav[api->savnum].right,sav[api->savnum].bot
-			,sav[api->savnum].buf);	/* put original window back */
-		FREE(sav[api->savnum].buf);
-		if((sav[api->savnum].buf=(char *)MALLOC((width+3)*(height+2)*2))==NULL) {
-			cprintf("UIFC line %d: error allocating %u bytes."
-				,__LINE__,(width+3)*(height+2)*2);
-			return(-1); }
-		gettext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT+left+width+1
-			,SCRN_TOP+top+height,sav[api->savnum].buf);	  /* save again */
-		sav[api->savnum].left=SCRN_LEFT+left;
-		sav[api->savnum].top=SCRN_TOP+top;
-		sav[api->savnum].right=SCRN_LEFT+left+width+1;
-		sav[api->savnum].bot=SCRN_TOP+top+height; }
+
+	/* Dynamic Menus */
+#ifdef __unix__
+	if(mode&WIN_DYN
+			&& cur != NULL 
+			&& bar != NULL 
+			&& last_menu_cur==cur 
+			&& last_menu_bar==bar
+			&& save_menu_cur==*cur
+			&& save_menu_bar==*bar)
+		is_redraw=1;
+#endif
+
+	if(!is_redraw) {
+		if(mode&WIN_SAV && api->savdepth==api->savnum) {
+			if((sav[api->savnum].buf=(char *)MALLOC((width+3)*(height+2)*2))==NULL) {
+				cprintf("UIFC line %d: error allocating %u bytes."
+					,__LINE__,(width+3)*(height+2)*2);
+				return(-1); }
+			gettext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT+left+width+1
+				,SCRN_TOP+top+height,sav[api->savnum].buf);
+			sav[api->savnum].left=SCRN_LEFT+left;
+			sav[api->savnum].top=SCRN_TOP+top;
+			sav[api->savnum].right=SCRN_LEFT+left+width+1;
+			sav[api->savnum].bot=SCRN_TOP+top+height;
+			api->savdepth++; }
+		else if(mode&WIN_SAV
+			&& (sav[api->savnum].left!=SCRN_LEFT+left
+			|| sav[api->savnum].top!=SCRN_TOP+top
+			|| sav[api->savnum].right!=SCRN_LEFT+left+width+1
+			|| sav[api->savnum].bot!=SCRN_TOP+top+height)) { /* dimensions have changed */
+			puttext(sav[api->savnum].left,sav[api->savnum].top,sav[api->savnum].right,sav[api->savnum].bot
+				,sav[api->savnum].buf);	/* put original window back */
+			FREE(sav[api->savnum].buf);
+			if((sav[api->savnum].buf=(char *)MALLOC((width+3)*(height+2)*2))==NULL) {
+				cprintf("UIFC line %d: error allocating %u bytes."
+					,__LINE__,(width+3)*(height+2)*2);
+				return(-1); }
+			gettext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT+left+width+1
+				,SCRN_TOP+top+height,sav[api->savnum].buf);	  /* save again */
+			sav[api->savnum].left=SCRN_LEFT+left;
+			sav[api->savnum].top=SCRN_TOP+top;
+			sav[api->savnum].right=SCRN_LEFT+left+width+1;
+			sav[api->savnum].bot=SCRN_TOP+top+height; } }
 
 
 	#ifndef __FLAT__
@@ -483,158 +486,186 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 	#endif
 
 
-	if(mode&WIN_ORG) { /* Clear around menu */
-		if(top)
-			puttext(SCRN_LEFT,SCRN_TOP,SCRN_RIGHT+2,SCRN_TOP+top-1,blk_scrn);
-		if(SCRN_TOP+height+top<=api->scrn_len)
-			puttext(SCRN_LEFT,SCRN_TOP+height+top,SCRN_RIGHT+2,api->scrn_len,blk_scrn);
-		if(left)
-			puttext(SCRN_LEFT,SCRN_TOP+top,SCRN_LEFT+left-1,SCRN_TOP+height+top
-				,blk_scrn);
-		if(SCRN_LEFT+left+width<=SCRN_RIGHT)
-			puttext(SCRN_LEFT+left+width,SCRN_TOP+top,SCRN_RIGHT+2
-				,SCRN_TOP+height+top,blk_scrn); }
-	ptr=win;
-	*(ptr++)='É';
-	*(ptr++)=hclr|(bclr<<4);
+	if(!is_redraw) {
+		if(mode&WIN_ORG) { /* Clear around menu */
+			if(top)
+				puttext(SCRN_LEFT,SCRN_TOP,SCRN_RIGHT+2,SCRN_TOP+top-1,blk_scrn);
+			if(SCRN_TOP+height+top<=api->scrn_len)
+				puttext(SCRN_LEFT,SCRN_TOP+height+top,SCRN_RIGHT+2,api->scrn_len,blk_scrn);
+			if(left)
+				puttext(SCRN_LEFT,SCRN_TOP+top,SCRN_LEFT+left-1,SCRN_TOP+height+top
+					,blk_scrn);
+			if(SCRN_LEFT+left+width<=SCRN_RIGHT)
+				puttext(SCRN_LEFT+left+width,SCRN_TOP+top,SCRN_RIGHT+2
+					,SCRN_TOP+height+top,blk_scrn); }
+		ptr=win;
+		*(ptr++)='É';
+		*(ptr++)=hclr|(bclr<<4);
 
-	if(api->mode&UIFC_MOUSE) {
-		/* ToDo Mouse stuff */
-		i=0;
-	}
-	else
-		i=0;
-	for(;i<width-2;i++) {
-		*(ptr++)='Í';
-		*(ptr++)=hclr|(bclr<<4); }
-	*(ptr++)='»';
-	*(ptr++)=hclr|(bclr<<4);
-	*(ptr++)='º';
-	*(ptr++)=hclr|(bclr<<4);
-	a=strlen(title);
-	b=(width-a-1)/2;
-	for(i=0;i<b;i++) {
-		*(ptr++)=' ';
-		*(ptr++)=hclr|(bclr<<4); }
-	for(i=0;i<a;i++) {
-		*(ptr++)=title[i];
-		*(ptr++)=hclr|(bclr<<4); }
-	for(i=0;i<width-(a+b)-2;i++) {
-		*(ptr++)=' ';
-		*(ptr++)=hclr|(bclr<<4); }
-	*(ptr++)='º';
-	*(ptr++)=hclr|(bclr<<4);
-	*(ptr++)='Ì';
-	*(ptr++)=hclr|(bclr<<4);
-	for(i=0;i<width-2;i++) {
-		*(ptr++)='Í';
-		*(ptr++)=hclr|(bclr<<4); }
-	*(ptr++)='¹';
-	*(ptr++)=hclr|(bclr<<4);
-
-	if((*cur)>=opts)
-		(*cur)=opts-1;			/* returned after scrolled */
-
-	if(!bar) {
-		if((*cur)>height-5)
-			(*cur)=height-5;
-		i=0; }
-	else {
-		if((*bar)>=opts)
-			(*bar)=opts-1;
-		if((*bar)>height-5)
-			(*bar)=height-5;
-		if((*cur)==opts-1)
-			(*bar)=height-5;
-		if((*bar)<0)
-			(*bar)=0;
-		if((*cur)<(*bar))
-			(*cur)=(*bar);
-		i=(*cur)-(*bar);
-	//
-		if(i+(height-5)>=opts) {
-			i=opts-(height-4);
-			(*cur)=i+(*bar);
-			}
+		if(api->mode&UIFC_MOUSE) {
+			/* ToDo Mouse stuff */
+			i=0;
 		}
-	if((*cur)<0)
-		(*cur)=0;
-
-	j=0;
-	if(i<0) i=0;
-	longopt=0;
-	while(j<height-4 && i<opts) {
-		*(ptr++)='º';
-		*(ptr++)=hclr|(bclr<<4);
-		*(ptr++)=' ';
-		*(ptr++)=hclr|(bclr<<4);
-		*(ptr++)='³';
-		*(ptr++)=lclr|(bclr<<4);
-		if(i==(*cur))
-			a=hfclr|(hbclr<<4);
 		else
-			a=lclr|(bclr<<4);
-		b=strlen(option[i]);
-		if(b>longopt)
-			longopt=b;
-		if(b+4>width)
-			b=width-4;
-		for(c=0;c<b;c++) {
-			*(ptr++)=option[i][c];
-			*(ptr++)=a; }
-		while(c<width-4) {
-			*(ptr++)=' ';
-			*(ptr++)=a;
-			c++; }
+			i=0;
+		for(;i<width-2;i++) {
+			*(ptr++)='Í';
+			*(ptr++)=hclr|(bclr<<4); }
+		*(ptr++)='»';
+		*(ptr++)=hclr|(bclr<<4);
 		*(ptr++)='º';
 		*(ptr++)=hclr|(bclr<<4);
-		i++;
-		j++; }
-	*(ptr++)='È';
-	*(ptr++)=hclr|(bclr<<4);
-	for(i=0;i<width-2;i++) {
-		*(ptr++)='Í';
-		*(ptr++)=hclr|(bclr<<4); }
-	*(ptr++)='¼';
-	*(ptr++)=hclr|(bclr<<4);
-	puttext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT+left+width-1
-		,SCRN_TOP+top+height-1,win);
-	if(bar)
-		y=top+3+(*bar);
-	else
-		y=top+3+(*cur);
-	if(opts+4>height && ((!bar && (*cur)!=opts-1)
-		|| (bar && ((*cur)-(*bar))+(height-4)<opts))) {
-		gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+height-2);
-		textattr(lclr|(bclr<<4));
-		putch(31);	   /* put down arrow */
-		textattr(hclr|(bclr<<4)); }
+		a=strlen(title);
+		b=(width-a-1)/2;
+		for(i=0;i<b;i++) {
+			*(ptr++)=' ';
+			*(ptr++)=hclr|(bclr<<4); }
+		for(i=0;i<a;i++) {
+			*(ptr++)=title[i];
+			*(ptr++)=hclr|(bclr<<4); }
+		for(i=0;i<width-(a+b)-2;i++) {
+			*(ptr++)=' ';
+			*(ptr++)=hclr|(bclr<<4); }
+		*(ptr++)='º';
+		*(ptr++)=hclr|(bclr<<4);
+		*(ptr++)='Ì';
+		*(ptr++)=hclr|(bclr<<4);
+		for(i=0;i<width-2;i++) {
+			*(ptr++)='Í';
+			*(ptr++)=hclr|(bclr<<4); }
+		*(ptr++)='¹';
+		*(ptr++)=hclr|(bclr<<4);
 
-	if(bar && (*bar)!=(*cur)) {
-		gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+3);
-		textattr(lclr|(bclr<<4));
-		putch(30);	   /* put the up arrow */
-		textattr(hclr|(bclr<<4)); }
+		if((*cur)>=opts)
+			(*cur)=opts-1;			/* returned after scrolled */
 
-	if(bclr==BLUE) {
-		gettext(SCRN_LEFT+left+width,SCRN_TOP+top+1,SCRN_LEFT+left+width+1
-			,SCRN_TOP+top+height-1,shade);
-		for(i=1;i<height*4;i+=2)
-			shade[i]=DARKGRAY;
-		puttext(SCRN_LEFT+left+width,SCRN_TOP+top+1,SCRN_LEFT+left+width+1
-			,SCRN_TOP+top+height-1,shade);
-		gettext(SCRN_LEFT+left+2,SCRN_TOP+top+height,SCRN_LEFT+left+width+1
-			,SCRN_TOP+top+height,shade);
-		for(i=1;i<width*2;i+=2)
-			shade[i]=DARKGRAY;
-		puttext(SCRN_LEFT+left+2,SCRN_TOP+top+height,SCRN_LEFT+left+width+1
-			,SCRN_TOP+top+height,shade); }
-	showmouse();
-	#ifdef USE_SIGNALS
-	act.sa_handler=handle_alarm;
-	sigemptyset(&act.sa_mask);
-	act.sa_flags=0;
-	sigaction(SIGALRM,&act,&oact);
+		if(!bar) {
+			if((*cur)>height-5)
+				(*cur)=height-5;
+			i=0; }
+		else {
+			if((*bar)>=opts)
+				(*bar)=opts-1;
+			if((*bar)>height-5)
+				(*bar)=height-5;
+			if((*cur)==opts-1)
+				(*bar)=height-5;
+			if((*bar)<0)
+				(*bar)=0;
+			if((*cur)<(*bar))
+				(*cur)=(*bar);
+			i=(*cur)-(*bar);
+	//
+			if(i+(height-5)>=opts) {
+				i=opts-(height-4);
+				(*cur)=i+(*bar);
+				}
+			}
+			if((*cur)<0)
+				(*cur)=0;
+
+			j=0;
+			if(i<0) i=0;
+			longopt=0;
+			while(j<height-4 && i<opts) {
+				*(ptr++)='º';
+				*(ptr++)=hclr|(bclr<<4);
+				*(ptr++)=' ';
+				*(ptr++)=hclr|(bclr<<4);
+				*(ptr++)='³';
+				*(ptr++)=lclr|(bclr<<4);
+				if(i==(*cur))
+					a=hfclr|(hbclr<<4);
+				else
+					a=lclr|(bclr<<4);
+				b=strlen(option[i]);
+				if(b>longopt)
+					longopt=b;
+				if(b+4>width)
+					b=width-4;
+				for(c=0;c<b;c++) {
+					*(ptr++)=option[i][c];
+					*(ptr++)=a; }
+				while(c<width-4) {
+					*(ptr++)=' ';
+					*(ptr++)=a;
+					c++; }
+				*(ptr++)='º';
+				*(ptr++)=hclr|(bclr<<4);
+				i++;
+				j++; }
+			*(ptr++)='È';
+			*(ptr++)=hclr|(bclr<<4);
+			for(i=0;i<width-2;i++) {
+				*(ptr++)='Í';
+				*(ptr++)=hclr|(bclr<<4); }
+			*(ptr++)='¼';
+			*(ptr++)=hclr|(bclr<<4);
+			puttext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT+left+width-1
+				,SCRN_TOP+top+height-1,win);
+			if(bar)
+				y=top+3+(*bar);
+			else
+				y=top+3+(*cur);
+			if(opts+4>height && ((!bar && (*cur)!=opts-1)
+				|| (bar && ((*cur)-(*bar))+(height-4)<opts))) {
+				gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+height-2);
+				textattr(lclr|(bclr<<4));
+				putch(31);	   /* put down arrow */
+				textattr(hclr|(bclr<<4)); }
+
+			if(bar && (*bar)!=(*cur)) {
+				gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+3);
+				textattr(lclr|(bclr<<4));
+				putch(30);	   /* put the up arrow */
+				textattr(hclr|(bclr<<4)); }
+
+			if(bclr==BLUE) {
+				gettext(SCRN_LEFT+left+width,SCRN_TOP+top+1,SCRN_LEFT+left+width+1
+					,SCRN_TOP+top+height-1,shade);
+				for(i=1;i<height*4;i+=2)
+					shade[i]=DARKGRAY;
+				puttext(SCRN_LEFT+left+width,SCRN_TOP+top+1,SCRN_LEFT+left+width+1
+					,SCRN_TOP+top+height-1,shade);
+				gettext(SCRN_LEFT+left+2,SCRN_TOP+top+height,SCRN_LEFT+left+width+1
+					,SCRN_TOP+top+height,shade);
+				for(i=1;i<width*2;i+=2)
+					shade[i]=DARKGRAY;
+				puttext(SCRN_LEFT+left+2,SCRN_TOP+top+height,SCRN_LEFT+left+width+1
+					,SCRN_TOP+top+height,shade); }
+		showmouse();
+	}
+	else {	/* Is a redraw */
+		i=(*cur)-(*bar);
+		j=2;
+
+		while(j<height-2 && i<opts) {
+			ptr=win;
+			if(i==(*cur))
+				a=hfclr|(hbclr<<4);
+			else
+				a=lclr|(bclr<<4);
+			b=strlen(option[i]);
+			if(b>longopt)
+				longopt=b;
+			if(b+4>width)
+				b=width-4;
+			for(c=0;c<b;c++) {
+				*(ptr++)=option[i][c];
+				*(ptr++)=a; }
+			while(c<width-4) {
+				*(ptr++)=' ';
+				*(ptr++)=a;
+				c++; }
+			i++;
+			j++; 
+			puttext(SCRN_LEFT+left+3,SCRN_TOP+top+j,SCRN_LEFT+left+width-2
+				,SCRN_TOP+top+j,win); }
+	}
+
+	#ifdef __unix__
+	last_menu_cur=cur;
+	last_menu_bar=bar;
 	#endif
 	while(1) {
 	#if 0					/* debug */
@@ -651,15 +682,6 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 	#endif
 
 		if(inkey(1)) {
-			if(force_return) {
-				#ifdef USE_SIGNALS
-				alarm(0);
-				sigaction(SIGALRM,&act,&oact);
-				#endif
-				force_return=0;
-				flushinp();
-				return(-2);
-			}
 			i=inkey(0);
 			if(i==KEY_BACKSPACE || i==BS)
 				i=ESC;
@@ -927,29 +949,14 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 						break;
 					case KEY_F(5):	/* F5 */
 						if(mode&WIN_GET && !(mode&WIN_XTR && (*cur)==opts-1)) {
-							#ifdef USE_SIGNALS
-							alarm(0);
-							sigaction(SIGALRM,&act,&oact);
-							force_return=0;	
-							#endif
 							return((*cur)|MSK_GET); }
 						break;
 					case KEY_F(6):	/* F6 */
 						if(mode&WIN_PUT && !(mode&WIN_XTR && (*cur)==opts-1)) {
-							#ifdef USE_SIGNALS
-							alarm(0);
-							sigaction(SIGALRM,&act,&oact);
-							force_return=0;	
-							#endif
 							return((*cur)|MSK_PUT); }
 						break;
 					case KEY_IC:	/* insert */
 						if(mode&WIN_INS) {
-							#ifdef USE_SIGNALS
-							alarm(0);
-							sigaction(SIGALRM,&act,&oact);
-							force_return=0;	
-							#endif
 							if(mode&WIN_INSACT) {
 								hidemouse();
 								gettext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT
@@ -971,11 +978,6 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 						if(mode&WIN_XTR && (*cur)==opts-1)	/* can't delete */
 							break;							/* extra line */
 						if(mode&WIN_DEL) {
-							#ifdef USE_SIGNALS
-							alarm(0);
-							sigaction(SIGALRM,&act,&oact);
-							force_return=0;	
-							#endif
 							if(mode&WIN_DELACT) {
 								hidemouse();
 								gettext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT
@@ -1081,11 +1083,6 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 						case CR:
 							if(!opts || (mode&WIN_XTR && (*cur)==opts-1))
 								break;
-							#ifdef USE_SIGNALS
-							alarm(0);
-							sigaction(SIGALRM,&act,&oact);
-							force_return=0;
-							#endif
 							if(mode&WIN_ACT) {
 								hidemouse();
 								gettext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT
@@ -1128,14 +1125,17 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 								showmouse();
 								FREE(sav[api->savnum].buf);
 								api->savdepth--; }
-							#ifdef USE_SIGNALS
-							alarm(0);
-							sigaction(SIGALRM,&act,&oact);
-							force_return=0;
-							#endif
 							return(-1); } } }
 		else
 			mswait(1);
+#ifdef __unix__
+		if(mode&WIN_DYN) {
+			save_menu_cur=*cur;
+			save_menu_bar=*bar;
+			return(-2);
+		}
+#endif
+
 		}
 }
 
@@ -1806,19 +1806,8 @@ void help()
 				: high ? (hclr|(bclr<<4)) : (lclr|(bclr<<4)); } }
 	puttext(3,3,78,23,buf);
 	showmouse();
-	#ifdef USE_SIGNALS
-	act.sa_handler=handle_alarm;
-	sigemptyset(&act.sa_mask);
-	act.sa_flags=0;
-	sigaction(SIGALRM,&act,&oact);
-	#endif
 	while(1) {
 		if(inkey(1)) {
-			if(force_return) {
-				flushinp();
-				force_return=0;
-				break;
-			}
 			inkey(0);
 			break; }
 	#ifndef __FLAT__
@@ -1828,11 +1817,6 @@ void help()
 	#endif
 		mswait(1);
 		}
-	#ifdef USE_SIGNALS
-	alarm(0);
-	sigaction(SIGALRM,&act,&oact);
-	force_return=0;	
-	#endif
 
 	hidemouse();
 	puttext(1,1,scrn_width,25,savscrn);
@@ -2129,7 +2113,7 @@ static int kbhit(void)
 	struct timeval timeout;
 	fd_set	rfds;
 	
-	timeout.tv_sec=5;
+	timeout.tv_sec=1;
 	timeout.tv_usec=0;
 	FD_ZERO(&rfds);
 	FD_SET(fileno(stdin),&rfds);
