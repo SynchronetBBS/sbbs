@@ -450,7 +450,7 @@ js_getsockopt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_FALSE);
 
-	opt = sockopt(JS_GetStringBytes(JS_ValueToString(cx,argv[1])));
+	opt = sockopt(JS_GetStringBytes(JS_ValueToString(cx,argv[0])));
 	len = sizeof(val);
 
 	if(getsockopt(p->sock,SOL_SOCKET,opt,(char*)&val,&len)==0) {
@@ -471,7 +471,7 @@ static JSBool
 js_setsockopt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	int			opt;
-	int			val;
+	int			val=1;
 	private_t*	p;
 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
@@ -641,8 +641,8 @@ static JSFunctionSpec js_socket_functions[] = {
 	{"recvline",		js_recvline,		0},		/* receive a \n terminated string	*/
 	{"readline",		js_recvline,		0},		/* receive a \n terminated string	*/
 	{"readln",			js_recvline,		0},		/* receive a \n terminated string	*/
-	{"getoption",		js_getsockopt,		2},		/* getsockopt(level,opt)			*/
-	{"setoption",		js_setsockopt,		3},		/* setsockopt(level,opt,val)		*/
+	{"getoption",		js_getsockopt,		1},		/* getsockopt(opt)					*/
+	{"setoption",		js_setsockopt,		2},		/* setsockopt(opt,val)				*/
 	{"ioctl",			js_ioctlsocket,		1},		/* ioctl(cmd,arg)					*/
 	{0}
 };
