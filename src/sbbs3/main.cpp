@@ -756,7 +756,7 @@ void sbbs_t::js_create_user_objects(void)
 	if(js_cx==NULL)
 		return;
 
-	if(js_CreateUserObjects(js_cx, js_glob, &cfg, &useron, NULL, subscan)==NULL) 
+	if(!js_CreateUserObjects(js_cx, js_glob, &cfg, &useron, NULL, subscan)) 
 		lprintf("!JavaScript ERROR creating user objects");
 }
 
