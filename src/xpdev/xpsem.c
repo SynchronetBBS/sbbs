@@ -151,8 +151,6 @@ xp_sem_wait(xp_sem_t *sem)
 {
 	int	retval;
 
-	pthread_testcancel();
-	
 	_SEM_CHECK_VALIDITY(sem);
 
 	pthread_mutex_lock(&(*sem)->lock);
@@ -169,7 +167,6 @@ xp_sem_wait(xp_sem_t *sem)
 	retval = 0;
   RETURN:
 
-	pthread_testcancel();
 	return retval;
 }
 
@@ -269,8 +266,6 @@ xp_sem_timedwait(xp_sem_t *sem, const struct timespec *abs_timeout)
 {
 	int	retval=0;
 
-	pthread_testcancel();
-	
 	_SEM_CHECK_VALIDITY(sem);
 
 	pthread_mutex_lock(&(*sem)->lock);
@@ -292,6 +287,5 @@ xp_sem_timedwait(xp_sem_t *sem, const struct timespec *abs_timeout)
 
   RETURN:
 
-	pthread_testcancel();
 	return retval;
 }
