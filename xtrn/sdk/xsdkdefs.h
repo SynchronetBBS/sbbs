@@ -1,4 +1,39 @@
-/* XSDKDEFS.H */
+/* xsdkdefs.h */
+
+/* Synchronet XSDK constants, macros, and type definitions */
+
+/* $Id$ */
+
+/****************************************************************************
+ * @format.tab-size 4		(Plain Text/Source Code File Header)			*
+ * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
+ *																			*
+ * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ *																			*
+ * This library is free software; you can redistribute it and/or			*
+ * modify it under the terms of the GNU Lesser General Public License		*
+ * as published by the Free Software Foundation; either version 2			*
+ * of the License, or (at your option) any later version.					*
+ * See the GNU Lesser General Public License for more details: lgpl.txt or	*
+ * http://www.fsf.org/copyleft/lesser.html									*
+ *																			*
+ * Anonymous FTP access to the most recent released source is available at	*
+ * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
+ *																			*
+ * Anonymous CVS access to the development source and modification history	*
+ * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
+ *     (just hit return, no password is necessary)							*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout xtrn	*
+ *																			*
+ * For Synchronet coding style and modification guidelines, see				*
+ * http://www.synchro.net/source.html										*
+ *																			*
+ * You are encouraged to submit any modifications (preferably in Unix diff	*
+ * format) via e-mail to mods@synchro.net									*
+ *																			*
+ * Note: If this box doesn't appear square, then you need to fix your tabs.	*
+ ****************************************************************************/
 
 #ifndef _XSDKDEFS_H
 #define _XSDKDEFS_H
@@ -6,6 +41,10 @@
 /**********/
 /* Macros */
 /**********/
+
+#ifdef _WIN32
+#define mswait	Sleep		/* Win32 equivalent */
+#endif
 									/* Control characters */
 #define STX 	0x02				/* Start of text			^B	*/
 #define ETX 	0x03				/* End of text				^C	*/
@@ -146,10 +185,8 @@ enum {								/* Node Action */
 #define NM_LOWPRIO	(1<<15) /* Always use low priority input			*/
 #define NM_7BITONLY (1L<<16) /* Except 7-bit input only (E71 terminals)  */
 
-#ifdef __WATCOMC__
-
-	#if !defined(__COLORS)
-	#define __COLORS
+#if !defined(__COLORS)
+#define __COLORS
 
 	enum COLORS {
 		BLACK,			/* dark colors */
@@ -169,14 +206,40 @@ enum {								/* Node Action */
 		YELLOW,
 		WHITE
 	};
-	#endif
+#endif
 
-	#define BLINK		128 /* blink bit */
+#ifndef BLINK
+#define BLINK		128 /* blink bit */
+#endif
+
+#ifdef __WATCOMC__
+
 
 	#define ffblk find_t
     #define findfirst(x,y,z) _dos_findfirst(x,z,y)
 	#define findnext(x) _dos_findnext(x)
 	#pragma aux mswait "_*"
+#endif
+
+/* Windows Types */
+#ifndef BYTE
+#define BYTE	uchar
+#endif
+#ifndef WORD
+#define WORD	ushort
+#endif
+#ifndef DWORD
+#define DWORD	ulong
+#endif
+#ifndef BOOL
+#define BOOL	int
+#endif
+#ifndef TRUE
+#define TRUE	1
+#define FALSE	0
+#endif
+#ifndef HANDLE
+#define HANDLE	void*
 #endif
 
 /****************************************************************************/
@@ -186,8 +249,13 @@ enum {								/* Node Action */
 /* LMALLOC is used for allocations of possibly larger than 64k				*/
 /* LFREE is used to free buffers allocated with LMALLOC 					*/
 /* REALLOC is used to re-size a previously MALLOCed or LMALLOCed buffer 	*/
+/* FAR16 is used to create a far (32-bit) pointer in 16-bit compilers		*/
+/* HUGE16 is used to create a huge (32-bit) pointer in 16-bit compilers 	*/
 /****************************************************************************/
 #if defined(__COMPACT__) || defined(__LARGE__) || defined(__HUGE__)
+	#define __16BIT__
+	#define HUGE16 huge
+	#define FAR16 far
 	#if defined(__TURBOC__)
 		#define REALLOC(x,y) farrealloc(x,y)
 		#define LMALLOC(x) farmalloc(x)
@@ -208,6 +276,8 @@ enum {								/* Node Action */
 		#define FREE free
 	#endif
 #else		/* 32-bit Compiler or Small Memory Model */
+	#define HUGE16
+	#define FAR16
 	#define REALLOC realloc
 	#define LMALLOC malloc
 	#define MALLOC malloc
@@ -235,15 +305,24 @@ enum {								/* Node Action */
 /* Typedefs */
 /************/
 
+#ifdef _WIN32	/* necessary for compatibility with SBBS v2 */
+#pragma pack(push)
+#pragma pack(1)
+#endif
+
 typedef struct {						/* Node information kept in NODE.DAB */
 	uchar	status,						/* Current Status of Node */
 			errors,						/* Number of Critical Errors */
 			action;						/* Action User is doing on Node */
-	uint	useron,						/* User on Node */
+	ushort	useron,						/* User on Node */
 			connection,					/* Connection rate of Node */
 			misc,						/* Miscellaneous bits for node */
 			aux;						/* Auxillary word for node */
 	ulong	extaux;						/* Extended aux dword for node */
             } node_t;
+
+#ifdef _WIN32
+#pragma pack(pop)		/* original packing */
+#endif
 
 #endif	/* Don't add anything after this endif */

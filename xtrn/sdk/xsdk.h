@@ -1,42 +1,54 @@
-/* XSDK.H */
+/* xsdk.h */
+
+/* Synchronet XSDK function prototypes */
+
+/* $Id$ */
+
+/****************************************************************************
+ * @format.tab-size 4		(Plain Text/Source Code File Header)			*
+ * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
+ *																			*
+ * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ *																			*
+ * This library is free software; you can redistribute it and/or			*
+ * modify it under the terms of the GNU Lesser General Public License		*
+ * as published by the Free Software Foundation; either version 2			*
+ * of the License, or (at your option) any later version.					*
+ * See the GNU Lesser General Public License for more details: lgpl.txt or	*
+ * http://www.fsf.org/copyleft/lesser.html									*
+ *																			*
+ * Anonymous FTP access to the most recent released source is available at	*
+ * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
+ *																			*
+ * Anonymous CVS access to the development source and modification history	*
+ * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
+ *     (just hit return, no password is necessary)							*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout xtrn	*
+ *																			*
+ * For Synchronet coding style and modification guidelines, see				*
+ * http://www.synchro.net/source.html										*
+ *																			*
+ * You are encouraged to submit any modifications (preferably in Unix diff	*
+ * format) via e-mail to mods@synchro.net									*
+ *																			*
+ * Note: If this box doesn't appear square, then you need to fix your tabs.	*
+ ****************************************************************************/
+
 
 #ifndef _XSDK_H
 #define _XSDK_H
-
-/****************************************************************************/
-/*			Synchronet External Program Software Development Kit			*/
-/*							1993 Digital Dynamics							*/
-/****************************************************************************/
-
-/****************************************************************************/
-/* This source code file is public domain and may be modified, compiled 	*/
-/* distributed, or used in any way, in part or whole for any purposes		*/
-/* without the consent or notification of Digital Dynamics. 				*/
-/*																			*/
-/* We only request that you display to the user, at some point, in your 	*/
-/* program the character "XSDK" and the version number.                     */
-/* example: bprintf("XSDK v%s",xsdk_ver);                                   */
-/****************************************************************************/
-
-/****************************************************************************/
-/* The source code for two external programs developed by Digital Dynamics	*/
-/* using XSDK (Synchronet Blackjack [SBJ] and Synchronet BBS List [SBL])	*/
-/* are available to the public domain as examples of how to implement the	*/
-/* functions and variables included in this software development kit.		*/
-/****************************************************************************/
-
-
-/****************************************************/
-/* For use with Borland/Turbo C and C++ compilers.	*/
-/* Tabstop set to 4.								*/
-/****************************************************/
 
 /*********************************************/
 /* Standard Borland/Turbo C/C++ Header Files */
 /*********************************************/
 #include <io.h>
 #include <dos.h>
+#ifdef _WIN32
+#include <windows.h>
+#else
 #include <bios.h>
+#endif
 #include <time.h>
 #include <ctype.h>
 #include <stdio.h>
@@ -134,12 +146,12 @@ char noyes(char *str);
 	- If the local or remote user has struck a key, this function returns the
 	  key, otherwise it returns 0
 	- Does not wait for a keystroke */
-char inkey(int mode);
+char inkey(long mode);
 
 /* Get a Key
 	- Waits for the local or remote user to hit a valid key
 	- See K_* constants in XSDKDEFS.H for possible values of mode */
-char getkey(int mode);
+char getkey(long mode);
 
 /* Get One of these Keys or a Number
 	- Waits for the user to hit a valid key or if max is non-zero, then enter
@@ -159,7 +171,7 @@ int  getnum(int max);
 /* Change Attribute
 	- Sends ANSI escape sequences (if user supports ANSI) to change color
 	- Valid color bits are defined in INCLUDE\CONIO.H */
-void attr(char atr);
+void attr(int atr);
 
 /* Clear Screen
 	- Clears local and remote screen (using ANSI if appropriate)
@@ -196,11 +208,11 @@ void printfile(char *str);
 	- Waits for the user to enter a string
 	- maxlen is the maximum length of the string
 	- See K_* constants in XSDKDEFS.H for possible values of mode */
-int  getstr(char *str, int maxlen, int mode);
+int  getstr(char *str, size_t maxlen, long mode);
 
 /* Redraw String
 	- Redisplays a string, mainly called by getstr() */
-void redrwstr(char *strin, int i, int l, char mode);
+void redrwstr(char *strin, int i, int l, long mode);
 
 /* Strip Invalid Ctrl-A codes */
 char stripattr(char *strin);
@@ -224,16 +236,16 @@ char *ultoac(ulong l, char *string);
 ulong ahtoul(char *str);
 
 /* Display status of node */
-void printnodedat(uchar number, node_t node);
+void printnodedat(int number, node_t node);
 
 /* Checks to see if this node has been interrupted or any messages waiting */
 void nodesync(void);
 
 /* Writes the node information to disk */
-void putnodedat(uchar number, node_t node);
+void putnodedat(int number, node_t node);
 
 /* Reads the node information from disk */
-void getnodedat(uchar number, node_t *node, char lockit);
+void getnodedat(int number, node_t *node, char lockit);
 
 /* Writes a short message (telegram) for specified user number */
 void putsmsg(int usernumber, char *strin);
@@ -259,11 +271,18 @@ void ungetkey(char ch);
 /* Check to see if the user has hung-up */
 void checkline(void);
 
+#ifndef _WIN32
 /* Wait a specific number of milliseconds */
 void mswait(int ms);
+#endif
 
 /* Display a line (with ctrl-A codes) centered on the screen */
 void center(char *str);
+
+#ifdef _MSC_VER
+int lock(int file, long offset, int size);
+int unlock(int file, long offset, int size);
+#endif
 
 #ifdef __cplusplus
 	}
