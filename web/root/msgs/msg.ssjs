@@ -62,7 +62,7 @@ if(template.hdr != null)  {
 	template.title="Message: "+template.hdr.subject;
 }
 
-var tmp=find_np_message(get_msg_offset(template.hdr.number),true);
+var tmp=find_np_message(template.idx.offset,true);
 template.replyto=undefined;
 if(template.hdr.thread_orig!=0) {
 	template.replyto=msgbase.get_msg_header(false,template.hdr.thread_orig);
@@ -83,7 +83,7 @@ if(template.hdr.thread_first!=0) {
 }
 if(tmp!=undefined)
 	template.nextlink='<a href="msg.ssjs?msg_sub='+sub+'&amp;message='+tmp+'">'+next_msg_html+'</a>';
-tmp=find_np_message(get_msg_offset(template.hdr.number),false);
+tmp=find_np_message(template.idx.offset,false);
 if(tmp!=undefined)
 	template.prevlink='<a href="msg.ssjs?msg_sub='+sub+'&amp;message='+tmp+'">'+prev_msg_html+'</a>';
 
