@@ -1,21 +1,21 @@
-<div align="center"><P><A HREF="http://^^JS:system.inet_addr^^/">Home</A> : <A href="/members/">Members</A> : <B>User List</B></P></div>
-<TABLE class="centeralign">
-<TR class="userlist"><TH><a class="userlist" href="userlist.ssjs?sort=alias">Alias</a></TH><TH><a class="userlist" href="userlist.ssjs?sort=location">Location</a></TH><TH><a class="userlist" href="userlist.ssjs?sort=connection">Connection</a></TH><TH><a class="userlist" href="userlist.ssjs?sort=laston">Last On</a></TH></TR>
+<div align="center"><p><a href="http://^^JS:system.inet_addr^^/">Home</a> : <a href="/members/">Members</a> : <b>User List</b></p></div>
+<table class="centeralign">
+<tr class="userlist"><th><a class="userlist" href="userlist.ssjs?sort=alias">Alias</a></th><th><a class="userlist" href="userlist.ssjs?sort=location">Location</a></TH><TH><a class="userlist" href="userlist.ssjs?sort=connection">Connection</a></TH><TH><a class="userlist" href="userlist.ssjs?sort=laston">Last On</a></th></tr>
 <<REPEAT users>>
-<TR>
-  <TD>
+<tr>
+  <td>
     @@users:alias@@
-  </TD>
-  <TD>
+  </td>
+  <td>
     @@users:location@@
-  </TD>
-  <TD>
+  </td>
+  <td>
     @@users:connection@@
-  </TD>
-  <TD>
+  </td>
+  <td>
     @@users:logon@@
-  </TD>
-</TR>
+  </td>
+</tr>
 <<END REPEAT users>>
-</TABLE>
+</table>
 

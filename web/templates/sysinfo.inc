@@ -1,4 +1,4 @@
-<div align="center"><P><A HREF="http://^^JS:system.inet_addr^^/">Home</A> : <A href="/members/">Members</A> : <a href="http://runekeep.darktech.org:8081/members/info.ssjs">Information</a> : <B>System Info</B></P></div>
+<div align="center"><p><a href="http://^^JS:system.inet_addr^^/">Home</a> : <a href="/members/">Members</a> : <a href="/members/info.ssjs">Information</a> : <b>System Info</b></p></div>
 <div align="center">
 <table>
   <tr>

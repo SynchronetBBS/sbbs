@@ -17,5 +17,5 @@
     </tr>
   </tbody>
 </table>
-</BODY>
-</HTML>
+</body>
+</html>
