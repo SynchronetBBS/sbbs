@@ -38,22 +38,6 @@
 #include "sbbs.h"
 #include "telnet.h" 
 
-extern "C" {
-int open_socket(int);
-int close_socket(int);
-}
-
-u_long resolve_ip(char *addr)
-{
-	HOSTENT*	host;
-
-	if(isdigit(addr[0]))
-		return(inet_addr(addr));
-	if ((host=gethostbyname(addr))==NULL) 
-		return(0);
-	return(*((ulong*)host->h_addr_list[0]));
-}
-
 void sbbs_t::telnet_gate(char* destaddr, ulong mode)
 {
 	char*	p;
@@ -83,7 +67,7 @@ void sbbs_t::telnet_gate(char* destaddr, ulong mode)
 	ip_addr=resolve_ip(destaddr);
 	if(!ip_addr) {
 		lprintf("!Failed to resolve address: %s",destaddr);
-		bprintf("!Failed to resolve address: %s\n",destaddr);
+		bprintf("!Failed to resolve address: %s\r\n",destaddr);
 		return;
 	}
 
@@ -99,7 +83,7 @@ void sbbs_t::telnet_gate(char* destaddr, ulong mode)
 	if((i=bind(remote_socket, (struct sockaddr *) &addr, sizeof (addr)))!=0) {
 		close_socket(remote_socket);
 		lprintf("!ERROR %d (%d) binding to socket %d",i, ERROR_VALUE, socket);
-		bprintf("!ERROR %d (%d) binding to socket\n",i, ERROR_VALUE);
+		bprintf("!ERROR %d (%d) binding to socket\r\n",i, ERROR_VALUE);
 		return;
 	}
 
@@ -112,7 +96,7 @@ void sbbs_t::telnet_gate(char* destaddr, ulong mode)
 		close_socket(remote_socket);
 		lprintf("!ERROR %d (%d) connecting to server: %s"
 			,i,ERROR_VALUE, destaddr);
-		bprintf("!ERROR %d (%d) connecting to server: %s\n"
+		bprintf("!ERROR %d (%d) connecting to server: %s\r\n"
 			,i,ERROR_VALUE, destaddr);
 		return;
 	}
