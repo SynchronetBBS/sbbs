@@ -12,6 +12,10 @@ if(freespace==-1 || freespace > Number(argv[0])*1024*1024)
 log("!Low disk space: " + freespace + " bytes");
 
 msgbase = new MsgBase("mail");
+if(msgbase.open!=undefined && msgbase.open()==false) {
+	log("!ERROR " + msgbase.last_error);
+	exit();
+}
 
 hdr = { to: 'sysop', to_ext: '1', from: 'chkspace', subject: 'Low disk space notification' }
 

@@ -214,8 +214,9 @@ for(i in area) {
 
 	printf("sub: %s, newsgroup: %s\r\n",sub,newsgroup);
 	msgbase = new MsgBase(sub);
-	if(msgbase == null) {
-		printf("!ERROR opening msgbase: %s\r\n",sub);
+	if(msgbase.open!=undefined && msgbase.open()==false) {
+		printf("!ERROR %s opening msgbase: %s\r\n",msgbase.last_error,sub);
+		delete msgbase;
 		continue;
 	}
 
