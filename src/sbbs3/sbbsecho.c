@@ -3971,7 +3971,7 @@ int main(int argc, char **argv)
 
     printf("\nLoading configuration files from %s\n", scfg.ctrl_dir);
 	scfg.size=sizeof(scfg);
-	str[0]=0;
+	SAFECOPY(str,UNKNOWN_LOAD_ERROR);
 	if(!load_cfg(&scfg, NULL, TRUE, str)) {
 		printf("!ERROR %s\n",str);
 		printf("!Failed to load configuration files\n");
