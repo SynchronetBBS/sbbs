@@ -539,7 +539,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 	/*******************/
 	/* Compress Packet */
 	/*******************/
-	sprintf(tmp2,"%s*",cfg.temp_dir);
+	sprintf(tmp2,"%s%s",cfg.temp_dir,ALLFILES);
 	i=external(cmdstr(temp_cmd(),packet,tmp2,NULL),ex);
 	if(!fexist(packet)) {
 		bputs(text[QWKCompressionFailed]);

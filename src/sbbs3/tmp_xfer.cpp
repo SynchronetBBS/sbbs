@@ -298,7 +298,7 @@ void sbbs_t::extract(uint dirnum)
 	bprintf(text[DiskNBytesFree],ultoac(space,tmp));
 
 	if(!intmp) {    /* not extracting FROM temp directory */
-		sprintf(str,"%s*",cfg.temp_dir);
+		sprintf(str,"%s%s",cfg.temp_dir,ALLFILES);
 		if(fexist(str)) {
 			bputs(text[RemovingTempFiles]);
 			dir=opendir(cfg.temp_dir);

@@ -218,7 +218,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 	/* Compress Packet */
 	/*******************/
 	sprintf(str,"%s%s.rep",cfg.data_dir,cfg.qhub[hubnum]->id);
-	sprintf(tmp2,"%s*",cfg.temp_dir);
+	sprintf(tmp2,"%s%s",cfg.temp_dir,ALLFILES);
 	i=external(cmdstr(cfg.qhub[hubnum]->pack,str,tmp2,NULL),EX_OFFLINE);
 	if(!fexist(str)) {
 		lputs(remove_ctrl_a(text[QWKCompressionFailed],tmp));
