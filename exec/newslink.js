@@ -727,7 +727,7 @@ for(i in area) {
 		}
 		if(use_twitlist 
 			&& (system.findstr(twitlist_fname,hdr.from) 
-				|| system.findstr(twitlist_fname,hdr.to)) {
+				|| system.findstr(twitlist_fname,hdr.to))) {
 			printf("Filtering message from %s to %s\r\n", hdr.from, hdr.to);
 			continue;
 		}
