@@ -59,6 +59,9 @@
 
 #endif
 
+/* Constants */
+#define SBBS_PID_FILE	"/var/run/sbbs.pid"
+
 /* Global variables */
 BOOL				bbs_running=FALSE;
 BOOL				bbs_stopped=FALSE;
@@ -370,21 +373,16 @@ static int ftp_lputs(char *str)
 	time_t		t;
 	struct tm*	tm_p;
 
-	if(is_daemon)  {
-		sprintf(logline,"ftp  %.*s",sizeof(logline)-2,str);
-	}
-	else  {
-		t=time(NULL);
-		tm_p=localtime(&t);
-		if(tm_p==NULL)
-			tstr[0]=0;
-		else
-			sprintf(tstr,"%d/%d %02d:%02d:%02d "
-				,tm_p->tm_mon+1,tm_p->tm_mday
-				,tm_p->tm_hour,tm_p->tm_min,tm_p->tm_sec);
+	t=time(NULL);
+	tm_p=localtime(&t);
+	if(tm_p==NULL || is_daemon)
+		tstr[0]=0;
+	else
+		sprintf(tstr,"%d/%d %02d:%02d:%02d "
+			,tm_p->tm_mon+1,tm_p->tm_mday
+			,tm_p->tm_hour,tm_p->tm_min,tm_p->tm_sec);
 
-		sprintf(logline,"%sftp  %.*s",tstr,sizeof(logline)-2,str);
-	}
+	sprintf(logline,"%sftp  %.*s",tstr,sizeof(logline)-2,str);
 	truncsp(logline);
 	lputs(logline);
 	
@@ -413,21 +411,16 @@ static int mail_lputs(char *str)
 	time_t		t;
 	struct tm*	tm_p;
 
-	if(is_daemon)  {
-		sprintf(logline,"mail %.*s",sizeof(logline)-2,str);
-	}
-	else  {
-		t=time(NULL);
-		tm_p=localtime(&t);
-		if(tm_p==NULL)
-			tstr[0]=0;
-		else
-			sprintf(tstr,"%d/%d %02d:%02d:%02d "
-				,tm_p->tm_mon+1,tm_p->tm_mday
-				,tm_p->tm_hour,tm_p->tm_min,tm_p->tm_sec);
+	t=time(NULL);
+	tm_p=localtime(&t);
+	if(tm_p==NULL || is_daemon)
+		tstr[0]=0;
+	else
+		sprintf(tstr,"%d/%d %02d:%02d:%02d "
+			,tm_p->tm_mon+1,tm_p->tm_mday
+			,tm_p->tm_hour,tm_p->tm_min,tm_p->tm_sec);
 
-		sprintf(logline,"%smail %.*s",tstr,sizeof(logline)-2,str);
-	}
+	sprintf(logline,"%smail %.*s",tstr,sizeof(logline)-2,str);
 	truncsp(logline);
 	lputs(logline);
 	
@@ -456,21 +449,16 @@ static int services_lputs(char *str)
 	time_t		t;
 	struct tm*	tm_p;
 
-	if(is_daemon)  {
-		sprintf(logline,"srvc %.*s",sizeof(logline)-2,str);
-	}
-	else  {
-		t=time(NULL);
-		tm_p=localtime(&t);
-		if(tm_p==NULL)
-			tstr[0]=0;
-		else
-			sprintf(tstr,"%d/%d %02d:%02d:%02d "
-				,tm_p->tm_mon+1,tm_p->tm_mday
-				,tm_p->tm_hour,tm_p->tm_min,tm_p->tm_sec);
+	t=time(NULL);
+	tm_p=localtime(&t);
+	if(tm_p==NULL || is_daemon)
+		tstr[0]=0;
+	else
+		sprintf(tstr,"%d/%d %02d:%02d:%02d "
+			,tm_p->tm_mon+1,tm_p->tm_mday
+			,tm_p->tm_hour,tm_p->tm_min,tm_p->tm_sec);
 
-		sprintf(logline,"%ssrvc %.*s",tstr,sizeof(logline)-2,str);
-	}
+	sprintf(logline,"%ssrvc %.*s",tstr,sizeof(logline)-2,str);
 	truncsp(logline);
 	lputs(logline);
 	
@@ -499,21 +487,16 @@ static int event_lputs(char *str)
 	time_t		t;
 	struct tm*	tm_p;
 
-	if(is_daemon)  {
-		sprintf(logline,"evnt %.*s",sizeof(logline)-2,str);
-	}
-	else  {
-		t=time(NULL);
-		tm_p=localtime(&t);
-		if(tm_p==NULL)
-			tstr[0]=0;
-		else
-			sprintf(tstr,"%d/%d %02d:%02d:%02d "
-				,tm_p->tm_mon+1,tm_p->tm_mday
-				,tm_p->tm_hour,tm_p->tm_min,tm_p->tm_sec);
+	t=time(NULL);
+	tm_p=localtime(&t);
+	if(tm_p==NULL || is_daemon)
+		tstr[0]=0;
+	else
+		sprintf(tstr,"%d/%d %02d:%02d:%02d "
+			,tm_p->tm_mon+1,tm_p->tm_mday
+			,tm_p->tm_hour,tm_p->tm_min,tm_p->tm_sec);
 
-		sprintf(logline,"%sevnt %.*s",tstr,sizeof(logline)-2,str);
-	}
+	sprintf(logline,"%sevnt %.*s",tstr,sizeof(logline)-2,str);
 	truncsp(logline);
 	lputs(logline);
 	
@@ -532,7 +515,7 @@ void _sighandler_quit(int sig)
     while(bbs_running || ftp_running || mail_running || services_running)
 		mswait(1);
 	if(is_daemon)
-		unlink("/var/run/sbbs.pid");
+		unlink(SBBS_PID_FILE);
 
     exit(0);
 }
@@ -967,9 +950,11 @@ int main(int argc, char** argv)
 #ifdef __unix__
 	/* Write the standard .pid file if running as a daemon */
 	if(is_daemon)  {
-		pidfile=fopen("/var/run/sbbs.pid","w");
-		fprintf(pidfile,"%d",getpid());
-		fclose(pidfile);
+		pidfile=fopen(SBBS_PID_FILE,"w");
+		if(pidfile!=NULL) {
+			fprintf(pidfile,"%d",getpid());
+			fclose(pidfile);
+		}
 	}
 #endif
 
