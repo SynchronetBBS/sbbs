@@ -1,6 +1,5 @@
 USEUNIT("scfg.c");
 USEUNIT("scfgxtrn.c");
-USEUNIT("scfgmdm.c");
 USEUNIT("scfgmsg.c");
 USEUNIT("scfgnet.c");
 USEUNIT("scfgnode.c");

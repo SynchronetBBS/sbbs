@@ -4,11 +4,11 @@
   <MACROS>
     <VERSION value="BCB.05.03"/>
     <PROJECT value="scfg.exe"/>
-    <OBJFILES value="scfg.obj scfgxtrn.obj scfgmdm.obj scfgmsg.obj scfgnet.obj scfgnode.obj 
-      scfgsub.obj scfgsys.obj scfgxfr1.obj scfgxfr2.obj scfgchat.obj 
-      ..\..\uifc\uifc.obj ..\scfgsave.obj ..\scfglib1.obj ..\smblib.obj 
-      ..\scfglib2.obj ..\smbwrap.obj ..\ars.obj ..\load_cfg.obj ..\misc.obj 
-      ..\crc32.obj ..\userdat.obj ..\date_str.obj"/>
+    <OBJFILES value="scfg.obj scfgxtrn.obj scfgmsg.obj scfgnet.obj scfgnode.obj scfgsub.obj 
+      scfgsys.obj scfgxfr1.obj scfgxfr2.obj scfgchat.obj ..\..\uifc\uifc.obj 
+      ..\scfgsave.obj ..\scfglib1.obj ..\smblib.obj ..\scfglib2.obj 
+      ..\smbwrap.obj ..\ars.obj ..\load_cfg.obj ..\misc.obj ..\crc32.obj 
+      ..\userdat.obj ..\date_str.obj"/>
     <RESFILES value=""/>
     <IDLFILES value=""/>
     <IDLGENFILES value=""/>
@@ -107,7 +107,7 @@ Item1=_DEBUG;JAVASCRIPT
 DebugSourceDirs=$(BCB)\source\vcl
 
 [Parameters]
-RunParams=c:\sbbs\ctrl -l25
+RunParams=c:\sbbs\ctrl
 HostApplication=
 RemoteHost=
 RemotePath=
