@@ -464,6 +464,7 @@ js_iniGetValue(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 static JSBool
 js_iniGetSections(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
+	char*		prefix=NULL;
 	char**		list;
     jsint       i;
     jsval       val;
@@ -477,9 +478,12 @@ js_iniGetSections(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 		return(JS_FALSE);
 	}
 
+	if(argc)
+		prefix=JS_GetStringBytes(JS_ValueToString(cx, argv[0]));
+
     array = JS_NewArrayObject(cx, 0, NULL);
 
-	list = iniGetSectionList(p->fp);
+	list = iniGetSectionList(p->fp,prefix);
     for(i=0;list && list[i];i++) {
 		val=STRING_TO_JSVAL(JS_NewStringCopyZ(cx,list[i]));
         if(!JS_SetElement(cx, array, i, &val))
@@ -1297,9 +1301,10 @@ static jsMethodSpec js_file_functions[] = {
 	,JSDOCSTR("write a formatted string to the file (ala fprintf) - "
 		"<small>CAUTION: for experienced C programmers ONLY</small>")
 	},
-	{"iniGetSections",	js_iniGetSections,	0,	JSTYPE_ARRAY,	""
+	{"iniGetSections",	js_iniGetSections,	0,	JSTYPE_ARRAY,	JSDOCSTR("[prefix]")
 	,JSDOCSTR("parse all section names from a <tt>.ini</tt> file (format = '<tt>[section]</tt>') "
-		"and return the section names as an <i>array of strings</i>")
+		"and return the section names as an <i>array of strings</i>, "
+		"optionally, only those section names that begin with the specified <i>prefix</i>")
 	},
 	{"iniGetKeys",		js_iniGetKeys,		0,	JSTYPE_ARRAY,	JSDOCSTR("section")
 	,JSDOCSTR("parse all key names from the specified <i>section</i> in a <tt>.ini</tt> file "
