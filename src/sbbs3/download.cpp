@@ -194,7 +194,7 @@ int sbbs_t::protocol(char *cmdline, int cd)
 	i=external(cmdline
 		,EX_OUTL
 #ifdef __unix__		/* file xfer progs use stdio on Unix */
-		|EX_INR|EX_OUTR
+		|EX_INR|EX_OUTR|EX_BIN
 #endif
 		,p);
 	sys_status&=~SS_FILEXFER;
