@@ -274,7 +274,7 @@ static const char* method_array_name = "_method_list";
  * its length match the JSType enum's JSTYPE_LIMIT limit value.
  */
 static const char *js_type_str[] = {
-    "undefined",
+    "void",			// changed from "undefined"
     "object",
     "function",
     "string",
