@@ -99,7 +99,7 @@ $(EXEODIR):
 	mkdir $(EXEODIR)
 
 # Monolithic Synchronet executable Build Rule
-$(SBBSMONO): sbbscon.c conwrap.c $(OBJS) $(LIBODIR)/ver.o $(LIBODIR)/ftpsrvr.o $(LIBODIR)/mailsrvr.o $(LIBODIR)/mxlookup.o
+$(SBBSMONO): sbbscon.c conwrap.c $(OBJS) $(LIBODIR)/ver.o $(LIBODIR)/ftpsrvr.o $(LIBODIR)/mailsrvr.o $(LIBODIR)/mxlookup.o $(LIBODIR)/services.o
 #	$(CC) $(CFLAGS) -o $(SBBSMONO) $^ $(LIBS)
 	$(CC) -o $(SBBSMONO) $^ $(LIBS)
 
