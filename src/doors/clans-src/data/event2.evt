@@ -1,0 +1,15 @@
+# Example Event File No.2
+#
+
+Event FirstEvent
+  Text "This is the 1st event
+  Jump FirstEvent.Result
+End
+
+Result FirstEvent.Result
+  Text "This is a result of the first event!
+End
+
+Event SecondEvent
+  Text "This is the 2nd event!
+End

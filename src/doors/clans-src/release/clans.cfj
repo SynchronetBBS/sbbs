@@ -1,0 +1,29 @@
+# Clans Config File ---------------------------------------------------------
+#
+# Edit it as you wish with a text file or use CONFIG.EXE to modify.
+#
+
+FirstTime
+
+# [GameData] ----------------------------------------------------------------
+SysopName       Sysop Name
+BBSName         BBS Name
+UseLog          Yes
+ScoreANSI       SCORES.ANS
+ScoreASCII      SCORES.ASC
+
+# [NodeData] ----------------------------------------------------------------
+Node            1
+DropDirectory   C:\BBS\NODE1
+UseFOSSIL       Yes
+SerialPortAddr  Default
+SerialPortIRQ   Default
+LockedRate      Default
+
+# [NodeData] ----------------------------------------------------------------
+Node            2
+DropDirectory   C:\BBS\NODE1
+UseFOSSIL       Yes
+SerialPortAddr  Default
+SerialPortIRQ   Default
+LockedRate      Default

@@ -1,0 +1,56 @@
+Clans -- how it all works
+
+>> Initialization
+  First of all, System_Init() is called.  
+
+>> IBBS
+** BEGIN How to send data to another BBS form this BBS:
+	1. Create the data file.
+	2. Call IBBS_SendFileInPacket( DestID, PacketType, FileName );
+		- incidentally, this function calls IBBS_SendPacket() itself.
+-or-
+	1. Call IBBS_SendPacket(PacketType, sizeof(data), void *data, DestID)
+-or- (the OLD way)
+	1. Create Packet struct and place all data in it.
+	2. Create temp file containing all Packet data -- header + raw data.
+	3. Call IBBS_SendPacketFile(DestID, tempFilename)
+	4. delete temp file
+** END
+
+** BEGIN How is the userlist maintained?  (Look over this to perhaps figure out bug)
+	1. Each BBS has a file called userlist.dat.  This binary data file contains struct UserInfo
+	data on each user in the league that THAT BBS knows of.
+	2. The LC's BBS also has its own userlist.dat and we assume this is the most up to date of
+	all the BBSes.
+	3. Once in a while, the LC sends out its own userlist.dat to every other BBS in the league so
+	that they are all in sync.
+** END
+
+** BEGIN What happens when a new user is created?
+	1. BBS calls IBBS_LeagueNewUser()
+	2. This function calls AddToUList which adds the user to its own local userlist.  Then iff it is NOT the LC, it calls
+	IBBS_SendPacket(PT_NEWUSER,..,1) to send the new user data to the LC's BBS, goto 3.  If it IS the LC, it immediately
+	calls UpdateNodesOnNewUser which does just that, sends new user info to all BBSes which in turn call
+	AddToUList  then stop.
+	3. The LC then receives PT_NEWUSER and checks its own userlist (note we didn't need to do this in stage 2 if it was
+	the LC's BBS getting a new user since it automatically does that when a new user plays) to see if it is a dupe.  If it IS
+	a dupe (that is, it's in the list already), it sends back a packet saying it was a dupe and to delete that new user (calls
+	IBBS_SendDelUser).  If it was NOT a dupe, it calls UpdateNodesOnNewUser() and AddToList.
+
+	* NOTE, we do have a PT_SUBUSER which works similarly, but it should only be called if a valid user which already
+	exists decides to delte HIMSELF (i.e. suicide).  PT_DELUSER is used by the system to purge dupe users.
+
+** END
+
+
+
+
+
+Intro:
+
+        As with many of my previous programming endeavours, Clans started out
+very cleanly with easy to follow code.  Once that was base code was written,
+stuff was modified or added on in a very disorderly way.  I decided to recode
+much of the game in v0.95 and this has helped a bit with the readability.
+However, it is still quite messy in some areas, IMHO.  Who knows, you may
+see the code as quite readable compared to others you've seen.

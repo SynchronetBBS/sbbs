@@ -1,0 +1,380 @@
+# Event monsters that you encounter
+
+# 0
+Name            Ghoul
+HP              12
+Difficulty      3
+Agility         7
+Dexterity       10
+Strength        8
+Wisdom          9
+Charisma        2
+Armorstr        0
+Undead
+
+Name            Ghoul
+HP              15
+Difficulty      1
+Agility         9
+Dexterity       4
+Strength        7
+Wisdom          9
+Charisma        2
+Armorstr        0
+Undead
+
+Name            Mad Scientist
+HP              20
+Difficulty      1
+Agility         10
+Dexterity       6
+Strength        9
+Wisdom          9
+Charisma        0
+Armorstr        0
+
+# 3
+Name            Mad Gardener
+HP              30
+Difficulty      1
+Agility         7
+Dexterity       3
+Strength        13
+Wisdom          9
+Armorstr        1
+
+# 4
+Name            Orc
+HP              10
+Difficulty      1
+Agility         8
+Dexterity       3
+Strength        8
+Wisdom          9
+Armorstr        0
+
+# 5
+Name            Small Gnome
+HP              15
+Difficulty      1
+Agility         6
+Dexterity       6
+Strength        11
+Wisdom          9
+Armorstr        0
+
+# 6
+Name            Wolf Master
+HP              20
+Difficulty      1
+Agility         10
+Dexterity       9
+Strength        11
+Wisdom          9
+Armorstr        0
+
+# 7
+Name            Wolf
+HP              15
+Difficulty      1
+Agility         8
+Dexterity       3
+Strength        9
+Wisdom          2
+Armorstr        0
+
+# 8-10, thieves
+Name            Thief
+HP              18
+Difficulty      1
+Agility         9
+Dexterity       6
+Strength        11
+Wisdom          2
+Armorstr        0
+
+# 9
+Name            Thief
+HP              21
+Difficulty      1
+Agility         10
+Dexterity       4
+Strength        13
+Wisdom          2
+Armorstr        1
+
+# 10
+Name            Thief
+HP              21
+Difficulty      1
+Agility         10
+Dexterity       4
+Strength        14
+Wisdom          2
+Armorstr        0
+
+# 11 & 12 knights
+Name            Spirit Knight
+HP              17
+Difficulty      1
+Agility         12
+Dexterity       8
+Strength        11
+Wisdom          2
+Armorstr        0
+Undead
+
+Name            Spirit Knight
+HP              22
+Difficulty      1
+Agility         12
+Dexterity       9
+Strength        12
+Wisdom          2
+Armorstr        0
+Undead
+
+# 13,14,15 orcs
+Name            Orc
+HP              12
+Difficulty      1
+Agility         6
+Dexterity       9
+Strength        7
+Wisdom          2
+Armorstr        0
+
+Name            Orc
+HP              15
+Difficulty      1
+Agility         7
+Dexterity       9
+Strength        8
+Wisdom          2
+Armorstr        0
+
+Name            Orc
+HP              15
+Difficulty      1
+Agility         6
+Dexterity       10
+Strength        9
+#Wisdom          4
+Wisdom          15
+Armorstr        0
+Spell           8
+
+# 16,17 orcs
+Name            Orc
+HP              14
+Difficulty      1
+Agility         6
+Dexterity       9
+Strength        10
+Wisdom          2
+Armorstr        0
+
+Name            Orc
+HP              19
+Difficulty      1
+Agility         9
+Dexterity       9
+Strength        9
+Wisdom          2
+Armorstr        0
+
+# 18, orc guards
+Name            Orc Guard
+HP              15
+Difficulty      1
+Agility         10
+Dexterity       9
+Strength        10
+Wisdom          2
+Armorstr        0
+
+# 19
+Name            Man
+HP              25
+Difficulty      1
+Agility         12
+Dexterity       9
+Strength        12
+Wisdom          2
+Armorstr        0
+
+# 20 man
+Name            Man
+HP              20
+Difficulty      1
+Agility         12
+Dexterity       11
+Strength        10
+Wisdom          2
+Armorstr        1
+
+# 21 hellhound
+Name            Hellhound
+HP              14
+Difficulty      2
+Agility         10
+Dexterity       11
+Strength        10
+Wisdom          4
+Armorstr        1
+Undead
+
+# 22 hellhound
+Name            Hellhound
+HP              16
+Difficulty      2
+Agility         10
+Dexterity       11
+Strength        13
+Wisdom          4
+Armorstr        1
+Undead
+
+# 23 beast
+Name            Beast
+HP              60
+Difficulty      5
+Agility         16
+Dexterity       14
+Strength        21
+Wisdom          10
+Armorstr        2
+Spell           8
+Spell           11
+
+# 24 gardener
+Name            gardener
+HP              20
+Difficulty      2
+Agility         11
+Dexterity       10
+Strength        14
+Wisdom          10
+Armorstr        1
+
+# 25 guard
+Name            guard
+HP              20
+Difficulty      2
+Agility         8
+Dexterity       12
+Strength        21
+Wisdom          2
+Armorstr        1
+
+
+# 26 guard
+Name            guard
+HP              25
+Difficulty      2
+Agility         10
+Dexterity       10
+Strength        13
+Wisdom          5
+Armorstr        1
+
+
+# 27 businessman
+Name            Businessman
+HP              45
+Difficulty      4
+Agility         10
+Dexterity       11
+Strength        15
+Wisdom          10
+Armorstr        1
+
+# 28 thief
+Name            Thief
+HP              19
+Difficulty      2
+Agility         9
+Dexterity       8
+Strength        12
+Wisdom          5
+Armorstr        0
+Spell           5
+
+# 29 thief
+Name            Thief
+HP              13
+Difficulty      1
+Agility         9
+Dexterity       10
+Strength        12
+Wisdom          5
+
+# 30 Large thief
+Name            Large Thief
+HP              43
+Difficulty      5
+Agility         10
+Dexterity       12
+Strength        16
+Wisdom          5
+
+# 31 wyverns
+Name            Wyvern
+HP              27
+Difficulty      5
+Agility         12
+Dexterity       14
+Strength        17
+Wisdom          5
+
+# 32 hellhounds
+Name            Hellhound
+HP              23
+Difficulty      4
+Agility         11
+Dexterity       12
+Strength        12
+Wisdom          5
+ArmorStr        1
+Undead
+
+# 33
+Name            Green Slyme
+HP              35
+Difficulty      4
+Agility         8
+Dexterity       7
+Strength        15
+Wisdom          5
+ArmorStr        0
+
+# 34
+Name            Skeletal Fiend
+HP              22
+Difficulty      3
+Agility         9
+Dexterity       8
+Strength        13
+Wisdom          2
+ArmorStr        0
+Undead
+
+# 35
+Name            Golden Dragon
+HP              42
+Difficulty      3
+Agility         10
+Dexterity       9
+Strength        16
+Wisdom          2
+ArmorStr        1
+Spell           17
+
+# 36
+Name            Ghoul
+HP              27
+Difficulty      3
+Agility         8
+Dexterity       6
+Strength        15
+Undead

@@ -1,0 +1,137 @@
+^Instructions
+%N%T
+ |0BObjectives of The Clans
+
+ |0CBasically, the object is to destroy the competition.  There's no "goal"
+ as in other games so you can continue playing as much as you want.  The
+ leaders will change, the alliances will change, and your clan will see
+ several new members, but the object will always be to become the top clan
+ in the game.  If your sysop has hooked up the game to an InterBBS league,
+ then the object may be to strengthen your village and attack other villages
+ in the league.  There are also quests to be completed!  The main ways of
+ achieving success are these:
+
+ * Defeat monsters in the dungeons to collect gold and followers.
+ * Complete quests.
+ * Increase the size of your empire.
+ * Annihilate enemy clans in empire wars and loot their land and gold.
+ * Create alliances with other clans.
+ * Become ruler of the village.
+
+ |15Good luck on your journey!
+%N
+^END
+
+^Newbies
+ |0BWelcome, new player!|0C
+
+ You will find clans very self-explanatory and easy to play as help is
+ displayed for most new options you will encounter.  Remember that this
+ game is played on many levels and never stop strategizing!
+^END
+
+^Colours
+ |0CUse pipe codes (|) for colours.  Simply type the pipe code and then a two
+ digit value representing the number:  |xx (where xx is the two digit value).
+ Example | %B15 for |15white|0C.  TG ` codes can be used as well.  Use `xy
+ where x is the background colour (0 to 7) and y is the foreground colour
+ (between 0 and F hexadecimal).
+^END
+
+
+^Welcome
+%C%N
+`00`0B `05€ﬂﬂﬂﬂﬂﬂﬂ€‹€€€ﬂ€€€€€€€€€€€€‹€€ﬂ€€€€€€€‹€€`5D∞`05€€`5E±`05€€€‹ `03‹‹`0B
+`03 `05€ `0D€   € ‹‹‹ ‹  ‹‹ ‹‹‹ ‹‹‹‹‹ ‹‹‹ `5D∞`05ﬂ€`5E∞`05€€€ﬂ€€€€ﬂﬂ€€ `03ﬁ`3B≤`03€`0B     `06‹‹‹‹‹‹`0B
+`06 `05€ `0D€   € €‹  €  €  € € € ﬂ € €‹`0B                 `05€ `03€€`3B≤`03€  `06ﬁ`6E≤±`06€€€€€€›`0B           `03‹`0B
+`03 `05€ `0D€‹€‹€ €‹‹ €‹ €‹ €‹€ €   € €‹‹`0B                `05€ `03€€`3B±`03€›`06ﬁ`6E∞±`06€€€€€€€€`0B       `03‹‹`3B±`03€`3B∞`0B
+ `05€ ‹`0B                                            `05€ `03ﬁ€€`3B∞`03›`06ﬁﬂ `07‹‹ `06ﬂﬂﬂ€`68∞`0B    `03‹€`3B∞±≤`03€€€`0B
+`03 `5E∞`05€€ `07Welcome to `0EThe Clans`07.  The object of this  `05€›`03ﬁ€€`3B∞`03€ `06›`07€€€€€€ `06€€›  `03ﬁ€`3B≤`03€€€€€€`0B
+`03 `05€€€ `07game is to build up a powerful  ‹‹‹  clan, `05€› `03€€€`3B∞`0B `06›`07ﬂ€€€€ﬂ `06€€`68∞`0B  `03€`3B≤`03€€€€€€€`0B
+`03 `05€€‹ `07create an empire and destroy    ﬂ€€ﬂ ‹`0B     `05€€‹ `03ﬂﬂ `06ﬁ`6E∞`06› `07ﬂ ≤ `06ﬁ€`68∞±`06› `03ﬂ€€€€€€€`0B
+`03 `05ﬂ€`5E∞`0B `07all competition.  Be sure to look `02‹€`2A∞`02‹ `07at  `05€€ﬂ `02ﬂ‹`2A∞`02€‹ `07‹€€€‹ `02‹ ‹‹ﬂ  `03€€›ﬂ`0B
+`03 `5D±`05€€ `07the help database for info on`0B      `02ﬂ `07‹‹`0B     `07‹‹€‹ `02€€ﬂ‹‹‹ ‹‹‹€€€ﬂ `7F±`07› `03€`0B
+`03 `05€€€ `07on specific parts of the game.`0B      `07ﬂ`7F∞`07€€‹ ‹`7F±`07€€`7F∞`07ﬂ  `2A±`02€€€`28∞`02€`2A∞±`02€€‹‹ `07€`7F∞±`0B `03›`0B
+`03 `05€€‹‹‹‹‹‹‹‹‹ ‹‹‹‹‹‹‹‹ ‹‹‹ ‹‹‹‹‹‹‹‹‹‹‹‹ ‹‹‹ `07€€€ﬁ€€€ﬂ    `02ﬂ€€ﬂ ‹ﬂ€€€`28±`02› `07€€`7F±`07›`0B
+`07 `05‹€€ﬂ€`5D±`05€€`5E±`05€€€€€€€`5E∞`05ﬂ€`5E∞`05€€`5D∞`05€€€€ﬂ€`5E∞±`05‹€€€€ﬂ€€€€‹ `07ﬂ€€€ﬂ `05‹    `03‹ `02‹‹€€€‹‹‹≤ `03‹`07ﬁ€€€`03ﬁ‹‹`0B
+                                              `07ﬂ`0B       `3B±`03€‹ `02€€`2A∞`02€€€ﬂ `03ﬁ`3B±`0B `07€€€ `03€€€`0B
+                                                      `3B∞`03€›`07ﬁ`02ﬁ€€€€`28∞`02›`07€`03ﬁ`3B∞`03›`07ﬁ€`7F∞`07›`03€€€›`0B
+                                                     `03ﬁ€ﬂ `07ﬂ`02‹`2A∞`02€€€€‹‹ `03ﬂ `07€€`7F±`07›`03€€€€`0B
+                                                     `03ﬁ€ `07›`02ﬂﬂﬁ€€›`28∞`02ﬂ`07‹‹› €€€ `03ﬁ€€€`0B
+                                                      `03›`07ﬁ`7F±`07€€ `02€€ `07‹€€€€ ﬁ€ﬂ `03€€€›`0B
+                                                      `03›`07€`7F≤`07€€‹ `02ﬂ `7F±`07€€€`78±`07› `02‹≤›`03€€€`0B
+                                                       `07€`7F±`07€€`78∞±`0B `07€`7F∞`07€€€`78∞`07› ‹‹‹ `03€‹`0B
+
+^PAUSE
+
+
+
+
+
+
+
+  |0CThe main objective in The Clans is to destroy the opposition.  You do
+  this not only by improving your clan by fighting, gaining gold and
+  experience but also through your empire.  Increase the size of your
+  empire and form alliances as well!
+
+  |0BIf this game is in an InterBBS league, |0Cyou may wish to play the game as
+  "whole" BBS.  This means having the all players who play The Clans on this
+  BBS unite (by choosing similar Clan Symbols usually) and travel onto other
+  BBSes with the intent of destroying everything in sight.  Another way to
+  play is to simply attack other villages through village empire wars.
+
+  |15Good luck!  And remember: destroy everything.
+
+
+
+|08[End of Intro]
+
+%N
+^PAUSE
+^END
+
+^Clan Symbol
+ |0BClan Symbol|0C
+
+ This symbol is not required and really does nothing on its own.  However, you
+ may find it useful as a way of showing your alliances with other clans.  For
+ instance, if you and 3 other clans are all allied one another, you may wish
+ to pick a common symbol for each of the clans in the alliance.  This way,
+ other clans will immediately know which clans are associated with each other.
+
+ The symbol can be almost any string of up to 20 characters.  You may use
+ pipe (|) codes or TG-style ` codes for colours.  Examples:
+
+  `01[`19KiLL`01]`07   `08\`04/`0C^`01\`08/`07  `04[`0CVGA`07i`04]   `02[`0AKoR`02]
+
+^END
+
+^Individual Colours
+ |0C01 |01Blue    |0C05 |05Magenta     |0C09 |09Blue    |0C13 |13Magenta
+ |0C02 |02Green   |0C06 |06Brown       |0C10 |10Green   |0C14 |14Yellow
+ |0C03 |03Cyan    |0C07 |07Grey        |0C11 |11Cyan    |0C15 |15White
+ |0C04 |04Red     |0C08 |08Dark Grey   |0C12 |12Red
+^END
+
+
+^Beta Note
+%C
+|0CBugs, comments, suggestions?
+
+|0Bemail:               |14tigertigr@yahoo.ca
+|0Bwebpage:             |14http://theclans.sourceforge.net
+|0Bsupport bbs:         |14rev.nine   (defunct)
+
+|0CSee the bulletins for features coming soon!  Here are some features coming
+very, very soon:
+
+        |0B* |0Cinter-village wars (IBBS games)
+        |0B* |0Ca village army
+        |0B* |0Cinterbbs scores
+        |0B* |0Cvillage council
+        |0B* |0Cvillage schemes (port town, farming town, etc.)
+        |0B* |0Cland (for businesses, farms, etc.) for individual clans
+
+^PAUSE
+^END

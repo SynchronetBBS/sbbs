@@ -1,0 +1,8 @@
+Conversion notes for Linux
+
+Some notes on how to convert this to linux:
+
+- change all filenames to lowercase
+- move all .h includes into one large .h file
+- change all sprintf, strcpy, etc. so that they do not contain buffer overflows which may be exploitable
+- file locking (_fsopen et al) must use flock() and others (?)

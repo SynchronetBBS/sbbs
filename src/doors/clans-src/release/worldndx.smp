@@ -1,0 +1,105 @@
+# The Clans -------------------------------------------------------------------
+#
+# This is the World Index file and is created by your league coordinator.
+#
+# DO NOT MODIFY THIS FILE!  Only the coordinator may modify and distribute this
+# file.
+
+WorldName       Magnamund
+LeagueId        MG
+
+# The following is a listing of all BBSes in the league.
+# ----------------------------------------------------------------------------
+# BBSId must ALWAYS come first followed by the other information (which can be
+# in any order.
+# ----------------------------------------------------------------------------
+
+BBSId           1
+BBSName         Revolution Nine
+VillageName     The Village
+Address         6:1/1
+Host 2
+
+BBSId           2
+BBSName         Blah BBS
+VillageName     Dude City
+Address         6:1/2
+Status          Active
+Host 3
+
+BBSId           3
+BBSName         Main BBS
+VillageName     Port Blacksand
+Address         6:1/3
+Status          Active
+
+# Use the following if you wish to reserve a spot for a BBS which will join
+# in the future.
+# BBSId           <enter number here>
+# BBSName         BBS Name
+# VillageName     Village Name
+# Address         XXX:YYY/ZZZ
+# NoMSG <- optional, use this if you don't want a .MSG file to be created.
+#          this is useful for ftp networks
+
+
+# here is the ascii to display
+Ascii [ASCII as it appears in WORLD.NDX]
+Ascii
+Ascii 
+Ascii [Put stuff here]
+Ascii 
+Ascii 
+Ascii 
+Ascii 
+Ascii 
+Ascii 
+Ascii 
+Ascii 
+Ascii 
+Ascii 
+Ascii 
+Ascii 
+Ascii 
+Ascii 
+Ascii 
+Ascii 
+Ascii 
+Ascii 
+Ascii %P
+
+# The following section contains BBS descriptions (i.e. VillInfo section)
+
+#Format is this:  ^villagename
+#                 some text about the BBS goes here (advertising)
+#                 ^END
+
+^The Village
+ |14Revolution Nine -- 403-433-7304
+
+ |06* Home of The Clans!
+ |06* lots of anime files
+ |06* lots of doors and message areas
+ |06* no ratios!
+^END
+
+^Port Town
+ |14My BBS -- 403-4xx-xxxx
+
+ |06* Blah blah
+ |06* Blah blah
+ |06* Blah blah
+ |06* Blah blah
+^END
+
+^Dude City
+ |14Joe's BBS -- 403-4XX-DUDE
+
+ |06* lots of xxx files blah
+ |06* hot online chat
+ |06* blah blah
+^END
+
+
+
+# [EOF] ----------------------------------------------------------------------

@@ -1,0 +1,84 @@
+^Footmen
+|0B Footmen
+
+|0C Footmen are your main source of troops.  They will attack any type of
+ enemy they find.
+^END
+
+^Archers
+|0B Archers
+
+|0C Archers are slightly more specialized than footmen.  About 50% of the time,
+ they will attack enemy archers (if there are any) and 30% of the time they
+ will attack footmen.  They will occasionally attack knights and catapults
+ as well.
+^END
+
+^Catapults
+|0B Catapults
+
+|0C Catapults are hard to use and therefore their level of attack varies.
+ They will often hit a large group of enemy troops but much of the time they
+ will miss.  They are excellent on fort attacks, however.  They are of no
+ use when defending.
+
+|10 It takes 4 followers for each catapult.
+^END
+
+^Knights
+|0B Knights
+
+|0C These troops are the strongest of the pack.  They will attack knights and
+ catapults about 50% of the time while the rest of the time they will attack
+ anyone randomly.  These are great defenses against catapults!!
+^END
+
+^Fort
+|0CYour fort is the homebase of your clan and its troops.  You require a
+fort to manage troops and to attack other clans.  If the current game is set
+to Elimination Mode and your fort is destroyed while your clan is stationed
+in this village, you will be ELIMINATED FROM THE GAME.  Therefore, it is
+important to repair your fort but also try to destroy the competition and
+to wipe them out.
+^END
+
+^Troops
+|0CTroops are needed to attack other clans' forts and to defend your own fort.
+If you wish to rule the village, you must also have troops to defend it
+with.  If you wish to overtake the current ruler, you will need troops to
+attack the ruler's army with.
+^END
+
+^Alliances
+|0CAlliance serve to improve your numbers.  If you are allied with another
+nation and then are attacked, the other nation will donate 10% of their
+troops to you for the battle.  On the other hand, if your allies are
+attacked, you will be forced to donate 10% of your troops to help their cause.
+It is a very good idea to ally with many other clans so that you can have a
+strong army.
+^END
+
+^Attacking
+|0CThe purpose of attacking other players' forts is not only to gain points and
+status but also to gain gold.  The more that an enemy is attacked and
+destroyed, the more gold that is obtained.  Of course, be sure to arm yourself
+well as other clans will be attacking your fort as well!
+^END
+
+^Reserve Troops
+|0CThe purpose of reserving troops is to protect them from attack and also to
+keep them from traveling with the clan.  If you travel to another village,
+only your readied troops (and not the reserved ones) will come along.  This
+is also the case with fort attacks.
+^END
+
+^Army Rating
+|0CArmy Rating can be thought of as the potential of your army.  Of course,
+100% means they are able to do as much damage as possible while 50% means
+they can only do half their regular damage.  Each attack will cause the
+army rating to decrease.  Using a larger army for an attack will cause the
+army rating to decrease substantially.  Therefore, it is advised that you
+keep your attacking armies small.
+
+|0B* Each day, the army rating increases from 5 to 10%.
+^END

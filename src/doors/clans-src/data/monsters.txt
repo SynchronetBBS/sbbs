@@ -1,0 +1,1817 @@
+# 1 ---------------------------------------------------------------------------
+Name            Mangy dog
+HP              7
+Difficulty      1
+Agility         5
+Dexterity       8
+Strength        11
+Wisdom          1
+Armorstr        0
+
+Name            Cave Dweller
+HP              10
+Difficulty      1
+Agility         5
+Dexterity       7
+Strength        9
+Wisdom          3
+Armorstr        0
+
+Name            Witch
+HP              13
+SP              10
+Difficulty      1
+Strength        8
+Agility         8
+Dexterity       5
+Wisdom          10
+ArmorStr        0
+Spell           10
+
+Name            Giant Rat
+HP              14
+Difficulty      1
+Strength        8
+Agility         8
+Dexterity       9
+Wisdom          1
+ArmorStr        0
+
+Name            Ogre
+HP              13
+Difficulty      1
+Strength        10
+Agility         9
+Dexterity       8
+Wisdom          1
+ArmorStr        0
+
+Name            Zombie
+HP              9
+Difficulty      1
+Strength        11
+Agility         8
+Dexterity       8
+Wisdom          3
+ArmorStr        0
+Undead
+
+Name            Evil Wizard
+HP              15
+SP              20
+Difficulty      1
+Strength        9
+Agility         8
+Dexterity       9
+Wisdom          3
+Spell           1
+Spell           5
+Spell           8
+Spell           15
+ArmorStr        0
+
+Name            Troll
+HP              12
+Difficulty      1
+Strength        12
+Agility         6
+Dexterity       7
+Wisdom          2
+ArmorStr        0
+
+Name            Ratman
+HP              13
+Difficulty      1
+Strength        10
+Agility         6
+Dexterity       9
+Wisdom          2
+ArmorStr        0
+
+Name            Rockman
+HP              12
+Difficulty      1
+Strength        12
+Agility         10
+Dexterity       9
+Wisdom          3
+ArmorStr        0
+
+Name            Beast
+HP              14
+Difficulty      1
+Strength        10
+Agility         9
+Dexterity       7
+Wisdom          1
+ArmorStr        0
+
+Name            Grue
+HP              13
+Difficulty      1
+Strength        10
+Agility         9
+Dexterity       10
+Wisdom          3
+ArmorStr        0
+
+Name            Demon
+HP              14
+Difficulty      1
+Strength        11
+Agility         9
+Dexterity       8
+Wisdom          3
+ArmorStr        0
+
+
+# 2 ---------------------------------------------------------------------------
+Name            Bad Boy
+HP              14
+Difficulty      2
+Strength        10
+Agility         9
+Dexterity       7
+Wisdom          3
+ArmorStr        0
+
+Name            Evil Priest
+HP              15
+SP              13
+Difficulty      2
+Strength        11
+Agility         10
+Dexterity       9
+Wisdom          1
+ArmorStr        0
+Spell           6
+Spell           12
+
+Name            Thief
+HP              15
+SP              11
+Difficulty      2
+Strength        10
+Agility         9
+Dexterity       8
+Wisdom          3
+ArmorStr        0
+Spell           16
+
+Name            Drunken Fool
+HP              16
+Difficulty      2
+Strength        10
+Agility         9
+Dexterity       9
+Wisdom          3
+ArmorStr        0
+
+Name            Beggar
+HP              17
+Difficulty      2
+Strength        11
+Agility         8
+Dexterity       7
+Wisdom          2
+ArmorStr        0
+
+Name            Orc
+HP              19
+Difficulty      2
+Strength        10
+Agility         8
+Dexterity       7
+Wisdom          3
+ArmorStr        0
+
+Name            Warrior
+HP              17
+Difficulty      2
+Strength        11
+Agility         8
+Dexterity       9
+Wisdom          2
+ArmorStr        0
+
+Name            Dark Elf
+HP              17
+Difficulty      2
+Strength        16
+Agility         8
+Dexterity       7
+Wisdom          1
+ArmorStr        0
+
+Name            Goblin
+Difficulty      2
+HP              16
+Agility         7
+Strength        10
+Dexterity       9
+Wisdom          4
+Armorstr        1
+
+Name            Orc
+Difficulty      2
+HP              15
+Agility         8
+Strength        11
+Dexterity       7
+Wisdom          3
+Armorstr        0
+
+
+# 3 ---------------------------------------------------------------------------
+Name            Werewolf
+HP              18
+Difficulty      3
+Strength        12
+Agility         10
+Dexterity       9
+Wisdom          2
+ArmorStr        0
+
+Name            Spirit
+HP              21
+Difficulty      3
+Strength        12
+Agility         10
+Dexterity       11
+Wisdom          3
+ArmorStr        0
+
+Name            Serpent
+HP              20
+Difficulty      3
+Strength        14
+Agility         10
+Dexterity       8
+Wisdom          3
+ArmorStr        1
+
+Name            Bum
+HP              19
+Difficulty      3
+Strength        11
+Agility         10
+Dexterity       11
+Wisdom          1
+ArmorStr        0
+
+Name            Freak
+HP              21
+Difficulty      3
+Strength        13
+Agility         10
+Dexterity       10
+Wisdom          2
+ArmorStr        0
+
+Name            Assassin
+HP              22
+SP              ??
+Difficulty      3
+Strength        11
+Agility         9
+Dexterity       14
+Wisdom          3
+ArmorStr        0
+Spell           5
+Spell           16
+
+Name            Nosferatu
+HP              20
+SP              15
+Difficulty      3
+Strength        12
+Agility         9
+Dexterity       10
+Wisdom          12
+ArmorStr        1
+Spell           19
+Undead
+
+Name            Hellcat
+HP              22
+SP              ??
+Difficulty      3
+Strength        12
+Agility         10
+Dexterity       9
+Wisdom          3
+ArmorStr        0
+Undead
+
+Name            Ugly Hag
+HP              23
+Difficulty      3
+Strength        12
+Agility         9
+Dexterity       9
+Wisdom          2
+ArmorStr        0
+
+Name            Wolf
+HP              17
+Difficulty      3
+Agility         7
+Strength        11
+Wisdom          5
+Dexterity       7
+Armorstr        1
+
+Name            Death Knight
+Difficulty      3
+HP              25
+Agility         6
+Dexterity       5
+Strength        11
+Wisdom          9
+Armorstr        1
+Spell           12
+Spell           13
+SP              25
+
+
+
+# 4 ---------------------------------------------------------------------------
+Name            Shadowspawn
+HP              23
+Difficulty      4
+Strength        14
+Agility         10
+Dexterity       9
+Wisdom          5
+ArmorStr        1
+
+Name            Hound
+HP              22
+SP              ??
+Difficulty      4
+Strength        16
+Agility         11
+Dexterity       10
+Wisdom          6
+ArmorStr        1
+
+Name            Hobgoblin
+HP              25
+Difficulty      4
+Strength        13
+Agility         11
+Dexterity       10
+Wisdom          3
+ArmorStr        1
+
+Name            Lunatic
+HP              23
+Difficulty      4
+Strength        14
+Agility         12
+Dexterity       9
+Wisdom          1
+ArmorStr        1
+
+Name            Giant Spider
+HP              22
+Difficulty      4
+Strength        14
+Agility         11
+Dexterity       9
+Wisdom          2
+ArmorStr        1
+
+Name            Ghoul
+HP              24
+Difficulty      4
+Strength        14
+Agility         12
+Dexterity       9
+Wisdom          3
+ArmorStr        1
+Undead
+
+Name            Tarantula
+HP              25
+Difficulty      4
+Strength        14
+Agility         10
+Dexterity       8
+Wisdom          3
+ArmorStr        1
+
+Name            Manticore
+HP              27
+Difficulty      4
+Strength        15
+Agility         10
+Dexterity       9
+Wisdom          3
+ArmorStr        1
+
+Name            Wight
+HP              26
+SP              ??
+Difficulty      4
+Strength        15
+Agility         11
+Dexterity       10
+Wisdom          2
+ArmorStr        1
+Undead
+
+Name            Giant Ant
+Difficulty      4
+HP              25
+Agility         10
+Strength        16
+Wisdom          7
+Dexterity       8
+Armorstr        2
+
+Name            Wildman
+Difficulty      4
+HP              26
+Agility         12
+Strength        15
+Wisdom          8
+Dexterity       10
+Armorstr        1
+
+Name            Old Hag
+Difficulty      4
+HP              27
+Agility         10
+Strength        16
+Wisdom          8
+Dexterity       8
+Armorstr        2
+
+Name            Ninja
+HP              24
+SP              13
+Difficulty      4
+Agility         11
+Strength        14
+Wisdom          7
+Dexterity       11
+Armorstr        2
+Spell           8
+Spell           9
+
+Name            Wildman
+HP              24
+SP              15
+Difficulty      4
+Agility         12
+Strength        15
+Wisdom          5
+Dexterity       10
+Armorstr        1
+
+Name            Dark Elf
+HP              24
+SP              15
+Difficulty      4
+Agility         13
+Strength        16
+Wisdom          8
+Dexterity       9
+Armorstr        1
+Spell           15
+Spell           10
+Spell           8
+
+Name            Wing-Eye
+HP              23
+Difficulty      4
+Agility         10
+Strength        15
+Wisdom          6
+Dexterity       8
+Armorstr        0
+
+# 5 ---------------------------------------------------------------------------
+Name            Shadow Knight
+HP              22
+SP              10
+Difficulty      5
+Strength        16
+Agility         12
+Dexterity       11
+Wisdom          3
+ArmorStr        3
+Spell           11
+Spell           12
+
+Name            Giant Maggot
+HP              24
+Difficulty      5
+Strength        17
+Agility         11
+Dexterity       7
+Wisdom          4
+ArmorStr        4
+
+Name            Wraith
+HP              25
+SP              10
+Difficulty      5
+Strength        18
+Agility         13
+Dexterity       13
+Wisdom          2
+ArmorStr        3
+Spell           5
+Spell           3
+
+Name            Skeleton
+HP              27
+Difficulty      5
+Strength        18
+Agility         12
+Dexterity       10
+Wisdom          4
+ArmorStr        3
+Undead
+
+Name            Fire Imp
+HP              26
+Difficulty      5
+Strength        17
+Agility         13
+Dexterity       12
+Wisdom          4
+ArmorStr        3
+
+Name            Rock Grub
+HP              24
+Difficulty      5
+Strength        17
+Agility         12
+Dexterity       9
+Wisdom          3
+ArmorStr        2
+
+Name            Dark Soldier
+HP              26
+Difficulty      5
+Strength        18
+Agility         13
+Dexterity       10
+Wisdom          4
+ArmorStr        4
+
+Name            Lizardman
+HP              25
+Difficulty      5
+Strength        17
+Agility         13
+Dexterity       11
+Wisdom          3
+ArmorStr        2
+
+Name            Vampire
+HP              26
+SP              18
+Difficulty      5
+Strength        19
+Agility         13
+Dexterity       9
+Wisdom          14
+ArmorStr        3
+Spell           19
+
+Name            Boulder Beast
+HP              23
+Difficulty      5
+Strength        18
+Agility         14
+Dexterity       10
+Wisdom          3
+ArmorStr        3
+
+# 6 ---------------------------------------------------------------------------
+Name            Giant Centipede
+HP              17
+Difficulty      6
+Strength        19
+Agility         13
+Dexterity       12
+Wisdom          2
+ArmorStr        4
+
+Name            Chaos Lord
+HP              26
+Difficulty      6
+Strength        18
+Agility         14
+Dexterity       12
+Wisdom          4
+ArmorStr        3
+
+Name            Skeleton
+HP              27
+Difficulty      6
+Strength        19
+Agility         13
+Dexterity       10
+Wisdom          4
+ArmorStr        4
+Undead
+
+Name            Minotaur
+HP              28
+Difficulty      6
+Strength        19
+Agility         15
+Dexterity       10
+Wisdom          4
+ArmorStr        5
+
+Name            Green Slyme
+HP              27
+Difficulty      6
+Strength        19
+Agility         13
+Dexterity       9
+Wisdom          4
+ArmorStr        3
+
+Name            Blue Slyme
+HP              26
+Difficulty      6
+Strength        21
+Agility         13
+Dexterity       12
+Wisdom          2
+ArmorStr        4
+
+Name            Red Slyme
+HP              26
+Difficulty      6
+Strength        19
+Agility         14
+Dexterity       10
+Wisdom          3
+ArmorStr        3
+
+Name            Troglodyte
+HP              27
+Difficulty      6
+Strength        20
+Agility         15
+Dexterity       10
+Wisdom          3
+ArmorStr        4
+
+Name            Serpent
+HP              28
+Difficulty      6
+Strength        20
+Agility         13
+Dexterity       11
+Wisdom          4
+ArmorStr        4
+
+Name            Dark Mage
+HP              24
+SP              10
+Difficulty      6
+Strength        21
+Agility         13
+Dexterity       10
+Wisdom          10
+ArmorStr        2
+Spell           8
+Spell           13
+Spell           14
+
+# 7 ---------------------------------------------------------------------------
+Name            Ranger
+HP              29
+Difficulty      7
+Strength        19
+Agility         14
+Dexterity       11
+Wisdom          2
+ArmorStr        4
+
+Name            Shadow
+HP              31
+Difficulty      7
+Strength        20
+Agility         15
+Dexterity       10
+Wisdom          2
+ArmorStr        5
+
+Name            Shadow Wolf
+HP              27
+Difficulty      7
+Strength        20
+Agility         13
+Dexterity       12
+Wisdom          4
+ArmorStr        5
+
+Name            Shadow Knight
+HP              25
+Difficulty      7
+Strength        22
+Agility         14
+Dexterity       10
+Wisdom          4
+ArmorStr        4
+
+Name            Silver Knight
+HP              27
+Difficulty      7
+Strength        21
+Agility         13
+Dexterity       16
+Wisdom          3
+ArmorStr        6
+
+Name            Hell Hound
+HP              28
+Difficulty      7
+Strength        19
+Agility         9
+Dexterity       14
+Wisdom          2
+ArmorStr        5
+
+Name            Witch
+HP              26
+Difficulty      7
+Strength        18
+Agility         15
+Dexterity       11
+Wisdom          3
+ArmorStr        5
+
+Name            Wyvern
+HP              26
+Difficulty      7
+Strength        21
+Agility         16
+Dexterity       10
+Wisdom          4
+ArmorStr        4
+
+Name            Fimir
+HP              25
+Difficulty      7
+Strength        19
+Agility         15
+Dexterity       12
+Wisdom          3
+ArmorStr        5
+
+Name            Demon
+HP              27
+Difficulty      7
+Strength        21
+Agility         16
+Dexterity       11
+Wisdom          3
+ArmorStr        4
+
+# 8 ---------------------------------------------------------------------------
+Name            Orc
+HP              29
+Difficulty      8
+Strength        21
+Agility         14
+Dexterity       11
+Wisdom          4
+ArmorStr        5
+
+Name            Goblin
+HP              28
+Difficulty      8
+Strength        20
+Agility         15
+Dexterity       9
+Wisdom          4
+ArmorStr        3
+
+Name            Gargoyle
+HP              32
+Difficulty      8
+Strength        21
+Agility         14
+Dexterity       11
+Wisdom          4
+ArmorStr        6
+
+Name            Martial Artist
+HP              29
+SP              12
+Difficulty      8
+Strength        20
+Agility         14
+Dexterity       10
+Wisdom          3
+ArmorStr        4
+Spell           21
+Spell           9
+Spell           8
+
+Name            Small Dragon
+HP              30
+SP              15
+Difficulty      8
+Strength        23
+Agility         11
+Dexterity       10
+Wisdom          4
+ArmorStr        5
+Spell           24
+
+Name            Ogre
+HP              31
+Difficulty      8
+Strength        21
+Agility         15
+Dexterity       9
+Wisdom          2
+ArmorStr        5
+
+Name            Orc
+HP              30
+Difficulty      8
+Strength        22
+Agility         14
+Dexterity       11
+Wisdom          4
+ArmorStr        4
+
+Name            Ogre
+HP              29
+Difficulty      8
+Strength        21
+Agility         15
+Dexterity       11
+Wisdom          4
+ArmorStr        5
+
+Name            Dark Knight
+HP              30
+Difficulty      8
+Strength        22
+Agility         16
+Dexterity       11
+Wisdom          4
+ArmorStr        6
+
+Name            Wolf
+HP              31
+Difficulty      8
+Strength        20
+Agility         15
+Dexterity       11
+Wisdom          4
+ArmorStr        5
+
+# 9 ---------------------------------------------------------------------------
+Name            Minotaur
+HP              29
+SP              ??
+Difficulty      9
+Strength        22
+Agility         14
+Dexterity       10
+Wisdom          4
+ArmorStr        6
+
+Name            Blood Fiend
+HP              28
+Difficulty      9
+Strength        21
+Agility         16
+Dexterity       12
+Wisdom          3
+ArmorStr        4
+
+Name            Old Hag
+HP              32
+Difficulty      9
+Strength        22
+Agility         15
+Dexterity       10
+Wisdom          2
+ArmorStr        5
+
+Name            Lunatic
+HP              30
+SP              ??
+Difficulty      9
+Strength        23
+Agility         10
+Dexterity       12
+Wisdom          2
+ArmorStr        3
+
+Name            Ogre
+HP              31
+Difficulty      9
+Strength        24
+Agility         11
+Dexterity       13
+Wisdom          4
+ArmorStr        5
+Spell           18
+
+Name            Boulder Beast
+HP              30
+Difficulty      9
+Strength        23
+Agility         12
+Dexterity       12
+Wisdom          4
+ArmorStr        5
+
+Name            Dark Nun
+HP              32
+Difficulty      9
+Strength        25
+Agility         12
+Dexterity       12
+Wisdom          3
+ArmorStr        4
+
+Name            Large Spider
+HP              34
+Difficulty      9
+Strength        24
+Agility         12
+Dexterity       11
+Wisdom          3
+ArmorStr        3
+
+Name            Giant Ant
+HP              32
+Difficulty      9
+Strength        23
+Agility         11
+Dexterity       10
+Wisdom          2
+ArmorStr        4
+
+Name            Dark Knight
+HP              35
+Difficulty      9
+Strength        22
+Agility         12
+Dexterity       10
+Wisdom          3
+ArmorStr        5
+
+# 10 --------------------------------------------------------------------------
+Name            Spirit
+HP              34
+Difficulty      10
+Strength        24
+Agility         13
+Dexterity       12
+Wisdom          6
+ArmorStr        5
+
+Name            Gargoyle
+HP              34
+Difficulty      10
+Strength        24
+Agility         11
+Dexterity       12
+Wisdom          4
+ArmorStr        4
+
+Name            Demon
+HP              33
+Difficulty      10
+Strength        26
+Agility         10
+Dexterity       11
+Wisdom          5
+ArmorStr        5
+
+Name            Goblin
+HP              34
+Difficulty      10
+Strength        25
+Agility         10
+Dexterity       11
+Wisdom          5
+ArmorStr        6
+
+Name            LizardMan
+HP              35
+SP              ??
+Difficulty      10
+Strength        24
+Agility         12
+Dexterity       10
+Wisdom          4
+ArmorStr        6
+
+Name            Red Devil
+HP              32
+Difficulty      10
+Strength        19
+Agility         10
+Dexterity       12
+Wisdom          4
+ArmorStr        4
+
+Name            Satyr
+HP              34
+Difficulty      10
+Strength        23
+Agility         13
+Dexterity       12
+Wisdom          5
+ArmorStr        5
+
+Name            Ghoul
+HP              32
+Difficulty      10
+Strength        24
+Agility         11
+Dexterity       12
+Wisdom          5
+ArmorStr        3
+Undead
+
+Name            Vampire
+HP              34
+Difficulty      10
+Strength        25
+Agility         11
+Dexterity       11
+Wisdom          5
+ArmorStr        3
+Spell           19
+Undead
+
+Name            Centaur
+HP              32
+SP              10
+Difficulty      11
+Strength        26
+Agility         12
+Dexterity       12
+Wisdom          10
+ArmorStr        5
+Spell           4
+Spell           5
+
+# 11 --------------------------------------------------------------------------
+Name            Giant Millipede
+HP              36
+Difficulty      11
+Strength        26
+Agility         12
+Dexterity       11
+Wisdom          5
+ArmorStr        6
+
+Name            Werewolf
+HP              35
+Difficulty      11
+Strength        27
+Agility         11
+Dexterity       11
+Wisdom          3
+ArmorStr        5
+
+Name            Beast
+HP              42
+Difficulty      11
+Strength        28
+Agility         12
+Dexterity       12
+Wisdom          5
+ArmorStr        6
+
+# 12 --------------------------------------------------------------------------
+Name            Loomer
+HP              43
+SP              ??
+Difficulty      12
+Strength        29
+Agility         12
+Dexterity       11
+Wisdom          3
+ArmorStr        5
+
+Name            Black Goo
+HP              40
+SP              ??
+Difficulty      12
+Strength        28
+Agility         13
+Dexterity       12
+Wisdom          3
+ArmorStr        5
+
+Name            Golem
+HP              40
+Difficulty      12
+Strength        29
+Agility         14
+Dexterity       13
+Wisdom          4
+ArmorStr        6
+
+Name            Minotaur
+HP              40
+SP              ??
+Difficulty      12
+Strength        30
+Agility         12
+Dexterity       12
+Wisdom          6
+ArmorStr        7
+
+Name            Cyclops
+HP              43
+Difficulty      12
+Strength        27
+Agility         12
+Dexterity       12
+Wisdom          5
+ArmorStr        5
+
+Name            Evil Bard
+HP              41
+SP              ??
+Difficulty      12
+Strength        29
+Agility         11
+Dexterity       11
+Wisdom          5
+ArmorStr        6
+
+Name            Evil Farmer
+HP              41
+SP              ??
+Difficulty      12
+Strength        31
+Agility         12
+Dexterity       13
+Wisdom          3
+ArmorStr        5
+
+Name            Murderer
+HP              40
+SP              ??
+Difficulty      12
+Strength        32
+Agility         12
+Dexterity       13
+Wisdom          5
+ArmorStr        6
+
+Name            Giant
+HP              41
+Difficulty      13
+Strength        27
+Agility         13
+Dexterity       12
+Wisdom          4
+ArmorStr        5
+
+# 13 --------------------------------------------------------------------------
+Name            Sorcerer
+HP              42
+SP              17
+Difficulty      13
+Strength        28
+Agility         11
+Dexterity       13
+Wisdom          6
+ArmorStr        6
+Spell           6
+Spell           7
+Spell           8
+
+Name            Wyvern
+HP              43
+SP              ??
+Difficulty      13
+Strength        29
+Agility         12
+Dexterity       12
+Wisdom          5
+ArmorStr        7
+
+Name            Warrior
+HP              43
+SP              ??
+Difficulty      13
+Strength        33
+Agility         13
+Dexterity       12
+Wisdom          3
+ArmorStr        6
+
+Name            Black Moon Warrior
+HP              44
+SP              ??
+Difficulty      13
+Strength        30
+Agility         14
+Dexterity       12
+Wisdom          4
+ArmorStr        5
+
+Name            Goblin
+HP              43
+SP              ??
+Difficulty      13
+Strength        28
+Agility         12
+Dexterity       14
+Wisdom          4
+ArmorStr        6
+
+Name            Troll
+HP              41
+SP              ??
+Difficulty      13
+Strength        32
+Agility         11
+Dexterity       13
+Wisdom          6
+ArmorStr        4
+
+Name            Large Rat
+HP              42
+SP              ??
+Difficulty      13
+Strength        31
+Agility         12
+Dexterity       13
+Wisdom          4
+ArmorStr        5
+
+# 14 --------------------------------------------------------------------------
+Name            Large Spider
+HP              46
+SP              ??
+Difficulty      14
+Strength        33
+Agility         13
+Dexterity       12
+Wisdom          5
+ArmorStr        6
+
+Name            Large Millipede
+HP              48
+SP              ??
+Difficulty      14
+Strength        34
+Agility         13
+Dexterity       12
+Wisdom          6
+ArmorStr        5
+
+Name            Dark Elf
+HP              45
+Difficulty      14
+Strength        33
+Agility         14
+Dexterity       13
+Wisdom          4
+ArmorStr        4
+
+Name            Spiked Demon
+HP              46
+SP              ??
+Difficulty      14
+Strength        31
+Agility         13
+Dexterity       12
+Wisdom          4
+ArmorStr        6
+
+Name            Skeleton
+HP              45
+SP              ??
+Difficulty      14
+Strength        34
+Agility         12
+Dexterity       12
+Wisdom          4
+ArmorStr        7
+Undead
+
+Name            Bats
+HP              44
+SP              ??
+Difficulty      14
+Strength        32
+Agility         12
+Dexterity       12
+Wisdom          5
+ArmorStr        6
+
+Name            Caveman
+HP              45
+SP              ??
+Difficulty      14
+Strength        33
+Agility         14
+Dexterity       12
+Wisdom          4
+ArmorStr        8
+
+# 15 --------------------------------------------------------------------------
+Name            Mummy
+HP              44
+Difficulty      15
+Strength        33
+Agility         12
+Dexterity       12
+Wisdom          6
+Undead
+ArmorStr        6
+
+Name            Serpent
+HP              46
+SP              ??
+Difficulty      15
+Strength        34
+Agility         13
+Dexterity       14
+Wisdom          6
+ArmorStr        7
+
+Name            Rabid Dog
+HP              44
+SP              ??
+Difficulty      15
+Strength        36
+Agility         14
+Dexterity       14
+Wisdom          5
+ArmorStr        6
+
+Name            Ugly Man
+HP              46
+SP              ??
+Difficulty      15
+Strength        35
+Agility         12
+Dexterity       13
+Wisdom          8
+ArmorStr        5
+
+Name            Critter
+HP              47
+SP              ??
+Difficulty      15
+Strength        34
+Agility         13
+Dexterity       12
+Wisdom          6
+ArmorStr        6
+
+Name            Blue Jelly
+HP              47
+SP              ??
+Difficulty      15
+Strength        37
+Agility         12
+Dexterity       14
+Wisdom          5
+ArmorStr        5
+
+Name            Fire Elemental
+HP              44
+SP              ??
+Difficulty      15
+Strength        38
+Agility         15
+Dexterity       13
+Wisdom          7
+ArmorStr        7
+
+Name            Sprite
+HP              47
+SP              ??
+Difficulty      15
+Strength        36
+Agility         14
+Dexterity       14
+Wisdom          5
+ArmorStr        6
+
+# 16 --------------------------------------------------------------------------
+Name            Slyme
+HP              47
+Difficulty      16
+Strength        39
+Agility         12
+Dexterity       12
+Wisdom          6
+ArmorStr        5
+
+Name            Giant Maggot
+HP              51
+Difficulty      16
+Strength        38
+Agility         12
+Dexterity       15
+Wisdom          6
+ArmorStr        6
+
+Name            Undead Warrior
+HP              52
+Difficulty      16
+Strength        39
+Agility         15
+Dexterity       16
+Wisdom          5
+ArmorStr        7
+Undead
+
+Name            Death Soldier
+HP              43
+Difficulty      16
+Strength        40
+Agility         13
+Dexterity       14
+Wisdom          5
+ArmorStr        6
+
+Name            Undertaker
+HP              47
+Difficulty      16
+Strength        36
+Agility         13
+Dexterity       13
+Wisdom          5
+ArmorStr        7
+
+Name            Wild Man
+HP              45
+SP              ??
+Difficulty      16
+Strength        38
+Agility         14
+Dexterity       14
+Wisdom          6
+ArmorStr        5
+
+Name            Dark Monk
+HP              47
+SP              10
+Difficulty      16
+Strength        41
+Agility         13
+Dexterity       14
+Wisdom          6
+ArmorStr        7
+Spell           5
+
+Name            Thief
+HP              48
+Difficulty      16
+Strength        38
+Agility         12
+Dexterity       15
+Wisdom          6
+ArmorStr        8
+
+Name            Small Dragon
+HP              48
+Difficulty      16
+Strength        39
+Agility         14
+Dexterity       13
+Wisdom          8
+ArmorStr        7
+
+# 17 --------------------------------------------------------------------------
+Name            Sorcerer
+HP              51
+SP              23
+Difficulty      17
+Strength        42
+Agility         14
+Dexterity       15
+Wisdom          6
+ArmorStr        5
+Spell           22
+Spell           19
+Spell           15
+Spell           8
+
+Name            Spirit
+HP              52
+Difficulty      17
+Strength        42
+Agility         13
+Dexterity       14
+Wisdom          6
+ArmorStr        8
+
+Name            Evil Bard
+HP              53
+Difficulty      17
+Strength        41
+Agility         13
+Dexterity       15
+Wisdom          7
+ArmorStr        7
+
+Name            Rock Beast
+HP              50
+Difficulty      17
+Strength        40
+Agility         15
+Dexterity       14
+Wisdom          7
+ArmorStr        8
+
+Name            Brakarak
+HP              52
+Difficulty      17
+Strength        33
+Agility         17
+Dexterity       17
+Wisdom          6
+ArmorStr        6
+
+Name            Emerald Wizard
+HP              50
+SP              20
+Difficulty      17
+Strength        43
+Agility         16
+Dexterity       15
+Wisdom          5
+ArmorStr        5
+Spell           4
+Spell           5
+Spell           7
+
+Name            Amundsen
+HP              49
+Difficulty      17
+Strength        42
+Agility         14
+Dexterity       14
+Wisdom          5
+ArmorStr        7
+
+Name            Dark Demon
+HP              48
+SP              13
+Difficulty      17
+Strength        45
+Agility         12
+Dexterity       13
+Wisdom          4
+ArmorStr        7
+Spell           1
+
+# 18 --------------------------------------------------------------------------
+Name            Diablo
+HP              50
+Difficulty      18
+Strength        44
+Agility         15
+Dexterity       13
+Wisdom          5
+ArmorStr        8
+
+Name            Dark Wizard
+HP              49
+SP              30
+Difficulty      18
+Strength        45
+Agility         15
+Dexterity       14
+Wisdom          5
+ArmorStr        7
+Spell           12
+Spell           10
+Spell           15
+
+Name            Slyme
+HP              47
+SP              ??
+Difficulty      18
+Strength        46
+Agility         14
+Dexterity       13
+Wisdom          7
+ArmorStr        6
+
+Name            Casba Dragon
+HP              49
+SP              ??
+Difficulty      18
+Strength        44
+Agility         13
+Dexterity       13
+Wisdom          6
+ArmorStr        8
+
+Name            Caveman
+HP              49
+Difficulty      18
+Strength        43
+Agility         14
+Dexterity       13
+Wisdom          6
+ArmorStr        7
+
+Name            Skeletal Fiend
+HP              52
+Difficulty      18
+Strength        41
+Agility         13
+Dexterity       14
+Wisdom          6
+ArmorStr        6
+Undead
+
+Name            Doom Ninja
+HP              45
+SP              25
+Difficulty      18
+Strength        42
+Agility         15
+Dexterity       15
+Wisdom          5
+ArmorStr        8
+Spell           8
+Spell           9
+Spell           10
+
+# 19 --------------------------------------------------------------------------
+Name            Doom Wolf
+HP              49
+Difficulty      19
+Strength        41
+Agility         16
+Dexterity       15
+Wisdom          5
+ArmorStr        7
+
+Name            Doom Knight
+HP              41
+Difficulty      19
+Strength        43
+Agility         14
+Dexterity       13
+Wisdom          4
+ArmorStr        8
+
+Name            Doom Wizard
+HP              48
+SP              22
+Difficulty      19
+Strength        46
+Agility         15
+Dexterity       14
+Wisdom          5
+ArmorStr        7
+Spell           19
+Spell           15
+Spell           12
+
+Name            Orc Knight
+HP              47
+Difficulty      19
+Strength        48
+Agility         14
+Dexterity       14
+Wisdom          8
+ArmorStr        9
+
+Name            Wild Dog
+HP              47
+SP              ??
+Difficulty      19
+Strength        45
+Agility         13
+Dexterity       15
+Wisdom          7
+ArmorStr        7
+
+Name            Fire Fiend
+HP              47
+Difficulty      19
+Strength        47
+Agility         14
+Dexterity       16
+Wisdom          4
+ArmorStr        6
+
+Name            Green Demon
+HP              48
+SP              ??
+Difficulty      19
+Strength        48
+Agility         15
+Dexterity       16
+Wisdom          6
+ArmorStr        8
+
+# 20 --------------------------------------------------------------------------
+Name            Orange Demon
+HP              42
+Difficulty      20
+Strength        51
+Agility         13
+Dexterity       15
+Wisdom          7
+ArmorStr        8
+
+Name            Violet Demon
+HP              48
+SP              ??
+Difficulty      20
+Strength        52
+Agility         15
+Dexterity       14
+Wisdom          7
+ArmorStr        8
+
+Name            Red Demon
+HP              41
+SP              ??
+Difficulty      20
+Strength        50
+Agility         14
+Dexterity       15
+Wisdom          8
+ArmorStr        8
+
+Name            Doom Wolf
+HP              48
+Difficulty      20
+Strength        49
+Agility         14
+Dexterity       15
+Wisdom          5
+ArmorStr        9
+
+Name            Doom Knight
+HP              52
+SP              12
+Difficulty      20
+Strength        51
+Agility         14
+Dexterity       15
+Wisdom          7
+ArmorStr        5
+Spell           9
+
+Name            Hell Hound
+HP              51
+Difficulty      20
+Strength        52
+Agility         15
+Dexterity       16
+Wisdom          7
+ArmorStr        8
+
+Name            Hell Knight
+HP              51
+SP              12
+Difficulty      20
+Strength        52
+Agility         14
+Dexterity       16
+Wisdom          10
+ArmorStr        7
+Spell           15
+
+Name            Red Dragon
+HP              52
+Difficulty      20
+Strength        53
+Agility         15
+Dexterity       15
+Wisdom          7
+ArmorStr        8
+
+Name            Green Dragon
+HP              53
+SP              21
+Difficulty      20
+Strength        54
+Agility         15
+Dexterity       14
+Wisdom          7
+ArmorStr        9
+Spell           17
+

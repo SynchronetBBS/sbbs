@@ -1,0 +1,1489 @@
+# -----------------------------------------------------------------------------
+# Knight
+# -----------------------------------------------------------------------------
+
+Topic           Knight.Past
+Text    "I was once the knight in a powerful kingdom.
+TellTopic       Knight.About.King
+End
+
+Topic           Knight.About.King
+Text    "I once served an excellent king, but he was killed.
+TellTopic       Knight.4
+#TellQuest Quest7
+End
+
+Topic           Knight.2
+Text "|02I enjoy adventuring and fighting evil with other |10clans|02.
+TellTopic       Knight.JoinClan
+End
+
+Topic           Knight.3
+Text "The sword was dubbed "The Heavenly Sword".  The king was least seen
+Text "using it in battle.  Only he knows its whereabouts!
+End
+
+Topic           Knight.4
+Text    "The king's name was King Claudius.  He wielded a fabulous sword.
+TellTopic       Knight.3
+End
+
+Topic           Knight.JoinClan
+Text "I can't join your clan.  I must search out other knights like me so that
+Text "we may overcome evil.
+End
+
+# -----------------------------------------------------------------------------
+# Fisherman
+# -----------------------------------------------------------------------------
+
+Topic           Fisherman.JoinClan
+Text "Oh, I cannot join your clan.  I am too busy fishing!
+End
+
+Topic           Fisherman.Catch?
+Text "Not yet, but I know I am going to catch one soon.  Very soon...
+End
+
+Topic           Fisherman.Kingdom
+Text "I once served under a very powerful king.  I was a general, but the kingdom
+Text "was destroyed by a very evil man.  They called him "The Dark One."  The
+Text "kingdom was very prosperous until The Dark One came.  I still have much of
+Text "the money I had back then, but I have no use for it now...
+TellTopic  Fisherman.EvilMan
+TellTopic  Fisherman.Money
+End
+
+Topic           Fisherman.EvilMan
+Text "I don't know much about him, but from what I've heard, he always wears black
+Text "and supposedly, his kingdom lies deep within this very mine!
+End
+
+Topic           Fisherman.Music
+# if he rescued Leonard, say thanks
+{Q5}Text "Thanks for rescuing Leonard!  He is back to his old self again and composing
+{Q5}Text "wonderful music!
+{!Q5} Prompt "Do you like music? [|12Y/N|02]: |13
+{!Q5} Option Y NextLine
+{!Q5} Option N Fisherman.!Music
+{!Q5} Text
+{!Q5} Text "|02That's great to hear!  I love music too.
+End
+
+Topic           Fisherman.!Music
+Text
+Text "|02That's a shame!  You should listen to music.  My favourite music was
+Text "made by a minstrel named Leonard, but he was taken hostage by some strange
+Text "creatures.  If only I could hear that music again.  He's hidden somewhere
+Text "in these mines, but I am too weak to fight!  If I were stronger, I'd
+Text "rescue him myself.
+Text
+Prompt "Do you wish to know where to find and rescue him? [|12Y/N|02]: |13
+Option N NextLine
+Option Y Fisherman.Music.R
+Text
+Text "|02I guess we'll never hear his sweet music again.
+End
+
+Topic           Fisherman.Music.R
+Text
+Text "|02Good luck!  I hope you rescue him so we can hear his wonderful music again!
+TellQuest Quest5
+End
+
+Topic Fisherman.Money
+Prompt "|02I have much gold in my small shack.  Would like some of my gold? [|12Y/N|02]: |13
+Option Y NextLine
+Option N Fisherman.NoGold
+GiveGold 250
+Text
+{D1}Text "|02I gave you all the money I have on hand.  Come back another time and I shall
+{D1}Text "give you more.
+{!D1}Text "|03(He gives you 250 gold pieces.)  |02It is useless to me.  Enjoy it.
+# set flag so people don't keep coming back getting money.
+SetFlag D1
+End
+
+        Topic Fisherman.NoGold
+        Text
+        Text "|02Good.  Money is the root of all evil!
+        End
+
+
+# -----------------------------------------------------------------------------
+# Village Idiot
+# -----------------------------------------------------------------------------
+
+Topic Vidiot.1
+Text "|02Duh . . .
+End
+
+Topic Vidiot.2
+Prompt "|02I'm fine.
+End
+
+Topic Vidiot.3
+Text "There is a lost knight in an abandoned old keep to the north of town!
+Text "He is supposedly held captive by a creature which roams the keep!
+Text "That's all I know about it though so don't bother asking me anything else.
+TellTopic Vidiot.4
+#TellQuest Quest8
+End
+
+Topic Vidiot.4
+Text "I told you I know nothing else!
+TellTopic Vidiot.5
+End
+
+Topic Vidiot.5
+Text "If you're expecting something cool to happen, don't get your hopes up.
+TellTopic Vidiot.6
+End
+
+Topic Vidiot.6
+Text "Maybe you'd like to become the village idiot, huh?
+End
+
+
+# -----------------------------------------------------------------------------
+# Prince Ussher
+# -----------------------------------------------------------------------------
+
+Topic Ussher.1
+{!D2}Text "Hello, I wrote this game.
+{!D2}Text "|03(Each clan member gains 5 experience for being in the prince's presence.)
+{!D2}GiveXP 5
+{D2}Text "Hello again.
+{!D2}Setflag D2
+End
+
+Topic Ussher.2
+Text "Do everything in your power to gain gold and experience quickly.
+End
+
+Topic Ussher.3
+Text "There are may be secrets but I'm not telling.
+End
+
+Topic Ussher.4
+Text "There are NO cheats in this game.  Cheaters suck.
+End
+
+Topic Ussher.5
+Prompt "You like the game so far? [|12Y/N|02]: |13
+Option Y Ussher.Yes
+Option N NextLine
+Text
+Text "|02Your opinion has no meaning whatsoever to me.  Blah! :P
+End
+
+Topic Ussher.Yes
+Text
+Text "|02Thanks, your opinion is quite important to me.
+# secretly give 5 points
+GiveXP 5
+End
+
+Topic Ussher.6
+Text "|02I've also made a door game called Ashrella which uses TXDS (a door creation
+Text "utility).  Another game I made is not an RPG but more of a action game which
+Text "something like internet MUDs.
+End
+
+Topic Ussher.7
+Text "|02Here's 10 gold pieces.  Don't spend it all at once <grin> . . .
+GiveGold 10
+End
+
+Topic Ussher.8
+Text "|02Saggitarius, but I don't see how it matters.
+End
+
+# -----------------------------------------------------------------------------
+# Lovely Lady
+# -----------------------------------------------------------------------------
+
+Topic Lady.1
+Text "Hello.  My name is Alys.
+End
+
+Topic Lady.2
+Text "I am a seamstress.
+TellTopic Lady.3
+End
+
+Topic Lady.3
+Text "I sew for a living.  Many of my friends are seamstresses too.
+TellTopic Lady.4
+End
+
+Topic Lady.4
+Text "Actually, almost all my female friends sew even if they aren't seamstresses.
+Prompt "We sew together and tell stories.  Do you wish to hear a story? [|12Y/N|02]: |13
+Option Y Lady.Story
+Option N NextLine
+Text
+Text "Well, maybe next time you'd like to hear the story...
+End
+
+Topic Lady.Story
+Text
+Text "|02This story is about a couple who loved each other dearly and some people say
+Text "it is actually true!
+Text
+Text "A long time ago, a man and woman were to be married.  One day they were
+Text "wandering along the snowy hillside  and didn't realize what was about to
+Text "happen.  They were caught unawares by the avalanche that was approaching from
+Text "above.  They took shelter in a cave but then the cave was closed off by piles
+Text "of snow.
+Text
+Text "They decided to search out the cave for another way out.  They were walking
+Text "quietly when suddenly the woman slipped and almost fell into a chasm!
+Text "The man grabbed her hand and held on as hard as he could.  But their grips
+Text "were loosening.  He couldn't hold on any more.  She finally slipped free of
+Text "his tight grasp and fell to her grave.  When the man was later rescued, his
+Text "face was pale.  That night he commited suicide.  They say her ghost still
+Text "wanders the cave in mourning.
+Text
+Text "Quite an interesting tale, isn't it?
+#TellQuest Quest10
+End
+
+# -----------------------------------------------------------------------------
+# Beggar 1
+# -----------------------------------------------------------------------------
+
+Topic Beggar1.0
+Text "Please, kind warrior, give me |10100 gold |02pieces.
+Text
+Prompt "Give the beggar 100 gold pieces? [|12Y/N|02]: |13
+Option Y Beggar1.Y
+Option N NextLine
+Text
+Text "|02Thanks for nothing!
+pause
+EndChat
+End
+
+Topic Beggar1.Y
+# see if gold on hand
+Text
+{!$100}Text "|03(You realize you do not have that much gold on hand!)
+{!$100}Text
+{!$100}Text "|02Thanks for nothing!
+{!$100}pause
+{!$100}EndChat
+TakeGold 100
+Text "|02Thank you kindly!  Ask me anything you want.
+End
+
+Topic Beggar1.1
+Text "Sorry.  I know nothing of "The Dark One"
+End
+
+Topic Beggar1.2
+Text "The flag of this land contains two suns: a black sun and a white one.
+Text "The black sun comes once a year and during that period, everybody stays
+Text "indoors until the black sun passes.
+TellTopic Beggar1.3
+End
+
+Topic Beggar1.3
+Text "The reason people go indoors is because during this dark period, creatures of
+Text "all sorts come out and anyone caught in the streets during this time will be
+Text "killed!  Luckily, in the past I was able to hide in a barn . . .
+End
+
+Topic Beggar1.4
+Text "I was once a warrior with great vitality like yourself but I was seriously
+Text "crippled in a battle and could do nothing afterwards.  I soon became poor
+Text "because I could do no work.  I hope you are successful in your endeavours!
+{!D3} Text
+{!D3} Text "|10The beggar's story motivates you to fight even more. You gain 1 monster battle.
+{!D3} GiveFight 1
+Setflag D3
+End
+
+Topic Beggar1.5
+Text "If I knew that, do you think I'd be a beggar?!?
+End
+
+# -----------------------------------------------------------------------------
+# Villager 1
+# -----------------------------------------------------------------------------
+
+Topic Villager1.0
+Text "I wish I could go on an adventure.  I'm pretty fit but have no experience!
+End
+
+Topic Villager1.1
+JoinClan
+End
+
+Topic Villager1.2
+Text "I value loyalty greatly and I have never stabbed anyone in the back.
+End
+
+Topic Villager1.3
+Text "I am a teacher by trade.
+End
+
+Topic Villager1.4
+Text "I am an excellent speaker.  It comes with the territory I suppose.
+End
+
+# -----------------------------------------------------------------------------
+# Villager 1
+# -----------------------------------------------------------------------------
+
+
+# -----------------------------------------------------------------------------
+# The Wise One -- answers only one question per day
+# -----------------------------------------------------------------------------
+
+Topic Wise.0
+{D4}Text "You've had your chance to ask a question today.  Please ask again another day.
+{D4}EndChat
+# otherwise, chat
+# make it so can't chat again later today
+SetFlag D4
+Text "Hello, there.  I am a very busy person answering questions from many, many
+Text "people.  Please, I ask that you only ask one question of me . . .
+End
+
+Topic Wise.1
+Text "Make sure you get a temporary member joining your clan each day.  Also
+Text "ensure you do not pick all warriors or all wizards for your clansmen.
+End
+
+Topic Wise.2
+Text "Many footmen can be used to strengthen your army.
+End
+
+Topic Wise.3
+Text "Ally with many other clans if you wish to strengthen your position.
+End
+
+Topic Wise.4
+Text "You wish to rule with confidence?  Have many allies who will attack those
+Text "who try to usurp your power.
+End
+
+Topic Wise.5
+Text "Always keep crime at a low!
+End
+
+Topic Wise.6
+Text "Build a church and upgrade it as soon as possible!
+End
+
+
+
+# -----------------------------------------------------------------------------
+# Minstrel
+# -----------------------------------------------------------------------------
+
+
+
+# -----------------------------------------------------------------------------
+# The Professor
+# -----------------------------------------------------------------------------
+
+Topic Prof.0
+Text "Hello.  They call me the professor because I love to solve problems and
+Text "have others try to solve them as well.  If you can answer one of my
+Text "puzzles, you will be rewarded.
+End
+
+Topic Prof.1
+Text "A king is trying identical twins for various crimes.  One of them lies while
+Text "the other sometimes lies and sometimes tells the truth.  Their names are
+Text "Shawn and John.  The king asks one of them if his name is Shawn.  The reply
+Text "is no.  After asking the second twin if his name was Shawn and getting a reply,
+Text "the king was immediately able to deduce which was which.
+Text
+Prompt "What was the reply of the second twin?  [|12"Yes" or "No"|02]: |13
+Option Y Prof.1.Y
+Option N Prof.1.1
+End
+
+        # answer first question
+        Topic Prof.1.Y
+        Setflag T1
+        Jump Prof.1.1
+        End
+
+        # answer second question
+        Topic Prof.1.Y.2
+        Setflag T2
+        Jump Prof.1.2
+        End
+
+
+        Topic Prof.1.1
+        Text
+        Prompt "|02What was the first twin Shawn?  [|12Yes/No|02]: |13
+        Option Y Prof.1.Y.2
+        Option N Prof.1.2
+        End
+
+        Topic Prof.1.2
+        Text "|02
+        {!T1|T2}Text "Your replies were incorrect!  Sorry, maybe next time you'll get it.
+        {T1&!T2}Text "Your replies were correct!  Congratulations.  Here are 200 gold pieces!
+        {T1&!T2}GiveGold 200
+        EndChat
+        End
+
+Topic Prof.2
+Text
+Text "I bought an article of clothing for 5 gold pieces, then sold it
+Text "for 6 gold pieces.  I then bought it back at 7 gold pieces and
+Text "sold it once more for 8 gold pieces.  How much gold did I make profit?
+Text
+Text " |02(|100|02) No gold was made, you broke even.
+Text " |02(|101|02) 1 gold piece
+Text " |02(|102|02) 2 gold pieces
+Text " |02(|103|02) 3 gold pieces
+Text
+Prompt "[|120123|02]: |13
+Option 0 Prof.2.Wrong
+Option 1 Prof.2.Wrong
+Option 2 Prof.2.2
+Option 3 Prof.2.Wrong
+End
+
+        Topic Prof.2.Wrong
+        Text
+        Text "|02Sorry, that is incorrect!
+        EndChat
+        End
+
+        Topic Prof.2.2
+        Text
+        Text "|10That's right!  |03(Each member of the clan gains 5 experience)
+        GiveXP 5
+        EndChat
+        End
+
+Topic Prof.3
+Text
+Text "|02Tell me, what comes next in this sequence?
+Text
+Text " O T T F F S S E
+Text
+Prompt "[|12OTFNSE|02]: |13
+Option O NextLine
+Option T NextLine
+Option F NextLine
+Option E NextLine
+Option N Prof.3.N
+Option S NextLine
+Text
+Text "|02Sorry, but that is incorrect.
+End
+
+        Topic Prof.3.N
+        Text
+        Text "|02That's correct!  Here is |10300 gold|02!
+        GiveGold 300
+        End
+
+# -----------------------------------------------------------------------------
+# The Jester
+# -----------------------------------------------------------------------------
+
+Topic Jester.0
+Text
+Text "|10Oh, thank you so much for rescuing me!  I am a jester of the old kingdom but
+Text "was kidnapped by the orcs.  They've tortured me often to try to get a good
+Text "joke out of me, but I've always been an awful jester.
+End
+
+Topic Jester.1
+Text "The orcs you just defeated aren't natives of this area.  They were sent here
+Text "by a greater force.  I believe I overheard them mention another group of orcs
+Text "in the area as well, but that group is a lot more powerful.
+TellTopic Jester.2
+End
+
+Topic Jester.2
+Text "The other orcs are also in these mines but are nowhere near this group.
+Text "The two groups were fighting for "power" of the village, I believe.
+Text "|03(He tells you where the other orcs are.)
+TellQuest Quest11
+End
+
+Topic Jester.3
+Text "|10A fair maiden walks into a bar -- Ouch!  |02I told you I am an awful
+Text "jester.  I can't make anybody laugh. <sob>
+End
+
+Topic Jester.4
+Text "Ah, you are obviously not from around here.  The Old Kingdom once stood
+Text "outside the village but it was destroyed and none of it remains.  The
+Text "one who destroyed is called The Dark One, but he has not been seen from
+Text "for 10 years, thank goodness.
+End
+
+# -----------------------------------------------------------------------------
+# The Warrior
+# -----------------------------------------------------------------------------
+
+Topic Warrior.1
+Text "I love a good adventure.
+TellTopic Warrior.2
+End
+
+Topic Warrior.2
+JoinClan
+End
+
+Topic Warrior.3
+Text "I try to be loyal, but sometimes I slip things out without knowing it
+End
+
+Topic Warrior.4
+Text "If you see The Wise One about, be sure to ask him a question!  He can give
+Text "great tips for new warriors.
+End
+
+# -----------------------------------------------------------------------------
+# Sorcerer
+# -----------------------------------------------------------------------------
+
+Topic Sorcerer.0
+Text "Hi.  I'm an apprentice sorcerer.  I know only a few spells so far, but
+Text "hey!  I'm still learning.
+End
+
+Topic Sorcerer.1
+JoinClan
+End
+
+Topic Sorcerer.2
+Text "What's that?
+End
+
+Topic Sorcerer.3
+Text "A great many have perished within these mines.
+End
+
+# -----------------------------------------------------------------------------
+# Acolyte
+# -----------------------------------------------------------------------------
+
+Topic Acolyte.1
+JoinClan
+End
+
+Topic Acolyte.2
+Prompt "Loyalty is a *very* important virtue, don't you agree? [|12Y/N|02]: |13
+Option Y NextLine
+Option N Acolyte.2.N
+Text
+Text "|10I should hope so!
+End
+
+        Topic Acolyte.2.N
+        Text
+        Text "|02What a terrible thing to think!
+        End
+
+Topic Acolyte.3
+Text "It is a good idea to pray each day.
+End
+
+Topic Acolyte.4
+Text "I'm awful at combat but I am a great healer.
+End
+
+Topic Acolyte.5
+Text "The Dark One is the epitome of all evil.  Seek him out and destroy him!
+End
+
+Topic Acolyte.6
+Text "Thank the gods the ruler finally decided to build this church!
+End
+
+Topic Acolyte.7
+Text "One of the Three Rules of Our Religion is |10"Thou shalt register your copy of
+Text "The Clans."  |02I don't understand the rule myself, but if the gods say it should
+Text "be so, then so be it!
+End
+
+# -----------------------------------------------------------------------------
+# Bum
+# -----------------------------------------------------------------------------
+
+Topic Bum1.0
+Text "Please, kind warrior, give me |10250 gold |02pieces.
+Text
+Prompt "Give the bum 250 gold pieces? [|12Y/N|02]: |13
+Option Y Bum1.Y
+Option N NextLine
+Text
+Text "|02Your lucky I'm such a nice person or I'd really make you feel bad right now!
+End
+
+Topic Bum1.Y
+# see if gold on hand
+Text
+{!$250}Text "|03(You realize you do not have that much gold on hand!)
+{!$250}Text
+{!$250}Text "|02Your lucky I'm such a nice person or I'd really make you feel bad right now!
+# else do this
+{$250}TakeGold 250
+{$250}Text "|02Thank you so much!
+{$250}Text "|03(Each clansman gains 10 experience.)
+End
+
+Topic Bum1.1
+Text "I once led a great life.  I was a bard of another realm, but I got lazy and
+Text "didn't write new songs so eventually people gave up on me.
+End
+
+Topic Bum1.2
+Text "I bum around mainly.
+End
+
+Topic Bum1.3
+Text "I don't like politics myself but a good tip is to gain many allies before
+Text "becoming the ruler.  You'll thank me later!
+End
+
+Topic Bum1.4
+Text "I ain't loyal to nobody, OK!?
+End
+
+Topic Bum1.5
+JoinClan
+End
+
+# -----------------------------------------------------------------------------
+# Peasant
+# -----------------------------------------------------------------------------
+
+Topic Peasant1.0
+Text "I can only answer a couple questions.  I am quite a busy peasant!
+End
+
+Topic Peasant1.1
+Text "My favourite quote would probably have to be |10"Yes, my lord."
+End
+
+Topic Peasant1.2
+Text "I don't have time for adventuring.  Didn't I tell you I'm quite busy?!
+End
+
+Topic Peasant1.3
+Text "I farm.  Right now I'm delivering some goods to a customer.
+End
+
+Topic Peasant1.4
+Text "I used to live in the realm of Exaggerus, but the leader vanished for some
+Text "reason.  People still live there even the town has run amok and almost
+Text "everyone is a common thief.
+End
+
+Topic Peasant1.5
+Text "If you want gold, attack someone empire!  I don't have any to spare!
+End
+
+Topic Peasant1.6
+Text "The bums here are awful.  They make this town seem worse than it is.
+End
+
+Topic Peasant1.7
+Text "There has been recently a string of murders.  I think I know who is causing
+Text "them!  An evil beast has been causing them, I believe.  He lives deep in the
+Text "forest.  |03(The peasant gives you directions.)
+Text
+Text "|10Please, end his wrath!
+TellQuest Quest2
+End
+
+# -----------------------------------------------------------------------------
+# Old man
+# -----------------------------------------------------------------------------
+
+Topic OldMan.0
+Text "I think adventures are great!  If I had enough strength and my youth, I'd
+Text "be fighting monsters like yourself!
+Text
+{!D5} Text "|03(The old man's words move you to fight further.  You gain
+{!D5} Text "1 monster fight.)
+{!D5} GiveFight 1
+Setflag D5
+End
+
+Topic OldMan.1
+Text "I carry my gold in this sack since I don't trust the banks.  They are all too
+Text "greedy!
+End
+
+Topic OldMan.2
+Text "Supposedly, there is some treasure within these mines.  It is heavily guarded
+Text "by spirits, though.  I'm to weak to go after it myself.  Perhaps you could
+Text "get it?  There is supposedly about 3000 gold pieces in the treasure!
+#TellQuest Quest12
+End
+
+# -----------------------------------------------------------------------------
+# The Psychic
+# -----------------------------------------------------------------------------
+
+Topic Psychic.0
+Text "Spirits are everywhere but not all of us can see them.
+End
+
+Topic Psychic.1
+Text "My job is to search out and destroy evil spirits.
+End
+
+Topic Psychic.2
+Text "The Spirit World exists alongside the Living World.  Once in a while, a
+Text "tear is created in the space-time continuum and beings are free to pass
+Text "from one world to the other.  Unfortunately, this has caused problems as
+Text "spirits can do great damage in this world.
+End
+
+
+Topic Psychic.3
+Text "Lelaz, a pupil of mine, opened up a tear in the spirit world and caused a
+Text "great number of evil beings to come into this world.  He was then possessed
+Text "by one of the demons who called himself Diablo.  He now resides within the
+Text "depths of these mines.  What a fool!
+#TellTopic Psychic.4
+#TellQuest Quest13
+End
+
+Topic Psychic.4
+Text "The only way to reach Diablo is to light 4 candles within the underground mine
+Text "system.  After the 4 candles are lit, a door will open and Diablo's domain
+Text "will be revealed.  Good luck!
+End
+
+# -----------------------------------------------------------------------------
+# Common Man
+# -----------------------------------------------------------------------------
+
+Topic Common.0
+Text "I am a historian.
+TellTopic Common.1
+End
+
+Topic Common.1
+Text "I enjoy research, especially those relating to The Five Great Evils.
+TellTopic Common.2
+End
+
+Topic Common.2
+Text "The Five Great Evils are the the five most vile creatures to have ever
+Text "existed.  They were placed on this world by the Lord of Darkness Nuul.
+Text "I believe The Dark One who ravished our land is one of these evils.
+End
+
+# -----------------------------------------------------------------------------
+# Guard
+# -----------------------------------------------------------------------------
+
+Topic Guard.0
+Text "I despise crime.  That is why I became a guard.
+End
+
+Topic Guard.1
+Prompt "Art thou valiant? [|12Y/N|02]: |13
+Option N NextLine
+Option Y Guard.1.Yes
+Text
+Text "|02As I thought!
+End
+
+        Topic Guard.1.Yes
+        Text
+        Text "|02Then thou should be a guard!
+        End
+
+Topic Guard.2
+Prompt "Art thou honest? [|12Y/N|02]: |13
+Option N NextLine
+Option Y Guard.2.Yes
+Text
+Text "|02As I expected!
+End
+
+        Topic Guard.2.Yes
+        Text
+        Text "|02Then thou should be a guard!
+        End
+
+Topic Guard.3
+Prompt "Art thou corrupt? [|12Y/N|02]: |13
+Option N NextLine
+Option Y Guard.3.Yes
+Text
+Text "|02I knew it!
+End
+
+        Topic Guard.3.Yes
+        Text
+        Text "|02Then thou should be a guard!
+        End
+
+Topic Guard.4
+Text "I don't get paid much.
+End
+
+# -----------------------------------------------------------------------------
+# Poet
+# -----------------------------------------------------------------------------
+
+Topic Poet.1
+Text "Hey, you may be a poet and you don't even know it!
+End
+
+Topic Poet.2
+Text "The wealth I receive is not from gold
+Text "Nor is it something to be bought or sold
+Text "And it is not something that requires a fee
+Text "Wealth, to me, is all the smiles that I see
+pause
+Text
+# stop if quest completed
+{Q19}Text "Thank you once again for finding my quill!
+{Q19}End
+Prompt "Can you please give me 300 gold? [|12Y/N|02]: |13
+Option Y NextLine
+Option N Poet.2.1
+{!$300}Text "|03(You realize you do not have that much gold on hand!)
+{!$300}Text
+{!$300}Text "|10For giving me hope of a better life and then shattering those hopes,
+{!$300}Text "I thank you . . .
+{!$300}pause
+{!$300}Text
+{!$300}Text "I was being sarcastic!
+{!$300}End
+TakeGold 300
+Text
+Text "|10Thank you so much!  |02Ever since I had my quill stolen, I haven't been
+Text "able to write decent poems.  The quill was stolen by some common thiefs.  It
+Text "was a gift that I received from my parents when I was a young lad.  It is
+Text "quite valuable in that it is from a rare golden bird from a place south
+Text "of these lands.  If you can find the time, please find it for me!
+Text
+#TellQuest Quest19
+End
+
+        Topic Poet.2.1
+        Text
+        Text "|10Lousy cheapskate!
+        End
+
+Topic Poet.3
+Text "Oh, I do hate politics.  I wish the rulers would be overthrown!
+End
+
+Topic Poet.4
+Text "I do love a good tune.  I wrote songs once with a bard ... that is, until he
+Text "went missing.
+End
+
+Topic Poet.5
+Text "
+Text "Fight the good fight,
+Text "because you know you're right
+Text "And they are so wrong
+Text "But it won't be too long
+Text "Before they are defeated
+Text "And they will ... er, I can't think of anything that rhymes with defeated
+Text "at the moment.  I'm terribly sorry.
+{!D7}Text
+{!D7}Text "|10The poet's somewhat average poem inspires the clan to fight some more.
+{!D7}Text "|03(You gain 1 monster fight.)
+{!D7}GiveFight 1
+Setflag D7
+End
+
+Topic Poet.6
+Text "My friends tell me this is true
+Text "To prove them right, I leave to you
+Text "The tip is this and learn it well
+Text "|10Equip your clan members with the best weapons suited for their abilities
+Text "to improve in the mines.
+Text "|02... or they shall go to hell.
+End
+
+# -----------------------------------------------------------------------------
+# Myau
+# -----------------------------------------------------------------------------
+
+Topic Myau.0
+Text "|03You see a small creature about the size of a rabbit.  It is a strange
+Text "creature which resembles a rabbit AND a cat.  Around its neck is a small
+Text "vial containing a green liquid.
+End
+
+Topic Myau.1
+Text "Meow.
+End
+
+Topic Myau.2
+Text "Raourrrr.
+End
+
+Topic Myau.3
+Text "Meooooow.
+End
+
+Topic Myau.4
+Text "Meeeeeeeeeooooooooooooooowwwwwwwwww.
+{!D8}Text
+{!D8}Text "|03(You gain 1 monster fight after hearing the beautiful sound of the
+{!D8}Text "creature.)
+{!D8}GiveFight 1
+SetFlag D8
+End
+
+Topic Myau.5
+Text "Purr.
+{!T2}Text
+{!T2}Text "|03(The creature rubs up against each clansmen's leg.  Each one feels
+{!T2}Text "better.  Each clan member's skill points increase.)
+{!T2}Heal SP
+SetFlag T2
+End
+
+# -----------------------------------------------------------------------------
+# Drunk Man
+# -----------------------------------------------------------------------------
+
+Topic Drunk.1
+Text "<buuuuuuurp>
+End
+
+Topic Drunk.2
+Text "Take the middle door!
+End
+
+Topic Drunk.3
+Text "Funny. <burp> There's no tavern in town and I still manage to get drunk.
+End
+
+Topic Drunk.4
+Prompt "Want some of my gold? [|12Y/N|02]: |13
+Option Y Drunk.4.Y
+Option N NextLine
+Text
+Text "|02What, not good enough for you?  ....  Or too busy feeling sorry for me?!
+End
+
+        Topic Drunk.4.Y
+        Text
+        {!T1}Text "|02You hold out your hand and the drunk drops |10100 |02gold coins in
+        {!T1}Text "your hand!
+        {!T1}GiveGold 100
+        {T1}Text "|02You hold your hand and the drunk drops NOTHING in it.
+        {T1}Text "|10I already gave you all my gold, dolt!
+        SetFlag T1
+        End
+
+
+# -----------------------------------------------------------------------------
+# Paladin
+# -----------------------------------------------------------------------------
+
+Topic Paladin.0
+Text "Hello.  I am a paladin dedicated to ridding this land of evil vermin!
+End
+
+Topic Paladin.1
+JoinClan
+End
+
+Topic Paladin.2
+Text "I am always loyal.
+End
+
+Topic Paladin.3
+Text "I have no gold.  Religion is all I need.
+End
+
+Topic Paladin.4
+Text "A legendary sword was once endowed upon the king.  Unfortunately, the king
+Text "was locked up in a dungeon by The Dark One and the sword was discarded deep
+Text "in the mines so that no one could use it.  Only the pure of heart may wield
+Text "such a weapon.
+#TellQuest Quest18
+End
+
+Topic Paladin.5
+Text "Some say The Dark One resides deep within the earth's core.  He hasn't been
+Text "seen for some time but given the chance, I'd destroy him myself!
+End
+
+# -----------------------------------------------------------------------------
+# Merchant
+# -----------------------------------------------------------------------------
+
+Topic Merchant.0
+Text "I am a merchant traveling from town to town selling wares.
+End
+
+Topic Merchant.1
+Text "I can't possibly join your clan!  I'm a simple merchant -- not a
+Text "sword-wielding adventurer!
+End
+
+Topic Merchant.2
+Text "I sell mainly weapons.  I have a special today on shortswords.  I will sell
+Text "you one for only 1000GP.  It usually costs around 1300GP.
+Text
+Prompt "Buy the shortsword? [|12Y/N|02]: |13
+Option Y NextLine
+Option N Stop
+{!$1000}Jump Merchant.2.NoGold
+# if you have that gold, take it
+Text
+Text "|10The merchant gives you the shortsword and you place it in your inventory.
+TakeGold 1000
+GiveItem Shortsword
+End
+
+        Topic Merchant.2.NoGold
+        Text
+        Text "|02You extend your hand with nothing in it.  The merchant laughs out loud.
+        Text "|10I only accept REAL gold, not imaginary gold!
+        End
+
+Topic Merchant.3
+Text "I do not carry any precious goods.
+End
+
+Topic Merchant.4
+Text "Traveling is hard on the spirit but it is worthwhile once you make a decent
+Text "sale.
+TellTopic Merchant.4.B
+End
+
+Topic Merchant.4.B
+Text "I have a perilous mission for you.  I am in great need of protection
+Text "considering the lands are filled with thieves waiting for someone like
+Text "me to roll along.  For 2000 GP, I would like you to travel alongside my
+Text "caravan to a neighbouring town.  We may face some thieves and other evil
+Text "but I hope that you can fend them off.  If you wish to help me out, meet
+Text "me on the outskirts of town.
+TellQuest Quest4
+End
+
+Topic Merchant.5
+Text "Some of my colleagues work within the mines!  They usually offer great deals
+Text "on excellent weapons.
+End
+
+# -----------------------------------------------------------------------------
+# Freak
+# -----------------------------------------------------------------------------
+
+Topic Freak.0
+Text "Good day to you.  I was just in the middle of reading this wonderful book.
+End
+
+Topic Freak.1
+Text "Whoever says I'm a murderer is a liar!  Although I used to be a soldier, I
+Text "never murdered anybody.  I may have chopped off a limb here and there but I
+Text "never went so far as to kill a man!
+TellTopic Freak.2
+End
+
+Topic Freak.2
+Text "The one causing the murders in town was not I!  There is a rich businessman in
+Text "town who controls underground affairs.  He wanted to get rid of some men
+Text "cleanly so he spread a rumour that I caused them!  Of course, people believed
+Text "the rumours since I'm a freak!!
+TellQuest Quest3
+End
+
+Topic Freak.3
+Text "The book I'm reading is called N.P. by Banana Yoshimoto.  Great novel.
+End
+
+Topic Freak.4
+Text "Ah, my axe.  I have never needed this old thing.  I am quite the axehandler,
+Text "but I haven't used it in ages.  You may have it.
+Text
+Prompt "Take the axe? [|12Y/N|02]: |13
+Option N STOP
+Option Y NextLine
+{!T1}GiveItem Battle Axe
+{!T1}Text
+{!T1}Text "|10You now have a Battle Axe!
+{T1}Text "|10Are you an idiot?  I just gave you the axe!
+SetFlag T1
+End
+
+# -----------------------------------------------------------------------------
+# Knight
+# -----------------------------------------------------------------------------
+
+Topic Knight2.0
+Text "I have nothing much to say so don't waste your time.
+End
+
+Topic Knight2.1
+JoinClan
+End
+
+Topic Knight2.2
+Text "At least it's not a forest.
+End
+
+Topic Knight2.3
+Text "Quests are an excellent way of building up experience and gold.
+End
+
+
+# -----------------------------------------------------------------------------
+# Blacksmith
+# -----------------------------------------------------------------------------
+
+Topic Smith.1
+Text "Just for you 'cos you have a pretty face, I'll sell ya this Mace for
+Text "only 700GP.  It usually costs around 900GP!
+Text
+Prompt "Buy the mace? [|12Y/N|02]: |13
+Option Y NextLine
+Option N Stop
+{!$700}Jump Smith.1.NoGold
+# if you have that gold, take it
+Text
+Text "|10The blacksmith gives you the mace and you place it in your inventory.
+TakeGold 700
+GiveItem Mace
+End
+
+        Topic Smith.1.NoGold
+        Text
+        Text "|02You extend your hand with nothing in it.  The smith looks at you with a
+        Text "disgruntled look and says |10I only accept REAL gold, not imaginary gold!
+        End
+
+Topic Smith.2
+Text "KOR rules!
+End
+
+Topic Smith.3
+Text "Always use your skills in combat!  You won't believe how useful they are until
+Text "you try 'em.  There *was* a reason you trained for those skills, don't you
+Text "think?  They're not just there for show!
+End
+
+Topic Smith.4
+Text "Don't waste your fights by fighting people who are just gonna kick your butt!
+End
+
+# -----------------------------------------------------------------------------
+# Peasant2
+# -----------------------------------------------------------------------------
+
+Topic Peasant2.1
+Text "I love a good mystery -- er, adventure.
+End
+
+Topic Peasant2.2
+JoinClan
+End
+
+Topic Peasant2.3
+Text "Ayukawa Madoka is a goddess!
+End
+
+Topic Peasant2.4
+Text "Full-time peasant.
+End
+
+Topic Peasant2.5
+Text "Supposedly, the freak of the town is causing some murders.  I don't believe it
+Text "myself though.
+End
+
+Topic Peasant2.6
+{!D9}Text "|03(The peasant sings a song for you.  You gain 1 monster fight.)
+{!D9}GiveFight 1
+{D9}Text "|03(The peasant sings a song for you -- the same one.  You feel indifferent.)
+SetFlag D9
+End
+
+Topic JoinClan
+JoinClan
+End
+
+# -----------------------------------------------------------------------------
+# Pirate
+# -----------------------------------------------------------------------------
+
+Topic Pirate.0
+{D6}Text "|12Arr, it's you again . . .
+{!D6}Text "|12Arr.  I be a pirate.
+{!D6}Text
+{!D6}Text "|06(You see a typical pirate.  Well, not so typical.  He's got two
+{!D6}Text "eyepatches.  One on each eye!)
+End
+
+Topic Pirate.1
+Text "|12I lost both eyes on a voyage.
+TellTopic Pirate.2
+End
+
+Topic Pirate.2
+Text "|12What's a sunglasses?
+End
+
+Topic Pirate.3
+TellTopic Pirate.6
+Text "|0CThe heck would I know?  What do I look like, a pirate?
+Text
+Text " |0A(|0B1|0A) |0CActually, yeah, you do.
+Text " |0A(|0B2|0A) |0CNo, but you remind me of a dead fish I once owned.
+Text " |0A(|0B3|0A) |0CForget it...
+Text
+Prompt "|0A[|0B123|0A]: |0F
+Option 1 Pirate.3.1
+Option 2 Pirate.3.2
+Option 3 Pirate.3.3
+End
+
+Result Pirate.3.1
+Text
+Text "Well, I guess I do look like a pirate.  I can assure you, it is merely
+Text "coincidental.
+End
+
+Result Pirate.3.2
+Text
+Text "Why would anyone own a dead fish?
+End
+
+Result Pirate.3.3
+Text
+Text "Forget what?
+End
+
+Topic Pirate.4
+Text "|12No, why?  You want one?
+End
+
+Topic Pirate.5
+JoinClan
+End
+
+Topic Pirate.6
+Text "|07I'm telling you, I don't know!
+TellTopic Pirate.7
+End
+
+Topic Pirate.7
+Text "|07You ain't gettin' anything outta me!
+TellTopic Pirate.8
+End
+
+Topic Pirate.8
+Text "|07Aw shucks, you dragged it outta me... find an X and dig there.  Oh, darn
+Text "it, I'll save you the trouble.  Here's 1000 gold pieces for your troubles.
+{!D10}GiveGold 1000
+{D10}Text
+{D10}Text "Wait a second!  I already gave you some gold today!  Get away now!
+SetFlag D10
+End
+
+
+
+# -----------------------------------------------------------------------------
+# Old Man #2
+# -----------------------------------------------------------------------------
+
+Topic OldMan2.1
+Text "I came from a small town near here called |S|06BrownTown|R.  It was an amazing
+Text "place...
+TellTopic OldMan2.2
+End
+
+Topic OldMan2.2
+Text "Darn it, it had the finest Blue Cows around!  I wish I could return to that
+Text "town but they kicked me out.
+TellTopic OldMan2.3
+TellTopic OldMan2.4
+End
+
+Topic OldMan2.3
+Text "I was kicked out for a very good reason . . .  I made a mistake.  |S|15I ERRED!|R
+Text "I can say no more!
+TellTopic OldMan2.5
+End
+
+Topic OldMan2.4
+Text "Ah, but there is truth to some legends, isn't there?
+Text
+Input OldMan2.4.1 1. Maybe so, but there's no such things as Blue Cows!!
+Input OldMan2.4.2 2. Um . . .  How should I know?!
+Input Stop        3. Maybe, but legends bore me, let's talk about something else...
+End
+
+        Result OldMan2.4.1
+        Text "They do so exist!
+        Text
+        Input OldMan2.4.1.More  1. They do not!
+        Input OldMan2.4.1.2     2. Ok, they do exist.
+        End
+
+        Result OldMan2.4.1.More
+        Text "They do so!
+        Text
+        Input OldMan2.4.1.YetMore       1. Do not!
+        Input OldMan2.4.1.2             2. Ok, fine, they do exist.
+        End
+
+        Result OldMan2.4.1.YetMore
+        Text "Do so!
+        Text
+        Input OldMan2.4.1.YetMore       1. Do not!
+        Input OldMan2.4.1.2             2. Have it your way, they do exist.
+        End
+
+        Result OldMan2.4.1.2
+        Text "I knew you'd see the light.
+        End
+
+        Result OldMan2.4.2
+        Text "I don't know.  I'm just a simple old man.  Simple on the outside but complex
+        Text "on the inside.
+        End
+
+
+Topic OldMan2.5
+Text "I'd like to see you try!  I don't even have a beard!  And if you thought I had
+Text "a cane, you were wrong about that too!  I will not reveal my past.
+TellTopic OldMan2.6
+End
+
+Topic OldMan2.6
+Text "Ok, good.  I won't.
+TellTopic OldMan2.7
+End
+
+Topic OldMan2.7
+Text "Ok, ok!!  I'll tell you, but you must promise not to tell any one else. . .
+pause
+Text
+Text "I was kicked out because . . .
+pause
+Text
+Text "I stink.
+End
+
+Topic OldMan2.8
+Text "Ah, I still remember the good times I had with my old friends.  Ron Ron, John
+Text "John, Tim Tim, Mark Mark, Don Don . . .
+TellTopic OldMan2.9
+End
+
+Topic OldMan2.9
+Text "Now that I think about it...yes, they all had dumb names.  No wonder they
+Text "were outcasts.  But then again their two heads probably caused some of their
+Text "misfortune as well . . .
+End
+
+# -----------------------------------------------------------------------------
+# Lone Wolf
+# -----------------------------------------------------------------------------
+
+Topic LW.1
+Text "I came from a land far away called Sommerlund.  It is a beautiful place.
+End
+
+Topic LW.2
+Text "Kai Warriors are the greatest warriors of all time.  I am one myself.
+End
+
+Topic LW.3
+Text "Scrolls are very useful in battle.
+End
+
+# -----------------------------------------------------------------------------
+# Dungeoner
+# -----------------------------------------------------------------------------
+
+Topic Dung.1
+Text "The world's fastest man is still Donovan Bailey.
+End
+
+Topic Dung.2
+Text "I enjoy dungeons.  I can only go down to a certain level by myself,
+Text "however.  I need the help of a clan to survive any lower.
+End
+
+Topic Dung.3
+Text "I have no use for gold.  I merely seek out adventures, not wealth.
+End
+
+# -----------------------------------------------------------------------------
+# Bartender
+# -----------------------------------------------------------------------------
+
+Topic Bartender.0
+Text "My name is Bart the Bartender.  Quit yer laughin'!
+End
+
+Topic Bartender.1
+Text "Strange, there's no tavern in this town.  Regardless, I come from another
+Text "town.  Perhaps one day this town will have a tavern.
+End
+
+Topic Bartender.2
+Text "I wouldn't know what's good.  I don't drink.  Strange, huh?
+End
+
+
+# -----------------------------------------------------------------------------
+# Ai
+# -----------------------------------------------------------------------------
+
+Topic Ai.0
+Text "             |04‹‹‹‹‹‹‹|07
+Text "          |04‹€€€€€€€€€€€‹|07
+Text "       |04‹€€€|12|20±|04|16€€€€|12|20±|04|16€€ﬂ€€€€|07
+Text "      |04€‹|12|20±|04|16€€ﬂ€€ﬂ€€€|12|20∞|04|16€€ﬂ€|08|20∞|04|16›|07
+Text "     |04ﬂ ‹‹€ﬂ  ﬂ|08|20∞|04|16ﬂ|12|20∞|07|16 |04ﬂ |07‹ |04€|08|20∞|04|16€|07
+Text "        |04ﬂﬂ |07€ﬂ ‹‹  ‹€ |04‹€€|08|20±|07|16
+Text "       |04ﬂ €›|07ﬁ|15|23∞|07|16€|12|23∞|07|16€€€€|08|23∞|07|16‹ |04ﬂ|08|20∞±|07|16
+Text "       |04‹|12|20∞|04|16€‹ |07ﬂ€€|04|23‹|07|16€€|08|23∞∞|07|16ﬂ |12|20∞|08±|04|16›|07
+Text "    |04ﬂ ‹ﬂ‹€|12|20±|08∞|07|16  ﬂ€€ﬂﬂ |04‹ﬂ€ﬂ|07
+Text "         |04ﬂﬂﬂﬂ  |07‹ |04‹ﬂﬂﬂ|07
+Text "    |01‹|07        ‹‹€|15|23∞|07|16‹€‹‹   |01‹|07
+Text "     ‹|01ﬂ€|09|17‹|01|16‹‹|07ﬂﬂ ﬂﬂﬂ  |01‹‹‹‹€‹€€ﬂﬂ|07
+Text "    ﬁ|15|23∞|07|16‹ |01€|09|17€‹‹|01|16€€‹‹€€|09|17‹‹|01|16€€ﬂﬂﬂ |07‹€
+Text "    €€|08|23∞|07|16‹ |01ﬂ|09|17±∞|01|16€‹€€ﬂ|09|17∞ﬂ|01|16€€€€ |15|23∞|07|16€€|08|23∞|07|16›
+Text
+Text "Hello.  My name is Ai.  I am the finest warrior in the land.  If anyone tells
+Text "you differently, he is lying.
+End
+
+Topic Ai.1
+Text
+Text "I have no past.  I have relinquished all ties with anyone I had known in order
+Text "to keep my anonymity.
+End
+
+Topic Ai.2
+Text
+Text "I have pledged to avenge my parent's deaths.  I am seeing out the one called
+Text "Sloryx but I have yet to find his whereabouts.  If you ever find out anything
+Text "about him, contact me at once!
+End
+
+Topic Ai.3
+Text
+Text "I cannot speak any more about myself.  I will only reveal information as you
+Text "need it.
+End
+

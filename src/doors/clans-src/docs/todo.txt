@@ -1,0 +1,12 @@
+        - when village attacked and ruler ousted, reset all votes
+
+
+Game Notes:
+        * Keep in mind that since we have *_Inits for Game_, User_, and
+          Village_, we can use CRCs now.  That is, after *_Read is called
+          within *_Init, we can check its CRC value.  If the CRC value is
+          wrong, called *_Destroy and then System_Error("CRC Value is WRONG!")
+          This way, the data is not updated to file like it should be and so
+          we don't have to worry about bypassing anything to prevent the
+          data from being accidentally written to file with a correct CRC
+          value.  The CRC value can be determined WITHIN *_Write.

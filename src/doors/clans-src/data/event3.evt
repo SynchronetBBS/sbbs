@@ -1,0 +1,50 @@
+# Example Event File No.3
+#
+
+Event Block1
+  Text "This is example #3!
+  Text
+  Prompt "Press A,B,C, or D >
+  Option A PressA
+  Option B ILikeB
+  Option C C
+  Option D NextLine
+
+  Text "You pressed D!
+  Jump Block2
+End
+
+Result PressA
+  Text "You pressed A!
+  Jump Block2
+End
+
+Result ILikeB
+  Text "You pressed B!
+  Jump Block2
+End
+
+Result C
+  Text "You pressed C!
+  Jump Block2
+End
+
+Result Block2
+  Text
+  Text "Now let's chat:
+  Input TFC1  1. This is Option 1
+  Input TFC2  2. This is Option 2
+  Input TFC3  3. This is Option 3
+End
+
+Result TFC1
+  Text "You chose option 1!
+End
+
+Result TFC2
+  Text "You chose option 1!
+End
+
+Result TFC3
+  Text "You chose option 1!
+End

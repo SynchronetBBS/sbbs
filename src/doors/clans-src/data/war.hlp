@@ -1,0 +1,115 @@
+^War Help
+|0CBy attacking another empire, you will be able to gain their gold or land,
+or else simply cause mass destruction to their buildings.
+^END
+
+^Barracks
+|0BBarracks
+
+|0CBarracks are required to train new troops.  Each barracks can train 20
+Footmen, 10 Axemen, and 5 Knights.
+
+^END
+
+^Walls
+|0BWalls
+
+|0CWalls are used to prevent enemy troops from gaining easy access into the
+empire.  However, they are easily destroyed in battle.
+
+^END
+
+^Towers
+|0BTowers
+
+|0CTowers complement walls and can often kill off some troops when defending.
+However, like walls, they are easily destroyed.
+
+^END
+
+^Steel Mill
+|0BSteel Mill
+
+|0CA steel mill is required to train axemen.  Only one is required.
+
+^END
+
+^Stables
+|0BStables
+
+|0CStables are required to hold horses used by knights.  Only one is required.
+
+^END
+
+^Intell. Agencies
+|0BIntelligence Agencies
+
+|0CAn intelligence agency is used to train spies.  The more agencies built,
+the higher the level of spies sent out.  Agencies should be built often as
+the enemy will be building up their security.
+
+^END
+
+^Security Centers
+|0BSecurity Centers
+
+|0CSecurity centers prevent spies from spying on your empire.  The more
+security centers you have the higher the level of spies required to spy on
+you.
+
+^END
+
+^Gymnasiums
+|0BGymnasiums
+
+|0CA gymnasium functions as a place to keep troops healthy.  Each gymnasium
+will increment the army rating daily by 2%.
+
+^END
+
+^Developer's Halls
+|0BDeveloper's Halls
+
+|0CDeveloper's are needed to develop barren land for construction.  The higher
+the number of these halls, the better your developers will become at
+developing land.  As they improve, the cost of developing land will drop.
+
+^END
+
+^Shops
+|0BShops
+
+|0CShops can only be built by the village.  Each shop brings in approximately
+1500 gold each.  The town starts out with 10 shops at the onset of the game.
+
+^END
+
+# Goals
+^0 Oust the Ruler of the Village
+|0BOust the Ruler
+
+|0CIf you wish to get rid of the current ruler of the village, attack with
+the intent of ousting them.
+^END
+
+^1 Capture Land
+|0BCapture Land
+
+|0CLand is needed to build new structures within your empire.  However, it
+costs gold to develop.  This goal allows you to loot some of an empire's
+unused land and destroy some of his buildings to loot his used land as well.
+^END
+
+^2 Capture Gold
+|0BCapture Gold
+
+|0CThis goal allows you to break into the empire's vaults and steal some
+of their gold.
+^END
+
+^3 Destroy Buildings
+|0BDestroy Buildings
+
+|0CWithout buildings, an empire cannot fend for itself.  This goal allows you
+to destroy some of their buildings.
+^END

@@ -1,0 +1,65 @@
+Reset Help for The Clans
+
+^Date Game Starts
+|07 The Start Date Configuration allows you to reset the game earlier than
+ actually starting.  This option is very useful for League Coordinators
+ in Inter-BBS games to force all systems to start on the same date (using
+ league-wide reset).  This option is also useful for Tournament games in
+ which you want to allow players to sign up early.
+^END
+
+^Last Join Date
+|07 The Join Date option allows the sysop (or LC) to determine the last
+ date a player can join the game.  This is useful for restricting access
+ to latercomers in the game for tournaments, etc.
+^END
+
+^Village Name
+|07 This option is only used in a local game.  It allows you to define the
+ name of the village in the game.
+^END
+
+^Elimination Mode
+ |07Elimination mode play is different from regular play.
+
+ ** Feature not yet implemented in the current version.
+
+ |12**NOTE**  |07In InterBBS games, only the League Coordinator can use this
+ option.  If any other BBS sets it, it will not have any affect on the game.
+^END
+
+^Clan Travel
+|07 This toggles whether or not a clan can travel from one village to another
+ in a league.  (InterBBS Only)
+^END
+
+^Lost Troops
+|07 This sets how many days before lost troops (and other data) will be returned
+ to this BBS.  (InterBBS Only)
+^END
+
+^Clan Empires
+|07 If you do not want the players to build up clan empires, toggle it off
+ with this option.
+^END
+
+^Mine Fights
+|07 This option sets how many mine fights a clan gets each day.
+^END
+
+^Clan Combat
+|07 This option sets how many clan vs clan fights a clan gets each day.
+^END
+
+^Max Permanent Members
+|07 This setting will allow you to choose how many permanent members a clan
+ can have.  If you wish each user to go solo, set this value to 1.  On the
+ other hand, if you want them to have the most number of members (disabling
+ the ability of NPCs) set this value to 6.
+^END
+
+^Days Of Protection
+|07 This is the number of days a clan will be in protection for.  Protection
+ is used to allow new users to enter the game and build up a bit before
+ being attacked by experienced users already playing.
+^END

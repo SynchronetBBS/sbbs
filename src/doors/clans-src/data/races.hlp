@@ -1,0 +1,198 @@
+^Classes
+
+ |0BBarbarian    |0CNo skills but strongest fighter.
+ |0BWarrior      |0CA few skills.  Not as strong as a barbarian.  High agility.
+ |0BKnight       |0CHigh starting gold.  High charisma.  High agility.
+ |0BMartial Artist
+              |0CLow starting gold.  High agility, high dexterity, mystic
+              skills.
+ |0BAssassin     |0CHigh agility and dexterity, a few skills.  Low charisma.
+              High starting gold.
+ |0BHealer       |0CSeveral spells used for healing or protection.  Not a good
+              fighter.
+ |0BNecromancer  |0CSeveral spells used to raise and banish the undead. Weak fighter.
+ |0BSorcerer     |0CHas several destructive spells.  Low strength.
+ |0BWizard       |0CSeveral general spells.  Low strength.
+ |0BPirate       |0CVery agile but no spells.
+ |0BSamurai      |0CLike martial artists but stronger and less agile.
+
+^END
+
+^Barbarian
+ |0BBarbarian
+
+ |0CNo skills but strongest fighter.  These are the strongest warriors and
+ are often included in most clans.
+
+^END
+
+^Warrior
+ |0BWarrior
+
+ |0CWarriors have learned a few skills in training.  They are not as strong
+ as barbarians, however.  They do have high agility.
+
+^END
+
+^Knight
+ |0BKnight
+
+ |0CKnights, because of their background, have high starting gold and high
+ charisma.  Through training, they have learned to improve their agility
+ and dexterity.
+
+^END
+
+^Martial Artist
+ |0BMartial Artist
+
+ |0CMartial artists depend on their amazing agility and dexterity.  Strength
+ is less important but they are not weak.  They have low starting gold.
+ Training has allowed them to learn some mystic skills.
+
+^END
+
+^Assassin
+ |10Assassin
+
+ |0CHigh agility and dexterity, a few skills.  Low charisma.  High starting gold.
+
+^END
+
+^Healer
+ |0BHealer
+
+ |0CThese magicians have several spells used for healing or protection.  They
+ are poor at combat but are excellent at helping other members of the clan
+ out if they are in need of healing while in battle.
+
+^END
+
+^Necromancer
+ |0BNecromancer
+
+ |0CNecromancers have in their arsenal several spells to raise and banish
+ the undead.  They make weak fighters but their spellcasting abilities make
+ up for this.
+
+^END
+
+^Sorcerer
+ |0BSorcerer
+
+ |0CSorcerers have several destructive spells at their disposal.
+
+^END
+
+^Wizard
+ |0BWizard
+
+ |0CWizards have several general spells to use and aren't as focused on
+ specific styles as much as sorcerers or necromancers.  They have low strength.
+
+^END
+
+^Pirate
+ |0BPirate
+
+ |0CPirates are surprisingly agile and fairly strong but lack skills.
+
+^END
+
+^Samurai
+ |0BSamurai
+
+ |0CUsing martial arts but also shear strength, these mystic warriors
+ are powerful and know some skills.
+
+^END
+
+^Races
+
+ |0BHuman        |0CAverage stats.
+ |0BDwarf        |0CHigh strength and hitpoints.
+ |0BElf          |0CHigh hitpoints and wisdom.  Dextrous.  Build up mana
+              quickly.
+ |0BHalf-Elf     |0CA combination of human and elven stats.
+ |0BHalfling     |0CHave high dexterity and agility.
+ |0BOrc          |0CHigh strength and agility, but low charisma.
+ |0BMuya         |0CA strange race of cute, rabbit-like creatures.  Can use
+              magic very well.
+ |0BMinotaur     |0CThese half-men/half-bulls are the strongest race available
+              but are not very agile.
+ |0BDemon        |0CDemons are able to instill fear in their enemy.
+
+^END
+
+^Human
+ |0BHuman
+
+ |0CAverage stats.  Can be most any class.
+
+^END
+
+^Dwarf
+ |0BDwarf
+
+ |0CVery tough race.  High strength and hitpoints.  Can endure with the best
+ of them.
+
+^END
+
+^Elf
+ |0BElf
+
+ |0CA wise race.  Excellent at using magic.  Dextrous but not too strong.  They
+ can build up their mana quickly.
+
+^END
+
+^Half-Elf
+ |0BHalf-Elf
+
+ |0CA cross between elves and humans.  They have statistics varying between
+ the two races.
+
+^END
+
+^Halfling
+ |0BHalfling
+
+ |0CSmall human-like race.  These are very quick beings and have high agility
+ and dexterity.  They have poor strength, however.
+
+^END
+
+^Orc
+ |0BOrc
+
+ |0COrcs are quite strong and have fairly high endurance.  They are mainly
+ warriors and make poor magicians.
+
+^END
+
+^Muya
+ |0BMuya
+
+ |0CMuyans are a strange race.  They are small and resemble a cross between
+ a rabbit and a cat.  They have large ears and are extremely cute (giving
+ them high charisma).  However, they have poor strength and often become
+ healers as they have a great build-up of mana.
+
+^END
+
+^Minotaur
+ |0BMinotaur
+
+ |0CThese beasts are the most powerful race but their bulky size prevent them
+ from moving quickly and efficiently.
+
+^END
+
+^Demon
+ |0BDemon
+
+ |0CDemons are red, winged creatures.  They are quite dextrous and possess
+ some skills.
+
+^END

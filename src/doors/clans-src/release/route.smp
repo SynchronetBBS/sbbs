@@ -1,0 +1,54 @@
+# Route Config file -- sample -- rename to route.cfg to use
+#
+# The format is similar to other InterBBS games:
+#
+# ROUTE A B
+#
+# A and B are BBS Ids (in the WORLD.NDX file).
+# This will route all packets going to BBS 'A' through BBS 'B'.  For instance,
+# if you wish to route all packets going to BBS #3 through BBS #1, use this:
+#
+# ROUTE 3 1
+#
+# Now, any packets sent to BBS #3 will be sent to BBS #1 first.  BBS #1 will
+# then route the packet to BBS #3 itself.
+#
+# You may also use "ALL" as a keyword.  If you wish to route ALL packets
+# through BBS #1, use this:
+#
+# ROUTE ALL 1
+#
+# You may also set packets going to certain BBSes to CRASH:
+#
+# CRASH A
+#
+# 'A' is the Id of the BBS you wish to crash the packets to.  Normally,
+# all packets aren't set to crash, but are normal.  If you wish to crash
+# packets going to BBS #9, use this:
+#
+# CRASH 9
+#
+# To crash all packets to all BBSes:
+#
+# CRASH ALL
+#
+# To set a BBS back to normal, use the NORMAL keyword:
+#
+# NORMAL A
+#
+# Again, A is the Id of the BBS which you wish to set to normal packet status:
+#
+# NORMAL 3
+#
+# This sets packets going to BBS #3 to normal.
+#
+# Finally, to set packets to a certain BBS to Hold status, use the HOLD keyword
+# as you would CRASH:
+#
+# HOLD A
+#
+# This sets all packets for BBS #2 to Hold priority.
+#
+# HOLD 2
+#
+# BY DEFAULT, USE NO ROUTING (i.e. direct).

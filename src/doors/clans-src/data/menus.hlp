@@ -1,0 +1,407 @@
+Menus
+
+^Mine Menu
+|0DНННДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДННН
+|0A Level |0B%M |0Aof Mine.  |0B%F |0Afights remaining.
+
+|0A (|0BL|0A) |0CLook for Creatures     |0A (|0BW|0A) |0CWho's here?
+|0A (|0BC|0A) |0CChange Mine Level      |0A (|0BF|0A) |0CFight another clan
+|0A (|0BG|0A) |0CGo on A Quest          |0A (|0B/|0A) |0CChat with Villagers in area
+|0A (|0BV|0A) |0CView Your Stats        |0A (|0BQ|0A) |0CQuit
+|0DНННДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДННН
+^END
+
+^Main Menu1
+|0DНННДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДННН
+|0A (|0BE|0A) |0CEnter the Mines    |0A(|0BU|0A) |0CThe Church      |038888888888888888888888888888888888
+|0A (|0BV|0A) |0CView Your Stats    |0A(|0BW|0A) |0CWorld Travel    |03888888 |07s s s |0388888 |07s s s |03888888888
+|0A (|0BM|0A) |0CThe Market         |0A(|0BP|0A) |0CEmpire          |03888888 |07$$$$$ |03""""" |07$$$$$ |03""""Y8888
+|0A (|0BC|0A) |0CCommunications     |0A(|0BT|0A) |0CTown Hall       |03888888 |07$$^$$$$$$$$$$$^$$ |02dSSb.|03`Y88
+|0A (|0BA|0A) |0CAlliances          |0A(|0BH|0A) |0CTraining Hall   |038888P' |07$$$$$$$|06d$b|07$$$$$$$ |02$$$$$b. |03`
+|0A (|0B/|0A) |0CChat w/Villagers   |0A(|0BN|0A) |0CNewbie Help     |0388'|02.sS |07$$$$$$$|06$$$|07$$$$$$$ |02$$$$$$$$b
+|0A (|0B!|0A) |0CDisband Clan       |0A(|0BQ|0A) |0CQuit            |02sssSSbsaaaaaa,aa.aaasaasdSSSSSSSSS
+|0A  |0B |0A  |0C                   |0A |0B |0A  |0C                |02SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS
+|0DНННДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДННН
+^END
+
+^Main Menu2
+|0DНННДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДННН
+|0A (|0BE|0A) |0CEnter the Mines    |0A(|0BU|0A) |0CThe Church      |072SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS2|04
+|0A (|0BV|0A) |0CView Your Stats    |0A(|0BW|0A) |0CWorld Travel    |07SSSSSSSSSSSP"'|04.ssss.|07`"YSSSSSSSSSSS
+|0A (|0BM|0A) |0CThe Market         |0A(|0BP|0A) |0CEmpire          |07SSSSSSSSSS'|04.sSSSSSSSSs.|07`SSSSSSSSSS
+|0A (|0BC|0A) |0CCommunications     |0A(|0BT|0A) |0CTown Hall       |07SSSSSSSSSS |04SSSSSSSSSSSS |07SSSSSSSSSS
+|0A (|0BA|0A) |0CAlliances          |0A(|0BH|0A) |0CTraining Hall   |07SSSSSSSSSS |04SSSSSSSSSSSS |07SSSSSSSSSS
+|0A (|0B/|0A) |0CChat w/Villagers   |0A(|0BN|0A) |0CNewbie Help     |07SSSSSSSSSSb|04`эSSSSSSSSэ'|07dSSSSSSSSSS
+|0A (|0B!|0A) |0CDisband Clan       |0A(|0BQ|0A) |0CQuit            |07SSSSSSSSSSSSb.|04`ээээ'|07.dSSSSSSSSSSSS
+|0A  |0B |0A  |0C                   |0A |0B |0A  |0C                |072SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS2
+|0DНННДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДННН
+^END
+
+^Main Menu3
+|0DНННДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДННН
+|0A (|0BE|0A) |0CEnter the Mines    |0A(|0BU|0A) |0CThe Church      |12s.  |07""SSSSSSSSSSSSSSSSSbsa, |04`"YSSS
+|0A (|0BV|0A) |0CView Your Stats    |0A(|0BW|0A) |0CWorld Travel    |12SSSbs   |07`""SSSSSSSSSSSSSSSSSbsa,|04`"
+|0A (|0BM|0A) |0CThe Market         |0A(|0BP|0A) |0CEmpire          |12SSSSSSbs|07     SSSSSP' |04,|07`""ьэSSSSSSb
+|0A (|0BC|0A) |0CCommunications     |0A(|0BT|0A) |0CTown Hall       |12SSSSSSSSb|07     SSSSb, |04YSSbsa |07,  'э'
+|0A (|0BA|0A) |0CAlliances          |0A(|0BH|0A) |0CTraining Hall   |12SP"'   |07___ssssSSSSSSb.|04`YYY |07aSSs,|04`S
+|0A (|0B/|0A) |0CChat w/Villagers   |0A(|0BN|0A) |0CNewbie Help     |12S  |07aSSSSSSSSSSSSSSSSSSb,.|04`,s.|07`SSb
+|0A (|0B!|0A) |0CDisband Clan       |0A(|0BQ|0A) |0CQuit            |12Sb. |07`YSSP""SSb,  `эYSSSSSSsa,dSSSS
+|0A  |0B |0A  |0C                   |0A |0B |0A  |0C                |12SSSba.    |07dSS'Yb.   `"YSSSSSSSSSSS
+|0DНННДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДННН
+^END
+
+^Main Menu4
+|0DНННДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДННН
+|0A (|0BE|0A) |0CEnter the Mines    |0A(|0BU|0A) |0CThe Church      |04SSSSSSSS |07SSSSSSSSSSSSSSSS |04SSSSSSSS
+|0A (|0BV|0A) |0CView Your Stats    |0A(|0BW|0A) |0CWorld Travel    |04SSSSSSSS |07SSSS"'|04,ss.|07`"SSSS |04SSSSSSSS
+|0A (|0BM|0A) |0CThe Market         |0A(|0BP|0A) |0CEmpire          |04SSSSSSSS |07SY"' |04ASSSSA |07`"YS |04SSSSSSSS
+|0A (|0BC|0A) |0CCommunications     |0A(|0BT|0A) |0CTown Hall       |04SSSSSSSS |07S |04nAnSSSSSSnAn |07S |04SSSSSSSS
+|0A (|0BA|0A) |0CAlliances          |0A(|0BH|0A) |0CTraining Hall   |04SSSSSSSS |07S.|04`YSSSSSSSSY'|07,S |04SSSSSSSS
+|0A (|0B/|0A) |0CChat w/Villagers   |0A(|0BN|0A) |0CNewbie Help     |04SSSSSSSS |07SS |04zvSSSSSSvs |07SS |04SSSSSSSS
+|0A (|0B!|0A) |0CDisband Clan       |0A(|0BQ|0A) |0CQuit            |04SSSSSSSS |07SSbaaa |04SS |07aaadSS |04SSSSSSSS
+|0A  |0B |0A  |0C                   |0A |0B |0A  |0C                |04SSSSSSSS |07SSSSSSSssSSSSSSS |04SSSSSSSS
+|0DНННДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДННН
+^END
+
+^Main Menu5
+|0DНННДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДННН
+|0A (|0BE|0A) |0CEnter the Mines    |0A(|0BU|0A) |0CThe Church      |02SSSSb |15SS |08SSSSSS |07(|06__|07) |03SSSSSSSSSSSSS
+|0A (|0BV|0A) |0CView Your Stats    |0A(|0BW|0A) |0CWorld Travel    |02SSSSSb |15SS |08SSSSY  |1288  |03`"""`SSSSSSSS
+|0A (|0BM|0A) |0CThe Market         |0A(|0BP|0A) |0CEmpire          |02SSSSSSb |15SS |08`"" |07,sSSs|068ASA8 |03SSSSSSSS
+|0A (|0BC|0A) |0CCommunications     |0A(|0BT|0A) |0CTown Hall       |02SSSSSSS, |12SS|07SssS;SSSS|061SXS1 |03SSSSSSSS
+|0A (|0BA|0A) |0CAlliances          |0A(|0BH|0A) |0CTraining Hall   |02SSSSSSSbas.|07`""' YSSS|06`YSP' |03SSSSSSSS
+|0A (|0B/|0A) |0CChat w/Villagers   |0A(|0BN|0A) |0CNewbie Help     |02SSSSSSSSSSb |07sSSSSSSS; |03,ssSSSSSSSSS
+|0A (|0B!|0A) |0CDisband Clan       |0A(|0BQ|0A) |0CQuit            |02SSSSSSSSSSS |07YSS'~`YSS; |03SSSSSSSSSSS
+|0A  |0B |0A  |0C                   |0A |0B |0A  |0C                |02SSSSSSSSSSS |07`SS   `SSS |03YSSSSSSSSSS
+|0DНННДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДННН
+^END
+
+^Mines
+|08                                             s
+                                         |08 ,d$$$b.            |07,A,
+                                      |08.ad$$$$$$$$b,       |07,sd$$$bs
+                 |08,A           |07,dAb, |08sd$$$$$$$$$$$$$Ss  |07,sd$$$$$$$$bs
+|07           a   |08,d$$b,     |07,s$$$$$$$b, |08`Y$$$$$$$$$$P'|07,sd$$$$$$$$$$$$$b,
+         ,d$b |08,$$$$$$b |07,d$$$$$$$$$$$$$ba, |08`ээ$$$P'|07,d$$$$$$$$$$$$$$$$$$
+       ,d$$$$b |08э$$$$P |07a$$$$$$$$$$$$$$$$$$$$ba.  ,d$$$$$$$$$$$$$$$$$$$$b,
+     .d$$$$$$$b, |08Y$P |07$$$$$$$$$$$$$$$$$$$$$$$$$$s$$$$$$$$'$$$$$$$$$$$$$$$
+    d$$$$$$$$$$$b.,sd$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$  `$$$$$$$$$$$$$$b
+   d$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$'|04` '|07$$$$$$$$$$$$$$$$a,
+ ,s$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$'    `$$$$$$$$$$$$$$$$$b
+^END
+
+
+^Title 0
+|13              |09____|05
+ |13$$$$$$$$$$|05$$ |01$$$$|13 |08$|13 |03d|13 |08$P'|11$|13 |08`'|01$$ $|03$|01b |08`$$$|13 |01$$,|13 |01`$$b|13 |11,|13 |08`$|13 |03$ |13 |11$|05
+|13 $$$$|05$$$$$$$$|13 |01$$$$|13  |03$$b.|08`|11d$$b.|01 $,|13 |01`$|03$|01,|13 |08`'|13  |01`$|13 |08`|01 `Y|13 |11d.|13 |03 ,$$|13 |11$|05
+|13 $$|05$$$|13$|05$$$|08$|05$|08$|13 |01$$$$|13 |03$$$$$|11 |08,|11`$$$|01  $|13  |03$|01$$b|13 |11$$$|13 |03 ,$$|13 |01'|11,$$$|13 |03$'|13 |11$$|05
+|13 $|05$$$$$$|08$|05$$$|08$|13 |01$$$$|13 |08b,|13 |03`$$, |11$$|08,|13 |15a |13 |03d$$P'|13 |11$|03'|13  |03d$P'|13   |11`P|13 |03$|13  |11$$$|05
+|13 |05`$$|13$|05$$$$$|08$$'|13 |01$$$$|13 |08P|11,$|13  |03$|13  |11$'|13 |15,$b|13 |03$$|13 |11,d|13 |03'|11 $$|03 $$ |15`$$bs.|13 |01`.|11 $$|05
+|13  |05`$$$$|08$$$P'|13  |01$$$$|13 |11,$$$|15 |08'|15 |11'|15 ,d$$$ |03$|13 |11,$$|15 ,$ |11$$|15 |03`bs.|15`$$$$b,. |01.|05
+ |01   |05`$|08$$$'|01   |13 |01$$$$|13 |11$$'|13 |15 ,sd$$$$$' |13 |11,$$$|15 $$$ |03$|15 |11$|13 |03`$b|13 |15`$$$$$b|05
+             |13 |01$$$$|13 |11`|13 |15,s$$$$$$$$$b |11$$$$|13 |15d$$$$  |11$$$|13 |03$$$|13 |15$$$$$$|05
+|11 ,|_ ||_   _ |13 |01$$$$|13 |15d$$$$$$$$$$$$$b |11$|03'|13 |15d$$$$$$b.|13 |03`|11$|13 |03`$|13 |15$$$$$$|05
+|11 ||  || | |-||13 |01$$$$|13 |15$$$$$$$$$$$$$$$b ,d$$$$$$$$$$b.  ,d$$$$$$|05
+|11 ||/ || | |_,|13 |01$$$$|13 |15$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$|05
+|01    |09_______|01   $$$$    |09 ______    __   _____       _______|05
+|01 ,d$$$$$$$$b, $$$$ ,d$$$$$$$$$b. $$b,$$$$$$$b. ,d$$$$$$$$$b.|05
+|01d$$$$$' ,$$$$ $$$$ $$$P'|09__|01,$$$$$ $$$d$$'`Y$$$$ $$$$P'  Y$$$$|05
+|01$$$$$'  Y$$$P $$$$ ~,sd$$$$$$$$$ $$$$$'  `$$$$ `$$$$$b,.|09__|05
+|01$$$$$   |09 ___|01  $$$$ d$$$$э^`$$$$$ $$$$P   $$$$$ |09__|01 ^эY$$$$$b|05
+|01$$$$$b d$$$$b $$$$ $$$$$b.s$$$$$ $$$$' |09_|01d$$$$$ $$$$b`$$$$$$$|05
+|01`Y$$$$$$$$$P' $$$$ `Y$$$$$$$N6$' $$$$b d$$$$$$ `Y$$$$$$$$$Y'|05
+|01ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД|05
+|07                 copyright 1997 allen ussher
+                         |08<|07paused|08>%Z
+^END
+
+^Title 1
+|07
+        |08Ь|07                                                          |04Ь|07  |04Я|08ЯЯ|07
+             |08Я|07                                                   |12Ь|07       |04Ь|07
+ |08ДДДД |04Ы|07 |08ДДДДДДДД|07 |04Я|12ЯЬ|08 ДДД|07 ЬЬЬЬЬ |08ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД |04Ь|12|20Ь|04|16Я |08ДДДДДД |04Ь|08 ДДДД
+|07            |04Ь|12|20°|04|16ЫЬЬЬ|12Ь|14І|07 |12Ь|07 |04Ы|07 ЫЫЫЫЫ |04ЫЬЯЬЬ|07 |04ЬЬЬЫ |12|20°|07|16 |04ЬЬ|07    |04ЬЬЬЬЬЫ|12|20Ь|14|16Я|12|20Ь|04|16ЬЬ|12|20Я|04|16ЫЯ Ь|07   |04ЬЬЫ|12|20±|07|16
+        |12Я|14Ь|07  ЬЬЬЬЬЬЬЬЬЬЬ  ЫЫЫЫЫ  ЬЬЬЬЬЬЬЬЬЬ|12|20±|07|16 ЬЬЬЬЬЬЬЬЬЬЬ   ЬЬЬЬЬЬЬЬЬЬЬ|04 |12|20°|04|16Я|07
+           ЫЫЫЫЫ   ЫЫЫЫЫ ЫЫЫЫЫ ЫЫЫЫЫ  ЫЫЫЫЫ ЫЫЫЫЫ  ЫЫЫЫЫ ЫЫЫЫЫЬЬЬЬЬЬЬ     |04Ь|07
+         |04Ю|07 ЫЫЫЫЫ         ЫЫЫЫЫ        ЫЫЫЫЫ ЫЫЫЫЫ  ЫЫЫЫЫ ЬЬЬЬЬ  ЫЫЫЫЫ|04 Э|07
+         |04Ю|07 ЫЫЫЫЫ   ЬЬЬЬЬ ЫЫЫЫЫ ЬЫЫЫЫЯЯЫЫЫЫЫ ЫЫЫЫЫ  ЫЫЫЫЫ ЫЫЫЫЫ  ЫЫЫЫЫ |04Ы|07       |04Я
+|07         |04Ы|07 ЫЫЫЫЫ   ЫЫЫЫЫ ЫЫЫЫЫ ЫЫЫЫЫ  ЫЫЫЫЫ ЫЫЫЫЫ  ЫЫЫЫЫ ЯЫЫЫЫ  ЫЫЫЫЫ |14Ы|04ЫЬ|07   |04Я|07
+        |04Ю|12|20±|07|16 |12|20±|07|16ЯЯЯЯЯЯЯЯЯЯЯЯ ЫЫЫЫЫ ЯЯЯЯЯЯЯЯЯЯЯЯ ЯЯЯЯЯ  ЯЯЯЯ|12|20±|08|16Я|07 |08Ь|07 ЯЯЯЯЯЯЯЯЯ |12|20Я|04|16Я|07
+         |04Я|07 |12|20°|04|16 ЯЯЯЯЯЯЯ|12|20Ь|04|16Ы|12Ь|20Ь|07|16 ЫЫЫЫЫ |12|20Я|04|16ЬЯЯ|12Я|20І|16Я|04ЯЯ|12Ы|04ЬЯ|07 |04ЬЯ|12Я|07 |04ЯЯЯЫЯ|12|20±|07|16 |12|20°|07|16   |04Я|07           |04Я|07
+        |04Я|07   |04 |07         |04Я|14Ь|07 ЫЫЫЫЫ |04Ы|12Я|07   |12|20±|07|16    |04Я|07          |04Я|12|20°|04|16 |07      |12Я|04Я|12Ь|07        |08Ы|07
+ |08ДДДДД |04Ы|08 ДДДДДДДДДДДДД|07Д|15Д|07 ЯЯЯЯЯ |08ДДДД|04 |12|20°|04|16 |08ДДДДДДДДДДДДДДДДДДДДДДДДДДДД|07 |04Я|07  |08Ь|07 |08ДДДДДДД
+       |12Я|08            |07 |12Я|08         Copyright 1997 Allen Ussher|07
+         |08ЯЬ|07  |04Ь|07   |04Я|12Я|07                 |04  |07
+
+                                    |08<|04pause|08>%Z
+%Z
+^END
+
+^Title 2
+`00`07
+
+        `0DЬ`5D±`05ЫЯЯЫЫЬ`07                                         `04ЬЬЬЬЬЬЬ`07
+       `5DІ±°`07    `05ЫЫЫ   `0DЬ    `08the Clans`07                    `04ЬЫЫЫЫЫЫЫЫЫЫЫЬ`07
+      `5DІ±°`05Ы    `5D°`05ЫЫ`58°`07 `5DІ±`07                              `04ЬЫЫЫ`4C±`04ЫЫЫЫ`4C±`04ЫЫЯЫЫЫЫ`07
+      `5D°  `05Ы`07         `5D±°`07  `0DЬ`5D°`05ЯЫЬ   `0DЬ`5D±`05ЯЫЬ   `0DЬ`5D±`05ЯЫЬ`07      `04ЫЬ`4C±`04ЫЫЯЫЫЯЫЫЫ`4C°`04ЫЫЯЫ`48°`04Э`07
+      `05ЫЫ`5D°`05Ы    ЬЬЬЬ `5D°`05Ы Ь`5D°`07   `05ЫЫ `0DЬ`5DІ`07   `5D±`05Ь `0DЬ`5DІ`05Ь  ЯЯ    `04Я ЬЬЫЯ  Я`48°`04Я`4C°`07 `04Я `07Ь `04Ы`48°`04Ы`07
+      `05ЯЫЫ`58°`07    `5D±°`58°`05Я Ы`58°`07 `5D°`05Ы   Ы`58°`07 `5D±`05Ы   `5D°`58°`07 `05Я`5D±°`05ЫЫЬ`07        `04ЯЯ `07ЫЯ ЬЬ  ЬЫ `04ЬЫЫ`48±`07
+       `05ЯЫ`58°`05Ь  Ь`5D°`58°`05Я  `58°±`07 `05ЯЫЬ Ь`58°±`07 `5D°`58°`07   `5D°`58±`07    `05ЯЯ`5D°`58°`07      `04Я ЫЭ`07Ю`7F°`07Ы`7C°`07ЫЫЫЫ`78°`07Ь `04Я`48°±`07
+         `05ЯЯЯЯЯЯ   ЯЯЯ   ЯЯЯ Я ЯЯ   ЯЯ`07     `05Ь`58°±`07      `04Ь`4C°`04ЫЬ `07ЯЫЫ`74Ь`07ЫЫ`78°°`07Я `4C°`48±`04Э`07
+      `0DЯЯ`5DІІ±±°°`05Ы`5D°`05ЫЫЫЫ`5D°`05ЫЫЫЫ`58°`05ЫЫЫЫ`5D°`05ЫЫЫ`58°`05ЫЫЫЫ`58°`05Ы`58°±`05Я    `04Я ЬЯЬЫ`4C±`48°`07  ЯЫЫЯЯ `04ЬЯЫЯ`07
+                  `02ЬЬЬ`07     `02Ь`07                          `04ЯЯЯЯ  `07Ь `04ЬЯЯЯ`07
+         `28Ь`02ЫЫЫЬ Ь`28°±`02ЫЫ`07     `02Ь`28±`02ЫЫЬ`07                  `01Ь`07        ЬЬЫ`7F°`07ЬЫЬЬ   `01Ь`07
+        `42Я`02ЫЯ `2E°`02Ы  ЯЫ`28°`02Ь   ЬЫ`28І`02Ы`28±І°`02ЫЫ   ЬЯЯЬЬ`07         Ь`01ЯЫ`19Ь`01ЬЬ`07ЯЯ ЯЯЯ  `01ЬЬЬЬЫЬЫЫЯЯ`07
+      `04ЬЯ  `02Ю`2E±`02Ы    Я ЬЬЬЬЬЬЯЯЯЯЯЯЫЬ  `2A±`02Я  ЬЫ`07       Ю`7F°`07Ь `01Ы`19ЫЬЬ`01ЫЫЬЬЫЫ`19ЬЬ`01ЫЫЯЯЯ `07ЬЫ
+          `2EІ`02Ы   ЬЬЫ`2A°І±`02ЫЫ`2A±`02ЯЯЯЫЫЬЬ`07     `02Ь`2A°`02ЫЯ`07        ЫЫ`78°`07Ь `01Я`19±°`01ЫЬЫЫЯ`19°Я`01ЫЫЫЫ `7F°`07ЫЫ`78°`07Э
+       `02ЯЬЫ`2E±°`02Ь`2A±°`02ЫЯЯ Я Я ЯЬ    ЯЯЯЫЫЫЯЯ`07           The Clans copyright 1996
+        `02Я ЯЯЯЯЫЬ`07                                      Allen Ussher
+
+                 `01ъ`07        `09Д   `03Д`0BД`0FЕ `07p a u s e d `0FЕ`0BД`03Д Д    `09Д    `01ъ`07
+%Z
+^END
+
+^Clan Title
+
+|15  T   h   e       C   l   a   n   s |07%V
+|0DНННДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДННН
+|07 |08ДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДД Д ДДДДДД|07             |08ДДДДДД ДДДДДДДД ДДД|07
+|08 ДДДДДДДДД   ДДДДД    |14Ь|06ЬЬЬЬЬ |14Ь|06ЬЬЬ|14|22°|04|16Ы Я |15ЬЬЬЬЬЬ|07ЬЬЬ|15ЬЬ|07ЬЬЬЬЬЬ|15Ь|07Ь |08Ы |07ЬЬ |08Д  ДДДДДДДД  Д|07
+              |14Ь|06ЬЬЬ|14Я|06ЯЫЫЬЫЫЬ ЫЯЫЫ|08|22°|04°|06|16Ы |14|22±|07|16   Я|08Я|07ЯЯЯЯ|08ЯЯ|07ЯЯЯ|08ЯЯЯЯ |01ЬЬЬЬЬ|07Я|04ЬЯ|07Ь    |08ДДДДД|07
+|08 ДДДДДДДДД  |14ЬЬ|06ЬЬЬЬ |14ЬЬ|06ЬЬЬЬ  ЫЫ±Ы|14|22°|06|16ЫЬ|04|22°|07|16 |04Ы |08|22І|04|16ЬЯ ЫЬ |14|22І|04|16Я|12|20±|04|16Ь  Я  |01ЯЯ|09|17І±|01|16ЫЫЭ |07Я|15|23±°|07|16ЫЬ         |08Д|07
+|08 ДДД  Д    |14|22°|06|16Ы ЯЫЫЫЯ|14|22І±|06|16Ы|14|22°|06|16ЯЬЫ  ЯЫ ЫЫЫ|04|22±|08±|04І|07|16 |06Ы|08|22І|07|16 |12|20°|07|16   |04ЬЬ  |06ЫЬ Я  |07Ы |01Ы|09|17І°|01|16Ы  |07Ь|15|23°|07|16ЫЯ     |08ДДДД|07
+|08 ДДД    Д  |06Я|14|22І±|06|16Ь ЯЫЫ|14|22°|06|16ЫЯ |14|22°|06|16Ы ЬЫ Ю|14|22±|08°|04°|06|16ЫЬЫ  |04ЬЯ|06ЯЬ|04Я |06Я|04Я |06Я Я  |08ДД  |01Я |04ЬЬЬЫЬ |07ЫЯ  |08ДДДДДД  Д|07
+|08 ДД ДД Д   |06ЫЯЫЬ|04ъю|14|22°І|06|16Ы  |04ю|06ЮЫЫЫ|14|22±|07|16 |06ЫЯЫЫЬЯЯЯЯ|07                 |12Я|20°|04|16ЫЫЫЫ|12|20±|04|16Я|07
+|04 |08Д  ДДДДДДД |14|22±|06|16ЫЯЯ ЯЯЯЯ ЯЯЯЬІЬ ЫЫ|04|22±|08±|07|16  |08ДДДДДД ДД   Д   |07ЬЬЫЫ |04ЯЮЫ|12|20°|04|16ЬЬ|07
+       |04Ь ъЬЬЬюЮ|07Ю|15ЯЯІ°Я|07Я|15Я|07Э|14|22°|06|16ЯЫЫ |08|22°|06|16Я|07            Ь   ЬЬЮ|15|23°|07|16ЫЯЯ    |04ЮЫЫЬЬ |08ДДДДДДДДДДДД|07
+     |04ю   Ь Я|12|20°|07|16  |12|20°|15|16Э|04Ь|15ЬЬ ЬЮ|06ЬЫЫЫ  |08Д   ДДДД ДД |15|23°|07|16Ы |12|20±|07|16 |15|23±|07|16ЫЫЯЯ     |05Ь |04Я ЯЫ |05Ь|07       |08ДД ДДД|07
+|08   |04ъ   ЯЯ Ь  ЬЬЯ |06Ь ЬЬЬЬЬ|08|22°|06|16Я   |08ДДДДДДДДД    Д|07         |05ЬЬІЫЫЫЫЫЬ ЬЫЫ|07       |08Д ДДД|07
+|0DНННДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДННН
+|0A (|0BE|0A) |0CEnter Game        |0A (|0BV|0A) |0CVillage Stats  |0A (|0BG|0A) |0CGame Settings
+|0A (|0BS|0A) |0CSee Scores        |0A (|0BH|0A) |0CHelp           |0A (|0BL|0A) |0CLeague Scores
+|0A (|0BT|0A) |0CToday's News      |0A (|0BI|0A) |0CInstructions   |0A (|0BQ|0A) |0CQuit
+|0A (|0BY|0A) |0CYesterday's News  |0A (|0BB|0A) |0CBulletins
+|0DНННДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДННН
+^END
+
+^Main Title
+          |04the |0B_______  |0A $$$$     |0B______    __   _____       _______|0A
+           ,d$$$$$$$$b, $$$$ ,d$$$$$$$$$b. $$b,$$$$$$$b. ,d$$$$$$$$$b.
+|07<><><><>|0A  d$$$$$' ,$$$$ $$$$ $$$P'|0B__|0A,$$$$$ $$$d$$'`Y$$$$ $$$$P'  Y$$$$ |07<><><><>
+|07><><><><|0A  $$$$$'  Y$$$P $$$$ ~,sd$$$$$$$$$ $$$$$'  `$$$$ `$$$$$b,.|0B__|0A   |07><><><><
+|07<><><><>|0A  $$$$$    |0B___|0A  $$$$ d$$$$э^`$$$$$ $$$$P   $$$$$ |0B__|0A ^эY$$$$$b  |07<><><><>
+|07><><><><|0A  $$$$$b d$$$$b $$$$ $$$$$b.s$$$$$ $$$$' |0B_|0Ad$$$$$ $$$$b`$$$$$$$ |07><><><><|0A
+          `Y$$$$$$$$$P' $$$$ `Y$$$$$$$N6$' $$$$b d$$$$$$ `Y$$$$$$$$$Y'
+^END
+
+^Travel Menu
+ |0BTravel Menu
+|0DНННДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДННН
+|0A (|0BS|0A) |0CSee Current Travel Info
+|0A (|0BO|0A) |0CView Other Villages in league
+|0A (|0BT|0A) |0CTravel to Another Village
+|0A (|0BV|0A) |0CView Your Stats
+|0A (|0BH|0A) |0CHelp on Villages and Travel
+|0A (|0BQ|0A) |0CQuit to Town
+|0DНННДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДННН
+^END
+
+^Market Menu
+ |0BThe Market : Level %X
+|0DНННДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДННН
+ |0A(|0BW|0A) |0CBuy Weapon             |07                                  |06  asa
+ |0A(|0BA|0A) |0CBuy Armor              |07  ,sssssssssssssssssssssssssssssss|06 dMMMbmmmmmmmm,
+ |0A(|0BS|0A) |0CBuy Shield             |07a$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$|06 MMMMMWWWWWWWWW
+ |0A(|0BP|0A) |0CPawn Shop              |07 `Y$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$|06 YMMMPWWWWWWWP'
+ |0A(|0BZ|0A) |0CWizard's Shop          |07                                  |06 `YMP'
+ |0A(|0BT|0A) |0CTrade with Other Clans
+ |0A(|0BV|0A) |0CView Your Stats
+ |0A(|0B/|0A) |0CChat w/Villagers
+ |0A(|0BQ|0A) |0CQuit to Town
+|0DНННДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДННН
+^END
+
+^Mail Menu
+|0B Communications
+|0DНННДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДННН
+|0A (|0BC|0A) |0CCheck Mail                             |01$$$b |09'"эээээээ^~~~^эээээээ"` |01d$$$
+|0A (|0BW|0A) |0CWrite Mail                             |01$$$$$ |07"ьS$$$$$$$$$$$$$$$Sь" |01$$$$$
+|0A (|0BP|0A) |0CWrite Public Mail                      |01$$$$$ |07$bs.`"ьY$$$$$Pь"',sd$ |01$$$$$
+|0A (|0BU|0A) |0CUpdate Lastread Pointer                |01$$$$$ |07$$$$$bs,.`"'.,sd$$$$$ |01$$$$$
+|0A (|0BV|0A) |0CView Your Stats                        |01$$$$$ |07$$$$$$$$$$s$$$$$$$$$$ |01$$$$$
+|0A (|0BG|0A) |0CGlobal Post                            |01$$$P' |07$$$$$$$$$$$$$$$$$$$$$ |01`Y$$$
+|0A (|0BQ|0A) |0CQuit to Town                           |01$P'|09,dsssssssssssssssssssssssb.|01`Y$
+|0DНННДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДННН
+^END
+
+^Help Menu
+|0DНННДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДННН
+|0A (|0B1|0A) |0CItems
+|0A (|0B2|0A) |0CRaces & Classes
+|0A (|0B3|0A) |0CGeneral
+|0A (|0B4|0A) |0CCombat
+|0A (|0B5|0A) |0CStrategies
+|0A (|0B6|0A) |0CNewbie Help
+|0A (|0B7|0A) |0CAttributes
+|0A (|0BQ|0A) |0CQuit
+|0DНННДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДННН
+^END
+
+^Church Menu
+
+|0A (|0BM|0A) |0CAttend Mass                            |0A  .sь^~^~^s.  .sS$$$$Ss.
+|0A (|0BP|0A) |0CPray                                   |0A d          bd$$$$$$$$$$b
+|0A (|0BB|0A) |0CAsk for Blessing                       |0A$            $$$$$$$$$$$$$
+|0A (|0BD|0A) |0CResurrect Dead Member                  |0A$            $$$$$$$$$$$$$
+|0A (|0BU|0A) |0CResurrect Unconscious Member           |0A b.        .dY$$$$$$$$$$Y
+|0A (|0BV|0A) |0CView Stats                             |0A  `ьs.,.,sь'   ьS$$$$Sь
+|0A (|0B/|0A) |0CChat w/Villagers
+|0A (|0BQ|0A) |0CQuit
+|0DНННДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДННН
+^END
+
+^Training Hall
+
+|0A (|0BT|0A) |0CTrain a member
+|0A (|0BA|0A) |0CAdd a new member
+|0A (|0BL|0A) |0CRelease member
+|0A (|0B/|0A) |0CChat w/Villagers
+|0A (|0BV|0A) |0CView Stats
+|0A (|0BQ|0A) |0CQuit
+|0DНННДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДННН
+^END
+
+# make this an option in the future?!
+# |0A(|0BF|0A) |0CFine a Clan                 |0A(|0BI|0A) |0CInvestigate Clan
+^Town1
+ |0A(|0BE|0A) |0CEconomics Menu              |0A(|0BC|0A) |0CChange Colour Scheme
+ |0A(|0BL|0A) |0CChange Flag                 |0A(|0BS|0A) |0CStructures
+ |0A(|0BR|0A) |0CConscription Rate           |0A(|0BM|0A) |0CMake Announcement
+ |0A(|0BD|0A) |0CPublic Discussion           |0A(|0BP|0A) |0CVillage Empire
+ |0A(|0BH|0A) |0CRuling Help                 |0A(|0BV|0A) |0CView Clan Stats
+ |0A(|0B!|0A) |0CAbdicate                    |0A(|0BB|0A) |0CVoting Booth
+ |0A(|0B/|0A) |0CChat w/Villagers            |0A(|0BQ|0A) |0CQuit
+|0DНННДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДННН
+^END
+
+^Town2
+|0DНННДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДННН
+ |0A(|0BW|0A) |0CWrite to Ruler                 |0A(|0BD|0A) |0CDeposit into Vault
+ |0A(|0BE|0A) |0CDonate to Village Empire       |0A(|0BB|0A) |0CVoting Booths
+ |0A(|0BP|0A) |0CPublic Discussions             |0A(|0B/|0A) |0CChat w/Villagers
+ |0A(|0BS|0A) |0CSee Village Empire Stats       |0A(|0BV|0A) |0CView Clan Stats
+ |0A(|0BH|0A) |0CHelp                           |0A(|0BQ|0A) |0CQuit
+|0DНННДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДННН
+^END
+
+^Eliminated
+
+ |02You have been eliminated from play by another clan!  You may wish to see
+ the daily news for information on who caused your destruction.
+
+ |10After you exit the door, you may enter it again and start over.
+
+%P
+^END
+
+^Item Help
+
+|0A(|0BL|0A)|0Cist items                -- list items in inventory
+|0A(|0BE|0A)|0Cquip an item             -- use an item
+|0A(|0BD|0A)|0Crop item                 -- remove item from inventory
+|0A(|0BS|0A)|0Ctop using item           -- stop using an equipped item
+e|0A(|0BX|0A)|0Camine item              -- see an item's statistics
+|0A(|0BR|0A)|0Cead book                 -- read a book
+
+^END
+
+^Take Item Help
+
+|0A(|0BL|0A)|0Cist items                -- list items in inventory
+|0A(|0BT|0A)|0Cake an item              -- use an item
+e|0A(|0BX|0A)|0Camine item              -- see an item's statistics
+
+^END
+
+
+^Pawn Menu
+ |0BPawn Shop : Level %1
+|0DНННДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДННН
+ |0A(|0BB|0A) |0CBuy items              |0A(|0BS|0A) |0CSell items
+ |0A(|0BV|0A) |0CView Clan Stats        |0A(|0BQ|0A) |0CQuit
+|0DНННДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДННН
+^END
+
+^Empire Menu
+|0DНННДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДННН
+ |0A(|0BB|0A) |0CBuild Structure        |0A(|0BM|0A) |0CManage Army
+ |0A(|0BA|0A) |0CAttack an Empire       |0A(|0BS|0A) |0CSpy on an Empire
+ |0A(|0BD|0A) |0CDonate to Empire       |0A(|0BL|0A) |0CDevelop Land
+ |0A(|0BH|0A) |0CHelp on Empires        |0A(|0BQ|0A) |0CQuit
+|0DНННДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДННН
+^END
+
+# |0A(|0BS|0A) |0CSee relations
+^Alliance
+|0DНННДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДННН
+ |0A(|0BW|0A) |0CWrite to allies             |0A(|0BL|0A) |0CList alliance members
+ |0A(|0BI|0A) |0CInvite clan into alliance   |0A(|0BR|0A) |0CRemove clan from alliance
+ |0A(|0B!|0A) |0CRemove self from alliance   |0A(|0BS|0A) |0CSee member's stats
+ |0A(|0BC|0A) |0CChat Room                   |0A(|0BD|0A) |0CDonation Room
+ |0A(|0BP|0A) |0CManage Empire               |0A(|0B*|0A) |0CDestroy Alliance
+ |0A(|0BV|0A) |0CView Clan Stats             |0A(|0BQ|0A) |0CQuit
+|0DНННДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДННН
+^END
+
+^Disbanded
+|09You have disbanded your clan and cannot play again until tomorrow!
+%P
+^END
+
+^Voting Booth
+|0DНННДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДННН
+ |0A(|0BC|0A) |0CChange Vote
+ |0A(|0BV|0A) |0CView Clan Stats
+ |0A(|0BQ|0A) |0CQuit
+|0DНННДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДННН
+^END
+
+^Wizard Menu
+ |0BWizard's Shop : Level %2
+|0DНННДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДННН
+ |0A(|0BB|0A) |0CBuy Book               |0A(|0BS|0A) |0CBuy Scroll
+ |0A(|0BX|0A) |0CExamine Item           |0A(|0BV|0A) |0CView Your Stats
+ |0A(|0BQ|0A) |0CQuit to Town
+|0DНННДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДННН
+^END
+
+^Donate To Empire1
+|0DНННДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДННН
+|0A (|0B1|0A) |0CDonate Followers            |0A (|0B2|0A) |0CDonate Footmen
+|0A (|0B3|0A) |0CDonate Axemen               |0A (|0B4|0A) |0CDonate Knights
+|0A (|0B5|0A) |0CDonate Land                 |0A (|0BV|0A) |0CView Stats
+|0A (|0BQ|0A) |0CQuit
+|0DНННДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДННН
+^END
+
+^Donate To Empire2
+|0DНННДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДННН
+|0A (|0B1|0A) |0CDonate Followers            |0A (|0B6|0A) |0CTake Followers
+|0A (|0B2|0A) |0CDonate Footmen              |0A (|0B7|0A) |0CTake Footmen
+|0A (|0B3|0A) |0CDonate Axemen               |0A (|0B8|0A) |0CTake Axemen
+|0A (|0B4|0A) |0CDonate Knights              |0A (|0B9|0A) |0CTake Knights
+|0A (|0B5|0A) |0CDonate Land                 |0A (|0B0|0A) |0CTake Land
+|0A (|0BA|0A) |0CDonate Gold                 |0A (|0BB|0A) |0CTake Gold
+|0A (|0BV|0A) |0CView Stats                  |0A (|0BQ|0A) |0CQuit
+|0DНННДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДННН
+^END
+
+^Special
+%C|13 Special Deals on Allen Ussher's Doors
+
+|07 I am having a door sale!  See the (B)ulletins for info in the pre-game
+ menu of The Clans.
+
+^PAUSE
+^END

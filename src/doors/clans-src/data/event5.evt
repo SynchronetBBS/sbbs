@@ -1,0 +1,52 @@
+>>
+
+ Example Event File No.5
+
+ "How to use flags"
+
+
+  NOTE:  Txx flags are ALWAYS cleared before EFs are run so we can assume
+         they are zero and don't need to run a ClearFlag Txx on them.
+
+>>
+
+Event FlagExample
+  SetFlag T1
+
+  # the following is executed only if T1 is set -- which it is
+  {T1}Text "T1 was set!
+
+  # the following line should NOT execute
+  {!T1}Text "T1 was NOT set! -- NEVER EXECUTES
+
+  SetFlag T3
+  Jump NextPart
+End
+
+Result NextPart
+  # as you can see, the flag values are not cleared when jumping from block to
+  # block
+
+  {T3}Text "T3 is set!
+
+  ClearFlag T1
+  {!T1}Text "T1 has been cleared.
+
+  {!T1 & T3}Text "T3 was set but T1 was not.
+
+  # The following three lines sometimes appear and sometimes don't
+  {R50}Text "Random display 1
+  {R50}Text "Random display 2
+  {R50}Text "Random display 3
+
+  # ^ = TRUE, % = FALSE
+  {^}Text "This should ALWAYS be seen
+  {%}Text "This should NEVER be seen
+
+  # note how option 4 will NEVER execute
+  Prompt "Choose an option (1,2,3):
+  {%}Option 4 NextLine
+  {^}Option 1 NextLine
+  Option 2 NextLine
+  Option 3 NextLine
+End

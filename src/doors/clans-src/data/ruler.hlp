@@ -1,0 +1,122 @@
+^Tax Rate
+ |0CThe tax rate is simply the amount of taxes collected from warriors who
+ fight within the mines.  After fighting in the mines, they are taxed by
+ the tax rate the ruler sets.
+
+ |14A good starting value is 10%.
+
+^END
+
+^GST
+ |0CThis is the goods and services tax and is applied whenever a good is
+ purchased or service is provided for a fee.
+
+ |14A good starting value is 6%.
+
+^END
+
+^Training Hall
+ |0CThe training hall is needed for training clan members.  Without one, clans
+ cannot upgrade their strengths and fight in tougher levels.  If you are in
+ a league, it is a good idea to build this right away.
+
+ |0BA higher level training hall will allow clans to require less training
+ points to train.
+
+^END
+
+^Church
+ |0CThe church allows ressurection of the dead among other things.  It is not
+ important in the beginning of a game but will become important later on when
+ clan members are killed easily.
+
+ |0BA higher level church will allow more resurrections.
+
+^END
+
+^Color Scheme
+ |0CThe colour scheme of the game can be changed here.  Only the ruler may
+ change the colour scheme and it may be a good way to leave your mark on
+ the villagers.
+^END
+
+^Flag
+ |0CThe flag can be changed by the ruler only.  It is a good idea to come up
+ with an original flag that you will wave whenever *you* are in rule.
+^END
+
+^Vault
+ |0CThe vault is where the town's gold is stored.  This is the gold used for
+ building or upgrading structures within the town (such as a church).
+ You can withdraw and deposit into this vault.  Doing with either one
+ will either decrease or increase your popularity respectively.
+
+^END
+
+^Deposit into Vault
+ |0CThis allows you to deposit gold into the village vault.  This gold can be
+ used to help the town grow.  It is a good idea to deposit into the vault
+ regularly if you wish to stay in power.  Other clans will see you are doing
+ this is be more loyal.
+
+^END
+
+^Withdraw from Vault
+ |0CThis option allows you to withdraw gold from the town's vault.  Be careful
+ when withdrawing gold.  Doing it too often or in excess *will* be noticed
+ by other clans.  This may cause them to rebel and overthrow you.
+
+^END
+
+^Make Announcement
+ |0CThis option allows you to make an announcement which will be seen in the
+ daily news.
+
+^END
+
+^Smithy
+ |0CBy upgrading the weapon shop, better stats will be produced when items
+ such as weapons, shields, and armor are bought.  It is very important to
+ have a weapon shop in an InterBBS game!
+
+^END
+
+^Government System
+ |0CThe government system used decides how the ruler is chosen each day.  If
+ a Dictatorial system is used, the current ruler will continue to reign
+ regardless of votes.  (Voting is actually disabled.)  If a Democratic system
+ is used, voting decides who the ruler will be each day.
+
+^END
+
+^Show Empire Stats
+ |0CUse this feature to toggle whether or not users can see the village's
+ empire stats.  This feature is extremely useful for a Dictator system of
+ government as it helps keep the enemy in the dark.
+
+^END
+
+^Conscription Rate
+ |0CThe conscription rate dictates how much of a clan's followers gained will be
+ taken into the town's empire.
+
+^END
+
+^Voting Booth
+ |0CThe voting booth allows you to vote for the clan which you think will rule
+ best.  At the end of the day, a new ruler is chosen from the top votes.  Of
+ course, if the town is under dictatorial rule, voting is disabled and the
+ current ruler will continue to reign unless ousted through an empire war.
+^END
+
+^Pawn Shop
+ |0CA Pawn Shop is required for users to buy and sell used goods.  A higher
+ level of pawn shop allows the shop to keep more items in stock each day.
+
+^END
+
+^Wizard's Shop
+ |0CA Wizard's Shop provides the town with magical items.  A higher level of
+ Wizard's Shop allows the wizard to sell a wider variety of goods.
+
+^END

@@ -1,0 +1,44 @@
+# events that occur when you go to mass
+
+# different church things happen:
+#
+# singing makes you rejoice
+# the sermon touches you
+# the collection plate is passed to you, how much do you give? -- gain something
+#   -- steal from it -- lose fights -- says in news
+# old man talks to you, tells you of a quest? -- monster down in a well
+
+Event Nothing
+Text "|10Sadly, the mass you attend fails to do anything to you or your clan.
+End
+
+Event Followers
+Text
+Text "|07Several villagers notice your presence in the mass and decide to join your
+Text "following!
+Text
+Text "|03(You gain 20 new followers!)
+GiveFollowers 20
+End
+
+Event GainGold
+Text
+Text "|07The priest notices you and decides to donate 100 gold to your cause as he
+Text "feels you have been doing great things for the village.
+GiveGold 100
+End
+
+Event GainFights
+Text
+Text "|07The priest delivered such a powerful speech that you feel energized and
+Text "ready to fight some more.  |03(You gain two monster fights.)
+GiveFight 2
+End
+
+Event Feelbad
+Text
+Text "|07The priest delivers a sermon which makes your clan feel terrible.  You feel
+Text "remorseful.  |12You lose 20 points.
+GivePoints -20
+End
+

@@ -1,0 +1,79 @@
+^Footmen
+|0B Footmen
+
+|0C Footmen are your main source of troops.  Because of their low cost, you
+ will usually have more of these than the other kinds of troops.
+
+ Speed:     Average
+ Offense:   Average
+ Defense:   Low
+ Vitality:  High
+
+|0B Each footman costs 15 gold to train.
+^END
+
+^Axemen
+|0B Axemen
+
+|0C Axemen are a strong type of troop but are very slow.
+
+ Speed:     Low
+ Offense:   High
+ Defense:   Below Average
+ Vitality:  Above Average
+
+|0B Each Axeman costs 30 gold to train.
+^END
+
+^Knights
+|0B Knights
+
+|0C Knights are the quickest troops but are the poorest defensively.
+
+ Speed:     High
+ Offense:   Very High
+ Defense:   Very Low
+ Vitality:  Above Average
+
+|0B Each Knight costs 60 gold to train.
+^END
+
+^Army Rating
+|0CArmy Rating can be thought of as the potential of your army.  100%
+means they are able to do as much damage as possible while 50% means
+they can only do half their regular damage.  Each attack will cause the
+army rating to decrease.  Using a larger army for an attack will cause
+the army rating to decrease substantially.  Therefore, it is advised
+that you keep your attacking armies small.
+
+|0B* Each day, the army rating increases from 5 to 10%.  More Gyms built will
+ increase this value.
+^END
+
+
+^Speed
+|0B Speed
+
+|0C The speed of the army dictates how quickly they can deliver attacks and how
+ quickly they can dodge blows.  With two armies of equal strength, the quicker
+ one will always win.
+^END
+
+^Offense
+|0B Offense
+
+|0C The offense of the army is how well it can attack the opponent.
+^END
+
+^Defense
+|0B Defense
+
+|0C The defense of the army is how well it can defend against the opponent.
+^END
+
+^Vitality
+|0B Vitality
+
+|0C The vitality of the army dictates how much energy an army has before being
+ defeated.
+^END

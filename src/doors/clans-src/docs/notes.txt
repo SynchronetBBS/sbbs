@@ -1,0 +1,338 @@
+
+>> Introduction
+
+Ok, here's the lowdown on this app.
+
+Please, if you have any questions about any of this, be specific with your queries.
+I haven't touched this code in ages, so I need some refreshing myself.  I'm providing 
+this for people to tinker with and to perhaps create a new version if they wish to.
+
+Allen
+tigertigr@yahoo.ca
+
+> Some things to keep in mind:
+
+- You need the OpenDoors library.  Luckily for us, it is now open source.  Get it below:
+  http://www.attcanada.net/~pirie/oddownload.html
+  * You might need to recompile it for your system.  Brian doesn't provide binaries for
+    the open source version. (Why not!?)
+  * If you use the non-free version of OpenDoors, you'll get an annoying registration message.
+    I've left out the procedure to turn this off 'cause you need to validly register that.  If
+    you don't like it, mail brian Pririe (see like above).
+- Even though the registration system is no longer used, I've kept the code in there to give you
+  an idea of how easy it must've been to make a keygen for this thing. :-)
+- You need to run the tools to generate the data files.  See details wayy below.
+- Strings appear in the language file.
+- You'll need Turbo C++ 3.00 or higher to compile this stuff.  Sorry.  I'm sure you could
+  port it to gcc by going through the TCC-specific code.  Actually, the only TCC-specific
+  code I can think of right now is the asm {} code.  
+- If you want to port this to Linux, however, you'll have to change all the hardware-level
+  calls as I don't think Linux lets user-apps do that directly.  See convert.txt for a
+  more comprehensive list of things to change around.
+
+> How you can improve this all:
+
+- Write it to C++ (or even Java).  I was not yet fluent in C++ at the time, so I didn't 
+  bother coding it in that.  However, you can start to see that I use encapsulation
+  and other such techniques, so some things should easily be converted to C++.
+- Re-write the IBBS routines so that they 
+  1. Use a better packet system.  The current system is a bit buggy.
+  2. Use sockets to exchange packets on the Internet, instead of using Fidonet or 
+     older other messaging network technology.
+  3. Use private/public key encryption to encrypt the packets.  The current encryption scheme
+     is not secure AT ALL and can easily be hacked to cheat.  Once you see the code, I'm sure you
+     can come up with schemes.
+  I do not recommend releasing a new version of this game until these routines are written,
+  especially due to #3.  #2 makes it difficult to set up IBBS games.  And #1 just warrants
+  an overhaul.
+
+> Bad things:
+
+- there are a few points in the code where i use magic numbers.  Sorry.
+- sometimes i use string literals in code when i really should've used strings from 
+  the language file.  
+- compiles in Turbo C++ only
+- depends heavily on the OpenDoors library.  it should be fixed so that any door library
+  can be used in its place (swap it in seemlessly)
+
+>> Installing
+
+So let's put this thing together, shall we?  
+
+0. Create a folder, say \clans, and move all the files there.
+1. Grab OpenDoors from http://www.attcanada.net/~pirie/oddownload.html.
+2. Create a folder \clans\extern.  Place odoorl.lib from the OpenDoors binary 
+   distribution into this folder.
+3. run make (make sure you have Turbo C++ in your path).
+
+
+>> Misc
+
+> Random notes
+
+- clans.c contains the main() function.
+
+> Strings
+
+- strings are contained in a strings.xl, language file.
+- this file is generated with the language compiler.
+
+
+> Files:
+
+CLANS.C		-- contains main.c
+		-- code to start up the game (pre-game menu)
+CLANS.H		-- empty (for now)
+CLANSF.H	-- i have no idea what this is for
+ALLIANCE.C	-- code for alliances (duh)
+ALLIANCE.H
+CLANSINI.C	-- contains code for clans.ini file.
+CLANSINI.H
+CLASS.C		-- for player classes as well as races (knight, warrior, elf, etc.)
+CLASS.H
+CRC.C		-- used for the CRC checking code (to ensure the files sent over network
+		-- are ok (i think).
+CRC.H	
+DATA/		-- contains the data files used by the game (more on this later)
+DOC		-- text document for the game
+DOOR.C		-- "door" code.  this is for so-called "low-level" calls to OpenDoors.
+		-- this includes such things as outputting a string, creating semaphor
+		-- files, and more.
+		-- also, local game loading.
+		-- loading up of the OpenDoors system.
+		-- this is where you stick the registration key.
+		-- other stuff: chat, status bar stuff
+		-- pause prompt
+		-- file display
+DOOR.H		
+EMPIRE.C	-- for empires
+		-- also contains code for processing packets from other BBSes.  This is
+		-- REALLY UGLY CODE!  Good luck.  Even I don't get this shit now.
+EMPIRE.H
+EVENT.C		-- for "mine events" (i.e. like forest events in LORD)
+		-- executes the event files.
+		-- the files, however, must first be "compiled".
+		-- also contains code for quests, which are basically just longer events.
+EVENT.H
+EXTERN		-- files for OpenDoors lib go here.
+FIGHT.C		-- battle sequence algorithms.  Really nasty.
+		-- includes such things as what happens AFTER the fight (experience gained,
+		-- etc.)
+FIGHT.H
+GAME.C		-- "game" data.  what this refers to is the current incarnation of the
+		-- game running.  this contains data such as the date the game started,
+		-- whether or not it's InterBBS and other such info.  also has settings
+		-- such as max number of fights per day...
+GAME.H
+HELP.C		-- interactive help system.  also, for displaying "help" files.
+HELP.H
+IBBS.C		-- InterBBS interaction code.  This is the biggie.  Take your time
+		-- figuring this one out!  (Don't worry, I never understood it myself. :-)
+IBBS.H
+INPUT.C		-- for the cool input system, of which I'm proud.
+INPUT.H
+INTERBBS.H	-- more code for interbbs
+ITEMS.C		-- for handling user items.
+ITEMS.H
+K_CLANSI.H	-- clans INI keywords
+K_COMMAN.H	-- keywords for command-line
+K_CONFIG.H	-- configuration file keywords
+K_IBBS.H	-- IBBS settings keywords
+K_QUESTS.H	-- quest config keywords
+LANGCOMP.C      -- used to generate the language file (this copy may be out of date?)
+LANGUAGE.C	-- loading up of the language file
+LANGUAGE.H
+MAIL.C		-- for internal mail system
+MAIL.H
+MAINT.C		-- maintenance code
+MAINT.H
+MAKEFILE	-- do 'make' to create clans.exe
+MCOMP.C		-- app to generate monster files
+MENUS.C		-- code for menu systems.
+MENUS.H
+MENUS2.C	-- more menus since the first file was getting too large :-)
+MENUS2.H
+MISC.C		-- miscellaneous date code.
+MISC.H
+MSTRINGS.H	-- VERY IMPORTANT.  Contains definitions for macros used to cross-reference
+		-- the language file for strings.
+MYIBBS.C	-- more interbbs code.  i don't know just why i split it up into two files.
+		-- the name "MyIBBS" is misleading because this code is actually taken from
+		-- the author of OpenDoors.  He provided it freely in one of his demo
+		-- applications.  I don't recall which one.  Anyway, take heed of the misleading
+		-- name. :-)
+		-- THIS is really complex code.  I didn't fully understand it at the time and
+		-- I still don't.  If the system works, don't touch this.
+MYIBBS.H
+MYOPEN.C	-- VERY simple encryption for files.  this is really easy to hack, so future
+		-- versions of The Clans should probably have better encryption.
+		-- Again, take heed:  Everybody can download this code and cheat at the game
+		-- right now just by looking at this and then hacking their data files.
+		-- You have been warned.
+MYOPEN.H	
+NEWS.C		-- self-explanatory.  news file handling
+NEWS.H
+NPC.C		-- for computer players that you meet in the streets.  has NOTHING to do
+		-- with enemies you meet in the mines.
+NPC.H
+OPENDOOR.H	-- required to load.  from OpenDoors library.
+PACKET.H	-- some defines used for InterBBS packets
+PARSING.C	-- string parsing code.
+PARSING.H
+PAWN.C		-- pawn shop code.
+PAWN.H
+QUESTS.C	-- code for handling quests.
+QUESTS.H
+REG.C		-- registration code stuff.
+REG.H
+SCORES.C	-- for generating scores.
+SCORES.H
+SPELLS.C	-- for spells.
+SPELLS.H
+STRUCTS.H	-- almost all the useful structures.  Convert these to C++ in the future!
+SYSTEM.C	-- again, more "low-level" system calls.  the 'system' being the door.
+SYSTEM.H
+SYSTEMF.H	-- system function calls.  is this even used??
+TASKER.H	-- needed for multitasking os support.  (is this needed nowadays?? nope.)
+TEST/		-- where you test out new binaries.  copy clans.exe here and run it.
+TRADES.C	-- for trading stuff
+TRADES.H
+TSLICER.C	-- some code for multitasking os support.  no longer used.
+TSLICER.H
+USER.C		-- player data ADT.  players are called "users" by the game.
+USER.H
+VIDEO.C		-- code for outputting text nicely and for inputting text nicely.
+		-- THIS is very hardware-specific.  If you want to port this game to
+		-- another platform, change this first.
+VILLAGE.C	-- code for the village.
+VILLAGE.H
+VOTING.C	-- for voting for a new village leader.
+VOTING.H
+
+in the DATA/ directory:
+
+** If any of the files here are missing, be sure to download the Clans Dev. Kit
+from the site.
+
+LANGCOMP.EXE	-- use this to compile the STRINGS.TXT into STRINGS.XL, the language file.
+		-- after you make langcomp.exe in the main directory, copy it in here.
+GENALL.BAT	-- call this to generate all the data files and save it into the CLANS.PAK
+		-- file (yes, I was influenced by Quake).
+		-- DOESN'T WORK.  I need to find old copies of the executables for this.
+MAKEPAK.EXE	-- generates the .PAK file from a list of files.
+MCOMP.EXE	-- compiles monster data files.
+MITEMS.EXE	-- compiles item data files.
+MSPELLS.EXE	-- you guessed it, compiles spell data.
+MCLASS.EXE	-- for class compilation.
+MAKENPC.EXE	-- generate NPC data files.
+ECOMP.EXE	-- event file compiler.
+PAK.LST		-- list of files to add to the .PAK file and the internal filenames to use
+		-- within the .PAK file.
+
+To use any of these, just look at how i ran it in GENALL.BAT.  Paths may be wrong, though. :-)
+
+> Generating Data Files
+
+In DATA/ you'll find data files used by The Clans.  Data files fall into these
+categories:
+
+	*.HLP		--- Help files
+			ARMY.HLP
+			BUILD.HLP
+			BULLETIN.HLP
+			CITIZEN.HLP
+			CLANS.HLP
+			COMBAT.HLP
+			EMPIRE.HLP
+			FORT.HLP
+			ITEMS.HLP
+			MENUS.HLP
+			NEWBIE.HLP
+			QUESTS.HLP
+			RACES.HLP
+			RESET.HLP
+			RULER.HLP
+			SPELLS.HLP
+			STATS.HLP
+			STRATEGY.HLP
+			VILLAGE.HLP
+			WAR.HLP
+			WIZARD.HLP
+	STRINGS.TXT	--- Language file
+	ITEMS.TXT	--- Items (Weapons, Armor, Shields, spell books, etc.)
+	MONSTERS.TXT	--- All the monsters you fight.
+	CLASSES.TXT	--- User classes
+	EVA.TXT		--- main event file??
+	EVENTMON.TXT	--- monsters you encounter in events
+	RACES.TXT	--- Races, work just like classes.
+	SCHEMES.TXT	--- Colour schemes for the village.
+	SPELLS.TXT	--- All the spells you and the computer can use.
+	NPC-PC.TXT	--- All the NPCs you meet on the streets, in mine events, etc.  (Can join your clan.)
+	NPCQUOTE.TXT	--- All the things NPCs say.
+	NPCS.TXT	--- "Script" for how topics (quotes) are exposed to the user.
+	*.EVT		--- Various event scripts.
+			CHURCH.EVT
+			EVENT1.EVT
+			EVENT2.EVT
+			EVENT3.EVT
+			EVENT4.EVT
+			EVENT5.EVT
+			PRAY.EVT
+			QUESTS.EVT
+			SECRET.EVT
+	PAK.LST		--- List of all files that will be added to CLANS.PAK and their internal filename.
+	*.ASC		--- Various ascii/colour-coded screens that are displayed in the game.
+			LIST.ASC
+			PG.ASC
+			PXNEWS.ASC
+			PXTIT.ASC
+	
+	
+>> Help files
+
+more to come.
+
+>> Classes
+
+Races + classes are based on the same thing, the PClass structure, see class.c file
+
+>> Structs.h
+
+>> Empire.C, Fight.C
+
+The code here is pretty bad.
+
+>> MStrings.h
+
+This will tell you the linkages for strings in the language file.
+
+>> MyOpen.C
+
+Specialized file calls.  See header file.
+
+>> Packet.h
+
+If you wanna hack the packets sent by the Clans, go here. ;-)
+
+
+>> Structs.h
+
+See this for just about every single structure.
+
+>> notes/
+
+Just some various notes.
+
+> How to create a distribution.
+
+Maybe you can do it your own way, but this is how I did it:
+
+1. use install.exe provided.
+2. modify the CLANS.CFJ if needed.
+3. update FILE_ID.DIZ.
+4. overwrite necessary files in release/
+5. run chew.exe on it all to make a .gum file
+6. um... :-)  i forget
+
+Please change the copyright notices to "originally copyright 1997 allen ussher, open source by
+whoever."

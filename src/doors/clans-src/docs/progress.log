@@ -1,0 +1,164 @@
+Wed 1-21-98
+
+ * worked on event files and NPCs
+ * done eventfiles and scripts
+
+Sun 1-25-98
+
+ * did NPC (/) Chatter but need to test --> work on maintenance
+ ! Currently working on maintenance
+
+Sat 1-31-98
+ * desperately need to check out D:\telemate\download\clans\clans.pc to see if
+   the users get negative experience or something like that when they reach
+   levels around 50
+ * need to work on empires and IBBS still and misc. menus
+
+Tue 2-17-98
+ * REMEMBER THIS:  Make sure you get rid of ALL od_printf's since they
+   consume memory!!!
+ * user encryption for ally.dat
+
+Thu 2-19-98
+ - all that's left: some REP's and IBBS
+ - also, empires
+ * new reset program
+ - fix problem with points?
+ - empire attacks still needs work (formulas)
+
+Sun 3-1-98
+ * Be more consistent with Config->InterBBS, Game.Data->InterBBS, etc.
+   actually, should use Game.Data->InterBBS since other two can be changed
+   by config file.
+
+Mon 3-2-98
+ * make reset send packets and all that crap
+ * maybe tell sysop to run clans /in /out or something like that to get
+   reset going properly...
+ * don't show game stats if game has not yet started!!!
+ - have each packet have a datestamp
+  -- now, if the packet is received AND it turns out to be greater than X
+     days old, treat it as if it was a lost packet.  That is, do NOT process
+     it.  Skip it.  Now, the sender will wait say X+2 days until restoring
+     lost packets (i.e. armies or clanmoves).  This should prevent multiple
+     players and lost data!
+ - bug just realized:
+     subuser and deluser act EXACTLY THE SAME!!  DelUser should only remove
+     the user from the BBS and SubUser should remove him from League
+     completely!  But, it turns out SubUser and DelUser both remove from
+     the league.  So if a user is duped, he is removed from league, ok maybe
+     that's the way it was meant to be actually...
+
+misc. ibbs stuff:
+        other packet types..
+
+ * large problem: if reset is sent by LC, boards will not reset their village
+   data... what else can be incorrect one must wonder... :)
+ - convert all fopens to _fsopens
+ - problem: what if village.dat is corrupt and a reset is sent? -- only way to
+   fix it is to run reset.exe!!!  solution: DO NOT CORRUPT VILLAGE.DAT :)
+ - implement PT_OKUSER packet
+ - what's left:
+        * int'l attacking
+        * int'l spying
+        * newndx
+        * deleting of clans
+        o new empire formulae
+ - make game create files other than TMP.$$$ (unique filename)
+ * get rid of od_printfs
+ * in reset, tell user to type CLANS /I if it's an IBBS game to finish off
+   reset procedure
+ - ensure there are NO warnings
+ - game sometimes hangs in battle!!!!
+ * add /Recon X and /SendReset X to game (simple)
+ - edit pcedit.exe
+
+ * default flag is blank
+ * add help for that other option (forgot which one)
+ * misc. colours are wrong
+ * protection in stats
+ * user written twice and updated twice!!
+ * deleted users are still in scorefile!  --> because of old packets...
+
+Sat 3-14-98
+ * send userlist to new BBS joining the league
+ * send userlist every X days...
+   * send new scorefile too?
+
+bugs:
+ * game says The game was reset! twice
+ * make it so that when reset run without config, it'll say run CONFIG.EXE
+   first.
+ - new empire formula?
+ - remove lc.log?
+ - remove all cheats
+ - user editor WHICH ALLOWS CHANGING OF NAMES and such
+
+
+Yer there's a way to get seven people in your party temporarily by
+haveing the sysop make it so u get six and once in the game get rid of a
+character then get a npc, now u should have 6, then go to the training
+hall and get another character.
+
+
+  3rdly and more seriously someone on my bbs discovered that they can double
+  their items, by taking their items from the donation room, then dropping
+  carrier and when they return the items are both in their possession and 
+  still in the donation room...
+
+> 2ndly people have noticed a few bugs when dropping carrier, 1stly that
+  they can avoid dying in a fight by dropping... hard to fix especially when
+  people could drop by accident..
+
+> like crazy just in one loss.  I once destroyed over 50 towers, 7 barracks,
+> and more in one day using 5 empire fights.
+
+- charisma is useless!
+
+* BBSID not set in local games
+
+
+- finish up jap secret
+* make it so game DOES NOT allow packets to bogus BBS IDs
+* add flag so it doesn't create netmail, just packets
+* crashes Win95 and reset.exe GPF's
+* status of reset not saved!
+* attacks don't return properly (??)
+* cdev kit doesn't work with monsters!
+- make the game write out league scores to file
+
+may 31
+- add on ibbs.log again
+- player's clans are being disbanded by league.  destroying disband.dat
+  fixes it
+* bbses 30-32 aren't getting packets in league of 32
+- dupe clans being made
+* make updates more often (Clan_Update) write after fights and empire wars
+- beef up village security
+- allow clans to join to protect village somehow?
+- disallow useage of |08 for all colours?
+* clans who travel during reset return AFTER reset
+& route.cfg DOESN'T supersede host method!
+
+
+wed jun 24, '98
+* fix initialization problem (.Initialized = TRUE set BEFORE we even checkmem() it!)
+* fixed leaving.dat problem, users leaving before reset would return after it (perhaps why we have
+  users deleted??!?!?)
+* return lost attacks!!
+* fixed problem empire attack problem (didn't return properly)
+* made BBS listing wider
+* clans dead are NOT listed as dead sometimes
+* make sure users can't join past lastjoin date
+ * REMEMBER THIS:  Make sure you get rid of ALL od_printf's since they
+   consume memory!!!
+
+----
+
+sunday, december 23, 2001 
+
+[12:30am]
+Going through files to see what is missing and noting it below.
+
+> System.c : got rid of time-slicer support
+> Door.c : dropped time-slicer code
