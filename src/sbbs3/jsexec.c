@@ -65,7 +65,7 @@ char		host_name_buf[128];
 BOOL		pause_on_exit=FALSE;
 BOOL		pause_on_error=FALSE;
 BOOL		terminated=FALSE;
-BOOL		recycled=FALSE;
+BOOL		recycled;
 DWORD		log_mask=DEFAULT_LOG_MASK;
 int  		err_level=DEFAULT_ERR_LOG_LVL;
 
@@ -858,16 +858,15 @@ int main(int argc, char **argv, char** environ)
 	signal(SIGINT,break_handler);
 	signal(SIGTERM,break_handler);
 
-	if(loop)
-		signal(SIGHUP,recycle_handler);
-	else
-		signal(SIGHUP,SIG_IGN);
+	signal(SIGHUP,recycle_handler);
 
 	/* Don't die on SIGPIPE  */
 	signal(SIGPIPE,SIG_IGN);
 #endif
 
 	do {
+
+		recycled=FALSE;
 
 		if(!js_init(environ)) {
 			lprintf(LOG_ERR,"!JavaScript initialization failure\n");
@@ -883,7 +882,7 @@ int main(int argc, char **argv, char** environ)
 		fprintf(statfp,"JavaScript: Destroying runtime\n");
 		JS_DestroyRuntime(js_runtime);	
 
-	} while(loop && !terminated);
+	} while((recycled || loop) && !terminated);
 
 	bail(result);
 
