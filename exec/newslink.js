@@ -326,7 +326,8 @@ for(i in area) {
 		print("exporting local messages");
 	last_msg=msgbase.last_msg;
 	for(;socket.is_connected && ptr<=last_msg && !file_exists(stop_semaphore);ptr++) {
-		console.line_counter = 0;
+		if(this.console!=undefined)
+			console.line_counter = 0;
 		hdr = msgbase.get_msg_header(
 			/* retrieve by offset? */	false,
 			/* message number */		ptr,
@@ -471,7 +472,8 @@ for(i in area) {
 	}
 
 	for(;socket.is_connected && ptr<=last_msg && !file_exists(stop_semaphore);ptr++) {
-		console.line_counter = 0;
+		if(this.console!=undefined)
+			console.line_counter = 0;
 		writeln(format("ARTICLE %lu",ptr));
 		rsp = readln();
 		if(rsp==null || rsp[0]!='2') {
@@ -482,11 +484,11 @@ for(i in area) {
 		body="";
 		header=true;
 		var hdr={ from: "", to: newsgroup, subject: "", id: "" };
+		var line;
 		var line_counter=0;
 		var recv_lines=0;
         var file=undefined;   
         var md5; 
-		var attachment = new Array();
 		while(socket.is_connected) {
 
 			if(recv_lines && lines_per_yield && (recv_lines%lines_per_yield)==0)
@@ -512,132 +514,133 @@ for(i in area) {
 				continue;
 			}
 
-			if(!header) {	/* Body text, append to 'body' */
-				if(line.charAt(0)=='.')
-					line=line.slice(1);		// Skip prepended dots
+			if(header) {
+				parse_news_header(hdr,line);	// from newsutil.js
+				continue;
+			}
 
-                if(flags.indexOf('b')>=0) {        // decode attachments
-					attachment.push(line+"\r\n");
-					if(file==undefined
-						&& line.substr(0,8)=="=ybegin " 
-						&& line.indexOf(" line=")>0
-						&& (size=line.indexOf(" size="))>0
-						&& (name=line.indexOf(" name="))>0) {
+			/* Body text, append to 'body' */
+			if(line.charAt(0)=='.')
+				line=line.slice(1);		// Skip prepended dots
 
-						printf("yenc header: %s\r\n",line);
+			body += line+"\r\n";
+			line_counter++;
 
-						size=parseInt(line.slice(size+6),10);
-						fname=file_getname(line.slice(name+6));
+            if(flags.indexOf('b')>=0) {        // decode attachments
+				if(file==undefined
+					&& line.substr(0,8)=="=ybegin " 
+					&& line.indexOf(" line=")>0
+					&& (size=line.indexOf(" size="))>0
+					&& (name=line.indexOf(" name="))>0) {
 
-						if((total=line.indexOf(" total="))>0)
-							total=parseInt(line.slice(total+7),10);
+					printf("yenc header: %s\r\n",line);
 
-						if(total>1)	/* multipart */
+					size=parseInt(line.slice(size+6),10);
+					fname=file_getname(line.slice(name+6));
+
+					if((total=line.indexOf(" total="))>0)
+						total=parseInt(line.slice(total+7),10);
+
+					if(total>1)	/* multipart */
+						continue;
+
+					/* part? */
+					if((part=line.indexOf(" part="))>0)
+						part=parseInt(line.slice(part+6),10);
+
+					if(part>1) /* multipart */
+						continue;
+
+					if(part>0) {
+
+						line = socket.recvline(512 /*maxlen*/, 300 /*timeout*/);
+
+						body += line+"\r\n";
+
+						printf("ypart header: %s\r\n",line);
+
+						if(line.substr(0,7)!="=ypart "
+							|| (begin=line.indexOf(" begin="))<1
+							|| (end=line.indexOf(" end="))<1) {
+							printf("!yEnc MALFORMED ypart line: %s\r\n",line);
 							continue;
-
-						/* part? */
-						if((part=line.indexOf(" part="))>0)
-							part=parseInt(line.slice(part+6),10);
-
-						if(part>1) /* multipart */
+						}
+						if(begin!=1 || end!=size)	/* multipart */
 							continue;
+					}
 
-						if(part>0) {
-							line = socket.recvline(512 /*maxlen*/, 300 /*timeout*/);
-							attachment.push(line+"\r\n");
-							printf("ypart header: %s\r\n",line);
-							if(line.substr(0,7)!="=ypart "
-								|| (begin=line.indexOf(" begin="))<1
-								|| (end=line.indexOf(" end="))<1) {
-								printf("!yEnc MALFORMED ypart line: %s\r\n",line);
-								continue;
-							}
-							if(begin!=1 || end!=size)	/* multipart */
-								continue;
+					fname=unique_fname(attachment_dir,fname);
+                    file=new File(fname);   
+                    file.yenc=true;   
+                    if(file.open("w+b"))   
+                        printf("Receiving/decoding attachment: %s\r\n",file.name);
+                    else   
+                        printf("!ERROR %s opening %s\r\n",errno_str,file.name);
+                    continue;   
+				}	
+
+                if(file==undefined && line.substr(0,6)=="begin ") {   
+					 // Parse uuencode header   
+					 arg=line.split(/\s+/);   
+					 arg.splice(0,2);        // strip "begin 666 "   
+					 fname=file_getname(arg.join(" "));   
+					 fname=unique_fname(attachment_dir,fname);    
+                     file=new File(fname);   
+                     file.uue=true;   
+                     if(file.open("w+b"))   
+                         printf("Receiving/decoding attachment: %s\r\n",file.name);   
+                     else   
+                         printf("!ERROR %s opening %s\r\n",errno_str,file.name);
+                     continue;   
+                 }    
+                 if(file!=undefined && file.is_open==true) {   
+                    if(file.uue && line=="end") {   
+                         md5=file.md5_hex;   
+                         file.close();
+						 continue;
+					}
+					if(file.yenc && line.substr(0,6)=="=yend "
+						&& (part_size=line.indexOf(" size="))>0) {
+						part_size=parseInt(line.slice(part_size+6),10);
+						if(part_size!=size)	{ /* multi-part, ignore */
+							file.remove();
+							delete file;
+							continue;
 						}
+						if((crc32=line.indexOf(" pcrc32="))>0)
+							crc32=parseInt(line.slice(crc32+8),16);
+						else if((crc32=line.indexOf(" crc32="))>0)
+							crc32=parseInt(line.slice(crc32+7),16);
+						else
+							crc32=undefined;
 
-						fname=unique_fname(attachment_dir,fname);
-                        file=new File(fname);   
-                        file.yenc=true;   
-                        if(file.open("w+b"))   
-                            printf("Receiving/decoding attachment: %s\r\n",file.name);
-                        else   
-                            printf("!ERROR %s opening %s\r\n",errno_str,file.name);
-                        continue;   
-					}	
-
-                    if(file==undefined && line.substr(0,6)=="begin ") {   
-						 // Parse uuencode header   
-						 arg=line.split(/\s+/);   
-						 arg.splice(0,2);        // strip "begin 666 "   
-						 fname=file_getname(arg.join(" "));   
-						 fname=unique_fname(attachment_dir,fname);    
-                         file=new File(fname);   
-                         file.uue=true;   
-                         if(file.open("w+b"))   
-                             printf("Receiving/decoding attachment: %s\r\n",file.name);   
-                         else   
-                             printf("!ERROR %s opening %s\r\n",errno_str,file.name);
-                         continue;   
-                     }    
-                     if(file!=undefined && file.is_open==true) {   
-                        if(file.uue && line=="end") {   
-                             md5=file.md5_hex;   
-                             file.close();
-							 continue;
-						}
-						if(file.yenc && line.substr(0,6)=="=yend "
-							&& (part_size=line.indexOf(" size="))>0) {
-							part_size=parseInt(line.slice(part_size+6),10);
-							if(part_size!=size)	{ /* multi-part, ignore */
+						if(crc32!=undefined) {
+							file_crc32=file.crc32;
+							if(crc32!=file_crc32) {
+								printf("!yEnc CRC-32 mismatch, actual: %08lX, trailer: %s\r\n"
+									,file_crc32,line);
 								file.remove();
 								delete file;
 								continue;
 							}
-							if((crc32=line.indexOf(" pcrc32="))>0)
-								crc32=parseInt(line.slice(crc32+8),16);
-							else if((crc32=line.indexOf(" crc32="))>0)
-								crc32=parseInt(line.slice(crc32+7),16);
-							else
-								crc32=undefined;
-
-							if(crc32!=undefined) {
-								file_crc32=file.crc32;
-								if(crc32!=file_crc32) {
-									printf("!yEnc CRC-32 mismatch, actual: %08lX, trailer: %s\r\n"
-										,file_crc32,line);
-									file.remove();
-									delete file;
-									continue;
-								}
-							}
-
-							md5=file.md5_hex;
-							file.close();
-							continue;
 						}
 
-						if(!file.write(line))   
-							printf("!ERROR decoding/writing: %s\r\n",line);   
-                        continue;   
+						md5=file.md5_hex;
+						file.close();
+						continue;
 					}
-                } 
 
-				body += line;
-				body += "\r\n";
-				line_counter++;
-				continue;
+					if(!file.write(line))   
+						printf("!ERROR decoding/writing: %s\r\n",line);   
+				}
 			}
 			//print(line);
-
-			parse_news_header(hdr,line);	// from newsutil.js
 		}
 			
         if(file!=undefined) {   
             if(file.is_open==true) { /* Incomplete attachment? */
 				print("!Incomplete attachment: " + file_getname(file.name));
-                file.close();
-				body = body + attachment;	// restore encoded lines
+                file.remove();
             } else {
 				/* Search for duplicate MD5 */
 				print("Searching for duplicate file");
@@ -668,6 +671,7 @@ for(i in area) {
 				} else
 					printf("!ERROR %d (%s) creating/appending %s\r\n"
 						,errno, errno_str, md5_file.name);
+				continue;
 			}
         } 
 		
