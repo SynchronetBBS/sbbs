@@ -18,7 +18,7 @@ EXEFILE	=	.exe
 ODIR	=	bcc.win32	# Executable output directory
 XPDEV	=   	..\..\xpdev
 UIFC	=	..\..\uifc
-CFLAGS	=	-M -I..;$(UIFC);$(XPDEV) -g1
+CFLAGS	=	-M -I..;$(UIFC);$(XPDEV)
 DELETE	=	echo y | del 
 
 .path.c = .;..;$(UIFC);$(XPDEV)
@@ -54,11 +54,11 @@ OBJS = $(OBJS) $(ODIR)\uifc.$(OFILE)
 $(ODIR):
 	@if not exist $(ODIR) mkdir $(ODIR)
 
-makehelp.exe: makehelp.c
-	$(CC) $?
+$(MAKEHELP): makehelp.c
+	@$(CC) -q -n$(ODIR) $?
 
-$(SCFGHELP): $(OBJS) makehelp.exe
-	makehelp $(ODIR)
+$(SCFGHELP): $(OBJS) $(MAKEHELP)
+	@$(MAKEHELP) $(ODIR)
 
 # Monolithic SCFG executable Build Rule
 $(SCFG): $(OBJS) 

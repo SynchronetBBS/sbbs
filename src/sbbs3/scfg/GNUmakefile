@@ -106,11 +106,11 @@ $(ODIR)/%.o : %.cpp
 $(ODIR):
 	mkdir $(ODIR)
 
-makehelp: makehelp.c
-	$(CC) makehelp.c -o makehelp
+$(MAKEHELP): makehelp.c
+	$(CC) makehelp.c -o $(MAKEHELP)
 
-$(SCFGHELP): $(OBJS) makehelp
-	./makehelp $(ODIR)
+$(SCFGHELP): $(OBJS) $(MAKEHELP)
+	$(MAKEHELP) $(ODIR)
 
 # Monolithic Synchronet executable Build Rule
 $(SCFG): $(OBJS)
