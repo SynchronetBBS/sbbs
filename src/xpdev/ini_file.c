@@ -258,6 +258,20 @@ BOOL iniRemoveValue(str_list_t* list, const char* section, const char* key)
 	return(TRUE);
 }
 
+BOOL iniRemoveSection(str_list_t* list, const char* section)
+{
+	size_t	i;
+
+	i=find_section_index(*list,section);
+	if((*list)[i]==NULL)	/* not found */
+		return(FALSE);
+	do {
+		strListDelete(list,i);
+	} while((*list)[i]!=NULL && *(*list)[i]!=INI_OPEN_SECTION_CHAR);
+
+	return(TRUE);
+}
+
 size_t iniAddSection(str_list_t* list, const char* section
 					,ini_style_t* style)
 {
