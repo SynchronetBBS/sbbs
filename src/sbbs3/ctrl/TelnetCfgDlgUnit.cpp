@@ -88,8 +88,8 @@ void __fastcall TTelnetCfgDlg::FormShow(TObject *Sender)
     AnswerSoundEdit->Text=AnsiString(MainForm->bbs_startup.answer_sound);
     HangupSoundEdit->Text=AnsiString(MainForm->bbs_startup.hangup_sound);
     CmdLogCheckBox->Checked=MainForm->bbs_startup.options&BBS_OPT_DEBUG_TELNET;
-    TelnetNopCheckBox->Checked
-    	=!(MainForm->bbs_startup.options&BBS_OPT_NO_TELNET_NOP);
+    TelnetGaCheckBox->Checked
+    	=!(MainForm->bbs_startup.options&BBS_OPT_NO_TELNET_GA);
 	XtrnMinCheckBox->Checked=MainForm->bbs_startup.options&BBS_OPT_XTRN_MINIMIZED;
     AutoLogonCheckBox->Checked=MainForm->bbs_startup.options&BBS_OPT_AUTO_LOGON;
     HostnameCheckBox->Checked
@@ -165,10 +165,10 @@ void __fastcall TTelnetCfgDlg::OKBtnClick(TObject *Sender)
         ,AnswerSoundEdit->Text.c_str());
     SAFECOPY(MainForm->bbs_startup.hangup_sound
         ,HangupSoundEdit->Text.c_str());
-	if(TelnetNopCheckBox->Checked==false)
-    	MainForm->bbs_startup.options|=BBS_OPT_NO_TELNET_NOP;
+	if(TelnetGaCheckBox->Checked==false)
+    	MainForm->bbs_startup.options|=BBS_OPT_NO_TELNET_GA;
     else
-	    MainForm->bbs_startup.options&=~BBS_OPT_NO_TELNET_NOP;
+	    MainForm->bbs_startup.options&=~BBS_OPT_NO_TELNET_GA;
     if(XtrnMinCheckBox->Checked==true)
     	MainForm->bbs_startup.options|=BBS_OPT_XTRN_MINIMIZED;
     else

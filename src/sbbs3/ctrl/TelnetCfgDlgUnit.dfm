@@ -197,15 +197,15 @@ object TelnetCfgDlg: TTelnetCfgDlg
         ShowHint = True
         TabOrder = 0
       end
-      object TelnetNopCheckBox: TCheckBox
+      object TelnetGaCheckBox: TCheckBox
         Left = 9
         Top = 76
         Width = 208
         Height = 26
         Hint = 
-          'Send periodic Telnet NOP commands to help detect dropped connect' +
-          'ions'
-        Caption = 'Send Telnet NOPs'
+          'Send periodic Telnet GA commands to help detect dropped connecti' +
+          'ons'
+        Caption = 'Send Telnet Go-Aheads'
         ParentShowHint = False
         ShowHint = True
         TabOrder = 2

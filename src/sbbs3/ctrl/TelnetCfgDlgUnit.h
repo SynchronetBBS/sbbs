@@ -79,7 +79,7 @@ __published:
     TEdit *TelnetInterfaceEdit;
     TLabel *TelnetPortLabel;
     TEdit *TelnetPortEdit;
-	TCheckBox *TelnetNopCheckBox;
+	TCheckBox *TelnetGaCheckBox;
     TCheckBox *AutoLogonCheckBox;
     TTabSheet *RLoginTabSheet;
     TLabel *RLoginPortLabel;
