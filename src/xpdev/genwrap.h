@@ -218,4 +218,8 @@ DLLEXPORT char*		DLLCALL	lastchar(const char* str);
 }
 #endif
 
+#ifndef YIELD
+#define	YIELD()
+#endif
+
 #endif	/* Don't add anything after this line */
