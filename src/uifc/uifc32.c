@@ -132,7 +132,7 @@ int kbwait(void) {
 	return(FALSE);
 }
 
-int inkey()
+int inkey(void)
 {
 	int c;
 
