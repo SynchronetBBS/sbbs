@@ -724,7 +724,7 @@ char* DLLCALL backslash(char* path)
 {
 	char* p;
 
-	p=lastchar(str);
+	p=lastchar(path);
 
 	if(*p!='/' && *p!='\\') {
 		*(p++)=BACKSLASH;
