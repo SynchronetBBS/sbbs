@@ -67,6 +67,7 @@
 #include <sys/ioctl.h>
 #include <signal.h>
 #include <termios.h>
+#include <errno.h>
 #endif
 #include "ODCore.h"
 #include "ODGen.h"
@@ -3452,8 +3453,20 @@ try_again:
 				if(select(2,NULL,&fdset,NULL,&tv) != 1)
 					return(kODRCGeneralFailure);
 
-				if((send_ret=write(1,pbtBuffer,nSize-pos))<1)
+				send_ret=write(1,pbtBuffer,nSize-pos);
+				if(send_ret==0)
 					return (kODRCGeneralFailure);
+				if(send_ret==-1) {
+					switch(errno) {
+						case EINTR:
+						case EAGAIN:
+							od_sleep(1);
+							send_ret=0;
+							break;
+						default:
+							return (kODRCGeneralFailure);
+					}
+				}
 
 				oldpos=pos;
 				pos+=send_ret;
