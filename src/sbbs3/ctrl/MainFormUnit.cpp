@@ -62,6 +62,7 @@
 #include "TextFileEditUnit.h"
 #include "UserListFormUnit.h"
 
+#include "sbbs.h"           // unixtodstr()
 #include "userdat.h"		// lastuser()
 
 //---------------------------------------------------------------------------
@@ -85,7 +86,7 @@ static void thread_up(BOOL up)
 
     if(!mutex)
     	mutex=CreateMutex(NULL,false,NULL);
-	WaitForSingleObject(mutex,5000);
+	WaitForSingleObject(mutex,INFINITE);
     if(up)
 	    threads++;
     else if(threads>0)
@@ -106,7 +107,7 @@ void socket_open(BOOL open)
 
     if(!mutex)
     	mutex=CreateMutex(NULL,false,NULL);
-	WaitForSingleObject(mutex,5000);
+	WaitForSingleObject(mutex,INFINITE);
     if(open)
 	    sockets++;
     else if(sockets>0)
@@ -128,7 +129,7 @@ static void client_add(BOOL add)
 
     if(!mutex)
     	mutex=CreateMutex(NULL,false,NULL);
-	WaitForSingleObject(mutex,5000);
+	WaitForSingleObject(mutex,INFINITE);
     if(add) {
 	    clients++;
         total_clients++;
@@ -156,8 +157,8 @@ static void client_on(BOOL on, int sock, client_t* client)
 
     if(!mutex)
     	mutex=CreateMutex(NULL,false,NULL);
-	WaitForSingleObject(mutex,5000);
-    WaitForSingleObject(ClientForm->ListMutex,5000);
+	WaitForSingleObject(mutex,INFINITE);
+    WaitForSingleObject(ClientForm->ListMutex,INFINITE);
 
     /* Search for exising entry for this socket */
     for(i=0;i<ClientForm->ListView->Items->Count;i++) {
@@ -202,7 +203,7 @@ static int bbs_lputs(char *str)
 
     if(!mutex)
     	mutex=CreateMutex(NULL,false,NULL);
-	WaitForSingleObject(mutex,5000);
+	WaitForSingleObject(mutex,INFINITE);
 
     while(TelnetForm->Log->Text.Length()>=MAX_LOGLEN)
         TelnetForm->Log->Lines->Delete(0);
@@ -220,7 +221,7 @@ static void bbs_status(char *str)
 
     if(!mutex)
     	mutex=CreateMutex(NULL,false,NULL);
-	WaitForSingleObject(mutex,5000);
+	WaitForSingleObject(mutex,INFINITE);
 
 	TelnetForm->Status->Caption=AnsiString(str);
 
@@ -240,7 +241,7 @@ static void bbs_clients(int clients)
 
     if(!mutex)
     	mutex=CreateMutex(NULL,false,NULL);
-	WaitForSingleObject(mutex,5000);
+	WaitForSingleObject(mutex,INFINITE);
 
     TelnetForm->ProgressBar->Max
     	=(MainForm->bbs_startup.last_node
@@ -277,7 +278,15 @@ static int mail_lputs(char *str)
 
     if(!mutex)
     	mutex=CreateMutex(NULL,false,NULL);
-	WaitForSingleObject(mutex,5000);
+	WaitForSingleObject(mutex,INFINITE);
+
+    if(str==NULL) {
+        if(LogStream!=NULL)
+            fclose(LogStream);
+        LogStream=NULL;
+        ReleaseMutex(mutex);
+        return(0);
+    }
 
     while(MailForm->Log->Text.Length()>=MAX_LOGLEN)
         MailForm->Log->Lines->Delete(0);
@@ -320,7 +329,7 @@ static void mail_status(char *str)
 
     if(!mutex)
     	mutex=CreateMutex(NULL,false,NULL);
-	WaitForSingleObject(mutex,5000);
+	WaitForSingleObject(mutex,INFINITE);
 
 	MailForm->Status->Caption=AnsiString(str);
 
@@ -340,7 +349,7 @@ static void mail_clients(int clients)
 
     if(!mutex)
     	mutex=CreateMutex(NULL,false,NULL);
-	WaitForSingleObject(mutex,5000);
+	WaitForSingleObject(mutex,INFINITE);
 
     MailForm->ProgressBar->Max=MainForm->mail_startup.max_clients;
 	MailForm->ProgressBar->Position=clients;
@@ -375,7 +384,15 @@ static int ftp_lputs(char *str)
 
     if(!mutex)
     	mutex=CreateMutex(NULL,false,NULL);
-	WaitForSingleObject(mutex,5000);
+	WaitForSingleObject(mutex,INFINITE);
+
+    if(str==NULL) {
+        if(LogStream!=NULL)
+            fclose(LogStream);
+        LogStream=NULL;
+        ReleaseMutex(mutex);
+        return(0);
+    }
 
     while(FtpForm->Log->Text.Length()>=MAX_LOGLEN)
         FtpForm->Log->Lines->Delete(0);
@@ -419,7 +436,7 @@ static void ftp_status(char *str)
 
     if(!mutex)
     	mutex=CreateMutex(NULL,false,NULL);
-	WaitForSingleObject(mutex,5000);
+	WaitForSingleObject(mutex,INFINITE);
 
 	FtpForm->Status->Caption=AnsiString(str);
 
@@ -439,7 +456,7 @@ static void ftp_clients(int clients)
 
     if(!mutex)
     	mutex=CreateMutex(NULL,false,NULL);
-	WaitForSingleObject(mutex,5000);
+	WaitForSingleObject(mutex,INFINITE);
 
     FtpForm->ProgressBar->Max=MainForm->ftp_startup.max_clients;
 	FtpForm->ProgressBar->Position=clients;
@@ -1502,7 +1519,7 @@ void __fastcall TMainForm::BBSStatisticsLogMenuItemClick(TObject *Sender)
 void __fastcall TMainForm::ForceTimedEventMenuItemClick(TObject *Sender)
 {
 	int i,file;
-	char str[MAX_PATH];
+	char str[MAX_PATH+1];
 
 	Application->CreateForm(__classid(TCodeInputForm), &CodeInputForm);
 	CodeInputForm->Label->Caption="Event Internal Code";
@@ -1531,7 +1548,7 @@ void __fastcall TMainForm::ForceNetworkCalloutMenuItemClick(
       TObject *Sender)
 {
 	int i,file;
-	char str[MAX_PATH];
+	char str[MAX_PATH+1];
 
 	Application->CreateForm(__classid(TCodeInputForm), &CodeInputForm);
 	CodeInputForm->Label->Caption="Hub QWK-ID";
@@ -1558,7 +1575,7 @@ void __fastcall TMainForm::ForceNetworkCalloutMenuItemClick(
 
 void __fastcall TMainForm::TextMenuItemEditClick(TObject *Sender)
 {
-	char filename[MAX_PATH];
+	char filename[MAX_PATH+1];
 
     sprintf(filename,"%s%s"
     	,MainForm->cfg.text_dir
@@ -1574,7 +1591,7 @@ void __fastcall TMainForm::TextMenuItemEditClick(TObject *Sender)
 
 void __fastcall TMainForm::CtrlMenuItemEditClick(TObject *Sender)
 {
-	char filename[MAX_PATH];
+	char filename[MAX_PATH+1];
 
     sprintf(filename,"%s%s"
     	,MainForm->cfg.ctrl_dir
@@ -1618,7 +1635,7 @@ void __fastcall TMainForm::UpTimerTick(TObject *Sender)
 
 void __fastcall TMainForm::BBSViewErrorLogMenuItemClick(TObject *Sender)
 {
-	char filename[MAX_PATH];
+	char filename[MAX_PATH+1];
 
     sprintf(filename,"%sERROR.LOG"
     	,MainForm->cfg.data_dir);
@@ -1697,4 +1714,50 @@ void __fastcall TMainForm::UserListMenuItemClick(TObject *Sender)
     UserListForm->Show();    
 }
 //---------------------------------------------------------------------------
+
+void __fastcall TMainForm::ViewLogClick(TObject *Sender)
+{
+    char    str[128];
+	char    filename[MAX_PATH+1];
+    struct  tm* tm;
+    time_t  t;
+    TModalResult mr;
+
+    if(((TMenuItem*)Sender)->Tag==-1) {
+    	Application->CreateForm(__classid(TCodeInputForm), &CodeInputForm);
+    	CodeInputForm->Label->Caption="Date";
+       	CodeInputForm->Edit->Text=AnsiString(unixtodstr(&cfg,time(NULL),str));
+        mr=CodeInputForm->ShowModal();
+        t=dstrtounix(&cfg,CodeInputForm->Edit->Text.c_str());
+        delete CodeInputForm;
+        if(mr!=mrOk)
+            return;
+    } else {
+        t=time(NULL);
+        t-=((TMenuItem*)Sender)->Tag*24*60*60;
+    }
+    tm=gmtime(&t);
+    if(tm==NULL)
+        return;
+
+    /* Close Mail/FTP logs */
+    mail_lputs(NULL);
+    ftp_lputs(NULL);
+
+    sprintf(filename,"%sLOGS\\%s%02d%02d%02d.LOG"
+    	,MainForm->cfg.data_dir
+        ,((TMenuItem*)Sender)->Hint.c_str()
+        ,tm->tm_mon+1
+        ,tm->tm_mday
+        ,tm->tm_year%100
+        );
+	Application->CreateForm(__classid(TTextFileEditForm), &TextFileEditForm);
+	TextFileEditForm->Filename=AnsiString(filename);
+    TextFileEditForm->Caption=((TMenuItem*)Sender)->Caption;
+    TextFileEditForm->Memo->ReadOnly=true;
+	TextFileEditForm->ShowModal();
+    delete TextFileEditForm;
+}
+//---------------------------------------------------------------------------
+
 
