@@ -259,6 +259,10 @@ be able to logon as New, leave this option blank.
 					,cfg.sys_misc&SM_EURODATE ? "Yes" : "No");
 				sprintf(opt[i++],"%-33.33s%s","User Expires When Out-of-time"
 					,cfg.sys_misc&SM_TIME_EXP ? "Yes" : "No");
+				sprintf(opt[i++],"%-33.33s%s","Display Sys Info During Logon"
+					,cfg.sys_misc&SM_NOSYSINFO ? "No" : "Yes");
+				sprintf(opt[i++],"%-33.33s%s","Display Node List During Logon"
+					,cfg.sys_misc&SM_NONODELIST ? "No" : "Yes");
 				opt[i][0]=0;
 				uifc.savnum=0;
 				SETHELP(WHERE);
@@ -576,6 +580,48 @@ time online, then set this option to Yes.
                             uifc.changes=1; }
 						else if(i==1 && cfg.sys_misc&SM_TIME_EXP) {
 							cfg.sys_misc&=~SM_TIME_EXP;
+                            uifc.changes=1; }
+                        break;
+					case 14:
+                        strcpy(opt[0],"Yes");
+                        strcpy(opt[1],"No");
+						opt[2][0]=0;
+						i=cfg.sys_misc&SM_NOSYSINFO ? 1:0;
+						SETHELP(WHERE);
+/*
+Display System Information During Logon:
+
+If you want system information displayed during logon, set this option
+to Yes.
+*/
+						i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
+							,"Display System Information During Logon",opt);
+						if(!i && cfg.sys_misc&SM_NOSYSINFO) {
+							cfg.sys_misc&=~SM_NOSYSINFO;
+                            uifc.changes=1; }
+						else if(i==1 && !(cfg.sys_misc&SM_NOSYSINFO)) {
+							cfg.sys_misc|=SM_NOSYSINFO;
+                            uifc.changes=1; }
+                        break;
+					case 15:
+                        strcpy(opt[0],"Yes");
+                        strcpy(opt[1],"No");
+						opt[2][0]=0;
+						i=cfg.sys_misc&SM_NONODELIST ? 1:0;
+						SETHELP(WHERE);
+/*
+Display Active Node List During Logon:
+
+If you want the active nodes displayed during logon, set this option
+to Yes.
+*/
+						i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
+							,"Display Active Node List During Logon",opt);
+						if(!i && cfg.sys_misc&SM_NONODELIST) {
+							cfg.sys_misc&=~SM_NONODELIST;
+                            uifc.changes=1; }
+						else if(i==1 && !(cfg.sys_misc&SM_NONODELIST)) {
+							cfg.sys_misc|=SM_NONODELIST;
                             uifc.changes=1; }
                         break;
 						} }

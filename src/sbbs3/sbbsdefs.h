@@ -132,7 +132,7 @@
 									/* Different bits in sys_misc				*/
 #define SM_CLOSED		(1L<<0) 	/* System is clsoed to New Users			*/
 #define SM_SYSSTAT		(1L<<1) 	/* Sysops activity included in statistics	*/
-#define SM_NOBEEP		(1L<<2) 	/* No beep sound locally					*/
+#define SM_NOSYSINFO	(1L<<2) 	/* Suppress system info display at logon	*/
 #define SM_PWEDIT		(1L<<3) 	/* Allow users to change their passwords	*/
 #define SM_RA_EMU		(1L<<4) 	/* Reverse R/A commands at msg read prompt	*/
 #define SM_ANON_EM		(1L<<5) 	/* Allow anonymous e-mail					*/
@@ -154,7 +154,7 @@
 #define SM_SHRTPAGE		(1L<<21)	/* Short sysop page 						*/
 #define SM_TIME_EXP		(1L<<22)	/* Set to expired values if out-of-time 	*/
 #define SM_FASTMAIL		(1L<<23)	/* Fast e-mail storage mode 				*/
-#define SM_QVALKEYS		(1L<<24)	/* Quick validation keys enabled			*/
+#define SM_NONODELIST	(1L<<24)	/* Suppress active node list during logon	*/
 #define SM_ERRALARM		(1L<<25)	/* Error beeps on							*/
 #define SM_FWDTONET		(1L<<26)	/* Allow forwarding of e-mail to netmail	*/
 #define SM_DELREADM		(1L<<27)	/* Delete read mail automatically			*/
