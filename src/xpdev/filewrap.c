@@ -41,6 +41,7 @@
 #include <string.h>     /* strlen() */
 #include <unistd.h>     /* getpid() */
 #include <fcntl.h>      /* fcntl() file/record locking */
+#include <sys/file.h>	/* L_SET for Solaris */
 
 #endif
 
