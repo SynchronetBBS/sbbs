@@ -39,6 +39,10 @@
 #include "ident.h"
 #include "telnet.h" 
 
+#ifdef JAVASCRIPT
+#include <jsnum.h>	/* JSDOUBLE_IS_NaN() */
+#endif
+
 #ifdef __unix__
 	#include <sys/un.h>
 	#ifndef SUN_LEN
@@ -277,6 +281,20 @@ DLLEXPORT int DLLCALL sbbs_random(int n)
 #ifdef JAVASCRIPT
 
 static js_server_props_t js_server_props;
+
+JSBool
+jsval_isNaN(JSContext *cx, jsval v)
+{
+    jsdouble d;
+
+    if(JSVAL_IS_DOUBLE(v)) {
+	    if (!JS_ValueToNumber(cx, v, &d))
+			return JS_FALSE;
+		if(JSDOUBLE_IS_NaN(d))
+			return JS_TRUE;
+	}
+	return JS_FALSE;
+}
 
 JSBool	
 DLLCALL js_CreateArrayOfStrings(JSContext* cx, JSObject* parent, const char* name, char* str[],uintN flags)
@@ -2205,7 +2223,8 @@ sbbs_t::sbbs_t(ushort node_num, DWORD addr, char* name, SOCKET sd,
 		if(startup->temp_dir[0])
 			SAFECOPY(cfg.temp_dir,startup->temp_dir);
 		else
-	    	prep_dir(cfg.data_dir, cfg.temp_dir, sizeof(cfg.temp_dir));
+			SAFECOPY(cfg.temp_dir,"../temp");
+    	prep_dir(cfg.ctrl_dir, cfg.temp_dir, sizeof(cfg.temp_dir));
 		md(cfg.temp_dir);
 		SAFEPRINTF2(path,"%sevent%u",cfg.temp_dir,startup->first_node);
 		backslash(path);

@@ -949,6 +949,9 @@ extern "C" {
 	DLLEXPORT JSBool	DLLCALL js_DefineConstIntegers(JSContext* cx, JSObject* obj, jsConstIntSpec*, int flags);
 	DLLEXPORT JSBool	DLLCALL js_CreateArrayOfStrings(JSContext* cx, JSObject* parent
 														,const char* name, char* str[], uintN flags);
+	DLLEXPORT JSBool	DLLCALL jsval_isNaN(JSContext* cx, jsval);
+
+	#define JSVAL_IS_NUM(cx,v)	(JSVAL_IS_NUMBER(v) && !jsval_isNaN(cx,v))
 
 	/* js_server.c */
 	DLLEXPORT JSObject* DLLCALL js_CreateServerObject(JSContext* cx, JSObject* parent
