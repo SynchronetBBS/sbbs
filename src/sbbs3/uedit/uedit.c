@@ -847,7 +847,7 @@ int edit_comment(scfg_t *cfg, user_t *user)
 	char str[1024];
 	char editor[1024];
 
-	sprintf(str,"%s %suser/%04d.msg",geteditor(editor),cfg->data_dir,user->number);
+	sprintf(str,"%s %suser/%04u.msg",geteditor(editor),cfg->data_dir,user->number);
 	do_cmd(str);
 	return(0);
 }
