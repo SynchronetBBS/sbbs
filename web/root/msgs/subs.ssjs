@@ -5,11 +5,14 @@ template.title="Message Subs in Group: "+msg_area.grp[grp].description;
 write_template("header.inc");
 
 template.group=msg_area.grp[grp];
-template.subs=msg_area.grp[grp].sub_list;
+template.subs=new Array;
 
 for(s in msg_area.grp[grp].sub_list) {
-//	if(msg_area.grp[grp].sub_list[s].scan_cfg==0 && http_request.query.show_all_subs != undefined && http_request.query.show_all_subs != 'Yes')
-//		continue;
+	if(!(msg_area.grp[grp].sub_list[s].scan_cfg&(SCAN_CFG_YONLY|SCAN_CFG_NEW))
+			&& (http_request.query.show_all_subs == undefined 
+				|| http_request.query.show_all_subs != 'Yes'))
+		continue;
+	var thissub=msg_area.grp[grp].sub_list[s];
 	msgbase = new MsgBase(msg_area.grp[grp].sub_list[s].code);
 	if(msgbase.open()) {
 		var lastdate="No Msgs";
@@ -23,9 +26,10 @@ for(s in msg_area.grp[grp].sub_list) {
 			}
         }
         msgbase.close();
-        template.subs[s].messages=msgs;
-        template.subs[s].lastmsg=lastdate;
+        thissub.messages=msgs;
+        thissub.lastmsg=lastdate;
 	}
+	template.subs.push(thissub);
 }
 
 write_template("msgs/subs.inc");
