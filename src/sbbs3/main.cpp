@@ -2971,6 +2971,14 @@ void DLLCALL bbs_thread(void* arg)
 
 	status("Initializing");
 
+	/* Defeat the lameo hex0rs - the name and copyright must remain intact */
+	sprintf(str,"%.10s",VERSION_NOTICE);
+	if(crc32(COPYRIGHT_NOTICE,0)!=COPYRIGHT_CRC || crc32(str,0)!=SYNCHRONET_CRC) {
+		lprintf("!Corrupted library file");
+		cleanup(1);
+		return;
+	}
+
 #ifdef __unix__		/* Ignore "Broken Pipe" signal */
 	signal(SIGPIPE,SIG_IGN);
 #endif
