@@ -95,7 +95,7 @@ ifeq ($(os),darwin)
 else
  ifeq ($(os),sunos)
   MKSHLIB		:=	/usr/ccs/bin/ld -G
-  MKSHPPLIB		:=	/usr/ccs/bin/ld -G -L/usr/local/lib -lstdc++
+  MKSHPPLIB		:=	/usr/ccs/bin/ld -G
   SHLIBOPTS	:=	
  else
   MKSHLIB		:=	$(CC)
