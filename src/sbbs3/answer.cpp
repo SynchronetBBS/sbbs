@@ -106,8 +106,21 @@ bool sbbs_t::answer()
 			SAFECOPY(rlogin_name
 				,startup->options&BBS_OPT_USE_2ND_RLOGIN ? str2 : str);
 			useron.number=userdatdupe(0, U_ALIAS, LEN_ALIAS, rlogin_name, 0);
-			if(useron.number)
+			if(useron.number) {
 				getuserdat(&cfg,&useron);
+#if 1
+				if(!trashcan(client.addr,"rlogin")) {
+					lprintf(LOG_INFO,"%04d !CLIENT IP NOT LISTED in rlogin.can",client_socket);
+					SAFECOPY(tmp
+						,startup->options&BBS_OPT_USE_2ND_RLOGIN ? str : str2);
+					if(stricmp(tmp,useron.pass)) {
+						useron.number=0;
+					}
+					else
+						lprintf(LOG_INFO,"%04d RLogin password auth",client_socket);
+				}
+#endif
+			}
 			else
 				lprintf(LOG_DEBUG,"Node %d RLogin: Unknown user: %s",cfg.node_num,rlogin_name);
 		}

@@ -4250,6 +4250,7 @@ void DLLCALL bbs_thread(void* arg)
 		}
 
 		if(rlogin) {
+#if 0
 			if(!trashcan(&scfg,host_ip,"rlogin")) {
 				close_socket(client_socket);
 				lprintf(LOG_INFO,"%04d !CLIENT IP NOT LISTED in rlogin.can",client_socket);
@@ -4257,6 +4258,7 @@ void DLLCALL bbs_thread(void* arg)
 				sbbs->syslog("@!",logstr);
 				continue;
 			}
+#endif
 			sbbs->outcom(0); /* acknowledge RLogin per RFC 1282 */
 		}
 

@@ -37,4 +37,4 @@ FORCE$(EXEODIR)/uedit: $(EXEODIR) $(OBJS) $(BUILD_DEPENDS)
 
 $(EXEODIR)/uedit: $(EXEODIR) $(OBJS) $(BUILD_DEPENDS)
 	@echo Linking $@
-	@$(CC) $(LDFLAGS) $(OBJS) -o $@
+	${QUIET}$(CC) $(LDFLAGS) $(OBJS) -o $@
