@@ -60,10 +60,10 @@ typedef struct {
     DWORD	reserved_dword6;
     RingBuf** node_spybuf;		// Spy output buffer (each node)
     RingBuf** node_inbuf;		// User input buffer (each node)
-    DWORD	reserved_dword3;
     DWORD	reserved_dword2;
     DWORD	reserved_dword1;
-	int 	(*lputs)(char*);
+    int 	(*event_log)(char*);	// Event log - put string
+	int 	(*lputs)(char*);		// Log - put string
 	void	(*status)(char*);
     void	(*started)(void);
     void	(*terminated)(int code);
