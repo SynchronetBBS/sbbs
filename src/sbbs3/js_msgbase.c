@@ -383,6 +383,10 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 		,NULL,NULL,JSPROP_ENUMERATE);
 	JS_DefineProperty(cx, hdrobj, "subject",STRING_TO_JSVAL(JS_NewStringCopyZ(cx,msg.subj))
 		,NULL,NULL,JSPROP_ENUMERATE);
+	if(msg.summary!=NULL)
+		JS_DefineProperty(cx, hdrobj, "summary",STRING_TO_JSVAL(JS_NewStringCopyZ(cx,msg.summary))
+			,NULL,NULL,JSPROP_ENUMERATE);
+
 	JS_DefineProperty(cx, hdrobj, "to_ext",STRING_TO_JSVAL(JS_NewStringCopyZ(cx,msg.to_ext))
 		,NULL,NULL,JSPROP_ENUMERATE);
 	JS_DefineProperty(cx, hdrobj, "from_ext",STRING_TO_JSVAL(JS_NewStringCopyZ(cx,msg.from_ext))
@@ -420,6 +424,11 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 		,NULL,NULL,JSPROP_ENUMERATE);
 	JS_DefineProperty(cx, hdrobj, "expiration",INT_TO_JSVAL(msg.expiration)
 		,NULL,NULL,JSPROP_ENUMERATE);
+	JS_DefineProperty(cx, hdrobj, "priority",INT_TO_JSVAL(msg.priority)
+		,NULL,NULL,JSPROP_ENUMERATE);
+	JS_DefineProperty(cx, hdrobj, "cost",INT_TO_JSVAL(msg.cost)
+		,NULL,NULL,JSPROP_ENUMERATE);
+
 
 	JS_DefineProperty(cx, hdrobj, "type", INT_TO_JSVAL(msg.hdr.type)
 		,NULL,NULL,JSPROP_ENUMERATE);
@@ -449,6 +458,10 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 		,NULL,NULL,JSPROP_ENUMERATE);
 
 	JS_DefineProperty(cx, hdrobj, "delivery_attempts", INT_TO_JSVAL(msg.hdr.delivery_attempts)
+		,NULL,NULL,JSPROP_ENUMERATE);
+	JS_DefineProperty(cx, hdrobj, "last_downloaded", INT_TO_JSVAL(msg.hdr.last_downloaded)
+		,NULL,NULL,JSPROP_ENUMERATE);
+	JS_DefineProperty(cx, hdrobj, "times_downloaded", INT_TO_JSVAL(msg.hdr.times_downloaded)
 		,NULL,NULL,JSPROP_ENUMERATE);
 
 	l=smb_getmsgdatlen(&msg);
