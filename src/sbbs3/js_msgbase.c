@@ -543,6 +543,10 @@ js_get_msg_body(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 	if(argc>2)
 		strip_ctrl_a=JSVAL_TO_BOOLEAN(argv[2]);
 
+	if(argc>3)
+		tails=JSVAL_TO_BOOLEAN(argv[3]);
+
+
 	buf = get_msg_text(&(p->smb), &msg, strip_ctrl_a, tails ? GETMSGTXT_TAILS : 0);
 	if(buf==NULL)
 		return(JS_TRUE);
