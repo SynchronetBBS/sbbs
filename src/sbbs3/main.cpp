@@ -1548,10 +1548,20 @@ void event_thread(void* arg)
 			}
 			for(i=0;i<sbbs->cfg.total_events;i++) {
 				sbbs->cfg.event[i]->last=0;
-				if(filelength(file)<(long)(sizeof(time_t)*(i+1)))
+				if(filelength(file)<(long)(sizeof(time_t)*(i+1))) {
+					eprintf(LOG_WARNING,"Initializing last run time for event: %s (to 0x%08lx)"
+						,sbbs->cfg.event[i]->code
+						,sbbs->cfg.event[i]->last);
 					write(file,&sbbs->cfg.event[i]->last,sizeof(time_t));
-				else
-					read(file,&sbbs->cfg.event[i]->last,sizeof(time_t)); 
+				} else {
+					if(read(file,&sbbs->cfg.event[i]->last,sizeof(time_t))!=sizeof(time_t))
+						sbbs->errormsg(WHERE,ERR_READ,str,sizeof(time_t));
+					else
+						eprintf(LOG_DEBUG,"%s event last run: %s (0x%08lx)"
+								,sbbs->cfg.event[i]->code
+								,timestr(&sbbs->cfg, &sbbs->cfg.event[i]->last, str)
+								,sbbs->cfg.event[i]->last);
+				}
 				/* Event always runs after initialization? */
 				if(sbbs->cfg.event[i]->misc&EVENT_INIT)
 					sbbs->cfg.event[i]->last=-1;
@@ -1953,7 +1963,7 @@ void event_thread(void* arg)
 						|| sbbs->cfg.event[i]->node>last_node) {
 						eprintf(LOG_INFO,"Waiting for node %d to run timed event: %s"
 							,sbbs->cfg.event[i]->node,sbbs->cfg.event[i]->code);
-						eprintf(LOG_DEBUG,"%s event last run: %s (0x%lx)"
+						eprintf(LOG_DEBUG,"%s event last run: %s (0x%08lx)"
 							,sbbs->cfg.event[i]->code
 							,timestr(&sbbs->cfg, &sbbs->cfg.event[i]->last, str)
 							,sbbs->cfg.event[i]->last);
