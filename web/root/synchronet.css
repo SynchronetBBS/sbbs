@@ -43,6 +43,8 @@ th.sublist { background-color: #007788; color: black; }
 td.sublist { background-color: #007788; }
 
 table.msglist { margin-left: auto; margin-right: auto; background-color: #116677; }
+tr.msglist1 { background-color: #008699; }
+tr.msglist2 { background-color: #007688; }
 th.msglist { background-color: #007788; color: black; }
 a.msglist:hover { color: #ccffdd; }
 
