@@ -390,7 +390,7 @@ messages will be automatically purged. Usually, 100 messages is a
 sufficient maximum.
 */
                 uifc.input(WIN_MID|WIN_SAV,0,17,"Maximum Number of Messages"
-                    ,str,5,K_EDIT|K_NUMBER);
+                    ,str,9,K_EDIT|K_NUMBER);
                 cfg.sub[i]->maxmsgs=atoi(str);
                 cfg.sub[i]->misc|=SUB_HDRMOD;
 				break;
@@ -419,7 +419,7 @@ sub-board for duplicate message checking. Once this maximum number of
 CRCs is reached, the oldest CRCs will be automatically purged.
 */
 				uifc.input(WIN_MID|WIN_SAV,0,17,"Maximum Number of CRCs"
-					,str,5,K_EDIT|K_NUMBER);
+					,str,9,K_EDIT|K_NUMBER);
 				cfg.sub[i]->maxcrcs=atol(str);
 				cfg.sub[i]->misc|=SUB_HDRMOD;
                 break;
