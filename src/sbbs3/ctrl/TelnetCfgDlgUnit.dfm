@@ -37,6 +37,14 @@ object TelnetCfgDlg: TTelnetCfgDlg
         AutoSize = False
         Caption = 'Last Node'
       end
+      object XtrnPollsLabel: TLabel
+        Left = 9
+        Top = 76
+        Width = 91
+        Height = 25
+        AutoSize = False
+        Caption = 'External Yield'
+      end
       object AutoStartCheckBox: TCheckBox
         Left = 182
         Top = 12
@@ -111,6 +119,18 @@ object TelnetCfgDlg: TTelnetCfgDlg
         ParentShowHint = False
         ShowHint = True
         TabOrder = 6
+      end
+      object XtrnYieldEdit: TEdit
+        Left = 105
+        Top = 76
+        Width = 48
+        Height = 24
+        Hint = 
+          'Number of polls before yielding time-slices for external DOS/FOS' +
+          'SIL programs'
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 7
       end
     end
     object TelnetTabSheet: TTabSheet

@@ -82,6 +82,8 @@ void __fastcall TTelnetCfgDlg::FormShow(TObject *Sender)
 
 	FirstNodeEdit->Text=AnsiString((int)MainForm->bbs_startup.first_node);
 	LastNodeEdit->Text=AnsiString((int)MainForm->bbs_startup.last_node);
+	XtrnYieldEdit->Text=AnsiString(
+        (int)MainForm->bbs_startup.xtrn_polls_before_yield);
     AutoStartCheckBox->Checked=MainForm->SysAutoStart;
     AnswerSoundEdit->Text=AnsiString(MainForm->bbs_startup.answer_sound);
     HangupSoundEdit->Text=AnsiString(MainForm->bbs_startup.hangup_sound);
@@ -153,6 +155,9 @@ void __fastcall TTelnetCfgDlg::OKBtnClick(TObject *Sender)
 
     MainForm->bbs_startup.first_node=FirstNodeEdit->Text.ToIntDef(1);
     MainForm->bbs_startup.last_node=LastNodeEdit->Text.ToIntDef(1);
+    MainForm->bbs_startup.xtrn_polls_before_yield
+        =XtrnYieldEdit->Text.ToIntDef(10);
+
     MainForm->SysAutoStart=AutoStartCheckBox->Checked;
     sprintf(MainForm->bbs_startup.answer_sound,"%.*s"
 	    ,sizeof(MainForm->bbs_startup.answer_sound)-1

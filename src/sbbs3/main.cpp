@@ -2963,8 +2963,9 @@ void DLLCALL bbs_thread(void* arg)
 	}
 
 	/* Setup intelligent defaults */
-	if(startup->telnet_port==0)		startup->telnet_port=IPPORT_TELNET;
-	if(startup->rlogin_port==0)		startup->rlogin_port=513;
+	if(startup->telnet_port==0)				startup->telnet_port=IPPORT_TELNET;
+	if(startup->rlogin_port==0)				startup->rlogin_port=513;
+	if(startup->xtrn_polls_before_yield==0)	startup->xtrn_polls_before_yield=10;
 
 	thread_up();
 

@@ -1187,6 +1187,9 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     if(Registry->ValueExists("LastNode"))
     	bbs_startup.last_node=Registry->ReadInteger("LastNode");
 
+    if(Registry->ValueExists("ExternalYield"))
+    	bbs_startup.xtrn_polls_before_yield=Registry->ReadInteger("ExternalYield");
+
     if(Registry->ValueExists("AnswerSound"))
     	sprintf(bbs_startup.answer_sound,"%.*s"
         	,sizeof(bbs_startup.answer_sound)-1
@@ -1517,6 +1520,7 @@ void __fastcall TMainForm::SaveSettings(TObject* Sender)
     Registry->WriteInteger("FirstNode",bbs_startup.first_node);
     Registry->WriteInteger("LastNode",bbs_startup.last_node);
 
+    Registry->WriteInteger("ExternalYield",bbs_startup.xtrn_polls_before_yield);
     Registry->WriteString("AnswerSound",AnsiString(bbs_startup.answer_sound));
     Registry->WriteString("HangupSound",AnsiString(bbs_startup.hangup_sound));
 

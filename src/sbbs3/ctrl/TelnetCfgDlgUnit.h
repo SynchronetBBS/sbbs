@@ -91,6 +91,8 @@ __published:
     TCheckBox *RLogin2ndNameCheckBox;
         TCheckBox *QWKEventsCheckBox;
     TCheckBox *JavaScriptCheckBox;
+    TLabel *XtrnPollsLabel;
+    TEdit *XtrnYieldEdit;
 	void __fastcall FormShow(TObject *Sender);
 	void __fastcall OKBtnClick(TObject *Sender);
 	void __fastcall AnswerSoundButtonClick(TObject *Sender);
