@@ -117,7 +117,8 @@ else
 	$(INSBIN) $(SBBSDIR)/src/sbbs3/scfg/$(CCPRE).$(os).$(SUFFIX)/scfg $(SBBSDIR)/exec/scfg
 	$(INSBIN) $(SBBSDIR)/src/sbbs3/scfg/$(CCPRE).$(os).$(SUFFIX)/scfghelp.ixb $(SBBSDIR)/exec/scfghelp.ixb
 	$(INSBIN) $(SBBSDIR)/src/sbbs3/scfg/$(CCPRE).$(os).$(SUFFIX)/scfghelp.dat $(SBBSDIR)/exec/scfghelp.dat
-	-chown -hR $(SBBSCHOWN) $(SBBSDIR)
+	-chown -R $(SBBSCHOWN) $(SBBSDIR)
+	-chown -h $(SBBSCHOWN) $(SBBSDIR)/exec/*
 endif
 
 # CVS checkout command-line
