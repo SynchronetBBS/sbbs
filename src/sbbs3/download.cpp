@@ -307,9 +307,12 @@ bool sbbs_t::checkprotlog(file_t* f)
 	fclose(stream);
 	bprintf(text[FileNotSent],f->name);
 	if(f->dir<cfg.total_dirs)
-		sprintf(str,"%s attempted to download %s (%s) from %s %s",f->name
+		sprintf(str,"%s attempted to download %s (%s) from %s %s"
 			,useron.alias
-			,ultoac(f->size,tmp),cfg.lib[cfg.dir[f->dir]->lib]->sname,cfg.dir[f->dir]->sname);
+			,f->name
+			,ultoac(f->size,tmp)
+			,cfg.lib[cfg.dir[f->dir]->lib]->sname
+			,cfg.dir[f->dir]->sname);
 	else
 		sprintf(str,"%s attempted to download QWK packet",useron.alias);
 	logline("D!",str);
