@@ -43,7 +43,7 @@ RSC=rc.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MT /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "SBBS_EXPORTS" /YX /FD /c
-# ADD CPP /nologo /MT /W3 /GX /O2 /I "..\mozilla\js\src" /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "SBBS" /D "SBBS_EXPORTS" /D "WRAPPER_DLL" /D "SMBDLL" /D "SMB_EXPORTS" /D "JAVASCRIPT" /FR /YX /FD /c
+# ADD CPP /nologo /MT /W3 /GX /O2 /I "..\mozilla\js\src" /I "..\xpdev" /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "SBBS" /D "SBBS_EXPORTS" /D "WRAPPER_DLL" /D "WRAPPER_EXPORTS" /D "SMBDLL" /D "SMB_EXPORTS" /D "JAVASCRIPT" /FR /YX /FD /c
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
@@ -69,7 +69,7 @@ LINK32=link.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "SBBS_EXPORTS" /YX /FD /GZ /c
-# ADD CPP /nologo /MTd /W3 /Gm /GX /ZI /Od /I "..\mozilla\js\src" /D "_DEBUG" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "SBBS" /D "SBBS_EXPORTS" /D "WRAPPER_DLL" /D "SMBDLL" /D "SMB_EXPORTS" /D "JAVASCRIPT" /FR /YX /FD /GZ /c
+# ADD CPP /nologo /MTd /W3 /Gm /GX /ZI /Od /I "..\mozilla\js\src" /I "..\xpdev" /D "_DEBUG" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "SBBS" /D "SBBS_EXPORTS" /D "WRAPPER_DLL" /D "WRAPPER_EXPORTS" /D "SMBDLL" /D "SMB_EXPORTS" /D "JAVASCRIPT" /FR /YX /FD /GZ /c
 # ADD BASE MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
@@ -79,7 +79,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /debug /machine:I386 /pdbtype:sept
-# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib ../mozilla/js/src/release/js32.lib /nologo /dll /map /debug /debugtype:both /machine:I386 /pdbtype:sept
+# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib ../mozilla/js/src/debug/js32.lib /nologo /dll /map /debug /debugtype:both /machine:I386 /pdbtype:sept
 # SUBTRACT LINK32 /profile
 
 !ENDIF 
@@ -146,6 +146,10 @@ SOURCE=.\date_str.c
 # End Source File
 # Begin Source File
 
+SOURCE=..\xpdev\dirwrap.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\download.cpp
 # End Source File
 # Begin Source File
@@ -187,6 +191,14 @@ SOURCE=.\file.cpp
 # Begin Source File
 
 SOURCE=.\filedat.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\xpdev\filewrap.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\xpdev\genwrap.c
 # End Source File
 # Begin Source File
 
@@ -298,10 +310,6 @@ SOURCE=.\misc.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\msdirent.c
-# End Source File
-# Begin Source File
-
 SOURCE=.\msgtoqwk.cpp
 # End Source File
 # Begin Source File
@@ -386,10 +394,6 @@ SOURCE=.\smbtxt.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\smbwrap.c
-# End Source File
-# Begin Source File
-
 SOURCE=.\sortdir.cpp
 # End Source File
 # Begin Source File
@@ -407,6 +411,10 @@ SOURCE=.\telnet.c
 # Begin Source File
 
 SOURCE=.\text_sec.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\xpdev\threadwrap.c
 # End Source File
 # Begin Source File
 
@@ -439,10 +447,6 @@ SOURCE=.\ver.cpp
 # Begin Source File
 
 SOURCE=.\viewfile.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\wrappers.c
 # End Source File
 # Begin Source File
 

@@ -35,17 +35,12 @@
 #endif
 
 #include "sbbs.h"			/* load_cfg() */
-#include "smbwrap.h"		/* lock/unlock() */
-#include "sbbswrap.h"		/* glob_t */
 #include "sbbsdefs.h"
 #include "smblib.h"
 #include "scfglib.h"
 #include "post.h"
 #include "lzh.h"
 #include "sbbsecho.h"
-
-extern long crc32tbl[];
-ulong crc32(char *str);
 
 #ifdef __TURBOC__
     unsigned _stklen=20000;
@@ -72,6 +67,9 @@ two_plus_t two_plus;
 faddr_t		sys_faddr;
 config_t	cfg;
 scfg_t		scfg;
+
+ulong	crc32(char *buf, ulong len);
+
 
 BOOL pause_on_exit=FALSE;
 
@@ -108,6 +106,126 @@ return(i);
 }
 #endif
 
+/******************************************************************************
+ Displays characters locally
+******************************************************************************/
+long lputs(char *str)
+{
+    char tmp[256];
+    int i,j,k;
+
+
+	j=strlen(str);
+	for(i=k=0;i<j;i++)      /* remove CRs */
+		if(str[i]==CR && str[i+1]==LF)
+			continue;
+		else
+			tmp[k++]=str[i];
+	tmp[k]=0;
+	return(fputs(tmp,stdout));
+}
+
+/****************************************************************************/
+/* Performs printf() through local assembly routines                        */
+/* Called from everywhere                                                   */
+/****************************************************************************/
+int lprintf(char *fmat, ...)
+{
+	va_list argptr;
+	char sbuf[256];
+	int chcount;
+
+	va_start(argptr,fmat);
+	chcount=vsprintf(sbuf,fmat,argptr);
+	va_end(argptr);
+	lputs(sbuf);
+	return(chcount);
+}
+#if 0
+
+/****************************************************************************/
+/* Converts an ASCII Hex string into an ulong                       */
+/****************************************************************************/
+ulong ahtoul(char *str)
+{
+	ulong l,val=0;
+
+	while((l=(*str++)|0x20)!=0x20)
+		val=(l&0xf)+(l>>6&1)*9+val*16;
+	return(val);
+}
+/****************************************************************************/
+/* Truncates white-space chars off end of 'str' and terminates at first tab */
+/****************************************************************************/
+void truncsp(char *str)
+{
+	int c;
+
+	c=strlen(str);
+	while(c && (uchar)str[c-1]<=SP) c--;
+	str[c]=0;
+}
+
+/****************************************************************************/
+/* Puts a backslash on path strings 										*/
+/****************************************************************************/
+void backslash(char *str)
+{
+    int i;
+
+	i=strlen(str);
+	if(i && str[i-1]!='\\' && str[i-1]!='/') {
+		str[i]=BACKSLASH; 
+		str[i+1]=0; 
+	}
+}
+
+/****************************************************************************/
+/* Puts a backslash on path strings if not just a drive letter and colon	*/
+/****************************************************************************/
+void backslashcolon(char *str)
+{
+    int i;
+
+	i=strlen(str);
+	if(i && str[i-1]!='\\' && str[i-1]!='/' && str[i-1]!=':') {
+		str[i]=BACKSLASH; 
+		str[i+1]=0; 
+	}
+}
+
+/****************************************************************************/
+/* Updates 16-bit "rcrc" with character 'ch'                                */
+/****************************************************************************/
+void ucrc16(uchar ch, ushort *rcrc) 
+{
+	ushort i, cy;
+    uchar nch=ch;
+ 
+	for (i=0; i<8; i++) {
+		cy=*rcrc & 0x8000;
+		*rcrc<<=1;
+		if (nch & 0x80) *rcrc |= 1;
+		nch<<=1;
+		if (cy) *rcrc ^= 0x1021; }
+}
+
+/****************************************************************************/
+/* Returns CRC-16 of ASCIIZ string (not including terminating NULL)			*/
+/****************************************************************************/
+ushort DLLCALL crc16(char *str)
+{
+	int 	i=0;
+	ushort	crc=0;
+
+	ucrc16(0,&crc);
+	while(str[i])
+		ucrc16(str[i++],&crc);
+	ucrc16(0,&crc);
+	ucrc16(0,&crc);
+	return(crc);
+}
+#endif
 /**********************/
 /* Log print function */
 /**********************/
@@ -130,18 +248,6 @@ fprintf(fidologfile,"%02u/%02u/%02u %02u:%02u:%02u %s\r\n"
     ,gm->tm_mon+1,gm->tm_mday,TM_YEAR(gm->tm_year),gm->tm_hour,gm->tm_min,gm->tm_sec
     ,buf);
 fflush(fidologfile);
-}
-
-/****************************************************************************/
-/* Puts a backslash on path strings                                         */
-/****************************************************************************/
-void backslash(char *str)
-{
-    int i;
-
-i=strlen(str);
-if(i && str[i-1]!='\\') {
-    str[i]='\\'; str[i+1]=0; }
 }
 
 /*****************************************************************************/
@@ -314,7 +420,7 @@ int write_flofile(char *attachment, faddr_t dest)
 		strcat(outbound,str); }
 	if(outbound[strlen(outbound)-1]=='\\')
 		outbound[strlen(outbound)-1]=0;
-	_mkdir(outbound);
+	MKDIR(outbound);
 	strcat(outbound,"\\");
 	if(dest.point)
 		sprintf(fname,"%s%08x.%clo",outbound,dest.point,ch);
@@ -886,7 +992,7 @@ if(nomatch || (add_area.tags && !stricmp(add_area.tag[0],"+ALL"))) {
 							*p=0;
 							if(!stricmp(add_area.tag[0],"+ALL")) {
 								sprintf(fields,"%.1024s",str);
-								tagcrc=crc32(strupr(fields));
+								tagcrc=crc32(strupr(fields),0);
 								for(y=0;y<cfg.areas;y++)
 									if(tagcrc==cfg.area[y].tag)
 										break;
@@ -1510,7 +1616,7 @@ char attachment(char *bundlename,faddr_t dest,char cleanup)
 					,__LINE__,num_mfncrc*sizeof(long));
 				continue; 
 			}
-			mfncrc[num_mfncrc-1]=crc32(strupr(p)); 
+			mfncrc[num_mfncrc-1]=crc32(strupr(p),0); 
 		}
 		globfree(&g);
 
@@ -1520,7 +1626,7 @@ char attachment(char *bundlename,faddr_t dest,char cleanup)
 			sprintf(str,"%s%s",cfg.outbound,attach.fname);
 			if(!fexist(str))
 				continue;
-			fncrc=crc32(strupr(attach.fname));
+			fncrc=crc32(strupr(attach.fname),0);
 			for(crcidx=0;crcidx<num_mfncrc;crcidx++)
 				if(mfncrc[crcidx]==fncrc)
 					break;
@@ -1708,68 +1814,6 @@ int unpack_bundle(void)
 	}
 	return(0);
 }
-
-
-/******************************************************************************
- Displays characters locally
-******************************************************************************/
-long lputs(char *str)
-{
-    char tmp[256];
-    int i,j,k;
-
-
-	j=strlen(str);
-	for(i=k=0;i<j;i++)      /* remove CRs */
-		if(str[i]==CR && str[i+1]==LF)
-			continue;
-		else
-			tmp[k++]=str[i];
-	tmp[k]=0;
-	return(fputs(tmp,stdout));
-}
-
-/****************************************************************************/
-/* Performs printf() through local assembly routines                        */
-/* Called from everywhere                                                   */
-/****************************************************************************/
-int lprintf(char *fmat, ...)
-{
-	va_list argptr;
-	char sbuf[256];
-	int chcount;
-
-	va_start(argptr,fmat);
-	chcount=vsprintf(sbuf,fmat,argptr);
-	va_end(argptr);
-	lputs(sbuf);
-	return(chcount);
-}
-
-/****************************************************************************/
-/* Converts an ASCII Hex string into an ulong                       */
-/****************************************************************************/
-ulong ahtoul(char *str)
-{
-	ulong l,val=0;
-
-	while((l=(*str++)|0x20)!=0x20)
-		val=(l&0xf)+(l>>6&1)*9+val*16;
-	return(val);
-}
-
-/****************************************************************************/
-/* Truncates white-space chars off end of 'str' and terminates at first tab */
-/****************************************************************************/
-void truncsp(char *str)
-{
-	int c;
-
-	c=strlen(str);
-	while(c && (uchar)str[c-1]<=SP) c--;
-	str[c]=0;
-}
-
 
 void remove_re(char *str)
 {
@@ -2001,8 +2045,8 @@ if(!total_users) {		/* Load CRCs */
             if(name[c]==ETX || name[c]==CR) break;
         name[c]=0;
         strupr(name);
-		username[total_users].alias=crc32(alias);
-		username[total_users].real=crc32(name); }
+		username[total_users].alias=crc32(alias,0);
+		username[total_users].real=crc32(name,0); }
 	close(userdat);
 	fprintf(stderr,"     \b\b\b\b\b");  // Clear counter
 	fprintf(stderr,
@@ -2013,7 +2057,7 @@ if(!total_users) {		/* Load CRCs */
 
 strcpy(str,inname);
 strupr(str);
-crc=crc32(str);
+crc=crc32(str,0);
 for(l=0;l<total_users;l++)
 	if((crc==username[l].alias || crc==username[l].real))
 		return(l+1);
@@ -2183,8 +2227,10 @@ return(fbuf);
 int fmsgtosmsg(uchar HUGE16 *fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 {
 	uchar	ch,HUGE16 *sbody,HUGE16 *stail,HUGE16 *outbuf
-			,done,col,esc,cr,*p,str[128];
+				,*p,str[128];
+	BOOL	done,esc,cr;
 	int 	i,chunk,lzh=0,storage;
+	uint	col;
 	ushort	xlat,net;
 	ulong	l,m,length,lzhlen,bodylen,taillen,crc;
 	ulong	save;
@@ -2215,23 +2261,23 @@ destaddr.net=fmsghdr.destnet;
 destaddr.node=fmsghdr.destnode;
 destaddr.point=fmsghdr.destpoint;
 
-smb_hfield(&msg,SENDER,strlen(fmsghdr.from),fmsghdr.from);
+smb_hfield(&msg,SENDER,(ushort)strlen(fmsghdr.from),fmsghdr.from);
 strlwr(fmsghdr.from);
 if(subnum==INVALID_SUB)
 	msg.idx.from=0;
 else
 	msg.idx.from=crc16(fmsghdr.from);
 
-smb_hfield(&msg,RECIPIENT,strlen(fmsghdr.to),fmsghdr.to);
+smb_hfield(&msg,RECIPIENT,(ushort)strlen(fmsghdr.to),fmsghdr.to);
 strlwr(fmsghdr.to);
 msg.idx.to=crc16(fmsghdr.to);
 
 if(user) {
 	sprintf(str,"%u",user);
-	smb_hfield(&msg,RECIPIENTEXT,strlen(str),str);
+	smb_hfield(&msg,RECIPIENTEXT,(ushort)strlen(str),str);
 	msg.idx.to=user; }
 
-smb_hfield(&msg,SUBJECT,strlen(fmsghdr.subj),fmsghdr.subj);
+smb_hfield(&msg,SUBJECT,(ushort)strlen(fmsghdr.subj),fmsghdr.subj);
 remove_re(fmsghdr.subj);
 strlwr(fmsghdr.subj);
 msg.idx.subj=crc16(fmsghdr.subj);
@@ -2265,7 +2311,7 @@ for(col=l=esc=done=bodylen=taillen=0,cr=1;l<length;l++) {
         while(m<length && fbuf[m]!=CR) m++;
         while(m && fbuf[m-1]<=SP) m--;
         if(m>l)
-            smb_hfield(&msg,FIDOAREA,m-l,fbuf+l);
+            smb_hfield(&msg,FIDOAREA,(ushort)(m-l),fbuf+l);
         while(l<length && fbuf[l]!=CR) l++;
 		/* If unknown echo, keep AREA: line in message body */
 		if(cfg.badecho>=0 && subnum==cfg.area[cfg.badecho].sub)
@@ -2302,7 +2348,7 @@ for(col=l=esc=done=bodylen=taillen=0,cr=1;l<length;l++) {
 			while(m<length && fbuf[m]!=CR) m++;
 			while(m && fbuf[m-1]<=SP) m--;
 			if(m>l)
-				smb_hfield(&msg,FIDOMSGID,m-l,fbuf+l); }
+				smb_hfield(&msg,FIDOMSGID,(ushort)(m-l),fbuf+l); }
 
 		else if(!strncmp((char *)fbuf+l+1,"REPLY:",6)) {
 			l+=7;
@@ -2311,7 +2357,7 @@ for(col=l=esc=done=bodylen=taillen=0,cr=1;l<length;l++) {
 			while(m<length && fbuf[m]!=CR) m++;
 			while(m && fbuf[m-1]<=SP) m--;
 			if(m>l)
-				smb_hfield(&msg,FIDOREPLYID,m-l,fbuf+l); }
+				smb_hfield(&msg,FIDOREPLYID,(ushort)(m-l),fbuf+l); }
 
 		else if(!strncmp((char *)fbuf+l+1,"FLAGS:",6)) {
 			l+=7;
@@ -2320,7 +2366,7 @@ for(col=l=esc=done=bodylen=taillen=0,cr=1;l<length;l++) {
 			while(m<length && fbuf[m]!=CR) m++;
 			while(m && fbuf[m-1]<=SP) m--;
 			if(m>l)
-				smb_hfield(&msg,FIDOFLAGS,m-l,fbuf+l); }
+				smb_hfield(&msg,FIDOFLAGS,(ushort)(m-l),fbuf+l); }
 
 		else if(!strncmp((char *)fbuf+l+1,"PATH:",5)) {
 			l+=6;
@@ -2329,7 +2375,7 @@ for(col=l=esc=done=bodylen=taillen=0,cr=1;l<length;l++) {
 			while(m<length && fbuf[m]!=CR) m++;
 			while(m && fbuf[m-1]<=SP) m--;
 			if(m>l && misc&STORE_PATH)
-				smb_hfield(&msg,FIDOPATH,m-l,fbuf+l); }
+				smb_hfield(&msg,FIDOPATH,(ushort)(m-l),fbuf+l); }
 
 		else if(!strncmp((char *)fbuf+l+1,"PID:",4)) {
 			l+=5;
@@ -2338,7 +2384,7 @@ for(col=l=esc=done=bodylen=taillen=0,cr=1;l<length;l++) {
 			while(m<length && fbuf[m]!=CR) m++;
 			while(m && fbuf[m-1]<=SP) m--;
 			if(m>l)
-				smb_hfield(&msg,FIDOPID,m-l,fbuf+l); }
+				smb_hfield(&msg,FIDOPID,(ushort)(m-l),fbuf+l); }
 
 		else {		/* Unknown kludge line */
 			while(l<length && fbuf[l]<=SP) l++;
@@ -2346,7 +2392,7 @@ for(col=l=esc=done=bodylen=taillen=0,cr=1;l<length;l++) {
 			while(m<length && fbuf[m]!=CR) m++;
 			while(m && fbuf[m-1]<=SP) m--;
 			if(m>l && misc&STORE_KLUDGE)
-				smb_hfield(&msg,FIDOCTRL,m-l,fbuf+l); }
+				smb_hfield(&msg,FIDOCTRL,(ushort)(m-l),fbuf+l); }
 
 		while(l<length && fbuf[l]!=CR) l++;
 		continue; }
@@ -2362,7 +2408,7 @@ for(col=l=esc=done=bodylen=taillen=0,cr=1;l<length;l++) {
 			while(m<length && fbuf[m]!=CR) m++;
 			while(m && fbuf[m-1]<=SP) m--;
 			if(m>l && misc&STORE_SEENBY)
-				smb_hfield(&msg,FIDOSEENBY,m-l,fbuf+l);
+				smb_hfield(&msg,FIDOSEENBY,(ushort)(m-l),fbuf+l);
 			while(l<length && fbuf[l]!=CR) l++;
 			continue; }
 		if(done) {
@@ -2996,11 +3042,9 @@ void attach_bundles()
 				memcpy(&two_two,&pkthdr.empty,20);
 				pkt_faddr.point=pkthdr.month; }
 			printf("Sending to %s\n",faddrtoa(&pkt_faddr,NULL));
-			pack_bundle(packet,pkt_faddr); }
-		else {
-			fclose(fidomsg);
+			pack_bundle(packet,pkt_faddr); 
+		} else
 			printf("Possibly still in use\n"); 
-		} 
 	}
 	globfree(&g);
 }
@@ -3208,39 +3252,32 @@ int import_netmail(char *path,fmsghdr_t hdr, FILE *fidomsg)
 	ulong l;
 	faddr_t addr;
 
-	printf("import_netmail line %d\n",__LINE__);
 	hdr.destzone=hdr.origzone=sys_faddr.zone;
 	hdr.destpoint=hdr.origpoint=0;
 	getzpt(fidomsg,&hdr);				/* use kludge if found */
-	printf("import_netmail line %d\n",__LINE__);
 	for(match=0;match<scfg.total_faddrs;match++)
 		if((hdr.destzone==scfg.faddr[match].zone || misc&FUZZY_ZONE)
 			&& hdr.destnet==scfg.faddr[match].net
 			&& hdr.destnode==scfg.faddr[match].node
 			&& hdr.destpoint==scfg.faddr[match].point)
 			break;
-	printf("import_netmail line %d\n",__LINE__);
 	if(match<scfg.total_faddrs && misc&FUZZY_ZONE)
 		hdr.origzone=hdr.destzone=scfg.faddr[match].zone;
 	if(hdr.origpoint)
-		sprintf(tmp,".%u",hdr.origpoint);
+		sprintf(tmp,".%hu",hdr.origpoint);
 	else
 		tmp[0]=0;
 	if(hdr.destpoint)
-		sprintf(str,".%u",hdr.destpoint);
+		sprintf(str,".%hu",hdr.destpoint);
 	else
 		str[0]=0;
-	printf("import_netmail line %d\n",__LINE__);
 	sprintf(info,"%s%s%s (%hu:%hu/%hu%s) To: %s (%hu:%hu/%hu%s)"
 		,path,path[0] ? " ":""
 		,hdr.from,hdr.origzone,hdr.orignet,hdr.orignode,tmp
 		,hdr.to,hdr.destzone,hdr.destnet,hdr.destnode,str);
-	printf("import_netmail line %d\n",__LINE__);
 	printf("%s ",info);
-	printf("import_netmail line %d\n",__LINE__);
 
 	if(!(misc&IMPORT_NETMAIL)) {
-	printf("import_netmail line %d\n",__LINE__);
 		if(!path[0]) {
 			fmsgbuf=getfmsg(fidomsg,&l);
 			if(!fmsgbuf) {
@@ -3272,7 +3309,6 @@ int import_netmail(char *path,fmsghdr_t hdr, FILE *fidomsg)
 			logprintf("%s Ignored",info);
 		return(-1); }
 
-	printf("import_netmail line %d\n",__LINE__);
 	if(hdr.attr&FIDO_ORPHAN) {
 		printf("Orphaned");
 		return(1); }
@@ -3305,7 +3341,6 @@ int import_netmail(char *path,fmsghdr_t hdr, FILE *fidomsg)
 			logprintf(str);
 			bail(1); } }
 
-	printf("import_netmail line %d\n",__LINE__);
 	if(!stricmp(hdr.to,"AREAFIX") || !stricmp(hdr.to,"SBBSECHO")) {
 		fmsgbuf=getfmsg(fidomsg,NULL);
 		if(path[0]) {
@@ -3339,7 +3374,6 @@ int import_netmail(char *path,fmsghdr_t hdr, FILE *fidomsg)
 			logprintf(info);
 		return(-2); }
 
-	printf("import_netmail line %d\n",__LINE__);
 	usernumber=atoi(hdr.to);
 	if(!stricmp(hdr.to,"SYSOP"))  /* NetMail to "sysop" goes to #1 */
 		usernumber=1;
@@ -3391,7 +3425,6 @@ int import_netmail(char *path,fmsghdr_t hdr, FILE *fidomsg)
 	/* Importing NetMail */
 	/*********************/
 
-	printf("import_netmail line %d\n",__LINE__);
 	fmsgbuf=getfmsg(fidomsg,&l);
 
 	if(!l && misc&KILL_EMPTY_MAIL) {
@@ -3438,7 +3471,6 @@ int import_netmail(char *path,fmsghdr_t hdr, FILE *fidomsg)
 			tp=p+1; } }
 	netmail++;
 
-	printf("import_netmail line %d\n",__LINE__);
 	if(fmsgbuf)
 		FREE(fmsgbuf);
 
@@ -3453,7 +3485,6 @@ int import_netmail(char *path,fmsghdr_t hdr, FILE *fidomsg)
 	***/
 	if(cfg.log&LOG_IMPORTED)
 		logprintf("%s Imported",info);
-	printf("import_netmail line %d\n",__LINE__);
 	return(0);
 }
 
@@ -4005,7 +4036,7 @@ int main(int argc, char **argv)
 			bail(1); }
 		strcpy(cfg.area[cfg.areas].name,tmp);
 		strupr(tmp);
-		cfg.area[cfg.areas].tag=crc32(tmp);
+		cfg.area[cfg.areas].tag=crc32(tmp,0);
 
 		while(*p>SP) p++;				/* Skip tag */
 		while(*p && *p<=SP) p++;		/* Skip white space */
@@ -4304,7 +4335,7 @@ int main(int argc, char **argv)
 			printf("%21s: ",p);                 /* Show areaname: */
 			sprintf(areatagstr,"%.128s",p);
 			strupr(p);
-			areatag=crc32(p);
+			areatag=crc32(p,0);
 
 			for(i=0;i<cfg.areas;i++)				/* Do we carry this area? */
 				if(cfg.area[i].tag==areatag) {

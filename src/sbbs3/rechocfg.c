@@ -25,7 +25,7 @@
 #include "crc32.h"
 #include "sbbsdefs.h"
 #include "sbbsecho.h"
-#include "smbwrap.h"	/* O_DENYNONE */
+#include "filewrap.h"	/* O_DENYNONE */
 
 #ifdef __WATCOMC__
 	#include <mem.h>
@@ -37,7 +37,7 @@ extern uchar node_swap;
 #endif
 extern long misc;
 extern config_t cfg;
-
+#if 0
 /****************************************************************************/
 /* Network open function. Opens all files DENYALL and retries LOOP_NOPEN    */
 /* number of times if the attempted file is already open or denying access  */
@@ -93,6 +93,7 @@ if(stream==NULL) {
 setvbuf(stream,NULL,_IOFBF,16*1024);
 return(stream);
 }
+#endif
 /******************************************************************************
  Here we take a string and put a terminator in place of the first TAB or SPACE
 ******************************************************************************/
@@ -163,7 +164,7 @@ if((p=strchr(str,'.'))!=NULL) {
 		addr.point=atoi(p); }
 return(addr);
 }
-
+#if 0
 /****************************************************************************/
 /* Returns an ASCII string for FidoNet address 'addr'                       */
 /****************************************************************************/
@@ -193,6 +194,22 @@ else {
 				strcat(str,tmp); } } } }
 return(str);
 }
+
+/****************************************************************************/
+/* Returns 32-crc of string (not counting terminating NULL) 				*/
+/****************************************************************************/
+ulong crc32(char *str)
+{
+	int i=0;
+	ulong crc=0xffffffffUL;
+
+	while(str[i])
+		crc=ucrc32(str[i++],crc);
+	crc=~crc;
+	return(crc);
+}
+
+#endif
 /******************************************************************************
  This function returns the number of the node in the SBBSECHO.CFG file which
  matches the address passed to it (or cfg.nodecfgs if no match).
@@ -236,19 +253,6 @@ for(i=0;i<cfg.nodecfgs;i++) 					/* Look for total wild */
 	if(cfg.nodecfg[i].faddr.zone==0xffff)
         break;
 return(i);
-}
-/****************************************************************************/
-/* Returns 32-crc of string (not counting terminating NULL) 				*/
-/****************************************************************************/
-ulong crc32(char *str)
-{
-	int i=0;
-	ulong crc=0xffffffffUL;
-
-	while(str[i])
-		crc=ucrc32(str[i++],crc);
-	crc=~crc;
-	return(crc);
 }
 
 void read_echo_cfg()
