@@ -134,6 +134,35 @@ int uifcini(uifcapi_t* uifcapi)
     api->input=uinput;
     api->sethelp=sethelp;
 
+    if(api->scrn_len!=0) {
+        switch(api->scrn_len) {
+            case 14:
+                textmode(C80X14);
+                break;
+            case 21:
+                textmode(C80X21);
+                break;
+            case 25:
+                textmode(C80);
+                break;
+            case 28:
+                textmode(C80X28);
+                break;
+            case 43:
+                textmode(C80X43);
+                break;
+            case 50:
+                textmode(C80X50);
+                break;
+            case 60:
+                textmode(C80X60);
+                break;
+            default:
+                textmode(C4350);
+                break;
+        }
+    }
+
     clrscr();
     gettextinfo(&txtinfo);
     /* unsupported mode? */
