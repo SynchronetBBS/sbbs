@@ -1387,7 +1387,7 @@ int main(int argc, char **argv)
 setvbuf(stdout,0,_IONBF,0);
 
 smb.file[0]=0;
-printf("\nSMBUTIL Version %s (%s) SMBLIB %s ú Synchronet Message Base "\
+printf("\nSMBUTIL Version %s (%s) SMBLIB %s - Synchronet Message Base "\
 	"Utility\n\n"
 	,SMBUTIL_VER
 #if defined(__OS2__)

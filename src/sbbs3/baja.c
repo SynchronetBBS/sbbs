@@ -3121,7 +3121,7 @@ int main(int argc, char **argv)
 	int i,j;
 
 printf("\nBAJA v2.10 ú Synchronet Shell/Module Compiler ú "
-	"Developed 1995-97 Rob Swindell\n");
+	"Copyright 2000 Rob Swindell\n");
 
 for(i=1;i<argc;i++)
 	if(argv[i][0]=='/')

@@ -50,7 +50,7 @@
 #define REVISION	'C'
 
 #define VERSION_NOTICE		"Synchronet BBS for Win32  Version 3.00  "
-#define COPYRIGHT_NOTICE	"Developed 1990-2000 by Rob Swindell"
+#define COPYRIGHT_NOTICE	"Copyright 2000 Rob Swindell"
 #define QWK_HEADER			"Produced by Synchronet BBS  Version 3  "\
 								COPYRIGHT_NOTICE
 

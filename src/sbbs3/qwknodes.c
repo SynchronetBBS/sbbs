@@ -352,7 +352,7 @@ txt.allocerr="\7\r\nError allocating %u bytes of memory\r\n";
 txt.error="\7\r\nERROR: Offset %lu in %s\r\n\r\n";
 
 fprintf(stderr,"\nSynchronet QWKnet Node/Route/User List  v1.20  "
-	"Developed 1995-1997 Rob Swindell\n");
+	"Copyright 2000 Rob Swindell\n");
 
 
 for(i=1;i<argc;i++)

@@ -141,8 +141,8 @@ int main(int argc, char **argv)
 	idxrec_t	idx;
 	smbmsg_t	msg;
 
-fprintf(stderr,"\nCHKSMB v2.10 ú Check Synchronet Message Base ú "
-	"Devloped 1995-2000 Rob Swindell\n");
+fprintf(stderr,"\nCHKSMB v2.10 - Check Synchronet Message Base - "
+	"Copyright 2000 Rob Swindell\n");
 
 if(argc<2) {
 	printf("%s",usage);
