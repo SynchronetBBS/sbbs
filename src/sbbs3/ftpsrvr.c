@@ -2492,7 +2492,7 @@ static void ctrl_thread(void* arg)
 						fprintf(fp,"%-*s %s\r\n"
 							,INDEX_FNAME_LEN,scfg.dir[i]->code,scfg.dir[i]->lname);
 					}
-				} else {
+				} else if(chk_ar(&scfg,scfg.dir[dir]->ar,&user)){
 					sprintf(cmd,"%s*",scfg.dir[dir]->path);
 					glob(cmd,0,NULL,&g);
 					for(i=0;i<(int)g.gl_pathc;i++) {
