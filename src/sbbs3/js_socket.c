@@ -111,7 +111,7 @@ static void js_finalize_socket(JSContext *cx, JSObject *obj)
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
 		return;
 
-	if(p->external==JS_FALSE && p->sock!=INVALID_SOCKET) {
+	if(p->external==FALSE && p->sock!=INVALID_SOCKET) {
 		close_socket(p->sock);
 		dbprintf(FALSE, p, "closed/deleted");
 	}
@@ -170,7 +170,7 @@ js_bind(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	SOCKADDR_IN	addr;
 	private_t*	p;
-	ushort		port;
+	ushort		port=0;
 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_FALSE);
@@ -191,6 +191,69 @@ js_bind(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	dbprintf(FALSE, p, "bound to port %u",port);
 	*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
+	return(JS_TRUE);
+}
+
+static JSBool
+js_listen(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	private_t*	p;
+	int			backlog=1;
+
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+		return(JS_FALSE);
+	
+	if(argc)
+		backlog = JS_ValueToInt32(cx,argv[0],&backlog);
+
+	if(listen(p->sock, backlog)!=0) {
+		p->last_error=ERROR_VALUE;
+		dbprintf(TRUE, p, "listen failed with error %d",ERROR_VALUE);
+		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+		return(JS_TRUE);
+	}
+
+	dbprintf(FALSE, p, "listening, backlog=%d",backlog);
+	*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
+	return(JS_TRUE);
+}
+
+static JSBool
+js_accept(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	private_t*	p;
+	private_t*	new_p;
+	JSObject*	sockobj;
+	int			backlog=1;
+	SOCKET		new_socket;
+
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+		return(JS_FALSE);
+
+	if((new_socket=accept(p->sock,NULL,NULL))==INVALID_SOCKET) {
+		p->last_error=ERROR_VALUE;
+		dbprintf(TRUE, p, "accept failed with error %d",ERROR_VALUE);
+		*rval = JSVAL_VOID;
+		return(JS_TRUE);
+	}
+
+	if((sockobj=js_CreateSocketObject(cx, obj, "new_socket", new_socket))==NULL) {
+		closesocket(new_socket);
+		dbprintf(TRUE, p, "error creating new_socket object");
+		*rval = JSVAL_VOID;
+		return(JS_TRUE);
+	}
+	if((new_p=(private_t*)JS_GetPrivate(cx,sockobj))==NULL)
+		return(JS_FALSE);
+
+	new_p->type=p->type;
+	new_p->debug=p->debug;
+	new_p->nonblocking=p->nonblocking;
+	new_p->external=FALSE;		/* let destructor close socket */
+	new_p->is_connected=TRUE;
+
+	dbprintf(FALSE, p, "accepted connection");
+	*rval = OBJECT_TO_JSVAL(sockobj);
 	return(JS_TRUE);
 }
 
@@ -877,6 +940,8 @@ static JSFunctionSpec js_socket_functions[] = {
 	{"close",			js_close,			0},		/* close socket */
 	{"bind",			js_bind,			0},		/* bind to a port */
 	{"connect",         js_connect,         2},		/* connect to an IP address and port */
+	{"listen",			js_listen,			0},		/* put socket in listening state */
+	{"accept",			js_accept,			0},		/* accept an incoming connection */
 	{"send",			js_send,			1},		/* send a string */
 	{"sendto",			js_sendto,			3},		/* send a string to address and port */
 	{"sendfile",		js_sendfile,		1},		/* send a file */
@@ -894,7 +959,6 @@ static JSFunctionSpec js_socket_functions[] = {
 	{"poll",			js_poll,			1},		/* poll(seconds)					*/
 	{0}
 };
-
 
 JSObject* DLLCALL js_CreateSocketClass(JSContext* cx, JSObject* parent)
 {
@@ -932,7 +996,7 @@ JSObject* DLLCALL js_CreateSocketObject(JSContext* cx, JSObject* parent, char *n
 	memset(p,0,sizeof(private_t));
 
 	p->sock = sock;
-	p->external = JS_TRUE;
+	p->external = TRUE;
 
 	if(!JS_SetPrivate(cx, obj, p)) {
 		dbprintf(TRUE, p, "JS_SetPrivate failed");
@@ -943,6 +1007,5 @@ JSObject* DLLCALL js_CreateSocketObject(JSContext* cx, JSObject* parent, char *n
 
 	return(obj);
 }
-
 
 #endif	/* JAVSCRIPT */
