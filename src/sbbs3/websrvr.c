@@ -121,6 +121,7 @@ extern const uchar* nular;
 #define MAX_HEADERS_SIZE		16384	/* Maximum total size of all headers 
 										   (Including terminator )*/
 #define MAX_REDIR_LOOPS			20		/* Max. times to follow internal redirects for a single request */
+#define MAX_POST_LEN			1048576	/* Max size of body for POSTS */
 
 static scfg_t	scfg;
 static BOOL		scfg_reloaded=TRUE;
@@ -1553,7 +1554,7 @@ static BOOL parse_headers(http_session_t * session)
 		}
 	}
 	if(content_len)  {
-		if((session->req.post_data=malloc(content_len+1)) != NULL)  {
+		if(content_len < (MAX_POST_LEN+1) && (session->req.post_data=malloc(content_len+1)) != NULL)  {
 			session->req.post_len=recvbufsocket(session->socket,session->req.post_data,content_len);
 			if(session->req.post_len != content_len)
 				lprintf(LOG_DEBUG,"%04d !ERROR Browser said they sent %d bytes, but I got %d",session->socket,content_len,session->req.post_len);
