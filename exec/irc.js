@@ -1,7 +1,6 @@
-// sbbsimsg.js
+// irc.js
 
-// Synchronet inter-bbs instant message module
-// uses Finger and SMTP TCP/IP protocols
+// Deuce's IRC client module for Synchronet
 
 // $Id$
 
@@ -24,6 +23,14 @@ var connected=0;
 var quit=0;
 var nick=user.handle;
 var nicks=new Array();
+
+/* Command-line args can override default server values */
+if(argv[0]!=undefined)
+	irc_server=argv[0];
+if(argv[1]!=undefined)
+	irc_port=Number(argv[1]);
+if(argv[2]!=undefined)
+	default_channel=argv[2];
 
 default_channel=default_channel.replace(/\s+/g,"_");
 
