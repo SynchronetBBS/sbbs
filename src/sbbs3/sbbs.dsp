@@ -306,10 +306,6 @@ SOURCE=.\main.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\misc.c
-# End Source File
-# Begin Source File
-
 SOURCE=.\msgtoqwk.cpp
 # End Source File
 # Begin Source File
@@ -319,6 +315,10 @@ SOURCE=.\netmail.cpp
 # Begin Source File
 
 SOURCE=.\newuser.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\nopen.c
 # End Source File
 # Begin Source File
 
@@ -399,6 +399,10 @@ SOURCE=.\sortdir.cpp
 # Begin Source File
 
 SOURCE=.\str.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\str_util.c
 # End Source File
 # Begin Source File
 

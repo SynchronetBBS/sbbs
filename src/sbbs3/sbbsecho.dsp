@@ -116,7 +116,7 @@ SOURCE=.\lzh.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\misc.c
+SOURCE=.\nopen.c
 # End Source File
 # Begin Source File
 
@@ -145,6 +145,10 @@ SOURCE=.\smblib.c
 # Begin Source File
 
 SOURCE=.\smbtxt.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\str_util.c
 # End Source File
 # Begin Source File
 
