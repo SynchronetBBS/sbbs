@@ -46,6 +46,7 @@ uint cursor,helpline=0,max_opts=MAX_OPTS;
 
 int uifcini()
 {
+    setvbuf(stdout,NULL,_IONBF,0);
     scrn_len=24;
     
     return(scrn_len);
@@ -136,7 +137,7 @@ int ulist(int mode, char left, int top, char width, int *cur, int *bar
                 strcat(str,", Add");
             if(mode&WIN_DEL)
                 strcat(str,", Delete");
-            printf("\nWhich (Help%s): ",str);
+            printf("\nWhich (Help%s or Quit): ",str);
         }
         str[0]=0;
         fgets(str,sizeof(str)-1,stdin);
@@ -169,35 +170,40 @@ int ulist(int mode, char left, int top, char width, int *cur, int *bar
                 printf("Help\n");
                 help();
                 break;
-            case 'A':
+            case 'A':   /* Add/Insert */
 				if(!opts)
     				return(MSK_INS);
                 if(i>0 && i<=opts+1)
         			return((i-1)|MSK_INS);
                 return(which("Add before",opts+1)|MSK_INS);
                 break;
-            case 'D':
+            case 'D':   /* Delete */
 				if(!opts)
     				break;
                 if(i>0 && i<=opts)
         			return((i-1)|MSK_DEL);
-                return(which("Delete",opts)|MSK_INS);
+                if(opts==1)
+                    return(MSK_DEL);
+                return(which("Delete",opts)|MSK_DEL);
                 break;
-            case 'C':
+            case 'C':   /* Copy/Get */
 				if(!opts)
     				break;
                 if(i>0 && i<=opts)
         			return((i-1)|MSK_GET);
+                if(opts==1)
+                    return(MSK_GET);
                 return(which("Copy",opts)|MSK_GET);
                 break;
-            case 'P':
+            case 'P':   /* Paste/Put */
 				if(!opts)
     				break;
                 if(i>0 && i<=opts)
         			return((i-1)|MSK_PUT);
+                if(opts==1)
+                    return(MSK_PUT);
                 return(which("Paste",opts)|MSK_PUT);
                 break;
-
         }
     }
 }
