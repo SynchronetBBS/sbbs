@@ -45,7 +45,7 @@ LIBODIR	:=	bcc.linux.lib
 EXEODIR	:=	bcc.linux.exe
 else
 # -O doesn't work on FreeBSD (possible conflict with -g)
-CFLAGS	+=	-O
+# CFLAGS	+=	-O
 LIBODIR	:=	gcc.linux.lib
 EXEODIR	:=	gcc.linux.exe
 endif
