@@ -57,6 +57,10 @@ char sbbs_t::putmsg(char HUGE16 *str, long mode)
 	tmpatr=curatr;	/* was lclatr(-1) */
 	if(!(mode&P_SAVEATR))
 		attr(LIGHTGRAY);
+	if(mode&P_NOPAUSE)
+		sys_status|=SS_PAUSEOFF;
+	if(mode&P_HTML)
+		putcom("\x02\x02");
 	while(str[l] && (mode&P_NOABORT || !msgabort()) && online) {
 		if(str[l]==CTRL_A && str[l+1]!=0) {
 			if(str[l+1]=='"' && !(sys_status&SS_NEST_PF)) {  /* Quote a file */
@@ -223,10 +227,12 @@ char sbbs_t::putmsg(char HUGE16 *str, long mode)
 			if(str[l]!=26)
 				outchar(str[l]);
 			l++; } }
-	//curatr=lclatr(-1);		01/29/96
 	if(!(mode&P_SAVEATR)) {
 		console=orgcon;
-		attr(tmpatr); }
+		attr(tmpatr); 
+	}
+	if(mode&P_HTML)
+		putcom("\x02");
 
 	/* Restore original settings of Forced Pause On/Off */
 	sys_status&=~(SS_PAUSEOFF|SS_PAUSEON);
