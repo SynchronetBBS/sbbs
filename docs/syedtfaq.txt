@@ -14,8 +14,8 @@ packages as well.
 Authorship
 ~~~~~~~~~~
 Robert D. Bouman is the author of SyncEdit. Unfortunately he passed away a few
-years ago. I, Rob Swindell, am the author Synchronet BBS Software and while I
-was given permission to include an unregistered demo version of SyncEdit in
+years ago. I, Rob Swindell, am the author of Synchronet BBS Software and while
+I was given permission to include an unregistered demo version of SyncEdit in
 Synchronet distributions, I am not the author of SyncEdit and have never had
 any official connection with the product. I've decided to create this help file
 to answer all the common questions I get regarding SyncEdit (the most common
