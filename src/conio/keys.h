@@ -42,5 +42,6 @@
 #define CIO_KEY_RIGHT     0x4d << 8
 #define CIO_KEY_PPAGE     0x49 << 8
 #define CIO_KEY_NPAGE     0x51 << 8
+#define CIO_KEY_ALT_F(x)      (0x67+x) << 8
 
 #define CIO_KEY_MOUSE    0x02ff
