@@ -111,7 +111,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 					"8 DATA BITS, and 1 STOP BIT (N-8-1).\7\r\n");
 				return(0); } }
 		switch(ch) {
-			case 1: /* Ctrl-A for ANSI */
+			case CTRL_A: /* Ctrl-A for ANSI */
 				if(!(mode&K_MSG) || useron.rest&FLAG('A') || i>maxlen-3)
 					break;
 				if(ins) {
@@ -125,12 +125,12 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 						ins=0; }
 				outchar(str1[i++]=1);
 				break;
-			case 2: /* Ctrl-B Beginning of Line */
+			case CTRL_B: /* Ctrl-B Beginning of Line */
 				if(useron.misc&ANSI && i && !(mode&K_NOECHO)) {
 					bprintf("\x1b[%dD",i);
 					i=0; }
 				break;
-			case 4: /* Ctrl-D Delete word right */
+			case CTRL_D: /* Ctrl-D Delete word right */
 				if(i<l) {
 					x=i;
 					while(x<l && str1[x]!=SP) {
@@ -150,17 +150,17 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 					bprintf("\x1b[%dD",z-i);
 					l-=x-i; }                       /* l=new length */
 				break;
-			case 5: /* Ctrl-E End of line */
+			case CTRL_E: /* Ctrl-E End of line */
 				if(useron.misc&ANSI && i<l) {
 					bprintf("\x1b[%dC",l-i);  /* move cursor to eol */
 					i=l; }
 				break;
-			case 6: /* Ctrl-F move cursor forewards */
+			case CTRL_F: /* Ctrl-F move cursor forewards */
 				if(i<l && (useron.misc&ANSI)) {
 					bputs("\x1b[C");   /* move cursor right one */
 					i++; }
 				break;
-			case 7:	/* Ctrl-G */
+			case CTRL_G: /* Bell */
 				if(!(mode&K_MSG))
 					break;
 				if(useron.rest&FLAG('B')) {
@@ -195,7 +195,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 					if(!(mode&K_NOECHO))
 						outchar(BEL); }
 				 break;
-			case 8:	/* Ctrl-H/Backspace */
+			case CTRL_H:	/* Ctrl-H/Backspace */
 				if(!i)
 					break;
 				i--;
@@ -211,7 +211,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 				else if(!(mode&K_NOECHO))
 					bputs("\b \b");
 				break;
-			case 9:	/* Ctrl-I/TAB */
+			case CTRL_I:	/* Ctrl-I/TAB */
 				if(!(i%TABSIZE)) {
 					if(ins) {
 						if(l<maxlen)
@@ -238,7 +238,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 					redrwstr(str1,i,l,0);
 				break;
 
-			case 12:    /* Ctrl-L   Center line (used to be Ctrl-V) */
+			case CTRL_L:    /* Ctrl-L   Center line (used to be Ctrl-V) */
 				str1[l]=0;
 				l=bstrlen(str1);
 				if(!l) break;
@@ -261,7 +261,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 				CRLF;
 				return(l);
 
-			case 14:    /* Ctrl-N Next word */
+			case CTRL_N:    /* Ctrl-N Next word */
 				if(i<l && (useron.misc&ANSI)) {
 					x=i;
 					while(str1[i]!=SP && i<l)
@@ -270,11 +270,11 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 						i++;
 					bprintf("\x1b[%dC",i-x); }
 				break;
-			case 18:    /* Ctrl-R Redraw Line */
+			case CTRL_R:    /* Ctrl-R Redraw Line */
 				if(!(mode&K_NOECHO))
 					redrwstr(str1,i,l,0);
 				break;
-			case 22:	/* Ctrl-V			Toggles Insert/Overwrite */
+			case CTRL_V:	/* Ctrl-V			Toggles Insert/Overwrite */
 				if(!(useron.misc&ANSI) || mode&K_NOECHO)
 					break;
 				if(ins) {
@@ -289,7 +289,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 					attr(z);
 					bputs("\x1b[u"); }  /* restore pos */
 				break;
-			case 23:    /* Ctrl-W   Delete word left */
+			case CTRL_W:    /* Ctrl-W   Delete word left */
 				if(i<l) {
 					x=i;                            /* x=original offset */
 					while(i && str1[i-1]==SP) {
@@ -319,7 +319,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 						if(!(mode&K_NOECHO))
 							bputs("\b \b"); } }
 				break;
-			case 24:    /* Ctrl-X   Delete entire line */
+			case CTRL_X:    /* Ctrl-X   Delete entire line */
 				if(mode&K_NOECHO)
 					l=0;
 				else {
@@ -331,7 +331,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 						bputs("\b \b"); } }
 				i=0;
 				break;
-			case 25:    /* Ctrl-Y   Delete to end of line */
+			case CTRL_Y:    /* Ctrl-Y   Delete to end of line */
 				if(useron.misc&ANSI && !(mode&K_NOECHO)) {
 					bputs("\x1b[K");
 					l=i; }

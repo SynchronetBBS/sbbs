@@ -316,7 +316,7 @@ void sbbs_t::mnemonics(char *str)
 			if(!ctrl_a_codes)
 				attr(cfg.color[clr_mnelow]); }
 		else {
-			if(str[l]==1) {             /* ctrl-a */
+			if(str[l]==CTRL_A) {        /* ctrl-a */
 				ctrl_a(str[++l]);       /* skip the ctrl-a */
 				l++; }                  /* skip the attribute code */
 			else
