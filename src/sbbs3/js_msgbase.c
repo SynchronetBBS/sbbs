@@ -993,8 +993,10 @@ js_put_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 
 		smb_freemsghdrmem(&msg);	/* prevent duplicate header fields */
 
-		if(!parse_header_object(cx, p, hdr, &msg, TRUE))
+		if(!parse_header_object(cx, p, hdr, &msg, TRUE)) {
+			sprintf(p->smb.last_error,"Header parsing failure (required field missing?)");
 			break;
+		}
 
 		if(smb_putmsg(&(p->smb), &msg)!=0)
 			break;
@@ -1376,7 +1378,8 @@ js_save_msg(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 			if(i==rcpt_list_length)
 				*rval = JSVAL_TRUE;	/* success */
 		}
-	}
+	} else
+		sprintf(p->smb.last_error,"Header parsing failure (required field missing?)");
 
 	smb_freemsgmem(&msg);
 
