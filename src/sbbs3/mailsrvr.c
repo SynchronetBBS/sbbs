@@ -1488,6 +1488,7 @@ static void smtp_thread(void* arg)
 	BOOL		telegram=FALSE;
 	BOOL		forward=FALSE;
 	BOOL		no_forward=FALSE;
+	BOOL		auth_login;
 	uint		subnum=INVALID_SUB;
 	FILE*		msgtxt=NULL;
 	char		msgtxt_fname[MAX_PATH+1];
@@ -2260,7 +2261,7 @@ static void smtp_thread(void* arg)
 			while(*p && *p<=' ') p++;
 			SAFECOPY(hello_name,p);
 			sockprintf(socket,"250-%s",startup->host_name);
-			sockprintf(socket,"250 AUTH LOGIN CRAM-MD5");
+			sockprintf(socket,"250 AUTH PLAIN LOGIN CRAM-MD5");
 			esmtp=TRUE;
 			state=SMTP_STATE_HELO;
 			cmd=SMTP_CMD_NONE;
@@ -2268,26 +2269,39 @@ static void smtp_thread(void* arg)
 			subnum=INVALID_SUB;
 			continue;
 		}
-		/* This is a stupid protocol, but it's the only one Outlook Express supports */
-		if(!stricmp(buf,"AUTH LOGIN")) {	
-			sockprintf(socket,"334 VXNlcm5hbWU6");	/* Base64-encoded "Username:" */
+		if((auth_login=(stricmp(buf,"AUTH LOGIN")==0))==TRUE 
+			|| stricmp(buf,"AUTH PLAIN")==0) {
+			if(auth_login)
+				sockprintf(socket,"334 VXNlcm5hbWU6");	/* Base64-encoded "Username:" */
+			else
+				sockprintf(socket,"334 Username:");
 			if((rd=sockreadline(socket, buf, sizeof(buf)))<0) {
 				sockprintf(socket,badarg_rsp);
 				continue;
 			}
-			if(b64_decode(user_name,sizeof(user_name),buf,rd)<1) {
-				sockprintf(socket,badarg_rsp);
-				continue;
-			}
-			sockprintf(socket,"334 UGFzc3dvcmQ6");	/* Base64-encoded "Password:" */
+			if(auth_login) {
+				if(b64_decode(user_name,sizeof(user_name),buf,rd)<1) {
+					sockprintf(socket,badarg_rsp);
+					continue;
+				}
+			} else
+				SAFECOPY(user_name,buf);
+
+			if(auth_login)
+				sockprintf(socket,"334 UGFzc3dvcmQ6");	/* Base64-encoded "Password:" */
+			else
+				sockprintf(socket,"334 Password:");
 			if((rd=sockreadline(socket, buf, sizeof(buf)))<0) {
 				sockprintf(socket,badarg_rsp);
 				continue;
 			}
-			if(b64_decode(user_pass,sizeof(user_pass),buf,rd)<1) {
-				sockprintf(socket,badarg_rsp);
-				continue;
-			}
+			if(auth_login) {
+				if(b64_decode(user_pass,sizeof(user_pass),buf,rd)<1) {
+					sockprintf(socket,badarg_rsp);
+					continue;
+				}
+			} else
+				SAFECOPY(user_pass,buf);
 			if((relay_user.number=matchuser(&scfg,user_name,FALSE))==0) {
 				if(scfg.sys_misc&SM_ECHO_PW)
 					lprintf("%04d !SMTP UNKNOWN USER: %s (password: %s)"
@@ -2323,8 +2337,8 @@ static void smtp_thread(void* arg)
 				relay_user.number=0;
 				break;
 			}
-			lprintf("%04d SMTP %s authenticated using LOGIN"
-				,socket,relay_user.alias);
+			lprintf("%04d SMTP %s authenticated using %s authentication"
+				,socket,relay_user.alias,auth_login ? "LOGIN" : "PLAIN");
 			sockprintf(socket,auth_ok);
 			continue;
 		}
@@ -2400,7 +2414,7 @@ static void smtp_thread(void* arg)
 				relay_user.number=0;
 				continue;
 			}
-			lprintf("%04d SMTP %s authenticated using CRAM-MD5"
+			lprintf("%04d SMTP %s authenticated using CRAM-MD5 authentication"
 				,socket,relay_user.alias);
 			sockprintf(socket,auth_ok);
 			continue;
