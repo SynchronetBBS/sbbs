@@ -291,25 +291,25 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 
 		// Current environment passed to child process
 		sprintf(dszlog,"DSZLOG=%sPROTOCOL.LOG",cfg.node_dir);
-		if(putenv(dszlog)) 		/* Makes the DSZ LOG active */
-        	errormsg(WHERE,ERR_WRITE,"environment",0);
 		sprintf(sbbsnode,"SBBSNODE=%s",cfg.node_dir);
-		putenv(sbbsnode);		/* create environment var to contain node path */
 		sprintf(sbbsnnum,"SBBSNNUM=%d",cfg.node_num);
-		putenv(sbbsnnum);	   /* create environment var to contain node num */
 		sprintf(sbbsctrl,"SBBSCTRL=%s",cfg.ctrl_dir);
+		putenv(dszlog); 		/* Makes the DSZ LOG active */
+		putenv(sbbsnode);
+		putenv(sbbsnnum);
 		putenv(sbbsctrl);
-		if(tm_p!=NULL) {
-			sprintf(env_day			,"DAY=%02u\n"		,tm_p->tm_mday);
-			sprintf(env_weekday		,"WEEKDAY=%s\n"		,wday[tm_p->tm_wday]);
-			sprintf(env_monthname	,"MONTHNAME=%s\n"	,mon[tm_p->tm_mon]);
-			sprintf(env_month		,"MONTH=%02u\n"		,tm_p->tm_mon+1);
-			sprintf(env_year		,"YEAR=%u\n"		,1900+tm_p->tm_year);
+		if(tm_p!=NULL) {		/* date/time env vars */
+			sprintf(env_day			,"DAY=%02u"			,tm_p->tm_mday);
+			sprintf(env_weekday		,"WEEKDAY=%s"		,wday[tm_p->tm_wday]);
+			sprintf(env_monthname	,"MONTHNAME=%s"		,mon[tm_p->tm_mon]);
+			sprintf(env_month		,"MONTH=%02u"		,tm_p->tm_mon+1);
+			sprintf(env_year		,"YEAR=%u"			,1900+tm_p->tm_year);
 			putenv(env_day);
 			putenv(env_weekday);
 			putenv(env_monthname);
 			putenv(env_month);
-			putenv(env_year);
+			if(putenv(env_year))
+        		errormsg(WHERE,ERR_WRITE,"environment",0);
 		}
 
     } else { // DOS external
@@ -330,7 +330,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
         fprintf(fp, "SBBSCTRL=%s\n", cfg.ctrl_dir);
         fprintf(fp, "SBBSNODE=%s\n", cfg.node_dir);
         fprintf(fp, "SBBSNNUM=%d\n", cfg.node_num);
-		if(tm_p!=NULL) {
+		if(tm_p!=NULL) {	/* date/time env vars */
 			fprintf(fp, "DAY=%02u\n", tm_p->tm_mday);
 			fprintf(fp, "WEEKDAY=%s\n",wday[tm_p->tm_wday]);
 			fprintf(fp, "MONTHNAME=%s\n",mon[tm_p->tm_mon]);
