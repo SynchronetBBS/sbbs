@@ -151,7 +151,8 @@ void lzh_insert_node(short int r)
 					break;
 			}
 			if (i == lzh_match_length) {
-				if ((c = ((r - p) & (LZH_N - 1)) - 1) < lzh_match_position) {
+				if ((c = ((r - p) & (LZH_N - 1)) - 1) 
+					< (unsigned)lzh_match_position) {
 					lzh_match_position = c;
 				}
 			}
@@ -393,7 +394,7 @@ void lzh_putcode(short int l, unsigned short c, uchar *outbuf, long *outlen)
 
 /* initialize freq tree */
 
-void lzh_start_huff()
+void lzh_start_huff(void)
 {
 	short int i, j;
 
@@ -421,7 +422,7 @@ lzh_putlen = 0;
 
 /* reconstruct freq tree */
 
-void lzh_reconst()
+void lzh_reconst(void)
 {
 	short int i, j, k;
 	unsigned short f, l;
@@ -534,10 +535,10 @@ void lzh_encode_position(unsigned short c, uchar *outbuf, long *outlen)
 
 	/* output upper 6 bits with encoding */
 	i = c >> 6;
-	lzh_putcode(lzh_p_len[i], (unsigned)lzh_p_code[i] << 8, outbuf, outlen);
+	lzh_putcode(lzh_p_len[i], (unsigned short)(lzh_p_code[i] << 8), outbuf, outlen);
 
 	/* output lower 6 bits directly */
-	lzh_putcode(6, (c & 0x3f) << 10, outbuf, outlen);
+	lzh_putcode(6, (unsigned short)((c & 0x3f) << 10), outbuf, outlen);
 }
 
 void lzh_encode_end(uchar *outbuf, long *outlen)
@@ -656,7 +657,7 @@ long LZHCALL lzh_encode(uchar *inbuf, long inlen, uchar *outbuf)
 		lzh_text_buf[r + len] = inbuf[incnt++];
 	/* textsize = len; */
 	for (i = 1; i <= LZH_F; i++)
-		lzh_insert_node(r - i);
+		lzh_insert_node((short)(r - i));
 	lzh_insert_node(r);
 	do {
 		if (lzh_match_length > len)
@@ -665,7 +666,7 @@ long LZHCALL lzh_encode(uchar *inbuf, long inlen, uchar *outbuf)
 			lzh_match_length = 1;
 			lzh_encode_char(lzh_text_buf[r],outbuf,&outlen);
 		} else {
-			lzh_encode_char(255 - LZH_THRESHOLD + lzh_match_length
+			lzh_encode_char((unsigned short)(255 - LZH_THRESHOLD + lzh_match_length)
 				,outbuf,&outlen);
 			lzh_encode_position(lzh_match_position
 				,outbuf,&outlen);
@@ -674,9 +675,9 @@ long LZHCALL lzh_encode(uchar *inbuf, long inlen, uchar *outbuf)
 		for (i = 0; i < last_match_length && incnt<inlen; i++) {
 			lzh_delete_node(s);
 			c=inbuf[incnt++];
-			lzh_text_buf[s] = c;
+			lzh_text_buf[s] = (uchar)c;
 			if (s < LZH_F - 1)
-				lzh_text_buf[s + LZH_N] = c;
+				lzh_text_buf[s + LZH_N] = (uchar)c;
 			s = (s + 1) & (LZH_N - 1);
 			r = (r + 1) & (LZH_N - 1);
 			lzh_insert_node(r);
@@ -757,17 +758,17 @@ long LZHCALL lzh_decode(uchar *inbuf, long inlen, uchar *outbuf)
 	for (i = 0; i < LZH_N - LZH_F; i++)
 		*(lzh_text_buf+i) = ' ';
 	r = LZH_N - LZH_F;
-    for (count = 0; count < textsize; ) {
+    for (count = 0; count < (unsigned long)textsize; ) {
 		c = lzh_decode_char(inbuf,&incnt,inlen);
 		if (c < 256) {
-			outbuf[count]=c;
+			outbuf[count]=(uchar)c;
 #if 0
 			if(r>(LZH_N + LZH_F - 1) || r<0) {
 				printf("Overflow! (%d)\n",r);
 				getch();
 				exit(-1); }
 #endif
-			*(lzh_text_buf+r) = c;
+			*(lzh_text_buf+r) = (uchar)c;
 			r++;
 			r &= (LZH_N - 1);
 			count++;
@@ -775,15 +776,15 @@ long LZHCALL lzh_decode(uchar *inbuf, long inlen, uchar *outbuf)
 			i = (r - lzh_decode_position(inbuf,&incnt,inlen) - 1)
 				& (LZH_N - 1);
 			j = c - 255 + LZH_THRESHOLD;
-			for (k = 0; k < j && count<textsize; k++) {
+			for (k = 0; k < j && count<(unsigned long)textsize; k++) {
 				c = lzh_text_buf[(i + k) & (LZH_N - 1)];
-				outbuf[count]=c;
+				outbuf[count]=(uchar)c;
 #if 0
 				if(r>(LZH_N + LZH_F - 1) || r<0) {
 					printf("Overflow! (%d)\n",r);
 					exit(-1); }
 #endif
-				*(lzh_text_buf+r) = c;
+				*(lzh_text_buf+r) = (uchar)c;
 				r++;
 				r &= (LZH_N - 1);
 				count++;
