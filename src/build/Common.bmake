@@ -94,6 +94,7 @@
 #																			#
 #############################################################################
 
+
 # Macros
 # Set VERSION
 !ifndef VERSION
@@ -184,8 +185,9 @@ UIFC_SRC	=	$(SRC_ROOT)$(DIRSEP)uifc
 !include     $(UIFC_SRC)$(DIRSEP)Common.make
 !include     $(SMBLIB_SRC)$(DIRSEP)Common.make
 
-.path.c		=	.;$(XPDEV_SRC);$(SMBLIB_SRC);$(CIOLIB_SRC);$(UIFC_SRC)
-.path.cpp	=	.;$(XPDEV_SRC);$(SMBLIB_SRC);$(CIOLIB_SRC);$(UIFC_SRC)
+.path.obj	=	$(OBJODIR);$(MTOBJODIR)
+.path.c		=	.
+.path.cpp	=	.
 
 !include targets.mk
 !include $(SRC_ROOT)/build/rules.mk
@@ -207,3 +209,4 @@ UIFC_SRC	=	$(SRC_ROOT)$(DIRSEP)uifc
 # Implicit MT C++ Compile Rule
 {.}.cpp{$(MTOBJODIR)}$(OFILE):
 	@$(CC) $(CFLAGS) $(CXXFLAGS) -n$(MTOBJODIR) $(MT_CFLAGS) -c $< $(OUTPUT)$@
+
