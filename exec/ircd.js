@@ -4715,6 +4715,7 @@ function IRCClient_registered_commands(command, cmdline) {
 				switch(cmd[1].toUpperCase()) {
 					case "TKLINES":
 						this.numeric382("temp klines");
+						umode_notice(USERMODE_SERVER,"Notice",this.nick + " is clearing temp klines while whistling innocently");
 						for (kl in KLines) {
 							if(KLines[kl].type ==
 							   "k")
@@ -4724,16 +4725,17 @@ function IRCClient_registered_commands(command, cmdline) {
 					case "GC":
 						if (js.gc!=undefined) {
 							this.numeric382("garbage collecting");
+							umode_notice(USERMODE_SERVER,"Notice",this.nick + " is garbage collecting while whistling innocently");
 							js.gc();
 						}
 						break;
 					case "AKILLS":
 						this.numeric382("akills");
+						umode_notice(USERMODE_SERVER,"Notice",this.nick + " is rehashing akills");
 						for (kl in KLines) {
 							if(KLines[kl].type ==
 							   "A")
-								delete KLines[kl
-];
+								delete KLines[kl];
 						}
 						break;
 					default:
