@@ -645,6 +645,14 @@ void __fastcall TMainForm::ViewToolbarMenuItemClick(TObject *Sender)
 void __fastcall TMainForm::FormClose(TObject *Sender, TCloseAction &Action)
 {
     SaveSettings(Sender);
+
+    time_t start=time(NULL);
+	while(TelnetStop->Enabled || MailStop->Enabled || FtpStop->Enabled) {
+        if(time(NULL)-start>30)
+            break;
+        Application->ProcessMessages();
+        Sleep(1);
+    }
 }
 //---------------------------------------------------------------------------
 void __fastcall TMainForm::SaveSettings(TObject* Sender)
@@ -827,7 +835,7 @@ void __fastcall TMainForm::FormCloseQuery(TObject *Sender, bool &CanClose)
             return;
         FtpStopExecute(Sender);
     }
-
+#if 0 // Moved to FormClose()
     time_t start=time(NULL);
 	while(TelnetStop->Enabled || MailStop->Enabled || FtpStop->Enabled) {
         if(time(NULL)-start>15)
@@ -835,6 +843,7 @@ void __fastcall TMainForm::FormCloseQuery(TObject *Sender, bool &CanClose)
         Application->ProcessMessages();
         Sleep(1);
     }
+#endif    
 
     CanClose=true;
 }
