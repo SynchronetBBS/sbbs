@@ -1402,7 +1402,7 @@ Generated for <b>Synchronet v3.10m beta Debug</b>, compiled Jun 25 2003 19:19
 <tr valign=top><td><b>abortable</b><td>number
 <td>output can be aborted with Ctrl-C</td>
 <tr valign=top><td><b>telnet_mode</b><td>number
-<td>current telnet mode (see <tt>TELNET_MODE_*</tt> in <tt>sbbsdefs.js</tt> for valid values)</td>
+<td>current telnet mode bitfield (see <tt>TELNET_MODE_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)</td>
 <tr valign=top><td><b>wordwrap</b><td>string
 <td>word-wrap buffer (used by getstr)	- <small>READ ONLY</small></td>
 <tr valign=top><td><b>question</b><td>string
@@ -2038,29 +2038,29 @@ Generated for <b>Synchronet v3.10m beta Debug</b>, compiled Jun 25 2003 19:19
 <tr valign=top><td><b>is_connected</b><td>boolean
 <td><i>true</i> if socket is in a connected state - <small>READ ONLY</small></td>
 <tr valign=top><td><b>is_writeable</b><td>boolean
-<td><i>true</i> if data is waiting to be read - <small>READ ONLY</small></td>
+<td><i>true</i> if socket can accept written data - <small>READ ONLY</small></td>
 <tr valign=top><td><b>data_waiting</b><td>boolean
-<td>number of bytes waiting to be read - <small>READ ONLY</small></td>
+<td><i>true</i> if data is waiting to be read from socket - <small>READ ONLY</small></td>
 <tr valign=top><td><b>nread</b><td>number
-<td>enable debug logging</td>
+<td>number of bytes waiting to be read - <small>READ ONLY</small></td>
 <tr valign=top><td><b>debug</b><td>number
-<td>socket descriptor (advanced uses only)</td>
+<td>enable debug logging</td>
 <tr valign=top><td><b>descriptor</b><td>number
-<td>use non-blocking operation (default is <i>false</i>)</td>
+<td>socket descriptor (advanced uses only)</td>
 <tr valign=top><td><b>nonblocking</b><td>boolean
-<td>local IP address (string in dotted-decimal format)</td>
+<td>use non-blocking operation (default is <i>false</i>)</td>
 <tr valign=top><td><b>local_ip_address</b><td>undefined
-<td>local TCP or UDP port number</td>
+<td>local IP address (string in dotted-decimal format)</td>
 <tr valign=top><td><b>local_port</b><td>number
-<td>remote IP address (string in dotted-decimal format)</td>
+<td>local TCP or UDP port number</td>
 <tr valign=top><td><b>remote_ip_address</b><td>undefined
-<td>remote TCP or UDP port number</td>
+<td>remote IP address (string in dotted-decimal format)</td>
 <tr valign=top><td><b>remote_port</b><td>number
-<td>socket type, <tt>SOCK_STREAM</tt> (TCP) or <tt>SOCK_DGRAM</tt> (UDP)</td>
+<td>remote TCP or UDP port number</td>
 <tr valign=top><td><b>type</b><td>number
-<td><i>true</i> if binary data is to be sent in Network Byte Order (big end first), default is <i>true</i></td>
+<td>socket type, <tt>SOCK_STREAM</tt> (TCP) or <tt>SOCK_DGRAM</tt> (UDP)</td>
 <tr valign=top><td><b>network_byte_order</b><td>boolean
-<td>undefined</td>
+<td><i>true</i> if binary data is to be sent in Network Byte Order (big end first), default is <i>true</i></td>
 </table>
 <p><small>
 Totals: 409 properties, 236 methods
