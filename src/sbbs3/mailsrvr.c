@@ -624,7 +624,8 @@ static void pop3_thread(void* arg)
 			user.number=matchuser(&scfg,username);
 		}
 		if(!user.number) {
-			lprintf("%04d !POP3 UNKNOWN USER: %s", socket, username);
+			lprintf("%04d !POP3 UNKNOWN USER: %s (password: %s)"
+				, socket, username, password);
 			sockprintf(socket,"-ERR");
 			break;
 		}
