@@ -1,0 +1,467 @@
+# typehtml.c
+
+# Synchronet Baja Modules to Display HTML files to TTY/ANSI users
+
+# Created October 09, 2000 by Rob Swindell
+
+# $id$
+
+# @format.tab-size 8, @format.use-tabs true
+
+!include file_io.inc
+!include sbbsdefs.inc
+
+# Color Attributes for HTML type styles
+!define NORMAL		"\1N\1H"
+!define HEADING1	"\1H\1Y"
+!define HEADING2	"\1H\1C"
+!define HEADING3	"\1H\1M"
+!define HEADING4	"\1H\1G"
+!define HEADING5	"\1H\1B"	
+!define HEADING6	"\1H\1R"
+!define BOLD		"\1H\1C\x014"
+!define ITALIC		"\1H\1G\x012"
+!define UNDERLINE	"\1H\1W\x016"
+!define STRIKE_THROUGH	"\1N\1K\x017"
+!define LIST_ITEM 	"    \1H\1Wo \1G"
+
+!define RIGHT_MARGIN	79
+	
+str 	filename		# HTML filename
+str	tmpfname		# Temporary filename
+str	href
+int	i
+int	ch
+int	len
+int	t
+int	start
+int 	htmlfile 
+int	tmpfile
+int	hlevel			# header level
+int	col			# current cursor column
+int	last_line_len		# length of last line printed
+int	lines			# total lines printed
+int	printing		# printing on
+int	newline			# new line read from html file
+
+copy filename str
+
+compare_str ""
+if_true
+	print "usage: typehtml <filename>\r\n"
+	return
+	end_if
+
+# Open HTML input file
+fopen htmlfile O_RDONLY|O_DENYNONE filename
+if_false
+	printf "!Error %d opening %s\r\n" _ERRNO filename
+	return
+	end_if
+
+# Open Ctrl-A output file
+set tmpfname "%gHTML.ASC"
+fopen tmpfile O_WRONLY|O_CREAT|O_TRUNC tmpfname
+if_false
+	printf "!Error %d creating %s\r\n" _ERRNO tmpfname
+	return
+	end_if
+
+set col 0		# reset column counter
+set last_line_len 0	# reset last line length
+set lines 0		# reset line counter
+set printing 1		# printing by default
+
+print "Converting HTML"
+time start
+
+:next_line
+	print "."
+
+	# Read a line 
+	fread_line htmlfile str
+	if_false # end of file
+		fclose htmlfile
+		fclose tmpfile
+		time t
+		sub t start
+#		printf "%d seconds" t
+#		pause
+		cls
+		printfile tmpfname P_NOATCODES
+		return
+		end_if
+
+	set newline 1
+
+	# truncate whitespace off end
+	truncsp str
+
+	# truncate whitespace off front
+	call skip_whitespace
+
+	:next_char
+		compare_first_char str 0
+		if_true
+			goto next_line
+			end_if
+
+		compare_substr str "<"
+		if_false
+			compare col 0
+			if_true
+				call skip_whitespace
+				end_if
+			set i RIGHT_MARGIN
+			sub i col
+			compare i 0
+			if_equal
+				call crlf
+				set i RIGHT_MARGIN
+				end_if
+			strlen len str
+			compare i len
+			if_greater
+				copy i len
+				end_if
+			fprintf tmpfile "%.*s" i str
+			shift_str str i
+			add col i
+			compare col RIGHT_MARGIN
+			if_greater_or_equal
+				call crlf
+				end_if
+			goto next_char
+			end_if
+
+		compare_first_char str '<'
+		if_false
+			compare printing 1
+			if_true
+				# handle word wrap
+				compare newline 1
+				if_equal
+					compare col 0
+					if_not_equal
+						fprintf tmpfile " "	
+						add col 1
+						end_if
+					end_if
+				set newline 0
+
+				# don't start lines with white-space
+				compare col 0
+				if_true
+					compare_first_char str ' '		
+					end_if
+				if_false
+					fwrite tmpfile str 1
+					add col 1
+					compare col RIGHT_MARGIN
+					if_greater_or_equal
+						call crlf
+						end_if
+					end_if
+				end_if
+			shift_str 1
+			goto next_char
+			end_if
+
+		shift_str 1	# skip <
+
+		# Title
+		compare_word "TITLE>"
+		if_true
+			set printing 0
+			call find_close_bracket
+			goto next_char
+			end_if
+		compare_word "/TITLE>"
+		if_true
+			set printing 1
+			call find_close_bracket
+			goto next_char
+			end_if
+
+
+		# List item
+		compare_word "LI>"
+		if_false
+			compare_word "LI "
+			end_if
+		if_true
+			compare col 0
+			if_not_equal
+				call crlf
+				end_if
+			fprintf tmpfile LIST_ITEM
+			set col 6
+			call find_close_bracket
+			goto next_char
+			end_if
+
+		# Strike-through
+		compare_word "S>"
+		if_false
+			compare_word "STRIKE>"
+			end_if
+		if_true
+			fprintf tmpfile STRIKE_THROUGH
+			call find_close_bracket
+			goto next_char
+			end_if
+
+		# Bold
+		compare_word "B>"
+		if_false
+			compare_word "STRONG>"
+			end_if
+		if_true
+			fprintf tmpfile BOLD
+			call find_close_bracket
+			goto next_char
+			end_if
+
+		# Italics
+		compare_word "I>"
+		if_false
+			compare_word "EM>"
+			end_if
+		if_true
+			fprintf tmpfile ITALIC
+			call find_close_bracket
+			goto next_char
+			end_if
+
+		# Underline
+		compare_word "U>"
+		if_false
+			compare_word "U>"
+			end_if
+		if_true
+			fprintf tmpfile UNDERLINE
+			call find_close_bracket
+			goto next_char
+			end_if
+
+
+		# Attribute off
+		compare_word "/S>"
+		if_false
+			compare_word "/STRIKE>"
+			end_if
+		if_false
+			compare_word "/B>"
+			end_if
+		if_false
+			compare_word "/STRONG>"
+			end_if
+		if_false
+			compare_word "/I>"
+			end_if
+		if_false
+			compare_word "/EM>"
+			end_if
+		if_false
+			compare_word "/U>"
+			end_if
+		if_true
+			fprintf tmpfile NORMAL
+			call find_close_bracket
+			goto next_char
+			end_if
+
+		# Table cell
+		compare_word "TD>"
+		if_false
+			compare_word "TD "
+			end_if
+		if_true
+			# visually separate cells
+			compare col 0
+			if_greater
+				fprintf tmpfile " "	
+				add col 1
+				end_if
+			call find_close_bracket
+			goto next_char
+			end_if
+			
+
+		# Dumb CR/LF block	
+		compare_word "BR>"
+		if_false
+			compare_word "BR "
+			end_if
+		if_false
+			compare_word "P>"
+			end_if
+		if_false
+			compare_word "P "
+			end_if
+		if_false
+			compare_word "TR>"
+			end_if
+		if_false
+			compare_word "TR "	
+			end_if
+		if_true
+			call crlf
+			call find_close_bracket
+			goto next_char
+			end_if
+	
+
+		# Intelligent CR/LF block (force single blank line)
+		compare_word "/UL>"
+		if_false
+			compare_word "/OL>"
+			end_if
+		if_false
+			compare_word "/DIR>"
+			end_if
+		if_false
+			compare_word "/MENU>"
+			end_if
+		if_true
+			fprintf tmpfile NORMAL
+			end_if
+		if_false
+			compare_word "H"
+			if_true
+				shift_str 1
+				copy hlevel str
+				compare hlevel 0 
+				if_greater
+					switch hlevel
+						case 1
+							fprintf tmpfile HEADING1
+							end_case
+						case 2
+							fprintf tmpfile HEADING2
+							end_case
+						case 3
+							fprintf tmpfile HEADING3
+							end_case
+						case 4
+							fprintf tmpfile HEADING4
+							end_case
+						case 5
+							fprintf tmpfile HEADING5
+							end_case
+						default
+							fprintf tmpfile HEADING6
+							end_case
+						end_switch
+					setlogic TRUE
+				else
+					setlogic FALSE
+					end_if
+				end_if
+			end_if
+		if_false
+			compare_word "/H"
+			if_true
+				shift_str 2
+				copy hlevel str
+				compare hlevel 0 
+				if_greater
+					fprintf tmpfile NORMAL
+					setlogic TRUE
+				else
+					setlogic FALSE
+					end_if					
+				end_if
+			end_if
+		if_true
+			compare lines 0
+			if_equal
+				compare col 0
+				end_if
+			if_greater
+				compare last_line_len 0
+				if_equal
+					compare col 0
+					end_if
+				if_not_equal
+					call crlf
+					call crlf
+					end_if
+				end_if
+			call find_close_bracket
+			goto next_char
+			end_if
+		
+		# Hyper-link
+		compare_word "A HREF="
+		if_true
+			shift_str 7
+			set href ""
+			:copy_href
+				compare_first_char str '>'
+				if_false
+					copy_first_char ch str
+					strcat href ch
+					shift_str 1
+					goto copy_href
+					end_if
+			end_if
+
+		# Show hyper-link
+		compare_word "/A>"
+		if_true
+			compare href ""
+			if_false
+				strlen i href
+				add i 3
+				add col i
+				compare col RIGHT_MARGIN
+				if_equal_or_greater
+					call crlf
+					sub i 1
+					copy col i
+				else
+					fprintf tmpfile " "
+					end_if					
+				fprintf tmpfile "<%s>" href
+				end_if
+			set href ""
+			end_if
+
+		call find_close_bracket
+		goto next_char
+			
+return
+
+# Carriage-return/Line-feed with column reset
+:crlf
+	copy last_line_len col
+	fprintf tmpfile "\r\n"
+	set col 0
+	add lines 1
+	return
+
+# Shift str past first close bracket
+:find_close_bracket
+	compare_first_char str 0
+	if_true
+		return
+		end_if
+
+	compare_first_char str '>'
+	shift_str 1
+	if_false
+		goto find_close_bracket
+		end_if	
+	return
+
+:skip_whitespace
+	compare_first_char str ' '
+	if_false
+		compare_first_char str '\t'
+		end_if
+	if_true
+		shift_str 1
+		goto skip_whitespace
+		end_if
+	return
