@@ -38,7 +38,7 @@ for(i=0;i<argc;i++) {
 	}
 }
 
-if(passedmsg && (msg==undefined || msg.search(/^\s*$/)!=-1)) {
+if(passedmsg && (msg==undefined || msg.search(/^[\r\n]*$/)!=-1)) {
 	log("-m specified with blank message... aborting");
 	exit();
 }
@@ -90,7 +90,7 @@ IRC_quit(my_server);
 
 function send(msg)
 {
-	if(msg==undefined || msg.search(/^\s*$/)!=-1) {
+	if(msg==undefined || msg.search(/^[\r\n]*$/)!=-1) {
 		log("Not sending blank message");
 		return;
 	}
