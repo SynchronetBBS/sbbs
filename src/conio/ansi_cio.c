@@ -54,11 +54,11 @@ sem_t	got_input;
 sem_t	used_input;
 sem_t	goahead;
 sem_t	need_key;
+static BOOL	sent_ga=FALSE;
 WORD	ansi_curr_attr=0x07<<8;
 
 int ansi_rows=24;
 int ansi_cols=80;
-unsigned int ansi_nextchar;
 int ansi_got_row=0;
 int ansi_got_col=0;
 int ansi_esc_delay=25;
@@ -67,7 +67,7 @@ int puttext_no_move=0;
 const int 	ansi_tabs[10]={9,17,25,33,41,49,57,65,73,80};
 const int 	ansi_colours[8]={0,4,2,6,1,5,3,7};
 static WORD		ansi_inch;
-static char		ansi_raw_inch;
+static unsigned char		ansi_raw_inch;
 WORD	*vmem;
 int		ansi_row=0;
 int		ansi_col=0;
@@ -350,16 +350,16 @@ static void ansi_keyparse(void *par)
 	char	*p;
 	int		timeout=0;
 	int		timedout=0;
+	int		sval;
 
 	seq[0]=0;
 	for(;;) {
 		sem_wait(&goahead);
-		sem_post(&need_key);
+		if(!timedout)
+			sem_post(&need_key);
 		timedout=0;
 		if(timeout) {
 			if(sem_trywait_block(&got_key,timeout)) {
-				/* Sneak it back down just in case */
-				sem_trywait(&need_key);
 				gotesc=0;
 				timeout=0;
 				timedout=1;
@@ -367,20 +367,21 @@ static void ansi_keyparse(void *par)
 		}
 		else
 			sem_wait(&got_key);
-
 		if(timedout) {
 			for(p=seq;*p;p++) {
-				sem_wait(&used_input);
 				ansi_inch=*p;
 				sem_post(&got_input);
+				sem_wait(&used_input);
+				sem_wait(&goahead);
 			}
+			/* We ended up eating one too many... add one back */
+			sem_post(&goahead);
 			seq[0]=0;
 			continue;
 		}
-		else {
+		else
 			ch=ansi_raw_inch;
-			ansi_raw_inch=0;
-		}
+
 		switch(gotesc) {
 			case 1:	/* Escape Sequence */
 				timeout=ANSI_TIMEOUT;
@@ -397,19 +398,24 @@ static void ansi_keyparse(void *par)
 						&& (strlen(seq)==2?ch != 'O':1)) {
 					for(i=0;aKeySequences[i].pszSequence[0];i++) {
 						if(!strcmp(seq,aKeySequences[i].pszSequence)) {
-							seq[0]=0;
-							sem_wait(&used_input);
 							ansi_inch=aKeySequences[i].chExtendedKey;
 							sem_post(&got_input);
 							/* Two-byte code, need to post twice and wait for one to
 							   be received */
+							sem_wait(&used_input);
+							sem_wait(&goahead);
 							sem_post(&got_input);
 							sem_wait(&used_input);
 							break;
 						}
 					}
+					seq[0]=0;
 					gotesc=0;
 					timeout=0;
+				}
+				else {
+					/* Need more keys... keep looping */
+					sem_post(&goahead);
 				}
 				break;
 			default:
@@ -418,11 +424,21 @@ static void ansi_keyparse(void *par)
 					seq[1]=0;
 					gotesc=1;
 					timeout=ANSI_TIMEOUT;
+					/* Need more keys... keep going... */
+					sem_post(&goahead);
 					break;
 				}
-				sem_wait(&used_input);
+				if(ch==13) {
+					/* The \r that goes with the next \n (hopefully) */
+					/* Eat it and keep chuggin' */
+					sem_post(&goahead);
+					break;
+				}
+				if(ch==10)
+					ch=13;
 				ansi_inch=ch;
 				sem_post(&got_input);
+				sem_wait(&used_input);
 				break;
 		}
 	}
@@ -433,11 +449,15 @@ static void ansi_keyparse(void *par)
 #endif
 static void ansi_keythread(void *params)
 {
+	int	sval=1;
+
 	_beginthread(ansi_keyparse,1024,NULL);
 
 	for(;;) {
 		sem_wait(&need_key);
-		if(fread(&ansi_raw_inch,1,1,stdin)==1)
+		/* If you already have a key, don't get another */
+		sem_getvalue(&got_key,&sval);
+		if((!sval) && fread(&ansi_raw_inch,1,1,stdin)==1)
 			sem_post(&got_key);
 		else
 			SLEEP(1);
@@ -446,11 +466,13 @@ static void ansi_keythread(void *params)
 
 int ansi_kbhit(void)
 {
-	int sval=1;
+	int	sval=1;
 
+	if(!sent_ga) {
+		sem_post(&goahead);
+		sent_ga=TRUE;
+	}
 	sem_getvalue(&got_input,&sval);
-	sem_trywait(&goahead);
-	sem_post(&goahead);
 	return(sval);
 }
 
@@ -631,12 +653,15 @@ int ansi_getch(void)
 {
 	int ch;
 
-	sem_trywait(&goahead);
-	sem_post(&goahead);
+	if(!sent_ga) {
+		sem_post(&goahead);
+		sent_ga=TRUE;
+	}
 	sem_wait(&got_input);
 	ch=ansi_inch&0xff;
 	ansi_inch=ansi_inch>>8;
 	sem_post(&used_input);
+	sent_ga=FALSE;
 	return(ch);
 }
 
@@ -644,8 +669,6 @@ int ansi_getche(void)
 {
 	int ch;
 
-	if(ansi_nextchar)
-		return(ansi_getch());
 	ch=ansi_getch();
 	if(ch)
 		putch(ch);
@@ -695,11 +718,9 @@ int ansi_initciolib(long inmode)
 		if(!SetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), 0))
 			return(0);
 	}
-	else {
-		setmode(fileno(stdout),_O_BINARY);
-		setmode(fileno(stdin),_O_BINARY);
-		setvbuf(stdout, NULL, _IONBF, 0);
-	}
+	setmode(fileno(stdout),_O_BINARY);
+	setmode(fileno(stdin),_O_BINARY);
+	setvbuf(stdout, NULL, _IONBF, 0);
 #else
 	struct termios tio_raw;
 
@@ -713,10 +734,9 @@ int ansi_initciolib(long inmode)
 	}
 #endif
 
-	/* Initialize used_* to 1 so they can be immediately waited on */
 	sem_init(&got_key,0,0);
 	sem_init(&got_input,0,0);
-	sem_init(&used_input,0,1);
+	sem_init(&used_input,0,0);
 	sem_init(&goahead,0,0);
 	sem_init(&need_key,0,0);
 
