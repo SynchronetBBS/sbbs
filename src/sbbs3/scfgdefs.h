@@ -576,6 +576,9 @@ typedef struct
 	char 	wfc_cmd[10][LEN_CMD+1];    /* 0-9 WFC DOS commands */
 	char 	wfc_scmd[12][LEN_CMD+1];   /* F1-F12 WFC shrinking DOS commands */
 
+	ushort	user_backup_level;
+	ushort	mail_backup_level;
+
 } scfg_t;
 
 #endif /* Don't add anything after this line */
