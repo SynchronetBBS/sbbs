@@ -170,6 +170,7 @@ int eprintf(char *fmt, ...)
     vsnprintf(sbuf,sizeof(sbuf),fmt,argptr);
 	sbuf[sizeof(sbuf)-1]=0;
     va_end(argptr);
+	strip_ctrl(sbuf);
     return(startup->event_log(sbuf));
 }
 
