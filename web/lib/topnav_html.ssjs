@@ -1,3 +1,5 @@
+/* $Id$ */
+
 template.topnav=new Array;
 
 if(http_request.virtual_path=="/index.ssjs" || http_request.virtual_path=="/")

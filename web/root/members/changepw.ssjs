@@ -1,3 +1,5 @@
+/* $Id$ */
+
 var sub="";
 
 load("sbbsdefs.js");
