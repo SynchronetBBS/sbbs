@@ -72,7 +72,7 @@ if((p=strchr(str,'.'))!=NULL)
 return(addr);
 }
 
-uint getsub()
+uint getsub(void)
 {
 	static int grp_dflt,sub_dflt,grp_bar,sub_bar;
 	char str[81];
