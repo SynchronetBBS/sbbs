@@ -2275,7 +2275,7 @@ static void smtp_thread(void* arg)
 				sockprintf(socket,"334 VXNlcm5hbWU6");	/* Base64-encoded "Username:" */
 			else
 				sockprintf(socket,"334 Username:");
-			if((rd=sockreadline(socket, buf, sizeof(buf)))<0) {
+			if((rd=sockreadline(socket, buf, sizeof(buf)))<1) {
 				sockprintf(socket,badarg_rsp);
 				continue;
 			}
@@ -2291,7 +2291,7 @@ static void smtp_thread(void* arg)
 				sockprintf(socket,"334 UGFzc3dvcmQ6");	/* Base64-encoded "Password:" */
 			else
 				sockprintf(socket,"334 Password:");
-			if((rd=sockreadline(socket, buf, sizeof(buf)))<0) {
+			if((rd=sockreadline(socket, buf, sizeof(buf)))<1) {
 				sockprintf(socket,badarg_rsp);
 				continue;
 			}
@@ -2351,7 +2351,7 @@ static void smtp_thread(void* arg)
 #endif
 			b64_encode(str,sizeof(str),challenge,0);
 			sockprintf(socket,"334 %s",str);
-			if((rd=sockreadline(socket, buf, sizeof(buf)))<0) {
+			if((rd=sockreadline(socket, buf, sizeof(buf)))<1) {
 				sockprintf(socket,badarg_rsp);
 				continue;
 			}
