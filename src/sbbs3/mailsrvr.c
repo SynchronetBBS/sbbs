@@ -1837,8 +1837,8 @@ static void smtp_thread(void* arg)
 					continue;
 				}
 
-				fclose(msgtxt);
-				fclose(rcptlst);
+				fclose(msgtxt), msgtxt=NULL;
+				fclose(rcptlst), rcptlst=NULL;
 
 				/* External Mail Processing here */
 				if(startup->proc_cfg_file[0] 
@@ -2821,7 +2821,7 @@ static void smtp_thread(void* arg)
 				continue;
 			}
 			if(msgtxt!=NULL) {
-				fclose(msgtxt);
+				fclose(msgtxt), msgtxt=NULL;
 				if(!(startup->options&MAIL_OPT_DEBUG_RX_BODY))
 					unlink(msgtxt_fname);
 			}
