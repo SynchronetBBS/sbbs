@@ -137,7 +137,7 @@ extern "C" {
 	#define sem_wait(psem)				WaitForSingleObject(*(psem),INFINITE)
 	#define sem_post(psem)				SetEvent(*(psem))
 	#define sem_destroy(psem)			CloseHandle(*(psem))
-	int		sem_getvalue(sem_t*, int* val);
+	DLLEXPORT int DLLCALL sem_getvalue(sem_t*, int* val);
 
 	/* POSIX mutexes */
 	typedef HANDLE pthread_mutex_t;
