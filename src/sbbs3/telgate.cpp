@@ -121,14 +121,29 @@ void sbbs_t::telnet_gate(char* destaddr, ulong mode)
 		return;
 	}
 
-	lprintf("Node %d Telnet gate to %s port %d on socket %d"
-		,cfg.node_num,destaddr,port,remote_socket);
+	lprintf("Node %d %s gate to %s port %d on socket %d"
+		,cfg.node_num
+		,mode&TG_RLOGIN ? "RLogin" : "Telnet"
+		,destaddr,port,remote_socket);
 
-	if(mode&TG_PASSTHRU)
+	if(mode&(TG_PASSTHRU|TG_RLOGIN))
 		telnet_mode|=TELNET_MODE_GATE;	// Pass-through telnet commands
 
 	if(!(mode&TG_CTRLKEYS))
 		console|=CON_RAW_IN;
+
+	if(mode&TG_RLOGIN) {
+		p=(char*)buf;
+		*(p++)=0;
+		strcpy(p,useron.alias);
+		p+=strlen(p)+1;
+		strcpy(p,useron.name);
+		p+=strlen(p)+1;
+		strcpy(p,"vt100/57600");
+		p+=strlen(p)+1;
+		l=p-(char*)buf;
+		send(remote_socket,(char*)buf,l,0);
+	}
 
 	while(online) {
 		gettimeleft();

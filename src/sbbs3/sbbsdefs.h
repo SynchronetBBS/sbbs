@@ -691,6 +691,7 @@ enum {						/* readmail and delmailidx which types		*/
 #define TG_NODESYNC	(1<<3)	/* Call Nodesync, get msgs, etc.			*/
 #define TG_CTRLKEYS	(1<<4)	/* Interpret ^P ^U ^T, etc locally			*/
 #define TG_PASSTHRU	(1<<5)	/* Pass-through telnet commands/responses	*/
+#define TG_RLOGIN	(1<<6)	/* Use BSD RLogin protocol					*/
 
 enum {						/* Values for 'mode' in listfileinfo        */
 	 FI_INFO            	/* Just list file information               */
