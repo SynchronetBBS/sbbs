@@ -70,6 +70,11 @@ enum {
 	,BBS_PROP_MAIN_CMDS
 	,BBS_PROP_FILE_CMDS
 
+	,BBS_PROP_CURGRP
+	,BBS_PROP_CURSUB
+	,BBS_PROP_CURLIB
+	,BBS_PROP_CURDIR
+
 	,BBS_PROP_CONNECTION		/* READ ONLY */
 	,BBS_PROP_RLOGIN_NAME
 	,BBS_PROP_CLIENT_NAME
@@ -160,6 +165,22 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 		case BBS_PROP_FILE_CMDS:
 			val=sbbs->xfer_cmds;
 			break;
+
+		case BBS_PROP_CURGRP:
+			val=sbbs->curgrp;
+			break;
+		case BBS_PROP_CURSUB:
+			if(sbbs->curgrp<sbbs->usrgrps)
+				val=sbbs->cursub[sbbs->curgrp];
+			break;
+		case BBS_PROP_CURLIB:
+			val=sbbs->curlib;
+			break;
+		case BBS_PROP_CURDIR:
+			if(sbbs->curlib<sbbs->usrlibs)
+				val=sbbs->curdir[sbbs->curlib];
+			break;
+
 		case BBS_PROP_CONNECTION:
 			p=sbbs->connection;
 			break;
@@ -269,6 +290,24 @@ static JSBool js_bbs_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 		case BBS_PROP_FILE_CMDS:
 			sbbs->xfer_cmds=val;
 			break;
+
+		case BBS_PROP_CURGRP:
+			if((uint)val<sbbs->cfg.total_grps && (uint)val<sbbs->usrgrps)
+				sbbs->curgrp=val;
+			break;
+		case BBS_PROP_CURSUB:
+			if(sbbs->curgrp<sbbs->cfg.total_grps && (uint)val<sbbs->usrsubs[sbbs->curgrp])
+				sbbs->cursub[sbbs->curgrp]=val;
+			break;
+		case BBS_PROP_CURLIB:
+			if((uint)val<sbbs->cfg.total_libs && (uint)val<sbbs->usrlibs)
+				sbbs->curlib=val;
+			break;
+		case BBS_PROP_CURDIR:
+			if(sbbs->curlib<sbbs->cfg.total_libs && (uint)val<sbbs->usrdirs[sbbs->curlib])
+				sbbs->curdir[sbbs->curlib]=val;
+			break;
+
 		case BBS_PROP_RLOGIN_NAME:
 			sprintf(sbbs->rlogin_name,"%.*s",sizeof(sbbs->rlogin_name)-1,p);
 			break;
@@ -278,6 +317,15 @@ static JSBool js_bbs_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 		default:
 			return(JS_TRUE);
 	}
+
+	if(sbbs->usrgrps)
+		sbbs->cursubnum=sbbs->usrsub[sbbs->curgrp][sbbs->cursub[sbbs->curgrp]];		/* Used for ARS */
+	else
+		sbbs->cursubnum=INVALID_SUB;
+	if(sbbs->usrlibs) 
+		sbbs->curdirnum=sbbs->usrdir[sbbs->curlib][sbbs->curdir[sbbs->curlib]];		/* Used for ARS */
+	else 
+		sbbs->curdirnum=INVALID_DIR;
 
 	return(JS_TRUE);
 }
@@ -310,6 +358,10 @@ static struct JSPropertySpec js_bbs_properties[] = {
 	{	"menu_file"			,BBS_PROP_MENU_FILE		,JSPROP_ENUMERATE	,NULL,NULL},
 	{	"main_cmds"			,BBS_PROP_MAIN_CMDS		,JSPROP_ENUMERATE	,NULL,NULL},
 	{	"file_cmds"			,BBS_PROP_FILE_CMDS		,JSPROP_ENUMERATE	,NULL,NULL},
+	{	"curgrp"			,BBS_PROP_CURGRP		,JSPROP_ENUMERATE	,NULL,NULL},
+	{	"cursub"			,BBS_PROP_CURSUB		,JSPROP_ENUMERATE	,NULL,NULL},
+	{	"curlib"			,BBS_PROP_CURLIB		,JSPROP_ENUMERATE	,NULL,NULL},
+	{	"curdir"			,BBS_PROP_CURDIR		,JSPROP_ENUMERATE	,NULL,NULL},
 	{	"connection"		,BBS_PROP_CONNECTION	,BBS_PROP_READONLY	,NULL,NULL},
 	{	"rlogin_name"		,BBS_PROP_RLOGIN_NAME	,JSPROP_ENUMERATE	,NULL,NULL},
 	{	"client_name"		,BBS_PROP_CLIENT_NAME	,JSPROP_ENUMERATE	,NULL,NULL},
