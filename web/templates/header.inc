@@ -3,5 +3,5 @@
 <HEAD>
 <TITLE>%%title%%</TITLE>
 </HEAD>
-<BODY>
+<body bgcolor=teal text=white link=yellow vlink=lime alink=white>
 <P align="center"><H3>%%JS:system.name%%</H3></P>
