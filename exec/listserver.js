@@ -331,7 +331,8 @@ function process_control_msg(cmd_list)
 				for(var l in list_array) {
 					if(list_array[l].disabled || list_array[l].closed)
 						continue;
-					if(list_array[l].name.toLowerCase()==token[1].toLowerCase()) {
+					if(list_array[l].name.toLowerCase()==token[1].toLowerCase()
+						|| list_array[l].address.toLowerCase()==token[1].toLowerCase()) {
 						response.body.push(subscription_control(token[0], list_array[l], token[2]));
 						return(response);
 					}
@@ -419,12 +420,15 @@ function subscription_control(cmd, list, address)
 		case "unsubscribe":
 			if(remove_user(user_list, address)) {
 				write_user_list(user_list, user_file);
-				return log(LOG_INFO,address + " unsubscribed successfully");
+				return log(LOG_INFO,format("%s %s unsubscribed successfully"
+					,list.name, address));
 			}
-			return("!subscriber not found: " + address);
+			return log(LOG_WARNING,format("%s !subscriber not found: %s"
+				,list.name, address));
 		case "subscribe":
 			if(find_user(user_list, address)!=-1)
-				return log(address + " is already subscribed");
+				return log(LOG_WARNING,format("%s !%s is already subscribed"
+					,list.name, address));
 			var now=time();
 			user_list.push({ 
 				 name:					sender_name 
@@ -432,9 +436,10 @@ function subscription_control(cmd, list, address)
 				,created:				system.timestr(now)
 				,last_activity:			system.timestr(now)
 				,last_activity_time:	format("%08lxh",now)
-			});
+				});
 			write_user_list(user_list, user_file);
-			return log(address + " subscription successful");
+			return log(LOG_INFO,format("%s %s subscription successful"
+				,list.name, address));
 	}
 }
 
