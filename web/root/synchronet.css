@@ -1,11 +1,14 @@
-:link { color: yellow; }
-:hover { color: #CCFFDD }
-:visited { color: lime; }
+a:link { color: yellow; }
+a:visited { color: lime; }
+a:hover { color: #ccffdd }
  
 body { background-color: teal; color: white; font-family: Arial, Helvetica, sans-serif; }
 
 pre { background-color: black; color: #aaaaaa; font-family: monospace; }
 pre.leftalign { background-color: black; color: #aaaaaa; text-align: left; }
+
+table.newuser { margin-left: auto; margin-right: auto; background-color: #116677 }
+td.newuser { background-color: #007788; }
 
 table.userlist { margin-left: auto; margin-right: auto; background-color: #116677 }
 th.userlist { background-color: #007788; color: black; }
@@ -22,7 +25,7 @@ td.sysinfo { background-color: #007788; }
 table.grouplist { margin-left: auto; margin-right: auto; background-color: #116677 }
 th.grouplist { background-color: #007788; color: black; }
 td.grouplist { background-color: #007788; }
-a.grouplist:hover { color: #CCFFDD }
+a.grouplist:hover { color: #ccffdd }
 
 table.sublist { margin-left: auto; margin-right: auto; background-color: #116677 }
 th.sublist { background-color: #007788; color: black; }
@@ -30,15 +33,26 @@ td.sublist { background-color: #007788; }
 
 table.msglist { margin-left: auto; margin-right: auto; background-color: #116677 }
 th.msglist { background-color: #007788; color: black; }
-a.msglist:hover { color: #CCFFDD }
+a.msglist:hover { color: #ccffdd }
 
 body.msg { background-color: black; }
 table.msg { margin-left: auto; margin-right: auto; }
-td.msg { font-weight: bold; }
+td.msgheader { font-weight: bold; }
 object.msg { margin: 0%; background-color: black; color: #aaaaaa; }
+p.msgcenter { text-align: center; }
+
+table.postmsg { margin-left: auto; margin-right: auto; background-color: #116677 }
+td.postmsg { background-color: #007788; }
+textarea.postmsg { background-color: black; color: #aaaaaa; }
+input.postmsg { background-color: black; color: #aaaaaa; }
+
+table.replymsg { margin-left: auto; margin-right: auto; background-color: #116677 }
+td.replymsg { background-color: #007788; }
+textarea.replymsg { background-color: black; color: #aaaaaa; }
+input.replymsg { background-color: black; color: #aaaaaa; }
 
 p.navigation { text-align: center; font-style: italic; font-weight: bold; }
 a.navigation { font-style: normal; font-weight: normal; }
-a.navigation:hover { font-style: normal; font-weight: normal; color: #CCFFDD }
+a.navigation:hover { font-style: normal; font-weight: normal; color: #ccffdd }
 
 
