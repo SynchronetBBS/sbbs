@@ -87,6 +87,8 @@
 	#define PLATFORM_DESC	"Linux"
 #elif defined(__FreeBSD__)
 	#define PLATFORM_DESC	"FreeBSD"
+#elif defined(__OpenBSD__)
+	#define PLATFORM_DESC	"OpenBSD"
 #elif defined(BSD)
 	#define PLATFORM_DESC	"BSD"
 #elif defined(__unix__)
