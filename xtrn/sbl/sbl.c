@@ -196,12 +196,14 @@ Changed cosmetic appearance of main menu a bit
 Added support for C++Builder 5
 */
 
+#include <stddef.h>		/* offsetof() macro */
 #include <xsdk.h>
 #include "sbldefs.h"
 
 unsigned _stklen=16000; 		  /* Set stack size in code, not header */
 
 #define Y2K_2DIGIT_WINDOW	70
+#define VERIFICATION_MOD	FALSE
 
 typedef struct {
 
@@ -487,8 +489,13 @@ if(bbs.updated && bbs.userupdated[0])
 	bprintf("\1n\1c Last updated on \1h%s\1n\1c by \1h%s\r\n"
 		,timestr(&bbs.updated),bbs.userupdated);
 if(bbs.verified && bbs.userverified[0])
-	bprintf("\1n\1cLast verified on \1h%s\1n\1c by \1h%s\r\n"
-		,timestr(&bbs.verified),bbs.userverified);
+	bprintf("\1n\1cLast verified on \1h%s\1n\1c by \1h%s"
+#if VERIFICATION_MOD
+	" \1y(%d/%d)"
+#endif
+	"\r\n"
+		,timestr(&bbs.verified),bbs.userverified
+		,bbs.verification_count,bbs.verification_attempts);
 CRLF;
 if(aborted) {
 	aborted=0;
@@ -498,7 +505,20 @@ if(!sbl_pause) {
 		return(0);
 	return(1); }
 nodesync();
-return(yesno("More"));
+#if VERIFICATION_MOD
+	bputs("More? Y/N/V ");
+switch(getkeys("YNV\r",0)) {
+	case '\r':
+	case 'Y':
+		return(1);
+	case 'V':
+		return(2);
+	default:
+		return(0);
+}
+#else
+	return(yesno("More"));
+#endif
 }
 
 /* Gets/updates BBS info from user. Returns 0 if aborted. */
@@ -750,6 +770,7 @@ int main(int argc, char **argv)
 			switch(toupper(argv[i][1])) {
 				case 'M':
 					maint=1;
+					xsdk_mode&=~XSDK_MODE_NOCONSOLE;
 					break; }
 
 	p=getenv("SBBSNODE");
@@ -784,6 +805,8 @@ int main(int argc, char **argv)
 	fclose(stream);
 
 	initdata();
+	if(maint) 
+		client_socket=INVALID_SOCKET;
 
 	mnehigh=HIGH|LIGHTGRAY;
 	mnelow=HIGH|YELLOW;
@@ -830,8 +853,9 @@ int main(int argc, char **argv)
 						}
 						bbs.name[0]=0;
 						fseek(stream,-(long)(sizeof(bbs_t)),SEEK_CUR);
-						fwrite(&bbs,sizeof(bbs_t),1,stream); }
-					else if (!(bbs.misc&FROM_SMB)) { /* Warn user */
+						fwrite(&bbs,sizeof(bbs_t),1,stream); 
+						fflush(stream); 
+					} else if (!(bbs.misc&FROM_SMB)) { /* Warn user */
 						l=bbs.created;
 						if(l<bbs.updated)
 							l=bbs.updated;
@@ -907,6 +931,7 @@ int main(int argc, char **argv)
 		switch(getkeys("CLGDEFSNAURTQV!*",0)) {
 			case '!':
 				bprintf("\r\nsizeof(bbs_t)=%u\r\n",sizeof(bbs_t));
+				bprintf("\r\noffsetof(verification_count=%x)\r\n",offsetof(bbs_t,verification_count));
 				pause();
 				break;
 			case '*':
@@ -926,7 +951,11 @@ int main(int argc, char **argv)
 							bbs.name[0]=getkey(0);
 							bprintf("%s\r\n",bbs.name);
 							fseek(stream,-(long)sizeof(bbs_t),SEEK_CUR);
-							fwrite(&bbs,sizeof(bbs_t),1,stream); } } }
+							fwrite(&bbs,sizeof(bbs_t),1,stream); 
+							fflush(stream); 
+						} 
+					} 
+				}
 				break;
 			case 'L':
 				cls();
@@ -981,8 +1010,18 @@ int main(int argc, char **argv)
 				while(!feof(stream) && !aborted) {
 					if(!fread(&bbs,sizeof(bbs_t),1,stream))
 						break;
-					if(bbs.name[0] && !long_bbs_info(bbs))
+					i=long_bbs_info(bbs);
+					if(bbs.name[0] && !i)
 						break;
+#if VERIFICATION_MOD
+					if(i==2) {
+						bbs.verification_count++;
+						fseek(stream,-(int)sizeof(bbs_t),SEEK_CUR);
+						fwrite(&bbs,sizeof(bbs_t),1,stream);
+						fflush(stream);
+						fseek(stream,-(int)sizeof(bbs_t),SEEK_CUR);
+					}
+#endif
 					if(!sbl_pause)
 						lncntr=0; }
 				break;
@@ -1329,6 +1368,7 @@ int main(int argc, char **argv)
 					fseek(stream,(long)sizeof(bbs_t)-1L,SEEK_CUR); }
 				bbs.created=time(NULL);
 				fwrite(&bbs,sizeof(bbs_t),1,stream);
+				fflush(stream);
 				if(notify_user && notify_user!=user_number) {
 					sprintf(str,"\1n\1hSBL: \1y%s \1madded \1c%s\1m "
 						"to the BBS List\r\n",user_name,bbs.name);
@@ -1363,6 +1403,7 @@ int main(int argc, char **argv)
 							bbs.name[0]=0;
 							bbs.updated=time(NULL);
 							fwrite(&bbs,sizeof(bbs_t),1,stream);
+							fflush(stream);
 							bprintf("\r\n\r\n\1m%s\1c deleted."
 								,tmp);
 							if(notify_user && notify_user!=user_number) {
@@ -1405,6 +1446,7 @@ int main(int argc, char **argv)
 						sprintf(bbs.userverified,"%.25s",user_name);
 						fseek(stream,-(long)(sizeof(bbs_t)),SEEK_CUR);
 						fwrite(&bbs,sizeof(bbs_t),1,stream);
+						fflush(stream);
 						bprintf("\r\n\r\n\1m%s\1c verified. \1r\1h\1iThank you!"
 							,bbs.name);
 						sprintf(str,"\1n\1hSBL: \1y%s \1mverified \1c%s\1m "
@@ -1456,6 +1498,7 @@ int main(int argc, char **argv)
 							sprintf(bbs.userupdated,"%.25s",user_name);
 							fseek(stream,l,SEEK_SET);
 							fwrite(&bbs,sizeof(bbs_t),1,stream);
+							fflush(stream);
 							bprintf("\r\n\1h\1m%s\1c updated.",bbs.name);
 							if(notify_user && notify_user!=user_number) {
 								sprintf(str,"\1n\1hSBL: \1y%s \1mupdated \1c%s\1m "

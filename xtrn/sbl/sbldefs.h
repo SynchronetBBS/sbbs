@@ -107,7 +107,9 @@ typedef struct _PACK {
 	char	web_url[61];				/* Web-site address */
 	char	sysop_email[61];			/* Sysop's e-mail address */
 	time_t	exported;					/* Date last exported to SMB */
-	char	unused[318];				/* Unused space */
+	ulong	verification_count;			/* Number of successful auto-verifications */
+	ulong	verification_attempts;		/* Number of auto-verification attempts */
+	char	unused[310];				/* Unused space */
 } bbs_t;
 
 #ifdef _WIN32
