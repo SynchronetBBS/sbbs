@@ -1212,7 +1212,7 @@ int main(int argc, char** argv)
  			bbs_startup.options|=BBS_OPT_NO_RECYCLE;
 			ftp_startup.options|=FTP_OPT_NO_RECYCLE;
 			mail_startup.options|=MAIL_OPT_NO_RECYCLE;
-			service_startup.options|=BBS_OPT_NO_RECYCLE;
+			services_startup.options|=BBS_OPT_NO_RECYCLE;
 		}
 	}
 
