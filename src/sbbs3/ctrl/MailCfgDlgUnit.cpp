@@ -6,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -98,6 +98,8 @@ void __fastcall TMailCfgDlg::FormShow(TObject *Sender)
         =!(MainForm->mail_startup.options&MAIL_OPT_NO_HOST_LOOKUP);
 
     RelayServerEdit->Text=AnsiString(MainForm->mail_startup.relay_server);
+    RelayAuthNameEdit->Text=AnsiString(MainForm->mail_startup.relay_user);
+    RelayAuthPassEdit->Text=AnsiString(MainForm->mail_startup.relay_pass);
     SMTPPortEdit->Text=AnsiString(MainForm->mail_startup.smtp_port);
     POP3PortEdit->Text=AnsiString(MainForm->mail_startup.pop3_port);
     RelayPortEdit->Text=AnsiString(MainForm->mail_startup.relay_port);
@@ -126,6 +128,13 @@ void __fastcall TMailCfgDlg::FormShow(TObject *Sender)
         &MAIL_OPT_DEBUG_POP3;
     RelayRadioButton->Checked=MainForm->mail_startup.options
     	&MAIL_OPT_RELAY_TX;
+    RelayAuthPlainRadioButton->Checked=MainForm->mail_startup.options
+        &MAIL_OPT_RELAY_AUTH_PLAIN;
+    RelayAuthLoginRadioButton->Checked=MainForm->mail_startup.options
+        &MAIL_OPT_RELAY_AUTH_LOGIN;
+    RelayAuthCramMD5RadioButton->Checked=MainForm->mail_startup.options
+        &MAIL_OPT_RELAY_AUTH_CRAM_MD5;
+
 #if 0 /* this is a stupid option */
     UserNumberCheckBox->Checked=MainForm->mail_startup.options
     	&MAIL_OPT_ALLOW_RX_BY_NUMBER;
@@ -155,6 +164,7 @@ void __fastcall TMailCfgDlg::FormShow(TObject *Sender)
 	POP3EnabledCheckBoxClick(Sender);
     SendMailCheckBoxClick(Sender);
     AllowRelayCheckBoxClick(Sender);
+    RelayAuthRadioButtonClick(Sender);
     PageControl->ActivePage=GeneralTabSheet;
 }
 //---------------------------------------------------------------------------
@@ -201,6 +211,10 @@ void __fastcall TMailCfgDlg::OKBtnClick(TObject *Sender)
         ,DNSServerEdit->Text.c_str());
     SAFECOPY(MainForm->mail_startup.relay_server
         ,RelayServerEdit->Text.c_str());
+    SAFECOPY(MainForm->mail_startup.relay_user
+        ,RelayAuthNameEdit->Text.c_str());
+    SAFECOPY(MainForm->mail_startup.relay_pass
+        ,RelayAuthPassEdit->Text.c_str());
     SAFECOPY(MainForm->mail_startup.inbound_sound
         ,InboundSoundEdit->Text.c_str());
     SAFECOPY(MainForm->mail_startup.outbound_sound
@@ -216,6 +230,13 @@ void __fastcall TMailCfgDlg::OKBtnClick(TObject *Sender)
     	MainForm->mail_startup.options|=MAIL_OPT_RELAY_TX;
     else
 	    MainForm->mail_startup.options&=~MAIL_OPT_RELAY_TX;
+    MainForm->mail_startup.options&=~(MAIL_OPT_RELAY_AUTH_MASK);
+    if(RelayAuthLoginRadioButton->Checked==true)
+        MainForm->mail_startup.options|=MAIL_OPT_RELAY_AUTH_LOGIN;
+    else if(RelayAuthPlainRadioButton->Checked==true)
+        MainForm->mail_startup.options|=MAIL_OPT_RELAY_AUTH_PLAIN;
+    else if(RelayAuthCramMD5RadioButton->Checked==true)
+        MainForm->mail_startup.options|=MAIL_OPT_RELAY_AUTH_CRAM_MD5;
 	if(DebugTXCheckBox->Checked==true)
     	MainForm->mail_startup.options|=MAIL_OPT_DEBUG_TX;
     else
@@ -302,11 +323,13 @@ void __fastcall TMailCfgDlg::POP3SoundButtonClick(TObject *Sender)
 
 void __fastcall TMailCfgDlg::DNSRadioButtonClick(TObject *Sender)
 {
-    RelayServerEdit->Enabled=RelayRadioButton->Checked;
-    RelayPortEdit->Enabled=RelayRadioButton->Checked;
-    RelayPortLabel->Enabled=RelayRadioButton->Checked;
-    DNSServerEdit->Enabled=!RelayRadioButton->Checked;
-    TcpDnsCheckBox->Enabled=!RelayRadioButton->Checked;
+    bool checked = RelayRadioButton->Checked && SendMailCheckBox->Checked;
+    RelayTabSheet->TabVisible=checked;
+    RelayPortEdit->Enabled=checked;
+    RelayPortLabel->Enabled=checked;
+    DNSServerEdit->Enabled=!checked;
+    DNSServerLabel->Enabled=!checked;
+    TcpDnsCheckBox->Enabled=!checked;
 }
 //---------------------------------------------------------------------------
 
@@ -334,15 +357,11 @@ void __fastcall TMailCfgDlg::SendMailCheckBoxClick(TObject *Sender)
     DNSServerEdit->Enabled=checked;
     TcpDnsCheckBox->Enabled=checked;
     RelayRadioButton->Enabled=checked;
-    RelayServerEdit->Enabled=checked;
-    RelayPortEdit->Enabled=checked;
-    RelayPortLabel->Enabled=checked;
     OutboundSoundEdit->Enabled=checked;
     OutboundSoundLabel->Enabled=checked;
     OutboundSoundButton->Enabled=checked;
 
-    if(checked)
-        DNSRadioButtonClick(Sender);
+    DNSRadioButtonClick(Sender);
 }
 //---------------------------------------------------------------------------
 
@@ -386,6 +405,17 @@ void __fastcall TMailCfgDlg::DNSBLExemptionsButtonClick(TObject *Sender)
 void __fastcall TMailCfgDlg::AllowRelayCheckBoxClick(TObject *Sender)
 {
 	AuthViaIpCheckBox->Enabled=AllowRelayCheckBox->Checked;
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TMailCfgDlg::RelayAuthRadioButtonClick(TObject *Sender)
+{
+    bool enabled = !RelayAuthNoneRadioButton->Checked;
+
+    RelayAuthNameEdit->Enabled=enabled;
+    RelayAuthPassEdit->Enabled=enabled;
+    RelayAuthNameLabel->Enabled=enabled;
+    RelayAuthPassLabel->Enabled=enabled;
 }
 //---------------------------------------------------------------------------
 

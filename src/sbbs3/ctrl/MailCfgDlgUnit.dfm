@@ -1,6 +1,6 @@
 object MailCfgDlg: TMailCfgDlg
-  Left = 841
-  Top = 501
+  Left = 501
+  Top = 339
   BorderStyle = bsDialog
   Caption = 'Mail Server Configuration'
   ClientHeight = 303
@@ -53,8 +53,8 @@ object MailCfgDlg: TMailCfgDlg
     Top = 4
     Width = 342
     Height = 245
-    ActivePage = DNSBLTabSheet
-    TabIndex = 5
+    ActivePage = RelayTabSheet
+    TabIndex = 4
     TabOrder = 3
     object GeneralTabSheet: TTabSheet
       Caption = 'General'
@@ -367,15 +367,6 @@ object MailCfgDlg: TMailCfgDlg
     object SendMailTabSheet: TTabSheet
       Caption = 'SendMail'
       ImageIndex = 3
-      object RelayPortLabel: TLabel
-        Left = 197
-        Top = 172
-        Width = 39
-        Height = 26
-        Alignment = taRightJustify
-        AutoSize = False
-        Caption = 'Port'
-      end
       object DeliveryAttemptsLabel: TLabel
         Left = 9
         Top = 44
@@ -394,15 +385,22 @@ object MailCfgDlg: TMailCfgDlg
         AutoSize = False
         Caption = 'Frequency'
       end
+      object DNSServerLabel: TLabel
+        Left = 9
+        Top = 152
+        Width = 72
+        Height = 16
+        Caption = 'DNS Server'
+      end
       object DNSRadioButton: TRadioButton
         Left = 9
-        Top = 76
-        Width = 104
+        Top = 116
+        Width = 184
         Height = 26
         Hint = 
           'Send mail directly to addressed mail server (requires DNS server' +
           ' access)'
-        Caption = 'DNS Server'
+        Caption = 'Direct Mail Delivery'
         Checked = True
         ParentShowHint = False
         ShowHint = True
@@ -412,9 +410,9 @@ object MailCfgDlg: TMailCfgDlg
       end
       object DNSServerEdit: TEdit
         Left = 113
-        Top = 76
+        Top = 148
         Width = 185
-        Height = 21
+        Height = 24
         Hint = 'Host name or IP address of your ISP'#39's DNS server'
         ParentShowHint = False
         ShowHint = True
@@ -422,7 +420,7 @@ object MailCfgDlg: TMailCfgDlg
       end
       object TcpDnsCheckBox: TCheckBox
         Left = 250
-        Top = 108
+        Top = 180
         Width = 65
         Height = 24
         Hint = 'Use TCP packets (instead of UDP) for DNS queries'
@@ -433,43 +431,21 @@ object MailCfgDlg: TMailCfgDlg
       end
       object RelayRadioButton: TRadioButton
         Left = 9
-        Top = 140
-        Width = 104
+        Top = 84
+        Width = 192
         Height = 26
         Hint = 'Route all mail through an SMTP relay server'
-        Caption = 'Relay Server'
+        Caption = 'Use Relay Server'
         ParentShowHint = False
         ShowHint = True
         TabOrder = 6
         OnClick = DNSRadioButtonClick
       end
-      object RelayServerEdit: TEdit
-        Left = 113
-        Top = 140
-        Width = 185
-        Height = 21
-        Hint = 
-          'Host name or IP address of external SMTP server (for relaying ma' +
-          'il)'
-        ParentShowHint = False
-        ShowHint = True
-        TabOrder = 7
-      end
-      object RelayPortEdit: TEdit
-        Left = 250
-        Top = 172
-        Width = 48
-        Height = 21
-        Hint = 'TCP port number for the SMTP relay server (default=25)'
-        ParentShowHint = False
-        ShowHint = True
-        TabOrder = 8
-      end
       object DeliveryAttemptsEdit: TEdit
         Left = 113
         Top = 44
         Width = 48
-        Height = 21
+        Height = 24
         Hint = 'Maximum number of delivery attempts'
         ParentShowHint = False
         ShowHint = True
@@ -479,7 +455,7 @@ object MailCfgDlg: TMailCfgDlg
         Left = 250
         Top = 44
         Width = 48
-        Height = 21
+        Height = 24
         Hint = 'Seconds between message base rescans'
         ParentShowHint = False
         ShowHint = True
@@ -496,6 +472,131 @@ object MailCfgDlg: TMailCfgDlg
         ShowHint = True
         TabOrder = 0
         OnClick = SendMailCheckBoxClick
+      end
+    end
+    object RelayTabSheet: TTabSheet
+      Caption = 'Relay'
+      ImageIndex = 6
+      object RelayPortLabel: TLabel
+        Left = 240
+        Top = 12
+        Width = 33
+        Height = 26
+        Alignment = taRightJustify
+        AutoSize = False
+        Caption = 'Port'
+      end
+      object RelayServerLabel: TLabel
+        Left = 9
+        Top = 12
+        Width = 40
+        Height = 16
+        Caption = 'Server'
+      end
+      object RelayServerEdit: TEdit
+        Left = 65
+        Top = 12
+        Width = 168
+        Height = 24
+        Hint = 
+          'Host name or IP address of external SMTP server (for relaying ma' +
+          'il)'
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 0
+      end
+      object RelayPortEdit: TEdit
+        Left = 282
+        Top = 12
+        Width = 39
+        Height = 24
+        Hint = 'TCP port number for the SMTP relay server (default=25)'
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 1
+      end
+      object RelayAuthGroupBox: TGroupBox
+        Left = 9
+        Top = 41
+        Width = 320
+        Height = 160
+        Caption = 'Authentication:'
+        TabOrder = 2
+        object RelayAuthNameLabel: TLabel
+          Left = 16
+          Top = 92
+          Width = 80
+          Height = 26
+          AutoSize = False
+          Caption = 'Name'
+        end
+        object RelayAuthPassLabel: TLabel
+          Left = 16
+          Top = 121
+          Width = 80
+          Height = 25
+          AutoSize = False
+          Caption = 'Password'
+        end
+        object RelayAuthNoneRadioButton: TRadioButton
+          Left = 16
+          Top = 28
+          Width = 113
+          Height = 24
+          Caption = 'None'
+          Checked = True
+          TabOrder = 0
+          TabStop = True
+          OnClick = RelayAuthRadioButtonClick
+        end
+        object RelayAuthPlainRadioButton: TRadioButton
+          Left = 169
+          Top = 28
+          Width = 113
+          Height = 24
+          Caption = 'Plain'
+          TabOrder = 1
+          OnClick = RelayAuthRadioButtonClick
+        end
+        object RelayAuthLoginRadioButton: TRadioButton
+          Left = 169
+          Top = 57
+          Width = 113
+          Height = 24
+          Caption = 'Login'
+          TabOrder = 2
+          OnClick = RelayAuthRadioButtonClick
+        end
+        object RelayAuthCramMD5RadioButton: TRadioButton
+          Left = 16
+          Top = 57
+          Width = 113
+          Height = 24
+          Caption = 'CRAM-MD5'
+          TabOrder = 3
+          OnClick = RelayAuthRadioButtonClick
+        end
+        object RelayAuthNameEdit: TEdit
+          Left = 105
+          Top = 92
+          Width = 185
+          Height = 24
+          Hint = 'User name to authenticate as'
+          ParentShowHint = False
+          ShowHint = True
+          TabOrder = 4
+        end
+        object RelayAuthPassEdit: TEdit
+          Left = 105
+          Top = 121
+          Width = 185
+          Height = 24
+          Hint = 'Password for authentication'
+          ParentShowHint = False
+          PasswordChar = '*'
+          ShowHint = True
+          TabOrder = 5
+        end
       end
     end
     object SoundTabSheet: TTabSheet
@@ -529,7 +630,7 @@ object MailCfgDlg: TMailCfgDlg
         Left = 113
         Top = 12
         Width = 185
-        Height = 21
+        Height = 24
         Hint = 'Sound file to play when inbound SMTP connections are accepted'
         ParentShowHint = False
         ShowHint = True
@@ -548,7 +649,7 @@ object MailCfgDlg: TMailCfgDlg
         Left = 113
         Top = 76
         Width = 185
-        Height = 21
+        Height = 24
         Hint = 'Sound file to play when accepting POP3 connections'
         ParentShowHint = False
         ShowHint = True
@@ -567,7 +668,7 @@ object MailCfgDlg: TMailCfgDlg
         Left = 113
         Top = 44
         Width = 185
-        Height = 21
+        Height = 24
         Hint = 'Sound file to play when sending mail'
         ParentShowHint = False
         ShowHint = True

@@ -82,9 +82,6 @@ __published:
     TEdit *DNSServerEdit;
     TCheckBox *TcpDnsCheckBox;
     TRadioButton *RelayRadioButton;
-    TEdit *RelayServerEdit;
-    TEdit *RelayPortEdit;
-    TLabel *RelayPortLabel;
     TLabel *DeliveryAttemptsLabel;
     TEdit *DeliveryAttemptsEdit;
     TLabel *RescanFreqLabel;
@@ -127,6 +124,21 @@ __published:
 	TEdit *MaxMsgSizeEdit;
 	TCheckBox *AuthViaIpCheckBox;
 	TCheckBox *NotifyCheckBox;
+    TTabSheet *RelayTabSheet;
+    TEdit *RelayServerEdit;
+    TEdit *RelayPortEdit;
+    TLabel *RelayPortLabel;
+    TLabel *DNSServerLabel;
+    TLabel *RelayServerLabel;
+    TGroupBox *RelayAuthGroupBox;
+    TRadioButton *RelayAuthNoneRadioButton;
+    TRadioButton *RelayAuthPlainRadioButton;
+    TRadioButton *RelayAuthLoginRadioButton;
+    TRadioButton *RelayAuthCramMD5RadioButton;
+    TLabel *RelayAuthNameLabel;
+    TEdit *RelayAuthNameEdit;
+    TLabel *RelayAuthPassLabel;
+    TEdit *RelayAuthPassEdit;
     void __fastcall InboundSoundButtonClick(TObject *Sender);
     void __fastcall OutboundSoundButtonClick(TObject *Sender);
     void __fastcall FormShow(TObject *Sender);
@@ -139,6 +151,7 @@ __published:
 	void __fastcall DNSBLServersButtonClick(TObject *Sender);
 	void __fastcall DNSBLExemptionsButtonClick(TObject *Sender);
 	void __fastcall AllowRelayCheckBoxClick(TObject *Sender);
+    void __fastcall RelayAuthRadioButtonClick(TObject *Sender);
 private:
 public:
 	virtual __fastcall TMailCfgDlg(TComponent* AOwner);
