@@ -38,7 +38,7 @@
 #include "sbbs.h"
 #include "cmdshell.h"
 
-int sbbs_t::execfile(csi_t *csi)
+int sbbs_t::exec_file(csi_t *csi)
 {
 	char	str[256],ch;
 	int		s;
