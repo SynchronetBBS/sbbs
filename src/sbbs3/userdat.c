@@ -1089,7 +1089,18 @@ static BOOL ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user)
 					result=not;
 				else
 					result=!not;
-				break; } }
+				break; 
+			case AR_SHELL:
+				if(user->shell>=cfg->total_shells
+					|| stricmp(cfg->shell[user->shell]->code,(char*)*ptrptr))
+					result=not;
+				else
+					result=!not;
+				while(*(*ptrptr))
+					(*ptrptr)++;
+				break;
+		} 
+	}
 	return(result);
 }
 

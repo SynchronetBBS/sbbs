@@ -392,8 +392,12 @@ uchar* arstr(ushort* count, char* str, scfg_t* cfg)
 			else if(!strnicmp(str+i,"FILE_CMDS",9)) {
 				artype=AR_FILE_CMDS;
 				i+=8; }
+			else if(!strnicmp(str+i,"SHELL",5)) {
+				artype=AR_SHELL;
+				i+=4; }
 			if(n!=i)            /* one of the above */
-				continue; }
+				continue; 
+		}
 
 		if(not)
 			ar[j++]=AR_NOT;
@@ -472,7 +476,7 @@ uchar* arstr(ushort* count, char* str, scfg_t* cfg)
 					break; }
 			while(isdigit(str[i+1])) i++;
 			continue; }
-		if(artype==AR_SUBCODE || artype==AR_DIRCODE) {
+		if(artype==AR_SUBCODE || artype==AR_DIRCODE || artype==AR_SHELL) {
 			for(n=0;n<8
 				&& str[i]
 				&& str[i]!=SP

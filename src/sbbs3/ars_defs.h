@@ -107,6 +107,7 @@ enum {                              /* Access requirement binaries */
 	,AR_WIN32
 	,AR_UNIX
 	,AR_LINUX
+	,AR_SHELL
     };
 
 #endif		/* Don't add anything after this line */

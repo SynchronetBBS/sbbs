@@ -267,7 +267,7 @@ bool sbbs_t::ar_exp(uchar **ptrptr, user_t* user)
 				break;
 			case AR_SUBCODE:
 				if(cursubnum>=cfg.total_subs
-					|| strcmp(cfg.sub[cursubnum]->code,(char*)*ptrptr))
+					|| stricmp(cfg.sub[cursubnum]->code,(char*)*ptrptr))
 					result=_not;
 				else
 					result=!_not;
@@ -302,7 +302,7 @@ bool sbbs_t::ar_exp(uchar **ptrptr, user_t* user)
 				break;
 			case AR_DIRCODE:
 				if(curdirnum>=cfg.total_dirs
-					|| strcmp(cfg.dir[curdirnum]->code,(char *)*ptrptr))
+					|| stricmp(cfg.dir[curdirnum]->code,(char *)*ptrptr))
 					result=_not;
 				else
 					result=!_not;
@@ -491,7 +491,18 @@ bool sbbs_t::ar_exp(uchar **ptrptr, user_t* user)
 				if(!result) {
 					noaccess_str=text[NoAccessSex];
 					noaccess_val=n; }
-				break; } }
+				break; 
+			case AR_SHELL:
+				if(user->shell>=cfg.total_shells
+					|| stricmp(cfg.shell[user->shell]->code,(char*)*ptrptr))
+					result=_not;
+				else
+					result=!_not;
+				while(*(*ptrptr))
+					(*ptrptr)++;
+				break;
+		}
+	}
 	return(result);
 }
 
