@@ -585,6 +585,7 @@ enum {
     ,SMB_PROP_MAX_MSGS      // Maximum number of message to keep in sub
     ,SMB_PROP_MAX_AGE       // Maximum age of message to keep in sub (in days)
 	,SMB_PROP_ATTR			// Attributes for this message base (SMB_HYPER,etc)
+	,SMB_PROP_SUBNUM		// sub-board number
 };
 
 static JSBool js_msgbase_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
@@ -658,6 +659,10 @@ static JSBool js_msgbase_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 		case SMB_PROP_ATTR:
 			*vp = INT_TO_JSVAL(p->smb.status.attr);
 			break;
+		case SMB_PROP_SUBNUM:
+			*vp = INT_TO_JSVAL(p->smb.subnum);
+			break;
+
 	}
 
 	return(JS_TRUE);
@@ -679,6 +684,7 @@ static struct JSPropertySpec js_msgbase_properties[] = {
 	{	"max_msgs"			,SMB_PROP_MAX_MSGS  	,SMB_PROP_FLAGS,	NULL,NULL},
 	{	"max_age"			,SMB_PROP_MAX_AGE   	,SMB_PROP_FLAGS,	NULL,NULL},
 	{	"attributes"		,SMB_PROP_ATTR			,SMB_PROP_FLAGS,	NULL,NULL},
+	{	"subnum"			,SMB_PROP_SUBNUM		,SMB_PROP_FLAGS,	NULL,NULL},
 	{0}
 };
 
