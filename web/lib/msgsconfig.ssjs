@@ -1,7 +1,5 @@
-max_groups=10;
-max_subs=10;
 max_messages=20;
-max_pages=10;
+max_pages=30;
 next_msg_html="Next Message";
 prev_msg_html="Previous Message";
 next_page_html="NEXT";
