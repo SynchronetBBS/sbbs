@@ -256,21 +256,29 @@ function searchbychannel(chan) {
 	return 0; // failure
 }
 
-function searchbyserver(server_name) {
+function searchbyserver(server_name,ignore_wildcards) {
 	if (!server_name)
 		return 0;
-	if (match_irc_mask(servername,server_name))
+	log("ignore wildcards? " + ignore_wildcards);
+	if ((ignore_wildcards &&
+	    (servername.toUpperCase() == server_name.toUpperCase()) ) ||
+	   (!ignore_wildcards && match_irc_mask(servername,server_name)) )
 		return -1; // the server passed to us is our own.
 	for(thisServer in Clients) {
-		Server=Clients[thisServer];
-		if ( (Server.conntype == TYPE_SERVER) &&
-		     match_irc_mask(Server.nick,server_name) )
+		var Server=Clients[thisServer];
+		if ((ignore_wildcards && (Server.conntype == TYPE_SERVER) &&
+		    (Server.nick.toUpperCase() == server_name.toUpperCase())) ||
+		   (!ignore_wildcards &&(Server.conntype == TYPE_SERVER) &&
+		     match_irc_mask(Server.nick,server_name) ) )
 			return Server;
 	}
+	// No wildcards implies not doing searches on nicks, either.
+	if (ignore_wildcards)
+		return 0;
 	// if we've had no success so far, try nicknames and glean a server
 	// from there.
 	for(thisNick in Clients) {
-		Nick=Clients[thisNick];
+		var Nick=Clients[thisNick];
 		if (!Nick.server && match_irc_mask(Nick.nick,server_name))
 			return searchbyserver(Nick.servername);
 	}
@@ -755,9 +763,9 @@ function read_config_file() {
 	if (conf.open("r")) {
 		log("Reading Config: " + fname);
 		while (!conf.eof) {
-			conf_line = conf.readln();
+			var conf_line = conf.readln();
 			if ((conf_line != null) && conf_line.match("[:]")) {
-				arg = conf_line.split(":");
+				var arg = conf_line.split(":");
 				for(argument in arg) {
 					arg[argument]=arg[argument].replace(
 						/SYSTEM_HOST_NAME/g,system.host_name);
@@ -779,7 +787,7 @@ function read_config_file() {
 					case "C":
 						if (!arg[5])
 							break;
-						CLines.push(new CLine(arg[1],arg[2],arg[3],arg[4],arg[5]));
+						CLines.push(new CLine(arg[1],arg[2],arg[3],arg[4],parseInt(arg[5])));
 						break;
 					case "H":
 						if (!arg[3])
@@ -794,7 +802,7 @@ function read_config_file() {
 					case "K":
 						if (!arg[2])
 							break;
-						kline_mask = create_ban_mask(arg[1],true);
+						var kline_mask = create_ban_mask(arg[1],true);
 						if (!kline_mask) {
 							log("!WARNING Invalid K:Line (" + arg[1] + ")");
 							break;
@@ -1020,11 +1028,14 @@ while (!server.terminated) {
 	}
 
 	// Scan C:Lines for servers to connect to automatically.
+	var my_cline;
 	for(thisCL in CLines) {
-		var my_cline = CLines[thisCL];
+		my_cline = CLines[thisCL];
 		if (my_cline.port && YLines[my_cline.ircclass].connfreq &&
-		    !(searchbyserver(my_cline.servername)) &&
-		    ((time() - my_cline.lastconnect) > YLines[my_cline.ircclass].connfreq) ) {
+		    !searchbyserver(my_cline.servername,true) &&
+		     ((time() - my_cline.lastconnect) >
+		     YLines[my_cline.ircclass].connfreq)
+		   ) {
 			oper_notice("Routing","Auto-connecting to " + CLines[thisCL].servername);
 			connect_to_server(CLines[thisCL]);
 		}
