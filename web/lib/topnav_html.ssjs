@@ -5,6 +5,9 @@ if(http_request.virtual_path=="/index.ssjs" || http_request.virtual_path=="/")
 else
 	template.topnav.push({html: '<a class="tlink" href="/">Home</a>'});
 
+if(http_request.virtual_path=="/nodelist.ssjs")
+	template.topnav.push({html: '<span class="tlink">Who\'s Online</span>'});
+
 if(http_request.virtual_path=="/members/userlist.ssjs")
 	template.topnav.push({html: '<span class="tlink">User List</span>'});
 
