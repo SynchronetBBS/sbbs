@@ -2706,6 +2706,7 @@ static jsConstIntSpec js_global_const_ints[] = {
 	{"LOG_ALERT"		,LOG_ALERT		},
 	{"LOG_CRIT"			,LOG_CRIT		},
 	{"LOG_ERR"			,LOG_ERR		},
+	{"LOG_ERROR"		,LOG_ERR		},
 	{"LOG_WARNING"		,LOG_WARNING	},
 	{"LOG_NOTICE"		,LOG_NOTICE		},
 	{"LOG_INFO"			,LOG_INFO		},
