@@ -66,10 +66,11 @@ extern "C" {
 #endif
 
 /* arg is pointer to static bbs_startup_t* */
-DLLEXPORT void	DLLCALL bbs_thread(void* arg);
-DLLEXPORT void	DLLCALL bbs_terminate(void);
-DLLEXPORT char*	DLLCALL bbs_ver(void);
-DLLEXPORT long	DLLCALL	bbs_ver_num(void);
+DLLEXPORT void			DLLCALL bbs_thread(void* arg);
+DLLEXPORT void			DLLCALL bbs_terminate(void);
+DLLEXPORT const char*	DLLCALL js_ver(void);
+DLLEXPORT const char*	DLLCALL bbs_ver(void);
+DLLEXPORT long			DLLCALL	bbs_ver_num(void);
 
 #ifdef __cplusplus
 }

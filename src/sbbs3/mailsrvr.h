@@ -134,9 +134,9 @@ typedef struct {
 extern "C" {
 #endif
 /* arg is pointer to static mail_startup_t* */
-DLLEXPORT void	DLLCALL mail_server(void* arg);
-DLLEXPORT void	DLLCALL mail_terminate(void);
-DLLEXPORT char*	DLLCALL mail_ver(void);
+DLLEXPORT void			DLLCALL mail_server(void* arg);
+DLLEXPORT void			DLLCALL mail_terminate(void);
+DLLEXPORT const	char*	DLLCALL mail_ver(void);
 #ifdef __cplusplus
 }
 #endif

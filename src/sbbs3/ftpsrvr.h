@@ -131,9 +131,9 @@ typedef struct {
 extern "C" {
 #endif
 /* arg is pointer to static ftp_startup_t */
-DLLEXPORT void	DLLCALL ftp_server(void* arg);
-DLLEXPORT void	DLLCALL ftp_terminate(void);
-DLLEXPORT char*	DLLCALL ftp_ver(void);
+DLLEXPORT void			DLLCALL ftp_server(void* arg);
+DLLEXPORT void			DLLCALL ftp_terminate(void);
+DLLEXPORT const char*	DLLCALL ftp_ver(void);
 #ifdef __cplusplus
 }
 #endif

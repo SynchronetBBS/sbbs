@@ -2271,7 +2271,7 @@ static void cleanup(int code)
 	thread_down();
 }
 
-char* DLLCALL mail_ver(void)
+const char* DLLCALL mail_ver(void)
 {
 	static char ver[256];
 	char compiler[32];

@@ -2136,7 +2136,7 @@ static void ctrl_thread(void* arg)
 	
 	lprintf("%04d CTRL thread started", sock);
 
-	free(arg);
+	free(arg);	/* unexplicable assertion here on July 26, 2001 */
 
 #ifdef _WIN32
 	if(startup->answer_sound[0] && !(startup->options&FTP_OPT_MUTE)) 
@@ -4045,7 +4045,7 @@ static void cleanup(int code)
 	thread_down();
 }
 
-char* DLLCALL ftp_ver(void)
+const char* DLLCALL ftp_ver(void)
 {
 	static char ver[256];
 	char compiler[32];
