@@ -572,7 +572,7 @@ static void pop3_thread(void* arg)
 		lprintf("%04d POP3 client name: %s", socket, host_name);
 
 	if(trashcan(&scfg,host_ip,"ip")) {
-		lprintf("%04d !POP3 CLIENT BLOCKED in ip.can: %s"
+		lprintf("%04d !POP3 BLOCKED CLIENT IP ADDRESS: %s"
 			,socket, host_ip);
 		sockprintf(socket,"-ERR Access denied.");
 		mail_close_socket(socket);
@@ -581,7 +581,7 @@ static void pop3_thread(void* arg)
 	}
 
 	if(trashcan(&scfg,host_name,"host")) {
-		lprintf("%04d !POP3 CLIENT BLOCKED in host.can: %s"
+		lprintf("%04d !POP3 BLOCKED CLIENT HOSTNAME: %s"
 			,socket, host_name);
 		sockprintf(socket,"-ERR Access denied.");
 		mail_close_socket(socket);
@@ -1062,9 +1062,9 @@ static BOOL chk_email_addr(SOCKET socket, char* p, char* host_name, char* host_i
 	if(!trashcan(&scfg,addr,"email"))
 		return(TRUE);
 
-	lprintf("%04d !SMTP BLOCKED e-mail address: %s"
+	lprintf("%04d !SMTP BLOCKED SOURCE E-MAIL ADDRESS: %s"
 		,socket, addr);
-	sprintf(tmp,"Blocked e-mail address: %s", addr);
+	sprintf(tmp,"Blocked source e-mail address: %s", addr);
 	spamlog(&scfg, "SMTP", tmp, host_name, host_ip, to);
 	sockprintf(socket, "554 Sender not allowed.");
 
@@ -1203,7 +1203,7 @@ static void smtp_thread(void* arg)
 	strcpy(hello_name,host_name);
 
 	if(trashcan(&scfg,host_ip,"ip")) {
-		lprintf("%04d !SMTP SERVER BLOCKED in ip.can: %s"
+		lprintf("%04d !SMTP BLOCKED SERVER IP ADDRESS: %s"
 			,socket, host_ip);
 		sockprintf(socket,"550 Access denied.");
 		mail_close_socket(socket);
@@ -1212,7 +1212,7 @@ static void smtp_thread(void* arg)
 	}
 
 	if(trashcan(&scfg,host_name,"host")) {
-		lprintf("%04d !SMTP SERVER BLOCKED in host.can: %s"
+		lprintf("%04d !SMTP BLOCKED SERVER HOSTNAME: %s"
 			,socket, host_name);
 		sockprintf(socket,"550 Access denied.");
 		mail_close_socket(socket);
@@ -1617,7 +1617,7 @@ static void smtp_thread(void* arg)
 				p=buf+8;
 				while(*p && *p<=' ') p++;
 				if(trashcan(&scfg,p,"subject")) {
-					lprintf("%04d !SMTP ILLEGAL SUBJECT '%s' from %s"
+					lprintf("%04d !SMTP BLOCKED SUBJECT '%s' from %s"
 						,socket, p, reverse_path);
 					sprintf(tmp,"Blocked subject '%s' from %s"
 						,p, reverse_path);
@@ -1930,6 +1930,16 @@ static void smtp_thread(void* arg)
 			rcpt_name[0]=0;
 			sprintf(rcpt_addr,"%.*s",sizeof(rcpt_addr)-1,p);
 
+			/* Check for blocked recipients */
+			if(trashcan(&scfg,rcpt_addr,"email")) {
+				lprintf("%04d !SMTP BLOCKED RECIPIENT E-MAIL ADDRESS: %s", socket, rcpt_addr);
+				spamlog(&scfg, "SMTP", "Blocked recipient e-mail address"
+					,host_name, host_ip, rcpt_addr);
+				sockprintf(socket, "550 Unknown User:%s", buf+8);
+				continue;
+			}
+
+			/* Check for full address aliases */
 			p=alias(&scfg,p,alias_buf);
 			if(p==alias_buf) 
 				lprintf("%04d SMTP ADDRESS ALIAS: %s",socket,p);
