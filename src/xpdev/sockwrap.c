@@ -217,7 +217,7 @@ BOOL socket_check(SOCKET sock, BOOL* rd_p, BOOL* wr_p, DWORD timeout)
 			return(TRUE);
 	}
 
-	if(rd_p !=NULL)  {
+	if(rd_p !=NULL || wr_p==NULL)  {
 		rd=recv(sock,&ch,1,MSG_PEEK);
 		if(rd==1 
 			|| (rd==SOCKET_ERROR && ERROR_VALUE==EMSGSIZE)) {
@@ -229,5 +229,3 @@ BOOL socket_check(SOCKET sock, BOOL* rd_p, BOOL* wr_p, DWORD timeout)
 
 	return(FALSE);
 }
-
-
