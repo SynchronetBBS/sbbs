@@ -3765,10 +3765,12 @@ void DLLCALL bbs_thread(void* arg)
 
 		bool rlogin = false;
 
-		if(FD_ISSET(telnet_socket,&socket_set)) 
+		if(telnet_socket!=INVALID_SOCKET 
+			&& FD_ISSET(telnet_socket,&socket_set)) 
 			client_socket = accept_socket(telnet_socket, (struct sockaddr *)&client_addr
 	        	,&client_addr_len);
-		else if(rlogin_socket!=INVALID_SOCKET && FD_ISSET(rlogin_socket,&socket_set)) {
+		else if(rlogin_socket!=INVALID_SOCKET 
+			&& FD_ISSET(rlogin_socket,&socket_set)) {
 			client_socket = accept_socket(rlogin_socket, (struct sockaddr *)&client_addr
 	        	,&client_addr_len);
 			rlogin = true;

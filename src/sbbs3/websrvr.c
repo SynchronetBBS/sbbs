@@ -2346,7 +2346,8 @@ void DLLCALL web_server(void* arg)
 
 			client_addr_len = sizeof(client_addr);
 
-			if(FD_ISSET(server_socket,&socket_set)) 
+			if(server_socket!=INVALID_SOCKET
+				&& FD_ISSET(server_socket,&socket_set)) 
 				client_socket = accept(server_socket, (struct sockaddr *)&client_addr
 	        		,&client_addr_len);
 			else {
