@@ -55,12 +55,17 @@ enum {
     ,DEAD
 };
 
+enum {
+	PLAYER
+	,MONSTER
+};
+
 struct playertype {
     char            name[31];	       /* Name from BBS drop file */
     char            pseudo[31];	       /* In-game pseudonym */
     char            killer[31];	       /* Person killed by (if status==DEAD) */
     char            gaspd[61];	       /* Dying curse */
-    WORD            status;	       /* Status alive or dead */
+    WORD            status;	       /* Status alive or dead for player records, PLAYER or MONSTER for opponent record (record 0) */
     /* ToDo make configurable */
     WORD            flights;	       /* Weird thing... may be number of
 				        * times can run */
@@ -106,7 +111,6 @@ DWORD           player_num;	       /* Current Player Number */
 DWORD           curr_opp;	       /* Player number who is currently
 				        * being fought */
 DWORD           number_of_players;
-BOOL            doga;		       /* The current fight is a Battle
 				        * between players */
 struct playertype player[31];
 /**********************************************************/
@@ -399,12 +403,12 @@ mutantvictory(void)
     int             bt;
     int             d;
     FILE           *outfile;
-    if (!doga)
+    if (opp.status==MONSTER)
 	opp.gold = opp.gold * supplant();
     nl();
     od_printf("You take his %" QWORDFORMAT " Steel pieces.\r\n", opp.gold);
     player[player_num].gold = player[player_num].gold + opp.gold;
-    if (doga) {
+    if (opp.status==PLAYER) {
 	int             i;
 	i = curr_opp;
 	nl();
@@ -444,7 +448,6 @@ mutantvictory(void)
     opp.experience *= supplant();
     player[player_num].experience += opp.experience;
     od_printf("You obtain %" QWORDFORMAT " exp points.\r\n", opp.experience);
-    doga = FALSE;
 }
 
 void
@@ -602,7 +605,7 @@ bmode(void)
 			od_disp_str("May Palidine Be With You!!\r\n");
 			break;
 		}
-		if (doga) {
+		if (opp.status==PLAYER) {
 		    player[curr_opp].wins++;
 		    player[player_num].loses++;
 		    player[curr_opp].gold += player[player_num].gold;
@@ -927,6 +930,7 @@ searcher(void)
 	opp.dexterity = readnumb(6);
 	opp.gold = readnumb(0);
 	opp.experience = readnumb(0);
+	opp.status=MONSTER;
 	endofline();
     }
     fclose(infile);
@@ -1016,7 +1020,7 @@ doggie(void)
 	opp.hps = player[curr_opp].hps;
 	opp.damage = player[curr_opp].hps;
 	opp.vary = player[curr_opp].vary;
-	doga = TRUE;
+	opp.status = PLAYER;
 	player[player_num].battles--;
 	opp.attack = w2[player[curr_opp].weapon];
 	opp.power = w3[player[curr_opp].weapon];
@@ -1071,7 +1075,6 @@ battle(void)
 		    nl();
 		    od_set_color(D_GREEN, D_BLACK);
 		    od_disp_str("You Ride away on a Silver Dragon.\r\n");
-		    doga = FALSE;
 		    return;
 		}
 		break;
@@ -1552,7 +1555,6 @@ main(int argc, char **argv)
     atexit(leave);
 
     od_init();
-    doga = FALSE;
     for (i = 1; i <= 30; i++)
 	player[i].damage = 0;
     found = FALSE;
