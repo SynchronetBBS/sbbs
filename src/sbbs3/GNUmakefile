@@ -255,6 +255,7 @@ CHKSMB_OBJS = \
 	$(LIBODIR)/smbdump.o \
 	$(LIBODIR)/conwrap.o \
 	$(LIBODIR)/dirwrap.o \
+	$(LIBODIR)/filewrap.o \
 	$(LIBODIR)/genwrap.o
 FORCE$(CHKSMB): $(CHKSMB_OBJS)
 
@@ -267,6 +268,7 @@ SMBUTIL_OBJS = \
 	$(LIBODIR)/smbutil.o \
 	$(LIBODIR)/conwrap.o \
 	$(LIBODIR)/dirwrap.o \
+	$(LIBODIR)/filewrap.o \
 	$(LIBODIR)/genwrap.o \
 	$(LIBODIR)/date_str.o \
 	$(LIBODIR)/str_util.o
@@ -409,3 +411,6 @@ $(ASC2ANS): $(LIBODIR)/asc2ans.o
 	$(QUIET)$(CC) $(UTIL_LDFLAGS) -o $@ $^ $(ADD_LIBS)
 
 FORCE:
+
+SMBLIB:	$(SMBLIB_TARGET)
+
