@@ -2135,6 +2135,7 @@ int sbbs_t::mv(char *src, char *dest, char copy)
         bprintf("\r\n\7MV ERROR: Destination already exists\r\n'%s'\r\n"
             ,dest);
         return(-1); }
+#ifndef __unix__	/* need to determine if on same mount device */
     if(!copy && ((src[1]!=':' && dest[1]!=':')
         || (src[1]==':' && dest[1]==':' && toupper(src[0])==toupper(dest[0])))) {
         if(rename(src,dest)) {						/* same drive, so move */
@@ -2142,6 +2143,7 @@ int sbbs_t::mv(char *src, char *dest, char copy)
                     "\r\n                      to '%s'\r\n\7",src,dest);
             return(-1); }
         return(0); }
+#endif
     attr(WHITE);
     if((ind=nopen(src,O_RDONLY))==-1) {
         errormsg(WHERE,ERR_OPEN,src,O_RDONLY);
