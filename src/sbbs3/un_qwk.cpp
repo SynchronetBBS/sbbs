@@ -45,6 +45,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 {
 	char	str[MAX_PATH+1],fname[MAX_PATH+1];
 	char 	tmp[512];
+	char	inbox[MAX_PATH+1];
 	uchar	block[QWK_BLOCK_LEN];
 	int 	k,file;
 	uint	i,j,n,lastsub=INVALID_SUB;
@@ -255,14 +256,16 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 
 	dir=opendir(cfg.temp_dir);
 	while(dir!=NULL && (dirent=readdir(dir))!=NULL) {
-		// Create directory if necessary
-		sprintf(str,"%sqnet/%s.in",cfg.data_dir,cfg.qhub[hubnum]->id);
-		MKDIR(str);
 		sprintf(str,"%s%s",cfg.temp_dir,dirent->d_name);
 		if(isdir(str))	/* sub-dir */
 			continue;
+
+		// Create directory if necessary
+		sprintf(inbox,"%sqnet/%s.in",cfg.data_dir,cfg.qhub[hubnum]->id);
+		MKDIR(inbox);
+
 		// Copy files
-		sprintf(fname,"%sqnet/%s.in/%s",cfg.data_dir,cfg.qhub[hubnum]->id,dirent->d_name);
+		sprintf(fname,"%s/%s",inbox,dirent->d_name);
 		mv(str,fname,1 /* overwrite */);
 		sprintf(str,text[ReceivedFileViaQWK],dirent->d_name,cfg.qhub[hubnum]->id);
 		putsmsg(&cfg,1,str);
