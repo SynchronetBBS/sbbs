@@ -18,9 +18,7 @@
 <tr><td colspan="4"><hr /></td></tr>
 <tr>
     <td colspan="4">
-        <object class="msg" type="text/html" border="2" data="msgframe.ssjs/^^sub:code^^/^^hdr:number^^" standby="Loading Message ..." width="100%" height="450">
             <pre class="leftalign">@@body@@</pre>
-        </object>
     </td>
 </tr>
 </table>
