@@ -93,6 +93,11 @@ $(FTPSRVR): ftpsrvr.c $(SBBSLIB)
     @echo Compiling $** ...
 	$(CC) $(CFLAGS) -WD -WM -lGi -n$(LIBODIR) -DFTPSRVR_EXPORTS $** $(LIBS)
 
+# Services DLL Link Rule
+$(SERVICES): services.c $(SBBSLIB)
+    @echo Compiling $** ...
+	$(CC) $(CFLAGS) -WD -WM -lGi -n$(LIBODIR) -DSERVICES_EXPORTS $** $(LIBS)
+
 # Synchronet Console Build Rule
 $(SBBSCON): sbbscon.c $(SBBSLIB)
 	$(CC) $(CFLAGS) -n$(EXEODIR) $**
