@@ -1962,7 +1962,7 @@ static void smtp_thread(void* arg)
 							,reverse_path, p);
 						spamlog(&scfg, "SMTP", tmp, host_name, host_ip, rcpt_addr);
 						sockprintf(socket, "550 Relay not allowed.");
-						continue;
+						break;
 					}
 
 					lprintf("%04d SMTP Relaying to external mail service: %s"
