@@ -104,7 +104,6 @@ int ciomouse_delevents(int events)
 void ciomouse_gotevent(int event, int x, int y)
 {
 	struct in_mouse_event *ime;
-	struct in_mouse_event **lastevent;
 
 	while(!mouse_initialized)
 		SLEEP(1);
@@ -126,7 +125,6 @@ void ciomouse_gotevent(int event, int x, int y)
 void add_outevent(int event, int x, int y)
 {
 	struct out_mouse_event *ome;
-	struct out_mouse_event **lastevent;
 	int	but=0;
 
 	if(!(mouse_events & 1<<event))
@@ -152,8 +150,6 @@ void add_outevent(int event, int x, int y)
 
 int more_multies(int button, int clicks)
 {
-	int i;
-
 	switch(clicks) {
 		case 1:
 			if(mouse_events & (1<<CIOLIB_BUTTON_DBL_CLICK(button)))
@@ -170,7 +166,6 @@ int more_multies(int button, int clicks)
 
 void ciolib_mouse_thread(void *data)
 {
-	struct in_mouse_event *old_in_event;
 	int	timedout;
 	int timeout_button=0;
 	int but;
@@ -406,7 +401,6 @@ int mouse_pending(void)
 int ciolib_getmouse(struct mouse_event *mevent)
 {
 	int retval=0;
-	struct out_mouse_event *old_out_event;
 
 	while(!mouse_initialized)
 		SLEEP(1);
