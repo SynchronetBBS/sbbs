@@ -1,0 +1,13 @@
+#!/bin/sh
+os=`uname | tr "[A-Z]" "[a-z]"`
+if [ -x gcc.$os.exe.release/$0 ]
+	then exec gcc.$os.exe.release/$0 $@
+elif [ -x gcc.$os.exe.debug/$0 ]
+	then exec gcc.$os.exe.debug/$0 $@
+elif [ -x *.$os.exe.release/$0 ]
+	then exec *.$os.exe.release/$0 $@
+elif [ -x *.$os.exe.debug/$0 ]
+	then exec *.$os.exe.debug/$0 $@
+elif [ -x *.$os.exe.*/$0 ]
+	then exec *.$os.exe.debug/$0 $@
+fi
