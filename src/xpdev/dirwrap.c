@@ -671,3 +671,57 @@ ulong DLLCALL getfreediskspace(const char* path, ulong unit)
 
 #endif
 }
+
+/****************************************************************************/
+/* Resolves //, /./, and /../ in a path. Should work indetically to Windows */
+/****************************************************************************/
+#if defined(__unix__)
+char * DLLCALL _fullpath(char *target, const char *path, size_t size)  {
+	char	*out;
+	char	*p;
+	struct stat	sb;
+	
+	if(target==NULL)  {
+		if((target=malloc(MAX_PATH+1))==NULL) {
+			return(NULL);
+		}
+	}
+	out=target;
+	*out=0;
+
+	if(*path != '/')  {
+		p=getcwd(target,size);
+		if(p==NULL || strlen(p)+strlen(path)>=size)
+			return(NULL);
+		out=strrchr(target,'\0');
+		*(out++)='/';
+		*out=0;
+		out--;
+	}
+	strncat(target,path,size-1);
+	
+/*	if(stat(target,&sb))
+		return(NULL);
+	if(sb.st_mode&S_IFDIR)
+		strcat(target,"/"); */
+
+	for(;*out;out++)  {
+		while(*out=='/')  {
+			if(*(out+1)=='/')
+				memmove(out,out+1,strlen(out));
+			else if(*(out+1)=='.' && *(out+2)=='/')
+				memmove(out,out+2,strlen(out)-1);
+			else if(*(out+1)=='.' && *(out+2)=='.' && *(out+3)=='/')  {
+				*out=0;
+				p=strrchr(target,'/');
+				memmove(p,out+3,strlen(out+3)+1);
+				out=p;
+			}
+			else  {
+				out++;
+			}
+		}
+	}
+	return(target);
+}
+#endif

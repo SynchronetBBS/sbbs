@@ -61,14 +61,6 @@ extern "C" {
 	#include <glob.h>		/* POSIX.2 directory pattern matching function */
 	#define MKDIR(dir)		mkdir(dir,0777)
 
-	#if defined(BSD) && defined(_THREADWRAP_H)
-		/* realpath() not threadsafe on OpenBSD -or- FreeBSD */
-		/* (On FreeBSD it only fails in release builds!		 */
-	    #define FULLPATH(a,r,l) realpath_r(r,a)	/* defined in threadwrap.c */
-	#else
-		#define FULLPATH(a,r,l)	realpath(r,a)
-	#endif
-
 #else	
 
 	#define ALLFILES "*.*"	/* matches all files in a directory */
@@ -77,7 +69,6 @@ extern "C" {
 	#else
 		#define MKDIR(dir)		_mkdir(dir)
 	#endif
-	#define FULLPATH(a,r,l)		_fullpath(a,r,l)
 
 	/* glob-compatible findfirst/findnext wrapper */
 
@@ -115,6 +106,8 @@ extern "C" {
 	DLLEXPORT void	DLLCALL globfree(glob_t*);
 
 #endif
+
+#define FULLPATH(a,r,l)		_fullpath(a,r,l)
 
 /*****************************/
 /* POSIX Directory Functions */
@@ -204,6 +197,7 @@ DLLEXPORT ulong		DLLCALL delfiles(char *inpath, char *spec);
 #if defined(__unix__)
 DLLEXPORT void DLLCALL _splitpath(const char *path, char *drive, char *dir, 
 								  char *fname, char *ext);
+DLLEXPORT char * DLLCALL _fullpath(char *target, const char *path, size_t size);
 #endif
 
 #if defined(__cplusplus)

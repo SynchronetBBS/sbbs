@@ -37,7 +37,6 @@
 
 #if defined(__unix__)
 	#include <unistd.h>	/* _POSIX_THREADS */
-	#include <stdlib.h>	/* realpath() */
 #endif
 
 #include "threadwrap.h"	/* DLLCALL */
@@ -88,24 +87,6 @@ ulong _beginthread(void( *start_address )( void * )
 
 #error "Need _beginthread implementation for non-POSIX thread library."
 
-#endif
-
-
-/****************************************************************************/
-/* Thread-safe (reentrant) version of realpath() - required for OpenBSD		*/
-/* And for NON-DEBUG FreeBSD builds (on 4.7 anyways)						*/
-/****************************************************************************/
-#if defined(BSD)
-char* realpath_r(const char *pathname, char *resolvedname)  
-{
-    static pthread_mutex_t mutex=PTHREAD_MUTEX_INITIALIZER;
-    char *p;
-
-    pthread_mutex_lock(&mutex);
-    p=realpath(pathname,resolvedname);
-    pthread_mutex_unlock(&mutex);
-    return p;
-}
 #endif
 
 #endif	/* __unix__ */
