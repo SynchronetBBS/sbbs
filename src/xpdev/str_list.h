@@ -52,6 +52,9 @@ str_list_t	strListInit(void);
 /* Frees the strings in the list (and the list itself) */
 void		strListFree(str_list_t* list);
 
+/* Frees the strings in the list */
+void		strListFreeStrings(str_list_t list);
+
 /* Pass a pointer to a string list, the string to add */
 /* Returns the updated list or NULL on error */
 str_list_t	strListAdd(str_list_t* list, const char* str);
