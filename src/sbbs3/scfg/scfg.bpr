@@ -9,7 +9,8 @@
       ..\scfgsave.obj ..\scfglib1.obj ..\smblib.obj ..\scfglib2.obj ..\ars.obj 
       ..\load_cfg.obj ..\crc32.obj ..\userdat.obj ..\date_str.obj 
       ..\..\uifc\uifcx.obj ..\..\xpdev\genwrap.obj ..\..\xpdev\filewrap.obj 
-      ..\..\xpdev\dirwrap.obj ..\str_util.obj ..\nopen.obj"/>
+      ..\..\xpdev\dirwrap.obj ..\str_util.obj ..\nopen.obj ..\crc16.obj 
+      ..\dat_rec.obj"/>
     <RESFILES value=""/>
     <IDLFILES value=""/>
     <IDLGENFILES value=""/>
@@ -22,7 +23,7 @@
       ibsmp.bpi bdertl.bpi vcldbx.bpi qrpt.bpi teeui.bpi teedb.bpi tee.bpi 
       dss.bpi teeqr.bpi ibxpress.bpi dsnap.bpi vclie.bpi inetdb.bpi inet.bpi 
       nmfast.bpi webdsnap.bpi bcbie.bpi dclocx.bpi bcb2kaxserver.bpi"/>
-    <PATHCPP value=".;..\..\uifc;..;..;..;..;..;..;..;..;..;..\..\uifc;..\..\xpdev;..\..\xpdev;..\..\xpdev;..;.."/>
+    <PATHCPP value=".;..\..\uifc;..;..;..;..;..;..;..;..;..;..\..\uifc;..\..\xpdev;..\..\xpdev;..\..\xpdev;..;..;..;.."/>
     <PATHPAS value=".;"/>
     <PATHRC value=".;"/>
     <PATHASM value=".;"/>
@@ -82,6 +83,8 @@
       <FILE FILENAME="..\..\xpdev\dirwrap.c" FORMNAME="" UNITNAME="dirwrap.c" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="..\str_util.c" FORMNAME="" UNITNAME="str_util" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="..\nopen.c" FORMNAME="" UNITNAME="nopen" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\crc16.c" FORMNAME="" UNITNAME="crc16" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\dat_rec.c" FORMNAME="" UNITNAME="dat_rec" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
   </FILELIST>
   <BUILDTOOLS>
   </BUILDTOOLS>
@@ -143,7 +146,7 @@ Item1=_DEBUG;JAVASCRIPT
 DebugSourceDirs=$(BCB)\source\vcl
 
 [Parameters]
-RunParams=-l25 s:\sbbs\ctrl
+RunParams=-l25 c:\sbbs\ctrl
 Launcher=
 UseLauncher=0
 DebugCWD=
