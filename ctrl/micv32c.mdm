@@ -1,8 +1,0 @@
-# This is for the Microcom QX/V.32c modem
-# Updated 03/23/96 Digital Dynamics: Now uses verbal result codes
-
-INCLUDE         GEN2400
-COM_RATE	38400
-LOCKED_RATE     YES
-FLOW_CONTROL    BOTH
-SPEC_INIT	AT\J0\G0\N3\Q3\V1\%C2\%D5

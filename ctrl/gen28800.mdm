@@ -1,5 +1,0 @@
-# This is for Generic 28800bps modems
-# Updated 06/04/96 Digital Dynamics: Now uses verbal result codes
-
-INCLUDE 	GEN14400
-COM_RATE	57600

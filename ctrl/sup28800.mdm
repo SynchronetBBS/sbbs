@@ -1,6 +1,0 @@
-# This is for SupraFAX 28800 modems
-# Updated 03/23/96 Digital Dynamics: Now uses verbal result codes
-
-INCLUDE		GEN28800
-INCLUDE 	SUP14400
-
