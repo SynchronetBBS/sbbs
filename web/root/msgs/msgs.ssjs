@@ -23,19 +23,27 @@ if(lastpage>total_pages)
 	lastpage=total_pages;
 
 /* Ensure currpage is inside first/last */
+var lcount=0;
 while(currpage>lastpage) {
+	lcount++;
 	firstpage++;
 	lastpage=firstpage+max_pages-1;
 	if(lastpage>total_pages)
 		lastpage=total_pages;
+	if(lcount>5000)
+		currpage=lastpage;
 }
 
 /* Try adjust so currpage is in the middle of firstpage and lastpage */
+lcount=0;
 while(currpage>firstpage+(max_pages/2) && lastpage<total_pages) {
+	lcount++;
 	firstpage++;
 	lastpage=firstpage+max_pages-1;
 	if(lastpage>total_pages)
 		lastpage=total_pages;
+	if(lcount>5000)
+		break;
 }
 
 /* Build the links now */
