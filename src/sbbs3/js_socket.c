@@ -47,10 +47,8 @@ typedef struct
 	BOOL	nonblocking;
 	BOOL	is_connected;
 	int		last_error;
-	SOCKADDR_IN	addr;
 
 } private_t;
-
 
 
 static void dbprintf(BOOL error, private_t* p, char* fmt, ...)
@@ -164,7 +162,7 @@ js_bind(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(argc)
 		addr.sin_port = (ushort)JSVAL_TO_INT(argv[0]);
 
-	if(bind(p->sock, (struct sockaddr *) &addr, sizeof (addr))!=0) {
+	if(bind(p->sock, (struct sockaddr *) &addr, sizeof(addr))!=0) {
 		p->last_error=ERROR_VALUE;
 		dbprintf(TRUE, p, "bind failed with error %d",ERROR_VALUE);
 		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
@@ -183,6 +181,7 @@ js_connect(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	ushort		port;
 	JSString*	str;
 	private_t*	p;
+	SOCKADDR_IN	addr;
 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_FALSE);
@@ -203,12 +202,12 @@ js_connect(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	dbprintf(FALSE, p, "connecting to port %u at %s", port, JS_GetStringBytes(str));
 
-	memset(&p->addr,0,sizeof(p->addr));
-	p->addr.sin_addr.s_addr = ip_addr;
-	p->addr.sin_family = AF_INET;
-	p->addr.sin_port   = htons(port);
+	memset(&addr,0,sizeof(addr));
+	addr.sin_addr.s_addr = ip_addr;
+	addr.sin_family = AF_INET;
+	addr.sin_port   = htons(port);
 
-	if(connect(p->sock, (struct sockaddr *)&p->addr, sizeof(p->addr))!=0) {
+	if(connect(p->sock, (struct sockaddr *)&addr, sizeof(addr))!=0) {
 		p->last_error=ERROR_VALUE;
 		dbprintf(TRUE, p, "connect failed with error %d",ERROR_VALUE);
 		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
@@ -553,7 +552,10 @@ enum {
 	,SOCK_PROP_DEBUG
 	,SOCK_PROP_DESCRIPTOR
 	,SOCK_PROP_NONBLOCKING
-	,SOCK_PROP_IP_ADDRESS
+	,SOCK_PROP_LOCAL_IP
+	,SOCK_PROP_LOCAL_PORT
+	,SOCK_PROP_REMOTE_IP
+	,SOCK_PROP_REMOTE_PORT
 };
 
 static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
@@ -589,10 +591,13 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 
 static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
+	char		str[128];
     jsint       tiny;
 	ulong		cnt;
 	BOOL		rd;
 	private_t*	p;
+	socklen_t	addr_len;
+	SOCKADDR_IN	addr;
 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_FALSE);
@@ -633,9 +638,43 @@ static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 		case SOCK_PROP_NONBLOCKING:
 			*vp = BOOLEAN_TO_JSVAL(p->nonblocking);
 			break;
-		case SOCK_PROP_IP_ADDRESS:
-			*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,inet_ntoa(p->addr.sin_addr)));
+		case SOCK_PROP_LOCAL_IP:
+			addr_len = sizeof(addr);
+			if(getsockname(p->sock, (struct sockaddr *)&addr,&addr_len)!=0) {
+				p->last_error=ERROR_VALUE;
+				*vp = JSVAL_VOID;
+			} else
+				*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,inet_ntoa(addr.sin_addr)));
 			break;
+		case SOCK_PROP_LOCAL_PORT:
+			addr_len = sizeof(addr);
+			if(getsockname(p->sock, (struct sockaddr *)&addr,&addr_len)!=0) {
+				p->last_error=ERROR_VALUE;
+				*vp = JSVAL_VOID;
+			} else {
+				sprintf(str,"%u",ntohs(addr.sin_port));
+				*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,str));
+			}
+			break;
+		case SOCK_PROP_REMOTE_IP:
+			addr_len = sizeof(addr);
+			if(getpeername(p->sock, (struct sockaddr *)&addr,&addr_len)!=0) {
+				p->last_error=ERROR_VALUE;
+				*vp = JSVAL_VOID;
+			} else
+				*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,inet_ntoa(addr.sin_addr)));
+			break;
+		case SOCK_PROP_REMOTE_PORT:
+			addr_len = sizeof(addr);
+			if(getpeername(p->sock, (struct sockaddr *)&addr,&addr_len)!=0) {
+				p->last_error=ERROR_VALUE;
+				*vp = JSVAL_VOID;
+			} else {
+				sprintf(str,"%u",ntohs(addr.sin_port));
+				*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,str));
+			}
+			break;
+
 	}
 
 	return(TRUE);
@@ -653,7 +692,10 @@ static struct JSPropertySpec js_socket_properties[] = {
 	{	"debug"				,SOCK_PROP_DEBUG		,JSPROP_ENUMERATE,	NULL,NULL},
 	{	"descriptor"		,SOCK_PROP_DESCRIPTOR	,JSPROP_ENUMERATE,	NULL,NULL},
 	{	"nonblocking"		,SOCK_PROP_NONBLOCKING	,JSPROP_ENUMERATE,	NULL,NULL},
-	{	"ip_address"		,SOCK_PROP_IP_ADDRESS	,SOCK_PROP_FLAGS,	NULL,NULL},
+	{	"local_ip_address"	,SOCK_PROP_LOCAL_IP		,SOCK_PROP_FLAGS,	NULL,NULL},
+	{	"local_port"		,SOCK_PROP_LOCAL_PORT	,SOCK_PROP_FLAGS,	NULL,NULL},
+	{	"remote_ip_address"	,SOCK_PROP_REMOTE_IP	,SOCK_PROP_FLAGS,	NULL,NULL},
+	{	"remote_port"		,SOCK_PROP_REMOTE_PORT	,SOCK_PROP_FLAGS,	NULL,NULL},
 	{0}
 };
 
