@@ -685,12 +685,7 @@ public:
 
 };
 
-SOCKET	open_socket(int type);
-int		close_socket(SOCKET);
-bool	socket_check(SOCKET sock, bool *rd);
-u_long	resolve_ip(char *addr);
-
-#endif
+#endif /* __cplusplus */
 
 #ifdef DLLEXPORT
 #undef DLLEXPORT
@@ -775,28 +770,34 @@ extern "C" {
 
 #ifdef JAVASCRIPT
 
-	/* globobj.c */
+	/* js_global.c */
 	DLLEXPORT JSObject* DLLCALL js_CreateGlobalObject(scfg_t* cfg, JSContext* cx);
 
-	/* sysobj.c */
+	/* js_system.c */
 	DLLEXPORT JSObject* DLLCALL js_CreateSystemObject(scfg_t* cfg, JSContext* cx, JSObject* parent);
 
-	/* userobj.c */
+	/* js_user.c */
 	DLLEXPORT JSObject* DLLCALL js_CreateUserObject(scfg_t* cfg, JSContext* cx, JSObject* parent
 													,char* name, user_t* user);
-	/* fileobj.c */
+	/* js_file_area.c */
 	DLLEXPORT JSObject* DLLCALL js_CreateFileAreaObject(scfg_t* cfg, JSContext* cx, JSObject* parent
 													,user_t* user, char* html_index_file);
-	/* conobj.cpp */
+	/* js_console.cpp */
 	JSObject* js_CreateConsoleObject(JSContext* cx, JSObject* parent);
 
-	/* sockobj.c */
-	JSObject* DLLCALL js_CreateSocketObject(scfg_t* cfg, JSContext* cx, JSObject* parent
-													,char* name, SOCKET);
+	/* js_socket.c */
+	JSObject* DLLCALL js_CreateSocketClass(JSContext* cx, JSObject* parent);
 
 #endif
 
 #ifdef SBBS /* These aren't exported */
+
+	/* main.c */
+	SOCKET	open_socket(int type);
+	int		close_socket(SOCKET);
+	BOOL	socket_check(SOCKET sock, BOOL *rd);
+	u_long	resolve_ip(char *addr);
+
 
 	/* misc.c */
 	int		nopen(char *str, int access);

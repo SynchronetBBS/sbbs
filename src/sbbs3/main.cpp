@@ -347,6 +347,10 @@ bool sbbs_t::js_initcx()
 		if(js_CreateConsoleObject(js_cx, js_glob)==NULL)
 			break;
 
+		/* Socket Class */
+		if(js_CreateSocketClass(js_cx, js_glob)==NULL)
+			break;
+
 		success=true;
 
 	} while(0);
@@ -462,8 +466,6 @@ int eprintf(char *fmt, ...)
     return(startup->event_log(sbuf));
 }
 
-} /* extern "C" */
-
 SOCKET open_socket(int type)
 {
 	SOCKET sock;
@@ -491,7 +493,7 @@ int close_socket(SOCKET sock)
 }
 
 /* Return true if connected, optionally sets *rd_p to true if read data available */
-bool socket_check(SOCKET sock, bool* rd_p)
+BOOL socket_check(SOCKET sock, BOOL* rd_p)
 {
 	char	ch;
 	int		i,rd;
@@ -499,7 +501,7 @@ bool socket_check(SOCKET sock, bool* rd_p)
 	struct	timeval tv;
 
 	if(rd_p!=NULL)
-		*rd_p=false;
+		*rd_p=FALSE;
 
 	FD_ZERO(&socket_set);
 	FD_SET(sock,&socket_set);
@@ -509,19 +511,19 @@ bool socket_check(SOCKET sock, bool* rd_p)
 
 	i=select(sock+1,&socket_set,NULL,NULL,&tv);
 	if(i==SOCKET_ERROR)
-		return(false);
+		return(FALSE);
 
 	if(i==0) 
-		return(true);
+		return(TRUE);
 
 	rd=recv(sock,&ch,1,MSG_PEEK);
 	if(rd==1) {
 		if(rd_p!=NULL)
-			*rd_p=true;
-		return(true);
+			*rd_p=TRUE;
+		return(TRUE);
 	}
 
-	return(false);
+	return(FALSE);
 }
 
 u_long resolve_ip(char *addr)
@@ -538,6 +540,9 @@ u_long resolve_ip(char *addr)
 		return(0);
 	return(*((ulong*)host->h_addr_list[0]));
 }
+
+} /* extern "C" */
+
 
 BYTE* telnet_interpret(sbbs_t* sbbs, BYTE* inbuf, int inlen,
   									BYTE* outbuf, int& outlen)
