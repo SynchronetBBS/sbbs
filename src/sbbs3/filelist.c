@@ -354,7 +354,7 @@ int main(int argc, char **argv)
 		while(m<l && !ferror(out)) {
 			for(j=0;j<12 && m<l;j++)
 				if(j==8)
-					str[j]='.';
+					str[j]=ixbbuf[m]>' ' ? '.' : ' ';
 				else
 					str[j]=ixbbuf[m++]; /* Turns FILENAMEEXT into FILENAME.EXT */
 			str[j]=0;
