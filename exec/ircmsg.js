@@ -28,7 +28,8 @@ for(i=0;i<argc;i++) {
 	}
 }
 
-log("Connecting to " +server+ " port " + port);
+log("Using nick: " + nick);
+log("Connecting to: " +server+ " port " + port);
 my_server = IRC_client_connect(server,nick,undefined,undefined,port);
 if (!my_server) {
         log("!Couldn't connect to " + server);
@@ -37,17 +38,24 @@ if (!my_server) {
 while(my_server.data_waiting && (response=my_server.recvline()))
 	log(response);
 
-log("Joining " + channel);
+log("Joining: " + channel);
 my_server.send("JOIN " + channel + "\r\n");
 while(my_server.data_waiting && (response=my_server.recvline()))
 	log(response);
 
 if(msg)
-	my_server.send("PRIVMSG "+channel+" :"+msg+"\r\n");
+	send(msg);
 else while(msg=readln())
-	my_server.send("PRIVMSG "+channel+" :"+msg+"\r\n");
+	send(msg);
 
 while(my_server.data_waiting && (response=my_server.recvline()))
 	log(response);
 
 IRC_quit(my_server);
+
+function send(msg)
+{
+	log("Sending: " + msg);
+	if(!my_server.send("PRIVMSG "+channel+" :"+msg+"\r\n"))
+		alert("send failure");
+}
