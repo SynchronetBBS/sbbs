@@ -279,6 +279,9 @@ int main(int argc, char** argv)
     mail_startup.started=mail_started;
     mail_startup.terminated=mail_terminated;
 	mail_startup.options|=MAIL_OPT_ALLOW_POP3;
+	/* Spam filtering */
+	mail_startup.options|=MAIL_OPT_USE_RBL;	/* Realtime Blackhole List */
+	mail_startup.options|=MAIL_OPT_USE_RSS;	/* Relay Spam Stopper */
     strcpy(mail_startup.ctrl_dir,ctrl_dir);
 
 #ifdef __unix__	/* Look up DNS server address */
