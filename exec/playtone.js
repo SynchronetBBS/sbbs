@@ -10,6 +10,7 @@ var mode=0; 	/* Optional modes */
 var t=1;		/* Timing */
 var s=0;		/* Stacato */
 var octave=4;	/* Default octave */
+var stop=false;
 
 var pitch=523.50/32.0;	 /* low 'C' */
 
@@ -26,8 +27,8 @@ function play(freq, dur)
 	if(dur==undefined)
 		dur="0";
 
-	d=parseInt(dur);
-	if(isNaN(f=parseInt(freq.charAt(0))))
+	d=parseFloat(dur);
+	if(isNaN(f=parseInt(freq)))
 		switch(freq.charAt(0).toUpperCase()) {
 			case 'O':               /* default octave */
 				if(Number(dur.charAt(0)))
@@ -41,8 +42,6 @@ function play(freq, dur)
 				else
 					pitch+=parseFloat(dur);
 				return;
-			case 'Q':               /* quit */
-				exit(0);
 			case 'R':               /* rest */
 				f=0;
 				break;
@@ -64,8 +63,10 @@ function play(freq, dur)
 				else
 					writeln(dur);
 				return;
+			case 'Q':
 			case 'X':               /* exit */
-				exit(1);
+				stop=true;
+				break;;
 			default:
 				for(n=0;notes[n];n++)
 					if(freq.charAt(0)==notes[n] || freq.charAt(0)==sharp[n])
@@ -99,12 +100,24 @@ function play(freq, dur)
 
 printf("\r\nSynchronet Tone Generation Module %s\r\n\r\n", REVISION);
 
-if(argc<1) {
+var filename;
+var debug=false;
+
+for(i=0;i<argc;i++) {
+	switch(argv[i]) {
+		case "-d":
+			debug=true;
+			break;
+		default:
+			filename=argv[i];
+			break;
+	}
+}
+if(filename==undefined) {
 	alert("No filename specified");
 	exit();
 }
 
-var filename = argv[0];
 if(!file_exists(filename))
 	filename = system.exec_dir + filename;	
 file = new File(filename);
@@ -116,10 +129,12 @@ if(!file.open("r")) {
 text=file.readAll();
 file.close();
 
+stop=false;
 for(i in text) {
-	if(js.terminated)
+	if(js.terminated || stop)
 		break;
-//	writeln(text[i]);
+	if(debug)
+		writeln(text[i]);
 	if(text[i].charAt(0)==':')	/* comment */
 		continue;
 	token=truncsp(text[i]).split(/\s+/);
