@@ -646,7 +646,7 @@ int ansi_initciolib(long inmode)
 		if(!GetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), &conmode))
 			return(0);
 		conmode&=~(ENABLE_PROCESSED_INPUT|ENABLE_QUICK_EDIT_MODE);
-		conmode|=ENABLE_MOUSE_INPUT;
+		conmode&=~ENABLE_MOUSE_INPUT;
 		if(!SetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), conmode))
 			return(0);
 
