@@ -22,6 +22,7 @@ endif
 
 ifdef DEBUG
  BUILD	=	debug
+ CFLAGS	+=	-g
 else
  BUILD	=	release
 endif

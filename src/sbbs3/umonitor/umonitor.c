@@ -37,7 +37,11 @@
 
 #include "conwrap.h"	/* this has to go BEFORE curses.h so getkey() can be macroed around */
 #include <curses.h>
-#include <poll.h>
+#include <sys/types.h>
+#include <sys/time.h>
+#ifdef __QNX__
+#include <string.h>
+#endif
 #include <stdio.h>
 #include <termios.h>
 #include <unistd.h>
@@ -74,6 +78,7 @@ enum {
 enum {
 	 SPY_NOSOCKET
 	,SPY_NOCONNECT
+	,SPY_SELECTFAILED
 	,SPY_SOCKETLOST
 	,SPY_STDINLOST
 	,SPY_CLOSED
@@ -115,13 +120,12 @@ int spyon(char *sockname)  {
 	int		i;
 	struct	termios	tio;
 	struct	termios	old_tio;
-	struct pollfd pset[2];
+	fd_set	rd;
 	BOOL	b;
 	int		retval=0;
 
 	/* ToDo Test for it actually being a socket! */
 	/* Well, it will fail to connect won't it?   */
-
 
 	if((spy_sock=socket(PF_LOCAL,SOCK_STREAM,0))==INVALID_SOCKET)  {
 		printf("ERROR %d creating local spy socket", errno);
@@ -141,12 +145,11 @@ int spyon(char *sockname)  {
 	cfmakeraw(&tio);
 	tcsetattr(STDIN_FILENO,TCSANOW,&tio);
 	printf("\r\n\r\nLocal spy mode... press CTRL-C to return to monitor\r\n\r\n");
-	pset[0].fd=STDIN_FILENO;
-	pset[0].events=POLLIN;
-	pset[1].fd=spy_sock;
-	pset[1].events=POLLIN;
 	while(spy_sock!=INVALID_SOCKET)  {
-		if((poll(pset,2,-1))<0)  {
+		FD_ZERO(&rd);
+		FD_SET(STDIN_FILENO,&rd);
+		FD_SET(spy_sock,&rd);
+		if((select(spy_sock > STDIN_FILENO ? spy_sock+1 : STDIN_FILENO+1,&rd,NULL,NULL,NULL))<0)  {
 			close(spy_sock);
 			spy_sock=INVALID_SOCKET;
 			break;
@@ -157,51 +160,35 @@ int spyon(char *sockname)  {
 			retval=SPY_SOCKETLOST;
 			break;
 		}
-		if(pset[0].revents)  {
-			if(pset[0].revents&(POLLNVAL|POLLHUP|POLLERR))  {
+		if(FD_ISSET(STDIN_FILENO,&rd))  {
+			if((i=read(STDIN_FILENO,&key,1))==1)  {
+				/* Check for control keys */
+				switch(key)  {
+					case 3:	/* CTRL-C */
+						close(spy_sock);
+						spy_sock=INVALID_SOCKET;
+						retval=SPY_CLOSED;
+						break;
+					default:
+						write(spy_sock,&key,1);
+				}
+			}
+			else if(i<0) {
 				close(spy_sock);
 				spy_sock=INVALID_SOCKET;
 				retval=SPY_STDINLOST;
 				break;
 			}
-			else  {
-				if((i=read(STDIN_FILENO,&key,1))==1)  {
-					/* Check for control keys */
-					switch(key)  {
-						case CTRL('c'):
-							close(spy_sock);
-							spy_sock=INVALID_SOCKET;
-							retval=SPY_CLOSED;
-							break;
-						default:
-							write(spy_sock,&key,1);
-					}
-				}
-				else if(i<0) {
-					close(spy_sock);
-					spy_sock=INVALID_SOCKET;
-					retval=SPY_STDINLOST;
-					break;
-				}
-			}
 		}
-		if(pset[1].revents)  {
-			if(pset[1].revents&(POLLNVAL|POLLHUP|POLLERR))  {
+		if(spy_sock != INVALID_SOCKET && FD_ISSET(spy_sock,&rd))  {
+			if((i=read(spy_sock,&buf,1))==1)  {
+				write(STDOUT_FILENO,buf,1);
+			}
+			else if(i<0) {
 				close(spy_sock);
 				spy_sock=INVALID_SOCKET;
 				retval=SPY_SOCKETLOST;
 				break;
-			}
-			else  {
-				if((i=read(spy_sock,&buf,1))==1)  {
-					write(STDOUT_FILENO,buf,1);
-				}
-				else if(i<0) {
-					close(spy_sock);
-					spy_sock=INVALID_SOCKET;
-					retval=SPY_SOCKETLOST;
-					break;
-				}
 			}
 		}
 	}
@@ -759,7 +746,10 @@ int main(int argc, char** argv)  {
 							sprintf(str2,"Failed to connect to %s",str);
 							uifc.msg(str2);
 							break;
-							
+
+						case SPY_SELECTFAILED:
+							uifc.msg("select() failed, connection terminated.");
+
 						case SPY_SOCKETLOST:
 							uifc.msg("Spy socket lost");
 							break;
