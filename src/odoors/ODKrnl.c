@@ -198,23 +198,24 @@ tODResult ODKrnlInitialize(void)
    act.sa_flags=SA_RESTART;
    sigemptyset(&(act.sa_mask));
    sigaction(SIGALRM,&act,NULL);
-   itv.it_interval.tv_sec=1;
-   itv.it_interval.tv_usec=0;
-   itv.it_value.tv_sec=1;
-   itv.it_value.tv_usec=0;
+   itv.it_interval.tv_sec=0;
+   itv.it_interval.tv_usec=10000;
+   itv.it_value.tv_sec=0;
+   itv.it_value.tv_usec=10000;
    setitimer(ITIMER_REAL,&itv,NULL);
    
    /* Make stdin signal driven. */
-   act.sa_handler=sig_get_char;
-   act.sa_flags=0;
-   sigemptyset(&(act.sa_mask));
-   sigaction(SIGIO,&act,NULL);
-
-   /* Have SIGIO signales delivered to this process */
-   fcntl(0,F_SETOWN,getpid());
-   
-   /* Enable SIGIO when read possible on stdin */
-   fcntl(0,F_SETFL,fcntl(0,F_GETFL)|O_ASYNC);
+/*   act.sa_handler=sig_get_char;
+/*   act.sa_flags=0;
+/*   sigemptyset(&(act.sa_mask));
+/*   sigaction(SIGIO,&act,NULL);
+/*
+/*   /* Have SIGIO signals delivered to this process */
+/*   fcntl(0,F_SETOWN,getpid());
+/*   
+/*   /* Enable SIGIO when read possible on stdin */
+/*   fcntl(0,F_SETFL,fcntl(0,F_GETFL)|O_ASYNC); */
+/*/
 
    /* Make sure SIGHUP, SIGALRM, and SIGIO are unblocked */
    sigemptyset(&block);
@@ -368,9 +369,9 @@ ODAPIDEF void ODCALL od_kernel(void)
 #ifndef OD_MULTITHREADED
    /* If not operating in local mode, then perform remote-mode specific */
    /* activies.                                                         */
-#ifndef ODPLAT_NIX	/* On *nix, this is handled by signals */
    if(od_control.baud != 0)
    {
+#ifndef ODPLAT_NIX	/* On *nix, this is handled by signals */
       /* If carrier detection is enabled, then shutdown OpenDoors if */
       /* the carrier detect signal is no longer high.                */
       if(!(od_control.od_disable&DIS_CARRIERDETECT))
@@ -381,6 +382,7 @@ ODAPIDEF void ODCALL od_kernel(void)
             ODKrnlForceOpenDoorsShutdown(ERRORLEVEL_NOCARRIER);
          }
       }
+#endif
 
       /* Loop, obtaining any new characters from the serial port and */
       /* adding them to the common local/remote input queue.         */
@@ -389,7 +391,6 @@ ODAPIDEF void ODCALL od_kernel(void)
          ODKrnlHandleReceivedChar(ch, TRUE);
       }
    }
-#endif
 
 #ifdef ODPLAT_DOS
 check_keyboard_again:

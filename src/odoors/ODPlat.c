@@ -619,7 +619,7 @@ BOOL ODTimerElapsed(tODTimer *pTimer)
    end.tv_sec=pTimer->Start.tv_sec+(pTimer->Duration / 1000);
    end.tv_usec=((pTimer->Start.tv_usec)+((pTimer->Duration)*1000))%1000000;
    gettimeofday(&tv,NULL);
-   return(end.tv_sec >= tv.tv_sec && end.tv_usec >= tv.tv_usec);
+   return((end.tv_sec >= tv.tv_sec) && (end.tv_usec >= tv.tv_usec));
 #endif
 }
 
