@@ -121,7 +121,6 @@ extern const uchar* nular;
 
 static scfg_t	scfg;
 static BOOL		scfg_reloaded=TRUE;
-static uint 	http_threads_running=0;
 static BOOL		http_logging_thread_running=FALSE;
 static ulong	active_clients=0;
 static ulong	sockets=0;
@@ -2873,7 +2872,7 @@ void http_logging_thread(void* arg)
 
 	thread_up(TRUE /* setuid */);
 
-	lprintf(LOG_INFO,"0000 http logging thread started");
+	lprintf(LOG_INFO,"%04d http logging thread started", server_socket);
 
 	for(;!terminate_http_logging_thread;) {
 		struct log_data *ld;
@@ -2888,7 +2887,8 @@ void http_logging_thread(void* arg)
 		ld=listRemoveNode(&log_list, FIRST_NODE);
 		pthread_mutex_unlock(&log_mutex);
 		if(ld==NULL) {
-			lprintf(LOG_ERR,"0000 http logging thread received NULL linked list log entry");
+			lprintf(LOG_ERR,"%04d http logging thread received NULL linked list log entry"
+				,server_socket);
 			continue;
 		}
 		if(ld==NULL)
@@ -2900,7 +2900,7 @@ void http_logging_thread(void* arg)
 				fclose(logfile);
 			SAFECOPY(filename,newfilename);
 			logfile=fopen(filename,"ab");
-			lprintf(LOG_INFO,"0000 http logfile is now: %s",filename);
+			lprintf(LOG_INFO,"%04d http logfile is now: %s",server_socket,filename);
 		}
 		if(logfile!=NULL) {
 			sprintf(sizestr,"%d",ld->size);
@@ -2930,7 +2930,7 @@ void http_logging_thread(void* arg)
 		}
 		else {
 			logfile=fopen(filename,"ab");
-			lprintf(LOG_ERR,"0000 http logfile %s was not open!",filename);
+			lprintf(LOG_ERR,"%04d http logfile %s was not open!",server_socket,filename);
 		}
 	}
 	if(logfile!=NULL) {
@@ -2938,7 +2938,7 @@ void http_logging_thread(void* arg)
 		logfile=NULL;
 	}
 	thread_down();
-	lprintf(LOG_INFO,"0000 http logging thread terminated");
+	lprintf(LOG_INFO,"%04d http logging thread terminated",server_socket);
 
 	http_logging_thread_running=FALSE;
 }
@@ -3177,7 +3177,8 @@ void DLLCALL web_server(void* arg)
 			if(active_clients==0) {
 				if(!(startup->options&BBS_OPT_NO_RECYCLE)) {
 					if((p=semfile_list_check(&initialized,&recycle_semfiles))!=NULL) {
-						lprintf(LOG_INFO,"0000 Recycle semaphore file (%s) detected",p);
+						lprintf(LOG_INFO,"%04d Recycle semaphore file (%s) detected"
+							,server_socket,p);
 						break;
 					}
 #if 0	/* unused */
@@ -3185,15 +3186,17 @@ void DLLCALL web_server(void* arg)
 						startup->recycle_now=TRUE;
 #endif
 					if(startup->recycle_now==TRUE) {
-						lprintf(LOG_INFO,"0000 Recycle semaphore signaled");
+						lprintf(LOG_INFO,"%04d Recycle semaphore signaled",server_socket);
 						startup->recycle_now=FALSE;
 						break;
 					}
 				}
 				if(((p=semfile_list_check(&initialized,&shutdown_semfiles))!=NULL
-						&& lprintf(LOG_INFO,"0000 Shutdown semaphore file (%s) detected",p))
+						&& lprintf(LOG_INFO,"%04d Shutdown semaphore file (%s) detected"
+							,server_socket,p))
 					|| (startup->shutdown_now==TRUE
-						&& lprintf(LOG_INFO,"0000 Shutdown semaphore signaled"))) {
+						&& lprintf(LOG_INFO,"%04d Shutdown semaphore signaled"
+							,server_socket))) {
 					startup->shutdown_now=FALSE;
 					terminate_server=TRUE;
 					break;
@@ -3286,14 +3289,15 @@ void DLLCALL web_server(void* arg)
 			served++;
 		}
 
-		/* Wait for connection threads to terminate */
-		if(http_threads_running) {
-			lprintf(LOG_DEBUG,"Waiting for %d connection threads to terminate...", http_threads_running);
+		/* Wait for active clients to terminate */
+		if(active_clients) {
+			lprintf(LOG_DEBUG,"%04d Waiting for %d active clients to disconnect..."
+				,server_socket, active_clients);
 			start=time(NULL);
-			while(http_threads_running) {
-				if(time(NULL)-start>TIMEOUT_THREAD_WAIT) {
-					lprintf(LOG_WARNING,"!TIMEOUT waiting for %d http thread(s) to "
-            			"terminate", http_threads_running);
+			while(active_clients) {
+				if(time(NULL)-start>startup->max_inactivity) {
+					lprintf(LOG_WARNING,"%04d !TIMEOUT waiting for %d active clients"
+						,server_socket, active_clients);
 					break;
 				}
 				mswait(100);
@@ -3306,12 +3310,13 @@ void DLLCALL web_server(void* arg)
 			mswait(100);
 		}
 		if(http_logging_thread_running) {
-			lprintf(LOG_DEBUG,"Waiting for HTTP logging thread to terminate...");
+			lprintf(LOG_DEBUG,"%04d Waiting for HTTP logging thread to terminate..."
+				,server_socket);
 			start=time(NULL);
 			while(http_logging_thread_running) {
 				if(time(NULL)-start>TIMEOUT_THREAD_WAIT) {
-					lprintf(LOG_WARNING,"!TIMEOUT waiting for HTTP logging thread to "
-            			"terminate");
+					lprintf(LOG_WARNING,"%04d !TIMEOUT waiting for HTTP logging thread to "
+            			"terminate", server_socket);
 					break;
 				}
 				mswait(100);
