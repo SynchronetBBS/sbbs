@@ -52,16 +52,22 @@
 #ifndef MAX_PATH
 	#ifdef MAXPATHLEN
 		#define MAX_PATH MAXPATHLEN	/* clib.h */
+	#elif defined _MAX_PATH
+		#define MAX_PATH _MAX_PATH
 	#else
-		#define MAX_PATH 127		/* MS-DOS max */
+		#define MAX_PATH 260		
 	#endif
 #endif
 
 /* Unsigned type short-hands	*/
 #define uchar	unsigned char
-#define ushort  unsigned short
-#define uint    unsigned int
-#define ulong   unsigned long
+#ifdef __GLIBC__
+	#include <sys/types.h>
+#else
+	#define ushort  unsigned short
+	#define uint    unsigned int
+	#define ulong   unsigned long
+#endif
 
 /* Windows Types */
 #ifndef BYTE
