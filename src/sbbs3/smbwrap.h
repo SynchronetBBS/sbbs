@@ -38,8 +38,6 @@
 #ifndef _SMBWRAP_H
 #define _SMBWRAP_H
 
-#include "smblib.h"	/* SMBEXPORT/SMBCALL */
-
 /**********/
 /* Macros */
 /**********/
@@ -80,13 +78,7 @@
 
 #endif
 
-#ifndef BOOL
-	#define BOOL	int
-#endif
-#ifndef TRUE
-	#define TRUE	1
-	#define FALSE	0
-#endif
+#include "smblib.h"	/* SMBEXPORT/SMBCALL */
 
 /**************/
 /* Prototypes */
