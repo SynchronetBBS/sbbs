@@ -94,8 +94,7 @@ static char* DLLCALL truncsp(char *str)
 /****************************************************************************/
 int SMBCALL smb_open(smb_t* smb)
 {
-    int			file;
-    char		path[MAX_PATH+1];
+	int			i;
 	time_t		start=0;
 	smbhdr_t	hdr;
 
@@ -119,24 +118,11 @@ int SMBCALL smb_open(smb_t* smb)
 		SLEEP(smb->retry_delay);
 	}
 
-	SAFEPRINTF(path,"%s.shd",smb->file);
-	if((file=sopen(path,O_RDWR|O_CREAT|O_BINARY,SH_DENYNO,S_IREAD|S_IWRITE))==-1) {
-		safe_snprintf(smb->last_error,sizeof(smb->last_error)
-			,"%d (%s) opening %s"
-			,errno,STRERROR(errno),path);
-		return(SMB_ERR_OPEN); 
-	}
+	if((i=smb_open_fp(smb,&smb->shd_fp,SH_DENYNO))!=SMB_SUCCESS)
+		return(i);
 
-	if((smb->shd_fp=fdopen(file,"r+b"))==NULL) {
-		safe_snprintf(smb->last_error,sizeof(smb->last_error)
-			,"%d (%s) fdopening %s (%d)"
-			,errno,STRERROR(errno),path,file);
-		close(file);
-		return(SMB_ERR_OPEN); 
-	}
-
-	if(filelength(file)>=sizeof(smbhdr_t)) {
-		setvbuf(smb->shd_fp,smb->shd_buf,_IONBF,SHD_BLOCK_LEN);
+	if(filelength(fileno(smb->shd_fp))>=sizeof(smbhdr_t)) {
+		setvbuf(smb->shd_fp,NULL,_IONBF,SHD_BLOCK_LEN);
 		if(smb_locksmbhdr(smb)!=SMB_SUCCESS) {
 			smb_close(smb);
 			/* smb_lockmsghdr set last_error */
@@ -175,47 +161,13 @@ int SMBCALL smb_open(smb_t* smb)
 		rewind(smb->shd_fp); 
 	}
 
-	setvbuf(smb->shd_fp,smb->shd_buf,_IOFBF,SHD_BLOCK_LEN);
+	setvbuf(smb->shd_fp,NULL,_IOFBF,SHD_BLOCK_LEN);
 
-	SAFEPRINTF(path,"%s.sdt",smb->file);
-	if((file=sopen(path,O_RDWR|O_CREAT|O_BINARY,SH_DENYNO,S_IREAD|S_IWRITE))==-1) {
-		safe_snprintf(smb->last_error,sizeof(smb->last_error)
-			,"%d (%s) opening %s"
-			,errno,STRERROR(errno),path);
-		smb_close(smb);
-		return(SMB_ERR_OPEN); 
-	}
+	if((i=smb_open_fp(smb,&smb->sdt_fp,SH_DENYNO))!=SMB_SUCCESS)
+		return(i);
 
-	if((smb->sdt_fp=fdopen(file,"r+b"))==NULL) {
-		safe_snprintf(smb->last_error,sizeof(smb->last_error)
-			,"%d (%s) fdopening %s (%d)"
-			,errno,STRERROR(errno),path,file);
-		close(file);
-		smb_close(smb);
-		return(SMB_ERR_OPEN);
-	}
-
-	setvbuf(smb->sdt_fp,NULL,_IOFBF,2*1024);
-
-	SAFEPRINTF(path,"%s.sid",smb->file);
-	if((file=sopen(path,O_RDWR|O_CREAT|O_BINARY,SH_DENYNO,S_IREAD|S_IWRITE))==-1) {
-		safe_snprintf(smb->last_error,sizeof(smb->last_error)
-			,"%d (%s) opening %s"
-			,errno,STRERROR(errno),path);
-		smb_close(smb);
-		return(SMB_ERR_OPEN); 
-	}
-
-	if((smb->sid_fp=fdopen(file,"r+b"))==NULL) {
-		safe_snprintf(smb->last_error,sizeof(smb->last_error)
-			,"%d (%s) fdopening %s (%d)"
-			,errno,STRERROR(errno),path,file);
-		close(file);
-		smb_close(smb);
-		return(SMB_ERR_OPEN); 
-	}
-
-	setvbuf(smb->sid_fp,NULL,_IOFBF,2*1024);
+	if((i=smb_open_fp(smb,&smb->sid_fp,SH_DENYNO))!=SMB_SUCCESS)
+		return(i);
 
 	return(SMB_SUCCESS);
 }
@@ -242,14 +194,20 @@ void SMBCALL smb_close(smb_t* smb)
 /* Retrys for retry_time number of seconds									*/
 /* Return 0 on success, non-zero otherwise									*/
 /****************************************************************************/
-int SMBCALL smb_open_fp(smb_t* smb, FILE** fp)
+int SMBCALL smb_open_fp(smb_t* smb, FILE** fp, int share)
 {
 	int 	file;
 	char	path[MAX_PATH+1];
 	char*	ext;
 	time_t	start=0;
 
-	if(fp==&smb->sda_fp)
+	if(fp==&smb->shd_fp)
+		ext="shd";
+	else if(fp==&smb->sid_fp)
+		ext="sid";
+	else if(fp==&smb->sdt_fp)
+		ext="sdt";
+	else if(fp==&smb->sda_fp)
 		ext="sda";
 	else if(fp==&smb->sha_fp)
 		ext="sha";
@@ -267,7 +225,7 @@ int SMBCALL smb_open_fp(smb_t* smb, FILE** fp)
 		return(SMB_SUCCESS);
 
 	while(1) {
-		if((file=sopen(path,O_RDWR|O_CREAT|O_BINARY,SH_DENYRW,S_IREAD|S_IWRITE))!=-1)
+		if((file=sopen(path,O_RDWR|O_CREAT|O_BINARY,share,S_IREAD|S_IWRITE))!=-1)
 			break;
 		if(errno!=EACCES && errno!=EAGAIN) {
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
@@ -502,7 +460,7 @@ int SMBCALL smb_getstatus(smb_t* smb)
 		safe_snprintf(smb->last_error,sizeof(smb->last_error),"msgbase not open");
 		return(SMB_ERR_NOT_OPEN);
 	}
-	setvbuf(smb->shd_fp,smb->shd_buf,_IONBF,SHD_BLOCK_LEN);
+	setvbuf(smb->shd_fp,NULL,_IONBF,SHD_BLOCK_LEN);
 	clearerr(smb->shd_fp);
 	if(fseek(smb->shd_fp,sizeof(smbhdr_t),SEEK_SET)) {
 		safe_snprintf(smb->last_error,sizeof(smb->last_error)
@@ -511,7 +469,7 @@ int SMBCALL smb_getstatus(smb_t* smb)
 		return(SMB_ERR_SEEK);
 	}
 	i=smb_fread(smb,&(smb->status),sizeof(smbstatus_t),smb->shd_fp);
-	setvbuf(smb->shd_fp,smb->shd_buf,_IOFBF,SHD_BLOCK_LEN);
+	setvbuf(smb->shd_fp,NULL,_IOFBF,SHD_BLOCK_LEN);
 	if(i==sizeof(smbstatus_t))
 		return(SMB_SUCCESS);
 	safe_snprintf(smb->last_error,sizeof(smb->last_error)
@@ -1725,6 +1683,8 @@ int SMBCALL smb_create(smb_t* smb)
 	SAFEPRINTF(str,"%s.sha",smb->file);
 	remove(str);                        /* if it exists, delete it */
 	SAFEPRINTF(str,"%s.sch",smb->file);
+	remove(str);
+	SAFEPRINTF(str,"%s.hash",smb->file);
 	remove(str);
 	smb_unlocksmbhdr(smb);
 	return(SMB_SUCCESS);

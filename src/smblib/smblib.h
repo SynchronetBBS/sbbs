@@ -90,11 +90,11 @@
 /* Legacy API functions */
 #define smb_incmsg(smb,msg)	smb_incmsg_dfields(smb,msg,1)
 #define smb_incdat			smb_incmsgdat
-#define smb_open_da(smb)	smb_open_fp(smb,&(smb)->sda_fp)
+#define smb_open_da(smb)	smb_open_fp(smb,&(smb)->sda_fp,SH_DENYRW)
 #define smb_close_da(smb)	smb_close_fp(&(smb)->sda_fp)
-#define smb_open_ha(smb)	smb_open_fp(smb,&(smb)->sha_fp)
+#define smb_open_ha(smb)	smb_open_fp(smb,&(smb)->sha_fp,SH_DENYRW)
 #define smb_close_ha(smb)	smb_close_fp(&(smb)->sha_fp)
-#define smb_open_hash(smb)	smb_open_fp(smb,&(smb)->hash_fp)
+#define smb_open_hash(smb)	smb_open_fp(smb,&(smb)->hash_fp,SH_DENYRW)
 #define smb_close_hash(smb)	smb_close_fp(&(smb)->hash_fp)
 
 #ifdef __cplusplus
@@ -105,7 +105,7 @@ SMBEXPORT int 		SMBCALL smb_ver(void);
 SMBEXPORT char*		SMBCALL smb_lib_ver(void);
 SMBEXPORT int 		SMBCALL smb_open(smb_t* smb);
 SMBEXPORT void		SMBCALL smb_close(smb_t* smb);
-SMBEXPORT int 		SMBCALL smb_open_fp(smb_t* smb, FILE**);
+SMBEXPORT int 		SMBCALL smb_open_fp(smb_t* smb, FILE**, int share);
 SMBEXPORT void		SMBCALL smb_close_fp(FILE**);
 SMBEXPORT int 		SMBCALL smb_create(smb_t* smb);
 SMBEXPORT int 		SMBCALL smb_stack(smb_t* smb, int op);
