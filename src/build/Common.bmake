@@ -158,6 +158,7 @@ CFLAGS	=	-q
 LDFLAGS	=	$(CFLAGS)
 CFLAGS  =	$(CFLAGS) -M -X-
 MT_CFLAGS = -WM 
+MT_LDFLAGS = -WM 
 !ifdef DEBUG
 CFLAGS	=	$(CFLAGS) -v
 !endif
