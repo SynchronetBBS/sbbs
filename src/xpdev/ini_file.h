@@ -96,6 +96,7 @@ void*		iniFreeNamedStringList(named_string_t** list);
 
 
 /* File I/O Functions */
+char*		iniFileName(char* dest, size_t maxlen, const char* dir, const char* fname);
 FILE*		iniOpenFile(const char* fname);
 str_list_t	iniReadFile(FILE*);
 BOOL		iniWriteFile(FILE*, const str_list_t);

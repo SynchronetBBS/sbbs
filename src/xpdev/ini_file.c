@@ -854,6 +854,39 @@ ulong iniGetIpAddress(str_list_t* list, const char* section, const char* key, ul
 
 #endif	/* !NO_SOCKET_SUPPORT */
 
+char* iniFileName(char* dest, size_t maxlen, const char* indir, const char* infname)
+{
+	char	dir[MAX_PATH+1];
+	char	fname[MAX_PATH+1];
+	char	ext[MAX_PATH+1];
+	char*	p;
+
+	SAFECOPY(dir,indir);
+	backslash(dir);
+	SAFECOPY(fname,infname);
+	ext[0]=0;
+	if((p=getfext(fname))!=NULL) {
+		SAFECOPY(ext,p);
+		*p=0;
+	}
+
+#if !defined(NO_SOCKET_SUPPORT)
+	{
+		char hostname[128];
+
+		if(gethostname(hostname,sizeof(hostname))==0) {
+			safe_snprintf(dest,maxlen,"%s%s.%s%s",dir,fname,hostname,ext);
+			if(fexistcase(dest))
+				return(dest);
+		}
+	}
+#endif
+	
+	safe_snprintf(dest,maxlen,"%s%s%s",dir,fname,ext);
+	fexistcase(dest);
+	return(dest);
+}
+
 double iniReadFloat(FILE* fp, const char* section, const char* key, double deflt)
 {
 	char	buf[INI_MAX_VALUE_LEN];
