@@ -2278,7 +2278,6 @@ void __fastcall TMainForm::UserTruncateMenuItemClick(TObject *Sender)
         if(!del_lastuser(&cfg))
             break;
         deleted++;
-        Sleep(1);
     }
     Screen->Cursor=crDefault;
     char str[128];
