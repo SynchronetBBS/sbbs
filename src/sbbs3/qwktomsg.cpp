@@ -112,24 +112,14 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 		username(&cfg,touser,str);
 		smb_hfield(&msg,RECIPIENT,strlen(str),str);
 		sprintf(str,"%u",touser);
-		smb_hfield(&msg,RECIPIENTEXT,strlen(str),str); }
-
-	else {
+		smb_hfield(&msg,RECIPIENTEXT,strlen(str),str); 
+	} else {
 		sprintf(str,"%25.25s",(char *)hdrblk+21);     /* To user */
 		truncsp(str);
 		smb_hfield(&msg,RECIPIENT,strlen(str),str);
 		strlwr(str);
-		msg.idx.to=crc16(str); }
-
-	smb_hfield(&msg,SENDER,strlen(str),str);
-	if((uint)subnum==INVALID_SUB) {
-		if(useron.rest&FLAG('Q') || fromhub)
-			msg.idx.from=0;
-		else
-			msg.idx.from=useron.number; }
-	else {
-		strlwr(str);
-		msg.idx.from=crc16(str); }
+		msg.idx.to=crc16(str); 
+	}
 
 	sprintf(str,"%25.25s",hdrblk+71);   /* Subject */
 	truncsp(str);
@@ -280,6 +270,16 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 			strcpy(str,useron.name);
 		else
 			strcpy(str,useron.alias);
+	}
+	smb_hfield(&msg,SENDER,strlen(str),str);
+	if((uint)subnum==INVALID_SUB) {
+		if(useron.rest&FLAG('Q') || fromhub)
+			msg.idx.from=0;
+		else
+			msg.idx.from=useron.number; 
+	} else {
+		strlwr(str);
+		msg.idx.from=crc16(str); 
 	}
 
 	if(!strnicmp(header+skip,"@MSGID:",7)) {
