@@ -86,26 +86,6 @@ char		compiler[32];
 
 BOOL pause_on_exit=FALSE;
 
-#ifdef __WATCOMC__
-/******************************************************************************
- A DOS to Unix function - because WATCOM doesn't have one
-******************************************************************************/
-time_t dostounix(struct date *d,struct time *t)
-{
-	struct tm tm;
-
-	tm.tm_sec=t->ti_sec;
-	tm.tm_min=t->ti_min;
-	tm.tm_hour=t->ti_hour;
-	tm.tm_mday=d->da_day;
-	tm.tm_mon=(d->da_mon-1);
-	tm.tm_year=d->da_year-1900;
-	tm.tm_isdst=0;
-
-	return(mktime(&tm));
-}
-#endif
-
 #ifndef __NT__
 #define delfile(x) remove(x)
 #else
@@ -4021,7 +4001,7 @@ int main(int argc, char **argv)
 			,password[16];
 	uchar	*fmsgbuf=NULL;
 	ushort	attr;
-	int 	i,j,k,file,fmsg, grp;
+	int 	i,j,k,file,fmsg,grp,node;
 	BOOL	grunged;
 	uint	subnum[MAX_OPEN_SMBS]={INVALID_SUB};
 	ulong	echomail=0,l,m/* f, */,areatag;
@@ -5014,18 +4994,19 @@ int main(int argc, char **argv)
 				bail(1); }
 			fclose(fidomsg);
 
+			attr=0;
+			node=matchnode(addr,0);
+			if(node<cfg.nodecfgs && cfg.nodecfg[node].route.zone
+				&& !(hdr.attr&(FIDO_CRASH|FIDO_HOLD))) {
+				addr=cfg.nodecfg[node].route;		/* Routed */
+				if(cfg.log&LOG_ROUTING)
+					logprintf("Routing %s to %s",path,faddrtoa(&addr,NULL));
+				node=matchnode(addr,0); 
+			}
+			if(node<cfg.nodecfgs)
+				attr=cfg.nodecfg[node].attr;
+
 			if(misc&FLO_MAILER) {
-				attr=0;
-				i=matchnode(addr,0);
-				if(i<cfg.nodecfgs)
-					if(cfg.nodecfg[i].route.zone
-						&& !(hdr.attr&(FIDO_CRASH|FIDO_HOLD))) {
-						addr=cfg.nodecfg[i].route;		/* Routed */
-						if(cfg.log&LOG_ROUTING)
-							logprintf("Routing %s to %s",path,faddrtoa(&addr,NULL));
-						i=matchnode(addr,0); }
-				if(i<cfg.nodecfgs)
-					attr=cfg.nodecfg[i].attr;
 				if(hdr.attr&FIDO_CRASH)
 					attr|=ATTR_CRASH;
 				else if(hdr.attr&FIDO_HOLD)
@@ -5068,12 +5049,13 @@ int main(int argc, char **argv)
 					,packet);
 				logprintf("ERROR line %d opening %s %s",__LINE__,packet
 					,strerror(errno));
-				bail(1); }
+				bail(1); 
+			}
 
 			if(!filelength(file)) {
 				memset(&pkthdr,0,sizeof(pkthdr));
 				pkthdr.orignode=hdr.orignode;
-				pkthdr.destnode=hdr.destnode;
+				pkthdr.destnode=addr.node;
 				pkthdr.year=tm->tm_year+1900;
 				pkthdr.month=tm->tm_mon;
 				pkthdr.day=tm->tm_mday;
@@ -5083,14 +5065,13 @@ int main(int argc, char **argv)
 				pkthdr.baud=0x00;
 				pkthdr.pkttype=0x0002;
 				pkthdr.orignet=hdr.orignet;
-				pkthdr.destnet=hdr.destnet;
+				pkthdr.destnet=addr.net;
 				pkthdr.prodcode=0x00;
 				pkthdr.sernum=0;
 				pkthdr.origzone=hdr.origzone;
-				pkthdr.destzone=hdr.destzone;
-				i=matchnode(addr,0);
-				if(i<cfg.nodecfgs) {
-					if(cfg.nodecfg[i].pkt_type==PKT_TWO_PLUS) {
+				pkthdr.destzone=addr.zone;
+				if(node<cfg.nodecfgs) {
+					if(cfg.nodecfg[node].pkt_type==PKT_TWO_PLUS) {
 						memset(&two_plus,0,sizeof(two_plus));
 						if(hdr.origpoint) {
 							pkthdr.orignet=-1;
@@ -5103,10 +5084,10 @@ int main(int argc, char **argv)
 						two_plus.origzone=pkthdr.origzone;
 						two_plus.destzone=pkthdr.destzone;
 						two_plus.origpoint=hdr.origpoint;
-						two_plus.destpoint=hdr.destpoint;
+						two_plus.destpoint=addr.point;
 						memcpy(&pkthdr.empty,&two_plus,sizeof(pkthdr.empty)); 
 					}
-					memcpy(pkthdr.password,cfg.nodecfg[i].pktpwd,sizeof(pkthdr.password));
+					memcpy(pkthdr.password,cfg.nodecfg[node].pktpwd,sizeof(pkthdr.password));
 				}
 				fwrite(&pkthdr,sizeof(pkthdr_t),1,stream); 
 			}
