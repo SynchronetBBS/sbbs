@@ -121,7 +121,7 @@ void __fastcall TClientForm::FilterIpMenuItemClick(TObject *Sender)
         		,MB_YESNOCANCEL|MB_ICONQUESTION);
         if(res==IDCANCEL)
     		break;
-    	if(res==IDOK)
+    	if(res==IDYES)
 	        MainForm->FilterIP(
     	     	 ListItem->SubItems->Strings[2].c_str() /* ip_addr */
 	        	,ListItem->SubItems->Strings[0].c_str() /* protocol */
