@@ -51,6 +51,7 @@ typedef struct {
     DWORD   interface_addr;
     DWORD	options;			/* See FTP_OPT definitions */
     DWORD	js_max_bytes;
+	DWORD	js_cx_stack;
 	int 	(*lputs)(char*);
 	void	(*status)(char*);
     void	(*started)(void);

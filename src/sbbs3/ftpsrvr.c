@@ -481,9 +481,9 @@ js_initcx(JSRuntime* runtime, SOCKET sock, JSObject** glob, JSObject** ftp)
 	BOOL		success=FALSE;
 
 	lprintf("%04d JavaScript: Initializing context (stack: %lu bytes)"
-		,sock,JAVASCRIPT_CONTEXT_STACK);
+		,sock,startup->js_cx_stack);
 
-    if((js_cx = JS_NewContext(runtime, JAVASCRIPT_CONTEXT_STACK))==NULL)
+    if((js_cx = JS_NewContext(runtime, startup->js_cx_stack))==NULL)
 		return(NULL);
 
 	lprintf("%04d JavaScript: Context created",sock);
@@ -4529,6 +4529,7 @@ void DLLCALL ftp_server(void* arg)
 		startup->options|=FTP_OPT_NO_JAVASCRIPT;
 #ifdef JAVASCRIPT
 	if(startup->js_max_bytes==0)			startup->js_max_bytes=JAVASCRIPT_MAX_BYTES;
+	if(startup->js_cx_stack==0)				startup->js_cx_stack=JAVASCRIPT_CONTEXT_STACK;
 #endif
 
 	uptime=0;

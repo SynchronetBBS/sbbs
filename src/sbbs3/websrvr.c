@@ -2005,9 +2005,9 @@ js_initcx(JSRuntime* runtime, SOCKET sock, JSObject** glob, http_session_t *sess
 	BOOL		success=FALSE;
 
 	lprintf("%04d JavaScript: Initializing context (stack: %lu bytes)"
-		,sock,JAVASCRIPT_CONTEXT_STACK);
+		,sock,startup->js_cx_stack);
 
-    if((js_cx = JS_NewContext(runtime, JAVASCRIPT_CONTEXT_STACK))==NULL)
+    if((js_cx = JS_NewContext(runtime, startup->js_cx_stack))==NULL)
 		return(NULL);
 
 	lprintf("%04d JavaScript: Context created",sock);
@@ -2446,6 +2446,7 @@ void DLLCALL web_server(void* arg)
 	if(startup->max_inactivity==0) 			startup->max_inactivity=120; /* seconds */
 	if(startup->sem_chk_freq==0)			startup->sem_chk_freq=5; /* seconds */
 	if(startup->js_max_bytes==0)			startup->js_max_bytes=JAVASCRIPT_MAX_BYTES;
+	if(startup->js_cx_stack==0)				startup->js_cx_stack=JAVASCRIPT_CONTEXT_STACK;
 	if(startup->ssjs_ext[0]==0)				SAFECOPY(startup->ssjs_ext,"ssjs");
 
 	/* Copy html directories */
