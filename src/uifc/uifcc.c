@@ -133,6 +133,8 @@ static int uinput(int imode, int left, int top, char *prompt, char *str
 static void umsg(char *str);
 static void upop(char *str);
 static void sethelp(int line, char* file);
+static void showbuf(char *buf, char *title, BOOL markup);
+static void showfile(char *file, char *title, BOOL markup);
 
 /* Dynamic menu support */
 static int *last_menu_cur=NULL;
@@ -182,7 +184,7 @@ int uifcinic(uifcapi_t* uifcapi)
     api->sethelp=sethelp;
 #ifdef __unix__
     api->showhelp=help;
-	api->helptitle=NULL;
+	api->showbuf=showbuf;
 #endif
 
 #if defined(LOCALE)
@@ -1681,86 +1683,67 @@ void sethelp(int line, char* file)
     helpfile=file;
 }
 
-/************************************************************/
-/* Help (F1) key function. Uses helpbuf as the help input.	*/
-/************************************************************/
-void help()
+/****************************************************************************/
+/* Shows a scrollable text buffer - optionally parsing "help markup codes"	*/
+/****************************************************************************/
+void showbuf(char *hbuf, char *title, BOOL markup)
 {
-	char *savscrn,*buf,inverse=0,high=0
-		,hbuf[HELPBUF_SIZE],str[256];
+	char *savscrn,inverse=0,high=0;
+	char *buf;
+	char *textbuf;
     char *p;
 	uint i,j,k,len;
-	unsigned short line;
-	long l;
-	FILE *fp;
 	int  old_curs;
+	int  win_len;
+	int	 lines;
 #ifndef __FLAT__
 	union  REGS r;
 #endif
 
 	old_curs=curs_set(0);
 
-	if((savscrn=(char *)MALLOC(scrn_width*25*2))==NULL) {
+	if((savscrn=(char *)MALLOC(scrn_width*api->scrn_len*2))==NULL) {
 		cprintf("UIFC line %d: error allocating %u bytes\r\n"
 			,__LINE__,scrn_width*25*2);
 		curs_set(1);
 		return; }
-	if((buf=(char *)MALLOC(76*21*2))==NULL) {
+	win_len=api->scrn_len-2;
+	if((buf=(char *)MALLOC(76*win_len*2))==NULL) {
 		cprintf("UIFC line %d: error allocating %u bytes\r\n"
 			,__LINE__,76*21*2);
 		FREE(savscrn);
 		curs_set(1);
 		return; }
 	hidemouse();
-	gettext(1,1,scrn_width,25,savscrn);
-	memset(buf,SP,76*21*2);
-	for(i=1;i<76*21*2;i+=2)
+	gettext(1,1,scrn_width,api->scrn_len,savscrn);
+	memset(buf,SP,76*win_len*2);
+	for(i=1;i<76*win_len*2;i+=2)
 		buf[i]=(hclr|(bclr<<4));
-        buf[0]='Ú';
-	if(api->helptitle==NULL) {
-		for(i=2;i<30*2;i+=2)
-    	      buf[i]='Ä';
-	    buf[i]='´'; i+=4;
-		buf[i]='O'; i+=2;
-		buf[i]='n'; i+=2;
-		buf[i]='l'; i+=2;
-		buf[i]='i'; i+=2;
-		buf[i]='n'; i+=2;
-		buf[i]='e'; i+=4;
-		buf[i]='H'; i+=2;
-		buf[i]='e'; i+=2;
-		buf[i]='l'; i+=2;
-		buf[i]='p'; i+=4;
-    	buf[i]='Ã'; i+=2;
-		for(j=i;j<i+(30*2);j+=2)
-    	    buf[j]='Ä';
-	}
-	else {
-		j=strlen(api->helptitle);
-		if(j>70)
-			*(api->helptitle+70)=0;
-		for(i=2;i<(35-(j/2))*2;i+=2)
-    	      buf[i]='Ä';
-	    buf[i]='´'; i+=4;
-		for(p=api->helptitle;*p;p++) {
-			buf[i]=*p;
-			i+=2;
-		}
+    buf[0]='Ú';
+	j=strlen(title);
+	if(j>70)
+		*(title+70)=0;
+	for(i=2;i<(35-(j/2))*2;i+=2)
+   	      buf[i]='Ä';
+    buf[i]='´'; i+=4;
+	for(p=title;*p;p++) {
+		buf[i]=*p;
 		i+=2;
-    	buf[i]='Ã'; i+=2;
-		for(j=i;j<(75*2);j+=2)
-    	    buf[j]='Ä';
 	}
+	i+=2;
+   	buf[i]='Ã'; i+=2;
+	for(j=i;j<(75*2);j+=2)
+   	    buf[j]='Ä';
 	i=j;
     buf[i]='¿'; i+=2;
 	j=i;	/* leave i alone */
-	for(k=0;k<19;k++) { 		/* the sides of the box */
+	for(k=0;k<(win_len-2);k++) { 		/* the sides of the box */
         buf[j]='³'; j+=2;
 		j+=(74*2);
         buf[j]='³'; j+=2; }
     buf[j]='À'; j+=2;
 	for(k=j;k<j+(23*2);k+=2)
-        buf[k]='Ä';
+		buf[k]='Ä';
     buf[k]='´'; k+=4;
 	buf[k]='H'; k+=2;
 	buf[k]='i'; k+=2;
@@ -1785,6 +1768,131 @@ void help()
 	for(j=k;j<k+(24*2);j+=2)
         buf[j]='Ä';
     buf[j]='Ù';
+	puttext(3,3,78,win_len+2,buf);
+	len=strlen(hbuf);
+
+	i=0;
+	lines=1;		/* The first one is free */
+	k=0;
+	for(j=0;j<len;j++) {
+		k++;
+		if(hbuf[j]==LF)
+			lines++;
+		if(k>72) {
+			k=0;
+			lines++;
+		}
+	}
+	if(lines < win_len-4)
+		lines=win_len-4;
+
+	if((buf=(char *)textbuf=MALLOC(72*lines*2))==NULL) {
+		cprintf("UIFC line %d: error allocating %u bytes\r\n"
+			,__LINE__,72*lines*2);
+		FREE(savscrn);
+		FREE(buf);
+		curs_set(1);
+		return; }
+	memset(textbuf,SP,72*lines*2);
+	for(i=1;i<72*lines*2;i+=2)
+		buf[i]=(hclr|(bclr<<4));
+	i=0;
+	for(j=0;j<len;j++,i+=2) {
+		if(hbuf[j]==LF) {
+			i+=2;
+			while(i%(72*2)) i++; i-=2; }
+		else if(markup && (hbuf[j]==2 || hbuf[j]=='~')) {		 /* Ctrl-b toggles inverse */
+			inverse=!inverse;
+			i-=2; }
+		else if(markup && (hbuf[j]==1 || hbuf[j]=='`')) {		 /* Ctrl-a toggles high intensity */
+			high=!high;
+			i-=2; }
+		else if(hbuf[j]!=CR) {
+			textbuf[i]=hbuf[j];
+			textbuf[i+1]=inverse ? (bclr|(cclr<<4))
+				: high ? (hclr|(bclr<<4)) : (lclr|(bclr<<4)); } }
+	showmouse();
+	i=0;
+	p=textbuf;
+	while(i==0) {
+		puttext(5,5,76,win_len,p);
+		if(inkey(1)) {
+			switch(inkey(0)) {
+				case KEY_HOME:	/* home */
+					p=textbuf;
+					break;
+
+				case KEY_UP:	/* up arrow */
+					p = p-(72*2);
+					if(p<textbuf)
+						p=textbuf;
+					break;
+					
+				case KEY_PPAGE:	/* PgUp */
+					p = p-(72*2*(win_len-5));
+					if(p<textbuf)
+						p=textbuf;
+					break;
+
+				case KEY_NPAGE:	/* PgDn */
+					p=p+72*2*(win_len-5);
+					if(p > textbuf+(lines-win_len+1)*72*2)
+						p=textbuf+(lines-win_len+1)*72*2;
+					if(p<textbuf)
+						p=textbuf;
+					break;
+
+				case KEY_END:	/* end */
+					p=textbuf+(lines-win_len+1)*72*2;
+					if(p<textbuf)
+						p=textbuf;
+					break;
+
+				case KEY_DOWN:	/* dn arrow */
+					p = p+(72*2);
+					if(p > textbuf+(lines-win_len+1)*72*2)
+						p=textbuf+(lines-win_len+1)*72*2;
+					if(p<textbuf)
+						p=textbuf;
+					break;
+
+				default:
+					i=1;
+			}
+		}
+		mswait(1);
+	}
+	#ifndef __FLAT__
+		if(api->mode&UIFC_MOUSE) {
+			/* ToDo more mouse stiff */
+		}
+	#endif
+
+	hidemouse();
+	puttext(1,1,scrn_width,api->scrn_len,savscrn);
+	showmouse();
+	FREE(savscrn);
+	FREE(buf);
+	if(old_curs != ERR)
+		curs_set(old_curs);
+}
+
+/************************************************************/
+/* Help (F1) key function. Uses helpbuf as the help input.	*/
+/************************************************************/
+void help()
+{
+	char hbuf[HELPBUF_SIZE],str[256];
+    char *p;
+	unsigned short line;
+	long l;
+	FILE *fp;
+	int  old_curs;
+#ifndef __FLAT__
+	union  REGS r;
+#endif
+
+	old_curs=curs_set(0);
 
 	if(!api->helpbuf) {
 		if((fp=fopen(api->helpixbfile,"rb"))==NULL)
@@ -1824,44 +1932,7 @@ void help()
 	else
 		strcpy(hbuf,api->helpbuf);
 
-	len=strlen(hbuf);
-
-	i+=78*2;
-	for(j=0;j<len;j++,i+=2) {
-		if(hbuf[j]==LF) {
-			while(i%(76*2)) i++;
-			i+=2; }
-		else if(hbuf[j]==2 || hbuf[j]=='~') {		 /* Ctrl-b toggles inverse */
-			inverse=!inverse;
-			i-=2; }
-		else if(hbuf[j]==1 || hbuf[j]=='`') {		 /* Ctrl-a toggles high intensity */
-			high=!high;
-			i-=2; }
-		else if(hbuf[j]!=CR) {
-			buf[i]=hbuf[j];
-			buf[i+1]=inverse ? (bclr|(cclr<<4))
-				: high ? (hclr|(bclr<<4)) : (lclr|(bclr<<4)); } }
-	puttext(3,3,78,23,buf);
-	showmouse();
-	while(1) {
-		if(inkey(1)) {
-			inkey(0);
-			break; }
-	#ifndef __FLAT__
-		if(api->mode&UIFC_MOUSE) {
-			/* ToDo more mouse stiff */
-		}
-	#endif
-		mswait(1);
-		}
-
-	hidemouse();
-	puttext(1,1,scrn_width,25,savscrn);
-	showmouse();
-	FREE(savscrn);
-	FREE(buf);
-	if(old_curs != ERR)
-		curs_set(old_curs);
+	showbuf(hbuf, "Online Help", TRUE);
 }
 
 static int puttext(int sx, int sy, int ex, int ey, unsigned char *fill)

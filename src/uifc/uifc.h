@@ -345,7 +345,6 @@ typedef struct {
 /****************************************************************************/
     void    (*sethelp)(int line, char* file);
 
-
 #ifdef __unix__
 /****************************************************************************/
 /* Shows the current help text												*/
@@ -353,9 +352,10 @@ typedef struct {
     void    (*showhelp)(void);
 	
 /****************************************************************************/
-/* Shows help title text													*/
+/* Shows a scrollable text buffer - optionally parsing "help markup codes"	*/
 /****************************************************************************/
-    char	*helptitle;
+	void (*showbuf)(char *buf, char *title, BOOL markup);
+
 #endif
 } uifcapi_t;
 
