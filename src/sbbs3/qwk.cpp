@@ -352,7 +352,7 @@ void sbbs_t::qwk_success(ulong msgcnt, char bi, char prepack)
 
 		/* Mark as READ and DELETE */
 		for(l=0;l<msgs;l++) {
-			if(mail[l].time>qwkmail_time)
+			if(mail[l].number>qwkmail_last)
 				continue;
 			msg.idx.offset=0;
 			if(!loadmsg(&msg,mail[l].number))

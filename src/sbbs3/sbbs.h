@@ -652,7 +652,7 @@ public:
 	
 	/* qwk.cpp */
 	bool	qwklogon;
-	ulong	qwkmail_time;
+	ulong	qwkmail_last;
 	void	qwk_sec(void);
 	int		qwk_route(char *inaddr, char *fulladdr);
 	void	update_qwkroute(char *via);

@@ -257,7 +257,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 		/***********************/
 		/* Pack E-mail, if any */
 		/***********************/
-		qwkmail_time=time(NULL);
+		qwkmail_last=0;
 		mail=loadmail(&smb,&mailmsgs,useron.number,0,useron.qwk&QWK_ALLMAIL ? 0
 			: LM_UNREAD);
 		if(mailmsgs && !(sys_status&SS_ABORT)) {
@@ -288,6 +288,8 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 
 				memset(&msg,0,sizeof(msg));
 				msg.idx=mail[l];
+				if(msg.idx.number>qwkmail_last)
+					qwkmail_last=msg.idx.number;
 				if(!loadmsg(&msg,mail[l].number))
 					continue;
 

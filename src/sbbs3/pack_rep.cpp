@@ -95,7 +95,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 	/***********************/
 	/* Pack E-mail, if any */
 	/***********************/
-	qwkmail_time=time(NULL);
+	qwkmail_last=0;
 	mail=loadmail(&smb,&mailmsgs,0,MAIL_YOUR,0);
 	packedmail=0;
 	if(mailmsgs) {
@@ -105,6 +105,8 @@ bool sbbs_t::pack_rep(uint hubnum)
 
 			memset(&msg,0,sizeof(msg));
 			msg.idx=mail[l];
+			if(msg.idx.number>qwkmail_last)
+				qwkmail_last=msg.idx.number;
 			if(!loadmsg(&msg,mail[l].number))
 				continue;
 
@@ -271,7 +273,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 		deleted=0;
 		/* Mark as READ and DELETE */
 		for(l=0;(ulong)l<mailmsgs;l++) {
-			if(mail[l].time>qwkmail_time)
+			if(mail[l].number>qwkmail_last)
 				continue;
 			memset(&msg,0,sizeof(msg));
 			msg.idx=mail[l];
@@ -301,6 +303,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 		smb_close(&smb);
 		if(mailmsgs)
 			FREE(mail); 
+		eprintf("Deleted %d sent NetMail messages",deleted); 
 	}
 
 	return(true);
