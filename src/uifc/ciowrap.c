@@ -331,6 +331,26 @@ void textattr(unsigned char attr)
 	bkgdset(colour);
 }
 
+void textbackground(int colour)
+{
+	unsigned char attr;
+	
+	attr=lastattr;
+	attr&=143;
+	attr|=(colour<<4);
+	textattr(attr);
+}
+
+void textcolor(int colour)
+{
+	unsigned char attr;
+	
+	attr=lastattr;
+	attr&=240;
+	attr|=colour;
+	textattr(attr);
+}
+
 int kbhit(void)
 {
 	struct timeval timeout;
