@@ -354,7 +354,13 @@ int main(int argc, char **argv)
 	long value;
 	node_t node;
 
-	printf("\nSynchronet Node Display/Control Utility v1.03\n\n");
+	printf("\nSynchronet Node Display/Control Utility v1.10\n\n");
+
+	if(sizeof(node_t)!=SIZEOF_NODE_T) {
+		printf("COMPILER ERROR: sizeof(node_t)=%d instead of %d\n"
+			,sizeof(node_t),SIZEOF_NODE_T);
+		return(-1);
+	}
 
 	if(argc<2) {
 		printf("usage: node [/debug] [action [on|off]] [node numbers] [...]"
