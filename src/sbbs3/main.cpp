@@ -1343,7 +1343,7 @@ void event_thread(void* arg)
 					sbbs->online=ON_LOCAL;
 					sbbs->external(
 						 sbbs->cmdstr(sbbs->cfg.qhub[i]->call,nulstr,nulstr,NULL)
-						,EX_OFFLINE|EX_BG);
+						,EX_OFFLINE|EX_SH);	/* sh for Unix perl scripts */
 				}
 			} 
 		}
@@ -1386,7 +1386,7 @@ void event_thread(void* arg)
 					sbbs->online=ON_LOCAL;
 					sbbs->external(
 						 sbbs->cmdstr(sbbs->cfg.phub[i]->call,nulstr,nulstr,NULL)
-						,EX_OFFLINE|EX_BG);
+						,EX_OFFLINE|EX_SH);	/* sh for Unix perl scripts */
 				} 
 			}
 		}
