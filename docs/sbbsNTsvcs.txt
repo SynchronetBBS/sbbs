@@ -28,6 +28,11 @@ services know the location of your Synchronet CTRL directory from the
 SBBSCTRL environment variable. See sbbscon.txt for more details about the
 SBBSCTRL environment variable and the initialization file (sbbs.ini).
 
+If you are using the Synchronet Control Panel (for Win32) and want to use
+your current settings for the Synchronet Console or NT Services, you can
+export your settings to your ctrl/sbbs.ini file using the File->Export
+Settings menu option.
+
 Once installed, the Synchronet NT services may be started from the NT Services
 dialog (under the Control Panel), by running the Synchronet Control Panel, or 
 if the system is rebooted, the services will start automatically.

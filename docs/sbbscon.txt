@@ -128,6 +128,11 @@ command-line, sbbs will use the SBBSCTRL environment variable to determine
 the location of your Synchronet ctrl directory, where it expects to find
 either <HOSTNAME>.ini or sbbs.ini.
 
+If you are using the Synchronet Control Panel (for Win32) and want to use
+your current settings for the Synchronet Console or NT Services, you can
+export your settings to your ctrl/sbbs.ini file using the File->Export
+Settings menu option.
+
 
 5. For Unix Sysops
 --------------------
