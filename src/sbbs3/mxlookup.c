@@ -47,6 +47,7 @@
 /* Synchronet-specific */
 #include "gen_defs.h"
 #include "sbbsinet.h"
+#include "smbdefs.h"		/* _PACK */
 
 #ifdef _WIN32
 #pragma pack(push)
