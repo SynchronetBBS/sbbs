@@ -221,7 +221,7 @@ void xmodem_put_block(xmodem_t* xm, uchar* block, uint block_size, ulong block_n
 	}
 	else
 		putcom(chksum);
-	YIELD();
+//	YIELD();
 }
 
 /************************************************************/
@@ -235,6 +235,7 @@ int xmodem_get_ack(xmodem_t* xm, int tries)
 	for(errors=0;errors<tries;errors++) {
 
 		if((*xm->mode)&GMODE) {		/* Don't wait for ACK on Ymodem-G */
+			YIELD();
 			if(getcom(0)==CAN) {
 				newline();
 				fprintf(xm->statfp,"Cancelled remotely\n");

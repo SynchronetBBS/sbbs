@@ -42,7 +42,7 @@ RSC=rc.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /c
-# ADD CPP /nologo /W3 /GX /O2 /I "..\xpdev" /I "..\smblib" /D "NDEBUG" /D "WIN32" /D "_CONSOLE" /D "_MBCS" /D "SBBS_EXPORTS" /FD /c
+# ADD CPP /nologo /MT /W3 /GX /O2 /I "..\xpdev" /I "..\smblib" /D "NDEBUG" /D "WIN32" /D "_CONSOLE" /D "_MBCS" /D "SBBS_EXPORTS" /D "RINGBUF_SEM" /FD /c
 # SUBTRACT CPP /YX
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
@@ -67,7 +67,7 @@ LINK32=link.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /GZ /c
-# ADD CPP /nologo /W3 /Gm /GX /ZI /Od /I "..\xpdev" /I "..\smblib" /D "_DEBUG" /D "WIN32" /D "_CONSOLE" /D "_MBCS" /D "SBBS_EXPORTS" /YX /FD /GZ /c
+# ADD CPP /nologo /MTd /W3 /Gm /GX /ZI /Od /I "..\xpdev" /I "..\smblib" /D "_DEBUG" /D "WIN32" /D "_CONSOLE" /D "_MBCS" /D "SBBS_EXPORTS" /D "RINGBUF_SEM" /YX /FD /GZ /c
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
 # ADD RSC /l 0x409 /d "_DEBUG"
 BSC32=bscmake.exe
@@ -90,6 +90,10 @@ SOURCE=..\smblib\crc16.c
 # Begin Source File
 
 SOURCE=..\smblib\crc32.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\ringbuf.c
 # End Source File
 # Begin Source File
 
