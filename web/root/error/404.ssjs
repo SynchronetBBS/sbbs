@@ -18,12 +18,61 @@ else {
 			writeln('<td align=right colspan=2>&lt;directory&gt;</td>');
 		}
 		else {
-                        var size = file_size(files[fn])/1024;
-			if(size<1) size=1;
-			writeln('<td align=right>&nbsp;'+ Math.floor(size)+'k&nbsp;</td>');
+			var size = getsizestr(file_size(files[fn]),true);
+			writeln('<td align=right>&nbsp;'+size+'&nbsp;</td>');
 			writeln('<td align=right nowrap>&nbsp;' + strftime("%b-%d-%y %H:%M",file_date(files[fn])) + '</td>');
 		}
 		writeln("</tr>");
 	}
 	writeln("</table></body></html>");
+}
+
+function getsizestr(size, bytes)
+{
+	var outstr='';
+
+	if(bytes) {
+		if(size < 1000) {       /* Bytes */
+			outstr=format("%ld bytes",size);
+			return(outstr);
+		}
+		if(size<10000) {        /* Bytes with comma */
+			outstr=format("%ld,%03ld bytes",(size/1000),(size%1000));
+			return(outstr);
+		}
+		size = size/1024;
+	}
+	if(size<1000) { /* KB */
+		outstr=format("%ld KB",size);
+		return(outstr);
+	}
+	if(size<999999) { /* KB With comma */
+		outstr=format("%ld,%03ld KB",(size/1000),(size%1000));
+		return(outstr);
+	}
+	size = size/1024;
+	if(size<1000) { /* MB */
+		outstr=format("%ld MB",size);
+		return(outstr);
+	}
+	if(size<999999) { /* MB With comma */
+		outstr=format("%ld,%03ld MB",(size/1000),(size%1000));
+		return(outstr);
+	}
+	size = size/1024;
+	if(size<1000) { /* GB */
+		outstr=format("%ld GB",size);
+		return(outstr);
+	}
+	if(size<999999) { /* GB With comma */
+		outstr=format("%ld,%03ld GB",(size/1000),(size%1000));
+		return(outstr);
+	}
+	size = size/1024;
+	if(size<1000) { /* TB (Yeah, right) */
+		outstr=format("%ld TB",size);
+		return(outstr);
+	}
+	sprintf(outstr,"Plenty");
+	return(outstr);
 }
