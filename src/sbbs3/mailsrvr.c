@@ -618,12 +618,6 @@ static void pop3_thread(void* arg)
 		sprintf(password,"%.*s",(int)sizeof(password)-1,p);
 		user.number=matchuser(&scfg,username);
 		if(!user.number) {
-			for(i=0;username[i];i++)
-				if(username[i]=='.')
-					username[i]=' ';
-			user.number=matchuser(&scfg,username);
-		}
-		if(!user.number) {
 			lprintf("%04d !POP3 UNKNOWN USER: %s (password: %s)"
 				, socket, username, password);
 			sockprintf(socket,"-ERR");

@@ -44,8 +44,8 @@ char* nulstr="";
 
 /****************************************************************************/
 /* Looks for a perfect match amoung all usernames (not deleted users)		*/
+/* Makes dots and underscores synomynous with spaces for comparisions		*/
 /* Returns the number of the perfect matched username or 0 if no match		*/
-/* Called from functions waitforcall and newuser							*/
 /****************************************************************************/
 uint DLLCALL matchuser(scfg_t* cfg, char *name)
 {
@@ -65,18 +65,41 @@ uint DLLCALL matchuser(scfg_t* cfg, char *name)
 		for(c=0;c<LEN_ALIAS;c++)
 			if(str[c]==ETX) break;
 		str[c]=0;
-		if(!stricmp(str,name)) {
-			fclose(stream);
-			return((l/(LEN_ALIAS+2))+1); 
-		} 
+		if(!stricmp(str,name)) 
+			break;
+		/* convert dots to spaces */
+		for(c=0;str[c];c++)
+			if(str[c]=='.') 
+				str[c]=' ';
+		if(!stricmp(str,name)) 
+			break;
+		/* convert spaces to dots */
+		for(c=0;str[c];c++)
+			if(str[c]==' ') 
+				str[c]='.';
+		if(!stricmp(str,name)) 
+			break;
+		/* convert dots to underscores */
+		for(c=0;str[c];c++)
+			if(str[c]=='.') 
+				str[c]='_';
+		if(!stricmp(str,name)) 
+			break;
+		/* convert underscores to spaces */
+		for(c=0;str[c];c++)
+			if(str[c]=='_') 
+				str[c]=' ';
+		if(!stricmp(str,name)) 
+			break;
 	}
 	fclose(stream);
+	if(l<length)
+		return((l/(LEN_ALIAS+2))+1); 
 	return(0);
 }
 
 /****************************************************************************/
 /* Returns the number of the last user in user.dat (deleted ones too)		*/
-/* Called from function useredit											*/
 /****************************************************************************/
 uint DLLCALL lastuser(scfg_t* cfg)
 {
