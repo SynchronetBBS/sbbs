@@ -33,6 +33,11 @@ os      :=	$(shell echo $(os) | tr "[A-Z]" "[a-z]")
 # remove '/' from "os/2"
 os      :=  $(shell echo $(os) | tr -d "/")
 
+ifeq ($(os),netbsd)
+ CFLAGS	+=	-D__unix__ -I/usr/pkg/include -DUSE_XP_SEMAPHORES
+ LDFLAGS +=	-L/usr/pkg/lib
+endif
+
 ODIR	:=	gcc.$(os)
 
 LIBDIR	:=	/usr/lib
