@@ -1111,9 +1111,22 @@ void DLLCALL services_thread(void* arg)
 			if((socket = open_socket(
 				(service[i].options&SERVICE_OPT_UDP) ? SOCK_DGRAM : SOCK_STREAM))
 				==INVALID_SOCKET) {
-				lprintf("!ERROR %d opening socket", ERROR_VALUE);
+				lprintf("!ERROR %d opening %s socket"
+					,ERROR_VALUE, service[i].protocol);
 				cleanup(1);
 				return;
+			}
+
+			if(service[i].options&SERVICE_OPT_UDP) {
+				/* We need to set the REUSE ADDRESS socket option */
+				optval=TRUE;
+				if(setsockopt(socket,SOL_SOCKET,SO_REUSEADDR
+					,(char*)&optval,sizeof(optval))!=0) {
+					lprintf("%04d !ERROR %d setting %s socket option"
+						,socket, ERROR_VALUE, service[i].protocol);
+					close_socket(socket);
+					continue;
+				}
 			}
 			memset(&addr, 0, sizeof(addr));
 
