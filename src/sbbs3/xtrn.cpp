@@ -972,10 +972,12 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
     if(i<cfg.total_natvpgms || mode&EX_NATIVE)
         native=true;
 
+#ifndef __FreeBSD__
 	if(!native) {
 		bprintf("\r\nExternal DOS programs are not yet supported in\r\n%s\r\n",VERSION_NOTICE);
 		return(-1);
 	}
+#endif
 
  	if(native) { // Native (32-bit) external
 
@@ -995,7 +997,47 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
         	errormsg(WHERE,ERR_WRITE,"environment",0);
 
 	} else {
-		/* setup DOSemu env here */
+#ifdef __FreeBSD__
+		/* ToDo: This seems to work for every door except Iron Ox
+		   ToDo: Iron Ox is unique in that it runs perfectly from
+		   ToDo: tcsh but not at all from anywhere else, complaining
+		   ToDo: about corrupt files.  I've ruled out the possibilty
+		   ToDo: of it being a terminal mode issue... no other ideas
+		   ToDo: come to mind. */
+
+		FILE * doscmdrc;
+
+		sprintf(str,"%s.doscmdrc",cfg.node_dir);
+		if((doscmdrc=fopen(str,"w+"))==NULL)  {
+			errormsg(WHERE,ERR_CREATE,str,0);
+			return(-1);
+		}
+		if(startup_dir!=NULL && startup_dir[0])
+			fprintf(doscmdrc,"assign C: %s\n",startup_dir);
+		else
+			fprintf(doscmdrc,"assign C: .\n");
+
+		fprintf(doscmdrc,"assign D: %s\n",cfg.node_dir);
+		SAFECOPY(str,cfg.exec_dir);
+		if((p=strrchr(str,'/'))!=NULL)
+			*p=0;
+		if((p=strrchr(str,'/'))!=NULL)
+			*p=0;
+		fprintf(doscmdrc,"assign E: %s\n",str);
+		
+		/* setup doscmd env here */
+		/* ToDo Note, this assumes that the BBS uses standard dir names */
+		fprintf(doscmdrc,"DSZLOG=E:\\node%d\\PROTOCOL.LOG\n",cfg.node_num);
+		fprintf(doscmdrc,"SBBSNODE=D:\\\n");
+		fprintf(doscmdrc,"SBBSCTRL=E:\\ctrl\\\n");
+		fprintf(doscmdrc,"SBBSDATA=E:\\data\\\n");
+		fprintf(doscmdrc,"SBBSEXEC=E:\\exec\\\n");
+		fprintf(doscmdrc,"SBBSNNUM=%d\n",cfg.node_num);
+
+		fclose(doscmdrc);
+		SAFECOPY(str,cmdline);
+		sprintf(cmdline,"/usr/bin/doscmd -xFQ %s",str);
+#endif
 	}
 
 	if(!(mode&EX_INR))
@@ -1034,6 +1076,11 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 	}
 	if(pid==0) {	/* child process */
 		setup_term(0, startup->xtrn_term);
+#ifdef __FreeBSD__
+		if(!native)
+			chdir(cfg.node_dir);
+		else
+#endif
 		if(startup_dir!=NULL && startup_dir[0])
 			chdir(startup_dir);
 
