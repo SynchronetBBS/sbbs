@@ -69,7 +69,7 @@ BOOL read_file_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 
 	strcpy(fname,"file.cnf");
 	sprintf(str,"%s%s",cfg->ctrl_dir,fname);
-	if((instream=fopen(str,"rb" /*O_RDONLY*/))==NULL) {
+	if((instream=fnopen(NULL,str,O_RDONLY))==NULL) {
 		lprintf(txt->openerr,str);
 		return(FALSE); }
 
@@ -536,7 +536,7 @@ BOOL read_xtrn_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 
 	strcpy(fname,"xtrn.cnf");
 	sprintf(str,"%s%s",cfg->ctrl_dir,fname);
-	if((instream=fopen(str,"rb" /*O_RDONLY*/))==NULL) {
+	if((instream=fnopen(NULL,str,O_RDONLY))==NULL) {
 		lprintf(txt->openerr,str);
 		return(FALSE); }
 
@@ -788,7 +788,7 @@ BOOL read_chat_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 
 	strcpy(fname,"chat.cnf");
 	sprintf(str,"%s%s",cfg->ctrl_dir,fname);
-	if((instream=fopen(str,"rb"/* O_RDONLY */))==NULL) {
+	if((instream=fnopen(NULL,str,O_RDONLY))==NULL) {
 		lprintf(txt->openerr,str);
 		return(FALSE); }
 

@@ -128,9 +128,10 @@ BOOL read_node_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 
 	strcpy(fname,"node.cnf");
 	sprintf(str,"%s%s",cfg->node_dir,fname);
-	if((instream=fopen(str,"rb" /*O_RDONLY*/))==NULL) {
+	if((instream=fnopen(NULL,str,O_RDONLY))==NULL) {
 		lprintf(txt->openerr,str);
-		return(FALSE); }
+		return(FALSE); 
+	}
 
 	if(txt->reading && txt->reading[0])
 		lprintf(txt->reading,fname);
@@ -261,7 +262,7 @@ BOOL read_main_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 
 	strcpy(fname,"main.cnf");
 	sprintf(str,"%s%s",cfg->ctrl_dir,fname);
-	if((instream=fopen(str,"rb" /* O_RDONLY */))==NULL) {
+	if((instream=fnopen(NULL,str,O_RDONLY))==NULL) {
 		lprintf(txt->openerr,str);
 		return(FALSE); }
 
@@ -516,7 +517,7 @@ BOOL read_msgs_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 
 	strcpy(fname,"msgs.cnf");
 	sprintf(str,"%s%s",cfg->ctrl_dir,fname);
-	if((instream=fopen(str,"rb"/*O_RDONLY*/))==NULL) {
+	if((instream=fnopen(NULL,str,O_RDONLY))==NULL) {
 		lprintf(txt->openerr,str);
 		return(FALSE); }
 
