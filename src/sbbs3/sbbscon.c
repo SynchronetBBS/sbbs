@@ -52,11 +52,6 @@
 #include <stdarg.h>
 #include <stdlib.h>  /* Is this included from somewhere else? */
 
-#ifndef __FreeBSD__
-#include <fcntl.h>	/* Used for daemonizing */
-#include <paths.h>	/* Used for daemonizing */
-#endif
-
 #endif
 
 /* Constants */
@@ -197,9 +192,9 @@ static BOOL do_setuid(void)
 {
 	BOOL	result=FALSE;
 
-	setegid(old_gid);
-	seteuid(old_uid);
-	if(!setgid(new_gid) && !setuid(new_uid)) 
+	setregid(-1,old_gid);
+	setreuid(-1,old_uid);
+	if(!setregid(new_gid,new_gid) && !setreuid(new_uid,new_uid)) 
 		result=TRUE;
 
 	if(!result) {
@@ -229,12 +224,12 @@ static BOOL do_seteuid(BOOL to_new)
 	pthread_mutex_lock(&mutex);
 
 	if(to_new)
-		if(!setegid(new_gid) && !seteuid(new_uid))
+		if(!setregid(-1,new_gid) && !setreuid(-1,new_uid))
 			result=TRUE;
 		else
 			result=FALSE;
 	else
-		if(!setegid(old_gid) && !seteuid(old_uid))
+		if(!setregid(-1,old_gid) && !setreuid(-1,old_uid))
 			result=TRUE;
 		else
 			result=FALSE;
@@ -250,10 +245,17 @@ static BOOL do_seteuid(BOOL to_new)
 }
 #endif   /* __unix__ */
 
-static void thread_up(BOOL up)
+static void thread_up(BOOL up, BOOL setuid)
 {
    	static pthread_mutex_t mutex;
 	static BOOL mutex_initialized;
+
+#ifdef _THREAD_SUID_BROKEN
+	if(up && setuid) {
+		do_seteuid(FALSE);
+		do_setuid();
+	}
+#endif
 
 	if(!mutex_initialized) {
 		pthread_mutex_init(&mutex,NULL);
@@ -350,6 +352,10 @@ static void bbs_started(void)
 {
 	bbs_running=TRUE;
 	bbs_stopped=FALSE;
+	#ifdef _THREAD_SUID_BROKEN
+	    do_seteuid(FALSE);
+	    do_setuid();
+	#endif
 }
 
 static void bbs_terminated(int code)
@@ -400,6 +406,10 @@ static void ftp_started(void)
 {
 	ftp_running=TRUE;
 	ftp_stopped=FALSE;
+	#ifdef _THREAD_SUID_BROKEN
+	    do_seteuid(FALSE);
+	    do_setuid();
+	#endif
 }
 
 static void ftp_terminated(int code)
@@ -450,6 +460,10 @@ static void mail_started(void)
 {
 	mail_running=TRUE;
 	mail_stopped=FALSE;
+	#ifdef _THREAD_SUID_BROKEN
+	    do_seteuid(FALSE);
+	    do_setuid();
+	#endif
 }
 
 static void mail_terminated(int code)
@@ -500,6 +514,10 @@ static void services_started(void)
 {
 	services_running=TRUE;
 	services_stopped=FALSE;
+	#ifdef _THREAD_SUID_BROKEN
+	    do_seteuid(FALSE);
+	    do_setuid();
+	#endif
 }
 
 static void services_terminated(int code)
@@ -566,6 +584,7 @@ void _sighandler_quit(int sig)
     exit(0);
 }
 
+#if 0 // Apparently, Linux hasa daemon call too!
 #ifndef __FreeBSD__
 /****************************************************************************/
 /* Daemonizes the process													*/
@@ -601,6 +620,7 @@ daemon(nochdir, noclose)
 	return (0);
 }
 #endif	/* !__FreeBSD__ */
+#endif /* 0 */
 
 #endif	/* __unix__ */
 
@@ -1058,6 +1078,7 @@ int main(int argc, char** argv)
 			fclose(pidfile);
 		}
 	}
+
 #endif
 
 	_beginthread((void(*)(void*))bbs_thread,0,&bbs_startup);
