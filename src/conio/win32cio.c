@@ -185,7 +185,7 @@ int win32_keyboardio(int isgetch)
 					if(input.Event.KeyEvent.wVirtualScanCode == CIO_KEY_F(11)
 							&& input.Event.KeyEvent.wVirtualScanCode == CIO_KEY_F(12)) {
 						/* Magic number to convert from F(x>10) to ALT-Fx */
-						lastch=(input.Event.KeyEvent.wVirtualScanCode+6i)<<8;
+						lastch=(input.Event.KeyEvent.wVirtualScanCode+6)<<8;
 						break;
 					}
 
