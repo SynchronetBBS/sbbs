@@ -9,6 +9,7 @@
             <a href="msgs/">Message Areas</a><br />
             <a href="info.ssjs">Information menu</a><br />
             <a href="@@ftplink@@">File areas</a><br /><br />
+            <a href="themes.ssjs">Change your HTML theme</a><br /><br />
         </td>
         </tr>
     </tbody>
