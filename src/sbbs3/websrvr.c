@@ -1272,7 +1272,7 @@ static void unescape(char *p)
 	*(dst)=0;
 }
 
-static void js_parse_post(http_session_t * session)  
+static void js_parse_post(http_session_t * session)
 {
 	char		*p;
 	char		*key;
@@ -1394,10 +1394,10 @@ static BOOL parse_headers(http_session_t * session)
 				lprintf(LOG_DEBUG,"%04d !ERROR Browser said they sent %d bytes, but I got %d",session->socket,content_len,session->req.post_len);
 			if(session->req.post_len<0)
 				session->req.post_len=0;
+			session->req.post_data[session->req.post_len]=0;
 			if(session->req.dynamic==IS_SSJS)  {
 				js_parse_post(session);
 			}
-			session->req.post_data[session->req.post_len]=0;
 		}
 		else  {
 			lprintf(LOG_CRIT,"%04d !ERROR Allocating %d bytes of memory",session->socket,content_len);
