@@ -50,6 +50,7 @@ enum {
 	,VDD_OUTBUF_FULL
 	,VDD_OUTBUF_SIZE
 	,VDD_ONLINE
+	,VDD_YIELD
 };
 
 typedef struct {

@@ -62,6 +62,7 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 	static  RingBuf	rdbuf;
 	static	FILE*	fp;
 
+	retval=0;
 	node_num=getBH();
 
 	switch(getBL()) {
@@ -280,7 +281,6 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 			retval=0;
 			break;
 
-#if 1
 		case VDD_INBUF_FULL:
 			if(!GetMailslotInfo(
 				rdslot,		// mailslot handle 
@@ -338,7 +338,11 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 				retval=1;
 			online_poll++;
 			break;
-#endif
+
+		case VDD_YIELD:
+			Sleep(1);
+			break;
+
 		default:
 			if(fp!=NULL)
 				fprintf(fp,"!UNKNOWN VDD_OP: %d\r\n",getBL());
