@@ -76,6 +76,8 @@ static const char*	server_name="Synchronet Web Server";
 static const char*	newline="\r\n";
 static const char*	http_scheme="http://";
 static const size_t	http_scheme_len=7;
+static const char*	error_404="404 Not Found";
+static const char*	error_500="500 Internal Server Error";
 
 extern const uchar* nular;
 
@@ -96,6 +98,7 @@ static ulong	mime_count=0;
 static char		revision[16];
 static char		root_dir[MAX_PATH+1];
 static char		error_dir[MAX_PATH+1];
+static char		cgi_dir[MAX_PATH+1];
 static time_t	uptime=0;
 static DWORD	served=0;
 static web_startup_t* startup=NULL;
@@ -783,7 +786,7 @@ static void sock_sendfile(SOCKET socket,char *path)
 	}
 }
 
-static void send_error(http_session_t * session, char *message)
+static void send_error(http_session_t * session, const char* message)
 {
 	char	error_code[4];
 	struct stat	sb;
@@ -793,7 +796,7 @@ static void send_error(http_session_t * session, char *message)
 	session->req.keep_alive=FALSE;
 	session->req.send_location=NO_LOCATION;
 	SAFECOPY(error_code,message);
-	sprintf(session->req.physical_path,"%s/%s.html",error_dir,error_code);
+	sprintf(session->req.physical_path,"%s%s.html",error_dir,error_code);
 	if(session->http_ver > HTTP_0_9)  {
 		session->req.mime_type=get_mime_type(strrchr(session->req.physical_path,'.'));
 		send_headers(session,message);
@@ -1255,14 +1258,14 @@ static int is_dynamic_req(http_session_t* session)
 	
 		if(!js_setup(session)) {
 			lprintf("%04d !ERROR setting up JavaScript support", session->socket);
-			send_error(session,"500 Internal Server Error");
+			send_error(session,error_500);
 			return(IS_STATIC);
 		}
 	
 		sprintf(path,"%s/SBBS_SSJS.%d.html",startup->cgi_temp_dir,session->socket);
 		if((session->req.fp=fopen(path,"w"))==NULL) {
 			lprintf("%04d !ERROR %d opening/creating %s", session->socket, errno, path);
-			send_error(session,"500 Internal Server Error");
+			send_error(session,error_500);
 			return(IS_STATIC);
 		}
 		return(IS_SSJS);
@@ -1275,13 +1278,11 @@ static int is_dynamic_req(http_session_t* session)
 				return(IS_CGI);
 			}
 		}
-		for(i=0; startup->cgi_dir!=NULL && startup->cgi_dir[i]!=NULL; i++)  {
-			if(FULLPATH(path,startup->cgi_dir[i],sizeof(path))==NULL)
-				continue;
-			if(stricmp(dir,path)==0)  {
-				init_enviro(session);
-				return(IS_CGI);
-			}
+		/* It would be more secure if this was a true physical directory comparision */
+		sprintf(path,"/%s/",cgi_dir);
+		if(stricmp(dir,path)==0)  {
+			init_enviro(session);
+			return(IS_CGI);
 		}
 	}
 
@@ -1291,6 +1292,7 @@ static int is_dynamic_req(http_session_t* session)
 static char *get_request(http_session_t * session, char *req_line)
 {
 	char*	p;
+	char*	query;
 	char*	retval;
 	int		offset;
 
@@ -1298,6 +1300,8 @@ static char *get_request(http_session_t * session, char *req_line)
 	SAFECOPY(session->req.virtual_path,req_line);
 	strtok(session->req.virtual_path," \t");
 	retval=strtok(NULL," \t");
+	strtok(session->req.virtual_path,"?");
+	query=strtok(NULL,"");
 
 	/* Must initialize physical_path before calling is_dynamic_req() */
 	SAFECOPY(session->req.physical_path,session->req.virtual_path);
@@ -1319,18 +1323,16 @@ static char *get_request(http_session_t * session, char *req_line)
 			);
 	}
 
-	strtok(session->req.virtual_path,"?");
-	p=strtok(NULL,"");
 	session->req.dynamic=is_dynamic_req(session);
 	if(session->req.dynamic)
-		SAFECOPY(session->req.query_str,p);
-	if(p!=NULL)  {
+		SAFECOPY(session->req.query_str,query);
+	if(query!=NULL)  {
 		switch(session->req.dynamic) {
 			case IS_CGI:
-				add_env(session,"QUERY_STRING",p);
+				add_env(session,"QUERY_STRING",query);
 				break;
 			case IS_SSJS:
-				js_parse_query(session,p);
+				js_parse_query(session,query);
 				break;
 		}
 	}
@@ -1448,7 +1450,7 @@ static BOOL check_request(http_session_t * session)
 		sprintf(str,"%s%s",root_dir,session->req.physical_path);
 	
 	if(FULLPATH(path,str,sizeof(session->req.physical_path))==NULL) {
-		send_error(session,"404 Not Found");
+		send_error(session,error_404);
 		return(FALSE);
 	}
 	if(startup->options&WEB_OPT_DEBUG_TX)
@@ -1464,7 +1466,7 @@ static BOOL check_request(http_session_t * session)
 		}
 		last_slash=find_last_slash(path);
 		if(last_slash==NULL) {
-			send_error(session,"404 Not Found");
+			send_error(session,error_404);
 			return(FALSE);
 		}
 		last_slash++;
@@ -1477,7 +1479,7 @@ static BOOL check_request(http_session_t * session)
 				break;
 		}
 		if(startup->index_file_name[i] == NULL)  {
-			send_error(session,"404 Not Found");
+			send_error(session,error_404);
 			return(FALSE);
 		}
 		strcat(session->req.virtual_path,startup->index_file_name[i]);
@@ -1492,7 +1494,7 @@ static BOOL check_request(http_session_t * session)
 	if(stat(path,&sb)) {
 		if(startup->options&WEB_OPT_DEBUG_TX)
 			lprintf("404 - %s does not exist",path);
-		send_error(session,"404 Not Found");
+		send_error(session,error_404);
 		return(FALSE);
 	}
 	SAFECOPY(session->req.physical_path,path);
@@ -2249,7 +2251,7 @@ static void respond(http_session_t * session)
 
 	if(session->req.dynamic==IS_CGI)  {
 		if(!exec_cgi(session))  {
-			send_error(session,"500 Internal Server Error");
+			send_error(session,error_500);
 			return;
 		}
 		close_request(session);
@@ -2258,7 +2260,7 @@ static void respond(http_session_t * session)
 
 	if(session->req.dynamic==IS_SSJS) {	/* Server-Side JavaScript */
 		if(!exec_ssjs(session))  {
-			send_error(session,"500 Internal Server Error");
+			send_error(session,error_500);
 			return;
 		}
 		sprintf(session->req.physical_path
@@ -2467,8 +2469,9 @@ void DLLCALL web_server(void* arg)
 
 	/* Setup intelligent defaults */
 	if(startup->port==0)					startup->port=IPPORT_HTTP;
-	if(startup->root_dir[0]==0)				SAFECOPY(startup->root_dir,"../html");
-	if(startup->error_dir[0]==0)			SAFECOPY(startup->error_dir,"../html/error");
+	if(startup->root_dir[0]==0)				SAFECOPY(startup->root_dir,WEB_DEFAULT_ROOT_DIR);
+	if(startup->error_dir[0]==0)			SAFECOPY(startup->error_dir,WEB_DEFAULT_ERROR_DIR);
+	if(startup->cgi_dir[0]==0)				SAFECOPY(startup->error_dir,WEB_DEFAULT_CGI_DIR);
 	if(startup->max_inactivity==0) 			startup->max_inactivity=120; /* seconds */
 	if(startup->sem_chk_freq==0)			startup->sem_chk_freq=5; /* seconds */
 	if(startup->js_max_bytes==0)			startup->js_max_bytes=JAVASCRIPT_MAX_BYTES;
@@ -2478,14 +2481,14 @@ void DLLCALL web_server(void* arg)
 	/* Copy html directories */
 	SAFECOPY(root_dir,startup->root_dir);
 	SAFECOPY(error_dir,startup->error_dir);
+	SAFECOPY(cgi_dir,startup->cgi_dir);
 
 	/* Change to absolute path */
 	prep_dir(startup->ctrl_dir, root_dir, sizeof(root_dir));
-	prep_dir(startup->ctrl_dir, error_dir, sizeof(error_dir));
+	prep_dir(root_dir, error_dir, sizeof(error_dir));
 
 	/* Trim off trailing slash/backslash */
 	if(IS_PATH_DELIM(*(p=lastchar(root_dir))))	*p=0;
-	if(IS_PATH_DELIM(*(p=lastchar(error_dir))))	*p=0;
 
 	uptime=0;
 	served=0;

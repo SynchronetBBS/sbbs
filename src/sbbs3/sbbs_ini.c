@@ -501,9 +501,11 @@ void sbbs_read_ini(
 			,iniGetString(fp,section,strHostName,host_name,value));
 
 		SAFECOPY(web->root_dir
-			,iniGetString(fp,section,"RootDirectory","../html",value));
+			,iniGetString(fp,section,"RootDirectory",WEB_DEFAULT_ROOT_DIR,value));
 		SAFECOPY(web->error_dir
-			,iniGetString(fp,section,"ErrorDirectory","../html/error",value));
+			,iniGetString(fp,section,"ErrorDirectory",WEB_DEFAULT_ERROR_DIR,value));
+		SAFECOPY(web->cgi_dir
+			,iniGetString(fp,section,"CGIDirectory",WEB_DEFAULT_CGI_DIR,value));
 
 		iniFreeStringList(web->index_file_name);
 		web->index_file_name
@@ -511,9 +513,6 @@ void sbbs_read_ini(
 		iniFreeStringList(web->cgi_ext);
 		web->cgi_ext
 			=iniGetStringList(fp,section,"CGIExtensions", "," ,".cgi");
-		iniFreeStringList(web->cgi_dir);
-		web->cgi_dir
-			=iniGetStringList(fp,section,"CGIDirectories", "," ,"../cgi-bin");
 		SAFECOPY(web->ssjs_ext
 			,iniGetString(fp,section,"JavaScriptExtension",".ssjs",value));
 
