@@ -17,8 +17,6 @@ OBJS	=	$(LIBODIR)$(SLASH)ansiterm.$(OFILE)\
 			$(LIBODIR)$(SLASH)chk_ar.$(OFILE)\
 			$(LIBODIR)$(SLASH)con_hi.$(OFILE)\
 			$(LIBODIR)$(SLASH)con_out.$(OFILE)\
-			$(LIBODIR)$(SLASH)crc16.$(OFILE)\
-			$(LIBODIR)$(SLASH)crc32.$(OFILE)\
 			$(LIBODIR)$(SLASH)dat_rec.$(OFILE)\
 			$(LIBODIR)$(SLASH)data.$(OFILE)\
 			$(LIBODIR)$(SLASH)data_ovl.$(OFILE)\
@@ -63,11 +61,8 @@ OBJS	=	$(LIBODIR)$(SLASH)ansiterm.$(OFILE)\
 			$(LIBODIR)$(SLASH)login.$(OFILE)\
 			$(LIBODIR)$(SLASH)logon.$(OFILE)\
 			$(LIBODIR)$(SLASH)logout.$(OFILE)\
-			$(LIBODIR)$(SLASH)lzh.$(OFILE)\
 			$(LIBODIR)$(SLASH)mail.$(OFILE)\
 			$(LIBODIR)$(SLASH)main.$(OFILE)\
-			$(LIBODIR)$(SLASH)md5.$(OFILE)\
-			$(LIBODIR)$(SLASH)msg_id.$(OFILE)\
 			$(LIBODIR)$(SLASH)msgdate.$(OFILE)\
 			$(LIBODIR)$(SLASH)msgtoqwk.$(OFILE)\
 			$(LIBODIR)$(SLASH)netmail.$(OFILE)\
@@ -89,8 +84,6 @@ OBJS	=	$(LIBODIR)$(SLASH)ansiterm.$(OFILE)\
 			$(LIBODIR)$(SLASH)scfglib1.$(OFILE)\
 			$(LIBODIR)$(SLASH)scfglib2.$(OFILE)\
 			$(LIBODIR)$(SLASH)scfgsave.$(OFILE)\
-			$(LIBODIR)$(SLASH)smblib.$(OFILE)\
-			$(LIBODIR)$(SLASH)smbtxt.$(OFILE)\
 			$(LIBODIR)$(SLASH)sockopts.$(OFILE)\
 			$(LIBODIR)$(SLASH)sortdir.$(OFILE)\
 			$(LIBODIR)$(SLASH)str.$(OFILE)\

@@ -22,6 +22,7 @@ endif
 
 UIFC_SRC =	../uifc/
 XPDEV	 =	../xpdev/
+SMBLIB_SRC	=	../smblib/
 SBBS_SRC =	./
 
 NEED_JAVASCRIPT	:= 1
@@ -30,6 +31,9 @@ NEED_THREADS	:= 1
 include $(XPDEV)/Common.gmake
 include $(SBBS_SRC)/Common.gmake
 include $(UIFC_SRC)/Common.gmake
+include $(SMBLIB_SRC)/Common.gmake
+
+CFLAGS	+=	$(SMBLIB_CFLAGS)
 
 ifeq ($(os),freebsd)
  BSD	=	1
@@ -112,14 +116,7 @@ SERVICE_OBJS	= $(LIBODIR)/services.o $(LIBODIR)/ini_file.o $(LIBODIR)/str_list.o
 MONO_OBJS	= $(CON_OBJS) $(FTP_OBJS) $(WEB_OBJS) \
 			$(MAIL_OBJS) $(SERVICE_OBJS)
 SMBLIB_OBJS = \
-	$(LIBODIR)/smblib.o \
-	$(LIBODIR)/smbtxt.o \
-	$(LIBODIR)/smbdump.o \
-	$(LIBODIR)/crc16.o \
-	$(LIBODIR)/crc32.o \
-	$(LIBODIR)/md5.o \
-	$(LIBODIR)/lzh.o \
-	$(LIBODIR)/filewrap.o
+	$(SMBLIB_TARGET)
 
 SHLIBOPTS	:=	-shared
 ifeq ($(os),darwin)
