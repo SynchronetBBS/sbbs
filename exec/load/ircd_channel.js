@@ -38,7 +38,7 @@ const CHANMODE_VOICE		=(1<<11); // v
 
 // These are used in the mode crunching section to figure out what character
 // to display in the crunched MODE line.
-function Mode (modechar,args,state,list,isnick) {
+function Mode(modechar,args,state,list,isnick) {
 	// The mode's character
 	this.modechar = modechar;
 	// Does this mode take a single argument only?
@@ -657,7 +657,7 @@ function IRCClient_part_all() {
 
 	for(thisChannel in this.channels) {
 		partingChannel=this.channels[thisChannel];
-		this.do_part(Channels[partingChannel].nam);
+		this.do_part(partingChannel.nam);
 	}
 }
 

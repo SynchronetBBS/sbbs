@@ -45,7 +45,7 @@ const VERSION_STR = "Synchronet "
 // It also enables some more verbose WALLOPS, especially as they pertain to
 // blocking functions.
 // The special "DEBUG" oper command also switches this value.
-var debug = true;
+var debug = false;
 
 // Resolve connecting clients' hostnames?  If set to false, everyone will have
 // an IP address instead of a hostname in their nick!user@host identifier.
@@ -440,7 +440,7 @@ function search_nickbuf(bufnick) {
 			if (!Users[NickHistory[nb].newnick.toUpperCase()])
 				return search_nickbuf(NickHistory[nb].newnick);
 			else
-				return NickHistory[nb].newnick;
+				return Users[NickHistory[nb].newnick.toUpperCase()];
 		}
 	}
 	return 0;
