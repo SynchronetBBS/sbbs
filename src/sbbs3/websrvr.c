@@ -41,10 +41,7 @@
 #include "websrvr.h"
 
 static const char* server_name="Synchronet Web Server";
-
-#ifdef WEBSRVR_EXPORTS
-	char* crlf="\r\n";
-#endif
+#define CRLF	"\r\n"
 
 #define TIMEOUT_THREAD_WAIT		60		/* Seconds */
 #define MAX_MIME_TYPES			128
@@ -75,15 +72,12 @@ typedef struct  {
 } http_request_t;
 
 typedef struct  {
-	char	host[128];				/* Host to serve the request */
-	int		http_ver;               /* HTTP version.  0 = HTTP/0.9, 1=HTTP/1.0, 2=HTTP/1.1 */
-	BOOL	finished;				/* Do not accept any more imput from client */
+	SOCKET			socket;
+	SOCKADDR_IN		addr;
 	http_request_t	req;
-	SOCKET	socket;
-	char	r_host_ip[32];			/* Remote host */
-	char	r_host_name[32];		/* Remote host */
-	WORD	r_port;					/* Remote port */
-	char *	identity;
+	char			host[128];		/* What's this for? */
+	int				http_ver;       /* HTTP version.  0 = HTTP/0.9, 1=HTTP/1.0, 2=HTTP/1.1 */
+	BOOL			finished;		/* Do not accept any more imput from client */
 } http_session_t;
 
 typedef struct {
@@ -519,7 +513,7 @@ void send_headers(http_session_t *session, const char *status)
 		t=gmtime(&stats.st_mtime);
 		sockprintf(session->socket,"%s: %s, %02d %s %04d %02d:%02d:%02d GMT",get_header(HEAD_LASTMODIFIED),days[t->tm_wday],t->tm_mday,months[t->tm_mon],t->tm_year+1900,t->tm_hour,t->tm_min,t->tm_sec);
 	}
-	sendsocket(session->socket,crlf,2);
+	sendsocket(session->socket,CRLF,2);
 }
 
 static void sock_sendfile(SOCKET socket,char *path)
@@ -945,7 +939,7 @@ static BOOL check_request(http_session_t * session)
 	if(session->req.ars[0] && !(check_ars(session->req.ars,session))) {
 		/* No authentication provided */
 		sprintf(str,"401 Unauthorized%s%s: Basic realm=\"%s\""
-			,crlf,get_header(HEAD_WWWAUTH),scfg.sys_name);
+			,CRLF,get_header(HEAD_WWWAUTH),scfg.sys_name);
 		send_error(str,session);
 		return(FALSE);
 	}
@@ -964,25 +958,56 @@ static void respond(http_session_t * session)
 
 void http_session_thread(void* arg)
 {
-	http_session_t *	session;
-	
-	session=(http_session_t*)arg;
-	thread_up(FALSE /* setuid */);
-	session->finished=FALSE;
+	char			host_ip[64];
+	char*			host_name;
+	HOSTENT*		host;
+	http_session_t	session=*(http_session_t*)arg;
 
-	while(!session->finished && server_socket!=INVALID_SOCKET) {
-	    memset(&(session->req), 0, sizeof(session->req));
-		if(get_req(session)) {
+	free(arg);	/* now we don't need to worry about freeing the session */
+
+	thread_up(FALSE /* setuid */);
+	session.finished=FALSE;
+
+	if(startup->options&BBS_OPT_NO_HOST_LOOKUP)
+		host=NULL;
+	else
+		host=gethostbyaddr ((char *)&session.addr.sin_addr
+			,sizeof(session.addr.sin_addr),AF_INET);
+
+	if(host!=NULL && host->h_name!=NULL)
+		host_name=host->h_name;
+	else
+		host_name="<no name>";
+
+	if(!(startup->options&BBS_OPT_NO_HOST_LOOKUP))
+		lprintf("%04d Hostname: %s", session.socket, host_name);
+
+	if(trashcan(&scfg,host_ip,"ip")) {
+		close_socket(session.socket);
+		lprintf("%04d !CLIENT BLOCKED in ip.can: %s", session.socket, host_ip);
+		thread_down();
+		return;
+	}
+
+	if(trashcan(&scfg,host_name,"host")) {
+		close_socket(session.socket);
+		lprintf("%04d !CLIENT BLOCKED in host.can: %s", session.socket, host_name);
+		thread_down();
+		return;
+	}
+
+	while(!session.finished && server_socket!=INVALID_SOCKET) {
+	    memset(&(session.req), 0, sizeof(session.req));
+		if(get_req(&session)) {
 			lprintf("Got request %s method %d version %d"
-				,session->req.request,session->req.method,session->http_ver);
-			if((session->http_ver<HTTP_1_0)||parse_headers(session)) {
-				if(check_request(session)) {
-					respond(session);
+				,session.req.request,session.req.method,session.http_ver);
+			if((session.http_ver<HTTP_1_0)||parse_headers(&session)) {
+				if(check_request(&session)) {
+					respond(&session);
 				}
 			}
 		}
 	}
-	free(session);
 }
 
 void DLLCALL web_terminate(void)
@@ -1044,11 +1069,8 @@ void DLLCALL web_server(void* arg)
 {
 	int				i;
 	int				result;
-	char *			host_name;
-	char *			identity;
 	time_t			start;
 	WORD			host_port;
-    char			str[MAX_PATH+1];
 	char			path[MAX_PATH+1];
 	char			logstr[256];
 	SOCKADDR_IN		server_addr={0};
@@ -1063,7 +1085,6 @@ void DLLCALL web_server(void* arg)
 	char			compiler[32];
 	http_session_t *	session;
 	struct timeval tv;
-	struct hostent* h;
 	startup=(web_startup_t*)arg;
 
 	web_ver();	/* get CVS revision */
@@ -1269,59 +1290,17 @@ void DLLCALL web_server(void* arg)
 
 			if(startup->socket_open!=NULL)
 				startup->socket_open(TRUE);
-
-			if(trashcan(&scfg,host_ip,"ip")) {
+	
+			if((session=malloc(sizeof(http_session_t)))==NULL) {
+				lprintf("%04d !ERROR allocating %u bytes of memory for service_client"
+					,client_socket, sizeof(http_session_t));
+				mswait(3000);
 				close_socket(client_socket);
-				lprintf("%04d !CLIENT BLOCKED in ip.can"
-					,client_socket);
 				continue;
 			}
 
-			if(startup->options&BBS_OPT_NO_HOST_LOOKUP)
-				h=NULL;
-			else {
-				h=gethostbyaddr((char *)&client_addr.sin_addr
-					,sizeof(client_addr.sin_addr),AF_INET);
-			}
-			if(h!=NULL && h->h_name!=NULL)
-				host_name=h->h_name;
-			else
-				host_name="<no name>";
-
-			if(!(startup->options&BBS_OPT_NO_HOST_LOOKUP))
-				lprintf("%04d Hostname: %s", client_socket, host_name);
-
-			if(trashcan(&scfg,host_name,"host")) {
-				close_socket(client_socket);
-				lprintf("%04d !CLIENT BLOCKED in host.can",client_socket);
-				continue;
-			}
-
-			identity=NULL;
-			if(startup->options&BBS_OPT_GET_IDENT) {
-	/* Not exported properly
-				identify(&client_addr, startup->port, str, sizeof(str)-1);
-	*/
-				identity=strrchr(str,':');
-				if(identity!=NULL) {
-					identity++;	/* skip colon */
-					while(*identity && *identity<=SP) /* point to user name */
-						identity++;
-					lprintf("%04d Identity: %s",client_socket, identity);
-				}
-			}
-
-			/* copy the IDENT response, if any */
-			
-			session=malloc(sizeof(http_session_t));
 			memset(session, 0, sizeof(http_session_t));
-			if(identity!=NULL)
-				SAFECOPY(session->identity,identity);
-			if(host_name!=NULL)
-				SAFECOPY(session->r_host_name,host_name);
-			if(host_ip!=NULL)
-				SAFECOPY(session->r_host_ip,host_ip);
-			session->r_port=host_port;
+			session->addr=client_addr;
    			session->socket=client_socket;
 
 			_beginthread(http_session_thread, 0, session);
