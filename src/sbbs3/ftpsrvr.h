@@ -35,11 +35,7 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-
-#ifdef _WIN32
-#include <windows.h>
-#endif
-#include "client.h"		/* client_t */
+#include "client.h"				/* client_t */
 
 typedef struct {
 
@@ -100,13 +96,13 @@ typedef struct {
 #define FTP_OPT_MUTE			(1<<31)
 
 #ifdef _WIN32
-#ifdef FTPSRVR_EXPORTS
-#define FTP_CALL __declspec( dllexport )
-#else
-#define FTP_CALL __declspec( dllimport )
-#endif
+	#ifdef FTPSRVR_EXPORTS
+		#define FTP_CALL __declspec( dllexport )
+	#else
+		#define FTP_CALL __declspec( dllimport )
+	#endif
 #else	/* !_WIN32 */
-#define FTP_CALL
+	#define FTP_CALL
 #endif
 
 #ifdef __cplusplus
