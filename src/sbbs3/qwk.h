@@ -35,14 +35,10 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-typedef union {
-	uchar	uc[10];
-	ushort	ui[5];
-	ulong	ul[2];
-	float	f[2];
-	double	d[1]; } converter;
+#define QWK_NEWLINE		'\xe3'	/* QWK line terminator */
+#define QWK_BLOCK_LEN	128
 
-#define LEN_QWKBUF	20000	/* 20k buffer for each message */
+/* QWK mode bits */
 #define TAGLINE 	(1<<5)	/* Place tagline at end of qwk message */
 #define TO_QNET 	(1<<6)	/* Sending to hub */
 #define REP 		(1<<7)	/* It's a REP packet */
