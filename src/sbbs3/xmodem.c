@@ -35,6 +35,7 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
+#include <stdarg.h>		/* va_list */
 #include "sexyz.h"
 #include "genwrap.h"	/* YIELD */
 #include "conwrap.h"	/* kbhit */
