@@ -1532,54 +1532,11 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     if(Registry->ValueExists("ToolbarVisible"))
     	Toolbar->Visible=Registry->ReadBool("ToolbarVisible");
 
-    if(Registry->ValueExists("SysAutoStart"))
-    	SysAutoStart=Registry->ReadInteger("SysAutoStart");
-    else
-    	SysAutoStart=true;
-
-    if(Registry->ValueExists("MailAutoStart"))
-    	MailAutoStart=Registry->ReadInteger("MailAutoStart");
-    else
-    	MailAutoStart=true;
-
-    if(Registry->ValueExists("FtpAutoStart"))
-    	FtpAutoStart=Registry->ReadInteger("FtpAutoStart");
-    else
-    	FtpAutoStart=true;
-
-    if(Registry->ValueExists("ServicesAutoStart"))
-    	ServicesAutoStart=Registry->ReadInteger("ServicesAutoStart");
-    else
-    	ServicesAutoStart=true;
-
     ViewToolbarMenuItem->Checked=Toolbar->Visible;
     ViewStatusBarMenuItem->Checked=StatusBar->Visible;
 
-    if(Registry->ValueExists("Hostname"))
-    	SAFECOPY(global.host_name,Registry->ReadString("Hostname"));
-    if(Registry->ValueExists("CtrlDirectory"))
-    	SAFECOPY(global.ctrl_dir,Registry->ReadString("CtrlDirectory"));
-    if(Registry->ValueExists("TempDirectory"))
-    	SAFECOPY(global.temp_dir,Registry->ReadString("TempDirectory"));
-
     if(Registry->ValueExists("MaxLogLen"))
     	MaxLogLen=Registry->ReadInteger("MaxLogLen");
-
-    /* JavaScript Operating Parameters */
-    if(Registry->ValueExists("JS_MaxBytes"))
-    	global.js.max_bytes=Registry->ReadInteger("JS_MaxBytes");
-    if(global.js.max_bytes==0)
-        global.js.max_bytes=JAVASCRIPT_MAX_BYTES;
-    if(Registry->ValueExists("JS_ContextStack"))
-    	global.js.cx_stack=Registry->ReadInteger("JS_ContextStack");
-    if(global.js.cx_stack==0)
-        global.js.cx_stack=JAVASCRIPT_CONTEXT_STACK;
-    if(Registry->ValueExists("JS_BranchLimit"))
-    	global.js.branch_limit=Registry->ReadInteger("JS_BranchLimit");
-    if(Registry->ValueExists("JS_GcInterval"))
-    	global.js.gc_interval=Registry->ReadInteger("JS_GcInterval");
-    if(Registry->ValueExists("JS_YieldInterval"))
-    	global.js.yield_interval=Registry->ReadInteger("JS_YieldInterval");
 
     if(Registry->ValueExists("LoginCommand"))
     	LoginCommand=Registry->ReadString("LoginCommand");
@@ -1593,8 +1550,6 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     	NodeDisplayInterval=Registry->ReadInteger("NodeDisplayInterval");
 	if(Registry->ValueExists("ClientDisplayInterval"))
     	ClientDisplayInterval=Registry->ReadInteger("ClientDisplayInterval");
-	if(Registry->ValueExists("SemFileCheckFrequency"))
-    	global.sem_chk_freq=Registry->ReadInteger("SemFileCheckFrequency");
 
     if(Registry->ValueExists("MailLogFile"))
     	MailLogFile=Registry->ReadInteger("MailLogFile");
@@ -1606,178 +1561,248 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     else
     	FtpLogFile=true;
 
-    if(Registry->ValueExists("TelnetInterface"))
-    	bbs_startup.telnet_interface=Registry->ReadInteger("TelnetInterface");
-    if(Registry->ValueExists("RLoginInterface"))
-    	bbs_startup.rlogin_interface=Registry->ReadInteger("RLoginInterface");
+    FILE* fp;
+    if(Registry->ValueExists("Imported")
+        && Registry->ReadBool("Imported")
+        && ini_file[0]) {
+        if((fp=fopen(ini_file,"r"))==NULL) {
+            char err[MAX_PATH*2];
+            sprintf(err,"Error %d opening initialization file: %s",errno,ini_file);
+            Application->MessageBox(err,"ERROR",MB_OK|MB_ICONEXCLAMATION);
+            Application->Terminate();
+            return;
+        }
+        sbbs_read_ini(fp
+            ,&global
+            ,(BOOL*)&SysAutoStart   		,&bbs_startup
+            ,(BOOL*)&FtpAutoStart 			,&ftp_startup
+            ,(BOOL*)&WebAutoStart 			,&web_startup
+            ,(BOOL*)&MailAutoStart 	    	,&mail_startup
+            ,(BOOL*)&ServicesAutoStart     	,&services_startup
+            );
+        fclose(fp);
 
-	if(Registry->ValueExists("TelnetPort"))
-    	bbs_startup.telnet_port=Registry->ReadInteger("TelnetPort");
-	if(Registry->ValueExists("RLoginPort"))
-    	bbs_startup.rlogin_port=Registry->ReadInteger("RLoginPort");
+    } else {
 
-    if(Registry->ValueExists("FirstNode"))
-    	bbs_startup.first_node=Registry->ReadInteger("FirstNode");
+        if(Registry->ValueExists("SysAutoStart"))
+            SysAutoStart=Registry->ReadInteger("SysAutoStart");
+        else
+            SysAutoStart=true;
 
-    if(Registry->ValueExists("LastNode"))
-    	bbs_startup.last_node=Registry->ReadInteger("LastNode");
+        if(Registry->ValueExists("MailAutoStart"))
+            MailAutoStart=Registry->ReadInteger("MailAutoStart");
+        else
+            MailAutoStart=true;
 
-    if(Registry->ValueExists("ExternalYield"))
-    	bbs_startup.xtrn_polls_before_yield=Registry->ReadInteger("ExternalYield");
+        if(Registry->ValueExists("FtpAutoStart"))
+            FtpAutoStart=Registry->ReadInteger("FtpAutoStart");
+        else
+            FtpAutoStart=true;
 
-	if(Registry->ValueExists("OutbufHighwaterMark"))
-		bbs_startup.outbuf_highwater_mark=Registry->ReadInteger("OutbufHighwaterMark");
-	else
-		bbs_startup.outbuf_highwater_mark=1024;
-	if(Registry->ValueExists("OutbufDrainTimeout"))
-		bbs_startup.outbuf_drain_timeout=Registry->ReadInteger("OutbufDrainTimeout");
-	else
-		bbs_startup.outbuf_drain_timeout=10;
+        if(Registry->ValueExists("ServicesAutoStart"))
+            ServicesAutoStart=Registry->ReadInteger("ServicesAutoStart");
+        else
+            ServicesAutoStart=true;
 
-    if(Registry->ValueExists("AnswerSound"))
-    	SAFECOPY(bbs_startup.answer_sound
-        	,Registry->ReadString("AnswerSound").c_str());
+        if(Registry->ValueExists("Hostname"))
+            SAFECOPY(global.host_name,Registry->ReadString("Hostname"));
+        if(Registry->ValueExists("CtrlDirectory"))
+            SAFECOPY(global.ctrl_dir,Registry->ReadString("CtrlDirectory"));
+        if(Registry->ValueExists("TempDirectory"))
+            SAFECOPY(global.temp_dir,Registry->ReadString("TempDirectory"));
 
-    if(Registry->ValueExists("HangupSound"))
-    	SAFECOPY(bbs_startup.hangup_sound
-        	,Registry->ReadString("HangupSound").c_str());
+        if(Registry->ValueExists("SemFileCheckFrequency"))
+            global.sem_chk_freq=Registry->ReadInteger("SemFileCheckFrequency");
 
-    if(Registry->ValueExists("StartupOptions"))
-    	bbs_startup.options=Registry->ReadInteger("StartupOptions");
+        /* JavaScript Operating Parameters */
+        if(Registry->ValueExists("JS_MaxBytes"))
+            global.js.max_bytes=Registry->ReadInteger("JS_MaxBytes");
+        if(global.js.max_bytes==0)
+            global.js.max_bytes=JAVASCRIPT_MAX_BYTES;
+        if(Registry->ValueExists("JS_ContextStack"))
+            global.js.cx_stack=Registry->ReadInteger("JS_ContextStack");
+        if(global.js.cx_stack==0)
+            global.js.cx_stack=JAVASCRIPT_CONTEXT_STACK;
+        if(Registry->ValueExists("JS_BranchLimit"))
+            global.js.branch_limit=Registry->ReadInteger("JS_BranchLimit");
+        if(Registry->ValueExists("JS_GcInterval"))
+            global.js.gc_interval=Registry->ReadInteger("JS_GcInterval");
+        if(Registry->ValueExists("JS_YieldInterval"))
+            global.js.yield_interval=Registry->ReadInteger("JS_YieldInterval");
 
-    if(Registry->ValueExists("MailMaxClients"))
-    	mail_startup.max_clients=Registry->ReadInteger("MailMaxClients");
+        if(Registry->ValueExists("TelnetInterface"))
+            bbs_startup.telnet_interface=Registry->ReadInteger("TelnetInterface");
+        if(Registry->ValueExists("RLoginInterface"))
+            bbs_startup.rlogin_interface=Registry->ReadInteger("RLoginInterface");
 
-    if(Registry->ValueExists("MailMaxInactivity"))
-    	mail_startup.max_inactivity=Registry->ReadInteger("MailMaxInactivity");
+        if(Registry->ValueExists("TelnetPort"))
+            bbs_startup.telnet_port=Registry->ReadInteger("TelnetPort");
+        if(Registry->ValueExists("RLoginPort"))
+            bbs_startup.rlogin_port=Registry->ReadInteger("RLoginPort");
 
-    if(Registry->ValueExists("MailInterface"))
-    	mail_startup.interface_addr=Registry->ReadInteger("MailInterface");
+        if(Registry->ValueExists("FirstNode"))
+            bbs_startup.first_node=Registry->ReadInteger("FirstNode");
 
-    if(Registry->ValueExists("MailMaxDeliveryAttempts"))
-    	mail_startup.max_delivery_attempts
-            =Registry->ReadInteger("MailMaxDeliveryAttempts");
+        if(Registry->ValueExists("LastNode"))
+            bbs_startup.last_node=Registry->ReadInteger("LastNode");
 
-    if(Registry->ValueExists("MailRescanFrequency"))
-    	mail_startup.rescan_frequency
-            =Registry->ReadInteger("MailRescanFrequency");
+        if(Registry->ValueExists("ExternalYield"))
+            bbs_startup.xtrn_polls_before_yield=Registry->ReadInteger("ExternalYield");
 
-    if(Registry->ValueExists("MailLinesPerYield"))
-    	mail_startup.lines_per_yield
-            =Registry->ReadInteger("MailLinesPerYield");
+        if(Registry->ValueExists("OutbufHighwaterMark"))
+            bbs_startup.outbuf_highwater_mark=Registry->ReadInteger("OutbufHighwaterMark");
+        else
+            bbs_startup.outbuf_highwater_mark=1024;
+        if(Registry->ValueExists("OutbufDrainTimeout"))
+            bbs_startup.outbuf_drain_timeout=Registry->ReadInteger("OutbufDrainTimeout");
+        else
+            bbs_startup.outbuf_drain_timeout=10;
 
-    if(Registry->ValueExists("MailMaxRecipients"))
-    	mail_startup.max_recipients
-            =Registry->ReadInteger("MailMaxRecipients");
+        if(Registry->ValueExists("AnswerSound"))
+            SAFECOPY(bbs_startup.answer_sound
+                ,Registry->ReadString("AnswerSound").c_str());
 
-    if(Registry->ValueExists("MailMaxMsgSize"))
-    	mail_startup.max_msg_size
-            =Registry->ReadInteger("MailMaxMsgSize");
+        if(Registry->ValueExists("HangupSound"))
+            SAFECOPY(bbs_startup.hangup_sound
+                ,Registry->ReadString("HangupSound").c_str());
 
-    if(Registry->ValueExists("MailSMTPPort"))
-    	mail_startup.smtp_port=Registry->ReadInteger("MailSMTPPort");
+        if(Registry->ValueExists("StartupOptions"))
+            bbs_startup.options=Registry->ReadInteger("StartupOptions");
 
-    if(Registry->ValueExists("MailPOP3Port"))
-    	mail_startup.pop3_port=Registry->ReadInteger("MailPOP3Port");
+        if(Registry->ValueExists("MailMaxClients"))
+            mail_startup.max_clients=Registry->ReadInteger("MailMaxClients");
 
-    if(Registry->ValueExists("MailRelayServer"))
-        SAFECOPY(mail_startup.relay_server
-            ,Registry->ReadString("MailRelayServer").c_str());
+        if(Registry->ValueExists("MailMaxInactivity"))
+            mail_startup.max_inactivity=Registry->ReadInteger("MailMaxInactivity");
 
-    if(Registry->ValueExists("MailRelayPort"))
-    	mail_startup.relay_port=Registry->ReadInteger("MailRelayPort");
+        if(Registry->ValueExists("MailInterface"))
+            mail_startup.interface_addr=Registry->ReadInteger("MailInterface");
 
-    if(Registry->ValueExists("MailDefaultUser"))
-        SAFECOPY(mail_startup.default_user
-            ,Registry->ReadString("MailDefaultUser").c_str());
+        if(Registry->ValueExists("MailMaxDeliveryAttempts"))
+            mail_startup.max_delivery_attempts
+                =Registry->ReadInteger("MailMaxDeliveryAttempts");
 
-    if(Registry->ValueExists("MailDNSBlacklistSubject"))
-        SAFECOPY(mail_startup.dnsbl_tag
-            ,Registry->ReadString("MailDNSBlacklistSubject").c_str());
-    else
-		SAFECOPY(mail_startup.dnsbl_tag,"SPAM");
+        if(Registry->ValueExists("MailRescanFrequency"))
+            mail_startup.rescan_frequency
+                =Registry->ReadInteger("MailRescanFrequency");
 
-    if(Registry->ValueExists("MailDNSBlacklistHeader"))
-        SAFECOPY(mail_startup.dnsbl_hdr
-            ,Registry->ReadString("MailDNSBlacklistHeader").c_str());
-    else
-		SAFECOPY(mail_startup.dnsbl_hdr,"X-DNSBL");
+        if(Registry->ValueExists("MailLinesPerYield"))
+            mail_startup.lines_per_yield
+                =Registry->ReadInteger("MailLinesPerYield");
 
-    if(Registry->ValueExists("MailDNSServer"))
-        SAFECOPY(mail_startup.dns_server
-            ,Registry->ReadString("MailDNSServer").c_str());
+        if(Registry->ValueExists("MailMaxRecipients"))
+            mail_startup.max_recipients
+                =Registry->ReadInteger("MailMaxRecipients");
 
-    if(Registry->ValueExists("MailInboundSound"))
-    	SAFECOPY(mail_startup.inbound_sound
-        	,Registry->ReadString("MailInboundSound").c_str());
+        if(Registry->ValueExists("MailMaxMsgSize"))
+            mail_startup.max_msg_size
+                =Registry->ReadInteger("MailMaxMsgSize");
 
-    if(Registry->ValueExists("MailOutboundSound"))
-    	SAFECOPY(mail_startup.outbound_sound
-        	,Registry->ReadString("MailOutboundSound").c_str());
+        if(Registry->ValueExists("MailSMTPPort"))
+            mail_startup.smtp_port=Registry->ReadInteger("MailSMTPPort");
 
-    if(Registry->ValueExists("MailPOP3Sound"))
-    	SAFECOPY(mail_startup.pop3_sound
-        	,Registry->ReadString("MailPOP3Sound").c_str());
+        if(Registry->ValueExists("MailPOP3Port"))
+            mail_startup.pop3_port=Registry->ReadInteger("MailPOP3Port");
 
-    if(Registry->ValueExists("MailOptions"))
-    	mail_startup.options=Registry->ReadInteger("MailOptions");
+        if(Registry->ValueExists("MailRelayServer"))
+            SAFECOPY(mail_startup.relay_server
+                ,Registry->ReadString("MailRelayServer").c_str());
 
-    if(Registry->ValueExists("FtpMaxClients"))
-    	ftp_startup.max_clients=Registry->ReadInteger("FtpMaxClients");
+        if(Registry->ValueExists("MailRelayPort"))
+            mail_startup.relay_port=Registry->ReadInteger("MailRelayPort");
 
-    if(Registry->ValueExists("FtpMaxInactivity"))
-    	ftp_startup.max_inactivity=Registry->ReadInteger("FtpMaxInactivity");
+        if(Registry->ValueExists("MailDefaultUser"))
+            SAFECOPY(mail_startup.default_user
+                ,Registry->ReadString("MailDefaultUser").c_str());
 
-    if(Registry->ValueExists("FtpQwkTimeout"))
-    	ftp_startup.qwk_timeout=Registry->ReadInteger("FtpQwkTimeout");
+        if(Registry->ValueExists("MailDNSBlacklistSubject"))
+            SAFECOPY(mail_startup.dnsbl_tag
+                ,Registry->ReadString("MailDNSBlacklistSubject").c_str());
+        else
+            SAFECOPY(mail_startup.dnsbl_tag,"SPAM");
 
-    if(Registry->ValueExists("FtpInterface"))
-    	ftp_startup.interface_addr=Registry->ReadInteger("FtpInterface");
+        if(Registry->ValueExists("MailDNSBlacklistHeader"))
+            SAFECOPY(mail_startup.dnsbl_hdr
+                ,Registry->ReadString("MailDNSBlacklistHeader").c_str());
+        else
+            SAFECOPY(mail_startup.dnsbl_hdr,"X-DNSBL");
 
-    if(Registry->ValueExists("FtpPort"))
-    	ftp_startup.port=Registry->ReadInteger("FtpPort");
+        if(Registry->ValueExists("MailDNSServer"))
+            SAFECOPY(mail_startup.dns_server
+                ,Registry->ReadString("MailDNSServer").c_str());
 
-    if(Registry->ValueExists("FtpAnswerSound"))
-    	SAFECOPY(ftp_startup.answer_sound
-        	,Registry->ReadString("FtpAnswerSound").c_str());
+        if(Registry->ValueExists("MailInboundSound"))
+            SAFECOPY(mail_startup.inbound_sound
+                ,Registry->ReadString("MailInboundSound").c_str());
 
-    if(Registry->ValueExists("FtpHangupSound"))
-    	SAFECOPY(ftp_startup.hangup_sound
-        	,Registry->ReadString("FtpHangupSound").c_str());
+        if(Registry->ValueExists("MailOutboundSound"))
+            SAFECOPY(mail_startup.outbound_sound
+                ,Registry->ReadString("MailOutboundSound").c_str());
 
-    if(Registry->ValueExists("FtpHackAttemptSound"))
-    	SAFECOPY(ftp_startup.hack_sound
-        	,Registry->ReadString("FtpHackAttemptSound").c_str());
+        if(Registry->ValueExists("MailPOP3Sound"))
+            SAFECOPY(mail_startup.pop3_sound
+                ,Registry->ReadString("MailPOP3Sound").c_str());
 
-    if(Registry->ValueExists("FtpIndexFileName"))
-    	SAFECOPY(ftp_startup.index_file_name
-        	,Registry->ReadString("FtpIndexFileName").c_str());
+        if(Registry->ValueExists("MailOptions"))
+            mail_startup.options=Registry->ReadInteger("MailOptions");
 
-    if(Registry->ValueExists("FtpHtmlIndexFile"))
-    	SAFECOPY(ftp_startup.html_index_file
-        	,Registry->ReadString("FtpHtmlIndexFile").c_str());
+        if(Registry->ValueExists("FtpMaxClients"))
+            ftp_startup.max_clients=Registry->ReadInteger("FtpMaxClients");
 
-    if(Registry->ValueExists("FtpHtmlIndexScript"))
-    	SAFECOPY(ftp_startup.html_index_script
-        	,Registry->ReadString("FtpHtmlIndexScript").c_str());
+        if(Registry->ValueExists("FtpMaxInactivity"))
+            ftp_startup.max_inactivity=Registry->ReadInteger("FtpMaxInactivity");
 
-    if(Registry->ValueExists("FtpOptions"))
-    	ftp_startup.options=Registry->ReadInteger("FtpOptions");
+        if(Registry->ValueExists("FtpQwkTimeout"))
+            ftp_startup.qwk_timeout=Registry->ReadInteger("FtpQwkTimeout");
 
-    if(Registry->ValueExists("ServicesInterface"))
-    	services_startup.interface_addr
-            =Registry->ReadInteger("ServicesInterface");
+        if(Registry->ValueExists("FtpInterface"))
+            ftp_startup.interface_addr=Registry->ReadInteger("FtpInterface");
 
-    if(Registry->ValueExists("ServicesAnswerSound"))
-    	SAFECOPY(services_startup.answer_sound
-        	,Registry->ReadString("ServicesAnswerSound").c_str());
+        if(Registry->ValueExists("FtpPort"))
+            ftp_startup.port=Registry->ReadInteger("FtpPort");
 
-    if(Registry->ValueExists("ServicesHangupSound"))
-    	SAFECOPY(services_startup.hangup_sound
-        	,Registry->ReadString("ServicesHangupSound").c_str());
+        if(Registry->ValueExists("FtpAnswerSound"))
+            SAFECOPY(ftp_startup.answer_sound
+                ,Registry->ReadString("FtpAnswerSound").c_str());
 
-    if(Registry->ValueExists("ServicesOptions"))
-    	services_startup.options=Registry->ReadInteger("ServicesOptions");
+        if(Registry->ValueExists("FtpHangupSound"))
+            SAFECOPY(ftp_startup.hangup_sound
+                ,Registry->ReadString("FtpHangupSound").c_str());
+
+        if(Registry->ValueExists("FtpHackAttemptSound"))
+            SAFECOPY(ftp_startup.hack_sound
+                ,Registry->ReadString("FtpHackAttemptSound").c_str());
+
+        if(Registry->ValueExists("FtpIndexFileName"))
+            SAFECOPY(ftp_startup.index_file_name
+                ,Registry->ReadString("FtpIndexFileName").c_str());
+
+        if(Registry->ValueExists("FtpHtmlIndexFile"))
+            SAFECOPY(ftp_startup.html_index_file
+                ,Registry->ReadString("FtpHtmlIndexFile").c_str());
+
+        if(Registry->ValueExists("FtpHtmlIndexScript"))
+            SAFECOPY(ftp_startup.html_index_script
+                ,Registry->ReadString("FtpHtmlIndexScript").c_str());
+
+        if(Registry->ValueExists("FtpOptions"))
+            ftp_startup.options=Registry->ReadInteger("FtpOptions");
+
+        if(Registry->ValueExists("ServicesInterface"))
+            services_startup.interface_addr
+                =Registry->ReadInteger("ServicesInterface");
+
+        if(Registry->ValueExists("ServicesAnswerSound"))
+            SAFECOPY(services_startup.answer_sound
+                ,Registry->ReadString("ServicesAnswerSound").c_str());
+
+        if(Registry->ValueExists("ServicesHangupSound"))
+            SAFECOPY(services_startup.hangup_sound
+                ,Registry->ReadString("ServicesHangupSound").c_str());
+
+        if(Registry->ValueExists("ServicesOptions"))
+            services_startup.options=Registry->ReadInteger("ServicesOptions");
+    }
 
     Registry->CloseKey();
     delete Registry;
@@ -1931,7 +1956,6 @@ void __fastcall TMainForm::SaveSettings(TObject* Sender)
         Application->Terminate();
         return;
     }
-
     Registry->WriteInteger("MainFormTop",Top);
     Registry->WriteInteger("MainFormLeft",Left);
     Registry->WriteInteger("MainFormHeight",Height);
@@ -2036,10 +2060,19 @@ void __fastcall TMainForm::SaveSettings(TObject* Sender)
     Registry->WriteBool("ToolBarVisible",Toolbar->Visible);
     Registry->WriteBool("StatusBarVisible",StatusBar->Visible);
 
+    Registry->WriteInteger("MaxLogLen",MaxLogLen);
+
+    Registry->WriteString("LoginCommand",LoginCommand);
+    Registry->WriteString("ConfigCommand",ConfigCommand);
+    Registry->WriteString("Password",Password);
+    Registry->WriteBool("MinimizeToSysTray",MinimizeToSysTray);
+    Registry->WriteInteger("NodeDisplayInterval",NodeDisplayInterval);
+    Registry->WriteInteger("ClientDisplayInterval",ClientDisplayInterval);
+
+#if 0   /* Moved to sbbs.ini */
     Registry->WriteString("Hostname",global.host_name);
     Registry->WriteString("CtrlDirectory",global.ctrl_dir);
     Registry->WriteString("TempDirectory",global.temp_dir);
-    Registry->WriteInteger("MaxLogLen",MaxLogLen);
 
     /* JavaScript Operating Parameters */
     Registry->WriteInteger("JS_MaxBytes",global.js.max_bytes);
@@ -2048,12 +2081,6 @@ void __fastcall TMainForm::SaveSettings(TObject* Sender)
     Registry->WriteInteger("JS_GcInterval",global.js.gc_interval);
     Registry->WriteInteger("JS_YieldInterval",global.js.yield_interval);
 
-    Registry->WriteString("LoginCommand",LoginCommand);
-    Registry->WriteString("ConfigCommand",ConfigCommand);
-    Registry->WriteString("Password",Password);
-    Registry->WriteBool("MinimizeToSysTray",MinimizeToSysTray);
-    Registry->WriteInteger("NodeDisplayInterval",NodeDisplayInterval);
-    Registry->WriteInteger("ClientDisplayInterval",ClientDisplayInterval);
     Registry->WriteInteger("SemFileCheckFrequency",global.sem_chk_freq);
 
     Registry->WriteInteger("SysAutoStart",SysAutoStart);
@@ -2134,6 +2161,7 @@ void __fastcall TMainForm::SaveSettings(TObject* Sender)
         ,AnsiString(services_startup.hangup_sound));
 
     Registry->WriteInteger("ServicesOptions",services_startup.options);
+#endif  /* End of options moved to sbbs.ini */
 
 	Registry->WriteInteger( "SpyTerminalWidth"
                             ,SpyTerminalWidth);
@@ -2146,20 +2174,28 @@ void __fastcall TMainForm::SaveSettings(TObject* Sender)
 	Registry->WriteBool(    "SpyTerminalKeyboardActive"
                             ,SpyTerminalKeyboardActive);
 
+    FILE* fp=NULL;
+   	if(ini_file[0]) {
+        if((fp=fopen(ini_file,"r+"))==NULL) {
+            char err[MAX_PATH*2];
+            sprintf(err,"Error %d opening initialization file: %s",errno,ini_file);
+            Application->MessageBox(err,"ERROR",MB_OK|MB_ICONEXCLAMATION);
+        } else {
+            if(sbbs_write_ini(fp
+                ,&cfg
+                ,&global
+                ,SysAutoStart		,&bbs_startup
+                ,FtpAutoStart		,&ftp_startup
+                ,WebAutoStart		,&web_startup
+                ,MailAutoStart		,&mail_startup
+                ,ServicesAutoStart	,&services_startup
+                ))
+                Registry->WriteBool("Imported",true);
+            fclose(fp);
+        }
+    }
     Registry->CloseKey();
     delete Registry;
-
-    FILE* fp=NULL;
-   	if(ini_file[0] && (fp=fopen(ini_file,"r+"))!=NULL) {
-        sbbs_write_ini(fp    	,&global
-            ,SysAutoStart		,&bbs_startup
-            ,FtpAutoStart		,&ftp_startup
-            ,WebAutoStart		,&web_startup
-            ,MailAutoStart		,&mail_startup
-            ,ServicesAutoStart	,&services_startup
-            );
-    	fclose(fp);
-    }
 }
 
 //---------------------------------------------------------------------------
@@ -2186,7 +2222,7 @@ void __fastcall TMainForm::ImportSettings(TObject* Sender)
 	StatusBar->Panels->Items[4]->Text="Importing Settings...";
 
     sbbs_read_ini(fp
-		,NULL	/* global_startup */
+		,&global
     	,(BOOL*)&SysAutoStart   		,&bbs_startup
     	,(BOOL*)&FtpAutoStart 			,&ftp_startup
     	,(BOOL*)&WebAutoStart 			,&web_startup
