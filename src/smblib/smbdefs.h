@@ -372,7 +372,7 @@ enum {
 /************/
 
 #ifdef __GNUC__ 
-	#define _PACK __attribute__ ((packed));
+	#define _PACK __attribute__ ((packed))
 #else
 	#define _PACK
 #endif
