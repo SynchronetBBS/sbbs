@@ -117,12 +117,18 @@ SMBLIB_OBJS = \
 
 SHLIBOPTS	:=	-shared
 ifeq ($(os),darwin)
-MKSHLIB		:=	libtool -dynamic -framework System -lcc_dynamic
-MKSHPPLIB		:=	libtool -dynamic -framework System -lcc_dynamic -lstdc++
-SHLIBOPTS	:=	
+ MKSHLIB		:=	libtool -dynamic -framework System -lcc_dynamic
+ MKSHPPLIB		:=	libtool -dynamic -framework System -lcc_dynamic -lstdc++
+ SHLIBOPTS	:=	
 else
-MKSHLIB		:=	$(CC)
-MKSHPPLIB		:=	$(CXX)
+ ifeq ($(os),sunos)
+  MKSHLIB		:=	/usr/ccs/bin/ld -G
+  MKSHPPLIB		:=	/usr/ccs/bin/ld -G -L/usr/local/lib -lstdc++
+  SHLIBOPTS	:=	
+ else
+  MKSHLIB		:=	$(CC)
+  MKSHPPLIB		:=	$(CXX)
+ endif
 endif
 
 # Monolithic Synchronet executable Build Rule
