@@ -11,7 +11,7 @@
 // port		TCP port number (defaults to 119)
 // user		username (optional)
 // pass		password (optional)
-// area		subboard (internal code) newsgroup flags [attachment_dir]
+// area		subboard (internal code) newsgroup flags
 // ...
 
 // Defined area flags:
@@ -20,7 +20,6 @@
 // t		do not add tearline to imported messages
 // a		convert extended-ASCII chars to ASCII on imported messages
 // r		remove "Newsgroups:" header field from imported messages
-// u		uudecode attachments
 // i		import all (not just new articles)
 // s		no subject filtering
 
@@ -51,6 +50,7 @@ var update_export_ptrs = false;		// Update export pointers, don't export anythin
 var email_addresses = true;			// Include e-mail addresses in headers
 var import_amount = 0;				// Import a fixed number of messages per group
 var lines_per_yield = 5;			// Release time-slices ever x number of lines
+var yield_length = 1;				// Length of yield (in milliseconds)
 
 // Parse arguments
 for(i=0;i<argc;i++) {
@@ -70,7 +70,7 @@ for(i=0;i<argc;i++) {
 		antispam = "";
 	else if(argv[i].toLowerCase()=="-ix") 	// import a fixed number of messages
 	{
-		import_amount = Number(argv[i+1]);
+		import_amount = parseInt(argv[i+1]);
 		if(import_amount)
 			i++;
 		else
@@ -119,7 +119,7 @@ if(!cfg_file.open("r")) {
 }
 
 while(!cfg_file.eof) {
-	line = cfg_file.readln();
+	line = truncsp(cfg_file.readln());
 	if(line==null || line[0] == ';' || !line.length)
 		continue;
 	str=line.split(/\s+/);
@@ -132,7 +132,7 @@ while(!cfg_file.eof) {
 			server=str[1];
 			break;
 		case "port":
-			port=Number(str[1]);
+			port=parseInt(str[1]);
 			break;
 		case "user":
 			username=str[1];
@@ -158,8 +158,12 @@ while(!cfg_file.eof) {
 			tagline+="\r\n";
 			break;
 		case "lines_per_yield":
-			lines_per_yield=Number(str[1]);
+			lines_per_yield=parseInt(str[1]);
 			break;
+		case "yield_length":
+			yield_length=parseInt(str[1]);
+			break;
+
 		default:
 			printf("!UNRECOGNIZED configuration keyword: %s\r\n",str[0]);
 			break;
@@ -236,7 +240,6 @@ for(i in area) {
 	flags += global_flags;
 	flags = flags.toLowerCase();
 
-	printf("sub: %s, newsgroup: %s\r\n",sub,newsgroup);
 	msgbase = new MsgBase(sub);
 	if(msgbase.open!=undefined && msgbase.open()==false) {
 		printf("!ERROR %s opening msgbase: %s\r\n",msgbase.last_error,sub);
@@ -244,27 +247,18 @@ for(i in area) {
 		continue;
 	}
 
-	attachment_dir=area[i][4];
-	if(attachment_dir==undefined)
-		attachment_dir=msgbase.cfg.data_dir+"attach";
-	mkdir(attachment_dir);
-	if(attachment_dir.substr(-1)!='/')
-		attachment_dir+="/";
+	// Use default newsgroup name if not configured
+	if(newsgroup==undefined || newsgroup.length<2)
+		newsgroup=msgbase.cfg.newsgroup;
 
-	md5_fname=attachment_dir + "md5.lst";
-	md5_list=new Array();
-	md5_file=new File(md5_fname);
-	if(md5_file.open("r")) {
-		md5_list=md5_file.readAll();
-		md5_file.close();
-	}
+	printf("sub: %s, newsgroup: %s\r\n",sub,newsgroup);
 
 	/*********************/
 	/* Read Pointer File */
 	/*********************/
 	export_ptr = 0;
 	import_ptr = NaN;			// Set to highest possible message number (by default)
-	if(flags.indexOf('i')>0)	// import all
+	if(flags.indexOf('i')>=0)	// import all
 		import_ptr = 0;
 	ptr_fname = msgbase.file + ".snl";
 	ptr_file = new File(ptr_fname);
@@ -415,8 +409,8 @@ for(i in area) {
 	}
 	str = rsp.split(' ');
 
-	first_msg = Number(str[2]);
-	last_msg = Number(str[3]);
+	first_msg = parseInt(str[2]);
+	last_msg = parseInt(str[3]);
 
 	if(reset_import_ptrs)
 		ptr = 0;
@@ -427,7 +421,8 @@ for(i in area) {
 	else
 		ptr = import_ptr;
 
-	printf("%s import ptr: %ld, last_msg: %ld\r\n",newsgroup,ptr,last_msg);
+	printf("%s import ptr: %ld, first_msg: %ld, last_msg: %ld\r\n"
+		,newsgroup,ptr,first_msg,last_msg);
 
 	if(ptr < first_msg)
 		ptr = first_msg;
@@ -436,6 +431,7 @@ for(i in area) {
 			ptr = last_msg;
 		ptr++;
 	}
+
 	for(;socket.is_connected && ptr<=last_msg;ptr++) {
 		console.line_counter = 0;
 		writeln(format("ARTICLE %lu",ptr));
@@ -450,12 +446,10 @@ for(i in area) {
 		var hdr={ from: "", to: newsgroup, subject: "", id: "" };
 		var line_counter=0;
 		var recv_lines=0;
-		var file=undefined;
-		var md5;
 		while(socket.is_connected) {
 
 			if(recv_lines && lines_per_yield && (recv_lines%lines_per_yield)==0)
-				yield();
+				sleep(yield_length);
 
 			line = socket.recvline(512 /*maxlen*/, 300 /*timeout*/);
 
@@ -480,42 +474,6 @@ for(i in area) {
 			if(!header) {	/* Body text, append to 'body' */
 				if(line.charAt(0)=='.')
 					line=line.slice(1);		// Skip prepended dots
-
-				if(flags.indexOf('u')>=0) {	// uudecode attachments
-					if(line.substr(0,6)=="begin ") {
-						// Parse uuencode header
-						arg=line.split(/\s+/);
-						arg.splice(0,2);	// strip "begin 666 "
-						fname=file_getname(arg.join(" "));
-						if(file_exists(attachment_dir + fname)) { // generate unique name, if necessary
-							ext=fname.lastIndexOf('.');
-							if(ext<0)
-								ext="";
-							else
-								ext=fname.slice(ext);
-							// Convert filename.ext to filename.<article>.ext
-							fname=format("%.*s.%lu%s",fname.length-ext.length,fname,ptr,ext);
-						}
-						fname=attachment_dir + fname;
-
-						file=new File(fname);
-						file.uue=true;
-						if(file.open("w+b"))
-							printf("Receiving/decoding attachment: %s\r\n",file.name);
-						else
-							printf("!ERROR %s opening %s\r\n",errno_str,file.name);
-						continue;
-					} 
-					if(file!=undefined && file.is_open==true) {
-						if(line=="end") {
-							md5=file.md5_hex;
-							file.close();
-						} else
-							if(!file.write(line))
-								printf("!ERROR decoding/writing: %s\r\n",line);
-						continue;
-					}
-				}
 				body += line;
 				body += "\r\n";
 				line_counter++;
@@ -526,34 +484,8 @@ for(i in area) {
 			parse_news_header(hdr,line);	// from newsutil.js
 		}
 
-		
-		if(file!=undefined) {
-			var partial=false;
-			if(file.is_open==true) { /* Partial attachment? */
-				md5=file.md5_hex;
-				file.close();
-				partial=true;
-			}
-			for(mi=0;mi<md5_list.length;mi++)
-				if(md5_list[mi]==md5)
-					break;
-			if(mi<md5_list.length) {
-				printf("Duplicate MD5 digest found: %s\r\n",md5);
-				if(file_remove(file.name))
-					printf("Duplicate file removed: %s\r\n",file.name);
-				else
-					printf("!ERROR removing duplicate file: %s\r\n",file.name);
-				continue;
-			}
-			md5_list.push(md5);
-			if(partial)
-				file_rename(file.name
-					,attachment_dir 
-						+ hdr.subject.replace(/\//g,'.').replace(/ /g,'_') + ".part");
-		}
-
 		if(truncsp(body).length==0) {
-			printf("Message %lu not imported (blank)",ptr);
+			printf("Message %lu not imported (blank)\r\n",ptr);
 			continue;
 		}
 
@@ -597,14 +529,6 @@ for(i in area) {
 				,ptr, sub, imported, msgbase.total_msgs, line_counter);
 		} else
 			printf("!IMPORT %lu ERROR: %s\r\n", ptr, msgbase.last_error);
-	}
-
-	/* Save Attachment MD5 history */
-	if(md5_list.length) {
-		if(md5_file.open("w")) {
-			md5_file.writeAll(md5_list);
-			md5_file.close();
-		}
 	}
 
 	if(ptr > last_msg)
