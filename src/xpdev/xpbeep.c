@@ -6,7 +6,7 @@
 #endif
 #ifdef __unix__
 	#include <fcntl.h>
-	#include <machine/soundcard.h>
+	#include <sys/soundcard.h>
 	/* KIOCSOUND */
 	#if defined(__FreeBSD__)
 		#include <sys/kbio.h>
