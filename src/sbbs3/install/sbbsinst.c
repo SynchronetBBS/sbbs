@@ -188,7 +188,7 @@ int main(int argc, char **argv)
 		SAFECOPY(params.sbbsuser,p);
 	if((p=getenv("GROUP"))!=NULL)
 		SAFECOPY(params.sbbsgroup,p);
-	params.useX=TRUE;
+	params.useX=FALSE;
 
 	sscanf("$Revision$", "%*s %s", revision);
 
