@@ -342,6 +342,9 @@ char* DLLCALL ftn_msgid(sub_t *sub, smbmsg_t* msg)
 {
 	static char msgid[256];
 
+	if(msg->ftn_msgid!=NULL)
+		return(msg->ftn_msgid);
+
 	snprintf(msgid,sizeof(msgid)
 		,"%s %08lX %lu.%s %08lX\r"
 		,faddrtoa(&sub->faddr,NULL)
@@ -357,9 +360,12 @@ char* DLLCALL ftn_msgid(sub_t *sub, smbmsg_t* msg)
 /****************************************************************************/
 /* Return a general purpose (RFC-822) message-ID							*/
 /****************************************************************************/
-char* DLLCALL gen_msgid(scfg_t* cfg, uint subnum, smbmsg_t* msg)
+char* DLLCALL get_msgid(scfg_t* cfg, uint subnum, smbmsg_t* msg)
 {
 	static char msgid[256];
+
+	if(msg->id!=NULL)
+		return(msg->id);
 
 	if(subnum>=cfg->total_subs)
 		snprintf(msgid,sizeof(msgid)

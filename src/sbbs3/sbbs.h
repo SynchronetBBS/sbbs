@@ -781,7 +781,7 @@ extern "C" {
 	DLLEXPORT size_t	DLLCALL strip_invalid_attr(char *str);
 	DLLEXPORT ushort	DLLCALL subject_crc(char *subj);
 	DLLEXPORT char *	DLLCALL ftn_msgid(sub_t* sub, smbmsg_t* msg);
-	DLLEXPORT char *	DLLCALL gen_msgid(scfg_t* cfg, uint subnum, smbmsg_t* msg);
+	DLLEXPORT char *	DLLCALL get_msgid(scfg_t* cfg, uint subnum, smbmsg_t* msg);
 
 	/* date_str.c */
 	DLLEXPORT char *	DLLCALL zonestr(short zone);
