@@ -1185,8 +1185,11 @@ void event_thread(void* arg)
 				if(sbbs->cfg.qhub[i]->node>=first_node 
 					&& sbbs->cfg.qhub[i]->node<=last_node) {
 					sprintf(str,"%sqnet/%s.now",sbbs->cfg.data_dir,sbbs->cfg.qhub[i]->id);
-					if(fexist(str))
+					if(fexist(str)) {
+						eprintf("Semaphore signaled for QWK Network Hub: %s"
+							,sbbs->cfg.qhub[i]->id);
 						sbbs->cfg.qhub[i]->last=-1; 
+					}
 				}
 			}
 
@@ -1196,8 +1199,11 @@ void event_thread(void* arg)
 					&& sbbs->cfg.event[i]->node<=last_node)
 					|| sbbs->cfg.event[i]->misc&EVENT_EXCL) {
 					sprintf(str,"%s%s.now",sbbs->cfg.data_dir,sbbs->cfg.event[i]->code);
-					if(fexist(str))
+					if(fexist(str)) {
+						eprintf("Semaphore signaled for Timed Event: %s"
+							,sbbs->cfg.event[i]->code);
 						sbbs->cfg.event[i]->last=-1; 
+					}
 				}
 			}
 		}
@@ -1297,15 +1303,14 @@ void event_thread(void* arg)
 			if(sbbs->cfg.phub[i]->node<first_node 
 				|| sbbs->cfg.phub[i]->node>last_node)
 				continue;
-			tm=localtime(&sbbs->cfg.phub[i]->last);	  /* PostLink call out based on time */
-			if(tm==NULL)
-				continue;
-			if(((sbbs->cfg.phub[i]->freq								/* or frequency */
+			tm=gmtime(&sbbs->cfg.phub[i]->last);	  /* PostLink call out based on time */
+			if(tm==NULL || sbbs->cfg.phub[i]->last==-1
+				|| (((sbbs->cfg.phub[i]->freq								/* or frequency */
 					&& (now-sbbs->cfg.phub[i]->last)/60>sbbs->cfg.phub[i]->freq)
 				|| (sbbs->cfg.phub[i]->time
 					&& (now_tm.tm_hour*60)+now_tm.tm_min>=sbbs->cfg.phub[i]->time
 				&& (now_tm.tm_mday!=tm->tm_mday || now_tm.tm_mon!=tm->tm_mon)))
-				&& sbbs->cfg.phub[i]->days&(1<<now_tm.tm_wday)) {
+				&& sbbs->cfg.phub[i]->days&(1<<now_tm.tm_wday))) {
 
 				sbbs->cfg.phub[i]->last=time(NULL);
 				sprintf(str,"%spnet.dab",sbbs->cfg.ctrl_dir);
@@ -1339,11 +1344,11 @@ void event_thread(void* arg)
 			if(!sbbs->cfg.event[i]->node || sbbs->cfg.event[i]->node>sbbs->cfg.sys_nodes)
 				continue;
 			tm=gmtime(&sbbs->cfg.event[i]->last);
-			if(tm==NULL)
-				continue;
-			if(sbbs->cfg.event[i]->last==-1 ||
-				(((sbbs->cfg.event[i]->freq && (now-sbbs->cfg.event[i]->last)/60>sbbs->cfg.event[i]->freq)
-				|| 	(!sbbs->cfg.event[i]->freq && (now_tm.tm_hour*60)+now_tm.tm_min>=sbbs->cfg.event[i]->time
+			if(tm==NULL || sbbs->cfg.event[i]->last==-1 ||
+				(((sbbs->cfg.event[i]->freq 
+					&& (now-sbbs->cfg.event[i]->last)/60>sbbs->cfg.event[i]->freq)
+				|| 	(!sbbs->cfg.event[i]->freq 
+					&& (now_tm.tm_hour*60)+now_tm.tm_min>=sbbs->cfg.event[i]->time
 				&& (now_tm.tm_mday!=tm->tm_mday || now_tm.tm_mon!=tm->tm_mon)))
 				&& sbbs->cfg.event[i]->days&(1<<now_tm.tm_wday))) 
 			{
