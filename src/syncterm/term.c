@@ -1,13 +1,15 @@
+#include <genwrap.h>
+#include <ciowrap.h>
+
 #include "term.h"
-#include "ciowrap.h"
 #include "uifcinit.h"
-#include "genwrap.h"
+#include "menu.h"
 
 struct terminal term;
 
 const int tabs[11]={1,8,16,24,32,40,48,56,64,72,80};
 
-int backlines=200;
+int backlines=2000;
 
 void play_music(void)
 {
@@ -506,6 +508,7 @@ void doterm(void)
 	term.music=0;
 	term.backpos=0;
 	term.scrollback=malloc(term.width*2*backlines);
+	memset(term.scrollback,0,term.width*2*backlines);
 	ch[1]=0;
 	gotoxy(term.xpos,term.ypos);
 	textattr(term.attr);
@@ -599,13 +602,60 @@ void doterm(void)
 		/* Get local input */
 		if(kbhit()) {
 			key=getch();
-			if(key==17) {
-				free(term.scrollback);
-				return;
-			}
-			if(key<256) {
-				ch[0]=key;
-				rlogin_send(ch,1,100);
+			switch(key) {
+				case 17:	/* CTRL-Q */
+					free(term.scrollback);
+					return;
+				case 19:	/* CTRL-S */
+					switch(syncmenu()) {
+						case -1:
+							free(term.scrollback);
+							return;
+					}
+					set_cursor();
+					break;
+				case KEY_LEFT:
+					rlogin_send("\033[D",3,100);
+					break;
+				case KEY_RIGHT:
+					rlogin_send("\033[C",3,100);
+					break;
+				case KEY_UP:
+					rlogin_send("\033[A",3,100);
+					break;
+				case KEY_DOWN:
+					rlogin_send("\033[B",3,100);
+					break;
+				case KEY_HOME:
+					rlogin_send("\033[H",3,100);
+					break;
+				case KEY_END:
+#ifdef KEY_SELECT
+				case KEY_SELECT:	/* Some terminfo/termcap entries use KEY_SELECT as the END key! */
+#endif
+					rlogin_send("\033[K",3,100);
+					break;
+				case KEY_F(1):
+					rlogin_send("\033OP",3,100);
+					break;
+				case KEY_F(2):
+					rlogin_send("\033OQ",3,100);
+					break;
+				case KEY_F(3):
+					rlogin_send("\033Ow",3,100);
+					break;
+				case KEY_F(4):
+					rlogin_send("\033Ox",3,100);
+					break;
+				case KEY_BACKSPACE:
+				case '\b':
+					key='\b';
+					/* FALLTHROUGH to default */
+				default:
+					if(key<256) {
+						ch[0]=key;
+						rlogin_send(ch,1,100);
+					}
 			}
 		}
 	}
