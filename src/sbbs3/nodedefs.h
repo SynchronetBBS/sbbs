@@ -110,7 +110,7 @@ enum {                              /* Node Action */
 
 #define SIZEOF_NODE_T 15			/* Must == sizeof(node_t) */
 
-typedef struct {					/* Node information kept in node.dab */
+typedef struct _PACK {				/* Node information kept in node.dab */
     uchar   status,                 /* Current Status of Node */
             errors,                 /* Number of Critical Errors */
             action;                 /* Action User is doing on Node */
@@ -119,7 +119,7 @@ typedef struct {					/* Node information kept in node.dab */
             misc,                   /* Miscellaneous bits for node */
             aux;                    /* Auxillary word for node */
     ulong   extaux;                 /* Extended aux dword for node */
-            } node_t _PACK;
+            } node_t;
 
 #ifdef _WIN32
 #pragma pack(pop)		/* original packing */

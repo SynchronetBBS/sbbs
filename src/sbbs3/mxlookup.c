@@ -53,7 +53,7 @@
 #pragma pack(1)
 #endif
 
-typedef struct {
+typedef struct _PACK {
 	WORD	length;			/* This field included when using TCP only */
 	WORD	id;
 	WORD	bitfields;
@@ -61,19 +61,19 @@ typedef struct {
 	WORD	ancount;
 	WORD	nscount;
 	WORD	arcount;
-} dns_msghdr_t _PACK;
+} dns_msghdr_t;
 
-typedef struct {
+typedef struct _PACK {
 	WORD	type;
 	WORD	class;
-} dns_query_t _PACK;
+} dns_query_t;
 
-typedef struct {
+typedef struct _PACK {
 	WORD	type;
 	WORD	class;
 	DWORD	ttl;
 	WORD	length;
-} dns_rr_t _PACK;
+} dns_rr_t;
 
 #ifdef _WIN32
 #pragma pack(pop)		/* original packing */
