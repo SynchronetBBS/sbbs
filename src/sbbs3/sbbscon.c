@@ -821,7 +821,7 @@ static void handle_sigs(void)  {
 				_sighandler_rerun(sig);
 				break;
 			default:
-				sprintf(str,"     Signal has no handler (unexpected)",sig);
+				sprintf(str,"     Signal has no handler (unexpected)");
 				lputs(str);
 		}
 	}
