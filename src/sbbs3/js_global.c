@@ -585,7 +585,7 @@ js_html_encode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 	if(argc>1 && JSVAL_IS_BOOLEAN(argv[1]))
 		exascii=JSVAL_TO_BOOLEAN(argv[1]);
 
-	if((outbuf=(char*)malloc(strlen(inbuf)*10))==NULL)
+	if((outbuf=(char*)malloc((strlen(inbuf)*10)+1))==NULL)
 		return(JS_FALSE);
 
 	for(i=j=0;inbuf[i];i++) {
@@ -660,7 +660,7 @@ js_html_decode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 	if((inbuf=JS_GetStringBytes(JS_ValueToString(cx, argv[0])))==NULL) 
 		return(JS_FALSE);
 
-	if((outbuf=(char*)malloc(strlen(inbuf)))==NULL)
+	if((outbuf=(char*)malloc(strlen(inbuf)+1))==NULL)
 		return(JS_FALSE);
 
 	for(i=j=0;inbuf[i];i++) {
