@@ -1,0 +1,129 @@
+<html>
+<head>
+<title>What's New in Synchronet v3.11 (Change History)</title>
+</head>
+<body>
+<font face=Arial,Helvetica>
+<h1 align=center>What's New in Synchronet v3.11</h1>
+<h2>Contents</h2>
+<ul>
+<li>Platform-Specific Changes
+<ul>
+	<li><a href=#win32>Win32</a>
+	<ul>
+		<li><a href=#sbbsctrl>Synchronet Control Panel (GUI)</a>	
+		</ul>
+	<li><a href=#unix>UNIX</a>
+	</ul>
+<li><a href=#servers>Servers</a>
+<li><a href=#telnet>Telnet/RLogin</a>
+<li><a href=#ftpsrvr>FTP Server</a>
+<li><a href=#mailsrvr>Mail Server</a>
+<li><a href=#services>Synchronet Services</a>
+<li><a href=#javascript>JavaScript-Related Changes</a>
+<ul>
+	<li><a href=#jsexec>JSexec</a> (Brand New!)
+	</ul>
+<li><a href=#sbbsecho>SBBSecho</a>
+</ul>
+
+<h2><a name=win32>Win32-specific Changes</a></h2>
+
+<h2><a name=unix>UNIX-specific Changes</a></h2>
+
+<h2><a name=sbbsctrl>Synchronet Control Panel (Win32 GUI) Specific Changes</a></h2>
+
+<h2><a name=servers>All Servers</a></h2>
+<ul>
+<li>Silently-filtered IP address (using ip-silent.can) are truely silent now
+(no sounds or log entries)
+<li>New SemFileCheckFrequency value in .ini file (both global and per-server) (previously hard-coded to 2 seconds in most cases), defaults to 5 seconds
+</ul>
+
+<h2><a name=telnet>Telnet/RLogin Server</a></h2>
+
+<h2><a name=ftpsrvr>FTP Server</a></h2>
+<ul>
+<li>Bugfix: in send_thread() that could send partial files if the last block was
+retried because of a EWOULDBLOCK error (new bug due to non-blocking socket use)
+<li>Bugfix: No longer stops send_thread when send() reports a short packet
+(still logs a error/warning message)
+<li>Only reports data send error if send returns < 1.
+Apparently its normal on Linux for send to send short data (on non-blocking
+sockets)
+<li>No longer converts filenames to uppercase before adding to or retrieving from
+file databases
+<li>Implemented support for directory exemption ARS (finally)
+<li>Support SITE EXEC command for sysop logins
+<li>Added new directory toggle option to prevent transfers to/from that directory
+to be included in the system's upload and download statistics
+<li>Bugfix: wasn't closing ctrl/ftpalias.cfg under some circumstances (file handle/descriptor leak)
+<li>Added current PID to FTP temporary filenames (for more uniqueness)
+<li>Gets current user information after each FTP command, making external changes
+to security, credits, etc. immediately effective
+<li>Removed unnecessary time-slice yields
+</ul>
+
+<h2><a name=mailsrvr>Mail (SMTP/POP3) Server</a></h2>
+<ul>
+<li>QWKnet NetMail messages can now routed over SMTP using qwk-id!user@domain addressing (only single hops are currently supported)
+<li>Bugfix: 100% CPU utilization in sendmail thread when no mail database exists
+<li>Bugfix: RSET and MAIL commands were not correctly resetting (truncating) the recipient list file
+<li>sockreadline() function terminates at sole LF (fix for broken TCP apps - e.g. some Perl mail script)
+<li>Support for folded RFC822 header fields
+<li>Support for SMTP authentication protocols: LOGIN (used by Outlook Express), CRAM-MD5, and PLAIN
+<li>Support for POP3 APOP authentication
+<li>POP3 server thread reads all msg indices and headers before reporting initial OK or ERR reponse after authentication
+<li>Strip control chars from received SMTP commands - apparently some newer
+spammer technique involves embedding a carriage return character in the
+MAIL FROM address
+<li>If an SMTP message is received for an address in the ctrl/spambait.cfg file,
+the message is refused and the IP address of the sender is added to ctrl/spamblock.cfg for later auto-blocking of spammers
+<li>An SMTP-authenticated client is automatically exempt from DNSBL-based mail
+tagging, ignoring, or reporting "bad user". 
+<br>(DNSBL-based "session refusal" occurs before SMTP authentication can take place)
+<li>Added new option: DNSBL_CHKRECVHDRS which checks all of the Received:
+from header IPs against the DNS blacklists.
+<li>Added new mail server option: NO_NOTIFY, to disable user notification telegrams for received SMTP mail (for all users)
+<li>SMTP and POP3 servers now return termporarily failures if the mail database
+is currently locked (for packing)
+<li>Mail server now uses .ini-formatted recipient list file (much more flexible)
+<li>Added support for mail processing command-line specifers: %h, %i, and %u
+(see ctrl/mailproc.cfg for details). Fixed %v (version specifier)
+</ul>
+
+<h2><a name=services>Synchronet Services</a></h2>
+
+<h2><a name=javascript>JavaScript-specific Changes</a></h2>
+<ul>
+<li>Now using thread-safe build of Mozilla JavaScript Engine for improved reliability when multiple simultaneous JavaScripts modules are being executed
+<li>Upgraded JavaScript engine to JavaScript-C (SpiderMonkey) 1.5 RC 5a for improved relability
+<li>Static global objects are now created as read-only: prevents inadvertent
+reasignment by script author accidentally using object name as local variable
+<li>Fixed (finally) JavaScript object initialization segfaults when the JS runtime
+"max_bytes" value is insufficient for the number of configured items:
+by defining dynamically created objects and arrays as properties of child
+objects of the global object immediately after such objects are created,
+they are "implicitly rooted", protecting them from (unexpected) garbage
+collection. Now the initialization will simply fail with a nice "out of memory"
+error. This was a long-standing bug that rarely occurred in the wild
+<li>JavaScript context stack size is now configurable 
+</ul>
+
+<h2><a name=jsexec>JSexec</a></h2>
+<ul>
+<li>This is a new program used to execute JavaScript modules in a separate process outside of Synchronet
+<br>(run <tt>jsexec -?</tt> for usage syntax)
+<li>Can be used to execute JavaScript timed events (e.g. newslink.js) in the background (asynchronous to other timed events)
+<li>Can be used to execute JavaScript modules (e.g. nodelist_html.js) as web server CGI scripts (using a 3rd party web server)
+<li>Can be used to execute some static Synchronet services (e.g. ircd.js) externally from Synchronet
+</ul>
+
+<h2><a name=sbbsecho>SBBSecho (FidoNet NetMail/EchoMail Program)</a></h2>
+
+<p align="right"><font face="Arial" size="1" , "Helvetica">Copyright © 2003 Rob 
+Swindell <br>
+&nbsp;$Id$</font></p>
+
+</body>
+</html>
