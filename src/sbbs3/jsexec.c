@@ -534,35 +534,11 @@ static BOOL js_init(char** environ)
 	JS_SetErrorReporter(js_cx, js_ErrorReporter);
 
 	/* Global Object */
-	if((js_glob=js_CreateGlobalObject(js_cx, &scfg, js_global_functions))==NULL)
-		return(FALSE);
-
-	/* Internal JS Object */
-	if(js_CreateInternalJsObject(js_cx, js_glob, &branch)==NULL)
-		return(FALSE);
-
-	/* System Object */
-	if(js_CreateSystemObject(js_cx, js_glob, &scfg, time(NULL), host_name, SOCKLIB_DESC)==NULL)
-		return(FALSE);
-
-	/* Socket Class */
-	if(js_CreateSocketClass(js_cx, js_glob)==NULL)
-		return(FALSE);
-
-	/* MsgBase Class */
-	if(js_CreateMsgBaseClass(js_cx, js_glob, &scfg)==NULL)
-		return(FALSE);
-
-	/* File Class */
-	if(js_CreateFileClass(js_cx, js_glob)==NULL)
-		return(FALSE);
-
-	/* User class */
-	if(js_CreateUserClass(js_cx, js_glob, &scfg)==NULL) 
-		return(FALSE);
-
-	/* Area Objects */
-	if(!js_CreateUserObjects(js_cx, js_glob, &scfg, NULL, NULL, NULL)) 
+	if((js_glob=js_CreateGlobalObjects(js_cx, &scfg, js_global_functions
+		,time(NULL), host_name, SOCKLIB_DESC	/* system */
+		,&branch								/* js */
+		,NULL,INVALID_SOCKET					/* client */
+		))==NULL)
 		return(FALSE);
 
 	/* Environment Object (associative array) */
