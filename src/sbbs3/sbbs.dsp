@@ -234,6 +234,10 @@ SOURCE=.\ident.c
 # End Source File
 # Begin Source File
 
+SOURCE=..\xpdev\ini_file.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\inkey.cpp
 # End Source File
 # Begin Source File
