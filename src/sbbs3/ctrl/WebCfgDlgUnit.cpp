@@ -173,7 +173,7 @@ void __fastcall TWebCfgDlg::OKBtnClick(TObject *Sender)
     else
 	    MainForm->web_startup.options&=~WEB_OPT_VIRTUAL_HOSTS;
 
-    MainForm->SaveSettings(Sender);
+    MainForm->SaveIniSettings(Sender);
 }
 //---------------------------------------------------------------------------
 void __fastcall TWebCfgDlg::AnswerSoundButtonClick(TObject *Sender)
