@@ -41,6 +41,7 @@
 
 enum {
 	 PROP_TERMINATED
+	,PROP_AUTO_TERMINATE
 	,PROP_BRANCH_COUNTER
 	,PROP_BRANCH_LIMIT
 	,PROP_YIELD_INTERVAL
@@ -68,6 +69,9 @@ static JSBool js_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 		case PROP_TERMINATED:
 			if(branch->terminated!=NULL)
 				*vp=BOOLEAN_TO_JSVAL(*branch->terminated);
+			break;
+		case PROP_AUTO_TERMINATE:
+			*vp=BOOLEAN_TO_JSVAL(branch->auto_terminate);
 			break;
 		case PROP_BRANCH_COUNTER:
 			JS_NewNumberValue(cx,branch->counter,vp);
@@ -118,6 +122,9 @@ static JSBool js_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			if(branch->terminated!=NULL)
 				JS_ValueToBoolean(cx, *vp, branch->terminated);
 			break;
+		case PROP_AUTO_TERMINATE:
+			JS_ValueToBoolean(cx,*vp,&branch->auto_terminate);
+			break;
 		case PROP_BRANCH_COUNTER:
 			JS_ValueToInt32(cx, *vp, (int32*)&branch->counter);
 			break;
@@ -145,6 +152,7 @@ static JSBool js_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 static jsSyncPropertySpec js_properties[] = {
 /*		 name,				tinyid,						flags,		ver	*/
 
+	{	"auto_terminate",	PROP_AUTO_TERMINATE,JSPROP_ENUMERATE,	311 },
 	{	"terminated",		PROP_TERMINATED,	JSPROP_ENUMERATE,	311 },
 	{	"branch_counter",	PROP_BRANCH_COUNTER,JSPROP_ENUMERATE,	311 },
 	{	"branch_limit",		PROP_BRANCH_LIMIT,	JSPROP_ENUMERATE,	311 },
@@ -162,7 +170,8 @@ static jsSyncPropertySpec js_properties[] = {
 
 #ifdef _DEBUG
 static char* prop_desc[] = {
-	 "termination has been requested (stop execution as soon as possible)"
+	 "set to <i>false</i> to disable the automatic termination of the script upon external request"
+	,"termination has been requested (stop execution as soon as possible)"
 	,"number of branch operations performed in this runtime"
 	,"maximum number of branches, used for infinite-loop detection (0=disabled)"
 	,"interval of periodic time-slice yields (lower number=higher frequency, 0=disabled)"

@@ -535,7 +535,7 @@ js_BranchCallback(JSContext *cx, JSScript *script)
 	sbbs->js_branch.counter++;
 
 	/* Terminated? */
-	if(sbbs->terminated) {
+	if(sbbs->js_branch.auto_terminate && sbbs->terminated) {
 		JS_ReportError(cx,"Terminated");
 		sbbs->js_branch.counter=0;
 		return(JS_FALSE);

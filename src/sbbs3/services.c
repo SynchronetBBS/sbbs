@@ -895,7 +895,7 @@ js_BranchCallback(JSContext *cx, JSScript *script)
 	client->branch.counter++;
 
 	/* Terminated? */ 
-	if(terminated && !(client->service->options&SERVICE_OPT_STATIC)) {
+	if(client->branch.auto_terminate && terminated) {
 		JS_ReportError(cx,"Terminated");
 		client->branch.counter=0;
 		return(JS_FALSE);
@@ -1162,6 +1162,7 @@ static void js_static_service_thread(void* arg)
 	service_client.branch.gc_interval = service->js_gc_interval;
 	service_client.branch.yield_interval = service->js_yield_interval;
 	service_client.branch.terminated = &service->terminated;
+	service_client.branch.auto_terminate = TRUE;
 
 	if((js_runtime=JS_NewRuntime(service->js_max_bytes))==NULL) {
 		lprintf(LOG_ERR,"%04d !%s ERROR initializing JavaScript runtime"
@@ -2066,6 +2067,7 @@ void DLLCALL services_thread(void* arg)
 				client->branch.gc_interval		= service[i].js_gc_interval;
 				client->branch.yield_interval	= service[i].js_yield_interval;
 				client->branch.terminated		= &client->service->terminated;
+				client->branch.auto_terminate	= TRUE;
 
 				udp_buf = NULL;
 

@@ -843,6 +843,7 @@ bool sbbs_t::js_init()
 	js_branch.gc_interval = startup->js_gc_interval;
 	js_branch.yield_interval = startup->js_yield_interval;
 	js_branch.terminated = &terminated;
+	js_branch.auto_terminate = TRUE;
 
 	bool success=false;
 

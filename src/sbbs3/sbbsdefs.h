@@ -78,6 +78,7 @@ typedef struct {
 	ulong	yield_interval;
 	ulong	gc_interval;
 	ulong	gc_attempts;
+	BOOL	auto_terminate;
 	BOOL*	terminated;
 } js_branch_t;
 
