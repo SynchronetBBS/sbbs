@@ -43,8 +43,7 @@
 /* Console Object Properites */
 /*****************************/
 enum {
-	 CON_PROP_ONLINE
-	,CON_PROP_STATUS
+	 CON_PROP_STATUS
 	,CON_PROP_LNCNTR 
 	,CON_PROP_ATTR
 	,CON_PROP_TOS
@@ -69,9 +68,6 @@ static JSBool js_console_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
     tiny = JSVAL_TO_INT(id);
 
 	switch(tiny) {
-		case CON_PROP_ONLINE:
-			val=sbbs->online;
-			break;
 		case CON_PROP_STATUS:
 			val=sbbs->console;
 			break;
@@ -129,9 +125,6 @@ static JSBool js_console_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 		JS_ValueToInt32(cx, *vp, &val);
 
 	switch(tiny) {
-		case CON_PROP_ONLINE:
-			sbbs->online=val;
-			break;
 		case CON_PROP_STATUS:
 			sbbs->console=val;
 			break;
@@ -175,12 +168,11 @@ static JSBool js_console_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 static struct JSPropertySpec js_console_properties[] = {
 /*		 name				,tinyid					,flags			,getter,setter	*/
 
-	{	"online"			,CON_PROP_ONLINE		,CON_PROP_FLAGS	,NULL,NULL},
 	{	"status"			,CON_PROP_STATUS		,CON_PROP_FLAGS	,NULL,NULL},
 	{	"line_counter"		,CON_PROP_LNCNTR 		,CON_PROP_FLAGS	,NULL,NULL},
 	{	"attributes"		,CON_PROP_ATTR			,CON_PROP_FLAGS	,NULL,NULL},
 	{	"top_of_screen"		,CON_PROP_TOS			,CON_PROP_FLAGS	,NULL,NULL},
-	{	"rows"				,CON_PROP_ROWS			,CON_PROP_FLAGS	,NULL,NULL},
+	{	"screen_rows"		,CON_PROP_ROWS			,CON_PROP_FLAGS	,NULL,NULL},
 	{	"autoterm"			,CON_PROP_AUTOTERM		,CON_PROP_FLAGS	,NULL,NULL},
 	{	"timeout"			,CON_PROP_TIMEOUT		,CON_PROP_FLAGS	,NULL,NULL},
 	{	"timeleft_warning"	,CON_PROP_TIMELEFT_WARN	,CON_PROP_FLAGS	,NULL,NULL},
@@ -320,7 +312,7 @@ js_getkeys(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 			js_str = JS_ValueToString(cx, argv[i]);
 		}
 	}
-	if (!js_str)
+	if(js_str==NULL)
 		return(JS_FALSE);
 
 	val=sbbs->getkeys(JS_GetStringBytes(js_str),maxnum);
@@ -637,10 +629,10 @@ js_uselect(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	uintN		i;
 	int			num=0;
-	char*		title;
-	char*		item;
+	char*		title="";
+	char*		item="";
 	char*		ar_str;
-	uchar*		ar;
+	uchar*		ar=NULL;
 	sbbs_t*		sbbs;
     JSString*	js_str;
 
@@ -881,7 +873,9 @@ static JSFunctionSpec js_console_functions[] = {
 	{"saveline",		js_saveline,		0},		// save last output line 
 	{"restoreline",		js_restoreline,		0},		// restore last output line 
 	{"ansi",			js_ansi,			1},		// returns ANSI encoding of attribute arg
+	{"ansi_save",		js_ansi_save,		0},
 	{"ansi_pushxy",		js_ansi_save,		0},
+	{"ansi_restore",	js_ansi_restore,	0},
 	{"ansi_popxy",		js_ansi_restore,	0},
 	{"ansi_gotoxy",		js_ansi_gotoxy,		2},
 	{"ansi_up",			js_ansi_up,			0},
