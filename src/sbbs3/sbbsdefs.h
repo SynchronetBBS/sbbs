@@ -181,6 +181,7 @@
 #define NM_7BITONLY		(1L<<16)	/* Except 7-bit input only (E71 terminals)	*/
 #define NM_RESETVID		(1L<<17)	/* Reset video mode between callers?		*/
 #define NM_NOPAUSESPIN	(1L<<18)	/* No spinning cursor at pause prompt		*/
+#define NM_CLOSENODEDAB	(1L<<19)	/* Keep node.dab file closed (for Samba)	*/
 
 									/* Miscellaneous Modem Settings (mdm_misc)  */
 #define MDM_CTS 		(1<<0)		/* Use hardware send flow control			*/
