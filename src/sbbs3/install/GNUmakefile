@@ -36,10 +36,11 @@ LIBDIR	:=	/usr/lib
 DELETE	=	rm -f -v
 OUTLIB	=	-o
 
-CFLAGS	+=	-O2
+CFLAGS	+=	-g
+#CFLAGS	+=	-O2
 CFLAGS	+=	-MMD -Wall -I$(UIFC) -I$(XPDEV) -I..
 
-LFLAGS	:=	-static -L/usr/local/lib
+LFLAGS	:=	-L/usr/local/lib
 
 ODIR	:=	$(ODIR).release
 
@@ -89,7 +90,7 @@ $(SBBSINST): $(OBJS)
    endif
 	@echo Linking $@
 	@$(CC) -o $@ $(OBJS) $(LFLAGS)
-	@strip $@
+#	@strip $@
 
 # Auto-dependency files (should go in output dir, but gcc v2.9.5 puts in cwd)
 -include ./*.d
