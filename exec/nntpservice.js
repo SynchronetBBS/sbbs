@@ -456,7 +456,8 @@ while(client.socket.is_connected) {
 						,hdr.from.replace(/ /g,".").toLowerCase()
 						,hdr.from_net_addr));
 				if(hdr.from_org!=undefined)
-					writeln("Organization: " + hdr.from_org);
+					hdr.from_org=system.name;
+				writeln("Organization: " + hdr.from_org);
 				writeln("To: " + hdr.to);
 				writeln("X-Comment-To: " + hdr.to);
 				writeln("Subject: " + hdr.subject);
