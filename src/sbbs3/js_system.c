@@ -1248,7 +1248,7 @@ js_new_user(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	i=newuserdat(cfg,&user);
 
 	if(i==0) {
-		userobj=js_CreateUserObject(cx, obj, cfg, "user", user.number);
+		userobj=js_CreateUserObject(cx, obj, cfg, NULL, user.number);
 		*rval = OBJECT_TO_JSVAL(userobj);
 	} else
 		*rval = INT_TO_JSVAL(i);
