@@ -311,6 +311,8 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 	strcpy(listpath,inpath);
 	fexistcase(listpath);
 	if((stream=fnopen(&file,listpath,O_RDONLY))==NULL) {
+		fprintf(stderr,"Error %d (%s) opening %s\n"
+			,errno,strerror(errno),listpath);
 		sprintf(listpath,"%s%s",cur_altpath ? scfg.altpath[cur_altpath-1]
 				: scfg.dir[f.dir]->path,inpath);
 		if((stream=fnopen(&file,listpath,O_RDONLY))==NULL) {
