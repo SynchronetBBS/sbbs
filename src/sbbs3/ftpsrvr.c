@@ -919,7 +919,7 @@ BOOL js_generate_index(JSContext* js_cx, JSObject* js_glob,
 	} while(0);
 
 
-	if(js_script!=NULL)
+	if(js_script!=NULL) 
 		JS_DestroyScript(js_cx, js_script);
 
 	JS_DeleteProperty(js_cx, js_glob, "ftp_path");
@@ -1935,6 +1935,7 @@ static void ctrl_thread(void* arg)
 #endif
 
 #ifdef JAVASCRIPT
+	lprintf("%04d JavaScript: Initializing context",sock);
 	if(((js_cx=js_initcx(&js_glob))==NULL)) {
 		lprintf("%04d !ERROR initializing JavaScript context",sock);
 		sockprintf(sock,"425 Error initializing JavaScript context");
@@ -3735,6 +3736,7 @@ static void ctrl_thread(void* arg)
 #endif
 
 #ifdef JAVASCRIPT
+	lprintf("%04d JavaScript: Destroying context",sock);
 	JS_DestroyContext(js_cx);	/* Free Context */
 #endif
 
@@ -3773,6 +3775,7 @@ static void cleanup(int code)
 #endif
 
 #ifdef JAVASCRIPT
+	lprintf("0000 JavaScript: Destroying runtime");
 	if(js_runtime!=NULL) {
 		JS_DestroyRuntime(js_runtime);
 		js_runtime=NULL;
@@ -3938,11 +3941,16 @@ void DLLCALL ftp_server(void* arg)
 		strlwr(scfg.dir[i]->code);
 
 #ifdef JAVASCRIPT
+	lprintf("JavaScript: Creating runtime: %lu bytes"
+		,JAVASCRIPT_RUNTIME_MEMORY);
+
 	if((js_runtime = JS_NewRuntime(JAVASCRIPT_RUNTIME_MEMORY))==NULL) {
 		lprintf("!JS_NewRuntime failed");
 		cleanup(1);
 		return;
 	}
+
+	lprintf("JavaScript: Context stack: %lu bytes", JAVASCRIPT_CONTEXT_STACK);
 #endif
 
     /* open a socket and wait for a client */
