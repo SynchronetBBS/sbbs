@@ -431,6 +431,10 @@ void sbbs_read_ini(
 			=iniReadIpAddress(fp,section,strInterface,global->interface_addr);
 		web->port
 			=iniReadShortInt(fp,section,"Port",IPPORT_HTTP);
+		web->max_clients
+			=iniReadShortInt(fp,section,"MaxClients",10);
+		web->max_inactivity
+			=iniReadShortInt(fp,section,"MaxInactivity",120);		/* seconds */
 		web->sem_chk_freq
 			=iniReadShortInt(fp,section,strSemFileCheckFrequency,global->sem_chk_freq);
 
@@ -951,6 +955,10 @@ BOOL sbbs_write_ini(
 			break;
 
 		if(!iniSetShortInt(lp,section,"Port",web->port,&style))
+			break;
+		if(!iniSetShortInt(lp,section,"MaxClients",web->max_clients,&style))
+			break;
+		if(!iniSetShortInt(lp,section,"MaxInactivity",web->max_inactivity,&style))
 			break;
 
 		if(web->sem_chk_freq==global->sem_chk_freq)
