@@ -28,7 +28,7 @@ for(i=0;i<argc;i++)
 			break;
 	}
 
-if(this.server && this.client) {
+if((this.http_request==undefined) && this.server && this.client) {
 
 	// Write a string to the client socket
 	function write(str)
@@ -64,7 +64,7 @@ while(this.client!=undefined && client.socket.data_waiting) {
 //	log(format("client request: '%s'",request));
 }
 
-if(this.server==undefined) {	/* CGI, so send CGI/HTTP headers */
+if(this.http_request==undefined) {	/* CGI, so send CGI/HTTP headers */
 	writeln("Content-Type: text/html");
 	writeln();
 }
