@@ -10,10 +10,17 @@ int	rcvtimeo=0;
 int rlogin_recv(char *buffer, size_t buflen)
 {
 	int	r;
+	BOOL	rd;
+	BOOL	*rdptr=NULL;
 
-	if(!socket_check(rlogin_socket, NULL, NULL, 0))
+	if(rcvtimeo)
+		rdptr=&rd;
+	if(!socket_check(rlogin_socket, rdptr, NULL, 0))
 		return(-1);
-	r=recv(rlogin_socket,buffer,buflen,0);
+	if(rcvtimeo || rd)
+		r=recv(rlogin_socket,buffer,buflen,0);
+	else
+		r=0;
 	if(r==-1 && (errno==EAGAIN || errno==EINTR || errno==0))	/* WTF? */
 		r=0;
 	return(r);
