@@ -7,10 +7,22 @@ var start=new Date();
 
 load("nodedefs.js");
 
+var include_age_gender=true;
+var include_location=false;
+
 // Parse arguments
 for(i=0;i<argc;i++)
-	if(argv[i].toLowerCase()=="-r")
-		refresh_rate=Number(argv[++i]);
+	switch(argv[i].toLowerCase()) {
+		case "-r":
+			refresh_rate=Number(argv[++i]);
+			break;
+		case "-n":
+			include_age_gender=false;
+			break;
+		case "-l":
+			include_location=true;
+			break;
+	}
 
 // Write a string to the client socket
 function write(str)
@@ -43,11 +55,25 @@ writeln("</head>");
 writeln("<body bgcolor=teal text=white link=yellow vlink=lime alink=white>");
 writeln("<font face=Arial,Helvetica,sans-serif>");
 
+// Login Button - Modified by RuneMaster of RuneKeep BBS
+writeln("<table border=0 width=100%>");
+writeln("<tr>");
+writeln("<td align=left>");
+writeln("<font color='lime'>");
+writeln(format("<h1><i>%s BBS - Node List</i></h1>",system.name));
+writeln("</font>");
+writeln("</td>");
+writeln("<td align=right>");
+writeln("<form>");
+writeln("<input type=button value='Login' onClick='location=\"telnet://"
+        + system.inetaddr + "\";'>");
+writeln("</form>");
+writeln("</td>");
+writeln("</tr>");
+writeln("</table>");
+
 // Table
 writeln("<table border=0 width=100%>");
-writeln("<caption align=left><font color=lime>");
-writeln(format("<h1><i>%s BBS - Node List</i></h1>",system.name));
-writeln("</caption>");
 
 // Header
 writeln("<thead>");
@@ -57,8 +83,12 @@ font_color = "<font color=black>";
 write(format("<th align=center width=7%>%sNode",font_color));
 write(format("<th align=center width=20%>%sUser",font_color));
 write(format("<th align=left>%sAction/Status",font_color));
-write(format("<th align=center width=7%>%sAge",font_color));
-write(format("<th align=center width=10%>%sGender\r\n",font_color));
+if(include_location) 
+	write(format("<th align=left>%sLocation",font_color));
+if(include_age_gender) {
+	write(format("<th align=center width=7%>%sAge",font_color));
+	write(format("<th align=center width=10%>%sGender\r\n",font_color));
+}
 write(format("<th align=center width=10%>%sTime\r\n",font_color));
 writeln("</thead>");
 
@@ -80,11 +110,20 @@ for(n=0;n<system.node_list.length;n++) {
 			,user.alias
 			));
 		write(format(
-			"<td><font color=yellow>%s<td align=center>%d<td align=center>%s"
+			"<td><font color=yellow>%s"
 			,action
-			,user.age
-			,user.gender
 			));
+		if(include_location)
+			write(format(
+				"<td align=left>%s"
+				,user.location
+				));
+		if(include_age_gender) 
+			write(format(
+				"<td align=center>%d<td align=center>%s"
+				,user.age
+				,user.gender
+				));
 		t=time()-user.logontime;
 		write(format(
 			"<td align=center>%u:%02u:%02u"
@@ -100,14 +139,6 @@ for(n=0;n<system.node_list.length;n++) {
 }
 writeln("</tbody>");
 writeln("</table>");
-
-// Login Button
-writeln("<form>");
-writeln("<table align=right>");
-writeln("<tr><td><input type=button value='Login' onClick='location=\"telnet://" 
-	+ system.inetaddr + "\";'>"); 
-writeln("</table>");
-writeln("</form>");
 
 writeln("<p><font color=silver><font size=-2>");
 writeln(format("Auto-refresh in %d seconds",refresh_rate));
