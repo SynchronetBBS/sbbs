@@ -77,22 +77,6 @@ if((p=strchr(str,'.'))!=NULL)
     addr.point=atoi(p+1);
 return(addr);
 }
-#if 0
-/****************************************************************************/
-/* Returns an ASCII string for FidoNet address 'addr'                       */
-/****************************************************************************/
-char *faddrtoa(faddr_t addr)
-{
-    static char str[25];
-    char point[25];
-
-sprintf(str,"%u:%u/%u",addr.zone,addr.net,addr.node);
-if(addr.point) {
-    sprintf(point,".%u",addr.point);
-    strcat(str,point); }
-return(str);
-}
-#endif
 
 uint getsub()
 {
@@ -132,10 +116,10 @@ void net_cfg()
 
 while(1) {
 	i=0;
+	strcpy(opt[i++],"Internet");
 	strcpy(opt[i++],"QWK Packet Networks");
 	strcpy(opt[i++],"FidoNet EchoMail and NetMail");
 	strcpy(opt[i++],"PostLink Networks");
-	strcpy(opt[i++],"Internet NetMail");
 	opt[i][0]=0;
 	SETHELP(WHERE);
 /*
@@ -145,7 +129,7 @@ This is the network configuration menu. Select the type of network
 technology that you want to configure.
 */
 	i=ulist(WIN_ORG|WIN_ACT|WIN_CHE,0,0,0,&net_dflt,0,"Networks",opt);
-	if(i==0) {	/* QWK net stuff */
+	if(i==1) {	/* QWK net stuff */
 		done=0;
 		while(!done) {
 			i=0;
@@ -178,7 +162,7 @@ networked sub-boards. This default can be overridden on a per sub-board
 basis with the sub-board configuration Network Options....
 */
 					uinput(WIN_MID|WIN_SAV,0,0,nulstr
-						,cfg.qnet_tagline,63,K_MSG|K_EDIT);
+						,cfg.qnet_tagline,70,K_MSG|K_EDIT);
 					break;
 				case 0:
 					while(1) {
@@ -263,7 +247,7 @@ outgoing network packets and must be accurate.
 						qhub_edit(i); }
 					break; } } }
 
-	else if(i==1) { 	/* FidoNet Stuff */
+	else if(i==2) { 	/* FidoNet Stuff */
 		done=0;
 		while(!done) {
 			i=0;
@@ -670,7 +654,7 @@ If you want the sending of NetMail to be free, set this value to 0.
 						,str,10,K_EDIT|K_NUMBER);
 					cfg.netmail_cost=atol(str);
 					break; } } }
-	else if(i==2) {
+	else if(i==3) {
 		done=0;
 		while(!done) {
 			i=0;
@@ -682,10 +666,7 @@ If you want the sending of NetMail to be free, set this value to 0.
 /*
 PostLink Networks:
 
-From this menu you can configure the default tagline to use for
-outgoing messages on QWK networked sub-boards, or you can select
-Network Hubs... to add, delete, or configure QWK hubs that your system
-calls to exchange packets with.
+From this menu you can configure PostLink or PCRelay Networks.
 */
 			i=ulist(WIN_ACT|WIN_RHT|WIN_BOT|WIN_CHE,0,0,0,&pnet_dflt,0
 				,"PostLink Networks",opt);
@@ -796,36 +777,35 @@ This is the Site Name of this hub. It is used for only for reference.
 						phub_edit(i); }
                     break; } } }
 
-	else if(i==3) { 	/* Internet */
+	else if(i==0) { 	/* Internet */
 		done=0;
 		while(!done) {
 			i=0;
 			sprintf(opt[i++],"%-27.27s%s"
 				,"System Address",cfg.sys_inetaddr);
 			sprintf(opt[i++],"%-27.27s%.40s"
-				,"NetMail Semaphore",cfg.inetmail_sem);
+				,"E-mail Semaphore",cfg.inetmail_sem);
 			sprintf(opt[i++],"%-27.27s%s"
-				,"Allow Sending of NetMail"
+				,"Allow Sending of E-mail"
 				,cfg.inetmail_misc&NMAIL_ALLOW ? "Yes":"No");
 			sprintf(opt[i++],"%-27.27s%s"
 				,"Allow File Attachments"
 				,cfg.inetmail_misc&NMAIL_FILE ? "Yes":"No");
 			sprintf(opt[i++],"%-27.27s%s"
-				,"Send NetMail Using Alias"
+				,"Send E-mail Using Alias"
 				,cfg.inetmail_misc&NMAIL_ALIAS ? "Yes":"No");
 			sprintf(opt[i++],"%-27.27s%lu"
-				,"Cost to Send NetMail",cfg.inetmail_cost);
+				,"Cost to Send E-mail",cfg.inetmail_cost);
 			opt[i][0]=0;
 			SETHELP(WHERE);
 /*
-Internet NetMail:
+Internet:
 
 This menu contains configuration options that pertain specifically to
-Internet E-mail (NetMail). To utilize these options, you must own
-a Synchronet compatible UUCP/Internet gateway (e.g. SyncUUCP).
+Internet E-mail.
 */
 			i=ulist(WIN_ACT|WIN_MID|WIN_CHE,0,0,60,&inet_dflt,0
-				,"Internet NetMail",opt);
+				,"Internet",opt);
 			savnum=0;
 			switch(i) {
 				case -1:	/* ESC */
@@ -836,8 +816,8 @@ a Synchronet compatible UUCP/Internet gateway (e.g. SyncUUCP).
 /*
 Sytem Internet Address:
 
-If your system has an Internet mail feed, enter your system's Internet
-address here (e.g. joesbbs.com).
+Enter your system's Internet address (hostname or IP address) here
+(e.g. joesbbs.com).
 */
 					uinput(WIN_MID|WIN_SAV,0,0,""
 						,cfg.sys_inetaddr,60,K_EDIT);
@@ -845,11 +825,11 @@ address here (e.g. joesbbs.com).
 				case 1:
 					SETHELP(WHERE);
 /*
-Internet NetMail Semaphore File:
+Internet E-mail Semaphore File:
 
-This is a filename that will be used as a semaphore (signal) to your
-Internet gateway (if supported) that new mail has been created and the
-message base should be re-scanned.
+This is a filename that will be used as a semaphore (signal) to any
+external Internet gateways (if supported) that new mail has been created
+and the message base should be re-scanned.
 */
 					uinput(WIN_MID|WIN_SAV,0,0,"Semaphore File"
 						,cfg.inetmail_sem,50,K_EDIT);
@@ -862,13 +842,13 @@ message base should be re-scanned.
 					opt[2][0]=0;
 					SETHELP(WHERE);
 /*
-Allow Users to Send Internet NetMail:
+Allow Users to Send Internet E-mail:
 
-If your system has an Internet uplink and you want your users to be
-allowed to send Internet NetMail, set this option to Yes.
+If you want your users to be allowed to send Internet E-mail, set this
+option to Yes.
 */
 					i=ulist(WIN_MID|WIN_SAV,0,0,0,&i,0
-						,"Allow Users to Send NetMail",opt);
+						,"Allow Users to Send E-mail",opt);
 					if(!i && !(cfg.inetmail_misc&NMAIL_ALLOW)) {
 						changes=1;
 						cfg.inetmail_misc|=NMAIL_ALLOW; }
@@ -884,13 +864,13 @@ allowed to send Internet NetMail, set this option to Yes.
 					opt[2][0]=0;
 					SETHELP(WHERE);
 /*
-Allow Users to Send Internet NetMail File Attachments:
+Allow Users to Send Internet E-mail File Attachments:
 
-If your system has an Internet uplink and you want your users to be
-allowed to send Internet NetMail file attachments, set this option to Yes.
+If you want your users to be allowed to send Internet E-mail with file
+attachments, set this option to Yes.
 */
 					i=ulist(WIN_MID|WIN_SAV,0,0,0,&i,0
-						,"Allow Users to Send NetMail File Attachments",opt);
+						,"Allow Users to Send E-mail with File Attachments",opt);
 					if(!i && !(cfg.inetmail_misc&NMAIL_FILE)) {
 						changes=1;
 						cfg.inetmail_misc|=NMAIL_FILE; }
@@ -905,15 +885,15 @@ allowed to send Internet NetMail file attachments, set this option to Yes.
 					opt[2][0]=0;
 					SETHELP(WHERE);
 /*
-Use Aliases in NetMail:
+Use Aliases in Internet E-mail:
 
-If you allow aliases on your system and wish users to have their NetMail
-contain their alias as the From User, set this option to Yes. If you
-want all NetMail to be sent using users' real names, set this option to
-No.
+If you allow aliases on your system and wish users to have their
+Internet E-mail contain their alias as the From User, set this option to
+Yes. If you want all E-mail to be sent using users' real names, set this
+option to No.
 */
 					i=ulist(WIN_MID|WIN_SAV,0,0,0,&i,0
-						,"Use Aliases in NetMail",opt);
+						,"Use Aliases in Internet E-mail",opt);
 					if(!i && !(cfg.inetmail_misc&NMAIL_ALIAS)) {
 						changes=1;
 						cfg.inetmail_misc|=NMAIL_ALIAS; }
@@ -925,13 +905,14 @@ want all NetMail to be sent using users' real names, set this option to
 					ultoa(cfg.inetmail_cost,str,10);
 					SETHELP(WHERE);
 /*
-Cost in Credits to Send NetMail:
+Cost in Credits to Send Internet E-mail:
 
-This is the number of credits it will cost your users to send NetMail.
-If you want the sending of NetMail to be free, set this value to 0.
+This is the number of credits it will cost your users to send Internet
+E-mail. If you want the sending of Internet E-mail to be free, set this
+value to 0.
 */
 					uinput(WIN_MID|WIN_SAV,0,0
-						,"Cost in Credits to Send NetMail"
+						,"Cost in Credits to Send Internet E-mail"
 						,str,10,K_EDIT|K_NUMBER);
 					cfg.inetmail_cost=atol(str);
 					break; } } }
