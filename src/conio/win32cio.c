@@ -141,7 +141,6 @@ int win32_kbhit(void)
 
 int win32_getch(void)
 {
-	char str[128];
 	INPUT_RECORD input;
 	DWORD num=0;
 
@@ -290,7 +289,6 @@ void win32_textmode(int mode)
 	int i;
 	COORD	sz;
 	SMALL_RECT	rc;
-	CONSOLE_SCREEN_BUFFER_INFO	sb;
 
 	for(i=0;i<VID_MODES;i++) {
 		if(vid_modes[i].mode==mode)
@@ -461,10 +459,7 @@ int win32_wherey(void)
 int win32_putch(int ch)
 {
 	struct text_info ti;
-	WORD sch;
-	int i;
 	unsigned char buf[2];
-	DWORD wr;
 
 	buf[0]=ch;
 	buf[1]=currattr;

@@ -131,8 +131,6 @@ tODKeySequence aKeySequences[] =
 
 void ansi_sendch(char ch)
 {
-	struct text_info ti;
-
 	if(!ch)
 		ch=' ';
 	if(ansi_row<ansi_rows-1 || (ansi_row==ansi_rows-1 && ansi_col<ansi_cols-1)) {
@@ -202,7 +200,7 @@ int ansi_puttext(int sx, int sy, int ex, int ey, void* buf)
 				textattr(sch>>8);
 				attrib=sch>>8;
 			}
-			ansi_sendch(sch&0xff);
+			ansi_sendch((char)(sch&0xff));
 		}
 	}
 
@@ -439,7 +437,6 @@ int ansi_wherex(void)
 int ansi_putch(int ch)
 {
 	struct text_info ti;
-	WORD sch;
 	int i;
 	unsigned char buf[2];
 
@@ -509,7 +506,6 @@ int ansi_putch(int ch)
 
 void ansi_gotoxy(int x, int y)
 {
-	struct text_info ti;
 	char str[16];
 
 	if(x < 1
