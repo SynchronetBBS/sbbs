@@ -43,7 +43,7 @@
 uifcapi_t uifc; /* User Interface (UIFC) Library API */
 params_t params; /* Build parameters */
 
-#define MAKEFILE = "/tmp/SBBSmakefile";
+#define MAKEFILE "/tmp/SBBSmakefile";
 
 char **opt;
 char tmp[256];
