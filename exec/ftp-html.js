@@ -277,7 +277,7 @@ if(ftp.file_list.length) {
 	if (ftp.curdir.name==undefined)
 		show_ext_desc=false;	/* aliased files have no ext desc */
 	else
-		show_ext_desc=user.settings&USER_EXTDESC;
+		show_ext_desc=ftp.extended_descriptions;
 
 	writeln("<table " + cell_spacing + " width=100%>");
 	writeln(font_face);
@@ -303,14 +303,12 @@ if(ftp.file_list.length) {
 
 	/* Description */
 	write("<th>" + hdr_font + "Description");
-	if(!(user.security.restrictions&UFLAG_G) && ftp.curdir.settings!=undefined) {
-		if(user.settings&USER_EXTDESC)
-			writeln(format(" [%s]"
-				,(hdr_font+"short").link(format("%s?ext=off$%s",html_index_file, time_stamp))));
-		else
-			writeln(format(" [%s]"
-				,(hdr_font+"extended").link(format("%s?ext=on$%s",html_index_file, time_stamp))));
-	}
+	if(ftp.extended_descriptions)
+		writeln(format(" [%s]"
+			,(hdr_font+"short").link(format("%s?ext=off$%s",html_index_file, time_stamp))));
+	else
+		writeln(format(" [%s]"
+			,(hdr_font+"extended").link(format("%s?ext=on$%s",html_index_file, time_stamp))));
 
 	/* Date/Time */
 	writeln(format("<th><a href=%s?sort=time%s$%s>%sDate/Time</a>"
