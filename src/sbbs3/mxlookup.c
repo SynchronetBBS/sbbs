@@ -61,19 +61,19 @@ typedef struct {
 	WORD	ancount;
 	WORD	nscount;
 	WORD	arcount;
-} dns_msghdr_t;
+} _PACK dns_msghdr_t;
 
 typedef struct {
 	WORD	type;
 	WORD	class;
-} dns_query_t;
+} _PACK dns_query_t;
 
 typedef struct {
 	WORD	type;
 	WORD	class;
 	DWORD	ttl;
 	WORD	length;
-} dns_rr_t;
+} _PACK dns_rr_t;
 
 #ifdef _WIN32
 #pragma pack(pop)		/* original packing */
