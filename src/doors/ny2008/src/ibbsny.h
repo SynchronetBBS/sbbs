@@ -32,7 +32,7 @@ typedef INT16 tBool;
 /*                         InterBBS API Functions                             */
 /******************************************************************************/
 tIBResult IBSend(tIBInfo *pInfo, char *pszDestNode, char *pBuffer,
-		 INT16 nBufferSize);
+                 INT16 nBufferSize);
 
 tIBResult IBSendAll(tIBInfo *pInfo, char *pBuffer, INT16 nBufferSize);
 //tIBResult IBGet(tIBInfo *pInfo, void *pBuffer, INT16 nMaxBufferSize);
@@ -65,14 +65,14 @@ tIBResult IBReadConfig(tIBInfo *pInfo, char *pszConfigFile);
 void MakeFilename(const char *pszPath, const char *pszFilename, char *pszOut);
 tIBResult ValidateInfoStruct(tIBInfo *pInfo);
 tBool CreateMessage(char *pszMessageDir, tMessageHeader *pHeader,
-					char *pszText);
+                    char *pszText);
 DWORD GetFirstUnusedMsgNum(char *pszMessageDir);
 void GetMessageFilename(char *pszMessageDir, DWORD lwMessageNum,
-						char *pszOut);
+                        char *pszOut);
 tBool WriteMessage(char *pszMessageDir, DWORD lwMessageNum,
-				   tMessageHeader *pHeader, char *pszText);
+                   tMessageHeader *pHeader, char *pszText);
 tBool ReadMessage(char *pszMessageDir, DWORD lwMessageNum,
-				  tMessageHeader *pHeader, char **ppszText);
+                  tMessageHeader *pHeader, char **ppszText);
 DWORD GetNextMSGID(void);
 INT16 GetMaximumEncodedLength(INT16 nUnEncodedLength);
 void EncodeBuffer(char *pszDest, const char *pBuffer, INT16 nBufferSize);
@@ -83,7 +83,7 @@ void DecodeMail(const char *pcSource, ibbs_mail_type *ibmail);
 void ConvertAddressToString(char *pszDest, const tFidoNode *pNode);
 void ConvertStringToAddress(tFidoNode *pNode, const char *pszSource);
 tBool ProcessConfigFile(char *pszFileName, INT16 nKeyWords, char **papszKeyWord,
-		  void (*pfCallBack)(INT16, char *, void *), void *pCallBackData);
+                        void (*pfCallBack)(INT16, char *, void *), void *pCallBackData);
 void ProcessConfigLine(INT16 nKeyword, char *pszParameter, void *pCallbackData);
 
 #endif
