@@ -8,10 +8,11 @@
 #########################################################################
 
 # Macros
-CC	= \bc31\bin\bcc
-LD	= \bc31\bin\tlink
-INCLUDE = \bc31\include;smb;rio;..\spawno
-LIB     = \bc31\lib
+BCDIR	= e:\bc31
+CC	= $(BCDIR)\bin\bcc
+LD	= $(BCDIR)\bin\tlink
+INCLUDE = $(BCDIR)\include;smb;rio;..\spawno
+LIB     = $(BCDIR)\lib
 DEFINES = -DSBBS 
 
 !if $d(__OS2__)
