@@ -41,9 +41,9 @@
 
 int main(int argc, char **argv)
 {
-	char esc,n[25],ni;
+	char esc,n[25];
 	char revision[16];
-	int i,ch;
+	int i,ch,ni;
 	FILE *in,*out;
 
 	sscanf("$Revision$", "%*s %s", revision);

@@ -43,7 +43,7 @@
 int main(int argc, char **argv)
 {
 	char	revision[16];
-	int		i,ch;
+	int		ch;
 	FILE*	in;
 	FILE*	out;
 
