@@ -42,6 +42,8 @@
 #include "sbbsdefs.h"	/* JAVASCRIPT_* macros */
 
 static const char*	nulstr="";
+static const char*  strCtrlDirectory="CtrlDirectory";
+static const char*  strTempDirectory="TempDirectory";
 static const char*	strOptions="Options";
 static const char*	strInterface="Interface";
 static const char*	strHostName="HostName";
@@ -51,6 +53,8 @@ static const char*	strBindRetryDelay="BindRetryDelay";
 
 #define DEFAULT_LOG_MASK		0xff	/* EMERG|ALERT|CRIT|ERR|WARNING|NOTICE|INFO|DEBUG */
 #define DEFAULT_MAX_MSG_SIZE    (10*1024*1024)	/* 10MB */
+#define DEFAULT_BIND_RETRY_COUNT	10
+#define DEFAULT_BIND_RETRY_DELAY	15
 
 void sbbs_get_ini_fname(char* ini_file, char* ctrl_dir, char* pHostName)
 {
@@ -85,13 +89,13 @@ static void read_ini_globals(FILE* fp, global_startup_t* global)
 	char		value[INI_MAX_VALUE_LEN];
 	char*		p;
 
-	p=iniReadString(fp,section,"CtrlDirectory",nulstr,value);
+	p=iniReadString(fp,section,strCtrlDirectory,nulstr,value);
 	if(*p) {
 	    SAFECOPY(global->ctrl_dir,value);
 		backslash(global->ctrl_dir);
     }
 
-	p=iniReadString(fp,section,"TempDirectory",nulstr,value);
+	p=iniReadString(fp,section,strTempDirectory,nulstr,value);
 	if(*p) {
 	    SAFECOPY(global->temp_dir,value);
 		backslash(global->temp_dir);
@@ -104,12 +108,12 @@ static void read_ini_globals(FILE* fp, global_startup_t* global)
 	global->sem_chk_freq=iniReadShortInt(fp,section,strSemFileCheckFrequency,0);
 	global->interface_addr=iniReadIpAddress(fp,section,strInterface,INADDR_ANY);
 	global->log_mask=iniReadBitField(fp,section,strLogMask,log_mask_bits,DEFAULT_LOG_MASK);
-	global->bind_retry_count=iniReadInteger(fp,section,strBindRetryCount,10);
-	global->bind_retry_delay=iniReadInteger(fp,section,strBindRetryDelay,15);
+	global->bind_retry_count=iniReadInteger(fp,section,strBindRetryCount,DEFAULT_BIND_RETRY_COUNT);
+	global->bind_retry_delay=iniReadInteger(fp,section,strBindRetryDelay,DEFAULT_BIND_RETRY_DELAY);
 
 	global->js.max_bytes		= iniReadInteger(fp,section,strJavaScriptMaxBytes		,JAVASCRIPT_MAX_BYTES);
 	global->js.cx_stack			= iniReadInteger(fp,section,strJavaScriptContextStack	,JAVASCRIPT_CONTEXT_STACK);
-	global->js.branch_limit		= iniReadInteger(fp,section,strJavaScriptBranchLimit		,JAVASCRIPT_BRANCH_LIMIT);
+	global->js.branch_limit		= iniReadInteger(fp,section,strJavaScriptBranchLimit	,JAVASCRIPT_BRANCH_LIMIT);
 	global->js.gc_interval		= iniReadInteger(fp,section,strJavaScriptGcInterval		,JAVASCRIPT_GC_INTERVAL);
 	global->js.yield_interval	= iniReadInteger(fp,section,strJavaScriptYieldInterval	,JAVASCRIPT_YIELD_INTERVAL);
 }
@@ -518,6 +522,69 @@ BOOL sbbs_write_ini(
 	lp=&list;
 
 	do { /* try */
+
+	/***********************************************************************/
+	if(global!=&global_buf) {
+		section = "Global";
+
+		if(global->ctrl_dir[0]==0)
+			iniRemoveKey(lp,section,strCtrlDirectory);
+		else
+			iniSetString(lp,section,strCtrlDirectory,global->ctrl_dir,&style);
+
+		if(global->temp_dir[0]==0)
+			iniRemoveKey(lp,section,strTempDirectory);
+		else
+			iniSetString(lp,section,strTempDirectory,global->temp_dir,&style);
+
+		if(global->host_name[0]==0)
+			iniRemoveKey(lp,section,strHostName);
+		else
+			iniSetString(lp,section,strHostName,global->host_name,&style);
+	
+		if(global->sem_chk_freq==0)
+			iniRemoveKey(lp,section,strSemFileCheckFrequency);
+		else
+			iniSetShortInt(lp,section,strSemFileCheckFrequency,global->sem_chk_freq,&style);
+		if(global->interface_addr==INADDR_ANY)
+			iniRemoveKey(lp,section,strInterface);
+		else
+			iniSetIpAddress(lp,section,strInterface,global->interface_addr,&style);
+		if(global->log_mask==DEFAULT_LOG_MASK)
+			iniRemoveKey(lp,section,strLogMask);
+		else
+			iniSetBitField(lp,section,strLogMask,log_mask_bits,global->log_mask,&style);
+
+		if(global->bind_retry_count==DEFAULT_BIND_RETRY_COUNT)
+			iniRemoveKey(lp,section,strBindRetryCount);
+		else
+			iniSetInteger(lp,section,strBindRetryCount,global->bind_retry_count,&style);
+		if(global->bind_retry_delay==DEFAULT_BIND_RETRY_DELAY)
+			iniRemoveKey(lp,section,strBindRetryDelay);
+		else
+			iniSetInteger(lp,section,strBindRetryDelay,global->bind_retry_delay,&style);
+
+		if(global->js.max_bytes==JAVASCRIPT_MAX_BYTES)
+			iniRemoveKey(lp,section,strJavaScriptMaxBytes);
+		else
+			iniSetInteger(lp,section,strJavaScriptMaxBytes,global->js.max_bytes,&style);
+		if(global->js.cx_stack==JAVASCRIPT_CONTEXT_STACK)
+			iniRemoveKey(lp,section,strJavaScriptContextStack);
+		else
+			iniSetInteger(lp,section,strJavaScriptContextStack,global->js.cx_stack,&style);
+		if(global->js.branch_limit==JAVASCRIPT_BRANCH_LIMIT)
+			iniRemoveKey(lp,section,strJavaScriptBranchLimit);
+		else
+			iniSetInteger(lp,section,strJavaScriptBranchLimit,global->js.branch_limit,&style);
+		if(global->js.gc_interval==JAVASCRIPT_GC_INTERVAL)
+			iniRemoveKey(lp,section,strJavaScriptGcInterval);
+		else
+			iniSetInteger(lp,section,strJavaScriptGcInterval,global->js.gc_interval,&style);
+		if(global->js.yield_interval==JAVASCRIPT_YIELD_INTERVAL)
+			iniRemoveKey(lp,section,strJavaScriptYieldInterval);
+		else
+			iniSetInteger(lp,section,strJavaScriptYieldInterval,global->js.yield_interval,&style);
+	}
 
 	/***********************************************************************/
 	if(bbs!=NULL) {
