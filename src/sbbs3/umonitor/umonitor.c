@@ -56,24 +56,17 @@
 #include "ars_defs.h"	/* needed for SCFG files */
 #include "userdat.h"	/* getnodedat() */
 #include "spyon.h"
+#include "chat.h"
 
 #define CTRL(x) (x&037)
-#define PCHAT_LEN 1000		/* Size of Private chat file */
-
-typedef struct {
-	chtype ls, rs, ts, bs, tl, tr, bl, br;
-} box_t;
-
 
 /********************/
 /* Global Variables */
 /********************/
 uifcapi_t uifc; /* User Interface (UIFC) Library API */
 char tmp[256];
-int nodefile;
 const char *YesStr="Yes";
 const char *NoStr="No";
-scfg_t	cfg;
 box_t boxch;
 
 int lprintf(char *fmt, ...)
@@ -107,7 +100,8 @@ void allocfail(uint size)
     bail(1);
 }
 
-void node_toggles(int nodenum)  {
+void node_toggles(scfg_t *cfg,int nodenum)  {
+	int nodefile;
 	char**	opt;
 	int		i,j;
 	node_t	node;
@@ -123,7 +117,7 @@ void node_toggles(int nodenum)  {
 	uifc.helpbuf=	"`Node Toggles:`\n"
 					"\nToDo: Add help (Mention that changes take effect immediately)";
 	while(save==0) {
-		if(getnodedat(&cfg,nodenum,&node,&nodefile)) {
+		if(getnodedat(cfg,nodenum,&node,&nodefile)) {
 			uifc.msg("Error reading node data!");
 			break;
 		}
@@ -181,259 +175,8 @@ void node_toggles(int nodenum)  {
 				uifc.msg("Option not implemented");
 				continue;
 		}
-		putnodedat(&cfg,nodenum,&node,nodefile);
+		putnodedat(cfg,nodenum,&node,nodefile);
 	}
-}
-
-bool togglechat(int node_num, node_t *node, bool on)
-{
-    static int  org_act;
-
-	if(getnodedat(&cfg,node_num,node,&nodefile)) {
-		uifc.msg("Error reading node data!");
-		return(FALSE);
-	}
-    if(on) {
-        org_act=node->action;
-        if(org_act==NODE_PCHT)
-            org_act=NODE_MAIN;
-        node->misc|=NODE_LCHAT;
-    } else {
-        node->action=org_act;
-        node->misc&=~NODE_LCHAT;
-    }
-	putnodedat(&cfg,node_num,node,nodefile);
-    return(TRUE);
-}
-
-void wsetcolor(WINDOW *win, int fg, int bg)  {
-	int   attrs=A_NORMAL;
-	short	colour;
-	int		lastfg=0;
-	int		lastbg=0;
-
-	if (lastfg==fg && lastbg==bg)
-		return;
-
-	lastfg=fg;
-	lastbg=bg;
-
-	if (fg & 8)  {
-		attrs |= A_BOLD;
-	}
-	wattrset(win, attrs);
-	colour = COLOR_PAIR( ((fg&7)|(bg<<3))+1 );
-	#ifdef NCURSES_VERSION_MAJOR
-	wcolor_set(win, colour,NULL);
-	#endif
-	wbkgdset(win, colour);
-}
-
-void drawchatwin(WINDOW **uwin, WINDOW **swin) {
-	int maxy,maxx;
-
-	endwin();
-	getmaxyx(stdscr,maxy,maxx);
-	*uwin=newwin(maxy/2,maxx,0,0);
-	*swin=newwin(0,maxx,maxy/2,0);
-	wsetcolor(*uwin,YELLOW,BLUE);
-	wclear(*uwin);
-	wborder(*uwin,  boxch.ls, boxch.rs, boxch.ts, boxch.bs, boxch.tl, boxch.tr, boxch.bl, boxch.br);
-	wmove(*uwin,0,5);
-	waddstr(*uwin,"Remote User");
-	wmove(*uwin,1,2);
-	scrollok(*uwin,TRUE);
-	wrefresh(*uwin);
-	wsetcolor(*swin,YELLOW,BLUE);
-	wclear(*swin);
-	wborder(*swin,  boxch.ls, boxch.rs, boxch.ts, boxch.bs, boxch.tl, boxch.tr, boxch.bl, boxch.br);
-	wmove(*swin,0,5);
-	waddstr(*swin,"Sysop");
-	wmove(*swin,1,2);
-	scrollok(*swin,TRUE);
-	wrefresh(*swin);
-}
-
-int chatchar(WINDOW *win, int ch) {
-	int	maxy,maxx;
-	int	cury,curx;
-	getmaxyx(win,maxy,maxx);
-	getyx(win,cury,curx);
-	switch(ch) {
-		case 8:
-			curx-=1;
-			if(curx<2)
-				curx+=1;
-			mvwaddch(win,cury,curx,' ');
-			wmove(win,cury,curx);
-			wrefresh(win);
-			break;
-		
-		case '\r':
-		case '\n':
-			curx=2;
-			cury+=1;
-			wmove(win,cury,curx);
-			if(cury>=maxy-1) {
-				wscrl(win,1);
-				cury-=1;
-				wmove(win,cury,curx-1);
-				whline(win,' ',maxx-2);
-				wborder(win, boxch.ls, boxch.rs, boxch.ts, boxch.bs, boxch.tl, boxch.tr, boxch.bl, boxch.br);
-				wmove(win,0,5);
-				waddstr(win,"Sysop");
-				wmove(win,cury,curx);
-			}
-			wrefresh(win);
-			break;
-			
-		default:
-			waddch(win,ch);
-			getyx(win,cury,curx);
-			if(curx>=maxx-2) {
-				curx=2;
-				cury+=1;
-				if(cury>=maxy-1) {
-					wscrl(win,1);
-					cury-=1;
-					wmove(win,cury,curx-1);
-					whline(win,' ',maxx-2);
-					wborder(win, boxch.ls, boxch.rs, boxch.ts, boxch.bs, boxch.tl, boxch.tr, boxch.bl, boxch.br);
-					wmove(win,0,5);
-					waddstr(win,"Sysop");
-				}
-				wmove(win,cury,curx);
-			}
-			wrefresh(win);
-	}
-	return(0);
-}
-
-int chat(int nodenum, node_t *node, bbs_startup_t *bbs_startup) {
-	WINDOW	*uwin;
-	WINDOW	*swin;
-	int		in,out;
-	char	inpath[MAX_PATH];
-	char	outpath[MAX_PATH];
-	char	*p;
-	char	ch;
-	int		inpos=0;
-	int		outpos=0;
-
-	drawchatwin(&uwin,&swin);
-
-	if(getnodedat(&cfg,nodenum,node,NULL)) {
-		uifc.msg("Error reading node data!");
-		return(-1);
-	}
-
-	sprintf(outpath,"%slchat.dab",cfg.node_path[nodenum-1]);
-	if((out=sopen(outpath,O_RDWR|O_CREAT|O_BINARY,O_DENYNONE
-		,S_IREAD|S_IWRITE))==-1) {
-		uifc.msg("!Error opening lchat.dab");
-		return(-1);
-	}
-
-	sprintf(inpath,"%schat.dab",cfg.node_path[nodenum-1]);
-	if((in=sopen(inpath,O_RDWR|O_CREAT|O_BINARY,O_DENYNONE
-		,S_IREAD|S_IWRITE))==-1) {
-		close(out);
-		uifc.msg("!Error opening chat.dab");
-		return(-1);
-    }
-
-	if((p=(char *)MALLOC(PCHAT_LEN))==NULL) {
-		close(in);
-		close(out);
-		uifc.msg("!Error allocating memory");
-		return(-1);
-    }
-	memset(p,0,PCHAT_LEN);
-	write(in,p,PCHAT_LEN);
-	write(out,p,PCHAT_LEN);
-	FREE(p);
-	lseek(in,0,SEEK_SET);
-	lseek(out,0,SEEK_SET);
-	halfdelay(1);
-
-	togglechat(nodenum,node,TRUE);
-
-	while(in != -1) {
-		utime(outpath,NULL);
-		utime(inpath,NULL);
-		
-		if(getnodedat(&cfg,nodenum,node,NULL)) {
-			uifc.msg("Loop error reading node data!");
-			break;
-		}
-	    if(node->misc&NODE_LCHAT) {
-			YIELD();
-			continue;
-		}
-		
-		if(!node->status || node->status>NODE_QUIET || node->action!=NODE_PCHT) {
-	        uifc.msg("CHAT: User Disconnected\r\n");
-			close(in);
-			in=-1;
-		}
-		switch (read(in,&ch,1)) {
-			case -1:
-				close(in);
-				in=-1;
-				break;
-				
-			case 0:
-				lseek(in,0,SEEK_SET);	/* Wrapped */
-				continue;
-				
-			case 1:
-				lseek(in,-1L,SEEK_CUR);
-				if(ch) {
-					chatchar(uwin,ch);
-					ch=0;
-					write(in,&ch,1);
-				}
-		}
-		if((ch=wgetch(swin))) {
-			switch(ch)  {
-				case 0:
-				case ERR:
-					ch=0;
-					write(out,&ch,1);
-					lseek(out,-1,SEEK_CUR);
-					break;
-					
-				case ESC:
-				case 3:
-					close(in);
-					in=-1;
-					continue;
-					
-				default:
-					if(lseek(out,0,SEEK_CUR)>=PCHAT_LEN)
-						lseek(out,0,SEEK_SET);
-					chatchar(swin,ch);
-					switch(write(out,&ch,1)) {
-						case -1:
-							close(in);
-							in=-1;
-							break;
-					}
-			}
-		}
-	}
-	if(in != -1)
-		close(in);
-	if(out != -1)
-		close(out);
-	nocbreak();
-	cbreak();
-	togglechat(nodenum,node,FALSE);
-	delwin(uwin);
-	delwin(swin);
-	touchwin(stdscr);
-	refresh();
-	return(0);
 }
 
 int dospy(int nodenum, bbs_startup_t *bbs_startup)  {
@@ -480,26 +223,27 @@ int dospy(int nodenum, bbs_startup_t *bbs_startup)  {
 	return(0);
 }
 
-int sendmessage(int nodenum,node_t *node)  {
+int sendmessage(scfg_t *cfg, int nodenum,node_t *node)  {
 	char str[80],str2[80];
 
 	uifc.input(WIN_MID,0,0,"Telegram",str2,58,K_WRAP|K_MSG);
 	sprintf(str,"\1n\1y\1hMessage From Sysop:\1w %s",str2);
-	if(getnodedat(&cfg,nodenum,node,NULL))
+	if(getnodedat(cfg,nodenum,node,NULL))
 		return(-1);
 	if(node->useron==0)
 		return(-1);
-	putsmsg(&cfg, node->useron, str);
+	putsmsg(cfg, node->useron, str);
 	return(0);
 }
 
-int clearerrors(int nodenum, node_t *node) {
-	if(getnodedat(&cfg,nodenum,node,&nodefile)) {
+int clearerrors(scfg_t *cfg, int nodenum, node_t *node) {
+	int nodefile;
+	if(getnodedat(cfg,nodenum,node,&nodefile)) {
 		uifc.msg("getnodedat() failed! (Nothing done)");
 		return(-1);
 	}
 	node->errors=0;
-	putnodedat(&cfg,nodenum,node,nodefile);
+	putnodedat(cfg,nodenum,node,nodefile);
 	return(0);
 }
 
@@ -515,6 +259,9 @@ int main(int argc, char** argv)  {
 	node_t node;
 	char	*buf;
 	int		buffile;
+	int		nodefile;
+	box_t	boxch;
+	scfg_t	cfg;
 /******************/
 /* Ini file stuff */
 /******************/
@@ -708,17 +455,17 @@ int main(int argc, char** argv)  {
 		}
 		
 		if(j==-2-KEY_DC) {	/* Clear errors */
-			clearerrors(main_dflt+1,&node);
+			clearerrors(&cfg, main_dflt+1,&node);
 			continue;
 		}
 
 		if(j==-2-KEY_F(10)) {	/* Chat */
-			chat(main_dflt+1,&node,&bbs_startup);
+			chat(&cfg,main_dflt+1,&node,&boxch);
 			continue;
 		}
 
 		if(j==-2-KEY_F(11)) {	/* Send message */
-			sendmessage(main_dflt+1,&node);
+			sendmessage(&cfg, main_dflt+1,&node);
 			continue;
 		}
 		
@@ -811,19 +558,19 @@ int main(int argc, char** argv)  {
 					break;
 
 				case 1: /* Node Toggles */
-					node_toggles(j+1);
+					node_toggles(&cfg, j+1);
 					break;
 
 				case 2:
-					clearerrors(j+1,&node);
+					clearerrors(&cfg, j+1,&node);
 					break;
 
 				case 3:	/* Send message */
-					sendmessage(j+1,&node);
+					sendmessage(&cfg, j+1,&node);
 					break;
 
 				case 4:
-					chat(main_dflt+1,&node,&bbs_startup);
+					chat(&cfg,main_dflt+1,&node,&boxch);
 					break;
 				
 				case -1:

@@ -79,6 +79,7 @@ endif
 vpath %.c $(UIFC) $(XPDEV) $(SBBS3)
 
 OBJS	:=	$(LIBODIR)/filewrap.o \
+			$(LIBODIR)/chat.o \
 			$(LIBODIR)/uifcc.o \
 			$(LIBODIR)/sockwrap.o \
 			$(LIBODIR)/dirwrap.o \
