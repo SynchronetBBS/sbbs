@@ -144,7 +144,7 @@ function dec_to_ip(ip) {
 
 function terminate_everything(terminate_reason) {
 	for(thisClient in Clients) {
-		client = Clients[thisClient];
+		var client = Clients[thisClient];
 		if (client.local)
 			client.quit(terminate_reason,false)
 	}
@@ -2271,7 +2271,7 @@ function IRCClient_registered_commands(command, cmdline) {
 			}
 			cmd.shift();
 			try {
-				this.server_notice("Result: " + eval(cmd.toString()));
+				this.server_notice("Result: " + eval(cmd.join(' ')));
 			} catch(e) {
 				this.server_notice("!" + e);
 			}
