@@ -49,6 +49,7 @@ bool sbbs_t::email(int usernumber, char *top, char *subj, long mode)
 			,buf[SDT_BLOCK_LEN];
 	char 	tmp[512];
 	ushort	xlat=XLAT_NONE,msgattr=0;
+	ushort	nettype;
 	int 	i,j,x,file;
 	long	l;
 	ulong	length,offset,crc=0xffffffffUL;
@@ -272,6 +273,14 @@ bool sbbs_t::email(int usernumber, char *top, char *subj, long mode)
 	sprintf(str,"%u",useron.number);
 	smb_hfield_str(&msg,SENDEREXT,str);
 	msg.idx.from=useron.number;
+
+	if(useron.misc&NETMAIL) {
+		nettype=smb_netaddr_type(useron.netmail);
+		if(nettype!=NET_NONE && nettype!=NET_UNKNOWN) {
+			smb_hfield(&msg,REPLYTONETTYPE,sizeof(nettype),&nettype);
+			smb_hfield_str(&msg,REPLYTONETADDR,useron.netmail);
+		}
+	}
 
 	/* Security logging */
 	msg_client_hfields(&msg,&client);
