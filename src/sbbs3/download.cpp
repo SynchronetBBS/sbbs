@@ -182,7 +182,7 @@ int sbbs_t::protocol(char *cmdline, int cd)
 	//lprintf("%s",cmdline);
 	if(cd) 
 		p=cfg.temp_dir;
-	sprintf(msg,"Transferring ",cmdline);
+	sprintf(msg,"Transferring %s",cmdline);
 	spymsg(msg);
 	sys_status|=SS_FILEXFER;
 	i=external(cmdline,EX_OUTL,p);
