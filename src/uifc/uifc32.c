@@ -1526,8 +1526,9 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 		if(mode&WIN_DYN) {
 			save_menu_cur=*cur;
 			save_menu_bar=*bar;
-			return(-2-i);
 		}
+		if(mode&WIN_DYN || mode&WIN_EXTKEYS) {
+			return(-2-i);
 	}
 }
 

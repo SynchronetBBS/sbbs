@@ -178,6 +178,9 @@
 #define WIN_FAT		(1<<20)	/* Do not pad outside borders */
 #define WIN_REDRAW	(1<<21) /* Force redraw on dynamic window */
 #define WIN_NODRAW	(1<<22) /* Force not to redraw on dynamic window */
+#define WIN_EXTKEYS	(1<<23) /* Return on any keypress... if it's not handled internally
+							 * Return value is -2 - keyvalue
+							 */
 
 #define WIN_MID WIN_L2R|WIN_T2B  /* Place window in middle of screen */
 
