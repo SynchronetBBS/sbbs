@@ -60,16 +60,25 @@ if(request==null) {
 
 log("client request: '" + request + "'");
 
+var prefix="";
 var gopher_plus=false;
 if((term=request.indexOf("\t+"))>=0) {
 	gopher_plus=true;
 	request=request.substr(0,term);
-	writeln("+-2");
+} else if((term=request.indexOf("\t$"))>=0) {
+	prefix="+INFO: ";
+	gopher_plus=true;
+	request=request.substr(0,term);
 }
+
+if(gopher_plus)
+	writeln("+-1");	// indicates '.' terminated data
+
 
 if(request=="" || request=='/') { /* "root" */
 	for(g in msg_area.grp_list) 
-		writeln("1" + msg_area.grp_list[g].description 
+		writeln(prefix 
+			+ "1" + msg_area.grp_list[g].description 
 			+ "\tgrp:" + msg_area.grp_list[g].name.toLowerCase() 
 			+ "\t" + system.host_name
 			+ "\t" + GOPHER_PORT);
@@ -82,22 +91,28 @@ if(request=="" || request=='/') { /* "root" */
 			,GOPHER_PORT
 			));
 **/
-	writeln("0Node List\tnodelist"
+	writeln(prefix
+		+ "0Node List\tnodelist"
 		+"\t" + system.host_name
 		+"\t" + GOPHER_PORT);
-	writeln("0Logon List\tlogonlist"
+	writeln(prefix
+		+ "0Logon List\tlogonlist"
 		+"\t" + system.host_name
 		+"\t" + GOPHER_PORT);
-	writeln("0Auto-Message\tautomsg"
+	writeln(prefix
+		+ "0Auto-Message\tautomsg"
 		+"\t" + system.host_name
 		+"\t" + GOPHER_PORT);
-	writeln("0System Statistics\tstats"
+	writeln(prefix
+		+ "0System Statistics\tstats"
 		+"\t" + system.host_name
 		+"\t" + GOPHER_PORT);
-	writeln("0System Time\ttime"
+	writeln(prefix
+		+ "0System Time\ttime"
 		+"\t" + system.host_name
 		+"\t" + GOPHER_PORT);
-	writeln("0Version Information\tver"
+	writeln(prefix
+		+ "0Version Information\tver"
 		+"\t" + system.host_name
 		+"\t" + GOPHER_PORT);
 
@@ -169,7 +184,8 @@ switch(field[0]) {
 		for(g in msg_area.grp_list) 
 			if(msg_area.grp_list[g].name.toLowerCase()==field[1]) {
 				for(s in msg_area.grp_list[g].sub_list)
-					writeln("1[" + msg_area.grp_list[g].name + "] "
+					writeln(prefix
+						+ "1[" + msg_area.grp_list[g].name + "] "
 						+ msg_area.grp_list[g].sub_list[s].description 
 						+ "\tsub:"
 						+ msg_area.grp_list[g].sub_list[s].code.toLowerCase() 
@@ -185,7 +201,8 @@ switch(field[0]) {
 		for(l in file_area.lib_list) 
 			if(file_area.lib_list[l].name.toLowerCase()==field[1]) {
 				for(d in file_area.lib_list[l].dir_list)
-					writeln(format("1[%s] %s\tdir:%s\t%s\t%u"
+					writeln(format(prefix
+						+ "1[%s] %s\tdir:%s\t%s\t%u"
 						,file_area.lib_list[l].name
 						,file_area.lib_list[l].dir_list[d].description
 						,file_area.lib_list[l].dir_list[d].code.toLowerCase()
