@@ -61,8 +61,8 @@ enum {
 	,USER_PROP_EMAIL	/* READ ONLY */
 	,USER_PROP_ADDRESS	
 	,USER_PROP_LOCATION	
-	,USER_PROP_ZIPCODE	
-	,USER_PROP_PASS		
+	,USER_PROP_ZIPCODE
+	,USER_PROP_PASS
 	,USER_PROP_PHONE  	
 	,USER_PROP_BIRTH  
 	,USER_PROP_AGE		/* READ ONLY */
@@ -112,6 +112,7 @@ enum {
 	,USER_PROP_PROT		
 	,USER_PROP_LOGONTIME
 };
+
 
 static JSBool js_user_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
@@ -518,10 +519,10 @@ static struct JSPropertySpec js_user_properties[] = {
 	{	"alias"				,USER_PROP_ALIAS 		,USER_PROP_FLAGS,		NULL,NULL},
 	{	"name"				,USER_PROP_NAME		 	,USER_PROP_FLAGS,		NULL,NULL},
 	{	"handle"			,USER_PROP_HANDLE	 	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"note"				,USER_PROP_NOTE		 	,USER_PROP_FLAGS,		NULL,NULL},
 	{	"ip_address"		,USER_PROP_NOTE		 	,USER_PROP_FLAGS,		NULL,NULL},
-	{	"computer"			,USER_PROP_COMP		 	,USER_PROP_FLAGS,		NULL,NULL},
+	{	"note"				,USER_PROP_NOTE		 	,USER_PROP_FLAGS,		NULL,NULL},
 	{	"host_name"			,USER_PROP_COMP		 	,USER_PROP_FLAGS,		NULL,NULL},
+	{	"computer"			,USER_PROP_COMP		 	,USER_PROP_FLAGS,		NULL,NULL},
 	{	"comment"			,USER_PROP_COMMENT	 	,USER_PROP_FLAGS,		NULL,NULL},
 	{	"netmail"			,USER_PROP_NETMAIL	 	,USER_PROP_FLAGS,		NULL,NULL},
 	{	"email"				,USER_PROP_EMAIL	 	,USER_PROP_FLAGS|JSPROP_READONLY,		NULL,NULL},
@@ -531,8 +532,8 @@ static struct JSPropertySpec js_user_properties[] = {
 	{	"phone"				,USER_PROP_PHONE  	 	,USER_PROP_FLAGS,		NULL,NULL},
 	{	"birthdate"			,USER_PROP_BIRTH  	 	,USER_PROP_FLAGS,		NULL,NULL},
 	{	"age"				,USER_PROP_AGE			,USER_PROP_FLAGS|JSPROP_READONLY,		NULL,NULL},
-	{	"modem"				,USER_PROP_MODEM      	,USER_PROP_FLAGS,		NULL,NULL},
 	{	"connection"		,USER_PROP_MODEM      	,USER_PROP_FLAGS,		NULL,NULL},
+	{	"modem"				,USER_PROP_MODEM      	,USER_PROP_FLAGS,		NULL,NULL},
 	{	"screen_rows"		,USER_PROP_ROWS		 	,USER_PROP_FLAGS,		NULL,NULL},
 	{	"gender"			,USER_PROP_SEX		 	,USER_PROP_FLAGS,		NULL,NULL},
 	{	"cursub"			,USER_PROP_CURSUB	 	,USER_PROP_FLAGS,		NULL,NULL},
@@ -549,6 +550,47 @@ static struct JSPropertySpec js_user_properties[] = {
 	{	"logontime"			,USER_PROP_LOGONTIME 	,USER_PROP_FLAGS,		NULL,NULL},
 	{0}
 };
+
+#ifdef _DEBUG
+static char* user_prop_desc[] = {
+
+	 "record number (1-based)"
+	,"alias"
+	,"real name"
+	,"chat handle"
+	,"IP address last logged on from"
+	,"AKA ip_address"
+	,"host name last logged on from"
+	,"AKA computer"
+	,"comment"
+	,"external e-mail address"
+	,"local Internet e-mail address	(READ ONLY)"
+	,"street address"
+	,"location (city, state)"
+	,"zip/postal code"
+	,"phone number"
+	,"birth date"
+	,"calculated age in years (READ ONLY)"
+	,"previous connection type"
+	,"AKA connection"
+	,"terminal rows (lines)"
+	,"gender"
+	,"settings"
+	,"current message sub-board"
+	,"current file directory"
+	,"current external program being run"
+	,"external message editor"
+	,"command shell"
+	,"QWK packet settings"
+	,"temporary file extension"
+	,"chat settings"
+	,"new file scan time"
+	,"file transfer protocol"
+	,"logon time"
+	,NULL
+};
+#endif
+
 
 /* user.security */
 static struct JSPropertySpec js_user_security_properties[] = {
@@ -570,6 +612,28 @@ static struct JSPropertySpec js_user_security_properties[] = {
 	{	"expiration_date"	,USER_PROP_EXPIRE     	,USER_PROP_FLAGS,		NULL,NULL},
 	{0}
 };
+
+#ifdef _DEBUG
+static char* user_security_prop_desc[] = {
+
+	 "password"
+	,"date password last modified"
+	,"level"
+	,"flag set #1"
+	,"flag set #2"
+	,"flag set #3"
+	,"flag set #4"
+	,"exemption flags"
+	,"restriction flags"
+	,"credits"
+	,"free credits (for today only)"
+	,"extra minutes (time bank)"
+	,"extra minutes (for today only)"
+	,"expiration date"
+	,NULL
+};
+#endif
+
 
 #undef  USER_PROP_FLAGS
 #define USER_PROP_FLAGS JSPROP_ENUMERATE|JSPROP_READONLY
@@ -597,6 +661,31 @@ static struct JSPropertySpec js_user_stats_properties[] = {
 	{	"leech_attempts"	,USER_PROP_LEECH 	 	,USER_PROP_FLAGS,		NULL,NULL},
 	{0}
 };
+
+#ifdef _DEBUG
+static char* user_stats_prop_desc[] = {
+
+	 "date of previous logon"
+	,"date of first logon"
+	,"total number of logons"
+	,"total logons today"
+	,"total time used (in minutes)"
+	,"time used today"
+	,"time used last session"
+	,"total messages posted"
+	,"total e-mails sent"
+	,"total feedback messages sent"
+	,"e-mail sent today"
+	,"messages posted today"
+	,"total bytes uploaded"
+	,"total files uploaded"
+	,"total bytes downloaded"
+	,"total files downloaded"
+	,"suspected leech downloads"
+	,NULL
+};
+#endif
+
 
 static void js_user_finalize(JSContext *cx, JSObject *obj)
 {
@@ -690,12 +779,14 @@ static JSClass js_user_security_class = {
 static JSBool
 js_user_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
+	int32		val=0;
 	user_t		user;
 	private_t*	p;
 	JSObject*	statsobj;
 	JSObject*	securityobj;
 
-	user.number=(ushort)(JSVAL_TO_INT(argv[0]));
+	JS_ValueToInt32(cx,argv[0],&val);
+	user.number=(ushort)val;
 	if(getuserdat(scfg,&user)!=0)
 		return(JS_FALSE);
 
@@ -775,6 +866,10 @@ JSObject* DLLCALL js_CreateUserObject(JSContext* cx, JSObject* parent, scfg_t* c
 
 	JS_DefineProperties(cx, userobj, js_user_properties);
 
+#ifdef _DEBUG
+	js_CreateArrayOfStrings(cx, userobj, "_property_desc_list", user_prop_desc, JSPROP_READONLY);
+#endif
+
 	js_DefineMethods(cx, userobj, js_user_functions);
 
 	/* user.stats */
@@ -790,6 +885,10 @@ JSObject* DLLCALL js_CreateUserObject(JSContext* cx, JSObject* parent, scfg_t* c
 
 	JS_DefineProperties(cx, statsobj, js_user_stats_properties);
 
+#ifdef _DEBUG
+	js_CreateArrayOfStrings(cx, statsobj, "_property_desc_list", user_stats_prop_desc, JSPROP_READONLY);
+#endif
+
 	/* user.security */
 	securityobj = JS_DefineObject(cx, userobj, "security"
 		,&js_user_security_class, NULL, JSPROP_ENUMERATE);
@@ -802,6 +901,10 @@ JSObject* DLLCALL js_CreateUserObject(JSContext* cx, JSObject* parent, scfg_t* c
 	JS_SetPrivate(cx, securityobj, p);
 
 	JS_DefineProperties(cx, securityobj, js_user_security_properties);
+
+#ifdef _DEBUG
+	js_CreateArrayOfStrings(cx, securityobj, "_property_desc_list", user_security_prop_desc, JSPROP_READONLY);
+#endif
 
 	return(userobj);
 }
