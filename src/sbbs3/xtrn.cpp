@@ -56,14 +56,22 @@
 	#include <grp.h>
 	#endif
 
+	#define TTYDEFCHARS
 	#include <termios.h>
+
 #endif
 #define XTRN_IO_BUF_LEN 5000
 
 #ifdef __solaris__
-#    define TTYDEF_IFLAG    (BRKINT | ICRNL | IMAXBEL | IXON | IXANY)
-#    define TTYDEF_OFLAG    (OPOST | ONLCR)
-#    define TTYDEF_LFLAG    (ECHO | ICANON | ISIG | IEXTEN | ECHOE|ECHOKE|ECHOCTL)
+#   define TTYDEF_IFLAG    (BRKINT | ICRNL | IMAXBEL | IXON | IXANY)
+#   define TTYDEF_OFLAG    (OPOST | ONLCR)
+#   define TTYDEF_LFLAG    (ECHO | ICANON | ISIG | IEXTEN | ECHOE|ECHOKE|ECHOCTL)
+#	define TTYDEF_CFLAG    (CREAD | CS8 | HUPCL)
+	static cc_t     ttydefchars[NCCS] = {
+        CEOF,   CEOL,   CEOL,   CERASE, CWERASE, CKILL, CREPRINT,
+        CERASE2, CINTR, CQUIT,  CSUSP,  CDSUSP, CSTART, CSTOP,  CLNEXT,
+        CDISCARD, CMIN, CTIME,  CSTATUS, _POSIX_VDISABLE
+	};
 #endif
 
 /*****************************************************************************/
@@ -1161,6 +1169,8 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 			term.c_iflag = TTYDEF_IFLAG;
 			term.c_oflag = TTYDEF_OFLAG;
 			term.c_lflag = TTYDEF_LFLAG;
+			term.c_cflag = TTYDEF_CFLAG;
+			term.c_cc = ttydefchars;
 		}
 		winsize.ws_row=rows;
 		// #warning Currently cols are forced to 80 apparently TODO
@@ -1192,6 +1202,9 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 		}
 	}
 	if(pid==0) {	/* child process */
+		sigset_t        sigs;
+		sigfillset(&sigs);
+		sigprocmask(SIG_UNBLOCK,&sigs,NULL);
 		if(!(mode&EX_BIN))  {
 			static char	term_env[256];
 			sprintf(term_env,"TERM=%s",startup->xtrn_term);
