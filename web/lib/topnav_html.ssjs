@@ -39,6 +39,15 @@ if(http_request.virtual_path=="/members/themes.ssjs")
 if(http_request.virtual_path=="/msgs/index.ssjs" || http_request.virtual_path=="/msgs")
 	template.topnav.push({html: '<span class="tlink">Message Groups</span>'});
 
+if(http_request.virtual_path=="/msgs/choosegroup.ssjs")
+    template.topnav.push({html: '<span class="tlink">Choose Group to Set Scan</span>'});
+    
+if(http_request.virtual_path=="/msgs/choosesubs.ssjs")
+    template.topnav.push({html: '<span class="tlink">Selecting Subs to Display</span>'});
+    
+if(http_request.virtual_path=="/msgs/updatesubs.ssjs")
+    template.topnav.push({html: '<span class="tlink">Subs to Display Updated</span>'});
+    
 if(http_request.virtual_path=="/msgs/subs.ssjs")
 	template.topnav.push({html: '<a class="tlink" href="/msgs">Message Groups</a><span class="tlink">'+template.group.description+'</span>'});
 
