@@ -3975,7 +3975,6 @@ object MainForm: TMainForm
     Icons = ImageList
     IconIndex = 4
     OnRestore = TrayIconRestore
-    OnClick = TrayIconClick
     Left = 506
     Top = 65532
   end
@@ -3987,7 +3986,7 @@ object MainForm: TMainForm
       Default = True
       OnClick = RestoreTrayMenuItemClick
     end
-    object BBSConfigureTrayMenuItem: TMenuItem
+    object ConfigureTrayMenuItem: TMenuItem
       Caption = 'Configure'
       object ConfigureBBSTrayMenuItem: TMenuItem
         Caption = 'BBS'
