@@ -388,6 +388,7 @@ BAJA_OBJS = \
 	$(LIBODIR)/ars.o \
 	$(LIBODIR)/crc32.o \
 	$(LIBODIR)/genwrap.o \
+	$(LIBODIR)/dirwrap.o \
 	$(LIBODIR)/filewrap.o
 FORCE$(BAJA): $(BAJA_OBJS)
 

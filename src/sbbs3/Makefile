@@ -136,7 +136,7 @@ $(SBBSCON): sbbscon.c $(SBBSLIB)
 	$(QUIET)$(CC) $(CFLAGS) -n$(EXEODIR) $**
 
 # Baja Utility
-$(BAJA): baja.c ars.c crc32.c
+$(BAJA): baja.c ars.c crc32.c $(LIBODIR)\genwrap.obj $(LIBODIR)\dirwrap.obj
 	@echo Creating $@
 	$(QUIET)$(CC) $(CFLAGS) -n$(EXEODIR) $** 
 
