@@ -35,6 +35,7 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
+#include <limits.h>		/* INT_MAX */
 #if defined(__unix__)
 	#include <signal.h>	/* do we need bsd/signal on Linux? */
 #endif
@@ -1020,7 +1021,7 @@ void event_thread(void* arg)
 
 			memcpy(&sbbs->cfg,&scfg,sizeof(scfg_t));
 
-			sprintf(sbbs->cfg.temp_dir, "temp/%lX", sbbs_random(~0));
+//			sprintf(sbbs->cfg.temp_dir, "temp/%08lX", sbbs_random(INT_MAX));
 			prep_dir(sbbs->cfg.data_dir, sbbs->cfg.temp_dir);
 
 			// Read TIME.DAB
@@ -1583,7 +1584,7 @@ sbbs_t::sbbs_t(ushort node_num, DWORD addr, char* name, SOCKET sd,
 		strcpy(cfg.node_dir, cfg.node_path[node_num-1]);
 		prep_dir(cfg.node_dir, cfg.temp_dir);
 	} else {
-		sprintf(cfg.temp_dir, "temp/%lX", sbbs_random(~0));
+//		sprintf(cfg.temp_dir, "temp/%08lX", sbbs_random(INT_MAX));
     	prep_dir(cfg.data_dir, cfg.temp_dir);
 	}
 
@@ -2001,8 +2002,8 @@ sbbs_t::~sbbs_t()
 
 	lprintf("%s destructor begin", node);
 
-	if(!cfg.node_num)
-		rmdir(cfg.temp_dir);
+//	if(!cfg.node_num)
+//		rmdir(cfg.temp_dir);
 
 	if(client_socket_dup!=INVALID_SOCKET)
 		closesocket(client_socket_dup);	/* close duplicate handle */
