@@ -610,7 +610,7 @@ int main(int argc, char **argv)
 				ip_addr=resolve_ip(telnet_addr);
 				printf("\n");
 
-				if(ip_addr!=0) {
+				if(i && ip_addr!=0) {
 					for(ip=0;ip<ip_total;ip++)
 						if(ip_addr==ip_list[ip])
 							break;
