@@ -1,16 +1,39 @@
-/* SBL.C */
+/* sbl.c */
 
-/* Developed 1990-1997 by Rob Swindell; PO Box 501, Yorba Linda, CA 92885 */
-
-/****************************/
 /* Synchronet BBS List Door */
-/****************************/
 
-/****************************************************************************/
-/* This source code is completely Public Domain and can be modified and 	*/
-/* distributed freely (as long as changes are documented).                  */
-/* It is meant as an example to programmers of how to use the XSDK			*/
-/****************************************************************************/
+/* $Id$ */
+
+/****************************************************************************
+ * @format.tab-size 4		(Plain Text/Source Code File Header)			*
+ * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
+ *																			*
+ * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ *																			*
+ * This program is free software; you can redistribute it and/or			*
+ * modify it under the terms of the GNU General Public License				*
+ * as published by the Free Software Foundation; either version 2			*
+ * of the License, or (at your option) any later version.					*
+ * See the GNU General Public License for more details: gpl.txt or			*
+ * http://www.fsf.org/copyleft/gpl.html										*
+ *																			*
+ * Anonymous FTP access to the most recent released source is available at	*
+ * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
+ *																			*
+ * Anonymous CVS access to the development source and modification history	*
+ * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
+ *     (just hit return, no password is necessary)							*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
+ *																			*
+ * For Synchronet coding style and modification guidelines, see				*
+ * http://www.synchro.net/source.html										*
+ *																			*
+ * You are encouraged to submit any modifications (preferably in Unix diff	*
+ * format) via e-mail to mods@synchro.net									*
+ *																			*
+ * Note: If this box doesn't appear square, then you need to fix your tabs.	*
+ ****************************************************************************/
 
 /***********
  * History *
@@ -154,12 +177,31 @@ When deleting an entry, the name of the BBS deleted wasn't being printed.
 Import utility made mistake of ignoring READ messages to SBL. This has been
 fixed.
 
+12/16/99
+Fixed Y2K window bug in dstrtounix().
+
+12/16/99
+Fixed bug that caused SMB imported entries to never be autodeleted.
+
+06/01/00
+Added support for XSDK 3.0
+
+06/01/00
+Added support for MSVC 5+
+
+06/01/00
+Changed cosmetic appearance of main menu a bit
+
+06/14/99
+Added support for C++Builder 5
 */
 
-#include "xsdk.h"
+#include <xsdk.h>
 #include "sbldefs.h"
 
 unsigned _stklen=16000; 		  /* Set stack size in code, not header */
+
+#define Y2K_2DIGIT_WINDOW	70
 
 typedef struct {
 
@@ -182,8 +224,6 @@ char *mon[]={"Jan","Feb","Mar","Apr","May","Jun"
 char tmp[256];
 char list_fmt[128];
 uint del_days,add_ml,update_ml,remove_ml,verify_ml,sbl_pause=1,notify_user;
-struct date date;
-struct time curtime;
 time_t now;
 
 /****************************************************************************/
@@ -217,42 +257,48 @@ return(str);
 
 
 /****************************************************************************/
-/* Converts unix time format (long - time_t) into a char str MM/DD/YY		*/
-/****************************************************************************/
-char *unixtodstr(time_t unix, char *str)
-{
-
-if(!unix)
-	strcpy(str,"00/00/00");
-else {
-	unixtodos(unix,&date,&curtime);
-	if((unsigned)date.da_mon>12) {	  /* DOS leap year bug */
-		date.da_mon=1;
-		date.da_year++; }
-	if((unsigned)date.da_day>31)
-		date.da_day=1;
-	sprintf(str,"%02u/%02u/%02u",date.da_mon,date.da_day
-		,date.da_year>=2000 ? date.da_year-2000 : date.da_year-1900); }
-return(str);
-}
-
-
-/****************************************************************************/
 /* Converts a date string in format MM/DD/YY into unix time format			*/
 /****************************************************************************/
 time_t dstrtounix(char *str)
 {
+	struct tm tm;
 
-if(!strcmp(str,"00/00/00"))
-	return(NULL);
-curtime.ti_hour=curtime.ti_min=curtime.ti_sec=0;
-if(str[6]<7)
-	date.da_year=2000+((str[6]&0xf)*10)+(str[7]&0xf);
-else
-	date.da_year=1900+((str[6]&0xf)*10)+(str[7]&0xf);
-date.da_mon=((str[0]&0xf)*10)+(str[1]&0xf);
-date.da_day=((str[3]&0xf)*10)+(str[4]&0xf);
-return(dostounix(&date,&curtime));
+	if(!strncmp(str,"00/00/00",8))
+		return(0);
+	memset(&tm,0,sizeof(tm));
+	tm.tm_year=((str[6]&0xf)*10)+(str[7]&0xf);
+	if (tm.tm_year<Y2K_2DIGIT_WINDOW)
+		tm.tm_year+=100;
+	tm.tm_mon=((str[0]&0xf)*10)+(str[1]&0xf);
+	tm.tm_mday=((str[3]&0xf)*10)+(str[4]&0xf); 
+	if (tm.tm_mon)
+		tm.tm_mon--;	/* zero-based month field */
+	return(mktime(&tm));
+}
+
+/****************************************************************************/
+/* Converts unix time format (long - time_t) into a char str MM/DD/YY		*/
+/****************************************************************************/
+char * unixtodstr(time_t unix, char *str)
+{
+	struct tm* tm;
+
+	if(!unix)
+		strcpy(str,"00/00/00");
+	else {
+		tm=gmtime(&unix);
+		if(tm==NULL) {
+			strcpy(str,"00/00/00");
+			return(str);
+		}
+		if(tm->tm_mon>11) {	  /* DOS leap year bug */
+			tm->tm_mon=0;
+			tm->tm_year++; }
+		if(tm->tm_mday>31)
+			tm->tm_mday=1;
+		sprintf(str,"%02u/%02u/%02u",tm->tm_mon+1,tm->tm_mday
+			,tm->tm_year%100); }
+	return(str);
 }
 
 void dots(int show)
@@ -274,7 +320,8 @@ outchar('.');
 
 char short_bbs_info(bbs_t bbs)
 {
-	int i,j;
+	char	str[128];
+	int		i,j;
 
 for(i=0;i<bbs.total_numbers && i<MAX_NUMBERS;i++) {
 	for(j=0;list_fmt[j];j++) {
@@ -287,20 +334,32 @@ for(i=0;i<bbs.total_numbers && i<MAX_NUMBERS;i++) {
 				bprintf("\1h\1c%-15.15s",i ? nulstr : bbs.software);
 				break;
 			case 'P':
-				bprintf("\1n\1g%12.12s",bbs.number[i].number);
+				if(bbs.number[i].modem.min_rate==0xffff) {
+					if(bbs.number[i].telnet.port!=0 
+						&& bbs.number[i].telnet.port!=IPPORT_TELNET)
+						sprintf(str,"%s:%hu"
+							,bbs.number[i].telnet.addr
+							,bbs.number[i].telnet.port);
+					else
+						strcpy(str,bbs.number[i].telnet.addr);
+					bprintf("\1h\1b%-28.28s",str);
+				} else
+					bprintf("\1n\1g%12.12s",bbs.number[i].modem.number);
 				break;
 			case 'B':
-				bprintf("\1h\1g%5u",bbs.number[i].max_rate);
+				if(bbs.number[i].modem.min_rate!=0xffff)
+					bprintf("\1h\1g%5u",bbs.number[i].modem.max_rate);
 				break;
 			case 'M':
-				bprintf("\1h\1b%-15.15s",bbs.number[i].modem);
+				if(bbs.number[i].modem.min_rate!=0xffff)
+					bprintf("\1h\1b%-15.15s",bbs.number[i].modem.desc);
 				break;
 			case 'Y':
 				bprintf("\1h\1y%-25.25s",i ? nulstr : bbs.sysop[0]);
 				break;
 			case 'T':
 				if(i) bputs("   ");
-				else  bprintf("\1n\1h%3u",bbs.nodes);
+				else  bprintf("\1y\1h%3u",bbs.nodes);
 				break;
 			case 'U':
 				if(i) bputs("     ");
@@ -311,7 +370,7 @@ for(i=0;i<bbs.total_numbers && i<MAX_NUMBERS;i++) {
 				else  bprintf("\1h\1r%10u",bbs.megs);
 				break;
 			case 'L':
-				bprintf("\1n\1c%-25.25s",bbs.number[i].location);
+				bprintf("\1n\1c%-20.20s",bbs.number[i].modem.location);
 				break;
 			case 'F':
 				bprintf("\1n\1b%s",i ? nulstr : unixtodstr(bbs.birth,tmp));
@@ -353,7 +412,10 @@ for(i=0;i<bbs.total_sysops && i<MAX_SYSOPS;i++) {
             bputs("\r\n          ");
 		if(i+1==bbs.total_sysops)
 			bputs("and "); }
-	bprintf("\1h%s\1n\1g",bbs.sysop[i]); }
+	bprintf("\1h%s\1n\1g",bbs.sysop[i]); 
+	if(!i && bbs.sysop_email[0])
+		bprintf(" <\1h%s\1n\1g>", bbs.sysop_email);
+}
 CRLF;
 bprintf("\1n\1gSoftware: \1h%-15.15s \1n\1gNodes: \1h%-5u \1n\1g"
 	"Users: \1h%-5u \1n\1gDoors: \1h%u\r\n"
@@ -387,16 +449,29 @@ for(i=0;i<bbs.total_terminals && i<MAX_TERMS;i++) {
             bputs("and "); }
 	bprintf("\1h%s\1n\1g",bbs.terminal[i]); }
 CRLF;
+if(bbs.web_url[0])
+	bprintf("Web-site: http://\1h%s\r\n",bbs.web_url);
 CRLF;
-for(i=0;i<bbs.total_numbers && i<MAX_NUMBERS;i++)
-	bprintf("\1h\1b%-30.30s \1n\1g%12.12s \1h%5u \1b%-15.15s \1n\1c"
-		"Minimum: \1h%u\r\n"
-		,i && !strcmp(bbs.number[i].location,bbs.number[i-1].location)
-			? nulstr : bbs.number[i].location
-		,bbs.number[i].number
-		,bbs.number[i].max_rate,bbs.number[i].modem
-		,bbs.number[i].min_rate);
-
+for(i=0;i<bbs.total_numbers && i<MAX_NUMBERS;i++) {
+	bprintf("\1h\1b%-30.30s "
+		,i && !strcmp(bbs.number[i].modem.location,bbs.number[i-1].modem.location)
+				? nulstr : bbs.number[i].modem.location);
+	if(bbs.number[i].modem.min_rate==0xffff) {
+		if(bbs.number[i].telnet.port!=0
+			&& bbs.number[i].telnet.port!=IPPORT_TELNET)
+			bprintf("\1n\1mtelnet://\1h%s:%hu\r\n"
+				,bbs.number[i].telnet.addr
+				,bbs.number[i].telnet.port);
+		else
+			bprintf("\1n\1mtelnet://\1h%s\r\n"
+				,bbs.number[i].telnet.addr);
+	} else
+		bprintf("\1n\1g%12.12s \1h%5u \1b%-15.15s \1n\1cMinimum: \1h%u\r\n"
+			,bbs.number[i].modem.number
+			,bbs.number[i].modem.max_rate
+			,bbs.number[i].modem.desc
+			,bbs.number[i].modem.min_rate);
+}
 bputs("\r\n\1w\1h");
 for(i=0;i<5;i++) {
 	if(!bbs.desc[i][0])
@@ -452,7 +527,12 @@ if(!getstr(bbs->software,15,K_AUTODEL|K_EDIT))
 for(i=0;i<MAX_SYSOPS && !aborted;i++) {
 	bprintf("\1y\1hName of System Operator #%d [\1wNone\1y]: ",i+1);
 	if(!getstr(bbs->sysop[i],25,K_EDIT|K_LINE|K_AUTODEL))
-		break; }
+		break; 
+	if(!i) {
+		bprintf("\1y\1hInternet E-mail Address [\1wNone\1y]:\1w ");
+		getstr(bbs->sysop_email,40,K_EDIT|K_AUTODEL);
+	}
+}
 bbs->total_sysops=i;
 if(aborted)
 	return(0);
@@ -464,10 +544,10 @@ if(getstr(str,8,K_UPPER|K_EDIT|K_AUTODEL))
 if(aborted) return(0);
 
 for(i=0;i<MAX_NETS && !aborted;i++) {
-	bprintf("\1y\1hName of Network #%d [\1wNone\1y]: ",i+1);
+	bprintf("\1y\1hName of Message Network #%d [\1wNone\1y]: ",i+1);
 	if(!getstr(bbs->network[i],15,K_EDIT|K_AUTODEL|K_LINE))
 		break;
-	bprintf("\1y\1hNetwork \1wAddress\1y #%d [\1wNone\1y]: \1w",i+1);
+	bprintf("\1y\1hNetwork Message \1wAddress\1y #%d [\1wNone\1y]: \1w",i+1);
 	getstr(bbs->address[i],25,K_EDIT|K_AUTODEL); }
 bbs->total_networks=i;
 if(aborted) return(0);
@@ -480,6 +560,9 @@ for(i=0;i<MAX_TERMS && !aborted;i++) {
 bbs->total_terminals=i;
 if(aborted) return(0);
 
+bprintf("\1y\1hWeb-site [\1wNone\1y] http://\1w");
+getstr(bbs->web_url,60,K_EDIT|K_AUTODEL);
+
 if(!bbs->nodes)
 	bbs->nodes=1;
 bprintf("\1y\1hNodes (maximum number of simultaneous REMOTE users): \1w");
@@ -491,47 +574,62 @@ if(!bbs->nodes)
 if(aborted) return(0);
 
 for(i=0;i<MAX_NUMBERS;i++) {
-	if(!i && !bbs->number[i].number[0])
-		sprintf(bbs->number[i].number,"%.8s",user_phone);
-	bprintf("\1y\1hPhone Number #%d (###-###-####) [\1wNone\1y]: ",i+1);
-	if(!getstr(bbs->number[i].number,12,K_EDIT|K_LINE))
+#if 0
+	if(!i && !bbs->number[i].modem.number[0])
+		sprintf(bbs->number[i].modem.number,"%.8s",user_phone);
+#endif
+	bprintf("\1y\1hPhone Number or \1mTelnet address\1y #%d [\1wNone\1y]: ",i+1);
+	if(!getstr(bbs->number[i].telnet.addr,28,K_EDIT|K_LINE))
 		break;
-	if(!bbs->number[i].location[0]) {
+	if(!bbs->number[i].modem.location[0]) {
 		if(!i)
-			strcpy(bbs->number[i].location,user_location);
+			strcpy(bbs->number[i].modem.location,user_location);
 		else
-			strcpy(bbs->number[i].location,bbs->number[i-1].location); }
+			strcpy(bbs->number[i].modem.location,bbs->number[i-1].modem.location); }
 	bprintf("\1y\1hLocation (City, State): \1w");
-	if(!getstr(bbs->number[i].location,30,K_EDIT|K_AUTODEL))
+	if(!getstr(bbs->number[i].modem.location,30,K_EDIT|K_AUTODEL))
 		break;
 	if(aborted) return(0);
+	if(yesno("Is the above a Telnet address")) {
+		bbs->number[i].modem.min_rate=0xffff;
+		if(bbs->number[i].telnet.port==0)
+			bbs->number[i].telnet.port=IPPORT_TELNET;
+		bprintf("\1y\1hTCP Port: \1w");
+		sprintf(str,"%u",bbs->number[i].telnet.port);
+		if(getstr(str,5,K_NUMBER|K_EDIT|K_AUTODEL))
+			bbs->number[i].telnet.port=atoi(str);
+		if(aborted) return(0);
 
-	if(!bbs->number[i].min_rate) {
-		if(i)
-			bbs->number[i].min_rate=bbs->number[i-1].min_rate;
-		else
-			bbs->number[i].min_rate=300; }
-	bprintf("\1y\1hMinimum Connect Rate: \1w");
-	sprintf(str,"%u",bbs->number[i].min_rate);
-	if(getstr(str,5,K_NUMBER|K_EDIT|K_AUTODEL))
-		bbs->number[i].min_rate=atoi(str);
-	if(aborted) return(0);
+	} else {
+		if(bbs->number[i].modem.min_rate==0xffff)
+			bbs->number[i].modem.min_rate=300;
+		bbs->number[i].modem.number[13]=0;
+		if(!bbs->number[i].modem.min_rate) {
+			if(i)
+				bbs->number[i].modem.min_rate=bbs->number[i-1].modem.min_rate;
+			else
+				bbs->number[i].modem.min_rate=300; }
+		bprintf("\1y\1hMinimum Connect Rate: \1w");
+		sprintf(str,"%u",bbs->number[i].modem.min_rate);
+		if(getstr(str,5,K_NUMBER|K_EDIT|K_AUTODEL))
+			bbs->number[i].modem.min_rate=atoi(str);
+		if(aborted) return(0);
 
-	if(!bbs->number[i].max_rate) {
-        if(i)
-            bbs->number[i].max_rate=bbs->number[i-1].max_rate;
-        else
-            bbs->number[i].max_rate=2400; }
-	if(bbs->number[i].max_rate<bbs->number[i].min_rate)
-        bbs->number[i].max_rate=bbs->number[i].min_rate;
-	bprintf("\1y\1hMaximum Connect Rate (i.e. 2400, 9600, 14400, etc): \1w");
-	sprintf(str,"%u",bbs->number[i].max_rate);
-	if(getstr(str,5,K_NUMBER|K_EDIT|K_AUTODEL))
-		bbs->number[i].max_rate=atoi(str);
-	if(aborted) return(0);
-
-	bprintf("\1y\1hModem Description (i.e. Hayes, HST, V.32, etc): \1w");
-	getstr(bbs->number[i].modem,15,K_EDIT|K_AUTODEL);  }
+		if(!bbs->number[i].modem.max_rate) {
+			if(i)
+				bbs->number[i].modem.max_rate=bbs->number[i-1].modem.max_rate;
+			else
+				bbs->number[i].modem.max_rate=2400; }
+		if(bbs->number[i].modem.max_rate<bbs->number[i].modem.min_rate)
+			bbs->number[i].modem.max_rate=bbs->number[i].modem.min_rate;
+		bprintf("\1y\1hMaximum Connect Rate (i.e. 2400, 9600, 14400, etc): \1w");
+		sprintf(str,"%u",bbs->number[i].modem.max_rate);
+		if(getstr(str,5,K_NUMBER|K_EDIT|K_AUTODEL))
+			bbs->number[i].modem.max_rate=atoi(str);
+		if(aborted) return(0);
+		bprintf("\1y\1hModem Description (i.e. Hayes, HST, V.32, etc): \1w");
+		getstr(bbs->number[i].modem.desc,15,K_EDIT|K_AUTODEL);  }
+}
 if(!i)
 	return(0);
 bbs->total_numbers=i;
@@ -661,7 +759,7 @@ if(node_dir[strlen(node_dir)-1]!='\\')
 	strcat(node_dir,"\\");
 
 strcpy(str,"SBL.CFG");
-if((file=open(str,O_RDONLY|O_DENYNONE))==-1) {
+if((file=sopen(str,O_RDONLY,SH_DENYNO))==-1) {
 	printf("error opening %s\r\n",str);
 	exit(1); }
 if((stream=fdopen(file,"rb"))==NULL) {
@@ -682,10 +780,13 @@ notify_user=atoi(str);
 fclose(stream);
 
 initdata();
+
+mnehigh=HIGH|LIGHTGRAY;
+mnelow=HIGH|YELLOW;
 if(maint)
 	user_misc=(ANSI|COLOR);
 
-if((file=open("SBL.DAB",O_RDWR|O_BINARY|O_DENYNONE|O_CREAT
+if((file=sopen("SBL.DAB",O_RDWR|O_BINARY|O_CREAT,SH_DENYNO
 	,S_IWRITE|S_IREAD))==-1) {
 	bprintf("\r\n\7Error opening/creating SBL.DAB\r\n");
 	exit(1); }
@@ -700,7 +801,7 @@ if(del_days) {
 	if((file=nopen(str,O_RDWR|O_CREAT))==-1) {
 		printf("Error creating %s\r\n",str);
 		exit(1); }
-	l=NULL;
+	l=0;
 	read(file,&l,4);
 	if(now-l>(24L*60L*60L) || maint) {	 /* more than a day since update */
 		bputs("\r\n\1n\1hRunning daily maintenance for Synchronet BBS List...");
@@ -711,27 +812,29 @@ if(del_days) {
 		while(!feof(stream)) {
 			if(!fread(&bbs,sizeof(bbs_t),1,stream))
 				break;
-			if(bbs.name[0] && !(bbs.misc&FROM_SMB)) {
-				if((now-bbs.updated)/(24L*60L*60L)>del_days
-					&& (now-bbs.created)/(24L*60L*60L)>del_days
-					&& (now-bbs.verified)/(24L*60L*60L)>del_days) {
+			if(bbs.name[0]) {
+				if((now-bbs.updated)/(24L*60L*60L)>(time_t)del_days
+					&& (now-bbs.created)/(24L*60L*60L)>(time_t)del_days
+					&& (now-bbs.verified)/(24L*60L*60L)>(time_t)del_days) {
 					lncntr=0;
 					bprintf("\r\n\1n\1hAuto-deleting \1m%s\r\n",bbs.name);
-					sprintf(str,"\1n\1hSBL: \1mYour BBS entry for \1y%s\1m\r\n"
-						"     was auto-deleted from the \1cSynchronet BBS "
-						"List\r\n",bbs.name);
-					i=usernumber(bbs.user);
-					if(i) putsmsg(i,str);
+					if(!(bbs.misc&FROM_SMB)) {
+						sprintf(str,"\1n\1hSBL: \1mYour BBS entry for \1y%s\1m\r\n"
+							"     was auto-deleted from the \1cSynchronet BBS "
+							"List\r\n",bbs.name);
+						i=usernumber(bbs.user);
+						if(i) putsmsg(i,str);
+					}
 					bbs.name[0]=0;
 					fseek(stream,-(long)(sizeof(bbs_t)),SEEK_CUR);
 					fwrite(&bbs,sizeof(bbs_t),1,stream); }
-				else { /* Warn user */
+				else if (!(bbs.misc&FROM_SMB)) { /* Warn user */
 					l=bbs.created;
 					if(l<bbs.updated)
 						l=bbs.updated;
 					if(l<bbs.verified)
 						l=bbs.verified;
-					if((now-l)/(24L*60L*60L)>=(del_days/2)) {
+					if((now-l)/(24L*60L*60L)>=(time_t)(del_days/2)) {
 						bprintf("\r\n\1n\1hWarning \1y%s\r\n",bbs.user);
 						lncntr=0;
 						sprintf(str,"\1n\1hSBL: \1mPlease verify your BBS "
@@ -754,42 +857,45 @@ while(1) {
 	aborted=0;
 	attr(LIGHTGRAY);
 	cls();
-	bprintf("\1n\1m\1hSynchronet \1wBBS List \1mv1.37 (XSDK v%s)  "
-		"Developed 1994-1997 Rob Swindell\r\n\r\n",xsdk_ver);
-	sprintf(str,"~List all systems (condensed)\r\n"
-				"~Change list format\r\n"
-				"~Extended information on all systems\r\n"
-				"~Turn screen pause %s\r\n"
-				"~Find text in BBS entries\r\n"
-				"~Generate sorted list\r\n"
-				"~Display sorted list\r\n"
-				"~New entry scan\r\n"
-				"~Add a BBS entry\r\n"
-				"~Update a BBS entry\r\n"
-				"~Verify a BBS entry\r\n"
-				"~Remove a BBS entry\r\n"
-				"~Quit back to BBS\r\n"
+	bprintf("\1n\1m\1hSynchronet \1wBBS List \1mv3.10 (XSDK v%s) "
+        "Developed 1994-2000 Rob Swindell\r\n\r\n"
+        ,xsdk_ver);
+
+#define SBL_INDENT "    "
+	sprintf(str,SBL_INDENT"~List all systems (condensed)\r\n"
+				SBL_INDENT"~Change list format\r\n"
+				SBL_INDENT"~Extended information on all systems\r\n"
+				SBL_INDENT"~Turn screen pause %s\r\n"
+				SBL_INDENT"~Find text in BBS entries\r\n"
+				SBL_INDENT"~Generate sorted list\r\n"
+				SBL_INDENT"~Display sorted list\r\n"
+				SBL_INDENT"~New entry scan\r\n"
+				SBL_INDENT"~Add a BBS entry\r\n"
+				SBL_INDENT"~Update a BBS entry\r\n"
+				SBL_INDENT"~Verify a BBS entry\r\n"
+				SBL_INDENT"~Remove a BBS entry\r\n"
+				SBL_INDENT"~Quit back to BBS\r\n"
 				,sbl_pause ? "OFF" : "ON");
 	mnemonics(str);
 	if(SYSOP)
-		mnemonics(	"~* Undelete entries\r\n");
+		mnemonics(SBL_INDENT"~* Undelete entries\r\n");
 
 	bputs("\r\n");
 
 	l=filelength(fileno(stream));
 	if(l>0)
-		bprintf("\1n\1cThere are \1h%lu\1n\1c entries in the online BBS list "
+		bprintf(SBL_INDENT"\1n\1cThere are \1h%lu\1n\1c entries in the online BBS list "
 			"database.\r\n",l/(long)sizeof(bbs_t));
 
 	if(del_days) {
-		bprintf("\1n\1cEntries are auto-deleted \1h%u\1n\1c days after "
+		bprintf(SBL_INDENT"\1n\1cEntries are auto-deleted \1h%u\1n\1c days after "
 			"last update or verification.\r\n",del_days);
-		bputs("Users are encouraged to \1hV\1n\1cerify (vouch for) any listed "
+		bputs(SBL_INDENT"Users are encouraged to \1hV\1n\1cerify (vouch for) any listed "
 			"BBSs they call.\r\n"); }
 
 	nodesync(); 			/* Display any waiting messages */
 
-	bputs("\r\n\1y\1hWhich: \1w");
+	bputs("\r\n"SBL_INDENT"\1y\1hWhich: \1w");
 	switch(getkeys("CLGDEFSNAURTQV!*",0)) {
 		case '!':
 			bprintf("\r\nsizeof(bbs_t)=%u\r\n",sizeof(bbs_t));
@@ -892,14 +998,16 @@ while(1) {
 				tmpbbs=bbs;
 				strupr(tmpbbs.name);
 				strupr(tmpbbs.user);
+				strupr(tmpbbs.software);
 				strupr(tmpbbs.userverified);
 				strupr(tmpbbs.userupdated);
-				strupr(tmpbbs.software);
+				strupr(tmpbbs.web_url);
 				if(strstr(tmpbbs.name,name)
 					|| strstr(tmpbbs.user,name)
 					|| strstr(tmpbbs.software,name)
 					|| strstr(tmpbbs.userverified,name)
 					|| strstr(tmpbbs.userupdated,name)
+					|| strstr(tmpbbs.web_url,name)
 					) {
 					found++;
 					if(ch && !long_bbs_info(bbs))
@@ -947,12 +1055,12 @@ while(1) {
                     continue; }
 
 				for(i=0;i<tmpbbs.total_numbers;i++) {
-					strupr(tmpbbs.number[i].number);
-					strupr(tmpbbs.number[i].modem);
-					strupr(tmpbbs.number[i].location);
-					if(strstr(tmpbbs.number[i].number,name)
-						|| strstr(tmpbbs.number[i].modem,name)
-						|| strstr(tmpbbs.number[i].location,name))
+					strupr(tmpbbs.number[i].modem.number);
+					strupr(tmpbbs.number[i].modem.desc);
+					strupr(tmpbbs.number[i].modem.location);
+					if(strstr(tmpbbs.number[i].modem.number,name)
+						|| strstr(tmpbbs.number[i].modem.desc,name)
+						|| strstr(tmpbbs.number[i].modem.location,name))
 						break; }
 				if(i<tmpbbs.total_numbers) {
 					found++;
@@ -1019,11 +1127,11 @@ while(1) {
 						sort_by_str=1;
 						break;
 					case 'P':
-						sprintf(str,"%.30s",bbs.number[0].number);
+						sprintf(str,"%.30s",bbs.number[0].modem.number);
 						sort_by_str=1;
 						break;
 					case 'M':
-						sprintf(str,"%.30s",bbs.number[0].modem);
+						sprintf(str,"%.30s",bbs.number[0].modem.desc);
 						sort_by_str=1;
 						break;
 					case 'Y':
@@ -1031,11 +1139,11 @@ while(1) {
 						sort_by_str=1;
 						break;
 					case 'L':
-						sprintf(str,"%.30s",bbs.number[0].location);
+						sprintf(str,"%.30s",bbs.number[0].modem.location);
 						sort_by_str=1;
 						break;
 					case 'B':
-						l=bbs.number[0].max_rate;
+						l=bbs.number[0].modem.max_rate;
 						break;
 					case 'T':
 						l=bbs.nodes;
@@ -1059,19 +1167,19 @@ while(1) {
 						l=bbs.updated;
 						break; }
 				if(sort_by_str) {
-					if((sortstr=(sortstr_t *)farrealloc(sortstr
+					if((sortstr=(sortstr_t *)REALLOC(sortstr
 						,sizeof(sortstr_t)*i))==NULL) {
 						bprintf("\r\n\7Memory allocation error\r\n");
-						farfree(sortstr);
+						LFREE(sortstr);
 						done=1;
 						continue; }
 					strcpy(sortstr[i-1].str,str);
 					sortstr[i-1].offset=j-1; }
 				else {
-					if((sortint=(sortint_t *)farrealloc(sortint
+					if((sortint=(sortint_t *)REALLOC(sortint
 						,sizeof(sortint_t)*i))==NULL) {
 						bprintf("\r\n\7Memory allocation error\r\n");
-						farfree(sortint);
+						LFREE(sortint);
 						done=1;
 						continue; }
 					sortint[i-1].i=l;
@@ -1093,9 +1201,9 @@ while(1) {
 			if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
 				bprintf("\r\n\7Error creating %s\r\n",str);
 				if(sort_by_str)
-					farfree(sortstr);
+					LFREE(sortstr);
 				else
-					farfree(sortint);
+					LFREE(sortint);
 				pause();
 				break; }
 			for(j=0;j<i;j++)
@@ -1105,9 +1213,9 @@ while(1) {
 					write(file,&sortint[j].offset,2);
 			close(file);
 			if(sort_by_str)
-				farfree(sortstr);
+				LFREE(sortstr);
 			else
-				farfree(sortint);
+				LFREE(sortint);
 			bputs("\r\n\r\n\1n\1hDone.\r\n");
 			pause();
 			break;
@@ -1169,13 +1277,13 @@ while(1) {
             break;
 		case 'A':
 			cls();
-			if(user_level<add_ml) {
+			if((uint)user_level<add_ml) {
 				bprintf("\1h\1rYou have insufficient access.\r\n\r\n");
 				pause();
 				break; }
 			bputs("\1g\1hAdding a BBS entry:\1n\r\n\r\n");
 			bputs("\1n\1gHit ENTER for unknown data items.\r\n\r\n");
-			memset(&bbs,NULL,sizeof(bbs_t));
+			memset(&bbs,0,sizeof(bbs_t));
 			if(!get_bbs_info(&bbs))
 				break;
 			bputs("\1n\1h\r\nSearching for duplicates...");
@@ -1214,7 +1322,7 @@ while(1) {
 			break;
 		case 'R':       /* Remove an entry */
 			cls();
-			if(user_level<remove_ml) {
+			if((uint)user_level<remove_ml) {
 				bprintf("\1h\1rYou have insufficient access.\r\n\r\n");
 				pause();
                 break; }
@@ -1262,7 +1370,7 @@ while(1) {
 			break;
 		case 'V':       /* Verify an entry */
 			cls();
-			if(user_level<verify_ml) {
+			if((uint)user_level<verify_ml) {
 				bprintf("\1h\1rYou have insufficient access.\r\n\r\n");
 				pause();
                 break; }
@@ -1291,7 +1399,7 @@ while(1) {
 						putsmsg(notify_user,str);
 					if(stricmp(bbs.user,user_name)) {
 						i=usernumber(bbs.user);
-						if(i && i!=user_number) putsmsg(i,str); }
+						if(i && i!=(int)user_number) putsmsg(i,str); }
 					break; } }
 			if(!found)
 				bprintf("\r\n\r\n\1m%s\1c not found.",name);
@@ -1301,7 +1409,7 @@ while(1) {
             break;
 		case 'U':       /* Update an entry */
 			cls();
-			if(user_level<update_ml) {
+			if((uint)user_level<update_ml) {
 				bprintf("\1h\1rYou have insufficient access.\r\n\r\n");
 				pause();
                 break; }
