@@ -543,11 +543,14 @@ int main(int argc, char** argv)  {
 						"\nCTRL-D Down node toggle"
 						"\nCTRL-I Interrupt node"
 						"\nToDo: Add more help. (Explain what you're looking at)";
-						
+
 		drawstats(&cfg, main_dflt+1, &node, &main_dflt, &main_bar);
-		
+
 		j=uifc.list(WIN_L2R|WIN_ESC|WIN_ACT|WIN_DYN,0,5,70,&main_dflt,&main_bar
 			,title,mopt);
+
+		if(j == -2)
+			continue;
 
 		if(j==-7) {	/* CTRL-E */
 			sprintf(str,"%s/error.log",cfg.data_dir);
