@@ -358,6 +358,8 @@ This is the internal code for the timed event.
 			,cfg.event[i]->misc&EVENT_FORCE ? "Yes":"No");
 		sprintf(opt[k++],"%-32.32s%s","Native (32-bit) Executable"
 			,cfg.event[i]->misc&EX_NATIVE ? "Yes" : "No");
+		sprintf(opt[k++],"%-32.32s%s","Use Shell to Execute"
+			,cfg.event[i]->misc&XTRN_SH ? "Yes" : "No");
 		sprintf(opt[k++],"%-32.32s%s","Background Execution"
 			,cfg.event[i]->misc&EX_BG ? "Yes" : "No");
 
@@ -606,6 +608,31 @@ set this option to Yes.
                 break;
 
 			case 10:
+				k=cfg.event[i]->misc&XTRN_SH ? 0:1;
+				strcpy(opt[0],"Yes");
+				strcpy(opt[1],"No");
+				opt[2][0]=0;
+				uifc.savnum=2;
+				SETHELP(WHERE);
+/*
+`Use Shell to Execute Command:`
+
+If this command-line requires the system command shell to execute, (Unix 
+shell script or DOS batch file), set this option to ~Yes~.
+*/
+				k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
+					,"Use Shell",opt);
+				if(!k && !(cfg.event[i]->misc&XTRN_SH)) {
+					cfg.event[i]->misc|=XTRN_SH;
+					uifc.changes=TRUE;
+                }
+				else if(k==1 && cfg.event[i]->misc&XTRN_SH) {
+					cfg.event[i]->misc&=~XTRN_SH;
+					uifc.changes=TRUE;
+                }
+                break;
+
+			case 11:
 				k=cfg.event[i]->misc&EX_BG ? 0:1;
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
@@ -766,6 +793,8 @@ online program name.
 			,cfg.xtrn[i]->misc&WWIVCOLOR ? ", WWIV" : nulstr);
 		sprintf(opt[k++],"%-27.27s%s","Native (32-bit) Executable"
 			,cfg.xtrn[i]->misc&XTRN_NATIVE ? "Yes" : "No");
+		sprintf(opt[k++],"%-27.27s%s","Use Shell to Execute"
+			,cfg.xtrn[i]->misc&XTRN_SH ? "Yes" : "No");
 		sprintf(opt[k++],"%-27.27s%s","Modify User Data"
             ,cfg.xtrn[i]->misc&MODUSERDAT ? "Yes" : "No");
 		switch(cfg.xtrn[i]->event) {
@@ -991,6 +1020,30 @@ set this option to Yes.
 					uifc.changes=TRUE; }
 				break;
 			case 11:
+				k=cfg.xtrn[i]->misc&XTRN_SH ? 0:1;
+				strcpy(opt[0],"Yes");
+				strcpy(opt[1],"No");
+				opt[2][0]=0;
+				SETHELP(WHERE);
+/*
+`Use Shell to Execute Command:`
+
+If this command-line requires the system command shell to execute, (Unix 
+shell script or DOS batch file), set this option to ~Yes~.
+*/
+				uifc.savnum=4;
+				k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
+					,"Use Shell",opt);
+				if(!k && !(cfg.xtrn[i]->misc&XTRN_SH)) {
+					cfg.xtrn[i]->misc|=XTRN_SH;
+					uifc.changes=TRUE; 
+				}
+				else if(k==1 && cfg.xtrn[i]->misc&XTRN_SH) {
+					cfg.xtrn[i]->misc&=~XTRN_SH;
+					uifc.changes=TRUE; 
+				}
+				break;
+			case 12:
 				k=cfg.xtrn[i]->misc&MODUSERDAT ? 0:1;
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
@@ -1013,7 +1066,7 @@ modify the data of users who run the program, set this option to Yes.
 					cfg.xtrn[i]->misc&=~MODUSERDAT;
 					uifc.changes=TRUE; }
                 break;
-			case 12:
+			case 13:
 				k=0;
 				strcpy(opt[k++],"No");
 				strcpy(opt[k++],"Logon");
@@ -1077,7 +1130,7 @@ to Yes.
                     cfg.xtrn[i]->misc&=~EVENTONLY;
                     uifc.changes=TRUE; }
                 break;
-			case 13:
+			case 14:
 				k=0;
 				strcpy(opt[k++],"None");
 				sprintf(opt[k++],"%-15s %s","Synchronet","XTRN.DAT");
@@ -1141,7 +1194,7 @@ format, select the file format from the list.
 					} 
 				}
 				break;
-			case 14:
+			case 15:
 				k=0;
 				strcpy(opt[0],"Node Directory");
 				strcpy(opt[1],"Start-up Directory");
@@ -1163,7 +1216,7 @@ You can have the data file created in the current Node Directory or the
 					cfg.xtrn[i]->misc|=STARTUPDIR;
                     uifc.changes=TRUE; }
 				break;
-			case 15:
+			case 16:
 				while(1) {
 					k=0;
 					if(cfg.xtrn[i]->textra)
@@ -1390,6 +1443,8 @@ This is the internal code for the external editor.
 			,cfg.xedit[i]->misc&WWIVCOLOR ? ", WWIV" : nulstr);
         sprintf(opt[k++],"%-32.32s%s","Native (32-bit) Executable"
 			,cfg.xedit[i]->misc&XTRN_NATIVE ? "Yes" : "No");
+		sprintf(opt[k++],"%-32.32s%s","Use Shell to Execute"
+			,cfg.xedit[i]->misc&XTRN_SH ? "Yes" : "No");
 		sprintf(opt[k++],"%-32.32s%s","Quoted Text"
 			,cfg.xedit[i]->misc&QUOTEALL ? "All":cfg.xedit[i]->misc&QUOTENONE
 				? "None" : "Prompt User");
@@ -1518,8 +1573,7 @@ option to Yes.
 /*
 Native (32-bit) Executable:
 
-If this online program is a native 32-bit executable,
-set this option to Yes.
+If this editor is a native 32-bit executable, set this option to Yes.
 */
 				uifc.savnum=2;
 				k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
@@ -1531,8 +1585,30 @@ set this option to Yes.
 					cfg.xedit[i]->misc&=~XTRN_NATIVE;
 					uifc.changes=TRUE; }
 				break;
-
 			case 6:
+				k=cfg.xedit[i]->misc&XTRN_SH ? 0:1;
+				strcpy(opt[0],"Yes");
+				strcpy(opt[1],"No");
+				opt[2][0]=0;
+				SETHELP(WHERE);
+/*
+`Use Shell to Execute Command:`
+
+If this command-line requires the system command shell to execute, (Unix 
+shell script or DOS batch file), set this option to ~Yes~.
+*/
+				uifc.savnum=2;
+				k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
+					,"Use Shell",opt);
+				if(!k && !(cfg.xedit[i]->misc&XTRN_SH)) {
+					cfg.xedit[i]->misc|=XTRN_SH;
+					uifc.changes=TRUE; 
+				} else if(k==1 && cfg.xedit[i]->misc&XTRN_SH) {
+					cfg.xedit[i]->misc&=~XTRN_SH;
+					uifc.changes=TRUE; 
+				}
+				break;
+			case 7:
 				k=3;
 				strcpy(opt[0],"All");
 				strcpy(opt[1],"None");
@@ -1567,7 +1643,7 @@ drop file (like SyncEdit v2.x).
 					cfg.xedit[i]->misc&=~(QUOTENONE|QUOTEALL);
 					uifc.changes=TRUE; }
                 break;
-			case 7:
+			case 8:
 				k=cfg.xedit[i]->misc&QUICKBBS ? 0:1;
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
@@ -1589,7 +1665,7 @@ this option to Yes.
 					cfg.xedit[i]->misc&=~QUICKBBS;
                     uifc.changes=TRUE; }
 				break;
-			case 8:
+			case 9:
 				k=cfg.xedit[i]->misc&EXPANDLF ? 0:1;
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
@@ -1611,7 +1687,7 @@ instead of a carriage return/line feed pair, set this option to Yes.
 					cfg.xedit[i]->misc&=~EXPANDLF;
                     uifc.changes=TRUE; }
 				break;
-			case 9:
+			case 10:
 				k=cfg.xedit[i]->misc&STRIPKLUDGE ? 0:1;
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
@@ -1634,7 +1710,7 @@ set this option to Yes to strip those lines from the message.
 					cfg.xedit[i]->misc&=~STRIPKLUDGE;
                     uifc.changes=TRUE; }
 				break;
-			case 10:
+			case 11:
 				k=0;
 				strcpy(opt[k++],"None");
 				sprintf(opt[k++],"%-15s %s","Synchronet","XTRN.DAT");
