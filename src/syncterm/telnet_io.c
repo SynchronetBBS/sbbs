@@ -116,13 +116,16 @@ static BYTE* telnet_interpret(BYTE* inbuf, int inlen, BYTE* outbuf, int *outlen)
 
 					if(command==TELNET_DO && option==TELNET_NEGOTIATE_WINDOW_SIZE) {
 						BYTE buf[32];
-						int len=sprintf(buf,"%c%c%c%c%c%c%c%c%c"
-							,TELNET_IAC,TELNET_SB
-							,TELNET_NEGOTIATE_WINDOW_SIZE
-							,(term.width>>8)&0xff, term.width&0xff
-							,(term.height>>8)&0xff, term.height&0xff
-							,TELNET_IAC,TELNET_SE);
-						putcom(buf,len);
+						buf[0]=TELNET_IAC;
+						buf[1]=TELNET_SB;
+						buf[2]=TELNET_NEGOTIATE_WINDOW_SIZE;
+						buf[3]=(term.width>>8)&0xff;
+						buf[4]=term.width&0xff;
+						buf[5]=(term.height>>8)&0xff;
+						buf[6]=term.height&0xff;
+						buf[7]=TELNET_IAC;
+						buf[8]=TELNET_SE;
+						putcom(buf,9);
 					}
 
 				} else { /* WILL/WONT (remote options) */ 
