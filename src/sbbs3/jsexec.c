@@ -94,8 +94,39 @@ void usage(FILE* fp)
 		);
 }
 
+#ifdef _WINSOCKAPI_
+
+WSADATA WSAData;
+static BOOL WSAInitialized=FALSE;
+
+static BOOL winsock_startup(void)
+{
+	int		status;             /* Status Code */
+
+    if((status = WSAStartup(MAKEWORD(1,1), &WSAData))==0) {
+		fprintf(statfp,"%s %s",WSAData.szDescription, WSAData.szSystemStatus);
+		WSAInitialized=TRUE;
+		return(TRUE);
+	}
+
+    fprintf(errfp,"!WinSock startup ERROR %d", status);
+	return(FALSE);
+}
+
+#else /* No WINSOCK */
+
+#define winsock_startup()	(TRUE)	
+
+#endif
+
 void bail(int code)
 {
+
+#ifdef _WINSOCKAPI_
+	if(WSAInitialized && WSACleanup()!=0) 
+		fprintf(errfp,"!WSACleanup ERROR %d\n",ERROR_VALUE);
+#endif
+
 	if(pause_on_exit || (code && pause_on_error)) {
 		fprintf(statfp,"\nHit enter to continue...");
 		getchar();
@@ -314,7 +345,7 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 	const char*	warning;
 
 	if(report==NULL) {
-		fprintf(errfp,"!JavaScript: %s", message);
+		fprintf(errfp,"!JavaScript: %s\n", message);
 		return;
     }
 
@@ -336,7 +367,7 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 	} else
 		warning="";
 
-	fprintf(errfp,"!JavaScript %s%s%s: %s",warning,file,line,message);
+	fprintf(errfp,"!JavaScript %s%s%s: %s\n",warning,file,line,message);
 }
 
 static JSBool
@@ -622,6 +653,9 @@ int main(int argc, char **argv, char** environ)
 
 	if(!(scfg.sys_misc&SM_LOCAL_TZ))
 		putenv("TZ=UTC0");
+
+	if(!winsock_startup())
+		bail(2);
 
 	if(!js_init(environ)) {
 		fprintf(errfp,"!JavaScript initialization failure\n");
