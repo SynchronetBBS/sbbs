@@ -312,7 +312,7 @@ faddr_t getsysfaddr(short zone)
  attach file.
  Returns 0 on success.
 ******************************************************************************/
-int write_flofile(char *attachment, faddr_t dest)
+int write_flofile(char *attachment, faddr_t dest, BOOL bundle)
 {
 	char fname[MAX_PATH+1];
 	char outbound[MAX_PATH+1];
@@ -352,7 +352,11 @@ int write_flofile(char *attachment, faddr_t dest)
 		sprintf(fname,"%s%08x.%clo",outbound,dest.point,ch);
 	else
 		sprintf(fname,"%s%04x%04x.%clo",outbound,dest.net,dest.node,ch);
-	sprintf(searchstr,"^%s",attachment);
+	if(bundle && misc&TRUNC_BUNDLES)
+		ch='#';
+	else
+		ch='^';
+	sprintf(searchstr,"%c%s",ch,attachment);
 	if(findstr(searchstr,fname))	/* file already in FLO file */
 		return(0);
 	if((stream=fopen(fname,"a"))==NULL) {
@@ -360,7 +364,7 @@ int write_flofile(char *attachment, faddr_t dest)
 		logprintf("ERROR line %d opening %s %s",__LINE__,fname,strerror(errno));
 		return(-1); 
 	}
-	fprintf(stream,"^%s\n",attachment);
+	fprintf(stream,"%s\n",searchstr);
 	fclose(stream);
 	return(0);
 }
@@ -1696,7 +1700,7 @@ void pack_bundle(char *infile,faddr_t dest)
 	if(node<cfg.nodecfgs)
 		if(cfg.nodecfg[node].arctype==0xffff) {    /* Uncompressed! */
 			if(misc&FLO_MAILER)
-				i=write_flofile(infile,dest);
+				i=write_flofile(infile,dest,TRUE /* bundle */);
 			else
 				i=create_netmail(NULL,infile
 					,misc&TRUNC_BUNDLES ? "\1FLAGS TFS\r" : "\1FLAGS KFS\r"
@@ -1738,7 +1742,7 @@ void pack_bundle(char *infile,faddr_t dest)
 			return; }
 		else {
 			if(misc&FLO_MAILER)
-				j=write_flofile(str,dest);
+				j=write_flofile(str,dest,TRUE /* bundle */);
 			else {
 				p=getfname(str);
 				j=attachment(p,dest,ATTACHMENT_ADD); }
@@ -5027,7 +5031,7 @@ int main(int argc, char **argv)
 				else
 					sprintf(packet,"%s%04x%04x.%cut",outbound,addr.net,addr.node,ch);
 				if(hdr.attr&FIDO_FILE)
-					if(write_flofile(hdr.subj,addr))
+					if(write_flofile(hdr.subj,addr,FALSE /* !bundle */))
 						bail(1); }
 			else
 				strcpy(packet,pktname());
