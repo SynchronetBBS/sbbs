@@ -218,6 +218,10 @@ SOURCE=.\getkey.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\getmail.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\getmsg.cpp
 # End Source File
 # Begin Source File
@@ -499,6 +503,10 @@ SOURCE=.\xtrn.cpp
 # Begin Source File
 
 SOURCE=.\xtrn_sec.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\yenc.c
 # End Source File
 # End Target
 # End Project

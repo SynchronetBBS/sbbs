@@ -35,6 +35,7 @@ OBJS	=	$(LIBODIR)$(SLASH)ansiterm.$(OFILE)\
 			$(LIBODIR)$(SLASH)file.$(OFILE)\
 			$(LIBODIR)$(SLASH)filedat.$(OFILE)\
 			$(LIBODIR)$(SLASH)getkey.$(OFILE)\
+			$(LIBODIR)$(SLASH)getmail.$(OFILE)\
 			$(LIBODIR)$(SLASH)getmsg.$(OFILE)\
 			$(LIBODIR)$(SLASH)getnode.$(OFILE)\
 			$(LIBODIR)$(SLASH)getstr.$(OFILE)\
@@ -103,6 +104,7 @@ OBJS	=	$(LIBODIR)$(SLASH)ansiterm.$(OFILE)\
 			$(LIBODIR)$(SLASH)writemsg.$(OFILE)\
 			$(LIBODIR)$(SLASH)xtrn.$(OFILE)\
 			$(LIBODIR)$(SLASH)xtrn_sec.$(OFILE)\
+			$(LIBODIR)$(SLASH)yenc.$(OFILE)\
 			$(LIBODIR)$(SLASH)genwrap.$(OFILE)\
 			$(LIBODIR)$(SLASH)dirwrap.$(OFILE)\
 			$(LIBODIR)$(SLASH)filewrap.$(OFILE)\
