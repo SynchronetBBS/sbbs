@@ -1892,8 +1892,11 @@ ulong loadmsgs(post_t HUGE16 **post, ulong ptr)
 
 	fseek(smb[cur_smb].sid_fp,0L,SEEK_SET);
 	while(!feof(smb[cur_smb].sid_fp)) {
-		if(!fread(&idx,sizeof(idxrec_t),1,smb[cur_smb].sid_fp))
+		if(smb_fread(&idx,sizeof(idx),smb[cur_smb].sid_fp) != sizeof(idx))
 			break;
+
+		if(idx.number==0)	/* invalid message number, ignore */
+			continue;
 
 		if(idx.number<=ptr || idx.attr&MSG_DELETE)
 			continue;
