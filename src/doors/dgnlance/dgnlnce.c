@@ -11,25 +11,35 @@
 #define FLIGHTS_PER_DAY	3
 
 #ifndef INT64
-#define INT64	long long int
+ #ifdef _MSC_VER
+  #define INT64	_int64
+ #else
+  #define INT64	long long int
+ #endif
 #endif
+
 #ifndef INT64FORMAT
-#ifdef __unix__
-#define	INT64FORMAT	"lld"
-#else
-#define INT64FORMAT	"I64d"
-#endif
+ #ifdef __unix__
+  #define	INT64FORMAT	"lld"
+ #else
+  #define INT64FORMAT	"I64d"
+ #endif
 #endif
 
 #ifndef QWORD
-#define	QWORD	unsigned long long int
+ #ifdef _MSC_VER
+  #define QWORD	unsigned _int64
+ #else
+  #define	QWORD	unsigned long long int
+ #endif
 #endif
+
 #ifndef QWORDFORMAT
-#ifdef __unix__
-#define	QWORDFORMAT	"llu"
-#else
-#define QWORDFORMAT	"I64u"
-#endif
+ #ifdef __unix__
+  #define	QWORDFORMAT	"llu"
+ #else
+  #define QWORDFORMAT	"I64u"
+ #endif
 #endif
 
 enum {
