@@ -1085,3 +1085,112 @@ bool sbbs_t::spy(uint i /* node_num */)
 	spy_socket[i-1]=INVALID_SOCKET;
 	return(true);
 }
+
+void sbbs_t::time_bank(void)
+{
+	char	str[128];
+	char	tmp[128];
+	char	tmp2[128];
+	int		s;
+
+	if(cfg.sys_misc&SM_TIMEBANK) {	/* Allow users to deposit free time */
+		s=(cfg.level_timeperday[useron.level]-useron.ttoday)+useron.textra;
+		if(s<0) s=0;
+		if(s>cfg.level_timepercall[useron.level])
+			s=cfg.level_timepercall[useron.level];
+		s-=(now-starttime)/60;
+		if(s<0) s=0;
+		bprintf(text[FreeMinLeft],s);
+		bprintf(text[UserMinutes],ultoac(useron.min,tmp));
+		if(cfg.max_minutes && useron.min>=cfg.max_minutes) {
+			bputs(text[YouHaveTooManyMinutes]);
+			return; 
+		}
+		if(cfg.max_minutes)
+			while(s>0 && s+useron.min>cfg.max_minutes) s--;
+		bprintf(text[FreeMinToDeposit],s);
+		s=getnum(s);
+		if(s>0) {
+			logline("  ","Minute Bank Deposit");
+			useron.min=adjustuserrec(&cfg,useron.number,U_MIN,10,s);
+			useron.ttoday=(ushort)adjustuserrec(&cfg,useron.number,U_TTODAY,10,s);
+			sprintf(str,"Minute Adjustment: %u",s*cfg.cdt_min_value);
+			logline("*+",str); 
+		} 
+	}
+
+	if(!(cfg.sys_misc&SM_NOCDTCVT)) {
+		bprintf(text[ConversionRate],cfg.cdt_min_value);
+		bprintf(text[UserCredits]
+			,ultoac(useron.cdt,tmp)
+			,ultoac(useron.freecdt,tmp2)
+			,ultoac(cfg.level_freecdtperday[useron.level],str));
+		bprintf(text[UserMinutes],ultoac(useron.min,tmp));
+		if(useron.cdt/102400L<1L) {
+			bprintf(text[YouOnlyHaveNCredits],ultoac(useron.cdt,tmp));
+			return; 
+		}
+		if(cfg.max_minutes && useron.min>=cfg.max_minutes) {
+			bputs(text[YouHaveTooManyMinutes]);
+			return; 
+		}
+		s=useron.cdt/102400L;
+		if(cfg.max_minutes)
+			while(s>0 && (s*cfg.cdt_min_value)+useron.min>cfg.max_minutes) s--;
+		bprintf(text[CreditsToMin],s);
+		s=getnum(s);
+		if(s>0) {
+			logline("  ","Credit to Minute Conversion");
+			useron.cdt=adjustuserrec(&cfg,useron.number,U_CDT,10,-(s*102400L));
+			useron.min=adjustuserrec(&cfg,useron.number,U_MIN,10,s*cfg.cdt_min_value);
+			sprintf(str,"Credit Adjustment: %ld",-(s*102400L));
+			logline("$-",str);
+			sprintf(str,"Minute Adjustment: %u",s*cfg.cdt_min_value);
+			logline("*+",str); 
+		} 
+	}
+}
+
+void sbbs_t::change_user(void)
+{
+	uint	i;
+	char	str[256];
+	char	tmp[128];
+
+	if(!chksyspass())
+		return;
+	bputs(text[ChUserPrompt]);
+	if(!getstr(str,LEN_ALIAS,K_UPPER))
+		return;
+	if((i=finduser(str))==0)
+		return;
+	if(online==ON_REMOTE) {
+		getuserrec(&cfg,i,U_LEVEL,2,str);
+		if(atoi(str)>logon_ml) {
+			getuserrec(&cfg,i,U_PASS,8,tmp);
+			bputs(text[ChUserPwPrompt]);
+			console|=CON_R_ECHOX;
+			if(!(cfg.sys_misc&SM_ECHO_PW))
+				console|=CON_L_ECHOX;
+			getstr(str,8,K_UPPER);
+			console&=~(CON_R_ECHOX|CON_L_ECHOX);
+			if(strcmp(str,tmp))
+				return;
+		}
+	}
+	putmsgptrs();
+	putuserrec(&cfg,useron.number,U_CURSUB,8
+		,cfg.sub[usrsub[curgrp][cursub[curgrp]]]->code);
+	putuserrec(&cfg,useron.number,U_CURDIR,8
+		,cfg.dir[usrdir[curlib][curdir[curlib]]]->code);
+	useron.number=i;
+	getuserdat(&cfg,&useron);
+	getnodedat(cfg.node_num,&thisnode,1);
+	thisnode.useron=useron.number;
+	putnodedat(cfg.node_num,&thisnode);
+	getmsgptrs();
+	if(REALSYSOP) sys_status&=~SS_TMPSYSOP;
+	else sys_status|=SS_TMPSYSOP;
+	sprintf(str,"Changed into %s #%u",useron.alias,useron.number);
+	logline("S+",str);
+}

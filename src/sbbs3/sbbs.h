@@ -404,6 +404,8 @@ public:
 	void	subinfo(uint subnum);
 	void	dirinfo(uint dirnum);
 	bool	trashcan(char *insearch, char *name);
+	void	time_bank(void);
+	void	change_user(void);
 
 	/* writemsg.cpp */
 	void	automsg(void);
