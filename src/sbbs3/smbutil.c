@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -246,7 +246,7 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 		msg.idx.to=atoi(str); }
 	else {
 		strlwr(str);
-		msg.idx.to=crc16(str); 
+		msg.idx.to=crc16(str,0); 
 	}
 
 	if(smb.status.attr&SMB_EMAIL && (type=='N' || !msg.idx.to)) {
@@ -302,7 +302,7 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 		msg.idx.from=atoi(str); 
 	} else {
 		strlwr(str);
-		msg.idx.from=crc16(str); 
+		msg.idx.from=crc16(str,0); 
 	}
 	smb_hfield(&msg, SENDERAGENT, sizeof(agent), &agent);
 
@@ -1071,10 +1071,10 @@ void packmsgs(ulong packable)
 		else {
 			SAFECOPY(str,msg.to);
 			strlwr(str);
-			msg.idx.to=crc16(str);
+			msg.idx.to=crc16(str,0);
 			SAFECOPY(str,msg.from);
 			strlwr(str);
-			msg.idx.from=crc16(str); }
+			msg.idx.from=crc16(str,0); }
 		fwrite(&msg.idx,1,sizeof(idxrec_t),tmp_sid);
 
 		/* Write the new header entry */

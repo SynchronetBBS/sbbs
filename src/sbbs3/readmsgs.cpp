@@ -190,11 +190,11 @@ post_t HUGE16 * sbbs_t::loadposts(long *posts, uint subnum, ulong ptr, long mode
 
 	strcpy(name,useron.name);
 	strlwr(name);
-	namecrc=crc16(name);
+	namecrc=crc16(name,0);
 	strcpy(name,useron.alias);
 	strlwr(name);
-	aliascrc=crc16(name);
-	sysop=crc16("sysop");
+	aliascrc=crc16(name,0);
+	sysop=crc16("sysop",0);
 
 	rewind(smb.sid_fp);
 
@@ -1194,11 +1194,11 @@ void sbbs_t::showposts_toyou(post_t HUGE16 *post, ulong start, long posts)
 
 	strcpy(str,useron.alias);
 	strlwr(str);
-	aliascrc=crc16(str);
+	aliascrc=crc16(str,0);
 	strcpy(str,useron.name);
 	strlwr(str);
-	namecrc=crc16(str);
-	sysop=crc16("sysop");
+	namecrc=crc16(str,0);
+	sysop=crc16("sysop",0);
 	msg.total_hfields=0;
 	for(l=start,found=0;l<posts && !msgabort();l++) {
 

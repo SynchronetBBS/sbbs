@@ -241,7 +241,7 @@ js_crc16(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if((str=JS_GetStringBytes(JS_ValueToString(cx, argv[0])))==NULL) 
 		return(JS_FALSE);
 
-	*rval = INT_TO_JSVAL(crc16(str));
+	*rval = INT_TO_JSVAL(crc16(str,0));
 	return(JS_TRUE);
 }
 

@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -2388,11 +2388,11 @@ int fmsgtosmsg(uchar HUGE16 *fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 	if(subnum==INVALID_SUB)
 		msg.idx.from=0;
 	else
-		msg.idx.from=crc16(fmsghdr.from);
+		msg.idx.from=crc16(fmsghdr.from,0);
 
 	smb_hfield(&msg,RECIPIENT,(ushort)strlen(fmsghdr.to),fmsghdr.to);
 	strlwr(fmsghdr.to);
-	msg.idx.to=crc16(fmsghdr.to);
+	msg.idx.to=crc16(fmsghdr.to,0);
 
 	if(user) {
 		sprintf(str,"%u",user);
