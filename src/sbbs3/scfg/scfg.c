@@ -164,9 +164,12 @@ int main(int argc, char **argv)
             SAFECOPY(cfg.ctrl_dir,argv[i]);
     }
 
-if(backup_level>10) backup_level=10;
-
 backslashcolon(cfg.ctrl_dir);
+
+if(chdir(cfg.ctrl_dir)!=0) {
+	printf("!ERROR %d changing current directory to: %s\n",cfg.ctrl_dir);
+	exit(-1);
+}
 
 uifc.size=sizeof(uifc);
 #if defined(USE_DIALOG)
