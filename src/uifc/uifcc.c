@@ -86,7 +86,7 @@ enum {
 #define SH_DENYRW	2
 #define O_BINARY	0
 
-static char hclr,lclr,bclr,cclr,show_free_mem=0;
+static char hfclr,hbclr,hclr,lclr,bclr,cclr,show_free_mem=0;
 static char* helpfile=0;
 static uint helpline=0;
 static char blk_scrn[MAX_BFLN];
@@ -174,6 +174,7 @@ int uifcinic(uifcapi_t* uifcapi)
 	keypad(stdscr, TRUE);
 	scrollok(stdscr,FALSE);
 	raw();
+	ESCDELAY=api->esc_delay;
 
 	// Set up color pairs
 	for(bg=0;bg<8;bg++)  {
@@ -181,6 +182,7 @@ int uifcinic(uifcapi_t* uifcapi)
 			init_pair(++pair,curses_color(fg),curses_color(bg));
 		}
 	}
+
     clear();
 	refresh();
 	getmaxyx(stdscr,height,width);
@@ -222,11 +224,15 @@ int uifcinic(uifcapi_t* uifcapi)
         hclr=WHITE;
         lclr=LIGHTGRAY;
         cclr=LIGHTGRAY;
+		hbclr=BLACK;		/* Highlight Background Colour */
+		hfclr=WHITE;		/* Highlight Foreground Colour */
     } else {
         bclr=BLUE;
         hclr=YELLOW;
         lclr=WHITE;
         cclr=CYAN;
+		hbclr=LIGHTGRAY;
+		hfclr=YELLOW;
     }
     for(i=0;i<MAX_BFLN;i+=2) {
         blk_scrn[i]='°';
@@ -538,7 +544,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 		*(ptr++)='³';
 		*(ptr++)=lclr|(bclr<<4);
 		if(i==(*cur))
-			a=bclr|(LIGHTGRAY<<4);
+			a=hfclr|(hbclr<<4);
 		else
 			a=lclr|(bclr<<4);
 		b=strlen(option[i]);
@@ -613,7 +619,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 
 		if(inkey(1)) {
 			i=inkey(0);
-			if(i==KEY_BACKSPACE)
+			if(i==KEY_BACKSPACE || i==BS)
 				i=ESC;
 			if(i>255) {
 				s=0;
@@ -630,7 +636,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+height-2);
 							putch(31);	   /* put the down arrow */
 							uprintf(SCRN_LEFT+left+3,SCRN_TOP+top+3
-								,bclr|(LIGHTGRAY<<4)
+								,hfclr|(hbclr<<4)
 								,"%-*.*s",width-4,width-4,option[0]);
 							for(i=1;i<height-4;i++)    /* re-display options */
 								uprintf(SCRN_LEFT+left+3,SCRN_TOP+top+3+i
@@ -656,7 +662,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 						gettext(SCRN_LEFT+3+left,SCRN_TOP+y
 							,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
 						for(i=1;i<width*2;i+=2)
-							line[i]=bclr|(LIGHTGRAY<<4);
+							line[i]=hfclr|(hbclr<<4);
 						puttext(SCRN_LEFT+3+left,SCRN_TOP+y
 							,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
 						showmouse();
@@ -673,7 +679,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							putch(' ');    /* delete the down arrow */
 							for(i=(opts+4)-height,j=0;i<opts;i++,j++)
 								uprintf(SCRN_LEFT+left+3,SCRN_TOP+top+3+j
-									,i==opts-1 ? bclr|(LIGHTGRAY<<4)
+									,i==opts-1 ? hfclr|(hbclr<<4)
 										: lclr|(bclr<<4)
 									,"%-*.*s",width-4,width-4,option[i]);
 							(*cur)=opts-1;
@@ -714,7 +720,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							scroll_text(SCRN_LEFT+left+2,SCRN_TOP+top+3
 								,SCRN_LEFT+left+width-3,SCRN_TOP+top+height-2,1);
 							uprintf(SCRN_LEFT+left+3,SCRN_TOP+top+3
-								,bclr|(LIGHTGRAY<<4)
+								,hfclr|(hbclr<<4)
 								,"%-*.*s",width-4,width-4,option[*cur]);
 							showmouse(); }
 						else {
@@ -722,7 +728,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							gettext(SCRN_LEFT+3+left,SCRN_TOP+y
 								,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
 							for(i=1;i<width*2;i+=2)
-								line[i]=bclr|(LIGHTGRAY<<4);
+								line[i]=hfclr|(hbclr<<4);
 							puttext(SCRN_LEFT+3+left,SCRN_TOP+y
 								,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
 							showmouse(); }
@@ -746,7 +752,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 
 						for(i=(opts+4)-height,j=0;i<opts;i++,j++)
 							uprintf(SCRN_LEFT+left+3,SCRN_TOP+top+3+j
-								,i==(*cur) bclr|(LIGHTGRAY<<4) : lclr|(bclr<<4)
+								,i==(*cur) hfclr|(hbclr<<4) : lclr|(bclr<<4)
 								,"%-*.*s",width-4,width-4,option[i]);
 						y=top+height-2;
 						if(bar)
@@ -754,7 +760,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 						gettext(SCRN_LEFT+3+left,SCRN_TOP+y
 							,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
 						for(i=1;i<148;i+=2)
-							line[i]=bclr|(LIGHTGRAY<<4);
+							line[i]=hfclr|(hbclr<<4);
 						puttext(SCRN_LEFT+3+left,SCRN_TOP+y
 							,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
 						showmouse();
@@ -772,7 +778,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							putch(' ');    /* delete the down arrow */
 							for(i=(opts+4)-height,j=0;i<opts;i++,j++)
 								uprintf(SCRN_LEFT+left+3,SCRN_TOP+top+3+j
-									,i==opts-1 ? bclr|(LIGHTGRAY<<4)
+									,i==opts-1 ? hfclr|(hbclr<<4)
 										: lclr|(bclr<<4)
 									,"%-*.*s",width-4,width-4,option[i]);
 							(*cur)=opts-1;
@@ -795,7 +801,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 						gettext(SCRN_LEFT+3+left,SCRN_TOP+y
 							,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
 						for(i=1;i<148;i+=2)
-							line[i]=bclr|(LIGHTGRAY<<4);
+							line[i]=hfclr|(hbclr<<4);
 						puttext(SCRN_LEFT+3+left,SCRN_TOP+y
 							,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
 						showmouse();
@@ -811,7 +817,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+height-2);
 							putch(31);	   /* put the down arrow */
 							uprintf(SCRN_LEFT+left+3,SCRN_TOP+top+3
-								,bclr|(LIGHTGRAY<<4)
+								,hfclr|(hbclr<<4)
 								,"%-*.*s",width-4,width-4,option[0]);
 							for(i=1;i<height-4;i++)    /* re-display options */
 								uprintf(SCRN_LEFT+left+3,SCRN_TOP+top+3+i
@@ -859,7 +865,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 								,SCRN_LEFT+left+width-3,SCRN_TOP+top+height-2,0);
 							/* gotoxy(1,1); cprintf("\rdebug: %4d ",__LINE__); */
 							uprintf(SCRN_LEFT+left+3,SCRN_TOP+top+height-2
-								,bclr|(LIGHTGRAY<<4)
+								,hfclr|(hbclr<<4)
 								,"%-*.*s",width-4,width-4,option[*cur]);
 							showmouse(); }
 						else {
@@ -868,7 +874,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 								,SCRN_LEFT+left+width-2,SCRN_TOP+y
 								,line);
 							for(i=1;i<width*2;i+=2)
-								line[i]=bclr|(LIGHTGRAY<<4);
+								line[i]=hfclr|(hbclr<<4);
 							puttext(SCRN_LEFT+3+left,SCRN_TOP+y
 								,SCRN_LEFT+left+width-2,SCRN_TOP+y
 								,line);
@@ -954,7 +960,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 									putch(' '); }  /* delete the down arrow */
 								for(i=((*cur)+5)-height,j=0;i<(*cur)+1;i++,j++)
 									uprintf(SCRN_LEFT+left+3,SCRN_TOP+top+3+j
-										,i==(*cur) ? bclr|(LIGHTGRAY<<4)
+										,i==(*cur) ? hfclr|(hbclr<<4)
 											: lclr|(bclr<<4)
 										,"%-*.*s",width-4,width-4,option[i]);
 								y=top+height-2;
@@ -970,7 +976,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 								gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+height-2);
 								putch(31);	   /* put the down arrow */
 								uprintf(SCRN_LEFT+left+3,SCRN_TOP+top+3
-									,bclr|(LIGHTGRAY<<4)
+									,hfclr|(hbclr<<4)
 									,"%-*.*s",width-4,width-4,option[(*cur)]);
 								for(i=1;i<height-4;i++) 	/* re-display options */
 									uprintf(SCRN_LEFT+left+3,SCRN_TOP+top+3+i
@@ -1001,7 +1007,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							gettext(SCRN_LEFT+3+left,SCRN_TOP+y
 								,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
 							for(i=1;i<width*2;i+=2)
-								line[i]=bclr|(LIGHTGRAY<<4);
+								line[i]=hfclr|(hbclr<<4);
 							puttext(SCRN_LEFT+3+left,SCRN_TOP+y
 								,SCRN_LEFT+left+width-2,SCRN_TOP+y,line);
 							showmouse();
@@ -1191,7 +1197,7 @@ static int ugetstr(char *outstr, int max, long mode)
 		truncsp(outstr);
 	***/
 		outstr[max]=0;
-		textattr(bclr|(LIGHTGRAY<<4));
+		textattr(hfclr|(hbclr<<4));
 		cputs(outstr);
 		textattr(lclr|(bclr<<4));
 		strcpy(str,outstr);
@@ -1321,7 +1327,7 @@ static int ugetstr(char *outstr, int max, long mode)
 						j--;
 					}
 					continue;
-				case 03:
+				case 3:
 				case ESC:
 					{
 						curs_set(0);
@@ -1441,8 +1447,8 @@ void bottomline(int line)
 		i+=4;
 		uprintf(i,api->scrn_len+1,BLACK|(cclr<<4),"Delete Item  ");
 		i+=13; }
-	uprintf(i,api->scrn_len+1,bclr|(cclr<<4),"BACKSP ");
-	i+=7;
+	uprintf(i,api->scrn_len+1,bclr|(cclr<<4),"ESC ");	/* Backspace is no good no way to abort editing */
+	i+=4;
 	uprintf(i,api->scrn_len+1,BLACK|(cclr<<4),"Exit");
 	i+=4;
 	gotoxy(i,api->scrn_len+1);
@@ -1794,7 +1800,7 @@ static int gettext(int sx, int sy, int ex, int ey, unsigned char *fill)
 		for(x=sx-1;x<=ex-1;x++)
 		{
 			attr=mvinch(y, x);
-			if(attr&A_ALTCHARSET){
+			if(attr&A_ALTCHARSET && !(api->mode&UIFC_IBM)){
 				ext_char=A_ALTCHARSET|(attr&255);
 				/* likely ones */
 				if (ext_char == ACS_CKBOARD)
@@ -2064,148 +2070,155 @@ static void _putch(unsigned char ch, BOOL refresh_now)
 {
 	int	cha;
 
-	switch(ch)
+	if(!(api->mode&UIFC_IBM))
 	{
-		case 30:
-			cha=ACS_UARROW;
-			break;
-		case 31:
-			cha=ACS_DARROW;
-			break;
-		case 176:
-			cha=ACS_CKBOARD;
-			break;
-		case 177:
-			cha=ACS_BOARD;
-			break;
-		case 178:
-			cha=ACS_BOARD;
-			break;
-		case 179:
-			cha=ACS_SBSB;
-			break;
-		case 180:
-			cha=ACS_SBSS;
-			break;
-		case 181:
-			cha=ACS_SBSD;
-			break;
-		case 182:
-			cha=ACS_DBDS;
-			break;
-		case 183:
-			cha=ACS_BBDS;
-			break;
-		case 184:
-			cha=ACS_BBSD;
-			break;
-		case 185:
-			cha=ACS_DBDD;
-			break;
-		case 186:
-			cha=ACS_DBDB;
-			break;
-		case 187:
-			cha=ACS_BBDD;
-			break;
-		case 188:
-			cha=ACS_DBBD;
-			break;
-		case 189:
-			cha=ACS_DBBS;
-			break;
-		case 190:
-			cha=ACS_SBBD;
-			break;
-		case 191:
-			cha=ACS_BBSS;
-			break;
-		case 192:
-			cha=ACS_SSBB;
-			break;
-		case 193:
-			cha=ACS_SSBS;
-			break;
-		case 194:
-			cha=ACS_BSSS;
-			break;
-		case 195:
-			cha=ACS_SSSB;
-			break;
-		case 196:
-			cha=ACS_BSBS;
-			break;
-		case 197:
-			cha=ACS_SSSS;
-			break;
-		case 198:
-			cha=ACS_SDSB;
-			break;
-		case 199:
-			cha=ACS_DSDB;
-			break;
-		case 200:
-			cha=ACS_DDBB;
-			break;
-		case 201:
-			cha=ACS_BDDB;
-			break;
-		case 202:
-			cha=ACS_DDBD;
-			break;
-		case 203:
-			cha=ACS_BDDD;
-			break;
-		case 204:
-			cha=ACS_DDDB;
-			break;
-		case 205:
-			cha=ACS_BDBD;
-			break;
-		case 206:
-			cha=ACS_DDDD;
-			break;
-		case 207:
-			cha=ACS_SDBD;
-			break;
-		case 208:
-			cha=ACS_DSBS;
-			break;
-		case 209:
-			cha=ACS_BDSD;
-			break;
-		case 210:
-			cha=ACS_BSDS;
-			break;
-		case 211:
-			cha=ACS_DSBB;
-			break;
-		case 212:
-			cha=ACS_SDBB;
-			break;
-		case 213:
-			cha=ACS_BDSB;
-			break;
-		case 214:
-			cha=ACS_BSDB;
-			break;
-		case 215:
-			cha=ACS_DSDS;
-			break;
-		case 216:
-			cha=ACS_SDSD;
-			break;
-		case 217:
-			cha=ACS_SBBS;
-			break;
-		case 218:
-			cha=ACS_BSSB;
-			break;
-		case 219:
-			cha=ACS_BLOCK;
-			break;
-		default:
-			cha=ch;
+		switch(ch)
+		{
+			case 30:
+				cha=ACS_UARROW;
+				break;
+			case 31:
+				cha=ACS_DARROW;
+				break;
+			case 176:
+				cha=ACS_CKBOARD;
+				break;
+			case 177:
+				cha=ACS_BOARD;
+				break;
+			case 178:
+				cha=ACS_BOARD;
+				break;
+			case 179:
+				cha=ACS_SBSB;
+				break;
+			case 180:
+				cha=ACS_SBSS;
+				break;
+			case 181:
+				cha=ACS_SBSD;
+				break;
+			case 182:
+				cha=ACS_DBDS;
+				break;
+			case 183:
+				cha=ACS_BBDS;
+				break;
+			case 184:
+				cha=ACS_BBSD;
+				break;
+			case 185:
+				cha=ACS_DBDD;
+				break;
+			case 186:
+				cha=ACS_DBDB;
+				break;
+			case 187:
+				cha=ACS_BBDD;
+				break;
+			case 188:
+				cha=ACS_DBBD;
+				break;
+			case 189:
+				cha=ACS_DBBS;
+				break;
+			case 190:
+				cha=ACS_SBBD;
+				break;
+			case 191:
+				cha=ACS_BBSS;
+				break;
+			case 192:
+				cha=ACS_SSBB;
+				break;
+			case 193:
+				cha=ACS_SSBS;
+				break;
+			case 194:
+				cha=ACS_BSSS;
+				break;
+			case 195:
+				cha=ACS_SSSB;
+				break;
+			case 196:
+				cha=ACS_BSBS;
+				break;
+			case 197:
+				cha=ACS_SSSS;
+				break;
+			case 198:
+				cha=ACS_SDSB;
+				break;
+			case 199:
+				cha=ACS_DSDB;
+				break;
+			case 200:
+				cha=ACS_DDBB;
+				break;
+			case 201:
+				cha=ACS_BDDB;
+				break;
+			case 202:
+				cha=ACS_DDBD;
+				break;
+			case 203:
+				cha=ACS_BDDD;
+				break;
+			case 204:
+				cha=ACS_DDDB;
+				break;
+			case 205:
+				cha=ACS_BDBD;
+				break;
+			case 206:
+				cha=ACS_DDDD;
+				break;
+			case 207:
+				cha=ACS_SDBD;
+				break;
+			case 208:
+				cha=ACS_DSBS;
+				break;
+			case 209:
+				cha=ACS_BDSD;
+				break;
+			case 210:
+				cha=ACS_BSDS;
+				break;
+			case 211:
+				cha=ACS_DSBB;
+				break;
+			case 212:
+				cha=ACS_SDBB;
+				break;
+			case 213:
+				cha=ACS_BDSB;
+				break;
+			case 214:
+				cha=ACS_BSDB;
+				break;
+			case 215:
+				cha=ACS_DSDS;
+				break;
+			case 216:
+				cha=ACS_SDSD;
+				break;
+			case 217:
+				cha=ACS_SBBS;
+				break;
+			case 218:
+				cha=ACS_BSSB;
+				break;
+			case 219:
+				cha=ACS_BLOCK;
+				break;
+			default:
+				cha=ch;
+		}
+	}
+	else
+	{
+		cha=ch;
 	}
 			
 

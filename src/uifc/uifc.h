@@ -143,6 +143,7 @@
 #define UIFC_MOUSE	(1<<1)	/* Mouse installed and available */
 #define UIFC_MONO	(1<<2)	/* Force monochrome mode */
 #define UIFC_COLOR	(1<<3)	/* Force color mode */
+#define UIFC_IBM	(1<<4)	/* Force use of IBM charset	*/
 
                             /* Bits in uifcapi_t.list mode */
 #define WIN_ORG 	(1<<0)	/* Original menu - destroy valid screen area */
@@ -261,6 +262,10 @@ typedef struct {
 /* Screen length															*/
 /****************************************************************************/
     uint    scrn_len;
+/****************************************************************************/
+/* ESC key delay for curses													*/
+/****************************************************************************/
+    uint    esc_delay;
 /****************************************************************************/
 /* Alternative method of setting current help text.							*/
 /****************************************************************************/
