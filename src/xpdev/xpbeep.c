@@ -91,32 +91,8 @@ void makewave(double freq, unsigned char *wave, int samples)
 			wave[i]=128;
 		}
 	}
-#if 0
-	/* Fade out */
-	for(k=8;k>0;k--) {
-		for(;i>midpoint;i--) {
-			if(!endhigh && wave[i]<128)
-				break;
-			if(endhigh && wave[i]>128)
-				break;
-			j=wave[i];
-			j-=128;
-			j/=1<<k;
-			wave[i]=j+128;
-		}
-		for(;i>midpoint;i--) {
-			if(endhigh && wave[i]<128)
-				break;
-			if(!endhigh && wave[i]>128)
-				break;
-			j=wave[i];
-			j-=128;
-			j/=1<<k;
-			wave[i]=j+128;
-		}
-	}
-#endif
 
+#if 0
 	if(wave[0]>128)
 		starthigh=TRUE;
 	else
@@ -130,30 +106,6 @@ void makewave(double freq, unsigned char *wave, int samples)
 			if(!starthigh && wave[i]>128)
 				break;
 			wave[i]=128;
-		}
-	}
-#if 0
-	/* Fade in */
-	for(k=8;k>0;k--) {
-		for(;i<midpoint;i++) {
-			if(!starthigh && wave[i]<128)
-				break;
-			if(starthigh && wave[i]>128)
-				break;
-			j=wave[i];
-			j-=128;
-			j/=1<<k;
-			wave[i]=j+128;
-		}
-		for(;i<midpoint;i++) {
-			if(starthigh && wave[i]<=128)
-				break;
-			if(!starthigh && wave[i]>=128)
-				break;
-			j=wave[i];
-			j-=128;
-			j/=1<<k;
-			wave[i]=j+128;
 		}
 	}
 #endif
