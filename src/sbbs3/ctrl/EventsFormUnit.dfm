@@ -14,14 +14,13 @@ object EventsForm: TEventsForm
   Font.Style = []
   OldCreateOrder = False
   OnHide = FormHide
-  OnShow = FormShow
   PixelsPerInch = 120
   TextHeight = 16
   object Log: TMemo
     Left = 0
     Top = 0
     Width = 551
-    Height = 359
+    Height = 358
     Align = alClient
     ReadOnly = True
     ScrollBars = ssBoth

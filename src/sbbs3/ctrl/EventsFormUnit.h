@@ -47,7 +47,6 @@ class TEventsForm : public TForm
 {
 __published:	// IDE-managed Components
     TMemo *Log;
-    void __fastcall FormShow(TObject *Sender);
     void __fastcall FormHide(TObject *Sender);
 private:	// User declarations
 public:		// User declarations

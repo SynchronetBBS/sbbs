@@ -6,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -77,7 +77,6 @@ __published:	// IDE-managed Components
     TToolButton *UserMsgButton;
     TMenuItem *SendMsgMenuItem;
     TMenuItem *RefreshMenuItem;
-	void __fastcall FormShow(TObject *Sender);
 	void __fastcall TimerTick(TObject *Sender);
     void __fastcall FormHide(TObject *Sender);
 	void __fastcall InterruptNodeButtonClick(TObject *Sender);
@@ -95,7 +94,6 @@ private:	// User declarations
 
 public:		// User declarations
      __fastcall TNodeForm(TComponent* Owner);
-     TMainForm* MainForm;
     int __fastcall getnodedat(int node_num, node_t* node, int* file);
     int __fastcall putnodedat(int node_num, node_t* node, int file);
 

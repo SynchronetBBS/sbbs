@@ -1,6 +1,6 @@
 object FtpForm: TFtpForm
-  Left = 475
-  Top = 427
+  Left = 856
+  Top = 689
   Width = 350
   Height = 150
   Caption = 'FTP Server'
@@ -14,7 +14,6 @@ object FtpForm: TFtpForm
   Font.Style = []
   OldCreateOrder = False
   OnHide = FormHide
-  OnShow = FormShow
   PixelsPerInch = 120
   TextHeight = 16
   object ToolBar: TToolBar

@@ -16,7 +16,6 @@ object TelnetForm: TTelnetForm
   OldCreateOrder = False
   Position = poDefault
   OnHide = FormHide
-  OnShow = FormShow
   PixelsPerInch = 120
   TextHeight = 16
   object ToolBar: TToolBar

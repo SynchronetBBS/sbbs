@@ -1,6 +1,6 @@
 object ServicesForm: TServicesForm
-  Left = 381
-  Top = 320
+  Left = 122
+  Top = 297
   Width = 870
   Height = 640
   Caption = 'Services'
@@ -12,6 +12,7 @@ object ServicesForm: TServicesForm
   Font.Name = 'MS Sans Serif'
   Font.Style = []
   OldCreateOrder = False
+  OnHide = FormHide
   PixelsPerInch = 120
   TextHeight = 16
   object Log: TMemo

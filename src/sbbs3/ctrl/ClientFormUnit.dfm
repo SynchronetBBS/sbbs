@@ -14,14 +14,13 @@ object ClientForm: TClientForm
   Font.Style = []
   OldCreateOrder = False
   OnHide = FormHide
-  OnShow = FormShow
   PixelsPerInch = 120
   TextHeight = 16
   object ListView: TListView
     Left = 0
     Top = 0
     Width = 623
-    Height = 317
+    Height = 312
     Align = alClient
     Columns = <
       item

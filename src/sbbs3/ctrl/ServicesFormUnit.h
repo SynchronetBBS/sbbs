@@ -58,6 +58,7 @@ __published:	// IDE-managed Components
     TToolButton *ToolButton2;
     TStaticText *Status;
 	TToolButton *RecycleButton;
+    void __fastcall FormHide(TObject *Sender);
 private:	// User declarations
 public:		// User declarations
     __fastcall TServicesForm(TComponent* Owner);

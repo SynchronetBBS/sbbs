@@ -13,8 +13,6 @@ object WebForm: TWebForm
   Font.Name = 'MS Sans Serif'
   Font.Style = []
   OldCreateOrder = False
-  OnHide = FormHide
-  OnShow = FormShow
   PixelsPerInch = 120
   TextHeight = 16
   object ToolBar: TToolBar

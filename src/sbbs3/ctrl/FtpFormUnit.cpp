@@ -6,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -46,21 +46,12 @@ TFtpForm *FtpForm;
 __fastcall TFtpForm::TFtpForm(TComponent* Owner)
 	: TForm(Owner)
 {
-	MainForm=(TMainForm*)Application->MainForm;
-//	ManualDock(MainForm->Panel, MainForm->Panel, alClient);
-}
-//---------------------------------------------------------------------------
-void __fastcall TFtpForm::FormShow(TObject *Sender)
-{
-	MainForm->ViewFtpServerMenuItem->Checked=true;
-	MainForm->ViewFtpServerButton->Down=true;
 }
 //---------------------------------------------------------------------------
 
 void __fastcall TFtpForm::FormHide(TObject *Sender)
 {
-	MainForm->ViewFtpServerMenuItem->Checked=false;
-	MainForm->ViewFtpServerButton->Down=false;
+    MainForm->ViewFtpServer->Checked=false;
 }
 //---------------------------------------------------------------------------
 

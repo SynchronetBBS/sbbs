@@ -967,8 +967,7 @@ void __fastcall TMainForm::FormShow(TObject *Sender)
 
 void __fastcall TMainForm::ViewToolbarMenuItemClick(TObject *Sender)
 {
-	Toolbar->Visible=!ViewToolbarMenuItem->Checked;
-    ViewToolbarMenuItem->Checked=Toolbar->Visible;
+	Toolbar->Visible=ViewToolbarMenuItem->Checked;
 }
 //---------------------------------------------------------------------------
 void __fastcall TMainForm::FormClose(TObject *Sender, TCloseAction &Action)
@@ -1194,41 +1193,50 @@ void __fastcall TMainForm::MailStopExecute(TObject *Sender)
 //---------------------------------------------------------------------------
 void __fastcall TMainForm::ViewTelnetExecute(TObject *Sender)
 {
-	TelnetForm->Visible=!TelnetForm->Visible;
-    ViewTelnet->Checked=TelnetForm->Visible;
+	TelnetForm->Visible=ViewTelnet->Checked;
 }
 //---------------------------------------------------------------------------
 void __fastcall TMainForm::ViewEventsExecute(TObject *Sender)
 {
-	EventsForm->Visible=!EventsForm->Visible;
-    ViewEvents->Checked=EventsForm->Visible;
+	EventsForm->Visible=ViewEvents->Checked;
 }
 //---------------------------------------------------------------------------
 
 void __fastcall TMainForm::ViewNodesExecute(TObject *Sender)
 {
-	NodeForm->Visible=!NodeForm->Visible;
-    ViewNodes->Checked=NodeForm->Visible;
+	NodeForm->Visible=ViewNodes->Checked;
 }
 //---------------------------------------------------------------------------
 
 void __fastcall TMainForm::ViewMailServerExecute(TObject *Sender)
 {
-	MailForm->Visible=!MailForm->Visible;
-    ViewMailServer->Checked=MailForm->Visible;
+	MailForm->Visible=ViewMailServer->Checked;
 }
 //---------------------------------------------------------------------------
 
 void __fastcall TMainForm::ViewFtpServerExecute(TObject *Sender)
 {
-	FtpForm->Visible=!FtpForm->Visible;
-    ViewFtpServer->Checked=FtpForm->Visible;
+	FtpForm->Visible=ViewFtpServer->Checked;
 }
 //---------------------------------------------------------------------------
 void __fastcall TMainForm::ViewWebServerExecute(TObject *Sender)
 {
-    WebForm->Visible=!WebForm->Visible;
-    ViewWebServer->Checked=WebForm->Visible;
+    WebForm->Visible=ViewWebServer->Checked;
+}
+//---------------------------------------------------------------------------
+void __fastcall TMainForm::ViewServicesExecute(TObject *Sender)
+{
+    ServicesForm->Visible=ViewServices->Checked;
+}
+//---------------------------------------------------------------------------
+void __fastcall TMainForm::ViewStatsExecute(TObject *Sender)
+{
+	StatsForm->Visible=ViewStats->Checked;
+}
+//---------------------------------------------------------------------------
+void __fastcall TMainForm::ViewClientsExecute(TObject *Sender)
+{
+	ClientForm->Visible=ViewClients->Checked;
 }
 //---------------------------------------------------------------------------
 void __fastcall TMainForm::FtpStartExecute(TObject *Sender)
@@ -1393,14 +1401,6 @@ void __fastcall TMainForm::StatsTimerTick(TObject *Sender)
 	counter++;
 }
 //---------------------------------------------------------------------------
-
-void __fastcall TMainForm::ViewStatsExecute(TObject *Sender)
-{
-	StatsForm->Visible=!StatsForm->Visible;
-    ViewStats->Checked=StatsForm->Visible;
-}
-//---------------------------------------------------------------------------
-
 void __fastcall TMainForm::StatsCloseButtonClick(TObject *Sender)
 {
 	ViewStatsExecute(Sender);
@@ -1525,8 +1525,18 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     int		EventsFormPage=PAGE_LOWERLEFT;
     int		MailFormPage=PAGE_UPPERRIGHT;
     int		FtpFormPage=PAGE_LOWERRIGHT;
-    int		WebFormPage=PAGE_LOWERRIGHT;    
+    int		WebFormPage=PAGE_LOWERRIGHT;
     int     ServicesFormPage=PAGE_LOWERRIGHT;
+    bool	TelnetFormVisible=true;
+    bool	EventsFormVisible=true;
+    bool	ServicesFormVisible=true;
+    bool 	NodeFormVisible=true;
+    bool	StatsFormVisible=true;
+    bool	ClientFormVisible=true;
+    bool 	MailFormVisible=true;
+    bool	FtpFormVisible=true;
+    bool	WebFormVisible=true;
+
 
     AnsiString	Str;
 
@@ -1576,6 +1586,25 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
         if(Registry->ValueExists("WebFormFloating"))
             WebFormFloating=Registry->ReadBool("WebFormFloating");
     }
+
+    if(Registry->ValueExists("TelnetFormVisible"))
+        TelnetFormVisible=Registry->ReadBool("TelnetFormVisible");
+    if(Registry->ValueExists("EventsFormVisible"))
+        EventsFormVisible=Registry->ReadBool("EventsFormVisible");
+    if(Registry->ValueExists("ServicesFormVisible"))
+        ServicesFormVisible=Registry->ReadBool("ServicesFormVisible");
+    if(Registry->ValueExists("NodeFormVisible"))
+        NodeFormVisible=Registry->ReadBool("NodeFormVisible");
+    if(Registry->ValueExists("StatsFormVisible"))
+        StatsFormVisible=Registry->ReadBool("StatsFormVisible");
+    if(Registry->ValueExists("ClientFormVisible"))
+        ClientFormVisible=Registry->ReadBool("ClientFormVisible");
+    if(Registry->ValueExists("MailFormVisible"))
+        MailFormVisible=Registry->ReadBool("MailFormVisible");
+    if(Registry->ValueExists("FtpFormVisible"))
+        FtpFormVisible=Registry->ReadBool("FtpFormVisible");
+    if(Registry->ValueExists("WebFormVisible"))
+        WebFormVisible=Registry->ReadBool("WebFormVisible");
 
     if(Registry->ValueExists("TelnetFormPage"))
     	TelnetFormPage=Registry->ReadInteger("TelnetFormPage");
@@ -2062,14 +2091,24 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     	WebForm->ManualDock(PageControl(WebFormPage),NULL,alClient);
 
     NodeForm->Show();
+//    ViewNodes->Checked=NodeFormVisible,     ViewNodesExecute(Sender);
     ClientForm->Show();
+//    ViewClients->Checked=ClientFormVisible, ViewClientsExecute(Sender);
     StatsForm->Show();
+//    ViewStats->Checked=StatsFormVisible,    ViewStatsExecute(Sender);
     TelnetForm->Show();
+//    ViewTelnet->Checked=TelnetFormVisible,  ViewTelnetExecute(Sender);
     EventsForm->Show();
+//    ViewEvents->Checked=EventsFormVisible,  ViewEventsExecute(Sender);
     FtpForm->Show();
+//    ViewFtpServer->Checked=FtpFormVisible,  ViewFtpServerExecute(Sender);
     WebForm->Show();
-    ServicesForm->Show();
+//    ViewWebServer->Checked=WebFormVisible;
+//    WebForm->Visible=ViewWebServer->Checked;
     MailForm->Show();
+//    ViewMailServer->Checked=MailFormVisible,ViewMailServerExecute(Sender);
+    ServicesForm->Show();
+//    ViewServices->Checked=ServicesFormVisible,ViewServicesExecute(Sender);
 
 	UpperLeftPageControl->Visible=true;
 	UpperRightPageControl->Visible=true;
@@ -2216,6 +2255,16 @@ void __fastcall TMainForm::SaveSettings(TObject* Sender)
     Registry->WriteBool("FtpFormFloating",FtpForm->Floating);
     Registry->WriteBool("WebFormFloating",WebForm->Floating);
     Registry->WriteBool("MailFormFloating",MailForm->Floating);
+
+    Registry->WriteBool("TelnetFormVisible",TelnetForm->Visible);
+    Registry->WriteBool("EventsFormVisible",EventsForm->Visible);
+    Registry->WriteBool("ServicesFormVisible",ServicesForm->Visible);
+    Registry->WriteBool("NodeFormVisible",NodeForm->Visible);
+    Registry->WriteBool("StatsFormVisible",StatsForm->Visible);
+    Registry->WriteBool("ClientFormVisible",ClientForm->Visible);
+    Registry->WriteBool("FtpFormVisible",FtpForm->Visible);
+    Registry->WriteBool("WebFormVisible",WebForm->Visible);
+    Registry->WriteBool("MailFormVisible",MailForm->Visible);
 
     Registry->WriteInteger("TelnetFormPage"
 	    ,PageNum((TPageControl*)TelnetForm->HostDockSite));
@@ -3070,15 +3119,6 @@ void __fastcall TMainForm::ChatToggleExecute(TObject *Sender)
 
 }
 //---------------------------------------------------------------------------
-
-void __fastcall TMainForm::ViewClientsExecute(TObject *Sender)
-{
-	ClientForm->Visible=!ClientForm->Visible;
-    ViewClients->Checked=ClientForm->Visible;
-}
-//---------------------------------------------------------------------------
-
-
 void __fastcall TMainForm::UserEditExecute(TObject *Sender)
 {
     char str[256];
@@ -3735,5 +3775,4 @@ void __fastcall TMainForm::ViewFile(AnsiString filename, AnsiString Caption)
     }
 }
 //---------------------------------------------------------------------------
-
 

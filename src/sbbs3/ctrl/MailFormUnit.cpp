@@ -6,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -46,21 +46,11 @@ TMailForm *MailForm;
 __fastcall TMailForm::TMailForm(TComponent* Owner)
 	: TForm(Owner)
 {
-	MainForm=(TMainForm*)Application->MainForm;
-//	ManualDock(MainForm->Panel, MainForm->Panel, alClient);
-
-}
-//---------------------------------------------------------------------------
-void __fastcall TMailForm::FormShow(TObject *Sender)
-{
-	MainForm->ViewMailServerMenuItem->Checked=true;
-	MainForm->ViewMailServerButton->Down=true;
 }
 //---------------------------------------------------------------------------
 void __fastcall TMailForm::FormHide(TObject *Sender)
 {
-	MainForm->ViewMailServerMenuItem->Checked=false;
-	MainForm->ViewMailServerButton->Down=false;
+	MainForm->ViewMailServer->Checked=false;
 }
 //---------------------------------------------------------------------------
 

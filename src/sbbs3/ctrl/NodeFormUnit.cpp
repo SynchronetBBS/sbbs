@@ -57,30 +57,13 @@ TNodeForm *NodeForm;
 __fastcall TNodeForm::TNodeForm(TComponent* Owner)
         : TForm(Owner)
 {
-//    OutputDebugString("NodeForm constructor\n");
-	MainForm=(TMainForm*)Application->MainForm;
     MainForm->bbs_startup.node_spybuf
         =(RingBuf**)calloc(1,sizeof(RingBuf*)*MAX_NODES);
 }
 //---------------------------------------------------------------------------
-
-
 void __fastcall TNodeForm::FormHide(TObject *Sender)
 {
-	MainForm->ViewNodesMenuItem->Checked=false;
-    MainForm->ViewNodesButton->Down=false;
-}
-//---------------------------------------------------------------------------
-
-
-
-
-void __fastcall TNodeForm::FormShow(TObject *Sender)
-{
-//    OutputDebugString("NodeForm::FormShow\n");
-
-	MainForm->ViewNodesMenuItem->Checked=true;
-    MainForm->ViewNodesButton->Down=true;
+	MainForm->ViewNodes->Checked=false;
 }
 //---------------------------------------------------------------------------
 int __fastcall TNodeForm::getnodedat(int node_num, node_t* node, int* file)

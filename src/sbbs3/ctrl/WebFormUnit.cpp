@@ -47,15 +47,3 @@ __fastcall TWebForm::TWebForm(TComponent* Owner)
 	MainForm=(TMainForm*)Application->MainForm;
 }
 //---------------------------------------------------------------------------
-void __fastcall TWebForm::FormShow(TObject *Sender)
-{
-	MainForm->ViewWebServerMenuItem->Checked=true;
-	MainForm->ViewWebServerButton->Down=true;
-}
-//---------------------------------------------------------------------------
-void __fastcall TWebForm::FormHide(TObject *Sender)
-{
-	MainForm->ViewWebServerMenuItem->Checked=false;
-	MainForm->ViewWebServerButton->Down=false;
-}
-//---------------------------------------------------------------------------
