@@ -2135,7 +2135,7 @@ static void smtp_thread(void* arg)
 					}
 					lprintf("%04d SMTP Created message #%ld from %s to %s <%s>"
 						,socket, newmsg.hdr.number, sender, rcpt_name, rcpt_addr);
-					if(usernum) {
+					if(!(startup->options&MAIL_OPT_NO_NOTIFY) && usernum) {
 						sprintf(str,"\7\1n\1hOn %.24s\r\n\1m%s \1n\1msent you e-mail from: "
 							"\1h%s\1n\r\n"
 							,timestr(&scfg,(time_t*)&newmsg.hdr.when_imported.time,tmp)
