@@ -168,8 +168,6 @@ else {
 			template.gender_list='<select name="gender">\n<option value="M">Male</option>\n<option value="F">Female</option>\n</select>';
 			err=1;
 			template.errs[fields[field]]="MISSING";
-write(fields[field]);
-write("Fields: "+fields);
 			template.err_message+="Some fields missing from POST data... possible browser issue.\r\n";
 		}
 		if(err)
