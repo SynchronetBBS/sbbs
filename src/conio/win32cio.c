@@ -124,75 +124,31 @@ unsigned char WintoDOSAttr(WORD newattr)
 	return(ret);
 }
 
-int win32_kbhit(void)
-{
-	INPUT_RECORD input;
-	DWORD num=0;
-
-	if(lastch)
-		return(1);
-	while(1) {
-		if(mouse_pending())
-			return(1);
-		if(!GetNumberOfConsoleInputEvents(GetStdHandle(STD_INPUT_HANDLE), &num)
-			|| !num)
-			return(0);
-		if(input.EventType==KEY_EVENT && input.Event.KeyEvent.bKeyDown)
-			return(1);
-		if(domouse) {
-			if(input.EventType==MOUSE_EVENT) {
-				if(input.Event.MouseEvent.dwMousePosition.X+1 != LastX || input.Event.MouseEvent.dwMousePosition.Y+1 != LastY) {
-					LastX=input.Event.MouseEvent.dwMousePosition.X+1;
-					LastY=input.Event.MouseEvent.dwMousePosition.Y+1;
-					ciomouse_gotevent(CIOLIB_MOUSE_MOVE,LastX,LastY);
-				}
-				if(last_state != input.Event.MouseEvent.dwButtonState) {
-					switch(input.Event.MouseEvent.dwButtonState ^ last_state) {
-						case FROM_LEFT_1ST_BUTTON_PRESSED:
-							if(input.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
-								ciomouse_gotevent(CIOLIB_BUTTON_1_PRESS,input.Event.MouseEvent.dwMousePosition.X+1,input.Event.MouseEvent.dwMousePosition.Y+1);
-							else
-								ciomouse_gotevent(CIOLIB_BUTTON_1_RELEASE,input.Event.MouseEvent.dwMousePosition.X+1,input.Event.MouseEvent.dwMousePosition.Y+1);
-							break;
-						case FROM_LEFT_2ND_BUTTON_PRESSED:
-							if(input.Event.MouseEvent.dwButtonState & FROM_LEFT_2ND_BUTTON_PRESSED)
-								ciomouse_gotevent(CIOLIB_BUTTON_2_PRESS,input.Event.MouseEvent.dwMousePosition.X+1,input.Event.MouseEvent.dwMousePosition.Y+1);
-							else
-								ciomouse_gotevent(CIOLIB_BUTTON_2_RELEASE,input.Event.MouseEvent.dwMousePosition.X+1,input.Event.MouseEvent.dwMousePosition.Y+1);
-							break;
-						case RIGHTMOST_BUTTON_PRESSED:
-							if(input.Event.MouseEvent.dwButtonState & RIGHTMOST_BUTTON_PRESSED)
-								ciomouse_gotevent(CIOLIB_BUTTON_3_PRESS,input.Event.MouseEvent.dwMousePosition.X+1,input.Event.MouseEvent.dwMousePosition.Y+1);
-							else
-								ciomouse_gotevent(CIOLIB_BUTTON_3_RELEASE,input.Event.MouseEvent.dwMousePosition.X+1,input.Event.MouseEvent.dwMousePosition.Y+1);
-							break;
-					}
-					last_state=input.Event.MouseEvent.dwButtonState;
-				}
-			}
-		}
-		ReadConsoleInput(GetStdHandle(STD_INPUT_HANDLE), &input, 1, &num);
-	}
-}
-
-int win32_getch(void)
+int win32_keyboardio(int isgetch)
 {
 	INPUT_RECORD input;
 	DWORD num=0;
 
 	while(1) {
 		if(lastch) {
-			int ch;
-			ch=lastch&0xff;
-			lastch>>=8;
-			return(ch);
+			if(isgetch) {
+				int ch;
+				ch=lastch&0xff;
+				lastch>>=8;
+				return(ch);
+			}
+			else
+				return(TRUE);
 		}
 
 		while(1) {
 			GetNumberOfConsoleInputEvents(GetStdHandle(STD_INPUT_HANDLE), &num);
 			if(num || mouse_pending())
 				break;
-			SLEEP(1);
+			if(isgetch)
+				SLEEP(1);
+			else
+				return(FALSE);
 		}
 
 		if(mouse_pending()) {
@@ -267,6 +223,16 @@ int win32_getch(void)
 				}
 		}
 	}
+}
+
+int win32_kbhit(void)
+{
+	return(win32_keyboardio(FALSE));
+}
+
+int win32_getch(void)
+{
+	return(win32_keyboardio(TRUE));
 }
 
 int win32_getche(void)
