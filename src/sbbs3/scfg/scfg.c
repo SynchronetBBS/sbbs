@@ -167,7 +167,8 @@ int main(int argc, char **argv)
 backslashcolon(cfg.ctrl_dir);
 
 if(chdir(cfg.ctrl_dir)!=0) {
-	printf("!ERROR %d changing current directory to: %s\n",cfg.ctrl_dir);
+	printf("!ERROR %d changing current directory to: %s\n"
+		,errno,cfg.ctrl_dir);
 	exit(-1);
 }
 
