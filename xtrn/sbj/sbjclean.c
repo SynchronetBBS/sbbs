@@ -29,8 +29,9 @@ if(!node_dir[0]) {	  /* node directory not specified */
 	getch();
 	return(1); }
 
-if(node_dir[strlen(node_dir)-1]!='\\')  /* make sure node_dir ends in '\' */
-    strcat(node_dir,"\\");
+if(node_dir[strlen(node_dir)-1]!='\\'
+	&& node_dir[strlen(node_dir)-1]!='/')  /* make sure node_dir ends in '/' */
+	strcat(node_dir,"/");
 
 initdata();                                 /* read XTRN.DAT and more */
 
