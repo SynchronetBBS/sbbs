@@ -272,7 +272,7 @@ void sbbs_t::upload(uint dirnum)
 	space=getfreediskspace(path);
 	if(space<(ulong)cfg.min_dspace*1024L) {
 		bputs(text[LowDiskSpace]);
-		sprintf(str,"Diskspace is low: %s",path);
+		sprintf(str,"Diskspace is low: %s (%lu bytes)",path,space);
 		errorlog(str);
 		if(!dir_op(dirnum))
 			return; }

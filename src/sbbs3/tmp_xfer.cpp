@@ -107,7 +107,8 @@ void sbbs_t::temp_xfer()
 				space=getfreediskspace(cfg.temp_dir);
 				if(space<(ulong)cfg.min_dspace*1024L) {
 					bputs(text[LowDiskSpace]);
-					sprintf(str,"Diskspace is low: %s",cfg.temp_dir);
+					sprintf(str,"Diskspace is low: %s (%lu bytes)"
+						,cfg.temp_dir,space);
 					errorlog(str);
 					if(!dir_op(dirnum))
 						break; }
@@ -290,7 +291,7 @@ void sbbs_t::extract(uint dirnum)
 	space=getfreediskspace(cfg.temp_dir);
 	if(space<(ulong)cfg.min_dspace*1024L) {
 		bputs(text[LowDiskSpace]);
-		sprintf(str,"Diskspace is low: %s",cfg.temp_dir);
+		sprintf(str,"Diskspace is low: %s (%lu bytes)",cfg.temp_dir,space);
 		errorlog(str);
 		if(!dir_op(dirnum))
 			return; }
