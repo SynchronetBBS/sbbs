@@ -381,29 +381,38 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 
 	JS_DefineProperty(cx, hdrobj, "number", INT_TO_JSVAL(msg.hdr.number)
 		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
-	JS_DefineProperty(cx, hdrobj, "to",STRING_TO_JSVAL(JS_NewStringCopyZ(cx,msg.to))
+	JS_DefineProperty(cx, hdrobj, "to"
+		,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,truncsp(msg.to)))
 		,NULL,NULL,JSPROP_ENUMERATE);
-	JS_DefineProperty(cx, hdrobj, "from",STRING_TO_JSVAL(JS_NewStringCopyZ(cx,msg.from))
+	JS_DefineProperty(cx, hdrobj, "from"
+		,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,truncsp(msg.from)))
 		,NULL,NULL,JSPROP_ENUMERATE);
-	JS_DefineProperty(cx, hdrobj, "subject",STRING_TO_JSVAL(JS_NewStringCopyZ(cx,msg.subj))
+	JS_DefineProperty(cx, hdrobj, "subject"
+		,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,truncsp(msg.subj)))
 		,NULL,NULL,JSPROP_ENUMERATE);
 	if(msg.summary!=NULL)
-		JS_DefineProperty(cx, hdrobj, "summary",STRING_TO_JSVAL(JS_NewStringCopyZ(cx,msg.summary))
+		JS_DefineProperty(cx, hdrobj, "summary"
+			,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,truncsp(msg.summary)))
 			,NULL,NULL,JSPROP_ENUMERATE);
 	if(msg.to_ext!=NULL)
-		JS_DefineProperty(cx, hdrobj, "to_ext",STRING_TO_JSVAL(JS_NewStringCopyZ(cx,msg.to_ext))
+		JS_DefineProperty(cx, hdrobj, "to_ext"
+			,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,truncsp(msg.to_ext)))
 			,NULL,NULL,JSPROP_ENUMERATE);
 	if(msg.from_ext!=NULL)
-		JS_DefineProperty(cx, hdrobj, "from_ext",STRING_TO_JSVAL(JS_NewStringCopyZ(cx,msg.from_ext))
+		JS_DefineProperty(cx, hdrobj, "from_ext"
+			,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,truncsp(msg.from_ext)))
 			,NULL,NULL,JSPROP_ENUMERATE);
 	if(msg.from_org!=NULL)
-		JS_DefineProperty(cx, hdrobj, "from_org",STRING_TO_JSVAL(JS_NewStringCopyZ(cx,msg.from_org))
+		JS_DefineProperty(cx, hdrobj, "from_org"
+			,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,truncsp(msg.from_org)))
 			,NULL,NULL,JSPROP_ENUMERATE);
 	if(msg.replyto!=NULL)
-		JS_DefineProperty(cx, hdrobj, "replyto",STRING_TO_JSVAL(JS_NewStringCopyZ(cx,msg.replyto))
+		JS_DefineProperty(cx, hdrobj, "replyto"
+			,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,truncsp(msg.replyto)))
 			,NULL,NULL,JSPROP_ENUMERATE);
 	if(msg.replyto_ext!=NULL)
-		JS_DefineProperty(cx, hdrobj, "replyto_ext",STRING_TO_JSVAL(JS_NewStringCopyZ(cx,msg.replyto_ext))
+		JS_DefineProperty(cx, hdrobj, "replyto_ext"
+			,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,truncsp(msg.replyto_ext)))
 			,NULL,NULL,JSPROP_ENUMERATE);
 
 	JS_DefineProperty(cx, hdrobj, "to_agent",INT_TO_JSVAL(msg.to_agent)
@@ -502,48 +511,51 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 		val=reply_id;
 	}
 	if(val[0])
-		JS_DefineProperty(cx, hdrobj, "reply_id", STRING_TO_JSVAL(JS_NewStringCopyZ(cx,val))
+		JS_DefineProperty(cx, hdrobj, "reply_id"
+			, STRING_TO_JSVAL(JS_NewStringCopyZ(cx,truncsp(val)))
 			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
 	/* Message-ID */
 	SAFECOPY(msg_id,get_msgid(scfg,p->smb.subnum,&msg));
 	val=msg_id;
-	JS_DefineProperty(cx, hdrobj, "id", STRING_TO_JSVAL(JS_NewStringCopyZ(cx,val))
+	JS_DefineProperty(cx, hdrobj, "id"
+		,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,truncsp(val)))
 		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
 	/* USENET Fields */
 	if(msg.path!=NULL)
-		JS_DefineProperty(cx, hdrobj, "path", STRING_TO_JSVAL(JS_NewStringCopyZ(cx,msg.path))
+		JS_DefineProperty(cx, hdrobj, "path"
+			,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,truncsp(msg.path)))
 			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 	if(msg.newsgroups!=NULL)
 		JS_DefineProperty(cx, hdrobj, "newsgroups"
-			,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,msg.newsgroups))
+			,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,truncsp(msg.newsgroups)))
 			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
 	/* FidoNet Header Fields */
 	if(msg.ftn_msgid!=NULL)
 		JS_DefineProperty(cx, hdrobj, "ftn_msgid"
-			,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,msg.ftn_msgid))
+			,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,truncsp(msg.ftn_msgid)))
 			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 	if(msg.ftn_reply!=NULL)
 		JS_DefineProperty(cx, hdrobj, "ftn_reply"
-			,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,msg.ftn_reply))
+			,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,truncsp(msg.ftn_reply)))
 			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 	if(msg.ftn_pid!=NULL)
 		JS_DefineProperty(cx, hdrobj, "ftn_pid"
-			,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,msg.ftn_pid))
+			,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,truncsp(msg.ftn_pid)))
 			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 	if(msg.ftn_tid!=NULL)
 		JS_DefineProperty(cx, hdrobj, "ftn_tid"
-			,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,msg.ftn_tid))
+			,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,truncsp(msg.ftn_tid)))
 			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 	if(msg.ftn_area!=NULL)
 		JS_DefineProperty(cx, hdrobj, "ftn_area"
-			,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,msg.ftn_area))
+			,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,truncsp(msg.ftn_area)))
 			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 	if(msg.ftn_flags!=NULL)
 		JS_DefineProperty(cx, hdrobj, "ftn_flags"
-			,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,msg.ftn_flags))
+			,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,truncsp(msg.ftn_flags)))
 			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
 	smb_freemsgmem(&msg);
