@@ -715,44 +715,51 @@ extern "C" {
 #endif
 
 	/* main.cpp */
-	DLLEXPORT 	BOOL	DLLCALL getstats(scfg_t* cfg, char node, stats_t* stats);
+	DLLEXPORT BOOL		DLLCALL getstats(scfg_t* cfg, char node, stats_t* stats);
 
 	/* mail.cpp */
-	DLLEXPORT	int		DLLCALL getmail(scfg_t* cfg, int usernumber, BOOL sent);
-	DLLEXPORT	mail_t*	DLLCALL loadmail(smb_t* smb, ulong* msgs, uint usernumber
+	DLLEXPORT int		DLLCALL getmail(scfg_t* cfg, int usernumber, BOOL sent);
+	DLLEXPORT mail_t *	DLLCALL loadmail(smb_t* smb, ulong* msgs, uint usernumber
 										,int which, long mode);
-	DLLEXPORT	void	DLLCALL freemail(mail_t* mail);
+	DLLEXPORT void		DLLCALL freemail(mail_t* mail);
 
 	/* filedat.c */
-	DLLEXPORT 	BOOL	DLLCALL getfileixb(scfg_t* cfg, file_t* f);
-	DLLEXPORT 	BOOL	DLLCALL getfiledat(scfg_t* cfg, file_t* f);
-	DLLEXPORT 	BOOL	DLLCALL putfiledat(scfg_t* cfg, file_t* f);
-	DLLEXPORT	void	DLLCALL putextdesc(scfg_t* cfg, uint dirnum, ulong datoffset, char *ext);
-	DLLEXPORT	void	DLLCALL getextdesc(scfg_t* cfg, uint dirnum, ulong datoffset, char *ext);
+	DLLEXPORT BOOL		DLLCALL getfileixb(scfg_t* cfg, file_t* f);
+	DLLEXPORT BOOL		DLLCALL getfiledat(scfg_t* cfg, file_t* f);
+	DLLEXPORT BOOL		DLLCALL putfiledat(scfg_t* cfg, file_t* f);
+	DLLEXPORT void		DLLCALL putextdesc(scfg_t* cfg, uint dirnum, ulong datoffset, char *ext);
+	DLLEXPORT void		DLLCALL getextdesc(scfg_t* cfg, uint dirnum, ulong datoffset, char *ext);
 
-	DLLEXPORT 	BOOL	DLLCALL removefiledat(scfg_t* cfg, file_t* f);
-	DLLEXPORT 	BOOL	DLLCALL addfiledat(scfg_t* cfg, file_t* f);
-	DLLEXPORT 	BOOL	DLLCALL findfile(scfg_t* cfg, uint dirnum, char *filename);
-	DLLEXPORT	char *	DLLCALL getfname(char *path);
-	DLLEXPORT	char *	DLLCALL padfname(char *filename, char *str);
-	DLLEXPORT	char *	DLLCALL unpadfname(char *filename, char *str);
-	DLLEXPORT	BOOL	DLLCALL rmuserxfers(scfg_t* cfg, int fromuser, int destuser, char *fname);
+	DLLEXPORT BOOL		DLLCALL removefiledat(scfg_t* cfg, file_t* f);
+	DLLEXPORT BOOL		DLLCALL addfiledat(scfg_t* cfg, file_t* f);
+	DLLEXPORT BOOL		DLLCALL findfile(scfg_t* cfg, uint dirnum, char *filename);
+	DLLEXPORT char *	DLLCALL getfname(char *path);
+	DLLEXPORT char *	DLLCALL padfname(char *filename, char *str);
+	DLLEXPORT char *	DLLCALL unpadfname(char *filename, char *str);
+	DLLEXPORT BOOL		DLLCALL rmuserxfers(scfg_t* cfg, int fromuser, int destuser, char *fname);
 
-	DLLEXPORT	ulong	DLLCALL	getposts(scfg_t* cfg, uint subnum);
-	DLLEXPORT	long	DLLCALL getfiles(scfg_t* cfg, uint dirnum);
+	DLLEXPORT ulong		DLLCALL	getposts(scfg_t* cfg, uint subnum);
+	DLLEXPORT long		DLLCALL getfiles(scfg_t* cfg, uint dirnum);
 
 	/* str.cpp */
-	DLLEXPORT	char*	DLLCALL ascii_str(uchar* str);
+	DLLEXPORT char *	DLLCALL ascii_str(uchar* str);
 	DLLEXPORT ushort	DLLCALL crc16(char *str);
-	DLLEXPORT char *	DLLCALL zonestr(short zone);
-	DLLEXPORT	BOOL	DLLCALL trashcan(scfg_t* cfg, char *insearch, char *name);
+	DLLEXPORT BOOL		DLLCALL trashcan(scfg_t* cfg, char *insearch, char *name);
 	DLLEXPORT int		DLLCALL putsmsg(scfg_t* cfg, int usernumber, char *strin);
 
-	/* load_cfg.C */
+	/* misc.c */
+	DLLEXPORT char *	DLLCALL zonestr(short zone);
+	DLLEXPORT void		DLLCALL strip_ctrl(char *str);
+	DLLEXPORT void		DLLCALL strip_exascii(char *str);
 
+
+	/* load_cfg.c */
 	DLLEXPORT BOOL		DLLCALL load_cfg(scfg_t* cfg, char* text[]);
 	DLLEXPORT void		DLLCALL free_cfg(scfg_t* cfg);
 	DLLEXPORT void		DLLCALL free_text(char* text[]);
+
+	/* scfglib1.c */
+	DLLEXPORT void		prep_dir(char* base, char* dir);
 
 	/* date_str.c */
 
@@ -767,7 +774,7 @@ extern "C" {
 	DLLEXPORT BOOL		DLLCALL hacklog(scfg_t* cfg, char* prot, char* user, char* text, 
 										char* host, SOCKADDR_IN* addr);
 
-	DLLEXPORT char*		DLLCALL remove_ctrl_a(char* instr, char* outstr);
+	DLLEXPORT char *	DLLCALL remove_ctrl_a(char* instr, char* outstr);
 
 #ifdef JAVASCRIPT
 
@@ -812,8 +819,6 @@ extern "C" {
 	int		nopen(char *str, int access);
 	FILE *	fnopen(int *file, char *str, int access);
 	int		bstrlen(char *str);
-	void	strip_ctrl(char *str);
-	void	strip_exascii(char *str);
 	char *	ultoac(ulong l,char *str);
 	void	truncsp(char *str);		/* Truncates white spaces off end of str */
 	void	backslash(char *str);

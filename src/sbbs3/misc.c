@@ -117,7 +117,7 @@ int bstrlen(char *str)
 	return(i);
 }
 
-void strip_ctrl(char *str)
+void DLLCALL strip_ctrl(char *str)
 {
 	char tmp[1024];
 	int i,j,k;
@@ -138,7 +138,7 @@ void strip_ctrl(char *str)
 	strcpy(str,tmp);
 }
 
-void strip_exascii(char *str)
+void DLLCALL strip_exascii(char *str)
 {
 	char tmp[1024];
 	int i,j,k;

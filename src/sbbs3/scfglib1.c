@@ -40,7 +40,7 @@
 
 const char *scfgnulstr="";
 
-void prep_dir(char* base, char* path)
+void DLLEXPORT prep_dir(char* base, char* path)
 {
 #ifdef __unix__
 	char	*p;
