@@ -313,8 +313,15 @@ BOOL read_main_cfg(scfg_t* cfg, char* error)
 
 	for(i=0;i<224;i++)					/* unused - initialized to NULL */
 		get_int(n,instream);
-	for(i=0;i<256;i++)					/* unused - initialized to 0xff */
+	for(i=0;i<254;i++)					/* unused - initialized to 0xff */
 		get_int(n,instream);
+
+	get_int(cfg->user_backup_level,instream);
+	if(cfg->user_backup_level==0xffff)
+		cfg->user_backup_level=5;
+	get_int(cfg->mail_backup_level,instream);
+	if(cfg->mail_backup_level==0xffff)
+		cfg->mail_backup_level=5;
 
 	/*******************/
 	/* Validation Sets */
