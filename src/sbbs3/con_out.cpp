@@ -84,7 +84,8 @@ int sbbs_t::bputs(char *str)
 			&& str[l+1]!=0) {		/* valid */
 			ctrl_a(str[++l]);       /* skip the ctrl-a */
 			l++;					/* skip the attribute code */
-			continue; }
+			continue; 
+		}
 		if(str[l]=='@') {           /* '@' */
 			if(str==mnestr			/* Mnemonic string or */
 				|| (str>=text[0]	/* Straight out of TEXT.DAT */
@@ -92,7 +93,8 @@ int sbbs_t::bputs(char *str)
 				i=show_atcode(str+l);	/* return 0 if not valid @ code */
 				l+=i;					/* i is length of code string */
 				if(i)					/* if valid string, go to top */
-					continue; }
+					continue; 
+			}
 			for(i=0;i<TOTAL_TEXT;i++)
 				if(str==text[i])
 					break;
@@ -100,8 +102,11 @@ int sbbs_t::bputs(char *str)
 				i=show_atcode(str+l);
 				l+=i;
 				if(i)
-					continue; } }
-		outchar(str[l++]); }
+					continue; 
+			} 
+		}
+		outchar(str[l++]); 
+	}
 	return(l);
 }
 
@@ -170,7 +175,8 @@ void sbbs_t::outchar(char ch)
 		if(ch=='[')
 			outchar_esc++;
 		else
-			outchar_esc=0; }
+			outchar_esc=0; 
+	}
 	else
 		outchar_esc=0;
 	if(useron.misc&NO_EXASCII && ch&0x80)
@@ -196,8 +202,10 @@ void sbbs_t::outchar(char ch)
 		else if(cfg.node_misc&NM_NOBEEP && ch==BEL);	 /* Do nothing if beep */
 		else if(ch==BEL) {
 				sbbs_beep(2000,110);
-				nosound(); }
-		else putch(ch); }
+				nosound(); 
+		}
+		else putch(ch); 
+	}
 #endif
 
 	if(online==ON_REMOTE && console&CON_R_ECHO) {
@@ -217,12 +225,16 @@ void sbbs_t::outchar(char ch)
 				if(sys_status&SS_SYSPAGE)
 					sbbs_beep(i,80);
 				else
-					mswait(80); }
+					mswait(80); 
+			}
 			if(i==1440) {							/* timeout - beep flush outbuf */
 				i=rioctl(TXBC);
 				lprintf("timeout(outchar) %04X %04X\r\n",i,rioctl(IOFO));
 				outcom(BEL);
-				rioctl(IOCS|PAUSE); } } }
+				rioctl(IOCS|PAUSE); 
+			} 
+		} 
+	}
 	if(ch==LF) {
 		lncntr++;
 		lbuflen=0;
@@ -259,27 +271,107 @@ void sbbs_t::center(char *instr)
 	CRLF;
 }
 
+void sbbs_t::clearline(void)
+{
+	int i;
+
+	outchar(CR);
+	if(useron.misc&ANSI)
+		rputs("\x1b[K");
+	else {
+		for(i=0;i<cols-1;i++)
+			outchar(SP);
+		outchar(CR); 
+	}
+}
+
+void sbbs_t::cursor_home(void)
+{
+	if(useron.misc&ANSI)
+		rputs("\x1b[H");
+	else
+		outchar(FF);
+}
+
+void sbbs_t::cursor_up(int count)
+{
+	if(!(useron.misc&ANSI))
+		return;
+	if(count>1)
+		rprintf("\x1b[%dA",count);
+	else
+		rputs("\x1b[A");
+}
+
+void sbbs_t::cursor_down(int count)
+{
+	if(!(useron.misc&ANSI))
+		return;
+	if(count>1)
+		rprintf("\x1b[%dB",count);
+	else
+		rputs("\x1b[B");
+}
+
+void sbbs_t::cursor_right(int count)
+{
+	if(useron.misc&ANSI) {
+		if(count>1)
+			rprintf("\x1b[%dC",count);
+		else
+			rputs("\x1b[C");
+	} else {
+		for(int i=0;i<count;i++)
+			outchar(SP);
+	}
+}
+
+void sbbs_t::cursor_left(int count)
+{
+	if(useron.misc&ANSI) {
+		if(count>1)
+			rprintf("\x1b[%dD",count);
+		else
+			rputs("\x1b[D");
+	} else {
+		for(int i=0;i<count;i++)
+			outchar('\b');
+	}
+}
+
+void sbbs_t::cleartoeol(void)
+{
+	if(useron.misc&ANSI)
+		rputs("\x1b[K");
+#if 0
+	else {
+		i=j=lclwx();	/* commented out */
+		while(i++<79)
+			outchar(SP);
+		while(j++<79)
+			outchar(BS); 
+	}
+#endif                
+}
 
 /****************************************************************************/
 /* performs the correct attribute modifications for the Ctrl-A code			*/
 /****************************************************************************/
 void sbbs_t::ctrl_a(char x)
 {
-	int		i;
 	char	tmp1[128],atr=curatr;
 	struct	tm tm;
 
 	if(x && (uchar)x<=CTRL_Z) {    /* Ctrl-A through Ctrl-Z for users with MF only */
 		if(!(useron.flags1&FLAG(x+64)))
 			console^=(CON_ECHO_OFF);
-		return; }
-	if((uchar)x>=0x7f) {
+		return; 
+	}
+	if((uchar)x>0x7f) {
 		if(useron.misc&ANSI)
-			bprintf("\x1b[%uC",(uchar)x-0x7f);
-		else
-			for(i=0;i<(uchar)x-0x7f;i++)
-				outchar(SP);
-		return; }
+			cursor_right((uchar)x-0x7f);
+		return; 
+	}
 	switch(toupper(x)) {
 		case '!':   /* level 10 or higher */
 			if(useron.level<10)
@@ -362,16 +454,7 @@ void sbbs_t::ctrl_a(char x)
 			CLS;
 			break;
 		case '>':   /* CLREOL */
-			if(useron.misc&ANSI)
-				bputs("\x1b[K");
-	#if 0
-			else {
-				i=j=lclwx();	/* commented out */
-				while(i++<79)
-					outchar(SP);
-				while(j++<79)
-					outchar(BS); }
-	#endif                
+			cleartoeol();
 			break;
 		case '<':   /* Non-destructive backspace */
 			outchar(BS);
@@ -459,7 +542,8 @@ void sbbs_t::ctrl_a(char x)
 		case '7':	/* White Background */
 			atr=(atr&0x8f)|(uchar)BG_LIGHTGRAY;
 			attr(atr);
-			break; }
+			break; 
+	}
 }
 
 /***************************************************************************/
@@ -483,74 +567,94 @@ void sbbs_t::attr(int atr)
 		if(atr&LIGHTGRAY && atr&BG_LIGHTGRAY)
 			atr&=~LIGHTGRAY;    /* if background is solid, foreground is black */
 		if(!atr)
-			atr|=LIGHTGRAY; }   /* don't allow black on black */
+			atr|=LIGHTGRAY;		/* don't allow black on black */
+	}
 	if(curatr==atr) /* text hasn't changed. don't send codes */
 		return;
 
 	if((!(atr&HIGH) && curatr&HIGH) || (!(atr&BLINK) && curatr&BLINK)
 		|| atr==LIGHTGRAY) {
-		bputs(ansi(ANSI_NORMAL));
-		curatr=LIGHTGRAY; }
+		rputs(ansi(ANSI_NORMAL));
+		curatr=LIGHTGRAY; 
+	}
 
 	if(atr==LIGHTGRAY)                  /* no attributes */
 		return;
 
 	if(atr&BLINK) {                     /* special attributes */
 		if(!(curatr&BLINK))
-			bputs(ansi(BLINK)); }
+			rputs(ansi(BLINK)); 
+	}
 	if(atr&HIGH) {
 		if(!(curatr&HIGH))
-			bputs(ansi(HIGH)); }
+			rputs(ansi(HIGH)); 
+	}
 
 	if((atr&0x7)==BLACK) {              /* foreground colors */
 		if((curatr&0x7)!=BLACK)
-			bputs(ansi(BLACK)); }
+			rputs(ansi(BLACK)); 
+	}
 	else if((atr&0x7)==RED) {
 		if((curatr&0x7)!=RED)
-			bputs(ansi(RED)); }
+			rputs(ansi(RED)); 
+	}
 	else if((atr&0x7)==GREEN) {
 		if((curatr&0x7)!=GREEN)
-			bputs(ansi(GREEN)); }
+			rputs(ansi(GREEN)); 
+	}
 	else if((atr&0x7)==BROWN) {
 		if((curatr&0x7)!=BROWN)
-			bputs(ansi(BROWN)); }
+			rputs(ansi(BROWN)); 
+	}
 	else if((atr&0x7)==BLUE) {
 		if((curatr&0x7)!=BLUE)
-			bputs(ansi(BLUE)); }
+			rputs(ansi(BLUE)); 
+	}
 	else if((atr&0x7)==MAGENTA) {
 		if((curatr&0x7)!=MAGENTA)
-			bputs(ansi(MAGENTA)); }
+			rputs(ansi(MAGENTA)); 
+	}
 	else if((atr&0x7)==CYAN) {
 		if((curatr&0x7)!=CYAN)
-			bputs(ansi(CYAN)); }
+			rputs(ansi(CYAN)); 
+	}
 	else if((atr&0x7)==LIGHTGRAY) {
 		if((curatr&0x7)!=LIGHTGRAY)
-			bputs(ansi(LIGHTGRAY)); }
+			rputs(ansi(LIGHTGRAY)); 
+	}
 
 	if((atr&0x70)==0) {        /* background colors */
 		if((curatr&0x70)!=0)
-			bputs(ansi(BG_BLACK)); }
+			rputs(ansi(BG_BLACK)); 
+	}
 	else if((atr&0x70)==BG_RED) {
 		if((curatr&0x70)!=BG_RED)
-			bputs(ansi(BG_RED)); }
+			rputs(ansi(BG_RED)); 
+	}
 	else if((atr&0x70)==BG_GREEN) {
 		if((curatr&0x70)!=BG_GREEN)
-			bputs(ansi(BG_GREEN)); }
+			rputs(ansi(BG_GREEN)); 
+	}
 	else if((atr&0x70)==BG_BROWN) {
 		if((curatr&0x70)!=BG_BROWN)
-			bputs(ansi(BG_BROWN)); }
+			rputs(ansi(BG_BROWN)); 
+	}
 	else if((atr&0x70)==BG_BLUE) {
 		if((curatr&0x70)!=BG_BLUE)
-			bputs(ansi(BG_BLUE)); }
+			rputs(ansi(BG_BLUE)); 
+	}
 	else if((atr&0x70)==BG_MAGENTA) {
 		if((curatr&0x70)!=BG_MAGENTA)
-			bputs(ansi(BG_MAGENTA)); }
+			rputs(ansi(BG_MAGENTA)); 
+	}
 	else if((atr&0x70)==BG_CYAN) {
 		if((curatr&0x70)!=BG_CYAN)
-			bputs(ansi(BG_CYAN)); }
+			rputs(ansi(BG_CYAN)); 
+	}
 	else if((atr&0x70)==BG_LIGHTGRAY) {
 		if((curatr&0x70)!=BG_LIGHTGRAY)
-			bputs(ansi(BG_LIGHTGRAY)); }
+			rputs(ansi(BG_LIGHTGRAY)); 
+	}
 
 	curatr=atr;
 }
