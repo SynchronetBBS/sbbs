@@ -69,21 +69,24 @@
 #ifdef _WINSOCKAPI_
 
 #undef  EINTR
-#define EINTR			WSAEINTR
+#define EINTR			(WSAEINTR-WSABASEERR)
 #undef  ENOTSOCK
-#define ENOTSOCK		WSAENOTSOCK
+#define ENOTSOCK		(WSAENOTSOCK-WSABASEERR)
 #undef  EWOULDBLOCK
-#define EWOULDBLOCK		WSAEWOULDBLOCK
+#define EWOULDBLOCK		(WSAEWOULDBLOCK-WSABASEERR)
 #undef  ECONNRESET
-#define ECONNRESET		WSAECONNRESET
+#define ECONNRESET		(WSAECONNRESET-WSABASEERR)
+#undef  ESHUTDOWN
+#define ESHUTDOWN		(WSAESHUTDOWN-WSABASEERR)
 #undef  ECONNABORTED
-#define ECONNABORTED	WSAECONNABORTED
+#define ECONNABORTED	(WSAECONNABORTED-WSABASEERR)
 
 #define s_addr			S_un.S_addr
 
 #define socklen_t		int
 
-#define ERROR_VALUE		WSAGetLastError()
+static  wsa_error;
+#define ERROR_VALUE		((wsa_error=WSAGetLastError())>0 ? wsa_error-WSABASEERR : wsa_error)
 
 #else	/* BSD sockets */
 
