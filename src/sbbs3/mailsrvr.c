@@ -76,6 +76,8 @@ int dns_getmx(char* name, char* mx, char* mx2
 
 #define TIMEOUT_THREAD_WAIT		30		/* Seconds */
 
+#define MAX_RECIPIENTS			1000	/* 0xffff = abs max */
+
 #define STATUS_WFC	"Listening"
 
 static const char *wday[]={"Sun","Mon","Tue","Wed","Thu","Fri","Sat"};
@@ -1100,6 +1102,7 @@ static void smtp_thread(void* arg)
 	char		host_name[128];
 	char		host_ip[64];
 	char*		telegram_buf;
+	char*		msgbuf;
 	int			addr_len;
 	ushort		xlat;
 	ushort		nettype=NET_NONE;
@@ -1109,10 +1112,12 @@ static void smtp_thread(void* arg)
 	ulong		offset;
 	BOOL		esmtp=FALSE;
 	BOOL		telegram=FALSE;
+	uint		subnum=INVALID_SUB;
 	FILE*		msgtxt=NULL;
 	char		msgtxt_fname[MAX_PATH+1];
 	FILE*		rcptlst;
 	char		rcptlst_fname[MAX_PATH+1];
+	ushort		rcpt_count;
 	FILE*		spy=NULL;
 	SOCKET		socket;
 	HOSTENT*	host;
@@ -1167,6 +1172,7 @@ static void smtp_thread(void* arg)
 		return;
 	} 
 
+	memset(&smb,0,sizeof(smb));
 	memset(&msg,0,sizeof(msg));
 	memset(&user,0,sizeof(user));
 
@@ -1311,7 +1317,7 @@ static void smtp_thread(void* arg)
 
 				lprintf("%04d SMTP End of message (%lu bytes)", socket, ftell(msgtxt));
 
-				if(telegram==TRUE) {
+				if(telegram==TRUE) {		/* Telegram */
 					rewind(msgtxt);
 					length=filelength(fileno(msgtxt));
 					
@@ -1360,19 +1366,57 @@ static void smtp_thread(void* arg)
 					telegram=FALSE;
 					continue;
 				}
-				telegram=FALSE;
 
 				if(sender[0]==0) {
 					lprintf("%04d !SMTP MISSING mail header 'FROM' field", socket);
 					sockprintf(socket, "554 Mail header missing 'FROM' field");
+					subnum=INVALID_SUB;
 					continue;
 				}
 				nettype=NET_INTERNET;
 				smb_hfield(&msg, SENDER, (ushort)strlen(sender), sender);
 				smb_hfield(&msg, SENDERNETTYPE, sizeof(nettype), &nettype);
 				smb_hfield(&msg, SENDERNETADDR, (ushort)strlen(sender_addr), sender_addr);
+				if(msg.idx.subj==0) {
+					p="";
+					smb_hfield(&msg, SUBJECT, 0, p);
+					msg.idx.subj=crc16(p);
+				}
 
 				rewind(msgtxt);
+				length=filelength(fileno(msgtxt));
+
+				if(subnum!=INVALID_SUB) {	/* Message Base */
+					if(rcpt_name[0]==0)
+						strcpy(rcpt_name,"All");
+					smb_hfield(&msg, RECIPIENT, (ushort)strlen(rcpt_name), rcpt_name);
+
+					if((msgbuf=(char*)malloc(length+1))==NULL) {
+						lprintf("%04d !SMTP ERROR allocating %d bytes of memory"
+							,socket,length+1);
+						sockprintf(socket, "452 Insufficient system storage");
+						subnum=INVALID_SUB;
+						continue;
+					}
+					fread(msgbuf,length,1,msgtxt);
+					msgbuf[length]=0;	/* ASCIIZ */
+					if((i=savemsg(&scfg, &smb, subnum, &msg, msgbuf))!=0) {
+						lprintf("%04d !SMTP ERROR %d (%s) saving message"
+							,socket,i,smb.last_error);
+						sockprintf(socket, "452 ERROR %d (%s) saving message"
+							,i,smb.last_error);
+					} else {
+						lprintf("%04d SMTP %s posted a message on sub-board: %s"
+							,socket, sender_addr, scfg.sub[subnum]->sname);
+						sockprintf(socket,SMTP_OK);
+					}
+					free(msgbuf);
+					smb_close(&smb);
+					subnum=INVALID_SUB;
+					continue;
+				}
+
+				/* E-mail */
 				sprintf(smb.file,"%smail", scfg.data_dir);
 				smb.retry_time=scfg.smb_retry_time;
 				if((i=smb_open(&smb))!=0) {
@@ -1404,7 +1448,7 @@ static void smtp_thread(void* arg)
 					continue; 
 				}
 
-				length=filelength(fileno(msgtxt))+2;	 /* +2 for translation string */
+				length+=sizeof(xlat);	 /* +2 for translation string */
 
 				if((i=smb_open_da(&smb))!=0) {
 					smb_unlocksmbhdr(&smb);
@@ -1419,7 +1463,6 @@ static void smtp_thread(void* arg)
 					offset=smb_fallocdat(&smb,length,1);
 				else
 					offset=smb_allocdat(&smb,length,1);
-				smb_close_da(&smb);
 
 				smb_fseek(smb.sdt_fp,offset,SEEK_SET);
 				xlat=XLAT_NONE;
@@ -1430,7 +1473,7 @@ static void smtp_thread(void* arg)
 					j=fread(buf,1,x,msgtxt);
 					if(j<1)
 						break;
-					if((j!=x || feof(msgtxt)) && buf[j-1]=='\n' && buf[j-2]=='\r')
+					if(j>1 && (j!=x || feof(msgtxt)) && buf[j-1]=='\n' && buf[j-2]=='\r')
 						buf[j-1]=buf[j-2]=0;
 					if(scfg.mail_maxcrcs) {
 						for(i=0;i<j;i++)
@@ -1447,6 +1490,7 @@ static void smtp_thread(void* arg)
 					if(i) {
 						smb_freemsgdat(&smb,offset,length,1);
 						smb_unlocksmbhdr(&smb);
+						smb_close_da(&smb);
 						smb_close(&smb);
 						lprintf("%04d !SMTP DUPLICATE MESSAGE", socket);
 						sockprintf(socket, "554 Duplicate Message");
@@ -1459,13 +1503,9 @@ static void smtp_thread(void* arg)
 				smb_dfield(&msg,TEXT_BODY,length);
 
 				smb_unlocksmbhdr(&smb);
-				if(msg.idx.subj==0) {
-					p="";
-					smb_hfield(&msg, SUBJECT, 0, p);
-					msg.idx.subj=crc16(p);
-				}
 				rewind(rcptlst);
-				while(!feof(rcptlst)) {
+				rcpt_count=0;
+				while(!feof(rcptlst) && rcpt_count<MAX_RECIPIENTS) {
 					if((i=smb_copymsgmem(&newmsg,&msg))!=0) {
 						lprintf("%04d !SMTP ERROR %d copying message"
 							,socket, i);
@@ -1526,14 +1566,19 @@ static void smtp_thread(void* arg)
 						}
 						putsmsg(&scfg, usernum, str);
 					}
+					rcpt_count++;
 				}
-				smb_close(&smb);
-				if(i) {
-					smb_freemsgdat(&smb,offset,length,1);
+				if(rcpt_count<1) {
+					smb_freemsgdat(&smb,offset,length,0);
 					sockprintf(socket, "452 Insufficient system storage");
-					continue;
 				}
-				sockprintf(socket,SMTP_OK);
+				else {
+					if(rcpt_count>1)
+						smb_incdat(&smb,offset,length,(ushort)(rcpt_count-1));
+					sockprintf(socket,SMTP_OK);
+				}
+				smb_close_da(&smb);
+				smb_close(&smb);
 				continue;
 			}
 			if(buf[0]==0 && state==SMTP_STATE_DATA_HEADER) {	
@@ -1575,6 +1620,7 @@ static void smtp_thread(void* arg)
 					p++;
 					tp=strrchr(p,'>');
 					if(tp) *tp=0;
+					sprintf(rcpt_name,"%.*s",sizeof(rcpt_name)-1,p);
 				}
 				continue;
 			}
@@ -1728,6 +1774,7 @@ static void smtp_thread(void* arg)
 			state=SMTP_STATE_HELO;
 			cmd=SMTP_CMD_NONE;
 			telegram=FALSE;
+			subnum=INVALID_SUB;
 			continue;
 		}
 		if(!strnicmp(buf,"EHLO",4)) {
@@ -1739,6 +1786,7 @@ static void smtp_thread(void* arg)
 			state=SMTP_STATE_HELO;
 			cmd=SMTP_CMD_NONE;
 			telegram=FALSE;
+			subnum=INVALID_SUB;
 			continue;
 		}
 		if(!stricmp(buf,"QUIT")) {
@@ -1769,6 +1817,7 @@ static void smtp_thread(void* arg)
 			state=SMTP_STATE_HELO;
 			cmd=SMTP_CMD_NONE;
 			telegram=FALSE;
+			subnum=INVALID_SUB;
 			continue;
 		}
 		if(!strnicmp(buf,"MAIL FROM:",10)) {
@@ -1861,6 +1910,7 @@ static void smtp_thread(void* arg)
 			tp=strchr(str,'>');				/* Truncate '>' */
 			if(tp!=NULL) *tp=0;
 
+			rcpt_name[0]=0;
 			sprintf(rcpt_addr,"%.*s",sizeof(rcpt_addr)-1,p);
 
 			p=alias(socket,p,alias_buf);
@@ -1906,11 +1956,27 @@ static void smtp_thread(void* arg)
 			if(tp!=NULL) *tp=0;	/* truncate at '"' */
 
 			p=alias(socket,p,name_alias_buf);
+		
+			if(!strnicmp(p,"sub:",4)) {		/* Post on a sub-board */
+				p+=4;
+				for(i=0;i<scfg.total_subs;i++)
+					if(!stricmp(p,scfg.sub[i]->code))
+						break;
+				if(i>=scfg.total_subs) {
+					lprintf("%04d !SMTP UNKNOWN SUB-BOARD: %s", socket, p);
+					sockprintf(socket, "550 Unknown sub-board: %s", p);
+					continue;
+				}
+				subnum=i;
+				sockprintf(socket,SMTP_OK);
+				state=SMTP_STATE_RCPT_TO;
+				continue;
+			}
 
-											/* RX by sysop alias */
+			usernum=0;	/* unknown user at this point */
 			if(!stricmp(p,"SYSOP") || !stricmp(p,scfg.sys_id) 
 				|| !stricmp(p,"POSTMASTER") || !stricmp(p,scfg.sys_op))
-				usernum=1;
+				usernum=1;	/* RX by sysop alias */
 			else if(startup->options&MAIL_OPT_ALLOW_RX_BY_NUMBER 
 				&& isdigit(*p)) {
 				usernum=atoi(p);			/* RX by user number */
