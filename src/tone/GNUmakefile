@@ -37,7 +37,7 @@ SRC_ROOT	:=	..
 include $(SRC_ROOT)/build/Common.gmake
 LDFLAGS 	+=	$(XPDEV_LDFLAGS)
 CFLAGS		+=	$(XPDEV_CFLAGS)
-LDLIBS		+=	-lm -lxpdev
+LDLIBS		+=	$(XPDEV_LIBS)
 
 $(TONE):	$(OBJODIR)$(DIRSEP)tone$(OFILE)
 	@echo Creating $@
