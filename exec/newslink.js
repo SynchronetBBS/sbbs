@@ -27,6 +27,7 @@ var cfg_fname = system.ctrl_dir + "newslink.cfg";
 load("sbbsdefs.js");
 
 var debug = false;
+var slave = false;
 var reset_import_ptrs = false;		// Reset import pointers, import all messages
 var update_import_ptrs = false;		// Update import pointers, don't import anything
 var reset_export_ptrs = false;		// Reset export pointers, export all messages
@@ -121,6 +122,12 @@ while(!cfg_file.eof) {
 		case "area":
 			area.push(str);
 			break;
+		case "debug":
+			debug=true;
+			break;
+		case "slave":
+			slave=true;
+			break;
 		default:
 			printf("!UNRECOGNIZED configuration keyword: %s\r\n",str[0]);
 			break;
@@ -152,9 +159,6 @@ if(!socket.connect(server,port)) {
 print("Connected");
 readln();
 
-writeln("slave");
-readln();
-
 if(username!=undefined && username.length) {
 	print("Authenticating...");
 	writeln(format("AUTHINFO USER %s",username));
@@ -169,6 +173,11 @@ if(username!=undefined && username.length) {
 		}
 	}
 	print("Authenticated");
+}
+
+if(slave) {
+	writeln("slave");
+	readln();
 }
 
 /******************************/
@@ -234,7 +243,11 @@ for(i in area) {
 		print("exporting local messages");
 	for(;socket.is_connected && ptr<=msgbase.last_msg;ptr++) {
 		console.line_counter = 0;
-		hdr = msgbase.get_msg_header(false,ptr);
+		hdr = msgbase.get_msg_header(
+			/* retrieve by offset? */	false,
+			/* message number */		ptr,
+			/* regenerate msg-id? */	true
+			);
 		if(hdr == null)
 			continue;
 		if(hdr.attr&MSG_DELETE)	/* marked for deletion */
@@ -270,6 +283,7 @@ for(i in area) {
 			break;
 		}
 
+		writeln("Path: " + hdr.path);
 		if(!email_addresses)
 			writeln(format("From: %s@%s",hdr.from,newsgroup));
 		else if(hdr.from.indexOf('@')!=-1)
@@ -429,6 +443,10 @@ for(i in area) {
 				case "newsgroups":
 					if(hdr.to==newsgroup)
 						hdr.to=data;
+					hdr.newsgroups=data;
+					break;
+				case "path":
+					hdr.path=data;
 					break;
 				case "from":
 					hdr.from=data;
@@ -444,6 +462,9 @@ for(i in area) {
 					break;
 				case "references":
 					hdr.reply_id=data;
+					break;
+				case "nntp-posting-host":
+					hdr.nntp_posting_host=data;
 					break;
 				/* FidoNet headers */
 				case "x-ftn-pid":
@@ -463,8 +484,20 @@ for(i in area) {
 					break;
 			}
 		}
-		if(hdr.id.indexOf('@' + system.inetaddr)!=-1)	// avoid dupe loop
+		// Duplicate/looped message detection here
+		if(hdr.id.indexOf('@' + system.inetaddr)!=-1)
 			continue;
+		if(hdr.path.indexOf(system.inetaddr)!=-1)
+			continue;
+		if(0 && hdr.nntp_posting_host!=undefined) {
+			if(hdr.nntp_posting_host.indexOf(system.inetaddr)!=-1)
+				continue;
+			if(hdr.nntp_posting_host.indexOf(system.host_name)!=-1)
+				continue;
+			if(hdr.nntp_posting_host == socket.local_ip_address)
+				continue;
+		}
+
 		if(system.trashcan("subject",hdr.subject)) {
 			printf("!BLOCKED subject: %s\r\n",hdr.subject);
 			var reason = format("Blocked subject (%s)",hdr.subject);
