@@ -1586,7 +1586,7 @@ int uinput(int mode, int left, int top, char *prompt, char *str,
 	if(mode&WIN_T2B)
 		top=(api->scrn_len-height+1)/2-2;
 	if(mode&WIN_L2R)
-		left=(SCRN_RIGHT-SCRN_LEFT-width+2)/2;
+		left=(SCRN_RIGHT-SCRN_LEFT-width+1)/2;
 	if(left<=-(SCRN_LEFT))
 		left=-(SCRN_LEFT)+1;
 	if(top<0)
