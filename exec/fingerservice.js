@@ -112,6 +112,7 @@ if(request.charAt(0)=='?') {	// Handle "special" requests
 
 		case "ver":
 			writeln(VERSION);
+			writeln(server.version);
 			writeln(system.version_notice + system.revision);
 			writeln("Compiled " + system.compiled_when + " with " + system.compiled_with);
 			writeln(system.js_version);
@@ -133,6 +134,17 @@ if(request.charAt(0)=='?') {	// Handle "special" requests
 		case "stats":	/* Statistics */
 			for(i in system.stats)
 				writeln(i + " = " + system.stats[i]);
+
+			total	= time()-system.uptime;
+			days	= Math.floor(total/(24*60*60));
+		    if(days) 
+				total%=(24*60*60);
+			hours	= Math.floor(total/(60*60));
+			min		= (Math.floor(total/60))%60;
+			sec		= total%60;
+
+			writeln(format("uptime = %u days, %u hours, %u minutes and %u seconds"
+				,days,hours,min,sec));
 			break;
 
 		case "nodelist":
@@ -165,11 +177,21 @@ if(request.charAt(0)=='?') {	// Handle "special" requests
 				writeln("NNTP");
 			if(test_port(80))
 				writeln("HTTP");
+			if(test_port(113))
+				writeln("IDENT");
 			if(test_port(6667))
 				writeln("IRC");
 			break;
 
 		default:
+			writeln("Supported special requests:");
+			writeln("\tver");
+			writeln("\ttime");
+			writeln("\tstats");
+			writeln("\tservices");
+			writeln("\tnodelist");
+			writeln("\tauto.msg");
+			writeln("\tlogon.lst");
 			log(format("!UNSUPPORTED SPECIAL REQUEST: '%s'",request));
 			break;
 	}
@@ -184,7 +206,7 @@ if(!usernum) {
 	if(at>0)
 		request = request.substr(0,at-1);
 
-	usernum = system.matchuser(request);
+	usernum = system.matchuser(system.alias(request));
 	if(!usernum) {
 		log(format("!UNKNOWN USER: '%s'",request));
 		exit();
@@ -196,10 +218,9 @@ if(user == null) {
 	exit();
 }
 
-write(format("Site: %s\r\n"
-	  ,system.inetaddr));
-write(format("Login name: %-30s In real life: %s\r\n"
-	  ,user.alias,user.name));
+uname = format("%s #%d",user.alias,user.number);
+write(format("User: %-30s In real life: %s\r\n"
+	  ,uname,user.name));
 write(format("From: %s\r\n",user.location));
 if(include_age_gender) {
 	birth=format("Birth: %s (Age: %u years)"
