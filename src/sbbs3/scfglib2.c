@@ -1291,8 +1291,8 @@ void free_xtrn_cfg(scfg_t* cfg)
 #ifndef SCFG
 			FREE_AND_NULL(cfg->xtrn[i]->path);
 #endif
-			FREE_ALLOC(cfg->xtrn[i]->ar);
-			FREE_ALLOC(cfg->xtrn[i]->run_ar);
+			FREE_AR(cfg->xtrn[i]->ar);
+			FREE_AR(cfg->xtrn[i]->run_ar);
 			FREE_ALLOC(cfg->xtrn[i]->name);
 			FREE_ALLOC(cfg->xtrn[i]->cmd);
 			FREE_ALLOC(cfg->xtrn[i]->clean);
