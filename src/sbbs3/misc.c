@@ -43,7 +43,7 @@
 /* number of times if the attempted file is already open or denying access  */
 /* for some other reason.	All files are opened in BINARY mode.			*/
 /****************************************************************************/
-int nopen(char *str, int access)
+int DLLCALL nopen(char *str, int access)
 {
 	int file,share,count=0;
 
@@ -119,55 +119,6 @@ int bstrlen(char *str)
 	return(i);
 }
 
-char* DLLCALL strip_ctrl(char *str)
-{
-	char tmp[1024];
-	int i,j;
-
-	for(i=j=0;str[i] && j<sizeof(tmp)-1;i++)
-		if(str[i]==CTRL_A && str[i+1]!=0)
-			i++;
-		else if((uchar)str[i]>=SP)
-			tmp[j++]=str[i];
-	tmp[j]=0;
-	strcpy(str,tmp);
-	return(str);
-}
-
-char* DLLCALL strip_exascii(char *str)
-{
-	char tmp[1024];
-	int i,j;
-
-	for(i=j=0;str[i] && j<sizeof(tmp)-1;i++)
-		if(!(str[i]&0x80))
-			tmp[j++]=str[i];
-	tmp[j]=0;
-	strcpy(str,tmp);
-	return(str);
-}
-
-char* DLLCALL prep_file_desc(char *str)
-{
-	char tmp[1024];
-	int i,j;
-
-	for(i=j=0;str[i];i++)
-		if(str[i]==CTRL_A && str[i+1]!=0)
-			i++;
-		else if(j && str[i]<=SP && tmp[j-1]==SP)
-			continue;
-		else if(i && !isalnum(str[i]) && str[i]==str[i-1])
-			continue;
-		else if((uchar)str[i]>=SP)
-			tmp[j++]=str[i];
-		else if(str[i]==TAB || (str[i]==CR && str[i+1]==LF))
-			tmp[j++]=SP;
-	tmp[j]=0;
-	strcpy(str,tmp);
-	return(str);
-}
-
 /****************************************************************************/
 /* Returns in 'string' a character representation of the number in l with   */
 /* commas.																	*/
@@ -191,7 +142,7 @@ char *ultoac(ulong l, char *string)
 /****************************************************************************/
 /* Truncates white-space chars off end of 'str'								*/
 /****************************************************************************/
-void truncsp(char *str)
+void DLLCALL truncsp(char *str)
 {
 	uint c;
 
