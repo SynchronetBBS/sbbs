@@ -75,7 +75,6 @@ DELETE	=	rm -f
 CFLAGS	+=	-DJAVASCRIPT -I../../include/mozilla/js -I$(XPDEV) -I$(UIFC)
 
 ifdef BSD	# BSD
- CFLAGS	+=	-D_THREAD_SAFE
  # Math libraries needed and uses pthread
  LFLAGS	:=	-lm -pthread -lutil
 else			# Linux / Other UNIX

@@ -45,7 +45,7 @@ DELETE	=	rm -f
 OUTLIB	=	-o
 
 CFLAGS	+=	-MMD
-CFLAGS	+=	-Wall -I$(UIFC) -I$(XPDEV) -I../  -D_THREAD_SAFE
+CFLAGS	+=	-Wall -I$(UIFC) -I$(XPDEV) -I../
 
 LFLAGS	:=	-L/usr/local/lib
 
