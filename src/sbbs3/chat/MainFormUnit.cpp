@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -46,6 +46,7 @@
 #include <vcl\Registry.hpp>	/* TRegistry */
 #pragma hdrstop
 
+#include <utime.h>
 #include "gen_defs.h"       /* BS and DEL */
 
 #define PCHAT_LEN 1000		/* Size of Private chat file */
@@ -60,6 +61,10 @@ extern int      node_num;
 extern char     ctrl_dir[];
 extern char     node_dir[];
 extern char     user_name[];
+
+char node_path[MAX_PATH+1];
+char out_path[MAX_PATH+1];
+
 //---------------------------------------------------------------------------
 __fastcall TMainForm::TMainForm(TComponent* Owner)
     : TForm(Owner)
@@ -99,32 +104,35 @@ bool __fastcall TMainForm::ToggleChat(bool on)
     lseek(nodedab, n*sizeof(node_t), SEEK_SET);
     locking(nodedab, LK_UNLCK, sizeof(node_t));
 
+    utime(node_path,NULL);
+
     return(true);
 }
 //---------------------------------------------------------------------------
 void __fastcall TMainForm::FormShow(TObject *Sender)
 {
-    char    path[MAX_PATH+1];
     char*   p;
+    char	path[MAX_PATH+1];
 
     Caption="Waiting for "
         +AnsiString(user_name)+" on Node "+AnsiString(node_num);
 
-    wsprintf(path,"%sNODE.DAB",ctrl_dir);
-    nodedab=_sopen(path,O_RDWR|O_BINARY|O_CREAT, SH_DENYNONE,S_IREAD|S_IWRITE);
+    wsprintf(node_path,"%sNODE.DAB",ctrl_dir);
+    nodedab=_sopen(node_path,O_RDWR|O_BINARY|O_CREAT, SH_DENYNONE,S_IREAD|S_IWRITE);
 
     if(nodedab==-1) {
-        Remote->Lines->Add("!Error opening NODE.DAB");
+        Remote->Lines->Add("!Error opening " + AnsiString(node_path));
         return;
     }
 
     ToggleChat(true);
 
-	wsprintf(path,"%sLCHAT.DAB",node_dir);
-	if((out=_sopen(path,O_RDWR|O_CREAT|O_BINARY,O_DENYNONE
+	wsprintf(out_path,"%sLCHAT.DAB",node_dir);
+	if((out=_sopen(out_path,O_RDWR|O_CREAT|O_BINARY,O_DENYNONE
 		,S_IREAD|S_IWRITE))==-1) {
-		Remote->Lines->Add("!Error opening LCHAT.DAB");
-		return; }
+		Remote->Lines->Add("!Error opening " + AnsiString(out_path));
+		return;
+    }
 
 	wsprintf(path,"%sCHAT.DAB",node_dir);
 #if 0
@@ -186,6 +194,13 @@ void __fastcall TMainForm::LocalKeyPress(TObject *Sender, char &Key)
 {
     char c;
 
+    if(Key==22) {	/* Ctrl-V */
+    	Key=0;
+        return;		/* Don't allow "paste from clipboard" */
+    }
+    if(Key<' ' && Key!='\r' && Key!='\t' && Key!='\b')
+    	return;
+
     if(out==-1 || Local->ReadOnly==true) {
         Beep();
         return;
@@ -202,6 +217,7 @@ void __fastcall TMainForm::LocalKeyPress(TObject *Sender, char &Key)
         write(out,&c,1);
         lseek(out,-1L,SEEK_CUR);
     }
+    utime(out_path,NULL);
     if(tell(out)>=PCHAT_LEN)
         lseek(out,0L,SEEK_SET);
 }
@@ -287,4 +303,7 @@ void __fastcall TMainForm::FormCreate(TObject *Sender)
 
 }
 //---------------------------------------------------------------------------
+
+
+
 
