@@ -587,7 +587,7 @@ BOOL DLLCALL write_msgs_cfg(scfg_t* cfg, int backup_level)
 	if(!no_msghdr) {
 		strcpy(dir,cfg->data_dir);
 		prep_dir(cfg->ctrl_dir,dir);
-		sprintf(smb.file,"%sMAIL",dir);
+		sprintf(smb.file,"%smail",dir);
 		if(smb_open(&smb)!=0) {
 			return(FALSE); 
 		}
