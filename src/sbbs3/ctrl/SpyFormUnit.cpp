@@ -11,7 +11,6 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "Emulvt"
-#pragma link "Emulvt"
 #pragma resource "*.dfm"
 TSpyForm *SpyForm;
 //---------------------------------------------------------------------------
@@ -20,6 +19,9 @@ __fastcall TSpyForm::TSpyForm(TComponent* Owner)
 {
     Width=MainForm->SpyTerminalWidth;
     Height=MainForm->SpyTerminalHeight;
+    Terminal = new TEmulVT(this);
+    Terminal->Parent=this;
+    Terminal->Align=alClient;
 }
 bool strip_ansi(char* str)
 {
@@ -110,6 +112,9 @@ void __fastcall TSpyForm::FormShow(TObject *Sender)
     }
     RingBufInit(*spybuf,SPYBUF_LEN);
     Timer->Enabled=true;
+    Terminal->Clear();
+    Terminal->WriteStr("*** Synchronet Local Spy ***\r\n\r\n");
+    Terminal->WriteStr("ANSI Terminal Emulation:"+CopyRight+"\r\n\r\n");
 }
 //---------------------------------------------------------------------------
 
@@ -135,7 +140,8 @@ void __fastcall TSpyForm::FontMenuItemClick(TObject *Sender)
     MainForm->SpyTerminalFont->Assign(FontDialog->Font);
     Terminal->Font=MainForm->SpyTerminalFont;
     delete FontDialog;
-
+//    Terminal->Clear();
+    Terminal->UpdateScreen();
 }
 //---------------------------------------------------------------------------
 

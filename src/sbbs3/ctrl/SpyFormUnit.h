@@ -9,8 +9,7 @@
 #include <Forms.hpp>
 #include <ExtCtrls.hpp>
 #include "ringbuf.h"
-#include "tnemulvt.hpp"
-#include "Emulvt.hpp"
+#include "emulvt.hpp"
 #include <ComCtrls.hpp>
 #include <Dialogs.hpp>
 #include <ImgList.hpp>
@@ -21,7 +20,6 @@ class TSpyForm : public TForm
 {
 __published:	// IDE-managed Components
     TTimer *Timer;
-    TEmulVT *Terminal;
     TImageList *ImageList;
     TMainMenu *SpyMenu;
     TMenuItem *FontMenuItem;
@@ -31,6 +29,7 @@ __published:	// IDE-managed Components
     void __fastcall FontMenuItemClick(TObject *Sender);
 private:	// User declarations
 public:		// User declarations
+    TEmulVT *Terminal;
     RingBuf** spybuf;
     __fastcall TSpyForm(TComponent* Owner);
 };
