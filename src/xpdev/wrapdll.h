@@ -35,9 +35,6 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#ifndef _WRAPDLL_H
-#define _WRAPDLL_H
-
 #if defined(DLLEXPORT)
 	#undef DLLEXPORT
 #endif
@@ -61,4 +58,3 @@
 	#define DLLCALL
 #endif
 
-#endif
