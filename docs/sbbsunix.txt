@@ -146,8 +146,8 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
    *> Optional Shortcut:
    *> At this point you can copy the file from this url: 
    *> http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/install/GNUmakefile
-   *> into the Synchronet directory, run "gmake install", and then skip ahead 
-   *> to step 5.
+   *> into the Synchronet directory, run "gmake install SYMLINK=1"
+   *> and then skip ahead to step 5.
 
    C. Get the required installation modules from the CVS repository:
       # export CVSROOT=:pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs 
