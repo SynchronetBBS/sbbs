@@ -63,11 +63,16 @@ void sbbs_t::telnet_gate(char* destaddr, ulong mode)
 	int		rd;
 	ulong	l;
 	bool	gotline;
-	ushort	port=IPPORT_TELNET;
+	ushort	port;
 	ulong	ip_addr;
 	ulong	save_console;
 	SOCKET	remote_socket;
 	SOCKADDR_IN	addr;
+
+	if(mode&TG_RLOGIN)
+		port=513;
+	else
+		port=IPPORT_TELNET;
 
 	p=strchr(destaddr,':');
 	if(p!=NULL) {
