@@ -254,7 +254,7 @@ static int ftp_close_socket(SOCKET* sock, int line)
 	shutdown(*sock,SHUT_RDWR);	/* required on Unix */
 
 	result=closesocket(*sock);
-	if(result==0 && startup!=NULL && startup->socket_open!=NULL) 
+	if(startup!=NULL && startup->socket_open!=NULL) 
 		startup->socket_open(startup->cbdata,FALSE);
 
 	sockets--;
