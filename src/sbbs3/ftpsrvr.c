@@ -342,17 +342,6 @@ static int sockprintf(SOCKET sock, char *fmt, ...)
 	return(len);
 }
 
-/************************************************/
-/* Truncates white-space chars off end of 'str' */
-/************************************************/
-static void truncsp(char *str)
-{
-	uint c;
-
-c=strlen(str);
-while(c && (uchar)str[c-1]<=' ') c--;
-str[c]=0;
-}
 
 /* Returns the directory index of a virtual lib/dir path (e.g. main/games/filename) */
 int getdir(char* p, user_t* user)
@@ -993,23 +982,8 @@ BOOL js_generate_index(JSContext* js_cx, JSObject* parent,
 }
 
 
-#endif
+#endif	/* ifdef JAVASCRIPT */
 
-static int nopen(char *str, int access)
-{
-	int file,share,count=0;
-
-    if(access&O_DENYNONE) {
-        share=SH_DENYNO;
-        access&=~O_DENYNONE; }
-    else if(access==O_RDONLY) share=SH_DENYWR;
-    else share=SH_DENYRW;
-    while(((file=sopen(str,O_BINARY|access,share))==-1)
-        && (errno==EACCES || errno==EAGAIN) && count++<LOOP_NOPEN)
-        if(count)
-            mswait(100);
-    return(file);
-}
 
 time_t gettimeleft(scfg_t* cfg, user_t* user, time_t starttime)
 {
