@@ -44,11 +44,23 @@
 
 uifcapi_t uifc; /* User Interface (UIFC) Library API */
 
-static int yesno(char *prompt, int dflt)
+static int yesno(char *prompt, BOOL dflt)
 {
 	char*	opt[]={"Yes","No",NULL};
+	int		i=!dflt;	/* reverse logic */
 
-	return(uifc.list(WIN_MID|WIN_SAV,0,0,0,&dflt,0,prompt,opt));
+	i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,prompt,opt);
+	if(i>=0) {
+		i=!i;	/* reverse logic */
+		if(i!=dflt)
+			uifc.changes=TRUE;
+	}
+	return(i);
+}
+
+static const char* boolstr(BOOL val)
+{
+	return(val?"Yes":"No");
 }
 
 static void edit_menu(char* path)
@@ -57,9 +69,18 @@ static void edit_menu(char* path)
 	FILE*	fp;
 	int		i;
 	static	dflt;
+	char	title[MAX_PATH+1];
 	char	value[INI_MAX_VALUE_LEN];
+	char*	p;
 	char*	opt[MAX_OPTS+1];
-	char	prompt[256];
+	char	exec[INI_MAX_VALUE_LEN];
+	char	prompt[INI_MAX_VALUE_LEN];
+	char	menu_file[MAX_PATH+1];
+	char	menu_format[INI_MAX_VALUE_LEN];
+	size_t	menu_column_width;
+	BOOL	menu_reverse;
+	BOOL	hotkeys;
+	BOOL	expert;
 	const char* opt_fmt = "%-25.25s %s";
 	str_list_t	list;
 	ini_style_t style;
@@ -72,36 +93,79 @@ static void edit_menu(char* path)
 	}
 
 	/* Read menu file */
-	SAFECOPY(prompt,iniGetString(fp, ROOT_SECTION, "prompt", "'Command: '", value));
+	SAFECOPY(prompt,iniGetString(fp,ROOT_SECTION, "prompt", "'Command: '", value));
+	SAFECOPY(exec,iniGetString(fp,ROOT_SECTION, "exec", "", value));
+	SAFECOPY(menu_file,iniGetString(fp,ROOT_SECTION, "menu_file", "", value));
+	SAFECOPY(menu_format,iniGetString(fp,ROOT_SECTION, "menu_format", "\1n\1h\1w%s \1b%s", value));
+	menu_column_width=iniGetInteger(fp,ROOT_SECTION,"menu_column_width", 39);
+	menu_reverse=iniGetBool(fp,ROOT_SECTION,"menu_reverse", FALSE);
+
+	hotkeys=iniGetBool(fp,ROOT_SECTION,"hotkeys",TRUE);
+	expert=iniGetBool(fp,ROOT_SECTION,"expert",TRUE);
+
 	fclose(fp);
 
 
 	for(i=0;i<MAX_OPTS+1;i++)
 		opt[i]=(char *)alloca(MAX_OPLN+1);
 
+	SAFECOPY(str,getfname(path));
+	if((p=getfext(str))!=NULL)
+		*p=0;
+	SAFEPRINTF(title, "Menu: %s", str);
 	uifc.changes=0;
 	while(1) {
 
 		/* Create option list */
 		i=0;
-		safe_snprintf(opt[i++],MAX_OPLN,opt_fmt,"Prompt",prompt);
+		safe_snprintf(opt[i++],MAX_OPLN,opt_fmt,"Menu File", menu_file[0] ? menu_file : "<Dynamic>");
+		safe_snprintf(opt[i++],MAX_OPLN,opt_fmt,"Execute (JS Expression)",exec[0] ? exec : "<nothing>");
+		safe_snprintf(opt[i++],MAX_OPLN,opt_fmt,"Prompt (JS String)",prompt[0] ? prompt : "<none>");
+		safe_snprintf(opt[i++],MAX_OPLN,opt_fmt,"Hot Key Input",boolstr(hotkeys));
+		safe_snprintf(opt[i++],MAX_OPLN,opt_fmt,"Display Menu"
+			,expert ? "Based on User \"Expert\" Setting"
+			: "Always");
+		safe_snprintf(opt[i++],MAX_OPLN,"Commands...");
+
 		opt[i][0]=0;
 
 		i=uifc.list(WIN_ACT|WIN_CHE|WIN_RHT|WIN_BOT,0,0,10,&dflt,0
-			,getfname(path),opt);
+			,title,opt);
 		if(i==-1) {
 			if(uifc.changes) {
 				i=yesno("Save Changes",TRUE);
 				if(i==-1)
 					continue;
-				if(i==1)
+				if(i==FALSE)
 					uifc.changes=0;
 			}
 			break;
 		}
 		switch(i) {
 			case 0:
-				uifc.input(WIN_MID|WIN_SAV,0,0,"Prompt",prompt,sizeof(prompt)-1,K_EDIT);
+				i=yesno("Use Static Menu File", menu_file[0]);
+				if(i==-1)
+					break;
+				if(i==TRUE)
+					uifc.input(WIN_MID|WIN_SAV,0,0,"Base Filename"
+						,menu_file,sizeof(menu_file)-1,K_EDIT);
+				else {
+					menu_file[0]=0;
+				}
+				break;
+			case 1:
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Execute (JS Expression)",exec,sizeof(exec)-1,K_EDIT);
+				break;
+			case 2:
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Prompt (JS String)",prompt,sizeof(prompt)-1,K_EDIT);
+				break;
+			case 3:
+				i=yesno("Use Hot Key Input (ENTER key not used)",hotkeys);
+				if(i>=0) hotkeys=i;
+				break;
+			case 4:
+				i=yesno("Display Menu Always (Ignore \"Expert\" User Setting)",!expert);
+				if(i>=0) expert=!i;
 				break;
 		}
 	}
@@ -124,6 +188,13 @@ static void edit_menu(char* path)
 
 			/* Update options */
 			iniSetString(&list,ROOT_SECTION,"prompt",prompt,&style);
+			iniSetString(&list,ROOT_SECTION,"menu_file",menu_file,&style);
+			iniSetString(&list,ROOT_SECTION,"menu_format",menu_format,&style);
+			iniSetInteger(&list,ROOT_SECTION,"menu_column_width",menu_column_width,&style);
+			iniSetBool(&list,ROOT_SECTION,"menu_reverse",menu_reverse,&style);
+
+			iniSetBool(&list,ROOT_SECTION,"hotkeys",hotkeys,&style);
+			iniSetBool(&list,ROOT_SECTION,"expert",expert,&style);
 
 			/* Write menu file */
 			iniWriteFile(fp,list);
