@@ -139,6 +139,20 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 			if(!JS_SetProperty(cx, subobj, "newsgroup", &val))
 				return(NULL);
 
+			if(user==NULL || chk_ar(cfg,cfg->sub[d]->read_ar,user))
+				val=BOOLEAN_TO_JSVAL(JS_TRUE);
+			else
+				val=BOOLEAN_TO_JSVAL(JS_FALSE);
+			if(!JS_SetProperty(cx, subobj, "can_read", &val))
+				return(NULL);
+
+			if(user==NULL || chk_ar(cfg,cfg->sub[d]->post_ar,user))
+				val=BOOLEAN_TO_JSVAL(JS_TRUE);
+			else
+				val=BOOLEAN_TO_JSVAL(JS_FALSE);
+			if(!JS_SetProperty(cx, subobj, "can_post", &val))
+				return(NULL);
+
 			if(!JS_GetArrayLength(cx, sub_list, &index))
 				return(NULL);							
 
