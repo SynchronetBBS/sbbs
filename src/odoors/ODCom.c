@@ -49,6 +49,7 @@
  *              Oct 22, 2001  6.21  RS   Fixed disconnected socket detection.
  *              Aug 22, 2002  6.22  RS   Fixed bugs in ODComCarrier and ODComWaitEvent
  *              Aug 22, 2002  6.22  MD   Modified socket functions for non-blocking use.
+ *              Sep 18, 2002  6.22  MD   Fixed bugs in ODComWaitEvent for non-blocking sockets.
  */
 
 #define BUILDING_OPENDOORS
@@ -3427,6 +3428,7 @@ tODResult ODComWaitEvent(tPortHandle hPort, tComEvent Event)
   			/* Wait for socket disconnect */
 				fd_set	socket_set;
 				char		ch;
+				int recv_ret;
 
 				while(1) 
 				{
@@ -3436,7 +3438,9 @@ tODResult ODComWaitEvent(tPortHandle hPort, tComEvent Event)
 					if(select(pPortInfo->socket+1,&socket_set,NULL,NULL,NULL)
 						==SOCKET_ERROR)
 						break;
-					if(recv(pPortInfo->socket, &ch, 1, MSG_PEEK)!=1)
+					while ((recv_ret = recv(pPortInfo->socket, &ch, 1, MSG_PEEK) != 1) && (WSAGetLastError() == WSAEWOULDBLOCK))
+						Sleep(25);
+					if (recv_ret == SOCKET_ERROR)
 						break;
 				}
 			} 
