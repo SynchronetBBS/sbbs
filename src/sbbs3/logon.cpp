@@ -479,7 +479,7 @@ bool sbbs_t::logon()
 	}
 
 	if(sys_status&SS_EVENT)
-		bputs(text[ReducedTime]);
+		bprintf(text[ReducedTime],timestr(&event_time));
 	getnodedat(cfg.node_num,&thisnode,1);
 	thisnode.misc&=~(NODE_AOFF|NODE_POFF);
 	if(useron.chat&CHAT_NOACT)
