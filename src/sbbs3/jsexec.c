@@ -1,6 +1,6 @@
 /* jsexec.c */
 
-/* Execute a Synchronet JavaScript from the command-line */
+/* Execute a Synchronet JavaScript module from the command-line */
 
 /* $Id$ */
 
@@ -45,11 +45,22 @@ JSObject*	js_glob;
 ulong		js_loop=0;
 scfg_t		scfg;
 ulong		js_max_bytes=JAVASCRIPT_MAX_BYTES;
+ulong		js_context_stack=JAVASCRIPT_CONTEXT_STACK;
+FILE*		confp=stdout;
+FILE*		errfp=stderr;
 
-char *usage="\nusage: jsexec [-opts] module[.js] [args]\n"
-	"\navailable opts:"
-	"\n"
-	;
+void usage(FILE* fp)
+{
+	fprintf(fp,"\nusage: jsexec [-opts] [path]module[.js] [args]\n"
+		"\navailable opts:\n\n"
+		"\t-m <bytes>      set maximum heap size (default: %lu bytes)\n"
+		"\t-s <bytes>      set context stack size (default: %lu bytes)\n"
+		"\t-t <filename>   send console output to stdout and filename\n"
+		"\t-e              send error message to stdout instead of stderr\n"
+		,JAVASCRIPT_MAX_BYTES
+		,JAVASCRIPT_CONTEXT_STACK
+		);
+}
 
 static JSBool
 js_log(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
@@ -197,7 +208,7 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 	const char*	warning;
 
 	if(report==NULL) {
-		fprintf(stderr,"!JavaScript: %s", message);
+		fprintf(errfp,"!JavaScript: %s", message);
 		return;
     }
 
@@ -219,7 +230,7 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 	} else
 		warning="";
 
-	fprintf(stderr,"!JavaScript %s%s%s: %s",warning,file,line,message);
+	fprintf(errfp,"!JavaScript %s%s%s: %s",warning,file,line,message);
 }
 
 static JSBool
@@ -251,18 +262,48 @@ js_BranchCallback(JSContext *cx, JSScript *script)
     return(JS_TRUE);
 }
 
+static BOOL js_CreateEnvObject(JSContext* cx, JSObject* glob, char** env)
+{
+	char		name[256];
+	char*		val;
+	uint		i;
+	JSObject*	js_env;
+
+	if((js_env=JS_NewObject(js_cx, NULL, NULL, glob))==NULL)
+		return(FALSE);
+
+	for(i=0;env[i]!=NULL;i++) {
+		SAFECOPY(name,env[i]);
+		truncstr(name,"=");
+		val=strchr(env[i],'=');
+		if(val==NULL)
+			val="";
+		else
+			val++;
+		if(!JS_DefineProperty(cx, js_env, name, STRING_TO_JSVAL(JS_NewStringCopyZ(cx,val))
+			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE))
+			return(FALSE);
+	}
+
+	if(!JS_DefineProperty(cx, glob, "env", OBJECT_TO_JSVAL(js_env)
+		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE))
+		return(FALSE);
+
+	return(TRUE);
+}
+
 static BOOL js_init(void)
 {
-	fprintf(stderr,"JavaScript: Creating runtime: %lu bytes\n"
+	fprintf(errfp,"JavaScript: Creating runtime: %lu bytes\n"
 		,js_max_bytes);
 
 	if((js_runtime = JS_NewRuntime(js_max_bytes))==NULL)
 		return(FALSE);
 
-	fprintf(stderr,"JavaScript: Initializing context (stack: %lu bytes)\n"
+	fprintf(errfp,"JavaScript: Initializing context (stack: %lu bytes)\n"
 		,JAVASCRIPT_CONTEXT_STACK);
 
-    if((js_cx = JS_NewContext(js_runtime, JAVASCRIPT_CONTEXT_STACK))==NULL)
+    if((js_cx = JS_NewContext(js_runtime, js_context_stack))==NULL)
 		return(FALSE);
 
 	JS_SetErrorReporter(js_cx, js_ErrorReporter);
@@ -295,6 +336,10 @@ static BOOL js_init(void)
 	if(!js_CreateUserObjects(js_cx, js_glob, &scfg, NULL, NULL, NULL)) 
 		return(FALSE);
 
+	/* Environment Object (associative array) */
+	if(!js_CreateEnvObject(js_cx, js_glob, environ))
+		return(FALSE);
+
 	return(TRUE);
 }
 
@@ -320,14 +365,14 @@ long js_exec(const char *fname, char** args)
 		strcat(path,".js");
 
 	if(!fexistcase(path)) {
-		fprintf(stderr,"!Module file (%s) doesn't exist\n",path);
+		fprintf(errfp,"!Module file (%s) doesn't exist\n",path);
 		return(-1); 
 	}
 
 	js_scope=JS_NewObject(js_cx, NULL, NULL, js_glob);
 
 	if(js_scope==NULL) {
-		fprintf(stderr,"!Error creating JS scope\n");
+		fprintf(errfp,"!Error creating JS scope\n");
 		return(-1);
 	}
 
@@ -347,7 +392,7 @@ long js_exec(const char *fname, char** args)
 		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
 	if((js_script=JS_CompileFile(js_cx, js_scope, path))==NULL) {
-		fprintf(stderr,"!Error executing %s\n",fname);
+		fprintf(errfp,"!Error executing %s\n",fname);
 		return(-1);
 	}
 
@@ -369,36 +414,25 @@ long js_exec(const char *fname, char** args)
 /*********************/
 int main(int argc, char **argv)
 {
-	char error[512];
-	char revision[16];
-	char* module=NULL;
-	char* p;
+	char	error[512];
+	char	revision[16];
+	char*	module=NULL;
+	char*	p;
+	int		argn;
 
 	sscanf("$Revision$", "%*s %s", revision);
 
-	fprintf(stderr,"\nJSexec v%s%c-%s (rev %s) - "
-		"Execute Synchronet JavaScript Modules\n"
+	fprintf(errfp,"\nJSexec v%s%c-%s (rev %s) - "
+		"Execute Synchronet JavaScript Module\n"
 		,VERSION,REVISION
 		,PLATFORM_DESC
 		,revision
 		);
 
-	if(argc<2) {
-		fprintf(stderr,usage);
-		return(1); 
-	}
-
-	module=argv[1];
-
-	if(module==NULL) {
-		fprintf(stderr,usage);
-		return(1); 
-	}
-
 	p=getenv("SBBSCTRL");
 	if(p==NULL) {
-		fprintf(stderr,"\nSBBSCTRL environment variable not set.\n");
-		fprintf(stderr,"\nExample: SET SBBSCTRL=/sbbs/ctrl\n");
+		fprintf(errfp,"\nSBBSCTRL environment variable not set.\n");
+		fprintf(errfp,"\nExample: SET SBBSCTRL=/sbbs/ctrl\n");
 		exit(1); 
 	}
 
@@ -406,12 +440,38 @@ int main(int argc, char **argv)
 	scfg.size=sizeof(scfg);
 	SAFECOPY(scfg.ctrl_dir,p);
 
+	for(argn=1;argn<argc;argn++) {
+		if(argv[argn][0]=='-') {
+			switch(argv[argn][1]) {
+				case 'm':
+					js_max_bytes=strtoul(argv[++argn],NULL,0);
+					break;
+				case 's':
+					js_context_stack=strtoul(argv[++argn],NULL,0);
+					break;
+				case 'e':
+					errfp=stdout;
+					break;
+				default:
+					usage(errfp);
+					return(1);
+			}
+			continue;
+		}
+		module=argv[argn];
+	}
+
+	if(module==NULL) {
+		usage(errfp);
+		return(1); 
+	}
+
 	if(chdir(scfg.ctrl_dir)!=0)
-		fprintf(stderr,"!ERROR changing directory to: %s", scfg.ctrl_dir);
+		fprintf(errfp,"!ERROR changing directory to: %s", scfg.ctrl_dir);
 
 	printf("\nLoading configuration files from %s\n",scfg.ctrl_dir);
 	if(!load_cfg(&scfg,NULL,TRUE,error)) {
-		fprintf(stderr,"!ERROR loading configuration files: %s\n",error);
+		fprintf(errfp,"!ERROR loading configuration files: %s\n",error);
 		exit(1);
 	}
 	prep_dir(scfg.data_dir, scfg.temp_dir, sizeof(scfg.temp_dir));
@@ -419,9 +479,12 @@ int main(int argc, char **argv)
 	if(!(scfg.sys_misc&SM_LOCAL_TZ))
 		putenv("TZ=UTC0");
 
-	if(!js_init())
+	if(!js_init()) {
+		fprintf(errfp,"!JavaScript initialization failure\n");
 		return(1);
+	}
+	printf("\n");
 
-	return(js_exec(module,&argv[2]));
+	return(js_exec(module,&argv[argn]));
 }
 
