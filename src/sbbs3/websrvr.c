@@ -2573,10 +2573,8 @@ void DLLCALL web_server(void* arg)
 			tv.tv_usec=0;
 
 			if((i=select(high_socket_set,&socket_set,NULL,NULL,&tv))<1) {
-				if(i==0) {
-					YIELD();
+				if(i==0)
 					continue;
-				}
 				if(ERROR_VALUE==EINTR)
 					lprintf("Web Server listening interrupted");
 				else if(ERROR_VALUE == ENOTSOCK)
