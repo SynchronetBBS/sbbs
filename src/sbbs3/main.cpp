@@ -1059,6 +1059,7 @@ void input_thread(void *arg)
 					spy_insock=spy_socket[sbbs->cfg.node_num-1]=INVALID_SOCKET;
 				}
 #endif
+				break;
 			}
 		}
 
