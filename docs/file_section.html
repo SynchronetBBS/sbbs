@@ -56,42 +56,51 @@ Windows CD-ROM          Utilities
                         Games
                         Desktop Publishing
                         Fonts</pre>
-<h2><a name="SynchronetFTPServer">[10.1] - Synchronet FTP Server
-Documentation</a></h2>
+<h2><a name="SynchronetFTPServer">[10.1] - Internet FTP Server</a> <b><font color="#FF0000"><i>(v3+
+Only)</i></font></b>
+</h2>
 <pre><b>FTP Filename Aliases</b>
 
 You can create a list of file aliases that will appear in your FTP root 
 directory for:</pre>
-<pre>o Quick and easy access to often downloaded user files</pre>
-<pre>o Static filenames that corresponds to a dynamically changing filenames
+<ul>
+  <li>
+<pre>Quick and easy access to often downloaded user files</pre>
+  </li>
+  <li>
+<pre>Static filenames that corresponds to a dynamically changing filenames
   e.g. ftp://vert.synchro.net/sbbs_for_dos.zip always points to the current
        versioned filename of Synchronet for DOS (e.g. SBBS230B.ZIP)</pre>
-<pre>o Download access to files on the local disk not in the BBS file database </pre>
-<pre>How? Edit the file CTRL\FTPALIAS.CFG (SBBSCTRL-&gt;FTP-&gt;Edit-&gt;Alias List). The
-format is similar to that of the Synchronet Mail Server ALIAS.CFG, one alias
+  </li>
+  <li>
+<pre>Download access to files on the local disk not in the BBS file database </pre>
+  </li>
+</ul>
+<pre>How? Edit the file <b>CTRL/FTPALIAS.CFG</b> (<i>SBBSCTRL-&gt;FTP-&gt;Edit-&gt;Alias List</i>). The
+format is similar to that of the Synchronet Mail Server <b>ALIAS.CFG</b>, one alias
 per line in the format:</pre>
-<pre>alias	path	description</pre>
+<pre><b>alias	path	description</b></pre>
 <pre>The alias is not case-sensitive and may not contain spaces. This is the 
 filename that will appear in your FTP root directory.</pre>
 <pre>The path element is either the full path and filename to a file on a
-local file system (e.g. C:\DOCS\MYFILE.TXT) or a virtual path to a file in the
-BBS file database. Virtual paths are specified as &quot;bbs://lib/dir/filename&quot;
+local file system (e.g. <b>C:\DOCS\MYFILE.TXT</b>) or a virtual path to a file in the
+BBS file database. Virtual paths are specified as &quot;<b>bbs://lib/dir/filename</b>&quot;
 where lib is the library short name, dir is the directory internal code and
 filename is the actual filename of the referenced file (may be the long
 filename, but may not contain spaces). </pre>
 <pre>The description is the optional description of the file that will be used in 
 the dynamically generated Auto Index file (if you have this option enabled).</pre>
-<pre>Lines beginning with a ';' are considered comments and are ignored.</pre>
+<pre>Lines beginning with a '<b>;</b>' are considered comments and are ignored.</pre>
 <pre>Example Alias:</pre>
-<pre>sbbs_for_dos.zip bbs://main/sbbs/sbbs230b.zip Current version for SBBS for DOS</pre>
+<pre><b>sbbs_for_dos.zip bbs://main/sbbs/sbbs230b.zip Current version for SBBS for DOS</b></pre>
 <pre><b>Sysop Access</b>
 
 To login with system operator access, you must login with a user account that
 has a security level of 90 or higher (user #1 usually has level 99) and enter 
-your password as &quot;pass:syspass&quot; where pass is your personal password and 
+your password as &quot;<b>pass:syspass</b>&quot; where pass is your personal password and 
 syspass is the system password.</pre>
 <pre>A successful sysop login will generate a login message stating 
-&quot;Sysop access granted&quot;. Logging in with just your personal password will give
+&quot;<b>Sysop access granted</b>&quot;. Logging in with just your personal password will give
 you normal (non-sysop) access.</pre>
 <pre>Sysop access allows you to mount local file systems and will enable secure
 BBS database features in the future (such as deleting/renaming files).</pre>
@@ -99,7 +108,7 @@ BBS database features in the future (such as deleting/renaming files).</pre>
 </u></b>
 This is a powerful new feature that allows the sysop to access any and all
 locally accessible files and file systems via FTP (very convenient for
-remote administration). The &quot;Local File System&quot; checkbox must be checked in the
+remote administration). The &quot;<i>Local File System</i>&quot; checkbox must be checked in the
 FTP configuration dialog in SBBSCTRL to enable this feature.</pre>
 <pre>To access local file systems, you must first login with sysop access
 (see &quot;Sysop Access&quot; for details). Once logged in with sysop access, you may
@@ -107,28 +116,28 @@ mount the local file system. There are two ways to mount the local file system
 (and subsequently to revert to the BBS file system):</pre>
 <pre><b>SMNT (Structure Mount)</b>
 
-Sysops may use the FTP &quot;SMNT&quot; command to mount the local files system. Since most 
-FTP clients do not support the SMNT command, you'll probably need to use the 
+Sysops may use the FTP &quot;<b>SMNT</b>&quot; command to mount the local files system. Since most 
+FTP clients do not support the <b>SMNT</b> command, you'll probably need to use the 
 &quot;quote&quot; feature of your FTP client to send the command to the FTP server. </pre>
-<pre>The syntax is &quot;SMNT new_dir&quot; where new_dir is the file system specifier 
-for the new directory used in the FTP hierarchy. Example: &quot;SMNT C:\&quot; 
+<pre>The syntax is &quot;<b>SMNT new_dir</b>&quot; where <i>new_dir</i> is the file system specifier 
+for the new directory used in the FTP hierarchy. Example: &quot;<b>SMNT C:\</b>&quot; 
 would make the root directory of your local C drive your new current FTP
-directory (for Windows' command-line ftp, type &quot;quote SMNT C:\&quot;).</pre>
+directory (for Windows' command-line ftp, type &quot;<b>quote SMNT C:\</b>&quot;).</pre>
 <pre>You can access shared drives on other machines on your local area network
-by using &quot;SMNT \\othersys\drive&quot; where othersys is the name of the other
+by using &quot;<b>SMNT \\othersys\drive</b>&quot; where <i>othersys</i> is the name of the other
 computer and drive is the share name of the desired drive.</pre>
-<pre>To switch back to (mount) the BBS file database, use &quot;SMNT bbs:&quot;</pre>
+<pre>To switch back to (mount) the BBS file database, use &quot;<b>SMNT bbs:</b>&quot;</pre>
 <pre><b>CD (Change Directory)</b>
 
-Sysops can mount the local file system using a special case of the CD (CWD, XCWD)
+Sysops can mount the local file system using a special case of the <b>CD</b> (<b>CWD</b>, <b>XCWD</b>)
 command. By prefixing &quot;local:&quot; to the new directory, the local file system will
-be automatically mounted. Example: &quot;cd local:c:\&quot;.</pre>
+be automatically mounted. Example: &quot;<b>cd local:c:\</b>&quot;.</pre>
 <pre>Once the local file system is mounted, you can switch between drives and shared
-drives with the CD command (the &quot;local:&quot; specifier is not needed). 
-Example: &quot;cd d:\&quot;.</pre>
-<pre>To access a shared drive on other machines: &quot;cd \\othersys\drive&quot;.</pre>
-<pre>To switch back to (mount) the BBS file system, use &quot;cd bbs:&quot;.</pre>
-<pre>Since some FTP clients do not support the SMNT command, nor allow users to enter
+drives with the CD command (the &quot;<b>local:</b>&quot; specifier is not needed). 
+Example: &quot;<b>cd d:\</b>&quot;.</pre>
+<pre>To access a shared drive on other machines: &quot;<b>cd \\othersys\drive</b>&quot;.</pre>
+<pre>To switch back to (mount) the BBS file system, use &quot;<b>cd bbs:</b>&quot;.</pre>
+<pre>Since some FTP clients do not support the <b>SMNT</b> command, nor allow users to enter
 verbatim FTP commands, the CD method is the easiest and most reliable method of
 accessing the local file system.&nbsp;</pre>
 <h2><a name="SettingUpFileTransferSection">[10.2] - Setting Up the File
