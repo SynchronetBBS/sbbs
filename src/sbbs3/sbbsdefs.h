@@ -38,9 +38,11 @@
 #ifndef _SBBSDEFS_H
 #define _SBBSDEFS_H
 
-#include "gen_defs.h"
-#include "nodedefs.h"
 #include <time.h>
+
+#include "gen_defs.h"	/* uchar, ushort, uint, ulong, etc. */
+#include "nodedefs.h"	/* node_t */
+#include "fidodefs.h"	/* fmsghdr_t, fpkthdr_t, FIDO_*, etc. */
 
 /*************/
 /* Constants */
@@ -216,23 +218,6 @@ typedef struct {
 #define NMAIL_ALIAS 	(1<<4)		/* Use Aliases in NetMail */
 #define NMAIL_FILE		(1<<5)		/* Allow file attachments */
 #define NMAIL_DIRECT	(1<<6)		/* Default netmail to direct */
-
-									/* Attribute bits for fido msg header */
-#define FIDO_PRIVATE	(1<<0)		/* Private message */
-#define FIDO_CRASH		(1<<1)		/* Crash-mail (send immediately) */
-#define FIDO_RECV		(1<<2)		/* Received successfully */
-#define FIDO_SENT		(1<<3)		/* Sent successfully */
-#define FIDO_FILE		(1<<4)		/* File attached */
-#define FIDO_INTRANS	(1<<5)		/* In transit */
-#define FIDO_ORPHAN 	(1<<6)		/* Orphan */
-#define FIDO_KILLSENT	(1<<7)		/* Kill it after sending it */
-#define FIDO_LOCAL		(1<<8)		/* Created locally - on this system */
-#define FIDO_HOLD		(1<<9)		/* Hold - don't send it yet */
-#define FIDO_FREQ		(1<<11) 	/* File request */
-#define FIDO_RRREQ		(1<<12) 	/* Return receipt request */
-#define FIDO_RR 		(1<<13) 	/* This is a return receipt */
-#define FIDO_AUDIT		(1<<14) 	/* Audit request */
-#define FIDO_FUPREQ 	(1<<15) 	/* File update request */
 
 									/* Bit values for sub_cfg and sav_sub_cfg	*/
 #define SUB_CFG_NSCAN	0x0005		/* bits 0 and 2								*/
@@ -1015,27 +1000,6 @@ typedef struct {						/* System/Node Statistics */
 	ushort	nusers; 					/* Total New Users Today */
 
 } stats_t;
-
-typedef struct {						/* FidoNet msg header */
-	char	from[36],					/* From user */
-			to[36], 					/* To user */
-			subj[72],					/* Message title */
-			time[20];					/* Time in goof-ball ASCII format */
-	short	read,						/* Times read */
-			destnode,					/* Destination node */
-			orignode,					/* Origin node */
-			cost,						/* Cost in pennies */
-			orignet,					/* Origin net */
-			destnet,					/* Destination net */
-			destzone,					/* Destination zone */
-			origzone,					/* Origin zone */
-			destpoint,					/* Destination point */
-			origpoint,					/* Origin point */
-			re, 						/* Message number regarding */
-			attr,						/* Attributes - see FIDO_* */
-			next;						/* Next message number in stream */
-
-} fmsghdr_t;
 
 typedef struct {						/* Sub-board scan information */
 	ushort	cfg;						/* User's configuration */
