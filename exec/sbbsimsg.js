@@ -90,7 +90,10 @@ function list_users(show)
 		// Skip header
 		while(response.length && response[0].charAt(0)!='-')
 			response.shift();
-		response.shift();
+		if(response.length && response[0].charAt(0)=='-')
+			response.shift();	// Delete the separator line
+		while(response.length && !response[0].length)
+			response.shift();	// Delete any blank lines
 
 		if(!response.length) {
 			if(show)
