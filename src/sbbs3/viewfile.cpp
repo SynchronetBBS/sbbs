@@ -132,6 +132,6 @@ void sbbs_t::viewfilecontents(file_t* f)
 		bprintf(text[NonviewableFile],tmp+9);
 	else
 		if((i=external(cmdstr(cmd,str,str,NULL)
-			,EX_OUTL|EX_OUTR|EX_INR|EX_SH))!=0)
+			,EX_OUTL|EX_OUTR|EX_INR))!=0)
 			errormsg(WHERE,ERR_EXEC,cmdstr(cmd,str,str,NULL),i);
 }
