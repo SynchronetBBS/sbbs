@@ -56,19 +56,21 @@ while(currpage>firstpage+(max_pages/2) && lastpage<total_pages) {
 
 /* Build the links now */
 template.pagelinks='';
-for(var page=firstpage;page<=lastpage;page++) {
-	if(currpage==page)
-		template.pagelinks += '<b>'+(page+1)+'</b> ';
-	else
-		template.pagelinks += "<a href=\""+path+'?msg_grp='+g+'&amp;msg_sub='+encodeURIComponent(sub)+'&amp;offset='+(page*max_messages)+'">'+(page+1)+'</a> ';
-}
+if(total_pages>1) {
+	for(var page=firstpage;page<=lastpage;page++) {
+		if(currpage==page)
+			template.pagelinks += '<b>'+(page+1)+'</b> ';
+		else
+			template.pagelinks += "<a href=\""+path+'?msg_grp='+g+'&amp;msg_sub='+encodeURIComponent(sub)+'&amp;offset='+(page*max_messages)+'">'+(page+1)+'</a> ';
+	}
 
-if(offset+max_messages < msgarray.length)  {
-	template.pagelinks+='<a href="'+path+'?msg_grp='+g+'&amp;msg_sub='+encodeURIComponent(sub)+'&amp;offset='+(offset+max_messages)+'">NEXT</a>';
-}
+	if(offset+max_messages < msgarray.length)  {
+		template.pagelinks+='<a href="'+path+'?msg_grp='+g+'&amp;msg_sub='+encodeURIComponent(sub)+'&amp;offset='+(offset+max_messages)+'">NEXT</a>';
+	}
 
-if(offset>0) {
-	template.pagelinks='<a href="'+path+'?msg_grp='+g+'&amp;msg_sub='+encodeURIComponent(sub)+'&amp;offset='+(offset-max_messages)+'">PREV</a> '+template.pagelinks;
+	if(offset>0) {
+		template.pagelinks='<a href="'+path+'?msg_grp='+g+'&amp;msg_sub='+encodeURIComponent(sub)+'&amp;offset='+(offset-max_messages)+'">PREV</a> '+template.pagelinks;
+	}
 }
 
 if(sub=='mail') {
