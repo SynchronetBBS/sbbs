@@ -368,7 +368,228 @@ int drawstats(scfg_t *cfg, int nodenum, node_t *node, int *curp, int *barp) {
 	return(0);
 }
 
+int view_log(char *filename, char *title)
+{
+	char str[1024];
+	int buffile;
+	int j;
+	char *buf;
 
+	if(fexist(filename)) {
+		if((buffile=sopen(filename,O_RDONLY,SH_DENYWR))>=0) {
+			j=filelength(buffile);
+			if((buf=(char *)MALLOC(j+1))!=NULL) {
+				read(buffile,buf,j);
+				close(buffile);
+				*(buf+j)=0;
+				uifc.showbuf(WIN_MID,0,0,76,uifc.scrn_len-2,title,buf,NULL,NULL);
+				free(buf);
+				return(0);
+			}
+			close(buffile);
+			uifc.msg("Error allocating memory for the error log");
+			return(3);
+		}
+		sprintf(str,"Error opening %s",title);
+		uifc.msg(str);
+		return(1);
+	}
+	sprintf(str,"%s does not exists",title);
+	uifc.msg(str);
+	return(2);
+}
+
+int view_logs(scfg_t *cfg)
+{
+	char**	opt;
+	int		i;
+	char	str[1024];
+	struct tm tm;
+	struct tm tm_yest;
+	time_t	now;
+
+	now=time(NULL);
+	localtime_r(&now,&tm);
+	now -= 60*60*24;
+	localtime_r(&now,&tm_yest);
+	if((opt=(char **)MALLOC(sizeof(char *)*(MAX_OPTS+1)))==NULL)
+		allocfail(sizeof(char *)*(MAX_OPTS+1));
+	for(i=0;i<(MAX_OPTS+1);i++)
+		if((opt[i]=(char *)MALLOC(MAX_OPLN))==NULL)
+			allocfail(MAX_OPLN);
+
+	i=0;
+	strcpy(opt[i++],"Todays callers");
+	strcpy(opt[i++],"Yesterdays callers");
+	strcpy(opt[i++],"Error log");
+	strcpy(opt[i++],"Todays log");
+	strcpy(opt[i++],"Yesterdays log");
+	strcpy(opt[i++],"Spam log");
+	strcpy(opt[i++],"SBBSEcho log");
+	strcpy(opt[i++],"Guru log");
+	strcpy(opt[i++],"Hack log");
+	opt[i][0]=0;
+	i=0;
+	while(1) {
+		switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"System Options",opt))  {
+			case -1:
+				return(0);
+			case 0:
+				sprintf(str,"%slogs/%2.2d%2.2d%2.2d.LOL",cfg->logs_dir,tm.tm_mon+1,tm.tm_mday
+					,TM_YEAR(tm.tm_year));
+				view_log(str,"Todays Callers");
+				break;
+			case 1:
+				sprintf(str,"%slogs/%2.2d%2.2d%2.2d.LOL",cfg->logs_dir,tm_yest.tm_mon+1
+					,tm_yest.tm_mday,TM_YEAR(tm_yest.tm_year));
+				view_log(str,"Yesterdays Callers");
+				break;
+			case 2:
+				sprintf(str,"%s/error.log",cfg->logs_dir);
+				view_log(str,"Error Log");
+				break;
+			case 3:
+				sprintf(str,"%slogs/%2.2d%2.2d%2.2d.log",cfg->logs_dir,tm.tm_mon+1,tm.tm_mday
+					,TM_YEAR(tm.tm_year));
+				view_log(str,"Todays Log");
+				break;
+			case 4:
+				sprintf(str,"%slogs/%2.2d%2.2d%2.2d.log",cfg->logs_dir,tm_yest.tm_mon+1
+					,tm_yest.tm_mday,TM_YEAR(tm_yest.tm_year));
+				view_log(str,"Yesterdays Log");
+				break;
+			case 5:
+				sprintf(str,"%sspam.log",cfg->logs_dir);
+				view_log(str,"SPAM Log");
+				break;
+			case 6:
+				sprintf(str,"%ssbbsecho.log",cfg->logs_dir);
+				view_log(str,"SBBSEcho Log");
+				break;
+			case 7:
+				sprintf(str,"%sguru.log",cfg->logs_dir);
+				view_log(str,"Guru Log");
+				break;
+			case 8:
+				sprintf(str,"%shack.log",cfg->logs_dir);
+				view_log(str,"Hack Log");
+				break;
+		}
+	}
+}
+
+int do_cmd(char *cmd)
+{
+	int i;
+
+	endwin();
+	i=system(cmd);
+	refresh();
+	return(i);
+}
+
+int qwk_callouts(void)
+{
+	return(0);
+}
+
+int run_events(void)
+{
+	return(0);
+}
+
+int recycle_servers(void)
+{
+	return(0);
+}
+
+int edit_cfg(scfg_t *cfg)
+{
+	char**	opt;
+	int		i;
+	char	cmd[1024];
+
+	if(getenv("EDITOR")==NULL) {
+		uifc.msg("EDITOR environment variable not found");
+		return(1);
+	}
+	if((opt=(char **)MALLOC(sizeof(char *)*(MAX_OPTS+1)))==NULL)
+		allocfail(sizeof(char *)*(MAX_OPTS+1));
+	for(i=0;i<(MAX_OPTS+1);i++)
+		if((opt[i]=(char *)MALLOC(MAX_OPLN))==NULL)
+			allocfail(MAX_OPLN);
+
+	i=0;
+	strcpy(opt[i++],"alias.cfg");
+	strcpy(opt[i++],"attr.cfg");
+	strcpy(opt[i++],"dns_blacklist.cfg");
+	strcpy(opt[i++],"dnsbl_exempt.cfg");
+	strcpy(opt[i++],"domains.cfg");
+	strcpy(opt[i++],"mailproc.cfg");
+	strcpy(opt[i++],"mime_types.cfg");
+	strcpy(opt[i++],"relay.cfg");
+	strcpy(opt[i++],"sbbsecho.cfg");
+	strcpy(opt[i++],"services.cfg");
+	strcpy(opt[i++],"ftpalias.cfg");
+	strcpy(opt[i++],"sockopts.cfg");
+	strcpy(opt[i++],"spambait.cfg");
+	strcpy(opt[i++],"spamblock.cfg");
+	strcpy(opt[i++],"twitlist.cfg");
+	opt[i][0]=0;
+	i=0;
+	while(1) {
+		switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"System Options",opt))  {
+			case -1:
+				return(0);
+			default:
+				sprintf(cmd,"%s %s%s",getenv("EDITOR"),cfg->ctrl_dir,opt[i]);
+				do_cmd(cmd);
+				break;
+		}
+	}
+	return(0);
+}
+
+int edit_can(scfg_t *cfg)
+{
+	char**	opt;
+	int		i;
+	char	cmd[1024];
+
+	if(getenv("EDITOR")==NULL) {
+		uifc.msg("EDITOR environment variable not found");
+		return(1);
+	}
+	if((opt=(char **)MALLOC(sizeof(char *)*(MAX_OPTS+1)))==NULL)
+		allocfail(sizeof(char *)*(MAX_OPTS+1));
+	for(i=0;i<(MAX_OPTS+1);i++)
+		if((opt[i]=(char *)MALLOC(MAX_OPLN))==NULL)
+			allocfail(MAX_OPLN);
+
+	i=0;
+	strcpy(opt[i++],"email.can");
+	strcpy(opt[i++],"file.can");
+	strcpy(opt[i++],"host.can");
+	strcpy(opt[i++],"ip.can");
+	strcpy(opt[i++],"ip-silent.can");
+	strcpy(opt[i++],"name.can");
+	strcpy(opt[i++],"phone.can");
+	strcpy(opt[i++],"rlogin.can");
+	strcpy(opt[i++],"subject.can");
+	opt[i][0]=0;
+	i=0;
+	while(1) {
+		switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"System Options",opt))  {
+			case -1:
+				return(0);
+			default:
+				sprintf(cmd,"%s %s%s",getenv("EDITOR"),cfg->ctrl_dir,opt[i]);
+				do_cmd(cmd);
+				break;
+		}
+	}
+	return(0);
+}
 
 int main(int argc, char** argv)  {
 	char**	opt;
@@ -380,11 +601,10 @@ int main(int argc, char** argv)  {
 	char	title[256];
 	int		i,j;
 	node_t	node;
-	char	*buf;
-	int		buffile;
 	int		nodefile;
 	box_t	boxch;
 	scfg_t	cfg;
+	int		done;
 	/******************/
 	/* Ini file stuff */
 	/******************/
@@ -524,11 +744,12 @@ int main(int argc, char** argv)  {
 	}
 
 	while(1) {
+		strcpy(mopt[0],"System Options");
 		for(i=1;i<=cfg.sys_nodes;i++) {
 			if((j=getnodedat(&cfg,i,&node,NULL)))
-				sprintf(mopt[i-1],"Error reading node data (%d)!",j);
+				sprintf(mopt[i],"Error reading node data (%d)!",j);
 			else
-				sprintf(mopt[i-1],"%3d: %s",i,nodestatus(&cfg,&node,str,71));
+				sprintf(mopt[i],"%3d: %s",i,nodestatus(&cfg,&node,str,71));
 		}
 		mopt[i-1][0]=0;
 
@@ -544,7 +765,7 @@ int main(int argc, char** argv)  {
 						"\nCTRL-I Interrupt node"
 						"\nToDo: Add more help. (Explain what you're looking at)";
 
-		drawstats(&cfg, main_dflt+1, &node, &main_dflt, &main_bar);
+		drawstats(&cfg, main_dflt, &node, &main_dflt, &main_bar);
 
 		j=uifc.list(WIN_L2R|WIN_ESC|WIN_ACT|WIN_DYN,0,5,70,&main_dflt,&main_bar
 			,title,mopt);
@@ -554,26 +775,7 @@ int main(int argc, char** argv)  {
 
 		if(j==-7) {	/* CTRL-E */
 			sprintf(str,"%s/error.log",cfg.data_dir);
-			if(fexist(str)) {
-				if((buffile=sopen(str,O_RDONLY,SH_DENYWR))>=0) {
-					j=filelength(buffile);
-					if((buf=(char *)MALLOC(j+1))!=NULL) {
-						read(buffile,buf,j);
-						close(buffile);
-						*(buf+j)=0;
-						uifc.showbuf(WIN_MID,0,0,76,uifc.scrn_len-2,"Error Log",buf,NULL,NULL);
-						free(buf);
-						continue;
-					}
-					close(buffile);
-					uifc.msg("Error allocating memory for the error log");
-					continue;
-				}
-				uifc.msg("Error opening error log");
-			}
-			else {
-				uifc.msg("Error log does not exist");
-			}
+			view_log(str,"Error Log");
 			continue;
 		}
 		
@@ -666,12 +868,62 @@ int main(int argc, char** argv)  {
 				bail(0);
 			continue;
 		}
-		if(j<cfg.sys_nodes && j>=0) {
+
+		if(j==0) {
+			/* System Options */
+			i=0;
+			strcpy(opt[i++],"Run SCFG");
+			strcpy(opt[i++],"View logs");
+			strcpy(opt[i++],"Force QWK Net callout");
+			strcpy(opt[i++],"Run event");
+			strcpy(opt[i++],"Recycle servers");
+			strcpy(opt[i++],"Edit CFG files");
+			strcpy(opt[i++],"Edit trashcan files");
+			opt[i][0]=0;
+			uifc.helpbuf=	"`System Options:`\n"
+							"\nToDo: Add help";
+
+			done=0;
+			i=0;
+			while(!done) {
+				switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"System Options",opt))  {
+					case -1:
+						done=1;
+						break;
+					case 0:
+						sprintf(str,"%sscfg",cfg.exec_dir);
+						do_cmd(str);
+						break;
+					case 1:
+						view_logs(&cfg);
+						break;
+					case 2:
+						qwk_callouts();
+						break;
+					case 3:
+						run_events();
+						break;
+					case 4:
+						recycle_servers();
+						break;
+					case 5:
+						edit_cfg(&cfg);
+						break;
+					case 6:
+						edit_can(&cfg);
+						break;
+				}
+			}
+		}
+
+		if(j<cfg.sys_nodes && j>0) {
 			i=0;
 			strcpy(opt[i++],"Spy on node");
 			strcpy(opt[i++],"Node toggles");
 			strcpy(opt[i++],"Clear Errors");
-			if(!getnodedat(&cfg,j+1,&node,NULL)) {
+			strcpy(opt[i++],"View node log");
+			strcpy(opt[i++],"View crash log");
+			if(!getnodedat(&cfg,j,&node,NULL)) {
 				if((node.status==NODE_INUSE) && node.useron) {
 					strcpy(opt[i++],"Send message to user");
 					strcpy(opt[i++],"Chat with user");
@@ -681,33 +933,47 @@ int main(int argc, char** argv)  {
 			i=0;
 			uifc.helpbuf=	"`Node Options:`\n"
 							"\nToDo: Add help";
-			switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"Node Options",opt))  {
-				case 0:	/* Spy */
-					dospy(j+1,&bbs_startup);
-					break;
+			done=0;
+			while(!done) {
+				switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"Node Options",opt))  {
+					case 0:	/* Spy */
+						dospy(j,&bbs_startup);
+						break;
 
-				case 1: /* Node Toggles */
-					node_toggles(&cfg, j+1);
-					break;
+					case 1: /* Node Toggles */
+						node_toggles(&cfg, j);
+						break;
+	
+					case 2:
+						clearerrors(&cfg, j,&node);
+						break;
+	
+					case 3: /* Node log */
+						sprintf(str,"%snode.log",cfg.node_path[j-1]);
+						view_log(str,"Node Log");
+						break;
 
-				case 2:
-					clearerrors(&cfg, j+1,&node);
-					break;
-
-				case 3:	/* Send message */
-					sendmessage(&cfg, j+1,&node);
-					break;
-
-				case 4:
-					chat(&cfg,main_dflt+1,&node,&boxch,uifc.timedisplay);
-					break;
-				
-				case -1:
-					break;
+					case 4: /* Crash log */
+						sprintf(str,"%scrash.log",cfg.node_path[j-1]);
+						view_log(str,"Crash Log");
+						break;
 					
-				default:
-					uifc.msg("Option not implemented");
-					break;
+					case 5:	/* Send message */
+						sendmessage(&cfg, j,&node);
+						break;
+	
+					case 6:
+						chat(&cfg,main_dflt+1,&node,&boxch,uifc.timedisplay);
+						break;
+					
+					case -1:
+						done=1;
+						break;
+					
+					default:
+						uifc.msg("Option not implemented");
+						break;
+				}
 			}
 		}
 	}
