@@ -744,7 +744,8 @@ extern "C" {
 	char *	hexplus(uint num, char *str); 	/* Hex plus for 3 digits up to 9000 */
 	uint	hptoi(char *str);
 #ifndef __BORLANDC__
-	int		random(int n);	/* return random number between 0 and n-1 */
+	int		sbbs_random(int n);	/* return random number between 0 and n-1 */
+#define random(x) sbbs_random(x)
 #endif
 
 #ifndef _WIN32

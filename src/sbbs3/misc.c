@@ -388,8 +388,9 @@ ulong ahtoul(char *str)
 		val=(l&0xf)+(l>>6&1)*9+val*16;
 	return(val);
 }
+
 #ifndef __BORLANDC__
-int random(int n)
+int sbbs_random(int n)
 {
 	float f;
 
