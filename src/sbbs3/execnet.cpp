@@ -614,7 +614,7 @@ SOCKET sbbs_t::ftp_data_sock(csi_t* csi, SOCKET ctrl_sock, SOCKADDR_IN* addr)
 
 		ip_addr.dw=ntohl(ctrl_addr.sin_addr.s_addr);
 		port.w=ntohs(addr->sin_port);
-		sprintf(cmd,"PORT %u,%u,%u,%u,%hu,%hu"
+		sprintf(cmd,"PORT %u,%u,%u,%u,%u,%u"
 			,ip_addr.b[3]
 			,ip_addr.b[2]
 			,ip_addr.b[1]
@@ -666,8 +666,20 @@ bool sbbs_t::ftp_get(csi_t* csi, SOCKET ctrl_sock, char* src, char* dest, bool d
 			close_socket(data_sock);
 			return(false);
 		}
+	}
 
-	} else {	/* Normal (Active) FTP */
+	if(dir)
+		sprintf(cmd,"LIST %s",src);
+	else
+		sprintf(cmd,"RETR %s",src);
+
+	if(!ftp_cmd(csi,ctrl_sock,cmd,rsp) 
+		|| atoi(rsp)!=150 /* Open data connection */) {
+		close_socket(data_sock);
+		return(false);
+	}
+
+	if(!(csi->ftp_mode&CS_FTP_PASV)) {	/* Normal (Active) FTP */
 
 		/* Setup for select() */
 		tv.tv_sec=TIMEOUT_SOCK_LISTEN;
@@ -695,17 +707,6 @@ bool sbbs_t::ftp_get(csi_t* csi, SOCKET ctrl_sock, char* src, char* dest, bool d
 
 		close_socket(data_sock);
 		data_sock=accept_sock;
-	}
-
-	if(dir)
-		sprintf(cmd,"LIST %s",src);
-	else
-		sprintf(cmd,"RETR %s",src);
-
-	if(!ftp_cmd(csi,ctrl_sock,cmd,rsp) 
-		|| atoi(rsp)!=150 /* Open data connection */) {
-		close_socket(data_sock);
-		return(false);
 	}
 
 	if(!dir)
