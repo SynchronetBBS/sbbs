@@ -283,7 +283,6 @@ int win32_getche(void)
 int win32_initciolib(long inmode)
 {
 	DWORD conmode;
-	char	*buf;
 	int	i,j;
 
 	if(!isatty(fileno(stdin)))
@@ -305,15 +304,6 @@ int win32_initciolib(long inmode)
 	win32_textmode(inmode);
 	cio_api.mouse=1;
 	j=vid_modes[modeidx].ysize*vid_modes[modeidx].xsize*2;
-	buf=(char *)malloc(j);
-	if(buf==NULL)
-		return(0);
-	for(i=0;i<j;) {
-		buf[i++]=32;
-		buf[i++]=7;
-	}
-	win32_puttext(1,1,vid_modes[modeidx].xsize,vid_modes[modeidx].ysize,buf);
-	gree(buf);
 	return(1);
 }
 
