@@ -42,6 +42,10 @@
 #define DESC_LINES	5
 #define DEF_LIST_FMT "NSTP"
 
+#ifndef IPPORT_TELNET
+#define IPPORT_TELNET 23
+#endif
+
 /* Misc bits */
 
 #define FROM_SMB	(1L<<0) 	/* BBS info imported from message base */
