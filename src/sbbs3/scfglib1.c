@@ -171,6 +171,9 @@ BOOL read_node_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 	if(!cfg->temp_dir[0])
 		strcpy(cfg->temp_dir,"temp");
 
+	strlwr(cfg->text_dir);	/* temporary Unix-compatibility hack */
+	strlwr(cfg->temp_dir);	/* temporary Unix-compatibility hack */
+
 	#ifndef SCFG
 	prep_path(cfg->ctrl_dir, cfg->text_dir);
 	#endif
