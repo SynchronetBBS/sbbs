@@ -76,20 +76,34 @@ static const char* prompt =
 "[Threads: %d  Sockets: %d  Clients: %d  Served: %lu] (?=Help): ";
 
 static const char* usage  = "\nusage: %s [[option] [...]]\n"
-							"\noptions:\n\n"
+							"\nTelnet server options:\n\n"
+							"td         enable Telnet option debug output\n"
+							"tf<node>   set first Telnet node number\n"
+							"tl<node>   set last Telnet node number\n"
+							"tp<port>   set Telnet server port\n"
+							"rp<port>   set RLogin server port (and enable RLogin server)\n"
+							"r2         use second RLogin name in BSD RLogin\n"
+							"nq         disable QWK events\n"
+
+							"\nFTP server options:\n\n"
+							"f-         disable FTP server\n"
+							"fp<port>   set FTP server port\n"
+
+							"\nMail server options:\n\n"
+							"m-         disable Mail server\n"
+							"p-         disable POP3 server\n"
+							"s-         disable SendMail thread\n"
+							"sp<port>   set SMTP server port\n"
+							"sr<port>   set SMTP relay port\n"
+							"pp<port>   set POP3 server port\n"
+
+							"\nGlobal options:\n\n"
+							"un<user>   set username for BBS to run as (UNIX only)\n"
+							"nh         disable hostname lookups\n"
+							"nj         disable JavaScript support\n"
+							"ns         disable Services (no services module)\n"
+							"lt         use local timezone (do not assume UTC/GMT)\n"
 							"defaults   show default settings\n"
-							"tf<node>   set First Telnet Node Number\n"
-							"tl<node>   set Last Telnet Node Number\n"
-							"tp<port>   set Telnet Server Port\n"
-							"rp<port>   set RLogin Server Port (and enable RLogin Server)\n"
-							"fp<port>   set FTP Server Port\n"
-							"sp<port>   set SMTP Server Port\n"
-							"sr<port>   set SMTP Relay Port\n"
-							"pp<port>   set POP3 Server Port\n"
-							"u<user>    set username for BBS to run as\n"
-							"nf         run without FTP Server\n"
-							"nm			run without Mail Server\n"
-							"ns         run without Services (no services module)\n"
 							"\n"
 							;
 
@@ -427,7 +441,6 @@ int main(int argc, char** argv)
     bbs_startup.first_node=1;
     bbs_startup.last_node=4;
     bbs_startup.telnet_interface=INADDR_ANY;
-	bbs_startup.options|=BBS_OPT_NO_QWK_EVENTS;
 
 #ifdef USE_RLOGIN
 	bbs_startup.options|=BBS_OPT_ALLOW_RLOGIN;
@@ -526,10 +539,11 @@ int main(int argc, char** argv)
 	/* Process arguments */
 	for(i=1;i<argc;i++) {
 		arg=argv[i];
-		if(*arg=='-')/* ignore prepended slashes */
+		while(*arg=='-')/* ignore prepended slashes */
 			arg++;
 		if(!stricmp(arg,"defaults")) {
-			printf("default settings:\n");
+			printf("\n");
+			printf("Default settings:\n");
 			printf("\n");
 			printf("Telnet server port:\t%u\n",IPPORT_TELNET);
 			printf("Telnet first node:\t%u\n",bbs_startup.first_node);
@@ -544,6 +558,9 @@ int main(int argc, char** argv)
 		switch(toupper(*(arg++))) {
 			case 'T':	/* Telnet settings */
 				switch(toupper(*(arg++))) {
+					case 'D': /* debug output */
+						bbs_startup.options|=BBS_OPT_DEBUG_TELNET;
+						break;
 					case 'P':
 						bbs_startup.telnet_port=atoi(arg);
 						break;
@@ -564,6 +581,9 @@ int main(int argc, char** argv)
 					case 'P':
 						bbs_startup.rlogin_port=atoi(arg);
 						break;
+					case '2':
+						bbs_startup.options|=BBS_OPT_USE_2ND_RLOGIN;
+						break;
 					default:
 						printf(usage,argv[0]);
 						return(0);
@@ -571,6 +591,9 @@ int main(int argc, char** argv)
 				break;
 			case 'F':	/* FTP */
 				switch(toupper(*(arg++))) {
+					case '-':	
+						run_ftp=FALSE;
+						break;
 					case 'P':
 						ftp_startup.port=atoi(arg);
 						break;
@@ -579,8 +602,11 @@ int main(int argc, char** argv)
 						return(0);
 				}
 				break;
-			case 'S':	/* SMTP */
+			case 'S':	/* SMTP/SendMail */
 				switch(toupper(*(arg++))) {
+					case '-':
+						mail_startup.options|=MAIL_OPT_NO_SENDMAIL;
+						break;
 					case 'P':
 						mail_startup.smtp_port=atoi(arg);
 						break;
@@ -594,6 +620,9 @@ int main(int argc, char** argv)
 				break;
 			case 'P':	/* POP3 */
 				switch(toupper(*(arg++))) {
+					case '-':
+						mail_startup.options&=~MAIL_OPT_ALLOW_POP3;
+						break;
 					case 'P':
 						mail_startup.pop3_port=atoi(arg);
 						break;
@@ -603,9 +632,26 @@ int main(int argc, char** argv)
 				}
 				break;
 			case 'U':	/* runtime UID */
+				switch(toupper(*(arg++))) {
+					case 'N': /* username */
 #ifdef __unix__
-				if (strlen(arg) > 1) new_uid_name=arg;
+						if (strlen(arg) > 1) new_uid_name=arg;
 #endif			
+						break;
+					default:
+						printf(usage,argv[0]);
+						return(0);
+				}
+				break;
+			case 'M':	/* Mail */
+				switch(toupper(*(arg++))) {
+					case '-':
+						run_mail=FALSE;
+						break;
+					default:
+						printf(usage,argv[0]);
+						return(0);
+				}
 				break;
 			case 'N':	/* No */
 				switch(toupper(*(arg++))) {
@@ -618,11 +664,40 @@ int main(int argc, char** argv)
 					case 'S':	/* Services */
 						run_services=FALSE;
 						break;
+					case 'Q':	/* QWK events */
+						bbs_startup.options		|=BBS_OPT_NO_QWK_EVENTS;
+						break;
+					case 'H':	/* Hostname lookup */
+						bbs_startup.options		|=BBS_OPT_NO_HOST_LOOKUP;
+						ftp_startup.options		|=BBS_OPT_NO_HOST_LOOKUP;
+						mail_startup.options	|=BBS_OPT_NO_HOST_LOOKUP;
+						services_startup.options|=BBS_OPT_NO_HOST_LOOKUP;
+						break;
+					case 'J':	/* JavaScript */
+						bbs_startup.options		|=BBS_OPT_NO_JAVASCRIPT;
+						ftp_startup.options		|=BBS_OPT_NO_JAVASCRIPT;
+						mail_startup.options	|=BBS_OPT_NO_JAVASCRIPT;
+						services_startup.options|=BBS_OPT_NO_JAVASCRIPT;
+						break;
 					default:
 						printf(usage,argv[0]);
 						return(0);
 				}
 				break;
+			case 'L':	/* Local */
+				switch(toupper(*(arg++))) {
+					case 'T': /* timezone */
+						bbs_startup.options		|=BBS_OPT_LOCAL_TIMEZONE;
+						ftp_startup.options		|=BBS_OPT_LOCAL_TIMEZONE;
+						mail_startup.options	|=BBS_OPT_LOCAL_TIMEZONE;
+						services_startup.options|=BBS_OPT_LOCAL_TIMEZONE;
+						break;
+					default:
+						printf(usage,argv[0]);
+						return(0);
+				}
+				break;
+
 			default:
 				printf(usage,argv[0]);
 				return(0);
