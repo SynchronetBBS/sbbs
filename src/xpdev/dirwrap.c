@@ -388,27 +388,63 @@ BOOL DLLCALL fexist(const char *filespec)
 BOOL DLLCALL fexistcase(char *path)
 {
 #if defined(__unix__)
-	char tmp[MAX_PATH+1];
-
-	if(fexist(path))
-		return(TRUE);
-
-	SAFECOPY(tmp,path);
-
-	/* check for uppercase filename */
-	strupr(getfname(tmp));
-	if(fexist(path)) {
-		strcpy(path,tmp);
-		return(TRUE);
+	char globme[MAX_PATH*4+1];
+	char fname[MAX_PATH+1];
+	char tmp[5];
+	char *p;
+	int  i,j;
+	glob_t	glb;
+	
+	strncpy(globme,path,MAX_PATH*4);
+	p=getfname(globme);
+	strncpy(fname,p,MAX_PATH);
+	*p=0;
+	for(i=0;fname[i];i++)  {
+		if(isalpha(fname[i]))  {
+			sprintf(tmp,"[%c%c]",toupper(fname[i]),tolower(fname[i]));
+		}
+		else  {
+			sprintf(tmp,"%c",fname[i]);
+		}
+		strncat(globme,tmp,MAX_PATH*4);
+	}
+	if(strcspn(path,"?*")!=strlen(path))  {
+		strncpy(path,globme,MAX_PATH);
+		return(fexist(path));
 	}
 
-	/* check for lowercase filename */
-	strlwr(getfname(tmp));
-	if(fexist(path)) {
-		strcpy(path,tmp);
-		return(TRUE);
+	if(glob(globme,GLOB_MARK|GLOB_NOSORT,NULL,&glb))
+		return(FALSE);
+	
+	if(glb.gl_matchc>0)  {
+		/**********************************************************
+		 * If multiple matches are found, return TRUE only if one *
+		 * EXACTLY matches path or all but one are directories	  *
+		 **********************************************************/
+		j=-1;
+		for(i=0;i<glb.gl_matchc;i++)  {
+			if(!strcmp(path,glb.gl_pathv[i]))  {
+				globfree(&glb);
+				return TRUE;
+			}
+			else  {
+				if(*lastchar(glb.gl_pathv[i]) != '/')  {
+					j=i;
+				}
+			}
+		}
+		if(j>=0)  {
+			strncpy(path,glb.gl_pathv[j],MAX_PATH);
+			globfree(&glb);
+			return TRUE;
+		}
+		globfree(&glb);
+		return FALSE;
 	}
-	return(FALSE);
+
+	globfree(&glb);
+	return FALSE;
+	
 #else
 	return(fexist(path));
 #endif
