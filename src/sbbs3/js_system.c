@@ -99,6 +99,7 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
 	char		str[128];
     jsint       tiny;
+	ulong		val;
 	scfg_t*		cfg;
 
 	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
@@ -151,7 +152,11 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, lastuseron));
 			break;
 		case SYS_PROP_FREEDISKSPACE:
-			*vp = INT_TO_JSVAL(getfreediskspace(cfg->temp_dir));
+			val = getfreediskspace(cfg->temp_dir);
+			if(INT_FITS_IN_JSVAL(val) && !(val&0x80000000))
+				*vp = INT_TO_JSVAL(val);
+			else
+	            JS_NewDoubleValue(cx, val, vp);
 			break;
 
 		case SYS_PROP_NEW_PASS:
