@@ -46,7 +46,8 @@
 int sbbs_t::getnodedat(uint number, node_t *node, bool lockit)
 {
 	char	str[MAX_PATH+1];
-	int		rd,count;
+	int		rd=sizeof(node_t);
+	int		count;
 
 	if(node==NULL || number<1)
 		return(-1);
@@ -89,7 +90,7 @@ int sbbs_t::getnodedat(uint number, node_t *node, bool lockit)
 		logline("!!",str); 
 	}
 	else if(count==LOOP_NODEDAB) {
-		errormsg(WHERE,ERR_READ,"node.dab",number+1);
+		errormsg(WHERE,rd==sizeof(node_t) ? ERR_LOCK : ERR_READ,"node.dab",number+1);
 		return(-2);
 	}
 
@@ -112,9 +113,10 @@ void sbbs_t::nodesync()
 	nodesync_inside=1;
 
 	if(thisnode.action!=action) {
-		getnodedat(cfg.node_num,&thisnode,1);
-		thisnode.action=action;
-		putnodedat(cfg.node_num,&thisnode); 
+		if(getnodedat(cfg.node_num,&thisnode,true)==0) {
+			thisnode.action=action;
+			putnodedat(cfg.node_num,&thisnode); 
+		}
 	}
 
 	criterrs=thisnode.errors;
@@ -123,9 +125,10 @@ void sbbs_t::nodesync()
 
 		if(thisnode.status==NODE_WFC) {
 			errorlog("NODE STATUS FIXUP");
-			getnodedat(cfg.node_num,&thisnode,1);
-			thisnode.status=NODE_INUSE;
-			putnodedat(cfg.node_num,&thisnode); 
+			if(getnodedat(cfg.node_num,&thisnode,true)==0) {
+				thisnode.status=NODE_INUSE;
+				putnodedat(cfg.node_num,&thisnode); 
+			}
 		}
 
 		if(!(sys_status&SS_NEWDAY)) {
@@ -139,9 +142,10 @@ void sbbs_t::nodesync()
 		}
 		if(thisnode.misc&NODE_UDAT && !(useron.rest&FLAG('G'))) {   /* not guest */
 			getuserdat(&cfg, &useron);
-			getnodedat(cfg.node_num,&thisnode,1);
-			thisnode.misc&=~NODE_UDAT;
-			putnodedat(cfg.node_num,&thisnode); 
+			if(getnodedat(cfg.node_num,&thisnode,true)==0) {
+				thisnode.misc&=~NODE_UDAT;
+				putnodedat(cfg.node_num,&thisnode); 
+			}
 		}
 		if(thisnode.misc&NODE_MSGW)
 			getsmsg(useron.number); 	/* getsmsg clears MSGW flag */
@@ -193,9 +197,10 @@ int sbbs_t::getnmsg()
 	int		file;
 	long	length;
 
-	getnodedat(cfg.node_num,&thisnode,1);
-	thisnode.misc&=~NODE_NMSG;          /* clear the NMSG flag */
-	putnodedat(cfg.node_num,&thisnode);
+	if(getnodedat(cfg.node_num,&thisnode,true)==0) {
+		thisnode.misc&=~NODE_NMSG;          /* clear the NMSG flag */
+		putnodedat(cfg.node_num,&thisnode);
+	}
 
 	sprintf(str,"%smsgs/n%3.3u.msg",cfg.data_dir,cfg.node_num);
 	if(flength(str)<1L)
@@ -323,9 +328,10 @@ int sbbs_t::getsmsg(int usernumber)
 		CRLF; 
 	}
 	if(thisnode.misc&NODE_MSGW) {
-		getnodedat(cfg.node_num,&thisnode,1);
-		thisnode.misc&=~NODE_MSGW;
-		putnodedat(cfg.node_num,&thisnode); 
+		if(getnodedat(cfg.node_num,&thisnode,true)==0) {
+			thisnode.misc&=~NODE_MSGW;
+			putnodedat(cfg.node_num,&thisnode); 
+		}
 	}
 	putmsg(buf,P_NOATCODES);
 	LFREE(buf);
