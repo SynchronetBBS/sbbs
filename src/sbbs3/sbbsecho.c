@@ -3681,6 +3681,7 @@ void export_echomail(char *sub_code,faddr_t addr)
 	memset(&msg_path,0,sizeof(addrlist_t));
 	memset(&fakearea,0,sizeof(areasbbs_t));
 	memset(&pkt_faddr,0,sizeof(faddr_t));
+	memset(&hdr,0,sizeof(hdr));
 	start_tick=0;
 
 	printf("\nScanning for Outbound EchoMail...\n");
@@ -4067,6 +4068,8 @@ int main(int argc, char **argv)
 	for(i=0;i<MAX_OPEN_SMBS;i++)
 		memset(&smb[i],0,sizeof(smb_t));
 	memset(&cfg,0,sizeof(config_t));
+	memset(&hdr,0,sizeof(hdr));
+	memset(&pkt_faddr,0,sizeof(pkt_faddr));
 	memset(&msg_seen,0,sizeof(addrlist_t));
 	memset(&msg_path,0,sizeof(addrlist_t));
 	memset(&fakearea,0,sizeof(areasbbs_t));
