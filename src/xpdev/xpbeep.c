@@ -28,13 +28,24 @@
 
 static BOOL sound_device_open_failed=FALSE;
 
-void makesine(double freq, unsigned char *wave, int samples)
+enum {
+	 WAVE_SHAPE_SINE
+	,WAVE_SHAPE_SAWTOOTH
+	,WAVE_SHAPE_SQUARE
+};
+
+#define SHAPE	WAVE_SHAPE_SAWTOOTH
+#define WAVE_PI	3.14159265358979323846
+#define WAVE_TPI 6.28318530717958647692
+
+void makewave(double freq, unsigned char *wave, int samples)
 {
 	int	i;
 	int j;
 	int k;
 	int midpoint;
 	double inc;
+	double pos;
 	BOOL endhigh;
 	BOOL starthigh;
 
@@ -42,11 +53,25 @@ void makesine(double freq, unsigned char *wave, int samples)
 	inc=8.0*atan(1.0);
 	inc *= ((double)freq / (double)S_RATE);
 
+	k=127;
 	for(i=0;i<samples;i++) {
-		wave[i]=(sin (inc * (double)i))*127+128;
+		pos=(inc*(double)i);
+		pos -= (int)(pos/WAVE_TPI)*WAVE_TPI;
+		switch(SHAPE) {
+			case WAVE_SHAPE_SINE:
+				wave[i]=(sin (pos))*127+128;
+				break;
+			case WAVE_SHAPE_SAWTOOTH:
+				wave[i]=(WAVE_TPI-pos)*40.5;
+				break;
+			case WAVE_SHAPE_SQUARE:
+				wave[i]=(pos<WAVE_PI)?255:0;
+				break;
+		}
+printf("POS: %.4f  VAL: %u\n",pos,wave[i]);
 	}
 	
-	/* Now we have a "perfect" sine wave... 
+	/* Now we have a "perfect" wave... 
 	 * we must clean it up now to avoid click/pop
 	 */
 	if(wave[samples-1]>128)
@@ -64,6 +89,7 @@ void makesine(double freq, unsigned char *wave, int samples)
 			wave[i]=128;
 		}
 	}
+#if 0
 	/* Fade out */
 	for(k=8;k>0;k--) {
 		for(;i>midpoint;i--) {
@@ -87,6 +113,7 @@ void makesine(double freq, unsigned char *wave, int samples)
 			wave[i]=j+128;
 		}
 	}
+#endif
 
 	if(wave[0]>128)
 		starthigh=TRUE;
@@ -103,6 +130,7 @@ void makesine(double freq, unsigned char *wave, int samples)
 			wave[i]=128;
 		}
 	}
+#if 0
 	/* Fade in */
 	for(k=8;k>0;k--) {
 		for(;i<midpoint;i++) {
@@ -126,6 +154,7 @@ void makesine(double freq, unsigned char *wave, int samples)
 			wave[i]=j+128;
 		}
 	}
+#endif
 }
 
 #ifdef _WIN32
@@ -155,7 +184,7 @@ void xpbeep(double freq, DWORD duration)
 	memset(&wh, 0, sizeof(wh));
 	wh.lpData=wave;
 	wh.dwBufferLength=S_RATE*duration/1000;
-	makesine(freq,wave,wh.dwBufferLength);
+	makewave(freq,wave,wh.dwBufferLength);
 	if(waveOutPrepareHeader(waveOut, &wh, sizeof(wh))!=MMSYSERR_NOERROR)
 		goto abrt;
 	if(waveOutWrite(waveOut, &wh, sizeof(wh))!=MMSYSERR_NOERROR)
@@ -226,7 +255,7 @@ void DLLCALL xpbeep(double freq, DWORD duration)
 	unsigned char	wave[S_RATE*15/2+1];
 
 	samples=S_RATE*duration/1000;
-	makesine(freq,wave,samples);
+	makewave(freq,wave,samples);
 	if(!sound_device_open_failed) {
 		if((dsp=open("/dev/dsp",O_WRONLY,0))<0) {
 			sound_device_open_failed=TRUE;
