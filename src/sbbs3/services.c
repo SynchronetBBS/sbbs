@@ -972,6 +972,7 @@ static void js_static_service_thread(void* arg)
 	SOCKET					socket;
 	/* JavaScript-specific */
 	JSObject*				js_glob;
+	JSObject*				js_scope;
 	JSScript*				js_script;
 	JSRuntime*				js_runtime;
 	JSContext*				js_cx;
@@ -1020,15 +1021,19 @@ static void js_static_service_thread(void* arg)
 	
 		JS_ClearPendingException(js_cx);
 
-		js_script=JS_CompileFile(js_cx, js_glob, spath);
+		if((js_scope=JS_NewObject(js_cx, NULL, NULL, js_glob))==NULL) {
+			lprintf("%04d !JavaScript FAILED to create scope object", service->socket);
+			break;
+		}
 
-		if(js_script==NULL)  {
+		if((js_script=JS_CompileFile(js_cx, js_scope, spath))==NULL)  {
 			lprintf("%04d !JavaScript FAILED to compile script (%s)",service->socket,spath);
 			break;
 		}
 
-		JS_ExecuteScript(js_cx, js_glob, js_script, &rval);
+		JS_ExecuteScript(js_cx, js_scope, js_script, &rval);
 		JS_DestroyScript(js_cx, js_script);
+		JS_ClearScope(js_cx, js_scope);
 
 		JS_GC(js_cx);
 	} while(!service->terminated && service->options&SERVICE_OPT_STATIC_LOOP);
