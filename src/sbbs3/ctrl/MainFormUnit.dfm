@@ -2278,6 +2278,11 @@ object MainForm: TMainForm
           Hint = 'BADEMAIL.MSG'
           OnClick = TextMenuItemEditClick
         end
+        object BBSEditSubjectFilterMenuItem: TMenuItem
+          Caption = 'E-mail Subject Filter'
+          Hint = 'SUBJECT.CAN'
+          OnClick = TextMenuItemEditClick
+        end
         object BBSEditFilenameFilter: TMenuItem
           Caption = 'File Name Filter'
           Hint = 'FILE.CAN'
