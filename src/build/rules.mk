@@ -1,0 +1,16 @@
+$(OBJODIR):
+	$(QUIET)$(IFNOTEXIST) mkdir $(OBJODIR)
+
+$(LIBODIR):
+	$(QUIET)$(IFNOTEXIST) mkdir $(LIBODIR)
+
+$(EXEODIR):
+	$(QUIET)$(IFNOTEXIST) mkdir $(EXEODIR)
+
+clean:
+	@echo Deleting $(OBJODIR)$(SLASH)
+	$(QUIET)$(DELETE) $(OBJODIR)$(SLASH)*
+	@echo Deleting $(LIBODIR)$(SLASH)
+	$(QUIET)$(DELETE) $(LIBODIR)$(SLASH)*
+	@echo Deleting $(EXEODIR)$(SLASH)
+	$(QUIET)$(DELETE) $(EXEODIR)$(SLASH)*

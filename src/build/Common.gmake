@@ -52,6 +52,7 @@
 #					  different options of the same source file				#
 #																			#
 # Common Build Macros Defined:												#
+#  DELETE			- Delete files (Preferrably verbose)					#
 #  OBJODIR			- Object output dir										#
 #  LIBODIR			- Library output dir									#
 #  EXEODIR			- Executable output dir									#
