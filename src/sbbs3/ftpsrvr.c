@@ -2229,15 +2229,9 @@ static void ctrl_thread(void* arg)
 						fprintf(fp,"%s\r\n",getfname(g.gl_pathv[i]));
 				}
 				globfree(&g);
-			} else {
+			} else 
 				lprintf("%04d %s listing: %s/%s directory (empty - no access)"
 					,sock,user.alias,scfg.lib[lib]->sname,scfg.dir[dir]->code);
-#ifdef __unix__
-				strcpy(fname,"/dev/null");
-#else
-				strcpy(fname,"NUL");
-#endif
-			}
 
 			fclose(fp);
 			filexfer(&data_addr,sock,pasv_sock,&data_sock,fname,0L
