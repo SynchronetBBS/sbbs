@@ -1,4 +1,4 @@
-<p class="navigation"><a class="navigation" href="http://^^JS:system.inet_addr^^/">Home</a> : <a class="navigation" href="/members/">Members</a> : <b>Groups</b></p>
+<p class="navigation"><a class="navigation" href="http://^^JS:system.inet_addr^^/">Home</a> : <b>Groups</b></p>
 <table class="grouplist" border="0" cellpadding="2" cellspacing="2">
 <tr>
 <th class="grouplist">Group</th><th class="grouplist">Description</th>
