@@ -18,7 +18,7 @@
 "nm\r\nSending E-mail to h%s nm#%un\r\n"          018 Emailing
 "nm\r\nPosting on h%snm %s\r\n"                    019 Posting
 "\r\nNew file.\r\n"                                     020 NewFile
-"_\r\nyhTitle: "                                     021 TitlePrompt
+"_\r\nyhSubject: "                                   021 SubjectPrompt
 "ng\r\nEnter message now (h%dng lines max). "\     022 EnterMsgNow
 	"Type h/?ng on a new line for menu.\r\nn"
 "ng\r\nRaw message input (h%lung bytes max). "\    023 EnterMsgNowRaw
@@ -71,7 +71,7 @@
 "n\r\nNo mail on system.\r\n"                          063 NoMailOnSystem
 "-\r\ngReading All E-mail (h%ung of h%ung): n" 064 ReadingAllMail
 "_\r\ngh      From                   "\              065 MailOnSystemLstHdr
-	"To                       Title\r\nn"
+	"To                     Subject\r\nn"
 "gh%4d:ng %-22.22s %-22.22s h%cng %.25s\r\n"     066 MailOnSystemLstFmt
 "-\r\nc%-15.15s yh%-40.40s       "\                 067 NScanStatusFmt
 	"ncNew:h%4lu ncofh %-lu"
@@ -754,7 +754,7 @@
 "\r\n~Directory, ~Library, or ~All: "                   622 DirLibOrAll
 "\r\n_yhEnter path: "                                623 EnterPath
 "\r\nSearch and display extended information"           624 SearchExtendedQ
-"\r\nDisplay Titles Only"                               625 DisplayTitlesOnlyQ
+"\r\nDisplay Subjects Only"                             625 DisplaySubjectsOnlyQ
 "\r\nEcho is now %s \r\n"                               626 EchoIsNow
 "\r\nnyhPrivate Chat - bCtrl-C to Quitn\r\n\r\n"   627 WelcomeToPrivateChat
 "\r\nngUploading h%s.REP\r\n"                        628 UploadingREP
