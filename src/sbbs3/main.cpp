@@ -1223,7 +1223,7 @@ void event_thread(void* arg)
 						// status(str);
 						lastnodechk=0;	 /* really last event time check */
 						while(!sbbs->terminated) {
-							mswait(1000);
+							mswait(startup->event_interval*1000);
 							now=time(NULL);
 							if(now-lastnodechk<10)
 								continue;
@@ -1259,7 +1259,7 @@ void event_thread(void* arg)
 							"running timed event.");
 						lastnodechk=0;
 						while(!sbbs->terminated) {
-							mswait(1000);
+							mswait(startup->event_interval*1000);
 							now=time(NULL);
 							if(now-lastnodechk<10)
 								continue;
@@ -1355,7 +1355,7 @@ void event_thread(void* arg)
 		}
 		pthread_mutex_unlock(&event_mutex);
 
-		mswait(1000);
+		mswait(startup->event_interval*1000);
 	}
     sbbs->event_thread_running = false;
 
@@ -2886,6 +2886,7 @@ void DLLCALL bbs_thread(void* arg)
 	/* Setup intelligent defaults */
 	if(startup->telnet_port==0)		startup->telnet_port=IPPORT_TELNET;
 	if(startup->rlogin_port==0)		startup->rlogin_port=513;
+	if(startup->event_interval==0)	startup->event_interval=5;
 
 	thread_up();
 
