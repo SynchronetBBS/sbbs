@@ -104,7 +104,6 @@ int DLLCALL getuserdat(scfg_t* cfg, user_t *user)
 	}
 	sprintf(userdat,"%suser/user.dat",cfg->data_dir);
 	if((file=nopen(userdat,O_RDONLY|O_DENYNONE))==-1) {
-		close(file);
 		memset(user,0,sizeof(user_t));
 		return(errno); 
 	}
@@ -540,7 +539,6 @@ int DLLCALL getnodedat(scfg_t* cfg, uint number, node_t *node, char lockit)
 
 	sprintf(str,"%snode.dab",cfg->ctrl_dir);
 	if((file=nopen(str,O_RDONLY|O_DENYNONE))==-1) {
-		close(file);
 		memset(node,0,sizeof(node_t));
 		return(errno); 
 	}
@@ -580,7 +578,6 @@ int DLLCALL putnodedat(scfg_t* cfg, uint number, node_t* node)
 
 	sprintf(str,"%snode.dab",cfg->ctrl_dir);
 	if((file=nopen(str,O_RDWR|O_CREAT|O_DENYNONE))==-1) {
-		close(file);
 		memset(node,0,sizeof(node_t));
 		return(errno); 
 	}
