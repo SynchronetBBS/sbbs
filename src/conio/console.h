@@ -46,6 +46,12 @@
 #include "vidmodes.h"
 
 extern sem_t	console_mode_changed;
+extern sem_t	copybuf_set;
+extern sem_t	pastebuf_request;
+extern sem_t	pastebuf_set;
+extern pthread_mutex_t	copybuf_mutex;
+extern char *copybuf;
+extern char *pastebuf;
 
 extern int CurrMode;
 

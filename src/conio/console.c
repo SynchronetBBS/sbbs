@@ -104,6 +104,7 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/keysym.h>
+#include <X11/Xatom.h>
 
 #include <genwrap.h>
 
@@ -121,6 +122,12 @@
 int console_new_mode=NO_NEW_MODE;
 int CurrMode;
 sem_t	console_mode_changed;
+sem_t	copybuf_set;
+sem_t	pastebuf_set;
+sem_t	pastebuf_request;
+pthread_mutex_t	copybuf_mutex;
+char *copybuf=NULL;
+char *pastebuf=NULL;
 sem_t	x11_beep;
 sem_t	x11_title;
 int InitCS;
@@ -178,6 +185,12 @@ struct x11 {
 	GC		(*XCreateGC)	(Display*, Drawable, unsigned long, XGCValues*);
 	int		(*XSelectInput)	(Display*, Window, long);
 	int		(*XStoreName)	(Display*, Window, _Xconst char*);
+	Window	(*XGetSelectionOwner)	(Display*, Atom);
+	int		(*XConvertSelection)	(Display*, Atom, Atom, Atom, Window, Time);
+	int		(*XGetWindowProperty)	(Display*, Window, Atom, long, long, Bool, Atom, Atom*, int*, unsigned long *, unsigned long *, unsigned char **);
+	int		(*XChangeProperty)		(Display*, Window, Atom, Atom, int, int, _Xconst unsigned char*, int);
+	Status	(*XSendEvent)	(Display*, Window, Bool, long, XEvent*);
+	int		(*XSetSelectionOwner)	(Display*, Atom, Window, Time);	
 };
 struct x11 x11;
 
@@ -548,6 +561,45 @@ static int
 video_event(XEvent *ev)
 {
 	switch (ev->type) {
+		case SelectionClear: {
+				XSelectionClearEvent *req;
+
+				req=&(ev->xselectionclear);
+				pthread_mutex_lock(&copybuf_mutex);
+				if(req->selection==XA_PRIMARY && copybuf!=NULL) {
+					free(copybuf);
+					copybuf=NULL;
+				}
+				pthread_mutex_unlock(&copybuf_mutex);
+		}
+		case SelectionRequest: {
+				XSelectionRequestEvent *req;
+				XEvent respond;
+
+				req=&(ev->xselectionrequest);
+				pthread_mutex_lock(&copybuf_mutex);
+				if(copybuf==NULL) {
+					respond.xselection.property=None;
+				}
+				else {
+					if(req->target==XA_STRING) {
+						x11.XChangeProperty(dpy, req->requestor, req->property, XA_STRING, 8, PropModeReplace, (unsigned char *)copybuf, strlen(copybuf));
+						respond.xselection.property=req->property;
+					}
+					else
+						respond.xselection.property=None;
+				}
+				respond.xselection.type=SelectionNotify;
+				respond.xselection.display=req->display;
+				respond.xselection.requestor=req->requestor;
+				respond.xselection.selection=req->selection;
+				respond.xselection.target=req->target;
+				respond.xselection.time=req->time;
+				x11.XSendEvent(dpy,req->requestor,0,0,&respond);
+				x11.XFlush(dpy);
+				pthread_mutex_unlock(&copybuf_mutex);
+				break;
+		}
 		case MotionNotify: {
 				XMotionEvent *me = (XMotionEvent *)ev;
 				me->x -= 2;
@@ -957,6 +1009,29 @@ video_async_event(void *crap)
 					x11.XBell(dpy, 0);
 				if(!sem_trywait(&x11_title))
 					x11.XStoreName(dpy, win, window_title);
+				if(!sem_trywait(&copybuf_set)) {
+					/* Copybuf has been set and isn't NULL */
+					x11.XSetSelectionOwner(dpy, XA_PRIMARY, win, CurrentTime);
+				}
+				if(!sem_trywait(&pastebuf_request)) {
+					Window sowner;
+					int format;
+					unsigned long len, bytes_left, dummy;
+					Atom type;
+
+					sowner=x11.XGetSelectionOwner(dpy, XA_PRIMARY);
+					if(sowner != None) {
+						x11.XConvertSelection(dpy, XA_PRIMARY, XA_STRING, None, sowner, CurrentTime);
+						x11.XFlush(dpy);
+						x11.XGetWindowProperty(dpy, sowner, XA_STRING, 0, 0, 0, AnyPropertyType, &type, &format, &len, &bytes_left, (unsigned char **)(&pastebuf));
+						if(bytes_left > 0)
+							x11.XGetWindowProperty(dpy,sowner,XA_STRING,0,bytes_left,0,AnyPropertyType,&type,&format,&len,&dummy,(unsigned char **)&pastebuf);
+					}
+					/* Set paste buffer */
+					sem_post(&pastebuf_set);
+					sem_wait(&pastebuf_request);
+					x11.XFree(pastebuf);
+				}
 				break;
 			default:
 				if (FD_ISSET(xfd, &fdset)) {
@@ -1144,7 +1219,7 @@ init_window()
 
     x11.XSelectInput(dpy, win, KeyReleaseMask | KeyPressMask |
 		     ExposureMask | ButtonPressMask
-		     | ButtonReleaseMask | PointerMotionMask );
+		     | ButtonReleaseMask | PointerMotionMask | StructureNotifyMask );
 
 	SAFECOPY(window_title,"SyncConsole");
     x11.XStoreName(dpy, win, window_title);
@@ -1255,13 +1330,41 @@ console_init()
 		dlclose(dl);
 		return(-1);
 	}
+	if((x11.XGetSelectionOwner=dlsym(dl,"XGetSelectionOwner"))==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
+	if((x11.XConvertSelection=dlsym(dl,"XConvertSelection"))==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
+	if((x11.XGetWindowProperty=dlsym(dl,"XGetWindowProperty"))==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
+	if((x11.XChangeProperty=dlsym(dl,"XChangeProperty"))==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
+	if((x11.XSendEvent=dlsym(dl,"XSendEvent"))==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
+	if((x11.XSetSelectionOwner=dlsym(dl,"XSetSelectionOwner"))==NULL) {
+		dlclose(dl);
+		return(-1);
+	}
 
 	if(dpy!=NULL)
 		return(0);
 
 	sem_init(&console_mode_changed,0,0);
+	sem_init(&copybuf_set,0,0);
+	sem_init(&pastebuf_request,0,0);
+	sem_init(&pastebuf_set,0,0);
 	sem_init(&x11_beep,0,0);
 	sem_init(&x11_title,0,0);
+	pthread_mutex_init(&copybuf_mutex, NULL);
 
    	if(kbd_init()) {
 		return(-1);
