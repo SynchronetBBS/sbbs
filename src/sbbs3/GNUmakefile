@@ -295,6 +295,7 @@ $(ECHOCFG): \
 	$(EXEODIR)/rechocfg.o \
 	$(UIFC_OBJS) \
 	$(EXEODIR)/nopen.o \
+	$(EXEODIR)/crc16.o \
 	$(EXEODIR)/str_util.o \
 	$(EXEODIR)/filewrap.o \
 	$(EXEODIR)/genwrap.o
