@@ -4,12 +4,12 @@ SRC_ROOT = ..
 
 CFLAGS = -DWRAPPER_IMPORTS $(CFLAGS) $(XPDEV-MT_CFLAGS) $(CIOLIB-MT_CFLAGS)
 
-$(UIFCLIB): $(OBJS)
+$(UIFCLIB_BUILD): $(OBJS)
 	@echo Creating $< ...
 	-$(QUIET)$(DELETE) $@
         &$(QUIET)tlib $@ +$**
 
-$(UIFCLIB-MT): $(MT_OBJS)
+$(UIFCLIB-MT_BUILD): $(MT_OBJS)
 	@echo Creating $< ...
 	-$(QUIET)$(DELETE) $@
         &$(QUIET)tlib $@ +$**
