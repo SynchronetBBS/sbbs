@@ -61,7 +61,7 @@ BOOL allocerr(FILE* fp, char* error, long offset, char *fname, uint size)
 /****************************************************************************/
 BOOL read_node_cfg(scfg_t* cfg, char* error)
 {
-	char	c,str[256],fname[13];
+	char	c,str[MAX_PATH+1],fname[13];
 	int 	i;
 	short	n;
 	long	offset=0;
@@ -180,7 +180,7 @@ BOOL read_node_cfg(scfg_t* cfg, char* error)
 /****************************************************************************/
 BOOL read_main_cfg(scfg_t* cfg, char* error)
 {
-	char	str[256],fname[13],c;
+	char	str[MAX_PATH+1],fname[13],c;
 	short	i,j,n;
 	long	offset=0;
 	FILE	*instream;
@@ -405,7 +405,7 @@ BOOL read_main_cfg(scfg_t* cfg, char* error)
 /****************************************************************************/
 BOOL read_msgs_cfg(scfg_t* cfg, char* error)
 {
-	char	str[256],fname[13],c;
+	char	str[MAX_PATH+1],fname[13],c;
 	short	i,j,k,n;
 	long	offset=0;
 	FILE	*instream;
