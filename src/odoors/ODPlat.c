@@ -578,7 +578,9 @@ void ODTimerStart(tODTimer *pTimer, tODMilliSec Duration)
 #endif /* ODPLAT_WIN32 */
 
 #ifdef ODPLAT_NIX
-   gettimeofday(&(pTimer->Start),NULL);
+   gettimeofday(&tv,NULL);
+   pTimer->Start_sec=tv.tv_sec;
+   pTimer->Start_usec=tv.tv_usec;
    pTimer->Duration = Duration;
 #endif
 }
@@ -600,6 +602,7 @@ BOOL ODTimerElapsed(tODTimer *pTimer)
    struct timeval tv;
    struct timeval end;
 #endif
+
    ASSERT(pTimer != NULL);
 
 #ifdef ODPLAT_DOS
@@ -613,13 +616,7 @@ BOOL ODTimerElapsed(tODTimer *pTimer)
 #endif /* ODPLAT_WIN32 */
 
 #ifdef ODPLAT_NIX
-   /* Don't bother checking for RunKernelTimer */
-   if (pTimer==&RunKernelTimer)
-      return;
-   end.tv_sec=pTimer->Start.tv_sec+(pTimer->Duration / 1000);
-   end.tv_usec=((pTimer->Start.tv_usec)+((pTimer->Duration)*1000))%1000000;
-   gettimeofday(&tv,NULL);
-   return((end.tv_sec >= tv.tv_sec) && (end.tv_usec >= tv.tv_usec));
+	return(ODTimerLeft(pTimer)==0);
 #endif
 }
 
@@ -659,8 +656,8 @@ void ODTimerWaitForElapse(tODTimer *pTimer)
    /* This is timing sensitive and *MUST* wait regardless of 100% CPU or signals */
    while(1)  {
       gettimeofday(&tv,NULL);
-      tv.tv_sec -= (pTimer->Start.tv_sec + pTimer->Duration/1000);
-      tv.tv_usec -= (pTimer->Start.tv_usec + ((pTimer->Duration*1000)%1000000));
+      tv.tv_sec -= (pTimer->Start_sec + pTimer->Duration/1000);
+      tv.tv_usec -= (pTimer->Start_usec + ((pTimer->Duration*1000)%1000000));
       if(tv.tv_usec < 0) {
          tv.tv_sec--;
          tv.tv_usec += 1000000;
@@ -712,6 +709,7 @@ tODMilliSec ODTimerLeft(tODTimer *pTimer)
 {
 #ifdef ODPLAT_NIX
    struct timeval tv;
+   tODMilliSec left=0;
 #endif
    ASSERT(pTimer != NULL);
 
@@ -733,13 +731,16 @@ tODMilliSec ODTimerLeft(tODTimer *pTimer)
    }
 #elif defined(ODPLAT_NIX)
    gettimeofday(&tv,NULL);
-   tv.tv_sec -= pTimer->Start.tv_sec;
-   tv.tv_usec -= pTimer->Start.tv_usec;
+   tv.tv_sec -= pTimer->Start_sec;
+   tv.tv_usec -= pTimer->Start_usec;
    if(tv.tv_usec < 0) {
       tv.tv_sec--;
 	  tv.tv_usec += 1000000;
    }
-   return((tv.tv_usec/1000)+(tv.tv_sec*1000));
+   left=(tv.tv_usec/1000)+(tv.tv_sec*1000);
+   if(left<0)
+      left=0;
+   return(left);
 #else /* !ODPLAT_DOS */
    {
       tODMilliSec Now;
