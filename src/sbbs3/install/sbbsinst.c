@@ -284,9 +284,9 @@ int main(int argc, char **argv)
 		if((opt[i]=(char *)MALLOC(MAX_OPLN))==NULL)
 			allocfail(MAX_OPLN);
 
-	if((mopt=(char **)MALLOC(sizeof(char *)*14))==NULL)
-		allocfail(sizeof(char *)*14);
-	for(i=0;i<14;i++)
+	if((mopt=(char **)MALLOC(sizeof(char *)*MAX_OPTS))==NULL)
+		allocfail(sizeof(char *)*MAX_OPTS);
+	for(i=0;i<MAX_OPTS;i++)
 		if((mopt[i]=(char *)MALLOC(MAX_OPLN))==NULL)
 			allocfail(MAX_OPLN);
 
