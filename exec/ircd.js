@@ -26,7 +26,7 @@ load("nodedefs.js");
 // IF you're making a custom version, it'd be appreciated if you left the
 // version number alone, and add a token in the form of +hack (i.e. 1.0+cyan)
 // This is so everyone knows your revision base, AND type of hack used.
-var version = "1.0+pre7";
+var version = "1.0+pre8";
 // This will dump all I/O to and from the server to your Synchronet console.
 // It also enables some more verbose WALLOPS, especially as they pertain to
 // blocking functions.
@@ -2953,8 +2953,19 @@ function IRCClient_server_commands(origin, command, cmdline) {
 		case "NICK":
 			if (!cmd[8] && (cmd[2][0] != ":"))
 				break;
-			if (searchbynick(cmd[1]))
-				break; /// XXX FIXME Collide Here.
+			collide = searchbynick(cmd[1]);
+			if ((collide) && (parseInt(collide.connecttime) <
+			    parseInt(cmd[3]) ) ) {
+				// FIXME: At the moment, we rely on the remote
+				// end to do the right thing.
+				break;
+			} else if ((collide) && (parseInt(collide.connecttime) >
+			    parseInt(cmd[3]) ) ) {
+				// Nuke our side of things, allow this newly
+				// introduced nick to overrule.
+				collide.quit("Nickname Collision");
+				this.bcast_to_servers("KILL " + collide.nick + " :Nickname Collision.");
+			}
 			if (cmd[2][0] == ":") {
 				cmd[2] = cmd[2].slice(1);
 				ThisOrigin.created = cmd[2];
