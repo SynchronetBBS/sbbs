@@ -566,6 +566,9 @@ char inkey(long mode)
 			keybufbot=0; }
 	else if(kbhit()) {
 		i=getch();
+#ifdef __unix__
+		if(i==LF) i=CR;	/* Enter key returns Ctrl-J on Unix! (ohmygod) */
+#endif
 		if(i==0 || i==0xE0) {			/* Local Alt or Function key hit */
 			i=getch();
 			switch(i) {
