@@ -12,7 +12,8 @@
 #include "threadwrap.h"
 
 static void getkey(void);
-static void thread_test(void* arg);
+static void sem_test_thread(void* arg);
+static void sleep_test_thread(void* arg);
 
 typedef struct {
 	sem_t parent_sem;
@@ -75,6 +76,25 @@ int main()
 	SLEEP(5000);
 	printf("slept %ld seconds\n",time(NULL)-t);
 
+	/* Thread SLEEP test */
+	printf("\nThread SLEEP(5 second) test\n");
+	getkey();
+	i=0;
+	if(_beginthread(
+		  sleep_test_thread	/* entry point */
+		 ,0					/* stack size (0=auto) */
+		 ,&i				/* data */
+		 )==(unsigned long)-1)
+		printf("_beginthread failed\n");
+	else {
+		SLEEP(1);			/* yield to child thread */
+		while(i==0) {
+			printf(".");
+			fflush(stdout);
+			SLEEP(1000);
+		}
+	}
+
 	/* glob test */
 	printf("\nglob(%s) test\n",glob_pattern);
 	getkey();
@@ -106,7 +126,7 @@ int main()
 	printf("\nFree disk space: %lu bytes\n",getfreediskspace(path));
 
 	/* Thread (and inter-process communication) test */
-	printf("\nThread test\n");
+	printf("\nSemaphore test\n");
 	getkey();
 	sem_init(&thread_data.parent_sem
 		,0 /* shared between processes */
@@ -117,9 +137,9 @@ int main()
 		,0	/* initial count */
 		);
 	if(_beginthread(
-		  thread_test	/* entry point */
-		 ,0				/* stack size (0=auto) */
-		 ,&thread_data	/* data */
+		  sem_test_thread	/* entry point */
+		 ,0					/* stack size (0=auto) */
+		 ,&thread_data		/* data */
 		 )==(unsigned long)-1)
 		printf("_beginthread failed\n");
 	else {
@@ -145,13 +165,24 @@ static void getkey(void)
 	fflush(stdout);
 }
 
-static void thread_test(void* arg)
+static void sleep_test_thread(void* arg)
+{
+	time_t t=time(NULL);
+	printf("child sleeping");
+	fflush(stdout);
+	SLEEP(5000);
+	printf("\nchild awake after %ld seconds\n",time(NULL)-t);
+
+	*(int*)arg=1;	/* signal parent: we're done */
+}
+
+static void sem_test_thread(void* arg)
 {
 	ulong i;
 	thread_data_t* data = (thread_data_t*)arg;
 
-	printf("thread_test entry\n");
-	sem_post(&data->child_sem);
+	printf("sem_test_thread entry\n");
+	sem_post(&data->child_sem);		/* signal parent: we've started */
 
 	for(i=0;i<10;i++) {
 		sem_wait(&data->parent_sem);
@@ -159,6 +190,6 @@ static void thread_test(void* arg)
 		sem_post(&data->child_sem);
 	}
 
-	printf("thread_test exit\n");
-	sem_post(&data->child_sem);
+	printf("sem_test_thread exit\n");
+	sem_post(&data->child_sem);		/* signal parent: we're done */
 }
