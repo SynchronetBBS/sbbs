@@ -2880,6 +2880,10 @@ void DLLCALL bbs_thread(void* arg)
 		return;
 	}
 
+	/* Setup intelligent defaults */
+	if(startup->telnet_port==0)		startup->telnet_port=IPPORT_TELNET;
+	if(startup->rlogin_port==0)		startup->rlogin_port=513;
+
 	thread_up();
 
 	status("Initializing");
