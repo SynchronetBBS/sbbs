@@ -162,7 +162,7 @@ UIFC_SRC	=	$(SRC_ROOT)$(DIRSEP)uifc
 !include     $(SMBLIB_SRC)$(DIRSEP)Common.make
 !include     $(XPDEV_SRC)$(DIRSEP)Common.make
 
-.path.c		=	.
+.path.c		=	.;$(SMBLIB_SRC)
 .path.cpp	=	.
 
 !include targets.mk
