@@ -123,7 +123,7 @@ char tmp[256];
 char error[256];
 char cflags[MAX_PATH+1];
 char cvsroot[MAX_PATH+1];
-char distlist_rev[128]="unspecified";
+char distlist_rev[128]="Unspecified";
 char revision[16];
 
 int  backup_level=5;
@@ -314,7 +314,7 @@ int main(int argc, char **argv)
 		sprintf(mopt[i++],"%-27.27s","Start Installation...");
 		mopt[i][0]=0;
 
-		sprintf(str,"Synchronet Installation (Distribution List %s)",distlist_rev);
+		sprintf(str,"Synchronet Installation - Distribution List %s",distlist_rev);
 		uifc.helpbuf=	"`Synchronet Installation:`\n"
 						"\nToDo: Add help.";
 		switch(uifc.list(WIN_ESC|WIN_MID|WIN_ACT|WIN_ORG,0,0,70,&main_dflt,0
