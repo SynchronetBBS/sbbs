@@ -36,7 +36,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "conwrap.h"
 #include "uifc.h"
 #include "sbbs.h"
 

@@ -31,7 +31,6 @@ OBJS	=	$(ODIR)$(SLASH)scfg.$(OFILE)\
             $(ODIR)$(SLASH)date_str.$(OFILE)\
 			$(ODIR)$(SLASH)str_util.$(OFILE)\
 			$(ODIR)$(SLASH)genwrap.$(OFILE)\
-			$(ODIR)$(SLASH)conwrap.$(OFILE)\
 			$(ODIR)$(SLASH)dirwrap.$(OFILE)\
 			$(ODIR)$(SLASH)filewrap.$(OFILE)\
 			$(ODIR)$(SLASH)uifcx.$(OFILE)
