@@ -39,6 +39,8 @@
 
 #ifdef JAVASCRIPT
 
+#include <jsobj.h>		/* Needed for OBJ_GET_CLASS macro */
+
 typedef struct
 {
 	SOCKET	sock;
@@ -145,8 +147,9 @@ SOCKET DLLCALL js_socket(JSContext *cx, jsval val)
 	SOCKET		sock=INVALID_SOCKET;
 
 	if(JSVAL_IS_OBJECT(val)) {
-		if((vp=JS_GetPrivate(cx,JSVAL_TO_OBJECT(val)))!=NULL)
-			sock=*(SOCKET*)vp;
+		if(OBJ_GET_CLASS(cx, JSVAL_TO_OBJECT(val))->flags & JSCLASS_HAS_PRIVATE)
+			if((vp=JS_GetPrivate(cx,JSVAL_TO_OBJECT(val)))!=NULL)
+				sock=*(SOCKET*)vp;
 	} else if(val!=JSVAL_VOID)
 		JS_ValueToInt32(cx,val,(int32*)&sock);
 
