@@ -1007,6 +1007,7 @@ function IRCClient(socket,new_id,local_client,do_newconn) {
 	this.numeric=IRCClient_numeric;
 	this.numeric351=IRCClient_numeric351;
 	this.numeric353=IRCClient_numeric353;
+	this.numeric391=IRCClient_numeric391;
 	this.numeric401=IRCClient_numeric401;
 	this.numeric402=IRCClient_numeric402;
 	this.numeric403=IRCClient_numeric403;
@@ -1038,6 +1039,9 @@ function IRCClient(socket,new_id,local_client,do_newconn) {
 	this.do_part=IRCClient_do_part;
 	this.do_whois=IRCClient_do_whois;
 	this.do_msg=IRCClient_do_msg;
+	this.do_admin=IRCClient_do_admin;
+	this.do_info=IRCClient_do_info;
+	this.do_stats=IRCClient_do_stats;
 	this.global=IRCClient_global;
 	this.services_msg=IRCClient_services_msg;
 	this.part_all=IRCClient_part_all;
@@ -1284,10 +1288,14 @@ function IRCClient_numeric351() {
 function IRCClient_numeric353(chan, str) {
 	// = public @ secret * everything else
 	if (Channels[chan].mode&CHANMODE_SECRET)
-		ctype_str = "@";
+		var ctype_str = "@";
 	else
-		ctype_str = "=";
+		var ctype_str = "=";
 	this.numeric("353", ctype_str + " " + Channels[chan].nam + " :" + str);
+}
+
+function IRCClient_numeric391() {
+	this.numeric(391, servername + " :" + strftime("%A %B %d %Y -- %H:%M %z",time()));
 }
 
 function IRCClient_numeric401(str) {
@@ -1735,6 +1743,128 @@ function IRCClient_do_msg(target,type_str,send_str) {
 		}
 	}
 	return 1;
+}
+
+function IRCClient_do_admin() {
+	if (Admin1 && Admin2 && Admin3) {
+		this.numeric(256, ":Administrative info about " + servername);
+		this.numeric(257, ":" + Admin1);
+		this.numeric(258, ":" + Admin2);
+		this.numeric(259, ":" + Admin3);
+	} else {
+		this.numeric(423, servername + " :No administrative information available.");
+	}
+}
+
+function IRCClient_do_info() {
+	this.numeric(371, ":" + VERSION + " Copyright 2003 Randy Sommerfeld.");
+	this.numeric(371, ":" + system.version_notice + " " + system.copyright + ".");
+	this.numeric(371, ": ");
+	this.numeric(371, ":--- A big thanks to the following for their assistance: ---");
+	this.numeric(371, ":     Deuce: Hacking and OOP conversions.");
+	this.numeric(371, ":DigitalMan: Additional hacking and API stuff.");
+	this.numeric(371, ": ");
+	this.numeric(371, ":Running on " + system.os_version);
+	this.numeric(371, ":Compiled with " + system.compiled_with + " at " + system.compiled_when);
+	this.numeric(371, ":Socket Library: " + system.socket_lib);
+	this.numeric(371, ":Message Base Library: " + system.msgbase_lib);
+	this.numeric(371, ":JavaScript Library: " + system.js_version);
+	this.numeric(371, ":This BBS has been up since " + system.timestr(system.uptime));
+	this.numeric(371, ": ");
+	this.numeric(371, ":This program is free software; you can redistribute it and/or modify");
+	this.numeric(371, ":it under the terms of the GNU General Public License as published by");
+	this.numeric(371, ":the Free Software Foundation; either version 2 of the License, or");
+	this.numeric(371, ":(at your option) any later version.");
+	this.numeric(371, ": ");
+	this.numeric(371, ":This program is distributed in the hope that it will be useful,");
+	this.numeric(371, ":but WITHOUT ANY WARRANTY; without even the implied warranty of");
+	this.numeric(371, ":MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the");
+	this.numeric(371, ":GNU General Public License for more details:");
+	this.numeric(371, ":http://www.gnu.org/licenses/gpl.txt");
+	this.numeric(374, ":End of /INFO list.");
+}
+
+function IRCClient_do_stats(statschar) {
+	switch(statschar[0]) {
+		case "C":
+		case "c":
+			for (cline in CLines) {
+				if(CLines[cline].port)
+					var cline_port = CLines[cline].port;
+				else
+					var cline_port = "*";
+				this.numeric(213,"C " + CLines[cline].host + " * " + CLines[cline].servername + " " + cline_port + " " + CLines[cline].ircclass);
+				if (NLines[cline])
+					this.numeric(214,"N " + NLines[cline].host + " * " + NLines[cline].servername + " " + NLines[cline].flags + " " + NLines[cline].ircclass);
+			}
+			break;  
+		case "H":
+		case "h":
+			for (hl in HLines) {
+				this.numeric(244,"H " + HLines[hl].allowedmask + " * " + HLines[hl].servername);
+			}
+			break;
+		case "I":
+		case "i":
+			for (iline in ILines) {
+				if (!ILines[iline].port)
+					var my_port = "*";
+				else
+					var my_port = ILines[iline].port;
+				this.numeric(215,"I " + ILines[iline].ipmask + " * " + ILines[iline].hostmask + " " + my_port + " " + ILines[iline].ircclass);
+			}
+			break;
+		case "K":
+		case "k":
+			for (kline in KLines) {
+				if(KLines[kline].hostmask)
+					this.numeric(216, KLines[kline].type + " " + KLines[kline].hostmask + " * * :" + KLines[kline].reason);
+			}
+			break;
+		case "L":
+		case "l":
+			this.numeric(211,"<linkname> <sendq> <sentmessages> <sentbytes> <receivedmessages> <receivedbytes> <timeopen>");
+			break;
+		case "M":
+		case "m":
+			this.numeric(212,"<command> <count>");
+			break;          
+		case "O":       
+		case "o":
+			for (oline in OLines) {
+				this.numeric(243, "O " + OLines[oline].hostmask + " * " + OLines[oline].nick);
+			}
+			break;
+		case "U":
+			for (uline in ULines) {
+				this.numeric(246, "U " + ULines[uline] + " * * 0 -1");                  
+			}       
+			break;
+		case "u":
+			var upsecs=time() - server_uptime;
+			var updays=upsecs / 86400;
+			if (updays < 1)
+				updays=0;
+			var uphours=(upsecs-(updays*86400))/3600;
+			if (uphours < 1)
+				uphours=0;
+			var upmins=((upsecs-(updays*86400))-(uphours*3600))/60;
+			if (upmins < 1)
+				upmins=0;
+			var upsec=(((upsecs-(updays*86400))-(uphours*3600))-(upmins*60));
+			this.numeric(242,":Server Up " + updays + " days " + uphours + ":" + upmins + ":" + upsec);
+			break;
+		case "Y":
+		case "y":
+			for (thisYL in YLines) {
+				var yl = YLines[thisYL];
+				this.numeric(218,"Y " + thisYL + " " + yl.pingfreq + " " + yl.connfreq + " " + yl.maxlinks + " " + yl.sendq);
+			}
+			break;
+		default:
+			break;
+	}
+	this.numeric(219, statschar[0] + " :End of /STATS Command.");
 }
 
 function IRCClient_do_join(chan_name,join_key) {
@@ -2409,14 +2539,20 @@ function IRCClient_registered_commands(command, cmdline) {
 	cmd=cmdline.split(' ');
 	switch(command) {
 		case "ADMIN":
-			if (Admin1 && Admin2 && Admin3) {
-				this.numeric(256, ":Administrative info about " + servername);
-				this.numeric(257, ":" + Admin1);
-				this.numeric(258, ":" + Admin2);
-				this.numeric(259, ":" + Admin3);
-			} else {
-				this.numeric(423, servername + " :No administrative information available.");
+			if (cmd[1]) {
+				if (cmd[1][0] == ":")
+					cmd[1] = cmd[1].slice(1);
+				var dest_server = searchbyserver(cmd[1]);
+				if (!dest_server) {
+					this.numeric402(cmd[1]);
+					break;
+				}
+				if (dest_server != -1) {
+					dest_server.rawout(":" + this.nick + " ADMIN :" + dest_server.nick);
+					break;
+				}
 			}
+			this.do_admin();
 			break;
 		case "AWAY":
 			if (cmd[1] && (cmd[1] != ":") ) {
@@ -2511,31 +2647,20 @@ function IRCClient_registered_commands(command, cmdline) {
 			}
 			break;
 		case "INFO":
-			this.numeric("371", ":" + VERSION + " Copyright 2003 Randy Sommerfeld.");
-			this.numeric("371", ":" + system.version_notice + " " + system.copyright + ".");
-			this.numeric("371", ": ");
-			this.numeric("371", ":--- A big thanks to the following for their assistance: ---");
-			this.numeric("371", ":     Deuce: Hacking and OOP conversions.");
-			this.numeric("371", ":DigitalMan: Additional hacking and API stuff.");
-			this.numeric("371", ": ");
-			this.numeric("371", ":Running on " + system.os_version);
-			this.numeric("371", ":Compiled with " + system.compiled_with + " at " + system.compiled_when);
-			this.numeric("371", ":Socket Library: " + system.socket_lib);
-			this.numeric("371", ":Message Base Library: " + system.msgbase_lib);
-			this.numeric("371", ":JavaScript Library: " + system.js_version);
-			this.numeric("371", ":This BBS has been up since " + system.timestr(system.uptime));
-			this.numeric("371", ": ");
-			this.numeric("371", ":This program is free software; you can redistribute it and/or modify");
-			this.numeric("371", ":it under the terms of the GNU General Public License as published by");
-			this.numeric("371", ":the Free Software Foundation; either version 2 of the License, or");
-			this.numeric("371", ":(at your option) any later version.");
-			this.numeric("371", ": ");
-			this.numeric("371", ":This program is distributed in the hope that it will be useful,");
-			this.numeric("371", ":but WITHOUT ANY WARRANTY; without even the implied warranty of");
-			this.numeric("371", ":MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the");
-			this.numeric("371", ":GNU General Public License for more details:");
-			this.numeric("371", ":http://www.gnu.org/licenses/gpl.txt");
-			this.numeric("374", ":End of /INFO list.");
+			if (cmd[1]) {
+				if (cmd[1][0] == ":")
+					cmd[1] = cmd[1].slice(1);
+				var dest_server = searchbyserver(cmd[1]);
+				if (!dest_server) {
+					this.numeric402(cmd[1]);
+					break;
+				}
+				if (dest_server != -1) {
+					dest_server.rawout(":" + this.nick + " INFO :" + dest_server.nick);
+					break;
+				}
+			}
+			this.do_info();
 			break;
 		case "INVITE":
 			if (!cmd[2]) {
@@ -2884,15 +3009,16 @@ function IRCClient_registered_commands(command, cmdline) {
 			}
 			oper_success=false;
 			for (ol in OLines) {
-				if((cmd[1].toUpperCase() ==
+				if(((cmd[1].toUpperCase() ==
 				    OLines[ol].nick.toUpperCase()) &&
 				   (match_irc_mask(this.uprefix + "@" +
 				    this.hostname,OLines[ol].hostmask)) &&
-				   ((OLines[ol].flags&OLINE_CHECK_SYSPASSWD)
-				    && (system.check_syspass(cmd[2]))) ||
-				   ((cmd[2] == OLines[ol].password) &&
-				    (!(OLines[ol].flags&OLINE_CHECK_SYSPASSWD)
-				))) {
+				   (cmd[2] == OLines[ol].password) &&
+				   !(OLines[ol].flags&OLINE_CHECK_SYSPASSWD))
+				||
+				   ((OLines[ol].flags&OLINE_CHECK_SYSPASSWD) &&
+				    system.check_syspass(cmd[2]) )
+				) {
 					oper_success=true;
 					this.ircclass = OLines[ol].ircclass;
 					this.flags = OLines[ol].flags;
@@ -3026,88 +3152,20 @@ function IRCClient_registered_commands(command, cmdline) {
 		case "STATS":
 			if(!cmd[1])
 				break;
-			switch (cmd[1][0]) {
-				case "C":
-				case "c":
-					for (cline in CLines) {
-						if(CLines[cline].port)
-							cline_port = CLines[cline].port;
-						else
-							cline_port = "*";
-						this.numeric(213,"C " + CLines[cline].host + " * " + CLines[cline].servername + " " + cline_port + " " + CLines[cline].ircclass);
-					}
+			if (cmd[2]) {
+				if (cmd[2][0] == ":")
+					cmd[2] = cmd[2].slice(1);
+				var dest_server = searchbyserver(cmd[2]);
+				if (!dest_server) {
+					this.numeric402(cmd[2]);
 					break;
-				case "H":
-				case "h":
-					this.numeric(244,"H hostmask * servername");
+				}
+				if (dest_server != -1) {
+					dest_server.rawout(":" + this.nick + " STATS " + cmd[1][0] + " :" + dest_server.nick);
 					break;
-				case "I":
-				case "i":
-					for (iline in ILines) {
-						if (!ILines[iline].port)
-							var my_port = "*";
-						else
-							var my_port = ILines[iline].port;
-						this.numeric(215,"I " + ILines[iline].ipmask + " * " + ILines[iline].hostmask + " " + my_port + " " + ILines[iline].ircclass);
-					}
-					break;
-				case "K":
-				case "k":
-					for (kline in KLines) {
-						if(KLines[kline].hostmask)
-							this.numeric(216, KLines[kline].type + " " + KLines[kline].hostmask + " * * :" + KLines[kline].reason);
-					}
-					break;
-				case "L":
-				case "l":
-					this.numeric(211,"<linkname> <sendq> <sentmessages> <sentbytes> <receivedmessages> <receivedbytes> <timeopen>");
-					break;
-				case "M":
-				case "m":
-					this.numeric(212,"<command> <count>");
-					break;
-				case "N":
-				case "n":
-					for (nline in NLines) {
-						this.numeric(214, "N " + NLines[nline].host + " * " + NLines[nline].servername + " " + NLines[nline].flags + " " + NLines[nline].ircclass);
-					}
-					break;
-				case "O":
-				case "o":
-					for (oline in OLines) {
-						this.numeric(243, "O " + OLines[oline].hostmask + " * " + OLines[oline].nick);
-					}
-					break;
-				case "U":
-					for (uline in ULines) {
-						this.numeric(246, "U " + ULines[uline] + " * * 0 -1");
-					}
-					break;
-				case "u":
-					upsecs=time() - server_uptime;
-					updays=upsecs / 86400;
-					if (updays < 1)
-						updays=0;
-					uphours=(upsecs-(updays*86400))/3600;
-					if (uphours < 1)
-						uphours=0;
-					upmins=((upsecs-(updays*86400))-(uphours*3600))/60;
-					if (upmins < 1)
-						upmins=0;
-					upsec=(((upsecs-(updays*86400))-(uphours*3600))-(upmins*60));
-					this.numeric(242,":Server Up " + updays + " days " + uphours + ":" + upmins + ":" + upsec);
-					break;
-				case "Y":
-				case "y":
-					for (thisYL in YLines) {
-						var yl = YLines[thisYL];
-						this.numeric(218,"Y " + thisYL + " " + yl.pingfreq + " " + yl.connfreq + " " + yl.maxlinks + " " + yl.sendq);
-					}
-					break;
-				default:
-					break;
+				}
 			}
-			this.numeric(219,cmd[1][0]+" :End of /STATS Command.");
+			this.do_stats(cmd[1][0]);
 			break;
 		case "SUMMON":
 			if(!cmd[1]) {
@@ -3139,7 +3197,20 @@ function IRCClient_registered_commands(command, cmdline) {
 			}
 			break;
 		case "TIME":
-			this.numeric(391, servername + " :" + strftime("%A %B %d %Y -- %H:%M %z",time()));
+			if (cmd[1]) {
+				if (cmd[1][0] == ":")
+					cmd[1] = cmd[1].slice(1);
+				var dest_server = searchbyserver(cmd[1]);
+				if (!dest_server) {
+					this.numeric402(cmd[1]);
+					break;
+				}
+				if (dest_server != -1) {
+					dest_server.rawout(":" + this.nick + " TIME :" + dest_server.nick);
+					break;
+				}
+			}
+			this.numeric391();
 			break;
 		case "TOPIC":
 			if (!cmd[1]) {
@@ -3394,13 +3465,16 @@ function IRCClient_registered_commands(command, cmdline) {
 
 // Server connections are ConnType 5
 function IRCClient_server_commands(origin, command, cmdline) {
-	if (origin.match(/[.]/))
+	if (origin.match(/[.]/)) {
 		var ThisOrigin = searchbyserver(origin);
-	else
+		var killtype = "SQUIT";
+	} else {
 		var ThisOrigin = searchbynick(origin);
-	if (!ThisOrigin) { // FIXME: SQUIT if it looks like a server prefix.
-		oper_notice("Notice","Server " + this.nick + " trying to pass message for non-existent origin " + origin);
-		this.rawout("KILL " + origin + " :" + servername + " (" + origin + "(?) <- " + this.nick + ")");
+		var killtype = "KILL";
+	}
+	if (!ThisOrigin) {
+		oper_notice("Notice","Server " + this.nick + " trying to pass message for non-existent origin: " + origin);
+		this.rawout(killtype + " " + origin + " :" + servername + " (" + origin + "(?) <- " + this.nick + ")");
 		return 0;
 	}
 
@@ -3426,6 +3500,20 @@ function IRCClient_server_commands(origin, command, cmdline) {
 			wallopers(str);
 			this.bcast_to_servers_raw(str);
 			break;
+		case "ADMIN":
+			if (!cmd[1])
+				break;
+			if (cmd[1][0] == ":")
+				cmd[1] = cmd[1].slice(1);
+			if (match_irc_mask(servername, cmd[1])) {
+				ThisOrigin.do_admin();
+			} else {
+				var dest_server = searchbyserver(cmd[1]);
+				if (!dest_server)
+					break;
+				dest_server.rawout(":" + ThisOrigin.nick + " ADMIN :" + dest_server.nick);
+			}
+			break;
 		case "AWAY":
 			if (!cmd[1])
 				ThisOrigin.away = "";
@@ -3433,8 +3521,22 @@ function IRCClient_server_commands(origin, command, cmdline) {
 				ThisOrigin.away = ircstring(cmdline);
 			break;
 		case "ERROR":
-			oper_notice("Notice", "ERROR :from " + ThisOrigin.nick + "[(+)0@" + this.hostname + "] -- " + ircstring(cmdline));
+			oper_notice("Notice", "ERROR from " + ThisOrigin.nick + "[(+)0@" + this.hostname + "] -- " + ircstring(cmdline));
 			ThisOrigin.quit();
+			break;
+		case "INFO":
+			if (!cmd[1])
+				break;
+			if (cmd[1][0] == ":")
+				cmd[1] = cmd[1].slice(1);
+			if (match_irc_mask(servername, cmd[1])) {
+				ThisOrigin.do_info();
+			} else {
+				var dest_server = searchbyserver(cmd[1]);
+				if (!dest_server)
+					break;
+				dest_server.rawout(":" + ThisOrigin.nick + " INFO :" + dest_server.nick);
+			}
 			break;
 		case "INVITE":
 			if (!cmd[2])
@@ -3543,6 +3645,9 @@ function IRCClient_server_commands(origin, command, cmdline) {
 						this.set_chanmode(chan, cmd[3], bounce_modes);
 				}
 
+				var num_sync_modes = 0;
+				var push_sync_modes = "+";
+				var push_sync_args = "";
 				for (member in chan_members) {
 					var is_op = false;
 					var is_voice = false;
@@ -3563,14 +3668,33 @@ function IRCClient_server_commands(origin, command, cmdline) {
 					if (chan.created >= cmd[1]) {
 						if (is_op) {
 							chan.modelist[CHANLIST_OP].push(member_obj.id);
-							this.bcast_to_channel(chan.nam, "MODE " + chan.nam + " +o " + member_obj.nick);
+							push_sync_modes += "o";
+							push_sync_args += " " + member_obj.nick;
+							num_sync_modes++;
+						}
+						if (num_sync_modes >= max_modes) {
+							this.bcast_to_channel(chan.nam, "MODE " + chan.nam + " " + push_sync_modes + push_sync_args);
+							push_sync_modes = "+";
+							push_sync_args = "";
+							num_sync_modes = 0;
 						}
 						if (is_voice) {
 							chan.modelist[CHANLIST_VOICE].push(member_obj.id);
-							this.bcast_to_channel(chan.nam, "MODE " + chan.nam + " +v " + member_obj.nick);
+							push_sync_modes += "v";
+							push_sync_args += " " + member_obj.nick;
+							num_sync_modes++;
+						}
+						if (num_sync_modes >= max_modes) {
+							this.bcast_to_channel(chan.nam, "MODE " + chan.nam + " " + push_sync_modes + push_sync_args);
+							push_sync_modes = "+";
+							push_sync_args = "";
+							num_sync_modes = 0;
 						}
 					}
 				}
+				if (num_sync_modes)
+					this.bcast_to_channel(chan.nam, "MODE " + chan.nam + " " + push_sync_modes + push_sync_args);
+
 				this.bcast_to_servers_raw(":" + servername + " SJOIN " + chan.created + " " + chan.nam + " " + chan.chanmode(true) + " :" + ircstring(cmdline))
 			} else {
 				ThisOrigin.channels.push(chan.nam.toUpperCase());
@@ -3771,6 +3895,34 @@ function IRCClient_server_commands(origin, command, cmdline) {
 				break;
 			}
 			this.bcast_to_servers_raw(":" + newsrv.linkparent + " SERVER " + newsrv.nick + " " + (parseInt(newsrv.hops)+1) + " :" + newsrv.realname);
+			break;
+		case "STATS":
+			if (!cmd[2])
+				break;
+			if (cmd[2][0] == ":")
+				cmd[2] = cmd[2].slice(1);
+			if (match_irc_mask(servername, cmd[2])) {
+				ThisOrigin.do_stats(cmd[1][0]);
+			} else {
+				var dest_server = searchbyserver(cmd[1]);
+				if (!dest_server)
+					break;
+				dest_server.rawout(":" + ThisOrigin.nick + " STATS " + cmd[1][0] + " :" + dest_server.nick);
+			}
+			break;
+		case "TIME":
+			if (!cmd[1])
+				break;
+			if (cmd[1][0] == ":")
+				cmd[1] = cmd[1].slice(1);
+			if (match_irc_mask(servername, cmd[1])) {
+				ThisOrigin.numeric391();
+			} else {
+				var dest_server = searchbyserver(cmd[1]);
+				if (!dest_server)
+					break;
+				dest_server.rawout(":" + ThisOrigin.nick + " TIME :" + dest_server.nick);
+			}
 			break;
 		case "TOPIC":
 			if (!cmd[4])
