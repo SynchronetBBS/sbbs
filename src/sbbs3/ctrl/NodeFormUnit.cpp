@@ -92,9 +92,9 @@ char* username(int usernumber,char *strin)
         strcpy(strin,"UNKNOWN USER");
         return(strin);
     }
-    sprintf(str,"%sUSER/NAME.DAT",MainForm->cfg.data_dir);
+    sprintf(str,"%suser/name.dat",MainForm->cfg.data_dir);
     if((file=_sopen(str,O_RDONLY,SH_DENYWR,S_IWRITE))==-1) {
-        return("<ERROR OPENING NAME.DAT>");
+        return("<!ERROR opening name.dat>");
     }
     if(filelength(file)<(long)((long)usernumber*(LEN_ALIAS+2))) {
         close(file);
