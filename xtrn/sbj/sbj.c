@@ -220,8 +220,8 @@ int main(int argc, char **argv)
 		strcpy(node_dir,p);
 
 	if(!node_dir[0]) {	  /* node directory not specified */
-		bputs("usage: sbj <node directory> [/options]\r\n");
-		bputs("\r\noptions: L = log wins/losses for each day\r\n");
+		printf("usage: sbj <node directory> [/options]\r\n");
+		printf("\r\noptions: L = log wins/losses for each day\r\n");
 		getch();
 		return(1); }
 
@@ -233,14 +233,14 @@ int main(int argc, char **argv)
 	credits=user_cdt;
 	total_nodes=sys_nodes;
 
-	remove("DEBUG.LOG");
+	remove("debug.log");
 
-	if((file=nopen("SBJ.CFG",O_RDONLY))==-1) {  /* open config file */
-		bputs("Error opening SBJ.CFG\r\n");
+	if((file=nopen("sbj.cfg",O_RDONLY))==-1) {  /* open config file */
+		bputs("Error opening sbj.cfg\r\n");
 		pause();
 		return(1); }
 	if((stream=fdopen(file,"rb"))==NULL) {      /* convert to stream */
-		bputs("Error converting SBJ.CFG handle to stream\r\n");
+		bputs("Error converting sbj.cfg handle to stream\r\n");
 		pause();
 		return(1); }
 	fgets(str,81,stream);						/* number of decks in shoe */
@@ -253,19 +253,19 @@ int main(int argc, char **argv)
 	ibet=atoi(str);
 	fclose(stream);
 	if(!total_decks || total_decks>MAX_DECKS) {
-		bputs("Invalid number of decks in SBJ.CFG\r\n");
+		bputs("Invalid number of decks in sbj.cfg\r\n");
 		pause();
 		return(1); }
 	if(!max_bet) {
-		bputs("Invalid max bet in SBJ.CFG\r\n");
+		bputs("Invalid max bet in sbj.cfg\r\n");
 		pause();
 		return(1); }
 	if(min_bet>max_bet) {
-		bputs("Invalid min bet in SBJ.CFG\r\n");
+		bputs("Invalid min bet in sbj.cfg\r\n");
 		pause();
 		return(1); }
 	if(ibet>max_bet || ibet<min_bet) {
-		bputs("Invalid default bet in SBJ.CFG\r\n");
+		bputs("Invalid default bet in sbj.cfg\r\n");
 		pause();
 		return(1); }
 
@@ -367,7 +367,7 @@ int main(int argc, char **argv)
 			#endif
 			case 'I':
 				cls();
-				printfile("SBJ.MSG");
+				printfile("sbj.msg");
 				break;
 			case 'L':
 				listplayers();
@@ -434,7 +434,7 @@ void debugline(char *line)
 #if 1
 now=time(NULL);
 unixtodos(now,&date,&curtime);
-if((file=nopen("DEBUG.LOG",O_WRONLY|O_APPEND|O_CREAT))==-1)
+if((file=nopen("debug.log",O_WRONLY|O_APPEND|O_CREAT))==-1)
 	return;
 sprintf(str,"%d %02u:%02u:%02u %s\r\n"
 	,node_num,curtime.ti_hour,curtime.ti_min,curtime.ti_sec,line);
@@ -903,7 +903,7 @@ while(1) {
 		if(logit) {
 			now=time(NULL);
 			tm=localtime(&now);
-			sprintf(log,"%02d%02d%02d.LOG"                  /* log winnings */
+			sprintf(log,"%02d%02d%02d.log"                  /* log winnings */
 				,tm->tm_mon+1,tm->tm_mday,tm->tm_year%100);
 			if((file=nopen(log,O_RDONLY))!=-1) {
 				read(file,tmp,filelength(file));
@@ -1157,7 +1157,7 @@ void getnodemsg()
 	ulong length;
 
 nodesync();
-sprintf(str,"MESSAGE.%d",node_num);
+sprintf(str,"message.%d",node_num);
 if(flength(str)<1L) 					/* v1.02 fix */
 	return;
 if((file=nopen(str,O_RDWR))==-1) {
@@ -1186,7 +1186,7 @@ void putnodemsg(char *msg, uint nodenumber)
 	char str[81];
 	int file;
 
-sprintf(str,"MESSAGE.%d",nodenumber);
+sprintf(str,"message.%d",nodenumber);
 if((file=nopen(str,O_WRONLY|O_CREAT|O_APPEND))==-1) {
 	bprintf("\r\n\7putnodemsg: error opening/creating %s\r\n",str);
 	return; }
@@ -1437,7 +1437,7 @@ void getcarddat()
 {
 	int file;
 
-if((file=nopen("CARD.DAB",O_RDONLY))==-1) {
+if((file=nopen("card.dab",O_RDONLY))==-1) {
 	bputs("getcarddat: Error opening CARD.DAB\r\n");
 	return; }
 read(file,&dc,1);
@@ -1456,7 +1456,7 @@ void putcarddat()
 {
 	int file;
 
-if((file=nopen("CARD.DAB",O_WRONLY|O_CREAT))==-1) {
+if((file=nopen("card.dab",O_WRONLY|O_CREAT))==-1) {
 	bputs("putcarddat: Error opening CARD.DAB\r\n");
 	return; }
 write(file,&dc,1);
@@ -1745,7 +1745,7 @@ return(str);
 void create_gamedab()
 {
 
-if((gamedab=sopen("GAME.DAB"
+if((gamedab=sopen("game.dab"
 	,O_WRONLY|O_CREAT|O_BINARY,SH_DENYNO))==-1) {
 	bputs("Error creating GAME.DAB\r\n");
 	pause();
@@ -1769,7 +1769,7 @@ close(gamedab);
 /****************************************************************************/
 void open_gamedab()
 {
-if((gamedab=sopen("GAME.DAB",O_RDWR|O_BINARY,SH_DENYNO))==-1) {
+if((gamedab=sopen("game.dab",O_RDWR|O_BINARY,SH_DENYNO))==-1) {
     bputs("Error opening GAME.DAB\r\n");                /* open deny none */
     pause();
 	exit(1); }
