@@ -72,7 +72,9 @@ int dns_getmx(char* name, char* mx, char* mx2
 			  ,DWORD intf, DWORD ip_addr, BOOL use_tcp, int timeout);
 
 static char* ok_rsp		=	"250 OK";
+static char* auth_ok	=	"235 User Authenticated";
 static char* sys_error	=	"421 System error";
+static char* badarg_rsp =	"501 Bad argument";
 static char* badseq_rsp	=	"503 Bad sequence of commands";
 static char* badauth_rsp=	"535 Authentication failure";
 static char* badrsp_err	=	"%s replied with:\r\n\"%s\"\r\n"
@@ -1589,7 +1591,9 @@ static void smtp_thread(void* arg)
 		}
 	}
 
-	sprintf(session_id,"%d.%lx",socket,clock()&0xffff);
+	srand(time(NULL));	/* seed random number generator */
+	rand();	/* throw-away first result */
+	sprintf(session_id,"%x%x%lx",socket,rand(),clock());
 
 	sprintf(rcptlst_fname,"%sSMTP.%s.lst", scfg.data_dir, session_id);
 	rcptlst=fopen(rcptlst_fname,"w+");
@@ -2222,20 +2226,20 @@ static void smtp_thread(void* arg)
 		if(!stricmp(buf,"AUTH LOGIN")) {	
 			sockprintf(socket,"334 VXNlcm5hbWU6");	/* Base64-encoded "Username:" */
 			if((rd=sockreadline(socket, buf, sizeof(buf)))<0) {
-				sockprintf(socket,badauth_rsp);
+				sockprintf(socket,badarg_rsp);
 				continue;
 			}
 			if(b64_decode(user_name,sizeof(user_name),buf,rd)<1) {
-				sockprintf(socket,badauth_rsp);
+				sockprintf(socket,badarg_rsp);
 				continue;
 			}
 			sockprintf(socket,"334 UGFzc3dvcmQ6");	/* Base64-encoded "Password:" */
 			if((rd=sockreadline(socket, buf, sizeof(buf)))<0) {
-				sockprintf(socket,badauth_rsp);
+				sockprintf(socket,badarg_rsp);
 				continue;
 			}
 			if(b64_decode(user_pass,sizeof(user_pass),buf,rd)<1) {
-				sockprintf(socket,badauth_rsp);
+				sockprintf(socket,badarg_rsp);
 				continue;
 			}
 			if((relay_user.number=matchuser(&scfg,user_name,FALSE))==0) {
@@ -2275,26 +2279,30 @@ static void smtp_thread(void* arg)
 			}
 			lprintf("%04d SMTP %s authenticated using LOGIN"
 				,socket,relay_user.alias);
-			sockprintf(socket,"235 User Authenticated");
+			sockprintf(socket,auth_ok);
 			continue;
 		}
 		if(!stricmp(buf,"AUTH CRAM-MD5")) {
-			sprintf(challenge,"<%u.%lu@%s>",socket,clock(),startup->host_name);
-			/***
+			sprintf(challenge,"<%x%x%lx%lx@%s>"
+				,rand(),socket,time(NULL),clock(),startup->host_name);
+#if 0
 			lprintf("%04d SMTP CRAM-MD5 challenge: %s"
 				,socket,challenge);
-			***/
+#endif
 			b64_encode(str,sizeof(str),challenge,0);
 			sockprintf(socket,"334 %s",str);
 			if((rd=sockreadline(socket, buf, sizeof(buf)))<0) {
-				sockprintf(socket,badauth_rsp);
+				sockprintf(socket,badarg_rsp);
 				continue;
 			}
-			b64_decode(response,sizeof(response),buf,rd);
-			/***
+			if(b64_decode(response,sizeof(response),buf,rd)<1) {
+				sockprintf(socket,badarg_rsp);
+				continue;
+			}
+#if 0
 			lprintf("%04d SMTP CRAM-MD5 response: %s"
 				,socket,response);
-			***/
+#endif
 			if((p=strrchr(response,' '))!=NULL)
 				*(p++)=0;
 			else
@@ -2323,7 +2331,7 @@ static void smtp_thread(void* arg)
 			/* Calculate correct response */
 			memset(secret,0,sizeof(secret));
 			SAFECOPY(secret,relay_user.pass);
-			strlwr(secret);
+			strlwr(secret);	/* this is case sensitive, so convert to lowercase first */
 			for(i=0;i<sizeof(secret);i++)
 				md5_data[i]=secret[i]^0x36;	/* ipad */
 			strcpy(md5_data+i,challenge);
@@ -2336,19 +2344,19 @@ static void smtp_thread(void* arg)
 			if(strcmp(p,str)) {
 				lprintf("%04d !SMTP %s FAILED CRAM-MD5 authentication"
 					,socket,relay_user.alias);
-				/***
+#if 0
 				lprintf("%04d !SMTP calc digest: %s"
 					,socket,str);
 				lprintf("%04d !SMTP resp digest: %s"
 					,socket,p);
-				***/
+#endif
 				sockprintf(socket,badauth_rsp);
 				relay_user.number=0;
 				continue;
 			}
 			lprintf("%04d SMTP %s authenticated using CRAM-MD5"
 				,socket,relay_user.alias);
-			sockprintf(socket,"235 User Authenticated");
+			sockprintf(socket,auth_ok);
 			continue;
 		}
 		if(!strnicmp(buf,"AUTH",4)) {
