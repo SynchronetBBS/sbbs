@@ -130,7 +130,7 @@ int main(int argc, char **argv)
 	ulong		l,m,n,length,size,total=0,orphan=0,deleted=0,headers=0
 				,*offset,*number,xlaterr
 				,delidx
-				,delhdrblocks,deldatblocks,hdrerr=0,lockerr=0,hdrnumerr=0
+				,delhdrblocks,deldatblocks,hdrerr=0,lockerr=0,hdrnumerr=0,hdrlenerr=0
 				,acthdrblocks,actdatblocks
 				,dfieldlength=0,dfieldoffset=0
 				,dupenum=0,dupenumhdr=0,dupeoff=0,attr=0,actalloc=0
@@ -142,7 +142,7 @@ int main(int argc, char **argv)
 	idxrec_t	idx;
 	smbmsg_t	msg;
 
-	fprintf(stderr,"\nCHKSMB v2.11 - Check Synchronet Message Base - "
+	fprintf(stderr,"\nCHKSMB v2.12 - Check Synchronet Message Base - "
 		"Copyright 2002 Rob Swindell\n");
 
 	if(argc<2) {
@@ -271,6 +271,15 @@ int main(int argc, char **argv)
 		truncsp(msg.from);
 		strip_ctrl(msg.from);
 		fprintf(stderr,"#%-5lu (%06lX) %-25.25s ",msg.hdr.number,l,msg.from);
+
+		if(msg.hdr.length!=smb_getmsghdrlen(&msg)) {
+			fprintf(stderr,"%sHeader length mismatch\n",beep);
+			msgerr=1;
+			if(extinfo)
+				printf("MSGERR: Header length (%hu) does not match calculcated length (%lu)\n"
+					,msg.hdr.length,smb_getmsghdrlen(&msg));
+			hdrlenerr++; 
+		}
 
 		lzhmsg=0;
 		if(msg.hdr.attr&MSG_DELETE) {
@@ -447,6 +456,8 @@ int main(int argc, char **argv)
 				,msg.hdr.version);
 			printf("%-20s: %u\n","Length"
 				,msg.hdr.length);
+			printf("%-20s: %u\n","Calculated Length"
+				,smb_getmsghdrlen(&msg));
 			printf("%-20s: %04hXh\n","Attributes"
 				,msg.hdr.attr);
 			printf("%-20s: %08lXh\n","Auxilary Attributes"
@@ -651,6 +662,10 @@ int main(int argc, char **argv)
 		printf("%-35.35s (!): %lu\n"
 			,"Out-Of-Range Header Numbers"
 			,hdrnumerr);
+	if(hdrlenerr)
+		printf("%-35.35s (!): %lu\n"
+			,"Mismatched Header Lengths"
+			,hdrlenerr);
 	if(attr)
 		printf("%-35.35s (!): %lu\n"
 			,"Mismatched Header Attributes"
