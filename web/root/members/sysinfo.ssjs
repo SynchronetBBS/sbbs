@@ -30,7 +30,22 @@ if(f.open("rb",true)) {
 				case 'OS_VER':
 					return(format(fmt,system.os_version.toString()));
 				case 'UPTIME':
-					return(format(fmt,system.uptime.toString()));
+					var days=0;
+					var hours=0;
+					var min=0;
+					var seconds=0;
+					var ut=time()-system.uptime;
+					days=(ut/86400);
+					ut%=86400;
+					hours=(ut/3600);
+					ut%=3600;
+					mins=(ut/60);
+					secsonds=parseInt(ut%60);
+					if(parseInt(days)!=0)
+						ut=format("%d days %d:%02d",days,hours,mins);
+					else
+						ut=format("%d:%02d",hours,mins);
+					return(format(fmt,ut.toString()));
 				case 'TUSER':
 					return(format(fmt,system.stats.total_users.toString()));
 				case 'STATS.NUSERS':
