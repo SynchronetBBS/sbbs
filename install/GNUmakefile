@@ -27,7 +27,7 @@ ifndef DEBUG
 endif
 
 ifdef SYMLINK
- INSBIN	:=	-ln -s
+ INSBIN	:=	ln -sf
 else
  INSBIN	:=	cp
 endif
