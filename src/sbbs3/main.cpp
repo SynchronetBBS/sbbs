@@ -120,8 +120,10 @@ js_printf(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 			if (!str)
 			    return JS_FALSE;
 			arglist[i-1]=JS_GetStringBytes(str);
-		} else
+		} else if(JSVAL_IS_INT(argv[i]))
 			arglist[i-1]=(char *)JSVAL_TO_INT(argv[i]);
+		else
+			arglist[i-1]=NULL;
 	}
 	
 	vsprintf(tmp,JS_GetStringBytes(fmt),(char*)arglist);
@@ -149,8 +151,10 @@ js_format(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 			if (!str)
 			    return JS_FALSE;
 			arglist[i-1]=JS_GetStringBytes(str);
-		} else
+		} else if(JSVAL_IS_INT(argv[i]))
 			arglist[i-1]=(char *)JSVAL_TO_INT(argv[i]);
+		else
+			arglist[i-1]=NULL;
 	}
 	
 	vsprintf(tmp,JS_GetStringBytes(fmt),(char*)arglist);
