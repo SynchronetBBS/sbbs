@@ -14,6 +14,8 @@ enum {
 	,SYSTEM_BBSLIST
 };
 
+char *screen_modes[]={"Current", "80x25", "80x28", "80x43", "80x50", "80x60", ""};
+
 void sort_list(struct bbslist **list)  {
 	struct bbslist *tmp;
 	unsigned int	i,swapped=1;
@@ -61,6 +63,7 @@ void read_list(char *listpath, struct bbslist **list, int *i, int type)
 			if(dumb)
 				list[*i]->conn_type=CONN_TYPE_RAW;
 			list[*i]->reversed=iniReadBool(listfile,bbsname,"Reversed",0);
+			list[*i]->screen_mode=iniReadInteger(listfile,bbsname,"ScreenMode",SCREEN_MODE_CURRENT);
 			list[*i]->type=type;
 			list[*i]->id=*i;
 			(*i)++;
@@ -75,8 +78,8 @@ void read_list(char *listpath, struct bbslist **list, int *i, int type)
 
 int edit_list(struct bbslist *item,char *listpath)
 {
-	char	opt[8][80];
-	char	*opts[8];
+	char	opt[9][80];
+	char	*opts[9];
 	int		changed=0;
 	int		copt=0,i,j;
 	char	str[6];
@@ -84,7 +87,7 @@ int edit_list(struct bbslist *item,char *listpath)
 	str_list_t	inifile;
 	char	tmp[LIST_NAME_MAX+1];
 
-	for(i=0;i<8;i++)
+	for(i=0;i<9;i++)
 		opts[i]=opt[i];
 	if(item->type==SYSTEM_BBSLIST) {
 		uifc.helpbuf=	"`Cannot edit system BBS list`\n\n"
@@ -93,7 +96,7 @@ int edit_list(struct bbslist *item,char *listpath)
 		uifc.msg("Cannot edit system BBS list");
 		return(0);
 	}
-	opt[7][0]=0;
+	opt[8][0]=0;
 	if((listfile=fopen(listpath,"r"))!=NULL) {
 		inifile=iniReadFile(listfile);
 		fclose(listfile);
@@ -108,6 +111,7 @@ int edit_list(struct bbslist *item,char *listpath)
 		sprintf(opt[4],"Password");
 		sprintf(opt[5],"Connection:     %s",conn_types[item->conn_type]);
 		sprintf(opt[6],"Reversed:       %s",item->reversed?"Yes":"No");
+		sprintf(opt[7],"Screen Mode:    %s",screen_modes[item->screen_mode]);
 		uifc.changes=0;
 
 		uifc.helpbuf=	"`Edit BBS`\n\n"
@@ -175,6 +179,13 @@ int edit_list(struct bbslist *item,char *listpath)
 				changed=1;
 				iniSetBool(&inifile,item->name,"Reversed",item->reversed,NULL);
 				break;
+			case 7:
+				item->screen_mode++;
+				if(item->screen_mode==SCREEN_MODE_TERMINATOR)
+					item->screen_mode=0;
+				changed=1;
+				iniSetInteger(&inifile,item->name,"ScreenMode",item->screen_mode,NULL);
+				break;
 		}
 		if(uifc.changes)
 			changed=1;
@@ -206,6 +217,7 @@ void add_bbs(char *listpath, struct bbslist *bbs)
 	iniSetString(&inifile,bbs->name,"Password",bbs->password,NULL);
 	iniSetInteger(&inifile,bbs->name,"ConnectionType",bbs->conn_type,NULL);
 	iniSetBool(&inifile,bbs->name,"Reversed",bbs->reversed,NULL);
+	iniSetInteger(&inifile,bbs->name,"ScreenMode",bbs->screen_mode,NULL);
 	if((listfile=fopen(listpath,"w"))!=NULL) {
 		iniWriteFile(listfile,inifile);
 		fclose(listfile);
@@ -366,6 +378,10 @@ struct bbslist *show_bbslist(int mode, char *path)
 							list[listcount-1]->password[0]=0;
 							list[listcount-1]->reversed=0;
 						}
+						uifc.helpbuf=	"`Screen Mode`\n\n"
+										"Select the screen size for this connection\n";
+						list[listcount-1]->screen_mode=SCREEN_MODE_CURRENT;
+						uifc.list(WIN_MID|WIN_SAV,0,0,0,&list[listcount-1]->screen_mode,NULL,"Screen Mode",screen_modes);
 						add_bbs(listpath,list[listcount-1]);
 						sort_list(list);
 						for(j=0;list[j]->name[0];j++) {

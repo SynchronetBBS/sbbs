@@ -93,9 +93,27 @@ int main(int argc, char **argv)
 				strListFreeStrings(inifile);
 			}
 			uifcbail();
+			switch(bbs->screen_mode) {
+				case SCREEN_MODE_80X25:
+					textmode(C80);
+					break;
+				case SCREEN_MODE_80X28:
+					textmode(C80X28);
+					break;
+				case SCREEN_MODE_80X43:
+					textmode(C80X43);
+					break;
+				case SCREEN_MODE_80X50:
+					textmode(C80X50);
+					break;
+				case SCREEN_MODE_80X60:
+					textmode(C80X60);
+					break;
+			}
 			if(drawwin())
 				return(1);
 			doterm();
+			textmode(txtinfo.currmode);
 		}
 	}
 	uifcbail();
