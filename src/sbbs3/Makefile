@@ -56,6 +56,8 @@ CFLAGS	= 	$(CFLAGS) -DJAVASCRIPT -I../../include/mozilla/js
 LIBS	=	..\..\lib\mozilla\js\win32.debug\js32omf.lib
 !endif
 
+mono:
+
 # Cross platform/compiler definitions
 !include targets.mk		# defines all targets
 !include objects.mk		# defines $(OBJS)
@@ -253,3 +255,5 @@ $(ANS2MSG): ans2msg.c
 $(MSG2ANS): msg2ans.c
 	@echo Creating $@
 	@$(CC) $(CFLAGS) -n$(EXEODIR) $** 
+
+
