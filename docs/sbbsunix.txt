@@ -34,7 +34,7 @@ A. Not currently. Synchronet assumes a little-endian processor. It *may* work
    Big-endian support is currently being developed for the v3.20 time-frame.
 
 Q. Will Synchronet ever support big-endian and/or 64-bit processors?
-A. Yes, that is plan.
+A. Yes, that is the plan.
 
 Q. Where do I get Synchronet for Unix?
 A. There are no binary distributions at this time, so you must get the source
@@ -107,7 +107,7 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
 
    B. Build the main executable (and utilities):
       gmake
-      (please report buid errors to rob@synchro.net)
+      (please report build errors to rob@synchro.net)
       Note: warnings (if any) can be safely ignored
 
    C. Change to this directory:
@@ -115,7 +115,7 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
 
    D. Build the Synchronet configuration utility (SCFG):
       gmake
-      (please report buid errors to rob@synchro.net)
+      (please report build errors to rob@synchro.net)
       Note: warnings (if any) can be safely ignored
 
    E. Congratulate yourself on a job well-done.
@@ -155,7 +155,7 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
    B. Build Synchronet Blackjack:
       gmake
 
-   C. Change to this dircectory:
+   C. Change to this directory:
       cd /sbbs/xtrn/sbl
 
    D. Build Synchronet BBS List:
@@ -205,7 +205,7 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
    B. Run Synchronet:
       run
 
-   C. After segfault, display backtrace:
+   C. After segfault, display back-trace:
       bt
 
    D. Copy and paste in e-mail to rob@synchro.net
