@@ -12,9 +12,9 @@
 #include "ansi_cio.h"
 WORD	ansi_curr_attr=0x07<<8;
 
-int ansi_rows=24;
-int ansi_cols=80;
-int ansi_nextchar;
+unsigned int ansi_rows=24;
+unsigned int ansi_cols=80;
+unsigned int ansi_nextchar;
 int ansi_got_row=0;
 int ansi_got_col=0;
 int ansi_esc_delay=25;
@@ -125,7 +125,7 @@ void ansi_sendch(char ch)
 
 	if(!ch)
 		ch=' ';
-	if(ansi_row<ansi_rows-1 || ansi_col<ansi_cols-1) {
+	if(ansi_row<ansi_rows-1 || (ansi_row==ansi_rows-1 && ansi_col<ansi_cols-1)) {
 		fwrite(&ch,1,1,stdout);
 		if(ch<' ')
 			force_move=1;
@@ -484,15 +484,13 @@ void ansi_gotoxy(int x, int y)
 		|| y < 1
 		|| y > ansi_rows)
 		return;
-
 	if(force_move) {
 		force_move=0;
-		sprintf(str,"%c[%d;%dH",27,y,x);
+		sprintf(str,"\033[%d;%dH",y,x);
 	}
 	else {
-		if(x==1 && ansi_col != 0) {
+		if(x==1 && ansi_col != 0 && ansi_row<ansi_row-1) {
 			ansi_sendch('\r');
-			force_move=0;
 			ansi_col=0;
 		}
 		if(x==ansi_col+1) {
@@ -504,13 +502,13 @@ void ansi_gotoxy(int x, int y)
 					if(y==ansi_row)
 						strcpy(str,"\033[A");
 					else
-						sprintf(str,"%c[%dA",27,ansi_row+1-y);
+						sprintf(str,"\033[%dA",ansi_row+1-y);
 				}
 				else {
 					if(y==ansi_row+2)
 						strcpy(str,"\033[B");
 					else
-						sprintf(str,"%c[%dB",27,y-ansi_row-1);
+						sprintf(str,"\033[%dB",y-ansi_row-1);
 				}
 			}
 		}
@@ -520,17 +518,17 @@ void ansi_gotoxy(int x, int y)
 					if(x==ansi_col)
 						strcpy(str,"\033[D");
 					else
-						sprintf(str,"%c[%dD",27,ansi_col+1-x);
+						sprintf(str,"\033[%dD",ansi_col+1-x);
 				}
 				else {
 					if(x==ansi_col+2)
 						strcpy(str,"\033[C");
 					else
-						sprintf(str,"%c[%dC",27,x-ansi_col-1);
+						sprintf(str,"\033[%dC",x-ansi_col-1);
 				}
 			}
 			else {
-				sprintf(str,"%c[%d;%dH",27,y,x);
+				sprintf(str,"\033[%d;%dH",y,x);
 			}
 		}
 	}
