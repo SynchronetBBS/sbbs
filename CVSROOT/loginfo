@@ -24,4 +24,4 @@
 #DEFAULT (echo ""; id; echo %s; date; cat) >> $CVSROOT/CVSROOT/commitlog
 # or
 #DEFAULT (echo ""; id; echo %{sVv}; date; cat) >> $CVSROOT/CVSROOT/commitlog
-ALL (echo %{sVv}; cat) | /src/sbbs3/gcc.linux.exe.debug/smbutil -tAll "-sCVS commit %s" -f$USER i /sbbs/data/subs/syncprog;sync
+ALL (echo %p %{s,V,v}; cat) | /src/sbbs3/gcc.linux.exe.debug/smbutil -tAll "-sCVS commit %s" -f$USER i /sbbs/data/subs/syncprog;sync
