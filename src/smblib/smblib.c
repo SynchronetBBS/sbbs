@@ -59,6 +59,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>		/* isdigit */
 #include <sys/types.h>
 #include <sys/stat.h>	/* must come after sys/types.h */
 
