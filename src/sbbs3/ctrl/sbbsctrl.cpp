@@ -61,6 +61,7 @@ USEFORM("FtpCfgDlgUnit.cpp", FtpCfgDlg);
 USEFORM("ServicesCfgDlgUnit.cpp", ServicesCfgDlg);
 USEFORM("PreviewFormUnit.cpp", PreviewForm);
 USEFORM("WebFormUnit.cpp", WebForm);
+USEFORM("WebCfgDlgUnit.cpp", WebCfgDlg);
 //---------------------------------------------------------------------------
 #include "MainFormUnit.h"
 #include "SpyFormUnit.h"

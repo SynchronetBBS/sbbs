@@ -61,6 +61,7 @@
 #include "TelnetCfgDlgUnit.h"
 #include "MailCfgDlgUnit.h"
 #include "FtpCfgDlgUnit.h"
+#include "WebCfgDlgUnit.h"
 #include "ServicesCfgDlgUnit.h"
 #include "AboutBoxFormUnit.h"
 #include "CodeInputFormUnit.h"
@@ -1346,9 +1347,9 @@ void __fastcall TMainForm::WebConfigureExecute(TObject *Sender)
     if(inside) return;
     inside=true;
 
-	Application->CreateForm(__classid(TFtpCfgDlg), &FtpCfgDlg);
-	FtpCfgDlg->ShowModal();
-    delete FtpCfgDlg;
+	Application->CreateForm(__classid(TWebCfgDlg), &WebCfgDlg);
+	WebCfgDlg->ShowModal();
+    delete WebCfgDlg;
 
     inside=false;
 }
