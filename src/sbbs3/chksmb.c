@@ -344,11 +344,25 @@ int main(int argc, char **argv)
 					fprintf(stderr,"%sFailed to find %s hash\n"
 						,beep,smb_hashsourcetype(hashes[h]->source));
 					msgerr=TRUE;
-					if(extinfo)
+					if(extinfo) {
 						printf("MSGERR: %d searching for %s: %s\n"
 							,i
 							,smb_hashsourcetype(hashes[h]->source)
 							,smb_hashsource(&msg,hashes[h]->source));
+#ifdef _DEBUG
+						printf("\n");
+						printf("%-10s: %s\n",		"Source",	smb_hashsourcetype(hashes[h]->source));
+						printf("%-10s: %lu\n",		"Length",	hashes[h]->length);
+						printf("%-10s: %x\n",		"Flags",	hashes[h]->flags);
+						if(hashes[h]->flags&SMB_HASH_CRC16)
+							printf("%-10s: %04x\n",	"CRC-16",	hashes[h]->crc16);
+						if(hashes[h]->flags&SMB_HASH_CRC32)
+							printf("%-10s: %08lx\n","CRC-32",	hashes[h]->crc32);
+						if(hashes[h]->flags&SMB_HASH_MD5)
+							printf("%-10s: %s\n",	"MD5",		MD5_hex(str,hashes[h]->md5));
+
+#endif
+					}
 					hasherr++;
 				}
 			}
