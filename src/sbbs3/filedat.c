@@ -532,13 +532,16 @@ char* DLLCALL padfname(char *filename, char *str)
 	d=c;
 	if(filename[c]=='.') c++;
 	while(d<8)
-		str[d++]=SP;
-	str[d++]='.';
+		str[d++]=' ';
+	if(filename[c]>' ')	/* Change "FILE" to "FILE        " */
+		str[d++]='.';	/* (don't add a dot if there's no extension) */
+	else
+		str[d++]=' ';
 	while(d<12)
 		if(!filename[c]) break;
 		else str[d++]=filename[c++];
 	while(d<12)
-		str[d++]=SP;
+		str[d++]=' ';
 	str[d]=0;
 	return(str);
 }

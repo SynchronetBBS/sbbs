@@ -151,7 +151,7 @@ int sbbs_t::listfiles(uint dirnum, char *filespec, int tofile, long mode)
 			FREE((char *)datbuf);
 			return(-1); }
 		for(j=0;j<12 && m<l;j++)
-			if(j==8)
+			if(j==8 && ixbbuf[8]>' ')
 				str[j]='.';
 			else
 				str[j]=ixbbuf[m++];		/* Turns FILENAMEEXT into FILENAME.EXT */
@@ -888,7 +888,7 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 			found=-1;
 			break; }
 		for(i=0;i<12 && m<l;i++)
-			if(i==8)
+			if(i==8 && ixbbuf[8]>' ')
 				str[i]='.';
 			else
 				str[i]=ixbbuf[m++];     /* Turns FILENAMEEXT into FILENAME.EXT */

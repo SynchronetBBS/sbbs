@@ -214,7 +214,7 @@ char * sbbs_t::getfilespec(char *str)
 	bputs(text[FileSpecStarDotStar]);
 	if(!getstr(str,12,K_UPPER))
 		strcpy(str,ALLFILES);
-#ifndef __unix__
+#if 0
 	else if(!strchr(str,'.') && strlen(str)<=8)
 		strcat(str,".*");
 #endif
@@ -234,6 +234,8 @@ BOOL filematch(char *filename, char *filespec)
 		if(filespec[c]=='*') break;
 		else if(filespec[c]=='?') continue;
 		else if(toupper(filename[c])!=toupper(filespec[c])) return(FALSE);
+	if(filespec[8]==' ')	/* no extension specified */
+		return(TRUE);
 	for(c=9;c<12;c++)
 		if(filespec[c]=='*') break;
 		else if(filespec[c]=='?') continue;
