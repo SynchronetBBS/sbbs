@@ -65,7 +65,7 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 	static  HANDLE	rdslot=INVALID_HANDLE_VALUE;
 	static  HANDLE	wrslot=INVALID_HANDLE_VALUE;
 	static  RingBuf	rdbuf;
-	static	FILE*	fp;
+	static	FILE*	fp=NULL;
 
 	retval=0;
 	node_num=getBH();
@@ -73,8 +73,10 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 	switch(getBL()) {
 
 		case VDD_OPEN:
+#if 0
 			sprintf(str,"sbbsexec%d.log",node_num);
 			fp=fopen(str,"wb");
+#endif
 
 			sprintf(str,"\\\\.\\mailslot\\sbbsexec\\wr%d",node_num);
 			rdslot=CreateMailslot(str
