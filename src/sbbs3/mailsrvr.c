@@ -791,6 +791,7 @@ static void pop3_thread(void* arg)
 						break; 
 					}
 					if((i=smb_getmsghdr(&smb,&msg))!=0) {
+						smb_unlockmsghdr(&smb,&msg);
 						lprintf("%04d !POP3 ERROR %d getting message header #%lu"
 							,socket, i, msg.hdr.number);
 						break;
@@ -942,14 +943,14 @@ static void pop3_thread(void* arg)
 					sockprintf(socket,"-ERR %d locking message header",i);
 					continue; 
 				}
-				if((i=smb_getmsghdr(&smb,&msg))!=0) {
-					smb_unlockmsghdr(&smb,&msg);
+				i=smb_getmsghdr(&smb,&msg);
+				smb_unlockmsghdr(&smb,&msg);
+				if(i!=0) {
 					lprintf("%04d !POP3 ERROR %d getting message header #%lu"
 						,socket, i, msg.hdr.number);
 					sockprintf(socket,"-ERR %d getting message header",i);
 					continue;
 				}
-				smb_unlockmsghdr(&smb,&msg);
 
 				if((msgtxt=smb_getmsgtxt(&smb,&msg,GETMSGTXT_TAILS))==NULL) {
 					smb_freemsgmem(&msg);
@@ -2334,11 +2335,10 @@ static void sendmail_thread(void* arg)
 			continue;
 		if((i=smb_locksmbhdr(&smb))!=0)
 			continue;
-		if((i=smb_getstatus(&smb))!=0) {
-			smb_unlocksmbhdr(&smb);
-			continue;
-		}
+		i=smb_getstatus(&smb);
 		smb_unlocksmbhdr(&smb);
+		if(i!=0)
+			continue;
 		if(smb.status.last_msg==last_msg && time(NULL)-last_scan<startup->rescan_frequency)
 			continue;
 		last_msg=smb.status.last_msg;
@@ -2381,13 +2381,13 @@ static void sendmail_thread(void* arg)
 					,i,msg.idx.number);
 				continue;
 			}
-			if((i=smb_getmsghdr(&smb,&msg))!=0) {
-				smb_unlockmsghdr(&smb,&msg);
+			i=smb_getmsghdr(&smb,&msg);
+			smb_unlockmsghdr(&smb,&msg);
+			if(i!=0) {
 				lprintf("0000 !SEND ERROR %d reading message header #%lu"
 					,i,msg.idx.number);
 				continue; 
 			}
-			smb_unlockmsghdr(&smb,&msg);
 
 			if(msg.to_net.type!=NET_INTERNET || msg.to_net.addr==NULL) 
 				continue;
