@@ -137,6 +137,10 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 			if(!JS_SetProperty(cx, dirobj, "description", &val))
 				return(NULL);
 
+			val=INT_TO_JSVAL(cfg->dir[d]->misc);
+			if(!JS_SetProperty(cx, dirobj, "settings", &val))
+				return(NULL);
+
 			sprintf(vpath,"/%s/%s/%s"
 				,cfg->lib[l]->sname
 				,cfg->dir[d]->code
@@ -144,6 +148,34 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 
 			val=STRING_TO_JSVAL(JS_NewStringCopyZ(cx, vpath));
 			if(!JS_SetProperty(cx, dirobj, "link", &val))
+				return(NULL);
+
+			if(user==NULL || chk_ar(cfg,cfg->dir[d]->ul_ar,user))
+				val=BOOLEAN_TO_JSVAL(JS_TRUE);
+			else
+				val=BOOLEAN_TO_JSVAL(JS_FALSE);
+			if(!JS_SetProperty(cx, dirobj, "can_upload", &val))
+				return(NULL);
+
+			if(user==NULL || chk_ar(cfg,cfg->dir[d]->dl_ar,user))
+				val=BOOLEAN_TO_JSVAL(JS_TRUE);
+			else
+				val=BOOLEAN_TO_JSVAL(JS_FALSE);
+			if(!JS_SetProperty(cx, dirobj, "can_download", &val))
+				return(NULL);
+
+			if(user==NULL || chk_ar(cfg,cfg->dir[d]->ex_ar,user))
+				val=BOOLEAN_TO_JSVAL(JS_TRUE);
+			else
+				val=BOOLEAN_TO_JSVAL(JS_FALSE);
+			if(!JS_SetProperty(cx, dirobj, "is_exempt", &val))
+				return(NULL);
+
+			if(user==NULL || chk_ar(cfg,cfg->dir[d]->op_ar,user))
+				val=BOOLEAN_TO_JSVAL(JS_TRUE);
+			else
+				val=BOOLEAN_TO_JSVAL(JS_FALSE);
+			if(!JS_SetProperty(cx, dirobj, "is_operator", &val))
 				return(NULL);
 
 			if(!JS_GetArrayLength(cx, dir_list, &index))	/* inexplicable exception here on Jul-6-2001 */
