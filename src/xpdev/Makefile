@@ -1,6 +1,8 @@
 SRC_ROOT	=	..
 !include $(SRC_ROOT)/build/Common.bmake
-CFLAGS	=	$(CFLAGS) -DWRAPPER_EXPORTS
+
+#The following is necessary only when DLL-exporting wrapper functions
+#CFLAGS	=	$(CFLAGS) -DWRAPPER_EXPORTS
 
 $(XPDEV_LIB): $(OBJS)
 	@echo Creating $< ...
