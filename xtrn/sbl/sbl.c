@@ -1226,7 +1226,7 @@ int main(int argc, char **argv)
 					pause(); }
 				ch=yesno("Display extended information");
 				cls();
-				while(!eof(file) && !aborted) {
+				while(/* !eof(file) && not on unix */ !aborted) {
 					if(read(file,&i,2)!=2)
 						break;
 					fseek(stream,(long)i*sizeof(bbs_t),SEEK_SET);
