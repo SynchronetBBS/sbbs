@@ -2353,7 +2353,8 @@ void DLLCALL mail_server(void* arg)
 	}
 
 	t=time(NULL);
-	lprintf("Initializing on %s",ctime(&t));
+	lprintf("Initializing on %.24s with options: %lx"
+		,ctime(&t),startup->options);
 
 	/* Initial configuration and load from CNF files */
     memset(&scfg, 0, sizeof(scfg));
