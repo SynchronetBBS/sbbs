@@ -23,6 +23,7 @@
 /* $Id$ */
 
 template=new Object;
+load("sbbsdefs.js");	// UFLAG_G
 load("../web/lib/html_themes.ssjs");
 template.Theme_CSS_File=Themes[CurrTheme].css;
 
@@ -127,8 +128,8 @@ function regex_escape(str)
 if(user.number==0)
 	template.user_greeting="Welcome, Guest.";
 else
-	if(user.alias!='Guest')
-		template.user_greeting="Welcome, "+user.alias+ ". You last visited " +strftime("%B %d, %Y",user.stats.laston_date);
+	if(!(user.security.restrictions&UFLAG_G))
+		template.user_greeting="Welcome, "+user.alias+ ".<br> You last visited on " +strftime("%A, %B %d, %Y",user.stats.laston_date);
 	else
 		template.user_greeting="Welcome, "+user.alias+ ".";
 	
