@@ -92,9 +92,9 @@ ifdef BSD	# BSD
 else			# Linux / Other UNIX
  # Math and pthread libraries needed
  ifdef bcc
-  LFLAGS	:=	libpthread.so
+  LFLAGS	:=	libpthread.so -lc
  else
-  LFLAGS	:=	-lm -lpthread -lutil
+  LFLAGS	:=	-lm -lpthread -lutil -lc
  endif
 endif
 
