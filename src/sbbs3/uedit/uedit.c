@@ -1737,7 +1737,7 @@ int getuser(scfg_t *cfg, user_t *user, char* str)
 {
 	int i,j,last;
 	ushort un;
-//	char* str ;
+	/* char* str ; */
 	struct user_list **opt;
 	int done=0;
 
@@ -1746,7 +1746,7 @@ int getuser(scfg_t *cfg, user_t *user, char* str)
 	for(i=0;i<(MAX_OPTS+1);i++)
 		opt[i]=NULL;
 
-//    strcpy(str, username);
+	/* strcpy(str, username); */
 	/* User List */
 	done=0;
 	while(!done) {
@@ -2072,8 +2072,7 @@ int main(int argc, char** argv)  {
 			/* New User */
 			    createdefaults();
 			    lprintf("Please edit defaults using next screen.");
-			    char* uname = "New User";
-			    getuser(&cfg,&user,uname);
+			    getuser(&cfg,&user,"New User";);
 		}
 		if(j==1) {
 		    /* Find User */
