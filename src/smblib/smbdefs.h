@@ -52,10 +52,18 @@
 #define ESC 				0x1b		/* Escape					^[ */
 #define SP					0x20		/* Space					   */
 
-#define ulong				unsigned long
-#define ushort				unsigned short
-#define uchar				unsigned char
-#define uint				unsigned int
+#ifndef uchar
+	#define uchar				unsigned char
+#endif
+#ifdef __GLIBC__
+	#include <sys/types.h>
+#else
+	#ifndef ushort
+	#define ushort				unsigned short
+	#define ulong				unsigned long
+	#define uint				unsigned int
+	#endif
+#endif
 
 /****************************************************************************/
 /* Memory allocation macros for various compilers and environments			*/
@@ -215,11 +223,9 @@
 
 #define SUBJECT 			0x60
 #define SUMMARY 			0x61
-#ifndef COMMENT
-#define COMMENT 			0x62
-#endif
+#define SMB_COMMENT 		0x62
 #define CARBONCOPY			0x63
-#define GROUP				0x64
+#define SMB_GROUP			0x64
 #define EXPIRATION			0x65
 #define PRIORITY			0x66
 
