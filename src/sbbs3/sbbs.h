@@ -520,7 +520,8 @@ public:
 	void	multinodechat(int channel=1);
 	void	nodepage(void);
 	void	nodemsg(void);
-	int		nodemsg_inside;
+	uint	nodemsg_inside;
+	uint	hotkey_inside;
 	uchar	lastnodemsg;	/* Number of node last message was sent to */
 	char	lastnodemsguser[LEN_ALIAS+1];
 	void	guruchat(char *line, char *guru, int gurunum);
