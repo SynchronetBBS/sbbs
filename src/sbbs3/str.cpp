@@ -717,6 +717,7 @@ void sbbs_t::dirinfo(uint dirnum)
 /****************************************************************************/
 extern "C" BOOL trashcan(scfg_t* cfg, char* insearch, char* name)
 {
+	char*	p;
 	char	str[128];
 	char	search[81];
 	int		c;
@@ -728,32 +729,47 @@ extern "C" BOOL trashcan(scfg_t* cfg, char* insearch, char* name)
 	if((stream=fopen(str,"r"))==NULL)
 		return(FALSE); 
 
-	found=FALSE;
-
 	sprintf(search,"%.*s",sizeof(search)-1,insearch);
 	strupr(search);
+
+	found=FALSE;
+
 	while(!feof(stream) && !ferror(stream) && !found) {
 		if(!fgets(str,sizeof(str),stream))
 			break;
-		truncsp(str);
-		c=strlen(str);
+		
+		found=FALSE;
+
+		p=str;	
+		while(*p && *p<=' ') p++; /* Skip white-space */
+
+		if(*p==';')		/* comment */
+			continue;
+
+		if(*p=='!')	{	/* !match */
+			found=TRUE;
+			p++;
+		}
+
+		truncsp(p);
+		c=strlen(p);
 		if(c) {
 			c--;
-			strupr(str);
-			if(str[c]=='~') {
-				str[c]=0;
-				if(strstr(search,str))
-					found=TRUE; 
+			strupr(p);
+			if(p[c]=='~') {
+				p[c]=0;
+				if(strstr(search,p))
+					found=!found; 
 			}
 
-			else if(str[c]=='^') {
-				str[c]=0;
-				if(!strncmp(str,search,c))
-					found=TRUE; 
+			else if(p[c]=='^') {
+				p[c]=0;
+				if(!strncmp(p,search,c))
+					found=!found; 
 			}
 
-			else if(!strcmp(str,search))
-				found=TRUE; 
+			else if(!strcmp(p,search))
+				found=!found; 
 		} 
 	}
 	fclose(stream);
