@@ -871,6 +871,8 @@ int main(int argc, char** argv)
 							gethostname(services_startup.host_name
 								,sizeof(services_startup.host_name)-1);
 						}
+						printf("Setting hostname: %s\n",bbs_startup.host_name);
+						break;
 					default:
 						printf(usage,argv[0]);
 						return(0);
