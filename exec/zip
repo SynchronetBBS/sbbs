@@ -1,2 +1,4 @@
 #!/bin/sh
-/usr/local/bin/zip $@
+# This script is necessary for wildcard expansion
+#/usr/local/bin/zip $@
+/usr/bin/zip $@
