@@ -77,7 +77,7 @@ int dns_getmx(char* name, char* mx, char* mx2
 
 #define TIMEOUT_THREAD_WAIT		60		/* Seconds */
 
-#define MAX_RECIPIENTS			1000	/* 0xffff = abs max */
+#define MAX_RECIPIENTS			100		/* 0xffff = abs max */
 
 #define LINES_PER_YIELD			100		/* Yield every this many lines of text */
 
@@ -1174,7 +1174,7 @@ static void smtp_thread(void* arg)
 	char		msgtxt_fname[MAX_PATH+1];
 	FILE*		rcptlst;
 	char		rcptlst_fname[MAX_PATH+1];
-	ushort		rcpt_count;
+	ushort		rcpt_count=0;
 	FILE*		spy=NULL;
 	SOCKET		socket;
 	HOSTENT*	host;
@@ -1433,6 +1433,11 @@ static void smtp_thread(void* arg)
 					free(telegram_buf);
 					sockprintf(socket,SMTP_OK);
 					telegram=FALSE;
+
+					/* reset recipient list */
+					rewind(rcptlst);
+					chsize(fileno(rcptlst),0);
+					rcpt_count=0;
 					continue;
 				}
 
@@ -1484,6 +1489,11 @@ static void smtp_thread(void* arg)
 					free(msgbuf);
 					smb_close(&smb);
 					subnum=INVALID_SUB;
+
+					/* reset recipient list */
+					rewind(rcptlst);
+					chsize(fileno(rcptlst),0);
+					rcpt_count=0;
 					continue;
 				}
 
@@ -1652,6 +1662,11 @@ static void smtp_thread(void* arg)
 				}
 				smb_close_da(&smb);
 				smb_close(&smb);
+
+				/* reset recipient list */
+				rewind(rcptlst);
+				chsize(fileno(rcptlst),0);
+				rcpt_count=0;
 				continue;
 			}
 			if(buf[0]==0 && state==SMTP_STATE_DATA_HEADER) {	
@@ -1822,6 +1837,7 @@ static void smtp_thread(void* arg)
 			cmd=SMTP_CMD_NONE;
 			telegram=FALSE;
 			subnum=INVALID_SUB;
+			rcpt_count=0;
 			badcmds=0;
 			continue;
 		}
@@ -1897,8 +1913,7 @@ static void smtp_thread(void* arg)
 			}
 #endif
 
-
-
+		/* Add to Recipient list */
 		if(!strnicmp(buf,"RCPT TO:",8)) {
 
 			if(state<SMTP_STATE_MAIL_FROM) {
@@ -1924,11 +1939,23 @@ static void smtp_thread(void* arg)
 			rcpt_name[0]=0;
 			sprintf(rcpt_addr,"%.*s",sizeof(rcpt_addr)-1,p);
 
+			/* Check recipient counter */
+			if(rcpt_count>=MAX_RECIPIENTS) {
+				lprintf("%04d !SMTP MAXIMUM RECIPIENTS (%d) REACHED"
+					,socket, MAX_RECIPIENTS);
+				sprintf(tmp,"Maximum recipient count (%d) from: %s"
+					,MAX_RECIPIENTS, reverse_path);
+				spamlog(&scfg, "SMTP", tmp, host_name, host_ip, rcpt_addr);
+				sockprintf(socket, "552 Too many recipients");
+				continue;
+			}
+
 			/* Check for blocked recipients */
 			if(trashcan(&scfg,rcpt_addr,"email")) {
 				lprintf("%04d !SMTP BLOCKED RECIPIENT (%s) from: %s"
 					,socket, rcpt_addr, reverse_path);
-				sprintf(str,"Blocked recipient e-mail address from: %s",reverse_path);
+				sprintf(str,"Blocked recipient e-mail address from: %s"
+					,reverse_path);
 				spamlog(&scfg, "SMTP", str, host_name, host_ip, rcpt_addr);
 				sockprintf(socket, "550 Unknown User:%s", buf+8);
 				continue;
@@ -1978,6 +2005,7 @@ static void smtp_thread(void* arg)
 					
 					sockprintf(socket,SMTP_OK);
 					state=SMTP_STATE_RCPT_TO;
+					rcpt_count++;
 					continue;
 				}
 			}
@@ -2005,6 +2033,7 @@ static void smtp_thread(void* arg)
 				subnum=i;
 				sockprintf(socket,SMTP_OK);
 				state=SMTP_STATE_RCPT_TO;
+				rcpt_count++;
 				continue;
 			}
 
@@ -2110,8 +2139,10 @@ static void smtp_thread(void* arg)
 				sockprintf(socket,SMTP_OK);
 			}
 			state=SMTP_STATE_RCPT_TO;
+			rcpt_count++;
 			continue;
 		}
+		/* Message Data (header and body) */
 		if(!strnicmp(buf,"DATA",4)) {
 			if(state<SMTP_STATE_RCPT_TO) {
 				lprintf("%04d !SMTP MISSING 'RCPT TO' command", socket);
