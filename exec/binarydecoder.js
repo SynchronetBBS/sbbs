@@ -12,21 +12,25 @@ const REVISION = "$Revision$".split(' ')[1];
 
 printf("Synchronet Binary Decoder %s session started\r\n", REVISION);
 
-lines_per_yield=5;
+lines_per_yield=10;
+yield_length=1;
 completed_files=0;
+sub = new Array();
 
 var ini_fname = system.ctrl_dir + "binarydecoder.ini";
-
 file = new File(ini_fname);
-if(!file.open("r")) {
-	printf("!Error %d opening %s\r\n",errno,file.name);
-	delete file;
-	exit();
+if(file.open("r")) {
+	sub = file.iniGetAllObjects("code","sub:");
+	file.close();
 }
 
-sub = file.iniGetAllObjects("code","sub:");
-
-file.close();
+if(argc) {
+	print("Searching for sub-boards matching pattern: " + argv[0]);
+	re = new RegExp(argv[0],"i");
+	for(i in msg_area.sub)
+		if(re.test(i))
+			sub.push(msg_area.sub[i]);
+}
 
 for(i in sub) {
 
@@ -70,6 +74,7 @@ for(i in sub) {
 		md5_list=md5_file.readAll();
 		md5_file.close();
 	}
+	md5_list_length=md5_list.length;
 
 	/* Read CRC-32 list */
 	crc_fname=attachment_dir + "crc32.lst";
@@ -79,6 +84,7 @@ for(i in sub) {
 		crc_list=crc_file.readAll();
 		crc_file.close();
 	}
+	crc_list_length=crc_list.length;
 
 	/* Read parts database */
 	parts_fname=attachment_dir + "parts.db";
@@ -88,7 +94,8 @@ for(i in sub) {
 		parts_list=parts_file.iniGetAllObjects();
 		parts_file.close();
 	}
-	
+	parts_list_modified=false;
+
 	printf("Scanning %s\r\n",msgbase.cfg.code);
 
 	last_msg=msgbase.last_msg;
@@ -145,14 +152,13 @@ for(i in sub) {
 		for(li=0;li<lines.length;li++) {
 
 			if(lines_per_yield && li && (li%lines_per_yield)==0)
-				yield();
+				sleep(yield_length);
 
 			line=lines[li];
 
 			if(file.uue && line=="end") {
 				if(!part)
-					if(!complete_file(file,fname,attachment_dir))
-						console.pause();
+					complete_file(file,fname,attachment_dir);
 				li--;
 				break;
 			}
@@ -319,7 +325,6 @@ for(i in sub) {
 	} /* for(ptr<=msg.last_msg) */
 
 	/* Save the scan pointer */
-	print("Saving scan pointer");
 	if(ptr_file.open("w"))
 		ptr_file.writeln(ptr);
 
@@ -327,8 +332,8 @@ for(i in sub) {
 	delete msgbase;
 
 	/* Save Attachment MD5 history */
-	print("Saving MD5 history");
-	if(md5_list.length) {
+	if(md5_list.length!=md5_list_length) {
+		print("Saving MD5 history");
 		if(md5_file.open("w")) {
 			md5_file.writeAll(md5_list);
 			md5_file.close();
@@ -336,34 +341,35 @@ for(i in sub) {
 	}
 
 	/* Save Attachment CRC-32 history */
-	print("Saving CRC-32 History");
-	if(crc_list.length) {
+	if(crc_list.length!=crc_list_length) {
+		print("Saving CRC-32 History");
 		if(crc_file.open("w")) {
 			crc_file.writeAll(crc_list);
 			crc_file.close();
 		}
 	}
 
-	/* Combine and decode parts */
-	print("Combining partial files");
-	combine_parts(parts_list);
+	if(parts_list_modified==true) {
 
-	/* Save the Partial file/parts Database */
-	print("Saving partial file database");
-	parts_file.open("w");
-	for(o in parts_list) {
-		obj=parts_list[o];
-		if(obj==undefined)
-			continue;
-		parts_file.writeln("[" + obj.name + "]");
-		for(prop in obj)
-			parts_file.printf("%-20s=%s\r\n"
-				,prop.toString(), obj[prop].toString());
-		parts_file.writeln("; end of file: " + obj.name );
-		parts_file.writeln();
+		/* Combine and decode parts */
+		print("Combining partial files");
+		combine_parts(parts_list);
+
+		/* Save the Partial file/parts Database */
+		print("Saving partial file database");
+		parts_file.open("w");
+		for(o in parts_list) {
+			obj=parts_list[o];
+			parts_file.writeln("[" + obj.name + "]");
+			for(prop in obj)
+				parts_file.printf("%-20s=%s\r\n"
+					,prop.toString(), obj[prop].toString());
+			parts_file.writeln("; end of file: " + obj.name );
+			parts_file.writeln();
+		}
+		parts_file.printf("; %lu partial files\n", parts_list.length);
+		parts_file.close();
 	}
-	parts_file.printf("; %lu partial files\n", parts_list.length);
-	parts_file.close();
 
 } /* for(i in subs) */
 
@@ -460,12 +466,12 @@ function add_part(list,sub_code,hdr
 	obj=list[li];
 
 	var time_str = system.timestr();
-	var time_hex = format("%lx",time());
+	var time_hex = format("%08lxh",time());
 
 	if(obj==undefined)	{	/* new entry */
 
 		printf("New parts database entry for: %s\r\n",fname.toString());
-		printf("total=%u, size=%u, crc32=%lx\r\n",total,size,crc32);
+		printf("total=%u, size=%u, crc32=%08lx\r\n",total,size,crc32);
 
 		obj = { name: fname, codec: codec, parts: 0, total: total };
 
@@ -476,7 +482,7 @@ function add_part(list,sub_code,hdr
 		if(size!=undefined)
 			obj.size=size;
 		if(crc32!=undefined)
-			obj.crc32=format("%lx",crc32);
+			obj.crc32=format("%08lxh",crc32);
 
 		/* Timestamp */
 		obj.created=time_str;
@@ -516,11 +522,13 @@ function add_part(list,sub_code,hdr
 	if(end!=undefined)
 		obj[format("part%u.end",part)]=end;
 	if(pcrc32!=undefined)
-		obj[format("part%u.crc32",part)]=format("%lx",pcrc32);
+		obj[format("part%u.crc32",part)]=format("%08lxh",pcrc32);
 
 	obj.parts++;
 
 	list[li]=obj;
+
+	parts_list_modified=true;
 
 	printf("Part %u added (%u/%u parts in database)\r\n"
 		,part,obj.parts,obj.total);
@@ -578,6 +586,8 @@ function combine_parts(list,attachment_dir)
 			last_line=obj[prefix + "last_line"];
 			for(var l=first_line;l<=last_line;l++)
 				file.write(lines[l]);
+
+			delete msgbase;
 		}
 		if(pi<=obj.total) {
 			file.remove();
@@ -586,13 +596,21 @@ function combine_parts(list,attachment_dir)
 			continue;
 		}
 
+		if(obj.size!=undefined && obj.size!=file.length) {
+			file.remove();
+			printf("!File length mismatch, actual: %lu, expected: %lu\r\n"
+				,file.length, obj.size);
+			continue;
+		}
+
 		/* Verify final CRC-32, if available */
 		if(obj.crc32!=undefined) {
-			file_crc32=format("%lx",file.crc32);
-			if(obj.crc32!=file_crc32) {
+			file_crc32=file.crc32;
+			crc32=parseInt(obj.crc32,16);
+			if(crc32!=file_crc32) {
 				file.remove();
-				printf(!"CRC-32 failure, actual: %s, expected: %s\r\n"
-					,file_crc32, obj.crc32);
+				printf("!CRC-32 failure, actual: %08lx, expected: %08lx\r\n"
+					,file_crc32, crc32);
 				continue;
 			}
 		}
@@ -601,8 +619,9 @@ function combine_parts(list,attachment_dir)
 			,obj.name.toString()
 			,msg_area.sub[sub_code].attachment_dir);
 
-		list[li]=undefined;	// Remove file entry from database
-
+		// Remove file entry from database
+		list.splice(li--,1);
+		parts_list_modified=true;
 	}
 }
 
@@ -611,6 +630,8 @@ function combine_parts(list,attachment_dir)
 /***********************************************************************************/
 function complete_file(file, fname, attachment_dir)
 {
+	fname=fname.replace(/ /g,'_');	/* no spaces in filenames */
+
 	printf("Completing attachment: %s\r\n",fname);
 
 	md5=file.md5_hex;
@@ -633,7 +654,7 @@ function complete_file(file, fname, attachment_dir)
 		printf("Duplicate CRC-32 found: %s\r\n",crc_list[ci]);
 		return(false);
 	}
-	crc_list.push(format("%lx %s",crc32,fname));
+	crc_list.push(format("%08lx %s",crc32,fname));
 
 	new_fname=fname;
 	file_num=0;
