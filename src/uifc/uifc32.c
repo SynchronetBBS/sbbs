@@ -1287,7 +1287,7 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 		cprintf("UIFC line %d: error allocating %u bytes\r\n"
 			,__LINE__,(max+1));
 		_setcursortype(cursor);
-		return; 
+		return(-1); 
 	}
 	gotoxy(left,top);
 	cursor=_NORMALCURSOR;
