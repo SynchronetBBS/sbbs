@@ -52,7 +52,7 @@ bool sbbs_t::answer()
 	answertime=logontime=starttime=now=time(NULL);
 	/* Caller ID is IP address */
 	addr.s_addr=client_addr;
-	strcpy(cid,inet_ntoa(addr)); 
+	SAFECOPY(cid,inet_ntoa(addr)); 
 
 	memset(&tm,0,sizeof(tm));
     localtime_r(&now,&tm); 
@@ -99,7 +99,7 @@ bool sbbs_t::answer()
 			terminal[i]=0;
 			truncstr(terminal,"/");
 			lprintf("Node %d RLogin: '%s' / '%s / %s'",cfg.node_num,str,str2,terminal);
-			strcpy(rlogin_name
+			SAFECOPY(rlogin_name
 				,startup->options&BBS_OPT_USE_2ND_RLOGIN ? str2 : str);
 			useron.number=userdatdupe(0, U_ALIAS, LEN_ALIAS, rlogin_name, 0);
 			if(useron.number)
@@ -168,7 +168,7 @@ bool sbbs_t::answer()
     if(l) {
         if(str[0]==ESC && str[1]=='[') {
 			if(terminal[0]==0)
-				SAFECOPY(terminal,"ansi");
+				SAFECOPY(terminal,"ANSI");
 			autoterm|=(ANSI|COLOR);
             rows=atoi(str+2);
 			lprintf("Node %d ANSI cursor position report: %u rows"
@@ -178,24 +178,24 @@ bool sbbs_t::answer()
 		truncsp(str);
 		if(strstr(str,"RIPSCRIP")) {
 			if(terminal[0]==0)
-				SAFECOPY(terminal,"rip");
+				SAFECOPY(terminal,"RIP");
 			logline("@R",strstr(str,"RIPSCRIP"));
 			autoterm|=(RIP|COLOR|ANSI); }
 		else if(strstr(str,"DC-TERM")
 			&& toupper(*(strstr(str,"DC-TERM")+12))=='W') {
 			if(terminal[0]==0)
-				SAFECOPY(terminal,"wip");
+				SAFECOPY(terminal,"WIP");
 			logline("@W",strstr(str,"DC-TERM"));
 			autoterm|=(WIP|COLOR|ANSI); }
 		else if(strstr(str,"!HTML!"))  {
 			if(terminal[0]==0)
-				SAFECOPY(terminal,"html");
+				SAFECOPY(terminal,"HTML");
 			logline("@H",strstr(str,"!HTML!"));
 			autoterm|=HTML;
 		} 
 	}
 	else if(terminal[0]==0)
-		SAFECOPY(terminal,"dumb");
+		SAFECOPY(terminal,"DUMB");
 
 	rioctl(IOFI); /* flush left-over or late response chars */
 
