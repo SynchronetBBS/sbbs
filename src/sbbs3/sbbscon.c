@@ -813,7 +813,9 @@ void _sighandler_rerun(int sig)
 
 	log_puts(LOG_NOTICE,"     Got HUP (rerun) signal");
 
-	read_startup_ini();
+	/*
+	Currently, rereading the ini appears to case 100% CPU issues. - ToDo
+		read_startup_ini(); */
 	bbs_startup.recycle_now=TRUE;
 	ftp_startup.recycle_now=TRUE;
 	web_startup.recycle_now=TRUE;
@@ -951,6 +953,7 @@ int main(int argc, char** argv)
 	setlocale( LC_ALL, "C-TRADITIONAL" );
 #endif
 #ifdef __unix__
+	setsid();	/* Disassociate from controlling terminal */
 	umask(077);
 #endif
 	printf("\nSynchronet Console for %s  Version %s%c  %s\n\n"
@@ -1095,6 +1098,39 @@ int main(int argc, char** argv)
 	}
 
 	read_startup_ini();
+
+	if(!command_is(argv[0],"sbbs"))  {
+		run_bbs=has_bbs=FALSE;
+		run_ftp=has_ftp=FALSE;
+		run_mail=has_mail=FALSE;
+		run_services=has_services=FALSE;
+		run_web=has_web=FALSE;
+	}
+	if(command_is(argv[0],"sbbs_ftp"))
+		run_ftp=has_ftp=TRUE;
+	else if(command_is(argv[0],"sbbs_mail"))
+		run_mail=has_mail=TRUE;
+	else if(command_is(argv[0],"sbbs_bbs"))
+		run_bbs=has_bbs=TRUE;
+#ifndef NO_SERVICES
+	else if(command_is(argv[0],"sbbs_srvc"))
+		run_services=has_services=TRUE;
+#endif
+#ifndef NO_WEB_SERVER
+	else if(command_is(argv[0],"sbbs_web"))
+		run_web=has_web=TRUE;
+#endif
+	else {
+		run_bbs=has_bbs=TRUE;
+		run_ftp=has_ftp=TRUE;
+		run_mail=has_mail=TRUE;
+#ifndef NO_SERVICES
+		run_services=has_services=TRUE;
+#endif
+#ifndef NO_WEB_SERVER
+		run_web=has_web=TRUE;
+#endif
+	}
 
 	prompt = "[Threads: %d  Sockets: %d  Clients: %d  Served: %lu] (?=Help): ";
 
@@ -1385,41 +1421,41 @@ int main(int argc, char** argv)
 /* Daemonize / Set uid/gid */
 #ifdef __unix__
 
+	switch(toupper(daemon_type[0])) {
+		case '0':
+			openlog(SBBS_LOG_NAME,LOG_CONS,LOG_LOCAL0);
+			break;
+		case '1':
+			openlog(SBBS_LOG_NAME,LOG_CONS,LOG_LOCAL1);
+			break;
+		case '2':
+			openlog(SBBS_LOG_NAME,LOG_CONS,LOG_LOCAL2);
+			break;
+		case '3':
+			openlog(SBBS_LOG_NAME,LOG_CONS,LOG_LOCAL3);
+			break;
+		case '4':
+			openlog(SBBS_LOG_NAME,LOG_CONS,LOG_LOCAL4);
+			break;
+		case '5':
+			openlog(SBBS_LOG_NAME,LOG_CONS,LOG_LOCAL5);
+			break;
+		case '6':
+			openlog(SBBS_LOG_NAME,LOG_CONS,LOG_LOCAL6);
+			break;
+		case '7':
+			openlog(SBBS_LOG_NAME,LOG_CONS,LOG_LOCAL7);
+			break;
+		case 'F':	/* this is legacy */
+		case 'S':
+			/* Use standard facilities */
+			openlog(SBBS_LOG_NAME,LOG_CONS,LOG_USER);
+			std_facilities = TRUE;
+			break;
+		default:
+			openlog(SBBS_LOG_NAME,LOG_CONS,LOG_USER);
+	}
 	if(is_daemon) {
-		switch(toupper(daemon_type[0])) {
-			case '0':
-				openlog(SBBS_LOG_NAME,LOG_CONS,LOG_LOCAL0);
-				break;
-			case '1':
-				openlog(SBBS_LOG_NAME,LOG_CONS,LOG_LOCAL1);
-				break;
-			case '2':
-				openlog(SBBS_LOG_NAME,LOG_CONS,LOG_LOCAL2);
-				break;
-			case '3':
-				openlog(SBBS_LOG_NAME,LOG_CONS,LOG_LOCAL3);
-				break;
-			case '4':
-				openlog(SBBS_LOG_NAME,LOG_CONS,LOG_LOCAL4);
-				break;
-			case '5':
-				openlog(SBBS_LOG_NAME,LOG_CONS,LOG_LOCAL5);
-				break;
-			case '6':
-				openlog(SBBS_LOG_NAME,LOG_CONS,LOG_LOCAL6);
-				break;
-			case '7':
-				openlog(SBBS_LOG_NAME,LOG_CONS,LOG_LOCAL7);
-				break;
-			case 'F':	/* this is legacy */
-			case 'S':
-				/* Use standard facilities */
-				openlog(SBBS_LOG_NAME,LOG_CONS,LOG_USER);
-				std_facilities = TRUE;
-				break;
-			default:
-				openlog(SBBS_LOG_NAME,LOG_CONS,LOG_USER);
-		}
 
 		printf("Running as daemon\n");
 		if(daemon(TRUE,FALSE))  { /* Daemonize, DON'T switch to / and DO close descriptors */
@@ -1484,39 +1520,6 @@ int main(int argc, char** argv)
 	_beginthread((void(*)(void*))handle_sigs,0,NULL);
 #endif
 
-	if(!command_is(argv[0],"sbbs"))  {
-		run_bbs=has_bbs=FALSE;
-		run_ftp=has_ftp=FALSE;
-		run_mail=has_mail=FALSE;
-		run_services=has_services=FALSE;
-		run_web=has_web=FALSE;
-	}
-	if(command_is(argv[0],"sbbs_ftp"))
-		run_ftp=has_ftp=TRUE;
-	else if(command_is(argv[0],"sbbs_mail"))
-		run_mail=has_mail=TRUE;
-	else if(command_is(argv[0],"sbbs_bbs"))
-		run_bbs=has_bbs=TRUE;
-#ifndef NO_SERVICES
-	else if(command_is(argv[0],"sbbs_srvc"))
-		run_services=has_services=TRUE;
-#endif
-#ifndef NO_WEB_SERVER
-	else if(command_is(argv[0],"sbbs_web"))
-		run_web=has_web=TRUE;
-#endif
-	else {
-		run_bbs=has_bbs=TRUE;
-		run_ftp=has_ftp=TRUE;
-		run_mail=has_mail=TRUE;
-#ifndef NO_SERVICES
-		run_services=has_services=TRUE;
-#endif
-#ifndef NO_WEB_SERVER
-		run_web=has_web=TRUE;
-#endif
-	}
-
 	if(run_bbs)
 		_beginthread((void(*)(void*))bbs_thread,0,&bbs_startup);
 	if(run_ftp)
@@ -1576,9 +1579,7 @@ int main(int argc, char** argv)
 			bbs_lputs(NULL,LOG_INFO,str);
 
 			/* Can't recycle servers (re-bind ports) as non-root user */
-			/* ToDo: Something seems to be broken here on FreeBSD now */
-			/* ToDo: Now, they try to re-bind on FreeBSD */
-			/* ToDo: Seems like I switched problems with Linux */
+			/* If DONT_BLAME_SYNCHRONET is set, keeps root credentials laying around */
 #if !defined(DONT_BLAME_SYNCHRONET) && !defined(_THREAD_SUID_BROKEN)
  			if(bbs_startup.telnet_port < IPPORT_RESERVED
 				|| (bbs_startup.options & BBS_OPT_ALLOW_RLOGIN
@@ -1603,7 +1604,24 @@ int main(int argc, char** argv)
 	else								/* interactive */
 #endif
 		while(!terminated) {
-			if(!isatty(fileno(stdin)) || !kbhit()) {
+#ifdef __unix__
+			if(!isatty(STDIN_FILENO))  {		/* Controlling terminal has left us *sniff* */
+				int fd;
+				openlog(SBBS_LOG_NAME,LOG_CONS,LOG_USER);
+    			if ((fd = open(_PATH_DEVNULL, O_RDWR, 0)) != -1) {
+        			(void)dup2(fd, STDIN_FILENO);
+        			(void)dup2(fd, STDOUT_FILENO);
+        			(void)dup2(fd, STDERR_FILENO);
+        			if (fd > 2)
+            			(void)close(fd);
+    			}
+				is_daemon=TRUE;
+				bbs_lputs(NULL, LOG_ERR, "STDIN is not a tty anymore... switching to syslog logging");
+				select(0,NULL,NULL,NULL,NULL);	/* Sleep forever - Should this just exit the thread? */
+			}
+#endif
+
+			if(!kbhit()) {
 				YIELD();
 				continue;
 			}
