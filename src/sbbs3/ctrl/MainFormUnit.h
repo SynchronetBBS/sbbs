@@ -253,6 +253,7 @@ __published:	// IDE-managed Components
 	TMenuItem *Recycle2;
 	TMenuItem *Recycle3;
 	TAction *TelnetRecycle;
+	TMenuItem *DnsBlacklists;
     void __fastcall FileExitMenuItemClick(TObject *Sender);
 	void __fastcall ViewToolbarMenuItemClick(TObject *Sender);
 	void __fastcall FormClose(TObject *Sender, TCloseAction &Action);

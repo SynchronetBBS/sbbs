@@ -2416,6 +2416,11 @@ object MainForm: TMainForm
           Hint = 'RELAY.CFG'
           OnClick = CtrlMenuItemEditClick
         end
+        object DnsBlacklists: TMenuItem
+          Caption = 'DNS-based Blacklists'
+          Hint = 'DNS_BLACKLIST.CFG'
+          OnClick = CtrlMenuItemEditClick
+        end
       end
     end
     object FtpMenuItem: TMenuItem
