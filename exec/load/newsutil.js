@@ -52,7 +52,7 @@ function write_news_header(hdr,writeln)
 function parse_news_header(hdr, line)
 {
 	/* Parse header lines */
-	if(line.charAt(0)==' ' || line.charAt(0)=='\t' && hdr.field_list) {
+	if((line.charAt(0)==' ' || line.charAt(0)=='\t') && hdr.field_list) {
 		/* "folded" header field */
 		hdr.field_list.push(
 			{	type: RFC822HEADER, 
