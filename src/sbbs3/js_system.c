@@ -871,7 +871,7 @@ js_zonestr(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		zone=(short)val;
 	}
 
-	if((js_str = JS_NewStringCopyZ(cx, zonestr(zone)))==NULL)
+	if((js_str = JS_NewStringCopyZ(cx, smb_zonestr(zone,NULL)))==NULL)
 		return(JS_FALSE);
 
 	*rval = STRING_TO_JSVAL(js_str);

@@ -2216,7 +2216,7 @@ static void smtp_thread(void* arg)
 								,socket, startup->dnsbl_tag);
 						}
 						smb_hfield_str(&msg, SUBJECT, p);
-						msg.idx.subj=subject_crc(p);
+						msg.idx.subj=smb_subject_crc(p);
 						continue;
 					}
 					if(!strnicmp(buf, "FROM:", 5)
@@ -2312,7 +2312,7 @@ static void smtp_thread(void* arg)
 				if(msg.idx.subj==0) {
 					p="";
 					smb_hfield(&msg, SUBJECT, 0, p);
-					msg.idx.subj=subject_crc(p);
+					msg.idx.subj=smb_subject_crc(p);
 				}
 
 				/* Security logging */

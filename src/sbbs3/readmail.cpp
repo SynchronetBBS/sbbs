@@ -361,7 +361,7 @@ void sbbs_t::readmail(uint usernumber, int which)
 					strcpy(str,msg.from);
 				else if(msg.from_net.type==NET_FIDO) 	/* FidoNet type */
 					sprintf(str,"%s @%s",msg.from
-						,faddrtoa((faddr_t *)msg.from_net.addr,tmp));
+						,smb_faddrtoa((faddr_t *)msg.from_net.addr,tmp));
 				else if(msg.from_net.type==NET_INTERNET)
 					strcpy(str,(char *)msg.from_net.addr);
 				else

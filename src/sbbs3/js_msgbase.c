@@ -201,7 +201,7 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 	} else
 		cp="";
 	smb_hfield_str(msg, SUBJECT, cp);
-	msg->idx.subj=subject_crc(cp);
+	msg->idx.subj=smb_subject_crc(cp);
 
 	if(JS_GetProperty(cx, hdr, "from", &val) && !JSVAL_NULL_OR_VOID(val)) {
 		if((cp=JS_GetStringBytes(JS_ValueToString(cx,val)))==NULL)
@@ -697,7 +697,7 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 		JS_DefineProperty(cx, hdrobj, "to_net_type",INT_TO_JSVAL(msg.to_net.type)
 			,NULL,NULL,JSPROP_ENUMERATE);
 	if(msg.to_net.type
-		&& (js_str=JS_NewStringCopyZ(cx,net_addr(&msg.to_net)))!=NULL)
+		&& (js_str=JS_NewStringCopyZ(cx,smb_netaddr(&msg.to_net)))!=NULL)
 		JS_DefineProperty(cx, hdrobj, "to_net_addr"
 			,STRING_TO_JSVAL(js_str)
 			,NULL,NULL,JSPROP_ENUMERATE);
@@ -706,7 +706,7 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 		JS_DefineProperty(cx, hdrobj, "from_net_type",INT_TO_JSVAL(msg.from_net.type)
 			,NULL,NULL,JSPROP_ENUMERATE);
 	if(msg.from_net.type
-		&& (js_str=JS_NewStringCopyZ(cx,net_addr(&msg.from_net)))!=NULL)
+		&& (js_str=JS_NewStringCopyZ(cx,smb_netaddr(&msg.from_net)))!=NULL)
 		JS_DefineProperty(cx, hdrobj, "from_net_addr"
 			,STRING_TO_JSVAL(js_str)
 			,NULL,NULL,JSPROP_ENUMERATE);
@@ -716,7 +716,7 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 		JS_DefineProperty(cx, hdrobj, "replyto_net_type",INT_TO_JSVAL(msg.replyto_net.type)
 			,NULL,NULL,JSPROP_ENUMERATE);
 	if(msg.replyto_net.type
-		&& (js_str=JS_NewStringCopyZ(cx,net_addr(&msg.replyto_net)))!=NULL)
+		&& (js_str=JS_NewStringCopyZ(cx,smb_netaddr(&msg.replyto_net)))!=NULL)
 		JS_DefineProperty(cx, hdrobj, "replyto_net_addr"
 			,STRING_TO_JSVAL(js_str)
 			,NULL,NULL,JSPROP_ENUMERATE);

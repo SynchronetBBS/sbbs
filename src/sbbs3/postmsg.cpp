@@ -84,7 +84,7 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 		msgattr=(ushort)(remsg->hdr.attr&MSG_PRIVATE);
 		sprintf(top,text[RegardingByToOn],title,touser,remsg->to
 			,timestr((time_t *)&remsg->hdr.when_written.time)
-			,zonestr(remsg->hdr.when_written.zone)); 
+			,smb_zonestr(remsg->hdr.when_written.zone,NULL)); 
 	} else {
 		title[0]=0;
 		touser[0]=0;
@@ -371,7 +371,7 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 	msg_client_hfields(&msg,&client);
 
 	smb_hfield_str(&msg,SUBJECT,title);
-	msg.idx.subj=subject_crc(title);
+	msg.idx.subj=smb_subject_crc(title);
 
 	smb_dfield(&msg,TEXT_BODY,length);
 

@@ -115,9 +115,9 @@ void sbbs_t::msghdr(smbmsg_t* msg)
 
 	/* fixed fields */
 	bprintf("%-16.16s %s %s\r\n","when_written"	
-		,timestr((time_t *)&msg->hdr.when_written.time), zonestr(msg->hdr.when_written.zone));
+		,timestr((time_t *)&msg->hdr.when_written.time), smb_zonestr(msg->hdr.when_written.zone,NULL));
 	bprintf("%-16.16s %s %s\r\n","when_imported"	
-		,timestr((time_t *)&msg->hdr.when_imported.time), zonestr(msg->hdr.when_imported.zone));
+		,timestr((time_t *)&msg->hdr.when_imported.time), smb_zonestr(msg->hdr.when_imported.zone,NULL));
 	bprintf("%-16.16s %04Xh\r\n","type"				,msg->hdr.type);
 	bprintf("%-16.16s %04Xh\r\n","version"			,msg->hdr.version);
 	bprintf("%-16.16s %04Xh\r\n","attr"				,msg->hdr.attr);
@@ -810,7 +810,7 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 					strcpy(str,msg.from);
 				else if(msg.from_net.type==NET_FIDO)
 					sprintf(str,"%s @%s",msg.from
-						,faddrtoa((faddr_t *)msg.from_net.addr,tmp));
+						,smb_faddrtoa((faddr_t *)msg.from_net.addr,tmp));
 				else if(msg.from_net.type==NET_INTERNET)
 					strcpy(str,(char *)msg.from_net.addr);
 				else
