@@ -682,6 +682,11 @@ bool sbbs_t::js_init()
 		if(!js_DefineMethods(js_cx, js_glob, js_global_functions))
 			break;
 
+#ifdef _DEBUG
+		JS_DefineProperty(js_cx, js_glob, "_global", OBJECT_TO_JSVAL(js_glob)
+			,NULL,NULL,JSPROP_READONLY);
+#endif
+
 		/* System Object */
 		if(js_CreateSystemObject(js_cx, js_glob, &cfg, uptime, startup->host_name)==NULL)
 			break;
