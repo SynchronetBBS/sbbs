@@ -251,6 +251,8 @@ be able to logon as New, leave this option blank.
                     ,cfg.sys_misc&SM_CLOSED ? "Yes" : "No");
                 sprintf(opt[i++],"%-33.33s%s","Use Location in User Lists"
 					,cfg.sys_misc&SM_LISTLOC ? "Yes" : "No");
+				sprintf(opt[i++],"%-33.33s%s","Use Local/System Time Zone"
+					,cfg.sys_misc&SM_LOCAL_TZ ? "Yes" : "No");
 				sprintf(opt[i++],"%-33.33s%s","Military (24 hour) Time Format"
 					,cfg.sys_misc&SM_MILITARY ? "Yes" : "No");
 				sprintf(opt[i++],"%-33.33s%s","European Date Format (DD/MM/YY)"
@@ -275,7 +277,7 @@ two or more states, such as Yes and No.
 						strcpy(opt[0],"Yes");
 						strcpy(opt[1],"No");
 						opt[2][0]=0;
-						i=0;
+						i=cfg.uq&UQ_ALIASES ? 0:1;
 						SETHELP(WHERE);
 /*
 Allow Users to Use Aliases:
@@ -297,7 +299,7 @@ users on your system to be known only by their real names, select No.
 						strcpy(opt[0],"Yes");
 						strcpy(opt[1],"No");
 						opt[2][0]=0;
-						i=0;
+						i=cfg.sys_misc&SM_TIMEBANK ? 0:1;
 						SETHELP(WHERE);
 /*
 Allow Time Banking:
@@ -321,7 +323,7 @@ with credits.
 						strcpy(opt[0],"Yes");
 						strcpy(opt[1],"No");
 						opt[2][0]=0;
-						i=0;
+						i=cfg.sys_misc&SM_NOCDTCVT ? 1:0;
 						SETHELP(WHERE);
 /*
 Allow Credits to be Converted into Minutes:
@@ -344,7 +346,7 @@ set this option to Yes.
 						strcpy(opt[0],"Yes");
 						strcpy(opt[1],"No");
 						opt[2][0]=0;
-						i=0;
+						i=cfg.sys_misc&SM_R_SYSOP ? 0:1;
 						SETHELP(WHERE);
 /*
 Allow Sysop Logins:
@@ -364,7 +366,7 @@ If you want to be able to login with sysop access, set this option to Yes.
 						strcpy(opt[0],"Yes");
 						strcpy(opt[1],"No");
 						opt[2][0]=0;
-						i=0;
+						i=cfg.sys_misc&SM_ECHO_PW ? 0:1;
 						SETHELP(WHERE);
 /*
 Echo Passwords Locally:
@@ -385,7 +387,7 @@ If you want to passwords to be displayed locally, set this option to
                         strcpy(opt[0],"Yes");
                         strcpy(opt[1],"No");
 						opt[2][0]=0;
-                        i=0;
+                        i=cfg.sys_misc&SM_SHRTPAGE ? 0:1;
 						SETHELP(WHERE);
 /*
 Short Sysop Page:
@@ -406,7 +408,7 @@ than continuous random tones, set this option to Yes.
                         strcpy(opt[0],"Yes");
                         strcpy(opt[1],"No");
 						opt[2][0]=0;
-                        i=0;
+                        i=cfg.sys_misc&SM_ERRALARM ? 0:1;
 						SETHELP(WHERE);
 /*
 Sound Alarm on Error:
@@ -427,7 +429,7 @@ system error has occured, set this option to Yes.
                         strcpy(opt[0],"Yes");
                         strcpy(opt[1],"No");
 						opt[2][0]=0;
-                        i=1;
+                        i=cfg.sys_misc&SM_SYSSTAT ? 0:1;
 						SETHELP(WHERE);
 /*
 Include Sysop Activity in System Statistics:
@@ -451,7 +453,7 @@ include sysop maintenance activity.
                         strcpy(opt[0],"Yes");
                         strcpy(opt[1],"No");
 						opt[2][0]=0;
-                        i=1;
+                        i=cfg.sys_misc&SM_CLOSED ? 0:1;
 						SETHELP(WHERE);
 /*
 Closed to New Users:
@@ -471,7 +473,7 @@ If you want callers to be able to logon as New, set this option to No.
                         strcpy(opt[0],"Yes");
                         strcpy(opt[1],"No");
 						opt[2][0]=0;
-                        i=0;
+                        i=cfg.sys_misc&SM_LISTLOC ? 0:1;
 						SETHELP(WHERE);
 /*
 User Location in User Lists:
@@ -494,7 +496,30 @@ set this option to Yes. If this option is set to No, the user notes
                         strcpy(opt[0],"Yes");
                         strcpy(opt[1],"No");
 						opt[2][0]=0;
-						i=1;
+						i=cfg.sys_misc&SM_LOCAL_TZ ? 0:1;
+						SETHELP(WHERE);
+/*
+.Use Local/System Time Zone:.
+
+If you would like the times to be displayed adjusting for the local
+time zone, set this optiont to Yes. If this option is set to Yes, then
+all times will be stored in GMT/UTC representation. If this option is
+set to No, then all times will be stored in local representation.
+*/
+						i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
+							,"Use Local/System Time Zone",opt);
+						if(!i && !(cfg.sys_misc&SM_LOCAL_TZ)) {
+							cfg.sys_misc|=SM_LOCAL_TZ;
+                            uifc.changes=1; }
+						else if(i==1 && cfg.sys_misc&SM_LOCAL_TZ) {
+							cfg.sys_misc&=~SM_LOCAL_TZ;
+                            uifc.changes=1; }
+                        break;
+					case 11:
+                        strcpy(opt[0],"Yes");
+                        strcpy(opt[1],"No");
+						opt[2][0]=0;
+						i=cfg.sys_misc&SM_MILITARY ? 0:1;
 						SETHELP(WHERE);
 /*
 Military:
@@ -511,11 +536,11 @@ format always, set this option to Yes.
 							cfg.sys_misc&=~SM_MILITARY;
                             uifc.changes=1; }
                         break;
-					case 11:
+					case 12:
                         strcpy(opt[0],"Yes");
                         strcpy(opt[1],"No");
 						opt[2][0]=0;
-						i=1;
+						i=cfg.sys_misc&SM_EURODATE ? 0:1;
 						SETHELP(WHERE);
 /*
 European Date Format:
@@ -532,12 +557,11 @@ instead of MM/DD/YY format, set this option to Yes.
 							cfg.sys_misc&=~SM_EURODATE;
                             uifc.changes=1; }
                         break;
-
-					case 12:
+					case 13:
                         strcpy(opt[0],"Yes");
                         strcpy(opt[1],"No");
 						opt[2][0]=0;
-						i=1;
+						i=cfg.sys_misc&SM_TIME_EXP ? 0:1;
 						SETHELP(WHERE);
 /*
 User Expires When Out-of-time:
