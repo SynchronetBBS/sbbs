@@ -400,7 +400,7 @@ while(client.socket.is_connected) {
 				break;
 			}
 			if(cmd[1]==undefined) {
-				writeln("420 article selected");
+				writeln("420 no current article has been selected");
 				break;
 			}
 			if(cmd[1]!='') {
@@ -422,6 +422,8 @@ while(client.socket.is_connected) {
 				writeln("430 no such article found");
 				break;
 			}
+
+			current_article=hdr.number;
 
 			if(cmd[0].toUpperCase()!="HEAD")
 				body=msgbase.get_msg_body(false,current_article
