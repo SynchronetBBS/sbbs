@@ -54,24 +54,20 @@ js_load(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_FALSE);
 
-    for (i = 0; i < argc; i++) {
-		str = JS_ValueToString(cx, argv[i]);
-		if (!str)
+    for (i=0;i<argc;i++) {
+		if((str=JS_ValueToString(cx, argv[i]))==NULL)
 			return(JS_FALSE);
-		argv[i] = STRING_TO_JSVAL(str);
-		filename = JS_GetStringBytes(str);
+		if((filename=JS_GetStringBytes(str))==NULL)
+			return(JS_FALSE);
 		errno = 0;
 		if(!strchr(filename,BACKSLASH))
 			sprintf(path,"%s%s",cfg->exec_dir,filename);
 		else
 			strcpy(path,filename);
-		script = JS_CompileFile(cx, obj, path);
-		if (!script)
-			ok = JS_FALSE;
-		else {
-			ok = JS_ExecuteScript(cx, obj, script, &result);
-			JS_DestroyScript(cx, script);
-			}
+		if((script=JS_CompileFile(cx, obj, path))==NULL)
+			return(JS_FALSE);
+		ok = JS_ExecuteScript(cx, obj, script, &result);
+		JS_DestroyScript(cx, script);
 		if (!ok)
 			return(JS_FALSE);
     }
@@ -366,7 +362,7 @@ js_flength(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 		
 static JSBool
-js_play_sound(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+js_sound(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char*		p;
 	JSString*	js_str;
@@ -415,6 +411,7 @@ static JSFunctionSpec js_global_functions[] = {
 	{"random",			js_random,			1},		/* return random int between 0 and n */
 	{"time",			js_time,			0},		/* return time in Unix format */
 	{"beep",			js_beep,			0},		/* local beep (freq, dur) */
+	{"sound",			js_sound,			0},		/* play sound file */
 	{"crc16",			js_crc16,			1},		/* calculate 16-bit CRC of string */
 	{"crc32",			js_crc32,			1},		/* calculate 32-bit CRC of string */
 	{"chksum",			js_chksum,			1},		/* calculate 32-bit chksum of string */
@@ -425,7 +422,6 @@ static JSFunctionSpec js_global_functions[] = {
 	{"file_attrib",		js_fattr,			1},		/* get file mode/attributes */
 	{"file_date",		js_fdate,			1},		/* get file last modified date/time */
 	{"file_size",		js_flength,			1},		/* get file length (in bytes) */
-	{"play_sound",		js_play_sound,		0},		/* play sound file */
 	{0}
 };
 
