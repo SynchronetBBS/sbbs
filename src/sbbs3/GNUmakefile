@@ -104,7 +104,7 @@ ifeq ($(os),sunos)    # Solaris
 endif
 
 ifeq ($(os),netbsd)
- CFLAGS += -D_REENTRANT -D_NEED_SEM -D__unix__ -I/usr/pkg/include -DNEEDS_FORKPTY
+ CFLAGS += -D_REENTRANT -DUSE_XP_SEMAPHORES -D__unix__ -I/usr/pkg/include -DNEEDS_FORKPTY
  LFLAGS := -lm -lpthread -L/usr/pkg/lib
 endif
 
@@ -151,12 +151,12 @@ include objects.mk		# defines $(OBJS)
 include sbbsdefs.mk		# defines $(SBBSDEFS)
 
 ifeq ($(os),gnu)
- CFLAGS += -D_NEED_SEM -DNEEDS_FORKPTY -D_POSIX_THREADS
+ CFLAGS += -DUSE_XP_SEMAPHORES -DNEEDS_FORKPTY -D_POSIX_THREADS
  OBJS	+= $(LIBODIR)$(SLASH)sem.$(OFILE)
 endif
 
 ifeq ($(os),netbsd)
- OBJS	+= $(LIBODIR)$(SLASH)sem.$(OFILE)
+ OBJS	+= $(LIBODIR)$(SLASH)xpsem.$(OFILE)
 endif
 
 SBBSLIB	=	$(LIBODIR)/sbbs.a
