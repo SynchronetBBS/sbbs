@@ -48,7 +48,11 @@
 	#ifndef __FLAT__
 		#define __FLAT__
 	#endif
-	#define SMBCALL __stdcall	/* VB Compatible */
+	#ifdef SMB_VB_COMPATIBLE
+		#define SMBCALL __stdcall	/* VB Compatible */
+	#else
+		#define SMBCALL
+	#endif
 	#ifdef SMBDLL
 		#define EXPORT32 __declspec( dllexport )
 	#else
@@ -58,7 +62,7 @@
 	#define SMBCALL
 	#define EXPORT32
 #elif defined __FLAT__
-	#define SMBCALL	_pascal
+	#define SMBCALL
 	#define EXPORT32	_export
 #else
 	#define SMBCALL

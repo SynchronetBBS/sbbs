@@ -39,7 +39,11 @@
 	#ifndef __FLAT__
 		#define __FLAT__
 	#endif
-	#define LZHCALL __stdcall	/* VB Compatible */
+	#ifdef LZH_VB_COMPATIBLE
+		#define LZHCALL __stdcall	/* VB Compatible */
+	#else
+		#define LZHCALL
+	#endif
 	#ifdef LZHDLL
 		#define EXPORT32 __declspec( dllexport )
 	#else
