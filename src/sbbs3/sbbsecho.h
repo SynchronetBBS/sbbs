@@ -231,15 +231,7 @@ FILE *fnopen(int *file, char *str,int access);
 void truncsp(char *str);
 ulong ahtoul(char *str);
 int  mv(char *src, char *dest, char copy); /* fast file move/copy function */
-char *timestr(time_t *intime);  /* ASCII representation of time_t */
-//time_t dstrtounix(char *str);	/* ASCII date (MM/DD/YY) to unix conversion */
-//char *unixtodstr(time_t unix, char *str); /* Unix time to ASCII date */
-//int chk_ar(char *str, user_t user); /* checks access requirements */
-//ushort crc16(char *str);
 void ucrc16(uchar ch, ushort *rcrc);
-//char fexist(char *filespec);
-//long flength(char *filespec);
-//long fdate(char *filespec);
 faddr_t atofaddr(char *str);
 int  matchnode(faddr_t addr, int exact);
 void export_echomail(char *sub_code,faddr_t addr);
