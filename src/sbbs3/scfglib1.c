@@ -296,7 +296,9 @@ BOOL read_main_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 		offset+=LEN_DIR+1;
 		if((cfg->node_path[i]=(char *)MALLOC(strlen(str)+1))==NULL)
 			return allocerr(txt,offset,fname,strlen(str)+1);
-		strcpy(cfg->node_path[i],str); }
+		strcpy(cfg->node_path[i],str); 
+		strlwr(cfg->node_path[i]); /* temporary Unix-compatibility hack */
+	}
 
 	get_str(cfg->data_dir,instream); 			  /* data directory */
 	get_str(cfg->exec_dir,instream); 			  /* exec directory */
