@@ -648,7 +648,11 @@ read_dorinfox:
           od_control.port=szIFTemp[3]-'1';
                                           /* determine BPS rate of connection */
           if(fgets((char *)apszDropFileInfo[0],255,pfDropFile)==NULL) goto DropFileFail;
+#ifdef ODPLAT_NIX
+          od_control.baud= (od_control.port == -1) ? 1 : atol((char *)apszDropFileInfo[0]);
+#else
           od_control.baud= (od_control.port == -1) ? 0 : atol((char *)apszDropFileInfo[0]);
+#endif
 
           if(fgets((char *)apszDropFileInfo[1],80,pfDropFile)==NULL) goto DropFileFail;
 
@@ -742,7 +746,11 @@ read_dorinfox:
           if(fgets(szIFTemp,255,pfDropFile)==NULL) goto DropFileFail;
           if(strcmp(szIFTemp,"KB")==0)
           {
+#ifdef ODPLAT_NIX
+             od_control.baud=1;
+#else
              od_control.baud=0;
+#endif
           }
           else
           {
@@ -1070,7 +1078,11 @@ again:
              if(fgets(szIFTemp,255,pfDropFile)==NULL) goto DropFileFail;
              if(od_control.port==-1)
              {
+#ifdef ODPLAT_NIX
+                od_control.baud=1L;
+#else
                 od_control.baud=0L;
+#endif
              }
              else
              {
@@ -1322,7 +1334,11 @@ finished:
 
 			 /* Read line 3: Baud rate */
           if(fgets((char *)apszDropFileInfo[0],255,pfDropFile)==NULL) goto DropFileFail;
+#ifdef ODPLAT_NIX
+          od_control.baud= (od_control.port == -1) ? 1 : atol((char *)apszDropFileInfo[0]);
+#else
           od_control.baud= (od_control.port == -1) ? 0 : atol((char *)apszDropFileInfo[0]);
+#endif
 
 			 /* Read line 4: BBS Software name and version - unused. */
           if(fgets(szIFTemp, 255, pfDropFile) == NULL) goto DropFileFail;
