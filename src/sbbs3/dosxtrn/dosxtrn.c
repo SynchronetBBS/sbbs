@@ -116,6 +116,8 @@ static int vdd_op(BYTE op)
 	return(retval);
 }
 
+#if 0
+
 char win95int14[]={
 	 0xCF	// IRET
 	,0x90	// NOP
@@ -127,6 +129,44 @@ char win95int14[]={
 	,0x19	// FOSSIL sig
 	,0x1B	// FOSSIL highest func supported
 };
+
+#else
+
+union REGS inregs;
+struct SREGS sregs;
+
+/* This function is only necessary for naughty programs that call the vector
+   directly instead of issuing an interrupt 
+*/
+void interrupt win95int14(
+	unsigned _es, unsigned _ds,
+	unsigned _di, unsigned _si,
+	unsigned _bp, unsigned _sp,
+	unsigned _bx, unsigned _dx,
+	unsigned _cx, unsigned _ax,
+    unsigned flags )
+{
+	union REGS outregs;
+
+	inregs.x.ax=_ax;
+	inregs.x.bx=_bx;
+	inregs.x.cx=_cx;
+	inregs.x.dx=_dx;
+	inregs.x.si=_si;
+	inregs.x.di=_di;
+	inregs.x.cflag=flags;
+
+	sregs.es=_es;
+	sregs.ds=_ds;
+
+	int86x(0x14,&inregs,&outregs,&sregs);
+
+	/* FOSSIL driver only touches these AX and BX */
+	_ax= outregs.x.ax;
+	_bx= outregs.x.bx;
+}
+
+#endif
 
 void vdd_getstatus(vdd_status_t* status)
 {
@@ -385,13 +425,12 @@ int main(int argc, char **argv)
 	strcat(dll,"SBBSEXEC.DLL");
 	DllName=dll;
 
-	if(argc>2 && !strcmp(argv[2],"NT")) {
+	if(argc>2 && !strcmp(argv[2],"NT")) 
 		NT=TRUE;
-		if(argc>3)
-			node_num=atoi(argv[3]);
-		if(argc>4)
-			mode=atoi(argv[4]);
-	}
+	if(argc>3)
+		node_num=atoi(argv[3]);
+	if(argc>4)
+		mode=atoi(argv[4]);
 
 	if((fp=fopen(argv[1],"r"))==NULL) {
 		fprintf(stderr,"!Error opening %s\n",argv[1]);
@@ -469,7 +508,7 @@ int main(int argc, char **argv)
 		if(mode&SBBSEXEC_MODE_DOS_OUT) 
 			_dos_setvect(0x29,winNTint29); 
 	}
-	else		/* Windows 95/98/Millennium */
+	else if(mode==SBBSEXEC_MODE_FOSSIL)	/* Windows 95/98/Millennium */
 		_dos_setvect(0x14,(void(interrupt *)())win95int14); 
 
 	_heapmin();
