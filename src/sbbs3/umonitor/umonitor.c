@@ -647,7 +647,7 @@ int main(int argc, char** argv)  {
 			/* ToDo must get the logs dir from the config */
 			sprintf(str,"%s../data/error.log",ctrl_dir);
 			if(fexist(str)) {
-				if((buffile=sopen(str,O_RDONLY,SH_DENYRW))>=0) {
+				if((buffile=sopen(str,O_RDONLY,SH_DENYWR))>=0) {
 					j=filelength(buffile);
 					if((buf=(char *)MALLOC(j+1))!=NULL) {
 						read(buffile,buf,j);
@@ -661,9 +661,10 @@ int main(int argc, char** argv)  {
 						continue;
 					}
 					close(buffile);
+					uifc.msg("Error allocating memory for the error log");
 					continue;
 				}
-				uifc.msg("Error reading error log");
+				uifc.msg("Error opening error log");
 			}
 			else {
 				uifc.msg("Error log does not exist");
@@ -683,7 +684,7 @@ int main(int argc, char** argv)  {
 							"\n"
 							"\nIf you want to exit the Synchronet UNIX monitor utility,"
 							"\nselect `Yes`. Otherwise, select `No` or hit ~ ESC ~.";
-			i=uifc.list(WIN_MID,0,0,0,&i,0,"Exit Synchronet Install",opt);
+			i=uifc.list(WIN_MID,0,0,0,&i,0,"Exit Synchronet Monitor",opt);
 			if(!i)
 				bail(0);
 			continue;
