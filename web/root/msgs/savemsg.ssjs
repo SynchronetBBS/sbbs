@@ -64,6 +64,10 @@ if(msgbase.cfg.moderated_ars!='')
 /* Set kill when read flag */
 if(sub=="mail" && hdrs.to_net_type==NET_NONE && system.settings&SYS_DELREADM)
 	hdrs.attr|=MSG_KILLREAD;
+if(msgbase.cfg.settings&SUB_KILL)
+	hdrs.attr|=MSG_KILLREAD;
+if(msgbase.cfg.settings&SUB_KILLP && hdrs.attr&MSG_PRIVATE)
+	hdrs.attr|=MSG_KILLREAD;
 
 if(!msgbase.save_msg(hdrs,body)) {
 	error(msgbase.last_error);
