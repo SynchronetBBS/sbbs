@@ -147,7 +147,7 @@ int lputs(char* str)
 	}
 #endif
 
-    return(startup->lputs(startup->cbdata,str));
+    return(startup->lputs(startup->cbdata,LOG_INFO,str));
 }
 
 int lprintf(char *fmt, ...)
@@ -162,7 +162,7 @@ int lprintf(char *fmt, ...)
     vsnprintf(sbuf,sizeof(sbuf),fmt,argptr);
 	sbuf[sizeof(sbuf)-1]=0;
     va_end(argptr);
-    return(startup->lputs(startup->cbdata,sbuf));
+    return(startup->lputs(startup->cbdata,LOG_INFO,sbuf));
 }
 
 int eprintf(char *fmt, ...)
@@ -170,7 +170,7 @@ int eprintf(char *fmt, ...)
 	va_list argptr;
 	char sbuf[1024];
 
-    if(startup==NULL || startup->event_log==NULL)
+    if(startup==NULL || startup->event_lputs==NULL)
         return(0);
 
     va_start(argptr,fmt);
@@ -178,7 +178,7 @@ int eprintf(char *fmt, ...)
 	sbuf[sizeof(sbuf)-1]=0;
     va_end(argptr);
 	strip_ctrl(sbuf);
-    return(startup->event_log(sbuf));
+    return(startup->event_lputs(LOG_INFO,sbuf));
 }
 
 SOCKET open_socket(int type)
@@ -452,8 +452,8 @@ js_log(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		if((str=JS_ValueToString(cx, argv[i]))==NULL)
 		    return(JS_FALSE);
 		if(sbbs->online==ON_LOCAL) {
-			if(startup!=NULL && startup->event_log!=NULL)
-				startup->event_log(JS_GetStringBytes(str));
+			if(startup!=NULL && startup->event_lputs!=NULL)
+				startup->event_lputs(LOG_INFO,JS_GetStringBytes(str));
 		} else
 			lputs(JS_GetStringBytes(str));
 		}

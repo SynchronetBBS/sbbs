@@ -153,7 +153,7 @@ static int lprintf(char *fmt, ...)
     vsnprintf(sbuf,sizeof(sbuf),fmt,argptr);
 	sbuf[sizeof(sbuf)-1]=0;
     va_end(argptr);
-    return(startup->lputs(startup->cbdata,sbuf));
+    return(startup->lputs(startup->cbdata,LOG_INFO,sbuf));
 }
 
 #ifdef _WINSOCKAPI_

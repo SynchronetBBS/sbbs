@@ -72,8 +72,8 @@ typedef struct {
 	void*	cbdata;					/* Private data passed to callbacks */ 
 
 	/* Callbacks (NULL if unused) */
-    int 	(*event_log)(char*);	/* Event log - put string			*/
-	int 	(*lputs)(void*, char*);	/* Log - put string					*/
+	int 	(*lputs)(void*, int, char*);	/* Log - put string					*/
+    int 	(*event_lputs)(int, char*);		/* Event log - put string			*/
 	void	(*status)(void*, char*);
     void	(*started)(void*);
     void	(*terminated)(void*, int code);

@@ -152,7 +152,7 @@ static int lprintf(char *fmt, ...)
     vsnprintf(sbuf,sizeof(sbuf),fmt,argptr);
 	sbuf[sizeof(sbuf)-1]=0;
     va_end(argptr);
-    result=startup->lputs(startup->cbdata,sbuf);
+    result=startup->lputs(startup->cbdata,LOG_INFO,sbuf);
 
 	return(result);
 }

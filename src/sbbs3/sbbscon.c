@@ -195,7 +195,7 @@ static const char* services_usage  = "Services settings:\n"
 							"\n"
 							;
 
-static int lputs(char *str)
+static int log_puts(int level, char *str)
 {
 	static pthread_mutex_t mutex;
 	static BOOL mutex_initialized;
@@ -205,9 +205,9 @@ static int lputs(char *str)
 	if (is_daemon)  {
 		if(str!=NULL) {
 			if (std_facilities)
-				syslog(LOG_INFO|LOG_AUTH,"%s",str);
+				syslog(level|LOG_AUTH,"%s",str);
 			else
-				syslog(LOG_INFO,"%s",str);
+				syslog(level,"%s",str);
 		}
 		return(0);
 	}
@@ -265,8 +265,8 @@ static BOOL do_seteuid(BOOL to_new)
 	pthread_mutex_unlock(&mutex);
 
 	if(!result) {
-		lputs("!seteuid FAILED");
-		lputs(strerror(errno));
+		log_puts(LOG_ERR,"!seteuid FAILED");
+		log_puts(LOG_ERR,strerror(errno));
 	}
 	return result;
 }
@@ -285,15 +285,15 @@ BOOL do_setuid(BOOL force)
 	setreuid(-1,old_uid);
 	if(setregid(new_gid,new_gid))
 	{
-		lputs("!setgid FAILED");
-		lputs(strerror(errno));
+		log_puts(LOG_ERR,"!setgid FAILED");
+		log_puts(LOG_ERR,strerror(errno));
 		result=FALSE;
 	}
 
 	if(setreuid(new_uid,new_uid))
 	{
-		lputs("!setuid FAILED");
-		lputs(strerror(errno));
+		log_puts(LOG_ERR,"!setuid FAILED");
+		log_puts(LOG_ERR,strerror(errno));
 		result=FALSE;
 	}
 	if(force && (!result))
@@ -357,7 +357,7 @@ static void thread_up(void* p, BOOL up, BOOL setuid)
     else if(thread_count>0)
     	thread_count--;
 	pthread_mutex_unlock(&mutex);
-	lputs(NULL); /* update displayed stats */
+	log_puts(LOG_INFO,NULL); /* update displayed stats */
 }
 
 static void socket_open(void* p, BOOL open)
@@ -376,7 +376,7 @@ static void socket_open(void* p, BOOL open)
     else if(socket_count>0)
     	socket_count--;
 	pthread_mutex_unlock(&mutex);
-	lputs(NULL); /* update displayed stats */
+	log_puts(LOG_INFO,NULL); /* update displayed stats */
 }
 
 static void client_on(void* p, BOOL on, int sock, client_t* client, BOOL update)
@@ -396,13 +396,13 @@ static void client_on(void* p, BOOL on, int sock, client_t* client, BOOL update)
 	} else if(!on && client_count>0)
 		client_count--;
 	pthread_mutex_unlock(&mutex);
-	lputs(NULL); /* update displayed stats */
+	log_puts(LOG_INFO,NULL); /* update displayed stats */
 }
 
 /****************************************************************************/
 /* BBS local/log print routine												*/
 /****************************************************************************/
-static int bbs_lputs(void* p, char *str)
+static int bbs_lputs(void* p, int level, char *str)
 {
 	char		logline[512];
 	char		tstr[64];
@@ -414,9 +414,9 @@ static int bbs_lputs(void* p, char *str)
 		if(str==NULL)
 			return(0);
 		if (std_facilities)
-			syslog(LOG_INFO|LOG_AUTH,"%s",str);
+			syslog(level|LOG_AUTH,"%s",str);
 		else
-			syslog(LOG_INFO,"     %s",str);
+			syslog(level,"     %s",str);
 		return(strlen(str));
 	}
 #endif
@@ -431,7 +431,7 @@ static int bbs_lputs(void* p, char *str)
 
 	sprintf(logline,"%s     %.*s",tstr,(int)sizeof(logline)-32,str);
 	truncsp(logline);
-	lputs(logline);
+	log_puts(level,logline);
 	
     return(strlen(logline)+1);
 }
@@ -455,7 +455,7 @@ static void bbs_terminated(void* p, int code)
 /****************************************************************************/
 /* FTP local/log print routine												*/
 /****************************************************************************/
-static int ftp_lputs(void* p, char *str)
+static int ftp_lputs(void* p, int level, char *str)
 {
 	char		logline[512];
 	char		tstr[64];
@@ -468,12 +468,12 @@ static int ftp_lputs(void* p, char *str)
 			return(0);
 		if (std_facilities)
 #ifdef __solaris__
-			syslog(LOG_INFO|LOG_DAEMON,"%s",str);
+			syslog(level|LOG_DAEMON,"%s",str);
 #else
-			syslog(LOG_INFO|LOG_FTP,"%s",str);
+			syslog(level|LOG_FTP,"%s",str);
 #endif
 		else
-			syslog(LOG_INFO,"ftp  %s",str);
+			syslog(level,"ftp  %s",str);
 		return(strlen(str));
 	}
 #endif
@@ -488,7 +488,7 @@ static int ftp_lputs(void* p, char *str)
 
 	sprintf(logline,"%sftp  %.*s",tstr,(int)sizeof(logline)-32,str);
 	truncsp(logline);
-	lputs(logline);
+	log_puts(level,logline);
 	
     return(strlen(logline)+1);
 }
@@ -512,7 +512,7 @@ static void ftp_terminated(void* p, int code)
 /****************************************************************************/
 /* Mail Server local/log print routine										*/
 /****************************************************************************/
-static int mail_lputs(void* p, char *str)
+static int mail_lputs(void* p, int level, char *str)
 {
 	char		logline[512];
 	char		tstr[64];
@@ -524,9 +524,9 @@ static int mail_lputs(void* p, char *str)
 		if(str==NULL)
 			return(0);
 		if (std_facilities)
-			syslog(LOG_INFO|LOG_MAIL,"%s",str);
+			syslog(level|LOG_MAIL,"%s",str);
 		else
-			syslog(LOG_INFO,"mail %s",str);
+			syslog(level,"mail %s",str);
 		return(strlen(str));
 	}
 #endif
@@ -541,7 +541,7 @@ static int mail_lputs(void* p, char *str)
 
 	sprintf(logline,"%smail %.*s",tstr,(int)sizeof(logline)-32,str);
 	truncsp(logline);
-	lputs(logline);
+	log_puts(level,logline);
 	
     return(strlen(logline)+1);
 }
@@ -565,7 +565,7 @@ static void mail_terminated(void* p, int code)
 /****************************************************************************/
 /* Services local/log print routine											*/
 /****************************************************************************/
-static int services_lputs(void* p, char *str)
+static int services_lputs(void* p, int level, char *str)
 {
 	char		logline[512];
 	char		tstr[64];
@@ -577,9 +577,9 @@ static int services_lputs(void* p, char *str)
 		if(str==NULL)
 			return(0);
 		if (std_facilities)
-			syslog(LOG_INFO|LOG_DAEMON,"%s",str);
+			syslog(level|LOG_DAEMON,"%s",str);
 		else
-			syslog(LOG_INFO,"srvc %s",str);
+			syslog(level,"srvc %s",str);
 		return(strlen(str));
 	}
 #endif
@@ -594,7 +594,7 @@ static int services_lputs(void* p, char *str)
 
 	sprintf(logline,"%ssrvc %.*s",tstr,(int)sizeof(logline)-32,str);
 	truncsp(logline);
-	lputs(logline);
+	log_puts(level,logline);
 	
     return(strlen(logline)+1);
 }
@@ -618,7 +618,7 @@ static void services_terminated(void* p, int code)
 /****************************************************************************/
 /* Event thread local/log print routine										*/
 /****************************************************************************/
-static int event_lputs(char *str)
+static int event_lputs(int level, char *str)
 {
 	char		logline[512];
 	char		tstr[64];
@@ -630,9 +630,9 @@ static int event_lputs(char *str)
 		if(str==NULL)
 			return(0);
 		if (std_facilities)
-			syslog(LOG_INFO|LOG_CRON,"%s",str);
+			syslog(level|LOG_CRON,"%s",str);
 		else
-			syslog(LOG_INFO,"evnt %s",str);
+			syslog(level,"evnt %s",str);
 		return(strlen(str));
 	}
 #endif
@@ -647,7 +647,7 @@ static int event_lputs(char *str)
 
 	sprintf(logline,"%sevnt %.*s",tstr,(int)sizeof(logline)-32,str);
 	truncsp(logline);
-	lputs(logline);
+	log_puts(level,logline);
 	
     return(strlen(logline)+1);
 }
@@ -655,7 +655,7 @@ static int event_lputs(char *str)
 /****************************************************************************/
 /* web local/log print routine											*/
 /****************************************************************************/
-static int web_lputs(void* p, char *str)
+static int web_lputs(void* p, int level, char *str)
 {
 	char		logline[512];
 	char		tstr[64];
@@ -667,9 +667,9 @@ static int web_lputs(void* p, char *str)
 		if(str==NULL)
 			return(0);
 		if (std_facilities)
-			syslog(LOG_INFO|LOG_DAEMON,"%s",str);
+			syslog(level|LOG_DAEMON,"%s",str);
 		else
-			syslog(LOG_INFO,"web  %s",str);
+			syslog(level,"web  %s",str);
 		return(strlen(str));
 	}
 #endif
@@ -684,7 +684,7 @@ static int web_lputs(void* p, char *str)
 
 	sprintf(logline,"%sweb  %.*s",tstr,(int)sizeof(logline)-32,str);
 	truncsp(logline);
-	lputs(logline);
+	log_puts(level,logline);
 	
     return(strlen(logline)+1);
 }
@@ -722,15 +722,15 @@ static void terminate(void)
 	while(bbs_running || ftp_running || web_running || mail_running || services_running)  {
 		if(count && (count%10)==0) {
 			if(bbs_running)
-				bbs_lputs(NULL,"BBS System thread still running");
+				bbs_lputs(NULL,LOG_INFO,"BBS System thread still running");
 			if(ftp_running)
-				ftp_lputs(NULL,"FTP Server thread still running");
+				ftp_lputs(NULL,LOG_INFO,"FTP Server thread still running");
 			if(web_running)
-				web_lputs(NULL,"Web Server thread still running");
+				web_lputs(NULL,LOG_INFO,"Web Server thread still running");
 			if(mail_running)
-				mail_lputs(NULL,"Mail Server thread still running");
+				mail_lputs(NULL,LOG_INFO,"Mail Server thread still running");
 			if(services_running)
-				services_lputs(NULL,"Services thread still running");
+				services_lputs(NULL,LOG_INFO,"Services thread still running");
 		}
 		count++;
 		SLEEP(1000);
@@ -761,7 +761,7 @@ void _sighandler_quit(int sig)
 	/* Can I get away with leaving this locked till exit? */
 
 	sprintf(str,"     Got quit signal (%d)",sig);
-	lputs(str);
+	log_puts(LOG_NOTICE,str);
 	terminate();
 
 	if(is_daemon)
@@ -773,7 +773,7 @@ void _sighandler_quit(int sig)
 void _sighandler_rerun(int sig)
 {
 
-	lputs("     Got HUP (rerun) signal");
+	log_puts(LOG_NOTICE,"     Got HUP (rerun) signal");
 	
 #if 0	/* old way, we don't want to recycle all nodes, necessarily */
 	for(i=1;i<=scfg.sys_nodes;i++) {
@@ -853,7 +853,7 @@ static void handle_sigs(void)  {
 	while(1)  {
 		sigwait(&sigs,&sig);    /* wait here until signaled */
 		sprintf(str,"     Got signal (%d)",sig);
-		lputs(str);
+		log_puts(LOG_NOTICE,str);
 		switch(sig)  {
 			/* QUIT-type signals */
 			case SIGINT:
@@ -867,7 +867,7 @@ static void handle_sigs(void)  {
 				break;
 			default:
 				sprintf(str,"     Signal has no handler (unexpected)");
-				lputs(str);
+				log_puts(LOG_NOTICE,str);
 		}
 	}
 }
@@ -951,7 +951,7 @@ int main(int argc, char** argv)
     bbs_startup.size=sizeof(bbs_startup);
 
 	bbs_startup.lputs=bbs_lputs;
-	bbs_startup.event_log=event_lputs;
+	bbs_startup.event_lputs=event_lputs;
     bbs_startup.started=bbs_started;
     bbs_startup.terminated=bbs_terminated;
     bbs_startup.thread_up=thread_up;
@@ -1070,7 +1070,7 @@ int main(int argc, char** argv)
 	/* Read .ini file here */
 	if(ini_file[0]!=0 && (fp=fopen(ini_file,"r"))!=NULL) {
 		sprintf(str,"Reading %s",ini_file);
-		bbs_lputs(NULL,str);
+		bbs_lputs(NULL,LOG_INFO,str);
 	}
 
 	prompt = "[Threads: %d  Sockets: %d  Clients: %d  Served: %lu] (?=Help): ";
@@ -1456,7 +1456,7 @@ int main(int argc, char** argv)
     scfg.size=sizeof(scfg);
 	SAFECOPY(error,UNKNOWN_LOAD_ERROR);
 	sprintf(str,"Loading configuration files from %s", scfg.ctrl_dir);
-	bbs_lputs(NULL,str);
+	bbs_lputs(NULL,LOG_INFO,str);
 	if(!load_cfg(&scfg, NULL /* text.dat */, TRUE /* prep */, error)) {
 		fprintf(stderr,"\n!ERROR Loading Configuration Files: %s\n", error);
         return(-1);
@@ -1536,15 +1536,15 @@ int main(int argc, char** argv)
 #ifdef __unix__
 	if(getuid())  { /*  are we running as a normal user?  */
 		sprintf(str,"!Started as non-root user.  Cannot bind() to ports below %u.", IPPORT_RESERVED);
-		bbs_lputs(NULL,str);
+		bbs_lputs(NULL,LOG_ERR,str);
 	}
 	
 	else if(new_uid_name[0]==0)   /*  check the user arg, if we have uid 0 */
-		bbs_lputs(NULL,"Warning: No user account specified, running as root.");
+		bbs_lputs(NULL,LOG_WARNING,"Warning: No user account specified, running as root.");
 	
 	else 
 	{
-		bbs_lputs(NULL,"Waiting for child threads to bind ports...");
+		bbs_lputs(NULL,LOG_INFO,"Waiting for child threads to bind ports...");
 		while((run_bbs && !(bbs_running || bbs_stopped)) 
 				|| (run_ftp && !(ftp_running || ftp_stopped)) 
 				|| (run_web && !(web_running || web_stopped)) 
@@ -1552,25 +1552,25 @@ int main(int argc, char** argv)
 				|| (run_services && !(services_running || services_stopped)))  {
 			mswait(1000);
 			if(run_bbs && !(bbs_running || bbs_stopped))
-				bbs_lputs(NULL,"Waiting for BBS thread");
+				bbs_lputs(NULL,LOG_INFO,"Waiting for BBS thread");
 			if(run_web && !(web_running || web_stopped))
-				bbs_lputs(NULL,"Waiting for Web thread");
+				bbs_lputs(NULL,LOG_INFO,"Waiting for Web thread");
 			if(run_ftp && !(ftp_running || ftp_stopped))
-				bbs_lputs(NULL,"Waiting for FTP thread");
+				bbs_lputs(NULL,LOG_INFO,"Waiting for FTP thread");
 			if(run_mail && !(mail_running || mail_stopped))
-				bbs_lputs(NULL,"Waiting for Mail thread");
+				bbs_lputs(NULL,LOG_INFO,"Waiting for Mail thread");
 			if(run_services && !(services_running || services_stopped))
-				bbs_lputs(NULL,"Waiting for Services thread");
+				bbs_lputs(NULL,LOG_INFO,"Waiting for Services thread");
 		}
 
 		if(!do_setuid(FALSE))
 				/* actually try to change the uid of this process */
-			bbs_lputs(NULL,"!Setting new user_id failed!  (Does the user exist?)");
+			bbs_lputs(NULL,LOG_ERR,"!Setting new user_id failed!  (Does the user exist?)");
 	
 		else {
 			char str[256];
 			sprintf(str,"Successfully changed user_id to %s", new_uid_name);
-			bbs_lputs(NULL,str);
+			bbs_lputs(NULL,LOG_INFO,str);
 
 			/* Can't recycle servers (re-bind ports) as non-root user */
 			/* ToDo: Something seems to be broken here on FreeBSD now */
@@ -1661,7 +1661,7 @@ int main(int argc, char** argv)
 #endif
 					break;
 			}
-			lputs("");	/* redisplay prompt */
+			log_puts(LOG_INFO,"");	/* redisplay prompt */
 		}
 
 	terminate();

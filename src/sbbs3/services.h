@@ -59,7 +59,7 @@ typedef struct {
 	void*	cbdata;					/* Private data passed to callbacks */ 
 
 	/* Callbacks (NULL if unused) */
-	int 	(*lputs)(void*, char*);		/* Log - put string */
+	int 	(*lputs)(void*, int, char*);		/* Log - put string */
 	void	(*status)(void*, char*);
     void	(*started)(void*);
     void	(*terminated)(void*, int code);
