@@ -1,6 +1,6 @@
-# build/Common.gmake
+# build/Common.bmake
 #
-# Global build system setup file
+# Global build system setup file for Borland Make/BCC
 #
 # $Id$
 #
@@ -37,7 +37,7 @@
 #																			#
 #############################################################################
 #																			#
-# Common macro setup for GNU make											#
+# Common macro setup for Borland make										#
 #																			#
 # Common Build Macros REQUIRED:												#
 #  SRC_ROOT			- *MUST* be set to the src dir							#
@@ -78,8 +78,6 @@
 #  DIRSEP			- The directory seperator this system likes most		#
 #  VERSION			- Synchronet version number in MAJOR.MINOR format		#
 #					  (Numeric ONLY)										#
-#  OUTPUT			- Compiler flag specifying output filename				#
-#  LOUTPUT			- Linker flag specifying output filename				#
 #																			#
 # Common Targets Defined:													#
 #  Implicit C and C++ targets												#
@@ -88,159 +86,91 @@
 #																			#
 #############################################################################
 
+# Macros
 # Set VERSION
-ifndef VERSION
- VERSION	:=	3.12
-endif
+!ifndef VERSION
+ VERSION	=	3.12
+!endif
 
 # Set DEBUG
-ifdef DEBUG
- ifdef RELEASE
-  undef RELEASE
- endif
-endif
+!ifdef DEBUG
+ !ifdef RELEASE
+  !undef RELEASE
+ !endif
+!endif
 
-ifndef DEBUG
- ifndef RELEASE
-  DEBUG	:=	1
- endif
-endif
+!ifndef DEBUG
+ !ifndef RELEASE
+  DEBUG	=	1
+ !endif
+!endif
 
 # VERBOSE/QUIET
-ifndef VERBOSE
- QUIET	:=	@
-endif
+!ifndef VERBOSE
+ QUIET	=	@
+!endif
 
-# Compiler-specific options
-CFLAGS	+=	-MMD
-ifdef BUILD_DEPENDS
- ifdef DONT_CLOBBER_CC
-  CC			?=	gcc
- else
-  CC			:=	gcc
- endif
- CCPRE			:=	$(CC)
- CC				:=	$(SRC_ROOT)/build/mkdep -a
- CXX			:=	$(SRC_ROOT)/build/mkdep -a
- LD				:=	echo
- COMPILE_MSG	:=  Depending
-else
- ifdef DONT_CLOBBER_CC
-  CC			?=	gcc
- else
-  CC			:=	gcc
- endif
- CCPRE			:=	$(CC)
- CXX			?=	g++
- LD				?=	ld
- COMPILE_MSG	:= Compiling
-endif
+# OS-specific
+DIRSEP	=	\	# This comment is necessary
+EXEFILE	=	.exe
+OFILE	=	.obj
+SOFILE	=	.dll
+LIBFILE	=	.lib
+DELETE	=	echo y | del 
 
-ifdef DEBUG
- BUILD	=	debug
-else
- BUILD	=	release
-endif
-BUILDPATH	?=	$(BUILD)
+# Compiler-specific
+!ifdef msc	# Microsoft Visual C++
+CC		=	cl
+LD		=	link
+CCPRE	=	msvc.Win32
+OUTPUT	=	-Fo
+LOUTPUT	=	-Fe
+CFLAGS  =	-nologo -MTd
+LDFLAGS	=	$(CFLAGS)
+!ifdef DEBUG
+CFLAGS	=	$(CFLAGS) -Yd
+!endif
 
-# Get OS
-ifndef os
- os		:=	$(shell uname)
-endif
-os      :=	$(shell echo $(os) | tr '[A-Z]' '[a-z]' | tr ' ' '_')
+!else		# Borland C++
 
-machine		:=	$(shell if uname -m | egrep -v "(i[3456789]|x)86" > /dev/null; then uname -m | tr "[A-Z]" "[a-z]" | tr " " "_" ; fi)
-ifeq ($(machine),sun4u)
- CFLAGS +=      -D__BIG_ENDIAN__
-endif
-ifeq ($(machine),)
- machine	:=	$(os)
-else
- machine	:=	$(os).$(machine)
-endif
+CC		=	bcc32
+CCPRE	=	bcc
+LD		=	ilink32
+OUTPUT	=	-o
+LOUTPUT	=	$(OUTPUT)
+CFLAGS	=	-n$(LIBODIR) -WM -q 
+LDFLAGS	=	$(CFLAGS)
+CFLAGS  =	$(CFLAGS) -M -WD -WM -X-
+!ifdef DEBUG
+CFLAGS	=	$(CFLAGS) -v
+!endif
+!endif
 
-LIBODIR :=	$(CCPRE).$(machine).lib.$(BUILDPATH)
-OBJODIR :=	$(CCPRE).$(machine).obj.$(BUILDPATH)$(OBJPATH_SUFFIX)
-EXEODIR :=	$(CCPRE).$(machine).exe.$(BUILDPATH)
-LDFLAGS	+=	-L$(LIBODIR)
+# Common compiler flags
+!ifdef DEBUG
+CFLAGS	=	$(CFLAGS) -Od -D_DEBUG 
+!endif
 
-ifeq ($(os),netbsd)
- DELETE :=	rm -f
-else
- ifeq ($(os),openbsd)
-  DELETE :=	rm -f
- else
-  ifeq ($(os),sunos)
-   DELETE :=	rm -f
-  else
-   DELETE	=	rm -fv
-  endif
- endif
-endif
+# Debug or release build?
+!ifdef DEBUG
+BUILDPATH	=	debug
+!else
+BUILDPATH	=	release
+!endif
 
-LIBPREFIX	:= lib
-DIRSEP		:= /
-OFILE		:= .o
-EXEFILE		:=
-SOFILE		:= .so
-LIBFILE		:= .a
+LIBODIR :=	$(CCPRE).win32.lib.$(BUILDPATH)
+OBJODIR :=	$(CCPRE).win32.obj.$(BUILDPATH)$(OBJPATH_SUFFIX)
+EXEODIR :=	$(CCPRE).win32.$(machine).exe.$(BUILDPATH)
 
-OUTPUT		:=	-o
-LOUTPUT		:=	-o
-
-ifeq ($(os),openbsd)
- SOFILE	:=	$(SOFILE)$(VERSION)
-else
- ifeq ($(os),darwin)
-  SOFILE =	.dylib
- endif
-endif
-
-# OS Specific Flags
-ifeq ($(os),sunos)    # Solaris
- CFLAGS	+= -D__solaris__ -DNEEDS_DAEMON -DNEEDS_FORKPTY -DNEEDS_SETENV -DNEEDS_CFMAKERAW
-endif
-ifeq ($(os),netbsd)	# NetBSD
- CFLAGS	+=	-D__unix__ -I/usr/pkg/include -I/usr/pkg/pthreads/include -DNEEDS_FORKPTY
-endif
-ifeq ($(os),darwin)
- CFLAGS +=  -D__unix__ -fno-common -D__DARWIN__
- LDFLAGS +=  -lm
-endif
-
-ifdef DEBUG
- CFLAGS	+=	-ggdb
- CFLAGS	+=	-D_DEBUG
-else # RELEASE
- CFLAGS	:= -O3 $(CFLAGS)
-endif
-
--include targets.mk
--include $(SRC_ROOT)/build/rules.mk
--include objects.mk		# defines $(OBJS)
--include libobjs.mk		# defines $(LIB_OBJS)
+!include targets.mk
+!include $(SRC_ROOT)/build/rules.mk
+!include objects.mk		# defines $(OBJS)
+!include libobjs.mk		# defines $(LIB_OBJS)
 
 # Implicit C Compile Rule
-$(OBJODIR)/%.o : %.c $(BUILD_DEPENDS)
-	@echo $(COMPILE_MSG) $<
-	$(QUIET)$(CC) $(CFLAGS) $(CCFLAGS) -o $@ -c $<
+{.}.c$(OFILE):
+	@$(CC) $(CFLAGS) $(CCFLAGS) -c $< $(OUTPUT)$@
 
 # Implicit C++ Compile Rule
-$(OBJODIR)/%.o : %.cpp $(BUILD_DEPENDS)
-	@echo $(COMPILE_MSG) $<
-	$(QUIET)$(CXX) $(CFLAGS) $(CXXFLAGS) -o $@ -c $<
-
-depend:
-	$(QUIET)$(DELETE) $(OBJODIR)/.depend
-	$(QUIET)$(DELETE) $(LIBODIR)/.depend
-	$(QUIET)$(DELETE) $(EXEODIR)/.depend
-	$(QUIET)$(MAKE) BUILD_DEPENDS=FORCE
-
-FORCE:
-
--include $(OBJODIR)/.depend
--include $(LIBODIR)/.depend
--include $(EXEODIR)/.depend
--include $(OBJODIR)/*.d
--include $(LIBODIR)/*.d
--include $(EXEODIR)/*.d
+{.}.cpp$(OFILE):
+	@$(CC) $(CFLAGS) $(CXXFLAGS) -c $< $(OUTPUT)$@
