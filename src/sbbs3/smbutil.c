@@ -39,6 +39,11 @@
 char	revision[16];
 char	compiler[32];
 
+const char *wday[]={"Sun","Mon","Tue","Wed","Thu","Fri","Sat"};
+const char *mon[]={"Jan","Feb","Mar","Apr","May","Jun"
+            ,"Jul","Aug","Sep","Oct","Nov","Dec"};
+
+
 #define NOANALYSIS		(1L<<0)
 #define NOCRC			(1L<<1)
 
@@ -60,12 +65,12 @@ char	compiler[32];
 #include <string.h>		/* strrchr */
 #include <ctype.h>		/* toupper */
 
-#include "sbbs.h"
 #include "genwrap.h"	/* stricmp */
 #include "dirwrap.h"	/* fexist */
 #include "conwrap.h"	/* getch */
 #include "filewrap.h"
 #include "smblib.h"
+#include "crc16.h"
 #include "crc32.h"
 #include "gen_defs.h"	/* MAX_PATH */
 
@@ -134,6 +139,8 @@ ulong lf_expand(BYTE* inbuf, ulong inlen, BYTE* outbuf)
 	}
 	return(j);
 }
+
+#include "truncsp.c"
 
 /****************************************************************************/
 /* Adds a new message to the message base									*/
@@ -326,7 +333,7 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 		smb_freemsgdat(&smb,offset,length,1);
 		exit(1); 
 	}
-	msg.idx.subj=subject_crc(str);
+	msg.idx.subj=smb_subject_crc(str);
 
 	i=smb_dfield(&msg,TEXT_BODY,length);
 	if(i) {
@@ -1059,7 +1066,7 @@ void packmsgs(ulong packable)
 		msg.idx.number=msg.hdr.number;
 		msg.idx.attr=msg.hdr.attr;
 		msg.idx.time=msg.hdr.when_imported.time;
-		msg.idx.subj=subject_crc(msg.subj);
+		msg.idx.subj=smb_subject_crc(msg.subj);
 		if(smb.status.attr&SMB_EMAIL) {
 			if(msg.to_ext)
 				msg.idx.to=atoi(msg.to_ext);
@@ -1247,16 +1254,13 @@ void readmsgs(ulong start)
 			printf("Subj : %s\n",msg.subj);
 			printf("To   : %s",msg.to);
 			if(msg.to_net.type)
-				printf(" (%s)",msg.to_net.type==NET_FIDO
-					? faddrtoa((fidoaddr_t *)msg.to_net.addr,NULL) : (char*)msg.to_net.addr);
+				printf(" (%s)",smb_netaddr(&msg.to_net));
 			printf("\nFrom : %s",msg.from);
 			if(msg.from_net.type)
-				printf(" (%s)",msg.from_net.type==NET_FIDO
-					? faddrtoa((fidoaddr_t *)msg.from_net.addr,NULL)
-						: (char*)msg.from_net.addr);
+				printf(" (%s)",smb_netaddr(&msg.from_net));
 			printf("\nDate : %.24s %s"
 				,my_timestr((time_t*)&msg.hdr.when_written.time)
-				,zonestr(msg.hdr.when_written.zone));
+				,smb_zonestr(msg.hdr.when_written.zone,NULL));
 
 			printf("\n\n");
 

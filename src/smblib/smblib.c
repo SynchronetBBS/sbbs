@@ -2677,4 +2677,127 @@ int SMBCALL smb_getmsghdr_by_hash(smb_t* smb, smbmsg_t* msg, unsigned source
 }
 
 
+ushort SMBCALL smb_subject_crc(const char *subj)
+{
+	char*	str;
+	ushort	crc;
+
+	while(!strnicmp(subj,"RE:",3)) {
+		subj+=3;
+		while(*subj==' ')
+			subj++; 
+	}
+
+	if((str=strdup(subj))==NULL)
+		return(0xffff);
+
+	strlwr(str);
+	crc=crc16(str,0	/* auto-length */);
+	free(str);
+
+	return(crc);
+}
+
+/****************************************************************************/
+/* Returns an ASCII string for FidoNet address 'addr'                       */
+/****************************************************************************/
+char* SMBCALL smb_faddrtoa(fidoaddr_t* addr, char* outstr)
+{
+	static char str[64];
+    char point[25];
+
+	if(addr==NULL)
+		return("0:0/0");
+	sprintf(str,"%hu:%hu/%hu",addr->zone,addr->net,addr->node);
+	if(addr->point) {
+		sprintf(point,".%hu",addr->point);
+		strcat(str,point); 
+	}
+	if(outstr==NULL)
+		return(str);
+	strcpy(outstr,str);
+	return(outstr);
+}
+
+char* SMBCALL smb_netaddr(net_t* net)
+{
+	if(net->type==NET_FIDO)
+		return(smb_faddrtoa((fidoaddr_t*)net->addr,NULL));
+	return(net->addr);
+}
+
+/****************************************************************************/
+/* Converts when_t.zone into ASCII format                                   */
+/****************************************************************************/
+char* DLLCALL smb_zonestr(short zone, char* outstr)
+{
+	char*		plus;
+    static char str[32];
+
+	switch((ushort)zone) {
+		case 0:     return("UTC");
+		case AST:   return("AST");
+		case EST:   return("EST");
+		case CST:   return("CST");
+		case MST:   return("MST");
+		case PST:   return("PST");
+		case YST:   return("YST");
+		case HST:   return("HST");
+		case BST:   return("BST");
+		case ADT:   return("ADT");
+		case EDT:   return("EDT");
+		case CDT:   return("CDT");
+		case MDT:   return("MDT");
+		case PDT:   return("PDT");
+		case YDT:   return("YDT");
+		case HDT:   return("HDT");
+		case BDT:   return("BDT");
+		case MID:   return("MID");
+		case VAN:   return("VAN");
+		case EDM:   return("EDM");
+		case WIN:   return("WIN");
+		case BOG:   return("BOG");
+		case CAR:   return("CAR");
+		case RIO:   return("RIO");
+		case FER:   return("FER");
+		case AZO:   return("AZO");
+		case LON:   return("LON");
+		case BER:   return("BER");
+		case ATH:   return("ATH");
+		case MOS:   return("MOS");
+		case DUB:   return("DUB");
+		case KAB:   return("KAB");
+		case KAR:   return("KAR");
+		case BOM:   return("BOM");
+		case KAT:   return("KAT");
+		case DHA:   return("DHA");
+		case BAN:   return("BAN");
+		case HON:   return("HON");
+		case TOK:   return("TOK");
+		case SYD:   return("SYD");
+		case NOU:   return("NOU");
+		case WEL:   return("WEL");
+		}
+
+	if(!OTHER_ZONE(zone)) {
+		if(zone&(WESTERN_ZONE|US_ZONE))	/* West of UTC? */
+			zone=-(zone&0xfff);
+		else
+			zone&=0xfff;
+	}
+
+	if(zone>0)
+		plus="+";
+	else
+		plus="";
+	sprintf(str,"UTC%s%d:%02u", plus, zone/60, zone<0 ? (-zone)%60 : zone%60);
+
+	if(outstr==NULL)
+		return(str);
+	strcpy(outstr,str);
+	return(outstr);
+}
+
+
+
 /* End of SMBLIB.C */

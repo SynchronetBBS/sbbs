@@ -40,7 +40,10 @@
 #include <string.h>	/* strnicmp */
 #include <ctype.h>	/* toupper */
 
-#include "sbbs.h"
+#include "smblib.h"
+#include "genwrap.h"	/* PLATFORM_DESC */
+#include "str_list.h"	/* strList API */
+#include "crc16.h"
 
 smb_t	smb;
 BOOL	renumber=FALSE;
@@ -213,7 +216,7 @@ int fixsmb(char* sub)
 			msg.idx.number=msg.hdr.number;
 			msg.idx.attr=msg.hdr.attr;
 			msg.idx.time=msg.hdr.when_imported.time;
-			msg.idx.subj=subject_crc(msg.subj);
+			msg.idx.subj=smb_subject_crc(msg.subj);
 			if(smb.status.attr&SMB_EMAIL) {
 				if(msg.to_ext)
 					msg.idx.to=atoi(msg.to_ext);

@@ -88,6 +88,7 @@
 #define SMB_IS_OPEN(smb)	((smb)->shd_fp!=NULL)
 
 /* Legacy API functions */
+#include "filewrap.h"		/* SH_DENYRW */
 #define smb_incmsg(smb,msg)	smb_incmsg_dfields(smb,msg,1)
 #define smb_incdat			smb_incmsgdat
 #define smb_open_da(smb)	smb_open_fp(smb,&(smb)->sda_fp,SH_DENYRW)
@@ -161,6 +162,11 @@ SMBEXPORT void		SMBCALL smb_freemsgtxt(char* buf);
 SMBEXPORT int		SMBCALL	smb_copymsgmem(smb_t* smb, smbmsg_t* destmsg, smbmsg_t* srcmsg);
 SMBEXPORT int		SMBCALL smb_tzutc(short timezone);
 SMBEXPORT int		SMBCALL smb_updatethread(smb_t* smb, smbmsg_t* remsg, ulong newmsgnum);
+SMBEXPORT ushort	SMBCALL smb_subject_crc(const char *subj);
+
+SMBEXPORT char*		SMBCALL smb_faddrtoa(fidoaddr_t* addr, char* outstr);
+SMBEXPORT char*		SMBCALL smb_netaddr(net_t* net);
+SMBEXPORT char*		SMBCALL smb_zonestr(short zone, char* outstr);
 
 /* hash-related functions */
 SMBEXPORT int		SMBCALL smb_findhash(smb_t* smb, hash_t** compare_list, hash_t* found, BOOL mark);
