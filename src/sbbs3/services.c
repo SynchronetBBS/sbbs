@@ -1030,7 +1030,7 @@ void DLLCALL services_thread(void* arg)
 	srand(time(NULL));
 
 	if(!(startup->options&BBS_OPT_LOCAL_TIMEZONE)) {
-		if(PUTENV("TZ=UCT0"))
+		if(PUTENV("TZ=UTC0"))
 			lprintf("!putenv() FAILED");
 		tzset();
 

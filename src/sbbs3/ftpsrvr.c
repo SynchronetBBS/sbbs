@@ -4311,7 +4311,7 @@ void DLLCALL ftp_server(void* arg)
 	srand(time(NULL));
 
 	if(!(startup->options&FTP_OPT_LOCAL_TIMEZONE)) { 
-		if(PUTENV("TZ=UCT0"))
+		if(PUTENV("TZ=UTC0"))
 			lprintf("!putenv() FAILED");
 		tzset();
 

@@ -103,7 +103,7 @@ typedef struct {
 #define BBS_OPT_NO_HOST_LOOKUP		(1<<11)
 #define BBS_OPT_GET_IDENT			(1<<28)	/* Get Identity (RFC 1413)			*/
 #define BBS_OPT_NO_JAVASCRIPT		(1<<29)	/* JavaScript disabled				*/
-#define BBS_OPT_LOCAL_TIMEZONE		(1<<30)	/* Don't force UCT/GMT				*/
+#define BBS_OPT_LOCAL_TIMEZONE		(1<<30)	/* Don't force UTC/GMT				*/
 #define BBS_OPT_MUTE				(1<<31)	/* Mute sounds						*/
 
 #ifdef __cplusplus

@@ -3808,7 +3808,7 @@ int main(int argc, char **argv)
 		,smb_lib_ver()
 		);
 
-	putenv("TZ=UCT0");
+	putenv("TZ=UTC0");
 	putenv("TMP=");
 	_fmode=O_BINARY;
 	setvbuf(stdout,NULL,_IONBF,0);
