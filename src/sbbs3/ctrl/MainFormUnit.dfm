@@ -2049,7 +2049,9 @@ object MainForm: TMainForm
     Images = ImageList
     Left = 296
     object FileMenuItem: TMenuItem
-      Caption = '&File'
+      Caption = 'File'
+      Hint = 'Toggle All Sounds'
+      OnClick = SoundToggleExecute
       object FileOpenMenuItem: TMenuItem
         Caption = '&Open...'
         ImageIndex = 45
@@ -2069,6 +2071,12 @@ object MainForm: TMainForm
         Checked = True
       end
       object N5: TMenuItem
+        Caption = '-'
+      end
+      object FilePropertiesMenuItem: TMenuItem
+        Action = Properties
+      end
+      object N8: TMenuItem
         Caption = '-'
       end
       object FileExitMenuItem: TMenuItem
@@ -2567,6 +2575,12 @@ object MainForm: TMainForm
       Hint = 'List Users'
       ImageIndex = 49
       OnExecute = UserListExecute
+    end
+    object Properties: TAction
+      Caption = 'Properties'
+      Hint = 'Control Panel Properties'
+      ImageIndex = 4
+      OnExecute = PropertiesExecute
     end
   end
   object ImageList: TImageList
@@ -3667,17 +3681,11 @@ object MainForm: TMainForm
       00018003000180030001FFFF0001FFFF00000000000000000000000000000000
       000000000000}
   end
-  object CloseTimer: TTimer
-    Enabled = False
-    OnTimer = CloseTimerTimer
-    Left = 328
-    Top = 65534
-  end
   object StatsTimer: TTimer
     Enabled = False
     Interval = 5000
     OnTimer = StatsTimerTick
-    Left = 250
+    Left = 538
     Top = 65532
   end
   object StartupTimer: TTimer
@@ -3689,6 +3697,17 @@ object MainForm: TMainForm
   object UpTimer: TTimer
     OnTimer = UpTimerTick
     Left = 466
+    Top = 65532
+  end
+  object TrayIcon: TTrayIcon
+    Hint = 'Synchronet Control Panel'
+    Hide = True
+    RestoreOn = imDoubleClick
+    PopupMenuOn = imNone
+    Icons = ImageList
+    IconIndex = 4
+    OnRestore = TrayIconRestore
+    Left = 506
     Top = 65532
   end
 end

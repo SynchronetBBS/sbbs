@@ -61,12 +61,14 @@
 #include "CodeInputFormUnit.h"
 #include "TextFileEditUnit.h"
 #include "UserListFormUnit.h"
+#include "PropertiesDlgUnit.h"
 
 #include "sbbs.h"           // unixtodstr()
 #include "userdat.h"		// lastuser()
 
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
+#pragma link "Trayicon"
 #pragma resource "*.dfm"
 TMainForm *MainForm;
 
@@ -485,15 +487,18 @@ static void ftp_start(void)
 }
 //---------------------------------------------------------------------------
 
-#define REG_KEY "\\Software\\Swindell\\Synchronet Control Panel\\"
+#define APP_TITLE "Synchronet Control Panel"
+#define REG_KEY "\\Software\\Swindell\\"APP_TITLE"\\"
 
 //---------------------------------------------------------------------------
 __fastcall TMainForm::TMainForm(TComponent* Owner)
         : TForm(Owner)
 {
+    /* Defaults */
     CtrlDirectory="c:\\sbbs\\ctrl\\";
     LoginCommand="start telnet://localhost";
     ConfigCommand="%sSCFG %s /T2";
+    MinimizeToSysTray=false;
 
     memset(&bbs_startup,0,sizeof(bbs_startup));
     bbs_startup.size=sizeof(bbs_startup);
@@ -554,6 +559,8 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
     SpyTerminalWidth=434;
     SpyTerminalHeight=365;
     SpyTerminalKeyboardActive=true;
+
+    Application->OnMinimize=FormMinimize;    
 }
 //---------------------------------------------------------------------------
 void __fastcall TMainForm::FileExitMenuItemClick(TObject *Sender)
@@ -700,6 +707,7 @@ void __fastcall TMainForm::SaveSettings(TObject* Sender)
     Registry->WriteString("CtrlDirectory",CtrlDirectory);
     Registry->WriteString("LoginCommand",LoginCommand);
     Registry->WriteString("ConfigCommand",ConfigCommand);
+    Registry->WriteBool("MinimizeToSysTray",MinimizeToSysTray);
 
     Registry->WriteInteger("SysAutoStart",SysAutoStart);
     Registry->WriteInteger("MailAutoStart",MailAutoStart);
@@ -769,10 +777,9 @@ void __fastcall TMainForm::SaveSettings(TObject* Sender)
 
 void __fastcall TMainForm::FormCloseQuery(TObject *Sender, bool &CanClose)
 {
-	CanClose=true;
+	CanClose=false;
 
     if(TelnetStop->Enabled) {
-	   	CanClose=false;
      	if(TelnetForm->ProgressBar->Position
 	        && Application->MessageBox("Shut down the Telnet Server?"
         	,"Telnet Server In Use", MB_OKCANCEL)!=IDOK)
@@ -781,7 +788,6 @@ void __fastcall TMainForm::FormCloseQuery(TObject *Sender, bool &CanClose)
 	}
 
     if(MailStop->Enabled) {
-        CanClose=false;
     	if(MailForm->ProgressBar->Position
     		&& Application->MessageBox("Shut down the Mail Server?"
         	,"Mail Server In Use", MB_OKCANCEL)!=IDOK)
@@ -790,7 +796,6 @@ void __fastcall TMainForm::FormCloseQuery(TObject *Sender, bool &CanClose)
     }
 
     if(FtpStop->Enabled) {
-        CanClose=false;
     	if(FtpForm->ProgressBar->Position
     		&& Application->MessageBox("Shut down the FTP Server?"
 	       	,"FTP Server In Use", MB_OKCANCEL)!=IDOK)
@@ -798,8 +803,10 @@ void __fastcall TMainForm::FormCloseQuery(TObject *Sender, bool &CanClose)
         FtpStopExecute(Sender);
     }
 
-    if(CanClose==false)
-	    CloseTimer->Enabled=true;
+	while(TelnetStop->Enabled || MailStop->Enabled || FtpStop->Enabled)
+        Application->HandleMessage(); 
+
+    CanClose=true;
 }
 //---------------------------------------------------------------------------
 
@@ -1265,6 +1272,8 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     	LoginCommand=Registry->ReadString("LoginCommand");
     if(Registry->ValueExists("ConfigCommand"))
     	ConfigCommand=Registry->ReadString("ConfigCommand");
+    if(Registry->ValueExists("MinimizeToSysTray"))
+    	MinimizeToSysTray=Registry->ReadBool("MinimizeToSysTray");
 
     if(Registry->ValueExists("MailLogFile"))
     	MailLogFile=Registry->ReadInteger("MailLogFile");
@@ -1635,6 +1644,19 @@ void __fastcall TMainForm::UpTimerTick(TObject *Sender)
     AnsiString Str=AnsiString(str);
     if(MainForm->StatusBar->Panels->Items[4]->Text!=Str)
 		MainForm->StatusBar->Panels->Items[4]->Text=Str;
+    if(TrayIcon->Visible) {
+        /* Animate TrayIcon when in use */
+        AnsiString NumClients;
+        if(clients) {
+            TrayIcon->IconIndex^=1;
+            NumClients=" ("+AnsiString(clients)+" client";
+            if(clients>1)
+                NumClients+="s";
+            NumClients+=")";
+        } else if(TrayIcon->IconIndex!=4)
+            TrayIcon->IconIndex=4;
+        TrayIcon->Hint=AnsiString(APP_TITLE)+NumClients;
+    }
 }
 //---------------------------------------------------------------------------
 
@@ -1773,6 +1795,38 @@ void __fastcall TMainForm::HelpIndexMenuItemClick(TObject *Sender)
 
     sprintf(str,"start http://synchro.net/docs");
     WinExec(str,SW_SHOWMINNOACTIVE);
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TMainForm::FormMinimize(TObject *Sender)
+{
+    if(MinimizeToSysTray) {
+        TrayIcon->Visible=true;
+        TrayIcon->Minimize();
+    }
+}
+
+void __fastcall TMainForm::TrayIconRestore(TObject *Sender)
+{
+    TrayIcon->Visible=false;
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TMainForm::PropertiesExecute(TObject *Sender)
+{
+    Application->CreateForm(__classid(TPropertiesDlg), &PropertiesDlg);
+    PropertiesDlg->LoginCmdEdit->Text=LoginCommand;
+    PropertiesDlg->ConfigCmdEdit->Text=ConfigCommand;
+    PropertiesDlg->CtrlDirEdit->Text=CtrlDirectory;
+    PropertiesDlg->TrayIconCheckBox->Checked=MinimizeToSysTray;
+	if(PropertiesDlg->ShowModal()==mrOk) {
+        LoginCommand=PropertiesDlg->LoginCmdEdit->Text;
+        ConfigCommand=PropertiesDlg->ConfigCmdEdit->Text;
+        CtrlDirectory=PropertiesDlg->CtrlDirEdit->Text;
+        MinimizeToSysTray=PropertiesDlg->TrayIconCheckBox->Checked;
+        SaveSettings(Sender);
+    }
+    delete PropertiesDlg;
 }
 //---------------------------------------------------------------------------
 

@@ -54,6 +54,7 @@
 #include <ImgList.hpp>
 #include <Buttons.hpp>
 #include <Graphics.hpp>
+#include "Trayicon.h"
 //---------------------------------------------------------------------------
 class TMainForm : public TForm
 {
@@ -101,7 +102,6 @@ __published:	// IDE-managed Components
 	TMenuItem *FtpConfigureMenuItem;
 	TMenuItem *FtpStartMenuItem;
 	TMenuItem *FtpStopMenuItem;
-	TTimer *CloseTimer;
 	TMenuItem *BBSMenuItem;
 	TMenuItem *BBSConfigureMenuItem;
 	TPanel *TopPanel;
@@ -199,6 +199,10 @@ __published:	// IDE-managed Components
     TToolButton *UserListButton;
     TMenuItem *HelpIndexMenuItem;
     TMenuItem *N7;
+    TMenuItem *FilePropertiesMenuItem;
+    TMenuItem *N8;
+    TTrayIcon *TrayIcon;
+    TAction *Properties;
     void __fastcall FileExitMenuItemClick(TObject *Sender);
 	void __fastcall ViewToolbarMenuItemClick(TObject *Sender);
 	void __fastcall FormClose(TObject *Sender, TCloseAction &Action);
@@ -249,6 +253,8 @@ __published:	// IDE-managed Components
     void __fastcall ViewLogClick(TObject *Sender);
     void __fastcall UserListExecute(TObject *Sender);
     void __fastcall HelpIndexMenuItemClick(TObject *Sender);
+    void __fastcall TrayIconRestore(TObject *Sender);
+    void __fastcall PropertiesExecute(TObject *Sender);
 private:	// User declarations
 public:		// User declarations
     __fastcall TMainForm(TComponent* Owner);
@@ -260,6 +266,7 @@ public:		// User declarations
     AnsiString		CtrlDirectory;
     AnsiString      LoginCommand;
     AnsiString      ConfigCommand;
+    bool            MinimizeToSysTray;
     scfg_t		    cfg;
     bbs_startup_t 	bbs_startup;
     mail_startup_t 	mail_startup;
@@ -270,6 +277,7 @@ public:		// User declarations
     bool            SpyTerminalKeyboardActive;
 	TPageControl* __fastcall PageControl(int num);
 	int __fastcall  PageNum(TPageControl* obj);
+    void __fastcall FormMinimize(TObject *Sender);    
 };
 
 //---------------------------------------------------------------------------
