@@ -102,6 +102,25 @@ static void parse_queued_value(JSContext *cx, queued_value_t* v, jsval* rval, BO
 /* Queue Object Methods */
 
 static JSBool
+js_wait(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	msg_queue_t* q;
+	int32 timeout=0;
+
+	if((q=(msg_queue_t*)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx,getprivate_failure,WHERE);
+		return(JS_FALSE);
+	}
+
+	if(argc) 	/* timeout specified */
+		JS_ValueToInt32(cx,argv[0],&timeout);
+
+	*rval = BOOLEAN_TO_JSVAL(msgQueueWait(q, timeout));
+
+	return(JS_TRUE);
+}
+
+static JSBool
 js_read(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	msg_queue_t* q;
@@ -143,25 +162,14 @@ js_peek(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	return(JS_TRUE);
 }
 
-static JSBool
-js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+BOOL js_enqueue_value(JSContext *cx, msg_queue_t* q, jsval val, char* name)
 {
-	uintN			argn=0;
-	msg_queue_t*	q;
-	jsval			val;
-	queued_value_t	v;
-
-	if((q=(msg_queue_t*)JS_GetPrivate(cx,obj))==NULL) {
-		JS_ReportError(cx,getprivate_failure,WHERE);
-		return(JS_FALSE);
-	}
+	queued_value_t v;
 
 	ZERO_VAR(v);
 
-	val = argv[argn++];
-
-	if(argn < argc)
-		SAFECOPY(v.name,JS_GetStringBytes(JS_ValueToString(cx,argv[argn++])));
+	if(name!=NULL)
+		SAFECOPY(v.name,name);
 
 	switch(v.type=JSVAL_TAG(val)) {
 		case JSVAL_BOOLEAN:
@@ -182,8 +190,28 @@ js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 			}
 			break;
 	}
+	return(msgQueueWrite(q,&v,sizeof(v)));
+}
 
-	*rval = BOOLEAN_TO_JSVAL(msgQueueWrite(q,&v,sizeof(v)));
+static JSBool
+js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	uintN			argn=0;
+	msg_queue_t*	q;
+	jsval			val;
+	char*			name=NULL;
+
+	if((q=(msg_queue_t*)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx,getprivate_failure,WHERE);
+		return(JS_FALSE);
+	}
+
+	val = argv[argn++];
+
+	if(argn < argc)
+		name=JS_GetStringBytes(JS_ValueToString(cx,argv[argn++]));
+
+	*rval = BOOLEAN_TO_JSVAL(js_enqueue_value(cx, q, val, name));
 
 	return(JS_TRUE);
 }
@@ -249,6 +277,11 @@ static JSClass js_queue_class = {
 };
 
 static jsSyncMethodSpec js_queue_functions[] = {
+	{"wait",		js_wait,		0,	JSTYPE_BOOLEAN,	"[timeout]"
+	,JSDOCSTR("wait for a value on the queue up-to <i>timeout</i> milliseconds "
+		"(default: <i>infinite</i>)")
+	,312
+	},
 	{"read",		js_read,		0,	JSTYPE_VOID,	"[name]"
 	,JSDOCSTR("read a value from the queue, if <i>name</i> not specified, reads next value "
 		"from the bottom of the queue")

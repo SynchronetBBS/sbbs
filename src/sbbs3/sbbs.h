@@ -1004,6 +1004,7 @@ extern "C" {
 	DLLEXPORT JSObject* DLLCALL js_CreateQueueClass(JSContext* cx, JSObject* parent);
 	DLLEXPORT JSObject* DLLCALL js_CreateQueueObject(JSContext* cx, JSObject* parent
 													,char *name, msg_queue_t* q);
+	BOOL js_enqueue_value(JSContext *cx, msg_queue_t* q, jsval val, char* name);
 
 	/* js_file.c */
 	DLLEXPORT JSObject* DLLCALL js_CreateFileClass(JSContext* cx, JSObject* parent);
