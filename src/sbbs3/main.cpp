@@ -273,18 +273,28 @@ static JSClass js_method_class = {
 
 /* Convert from Synchronet-specific jsMethodSpec to JSAPI's JSFunctionSpec */
 
-int DLLCALL js_MethodsToFunctions(jsMethodSpec meth[], JSFunctionSpec func[])
+JSBool
+DLLCALL js_DescribeObject(JSContext* cx, JSObject* obj, const char* str)
 {
-	int			i;
+	JSString* js_str = JS_NewStringCopyZ(cx, str);
 
-	/* Convert from jsMethodSpec to JSFunctionSpec */
-	for(i=0;meth[i].name!=NULL;i++) {
-		func[i].name=meth[i].name;
-		func[i].call=meth[i].call;
-		func[i].nargs=meth[i].nargs;
-	}
+	if(js_str==NULL)
+		return(JS_FALSE);
 
-	return(i);
+	return(JS_DefineProperty(cx,obj,"_description"
+		,STRING_TO_JSVAL(js_str),NULL,NULL,JSPROP_READONLY));
+}
+
+JSBool
+DLLCALL js_DescribeConstructor(JSContext* cx, JSObject* obj, const char* str)
+{
+	JSString* js_str = JS_NewStringCopyZ(cx, str);
+
+	if(js_str==NULL)
+		return(JS_FALSE);
+
+	return(JS_DefineProperty(cx,obj,"_constructor"
+		,STRING_TO_JSVAL(js_str),NULL,NULL,JSPROP_READONLY));
 }
 
 #ifdef _DEBUG

@@ -846,7 +846,8 @@ extern "C" {
 	#endif
 
 	/* main.cpp */
-	DLLEXPORT int		DLLCALL js_MethodsToFunctions(jsMethodSpec meth[], JSFunctionSpec func[]);
+	DLLEXPORT JSBool	DLLCALL js_DescribeObject(JSContext* cx, JSObject* obj, const char*);
+	DLLEXPORT JSBool	DLLCALL js_DescribeConstructor(JSContext* cx, JSObject* obj, const char*);
 	DLLEXPORT JSBool	DLLCALL js_DefineMethods(JSContext* cx, JSObject* obj, jsMethodSpec *fs);
 	DLLEXPORT JSBool	DLLCALL js_CreateArrayOfStrings(JSContext* cx, JSObject* parent
 														,const char* name, char* str[], uintN flags);
