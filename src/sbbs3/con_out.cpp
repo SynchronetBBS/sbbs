@@ -82,7 +82,7 @@ int sbbs_t::bputs(char *str)
 			if(str==mnestr			/* Mnemonic string or */
 				|| (str>=text[0]	/* Straight out of TEXT.DAT */
 					&& str<=text[TOTAL_TEXT-1])) {
-				i=atcodes(str+l);		/* return 0 if not valid @ code */
+				i=show_atcode(str+l);	/* return 0 if not valid @ code */
 				l+=i;					/* i is length of code string */
 				if(i)					/* if valid string, go to top */
 					continue; }
@@ -90,7 +90,7 @@ int sbbs_t::bputs(char *str)
 				if(str==text[i])
 					break;
 			if(i<TOTAL_TEXT) {		/* Replacement text */
-				i=atcodes(str+l);
+				i=show_atcode(str+l);
 				l+=i;
 				if(i)
 					continue; } }

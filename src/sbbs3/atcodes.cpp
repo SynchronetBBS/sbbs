@@ -43,17 +43,14 @@ extern "C" const char* beta_version;
 /****************************************************************************/
 /* Returns 0 if invalid @ code. Returns length of @ code if valid.          */
 /****************************************************************************/
-int sbbs_t::atcodes(char *instr)
+int sbbs_t::show_atcode(char *instr)
 {
 	char	str[128],str2[128],*p,*tp,*sp;
-    int     i,len;
-	long	l;
-    stats_t stats;
-    node_t  node;
-	struct	tm tm;
-	struct	tm * tm_p;
+    int     len;
+	bool	padded_left=false;
+	bool	padded_right=false;
 
-	sprintf(str,"%.40s",instr);
+	sprintf(str,"%.80s",instr);
 	tp=strchr(str+1,'@');
 	if(!tp)                 /* no terminating @ */
 		return(0);
@@ -64,44 +61,79 @@ int sbbs_t::atcodes(char *instr)
 	(*tp)=0;
 	sp=(str+1);
 
+	if((p=strstr(sp,"-L"))!=NULL)
+		padded_left=true;
+	else if((p=strstr(sp,"-R"))!=NULL)
+		padded_right=true;
+	if(p!=NULL)
+		*p=0;
+
+	p=atcode(sp,str2);
+	if(p==NULL)
+		return(0);
+
+	if(padded_left)
+		rprintf("%-*.*s",len,len,p);
+	else if(padded_right)
+		rprintf("%*.*s",len,len,p);
+	else
+		rputs(p);
+
+	return(len);
+}
+
+char* sbbs_t::atcode(char* sp, char* str)
+{
+	char*	tp;
+	uint	i;
+	long	l;
+    stats_t stats;
+    node_t  node;
+	struct	tm tm;
+	struct	tm * tm_p;
+
+	str[0]=0;
+
 	if(!strcmp(sp,"VER"))
-		bputs(VERSION);
+		return(VERSION);
 
-	else if(!strcmp(sp,"REV"))
-		bprintf("%c",REVISION);
-
-	else if(!strcmp(sp,"FULL_VER")) {
-		sprintf(str2,"%s%c%s",VERSION,REVISION,beta_version);
-		truncsp(str2);
-#if defined(_DEBUG)
-		strcat(str2," Debug");
-#endif
-		bputs(str2);
+	if(!strcmp(sp,"REV")) {
+		sprintf(str,"%c",REVISION);
+		return(str);
 	}
 
-	else if(!strcmp(sp,"VER_NOTICE")) 
-		bputs(VERSION_NOTICE);
+	if(!strcmp(sp,"FULL_VER")) {
+		sprintf(str,"%s%c%s",VERSION,REVISION,beta_version);
+		truncsp(str);
+#if defined(_DEBUG)
+		strcat(str," Debug");
+#endif
+		return(str);
+	}
 
-	else if(!strcmp(sp,"OS_VER"))
-		bputs(os_version(str2));
+	if(!strcmp(sp,"VER_NOTICE")) 
+		return(VERSION_NOTICE);
+
+	if(!strcmp(sp,"OS_VER"))
+		return(os_version(str));
 
 #ifdef JAVASCRIPT
-	else if(!strcmp(sp,"JS_VER"))
-		bputs((char *)JS_GetImplementationVersion());
+	if(!strcmp(sp,"JS_VER"))
+		return((char *)JS_GetImplementationVersion());
 #endif
 
-	else if(!strcmp(sp,"PLATFORM"))
-		bputs(PLATFORM_DESC);
+	if(!strcmp(sp,"PLATFORM"))
+		return(PLATFORM_DESC);
 
-	else if(!strcmp(sp,"COPYRIGHT"))
-		bputs(COPYRIGHT_NOTICE);
+	if(!strcmp(sp,"COPYRIGHT"))
+		return(COPYRIGHT_NOTICE);
 
-	else if(!strcmp(sp,"COMPILER")) {
-		COMPILER_DESC(str2);
-		bputs(str2);
+	if(!strcmp(sp,"COMPILER")) {
+		COMPILER_DESC(str);
+		return(str);
 	}
 
-	else if(!strcmp(sp,"UPTIME")) {
+	if(!strcmp(sp,"UPTIME")) {
 		extern time_t uptime;
 		time_t up=time(NULL)-uptime;
 		if(up<0)
@@ -111,640 +143,764 @@ int sbbs_t::atcodes(char *instr)
 	        sprintf(days,"%u days ",up/(24*60*60));
 			up%=(24*60*60);
 		}
-		bprintf("%s%u:%02u"
+		sprintf(str,"%s%u:%02u"
 	        ,days
 			,up/(60*60)
 			,(up/60)%60
 			);
+		return(str);
 	}
 
-	else if(!strcmp(sp,"SOCKET_LIB")) 
-		bputs(socklib_version(str2));
+	if(!strcmp(sp,"SOCKET_LIB")) 
+		return(socklib_version(str));
 
-	else if(!strcmp(sp,"MSG_LIB")) 
-		bprintf("SMBLIB %s",smb_lib_ver());
+	if(!strcmp(sp,"MSG_LIB")) {
+		sprintf(str,"SMBLIB %s",smb_lib_ver());
+		return(str);
+	}
 
-	else if(!strcmp(sp,"BBS") || !strcmp(sp,"BOARDNAME"))
-		bputs(cfg.sys_name);
+	if(!strcmp(sp,"BBS") || !strcmp(sp,"BOARDNAME"))
+		return(cfg.sys_name);
 
-	else if(!strcmp(sp,"BAUD") || !strcmp(sp,"BPS"))
-		bprintf("%lu",cur_rate);
+	if(!strcmp(sp,"BAUD") || !strcmp(sp,"BPS")) {
+		sprintf(str,"%lu",cur_rate);
+		return(str);
+	}
 
-	else if(!strcmp(sp,"CONN"))
-		bputs(connection);
+	if(!strcmp(sp,"CONN"))
+		return(connection);
 
-	else if(!strcmp(sp,"SYSOP"))
-		bputs(cfg.sys_op);
+	if(!strcmp(sp,"SYSOP"))
+		return(cfg.sys_op);
 
-	else if(!strcmp(sp,"LOCATION"))
-		bputs(cfg.sys_location);
+	if(!strcmp(sp,"LOCATION"))
+		return(cfg.sys_location);
 
-	else if(!strcmp(sp,"NODE"))
-		bprintf("%u",cfg.node_num);
+	if(!strcmp(sp,"NODE")) {
+		sprintf(str,"%u",cfg.node_num);
+		return(str);
+	}
 
-	else if(!strcmp(sp,"TNODE"))
-		bprintf("%u",cfg.sys_nodes);
+	if(!strcmp(sp,"TNODE")) {
+		sprintf(str,"%u",cfg.sys_nodes);
+		return(str);
+	}
 
-	else if(!strcmp(sp,"INETADDR"))
-		bputs(cfg.sys_inetaddr);
+	if(!strcmp(sp,"INETADDR"))
+		return(cfg.sys_inetaddr);
 
-	else if(!strcmp(sp,"FIDOADDR")) {
+	if(!strcmp(sp,"FIDOADDR")) {
 		if(cfg.total_faddrs)
-			bputs(faddrtoa(cfg.faddr[0]));
+			return(faddrtoa(cfg.faddr[0]));
+		return(nulstr);
 	}
 
-	else if(!strcmp(sp,"EMAILADDR")) 
-		bputs(usermailaddr(&cfg, str
+	if(!strcmp(sp,"EMAILADDR")) 
+		return(usermailaddr(&cfg, str
 			,cfg.inetmail_misc&NMAIL_ALIAS ? useron.alias : useron.name));
 
-	else if(!strcmp(sp,"QWKID"))
-		bputs(cfg.sys_id);
+	if(!strcmp(sp,"QWKID"))
+		return(cfg.sys_id);
 
-	else if(!strcmp(sp,"TIME") || !strcmp(sp,"SYSTIME")) {
+	if(!strcmp(sp,"TIME") || !strcmp(sp,"SYSTIME")) {
 		now=time(NULL);
 		tm_p=gmtime(&now);
 		if(tm_p!=NULL)
 			tm=*tm_p;
 		else
 			memset(&tm,0,sizeof(tm));
-		bprintf("%02d:%02d %s"
+		sprintf(str,"%02d:%02d %s"
 			,tm.tm_hour==0 ? 12
 			: tm.tm_hour>12 ? tm.tm_hour-12
 			: tm.tm_hour, tm.tm_min, tm.tm_hour>11 ? "pm":"am"); 
+		return(str);
 	}
 
-	else if(!strcmp(sp,"DATE") || !strcmp(sp,"SYSDATE")) {
+	if(!strcmp(sp,"DATE") || !strcmp(sp,"SYSDATE")) {
 		now=time(NULL);
-		bputs(unixtodstr(&cfg,now,str2)); }
+		return(unixtodstr(&cfg,now,str)); 
+	}
 
-	else if(!strcmp(sp,"TMSG")) {
+	if(!strcmp(sp,"TMSG")) {
 		l=0;
 		for(i=0;i<cfg.total_subs;i++)
 			l+=getposts(&cfg,i); 		/* l=total posts */
-		bprintf("%lu",l); }
+		sprintf(str,"%lu",l); 
+		return(str);
+	}
 
-	else if(!strcmp(sp,"TUSER"))
-		bprintf("%u",lastuser(&cfg));
+	if(!strcmp(sp,"TUSER")) {
+		sprintf(str,"%u",lastuser(&cfg));
+		return(str);
+	}
 
-	else if(!strcmp(sp,"TFILE")) {
+	if(!strcmp(sp,"TFILE")) {
 		l=0;
 		for(i=0;i<cfg.total_dirs;i++)
 			l+=getfiles(&cfg,i);
-		bprintf("%lu",l); }
+		sprintf(str,"%lu",l); 
+		return(str);
+	}
 
-	else if(!strcmp(sp,"TCALLS") || !strcmp(sp,"NUMCALLS")) {
+	if(!strcmp(sp,"TCALLS") || !strcmp(sp,"NUMCALLS")) {
 		getstats(&cfg,0,&stats);
-		bprintf("%lu",stats.logons); }
+		sprintf(str,"%lu",stats.logons); 
+		return(str);
+	}
 
-	else if(!strcmp(sp,"PREVON") || !strcmp(sp,"LASTCALLERNODE")
+	if(!strcmp(sp,"PREVON") || !strcmp(sp,"LASTCALLERNODE")
 		|| !strcmp(sp,"LASTCALLERSYSTEM"))
-		bputs(lastuseron);
+		return(lastuseron);
 
-	else if(!strcmp(sp,"CLS"))
+	if(!strcmp(sp,"CLS")) {
 		CLS;
+		return(nulstr);
+	}
 
-	else if(!strcmp(sp,"PAUSE") || !strcmp(sp,"MORE"))
+	if(!strcmp(sp,"PAUSE") || !strcmp(sp,"MORE")) {
 		pause();
+		return(nulstr);
+	}
 
-	else if(!strcmp(sp,"RESETPAUSE"))
+	if(!strcmp(sp,"RESETPAUSE")) {
 		lncntr=0;
+		return(nulstr);
+	}
 
-	else if(!strcmp(sp,"NOPAUSE") || !strcmp(sp,"POFF"))
+	if(!strcmp(sp,"NOPAUSE") || !strcmp(sp,"POFF")) {
 		sys_status^=SS_PAUSEOFF;
+		return(nulstr);
+	}
 
-	else if(!strcmp(sp,"PON") || !strcmp(sp,"AUTOMORE"))
+	if(!strcmp(sp,"PON") || !strcmp(sp,"AUTOMORE")) {
 		sys_status^=SS_PAUSEON;
+		return(nulstr);
+	}
 
 	/* NOSTOP */
 
 	/* STOP */
 
-	else if(!strcmp(sp,"BELL") || !strcmp(sp,"BEEP"))
-		outchar(BEL);
+	if(!strcmp(sp,"BELL") || !strcmp(sp,"BEEP"))
+		return("\a");
 
 	// else if(!strcmp(sp,"EVENT"))
-	//	  bputs(sectostr(sys_eventtime,str2));
+	//	  return(sectostr(sys_eventtime,str2));
 
 	/* LASTCALL */
 
-	else if(!strncmp(sp,"NODE",4)) {
+	if(!strncmp(sp,"NODE",4)) {
 		i=atoi(sp+4);
 		if(i && i<=cfg.sys_nodes) {
 			getnodedat(i,&node,0);
-			printnodedat(i,&node); } }
+			printnodedat(i,&node); 
+		} 
+		return(nulstr);
+	}
 
-	else if(!strcmp(sp,"WHO"))
+	if(!strcmp(sp,"WHO")) {
 		whos_online(true);
+		return(nulstr);
+	}
 
 	/* User Codes */
 
-	else if(!strcmp(sp,"USER") || !strcmp(sp,"ALIAS") || !strcmp(sp,"NAME"))
-		bputs(useron.alias);
+	if(!strcmp(sp,"USER") || !strcmp(sp,"ALIAS") || !strcmp(sp,"NAME"))
+		return(useron.alias);
 
-	else if(!strcmp(sp,"FIRST")) {
-		strcpy(str2,useron.alias);
-		tp=strchr(str2,SP);
+	if(!strcmp(sp,"FIRST")) {
+		strcpy(str,useron.alias);
+		tp=strchr(str,SP);
 		if(tp) *tp=0;
-		bputs(str2); }
+		return(str); 
+	}
 
-	else if(!strcmp(sp,"USERNUM")) 
-		bprintf("%u",useron.number);
+	if(!strcmp(sp,"USERNUM")) {
+		sprintf(str,"%u",useron.number);
+		return(str);
+	}
 
-	else if(!strcmp(sp,"PHONE") || !strcmp(sp,"HOMEPHONE")
+	if(!strcmp(sp,"PHONE") || !strcmp(sp,"HOMEPHONE")
 		|| !strcmp(sp,"DATAPHONE") || !strcmp(sp,"DATA"))
-		bputs(useron.phone);
+		return(useron.phone);
 
-	else if(!strcmp(sp,"ADDR1"))
-		bputs(useron.address);
+	if(!strcmp(sp,"ADDR1"))
+		return(useron.address);
 
-	else if(!strcmp(sp,"FROM"))
-		bputs(useron.location);
+	if(!strcmp(sp,"FROM"))
+		return(useron.location);
 
-	else if(!strcmp(sp,"CITY")) {
-		strcpy(str2,useron.location);
-		p=strchr(str2,',');
+	if(!strcmp(sp,"CITY")) {
+		strcpy(str,useron.location);
+		char* p=strchr(str,',');
 		if(p) {
 			*p=0;
-			bputs(str2); } }
+			return(str); 
+		} 
+		return(nulstr);
+	}
 
-	else if(!strcmp(sp,"STATE")) {
-		p=strchr(useron.location,',');
+	if(!strcmp(sp,"STATE")) {
+		char* p=strchr(useron.location,',');
 		if(p) {
 			p++;
 			if(*p==SP)
 				p++;
-			bputs(p); } }
+			return(p); 
+		} 
+		return(nulstr);
+	}
 
-	else if(!strcmp(sp,"CPU"))
-		bputs(useron.comp);
+	if(!strcmp(sp,"CPU"))
+		return(useron.comp);
 		
-	else if(!strcmp(sp,"HOST"))
-		bputs(client_name);
+	if(!strcmp(sp,"HOST"))
+		return(client_name);
 
-	else if(!strcmp(sp,"BDATE"))
-		bputs(useron.birth);
+	if(!strcmp(sp,"BDATE"))
+		return(useron.birth);
 
-	else if(!strcmp(sp,"AGE"))
-		bprintf("%u",getage(&cfg,useron.birth));
+	if(!strcmp(sp,"AGE")) {
+		sprintf(str,"%u",getage(&cfg,useron.birth));
+		return(str);
+	}
 
-	else if(!strcmp(sp,"CALLS") || !strcmp(sp,"NUMTIMESON"))
-		bprintf("%u",useron.logons);
+	if(!strcmp(sp,"CALLS") || !strcmp(sp,"NUMTIMESON")) {
+		sprintf(str,"%u",useron.logons);
+		return(str);
+	}
 
-	else if(!strcmp(sp,"MEMO"))
-		bputs(unixtodstr(&cfg,useron.pwmod,str2));
+	if(!strcmp(sp,"MEMO"))
+		return(unixtodstr(&cfg,useron.pwmod,str));
 
-	else if(!strcmp(sp,"SEC") || !strcmp(sp,"SECURITY"))
-		bprintf("%u",useron.level);
+	if(!strcmp(sp,"SEC") || !strcmp(sp,"SECURITY")) {
+		sprintf(str,"%u",useron.level);
+		return(str);
+	}
 
-	else if(!strcmp(sp,"SINCE"))
-		bputs(unixtodstr(&cfg,useron.firston,str2));
+	if(!strcmp(sp,"SINCE"))
+		return(unixtodstr(&cfg,useron.firston,str));
 
-	else if(!strcmp(sp,"TIMEON") || !strcmp(sp,"TIMEUSED")) {
+	if(!strcmp(sp,"TIMEON") || !strcmp(sp,"TIMEUSED")) {
 		now=time(NULL);
-		bprintf("%u",(now-logontime)/60); }
+		sprintf(str,"%u",(now-logontime)/60); 
+		return(str);
+	}
 
-	else if(!strcmp(sp,"TUSED")) {              /* Synchronet only */
+	if(!strcmp(sp,"TUSED")) {              /* Synchronet only */
 		now=time(NULL);
-		bputs(sectostr(now-logontime,str2)+1); }
+		return(sectostr(now-logontime,str)+1); 
+	}
 
-	else if(!strcmp(sp,"TLEFT")) {              /* Synchronet only */
+	if(!strcmp(sp,"TLEFT")) {              /* Synchronet only */
 		gettimeleft();
-		bputs(sectostr(timeleft,str2)+1); }
+		return(sectostr(timeleft,str)+1); 
+	}
 
-	else if(!strcmp(sp,"TPERD"))                /* Synchronet only */
-		bputs(sectostr(cfg.level_timeperday[useron.level],str)+1);
+	if(!strcmp(sp,"TPERD"))                /* Synchronet only */
+		return(sectostr(cfg.level_timeperday[useron.level],str)+1);
 
-	else if(!strcmp(sp,"TPERC"))                /* Synchronet only */
-		bputs(sectostr(cfg.level_timepercall[useron.level],str)+1);
+	if(!strcmp(sp,"TPERC"))                /* Synchronet only */
+		return(sectostr(cfg.level_timepercall[useron.level],str)+1);
 
-	else if(!strcmp(sp,"TIMELIMIT"))
-		bprintf("%u",cfg.level_timepercall[useron.level]);
+	if(!strcmp(sp,"TIMELIMIT")) {
+		sprintf(str,"%u",cfg.level_timepercall[useron.level]);
+		return(str);
+	}
 
-	else if(!strcmp(sp,"MINLEFT") || !strcmp(sp,"LEFT") || !strcmp(sp,"TIMELEFT")) {
+	if(!strcmp(sp,"MINLEFT") || !strcmp(sp,"LEFT") || !strcmp(sp,"TIMELEFT")) {
 		gettimeleft();
-		bprintf("%u",timeleft/60); }
+		sprintf(str,"%u",timeleft/60); 
+		return(str);
+	}
 
-	else if(!strcmp(sp,"LASTON"))
-		bputs(timestr(&useron.laston));
+	if(!strcmp(sp,"LASTON")) 
+		return(timestr(&useron.laston));
 
-	else if(!strcmp(sp,"LASTDATEON"))
-		bputs(unixtodstr(&cfg,useron.laston,str2));
+	if(!strcmp(sp,"LASTDATEON"))
+		return(unixtodstr(&cfg,useron.laston,str));
 
-	else if(!strcmp(sp,"LASTTIMEON")) {
+	if(!strcmp(sp,"LASTTIMEON")) {
 		tm_p=gmtime(&useron.laston);
 		if(tm_p)
 			tm=*tm_p;
 		else
 			memset(&tm,0,sizeof(tm));
-		bprintf("%02d:%02d %s"
+		sprintf(str,"%02d:%02d %s"
 			,tm.tm_hour==0 ? 12
 			: tm.tm_hour>12 ? tm.tm_hour-12
 			: tm.tm_hour, tm.tm_min, tm.tm_hour>11 ? "pm":"am"); 
+		return(str);
 	}
 
-	else if(!strcmp(sp,"MSGLEFT") || !strcmp(sp,"MSGSLEFT"))
-		bprintf("%u",useron.posts);
+	if(!strcmp(sp,"MSGLEFT") || !strcmp(sp,"MSGSLEFT")) {
+		sprintf(str,"%u",useron.posts);
+		return(str);
+	}
 
-	else if(!strcmp(sp,"MSGREAD"))
-		bprintf("%u",posts_read);
+	if(!strcmp(sp,"MSGREAD")) {
+		sprintf(str,"%u",posts_read);
+		return(str);
+	}
 
-	else if(!strcmp(sp,"FREESPACE")) 
-		bprintf("%lu",getfreediskspace(cfg.temp_dir)); 
+	if(!strcmp(sp,"FREESPACE")) {
+		sprintf(str,"%lu",getfreediskspace(cfg.temp_dir)); 
+		return(str);
+	}
 
-	else if(!strcmp(sp,"UPBYTES"))
-		bprintf("%lu",useron.ulb);
+	if(!strcmp(sp,"UPBYTES")) {
+		sprintf(str,"%lu",useron.ulb);
+		return(str);
+	}
 
-	else if(!strcmp(sp,"UPK"))
-		bprintf("%lu",useron.ulb/1024L);
+	if(!strcmp(sp,"UPK")) {
+		sprintf(str,"%lu",useron.ulb/1024L);
+		return(str);
+	}
 
-	else if(!strcmp(sp,"UPS") || !strcmp(sp,"UPFILES"))
-		bprintf("%u",useron.uls);
+	if(!strcmp(sp,"UPS") || !strcmp(sp,"UPFILES")) {
+		sprintf(str,"%u",useron.uls);
+		return(str);
+	}
 
-	else if(!strcmp(sp,"DLBYTES"))
-		bprintf("%lu",useron.dlb);
+	if(!strcmp(sp,"DLBYTES")) {
+		sprintf(str,"%lu",useron.dlb);
+		return(str);
+	}
 
-	else if(!strcmp(sp,"DOWNK"))
-		bprintf("%lu",useron.dlb/1024L);
+	if(!strcmp(sp,"DOWNK")) {
+		sprintf(str,"%lu",useron.dlb/1024L);
+		return(str);
+	}
 
-	else if(!strcmp(sp,"DOWNS") || !strcmp(sp,"DLFILES"))
-		bprintf("%u",useron.dls);
+	if(!strcmp(sp,"DOWNS") || !strcmp(sp,"DLFILES")) {
+		sprintf(str,"%u",useron.dls);
+		return(str);
+	}
 
-	else if(!strcmp(sp,"LASTNEW"))
-		bputs(unixtodstr(&cfg,ns_time,str2));
+	if(!strcmp(sp,"LASTNEW"))
+		return(unixtodstr(&cfg,ns_time,str));
 
-	else if(!strcmp(sp,"NEWFILETIME"))
-		bputs(timestr(&ns_time));
+	if(!strcmp(sp,"NEWFILETIME"))
+		return(timestr(&ns_time));
 
 	/* MAXDL */
 
-	else if(!strcmp(sp,"MAXDK") || !strcmp(sp,"DLKLIMIT") || !strcmp(sp,"KBLIMIT"))
-		bprintf("%lu",cfg.level_freecdtperday[useron.level]/1024L);
+	if(!strcmp(sp,"MAXDK") || !strcmp(sp,"DLKLIMIT") || !strcmp(sp,"KBLIMIT")) {
+		sprintf(str,"%lu",cfg.level_freecdtperday[useron.level]/1024L);
+		return(str);
+	}
 
-	else if(!strcmp(sp,"DAYBYTES"))     /* amt of free cdts used today */
-		bprintf("%lu",cfg.level_freecdtperday[useron.level]-useron.freecdt);
+	if(!strcmp(sp,"DAYBYTES")) {    /* amt of free cdts used today */
+		sprintf(str,"%lu",cfg.level_freecdtperday[useron.level]-useron.freecdt);
+		return(str);
+	}
 
-	else if(!strcmp(sp,"BYTELIMIT"))
-		bprintf("%lu",cfg.level_freecdtperday[useron.level]);
+	if(!strcmp(sp,"BYTELIMIT")) {
+		sprintf(str,"%lu",cfg.level_freecdtperday[useron.level]);
+		return(str);
+	}
 
-	else if(!strcmp(sp,"KBLEFT"))
-		bprintf("%lu",(useron.cdt+useron.freecdt)/1024L);
+	if(!strcmp(sp,"KBLEFT")) {
+		sprintf(str,"%lu",(useron.cdt+useron.freecdt)/1024L);
+		return(str);
+	}
 
-	else if(!strcmp(sp,"BYTESLEFT"))
-		bprintf("%lu",useron.cdt+useron.freecdt);
+	if(!strcmp(sp,"BYTESLEFT")) {
+		sprintf(str,"%lu",useron.cdt+useron.freecdt);
+		return(str);
+	}
 
-	else if(!strcmp(sp,"CONF"))
-		bprintf("%s %s"
+	if(!strcmp(sp,"CONF")) {
+		sprintf("%s %s"
 			,usrgrps ? cfg.grp[usrgrp[curgrp]]->sname :nulstr
 			,usrgrps ? cfg.sub[usrsub[curgrp][cursub[curgrp]]]->sname : nulstr);
+		return(str);
+	}
 
-	else if(!strcmp(sp,"CONFNUM"))
-		bprintf("%u %u",curgrp+1,cursub[curgrp]+1);
+	if(!strcmp(sp,"CONFNUM")) {
+		sprintf(str,"%u %u",curgrp+1,cursub[curgrp]+1);
+		return(str);
+	}
 
-	else if(!strcmp(sp,"NUMDIR"))
-		bprintf("%u %u",usrlibs ? curlib+1 : 0,usrlibs ? curdir[curlib]+1 : 0);
+	if(!strcmp(sp,"NUMDIR")) {
+		sprintf(str,"%u %u",usrlibs ? curlib+1 : 0,usrlibs ? curdir[curlib]+1 : 0);
+		return(str);
+	}
 
-	else if(!strcmp(sp,"EXDATE") || !strcmp(sp,"EXPDATE"))
-		bputs(unixtodstr(&cfg,useron.expire,str2));
+	if(!strcmp(sp,"EXDATE") || !strcmp(sp,"EXPDATE"))
+		return(unixtodstr(&cfg,useron.expire,str));
 
-	else if(!strcmp(sp,"EXPDAYS")) {
+	if(!strcmp(sp,"EXPDAYS")) {
 		now=time(NULL);
 		l=useron.expire-now;
 		if(l<0)
 			l=0;
-		bprintf("%u",l/(1440L*60L)); }
+		sprintf(str,"%u",l/(1440L*60L)); 
+		return(str);
+	}
 
-	else if(!strcmp(sp,"MEMO1"))
-		bputs(useron.note);
+	if(!strcmp(sp,"MEMO1"))
+		return(useron.note);
 
-	else if(!strcmp(sp,"MEMO2") || !strcmp(sp,"COMPANY"))
-		bputs(useron.name);
+	if(!strcmp(sp,"MEMO2") || !strcmp(sp,"COMPANY"))
+		return(useron.name);
 
-	else if(!strcmp(sp,"ZIP"))
-		bputs(useron.zipcode);
+	if(!strcmp(sp,"ZIP"))
+		return(useron.zipcode);
 
-	else if(!strcmp(sp,"HANGUP"))
+	if(!strcmp(sp,"HANGUP")) {
 		hangup();
-
-	else
-		return(syncatcodes(sp, len));
-
-	return(len);
-}
-
-int sbbs_t::syncatcodes(char *sp, int len)
-{
-	char str2[128],*tp;
-    stats_t stats;
+		return(nulstr);
+	}
 
 	/* Synchronet Specific */
 
-	if(!strncmp(sp,"SETSTR:",7))
+	if(!strncmp(sp,"SETSTR:",7)) {
 		strcpy(main_csi.str,sp+7);
+		return(nulstr);
+	}
 
-	else if(!strncmp(sp,"EXEC:",5))
+	if(!strncmp(sp,"EXEC:",5)) {
 		exec_bin(sp+5,&main_csi);
+		return(nulstr);
+	}
 
-	else if(!strncmp(sp,"MENU:",5))
+	if(!strncmp(sp,"MENU:",5)) {
 		menu(sp+5);
+		return(nulstr);
+	}
 
-	else if(!strncmp(sp,"TYPE:",5))
-		printfile(cmdstr(sp+5,nulstr,nulstr,str2),0);
+	if(!strncmp(sp,"TYPE:",5)) {
+		printfile(cmdstr(sp+5,nulstr,nulstr,str),0);
+		return(nulstr);
+	}
 
-	else if(!strcmp(sp,"QUESTION"))
-		bputs(question);
+	if(!strcmp(sp,"QUESTION"))
+		return(question);
 
-	else if(!strncmp(sp,"NAME-L",6))
-		bprintf("%-*.*s",len,len,useron.alias);
+	if(!strcmp(sp,"HANDLE"))
+		return(useron.handle);
 
-	else if(!strncmp(sp,"NAME-R",6))
-		bprintf("%*.*s",len,len,useron.alias);
+	if(!strcmp(sp,"CID") || !strcmp(sp,"IP"))
+		return(cid);
 
-	else if(!strcmp(sp,"HANDLE"))
-		bputs(useron.handle);
-
-	else if(!strcmp(sp,"CID") || !strcmp(sp,"IP"))
-		bputs(cid);
-
-	else if(!strcmp(sp,"LOCAL-IP")) {
+	if(!strcmp(sp,"LOCAL-IP")) {
 		struct in_addr in_addr;
 		in_addr.s_addr=local_addr;
-		bprintf("%s",inet_ntoa(in_addr));
+		return(inet_ntoa(in_addr));
 	}
 
-	else if(!strcmp(sp,"CRLF")) {
-		CRLF;
-	}
+	if(!strcmp(sp,"CRLF"))
+		return("\r\n");
 
-	else if(!strcmp(sp,"PUSHXY")) 
+	if(!strcmp(sp,"PUSHXY")) {
 		ANSI_SAVE();
+		return(nulstr);
+	}
 
-	else if(!strcmp(sp,"POPXY")) 
+	if(!strcmp(sp,"POPXY")) {
 		ANSI_RESTORE();
+		return(nulstr);
+	}
 
-	else if(!strcmp(sp,"UP")) 
-		rputs("\x1b[A");
+	if(!strcmp(sp,"UP")) 
+		return("\x1b[A");
 
-	else if(!strcmp(sp,"DOWN")) 
-		rputs("\x1b[B");
+	if(!strcmp(sp,"DOWN")) 
+		return("\x1b[B");
 
-	else if(!strcmp(sp,"RIGHT")) 
-		rputs("\x1b[C");
+	if(!strcmp(sp,"RIGHT")) 
+		return("\x1b[C");
 
-	else if(!strcmp(sp,"LEFT")) 
-		rputs("\x1b[D");
+	if(!strcmp(sp,"LEFT")) 
+		return("\x1b[D");
 
-	else if(!strncmp(sp,"UP:",3))
-		rprintf("\x1b[%dA",atoi(sp+3));
+	if(!strncmp(sp,"UP:",3)) {
+		sprintf(str,"\x1b[%dA",atoi(sp+3));
+		return(str);
+	}
 
-	else if(!strncmp(sp,"DOWN:",5))
-		rprintf("\x1b[%dB",atoi(sp+5));
+	if(!strncmp(sp,"DOWN:",5)) {
+		sprintf(str,"\x1b[%dB",atoi(sp+5));
+		return(str);
+	}
 
-	else if(!strncmp(sp,"LEFT:",5))
-		rprintf("\x1b[%dC",atoi(sp+5));
+	if(!strncmp(sp,"LEFT:",5)) {
+		sprintf(str,"\x1b[%dC",atoi(sp+5));
+		return(str);
+	}
 
-	else if(!strncmp(sp,"RIGHT:",6))
-		rprintf("\x1b[%dD",atoi(sp+6));
+	if(!strncmp(sp,"RIGHT:",6)) {
+		sprintf(str,"\x1b[%dD",atoi(sp+6));
+		return(str);
+	}
 
-	else if(!strncmp(sp,"GOTOXY:",7)) {
+	if(!strncmp(sp,"GOTOXY:",7)) {
 		tp=strchr(sp,',');
 		if(tp!=NULL) {
 			tp++;
 			GOTOXY(atoi(sp+7),atoi(tp));
 		}
+		return(nulstr);
 	}
 
-	else if(!strcmp(sp,"GRP"))
-		bputs(usrgrps ? cfg.grp[usrgrp[curgrp]]->sname : nulstr);
+	if(!strcmp(sp,"GRP"))
+		return(usrgrps ? cfg.grp[usrgrp[curgrp]]->sname : nulstr);
 
-	else if(!strncmp(sp,"GRP-L",5))
-		bprintf("%-*.*s",len,len,usrgrps ? cfg.grp[usrgrp[curgrp]]->sname : nulstr);
+	if(!strcmp(sp,"GRPL"))
+		return(usrgrps ? cfg.grp[usrgrp[curgrp]]->lname : nulstr);
 
-	else if(!strncmp(sp,"GRP-R",5))
-		bprintf("%*.*s",len,len,usrgrps ? cfg.grp[usrgrp[curgrp]]->sname : nulstr);
+	if(!strcmp(sp,"GN")) {
+		sprintf(str,"%u",usrgrps ? curgrp+1 : 0);
+		return(str);
+	}
 
-	else if(!strcmp(sp,"GRPL"))
-		bputs(usrgrps ? cfg.grp[usrgrp[curgrp]]->lname : nulstr);
+	if(!strcmp(sp,"GL")) {
+		sprintf(str,"%-4u",usrgrps ? curgrp+1 : 0);
+		return(str);
+	}
 
-	else if(!strncmp(sp,"GRPL-L",6))
-		bprintf("%-*.*s",len,len,usrgrps ? cfg.grp[usrgrp[curgrp]]->lname : nulstr);
+	if(!strcmp(sp,"GR")) {
+		sprintf(str,"%4u",usrgrps ? curgrp+1 : 0);
+		return(str);
+	}
 
-	else if(!strncmp(sp,"GRPL-R",6))
-		bprintf("%*.*s",len,len,usrgrps ? cfg.grp[usrgrp[curgrp]]->lname : nulstr);
+	if(!strcmp(sp,"SUB"))
+		return(usrgrps ? cfg.sub[usrsub[curgrp][cursub[curgrp]]]->sname : nulstr);
 
-	else if(!strcmp(sp,"GN"))
-		bprintf("%u",usrgrps ? curgrp+1 : 0);
+	if(!strcmp(sp,"SUBL"))
+		return(usrgrps  ? cfg.sub[usrsub[curgrp][cursub[curgrp]]]->lname : nulstr);
 
-	else if(!strcmp(sp,"GL"))
-		bprintf("%-4u",usrgrps ? curgrp+1 : 0);
+	if(!strcmp(sp,"SN")) {
+		sprintf(str,"%u",usrgrps ? cursub[curgrp]+1 : 0);
+		return(str);
+	}
 
-	else if(!strcmp(sp,"GR"))
-		bprintf("%4u",usrgrps ? curgrp+1 : 0);
+	if(!strcmp(sp,"SL")) {
+		sprintf(str,"%-4u",usrgrps ? cursub[curgrp]+1 : 0);
+		return(str);
+	}
 
-	else if(!strcmp(sp,"SUB"))
-		bputs(usrgrps ? cfg.sub[usrsub[curgrp][cursub[curgrp]]]->sname : nulstr);
+	if(!strcmp(sp,"SR")) {
+		sprintf(str,"%4u",usrgrps ? cursub[curgrp]+1 : 0);
+		return(str);
+	}
 
-	else if(!strncmp(sp,"SUB-L",5))
-		bprintf("%-*.*s",len,len,usrgrps
-			? cfg.sub[usrsub[curgrp][cursub[curgrp]]]->sname : nulstr);
+	if(!strcmp(sp,"LIB"))
+		return(usrlibs ? cfg.lib[usrlib[curlib]]->sname : nulstr);
 
-	else if(!strncmp(sp,"SUB-R",5))
-		bprintf("%*.*s",len,len,usrgrps
-			? cfg.sub[usrsub[curgrp][cursub[curgrp]]]->sname : nulstr);
+	if(!strcmp(sp,"LIBL"))
+		return(usrlibs ? cfg.lib[usrlib[curlib]]->lname : nulstr);
 
-	else if(!strcmp(sp,"SUBL"))
-		bputs(usrgrps  ? cfg.sub[usrsub[curgrp][cursub[curgrp]]]->lname : nulstr);
+	if(!strcmp(sp,"LN")) {
+		sprintf(str,"%u",usrlibs ? curlib+1 : 0);
+		return(str);
+	}
 
-	else if(!strncmp(sp,"SUBL-L",6))
-		bprintf("%-*.*s",len,len,usrgrps
-			? cfg.sub[usrsub[curgrp][cursub[curgrp]]]->lname : nulstr);
+	if(!strcmp(sp,"LL")) {
+		sprintf(str,"%-4u",usrlibs ? curlib+1 : 0);
+		return(str);
+	}
 
-	else if(!strncmp(sp,"SUBL-R",6))
-		bprintf("%*.*s",len,len,usrgrps
-			? cfg.sub[usrsub[curgrp][cursub[curgrp]]]->lname : nulstr);
+	if(!strcmp(sp,"LR")) {
+		sprintf(str,"%4u",usrlibs  ? curlib+1 : 0);
+		return(str);
+	}
 
-	else if(!strcmp(sp,"SN"))
-		bprintf("%u",usrgrps ? cursub[curgrp]+1 : 0);
+	if(!strcmp(sp,"DIR"))
+		return(usrlibs ? cfg.dir[usrdir[curlib][curdir[curlib]]]->sname :nulstr);
 
-	else if(!strcmp(sp,"SL"))
-		bprintf("%-4u",usrgrps ? cursub[curgrp]+1 : 0);
+	if(!strcmp(sp,"DIRL"))
+		return(usrlibs ? cfg.dir[usrdir[curlib][curdir[curlib]]]->lname : nulstr);
 
-	else if(!strcmp(sp,"SR"))
-		bprintf("%4u",usrgrps ? cursub[curgrp]+1 : 0);
+	if(!strcmp(sp,"DN")) {
+		sprintf(str,"%u",usrlibs ? curdir[curlib]+1 : 0);
+		return(str);
+	}
 
-	else if(!strcmp(sp,"LIB"))
-		bputs(usrlibs ? cfg.lib[usrlib[curlib]]->sname : nulstr);
+	if(!strcmp(sp,"DL")) {
+		sprintf(str,"%-4u",usrlibs ? curdir[curlib]+1 : 0);
+		return(str);
+	}
 
-	else if(!strncmp(sp,"LIB-L",5))
-		bprintf("%-*.*s",len,len,usrlibs ? cfg.lib[usrlib[curlib]]->sname : nulstr);
+	if(!strcmp(sp,"DR")) {
+		sprintf(str,"%4u",usrlibs ? curdir[curlib]+1 : 0);
+		return(str);
+	}
 
-	else if(!strncmp(sp,"LIB-R",5))
-		bprintf("%*.*s",len,len,usrlibs ? cfg.lib[usrlib[curlib]]->sname : nulstr);
-
-	else if(!strcmp(sp,"LIBL"))
-		bputs(usrlibs ? cfg.lib[usrlib[curlib]]->lname : nulstr);
-
-	else if(!strncmp(sp,"LIBL-L",6))
-		bprintf("%-*.*s",len,len,usrlibs ? cfg.lib[usrlib[curlib]]->lname : nulstr);
-
-	else if(!strncmp(sp,"LIBL-R",6))
-		bprintf("%*.*s",len,len,usrlibs ? cfg.lib[usrlib[curlib]]->lname : nulstr);
-
-	else if(!strcmp(sp,"LN"))
-		bprintf("%u",usrlibs ? curlib+1 : 0);
-
-	else if(!strcmp(sp,"LL"))
-		bprintf("%-4u",usrlibs ? curlib+1 : 0);
-
-	else if(!strcmp(sp,"LR"))
-		bprintf("%4u",usrlibs  ? curlib+1 : 0);
-
-	else if(!strcmp(sp,"DIR"))
-		bputs(usrlibs ? cfg.dir[usrdir[curlib][curdir[curlib]]]->sname :nulstr);
-
-	else if(!strncmp(sp,"DIR-L",5))
-		bprintf("%-*.*s",len,len,usrlibs
-			? cfg.dir[usrdir[curlib][curdir[curlib]]]->sname : nulstr);
-
-	else if(!strncmp(sp,"DIR-R",5))
-		bprintf("%*.*s",len,len,usrlibs
-			? cfg.dir[usrdir[curlib][curdir[curlib]]]->sname : nulstr);
-
-	else if(!strcmp(sp,"DIRL"))
-		bputs(usrlibs ? cfg.dir[usrdir[curlib][curdir[curlib]]]->lname : nulstr);
-
-	else if(!strncmp(sp,"DIRL-L",6))
-		bprintf("%-*.*s",len,len,usrlibs
-			? cfg.dir[usrdir[curlib][curdir[curlib]]]->lname : nulstr);
-
-	else if(!strncmp(sp,"DIRL-R",6))
-		bprintf("%*.*s",len,len,usrlibs
-			? cfg.dir[usrdir[curlib][curdir[curlib]]]->lname : nulstr);
-
-	else if(!strcmp(sp,"DN"))
-		bprintf("%u",usrlibs ? curdir[curlib]+1 : 0);
-
-	else if(!strcmp(sp,"DL"))
-		bprintf("%-4u",usrlibs ? curdir[curlib]+1 : 0);
-
-	else if(!strcmp(sp,"DR"))
-		bprintf("%4u",usrlibs ? curdir[curlib]+1 : 0);
-
-	else if(!strcmp(sp,"NOACCESS")) {
+	if(!strcmp(sp,"NOACCESS")) {
 		if(noaccess_str==text[NoAccessTime])
-			bprintf(noaccess_str,noaccess_val/60,noaccess_val%60);
+			sprintf(str,noaccess_str,noaccess_val/60,noaccess_val%60);
 		else if(noaccess_str==text[NoAccessDay])
-			bprintf(noaccess_str,wday[noaccess_val]);
+			sprintf(str,noaccess_str,wday[noaccess_val]);
 		else
-			bprintf(noaccess_str,noaccess_val); }
+			sprintf(str,noaccess_str,noaccess_val); 
+		return(str);
+	}
 
-	else if(!strcmp(sp,"LAST")) {
+	if(!strcmp(sp,"LAST")) {
 		tp=strrchr(useron.alias,SP);
 		if(tp) tp++;
 		else tp=useron.alias;
-		bputs(tp); }
+		return(tp); 
+	}
 
-	else if(!strcmp(sp,"REAL")) {
-		strcpy(str2,useron.name);
-		tp=strchr(str2,SP);
+	if(!strcmp(sp,"REAL")) {
+		strcpy(str,useron.name);
+		tp=strchr(str,SP);
 		if(tp) *tp=0;
-		bputs(str2); }
+		return(str); 
+	}
 
-	else if(!strcmp(sp,"FIRSTREAL")) {
-		strcpy(str2,useron.name);
-		tp=strchr(str2,SP);
+	if(!strcmp(sp,"FIRSTREAL")) {
+		strcpy(str,useron.name);
+		tp=strchr(str,SP);
 		if(tp) *tp=0;
-		bputs(str2); }
+		return(str); 
+	}
 
-	else if(!strcmp(sp,"LASTREAL")) {
+	if(!strcmp(sp,"LASTREAL")) {
 		tp=strrchr(useron.name,SP);
 		if(tp) tp++;
 		else tp=useron.name;
-		bputs(tp); }
+		return(tp); 
+	}
 
-	else if(!strcmp(sp,"MAILW"))
-		bprintf("%u",getmail(&cfg,useron.number,0));
+	if(!strcmp(sp,"MAILW")) {
+		sprintf(str,"%u",getmail(&cfg,useron.number,0));
+		return(str);
+	}
 
-	else if(!strcmp(sp,"MAILP"))
-		bprintf("%u",getmail(&cfg,useron.number,1));
+	if(!strcmp(sp,"MAILP")) {
+		sprintf(str,"%u",getmail(&cfg,useron.number,1));
+		return(str);
+	}
 
-	else if(!strncmp(sp,"MAILW:",6))
-		bprintf("%u",getmail(&cfg,atoi(sp+6),0));
+	if(!strncmp(sp,"MAILW:",6)) {
+		sprintf(str,"%u",getmail(&cfg,atoi(sp+6),0));
+		return(str);
+	}
 
-	else if(!strncmp(sp,"MAILP:",6))
-		bprintf("%u",getmail(&cfg,atoi(sp+6),1));
+	if(!strncmp(sp,"MAILP:",6)) {
+		sprintf(str,"%u",getmail(&cfg,atoi(sp+6),1));
+		return(str);
+	}
 
-	else if(!strcmp(sp,"MSGREPLY"))
-		bprintf("%c",cfg.sys_misc&SM_RA_EMU ? 'R' : 'A');
+	if(!strcmp(sp,"MSGREPLY")) {
+		sprintf(str,"%c",cfg.sys_misc&SM_RA_EMU ? 'R' : 'A');
+		return(str);
+	}
 
-	else if(!strcmp(sp,"MSGREREAD"))
-		bprintf("%c",cfg.sys_misc&SM_RA_EMU ? 'A' : 'R');
+	if(!strcmp(sp,"MSGREREAD")) {
+		sprintf(str,"%c",cfg.sys_misc&SM_RA_EMU ? 'A' : 'R');
+		return(str);
+	}
 
-	else if(!strncmp(sp,"STATS.",6)) {
+	if(!strncmp(sp,"STATS.",6)) {
 		getstats(&cfg,0,&stats);
 		sp+=6;
 		if(!strcmp(sp,"LOGONS")) 
-			bprintf("%u",stats.logons);
+			sprintf(str,"%u",stats.logons);
 		else if(!strcmp(sp,"LTODAY")) 
-			bprintf("%u",stats.ltoday);
+			sprintf(str,"%u",stats.ltoday);
 		else if(!strcmp(sp,"TIMEON")) 
-			bprintf("%u",stats.timeon);
+			sprintf(str,"%u",stats.timeon);
 		else if(!strcmp(sp,"TTODAY")) 
-			bprintf("%u",stats.ttoday);
+			sprintf(str,"%u",stats.ttoday);
 		else if(!strcmp(sp,"ULS")) 
-			bprintf("%u",stats.uls);
+			sprintf(str,"%u",stats.uls);
 		else if(!strcmp(sp,"ULB")) 
-			bprintf("%u",stats.ulb);
+			sprintf(str,"%u",stats.ulb);
 		else if(!strcmp(sp,"DLS")) 
-			bprintf("%u",stats.dls);
+			sprintf(str,"%u",stats.dls);
 		else if(!strcmp(sp,"DLB")) 
-			bprintf("%u",stats.dlb);
+			sprintf(str,"%u",stats.dlb);
 		else if(!strcmp(sp,"PTODAY")) 
-			bprintf("%u",stats.ptoday);
+			sprintf(str,"%u",stats.ptoday);
 		else if(!strcmp(sp,"ETODAY")) 
-			bprintf("%u",stats.etoday);
+			sprintf(str,"%u",stats.etoday);
 		else if(!strcmp(sp,"FTODAY")) 
-			bprintf("%u",stats.ftoday);
+			sprintf(str,"%u",stats.ftoday);
 		else if(!strcmp(sp,"NUSERS")) 
-			bprintf("%u",stats.nusers);
+			sprintf(str,"%u",stats.nusers);
+		return(str);
 	}
 
 	/* Message header codes */
-	else if(!strcmp(sp,"MSG_TO") && current_msg!=NULL)
-		bputs(current_msg->to==NULL ? nulstr : current_msg->to);
-	else if(!strcmp(sp,"MSG_TO_EXT") && current_msg!=NULL) {
+	if(!strcmp(sp,"MSG_TO") && current_msg!=NULL) {
+		if(current_msg->to==NULL)
+			return(nulstr);
 		if(current_msg->to_ext!=NULL)
-			bprintf("#%s",current_msg->to_ext);
+			sprintf(str,"%s #%s",current_msg->to,current_msg->to_ext);
+		else if(current_msg->to_net.type!=NET_NONE)
+			sprintf(str,"%s (%s)",current_msg->to
+				,current_msg->to_net.type==NET_FIDO
+					? faddrtoa(*(faddr_t *)current_msg->to_net.addr) 
+					: (char*)current_msg->to_net.addr);
+		else
+			strcpy(str,current_msg->to);
+		return(str);
 	}
-	else if(!strcmp(sp,"MSG_TO_NET") && current_msg!=NULL) {
+	if(!strcmp(sp,"MSG_TO_NAME") && current_msg!=NULL)
+		return(current_msg->to==NULL ? nulstr : current_msg->to);
+	if(!strcmp(sp,"MSG_TO_EXT") && current_msg!=NULL) {
+		if(current_msg->to_ext==NULL)
+			return(nulstr);
+		return(current_msg->to_ext);
+	}
+	if(!strcmp(sp,"MSG_TO_NET") && current_msg!=NULL) {
 		if(current_msg->to_net.type!=NET_NONE)
-			bprintf("(%s)",current_msg->to_net.type==NET_FIDO
+			sprintf(str,"%s",current_msg->to_net.type==NET_FIDO
 				? faddrtoa(*(faddr_t *)current_msg->to_net.addr) 
 				: (char*)current_msg->to_net.addr);
+		return(str);
 	}
-	else if(!strcmp(sp,"MSG_FROM") && current_msg!=NULL) {
-		if(!(current_msg->hdr.attr&MSG_ANONYMOUS) || SYSOP)
-			bputs(current_msg->from==NULL ? nulstr : current_msg->from);
+	if(!strcmp(sp,"MSG_FROM") && current_msg!=NULL) {
+		if(current_msg->from==NULL)
+			return(nulstr);
+		if(current_msg->hdr.attr&MSG_ANONYMOUS && !SYSOP)
+			return(text[Anonymous]);
+		if(current_msg->from_ext!=NULL)
+			sprintf(str,"%s #%s",current_msg->from,current_msg->from_ext);
+		else if(current_msg->from_net.type!=NET_NONE)
+			sprintf(str,"%s (%s)",current_msg->from
+				,current_msg->from_net.type==NET_FIDO
+					? faddrtoa(*(faddr_t *)current_msg->from_net.addr) 
+					: (char*)current_msg->from_net.addr);
+		else
+			strcpy(str,current_msg->from);
+		return(str);
 	}
-	else if(!strcmp(sp,"MSG_FROM_EXT") && current_msg!=NULL) {
+	if(!strcmp(sp,"MSG_FROM_NAME") && current_msg!=NULL) {
+		if(current_msg->from==NULL)
+			return(nulstr);
+		if(current_msg->hdr.attr&MSG_ANONYMOUS && !SYSOP)
+			return(text[Anonymous]);
+		return(current_msg->from);
+	}		
+	if(!strcmp(sp,"MSG_FROM_EXT") && current_msg!=NULL) {
 		if(!(current_msg->hdr.attr&MSG_ANONYMOUS) || SYSOP)
 			if(current_msg->from_ext!=NULL)
-				bprintf("#%s",current_msg->from_ext);
+				return(current_msg->from_ext);
+		return(nulstr);
 	}
-	else if(!strcmp(sp,"MSG_FROM_NET") && current_msg!=NULL) {
-		if(current_msg->to_net.type!=NET_NONE
+	if(!strcmp(sp,"MSG_FROM_NET") && current_msg!=NULL) {
+		if(current_msg->from_net.type!=NET_NONE
 			&& (!(current_msg->hdr.attr&MSG_ANONYMOUS) || SYSOP))
-			bprintf("(%s)",current_msg->from_net.type==NET_FIDO
+			sprintf(str,"%s",current_msg->from_net.type==NET_FIDO
 				? faddrtoa(*(faddr_t *)current_msg->from_net.addr) 
 				: (char*)current_msg->from_net.addr);
+		return(str);
 	}
-	else if(!strcmp(sp,"MSG_SUBJECT") && current_msg!=NULL)
-		bputs(current_msg->subj==NULL ? nulstr : current_msg->subj);
-	else if(!strcmp(sp,"MSG_DATE") && current_msg!=NULL)
-		bputs(timestr((time_t *)&current_msg->hdr.when_written.time));
-	else if(!strcmp(sp,"MSG_TIMEZONE") && current_msg!=NULL)
-		bputs(zonestr(current_msg->hdr.when_written.zone));
-	else if(!strcmp(sp,"MSG_ATTR") && current_msg!=NULL)
-		bprintf("%s%s%s%s%s%s%s%s%s%s"
+	if(!strcmp(sp,"MSG_SUBJECT") && current_msg!=NULL)
+		return(current_msg->subj==NULL ? nulstr : current_msg->subj);
+	if(!strcmp(sp,"MSG_DATE") && current_msg!=NULL)
+		return(timestr((time_t *)&current_msg->hdr.when_written.time));
+	if(!strcmp(sp,"MSG_TIMEZONE") && current_msg!=NULL)
+		return(zonestr(current_msg->hdr.when_written.zone));
+	if(!strcmp(sp,"MSG_ATTR") && current_msg!=NULL) {
+		sprintf(str,"%s%s%s%s%s%s%s%s%s%s"
 			,current_msg->hdr.attr&MSG_PRIVATE		? "Private  "   :nulstr
 			,current_msg->hdr.attr&MSG_READ			? "Read  "      :nulstr
 			,current_msg->hdr.attr&MSG_DELETE		? "Deleted  "   :nulstr
@@ -756,42 +912,64 @@ int sbbs_t::syncatcodes(char *sp, int len)
 			,current_msg->hdr.attr&MSG_VALIDATED	? "Validated  " :nulstr
 			,current_msg->hdr.attr&MSG_REPLIED		? "Replied  "	:nulstr
 			);
-	else if(!strcmp(sp,"SMB_GROUP")) {
-		if(smb.subnum!=INVALID_SUB && smb.subnum<cfg.total_subs)
-			bputs(cfg.grp[cfg.sub[smb.subnum]->grp]->sname);
+		return(str);
 	}
-	else if(!strcmp(sp,"SMB_GROUP_DESC")) {
+	if(!strcmp(sp,"SMB_AREA")) {
 		if(smb.subnum!=INVALID_SUB && smb.subnum<cfg.total_subs)
-			bputs(cfg.grp[cfg.sub[smb.subnum]->grp]->lname);
+			sprintf(str,"%s %s"
+				,cfg.grp[cfg.sub[smb.subnum]->grp]->sname
+				,cfg.sub[smb.subnum]->sname);
+		return(str);
 	}
-	else if(!strcmp(sp,"SMB_GROUP_NUM")) {
+	if(!strcmp(sp,"SMB_AREA_DESC")) {
+		if(smb.subnum!=INVALID_SUB && smb.subnum<cfg.total_subs)
+			sprintf(str,"%s %s"
+				,cfg.grp[cfg.sub[smb.subnum]->grp]->lname
+				,cfg.sub[smb.subnum]->lname);
+		return(str);
+	}
+	if(!strcmp(sp,"SMB_GROUP")) {
+		if(smb.subnum!=INVALID_SUB && smb.subnum<cfg.total_subs)
+			return(cfg.grp[cfg.sub[smb.subnum]->grp]->sname);
+		return(nulstr);
+	}
+	if(!strcmp(sp,"SMB_GROUP_DESC")) {
+		if(smb.subnum!=INVALID_SUB && smb.subnum<cfg.total_subs)
+			return(cfg.grp[cfg.sub[smb.subnum]->grp]->lname);
+		return(nulstr);
+	}
+	if(!strcmp(sp,"SMB_GROUP_NUM")) {
 		if(smb.subnum!=INVALID_SUB && smb.subnum<cfg.total_subs) {
 			uint ugrp;
 			for(ugrp=0;ugrp<usrgrps;ugrp++)
 				if(usrgrp[ugrp]==cfg.sub[smb.subnum]->grp)
 					break;
-			bprintf("%u",ugrp+1);
+			sprintf(str,"%u",ugrp+1);
 		}
+		return(str);
 	}
-	else if(!strcmp(sp,"SMB_SUB")) {
+	if(!strcmp(sp,"SMB_SUB")) {
 		if(smb.subnum==INVALID_SUB)
-			bputs("Mail");
+			return("Mail");
 		else if(smb.subnum<cfg.total_subs)
-			bputs(cfg.sub[smb.subnum]->sname);
+			return(cfg.sub[smb.subnum]->sname);
+		return(nulstr);
 	}
-	else if(!strcmp(sp,"SMB_SUB_DESC")) {
+	if(!strcmp(sp,"SMB_SUB_DESC")) {
 		if(smb.subnum==INVALID_SUB)
-			bputs("Mail");
+			return("Mail");
 		else if(smb.subnum<cfg.total_subs)
-			bputs(cfg.sub[smb.subnum]->lname);
+			return(cfg.sub[smb.subnum]->lname);
+		return(nulstr);
 	}
-	else if(!strcmp(sp,"SMB_SUB_CODE")) {
+	if(!strcmp(sp,"SMB_SUB_CODE")) {
 		if(smb.subnum==INVALID_SUB)
-			bputs("MAIL");
+			return("MAIL");
 		else if(smb.subnum<cfg.total_subs)
-			bputs(cfg.sub[smb.subnum]->code);
+			return(cfg.sub[smb.subnum]->code);
+		return(nulstr);
 	}
-	else if(!strcmp(sp,"SMB_SUB_NUM")) {
+	if(!strcmp(sp,"SMB_SUB_NUM")) {
 		if(smb.subnum!=INVALID_SUB && smb.subnum<cfg.total_subs) {
 			uint ugrp;
 			for(ugrp=0;ugrp<usrgrps;ugrp++)
@@ -801,12 +979,10 @@ int sbbs_t::syncatcodes(char *sp, int len)
 			for(usub=0;usub<usrsubs[ugrp];usub++)
 				if(usrsub[ugrp][usub]==smb.subnum)
 					break;
-			bprintf("%u",usub+1);
+			sprintf(str,"%u",usub+1);
 		}
+		return(str);
 	}
-	
-	else return(0);
-
-	return(len);
+	return(NULL);
 }
 

@@ -216,7 +216,7 @@ char sbbs_t::putmsg(char HUGE16 *str, long mode)
 			if(str[l]==ESC && str[l+1]=='$')    /* WIP command */
 				lncntr=0;
 			if(str[l]=='@' && !(mode&P_NOATCODES)) {
-				i=atcodes((char *)str+l);	/* returns 0 if not valid @ code */
+				i=show_atcode((char *)str+l);	/* returns 0 if not valid @ code */
 				l+=i;					/* i is length of code string */
 				if(i)					/* if valid string, go to top */
 					continue; }
