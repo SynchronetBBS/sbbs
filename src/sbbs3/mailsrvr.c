@@ -1422,13 +1422,6 @@ static void smtp_thread(void* arg)
 					tp=strrchr(p,'>');
 					if(tp) *tp=0;
 				}
-#if 0
-				if(!nettype) {
-					nettype=NET_INTERNET;
-					smb_hfield(&msg, RECIPIENTNETTYPE, nettype, &nettype);
-					smb_hfield(&msg, RECIPIENTNETADDR, (ushort)strlen(p), p);
-				}
-#endif
 				continue;
 			}
 			if(!strnicmp(buf, "REPLY-TO:",9)) {

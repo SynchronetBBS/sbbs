@@ -101,11 +101,7 @@ bool sbbs_t::email(int usernumber, char *top, char *subj, long mode)
 		msgattr|=MSG_KILLREAD;
 
 	sprintf(msgpath,"%sINPUT.MSG", cfg.node_dir);
-	#if 0	// Removed 01/06/00 (for external editor information)
-	sprintf(str2,"%s #%u",username(&cfg,usernumber,tmp),usernumber);
-	#else
 	username(&cfg,usernumber,str2);
-	#endif
 	if(!writemsg(msgpath,top,title,mode,0,str2)) {
 		bputs(text[Aborted]);
 		return(false); }

@@ -342,7 +342,7 @@ bool sbbs_t::js_initcx()
 			,JSPROP_ENUMERATE))
 			break;
 
-#if 0	/* Server Object */
+#if 0	/* Server Object? */
 		jsval	val;
 		char	ver[256];
 		sprintf(ver,"%s v%s",TELNET_SERVER,VERSION);
@@ -1662,14 +1662,6 @@ bool sbbs_t::init()
 		return(false); 
 	}
 
-#if 0
-	sprintf(str,"%s%s",cfg.ctrl_dir,"node.exb");
-	if((node_ext_fp=fnopen(&node_ext,str,O_DENYNONE|O_RDWR|O_CREAT))==NULL) {
-		errormsg(WHERE, ERR_FDOPEN, str, cfg.node_num);
-		return(false); 
-	}
-#endif
-
 	if(cfg.node_num) {
 		sprintf(str,"%snode.log",cfg.node_dir);
 		if((logfile_fp=fopen(str,"a+b"))==NULL) {
@@ -1890,15 +1882,6 @@ bool sbbs_t::init()
 
 	reset_logon_vars();
 
-#if 0
-    lprintf("temp_dir: %s", cfg.temp_dir);
-    lprintf("node_dir: %s", cfg.node_dir);
-    lprintf("ctrl_dir: %s", cfg.ctrl_dir);
-    lprintf("data_dir: %s", cfg.data_dir);
-    lprintf("text_dir: %s", cfg.text_dir);
-    lprintf("exec_dir: %s", cfg.exec_dir);
-#endif
-
 	online=ON_REMOTE;
 
 	return(true);
@@ -1935,16 +1918,6 @@ sbbs_t::~sbbs_t()
 		RingBufDispose(&outbuf);
 
 	/* Close all open files */
-#if 0	/* old way, not compatible with Linux Samba client */
-	if(nodefile_fp!=NULL) {	
-		fclose(nodefile_fp);
-		nodefile_fp=NULL;
-	}
-	if(node_ext_fp!=NULL) {
-		fclose(node_ext_fp);
-		node_ext_fp=NULL;
-	}
-#else
 	if(nodefile!=-1) {
 		close(nodefile);
 		nodefile=-1;
@@ -1953,7 +1926,6 @@ sbbs_t::~sbbs_t()
 		close(node_ext);
 		node_ext=-1;
 	}
-#endif
 	if(logfile_fp!=NULL) {
 		fclose(logfile_fp);
 		logfile_fp=NULL;
@@ -2239,13 +2211,9 @@ int sbbs_t::incom(void)
 	if(!RingBufRead(&inbuf, &ch, 1))
 		return(NOINP);
 
-	if(rio_abortable && ch==3) { 		/* Ctrl-C */
-#if 0 /* moved into input_thread */
-    	lprintf("Node %d Ctrl-C hit",cfg.node_num);
-		sys_status|=SS_ABORT;
-		rioctl(IOFO);
-#endif
-		return(NOINP); }
+	if(rio_abortable && ch==CTRL_C)
+		return(NOINP); 
+
 	return(ch);
 }
 
@@ -2507,11 +2475,6 @@ void sbbs_t::logoffstats()
     char str[256];
     int i,file;
     stats_t stats;
-
-#if 0
-	if(thisnode.status==NODE_QUIET)       /* Quiet users aren't counted */
-		return;
-#endif
 
 	if(REALSYSOP && !(cfg.sys_misc&SM_SYSSTAT))
 		return;

@@ -717,10 +717,6 @@ BOOL read_msgs_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 	#endif
 		fread(str,1,LEN_DIR+1,instream);   /* substitute EchoMail path */
 		offset+=LEN_DIR+1;
-	#if 0 /* ndef SBBS */
-		backslash(str);
-		strcpy(cfg->sub[i]->echopath,str);
-	#endif
 		get_int(cfg->sub[i]->faddr,instream);			/* FidoNet address */
 
 		get_int(cfg->sub[i]->maxmsgs,instream);

@@ -37,10 +37,6 @@
 #include "sbbsdefs.h"
 #include "smblib.h"
 #include "scfglib.h"
-#if 0	// v2.x
-	#define GLOBAL extern	/* turn vars.c and scfgvars.c files into headers */
-	#include "scfgvars.c"
-#endif
 #include "post.h"
 #include "lzh.h"
 #include "sbbsecho.h"
@@ -106,26 +102,6 @@ int delfile(char *filename)
 while(remove(filename) && i++<120)	/* Wait up to 60 seconds to delete file */
 	delay(500); 					/* for Win95 bug fix */
 return(i);
-}
-#endif
-
-/******************************************************************************
- This turns the DOS file date garbage into a long
-******************************************************************************/
-#if 0 // v2.x
-long ddtol(ushort ftim, ushort fdat)
-{
-    struct date date;
-    struct time time;
-
-    date.da_year=((fdat&0xfe00)>>9)+1980;
-    date.da_mon=((fdat&0x01e0)>>5);
-    date.da_day=(fdat&0x001f);
-    time.ti_hour=((ftim&0xf800)>>11);
-    time.ti_min=((ftim&0x07e0)>>5);
-    time.ti_sec=((ftim&0x001f)<<1);
-    time.ti_hund=0;
-    return(dostounix(&date,&time));
 }
 #endif
 
@@ -1274,14 +1250,6 @@ char *process_areafix(faddr_t addr,char HUGE16 *inbuf,char *password)
 		if(*p)
 			p++; }				/* Skip CR */
 
-	#if 0 // Removed 11/05/95
-	while(*p && (tp=strchr(p,'\1'))!=NULL) {    /* Remove ^A kludge lines */
-		p=tp;
-		while(*p && *p!=CR) p++; }
-	if(*p==CR)
-		p++;
-	#endif
-
 	if(((tp=strstr(p,"---\r"))!=NULL || (tp=strstr(p,"--- "))!=NULL) &&
 		(*(tp-1)==10 || *(tp-1)==13))
 		*tp=0;
@@ -1490,68 +1458,69 @@ char attachment(char *bundlename,faddr_t dest,char cleanup)
 		return(0); }
 									/* Get attach names from existing MSGs */
 	sprintf(str,"%s*.msg",scfg.netmail_dir);
-	glob(str,0,NULL,&g);
-	for(f=0;f<g.gl_pathc;f++) {
+	if(glob(str,0,NULL,&g)==0) {
+		for(f=0;f<g.gl_pathc;f++) {
 
-		path=g.gl_pathv[f];
+			path=g.gl_pathv[f];
 
-		if((fidomsg=fnopen(&fmsg,path,O_RDWR))==NULL) {
-			printf("\7ERROR line %d opening %s\n",__LINE__,path);
-			logprintf("ERROR line %d opening %s %s",__LINE__,path
-				,sys_errlist[errno]);
-			continue; }
-		if(filelength(fmsg)<sizeof(fmsghdr_t)) {
-			printf("\7ERROR %s has invalid length of %u bytes\n",path
-				,filelength(fmsg));
-			logprintf("ERROR line %d %s has invalid length of %u bytes"
-				,__LINE__,path,filelength(fmsg));
+			if((fidomsg=fnopen(&fmsg,path,O_RDWR))==NULL) {
+				printf("\7ERROR line %d opening %s\n",__LINE__,path);
+				logprintf("ERROR line %d opening %s %s",__LINE__,path
+					,sys_errlist[errno]);
+				continue; }
+			if(filelength(fmsg)<sizeof(fmsghdr_t)) {
+				printf("\7ERROR %s has invalid length of %u bytes\n",path
+					,filelength(fmsg));
+				logprintf("ERROR line %d %s has invalid length of %u bytes"
+					,__LINE__,path,filelength(fmsg));
+				fclose(fidomsg);
+				continue; }
+			if(fread(&hdr,sizeof(fmsghdr_t),1,fidomsg)!=1) {
+				fclose(fidomsg);
+				printf("\7ERROR reading %u bytes from %s"
+					,sizeof(fmsghdr_t),path);
+				logprintf("ERROR line %d reading %u bytes from %s"
+					,__LINE__,sizeof(fmsghdr_t),path);
+				continue; }
 			fclose(fidomsg);
-			continue; }
-		if(fread(&hdr,sizeof(fmsghdr_t),1,fidomsg)!=1) {
-			fclose(fidomsg);
-			printf("\7ERROR reading %u bytes from %s"
-				,sizeof(fmsghdr_t),path);
-			logprintf("ERROR line %d reading %u bytes from %s"
-				,__LINE__,sizeof(fmsghdr_t),path);
-			continue; }
-		fclose(fidomsg);
-		if(!(hdr.attr&FIDO_FILE))		/* Not a file attach */
-			continue;
-		num_mfncrc++;
-		if((p=strrchr(hdr.subj,'\\'))!=NULL)
-			p++;
-		else
-			p=hdr.subj;
-		if((mfncrc=(long *)REALLOC(mfncrc,num_mfncrc*sizeof(long)))==NULL) {
-			printf("ERROR allocating %lu bytes for bundle name crc.\n"
-				,num_mfncrc*sizeof(long));
-			logprintf("ERROR line %d allocating %lu for bundle name crc"
-				,__LINE__,num_mfncrc*sizeof(long));
-			continue; }
-		mfncrc[num_mfncrc-1]=crc32(strupr(p)); }
-
-		while(!feof(stream)) {
-			if(!fread(&attach,1,sizeof(attach_t),stream))
-				break;
-			sprintf(str,"%s%s",cfg.outbound,attach.fname);
-			if(!fexist(str))
+			if(!(hdr.attr&FIDO_FILE))		/* Not a file attach */
 				continue;
-			fncrc=crc32(strupr(attach.fname));
-			for(crcidx=0;crcidx<num_mfncrc;crcidx++)
-				if(mfncrc[crcidx]==fncrc)
+			num_mfncrc++;
+			if((p=strrchr(hdr.subj,'\\'))!=NULL)
+				p++;
+			else
+				p=hdr.subj;
+			if((mfncrc=(long *)REALLOC(mfncrc,num_mfncrc*sizeof(long)))==NULL) {
+				printf("ERROR allocating %lu bytes for bundle name crc.\n"
+					,num_mfncrc*sizeof(long));
+				logprintf("ERROR line %d allocating %lu for bundle name crc"
+					,__LINE__,num_mfncrc*sizeof(long));
+				continue; }
+			mfncrc[num_mfncrc-1]=crc32(strupr(p)); }
+
+			while(!feof(stream)) {
+				if(!fread(&attach,1,sizeof(attach_t),stream))
 					break;
-			if(crcidx==num_mfncrc)
-				if(create_netmail(0,str,"\1FLAGS KFS\r",attach.dest,1))
-					error=1; }
-		if(!error)				/* don't truncate if an error occured */
-			chsize(file,0L);
-		fclose(stream);
-		if(num_mfncrc)
-			FREE(mfncrc);
+				sprintf(str,"%s%s",cfg.outbound,attach.fname);
+				if(!fexist(str))
+					continue;
+				fncrc=crc32(strupr(attach.fname));
+				for(crcidx=0;crcidx<num_mfncrc;crcidx++)
+					if(mfncrc[crcidx]==fncrc)
+						break;
+				if(crcidx==num_mfncrc)
+					if(create_netmail(0,str,"\1FLAGS KFS\r",attach.dest,1))
+						error=1; }
+			if(!error)				/* don't truncate if an error occured */
+				chsize(file,0L);
+			fclose(stream);
+			if(num_mfncrc)
+				FREE(mfncrc);
+			globfree(&g);
+			return(0); 
+		}
 		globfree(&g);
-		return(0); 
 	}
-	globfree(&g);
 
 	while(!feof(stream)) {
 		if(!fread(&attach,1,sizeof(attach_t),stream))
@@ -1741,41 +1710,6 @@ long lputs(char *str)
 	return(fputs(tmp,stdout));
 }
 
-/******************************************/
-/* CRC-16 routines required for SMB index */
-/******************************************/
-#if 0
-/***********************************************)**********************)*****/
-/* Updates 16-bit "rcrc" with character 'ch'                                */
-/****************************************************************************/
-void ucrc16(uchar ch, ushort *rcrc) {
-	ushort i, cy;
-    uchar nch=ch;
- 
-	for (i=0; i<8; i++) {
-		cy=*rcrc & 0x8000;
-		*rcrc<<=1;
-		if (nch & 0x80) *rcrc |= 1;
-		nch<<=1;
-		if (cy) *rcrc ^= 0x1021; }
-}
-
-/****************************************************************************/
-/* Returns 16-crc of string (not counting terminating NULL) 				*/
-/****************************************************************************/
-ushort crc16(char *str)
-{
-	int 	i=0;
-	ushort	crc=0;
-
-	ucrc16(0,&crc);
-	while(str[i])
-		ucrc16(str[i++],&crc);
-	ucrc16(0,&crc);
-	ucrc16(0,&crc);
-	return(crc);
-}
-#endif
 /****************************************************************************/
 /* Performs printf() through local assembly routines                        */
 /* Called from everywhere                                                   */
@@ -1793,78 +1727,6 @@ int lprintf(char *fmat, ...)
 	return(chcount);
 }
 
-#if 0
-/****************************************************************************/
-/* Reads the data for node number 'number' into the structure 'node'        */
-/* from NODE.DAB															*/
-/* if lockit is non-zero, locks this node's record. putnodedat() unlocks it */
-/****************************************************************************/
-void getnodedat(uint number, node_t *node, char lockit)
-{
-	int count=0;
-
-	number--;	/* make zero based */
-	while(count<LOOP_NODEDAB) {
-		lseek(nodefile,(long)number*sizeof(node_t),SEEK_SET);
-		if(lockit
-			&& lock(nodefile,(long)number*sizeof(node_t),sizeof(node_t))==-1) {
-			count++;
-			continue; }
-		if(read(nodefile,node,sizeof(node_t))==sizeof(node_t))
-			break;
-		count++; }
-	if(count==LOOP_NODEDAB) {
-		printf("\7ERROR unlocking and reading NODE.DAB\n");
-		logprintf("ERROR line %d unlocking and reading NODE.DAB",__LINE__); }
-}
-/****************************************************************************/
-/* Write the data from the structure 'node' into NODE.DAB  					*/
-/* getnodedat(num,&node,1); must have been called before calling this func  */
-/*          NOTE: ------^   the indicates the node record has been locked   */
-/****************************************************************************/
-void putnodedat(uint number, node_t node)
-{
-	number--;	/* make zero based */
-	lseek(nodefile,(long)number*sizeof(node_t),SEEK_SET);
-	if(write(nodefile,&node,sizeof(node_t))!=sizeof(node_t)) {
-		unlock(nodefile,(long)number*sizeof(node_t),sizeof(node_t));
-		printf("\7ERROR writing NODE.DAB for node %u\n",number+1);
-		logprintf("ERROR line %d writing NODE.DAB for node %u",__LINE__,number+1);
-		return; }
-	unlock(nodefile,(long)number*sizeof(node_t),sizeof(node_t));
-}
-
-/****************************************************************************/
-/* Creates a short message for 'usernumber' than contains 'strin'			*/
-/****************************************************************************/
-void putsmsg(int usernumber, char *strin)
-{
-	char str[256];
-	int file,i;
-    node_t node;
-
-	sprintf(str,"%sMSGS\\%4.4u.MSG",scfg.data_dir,usernumber);
-	if((file=nopen(str,O_WRONLY|O_CREAT|O_APPEND))==-1) {
-		printf("\7ERROR line %d opening/creating %s for create/append access\n",__LINE__,str);
-		logprintf("ERROR line %d opening/creating %s",__LINE__,str);
-		return; }
-	i=strlen(strin);
-	if(write(file,strin,i)!=i) {
-		close(file);
-		printf("\7ERROR writing %u bytes to %s\n",i,str);
-		logprintf("ERROR line %d writing to %s",__LINE__,str);
-		return; }
-	close(file);
-	for(i=1;i<=scfg.sys_nodes;i++) {		/* flag node if user on that msg waiting */
-		getnodedat(i,&node,0);
-		if(node.useron==usernumber
-			&& (node.status==NODE_INUSE || node.status==NODE_QUIET)
-			&& !(node.misc&NODE_MSGW)) {
-			getnodedat(i,&node,1);
-			node.misc|=NODE_MSGW;
-			putnodedat(i,node); } }
-}
-#endif
 /****************************************************************************/
 /* Converts an ASCII Hex string into an ulong                       */
 /****************************************************************************/
@@ -1950,10 +1812,6 @@ int mv(char *src, char *dest, char copy)
 		fread(buf,chunk,1,inp);
 		fwrite(buf,chunk,1,outp);
 		l+=chunk; }
-#if 0
-	_dos_getftime(ind,&fdate,&ftime);
-	_dos_setftime(outd,fdate,ftime);
-#endif
 	fclose(inp);
 	fclose(outp);
 	if(!copy && delfile(src)) {
@@ -4148,8 +4006,7 @@ int main(int argc, char **argv)
 		printf("No areas defined!\n");
 		bail(1); }
 
-	#if 0
-		/* AREAS.BBS DEBUG */
+	#if 0	/* AREAS.BBS DEBUG */
 		for(i=0;i<cfg.areas;i++) {
 			printf("%4u: %-8s"
 				,i+1

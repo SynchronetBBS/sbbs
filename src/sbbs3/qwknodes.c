@@ -87,33 +87,6 @@ ulong _crc32(char *str)
 	return(crc);
 }
 
-#if 0
-/****************************************************************************/
-/* Converts unix time format (long - time_t) into a char str MM/DD/YY		*/
-/****************************************************************************/
-char *unixtodstr(time_t unix, char *str)
-{
-	struct date date;
-	struct time curtime;
-
-if(!unix)
-	strcpy(str,"00/00/00");
-else {
-	unixtodos(unix,&date,&curtime);
-	if((unsigned)date.da_mon>12) {	  /* DOS leap year bug */
-		date.da_mon=1;
-		date.da_year++; }
-	if((unsigned)date.da_day>31)
-		date.da_day=1;
-	if(sys_misc&SM_EURODATE)
-		sprintf(str,"%02u/%02u/%02u",date.da_day,date.da_mon
-			,date.da_year>=2000 ? date.da_year-2000 : date.da_year-1900);
-	else
-		sprintf(str,"%02u/%02u/%02u",date.da_mon,date.da_day
-			,date.da_year>=2000 ? date.da_year-2000 : date.da_year-1900); }
-return(str);
-}
-#else
 /****************************************************************************/
 /* Converts unix time format (long - time_t) into a char str MM/DD/YY		*/
 /****************************************************************************/
@@ -142,7 +115,6 @@ else {
 			,TM_YEAR(tm->tm_year)); }
 return(str);
 }
-#endif
 
 /****************************************************************************/
 /* Puts a backslash on path strings 										*/
@@ -220,7 +192,7 @@ void stripctrla(uchar *str)
 	int i,j;
 
 for(i=j=0;str[i];i++) {
-	if(str[i]==1)
+	if(str[i]==CTRL_A)
 		i++;
 	else
 		out[j++]=str[i]; }

@@ -111,11 +111,7 @@ void sbbs_t::useredit(int usernumber, int local)
 		bprintf(text[UeditLocationZipcode],user.location,user.zipcode);
 		bprintf(text[UeditNoteHandle],user.note,user.handle);
 		bprintf(text[UeditComputerModem],user.comp,user.modem);
-	#if 0	// Always show netmail address?
-		if(user.misc&NETMAIL)
-	#else
 		if(user.netmail[0])
-	#endif
 			bprintf(text[UserNetMail],user.netmail);
 
 		sprintf(str,"%suser/%4.4u.msg", cfg.data_dir,user.number);

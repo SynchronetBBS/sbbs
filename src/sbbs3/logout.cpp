@@ -72,18 +72,8 @@ void sbbs_t::logout()
 
 	if(useron.rest&FLAG('G')) {        /* Reset guest's msg scan cfg */
 		putuserrec(&cfg,useron.number,U_NAME,LEN_NAME,nulstr);		
-#if 0 // no longer necessary 
-		for(i=0;i<cfg.total_subs;i++) {
-			if(cfg.sub[i]->misc&SUB_NSDEF)
-				sub_cfg[i]|=SUB_CFG_NSCAN;
-			else
-				sub_cfg[i]&=~SUB_CFG_NSCAN;
-			if(cfg.sub[i]->misc&SUB_SSDEF)
-				sub_cfg[i]|=SUB_CFG_SSCAN;
-			else
-				sub_cfg[i]&=~SUB_CFG_SSCAN; }
-#endif
-		batdn_total=0; }
+		batdn_total=0; 
+	}
 
 	batch_create_list();
 

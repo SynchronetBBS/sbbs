@@ -122,10 +122,6 @@ bool sbbs_t::pack_rep(uint hubnum)
 	if(mailmsgs)
 		FREE(mail);
 
-	#if 0
-	useron.number=1;
-	getuserdat(&useron);
-	#endif
 	for(i=0;i<cfg.qhub[hubnum]->subs;i++) {
 		j=cfg.qhub[hubnum]->sub[i]; 			/* j now equals the real sub num */
 		msgs=getlastmsg(j,&last,0);
