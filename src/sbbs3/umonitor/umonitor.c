@@ -494,9 +494,9 @@ void node_toggles(int nodenum)  {
 				break;
 
 			case 5:	/* Down */
-				if(node.status == NODE_INUSE)
+				if(node.status == NODE_INUSE || node.status==NODE_LOGON)
 					node.misc ^= NODE_DOWN;
-				if(node.status != NODE_INUSE) {
+				else {
 					if(node.status!=NODE_OFFLINE)
 						node.status=NODE_OFFLINE;
 					else
