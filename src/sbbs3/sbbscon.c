@@ -738,14 +738,19 @@ static void terminate(void)
 {
 	ulong count=0;
 
-	bbs_terminate();
-	ftp_terminate();
+	if(bbs_running)
+		bbs_terminate();
+	if(ftp_running)
+		ftp_terminate();
 #ifndef NO_WEB_SERVER
-	web_terminate();
+	if(web_running)
+		web_terminate();
 #endif
-	mail_terminate();
+	if(mail_running)
+		mail_terminate();
 #ifndef NO_SERVICES
-	services_terminate();
+	if(services_running)
+		services_terminate();
 #endif
 
 	while(bbs_running || ftp_running || web_running || mail_running || services_running)  {
@@ -883,7 +888,8 @@ void _sighandler_rerun(int sig)
 
 static void handle_sigs(void)
 {
-	int			sig;
+	int			i;
+	int			sig=0;
 	sigset_t	sigs;
 
 	thread_up(NULL,TRUE,TRUE);
@@ -909,8 +915,11 @@ static void handle_sigs(void)
 	/* sigaddset(&sigs,SIGPIPE); */
 	pthread_sigmask(SIG_BLOCK,&sigs,NULL);
 	while(1)  {
-		sigwait(&sigs,&sig);    /* wait here until signaled */
-		lprintf(LOG_NOTICE,"     Got signal (%d)",sig);
+		if((i=sigwait(&sigs,&sig))!=0) {   /* wait here until signaled */
+			lprintf(LOG_ERR,"     !sigwait FAILURE (%d), i);
+			continue;
+		}
+		lprintf(LOG_NOTICE,"     Got signal (%d)", sig);
 		switch(sig)  {
 			/* QUIT-type signals */
 			case SIGINT:
@@ -1605,7 +1614,7 @@ int main(int argc, char** argv)
 	}
 	
 	else if(new_uid_name[0]==0)   /*  check the user arg, if we have uid 0 */
-		lputs(LOG_WARNING,"Warning: No user account specified, running as root.");
+		lputs(LOG_WARNING,"WARNING: No user account specified, running as root.");
 	
 	else 
 	{
