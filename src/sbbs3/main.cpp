@@ -272,9 +272,18 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 	}
 }
 
+static JSClass js_server_class = {
+        "TelnetServer",0, 
+        JS_PropertyStub,JS_PropertyStub,JS_PropertyStub,JS_PropertyStub, 
+        JS_EnumerateStub,JS_ResolveStub,JS_ConvertStub,JS_FinalizeStub 
+}; 
+
 bool sbbs_t::js_initcx()
 {
-	char node[128];
+	char		node[128];
+	char		ver[256];
+	jsval		val;
+	JSObject*	server;
 
     if(cfg.node_num)
     	sprintf(node,"Node %d",cfg.node_num);
@@ -322,6 +331,21 @@ bool sbbs_t::js_initcx()
 		/* Socket Class */
 		if(js_CreateSocketClass(js_cx, js_glob)==NULL)
 			break;
+
+		/* Server Object */
+		if((server=JS_DefineObject(js_cx, js_glob, "server", &js_server_class
+			,NULL,0))==NULL)
+			break;
+
+		sprintf(ver,"%s v%s%c",TELNET_SERVER,VERSION,REVISION);
+		val = STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, ver));
+		if(!JS_SetProperty(js_cx, server, "version", &val))
+			break;
+
+		val = STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, bbs_ver()));
+		if(!JS_SetProperty(js_cx, server, "version_detail", &val))
+			break;
+
 
 		success=true;
 
@@ -419,6 +443,7 @@ int lprintf(char *fmt, ...)
 
     if(startup==NULL || startup->lputs==NULL)
         return(0);
+
     va_start(argptr,fmt);
     vsprintf(sbuf,fmt,argptr);
     va_end(argptr);
@@ -432,6 +457,7 @@ int eprintf(char *fmt, ...)
 
     if(startup==NULL || startup->event_log==NULL)
         return(0);
+
     va_start(argptr,fmt);
     vsprintf(sbuf,fmt,argptr);
     va_end(argptr);
