@@ -1230,7 +1230,7 @@ static ulong rblchk(SOCKET sock, DWORD mail_addr_n, const char* rbl_addr)
 	return(dnsbl_result.s_addr);
 }
 
-static ulong dns_blacklisted(SOCKET sock, IN_ADDR addr, char* host_name, char* list)
+static ulong dns_blacklisted(SOCKET sock, IN_ADDR addr, char* host_name, char* list, char* dnsbl_ip)
 {
 	char	fname[MAX_PATH+1];
 	char	str[256];
@@ -1269,6 +1269,8 @@ static ulong dns_blacklisted(SOCKET sock, IN_ADDR addr, char* host_name, char* l
 		found = rblchk(sock, addr.s_addr, p);
 	}
 	fclose(fp);
+	if(found)
+		SAFECOPY(dnsbl_ip, inet_ntoa(addr));
 
 	return(found);
 }
@@ -1444,7 +1446,7 @@ static int parse_header_field(char* buf, smbmsg_t* msg, ushort* type)
 	return smb_hfield(msg, *type=RFC822HEADER, (ushort)strlen(buf), buf);
 }
 
-static int chk_received_hdr(SOCKET socket,const char *buf,IN_ADDR *dnsbl_result)
+static int chk_received_hdr(SOCKET socket,const char *buf,IN_ADDR *dnsbl_result, char *dnsbl, char *dnsbl_ip)
 {
 	char		host_name[128];
 	IN_ADDR		check_addr;
@@ -1452,7 +1454,6 @@ static int chk_received_hdr(SOCKET socket,const char *buf,IN_ADDR *dnsbl_result)
 	char		ip[16];
 	char		*p;
 	char		*p2;
-	char		dnsbl[256];
 
 	fromstr=(char *)MALLOC(strlen(buf)+1);
 	if(fromstr==NULL)
@@ -1484,7 +1485,7 @@ static int chk_received_hdr(SOCKET socket,const char *buf,IN_ADDR *dnsbl_result)
 		check_addr.s_addr = inet_addr(ip);
 		if(startup->options&MAIL_OPT_DNSBL_DEBUG)
 			lprintf("%04d DEBUG checking %s (%s)",socket,host_name,ip);
-		if((dnsbl_result->s_addr=dns_blacklisted(socket,check_addr,host_name,dnsbl)))
+		if((dnsbl_result->s_addr=dns_blacklisted(socket,check_addr,host_name,dnsbl,dnsbl_ip)))
 				lprintf("%04d !SMTP BLACKLISTED SERVER on %s: %s [%s] = %s"
 					,socket, dnsbl, host_name, ip, inet_ntoa(*dnsbl_result));
 	} while(0);
@@ -1518,6 +1519,7 @@ static void smtp_thread(void* arg)
 	char		host_name[128];
 	char		host_ip[64];
 	char		dnsbl[256];
+	char		dnsbl_ip[64];
 	char*		telegram_buf;
 	char*		msgbuf;
 	char		challenge[256];
@@ -1674,16 +1676,16 @@ static void smtp_thread(void* arg)
 	active_clients++, update_clients();
 
 	/*  SPAM Filters (mail-abuse.org) */
-	dnsbl_result.s_addr = dns_blacklisted(socket,smtp.client_addr.sin_addr,host_name,dnsbl);
+	dnsbl_result.s_addr = dns_blacklisted(socket,smtp.client_addr.sin_addr,host_name,dnsbl,dnsbl_ip);
 	if(dnsbl_result.s_addr) {
 		lprintf("%04d !SMTP BLACKLISTED SERVER on %s: %s [%s] = %s"
-			,socket, dnsbl, host_name, host_ip, inet_ntoa(dnsbl_result));
+			,socket, dnsbl, host_name, dnsbl_ip, inet_ntoa(dnsbl_result));
 		if(startup->options&MAIL_OPT_DNSBL_REFUSE) {
 			sprintf(str,"Listed on %s as %s", dnsbl, inet_ntoa(dnsbl_result));
-			spamlog(&scfg, "SMTP", "SESSION REFUSED", str, host_name, host_ip, NULL, NULL);
+			spamlog(&scfg, "SMTP", "SESSION REFUSED", str, host_name, dnsbl_ip, NULL, NULL);
 			sockprintf(socket
 				,"550 Mail from %s refused due to listing at %s"
-				,host_ip, dnsbl);
+				,dnsbl_ip, dnsbl);
 			mail_close_socket(socket);
 			lprintf("%04d !SMTP REFUSED SESSION from blacklisted server"
 				,socket);
@@ -1978,7 +1980,7 @@ static void smtp_thread(void* arg)
 					for(i=0;!dnsbl_result.s_addr && i<msg.total_hfields;i++)  {
 						if(msg.hfield[i].type == RFC822HEADER
 							&& strnicmp(msg.hfield_dat[i],"Received:",9)==0)  {
-							if(chk_received_hdr(socket,msg.hfield_dat[i],&dnsbl_result))
+							if(chk_received_hdr(socket,msg.hfield_dat[i],&dnsbl_result,dnsbl,dnsbl_ip))
 								break;
 						}
 					}
@@ -1989,7 +1991,7 @@ static void smtp_thread(void* arg)
 							,socket);
 						sprintf(str,"Listed on %s as %s", dnsbl, inet_ntoa(dnsbl_result));
 						spamlog(&scfg, "SMTP", "IGNORED"
-							,str, host_name, host_ip, rcpt_addr, reverse_path);
+							,str, host_name, dnsbl_ip, rcpt_addr, reverse_path);
 						/* pretend we received it */
 						sockprintf(socket,ok_rsp);
 						continue;
@@ -1997,7 +1999,7 @@ static void smtp_thread(void* arg)
 					/* tag message as spam */
 					if(startup->dnsbl_hdr[0]) {
 						sprintf(str,"%s: %s is listed on %s as %s"
-							,startup->dnsbl_hdr, host_ip
+							,startup->dnsbl_hdr, dnsbl_ip
 							,dnsbl, inet_ntoa(dnsbl_result));
 						smb_hfield(&msg,RFC822HEADER,strlen(str),str);
 						lprintf("%04d !SMTP TAGGED MAIL HEADER from blacklisted server with: %s"
@@ -2005,7 +2007,7 @@ static void smtp_thread(void* arg)
 					}
 					if(startup->dnsbl_hdr[0] || startup->dnsbl_tag[0]) {
 						sprintf(str,"Listed on %s as %s", dnsbl, inet_ntoa(dnsbl_result));
-						spamlog(&scfg, "SMTP", "TAGGED", str, host_name, host_ip, rcpt_addr, reverse_path);
+						spamlog(&scfg, "SMTP", "TAGGED", str, host_name, dnsbl_ip, rcpt_addr, reverse_path);
 					}
 				}
 
