@@ -124,6 +124,7 @@ bool sbbs_t::answer()
 	i=l=0;
 	tos=1;
 	strcpy(str,VERSION_NOTICE);
+	strcat(str,"  ");
 	strcat(str,COPYRIGHT_NOTICE);
 	strip_ctrl(str);
 	center(str);
