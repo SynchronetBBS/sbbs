@@ -49,7 +49,8 @@
 int sendfilesocket(int sock, int file, long *offset, long count)
 {
 /* sendfile() on Linux may or may not work with non-blocking sockets ToDo */
-#if defined(__FreeBSD__)
+#if defined(__FreeBSD__) && 0
+#warning FreeBSD sendfile may cause problems!
 	off_t	total=0;
 	off_t	wr=0;
 	int		i;
