@@ -52,7 +52,7 @@ LD	:=	ld
 #
 # Compiler command-line flags.
 #
-CFLAGS	+=	-O2 -g -L.
+CFLAGS	+=	-O2 -g -L. -I../xpdev
 # /MTd /Zi - for debug
 #
 #------------------------------------------------------------------------------
@@ -85,7 +85,7 @@ endif
 #
 # Define primary target.
 #
-all: ${LIBDIR}libODoors${SHLIB} ${LIBDIR}libODoors${STATICLIB}
+all: ${LIBDIR}libODoors${SHLIB} ${LIBDIR}libODoors${STATICLIB} ex_diag
 #
 #------------------------------------------------------------------------------
 #
@@ -155,6 +155,9 @@ ${LIBDIR}libODoors${STATICLIB} : ${OBJECTS}
 	
 ex_chat: ex_chat.c ${LIBDIR}libODoors${SHLIB}
 	$(CC) $(CFLAGS) ex_chat.c -o ex_chat -lODoors
+
+ex_diag: ex_diag.c ${LIBDIR}libODoors${SHLIB}
+	$(CC) $(CFLAGS) ex_diag.c -o ex_diag -lODoors
 
 #
 #------------------------------------------------------------------------------

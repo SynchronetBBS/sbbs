@@ -8,7 +8,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "opendoor.h"
+#include "OpenDoor.h"
+#include <genwrap.h>
 
 typedef enum
 {
