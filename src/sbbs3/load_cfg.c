@@ -37,10 +37,12 @@
 
 #include "sbbs.h"
 
+static void prep_cfg(scfg_t* cfg);
+
 /****************************************************************************/
 /* Initializes system and node configuration information and data variables */
 /****************************************************************************/
-BOOL DLLCALL load_cfg(scfg_t* cfg, char* text[])
+BOOL DLLCALL load_cfg(scfg_t* cfg, char* text[], BOOL prep)
 {
 	char	str[256],fname[13];
 	int		i;
@@ -48,7 +50,12 @@ BOOL DLLCALL load_cfg(scfg_t* cfg, char* text[])
 	FILE 	*instream;
 	read_cfg_text_t txt;
 
+	if(cfg->size!=sizeof(scfg_t))
+		return(FALSE);
+
 	free_cfg(cfg);	/* free allocated config parameters */
+
+	cfg->prepped=FALSE;	/* reset prepped flag */
 
 	memset(&txt,0,sizeof(txt));
 	txt.openerr=	"!ERROR: opening %s for read.";
@@ -112,7 +119,106 @@ BOOL DLLCALL load_cfg(scfg_t* cfg, char* text[])
     cfg->com_base=0xf;	/* All nodes use FOSSIL */
     cfg->com_port=1;	/* All nodes use "COM1" */
 
+	if(prep)
+		prep_cfg(cfg);
+
 	return(TRUE);
+}
+
+/****************************************************************************/
+/* Prepare configuration for run-time (resolve relative paths, etc)			*/
+/****************************************************************************/
+void prep_cfg(scfg_t* cfg)
+{
+	int i;
+
+	strlwr(cfg->text_dir);	/* temporary Unix-compatibility hack */
+	strlwr(cfg->temp_dir);	/* temporary Unix-compatibility hack */
+	strlwr(cfg->data_dir);	/* temporary Unix-compatibility hack */
+	strlwr(cfg->exec_dir);	/* temporary Unix-compatibility hack */
+
+	/* Fix-up paths */
+	prep_dir(cfg->ctrl_dir, cfg->data_dir);
+	prep_dir(cfg->ctrl_dir, cfg->exec_dir);
+	prep_dir(cfg->ctrl_dir, cfg->text_dir);
+
+	prep_dir(cfg->netmail_dir,cfg->data_dir);
+	prep_dir(cfg->echomail_dir,cfg->data_dir);
+	prep_dir(cfg->fidofile_dir,cfg->data_dir);
+
+	prep_path(cfg->netmail_sem);
+	prep_path(cfg->echomail_sem);
+	prep_path(cfg->inetmail_sem);
+
+	/* temporary hack for Unix compatibility */
+	strlwr(cfg->logon_mod);
+	strlwr(cfg->logoff_mod);
+	strlwr(cfg->newuser_mod);
+	strlwr(cfg->login_mod);
+	strlwr(cfg->logout_mod);
+	strlwr(cfg->sync_mod);
+	strlwr(cfg->expire_mod);
+
+	for(i=0;i<cfg->sys_nodes;i++) 
+		strlwr(cfg->node_path[i]); /* temporary Unix-compatibility hack */
+
+	for(i=0;i<cfg->total_subs;i++) {
+		strlwr(cfg->sub[i]->code); /* temporary Unix-compatibility hack */
+
+		if(!cfg->sub[i]->data_dir[0])	/* no data storage path specified */
+			sprintf(cfg->sub[i]->data_dir,"%ssubs",cfg->data_dir);
+		prep_dir(cfg->ctrl_dir, cfg->sub[i]->data_dir);
+
+		/* default QWKnet tagline */
+		if(!cfg->sub[i]->tagline[0])
+			strcpy(cfg->sub[i]->tagline,cfg->qnet_tagline);
+
+		/* default echomail semaphore */
+		if(!cfg->sub[i]->echomail_sem[0])
+			strcpy(cfg->sub[i]->echomail_sem,cfg->echomail_sem);
+
+		/* default origin line */
+		if(!cfg->sub[i]->origline[0])
+			strcpy(cfg->sub[i]->origline,cfg->origline);
+
+		prep_dir(cfg->ctrl_dir, cfg->sub[i]->echomail_sem);
+	}
+
+	for(i=0;i<cfg->total_dirs;i++) {
+		strlwr(cfg->dir[i]->code); 	/* temporary Unix-compatibility hack */
+
+		if(!cfg->dir[i]->data_dir[0])	/* no data storage path specified */
+			sprintf(cfg->dir[i]->data_dir,"%sdirs",cfg->data_dir);
+		prep_dir(cfg->ctrl_dir, cfg->dir[i]->data_dir);
+
+		if(!cfg->dir[i]->path[0])		/* no file storage path specified */
+            sprintf(cfg->dir[i]->path,"%sdirs/%s/",cfg->data_dir,cfg->dir[i]->code);
+		prep_dir(cfg->ctrl_dir, cfg->dir[i]->path);
+
+		prep_path(cfg->dir[i]->upload_sem);
+	}
+
+	for(i=0;i<cfg->total_shells;i++)
+		strlwr(cfg->shell[i]->code);	/* temporary Unix-compatibility hack */
+
+	for(i=0;i<cfg->total_gurus;i++)
+		strlwr(cfg->guru[i]->code); 	/* temporary Unix-compatibility hack */
+
+	for(i=0;i<cfg->total_txtsecs;i++)
+		strlwr(cfg->txtsec[i]->code); 	/* temporary Unix-compatibility hack */
+
+	for(i=0;i<cfg->total_xtrnsecs;i++)
+		strlwr(cfg->xtrnsec[i]->code); 	/* temporary Unix-compatibility hack */
+
+	for(i=0;i<cfg->total_xtrns;i++) {
+		prep_dir(cfg->ctrl_dir, cfg->xtrn[i]->path);
+	}
+	for(i=0;i<cfg->total_events;i++) {
+		strlwr(cfg->event[i]->code); 	/* temporary Unix-compatibility hack */
+		prep_dir(cfg->ctrl_dir, cfg->event[i]->dir);
+	}
+
+	cfg->prepped=TRUE;	/* data prepared for run-time, DO NOT SAVE TO DISK! */
 }
 
 void DLLCALL free_cfg(scfg_t* cfg)
@@ -298,3 +404,40 @@ BOOL read_attr_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 	return(TRUE);
 }
 
+void DLLEXPORT prep_dir(char* base, char* path)
+{
+#ifdef __unix__
+	char	*p;
+#endif
+	char	str[LEN_DIR*2];
+
+	if(!path[0])
+		return;
+	if(path[0]!='\\' && path[0]!='/' && path[1]!=':')           /* Relative to NODE directory */
+		sprintf(str,"%s%s",base,path);
+	else
+		strcpy(str,path);
+
+#ifdef __unix__				/* Change backslashes to forward slashes on Unix */
+	for(p=str;*p;p++)
+		if(*p=='\\') 
+			*p='/';
+	strlwr(str);	/* temporary hack */
+#endif
+
+	backslashcolon(str);
+	strcat(str,".");                // Change C: to C:. and C:\SBBS\ to C:\SBBS\.
+	_fullpath(path,str,LEN_DIR+1);	// Change C:\SBBS\NODE1\..\EXEC to C:\SBBS\EXEC
+	backslash(path);
+}
+
+void prep_path(char* path)
+{
+#ifdef __unix__				/* Change backslashes to forward slashes on Unix */
+	char	*p;
+
+	for(p=path;*p;p++)
+		if(*p=='\\') 
+			*p='/';
+#endif
+}
