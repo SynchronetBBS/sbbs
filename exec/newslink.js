@@ -273,6 +273,7 @@ for(i in area) {
 				,hdr.from
 				,antispam,hdr.from
 				,antispam,system.inetaddr));
+		writeln("To: " + hdr.to);
 		writeln("Subject: " + hdr.subject);
 		writeln("Message-ID: " + hdr.id);
 		writeln("Date: " + hdr.date);
@@ -373,6 +374,10 @@ for(i in area) {
 				line=line.slice(1);
 
 			switch(line.toLowerCase()) {
+				case "to":
+				case "apparently-to":
+					hdr.to=data;
+					break;
 				case "from":
 					hdr.from=data;
 					break;
