@@ -142,7 +142,7 @@ typedef struct {
 /* ASCIIZ char* parsing helper macros */
 #define SKIP_WHITESPACE(p)			while(*p && isspace(*p))			p++;
 #define FIND_WHITESPACE(p)			while(*p && !isspace(*p))			p++;
-#define SKIP_CHAR(p,c)				while(*p && *p==c)					p++;
+#define SKIP_CHAR(p,c)				while(*p==c)						p++;
 #define FIND_CHAR(p,c)				while(*p && *p!=c)					p++;
 #define SKIP_CHARSET(p,s)			while(*p && strchr(s,*p)!=NULL)		p++;
 #define FIND_CHARSET(p,s)			while(*p && strchr(s,*p)==NULL)		p++;
