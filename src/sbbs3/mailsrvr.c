@@ -831,11 +831,9 @@ static void pop3_thread(void* arg)
 					,socket, i, smb.last_error, msg.hdr.number);
 				break;
 			}
-			for(i=0;i<msg.hdr.total_dfields;i++)
-				if(msg.dfield[i].type==TEXT_BODY || msg.dfield[i].type==TEXT_TAIL)
-					bytes+=msg.dfield[i].length;
+			bytes+=smb_getmsgtxtlen(&msg);
 			smb_freemsgmem(&msg);
-		}			
+		}
 
 		if(l<msgs) {
 			sockprintf(socket,"-ERR message #%d: %d (%s)"
