@@ -291,7 +291,11 @@ int main(int argc, char **argv)
 		i=uifcinifltk(&uifc);  /* fltk */
 	else
 #endif
-#if defined(USE_DIALOG)
+#if defined(USE_UIFC32)	/* "New" UIFC */
+	if(!door_mode)
+		i=uifcini32(&uifc);  /* dialog */
+	else
+#elif defined(USE_DIALOG)
 	if(!door_mode)
 		i=uifcinid(&uifc);  /* dialog */
 	else
