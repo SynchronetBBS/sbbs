@@ -38,6 +38,7 @@
 #include <stdlib.h>		/* malloc */
 #include <string.h>		/* memset */
 
+#include "threadwrap.h"	/* GetCurrentThreadId */
 #include "msg_queue.h"
 
 msg_queue_t* msgQueueInit(msg_queue_t* q, long flags)
