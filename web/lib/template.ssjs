@@ -24,6 +24,7 @@
 
 template=new Object;
 load("html_inc/html_themes.ssjs");
+template.Theme_CSS_File=Themes[CurrTheme].css;
 
 function write_template(filename)  {
 	var inc=new File(system.text_dir+"html_templates"+'/'+Themes[CurrTheme].dir+'/'+filename);
