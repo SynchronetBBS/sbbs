@@ -39,13 +39,10 @@
 USERES("sbbsctrl.res");
 USEFORM("MainFormUnit.cpp", MainForm);
 USEFORM("CtrlPathDialogUnit.cpp", CtrlPathDialog);
-USEFORM("TelnetCfgDlgUnit.cpp", TelnetCfgDlg);
 USELIB("sbbs.lib");
 USELIB("mailsrvr.lib");
 USELIB("ftpsrvr.lib");
 USELIB("services.lib");
-USEFORM("MailCfgDlgUnit.cpp", MailCfgDlg);
-USEFORM("FtpCfgDlgUnit.cpp", FtpCfgDlg);
 USEFORM("TextFileEditUnit.cpp", TextFileEditForm);
 USEFORM("TelnetFormUnit.cpp", TelnetForm);
 USEFORM("FtpFormUnit.cpp", FtpForm);
@@ -65,6 +62,10 @@ USEFORM("PropertiesDlgUnit.cpp", PropertiesDlg);
 USEFORM("EventsFormUnit.cpp", EventsForm);
 USEFORM("ConfigWizardUnit.cpp", ConfigWizardForm);
 USEFORM("ServicesFormUnit.cpp", ServicesForm);
+USEFORM("TelnetCfgDlgUnit.cpp", TelnetCfgDlg);
+USEFORM("MailCfgDlgUnit.cpp", MailCfgDlg);
+USEFORM("FtpCfgDlgUnit.cpp", FtpCfgDlg);
+USEFORM("ServicesCfgDlgUnit.cpp", ServicesCfgDlg);
 //---------------------------------------------------------------------------
 #include "MainFormUnit.h"
 #include "SpyFormUnit.h"
