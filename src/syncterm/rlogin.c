@@ -13,7 +13,7 @@ int rlogin_recv(char *buffer, size_t buflen)
 	BOOL	rd;
 	BOOL	*rdptr=NULL;
 
-	if(rcvtimeo)
+	if(!rcvtimeo)
 		rdptr=&rd;
 	if(!socket_check(rlogin_socket, rdptr, NULL, 0))
 		return(-1);
