@@ -53,6 +53,21 @@ ftp_startup_t	ftp_startup;
 BOOL			mail_running=FALSE;
 mail_startup_t	mail_startup;
 
+static const char* prompt = "Command (?=Help): ";
+
+static lputs(char *str)
+{
+	static pthread_mutex_t mutex;
+
+	if(mutex==0) 
+		pthread_mutex_init(&mutex,NULL);
+
+	pthread_mutex_lock(&mutex);
+	printf("\r%*s\r%s\n",strlen(prompt),"",str);
+	printf(prompt);
+	pthread_mutex_unlock(&mutex);
+}
+
 /************************************************/
 /* Truncates white-space chars off end of 'str' */
 /************************************************/
@@ -80,26 +95,24 @@ static int bbs_lputs(char *str)
 	if(tm_p==NULL)
 		tstr[0]=0;
 	else
-		sprintf(tstr,"%d/%d %02d:%02d:%02d  BBS  "
+		sprintf(tstr,"%d/%d %02d:%02d:%02d "
 			,tm_p->tm_mon+1,tm_p->tm_mday
 			,tm_p->tm_hour,tm_p->tm_min,tm_p->tm_sec);
 
-	sprintf(logline,"%s%.*s",tstr,sizeof(logline)-2,str);
+	sprintf(logline,"%sbbs  %.*s",tstr,sizeof(logline)-2,str);
 	truncsp(logline);
-	printf("%s\n",logline);
+	lputs(logline);
 	
     return(strlen(logline)+1);
 }
 
 static void bbs_started(void)
 {
-	bbs_lputs("bbs_started");
 	bbs_running=TRUE;
 }
 
 static void bbs_terminated(int code)
 {
-	bbs_lputs("bbs_terminated");
 	bbs_running=FALSE;
 }
 
@@ -118,26 +131,24 @@ static int ftp_lputs(char *str)
 	if(tm_p==NULL)
 		tstr[0]=0;
 	else
-		sprintf(tstr,"%d/%d %02d:%02d:%02d  FTP  "
+		sprintf(tstr,"%d/%d %02d:%02d:%02d "
 			,tm_p->tm_mon+1,tm_p->tm_mday
 			,tm_p->tm_hour,tm_p->tm_min,tm_p->tm_sec);
 
-	sprintf(logline,"%s%.*s",tstr,sizeof(logline)-2,str);
+	sprintf(logline,"%sftp  %.*s",tstr,sizeof(logline)-2,str);
 	truncsp(logline);
-	printf("%s\n",logline);
+	lputs(logline);
 	
     return(strlen(logline)+1);
 }
 
 static void ftp_started(void)
 {
-	ftp_lputs("ftp_started");
 	ftp_running=TRUE;
 }
 
 static void ftp_terminated(int code)
 {
-	ftp_lputs("ftp_terminated");
 	ftp_running=FALSE;
 }
 
@@ -156,26 +167,24 @@ static int mail_lputs(char *str)
 	if(tm_p==NULL)
 		tstr[0]=0;
 	else
-		sprintf(tstr,"%d/%d %02d:%02d:%02d  MAIL "
+		sprintf(tstr,"%d/%d %02d:%02d:%02d "
 			,tm_p->tm_mon+1,tm_p->tm_mday
 			,tm_p->tm_hour,tm_p->tm_min,tm_p->tm_sec);
 
-	sprintf(logline,"%s%.*s",tstr,sizeof(logline)-2,str);
+	sprintf(logline,"%smail %.*s",tstr,sizeof(logline)-2,str);
 	truncsp(logline);
-	printf("%s\n",logline);
+	lputs(logline);
 	
     return(strlen(logline)+1);
 }
 
 static void mail_started(void)
 {
-	mail_lputs("mail_started");
 	mail_running=TRUE;
 }
 
 static void mail_terminated(int code)
 {
-	mail_lputs("mail_terminated");
 	mail_running=FALSE;
 }
 
@@ -184,7 +193,9 @@ static void mail_terminated(int code)
 /****************************************************************************/
 int main(int argc, char** argv)
 {
+	char	ch;
 	char*	ctrl_dir;
+	BOOL	quit=FALSE;
 
 	printf("\nSynchronet BBS Console Version %s  Copyright 2000 Rob Swindell\n"
 		,SBBSCON_VERSION);
@@ -249,22 +260,39 @@ int main(int argc, char** argv)
 	_beginthread(ftp_server,0,&ftp_startup);
 //	_beginthread(mail_server,0,&mail_startup);
 
-	while(1) {
-		if(kbhit())
-			break;
-		mswait(1);
+	while(!quit) {
+		ch=getch();
+		printf("%c\n",ch);
+		switch(ch) {
+			case 'q':
+				quit=TRUE;
+				break;
+			default:
+				printf("\nSynchronet BBS Console Version %s Help\n\n",SBBSCON_VERSION);
+				printf("q   = quit\n");
+#if 0	/* to do */
+				printf("n   = node list\n");
+				printf("w   = who's online\n");
+				printf("l#  = lock node #\n");
+				printf("d#  = down node #\n");
+				printf("i#  = interrupt node #\n");
+				printf("c#  = chat with node #\n");
+				printf("s#  = spy on node #\n");
+#endif
+				lputs("");	/* redisplay prompt */
+				break;
+		}
 	}
 
 	bbs_terminate();
 	ftp_terminate();
 //	mail_terminate();
 
-	printf("\nWaiting for servers to terminate...\n");
-
 	while(bbs_running || ftp_running || mail_running)
 		mswait(1);
 
-	printf("\nAll servers terminated\n");
+	/* erase the prompt */
+	printf("\r%*s\r",strlen(prompt),"");
 
 	return(0);
 }
