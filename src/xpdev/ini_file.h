@@ -51,6 +51,7 @@ typedef struct {
 typedef struct {
 	int			key_len;
 	const char* key_prefix;
+	const char* section_separator;
 	const char* value_separator;
 	const char*	bit_separator;
 } ini_style_t;
@@ -98,7 +99,8 @@ str_list_t	iniReadFile(FILE*);
 BOOL		iniWriteFile(FILE*, const str_list_t);
 
 /* StringList functions */
-size_t		iniAddSection(str_list_t*, const char* section);
+size_t		iniAddSection(str_list_t*, const char* section
+					,ini_style_t*);
 char*		iniSetString(str_list_t*, const char* section, const char* key, const char* value
 					,ini_style_t*);
 char*		iniSetInteger(str_list_t*, const char* section, const char* key, long value
