@@ -58,9 +58,12 @@ static const char* prompt = "Command (?=Help): ";
 static lputs(char *str)
 {
 	static pthread_mutex_t mutex;
+	static BOOL mutex_initialized;
 
-	if(mutex==0) 
+	if(!mutex_initialized) {
 		pthread_mutex_init(&mutex,NULL);
+		mutex_initialized=TRUE;
+	}
 
 	pthread_mutex_lock(&mutex);
 	printf("\r%*s\r%s\n",strlen(prompt),"",str);
