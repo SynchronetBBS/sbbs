@@ -1201,7 +1201,7 @@ static jsMethodSpec js_console_functions[] = {
 	,JSDOCSTR("print last x lines of file with optional mode")
 	},		
 	{"editfile",		js_editfile,		1, JSTYPE_VOID,		JSDOCSTR("string filename")
-	,JSDOCSTR("edit a text file")
+	,JSDOCSTR("edit/create a text file using the user's preferred message editor")
 	},		
 	{"uselect",			js_uselect,			0, JSTYPE_NUMBER,	JSDOCSTR("[number, string title, string item, string ars]")
 	,JSDOCSTR("user selection menu, call for each item, then with no args to display select menu")
