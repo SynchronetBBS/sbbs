@@ -848,6 +848,8 @@ static BOOL send_headers(http_session_t *session, const char *status)
 	char	header[MAX_REQUEST_LINE+1];
 	list_node_t	*node;
 
+	if(session->socket==INVALID_SOCKET)
+		return(FALSE);
 	lprintf(LOG_DEBUG,"%04d Request resolved to: %s"
 		,session->socket,session->req.physical_path);
 	if(session->http_ver <= HTTP_0_9) {
@@ -993,6 +995,8 @@ static void send_error(http_session_t * session, const char* message)
 	char	sbuf[1024];
 	BOOL	sent_ssjs=FALSE;
 
+	if(session->socket==INVALID_SOCKET)
+		return;
 	session->req.if_modified_since=0;
 	lprintf(LOG_INFO,"%04d !ERROR: %s",session->socket,message);
 	session->req.keep_alive=FALSE;
@@ -1793,7 +1797,7 @@ static BOOL get_req(http_session_t * session, char *request_line)
 		 */
 		while((len=sockreadline(session,req_line,sizeof(req_line)-1))==0);
 		if(len<0)
-			req_line[0]=0;
+			return(FALSE);
 		if(req_line[0])
 			lprintf(LOG_DEBUG,"%04d Request: %s",session->socket,req_line);
 	}
