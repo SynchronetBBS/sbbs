@@ -311,6 +311,7 @@ $(ADDFILES): \
 	$(EXEODIR)/scfglib1.o \
 	$(EXEODIR)/scfglib2.o \
 	$(EXEODIR)/nopen.o \
+	$(EXEODIR)/crc16.o \
 	$(EXEODIR)/str_util.o \
 	$(EXEODIR)/dat_rec.o \
 	$(EXEODIR)/filedat.o \
@@ -329,6 +330,7 @@ $(FILELIST): \
 	$(EXEODIR)/scfglib1.o \
 	$(EXEODIR)/scfglib2.o \
 	$(EXEODIR)/nopen.o \
+	$(EXEODIR)/crc16.o \
 	$(EXEODIR)/str_util.o \
 	$(EXEODIR)/dat_rec.o \
 	$(EXEODIR)/filedat.o \
@@ -347,6 +349,7 @@ $(MAKEUSER): \
 	$(EXEODIR)/scfglib1.o \
 	$(EXEODIR)/scfglib2.o \
 	$(EXEODIR)/nopen.o \
+	$(EXEODIR)/crc16.o \
 	$(EXEODIR)/str_util.o \
 	$(EXEODIR)/dat_rec.o \
 	$(EXEODIR)/userdat.o \
