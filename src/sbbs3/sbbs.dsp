@@ -474,6 +474,10 @@ SOURCE=.\useredit.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\uucode.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\ver.cpp
 # End Source File
 # Begin Source File

@@ -97,6 +97,7 @@ OBJS	=	$(LIBODIR)$(SLASH)ansiterm.$(OFILE)\
 			$(LIBODIR)$(SLASH)upload.$(OFILE)\
 			$(LIBODIR)$(SLASH)userdat.$(OFILE)\
 			$(LIBODIR)$(SLASH)useredit.$(OFILE)\
+			$(LIBODIR)$(SLASH)uucode.$(OFILE)\
 			$(LIBODIR)$(SLASH)viewfile.$(OFILE)\
 			$(LIBODIR)$(SLASH)writemsg.$(OFILE)\
 			$(LIBODIR)$(SLASH)xtrn.$(OFILE)\
