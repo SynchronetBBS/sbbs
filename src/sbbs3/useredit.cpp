@@ -62,11 +62,13 @@ void sbbs_t::useredit(int usernumber)
 
 	if(online==ON_REMOTE && console&(CON_R_ECHO|CON_R_INPUT) && !chksyspass())
 		return;
+#if 0	/* no local logins in v3 */
 	if(online==ON_LOCAL) {
 		if(!(cfg.sys_misc&SM_L_SYSOP))
 			return;
 		if(cfg.node_misc&NM_SYSPW && !chksyspass())
 			return; }
+#endif
 	if(usernumber)
 		user.number=usernumber;
 	else

@@ -70,8 +70,7 @@ bool sbbs_t::logon()
 
 	if(useron.rest&FLAG('Q'))
 		qwklogon=1;
-	if(SYSOP && ((online==ON_REMOTE && !(cfg.sys_misc&SM_R_SYSOP))
-		|| (online==ON_LOCAL && !(cfg.sys_misc&SM_L_SYSOP))))
+	if(SYSOP && !(cfg.sys_misc&SM_R_SYSOP))
 		return(false);
 	if(cur_rate<cfg.node_minbps && !(useron.exempt&FLAG('M'))) {
 		bprintf(text[MinimumModemSpeed],cfg.node_minbps);
