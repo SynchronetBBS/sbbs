@@ -308,7 +308,7 @@ function Server_Work() {
 				nickid = search_nickbuf(cmd[2]);
 			if (!nickid)
 				break;
-			if (!nickid.channels[chan.nam.toUpperCase()])
+			if (!nickid.channels[chanid.nam.toUpperCase()])
 				break;
 			if (cmd[3])
 				kick_reason = IRC_string(cmdline).slice(0,max_kicklen);
