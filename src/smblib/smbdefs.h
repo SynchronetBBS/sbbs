@@ -273,6 +273,8 @@
 #define RFC822MSGID 		0xb1
 #define RFC822REPLYID		0xb2
 #define RFC822TO			0xb3
+#define RFC822FROM			0xb4
+#define RFC822REPLYTO		0xb5
 
 #define USENETPATH			0xc0
 #define USENETNEWSGROUPS	0xc1
