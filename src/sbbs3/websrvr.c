@@ -1390,6 +1390,8 @@ static BOOL parse_headers(http_session_t * session)
 	if(content_len)  {
 		if((session->req.post_data=malloc(content_len+1)) != NULL)  {
 			session->req.post_len=recvbufsocket(session->socket,session->req.post_data,content_len);
+			if(session->req.post_len != content_len)
+				lprintf(LOG_DEBUG,"%04d !ERROR Browser said they sent %d bytes, but I got %d",session->socket,content_len,session->req.post_len);
 			if(session->req.post_len<0)
 				session->req.post_len=0;
 			if(session->req.dynamic==IS_SSJS)  {
