@@ -445,7 +445,6 @@ void compile(char *src)
 	long l,savline;
 	FILE *in;
 
-	strupr(src);
 	if((in=fopen(src,"rb"))==NULL) {
 		printf("error opening %s for read\n",src);
 		exit(1); }
