@@ -91,12 +91,12 @@ void x_delay(long msec)
 
 int x_wherey(void)
 {
-	return(CursRow0+1);
+	return(CursRow+1);
 }
 
 int x_wherex(void)
 {
-	return(CursCol0+1);
+	return(CursCol+1);
 }
 
 /* Put the character _c on the screen at the current cursor position. 
@@ -114,19 +114,19 @@ int x_putch(int ch)
 	switch(ch) {
 		case '\r':
 			gettextinfo(&ti);
-			CursCol0=ti.winleft-1;
+			CursCol=ti.winleft-1;
 			break;
 		case '\n':
 			gettextinfo(&ti);
 			if(wherey()==ti.winbottom-ti.wintop+1)
 				wscroll();
 			else
-				CursRow0++;
+				CursRow++;
 			break;
 		case '\b':
-			if(CursCol0>0)
-				CursCol0--;
-			vmem[CursCol0+CursRow0*DpyCols]=x_curr_attr|' ';
+			if(CursCol>0)
+				CursCol--;
+			vmem[CursCol+CursRow*DpyCols]=x_curr_attr|' ';
 			break;
 		case 7:		/* Bell */
 			tty_beep();
@@ -149,17 +149,17 @@ int x_putch(int ch)
 			gettextinfo(&ti);
 			if(wherey()==ti.winbottom-ti.wintop+1
 					&& wherex()==ti.winright-ti.winleft+1) {
-				vmem[CursCol0+CursRow0*DpyCols]=sch;
+				vmem[CursCol+CursRow*DpyCols]=sch;
 				wscroll();
 				gotoxy(ti.winleft,wherey());
 			}
 			else {
 				if(wherex()==ti.winright-ti.winleft+1) {
-					vmem[CursCol0+CursRow0*DpyCols]=sch;
+					vmem[CursCol+CursRow*DpyCols]=sch;
 					gotoxy(ti.winleft,ti.cury+1);
 				}
 				else {
-					vmem[CursCol0+CursRow0*DpyCols]=sch;
+					vmem[CursCol+CursRow*DpyCols]=sch;
 					gotoxy(ti.curx+1,ti.cury);
 				}
 			}
@@ -171,8 +171,8 @@ int x_putch(int ch)
 
 void x_gotoxy(int x, int y)
 {
-	CursRow0=y-1;
-	CursCol0=x-1;
+	CursRow=y-1;
+	CursCol=x-1;
 }
 
 void x_gettextinfo(struct text_info *info)
@@ -194,11 +194,11 @@ void x_setcursortype(int type)
 			break;
 		case _SOLIDCURSOR:
 			CursStart=0;
-			CursEnd=FH;
+			CursEnd=FH-1;
 			break;
 		default:
-		    CursStart = VGA_CRTC[CRTC_CursStart];
-		    CursEnd = VGA_CRTC[CRTC_CursEnd];
+		    CursStart = InitCS;
+		    CursEnd = InitCE;
 			break;
 	}
 }
@@ -228,7 +228,8 @@ int x_beep(void)
 
 void x_textmode(int mode)
 {
-	init_mode(mode);
+	console_new_mode=mode;
+	sem_wait(&console_mode_changed);
 }
 
 void x_settitle(const char *title)

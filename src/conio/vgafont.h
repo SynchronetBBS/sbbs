@@ -255,7 +255,7 @@
 #define B_01111111_B	0xfe
 #define B_11111111_B	0xff
 
-const  char vga_font_bitmap[4096]={
+char vga_font_bitmap[4096]={
 	 B_00000000_B
 	,B_00000000_B
 	,B_00000000_B
@@ -4610,7 +4610,7 @@ const  char vga_font_bitmap[4096]={
 
 };
 
-const  char vga_font_bitmap14[3584]={
+char vga_font_bitmap14[3584]={
 	 B_00000000_B
 	,B_00000000_B
 	,B_00000000_B
@@ -8453,7 +8453,7 @@ const  char vga_font_bitmap14[3584]={
 
 };
 
-const  char vga_font_bitmap8[2048]={
+char vga_font_bitmap8[2048]={
 	 B_00000000_B
 	,B_00000000_B
 	,B_00000000_B

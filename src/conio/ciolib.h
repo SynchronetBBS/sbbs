@@ -56,8 +56,13 @@ enum {
 #define BW80		2
 #define	C80			3
 #define MONO		7
-#define C4350		64
 #define C80X50		64
+#define C4350		C80X50
+#define C80X14		128
+#define C80X21		129
+#define	C80X28		130
+#define C80X43		131
+#define C80X60		132
 
 #define COLOR_MODE	C80
 
