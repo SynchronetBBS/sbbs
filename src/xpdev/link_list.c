@@ -356,8 +356,9 @@ static list_node_t* list_add_node(link_list_t* list, list_node_t* node, list_nod
 	if(after==list->last)					/* append to list */
 		list->last = node;
 	if(after==FIRST_NODE) {					/* insert at beginning of list */
-		if(list->first!=NULL)
-			list->first->prev = node;
+		node->next = list->first;
+		if(node->next!=NULL)
+			node->next->prev = node;
 		list->first = node;
 	} else {
 		if(after->next!=NULL) {
