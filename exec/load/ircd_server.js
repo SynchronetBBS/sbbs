@@ -333,7 +333,7 @@ function Server_Work() {
 				if (!target)
 					target = search_nickbuf(kills[kill]);
 				if (target && (this.hub ||
-				    (target.parent == this.id)) ) {
+				    (target.parent == this.nick)) ) {
 					umode_notice(USERMODE_KILL,"Notice","Received KILL message for " + target.nuh + ". From " + ThisOrigin.nick + " Path: target!Synchronet!" + ThisOrigin.nick + " (" + reason + ")");
 					this.bcast_to_servers_raw(":" + ThisOrigin.nick + " KILL " + target.nick + " :" + reason);
 					target.quit("KILLED by " + ThisOrigin.nick + " (" + reason + ")",true);
@@ -452,6 +452,7 @@ function Server_Work() {
 				next_client_id++;
 				Users[cmd[1].toUpperCase()] = new IRC_User(new_id);
 				var NewNick = Users[cmd[1].toUpperCase()];
+				NewNick.local = false; // not local. duh.
 				NewNick.nick = cmd[1];
 				NewNick.hops = cmd[2];
 				NewNick.created = cmd[3];
@@ -459,10 +460,9 @@ function Server_Work() {
 				NewNick.hostname = cmd[6];
 				NewNick.servername = cmd[7];
 				NewNick.realname = IRC_string(cmdline,10);
-				NewNick.parent = this.nick.toLowerCase();
+				NewNick.parent = this.nick;
 				NewNick.ip = int_to_ip(cmd[9]);
 				NewNick.setusermode(cmd[4]);
-				NewNick.local = false; // not local. duh.
 				for (u in ULines) {
 					if (ULines[u] == cmd[7]) {
 						NewNick.uline = true;
@@ -608,7 +608,7 @@ function Server_Work() {
 				this.hops = 1;
 				this.info = IRC_string(cmdline);
 				this.linkparent = servername;
-				this.parent = this.nick.toLowerCase();
+				this.parent = this.nick;
 				var newsrv = this;
 			} else if (parseInt(cmd[2]) > 1) {
 				if (this.hub) {
@@ -619,7 +619,7 @@ function Server_Work() {
 					newsrv.hops = cmd[2];
 					newsrv.nick = cmd[1];
 					newsrv.info = IRC_string(cmdline);
-					newsrv.parent = this.nick.toLowerCase();
+					newsrv.parent = this.nick;
 					newsrv.linkparent = ThisOrigin.nick;
 					newsrv.local = false;
 					for (u in ULines) {

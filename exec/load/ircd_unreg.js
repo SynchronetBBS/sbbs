@@ -221,7 +221,7 @@ function Unregistered_Commands() {
 			new_server.socket = this.socket;
 			new_server.hops = cmd[2];
 			new_server.info = IRC_string(cmdline);
-			new_server.parent = cmd[1].toLowerCase();
+			new_server.parent = cmd[1];
 			new_server.linkparent = servername;
 			new_server.id = this.id;
 			new_server.flags = this_nline.flags;

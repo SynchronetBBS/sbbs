@@ -1430,7 +1430,7 @@ function User_Quit(str,suppress_bcast,is_netsplit,origin) {
 	if (!this.parent)
 		ww_serverdesc = serverdesc;
 	else
-		ww_serverdesc = Servers[this.parent].info;
+		ww_serverdesc = Servers[this.parent.toLowerCase()].info;
 	WhoWasHistory[whowas_pointer] = new WhoWas(this.nick,this.uprefix,this.hostname,this.realname,this.servername,ww_serverdesc);
 	whowas_pointer++;
 	if (!suppress_bcast)

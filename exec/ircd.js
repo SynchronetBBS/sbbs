@@ -97,7 +97,7 @@ const max_topiclen = 307;	// Maximum length of topic per channel
 const max_kicklen = 307;	// Maximum length of kick reasons
 const max_who = 100;		// Maximum replies to WHO for non-oper users
 
-const default_port = 6667;
+var default_port = 6667;
 
 ////////// Functions not linked to an object //////////
 
@@ -884,7 +884,7 @@ function rawout(str) {
 			str_beg = str.slice(0,str.indexOf("!"));
 			str = str_beg + " " + str_end;
 		}
-		sendsock = Servers[this.parent].socket;
+		sendsock = Servers[this.parent.toLowerCase()].socket;
 	} else {
 		log("!ERROR: No socket to send to?");
 		return 0;
@@ -910,7 +910,7 @@ function originatorout(str,origin) {
 	} else if (this.server) {
 		send_data = ":" + origin.nick + " " + str;
 	} else if (!this.local) {
-		sendsock = Servers[this.parent].socket;
+		sendsock = Servers[this.parent.toLowerCase()].socket;
 		send_data = ":" + origin.nick + " " + str;
 	} else {
 		log("!ERROR: No socket to send to?");
@@ -930,7 +930,7 @@ function ircout(str) {
 	if(this.local) {
 		sendsock = this.socket;
 	} else if (this.parent) {
-		sendsock = Servers[this.parent].socket;
+		sendsock = Servers[this.parent.toLowerCase()].socket;
 	} else {
 		log("!ERROR: No socket to send to?");
 		return 0;
@@ -1254,9 +1254,9 @@ function IRCClient_bcast_to_channel_servers(chan, str) {
 	for(thisUser in chan.users) {
 		var aUser=chan.users[thisUser];
 		if (!aUser.local && (this.parent != aUser.parent) &&
-		    !sent_to_servers[aUser.parent]) {
+		    !sent_to_servers[aUser.parent.toLowerCase()]) {
 			aUser.originatorout(str,this);
-			sent_to_servers[aUser.parent] = true;
+			sent_to_servers[aUser.parent.toLowerCase()] = true;
 		}
 	}
 }
@@ -1376,7 +1376,7 @@ function IRCClient_global(target,type_str,send_str) {
 	}
 	global_str = ":" + this.nick + " " + global_str;
 	if(this.parent)
-		Servers[this.parent].bcast_to_servers_raw(global_str);
+		Servers[this.parent.toLowerCase()].bcast_to_servers_raw(global_str);
 	else if (this.flags&OLINE_CAN_GGNOTICE)
 		server_bcast_to_servers(global_str);
 	return 1;
@@ -1388,7 +1388,7 @@ function IRCClient_globops(str) {
 	globops_bits |= USERMODE_GLOBOPS;
 	umode_notice(globops_bits,"Global","from " + this.nick +": " + str);
 	if (this.parent)
-		Servers[this.parent].bcast_to_servers_raw(":" + this.nick +
+		Servers[this.parent.toLowerCase()].bcast_to_servers_raw(":" + this.nick +
 			" GLOBOPS :" + str);
 	else
 		server_bcast_to_servers(":" + this.nick + " GLOBOPS :" + str);
@@ -1721,7 +1721,7 @@ function IRCClient_do_trace(target) {
 				this.numeric205(nick);
 		} else if (nick) {
 			nick.rawout(":" + this.nick + " TRACE " + target);
-			this.numeric200(target,Servers[nick.parent].nick);
+			this.numeric200(target,Servers[nick.parent.toLowerCase()].nick);
 			return 0;
 		} else {
 			this.numeric402(target);
@@ -3110,7 +3110,7 @@ function IRCClient_setusermode(modestr) {
 			case "o":
 				// Allow +o only by servers or non-local users.
 				if (add && this.parent &&
-				    Servers[this.parent].hub)
+				    Servers[this.parent.toLowerCase()].hub)
 					umode.tweak_mode(USERMODE_OPER,true);
 				else if (!add)
 					umode.tweak_mode(USERMODE_OPER,false);
