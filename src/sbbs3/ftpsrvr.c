@@ -2180,8 +2180,10 @@ static BOOL ftpalias(char* fullalias, char* filename, user_t* user, int* curdir)
 		fname=p+1;
 	}
 
-	if(filename==NULL /* directory */ && *fname /* filename specified */)
+	if(filename==NULL /* directory */ && *fname /* filename specified */) {
+		fclose(fp);
 		return(FALSE);
+	}
 
 	while(!feof(fp)) {
 		if(!fgets(line,sizeof(line),fp))
