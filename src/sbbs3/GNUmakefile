@@ -20,7 +20,6 @@ UTIL_LDFLAGS	+=	$(SMBLIB_LDFLAGS) $(UIFC-MT_LDFLAGS) $(CIOLIB-MT_LDFLAGS) $(XPDE
 UTIL_LIBS	+=	$(SMBLIB_LIBS)
 
 ifndef bcc
- LDFLAGS	+=	-lm
  ifneq ($(os),sunos)
   LDFLAGS	+=	-lutil
  endif
