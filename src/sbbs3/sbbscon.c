@@ -1095,7 +1095,7 @@ int main(int argc, char** argv)
 						mail_startup.options	|=BBS_OPT_NO_JAVASCRIPT;
 						services_startup.options|=BBS_OPT_NO_JAVASCRIPT;
 						break;
-					case 'I'	/* no .ini file */
+					case 'I':	/* no .ini file */
 						break;
 					default:
 						printf(usage,argv[0]);
