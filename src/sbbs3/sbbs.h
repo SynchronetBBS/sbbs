@@ -772,11 +772,15 @@ extern "C" {
 #ifdef JAVASCRIPT
 
 	/* sysobj.c */
-	DLLEXPORT JSObject* DLLCALL CreateSystemObject(scfg_t* cfg, JSContext* cx, JSObject* parent);
+	DLLEXPORT JSObject* DLLCALL js_CreateSystemObject(scfg_t* cfg, JSContext* cx, JSObject* parent);
 
 	/* userobj.c */
-	DLLEXPORT JSObject* DLLCALL CreateUserObject(scfg_t* cfg, JSContext* cx, JSObject* parent
+	DLLEXPORT JSObject* DLLCALL js_CreateUserObject(scfg_t* cfg, JSContext* cx, JSObject* parent
 													,char* name, user_t* user);
+
+	/* fileobj.c */
+	DLLEXPORT JSObject* DLLCALL js_CreateFileAreaObject(scfg_t* cfg, JSContext* cx, JSObject* parent
+													,user_t* user, char* html_index_file);
 
 #endif
 

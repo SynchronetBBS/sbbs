@@ -318,7 +318,7 @@ static JSClass js_sysstats_class = {
 };
 
 
-JSObject* DLLCALL CreateSystemObject(scfg_t* cfg, JSContext* cx, JSObject* parent)
+JSObject* DLLCALL js_CreateSystemObject(scfg_t* cfg, JSContext* cx, JSObject* parent)
 {
 	JSObject*	sysobj;
 	JSObject*	statsobj;
