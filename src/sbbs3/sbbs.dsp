@@ -134,6 +134,10 @@ SOURCE=.\crc32.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\dat_rec.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\data.cpp
 # End Source File
 # Begin Source File

@@ -92,6 +92,10 @@ SOURCE=.\crc32.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\dat_rec.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\date_str.c
 # End Source File
 # Begin Source File

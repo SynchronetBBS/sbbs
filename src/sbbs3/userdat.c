@@ -44,7 +44,6 @@ char* nulstr="";
 
 #define REPLACE_CHARS(str,ch1,ch2)	for(c=0;str[c];c++)	if(str[c]==ch1) str[c]=ch2;
 
-
 /****************************************************************************/
 /* Looks for a perfect match amoung all usernames (not deleted users)		*/
 /* Makes dots and underscores synomynous with spaces for comparisions		*/
@@ -558,39 +557,6 @@ int DLLCALL putusername(scfg_t* cfg, int number, char *name)
 
 	return(0);
 }
-
-/****************************************************************************/
-/* Places into 'strout' CR or ETX terminated string starting at             */
-/* 'start' and ending at 'start'+'length' or terminator from 'strin'        */
-/****************************************************************************/
-void DLLCALL getrec(char *strin,int start,int length,char *strout)
-{
-    int i=0,stop;
-
-	stop=start+length;
-	while(start<stop) {
-		if(strin[start]==ETX || strin[start]==CR || strin[start]==LF)
-			break;
-		strout[i++]=strin[start++]; 
-	}
-	strout[i]=0;
-}
-
-/****************************************************************************/
-/* Places into 'strout', 'strin' starting at 'start' and ending at          */
-/* 'start'+'length'                                                         */
-/****************************************************************************/
-void DLLCALL putrec(char *strout,int start,int length,char *strin)
-{
-    int i=0,j;
-
-	j=strlen(strin);
-	while(i<j && i<length)
-		strout[start++]=strin[i++];
-	while(i++<length)
-		strout[start++]=ETX;
-}
-
 
 /****************************************************************************/
 /* Returns the age derived from the string 'birth' in the format MM/DD/YY	*/

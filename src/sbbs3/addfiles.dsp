@@ -41,7 +41,7 @@ RSC=rc.exe
 # PROP Intermediate_Dir "msvc.win32.exe.release"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /c
-# ADD CPP /nologo /W3 /GX /O2 /I "..\xpdev" /D "NDEBUG" /D "WRAPPER_IMPORTS" /D "WIN32" /D "_CONSOLE" /D "_MBCS" /D "WRAPPER_EXPORTS" /D "SBBS_EXPORTS" /YX /FD /c
+# ADD CPP /nologo /W3 /GX /O2 /I "..\xpdev" /D "NDEBUG" /D "WIN32" /D "_CONSOLE" /D "_MBCS" /D "WRAPPER_EXPORTS" /D "SBBS_EXPORTS" /YX /FD /c
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
 BSC32=bscmake.exe
@@ -90,6 +90,10 @@ SOURCE=.\ars.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\dat_rec.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\date_str.c
 # End Source File
 # Begin Source File
@@ -127,10 +131,6 @@ SOURCE=.\scfglib2.c
 # Begin Source File
 
 SOURCE=.\str_util.c
-# End Source File
-# Begin Source File
-
-SOURCE=.\userdat.c
 # End Source File
 # End Target
 # End Project
