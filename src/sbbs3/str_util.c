@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -426,39 +426,6 @@ uint hptoi(char *str)
 	return(i);
 }
 
-
-/****************************************************************************/
-/* Updates 16-bit "rcrc" with character 'ch'                                */
-/****************************************************************************/
-void ucrc16(uchar ch, ushort *rcrc) 
-{
-	ushort i, cy;
-    uchar nch=ch;
- 
-	for (i=0; i<8; i++) {
-		cy=*rcrc & 0x8000;
-		*rcrc<<=1;
-		if (nch & 0x80) *rcrc |= 1;
-		nch<<=1;
-		if (cy) *rcrc ^= 0x1021; }
-}
-
-/****************************************************************************/
-/* Returns CRC-16 of ASCIIZ string (not including terminating NULL)			*/
-/****************************************************************************/
-ushort DLLCALL crc16(char *str)
-{
-	int 	i=0;
-	ushort	crc=0;
-
-	ucrc16(0,&crc);
-	while(str[i])
-		ucrc16(str[i++],&crc);
-	ucrc16(0,&crc);
-	ucrc16(0,&crc);
-	return(crc);
-}
-
 /****************************************************************************/
 /* Returns 1 if a is a valid ctrl-a code, 0 if it isn't.                    */
 /****************************************************************************/
@@ -530,5 +497,5 @@ ushort DLLCALL subject_crc(char *subj)
 
 	SAFECOPY(str,subj);
 	strlwr(str);
-	return(crc16(str));
+	return(crc16(str,0));
 }

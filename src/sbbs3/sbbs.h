@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -124,6 +124,8 @@
 #include "cmdshell.h"
 #include "ringbuf.h"    /* RingBuf definition */
 #include "client.h"		/* client_t definition */
+#include "crc16.h"
+#include "crc32.h"
 
 /* Synchronet Node Instance class definition */
 #ifdef __cplusplus
@@ -787,7 +789,6 @@ extern "C" {
 	DLLEXPORT char *	DLLCALL prep_file_desc(char *str);
 	DLLEXPORT char *	DLLCALL strip_ctrl(char *str);
 	DLLEXPORT char *	DLLCALL net_addr(net_t* net);
-	DLLEXPORT ushort	DLLCALL crc16(char *str);
 	DLLEXPORT BOOL		DLLCALL validattr(char a);
 	DLLEXPORT size_t	DLLCALL strip_invalid_attr(char *str);
 	DLLEXPORT ushort	DLLCALL subject_crc(char *subj);
@@ -919,9 +920,6 @@ extern "C" {
 
 #endif
 
-/* crc32.c */
-ulong	crc32(char *buf, ulong len);
-
 /* str_util.c */
 int		bstrlen(char *str);
 void	backslashcolon(char *str);
@@ -931,7 +929,6 @@ char *	hexplus(uint num, char *str); 	/* Hex plus for 3 digits up to 9000 */
 uint	hptoi(char *str);
 int		pstrcmp(char **str1, char **str2);  /* Compares pointers to pointers */
 int		strsame(char *str1, char *str2);	/* Compares number of same chars */
-void	ucrc16(uchar ch, ushort *rcrc);
 
 /* nopen.c */
 int		nopen(char *str, int access);
