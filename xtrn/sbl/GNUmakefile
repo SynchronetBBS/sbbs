@@ -14,38 +14,31 @@
 
 # Macros
 XSDK		=	../sdk
-ifndef XPDEV
- XPDEV		=	../../src/xpdev
-endif
-ifndef SBBS_SRC
- SBBS_SRC	:=	$(XPDEV)/../sbbs3
-endif
-NEED_THREADS	:=	1
-include $(XPDEV)/Common.gmake
-include $(SBBS_SRC)/Common.gmake
+SRC_ROOT	=	../../src
+include $(SRC_ROOT)/build/Common.gmake
 
 ifeq ($(os),sunos)
  LDFLAGS	+=	-lsocket -lnsl -lrt
 endif
 
+LDFLAGS	+=	$(XPDEV_LDFLAGS)
+
 vpath %.c $(XSDK)
 
-CFLAGS	+=	-I$(XSDK)
+CFLAGS	+=	-I$(SRC_ROOT)$(DIRSEP)sbbs3 -I$(XSDK) -DUSE_XPDEV $(XPDEV_CFLAGS) $(SMBLIB_CFLAGS)
 
-$(EXEODIR)$(SLASH)sbl: $(OBJS)
+$(SBL): $(OBJS)
 	@echo Linking $@
-	$(QUIET)$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@ $(LIBS)
-SMBIO	=	$(LIBODIR)/genwrap.o $(LIBODIR)/filewrap.o $(LIBODIR)/dirwrap.o \
-		$(LIBODIR)/smblib.o $(LIBODIR)/lzh.o $(LIBODIR)/crc32.o $(LIBODIR)/md5.o
+	$(QUIET)$(CC) $(MT_LDFLAGS) $(LDFLAGS) $^ -o $@ $(XPDEV-MT_LIBS)
 
-$(EXEODIR)$(SLASH)sbl2smb: $(LIBODIR)$(SLASH)sbl2smb.o $(SMBIO)
+$(SBL2SMB): $(OBJODIR)$(DIRSEP)sbl2smb$(OFILE)
 	@echo Linking $@
-	$(QUIET)$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@ $(LIBS)
+	$(QUIET)$(CC) $(LDFLAGS) $(SMBLIB_LDFLAGS) $^ -o $@ $(LIBS) $(SMBLIB_LIBS) $(XPDEV_LIBS)
 
-$(EXEODIR)$(SLASH)smb2sbl: $(LIBODIR)$(SLASH)smb2sbl.o $(SMBIO)
+$(SMB2SBL): $(OBJODIR)$(DIRSEP)smb2sbl$(OFILE)
 	@echo Linking $@
-	$(QUIET)$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@ $(LIBS)
+	$(QUIET)$(CC) $(LDFLAGS) $(SMBLIB_LDFLAGS) $^ -o $@  $(SMBLIB_LIBS) $(XPDEV_LIBS)
 
-$(EXEODIR)$(SLASH)sblpack: $(LIBODIR)$(SLASH)sblpack.o $(LIBODIR)$(SLASH)/filewrap.o
+$(SBLPACK): $(OBJODIR)$(DIRSEP)sblpack$(OFILE)
 	@echo Linking $@
-	$(QUIET)$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@ $(LIBS)
+	$(QUIET)$(CC) $(LDFLAGS) $(SMBLIB_LDFLAGS) $^ -o $@ $(XPDEV_LIBS)

@@ -177,9 +177,9 @@ return(crc);
 
 /****************************************************************************/
 /* Truncates white-space chars off end of 'str'								*/
-/* This is a *special* version of truncsp that truncates at first CR char	*/
+/* This is a *special* version of trunccrsp that truncates at first CR char	*/
 /****************************************************************************/
-static void truncsp(char *str)
+static void trunccrsp(char *str)
 {
 	uint org,c;
 
@@ -284,7 +284,7 @@ int main(int argc, char **argv)
 		printf("\nMessage #%lu by %s on %.24s\n"
 			,msg.hdr.number,msg.from,ctime((time_t*)&msg.hdr.when_written.time));
 
-		truncsp(msg.subj);
+		trunccrsp(msg.subj);
 		if(!msg.subj[0]) {
 			smb_freemsgmem(&msg);
 			continue; }
@@ -336,7 +336,7 @@ int main(int argc, char **argv)
 				while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
 					l++;
 				SAFECOPY(bbs.name,buf+l);
-				truncsp(bbs.name); 
+				trunccrsp(bbs.name); 
 			}
 			if(!strnicmp(buf+l,"BIRTH:",6)) {
 				l+=6;
@@ -348,26 +348,26 @@ int main(int argc, char **argv)
 				while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
 					l++;
 				SAFECOPY(bbs.software,buf+l);
-				truncsp(bbs.software); }
+				trunccrsp(bbs.software); }
 			if(!strnicmp(buf+l,"WEB-SITE:",9)) {
 				l+=9;
 				while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
 					l++;
 				SAFECOPY(bbs.web_url,buf+l);
-				truncsp(bbs.web_url); }
+				trunccrsp(bbs.web_url); }
 			if(!strnicmp(buf+l,"E-MAIL:",7)) {
 				l+=7;
 				while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
 					l++;
 				SAFECOPY(bbs.sysop_email,buf+l);
-				truncsp(bbs.sysop_email); }
+				trunccrsp(bbs.sysop_email); }
 
 			if(!strnicmp(buf+l,"SYSOP:",6)) {
 				l+=6;
 				while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
 					l++;
 				SAFECOPY(bbs.sysop[sysop],buf+l);
-				truncsp(bbs.sysop[sysop]);
+				trunccrsp(bbs.sysop[sysop]);
 				if(sysop<MAX_SYSOPS-1)
 					sysop++; }
 			if(!strnicmp(buf+l,"NUMBER:",7) || !strnicmp(buf+l,"TELNET:",7)) {
@@ -375,7 +375,7 @@ int main(int argc, char **argv)
 				while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
 					l++;
 				SAFECOPY(bbs.number[number].telnet.addr,buf+l);
-				truncsp(bbs.number[number].telnet.addr);
+				trunccrsp(bbs.number[number].telnet.addr);
 				if(!strnicmp(buf+l,"TELNET:",7)) {
 					bbs.number[number].telnet.unused=0xffff;
 					bbs.number[number].telnet.port=23;
@@ -390,7 +390,7 @@ int main(int argc, char **argv)
 				i=number;
 				if(i) i--;
 				SAFECOPY(bbs.number[i].modem.desc,buf+l);
-				truncsp(bbs.number[i].modem.desc); }
+				trunccrsp(bbs.number[i].modem.desc); }
 			if(!strnicmp(buf+l,"LOCATION:",9)) {
 				l+=9;
 				while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
@@ -398,7 +398,7 @@ int main(int argc, char **argv)
 				i=number;
 				if(i) i--;
 				SAFECOPY(bbs.number[i].modem.location,buf+l);
-				truncsp(bbs.number[i].modem.location); }
+				trunccrsp(bbs.number[i].modem.location); }
 			if(!strnicmp(buf+l,"MINRATE:",8)) {
 				l+=8;
 				while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
@@ -425,7 +425,7 @@ int main(int argc, char **argv)
 				while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
 					l++;
 				SAFECOPY(bbs.network[network],buf+l);
-				truncsp(bbs.network[network]);
+				trunccrsp(bbs.network[network]);
 				if(network<MAX_NETS-1)
 					network++; }
 			if(!strnicmp(buf+l,"ADDRESS:",8)) {
@@ -435,13 +435,13 @@ int main(int argc, char **argv)
 				i=network;
 				if(i) i--;
 				SAFECOPY(bbs.address[i],buf+l);
-				truncsp(bbs.address[i]); }
+				trunccrsp(bbs.address[i]); }
 			if(!strnicmp(buf+l,"TERMINAL:",9)) {
 				l+=9;
 				while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
 					l++;
 				SAFECOPY(bbs.terminal[terminal],buf+l);
-				truncsp(bbs.terminal[terminal]);
+				trunccrsp(bbs.terminal[terminal]);
 				if(terminal<MAX_TERMS-1)
 					terminal++; }
 			if(!strnicmp(buf+l,"DESC:",5)) {
@@ -449,7 +449,7 @@ int main(int argc, char **argv)
 				while(buf[l] && buf[l]<=' ' && buf[l]!=CR)
 					l++;
 				SAFECOPY(bbs.desc[desc],buf+l);
-				truncsp(bbs.desc[desc]);
+				trunccrsp(bbs.desc[desc]);
 				if(desc<4)
 					desc++; }
 

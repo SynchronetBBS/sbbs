@@ -1,4 +1,8 @@
-all: $(EXEODIR) $(LIBODIR) \
-		$(EXEODIR)$(SLASH)sbl $(EXEODIR)$(SLASH)sbl2smb \
-		$(EXEODIR)$(SLASH)smb2sbl $(EXEODIR)$(SLASH)sblpack
+SBL	=	$(EXEODIR)$(DIRSEP)sbl$(EXEFILE)
+SBL2SMB	=	$(EXEODIR)$(DIRSEP)sbl2smb$(EXEFILE)
+SMB2SBL	=	$(EXEODIR)$(DIRSEP)smb2sbl$(EXEFILE)
+SBLPACK	=	$(EXEODIR)$(DIRSEP)sblpack$(EXEFILE)
+
+all: xpdev xpdev-mt smblib $(EXEODIR) $(MTOBJODIR) $(OBJODIR) \
+		$(SBL) $(SBL2SMB) $(SMB2SBL) $(SBLPACK)
 

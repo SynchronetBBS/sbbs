@@ -1,4 +1,3 @@
-OBJS	:=	$(LIBODIR)$(SLASH)sbl.$(OFILE) \
-			$(LIBODIR)$(SLASH)xsdk.$(OFILE) \
-			$(LIBODIR)$(SLASH)xsdkvars.$(OFILE) \
-			$(LIBODIR)$(SLASH)xsdkwrap.$(OFILE)
+OBJS	=	$(MTOBJODIR)$(DIRSEP)sbl$(OFILE) \
+			$(MTOBJODIR)$(DIRSEP)xsdk$(OFILE) \
+			$(MTOBJODIR)$(DIRSEP)xsdkvars$(OFILE)
