@@ -95,6 +95,7 @@ typedef struct {
 typedef struct {
 	SOCKET			socket;
 	SOCKADDR_IN		addr;
+	client_t*		client;
 	service_t*		service;
 } service_client_t;
 
@@ -282,9 +283,83 @@ js_log(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     return(JS_TRUE);
 }
 
+static JSBool
+js_login(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		p;
+	user_t		user;
+	JSString*	js_str;
+	service_client_t* client;
+
+	*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+
+	if((client=(service_client_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	/* User name */
+	if((js_str=JS_ValueToString(cx, argv[0]))==NULL) 
+		return(JS_FALSE);
+
+	if((p=JS_GetStringBytes(js_str))==NULL) 
+		return(JS_FALSE);
+
+	if(isdigit(*p))
+		user.number=atoi(p);
+	else
+		user.number=matchuser(&scfg,p);
+
+	if(getuserdat(&scfg,&user)!=0) {
+		lprintf("%04d %s !USER NOT FOUND: '%s'"
+			,client->socket,client->service->protocol,p);
+		return(JS_TRUE);
+	}
+
+	/* Password */
+	if(user.pass[0]) {
+		if((js_str=JS_ValueToString(cx, argv[1]))==NULL) 
+			return(JS_FALSE);
+
+		if((p=JS_GetStringBytes(js_str))==NULL) 
+			return(JS_FALSE);
+
+		if(stricmp(user.pass,p)) { /* Wrong password */
+			lprintf("%04d %s !INVALID PASSWORD ATTEMPT FOR USER: %s"
+				,client->socket,client->service->protocol,user.alias);
+			return(JS_TRUE);
+		}
+	}
+	sprintf(user.note,"%.*s",sizeof(user.note)-1,client->client->addr);
+	sprintf(user.comp,"%.*s",sizeof(user.comp)-1,client->client->host);
+	sprintf(user.modem,"%.*s",sizeof(user.modem)-1,client->service->protocol);
+	user.logons++;
+	putuserdat(&scfg,&user);
+
+	/* user object */
+	if(js_CreateUserObject(cx, obj, &scfg, "user", user.number)==NULL) 
+		lprintf("%04d %s !JavaScript ERROR creating user object"
+			,client->socket,client->service->protocol);
+
+	/* file_area object */
+	if(js_CreateFileAreaObject(cx, obj, &scfg, &user, "")==NULL) 
+		lprintf("%04d %s !JavaScript ERROR createing file_area object"
+			,client->socket,client->service->protocol);
+
+	/* msg_area object */
+	if(js_CreateMsgAreaObject(cx, obj, &scfg, &user)==NULL) 
+		lprintf("%04d %s !JavaScript ERROR createing file_area object"
+			,client->socket,client->service->protocol);
+
+	client->client->user=user.alias;
+	client_on(client->socket,client->client);
+
+	*rval=BOOLEAN_TO_JSVAL(JS_TRUE);
+
+	return(JS_TRUE);
+}
 
 static JSFunctionSpec js_global_functions[] = {
 	{"log",				js_log,				1},		/* Log a string */
+ 	{"login",			js_login,			2},		/* Login specified username and password */
     {0}
 };
 
@@ -322,7 +397,7 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 }
 
 static JSContext* 
-js_initcx(SOCKET sock, client_t* client, service_client_t* service_client, JSObject** glob)
+js_initcx(SOCKET sock, service_client_t* service_client, JSObject** glob)
 {
 	JSContext*	js_cx;
 	JSObject*	js_glob;
@@ -351,7 +426,7 @@ js_initcx(SOCKET sock, client_t* client, service_client_t* service_client, JSObj
 			break;
 
 		/* Client Object */
-		if(js_CreateClientObject(js_cx, js_glob, "client", client, sock)==NULL)
+		if(js_CreateClientObject(js_cx, js_glob, "client", service_client->client, sock)==NULL)
 			break;
 
 		/* User Class */
@@ -360,6 +435,10 @@ js_initcx(SOCKET sock, client_t* client, service_client_t* service_client, JSObj
 
 		/* Socket Class */
 		if(js_CreateSocketClass(js_cx, js_glob)==NULL)
+			break;
+
+		/* MsgBase Class */
+		if(js_CreateMsgBaseClass(js_cx, js_glob, &scfg)==NULL)
 			break;
 
 		/* File Class */
@@ -465,8 +544,9 @@ static void js_service_thread(void* arg)
 	client.port=ntohs(service_client.addr.sin_port);
 	client.protocol=service->protocol;
 	client.user="<unknown>";
+	service_client.client=&client;
 
-	if(((js_cx=js_initcx(socket,&client,&service_client,&js_glob))==NULL)) {
+	if(((js_cx=js_initcx(socket,&service_client,&js_glob))==NULL)) {
 		lprintf("%04d !%s ERROR initializing JavaScript context"
 			,socket,service->protocol);
 		close_socket(socket);
