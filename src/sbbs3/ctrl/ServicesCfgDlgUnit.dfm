@@ -1,6 +1,6 @@
 object ServicesCfgDlg: TServicesCfgDlg
-  Left = 693
-  Top = 296
+  Left = 791
+  Top = 165
   BorderStyle = bsDialog
   Caption = 'Services Configuration'
   ClientHeight = 301
@@ -37,6 +37,7 @@ object ServicesCfgDlg: TServicesCfgDlg
     00018000000180000001FC00001FFC00001FFE00001FFC00000FF800000FF800
     001FF800003FFC180C7FFE380EFFFFF80FFFFFF80FFFFFF80FFFFFFFFFFF}
   OldCreateOrder = False
+  Position = poScreenCenter
   OnShow = FormShow
   PixelsPerInch = 120
   TextHeight = 16
