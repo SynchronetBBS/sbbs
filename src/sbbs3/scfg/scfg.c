@@ -706,8 +706,8 @@ This is a list of Command Shells configured for your system.
 Command shells are the programmable command and menu structures which
 are available for your BBS.
 
-To add a command shell section, select the desired location with the arrow
-keys and hit  INS .
+To add a command shell section, select the desired location with the
+arrow keys and hit  INS .
 
 To delete a command shell, select it and hit  DEL .
 
