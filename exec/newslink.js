@@ -47,6 +47,7 @@ var reset_export_ptrs = false;		// Reset export pointers, export all messages
 var update_export_ptrs = false;		// Update export pointers, don't export anything
 var email_addresses = true;			// Include e-mail addresses in headers
 var import_amount = 0;				// Import a fixed number of messages per group
+var lines_per_yield = 10;			// Release time-slices ever x number of lines
 
 // Parse arguments
 for(i=0;i<argc;i++) {
@@ -152,6 +153,9 @@ while(!cfg_file.eof) {
 			str.shift();				// Remove first element (keyword)
 			tagline=str.join(' ');		// Combine remaining elements (tagline)
 			tagline+="\r\n";
+			break;
+		case "lines_per_yield":
+			lines_per_yield=Number(str[1]);
 			break;
 		default:
 			printf("!UNRECOGNIZED configuration keyword: %s\r\n",str[0]);
@@ -427,6 +431,7 @@ for(i in area) {
 			body="";
 		header=true;
 		var hdr={ from: "", to: newsgroup, subject: "", id: "" };
+		var line_counter=0;
 		while(socket.is_connected) {
 
 			line = socket.recvline(512 /*maxlen*/, 300 /*timeout*/);
@@ -452,6 +457,9 @@ for(i in area) {
 					line=line.slice(1);		// Skip prepended dots
 				body += line;
 				body += "\r\n";
+				line_counter++;
+				if(lines_per_yield && (line_counter%lines_per_yield)==0)
+					sleep(1);
 				continue;
 			}
 			//print(line);
