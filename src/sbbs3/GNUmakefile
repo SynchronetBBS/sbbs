@@ -235,7 +235,9 @@ $(ECHOCFG): \
 	$(EXEODIR)/rechocfg.o \
 	$(EXEODIR)/uifcx.o \
 	$(EXEODIR)/nopen.o \
-	$(EXEODIR)/str_util.o
+	$(EXEODIR)/str_util.o \
+	$(EXEODIR)/filewrap.o \
+	$(EXEODIR)/genwrap.o
 	@echo Linking $@
 	@$(CC) -o $@ $^
 
