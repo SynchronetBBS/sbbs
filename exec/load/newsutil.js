@@ -26,6 +26,10 @@ function write_news_header(hdr,writeln)
 	if(hdr.replyto!=undefined)
 		writeln("Reply-To: " + hdr.replyto);
 	if(hdr.reply_id!=undefined)
+		writeln("In-Reply-To: " + hdr.reply_id);
+	if(hdr.references!=undefined)
+		writeln("References: " + hdr.references);
+	else if(hdr.reply_id!=undefined)
 		writeln("References: " + hdr.reply_id);
 
 	/* FidoNet header fields */
@@ -107,6 +111,9 @@ function parse_news_header(hdr, line)
 			hdr.replyto_net_type=NET_INTERNET;
 			hdr.replyto=data;
 			break;
+		case "in-reply-to":
+			hdr.reply_id=data;
+			break;
 		case "date":
 			hdr.date=data;
 			break;
@@ -117,7 +124,9 @@ function parse_news_header(hdr, line)
 			hdr.id=data;
 			break;
 		case "references":
-			hdr.reply_id=data;
+			hdr.references=data;
+			if(!hdr.reply_id && data.length)
+				hdr.reply_id=data.match(/(?:\S+\s)*(\S+)$/)[1];
 			break;
 		case "x-gateway":
 			hdr.gateway=data;
