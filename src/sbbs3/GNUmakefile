@@ -140,6 +140,10 @@ else
  CFLAGS	+= -O3
 endif
 
+ifdef PREFIX
+ CFLAGS += -DPREFIX=$(PREFIX)
+endif
+
 ifndef JSLIBDIR
  JSLIBDIR := ../../lib/mozilla/js/$(os).$(BUILD)
 endif
