@@ -685,7 +685,10 @@ contents, usually an abreviation of the directory's name.
 			uifc.msg("Invalid Code");
 			uifc.helpbuf=0;
 			continue; }
-		sprintf(path,"%sdirs/%s",cfg.data_dir,code);
+		if(cfg.lib[libnum]->parent_path[0])
+			SAFECOPY(path,code);
+		else
+			sprintf(path,"%sdirs/%s",cfg.data_dir,code);
 		SETHELP(WHERE);
 /*
 Directory File Path:
