@@ -53,6 +53,7 @@
 #																			#
 # Common Build Macros Defined:												#
 #  DELETE			- Delete files (Preferrably verbose)					#
+#  MTOBJODIR		- Object output dir										#
 #  OBJODIR			- Object output dir										#
 #  LIBODIR			- Library output dir									#
 #  EXEODIR			- Executable output dir									#
@@ -164,7 +165,8 @@ else
 endif
 
 LIBODIR :=	$(CCPRE).$(machine).lib.$(BUILDPATH)
-OBJODIR :=	$(CCPRE).$(machine).obj.$(BUILDPATH)$(OBJPATH_SUFFIX)
+OBJODIR :=	$(CCPRE).$(machine).obj.$(BUILDPATH)
+MTOBJODIR :=	$(CCPRE).$(machine).obj.$(BUILDPATH)-mt
 EXEODIR :=	$(CCPRE).$(machine).exe.$(BUILDPATH)
 LDFLAGS	+=	-L$(LIBODIR)
 
@@ -212,6 +214,51 @@ ifeq ($(os),darwin)
  LDFLAGS +=  -lm
 endif
 
+# PThread-specific flags
+ifeq ($(os),linux)    # Linux
+ ifndef THREADS_ACTUALLY_WORK
+  PTHREAD_CFLAGS    += -D_THREAD_SUID_BROKEN
+ endif
+endif
+PTHREAD_CFLAGS    += -D_THREAD_SAFE -D_REENTRANT
+ifeq ($(os),freebsd)    # FreeBSD
+ PTHREAD_CFLAGS    += -DUSE_XP_SEMAPHORES
+ PTHREAD_LDFLAGS    +=    -pthread
+ XP_SEM    :=    1
+else
+ ifeq ($(os),openbsd)    # OpenBSD
+  PTHREAD_CFLAGS    += -DUSE_XP_SEMAPHORES
+  PTHREAD_LDFLAGS    +=    -pthread
+  XP_SEM    :=    1
+ else
+  ifeq ($(os),netbsd)    # NetBSD
+   PTHREAD_CFLAGS    += -D__unix__ -DUSE_XP_SEMAPHORES
+   PTHREAD_LDFLAGS    +=    -L/usr/pkg/lib -L/usr/pkg/pthreads/lib -lpthread
+   XP_SEM    :=    1
+  else
+   ifeq ($(os),qnx)    # QNX
+   else
+    ifeq ($(os),darwin)    # Darwin/Mac OS X
+     PTHREAD_CFLAGS    += -D__unix__ -DUSE_XP_SEMAPHORES -D__DARWIN__
+     PTHREAD_LDFLAGS    += -lpthread
+     XP_SEM    := 1
+    else
+     ifeq ($(os),sunos)  # Solaris
+      XP_SEM :=    1
+      PTHREAD_CFLAGS    +=    -D_POSIX_PTHREAD_SEMANTICS
+      PTHREAD_CFLAGS    += -DUSE_XP_SEMAPHORES
+      PTHREAD_LDFLAGS    +=    -lpthread
+     else            # Linux / Other UNIX
+      XP_SEM :=    1
+      PTHREAD_CFLAGS    += -DUSE_XP_SEMAPHORES
+      PTHREAD_LDFLAGS    +=    -lpthread
+     endif
+    endif
+   endif
+  endif
+ endif
+endif
+
 # Paths
 XPDEV_SRC	:=	$(SRC_ROOT)$(DIRSEP)xpdev
 CIOLIB_SRC	:=	$(SRC_ROOT)$(DIRSEP)conio
@@ -245,17 +292,30 @@ $(OBJODIR)/%.o : %.cpp $(BUILD_DEPENDS)
 	@echo $(COMPILE_MSG) $<
 	$(QUIET)$(CXX) $(CFLAGS) $(CXXFLAGS) -o $@ -c $<
 
+# Implicit MT C Compile Rule
+$(MTOBJODIR)/%.o : %.c $(BUILD_DEPENDS)
+	@echo $(COMPILE_MSG) $<
+	$(QUIET)$(CC) $(CFLAGS) $(CCFLAGS) $(PTHREAD_CFLAGS) -o $@ -c $<
+
+# Implicit MT C++ Compile Rule
+$(MTOBJODIR)/%.o : %.cpp $(BUILD_DEPENDS)
+	@echo $(COMPILE_MSG) $<
+	$(QUIET)$(CXX) $(CFLAGS) $(CXXFLAGS) $(PTHREAD_CFLAGS) -o $@ -c $<
+
 depend:
 	$(QUIET)$(DELETE) $(OBJODIR)/.depend
+	$(QUIET)$(DELETE) $(MTOBJODIR)/.depend
 	$(QUIET)$(DELETE) $(LIBODIR)/.depend
 	$(QUIET)$(DELETE) $(EXEODIR)/.depend
 	$(QUIET)$(MAKE) BUILD_DEPENDS=FORCE
 
 FORCE:
 
+-include $(MTOBJODIR)/.depend
 -include $(OBJODIR)/.depend
 -include $(LIBODIR)/.depend
 -include $(EXEODIR)/.depend
+-include $(MTOBJODIR)/*.d
 -include $(OBJODIR)/*.d
 -include $(LIBODIR)/*.d
 -include $(EXEODIR)/*.d
