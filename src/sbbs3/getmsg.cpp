@@ -297,11 +297,11 @@ void sbbs_t::msgtotxt(smbmsg_t* msg, char *str, int header, int tails)
 		fprintf(out,"\r\n\r\n"); }
 
 	buf=smb_getmsgtxt(&smb,msg,tails);
-	if(buf) {
+	if(buf!=NULL) {
 		lfputs(buf,out);
-		LFREE(buf); }
-	else if(smb_getmsgdatlen(msg)>2)
-		errormsg(WHERE,ERR_ALLOC,smb.file,smb_getmsgdatlen(msg));
+		LFREE(buf); 
+	} else if(smb_getmsgdatlen(msg)>2)
+		errormsg(WHERE,ERR_READ,smb.file,smb_getmsgdatlen(msg));
 	fclose(out);
 }
 
