@@ -29,10 +29,18 @@ for(i=0;i<argc;i++)
 	if(argv[i].toLowerCase()=="-n")
 		include_age_gender = false;
 
+var output_buf = "";
+
 // Write a string to the client socket
 function write(str)
 {
-	client.socket.send(str);
+	output_buf += str;
+}
+
+// Write all the output at once
+function flush()
+{
+	client.socket.send(output_buf);
 }
 
 // Write a crlf terminated string to the client socket
@@ -64,14 +72,19 @@ function test_port(port)
 }
 
 // Get Finger Request (the main entry point) 
-request = client.socket.recvline(128 /*maxlen*/, 10 /*timeout*/);
+if(datagram == undefined)	// TCP
+	request = client.socket.recvline(128 /*maxlen*/, 10 /*timeout*/);
+else						// UDP
+	request = datagram;
 
 if(request==null) {
 	log("!TIMEOUT waiting for request");
 	exit();
 }
 
-log(format("client request: '%s'",request));
+request = truncsp(request);
+
+log("client request: " + request);
 
 if(request.substr(0,2).toUpperCase()=="/W")	// "higher level of verbosity"
 	request=request.slice(2);				// ignored...
@@ -112,6 +125,7 @@ if(request=="") {	// no specific user requested, give list of active users
 			,n+1
 			));
 	}
+	flush();
 	exit();
 }
 
@@ -220,6 +234,7 @@ if(request.charAt(0)=='?') {	// Handle "special" requests
 			log(format("!UNSUPPORTED SPECIAL REQUEST: '%s'",request));
 			break;
 	}
+	flush();
 	exit();
 }
 
@@ -261,5 +276,7 @@ write(format("Last login %s %s\r\nvia %s from %s [%s]\r\n"
 	  ,user.connection
 	  ,user.host_name
 	  ,user.ip_address));
+
+flush();
 
 /* End of fingerservice.js */
