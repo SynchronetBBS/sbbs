@@ -435,7 +435,8 @@ void ciolib_wscroll(void)
 	ciolib_gotoxy(1,ti.winbottom-ti.winleft+1);
 	os=_wscroll;
 	_wscroll=0;
-	ciolib_cprintf("%*s",ti.winright-ti.winleft+1,"");
+	/* ciolib_cprintf("%*s",ti.winright-ti.winleft+1,""); */
+	ciolib_clreol();
 	_wscroll=os;
 	ciolib_gotoxy(ti.curx,ti.cury);
 }
@@ -527,17 +528,24 @@ void ciolib_window(int sx, int sy, int ex, int ey)
 
 void ciolib_clreol(void)
 {
-	int os;
-	struct text_info	ti;
+	unsigned char *buf;
+	int i;
+	int width,height;
+	struct text_info ti;
 
 	CIOLIB_INIT();
 	
 	ciolib_gettextinfo(&ti);
-	os=_wscroll;
-	_wscroll=0;
-	ciolib_cprintf("%*s",ti.winright-ti.curx+1,"");
-	_wscroll=os;
-	ciolib_gotoxy(ti.curx,ti.cury);
+
+	width=ti.winright-ti.curx+1;
+	height=1;
+	buf=(unsigned char *)malloc(width*height*2);
+	for(i=0;i<width*height*2;) {
+		buf[i++]=' ';
+		buf[i++]=ti.attribute;
+	}
+	ciolib_puttext(ti.curx+ti.winleft-1,ti.cury+ti.wintop-1,ti.winright,ti.cury+ti.wintop-1,buf);
+	free(buf);
 }
 
 void ciolib_clrscr(void)
