@@ -419,7 +419,12 @@ void sbbs_t::newuser()
 			i=j+1; }
 
 	useron.number=i;
-	putuserdat(&cfg,&useron);
+	if((i=putuserdat(&cfg,&useron))!=0) {
+		sprintf(str,"user record #%u",useron.number);
+		errormsg(WHERE,ERR_CREATE,str,i);
+		hangup();
+		return; 
+	}
 	putusername(&cfg,useron.number,useron.alias);
 	sprintf(str,"Created user record #%u: %s",useron.number,useron.alias);
 	logline(nulstr,str);
