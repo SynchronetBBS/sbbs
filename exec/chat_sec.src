@@ -64,7 +64,12 @@ cmdkey 'I'
 
 cmdkey 'R'
 	crlf
-	exec "?irc irc.thebbs.org 6667 #Synchronet"
+	print "\1n\1y\1hServer and channel: "
+	setstr "irc.thebbs.org 6667 #Synchronet"
+	getstr str 50 K_EDIT|K_LINE|K_AUTODEL
+	if_true
+		exec "?irc %s"
+		end_if
 	end_cmd
 
 cmdkey 'J'
