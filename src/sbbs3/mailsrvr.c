@@ -704,6 +704,8 @@ static void pop3_thread(void* arg)
 			sockprintf(socket, "-ERR");
 			break;
 		}
+		putuserrec(&scfg,user.number,U_COMP,LEN_COMP,host_name);
+		putuserrec(&scfg,user.number,U_NOTE,LEN_NOTE,host_ip);
 
 		/* Update client display */
 		client.user=user.alias;
@@ -1168,6 +1170,7 @@ static void smtp_thread(void* arg)
 	smbmsg_t	msg;
 	smbmsg_t	newmsg;
 	user_t		user;
+	user_t		relay_user;
 	node_t		node;
 	client_t	client;
 	smtp_t		smtp=*(smtp_t*)arg;
@@ -1940,7 +1943,13 @@ static void smtp_thread(void* arg)
 					|| dest_port!=server_addr.sin_port) {
 
 					sprintf(relay_list,"%srelay.cfg",scfg.ctrl_dir);
+					relay_user.number=userdatdupe(&scfg, 0, U_NOTE, LEN_NOTE, host_ip, FALSE);
+					if(relay_user.number!=0)
+						getuserdat(&scfg,&relay_user);
 					if(p!=alias_buf /* forced relay by alias */ &&
+						(!(startup->options&MAIL_OPT_ALLOW_RELAY)
+							|| relay_user.number==0
+							|| relay_user.rest&(FLAG('G')|FLAG('M'))) &&
 						!findstr(&scfg,host_name,relay_list) && 
 						!findstr(&scfg,host_ip,relay_list)) {
 						lprintf("%04d !SMTP ILLEGAL RELAY ATTEMPT from %s [%s] to %s"
@@ -1948,12 +1957,20 @@ static void smtp_thread(void* arg)
 						sprintf(tmp,"Relay attempt from: %s to: %s"
 							,reverse_path, p);
 						spamlog(&scfg, "SMTP", tmp, host_name, host_ip, rcpt_addr);
-						sockprintf(socket, "550 Relay not allowed.");
+						if(startup->options&MAIL_OPT_ALLOW_RELAY)
+							sockprintf(socket, "553 Relaying through this server "
+							"requires authentication.  "
+							"Please authenticate with POP3 before sending.");
+						else
+							sockprintf(socket, "550 Relay not allowed.");
 						break;
 					}
 
-					lprintf("%04d SMTP Relaying to external mail service: %s"
-						,socket, tp+1);
+					if(relay_user.number==0)
+						SAFECOPY(relay_user.alias,"Unknown User");
+
+					lprintf("%04d SMTP %s relaying to external mail service: %s"
+						,socket, relay_user.alias, tp+1);
 
 					fprintf(rcptlst,"0\n%.*s\n%.*s\n"
 						,(int)sizeof(rcpt_name)-1,rcpt_addr

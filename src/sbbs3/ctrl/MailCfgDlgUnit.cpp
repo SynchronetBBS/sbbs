@@ -118,6 +118,8 @@ void __fastcall TMailCfgDlg::FormShow(TObject *Sender)
     	&MAIL_OPT_RELAY_TX;
     UserNumberCheckBox->Checked=MainForm->mail_startup.options
     	&MAIL_OPT_ALLOW_RX_BY_NUMBER;
+    AllowRelayCheckBox->Checked=MainForm->mail_startup.options
+    	&MAIL_OPT_ALLOW_RELAY;
     RBLCheckBox->Checked=MainForm->mail_startup.options
     	&MAIL_OPT_USE_RBL;
     DULCheckBox->Checked=MainForm->mail_startup.options
@@ -205,6 +207,10 @@ void __fastcall TMailCfgDlg::OKBtnClick(TObject *Sender)
     	MainForm->mail_startup.options|=MAIL_OPT_ALLOW_RX_BY_NUMBER;
     else
 	    MainForm->mail_startup.options&=~MAIL_OPT_ALLOW_RX_BY_NUMBER;
+	if(AllowRelayCheckBox->Checked==true)
+    	MainForm->mail_startup.options|=MAIL_OPT_ALLOW_RELAY;
+    else
+	    MainForm->mail_startup.options&=~MAIL_OPT_ALLOW_RELAY;
 	if(RBLCheckBox->Checked==true)
     	MainForm->mail_startup.options|=MAIL_OPT_USE_RBL;
     else

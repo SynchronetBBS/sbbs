@@ -108,6 +108,7 @@ __published:
     TCheckBox *SendMailCheckBox;
     TLabel *DefaultUserLabel;
     TEdit *DefaultUserEdit;
+	TCheckBox *AllowRelayCheckBox;
     void __fastcall InboundSoundButtonClick(TObject *Sender);
     void __fastcall OutboundSoundButtonClick(TObject *Sender);
     void __fastcall FormShow(TObject *Sender);

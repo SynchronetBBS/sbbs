@@ -53,8 +53,8 @@ object MailCfgDlg: TMailCfgDlg
     Top = 4
     Width = 342
     Height = 245
-    ActivePage = SendMailTabSheet
-    TabIndex = 3
+    ActivePage = SMTPTabSheet
+    TabIndex = 1
     TabOrder = 3
     object GeneralTabSheet: TTabSheet
       Caption = 'General'
@@ -267,6 +267,17 @@ object MailCfgDlg: TMailCfgDlg
         ParentShowHint = False
         ShowHint = True
         TabOrder = 2
+      end
+      object AllowRelayCheckBox: TCheckBox
+        Left = 115
+        Top = 140
+        Width = 198
+        Height = 24
+        Hint = 'Allow mail to be relayed for authenticated users'
+        Caption = 'Allow Authenticated Relay'
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 7
       end
     end
     object POP3TabSheet: TTabSheet
