@@ -114,7 +114,7 @@ zmodem_tx_raw(zmodem_t* zm, unsigned char ch)
 		lprintf(zm,LOG_INFO,"RX: %s ",chr(ch));
 
 	if(zm->send_byte(zm->cbdata,ch,zm->send_timeout))
-		lprintf(zm,LOG_ERR,"!Send error: %u",ERROR_VALUE);
+		lprintf(zm,LOG_ERR,"Send error: %u",ERROR_VALUE);
 
 	zm->last_sent = ch;
 }
@@ -427,7 +427,7 @@ zmodem_tx_data(zmodem_t* zm, uchar sub_frame_type,unsigned char * p, int l)
 }
 
 void
-zmodem_tx_pos_header(zmodem_t* zm, int type,long pos) 
+zmodem_tx_pos_header(zmodem_t* zm, int type, long pos, BOOL hex) 
 {
 	uchar header[5];
 
@@ -437,7 +437,10 @@ zmodem_tx_pos_header(zmodem_t* zm, int type,long pos)
 	header[ZP2] = (pos >> 16) & 0xff;
 	header[ZP3] = (pos >> 24) & 0xff;
 
-	zmodem_tx_hex_header(zm, header);
+	if(hex)
+		zmodem_tx_hex_header(zm, header);
+	else
+		zmodem_tx_header(zm, header);
 }
 
 void
@@ -445,13 +448,13 @@ zmodem_tx_znak(zmodem_t* zm)
 {
 //	lprintf(zm,LOG_INFO,"tx_znak");
 
-	zmodem_tx_pos_header(zm, ZNAK, zm->ack_file_pos);
+	zmodem_tx_pos_header(zm, ZNAK, zm->ack_file_pos, /* Hex? */ TRUE);
 }
 
 void
 zmodem_tx_zskip(zmodem_t* zm)
 {
-	zmodem_tx_pos_header(zm, ZSKIP, 0L);
+	zmodem_tx_pos_header(zm, ZSKIP, 0L, /* Hex? */ TRUE);
 }
 
 /*
@@ -491,7 +494,7 @@ zmodem_rx_raw(zmodem_t* zm, int to)
 		zm->n_cans++;
 		if(zm->n_cans == 5) {
 			zm->cancelled=TRUE;
-			lprintf(zm,LOG_WARNING,"!Cancelled Remotely");
+			lprintf(zm,LOG_WARNING,"Cancelled Remotely");
 			return(TIMEOUT);
 		}
 	}
@@ -769,13 +772,13 @@ zmodem_rx_data(zmodem_t* zm, unsigned char * p, int * l)
  		 * frame continues; ZACK expected
 		 */
 		case ZCRCQ:		
-			zmodem_tx_pos_header(zm, ZACK, pos);
+			zmodem_tx_pos_header(zm, ZACK, pos, /* Hex? */ TRUE);
 			return FRAMEOK;
 		/*
 		 * frame ends; ZACK expected
 		 */
 		case ZCRCW:
-			zmodem_tx_pos_header(zm, ZACK, pos);
+			zmodem_tx_pos_header(zm, ZACK, pos, /* Hex? */ TRUE);
 			return ENDOFFRAME;
 	}
 
@@ -937,7 +940,7 @@ zmodem_rx_hex_header(zmodem_t* zm, int to)
 		zm->rxd_header_len = 5;
 	}
 	else {
-		lprintf(zm,LOG_ERR,"!BAD CRC-16: 0x%hX, expected: 0x%hX", rxd_crc, crc);
+		lprintf(zm,LOG_ERR,"BAD CRC-16: 0x%hX, expected: 0x%hX", rxd_crc, crc);
 	}
 
 	/*
@@ -1038,7 +1041,7 @@ zmodem_rx_header_raw(zmodem_t* zm, int to,int errors)
 		c = zmodem_rx(zm, to);
 
 		if(c == TIMEOUT) {
-			lprintf(zm,LOG_ERR,"!TIMEOUT %s %d",__FILE__,__LINE__);
+			lprintf(zm,LOG_ERR,"TIMEOUT %s %d",__FILE__,__LINE__);
 			return c;
 		}
 
@@ -1062,7 +1065,7 @@ zmodem_rx_header_raw(zmodem_t* zm, int to,int errors)
 				/*
 				 * unrecognized header style
 				 */
-				lprintf(zm,LOG_ERR,"!UNRECOGNIZED header style %c",c);
+				lprintf(zm,LOG_ERR,"UNRECOGNIZED header style %c",c);
 				if(errors) {
 					return INVHDR;
 				}
@@ -1186,24 +1189,18 @@ int zmodem_send_zfin(zmodem_t* zm)
  */
 
 int
-zmodem_send_from(zmodem_t* zm, FILE * fp)
+zmodem_send_from(zmodem_t* zm, FILE* fp, ulong pos, ulong fsize, ulong* sent)
 {
 	int n;
-	long pos;
 	uchar type = ZCRCG;
-	uchar zdata_frame[] = { ZDATA, 0, 0, 0, 0 };
 
-	/*
- 	 * put the file position in the ZDATA frame
-	 */
+	if(sent!=NULL)
+		*sent=0;
 
-	pos = ftell(fp);
-	zdata_frame[ZP0] =  pos        & 0xff;
-	zdata_frame[ZP1] = (pos >> 8)  & 0xff;
-	zdata_frame[ZP2] = (pos >> 16) & 0xff;
-	zdata_frame[ZP3] = (pos >> 24) & 0xff;
+	fseek(fp,pos,SEEK_SET);
 
-	zmodem_tx_header(zm, zdata_frame);
+	zmodem_tx_pos_header(zm, ZDATA, pos, /* Hex? */ FALSE);
+
 	/*
 	 * send the data in the file
 	 */
@@ -1222,16 +1219,19 @@ zmodem_send_from(zmodem_t* zm, FILE * fp)
 			break;
 		}
 
-		zm->progress(zm->cbdata, ftell(fp), zm->current_file_size, zm->transfer_start);
+		zm->progress(zm->cbdata, pos, ftell(fp), fsize, zm->transfer_start);
 
 		/*
 		 * at end of file wait for an ACK
 		 */
-		if((ulong)ftell(fp) == zm->current_file_size) {
+		if((ulong)ftell(fp) == fsize) {
 			type = ZCRCW;
 		}
 
 		zmodem_tx_data(zm, type, zm->tx_data_subpacket, n);
+
+		if(sent!=NULL)
+			*sent+=n;
 
 		if(type == ZCRCW) {
 			int type;
@@ -1242,9 +1242,9 @@ zmodem_send_from(zmodem_t* zm, FILE * fp)
 				}
 			} while (type != ZACK);
 
-			if((ulong)ftell(fp) == zm->current_file_size) {
+			if((ulong)ftell(fp) >= fsize) {
 				if(*(zm->mode)&DEBUG) {
-					lprintf(zm,LOG_INFO,"end of file (%ld)", zm->current_file_size );
+					lprintf(zm,LOG_INFO,"end of file (%ld)", fsize );
 				}
 				return ZACK;
 			}
@@ -1288,8 +1288,8 @@ zmodem_send_from(zmodem_t* zm, FILE * fp)
 BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, time_t* start, ulong* sent)
 {
 	BOOL	success=FALSE;
-	ulong	sent_bytes=0;
-	long	pos;
+	long	pos=0;
+	ulong	sent_bytes;
 	struct	stat s;
 	unsigned char * p;
 	uchar	zfile_frame[] = { ZFILE, 0, 0, 0, 0 };
@@ -1314,14 +1314,13 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 				zmodem_parse_zrinit(zm);
 				break;
 			}
-			lprintf(zm,LOG_WARNING,"!RX header type: %d 0x%02X", i, i);
+			lprintf(zm,LOG_WARNING,"RX header type: %d 0x%02X", i, i);
 		}
 		if(errors>=zm->max_errors)
 			return(FALSE);
 	}
 
 	fstat(fileno(fp),&s);
-	zm->current_file_size = s.st_size;
 
 	/*
 	 * the file exists. now build the ZFILE frame
@@ -1423,7 +1422,7 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 
 		if(type == ZSKIP) {
 			zm->file_skipped=TRUE;
-			lprintf(zm,LOG_WARNING,"!File skipped by receiver");
+			lprintf(zm,LOG_WARNING,"File skipped by receiver");
 			return(FALSE);
 		}
 
@@ -1444,24 +1443,16 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 		}
 
 		/*
- 		 * seek to the right place in the file
-		 */
-		fseek(fp,pos,SEEK_SET);
-
-		/*
 		 * and start sending
 		 */
 
-		type = zmodem_send_from(zm,fp);
+		type = zmodem_send_from(zm, fp, pos, s.st_size, &sent_bytes);
+
+		if(sent!=NULL)
+			*sent+=sent_bytes;
 
 		if(type == ZFERR || type == ZABORT || zm->cancelled)
 			return(FALSE);
-
-		if(type==ZACK)
-			sent_bytes = ftell(fp);
-
-		if(sent!=NULL)	
-			*sent=sent_bytes;
 
 	} while (type == ZRPOS || type == ZNAK);
 
@@ -1624,7 +1615,7 @@ char* zmodem_ver(char *buf)
 
 void zmodem_init(zmodem_t* zm, void* cbdata, long* mode
 				,int	(*lputs)(void*, int level, const char* str)
-				,void	(*progress)(void* unused, ulong offset, ulong fsize, time_t t)
+				,void	(*progress)(void* unused, ulong, ulong, ulong, time_t)
 				,int	(*send_byte)(void*, uchar ch, unsigned timeout)
 				,int	(*recv_byte)(void*, unsigned timeout))
 {

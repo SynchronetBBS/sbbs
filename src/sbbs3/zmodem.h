@@ -259,13 +259,13 @@ typedef struct {
 	int			(*lputs)(void*, int level, const char* str);
 	int			(*send_byte)(void*, uchar ch, unsigned timeout);
 	int			(*recv_byte)(void*, unsigned timeout);
-	void		(*progress)(void*, ulong offset, ulong fsize, time_t t);
+	void		(*progress)(void*, ulong start_pos, ulong current_pos, ulong fsize, time_t start);
 
 } zmodem_t;
 
 void		zmodem_init(zmodem_t*, void* cbdata, long* mode
 						,int	(*lputs)(void*, int level, const char* str)
-						,void	(*progress)(void*, ulong offset, ulong fsize, time_t t)
+						,void	(*progress)(void*, ulong, ulong, ulong, time_t)
 						,int	(*send_byte)(void*, uchar ch, unsigned timeout)
 						,int	(*recv_byte)(void*, unsigned timeout));
 char*		zmodem_ver(char *buf);

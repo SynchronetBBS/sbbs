@@ -619,7 +619,8 @@ void xmodem_progress(void* unused, unsigned block_num, ulong offset, ulong fsize
  * show the progress of the transfer like this:
  * zmtx: sending file "garbage" 4096 bytes ( 20%)
  */
-void zmodem_progress(void* unused, ulong offset, ulong fsize, time_t start)
+void zmodem_progress(void* unused, ulong start_pos, ulong current_pos
+					 ,ulong fsize, time_t start)
 {
 	unsigned	cps;
 	long		l;
@@ -628,25 +629,25 @@ void zmodem_progress(void* unused, ulong offset, ulong fsize, time_t start)
 	static time_t last_progress;
 
 	now=time(NULL);
-	if(now-last_progress>=progress_interval || offset >= fsize || newline) {
+	if(now-last_progress>=progress_interval || current_pos >= fsize || newline) {
 		t=now-start;
 		if(t<=0)
 			t=1;
-		if((cps=offset/t)==0)
+		if((cps=(current_pos-start_pos)/t)==0)
 			cps=1;		/* cps so far */
 		l=fsize/cps;	/* total transfer est time */
 		l-=t;			/* now, it's est time left */
 		if(l<0) l=0;
 		fprintf(statfp,"\rKByte: %lu/%lu  "
 			"Time: %lu:%02lu/%lu:%02lu  CPS: %u  %lu%% "
-			,offset/1024
+			,current_pos/1024
 			,fsize/1024
 			,t/60L
 			,t%60L
 			,l/60L
 			,l%60L
 			,cps
-			,(long)(((float)offset/(float)fsize)*100.0)
+			,(long)(((float)current_pos/(float)fsize)*100.0)
 			);
 		newline=FALSE;
 		last_progress=now;
