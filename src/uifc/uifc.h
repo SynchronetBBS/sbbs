@@ -157,8 +157,10 @@
 #define UIFC_MONO	(1<<2)	/* Force monochrome mode */
 #define UIFC_COLOR	(1<<3)	/* Force color mode */
 #define UIFC_IBM	(1<<4)	/* Force use of IBM charset	*/
-
+#define UIFC_NOCTRL	(1<<5)	/* Don't allow useage of CTRL keys for movement 
+							 * etc in menus (Still available in text boxes) */
                             /* Bits in uifcapi_t.list mode */
+
 #define WIN_ORG 	(1<<0)	/* Original menu - destroy valid screen area */
 #define WIN_SAV 	(1<<1)	/* Save existing text and replace when finished */
 #define WIN_ACT 	(1<<2)	/* Menu remains active after a selection */
