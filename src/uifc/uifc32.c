@@ -1613,27 +1613,24 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 		if(i>j) j=i;
 		str[j]=0;
 		getstrupd(left, top, width, str, i, &soffset);
-		if(f || kbwait())
+		if(f || (ch=inkey()))
 		{
 			if(f)
 				ch=f;
-			else {
-				ch=inkey();
-				if(ch==CIO_KEY_MOUSE) {
-					if((ch=uifc_getmouse(&mevnt))==0) {
-						if(mevnt.x>=left-1
-								&& mevnt.x<=left+width-1
-								&& mevnt.button==1) {
-							i=mevnt.x-left+soffset+1;
-							if(i>j)
-								i=j;
-						}
+			f=0;
+			if(ch==CIO_KEY_MOUSE) {
+				if((ch=uifc_getmouse(&mevnt))==0) {
+					if(mevnt.x>=left-1
+							&& mevnt.x<=left+width-1
+							&& mevnt.button==1) {
+						i=mevnt.x-left+soffset+1;
+						if(i>j)
+							i=j;
 					}
 				}
 			}
 			if(lastkey != NULL)
 				*lastkey=ch;
-			f=0;
 			switch(ch)
 			{
 				case CIO_KEY_F(1):	/* F1 Help */
@@ -1763,8 +1760,6 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 				str[i++]=ch; 
 			}
 		}
-		else
-			mswait(1);
 	}
 
 
