@@ -587,7 +587,7 @@ static u_long resolve_ip(char *inaddr)
 
 	SAFECOPY(buf,inaddr);
 	addr=buf;
-	if(*addr=='[' && *(p=lastchar(addr))==']')	{ /* Support [addr] notation */
+	if(*addr=='[' && *(p=lastchar(addr))==']') { /* Support [ip_address] notation */
 		addr++;
 		*p=0;
 	}
@@ -601,8 +601,8 @@ static u_long resolve_ip(char *inaddr)
 	if(!(*p))
 		return(inet_addr(addr));
 
-	if((host=gethostbyname(addr))==NULL) {
-		lprintf(LOG_WARNING,"0000 !ERROR resolving hostname: %s",addr);
+	if((host=gethostbyname(inaddr))==NULL) {
+		lprintf(LOG_WARNING,"0000 !ERROR resolving hostname: %s",inaddr);
 		return((u_long)INADDR_NONE);
 	}
 	return(*((ulong*)host->h_addr_list[0]));
