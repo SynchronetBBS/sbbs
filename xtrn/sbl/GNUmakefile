@@ -38,10 +38,12 @@ DELETE	:=	rm -f -v
 ifeq ($(os),freebsd)	# FreeBSD
  CFLAGS	+= -D_THREAD_SAFE
  LFLAGS	:=	-pthread
+ BSD	=	1
 else
  ifeq ($(os),openbsd)	# OpenBSD
   CFLAGS	+= -D_THREAD_SAFE
   LFLAGS	:=	-pthread
+  BSD		=	1
  else
   ifeq ($(os),netbsd)	# NetBSD
   CFLAGS	+= -D_THREAD_SAFE -D__unix__ -D_NEED_SEM -I/usr/pkg/include
@@ -67,7 +69,7 @@ CFLAGS	+=	-I$(XSDK) -I$(XPDEV) -I$(SBBS_SRC)
 all: sbl sbl2smb smb2sbl sblpack
 
 sbl: sbl.o xsdk.o xsdkvars.o xsdkwrap.o
-	$(CC) $(CFLAGS) $^ -o $@ $(LIBS)
+	$(CC) $(CFLAGS) $(LFLAGS) $^ -o $@ $(LIBS)
 
 SMBIO	=	$(XPDEV)/genwrap.o $(XPDEV)/filewrap.o $(XPDEV)/dirwrap.o \
 		$(SBBS_SRC)/smblib.o $(SBBS_SRC)/lzh.o
