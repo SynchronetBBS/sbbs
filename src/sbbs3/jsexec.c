@@ -413,8 +413,6 @@ js_BranchCallback(JSContext *cx, JSScript *script)
 
 		val=JSVAL_TRUE;
 		JS_SetProperty(js_cx, obj, "terminated", &val);
-
-		terminated=FALSE;	/* No need to repeat this */
 	}
 
     return(JS_TRUE);
