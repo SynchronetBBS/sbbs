@@ -984,8 +984,8 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 		sprintf(dszlog,"DSZLOG=%sPROTOCOL.LOG",cfg.node_dir);
 		sprintf(sbbsnode,"SBBSNODE=%s",cfg.node_dir);
 		sprintf(sbbsctrl,"SBBSCTRL=%s",cfg.ctrl_dir);
-		sprintf(sbbsctrl,"SBBSDATA=%s",cfg.data_dir);
-		sprintf(sbbsctrl,"SBBSEXEC=%s",cfg.exec_dir);
+		sprintf(sbbsdata,"SBBSDATA=%s",cfg.data_dir);
+		sprintf(sbbsexec,"SBBSEXEC=%s",cfg.exec_dir);
 		sprintf(sbbsnnum,"SBBSNNUM=%d",cfg.node_num);
 		putenv(dszlog); 		/* Makes the DSZ LOG active */
 		putenv(sbbsnode);
