@@ -40,20 +40,20 @@
 
 #include "gen_defs.h"	/* HANDLE */
 
-#ifdef DLLEXPORT
-#undef DLLEXPORT
+#if defined(DLLEXPORT)
+	#undef DLLEXPORT
 #endif
-#ifdef DLLCALL
-#undef DLLCALL
+#if defined(DLLCALL)
+	#undef DLLCALL
 #endif
 
-#ifdef _WIN32
-	#ifdef WRAPPER_DLL
+#if defined(_WIN32)
+	#if defined(WRAPPER_DLL)
 		#define DLLEXPORT	__declspec(dllexport)
 	#else
 		#define DLLEXPORT	__declspec(dllimport)
 	#endif
-	#ifdef __BORLANDC__
+	#if defined(__BORLANDC__)
 		#define DLLCALL __stdcall
 	#else
 		#define DLLCALL
@@ -63,11 +63,11 @@
 	#define DLLCALL
 #endif
 
-#ifdef __cplusplus
+#if defined(__cplusplus)
 extern "C" {
 #endif
 
-#ifdef __unix__
+#if defined(__unix__)
 
 	#include <pthread.h>	/* POSIX threads and mutexes */
 	#include <semaphore.h>	/* POSIX semaphores */
@@ -85,7 +85,7 @@ extern "C" {
 	#define sem_wait(psem)				WaitForSingleObject(*(psem),INFINITE)
 	#define sem_post(psem)				ReleaseSemaphore(*(psem),1,NULL)
 	#define sem_destroy(psem)			CloseHandle(*(psem))
-	DLLEXPORT int DLLCALL sem_getvalue(sem_t*, int* val);
+	/* No Win32 implementation for sem_getvalue() */
 
 	/* POSIX mutexes */
 	typedef HANDLE pthread_mutex_t;
@@ -101,7 +101,7 @@ extern "C" {
 
 #endif
 
-#ifdef __cplusplus
+#if defined(__cplusplus)
 }
 #endif
 
