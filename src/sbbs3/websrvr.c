@@ -643,18 +643,16 @@ static void b64_decode (uchar *p)
 	return;
 }
 
-static BOOL read_mime_types(void)
+static BOOL read_mime_types(char* fname)
 {
 	char	str[1024];
 	char *	ext;
 	char *	type;
 	FILE*	mime_config;
 
-	sprintf(str,"%smime_types.cfg",scfg.ctrl_dir);
-	mime_config=fopen(str,"r");
-	if(mime_config==NULL) {
+	if((mime_config=fopen(fname,"r"))==NULL)
 		return(FALSE);
-	}
+
 	while (!feof(mime_config)&&mime_count<MAX_MIME_TYPES) {
 		if(fgets(str,sizeof(str),mime_config)!=NULL) {
 			truncsp(str);
@@ -1151,8 +1149,8 @@ void DLLCALL web_server(void* arg)
 	SAFECOPY(error_dir,startup->error_dir);
 
 	/* Change to absolute path */
-	prep_dir(startup->ctrl_dir, root_dir);
-	prep_dir(startup->ctrl_dir, error_dir);
+	prep_dir(scfg.ctrl_dir, root_dir);
+	prep_dir(scfg.ctrl_dir, error_dir);
 
 	startup->recycle_now=FALSE;
 	recycle_server=TRUE;
@@ -1203,8 +1201,9 @@ void DLLCALL web_server(void* arg)
 		}
 		scfg_reloaded=TRUE;
 
-		if(!read_mime_types()) {
-			lprintf("!ERROR %d reading mime_types.cfg", ERROR_VALUE);
+		sprintf(path,"%smime_types.cfg",scfg.ctrl_dir);
+		if(!read_mime_types(path)) {
+			lprintf("!ERROR %d reading %s", ERROR_VALUE,path);
 			cleanup(1);
 			return;
 		}
