@@ -51,8 +51,9 @@ void quotestr(char *str);
 bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 	,char *dest)
 {
-	char	str[256],quote[128],msgtmp[32],c,HUGE16 *buf,ex_mode=0,*p,*tp
+	char	str[256],quote[128],c,HUGE16 *buf,ex_mode=0,*p,*tp
 				,useron_level;
+	char	msgtmp[MAX_PATH+1];
 	char 	tmp[512];
 	int		i,j,file,linesquoted=0;
 	long	length,qlen,qtime;
@@ -72,9 +73,9 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 		mode|=WM_NOTOP;
 
 	if(useron.xedit && cfg.xedit[useron.xedit-1]->misc&QUICKBBS)
-		strcpy(msgtmp,"MSGTMP");
+		sprintf(msgtmp,"%sMSGTMP",cfg.node_dir);	/* QuickBBS editors are dumb */
 	else
-		strcpy(msgtmp,"INPUT.MSG");
+		sprintf(msgtmp,"%sINPUT.MSG",cfg.temp_dir);
 
 	if(mode&WM_QUOTE && !(useron.rest&FLAG('J'))
 		&& ((mode&(WM_EMAIL|WM_NETMAIL) && cfg.sys_misc&SM_QUOTE_EM)
@@ -91,9 +92,8 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 				return(false); 
 			}
 
-			sprintf(str,"%s%s",cfg.temp_dir,msgtmp);    /* file for quoted msg */
-			if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
-				errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC);
+			if((file=nopen(msgtmp,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
+				errormsg(WHERE,ERR_OPEN,msgtmp,O_WRONLY|O_CREAT|O_TRUNC);
 				LFREE(buf);
 				fclose(stream);
 				return(false); 
@@ -123,9 +123,8 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 				LFREE(buf);
 				return(false); }
 
-			sprintf(str,"%s%s",cfg.temp_dir,msgtmp);    /* file for quoted msg */
-			if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
-				errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC);
+			if((file=nopen(msgtmp,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
+				errormsg(WHERE,ERR_OPEN,msgtmp,O_WRONLY|O_CREAT|O_TRUNC);
 				LFREE(buf);
 				fclose(stream);
 				return(false); }
@@ -286,34 +285,33 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 			if(cfg.xedit[useron.xedit-1]->misc&WWIVCOLOR)
 				ex_mode|=EX_WWIV; }
 
-		sprintf(str,"%s%s",cfg.temp_dir,msgtmp);    /* temporary file for input */
-		if(!linesquoted && fexist(str))
-			remove(str);
+		if(!linesquoted && fexist(msgtmp))
+			remove(msgtmp);
 		if(linesquoted) {
-			qlen=flength(str);
-			qtime=fdate(str); }
+			qlen=flength(msgtmp);
+			qtime=fdate(msgtmp); }
 		if(online==ON_LOCAL) {
 			if(cfg.node_misc&NM_LCL_EDIT && cfg.node_editor[0])
-				external(cmdstr(cfg.node_editor,str,nulstr,NULL)
+				external(cmdstr(cfg.node_editor,msgtmp,nulstr,NULL)
 					,0,cfg.node_dir); 
 			else
-				external(cmdstr(cfg.xedit[useron.xedit-1]->lcmd,str,nulstr,NULL)
+				external(cmdstr(cfg.xedit[useron.xedit-1]->lcmd,msgtmp,nulstr,NULL)
 					,ex_mode,cfg.node_dir); }
 
 		else {
 			rioctl(IOCM|PAUSE|ABORT);
-			external(cmdstr(cfg.xedit[useron.xedit-1]->rcmd,str,nulstr,NULL),ex_mode,cfg.node_dir);
+			external(cmdstr(cfg.xedit[useron.xedit-1]->rcmd,msgtmp,nulstr,NULL),ex_mode,cfg.node_dir);
 			rioctl(IOSM|PAUSE|ABORT); }
 		checkline();
-		if(!fexist(str) || !online
-			|| (linesquoted && qlen==flength(str) && qtime==fdate(str))) {
+		if(!fexist(msgtmp) || !online
+			|| (linesquoted && qlen==flength(msgtmp) && qtime==fdate(msgtmp))) {
 			LFREE(buf);
 			return(false); }
 		buf[0]=0;
 		if(!(mode&WM_NOTOP))
 			strcpy((char *)buf,top);
-		if((file=nopen(str,O_RDONLY))==-1) {
-			errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
+		if((file=nopen(msgtmp,O_RDONLY))==-1) {
+			errormsg(WHERE,ERR_OPEN,msgtmp,O_RDONLY);
 			LFREE(buf);
 			return(false); }
 		length=filelength(file);
@@ -324,20 +322,19 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 			bputs(text[OutOfBytes]); }
 		lread(file,buf+l,length);
 		close(file);
-		// remove(str); 	   /* no need to save the temp input file */
+		// remove(msgtmp); 	   /* no need to save the temp input file */
 		buf[l+length]=0; }
 	else {
 		buf[0]=0;
 		if(linesquoted) {
-			sprintf(str,"%s%s",cfg.temp_dir,msgtmp);
-			if((file=nopen(str,O_RDONLY))!=-1) {
+			if((file=nopen(msgtmp,O_RDONLY))!=-1) {
 				length=filelength(file);
 				l=length>cfg.level_linespermsg[useron_level]*MAX_LINE_LEN
 					? cfg.level_linespermsg[useron_level]*MAX_LINE_LEN : length;
 				lread(file,buf,l);
 				buf[l]=0;
 				close(file);
-				// remove(str);
+				// remove(msgtmp);
 				} }
 		if(!(msgeditor((char *)buf,mode&WM_NOTOP ? nulstr : top,title))) {
 			LFREE(buf);
