@@ -105,10 +105,14 @@ else {
 	template.group=msg_area.grp[msg_area.sub[sub].grp_name];
 }
 
-for(displayed=0;displayed<max_messages && last_offset >= 0 && msgarray[last_offset].hdr != null;last_offset--) {
-	if(msgarray[last_offset].hdr.subject=='')
-		msgarray[last_offset].hdr.subject="-- No Subject --";
-	template.messages[displayed.toString()]=msgarray[last_offset].hdr;
+for(displayed=0;displayed<max_messages && last_offset >= 0;last_offset--) {
+	var hdr=msgbase.get_msg_header(true,msgarray[last_offset].offset);
+	if(hdr==null)
+		continue;
+	msgarray[last_offset].hdr != null
+	if(hdr.subject=='')
+		hdr.subject="-- No Subject --";
+	template.messages[displayed.toString()]=hdr;
 	template.messages[displayed.toString()].attachments=count_attachments(msgarray[last_offset].hdr,msgbase.get_msg_body(true,msgarray[last_offset].offset,true,true));
 	template.messages[displayed.toString()].offset=msgarray[last_offset].offset;
 	displayed++;
