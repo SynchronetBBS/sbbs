@@ -66,9 +66,11 @@ char sbbs_t::getkey(long mode)
 				bputs("\b \b");
 			return(0); }
 
+#if 0	// moved to inkey() on AUG-29-2001
 		if(sys_status&SS_SYSPAGE) {
 			sbbs_beep(sbbs_random(800),100);
 		}
+#endif
 
 		if(mode&K_SPIN)
 			switch(spin) {
