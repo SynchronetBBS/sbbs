@@ -2972,9 +2972,9 @@ void DLLCALL bbs_thread(void* arg)
 	status("Initializing");
 
 	/* Defeat the lameo hex0rs - the name and copyright must remain intact */
-	sprintf(str,"%.10s",VERSION_NOTICE);
-	if(crc32(COPYRIGHT_NOTICE,0)!=COPYRIGHT_CRC || crc32(str,0)!=SYNCHRONET_CRC) {
-		lprintf("!Corrupted library file");
+	if(crc32(COPYRIGHT_NOTICE,0)!=COPYRIGHT_CRC 
+		|| crc32(VERSION_NOTICE,10)!=SYNCHRONET_CRC) {
+		lprintf("!CORRUPTED LIBRARY FILE");
 		cleanup(1);
 		return;
 	}
