@@ -3,7 +3,7 @@ load("sbbsdefs.js");
 
 template.title=system.name+" Home Page";
 write_template("header.inc");
-writeln('<br>');
+writeln('<br />');
 writeln('<table class="main" cellspacing="2" cellpadding="2">');
 writeln('<tbody>');
 writeln('<tr>');
@@ -22,10 +22,10 @@ if(user.number || (this.login!=undefined && system.matchuser("Guest")))
     writeln('<a href="msgs">Message Groups</a><br />');
 // FTP link
 if(user.number || system.matchuser("Guest")) {
-    write('<a href=ftp://');
+    write('<a href="ftp://');
     if(user.number && !(user.security.restrictions&UFLAG_G))
 	    write(escape(user.alias) + ':' + escape(user.security.password) + '@');
-    writeln(http_request.host + '/00index.html>File Libraries</a>');
+    writeln(http_request.host + '/00index.html">File Libraries</a>');
     writeln('<br />');
 }
 writeln('</td>');
