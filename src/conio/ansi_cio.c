@@ -317,19 +317,22 @@ static void ansi_keyparse(void *par)
 	int		i;
 	char	*p;
 	int		timeout=0;
+	int		timedout=0;
 
 	seq[0]=0;
 	for(;;) {
+		timedout=0;
 		if(timeout) {
 			if(sem_trywait_block(&got_key,timeout)) {
 				gotesc=0;
 				timeout=0;
+				timedout=1;
 			}
 		}
 		else
 			sem_wait(&got_key);
 
-		if(!gotesc && seq[0]) {
+		if(timedout) {
 			for(p=seq;*p;p++) {
 				sem_wait(&used_input);
 				ansi_inch=*p;
