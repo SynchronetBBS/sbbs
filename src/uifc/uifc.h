@@ -49,6 +49,7 @@
 #if !defined(__unix__)
     #include <io.h>
 	#include <malloc.h>		/* malloc prototype */
+	#include <sys/param.h>	/* PATH_MAX */
 #endif
 #if (defined(__unix__) || defined(_WIN32)) && !defined(__FLAT__)
     #define __FLAT__
@@ -101,6 +102,18 @@
 	#define MALLOC malloc
 	#define LFREE free
 	#define FREE free
+#endif
+
+#if !defined(MAX_PATH)	/* maximum path length */
+	#if defined MAXPATHLEN
+		#define MAX_PATH MAXPATHLEN	/* clib.h */
+	#elif defined PATH_MAX
+		#define MAX_PATH PATH_MAX
+	#elif defined _MAX_PATH
+		#define MAX_PATH _MAX_PATH
+	#else
+		#define MAX_PATH 260		
+	#endif
 #endif
 
 #ifdef __DPMI32__
