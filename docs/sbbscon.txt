@@ -6,9 +6,9 @@ $Id$
 1. Introduction
 ---------------
 The Synchronet Console is the console-mode sysop interface to Synchronet v3.
-On Win32 operating systems, this interface (sbbs.exe) is an alternative to 
-the graphical Synchronet Control Panel (sbbsctrl.exe). On Unix, this interface
-(sbbs) is currently the only option.
+On Win32 operating systems, this interface (sbbs.exe) is an alternative to
+the graphical Synchronet Control Panel (sbbsctrl.exe). On Unix, this
+interface (sbbs) is currently the only option.
 
 On Win32 operating systems, the exact same underlying server libraries (DLLs)
 are used to service the clients, so from the users perspective there should
@@ -22,7 +22,7 @@ Unix sysops.
 2. BBS Configuration
 --------------------
 The system-wide configuration files (ctrl/*.cnf) are edited using the
-Synchronet configuration utility (SCFG). The executable filename is 
+Synchronet configuration utility (SCFG). The executable filename is
 exec/scfg.exe on Win32 and exec/scfg on Unix.
 
 SCFG needs to be told the location of your Synchronet ctrl directory, where
@@ -44,7 +44,7 @@ Generally speaking, if you are running Linux, your shell is bash.  You can
 verify your shell by typing ``echo $SHELL'' at a command line.
 
 Many of the Synchronet utilities require this environment variable, so it is
-suggested you initialize this environment variable in your system startup 
+suggested you initialize this environment variable in your system startup
 and/or login scripts. See section 3 for details.
 
 The SCFG application supports multiple forms of user interface. The default
@@ -144,8 +144,8 @@ root, you will have to set the User and Group values.
 If you want Synchronet to fork and run in the background as a daemon, logging
 via syslog rather than the local console, set Daemonize=True in this section.
 
-To configure syslog and the LogFacility, a good default to use is LogFacility=3
-Then, in /etc/syslog.conf you will need to add the line:
+To configure syslog and the LogFacility, a good default to use is
+LogFacility=3 Then, in /etc/syslog.conf you will need to add the line:
 local3.*				/var/log/synchronet.log
 
 You will have to create this file manually initially by running:
