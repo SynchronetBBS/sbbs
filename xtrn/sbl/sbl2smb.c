@@ -373,6 +373,7 @@ int main(int argc, char **argv)
 		memcpy(msg.hdr.id,"SHD\x1a",4);
 		msg.hdr.version=smb_ver();
 		msg.hdr.when_written.time=time(NULL);
+		msg.hdr.when_imported.time=time(NULL);
     
 		msg.hdr.offset=offset;
 
