@@ -1541,9 +1541,9 @@ int SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, BOOL dupechk
 
 		msg->hdr.number=smb->status.last_msg+1;
 
-		hashes=smb_msghashes(smb,msg,smb->status.max_crcs ? body : NULL);
+		hashes=smb_msghashes(smb,msg,body,dupechk);
 
-		if(dupechk && smb_findhash(smb, hashes, &found, /* update? */FALSE)==SMB_SUCCESS) {
+		if(smb_findhash(smb, hashes, &found, /* update? */FALSE)==SMB_SUCCESS) {
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
 				,"duplicate %s hash found (message #%lu)"
 				,smb_hashsource(found.source), found.number);
@@ -1743,7 +1743,7 @@ int SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, BOOL dupechk
 				break;
 		}
 
-		if(smb_addhashes(smb,hashes)==SMB_SUCCESS)
+		if(smb_addhashes(smb,hashes,/* skip_marked? */FALSE)==SMB_SUCCESS)
 			msg->flags|=MSG_FLAG_HASHED;
 
 		retval=smb_addmsghdr(smb,msg,storage); // calls smb_unlocksmbhdr() 
@@ -2741,7 +2741,7 @@ int SMBCALL smb_findhash(smb_t* smb, hash_t** compare, hash_t* found_hash, BOOL 
 	return(SMB_ERR_NOT_FOUND);
 }
 
-int SMBCALL smb_addhashes(smb_t* smb, hash_t** hashes)
+int SMBCALL smb_addhashes(smb_t* smb, hash_t** hashes, BOOL skip_marked)
 {
 	int		retval;
 	size_t	h;
@@ -2758,9 +2758,10 @@ int SMBCALL smb_addhashes(smb_t* smb, hash_t** hashes)
 	for(h=0;hashes[h]!=NULL;h++) {
 
 		/* skip hashes marked by smb_findhash() */
-		if(hashes[h]->flags&SMB_HASH_MARKED)	
+		if(skip_marked && hashes[h]->flags&SMB_HASH_MARKED)	
 			continue;	
 	
+		/* can't think of any reason to strip SMB_HASH_MARKED flag right now */
 		if(smb_fwrite(smb,hashes[h],sizeof(hash_t),smb->hash_fp)!=sizeof(hash_t))
 			return(SMB_ERR_WRITE);
 	}
@@ -2839,7 +2840,7 @@ hash_t* SMBCALL smb_hashstr(ulong msgnum, ulong t, unsigned source, unsigned fla
 
 /* Allocatese and calculates all hashes for a single message				*/
 /* Returns NULL on failure													*/
-hash_t** SMBCALL smb_msghashes(smb_t* smb, smbmsg_t* msg, const uchar* text)
+hash_t** SMBCALL smb_msghashes(smb_t* smb, smbmsg_t* msg, const uchar* text, BOOL dupechk)
 {
 	size_t		h=0;
 	uchar		flags=SMB_HASH_CRC16|SMB_HASH_CRC32|SMB_HASH_MD5;
@@ -2862,8 +2863,11 @@ hash_t** SMBCALL smb_msghashes(smb_t* smb, smbmsg_t* msg, const uchar* text)
 		&& (hash=smb_hashstr(msg->hdr.number, t, FIDOMSGID, flags, msg->ftn_msgid))!=NULL)
 		hashes[h++]=hash;
 
+	flags|=SMB_HASH_STRIP_WSP;
+	if(!dupechk)
+		flags|=SMB_HASH_MARKED;	/* ignore for dupe checks */
 	if(text!=NULL
-		&& (hash=smb_hashstr(msg->hdr.number, t, TEXT_BODY, flags|SMB_HASH_STRIP_WSP, text))!=NULL)
+		&& (hash=smb_hashstr(msg->hdr.number, t, TEXT_BODY, flags, text))!=NULL)
 		hashes[h++]=hash;
 
 	return(hashes);
@@ -2877,7 +2881,7 @@ int SMBCALL smb_hashmsg(smb_t* smb, smbmsg_t* msg, const uchar* text, BOOL updat
 	hash_t		found;
 	hash_t**	hashes;	/* This is a NULL-terminated list of hashes */
 
-	hashes=smb_msghashes(smb,msg,text);
+	hashes=smb_msghashes(smb,msg,text,/* dupechk? */TRUE);
 
 	if(smb_findhash(smb, hashes, &found, update)==SMB_SUCCESS && !update) {
 		retval=SMB_DUPE_MSG;
@@ -2885,7 +2889,7 @@ int SMBCALL smb_hashmsg(smb_t* smb, smbmsg_t* msg, const uchar* text, BOOL updat
 			,"duplicate %s hash found (message #%lu)"
 			,smb_hashsource(found.source), found.number);
 	} else
-		if((retval=smb_addhashes(smb,hashes))==SMB_SUCCESS)
+		if((retval=smb_addhashes(smb,hashes,/* skip_marked? */TRUE))==SMB_SUCCESS)
 			msg->flags|=MSG_FLAG_HASHED;
 
 	FREE_LIST(hashes,n);
