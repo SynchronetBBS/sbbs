@@ -175,7 +175,7 @@ while(client.socket.is_connected) {
 					,i
 					,hdr.subject
 					,hdr.from
-					,system.timestr(hdr.when_written_time)
+					,hdr.date
 					,hdr.id			// message-id
 					,hdr.reply_id	// references
 					,hdr.data_length	// byte count
@@ -206,6 +206,9 @@ while(client.socket.is_connected) {
 					continue;
 				var field="";
 				switch(cmd[1].toLowerCase()) {	/* header */
+					case "to":
+						field=hdr.to;
+						break;
 					case "subject":
 						field=hdr.subject;
 						break;
@@ -216,7 +219,7 @@ while(client.socket.is_connected) {
 						field=hdr.reply_to;
 						break;
 					case "date":
-						field=system.timestr(hdr.when_written_time);
+						field=hdr.date;
 						break;
 					case "message-id":
 						field=hdr.id;
@@ -301,6 +304,7 @@ while(client.socket.is_connected) {
 					writeln(format("From: \"%s\" <%s@%s>"
 						,hdr.from
 						,hdr.from,system.inetaddr));
+				writeln("To: " + hdr.to);
 				writeln("Subject: " + hdr.subject);
 				writeln("Message-ID: " + hdr.id);
 				writeln("Date: " + hdr.date);
@@ -398,6 +402,10 @@ while(client.socket.is_connected) {
 					line=line.slice(1);
 
 				switch(line.toLowerCase()) {
+					case "to":
+					case "apparently-to":
+						hdr.to=data;
+						break;
 					case "from":
 						if(user.security.restrictions&(UFLAG_G|UFLAG_Q)) // Guest or Network Node
 							hdr.from=data;
