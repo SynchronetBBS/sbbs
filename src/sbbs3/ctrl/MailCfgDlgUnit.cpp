@@ -228,7 +228,7 @@ void __fastcall TMailCfgDlg::OKBtnClick(TObject *Sender)
     MainForm->MailAutoStart=AutoStartCheckBox->Checked;
     MainForm->MailLogFile=LogFileCheckBox->Checked;
 
-    MainForm->SaveSettings();
+    MainForm->SaveSettings(Sender);
 }
 //---------------------------------------------------------------------------
 

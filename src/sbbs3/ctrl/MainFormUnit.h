@@ -112,11 +112,11 @@ __published:	// IDE-managed Components
 	TToolButton *ViewStatsButton;
 	TMenuItem *ViewStatsMenuItem;
 	TPageControl *LowerLeftPageControl;
-	TSplitter *Splitter3;
+    TSplitter *BottomVerticalSplitter;
 	TPageControl *LowerRightPageControl;
 	TStatusBar *StatusBar;
 	TPageControl *UpperLeftPageControl;
-	TSplitter *Splitter2;
+    TSplitter *TopVerticalSplitter;
 	TPageControl *UpperRightPageControl;
 	TTimer *StartupTimer;
 	TMenuItem *ViewStatusBarMenuItem;
@@ -176,10 +176,12 @@ __published:	// IDE-managed Components
     TMenuItem *BBSEditHostFilter;
     TMenuItem *BBSEditHostFilterMsg;
     TMenuItem *AllowedRelayList1;
+    TMenuItem *SaveSettingsMenuOption;
+    TMenuItem *N6;
+    TMenuItem *TelnetEditMenuItem;
+    TMenuItem *TelnetEditRLoginList;
     void __fastcall FileExitMenuItemClick(TObject *Sender);
 	void __fastcall ViewToolbarMenuItemClick(TObject *Sender);
-	void __fastcall PanelUnDock(TObject *Sender, TControl *Client,
-    	TWinControl *NewTarget, bool &Allow);
 	void __fastcall FormClose(TObject *Sender, TCloseAction &Action);
 	void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
 	void __fastcall TelnetStartExecute(TObject *Sender);
@@ -223,6 +225,7 @@ __published:	// IDE-managed Components
     void __fastcall ViewClientsExecute(TObject *Sender);
     void __fastcall UserEditorExecute(TObject *Sender);
     void __fastcall FileOpenMenuItemClick(TObject *Sender);
+    void __fastcall SaveSettings(TObject *Sender);
 private:	// User declarations
 public:		// User declarations
     __fastcall TMainForm(TComponent* Owner);
@@ -242,7 +245,6 @@ public:		// User declarations
     bool            SpyTerminalKeyboardActive;
 	TPageControl* __fastcall PageControl(int num);
 	int __fastcall  PageNum(TPageControl* obj);
-    void __fastcall SaveSettings(void);
 };
 
 //---------------------------------------------------------------------------

@@ -185,7 +185,7 @@ void __fastcall TTelnetCfgDlg::OKBtnClick(TObject *Sender)
     else
 	    MainForm->bbs_startup.options&=~BBS_OPT_USE_2ND_RLOGIN;
 
-    MainForm->SaveSettings();
+    MainForm->SaveSettings(Sender);
 }
 //---------------------------------------------------------------------------
 

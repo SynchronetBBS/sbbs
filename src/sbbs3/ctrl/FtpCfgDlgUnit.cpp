@@ -162,7 +162,7 @@ void __fastcall TFtpCfgDlg::OKBtnClick(TObject *Sender)
     else
 	    MainForm->ftp_startup.options&=~FTP_OPT_INDEX_FILE;
 
-    MainForm->SaveSettings();
+    MainForm->SaveSettings(Sender);
 }
 //---------------------------------------------------------------------------
 
