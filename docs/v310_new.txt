@@ -2454,5 +2454,9 @@ o Added SITE RECYCLE and SITE RECYCLE ALL sysop-only commands
 o Fixed normal (non-PASV) file transfers on Unix when running as non-root user
   - if it can't bind ctrl_port-1, then it'll retry the bind using any port (0)
 
+o Now gives uploader credits/minutes upon subsequent downloads (as configured)
+  
+o Now notifies the uploader of a file when the file is later downloaded
+
 
 /* End of V310_NEW.TXT */
