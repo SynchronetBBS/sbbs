@@ -57,6 +57,8 @@ if(platform=="win32") {
 	builds.push(["src/sbbs3/uedit",		"gmake"]);
 }
 
+chdir(temp_dir);
+
 var body = "System: " + system.local_host_name + " - " + system.os_version + "\n\n";
 
 var file = new File("README.TXT");
@@ -69,7 +71,7 @@ if(file.open("wt")) {
 	file.writeln();
 	for(i in builds) {
 		if(builds[i][0].length)
-			file.printf("%-40s %s", builds[i][0], builds[i][1]);
+			file.printf("%-40s %s\n", builds[i][0], builds[i][1]);
 	}
 	file.writeln();
 	file.write(body);
@@ -79,9 +81,8 @@ if(file.open("wt")) {
 
 var file = new File("FILE_ID.DIZ");
 if(file.open("wt")) {
-	file.writeln(format("Synchronet-%s C/C++ source code archive (%s)",system.platform,system.datestr()));
-	file.writeln(format("successfully built on %s (%s)",system.local_host_name,system.os_version));
-	file.writeln(format("on %s",system.timestr()));
+	file.writeln(format("Synchronet-%s C/C++ source code archive",system.platform));
+	file.writeln(format("(%s)",system.datestr()));
 	file.close();
 }
 
@@ -129,6 +130,7 @@ send_email(system.platform + " builds successful", lfexpand(body));
 
 chdir(temp_dir);
 var dest = file_area.dir["sbbs"].path+archive;
+log(LOG_INFO,format("Copying %s to %s",archive,dest));
 if(!file_copy(archive,dest))
 	log(LOG_ERR,format("!ERROR copying %s to %s",archive,dest));
 
