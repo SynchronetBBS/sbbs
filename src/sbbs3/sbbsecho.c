@@ -99,7 +99,7 @@ return(i);
 #endif
 
 #if defined(__unix__)	/* borrowed from MSVC */
-unsigned __cdecl _rotr (
+unsigned _rotr (
         unsigned val,
         int shift
         )
