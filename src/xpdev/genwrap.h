@@ -107,6 +107,7 @@ extern "C" {
 
 #if defined(_MSC_VER) || defined(__MINGW32__)
 	#define snprintf		_snprintf
+	#define vsnprintf		_vsnprintf
 #endif
 
 #if !defined(_MSC_VER) && !defined(__BORLANDC__)
