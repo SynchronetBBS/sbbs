@@ -929,7 +929,7 @@ JSBool DLLCALL
 js_CreateUserObjects(JSContext* cx, JSObject* parent, scfg_t* cfg, user_t* user
 					 ,char* html_index_file, subscan_t* subscan)
 {
-	if(js_CreateUserObject(cx,parent,cfg,"user",user->number)==NULL)
+	if(js_CreateUserObject(cx,parent,cfg,"user",user==NULL ? 0 : user->number)==NULL)
 		return(JS_FALSE);
 	if(js_CreateFileAreaObject(cx,parent,cfg,user,html_index_file)==NULL) 
 		return(JS_FALSE);
