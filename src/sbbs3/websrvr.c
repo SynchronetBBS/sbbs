@@ -122,12 +122,11 @@ extern const uchar* nular;
 										   (Including terminator )*/
 #define MAX_REDIR_LOOPS			20		/* Max. times to follow internal redirects for a single request */
 #define MAX_POST_LEN			1048576	/* Max size of body for POSTS */
-#define MAX_CLEANUPS			2		/* Max number of cleanup files
-										 * Currently one for SSJS output and
-										 * one for post data */
+
 enum {
 	 CLEANUP_SSJS_TMP_FILE
 	,CLEANUP_POST_DATA
+	,MAX_CLEANUPS
 };
 
 static scfg_t	scfg;
@@ -1563,7 +1562,7 @@ static BOOL parse_headers(http_session_t * session)
 			}
 		}
 	}
-	if(content_len)  {
+	if(content_len && session->req.dynamic != IS_CGI)  {
 		if(content_len < (MAX_POST_LEN+1) && (session->req.post_data=malloc(content_len+1)) != NULL)  {
 			session->req.post_len=recvbufsocket(session->socket,session->req.post_data,content_len);
 			if(session->req.post_len != content_len)
@@ -2045,7 +2044,6 @@ static BOOL exec_cgi(http_session_t *session)
 	int		i=0;
 	int		status=0;
 	pid_t	child=0;
-	int		in_pipe[2];
 	int		out_pipe[2];
 	int		err_pipe[2];
 	struct timeval tv={0,0};
@@ -2053,7 +2051,6 @@ static BOOL exec_cgi(http_session_t *session)
 	fd_set	write_set;
 	int		high_fd=0;
 	char	buf[1024];
-	size_t	post_offset=0;
 	BOOL	done_parsing_headers=FALSE;
 	BOOL	done_reading=FALSE;
 	char	cgi_status[MAX_REQUEST_LINE+1];
@@ -2079,10 +2076,6 @@ static BOOL exec_cgi(http_session_t *session)
 	session->req.keep_alive=FALSE;
 
 	/* Set up I/O pipes */
-	if(pipe(in_pipe)!=0) {
-		lprintf(LOG_ERR,"%04d Can't create in_pipe",session->socket,buf);
-		return(FALSE);
-	}
 
 	if(pipe(out_pipe)!=0) {
 		lprintf(LOG_ERR,"%04d Can't create out_pipe",session->socket,buf);
@@ -2104,9 +2097,7 @@ static BOOL exec_cgi(http_session_t *session)
 			putenv(listNodeData(node));
 
 		/* Set up STDIO */
-		close(in_pipe[1]);		/* close write-end of pipe */
-		dup2(in_pipe[0],0);		/* redirect stdin */
-		close(in_pipe[0]);		/* close excess file descriptor */
+		dup2(session->socket,0);		/* redirect stdin */
 		close(out_pipe[0]);		/* close read-end of pipe */
 		dup2(out_pipe[1],1);	/* stdout */
 		close(out_pipe[1]);		/* close excess file descriptor */
@@ -2129,12 +2120,10 @@ static BOOL exec_cgi(http_session_t *session)
 
 	if(child==-1)  {
 		lprintf(LOG_ERR,"%04d !FAILED! fork() errno=%d",session->socket,errno);
-		close(in_pipe[1]);		/* close write-end of pipe */
 		close(out_pipe[0]);		/* close read-end of pipe */
 		close(err_pipe[0]);		/* close read-end of pipe */
 	}
 
-	close(in_pipe[0]);		/* close excess file descriptor */
 	close(out_pipe[1]);		/* close excess file descriptor */
 	close(err_pipe[1]);		/* close excess file descriptor */
 
@@ -2144,19 +2133,9 @@ static BOOL exec_cgi(http_session_t *session)
 	start=time(NULL);
 
 
-	i=write(in_pipe[1],
-		session->req.post_data+post_offset,
-		session->req.post_len-post_offset);
-	if(i>0)
-		post_offset+=i;
-
 	high_fd=out_pipe[0];
 	if(err_pipe[0]>high_fd)
 		high_fd=err_pipe[0];
-	if(in_pipe[1]>high_fd)
-		high_fd=in_pipe[1];
-	if(session->socket>high_fd)
-		high_fd=session->socket;
 
 	/* ToDo: Magically set done_parsing_headers for nph-* scripts */
 	cgi_status[0]=0;
@@ -2167,29 +2146,9 @@ static BOOL exec_cgi(http_session_t *session)
 		FD_ZERO(&read_set);
 		FD_SET(out_pipe[0],&read_set);
 		FD_SET(err_pipe[0],&read_set);
-		FD_SET(session->socket,&read_set);
 		FD_ZERO(&write_set);
-		if(post_offset < session->req.post_len)
-			FD_SET(in_pipe[1],&write_set);
 
 		if(select(high_fd+1,&read_set,&write_set,NULL,&tv)>0)  {
-			if(FD_ISSET(session->socket,&read_set))  {
-				if(recv(session->socket,&ch,1,MSG_PEEK) < 1) /* Is there no data waiting? */
-					done_reading=TRUE;
-			}
-			if(FD_ISSET(in_pipe[1],&write_set))  {
-				if(post_offset < session->req.post_len)  {
-					i=write(in_pipe[1],
-						session->req.post_data+post_offset,
-						session->req.post_len-post_offset);
-					if(i>0)
-						post_offset += i;
-					if(post_offset>=session->req.post_len || done_reading)
-						close(in_pipe[1]);
-					else if(i!=post_offset)
-						start=time(NULL);
-				}
-			}
 			if(FD_ISSET(out_pipe[0],&read_set))  {
 				if(done_parsing_headers && got_valid_headers)  {
 					i=read(out_pipe[0],buf,sizeof(buf));
@@ -2241,8 +2200,14 @@ static BOOL exec_cgi(http_session_t *session)
 								case HEAD_STATUS:
 									SAFECOPY(cgi_status,value);
 									break;
+								case HEAD_LENGTH:
+									session->req.keep_alive=TRUE;
+									listPushNodeString(&session->req.dynamic_heads,buf);
+									break;
 								case HEAD_TYPE:
 									got_valid_headers=TRUE;
+									listPushNodeString(&session->req.dynamic_heads,buf);
+									break;
 								default:
 									listPushNodeString(&session->req.dynamic_heads,buf);
 							}
@@ -2304,7 +2269,6 @@ static BOOL exec_cgi(http_session_t *session)
 		}
 	}
 
-	close(in_pipe[1]);		/* close write-end of pipe */
 	close(out_pipe[0]);		/* close read-end of pipe */
 	close(err_pipe[0]);		/* close read-end of pipe */
 	if(!got_valid_headers) {
