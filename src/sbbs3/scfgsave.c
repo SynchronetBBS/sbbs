@@ -153,7 +153,7 @@ BOOL DLLCALL write_node_cfg(scfg_t* cfg, int backup_level)
 {
 	char	str[MAX_PATH+1];
 	int 	i,file;
-	short	n;
+	ushort	n;
 	FILE	*stream;
 
 	if(cfg->prepped)
@@ -216,7 +216,7 @@ BOOL DLLCALL write_node_cfg(scfg_t* cfg, int backup_level)
 	n=0;
 	for(i=0;i<188;i++)					/* unused init to NULL */
 		fwrite(&n,1,2,stream);
-	n=(ushort)0xffff;					/* unused init to 0xff */
+	n=0xffff;						/* unused init to 0xff */
 	for(i=0;i<256;i++)
 		fwrite(&n,1,2,stream);
 	put_int(cfg->com_port,stream);
@@ -251,7 +251,7 @@ BOOL DLLCALL write_main_cfg(scfg_t* cfg, int backup_level)
 {
 	char	str[MAX_PATH+1],c=0;
 	int 	file;
-	short	i,j,n;
+	ushort	i,j,n;
 	FILE	*stream;
 
 	if(cfg->prepped)
@@ -347,7 +347,7 @@ BOOL DLLCALL write_main_cfg(scfg_t* cfg, int backup_level)
 	n=0;
 	for(i=0;i<158;i++)
 		put_int(n,stream);
-	n=(ushort)0xffff;
+	n=0xffff;
 	for(i=0;i<254;i++)
 		put_int(n,stream);
 
@@ -407,7 +407,7 @@ BOOL DLLCALL write_msgs_cfg(scfg_t* cfg, int backup_level)
 	char	str[MAX_PATH+1],c;
 	char	dir[LEN_DIR+1]="";
 	int 	i,j,k,file;
-	short	n;
+	ushort	n;
 	long	l;
 	FILE	*stream;
 	smb_t	smb;
@@ -432,7 +432,7 @@ BOOL DLLCALL write_msgs_cfg(scfg_t* cfg, int backup_level)
 	n=0;
 	for(i=0;i<235;i++)
 		put_int(n,stream);
-	n=(short)0xffff;
+	n=0xffff;
 	for(i=0;i<256;i++)
 		put_int(n,stream);
 
@@ -449,7 +449,7 @@ BOOL DLLCALL write_msgs_cfg(scfg_t* cfg, int backup_level)
 		n=0;
 		for(j=0;j<27;j++)
 			put_int(n,stream);
-		n=(short)0xffff;
+		n=0xffff;
 		for(j=0;j<16;j++)
 			put_int(n,stream); }
 
@@ -684,7 +684,7 @@ BOOL DLLCALL write_file_cfg(scfg_t* cfg, int backup_level)
 	char	str[MAX_PATH+1],cmd[LEN_CMD+1],c;
 	char	path[MAX_PATH+1];
 	int 	i,j,k,file;
-	short	n;
+	ushort	n;
 	long	l=0;
 	FILE	*stream;
 
@@ -813,11 +813,11 @@ BOOL DLLCALL write_file_cfg(scfg_t* cfg, int backup_level)
 
 		c=0;
 		put_int(c,stream);
-		n=(short)0x0000;
+		n=0x0000;
 		for(j=0;j<3;j++)
 			put_int(n,stream); 
 
-		n=(short)0xffff;
+		n=0xffff;
 		for(j=0;j<16;j++)
 			put_int(n,stream); 
 	}
@@ -881,7 +881,7 @@ BOOL DLLCALL write_file_cfg(scfg_t* cfg, int backup_level)
 				n=0;
 				for(k=0;k<8;k++)
 					put_int(n,stream);
-				n=(short)0xffff;
+				n=0xffff;
 				for(k=0;k<16;k++)
 					put_int(n,stream);
 				}
@@ -914,7 +914,7 @@ BOOL DLLCALL write_chat_cfg(scfg_t* cfg, int backup_level)
 {
 	char	str[MAX_PATH+1];
 	int 	i,j,file;
-	short	n;
+	ushort	n;
 	FILE	*stream;
 
 	if(cfg->prepped)
@@ -989,7 +989,7 @@ BOOL DLLCALL write_xtrn_cfg(scfg_t* cfg, int backup_level)
 {
 	uchar	str[MAX_PATH+1],c;
 	int 	i,j,sec,file;
-	short	n;
+	ushort	n;
 	FILE	*stream;
 
 	if(cfg->prepped)
