@@ -140,7 +140,17 @@ else
  CFLAGS	+= -O3
 endif
 
-JSLIB	:=	-L../../lib/mozilla/js/$(os).$(BUILD) -ljs
+ifndef JSLIBDIR
+ JSLIBDIR := ../../lib/mozilla/js/$(os).$(BUILD)
+endif
+ifndef JSLIB
+ JSLIB	:=	js
+endif
+ifndef NSPRDIR
+ NSPRDIR := ../../lib/mozilla/nspr/$(os).$(BUILD)
+endif
+
+LFLAGS += -L$(JSLIBDIR) -l$(JSLIB)
 
 # The following are needed for echocfg (uses UIFC)
 UIFC_OBJS =	$(LIBODIR)/uifcx.o
@@ -181,7 +191,7 @@ $(SBBSLIB) : $(SBBS)
 vpath %.c $(XPDEV) $(UIFC)
 vpath %.cpp $(UIFC)
 
-LFLAGS		+=	-L./$(LIBODIR) -L../../lib/mozilla/js/$(os).$(BUILD) -L../../lib/mozilla/nspr/$(os).$(BUILD)
+LFLAGS		+=	-L./$(LIBODIR) -L$(NSPRDIR)
 SBBSLDFLAGS	:=	$(LFLAGS) -rpath-link ./$(LIBODIR) -rpath ./ 
 #LFLAGS		+=	-Wl,-rpath-link,./$(LIBODIR),-rpath,./
 LFLAGS		+=	-Xlinker -rpath
@@ -190,11 +200,11 @@ ifneq ($(os),openbsd)
 LFLAGS		+=	-Xlinker -rpath-link
 LFLAGS		+=	-Xlinker ./$(LIBODIR)
 LFLAGS		+=	-Xlinker -rpath-link
-LFLAGS		+=	-Xlinker ../../lib/mozilla/js/$(os).$(BUILD)
+LFLAGS		+=	-Xlinker $(JSLIBDIR)
 LFLAGS		+=	-Xlinker -rpath-link
-LFLAGS		+=	-Xlinker ../../lib/mozilla/nspr/$(os).$(BUILD)
+LFLAGS		+=	-Xlinker $(NSPRDIR)
 else
-LFLAGS		+=	-ljs -lnspr4
+LFLAGS		+=	-l$(JSLIB) -lnspr4
 endif
 ifeq ($(os),freebsd)
 LFLAGS		+=	-pthread
@@ -246,42 +256,42 @@ FORCE$(SBBSMONO): $(MONO_OBJS) $(OBJS) $(LIBS)
 
 $(SBBSMONO): $(MONO_OBJS) $(OBJS) $(LIBS)
 	@echo Linking $@
-	$(QUIET)$(CCPP) -o $@ $(LFLAGS) $^ $(JSLIB)
+	$(QUIET)$(CCPP) -o $@ $(LFLAGS) $^
 
 # Synchronet BBS library Link Rule
 FORCE$(SBBS): $(OBJS) $(LIBS)
 
 $(SBBS): $(OBJS) $(LIBS)
 	@echo Linking $@
-	$(QUIET)$(CCPP) $(LFLAGS) -o $@ $(JSLIB) $^ $(SHLIBOPTS)
+	$(QUIET)$(CCPP) $(LFLAGS) -o $@ $^ $(SHLIBOPTS)
 
 # FTP Server Link Rule
 FORCE$(FTPSRVR): $(LIBODIR)/ftpsrvr.o $(SBBSLIB)
 
 $(FTPSRVR): $(LIBODIR)/ftpsrvr.o $(SBBSLIB)
 	@echo Linking $@
-	$(QUIET)$(CC) $(LFLAGS) $^ $(JSLIB) $(SHLIBOPTS) -o $@ 
+	$(QUIET)$(CC) $(LFLAGS) $^ $(SHLIBOPTS) -o $@ 
 
 # Mail Server Link Rule
 FORCE$(MAILSRVR): $(MAIL_OBJS) $(LIBODIR)$(SLASH)$(SBBSLIB)
 
 $(MAILSRVR): $(MAIL_OBJS) $(SBBSLIB)
 	@echo Linking $@
-	$(QUIET)$(CC) $(LFLAGS) $^ $(JSLIB) $(SHLIBOPTS) -o $@
+	$(QUIET)$(CC) $(LFLAGS) $^ $(SHLIBOPTS) -o $@
 
 # Mail Server Link Rule
 FORCE$(WEBSRVR): $(WEB_OBJS) $(SBBSLIB)
 
 $(WEBSRVR): $(WEB_OBJS) $(SBBSLIB)
 	@echo Linking $@
-	$(QUIET)$(CC) $(LFLAGS) $^ $(JSLIB) $(SHLIBOPTS) -o $@
+	$(QUIET)$(CC) $(LFLAGS) $^ $(SHLIBOPTS) -o $@
 
 # Services Link Rule
 FORCE$(SERVICES): $(WEB_OBJS) $(SBBSLIB)
 
 $(SERVICES): $(SERVICE_OBJS) $(SBBSLIB)
 	@echo Linking $@
-	$(QUIET)$(CC) $(LFLAGS) $^ $(JSLIB) $(SHLIBOPTS) -o $@
+	$(QUIET)$(CC) $(LFLAGS) $^ $(SHLIBOPTS) -o $@
 
 # Synchronet Console Build Rule
 FORCE$(SBBSCON): $(CON_OBJS) $(SBBSLIB) $(FTP_OBJS) $(MAIL_OBJS) $(WEB_OBJS) $(SERVICE_OBJS)
