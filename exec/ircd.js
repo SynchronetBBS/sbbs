@@ -752,23 +752,24 @@ while (!server.terminated) {
 		}
 	}
 
-	if (rebuild_socksel_array) {
-		Selectable_Sockets = new Array;
-		Selectable_Sockets_Map = new Array
-		for (i in Local_Sockets) {
-			Selectable_Sockets.push(Local_Sockets[i]);
-			Selectable_Sockets_Map.push(Local_Sockets_Map[i]);
-		}
-		rebuild_socksel_array = false;
-	}
-
 	// Check for ping timeouts, and, do work on the sockets if we're 3.10
 	for(this_sock in Selectable_Sockets) {
 		if (Selectable_Sockets_Map[this_sock] &&
 		    Selectable_Sockets_Map[this_sock].check_timeout())
 			continue;
-		if(this.socket_select==undefined)
+		if(sync_310)
 			Selectable_Sockets_Map[this_sock].work();
+	}
+
+
+	if (rebuild_socksel_array) {
+		Selectable_Sockets = new Array;
+		Selectable_Sockets_Map = new Array;
+		for (i in Local_Sockets) {
+			Selectable_Sockets.push(Local_Sockets[i]);
+			Selectable_Sockets_Map.push(Local_Sockets_Map[i]);
+		}
+		rebuild_socksel_array = false;
 	}
 
 	// do some work.
