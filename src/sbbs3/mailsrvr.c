@@ -2471,7 +2471,8 @@ void DLLCALL mail_server(void* arg)
     if(startup->started!=NULL)
     	startup->started();
 
-	_beginthread (sendmail_thread, 0, NULL);
+	if(!(startup->options&MAIL_OPT_NO_SENDMAIL))
+		_beginthread (sendmail_thread, 0, NULL);
 
 	lprintf("%04d Mail Server thread started",server_socket);
 	status(STATUS_WFC);

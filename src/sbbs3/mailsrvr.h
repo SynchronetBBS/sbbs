@@ -92,14 +92,15 @@ typedef struct {
 #define MAIL_OPT_ALLOW_POP3			(1<<2)
 #define MAIL_OPT_DEBUG_TX			(1<<3)
 #define MAIL_OPT_DEBUG_RX_RSP		(1<<4)
-#define MAIL_OPT_RELAY_TX			(1<<5)
+#define MAIL_OPT_RELAY_TX			(1<<5)	/* Use SMTP relay server */
 #define MAIL_OPT_DEBUG_POP3			(1<<6)
-#define MAIL_OPT_ALLOW_RX_BY_NUMBER	(1<<7)
-#define MAIL_OPT_USE_RBL			(1<<8)
+#define MAIL_OPT_ALLOW_RX_BY_NUMBER	(1<<7)	/* Allow mail sent to user # */
+#define MAIL_OPT_USE_RBL			(1<<8)	/* SPAM filters */
 #define MAIL_OPT_USE_DUL			(1<<9)
 #define MAIL_OPT_USE_RSS			(1<<10)
-#define MAIL_OPT_NO_HOST_LOOKUP		(1<<11)
-#define MAIL_OPT_USE_TCP_DNS		(1<<12)
+#define MAIL_OPT_NO_HOST_LOOKUP		(1<<11)	/* Don't look-up hostnames */
+#define MAIL_OPT_USE_TCP_DNS		(1<<12)	/* Use TCP vs UDP for DNS req */
+#define MAIL_OPT_NO_SENDMAIL		(1<<13)	/* Don't run SendMail thread */
 #define MAIL_OPT_MUTE				(1<<31)
 
 #ifdef DLLEXPORT
