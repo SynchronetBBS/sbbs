@@ -58,6 +58,14 @@
   </tr>
   <tr>
     <td>
+	  Am Operator:
+	</td>
+    <td>
+	  %%sub:is_operator%%
+	</td>
+  </tr>
+  <tr>
+    <td>
 	  Max Msgs:
 	</td>
     <td>
