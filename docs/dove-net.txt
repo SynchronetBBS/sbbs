@@ -128,6 +128,25 @@ account there).
 You must answer (Y)es to the following new user question:
 "Is this account to be used for QWK Networking (DOVE-Net)?"
 
+When you get to the QWK: prompt, you need to (C)hange Packet Configuration
+to match the following (if you're running Synchronet):
+
+QWK Settings:
+
+A) Ctrl-A Color Codes            : Leave in
+T) Archive Type                  : ZIP
+E) Include E-mail Messages       : Un-read Only
+I) Include File Attachments      : Yes
+D) Delete E-mail Automatically   : Yes
+F) Include New Files List        : No
+N) Include Index Files           : No
+C) Include Control Files         : No
+Y) Include Messages from You     : No
+Z) Include Time Zone (TZ)        : Yes
+V) Include Message Path (VIA)    : Yes
+M) Include Message/Reply IDs     : Yes	(Synchronet v3.10+)
+X) Extended (QWKE) Packet Format : No
+
 Remember the password you used to create this account, you'll need it later.
 
 It is important that you do NOT use a regular user account for QWK packet
