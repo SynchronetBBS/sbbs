@@ -3571,7 +3571,7 @@ int import_netmail(char *path,fmsghdr_t hdr, FILE *fidomsg)
 			sp=strrchr(tp,'/');              /* sp is slash pointer */
 			if(!sp) sp=strrchr(tp,'\\');
 			if(sp) tp=sp+1;
-			sprintf(str,"%s%s",scfg.fidofile_dir,tp);
+			sprintf(str,"%s%s",secure ? cfg.secure : cfg.inbound,tp);
 			sprintf(tmp,"%sfile/%04u.in",scfg.data_dir,usernumber);
 			MKDIR(tmp);
 			backslash(tmp);
