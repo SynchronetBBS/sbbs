@@ -266,6 +266,7 @@
 #define RFC822HEADER		0xb0
 #define RFC822MSGID 		0xb1
 #define RFC822REPLYID		0xb2
+#define RFC822TO			0xb3
 
 #define UNKNOWN 			0xf1
 #define UNKNOWNASCII		0xf2
