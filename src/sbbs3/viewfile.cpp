@@ -102,8 +102,8 @@ void sbbs_t::viewfiles(uint dirnum, char *fspec)
 		bprintf(text[NonviewableFile],tmp+9);
 		return; }
 	sprintf(tmp,"%s%s",cfg.dir[dirnum]->path,fspec);
-	if((i=external(cmdstr(viewcmd,tmp,tmp,NULL),EX_OUTL|EX_OUTR|EX_INR|EX_CC))!=0)
-		errormsg(WHERE,ERR_EXEC,viewcmd,i);    /* must of EX_CC to ^C */
+	if((i=external(cmdstr(viewcmd,tmp,tmp,NULL),EX_OUTL|EX_OUTR|EX_INR|EX_SH))!=0)
+		errormsg(WHERE,ERR_EXEC,viewcmd,i);    /* must of EX_SH to ^C */
 }
 
 /****************************************************************************/
@@ -132,6 +132,6 @@ void sbbs_t::viewfilecontents(file_t* f)
 		bprintf(text[NonviewableFile],tmp+9);
 	else
 		if((i=external(cmdstr(cmd,str,str,NULL)
-			,EX_OUTL|EX_OUTR|EX_INR|EX_CC))!=0)
+			,EX_OUTL|EX_OUTR|EX_INR|EX_SH))!=0)
 			errormsg(WHERE,ERR_EXEC,cmdstr(cmd,str,str,NULL),i);
 }

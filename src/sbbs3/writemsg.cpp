@@ -745,7 +745,7 @@ ulong sbbs_t::msgeditor(char *buf, char *top, char *title)
 /****************************************************************************/
 void sbbs_t::editfile(char *str)
 {
-	char *buf,str2[128],mode=0;   /* EX_CC */
+	char *buf,str2[128],mode=0;   /* EX_SH */
     int file;
 	long length,maxlines,lines,l;
 

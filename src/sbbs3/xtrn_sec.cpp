@@ -1444,7 +1444,7 @@ bool sbbs_t::exec_xtrn(uint xtrnnum)
 	sprintf(str,"%sfile/%04u.dwn",cfg.data_dir,useron.number);
 	remove(str);
 
-	mode=0; 	/* EX_CC */
+	mode=0; 	/* EX_SH */
 	if(cfg.xtrn[xtrnnum]->misc&IO_INTS)
 		mode|=(EX_OUTR|EX_INR|EX_OUTL);
 	if(cfg.xtrn[xtrnnum]->misc&WWIVCOLOR)

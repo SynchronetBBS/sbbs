@@ -121,7 +121,7 @@ void sbbs_t::temp_xfer()
 				logline(nulstr,tmp2);
 				sprintf(tmp2,"%s%s",cfg.temp_dir,str);
 				sprintf(str,"%s%s",cfg.temp_dir,f.name);
-				external(cmdstr(temp_cmd(),str,tmp2,NULL),EX_CC|EX_OUTL|EX_OUTR);
+				external(cmdstr(temp_cmd(),str,tmp2,NULL),EX_SH|EX_OUTL|EX_OUTR);
 				break;
 			case 'D':   /* download from temp dir */
 				sprintf(str,"%s%s",cfg.temp_dir,f.name);
@@ -175,7 +175,7 @@ void sbbs_t::temp_xfer()
 
 					putnodedat(cfg.node_num,&thisnode); /* calculate ETA */
 					start=time(NULL);
-					j=protocol(cmdstr(cfg.prot[i]->dlcmd,str,nulstr,NULL),0);
+					j=protocol(cmdstr(cfg.prot[i]->dlcmd,str,nulstr,NULL),false);
 					end=time(NULL);
 					if(cfg.dir[temp_dirnum]->misc&DIR_TFREE)
 						starttime+=end-start;
@@ -382,7 +382,7 @@ void sbbs_t::extract(uint dirnum)
 				if(!checkfname(str))
 					break;
 				if((i=external(cmdstr(excmd,path,str,NULL)
-					,EX_INR|EX_OUTL|EX_OUTR|EX_CC))!=0) {
+					,EX_INR|EX_OUTL|EX_OUTR|EX_SH))!=0) {
 					errormsg(WHERE,ERR_EXEC,cmdstr(excmd,path,str,NULL),i);
 					return; }
 				sprintf(tmp,"Extracted %s from %s",str,path);
