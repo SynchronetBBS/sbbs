@@ -809,7 +809,7 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 				if(msg.from_net.addr==NULL)
 					strcpy(str,msg.from);
 				else if(msg.from_net.type==NET_FIDO)
-					sprintf(str,"%s @%s",msg.from
+					sprintf(str,"%s@%s",msg.from
 						,smb_faddrtoa((faddr_t *)msg.from_net.addr,tmp));
 				else if(msg.from_net.type==NET_INTERNET)
 					strcpy(str,(char *)msg.from_net.addr);
