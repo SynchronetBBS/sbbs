@@ -71,7 +71,7 @@ if((term=request.indexOf("\t+"))>=0) {
 	writeln("+-2");
 }
 
-if(request=="") { /* blank = "root" */
+if(request=="" || request=='/') { /* "root" */
 	for(g in msg_area.grp_list) 
 		writeln(format("1%s\tgrp:%s\t%s\t%u"
 			,msg_area.grp_list[g].description
