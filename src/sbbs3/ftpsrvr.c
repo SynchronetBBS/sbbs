@@ -2822,9 +2822,9 @@ static void ctrl_thread(void* arg)
 			else
 				l=0;
 			if(local_fsys)
-				avail=getfreediskspace(local_dir);
+				avail=getfreediskspace(local_dir,0);
 			else
-				avail=getfreediskspace(scfg.data_dir);	/* Change to temp_dir? */
+				avail=getfreediskspace(scfg.data_dir,0);	/* Change to temp_dir? */
 			if(l && l>avail)
 				sockprintf(sock,"504 Only %lu bytes available.",avail);
 			else

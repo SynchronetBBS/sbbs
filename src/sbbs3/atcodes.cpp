@@ -448,7 +448,12 @@ char* sbbs_t::atcode(char* sp, char* str)
 	}
 
 	if(!strcmp(sp,"FREESPACE")) {
-		sprintf(str,"%lu",getfreediskspace(cfg.temp_dir)); 
+		sprintf(str,"%lu",getfreediskspace(cfg.temp_dir,0)); 
+		return(str);
+	}
+
+	if(!strcmp(sp,"FREESPACEK")) {
+		sprintf(str,"%lu",getfreediskspace(cfg.temp_dir,1024)); 
 		return(str);
 	}
 

@@ -577,11 +577,23 @@ ulong DLLCALL delfiles(char *inpath, char *spec)
 /* Return free disk space in bytes (up to a maximum of 4GB)					*/
 /****************************************************************************/
 #if defined(_WIN32)
-	typedef BOOL(WINAPI * GetDiskFreeSpaceEx_t)
-		(LPCTSTR,PULARGE_INTEGER,PULARGE_INTEGER,PULARGE_INTEGER); 
+typedef BOOL(WINAPI * GetDiskFreeSpaceEx_t)
+	(LPCTSTR,PULARGE_INTEGER,PULARGE_INTEGER,PULARGE_INTEGER); 
+
+static int bit_num(ulong val)
+{
+	int i;
+
+	for(i=31;i>=0;i--)
+		if(val&(1<<i))
+			return(i);
+
+	return(-1);
+}
 #endif
 
-ulong DLLCALL getfreediskspace(const char* path)
+/* Unit should be a power-of-2 (e.g. 1024 to report kilobytes) */
+ulong DLLCALL getfreediskspace(const char* path, ulong unit)
 {
 #if defined(_WIN32)
 	char			root[16];
@@ -606,6 +618,10 @@ ulong DLLCALL getfreediskspace(const char* path)
 			&size,		// receives the number of bytes on disk
 			NULL))		// receives the free bytes on disk
 			return(0);
+
+		if(unit)
+			avail.QuadPart=Int64ShrlMod32(avail.QuadPart,bit_num(unit));
+
 #if defined(_ANONYMOUS_STRUCT)
 		if(avail.HighPart)
 #else
@@ -631,6 +647,8 @@ ulong DLLCALL getfreediskspace(const char* path)
 		))
 		return(0);
 
+	if(unit)
+		NumberOfFreeClusters/=unit;
 	return(NumberOfFreeClusters*SectorsPerCluster*BytesPerSector);
 
 
@@ -642,6 +660,8 @@ ulong DLLCALL getfreediskspace(const char* path)
     if (statfs(path, &fs) < 0)
     	return 0;
 
+	if(unit)
+		fs.f_bavail/=unit;
     return fs.f_bsize * fs.f_bavail;
     
 #else

@@ -156,7 +156,7 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			p=lastuseron;
 			break;
 		case SYS_PROP_FREEDISKSPACE:
-			val = getfreediskspace(cfg->temp_dir);
+			val = getfreediskspace(cfg->temp_dir,0);
 			if(INT_FITS_IN_JSVAL(val) && !(val&0x80000000))
 				*vp = INT_TO_JSVAL(val);
 			else
