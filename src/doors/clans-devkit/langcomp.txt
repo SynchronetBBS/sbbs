@@ -1,0 +1,23 @@
+What's this one do?
+-------------------
+langcomp is used to compile language (strings.txt) files.  The strings.txt
+file should be in the data directory of the source code you downloaded.
+
+You run it like
+---------------
+This...
+
+	langcomp <strings>
+
+Just use "strings" and it'll look for the file called strings.txt and
+generate a strings.xl language file.  That's it.  The Clans uses strings.xl
+in the .pak file, so that's what you'll likely want.  Another example:
+If you run "langcomp blah", it'll look for blah.txt and generate blah.xl.
+I know, it's not consistent with the other utils, but who the hell cares.
+
+64000b Limit
+------------
+Yeah, there's a 64000 byte limit on the compiled strings file mainly
+because under the memory model I used, that was the largest size of
+data I could use with malloc (approximately).  I doubt that limit
+exists with other systems and compilers, though.

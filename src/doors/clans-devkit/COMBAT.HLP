@@ -1,0 +1,28 @@
+^Attack
+|0C This causes the current member of your clan to attack the first living enemy.
+^END
+
+^Attack Specific
+|0C This will allow you to choose which enemy you would like to attack with
+ the current member of your clan.  This is extremely useful since not
+ all enemies are of equal strength!  It wise to attack the weak first to
+ get them out of the way and then go for the stronger ones.
+
+ You may also type digit from 1 to 9 first instead of typing |0BS|0C.
+^END
+
+^Experience Rewarded
+|0C The amount of experience each of your characters receive depends
+ largely on how well they do in combat.  Each successful attack garners
+ at least 1 experience point (XP) which are given in the [] symbols.
+ There are XP for other moves as well such as healing a member of your
+ clan successfully.  If your player does nothing in battle, he will not
+ receive any experience so be sure to spread the amount of damage done
+ by your players.
+^END
+
+^Skip Move
+|0C Use this option if you wish to pass on the character's move.  The character
+ will do nothing but this feature allows you to choose who will get the
+ killing blow (and gain more experience).
+^END

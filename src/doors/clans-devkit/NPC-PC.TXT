@@ -1,0 +1,171 @@
+# 0
+Name            Knight
+HP              25
+Difficulty      3
+Agility         13
+Dexterity       10
+Strength        13
+Wisdom          9
+Charisma        15
+Armorstr        0
+
+# 1
+Name            Fisherman
+HP              22
+Difficulty      1
+Agility         9
+Dexterity       4
+Strength        7
+Wisdom          9
+Charisma        7
+Armorstr        0
+
+# 2
+Name            Villager
+HP              28
+Difficulty      1
+Agility         6
+Dexterity       5
+Strength        10
+Wisdom          9
+Charisma        13
+Armorstr        0
+
+# 3
+Name            Warrior
+Difficulty      1
+HP              28
+Agility         9
+Dexterity       7
+Strength        13
+Wisdom          9
+Charisma        5
+Armorstr        1
+
+# 4
+Name            Sorcerer
+Difficulty      1
+HP              18
+SP              28
+Agility         9
+Dexterity       7
+Strength        8
+Wisdom          9
+Charisma        5
+Armorstr        0
+Spell           6
+Spell           7
+
+# 5
+Name            Acolyte
+Difficulty      1
+HP              23
+SP              28
+Agility         5
+Dexterity       4
+Strength        6
+Wisdom          9
+Charisma        5
+Armorstr        0
+Spell           2
+
+# 6
+Name            Bum
+Difficulty      1
+HP              16
+Agility         5
+Dexterity       4
+Strength        6
+Wisdom          3
+Charisma        1
+Armorstr        0
+
+
+# 7
+Name            Paladin
+Difficulty      3
+HP              24
+Agility         12
+Dexterity       10
+Strength        13
+Wisdom          7
+Charisma        6
+Armorstr        0
+
+# 8
+Name            Paladin
+Difficulty      3
+HP              24
+Agility         12
+Dexterity       10
+Strength        13
+Wisdom          7
+Charisma        6
+Armorstr        0
+
+# 9
+Name            Knight
+Difficulty      1
+HP              18
+Agility         10
+Dexterity       8
+Strength        14
+Wisdom          7
+Charisma        6
+Armorstr        1
+
+# 10
+Name            Peasant
+Difficulty      1
+HP              14
+Agility         7
+Dexterity       9
+Strength        12
+Wisdom          7
+Charisma        3
+Armorstr        0
+
+# 11
+Name            Bartender
+Difficulty      1
+HP              16
+Agility         8
+Dexterity       6
+Strength        10
+Wisdom          4
+Charisma        5
+Armorstr        0
+
+# 12
+Name            Dungeoner
+Difficulty      1
+HP              20
+Agility         9
+Dexterity       10
+Strength        9
+Wisdom          6
+Charisma        2
+Armorstr        0
+
+# 13
+Name            Pirate
+Difficulty      2
+HP              15
+Agility         11
+Dexterity       12
+Strength        10
+Wisdom          4
+Charisma        4
+Armorstr        1
+
+# 14
+Name            Lone Wolf
+Difficulty      2
+HP              20
+Agility         14
+Dexterity       8
+Strength        15
+Wisdom          9
+Charisma        5
+Armorstr        2
+

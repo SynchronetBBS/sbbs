@@ -1,0 +1,156 @@
+# Stats, an explanation (for myself):
+#
+# for stats, 0 is average, 3 is excellent, -3 is poor, 5 is amazing
+#
+
+Name            Barbarian
+Agility         2
+Dexterity       2
+Strength        5
+Wisdom          -1
+ArmorStr        1
+Charisma        -1
+MaxHP           10
+MaxMP           -3
+Gold            100
+
+Name            Warrior
+Agility         4
+Dexterity       3
+Strength        3
+Wisdom          1
+ArmorStr        0
+Charisma        0
+MaxHP           8
+MaxMP           6
+Gold            50
+Spell           20
+Spell           11
+Spell           18
+
+Name            Martial Artist
+Agility         6
+Dexterity       5
+Strength        1
+Wisdom          1
+ArmorStr        0
+Charisma        2
+MaxHP           12
+MaxMP           7
+Gold            60
+Spell           8
+Spell           9
+Spell           10
+Spell           21
+
+Name            Knight
+Agility         4
+Dexterity       3
+Strength        4
+Wisdom          2
+ArmorStr        1
+Charisma        4
+MaxHP           13
+MaxMP           6
+Gold            500
+Spell           14
+Spell           22
+
+Name            Assassin
+Agility         4
+Dexterity       6
+Strength        1
+Wisdom          2
+ArmorStr        0
+Charisma        1
+MaxHP           8
+MaxMP           9
+Gold            300
+Spell           16
+Spell           5
+Spell           23
+
+Name            Healer
+Agility         3
+Dexterity       2
+Strength        0
+Wisdom          3
+ArmorStr        0
+Charisma        2
+MaxHP           7
+MaxMP           12
+Gold            50
+Spell           1
+Spell           2
+Spell           4
+
+Name            Sorcerer
+Agility         2
+Dexterity       0
+Strength        -1
+Wisdom          4
+ArmorStr        0
+Charisma        0
+MaxHP           10
+MaxMP           9
+Gold            100
+Spell           8
+Spell           12
+Spell           13
+Spell           25
+
+Name            Necromancer
+Agility         2
+Dexterity       1
+Strength        -1
+Wisdom          5
+ArmorStr        0
+Charisma        0
+MaxHP           11
+MaxMP           10
+Gold            100
+Spell           8
+Spell           6
+Spell           7
+Spell           19
+
+Name            Wizard
+Agility         2
+Dexterity       -1
+Strength        -1
+Wisdom          5
+ArmorStr        0
+Charisma        1
+MaxHP           7
+MaxMP           13
+Gold            20
+Spell           13
+Spell           15
+Spell           8
+Spell           2
+Spell           4
+Spell           7
+
+Name            Pirate
+Agility         7
+Dexterity       3
+Strength        2
+Wisdom          1
+ArmorStr        0
+Charisma        4
+MaxHP           5
+MaxMP           0
+Gold            750
+
+Name            Samurai
+Agility         5
+Dexterity       4
+Strength        2
+Wisdom          1
+ArmorStr        1
+Charisma        2
+MaxHP           10
+MaxMP           5
+Gold            250
+Spell           8
+Spell           9

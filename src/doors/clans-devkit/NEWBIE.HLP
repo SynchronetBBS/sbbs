@@ -1,0 +1,192 @@
+^Protection
+ |0BProtection
+
+ |0CProtection is used to protect new clans from empire attacks.  The clan
+ can still be attacked normally through clan combat and can also attack
+ other clans.
+^END
+
+^Clan Leader
+ |0BThe Clan Leader
+
+ |0CThe first clan member you choose is important.  He will be thought of as the
+ "Clan Leader" and have superior stats when compared with the other members.
+ This member can be thought of as "you".  When the game addresses your
+ character, it will assume this character.  Be sure to choose wisely for this
+ character!
+^END
+
+^Mine Help
+ |0BThe Mines
+
+ |0CThe mines allow you to fight and build up not only your clansmen's
+ experience and gold but also to gain followers who are impressed by your
+ success in battle.  These followers will later be used as troops.
+^END
+
+^Combat
+ |0BCombat|0C
+
+ Combat in The Clans is unique.  Unlike other games, you control not one
+ character but four.  In combat, you will "run through" each of the characters
+ and decide what he should do in terms of turns.  The character (on the
+ enemy's or your side) with the most agility goes first and the one with
+ the second most goes next and so on.
+
+ |0BExperience |0Cis gained through the actual combat and NOT afterwards.
+   Each move you make in combat will result in an experience point granted
+   to the character you are controlling.  Therefore, good "moves" will result
+   in more experience which is gained faster.
+
+ |0BFollowers |0Cwho witness your combat will join your following and can later
+   be used as troops to attack other clans in "clan wars."
+
+^PAUSE
+
+ |0BHealing |0Cis done automatically after combat where necessary.  However,
+   mana (MP) is not restored but is restored automatically as combat
+   progresses.
+
+ |0BDying |0Cis very real in combat!  If your player dies (gets less than -15
+   hitpoints) he will no longer be useable (unless resurrected).  Those with
+   less than 0 hitpoints are simply deemed unconscious and can be used the
+   next day.
+
+^PAUSE
+^END
+
+^Mine Level
+ |0BMine Levels|0C
+
+ This option allows you to change which level of the mine your clan will
+ venture into.  Moving onto higher levels causes your clan to gain more
+ experience points and move up faster in their training.  Higher levels
+ also give more followers as your combat winnings are more impressive with
+ the higher odds.  Naturally, higher levels offer more difficult enemies to
+ combat.
+ 
+^END
+
+^Market
+ |0BThe Market|0C
+
+ In the market, you can buy equipment for members of your clan.  NOTE:  Items
+ are not usually better if they are more expensive.  Each item is unique
+ and has different stats.  You must choose the right one for your clansmen.
+ The most expensive equipment does not mean the best.
+
+ * It costs you 25% of an item's cost to examine the item's stats and decide
+   whether you wish to buy it or not.
+^END
+
+^Communications
+ |0BCommunications|0C
+
+ In this menu, you are given the option of communicating with other clans.
+^END
+
+^World Travel
+ |0BWorld Travel|0C
+
+ This is the InterBBS portion of The Clans.  Unlike other games, InterBBS
+ actually allows your clan to "travel" to another BBS.  How it works is this:
+
+   1. You choose the BBS you wish to travel to.
+   2. The next day, you call that BBS and login and your clan will be
+      available for you to play on THAT BBS! Imagine being able to move
+      your powerful clan to other BBSes and being able to obliterate
+      enemies there!
+^END
+
+^Town Hall
+ |0BTown Hall|0C
+
+ Town Hall is where the ruling clan deals with the village's duties such as
+ setting the tax rate, erecting buildings, buying farms, etc.
+
+ Other clans which are not currently ruling may do things to offset the ruler's
+ position.  Public conversation on the state of the village can be discussed
+ here as well.
+^END
+
+^Level Raise
+ |0BLevel Raises|0C
+
+ A level raise will provide characters with a training point.  These training
+ points can be used to increase the character's individual attributes in the
+ Training Hall.
+
+^END
+
+^Church Menu
+ |0BThe Church|0C
+
+ The church has methods of ressurecting the dead and blessing your clansmen.
+ It is a good idea to visit this building each day once it has been built.
+^END
+
+^Training Hall Menu
+ |0BThe Training Hall|0C
+
+ The training hall is essential and should be built right away by the ruler.
+ In it, clansmen are trained using training points.  Their stats, such as
+ strength and agility, can be increased through training.
+
+^END
+
+^Pawn Shop
+ |0BPawn Shop
+
+ |0CThe Pawn Shop is the place to buy and sell used goods.  The prices at
+ this shop are always cheaper than at the regular shops.  Feel free to browse
+ the items in stock.  They will only last a couple days so buy it now if you
+ want it.
+
+^END
+
+^Empire Help
+ |0BEmpires
+
+ |0CEmpires in this game are used to store gold and to store your growing
+ army.  Empires can attack each other through empire wars.  In these wars,
+ gold and land can be stolen.  Empire wars are also needed to oust a tyrant
+ ruler from his throne.
+^END
+
+^Wizard
+ |0BWizard's Shop
+
+ |0CThe Wizard's Shop provides the village with magical goods.  The wizard
+ will also be glad to examine any magical items you have for a fee.
+^END
+
+^Development Help
+ |0CThere is much land in this realm to be had.  However, special workers
+ called "Developers" are required to develop the land into something useable
+ for construction.  The more Developer's Halls you have, the cheaper it will
+ be to develop land.
+^END
+
+^Alliances
+ |0CAlliances serve as a way for clans to join together and share items and
+ perhaps troops.  You can join up to 5 alliances and you may create your own
+ as well.
+^END
+
+^Voting Booth
+ |0CThe voting booth allows you to vote for the clan which you think will rule
+ best.  At the end of the day, a new ruler is chosen from the top votes.  Of
+ course, if the town is under dictatorial rule, voting is disabled and the
+ current ruler will continue to reign unless ousted through an empire war.
+^END
+
+^Default Action
+ |0CThe default action is the action done during combat by default when you
+ hit enter.  You can set it to either just a regular attack or a specific
+ spell.  This is extremely useful.  When the spell is "castable" by the
+ character (that is, he has enough skill points to cast it) and you hit
+ enter, that spell will be cast.  On the other hand, if you do not have
+ enough skill points and you hit enter, the player will simply attack since
+ he can't cast the spell (which was the default action you specified).
+
+^END

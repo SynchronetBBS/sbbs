@@ -1,0 +1,1303 @@
+Author's Note
+-------------
+This is still the same v0.11 Dev Kit that I released long ago.  I've made a
+couple of updates, mainly to the webpage and email address.  For more information
+on what the utils included in the devkit do, see the appropriate .txt files.
+
+
+
+
+
+
+
+The Clans Development Kit v0.11 by Allen Ussher
+-------------------------------------------------------------------------------
+Clans web page: http://theclans.sourceforge.net
+email:          tigertigr@yahoo.ca
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[0.0]  Table of Contents
+-------------------------------------------------------------------------------
+
+Introduction
+============
+What Can You Develop? .................................................   0.1
+How Does the System Work? .............................................   0.2
+
+Event Files
+===========
+What Are They? ........................................................   1.1
+So How Do I Make an Event File?! ......................................   1.2
+Event File Command Reference ..........................................   1.3
+
+Monsters
+========
+What Are They? ........................................................   2.1
+How Do I Make Monsters? ...............................................   2.2
+Monster Field Reference ...............................................   2.3
+
+NPCs
+====
+What Are They? ........................................................   3.1
+How Do I Make NPCs? ...................................................   3.2
+Example NPC ...........................................................   3.3
+Quote Files ...........................................................   3.4
+Using Monster Files For Stats .........................................   3.5
+NPC Field Reference ...................................................   3.6
+
+Installing Add-Ons
+==================
+NPCs ..................................................................   4.1
+Quests ................................................................   4.2
+
+Miscellaneous Tools
+===================
+MAKEPAK.EXE and PAKfiles ..............................................   5.1
+CHEW.EXE and INSTALL.EXE ..............................................   5.2
+
+Miscellaneous
+=============
+Frequently Asked Questions ............................................   6.1
+Distributing Add-Ons ..................................................   6.2
+Spell Index ...........................................................   6.3
+Item Index ............................................................   6.4
+Monster Index .........................................................   6.5
+The End ...............................................................   6.6
+
+
+
+Introduction
+===============================================================================
+
+[0.1]  What Can You Develop?
+-------------------------------------------------------------------------------
+At the moment, you are limited to developing quests, NPCs, and monsters for
+The Clans. In the future, you may be able to develop items, mine events,
+classes, races, and possibly even the strings in the game. However, a system
+must be put into place first to prevent cheat packs from being created for the
+game.  It would be far too easy to distribute the item creator and have BBSes
+in leagues build up super items. Therefore, add-ons are being limited.
+
+Ok, so you can make quests for the game.  Quests are what you go on in the
+mines (G option).  They are fairly easy to make.  Simply create an event
+file (a script) and perhaps an NPC or two and often a monster file or two.
+Modify your QUESTS.INI file and sometimes the CLANS.INI file (to add on NPCs)
+and you're set.
+
+NPCs are the characters you encounter in the mines but usually on the street
+or other locales of the village.  Generally, NPCs are made up of stats (used
+if you want them to be able to join player clans) and of quotes (used for
+conversing with them).
+
+
+[0.2]  How Does The System Work?
+-------------------------------------------------------------------------------
+The Clans uses two INI files to allow sysops to add on modules to the game.
+
+CLANS.INI is the general INI file and allows the sysop to add on NPCs, races,
+classes, items, and spells (however, only NPCs can be developed by 3rd
+parties).  It also allows one to change the language file (the strings) used
+by the engine.
+
+QUESTS.INI is the file that the game uses to figure out which quests are
+available in the game and where to find them.
+
+When creating an add-on, you must specify instructions on how to install the
+add-on.  There may be an add-on installer created soon to make the process
+easier, but for now individual lines must be added to the INI files manually.
+(Instructions on what to add to the INI files come later.)
+
+
+Event Files
+===============================================================================
+NOTE:  Because you'll be creating modules, you'll often need to reset the game,
+run daily maintenance (forced), and log in and out of the game as you please.
+Because of this, I strongly recommend you install a fresh copy of the game and
+do all your editing there.  A slap upside the head is in order if you don't!
+(Administered by YOU, the reader.)
+
+[1.1]  What Are They?
+-------------------------------------------------------------------------------
+Event files are simple scripts which are used to construct "events" that are
+encountered through quests and mine events (ex: meeting the spirit knights).
+In essence, they are small "programs" that are run by the system using its
+own compiled language.
+
+To create an event file, you'll need to edit a text file which will contain
+the script (the commands used).  Then you'll need to compile the script using
+ECOMP.EXE.  Finally, you'll probably need to test out the script by actually
+running it in The Clans itself.
+
+
+[1.2]  So How Do I Make an Event File?!
+-------------------------------------------------------------------------------
+Example 1: Getting Started
+--------------------------
+Simple.  Run your favourite text editor and load up EVENT1.EVT.  It is the
+first example of event file you'll encounter through these docs.  It's the
+simplest one you'll ever see so you better savor the moment.
+
+See how simple this example is?  Just three lines.  The lines at the
+beginning of the event file (henceforth called EF) are simply comments.  To
+create a comment on a line, place a # as the first non-space character on
+the line and put whatever comments you like after it.
+
+Ok, we come upon a couple important things.  The first "real" command line
+says "Event SimpleEvent".  This line begins the block of code and ends with
+the "End" command.  Blocks are VITAL to event files.  They make it possible to
+jump from section to section of the script and help make things modular. To
+begin a block, use the Event command followed by the name you wish to use to
+reference the block.  Here, we used SimpleEvent.  We can really use anything
+we like.  The "End" command basically tells the system to stop running the
+script.  It's not really necessary here because the system would realize it's
+at the end of the script anyway because the end of the file is reached.
+However, if you added on another block, you'd need to stick in the End command
+or else the system might "fall through" to the next block and start executing
+lines you don't want executed!
+
+Look at the line that says:
+
+        Text "Hello World!
+
+That is an EF command!  It means output the string Hello World! onto the user's
+screen.
+
+Ok, let's compile it now to see if it really works.  (Ooh, this is getting
+oh-so exciting.)  To compile an EF, you need to run ECOMP.EXE.  Run it now on
+its own in DOS without any parameters to see how it works.  As you might have
+already guessed, the first parameter is the EF in text form and the second
+parameter is the compiled form of the EF.  The compiled form is used by the
+game.  You CANNOT run an uncompiled EF!  Usually, compiled EFs are denoted
+with a .E extension.  So, let's compile our first example.  Run this in DOS:
+
+        ECOMP EVENT1.EVT EVENT1.E
+
+
+When done, you should see the following on screen:
+
+ECOMP (dk0.10) by Allen Ussher
+
+  4:  Found event SimpleEvent
+Done!
+
+0 error(s)
+
+What does the 4:... mean?  It means on line 4, an event was found.  Now, how
+do we run it?  Running it is a little tricky.  To test it, we must add it onto
+the game as a quest.  To do this, add the following line to your QUESTS.INI
+file in your Clans directory:
+
+                Name            Event1 Test
+                File            EVENT1.E
+                Index           SimpleEvent
+                Known
+
+The game now recognizes the script as a quest.  Go into the game, and run this
+"quest" to see it in action.  Note what happens after you run it. (Disregard
+the "Help not found!" message.  This is normal.)  You can try to (G)o on
+another quest but it won't let you.  Ok, then run a forced maintenance on the
+game with this:
+
+        CLANS /M
+
+Now, go back into the game.  You should be able to run it again.
+
+Example 2: Blocks
+-----------------
+Ok, now let's try the second example, EVENT2.EVT.  Look at the file.  See how
+it is made up of three blocks of commands.  Compile it and run it the same way
+you did EVENT1.  Add the following to QUESTS.INI:
+
+                Name            Event2 Test Part 1
+                File            EVENT2.E
+                Index           FirstEvent
+                Known
+
+                Name            Event2 Test Part 2
+                File            EVENT2.E
+                Index           SecondEvent
+                Known
+
+
+See how the EF is made up.  There are three blocks, but the second one begins
+with the keyword Result instead of Event.  Result simply means it is not an
+event which is started on its own.  It is used for Jumping to.  However, Jumps
+can be made to regular Event blocks and not just Result blocks.  See also how
+to Jump command is used.  Pretty self-explanatory.  Now look at the 3rd block
+of code.  It is a totally different event.  What use is this?  If you ever
+create several quests, you can stuff 'em all in one file and distribute it
+all together as one!  Also notice how the Index used in the QUESTS.INI refers
+to the event block that is run.  And what is the Known keyword used for?  It
+makes it so that the player does not need to be "told" that the quest exists.
+You'll know what I mean if you've ever chatted with an NPC and "found out"
+about a quest.  The Known keyword bypasses that requirement.
+
+Example 3: Getting Options
+--------------------------
+Ok, onto another example.  Compile and run EVENT3.EVT.  You should know how
+it's done by now.  This is how you add quests onto QUESTS.INI:
+
+        Name    <put the name of the quest here -- you name it>
+        File    <the event file containing the commands>
+        Index   <name of the event block which starts off the quest>
+        [Known] (use this if you want users to already "know" of the quest)
+
+In this case (EVENT3), the Index is called Block1 so put that in the Index
+field.  The File is EVENT3.E (the compiled event file).
+
+Now EVENT3 is a bit more complex.  You should be used to seeing the blocks by
+now.  The first new thing you might notice is the Text keyword without any
+parameters.  This means output a carriage return/line feed. The next thing you
+see is a Prompt command.  This is identical to the Text keyword except it
+doesn't add a carriage return/line feed at the end.
+
+The next new thing is the Option command.  The Option command is used to get
+keyboard input from the user (one character).  This is useful when you wish to
+list choices for the user.  The format for an Option command is this:
+
+        Option <character to input> <which block to jump to>
+
+The character to input is any keyboard character that the user can type in.
+After typing it in, the event file is executed at the block specified.
+Instead of the block name, however, you can put NextLine and this will tell
+the system to execute the next line (following the Option keywords).  Again,
+this is very simple stuff.
+
+The last new command we encounter here is the Input command.  This command
+works similarly to the Option command except that the input method is
+different and the parameters have changed:
+
+        Input <which block to jump to> <quote to use>
+
+It's hard to explain how this works so you should just go run the event and
+see it in action.  Look at the whole EF now and follow it.
+
+Example 4: Fighting
+-------------------
+Now, let's look at EVENT4.EVT.  It is an example of how to do battles in the
+game.  The Index used for the QUESTS.INI file is "FightExample".
+
+Run it first to test it out.  I'll leave the installation to you.  After you
+have tested it out, and won the battle, you'll see that you have "completed"
+the quest.  This means that even if you run maintenance, you will no longer
+be able to run the quest.  This is achieved using the new keyword DoneQuest.
+This will set the quest as "completed" by the user so that he will no longer
+be able to run it.  Look at the EVENT4.EVT file and see where it is located.
+
+How do you fight monsters using the event file?  First of all, you'll need to
+"load up" the monsters into the game's memory.  To do this, you need to use
+the AddEnemy command:
+
+        AddEnemy <monster file name> <numeric index of monster in file>
+
+The monster file name is the file containing the monsters.  You'll learn how
+to create monsters in another section.  For now, we use the basic monsters in
+the game.  They are stored in the file called /m/Output.  The /m/Output file
+is contained in the CLANS.PAK.  (See the section on MAKEPAK.EXE and PAKfiles
+for info.)  The second parameter for this command is the numeric index of
+the monster.  Monsters in the file are listed and referred to using a numeric
+index.  0 is the first monster in the file, 1 is the next, and so on.  Again,
+see the section on monsters for info.  In our example, we use /m/Output and
+monster #1 (actually, the 2nd monster, since the 0th is the 1st).  We execute
+the AddEnemy command 4 times.  This will load up the same monster 4 times into
+the games monster buffer.  The monsters will not be fought, however, until the
+Fight command is reached.  So you can continue displaying text using the Text
+command and have Jumps and whatever and the monsters will still be in the
+monster buffer (until the event file ends).  Here is the format for the Fight
+command:
+
+        Fight <WinLabel> <LoseLabel> <RunLabel>
+
+The WinLabel is the name of the block to jump to after the user wins the
+battle.  The LoseLabel is where to jump when the user loses.  The RunLabel is
+where to go if the user runs.  Simple!  There are a couple more special
+features of this command, however.  As always, you can use NextLine to execute
+the command right after the Fight command instead of jumping to another block.
+However, you can also use the STOP label.  This will cause execution of the
+EF to end.  And if you don't want the user to run away, stick in NoRun where
+the label goes.  Here are some examples:
+
+        Fight NextLine STOP NoRun
+
+The above is probably what you'll use most often.  After the fight is won by
+the user, the next line will be run.  If the user loses, the EF will be
+stopped and the NoRun tells the game to not let the user run away in battle.
+
+        Fight WinSpot YouLose STOP
+
+The following will branch off to WinSpot if the user wins, YouLose if the user
+loses and finally cease execution of the EF if the user runs away.
+
+Example 5: Flags
+----------------
+Flags are probably the most confusing aspect of EFs.  Luckily, you will likely
+never use them!  So if you want, skip this section.
+
+Flags are basically, place-holders.  They are like variables in regular
+programming languages.  However, they are capable of only two states:  TRUE or
+FALSE.  The following categories of flags are available for use:
+
+  G flags -- global flags; shared by all users, never cleared
+  H flags -- daily global flags; cleared once a day during maintenance.
+  D flags -- daily player flags; individual flags differ for each user;
+             cleared each day during maintenance.
+  P flags -- player flags; individual flags differ for each user; never
+             cleared
+  T flags -- temporary flags; cleared each time an event file is run or each
+             time a quote file is run
+
+There are 64 flags in all for each category.  The first G flag is called G0,
+the 2nd is G1, the 3rd is G2, and so on until G63.  The same applies to all
+the other categories.  Other examples of flags:  P53, D21, H16, T44.  Flags
+are tested using {}'s.  You'll have to look at EVENT5.EVT for an example.
+{}'s are used in the following manner:
+
+        {acs goes here}<keyword goes here>
+
+For instance, to display "I see you have the heavenly sword!" only if the
+user's P1 flag is set, use this:
+
+        {P1}Text "I see you have the heavenly sword!
+
+P1 on its own is treated as a boolean variable.  If whatever is between the
+{}'s is TRUE, then the command following it is executed.
+
+To display "I see you do not have the heavenly sword!" if the user's P1 flag
+is NOT set, use this:
+
+        {!P1}Text "I see you do not have the heavenly sword!
+
+!P1 means NOT P1.  So if P1 is TRUE, NOT TRUE = FALSE.  And similarly, if P1
+is FALSE, NOT FALSE = TRUE.  Therefore "I see you do not have the heavenly
+sword!" is only displayed when the user's P1 flag is NOT set.
+
+So how do we go about setting and clearing flags?  Using the SetFlag and
+ClearFlag commands of course!
+
+        SetFlag   @#
+        ClearFlag @#
+
+@ represents which category of flag to set and # represents the corresponding
+flag in the category (from 0 to 63).  To set flag T5, use SetFlag T5.  To set
+flag G60, use SetFlag G60.  To clear flag P13, use ClearFlag P13.  You get the
+idea.
+
+You can also string 'em together and test a whole bunch using | for OR, & for
+AND.  If you want to see if the user has D10 set but NOT D4, use {D10 & !D4}.
+To see if either G3 or G9 is set use {G3 | G9}.  You can use ( and ) to group
+conditons.  Here is the ultimate and if you don't get it, sorry:
+
+        { (G12 & T2) | (H9 & !D1) }
+
+That will only be true if G12 and T2 or true OR H9 is set and
+D1 is not set. Trust me, you usually will NOT need more than one flag test but
+if you want to go crazy, be my guest.
+
+Some more ACS stuff:
+
+        $xxx    -- true if user has xxx gold or more in his pocket.  To have
+                   something occur if user has at least 100 gold, do this:
+
+                        {$100}Text "You rich snob!  I wish I had even 1 gold!
+
+        Qaa     -- true if user has completed quest aa.  To run something if
+                   user has completed quest #1:
+
+                        {Q1}Text "My, aren't we the questmaster?
+
+        ^       -- always true
+        %       -- always false
+        Ryy     -- true if a roll of 100 dice yields a value greater than or
+                   equal to yy.  If you want something to happen randomly
+                   with 50/100 odds (i.e. 1 out of 2) use this:
+
+                   {R50}Text "Something odd happened!
+
+                   This is very useful to make random events occur.  An
+                   imaginary dice is rolled each time a Rxx ACS is encountered
+                   and then it is tested against the xx value.
+
+        Lyy     -- user is at mine level yy
+
+        Kyy     -- user is at mine level yy or higher
+
+
+The rest is fairly self-explanatory.  Please peruse the EVENT5.EVT file for
+additional comments.
+
+* Useful Info
+When EFs are created they usually end in a .E extension or begin with a /e/
+for PAKfiles.
+
+
+And that concludes the tutorial. :)  The next section contains all the
+commands available in EFs.
+
+
+[1.3]  Event File Command Reference
+-------------------------------------------------------------------------------
+Here is a listing of the current keywords used in the event files and their
+meanings:
+
+        Event <event name>
+
+                -- used to start an event block
+
+        End
+
+                -- used to end an event
+
+        Jump <label>
+
+                -- used to jump to another event/result block
+
+        Result <event name>
+
+                -- similar to events but in the case of "random" events,
+                   they are not considered random events -- more on this later
+
+        Text "<string>
+
+                -- this displays text to the screen.  Using a blank string
+                   causes a carriage return to be displayed:
+
+                        Text
+
+        Prompt "<string>
+
+                -- displays text to screen but without the carriage return
+
+        Pause
+
+                -- displays <pause> and waits for keyboard input
+
+        Option # <event name>
+
+                -- when an option keyword is found, the program will
+                   scan for other Option keywords following it
+                   immediately and then go into input mode.  The only
+                   allowable inputs from the user will be the Option #'s
+                   used.  For instance, if you wanted to allow only Y or
+                   N to be input after a question, use this:
+
+                   Option Y YesEvent
+                   Option N NoEvent
+
+                   The program would then accept either the Y or N key
+                   to be input. The <event name> is the name of the
+                   event block to goto if that key was pressed.  (NOTE:
+                   Upon ending the event "jumped" to, the program will
+                   stop THERE.  It will not "return" to the original
+                   event which caused the jump to occur, so don't expect
+                   it to return.)
+
+                   * special <event name>'s:
+
+                   NextLine - causes the commands immediately following
+                              the Option keywords to be executed (see
+                              quests.txt for help)
+
+                   STOP -- causes execution of event block to stop.
+
+        AddEnemy FILENAME X
+
+                -- This will add Enemy #X to the queue of enemies to fight
+                   the next time that the Fight keyword is used.
+
+        Fight <WinLabel> <LoseLabel> <RunLabel>
+
+                -- This will cause the player to fight the queue of monsters
+                   that were added using AddEnemy.  For instance, if in the
+                   data file Monsters.MON you had monster #9 as Large Flea
+                   and you wanted the player to fight 3 of these creatures,
+                   you'd use this:
+
+                   # add 3 large fleas
+                   AddEnemy monsters.mon 9
+                   AddEnemy monsters.mon 9
+                   AddEnemy monsters.mon 9
+                   # fight them now
+                   Fight NextLine STOP STOP
+
+                   <WinLabel> is the label of the event block to branch
+                   off to if the player wins the battle, of course you
+                   may use the following again:
+
+                        NextLine  -- don't branch off; go to next line
+                        STOP      -- stop execution of script
+
+                   <LoseLabel> is the label of the event block to branch off
+                   to if the player *loses* the battle.  Usually, I set this
+                   to STOP meaning stop execution of the script.  Sometimes
+                   you might want to put something here like a short
+                   description of what happens after the clan loses the battle,
+                   but DO NOT use a Fight command if the clan loses because
+                   the clan is already dead!!
+
+                   <RunLabel>  You guessed it, this is the label of where to
+                   go if the clan runs away.  Now, sometimes you don't want
+                   the clan to be able to run away.  Say they're fighting
+                   some big-ass creature and cannot escape, you'd use a label
+                   of NoRun to tell the game that the clan cannot run away.
+                   Otherwise, use a regular label as for <WinLabel> and
+                   <LoseLabel>.
+
+        Chat NPCIndex
+
+                -- chat with NPC with NPCIndex.  See the section on NPCs for
+                   info on creating NPCs.
+
+        TellQuest QuestIndex
+
+                -- A player will normally not know of any quests (except
+                   those flagged as "Known" in QUESTS.INI so they have
+                   to find out about them from someone.  You "tell" them
+                   about a quest using this command.  After telling them
+                   about quest QuestIndex, they'll be able to access the
+                   quest in the quest menu.  See my NPCQUOTE.TXT file to
+                   see it in action (even if it is a quote file and not
+                   an event file).  It's easy to use.
+
+        DoneQuest
+
+                -- When an End keyword is encountered in a quest script, the
+                   quest is not officially completed.  The End is used in a
+                   quest to signify the end of the script and not the
+                   completion of the quest.  To make it so that the user has
+                   completed the quest and cannot go on it again the next day,
+                   use this command.   Example:
+
+                                [... stuff goes here ...]
+                                Text "Congratulations, you've completed the
+                                Text "quest!
+                                DoneQuest
+                                End
+
+        AddNews "<string>
+
+                -- This adds the string to the news file
+
+        Display "<filename>
+
+                -- Displays the ANSI or ASCII file.
+
+
+        SetFlag @X
+
+                -- This sets the flag @X (@ = either T, P, D, G or H
+                -- see section on Flags & ACS
+                   Example to set flag T3:
+
+                        SetFlag T3
+
+        ClearFlag @X
+
+                -- This clears flag @X
+                -- see section on Flags & ACS
+                   Example to clear flag P9:
+
+                        ClearFlag P9
+
+        Heal [option]
+
+                -- this heals all living members of the clan
+                -- use a blank [option] to heal their HP, use heal SP to heal
+                   their skill points.  This heals HP:
+
+                        Heal
+
+                   This heals SP:
+
+                        Heal SP
+
+        TakeGold <amount>
+
+                -- decreases user's pocket gold by amount specified, it does
+                   NOT check for negatives so be careful with this.  You may
+                   want to use a {$xxx} first.
+
+        GiveGold <amount>
+
+                -- Gives the user a certain amount of gold.  Be sure not to
+                   give 'em TOO MUCH gold.  I usually give between 300 and 1000
+                   gold.
+
+        GiveXP <amount>
+
+                -- Gives all clan members (living) the amount of XP specified.
+                   A good amount is between 1 and 10 XP.
+
+        GiveItem <item name>
+
+                -- Gives the item to the clan.  See the Item Index for a
+                   listing of the items available to give.
+
+        GiveFight X
+
+                -- Gives X more monster fights to the clan.
+
+        GiveFollowers X
+
+                -- Gives X more followers to the clan.
+
+        GivePoints X
+
+                -- Gives X points to the clan.  Don't give them more than 75
+                   points at any time!
+
+
+Monsters
+===============================================================================
+
+[2.1]  What Are They?
+-------------------------------------------------------------------------------
+Monsters are those creatures that you fight in combat.  Did I really need to
+explain that? :)  Hope not.
+
+
+[2.2]  How Do I Make Monsters?
+-------------------------------------------------------------------------------
+Monsters are made using a text file (like MONSTERS.TXT) and then compiling it
+into a data file (usually ends in .MON, but it doesn't matter).  So, make your
+monster file however you want (modify MONSTERS.TXT if you like) and compile it
+like so:
+
+	MCOMP <MONSTERS.TXT> <output.mon>
+
+To make a monsters file called test.mon, use this
+
+	MCOMP monsters.txt test.mon
+
+*See MONSTERS.TXT and the next section for info on making these files.  Of
+course, you can name the .TXT file anything.  If you made MYMON.TXT, compile
+it like this:
+
+        MCOMP MYMON.TXT MYMON.MON
+
+MYMON.MON can also be any valid filename.
+
+
+[2.3]  Monster Field Reference
+-------------------------------------------------------------------------------
+Please refer to MONSTERS.TXT for examples.
+
+Name          [name of monster, max of 19 chars]
+HP            [hp of monster]
+SP            [skill points of monster]
+Difficulty    [level of monster, 1 is lowest]
+Agility       [agility]
+Difficulty    [difficulty]
+Dexterity     [dexterity]
+Strength      [strength]
+Wisdom        [wisdom]
+ArmorStr      [armorstr]
+Spell         [spell he knows, see the Spell Index for a list]
+[you can list lots of spells like this:
+
+ Spell        1
+ Spell        2
+ Spell        5
+ Spell        7
+]
+
+
+NPCs
+===============================================================================
+
+[3.1]  What Are They?
+-------------------------------------------------------------------------------
+NPCs are the characters you encounter by hitting the / key in the game's menus
+and sometimes in random encounters in the mines and other times in quests.
+You will usually chat with them and sometimes have them join your clan.
+
+
+[3.2]  How Do I Make NPCs?
+-------------------------------------------------------------------------------
+NPCs are compiled usually to a file ending with the .NPC extension.  To
+make an NPC file, create a text file similar to NPCS.TXT and use MakeNPC
+to compile it:
+
+        MakeNPC [infile.txt] [outfile.npc]
+
+To add your new NPCs to the game, add this line to your CLANS.INI file:
+
+        NpcFile [yourfile].npc
+
+*NPCs are those characters that you chat with in The Clans (/ option in
+menus).  They can also join your clan.  See NPCS.TXT for an example NPC
+file.  You should name your NPC files something unique (i.e. not CLANS.NPC)
+and end it with .NPC.  However, if using a PAKfile (see section 5.1) then
+remember to name it properly.  If you name the file /npc/MyGuys in your
+PAKfile called ADDON.PAK, use this:
+
+        NpcFile @ADDON.PAK/npc/MyGuys
+
+
+[3.3]  Example NPC
+-------------------------------------------------------------------------------
+I'll go through one example in NPCS.TXT, The Knight.  As you can see from the
+example (open up NPCS.TXT and look at it if you're not already doing so) the
+data for this NPC is comprised of several lines.  This is how NPCs are set up.
+The first line, the Index line, must always come first.  The Index is
+basically a tagword used for referencing this NPC in event files (using the
+Chat command).  It MUST be unique.  If you created an NPC and used an Index
+of simply "Charles" and another person created an NPC with an Index of
+"Charles" as well and they were both installed on the same system, there would
+be a conflict.  The first "Charles" to be found by the game would be used and
+this would be a problem for the other add-on.  So, one way to make your Index
+names unique is to start them off with your initials.  For me that would be AU
+so I might use AUKnight for The Knight's Index.  However, in this example, I
+used the underscore (_) to start off the NPC's Index.  I use this for all my
+NPCs to differentiate them from other people's NPCs.  I suggest you find a
+unique naming system of your own to prevent conflicts from occurring.
+
+The next line contains the actual name of the NPC.
+
+Next is the QuoteFile's name.  See the next section on making
+QuoteFiles.  They contain all the quotes that the character can say.  They
+must be compiled like EFs and are actually compiled using ECOMP.EXE as well.
+
+The following line is the NPCDAT line.  This is used to reference the NPC's
+actual character data (used when the NPC joins clans).  The character data is
+held in monster files.  The monster files are made up several monsters in
+sequential order and the 0th monster being the first one in the file.  For
+this example, NPCDAT is followed by 0 meaning that the 0th monster is the one
+which has the stats for this character.  The next line is the MonFile line.
+This is the name of the monster file used for the data for NPCDAT.  Here,
+NPC.MON is used so the first monster appearing there (the 0th one) will be
+used for the NPC's stats.
+
+What follows is the Loyalty line.  This is used to see if the NPC is loyal to
+the clan it belongs to at the time.  10 means the NPC is always loyal and 0
+means it is never loyal.  A higher loyalty means the NPC will be less likely
+to disclose information on the clan it is in.  10 means it NEVER will and 0
+means it ALWAYS will.
+
+The next few lines are Topics used for chatting with the NPC.  KnownTopics are
+topics that are already known when the player meets the NPC and starts
+chatting.  The regular Topics are not known and must be found out by the user
+(through the TellTopic command in the QuoteFile).  The IntroTopic line is the
+first quote shown to the user.
+
+
+[3.4]  Quote Files
+-------------------------------------------------------------------------------
+The example used for this section is NPCQUOTE.TXT.  It is an uncompiled
+QuoteFile (QF).  QFs must be compiled using ECOMP.EXE.  QFs are made the exact
+same way as EFs except that they use the keyword Topic instead of Event or
+Result.  Each topic corresponds to the listing of topics that appears in the
+raw NPC data file (ex: NPCS.TXT).
+
+There are three new commands in the QuoteFiles, however.
+
+        TellTopic <topic name>
+
+TellTopic is used to make known a topic which was previously unknown (i.e.
+created using the Topic keyword instead of the KnownTopic keyword).
+
+        EndChat
+
+EndChat is used to end the discussion altogether.  The user will be kicked
+back into the chatting menu and be able to choose another NPC to chat with.
+
+        JoinClan
+
+When executed, the NPC will join the clan using the stats specified with the
+NPCDAT and MonFile keywords.  Also, if the NPC is already in a clan, he will
+decline.
+
+* Useful Info
+When QFs are created they usually end in a .Q extension or begin with a /q/
+for PAKfiles.
+
+
+
+[3.5]  Using Monster Files for Stats
+-------------------------------------------------------------------------------
+(This section needs work.)
+Create a file similar to NPC-MON.TXT.  Compile using MCOMP.EXE as you would a
+normal monster file.  Reference the file using the MonFile keyword and the
+actual stats within the file using the NPCDAT keyword.
+
+[3.6]  NPC Field Reference
+-------------------------------------------------------------------------------
+Please see NPCS.TXT for examples.  NPC-MON.TXT is the uncompiled NPC "Monster
+file" which contains the NPCs' stats.
+
+
+Index         [index, ONE WHOLE WORD, 19 chars or less, MUST COME FIRST]
+              The index must ALWAYS appear first and then the following info
+              can be in any order.  The Index is a special tagword used to
+              reference this NPC in the game.  For instance, if you use a
+              Chat [index] command in an event file, that [index] you used
+              is compared with the indexes in this file until the it finds
+              the character.  So, to chat with The Knight, use Chat _Knight1
+              You SHOULD use some sort of naming convention since other
+              people will make NPC data files to distribute and may end up
+              using the same Index names (which causes problems when
+              referencing).  I use underscores (_) so nobody confuses mine
+              with theirs.  One suggestion is to have your initials start
+              off the NPC Index.  For me, that is AU, so for the Knight I'd
+              have AUKnight.
+
+Name          [19 chars or less]
+QuoteFile     [12 chars or less, quote filename, such as NPCQUOTE.Q]
+MonFile       [12 chars or less, .MON file used to hold NPC monsters.
+              NPC attributes such as Dexterity, Agility, etc. are held in
+              files similar to the ones used for monster combat (.MON
+              files).  See NPC-MON.TXT for an example .MON file.
+              DO NOT USE NPC.MON, that is the one used for my NPCs, use your
+              own. :)  You might use JOE.MON for instance to hold YOUR NPC
+              data.
+NPCDat        [Which monster is he in the .MON file?  0 means first monster,
+              and so on.  Again, see NPC-MON.TXT for an example.]
+Loyalty       [How loyal is this NPC, 10 means most loyal and 0 means least.
+              This is used to see if the NPC chats about his Clan if asked
+              to join the clan but he is already in a clan]
+OddsOfSeeing  [Between 0 and 100.  100% means you'll see this NPC every
+              day in the place where he wanders and 0 means never see him.
+              In between are values used for randomness.  10 means you'll
+              see him 10% of the time.  To reiterate, each day the NPCs which
+              are in town will be chosen using these values and an imaginary
+              100-sided dice.  100% means the NPC will appear every day but
+              50% means it'll appear 50% of the time.]
+Wander        [Name of menu you must go into to chat with this NPC.  Valid
+              menus:
+
+                      Street          -- main menu of The Clans
+                      Church
+                      Market
+                      Town Hall
+                      Training Hall
+                      Mine
+              ]
+IntroTopic    [Name of Topic NPC will chat about when first chatting with
+              him.]
+Topic         [Topic] [Topic Name]
+
+              This will add a topic the NPC will to the list of valid topics.
+              Topic is always used to store a topic as "unknown" and is used
+              in conjunction with TellTopic [Topic] to make the topic known.
+              [Topic] is the name of the Topic as it appears in the Quote
+              File and [Topic Name] is what it will look like to the user
+              chatting with him.
+KnownTopic    [Topic] [Topic Name]
+
+              Same as Topic but these topics are already "known" and don't
+              require TellTopic to be used.
+MaxTopics     [Num topics user is allowed to chat about.  Optional]
+HereNews      [Displays string in news file when this character appears in
+              the game that day.]
+
+
+
+
+Installing Add-Ons
+===============================================================================
+
+[4.1]  NPCs
+-------------------------------------------------------------------------------
+Adding add-on NPCs to a pre-existing game is simple.  All you need to do is
+instruct the sysop to add one line to his CLANS.INI file:
+
+        NpcFile MYNPCS.NPC
+
+Of course, replace MYNPCS.NPC with whatever file you used to hold the NPCs.
+If you used a PAK file called MYPAK.PAK to hold a file called /npc/Mine, then
+use this:
+
+        NpcFile @MYPAK.PAK/npc/Mine
+
+
+[4.2]  Quests
+-------------------------------------------------------------------------------
+Adding quests is a bit more difficult but if the sysop knows how to cut and
+paste, it's really simple.  Ask the sysop to add on to their QUESTS.INI file
+lines such as the following:
+
+                Name            Bathtub o' Blood
+                File            BLOOD.E
+                Index           Blood
+                Known
+
+See the section on event files (and quests) for information on the make-up of
+these blocks.
+
+Then, you'll probably want to create a description of your quest to display
+when it is chosen in the game (this will avert those "Help not found!"
+messages).  Here's a template of a quest's description that follows the above
+example:
+
+        ^Bathtub o' Blood
+        |12Bathtub o' Blood
+        |06----------------
+        |04Go on a rampage killing everything in sight.
+
+        |12Difficulty: Hard and BLOODY!
+        ^END
+
+This section goes into the QUESTS.HLP file.  Again, you'll likely make it up,
+place it in your installation docs and ask the sysop to cut and paste it into
+his QUESTS.HLP file.  The format is simple.  The first line with the ^ has the
+title of the quest (literally, the Name that is seen in QUESTS.INI).  And then
+you simply place all the text you wish between that line and the ^END line.
+
+Here's another example for the QUESTS.INI but this one assumes the quest
+appears in BOB.PAK and in the file named /e/Bob:
+
+                Name            Bathtub o' Blood
+                File            @BOB.PAK/e/Bob
+                Index           Blood
+                Known
+
+
+Miscellaneous Tools
+===============================================================================
+
+[5.1]  MAKEPAK.EXE and PAKfiles
+-------------------------------------------------------------------------------
+Before making a quest, you should be aware, that there may be a few files that
+must be created for the quest.  An NPC file, a monster file, and the actual
+compiled event file are what you'd normally find.  To help reduce clutter, a
+system was created to place several files in one large file called a PAKfile.
+MAKEPAK.EXE is used to create a PAKfile.
+
+When files are PAKed together, they are referenced differently in event files,
+NPC files, and INI files.  PAK files are created in the following manner:
+
+        1. Create a file listing all the files that will go into the PAKfile.
+           The file will comprise of two columns.  The first column contains
+           the files as they are named in DOS.  The second column contains the
+           files as they are named in the PAKfile.  The PAKfile file names
+           MUST begin with a forward slash (/).  For an example of a PAKfile
+           file listing, see PAK.LST.  As you can see, the file names on the
+           right side all begin with the / character and often are named using
+           a directory-like hierarchy.  However, it matters not what you name
+           the PAKfile file names (2nd column files).  For all that matters,
+           you could name a file /@!BLAH!@ if you wanted.  As long as it
+           begins with a / it'll work.  Just look at the example for a bunch
+           of wacky names at the end.  HOWEVER, please be aware that PAKfile
+           names cannot exceed 29 characters in length!  And of course, the
+           files on left column must be exist to be PAKed!
+
+        2. Next, you need to actually run MAKEPAK.EXE.  This is run in the
+           following manner:
+
+                MAKEPAK [.pak file name] [PAK file list]
+
+           So, to create a PAKfile called AI.PAK using the PAK file list
+           called PAK.LST:
+
+                MAKEPAK AI.PAK PAK.LST
+
+           After the program is run, all the files listed in PAK.LST will
+           be PAKed into the file AI.PAK and be ready to be accessed by
+           The Clans.
+
+
+Now that we have the PAK file, you need to know how to access the files in it!
+Remember that we needed to name PAK files with the / as the first character?
+This is important.  When files in The Clans are referenced with the /
+character, the CLANS.PAK file is searched and the file is found there.
+However, we need a way to differentiate between a file named /Event.E that
+exists in CLANS.PAK from a file named /Event.E that exists in ADDON.PAK.  This
+is achieved through the @ character.  Yes, it's not used just for email
+addresses any more!  To access the file /Event.E that exists in ADDON.PAK,
+we'd use the following string:
+
+        @ADDON.PAK/Event.E
+
+To access the file called /Event.E in CLANS.PAK, we do the same thing:
+
+        @CLANS.PAK/Event.E
+
+Actually, by default, if a PAKfile name is omitted, the game will use
+CLANS.PAK.  So, we could actually use the following to access /Event.E in
+CLANS.PAK:
+
+        /Event.E
+
+So what does this all boil down to?  ** WHENEVER ACCESSING PAKfile FILES
+(these terms are getting confusing) ALWAYS USE THE @ CHARACTER UNLESS YOU
+REALLY WISH TO USE THE FILE IN CLANS.PAK!!! ***  So, if you PAK an ANSI into
+your PAKfile called DRAGON.PAK, and the ANSI is called /ans/Welcome, access it
+using this string:
+
+        @DRAGON.PAK/ans/Welcome
+
+DO NOT use /ans/Welcome (without the @DRAGON.PAK) or else the game will search
+CLANS.PAK and come up empty handed.
+
+If any of this is confusing, that's fine.  You can come back and read this
+over later when you need to make a PAKfile.
+
+[5.2]  CHEW.EXE and INSTALL.EXE
+-------------------------------------------------------------------------------
+When you wish to distribute your add-on, you may wish to use my installation
+program that is provided with The Clans.  Since everyone who has installed
+already has the INSTALL.EXE program in their Clans directory, you will not
+need to add it onto your archive.  Simply explain in a readme file within your
+archive that the sysop will need to unzip the contents of the file into the
+Clans directory.  This is necessary anyway since quests will go into that
+directory.
+
+To use the INSTALL program, you will need to create a GUM file.  A GUM file is
+a compressed file containing many files (similar to a ZIP file or an ARJ)
+file.  To create a GUM file, you'll first need to create a file containing a
+list of all the files that will go into the GUM file.  This file is named
+FILES.LST (you can't use any other name).  So create a text file called
+FILES.LST and in it, place the names of all the files that will go into the
+GUM archive, one file per line.  Here is an example of such a listing:
+
+        MYQUEST.TXT
+        MYQUEST.PAK
+        SYSOP.DOC
+
+Then all you need to do is run CHEW.EXE with the name of the GUM file to
+create following it.  For instance, to create a GUM file called MYQUEST.GUM,
+you'd run it like this:
+
+        CHEW MYQUEST.GUM
+
+(If you're wondering the significance of the terms of GUM and CHEW, there is
+none.  They sounded good, ok? ;-)  This will create the MYQUEST.GUM file
+containing all the files listed in FILES.LST.  If you do not specify a GUM
+file to create, ARCHIVE.GUM will be created by default.
+
+Now that you have a GUM file, you'll need to make an INI file useable by the
+INSTALL program.  You can take a look at CLANDEV.INI (the INI file used by the
+dev. kit) and INSTALL.INI (Clans's install INI file).  EXAMPLE.INI is provided
+as an example and template.
+
+The first few lines of the INI file can simply be comments.
+
+The line that begins with a ! is used to specify the name of the GUM file to
+use when extracting files.
+
+Lines beginning with a colon (:) are treated as displayable sections.  When
+the user types in "read whatsnew", the section which starts with :whatsnew is
+displayed.  The section ends when another section beginning with another colon
+begins (the lined sections are merely used for readability).
+
+The EXAMPLE.INI lays out all the sections and you are encouraged to try it out
+by typing INSTALL EXAMPLE in DOS.
+
+The section :install.files is a listing of all the files that are in the
+archive and how to treat them if there is an existing file.  The first
+character is used to determine how the file is dealt with and the second
+parameter is the actual file name.  However, if any files are left out of the
+list but still exist in the GUM file, the user will queried if he wishes to
+extract them if a file with the same name exists.
+
+Note the following things in the file:
+
+        * the :title section is displayed first and used as a header
+        * the :goodbye section is displayed when the program is exited
+        * :install is displayed before the user chooses to install
+        * :upgrade is displayed before the user chooses to upgrade
+        * NO BLANK LINES may be used in the :install.files and :upgrade.files
+          sections.
+
+Remember, to use your INSTALL INI file, you'll need to use INSTALL.EXE and run
+it with the INI file name as the parameter.  For instance, if you created an
+INI file called MYQUEST.INI, you may install it using INSTALL MYQUEST (the
+.INI can be omitted).
+
+
+Miscellaneous
+===============================================================================
+
+[6.1]  Frequently Asked Questions
+-------------------------------------------------------------------------------
+[Q]  Is it possible for NPCs to hold items?
+[A]  Nope, not yet.
+
+[Q]  Can NPC's retain stats?
+[A]  No.
+
+[Q]  What is the meaning of life?
+[A]  Seek within.
+
+Ask me a question and I'll probably put it in this section (unless it's a
+question like "Can I borrow 5 bucks?"  No, you can't.)
+
+
+[6.2]  Distributing Add-Ons
+-------------------------------------------------------------------------------
+Now that you've created an add-on, go and distribute it!  You should send it
+to me first so I can test it out but that's not really necessary any more.
+If you have a web page up with your add-ons, email me and I'll link it from my
+page.
+
+
+[6.3]  Spell Index
+-------------------------------------------------------------------------------
+Here is a listing of all the spells currently available.  This listing is
+useful for monster creation.
+
+        1. Partial Heal                 15. Lightning Bolt
+        2. Heal                         16. Backstab
+        3. Slow                         17. FireBreath
+        4. Strength                     18. Bloodlust
+        5. Ropes                        19. Fear
+        6. Raise Undead                 20. Light Blow
+        7. Banish Undead                21. Hurricane Kick
+        8. Mystic Fireball              22. Divine Warrior
+        9. Dragon's Uppercut            23. Blind Eye
+       10. Summon Dead Warrior          24. FireBreath
+       11. Heavy Blow                   25. Rain of Terror
+       12. Death and Decay              26. Summon Khaos
+       13. Mystic Bond                  27. Summon Dragon
+       14. Holy Heal                    28. Ice Blast
+
+[6.4]  Item Index
+-------------------------------------------------------------------------------
+Here is a listing of all the items currently available.  This listing is
+useful if you wish to give item using the GiveItem command in an EF.
+
+        Shortsword              Hero's Armor
+        Broadsword              Rags
+        Axe                     Wooden Shield
+        Mace                    Iron Shield
+        Dagger                  Platinum Shield
+        Staff                   Crystal Shield
+        Wand                    Hero's Shield
+        Battle Axe              Silver Mace
+        Morning Star            Lion's Shield
+        Scythe                  Battle Axe
+        Boomerang               Flame Scroll
+        Falcon's Sword          Summon Scroll
+        Bloody Club             Banish Scroll
+        Death Axe               Summon Khaos
+        Spirit Blade            Summon Dragon
+        Wizard's Staff          Ice Blast
+        Cloth Robe              Book of Stamina
+        Leather Armor           Book of Mana
+        Chainmail Armor         Book of Healing
+        Platemail Armor         Book of Flames
+        Wooden Armor            Book of the Dead I
+        Cloth Tunic             Book of the Dead II
+        Kai Tunic               Book of Destruction
+
+[6.5]  Monster Index
+-------------------------------------------------------------------------------
+Here is a listing of all the monsters appearing in the file
+@CLANS.PAK/m/Eva (i.e. /m/Eva).  These are used for events and can be used by
+you if you wish.
+
+        0. Ghoul                        19. Man
+        1. Ghoul                        20. Man
+        2. Mad Scientist                21. Hellhound
+        3. Mad Gardener                 22. Hellhound
+        4. Orc                          23. Beast
+        5. Small Gnome                  24. gardener
+        6. Wolf Master                  25. guard
+        7. Wolf                         26. guard
+        8. Thief                        27. Businessman
+        9. Thief                        28. Thief
+       10. Thief                        29. Thief
+       11. Spirit Knight                30. Large Thief
+       12. Spirit Knight                31. Wyvern
+       13. Orc                          32. Hellhound
+       14. Orc                          33. Green Slyme
+       15. Orc                          34. Skeletal Fiend
+       16. Orc                          35. Golden Dragon
+       17. Orc                          36. Ghoul
+       18. Orc Guard
+
+To use these monsters with the AddEnemy command, use the monster file name of
+/m/Eva and follow it with the index of the monster.  For instance, to access
+the Wyvern (#31), use the following line:
+
+        AddEnemy /m/Eva 31
+
+Here are all the monsters in the mines (/m/Output):
+
+ 0. Mangy dog           63. Minotaur            126. Goblin
+ 1. Cave Dweller        64. Green Slyme         127. Troll
+ 2. Witch               65. Blue Slyme          128. Large Rat
+ 3. Giant Rat           66. Red Slyme           129. Large Spider
+ 4. Ogre                67. Troglodyte          130. Large Millipede
+ 5. Zombie              68. Serpent             131. Dark Elf
+ 6. Evil Wizard         69. Dark Mage           132. Spiked Demon
+ 7. Troll               70. Ranger              133. Skeleton
+ 8. Ratman              71. Shadow              134. Bats
+ 9. Rockman             72. Shadow Wolf         135. Caveman
+10. Beast               73. Shadow Knight       136. Mummy
+11. Grue                74. Silver Knight       137. Serpent
+12. Demon               75. Hell Hound          138. Rabid Dog
+13. Bad Boy             76. Witch               139. Ugly Man
+14. Evil Priest         77. Wyvern              140. Critter
+15. Thief               78. Fimir               141. Blue Jelly
+16. Drunken Fool        79. Demon               142. Fire Elemental
+17. Beggar              80. Orc                 143. Sprite
+18. Orc                 81. Goblin              144. Slyme
+19. Warrior             82. Gargoyle            145. Giant Maggot
+20. Dark Elf            83. Martial Artist      146. Undead Warrior
+21. Goblin              84. Small Dragon        147. Death Soldier
+22. Orc                 85. Ogre                148. Undertaker
+23. Werewolf            86. Orc                 149. Wild Man
+24. Spirit              87. Ogre                150. Dark Monk
+25. Serpent             88. Dark Knight         151. Thief
+26. Bum                 89. Wolf                152. Small Dragon
+27. Freak               90. Minotaur            153. Sorcerer
+28. Assassin            91. Blood Fiend         154. Spirit
+29. Nosferatu           92. Old Hag             155. Evil Bard
+30. Hellcat             93. Lunatic             156. Rock Beast
+31. Ugly Hag            94. Ogre                157. Brakarak
+32. Wolf                95. Boulder Beast       158. Emerald Wizard
+33. Death Knight        96. Dark Nun            159. Amundsen
+34. Shadowspawn         97. Large Spider        160. Dark Demon
+35. Hound               98. Giant Ant           161. Diablo
+36. Hobgoblin           99. Dark Knight         162. Dark Wizard
+37. Lunatic             100. Spirit             163. Slyme
+38. Giant Spider        101. Gargoyle           164. Casba Dragon
+39. Ghoul               102. Demon              165. Caveman
+40. Tarantula           103. Goblin             166. Skeletal Fiend
+41. Manticore           104. LizardMan          167. Doom Ninja
+42. Wight               105. Red Devil          168. Doom Wolf
+43. Giant Ant           106. Satyr              169. Doom Knight
+44. Wildman             107. Ghoul              170. Doom Wizard
+45. Old Hag             108. Vampire            171. Orc Knight
+46. Ninja               109. Centaur            172. Wild Dog
+47. Wildman             110. Giant Millipede    173. Fire Fiend
+48. Dark Elf            111. Werewolf           174. Green Demon
+49. Wing-Eye            112. Beast              175. Orange Demon
+50. Shadow Knight       113. Loomer             176. Violet Demon
+51. Giant Maggot        114. Black Goo          177. Red Demon
+52. Wraith              115. Golem              178. Doom Wolf
+53. Skeleton            116. Minotaur           179. Doom Knight
+54. Fire Imp            117. Cyclops            180. Hell Hound
+55. Rock Grub           118. Evil Bard          181. Hell Knight
+56. Dark Soldier        119. Evil Farmer        182. Red Dragon
+57. Lizardman           120. Murderer           183. Green Dragon
+58. Vampire             121. Giant
+59. Boulder Beast       122. Sorcerer
+60. Giant Centipede     123. Wyvern
+61. Chaos Lord          124. Warrior
+62. Skeleton            125. Black Moon Warrior
+
+
+[6.6]  The End
+-------------------------------------------------------------------------------
+This document and its accompanying files are by no means complete.  More work
+is required and I won't know what to improve unless you tell me!  Emails are
+welcome.
+
+Thanks to everyone for making this door game popular (more so than I could
+ever imagine).  And especially to those who continually bombard my emailbox
+with bug reports. :)

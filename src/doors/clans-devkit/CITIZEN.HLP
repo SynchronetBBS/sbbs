@@ -1,0 +1,25 @@
+^Deposit into Vault
+
+ |0CThis allows you to deposit gold into the village vault.  This gold can be
+ used by the ruler to add onto the town.
+
+^END
+
+^Voting Booth
+ |0CThe voting booth allows you to vote for the clan which you think will rule
+ best.  At the end of the day, a new ruler is chosen from the top votes.  Of
+ course, if the town is under dictatorial rule, voting is disabled and the
+ current ruler will continue to reign unless ousted through an empire war.
+^END
+
+^Write to Ruler
+
+ |0CUse this option to write a message to the current ruler.
+^END
+
+^Public Discussions
+
+ |0CThis is a an area where all users can discuss with one another the town's
+ dealings.
+^END
+

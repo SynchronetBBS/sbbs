@@ -1,0 +1,183 @@
+^Shortsword
+|0B The Shortsword|0C
+
+ This is a good overall sword.  If the user is of reasonable strength, he may
+ use this sword.  However, it is not recommended for magic-users.
+^END
+
+^Broadsword
+|0B The Broadsword|0C
+
+ This is a heavier sword for mighty warriors.  Those with a fairly high
+ strength and dexterity will use this to its fullest.  Those with poor
+ strength should be cautious of using this heavy, but strong sword.
+^END
+
+^Axe
+|0B The Axe|0C
+
+ This is the heaviest of the weapons available and used only by very
+ strong warriors.  This weapon requires a high strength since it is quite
+ heavy!  This is also the most powerful weapon in terms of damage delivered
+ per blow.  It will also last the longest.
+^END
+
+^Mace
+|0B The Mace|0C
+
+ This is a small weapon which does not require a very high strength to use.
+ However, the user must have fairly good dexterity or may have difficulty
+ aiming with it!  It can be used by almost anyone.
+^END
+
+^Dagger
+|0B The Dagger|0C
+
+ This weapon can be used by any character.  It can deliver average strength
+ and has low requirements.  If a character has no weapon, equip him with this
+ if unsure of which weapon to use!
+^END
+
+^Staff
+|0B The Staff|0C
+
+  This is an excellent choice of weapon for players with high dexterity.  It
+  delivers excellent damage when put in the right hands.  However, those with
+  low dexterity should probably stay away from this weapon.  In the wrong
+  hands, it will do more harm than good.
+^END
+
+^Wand
+|0B The Wand|0C
+
+ The wand is a must for spellcasters as it gives them the ability to
+ regenerate mana a lot quicker.
+^END
+
+^Battle Axe
+|0B The Battle Axe|0C
+
+ The Axe is a heavy weapon, but the Battle Axe is even heavier.  However,
+ it delivers a larger blow than the Axe.
+^END
+
+^Morning Star
+|0B The Morning Star|0C
+
+ A spiked ball on a chain, the Morning Star is a lethal weapon useable by
+ agile characters.
+^END
+
+^Scythe
+|0B The Scythe|0C
+
+ Not truly a weapon, the scythe is still dangerous in the right hands.
+^END
+
+^Boomerang
+|0B The Boomerang|0C
+
+ The boomerang is a strange weapon.  Thrown at a foe, this bladed weapon
+ returns to its owner.
+^END
+
+
+
+^Cloth Robe
+|0B Cloth Robe|0C
+
+ This is a below average form of armor which can be used by anyone.  If a
+ character cannot wear armor, have him wear this instead.
+^END
+
+^Leather Armor
+|0B Leather Armor|0C
+
+ This is somewhat good armor and is a step up from the cloth robe but is not
+ the best.  It requires high strength and dexterity to use.
+^END
+
+^Chainmail Armor
+|0B Chainmail Armor|0C
+
+ This is very good armor which is recommended for characters of high strength
+ and dexterity.  Characters with low values in these stats should not wear
+ this armor as it is quite heavy and will deter their fighting abilities.
+^END
+
+^Platemail Armor
+|0B Platemail Armor|0C
+
+ This is the best armor currently available.  It requires quite high strength
+ to wear since it is very heavy and a high dexterity is required as it is
+ somewhat rigid.  A character who CAN wear this armor SHOULD wear it.
+^END
+
+^Wooden Armor
+|0B Wooden Armor|0C
+
+ Told it couldn't be done, the smithy went to design a fairly lightweight
+ piece of armor.  This is it.
+^END
+
+^Cloth Tunic
+|0B Cloth Tunic|0C
+
+ Made from the finest and strongest of fabrics, this tunic functions as good
+ armor for weaker characters.
+^END
+
+^Wooden Shield
+|0B Wooden Shield|0C
+
+ This is a fairly good shield.  Those with average strength or low strength
+ should not bother using this or any other shield as it will only hinder
+ combat.
+^END
+
+^Iron Shield
+|0B Iron Shield|0C
+
+ This is a heavier shield than the wooden shield and lasts much longer and
+ can block more attacks as well.  Of course, it requires more strength to
+ use.
+^END
+
+^Platinum Shield
+|0B Platinum Shield|0C
+
+ This is a light shield but is also the strongest.  This requires slightly
+ more strength to use than the wooden shield but protects about the same
+ level as the iron shield.  This is more expensive simply because of the lower
+ requirements and longer lifespan.
+^END
+
+^Crystal Shield
+|0B Crystal Shield|0C
+
+ Made entirely of a mysterious crystaline substance, this shield is
+ surprisingly light and strong.
+^END
+
+^Laconia
+
+|0C Laconia is a very strong metal which is common throughout the land.  It is
+ heavy, however.  Consequently, equipment forged using this metal tend to
+ be heavier but also stronger.
+^END
+
+^Polymetral
+
+|0C Polymetral is a light-weight metal which is just as common as laconia in this
+ world.  Because of its light weight, weapons which are normally unuseable by
+ some characters can be wielded if made with polymetral.  However, it is a
+ fairly weak metal and weapons made with it tend to become damaged more quickly
+ than laconia.
+^END
+
+^Item Help
+
+ Items are not usually better if they are more expensive.  Each item is
+ unique and has different stats.  You must choose the right one for your
+ clansmen. The most expensive equipment does not mean the best.
+^END

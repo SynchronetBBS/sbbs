@@ -1,0 +1,55 @@
+^Flame Scroll
+|0C This scroll allows the user to cast a fireball spell at an enemy.
+^END
+
+^Summon Scroll
+|0C This scroll allows the reader to summon undead beings to help the clan
+ out in battle.
+^END
+
+^Banish Scroll
+|0C When read, some of the enemy's undead beings will be banished from this
+ realm.
+^END
+
+^Summon Khaos
+|0C I do not recognize that scroll and its purpose eludes even me.
+^END
+
+^Summon Dragon
+|0C When read, this scroll will allow the reader to summon a Gold Dragon to
+ aid the clan in combat.
+^END
+
+^Ice Blast
+|0C This scroll allows the reader send a blast of energy in the form of ice
+ directed at an enemy.
+^END
+
+^Book of Stamina
+|0C The reader of this book will gain vitality in the form of HitPoints.
+^END
+
+^Book of Mana
+|0C The reader of this book will gain mana in the form of Skill Points.
+^END
+
+^Book of Healing
+|0C The reader of this book will learn to cast a Heal spell.
+^END
+
+^Book of Flames
+|0C The reader of this book will learn to cast a Fireball spell.
+^END
+
+^Book of the Dead I
+|0C The reader of this book will learn how to raise the undead.
+^END
+
+^Book of the Dead II
+|0C The reader of this book will learn how to banish the undead.
+^END
+
+^Book of Destruction
+|0C The reader of this book will learn how to cast a Rain of Terror spell.
+^END

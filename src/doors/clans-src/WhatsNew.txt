@@ -1,0 +1,8 @@
+What's new since v0.96b1
+------------------------
+- More Win32/FreeBSD fixes... should now actually work.
+
+What's new since v0.95b7
+-----------------------
+- Many fixes, cleanups too numerous to mention.i
+- Now compiles on Win32 and FreeBSD

@@ -1,0 +1,1364 @@
+#------------------------------------------------------------------------------
+#
+# Language Data for The Clans
+#
+# To modify the language for The Clans, modify this file the way you wish then
+# compile it using the The Clans Language Compiler.  It used as follows:
+#
+# LangComp <filename>
+#
+# For example, to compile this file:
+#
+# LangComp strings
+#
+# **************************************************************
+# YOU MUST READ THE FOLLOWING BEFORE EDITING THIS FILE!!!!
+# **************************************************************
+#
+#
+# Lines MUST be in the following form
+#
+# xxxx <String>
+#
+# xxxx is the FOUR digit number which the string is referenced by.
+# <String> is the string that xxxx uses.  There must be a space after the xxxx.
+#
+# All blank lines and lines starting with a pound symbol (#) are comments and
+# not treated as strings.
+#
+# If any of these are left out, major errors could result.
+#
+# Here are other special codes which can be used here only:
+#
+# ^M            LineFeed (%LF)
+# ^N            Carriage Return (%\r)
+# ^H            Backspace (%\b)
+# ^[            Escape code (alt-27, %<)
+# ^G            Beep (same as Ctrl-G in DOS)
+# ^-            End line here.  (useful for editors which remove trailing
+#                                spaces)
+# ^^            caret symbol (^)
+#
+# It is suggested that these be used as much as possible since they are
+# convereted to the real DOS special codes and not the MCI codes that CLANS
+# uses.  This will save memory and improve the screen output performance as
+# well.
+#
+#------------------------------------------------------------------------------
+# Organization
+#------------------------------------------------------------------------------
+#
+# 0001-0100     Various strings
+#
+# 0050+         colors
+#
+# 0100-         Help functions
+#
+# 0300+         menus!
+#
+# 0200-         System specific
+# 0400-         Various Stats
+#
+#
+# 0800-         News messages
+#
+# 0900-1000     Various System strings
+#
+# 1000+, more junk!? :)
+#------------------------------------------------------------------------------
+
+#------------------------------------------------------------------------------
+# Various Strings
+#------------------------------------------------------------------------------
+
+0001 |S|0V<|0Wpaused|0V>|R
+0002 |S|0WMore? |0V[Y/n]|R
+0003 |04Couldn't find clan.^M%P
+0004 |04Aborted^M
+0005 |0GEnter option|0E> |0F
+0006 Yes
+0007 No
+0008 |15The village cannot afford it!^M%P
+0009 Quit^M
+
+0010 Agility
+0011 Dexterity
+0012 Strength
+0013 Wisdom
+0014 Armor Strength
+0015 Charisma
+
+;0020 |0K+--+-----------------------------------------------------------------------+--+^M
+0020 |0KÍÍÍÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÍÍÍ^M
+;0021 |0D+--+-----------------------------------------------------------------------+--+^M
+0021 |0DÍÍÍÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÍÍÍ^M
+0022 |12Invalid item!^M
+
+0030  |0MSkills/Spells Known^M |0DÍÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÍ^M |0C
+0031 |0SDo you wish to join this game of clans?
+0032 ^M|10All right!  Let's begin by creating your clan!^M
+0033 ^M|0SWhat will you call your clan?^M|0E> |0F
+0034 |02Now, we will create clansmen for your clan.^M%P
+0035 |13Creating clansman %d of %d^M^M
+0036 |11Please choose a race for this character.^M
+0037 |11Please choose a class for this character.^M
+0038 |13Stats generated for this player^M
+0039 ^M|0SEnter the name of this member^M|0E> |0F
+0040 |10%s joins the clan.^M%%P
+
+0050 |00
+0051 |01
+0052 |02
+0053 |03
+0054 |04
+0055 |05
+0056 |06
+0057 |07
+0058 |08
+0059 |09
+0060 |10
+0061 |11
+0062 |12
+0063 |13
+0064 |14
+0065 |15
+0066 |16
+
+# buildmenu
+0073  |0A(|0BC|0A) |0CBuild a Church^M
+0074  |0A(|0BC|0A) |0CUpgrade Church to Level     |0B%d^M
+0075      |0CChurch Level                |0B%d^M
+0076  |0A(|0BT|0A) |0CBuild a Training Hall^M
+0077  |0A(|0BT|0A) |0CUpgrade T. Hall to Level    |0B%d^M
+0078      |0CTraining Hall Level         |0B%d^M
+0079  |0A(|0BH|0A) |0CRuling Help^M
+0080  |0A(|0BQ|0A) |0CQuit^M
+0081 |15The church is at its maximum level already.^M
+0082 |0CIt will cost |0B%ld GP |0Cto build a church.^MThe village has |0B%ld |0CGP.^M^M
+0083 |0SBuild the church?
+0084 |15The village now has a church!^M%P
+0085 |0CIt will cost %ld GP to upgrade the church to level %d.^MThe village has |0B%ld |0CGP.^M^M
+0086 |0SUpgrade the church?
+0087 |15The church has been upgraded to level %d!^M%%P
+0088 |15The training hall is at its maximum level already.^M
+0089 |0CIt will cost %ld GP to build a training hall.^MThe village has |0B%ld |0CGP.^M^M
+0090 |0SBuild the training hall?
+0091 |15The village now has a training hall!^M%P
+0092 |0SIt will cost %ld GP to upgrade the training hall to level %d.^MThe village has |0B%ld |0CGP.^M^M
+0093 |0SUpgrade the training hall?
+0094 |15The training hall has been upgraded to level %d!^M%%P
+
+0100 |12Help not found!^M
+0101 |12Help data not found!^M
+0102 |0KÍÍÍÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÍÍÍ^M|0C
+0103 |0CEnter option or |0B?|0C for list.  Enter blank line to quit.^M|0E> |0F
+0104 |14Display Options^M
+0105 ^M|12Invalid option!^M^M
+0106 END
+0107 PAUSE
+
+# hall options
+0108 Destroy Hall
+0109 Change Password
+0110 View Clan Stats
+0111 Quit
+0112 Redisplay Menu
+0113 Deposit Gold
+0114 Withdraw Gold
+0115 Chat with Others
+0116 Empire Menu
+0117 Donation Room
+0118 War Room
+
+# alliance crap
+0120 |10You already have 5 alliances.  You cannot create any more.^M%P
+0121 ^M|0SAre you sure you wish to invite that clan into this alliance?
+0123 |07That clan is already in the alliance!^M%P
+0124 |07That clan is already in too many alliances.^M%P
+0125 |10An alliance with that clan has been proposed.^M|02You may now send a letter to that clan.^MAborting the letter aborts the proposition for an alliance.^M
+0126 |07No alliances.^M%P
+0127 |07Alliances^M|08ÍÄÄÄÄÄÄÄÍ^M
+
+# town hall stuff
+0130  |0CDays of Reign                   |0B%d^M
+0131  |0CPopulation                      |0B%ld units^M
+0140  |0CVillage Vault                   |0B%-ld GP^M
+#0142  |0A(|0BE|0A) |0CEconomics Menu               |0A(|0BC|0A) |0CChange Colour Scheme^M
+#0143  |0A(|0BL|0A) |0CChange Flag                  |0A(|0BS|0A) |0CStructures^M
+#0144  |0A(|0BM|0A) |0CMake Announcement            |0A(|0BM|0A) |0CMake Announcement^M
+#0145  |0A(|0BP|0A) |0CPublic Discussion            |0A(|0BH|0A) |0CRuling Help^M
+#0146  |0A(|0BV|0A) |0CView Clan Stats              |0A(|0BG|0A) |0CHire Village Guards^M
+#0147  |0A(|0BF|0A) |0CFine a Clan                  |0A(|0BI|0A) |0CInvestigate Clan^M
+#0148  |0A(|0B!|0A) |0CAbdicate                     |0A(|0BQ|0A) |0CQuit^M
+0149
+0152 |0SEnter your announcement now.  It will go in the daily news.^M|0A> |0F
+0156 |0SAre you sure you wish to give up rule?
+0160  |0CCurrent Ruling Clan             |0BNone^M^M
+0161  |0CCurrent Ruling Clan             |0B%s |0A[ruled for %d day(s)]^M^M
+0162  |0CTax Rate                        |0B%d%%^M
+#0163  |0CInterest Rate                   |0B%d%%^M
+0164  |0CGoods and Services Tax          |0B%d%%^M
+0166  |0CVillage Vault                   |0B%ld GP^M
+0167 |0SHow much do you wish to deposit into the village vault?
+0168 |14%ld |07gold deposited into village vault.^M^M
+0169 ^M|07You've spoken out already today.^M%P
+0170 ^M|07There is currently no ruler.^M%P
+0171  |0A(|0BT|0A) |0CTax Rate                    |0B%d%%^M
+#0172  |0A(|0BI|0A) |0CInterest Rate               |0B%d%%^M
+0173  |0A(|0BG|0A) |0CGoods and Services Tax      |0B%d%%^M
+0174  |0A(|0BB|0A) |0CBuild a Bank^M
+# continued 185
+
+0175 |16|0SDo you wish to add on to the conversation?
+0176 ^M|0SPlease enter your comment now (enter up to 3 lines; blank line to stop).^M
+0177 |07There is currently no leader to speak of!^M%P
+
+# continued from 0174
+0185  |0A(|0BB|0A) |0CUpgrade Bank to Level       |0B%d^M
+0186      |0CBank Level                  |0B%d^M
+0187  |0A(|0BW|0A) |0CWithdraw from Vault^M |0A(|0BD|0A) |0CDeposit into Vault^M
+0188  |0A(|0BH|0A) |0CRuling Help^M
+0189  |0A(|0BQ|0A) |0CQuit^M
+0190 |07You may set the tax rate only once per day.^M%P
+0191 |0SPlease enter the tax rate (0 to 50)
+#0192 |07You need a bank first if you wish to set the interest rate.^M%P
+#0193 |07You may set the interest rate only once per day.^M%P
+#0194 |0SPlease enter the interest rate (0 to %d)
+0195 |07You may set the GST once per day.^M%P
+0196 |0SPlease enter the GST (0 to 50)
+
+# continued on 414
+
+0200 ^M^M|S|04-|12:< |07Sysop chat begins |12>:|04-|R^M
+0201 ^M|S|04-|12:< |07Sysop chat ends |12>:|04-|R^M
+0202 ^M^M^M^M
+
+# more options :)
+0205 Check Mail
+0206 Write Mail
+0207 Write Public Mail
+0208 Lastread Pointer
+0209 Quit
+0210 View Stats
+0211 Redisplay Menu
+0212 Global Post
+0213
+0214
+0215
+0216
+
+#0220 |01$$$$$$$$$$$$$$$$$$$$$$$$$P"'         |11,asssssssa.  s$$$$$$$$$$$b, |01Y$$$$$$$$$$$$
+#0221 $$$$$$$$$$$$$$$$$P"'      |03,ssd$$$$$b  |11 ^ıY$$$$$$$$$$$$$$$$$$$$$$b,|01`$$$$$$$$$$$
+#0222 $$$$$P'          |03 .sssd$$$$$$$$$P' |03sd$$b.  |11~~^^`Y$$$$$$ı^""^`ı$$$$|01 $$$$$$$$$$$
+#0223 $$$$P |03.asS$$$$$$$$$$$$$$$$$$$P'|03,sd$$$$$$$$$$$$$b, |11`Y"'|15 sd$$$$b|11`Y$$|01 $$$$$$$$$$$
+#0224 $$$$$b, |03`^ı$$$$$$$$$Pı"^^^~  |03sd$$$$$$$$$$$$$$$$$$$b.|15 d$$$$$$$$;|11,~'|01,$$$$$$$$$$$
+#0225 $$$$$$$$$bsa,  |03`YP'|11,sd$$$$$$bs. |03 "^ıı$$$$$$$$$$$$$$ |15$$$$$$$$$$;$ |01d$$$$$$$$$$$$
+#0226 $$$$$$$$$$$$$$bs, |11  `Y$$$$$$$P  |01sd$s.   |03`Y$$$$$$$P' |15`Y$$$$$$$P' |01d$$$$$$$$$$$$$
+#0227 $$$$$$$$$$$$$$$$$$bsss.     .sd$$$$$$$$s,           |15  `Y$$$P'   |01~~ıY$$$$$$$$$$
+#0228 $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$   |07 d$$$b, |15~ |07,d$$$$$  |01$$$$$$$$$$
+#0229 $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$  |07$$$$$$$$$$$$$$$$$$$ |01$$$$$$$$$$
+#0230 $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$  |07$$$$$$$$$$$$$$$$$$$$ |01$$$$$$$$$$
+
+#0220 |06-------------------------------------------------------------------------------
+#0221 |04$$$|07                |12$ $$$$$$$$$$$$$$.ı'$$$$$$$$$$$$b."$$|07                   |04$$$$$
+#0222 $$$|07                 |12$$."    `$$$$$$$s$s"Y'|07      |12`Y$$$$"$|07                 |04$$$$$$
+#0223 $$$$s.|07              |12$$$|07,|15$" s.|12`a$$$$$$$$$|15.s$$" $s.  |12"s.$$|07                 |04$$$$$$
+#0224 $$$$$$s|07             |12$$$|15$$|02, |15$$ |12$$$$$$$$$$|15$$$$|02. |15$$$ $|07s |12$$$|07     |12$s|07          |04$$$$$$
+#0225 $$$$$$$$$s.|07         |12^$$|15$$|02: |15^' |12$$$$$$$$$$|07$|15$$$.|02s |15^' $$|07$ |12$$$   $$$|07          |04$$$$$$
+#0226 $$$$$$$$$$$$$|07        |12$$|07"|15$s|02`$'|12.$$$$$$$$$$s|15`S$$.|02$ss$|07" |12$$$$$  $$$$|07           |04$$$$$
+#0227 $$$$$$$$$$$$$$$$s.   |12$$$s|07^` |12.$$$S~$$$$$$$s.|07~^ |02`^~|12.s$$$$$   $$$$|07           |04$$$$$
+#0228 $$$$$$$$$$$$$$$$$$$  |12$$$$$$$$$$$ $$$$$$$$$$$$$$$$$$$$$$$   $$P'|07           |04$$$$$
+#0229 $$$$$$$$$$$$$$$$$$$$ |12$$$$$$$$$$$b.$$$$$$$$$$$$$$$$$$$$$   "'|07               |04$$$$
+#0230 |06-------------------------------------------------------------------------------^M              |14T     H     E         C     L     A     N     S^M
+
+#0220 |07 |04------------------------------------------------------------------------------
+#0221  ÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛ|14|20ansi by no.6 |04|16Û
+#0222  Û|12|20°Ü|04|16Ûßßß  ÜÜ    ßÛÛ|07     |04ÜÛÛÛÛÛÛÛÛÛßß   ÜÜÜ ßßßÛÛÛÛ|07     |04ÜÜ ßßßÛÛÛÛßß   ÜÜÜ ßßÛÛÛ
+#0223  |12|20±²İ|07|16     |04ÛÛ|07      |04ÛÛ    ŞÛÛÛÛÛÛÛÛÛÛ|07     |04ßÛÛÛ    ßÛÛİ    ÛÛÛ    ßÛİ    ŞÛÛİ    ÛÛ
+#0224  |12|20°±|04|16İ    Ş|12|20±°|04|16ÛÜÜÜÜÛÛÛ    ŞÛÛÛÛÛÛÛÛÛÛ|07     |04ÜÜÜ|07      |04ÛÛ    ŞÛÛÛİ    Û|07     |04ÛÛÜ    ŞÛÛ
+#0225  ÛÛ|07     |12|20ŞÛ² ±|04|16ÛÛ|12|20°|04|16ÛÛİ    ŞÛÛÛÛÛÛÛÛÛÛ    ŞÛÛÛÛ|07     |04ÛÛ    ŞÛÛÛİ    ÛÛÜÜ   ßßÛÜÜÛÛÛÛ
+#0226  Û|12|20°|07|16     |12|20Ş²±|04|16ÛßßßßßÛİ    ÛÛÛÜ    ßÛİ    ŞÛÛÛİ    ŞÛİ    ŞÛÛÛ|07     |04ÛÛßßßßÛÜ   ßßÛÛÛ
+#0227  ÛÛ|07     |04ÛÛÛß    ŞÛİ    ÛÛÛÛİ    Ûİ    ÛÛÛÛ|07     |04ÛÛİ    ŞÛÛİ    ŞÛ    ŞÛÛÛ    ŞÛÛ
+#0228  ÛÛÜ    ßß    ÜÜÛÛ|07     |04ßß|07     |04ÜÛÛ|07     |04ÛÛÛİ    ŞÛÛ|07     |04ÛÛÛ|07     |04ÛÛÜ    ßß    ÜÛÛÛ
+#0229  ÛÛ|12|20°|04|16ÛÛÛÛÛÛÛÛÛÛÛÛÛÛ|12|20°|04|16ÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛ
+#0230  ------------------------------------------------------------------------------
+
+#0220 |07 |04ÍÍÍÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÍÍÍ
+#0221  |12|20Û²±|04|16Û|12|20ß|04|16Û|12|20ú|04|16ÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛ|12|20ß|04|16ÛÛÛÛÛÛÛÛÛÛÛÛ|12|20ú|04|16ÛÛÛ|12|20ş ß±²Û
+#0222 |07|16 |12|20İşú|04|16Ûßßß  ÜÜ    ßÛÛ|07     |04ÜÛÛÛÛÛÛÛÛÛßß   ÜÜÜ ßßßÛÛÛÛ|07     |04ÜÜ ßßßÛÛÛÛßß   ÜÜÜ  ßÛ|12|20ß²
+#0223 |16 |20°|04|16ÛÛ|07     |04ÛÛ|07      |04ÛÛ    ŞÛÛÛÛÛÛÛÛÛÛ  |08°  |04ßÛÛÛ    ßÛÛİ    ÛÛÛ    ßÛİ    ŞÛÛİ    Û|12|20±
+#0224 |16 |04ÛÛİ    ŞÛÛÛÜÜÜÜÛÛÛ    ŞÛÛÛÛÛÛÛÛÛÛ|07     |04ÜÜÜ|07      |04ÛÛ |08°  |04ŞÛÛÛİ    Û|07     |04ÛÛÜ |08±° |04ŞÛ|12|20°
+#0225 |07|16 |12|20ú|04|16Û|07     |04ÛÛÛÛÛÛÛÛÛÛİ |08°  |04ŞÛÛÛÛÛÛÛÛÛÛ |08°  |04ŞÛÛÛÛ  |08°  |04ÛÛ  |08° |04ŞÛÛÛİ |08°  |04ÛÛÜÜ   ßßÛÜÜÛÛ|12|20°|04|16Û
+#0226  ÛÛ |08±   |04ÛÛÛÛßßßßßÛİ|08±°° |04ÛÛÛÜ    ßÛİ|08±   |04ŞÛÛÛİ |08±  |04ŞÛİ |08±  |04ŞÛÛÛ |08±   |04ÛÛßßßßÛÜ   ßßÛÛÛ
+#0227  |12|20°|04|16Û |08²±  |04ÛÛÛß|08±°  |04ŞÛİ|08²±  |04ÛÛÛÛİ|08±°  |04Ûİ|08²±  |04ÛÛÛÛ |08Ş²± |04ÛÛİ|08²±  |04ŞÛÛİ|08Ş²± |04ŞÛ |08±² |04ŞÛÛÛ |08²± |04Ş|12|20ú°
+#0228 |07|16 |12|20±°|04|16Ü |08ß  |04ßß    ÜÜÛÛ |08ßß  |04ßß|07     |04ÜÛÛ |08ßß  |04ÛÛÛİ |08ßß |04ŞÛÛ |08ßß  |04ÛÛÛ |08ßß  |04ÛÛÜ |08ß  |04ßß  |08ß |04Ü|12|20ş|04|16Û|12|20±
+#0229 |07|16 |12|20Û²Ü|04|16Û|12|20ş|04|16Û|12|20ú|04|16ÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛ|12|20Ü|04|16ÛÛ|12|20ş|04|16Û|12|20Ü°±²
+#0230 |16|07 |04ÍÍÍÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÍÍÍ`00`07
+
+#0220 |07 |08ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+#0221  |11Ûß |15ÛÛÛ |11ßßßß |15ßßßßßßß |11ßßßÛÛßßßßßßßßßßßßßÛ|19²±|03|16Û |14|20°|04|16Û|12|20±|04|16ÛÛİ |14|20±|04|16ÛÛÛÛ ßß|14|20±|12±°|04|16ÛÛÛÛÛÛÛÛ  ÛÛÛÛÛ|00|20N6^M
+#0222 |07|16 |11İ |15ÛÛÛÛÛÛÛÛ ÛÛÛÛÛÛÛÛİÛÛÜ |11|19²|07|16 |15ÛÛİÛÛÛÛÛÛÛÛİ|11Ş|19±|03|16Û|19 |07|16 |04ŞÛ|12|20°|04|16ÛÛÛÜ ßß|12|20°|04|16Ûßß   ßÛ|12|20°|04|16ÛÛÛÛÛÛÛ  |14|20°|12±|04|16ÛÛÛÛ^M
+#0223   |15ÛÛÛßßßßÛÛ ßßßßßßÛÛİ ßß |11|19Ü|07|16 |15ÛÛİßßßßßßÛÛİ|11Ş|03ÛÛ|11|19°|03|16Ü  |04ßßÛÛ|12|20°|04|16ÛÜÜ  |07ÜÛÛÛÜÜ  |04ßßßßßßßß  ßß|12|20°|04|16ÛÛ^M
+#0224  |11ÜÜÜÜÜÛß|15ŞÛÛ |11|19²|16ÛÛ|19²|16ß|15ŞÛÛ |11|19²|16Û|19²|16Ûß|15ŞÛÛ |11|19²²|16Û|19²|16ß|15ŞÛÛ |11|19²±|03|16ÛÛÛÛÛÜÜ   |04ßßß |07ßÛÛ   ßßßÛÛÜÜÜ |04ßßßÛÜÜÜÜÜ^M
+#0225  |11|19±²|16ßßß |15ÜÛÛİ|11Şßßß |15ÜÛÛİ|11Şßßß |15ÜÛÛİ|11Şßßß |15ÜÛÛİ |11ß|19²°|03|16ÛÛÛ|11|19°|03|16ß |04Ü|14|20°|12°|04|16ÛÛÜÜ |07ŞÛİ|09Û|01şú|15Ü|07Ü  ßÛÛÛÛÛİ |12|20±|04|16Ûß Ü^M
+#0226  |11|19±²|07|16 |15ÛÛÛÛÛß |11|19²|07|16 |15ÛÛÛÛÛß |11|19²|07|16 |15ÛÛÛÛÛß |11|19²|07|16 |15ÛÛÛÛÛßÛÛÜ |11|19²±|03|16ß  |04ÜÜÜÜ ßß|12|20²|04|16Ûß |07Ûİ|01Üß|15ÜÛÛ|23Ü|07|16Ü Û|15|23°|07|16ÛÛÛ |04ß ÜÜ|08|20°|04|16Û^M
+#0227  |11|19°±|07|16 |15ßßßß  |11ßß |15ßßßß  |11ßß |15ßßßß  |11ßß |15ßßßß |11Ü |15ßß |11ß |04Ü|12|20±|04|16ÛÛÛÛßßß  |07ÜÜÛÛÜÜÜÜÜÜÜÜÛÛÛÛÛ |04ÜÛ|12|20±°|04|16Ûß|07^M
+#0228 |04 |03Û|11|19°±²|07|16 Ûßßßß Û |11Û|19²|16Û |07ÛßßßÛ ÛßßßÛ Ûßßßß |11Û|19²±±²|07|16 |14|20°|12±|04|16ÛÛÛß  Û |07ÛÛÛÛÛ|23 |15° |07|16ÛÛ|23        |16 |04Ş|14|20°|04|16ÛÛÛİ Û^M
+#0229  |03ÛÛÛ|11|19°|07|16 ÛÜÜÜÜ ÛÜÜÜÜ ÛßßßÛ Û |11|19ß|07|16 Û ÜÜÜÜÛ |11|19²±|03|16Û|11|19°|03|16İ|04ŞÛÛÛÛİ Ü|14|20°|04|16ÛÜ |07ßÛ|23  |15°|07|16Û|23 |16ÛÛ|23     |16ÛÛİ |12|20±|04|16ÛÛ|08|20°±|07|16 |04ÛÛ^M
+#0230  |08ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ^M^M
+
+0220  |01ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ^M
+0221  |09Ûß |15ÛÛÛ |09ßßßß |15ßßßßßßß |09ßßßÛÛßßßßßßßßßßßßß |15İİ|09Ş |14°|08ÛÛÛÛİ |14°|08ÛÛÛÛ ßß|14°|08|22²|16ÛÛÛÛÛÛÛÛÛ  ÛÛÛÛÛ|00|23N6^M
+0222 |07|16 |09İ |15ÛÛÛÛÛÛÛÛ ÛÛÛÛÛÛÛÛİÛÛÜ |09|17²|07|16 |15ÛÛİÛÛÛÛÛÛÛÛİ |09Ü|01Ü|09|17±|07|16 |08ŞÛÛÛÛ²Ü ßß|22²|16Ûßß   ßÛ|22²|16ÛÛÛÛÛÛÛ  |14°|08ÛÛÛÛÛ^M
+0223   |15ÛÛÛßßßßÛÛ ßßßßßßÛÛİ ßß |09|17Ü|07|16 |15ÛÛİßßßßßßÛÛİ|09Ş|01ÛÛ|09|17°|01|16Ü  |08ßßÛÛÛÛÜÜ  |07ÜÛÛÛÜÜ  |08ßßßßßßßß  ßß|22²|16Û²^M
+0224  |09ÜÜÜÜÜÛß|15ŞÛÛ |09|17²|16ÛÛ|17²|16ß|15ŞÛÛ |09|17²|16Û|17²|16Ûß|15ŞÛÛ |09|17²±|16Û|17²|16ß|15ŞÛÛ |09|17²±|01|16ÛÛÛÛÛÜÜ   |08ßßß |07ßÛÛ   ßßßÛÛÜÜÜ |08ßßßÛÜÜÜÜÜ^M
+0225  |09|17±²|16ßßß |15ÜÛÛİ|09Şßßß |15ÜÛÛİ|09Şßßß |15ÜÛÛİ|09Şßßß |15ÜÛÛİ |09ß|17²°|01|16ÛÛÛ|09|17°|01|16ß |08Ü|14°|08ÛÛ²ÜÜ |07ŞÛİ|14Û|06ş|01ú|15Ü|07Ü  ßÛÛÛÛÛİ |08²Ûß Ü^M
+0226  |09|17±²|07|16 |15ÛÛÛÛÛß |09|17²|07|16 |15ÛÛÛÛÛß |09|17²|07|16 |15ÛÛÛÛÛß |09|17°|07|16 |15ÛÛÛÛÛßÛÛÜ |09|17²±|01|16ß  |08ÜÜÜÜ ßßÛÛß |07Ûİ|06Üß|15ÜÛÛ|23Ü|07|16Ü Û|15|23°|07|16ÛÛÛ |08ß ÜÜ²Û^M
+0227  |09|17°±|07|16 |15ßßßß  |09ßß |15ßßßß  |09ßß |15ßßßß  |09ßß |15ßßßß |09Ü |15ßß |09ß |08Ü²ÛÛÛÛßßß  |07ÜÜÛÛÜÜÜÜÜÜÜÜÛÛÛÛÛ |08ÜÛ|22²|16²Ûß|07^M
+0228 |08 |01Û|09|17°±²|07|16 Ûßßßß Û |09Û|17²|16Û |07ÛßßßÛ ÛßßßÛ Ûßßßß |09Û|17²±±²|07|16 |14°|08²ÛÛÛß  Û |07ÛÛÛÛÛ|23 |15° |07|16ÛÛ|23        |16 |08Ş|14°|08ÛÛÛİ Û^M
+0229  |01ÛÛÛ|09|17°|07|16 ÛÜÜÜÜ ÛÜÜÜÜ ÛßßßÛ Û |09|17ß|07|16 Û ÜÜÜÜÛ |09|17²±|01|16Û|09|17°|01|16İ|08ŞÛÛÛÛİ Ü|22²|16ÛÜ |07ßÛ|23  |15°|07|16Û|23 |16ÛÛ|23     |16ÛÛİ |08|22²|16ÛÛ²± ÛÛ^M
+0230  |01ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ^M^M
+
+
+0231 Buy Weapon
+0232 Quit
+0233 Redisplay Menu
+0234 View Stats
+0235 Buy Armor
+0236 Buy Shield
+0237 Trade With Clans
+0238 Chat w/Villagers
+0239 Pawn Shop
+
+# combat stuff
+0240 ^M|15All members of your clan are either dead or unconscious!^M|07Come back tomorrow when able to do things again!^M%P
+0241 ^M|05>> |02%ld people were impressed by your battles and join your following!^M   %ld were recruited by the government.^M
+0242 |07You've already fought that clan today.^M%P
+0243 ^M^M|03** |14%s |03vs. |11%s |03**^M^M
+0244 |07%-13s |10%d/%d HP   %d/%d SP^M
+# 0245 |10(|15A|10)|02ttack (S)pecific attack (R)un (P)layer stats s(K)ills (V)iew stats (?)Help^M
+# 0245 |02[|05A|02]ttack s[k]ills [s]pecific attack [r]un [p]layer stats [v]iew stats [?]help^M
+# 0245 |02(|05a|02)ttack (|05f|02)ight to death s(|05k|02)ills (|05s|02)pecific attack^M(|05r|02)un (|05p|02)layer stats (|05v|02)iew stats (|05?|02)help^M^M
+0245 |0C(|0Ba|0C)ttack (f)ight to death s(k)ills (s)pecific attack^Mattack(#) r(e)ad scroll sk(i)p move (r)un (p)layer stats (?)help^M^M
+0246 |14
+0247 |04
+0248 ¯¯¯ |12%s missed!^M^M
+0249 ¯¯¯ |15%s's |07%s is destroyed!^M^M
+0250 ¯¯¯ |04%s attacks %s for |12%d damage.
+0251  [%ld]
+0252 ¯¯¯ |14%s |12is killed!  |04[%d]^M^M
+0253 ¯¯¯ |14%s |12is mortally wounded!  |04[%d]^M^M
+0254 ¯¯¯ |14%s |12is knocked unconscious!  |04[%d]^M^M
+0255 |02You receive |10%ld gold|02!^M
+0256 |12%ld gold |02was lost to taxes.^M^M
+#0257 |02Which enemy to attack? (|03?=List;|10Enter|02=First enemy): |15
+0257 |0SWhich enemy to attack? (|0B?=List;|10Enter|0C=First enemy)^M> |0F
+#0258 |10%d|02. |07%-20s %d/%d hp^M
+#0259 |10%d|02. |07%s^M
+0258 |0A(|0B%c|0A) |0C%-20s %d/%d hp^M
+0259 |0A(|0B%c|0A) |0C%s^M
+0260 ^M^M|14** That character either isn't here or isn't alive!^M
+0261 ^M|10You achieve victory!^M
+0262 ^M|12Your clan has been defeated!^M
+0263 |10*** |02Your clan runs away!^M^M
+0264 |10*** |02Your clan tries running but fails!^M^M
+0265 |15You cannot run away whilst battling a fellow clan!^M^M
+
+# town stuff
+0273 |02It will cost %ld GP to upgrade the smithy to level %d.^M|10The village has |15%ld |10GP.^M^M
+0274 |0SUpgrade the smithy?
+0275 |15The smithy has been upgraded to level %d!^M%%P
+0276
+0277
+0278
+0279
+
+# spell stuff
+0280 ^M|07No skills are available for that character!^M^M
+0281 |0A(|0B%c|0A) %s%-20s (%2d sp)^M
+0282 |0A(|0B?|0A) |0CHelp^M|0A(|0BQ|0A) |0CAbort^M
+0283 |0SChoose Skill [|0BEnter=Abort|0S]: |0F
+0284 |04You do not have enough skill points.^M%P
+0285 |0SDo you wish to use this skill?
+0286 ¯¯¯ |15%s |07attempts %s, but fails.^M^M
+0287 ¯¯¯ |14No undead to banish!  Spell does nothing.^M^M
+0288
+0289
+0290
+
+0335 Structures Menu
+0336 Economics Menu
+0337 Change Color Scheme
+0338 Change Flag
+0339 Ruling Help
+0340 Make Announcement
+0341 Public Discussion
+0342 Abdicate
+0343 View Clan Stats
+0344 Redisplay Menu
+0345 Quit
+0346 Chat w/Villagers
+0347 Voting Booth
+0348 System of Government
+0349 Manage Empire
+
+0350 Pawn Shop
+0351 Wizard's Shop
+0352 Build Farms
+0353 Church
+0354 Training Hall
+0355 Ruling Help
+0356 Redisplay Menu
+0357 Quit
+0358 Upgrade Smithy
+0359
+
+# managing troops
+0360 Train Footmen
+0361 Train Axemen
+0362 Train Knights
+0363 Redisplay Menu
+0364 Quit
+0365 Help
+0366
+0367
+
+# outsider town hall
+0380 Deposit into Vault
+0381 Write to Ruler
+0382 Voting Booth
+0383 View Clan Stats
+0384 Public Discussions
+0385 Help
+0386 Redisplay Menu
+0387 Quit
+0388 Chat w/Villagers
+0389 Donate to Empire
+
+0390 Tax Rate
+0391 GST
+0392 Withdraw from Vault
+0393 Deposit into Vault
+0394 Ruling Help
+0395 Redisplay Menu
+0396 Quit
+0397
+0398
+
+
+# Village stats                          .
+0400  |0CStats for |0B%s |0XÛ|0YÛ|0ZÛ|16^M
+0401  |0CClan Population         |0B%d clans          |0CRuling Clan    |0B%-s^M^M
+0402  |0CTax Rate                        |0B%d%%^M
+#0403  |0CInterest Rate                   |0B%d%%^M
+0404  |0CGoods and Services Tax          |0B%d%%^M
+#0405  |0LEntrance Fee            |0M%d GP^M
+0406  |0CEntrance Bonus                  |0B%d GP^M^M
+0407  |0CVault Gold                      |0B%ld GP^M
+0408 ^M |0CGame in progress for |0B%ld |0Cday(s) (since |0N%s|0C)^M |0CElimination mode is |0B%s^M
+0409 ^M |0CGame will begin on |0B%s^M
+0410 ^M |0CThe game is currently not in progress^M
+0411  |0CPopulation                      |0B%ld units^M
+0412  |0CPublic Approval                 |0B%d%% ^-
+0413  |0CCrime Rate                      |0B%d%%^M^M
+
+# fort stuff contines on 550
+
+0450  |0LStats for |0M%s   |0N%d/%d HP   %d/%d SP ^-
+0451  |0LRace             |0M%s^M
+0452  |0LClass            |0M%s^M
+0453  |0LAgility          |0M%-2d |0N(%2d)  ^-
+0454  |0LDexterity        |0M%-2d |0N(%2d)^M
+0455  |0LStrength         |0M%-2d |0N(%2d)  ^-
+0456  |0LWisdom           |0M%-2d |0N(%2d)^M
+0457  |0LArmor Strength   |0M%-2d |0N(%2d)  ^-
+0458  |0LCharisma         |0M%-2d |0N(%2d)^M
+0459  |0LLevel            |0M%-2d       ^-
+0460  |0LExperience       |0M%ld |0N(req. %ld)^M |0LTraining Points  |0M%d^M
+0461  |0LWeapon:          |0M%s^M
+0462  |0LWeapon:          |0MNone^M
+0463  |0LArmor:           |0M%s^M
+0464  |0LArmor:           |0MNone^M
+0465  |0LShield:          |0M%s^M
+0466  |0LShield:          |0MNone^M
+0467  |0LValues in ()'s are the values after modifiers.^M
+;0468 |0P(|0QE|0P)quip (|0QD|0P)rop (|0QS|0P)top Using e(|0QX|0P)amine (|0QL|0P)ist (|0Q?|0P)Help |0Q(|0RQ|0Q)|0Puit : |0R
+0468 ^M|0P(|0QL|0P=List,|0Q?|0P=Help,|0REnter|0P=Quit)> |0R
+0469 Examine Item^M^M
+0470 |04No items found.^M
+0471 |0SWhich item to examine? |04(0=abort)
+0472 |04Item does not exist.^M
+0473 List Items^M^M
+0474 Drop Item^M^M
+0475 |0SWhich item to drop? |04(0=abort)
+0476 |04Item is still in use.  Stop using it first.^M
+0477 |0SAre you sure you wish to drop %s?
+0478 %s dropped!^M^M
+0479 Stop Using Item^M^M
+# continued on 530
+
+0480  |0BName                                         |0ASymbol  Score   Status^M
+0481 |0KÍÍÍÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÍÍÍ^M
+
+# 0490  |0LStats for |0M%s  |07(%d-%d)^M
+# 0490  |0LStats for |0M%s |%02d%s^M
+0490  |0LStats for |0M%s %s^M
+0491  |0LLast game played: |0M%s^M
+0492  |0LGold            : |0M%ld^M
+0493  |0LMine Level      : |0M%d^M^M
+0494  |0P(|0QI|0P)nventory (|0QA|0P)llies (|0QV|0P)illage Stats (|0QS|0P)ymbol (|0QE|0P)mpire |0Q(|0RQ|0Q)|0Puit : |0R
+0495  |0LUntrained Followers    |0M%ld^M
+
+0520 |0SHow much do you wish to deposit into the village vault?
+0521 |15%ld gold deposited into village vault.^M^M
+0522 |07You may only withdraw 3 times a day!^M%P
+0523 |0SHow much do you wish to withdraw from the village vault?
+0524 |15%ld gold withdrawn from village vault.^M^M
+0525
+0526
+0527
+0528
+0529
+
+0530 |04Nothing equipped!^M
+0531 |0SWhich item to stop using? |04(0=abort) ^-
+0532 |04Item not in use!^M
+0533 ^M|0C%s unwields |0B%s^M
+0534 ^M|0C%s takes off |0B%s^M
+0535 ^M|0C%s stops using |0B%s^M
+0536 Equip^M^M
+0537 |04Everything already equipped!^M
+0538 |0SWhich item to equip?
+0539 |04Item already equipped!^M
+0540 |0A(|0B%c|0A) %s%-20s |0C%-s equipped^M
+0541 |0A(|0BQ|0A) |0CAbort^M^M
+0542 |0SWho will equip |0B%s|0S? |0F^-
+0543 |0SThat member is already wielding |0B%s|0S.  Unequip this first?
+0544 ^M|0C%s equips |0B%s!^M
+0545 |0SThat member is already wearing |0B%s|0S.  Unequip this first?
+0546 ^M|0C%s wears |0B%s!^M
+0547 |0SThat member is already using |0B%s|0S.  Unequip this first?
+0548 ^M|0C%s readies |0B%s!^M
+
+# manage troops
+0570  |07    Soldier        Cost(GP)    Owned^M
+0571  |0A(|0B1|0A) |0CFootmen            15       |0B%ld^M
+0572  |0A(|0B2|0A) |0CAxeman             30       |0B%ld^M
+0573  |0A(|0B3|0A) |0CKnights            60       |0B%ld^M
+0576  |0A(|0BH|0A) |0CHelp on Troops^M |0A(|0BQ|0A) |0CQuit^M^M
+0577 |0CYou have |0B%ld |0Cfollowers and |0B%ld |0Cgold.^M
+0578 ^M|0SHow many Footmen to train?
+0579 ^M|0B%ld |0CFootmen trained!  %ld gold deducted^M^M
+0580 ^M|0SHow many axemen to train?
+0581 ^M|0B%ld |0Caxemen trained!  %ld gold deducted^M^M
+0583 ^M|0SHow many knights to train?
+0584 ^M|0B%ld |0Cknights trained!  %ld gold deducted^M^M
+
+# Market Menu stuff
+0600 ^M|0B  Weapons Available^M
+0601 ^M|0B  Armor Available^M
+0602 ^M|0B  Shields Available^M
+0603 |07      name                    cost (gp)^M
+0604   |0A(|0B%c|0A) %s%-23s |15%ld^M
+0605   |0A(|0B?|0A) |0CHelp on Equipment^M  |0A(|0BQ|0A) |0CAbort^M^M  |0AYou have |0B%ld gold|0A.^M
+0606   |0GChoose one|0E> |0FAbort
+0607 Help on Equipment^M
+0608 |04Aborted^M^M
+0609 ^M|0B Cost is %ld gold.  |0CYou have %ld gold.^M^N
+0610 |0S Examine this?
+0611 |12You have no more room in your inventory!^M%P
+0612 |12You cannot afford it!^M%P
+0613 |0SMaterials available:^M |0A(|0BA|0A) |0CPolymetral^M |0A(|0BB|0A) |0CLaconia^M^M
+0614 |0SPlease choose the material to use: |0FPolymetral
+0615
+0616
+
+# getclass stuff
+0650 |0A(|0B%c|0A) |0C%s^M
+0651 |0A(|0B?|0A) |0CHelp^M
+0652 |0GEnter choice|0E> |0F
+0653 |0SChoose this?
+0654
+
+# options again :)
+0655 Train Member
+0656 Add a Member
+0657 Release a Member
+0658 Quit
+0659 Redisplay Menu
+0660 View Stats
+0661 Chat w/Villagers
+
+# color scheme stuff
+0670  |15Current Scheme Example:^M^M
+0671 |0DÍÍÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÍÍ^M
+0672   |0A(|0BE|0A) |0CEnter the Mines^M
+0673   |0A(|0BV|0A) |0CView Your Stats^M
+0674 |0DÍÍÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÍÍ^M
+0675  |0H[|0I12:13|0H] |0GEnter option|0E> |0F^M^M
+0676 |0KÍÍÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÍÍ^M
+0677 |0LStat         |0MStat Value    |0NMore Stats    |0O(More)^M
+0678 |0KÍÍÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÍÍ^M
+0679 |0Q(I)|0Pnventory, |0Q(C)|0Pharacters...|0Q(|0RQ|0Q)|0Puit^M^M
+0680 |0V<|0Wpause|0V>^M|0SQuestion?  |0A(|0CYes|0B/no|0A)^M
+0682
+0683
+0684
+0685 |071. () around hotkey      2. Hotkey                3. Option name^M
+0686 4. Line Divider          5. "Enter option" prompt 6. > after prompt^M
+0687 7. Prompt default choice 8. Time brackets         9. Time lit up^M
+0688 A. Time unlit            B. Stat line divider     C. Stat^M
+0689 D. Stat Value            E. More Stats            F. (More)^M
+0690 G. Stat option unlit     H. Stat option lit       I. Stat option hilight^M
+0691 J. Questions             M. Pause border          N. Pause prompt^M
+# 0692 !. list colours          Z. Choose scheme         Q. Quit^M^M
+0692 |15Z. Choose scheme         |07Q. Quit^M^M
+0693 |0GPlease choose an option|0E> |15
+0694
+
+
+# mail stuff
+0700 ^M|0CEnter up to |0B40 |0Clines.  Wrap-around is detected.^MType |0B/S |0Con a blank line to save.  |0B/A |0Cto abort.  |0B/? |0Cfor help.^M
+0701 |0C|16
+0702 |12No text entered.  Can't save blank message.^M
+0703 ^N|12Saved.^M
+0704 ^N|12Aborting message.^M
+0705 ^N|12Starting over^M
+0706 |12No text has been entered yet!^M
+0707 |13%d: |05%s|16
+0708 |1040 |02lines entered, message being saved.^M%P
+0709
+0710
+0720 |14Checking mail.^M
+0721 |0L From    : |0M%s^M|0L Date    : |0M%s ^-
+0722 |0L Date    : |0M%s ^-
+0723 |0N(PUBLIC POST #%d)
+0724 |0L Subject : |0M%s invites you to join the alliance of %s.^M
+0725 ^N                       ^N
+0726 |11|16 ^-
+0727 ^M|02+--+-: |02Do you wish to join this Alliance?
+0728 |0SReply to message?
+0729 %s rejected your alliance proposal.^M
+0730 %s has agreed to join your alliance!^M
+;0731 ^M|0K+------|0P[|0QR|0P]eply[|0QS|0P]kip[|0QQ|0P]uit|0Q[|0REnter=Skip|0Q] |0P: |05
+0731 ^M|0KÍÍÍÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÍÍÍ^M |0P(|0QR|0P)eply(|0QS|0P)kip(|0QQ|0P)uit|0Q(|0REnter=Skip|0Q) |0P: |05
+;0732 ^M|0K+------|0Q[|0RD|0Q]elete[|0QR|0P]eply[|0QS|0P]kip[|0QQ|0P]uit[|0QEnter=Delete|0P] |0P: |05
+0732 ^M|0KÍÍÍÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÍÍÍ^M |0Q(|0RD|0Q)elete|0P(|0QR|0P)eply(|0QS|0P)kip(|0QQ|0P)uit(|0QEnter=Delete|0P) |0P: |05
+0733 Reply^M^M
+0734 |0SDelete original message?
+0735 Delete^M^M
+0736 |10Deleting message.^M
+0737 Skip^M^M
+0738 Quit^M^M
+0740 |16|06[|10Command? : ?=help|06] : ^-
+0741 ^N|03(C)ontinue:(S)ave:(A)bort:(R)estart:(L)ist : [C] : ^-
+0742 ^N                                                                 ^N
+0743 |0SReally start message over?
+0744 |0SReally save?
+0745 |0SReally Abort?
+0746
+0747
+0748
+0749
+0750 |03Quote message?
+0751 |03Enter first line to quote |06[|10Enter=All|06]: |15
+0752 |10Quoting All of text...^M
+0753 |03Enter last line to quote: |15
+0754 |05> ^-
+0755 ^M|0CEnter up to |0B40 |0Clines.  Wrap-around is detected.^MType |0A/S |0Con a blank line to save.  |0A/A |0Cto abort.  |0A/Q |0Cto quote.  |0A/? |0Cfor help.^M
+0756 |0SPost as a public message?
+0757 ^N|03(C)ontinue:(S)ave:(A)bort:(R)estart:(Q)uote Line:(L)ist : [C] : ^-
+0758 ^M|10%02d: |02%s|16
+0759 ^M|03Enter line to quote: |15
+0760
+0761
+0762
+0763
+0764
+
+0800 |0A ¯¯¯ |0CA new clan is formed: |0B%s^M^M
+0801 |0CNews for |0B%s^M^M
+0802 |0A ¯¯¯ |0CThe village is now ruled by |0B%s^M^M
+0803 |0A ¯¯¯ |0COur ruler |0B%s |0Chave built a bank for the village!^M^M
+0804 |0A ¯¯¯ |0CUnder the rule of |0B%s|0C, the bank was upgraded to level %d!^M^M
+0805 |0A ¯¯¯ |0CThe current rulers (|0B%s|0C) make an announcement:|0B^M^M     ^-
+0806 |0A ¯¯¯ |0CThe government of |0B%s|0C has decided to use this flag: |%02dÛ|%02dÛ|%02dÛ^M^M
+0807 |0A ¯¯¯ |0COur ruler |0B%s |0Chave built a church for the village!^M^M
+0808 |0A ¯¯¯ |0CUnder the rule of |0B%s|0C, the church was upgraded to level %d!^M^M
+0809 |0A ¯¯¯ |0COur ruler |0B%s |0Chave built a training hall for the village!^M^M
+0810 |0A ¯¯¯ |0CUnder the rule of |0B%s|0C, the training hall was upgraded to level %d!^M^M
+0811 |0A ¯¯¯ |0B%s gave up their rule of this village!^M^M
+0813 %s was heard speaking badly about your rule in public!
+0815 |0A ¯¯¯ |0B%s embezzeled %ld gold |0Cfrom the village vault.^M^M
+0816 |0A ¯¯¯ |0B%s |0C%s the tax rate from |0B%d%% to %d%%^M^M
+#0817 |03 ¯¯¯ |15%s |02%s the interest rate from |10%d%% to %d%%^M^M
+0818 |0A ¯¯¯ |0B%s |0C%s the GST from |0B%d%% to %d%%^M^M
+0819 |0A ¯¯¯ |0BClan Combat:  |0C%s was defeated by %s!^M^M
+0820 Your clan was attacked by %s in hand-to-hand combat.^M |12Unfortunately, you were defeated!
+0821 |0A ¯¯¯ |0BClan Combat:  |0C%s attacked %s but lost!^M^M
+0822 Your clan was attacked by %s in hand-to-hand combat.^M |15However, you were victorious and fended them off well!
+0823 |0A ¯¯¯ |0CUnder the rule of |0B%s|0C, the smithy was upgraded to level %d!^M^M
+0829 |0A ¯¯¯ |0CThe game has been reset!^M^M
+0830 |0A ¯¯¯ |0CWaiting for InterBBS reset.^M^M
+0831 |0A ¯¯¯ |0CThe game has been reset by the League Coordinator!^M^M
+0832 |0A ¯¯¯ |0CThis BBS has joined the league and the game has begun!^M^M
+0833 |0A ¯¯¯ |0B%s |0Chave entered town!^M^M
+0834 |0A ¯¯¯ |0B%s |0Chave left town!^M^M
+0835   ID  Username              Clan Name^M----- --------------------  --------------------^M
+0836 |0A ¯¯¯ |0BThe town of |13%s |08(%s) |0Chas joined the league!^M^M
+0837 |0A ¯¯¯ |0B%s donated %ld gold |0Cto the village vault.^M^M
+0838 OUTBOUND.TMP
+0839 |07Your clan has the maximum number of permanent members already.^M%P
+0840 |0SAre you sure you wish to remove %s from the clan?
+0841 |0B%s |0Chas been removed from the clan!^M
+0842 |0A ¯¯¯ |0BClan Combat:  |0C%s attacked %s but then retreated!^M^M
+0843 Your clan was attacked by %s in hand-to-hand combat.^M |13However, they ran away!
+
+0880 |07Sorry, this game is currently taking in no new players.^M
+0881 |02Your clan was last seen headed for |14%s |02(%s)!^MPlease call that BBS instead.^M^M
+0882 |0CThis BBS = |0B%s|0C, |0B%s|0C.^M%%P%%C
+0883  |07This BBS is not in a league.^M
+0884 ^MSomeone is currently playing the game on another node.^MPlease return in a few minutes.^M%P
+0885 |07World Travel is only permitted in InterBBS games.^M%P
+0886 |07There is currently no ruler of %s^M
+0887  |07A Canadian Product |04Û|04|23|16|04Û^M^M |07No dropfile (|15DOOR.SYS, DORINFOx.DEF, etc.|07) was found for that node.^M Please check the settings in your configuration.  If you wish to^M play locally, use |14CLANS /L |07as your command line.^M
+0888
+0889
+0890 Attend Mass
+0891 Ask for Blessing
+0892 Pray
+0893 Resurrect Clan Member
+0894 Quit
+0895 Redisplay Menu
+0896 View Stats
+0897 Revive Unconscious Member
+0898 Chat w/Villagers
+0990
+
+0900 Error opening village.dat!^M%P
+0901 - Couldn't open PC file.^M
+0902 CLANS.PC
+0903 VILLAGE.DAT
+0904 CLANS.MSJ
+0905 Couldn't open CLANS.MSJ file!^M
+0906 /hlp/ruler
+0907 /hlp/NEWBIE
+0908 /hlp/general
+0909 |07This option only applies to InterBBS games.^M%P
+0910 |14The game has not yet begun.^M^M
+0911 ^M|15Game begins on %s^M^M
+0912  Scores for The Clans^M^M Name                                         Symbol  Score   Status^MÍÍÍÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÍÍÍ^M
+0913 ^[[0m^[[2J^[[0;36m Scores for The Clans^M^M Name                                         Symbol  Score   Status^M^[[0;35mÍÍÍÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÍÍÍ^M
+0914 No one has played The Clans yet^M
+0915 No one has played The Clans yet^M
+0916  %-30s %s%s  %-6ld  ^-
+0917 Away
+0918 Here
+0919   (Ruler)^M
+0920 ^[[0m %-30s ^[[38m%s%s^[[0;1m  %-6ld  ^-
+0921 ^[[0;32mAway
+0922 ^[[1;35mHere
+0923 ^[[1;36m  (Ruler)^M
+0924 |10>> |15%s |02raises to level |14%d |02and gains %d training points!^M
+0925 Eliminated
+0926 Eliminated
+0927 NEW.PC
+0928 |12User online -- skipping packet processing^M
+0929 |12Could not find WORLD.NDX file.  If you are not in an InterBBS league,^Mturn off the InterBBS option in the CONFIG.EXE program.^M^M
+
+0930 Look for Creatures
+0931 Fight Other Clan
+0932 Quit
+0933 Redisplay Menu
+0934 View Stats
+0935 Change Mine Level
+0936 Go on a Quest
+0937 event
+0938 Chat w/Villagers
+0939 Who's Here?
+
+# reg messages
+0940 |01+---+---------------------------------------------------------------+---+^M
+0941    |09±|01³ |11* unregistered * unregistered * unregistered * unregistered * |01³|09±^M
+0942 |01+---+---------------------------------------------------------------+---+^M
+0943 |07   This copy of The Clans is currently unregistered.  Please encourage^M
+0944    your sysop to register.  The cost is $15US ($20CAN)^M^M
+0945    Registration removes this message and also allows users to go beyond^M   level 4 of the mines, to upgrade characters beyond level 5, and to^M   access more than 10 Quests (and a few other things).^M^M   You can now register online using your credit card.^M   See PLASTIC.DOC for info!^M
+0946 |01+---+---------------------------------------------------------------+---+^M
+0947 |07This game is registered to |14%s |07for use on |14%s|07.^M
+0948 |02format:  |07CLANS |02[options]^M^M|02options:^M^M |10/Nx      |02-- |07use Node x^M |10/L       |02-- |07run game in local mode^M |10/O       |02-- |07create outbound packets now^M |10/I       |02-- |07process inbound packets now^M |10/M       |02-- |07run maintenance^M |10/FM      |02-- |07force daily maintenance to run (local only)^M |10/F       |02-- |07run in "fullmode"^M |10/T       |02-- |07use timeslicing code^M |10/USERS   |02-- |07see userlist^M |10/LIBBS   |02-- |07Local InterBBS support^M |10/Recon X |02-- |07send recon to BBS with ID X^M |10/NewNDX  |02-- |07send new WORLD.NDX file to all boards^M^M
+0949 |07That is the highest upgrade allowed in the UNREGISTERED version of this game.^M%P
+
+0950 Enter Game
+0951 See Scores
+0952 Today's News
+0953 Yesterday's News
+0954 Help
+0955 Instructions
+0956 Quit
+0957 Display Menu
+0958 Bulletins
+0959 Village Stats
+0960 Game Settings
+0961 League Scores
+
+0970 Enter the Mines
+0971 Quit
+0972 Redisplay Menu
+0973 View Stats
+0974 Market Menu
+0975 World Travel Menu
+0976 Communications Menu
+0977 Town Hall
+0978 Manage Empire
+0979 Church Menu
+0980 Training Hall
+0981 Chat w/Villagers
+0982 Newbie Help
+0983 Delete Clan
+0984 Memory Usage
+0985 Alliances Menu
+0986 Secret #2
+0987 Secret #3
+0988 Secret #4
+0989 Secret #5
+
+0990 View Other Villages
+0991 Quit
+0992 Redisplay Menu
+0993 View Stats
+0994 Travel to Another Village
+0995 Help on Villages and Travel
+0996 See Current Travel Info
+
+
+# combat options
+1000 Specific Attack
+1001 Attack
+1002 Run
+1003 Attack
+1004 Attack
+1005 Attack
+1006 Attack
+1007 Attack
+1008 Attack
+1009 Attack
+1010 Attack
+1011 Attack
+1012 Skip Move
+1013 View Player Stats
+1014 Skill
+1015 Help
+1016 Fight to Death
+1017 #
+1018 Read Scroll
+1019 Default
+
+1020  |0BAlliances Menu^M
+1021  |0A(|0B%c|0A) |0C%s^M
+1022  |0A(|0BZ|0A) |0CCreate an Alliance^M |0A(|0BQ|0A) |0CQuit^M
+1023 ^M|0SCreate an alliance?
+1024 |07You cannot create a new alliance, there are already too many.^M
+1025 |02Enter password^M|06> |07
+1026 ^M|12Wrong password!^M
+1027 Create Alliance^M
+#1028 |02Enter a password that others will need to use to get in this hall.^M|06> |07
+1029 |0SEnter a name for this alliance.^M|0E> |0F
+
+1030  |0CGold in Vault                   |0B%ld^M
+1031  |0CLand                            |0B%d^M
+1032  |0CFollowers                       |0B%ld^M
+1033  |0CFootmen                         |0B%ld^M
+1034  |0CArchers                         |0B%ld^M
+1035  |0CKnights                         |0B%ld^M
+1036  |0CCatapults                       |0B%ld^M
+1037  |0CAlliance Name                   |0B%s^M
+1038  |0CAlliance Owner                  |0B%s^M^M
+
+# options for empire menu
+1050 Donate Followers
+1051 Donate Footmen
+1052 Donate Archers
+1053 Donate Knights
+1054 Donate Catapults
+1055 Withdraw Followers
+1056 Withdraw Footmen
+1057 Withdraw Archers
+1058 Withdraw Knights
+1059 Withdraw Catapults
+1060 View Stats
+1061 Quit
+1062 Redisplay Menu
+1063
+1064
+1065
+1066
+1067
+1068
+1069
+1070
+1071
+1072
+1073
+1074
+1075
+1076
+1077
+1078
+1079
+
+# troop donations
+1091 ^M|0P(|0QD|0P)rop item (|0QT|0P)ake item e(|0QX|0P)amine (|0QL|0P)ist own items^Ml(|0QI|0P)st room items (|0Q*|0P)destroy item (|0Q?|0P)Help |0Q(|0RQ|0Q)|0Puit : |0R
+
+# misc crap
+1150 /hlp/menus
+1151 /hlp/races
+1152 /hlp/village
+1153 /hlp/items
+1154 /hlp/bulletins
+1155 /hlp/fort
+1156 /hlp/combat
+1157 /hlp/stats
+1158 /hlp/strategy
+1159 /hlp/spells
+1160 /hlp/citizen
+1161 /hlp/war
+1162 /hlp/empire
+1163 /hlp/army
+
+1180 Buy items
+1181 Sell items
+1182 View Stats
+1183 Quit
+1184 Redisplay Menu
+1185
+1186
+1187
+1188
+1189
+1190 List
+1191 Quit
+1192 Buy
+1193 Examine
+1194 Help
+1195 List
+1196 Quit
+1197 Sell
+1198 Examine
+1199 Help
+
+1210 |0AÛß|07    |06ÛÛ|07    |0AßÛ|07 ^-
+1211 |0AÛ |07 |06 ßß|15|22Ü|07Ü|06|16ßß |07 |0A Û|07 ^-
+1212 |0AÛ|07     |15Û|07Û     |0AÛ|07 ^-
+1213 |0AÛ|07     |15Û|07Û     |0AÛ|07 ^-
+1214 |0AÛ|07     |15Û|07Û     |0AÛ|07 ^-
+1215 |0AÛÜ|07    |15Ş|07İ    |0AÜÛ|07 ^-
+1216 |0AÛß|07  Ü|15|23Ü|07|16ÛÛÛÜ  |0AßÛ|07 ^-
+1217 |0AÛ |07 Û|15|23²|07|16ÛÛÛÛÛÛ |0A Û|07 ^-
+1218 |0AÛ |07 ÛÛßßßß|08|23°|07|16Û |0A Û|07 ^-
+1219 |0AÛ |07 Û|15|23°|07|16ÛİŞÛ|08|23±|07|16Û |0A Û|07 ^-
+1220 |0AÛ |07 ŞÛÛİŞÛ|08|23²|07|16İ |0A Û|07 ^-
+1221 |0AÛÜ|07  ßÛİŞ|08|23ß|07|16ß  |0AÜÛ|07 ^-
+1222 |0AÛß|07 Û|15|23²|07|16ÛÛÛÛÛÛ |0AßÛ|07 ^-
+1223 |0AÛ |07 Û|15|23Û|07|16ÛÛÛÛ|08|23°|07|16Û |0A Û|07 ^-
+1224 |0AÛ |07 Û|15|23Û|07|16ÛÛÛÛ|08|23²|07|16Û |0A Û|07 ^-
+1225 |0AÛ |07 Û|15|23Û|07|16ÛÛÛÛ|08|23Û|07|16Û |0A Û|07 ^-
+1226 |0AÛ|07   |15|23ßÜ|07|16ÛÛ|08|23Üß|07|16   |0AÛ|07 ^-
+1227 |0AÛÜ|07   ßÛÛß   |0AÜÛ|07 ^-
+1228 |0AÛß|07 ÜÜÜÜÜÜÜÜ |0AßÛ|07 ^-
+1229 |0AÛ |07ß|00|23ÄÄÄÄÄÄÄ|07|16Û |0A Û|07 ^-
+1230 |0AÛ |07 Ş|00|23------|07|16İ |0A Û|07 ^-
+1231 |0AÛ |07 Û|00|23-----|07|16Û  |0A Û|07 ^-
+1232 |0AÛ |07 Ş|00|23--|07|16Û|00|23--|07|16Ûİ |0A Û|07 ^-
+1233 |0AÛÜ|07ßÛÛÛÛÛÛÛß |0AÜÛ|07 ^-
+1234 |0AÛß|06  Ü|07Ü|06ßÜ|07    |0AßÛ|07 ^-
+1235 |0AÛ |06 ÛÛ |07Û|06 Û|07    |0AÛ|07 ^-
+1236 |0AÛ |06ÛÛÛÛ |07Û |06Û|07  |0A Û|07 ^-
+1237 |0AÛ |06ÛÛÛÛÛ |07Û |06Û |0A Û|07 ^-
+1238 |0AÛ |06 ÛÛÛÛß|07Üß|06Üß|0A Û|07 ^-
+1239 |0AÛÜ|06  ßÛÜ|07|22ß|06|16Üß |07 |0AÜÛ|07 ^-
+1240 |0AÛß|07  ÜÜÜÜÜÜ  |0AßÛ|07 ^-
+1241 |0AÛ |07 |15|23²|07|16Û|08|23°|07|16  |15|23²|07|16ÛÛ |0A Û|07 ^-
+1242 |0AÛ |07    Ü|15|23±|07|16Û|08|23°|07|16ß |0A Û|07 ^-
+1243 |0AÛ |07   |15|23°|07|16Û|08|23°|07|16ß   |0A Û|07 ^-
+1244 |0AÛ |07   ßßß    |0A Û|07 ^-
+1245 |0AÛÜ|07   |15|23°|07|16Û|08|23±|07|16    |0AÜÛ|07 ^-
+
+# Manage Empire menu
+1260 Build Structure
+1261 Manage Army
+1262 Attack Army
+1263 Quit
+1264 Redisplay menu
+1265 Spy on Empire
+1266 Donate to Empire
+1267 Develop Land
+1268 Help
+
+# structures menu
+1270 Quit
+1271 Redisplay menu
+1272 Barracks
+1273 Walls
+1274 Towers
+1275 Steel Mills
+1276 Stables
+1277 Intelligence Agencies
+1278 Security Centers
+1279 Gymnasium
+1280 Developers Halls
+1281 Destroy Buildings
+1282 Shops
+1283 View Stats
+
+# alliance menu
+1290 List alliance members
+1291 Invite clan into alliance
+1292 Remove clan from alliance
+1293 See member's stats
+1294 Chat Room
+1295 Donation Room
+1296 Manage Empire
+1297 Destroy Alliance
+1298 View Clan Stats
+1299 Quit
+1300 Redisplay menu
+1301 Write to Allies
+1302 Remove self
+
+# voting booth
+1310 Quit
+1311 Redisplay options
+1312 View Clan Stats
+1313 Change Vote
+#1314
+
+# wizard's shop
+1320 Buy Scroll
+1321 Buy Book
+1322 Examine Item
+1323 Quit
+1324 Redisplay Help
+1325 View Clan Stats
+
+# result of wars
+1350
+1351
+1352
+1353
+1354 |0B %ld |0CFootmen, |0B%ld |0CAxemen, |0B%ld |0CKnights ^M
+1355 ^M|0C You lost the following:^M  |0B%ld |0CFootmen, |0B%ld |0CAxemen, |0B%ld |0CKnights^M
+1356 |0SAttempt to loot how much steal land? (1-10%)
+1357 |0SAttempt to loot how much gold? (1-15%)
+1358 |0SAttempt how much damage? (1-15%)
+
+#
+1380  |0A(|0BP|0A) |0CBuild a pawn shop^M
+1381  |0A(|0BP|0A) |0CUpgrade pawn shop to level  |0B%d^M
+1382      |0CPawn Level                  |0B%d^M
+1383  |0A(|0BZ|0A) |0CBuild a Wizard shop^M
+1384  |0A(|0BZ|0A) |0CUpgrade Wiz. shop to Level  |0B%d^M
+1385      |0CWizard Level                |0B%d^M
+1386  |0A(|0BS|0A) |0CUpgrade Smithy to Level     |0B%d^M
+1387 Pawn shop is at max. level.^M
+1388 |02It will cost |10%ld GP |02to build a pawn shop.^M|10The village has |15%ld |10GP.^M^M
+1389 Build a pawn shop?
+1390 The village now has a pawn shop!^M
+1391 |0A ¯¯¯ |0COur ruler |0B%s |0Chave built a pawn shop for the village!^M^M
+1392 |02It will cost %ld GP to upgrade the pawn shop to level %d.^M|10The village has |15%ld |10GP.^M^M
+1393 Upgrade the pawn shop?
+1394 |0CThe pawn shop has been upgraded to level |0B%d^M
+1395 |0A ¯¯¯ |0C%s upgraded the pawn shop to level |0B%d^M^M
+1396 Wizard shop is at max. level.^M
+1397 |02It will cost |10%ld GP |02to build a wizard's shop.^M|10The village has |15%ld |10GP.^M^M
+1398 Build a wizard's shop?
+1399 The village now has a wizard's shop!^M
+1400 |0A ¯¯¯ |0COur ruler |0B%s |0Chave built a wizard's shop for the village!^M^M
+1401 |02It will cost %ld GP to upgrade the wizard's shop to level %d.^M|10The village has |15%ld |10GP.^M^M
+1402 |0SUpgrade the wizard's shop?
+1403 The wizard's shop has been upgraded to level %d^M
+1404 |0A ¯¯¯ |0C%s upgraded the wizard's shop to level %d^M^M
+
+# wizard's shop stuff
+1420 ^M|07There is currently no wizard's shop in the village.^M%P
+1421 |0SWhich item to examine? |04(0=abort)
+1422 |07I only examine books and scrolls^M%P
+1423 It will cost you %ld gold to examine that item.^MYou have %ld gold^M^M
+1424 Examine it?
+1425 /hlp/wizard
+1426
+1427
+1428
+1429
+1430
+
+# managing empire stuff
+1440  |0BManaging Empire^M
+1441  |0CGold                   |0B%ld^M
+1442  |0CArmy Rating            |0B%d^M
+1443  |0CDeveloped Land         |0B%d units^M
+1444  |0CWorker Energy          |0B%d%%^M
+1445  |0CSecurity Level         |0B%d^M
+1446  |0CSpy Level              |0B%d^M
+1447 |07You may only donate to a village or an alliance's empire.^M%P
+1448 |07You need a barracks first!^M%P
+1449 |07You need an intelligence agency first!^M%P
+
+# donate to empire stuff
+1450 Donate Followers
+1451 Donate Footmen
+1452 Donate Axemen
+1453 Donate Knights
+1454 Take Followers
+1455 Take Footmen
+1456 Take Axemen
+1457 Take Knights
+1458 Quit
+1459 Redisplay Menu
+1460 View Stats
+1461 Donate Land
+1462 Take Land
+1463 Donate Gold
+1464 Take Gold
+
+# more empire stuff
+1470  |0CDevelopers Level       |0B%d^M
+1471  |0CDeveloped Land         |0B%d units^M
+1472  |0CWorker Energy          |0B%d%%^M^M
+1473  |0A(|0B%c|0A) |0C%-20s    |0F%d^M
+1474  |0A(|0B*|0A) |0CDestroy Buildings^M |0A(|0BV|0A) |0CView Stats^M |0A(|0BQ|0A) |0CQuit^M
+1475  |0CBuilding Type          |0B%s^M
+1476  |0CWorker Energy Used     |0B%d%%^M
+1477  |0CLand Occupied          |0B%d^M
+1478  |0CCost                   |0B%ld^M^M
+1479 You need more land.^M%P
+1480 You need more worker energy.^M%P
+1481 |0SBuild this?
+1482 |0B%s |0Chas been built!^M
+1483  |0BManage Army^M
+1484  |0CArmy Rating            |0B%d^M^M
+1485 |07A steel mill must first be built.^M%P
+1486 |07A steel mill and stables must first be built.^M%P
+1487  |0A(|0BV|0A) |0CView Stats^M |0A(|0BQ|0A) |0CQuit^M
+1488 |07Shops can only be built by the village.^M%P
+1489 |07You don't have any of that building to destroy.^M%P
+1490 Destroy this?
+1491 %s destroyed.  %d land and %ld gold gained.^M%%P
+1492 The village army can only handle 2 attacks per day.^M
+1493 You can only command 5 attacks per day.^M
+1494 |07You need more gold.^M%P
+1495
+1496
+
+1500  |0CFollowers              |0B%ld^M
+1501  |0CFootmen                |0B%ld^M
+1502  |0CAxemen                 |0B%ld^M
+1503  |0CKnights                |0B%ld^M
+1504  |0CGold                   |0B%ld^M
+1505  |0CDeveloped Land         |0B%d units^M
+1506 |0SHow many Followers will you donate?
+1507 |0SHow many Footmen will you donate?
+1508 |0SHow many Axemen will you donate?
+1509 |0SHow many Knights will you donate?
+1510 |0SHow many Followers will you take?
+1511 |0SHow many Footmen will you take?
+1512 |0SHow many Axemen will you take?
+1513 |0SHow many Knights will you take?
+1514 |0SHow much Land will you donate?
+1515 |0SHow much Land will you take?
+1516 |0SHow much Gold will you donate?
+1517 |0SHow much Gold will you take?
+1518 |07A steel mill must first be built.^M%P
+1519 |07A steel mill and stables must first be built.^M%P
+1520 |07You cannot take from the town's empire.^M%P
+1521 |07You must first build a steel mill to own axemen.^M%P
+1522 |07A steel mill and stables must first be built.^M%P
+1523 |07Please use the economics menu.^M%P
+1524
+
+1530 |0CIt will cost you |0B%ld |0Cgold per unit of land to develop.^M
+1531 |0SHow much land to develop?
+1532 |0CYou developed |0B%d |0Cunits of land for |0B%ld |0Cgold^M
+1533
+1534
+
+1550 |0B%s |0Cattacked %s's empire!^M^M The enemy lost the following:^M ^-
+1551 ^M You were ousted from rule!^M
+1552 ^M The following buildings were destroyed:^M
+1553  ^M They stole |0B%d |0Cland!^M
+1554  ^M They looted |0B%ld |0Cgold!^M
+1555
+1556
+1557
+1558
+
+1580 |0SWhat type of empire?^M|0A> |0F
+1581 |0SWhich village? (Enter=abort)^M|0A> |0F
+1582 |0SWhat is the goal? (Enter=abort).^M|0A> |0F
+1583 ^M|0SChoose this goal?
+1584 |04There is no ruler to oust.  The attack is aborted.^M
+1585 |04No alliances found!^M
+1586 |0SWhich alliance? |0F
+1587
+
+1590  |0A(|0BA|0A) |0CFootmen   %5ld    |14%5ld^M
+1591  |0A(|0BB|0A) |0CAxemen    %5ld    |14%5ld^M
+1592  |0A(|0BC|0A) |0CKnights   %5ld    |14%5ld^M
+1593  |0A(|0B]|0A) |0CSend All^M |0A(|0B[|0A) |0CSend None^M |0A(|0B0|0A) |0CDone^M
+1594 |0SBring how many Footmen?
+1595 |0SBring how many Axemen?
+1596 |0SBring how many Knights?
+1597
+
+1600 ^M|0CYou lost |0B%ld |0CFootmen, |0B%ld |0CAxemen, and |0B%ld |0CKnights^M
+1601 |0CYou killed |0B%ld |0CFootmen, |0B%ld |0CAxemen, and |0B%ld |0CKnights^M^M
+1602 |0CYou were unable to penetrate their walls!^M
+1603 |0CYou came out |0Bvictorious|0C!^M
+1604 You successfully ousted the ruler!^M
+1605 |0CYou stole |0B%ld |0Cgold^M
+1606 There was no gold to steal!^M
+1607 |0CYou stole |0B%d |0Cunit(s) of land^M
+1608 |0CThere was no land to steal.^M
+1609 You destroyed the following buildings:^M
+1610  %2d %s^M
+1611 You destroyed the following buildings:^M
+1612  %2d %s^M
+1613 |0CYour forces come out |0Bdefeated|0C!^M
+1614
+
+
+1630 |07You may only spy 10 times each day.^M%P
+1631 |0CIt will cost you |0B%ld |0Cgold to spy.  The empire has |0B%ld |0Cgold.^M|0SContinue?
+1632 |0CYour spy is |15successful!^M
+1633 |0CYour spy failed and was |12captured!^M
+1634 A spying attempt on the village's empire by %s failed.^M
+1635 A spying attempt on %s's empire failed.^M The spy was from %s.^M
+1636 A spying attempt by %s on your clan's empire failed.^M
+1637 Your spies sent to %s were successful and return with information:^M^MGold:  %ld^MLand:  %d^M^MTroops:  %ld footmen, %ld axemen, %ld knights^M^MArmy Speed: %d^MArmy Offense: %ld^MArmy Defense: %ld^MArmy Vitality: %ld^M^MBuildings:
+1638
+
+1650 |0A(|0BL|0A)|0Cist |0A(|0BQ|0A)|0Cuit |0A(|0BB|0A)|0Cuy e|0A(|0BX|0A)|0Camine|0E> |0F
+1651 |0SWhich item to examine? |04(0=abort)
+1652 You have no more room in your inventory!^M
+1653 |0SBuy which item? |04(0=abort)
+1654 |0SBuy for |0B%ld |0Sgold?
+1655 |07You cheapskate, you don't have the gold!^M
+1656 |0B%2d. |0C%-20s  ^-
+1657 |0A(|0BL|0A)|0Cist |0A(|0BQ|0A)|0Cuit |0A(|0BS|0A)|0Cell sell |0A(|0BA|0A)|0Cll e|0A(|0BX|0A)|0Camine|0E> |0F
+1658 |0SWhich item to examine? |04(0=abort)
+1659 |07I'm sorry, we cannot accept any more items.^M
+1660 |0SWhich item to sell? |04(0=abort)
+1661 |0BYou're still using it!^M
+1662 |0SSell it for |0B%ld |0Sgold?
+1663 |0CNo items for sale.^M
+
+1675 |0CYou find |0B%s|0C. |0STake it?
+
+1680 |0A ¯¯¯ |0C%s attacked %s and %s.^M     ^-
+1681 They ousted our rulers!^M
+1682 They looted land.^M
+1683 They looted some gold.^M
+1684 They caused much damage.^M
+1685 |0A ¯¯¯ |0C%s's army returns after finding no ruler to oust in %s.^M^M
+1686 but found no ruler to oust!^M
+1687 |0A ¯¯¯ |0C%s's army returns after being unable to find the clan empire.^M^M
+1688 but found no empire!^M
+1689 and came out victorious!^M
+1690 |0A ¯¯¯ |0C%s's army returns after successfully^M     ousting the ruler of %s^M^M
+1691 |0A ¯¯¯ |0C%s's army returns successfully from %s^M     looting %d land from %s.^M^M
+1692 |0A ¯¯¯ |0C%s's army returns successfully from %s^M     looting %ld gold from %s.^M^M
+1693 |0A ¯¯¯ |0C%s's army returns successfully from %s^M     destroying %s's buildings.^M^M
+1694 and came out defeated.^M
+1695 |0A ¯¯¯ |0C%s's army returns unsuccessfully from %s^M     after attacking %s.^M^M
+1696 |0CResults of %s's attack on %s have returned.^M Your troops attempted %s %s^M^M You killed the following:^M ^-
+1697 ^M The following have returned:^M  |0B%ld |0CFootmen, |0B%ld |0CAxemen, |0B%ld |0CKnights^M
+1698 ^M You stole |0B%d |0Cland.^M
+1699 ^M You found no land to steal!^M
+1700 ^M You stole |0B%ld |0Cgold.^M
+1701 ^M You found no gold to steal!^M
+
+1710 |0A ¯¯¯ |0B%s|0C's reign as dictator continues.^M^M
+1711 |0A ¯¯¯ |0B%s|0C is re-elected as the leader of town!^M^M
+1712 |0A ¯¯¯ |0B%s|0C is elected as the new leader of town!^M^M
+1713 |0A ¯¯¯ |0CShops brought in |0B%ld |0Cgold today!^M^M
+1714 |0A ¯¯¯ |0C%s %s the conscription rate from |0B%d%% |0Cto |0B%d%%^M^M
+
+1715  |0CGold in Vaults                  |0B%ld^M
+1716  |0CConscription Rate               |0B%d^M
+1717  |0CSystem of Government            |0B%s^M
+1718 |07You cannot set conscription rate more than once a day.^M%P
+1719 |0SEnter conscription rate.
+1720 |07This town is under dictatorial rule.  Voting is disabled.^M%P
+1721 |0A ¯¯¯ |0C%s has changed this town's government system to |0BDictatorship^M^M
+1722 |0A ¯¯¯ |0C%s has changed this town's government system to |0BDemocracy^M^M
+1723 |0CCurrent Government:  |0B%s^M
+1724 |0SSwitch to Dictatorship?
+1725 |0SSwitch to Democracy?
+1726  |0CEmpire Statistics               |0B%s^M
+
+1730  |0LStats for the empire of |0M%s^M
+1731  |0LGold                            |0M%ld^M
+1732  |0LLand                            |0M%d units^M
+1733  |0LWorker Energy                   |0M%d%%^M
+1734  |0LArmy Statistics:  ^M
+1735  |0L- |0LFootmen: |0M%ld,
+1736  |0LAxemen: |0M%ld,
+1737  |0LKnights: |0M%ld,
+1738  |0LRating: |0M%d^M
+1739  |0L- |0LAvg. Speed: |0M%d,
+1740  |0LTotal Vitality: |0M%ld,
+1741  |0LOffense: |0M%ld,
+1742  |0LDefense: |0M%ld^M
+1743 ^M |0LBuildings:^M
+1744   |0MNone.^M
+1745  |0CSpeed: |0B%d, ^-
+1746 |0COffense: |0B%ld, ^-
+1747 |0CDefense: |0B%ld, ^-
+1748 |0CVitality: |0B%ld^M^M
+1749
+
+1760 |0CGame Start                 |0B%s^M
+1761 |0CElimination mode           |0B%s^M
+1762 |0CMax Permanent Clan members |0B%d^M
+1763 |0CClan Travel                |0B%s^M
+1764 |0CClan Empires are           |0B%s^M
+1765 |0CMine Fights per day        |0B%d^M
+1766 |0CClan Fights per day        |0B%d^M
+1767 |0CDays of Protection         |0B%d^M
+1768
+1769
+
+1770 |07Scores have not been generated yet.^M
+1771 ^M |0BName                                    |0ASymbol Score  Village^M
+1772  |0CTop 20 Clans in the league. |0B(as of %s)^M
+1773 |0C %-25s %s%s`0F %-6ld |0C%-20s^M
+1774
+1775
+1776
+
+1780  |0LDefault action in combat: |0M^-
+1781 ^M|0P(|0QC|0P)hange Default Action, |0Q[|0REnter=Quit|0Q] : |0R
+1782 |0EChoose a default action to be done in combat^M|0G> |0F
+
+#new stats lines
+1800  |0L%s ^-
+1801 |0LEquipment^M|0DÍÍÍÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÍÍÍ^M
+1802 |0L Level               |0M%d ^-
+1803 |0LWeapon    |0M%s^M
+1804 |0L Experience          |0M%ld (%ld req.)
+1805 |0LArmor     |0M%s^M
+1806 |0L Race/Class          |0M%s/%s
+1807 |0LShield    |0M%s^M
+1808 |0L Hitpoints           |0M%d/%d^M
+1809 |0L Skillpoints         |0M%d/%d^M
+1810  ^M|0L Statistics |0M(base values) plus modifiers   |0LSkills/Spells Known^M|0DÍÍÍÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÍÍÍ^M
+1811 ^M|0L Default Action      |0M^-
+1812 |0DÍÍÍÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÍÍÍ^M
+1813  |0P[|0QC|0P]hange Default Action, |0Q[|0REnter|0Q]|0P=Quit> |0R^-
+1814 |0L Training Points     |0M%d^M
+1815
+
+1832 |07This secret only works on |12Japanese |07versions of this game.^M%P
+1835 |07The |15X |07warrior will let you in.^M%P
+
+1836 seineew era sremmargorp sbb

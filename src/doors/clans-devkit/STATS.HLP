@@ -1,0 +1,56 @@
+^SP
+ |0CSkill Points are required for casting spells or using skills.  These are
+ regenerated during each round of combat and fully regenerated at the start
+ of each day.
+^END
+
+^HP
+ |0CHitpoints are the energy used by your characters.  The more the better as
+ they can survive strikes much longer.
+^END
+
+^Attributes
+ |0CAttributes are the characteristics of each character.  These make a character
+ what he or she is (i.e. a strong fighter or a magic-user).
+^END
+
+^Dexterity
+ |0CThe higher dexterity a character has, the better chances he or she will
+ strike an enemy.  A high dexterity is also desirable in the event that your
+ clan wishes to run away whilst in combat.  A low dexterity will prevent you
+ from running!
+^END
+
+^Agility
+ |0CThe higher agility a character has, the better his odds of attacking first
+ are.  In close combat, the first strike often decides the outcome.  A high
+ agility is also helpful in avoiding an enemy attack.
+^END
+
+^Strength
+ |0CRaw strength is desirable for not only attacking enemies but for using a
+ weapon.  Certain weapons require high strength to be wielded.  If the
+ character using the weapon does not have high strength, he will suffer in
+ other attributes such as dexterity.
+^END
+
+^Wisdom
+ |0CWisdom is needed mainly for magic-users or users of skills.  The higher
+ wisdom a character possesses, the more quickly he or she will regain skill
+ points.  When you are attacked by another clan (and you are not around to
+ control your characters) a high wisdom is helpful.  The higher wisdom a
+ character has, the better his chances of successful use of skills.
+^END
+
+^Charisma
+ |0CCharisma is currently only needed for speaking out for or against the ruler.
+ A high charisma will cause a larger amount of the population to notice than
+ a lower one.
+^END
+
+^Armor Strength
+ |0CArmor Strength is the amount of damage that is absorbed by the character
+ without the use of armor itself.  Obviously, this attribute is very
+ important.  A high armor strength will often prevent attacks from doing
+ any damage to the character.
+^END

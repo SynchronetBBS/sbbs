@@ -1,0 +1,118 @@
+^Partial Heal
+ |0CThis spell will cause the recipient to regain some lost hitpoints incurred
+ in battle.
+^END
+
+^Heal
+ |0CThis spell causes the recipient to regain much of his lost hitpoints.
+^END
+
+^Slow
+ |0CThis causes the victim of the spell to move very slowly causing him to
+ have a reduced agility.
+^END
+
+^Strength
+ |0CThe recipient of this spell will have increased strength for a few rounds.
+^END
+
+^Ropes
+ |0CThis skill allows one to quickly tie up an enemy in ropes.  The enemy
+ will eventually free himself from the ropes but it will take a few rounds to
+ do so.
+^END
+
+^Raise Undead
+ |0CA difficult spell to cast properly, this will cause undead beings to be
+ summoned which will fight alongside your clansmen.
+^END
+
+^Banish Undead
+ |0CIf one is being harassed by the undead whilst in combat, this spell
+ will banish them from the world of the living.
+^END
+
+^Mystic Fireball
+ |0CA burst of flames will emanate from the caster's hands and land a hit on
+ its victim.
+^END
+
+^Dragon's Uppercut
+ |0CMastered by martial artists, this special skill allows the attacker to do
+ great damage with a rising uppercut.
+^END
+
+^Summon Dead Warrior
+ |0CWhen this spell is cast, an undead warrior will come to the aid of the
+ party.
+^END
+
+^Death and Decay
+ |0CThis evil spell will cause great damage to the |11entire|0C enemy clan
+ at once!
+^END
+
+^Mystic Bond
+ |0CThis spell will quickly bind its victim in an invisible rope for a few rounds.
+ The victim will be unable to do anything until it wears off.
+^END
+
+^Holy Heal
+ |0CThis somewhat weak spell will cause its recipient to regain some lost
+ hit points.
+^END
+
+^Lightning Bolt
+ |0CThis powerful spell causes a great lightning bolt to appear out of thin
+ air and can cause great damage on an unsuspecting foe.
+^END
+
+^Backstab
+ |0CThis special skill allows one to quickly sneak up behind a foe and stab
+ him with a small dagger hidden in one's pocket.
+^END
+
+^Spells
+ |14Skills/Spells
+
+ |02This option will allow you to pick a special skill or a spell to be used by
+ the current character you are controlling.
+^END
+
+^Bloodlust
+ |0CThis spell will cause the recipient to fight with great fury and strength
+ as he has never fought before.
+^END
+
+^Fear
+ |0CThis spell instills fear in the enemy and causes him to fight with reduced
+ strength and agility.
+^END
+
+^Heavy Blow
+ |0CThis special skill allows the attacker to do great damage on its victim.
+^END
+
+^Light Blow
+ |0CThis special skill allows the attacker to do a bit of damage to its victim.
+^END
+
+^Hurricane Kick
+ |0CThis special skill will cause the warrior to do a blazingly fast kick which
+ will do light damage to the enemy.
+^END
+
+^Blind Eye
+ |0CThis special skill will cause the victim to be blinded for a few rounds.
+ Being blinded, the victim is unable to see his attackers and will have
+ reduced agility and dexterity.
+^END
+
+^Divine Warrior
+ |0CThis spell will call upon an angelic warrior to fight alongside the clan.
+^END
+
+^Rain of Terror
+ |0CThis powerful spell will cause a fireballs to rain down on the enemy,
+ doing much damage on the whole clan!
+^END

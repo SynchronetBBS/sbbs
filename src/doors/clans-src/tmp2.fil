@@ -1,0 +1,127 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        $(CC) $(FLAGS) -c alliance.c
+        $(CC) $(FLAGS) -c clans.c
+        $(CC) $(FLAGS) -c clansini.c
+        $(CC) $(FLAGS) -c class.c
+        $(CC) $(FLAGS) -c crc.c
+        $(CC) $(FLAGS) -c door.c
+        $(CC) $(FLAGS) -c empire.c
+        $(CC) $(FLAGS) -c fight.c
+        $(CC) $(FLAGS) -c game.c
+        $(CC) $(FLAGS) -c help.c
+        $(CC) $(FLAGS) -c ibbs.c
+        $(CC) $(FLAGS) -c input.c
+        $(CC) $(FLAGS) -c items.c
+        $(CC) $(FLAGS) -c language.c
+        $(CC) $(FLAGS) -c mail.c
+        $(CC) $(FLAGS) -c maint.c
+        $(CC) $(FLAGS) -c menus.c
+        $(CC) $(FLAGS) -c menus2.c
+        $(CC) $(FLAGS) -c misc.c
+        $(CC) $(FLAGS) -c myibbs.c
+        $(CC) $(FLAGS) -c myopen.c
+        $(CC) $(FLAGS) -c news.c
+        $(CC) $(FLAGS) -c npc.c
+        $(CC) $(FLAGS) -c parsing.c
+        $(CC) $(FLAGS) -c pawn.c
+        $(CC) $(FLAGS) -c quests.c
+        $(CC) $(FLAGS) -c reg.c
+        $(CC) $(FLAGS) -c scores.c
+        $(CC) $(FLAGS) -c spells.c
+        $(CC) $(FLAGS) -c system.c
+        $(CC) $(FLAGS) -c tasker.c
+        $(CC) $(FLAGS) -c trades.c
+        $(CC) $(FLAGS) -c tslicer.c
+        $(CC) $(FLAGS) -c user.c
+        $(CC) $(FLAGS) -c video.c
+        $(CC) $(FLAGS) -c village.c
+        $(CC) $(FLAGS) -c voting.c
+        $(CC) $(FLAGS) @comp.lst
+        crc.obj items.obj mail.obj fight.obj scores.obj pawn.obj reg.obj\
+        door.obj village.obj input.obj help.obj game.obj user.obj\
+        misc.obj maint.obj spells.obj clansini.obj class.obj menus.obj\
+        npc.obj quests.obj news.obj empire.obj alliance.obj menus2.obj\
+        parsing.obj ibbs.obj tslicer.obj myopen.obj language.obj\
+        voting.obj trades.obj myibbs.obj
+all: clans.exe
+alliance.obj: alliance.c alliance.h
+CC = tcc
+clans.exe:      $(OBJS)
+clans.obj:      clans.c
+clansini.obj:   clansini.c
+class.obj:      class.c
+crc.obj:        crc.c
+door.obj:       door.c
+empire.obj:     empire.c
+fight.obj:      fight.c
+FLAGS = -ml -wall -C
+game.obj:       game.c
+help.obj:       help.c
+ibbs.obj:       ibbs.c
+input.obj:      input.c
+items.obj:      items.c
+language.obj:   language.c
+mail.obj:       mail.c
+maint.obj:      maint.c
+menus.obj:      menus.c
+menus2.obj:     menus2.c
+misc.obj:       misc.c
+myibbs.obj:     myibbs.c
+myopen.obj:     myopen.c
+news.obj:       news.c
+npc.obj:        npc.c
+OBJS = clans.obj video.obj system.obj\
+parsing.obj:    parsing.c
+pawn.obj:       pawn.c
+quests.obj:     quests.c
+reg.obj:        reg.c
+scores.obj:     scores.c
+spells.obj:     spells.c
+system.obj:     system.c
+tasker.obj:     tasker.c
+trades.obj:     trades.c
+tslicer.obj:    tslicer.c
+user.obj:       user.c
+video.obj:      video.c
+village.obj:    village.c
+voting.obj:     voting.c

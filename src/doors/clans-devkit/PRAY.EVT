@@ -1,0 +1,80 @@
+# events when you pray that occur
+
+# you are given a book -- book of stamina or healing -- rare
+# given money
+# followers
+# you see a white light and it envelopes you, you gain experience
+# you feel cold -- nothing happens
+# you see the statue of the god of somethingerother cry -- gain experience (ansi)
+
+Event Nothing
+Text "|10Sadly, your prayer has no effect.
+End
+
+Event Nothing2
+Text "|10Sadly, your prayer has no effect.
+End
+
+Event Nothing3
+Text "|10Sadly, your prayer has no effect.
+End
+
+Event Nothing4
+Text "|10Sadly, your prayer has no effect.
+End
+
+Event Nothing5
+Text "You are granted an extra fight by the gods!
+GiveFight 1
+End
+
+Event Pray.1
+Text "|02You pray . . .  What did you pray for?
+Text
+Text " (|05W|02)orld Peace
+Text " (|05G|02)old
+Text " (|05F|02)ollowers
+Text " (|05M|02)ore Monster Fights
+Text " (|05N|02)othing
+Text
+Prompt "[|12WGFMN|02]: |13
+Option W Pray.W
+Option G Pray.G
+Option F Pray.F
+Option M Pray.M
+Option N Pray.N
+End
+
+Result Pray.W
+Text "|02You feel you asked for the impossible.  You get nothing.
+End
+
+Result Pray.G
+Text "|02You pray for gold and feel your gold sack get heavier.  You check it.
+Text "|10You received 1 gold piece!  |02You feel your god is mocking your greed.
+GiveGold 1
+End
+
+Result Pray.M
+Text "|02You pray for another monster fight.
+pause
+Text
+Text "|10You get it!  You gain one monster fight.
+GiveFight 1
+End
+
+Result Pray.F
+Text "|02You watch as 15 people march towards you and offer themselves.
+Text "|03(You gained 15 new followers!)
+GiveFollowers 15
+End
+
+Result Pray.N
+Text "|02You pray for nothing.
+pause
+Text
+Text "Suddenly, a huge sack of gold falls onto your lap.  You open the sack and
+Text "count |10100 |02gold pieces!
+GiveGold 100
+End
+

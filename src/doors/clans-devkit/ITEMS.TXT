@@ -1,0 +1,556 @@
+# Item file for The Clans
+
+# -----------------------------------------------------------------------------
+# Weapons
+# -----------------------------------------------------------------------------
+
+# --------------------------------------------------- Level 0 weapon
+Name            Shortsword
+Type            Weapon
+Cost            650
+Strength        +5
+Agility         -1
+Requirements
+Strength        6
+Agility         4
+Dexterity       6
+DiffMaterials
+Energy          200
+Village         ALL
+RandLevel       6
+
+Name            Broadsword
+Type            Weapon
+Cost            750
+Strength        +6
+Agility         -2
+Dexterity       +1
+Charisma        +1
+Requirements
+Strength        10
+Dexterity       +6
+Energy          300
+Village         All
+RandLevel       6
+
+Name            Axe
+Type            Weapon
+Cost            500
+Strength        +7
+Dexterity       -1
+Agility         -2
+Charisma        +1
+Requirements
+Strength        13
+Energy          400
+Village         All
+RandLevel       6
+
+Name            Mace
+Type            Weapon
+Cost            450
+Strength        +4
+Dexterity       +1
+Requirements
+Strength        4
+Agility         3
+Dexterity       5
+Energy          160
+Village         All
+RandLevel       6
+
+Name            Dagger
+Type            Weapon
+Cost            200
+Strength        +3
+Dexterity       +1
+Requirements
+Dexterity       3
+Energy          180
+Village         All
+RandLevel       6
+
+Name            Staff
+Type            Weapon
+Cost            125
+Energy          120
+Strength        +5
+Agility         -1
+Dexterity       +1
+Requirements
+Agility         6
+Dexterity       9
+Village         All
+RandLevel       6
+
+Name            Wand
+Type            Weapon
+Cost            250
+Energy          500
+Strength        +1
+Dexterity       +1
+Wisdom          +4
+Requirements
+Wisdom          11
+Village         All
+RandLevel       6
+
+# --------------------------------------------------- Level 1 weapon
+
+Name            Battle Axe
+Level           1
+Type            Weapon
+Cost            750
+Strength        +8
+Agility         -1
+Dexterity       -3
+Charisma        +1
+Requirements
+Strength        13
+Village         ALL
+RandLevel       5
+
+# --------------------------------------------------- Level 2 weapon
+Name            Morning Star
+Level           2
+Type            Weapon
+Cost            800
+Strength        +5
+Dexterity       +2
+Requirements
+Strength        6
+Agility         8
+Dexterity       7
+Village         All
+RandLevel       4
+
+# --------------------------------------------------- Level 3 weapon
+Name            Scythe
+Level           3
+Type            Weapon
+Cost            650
+Strength        +3
+Dexterity       +3
+Requirements
+Strength        2
+Agility         4
+Dexterity       3
+Village         All
+RandLevel       3
+
+# --------------------------------------------------- Level 4 weapon
+Name            Boomerang
+Level           4
+Type            Weapon
+Cost            1100
+Strength        +5
+Dexterity       +4
+Requirements
+Strength        2
+Agility         6
+Dexterity       7
+Village         All
+RandLevel       2
+
+# --------------------------------------------------- special weapons
+
+Name            Falcon's Sword
+Special
+Type            Weapon
+Cost            2500
+Strength        +8
+Agility         -3
+Dexterity       +1
+Charisma        +3
+Requirements
+Strength        12
+Dexterity       10
+Village         All
+RandLevel       1
+
+Name            Bloody Club
+Special
+Type            Weapon
+Cost            100
+Energy          120
+Strength        +6
+Agility         -1
+Dexterity       -1
+Requirements
+Agility         7
+Dexterity       9
+Strength        8
+Village         All
+RandLevel       2
+
+Name            Death Axe
+Special
+Type            Weapon
+Cost            1500
+Strength        +8
+Agility         -3
+Dexterity       -1
+Requirements
+Agility         8
+Dexterity       8
+Strength        13
+Village         All
+RandLevel       1
+
+Name            Spirit Blade
+Special
+Type            Weapon
+Cost            2000
+Strength        +8
+Agility         -1
+Dexterity       -1
+Requirements
+Agility         11
+Dexterity       5
+Strength        10
+Village         All
+RandLevel       1
+
+Name            Wizard's Staff
+Special
+Type            Weapon
+Cost            1000
+Strength        +2
+Wisdom          +6
+Dexterity       +2
+Agility         +1
+Requirements
+Wisdom          11
+Village         All
+RandLevel       6
+
+
+# --------------------------------------------------- individual village weaps.
+
+
+# -----------------------------------------------------------------------------
+# Armor
+# -----------------------------------------------------------------------------
+
+# --------------------------------------------------- Level 0 armor
+Name            Cloth Robe
+Type            Armor
+Cost            105
+ArmorStr        +1
+Energy          240
+Village         All
+RandLevel       6
+
+Name            Leather Armor
+Type            Armor
+Cost            250
+ArmorStr        +2
+Agility         -1
+Dexterity       -1
+Requirements
+Strength        9
+Dexterity       7
+Energy          340
+Village         All
+RandLevel       6
+
+Name            Chainmail Armor
+Type            Armor
+Cost            400
+ArmorStr        +3
+Agility         -2
+Dexterity       -1
+Requirements
+Strength        12
+Dexterity       8
+Energy          830
+Village         All
+RandLevel       6
+
+Name            Platemail Armor
+Type            Armor
+Cost            550
+ArmorStr        +4
+Agility         -3
+Dexterity       -2
+Charisma        +1
+Requirements
+Strength        14
+Dexterity       9
+Energy          1020
+Village         All
+RandLevel       6
+
+# --------------------------------------------------- Level 1 armor
+Name            Wooden Armor
+Level           1
+Type            Armor
+Cost            250
+ArmorStr        +3
+Agility         -1
+Dexterity       -1
+Requirements
+Strength        9
+Dexterity       6
+Village         All
+RandLevel       6
+
+# --------------------------------------------------- Level 2 armor
+Name            Cloth Tunic
+Level           2
+Type            Armor
+Cost            250
+ArmorStr        +2
+Requirements
+Dexterity       5
+Village         All
+RandLevel       5
+
+# --------------------------------------------------- special armor
+Name            Kai Tunic
+Special
+Type            Armor
+Cost            750
+ArmorStr        +3
+Requirements
+Agility         9
+Dexterity       8
+Village         All
+RandLevel       3
+
+Name            Hero's Armor
+Special
+Type            Armor
+Cost            2250
+ArmorStr        +4
+Agility         -2
+Dexterity       -1
+Charisma        +2
+Requirements
+Strength        12
+Dexterity       10
+Village         All
+RandLevel       2
+
+Name            Rags
+Type            Armor
+Special
+Cost            50
+ArmorStr        +1
+Village         All
+RandLevel       5
+
+
+# Shields
+# --------------------------------------------------- level 0 shields
+
+Name            Wooden Shield
+Type            Shield
+Cost            150
+ArmorStr        +1
+Requirements
+Strength        10
+Energy          120
+RandLevel       6
+
+Name            Iron Shield
+Type            Shield
+Cost            250
+ArmorStr        +2
+Dexterity       -1
+Energy          160
+Requirements
+Strength        13
+RandLevel       6
+
+Name            Platinum Shield
+Type            Shield
+Cost            450
+Charisma        +1
+ArmorStr        +2
+Energy          200
+Requirements
+Strength        11
+RandLevel       6
+
+# --------------------------------------------------- level 1 shields
+Name            Crystal Shield
+Level           1
+Type            Shield
+Cost            650
+Charisma        +3
+ArmorStr        +3
+Requirements
+Strength        12
+Agility         8
+RandLevel       5
+
+# --------------------------------------------------- special shields
+Name            Hero's Shield
+Special
+Type            Shield
+Cost            2500
+Charisma        +5
+ArmorStr        +4
+Requirements
+Strength        13
+Agility         10
+RandLevel       2
+
+
+
+# special items --------------------------------------------------------------
+Name            Silver Mace
+Type            Weapon
+Special
+Cost            650
+Strength        +6
+Dexterity       +1
+Requirements
+Strength        3
+Agility         3
+Dexterity       5
+Energy          79
+RandLevel       3
+
+Name            Lion's Shield
+Special
+Type            Shield
+Cost            700
+ArmorStr        +2
+Requirements
+Strength        7
+Energy          80
+RandLevel       2
+
+Name            Battle Axe
+Special
+Type            Weapon
+Cost            500
+Strength        +9
+Dexterity       -1
+Agility         -2
+Charisma        +1
+Requirements
+Strength        15
+Energy          400
+RandLevel       2
+
+# -----------------------------------------------------------------------------
+# Scrolls
+# -----------------------------------------------------------------------------
+
+# --------------------------------------------------- Level 0 scrolls
+Name            Flame Scroll
+Type            Scroll
+Cost            1000
+Uses            3
+Spell           8
+RandLevel       8
+
+Name            Summon Scroll
+Type            Scroll
+Cost            1200
+Uses            4
+Spell           6
+RandLevel       5
+
+Name            Banish Scroll
+Type            Scroll
+Cost            2500
+Uses            5
+Spell           7
+RandLevel       4
+
+Name            Summon Khaos
+Level           2
+Type            Scroll
+Cost            8500
+Uses            1
+Spell           26
+RandLevel       4
+
+Name            Summon Dragon
+Level           3
+Type            Scroll
+Cost            6500
+Uses            1
+Spell           27
+RandLevel       3
+
+Name            Ice Blast
+Level           4
+Type            Scroll
+Cost            4500
+Uses            2
+Spell           28
+RandLevel       4
+
+
+# -----------------------------------------------------------------------------
+# Books
+# -----------------------------------------------------------------------------
+
+# --------------------------------------------------- Level 0 books
+Name            Book of Stamina
+Type            Book
+Cost            13500
+HPAdd           +5
+Village         ALL
+RandLevel       2
+
+Name            Book of Mana
+Type            Book
+Cost            10000
+SPAdd           +2
+Village         ALL
+RandLevel       2
+
+Name            Book of Healing
+Type            Book
+Cost            15000
+Spell           2
+Village         ALL
+RandLevel       2
+Requirements
+Wisdom          10
+
+
+Name            Book of Flames
+Type            Book
+Cost            9500
+Spell           8
+Village         ALL
+RandLevel       10
+Requirements
+Wisdom          10
+
+Name            Book of the Dead I
+Level           2
+Type            Book
+Cost            15000
+Spell           6
+Village         ALL
+RandLevel       1
+Requirements
+Wisdom          10
+
+Name            Book of the Dead II
+Level           3
+Type            Book
+Cost            10000
+Spell           7
+Village         ALL
+RandLevel       2
+Requirements
+Wisdom          10
+
+Name            Book of Destruction
+Level           4
+Type            Book
+Cost            25000
+Spell           12
+Village         ALL
+RandLevel       2
+Requirements
+Wisdom          10

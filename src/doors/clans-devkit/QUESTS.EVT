@@ -1,0 +1,533 @@
+# -----------------------------------------------------------------------------
+# The Orcs -- Act I
+Event   Quest1
+Text "%C
+Text "|10The Orcs |02-- |14Act I
+Text
+Text "|02Several orcs have been wreaking havoc on the townspeople.  So far, no one
+Text "has been able to stop them from looting shops and killing the innocent.
+Text "Using the reports of many villagers, you were able to figure out the location
+Text "of the orc's hideout.
+pause
+Text
+Text "You find the entrance to the mine where the orcs are hiding out and
+Text "follow it.
+pause
+Text
+Text "|02You eventually find the doors to the orc's hideout.  Without haste,
+Text "you kick down the doors to reveal several orcs awaiting your wrath...
+pause
+AddEnemy EVENT.MON 13
+AddEnemy EVENT.MON 13
+AddEnemy EVENT.MON 13
+AddEnemy EVENT.MON 13
+AddEnemy EVENT.MON 14
+AddEnemy EVENT.MON 15
+{R30}AddEnemy EVENT.MON 13
+{R20}AddEnemy EVENT.MON 14
+{R20}AddEnemy EVENT.MON 14
+{R10}AddEnemy EVENT.MON 15
+{R10}AddEnemy EVENT.MON 15
+Fight NextLine STOP STOP
+Text
+Text "|02After destroying the orcs, you free many prisoners they had held captive.
+Text "Among them, you find one with a peculiar costume . . .
+pause
+Chat _Jester
+Text
+Text "|02You escort the jester to town and soon he is among safe hands.  The
+Text "townspeople cheer you on and many are impressed.  |03(50 followers join the
+Text "clan!  You gain 50 points also!)
+GiveFollowers 50
+GivePoints    50
+DoneQuest
+End
+
+# -----------------------------------------------------------------------------
+# The Quest for Justice
+Event   Quest2
+Text "%C
+Text "|10The Quest for Justice |02-- |14Act I
+Text
+Text "|02Using the directions given to you by the peasant, you find the home of the
+Text "evil beast deep in the forest.  You see smoke rise from the chimney.  The
+Text "beast must be here right now.
+pause
+Text
+Text "You enter the house unnoticed and eventually make your way into the den
+Text "where you find the beast sitting down and reading a book.  He doesn't look
+Text "up from his book.  You can see that he is human with a few freakish features
+Text "such as a totally hairy face.  What do you wish to do?
+Text
+Text " (|05A|02)ttack the Freak now before it's too late!
+Text " (|05T|02)alk to the freak
+Text
+Prompt "[|12AT|02]: |13
+Option A Quest2.Attack
+Option T NextLine
+Chat _Freak
+Text
+Text "|02You realize you must search out and defeat the rich murderer in town.
+Text "|03(You gain 100 points for the quest!)
+GivePoints 100
+DoneQuest
+End
+
+        Result Quest2.Attack
+        Text
+        Text "|02You ready your weapons as the beast he looks up from his book.
+        Text
+        Text "|10I am quite apt at protecting myself|02, he says as he readies his large
+        Text "axe.
+        pause
+        AddEnemy EVENT.MON 23
+        Fight NextLine Quest2.Defeat STOP
+        Text
+        Text "|10I was invincible!! |02the beast says.  |10Please listen to me.  I am not the
+        Text "murderer you are looking for.  <cough>  I was made the scapegoat.  There is a
+        Text "very rich man in the village who wanted to get rid of some people and he did
+        Text "so by <cough> framing me with the crimes.  I am simple man who was forced to
+        Text "live as a recluse because of my features. <cough>  Please exact my revenge and
+        Text "defeat the rich murderer! |02he says as he dies at your feet.
+        TellQuest Quest3
+        # make it so he is dead
+        SetFlag P1
+        Text
+        Text "|03(You gain 50 points for the quest!)
+        GivePoints 50
+        DoneQuest
+        End
+
+        Result Quest2.Defeat
+        Text
+        Text "|10Perhaps that'll teach you a lesson in manners!|02 says the beast after
+        Text "finishing off the clan.
+        End
+
+# -----------------------------------------------------------------------------
+Event Quest3
+Text "%C
+Text "|10The Quest for Justice |02-- |14Act II
+Text
+Text "|02You seek out the home of the rich businessman who is the sole cause of the
+Text "recent town murders.  You stand before the large mansion that is his home.
+Text "Before you are the gates that lead inside.  You are shocked to see the gates
+Text "are unlocked.  What do you do?
+Text
+Text " (|05E|02)nter through the open gates
+Text " (|05S|02)neak in another way
+Text
+Prompt "[|12ES|02]: |13
+Option E Quest3.E
+Option S Quest3.S
+End
+
+        Result Quest3.E
+        Text
+        Text "|02You enter through the gates and see no one initially.
+        pause
+        Text
+        Text "You turn and see 6 hellhounds pursuing you!  You turn and fight.
+        pause
+        AddEnemy EVENT.MON 21
+        AddEnemy EVENT.MON 21
+        AddEnemy EVENT.MON 21
+        AddEnemy EVENT.MON 21
+        AddEnemy EVENT.MON 22
+        AddEnemy EVENT.MON 22
+        Fight NextLine STOP STOP
+        Text
+        Text "|02The clan moves quickly towards the house after defeating the hounds.
+        pause
+        Jump Quest3.Fountain
+        End
+
+        Result Quest3.S
+        Text
+        Text "|02You find a low part on the fence and the clan quickly hops over it in
+        Text "sequence.  Once over you look around and see a gardener busy working on
+        Text "some flowers.  He looks up with eyes raging red.  He is not human!  He lifts
+        Text "his hoe and charges towards you!
+        pause
+        AddEnemy EVENT.MON 24
+        Fight NextLine STOP STOP
+        Text
+        Text "|02You walk away from the rotting corpse of the gardener and make your way
+        Text "towards the mansion.
+        pause
+        Jump Quest3.Fountain
+        End
+
+        Result Quest3.Fountain
+        Text
+        Text "|02Outside the doors into the house is a beautiful fountain with a statue of a
+        Text "mermaid in the middle.  The water looks refreshing but you are unsure of its
+        Prompt "safety.  Do you wish to drink from the fountain? [|12Y/N|02]: |13
+        Option Y Quest3.Drink
+        Option N NextLine
+        Jump Quest3.Hall
+        End
+
+        Result Quest3.Drink
+        Text
+        Text "|02Each clansman drinks from the fountain and is refreshed!  All lost HP is
+        Text "regained.  The water has some magical healing strengths!
+        Heal
+        pause
+        Jump Quest3.Hall
+        End
+
+        Result Quest3.Hall
+        Text "%C
+        Text "|02Inside the mansion is marvelous.  Large paintings line the walls while a
+        Text "marble floor lies below.  You are still in awe when you hear the sound of
+        Text "footsteps.  You turn to see 3 guards coming your way.
+        pause
+        AddEnemy EVENT.MON 25
+        AddEnemy EVENT.MON 26
+        AddEnemy EVENT.MON 25
+        Fight NextLine STOP STOP
+        Text
+        Text "|02After defeating the guards you notice that a large man had been standing
+        Text "watching you all along.
+        Text "
+        Text "|10I don't know how you got passed the hounds and the guards but you will not
+        Text "get passed me.  |02You watch as the businessman grabs a sword spread out against
+        Text "the wall and swings it around.
+        pause
+        AddEnemy EVENT.MON 27
+        Fight NextLine STOP STOP
+        Text
+        Text "|02You defeat the businessman and see some scattered sheets on a desk up ahead.
+        Text "After reading through the sheets, you realize these are sufficient evidence
+        Text "to clear the freak's name.
+        pause
+        Text
+        {P1}Text "Unfortunately, you realize you had killed the beast.  His name will
+        {P1}Text "be cleared either way you tell yourself.  He would have wanted it this
+        {P1}Text "way . . .  |03(You gain 50 points.)
+        {P1}GivePoints 50
+        {!P1}Text "You rush out to the freak's house and tell him the good news.  Soon the word
+        {!P1}Text "gets around that he is not the murderer they were looking for!
+        {!P1}Text "|10For your kindness, the freak gives you 500 gold pieces!
+        {!P1}GiveGold 500
+        {!P1}Text "|03(For clearing the freak's name, you receive 100 points.)
+        {!P1}GivePoints 100
+        DoneQuest
+        End
+
+# -----------------------------------------------------------------------------
+Event   Quest4
+Text "%C
+Text "|10Caravan
+Text
+Text "|02You meet the merchant along the outskirts of town as planned.  He provides
+Text "you with horses and your journey begins...
+pause
+Text
+Text "You spend an hour traveling and not much occurs.  The sun is up high and the
+Text "wind is soothing.  Suddenly you hear a noise to the left of the caravans.
+Text "What do you wish to do?
+Text
+Text " (|05I|02)nvestigate
+Text " I(|05g|02)nore it
+Text
+Prompt "[|12IG|02]: |13
+Option I NextLine
+Option G Quest4.G
+Text
+Text "|02You motion for the rest of the clan to follow your lead.  You tell the
+Text "merchant to wait behind.
+pause
+Text
+Text "After about moving |1050 |02feet, five thieves jump out of the bushes!
+pause
+AddEnemy EVENT.MON 28
+AddEnemy EVENT.MON 28
+AddEnemy EVENT.MON 28
+AddEnemy EVENT.MON 28
+AddEnemy EVENT.MON 28
+Fight NextLine STOP NoRun
+Text
+Text "|02After defeating the thieves, you turn to return to the merchant.  You find
+Text "him being harassed by more thieves!  You gallop towards the merchant but some
+Text "of the thieves run off with goods in hand!  Three thieves remain waiting for
+Text "you to near.
+pause
+AddEnemy EVENT.MON 29
+AddEnemy EVENT.MON 29
+AddEnemy EVENT.MON 29
+Fight NextLine STOP NoRun
+Text
+Text "|02The merchant, although not hurt, looks at you with great anger.
+Text "|10I lost about 500 gold worth of goods!  That's coming out of your pay!
+SetFlag T1
+pause
+Jump Quest4.2
+End
+
+        Result Quest4.G
+        Text
+        Text "|02You ignore the noise and continue moving forward.  You hear more noises but
+        Text "this time you can see their source.  10 thieves approach your caravan with
+        Text "weapons in hand!
+        pause
+        AddEnemy EVENT.MON 28
+        AddEnemy EVENT.MON 28
+        AddEnemy EVENT.MON 28
+        AddEnemy EVENT.MON 28
+        AddEnemy EVENT.MON 28
+        AddEnemy EVENT.MON 28
+        AddEnemy EVENT.MON 28
+        AddEnemy EVENT.MON 29
+        AddEnemy EVENT.MON 29
+        AddEnemy EVENT.MON 29
+        Fight NextLine STOP NoRun
+        Text "|02The merchant is not hurt and smiles.  He is obviously pleased with your
+        Text "efforts.
+        pause
+        Jump Quest4.2
+        End
+
+        Result Quest4.2
+        Heal
+        Text
+        Text "|02You wander for another hour and come upon another group.  This time it is
+        Text "one thief, but he is very large!
+        pause
+        AddEnemy EVENT.MON 30
+        Fight NextLine STOP NoRun
+        Text
+        Text "|02The large thief collapses with a great THUD!  You continue your caravan until
+        Text "you are on the outskirts of the destination town.
+        pause
+        Heal
+        Text
+        Text "|02The clan breathes a collective sigh of relief for finally reaching their
+        Text "destination.  After hearing more noises from behind, you realize you are not
+        Text "out of the bushes yet.  You turn to see 2 wyverns approaching!
+        pause
+        AddEnemy EVENT.MON 31
+        AddEnemy EVENT.MON 31
+        Fight NextLine STOP NoRun
+        Text
+        Text "|02You deliver a final blow to the remaining wyvern and hurry into town.  The
+        {T1}Text "merchant is somewhat pleased by the trip's success.  |10Although you got me to
+        {T1}Text "town, I am deducting 500 gold from your pay of 2000GP since you let those
+        {T1}Text "thieves get some of my items!  |03(He gives you 1500GP.)
+        {T1}GiveGold 1500
+        {T1}Text
+        {T1}Text "|02After receiving your pay, you return home.  |03(You receive 50 points.)
+        {T1}GivePoints 50
+        {!T1}Text "merchant is very pleased by the trip's success.  |10Since you got me to
+        {!T1}Text "town safely without sacrficing any of my wares, I will give you the 2000GP
+        {!T1}Text "I promised.  |03(He gives you 2000GP.)
+        {!T1}Text
+        {!T1}GiveGold 2000
+        {!T1}Text "|02After receiving your pay, you return home.  |03(You receive 75 points.)
+        {!T1}GivePoints 75
+        DoneQuest
+        End
+
+# -----------------------------------------------------------------------------
+# The Minstrel
+Event Quest5
+Text "%C
+Text "|10The Minstrel
+Text
+Text "|02You enter the mines and follow a path your instincts tell you is the way to
+Text "the minstrel.
+pause
+Text
+Text "|06After half an hour of walking, your clan comes upon a fork in the mines.  You
+Text "ponder on which route to take.  The left looks less used than the right route.
+Text
+Text " (|05L|06)eft Route
+Text " (|05R|06)ight Route
+Text
+Prompt "|06[|12LR|06]: |13
+Option L Quest5/L
+Option R Quest5/R
+End
+
+        Result Quest5/L
+        Text
+        Text "|06You follow the left route until you come upon several hellhounds.  They seem
+        Text "to be sniffing some dead bodies until they notice you.  They slowly come
+        Text "towards you . . .
+        pause
+        AddEnemy EVENT.MON 32
+        AddEnemy EVENT.MON 32
+        AddEnemy EVENT.MON 32
+        Fight NextLine STOP NoRun
+        Text
+        Text "|06You finish off the hellish beasts and move on.  You continue walking
+        Text "and reach another fork in the mines.  You see the left route lights up a
+        Text "little.  The right route seems to grow darker as you peer down its path.
+        Text "Which route do you take?
+        Text
+        Text " (|05L|06)eft Route
+        Text " (|05R|06)ight Route
+        Text
+        Prompt "|06[|12LR|06]: |13
+        Option L Quest5/L/L
+        Option R Quest5/L/R
+        End
+
+        Result Quest5/L/L
+        Text
+        Text "|14You follow the path and find you have exited the mines!  You realize it
+        Text "would be too late to search for the minstrel again today and you head back
+        Text "to town.
+        End
+
+        Result Quest5/L/R
+        Text
+        Text "|07You follow the right route and enter a room with metallic walls.  However,
+        Text "the walls are covered with a strange green goo.  You watch as the goo slowly
+        Text "joins together and green slyme forms!
+        pause
+        AddEnemy EVENT.MON 33
+        AddEnemy EVENT.MON 33
+        Fight NextLine STOP NoRUN
+        Text
+        Text "|06You curse the green goo as you wipe it off your hands.  Soon, you are on
+        Text "your way again.  You continue walking until you see a light up ahead!
+        pause
+        Text
+        Text "|14The light finally leads to the outside world.  You rub your eyes and the
+        Text "world comes into focus once more.  Seeing that it would be too late to
+        Text "search for the minstrel again, you return to town.
+        End
+
+        Result Quest5/R
+        Text
+        Text "|06The right route is well lit as torches line the walls.  You hear noise up
+        Text "ahead.  The clan readies their weapons.  You are not surprised when a group
+        Text "of six skeletal fiends charges towards you.
+        pause
+        AddEnemy EVENT.MON 34
+        AddEnemy EVENT.MON 34
+        AddEnemy EVENT.MON 34
+        AddEnemy EVENT.MON 34
+        AddEnemy EVENT.MON 34
+        AddEnemy EVENT.MON 34
+        Fight NextLine STOP NoRUN
+        Text
+        Text "|06You smile as you finish off the final skeletal fiend.  You look around and
+        Text "find |101000GP |06on the ground!
+        GiveGold 1000
+        pause
+        Text
+        Text "|06You look down and kick one of the skeletal fiend's skulls into the air
+        Text "and smile to yourself.
+        pause
+        Text
+        Text "|06You walk further down the corridors and come upon two more paths.  The left
+        Text "route seems to be lit up by a red light but you cannot see what the source
+        Text "of the light is.  You look to the right and see the corridor is dark.
+        Text "Which route do you take?
+        Text
+        Text " (|05L|06)eft Route
+        Text " (|05R|06)ight Route
+        Text
+        Prompt "[|12LR|06]: |13
+        Option L Quest5/R/L
+        Option R Quest5/R/R
+        End
+
+        Result Quest5/R/L
+        Text
+        Text "|04You follow the path and then realize what the source of the light is.  You are
+        Text "awestruck to see a large golden dragon resting with several red candles
+        Text "surrounding it.  It was sleeping as you entered but even your breathing has
+        Text "awoken it!  It raises its large head and stares at you with anger.
+        pause
+        # fight here
+        AddEnemy EVENT.MON 35
+        Fight NextLine STOP NoRUN
+        Text
+        Text "|06After defeating the dragon, you look around and find 600 gold pieces!
+        Text "You follow the path as it leads behinds the dragons den and see that it leads
+        Text "back to the outside world.  By now, the clan is too tired to journey back into
+        Text "the mines to search for the minstrel and you decide to call it a day and
+        Text "return to town . . .
+        GiveGold 600
+        End
+
+        Result Quest5/R/R
+        Text
+        Text "|06You follow the darker path and your ears suddenly detect something.  A voice!
+        Text "You rush along the dark path and find an iron door on the side.  The door is
+        Text "locked, but you find it breaks easily with a heavy kick.  You open the door
+        Text "and find a thin man with a mandolin in hand.  He is singing a beautiful song
+        Text "as you enter and it soothes your nerves.  The clan feels magically healed by
+        Text "the wonderful sounds!  You explain your story to the minstrel and he agrees to
+        Text "be rescued.  (Thank goodness!)  You lead him out and follow the trail further.
+        pause
+        Text
+        Text "|02Soon you see the light ahead and realize you are almost out of the mines.
+        pause
+        Text
+        Text "|02Suddenly, the bright light ahead is covered by the silhouettes of several
+        Text "ghouls.  Their howl is definitely not music to your ears.  You ready your
+        Text "weapons and tell the minstrel to stand aside for now.
+        pause
+        Heal
+        AddEnemy EVENT.MON 36
+        AddEnemy EVENT.MON 36
+        AddEnemy EVENT.MON 36
+        AddEnemy EVENT.MON 36
+        Fight NextLine STOP NoRUN
+        Text
+        Text "|06You deliver a final blow to the ghoul and watch as falls to the ground, limbs
+        Text "flailing.  You rush back to the minstrel and lead him out into the daylight.
+        Text "After returning to town with him, he sings another wondrous song which
+        Text "inspires the clan further.  |03(You gain 1 monster fight!)
+        GiveFight 1
+        DoneQuest
+        End
+
+
+# -----------------------------------------------------------------------------
+Event Quest11
+Text "%C
+Text "|10The Orcs |02-- |14Act II
+Text
+Text "|02Using the jester's instructions, you find the hideout of the second group
+Text "of orcs.
+pause
+Text
+Text "You arrive outside the orc's hideout and see two guards.  They spot the clan
+Text "immediately and come brandishing their swords.
+pause
+AddEnemy EVENT.MON 18
+AddEnemy EVENT.MON 18
+Fight NextLine STOP STOP
+Text
+Text "|02After doing away with the orcs, you enter the main hideout and attack the
+Text "rest . . .
+pause
+AddEnemy EVENT.MON 16
+AddEnemy EVENT.MON 16
+AddEnemy EVENT.MON 16
+AddEnemy EVENT.MON 16
+AddEnemy EVENT.MON 16
+AddEnemy EVENT.MON 16
+AddEnemy EVENT.MON 17
+AddEnemy EVENT.MON 17
+{R30}AddEnemy EVENT.MON 16
+{R20}AddEnemy EVENT.MON 16
+{R20}AddEnemy EVENT.MON 17
+{R10}AddEnemy EVENT.MON 17
+Fight NextLine STOP STOP
+Text
+Text "|02After destroying the orcs, you find no prisoners hidden away, but you do find
+Text "a few sacks of gold totalling 800 gold pieces!
+GiveGold 800
+pause
+Text
+Text "You feel relieved after removing the orcish plague from the townspeople.
+DoneQuest
+End
+

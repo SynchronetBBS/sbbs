@@ -1,0 +1,7 @@
+
+Makepak is used to generate an archive file containing all files listed
+in the PAKfile listing.
+
+Format:  MAKEPAK [.PAK to produce] [PAKfile listing]
+
+A sample pakfile list is pak.lst.  It's just a text file.

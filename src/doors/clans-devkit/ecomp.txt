@@ -1,0 +1,16 @@
+What's this now?
+----------------
+ecomp is used to generate event files.  See clandev.txt for info on
+event files and creating them.
+
+How to use it
+-------------
+For more information on how to run ecomp, see clandev.txt.  But if
+you're too lazy to load up the file, here's how to run ecomp quickly:
+
+       ecomp source-event.txt destination-event.e
+
+It's standard procedure to name "compiled" events as .e files, but
+it's just a standard.  You can name them whatever.  Additionally,
+source event files /were/ called .evt for some reason, but I recommend
+just naming them .txt for simplicity.

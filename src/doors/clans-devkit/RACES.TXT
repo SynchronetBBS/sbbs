@@ -1,0 +1,107 @@
+# Stats, an explanation (for myself):
+#
+# for stats, 5 is average, 8 is excellent, 3 is poor, 10 is amazing
+#
+# armorstr, 1 is average, 0 is ok, 2 is excellent
+
+
+Name            Human
+Agility         5
+Dexterity       5
+Strength        5
+Wisdom          4
+ArmorStr        0
+Charisma        4
+MaxHP           12
+MaxMP           4
+Gold            300
+
+Name            Dwarf
+Agility         4
+Dexterity       5
+Strength        8
+Wisdom          3
+ArmorStr        2
+Charisma        3
+MaxHP           17
+MaxMP           3
+Gold            75
+
+Name            Elf
+Agility         7
+Dexterity       8
+Strength        4
+Wisdom          7
+ArmorStr        0
+Charisma        5
+MaxHP           16
+MaxMP           6
+Gold            50
+
+Name            Half-Elf
+Agility         6
+Dexterity       7
+Strength        5
+Wisdom          6
+ArmorStr        0
+Charisma        4
+MaxHP           14
+MaxMP           4
+Gold            80
+
+Name            Halfling
+Agility         8
+Dexterity       7
+Strength        3
+Wisdom          4
+ArmorStr        0
+Charisma        3
+MaxHP           15
+MaxMP           8
+Gold            80
+
+Name            Orc
+Agility         4
+Dexterity       3
+Strength        8
+Wisdom          2
+ArmorStr        2
+Charisma        0
+MaxHP           14
+MaxMP           3
+Gold            500
+
+Name            Muya
+Agility         6
+Dexterity       5
+Strength        4
+Wisdom          7
+ArmorStr        0
+Charisma        6
+MaxHP           8
+MaxMP           7
+Gold            500
+
+Name            Minotaur
+Agility         2
+Dexterity       2
+Strength        9
+Wisdom          0
+ArmorStr        3
+Charisma        0
+MaxHP           15
+MaxMP           0
+Gold            0
+
+Name            Demon
+Agility         5
+Dexterity       8
+Strength        5
+Wisdom          4
+ArmorStr        1
+Charisma        0
+MaxHP           12
+MaxMP           5
+Gold            0
+Spell           19
+Spell           18

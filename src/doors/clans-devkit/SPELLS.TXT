@@ -1,0 +1,275 @@
+# spells file for The Clans
+
+# No "target" specified means target assumed, otherwise use "Notarget" if no
+# target for spell is required -- quite rare
+
+# 1
+Name		Partial Heal
+Flag		Heal
+Friendly
+Value		10
+Level		0
+SP              8
+HealStr         |02¯¯¯ |10%SS casts |15Partial Heal |10on |15%SD.%L  |10%SD |02regains |14%SV HP.
+
+# 2
+Name		Heal
+Flag		Heal
+Friendly
+Value		14
+Level		0
+SP		13
+HealStr         |02¯¯¯ |10%SS cast |15Heal on |15%SD.%L  |10%SD |02regains |14%SV HP.
+
+# 3
+Name		Slow
+Flag		Modify
+Agility 	-2
+Level           3
+ModifyStr	|02¯¯¯ |10%SS casts slow on %SD.  Agility is reduced!
+WearoffStr	|02¯¯¯ |10The slow spell has worn off %SD!
+
+# 4
+Name		Strength
+Friendly
+SP              6
+Energy		30
+Flag		Modify
+Strength	+5
+Level           5
+ModifyStr	|02¯¯¯ |10%SS casts Strength on |15%SD!
+WearoffStr	|02¯¯¯ |10%SD's super strength wears off!%L
+
+# 5
+Name		Ropes
+SP		9
+Energy          35
+Flag		Incapacitate
+Level           3
+ModifyStr	|02¯¯¯ |10%SS ties up %SD in ropes!
+WearoffStr	|02¯¯¯ |10%SD breaks free from the ropes!%L
+StatusStr	|02¯¯¯ |10%SD is still tied up!%L
+StrengthCanReduce
+
+# 6
+Name		Raise Undead
+SP		13
+Flag		RaiseUndead
+Value		1
+Level           5
+OtherStr	|02¯¯¯ |10%SS casts Raise Undead!
+UndeadName	Undead
+NoTarget
+
+# 7
+Name		Banish Undead
+SP		9
+Flag		BanishUndead
+Level           5
+OtherStr	|02¯¯¯ |10%SS casts Banish Undead!
+NoTarget
+
+# 8
+Name		Mystic Fireball
+SP		4
+Flag		Damage
+Value		9
+Level           6
+DamageStr	|02¯¯¯ |10%SS shoots a fireball at %SD.%L    %SD loses %SV HP.
+
+# 9
+Name		Dragon's Uppercut
+SP		6
+Flag		Damage
+Value		12
+Level           8
+DamageStr	|02¯¯¯ |10%SS uppercuts %SD.%L	  %SD loses %SV HP.
+
+# 10
+Name		Summon Dead Warrior
+SP		7
+Flag		RaiseUndead
+NoTarget
+UndeadName	Mystic Warrior
+Value		1
+Level		5
+OtherStr	|02¯¯¯ |10%SS summons an undead Mystic Warrior!
+Agility 	8
+Dexterity	6
+Strength	5
+
+# 11
+Name		Heavy Blow
+SP		6
+Flag		Damage
+Value           10
+Level           9
+DamageStr	|02¯¯¯ |10%SS delivers a heavy blow to %SD.%L	 %SD loses %SV HP.
+
+# 12
+Name		Death and Decay
+SP              7
+Flag		Damage
+Value           3
+Level           9
+DamageStr	|02¯¯¯ |10%SS casts death and decay on %SD!%L	 %SD loses %SV HP!
+MultiAffect
+NoTarget
+
+# 13
+Name		Mystic Bond
+SP		12
+Energy          25
+Flag		Incapacitate
+Level           4
+ModifyStr	|02¯¯¯ |10%SS casts Mystic Bond on %SD!%L    %SD is bound!
+WearoffStr	|02¯¯¯ |10Mystic Bond wears off %SD.%L
+StatusStr	|02¯¯¯ |10%SD is still bounded!
+
+# 14
+Name		Holy Heal
+Flag		Heal
+Friendly
+Value           4
+Level		0
+SP              7
+HealStr 	|02¯¯¯ |10%SS casts Holy Heal on %SD.  %SD regains %SV HP.
+
+# 15
+Name		Lightning Bolt
+SP		15
+Flag		Damage
+Value		25
+Level           8
+DamageStr	|02¯¯¯ |10%SS casts Lightning Bolt on %SD.%L	%SD loses %SV HP.
+
+# 16
+Name		Backstab
+SP		9
+Flag		Damage
+Value		17
+Level           9
+DamageStr	|02¯¯¯ |10%SS stabs %SD in the back!%L	  %SD loses %SV HP.
+
+# 17
+Name		FireBreath
+SP		9
+Flag		Damage
+Value           10
+Level           15
+DamageStr	|02¯¯¯ |10%SS breathes fire.%L	  %SD loses %SV HP.
+MultiAffect
+NoTarget
+
+# 18
+Name		Bloodlust
+Friendly
+SP		7
+Energy		30
+Flag		Modify
+Strength	+10
+Level		6
+ModifyStr	|02¯¯¯ |10%SS casts bloodlust on |15%SD!
+WearoffStr	|02¯¯¯ |10%SD's bloodlust wears off!%L
+
+# 19
+Name		Fear
+SP		9
+Energy		30
+Flag		Modify
+Strength	-3
+Agility 	-2
+Level		6
+ModifyStr	|02¯¯¯ |10%SS instills fear on |15%SD!
+WearoffStr      |02¯¯¯ |10%SD is no longer afraid!
+
+# 20
+Name		Light Blow
+SP		4
+Flag		Damage
+Value		13
+Level           3
+DamageStr	|02¯¯¯ |10%SS delivers a light blow to %SD.%L	 %SD loses %SV HP.
+
+# 21
+Name		Hurricane Kick
+SP		4
+Flag		Damage
+Value		10
+Level           5
+DamageStr	|02¯¯¯ |10%SS hurricane kicks %SD.%L	%SD loses %SV HP.
+
+# 22
+Name		Divine Warrior
+SP		8
+Flag		RaiseUndead
+NoTarget
+UndeadName	Divine Warrior
+Value		1
+Level		5
+OtherStr	|02¯¯¯ |10%SS summons a Divine Warrior!
+Agility 	8
+Dexterity	6
+Strength	14
+
+# 23
+Name		Blind Eye
+SP		6
+Energy		20
+Flag		Modify
+Dexterity	-3
+Agility 	-6
+Level           5
+ModifyStr	|02¯¯¯ |10%SS uses Blind Eye on |15%SD!
+WearoffStr      |02¯¯¯ |10%SD is no longer blinded.
+StatusStr	|02¯¯¯ |10%SD is still blinded!%L
+
+# 24
+Name            FireBreath
+SP		9
+Flag		Damage
+Value           6
+Level           15
+DamageStr	|02¯¯¯ |10%SS breathes fire.%L	  %SD loses %SV HP.
+MultiAffect
+NoTarget
+
+# 25
+Name            Rain of Terror
+SP              14
+Flag		Damage
+Value           4
+Level           12
+DamageStr       |02¯¯¯ |10%SS's Rain of Terror causes %SV damage on %SD!
+MultiAffect
+NoTarget
+
+# 26
+Name            Summon Khaos
+Flag		Damage
+Value           10
+Level           12
+DamageStr       |02¯¯¯ |10Khaos rains down fire on %SD.  %SV damage is done.
+MultiAffect
+NoTarget
+
+
+# 27
+Name            Summon Dragon
+Flag		RaiseUndead
+NoTarget
+UndeadName      Gold Dragon
+Value		1
+Level           9
+OtherStr        |02¯¯¯ |10%SS summons a Gold Dragon!
+Agility         12
+Dexterity       14
+Strength        16
+
+# 28
+Name            Ice Blast
+Flag		Damage
+Value           20
+Level           9
+DamageStr       |02¯¯¯ |10%SS shoots an Ice Blast at %SD.%L    %SD loses %SV HP.
+

@@ -1,0 +1,453 @@
+# NPC info in the game -- see NPC-PC.TXT for .PC file info
+# FIXME: search out 100% odds and replace 'em
+
+# 0
+Index           _Knight1
+Name            The Knight
+# he is the 0th npc in the NPC-PC.TXT file
+QuoteFile       NPCQUOTE.Q
+NPCDAT          0
+MonFile         NPC.PC
+Loyalty         9
+# here go the quotes, they all appear in npcquote.q
+KnownTopic      Knight.Past Your Past
+Topic           Knight.3 The Sword
+Topic           Knight.About.King About My King
+KnownTopic      Knight.2 Adventuring
+Topic           Knight.4 The King
+Topic           Knight.JoinClan Join Our Clan
+
+# 1
+Index           _Fisherman
+Name            Fisherman
+QuoteFile       npcquote.q
+MaxTopics       5
+NPCDAT          1
+MonFile         NPC.PC
+KnownTopic      Fisherman.JoinClan Join Our Clan
+KnownTopic      Fisherman.Catch? Catch Anything?
+KnownTopic      Fisherman.Kingdom Old Kingdom
+Topic           Fisherman.EvilMan The Dark One
+KnownTopic      Fisherman.Music Music
+Topic           Fisherman.Money Gold
+
+# 2
+Index           _VIdiot
+MonFile         NPC.PC
+Name            Village Idiot
+KnownTopic      Vidiot.1 Hello.
+KnownTopic      Vidiot.2 How are you today?
+KnownTopic      Vidiot.3 The Knight
+Topic           Vidiot.4 More on The Knight?!
+Topic           Vidiot.5 A secret?
+Topic           Vidiot.6 What the?!
+OddsOfSeeing    20
+Wander          Street
+
+# 3
+Index           _Ussher
+MonFile         NPC.PC
+Name            Prince Ussher
+OddsOfSeeing    10
+MaxTopics       4
+KnownTopic      Ussher.1 Hello.
+KnownTopic      Ussher.2 Hint
+KnownTopic      Ussher.3 Secrets
+KnownTopic      Ussher.4 Cheats
+KnownTopic      Ussher.5 The Clans
+KnownTopic      Ussher.6 Other games
+KnownTopic      Ussher.7 Money
+KnownTopic      Ussher.8 What's your sign?
+Wander          Street
+HereNews        |06 ¯¯¯ |14Prince Ussher |06is spotted on the street!
+
+# 4
+Index           _Lady
+MonFile         NPC.PC
+Name            Lovely Lady
+OddsOfSeeing    20
+Wander          Street
+KnownTopic      Lady.1 Hello
+KnownTopic      Lady.2 Occupation
+Topic           Lady.3 Seamstress?
+Topic           Lady.4 Friends
+HereNews        |06 ¯¯¯ |12A lovely lady is spotted on the street.
+
+# 5
+# some beggars
+Index           _Beggar
+MonFile         NPC.PC
+Name            Beggar
+MaxTopics       4
+OddsOfSeeing    30
+Wander          Street
+IntroTopic      Beggar1.0
+KnownTopic      Beggar1.1 The Dark One
+KnownTopic      Beggar1.2 The Flag
+Topic           Beggar1.3 The Black Sun
+KnownTopic      Beggar1.4 Your past
+KnownTopic      Beggar1.5 How to get rich...
+
+# 6
+# some guys to join clans
+Index           _Villager
+MonFile         NPC.PC
+Name            Villager
+OddsOfSeeing    30
+NPCDat          2
+Loyalty         10
+Wander          Town Hall
+IntroTopic      Villager1.0
+KnownTopic      Villager1.1 Join Our Clan
+KnownTopic      Villager1.2 Loyalty
+KnownTopic      Villager1.3 Occupation
+KnownTopic      Villager1.4 Speaking
+
+# 7
+Index           _Warrior
+MonFile         NPC.PC
+Name            Warrior
+NPCDAT          3
+#OddsOfSeeing    100
+OddsOfSeeing    20
+Wander          Training Hall
+KnownTopic      Warrior.1 Adventure
+Topic           Warrior.2 Join Our Clan
+KnownTopic      Warrior.3 Loyalty
+KnownTopic      Warrior.4 The Wise One
+Loyalty         9
+
+# 8
+Index           _YS
+MonFile         NPC.PC
+Name            Young Sorcerer
+NPCDAT          4
+OddsOfSeeing    10
+Loyalty         6
+Wander          Mine
+IntroTopic      Sorcerer.0
+KnownTopic      Sorcerer.1 Join Our Clan
+KnownTopic      Sorcerer.2 Loyalty
+KnownTopic      Sorcerer.3 The Mines
+
+# 9
+Index           _Knight2
+MonFile         NPC.PC
+Name            Knight
+NPCDAT
+OddsOfSeeing    20
+Wander          Church
+IntroTopic      Knight2.0
+KnownTopic      Knight2.1 Join Our Clan
+KnownTopic      Knight2.2 The Mines
+KnownTopic      Knight2.3 Quests
+
+# 10
+Index           _Acolyte
+MonFile         NPC.PC
+Name            Acolyte
+MaxTopics       4
+NPCDAT          5
+OddsOfSeeing    20
+Loyalty         10
+Wander          Church
+KnownTopic      Acolyte.1 Join Our Clan
+KnownTopic      Acolyte.2 Loyalty
+KnownTopic      Acolyte.3 Prayer
+KnownTopic      Acolyte.4 Combat
+KnownTopic      Acolyte.5 Evil
+KnownTopic      Acolyte.6 The Church
+KnownTopic      Acolyte.7 Registration
+
+# 11
+Index           _Bum
+MonFile         NPC.PC
+Name            Bum
+Loyalty         0
+OddsOfSeeing    20
+NPCDAT          6
+Wander          Street
+IntroTopic      Bum1.0
+KnownTopic      Bum1.1 My life
+KnownTopic      Bum1.2 Occupation
+KnownTopic      Bum1.3 Ruling
+KnownTopic      Bum1.4 Loyalty
+KnownTopic      Bum1.5 Join Our Clan
+
+# 12
+Index           _Blacksmith
+MonFile         NPC.PC
+Name            Blacksmith
+OddsOfSeeing    30
+MaxTopics       3
+Wander          Market
+KnownTopic      Smith.1 A Mace
+KnownTopic      Smith.2 KOR
+KnownTopic      Smith.3 Tip 1
+KnownTopic      Smith.4 Tip 2
+
+# 13
+Index           _Peasant1
+MonFile         NPC.PC
+Name            Peasant
+MaxTopics       3
+OddsOfSeeing    20
+Wander          Church
+IntroTopic      Peasant1.0
+KnownTopic      Peasant1.1 Favourite Quote
+KnownTopic      Peasant1.2 Join Our Clan
+KnownTopic      Peasant1.3 What do you do?
+KnownTopic      Peasant1.4 Exaggerus
+KnownTopic      Peasant1.5 Gold
+KnownTopic      Peasant1.6 Bums
+KnownTopic      Peasant1.7 Murders
+
+# 14
+Index           _WiseOne
+MonFile         NPC.PC
+Name            The Wise One
+OddsOfSeeing    5
+MaxTopics       1
+Wander          Street
+IntroTopic      Wise.0
+KnownTopic      Wise.1 Strong Clan
+KnownTopic      Wise.2 Strong Army (1)
+KnownTopic      Wise.3 Strong Army (2)
+KnownTopic      Wise.4 Ruling (1)
+KnownTopic      Wise.5 Ruling (2)
+KnownTopic      Wise.6 Ruling (3)
+HereNews        |06 ¯¯¯ |12The Wise One is seen answering questions.
+
+# 15
+Index           _Prof
+MonFile         NPC.PC
+Name            The Professor
+# this is actually an NPC you meet in an event, but just remove the next
+# two lines later on after testing
+OddsOfSeeing    20
+MaxTopics       1
+Wander          Street
+IntroTopic      Prof.0
+KnownTopic      Prof.1 The Twins
+KnownTopic      Prof.2 The Profit
+KnownTopic      Prof.3 A Sequence
+
+# 16
+Index           _Jester
+MonFile         NPC.PC
+Name            Jester
+IntroTopic      Jester.0
+KnownTopic      Jester.1 The Orc's Plan
+Topic           Jester.2 Other Orcs
+KnownTopic      Jester.3 Joke
+KnownTopic      Jester.4 Old Kingdom
+
+# 17
+Index           _Peasant2
+MonFile         NPC.PC
+Name            Peasant
+OddsOfSeeing    10
+Wander          Market
+Loyalty         6
+NPCDAT          10
+MaxTopics       3
+KnownTopic      Peasant2.1 Adventures
+KnownTopic      Peasant2.2 Join Our Clan
+KnownTopic      Peasant2.3 KOR
+KnownTopic      Peasant2.4 Occupation
+KnownTopic      Peasant2.5 Murders
+KnownTopic      Peasant2.6 A Song
+
+# 18
+Index           _OldMan
+MonFile         NPC.PC
+Name            Old Man
+OddsOfSeeing    0
+KnownTopic      OldMan.0 Adventure
+KnownTopic      OldMan.1 Gold
+KnownTopic      OldMan.2 Lost Gold
+
+# 19
+Index           _Psychic
+MonFile         NPC.PC
+Name            The Psychic
+OddsofSeeing    10
+KnownTopic      Psychic.0 Spirits
+KnownTopic      Psychic.1 Occupation
+KnownTopic      Psychic.2 The Spirit World
+KnownTopic      Psychic.3 Lelaz
+Topic           Psychic.4 Diablo
+
+# 20
+Index           _CommonMan
+MonFile         NPC.PC
+Name            Common Man
+OddsofSeeing    20
+Wander          Street
+KnownTopic      Common.0 Occupation
+Topic           Common.1 Research
+Topic           Common.2 Five Great Evils
+
+# 21
+Index           _Drunk
+MonFile         NPC.PC
+Name            Drunk Man
+OddsofSeeing    20
+MaxTopics       4
+Wander          Street
+KnownTopic      Drunk.1 The Arts
+KnownTopic      Drunk.2 The Three Doors
+KnownTopic      Drunk.3 Tavern
+KnownTopic      Drunk.4 Gold
+HereNews        |06 ¯¯¯ |13The drunk man is wandering the streets today.
+
+# 22
+Index           _Guard
+MonFile         NPC.PC
+Name            Guard
+OddsOfSeeing    20
+Wander          Town Hall
+KnownTopic      Guard.0 Crime
+KnownTopic      Guard.1 Valiance
+KnownTopic      Guard.2 Honesty
+KnownTopic      Guard.3 Corruption
+KnownTopic      Guard.4 Pay
+
+# 23
+Index           _Poet
+MonFile         NPC.PC
+Name            Poet
+OddsOfSeeing    15
+MaxTopics       3
+Wander          Street
+KnownTopic      Poet.1 Poetry
+KnownTopic      Poet.2 Wealth
+KnownTopic      Poet.3 Government
+KnownTopic      Poet.4 Music
+KnownTopic      Poet.5 A Poem
+KnownTopic      Poet.6 Tip
+
+# 24
+Index           _Myau
+MonFile         NPC.PC
+Name            Myau
+OddsOfSeeing    10
+MaxTopics       3
+Wander          Market
+IntroTopic      Myau.0
+KnownTopic      Myau.1 The Vial
+KnownTopic      Myau.2 Join Our Clan
+KnownTopic      Myau.3 Muyans
+KnownTopic      Myau.4 Music
+KnownTopic      Myau.5 Healing
+
+# 25
+Index           _Paladin
+MonFile         NPC.PC
+Name            Paladin
+NPCDAT          7
+OddsOfSeeing    5
+MaxTopics       3
+Wander          Church
+Loyalty         10
+IntroTopic      Paladin.0
+KnownTopic      Paladin.1 Join Our Clan
+KnownTopic      Paladin.2 Loyalty
+KnownTopic      Paladin.3 Riches
+KnownTopic      Paladin.4 Heavenly Sword
+KnownTopic      Paladin.5 The Dark One
+HereNews        |03 ¯¯¯ |11A holy paladin was spotted in church.
+
+# 26
+Index           _Merchant
+MonFile         NPC.PC
+Name            Merchant
+OddsOfSeeing    25
+MaxTopics       3
+Wander          Market
+IntroTopic      Merchant.0
+KnownTopic      Merchant.1 Join Our Clan
+KnownTopic      Merchant.2 Goods
+KnownTopic      Merchant.3 Precious goods
+KnownTopic      Merchant.4 Traveling
+Topic           Merchant.4.B A Mission
+KnownTopic      Merchant.5 The Mines
+
+# 30
+Index           _LW
+Name            Lone Wolf
+KnownTopic      LW.1    Sommerlund
+KnownTopic      LW.2    Kai Warriors
+KnownTopic      LW.3    Scrolls
+KnownTopic      JoinClan Join Our Clan
+OddsOfSeeing    10
+Wander          Mine
+NPCDAT          14
+MonFile         NPC.PC
+
+# 31
+Index           _Dung
+Name            Dungeoner
+KnownTopic      JoinClan Join Our Clan
+KnownTopic      Dung.1   World's Fastest Man
+KnownTopic      Dung.2   Dungeons
+KnownTopic      Dung.3   Gold
+OddsOfSeeing    10
+Wander          Mine
+NPCDAT          12
+MonFile         NPC.PC
+
+# 32
+Index           _Bartender
+Name            Bartender
+KnownTopic      JoinClan Join Our Clan
+IntropTopic     Bartender.0
+KnownTopic      Bartender.1 The Tavern
+KnownTopic      Bartender.2 Good Ale
+OddsOfSeeing    20
+Wander          Street
+NPCDAT          11
+MonFile         NPC.PC
+
+# 33
+Index           _Freak
+Name            Freak
+IntroTopic      Freak.0
+KnownTopic      Freak.1 Murderer
+Topic           Freak.2 Town murders
+KnownTopic      Freak.3 The book
+KnownTopic      Freak.4 Your axe
+
+# 34
+Index           _Pirate
+MonFile         NPC.PC
+NPCDAT          13
+QuoteFile       npcquote.q
+Name            Pirate
+IntroTopic      Pirate.0
+KnownTopic      Pirate.1 What's with the eye patches?
+Topic           Pirate.2 Why don't you just wear sunglasses?
+KnownTopic      Pirate.3 Where can I find treasure?
+KnownTopic      Pirate.4 Do you have a wooden leg?
+KnownTopic      Pirate.5 Join our clan!
+Topic           Pirate.6 Come on, where can I REALLY find treasure?
+Topic           Pirate.7 Quit foolin' around, I want to be rich!!
+Topic           Pirate.8 Ok, this is the last time I'll ask, where is the treasure!?
+OddsOfSeeing    20
+Wander          Mine
+
+# 35
+Index           _Oldman2
+QuoteFile       npcquote.q
+Name            Useless Old Man
+KnownTopic      OldMan2.1 BrownTown
+Topic           OldMan2.2 What was so great about it?!
+Topic           OldMan2.3 Why were you kicked out of BrownTown?
+Topic           OldMan2.5 Tell me or I'll grab you by the beard and swing you around.
+Topic           OldMan2.6 Fine, don't tell me.
+Topic           OldMan2.7 Oh, I changed my mind. I want to know!!
+Topic           OldMan2.4 Liar!  Blue Cows are only a legend!
+KnownTopic      OldMan2.8 Old Friends
+Topic           OldMan2.9 Did all your friends have dumb names?
+OddsOfSeeing    20
+Wander          Street
