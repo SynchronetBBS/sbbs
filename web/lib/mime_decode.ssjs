@@ -21,6 +21,8 @@ function count_attachments(hdr, body)
 
 	if(CT.search(/multipart\/[^\s;]*/i)!=-1) {
 		var bound=CT.match(/;[\s\r\n]*boundary="{0,1}([^";\r\n]*)"{0,1}/i);
+		if(bound==undefined)
+			return(attach);
 		bound[1]=regex_escape(bound[1]);
 		re=new RegExp ("--"+bound[1]+"-{0,2}","");
 		msgbits=body.split(re);
@@ -64,61 +66,63 @@ function mime_decode(hdr, body)
 	}
 	if(CT.search(/multipart\/[^\s;]*/i)!=-1) {
 		var bound=CT.match(/;[\s\r\n]*boundary="{0,1}([^";\r\n]*)"{0,1}/i);
-		bound[1]=regex_escape(bound[1]);
-		re=new RegExp ("--"+bound[1]+"-{0,2}");
-		msgbits=body.split(re);
-		/* Search for attachments/inlined */
-		for(bit in msgbits) {
-			var pieces=msgbits[bit].split(/\r?\n\r?\n/);
-			var disp=pieces[0].match(/content-disposition:\s+(?:attachment|inline)[;\s]*filename="?([^";\r\n]*)"?/i);
-			if(disp!=undefined) {
-				/* Attachment */
-				if(Message.attachments==undefined)
-					Message.attachments=new Array;
-				Message.attachments.push(disp[1]);
-			}
-			disp=pieces[0].match(/content-id:\s+\<?([^\<\>;\r\n]*)\>?/i);
-			if(disp!=undefined) {
-				/* Inline Attachment */
-				if(Message.inlines==undefined)
-					Message.inlines=new Array;
-				Message.inlines.push(disp[1]);
-			}
-		}
-		/* Search for HTML encoded bit */
-		for(bit in msgbits) {
-			var pieces=msgbits[bit].split(/(\r?\n\r?\n)/);
-			var pheads=pieces[0];
-			if(pheads==undefined)
-				continue;
-			var content=pieces.slice(2).join('');
-			if(content==undefined)
-				continue;
-			if(pheads.search(/content-type: text\/html/i)!=-1) {
-				Message.body=decode_body(TE,pheads,content);
-				if(Message.inlines!=undefined) {
-					for(il in Message.inlines) {
-						var path=http_request.virtual_path;
-						var basepath=path.match(/^(.*\/)[^\/]*$/);
-						re=new RegExp("cid:("+regex_escape(Message.inlines[il])+")","ig");
-						Message.body=Message.body.replace(re,basepath[1]+"inline.ssjs/"+template.group.number+"/"+template.sub.code+"/"+hdr.number+"/$1");
-					}
+		if(bound!=undefined) {
+			bound[1]=regex_escape(bound[1]);
+			re=new RegExp ("--"+bound[1]+"-{0,2}");
+			msgbits=body.split(re);
+			/* Search for attachments/inlined */
+			for(bit in msgbits) {
+				var pieces=msgbits[bit].split(/\r?\n\r?\n/);
+				var disp=pieces[0].match(/content-disposition:\s+(?:attachment|inline)[;\s]*filename="?([^";\r\n]*)"?/i);
+				if(disp!=undefined) {
+					/* Attachment */
+					if(Message.attachments==undefined)
+						Message.attachments=new Array;
+					Message.attachments.push(disp[1]);
 				}
-				Message.type="html";
-				return(Message);
+				disp=pieces[0].match(/content-id:\s+\<?([^\<\>;\r\n]*)\>?/i);
+				if(disp!=undefined) {
+					/* Inline Attachment */
+					if(Message.inlines==undefined)
+						Message.inlines=new Array;
+					Message.inlines.push(disp[1]);
+				}
 			}
-		}
-		/* Search for plaintext bit */
-		for(bit in msgbits) {
-			var pieces=msgbits[bit].split(/(\r?\n\r?\n)/);
-			var pheads=pieces[0];
-			var content=pieces.slice(2).join('');
-			if(content==undefined)
-				continue;
-			if(pheads.search(/content-type: text\/plain/i)!=-1) {
-				Message.body=decode_body(TE,pheads,content);
-				Message.type="plain";
-				return(Message);
+			/* Search for HTML encoded bit */
+			for(bit in msgbits) {
+				var pieces=msgbits[bit].split(/(\r?\n\r?\n)/);
+				var pheads=pieces[0];
+				if(pheads==undefined)
+					continue;
+				var content=pieces.slice(2).join('');
+				if(content==undefined)
+					continue;
+				if(pheads.search(/content-type: text\/html/i)!=-1) {
+					Message.body=decode_body(TE,pheads,content);
+					if(Message.inlines!=undefined) {
+						for(il in Message.inlines) {
+							var path=http_request.virtual_path;
+							var basepath=path.match(/^(.*\/)[^\/]*$/);
+							re=new RegExp("cid:("+regex_escape(Message.inlines[il])+")","ig");
+							Message.body=Message.body.replace(re,basepath[1]+"inline.ssjs/"+template.group.number+"/"+template.sub.code+"/"+hdr.number+"/$1");
+						}
+					}
+					Message.type="html";
+					return(Message);
+				}
+			}
+			/* Search for plaintext bit */
+			for(bit in msgbits) {
+				var pieces=msgbits[bit].split(/(\r?\n\r?\n)/);
+				var pheads=pieces[0];
+				var content=pieces.slice(2).join('');
+				if(content==undefined)
+					continue;
+				if(pheads.search(/content-type: text\/plain/i)!=-1) {
+					Message.body=decode_body(TE,pheads,content);
+					Message.type="plain";
+					return(Message);
+				}
 			}
 		}
 	}
@@ -202,6 +206,8 @@ function mime_get_attach(hdr, body, filename)
 	}
 	if(CT.search(/multipart\/[^\s;]*/i)!=-1) {
 		var bound=CT.match(/;[\s\r\n]*boundary="{0,1}([^";\r\n]*)"{0,1}/i);
+		if(bound==undefined)
+			return(undefined);
 		bound[1]=regex_escape(bound[1]);
 		re=new RegExp ("--"+bound[1]+"-{0,2}");
 		msgbits=body.split(re);
@@ -244,6 +250,8 @@ function mime_get_cid_attach(hdr, body, cid)
 	}
 	if(CT.search(/multipart\/[^\s;]*/i)!=-1) {
 		var bound=CT.match(/;[\s\r\n]*boundary="{0,1}([^";\r\n]*)"{0,1}/i);
+		if(bound==undefined)
+			return(undefined);
 		bound[1]=regex_escape(bound[1]);
 		re=new RegExp ("--"+bound[1]+"-{0,2}");
 		msgbits=body.split(re);
