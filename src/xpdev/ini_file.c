@@ -36,6 +36,8 @@
  ****************************************************************************/
 
 #include <stdlib.h>		/* strtol */
+#include <string.h>		/* strlen */
+#include <ctype.h>		/* isdigit */
 #include "sockwrap.h"	/* inet_addr */
 #include "ini_file.h"
 
