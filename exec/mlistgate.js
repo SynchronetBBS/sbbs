@@ -10,7 +10,7 @@
 
 // Configuration file (in ctrl/mlistgate.cfg) format:
 
-// <subcode> <emailaddr> [emailaddr] [...]
+// <subcode> <fromaddr> <toaddr> [toaddr] [...]
 
 const REVISION = "$Revision$".split(' ')[1];
 
@@ -22,6 +22,9 @@ var tagline	=  format(" *  %s - %s - telnet://%s\r\n"
 					  ,system.name,system.location,system.inetaddr);
 
 var cfg_fname = system.ctrl_dir + "mlistgate.cfg";
+
+var reset_export_ptrs = false;
+var update_export_ptrs = false;
 
 load("sbbsdefs.js");
 
@@ -70,6 +73,8 @@ for(i in area) {
 
 	sub = area[i].shift();
 
+	from = area[i].shift();
+
 	msgbase = new MsgBase(sub);
 	if(msgbase.open!=undefined && msgbase.open()==false) {
 		printf("!ERROR %s opening msgbase: %s\r\n",msgbase.last_error,sub);
@@ -107,7 +112,7 @@ for(i in area) {
 	/* EXPORT Local Messages */
 	/*************************/
 	last_msg=msgbase.last_msg;
-	for(;ptr<=last_msg && !js.terminated;p tr++) {
+	for(;ptr<=last_msg && !js.terminated;ptr++) {
 		if(this.console!=undefined)
 			console.line_counter = 0;
 		hdr = msgbase.get_msg_header(
@@ -155,6 +160,9 @@ for(i in area) {
 			/* Address message to list server e-mail address */
 		    hdr.to_net_addr = listserv; 
 		    hdr.to_net_type = NET_INTERNET;
+
+			hdr.from_net_addr = from;
+			hdr.from_net_type = NET_INTERNET;
 
 			/* Copy to message base */
 			mailbase.save_msg(hdr,body);
