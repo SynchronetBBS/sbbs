@@ -228,7 +228,12 @@ if_true
 	if_true
 		chksyspass
 		if_true
-			exec_int "%y -i"	
+			compare_ars "UNIX"
+			if_true
+				exec_int "%y -i"	
+			else
+				exec_int "%y"	
+				end_if
 			end_if	
 		return
 		end_if
