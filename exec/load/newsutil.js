@@ -54,7 +54,7 @@ function write_news_header(hdr,writeln)
 	}
 	if(content_type==undefined) {
 		/* No content-type specified, so assume IBM code-page 437 (full ex-ASCII) */
-		writeln("Content-Type: text/plain; charset=cp437");
+		writeln("Content-Type: text/plain; charset=IBM437");
 		writeln("Content-Transfer-Encoding: 8bit");
 	}
 
