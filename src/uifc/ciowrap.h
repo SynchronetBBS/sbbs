@@ -10,7 +10,7 @@
 #include "curs_fix.h"
 #include "keys.h"
 
-#define MONO	1
+#define MONO	2
 #define	BW80	MONO
 #define COLOR_MODE	3
 
