@@ -256,6 +256,7 @@ xp_sem_timedwait(xp_sem_t *sem, const struct timespec *abs_timeout)
 		if(retval)  {
 			errno=retval;
 			retval=-1;
+			break;
 		}
 	}
 	if(retval==0)
