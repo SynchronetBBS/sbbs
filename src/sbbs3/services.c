@@ -1553,6 +1553,8 @@ void DLLCALL services_thread(void* arg)
 								,service[i].socket, service[i].protocol, ERROR_VALUE);
 						break;
 					}
+					if(startup->socket_open!=NULL)
+						startup->socket_open(TRUE);	/* Callback, increments socket counter */
 				}
 				strcpy(host_ip,inet_ntoa(client_addr.sin_addr));
 
@@ -1591,9 +1593,6 @@ void DLLCALL services_thread(void* arg)
 					close_socket(client_socket);
 					continue;
 				}
-
-				if(startup->socket_open!=NULL)
-					startup->socket_open(TRUE);	/* Callback */
 
 				memset(client,0,sizeof(service_client_t));
 				client->socket=client_socket;
