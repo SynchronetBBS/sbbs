@@ -1,5 +1,7 @@
   Answers to frequently asked questions re: configuring Synchronet Version 3
-       by Rob Swindell (digital man), May 2000, last updated February 2003
+       by Rob Swindell (digital man), May 2000, last updated June 2003
+
+$Id$
 
 Q: I want to create custom menus. Is there any detailed documentation or
    samples regarding custom menus on Synchronet?  
@@ -7,13 +9,43 @@ A: Yes, see http://synchro.net/docs/customization.html,
    http://synchro.net/docs/baja.html and http://synchro.net/docs/js.html 
    for details.
 
+Q: I seem to missing the menu files for non-default (Synchronet Classic)
+   command shells on v3.10L-win32.
+A: These files were accidentally excluded from the v3.10L-win32 install.
+   Download ftp://vert.synchro.net/Synchronet/menu.zip and extract (with
+   directories) into your Synchronet text/menu directory.
+
+Q: How do I get on the Synchronet BBS List, http://synchro.net/sbbslist.html?
+A: The best way is to first join DOVE-Net, then run the Synchronet BBS List
+   (SBL) door on *your* BBS and add an entry for your BBS. This entry should
+   be automatically exported to the DOVE-Net SYNCDATA echo which will then be
+   propogated to Vertrauen and every other BBS on DOVE-Net. The sbbslist.html
+   page is automatically generated on Vertrauen every night at midnight
+   (Pacific time), so wait a day or so for your entry to appear on the list.
+   If it doesn't appear, verify that that your BBS entry was properly
+   exported (as a message) to the SYNCDATA message area. The events that run
+   SMB2SBL and SBL2SMB to import and export BBS entries should be configured
+   by default. If they are not, see xtrn/sbl/sbl.doc for more details.
+
+Q: How do I get my BBS listed in the Instant-Message capable BBS list
+   (ftp://ftp.synchro.net/sbbsimsg.lst)?
+A: First get your BBS on the Synchronet BBS List (sbbslist.html), and if your
+   BBS is running the Synchronet SMTP server on port 25 (like it should) and
+   the Synchronet Finger Service on TCP and UDP port 79, your BBS should
+   automatically appear on the instant message list. If it is not, then
+   verify that your SMTP and Finger services can be reached remotely (the
+   ports aren't being blocked by a firewall or your ISP).  This list
+   is generated nightly on Vertrauen at the same time as the Synchronet BBS 
+   List, http://synchro.net/sbbslist.html.
+   See docs/imsgdocs.txt for more details.
+
 Q: How do I join DOVE-Net?
 A: If you've installed v3.10, Telnet to vert.synchro.net and create a new
    account for your QWKnet transfers (using your system's QWK-ID for the user
    name), then edit your "Call-out Command Line" in SCFG->Networks->QWK->Hubs
    ->VERT: replace "YOURPASS" with the password you used when creating your
    QWKnet user account. Do NOT change anything else in the command-line!
-   That's it! For more details, see DOCS/DOVE-NET.TXT.
+   That's it! For more details, see docs/dove-net.txt.
 
 Q: What is my system's QWK-ID?
 A: This is normally an abbreviation of your BBS's name that YOU determine
@@ -44,10 +76,13 @@ A: Use SBBSecho (included with Synchronet) to toss (export) and scan (import)
    http://synchro.net/docs/sbbsecho.html for details).
 
    You will also need a TCP/IP FTN transport program like Binkd, Internet Rex,
-   Argus, etc. Traditional Front-End Mailers (FrontDoor, InterMail, D'bridge,
-   BinkleyTerm, etc) are NOT normally used for TCP/IP-based FTN transfers.
-   See http://net229.darktech.org/fidosetup/ for instructions on setting
-   up Synchronet with the Argus 32-bit FidoNet mailer.
+   Argus, Beemail, etc. Traditional Front-End Mailers (FrontDoor, InterMail,
+   D'bridge, BinkleyTerm, etc) are NOT normally used for TCP/IP-based FTN
+   transfers.
+   See http://www.net229.ca/fidosetup/ for instructions on setting up 
+   Synchronet with the Argus 32-bit FidoNet mailer.
+   I, personally, use Binkd for Win32, which you can find available for
+   download on my BBS and the docs (what little there are) online.
 
 Q: Does anyone know of a good, stable newsgroup door I can download or buy?  
    I would LOVE to have newsgroups on my board.
@@ -315,8 +350,13 @@ A: The Synchronet Configuration Utility (exec/scfg.exe). This 16-bit
    SCFG will fail with a "USCRN failed!" error message when run in a non-80x25
    window.
 
-   SCFG.EXE v3.10 is 32-bit, there is no more SCFG32.EXE. Also, SCFG.EXE is no
-   longer limited to 80x25 text windows.
+   ** UPDATE **
+   SCFG.EXE v3.10 (included with Synchronet v3.10g and later) is 32-bit; 
+   there is no more SCFG32.EXE (you can safely delete this file). Also, SCFG.EXE
+   is no longer limited to 80x25 text windows.
+   
+   If you find SCFG is running in a Window where not all of the application is
+   visible, add "-l25" to your SCFG command-line to force it to 25-line mode.
 
 As always, see the documentation if you have any questions that aren't
 answered here: http://synchro.net/docs
