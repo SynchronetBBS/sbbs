@@ -39,6 +39,23 @@
 
 #ifdef JAVASCRIPT
 
+BOOL debug=FALSE;
+
+static void dbprintf(BOOL error, SOCKET sock, char* fmt, ...)
+{
+	va_list argptr;
+	char sbuf[1024];
+
+	if(!debug && !error)
+		return;
+
+    va_start(argptr,fmt);
+    vsprintf(sbuf,fmt,argptr);
+    va_end(argptr);
+	
+	lprintf("%04u Socket %s%s",sock,error ? "ERROR: ":"",sbuf);
+}
+
 /* Socket Constructor (creates socket descriptor) */
 
 static JSBool
@@ -51,15 +68,18 @@ js_socket_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsv
 		type=JSVAL_TO_INT(argv[0]);
 
 	if((sock=open_socket(type))==INVALID_SOCKET) {
+		dbprintf(TRUE, 0, "open_socket failed with error %d",ERROR_VALUE);
 		*rval = JSVAL_VOID;
 		return JS_FALSE;
 	}
 
 	if(!JS_SetPrivate(cx, obj, (char*)(sock<<1))) {
+		dbprintf(TRUE, sock, "JS_SetPrivate failed");
 		*rval = JSVAL_VOID;
 		return JS_FALSE;
 	}
 
+	dbprintf(FALSE, sock, "opened");
 	return JS_TRUE;
 }
 
@@ -71,7 +91,12 @@ static void js_finalize_socket(JSContext *cx, JSObject *obj)
 	
 	sock=(uint)JS_GetPrivate(cx,obj)>>1;
 
+	if(sock==INVALID_SOCKET || sock==0)
+		return;
+
 	close_socket(sock);
+
+	dbprintf(FALSE, sock, "closed");
 
 	sock=INVALID_SOCKET;
 
@@ -97,10 +122,12 @@ js_bind(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		addr.sin_port = (ushort)JSVAL_TO_INT(argv[0]);
 
 	if((i=bind(sock, (struct sockaddr *) &addr, sizeof (addr)))!=0) {
+		dbprintf(TRUE, sock, "bind failed with error %d",ERROR_VALUE);
 		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
 		return JS_TRUE;
 	}
 
+	dbprintf(FALSE, sock, "bound to port %u",addr.sin_port);
 	*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
 	return JS_TRUE;
 }
@@ -122,11 +149,14 @@ js_connect(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	str = JS_ValueToString(cx, argv[0]);
 	if((ip_addr=resolve_ip(JS_GetStringBytes(str)))==0) {
+		dbprintf(TRUE, sock, "resolve_ip failed with error %d",ERROR_VALUE);
 		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
 		return JS_TRUE;
 	}
 
 	port = (ushort)JSVAL_TO_INT(argv[1]);
+
+	dbprintf(FALSE, sock, "connecting to port %u at %s", port, JS_GetStringBytes(str));
 
 	memset(&addr,0,sizeof(addr));
 	addr.sin_addr.s_addr = ip_addr;
@@ -134,11 +164,14 @@ js_connect(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	addr.sin_port   = htons(port);
 
 	if((i=connect(sock, (struct sockaddr *)&addr, sizeof(addr)))!=0) {
+		dbprintf(TRUE, sock, "connect failed with error %d",ERROR_VALUE);
 		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
 		return JS_TRUE;
 	}
 
 	*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
+	dbprintf(FALSE, sock, "connected to port %u at %s", port, JS_GetStringBytes(str));
+
 	return(JS_TRUE);
 }
 
@@ -161,8 +194,11 @@ js_send(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	p=JS_GetStringBytes(str);
 	len=strlen(p);
 
-	if(send(sock,p,len,0)==len)
+	if(send(sock,p,len,0)==len) {
+		dbprintf(FALSE, sock, "sent %u bytes",len);
 		*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
+	} else
+		dbprintf(TRUE, sock, "send of %u bytes failed",len);
 		
 	return(JS_TRUE);
 }
@@ -193,6 +229,8 @@ js_recv(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	str = JS_NewStringCopyZ(cx, buf);
 
 	*rval = STRING_TO_JSVAL(str);
+
+	dbprintf(FALSE, sock, "received %u bytes",len);
 		
 	return(JS_TRUE);
 }
@@ -223,6 +261,8 @@ js_peek(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	str = JS_NewStringCopyZ(cx, buf);
 
 	*rval = STRING_TO_JSVAL(str);
+
+	dbprintf(FALSE, sock, "received %u bytes",len);
 		
 	return(JS_TRUE);
 }
@@ -278,6 +318,8 @@ js_recvline(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	str = JS_NewStringCopyZ(cx, buf);
 
 	*rval = STRING_TO_JSVAL(str);
+
+	dbprintf(FALSE, sock, "received %u bytes",strlen(buf));
 		
 	return(JS_TRUE);
 }
@@ -297,10 +339,14 @@ js_getsockopt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 	opt = JSVAL_TO_INT(argv[1]);
 	len = sizeof(val);
 
-	if(getsockopt(sock,lvl,opt,(char*)&val,&len)==0)
+	if(getsockopt(sock,lvl,opt,(char*)&val,&len)==0) {
+		dbprintf(FALSE, sock, "option %d (level: %d) = %d",opt,lvl,val);
 		*rval = INT_TO_JSVAL(val);
-	else
+	} else {
+		dbprintf(TRUE, sock, "error %d getting option %d (level: %d)"
+			,ERROR_VALUE,opt,lvl);
 		*rval = INT_TO_JSVAL(-1);
+	}
 
 	return(JS_TRUE);
 }
@@ -331,10 +377,26 @@ enum {
 	,SOCK_PROP_IS_CONNECTED
 	,SOCK_PROP_DATA_WAITING
 	,SOCK_PROP_NREAD
+	,SOCK_PROP_DEBUG
 };
 
 static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
+    jsint       tiny;
+	SOCKET		sock;
+
+	sock=(uint)JS_GetPrivate(cx,obj)>>1;
+
+    tiny = JSVAL_TO_INT(id);
+
+	dbprintf(FALSE, sock, "setting property %d",tiny);
+
+	switch(tiny) {
+		case SOCK_PROP_DEBUG:
+			debug = JSVAL_TO_BOOLEAN(*vp);
+			break;
+	}
+
 	return(JS_TRUE);
 }
 
@@ -348,6 +410,10 @@ static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	sock=(uint)JS_GetPrivate(cx,obj)>>1;
 
     tiny = JSVAL_TO_INT(id);
+
+#if 0 /* just too much */
+	dbprintf(FALSE, sock, "getting property %d",tiny);
+#endif
 
 	switch(tiny) {
 		case SOCK_PROP_LAST_ERROR:
@@ -367,6 +433,9 @@ static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			else
 				*vp = INT_TO_JSVAL(0);
 			break;
+		case SOCK_PROP_DEBUG:
+			*vp = INT_TO_JSVAL(debug);
+			break;
 	}
 
 	return(TRUE);
@@ -381,6 +450,7 @@ static struct JSPropertySpec js_socket_properties[] = {
 	{	"is_connected"		,SOCK_PROP_IS_CONNECTED	,OBJ_FLAGS,			NULL,NULL},
 	{	"data_waiting"		,SOCK_PROP_DATA_WAITING	,OBJ_FLAGS,			NULL,NULL},
 	{	"nread"				,SOCK_PROP_NREAD		,OBJ_FLAGS,			NULL,NULL},
+	{	"debug"				,SOCK_PROP_DEBUG		,JSPROP_ENUMERATE,	NULL,NULL},
 	{0}
 };
 
