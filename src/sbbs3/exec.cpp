@@ -589,17 +589,17 @@ long sbbs_t::js_execfile(char *cmd)
 	}
 	fname=cmdline;
 
-	/* Add extension if not specified */
 	if(strcspn(fname,"/\\")==strlen(fname)) {
 		sprintf(path,"%s%s",cfg.mods_dir,fname);
-		if(cfg.mods_dir[0]==0 || !fexist(path))
+		if(cfg.mods_dir[0]==0 || !fexistcase(path))
 			sprintf(path,"%s%s",cfg.exec_dir,fname);
 	} else
 		sprintf(path,"%.*s",(int)sizeof(path)-4,fname);
+	/* Add extension if not specified */
 	if(!strchr(path,'.'))
 		strcat(path,".js");
 
-	if(!fexist(path)) {
+	if(!fexistcase(path)) {
 		errormsg(WHERE,ERR_OPEN,path,O_RDONLY);
 		return(-1); 
 	}
@@ -668,11 +668,11 @@ long sbbs_t::exec_bin(char *mod, csi_t *csi)
 #ifdef JAVASCRIPT
 	if(cfg.mods_dir[0]) {
 		sprintf(str,"%s%s.js",cfg.mods_dir,mod);
-		if(fexist(str)) 
+		if(fexistcase(str)) 
 			return(js_execfile(str));
 	}
 	sprintf(str,"%s%s.js",cfg.exec_dir,mod);
-	if(fexist(str)) 
+	if(fexistcase(str)) 
 		return(js_execfile(str));
 #endif
 
@@ -684,8 +684,10 @@ long sbbs_t::exec_bin(char *mod, csi_t *csi)
 		strcat(modname,".bin");
 
 	sprintf(str,"%s%s",cfg.mods_dir,modname);
-	if(cfg.mods_dir[0]==0 || !fexist(str))
+	if(cfg.mods_dir[0]==0 || !fexistcase(str)) {
 		sprintf(str,"%s%s",cfg.exec_dir,modname);
+		fexistcase(str);
+	}
 	if((file=nopen(str,O_RDONLY))==-1) {
 		errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
 		return(-1); 
@@ -1171,7 +1173,7 @@ int sbbs_t::exec(csi_t *csi)
 				console|=CON_R_ECHO;
 				break;
 			case CS_CHKFILE:
-				csi->logic=!fexist(cmdstr((char*)csi->ip,path,csi->str,(char*)buf));
+				csi->logic=!fexistcase(cmdstr((char*)csi->ip,path,csi->str,(char*)buf));
 				break;
 			case CS_EXEC:
 				external(cmdstr((char*)csi->ip,path,csi->str,(char*)buf),0);
