@@ -178,7 +178,11 @@ vpath %.cpp $(UIFC)
 
 LFLAGS		+=	-L./$(LIBODIR)
 SBBSLDFLAGS	:=	$(LFLAGS) -rpath-link ./$(LIBODIR) -rpath ./ 
-LFLAGS		+=	-Wl,-rpath-link,./$(LIBODIR),-rpath,./
+#LFLAGS		+=	-Wl,-rpath-link,./$(LIBODIR),-rpath,./
+LFLAGS		+=	-Xlinker -rpath-link
+LFLAGS		+=	-Xlinker ./$(LIBODIR)
+LFLAGS		+=	-Xlinker -rpath
+LFLAGS		+=	-Xlinker .
 ifeq ($(os),freebsd)
 LFLAGS		+=	-pthread
 endif
