@@ -137,8 +137,9 @@ static int lprintf(char *fmt, ...)
 	va_list argptr;
 	char sbuf[1024];
 
-    if(startup!=NULL && startup->lputs==NULL)
+    if(startup==NULL || startup->lputs==NULL)
         return(0);
+
     va_start(argptr,fmt);
     vsprintf(sbuf,fmt,argptr);
     va_end(argptr);
@@ -281,7 +282,7 @@ static int sockprintf(SOCKET sock, char *fmt, ...)
 
     va_start(argptr,fmt);
     len=vsprintf(sbuf,fmt,argptr);
-	if(startup->options&FTP_OPT_DEBUG_TX)
+	if(startup!=NULL && startup->options&FTP_OPT_DEBUG_TX)
 		lprintf("%04d TX: %s", sock, sbuf);
 	strcat(sbuf,"\r\n");
 	len+=2;
@@ -436,12 +437,24 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 		fprintf(fp,"!JavaScript %s%s%s: %s",warning,file,line,message);
 }
 
-JSContext* js_initcx(SOCKET sock, JSObject** glob)
+static JSClass js_server_class = {
+        "FtpServer",0, 
+        JS_PropertyStub,JS_PropertyStub,JS_PropertyStub,JS_PropertyStub, 
+        JS_EnumerateStub,JS_ResolveStub,JS_ConvertStub,JS_FinalizeStub 
+}; 
+
+static JSClass js_ftp_class = {
+        "Ftp",0, 
+        JS_PropertyStub,JS_PropertyStub,JS_PropertyStub,JS_PropertyStub, 
+        JS_EnumerateStub,JS_ResolveStub,JS_ConvertStub,JS_FinalizeStub 
+}; 
+
+JSContext* js_initcx(SOCKET sock, JSObject** glob, JSObject** ftp)
 {
 	char		ver[256];
 	JSContext*	js_cx;
 	JSObject*	js_glob;
-	JSObject*	sysobj;
+	JSObject*	server;
 	jsval		val;
 	BOOL		success=FALSE;
 
@@ -466,16 +479,24 @@ JSContext* js_initcx(SOCKET sock, JSObject** glob)
 			break;
 
 		lprintf("%04d JavaScript: Initializing System object",sock);
-		if((sysobj=js_CreateSystemObject(js_cx, js_glob, &scfg))==NULL) 
+		if(js_CreateSystemObject(js_cx, js_glob, &scfg)==NULL) 
+			break;
+
+		if((*ftp=JS_DefineObject(js_cx, js_glob, "ftp", &js_ftp_class
+			,NULL,0))==NULL)
+			break;
+
+		if((server=JS_DefineObject(js_cx, js_glob, "server", &js_server_class
+			,NULL,0))==NULL)
 			break;
 
 		sprintf(ver,"%s v%s",FTP_SERVER,FTP_VERSION);
 		val = STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, ver));
-		if(!JS_SetProperty(js_cx, sysobj, "version", &val))
+		if(!JS_SetProperty(js_cx, server, "version", &val))
 			break;
 
 		val = STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, ftp_ver()));
-		if(!JS_SetProperty(js_cx, sysobj, "version_detail", &val))
+		if(!JS_SetProperty(js_cx, server, "version_detail", &val))
 			break;
 
 		if(glob!=NULL)
@@ -570,7 +591,7 @@ BOOL js_add_file(JSContext* js_cx, JSObject* array,
 	return(JS_SetElement(js_cx, array, index, &val));
 }
 
-BOOL js_generate_index(JSContext* js_cx, JSObject* js_glob, 
+BOOL js_generate_index(JSContext* js_cx, JSObject* parent, 
 					   SOCKET sock, FILE* fp, int lib, int dir, user_t* user)
 {
 	char		str[256];
@@ -626,21 +647,21 @@ BOOL js_generate_index(JSContext* js_cx, JSObject* js_glob,
 		}
 
 		val=STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, startup->html_index_file));
-		if(!JS_SetProperty(js_cx, js_glob, "html_index_file", &val)) {
+		if(!JS_SetProperty(js_cx, parent, "html_index_file", &val)) {
 			lprintf("%04d !JavaScript FAILED to set html_index_file property",sock);
 			break;
 		}
 
 		/* file[] */
 		val=OBJECT_TO_JSVAL(file_array);
-		if(!JS_SetProperty(js_cx, js_glob, "file_list", &val)) {
+		if(!JS_SetProperty(js_cx, parent, "file_list", &val)) {
 			lprintf("%04d !JavaScript FAILED to set file property",sock);
 			break;
 		}
 
 		/* dir[] */
 		val=OBJECT_TO_JSVAL(dir_array);
-		if(!JS_SetProperty(js_cx, js_glob, "dir_list", &val)) {
+		if(!JS_SetProperty(js_cx, parent, "dir_list", &val)) {
 			lprintf("%04d !JavaScript FAILED to set dir property",sock);
 			break;
 		}
@@ -652,7 +673,7 @@ BOOL js_generate_index(JSContext* js_cx, JSObject* js_glob,
 		}
 
 		val=OBJECT_TO_JSVAL(lib_obj);
-		if(!JS_SetProperty(js_cx, js_glob, "curlib", &val)) {
+		if(!JS_SetProperty(js_cx, parent, "curlib", &val)) {
 			lprintf("%04d !JavaScript FAILED to set curlib property",sock);
 			break;
 		}
@@ -664,7 +685,7 @@ BOOL js_generate_index(JSContext* js_cx, JSObject* js_glob,
 		}
 
 		val=OBJECT_TO_JSVAL(dir_obj);
-		if(!JS_SetProperty(js_cx, js_glob, "curdir", &val)) {
+		if(!JS_SetProperty(js_cx, parent, "curdir", &val)) {
 			lprintf("%04d !JavaScript FAILED to set curdir property",sock);
 			break;
 		}
@@ -719,7 +740,7 @@ BOOL js_generate_index(JSContext* js_cx, JSObject* js_glob,
 		}
 
 		val=STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, vpath));
-		if(!JS_SetProperty(js_cx, js_glob, "ftp_path", &val)) {
+		if(!JS_SetProperty(js_cx, parent, "path", &val)) {
 			lprintf("%04d !JavaScript FAILED to set curdir property",sock);
 			break;
 		}
@@ -911,12 +932,12 @@ BOOL js_generate_index(JSContext* js_cx, JSObject* js_glob,
 		}
 
 		/* RUN SCRIPT */
-		if((js_script=JS_CompileFile(js_cx, js_glob, spath))==NULL) {
+		if((js_script=JS_CompileFile(js_cx, parent, spath))==NULL) {
 			lprintf("%04d !JavaScript FAILED to compile script (%s)",sock,spath);
 			break;
 		}
 
-		if((success=JS_ExecuteScript(js_cx, js_glob, js_script, &rval))!=TRUE) {
+		if((success=JS_ExecuteScript(js_cx, parent, js_script, &rval))!=TRUE) {
 			lprintf("%04d !JavaScript FAILED to execute script (%s)",sock,spath);
 			break;
 		}
@@ -927,14 +948,14 @@ BOOL js_generate_index(JSContext* js_cx, JSObject* js_glob,
 	if(js_script!=NULL) 
 		JS_DestroyScript(js_cx, js_script);
 
-	JS_DeleteProperty(js_cx, js_glob, "ftp_path");
-	JS_DeleteProperty(js_cx, js_glob, "ftp_sort");
-	JS_DeleteProperty(js_cx, js_glob, "ftp_reverse");
-	JS_DeleteProperty(js_cx, js_glob, "file_list");
-	JS_DeleteProperty(js_cx, js_glob, "dir_list");
-	JS_DeleteProperty(js_cx, js_glob, "curlib");
-	JS_DeleteProperty(js_cx, js_glob, "curdir");
-	JS_DeleteProperty(js_cx, js_glob, "html_index_file");
+	JS_DeleteProperty(js_cx, parent, "path");
+	JS_DeleteProperty(js_cx, parent, "sort");
+	JS_DeleteProperty(js_cx, parent, "reverse");
+	JS_DeleteProperty(js_cx, parent, "file_list");
+	JS_DeleteProperty(js_cx, parent, "dir_list");
+	JS_DeleteProperty(js_cx, parent, "curlib");
+	JS_DeleteProperty(js_cx, parent, "curdir");
+	JS_DeleteProperty(js_cx, parent, "html_index_file");
 
 	return(success);
 }
@@ -2100,7 +2121,7 @@ static void ctrl_thread(void* arg)
 	jsval		js_val;
 	JSContext*	js_cx;
 	JSObject*	js_glob;
-	JSObject*	js_user;
+	JSObject*	js_ftp;
 #endif
 
 	thread_up();
@@ -2123,7 +2144,7 @@ static void ctrl_thread(void* arg)
 #endif
 
 #ifdef JAVASCRIPT
-	if(((js_cx=js_initcx(sock,&js_glob))==NULL)) {
+	if(((js_cx=js_initcx(sock,&js_glob,&js_ftp))==NULL)) {
 		lprintf("%04d !ERROR initializing JavaScript context",sock);
 		sockprintf(sock,"425 Error initializing JavaScript context");
 		ftp_close_socket(&sock,__LINE__);
@@ -2416,7 +2437,7 @@ static void ctrl_thread(void* arg)
 			if(js_CreateUserClass(js_cx, js_glob, &scfg)==NULL) 
 				lprintf("%04d !JavaScript ERROR creating user class",sock);
 
-			if((js_user=js_CreateUserObject(js_cx, js_glob, &scfg, "user", user.number))==NULL) 
+			if(js_CreateUserObject(js_cx, js_glob, &scfg, "user", user.number)==NULL) 
 				lprintf("%04d !JavaScript ERROR creating user object",sock);
 
 			if(js_CreateClientObject(js_cx, js_glob, "client", &client, sock)==NULL) 
@@ -3440,9 +3461,9 @@ static void ctrl_thread(void* arg)
 				JS_BeginRequest(js_cx);	/* Required for multi-thread support */
 
 				js_val=STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, "name"));
-				JS_SetProperty(js_cx, js_glob, "ftp_sort", &js_val);
+				JS_SetProperty(js_cx, js_ftp, "sort", &js_val);
 				js_val=BOOLEAN_TO_JSVAL(FALSE);
-				JS_SetProperty(js_cx, js_glob, "ftp_reverse", &js_val);
+				JS_SetProperty(js_cx, js_ftp, "reverse", &js_val);
 
 				if(!strnicmp(p,html_index_ext,strlen(html_index_ext))) {
 					p+=strlen(html_index_ext);
@@ -3466,11 +3487,11 @@ static void ctrl_thread(void* arg)
 							tp++;
 							if(!stricmp(tp,"reverse")) {
 								js_val=BOOLEAN_TO_JSVAL(TRUE);
-								JS_SetProperty(js_cx, js_glob, "ftp_reverse", &js_val);
+								JS_SetProperty(js_cx, js_ftp, "reverse", &js_val);
 							}
 						}
 						js_val=STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, p));
-						JS_SetProperty(js_cx, js_glob, "ftp_sort", &js_val);
+						JS_SetProperty(js_cx, js_ftp, "sort", &js_val);
 					}
 				}
 				JS_EndRequest(js_cx);	/* Required for multi-thread support */
@@ -3494,9 +3515,9 @@ static void ctrl_thread(void* arg)
 				JS_BeginRequest(js_cx);	/* Required for multi-thread support */
 
 				js_val=INT_TO_JSVAL(timeleft);
-				if(!JS_SetProperty(js_cx, js_user, "time_left", &js_val))
+				if(!JS_SetProperty(js_cx, js_ftp, "time_left", &js_val))
 					lprintf("%04d !JavaScript ERROR setting user.time_left",sock);
-				js_generate_index(js_cx, js_glob, sock, fp, lib, dir, &user);
+				js_generate_index(js_cx, js_ftp, sock, fp, lib, dir, &user);
 
 				JS_EndRequest(js_cx);	/* Required for multi-thread support */
 #endif
