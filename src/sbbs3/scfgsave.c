@@ -653,6 +653,7 @@ BOOL DLLCALL write_msgs_cfg(scfg_t* cfg, int backup_level)
 BOOL DLLCALL write_file_cfg(scfg_t* cfg, int backup_level)
 {
 	char	str[128],cmd[LEN_CMD+1],c;
+	char	path[MAX_PATH+1];
 	int 	i,j,k,file;
 	short	n;
 	long	l=0;
@@ -813,8 +814,21 @@ BOOL DLLCALL write_file_cfg(scfg_t* cfg, int backup_level)
 				backslash(cfg->dir[i]->path);
 				put_str(cfg->dir[i]->path,stream);
 #if 1
-				if(cfg->dir[i]->misc&DIR_FCHK) 
-					md(cfg->dir[i]->path); 
+				if(cfg->dir[i]->misc&DIR_FCHK) {
+					SAFECOPY(path,cfg->dir[i]->path);
+					if(!path[0])		/* no file storage path specified */
+						sprintf(path,"%sdirs/%s/",cfg->data_dir,cfg->dir[i]->code);
+					else if(cfg->lib[cfg->dir[i]->lib]->parent_path[0]) {
+						SAFECOPY(path,cfg->lib[cfg->dir[i]->lib]->parent_path);
+						prep_dir(cfg->ctrl_dir,path);
+						md(path);
+						backslash(path);
+						strcat(path,cfg->dir[i]->path);
+					}
+					else
+						prep_dir(cfg->ctrl_dir, path);
+					md(path); 
+				}
 #endif
 
 				put_str(cfg->dir[i]->upload_sem,stream);
