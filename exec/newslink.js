@@ -236,7 +236,7 @@ for(i in area) {
 	/* Read Pointer File */
 	/*********************/
 	export_ptr = 0;
-	import_ptr = ~0;	// Set to highest possible message number
+	import_ptr = NaN;	// Set to highest possible message number
 	ptr_fname = msgbase.file + ".snl";
 	ptr_file = new File(ptr_fname);
 	if(ptr_file.open("rb")) {
@@ -403,7 +403,7 @@ for(i in area) {
 	if(ptr < first_msg)
 		ptr = first_msg;
 	else {
-		if(ptr > last_msg)
+		if(ptr > last_msg || isNaN(ptr))
 			ptr = last_msg;
 		ptr++;
 	}
