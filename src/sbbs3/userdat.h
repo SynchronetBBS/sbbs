@@ -38,6 +38,8 @@
 #ifndef _USERDAT_H
 #define _USERDAT_H
 
+#include "scfgdefs.h"   /* scfg_t */
+
 #ifdef DLLEXPORT
 #undef DLLEXPORT
 #endif
