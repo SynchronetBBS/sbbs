@@ -34,6 +34,7 @@ var antispam = format(".remove-%s-this"
 var cfg_fname = system.ctrl_dir + "newslink.cfg";
 
 load("sbbsdefs.js");
+load("newsutil.js");
 
 var debug = false;
 var slave = false;
@@ -304,7 +305,6 @@ for(i in area) {
 			break;
 		}
 
-		writeln("Path: " + hdr.path);
 		if(!email_addresses)
 			writeln(format("From: %s@%s",hdr.from,newsgroup));
 		else if(hdr.from.indexOf('@')!=-1)
@@ -325,22 +325,15 @@ for(i in area) {
 				,hdr.from
 				,hdr.from.replace(/ /g,".").toLowerCase()
 				,system.inetaddr,antispam));
-		if(hdr.from_org==undefined && !hdr.from_net_type)
-			hdr.from_org=system.name;
-		if(hdr.from_org!=undefined)
-			writeln("Organization: " + hdr.from_org);
-		writeln("To: " + hdr.to);
-		writeln("X-Comment-To: " + hdr.to);
-		writeln("Subject: " + hdr.subject);
-		writeln("Message-ID: " + hdr.id);
-		writeln("Date: " + hdr.date);
+
 		if(hdr.newsgroups==undefined)
 			hdr.newsgroups=newsgroup;
-		writeln("Newsgroups: " + hdr.newsgroups);
-		if(hdr.replyto!=undefined)
-			writeln("Reply-To: " + hdr.replyto);
-		if(hdr.reply_id!=undefined)
-			writeln("References: " + hdr.reply_id);
+
+		if(hdr.from_org==undefined && !hdr.from_net_type)
+			hdr.from_org=system.name;
+
+		write_news_header(hdr); // from newsutil.js
+
 		writeln("X-Gateway: "
 			+ system.inetaddr
 			+ " [Synchronet "
@@ -349,20 +342,6 @@ for(i in area) {
 			+ " NewsLink " + REVISION
 			+ "]"
 			);
-
-		/* Add a Sender: header field? */
-
-		/* FidoNet header */
-		if(hdr.ftn_pid!=undefined)
-			writeln("X-FTN-PID: " + hdr.ftn_pid);
-		if(hdr.ftn_area!=undefined)
-			writeln("X-FTN-AREA: " + hdr.ftn_area);
-		if(hdr.ftn_flags!=undefined)
-			writeln("X-FTN-FLAGS: " + hdr.ftn_flags);
-		if(hdr.ftn_msgid!=undefined)
-			writeln("X-FTN-MSGID: " + hdr.ftn_msgid);
-		if(hdr.ftn_reply!=undefined)
-			writeln("X-FTN-REPLY: " + hdr.ftn_reply);
 
 		writeln("");
 		if(hdr.to.toLowerCase()!="all") {
@@ -461,78 +440,12 @@ for(i in area) {
 			}
 			//print(line);
 
-			/* Parse header lines */
-			if((sp=line.indexOf(':'))==-1)
-				continue;
-
-			data=line.slice(sp+1);
-			while(data.charAt(0)==' ')	// trim prepended spaces
-				data=data.slice(1);
-			data=truncsp(data);			// trim trailing spaces
-
-			line=line.substr(0,sp);
-			while(line.charAt(0)==' ')	// trim prepended spaces
-				line=line.slice(1);
-			line=truncsp(line);			// trim trailing spaces
-
-			switch(line.toLowerCase()) {
-				case "to":
-				case "apparently-to":
-				case "x-comment-to":
-					hdr.to=data;
-					break;
-				case "newsgroups":
-					if(hdr.to==newsgroup)
-						hdr.to=data;
-					hdr.newsgroups=data;
-					break;
-				case "path":
-					hdr.path=data;
-					break;
-				case "from":
-					hdr.from=data;
-					break;
-				case "organization":
-					hdr.from_org=data;
-					break;
-				case "reply-to":
-					hdr.replyto_net_type=NET_INTERNET;
-					hdr.replyto=data;
-					break;
-				case "date":
-					hdr.date=data;
-					break;
-				case "subject":
-					hdr.subject=data;
-					break;
-				case "message-id":
-					hdr.id=data;
-					break;
-				case "references":
-					hdr.reply_id=data;
-					break;
-				case "x-gateway":
-					hdr.gateway=data;
-					break;
-
-				/* FidoNet headers */
-				case "x-ftn-pid":
-					hdr.ftn_pid=data;
-					break;
-				case "x-ftn-area":
-					hdr.ftn_area=data;
-					break;
-				case "x-ftn-flags":
-					hdr.ftn_flags=data;
-					break;
-				case "x-ftn-msgid":
-					hdr.ftn_msgid=data;
-					break;
-				case "x-ftn-reply":
-					hdr.ftn_reply=data;
-					break;
-			}
+			parse_news_header(hdr,line);	// from newsutil.js
 		}
+
+		if(hdr.to==newsgroup && hdr.newsgroups!=undefined)
+			hdr.to=hdr.newsgroups;
+
 		// Duplicate/looped message detection here
 		if(hdr.id.indexOf('@' + system.inetaddr)!=-1)
 			continue;

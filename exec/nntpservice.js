@@ -14,14 +14,15 @@
 //					Xnews 5.04.25
 //					Mozilla 1.1 (Requires -auto, and a prior login via other method)
 
-load("sbbsdefs.js");
-
 const REVISION = "$Revision$".split(' ')[1];
 
 var tearline = format("--- Synchronet %s%s-%s NNTP Service %s\r\n"
 					  ,system.version,system.revision,system.platform,REVISION);
 var tagline	=  format(" *  %s - %s - telnet://%s\r\n"
 					  ,system.name,system.location,system.inetaddr);
+
+load("sbbsdefs.js");
+load("newsutil.js");
 
 var debug = false;
 var no_anonymous = false;
@@ -438,9 +439,7 @@ while(client.socket.is_connected) {
 				break;
 
 			if(cmd[0].toUpperCase()!="BODY") {
-				if(hdr.path==undefined)
-					hdr.path="not-for-mail";
-				writeln("Path: " + system.inetaddr + "!" + hdr.path);
+
 				if(!hdr.from_net_type)	/* local message */
 					writeln(format("From: \"%s\" <%s@%s>"
 						,hdr.from
@@ -457,36 +456,17 @@ while(client.socket.is_connected) {
 						,hdr.from
 						,hdr.from.replace(/ /g,".").toLowerCase()
 						,hdr.from_net_addr));
-				if(hdr.from_org!=undefined)
+
+				if(hdr.path==undefined)
+					hdr.path="not-for-mail";
+
+				if(hdr.newsgroups==undefined)
+					hdr.newsgroups = selected.newsgroup;
+
+				if(hdr.from_org==undefined && !hdr.from_net_type)
 					hdr.from_org=system.name;
-				writeln("Organization: " + hdr.from_org);
-				writeln("To: " + hdr.to);
-				writeln("X-Comment-To: " + hdr.to);
-				writeln("Subject: " + hdr.subject);
-				writeln("Message-ID: " + hdr.id);
-				writeln("Date: " + hdr.date);
-				if(hdr.newsgroups!=undefined
-					&& hdr.newsgroups.indexOf(selected.newsgroup) >= 0)
-					writeln("Newsgroups: " + hdr.newsgroups);
-				else
-					writeln("Newsgroups: " + selected.newsgroup);
-
-				if(hdr.replyto!=undefined)
-					writeln("Reply-To: " + hdr.replyto);
-				if(hdr.reply_id!=undefined)
-					writeln("References: " + hdr.reply_id);
-				/* FidoNet header */
-				if(hdr.ftn_pid!=undefined)
-					writeln("X-FTN-PID: " + hdr.ftn_pid);
-				if(hdr.ftn_area!=undefined)
-					writeln("X-FTN-AREA: " + hdr.ftn_area);
-				if(hdr.ftn_flags!=undefined)
-					writeln("X-FTN-FLAGS: " + hdr.ftn_flags);
-				if(hdr.ftn_msgid!=undefined)
-					writeln("X-FTN-MSGID: " + hdr.ftn_msgid);
-				if(hdr.ftn_reply!=undefined)
-					writeln("X-FTN-REPLY: " + hdr.ftn_reply);
-
+		
+				write_news_header(hdr);	// from newsutil.js
 			}
 			if(hdr!=null && body!=null)	/* both, separate with blank line */
 				writeln("");
@@ -530,11 +510,6 @@ while(client.socket.is_connected) {
 			writeln("340 send article to be posted. End with <CR-LF>.<CR-LF>");
 
 			var hdr={ from: "", subject: "" };
-			if(!(user.security.restrictions&(UFLAG_G|UFLAG_Q))) {	// !Guest and !Network Node
-				hdr.from=user.alias;
-				hdr.from_ext=user.number;
-			}
-
 			var posted=false;
 			var header=true;
 			var body="";
@@ -568,78 +543,20 @@ while(client.socket.is_connected) {
 				}
 				log(line);
 
-				/* Parse header lines */
-				if((sp=line.indexOf(':'))==-1)
-					continue;
-
-				data=line.slice(sp+1);
-				while(data.charAt(0)==' ')	// trim prepended spaces
-					data=data.slice(1);
-				data=truncsp(data);			// trim trailing spaces
-
-				line=line.substr(0,sp);
-				while(line.charAt(0)==' ')	// trim prepended spaces
-					line=line.slice(1);
-				line=truncsp(line);			// trim trailing spaces
-
-				switch(line.toLowerCase()) {
-					case "to":
-					case "apparently-to":
-					case "x-comment-to":
-						hdr.to=data;
-						break;
-					case "path":
-						hdr.path=data;
-						break;
-					case "from":
-						if(user.security.restrictions&(UFLAG_G|UFLAG_Q)) // Guest or Network Node
-							hdr.from=data;
-						break;
-					case "organization":
-						hdr.from_org=data;
-						break;
-					case "reply-to":
-						hdr.replyto_net_type=NET_INTERNET;
-						hdr.replyto=data;
-						break;
-					case "date":
-						hdr.date=data;
-						break;
-					case "subject":
-						hdr.subject=data;
-						break;
-					case "message-id":
-						if(slave)
-							hdr.id=data;
-						break;
-					case "references":
-						hdr.reply_id=data;
-						if(hdr.to==undefined)
-							hdr.to=getReferenceTo(data);
-						break;
-					case "newsgroups":
-						newsgroups=data.split(',');
-						hdr.newsgroups=data;
-						break;
-					case "x-ftn-pid":
-						hdr.ftn_pid=data;
-						break;
-					case "x-ftn-area":
-						hdr.ftn_area=data;
-						break;
-					case "x-ftn-flags":
-						hdr.ftn_flags=data;
-						break;
-					case "x-ftn-msgid":
-						hdr.ftn_msgid=data;
-						break;
-					case "x-ftn-reply":
-						hdr.ftn_reply=data;
-						break;
-				}
+				parse_news_header(hdr,line);	// from newsutil.js
 			}
+			newsgroups=hdr.newsgroups.split(',');
+
+			if(hdr.to==undefined && hdr.reply_id!=undefined)
+				hdr.to=getReferenceTo(hdr.reply_id);
+
 			if(hdr.to==undefined && hdr.newsgroups!=undefined)
 				hdr.to=hdr.newsgroups;
+
+			if(!(user.security.restrictions&(UFLAG_G|UFLAG_Q))) {	// !Guest and !Network Node
+				hdr.from=user.alias;
+				hdr.from_ext=user.number;
+			}
 
 			if(system.trashcan("subject",hdr.subject)) {
 				log(format("!BLOCKED subject: %s",hdr.subject));
