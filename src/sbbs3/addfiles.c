@@ -354,7 +354,9 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 		if(p) *p=0;
 		else				   /* no space after filename? */
 			continue;
+#if 0
 		strupr(fname);
+#endif
 		strcpy(fname,unpadfname(fname,tmp));
 
 		padfname(fname,f.name);
@@ -814,7 +816,9 @@ int main(int argc, char **argv)
 			namegiven=1;
 			padfname(argv[j],f.name);
 			f.desc[0]=0;
+#if 0
 			strupr(f.name);
+#endif
 			if(j+1==argc) {
 				printf("%s no description given.\n",f.name);
 				continue; 
