@@ -207,8 +207,8 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 	smb.retry_time=cfg.smb_retry_time;
 	smb.subnum=subnum;
 	if((i=smb_open(&smb))!=0) {
-		smb_stack(&smb,SMB_STACK_POP);
 		errormsg(WHERE,ERR_OPEN,smb.file,i,smb.last_error);
+		smb_stack(&smb,SMB_STACK_POP);
 		return(false); 
 	}
 
@@ -219,23 +219,23 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 		smb.status.attr=cfg.sub[subnum]->misc&SUB_HYPER ? SMB_HYPERALLOC : 0;
 		if((i=smb_create(&smb))!=0) {
 			smb_close(&smb);
-			smb_stack(&smb,SMB_STACK_POP);
 			errormsg(WHERE,ERR_CREATE,smb.file,i,smb.last_error);
+			smb_stack(&smb,SMB_STACK_POP);
 			return(false); 
 		} 
 	}
 
 	if((i=smb_locksmbhdr(&smb))!=0) {
 		smb_close(&smb);
-		smb_stack(&smb,SMB_STACK_POP);
 		errormsg(WHERE,ERR_LOCK,smb.file,i,smb.last_error);
+		smb_stack(&smb,SMB_STACK_POP);
 		return(false); 
 	}
 
 	if((i=smb_getstatus(&smb))!=0) {
 		smb_close(&smb);
-		smb_stack(&smb,SMB_STACK_POP);
 		errormsg(WHERE,ERR_READ,smb.file,i,smb.last_error);
+		smb_stack(&smb,SMB_STACK_POP);
 		return(false); 
 	}
 
@@ -243,8 +243,8 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 
 	if(length&0xfff00000UL) {
 		smb_close(&smb);
-		smb_stack(&smb,SMB_STACK_POP);
 		errormsg(WHERE,ERR_LEN,str,length);
+		smb_stack(&smb,SMB_STACK_POP);
 		return(false); 
 	}
 
@@ -255,8 +255,8 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 	else {
 		if((i=smb_open_da(&smb))!=0) {
 			smb_close(&smb);
-			smb_stack(&smb,SMB_STACK_POP);
 			errormsg(WHERE,ERR_OPEN,smb.file,i,smb.last_error);
+			smb_stack(&smb,SMB_STACK_POP);
 			return(false); 
 		}
 		if(cfg.sub[subnum]->misc&SUB_FAST) {
@@ -274,8 +274,8 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 		|| (instream=fdopen(file,"rb"))==NULL) {
 		smb_freemsgdat(&smb,offset,length,1);
 		smb_close(&smb);
-		smb_stack(&smb,SMB_STACK_POP);
 		errormsg(WHERE,ERR_OPEN,str,O_RDONLY|O_BINARY);
+		smb_stack(&smb,SMB_STACK_POP);
 		return(false); 
 	}
 
