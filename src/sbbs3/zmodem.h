@@ -209,8 +209,6 @@ typedef struct {
 	int escape_all_control_characters;						/* guess */
 	int escape_8th_bit;
 
-	int use_variable_headers;								/* use variable length headers */
-
 	/*
 	 * file management options.
 	 * only one should be on

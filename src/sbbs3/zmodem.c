@@ -782,10 +782,13 @@ zmodem_rx_data(zmodem_t* zm, unsigned char* p, size_t maxlen, unsigned* l)
 	else {	
 		sub_frame_type = zmodem_rx_16_data(zm, p, maxlen, l);
 	}
+	
+	if(sub_frame_type==TIMEOUT)
+		return(TIMEOUT);
+	
+	lprintf(zm,LOG_DEBUG,"received sub-frame type: %s",chr((uchar)sub_frame_type));
 
 	switch (sub_frame_type)  {
-		case TIMEOUT:
-			return TIMEOUT;
 		/*
 		 * frame continues non-stop
 		 */
@@ -1134,7 +1137,7 @@ int
 zmodem_rx_header(zmodem_t* zm, int timeout)
 {
 	int ret = zmodem_rx_header_raw(zm, timeout, FALSE);
-#if 0
+#if 1
 	if(ret == TIMEOUT)
 		lprintf(zm,LOG_WARNING,"zmodem_rx_header timeout");
 	else
@@ -1165,18 +1168,31 @@ zmodem_rx_header_and_check(zmodem_t* zm, int timeout)
 
 void zmodem_parse_zrinit(zmodem_t* zm)
 {
+	ushort buf_size;
+
 	zm->can_full_duplex					= (zm->rxd_header[ZF0] & ZF0_CANFDX)  != 0;
 	zm->can_overlap_io					= (zm->rxd_header[ZF0] & ZF0_CANOVIO) != 0;
 	zm->can_break						= (zm->rxd_header[ZF0] & ZF0_CANBRK)  != 0;
 	zm->can_fcs_32						= (zm->rxd_header[ZF0] & ZF0_CANFC32) != 0;
 	zm->escape_all_control_characters	= (zm->rxd_header[ZF0] & ZF0_ESCCTL)  != 0;
 	zm->escape_8th_bit					= (zm->rxd_header[ZF0] & ZF0_ESC8)    != 0;
-	zm->use_variable_headers			= (zm->rxd_header[ZF1] & ZF1_CANVHDR) != 0;
 
-	lprintf(zm,LOG_INFO,"Receiver requested mode: CRC-%u, Escape: %s, %s Headers"
+	lprintf(zm,LOG_INFO,"Receiver requested mode (0x%02X):\r\n"
+		"%s-duplex, %s overlap I/O, CRC-%u, Escape: %s"
+		,zm->rxd_header[ZF0]
+		,zm->can_full_duplex ? "Full" : "Half"
+		,zm->can_overlap_io ? "Can" : "Cannot"
 		,zm->can_fcs_32 ? 32 : 16
 		,zm->escape_all_control_characters ? "ALL" : "Normal"
-		,zm->use_variable_headers ? "Variable" : "Fixed");
+		);
+
+	if(!zm->can_overlap_io)
+		zm->no_streaming = TRUE;
+
+	if((buf_size = (zm->rxd_header[ZP0]<<8 | zm->rxd_header[ZP1])) != 0) {
+		lprintf(zm,LOG_INFO,"Receiver specified buffer size of: %u", buf_size);
+		zm->no_streaming = TRUE;
+	}
 }
 
 int zmodem_get_zrinit(zmodem_t* zm)
@@ -1284,7 +1300,7 @@ zmodem_send_from(zmodem_t* zm, FILE* fp, ulong pos, ulong fsize, ulong* sent)
 		/*
 		 * at end of file wait for an ACK
 		 */
-		if((ulong)ftell(fp) == fsize) {
+		if(zm->no_streaming || (ulong)ftell(fp) == fsize) {
 			type = ZCRCW;
 		}
 
@@ -1598,8 +1614,6 @@ zmodem_send_files(char** fname, int total_files)
 	zmodem_escape_all_control_characters	= (zm->rxd_header[ZF0] & ZF0_ESCCTL)  != 0;
 	zmodem_escape_8th_bit					= (zm->rxd_header[ZF0] & ZF0_ESC8)    != 0;
 
-	zm->use_variable_headers				= (zm->rxd_header[ZF1] & ZF1_CANVHDR) != 0;
-
 	if(*(zm->mode)&DEBUG) {
 		lprintf(zm,LOG_INFO,"receiver %s full duplex"          ,zmodem_can_full_duplex               ? "can"      : "can't");
 		lprintf(zm,LOG_INFO,"receiver %s overlap io"           ,zmodem_can_overlap_io                ? "can"      : "can't");
@@ -1607,7 +1621,6 @@ zmodem_send_files(char** fname, int total_files)
 		lprintf(zm,LOG_INFO,"receiver %s fcs 32"               ,zmodem_can_fcs_32                    ? "can"      : "can't");
 		lprintf(zm,LOG_INFO,"receiver %s escaped control chars",zmodem_escape_all_control_characters ? "requests" : "doesn't request");
 		lprintf(zm,LOG_INFO,"receiver %s escaped 8th bit"      ,zmodem_escape_8th_bit                ? "requests" : "doesn't request");
-		lprintf(zm,LOG_INFO,"receiver %s use variable headers" ,zm->use_variable_headers          ? "can"      : "can't");
 	}
 
 	/* 
