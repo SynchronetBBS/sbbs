@@ -49,6 +49,9 @@
 	#include <unistd.h>		/* usleep */
 	#ifdef _THREAD_SAFE
 		#include <pthread.h>/* Check for GNU PTH libs */
+		#ifdef _PTH_PTHREAD_H_
+			#include <pth.h>
+		#endif
 	#endif
 #elif defined(_WIN32)
 	#include <process.h>	/* getpid() */
