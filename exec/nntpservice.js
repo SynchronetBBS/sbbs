@@ -122,6 +122,18 @@ while(client.socket.is_connected) {
 		case "MODE":
 			writeln("200 Hello, you can post");
 			continue;
+		case "DATE":
+			d = new Date();
+			writeln("111 " + 
+				format("%u%02u%02u%02u%02u%02u"
+					,d.getUTCFullYear()
+					,d.getUTCMonth()+1
+					,d.getUTCDate()
+					,d.getUTCHours()
+					,d.getUTCMinutes()
+					,d.getUTCSeconds()
+				));
+			continue;
 		case "QUIT":
 			writeln("205 closing connection - goodbye!");
 			client.socket.close();
