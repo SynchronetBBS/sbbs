@@ -1,7 +1,7 @@
 Introduction
 ============
 This document is for people interested in contributing to the Synchronet
-Documentation Project (http://wasteland-bbs.com/syncdocs/).
+Documentation Project : http://wasteland-bbs.com/syncdocs/
 
 Synchronet and it's related Source Code and Documentation is freely available
 and is continuing to be developed as an Open Source project.
@@ -46,14 +46,14 @@ fashion to ensure an organized and efficient version control system.  All
 changes should be *thoroughly documented* when uploading to the repository.
 
 Please refer to the CVS Documentation for information on how to obtain and
-use the CVS Features and Functions (http://www.cvshome.org)
+use the CVS Features and Functions http://www.cvshome.org .
 
 If you're looking for a GUI front-end for CVS management try these :
 http://www.wincvs.org
 http://www.lincvs.org
 
 If you have any questions on using CVS with the Synchronet Documentation :
-syndocs@wasteland-bbs.com
+syncdocs@wasteland-bbs.com 
 
 Working with the CVS Files Locally
 ==================================
@@ -96,7 +96,7 @@ files and contribute to the project.
               the Documentation Project files themselves should be uploaded
               to the repository.  If you are unsure which files are needed
               when uploading to the repository, please refer to the CVSweb
-              (http://cvs.synchro.net/cgi-bin/cvsweb.cgi) to see which files
+              http://cvs.synchro.net/cgi-bin/cvsweb.cgi to see which files
               are currently checked-in to CVS.
 
 Working with other HTML/Text Editors
