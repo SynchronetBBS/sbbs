@@ -1068,6 +1068,8 @@ static void native_service_thread(void* arg)
 		lprintf("%04d !%s CLIENT BLOCKED in host.can: %s"
 			,socket, service->protocol, host_name);
 		close_socket(socket);
+		if(service->clients)
+			service->clients--;
 		thread_down();
 		return;
 	}
