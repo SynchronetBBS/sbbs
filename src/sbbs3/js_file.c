@@ -50,6 +50,7 @@ typedef struct
 	uchar	etx;
 	BOOL	external;	/* externally created, don't close */
 	BOOL	debug;
+	BOOL	rot13;
 	BOOL	uuencoded;
 	BOOL	b64encoded;
 	BOOL	network_byte_order;
@@ -241,6 +242,9 @@ js_read(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		if(cp) *cp=0; 
 	}
 
+	if(p->rot13)
+		rot13(buf);
+
 	if(p->uuencoded || p->b64encoded) {
 		uulen=len*2;
 		if((uubuf=malloc(uulen))==NULL)
@@ -304,6 +308,8 @@ js_readln(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 			cp=strchr(buf,p->etx);
 			if(cp) *cp=0; 
 		}
+		if(p->rot13)
+			rot13(buf);
 		if((js_str=JS_NewStringCopyZ(cx,buf))!=NULL)
 			*rval = STRING_TO_JSVAL(js_str);
 	}
@@ -426,6 +432,9 @@ js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		cp=uubuf;
 	}
 
+	if(p->rot13)
+		rot13(cp);
+
 	tlen=len;
 	if(argc>1) {
 		JS_ValueToInt32(cx,argv[1],(int32*)&tlen);
@@ -479,6 +488,9 @@ js_writeln(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		}
 		cp = JS_GetStringBytes(str);
 	}
+
+	if(p->rot13)
+		rot13(cp);
 
 	if(fprintf(p->fp,"%s\n",cp)!=0)
 		*rval = JSVAL_TRUE;
@@ -780,6 +792,7 @@ enum {
 	,FILE_PROP_ATTRIBUTES
 	,FILE_PROP_UUENCODED
 	,FILE_PROP_B64ENCODED
+	,FILE_PROP_ROT13
 	,FILE_PROP_NETWORK_ORDER
 	/* dynamically calculated */
 	,FILE_PROP_CHKSUM
@@ -813,6 +826,9 @@ static JSBool js_file_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			break;
 		case FILE_PROP_B64ENCODED:
 			JS_ValueToBoolean(cx,*vp,&(p->b64encoded));
+			break;
+		case FILE_PROP_ROT13:
+			JS_ValueToBoolean(cx,*vp,&(p->rot13));
 			break;
 		case FILE_PROP_NETWORK_ORDER:
 			JS_ValueToBoolean(cx,*vp,&(p->network_byte_order));
@@ -918,6 +934,9 @@ static JSBool js_file_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 		case FILE_PROP_B64ENCODED:
 			*vp = BOOLEAN_TO_JSVAL(p->b64encoded);
 			break;
+		case FILE_PROP_ROT13:
+			*vp = BOOLEAN_TO_JSVAL(p->rot13);
+			break;
 		case FILE_PROP_NETWORK_ORDER:
 			*vp = BOOLEAN_TO_JSVAL(p->network_byte_order);
 			break;
@@ -1003,6 +1022,7 @@ static struct JSPropertySpec js_file_properties[] = {
 	{	"length"			,FILE_PROP_LENGTH		,JSPROP_ENUMERATE,	NULL,NULL},
 	{	"attributes"		,FILE_PROP_ATTRIBUTES	,JSPROP_ENUMERATE,	NULL,NULL},
 	{	"network_byte_order",FILE_PROP_NETWORK_ORDER,JSPROP_ENUMERATE,	NULL,NULL},
+	{	"rot13"				,FILE_PROP_ROT13		,JSPROP_ENUMERATE,	NULL,NULL},
 	{	"uue"				,FILE_PROP_UUENCODED	,JSPROP_ENUMERATE,	NULL,NULL},
 	{	"base64"			,FILE_PROP_B64ENCODED	,JSPROP_ENUMERATE,	NULL,NULL},
 	/* dynamically calculated */
@@ -1030,6 +1050,7 @@ static char* file_prop_desc[] = {
 	,"the current length of the file (in bytes)"
 	,"file mode/attributes"
 	,"set to <i>true</i> if binary data is to be written and read in Network Byte Order (big end first)"
+	,"set to <i>true</i> to enable automatic ROT13 translatation of text"
 	,"set to <i>true</i> to enable automatic unix-to-unix encode and decode on <tt>read</tt> and <tt>write</tt> calls"
 	,"set to <i>true</i> to enable automatic base64 encode and decode on <tt>read</tt> and <tt>write</tt> calls"
 	,"calculated 16-bit CRC of file contents - <small>READ ONLY</small>"

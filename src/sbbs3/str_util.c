@@ -257,6 +257,25 @@ char* DLLCALL truncstr(char* str, const char* set)
 }
 
 /****************************************************************************/
+/* rot13 encoder/decoder - courtesy of Mike Acar							*/
+/****************************************************************************/
+char* DLLCALL rot13(char* str)
+{
+	char ch, cap;
+	char* p;
+  
+	p=str;
+	while((ch=*p)!=0) {
+		cap = ch & 32;
+		ch &= ~cap;
+		ch = ((ch >= 'A') && (ch <= 'Z') ? ((ch - 'A' + 13) % 26 + 'A') : ch) | cap;
+		*(p++)=ch;
+    }
+
+	return(str);
+}
+
+/****************************************************************************/
 /* Puts a backslash on path strings if not just a drive letter and colon	*/
 /****************************************************************************/
 void backslashcolon(char *str)

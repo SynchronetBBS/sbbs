@@ -571,7 +571,27 @@ js_quote_msg(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	return(JS_TRUE);
 }
 
+static JSBool
+js_rot13(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		p;
+	char*		str;
+	JSString*	js_str;
 
+	if((str=JS_GetStringBytes(JS_ValueToString(cx, argv[0])))==NULL) 
+		return(JS_FALSE);
+
+	if((p=dupestr(str))==NULL)
+		return(JS_FALSE);
+
+	js_str = JS_NewStringCopyZ(cx, rot13(p));
+	free(p);
+	if(js_str==NULL)
+		return(JS_FALSE);
+
+	*rval = STRING_TO_JSVAL(js_str);
+	return(JS_TRUE);
+}
 
 /* This table is used to convert between IBM ex-ASCII and HTML character entities */
 /* Much of this table supplied by Deuce (thanks!) */
@@ -1421,6 +1441,9 @@ static jsMethodSpec js_global_functions[] = {
 	{"quote_msg",		js_quote_msg,		1,	JSTYPE_STRING,	JSDOCSTR("string text [,line_length] [,prefix]")
 	,JSDOCSTR("returns a quoted version of the message text string argumnet, <i>line_length</i> defaults to <i>79</i>, "
 		"<i>prefix</i> defaults to <tt>\" > \"</tt>")
+	},
+	{"rot13_translate",	js_rot13,			1,	JSTYPE_STRING,	JSDOCSTR("string text")
+	,JSDOCSTR("returns ROT13-translated version of text string (will encode or decode text)")
 	},
 	{"base64_encode",	js_b64_encode,		1,	JSTYPE_STRING,	JSDOCSTR("string text")
 	,JSDOCSTR("returns base64-encoded version of text string or <i>null</i> on error")
