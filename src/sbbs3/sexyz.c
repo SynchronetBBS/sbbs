@@ -57,6 +57,7 @@
 #include "sockwrap.h"
 #include "str_list.h"
 #include "ini_file.h"
+#include "eventwrap.h"
 #include "threadwrap.h"
 
 /* sbbs */
@@ -84,6 +85,7 @@ zmodem_t zm;
 
 FILE*	errfp;
 FILE*	statfp;
+FILE*	logfp=NULL;
 
 char	revision[16];
 
@@ -97,10 +99,10 @@ BOOL	debug_tx=FALSE;
 BOOL	debug_rx=FALSE;
 BOOL	debug_telnet=FALSE;
 
-RingBuf inbuf;
-RingBuf outbuf;
-HANDLE	outbuf_empty;
-unsigned outbuf_drain_timeout;
+RingBuf		inbuf;
+RingBuf		outbuf;
+xpevent_t	outbuf_empty;
+unsigned	outbuf_drain_timeout;
 
 #define getcom(t)	recv_byte(NULL,t)
 #define putcom(ch)	send_byte(NULL,ch,10)
@@ -168,7 +170,7 @@ void bail(int code)
 {
 #if !SINGLE_THREADED
 	lprintf(LOG_DEBUG,"Waiting for output buffer to empty...");
-	WaitForSingleObject(outbuf_empty,5000);
+	WaitForEvent(outbuf_empty,5000);
 	lprintf(LOG_DEBUG,"\n");
 #endif
 
@@ -184,7 +186,8 @@ void bail(int code)
 	fprintf(statfp,"Exiting - Error level: %d",code);
 	fprintf(statfp,"\n");
 
-	fcloseall();
+	if(logfp!=NULL)
+		fclose(logfp);
 
 //	YIELD();
 
@@ -358,13 +361,8 @@ int send_byte(void* unused, uchar ch, unsigned timeout)
 		buf[0]=ch;
 
 	if(RingBufFree(&outbuf)<len)
-#if 0
-		if(sem_trywait_block(&outbuf.empty_sem,timeout*1000)!=0)
+		if(WaitForEvent(outbuf_empty,timeout*1000)!=WAIT_OBJECT_0)
 			return(-1);
-#else
-		if(WaitForSingleObject(outbuf_empty,timeout*1000)!=WAIT_OBJECT_0)
-			return(-1);
-#endif
 
 	RingBufWrite(&outbuf,buf,len);
 
@@ -622,7 +620,7 @@ void dump_block(long block_size)
 	fprintf(statfp,"\n");
 }
 
-void send_files(char** fname, uint fnames, FILE* log)
+void send_files(char** fname, uint fnames)
 {
 	char	path[MAX_PATH+1];
 	int		ch;
@@ -936,7 +934,7 @@ void send_files(char** fname, uint fnames, FILE* log)
 					);
 
 			/* DSZLOG entry */
-			if(log) {
+			if(logfp) {
 				fprintf(statfp,"Updating DSZLOG: %s\n", dszlog);
 				if(mode&ZMODEM)
 					l=fsize;
@@ -945,7 +943,7 @@ void send_files(char** fname, uint fnames, FILE* log)
 					if(l>fsize)
 						l=fsize;
 				}
-				fprintf(log,"%c %6lu %5u bps %4lu cps %3u errors %5u %4u "
+				fprintf(logfp,"%c %6lu %5u bps %4lu cps %3u errors %5u %4u "
 					"%s -1\n"
 					,success ? (mode&ZMODEM ? 'z':'S') : 'E'
 					,l
@@ -999,7 +997,7 @@ void send_files(char** fname, uint fnames, FILE* log)
 	}
 }
 
-void receive_files(char** fname, int fnames, FILE* log)
+void receive_files(char** fname, int fnames)
 {
 	char	str[MAX_PATH+1];
 	int		i;
@@ -1330,8 +1328,9 @@ void receive_files(char** fname, int fnames, FILE* log)
 		newline();
 		fprintf(statfp,"Successful - Time: %lu:%02lu  CPS: %lu\n"
 			,t/60,t%60,l/t);
-		if(log) {
-			fprintf(log,"%c %6lu %5u bps %4lu cps %3u errors %5u %4u "
+		if(logfp) {
+			fprintf(statfp,"Updating DSZLOG: %s\n", dszlog);
+			fprintf(logfp,"%c %6lu %5u bps %4lu cps %3u errors %5u %4u "
 				"%s %d\n"
 				,mode&ZMODEM ? 'Z' : 'R'
 				,l
@@ -1391,7 +1390,6 @@ int main(int argc, char **argv)
 	int 	i;
 	uint	fnames=0;
 	FILE*	fp;
-	FILE*	log=NULL;
 	BOOL	tcp_nodelay;
 	char	compiler[32];
 	str_list_t fname_list;
@@ -1630,7 +1628,7 @@ int main(int argc, char **argv)
 	}
 
 	if((dszlog=getenv("DSZLOG"))!=NULL) {
-		if((log=fopen(dszlog,"w"))==NULL) {
+		if((logfp=fopen(dszlog,"w"))==NULL) {
 			fprintf(statfp,"!Error opening DSZLOG file: %s\n",dszlog);
 			bail(1); 
 		}
@@ -1647,9 +1645,9 @@ int main(int argc, char **argv)
 #endif
 
 	if(mode&RECV)
-		receive_files(fname_list, fnames, log);
+		receive_files(fname_list, fnames);
 	else
-		send_files(fname_list, fnames, log);
+		send_files(fname_list, fnames);
 
 	bail(0);
 	return(0);
