@@ -1629,10 +1629,14 @@ void upop(char *str)
 	int i,j,k;
 
 	if(!str) {
-		puttext(28,12,53,14,sav);
+		/* puttext(28,12,53,14,sav); */
+		puttext((api->scrn_width-26+1)/2+1,(api->scrn_len-3+1)/2+1
+			,(api->scrn_width+26-1)/2+1,(api->scrn_len+3-1)/2+1,sav);
 		return;
 	}
-	gettext(28,12,53,14,sav);
+	/* gettext(28,12,53,14,sav); */
+	gettext((api->scrn_width-26+1)/2+1,(api->scrn_len-3+1)/2+1
+			,(api->scrn_width+26-1)/2+1,(api->scrn_len+3-1)/2+1,sav);
 	memset(buf,SP,25*3*2);
 	for(i=1;i<26*3*2;i+=2)
 		buf[i]=(hclr|(bclr<<4));
@@ -1655,7 +1659,9 @@ void upop(char *str)
 		buf[i]='Ä';
 	buf[i]='Ù';
 
-	puttext(28,12,53,14,buf);
+	/* puttext(28,12,53,14,buf); */
+	puttext((api->scrn_width-26+1)/2+1,(api->scrn_len-3+1)/2+1
+			,(api->scrn_width+26-1)/2+1,(api->scrn_len+3-1)/2+1,buf);
 }
 
 /****************************************************************************/
@@ -1690,7 +1696,7 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 	if(width>api->scrn_width)
 		width=api->scrn_width;
 	if(mode&WIN_L2R)
-		left=(api->scrn_width-width+1)/2;
+		left=(api->scrn_width-width+1)/2+1;
 	else if(mode&WIN_RHT)
 		left=api->scrn_width-(width+4+left);
 	if(mode&WIN_T2B)
