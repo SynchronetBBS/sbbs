@@ -1031,6 +1031,7 @@ static void js_static_service_thread(void* arg)
 		JS_DestroyScript(js_cx, js_script);
 
 		JS_DestroyContext(js_cx);	/* Free Context */
+		js_cx=NULL;
 	} while(!service->terminated && service->options&SERVICE_OPT_STATIC_LOOP);
 
 	if(js_cx!=NULL)
