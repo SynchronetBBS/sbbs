@@ -1105,7 +1105,12 @@ static void unescape(char *p)
 			p+=2;
 		}
 		else  {
-			*(dst++)=*p;
+			if(*p=='+')  {
+				*(dst++)=' ';
+			}
+			else  {
+				*(dst++)=*p;
+			}
 		}
 	}
 	*(dst)=0;
@@ -1608,6 +1613,7 @@ JSObject* DLLCALL js_CreateHttpRequestObject(JSContext* cx, JSObject* parent, ht
 	char		*key;
 	char		*value;
 	char		*p;
+	char		*post;
 
 	/* Return existing object if it's already been created */
 	if(JS_GetProperty(cx,parent,"http_request",&val) && val!=JSVAL_VOID)  {
@@ -1690,6 +1696,35 @@ JSObject* DLLCALL js_CreateHttpRequestObject(JSContext* cx, JSObject* parent, ht
 			}
 		}
 	}
+
+	if(session->req.post_data != NULL)  {
+		if((post=malloc(session->req.post_len+1)) != NULL)  {
+			memcpy(post,session->req.post_data,session->req.post_len+1);
+			post[session->req.post_len+1]=0;
+		}
+		else  {
+			lprintf("%04d !ERROR Allocating %d bytes of memory",session->req.post_len+1);
+			return(FALSE);
+		}
+		lprintf("Parsing Post Data.");
+		p=post;
+		while((key=strtok(p,"="))!=NULL)  {
+			p=NULL;
+			if(key != NULL)  {
+				value=strtok(NULL,"&");
+				if(value != NULL)  {
+					unescape(value);
+					unescape(key);
+					lprintf("Setting %s to %s",key,value);
+					if((js_str=JS_NewStringCopyZ(cx, value))==NULL)
+						return(FALSE);
+					JS_DefineProperty(cx, query, key, STRING_TO_JSVAL(js_str)
+						,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+				}
+			}
+		}
+	}
+	
 	return(request);
 }
 
