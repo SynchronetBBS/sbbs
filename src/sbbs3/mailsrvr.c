@@ -1074,10 +1074,11 @@ static void pop3_thread(void* arg)
 	mail_close_socket(socket);
 }
 
-static BOOL rblchk(DWORD mail_addr_n, const char* rbl_addr)
+static ulong rblchk(DWORD mail_addr_n, const char* rbl_addr)
 {
 	char		name[256];
 	DWORD		mail_addr;
+	HOSTENT*	host;
 
 	mail_addr=ntohl(mail_addr_n);
 	sprintf(name,"%ld.%ld.%ld.%ld.%s"
@@ -1088,20 +1089,20 @@ static BOOL rblchk(DWORD mail_addr_n, const char* rbl_addr)
 		,rbl_addr
 		);
 
-	if(gethostbyname(name)==NULL)
-		return(FALSE);
+	if((host=gethostbyname(name))==NULL)
+		return(0);
 
-	return(TRUE);
+	return(*((ulong*)host->h_addr_list[0]));
 }
 
-static BOOL dns_blacklisted(DWORD addr, char* list)
+static ulong dns_blacklisted(DWORD addr, char* list)
 {
 	char	fname[MAX_PATH+1];
 	char	str[256];
 	char*	p;
 	char*	tp;
 	FILE*	fp;
-	BOOL	found=FALSE;
+	ulong	found=0;
 
 	sprintf(fname,"%sdns_blacklist.cfg", scfg.ctrl_dir);
 	if((fp=fopen(fname,"r"))==NULL)
@@ -1223,6 +1224,7 @@ static void smtp_thread(void* arg)
 	client_t	client;
 	smtp_t		smtp=*(smtp_t*)arg;
 	SOCKADDR_IN server_addr;
+	IN_ADDR		dns_result;
 	enum {
 			 SMTP_STATE_INITIAL
 			,SMTP_STATE_HELO
@@ -1312,7 +1314,7 @@ static void smtp_thread(void* arg)
 	if(startup->options&MAIL_OPT_USE_RBL
 		&& rblchk(smtp.client_addr.sin_addr.s_addr
 			,"blackholes.mail-abuse.org"
-			)==TRUE) {
+			)!=0) {
 		lprintf("%04d !SMTP SPAM server filtered (RBL): %s [%s]"
 			,socket, host_name, host_ip);
 		spamlog(&scfg, "SMTP", "Listed on RBL (http://mail-abuse.org/rbl)"
@@ -1327,7 +1329,7 @@ static void smtp_thread(void* arg)
 	if(startup->options&MAIL_OPT_USE_DUL
 		&& rblchk(smtp.client_addr.sin_addr.s_addr
 			,"dialups.mail-abuse.org"
-			)==TRUE) {
+			)!=0) {
 		lprintf("%04d !SMTP SPAM server filtered (DUL): %s [%s]"
 			,socket, host_name, host_ip);
 		spamlog(&scfg, "SMTP", "Listed on DUL (http://mail-abuse.org/dul)"
@@ -1342,7 +1344,7 @@ static void smtp_thread(void* arg)
 	if(startup->options&MAIL_OPT_USE_RSS
 		&& rblchk(smtp.client_addr.sin_addr.s_addr
 			,"relays.mail-abuse.org"
-			)==TRUE) {
+			)!=0) {
 		lprintf("%04d !SMTP SPAM server filtered (RSS): %s [%s]"
 			,socket, host_name, host_ip);
 		spamlog(&scfg, "SMTP", "Listed on RSS (http://mail-abuse.org/rss)"
@@ -1354,14 +1356,15 @@ static void smtp_thread(void* arg)
 		thread_down();
 		return;
 	}
-	if(dns_blacklisted(smtp.client_addr.sin_addr.s_addr,tmp)==TRUE) {
-		lprintf("%04d !SMTP SPAM server filtered (%s): %s [%s]"
-			,socket, tmp, host_name, host_ip);
-		sprintf(str,"Listed on %s",tmp);
+	dns_result.s_addr = dns_blacklisted(smtp.client_addr.sin_addr.s_addr,tmp);
+	if(dns_result.s_addr) {
+		lprintf("%04d !SMTP SPAM server filtered (%s): %s [%s] = %s"
+			,socket, tmp, host_name, host_ip, inet_ntoa(dns_result));
+		sprintf(str,"Listed on %s as %s", tmp, inet_ntoa(dns_result));
 		spamlog(&scfg, "SMTP", str, host_name, host_ip, NULL);
 		sockprintf(socket
-			,"571 Mail from %s refused"
-			,host_ip);					
+			,"571 Mail from %s refused due to listing at %s"
+			,host_ip, tmp);
 		mail_close_socket(socket);
 		thread_down();
 		return;
