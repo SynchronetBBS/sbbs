@@ -54,7 +54,7 @@ typedef struct xp_sem *xp_sem_t;
 #define SEM_FAILED	((xp_sem_t *)0)
 #define SEM_VALUE_MAX	UINT_MAX
 
-#ifdef __solaris__
+#if defined(__solaris__)
 typedef unsigned int	u_int32_t;
 #endif
 
