@@ -217,7 +217,7 @@ ifeq ($(os),sunos)    # Solaris
  CFLAGS	+= -D__solaris__ -DNEEDS_DAEMON -DNEEDS_FORKPTY -DNEEDS_SETENV -DNEEDS_CFMAKERAW
 endif
 ifeq ($(os),netbsd)	# NetBSD
- CFLAGS	+=	-D__unix__
+ CFLAGS	+=	-D__unix__ -I/usr/pkg/include
 endif
 ifeq ($(os),darwin)
  CFLAGS +=  -D__unix__ -fno-common -D__DARWIN__
@@ -243,7 +243,7 @@ else
  else
   ifeq ($(os),netbsd)    # NetBSD
    MT_CFLAGS	+=	-DUSE_XP_SEMAPHORES
-   MT_LDFLAGS    +=    -lpthread
+   MT_LDFLAGS    +=   -L/usr/pkg/lib -lpthread
    XP_SEM    :=    1
   else
    ifeq ($(os),qnx)    # QNX
