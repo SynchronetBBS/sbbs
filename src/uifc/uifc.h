@@ -235,7 +235,6 @@ void umsg(char *str);
 void upop(char *str);
 int  getstr(char *str, int maxlen, long mode);
 void timedisplay();
-void puttextinfo(struct text_info txt);
 int  lprintf(char *fmt,...);
 char *utimestr(time_t *intime);
 void help(void);
