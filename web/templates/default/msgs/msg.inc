@@ -36,7 +36,7 @@
 <tr>
     <td class="msgnavleft">@@prevlink@@</td>
     <td class="msgnavmid">@@JS:template.can_post?'<a href="reply.ssjs?msg_sub=^^sub:code^^&amp;reply_to=^^hdr:number^^">Reply</a>':'Reply'@@</td>
-    @@JS:template.can_delete?'<td class="msgnavmid"><a href="management.ssjs?Action=Delete+Message%28s%29&amp;msg_sub='+template.sub.code+'&amp;number='+template.hdr.number+'">Delete</a></td>':'<td class="msgnavmid">Delete</td>'@@
+    @@JS:template.can_delete?'<td class="msgnavmid"><a href="management.ssjs?Action=Delete+Selected+Message%28s%29&amp;msg_sub='+template.sub.code+'&amp;number='+template.hdr.number+'">Delete</a></td>':'<td class="msgnavmid">Delete</td>'@@
     <td class="msgnavright">@@nextlink@@</td>
 </tr>
 @@JS:if(template.replyto!=undefined) '<tr class="msg"><td colspan="4"><b>In Reply To: </b><a href="msg.ssjs?msg_sub='+sub+'&amp;message='+template.replyto.number+'">'+template.replyto.subject+'</a> ('+template.replyto.from+')</td></tr>'; else '';@@
