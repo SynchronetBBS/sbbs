@@ -2228,20 +2228,28 @@ BOOL DLLCALL is_download_free(scfg_t* cfg, uint dirnum, user_t* user)
 /* Add an IP address (with comment) to the IP filter/trashcan file			*/
 /* ToDo: Move somewhere more appropriate (filter.c?)						*/
 /****************************************************************************/
-BOOL DLLCALL filter_ip(scfg_t* cfg, char* prot, char* reason, char* ip_addr, char* username)
+BOOL DLLCALL filter_ip(scfg_t* cfg, char* prot, char* reason, char* host, char* ip_addr, char* username)
 {
 	char	filename[MAX_PATH+1];
 	char	tstr[64];
     FILE*	fp;
     time_t	now=time(NULL);
 
+	if(ip_addr==NULL)
+		return(FALSE);
+
 	sprintf(filename,"%sip.can",cfg->text_dir);
 
     if((fp=fopen(filename,"a"))==NULL)
     	return(FALSE);
 
-    fprintf(fp,"\n;%s %s by %s on %s\n%s\n"
-    	,prot,reason,username,timestr(cfg,&now,tstr),ip_addr);
+    fprintf(fp,"\n; %s %s by %s on %s\n"
+    	,prot,reason,username,timestr(cfg,&now,tstr));
+
+	if(host!=NULL)
+		fprintf(fp,"; Hostname: %s\n",host);
+		
+	fprintf(fp,"%s\n",ip_addr);
 
     fclose(fp);
 	return(TRUE);

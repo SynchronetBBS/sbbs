@@ -1009,6 +1009,7 @@ js_filter_ip(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	char*		p;
 	char*		prot=NULL;
 	char*		reason=NULL;
+	char*		host=NULL;
 	char*		ip_addr=NULL;
 	char*		from=NULL;
 	scfg_t*		cfg;
@@ -1026,12 +1027,14 @@ js_filter_ip(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 			prot=p;
 		else if(reason==NULL)
 			reason=p;
+		else if(host==NULL)
+			host=p;
 		else if(ip_addr==NULL)
 			ip_addr=p;
 		else if(from==NULL)
 			from=p;
 	}
-	*rval = BOOLEAN_TO_JSVAL(filter_ip(cfg,prot,reason,ip_addr,from));
+	*rval = BOOLEAN_TO_JSVAL(filter_ip(cfg,prot,reason,host,ip_addr,from));
 	return(JS_TRUE);
 }
 
@@ -1265,7 +1268,7 @@ static jsMethodSpec js_system_functions[] = {
 	{"hacklog",			js_hacklog,			5,	JSTYPE_BOOLEAN,	JSDOCSTR("[protocol, user, text, host, ip, port]")
 	,JSDOCSTR("log a suspected hack attempt")
 	},
-	{"filter_ip",		js_filter_ip,		4,	JSTYPE_BOOLEAN,	JSDOCSTR("[protocol, reason, ip, username]")
+	{"filter_ip",		js_filter_ip,		4,	JSTYPE_BOOLEAN,	JSDOCSTR("[protocol, reason, host, ip, username]")
 	,JSDOCSTR("add an IP address (with comment) to the system's IP filter file")
 	},		
 	{"get_node_message",js_get_node_message,0,	JSTYPE_STRING,	JSDOCSTR("number node")
