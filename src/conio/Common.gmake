@@ -1,4 +1,8 @@
-X_PATH ?=	/usr/X11R6
+ifeq ($os),sunos)
+ X_PATH	?=	/usr/X
+else
+ X_PATH ?=	/usr/X11R6
+endif
 X_HEADERS	?=	$(X_PATH)$(DIRSEP)include
 X_PRESENT	= $(shell if [ ! \( -f $(X_HEADERS)$(DIRSEP)X11$(DIRSEP)Xlib.h -a -f $(X_HEADERS)$(DIRSEP)X11$(DIRSEP)Xutil.h -a -f $(X_HEADERS)$(DIRSEP)X11$(DIRSEP)keysym.h -a -f $(X_HEADERS)$(DIRSEP)X11$(DIRSEP)Xatom.h \) ] ; then echo NO ; else echo YES ; fi )
 ifeq ($(X_PRESENT),NO)
