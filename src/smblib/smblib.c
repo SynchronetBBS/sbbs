@@ -1214,6 +1214,25 @@ int SMBCALL smb_hfield(smbmsg_t* msg, ushort type, size_t length, void* data)
 }
 
 /****************************************************************************/
+/* Adds a list of header fields to the 'msg' structure (in memory only)     */
+/****************************************************************************/
+int	SMBCALL smb_hfield_addlist(smbmsg_t* msg, hfield_t** hfield_list, void** hfield_dat)
+{
+	int			retval;
+	unsigned	n;
+
+	if(hfield_list==NULL)
+		return(SMB_FAILURE);
+
+	for(n=0;hfield_list[n]!=NULL;n++)
+		if((retval=smb_hfield(msg
+			,hfield_list[n]->type,hfield_list[n]->length,hfield_dat[n]))!=SMB_SUCCESS)
+			return(retval);
+
+	return(SMB_SUCCESS);
+}
+
+/****************************************************************************/
 /* Convenience function to add an ASCIIZ string header field				*/
 /****************************************************************************/
 int SMBCALL smb_hfield_str(smbmsg_t* msg, ushort type, const char* str)

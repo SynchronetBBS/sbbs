@@ -131,6 +131,7 @@ SMBEXPORT int 		SMBCALL smb_hfield(smbmsg_t* msg, ushort type, size_t length, vo
 SMBEXPORT int		SMBCALL smb_hfield_str(smbmsg_t* msg, ushort type, const char* str);
 SMBEXPORT int		SMBCALL smb_hfield_append(smbmsg_t* msg, ushort type, size_t length, void* data);
 SMBEXPORT int		SMBCALL smb_hfield_append_str(smbmsg_t* msg, ushort type, const char* data);
+SMBEXPORT int		SMBCALL smb_hfield_addlist(smbmsg_t* msg, hfield_t** hfield_list, void** hfield_dat);
 SMBEXPORT int 		SMBCALL smb_dfield(smbmsg_t* msg, ushort type, ulong length);
 SMBEXPORT void*		SMBCALL smb_get_hfield(smbmsg_t* msg, ushort type, hfield_t* hfield);
 SMBEXPORT char*		SMBCALL smb_hfieldtype(ushort type);
