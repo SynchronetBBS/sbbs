@@ -1094,9 +1094,9 @@ void DLLCALL services_thread(void* arg)
 		active_clients=0;
 		update_clients();
 
-		if(startup->services_cfg[0]==0)			
-			sprintf(startup->services_cfg,"%sservices.cfg",scfg.ctrl_dir);
-		if((service=read_services_cfg(startup->services_cfg, &services))==NULL) {
+		if(startup->cfg_file[0]==0)			
+			sprintf(startup->cfg_file,"%sservices.cfg",scfg.ctrl_dir);
+		if((service=read_services_cfg(startup->cfg_file, &services))==NULL) {
 			lprintf("!Failure reading configuration file");
 			cleanup(1);
 			return;
