@@ -58,6 +58,8 @@
 int console_new_mode=NO_NEW_MODE;
 int CurrMode;
 sem_t	console_mode_changed;
+sem_t	x11_beep;
+sem_t	x11_title;
 int InitCS;
 int InitCE;
 int FW, FH;
@@ -90,6 +92,7 @@ unsigned long white;
 GC gc;
 GC cgc;
 int xfd;
+char window_title[81];
 
 /* X functions */
 struct x11 {
@@ -490,7 +493,7 @@ KbdWrite(WORD code)
 
 void tty_beep(void)
 {
-	x11.XBell(dpy, 0);
+	sem_post(&x11_beep);
 }
 
 static int
@@ -876,6 +879,10 @@ video_async_event(void *crap)
 
 		if(console_new_mode!=NO_NEW_MODE)
 			init_mode(console_new_mode);
+		while(!sem_trywait(&x11_beep))
+			x11.XBell(dpy, 0);
+		if(!sem_trywait(&x11_title))
+			x11.XStoreName(dpy, win, window_title);
 
 		tv.tv_sec=0;
 		tv.tv_usec=54925;
@@ -1117,7 +1124,8 @@ init_window()
 		     ExposureMask | ButtonPressMask
 		     | ButtonReleaseMask | PointerMotionMask );
 
-    x11.XStoreName(dpy, win, "SyncConsole");
+	SAFECOPY(window_title,"SyncConsole");
+    x11.XStoreName(dpy, win, window_title);
 
     /* Get the default visual and depth for later use. */
     depth = DefaultDepth(dpy, DefaultScreen(dpy));
@@ -1133,12 +1141,6 @@ kbd_init()
 	K_BUFENDP = 0x20;	/* End of keyboard buffer */
 	K_NEXT = K_FREE = K_BUFSTARTP;
 	
-	return(0);
-}
-
-int
-mouse_init(void)
-{
 	return(0);
 }
 
@@ -1236,16 +1238,14 @@ console_init()
 		return(0);
 
 	sem_init(&console_mode_changed,0,0);
+	sem_init(&x11_beep,0,0);
+	sem_init(&x11_title,0,0);
 
    	if(kbd_init()) {
 		return(-1);
 	}
 
     if(video_init()) {
-		return(-1);
-	}
-
-    if(mouse_init()) {
 		return(-1);
 	}
 
@@ -1362,5 +1362,6 @@ tty_kbhit(void)
 
 void x_win_title(const char *title)
 {
-    x11.XStoreName(dpy, win, title);
+	SAFECOPY(window_title,title);
+	sem_post(&x11_title);
 }
