@@ -36,10 +36,7 @@
  ****************************************************************************/
 
 #include <errno.h>
-#include "threadwrap.h"
-#ifdef USE_XP_SEMAPHORES
-	#include "xpsem.h"
-#endif
+#include "semwrap.h"
 
 #if defined(__unix__)
 
@@ -53,8 +50,8 @@ sem_trywait_block(sem_t *sem, unsigned long timeout)
 	struct timeval currtime;
 	
 	gettimeofday(&currtime,NULL);
-	abstime.tv_sec=currtime.tv_sec+(currtime.tv_usec/1000+timeout)/1000;
-	abstime.tv_nsec=(currtime.tv_usec*1000+timeout*1000000)%1000000000;
+	abstime.tv_sec=currtime.tv_sec + (currtime.tv_usec/1000 + timeout)/1000;
+	abstime.tv_nsec=(currtime.tv_usec*1000 + timeout*1000000)%1000000000;
 
 	if((retval=sem_timedwait(sem, &abstime)) && errno==ETIMEDOUT)
 		errno=EAGAIN;
