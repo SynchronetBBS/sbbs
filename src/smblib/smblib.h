@@ -163,11 +163,35 @@ SMBEXPORT int		SMBCALL smb_updatethread(smb_t* smb, smbmsg_t* remsg, ulong newms
 
 /* hash-related functions */
 SMBEXPORT int		SMBCALL smb_findhash(smb_t* smb, hash_t** compare_list, hash_t* found, BOOL mark);
-SMBEXPORT int		SMBCALL smb_hashmsg(smb_t* smb, smbmsg_t* msg, uchar* text, BOOL update);
-SMBEXPORT hash_t*	SMBCALL	smb_hash(ulong msgnum, ulong time, unsigned source, unsigned flags, uchar* data, size_t length);
-SMBEXPORT hash_t*	SMBCALL	smb_hashstr(ulong msgnum, ulong time, unsigned source, unsigned flags, uchar* str);
-SMBEXPORT hash_t**	SMBCALL smb_msghashes(smb_t* smb, smbmsg_t* msg, uchar* text);
+SMBEXPORT int		SMBCALL smb_hashmsg(smb_t* smb, smbmsg_t* msg, const uchar* text, BOOL update);
+SMBEXPORT hash_t*	SMBCALL	smb_hash(ulong msgnum, ulong time, unsigned source
+								,unsigned flags, const uchar* data, size_t length);
+SMBEXPORT hash_t*	SMBCALL	smb_hashstr(ulong msgnum, ulong time, unsigned source
+								,unsigned flags, const uchar* str);
+SMBEXPORT hash_t**	SMBCALL smb_msghashes(smb_t* smb, smbmsg_t* msg, const uchar* text);
 SMBEXPORT int		SMBCALL smb_addhashes(smb_t* smb, hash_t** hash_list);
+
+/* Fast look-up functions (using hashes) */
+SMBEXPORT int 		SMBCALL smb_getmsgidx_by_hash(smb_t* smb, smbmsg_t* msg, unsigned source
+								 ,unsigned flags, const uchar* data, size_t length);
+SMBEXPORT int 		SMBCALL smb_getmsghdr_by_hash(smb_t* smb, smbmsg_t* msg, unsigned source
+								 ,unsigned flags, const uchar* data, size_t length);
+
+/* 0-length specifies ASCIIZ data (length calculated automatically) */
+#define smb_getmsgidx_by_hashstr(smb, msg, source, flags, data) \
+		smb_getmsgidx_by_hash(smb, msg, source, flags, data, 0)
+#define smb_getmsghdr_by_hashstr(smb, msg, source, flags, data) \
+		smb_getmsghdr_by_hash(smb, msg, source, flags, data, 0)
+
+/* Fast Message-ID based look-up macros (using hashes) */
+#define smb_getmsgidx_by_msgid(smb, msg, id) \
+		smb_getmsgidx_by_hashstr(smb, msg, RFC822MSGID, SMB_HASH_MASK, id)
+#define smb_getmsgidx_by_ftnid(smb, msg, id) \
+		smb_getmsgidx_by_hashstr(smb, msg, FIDOMSGID, SMB_HASH_MASK, id)
+#define smb_getmsghdr_by_msgid(smb, msg, id) \
+		smb_getmsghdr_by_hashstr(smb, msg, RFC822MSGID, SMB_HASH_MASK, id)
+#define smb_getmsghdr_by_ftnid(smb, msg, id) \
+		smb_getmsghdr_by_hashstr(smb, msg, FIDOMSGID, SMB_HASH_MASK, id)
 
 /* smbtxt.c */
 SMBEXPORT char*		SMBCALL smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, ulong mode);

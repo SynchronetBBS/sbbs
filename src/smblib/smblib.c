@@ -2481,8 +2481,8 @@ static char* strip_chars(uchar* str, uchar* set)
 
 /* Allocates and calculates hashes of data (based on flags)					*/
 /* Returns NULL on failure													*/
-hash_t* SMBCALL smb_hash(ulong msgnum, ulong t, unsigned source, unsigned flags, uchar* data
-						 ,size_t length)
+hash_t* SMBCALL smb_hash(ulong msgnum, ulong t, unsigned source, unsigned flags
+						 ,const uchar* data, size_t length)
 {
 	hash_t*	hash;
 
@@ -2494,9 +2494,9 @@ hash_t* SMBCALL smb_hash(ulong msgnum, ulong t, unsigned source, unsigned flags,
 	hash->source=source;
 	hash->flags=flags;
 	if(flags&SMB_HASH_CRC16)
-		hash->crc16=crc16(data,length);
+		hash->crc16=crc16((char*)data,length);
 	if(flags&SMB_HASH_CRC32)
-		hash->crc32=crc32(data,length);
+		hash->crc32=crc32((char*)data,length);
 	if(flags&SMB_HASH_MD5)
 		MD5_calc(hash->md5,data,length);
 
@@ -2504,10 +2504,12 @@ hash_t* SMBCALL smb_hash(ulong msgnum, ulong t, unsigned source, unsigned flags,
 }
 
 /* Allocates and calculates hashes of data (based on flags)					*/
+/* Supports string hash "pre-processing" (e.g. lowercase, strip whitespace)	*/
 /* Returns NULL on failure													*/
-hash_t* SMBCALL smb_hashstr(ulong msgnum, ulong t, unsigned source, unsigned flags, uchar* str)
+hash_t* SMBCALL smb_hashstr(ulong msgnum, ulong t, unsigned source, unsigned flags
+							,const uchar* str)
 {
-	uchar*	p=str;
+	uchar*	p=(uchar*)str;
 	hash_t*	hash;
 
 	if(flags&SMB_HASH_PROC_MASK) {	/* string pre-processing */
@@ -2529,7 +2531,7 @@ hash_t* SMBCALL smb_hashstr(ulong msgnum, ulong t, unsigned source, unsigned fla
 
 /* Allocatese and calculates all hashes for a single message				*/
 /* Returns NULL on failure													*/
-hash_t** SMBCALL smb_msghashes(smb_t* smb, smbmsg_t* msg, uchar* text)
+hash_t** SMBCALL smb_msghashes(smb_t* smb, smbmsg_t* msg, const uchar* text)
 {
 	size_t		h=0;
 	uchar		flags=SMB_HASH_CRC16|SMB_HASH_CRC32|SMB_HASH_MD5;
@@ -2560,7 +2562,7 @@ hash_t** SMBCALL smb_msghashes(smb_t* smb, smbmsg_t* msg, uchar* text)
 }
 
 /* Calculates and stores the hashes for a single message					*/
-int SMBCALL smb_hashmsg(smb_t* smb, smbmsg_t* msg, uchar* text, BOOL update)
+int SMBCALL smb_hashmsg(smb_t* smb, smbmsg_t* msg, const uchar* text, BOOL update)
 {
 	size_t		n;
 	int			retval=SMB_SUCCESS;
@@ -2577,5 +2579,60 @@ int SMBCALL smb_hashmsg(smb_t* smb, smbmsg_t* msg, uchar* text, BOOL update)
 
 	return(retval);
 }
+
+/* length=0 specifies ASCIIZ data											*/
+int SMBCALL smb_getmsgidx_by_hash(smb_t* smb, smbmsg_t* msg, unsigned source
+								 ,unsigned flags, const uchar* data, size_t length)
+{
+	int			retval;
+	size_t		n;
+	hash_t**	hashes;
+	hash_t		found;
+
+	if((hashes=(hash_t**)malloc(sizeof(hash_t*)*2))==NULL)
+		return(SMB_ERR_MEM);
+
+	if(length==0)
+		hashes[0]=smb_hashstr(0,0,source,flags,data);
+	else
+		hashes[0]=smb_hash(0,0,source,flags,data,length);
+	if(hashes[0]==NULL)
+		return(SMB_ERR_MEM);
+
+	hashes[1]=NULL;	/* terminate list */
+
+	memset(&found,0,sizeof(found));
+	if((retval=smb_findhash(smb, hashes, &found, FALSE))==SMB_SUCCESS) {
+		if(found.number==0)
+			retval=SMB_FAILURE;	/* use better error value here? */
+		else {
+			msg->hdr.number=found.number;
+			retval=smb_getmsgidx(smb, msg);
+		}
+	}
+
+	FREE_LIST(hashes,n);
+
+	return(retval);
+}
+
+int SMBCALL smb_getmsghdr_by_hash(smb_t* smb, smbmsg_t* msg, unsigned source
+								 ,unsigned flags, const uchar* data, size_t length)
+{
+	int retval;
+
+	if((retval=smb_getmsgidx_by_hash(smb,msg,source,flags,data,length))!=SMB_SUCCESS)
+		return(retval);
+
+	if((retval=smb_lockmsghdr(smb,msg))!=SMB_SUCCESS)
+		return(retval);
+
+	retval=smb_getmsghdr(smb,msg);
+
+	smb_unlockmsghdr(smb,msg); 
+
+	return(retval);
+}
+
 
 /* End of SMBLIB.C */
