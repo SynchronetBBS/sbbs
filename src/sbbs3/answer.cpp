@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -42,7 +42,7 @@ bool sbbs_t::answer()
 {
 	char	str[MAX_PATH+1],str2[MAX_PATH+1],c;
 	char 	tmp[MAX_PATH+1];
-	char 	tmp2[MAX_PATH+1];
+	char 	path[MAX_PATH+1];
 	int		i,l,in;
 	struct tm tm;
 	struct in_addr addr;
@@ -108,7 +108,8 @@ bool sbbs_t::answer()
 			if(useron.number) {
 				getuserdat(&cfg,&useron);
 				useron.misc&=~(ANSI|COLOR|RIP|WIP);
-				if(!trashcan(client.addr,"rlogin")) {
+				SAFEPRINTF(path,"%srlogin.cfg",cfg.ctrl_dir);
+				if(!findstr(client.addr,path)) {
 					SAFECOPY(tmp
 						,startup->options&BBS_OPT_USE_2ND_RLOGIN ? str : str2);
 					for(i=0;i<3;i++) {
@@ -297,11 +298,11 @@ bool sbbs_t::answer()
 		/* Display ANSWER screen */
 		sprintf(str,"%sanswer",cfg.text_dir);
 		sprintf(tmp,"%s.%s",str,autoterm&WIP ? "wip":"rip");
-		sprintf(tmp2,"%s.html",str);
+		sprintf(path,"%s.html",str);
 		sprintf(str2,"%s.ans",str);
 		if(autoterm&(RIP|WIP) && fexist(tmp))
 			strcat(str,autoterm&WIP ? ".wip":".rip");
-		else if(autoterm&HTML && fexist(tmp2))
+		else if(autoterm&HTML && fexist(path))
 			strcat(str,".html");
 		else if(autoterm&ANSI && fexist(str2))
 			strcat(str,".ans");
