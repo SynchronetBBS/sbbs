@@ -108,10 +108,10 @@
 /* Synchronet-specific */
 /***********************/
 #include "genwrap.h"
+#include "threadwrap.h"	/* must be before dirwrap.h for OpenBSD FULLPATH */
 #include "dirwrap.h"
 #include "filewrap.h"
 #include "sockwrap.h"
-#include "threadwrap.h"
 #include "smblib.h"
 #include "ars_defs.h"
 #include "scfgdefs.h"
