@@ -82,7 +82,8 @@ typedef struct {
 } services_startup_t;
 
 /* Option bit definitions	*/
-#define SERVICE_OPT_UDP		(1<<0)	/* UDP Socket */
+#define SERVICE_OPT_UDP			(1<<0)	/* UDP Socket */
+#define SERVICE_OPT_STANDALONE	(1<<1)	/* Stand alone server */
 
 #ifdef __cplusplus
 extern "C" {

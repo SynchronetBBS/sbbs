@@ -327,9 +327,11 @@ js_login(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(argc>2)
 		inc_logons=JSVAL_TO_BOOLEAN(argv[2]);
 
-	SAFECOPY(user.note,client->client->addr);
-	SAFECOPY(user.comp,client->client->host);
-	SAFECOPY(user.modem,client->service->protocol);
+	if(client->client!=NULL) {
+		SAFECOPY(user.note,client->client->addr);
+		SAFECOPY(user.comp,client->client->host);
+		SAFECOPY(user.modem,client->service->protocol);
+	}
 
 	if(inc_logons) {
 		user.logons++;
@@ -353,8 +355,10 @@ js_login(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		lprintf("%04d %s !JavaScript ERROR creating msg_area object"
 			,client->socket,client->service->protocol);
 
-	client->client->user=user.alias;
-	client_on(client->socket,client->client,TRUE /* update */);
+	if(client->client!=NULL) {
+		client->client->user=user.alias;
+		client_on(client->socket,client->client,TRUE /* update */);
+	}
 
 	memcpy(&client->user,&user,sizeof(user));
 
@@ -480,8 +484,9 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 			break;
 
 		/* Client Object */
-		if(js_CreateClientObject(js_cx, js_glob, "client", service_client->client, sock)==NULL)
-			break;
+		if(service_client->client!=NULL)
+			if(js_CreateClientObject(js_cx, js_glob, "client", service_client->client, sock)==NULL)
+				break;
 
 		/* User Class */
 		if(js_CreateUserClass(js_cx, js_glob, &scfg)==NULL) 
@@ -506,6 +511,10 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 		if((server=JS_DefineObject(js_cx, js_glob, "server", &js_server_class
 			,NULL,0))==NULL)
 			break;
+
+		if(service_client->client==NULL)	/* standalone service */
+			if(js_CreateSocketObject(js_cx, server, "socket", service_client->socket)==NULL)
+				break;
 
 		sprintf(ver,"Synchronet Services %s",revision);
 		val = STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, ver));
@@ -564,10 +573,49 @@ js_BranchCallback(JSContext *cx, JSScript *script)
     return(JS_TRUE);
 }
 
+static void js_init_cmdline(JSContext* js_cx, JSObject* js_obj, char* spath)
+{
+	char*					p;
+	char*					args=NULL;
+	int						argc=0;
+	JSString*				arg_str;
+	JSObject*				argv;
+	jsval					val;
+
+	p=spath;
+	while(*p && *p>' ') p++;
+	if(*p) {
+		*p=0;	/* truncate arguments */
+		args=p+1;
+	}
+	argv=JS_NewArrayObject(js_cx, 0, NULL);
+
+	if(args!=NULL && argv!=NULL) {
+		while(*args) {
+			p=strchr(args,' ');
+			if(p!=NULL)
+				*p=0;
+			while(*args && *args<=' ') args++; /* Skip spaces */
+			arg_str = JS_NewStringCopyZ(js_cx, args);
+			if(arg_str==NULL)
+				break;
+			val=STRING_TO_JSVAL(arg_str);
+			if(!JS_SetElement(js_cx, argv, argc, &val))
+				break;
+			argc++;
+			if(p==NULL)	/* last arg */
+				break;
+			args+=(strlen(args)+1);
+		}
+	}
+	JS_DefineProperty(js_cx, js_obj, "argv", OBJECT_TO_JSVAL(argv)
+		,NULL,NULL,JSPROP_READONLY);
+	JS_DefineProperty(js_cx, js_obj, "argc", INT_TO_JSVAL(argc)
+		,NULL,NULL,JSPROP_READONLY);
+}
 
 static void js_service_thread(void* arg)
 {
-	char*					p;
 	char*					host_name;
 	HOSTENT*				host;
 	SOCKET					socket;
@@ -575,11 +623,7 @@ static void js_service_thread(void* arg)
 	service_t*				service;
 	service_client_t		service_client;
 	/* JavaScript-specific */
-	char					spath[MAX_PATH];
-	char*					args=NULL;
-	int						argc=0;
-	JSString*				arg_str;
-	JSObject*				argv;
+	char					spath[MAX_PATH+1];
 	JSString*				datagram;
 	JSObject*				js_glob;
 	JSScript*				js_script;
@@ -674,37 +718,8 @@ static void js_service_thread(void* arg)
 
 	/* RUN SCRIPT */
 	sprintf(spath,"%s%s",scfg.exec_dir,service->cmd);
-	p=spath;
-	while(*p && *p>' ') p++;
-	if(*p) {
-		*p=0;	/* truncate arguments */
-		args=p+1;
-	}
 
-	argv=JS_NewArrayObject(js_cx, 0, NULL);
-
-	if(args!=NULL && argv!=NULL) {
-		while(*args) {
-			p=strchr(args,' ');
-			if(p!=NULL)
-				*p=0;
-			while(*args && *args<=' ') args++; /* Skip spaces */
-			arg_str = JS_NewStringCopyZ(js_cx, args);
-			if(arg_str==NULL)
-				break;
-			val=STRING_TO_JSVAL(arg_str);
-			if(!JS_SetElement(js_cx, argv, argc, &val))
-				break;
-			argc++;
-			if(p==NULL)	/* last arg */
-				break;
-			args+=(strlen(args)+1);
-		}
-	}
-	JS_DefineProperty(js_cx, js_glob, "argv", OBJECT_TO_JSVAL(argv)
-		,NULL,NULL,JSPROP_READONLY);
-	JS_DefineProperty(js_cx, js_glob, "argc", INT_TO_JSVAL(argc)
-		,NULL,NULL,JSPROP_READONLY);
+	js_init_cmdline(js_cx, js_glob, spath);
 
 	val = BOOLEAN_TO_JSVAL(JS_FALSE);
 	JS_SetProperty(js_cx, js_glob, "logged_in", &val);
@@ -755,6 +770,117 @@ static void js_service_thread(void* arg)
 
 	client_off(socket);
 	close_socket(socket);
+}
+
+static void js_standalone_service_thread(void* arg)
+{
+	char					spath[MAX_PATH+1];
+	service_t*				service;
+	service_client_t		service_client;
+	/* JavaScript-specific */
+	JSObject*				js_glob;
+	JSScript*				js_script;
+	JSRuntime*				js_runtime;
+	JSContext*				js_cx;
+	jsval					val;
+	jsval					rval;
+
+	// Copy service_client arg
+	service=(service_t*)arg;
+
+	lprintf("%04d %s JavaScript standalone service thread started", service->socket, service->protocol);
+
+	thread_up(TRUE /* setuid */);
+
+	memset(&service_client,0,sizeof(service_client));
+	service_client.socket = service->socket;
+	service_client.service = service;
+
+	if((js_runtime=JS_NewRuntime(startup->js_max_bytes))==NULL
+		|| (js_cx=js_initcx(js_runtime,service->socket,&service_client,&js_glob))==NULL) {
+		lprintf("%04d !%s ERROR initializing JavaScript context"
+			,service->socket,service->protocol);
+		close_socket(service->socket);
+		service->socket=INVALID_SOCKET;
+		thread_down();
+		return;
+	}
+
+	sprintf(spath,"%s%s",scfg.exec_dir,service->cmd);
+	js_init_cmdline(js_cx, js_glob, spath);
+
+	val = BOOLEAN_TO_JSVAL(JS_FALSE);
+	JS_SetProperty(js_cx, js_glob, "logged_in", &val);
+
+	js_script=JS_CompileFile(js_cx, js_glob, spath);
+
+	if(js_script==NULL) 
+		lprintf("%04d !JavaScript FAILED to compile script (%s)",service->socket,spath);
+	else  {
+		JS_SetBranchCallback(js_cx, js_BranchCallback);
+		JS_ExecuteScript(js_cx, js_glob, js_script, &rval);
+		JS_DestroyScript(js_cx, js_script);
+	}
+	JS_DestroyContext(js_cx);	/* Free Context */
+
+	JS_DestroyRuntime(js_runtime);
+
+	thread_down();
+	lprintf("%04d %s JavaScript standalone service thread terminated"
+		,service->socket, service->protocol);
+
+	close_socket(service->socket);
+	service->socket=INVALID_SOCKET;
+}
+
+static void native_standalone_service_thread(void* arg)
+{
+	char					cmd[MAX_PATH];
+	char					fullcmd[MAX_PATH*2];
+	SOCKET					socket_dup;
+	service_t*				service;
+
+	service = (service_t*)arg;
+
+	lprintf("%04d %s standalone service thread started", service->socket, service->protocol);
+
+	thread_up(TRUE /* setuid */);
+
+#ifdef _WIN32
+	if(!DuplicateHandle(GetCurrentProcess(),
+		(HANDLE)socket,
+		GetCurrentProcess(),
+		(HANDLE*)&socket_dup,
+		0,
+		TRUE, // Inheritable
+		DUPLICATE_SAME_ACCESS)) {
+		lprintf("%04d !%s ERROR %d duplicating socket descriptor"
+			,service->socket,service->protocol,GetLastError());
+		close_socket(service->socket);
+		service->socket=INVALID_SOCKET;
+		thread_down();
+		return;
+	}
+#else
+	socket_dup = dup(service->socket);
+#endif
+
+	/* RUN SCRIPT */
+	if(strpbrk(service->cmd,"/\\")==NULL)
+		sprintf(cmd,"%s%s",scfg.exec_dir,service->cmd);
+	else
+		strcpy(cmd,service->cmd);
+	sprintf(fullcmd,cmd,socket_dup);
+
+	system(fullcmd);
+
+	thread_down();
+	lprintf("%04d %s standalone service thread terminated"
+		,socket, service->protocol);
+
+	close_socket(service->socket);
+	service->socket=INVALID_SOCKET;
+	closesocket(socket_dup);	/* close duplicate handle */
 }
 
 static void native_service_thread(void* arg)
@@ -852,7 +978,7 @@ static void native_service_thread(void* arg)
 	client_on(socket,&client,FALSE /* update */);
 
 	/* RUN SCRIPT */
-	if(!strchr(service->cmd,BACKSLASH))
+	if(strpbrk(service->cmd,"/\\")==NULL)
 		sprintf(cmd,"%s%s",scfg.exec_dir,service->cmd);
 	else
 		strcpy(cmd,service->cmd);
@@ -1179,6 +1305,20 @@ void DLLCALL services_thread(void* arg)
 			return;
 		}
 
+		/* Setup standalone service threads */
+		for(i=0;i<(int)services;i++) {
+			if(!(service[i].options&SERVICE_OPT_STANDALONE))
+				continue;
+
+			/* start thread here */
+			SAFECOPY(cmd,service[i].cmd);
+			strlwr(cmd);
+			if(strstr(cmd,".js"))	/* JavaScript */
+				_beginthread(js_standalone_service_thread, 0, &service[i]);
+			else					/* Native */
+				_beginthread(native_standalone_service_thread, 0, &service[i]);
+		}
+
 		/* signal caller that we've started up successfully */
 		if(startup->started!=NULL)
     		startup->started();
@@ -1221,6 +1361,8 @@ void DLLCALL services_thread(void* arg)
 			FD_ZERO(&socket_set);	
 			high_socket=0;
 			for(i=0;i<(int)services;i++) {
+				if(service[i].options&SERVICE_OPT_STANDALONE)
+					continue;
 				if(service[i].socket==INVALID_SOCKET)
 					continue;
 				FD_SET(service[i].socket,&socket_set);
