@@ -370,7 +370,7 @@ char* iniSetIpAddress(str_list_t* list, const char* section, const char* key, ul
 					,ini_style_t* style)
 {
 	struct in_addr in_addr;
-	in_addr.s_addr=value;
+	in_addr.s_addr=htonl(value);
 	return iniSetString(list, section, key, inet_ntoa(in_addr), style);
 }
 #endif
