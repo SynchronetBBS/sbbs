@@ -646,6 +646,7 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 	printf("\n\n");
+	prep_dir(scfg.data_dir, scfg.temp_dir);
 
 	if(!(scfg.sys_misc&SM_LOCAL_TZ))
 		putenv("TZ=UTC0");
