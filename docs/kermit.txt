@@ -73,12 +73,7 @@ them and have new protocols automatically appear on the dynamic menus.
 
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-These instructions are specifically not authorized, approved, condoned, or
-verified by Michel Samson, the self-appointed Kermit expert and evangelist.
-
-"You've required too much of my patience, if you ask me!  The
-http://public.sogetel.net/bicephale/MSK.INI setup will remain available, refer
-to it any `SBBS' SysOp (or BBSer) who requires help - if you mind."
-                                              - Michel Samson
+For a different Kermit setup (Win32 only) which offers more user options, see
+http://public.sogetel.net/bicephale/MSK.INI
 
 /* End of kermit.txt */
