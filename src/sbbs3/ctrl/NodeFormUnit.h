@@ -76,6 +76,8 @@ __published:	// IDE-managed Components
     TMenuItem *RerunMenuItem;
     TToolButton *UserEditButton;
     TMenuItem *EditUser1;
+    TToolButton *UserMsgButton;
+    TMenuItem *SendMsgMenuItem;
 	void __fastcall FormShow(TObject *Sender);
 	void __fastcall TimerTick(TObject *Sender);
     void __fastcall FormHide(TObject *Sender);
@@ -89,6 +91,7 @@ __published:	// IDE-managed Components
     void __fastcall SpyButtonClick(TObject *Sender);
     void __fastcall RerunNodeButtonClick(TObject *Sender);
     void __fastcall UserEditButtonClick(TObject *Sender);
+    void __fastcall UserMsgButtonClick(TObject *Sender);
 private:	// User declarations
 public:		// User declarations
      __fastcall TNodeForm(TComponent* Owner);

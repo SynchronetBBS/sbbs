@@ -43,7 +43,9 @@
 #include <fcntl.h>
 #include <share.h>
 #include "NodeFormUnit.h"
+#include "UserMsgFormUnit.h"
 #include "SpyFormUnit.h"
+#include "sbbs.h"
 #include "nodedefs.h"
 #include "userdat.h"
 #include "ringbuf.h"
@@ -513,6 +515,28 @@ void __fastcall TNodeForm::UserEditButtonClick(TObject *Sender)
                 ,node.useron);
             WinExec(str,SW_SHOWNORMAL);
         }
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TNodeForm::UserMsgButtonClick(TObject *Sender)
+{
+    int     i;
+    node_t  node;
+
+	Application->CreateForm(__classid(TUserMsgForm), &UserMsgForm);
+    UserMsgForm->Memo->Text="\1n\1y\1hMessage From Sysop:\1w ";
+    UserMsgForm->Memo->SelStart=UserMsgForm->Memo->Text.Length();
+	if(UserMsgForm->ShowModal()==mrOk) {
+        for(i=0;i<ListBox->Items->Count;i++)
+            if(ListBox->Selected[i]==true) {
+                getnodedat(&MainForm->cfg,i+1,&node,0);
+                if(node.useron==0)
+                    continue;
+                putsmsg(&MainForm->cfg,node.useron
+                    ,UserMsgForm->Memo->Text.c_str());
+            }
+    }
+    delete UserMsgForm;
 }
 //---------------------------------------------------------------------------
 
