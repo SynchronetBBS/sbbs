@@ -35,7 +35,12 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
+#include <stdlib.h>	/* atoi */
+#include <string.h>	/* strnicmp */
+#include <ctype.h>	/* toupper */
+
 #include "smblib.h"
+#include "smbwrap.h"
 
 smb_t smb;
 
