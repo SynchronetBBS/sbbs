@@ -135,6 +135,8 @@ void __fastcall TConfigWizard::FormShow(TObject *Sender)
     int i;
     int status;
 
+   	Application->BringToFront();
+
     memset(&scfg,0,sizeof(scfg));
     SAFECOPY(scfg.ctrl_dir,MainForm->CtrlDirectory.c_str());
     scfg.size=sizeof(scfg);

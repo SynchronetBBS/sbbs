@@ -1630,6 +1630,7 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     }
 
     if(FirstRun) {
+    	Application->BringToFront();
     	Sleep(3000);	// Let 'em see the logo for a bit
         BBSConfigWizardMenuItemClick(Sender);
     }
