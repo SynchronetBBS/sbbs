@@ -51,7 +51,7 @@
 	#define REVISION	'A'
 #else
 	#define VERSION 	"3.00"  /* Version: Major.minor  */
-	#define REVISION	'E'
+	#define REVISION	'F'
 #endif
 
 #define VERSION_NOTICE		"Synchronet BBS for "PLATFORM_DESC\
@@ -1018,7 +1018,7 @@ typedef struct {                        /* Message sub board info */
 			*tagline,
 #endif
 			code[9];					/* Eight character code */
-#ifndef SBBS
+#if 0 /* ndef SBBS */
 	char	echopath[LEN_DIR+1];		/* EchoMail path */
 #endif
 	ushort	grp,						/* Which group this sub belongs to */
