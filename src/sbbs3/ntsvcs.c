@@ -51,6 +51,9 @@
 	#define NO_WEB_SERVER
 #endif
 
+#define NTSVC_TIMEOUT_STARTUP	30000	/* Milliseconds */
+#define NTSVC_TIMEOUT_TERMINATE	30000	/* Milliseconds */
+
 static void WINAPI bbs_ctrl_handler(DWORD dwCtrlCode);
 static void WINAPI ftp_ctrl_handler(DWORD dwCtrlCode);
 static void WINAPI web_ctrl_handler(DWORD dwCtrlCode);
@@ -129,6 +132,7 @@ sbbs_ntsvc_t services = {
 };
 #endif
 
+/* This list is used for enumerating all services */
 sbbs_ntsvc_t* ntsvc_list[] = {
 	&bbs,
 	&ftp,
@@ -164,18 +168,33 @@ static BOOL winsock_cleanup(void)
 	return(FALSE);
 }
 
+/****************************************/
 /* Service Control Handlers (Callbacks) */
+/****************************************/
 
+/* Common control handler for all services */
+static void svc_ctrl_handler(sbbs_ntsvc_t* svc, DWORD dwCtrlCode)
+{
+	switch(dwCtrlCode) {
+		case SERVICE_CONTROL_STOP:
+		case SERVICE_CONTROL_SHUTDOWN:
+			svc->status.dwWaitHint=NTSVC_TIMEOUT_TERMINATE;
+			svc->status.dwCurrentState=SERVICE_STOP_PENDING;
+			break;
+	}
+	SetServiceStatus(svc->status_handle, &svc->status);
+}
+
+/* Service-specific control handler stub functions */
 static void WINAPI bbs_ctrl_handler(DWORD dwCtrlCode)
 {
 	switch(dwCtrlCode) {
 		case SERVICE_CONTROL_STOP:
 		case SERVICE_CONTROL_SHUTDOWN:
 			bbs_terminate();
-			bbs.status.dwCurrentState=SERVICE_STOP_PENDING;
 			break;
 	}
-	SetServiceStatus(bbs.status_handle, &bbs.status);
+	svc_ctrl_handler(&bbs, dwCtrlCode);
 }
 
 static void WINAPI ftp_ctrl_handler(DWORD dwCtrlCode)
@@ -184,10 +203,9 @@ static void WINAPI ftp_ctrl_handler(DWORD dwCtrlCode)
 		case SERVICE_CONTROL_STOP:
 		case SERVICE_CONTROL_SHUTDOWN:
 			ftp_terminate();
-			ftp.status.dwCurrentState=SERVICE_STOP_PENDING;
 			break;
 	}
-	SetServiceStatus(ftp.status_handle, &ftp.status);
+	svc_ctrl_handler(&ftp, dwCtrlCode);
 }
 
 #if !defined(NO_WEB_SERVER)
@@ -197,10 +215,9 @@ static void WINAPI web_ctrl_handler(DWORD dwCtrlCode)
 		case SERVICE_CONTROL_STOP:
 		case SERVICE_CONTROL_SHUTDOWN:
 			web_terminate();
-			web.status.dwCurrentState=SERVICE_STOP_PENDING;
 			break;
 	}
-	SetServiceStatus(web.status_handle, &web.status);
+	svc_ctrl_handler(&web, dwCtrlCode);
 }
 #endif
 
@@ -210,10 +227,9 @@ static void WINAPI mail_ctrl_handler(DWORD dwCtrlCode)
 		case SERVICE_CONTROL_STOP:
 		case SERVICE_CONTROL_SHUTDOWN:
 			mail_terminate();
-			mail.status.dwCurrentState=SERVICE_STOP_PENDING;
 			break;
 	}
-	SetServiceStatus(mail.status_handle, &mail.status);
+	svc_ctrl_handler(&mail, dwCtrlCode);
 }
 
 #if !defined(NO_SERVICES)
@@ -223,25 +239,11 @@ static void WINAPI services_ctrl_handler(DWORD dwCtrlCode)
 		case SERVICE_CONTROL_STOP:
 		case SERVICE_CONTROL_SHUTDOWN:
 			services_terminate();
-			services.status.dwCurrentState=SERVICE_STOP_PENDING;
 			break;
 	}
-	SetServiceStatus(services.status_handle, &services.status);
+	svc_ctrl_handler(&services, dwCtrlCode);
 }
 #endif
-
-/****************************************************************************/
-/* BBS local/log print routine												*/
-/****************************************************************************/
-static int svc_lputs(void* p, char* str)
-{
-	char line[1024];
-	sbbs_ntsvc_t* svc = (sbbs_ntsvc_t*)p;
-
-	snprintf(line,sizeof(line),"%s: %s",svc==NULL ? "Synchronet" : svc->name, str);
-	OutputDebugString(line);
-    return(0);
-}
 
 /****************************************************************************/
 /* Event thread local/log print routine										*/
@@ -258,12 +260,22 @@ static int event_lputs(char *str)
 /************************************/
 /* Shared Service Callback Routines */
 /************************************/
+static int svc_lputs(void* p, char* str)
+{
+	char line[1024];
+	sbbs_ntsvc_t* svc = (sbbs_ntsvc_t*)p;
+
+	snprintf(line,sizeof(line),"%s: %s",svc==NULL ? "Synchronet" : svc->name, str);
+	OutputDebugString(line);
+    return(0);
+}
+
 static void svc_started(void* p)
 {
 	sbbs_ntsvc_t* svc = (sbbs_ntsvc_t*)p;
 
 	svc->status.dwCurrentState=SERVICE_RUNNING;
-	svc->status.dwControlsAccepted=SERVICE_ACCEPT_STOP;
+	svc->status.dwControlsAccepted|=SERVICE_ACCEPT_STOP;
 	SetServiceStatus(svc->status_handle, &svc->status);
 }
 
@@ -278,7 +290,11 @@ static void svc_terminated(void* p, int code)
 	}
 }
 
-/* Generic ServiceMain function */
+/***************/
+/* ServiceMain */
+/***************/
+
+/* Common ServiceMain for all services */
 static void WINAPI svc_start(sbbs_ntsvc_t* svc)
 {
 	svc_lputs(svc,"Starting service");
@@ -290,7 +306,8 @@ static void WINAPI svc_start(sbbs_ntsvc_t* svc)
 
 	memset(&svc->status,0,sizeof(SERVICE_STATUS));
 	svc->status.dwServiceType=SERVICE_WIN32_SHARE_PROCESS;
-	svc->status.dwWaitHint=30000;	/* milliseconds */
+	svc->status.dwControlsAccepted=SERVICE_ACCEPT_SHUTDOWN;
+	svc->status.dwWaitHint=NTSVC_TIMEOUT_STARTUP;
 
 	svc->status.dwCurrentState=SERVICE_START_PENDING;
 	SetServiceStatus(svc->status_handle, &svc->status);
@@ -301,7 +318,7 @@ static void WINAPI svc_start(sbbs_ntsvc_t* svc)
 	SetServiceStatus(svc->status_handle, &svc->status);
 }
 
-/* These are the actual ServiceMain stub functions */
+/* Service-specific ServiceMain stub functions */
 
 static void WINAPI bbs_start(DWORD dwArgc, LPTSTR *lpszArgv)
 {
@@ -353,6 +370,9 @@ static void describe_service(HANDLE hSCMlib, SC_HANDLE hService, char* descripti
 		changeServiceConfig2(hService, SERVICE_CONFIG_DESCRIPTION, &service_desc);
 }
 
+/****************************************************************************/
+/* Utility function to create a service with description (on Win2K+)		*/
+/****************************************************************************/
 static SC_HANDLE create_service(HANDLE hSCMlib, SC_HANDLE hSCManager
 								,char* name, char* display_name, char* description, char* path)
 {
@@ -386,7 +406,9 @@ static SC_HANDLE create_service(HANDLE hSCMlib, SC_HANDLE hSCManager
 	return(hService);
 }
 
-
+/****************************************************************************/
+/* Install one or all services												*/
+/****************************************************************************/
 static int install(const char* svc_name)
 {
 	int			i;
@@ -432,6 +454,9 @@ static int install(const char* svc_name)
 	return(0);
 }
 
+/****************************************************************************/
+/* Utility function to remove a service cleanly (stopping if necessary)		*/
+/****************************************************************************/
 static void remove_service(SC_HANDLE hSCManager, char* name, char* DISP_name)
 {
     SC_HANDLE		hService;
@@ -468,7 +493,9 @@ static void remove_service(SC_HANDLE hSCManager, char* name, char* DISP_name)
     CloseServiceHandle(hService);
 }
 
-
+/****************************************************************************/
+/* Uninstall one or all services											*/
+/****************************************************************************/
 static int uninstall(const char* svc_name)
 {
 	int			i;
