@@ -15,7 +15,7 @@ int x_wherey(void);
 int x_wherex(void);
 int x_putch(unsigned char ch);
 void x_gotoxy(int x, int y);
-void x_initciowrap(long inmode);
+void x_initciolib(long inmode);
 void x_gettextinfo(struct text_info *info);
 void x_setcursortype(int type);
 int x_getch(void);

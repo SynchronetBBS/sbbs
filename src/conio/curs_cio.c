@@ -135,7 +135,7 @@ int curs_gettext(int sx, int sy, int ex, int ey, unsigned char *fill)
 				thischar=attr&255-'A'+1;
 			}
 			else if(attr&A_ALTCHARSET) {
-				if(!(mode==CIOWRAP_CURSES_IBM_MODE)){
+				if(!(mode==CIOLIB_CURSES_IBM_MODE)){
 					ext_char=A_ALTCHARSET|(attr&255);
 					/* likely ones */
 					if (ext_char == ACS_CKBOARD)
@@ -428,7 +428,7 @@ int _putch(unsigned char ch, BOOL refresh_now)
 	int		ret;
 	chtype	cha;
 
-	if(!(mode==CIOWRAP_CURSES_IBM_MODE))
+	if(!(mode==CIOLIB_CURSES_IBM_MODE))
 	{
 		switch(ch)
 		{
@@ -601,12 +601,12 @@ void curs_gotoxy(int x, int y)
 	refresh();
 }
 
-int curs_initciowrap(long inmode)
+int curs_initciolib(long inmode)
 {
 	short	fg, bg, pair=0;
 
 #ifdef XCURSES
-	char	*argv[2]={"Syhcnronet",NULL};
+	char	*argv[2]={"ciolib",NULL};
 
 	Xinitscr(1,argv);
 #else

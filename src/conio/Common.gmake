@@ -1,15 +1,15 @@
 # Available Options:
 # NEED_CURSES       = Set flags suitable for building with the curses lib
 # XCURSES			= Use XCurses
-# NEED_CIOLIB		= Set flage suitable for using with ciowrap lib
-# NO_X				= Don't use X version of ciowrap
+# NEED_CIOLIB		= Set flage suitable for using with ciolib
+# NO_X				= Don't use X version of ciolib
 
 # You really should set this first.
 CONIO_SRC	?=	$(XPDEV)../conio/
 UIFC_SRC	?=	$(XPDEV)../uifc/
 
 CIOLIB_CFLAGS	+=	-I$(CONIO_SRC)
-# ciowrap stuff
+# ciolib stuff
 ifndef NO_X
  X_DIR	?=	/usr/X11R6/
  CIOLIB_CFLAGS	+=	-I${X_DIR}/include
