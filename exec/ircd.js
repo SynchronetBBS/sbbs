@@ -150,25 +150,26 @@ var CHANMODE_VOICE		=(1<<11); // v
 
 // These are used in the mode crunching section to figure out what character
 // to display in the crunched MODE line.
-function Mode (modechar,args,state,list) {
+function Mode (modechar,args,state,list,isnick) {
 	this.modechar = modechar;
 	this.args = args;
 	this.state = state;
 	this.list = list;
+	this.isnick = isnick;
 }
 
 MODE = new Array();
-MODE[CHANMODE_BAN] 		= new Mode("b",true,false,true);
-MODE[CHANMODE_INVITE] 		= new Mode("i",false,true,false);
-MODE[CHANMODE_KEY] 		= new Mode("k",true,true,false);
-MODE[CHANMODE_LIMIT] 		= new Mode("l",true,true,false);
-MODE[CHANMODE_MODERATED] 	= new Mode("m",false,true,false);
-MODE[CHANMODE_NOOUTSIDE] 	= new Mode("n",false,true,false);
-MODE[CHANMODE_OP] 		= new Mode("o",true,false,true);
-MODE[CHANMODE_PRIVATE] 		= new Mode("p",false,true,false);
-MODE[CHANMODE_SECRET] 		= new Mode("s",false,true,false);
-MODE[CHANMODE_TOPIC] 		= new Mode("t",false,true,false);
-MODE[CHANMODE_VOICE]		= new Mode("v",true,false,true);
+MODE[CHANMODE_BAN] 		= new Mode("b",true,false,true,false);
+MODE[CHANMODE_INVITE] 		= new Mode("i",false,true,false,false);
+MODE[CHANMODE_KEY] 		= new Mode("k",true,true,false,false);
+MODE[CHANMODE_LIMIT] 		= new Mode("l",true,true,false,false);
+MODE[CHANMODE_MODERATED] 	= new Mode("m",false,true,false,false);
+MODE[CHANMODE_NOOUTSIDE] 	= new Mode("n",false,true,false,false);
+MODE[CHANMODE_OP] 		= new Mode("o",true,false,true,true);
+MODE[CHANMODE_PRIVATE] 		= new Mode("p",false,true,false,false);
+MODE[CHANMODE_SECRET] 		= new Mode("s",false,true,false,false);
+MODE[CHANMODE_TOPIC] 		= new Mode("t",false,true,false,false);
+MODE[CHANMODE_VOICE]		= new Mode("v",true,false,true,true);
 
 // Connection Types
 const TYPE_EMPTY		=0;
@@ -1327,7 +1328,8 @@ function IRCClient_Quit(str,suppress_bcast,is_netsplit,origin) {
 		umode_notice(USERMODE_CLIENT,"Client","Client exiting: " +
 			this.nick + " (" + this.uprefix + "@" + this.hostname +
 			") [" + str + "] [" + this.ip + "]");
-//		this.socket.close();
+		if (this.socket!=undefined)
+			this.socket.close();
 	}
 
 	this.conntype=TYPE_EMPTY;
@@ -1673,6 +1675,7 @@ function IRCClient_numeric352(user,show_ips_only,chan) {
 		disphost = user.hostname;
 
 	this.numeric(352, disp + " " + user.uprefix + " " + disphost + " " + user.servername + " " + user.nick + " " + who_mode + " :" + user.hops + " " + user.realname);
+	return 1;
 }
 
 function IRCClient_numeric353(chan, str) {
@@ -2479,8 +2482,11 @@ function IRCClient_do_basic_who(whomask) {
 				var usr = Clients[Channels[chan].users[i]];
 				if (usr && (!(usr.mode&USERMODE_INVISIBLE) ||
 				    (this.mode&USERMODE_OPER) ||
-				    this.onchanwith(usr) ) )
-					this.numeric352(Clients[Channels[chan].users[i]],false,Channels[chan]);
+				    this.onchanwith(usr) ) ) {
+					var chkwho = this.numeric352(usr,false,Channels[chan]);
+					if (!chkwho)
+						umode_notice(USERMODE_OPER,"Notice","WHO returned 0 for user: " + usr.nick + " (A)");
+				}
 			}
 			eow = Channels[chan].nam;
 		}
@@ -2492,8 +2498,11 @@ function IRCClient_do_basic_who(whomask) {
 			    usr.match_who_mask(whomask) &&
 			    (!(usr.mode&USERMODE_INVISIBLE) ||
 			     (this.mode&USERMODE_OPER) ||
-			     this.onchanwith(usr) ) )
-				this.numeric352(Clients[i]);
+			     this.onchanwith(usr) ) ) {
+				var chkwho = this.numeric352(usr);
+				if (!chkwho)
+					umode_notice(USERMODE_OPER,"Notice","WHO returned 0 for user: " + usr.nick + " (B)");
+			}
 		}
 		eow = whomask;
 	}
@@ -2847,10 +2856,15 @@ function IRCClient_do_complex_who(cmd) {
 				show_ips_only = false;
 
 			// If we made it this far, we're good.
-			if (chan && Channels[chan.toUpperCase()])
-				this.numeric352(wc,show_ips_only,Channels[chan.toUpperCase()]);
-			else
-				this.numeric352(wc,show_ips_only);
+			if (chan && Channels[chan.toUpperCase()]) {
+				var chkwho = this.numeric352(wc,show_ips_only,Channels[chan.toUpperCase()]);
+				if (!chkwho)
+					umode_notice(USERMODE_OPER,"Notice","WHO returned 0 for user: " + wc.nick + " (C)");
+			} else {
+				var chkwho = this.numeric352(wc,show_ips_only);
+				if (!chkwho)
+					umode_notice(USERMODE_OPER,"Notice","WHO returned 0 for user: " + wc.nick + " (D)");
+			}
 			who_count++;
 		}
 		if (!(this.mode&USERMODE_OPER) && (who_count >= max_who))
@@ -3573,8 +3587,10 @@ function IRCClient_set_chanmode(chan,modeline,bounce_modes) {
 					cmode.delmodes += MODE[cm].modechar;
 					cmode.delmodeargs += " " +
 						chan.modelist[cm][member];
-					chan.del_modelist(chan.modelist
-						[cm][member],cm);
+					if (MODE[cm].isnick)
+						chan.del_modelist(Clients[chan.modelist[cm][member]].nick,cm);
+					else
+						chan.del_modelist(chan.modelist[cm][member],cm);
 				}
 			}
 		}
@@ -5072,7 +5088,8 @@ function IRCClient_registered_commands(command, cmdline) {
 				this.numeric(431, ":No nickname given.");
 				break;
 			}
-			firstnick="";
+			var firstnick="";
+			var aWhoWas;
 			for (aWhoWas=whowas_pointer;aWhoWas>=0;aWhoWas--) {
 				if(WhoWasHistory[aWhoWas] &&
 				   (WhoWasHistory[aWhoWas].nick.toUpperCase() ==
