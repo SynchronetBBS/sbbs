@@ -148,17 +148,6 @@ var CHANMODE_SECRET		=(1<<9); // s
 var CHANMODE_TOPIC		=(1<<10); // t
 var CHANMODE_VOICE		=(1<<11); // v
 
-// Channel lists.  Inverses of a mode MUST always be 1 'away' from each other
-// in the reverse direction.  For example, -o is +1 from +o, and +o is -1
-// from -o.
-const CHANLIST_NONE		=0; // null
-const CHANLIST_OP		=1; // +o
-const CHANLIST_DEOP		=2; // -o
-const CHANLIST_VOICE		=3; // +v
-const CHANLIST_DEVOICE		=4; // -v
-const CHANLIST_BAN		=5; // +b
-const CHANLIST_UNBAN		=6; // -b
-
 // These are used in the mode crunching section to figure out what character
 // to display in the crunched MODE line.
 function Mode (modechar,args,state,list) {
@@ -169,22 +158,17 @@ function Mode (modechar,args,state,list) {
 }
 
 MODE = new Array();
-MODE[CHANMODE_BAN] 		= new Mode("b",true,false,CHANLIST_BAN);
-MODE[CHANMODE_INVITE] 		= new Mode("i",false,true,0);
-MODE[CHANMODE_KEY] 		= new Mode("k",true,true,0);
-MODE[CHANMODE_LIMIT] 		= new Mode("l",true,true,0);
-MODE[CHANMODE_MODERATED] 	= new Mode("m",false,true,0);
-MODE[CHANMODE_NOOUTSIDE] 	= new Mode("n",false,true,0);
-MODE[CHANMODE_OP] 		= new Mode("o",true,false,CHANLIST_OP);
-MODE[CHANMODE_PRIVATE] 		= new Mode("p",false,true,0);
-MODE[CHANMODE_SECRET] 		= new Mode("s",false,true,0);
-MODE[CHANMODE_TOPIC] 		= new Mode("t",false,true,0);
-MODE[CHANMODE_VOICE]		= new Mode("v",true,false,CHANLIST_VOICE);
-
-MODECHAR = new Array();
-MODECHAR[CHANLIST_BAN]		= "b";
-MODECHAR[CHANLIST_OP]		= "o";
-MODECHAR[CHANLIST_VOICE]	= "v";
+MODE[CHANMODE_BAN] 		= new Mode("b",true,false,true);
+MODE[CHANMODE_INVITE] 		= new Mode("i",false,true,false);
+MODE[CHANMODE_KEY] 		= new Mode("k",true,true,false);
+MODE[CHANMODE_LIMIT] 		= new Mode("l",true,true,false);
+MODE[CHANMODE_MODERATED] 	= new Mode("m",false,true,false);
+MODE[CHANMODE_NOOUTSIDE] 	= new Mode("n",false,true,false);
+MODE[CHANMODE_OP] 		= new Mode("o",true,false,true);
+MODE[CHANMODE_PRIVATE] 		= new Mode("p",false,true,false);
+MODE[CHANMODE_SECRET] 		= new Mode("s",false,true,false);
+MODE[CHANMODE_TOPIC] 		= new Mode("t",false,true,false);
+MODE[CHANMODE_VOICE]		= new Mode("v",true,false,true);
 
 // Connection Types
 const TYPE_EMPTY		=0;
@@ -660,63 +644,46 @@ function search_nickbuf(bufnick) {
 	return 0;
 }
 
-function IRCClient_tweaktmpmode(tmp_bit,chan) {
-	if ((!chan.ismode(this.id,CHANLIST_OP)) && (!this.server) && (!this.parent)) {
-		this.numeric482(chan.nam);
+function ChanMode_tweaktmpmode(tmp_bit,add) {
+	if ((!this.chan.ismode(this.user.id,CHANMODE_OP)) &&
+	    (!this.user.server) && (!this.user.parent)) {
+		this.user.numeric482(this.chan.nam);
 		return 0;
 	}
 	if (add) {
-		addbits|=tmp_bit;
-		delbits&=~tmp_bit;
+		this.addbits|=tmp_bit;
+		this.delbits&=~tmp_bit;
 	} else {
-		addbits&=~tmp_bit;
-		delbits|=tmp_bit;
+		this.addbits&=~tmp_bit;
+		this.delbits|=tmp_bit;
 	}
 }
 
-function IRCClient_tweaktmpmodelist(tmp_cl,tmp_ncl,chan) {
-	if ((!chan.ismode(this.id,CHANLIST_OP)) &&
-	    (!this.server) && (!this.parent)) {
-		this.numeric482(chan.nam);
+function ChanMode_tweaktmpmodelist(tmp_bit,add,arg) {
+	if ((!this.chan.ismode(this.user.id,CHANMODE_OP)) &&
+	    (!this.user.server) && (!this.user.parent)) {
+		this.user.numeric482(this.chan.nam);
 		return 0;
 	}
-	if (add) {
-		tmp_match = false;
-		for (lstitem in chan_tmplist[tmp_cl]) {
-			if (chan_tmplist[tmp_cl][lstitem] &&
-			    (chan_tmplist[tmp_cl][lstitem].toUpperCase() ==
-			     cm_args[mode_args_counter].toUpperCase())
-			   )
-				tmp_match = true;
-		}
-		if(!tmp_match) {
-			chan_tmplist[tmp_cl][chan_tmplist[tmp_cl].length] = cm_args[mode_args_counter];
-			for (lstitem in chan_tmplist[tmp_ncl]) {
-				if (chan_tmplist[tmp_ncl][lstitem] &&
-				    (chan_tmplist[tmp_ncl][lstitem].toUpperCase() == 
-				     cm_args[mode_args_counter].toUpperCase())
-				   )
-					chan_tmplist[tmp_ncl][lstitem] = "";
-			}
-		}
-	} else {
-		tmp_match = false;
-		for (lstitem in chan_tmplist[tmp_ncl]) {
-			if (chan_tmplist[tmp_ncl][lstitem] &&
-			    (chan_tmplist[tmp_ncl][lstitem].toUpperCase() ==
-			     cm_args[mode_args_counter].toUpperCase())
-			   )
-				tmp_match = true;
-		}
-		if(!tmp_match) {
-			chan_tmplist[tmp_ncl][chan_tmplist[tmp_ncl].length] = cm_args[mode_args_counter];
-			for (lstitem in chan_tmplist[tmp_cl]) {
-				if (chan_tmplist[tmp_cl][lstitem] &&
-				    (chan_tmplist[tmp_cl][lstitem].toUpperCase() ==
-				     cm_args[mode_args_counter].toUpperCase())
-				   )
-					chan_tmplist[tmp_cl][lstitem] = "";
-			}
+	for (lstitem in this.tmplist[tmp_bit][add]) {
+		// Is this argument in our list for this mode already?
+		if (this.tmplist[tmp_bit][add][lstitem].toUpperCase() ==
+		     arg.toUpperCase())
+			return 0;
+	}
+	// It doesn't exist on our mode, push it in.
+	this.tmplist[tmp_bit][add].push(arg);
+	// Check for it against the other mode, and maybe nuke it.
+	var oadd;
+	if (add)
+		oadd = false;
+	else
+		oadd = true;
+	for (x in this.tmplist[tmp_bit][oadd]) {
+		if (this.tmplist[tmp_bit][oadd][x].toUpperCase() ==
+		    arg.toUpperCase()) {
+			delete this.tmplist[tmp_bit][oadd][x];
+			return 0;
 		}
 	}
 }
@@ -1158,9 +1125,6 @@ function IRCClient(socket,new_id,local_client,do_newconn) {
 	this.server=false;
 	this.hub=false;
 	this.servername = servername;
-	this.affect_mode_list=IRCClient_affect_mode_list;
-	this.tweaktmpmode=IRCClient_tweaktmpmode;
-	this.tweaktmpmodelist=IRCClient_tweaktmpmodelist;
 	this.rmchan=IRCClient_RMChan;
 	this.rawout=IRCClient_rawout;
 	this.originatorout=IRCClient_originatorout;
@@ -1424,7 +1388,7 @@ function IRCClient_server_info(sni_server) {
 }
 
 function IRCClient_server_nick_info(sni_client) {
-	this.rawout("NICK " + sni_client.nick + " " + sni_client.hops + " " + sni_client.created + " " + sni_client.get_usermode() + " " + sni_client.uprefix + " " + sni_client.hostname + " " + sni_client.servername + " 0 " + ip_to_int(sni_client.ip) + " :" + sni_client.realname);
+	this.rawout("NICK " + sni_client.nick + " " + sni_client.hops + " " + sni_client.created + " " + sni_client.get_usermode(true) + " " + sni_client.uprefix + " " + sni_client.hostname + " " + sni_client.servername + " 0 " + ip_to_int(sni_client.ip) + " :" + sni_client.realname);
 }
 
 function IRCClient_reintroduce_nick(nick) {
@@ -1443,9 +1407,9 @@ function IRCClient_reintroduce_nick(nick) {
 		cmodes = "";
 		if (nick.channels[uchan]) {
 			chan = Channels[nick.channels[uchan]];
-			if (chan.ismode(nick.id,CHANLIST_OP))
+			if (chan.ismode(nick.id,CHANMODE_OP))
 				cmodes += "@";
-			if (chan.ismode(nick.id,CHANLIST_VOICE))
+			if (chan.ismode(nick.id,CHANMODE_VOICE))
 				cmodes += "+";
 			this.rawout("SJOIN " + chan.created + " " + chan.nam + " " + chan.chanmode(true) + " :" + cmodes + nick.nick);
 			if (chan.topic)
@@ -1459,12 +1423,12 @@ function IRCClient_server_chan_info(sni_chan) {
 	var modecounter=0;
 	var modestr="+";
 	var modeargs="";
-	for (aBan in sni_chan.modelist[CHANLIST_BAN]) {
+	for (aBan in sni_chan.modelist[CHANMODE_BAN]) {
 		modecounter++;
 		modestr += "b";
 		if (modeargs)
 			modeargs += " ";
-		modeargs += sni_chan.modelist[CHANLIST_BAN][aBan];
+		modeargs += sni_chan.modelist[CHANMODE_BAN][aBan];
 		if (modecounter >= max_modes) {
 			this.ircout("MODE " + sni_chan.nam + " " + modestr + " " + modeargs);
 			modecounter=0;
@@ -1487,8 +1451,8 @@ function IRCClient_RMChan(rmchan_obj) {
 		if (this.channels[j] == rmchan_obj.nam.toUpperCase())
 			delete this.channels[j];
 	}
-	rmchan_obj.del_modelist(this.id,CHANLIST_OP);
-	rmchan_obj.del_modelist(this.id,CHANLIST_VOICE);
+	rmchan_obj.del_modelist(this.id,CHANMODE_OP);
+	rmchan_obj.del_modelist(this.id,CHANMODE_VOICE);
 	if (!rmchan_obj.count_users()) {
 		delete rmchan_obj.users;
 		delete rmchan_obj.mode;
@@ -1637,9 +1601,9 @@ function IRCClient_numeric352(user,show_ips_only,chan) {
 	else
 		who_mode += "H";
 	if (chan) {
-		if (chan.ismode(user.id,CHANLIST_OP))
+		if (chan.ismode(user.id,CHANMODE_OP))
 			who_mode += "@";
-		else if (chan.ismode(user.id,CHANLIST_VOICE))
+		else if (chan.ismode(user.id,CHANMODE_VOICE))
 			who_mode += "+";
 	}
 	if (user.mode&USERMODE_OPER)
@@ -1772,9 +1736,9 @@ function IRCClient_names(chan) {
 		    (this.onchannel(chan)) ) ) {
 			if (numnicks)
 				tmp += " ";
-			if (Channels[chan].ismode(Channel_user.id,CHANLIST_OP))
+			if (Channels[chan].ismode(Channel_user.id,CHANMODE_OP))
 				tmp += "@";
-			else if (Channels[chan].ismode(Channel_user.id,CHANLIST_VOICE))
+			else if (Channels[chan].ismode(Channel_user.id,CHANMODE_VOICE))
 				tmp += "+";
 			tmp += Channel_user.nick;
 			numnicks++;
@@ -1978,9 +1942,9 @@ function IRCClient_do_whois(wi) {
 		     this.mode&USERMODE_OPER)) {
 			if (userchans)
 				userchans += " ";
-			if (Channels[wi.channels[i]].ismode(wi.id,CHANLIST_OP))
+			if (Channels[wi.channels[i]].ismode(wi.id,CHANMODE_OP))
 				userchans += "@";
-			else if (Channels[wi.channels[i]].ismode(wi.id,CHANLIST_VOICE))
+			else if (Channels[wi.channels[i]].ismode(wi.id,CHANMODE_VOICE))
 				userchans += "+";
 			userchans += Channels[wi.channels[i]].nam;
 		}
@@ -2071,10 +2035,10 @@ function IRCClient_do_msg(target,type_str,send_str) {
 
 	send_to_list = -1;
 	if (target[0] == "@" && ( (target[1] == "#") || target[1] == "&") ) {
-		send_to_list = CHANLIST_OP;
+		send_to_list = CHANMODE_OP;
 		target = target.slice(1);
 	} else if (target[0]=="+" && ((target[1] == "#")|| target[1] == "&")) {
-		send_to_list = CHANLIST_VOICE;
+		send_to_list = CHANMODE_VOICE;
 		target = target.slice(1);
 	}
 		
@@ -2095,14 +2059,14 @@ function IRCClient_do_msg(target,type_str,send_str) {
 			return 0;
 		}
 		if ( (chan.mode&CHANMODE_MODERATED) &&
-		     !chan.ismode(this.id,CHANLIST_VOICE) &&
-		     !chan.ismode(this.id,CHANLIST_OP) ) {
+		     !chan.ismode(this.id,CHANMODE_VOICE) &&
+		     !chan.ismode(this.id,CHANMODE_OP) ) {
 			this.numeric(404, chan.nam + " :Cannot send to channel (+m: moderated)");
 			return 0;
 		}
 		if (chan.isbanned(this.ircnuh) &&
-		   !chan.ismode(this.id,CHANLIST_VOICE) &&
-		   !chan.ismode(this.id,CHANLIST_OP) ) {
+		   !chan.ismode(this.id,CHANMODE_VOICE) &&
+		   !chan.ismode(this.id,CHANMODE_OP) ) {
 			this.numeric(404, chan.nam + " :Cannot send to channel (+b: you're banned!)");
 			return 0;
 		}
@@ -2111,9 +2075,9 @@ function IRCClient_do_msg(target,type_str,send_str) {
 			this.bcast_to_channel(chan.nam, str, false);
 			this.bcast_to_channel_servers(chan.nam, str);
 		} else {
-			if (send_to_list == CHANLIST_OP)
+			if (send_to_list == CHANMODE_OP)
 				prefix_chr="@";
-			else if (send_to_list == CHANLIST_VOICE)
+			else if (send_to_list == CHANMODE_VOICE)
 				prefix_chr="+";
 			str = type_str +" " + prefix_chr + chan.nam + " :"+ send_str;
 			this.bcast_to_list(chan, str, false, send_to_list);
@@ -2655,22 +2619,22 @@ function IRCClient_do_complex_who(cmd) {
 					continue;
 				if (sf_op && Channels[who.Channel.toUpperCase()]&&
 				    !Channels[who.Channel.toUpperCase()].ismode(
-				     wc.id,CHANLIST_OP))
+				     wc.id,CHANMODE_OP))
 					continue;
 				if(sf_voice&&Channels[who.Channel.toUpperCase()]&&
 				    !Channels[who.Channel.toUpperCase()].ismode(
-				     wc.id,CHANLIST_VOICE))
+				     wc.id,CHANMODE_VIOCE))
 					continue;
 			} else if (who.del_flags&WHO_CHANNEL) {	
 				if (wc.onchannel(who.Channel.toUpperCase()))
 					continue;
 				if (sf_op && Channels[who.Channel.toUpperCase()]&&
 				    Channels[who.Channel.toUpperCase()].ismode(
-				     wc.id,CHANLIST_OP))
+				     wc.id,CHANMODE_OP))
 					continue;
 				if(sf_voice&&Channels[who.Channel.toUpperCase()]&&
 				    Channels[who.Channel.toUpperCase()].ismode(
-				     wc.id,CHANLIST_VOICE))
+				     wc.id,CHANMODE_VOICE))
 					continue;
 			}
 			if ((who.add_flags&WHO_REALNAME) &&
@@ -3308,11 +3272,11 @@ function IRCClient_do_join(chan_name,join_key) {
 		Channels[chan].created=time();
 		Channels[chan].users = new Array();
 		Channels[chan].users[0] = this.id;
-		Channels[chan].modelist[CHANLIST_BAN] = new Array();
-		Channels[chan].modelist[CHANLIST_VOICE] = new Array();
-		Channels[chan].modelist[CHANLIST_OP] = new Array();
-		Channels[chan].modelist[CHANLIST_OP].push(this.id);
-		str="JOIN :" + chan_name;
+		Channels[chan].modelist[CHANMODE_BAN] = new Array();
+		Channels[chan].modelist[CHANMODE_VOICE] = new Array();
+		Channels[chan].modelist[CHANMODE_OP] = new Array();
+		Channels[chan].modelist[CHANMODE_OP].push(this.id);
+		var str="JOIN :" + chan_name;
 		this.originatorout(str,this);
 		if (chan_name[0] != "&")
 			server_bcast_to_servers(":" + servername + " SJOIN " + Channels[chan].created + " " + Channels[chan].nam + " " + Channels[chan].chanmode() + " :@" + this.nick);
@@ -3363,117 +3327,141 @@ function IRCClient_part_all() {
 	}
 }
 
-function IRCClient_get_usermode() {
+function IRCClient_get_usermode(bcast_modes) {
 	var tmp_mode = "+";
-
-	if (this.mode&USERMODE_INVISIBLE)
-		tmp_mode += "i";
-	if (this.mode&USERMODE_OPER)
-		tmp_mode += "o";
-
+	for (ch in USERMODE_CHAR) {
+		if ((!bcast_modes || (bcast_modes && USERMODE_BCAST[ch])) &&
+		    this.mode&USERMODE_CHAR[ch])
+			tmp_mode += ch;
+	}
 	return tmp_mode;
+}
+
+// Yay, version 3.0 of this.set_chanmode(), eradicates any global variables.
+function ChanMode(chan,user) {
+	this.tmplist = new Array();
+	this.tmplist[CHANMODE_OP] = new Array();
+	this.tmplist[CHANMODE_OP][false] = new Array(); //deop
+	this.tmplist[CHANMODE_OP][true] = new Array(); //op
+	this.tmplist[CHANMODE_VOICE] = new Array();
+	this.tmplist[CHANMODE_VOICE][false] = new Array(); //devoice
+	this.tmplist[CHANMODE_VOICE][true] = new Array(); //voice
+	this.tmplist[CHANMODE_BAN] = new Array();
+	this.tmplist[CHANMODE_BAN][false] = new Array(); //unban
+	this.tmplist[CHANMODE_BAN][true] = new Array(); //ban
+	this.state_arg = new Array();
+	this.state_arg[CHANMODE_KEY] = "";
+	this.state_arg[CHANMODE_LIMIT] = "";
+	this.addbits = 0;
+	this.delbits = 0;
+	this.addmodes = "";
+	this.addmodeargs = "";
+	this.delmodes = "";
+	this.delmodeargs = "";
+	this.chan = chan;
+	this.user = user;
+	// Functions.
+	this.tweaktmpmodelist = ChanMode_tweaktmpmodelist;
+	this.tweaktmpmode = ChanMode_tweaktmpmode;
+	this.affect_mode_list = ChanMode_affect_mode_list;
 }
 
 function IRCClient_set_chanmode(chan,modeline,bounce_modes) {
 	if (!chan || !modeline)
 		return;
 
-	cm_args = modeline.split(' ');
+	var cmode = new ChanMode(chan,this);
 
-	add=true;
-	addbits=CHANMODE_NONE;
-	delbits=CHANMODE_NONE;
+	var cm_args = modeline.split(' ');
 
-	state_arg = new Array();
-	state_arg[CHANMODE_KEY] = "";
-	state_arg[CHANMODE_LIMIT] = "";
+	var add=true;
 
-	chan_tmplist=new Array();
-	chan_tmplist[CHANLIST_OP]=new Array();
-	chan_tmplist[CHANLIST_DEOP]=new Array();
-	chan_tmplist[CHANLIST_VOICE]=new Array();
-	chan_tmplist[CHANLIST_DEVOICE]=new Array();
-	chan_tmplist[CHANLIST_BAN]=new Array();
-	chan_tmplist[CHANLIST_UNBAN]=new Array();
-	mode_counter=0;
-	mode_args_counter=1; // start counting at the args, not the modestring
+	var mode_counter=0;
+	var mode_args_counter=1; // start counting at args, not the modestring
 
 	for (modechar in cm_args[0]) {
 		mode_counter++;
 		switch (cm_args[0][modechar]) {
 			case "+":
-				add=true;
+				if (!add)
+					add=true;
 				mode_counter--;
 				break;
 			case "-":
-				add=false;
+				if (add)
+					add=false;
 				mode_counter--;
 				break;
 			case "b":
-				if(add && (cm_args.length <= mode_args_counter)) {
-					addbits|=CHANMODE_BAN; // list bans
+				if(add && (cm_args.length<=mode_args_counter)) {
+					cmode.addbits|=CHANMODE_BAN;//list bans
 					break;
 				}
-				this.tweaktmpmodelist(CHANLIST_BAN,CHANLIST_UNBAN,chan);
+				cmode.tweaktmpmodelist(CHANMODE_BAN,add,
+					cm_args[mode_args_counter]);
 				mode_args_counter++;
 				break;
 			case "i":
-				this.tweaktmpmode(CHANMODE_INVITE,chan);
+				cmode.tweaktmpmode(CHANMODE_INVITE,add);
 				break;
 			case "k":
 				if(cm_args.length > mode_args_counter) {
-					this.tweaktmpmode(CHANMODE_KEY,chan);
-					state_arg[CHANMODE_KEY]=cm_args[mode_args_counter];
+					cmode.tweaktmpmode(CHANMODE_KEY,add);
+					cmode.state_arg[CHANMODE_KEY]=cm_args[mode_args_counter];
 					mode_args_counter++;
 				}
 				break;
 			case "l":
 				if (add && (cm_args.length > mode_args_counter)) {
-					this.tweaktmpmode(CHANMODE_LIMIT,chan);
-					regexp = "^[0-9]{1,4}$";
+					cmode.tweaktmpmode(CHANMODE_LIMIT,true);
+					var regexp = "^[0-9]{1,5}$";
 					if(cm_args[mode_args_counter].match(regexp))
-						state_arg[CHANMODE_LIMIT]=cm_args[mode_args_counter];
+						cmode.state_arg[CHANMODE_LIMIT]=cm_args[mode_args_counter];
 					mode_args_counter++;
 				} else if (!add) {
-					this.tweaktmpmode(CHANMODE_LIMIT,chan);
+					cmode.tweaktmpmode(CHANMODE_LIMIT,false);
 					if (cm_args.length > mode_args_counter)
 						mode_args_counter++;
 				}
 				break;
 			case "m":
-				this.tweaktmpmode(CHANMODE_MODERATED,chan);
+				cmode.tweaktmpmode(CHANMODE_MODERATED,add);
 				break;
 			case "n":
-				this.tweaktmpmode(CHANMODE_NOOUTSIDE,chan);
+				cmode.tweaktmpmode(CHANMODE_NOOUTSIDE,add);
 				break;
 			case "o":
 				if (cm_args.length <= mode_args_counter)
 					break;
-				this.tweaktmpmodelist(CHANLIST_OP,CHANLIST_DEOP,chan);
+				cmode.tweaktmpmodelist(CHANMODE_OP,add,
+					cm_args[mode_args_counter]);
 				mode_args_counter++;
 				break;
 			case "p":
 				if( (add && !(chan.mode&CHANMODE_SECRET) ||
-				     (delbits&CHANMODE_SECRET) ) || (!add) )
-					this.tweaktmpmode(CHANMODE_PRIVATE,chan);
+				     (cmode.delbits&CHANMODE_SECRET) ) ||
+				    (!add) )
+					cmode.tweaktmpmode(CHANMODE_PRIVATE,add);
 				break;
 			case "s":
 				if( (add && !(chan.mode&CHANMODE_PRIVATE) ||
-				     (delbits&CHANMODE_PRIVATE) ) || (!add) )
-					this.tweaktmpmode(CHANMODE_SECRET,chan);
+				     (cmode.delbits&CHANMODE_PRIVATE) ) ||
+				    (!add) )
+					cmode.tweaktmpmode(CHANMODE_SECRET,add);
 				break;
 			case "t":
-				this.tweaktmpmode(CHANMODE_TOPIC,chan);
+				cmode.tweaktmpmode(CHANMODE_TOPIC,add);
 				break;
 			case "v":
 				if (cm_args.length <= mode_args_counter)
 					break;
-				this.tweaktmpmodelist(CHANLIST_VOICE,CHANLIST_DEVOICE,chan);
+				cmode.tweaktmpmodelist(CHANMODE_VOICE,add,
+					cm_args[mode_args_counter]);
 				mode_args_counter++;
 				break;
 			default:
 				if ((!this.parent) && (!this.server))
-					this.numeric("472", cm_args[0][modechar] + " :is unknown mode char to me.");
+					this.numeric(472, cm_args[0][modechar] + " :is unknown mode char to me.");
 				mode_counter--;
 				break;
 		}
@@ -3481,24 +3469,23 @@ function IRCClient_set_chanmode(chan,modeline,bounce_modes) {
 			break;
 	}
 
-	addmodes = "";
-	delmodes = "";
-	addmodeargs = "";
-	delmodeargs = "";
-
 	// If we're bouncing modes, traverse our side of what the modes look
 	// like and remove any modes not mentioned by what was passed to the
 	// function.  Or, clear any ops, voiced members, or bans on the 'bad'
-	// side of the network sync.  FIXME: Bans get synchronized later.
+	// side of the network sync.
 	if (bounce_modes) {
 		for (cm in MODE) {
-			if (MODE[cm].state && (chan.mode&cm) && !(addbits&cm)) {
-				delbits |= cm;
+			if (MODE[cm].state && (chan.mode&cm) && 
+			    !(cmode.addbits&cm)) {
+				cmode.delbits |= cm;
 			} else if (MODE[cm].list) {
-				for (member in chan.modelist[MODE[cm].list]) {
-					delmodes += MODE[cm].modechar;
-					delmodeargs += " " + Clients[chan.modelist[MODE[cm].list][member]].nick;
-					chan.del_modelist(chan.modelist[MODE[cm].list][member],MODE[cm].list);
+				for (member in chan.modelist[cm]) {
+					cmode.delmodes += MODE[cm].modechar;
+					cmode.delmodeargs += " " +
+						Clients[chan.modelist
+						[cm][member]].nick;
+					chan.del_modelist(chan.modelist
+						[cm][member],cm);
 				}
 			}
 		}
@@ -3508,22 +3495,27 @@ function IRCClient_set_chanmode(chan,modeline,bounce_modes) {
 	// later display.  We also play with the channel bit switches here.
 	for (cm in MODE) {
 		if (MODE[cm].state) {
-			if ((cm&CHANMODE_KEY) && (addbits&CHANMODE_KEY) && 
-			    state_arg[cm] && chan.arg[cm] && !this.server &&
-			    !this.parent && !bounce_modes) {
-				this.numeric(467, chan.nam + " :Channel key already set.");
-			} else if ((addbits&cm) && !(chan.mode&cm)) {
-				addmodes += MODE[cm].modechar;
+			if ((cm&CHANMODE_KEY) && (cmode.addbits&CHANMODE_KEY)&& 
+			    cmode.state_arg[cm] && chan.arg[cm] &&
+			    !this.server && !this.parent && !bounce_modes) {
+				this.numeric(467, chan.nam +
+					" :Channel key already set.");
+			} else if ((cmode.addbits&cm) && (!(chan.mode&cm) ||
+			    ((cm==CHANMODE_LIMIT)&&(chan.arg[CHANMODE_LIMIT]!=
+			     cmode.state_arg[CHANMODE_LIMIT])) ) ) {
+				cmode.addmodes += MODE[cm].modechar;
 				chan.mode |= cm;
 				if (MODE[cm].args && MODE[cm].state) {
-					addmodeargs += " " + state_arg[cm];
-					chan.arg[cm] = state_arg[cm];
+					cmode.addmodeargs += " " +
+						cmode.state_arg[cm];
+					chan.arg[cm] = cmode.state_arg[cm];
 				}
-			} else if ((delbits&cm) && (chan.mode&cm)) {
-				delmodes += MODE[cm].modechar;
+			} else if ((cmode.delbits&cm) && (chan.mode&cm)) {
+				cmode.delmodes += MODE[cm].modechar;
 				chan.mode &= ~cm;
 				if (MODE[cm].args && MODE[cm].state) {
-					delmodeargs += " " + state_arg[cm];
+					cmode.delmodeargs += " " +
+						cmode.state_arg[cm];
 					chan.arg[cm] = "";
 				}
 			}
@@ -3532,32 +3524,62 @@ function IRCClient_set_chanmode(chan,modeline,bounce_modes) {
 
 	// This is a special case, if +b was passed to us without arguments,
 	// we simply display a list of bans on the channel.
-	if (addbits&CHANMODE_BAN) {
-		for (the_ban in chan.modelist[CHANLIST_BAN]) {
-			this.numeric(367, chan.nam + " " + chan.modelist[CHANLIST_BAN][the_ban] + " " + chan.bancreator[the_ban] + " " + chan.bantime[the_ban]);
+	if (cmode.addbits&CHANMODE_BAN) {
+		for (the_ban in chan.modelist[CHANMODE_BAN]) {
+			this.numeric(367, chan.nam + " " + chan.modelist[CHANMODE_BAN][the_ban] + " " + chan.bancreator[the_ban] + " " + chan.bantime[the_ban]);
 		}
 		this.numeric(368, chan.nam + " :End of Channel Ban List.");
 	}
 
-	// Now we play with the channel lists by adding or removing what was
-	// given to us on the modeline.
-	this.affect_mode_list(CHANLIST_OP,chan)
-	this.affect_mode_list(CHANLIST_VOICE,chan);
-	this.affect_mode_list(CHANLIST_BAN,chan);
+	// Bans are a specialized case, sigh.
+	for (z in cmode.tmplist[CHANMODE_BAN][true]) { // +b
+		var set_ban = create_ban_mask(
+			cmode.tmplist[CHANMODE_BAN][add][z]);
+		if ((chan.count_modelist(CHANMODE_BAN) >= max_bans) &&
+		     !this.server && !this.parent) {
+			this.numeric(478, chan.nam + " " + set_ban + " :" +
+				"Cannot add ban, channel's ban list is full.");
+		} else if (set_ban && !chan.isbanned(set_ban)) {
+			cmode.addmodes += "b";
+			cmode.addmodeargs += " " + set_ban;
+			var banid = chan.add_modelist(set_ban,CHANMODE_BAN);
+			chan.bantime[banid] = time();
+			chan.bancreator[banid] = this.ircnuh;
+		}
+	}
 
-	if (!addmodes && !delmodes)
+	for (z in cmode.tmplist[CHANMODE_BAN][false]) { // -b
+		for (ban in chan.modelist[CHANMODE_BAN]) {
+			if (cmode.tmplist[CHANMODE_BAN][false][z].toUpperCase()
+			    == chan.modelist[CHANMODE_BAN][ban].toUpperCase()) {
+				cmode.delmodes += "b";
+				cmode.delmodeargs += " " +
+					cmode.tmplist[CHANMODE_BAN][false][z];
+				var banid = chan.del_modelist(cmode.tmplist
+					[CHANMODE_BAN][false][z],CHANMODE_BAN);
+				delete chan.bantime[banid];
+				delete chan.bancreator[banid];
+			}
+		}
+	}
+
+	// Modes where we just deal with lists of nicks.
+	cmode.affect_mode_list(CHANMODE_OP);
+	cmode.affect_mode_list(CHANMODE_VOICE);
+
+	if (!cmode.addmodes && !cmode.delmodes)
 		return 0;
 
-	final_modestr = "";
+	var final_modestr = "";
 
-	if (addmodes)
-		final_modestr += "+" + addmodes;
-	if (delmodes)
-		final_modestr += "-" + delmodes;
-	if (addmodeargs)
-		final_modestr += addmodeargs;
-	if (delmodeargs)
-		final_modestr += delmodeargs;
+	if (cmode.addmodes)
+		final_modestr += "+" + cmode.addmodes;
+	if (cmode.delmodes)
+		final_modestr += "-" + cmode.delmodes;
+	if (cmode.addmodeargs)
+		final_modestr += cmode.addmodeargs;
+	if (cmode.delmodeargs)
+		final_modestr += cmode.delmodeargs;
 
 	var final_args = final_modestr.split(' ');
 	var arg_counter = 0;
@@ -3732,49 +3754,29 @@ function IRCClient_setusermode(modestr) {
 	return 1;
 }
 
-function IRCClient_affect_mode_list(list_bit,chan) {
-	for (x=list_bit;x<=(list_bit+1);x++) {
-		for (tmp_index in chan_tmplist[x]) {
-			if (list_bit >= CHANLIST_BAN) {
-				if (x == CHANLIST_BAN) {
-					var set_ban = create_ban_mask(chan_tmplist[x][tmp_index]);
-					if (chan.count_modelist(CHANLIST_BAN) >= max_bans) {
-						this.numeric(478, chan.nam + " " + set_ban + " :Cannot add ban, channel's ban list is full.");
-					} else if (set_ban && !chan.isbanned(set_ban)) {
-						addmodes += "b";
-						addmodeargs += " " + set_ban;
-						var banid = chan.add_modelist(set_ban,CHANLIST_BAN);
-						chan.bantime[banid] = time();
-						chan.bancreator[banid] = this.ircnuh;
-					}
-				} else if (x == CHANLIST_UNBAN) {
-					for (ban in chan.modelist[CHANLIST_BAN]) {
-						if (chan_tmplist[CHANLIST_UNBAN][tmp_index].toUpperCase() == chan.modelist[CHANLIST_BAN][ban].toUpperCase()) {
-							delmodes += "b";
-							delmodeargs += " " + chan_tmplist[CHANLIST_UNBAN][tmp_index];
-							var banid = chan.del_modelist(chan_tmplist[CHANLIST_UNBAN][tmp_index],CHANLIST_BAN);
-							delete chan.bantime[banid];
-							delete chan.bancreator[banid];
-						}
-					}
-				}
-			} else {
-				var tmp_nick = searchbynick(chan_tmplist[x][tmp_index]);
-				if (!tmp_nick)
-					tmp_nick = searchbynick(search_nickbuf(chan_tmplist[x][tmp_index]));
-				if (tmp_nick) { // FIXME: check for user existing on channel?
-					if ((x == list_bit) && (!chan.ismode(tmp_nick.id,list_bit))) {
-						addmodes += MODECHAR[list_bit];
-						addmodeargs += " " + tmp_nick.nick;
-						chan.add_modelist(tmp_nick.id,x);
-					} else if (chan.ismode(tmp_nick.id,list_bit)) {
-						delmodes += MODECHAR[list_bit];
-						delmodeargs += " " + tmp_nick.nick;
-						chan.del_modelist(tmp_nick.id,list_bit);
-					}
-				} else {
-					this.numeric401(chan_tmplist[x][tmp_index]);
-				}
+// What was I thinking?! Agh. v2.0 of this function
+function ChanMode_affect_mode_list(list_bit) {
+	var tmp_nick;
+	for (add in this.tmplist[list_bit]) {
+		for (z in this.tmplist[list_bit][add]) {
+			tmp_nick = searchbynick(this.tmplist[list_bit][add][z]);
+			if (!tmp_nick)
+				tmp_nick = searchbynick(search_nickbuf(
+					this.tmplist[list_bit][add][z]));
+			if (tmp_nick && (add=="true") &&
+			    !this.chan.ismode(tmp_nick.id,list_bit)) {
+				this.addmodes += MODE[list_bit].modechar;
+				this.addmodeargs += " " + tmp_nick.nick;
+				this.chan.add_modelist(tmp_nick.id,list_bit);
+			} else if (tmp_nick && (add=="false") && 
+			           this.chan.ismode(tmp_nick.id,list_bit)) {
+				this.delmodes += MODE[list_bit].modechar;
+				this.delmodeargs += " " + tmp_nick.nick;
+				this.chan.del_modelist(tmp_nick.id,list_bit);
+			} else if (!tmp_nick && !this.user.server &&
+			           !this.user.parent) { // no nick? :(
+				this.user.numeric401(this.tmplist[list_bit]
+					[add][z]);
 			}
 		}
 	}
@@ -3786,7 +3788,7 @@ function IRCClient_affect_mode_list(list_bit,chan) {
 function IRCClient_unregistered_commands(command, cmdline) {
 	if (command.match(/^[0-9]+/))
 		return 0; // we ignore all numerics from unregistered clients.
-	cmd=cmdline.split(' ');
+	var cmd=cmdline.split(' ');
 	switch(command) {
 		case "CAPAB":
 			break; // silently ignore for now.
@@ -3947,7 +3949,7 @@ function IRCClient_unregistered_commands(command, cmdline) {
 		this.numeric("001", ":Welcome to the Synchronet IRC Service, " + this.ircnuh);
 		this.numeric("002", ":Your host is " + servername + ", running " + VERSION);
 		this.numeric("003", ":This server was created " + strftime("%a %b %e %Y at %H:%M:%S %Z",server_uptime));
-		this.numeric("004", servername + " " + VERSION + " oi biklmnopstv");
+		this.numeric("004", servername + " " + VERSION + " oiwbgscrkfydnhF biklmnopstv");
 		this.numeric("005", "MODES=" + max_modes + " MAXCHANNELS=" + max_user_chans + " CHANNELLEN=" + max_chanlen + " MAXBANS=" + max_bans + " NICKLEN=" + max_nicklen + " TOPICLEN=" + max_topiclen + " KICKLEN=" + max_kicklen + " CHANTYPES=#& PREFIX=(ov)@+ NETWORK=Synchronet CASEMAPPING=ascii CHANMODES=b,k,l,imnpst STATUSMSG=@+ :are available on this server.");
 		this.lusers();
 		this.motd();
@@ -3956,7 +3958,7 @@ function IRCClient_unregistered_commands(command, cmdline) {
 			") [" + this.socket.remote_ip_address + "] {1}");
 		if (server.client_update != undefined)
 			server.client_update(this.socket, this.nick, this.hostname);
-		server_bcast_to_servers("NICK " + this.nick + " 1 " + this.created + " " + this.get_usermode() + " " + this.uprefix + " " + this.hostname + " " + servername + " 0 " + ip_to_int(this.ip) + " :" + this.realname);
+		server_bcast_to_servers("NICK " + this.nick + " 1 " + this.created + " " + this.get_usermode(true) + " " + this.uprefix + " " + this.hostname + " " + servername + " 0 " + ip_to_int(this.ip) + " :" + this.realname);
 	/// Otherwise, it's a server trying to connect.
 	} else if (this.nick.match("[.]") && this.hops && this.realname &&
 		   this.server && (this.conntype == TYPE_SERVER)) {
@@ -4112,7 +4114,7 @@ function IRCClient_registered_commands(command, cmdline) {
 				this.numeric403(cmd[2]);
 				break;
 			}
-			if (!chanid.ismode(this.id,CHANLIST_OP)) {
+			if (!chanid.ismode(this.id,CHANMODE_OP)) {
 				this.numeric482(chanid.nam);
 				break;
 			}
@@ -4184,7 +4186,7 @@ function IRCClient_registered_commands(command, cmdline) {
 				this.numeric403(cmd[1]);
 				break;
 			}
-			if (!chanid.ismode(this.id,CHANLIST_OP)) {
+			if (!chanid.ismode(this.id,CHANMODE_OP)) {
 				this.numeric482(chanid.nam);
 				break;
 			}
@@ -4743,7 +4745,7 @@ function IRCClient_registered_commands(command, cmdline) {
 			}
 			if (cmd[2]) {
 				if (!(chanid.mode&CHANMODE_TOPIC) ||
-				     chanid.ismode(this.id,CHANLIST_OP) ) {
+				     chanid.ismode(this.id,CHANMODE_OP) ) {
 					var tmp_topic = ircstring(cmdline).slice(0,max_topiclen);
 					if (tmp_topic == chanid.topic)
 						break;
@@ -5152,7 +5154,7 @@ function IRCClient_server_commands(origin, command, cmdline) {
 			var chanid = searchbychannel(cmd[2]);
 			if (!chanid)
 				break;
-			if (!chanid.ismode(ThisOrigin.id,CHANLIST_OP))
+			if (!chanid.ismode(ThisOrigin.id,CHANMODE_OP))
 				break;
 			var nickid = searchbynick(cmd[1]);
 			if (!nickid)
@@ -5330,9 +5332,9 @@ function IRCClient_server_commands(origin, command, cmdline) {
 				chan.created = parseInt(cmd[1]);
 				chan.topic = "";
 				chan.users = new Array();
-				chan.modelist[CHANLIST_BAN] = new Array();
-				chan.modelist[CHANLIST_VOICE] = new Array();
-				chan.modelist[CHANLIST_OP] = new Array();
+				chan.modelist[CHANMODE_BAN] = new Array();
+				chan.modelist[CHANMODE_VOICE] = new Array();
+				chan.modelist[CHANMODE_OP] = new Array();
 				chan.mode = CHANMODE_NONE;
 			}
 			if (cmd[3]) {
@@ -5368,7 +5370,7 @@ function IRCClient_server_commands(origin, command, cmdline) {
 					member_obj.bcast_to_channel(chan.nam, "JOIN " + chan.nam, false);
 					if (chan.created >= parseInt(cmd[1])) {
 						if (is_op) {
-							chan.modelist[CHANLIST_OP].push(member_obj.id);
+							chan.modelist[CHANMODE_OP].push(member_obj.id);
 							push_sync_modes += "o";
 							push_sync_args += " " + member_obj.nick;
 							num_sync_modes++;
@@ -5381,7 +5383,7 @@ function IRCClient_server_commands(origin, command, cmdline) {
 							num_sync_modes = 0;
 						}
 						if (is_voice) {
-							chan.modelist[CHANLIST_VOICE].push(member_obj.id);
+							chan.modelist[CHANMODE_VOICE].push(member_obj.id);
 							push_sync_modes += "v";
 							push_sync_args += " " + member_obj.nick;
 							num_sync_modes++;
@@ -5600,7 +5602,7 @@ function IRCClient_server_commands(origin, command, cmdline) {
 				NewNick.ip = int_to_ip(cmd[9]);
 				NewNick.setusermode(cmd[4]);
 				true_hops = parseInt(NewNick.hops)+1;
-				this.bcast_to_servers_raw("NICK " + NewNick.nick + " " + true_hops + " " + NewNick.created + " " + NewNick.get_usermode() + " " + NewNick.uprefix + " " + NewNick.hostname + " " + NewNick.servername + " 0 " + cmd[9] + " :" + NewNick.realname);
+				this.bcast_to_servers_raw("NICK " + NewNick.nick + " " + true_hops + " " + NewNick.created + " " + NewNick.get_usermode(true) + " " + NewNick.uprefix + " " + NewNick.hostname + " " + NewNick.servername + " 0 " + cmd[9] + " :" + NewNick.realname);
 			}
 			break;
 		case "NOTICE":
@@ -5987,9 +5989,9 @@ function Channel(nam)  {
 	this.arg[CHANMODE_KEY] = "";
 	this.users=new Array;
 	this.modelist=new Array;
-	this.modelist[CHANLIST_OP]=new Array;
-	this.modelist[CHANLIST_VOICE]=new Array;
-	this.modelist[CHANLIST_BAN]=new Array;
+	this.modelist[CHANMODE_OP]=new Array;
+	this.modelist[CHANMODE_VOICE]=new Array;
+	this.modelist[CHANMODE_BAN]=new Array;
 	this.bantime=new Array;
 	this.bancreator=new Array;
 	this.created=time();
@@ -6026,8 +6028,8 @@ function Channel_locate_on_list(tmp_str,mode_bit) {
 function Channel_add_modelist(tmp_nickid,list_bit) {
 	if (this.ismode(tmp_nickid,list_bit))
 		return 0;
-	pushed = this.modelist[list_bit].push(tmp_nickid);
-	return pushed-1;
+	var pushed = this.modelist[list_bit].push(tmp_nickid);
+	return pushed;
 }
 
 function Channel_del_modelist(tmp_nickid,list_bit) {
@@ -6108,8 +6110,8 @@ function inverse_chanmode(bitlist) {
 }
 
 function Channel_isbanned(banned_nuh) {
-	for (this_ban in this.modelist[CHANLIST_BAN]) {
-		if (match_irc_mask(banned_nuh,this.modelist[CHANLIST_BAN][this_ban]))
+	for (this_ban in this.modelist[CHANMODE_BAN]) {
+		if (match_irc_mask(banned_nuh,this.modelist[CHANMODE_BAN][this_ban]))
 			return 1;
 	}
 	return 0;
@@ -6123,9 +6125,9 @@ function Channel_occupants() {
 		    (Channel_user.conntype != TYPE_SERVER)) {
 			if (chan_occupants)
 				chan_occupants += " ";
-			if (this.ismode(Channel_user.id,CHANLIST_OP))
+			if (this.ismode(Channel_user.id,CHANMODE_OP))
 				chan_occupants += "@";
-			if (this.ismode(Channel_user.id,CHANLIST_VOICE))
+			if (this.ismode(Channel_user.id,CHANMODE_VOICE))
 				chan_occupants += "+";
 			chan_occupants += Channel_user.nick;
 		}
