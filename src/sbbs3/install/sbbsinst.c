@@ -76,13 +76,14 @@ struct server_ent_t {
 	char	addr[256];
 };
 
-struct dist_t {
+typdef struct {
 	char					version[78];
 	char					tag[20];
 	struct server_ent_t		**servers;
 	char					**files;
 	int						type;
-};
+	char					make_opts[128];
+} dist_t;
 
 enum {
 	 CVS_SERVER
@@ -131,8 +132,8 @@ char *ftp_pass="new@synchro.net";
 /**************/
 /* Prototypes */
 /**************/
-void install_sbbs(struct dist_t *, struct server_ent_t *);
-struct dist_t **get_distlist(void);
+void install_sbbs(dist_t *, struct server_ent_t *);
+dist_t **get_distlist(void);
 int choose_dist(char **opts);
 int choose_server(char **opts);
 
@@ -160,7 +161,7 @@ int main(int argc, char **argv)
 	int		main_dflt=0;
 	char 	str[129];
 	BOOL    door_mode=FALSE;
-	struct dist_t 	**distlist;
+	dist_t 	**distlist;
 	int		dist=0;
 	int		server=0;
 
@@ -415,7 +416,7 @@ int main(int argc, char **argv)
  *		Actually, it looks like you don't NEED to login if the password is blank... huh.
  */
 
-void install_sbbs(struct dist_t *dist,struct server_ent_t *server)  {
+void install_sbbs(dist_t *dist,struct server_ent_t *server)  {
 	char	cmd[MAX_PATH+1];
 	char	str[1024];
 	char	fname[MAX_PATH+1];
@@ -464,7 +465,8 @@ void install_sbbs(struct dist_t *dist,struct server_ent_t *server)  {
 				printf("Could not checkout install makefile.\n");
 				exit(EXIT_FAILURE);
 			}
-			if(system(params.make_cmdline))  {
+			sprintf(cmd,"%s %s",params.make_cmdline,dist->make_opts);
+			if(system(cmd))  {
 				printf(MAKE_ERROR);
 				exit(EXIT_FAILURE);
 			}
@@ -521,7 +523,8 @@ void install_sbbs(struct dist_t *dist,struct server_ent_t *server)  {
 				}
 				unlink(dstfname);
 			}
-			if(system(params.make_cmdline))  {
+			sprintf(cmd,"%s %s",params.make_cmdline,dist->make_opts);
+			if(system(cmd))  {
 				printf(MAKE_ERROR);
 				exit(EXIT_FAILURE);
 			}
@@ -535,7 +538,8 @@ void install_sbbs(struct dist_t *dist,struct server_ent_t *server)  {
 					exit(EXIT_FAILURE);
 				}
 			}
-			if(system(params.make_cmdline))  {
+			sprintf(cmd,"%s %s",params.make_cmdline,dist->make_opts);
+			if(system(cmd))  {
 				printf(MAKE_ERROR);
 				exit(EXIT_FAILURE);
 			}
@@ -544,13 +548,13 @@ void install_sbbs(struct dist_t *dist,struct server_ent_t *server)  {
 	}
 }
 
-struct dist_t **
+dist_t **
 get_distlist(void)
 {
 	int ret1,ret2,ret3,ret4;
 	int i;
 	char	in_line[256];
-	struct dist_t	**dist;
+	dist_t	**dist;
 	char	**file=NULL;
 	struct server_ent_t	**server=NULL;
 	int		r=0;
@@ -562,11 +566,11 @@ get_distlist(void)
 	char	sep[2]={'\t',0};
 	char	str[1024];
 
-	if((dist=(struct dist_t **)MALLOC(sizeof(void *)*MAX_DISTRIBUTIONS))==NULL)
+	if((dist=(dist_t **)MALLOC(sizeof(void *)*MAX_DISTRIBUTIONS))==NULL)
 		allocfail(sizeof(void *)*MAX_DISTRIBUTIONS);
 	for(i=0;i<MAX_DISTRIBUTIONS;i++)
-		if((dist[i]=(void *)MALLOC(sizeof(struct dist_t)))==NULL)
-			allocfail(sizeof(struct dist_t));
+		if((dist[i]=(void *)MALLOC(sizeof(dist_t)))==NULL)
+			allocfail(sizeof(dist_t));
 
 	sprintf(str,DEFAULT_LIBFILE,params.sys_desc);
 	if(!fexistcase(str))	/* use lib-linux.tgz if lib-linux-i686.tgz doesn't exist */
@@ -583,7 +587,7 @@ get_distlist(void)
 		f=0;
 		s=0;
 
-		memset(dist[r],0,sizeof(struct dist_t));
+		memset(dist[r],0,sizeof(dist_t));
 		sprintf(dist[r]->version,"%s (Local)",VERSION);
 		dist[r]->type=LOCAL_FILE;
 		dist[r]->servers=server;
@@ -643,7 +647,7 @@ get_distlist(void)
 				f=0;
 				s=0;
 
-				memset(dist[r],0,sizeof(struct dist_t));
+				memset(dist[r],0,sizeof(dist_t));
 				strcpy(dist[r]->version,in_line+2);
 				dist[r]->type=CVS_SERVER;
 				dist[r]->servers=server;
@@ -669,7 +673,7 @@ get_distlist(void)
 				f=0;
 				s=0;
 
-				memset(dist[r],0,sizeof(struct dist_t));
+				memset(dist[r],0,sizeof(dist_t));
 				strcpy(dist[r]->version,in_line+2);
 				dist[r]->type=DIST_SET;
 				dist[r]->servers=server;
@@ -681,6 +685,9 @@ get_distlist(void)
 				break;
 			case 't':
 				SAFECOPY(dist[r-1]->tag,in_line+2);
+				break;
+			case 'm':
+				SAFECOPY(dist[r-1]->make_opts,in_line+2);
 				break;
 			case 's':
 				p=in_line+2;
@@ -695,7 +702,7 @@ get_distlist(void)
 				break;
 		}
 	}
-	memset(dist[r],0,sizeof(struct dist_t));
+	memset(dist[r],0,sizeof(dist_t));
 	uifc.pop(NULL);
 	return(dist);
 }
