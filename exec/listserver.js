@@ -32,6 +32,10 @@ for(var l in list_array) {
 	/* Set default list addresses */
 	if(!list_array[l].address)
 		list_array[l].address = format("%s@%s", list_array[l].name, system.inet_addr);
+	if(!msg_area.sub[list_array[l].sub]) {
+		log(LOG_WARNING,"!Unrecognized sub-board internal code: " + list_array[l].sub);
+		continue;
+	}
 	if(!list_array[l].description)
 		list_array[l].description = msg_area.sub[list_array[l].sub].description;
 }
@@ -92,24 +96,28 @@ if(this.recipient_list_filename!=undefined) {
 		log(LOG_INFO,format("ListServer Control message from %s to %s: %s"
 			,header.from, header.to, header.subject));
 
+		file_remove(recipient_list_filename);
+
 		if(subj_cmd)
 			body.unshift(header.subject);	/* Process the subject as a command */
 
 		var response = process_control_msg(body);
-		
-		header.subject		= response.subject;
-		header.to			= sender_name;
-		header.to_net_addr	= sender_address;
-		header.from			= listserver_address;
-		header.from_agent	= AGENT_PROCESS;
+		var resp_hdr = {};
+
+		resp_hdr.subject		= "Synchronet Listserver Results";
+		resp_hdr.to				= sender_name;
+		resp_hdr.to_net_addr	= sender_address;
+		resp_hdr.to_net_type	= NET_INTERNET;
+		resp_hdr.from			= listserver_address;
+		resp_hdr.from_agent		= AGENT_PROCESS;
+		resp_hdr.reply_id		= header["message-id"];
 
 		/* Write response to message */
-		if(!mailbase.save_msg(header, response.body.join('\r\n'))) {
-			log(LOG_ERR,format("%s !ERROR %s saving response message to mail msgbase"
-				,list.name, msgbase.error));
-		} 
-
-		file_remove(recipient_list_filename);
+		if(mailbase.save_msg(resp_hdr, response.body.join('\r\n')))
+			log(LOG_INFO,"ListServer Response to control message created");
+		else
+			log(LOG_ERR,format("ListServer !ERROR %s saving response message to mail msgbase"
+				,msgbase.error));
 
 		exit();
 	}
