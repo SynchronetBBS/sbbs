@@ -57,7 +57,6 @@
 	#endif
 
 	#include <termios.h>
-	static void setup_term(int fd, char* term);	
 #endif
 #define XTRN_IO_BUF_LEN 5000
 
@@ -1153,12 +1152,20 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 
 	if((mode&EX_INR) && (mode&EX_OUTR))  {
 		struct winsize winsize;
-		struct termios termp;
-		cfmakeraw(&termp);
+		struct termios term;
+		memset(&term,0,sizeof(term));
+		cfsetspeed(&term,B19200);
+		if(mode&EX_BIN)
+			cfmakeraw(&term);
+		else {
+			term.c_iflag = TTYDEF_IFLAG;
+			term.c_oflag = TTYDEF_OFLAG;
+			term.c_lflag = TTYDEF_LFLAG;
+		}
 		winsize.ws_row=rows;
 		// #warning Currently cols are forced to 80 apparently TODO
 		winsize.ws_col=80;
-		if((pid=forkpty(&in_pipe[1],NULL,&termp,&winsize))==-1) {
+		if((pid=forkpty(&in_pipe[1],NULL,&term,&winsize))==-1) {
 			pthread_mutex_unlock(&input_thread_mutex);
 			errormsg(WHERE,ERR_EXEC,cmdline,0);
 			return(-1);
@@ -1185,7 +1192,11 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 		}
 	}
 	if(pid==0) {	/* child process */
-		setup_term(0, startup->xtrn_term);
+		if(!(mode&EX_BIN))  {
+			static char	term_env[256];
+			sprintf(term_env,"TERM=%s",startup->xtrn_term);
+			putenv(term_env);
+		}
 #ifdef __FreeBSD__
 		if(!native)
 			chdir(cfg.node_dir);
@@ -1521,25 +1532,7 @@ char * sbbs_t::cmdstr(char *instr, char *fpath, char *fspec, char *outstr)
     return(cmd);
 }
 
-#ifdef __unix__
-void
-setup_term(int fd, char* term)
-{
-	struct termios tt;
-	char	str[256];
-	// Shoud set speed here...
-
-	tcgetattr(fd, &tt);
-	tt.c_iflag = TTYDEF_IFLAG;
-	tt.c_oflag = TTYDEF_OFLAG;
-	tt.c_lflag = TTYDEF_LFLAG;
-	tcsetattr(fd, TCSAFLUSH, &tt);
-
-	sprintf(str,"TERM=%s",term);
-	putenv(str);
-
-
-	/* The following termcap entry is nice:
+/* The following termcap entry is nice (for Unix):
 
 <---SNIP--->
 # Handy for HyperTerminal and such
@@ -1573,6 +1566,4 @@ ansi-bbs|ANSI terminals (emulators):\
 
 <---SNIP--->
 
-	*/
-}
-#endif
+*/
