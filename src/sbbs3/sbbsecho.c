@@ -144,7 +144,7 @@ unsigned _rotr (
 /******************************************************************************
  Displays characters locally
 ******************************************************************************/
-int lputs(char *str)
+static int lputs(int level, char *str)
 {
     char tmp[256];
     int i,j,k;
@@ -161,10 +161,9 @@ int lputs(char *str)
 }
 
 /****************************************************************************/
-/* Performs printf() through local assembly routines                        */
-/* Called from everywhere                                                   */
+/* This is needed by load_cfg.c												*/
 /****************************************************************************/
-int lprintf(char *fmat, ...)
+int lprintf(int level, char *fmat, ...)
 {
 	va_list argptr;
 	char sbuf[256];
@@ -174,7 +173,7 @@ int lprintf(char *fmat, ...)
 	chcount=vsnprintf(sbuf,sizeof(sbuf),fmat,argptr);
 	sbuf[sizeof(sbuf)-1]=0;
 	va_end(argptr);
-	lputs(sbuf);
+	lputs(level, sbuf);
 	return(chcount);
 }
 
