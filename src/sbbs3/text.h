@@ -587,7 +587,7 @@ enum {
 	,NodeJoinedPrivateChat
 	,NodeLeftPrivateChat
 	,NoOneHasLoggedOnToday
-	,LastFewCallers
+	,Unused544	/* was LastFewCallers */
 	,LastFewCallersFmt
 	,CallersToday
 	,DoYouMeanThisUserQ
