@@ -91,14 +91,10 @@ typedef struct {
 	int		(*wherex)		(void);
 	int		(*wherey)		(void);
 	int		(*putch)		(unsigned char);
-	int		(*c_printf)		(char *fmat, ...);
-	int		(*cputs)		(unsigned char *);
 	void	(*gotoxy)		(int,int);
 	void	(*clrscr)		(void);
 	void	(*gettextinfo)	(struct text_info *);
 	void	(*setcursortype)(int);
-	void	(*textbackground)	(int);
-	void	(*textcolor)	(int);
 	int		(*getch)		(void);
 	int		(*getche)		(void);
 	int		(*beep)			(void);
@@ -124,6 +120,13 @@ void wscroll(void);
 void gotoxy(int x, int y);
 void clreol(void);
 void clrscr(void);
+int cputs(char *str);
+int	cprintf(char *fmat, ...);
+void textbackground(int colour);
+void textcolor(int colour);
+void highvideo(void);
+void lowvideo(void);
+void normvideo(void);
 
 extern cioapi_t cio_api;
 extern int _wscroll;
@@ -135,15 +138,8 @@ extern int directvideo;
 #define textattr(a)			cio_api.textattr(a)
 #define delay(a)			cio_api.delay(a)
 #define putch(a)			cio_api.putch(a)
-#define cprintf				cio_api.c_printf
-#define cputs(a)			cio_api.cputs(a)
 #define _setcursortype(a)	cio_api.setcursortype(a)
-#define textbackground(a)	cio_api.textbackground(a)
-#define textcolor(a)		cio_api.textcolor(a)
 #define beep()				cio_api.beep()
-#define highvideo()			cio_api.highvideo()
-#define lowvideo()			cio_api.lowvideo()
-#define normvideo()			cio_api.normvideo()
 
 #endif
 

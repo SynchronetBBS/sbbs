@@ -390,26 +390,6 @@ void curs_textattr(unsigned char attr)
 	bkgdset(colour);
 }
 
-void curs_textbackground(int colour)
-{
-	unsigned char attr;
-	
-	attr=lastattr;
-	attr&=143;
-	attr|=(colour<<4);
-	textattr(attr);
-}
-
-void curs_textcolor(int colour)
-{
-	unsigned char attr;
-	
-	attr=lastattr;
-	attr&=240;
-	attr|=colour;
-	textattr(attr);
-}
-
 int curs_kbhit(void)
 {
 	struct timeval timeout;
@@ -613,36 +593,6 @@ int _putch(unsigned char ch, BOOL refresh_now)
 	if(refresh_now)
 		refresh();
 
-	return(ret);
-}
-
-int curs_cprintf(char *fmat, ...)
-{
-    va_list argptr;
-	unsigned char	str[MAX_BFLN];
-	int		pos;
-	int		ret;
-
-    va_start(argptr,fmat);
-    ret=vsprintf(str,fmat,argptr);
-    va_end(argptr);
-	if(ret>=0)
-		cputs(str);
-	else
-		ret=EOF;
-    return(ret);
-}
-
-int curs_cputs(unsigned char *str)
-{
-	int		pos;
-	int		ret=0;
-
-	for(pos=0;str[pos];pos++)
-	{
-		ret=str[pos];
-		putch(str[pos]);
-	}
 	return(ret);
 }
 
@@ -964,29 +914,6 @@ int curs_getche(void)
 	if(ch)
 		putch(ch);
 	return(ch);
-}
-
-void curs_highvideo(void)
-{
-	int attr;
-
-	attr=lastattr;
-	attr |= 8;
-	textattr(attr);
-}
-
-void curs_lowvideo(void)
-{
-	int attr;
-
-	attr=lastattr;
-	attr &= 0xf7;
-	textattr(attr);
-}
-
-void curs_normvideo(void)
-{
-	textattr(0x07);
 }
 
 void curs_textmode(int mode)

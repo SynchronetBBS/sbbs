@@ -149,35 +149,6 @@ int x_putch(unsigned char ch)
 	return(ch);
 }
 
-int x_cprintf(char *fmat, ...)
-{
-	va_list argptr;
-	unsigned char   str[4097];
-	int             pos;
-	int				ret;
-
-	va_start(argptr,fmat);
-	ret=vsprintf(str,fmat,argptr);
-	va_end(argptr);
-	if(ret>=0)
-		cputs(str);
-	else
-		ret=EOF;
-	return(ret);
-}
-
-int x_cputs(unsigned char *str)
-{
-	int             pos;
-	int				ret=0;
-
-	for(pos=0;str[pos];pos++) {
-		ret=str[pos];
-		putch(str[pos]);
-	}
-	return(ret);
-}
-
 void x_gotoxy(int x, int y)
 {
 	CursRow0=y-1;
@@ -212,20 +183,6 @@ void x_setcursortype(int type)
 	}
 }
 
-void x_textbackground(int colour)
-{
-	colour &= 0x0f;
-	x_curr_attr &= 0x0f00;
-	x_curr_attr |= (colour<<12);
-}
-
-void x_textcolor(int colour)
-{
-	colour &= 0x0f;
-	x_curr_attr &= 0xf000;
-	x_curr_attr |= (colour<<8);
-}
-
 int x_getch(void)
 {
 	return(tty_read(TTYF_BLOCK));
@@ -247,29 +204,6 @@ int x_beep(void)
 {
 	tty_beep();
 	return(0);
-}
-
-void x_highvideo(void)
-{
-	int attr;
-
-	attr=x_curr_attr>>8;
-	attr |= 8;
-	textattr(attr);
-}
-
-void x_lowvideo(void)
-{
-	int attr;
-
-	attr=x_curr_attr>>8;
-	attr &= 0xf7;
-	textattr(attr);
-}
-
-void x_normvideo(void)
-{
-	textattr(0x07);
 }
 
 void x_textmode(int mode)

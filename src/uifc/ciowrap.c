@@ -23,24 +23,17 @@ void initciowrap(int mode)
 		cio_api.puttext=x_puttext;
 		cio_api.gettext=x_gettext;
 		cio_api.textattr=x_textattr;
-		cio_api.textbackground=x_textbackground;
-		cio_api.textcolor=x_textcolor;
 		cio_api.kbhit=x_kbhit;
 		cio_api.delay=x_delay;
 		cio_api.wherey=x_wherey;
 		cio_api.wherex=x_wherex;
 		cio_api.putch=x_putch;
-		cio_api.c_printf=x_cprintf;
-		cio_api.cputs=x_cputs;
 		cio_api.gotoxy=x_gotoxy;
 		cio_api.gettextinfo=x_gettextinfo;
 		cio_api.setcursortype=x_setcursortype;
 		cio_api.getch=x_getch;
 		cio_api.getche=x_getche;
 		cio_api.beep=x_beep;
-		cio_api.highvideo=x_highvideo;
-		cio_api.lowvideo=x_lowvideo;
-		cio_api.normvideo=x_normvideo;
 		cio_api.textmode=x_textmode;
 	}
 	else {
@@ -51,24 +44,17 @@ void initciowrap(int mode)
 		cio_api.puttext=curs_puttext;
 		cio_api.gettext=curs_gettext;
 		cio_api.textattr=curs_textattr;
-		cio_api.textbackground=curs_textbackground;
-		cio_api.textcolor=curs_textcolor;
 		cio_api.kbhit=curs_kbhit;
 		cio_api.delay=curs_delay;
 		cio_api.wherey=curs_wherey;
 		cio_api.wherex=curs_wherex;
 		cio_api.putch=curs_putch;
-		cio_api.c_printf=curs_cprintf;
-		cio_api.cputs=curs_cputs;
 		cio_api.gotoxy=curs_gotoxy;
 		cio_api.gettextinfo=curs_gettextinfo;
 		cio_api.setcursortype=curs_setcursortype;
 		cio_api.getch=curs_getch;
 		cio_api.getche=curs_getche;
 		cio_api.beep=beep;
-		cio_api.highvideo=curs_highvideo;
-		cio_api.lowvideo=curs_lowvideo;
-		cio_api.normvideo=curs_normvideo;
 		cio_api.textmode=curs_textmode;
 #ifndef NO_X
 	}
@@ -386,3 +372,81 @@ void insline(void)
 	clreol();
 	gotoxy(cio_textinfo.curx,cio_textinfo.cury);
 }
+
+int cprintf(char *fmat, ...)
+{
+    va_list argptr;
+	unsigned char	str[4097];
+	int		pos;
+	int		ret;
+
+    va_start(argptr,fmat);
+    ret=vsprintf(str,fmat,argptr);
+    va_end(argptr);
+	if(ret>=0)
+		cputs(str);
+	else
+		ret=EOF;
+    return(ret);
+}
+
+int cputs(char *str)
+{
+	int		pos;
+	int		ret=0;
+
+	for(pos=0;str[pos];pos++)
+	{
+		ret=str[pos];
+		putch(str[pos]);
+	}
+	return(ret);
+}
+
+void textbackground(int colour)
+{
+	unsigned char attr;
+
+	gettextinfo(&cio_textinfo);
+	attr=cio_textinfo.attribute;
+	attr&=143;
+	attr|=(colour<<4);
+	textattr(attr);
+}
+
+void textcolor(int colour)
+{
+	unsigned char attr;
+
+	gettextinfo(&cio_textinfo);
+	attr=cio_textinfo.attribute;
+	attr&=240;
+	attr|=colour;
+	textattr(attr);
+}
+
+void highvideo(void)
+{
+	int attr;
+
+	gettextinfo(&cio_textinfo);
+	attr=cio_textinfo.attribute;
+	attr |= 8;
+	textattr(attr);
+}
+
+void lowvideo(void)
+{
+	int attr;
+
+	gettextinfo(&cio_textinfo);
+	attr=cio_textinfo.attribute;
+	attr &= 0xf7;
+	textattr(attr);
+}
+
+void normvideo(void)
+{
+	textattr(0x07);
+}
+
