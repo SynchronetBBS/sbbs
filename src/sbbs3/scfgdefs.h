@@ -335,6 +335,11 @@ typedef struct {						/* Command Shells */
 
 } shell_t;
 
+typedef struct {
+	uchar	key;
+	char	cmd[LEN_CMD+1];
+} hotkey_t;
+
 typedef struct 
 {
 	DWORD		size;				/* sizeof(scfg_t) */
@@ -394,6 +399,8 @@ typedef struct
 	ushort		total_gurus;		/* Total number of guru files */
 	shell_t		**shell;			/* Command shells */
 	ushort		total_shells;		/* Total number of command shells */
+	hotkey_t	**hotkey;			/* Global hot keys */
+	ushort		total_hotkeys;		/* Total number of global hot keys */
 
 									/* COM port registers: */
 	ushort		com_base,			/* COM base address */

@@ -108,6 +108,13 @@ char sbbs_t::inkey(long mode)
 	if(ch<SP) { 				/* Control chars */
 		if(ch==LF)				/* ignore LF's in not in raw mode */
 			return(0);
+		for(i=0;i<cfg.total_hotkeys;i++)
+			if(cfg.hotkey[i]->key==ch)
+				break;
+		if(i<cfg.total_hotkeys) {
+			external(cfg.hotkey[i]->cmd,0);
+			return(0);
+		}
 		if(ch==CTRL_O) {	/* Ctrl-O toggles pause temporarily */
 			useron.misc^=UPAUSE;
 			return(0); }

@@ -1007,6 +1007,15 @@ BOOL DLLCALL write_xtrn_cfg(scfg_t* cfg, int backup_level)
 	for(i=0;i<cfg->total_natvpgms;i++)
 		put_int(cfg->natvpgm[i]->misc,stream);
 
+	put_int(cfg->total_hotkeys,stream);
+	for(i=0;i<cfg->total_hotkeys;i++) {
+		put_int(cfg->hotkey[i]->key,stream);
+		put_str(cfg->hotkey[i]->cmd,stream);
+		n=0;
+		for(j=0;j<8;j++)
+			put_int(n,stream);
+		}
+
 	fclose(stream);
 
 	return(TRUE);

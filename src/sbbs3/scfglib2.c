@@ -625,6 +625,31 @@ BOOL read_xtrn_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 		if(feof(instream)) break;
 		get_int(cfg->natvpgm[i]->misc,instream); }
 
+	/*******************/
+	/* Global Hot Keys */
+	/*******************/
+
+	get_int(cfg->total_hotkeys,instream);
+
+	if(cfg->total_hotkeys) {
+		if((cfg->hotkey=(hotkey_t **)MALLOC(sizeof(hotkey_t *)*cfg->total_hotkeys))==NULL)
+			return allocerr(txt,offset,fname,sizeof(hotkey_t *)*cfg->total_hotkeys); }
+	else
+		cfg->hotkey=NULL;
+
+	for(i=0;i<cfg->total_hotkeys;i++) {
+		if(feof(instream)) break;
+		if((cfg->hotkey[i]=(hotkey_t *)MALLOC(sizeof(hotkey_t)))==NULL)
+			return allocerr(txt,offset,fname,sizeof(hotkey_t));
+		memset(cfg->hotkey[i],0,sizeof(hotkey_t));
+
+		get_int(cfg->hotkey[i]->key,instream);
+		get_str(cfg->hotkey[i]->cmd,instream);
+
+		for(j=0;j<8;j++)
+			get_int(n,instream);
+		}
+	cfg->total_hotkeys=i;
 
 	fclose(instream);
 	if(txt->readit && txt->readit[0])
