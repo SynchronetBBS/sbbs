@@ -165,7 +165,7 @@ void sbbs_t::notdownloaded(ulong size, time_t start, time_t end)
 /****************************************************************************/
 /* Handles start and stop routines for transfer protocols                   */
 /****************************************************************************/
-int sbbs_t::protocol(char *cmdline, int cd)
+int sbbs_t::protocol(char *cmdline, bool cd)
 {
 	char	protlog[256],*p;
 	char	msg[256];
