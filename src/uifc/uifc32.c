@@ -82,7 +82,7 @@ enum {
 
 #define BLINK	128
 
-static char  hfclr,hbclr,hclr,lclr,bclr,cclr,lbclr;
+static char  hclr,lclr,bclr,cclr,lbclr;
 static int   cursor;
 static char* helpfile=0;
 static uint  helpline=0;
@@ -246,17 +246,19 @@ int uifcini32(uifcapi_t* uifcapi)
         hclr=WHITE;
         lclr=LIGHTGRAY;
         cclr=LIGHTGRAY;
-		hbclr=BLACK;		/* Highlight Background Colour */
-		hfclr=WHITE;		/* Highlight Foreground Colour */
+#ifdef __unix__
+		if(txtinfo.currmode==MONO)
+			lbclr=WHITE|(BLACK<<4);		/* no color on curses means no inverse either */
+		else
+#endif
+			lbclr=BLACK|(LIGHTGRAY<<4);	/* lightbar color */
     } else {
         bclr=BLUE;
         hclr=YELLOW;
         lclr=WHITE;
         cclr=CYAN;
-		hbclr=LIGHTGRAY;
-		hfclr=YELLOW;
+		lbclr=BLUE|(LIGHTGRAY<<4);	/* lightbar color */
     }
-	lbclr=bclr|(LIGHTGRAY<<4);	/* lightbar color */
 
     for(i=0;i<MAX_BFLN;i+=2) {
         blk_scrn[i]='°';
