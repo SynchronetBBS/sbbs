@@ -35,7 +35,10 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
+#define __COLORS
 #include "scfg.h"
+#undef BLINK
+#include "ciolib.h"
 
 /********************/
 /* Global Variables */
@@ -149,9 +152,7 @@ int main(int argc, char **argv)
 					uifc.mode|=UIFC_IBM;
 					break;
                 case 'V':
-#if !defined(__unix__) && !defined(_MSC_VER)
                     textmode(atoi(argv[i]+2));
-#endif
                     break;
 				case 'Y':
 					auto_save=TRUE;
@@ -174,9 +175,7 @@ int main(int argc, char **argv)
                         "-e# =  set escape delay to #msec\r\n"
 						"-i  =  force IBM charset\r\n"
 #endif
-#if !defined(__unix__) && !defined(_MSC_VER)
                         "-v# =  set video mode to # (default=auto)\r\n"
-#endif
                         "-l# =  set screen lines to # (default=auto-detect)\r\n"
                         "-b# =  set automatic back-up level (default=%d)\r\n"
 						"-y  =  automatically save changes (don't ask)\r\n"
@@ -1935,11 +1934,9 @@ void errormsg(int line, char *source,  char action, char *object, ulong access)
 {
     char actstr[256];
 
-#if !defined(__unix__)
 	char scrn_buf[MAX_BFLN];
     gettext(1,1,80,uifc.scrn_len,scrn_buf);
     clrscr();
-#endif
 
     switch(action) {
         case ERR_OPEN:
@@ -1981,9 +1978,7 @@ void errormsg(int line, char *source,  char action, char *object, ulong access)
     printf("          access: %ld (%lx)\n",access,access);
     printf("\nHit enter to continue...");
     getchar();
-#if !defined(__unix__)
     puttext(1,1,80,uifc.scrn_len,scrn_buf);
-#endif    
 }
 
 /* Prepare a string to be used as an internal code */
