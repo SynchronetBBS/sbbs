@@ -189,28 +189,6 @@ sbbs_ntsvc_t* ntsvc_list[] = {
 	NULL
 };
 							
-static WSADATA WSAData;
-
-static BOOL winsock_startup(void)
-{
-	int		status;             /* Status Code */
-
-    if((status = WSAStartup(MAKEWORD(1,1), &WSAData))==0)
-		return(TRUE);
-
-    fprintf(stderr,"!WinSock startup ERROR %d\n", status);
-	return(FALSE);
-}
-
-static BOOL winsock_cleanup(void)	
-{
-	if(WSACleanup()==0)
-		return(TRUE);
-
-	fprintf(stderr,"!WinSock cleanup ERROR %d\n",ERROR_VALUE);
-	return(FALSE);
-}
-
 /****************************************/
 /* Service Control Handlers (Callbacks) */
 /****************************************/
@@ -770,7 +748,6 @@ int main(int argc, char** argv)
 	char*	p;
 	char	str[MAX_PATH+1];
 	char	ini_file[MAX_PATH+1];
-	char	host_name[128]="";
 	int		i;
 	FILE*	fp=NULL;
 
@@ -798,15 +775,7 @@ int main(int argc, char** argv)
 			,ctrl_dir);
 	}
 
-	if(!winsock_startup())
-		return(-1);
-
-	gethostname(host_name,sizeof(host_name)-1);
-
-	if(!winsock_cleanup())
-		return(-1);
-
-	sbbs_get_ini_fname(ini_file, ctrl_dir, host_name);
+	sbbs_get_ini_fname(ini_file, ctrl_dir, NULL /* auto-host_name */);
 
 	/* Initialize BBS startup structure */
     memset(&bbs_startup,0,sizeof(bbs_startup));
