@@ -28,15 +28,18 @@ for(i=0;i<argc;i++)
 			break;
 	}
 
-// Write a string to the client socket
-function write(str)
-{
-	client.socket.send(str);
-}
+if(this.server!=undefined) {
 
-function writeln(str)
-{
-	write(str + "\r\n");
+	// Write a string to the client socket
+	function write(str)
+	{
+		client.socket.send(str);
+	}
+
+	function writeln(str)
+	{
+		write(str + "\r\n");
+	}
 }
 
 function xtrn_name(code)
@@ -52,8 +55,8 @@ function xtrn_name(code)
 }
 
 // Get HTTP Request
-while(client.socket.data_waiting) {
-	request = client.socket.recvline(128 /*maxlen*/, 3 /*timeout*/);
+while(this.client!=undefined && client.socket.data_waiting) {
+	request = client.socket.recvline(512 /*maxlen*/, 3 /*timeout*/);
 
 	if(request==null) 
 		break;
@@ -61,6 +64,10 @@ while(client.socket.data_waiting) {
 //	log(format("client request: '%s'",request));
 }
 
+if(this.server==undefined) {	/* CGI, so send CGI/HTTP headers */
+	writeln("Content-Type: text/html");
+	writeln();
+}
 // HTML Header
 writeln("<html>");
 writeln("<head>");
