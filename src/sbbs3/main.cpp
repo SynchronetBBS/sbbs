@@ -297,6 +297,14 @@ DLLCALL js_DescribeConstructor(JSContext* cx, JSObject* obj, const char* str)
 
 #ifdef _DEBUG
 
+static char* server_prop_desc[] = {
+
+	 "server name and version number"
+	,"detailed version/build information"
+	,NULL
+};
+
+
 static const char* method_array_name = "_method_list";
 
 /*
@@ -582,22 +590,22 @@ js_prompt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 static jsMethodSpec js_global_functions[] = {
 	{"log",				js_log,				1,	JSTYPE_VOID,	JSDOCSTR("string text [,text]")
-	,JSDOCSTR("Log a string")
+	,JSDOCSTR("add a string to the server and/or system log")
 	},
     {"print",           js_print,           0,	JSTYPE_VOID,	JSDOCSTR("string text [,test]")
-	,JSDOCSTR("Print a string, auto-crlf")
+	,JSDOCSTR("print a string, auto-CRLF")
 	},
     {"printf",          js_printf,          1,	JSTYPE_VOID,	JSDOCSTR("string format [,value][,value]")
-	,JSDOCSTR("Print a formatted string")
+	,JSDOCSTR("print a formatted string (ala C)")
 	},	
 	{"alert",			js_alert,			1,	JSTYPE_VOID,	JSDOCSTR("string text")
-	,JSDOCSTR("Print an alert message (ala client-side)")
+	,JSDOCSTR("print an alert message (ala client-side JS)")
 	},
 	{"prompt",			js_prompt,			1,	JSTYPE_STRING,	JSDOCSTR("string text")
-	,JSDOCSTR("Prompt for a user string  (ala clent-side)")
+	,JSDOCSTR("prompt for a user string (ala clent-side JS)")
 	},
 	{"confirm",			js_confirm,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("string text")
-	,JSDOCSTR("Confirm a question (ala client-side)")
+	,JSDOCSTR("confirm a question (ala client-side JS)")
 	},
     {0}
 };
@@ -643,12 +651,6 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 		sbbs->bprintf("!JavaScript %s%s%s: %s\r\n",warning,file,line,message);
 	}
 }
-
-static JSClass js_server_class = {
-        "TelnetServer",0, 
-        JS_PropertyStub,JS_PropertyStub,JS_PropertyStub,JS_PropertyStub, 
-        JS_EnumerateStub,JS_ResolveStub,JS_ConvertStub,JS_FinalizeStub 
-}; 
 
 bool sbbs_t::js_init()
 {
@@ -734,11 +736,9 @@ bool sbbs_t::js_init()
 			break;
 
 		/* Server Object */
-		if((server=JS_DefineObject(js_cx, js_glob, "server", &js_server_class
+		if((server=JS_DefineObject(js_cx, js_glob, "server", NULL
 			,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))==NULL)
 			break;
-
-		js_DescribeObject(js_cx,server,"Server-specifc properties");
 
 		sprintf(ver,"%s %s%c",TELNET_SERVER,VERSION,REVISION);
 		if((js_str=JS_NewStringCopyZ(js_cx, ver))==NULL)
@@ -753,6 +753,10 @@ bool sbbs_t::js_init()
 		if(!JS_SetProperty(js_cx, server, "version_detail", &val))
 			break;
 
+#ifdef _DEBUG
+		js_DescribeObject(js_cx,server,"Server-specifc properties");
+		js_CreateArrayOfStrings(js_cx, server, "_property_desc_list", server_prop_desc, JSPROP_READONLY);
+#endif
 
 		success=true;
 

@@ -39,18 +39,43 @@
 
 #ifdef JAVASCRIPT
 
-static JSClass js_file_area_class = {
-     "FileArea"				/* name			*/
-    ,JSCLASS_HAS_PRIVATE	/* flags		*/
-	,JS_PropertyStub		/* addProperty	*/
-	,JS_PropertyStub		/* delProperty	*/
-	,JS_PropertyStub		/* getProperty	*/
-	,JS_PropertyStub		/* setProperty	*/
-	,JS_EnumerateStub		/* enumerate	*/
-	,JS_ResolveStub			/* resolve		*/
-	,JS_ConvertStub			/* convert		*/
-	,JS_FinalizeStub		/* finalize		*/
+#ifdef _DEBUG
+
+static char* lib_prop_desc[] = {
+	 "library number"
+	,"library name"
+	,"library description"
+	,"library link (for HTML index)"
+	,NULL
 };
+
+static char* dir_prop_desc[] = {
+
+	 "directory number"
+	,"library number"
+	,"directory internal code"
+	,"directory name"
+	,"directory description"
+	,"directory file storage location"
+	,"allowed file extensions (comma delimited)"
+	,"upload semaphore file"
+	,"directory data storage location"
+	,"toggle options (bitfield)"
+	,"sequential (slow storage) device number"
+	,"sort order (see <tt>SORT_*</tt> in <tt>sbbsdefs.js</tt> for valid values)"
+	,"configured maximum number of files"
+	,"configured maximum age (in days) of files before expiration"
+	,"percent of file size awarded uploader in credits upon file upload"
+	,"percent of file size awarded uploader in credits upon subsequent downloads"
+	,"directory link (for HTML index)"
+	,"user has sufficient access to upload files"
+	,"user has sufficient access to download files"
+	,"user is exempt from download credit costs"
+	,"user has operator access to this directory"
+	,NULL
+};
+#endif
+
 
 JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_t* cfg
 										  ,user_t* user, char* html_index_file)
@@ -71,7 +96,7 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 	if(JS_GetProperty(cx,parent,"file_area",&val) && val!=JSVAL_VOID)
 		areaobj = JSVAL_TO_OBJECT(val);
 	else
-		areaobj = JS_DefineObject(cx, parent, "file_area", &js_file_area_class
+		areaobj = JS_DefineObject(cx, parent, "file_area", NULL
 								, NULL, JSPROP_ENUMERATE|JSPROP_READONLY);
 	if(areaobj==NULL)
 		return(NULL);
@@ -79,20 +104,12 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 	if((alldirs=JS_NewObject(cx, NULL, NULL, areaobj))==NULL)
 		return(NULL);
 
-	val=INT_TO_JSVAL(cfg->min_dspace);
+	JS_NewNumberValue(cx,cfg->min_dspace,&val);
 	if(!JS_SetProperty(cx, areaobj, "min_diskspace", &val)) 
 		return(NULL);
 
-	val=INT_TO_JSVAL(cfg->user_dir);
-	if(!JS_SetProperty(cx, areaobj, "user_dir", &val)) 
-		return(NULL);
-
-	val=INT_TO_JSVAL(cfg->sysop_dir);
-	if(!JS_SetProperty(cx, areaobj, "sysop_dir", &val)) 
-		return(NULL);
-
-	val=INT_TO_JSVAL(cfg->upload_dir);
-	if(!JS_SetProperty(cx, areaobj, "upload_dir", &val)) 
+	JS_NewNumberValue(cx,cfg->file_misc,&val);
+	if(!JS_SetProperty(cx, areaobj, "settings", &val)) 
 		return(NULL);
 
 	if(html_index_file==NULL)
@@ -118,7 +135,7 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 		if(user!=NULL && !chk_ar(cfg,cfg->lib[l]->ar,user))
 			continue;
 
-		if((libobj=JS_NewObject(cx, &js_file_area_class, NULL, NULL))==NULL)
+		if((libobj=JS_NewObject(cx, NULL, NULL, NULL))==NULL)
 			return(NULL);
 
 		val=INT_TO_JSVAL(l);
@@ -166,7 +183,7 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 			if(user!=NULL && !chk_ar(cfg,cfg->dir[d]->ar,user))
 				continue;
 
-			if((dirobj=JS_NewObject(cx, &js_file_area_class, NULL, NULL))==NULL)
+			if((dirobj=JS_NewObject(cx, NULL, NULL, NULL))==NULL)
 				return(NULL);
 
 			val=INT_TO_JSVAL(d);
@@ -219,7 +236,7 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 			if(!JS_SetProperty(cx, dirobj, "data_dir", &val))
 				return(NULL);
 
-			val=INT_TO_JSVAL(cfg->dir[d]->misc);
+			JS_NewNumberValue(cx,cfg->dir[d]->misc,&val);
 			if(!JS_SetProperty(cx, dirobj, "settings", &val))
 				return(NULL);
 
@@ -285,6 +302,10 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 			if(!JS_SetProperty(cx, dirobj, "is_operator", &val))
 				return(NULL);
 
+#ifdef _DEBUG
+			js_CreateArrayOfStrings(cx, dirobj, "_property_desc_list", dir_prop_desc, JSPROP_READONLY);
+#endif
+
 			if(!JS_GetArrayLength(cx, dir_list, &index))	/* inexplicable exception here on Jul-6-2001 */
 				return(NULL);								/* and again on Aug-7-2001 and Oct-21-2001 */
 
@@ -301,6 +322,10 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 			js_DescribeObject(cx,dirobj,"File Transfer Directories");
 #endif
 		}
+
+#ifdef _DEBUG
+		js_CreateArrayOfStrings(cx, libobj, "_property_desc_list", lib_prop_desc, JSPROP_READONLY);
+#endif
 
 		if(!JS_GetArrayLength(cx, lib_list, &index))
 			return(NULL);

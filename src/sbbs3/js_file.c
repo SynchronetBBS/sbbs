@@ -316,7 +316,7 @@ js_readbin(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 			break;
 		case sizeof(DWORD):
 			if(fread(&l,1,size,p->fp)==size)
-				*rval = INT_TO_JSVAL(l);
+				JS_NewNumberValue(cx,l,rval);
 			break;
 	}
 		
@@ -812,7 +812,7 @@ static JSBool js_file_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 				*vp = BOOLEAN_TO_JSVAL(fexist(p->name));
 			break;
 		case FILE_PROP_DATE:
-			*vp = INT_TO_JSVAL(fdate(p->name));
+			JS_NewNumberValue(cx,fdate(p->name),vp);
 			break;
 		case FILE_PROP_IS_OPEN:
 			*vp = BOOLEAN_TO_JSVAL(p->fp!=NULL);
@@ -831,18 +831,18 @@ static JSBool js_file_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			break;
 		case FILE_PROP_POSITION:
 			if(p->fp)
-				*vp = INT_TO_JSVAL(ftell(p->fp));
+				JS_NewNumberValue(cx,ftell(p->fp),vp);
 			else
 				*vp = INT_TO_JSVAL(-1);
 			break;
 		case FILE_PROP_LENGTH:
 			if(p->fp)	/* open? */
-				*vp = INT_TO_JSVAL(filelength(fileno(p->fp)));
+				JS_NewNumberValue(cx,filelength(fileno(p->fp)),vp);
 			else
 				*vp = INT_TO_JSVAL(flength(p->name));
 			break;
 		case FILE_PROP_ATTRIBUTES:
-			*vp = INT_TO_JSVAL(getfattr(p->name));
+			JS_NewNumberValue(cx,getfattr(p->name),vp);
 			break;
 		case FILE_PROP_DEBUG:
 			*vp = INT_TO_JSVAL(p->debug);
@@ -859,6 +859,10 @@ static JSBool js_file_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 		case FILE_PROP_CHKSUM:
 		case FILE_PROP_CRC16:
 		case FILE_PROP_CRC32:
+			*vp = JSVAL_ZERO;
+			if(p->fp==NULL)
+				break;
+			/* fall-through */
 		case FILE_PROP_BASE64:
 		case FILE_PROP_MD5_HEX:
 		case FILE_PROP_MD5_BASE64:
@@ -910,7 +914,7 @@ static JSBool js_file_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			break;
 	}
 
-	return(TRUE);
+	return(JS_TRUE);
 }
 
 #define FILE_PROP_FLAGS JSPROP_ENUMERATE|JSPROP_READONLY
@@ -948,7 +952,7 @@ static char* file_prop_desc[] = {
 	,"<i>true</i> if the file exists - <small>READ ONLY</small>"
 	,"last modified date/time (time_t format) - <small>READ ONLY</small>"
 	,"<i>true</i> if the file has been opened successfully - <small>READ ONLY</small>"
-	,"<i>true</i> if the current file position is at the <b>end of file</b> - <small>READ ONLY</small>"
+	,"<i>true</i> if the current file position is at the <i>end of file</i> - <small>READ ONLY</small>"
 	,"the last occurred error value (use clear_error to clear) - <small>READ ONLY</small>"
 	,"the open file descriptor (advanced use only) - <small>READ ONLY</small>"
 	,"end-of-text character (advanced use only), if non-zero used by <i>read</i>, <i>readln</i>, and <i>write</i>"
@@ -956,12 +960,12 @@ static char* file_prop_desc[] = {
 	,"the current file position (offset in bytes), change value to seek within file"
 	,"the current length of the file (in bytes)"
 	,"file mode/attributes"
-	,"calculated 32-bit checksum of file contents"
-	,"calculated 16-bit CRC of file contents"
-	,"calculated 32-bit CRC of file contents"
-	,"base64-encoded file contents"
-	,"base64-encoded calculated MD5 digest of file contents"
-	,"hexadecimal-encoded calculated MD5 digest of file contents"
+	,"calculated 32-bit checksum of file contents - <small>READ ONLY</small>"
+	,"calculated 16-bit CRC of file contents - <small>READ ONLY</small>"
+	,"calculated 32-bit CRC of file contents - <small>READ ONLY</small>"
+	,"base64-encoded file contents (string) - <small>READ ONLY</small>"
+	,"base64-encoded calculated MD5 digest of file contents (string) - <small>READ ONLY</small>"
+	,"hexadecimal-encoded calculated MD5 digest of file contents (string) - <small>READ ONLY</small>"
 	,NULL
 };
 #endif

@@ -39,20 +39,16 @@
 
 #ifdef JAVASCRIPT
 
-static JSClass js_xtrn_area_class = {
-     "XtrnArea"				/* name			*/
-    ,JSCLASS_HAS_PRIVATE	/* flags		*/
-	,JS_PropertyStub		/* addProperty	*/
-	,JS_PropertyStub		/* delProperty	*/
-	,JS_PropertyStub		/* getProperty	*/
-	,JS_PropertyStub		/* setProperty	*/
-	,JS_EnumerateStub		/* enumerate	*/
-	,JS_ResolveStub			/* resolve		*/
-	,JS_ConvertStub			/* convert		*/
-	,JS_FinalizeStub		/* finalize		*/
+#ifdef _DEBUG
+
+static char* xtrn_sec_prop_desc[] = {
+
+	 "external program section number"
+	,"external program section internal code"
+	,"external program section name"
+	,NULL
 };
 
-#ifdef _DEBUG
 static char* xtrn_prog_prop_desc[] = {
 
 	 "internal code"
@@ -66,8 +62,36 @@ static char* xtrn_prog_prop_desc[] = {
 	,"extra time given to users running this program"
 	,"maximum time allowed in program"
 	,"cost (in credits) to run this program"
+	/* Insert here */
+	,"program number"
+	,"program section number"
+	,"user has sufficient access to run this program"
 	,NULL
 };
+
+static char* event_prop_desc[] = {
+
+	 "command-line"
+	,"startup directory"
+	,"node number"
+	,"time to execute"
+	,"frequency to execute"
+	,"days of week to execute (bitfield)"
+	,"days of month to execute (bitfield)"
+	,"date/time last run (in time_t format)"
+	,"toggle options (bitfield)"
+	,NULL
+};
+
+static char* xedit_prop_desc[] = {
+
+	 "name"
+	,"command-line"
+	,"toggle options (bitfield)"
+	,"drop file type"
+	,NULL
+};
+
 #endif
 
 BOOL DLLCALL js_CreateXtrnProgProperties(JSContext* cx, JSObject* obj, xtrn_t* xtrn)
@@ -133,7 +157,9 @@ JSObject* DLLCALL js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_
 	JSObject*	secobj;
 	JSObject*	progobj;
 	JSObject*	eventobj;
+	JSObject*	event_array;
 	JSObject*	xeditobj;
+	JSObject*	xedit_array;
 	JSObject*	sec_list;
 	JSObject*	prog_list;
 	JSString*	js_str;
@@ -145,7 +171,7 @@ JSObject* DLLCALL js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_
 	if(JS_GetProperty(cx,parent,"xtrn_area",&val) && val!=JSVAL_VOID)
 		areaobj = JSVAL_TO_OBJECT(val);
 	else
-		areaobj = JS_DefineObject(cx, parent, "xtrn_area", &js_xtrn_area_class
+		areaobj = JS_DefineObject(cx, parent, "xtrn_area", NULL
 									, NULL, JSPROP_ENUMERATE|JSPROP_READONLY);
 
 	if(areaobj==NULL)
@@ -174,7 +200,7 @@ JSObject* DLLCALL js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_
 		if(user!=NULL && !chk_ar(cfg,cfg->xtrnsec[l]->ar,user))
 			continue;
 
-		if((secobj=JS_NewObject(cx, &js_xtrn_area_class, NULL, NULL))==NULL)
+		if((secobj=JS_NewObject(cx, NULL, NULL, NULL))==NULL)
 			return(NULL);
 
 		val=INT_TO_JSVAL(l);
@@ -215,7 +241,7 @@ JSObject* DLLCALL js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_
 			if(user!=NULL && !chk_ar(cfg,cfg->xtrn[d]->ar,user))
 				continue;
 
-			if((progobj=JS_NewObject(cx, &js_xtrn_area_class, NULL, NULL))==NULL)
+			if((progobj=JS_NewObject(cx, NULL, NULL, NULL))==NULL)
 				return(NULL);
 
 			if(!js_CreateXtrnProgProperties(cx, progobj, cfg->xtrn[d]))
@@ -253,6 +279,10 @@ JSObject* DLLCALL js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_
 #endif
 		}
 
+#ifdef _DEBUG
+		js_CreateArrayOfStrings(cx, secobj, "_property_desc_list", xtrn_sec_prop_desc, JSPROP_READONLY);
+#endif
+
 		if(!JS_GetArrayLength(cx, sec_list, &index))
 			return(NULL);
 
@@ -272,20 +302,111 @@ JSObject* DLLCALL js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_
 #endif
 
 	/* Create event property */
-	if((eventobj=JS_NewObject(cx,NULL,NULL,areaobj))==NULL)
+	if((event_array=JS_NewObject(cx,NULL,NULL,areaobj))==NULL)
 		return(NULL);
 
-	val=OBJECT_TO_JSVAL(eventobj);
+	for(l=0;l<cfg->total_events;l++) {
+
+		if((eventobj=JS_NewObject(cx, NULL, NULL, NULL))==NULL)
+			return(NULL);
+
+		if((js_str=JS_NewStringCopyZ(cx, cfg->event[l]->cmd))==NULL)
+			return(NULL);
+		JS_DefineProperty(cx, eventobj, "cmd", STRING_TO_JSVAL(js_str)
+			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+
+		if((js_str=JS_NewStringCopyZ(cx, cfg->event[l]->dir))==NULL)
+			return(NULL);
+		JS_DefineProperty(cx, eventobj, "startup_dir", STRING_TO_JSVAL(js_str)
+			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+
+		JS_DefineProperty(cx, eventobj, "node_num", INT_TO_JSVAL(cfg->event[l]->node)
+			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+
+		JS_DefineProperty(cx, eventobj, "time", INT_TO_JSVAL(cfg->event[l]->time)
+			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+
+		JS_DefineProperty(cx, eventobj, "freq", INT_TO_JSVAL(cfg->event[l]->freq)
+			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+
+		JS_DefineProperty(cx, eventobj, "days", INT_TO_JSVAL(cfg->event[l]->days)
+			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+
+		JS_DefineProperty(cx, eventobj, "mdays", INT_TO_JSVAL(cfg->event[l]->mdays)
+			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+
+		JS_DefineProperty(cx, eventobj, "last_run", INT_TO_JSVAL(cfg->event[l]->last)
+			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+
+		JS_DefineProperty(cx, eventobj, "settings", INT_TO_JSVAL(cfg->event[l]->misc)
+			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+
+#ifdef _DEBUG
+		js_CreateArrayOfStrings(cx, eventobj, "_property_desc_list", event_prop_desc, JSPROP_READONLY);
+#endif
+
+		if(!JS_DefineProperty(cx, event_array, cfg->event[l]->code, OBJECT_TO_JSVAL(eventobj)
+			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE))
+			return(NULL);
+	}
+
+	val=OBJECT_TO_JSVAL(event_array);
 	if(!JS_SetProperty(cx, areaobj, "event", &val))
 		return(NULL);
 
+#ifdef _DEBUG
+	js_DescribeObject(cx,event_array,"Associative array of all timed events (use internal code as index)");
+	JS_DefineProperty(cx,event_array,"_assoc_array",JSVAL_TRUE,NULL,NULL,JSPROP_READONLY);
+#endif
+
 	/* Create editor property */
-	if((xeditobj=JS_NewObject(cx,NULL,NULL,areaobj))==NULL)
+	if((xedit_array=JS_NewObject(cx,NULL,NULL,areaobj))==NULL)
 		return(NULL);
 
-	val=OBJECT_TO_JSVAL(xeditobj);
+	for(l=0;l<cfg->total_xedits;l++) {
+
+		if(user==NULL && (*cfg->xedit[l]->ar)!=AR_NULL)
+			continue;
+
+		if(user!=NULL && !chk_ar(cfg,cfg->xedit[l]->ar,user))
+			continue;
+
+		if((xeditobj=JS_NewObject(cx, NULL, NULL, NULL))==NULL)
+			return(NULL);
+
+		if((js_str=JS_NewStringCopyZ(cx, cfg->xedit[l]->name))==NULL)
+			return(NULL);
+		JS_DefineProperty(cx, xeditobj, "name", STRING_TO_JSVAL(js_str)
+			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+
+		if((js_str=JS_NewStringCopyZ(cx, cfg->xedit[l]->rcmd))==NULL)
+			return(NULL);
+		JS_DefineProperty(cx, xeditobj, "cmd", STRING_TO_JSVAL(js_str)
+			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+
+		JS_DefineProperty(cx, xeditobj, "settings", INT_TO_JSVAL(cfg->xedit[l]->misc)
+			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+
+		JS_DefineProperty(cx, xeditobj, "type", INT_TO_JSVAL(cfg->xedit[l]->type)
+			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+
+#ifdef _DEBUG
+		js_CreateArrayOfStrings(cx, xeditobj, "_property_desc_list", xedit_prop_desc, JSPROP_READONLY);
+#endif
+
+		if(!JS_DefineProperty(cx, xedit_array, cfg->xedit[l]->code, OBJECT_TO_JSVAL(xeditobj)
+			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE))
+			return(NULL);
+	}
+
+	val=OBJECT_TO_JSVAL(xedit_array);
 	if(!JS_SetProperty(cx, areaobj, "editor", &val))
 		return(NULL);
+
+#ifdef _DEBUG
+	js_DescribeObject(cx,xedit_array,"Associative array of all external editors (use internal code as index)");
+	JS_DefineProperty(cx,xedit_array,"_assoc_array",JSVAL_TRUE,NULL,NULL,JSPROP_READONLY);
+#endif
 
 	return(areaobj);
 }

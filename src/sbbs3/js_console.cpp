@@ -224,20 +224,22 @@ static struct JSPropertySpec js_console_properties[] = {
 
 #ifdef _DEBUG
 static char* con_prop_desc[] = {
-	 "status bit field (see CON_* in sbbsdefs.js for bit definitions)"
+	 "status bitfield (see <tt>CON_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
 	,"current line counter (used for automatic screen pause)"
 	,"current display attributes (set with number or string value)"
 	,"set to 1 if the terminal cursor is already at the top of the screen"
 	,"number of terminal rows"
-	,"automatically detected terminal settings (see USER_* in sbbsdefs.js for bit definitions)"
+	,"bitfield of automatically detected terminal settings "
+		"(see <tt>USER_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
 	,"user inactivity timeout reference"
 	,"low timeleft warning flag"
 	,"input/output has been aborted"
 	,"output can be aborted with Ctrl-C"
-	,"current telnet mode (see TELNET_MODE_* in sbbsdefs.js for valid values)"
+	,"current telnet mode (see <tt>TELNET_MODE_*</tt> in <tt>sbbsdefs.js</tt> for valid values)"
 	,"word-wrap buffer (used by getstr)"
 	,"current yes/no question (set by yesno and noyes)"
-	,"control key pass-through bitmask, set bits represent control key combinations <b>not</b> handled by inkey() method"
+	,"control key pass-through bitmask, set bits represent control key combinations "
+		"<i>not</i> handled by <tt>inkey()</tt> method"
 	,NULL
 };
 #endif
@@ -890,19 +892,6 @@ js_ansi_gotoxy(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
     return(JS_TRUE);
 }
 
-static JSClass js_screen_class = {
-     "Screen"				/* name			*/
-    ,0						/* flags		*/
-	,JS_PropertyStub		/* addProperty	*/
-	,JS_PropertyStub		/* delProperty	*/
-	,JS_PropertyStub		/* getProperty	*/
-	,JS_PropertyStub		/* setProperty	*/
-	,JS_EnumerateStub		/* enumerate	*/
-	,JS_ResolveStub			/* resolve		*/
-	,JS_ConvertStub			/* convert		*/
-	,JS_FinalizeStub		/* finalize		*/
-};
-
 
 static JSBool
 js_ansi_getxy(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
@@ -916,7 +905,7 @@ js_ansi_getxy(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
  
 	sbbs->ansi_getxy(&x,&y);
 
-	if((screen=JS_NewObject(cx,&js_screen_class,NULL,obj))==NULL)
+	if((screen=JS_NewObject(cx,NULL,NULL,obj))==NULL)
 		return(JS_TRUE);
 
 	JS_DefineProperty(cx, screen, "x", INT_TO_JSVAL(x)
@@ -1070,7 +1059,7 @@ static jsMethodSpec js_console_functions[] = {
 	{"getnum",			js_getnum,			0, JSTYPE_NUMBER,	JSDOCSTR("[maxnum]")
 	,JSDOCSTR("get a number")
 	},		
-	{"getkeys",			js_getkeys,			1, JSTYPE_NUMBER,	JSDOCSTR("string keys, [maxnum]")
+	{"getkeys",			js_getkeys,			1, JSTYPE_NUMBER,	JSDOCSTR("string keys [,maxnum]")
 	,JSDOCSTR("get one of a list of keys")
 	},		
 	{"gettemplate",		js_gettemplate,		1, JSTYPE_STRING,	JSDOCSTR("format [,string] [,mode]")
@@ -1107,7 +1096,8 @@ static jsMethodSpec js_console_functions[] = {
 	,JSDOCSTR("display a raw string")
 	},		
 	{"putmsg",			js_putmsg,			1, JSTYPE_VOID,		JSDOCSTR("string text [,number mode]")
-	,JSDOCSTR("display message text (Ctrl-A codes, @-codes, pipe codes, etc), see P_* in sbbsdefs.js for mode bits")
+	,JSDOCSTR("display message text (Ctrl-A codes, @-codes, pipe codes, etc), "
+		"see <tt>P_*</tt> in <tt>sbbsdefs.js</tt> for <i>mode</i> bits")
 	},		
 	{"center",			js_center,			1, JSTYPE_VOID,		JSDOCSTR("string text")
 	,JSDOCSTR("display a string centered on the screen")

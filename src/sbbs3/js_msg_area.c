@@ -43,23 +43,20 @@ enum {	/* msg_area Object Properties */
 	 PROP_MAX_QWK_MSGS
 };
 
-static JSClass js_msg_area_class = {
-     "MsgArea"				/* name			*/
-    ,JSCLASS_HAS_PRIVATE	/* flags		*/
-	,JS_PropertyStub		/* addProperty	*/
-	,JS_PropertyStub		/* delProperty	*/
-	,JS_PropertyStub		/* getProperty	*/
-	,JS_PropertyStub		/* setProperty	*/
-	,JS_EnumerateStub		/* enumerate	*/
-	,JS_ResolveStub			/* resolve		*/
-	,JS_ConvertStub			/* convert		*/
-	,JS_FinalizeStub		/* finalize		*/
+#ifdef _DEBUG
+
+static char* msg_grp_prop_desc[] = {
+	 "group number"
+	,"group name"
+	,"group description"
+	,NULL
 };
 
-#ifdef _DEBUG
 static char* msg_area_prop_desc[] = {
 
-	 "sub-board internal code"
+	 "sub-board number"
+	,"group number"
+	,"sub-board internal code"
 	,"sub-board name"
 	,"sub-board description"
 	,"sub-board QWK name"
@@ -72,13 +69,23 @@ static char* msg_area_prop_desc[] = {
 	,"configured maximum number of message CRCs to store (for dupe checking)"
 	,"configured maximum number of messages before purging"
 	,"configured maximum age (in days) of messages before expiration"
+	/* Insert here */
+	,"newsgroup name (as configured or dymamically generated)"
+	,"user has sufficient access to read messages"
+	,"user has sufficient access to post messages"
+	,"user has operator access to this message area"
+	,"user's posts are moderated"
+	,"user's current new message scan pointer"
+	,"user's message scan configuration (bitfield)"
+	,"user's last-read message number"
 	,NULL
 };
 #endif
 
 BOOL DLLCALL js_CreateMsgAreaProperties(JSContext* cx, JSObject* subobj, sub_t* sub)
 {
-	JSString* js_str;
+	JSString*	js_str;
+	jsval		val;
 
 	if((js_str=JS_NewStringCopyZ(cx, sub->code))==NULL)
 		return(FALSE);
@@ -115,7 +122,8 @@ BOOL DLLCALL js_CreateMsgAreaProperties(JSContext* cx, JSObject* subobj, sub_t* 
 	JS_DefineProperty(cx, subobj, "qwknet_tagline", STRING_TO_JSVAL(js_str)
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 
-	JS_DefineProperty(cx, subobj, "settings", INT_TO_JSVAL(sub->misc)
+	JS_NewNumberValue(cx,sub->misc,&val);
+	JS_DefineProperty(cx, subobj, "settings", val
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 
 	JS_DefineProperty(cx, subobj, "ptridx", INT_TO_JSVAL(sub->ptridx)
@@ -160,7 +168,7 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 	if(JS_GetProperty(cx,parent,"msg_area",&val) && val!=JSVAL_VOID)
 		areaobj = JSVAL_TO_OBJECT(val);
 	else
-		areaobj = JS_DefineObject(cx, parent, "msg_area", &js_msg_area_class
+		areaobj = JS_DefineObject(cx, parent, "msg_area", NULL
 									, NULL, JSPROP_ENUMERATE|JSPROP_READONLY);
 
 	if(areaobj==NULL)
@@ -233,15 +241,15 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 			if((subobj=JS_NewObject(cx, NULL, NULL, NULL))==NULL)
 				return(NULL);
 
-			if(!js_CreateMsgAreaProperties(cx, subobj, cfg->sub[d]))
-				return(NULL);
-
 			val=INT_TO_JSVAL(d);
 			if(!JS_SetProperty(cx, subobj, "number", &val))
 				return(NULL);
 
 			val=INT_TO_JSVAL(cfg->sub[d]->grp);
 			if(!JS_SetProperty(cx, subobj, "grp_number", &val))
+				return(NULL);
+
+			if(!js_CreateMsgAreaProperties(cx, subobj, cfg->sub[d]))
 				return(NULL);
 			
 			if(cfg->sub[d]->newsgroup[0])
@@ -296,13 +304,13 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 				return(NULL);
 
 			if(subscan!=NULL) {
-				val=INT_TO_JSVAL(subscan[d].ptr);
+				JS_NewNumberValue(cx,subscan[d].ptr,&val);
 				if(!JS_SetProperty(cx, subobj, "scan_ptr", &val))
 					return(NULL);
-				val=INT_TO_JSVAL(subscan[d].cfg);
+				JS_NewNumberValue(cx,subscan[d].cfg,&val);
 				if(!JS_SetProperty(cx, subobj, "scan_cfg", &val))
 					return(NULL);
-				val=INT_TO_JSVAL(subscan[d].last);
+				JS_NewNumberValue(cx,subscan[d].last,&val);
 				if(!JS_SetProperty(cx, subobj, "last_read", &val))
 					return(NULL);
 			}
@@ -325,6 +333,10 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 #endif
 
 		}
+
+#ifdef _DEBUG
+		js_CreateArrayOfStrings(cx, grpobj, "_property_desc_list", msg_grp_prop_desc, JSPROP_READONLY);
+#endif
 
 		if(!JS_GetArrayLength(cx, grp_list, &index))
 			return(NULL);

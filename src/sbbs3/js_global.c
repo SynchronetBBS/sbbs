@@ -56,7 +56,7 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 
 	switch(tiny) {
 		case GLOB_PROP_ERRNO:
-	        *vp = INT_TO_JSVAL(errno);
+			JS_NewNumberValue(cx,errno,vp);
 			break;
 		case GLOB_PROP_ERRNO_STR:
 			if((js_str=JS_NewStringCopyZ(cx, strerror(errno)))==NULL)
@@ -195,14 +195,14 @@ js_random(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(argc)
 		JS_ValueToInt32(cx,argv[0],&val);
 
-	*rval = INT_TO_JSVAL(sbbs_random(val));
+	JS_NewNumberValue(cx,sbbs_random(val),rval);
 	return(JS_TRUE);
 }
 
 static JSBool
 js_time(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	*rval = INT_TO_JSVAL(time(NULL));
+	JS_NewNumberValue(cx,time(NULL),rval);
 	return(JS_TRUE);
 }
 
@@ -253,7 +253,7 @@ js_crc32(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if((str=JS_GetStringBytes(JS_ValueToString(cx, argv[0])))==NULL) 
 		return(JS_FALSE);
 
-	*rval = INT_TO_JSVAL(crc32(str,strlen(str)));
+	JS_NewNumberValue(cx,crc32(str,strlen(str)),rval);
 	return(JS_TRUE);
 }
 
@@ -268,7 +268,7 @@ js_chksum(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	while(*p) sum+=*(p++);
 
-	*rval = INT_TO_JSVAL(sum);
+	JS_NewNumberValue(cx,sum,rval);
 	return(JS_TRUE);
 }
 
@@ -1088,7 +1088,7 @@ js_fattr(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_TRUE);
 	}
 
-	*rval = INT_TO_JSVAL(getfattr(p));
+	JS_NewNumberValue(cx,getfattr(p),rval);
 	return(JS_TRUE);
 }
 
@@ -1102,7 +1102,7 @@ js_fdate(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_TRUE);
 	}
 
-	*rval = INT_TO_JSVAL(fdate(p));
+	JS_NewNumberValue(cx,fdate(p),rval);
 	return(JS_TRUE);
 }
 
@@ -1116,7 +1116,7 @@ js_flength(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_TRUE);
 	}
 
-	*rval = INT_TO_JSVAL(flength(p));
+	JS_NewNumberValue(cx,flength(p),rval);
 	return(JS_TRUE);
 }
 
@@ -1265,7 +1265,7 @@ static jsMethodSpec js_global_functions[] = {
 	,JSDOCSTR("millisecond wait/sleep routine (AKA sleep)")
 	},
 	{"random",			js_random,			1,	JSTYPE_NUMBER,	JSDOCSTR("number max")
-	,JSDOCSTR("return random int between 0 and n")
+	,JSDOCSTR("return random integer between 0 and max-1")
 	},		
 	{"time",			js_time,			0,	JSTYPE_NUMBER,	""
 	,JSDOCSTR("return current time in Unix (time_t) format")
@@ -1276,15 +1276,6 @@ static jsMethodSpec js_global_functions[] = {
 	{"sound",			js_sound,			0,	JSTYPE_BOOLEAN,	JSDOCSTR("[string filename]")
 	,JSDOCSTR("play a waveform (.wav) sound file")
 	},		
-	{"crc16",			js_crc16,			1,	JSTYPE_NUMBER,	JSDOCSTR("string text")
-	,JSDOCSTR("calculate and return 16-bit CRC of string")
-	},		
-	{"crc32",			js_crc32,			1,	JSTYPE_NUMBER,	JSDOCSTR("string text")
-	,JSDOCSTR("calculate and return 32-bit CRC of string")
-	},		
-	{"chksum",			js_chksum,			1,	JSTYPE_NUMBER,	JSDOCSTR("string text")
-	,JSDOCSTR("calculate and return 32-bit checksum of string")
-	},
 	{"ctrl",			js_ctrl,			1,	JSTYPE_STRING,	JSDOCSTR("number or string")
 	,JSDOCSTR("return ASCII control character representing character passed - Example: <tt>ctrl('C') returns '\3'</tt>")
 	},
@@ -1362,8 +1353,17 @@ static jsMethodSpec js_global_functions[] = {
 	{"base64_decode",	js_b64_decode,		1,	JSTYPE_STRING,	JSDOCSTR("string text")
 	,JSDOCSTR("returns base64-decoded string or <i>null</i> on error")
 	},
-	{"md5_calc",		js_md5_calc,		1,	JSTYPE_STRING,	JSDOCSTR("string text [,bool hex]")
-	,JSDOCSTR("returns MD5 digest of string in base64 (default) or hexadecimal encoding")
+	{"md5",				js_md5_calc,		1,	JSTYPE_STRING,	JSDOCSTR("string text [,bool hex]")
+	,JSDOCSTR("calculate and return MD5 digest of string in base64 (default) or hexadecimal encoding")
+	},
+	{"crc16",			js_crc16,			1,	JSTYPE_NUMBER,	JSDOCSTR("string text")
+	,JSDOCSTR("calculate and return 16-bit CRC of string")
+	},		
+	{"crc32",			js_crc32,			1,	JSTYPE_NUMBER,	JSDOCSTR("string text")
+	,JSDOCSTR("calculate and return 32-bit CRC of string")
+	},		
+	{"chksum",			js_chksum,			1,	JSTYPE_NUMBER,	JSDOCSTR("string text")
+	,JSDOCSTR("calculate and return 32-bit checksum of string")
 	},
 	{0}
 };

@@ -449,18 +449,6 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 		fprintf(fp,"!JavaScript %s%s%s: %s",warning,file,line,message);
 }
 
-static JSClass js_server_class = {
-        "FtpServer",0, 
-        JS_PropertyStub,JS_PropertyStub,JS_PropertyStub,JS_PropertyStub, 
-        JS_EnumerateStub,JS_ResolveStub,JS_ConvertStub,JS_FinalizeStub 
-}; 
-
-static JSClass js_ftp_class = {
-        "Ftp",0, 
-        JS_PropertyStub,JS_PropertyStub,JS_PropertyStub,JS_PropertyStub, 
-        JS_EnumerateStub,JS_ResolveStub,JS_ConvertStub,JS_FinalizeStub 
-}; 
-
 static JSContext* 
 js_initcx(JSRuntime* runtime, SOCKET sock, JSObject** glob, JSObject** ftp)
 {
@@ -495,11 +483,11 @@ js_initcx(JSRuntime* runtime, SOCKET sock, JSObject** glob, JSObject** ftp)
 		if(js_CreateSystemObject(js_cx, js_glob, &scfg, uptime, startup->host_name)==NULL) 
 			break;
 
-		if((*ftp=JS_DefineObject(js_cx, js_glob, "ftp", &js_ftp_class
+		if((*ftp=JS_DefineObject(js_cx, js_glob, "ftp", NULL
 			,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))==NULL)
 			break;
 
-		if((server=JS_DefineObject(js_cx, js_glob, "server", &js_server_class
+		if((server=JS_DefineObject(js_cx, js_glob, "server", NULL
 			,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))==NULL)
 			break;
 
@@ -531,12 +519,6 @@ js_initcx(JSRuntime* runtime, SOCKET sock, JSObject** glob, JSObject** ftp)
 	return(js_cx);
 }
 
-static JSClass js_file_class = {
-        "FtpFile",0, 
-        JS_PropertyStub,JS_PropertyStub,JS_PropertyStub,JS_PropertyStub, 
-        JS_EnumerateStub,JS_ResolveStub,JS_ConvertStub,JS_FinalizeStub 
-}; 
-
 BOOL js_add_file(JSContext* js_cx, JSObject* array, 
 				 char* name, char* desc, char* ext_desc,
 				 ulong size, ulong credits, 
@@ -549,7 +531,7 @@ BOOL js_add_file(JSContext* js_cx, JSObject* array,
 	jsval		val;
 	jsuint		index;
 
-	if((file=JS_NewObject(js_cx, &js_file_class, NULL, NULL))==NULL)
+	if((file=JS_NewObject(js_cx, NULL, NULL, NULL))==NULL)
 		return(FALSE);
 
 	if((js_str=JS_NewStringCopyZ(js_cx, name))==NULL)
@@ -698,7 +680,7 @@ BOOL js_generate_index(JSContext* js_cx, JSObject* parent,
 		}
 
 		/* curlib */
-		if((lib_obj=JS_NewObject(js_cx, &js_file_class, 0, NULL))==NULL) {
+		if((lib_obj=JS_NewObject(js_cx, NULL, 0, NULL))==NULL) {
 			lprintf("%04d !JavaScript FAILED to create lib_obj",sock);
 			break;
 		}
@@ -710,7 +692,7 @@ BOOL js_generate_index(JSContext* js_cx, JSObject* parent,
 		}
 
 		/* curdir */
-		if((dir_obj=JS_NewObject(js_cx, &js_file_class, 0, NULL))==NULL) {
+		if((dir_obj=JS_NewObject(js_cx, NULL, 0, NULL))==NULL) {
 			lprintf("%04d !JavaScript FAILED to create dir_obj",sock);
 			break;
 		}

@@ -547,20 +547,6 @@ js_recv(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	return(JS_TRUE);
 }
 
-static JSClass js_recvfrom_class = {
-     "Recvfrom"				/* name			*/
-    ,0						/* flags		*/
-	,JS_PropertyStub		/* addProperty	*/
-	,JS_PropertyStub		/* delProperty	*/
-	,JS_PropertyStub		/* getProperty	*/
-	,JS_PropertyStub		/* setProperty	*/
-	,JS_EnumerateStub		/* enumerate	*/
-	,JS_ResolveStub			/* resolve		*/
-	,JS_ConvertStub			/* convert		*/
-	,JS_FinalizeStub		/* finalize		*/
-};
-
-
 static JSBool
 js_recvfrom(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
@@ -618,7 +604,7 @@ js_recvfrom(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 				if((rd=recvfrom(p->sock,(BYTE*)&l,len,0,(SOCKADDR*)&addr,&addrlen))==len) {
 					if(p->network_byte_order)
 						l=ntohl(l);
-					data_val = INT_TO_JSVAL(l);
+					JS_NewNumberValue(cx,l,&data_val);
 				}
 				break;
 		}
@@ -653,7 +639,7 @@ js_recvfrom(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	}
 
 
-	if((retobj=JS_NewObject(cx,&js_recvfrom_class,NULL,obj))==NULL) {
+	if((retobj=JS_NewObject(cx,NULL,NULL,obj))==NULL) {
 		JS_ReportError(cx,"JS_NewObject failed");
 		return(JS_FALSE);
 	}
@@ -837,7 +823,7 @@ js_recvbin(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 			if((rd=recv(p->sock,(BYTE*)&l,size,0))==size) {
 				if(p->network_byte_order)
 					l=ntohl(l);
-				*rval = INT_TO_JSVAL(l);
+				JS_NewNumberValue(cx,l,rval);
 			}
 			break;
 	}
@@ -867,7 +853,7 @@ js_getsockopt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 
 	if(getsockopt(p->sock,SOL_SOCKET,opt,(void*)&val,&len)==0) {
 		dbprintf(FALSE, p, "option %d = %d",opt,val);
-		*rval = INT_TO_JSVAL(val);
+		JS_NewNumberValue(cx,val,rval);
 	} else {
 		p->last_error=ERROR_VALUE;
 		dbprintf(TRUE, p, "error %d getting option %d"
@@ -917,7 +903,7 @@ js_ioctlsocket(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 		JS_ValueToInt32(cx,argv[1],(int32*)&arg);
 
 	if(ioctlsocket(p->sock,cmd,&arg)==0)
-		*rval = INT_TO_JSVAL(arg);
+		JS_NewNumberValue(cx,arg,rval);
 	else
 		*rval = INT_TO_JSVAL(-1);
 
@@ -1009,12 +995,12 @@ static char* socket_prop_desc[] = {
 	,"enable debug logging"
 	,"socket descriptor (advanced uses only)"
 	,"use non-blocking operation (default is <i>false</i>)"
-	,"local IP address (in dotted-decimal format)"
+	,"local IP address (string in dotted-decimal format)"
 	,"local TCP or UDP port number"
-	,"remote IP address (in dotted-decimal format)"
+	,"remote IP address (string in dotted-decimal format)"
 	,"remote TCP or UDP port number"
 	,"socket type, <tt>SOCK_STREAM</tt> (TCP) or <tt>SOCK_DGRAM</tt> (UDP)"
-	,"<i>true</i> if binary data is to be sent in Network Byte Order (big end first)"
+	,"<i>true</i> if binary data is to be sent in Network Byte Order (big end first), default is <i>true</i>"
 	,NULL
 };
 #endif
@@ -1093,9 +1079,9 @@ static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 		case SOCK_PROP_NREAD:
 			cnt=0;
 			if(ioctlsocket(p->sock, FIONREAD, &cnt)==0) 
-				*vp = INT_TO_JSVAL(cnt);
+				JS_NewNumberValue(cx,cnt,vp);
 			else
-				*vp = INT_TO_JSVAL(0);
+				*vp = JSVAL_ZERO;
 			break;
 		case SOCK_PROP_DEBUG:
 			*vp = INT_TO_JSVAL(p->debug);
@@ -1121,7 +1107,7 @@ static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			addr_len = sizeof(addr);
 			if(getsockname(p->sock, (struct sockaddr *)&addr,&addr_len)!=0) {
 				p->last_error=ERROR_VALUE;
-				*vp = JSVAL_VOID;
+				*vp = JSVAL_ZERO;
 			} else
 				*vp = INT_TO_JSVAL(ntohs(addr.sin_port));
 			break;
@@ -1140,7 +1126,7 @@ static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			addr_len = sizeof(addr);
 			if(getpeername(p->sock, (struct sockaddr *)&addr,&addr_len)!=0) {
 				p->last_error=ERROR_VALUE;
-				*vp = JSVAL_VOID;
+				*vp = JSVAL_ZERO;
 			} else
 				*vp = INT_TO_JSVAL(ntohs(addr.sin_port));
 			break;
@@ -1148,7 +1134,7 @@ static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			*vp = INT_TO_JSVAL(p->type);
 			break;
 		case SOCK_PROP_NETWORK_ORDER:
-			*vp = INT_TO_JSVAL(p->network_byte_order);
+			*vp = BOOLEAN_TO_JSVAL(p->network_byte_order);
 			break;
 
 	}
@@ -1205,7 +1191,7 @@ static jsMethodSpec js_socket_functions[] = {
 	,JSDOCSTR("place socket in a state to listen for incoming connections (use before an accept)")
 	},
 	{"accept",		js_accept,		0,	JSTYPE_OBJECT,	""					
-	,JSDOCSTR("accept an incoming connection, returns a new <b>Socket</b> object representing the new connection")
+	,JSDOCSTR("accept an incoming connection, returns a new <i>Socket</i> object representing the new connection")
 	},
 	{"write",		js_send,		1,	JSTYPE_ALIAS },
 	{"send",		js_send,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("data")
@@ -1236,23 +1222,26 @@ static jsMethodSpec js_socket_functions[] = {
 	{"recvfrom",	js_recvfrom,	0,	JSTYPE_OBJECT,	JSDOCSTR("[bool binary] [,maxlen or int_size]")
 	,JSDOCSTR("receive data (string or integer) from a socket (typically UDP)"
 	"<p>returns object with <i>ip_address</i> and <i>port</i> of sender along with <i>data</i>"
-	"<p><i>binary</i> defaults to <i>false</i>, <i>int_size</i> defaults to 4 bytes (32-bits)")
+	"<p><i>binary</i> defaults to <i>false</i>, <i>maxlen</i> defaults to 512 chars, <i>int_size</i> defaults to 4 bytes (32-bits)")
 	},
 	{"readBin",		js_recvbin,		0,	JSTYPE_ALIAS },
 	{"recvBin",		js_recvbin,		0,	JSTYPE_NUMBER,	JSDOCSTR("[number bytes]")
 	,JSDOCSTR("receive a binary integer from the socket, default number of bytes is 4 (32-bits)")
 	},
 	{"getoption",	js_getsockopt,	1,	JSTYPE_NUMBER,	JSDOCSTR("option")
-	,JSDOCSTR("get socket option value, option may be socket option name (see sockopts in sockdefs.js) or number")
+	,JSDOCSTR("get socket option value, option may be socket option name "
+	"(see <tt>sockopts</tt> in <tt>sockdefs.js</tt>) or number")
 	},
 	{"setoption",	js_setsockopt,	2,	JSTYPE_BOOLEAN,	JSDOCSTR("option, value")
-	,JSDOCSTR("set socket option value, option may be socket option name (see sockopts in sockdefs.js) or number")
+	,JSDOCSTR("set socket option value, option may be socket option name "
+	"(see <tt>sockopts</tt> in <tt>sockdefs.js</tt>) or number")
 	},
 	{"ioctl",		js_ioctlsocket,	1,	JSTYPE_NUMBER,	JSDOCSTR("command [,argument]")
 	,JSDOCSTR("send socket IOCTL (advanced)")					
 	},
 	{"poll",		js_poll,		1,	JSTYPE_NUMBER,	JSDOCSTR("[number timeout] [,bool write]")
-	,JSDOCSTR("poll socket for read or write ability (default is <i>read</i>), default timeout value is 0 seconds (immediate timeout)")
+	,JSDOCSTR("poll socket for read or write ability (default is <i>read</i>), "
+	"default timeout value is 0.0 seconds (immediate timeout)")
 	},
 	{0}
 };

@@ -123,7 +123,7 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			p=cfg->sys_id;
 			break;
 		case SYS_PROP_MISC:
-			*vp = INT_TO_JSVAL(cfg->sys_misc);
+			JS_NewNumberValue(cx,cfg->sys_misc,vp);
 			break;
 		case SYS_PROP_PSNAME:
 			p=cfg->sys_psname;
@@ -196,10 +196,10 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			*vp = INT_TO_JSVAL(cfg->new_exempt);
 			break;
 		case SYS_PROP_NEW_CDT:
-			*vp = INT_TO_JSVAL(cfg->new_cdt);
+			JS_NewNumberValue(cx,cfg->new_cdt,vp);
 			break;
 		case SYS_PROP_NEW_MIN:
-			*vp = INT_TO_JSVAL(cfg->new_min);
+			JS_NewNumberValue(cx,cfg->new_min,vp);
 			break;
 		case SYS_PROP_NEW_SHELL:
 			*vp = INT_TO_JSVAL(cfg->new_shell);
@@ -208,17 +208,17 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			p=cfg->new_xedit;
 			break;
 		case SYS_PROP_NEW_MISC:
-			*vp = INT_TO_JSVAL(cfg->new_misc);
+			JS_NewNumberValue(cx,cfg->new_misc,vp);
 			break;
 		case SYS_PROP_NEW_PROT:
 			sprintf(str,"%c",cfg->new_prot);
 			p=str;
 			break;
 		case SYS_PROP_NEW_EXPIRE:
-			*vp = INT_TO_JSVAL(cfg->new_expire);
+			JS_NewNumberValue(cx,cfg->new_expire,vp);
 			break;
 		case SYS_PROP_NEW_UQ:
-			*vp = INT_TO_JSVAL(cfg->uq);
+			JS_NewNumberValue(cx,cfg->uq,vp);
 			break;
 
 		case SYS_PROP_EXPIRED_LEVEL:
@@ -365,7 +365,7 @@ static char* sys_prop_desc[] = {
 	 "BBS name"
 	,"operator name"
 	,"system QWK-ID (for QWK packets)"
-	,"settings (see SS_* in sbbsdefs.js)"
+	,"settings (see <tt>SS_*</tt> in <tt>sbbsdefs.js</tt>)"
 	,"PostLink name"
 	,"PostLink system number"
 	,"Internet address (host name)"
@@ -397,7 +397,7 @@ static char* sys_prop_desc[] = {
 	,"new user settings"
 	,"new user file transfer protocol"
 	,"new user expiration date"
-	,"new user questions (see UQ_* in sbbsdefs.js)"
+	,"new user questions (see <tt>UQ_*</tt> in <tt>sbbsdefs.js</tt>)"
 
 	,"expired user level"
 	,"expired user flag set #1"
@@ -493,40 +493,40 @@ static JSBool js_sysstats_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 
 	switch(tiny) {
 		case SYSSTAT_PROP_LOGONS:
-			*vp = INT_TO_JSVAL(stats.logons);
+			JS_NewNumberValue(cx,stats.logons,vp);
 			break;
 		case SYSSTAT_PROP_LTODAY:
-			*vp = INT_TO_JSVAL(stats.ltoday);
+			JS_NewNumberValue(cx,stats.ltoday,vp);
 			break;
 		case SYSSTAT_PROP_TIMEON:
-			*vp = INT_TO_JSVAL(stats.timeon);
+			JS_NewNumberValue(cx,stats.timeon,vp);
 			break;
 		case SYSSTAT_PROP_TTODAY:
-			*vp = INT_TO_JSVAL(stats.ttoday);
+			JS_NewNumberValue(cx,stats.ttoday,vp);
 			break;
 		case SYSSTAT_PROP_ULS:
-			*vp = INT_TO_JSVAL(stats.uls);
+			JS_NewNumberValue(cx,stats.uls,vp);
 			break;
 		case SYSSTAT_PROP_ULB:
-			*vp = INT_TO_JSVAL(stats.ulb);
+			JS_NewNumberValue(cx,stats.ulb,vp);
 			break;
 		case SYSSTAT_PROP_DLS:
-			*vp = INT_TO_JSVAL(stats.dls);
+			JS_NewNumberValue(cx,stats.dls,vp);
 			break;
 		case SYSSTAT_PROP_DLB:
-			*vp = INT_TO_JSVAL(stats.dlb);
+			JS_NewNumberValue(cx,stats.dlb,vp);
 			break;
 		case SYSSTAT_PROP_PTODAY:
-			*vp = INT_TO_JSVAL(stats.ptoday);
+			JS_NewNumberValue(cx,stats.ptoday,vp);
 			break;
 		case SYSSTAT_PROP_ETODAY:
-			*vp = INT_TO_JSVAL(stats.etoday);
+			JS_NewNumberValue(cx,stats.etoday,vp);
 			break;
 		case SYSSTAT_PROP_FTODAY:
-			*vp = INT_TO_JSVAL(stats.ftoday);
+			JS_NewNumberValue(cx,stats.ftoday,vp);
 			break;
 		case SYSSTAT_PROP_NUSERS:
-			*vp = INT_TO_JSVAL(stats.nusers);
+			JS_NewNumberValue(cx,stats.nusers,vp);
 			break;
 
 		case SYSSTAT_PROP_TOTALUSERS:
@@ -536,13 +536,13 @@ static JSBool js_sysstats_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			l=0;
 			for(i=0;i<cfg->total_subs;i++)
 				l+=getposts(cfg,i); 
-			*vp = INT_TO_JSVAL(l); 
+			JS_NewNumberValue(cx,l,vp); 
 			break;
 		case SYSSTAT_PROP_TOTALFILES:
 			l=0;
 			for(i=0;i<cfg->total_dirs;i++)
 				l+=getfiles(cfg,i);
-			*vp = INT_TO_JSVAL(l);
+			JS_NewNumberValue(cx,l,vp);
 			break;
 		case SYSSTAT_PROP_TOTALMAIL:
 			*vp = INT_TO_JSVAL(getmail(cfg, 0,0));
@@ -1037,9 +1037,8 @@ js_put_node_message(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval
 	if((msg=JS_GetStringBytes(js_msg))==NULL) 
 		return(JS_FALSE);
 
-	putnmsg(cfg,node,msg);
+	*rval = BOOLEAN_TO_JSVAL(putnmsg(cfg,node,msg)==0);
 
-	*rval = JSVAL_VOID;
 	return(JS_TRUE);
 }
 
@@ -1093,9 +1092,8 @@ js_put_telegram(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 	if((msg=JS_GetStringBytes(js_msg))==NULL) 
 		return(JS_FALSE);
 
-	putsmsg(cfg,usernumber,msg);
+	*rval = BOOLEAN_TO_JSVAL(putsmsg(cfg,usernumber,msg)==0);
 
-	*rval = JSVAL_VOID;
 	return(JS_TRUE);
 }
 
@@ -1177,7 +1175,7 @@ static jsMethodSpec js_system_functions[] = {
 	{"matchuser",		js_matchuser,		1,	JSTYPE_NUMBER,	JSDOCSTR("string username [bool sysop_alias]")
 	,JSDOCSTR("exact user name matching, returns number of user whose name/alias matches <i>username</i>")
 	},		
-	{"matchuserdata",	js_matchuserdata,	2,	JSTYPE_NUMBER,	JSDOCSTR("field, data, [usernumber]")
+	{"matchuserdata",	js_matchuserdata,	2,	JSTYPE_NUMBER,	JSDOCSTR("field, data [,usernumber]")
 	,JSDOCSTR("search user database for data in a specific field (specified by offset), returns first matching user number")
 	},
 	{"trashcan",		js_trashcan,		2,	JSTYPE_BOOLEAN,	JSDOCSTR("string filename, search")
@@ -1195,8 +1193,8 @@ static jsMethodSpec js_system_functions[] = {
 	{"datestr",			js_datestr,			0,	JSTYPE_STRING,	JSDOCSTR("[number time]")
 	,JSDOCSTR("convert time_t into a date string")
 	},		
-	{"secondstr",		js_secondstr,		1,	JSTYPE_STRING,	JSDOCSTR("[number time]")
-	,JSDOCSTR("convert time_t into a hh:mm:ss string")
+	{"secondstr",		js_secondstr,		1,	JSTYPE_STRING,	JSDOCSTR("[number seconds]")
+	,JSDOCSTR("convert elapsed time in seconds into a string in <tt>hh:mm:ss</tt> format")
 	},		
 	{"spamlog",			js_spamlog,			6,	JSTYPE_BOOLEAN,	JSDOCSTR("[protocol, action, reason, host, ip, to, from]")
 	,JSDOCSTR("log a suspected SPAM attempt")
@@ -1207,18 +1205,18 @@ static jsMethodSpec js_system_functions[] = {
 	{"get_node_message",js_get_node_message,0,	JSTYPE_STRING,	JSDOCSTR("[number node]")
 	,JSDOCSTR("read any messages waiting for the specified node and return in a single string")
 	},		
-	{"put_node_message",js_put_node_message,2,	JSTYPE_VOID,	JSDOCSTR("number node, string message")
+	{"put_node_message",js_put_node_message,2,	JSTYPE_BOOLEAN,	JSDOCSTR("number node, string message")
 	,JSDOCSTR("send a node a short text message, delivered immediately")
 	},		
 	{"get_telegram",	js_get_telegram,	1,	JSTYPE_STRING,	JSDOCSTR("number user")
 	,JSDOCSTR("returns any short text messages waiting for the specified user")
 	},		
-	{"put_telegram",	js_put_telegram,	2,	JSTYPE_VOID,	JSDOCSTR("number user, string message")
+	{"put_telegram",	js_put_telegram,	2,	JSTYPE_BOOLEAN,	JSDOCSTR("number user, string message")
 	,JSDOCSTR("send a user a short text message, delivered immediately or during next logon")
 	},		
 	{"newuser",			js_new_user,		1,	JSTYPE_ALIAS },
 	{"new_user",		js_new_user,		1,	JSTYPE_OBJECT,	JSDOCSTR("name/alias")
-	,JSDOCSTR("Create a new user record, returns a <b>User</b> object")
+	,JSDOCSTR("Create a new user record, returns a <a href=#User>User</a> object")
 	},
 	{0}
 };
@@ -1239,14 +1237,14 @@ enum {
 
 #ifdef _DEBUG
 static char* node_prop_desc[] = {
-	 "status (see nodedefs.js for valid values)"
+	 "status (see <tt>nodedefs.js</tt> for valid values)"
 	,"error counter"
-	,"current user action (see nodedefs.js)"
+	,"current user action (see <tt>nodedefs.js</tt>)"
 	,"current user number"
-	,"connection speed (0xffff = Telnet or RLogin)"
-	,"miscellaneous flag bits (see nodedefs.js)"
-	,"auxillary field"
-	,"extended auxillary field"
+	,"connection speed (<tt>0xffff</tt> = Telnet or RLogin)"
+	,"miscellaneous bitfield (see <tt>nodedefs.js</tt>)"
+	,"auxillary bitfield"
+	,"extended auxillary bitfield"
 	,NULL
 };
 #endif
@@ -1301,7 +1299,7 @@ static JSBool js_node_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			*vp = INT_TO_JSVAL((int)node.aux);
 			break;
 		case NODE_PROP_EXTAUX:	
-			*vp = INT_TO_JSVAL((int)node.extaux);
+			JS_NewNumberValue(cx,node.extaux,vp);
 			break;
 	}
 	return(JS_TRUE);

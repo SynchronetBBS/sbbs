@@ -135,18 +135,18 @@ enum {
 
 #ifdef _DEBUG
 	static char* bbs_prop_desc[] = {
-	 "system status bitfield (see SS_* in sbbsdefs.js for bit definitions)"
-	,"startup options bitfield (see BBS_OPT_* in sbbsdefs.js for bit definitions)"
+	 "system status bitfield (see <tt>SS_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
+	,"startup options bitfield (see <tt>BBS_OPT_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
 	,"answer time, in time_t format"
 	,"logon time, in time_t format"
 	,"file newscan time, in time_t format"
 	,"previous newscan time, in time_t format"
-	,"online (see ON_* in sbbsdefs.js for valid values)"
+	,"online (see <tt>ON_*</tt> in <tt>sbbsdefs.js</tt> for valid values)"
 	,"timeleft (in seconds)"
 
 	,"current node number"
-	,"current node settings bitfield (see NM_* in sbbsdefs.js for bit definitions)"
-	,"current node action (see nodedefs.js for valid values)"
+	,"current node settings bitfield (see <tt>NM_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
+	,"current node action (see <tt>nodedefs.js</tt> for valid values)"
 	,"validation feedback user for this node (or 0 for no validation feedback required)"
 
 	,"bytes uploaded during this session"
@@ -562,6 +562,7 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			break;
 		case BBS_PROP_BATCH_DNLOAD_TOTAL:
 			val=sbbs->batdn_total;
+			break;
 
 		default:
 			return(JS_TRUE);
@@ -572,7 +573,7 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			return(JS_FALSE);
 		*vp = STRING_TO_JSVAL(js_str);
 	} else
-		*vp = INT_TO_JSVAL(val);
+		JS_NewNumberValue(cx,val,vp);
 
 	return(JS_TRUE);
 }
@@ -2100,9 +2101,8 @@ js_put_node_message(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval
 	if((msg=JS_GetStringBytes(js_msg))==NULL) 
 		return(JS_FALSE);
 
-	putnmsg(&sbbs->cfg,node,msg);
+	*rval = BOOLEAN_TO_JSVAL(putnmsg(&sbbs->cfg,node,msg)==0);
 
-	*rval = JSVAL_VOID;
 	return(JS_TRUE);
 }
 
@@ -2146,9 +2146,8 @@ js_put_telegram(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 	if((msg=JS_GetStringBytes(js_msg))==NULL) 
 		return(JS_FALSE);
 
-	putsmsg(&sbbs->cfg,usernumber,msg);
+	*rval = BOOLEAN_TO_JSVAL(putsmsg(&sbbs->cfg,usernumber,msg)==0);
 
-	*rval = JSVAL_VOID;
 	return(JS_TRUE);
 }
 
@@ -2447,7 +2446,7 @@ js_getnstime(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		JS_ValueToInt32(cx,argv[0],(int32*)&t);
 
 	if(sbbs->inputnstime(&t)==true)
-		*rval = INT_TO_JSVAL(t);
+		JS_NewNumberValue(cx,t,rval);
 
 	return(JS_TRUE);
 }
@@ -2588,10 +2587,10 @@ static jsMethodSpec js_bbs_functions[] = {
 	{"read_mail",		js_readmail,		0,	JSTYPE_VOID,	""
 	,JSDOCSTR("read private e-mail")
 	},		
-	{"email",			js_email,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("number user, [number mode, string top, string subject]")
+	{"email",			js_email,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("number user [,number mode] [,string top] [,string subject]")
 	,JSDOCSTR("send private e-mail or netmail")
 	},		
-	{"netmail",			js_netmail,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("string address, [number mode, string subject]")
+	{"netmail",			js_netmail,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("string address [,number mode] [,string subject]")
 	,JSDOCSTR("send private netmail")
 	},		
 	{"bulk_mail",		js_bulkmail,		0,	JSTYPE_VOID,	JSDOCSTR("[ars]")
@@ -2606,13 +2605,13 @@ static jsMethodSpec js_bbs_functions[] = {
 	{"resort_dir",		js_resort_dir,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("directory")
 	,JSDOCSTR("re-sort the specified file directory (number or internal code)")
 	},		
-	{"list_files",		js_listfiles,		1,	JSTYPE_NUMBER,	JSDOCSTR("directory, [string filespec, number mode]")
+	{"list_files",		js_listfiles,		1,	JSTYPE_NUMBER,	JSDOCSTR("directory [,string filespec] [,number mode]")
 	,JSDOCSTR("list files in the specified file directory, optionally specifying a file specification (wildcards) and mode")
 	},		
-	{"list_file_info",	js_listfileinfo,	1,	JSTYPE_NUMBER,	JSDOCSTR("directory, [string filespec, number mode]")
+	{"list_file_info",	js_listfileinfo,	1,	JSTYPE_NUMBER,	JSDOCSTR("directory [,string filespec] [,number mode]")
 	,JSDOCSTR("list extended file information for files in the specified file directory")
 	},		
-	{"post_msg",		js_postmsg,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("sub-board, [number mode]")
+	{"post_msg",		js_postmsg,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("sub-board [,number mode]")
 	,JSDOCSTR("post a message in the specified message sub-board (number or internal code) with optinal mode")
 	},		
 	{"cfg_msg_scan",	js_msgscan_cfg,		0,	JSTYPE_VOID,	JSDOCSTR("[number mode]")
@@ -2637,7 +2636,7 @@ static jsMethodSpec js_bbs_functions[] = {
 	{"menu",			js_menu,			1,	JSTYPE_VOID,	JSDOCSTR("base_filename")
 	,JSDOCSTR("display a menu file")
 	},		
-	{"log_key",			js_logkey,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("key, [boolean comma]")
+	{"log_key",			js_logkey,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("key [,boolean comma]")
 	,JSDOCSTR("log key to node.log (comma optional)")
 	},		
 	{"log_str",			js_logstr,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("text")
@@ -2651,17 +2650,19 @@ static jsMethodSpec js_bbs_functions[] = {
 	,JSDOCSTR("search file for psuedo-regexp (search string) in trashcan file (text/base_filename.can)")
 	},		
 	/* xtrn programs/modules */
-	{"exec",			js_exec,			2,	JSTYPE_NUMBER,	JSDOCSTR("cmdline, [number mode, string startup_dir]")
-	,JSDOCSTR("execute a program, optionally changing current directory to startup_dir (see EX_* in valid mode bits)")
+	{"exec",			js_exec,			2,	JSTYPE_NUMBER,	JSDOCSTR("cmdline [,number mode] [,string startup_dir]")
+	,JSDOCSTR("execute a program, optionally changing current directory to <i>startup_dir</i> "
+	"(see <tt>EX_*</tt> in <tt>sbbsdefs.js</tt> for valid <i>mode</i> bits)")
 	},		
 	{"exec_xtrn",		js_exec_xtrn,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("xtrn_number_or_code")
 	,JSDOCSTR("execute external program by internal code")
 	},		
 	{"user_event",		js_user_event,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("number event_type")
-	,JSDOCSTR("execute user event by event type (see EVENT_* in sbbsdefs.js)")
+	,JSDOCSTR("execute user event by event type "
+	"(see <tt>EVENT_*</tt> in <tt>sbbsdefs.js</tt> for valid values)")
 	},		
-	{"telnet_gate",		js_telnet_gate,		1,	JSTYPE_VOID,	JSDOCSTR("string address, [number mode]")
-	,JSDOCSTR("external telnet gateway (see TG_* in sbbsdefs.js for valid mode bits)")
+	{"telnet_gate",		js_telnet_gate,		1,	JSTYPE_VOID,	JSDOCSTR("string address [,number mode]")
+	,JSDOCSTR("external telnet gateway (see <tt>TG_*</tt> in <tt>sbbsdefs.js</tt> for valid <i>mode</i> bits)")
 	},		
 	/* security */
 	{"check_syspass",	js_chksyspass,		0,	JSTYPE_BOOLEAN,	""
@@ -2689,13 +2690,13 @@ static jsMethodSpec js_bbs_functions[] = {
 	{"get_node_message",js_get_node_message,0,	JSTYPE_VOID,	""
 	,JSDOCSTR("receive and display an inter-node message")
 	},		
-	{"put_node_message",js_put_node_message,2,	JSTYPE_VOID,	JSDOCSTR("number node, string text")
+	{"put_node_message",js_put_node_message,2,	JSTYPE_BOOLEAN,	JSDOCSTR("number node, string text")
 	,JSDOCSTR("send an inter-node message")
 	},		
 	{"get_telegram",	js_get_telegram,	1,	JSTYPE_VOID,	JSDOCSTR("[number usernum]")
 	,JSDOCSTR("receive and display a telegram")
 	},		
-	{"put_telegram",	js_put_telegram,	2,	JSTYPE_VOID,	JSDOCSTR("number user, string text")
+	{"put_telegram",	js_put_telegram,	2,	JSTYPE_BOOLEAN,	JSDOCSTR("number user, string text")
 	,JSDOCSTR("send a telegram to a user")
 	},		
 	{"list_nodes",		js_nodelist,		0,	JSTYPE_VOID,	""
@@ -2708,7 +2709,7 @@ static jsMethodSpec js_bbs_functions[] = {
 	,JSDOCSTR("spy on a node")
 	},		
 	/* misc */
-	{"cmdstr",			js_cmdstr,			1,	JSTYPE_STRING,	JSDOCSTR("string str, [string fpath, string fspec]")
+	{"cmdstr",			js_cmdstr,			1,	JSTYPE_STRING,	JSDOCSTR("string str [,string fpath] [,string fspec]")
 	,JSDOCSTR("return command string using Synchronet command-line specifiers")
 	},		
 	/* input */

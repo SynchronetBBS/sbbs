@@ -112,19 +112,6 @@ js_close(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	return(JS_TRUE);
 }
 
-static JSClass js_msghdr_class = {
-     "MsgHeader"				/* name			*/
-    ,JSCLASS_HAS_PRIVATE	/* flags		*/
-	,JS_PropertyStub		/* addProperty	*/
-	,JS_PropertyStub		/* delProperty	*/
-	,JS_PropertyStub		/* getProperty	*/
-	,JS_PropertyStub		/* setProperty	*/
-	,JS_EnumerateStub		/* enumerate	*/
-	,JS_ResolveStub			/* resolve		*/
-	,JS_ConvertStub			/* convert		*/
-	,JS_FinalizeStub		/* finalize		*/
-};
-
 static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbmsg_t* msg)
 {
 	char*		cp;
@@ -446,6 +433,7 @@ static JSBool
 js_get_msg_index(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	uintN		n;
+	jsval		val;
 	smbmsg_t	msg;
 	JSObject*	idxobj;
 	JSBool		by_offset=JS_FALSE;
@@ -497,10 +485,12 @@ js_get_msg_index(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 	JS_DefineProperty(cx, idxobj, "attr" ,INT_TO_JSVAL(msg.idx.attr)
 		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
-	JS_DefineProperty(cx, idxobj, "offset" ,INT_TO_JSVAL(msg.idx.offset)
+	JS_NewNumberValue(cx,msg.idx.offset,&val);
+	JS_DefineProperty(cx, idxobj, "offset", val
 		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
-	JS_DefineProperty(cx, idxobj, "time" ,INT_TO_JSVAL(msg.idx.time)
+	JS_NewNumberValue(cx,msg.idx.time,&val);
+	JS_DefineProperty(cx, idxobj, "time", val
 		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
 	*rval = OBJECT_TO_JSVAL(idxobj);
@@ -516,7 +506,6 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 	char		reply_id[256];
 	char*		val;
 	int			i;
-	ulong		l;
 	uintN		n;
 	smbmsg_t	msg;
 	smbmsg_t	orig_msg;
@@ -525,6 +514,7 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 	JSObject*	field;
 	JSString*	js_str;
 	jsint		items;
+	jsval		v;
 	JSBool		by_offset=JS_FALSE;
 	private_t*	p;
 
@@ -575,13 +565,13 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 	if(msg.hdr.number==0)	/* No valid message number/id/offset specified */
 		return(JS_TRUE);
 
-	if((hdrobj=JS_NewObject(cx,&js_msghdr_class,NULL,obj))==NULL) {
+	if((hdrobj=JS_NewObject(cx,NULL,NULL,obj))==NULL) {
 		smb_freemsgmem(&msg);
 		return(JS_TRUE);
 	}
 
-	JS_DefineProperty(cx, hdrobj, "number", INT_TO_JSVAL(msg.hdr.number)
-		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+	JS_NewNumberValue(cx,msg.hdr.number,&v);
+	JS_DefineProperty(cx, hdrobj, "number", v, NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
 	if((js_str=JS_NewStringCopyZ(cx,truncsp(msg.to)))==NULL)
 		return(JS_FALSE);
@@ -669,12 +659,12 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 
 	JS_DefineProperty(cx, hdrobj, "forwarded",INT_TO_JSVAL(msg.forwarded)
 		,NULL,NULL,JSPROP_ENUMERATE);
-	JS_DefineProperty(cx, hdrobj, "expiration",INT_TO_JSVAL(msg.expiration)
-		,NULL,NULL,JSPROP_ENUMERATE);
-	JS_DefineProperty(cx, hdrobj, "priority",INT_TO_JSVAL(msg.priority)
-		,NULL,NULL,JSPROP_ENUMERATE);
-	JS_DefineProperty(cx, hdrobj, "cost",INT_TO_JSVAL(msg.cost)
-		,NULL,NULL,JSPROP_ENUMERATE);
+	JS_NewNumberValue(cx,msg.expiration,&v);
+	JS_DefineProperty(cx, hdrobj, "expiration",v,NULL,NULL,JSPROP_ENUMERATE);
+	JS_NewNumberValue(cx,msg.priority,&v);
+	JS_DefineProperty(cx, hdrobj, "priority",v,NULL,NULL,JSPROP_ENUMERATE);
+	JS_NewNumberValue(cx,msg.cost,&v);
+	JS_DefineProperty(cx, hdrobj, "cost",v,NULL,NULL,JSPROP_ENUMERATE);
 
 
 	JS_DefineProperty(cx, hdrobj, "type", INT_TO_JSVAL(msg.hdr.type)
@@ -683,37 +673,36 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 		,NULL,NULL,JSPROP_ENUMERATE);
 	JS_DefineProperty(cx, hdrobj, "attr", INT_TO_JSVAL(msg.hdr.attr)
 		,NULL,NULL,JSPROP_ENUMERATE);
-	JS_DefineProperty(cx, hdrobj, "auxattr", INT_TO_JSVAL(msg.hdr.auxattr)
-		,NULL,NULL,JSPROP_ENUMERATE);
-	JS_DefineProperty(cx, hdrobj, "netattr", INT_TO_JSVAL(msg.hdr.netattr)
-		,NULL,NULL,JSPROP_ENUMERATE);
+	JS_NewNumberValue(cx,msg.hdr.auxattr,&v);
+	JS_DefineProperty(cx, hdrobj, "auxattr", v, NULL,NULL,JSPROP_ENUMERATE);
+	JS_NewNumberValue(cx,msg.hdr.netattr,&v);
+	JS_DefineProperty(cx, hdrobj, "netattr", v, NULL,NULL,JSPROP_ENUMERATE);
 
-	JS_DefineProperty(cx, hdrobj, "when_written_time", INT_TO_JSVAL(msg.hdr.when_written.time)
-		,NULL,NULL,JSPROP_ENUMERATE);
-	JS_DefineProperty(cx, hdrobj, "when_written_zone", INT_TO_JSVAL(msg.hdr.when_written.zone)
-		,NULL,NULL,JSPROP_ENUMERATE);
-	JS_DefineProperty(cx, hdrobj, "when_imported_time", INT_TO_JSVAL(msg.hdr.when_imported.time)
-		,NULL,NULL,JSPROP_ENUMERATE);
-	JS_DefineProperty(cx, hdrobj, "when_imported_zone", INT_TO_JSVAL(msg.hdr.when_imported.zone)
-		,NULL,NULL,JSPROP_ENUMERATE);
+	JS_NewNumberValue(cx,msg.hdr.when_written.time,&v);
+	JS_DefineProperty(cx, hdrobj, "when_written_time", v, NULL,NULL,JSPROP_ENUMERATE);
+	JS_NewNumberValue(cx,msg.hdr.when_written.zone,&v);
+	JS_DefineProperty(cx, hdrobj, "when_written_zone", v, NULL,NULL,JSPROP_ENUMERATE);
+	JS_NewNumberValue(cx,msg.hdr.when_imported.time,&v);
+	JS_DefineProperty(cx, hdrobj, "when_imported_time", v, NULL,NULL,JSPROP_ENUMERATE);
+	JS_NewNumberValue(cx,msg.hdr.when_imported.zone,&v);
+	JS_DefineProperty(cx, hdrobj, "when_imported_zone", v, NULL,NULL,JSPROP_ENUMERATE);
 
-	JS_DefineProperty(cx, hdrobj, "thread_orig", INT_TO_JSVAL(msg.hdr.thread_orig)
-		,NULL,NULL,JSPROP_ENUMERATE);
-	JS_DefineProperty(cx, hdrobj, "thread_next", INT_TO_JSVAL(msg.hdr.thread_next)
-		,NULL,NULL,JSPROP_ENUMERATE);
-	JS_DefineProperty(cx, hdrobj, "thread_first", INT_TO_JSVAL(msg.hdr.thread_first)
-		,NULL,NULL,JSPROP_ENUMERATE);
+	JS_NewNumberValue(cx,msg.hdr.thread_orig,&v);
+	JS_DefineProperty(cx, hdrobj, "thread_orig", v, NULL,NULL,JSPROP_ENUMERATE);
+	JS_NewNumberValue(cx,msg.hdr.thread_next,&v);
+	JS_DefineProperty(cx, hdrobj, "thread_next", v, NULL,NULL,JSPROP_ENUMERATE);
+	JS_NewNumberValue(cx,msg.hdr.thread_first,&v);
+	JS_DefineProperty(cx, hdrobj, "thread_first", v, NULL,NULL,JSPROP_ENUMERATE);
 
-	JS_DefineProperty(cx, hdrobj, "delivery_attempts", INT_TO_JSVAL(msg.hdr.delivery_attempts)
-		,NULL,NULL,JSPROP_ENUMERATE);
-	JS_DefineProperty(cx, hdrobj, "last_downloaded", INT_TO_JSVAL(msg.hdr.last_downloaded)
-		,NULL,NULL,JSPROP_ENUMERATE);
-	JS_DefineProperty(cx, hdrobj, "times_downloaded", INT_TO_JSVAL(msg.hdr.times_downloaded)
-		,NULL,NULL,JSPROP_ENUMERATE);
+	JS_NewNumberValue(cx,msg.hdr.delivery_attempts,&v);
+	JS_DefineProperty(cx, hdrobj, "delivery_attempts", v, NULL,NULL,JSPROP_ENUMERATE);
+	JS_NewNumberValue(cx,msg.hdr.last_downloaded,&v);
+	JS_DefineProperty(cx, hdrobj, "last_downloaded", v, NULL,NULL,JSPROP_ENUMERATE);
+	JS_NewNumberValue(cx,msg.hdr.times_downloaded,&v);
+	JS_DefineProperty(cx, hdrobj, "times_downloaded", v, NULL,NULL,JSPROP_ENUMERATE);
 
-	l=smb_getmsgdatlen(&msg);
-	JS_DefineProperty(cx, hdrobj, "data_length", INT_TO_JSVAL(l)
-		,NULL,NULL,JSPROP_ENUMERATE);
+	JS_NewNumberValue(cx,smb_getmsgdatlen(&msg),&v);
+	JS_DefineProperty(cx, hdrobj, "data_length", v, NULL,NULL,JSPROP_ENUMERATE);
 
 	if((js_str=JS_NewStringCopyZ(cx,msgdate(msg.hdr.when_written,date)))==NULL)
 		return(JS_FALSE);
@@ -1252,27 +1241,27 @@ static JSBool js_msgbase_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 		case SMB_PROP_FIRST_MSG:
 			memset(&idx,0,sizeof(idx));
 			smb_getfirstidx(&(p->smb),&idx);
-			*vp = INT_TO_JSVAL(idx.number);
+			JS_NewNumberValue(cx,idx.number,vp);
 			break;
 		case SMB_PROP_LAST_MSG:
 			smb_getstatus(&(p->smb));
-			*vp = INT_TO_JSVAL(p->smb.status.last_msg);
+			JS_NewNumberValue(cx,p->smb.status.last_msg,vp);
 			break;
 		case SMB_PROP_TOTAL_MSGS:
 			smb_getstatus(&(p->smb));
-			*vp = INT_TO_JSVAL(p->smb.status.total_msgs);
+			JS_NewNumberValue(cx,p->smb.status.total_msgs,vp);
 			break;
 		case SMB_PROP_MAX_CRCS:
-			*vp = INT_TO_JSVAL(p->smb.status.max_crcs);
+			JS_NewNumberValue(cx,p->smb.status.max_crcs,vp);
 			break;
 		case SMB_PROP_MAX_MSGS:
-			*vp = INT_TO_JSVAL(p->smb.status.max_msgs);
+			JS_NewNumberValue(cx,p->smb.status.max_msgs,vp);
 			break;
 		case SMB_PROP_MAX_AGE:
-			*vp = INT_TO_JSVAL(p->smb.status.max_age);
+			JS_NewNumberValue(cx,p->smb.status.max_age,vp);
 			break;
 		case SMB_PROP_ATTR:
-			*vp = INT_TO_JSVAL(p->smb.status.attr);
+			JS_NewNumberValue(cx,p->smb.status.attr,vp);
 			break;
 		case SMB_PROP_SUBNUM:
 			*vp = INT_TO_JSVAL(p->smb.subnum);
@@ -1371,7 +1360,7 @@ static jsMethodSpec js_msgbase_functions[] = {
 	"<tr><td><tt>subject</tt><td>CRC-16 of lowercase message subject"
 	"<tr><td><tt>to</tt><td>CRC-16 of lowercase recipient's name (or user number if e-mail)"
 	"<tr><td><tt>from</tt><td>CRC-16 of lowercase sender's name (or user number if e-mail)"
-	"<tr><td><tt>attr</tt><td>Attribute bit-field"
+	"<tr><td><tt>attr</tt><td>Attribute bitfield"
 	"<tr><td><tt>time</tt><td>Date/time (in time_t format)"
 	"<tr><td><tt>number</tt><td>Message number"
 	"<tr><td><tt>offset</tt><td>Byte-offset into header file"
@@ -1410,9 +1399,9 @@ static jsMethodSpec js_msgbase_functions[] = {
 	"<tr><td><tt>ftn_pid</tt><td>FidoNet FSC-46 Program Identifier"
 	"<tr><td><tt>ftn_tid</tt><td>FidoNet FSC-46 Tosser Identifier"
 	"<tr><td><tt>date</tt><td>RFC-822 formatted date/time"
-	"<tr><td><tt>attr</tt><td>Attribute bit-field"
-	"<tr><td><tt>auxattr</tt><td>Auxillary attribute bit-field"
-	"<tr><td><tt>netattr</tt><td>Network attribute bit-field"
+	"<tr><td><tt>attr</tt><td>Attribute bitfield"
+	"<tr><td><tt>auxattr</tt><td>Auxillary attribute bitfield"
+	"<tr><td><tt>netattr</tt><td>Network attribute bitfield"
 	"<tr><td><tt>when_written_time</tt><td>Date/time (in time_t format)"
 	"<tr><td><tt>when_written_zone</tt><td>Time zone"
 	"<tr><td><tt>when_imported_time</tt><td>Date/time message was imported"
