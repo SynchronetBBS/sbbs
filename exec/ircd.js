@@ -859,6 +859,7 @@ nick_pointer = 0;
 
 // Parse command-line arguments.
 config_filename="";
+var cmdline_port;
 for (cmdarg=0;cmdarg<argc;cmdarg++) {
 	switch(argv[cmdarg].toLowerCase()) {
 		case "-f":
