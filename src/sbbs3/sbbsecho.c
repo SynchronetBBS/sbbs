@@ -2257,7 +2257,7 @@ char* getfmsg(FILE *stream, ulong *outlen)
 /****************************************************************************/
 int fmsgtosmsg(uchar* fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 {
-	uchar	ch,*sbody,*stail,*outbuf
+	uchar	ch,*sbody,stail[MAX_TAILLEN+1],*outbuf
 				,*p,str[128];
 	char	msg_id[256];
 	BOOL	done,esc,cr;
@@ -2333,14 +2333,6 @@ int fmsgtosmsg(uchar* fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 		printf("ERROR allocating %lu bytes for body",(length+1)*2L);
 		logprintf("ERROR line %d allocating %lu bytes for body",__LINE__
 			,(length+1)*2L);
-		smb_freemsgmem(&msg);
-		return(-1); 
-	}
-	if((stail=(char*)malloc(MAX_TAILLEN))==NULL) {
-		printf("ERROR allocating %u bytes\n",MAX_TAILLEN);
-		logprintf("ERROR line %d allocating %u bytes for tail",__LINE__
-			,MAX_TAILLEN);
-		free(sbody);
 		smb_freemsgmem(&msg);
 		return(-1); 
 	}
@@ -2519,12 +2511,12 @@ int fmsgtosmsg(uchar* fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 
 	while(taillen && stail[taillen-1]<=' ')	/* trim all garbage off the tail */
 		taillen--;
+	stail[taillen]=0;
 
 	if(subnum==INVALID_SUB && !bodylen && !taillen && misc&KILL_EMPTY_MAIL) {
 		printf("Empty NetMail - Ignored ");
 		smb_freemsgmem(&msg);
 		free(sbody);
-		free(stail);
 		return(3);
 	}
 
@@ -2540,7 +2532,6 @@ int fmsgtosmsg(uchar* fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 				printf("smb_addcrc returned %d ",i);
 			smb_freemsgmem(&msg);
 			free(sbody);
-			free(stail);
 			return(i); 
 		} 
 	}
@@ -2571,7 +2562,6 @@ int fmsgtosmsg(uchar* fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 				,bodylen*2);
 			smb_freemsgmem(&msg);
 			free(sbody);
-			free(stail);
 			return(-1); 
 		}
 		lzhlen=lzh_encode((uchar *)sbody,bodylen,(uchar *)outbuf);
@@ -2600,7 +2590,6 @@ int fmsgtosmsg(uchar* fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 		logprintf("ERROR line %d checking msg len %lu",__LINE__,l);
 		smb_freemsgmem(&msg);
 		free(sbody);
-		free(stail);
 		return(-1); 
 	}
 
@@ -2609,7 +2598,6 @@ int fmsgtosmsg(uchar* fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 		logprintf("ERROR %d line %d locking %s",i,__LINE__,smbfile->file);
 		smb_freemsgmem(&msg);
 		free(sbody);
-		free(stail);
 		return(i); 
 	}
 #if 0
@@ -2645,7 +2633,6 @@ int fmsgtosmsg(uchar* fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 			logprintf("ERROR %d line %d opening %s.sda",i,__LINE__
 				,smbfile->file);
 			free(sbody);
-			free(stail);
 			return(i); 
 		}
 		if(subnum!=INVALID_SUB && scfg.sub[subnum]->misc&SUB_FAST) {
@@ -2660,7 +2647,6 @@ int fmsgtosmsg(uchar* fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 		smb_unlocksmbhdr(smbfile);
 		smb_freemsgmem(&msg);
 		free(sbody);
-		free(stail);
 		printf("ERROR %ld allocating records\n",msg.hdr.offset);
 		logprintf("ERROR line %d %ld allocating records",__LINE__,msg.hdr.offset);
 		return(-1); 
@@ -2680,7 +2666,6 @@ int fmsgtosmsg(uchar* fbuf, fmsghdr_t fmsghdr, uint user, uint subnum)
 		fwrite(&xlat,2,1,smbfile->sdt_fp);
 		fwrite(stail,1,taillen,smbfile->sdt_fp); }
 	free(sbody);
-	free(stail);
 	fflush(smbfile->sdt_fp);
 
 	if(lzh)
