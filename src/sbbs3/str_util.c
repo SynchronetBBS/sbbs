@@ -213,7 +213,7 @@ int bstrlen(char *str)
 /* Returns in 'string' a character representation of the number in l with   */
 /* commas.																	*/
 /****************************************************************************/
-char *ultoac(ulong l, char *string)
+char* DLLCALL ultoac(ulong l, char *string)
 {
 	char str[256];
 	int i,j,k;
