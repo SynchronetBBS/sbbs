@@ -85,14 +85,14 @@ js_format(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     JSString *	str;
 	va_list		arglist[64];
 
-	fmt = JS_ValueToString(cx, argv[0]);
-	if (!fmt)
+	if((fmt=JS_ValueToString(cx, argv[0]))==NULL)
 		return(JS_FALSE);
+
+	memset(arglist,0,sizeof(arglist));	/* Initialize arglist to NULLs */
 
     for (i = 1; i < argc && i<sizeof(arglist)/sizeof(arglist[0]); i++) {
 		if(JSVAL_IS_STRING(argv[i])) {
-			str = JS_ValueToString(cx, argv[i]);
-			if (!str)
+			if((str=JS_ValueToString(cx, argv[i]))==NULL)
 			    return(JS_FALSE);
 			arglist[i-1]=JS_GetStringBytes(str);
 		} else if(JSVAL_IS_INT(argv[i]) || JSVAL_IS_BOOLEAN(argv[i]))
