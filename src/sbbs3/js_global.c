@@ -91,6 +91,7 @@ typedef struct {
 	JSScript*		script;
 	msg_queue_t*	msg_queue;
 	js_branch_t		branch;
+	JSErrorReporter error_reporter;
 } background_data_t;
 
 static void background_thread(void* arg)
@@ -106,6 +107,24 @@ static void background_thread(void* arg)
 	JS_DestroyContext(bg->cx);
 	JS_DestroyRuntime(bg->runtime);
 	free(bg);
+}
+
+static void
+js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
+{
+	background_data_t* bg;
+
+	if((bg=(background_data_t*)JS_GetContextPrivate(cx))==NULL)
+		return;
+
+	/* Use parent's context private data */
+	JS_SetContextPrivate(cx, JS_GetContextPrivate(bg->parent_cx));
+
+	/* Call parent's error reporter */
+	bg->error_reporter(cx, message, report);
+
+	/* Restore our context private data */
+	JS_SetContextPrivate(cx, bg);
 }
 
 static JSBool js_BranchCallback(JSContext *cx, JSScript* script)
@@ -137,7 +156,6 @@ js_load(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	JSBool		success;
 	JSBool		background=JS_FALSE;
 	background_data_t* bg;
-	JSErrorReporter	reporter;
 
 	*rval=JSVAL_VOID;
 
@@ -183,12 +201,12 @@ js_load(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 		js_CreateQueueObject(bg->cx, bg->obj, "parent_queue", bg->msg_queue);
 
-		/* Use the error reporter from the parent context */
-		reporter=JS_SetErrorReporter(cx,NULL);
-		JS_SetErrorReporter(cx,reporter);
-		JS_SetErrorReporter(bg->cx,reporter);
+		/* Save parent's error reporter (for later use by our error reporter) */
+		bg->error_reporter=JS_SetErrorReporter(cx,NULL);
+		JS_SetErrorReporter(cx,bg->error_reporter);
+		JS_SetErrorReporter(bg->cx,js_ErrorReporter);
 
-		/* Use the generic branch callback */
+		/* Set our branch callback (which calls the generic branch callback) */
 		JS_SetContextPrivate(bg->cx, bg);
 		JS_SetBranchCallback(bg->cx, js_BranchCallback);
 
