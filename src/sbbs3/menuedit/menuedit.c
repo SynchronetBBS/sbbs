@@ -44,12 +44,11 @@
 
 uifcapi_t uifc; /* User Interface (UIFC) Library API */
 
-static int yesno(char *prompt, BOOL dflt)
+static int yesno(char *prompt, int dflt)
 {
 	char*	opt[]={"Yes","No",NULL};
-	int		i=dflt ? 0:1;
 
-	return(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,prompt,opt));
+	return(uifc.list(WIN_MID|WIN_SAV,0,0,0,&dflt,0,prompt,opt));
 }
 
 static void edit_menu(char* path)
@@ -62,6 +61,8 @@ static void edit_menu(char* path)
 	char*	opt[MAX_OPTS+1];
 	char	prompt[256];
 	const char* opt_fmt = "%-25.25s %s";
+	str_list_t	list;
+	ini_style_t style;
 
 	/* Open menu file */
 	if((fp=fopen(path,"r"))==NULL) {
@@ -93,7 +94,7 @@ static void edit_menu(char* path)
 				i=yesno("Save Changes",TRUE);
 				if(i==-1)
 					continue;
-				if(i==FALSE)
+				if(i==1)
 					uifc.changes=0;
 			}
 			break;
@@ -103,6 +104,33 @@ static void edit_menu(char* path)
 				uifc.input(WIN_MID|WIN_SAV,0,0,"Prompt",prompt,sizeof(prompt)-1,K_EDIT);
 				break;
 		}
+	}
+
+	if(uifc.changes) {	/* Saving changes? */
+
+		/* Open menu file */
+		if((fp=fopen(path,"r+"))==NULL) {
+			sprintf(str,"ERROR %u opening %s",errno,path);
+			uifc.msg(str);
+			return;
+		}
+
+		/* Set .ini style */
+		memset(&style, 0, sizeof(style));
+		style.value_separator=": ";
+
+		/* Read menu file */
+		if((list=iniReadFile(fp))!=NULL) {
+
+			/* Update options */
+			iniSetString(&list,ROOT_SECTION,"prompt",prompt,&style);
+
+			/* Write menu file */
+			iniWriteFile(fp,list);
+			strListFree(&list);
+		}
+
+		fclose(fp);
 	}
 }
 
@@ -173,7 +201,7 @@ int main(int argc, char **argv)
 			,"Edit Menu",opt);
 		if(i==-1)
 			break;
-		if(i>=0 && i<g.gl_pathc)
+		if(i>=0 && i<(int)g.gl_pathc)
 			edit_menu(g.gl_pathv[i]);
 		globfree(&g);
 	}
