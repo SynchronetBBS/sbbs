@@ -108,6 +108,8 @@ enum {                              /* Node Action */
 #pragma pack(1)
 #endif
 
+#define SIZEOF_NODE_T 15			/* Must == sizeof(node_t) */
+
 typedef struct {					/* Node information kept in NODE.DAB */
     uchar   status,                 /* Current Status of Node */
             errors,                 /* Number of Critical Errors */
@@ -118,10 +120,6 @@ typedef struct {					/* Node information kept in NODE.DAB */
             aux;                    /* Auxillary word for node */
     ulong   extaux;                 /* Extended aux dword for node */
             } node_t;
-
-#if sizeof(node_t)!=15
-#error "node_t packing problem!"
-#endif
 
 #ifdef _WIN32
 #pragma pack(pop)		/* original packing */
