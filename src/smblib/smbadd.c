@@ -237,9 +237,6 @@ int SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, long dupechk_hash
 			fflush(smb->sdt_fp);
 		}
 
-		if(msg->to==NULL)	/* no recipient, don't add header (required for bulkmail) */
-			break;
-
 		msg->hdr.version=smb_ver();
 		if(msg->hdr.when_imported.time==0) {
 			msg->hdr.when_imported.time=time(NULL);
@@ -297,6 +294,9 @@ int SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, long dupechk_hash
 		if(smb_addhashes(smb,hashes,/* skip_marked? */FALSE)==SMB_SUCCESS)
 			msg->flags|=MSG_FLAG_HASHED;
 
+		if(msg->to==NULL)	/* no recipient, don't add header (required for bulkmail) */
+			break;
+
 		retval=smb_addmsghdr(smb,msg,storage); /* calls smb_unlocksmbhdr() */
 
 	} while(0);
@@ -305,7 +305,8 @@ int SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, long dupechk_hash
 	if(retval!=SMB_SUCCESS)
 		smb_freemsg_dfields(smb,msg,1);
 
-	smb_unlocksmbhdr(smb);
+	if(smb->locked)
+		smb_unlocksmbhdr(smb);
 	FREE_AND_NULL(lzhbuf);
 	FREE_LIST(hashes,n);
 
