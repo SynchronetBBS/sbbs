@@ -223,13 +223,14 @@
 
 #define RECEIVED			0x58
 
-#define SUBJECT 			0x60
-#define SUMMARY 			0x61
+#define SUBJECT 			0x60	/* or filename */
+#define SMB_SUMMARY 		0x61	/* or file description */
 #define SMB_COMMENT 		0x62
-#define CARBONCOPY			0x63
+#define SMB_CARBONCOPY		0x63
 #define SMB_GROUP			0x64
-#define EXPIRATION			0x65
-#define PRIORITY			0x66
+#define SMB_EXPIRATION		0x65
+#define SMB_PRIORITY		0x66
+#define SMB_COST			0x67
 
 #define FILEATTACH			0x70
 #define DESTFILE			0x71
@@ -450,14 +451,16 @@ typedef struct _PACK {		// Message header
 	ushort	attr;			// Attributes (bit field) (duped in SID)
 	ulong	auxattr;		// Auxillary attributes (bit field)
     ulong   netattr;        // Network attributes
-	when_t	when_written;	// Time message was written (unix format)
-	when_t	when_imported;	// Time message was imported
+	when_t	when_written;	// Date/time/zone message was written
+	when_t	when_imported;	// Date/time/zone message was imported
     ulong   number;         // Message number
     ulong   thread_orig;    // Original message number in thread
     ulong   thread_next;    // Next message in thread
     ulong   thread_first;   // First reply to this message
 	ushort	delivery_attempts;	// Delivery attempt counter
-	uchar	reserved[14];	// Reserved for future use
+	ulong	times_downloaded;	// Total number of times downloaded
+	ulong	last_downloaded;	// Date/time of last download
+	uchar	reserved[6];	// Reserved for future use
     ulong   offset;         // Offset for buffer into data file (0 or mod 256)
 	ushort	total_dfields;	// Total number of data fields
 
@@ -518,7 +521,8 @@ typedef struct {				// Message
 				*ftn_flags,		// FTN FLAGS
 				*ftn_msgid,		// FTN MSGID
 				*ftn_reply,		// FTN REPLY
-				*subj;			// Subject
+				*subj,			// Subject (or filename)
+				*summary;		// Summary (or file description)
 	ushort		to_agent,		// Type of agent message is to
 				from_agent, 	// Type of agent message is from
 				replyto_agent;	// Type of agent replies should be sent to
@@ -531,7 +535,9 @@ typedef struct {				// Message
 	dfield_t	*dfield;		// Data fields (fixed length portion)
 	ulong		offset; 		// Offset (number of records) into index
 	int			forwarded;		// Forwarded from agent to another
-	when_t		expiration; 	// Message will exipre on this day (if >0)
+	time_t		expiration; 	// Message will expire on this day (if >0)
+	ulong		priority;		// Message priority (0 is lowest)
+	ulong		cost;			// Cost to download/read
 
 	} smbmsg_t;
 
