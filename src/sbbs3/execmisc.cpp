@@ -37,7 +37,6 @@
 
 #include "sbbs.h"
 #include "cmdshell.h"
-#include <sys/locking.h>
 
 int sbbs_t::exec_misc(csi_t *csi, char *path)
 {
