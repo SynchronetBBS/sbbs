@@ -196,6 +196,7 @@ function int_to_ip(ip) {
 }
 
 function terminate_everything(terminate_reason) {
+	log("Terminating: " + terminate_reason);
 	for(thisClient in Clients) {
 		var Client = Clients[thisClient];
 		if (Client && Client.local)
@@ -3231,9 +3232,7 @@ function IRCClient_registered_commands(command, cmdline) {
 				break;
 			}
 			log("!ERROR! Shutting down the ircd as per " + this.ircnuh);
-			if(this.js!=undefined)
-				js.terminated = true;
-			server.terminated = true;
+			js.terminated = true;
 			break;
 		case "REHASH":
 			if (!((this.mode&USERMODE_OPER) &&
