@@ -333,8 +333,9 @@ int main(int argc, char **argv)
 		}
 
 		/* Look-up the message hashes */
-		hashes=smb_msghashes(&smb,&msg,body);
-		if((i=smb_findhash(&smb,hashes,NULL,FALSE /* mark */))!=SMB_SUCCESS) {
+		hashes=smb_msghashes(&msg,body,TRUE);
+		if(hashes[0]!=NULL 
+			&& (i=smb_findhash(&smb,hashes,NULL,FALSE /* mark */))!=SMB_SUCCESS) {
 			fprintf(stderr,"%sFailed to find hash\n",beep);
 			msgerr=1;
 			if(extinfo)
