@@ -378,7 +378,7 @@ struct bbslist *show_bbslist(int mode, char *path)
 											"Select this option if you wish to send the username and password in the wrong\n"
 											"order (usefull for connecting to v3.11 and lower systems with the default"
 											"config)";
-							list[listcount-1]->reversed=0;
+							list[listcount-1]->reversed=1;
 							uifc.list(WIN_MID|WIN_SAV,0,0,0,&list[listcount-1]->reversed,NULL,"Reversed",YesNo);
 							list[listcount-1]->reversed=!list[listcount-1]->reversed;
 						}
