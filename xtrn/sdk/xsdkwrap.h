@@ -52,10 +52,12 @@
 
 	#define COMPILER_DESC(str) sprintf(str,"MSC %u", _MSC_VER);
 
+/***
 #elif defined(__GNUC__) && defined(__GLIBC__)
 
-	#define COMPILER_DESC(str) sprintf(str,"GCC %u.%02u" /* " (GLIBC %u.%u)" */\
+	#define COMPILER_DESC(str) sprintf(str,"GCC %u.%02u (GLIBC %u.%u)" \
 		,__GNUC__,__GNUC_MINOR__,__GLIBC__,__GLIBC_MINOR__);
+***/
 
 #elif defined(__GNUC__)
 
