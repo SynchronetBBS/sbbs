@@ -25,7 +25,7 @@ void __fastcall TTestThread::Execute()
 	ChildEvent->SetEvent();
 
 	for(int i=0;i<10;i++) {
-        ParentEvent->WaitFor(10000);
+        ParentEvent->WaitFor(INFINITE);
     	ParentEvent->ResetEvent();
 		printf(" <child>\n");
 		ChildEvent->SetEvent();
