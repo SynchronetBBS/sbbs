@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -320,7 +320,7 @@ static JSClass js_internal_class = {
 };
 
 static jsSyncMethodSpec js_functions[] = {
-	{"eval",            js_eval,            0,	JSTYPE_STRING,	JSDOCSTR("string script")
+	{"eval",            js_eval,            0,	JSTYPE_UNDEF,	JSDOCSTR("string script")
 	,JSDOCSTR("evaluate a JavaScript string in its own (secure) context, returning the result")
 	,311
 	},		
