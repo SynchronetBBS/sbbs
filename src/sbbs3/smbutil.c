@@ -142,6 +142,7 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 	int 	i;
 	long	l,length;
 	ulong	offset,crc;
+	ushort		agent=AGENT_PROCESS;
 	smbmsg_t	msg;
 
 	/* Read message text from stream (file or stdin) */
@@ -298,6 +299,7 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 		strlwr(str);
 		msg.idx.from=crc16(str); 
 	}
+	smb_hfield(&msg, SENDERAGENT, sizeof(agent), &agent);
 
 	if(subject==NULL) {
 		printf("Subject: ");
