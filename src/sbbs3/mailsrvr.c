@@ -1604,9 +1604,11 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user
 #endif
 
 
-static int parse_header_field(char* buf, smbmsg_t* msg, ushort* type)
+static int parse_header_field(uchar* buf, smbmsg_t* msg, ushort* type)
 {
 	char*	p;
+	char	field[128];
+	int		len;
 	ushort	nettype;
 
 	if(buf[0]<=' ' && *type!=UNKNOWN) {	/* folded header, append to previous */
@@ -1616,16 +1618,23 @@ static int parse_header_field(char* buf, smbmsg_t* msg, ushort* type)
 		return smb_hfield_append_str(msg, *type, p);
 	}
 
-	if(!strnicmp(buf, "TO:",3)) {
-		p=buf+3;
-		SKIP_WHITESPACE(p);
-		truncsp(p);
+	if((p=strchr(buf,':'))==NULL)
+		return smb_hfield_str(msg, *type=RFC822HEADER, buf);
+
+	len=p-buf;
+	if(len>sizeof(field)-1)
+		len=sizeof(field)-1;
+	sprintf(field,"%.*s",len,buf);
+	truncsp(field);
+
+	p++;	/* skip colon */
+	SKIP_WHITESPACE(p);
+	truncsp(p);
+
+	if(!stricmp(field, "TO"))
 		return smb_hfield_str(msg, *type=RFC822TO, p);
-	}
-	if(!strnicmp(buf, "REPLY-TO:",9)) {
-		p=buf+9;
-		SKIP_WHITESPACE(p);
-		truncsp(p);
+
+	if(!stricmp(field, "REPLY-TO")) {
 		smb_hfield_str(msg, *type=RFC822REPLYTO, p);
 		if(*p=='<')  {
 			p++;
@@ -1635,33 +1644,23 @@ static int parse_header_field(char* buf, smbmsg_t* msg, ushort* type)
 		smb_hfield(msg, REPLYTONETTYPE, sizeof(nettype), &nettype);
 		return smb_hfield_str(msg, *type=REPLYTONETADDR, p);
 	}
-	if(!strnicmp(buf, "FROM:", 5)) {
-		p=buf+5;
-		SKIP_WHITESPACE(p);
-		truncsp(p);
+	if(!stricmp(field, "FROM"))
 		return smb_hfield_str(msg, *type=RFC822FROM, p);
-	}
-	if(!strnicmp(buf, "ORGANIZATION:",13)) {
-		p=buf+13;
-		SKIP_WHITESPACE(p);
+
+	if(!stricmp(field, "ORGANIZATION"))
 		return smb_hfield_str(msg, *type=SENDERORG, p);
-	}
-	if(!strnicmp(buf, "DATE:",5)) {
-		p=buf+5;
+
+	if(!stricmp(field, "DATE")) {
 		msg->hdr.when_written=rfc822date(p);
 		*type=UNKNOWN;
 		return(0);
 	}
-	if(!strnicmp(buf, "MESSAGE-ID:",11)) {
-		p=buf+11;
-		SKIP_WHITESPACE(p);
+	if(!stricmp(field, "MESSAGE-ID"))
 		return smb_hfield_str(msg, *type=RFC822MSGID, p);
-	}
-	if(!strnicmp(buf, "IN-REPLY-TO:",12)) {
-		p=buf+12;
-		SKIP_WHITESPACE(p);
+
+	if(!stricmp(field, "IN-REPLY-TO"))
 		return smb_hfield_str(msg, *type=RFC822REPLYID, p);
-	}
+
 	/* Fall-through */
 	return smb_hfield_str(msg, *type=RFC822HEADER, buf);
 }
@@ -1710,6 +1709,43 @@ static int chk_received_hdr(SOCKET socket,const char *buf,IN_ADDR *dnsbl_result,
 	} while(0);
 	free(fromstr);
 	return(dnsbl_result->s_addr);
+}
+
+static void parse_mail_address(char* p
+							   ,char* name, size_t name_len
+							   ,char* addr, size_t addr_len)
+{
+	char*	tp;
+	char	tmp[128];
+
+	SKIP_WHITESPACE(p);
+
+	/* Get the address */
+	if((tp=strchr(p,'<'))!=NULL)
+		tp++;
+	else
+		tp=p;
+	SKIP_WHITESPACE(tp);
+	sprintf(addr,"%.*s",addr_len,tp);
+	truncstr(addr,">( ");
+
+	SAFECOPY(tmp,p);
+	p=tmp;
+	/* Get the "name" (if possible) */
+	if((tp=strchr(p,'('))!=NULL) {			/* name in parenthesis? */
+		p=tp+1;
+		tp=strchr(p,')');
+	} else if((tp=strchr(p,'"'))!=NULL) {	/* name in quotes? */
+		p=tp+1;
+		tp=strchr(p,'"');
+	} else if(*p=='<') {					/* address in brackets? */
+		p++;
+		tp=strchr(p,'>');
+	} else									/* name, then address in brackets */
+		tp=strchr(p,'<');
+	if(tp) *tp=0;
+	sprintf(name,"%.*s",name_len,p);
+	truncsp(name);
 }
 
 static void smtp_thread(void* arg)
@@ -2204,32 +2240,9 @@ static void smtp_thread(void* arg)
 					truncstr(rcpt_name,">");
 				}
 				if((p=smb_get_hfield(&msg, RFC822FROM, NULL))!=NULL) {
-					/* Get the sender's address */
-					if((tp=strchr(p,'<'))!=NULL)
-						tp++;
-					else
-						tp=p;
-					SKIP_WHITESPACE(tp);
-					SAFECOPY(sender_addr,tp);
-					truncstr(sender_addr,">( ");
-
-					SAFECOPY(tmp,p);
-					p=tmp;
-					/* Get the sender's "name" (if possible) */
-					if((tp=strchr(p,'('))!=NULL) {			/* name in parenthesis? */
-						p=tp+1;
-						tp=strchr(p,')');
-					} else if((tp=strchr(p,'"'))!=NULL) {	/* name in quotes? */
-						p=tp+1;
-						tp=strchr(p,'"');
-					} else if(*p=='<') {					/* address in brackets? */
-						p++;
-						tp=strchr(p,'>');
-					} else									/* name, then address in brackets */
-						tp=strchr(p,'<');
-					if(tp) *tp=0;
-					SAFECOPY(sender,p);
-					truncsp(sender);
+					parse_mail_address(p 
+						,sender		,sizeof(sender)-1
+						,sender_addr,sizeof(sender_addr)-1);
 				}
 
 				/* SPAM Filtering/Logging */
@@ -2484,6 +2497,11 @@ static void smtp_thread(void* arg)
 			/* RFC822 Header parsing */
 			if(startup->options&MAIL_OPT_DEBUG_RX_HEADER)
 				lprintf(LOG_DEBUG,"%04d SMTP %s",socket, buf);
+
+			if(!strnicmp(buf, "FROM:", 5))
+				parse_mail_address(buf+5
+					,sender,		sizeof(sender)-1
+					,sender_addr,	sizeof(sender_addr)-1);
 
 			if(msgtxt!=NULL) 
 				fprintf(msgtxt, "%s\r\n", buf);
