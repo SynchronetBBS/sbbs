@@ -1437,33 +1437,35 @@ static jsMethodSpec js_global_functions[] = {
 	,JSDOCSTR("returns filename portion of passed path string")
 	},		
 	{"file_exists",		js_fexist,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("string filename")
-	,JSDOCSTR("verify file existence")
+	,JSDOCSTR("verify a file's existence")
 	},		
 	{"file_remove",		js_remove,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("string filename")
 	,JSDOCSTR("delete a file")
 	},		
 	{"file_rename",		js_rename,			2,	JSTYPE_BOOLEAN,	JSDOCSTR("oldname, newname")
-	,JSDOCSTR("rename a file")
+	,JSDOCSTR("rename a file, possibly moving it to another directory in the process")
 	},
 	{"file_copy",		js_fcopy,			2,	JSTYPE_BOOLEAN,	JSDOCSTR("source, destination")
-	,JSDOCSTR("copy a file")
+	,JSDOCSTR("copy a file from one directory or filename to another")
 	},
 	{"file_backup",		js_backup,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("string filename [,number level] [,bool rename]")
-	,JSDOCSTR("backup the specified <i>filename</i>, saving up to <i>level</i> versions of the file "
-		"(as <tt>filename.<i>number</i>.extension</tt> - default backup level is 5) "
-		"and copying the file unlesss <i>rename</i> is specified as <i>true</i>")
+	,JSDOCSTR("backup the specified <i>filename</i> as <tt>filename.<i>number</i>.extension</tt> "
+		"where <i>number</i> is the backup number 0 through <i>level</i>-1 "
+		"(default backup <i>level</i> is 5), "
+		"if <i>rename</i> is <i>true</i>, the original file is renamed instead of copied "
+		"(default is <i>false</i>)")
 	},
 	{"file_isdir",		js_isdir,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("string filename")
-	,JSDOCSTR("check if directory")
+	,JSDOCSTR("check if specified <i>filename</i> is a directory")
 	},		
 	{"file_attrib",		js_fattr,			1,	JSTYPE_NUMBER,	JSDOCSTR("string filename")
-	,JSDOCSTR("get file mode/attributes")
+	,JSDOCSTR("get a file's permissions/attributes")
 	},		
 	{"file_date",		js_fdate,			1,	JSTYPE_NUMBER,	JSDOCSTR("string filename")
-	,JSDOCSTR("get file last modified date/time (in time_t format)")
+	,JSDOCSTR("get a file's last modified date/time (in time_t format)")
 	},		
 	{"file_size",		js_flength,			1,	JSTYPE_NUMBER,	JSDOCSTR("string filename")
-	,JSDOCSTR("get file length (in bytes)")
+	,JSDOCSTR("get a file's length (in bytes)")
 	},		
 	{"directory",		js_directory,		1,	JSTYPE_ARRAY,	JSDOCSTR("string pattern [,flags]")
 	,JSDOCSTR("returns an array of directory entries, "
