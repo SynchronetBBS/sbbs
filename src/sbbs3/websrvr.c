@@ -1305,7 +1305,7 @@ int recvbufsocket(int sock, char *buf, long count)
 	}
 
 	while(rd<count && socket_check(sock,NULL,NULL,startup->max_inactivity*1000))  {
-		i=recv(sock,buf,count-rd,0);
+		i=recv(sock,buf+rd,count-rd,0);
 		if(i<=0)  {
 			*buf=0;
 			return(0);
@@ -2094,9 +2094,11 @@ static BOOL exec_cgi(http_session_t *session)
 	start=time(NULL);
 
 
-	post_offset+=write(in_pipe[1],
+	i=write(in_pipe[1],
 		session->req.post_data+post_offset,
 		session->req.post_len-post_offset);
+	if(i>0)
+		post_offset+=i;
 
 	high_fd=out_pipe[0];
 	if(err_pipe[0]>high_fd)
@@ -2130,7 +2132,8 @@ static BOOL exec_cgi(http_session_t *session)
 					i=write(in_pipe[1],
 						session->req.post_data+post_offset,
 						session->req.post_len-post_offset);
-					post_offset += i;
+					if(i>0)
+						post_offset += i;
 					if(post_offset>=session->req.post_len || done_reading)
 						close(in_pipe[1]);
 					else if(i!=post_offset)
@@ -2212,6 +2215,10 @@ static BOOL exec_cgi(http_session_t *session)
 				if(i>0)
 					start=time(NULL);
 			}
+			if(!done_wait)
+				done_wait = (waitpid(child,&status,WNOHANG)==child);
+			if(!FD_ISSET(err_pipe[0],&read_set) && !FD_ISSET(out_pipe[0],&read_set) && done_wait)
+				done_reading=TRUE;
 		}
 		else  {
 			if((time(NULL)-start) >= startup->max_cgi_inactivity)  {
@@ -2233,6 +2240,8 @@ static BOOL exec_cgi(http_session_t *session)
 			lprintf(LOG_ERR,"%s",buf);
 	}
 
+	if(!done_wait)
+		done_wait = (waitpid(child,&status,WNOHANG)==child);
 	if(!done_wait)  {
 		if(start)
 			lprintf(LOG_NOTICE,"%04d CGI Script %s still alive on client exit",session->socket,cmdline);
