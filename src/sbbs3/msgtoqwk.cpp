@@ -169,7 +169,7 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, int subnum
 		} 
 	}
 
-	buf=smb_getmsgtxt(&smb,msg,1);
+	buf=smb_getmsgtxt(&smb,msg,GETMSGTXT_ALL);
 	if(!buf)
 		return(0);
 

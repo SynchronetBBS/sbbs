@@ -1065,7 +1065,7 @@ static void pop3_thread(void* arg)
 					continue;
 				}
 
-				if((msgtxt=smb_getmsgtxt(&smb,&msg,GETMSGTXT_TAILS))==NULL) {
+				if((msgtxt=smb_getmsgtxt(&smb,&msg,GETMSGTXT_ALL))==NULL) {
 					smb_freemsgmem(&msg);
 					lprintf(LOG_ERR,"%04d !POP3 ERROR (%s) retrieving message %lu text"
 						,socket, smb.last_error, msg.hdr.number);
@@ -3540,7 +3540,7 @@ static void sendmail_thread(void* arg)
 #endif
 
 			lprintf(LOG_DEBUG,"0000 SEND getting message text");
-			if((msgtxt=smb_getmsgtxt(&smb,&msg,GETMSGTXT_TAILS))==NULL) {
+			if((msgtxt=smb_getmsgtxt(&smb,&msg,GETMSGTXT_ALL))==NULL) {
 				remove_msg_intransit(&smb,&msg);
 				lprintf(LOG_ERR,"0000 !SEND ERROR (%s) retrieving message text",smb.last_error);
 				continue;

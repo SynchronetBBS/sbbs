@@ -551,7 +551,7 @@ int sbbs_t::scanposts(uint subnum, long mode, char *find)
 		if(domsg && !(sys_status&SS_ABORT)) {
 
 			if(do_find && mode&SCAN_FIND) { 			/* Find text in messages */
-				buf=smb_getmsgtxt(&smb,&msg,GETMSGTXT_TAILS);
+				buf=smb_getmsgtxt(&smb,&msg,GETMSGTXT_ALL);
 				if(!buf) {
 					if(smb.curmsg<smb.msgs-1) 
 						smb.curmsg++;
@@ -1148,7 +1148,7 @@ int sbbs_t::searchposts(uint subnum, post_t HUGE16 *post, long start, long posts
 		if(!loadmsg(&msg,post[l].number))
 			continue;
 		smb_unlockmsghdr(&smb,&msg);
-		buf=smb_getmsgtxt(&smb,&msg,1);
+		buf=smb_getmsgtxt(&smb,&msg,GETMSGTXT_ALL);
 		if(!buf) {
 			smb_freemsgmem(&msg);
 			continue; 

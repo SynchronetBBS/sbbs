@@ -1322,7 +1322,7 @@ void readmsgs(ulong start)
 
 			printf("\n\n");
 
-			if((inbuf=smb_getmsgtxt(&smb,&msg,GETMSGTXT_TAILS))!=NULL) {
+			if((inbuf=smb_getmsgtxt(&smb,&msg,GETMSGTXT_ALL))!=NULL) {
 				printf("%s",inbuf);
 				FREE(inbuf); 
 			}

@@ -3696,7 +3696,7 @@ void export_echomail(char *sub_code,faddr_t addr)
 
 				SAFECOPY(hdr.subj,msg.subj);
 
-				buf=smb_getmsgtxt(&smb[cur_smb],&msg,GETMSGTXT_TAILS);
+				buf=smb_getmsgtxt(&smb[cur_smb],&msg,GETMSGTXT_ALL);
 				if(!buf) {
 					smb_unlockmsghdr(&smb[cur_smb],&msg);
 					smb_freemsgmem(&msg);
