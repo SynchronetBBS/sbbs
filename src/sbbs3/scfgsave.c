@@ -578,6 +578,7 @@ BOOL DLLCALL write_msgs_cfg(scfg_t* cfg, int backup_level)
 	put_str(cfg->inetmail_sem,stream);
 	put_int(cfg->inetmail_misc,stream);
 	put_int(cfg->inetmail_cost,stream);
+	put_str(cfg->smtpmail_sem,stream);
 
 	fclose(stream);
 

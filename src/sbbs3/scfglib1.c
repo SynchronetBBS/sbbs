@@ -665,6 +665,7 @@ BOOL read_msgs_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 	get_str(cfg->inetmail_sem,instream);
 	get_int(cfg->inetmail_misc,instream);
 	get_int(cfg->inetmail_cost,instream);
+	get_str(cfg->smtpmail_sem,instream);
 
 	fclose(instream);
 	if(txt->readit && txt->readit[0])
