@@ -23,7 +23,7 @@ for(i=1;i<=lastuser;i++) {
 	usr.alias=u.alias.toString();
 	usr.location=u.location.toString();
 	usr.connection=u.connection.toString();
-	usr.logon=strftime("%m/%d/%y",u.stats.laston_date);
+	usr.logon=strftime("%b-%d-%y",u.stats.laston_date);
 	usr.laston=0-u.stats.laston_date;
 	template.users.push(usr);
 }

@@ -46,7 +46,7 @@ for(s in msg_area.grp[grp].sub_list) {
 			if(lastdate!=undefined && lastdate != null) {
 				lastdate=lastdate.time;
 				if(lastdate>0)
-					lastdate=strftime("%m/%d/%y",lastdate);
+					lastdate=strftime("%b-%d-%y",lastdate);
 			}
         }
         msgbase.close();
