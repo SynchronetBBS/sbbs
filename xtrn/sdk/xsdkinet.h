@@ -52,6 +52,10 @@
 
 #elif defined __unix__	/* Unix-variant */
 
+#ifdef __FreeBSD__
+#include <sys/types.h>	/* u_intXX_t */
+#endif
+
 #include <netdb.h>		/* gethostbyname */
 #include <netinet/in.h>	/* IPPROTO_IP */
 #include <sys/socket.h>	/* socket/bind/etc. */
