@@ -3,6 +3,8 @@
 * (ChangeLog since v3.00c for Win32 Dec 31, 2000) *
 ***************************************************
 
+$Id$
+
 Highlights
 ~~~~~~~~~~
 o Server-side JavaScript for dynamically-loaded BBS modules 
