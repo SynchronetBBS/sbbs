@@ -54,7 +54,7 @@ LIBODIR =	$(EXEODIR)
 
 !ifdef USE_UIFC32
 OBJS = $(OBJS) $(EXEODIR)\uifc32.$(OFILE) \
-	$(EXEODIR)\ciolib.$(OFILE) $(EXEODIR)\ansi_cio.$(OFILE) $(EXEODIR)\win32cio.$(OFILE)
+	$(EXEODIR)\ciolib.$(OFILE) $(EXEODIR)\ansi_cio.$(OFILE) $(EXEODIR)\win32cio.$(OFILE) $(EXEODIR)\mouse.$(OFILE)
 CFLAGS  =   $(CFLAGS) -DUSE_UIFC32 -WM
 !else
 OBJS = $(OBJS) $(EXEODIR)\uifc.$(OFILE)
