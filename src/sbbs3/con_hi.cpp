@@ -82,12 +82,15 @@ int sbbs_t::stripattr(char *strin)
 
 	e=strlen(strin);
 	for(a=c=d=0;c<e && d<sizeof(str)-1;c++) {
-		if(strin[c]==CTRL_A) {
+		if(strin[c]==CTRL_A && strin[c+1]!=0) {
 			a++;
 			if(!validattr(strin[c+1])) {
 				c++;
-				continue; } }
-		str[d++]=strin[c]; }
+				continue; 
+			} 
+		}
+		str[d++]=strin[c]; 
+	}
 	str[d]=0;
 	strcpy(strin,str);
 	return(a);
