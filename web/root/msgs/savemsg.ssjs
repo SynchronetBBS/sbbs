@@ -32,7 +32,8 @@ else {
 	}
 }
 
-var body=http_request.query.body;
+var body=http_request.query.body[0];
+body=body.replace(/([^\r])\n/g,"$1\r\n");
 body=word_wrap(body, 80);
 
 hdrs.from=user.alias;
