@@ -1034,7 +1034,7 @@ void packmsgs(ulong packable)
 			printf("\nDeleted header.\n");
 			smb_freemsgmem(&msg);
 			continue; }
-		if(msg.expiration.time && msg.expiration.time<=now) {
+		if(msg.expiration && msg.expiration<=now) {
 			printf("\nExpired message.\n");
 			smb_freemsgmem(&msg);
 			continue; }

@@ -418,9 +418,7 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 
 	JS_DefineProperty(cx, hdrobj, "forwarded",INT_TO_JSVAL(msg.forwarded)
 		,NULL,NULL,JSPROP_ENUMERATE);
-	JS_DefineProperty(cx, hdrobj, "expiration_time",INT_TO_JSVAL(msg.expiration.time)
-		,NULL,NULL,JSPROP_ENUMERATE);
-	JS_DefineProperty(cx, hdrobj, "expiration_zone",INT_TO_JSVAL(msg.expiration.zone)
+	JS_DefineProperty(cx, hdrobj, "expiration",INT_TO_JSVAL(msg.expiration)
 		,NULL,NULL,JSPROP_ENUMERATE);
 
 	JS_DefineProperty(cx, hdrobj, "type", INT_TO_JSVAL(msg.hdr.type)

@@ -515,7 +515,7 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			break;
 		case BBS_PROP_MSG_EXPIRATION:
 			if(sbbs->current_msg!=NULL)
-				val=sbbs->current_msg->expiration.time;
+				val=sbbs->current_msg->expiration;
 			break;
 		case BBS_PROP_MSG_FORWARDED:
 			if(sbbs->current_msg!=NULL)
