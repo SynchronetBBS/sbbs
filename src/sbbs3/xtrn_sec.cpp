@@ -43,7 +43,7 @@
 /****************************************************************************/
 int sbbs_t::xtrn_sec()
 {
-	char	str[256];
+	char	str[MAX_PATH+1];
 	int		xsec;
 	uint	i,j,k,*usrxtrn,usrxtrns,*usrxsec,usrxsecs;
 	long	l;
@@ -172,7 +172,14 @@ int sbbs_t::xtrn_sec()
 			SYNC;
 			if((l=getnum(usrxtrns))<1)
 				break;
-			exec_xtrn(usrxtrn[l-1]); 
+			l--;
+			sprintf(str,"%smenu/xtrn/%s.*",cfg.text_dir,cfg.xtrn[usrxtrn[l]]->code);
+			if(fexist(str)) {
+				sprintf(str,"xtrn/%s",cfg.xtrn[usrxtrn[l]]->code);
+				menu(str);
+				lncntr=0;
+			}
+			exec_xtrn(usrxtrn[l]); 
 		}
 		if(usrxsecs<2)
 			break; 
