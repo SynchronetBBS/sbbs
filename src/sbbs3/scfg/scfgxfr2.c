@@ -1376,7 +1376,7 @@ intead of credits, set this option to `Yes`.
 `Send Download Notifications:`
 
 If you wish the BBS to send download notification messages to the
-uploader of a file do this directory, set this option to `Yes`.
+uploader of a file to this directory, set this option to `Yes`.
 */
 							n=uifc.list(WIN_MID|WIN_SAV,0,0,0,&n,0
 								,"Send Download Notifications",opt);
