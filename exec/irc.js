@@ -1110,7 +1110,7 @@ function Screen_print_line(line)  {
 			}
 		}
 	}
-	if(i<78)  {
+	if(i<=78)  {
 		console.print(prev_colour+line.substr(linestart));
 		this.line.shift();
 		this.line.push(prev_colour+line.substr(linestart));
