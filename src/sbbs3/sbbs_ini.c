@@ -57,7 +57,7 @@ static const char*	strBindRetryDelay="BindRetryDelay";
 	#define DEFAULT_LOG_MASK		0xff	/* EMERG|ALERT|CRIT|ERR|WARNING|NOTICE|INFO|DEBUG */
 #endif
 #define DEFAULT_MAX_MSG_SIZE    (10*1024*1024)	/* 10MB */
-#define DEFAULT_BIND_RETRY_COUNT	10
+#define DEFAULT_BIND_RETRY_COUNT	2
 #define DEFAULT_BIND_RETRY_DELAY	15
 
 void sbbs_get_ini_fname(char* ini_file, char* ctrl_dir, char* pHostName)
