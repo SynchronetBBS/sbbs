@@ -36,17 +36,15 @@
 #include <time.h>
 #include <errno.h>
 #include <ctype.h>
-#ifdef MULTINODE_AWARE
-#include <io.h>
-#include <fcntl.h>
-#include <sys/stat.h>
-#include <share.h>
-#endif
 
 /* Include the OpenDoors header file. This line must be done in any program */
 /* using OpenDoors.                                                         */
-#include "opendoor.h"
+#include "OpenDoor.h"
 
+#ifdef MULTINODE_AWARE
+#include <filewrap.h>
+#endif
+#include <genwrap.h>
 
 /* Manifest constants used by Vote */
 #define NO_QUESTION              -1

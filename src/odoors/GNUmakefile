@@ -85,7 +85,7 @@ endif
 #
 # Define primary target.
 #
-all: ${LIBDIR}libODoors${SHLIB} ${LIBDIR}libODoors${STATICLIB} ex_diag ex_hello
+all: ${LIBDIR}libODoors${SHLIB} ${LIBDIR}libODoors${STATICLIB} ex_chat ex_diag ex_hello ex_music ex_ski ex_vote
 #
 #------------------------------------------------------------------------------
 #
@@ -167,6 +167,9 @@ ex_music: ex_music.c ${LIBDIR}libODoors${SHLIB}
 
 ex_ski: ex_ski.c ${LIBDIR}libODoors${SHLIB}
 	$(CC) $(CFLAGS) ex_ski.c -o ex_ski -lODoors
+
+ex_vote: ex_vote.c ${LIBDIR}libODoors${SHLIB}
+	$(CC) $(CFLAGS) ex_vote.c -o ex_vote ../xpdev/filewrap.c -lODoors -DMULTINODE_AWARE
 
 #
 #------------------------------------------------------------------------------
