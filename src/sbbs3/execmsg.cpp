@@ -264,10 +264,6 @@ int sbbs_t::exec_msg(csi_t *csi)
 			return(0);
 		case CS_MSG_POST:
 			if(!usrgrps) return(0);
-			csi->logic=LOGIC_FALSE;
-			if(!chk_ar(cfg.sub[usrsub[curgrp][cursub[curgrp]]]->post_ar,&useron)) {
-				bputs(text[CantPostOnSub]);
-				return(0); }
 			csi->logic=!postmsg(usrsub[curgrp][cursub[curgrp]],0,0);
 			return(0);
 		case CS_MSG_QWK:

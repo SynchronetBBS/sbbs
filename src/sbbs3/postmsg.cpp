@@ -69,18 +69,24 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 		top[0]=0;
 		msgattr=0; }
 
+	/* Security checks */
+	if(!chk_ar(cfg.sub[subnum]->post_ar,&useron)) {
+		bputs(text[CantPostOnSub]);
+		return(false); 
+	}
 	if(useron.rest&FLAG('P')) {
 		bputs(text[R_Post]);
-		return(false); }
-
+		return(false); 
+	}
 	if((cfg.sub[subnum]->misc&(SUB_QNET|SUB_FIDO|SUB_PNET|SUB_INET))
 		&& (useron.rest&FLAG('N'))) {
 		bputs(text[CantPostOnSub]);
-		return(false); }
-
+		return(false); 
+	}
 	if(useron.ptoday>=cfg.level_postsperday[useron.level]) {
 		bputs(text[TooManyPostsToday]);
-		return(false); }
+		return(false); 
+	}
 
 	bprintf(text[Posting],cfg.grp[cfg.sub[subnum]->grp]->sname,cfg.sub[subnum]->lname);
 	action=NODE_PMSG;
