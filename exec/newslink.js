@@ -509,7 +509,7 @@ for(i in area) {
 			file.close();
 
 		if(truncsp(body).length==0) {
-			printf("Not importing blank message: %lu",ptr);
+			printf("Message %lu not imported (blank)",ptr);
 			continue;
 		}
 
