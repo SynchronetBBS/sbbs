@@ -479,9 +479,14 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 	char	line[64];
 	char	file[MAX_PATH+1];
 	char*	warning;
+	FILE*	fp;
+
+	fp=(FILE*)JS_GetContextPrivate(cx);
 	
 	if(report==NULL) {
 		lprintf("!JavaScript: %s", message);
+		if(fp!=NULL)
+			fprintf(fp,"!JavaScript: %s", message);
 		return;
     }
 
@@ -504,6 +509,8 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 		warning="";
 
 	lprintf("!JavaScript %s%s%s: %s",warning,file,line,message);
+	if(fp!=NULL)
+		fprintf(fp,"!JavaScript %s%s%s: %s",warning,file,line,message);
 }
 
 JSContext* js_initcx(JSObject** glob)
@@ -615,7 +622,7 @@ BOOL js_add_file(JSContext* js_cx, JSObject* array,
 		return(FALSE);
 
 	val=INT_TO_JSVAL(misc);
-	if(!JS_SetProperty(js_cx, file, "misc", &val))
+	if(!JS_SetProperty(js_cx, file, "settings", &val))
 		return(FALSE);
 
 	val=STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, link));
@@ -692,14 +699,14 @@ BOOL js_generate_index(JSContext* js_cx, JSObject* js_glob,
 
 		/* file[] */
 		val=OBJECT_TO_JSVAL(file_array);
-		if(!JS_SetProperty(js_cx, js_glob, "file", &val)) {
+		if(!JS_SetProperty(js_cx, js_glob, "file_list", &val)) {
 			lprintf("%04d !JavaScript FAILED to set file property",sock);
 			break;
 		}
 
 		/* dir[] */
 		val=OBJECT_TO_JSVAL(dir_array);
-		if(!JS_SetProperty(js_cx, js_glob, "dir", &val)) {
+		if(!JS_SetProperty(js_cx, js_glob, "dir_list", &val)) {
 			lprintf("%04d !JavaScript FAILED to set dir property",sock);
 			break;
 		}
@@ -771,14 +778,14 @@ BOOL js_generate_index(JSContext* js_cx, JSObject* js_glob,
 			}
 
 			val=INT_TO_JSVAL(scfg.dir[dir]->misc);
-			if(!JS_SetProperty(js_cx, dir_obj, "misc", &val)) {
+			if(!JS_SetProperty(js_cx, dir_obj, "settings", &val)) {
 				lprintf("%04d !JavaScript FAILED to set curdir.misc property",sock);
 				break;
 			}
 		}
 
 		val=STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, vpath));
-		if(!JS_SetProperty(js_cx, js_glob, "path", &val)) {
+		if(!JS_SetProperty(js_cx, js_glob, "ftp_path", &val)) {
 			lprintf("%04d !JavaScript FAILED to set curdir property",sock);
 			break;
 		}
@@ -939,8 +946,12 @@ BOOL js_generate_index(JSContext* js_cx, JSObject* js_glob,
 				if(getfileixb(&scfg,&f)) {
 					f.size=0; /* flength(g.gl_pathv[i]); */
 					getfiledat(&scfg,&f);
-					if(f.misc&FM_EXTDESC) 
+					if(f.misc&FM_EXTDESC) {
+						extdesc[0]=0;
 						getextdesc(&scfg, dir, f.datoffset, extdesc);
+						/* Remove Ctrl-A Codes and Ex-ASCII code */
+						remove_ctrl_a(extdesc,NULL);
+					}
 					sprintf(vpath,"/%s/%s/%s"
 						,scfg.lib[scfg.dir[dir]->lib]->sname
 						,scfg.dir[dir]->code
@@ -982,9 +993,11 @@ BOOL js_generate_index(JSContext* js_cx, JSObject* js_glob,
 	if(js_script!=NULL)
 		JS_DestroyScript(js_cx, js_script);
 
-	JS_DeleteProperty(js_cx, js_glob, "path");
-	JS_DeleteProperty(js_cx, js_glob, "file");
-	JS_DeleteProperty(js_cx, js_glob, "dir");
+	JS_DeleteProperty(js_cx, js_glob, "ftp_path");
+	JS_DeleteProperty(js_cx, js_glob, "ftp_sort");
+	JS_DeleteProperty(js_cx, js_glob, "ftp_reverse");
+	JS_DeleteProperty(js_cx, js_glob, "file_list");
+	JS_DeleteProperty(js_cx, js_glob, "dir_list");
 	JS_DeleteProperty(js_cx, js_glob, "curlib");
 	JS_DeleteProperty(js_cx, js_glob, "curdir");
 	JS_DeleteProperty(js_cx, js_glob, "html_index_file");
@@ -2273,6 +2286,7 @@ static void ctrl_thread(void* arg)
 			if((js_user=CreateUserObject(&scfg, js_cx, js_glob, "user", &user))==NULL) {
 				lprintf("%04d !JavaScript ERROR creating user object",sock);
 			}
+//			js_CreateLibsObject(&scfg, js_cx, js_glob, "libraries
 #endif
 
 			if(sysop)
@@ -3274,13 +3288,42 @@ static void ctrl_thread(void* arg)
 				&& (!stricmp(p,startup->html_index_file) 
 				|| !strnicmp(p,html_index_ext,strlen(html_index_ext)))
 				&& !delecmd) {
+#ifdef JAVASCRIPT
+				js_val=STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, "name"));
+				JS_SetProperty(js_cx, js_glob, "ftp_sort", &js_val);
+				js_val=BOOLEAN_TO_JSVAL(FALSE);
+				JS_SetProperty(js_cx, js_glob, "ftp_reverse", &js_val);
+
 				if(!strnicmp(p,html_index_ext,strlen(html_index_ext))) {
 					p+=strlen(html_index_ext);
-					if(!stricmp(p,"ext=on"))
-						user.misc|=EXTDESC;
-					else if(!stricmp(p,"ext=off"))
-						user.misc&=~EXTDESC;
+					tp=strrchr(p,'$');
+					if(tp!=NULL)
+						*tp=0;
+					if(!strnicmp(p,"ext=",4)) {
+						p+=4;
+						if(!strcmp(p,"on"))
+							user.misc|=EXTDESC;
+						else
+							user.misc&=~EXTDESC;
+						if(!(user.rest&FLAG('G')))
+							putuserrec(&scfg,user.number,U_MISC,8,ultoa(user.misc,str,16));
+					} 
+					else if(!strnicmp(p,"sort=",5)) {
+						p+=5;
+						tp=strchr(p,'&');
+						if(tp!=NULL) {
+							*tp=0;
+							tp++;
+							if(!stricmp(tp,"reverse")) {
+								js_val=BOOLEAN_TO_JSVAL(TRUE);
+								JS_SetProperty(js_cx, js_glob, "ftp_reverse", &js_val);
+							}
+						}
+						js_val=STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, p));
+						JS_SetProperty(js_cx, js_glob, "ftp_sort", &js_val);
+					}
 				}
+#endif
 				sprintf(fname,"%sftp%d.tx", scfg.data_dir, sock);
 				if((fp=fopen(fname,"w+b"))==NULL) {
 					lprintf("%04d !ERROR %d opening %s",sock,errno,fname);
@@ -3297,9 +3340,9 @@ static void ctrl_thread(void* arg)
 				delfile=TRUE;
 #ifdef JAVASCRIPT
 				js_val=INT_TO_JSVAL(timeleft);
-				if(!JS_SetProperty(js_cx, js_glob, "time_left", &js_val))
+				if(!JS_SetProperty(js_cx, js_user, "time_left", &js_val))
 					lprintf("%04d !JavaScript ERROR setting user.time_left",sock);
-				success=js_generate_index(js_cx, js_glob, sock, fp, lib, dir, &user);
+				js_generate_index(js_cx, js_glob, sock, fp, lib, dir, &user);
 #endif
 				fclose(fp);
 			} else if(dir>=0) {
