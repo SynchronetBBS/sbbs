@@ -562,7 +562,7 @@ JSContext* js_initcx(JSObject** glob)
 }
 
 static JSClass js_file_class = {
-        "File",0, 
+        "FtpFile",0, 
         JS_PropertyStub,JS_PropertyStub,JS_PropertyStub,JS_PropertyStub, 
         JS_EnumerateStub,JS_ResolveStub,JS_ConvertStub,JS_FinalizeStub 
 }; 
