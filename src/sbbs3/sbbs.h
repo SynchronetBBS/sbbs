@@ -778,6 +778,10 @@ public:
 extern "C" {
 #endif
 
+	/* main.cpp */
+	DLLEXPORT int		DLLCALL sbbs_random(int);
+	DLLEXPORT void		DLLCALL sbbs_srand(void);
+
 	/* getstats.c */
 	DLLEXPORT BOOL		DLLCALL getstats(scfg_t* cfg, char node, stats_t* stats);
 	DLLEXPORT ulong		DLLCALL	getposts(scfg_t* cfg, uint subnum);

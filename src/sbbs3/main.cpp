@@ -263,6 +263,17 @@ static BOOL winsock_startup(void)
 
 #endif
 
+DLLEXPORT void DLLCALL sbbs_srand()
+{
+	srand(msclock());
+	sbbs_random(10);	/* Throw away first number */
+}
+
+DLLEXPORT int DLLCALL sbbs_random(int n)
+{
+	return(xp_random(n));
+}
+
 #ifdef JAVASCRIPT
 
 static js_server_props_t js_server_props;
@@ -1546,8 +1557,7 @@ void event_thread(void* arg)
 
 	sbbs->event_thread_running = true;
 
-	srand(time(NULL));	/* Seed random number generator */
-	sbbs_random(10);	/* Throw away first number */
+	sbbs_srand();	/* Seed random number generator */
 
 	thread_up(TRUE /* setuid */);
 
@@ -3263,8 +3273,7 @@ void node_thread(void* arg)
 	lprintf(LOG_DEBUG,"Node %d thread started",sbbs->cfg.node_num);
 #endif
 
-	srand(time(NULL));	/* Seed random number generator */
-	sbbs_random(10);	/* Throw away first number */
+	sbbs_srand();		/* Seed random number generator */
 
 #ifdef JAVASCRIPT
 	if(!(startup->options&BBS_OPT_NO_JAVASCRIPT)) {

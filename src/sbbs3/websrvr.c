@@ -2693,8 +2693,7 @@ void http_session_thread(void* arg)
 	thread_up(TRUE /* setuid */);
 	session.finished=FALSE;
 
-	srand(time(NULL));	/* Seed random number generator */
-	sbbs_random(10);	/* Throw away first number */
+	sbbs_srand();	/* Seed random number generator */
 
 	if(startup->options&BBS_OPT_NO_HOST_LOOKUP)
 		host=NULL;

@@ -831,7 +831,6 @@ enum {							/* Values of mode for userlist function     */
 #define TM_YEAR(yy)		((yy)%100)
 #define sbbs_beep(f,d)	BEEP(f,d)
 #define mswait(x)		SLEEP(x)
-#define sbbs_random(x)	xp_random(x)
 
 /**************************************/
 /* Text Attribute (color) Definitions */

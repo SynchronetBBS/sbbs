@@ -4569,8 +4569,7 @@ void DLLCALL ftp_server(void* arg)
 
 		lprintf(LOG_INFO,"Compiled %s %s with %s", __DATE__, __TIME__, compiler);
 
-		srand(time(NULL));	/* Seed random number generator */
-		sbbs_random(10);	/* Throw away first number */
+		sbbs_srand();	/* Seed random number generator */
 
 		if(!winsock_startup()) {
 			cleanup(1,__LINE__);

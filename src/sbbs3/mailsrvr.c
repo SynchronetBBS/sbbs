@@ -4024,7 +4024,7 @@ void DLLCALL mail_server(void* arg)
 
 		lprintf(LOG_INFO,"SMBLIB %s (format %x.%02x)",smb_lib_ver(),smb_ver()>>8,smb_ver()&0xff);
 
-		srand(time(NULL));
+		sbbs_srand();
 
 		if(!winsock_startup()) {
 			cleanup(1);
