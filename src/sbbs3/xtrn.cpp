@@ -1152,10 +1152,12 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 
 	if((mode&EX_INR) && (mode&EX_OUTR))  {
 		struct winsize winsize;
+		struct termios termp;
+		cfmakeraw(&termp);
 		winsize.ws_row=rows;
 		// #warning Currently cols are forced to 80 apparently TODO
 		winsize.ws_col=80;
-		if((pid=forkpty(&in_pipe[1],NULL,NULL,&winsize))==-1) {
+		if((pid=forkpty(&in_pipe[1],NULL,&termp,&winsize))==-1) {
 			pthread_mutex_unlock(&input_thread_mutex);
 			errormsg(WHERE,ERR_EXEC,cmdline,0);
 			return(-1);
