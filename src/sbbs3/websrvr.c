@@ -1164,8 +1164,7 @@ static BOOL parse_headers(http_session_t * session)
 					if(p==NULL)
 						break;
 					while(*p && *p<' ') p++;
-					b64_decode(p,strlen(p),p,strlen(p));
-					SAFECOPY(session->req.auth,p);
+					b64_decode(session->req.auth,sizeof(session->req.auth),p,strlen(p));
 					break;
 				case HEAD_LENGTH:
 					if(session->req.dynamic==IS_CGI)
