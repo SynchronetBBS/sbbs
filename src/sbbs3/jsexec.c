@@ -473,7 +473,7 @@ int main(int argc, char **argv, char** environ)
 	confp=stdout;
 	errfp=stderr;
 	nulfp=fopen(_PATH_DEVNULL,"w+");
-	statfp=stdout;
+	statfp=stderr;
 
 	branch.limit=JAVASCRIPT_BRANCH_LIMIT;
 	branch.yield_freq=JAVASCRIPT_YIELD_FREQUENCY;
