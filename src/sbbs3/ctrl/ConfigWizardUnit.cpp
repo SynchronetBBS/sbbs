@@ -271,7 +271,7 @@ void __fastcall TConfigWizard::FormShow(TObject *Sender)
             strcpy(str,tz_str[i]);
         TimeZoneComboBox->Items->Add(str);
     }
-   	sprintf(str,"Other (%s)",zonestr(scfg.sys_timezone));
+   	sprintf(str,"Other (%s)",smb_zonestr(scfg.sys_timezone,NULL));
     TimeZoneComboBox->Items->Add(str);
 
     for(i=0;i<sizeof(tz_val)/sizeof(tz_val[0]);i++)
