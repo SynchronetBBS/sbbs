@@ -1308,7 +1308,7 @@ static void signal_smtp_sem(void)
 /*****************************************************************************/
 /* Returns command line generated from instr with %c replacments             */
 /*****************************************************************************/
-static char* cmdstr(char* instr, char* msgpath, char* lstpath, char* errpath, char* cmd)
+static char* mailcmdstr(char* instr, char* msgpath, char* lstpath, char* errpath, char* cmd)
 {
 	char	str[256];
     int		i,j,len;
@@ -1775,7 +1775,7 @@ static void smtp_thread(void* arg)
 						if(*p==';' || *p==0)	/* comment or blank line */
 							continue;
 						lprintf("%04d SMTP executing external process: %s", socket, p);
-						system(cmdstr(p, msgtxt_fname, rcptlst_fname, proc_err_fname, str));
+						system(mailcmdstr(p, msgtxt_fname, rcptlst_fname, proc_err_fname, str));
 						if(flength(proc_err_fname)>0)
 							break;
 						if(!fexist(msgtxt_fname) || !fexist(rcptlst_fname))
