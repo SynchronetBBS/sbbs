@@ -107,6 +107,7 @@ at the main and reading messages prompts.
 		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Sub-board Short Name",str2,LEN_SSNAME
 			,K_EDIT)<1)
 			continue;
+#if 0
 		sprintf(str3,"%.10s",str2);
 		SETHELP(WHERE);
 /*
@@ -117,7 +118,8 @@ This is the name of the sub-board used for QWK off-line readers.
 		if(uifc.input(WIN_MID|WIN_SAV,0,0,"Sub-board QWK Name",str3,10
             ,K_EDIT)<1)
             continue;
-		sprintf(code,"%.8s",str3);
+#endif
+		sprintf(code,"%.8s",str2);
 		p=strchr(code,SP);
 		if(p) *p=0;
 		strupr(code);
@@ -137,7 +139,8 @@ usually an abreviation of the sub-board's name.
 			uifc.savnum=0;
 			uifc.msg("Invalid Code");
 			uifc.helpbuf=0;
-			continue; }
+			continue; 
+		}
 
 		if((cfg.sub=(sub_t **)REALLOC(cfg.sub,sizeof(sub_t *)*(cfg.total_subs+1)))==NULL) {
             errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_subs+1);
@@ -173,7 +176,9 @@ usually an abreviation of the sub-board's name.
 		strcpy(cfg.sub[subnum[i]]->code_suffix,code);
 		strcpy(cfg.sub[subnum[i]]->lname,str);
 		strcpy(cfg.sub[subnum[i]]->sname,str2);
-		strcpy(cfg.sub[subnum[i]]->qwkname,str3);
+		strcpy(cfg.sub[subnum[i]]->qwkname,code);
+		if(strchr(str,'.') && strchr(str,' ')==NULL)
+			strcpy(cfg.sub[subnum[i]]->newsgroup,str);
 		cfg.sub[subnum[i]]->misc=(SUB_NSDEF|SUB_SSDEF|SUB_QUOTE|SUB_TOUSER
 			|SUB_HDRMOD|SUB_FAST);
 		cfg.sub[subnum[i]]->ptridx=ptridx;
@@ -345,8 +350,8 @@ This is the name of the sub-board used for newsgroup readers. If no name
 is configured here, a name will be automatically generated from the
 sub-board's name and group name.
 */
-				uifc.input(WIN_MID|WIN_SAV,0,17,"Newsgroup"
-					,cfg.sub[i]->newsgroup,50,K_EDIT);
+				uifc.input(WIN_MID|WIN_SAV,0,17,""
+					,cfg.sub[i]->newsgroup,sizeof(cfg.sub[i]->newsgroup)-1,K_EDIT);
                 break;
 			case 5:
 				uifc.savnum=2;
