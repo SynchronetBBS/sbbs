@@ -121,7 +121,8 @@ extern "C" {
 
 #ifdef __unix__
 
-	#include <semaphore.h>	/* POSIX 1003.1b semaphores */
+	#include <pthread.h>	/* POSIX threads and mutexes */
+	#include <semaphore.h>	/* POSIX semaphores */
 	ulong _beginthread(void( *start_address )( void * )
 		,unsigned stack_size, void *arglist);
 
