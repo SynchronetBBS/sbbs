@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2002 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -59,9 +59,6 @@
 	#include <windows.h>		/* OF_SHARE_ */
 	#include <share.h>			/* SH_DENY */
 
-	#define sopen(f,o,s)		_sopen(f,o,s,S_IREAD|S_IWRITE)
-	#define close(f)			_close(f)
-							
 	#ifndef SH_DENYNO
 	#define SH_DENYNO			OF_SHARE_DENY_NONE
 	#define SH_DENYWR			OF_SHARE_DENY_WRITE
@@ -122,11 +119,9 @@ extern "C" {
 #endif
 
 #if !defined(__BORLANDC__) && defined(__unix__)
-#if defined(__QNX__)
-	DLLEXPORT int	DLLCALL qnx_sopen(char *fn, int access, int share);
-#else
-	DLLEXPORT int	DLLCALL sopen(char *fn, int access, int share);
-#endif /* !QNX */
+#if !defined(__QNX__)
+	DLLEXPORT int	DLLCALL sopen(const char* fn, int access, int share, ...);
+#endif
 	DLLEXPORT long	DLLCALL filelength(int fd);
 #endif
 

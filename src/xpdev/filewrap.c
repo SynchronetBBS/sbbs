@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2002 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -152,25 +152,26 @@ int DLLCALL unlock(int fd, long pos, int len)
 }
 
 /* Opens a file in specified sharing (file-locking) mode */
-#ifdef __QNX__
-int DLLCALL qnx_sopen(char *fn, int access, int share)
-{
-#undef sopen		/* Stupid macro trick */
-	return(sopen(fn, access, share, S_IREAD|S_IWRITE));
-#define sopen(x,y,z)	qnx_sopen(x,y,z)
-}
-#else
-int DLLCALL sopen(char *fn, int access, int share)
+#if !defined(__QNX__)
+int DLLCALL sopen(const char *fn, int access, int share, ...)
 {
 	int fd;
+	int pmode=S_IREAD;
 #ifndef F_SANEWRLCKNO
 	int	flock_op=LOCK_NB;	/* non-blocking */
 #endif
 #if defined(F_SANEWRLCKNO) || !defined(BSD)
 	struct flock alock;
 #endif
+    va_list ap;
 
-	if ((fd = open(fn, access, S_IREAD|S_IWRITE)) < 0)
+    if(access&O_CREAT) {
+        va_start(ap,share);
+        pmode = va_arg(ap,unsigned int));
+        va_end(ap);
+    }
+
+	if ((fd = open(fn, access, pmode)) < 0)
 		return -1;
 
 	if (share == SH_DENYNO) /* no lock needed */
