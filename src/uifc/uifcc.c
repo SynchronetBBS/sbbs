@@ -134,7 +134,7 @@ static int uinput(int imode, int left, int top, char *prompt, char *str
 static void umsg(char *str);
 static void upop(char *str);
 static void sethelp(int line, char* file);
-static void showbuf(char *buf, char *title, BOOL markup);
+void showbuf(int mode, int left, int top, int width, int height, char *title, char *hbuf);
 
 /* Dynamic menu support */
 static int *last_menu_cur=NULL;
@@ -1688,7 +1688,7 @@ void sethelp(int line, char* file)
 /****************************************************************************/
 /* Shows a scrollable text buffer - optionally parsing "help markup codes"	*/
 /****************************************************************************/
-void showbuf(char *hbuf, char *title, BOOL markup)
+void showbuf(int mode, int left, int top, int width, int height, char *title, char *hbuf)
 {
 	char *savscrn,inverse=0,high=0;
 	char *buf;
@@ -1696,11 +1696,29 @@ void showbuf(char *hbuf, char *title, BOOL markup)
     char *p;
 	uint i,j,k,len;
 	int  old_curs;
-	int  win_len;
 	int	 lines;
 #ifndef __FLAT__
 	union  REGS r;
 #endif
+	int pad=1;
+
+	if(top+height>api->scrn_len-3)
+		height=(api->scrn_len-3)-top;
+	if(!width || width<strlen(title)+6)
+		width=strlen(title)+6;
+	if(width>scrn_width)
+		width=scrn_width;
+	if(mode&WIN_L2R)
+		left=(scrn_width-width)/2+1;
+	else if(mode&WIN_RHT)
+		left=scrn_width-(width+4+left);
+	if(mode&WIN_T2B)
+		top=(api->scrn_len/2)-(height/2)-2;
+	else if(mode&WIN_BOT)
+		top=api->scrn_len-height-3-top;
+
+	if(mode&WIN_PACK)
+		pad=0;
 
 	old_curs=curs_set(0);
 
@@ -1709,23 +1727,22 @@ void showbuf(char *hbuf, char *title, BOOL markup)
 			,__LINE__,scrn_width*25*2);
 		curs_set(1);
 		return; }
-	win_len=api->scrn_len-2;
-	if((buf=(char *)MALLOC(76*win_len*2))==NULL) {
+	if((buf=(char *)MALLOC(width*height*2))==NULL) {
 		cprintf("UIFC line %d: error allocating %u bytes\r\n"
-			,__LINE__,76*21*2);
+			,__LINE__,width*21*2);
 		FREE(savscrn);
 		curs_set(1);
 		return; }
 	hidemouse();
 	gettext(1,1,scrn_width,api->scrn_len,savscrn);
-	memset(buf,SP,76*win_len*2);
-	for(i=1;i<76*win_len*2;i+=2)
+	memset(buf,SP,width*height*2);
+	for(i=1;i<width*height*2;i+=2)
 		buf[i]=(hclr|(bclr<<4));
     buf[0]='Ú';
 	j=strlen(title);
-	if(j>70)
-		*(title+70)=0;
-	for(i=2;i<(35-(j/2))*2;i+=2)
+	if(j>width-6)
+		*(title+width-6)=0;
+	for(i=2;i<((width-6)/2-(j/2))*2;i+=2)
    	      buf[i]='Ä';
     buf[i]='´'; i+=4;
 	for(p=title;*p;p++) {
@@ -1734,43 +1751,50 @@ void showbuf(char *hbuf, char *title, BOOL markup)
 	}
 	i+=2;
    	buf[i]='Ã'; i+=2;
-	for(j=i;j<(75*2);j+=2)
+	for(j=i;j<((width-1)*2);j+=2)
    	    buf[j]='Ä';
 	i=j;
     buf[i]='¿'; i+=2;
 	j=i;	/* leave i alone */
-	for(k=0;k<(win_len-2);k++) { 		/* the sides of the box */
+	for(k=0;k<(height-2);k++) { 		/* the sides of the box */
         buf[j]='³'; j+=2;
-		j+=(74*2);
+		j+=((width-2)*2);
         buf[j]='³'; j+=2; }
     buf[j]='À'; j+=2;
-	for(k=j;k<j+(23*2);k+=2)
-		buf[k]='Ä';
-    buf[k]='´'; k+=4;
-	buf[k]='H'; k+=2;
-	buf[k]='i'; k+=2;
-	buf[k]='t'; k+=4;
-	buf[k]='a'; k+=2;
-	buf[k]='n'; k+=2;
-	buf[k]='y'; k+=4;
-	buf[k]='k'; k+=2;
-	buf[k]='e'; k+=2;
-	buf[k]='y'; k+=4;
-	buf[k]='t'; k+=2;
-	buf[k]='o'; k+=4;
-	buf[k]='c'; k+=2;
-	buf[k]='o'; k+=2;
-	buf[k]='n'; k+=2;
-	buf[k]='t'; k+=2;
-	buf[k]='i'; k+=2;
-	buf[k]='n'; k+=2;
-	buf[k]='u'; k+=2;
-	buf[k]='e'; k+=4;
-    buf[k]='Ã'; k+=2;
-	for(j=k;j<k+(24*2);j+=2)
-        buf[j]='Ä';
+	if(!(mode&WIN_DYN) && (width>31)) {
+		for(k=j;k<j+(((width-4)/2-13)*2);k+=2)
+			buf[k]='Ä';
+		buf[k]='´'; k+=4;
+		buf[k]='H'; k+=2;
+		buf[k]='i'; k+=2;
+		buf[k]='t'; k+=4;
+		buf[k]='a'; k+=2;
+		buf[k]='n'; k+=2;
+		buf[k]='y'; k+=4;
+		buf[k]='k'; k+=2;
+		buf[k]='e'; k+=2;
+		buf[k]='y'; k+=4;
+		buf[k]='t'; k+=2;
+		buf[k]='o'; k+=4;
+		buf[k]='c'; k+=2;
+		buf[k]='o'; k+=2;
+		buf[k]='n'; k+=2;
+		buf[k]='t'; k+=2;
+		buf[k]='i'; k+=2;
+		buf[k]='n'; k+=2;
+		buf[k]='u'; k+=2;
+		buf[k]='e'; k+=4;
+	    buf[k]='Ã'; k+=2;
+		for(j=k;j<k+(((width-4)/2-12)*2);j+=2)
+	        buf[j]='Ä';
+	}
+	else {
+		for(k=j;k<j+((width-2)*2);k+=2)
+			buf[k]='Ä';
+		j=k;
+	}
     buf[j]='Ù';
-	puttext(3,3,78,win_len+2,buf);
+	puttext(left,top+1,left+width-1,top+height,buf);
 	len=strlen(hbuf);
 
 	i=0;
@@ -1785,28 +1809,28 @@ void showbuf(char *hbuf, char *title, BOOL markup)
 			lines++;
 		}
 	}
-	if(lines < win_len-4)
-		lines=win_len-4;
+	if(lines < height-2-pad-pad)
+		lines=height-2-pad-pad;
 
-	if((buf=(char *)textbuf=MALLOC(72*lines*2))==NULL) {
+	if((buf=(char *)textbuf=MALLOC((width-2-pad-pad)*lines*2))==NULL) {
 		cprintf("UIFC line %d: error allocating %u bytes\r\n"
-			,__LINE__,72*lines*2);
+			,__LINE__,(width-2-pad-pad)*lines*2);
 		FREE(savscrn);
 		FREE(buf);
 		curs_set(1);
 		return; }
-	memset(textbuf,SP,72*lines*2);
-	for(i=1;i<72*lines*2;i+=2)
+	memset(textbuf,SP,(width-2-pad-pad)*lines*2);
+	for(i=1;i<(width-2-pad-pad)*lines*2;i+=2)
 		buf[i]=(hclr|(bclr<<4));
 	i=0;
 	for(j=0;j<len;j++,i+=2) {
 		if(hbuf[j]==LF) {
 			i+=2;
-			while(i%(72*2)) i++; i-=2; }
-		else if(markup && (hbuf[j]==2 || hbuf[j]=='~')) {		 /* Ctrl-b toggles inverse */
+			while(i%((width-2-pad-pad)*2)) i++; i-=2; }
+		else if(mode&WIN_HLP && (hbuf[j]==2 || hbuf[j]=='~')) {		 /* Ctrl-b toggles inverse */
 			inverse=!inverse;
 			i-=2; }
-		else if(markup && (hbuf[j]==1 || hbuf[j]=='`')) {		 /* Ctrl-a toggles high intensity */
+		else if(mode&WIN_HLP && (hbuf[j]==1 || hbuf[j]=='`')) {		 /* Ctrl-a toggles high intensity */
 			high=!high;
 			i-=2; }
 		else if(hbuf[j]!=CR) {
@@ -1816,63 +1840,68 @@ void showbuf(char *hbuf, char *title, BOOL markup)
 	showmouse();
 	i=0;
 	p=textbuf;
-	while(i==0) {
-		puttext(5,5,76,win_len,p);
-		if(inkey(1)) {
-			switch(inkey(0)) {
-				case KEY_HOME:	/* home */
-					p=textbuf;
-					break;
-
-				case KEY_UP:	/* up arrow */
-					p = p-(72*2);
-					if(p<textbuf)
-						p=textbuf;
-					break;
-					
-				case KEY_PPAGE:	/* PgUp */
-					p = p-(72*2*(win_len-5));
-					if(p<textbuf)
-						p=textbuf;
-					break;
-
-				case KEY_NPAGE:	/* PgDn */
-					p=p+72*2*(win_len-5);
-					if(p > textbuf+(lines-win_len+1)*72*2)
-						p=textbuf+(lines-win_len+1)*72*2;
-					if(p<textbuf)
-						p=textbuf;
-					break;
-
-				case KEY_END:	/* end */
-					p=textbuf+(lines-win_len+1)*72*2;
-					if(p<textbuf)
-						p=textbuf;
-					break;
-
-				case KEY_DOWN:	/* dn arrow */
-					p = p+(72*2);
-					if(p > textbuf+(lines-win_len+1)*72*2)
-						p=textbuf+(lines-win_len+1)*72*2;
-					if(p<textbuf)
-						p=textbuf;
-					break;
-
-				default:
-					i=1;
-			}
-		}
-		mswait(1);
+	if(mode&WIN_DYN) {
+		puttext(left+1+pad,top+2+pad,left+width-2-pad,top+height-1-pad,p);
 	}
-	#ifndef __FLAT__
-		if(api->mode&UIFC_MOUSE) {
-			/* ToDo more mouse stiff */
-		}
-	#endif
+	else {
+		while(i==0) {
+			puttext(left+1+pad,top+2+pad,left+width-2-pad,top+height-1-pad,p);
+			if(inkey(1)) {
+				switch(inkey(0)) {
+					case KEY_HOME:	/* home */
+						p=textbuf;
+						break;
 
-	hidemouse();
-	puttext(1,1,scrn_width,api->scrn_len,savscrn);
-	showmouse();
+					case KEY_UP:	/* up arrow */
+						p = p-((width-4)*2);
+						if(p<textbuf)
+							p=textbuf;
+						break;
+					
+					case KEY_PPAGE:	/* PgUp */
+						p = p-((width-4)*2*(height-5));
+						if(p<textbuf)
+							p=textbuf;
+						break;
+
+					case KEY_NPAGE:	/* PgDn */
+						p=p+(width-4)*2*(height-5);
+						if(p > textbuf+(lines-height+1)*(width-4)*2)
+							p=textbuf+(lines-height+1)*(width-4)*2;
+						if(p<textbuf)
+							p=textbuf;
+						break;
+
+					case KEY_END:	/* end */
+						p=textbuf+(lines-height+1)*(width-4)*2;
+						if(p<textbuf)
+							p=textbuf;
+						break;
+
+					case KEY_DOWN:	/* dn arrow */
+						p = p+((width-4)*2);
+						if(p > textbuf+(lines-height+1)*(width-4)*2)
+							p=textbuf+(lines-height+1)*(width-4)*2;
+						if(p<textbuf)
+							p=textbuf;
+						break;
+
+					default:
+						i=1;
+				}
+			}
+			mswait(1);
+		}
+		#ifndef __FLAT__
+			if(api->mode&UIFC_MOUSE) {
+				/* ToDo more mouse stiff */
+			}
+		#endif
+
+		hidemouse();
+		puttext(1,1,scrn_width,api->scrn_len,savscrn);
+		showmouse();
+	}
 	FREE(savscrn);
 	FREE(buf);
 	if(old_curs != ERR)
@@ -1934,7 +1963,7 @@ void help()
 	else
 		strcpy(hbuf,api->helpbuf);
 
-	showbuf(hbuf, "Online Help", TRUE);
+	showbuf(WIN_MID|WIN_HLP, 0, 0, 76, api->scrn_len-2, "Online Help", hbuf);
 }
 
 static int puttext(int sx, int sy, int ex, int ey, unsigned char *fill)
