@@ -1541,6 +1541,8 @@ int attachment(char *bundlename,faddr_t dest, int mode)
 			} 
 		}
 		fclose(stream);
+		if(!flength(fname))
+			remove(fname);
 		return(0); 
 	}
 
