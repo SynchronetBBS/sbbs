@@ -5,6 +5,11 @@ icons=new File(system.ctrl_dir+"webicons.ini");
 if(icons.exists) {
 	icons.open("r",true);
 	allicons=icons.iniGetObject();
+	for(ic in allicons) {
+		if(ic!=ic.toLowerCase()) {
+			allicons[ic.toLowerCase()]=allicons[ic];
+		}
+	}
 }
 else {
 	log(system.ctrl_dir+"webicons.ini does not exist!");
@@ -45,6 +50,7 @@ else {
 				extension='..';
 				thisfilename="Parent directory";
 			}
+			extension=extension.toLowerCase();
 			if(allicons[extension]!=undefined)
 				icon='<img src="'+allicons[extension]+'">';
 			else
