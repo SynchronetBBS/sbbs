@@ -2934,12 +2934,11 @@ void http_session_thread(void* arg)
 
 	while(!session.finished && server_socket!=INVALID_SOCKET) {
 	    memset(&(session.req), 0, sizeof(session.req));
-		SAFECOPY(session.req.status,"200 OK");
-		session.req.send_location=NO_LOCATION;
 		redirp=NULL;
 		loop_count=0;
 		while((redirp==NULL || session.req.send_location >= MOVED_TEMP)
 				 && !session.finished && server_socket!=INVALID_SOCKET) {
+			SAFECOPY(session.req.status,"200 OK");
 			session.req.send_location=NO_LOCATION;
 			session.req.ld=NULL;
 			if(startup->options&WEB_OPT_HTTP_LOGGING) {
