@@ -684,8 +684,17 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 #endif
 	                    break;
 					}
+					
+
 					if(!(loop_since_io%3000)) {
-//						OutputDebugString(".");
+						OutputDebugString(".");
+
+						// Let's make sure the socket is up
+						// Sending will trigger a socket d/c detection
+						sprintf(str,"%c%c",TELNET_IAC,TELNET_GA);
+						putcom(str,2);
+
+						// Check if the node has been interrupted
 						getnodedat(cfg.node_num,&thisnode,0);
 						if(thisnode.misc&NODE_INTR)
 							break;
