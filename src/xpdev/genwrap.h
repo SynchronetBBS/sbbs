@@ -47,8 +47,10 @@
 	#include <sys/time.h>	/* struct timeval */
 	#include <strings.h>	/* strcasecmp() */
 	#include <unistd.h>		/* usleep */
+	#ifdef _THREAD_SAFE
+		#include <pthread.h>	/* Check for GNU PTH libs */
+	#endif
 #endif
-
 
 #if defined(__cplusplus)
 extern "C" {
@@ -171,7 +173,7 @@ extern "C" {
 #elif defined(__unix__)
 
 
-	#if defined(_PTH_PTHREAD_H_)
+	#if
 		#define SLEEP(x)  ({ int y=x; struct timeval tv; \
 			tv.tv_sec=(y/1000); tv.tv_usec=((y%1000)*1000); \
 			pth_nap(tv); })

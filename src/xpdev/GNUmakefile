@@ -46,20 +46,18 @@ endif
 
 DELETE	=	rm -fv
 
+CFLAGS	+= -D_THREAD_SAFE
 ifeq ($(os),freebsd)	# FreeBSD
- CFLAGS	+= -D_THREAD_SAFE
  LFLAGS	:=	-pthread
 else
  ifeq ($(os),openbsd)	# OpenBSD
-  CFLAGS	+= -D_THREAD_SAFE
   LFLAGS	:=	-pthread
  else
   ifeq ($(os),netbsd)	# NetBSD
-  CFLAGS	+= -D_THREAD_SAFE -D__unix__ -D_NEED_SEM -I/usr/pkg/include
+  CFLAGS	+= -D__unix__ -D_NEED_SEM -I/usr/pkg/include
   LFLAGS	:=	-lpth -lpthread -L/usr/pkg/lib
   else
    ifeq ($(os),qnx)	# QNX
-    CFLAGS	+= -D_THREAD_SAFE
     LFLAGS	:= 
    else			# Linux / Other UNIX
     ifdef bcc
