@@ -1,3 +1,4 @@
+<br />
 <form action="savemsg.ssjs" method="post">
 <table class="postmsg" border="0" cellspacing="2" cellpadding="0">
 <input type="hidden" name="msg_sub" value="%%sub:code%%" />
@@ -19,7 +20,7 @@
       <td class="postmsg" colspan="2"><textarea class="postmsg" name=body rows="20" cols="80" wrap="hard"></textarea></td>
       </tr>
     <tr>
-      <td align="center" class="postmsg" colspan="2"><input type="submit" value="Post Message" /></td>
+      <td align="center" class="postmsg" colspan="2"><input type="submit" value=@@JS:template.sub.code=='mail'? '"Send E-Mail"' : '"Post Message"' @@/></td>
     </tr>
   </tbody>
 </table>
