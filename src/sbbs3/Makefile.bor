@@ -75,7 +75,7 @@ $(SBBS): $(OBJS) $(LIBODIR)\ver.$(OFILE)
 		import32.lib cw32mt.lib ws2_32.lib
 
 # Mail Server DLL Link Rule
-$(MAILSRVR): mailsrvr.c mxlookup.c $(SBBSLIB)
+$(MAILSRVR): mailsrvr.c mxlookup.c crc32.c $(SBBSLIB)
     @echo Compiling $** ...
 	$(CC) $(CFLAGS) -WD -WM -lGi -n$(LIBODIR) -DMAILSRVR_EXPORTS -DSMBDLL $**
 
