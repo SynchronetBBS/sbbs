@@ -91,8 +91,9 @@ static mail_startup_t* startup=NULL;
 static scfg_t	scfg;
 static SOCKET	server_socket=INVALID_SOCKET;
 static SOCKET	pop3_socket=INVALID_SOCKET;
-static int		active_clients=0;
+static DWORD	active_clients=0;
 static int		active_sendmail=0;
+static DWORD	thread_count=0;
 static BOOL		sendmail_running=FALSE;
 static DWORD	sockets=0;
 
@@ -167,12 +168,15 @@ static void client_off(SOCKET sock)
 
 static void thread_up(void)
 {
+	thread_count++;
 	if(startup!=NULL && startup->thread_up!=NULL)
 		startup->thread_up(TRUE);
 }
 
 static void thread_down(void)
 {
+	if(thread_count>0)
+		thread_count--;
 	if(startup!=NULL && startup->thread_up!=NULL)
 		startup->thread_up(FALSE);
 }
@@ -1026,22 +1030,23 @@ static void pop3_thread(void* arg)
 	status(STATUS_WFC);
 
 	/* Free up resources here */
-	mail_close_socket(socket);
-
 	if(mail!=NULL)
 		freemail(mail);
 
 	smb_freemsgmem(&msg);
 	smb_close(&smb);
 
-	if(startup->options&MAIL_OPT_DEBUG_POP3)
-		lprintf("%04d POP3 session thread terminated", socket);
-
 	active_clients--;
 	update_clients();
 	client_off(socket);
 
 	thread_down();
+	if(startup->options&MAIL_OPT_DEBUG_POP3)
+		lprintf("%04d POP3 session thread terminated (%u threads remain)"
+			,socket, thread_count);
+
+	/* Must be last */
+	mail_close_socket(socket);
 }
 
 static BOOL rblchk(DWORD mail_addr_n, char* rbl_addr)
@@ -2195,8 +2200,6 @@ static void smtp_thread(void* arg)
 	}
 
 	/* Free up resources here */
-	mail_close_socket(socket);
-
 	smb_freemsgmem(&msg);
 
 	if(msgtxt!=NULL) {
@@ -2213,12 +2216,16 @@ static void smtp_thread(void* arg)
 
 	status(STATUS_WFC);
 
-	lprintf("%04d SMTP RX Session thread terminated", socket);
 	active_clients--;
 	update_clients();
 	client_off(socket);
 
 	thread_down();
+	lprintf("%04d SMTP RX Session thread terminated (%u threads remain)"
+		,socket, thread_count);
+
+	/* Must be last */
+	mail_close_socket(socket);
 }
 
 BOOL bounce(smb_t* smb, smbmsg_t* msg, char* err, BOOL immediate)
@@ -2628,11 +2635,10 @@ static void sendmail_thread(void* arg)
 	smb_freemsgmem(&msg);
 	smb_close(&smb);
 
-	lprintf("0000 SendMail thread terminated");
+	thread_down();
+	lprintf("0000 SendMail thread terminated (%u threads remain)", thread_count);
 
 	sendmail_running=FALSE;
-
-	thread_down();
 }
 
 void DLLCALL mail_terminate(void)
@@ -2665,11 +2671,11 @@ static void cleanup(int code)
 		lprintf("0000 !WSACleanup ERROR %d",ERROR_VALUE);
 #endif
 
-    lprintf("#### Mail Server thread terminated");
+	thread_down();
 	status("Down");
+    lprintf("#### Mail Server thread terminated (%u threads remain)", thread_count);
 	if(startup!=NULL && startup->terminated!=NULL)
 		startup->terminated(code);
-	thread_down();
 }
 
 const char* DLLCALL mail_ver(void)
