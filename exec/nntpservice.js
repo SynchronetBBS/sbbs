@@ -141,8 +141,10 @@ while(client.socket.is_connected) {
 					,msgbase.last_msg
 					,selected.newsgroup
 					));
-			else
+			else {
 				writeln("411 no such news group");
+				log("!no such group");
+			}
 			break;
 
 		case "XOVER":
@@ -424,13 +426,14 @@ while(client.socket.is_connected) {
 							    log(format("!ERROR saving mesage: %s",msgbase.last_error));
 					    }
 			if(!posted) {
-				log("post failure");
+				log("!post failure");
 				writeln("441 posting failed");
 			}
    			break;
 
 		default:
 			writeln("500 Syntax error or unknown command");
+			log("!unknown command");
 			break;
 	}
 }
