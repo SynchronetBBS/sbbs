@@ -43,6 +43,7 @@ LDFLAGS	=	$(LDFLAGS) $(JS_LDFLAGS)
 
 !include sbbsdefs.mk
 MT_CFLAGS	=	$(MT_CFLAGS) $(SBBSDEFS)
+CFLAGS	=	$(CFLAGS) -DMD5_IMPORTS
 
 CON_LIBS	= $(UL_PRE)sbbs$(UL_SUF) $(UL_PRE)ftpsrvr$(UL_SUF) $(UL_PRE)websrvr$(UL_SUF) $(UL_PRE)mailsrvr$(UL_SUF) $(UL_PRE)services$(UL_SUF)
 
@@ -177,7 +178,7 @@ $(MTOBJODIR)$(DIRSEP)ftpsrvr$(OFILE): ftpsrvr.c
 			-n$(MTOBJODIR) $(MT_CFLAGS) -c $** $(OUTPUT)$@
 
 $(MTOBJODIR)$(DIRSEP)mailsrvr$(OFILE): mailsrvr.c
-        $(QUIET)$(CC) $(CFLAGS) $(CCFLAGS) -DMAILSRVR_EXPORTS -DSMB_IMPORTS -DMD5_IMPORTS -USBBS_EXPORTS \
+        $(QUIET)$(CC) $(CFLAGS) $(CCFLAGS) -DMAILSRVR_EXPORTS -DSMB_IMPORTS -USBBS_EXPORTS \
 			-n$(MTOBJODIR) $(MT_CFLAGS) -c $** $(OUTPUT)$@
 
 $(MTOBJODIR)$(DIRSEP)websrvr$(OFILE): websrvr.c
