@@ -322,6 +322,17 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 		while(*p && *p<=SP) p++;		/* Skip any spaces */
 		msg.hdr.when_written.zone=(short)ahtoul(p); 
 	}
+	if(!strnicmp(header+skip,"@REPLYTO:",9)) {
+		p=strchr(header+skip, '\n');
+		i=skip;
+		if(p) {
+			*p=0;
+			skip+=strlen(header+i)+1; 
+		}
+		p=header+i+9;					/* Skip "@REPLYTO:" */
+		while(*p && *p<=SP) p++;		/* Skip any spaces */
+		smb_hfield(&msg,REPLYTO,strlen(p),p);
+	}
 	free(header);
 
 	/*****************/
