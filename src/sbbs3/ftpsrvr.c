@@ -145,6 +145,11 @@ static int lprintf(char *fmt, ...)
     if(startup==NULL || startup->lputs==NULL)
         return(0);
 
+#if defined(_WIN32)
+	if(IsBadCodePtr((FARPROC)startup->lputs))
+		return(0);
+#endif
+
     va_start(argptr,fmt);
     vsprintf(sbuf,fmt,argptr);
     va_end(argptr);
@@ -2159,7 +2164,6 @@ static void ctrl_thread(void* arg)
 	char		qwkfile[MAX_PATH+1];
 	char		aliasfile[MAX_PATH+1];
 	char		aliasline[512];
-	char		alias_buf[80];
 	char		desc[501]="";
 	char		sys_pass[128];
 	char*		host_name;

@@ -113,6 +113,11 @@ static int lprintf(char *fmt, ...)
     if(startup==NULL || startup->lputs==NULL)
         return(0);
 
+#if defined(_WIN32)
+	if(IsBadCodePtr((FARPROC)startup->lputs))
+		return(0);
+#endif
+
 	va_start(argptr,fmt);
     vsprintf(sbuf,fmt,argptr);
     va_end(argptr);
