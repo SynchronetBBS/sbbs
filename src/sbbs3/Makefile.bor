@@ -11,14 +11,15 @@
 # $Id$
 
 # Macros
-DEBUG	=	1		# Comment out for release (non-debug) version
+DEBUG	=	1				# Comment out for release (non-debug) version
 CC		=	bcc32
 LD		=	ilink32
 SLASH	=	\\
 OFILE	=	obj
-ODIR	=	bcc.win32.dll
-CFLAGS	=	-WD -WM -n$(ODIR) 
-LFLAGS  =	-m -s -c -Tpd -Gi -I$(ODIR)
+LIBODIR	=	bcc.win32.dll	# Library output directory
+EXEODIR =	bcc.win32.exe	# Executable output directory
+CFLAGS	=	-M
+LFLAGS  =	-m -s -c -Tpd -Gi -I$(LIBODIR)
 
 # Optional compile flags (disable banner, warnings and such)
 CFLAGS	=	$(CFLAGS) -q -d -H -X- -w-csu -w-pch
@@ -27,18 +28,24 @@ CFLAGS	=	$(CFLAGS) -q -d -H -X- -w-csu -w-pch
 !ifdef DEBUG
 CFLAGS	=	$(CFLAGS) -v -Od -D_DEBUG 
 LFLAGS	=	$(LFLAGS) -v
-ODIR	=	$(ODIR).debug
+LIBODIR	=	$(LIBODIR).debug
+EXEODIR	=	$(EXEODIR).debug
 !else
-ODIR	=	$(ODIR).release
+LIBODIR	=	$(LIBODIR).release
+EXEODIR	=	$(EXEODIR).release
 !endif
 
-SBBS	=	$(ODIR)\sbbs.dll 
+SBBS	=	$(LIBODIR)\sbbs.dll 
+FTPSRVR	=	$(LIBODIR)\ftpsrvr.dll
+MAILSRVR=	$(LIBODIR)\mailsrvr.dll
+BAJA	=	$(EXEODIR)\baja.exe
+FIXSMB	=	$(EXEODIR)\fixsmb.exe
+CHKSMB	=	$(EXEODIR)\chksmb.exe
+SMBUTIL	=	$(EXEODIR)\smbutil.exe
 
-FTPSRVR	=	$(ODIR)\ftpsrvr.dll
-
-MAILSRVR=	$(ODIR)\mailsrvr.dll
-
-ALL: $(ODIR) $(SBBS) $(FTPSRVR) $(MAILSRVR)
+ALL: $(LIBODIR) $(EXEODIR) \
+	$(SBBS) $(FTPSRVR) $(MAILSRVR) \
+	$(FIXSMB) $(CHKSMB) $(SMBUTIL) $(BAJA)
 
 !include objects.mak	# defines $(OBJS)
 !include headers.mak	# defines $(HEADERS)
@@ -47,31 +54,53 @@ ALL: $(ODIR) $(SBBS) $(FTPSRVR) $(MAILSRVR)
 # Implicit C Compile Rule for SBBS.DLL
 {.}.c.$(OFILE):
 	@echo Compiling (I) $< to $@ ...
-	$(CC) $(CFLAGS) -c $(SBBSDEFS) $<
+	$(CC) $(CFLAGS) -WD -WM -n$(LIBODIR) -c $(SBBSDEFS) $<
 
 # Implicit C++ Compile Rule for SBBS.DLL
 {.}.cpp.$(OFILE):
 	@echo Compiling (I) $< to $@ ...
-	$(CC) $(CFLAGS) -c $(SBBSDEFS) $<
+	$(CC) $(CFLAGS) -WD -WM -n$(LIBODIR) -c $(SBBSDEFS) $<
 
-# Create output directory
-$(ODIR):
-	mkdir $(ODIR)
+# Create output directories if they don't exist
+$(LIBODIR):
+	mkdir $(LIBODIR)
+$(EXEODIR):
+	mkdir $(EXEODIR)
 
 # SBBS DLL Link Rule
-$(SBBS): $(OBJS) $(ODIR)\ver.$(OFILE)
-    	@echo Linking $< ...
-		$(LD) $(LFLAGS) c0d32.obj $(OBJS) $(ODIR)\ver.$(OFILE), $*, $*, \
-			import32.lib cw32mt.lib ws2_32.lib
+$(SBBS): $(OBJS) $(LIBODIR)\ver.$(OFILE)
+    @echo Linking $< ...
+	$(LD) $(LFLAGS) c0d32.obj $(OBJS) $(LIBODIR)\ver.$(OFILE), $*, $*, \
+		import32.lib cw32mt.lib ws2_32.lib
 
 # Mail Server DLL Link Rule
 $(MAILSRVR): mailsrvr.c mxlookup.c
-    	@echo Compiling $< ...
-		$(CC) $(CFLAGS) -M -lGi -DMAILSRVR_EXPORTS mailsrvr.c mxlookup.c $(ODIR)\sbbs.lib
+    @echo Compiling $** ...
+	$(CC) $(CFLAGS) -WD -WM -lGi -n$(LIBODIR) -DMAILSRVR_EXPORTS $** $(LIBODIR)\sbbs.lib
 
 # FTP Server DLL Link Rule
 $(FTPSRVR): ftpsrvr.c
-    	@echo Compiling $< ...
-		$(CC) $(CFLAGS) -M -lGi -DFTPSRVR_EXPORTS ftpsrvr.c $(ODIR)\sbbs.lib
+    @echo Compiling $** ...
+	$(CC) $(CFLAGS) -WD -WM -lGi -n$(LIBODIR) -DFTPSRVR_EXPORTS $** $(LIBODIR)\sbbs.lib
+
+# Baja Utility
+$(BAJA): baja.c ars.c
+	@echo Compiling $** ...
+	$(CC) $(CFLAGS) -n$(EXEODIR) $** 
+
+# FIXSMB Utility
+$(FIXSMB): fixsmb.c smblib.c smbwrap.c
+	@echo Compiling $** ...
+	$(CC) $(CFLAGS) -n$(EXEODIR) $** 
+
+# CHKSMB Utility
+$(CHKSMB): chksmb.c smblib.c smbwrap.c
+	@echo Compiling $** ...
+	$(CC) $(CFLAGS) -n$(EXEODIR) $** 
+
+# SMB Utility
+$(SMBUTIL): smbutil.c smblib.c smbwrap.c smbtxt.c lzh.c
+	@echo Compiling $** ...
+	$(CC) $(CFLAGS) -n$(EXEODIR) $** 
 
 !include depends.mak	# defines dependencies
