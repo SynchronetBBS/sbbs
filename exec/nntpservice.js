@@ -374,16 +374,16 @@ while(client.socket.is_connected) {
 				if(hdr.reply_id!=undefined)
 					writeln("References: " + hdr.reply_id);
 				/* FidoNet header */
-				if(msg.ftn_pid!=undefined)
-					writeln("X-FTN-PID: " + msg.ftn_pid);
-				if(msg.ftn_area!=undefined)
-					writeln("X-FTN-AREA: " + msg.ftn_area);
-				if(msg.ftn_flags!=undefined)
-					writeln("X-FTN-FLAGS: " + msg.ftn_flags);
-				if(msg.ftn_msgid!=undefined)
-					writeln("X-FTN-MSGID: " + msg.ftn_msgid);
-				if(msg.ftn_reply!=undefined)
-					writeln("X-FTN-REPLY: " + msg.ftn_reply);
+				if(hdr.ftn_pid!=undefined)
+					writeln("X-FTN-PID: " + hdr.ftn_pid);
+				if(hdr.ftn_area!=undefined)
+					writeln("X-FTN-AREA: " + hdr.ftn_area);
+				if(hdr.ftn_flags!=undefined)
+					writeln("X-FTN-FLAGS: " + hdr.ftn_flags);
+				if(hdr.ftn_msgid!=undefined)
+					writeln("X-FTN-MSGID: " + hdr.ftn_msgid);
+				if(hdr.ftn_reply!=undefined)
+					writeln("X-FTN-REPLY: " + hdr.ftn_reply);
 
 			}
 			if(hdr!=null && body!=null)	/* both, separate with blank line */
