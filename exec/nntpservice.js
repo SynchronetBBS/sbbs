@@ -216,6 +216,17 @@ while(client.socket.is_connected) {
 			writeln(".");	// end of list
 			break;
 
+		case "XGTITLE":
+			writeln("282 list of newsgroups follows");
+			for(g in msg_area.grp_list)
+				for(s in msg_area.grp_list[g].sub_list)
+					writeln(format("%s %s"
+						,msg_area.grp_list[g].sub_list[s].newsgroup
+						,msg_area.grp_list[g].sub_list[s].description
+						));
+			writeln(".");	// end of list
+			break;
+
 		case "NEWGROUPS":
 			writeln("231 list of new newsgroups follows");
 			writeln(".");	// end of list
