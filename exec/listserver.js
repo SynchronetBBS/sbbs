@@ -5,6 +5,7 @@
 load("sbbsdefs.js");
 
 const REVISION = "$Revision$".split(' ')[1];
+const user_list_ext = ".list.sub";
 
 log(LOG_INFO,"ListServer " + REVISION);
 
@@ -19,6 +20,7 @@ if(!ini_file.open("r")) {
 	exit();
 }
 listserver_address=ini_file.iniGetValue("config","address","listserver@"+system.inet_addr);
+listserver_name=ini_file.iniGetValue("config","name","Synchronet ListServer");
 alias_list=ini_file.iniGetValue("config","aliases",new Array());
 subj_cmd=ini_file.iniGetValue("config","SubjectCommand",false);
 list_array=ini_file.iniGetAllObjects("name","list:");
@@ -34,10 +36,26 @@ for(var l in list_array) {
 		list_array[l].address = format("%s@%s", list_array[l].name, system.inet_addr);
 	if(!msg_area.sub[list_array[l].sub]) {
 		log(LOG_WARNING,"!Unrecognized sub-board internal code: " + list_array[l].sub);
+		list_array[l].disabled=true;
 		continue;
 	}
 	if(!list_array[l].description)
 		list_array[l].description = msg_area.sub[list_array[l].sub].description;
+	if(list_array[l].confirm==undefined)
+		list_array[l].confirm=true;
+
+	var msgbase = new MsgBase(list_array[l].sub);
+	if(msgbase.open()==false) {
+		log(LOG_ERR,format("%s !ERROR %s opening msgbase: %s"
+			,list_array[l].name, msgbase.error, list_array[l].sub));
+		continue;
+	}
+	list_array[l].msgbase_file = msgbase.file;
+
+	/* Create the user list file if it doesn't exist */
+	var user_fname = list_array[l].msgbase_file + user_list_ext;
+	if(!file_exists(user_fname))
+		file_touch(user_fname);
 }
 
 mailbase = new MsgBase("mail");
@@ -104,11 +122,13 @@ if(this.recipient_list_filename!=undefined) {
 		var response = process_control_msg(body);
 		var resp_hdr = {};
 
-		resp_hdr.subject		= "Synchronet Listserver Results";
+		resp_hdr.subject		= "Synchronet ListServer Results";
 		resp_hdr.to				= sender_name;
 		resp_hdr.to_net_addr	= sender_address;
 		resp_hdr.to_net_type	= NET_INTERNET;
-		resp_hdr.from			= listserver_address;
+		resp_hdr.from			= listserver_name;
+		resp_hdr.from_net_addr	= listserver_address;
+		resp_hdr.from_net_type	= NET_INTERNET;
 		resp_hdr.from_agent		= AGENT_PROCESS;
 		resp_hdr.reply_id		= header["message-id"];
 
@@ -126,8 +146,10 @@ if(this.recipient_list_filename!=undefined) {
 	for(r=0;r<rcpt_list.length;r++) {
 		var l;
 		for(l=0;l<list_array.length;l++) {
+/** DEBUG
 			for(var p in list_array[l])
 				log("list_array["+l+"]."+p+" = "+list_array[l][p]);
+**/
 			if(rcpt_list[r].Recipient.toLowerCase()==list_array[l].address.toLowerCase()
 				&& !list_array[l].disabled
 				&& !list_array[l].readonly)
@@ -165,11 +187,11 @@ for(var l in list_array) {
 		continue;
 	}
 
-	/* Get user (subscriber) list */
-	user_fname = msgbase.file + ".list.users";
+	/* Get subscriber list */
+	var user_fname = list_array[l].msgbase_file + user_list_ext;
 	user_file = new File(user_fname);
 	if(!user_file.open("r")) {
-		log(LOG_ERR,format("%s !ERROR %s opening file: %s"
+		log(LOG_ERR,format("%s !ERROR %d opening file: %s"
 			,list_name, user_file.error, user_fname));
 		delete msgbase;
 		continue;
@@ -185,7 +207,7 @@ for(var l in list_array) {
 ***/
 
 	/* Get export message pointer */
-	ptr_fname = msgbase.file + ".list.ptr";
+	ptr_fname = list_array[l].msgbase_file + ".list.ptr";
 	ptr_file = new File(ptr_fname);
 	if(!ptr_file.open("w+")) {
 		log(LOG_ERR,format("%s !ERROR %s opening/creating file: %s"
@@ -292,7 +314,7 @@ function process_control_msg(cmd_list)
 {
 	var response = { body: new Array(), subject: "" };
 	
-	response.body.push("Synchronet ListServer " +REVISION+ " Reponse:");
+	response.body.push("Synchronet ListServer " +REVISION+ " Response:\r\n");
 
 	for(var c in cmd_list) {
 		var cmd=cmd_list[c];
@@ -303,7 +325,21 @@ function process_control_msg(cmd_list)
 			case "lists":
 				response.body.push("List of lists:");
 				for(var l in list_array)
-					response.body.push("\t"+list_array[l].name+"\t"+list_array[l].description);
+					if(!list_array[l].disabled)
+						response.body.push("\t"+list_array[l].name.toUpperCase()
+										  +"\t\t"+list_array[l].description);
+				break;
+			case "subscribe":
+			case "unsubscribe":
+				for(var l in list_array) {
+					if(list_array[l].disabled || list_array[l].closed)
+						continue;
+					if(list_array[l].name.toLowerCase()==token[1].toLowerCase()) {
+						response.body.push(subscription_control(token[0], list_array[l], token[2]));
+						return(response);
+					}
+				}
+				response.body.push("!List not found: " + token[1]);
 				break;
 			case "end":
 				return(response);
@@ -321,6 +357,65 @@ function process_control_msg(cmd_list)
 	}
 
 	return(response);
+}
+
+function find_user(user_list, address)
+{
+	for(var u in user_list)
+		if(user_list[u].address.toLowerCase()==address.toLowerCase())
+			return(u);
+	return(-1);
+}
+function remove_user(user_list, address)
+{
+	var u=find_user(user_list, address);
+	if(u==-1)
+		return(false);
+	user_list.splice(u,1);
+	return(true);
+}
+
+function write_user_list(user_list, user_file)
+{
+	user_file.length = 0;
+	for(var u in user_list) {
+		user_file.writeln("[" + user_list[u].name + "]");
+		for(var p in user_list[u])
+			user_file.writeln(p + " = " + user_list[u][p]);
+	}
+}
+
+function subscription_control(cmd, list, address)
+{
+	if(!address)
+		address=sender_address;
+
+	log(LOG_INFO,format("%s Subscription control command (%s) from %s"
+		,list.name,cmd,address));
+
+	/* Get subscriber list */
+	var user_fname = list.msgbase_file + user_list_ext;
+	var user_file = new File(user_fname);
+	if(!user_file.open("r+"))
+		return log(LOG_ERR,format("%s !ERROR %d opening file: %s"
+			,list.name, user_file.error, user_fname));
+
+	user_list = user_file.iniGetAllObjects();
+	
+	switch(cmd.toLowerCase()) {
+		case "unsubscribe":
+			if(remove_user(user_list, address)) {
+				write_user_list(user_list, user_file);
+				return log(LOG_INFO,address + " unsubscribed successfully");
+			}
+			return("!subscriber not found: " + address);
+		case "subscribe":
+			if(find_user(user_list, address)!=-1)
+				return log(address + " already subscribed");
+			user_list.push({ name: sender_name, address: address });
+			write_user_list(user_list, user_file);
+			return log(address + " subscription successful");
+	}
 }
 
 /* Handle Mailing List Contributions here */
