@@ -25,6 +25,8 @@ var quit=0;
 var nick=user.handle;
 var nicks=new Array();
 var loading=true;
+var init_passthru=console.ctrlkey_passthru;
+console.ctrlkey_passthru=~(134217728);
 
 /* Command-line args can override default server values */
 if(argv[0]!=undefined)
@@ -45,7 +47,7 @@ if(!sock.connect(irc_server,irc_port)) {
 	log(format("!IRC connection to %s FAILED with error %d"
 		,irc_server,sock.last_error));
 	alert("system not available");
-	exit();
+	clean_exit();
 }
 
 sock.send("PASS "+user.security.password+"\r\n");
@@ -68,7 +70,7 @@ while(!connected)  {
 	else  {
 		alert("Response timeout");
 		sock.close();
-		exit();
+		clean_exit();
 	}
 }
 
@@ -77,7 +79,7 @@ while(!quit)  {
 	if(!sock.is_connected || !connected)  {
 		alert("Lost connection");
 		sock.close();
-		exit();
+		clean_exit();
 	}
 	
 	if(!client.socket.is_connected)  {
@@ -85,14 +87,14 @@ while(!quit)  {
 		quit=1;
 		sock.close();
 		bbs.hangup();
-		exit();
+		clean_exit();
 	}
 
 	screen.update();
 	recieve_command();
 }
 sock.close();
-exit();
+clean_exit();
 
 function handle_command(prefix,command,message)  {
 	var from_nick=null;
@@ -543,7 +545,7 @@ function wait_for(commands)  {
 		if(!sock.is_connected)  {
 			alert("Lost connection");
 			sock.close();
-			exit();
+			clean_exit();
 		}
 
 		if(!client.socket.is_connected)  {
@@ -551,7 +553,7 @@ function wait_for(commands)  {
 			quit=1;
 			sock.close();
 			bbs.hangup();
-			exit();
+			clean_exit();
 		}
 		if(sock.poll(0))  {
 			message=sock.recvline().split(" ");
@@ -592,7 +594,7 @@ function send_command(command,param)  {
 			sock.send("QUIT :"+param+"\r\n");
 			quit=1;
 			sock.close();
-			exit();
+			clean_exit();
 			break;
 		case "J":
 		case "JOIN":
@@ -733,11 +735,14 @@ function get_nick(prefix)  {
 	return to_nick;
 }
 
+function clean_exit()  {
+	console.ctrlkey_passthru=init_passthru;
+	exit();
+}
 
 // channel object
 function Channel(cname)  {
 	var got="";
-
 	this.topic="No topic set";
 	this.name=cname.toUpperCase();
 	this.display=cname;
@@ -766,7 +771,7 @@ function Channel_matchnick(inline)  {
 	var j=0;
 	var count=0;
 	var tmp_str="\x01N\x01BMatching Nicks:";
-	var nick="";
+	var nick_var="";
 	var partial=inline.toUpperCase();
 	var matched="";
 	var start="";
@@ -780,17 +785,17 @@ function Channel_matchnick(inline)  {
 	}
 	for(i=0;i<this.nick.length;i++)  {
 		if(partial==this.nick[i].substr(0,partial.length).toUpperCase())  {
-			tmp_str=tmp_str+" "+this.nick[i];
-			nick=this.nick[i];
+			tmp_str=tmp_str+" "+nick[i];
+			nick_var=this.nick[i];
 			count++;
 			if(matched=="")  {
-				matched=nick.toUpperCase();
+				matched=nick_var.toUpperCase();
 			}
 			else  {
-				nick=nick.substr(0,matched.length);
-				for(j=nick.length;matched.substr(0,j) != nick.substr(0,j).toUpperCase();j--)  {}
-				nick=nick.substr(0,j);
-				matched=nick.toUpperCase();
+				nick_var=nick_var.substr(0,matched.length);
+				for(j=nick_var.length;matched.substr(0,j) != nick_var.substr(0,j).toUpperCase();j--)  {}
+				nick_var=nick_var.substr(0,j);
+				matched=nick_var.toUpperCase();
 			}
 		}
 	}
@@ -804,14 +809,14 @@ function Channel_matchnick(inline)  {
 	}
 	if(partial==inline.toUpperCase())  {
 		if(count==1)  {
-			return nick+": ";
+			return nick_var+": ";
 		}
-		return nick;
+		return nick_var;
 	}
 	if(count==1)  {
-		return start+nick+" ";
+		return start+nick_var+" ";
 	}
-	return start+nick;
+	return start+nick_var;
 }
 
 // channels object
@@ -862,7 +867,7 @@ function Channels_nick_part(nick,cname)  {
 	var j=0;
 
 	for(i=0;i<this.length;i++)  {
-		if(cname.toUpperCase()==channels.channel[i].name)  {
+		if(cname.toUpperCase()==this.channel[i].name)  {
 			for(j=0;j<this.channel[i].nick.length;j++)  {
 				if(this.channel[i].nick[j].toUpperCase()==nick.toUpperCase())  {
 					this.channel[i].nick.splice(j,1);
@@ -876,8 +881,8 @@ function Channels_nick_add(nick,cname)  {
 	var i=0;
 	var j=0;
 
-	for(i=0;i<this.length;i++)  {
-		if(cname.toUpperCase()==channels.channel[i].name)  {
+	for(i=0;i<length;i++)  {
+		if(cname.toUpperCase()==this.channel[i].name)  {
 			this.channel[i].nick.push(nick);
 		}
 	}
@@ -907,7 +912,7 @@ function Channels_part(cname,message)  {
 			this.length -= 1;
 		}
 	}
-	if(this.index>=(this.length-1))  {
+	if(this.index>=(length-1))  {
 		this.index=0;
 	}
 }
@@ -922,6 +927,8 @@ function Screen()  {
 	this.print_line=Screen_print_line;
 	this.update_statline=Screen_update_statline;
 	this.statusline getter=function() {
+		// THIS NEEDS TO GO INTO THE SCREEN BUFFER!!! ToDo
+		bbs.nodesync();
 		if(connected)  {
 			if(channels != undefined)  {
 				if(channels.current != undefined)  {
@@ -942,6 +949,7 @@ function Screen()  {
 		return "\x01H\x01Y\x014No Topic"+SPACEx80.substr(0,72)+"\x01N\x01W\x010";
 	}
 	this.input_buffer="";
+	this.input_pos=0;
 	this.handle_key=Screen_handle_key;
 	this.update=Screen_update;
 	this.print_line("\1n\1hSynchronet \1cInternet Relay Chat \1wModule \1n" + REVISION + "\r\n");
@@ -1162,13 +1170,37 @@ function Screen_print_line(line)  {
 }
 
 function Screen_update_input_line()  {
+	var line_pos=this.input_pos;
+	var line_str=this.input_buffer;
+	var line_start=0;
+	var line_len=this.input_buffer.length;
+
+	if(line_len-this.input_pos < 49)  {
+		line_start=line_len-78;
+	}
+	else if (this.input_pos < 49)  {
+		line_start=0;
+	}
+	else  {
+		line_start=this.input_pos-49;
+	}
+	if(line_start<0)  {
+		line_start=0;
+	}
+	line_pos=this.input_pos-line_start;
+	line_str=this.input_buffer.slice(line_start,78);
+	if(line_start>0)  {
+		line_str='+'+line_str.slice(1);
+	}
+	if(line_start+78 < line_len)  {
+		line_str=line_str.slice(0,77)+'+';
+	}
+	
 	console.line_counter=0;	// defeat pause
 	console.ansi_gotoxy(1,console.screen_rows);
 	console.clearline();
-	if(this.input_buffer.length>78)  {
-		printf("+");
-	}
-	printf("%s",this.input_buffer.substr(-78));
+	printf("%s",line_str);
+	console.ansi_gotoxy(line_pos+1,console.screen_rows);
 }
 
 function Screen_update()  {
@@ -1184,79 +1216,104 @@ function Screen_handle_key(key)  {
 	
 	switch(key)  {
 		case "\r":
-			if(screen.input_buffer=="")  {
+			if(this.input_buffer=="")  {
 				break;
 			}
-			history.addline(screen.input_buffer);
+			history.addline(this.input_buffer);
 			while(history.line.length>MAX_HIST)  {
 				history.shift();
 			}
-			screen.input_buffer=screen.input_buffer.replace(/%C/g,"\x03");
-			screen.input_buffer=screen.input_buffer.replace(/%%/g,"%");
-			if(screen.input_buffer.substr(0,1)=="/" && screen.input_buffer.substr(1,1)!="/")  {
-				commands=screen.input_buffer.split(" ");
+			this.input_buffer=this.input_buffer.replace(/%C/g,"\x03");
+			this.input_buffer=this.input_buffer.replace(/%%/g,"%");
+			if(this.input_buffer.substr(0,1)=="/" && this.input_buffer.substr(1,1)!="/")  {
+				commands=this.input_buffer.split(" ");
 				command=commands.shift();
 				command=command.substr(1);
 				command=command.toUpperCase();
 				send_command(command,commands.join(" "));
 			}
 			else  {
-				if(screen.input_buffer.substr(0,1)=="/")  {
-					screen.input_buffer=screen.input_buffer.substr(1);
+				if(this.input_buffer.substr(0,1)=="/")  {
+					this.input_buffer=this.input_buffer.substr(1);
 				}
 				if(channels.current==undefined)  {
-					screen.print_line("\x01H\x01RYou are not in a channel!\x01N\x01W");
+					this.print_line("\x01H\x01RYou are not in a channel!\x01N\x01W");
 				}
 				else  {
-					channels.current.send(screen.input_buffer);
-					screen.print_line("\x01N\x01M<\x01N\x01W"+nick+"\x01N\x01M>\x01N\x01W "+screen.input_buffer);
+					channels.current.send(this.input_buffer);
+					this.print_line("\x01N\x01M<\x01N\x01W"+nick+"\x01N\x01M>\x01N\x01W "+this.input_buffer);
 				}
 			}
-			screen.input_buffer="";
-			screen.update_input_line();
+			this.input_buffer="";
+			this.input_pos=0;
+			this.update_input_line();
 			break;
 		case "\x08":
-			screen.input_buffer=screen.input_buffer.slice(0,-1);
-			screen.update_input_line();
+			if(this.input_pos > 0)  {
+				this.input_buffer=this.input_buffer.slice(0,this.input_pos-1)+this.input_buffer.slice(this.input_pos);
+				this.input_pos--;
+				this.update_input_line();
+			}
 			break;
 		case "\x0b":
-			screen.input_buffer=screen.input_buffer+"%C";
+			this.input_buffer=this.input_buffer+"%C";
+			this.input_pos+=2;
 			break;
 		case "\x1e":		// Up arrow
 			if(history.index==null)  {
-				history.incomplete=screen.input_buffer;
+				history.incomplete=this.input_buffer;
 			}
-			screen.input_buffer=history.previous;
-			screen.update_input_line()
+			this.input_buffer=history.previous;
+			this.input_pos=this.input_buffer.length;
+			this.update_input_line()
 			break;
 		case "\x0a":		// Down arrow
 			if(history.index==null)  {
-				history.incomplete=screen.input_buffer;
+				history.incomplete=this.input_buffer;
 			}
-			screen.input_buffer=history.next;
-			screen.update_input_line()
+			this.input_buffer=history.next;
+			this.input_pos=this.input_buffer.length;
+			this.update_input_line()
 			break;
 		case "\x1d":		// Left arrow
-			channels.index-=1;
-			if(channels.index<0)  {
-				channels.index=channels.length-1;
+			if(this.input_pos > 0)  {
+				this.input_pos--;
 			}
-			screen.update_statline();
+			this.update_input_line();
 			break;
 		case "\x06":		// right arrow
-			channels.index+=1;
-			if(channels.index>=channels.length)  {
-				channels.index=0;
+			if(this.input_pos < (this.input_buffer.length))  {
+				this.input_pos++;
 			}
-			screen.update_statline();
+			this.update_input_line();
 			break;
 		case "\t":			// Tab
-			screen.input_buffer=channels.current.matchnick(screen.input_buffer);
-			screen.update_input_line();
+			this.input_buffer=channels.current.matchnick(this.input_buffer);
+			this.update_input_line();
 			break;
 		default:
-			screen.input_buffer=screen.input_buffer+key;
-			screen.update_input_line();
+			if(ascii(key)<ascii(' '))  {
+				if(console.handle_ctrlkey!=undefined)  {
+					console.line_counter=0;	// defeat pause
+					console.ansi_gotoxy(1,console.screen_rows-1);
+					console.clearline();
+					console.ansi_gotoxy(1,console.screen_rows);
+					console.clearline();
+					console.ansi_gotoxy(1,console.screen_rows-1);
+					console.handle_ctrlkey(key,0); // for now
+					console.print(this.statusline);
+					console.crlf();
+					console.ansi_gotoxy(1,1);
+					console.clearline();
+					console.print(this.topicline);
+					this.update_input_line();
+				}
+			}
+			else  {
+				this.input_buffer=this.input_buffer.slice(0,this.input_pos)+key+this.input_buffer.slice(this.input_pos);
+				this.input_pos++;
+				this.update_input_line();
+			}
 	}
 }
 
