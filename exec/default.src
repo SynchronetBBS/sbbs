@@ -523,7 +523,9 @@ compare_ars file_cmds=0
 if_true
 	compare_user_misc UM_ask_nscan
 	if_true
-		yes_no "\r\n\r\nSearch all libraries for new files"
+		crlf
+		crlf
+		yes_no "Search all libraries for new files"
 		if_true
 			file_new_scan_all
 			end_if
