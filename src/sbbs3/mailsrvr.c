@@ -1847,6 +1847,8 @@ BOOL bounce(smb_t* smb, smbmsg_t* msg, char* err, BOOL immediate)
 	newmsg.total_hfields=0;
 	newmsg.idx.to=newmsg.idx.from;
 	newmsg.idx.from=0;
+	newmsg.hdr.delivery_attempts=0;
+
 	smb_hfield(&newmsg, RECIPIENT, (ushort)strlen(newmsg.from), newmsg.from);
 	if(newmsg.idx.to) {
 		sprintf(str,"%u",newmsg.idx.to);
