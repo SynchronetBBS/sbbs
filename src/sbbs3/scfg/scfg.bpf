@@ -19,6 +19,8 @@ USEUNIT("..\ars.c");
 USEUNIT("..\load_cfg.c");
 USEUNIT("..\misc.c");
 USEUNIT("..\crc32.c");
+USEUNIT("..\userdat.c");
+USEUNIT("..\date_str.c");
 //---------------------------------------------------------------------------
 This file is used by the project manager only and should be treated like the project file
 
