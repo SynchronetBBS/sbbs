@@ -91,11 +91,11 @@ typedef struct {
 #define WEB_OPT_DEBUG_TX			(1<<1)	/* Log all transmitted responses	*/
 #define WEB_OPT_VIRTUAL_HOSTS		(1<<4)	/* Use virutal host html subdirs	*/
 #define WEB_OPT_NO_CGI				(1<<5)	/* Disable CGI support				*/
+#define WEB_OPT_HTTP_LOGGING		(1<<6)	/* Create/write-to HttpLogFile		*/
 
 #define WEB_DEFAULT_ROOT_DIR		"../html"
 #define WEB_DEFAULT_ERROR_DIR		"error"
 #define WEB_DEFAULT_CGI_DIR			"cgi-bin"
-#define WEB_DEFAULT_LOGFILE			"../data/httpd-"
 
 #ifdef DLLEXPORT
 #undef DLLEXPORT

@@ -2555,15 +2555,12 @@ void http_session_thread(void* arg)
 		while((redirp==NULL || session.req.send_location >= MOVED_TEMP)
 				 && !session.finished && server_socket!=INVALID_SOCKET) {
 			session.req.send_location=NO_LOCATION;
-			if(startup->logfile_base[0])
-				session.req.ld=malloc(sizeof(struct log_data));
-			else
-				session.req.ld=NULL;
-			if(session.req.ld==NULL) {
-				if(startup->logfile_base[0])
+			session.req.ld=NULL;
+			if(startup->options&WEB_OPT_HTTP_LOGGING) {
+				if((session.req.ld=(struct log_data*)malloc(sizeof(struct log_data)))==NULL)
 					lprintf(LOG_ERR,"Cannot allocate memory for log data!");
 			}
-			else {
+			if(session.req.ld!=NULL) {
 				memset(session.req.ld,0,sizeof(struct log_data));
 				session.req.ld->hostname=strdup(session.host_name);
 			}
@@ -2666,15 +2663,15 @@ const char* DLLCALL web_ver(void)
 
 void http_logging_thread(void* arg)
 {
-	char	base[128];
-	char	filename[128+15];
-	char	newfilename[128+15];
+	char	base[MAX_PATH+1];
+	char	filename[MAX_PATH+1];
+	char	newfilename[MAX_PATH+1];
 	FILE*	logfile=NULL;
 
 	SAFECOPY(base,arg);
 	if(!base[0])
-		return;
-	FREE_AND_NULL(arg);
+		SAFEPRINTF(base,"%slogs/http-",scfg.data_dir);
+
 	filename[0]=0;
 	newfilename[0]=0;
 
@@ -2710,7 +2707,7 @@ void http_logging_thread(void* arg)
 		if(logfile!=NULL) {
 			sprintf(sizestr,"%d",ld->size);
 			strftime(timestr,sizeof(timestr),"%d/%b/%G:%H:%M:%S %z",&ld->completed);
-			while(lock(fileno(logfile),0,1)) {
+			while(lock(fileno(logfile),0,1) && !terminate_server) {
 				SLEEP(10);
 			}
 			fprintf(logfile,"%s %s %s [%s] \"%s\" %d %s \"%s\" \"%s\"\n"
@@ -2823,14 +2820,16 @@ void DLLCALL web_server(void* arg)
 	terminate_server=FALSE;
 
 
-	/********************/
-	/* Start log thread */
-	/********************/
-	sem_init(&log_sem,0,0);
-	pthread_mutex_init(&log_mutex,NULL);
-	log_list=malloc(sizeof(link_list_t));
-	listInit(log_list,LINK_LIST_NEVER_FREE);
-	_beginthread(http_logging_thread, 0, strdup(startup->logfile_base));
+	if(startup->options&WEB_OPT_HTTP_LOGGING) {
+		/********************/
+		/* Start log thread */
+		/********************/
+		sem_init(&log_sem,0,0);
+		pthread_mutex_init(&log_mutex,NULL);
+		log_list=malloc(sizeof(link_list_t));
+		listInit(log_list,LINK_LIST_NEVER_FREE);
+		_beginthread(http_logging_thread, 0, startup->logfile_base);
+	}
 
 	do {
 

@@ -435,7 +435,7 @@ void sbbs_read_ini(
 		SAFECOPY(web->cgi_dir
 			,iniReadString(fp,section,"CGIDirectory",WEB_DEFAULT_CGI_DIR,value));
 		SAFECOPY(web->logfile_base
-			,iniReadString(fp,section,"LogFile",WEB_DEFAULT_LOGFILE,value));
+			,iniReadString(fp,section,"HttpLogFile",nulstr,value));
 
 		iniFreeStringList(web->index_file_name);
 		web->index_file_name
@@ -460,7 +460,7 @@ void sbbs_read_ini(
 			=iniReadBitField(fp,section,strLogMask,log_mask_bits,global->log_mask);
 		web->options
 			=iniReadBitField(fp,section,strOptions,web_options
-				,BBS_OPT_NO_HOST_LOOKUP);
+				,BBS_OPT_NO_HOST_LOOKUP | WEB_OPT_HTTP_LOGGING);
 	}
 }
 

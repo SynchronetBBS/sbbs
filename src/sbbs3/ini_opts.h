@@ -86,6 +86,7 @@ static ini_bitdesc_t web_options[] = {
 	{ WEB_OPT_DEBUG_TX				,"DEBUG_TX"				},
 	{ WEB_OPT_VIRTUAL_HOSTS			,"VIRTUAL_HOSTS"		},
 	{ WEB_OPT_NO_CGI				,"NO_CGI"				},
+	{ WEB_OPT_HTTP_LOGGING			,"HTTP_LOGGING"			},
 
 	/* shared bits */
 	{ BBS_OPT_NO_HOST_LOOKUP		,"NO_HOST_LOOKUP"		},
