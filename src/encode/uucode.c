@@ -39,8 +39,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include "uucode.h"
 
-int uudecode(unsigned char *target, size_t tlen, const unsigned char *source, size_t slen)
+int uudecode(char *target, size_t tlen, const char *source, size_t slen)
 {
 	int		i;
 	char	ch;
@@ -75,8 +76,12 @@ int uudecode(unsigned char *target, size_t tlen, const unsigned char *source, si
 			target[wr++]|=cell[3]&0x3f;			/* lower 6 (s4) to lower 6 (d3) */
 			block+=3;
 		}
-		if(block!=len)
+#if 0
+		if(block!=len) {
+			fprintf(stderr,"block (%d) != len (%d)\n",block,len);
 			return(-1);
+		}
+#endif
 		while(rd<slen && source[rd]>' ')
 			rd++;	/* find whitespace (line termination) */
 		while(rd<slen && source[rd]!=0 && source[rd]<=' ') 
@@ -88,7 +93,7 @@ int uudecode(unsigned char *target, size_t tlen, const unsigned char *source, si
 
 #define BIAS(b) if((b)==0) (b)='`'; else (b)+=' ';
 
-int uuencode(unsigned char *target, size_t tlen, const unsigned char *source, size_t slen)
+int uuencode(char *target, size_t tlen, const char *source, size_t slen)
 {
 	size_t	rd=0;
 	size_t	wr=0;
@@ -195,8 +200,10 @@ int main(int argc, char**argv)
 		if(out==NULL)
 			continue;
 		len=uudecode(buf,sizeof(buf),str,0);
-		if(len<1)
+		if(len<0) {
+			fprintf(stderr,"!Error decoding: %s\n",str);
 			break;
+		}
 		fwrite(buf,len,1,out);
 		line++;
 	}
