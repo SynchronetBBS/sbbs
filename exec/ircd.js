@@ -1981,7 +1981,7 @@ function IRCClient_do_msg(target,type_str,send_str) {
 			str = type_str + " " + target + " :" + send_str;
 			target_socket.originatorout(str,this);
 			if (target_socket.away && (type_str == "PRIVMSG") &&
-			    !this.server)
+			    !this.server && this.local)
 				this.numeric(301, target_socket.nick + " :" + target_socket.away);
 		} else {
 			this.numeric401(target);
@@ -4217,9 +4217,9 @@ function IRCClient_registered_commands(command, cmdline) {
 				break;
 			}
 			if (cmd[2]) {
-				var dest_server = searchbyserver(cmd[1]);
+				var dest_server = searchbyserver(cmd[2]);
 				if (!dest_server) {
-					this.numeric402(cmd[1]);
+					this.numeric402(cmd[2]);
 					break;
 				}
 				if (dest_server != -1) {
