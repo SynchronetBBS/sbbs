@@ -65,8 +65,8 @@
 /* Global Variables */
 /********************/
 uifcapi_t uifc; /* User Interface (UIFC) Library API */
-char *YesStr="Yes";
-char *NoStr="No";
+char YesStr[]="Yes";
+char NoStr[]="No";
 int 		modified=0;
 
 int lprintf(char *fmt, ...)
