@@ -660,16 +660,20 @@ void ODTimerWaitForElapse(tODTimer *pTimer)
    }
 
 #elif defined(ODPLAT_NIX)
-   gettimeofday(&tv,NULL);
-   tv.tv_sec -= pTimer->Start.tv_sec;
-   tv.tv_usec -= pTimer->Start.tv_usec;
-   if(tv.tv_usec < 0) {
-      tv.tv_sec--;
-	  tv.tv_usec += 1000000;
+   /* This is timing sensitive and *MUST* wait regardless of 100% CPU or signals */
+   while(1)  {
+      gettimeofday(&tv,NULL);
+      tv.tv_sec -= (pTimer->Start.tv_sec + pTimer->Duration/1000);
+      tv.tv_usec -= (pTimer->Start.tv_usec + ((pTimer->Duration*1000)%1000000));
+      if(tv.tv_usec < 0) {
+         tv.tv_sec--;
+         tv.tv_usec += 1000000;
+      }
+      if(tv.tv_sec<0 || tv.tv_usec<0)
+         return;
+      if(!select(0,NULL,NULL,NULL,&tv))
+	     break;
    }
-   if(tv.tv_sec<0 || tv.tv_usec<0)
-      return;
-   select(0,NULL,NULL,NULL,&tv);
 #else /* !ODPLAT_DOS */
    {
       /* Under other platforms, timer resolution is high enough that we can */
@@ -779,7 +783,7 @@ ODAPIDEF void ODCALL od_sleep(tODMilliSec Milliseconds)
 {
 #ifdef ODPLAT_NIX
    struct timeval tv;
-   fd_set in;
+   struct timeval start;
 #endif
    /* Log function entry if running in trace mode. */
    TRACE(TRACE_API, "od_sleep()");
@@ -811,16 +815,33 @@ ODAPIDEF void ODCALL od_sleep(tODMilliSec Milliseconds)
 #endif /* ODPLAT_WIN32 */
 
 #ifdef ODPLAT_NIX
-   FD_ZERO(&in);
-   tv.tv_sec=Milliseconds/1000;
-   tv.tv_usec=(Milliseconds%1000)*1000;
    if(Milliseconds==0)  {
-      tv.tv_usec=1000;
-      FD_SET(0,&in);
+      /* Prevent 100% CPU *only* no delay is actually required here */
+      tv.tv_sec=0;
+      tv.tv_usec=1;
+      select(0,NULL,NULL,NULL,&tv);
    }
+   else  {
+      gettimeofday(&start,NULL);
+	  start.tv_sec += Milliseconds/1000;
+	  start.tv_usec += (Milliseconds*1000)%1000000;
 
-   if(select(1,Milliseconds?NULL:&in,NULL,NULL,&tv)>0)
-      od_kernel();
+
+      while(1)  {
+	     /* This is timing sensitive and *MUST* wait for at least Milliseconds regardless of 100% CPU or signals */
+         gettimeofday(&tv,NULL);
+         tv.tv_sec -= (start.tv_sec + Milliseconds/1000);
+         tv.tv_usec -= (start.tv_usec + ((Milliseconds*1000)%1000000));
+         if(tv.tv_usec < 0) {
+            tv.tv_sec--;
+            tv.tv_usec += 1000000;
+         }
+         if(tv.tv_sec<0 || tv.tv_usec<0)
+            break;
+         if(!select(0,NULL,NULL,NULL,&tv))
+            break;
+      }
+   }
 #endif
 
    OD_API_EXIT();

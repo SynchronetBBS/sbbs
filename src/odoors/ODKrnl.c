@@ -73,7 +73,11 @@
 
 #include "OpenDoor.h"
 #ifdef ODPLAT_NIX
+#include <sys/types.h>
+#include <unistd.h>
 #include <signal.h>
+#include <fcntl.h>
+#include <errno.h>
 #endif
 #include "ODCore.h"
 #include "ODGen.h"
@@ -108,7 +112,8 @@ static void ODKrnlTimeUpdate(void);
 static void ODKrnlChatCleanup(void);
 static void ODKrnlChatMode(void);
 #ifdef ODPLAT_NIX
-void sig_run_kernel(int sig);
+static void sig_run_kernel(int sig);
+static void sig_get_char(int sig);
 #endif
 
 /* Functions specific to the multithreaded implementation of the kernel. */
@@ -187,7 +192,7 @@ tODResult ODKrnlInitialize(void)
 
    /* Run kernel on SIGALRM (Every 1 second) */
    act.sa_handler=sig_run_kernel;
-   act.sa_flags=0;
+   act.sa_flags=SA_RESTART;
    sigemptyset(&(act.sa_mask));
    sigaction(SIGALRM,&act,NULL);
    itv.it_interval.tv_sec=1;
@@ -195,6 +200,28 @@ tODResult ODKrnlInitialize(void)
    itv.it_value.tv_sec=0;
    itv.it_value.tv_usec=250000;
    setitimer(ITIMER_REAL,&itv,NULL);
+   
+   /* Make sure SIGALRM is unblocked */
+   sigemptyset(&block);
+   sigaddset(&block,SIGALRM);
+   sigprocmask(SIG_UNBLOCK,&block,NULL);
+
+   /* Make stdin signal driven. */
+   act.sa_handler=sig_get_char;
+   act.sa_flags=0;
+   sigemptyset(&(act.sa_mask));
+   sigaction(SIGIO,&act,NULL);
+
+   /* Make sure SIGIO is unblocked */
+   sigemptyset(&block);
+   sigaddset(&block,SIGIO);
+   sigprocmask(SIG_UNBLOCK,&block,NULL);
+   
+   /* Have SIGIO signales delivered to this process */
+   fcntl(0,F_SETOWN,getpid());
+   
+   /* Enable SIGIO when read possible on stdin */
+   fcntl(0,F_SETFL,fcntl(0,F_GETFL)|O_ASYNC);
 #endif
 
    /* Initialize time of next status update and next time deduction. */
@@ -354,12 +381,14 @@ ODAPIDEF void ODCALL od_kernel(void)
          }
       }
 
+#ifndef ODPLAT_NIX	/* On *nix, this is handled by a signal */
       /* Loop, obtaining any new characters from the serial port and */
       /* adding them to the common local/remote input queue.         */
       while(ODComGetByte(hSerialPort, &ch, FALSE) == kODRCSuccess)
       {
          ODKrnlHandleReceivedChar(ch, TRUE);
       }
+#endif
    }
 
 #ifdef ODPLAT_DOS
@@ -1590,17 +1619,32 @@ static void ODKrnlChatCleanup(void)
 #endif
 }
 
+#ifdef ODPLAT_NIX
 /* ----------------------------------------------------------------------------
  * sig_run_kernel(sig)				   *** PRIVATE FUNCTION ***
  *
  * Runs od_kernel() on a SIGALRM
  *
  */
-#ifdef ODPLAT_NIX
-void sig_run_kernel(int sig)
+static void sig_run_kernel(int sig)
 {
    od_kernel();
 }
+
+/* ----------------------------------------------------------------------------
+ * sig_run_kernel(sig)				   *** PRIVATE FUNCTION ***
+ *
+ * Runs od_kernel() on a SIGALRM
+ *
+ */
+static void sig_get_char(int sig)
+{
+   static char ch;
+   /* Loop, obtaining any new characters from the serial port and */
+   /* adding them to the common local/remote input queue.         */
+   while(ODComGetByte(hSerialPort, &ch, FALSE) == kODRCSuccess)
+   {
+      ODKrnlHandleReceivedChar(ch, TRUE);
+   }
+}
 #endif
-
-
