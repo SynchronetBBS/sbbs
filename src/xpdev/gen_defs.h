@@ -180,6 +180,13 @@ typedef struct {
 	BOOL	value;
 } named_bool_t;
 
+/************************/
+/* Handy Integer Macros */
+/************************/
+
+/* Data Block Length Alignment Macro (returns required padding length for proper alignment) */
+#define PAD_LENGTH_FOR_ALIGNMENT(len,blk)	(((len)%(blk))==0 ? 0 : (blk)-((len)%(blk)))
+
 /***********************/
 /* Handy String Macros */
 /***********************/
@@ -266,5 +273,6 @@ typedef struct {
 /* Other Pointer-List Macros	*/
 /********************************/
 #define COUNT_LIST_ITEMS(list,i)	{ i=0; if(list!=NULL) while(list[i]!=NULL) i++; }
+
 
 #endif /* Don't add anything after this #endif statement */
