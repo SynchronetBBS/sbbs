@@ -35,7 +35,8 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#include <time.h>
+#include <time.h>		/* time()	*/
+#include <string.h>		/* strdup() */
 #include "smblib.h"
 #include "md5.h"
 #include "crc16.h"
