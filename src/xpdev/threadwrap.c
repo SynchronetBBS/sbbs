@@ -47,6 +47,9 @@
 /****************************************************************************/
 #if defined(__unix__)
 #if defined(_POSIX_THREADS)
+#if defined(__BORLANDC__)
+        #pragma argsused
+#endif
 ulong _beginthread(void( *start_address )( void * )
 		,unsigned stack_size, void *arglist)
 {
@@ -58,11 +61,14 @@ ulong _beginthread(void( *start_address )( void * )
 	/* set thread attributes to PTHREAD_CREATE_DETACHED which will ensure
 	   that thread resources are freed on exit() */
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-
 	if(pthread_create(&thread
+#if defined(__BORLANDC__) /* a (hopefully temporary) work-around */
+		,NULL
+#else
 		,&attr	/* default attributes */
+#endif
 		/* POSIX defines this arg as "void *(*start_address)" */
-		,(void *) start_address
+		,(void * (*)(void *)) start_address
 		,arglist)==0)
 		return((int) thread /* thread handle */);
 
