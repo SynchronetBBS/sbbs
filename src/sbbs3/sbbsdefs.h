@@ -391,6 +391,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define STRIPKLUDGE (1L<<15)		/* Strip FTN Kludge lines from msg		*/
 #define XTRN_CHKTIME (1<<16)		/* Check time online (EX_CHKTIME)		*/
 #define XTRN_LWRCASE (1<<17)		/* Use lowercase drop-file names		*/
+#define XTRN_SH		 (1<<18)		/* Use command shell to execute			*/
 
 									/* Bits in cfg.xtrn_misc				*/
 #define XTRN_NO_MUTEX	(1<<0)		/* Do not use exec_mutex for FOSSIL VXD	*/
