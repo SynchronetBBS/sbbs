@@ -76,6 +76,7 @@ int uifcinix(uifcapi_t* uifcapi)
     api->input=uinput;
     api->sethelp=sethelp;
 
+    setvbuf(stdin,NULL,_IONBF,0);
     setvbuf(stdout,NULL,_IONBF,0);
     api->scrn_len=24;
 
