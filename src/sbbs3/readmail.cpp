@@ -121,7 +121,7 @@ void sbbs_t::readmail(uint usernumber, int which)
 		ASYNC;
 		if(!(sys_status&SS_ABORT)) {
 			bprintf(text[StartWithN],1L);
-			if((curmsg=getnum(msgs))>0)
+			if((long)(curmsg=getnum(msgs))>0)
 				curmsg--;
 			else if(curmsg==-1) {
 				FREE(mail);
