@@ -130,6 +130,26 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 			if(!JS_SetProperty(cx, subobj, "description", &val))
 				return(NULL);
 
+			val=STRING_TO_JSVAL(JS_NewStringCopyZ(cx, cfg->sub[d]->qwkname));
+			if(!JS_SetProperty(cx, subobj, "qwk_name", &val))
+				return(NULL);
+
+			val=STRING_TO_JSVAL(JS_NewStringCopyZ(cx, cfg->sub[d]->data_dir));
+			if(!JS_SetProperty(cx, subobj, "data_dir", &val))
+				return(NULL);
+
+			val=STRING_TO_JSVAL(JS_NewStringCopyZ(cx, cfg->sub[d]->origline));
+			if(!JS_SetProperty(cx, subobj, "fidonet_origin", &val))
+				return(NULL);
+
+			val=STRING_TO_JSVAL(JS_NewStringCopyZ(cx, cfg->sub[d]->tagline));
+			if(!JS_SetProperty(cx, subobj, "qwknet_tagline", &val))
+				return(NULL);
+
+			val=INT_TO_JSVAL(cfg->sub[d]->misc);
+			if(!JS_SetProperty(cx, subobj, "settings", &val))
+				return(NULL);
+
 			sprintf(str,"%s.%s",cfg->grp[l]->sname,cfg->sub[d]->sname);
 			for(c=0;str[c];c++)
 				if(str[c]==' ')
@@ -150,6 +170,20 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 			else
 				val=BOOLEAN_TO_JSVAL(JS_FALSE);
 			if(!JS_SetProperty(cx, subobj, "can_post", &val))
+				return(NULL);
+
+			if(user==NULL || chk_ar(cfg,cfg->sub[d]->op_ar,user))
+				val=BOOLEAN_TO_JSVAL(JS_TRUE);
+			else
+				val=BOOLEAN_TO_JSVAL(JS_FALSE);
+			if(!JS_SetProperty(cx, subobj, "is_operator", &val))
+				return(NULL);
+
+			if(user==NULL || chk_ar(cfg,cfg->sub[d]->mod_ar,user))
+				val=BOOLEAN_TO_JSVAL(JS_TRUE);
+			else
+				val=BOOLEAN_TO_JSVAL(JS_FALSE);
+			if(!JS_SetProperty(cx, subobj, "is_moderated", &val))
 				return(NULL);
 
 			if(!JS_GetArrayLength(cx, sub_list, &index))
