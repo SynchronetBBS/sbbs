@@ -85,6 +85,7 @@ uint *label_indx=NULL
 char bin_file[MAX_PATH+1]="";
 
 uint display=0,line=0,labels=0,gotos=0,calls=0,defines=0,case_sens=0;
+BOOL pause=FALSE;
 
 FILE *out=NULL;
 
@@ -93,8 +94,14 @@ void bail(int retval)
 	if(out) 
 		fclose(out);
 
-	if(retval!=0 && bin_file[0]!=0)
-		remove(bin_file);
+	if(retval!=0) {
+		if(bin_file[0]!=0)
+			remove(bin_file);
+		if(pause) {
+			printf("\nHit enter to contiue...");
+			getchar();
+		}
+	}
 
 	exit(retval);
 }
@@ -3360,16 +3367,17 @@ void compile(char *src)
 }
 
 char *banner=	"\n"
-				"BAJA v2.32 - Synchronet Shell/Module Compiler - "
-				"Copyright 2001 Rob Swindell\n";
+				"BAJA v2.33 - Synchronet Shell/Module Compiler - "
+				"Copyright 2003 Rob Swindell\n";
 
 char *usage=	"\n"
-				"usage: baja [/opts] file[.src]\n"
+				"usage: baja [-opts] file[.src]\n"
 				"\n"
-				" opts: /d display debug during compile\n"
-				"       /c case sensitive variables, labels, and macros\n"
-				"       /o set output directory (e.g. /o/sbbs/exec)\n"
-				"       /q quiet mode (no banner)\n"
+				" opts: -d display debug during compile\n"
+				"       -c case sensitive variables, labels, and macros\n"
+				"       -o set output directory (e.g. /o/sbbs/exec)\n"
+				"       -q quiet mode (no banner)\n"
+				"       -p pause on error\n"
 				;
 
 int main(int argc, char **argv)
@@ -3379,7 +3387,11 @@ int main(int argc, char **argv)
 	int show_banner=1;
 
 	for(i=1;i<argc;i++)
-		if(argv[i][0]=='/')
+		if(argv[i][0]=='-'
+#ifdef _WIN32
+			|| argv[i][0]=='/'
+#endif
+			)
 			switch(toupper(argv[i][1])) {
 				case 'D':
 					display=1;
@@ -3389,6 +3401,9 @@ int main(int argc, char **argv)
 					break;
 				case 'O':
 					strcpy(outdir,argv[i]+2);
+					break;
+				case 'P':
+					pause=TRUE;
 					break;
 				case 'Q':
 					show_banner=0;
