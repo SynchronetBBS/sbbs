@@ -140,9 +140,11 @@
 	#define O_BINARY	0		/* all files in binary mode on Unix */
 	#define O_DENYNONE  (1<<31)	/* req'd for Baja/nopen compatibility */
 
+#ifndef __QNX__
 	#define SH_DENYNO	2          // no locks
 	#define SH_DENYRW	F_WRLCK	   // exclusive lock
 	#define SH_DENYWR   F_RDLCK    // shareable lock
+#endif
 
 	#define stricmp(x,y)		strcasecmp(x,y)
 	#define strnicmp(x,y,z)		strncasecmp(x,y,z)
@@ -203,8 +205,10 @@
 	#define tell(fd)			lseek(fd,0,SEEK_CUR)
 
 #ifdef __QNX__
+	#include <share.h>
 	int		qnx_sopen(char *fn, int access, int share);
 	#define sopen(x,y,z)	qnx_sopen(x,y,z)
+	#define L_SET			SEEK_SET
 #else
 	int		sopen(char *fn, int access, int share);
 #endif

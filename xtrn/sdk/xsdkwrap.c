@@ -57,6 +57,7 @@
 	#include <sys/time.h>
 	#include <sys/types.h>
 	#include <signal.h>
+	#include <errno.h>
 
 #endif
 
@@ -354,9 +355,9 @@ long filelength(int fd)
 
 /* Sets a lock on a portion of a file */
 #ifdef __QNX__
-int DLLCALL lock(int fd, long pos, long len)
+int lock(int fd, long pos, long len)
 #else	/* Not QNX */
-int DLLCALL lock(int fd, long pos, int len)
+int lock(int fd, long pos, int len)
 #endif
 {
 	#if defined(F_SANERDLCKNO) || !defined(BSD)
@@ -393,9 +394,9 @@ int DLLCALL lock(int fd, long pos, int len)
 
 /* Removes a lock from a file record */
 #ifdef __QNX__
-int DLLCALL unlock(int fd, long pos, long len)
+int unlock(int fd, long pos, long len)
 #else
-int DLLCALL unlock(int fd, long pos, int len)
+int unlock(int fd, long pos, int len)
 #endif
 {
 
@@ -424,14 +425,14 @@ int DLLCALL unlock(int fd, long pos, int len)
 
 /* Opens a file in specified sharing (file-locking) mode */
 #ifdef __QNX__
-int DLLCALL qnx_sopen(char *fn, int access, int share)
+int qnx_sopen(char *fn, int access, int share)
 {
 #undef sopen		/* Stupid macro trick */
 	return(sopen(fn, access, share, S_IREAD|S_IWRITE));
 #define sopen(x,y,z)	qnx_sopen(x,y,z)
 }
 #else
-int DLLCALL sopen(char *fn, int access, int share)
+int sopen(char *fn, int access, int share)
 {
 	int fd;
 #ifndef F_SANEWRLCKNO
