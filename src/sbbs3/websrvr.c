@@ -1569,7 +1569,7 @@ static BOOL get_req(http_session_t * session, char *request_line)
 	if(request_line == NULL) {
 		if(sockreadline(session,req_line,sizeof(req_line)-1)<0)
 			req_line[0]=0;
-		lprintf(LOG_DEBUG,"%04d Request: %s",session->socket,request_line);
+		lprintf(LOG_DEBUG,"%04d Request: %s",session->socket,req_line);
 	}
 	else {
 		lprintf(LOG_DEBUG,"%04d Handling Internal Redirect to: %s",session->socket,request_line);
@@ -1578,8 +1578,6 @@ static BOOL get_req(http_session_t * session, char *request_line)
 	if(session->req.ld!=NULL)
 		session->req.ld->request=strdup(req_line);
 	if(req_line[0]) {
-		if(startup->options&WEB_OPT_DEBUG_RX)
-			lprintf(LOG_DEBUG,"%04d Got request line: %s",session->socket,req_line);
 		p=NULL;
 		p=get_method(session,req_line);
 		if(p!=NULL) {
