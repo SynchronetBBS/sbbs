@@ -110,9 +110,11 @@ static int getstr(char* str, int maxlen)
 {
 	char 	ch;
     int		len=0;
+#ifdef __unix__
 	int		istty;
 
 	istty=isatty(fileno(stdin));
+#endif
     while(1) {
 		fread(&ch,1,1,stdin);
 #ifdef __unix__
