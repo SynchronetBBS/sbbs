@@ -156,8 +156,6 @@ extern "C" {
 	#define tell(fd)			lseek(fd,0,SEEK_CUR)
 
 	DLLEXPORT void	DLLCALL sbbs_beep(int freq, int dur);
-	DLLEXPORT char*	DLLCALL strupr(char* str);
-	DLLEXPORT char*	DLLCALL strlwr(char* str);
 	DLLEXPORT char* DLLCALL strrev(char* str);
 	DLLEXPORT char* DLLCALL _fullpath(char* absPath, const char* relPath
 										,size_t maxLength);

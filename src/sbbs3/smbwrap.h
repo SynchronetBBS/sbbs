@@ -95,13 +95,15 @@ extern "C" {
 #endif
 
 #if !defined(__BORLANDC__)
-	int		lock(int fd, long pos, int len);
-	int		unlock(int fd, long pos, int len);
+	SMBEXPORT int	SMBCALL	lock(int fd, long pos, int len);
+	SMBEXPORT int	SMBCALL unlock(int fd, long pos, int len);
 #endif
 
 #if defined(__unix__)
-	int		sopen(char *fn, int access, int share);
-	long	filelength(int fd);
+	SMBEXPORT int	SMBCALL sopen(char *fn, int access, int share);
+	SMBEXPORT long	SMBCALL filelength(int fd);
+	SMBEXPORT char*	SMBCALL strupr(char* str);
+	SMBEXPORT char*	SMBCALL strlwr(char* str);
 #endif
 
 SMBEXPORT BOOL	SMBCALL fexist(char *filespec);

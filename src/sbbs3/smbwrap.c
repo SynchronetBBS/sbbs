@@ -61,6 +61,35 @@
 #endif
 
 /****************************************************************************/
+/* Convert ASCIIZ string to upper case										*/
+/****************************************************************************/
+#ifdef __unix__
+char* SMBCALL strupr(char* str)
+{
+	char* p=str;
+
+	while(*p) {
+		*p=toupper(*p);
+		p++;
+	}
+	return(str);
+}
+/****************************************************************************/
+/* Convert ASCIIZ string to lower case										*/
+/****************************************************************************/
+char* SMBCALL strlwr(char* str)
+{
+	char* p=str;
+
+	while(*p) {
+		*p=tolower(*p);
+		p++;
+	}
+	return(str);
+}
+#endif
+
+/****************************************************************************/
 /* Returns the length of the file in 'filename'                             */
 /****************************************************************************/
 long SMBCALL flength(char *filename)
@@ -137,7 +166,7 @@ BOOL SMBCALL fexist(char *filespec)
 /****************************************************************************/
 /* Returns the length of the file in 'fd'									*/
 /****************************************************************************/
-long filelength(int fd)
+long SMBCALL filelength(int fd)
 {
 	STAT st;
 
@@ -148,7 +177,7 @@ long filelength(int fd)
 }
 
 /* Sets a lock on a portion of a file */
-int lock(int fd, long pos, int len)
+int SMBCALL lock(int fd, long pos, int len)
 {
  	struct flock alock;
 
@@ -162,7 +191,7 @@ int lock(int fd, long pos, int len)
 }
 
 /* Removes a lock from a file record */
-int unlock(int fd, long pos, int len)
+int SMBCALL unlock(int fd, long pos, int len)
 {
 	struct flock alock;
 
@@ -175,7 +204,7 @@ int unlock(int fd, long pos, int len)
 }
 
 /* Opens a file in specified sharing (file-locking) mode */
-int sopen(char *fn, int access, int share)
+int SMBCALL sopen(char *fn, int access, int share)
 {
 	int fd;
 	struct flock alock;
@@ -212,7 +241,7 @@ int sopen(char *fn, int access, int share)
 	#define LK_UNLCK LK_UNLOCK
 #endif
 
-int lock(int file, long offset, int size) 
+int SMBCALL lock(int file, long offset, int size) 
 {
 	int	i;
 	long	pos;
@@ -226,7 +255,7 @@ int lock(int file, long offset, int size)
 	return(i);
 }
 
-int unlock(int file, long offset, int size)
+int SMBCALL unlock(int file, long offset, int size)
 {
 	int	i;
 	long	pos;
