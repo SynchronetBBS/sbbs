@@ -796,6 +796,7 @@ extern "C" {
 	DLLEXPORT char *	DLLCALL ascii_str(uchar* str);
 	DLLEXPORT BOOL		DLLCALL findstr(char *insearch, char *fname);
 	DLLEXPORT BOOL		DLLCALL trashcan(scfg_t* cfg, char *insearch, char *name);
+	DLLEXPORT BOOL		DLLCALL filter_ip(scfg_t* cfg, char* prot, char* reason, char* ip_addr, char* username);
 	DLLEXPORT char *	DLLCALL strip_exascii(char *str);
 	DLLEXPORT char *	DLLCALL prep_file_desc(char *str);
 	DLLEXPORT char *	DLLCALL strip_ctrl(char *str);
