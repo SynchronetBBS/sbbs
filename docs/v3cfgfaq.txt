@@ -1,13 +1,14 @@
-  Answers to frequently asked questions re: configuring Synchronet Version 3
-       by Rob Swindell (digital man), May 2000, last updated June 2003
+   Configuring Synchronet Version 3: Answers to Frequently Asked Questions
+   -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 $Id$
 
 Q: I want to create custom menus. Is there any detailed documentation or
    samples regarding custom menus on Synchronet?  
-A: Yes, see http://synchro.net/docs/customization.html,
-   http://synchro.net/docs/baja.html and http://synchro.net/docs/js.html 
-   for details.
+A: Yes, see the customization chapter in the Synchronet Sysop Manual
+   (http://synchro.net/docs/customization.html), the Baja Manual
+   (http://synchro.net/docs/baja.html), or Synchronet JavaScript page
+   (http://synchro.net/docs/js.html) for details.
 
 Q: I seem to missing the menu files for non-default (Synchronet Classic)
    command shells on v3.10L-win32.
@@ -15,11 +16,11 @@ A: These files were accidentally excluded from the v3.10L-win32 install.
    Download ftp://vert.synchro.net/Synchronet/menu.zip and extract (with
    directories) into your Synchronet text/menu directory.
 
-Q: How do I get on the Synchronet BBS List, http://synchro.net/sbbslist.html?
+Q: How do I get on the Synchronet BBS List (http://synchro.net/sbbslist.html)?
 A: The best way is to first join DOVE-Net, then run the Synchronet BBS List
    (SBL) door on *your* BBS and add an entry for your BBS. This entry should
    be automatically exported to the DOVE-Net SYNCDATA echo which will then be
-   propogated to Vertrauen and every other BBS on DOVE-Net. The sbbslist.html
+   propagated to Vertrauen and every other BBS on DOVE-Net. The sbbslist.html
    page is automatically generated on Vertrauen every night at midnight
    (Pacific time), so wait a day or so for your entry to appear on the list.
    If it doesn't appear, verify that that your BBS entry was properly
@@ -32,11 +33,11 @@ Q: How do I get my BBS listed in the Instant-Message capable BBS list
 A: First get your BBS on the Synchronet BBS List (sbbslist.html), and if your
    BBS is running the Synchronet SMTP server on port 25 (like it should) and
    the Synchronet Finger Service on TCP and UDP port 79, your BBS should
-   automatically appear on the instant message list. If it is not, then
+   automatically appear in the instant message list. If it is not, then
    verify that your SMTP and Finger services can be reached remotely (the
    ports aren't being blocked by a firewall or your ISP).  This list
    is generated nightly on Vertrauen at the same time as the Synchronet BBS 
-   List, http://synchro.net/sbbslist.html.
+   List (http://synchro.net/sbbslist.html).
    See docs/imsgdocs.txt for more details.
 
 Q: How do I join DOVE-Net?
@@ -49,9 +50,8 @@ A: If you've installed v3.10, Telnet to vert.synchro.net and create a new
 
 Q: What is my system's QWK-ID?
 A: This is normally an abbreviation of your BBS's name that YOU determine
-   and configure in SBBSCTRL:BBS->Configure->Message Options. You may want to
-   look at NODES.DAT in DOVE-NET.ZIP for any conflicts with other DOVE-Net
-   systems' QWK-IDs.
+   and configure in SCFG->Message Options. You may want to look at NODES.DAT
+   in DOVE-NET.ZIP for any conflicts with other DOVE-Net systems' QWK-IDs.
 
 Q: How do I get my FTP server to work behind my firewall/NAT/router?
 A: See http://www.ncftpd.com/ncftpd/doc/misc/ftp_and_firewalls.html for
@@ -67,8 +67,8 @@ Q: What is the "!QWKTOMSG failed" or "Duplicate message" warnings in my
    areas?
 A: This warning indicates a duplicate message in your QWK packet was detected. 
    Duplicate messages in the SYNCDATA echo are normal and you can disable the 
-   duplicate message checking for that echo in SBBSCTRL:Configure->Message 
-   Areas->DOVE-Net->SYNCDATA and the warnings should go away.
+   duplicate message checking for that echo in SCFG->Message Areas->DOVE-Net
+   ->SYNCDATA and the warnings should go away.
 
 Q: How do I join/setup a FidoNet Technology Network (FTN)?
 A: Use SBBSecho (included with Synchronet) to toss (export) and scan (import)
@@ -79,26 +79,22 @@ A: Use SBBSecho (included with Synchronet) to toss (export) and scan (import)
    Argus, Beemail, etc. Traditional Front-End Mailers (FrontDoor, InterMail,
    D'bridge, BinkleyTerm, etc) are NOT normally used for TCP/IP-based FTN
    transfers.
-   See http://www.net229.ca/fidosetup/ for instructions on setting up 
-   Synchronet with the Argus 32-bit FidoNet mailer.
-   I, personally, use Binkd for Win32, which you can find available for
-   download on my BBS and the docs (what little there are) online.
+   See http://net229.darktech.org/fidosetup/ for instructions on setting up 
+   Synchronet with the Argus 32-bit FidoNet mailer for Windows.
+   I, personally, use Binkd for Win32 or Unix/Linux, which you can find
+   available for download on Vertrauen and the docs (what little there are)
+   online and example setup in docs/binkdex.html.
 
-Q: Does anyone know of a good, stable newsgroup door I can download or buy?  
-   I would LOVE to have newsgroups on my board.
-A: I don't know of any doors, but I do know of several newsgroup<->fido
-   gateway packages: newsgate, gigo, internet rex, and many others.
-A: You can also try MerlinSystem's NetXpress Usenet Gateway for Synchronet
-   (nx-sync, it's free): http://www.binaryh.com/merlinsys/
+Q: How do I import newsgroups into my board.
 A: Synchronet v3.10 comes with NewsLink, an external JavaScript module for
    importing and exporting messages via NNTP (Network News Transfer Protocol).
-   Just edit your ctrl/newslink.cfg file to get started.
+   See docs/newslink.txt for details.
 
 Q: How do I keep external programs (doors) from popping up windows and
-   stealing the keyboard/mouse focus?
+   stealing the keyboard/mouse focus (Windows)?
 A: Check SBBSCTRL:Telnet->Configure->Minimize Externals.
 
-Q: How do I set additional nodes for telnet access?
+Q: How do I set additional nodes for telnet access (Windows)?
 A: Create the additional nodes in SBBSCTRL:BBS->Configure->Nodes if you
    haven't already done so (Version 3 uses the same configuration information
    from the first telnet node for all telnet nodes and the COM port/modem
@@ -116,10 +112,10 @@ A: The easiest way is to use the ADDFILES utility which can automatically
    just use "ADDFILES * /SZN" to search all directories for new files and use
    embedded (FILE_ID.DIZ) description files, if they exist.
 
-Q: Long filename support doesn't seem to fully functional.
+Q: Long filename support doesn't seem to be fully functional.
 A: Support for files with long filenames (greater than the MS-DOS 8.3 format)
-   is a work in the progress. There are two main issues:
-   A: The current file database format only supports 8.3 filenames.
+   is a work in progress. There are two main issues:
+   A: The current Synchronet file database format only supports 8.3 filenames.
    B: The only X/Y/Zmodem file transfer program that currently works with 
       Synchronet-Win32 is FDSZ, which is a 16-bit DOS programs (which therefore 
       only supports 8.3 format filenames).
@@ -154,13 +150,8 @@ A: Add the disallowed host names to your text/host.can file or IP addresses
    to your text/ip.can file. To disallow a range of IP addresses, use the ^
    wildcard character (e.g. "192.168.10.^"). To disallow a partial string in a
    host name, use the ~ wildcard character (e.g. "mofoisp.com~").
-   As for v3.10, you can use the familiar '*' wildcard character
+   in Synchronet v3.10+, you can use the familiar '*' wildcard character
    (e.g. "*.aol.com" and "192.168.*").
-
-Q: When I run SBBSCTRL it asks me for the path to MAIN.CNF, but I don't have
-   this file.
-A: You've installed the v3 upgrade without installing v2.3 first. Install
-   Synchronet v2.3 (SBBS230?.ZIP) first, then apply the upgrade.
 
 Q: My CPU/kernel-utilization meter reports 100% when a user is online and
    entering a string/line of text.
@@ -173,6 +164,7 @@ A: You need to create a Guest account on your BBS. Create a new user (login
    "Guest". Give this user the 'G' exemption and the 'G', 'M', and 'F'
    restrictions and delete the password for the account. You may also want
    to give the Guest account additional exemptions (e.g. L, P, T, etc).
+A: Or preferably, run the exec/makeguest.js script included with v3.11+.
 
 Q: How can I get door X to work?
 A: If the door wasn't specifically written to run on Synchronet (XSDK) or
@@ -202,7 +194,7 @@ A: Make sure you have "Intercept I/O Interrupts" set to "No" for all FOSSIL
    is nothing you need to do to install or load the Synchronet FOSSIL driver.
 
 Q: SyncEdit isn't working correctly.
-A: See the file SYEDTFAQ.TXT for details.
+A: See the docs/syedtfaq.txt for details.
 
 Q: When I read messages on my v2.3c (or earlier) nodes, I sometimes get a
    garbled Message Attributes line.
@@ -361,4 +353,4 @@ A: The Synchronet Configuration Utility (exec/scfg.exe). This 16-bit
 As always, see the documentation if you have any questions that aren't
 answered here: http://synchro.net/docs
 
-/* End of V3CFGFAQ.TXT */
+/* End of v3cfgfaq.txt */
