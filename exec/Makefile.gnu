@@ -7,10 +7,13 @@
 # $id$
 
 all : 	bullseye.bin \
+        chat_sec.bin \
 	cntnodes.bin \
 	default.bin \
 	dir.bin \
 	file_io.bin \
+        ftp.bin \
+        getimlst.bin \
 	login.bin \
 	logon.bin \
 	major.bin \
@@ -19,11 +22,13 @@ all : 	bullseye.bin \
 	noyesbar.bin \
 	pcboard.bin \
 	qnet.bin \
+        qnet-ftp.bin \
 	ra_emu.bin \
 	renegade.bin \
 	rlogin.bin \
 	sdos.bin \
 	simple.bin \
+        socktest.bin \
 	str_cmds.bin \
 	telgate.bin \
 	type.bin \
