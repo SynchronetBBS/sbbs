@@ -375,7 +375,8 @@ static char* sys_prop_desc[] = {
 	,"days to preserve deleted user records"
 
 	,"last useron"
-	,"free disk space"
+	,"amount of free disk space (in bytes)"
+	,"amount of free disk space (in kilobytes)"
 
 	,"total number of BBS nodes"
 	,"last displayable node number"
