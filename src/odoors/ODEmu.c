@@ -417,13 +417,13 @@ abort_send:
       }
 
       /* Get next line, if any. */
-      if(fgets(szODWorkString, 256, pfRemoteFile) == NULL)
+      if(fgets(szODWorkString, OD_GLOBAL_WORK_STRING_SIZE-1, pfRemoteFile) == NULL)
       {
          /* If different local file. */
          if(pfLocalFile)
          {
             /* Display rest of it. */
-            while(fgets(szODWorkString, 256, pfLocalFile))
+            while(fgets(szODWorkString, OD_GLOBAL_WORK_STRING_SIZE-1, pfLocalFile))
             {
                 /* Pass each line to terminal emulator. */
                ODEmulateFromBuffer(szODWorkString, FALSE);
@@ -464,9 +464,9 @@ abort_send:
          {
             od_disp(szODWorkString, strlen(szODWorkString), FALSE);
 
-            if(fgets(szODWorkString, 256, pfLocalFile) == NULL)
+            if(fgets(szODWorkString, OD_GLOBAL_WORK_STRING_SIZE-1, pfLocalFile) == NULL)
             {
-               while(fgets(szODWorkString, 256, pfRemoteFile))
+               while(fgets(szODWorkString, OD_GLOBAL_WORK_STRING_SIZE-1, pfRemoteFile))
                {
                   od_disp(szODWorkString, strlen(szODWorkString), FALSE);
                }
@@ -763,13 +763,13 @@ abort_send:
       }
 
       /* Get next line, if any. */
-      if(fgets(szODWorkString, 256, pfRemoteFile) == NULL)
+      if(fgets(szODWorkString, OD_GLOBAL_WORK_STRING_SIZE-1, pfRemoteFile) == NULL)
       {
          /* If different local file. */
          if(pfLocalFile)
          {
             /* Display rest of it. */
-            while(fgets(szODWorkString, 256, pfLocalFile))
+            while(fgets(szODWorkString, OD_GLOBAL_WORK_STRING_SIZE-1, pfLocalFile))
             {
                if (!bSectionFound && strncmp(szFullSectionName, szODWorkString, uSectionNameLength) == 0) 
                {
@@ -846,9 +846,9 @@ abort_send:
          {
             od_disp(szODWorkString, strlen(szODWorkString), FALSE);
 
-            if(fgets(szODWorkString, 256, pfLocalFile) == NULL)
+            if(fgets(szODWorkString, OD_GLOBAL_WORK_STRING_SIZE-1, pfLocalFile) == NULL)
             {
-               while(fgets(szODWorkString, 256, pfRemoteFile))
+               while(fgets(szODWorkString, OD_GLOBAL_WORK_STRING_SIZE-1, pfRemoteFile))
                {
                   od_disp(szODWorkString, strlen(szODWorkString), FALSE);
                }
