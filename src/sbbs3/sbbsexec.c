@@ -66,7 +66,9 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 	static  HANDLE	rdslot=INVALID_HANDLE_VALUE;
 	static  HANDLE	wrslot=INVALID_HANDLE_VALUE;
 	static  RingBuf	rdbuf;
+#if defined(_DEBUG)
 	static	FILE*	fp=NULL;
+#endif
 
 	retval=0;
 	node_num=getBH();
@@ -85,9 +87,11 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 				,MAILSLOT_WAIT_FOREVER 	// Read timeout
 				,NULL);
 			if(rdslot==INVALID_HANDLE_VALUE) {
+#if defined(_DEBUG)
 				if(fp!=NULL)
 					fprintf(fp,"!VDD_OPEN: Error %d opening %s\r\n"
 						,GetLastError(),str);
+#endif
 				retval=1;
 				break;
 			}
@@ -101,9 +105,11 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 				,FILE_ATTRIBUTE_NORMAL
 				,(HANDLE) NULL);
 			if(wrslot==INVALID_HANDLE_VALUE) {
+#if defined(_DEBUG)
 				if(fp!=NULL)
 					fprintf(fp,"!VDD_OPEN: Error %d opening %s\r\n"
 						,GetLastError(),str);
+#endif
 				retval=2;
 				break;
 			}
@@ -119,9 +125,11 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 				FALSE,				// inherit flag 
 				str);				// pointer to event-object name 
 			if(hungup_event==NULL) {
+#if defined(_DEBUG)
 				if(fp!=NULL)
 					fprintf(fp,"!VDD_OPEN: Error %d opening %s\r\n"
 						,GetLastError(),str);
+#endif
 				retval=4;
 				break;
 			}
@@ -135,6 +143,7 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 			break;
 
 		case VDD_CLOSE:
+#if defined(_DEBUG)
 			if(fp!=NULL) {
 				fprintf(fp,"VDD_CLOSE: rdbuf=%u "
 					"status_poll=%u inbuf_poll=%u online_poll=%u yields=%u\r\n"
@@ -143,6 +152,7 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 				fprintf(fp,"           wrote=%u bytes (in %u calls)\r\n",bytes_written,writes);
 				fclose(fp);
 			}
+#endif
 			CloseHandle(rdslot);
 			CloseHandle(wrslot);
 			if(hungup_event!=NULL)
@@ -155,43 +165,54 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 
 		case VDD_READ:
 			count = getCX();
+#if defined(_DEBUG)
 			if(count != 1 && fp!=NULL)
 				fprintf(fp,"VDD_READ of %d\r\n",count);
-
+#endif
 			p = (BYTE*) GetVDMPointer((ULONG)((getES() << 16)|getDI())
 				,count,FALSE); 
 			if(RingBufFull(&rdbuf)) {
 				retval=RingBufRead(&rdbuf,p,count);
+#if defined(_DEBUG)
 				if(retval==0 && fp!=NULL)
 					fprintf(fp,"!VDD_READ: RingBufRead read 0\r\n");
+#endif
 				reads++;
 				bytes_read+=retval;
 				break;
 			}
 			if(!ReadFile(rdslot,buf,sizeof(buf),&retval,NULL)) {
+#if defined(_DEBUG)
 				if(fp!=NULL)
 					fprintf(fp,"!VDD_READ: ReadFile Error %d (size=%d)\r\n"
 						,GetLastError(),retval);
+#endif
 				retval=0;
 				break;
 			}
 			if(retval==0) {
+#if defined(_DEBUG)
 				if(fp!=NULL)
 					fprintf(fp,"!VDD_READ: ReadFile read 0\r\n");
+#endif
 				break;
 			}
 			RingBufWrite(&rdbuf,buf,retval);
 			retval=RingBufRead(&rdbuf,p,count);
+#if defined(_DEBUG)
 			if(retval==0 && fp!=NULL)
 				fprintf(fp,"!VDD_READ: RingBufRead read 0 after write\r\n");
+#endif
 			reads++;
 			bytes_read+=retval;
 			break;
 
 		case VDD_PEEK:
 			count = getCX();
+#if defined(_DEBUG)
 			if(count != 1 && fp!=NULL)
 				fprintf(fp,"VDD_PEEK of %d\r\n",count);
+#endif
 
 			p = (BYTE*) GetVDMPointer((ULONG)((getES() << 16)|getDI())
 				,count,FALSE); 
@@ -200,15 +221,19 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 				break;
 			}
 			if(!ReadFile(rdslot,buf,sizeof(buf),&retval,NULL)) {
+#if defined(_DEBUG)
 				if(fp!=NULL)
 					fprintf(fp,"!VDD_PEEK: ReadFile Error %d\r\n"
 						,GetLastError());
+#endif
 				retval=0;
 				break;
 			}
 			if(retval==0) {
+#if defined(_DEBUG)
 				if(fp!=NULL)
 					fprintf(fp,"!VDD_PEEK: ReadFile read 0\r\n");
+#endif
 				break;
 			}
 			RingBufWrite(&rdbuf,buf,retval);
@@ -217,16 +242,20 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 
 		case VDD_WRITE:
 			count = getCX();
+#if defined(_DEBUG)
 			if(count != 1 && fp!=NULL)
 				fprintf(fp,"VDD_WRITE of %d\r\n",count);
+#endif
 			p = (BYTE*) GetVDMPointer((ULONG)((getES() << 16)|getDI())
 				,count,FALSE); 
 //			if(fp!=NULL)
 //				fwrite(p,count,1,fp);
 			if(!WriteFile(wrslot,p,count,&retval,NULL)) {
+#if defined(_DEBUG)
 				if(fp!=NULL)
 					fprintf(fp,"!VDD_WRITE: WriteFile Error %d (size=%d)\r\n"
 						,GetLastError(),retval);
+#endif
 				retval=0;
 			} else {
 				writes++;
@@ -239,8 +268,10 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 			status_poll++;
 			count = getCX();
 			if(count != sizeof(vdd_status_t)) {
+#if defined(_DEBUG)
 				if(fp!=NULL)
 					fprintf(fp,"!VDD_STATUS: wrong size (%d!=%d)\r\n",count,sizeof(vdd_status_t));
+#endif
 				retval=sizeof(vdd_status_t);
 				break;
 			}
@@ -290,14 +321,18 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 
 
 		case VDD_INBUF_PURGE:
+#if defined(_DEBUG)
 			if(fp!=NULL)
 				fprintf(fp,"!VDD_INBUF_PURGE: NOT IMPLEMENTED\r\n");
+#endif
 			retval=0;
 			break;
 
 		case VDD_OUTBUF_PURGE:
+#if defined(_DEBUG)
 			if(fp!=NULL)
 				fprintf(fp,"!VDD_OUTBUF_PURGE: NOT IMPLEMENTED\r\n");
+#endif
 			retval=0;
 			break;
 
@@ -367,8 +402,10 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 			break;
 
 		default:
+#if defined(_DEBUG)
 			if(fp!=NULL)
 				fprintf(fp,"!UNKNOWN VDD_OP: %d\r\n",getBL());
+#endif
 			break;
 	}
 	setAX((WORD)retval);
