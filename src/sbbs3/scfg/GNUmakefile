@@ -91,6 +91,10 @@ ifeq ($(os),netbsd)
  CFLAGS	+=	-D__unix__ -I/usr/pkg/include
 endif
 
+ifeq ($(os),darwin)
+ CFLAGS +=  -D__unix__ -D__DARWIN__
+endif
+
 ifdef USE_DIALOG		
  OBJS += $(ODIR)$(SLASH)uifcd.$(OFILE)
 endif
