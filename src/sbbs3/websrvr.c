@@ -502,6 +502,7 @@ static const char* get_mime_type(char *ext)
 {
 	uint i;
 
+	lprintf("Getting mime-type for %s",ext);
 	if(ext==NULL)
 		return(unknown_mime_type);
 
@@ -561,6 +562,7 @@ BOOL send_headers(http_session_t *session, const char *status)
 	}
 	if(!ret) {
 		sockprintf(session->socket,"%s: %d",get_header(HEAD_LENGTH),stats.st_size);
+		lprintf("%04d Sending stats for: %s",session->socket,session->req.request);
 		
 		sockprintf(session->socket,"%s: %s",get_header(HEAD_TYPE)
 			,get_mime_type(strrchr(session->req.request,'.')));
@@ -589,15 +591,14 @@ static void sock_sendfile(SOCKET socket,char *path)
 
 static void send_error(char *message, http_session_t * session)
 {
-	char	error_path[MAX_PATH+1];
 	char	error_code[4];
 
 	session->req.send_location=FALSE;
+	SAFECOPY(error_code,message);
+	sprintf(session->req.request,"%s%s.html",error_dir,error_code);
 	if(session->http_ver > HTTP_0_9)
 		send_headers(session,message);
-	SAFECOPY(error_code,message);
-	sprintf(error_path,"%s%s.html",error_dir,error_code);
-	sock_sendfile(session->socket,error_path);
+	sock_sendfile(session->socket,session->req.request);
 	close_request(session);
 }
 
@@ -955,8 +956,11 @@ static BOOL check_request(http_session_t * session)
 		return(FALSE);
 	}
 	if(!fexist(path)) {
-		backslash(path);
+		if(path[strlen(path)-1]!='/')  {
+			strcat(path,"/");
+		}
 		strcat(path,startup->index_file_name);
+		session->req.send_location=TRUE;
 	}
 	if(strnicmp(path,root_dir,strlen(root_dir))) {
 		lprintf("%04d path = '%s'",session->socket,path);
@@ -969,10 +973,7 @@ static BOOL check_request(http_session_t * session)
 		send_error("404 Not Found",session);
 		return(FALSE);
 	}
-	if(strcmp(path,session->req.request)) {
-		session->req.send_location=TRUE;
-		SAFECOPY(session->req.request,path);
-	}
+	SAFECOPY(session->req.request,path);
 
 	/* Set default ARS to a 0-length string */
 	session->req.ars[0]=0;
