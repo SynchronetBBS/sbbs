@@ -400,6 +400,7 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, char* msg
 {
 	char	pad=0;
 	char*	pid;
+	char*	reply_id;
 	char	msg_id[256];
 	ushort	xlat;
 	int 	i;
@@ -408,6 +409,8 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, char* msg
 	ulong	length;
 	ulong	offset;
 	ulong	crc=0xffffffff;
+	smbmsg_t remsg;
+	smbmsg_t firstmsg;
 
 	if(!SMB_IS_OPEN(smb)) {
 		if(smb->subnum==INVALID_SUB)
@@ -526,6 +529,70 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, char* msg
 
 	if(msg->to==NULL)	/* no recipient, don't add header */
 		return(smb_unlocksmbhdr(smb));
+
+	/* Auto-thread linkage */
+	if(msg->hdr.thread_orig) {
+		memset(&remsg,0,sizeof(remsg));
+		remsg.hdr.number=msg->hdr.thread_orig;
+		if((i=smb_getmsgidx(smb, &remsg))!=SMB_SUCCESS)	/* invalid thread origin */
+			return(i);
+
+		if((i=smb_lockmsghdr(smb,&remsg))!=SMB_SUCCESS)
+			return(i);
+
+		if((i=smb_getmsghdr(smb, &remsg))!=SMB_SUCCESS) {
+			smb_unlockmsghdr(smb,&remsg); 
+			return(i);
+		}
+
+		/* Add RFC-822 Reply-ID (generate if necessary) */
+		if(msg->reply_id==NULL) {
+			reply_id=get_msgid(cfg,smb->subnum,&remsg);
+			smb_hfield(msg,RFC822REPLYID,strlen(reply_id),reply_id);
+		}
+
+		/* Add FidoNet Reply if original message has FidoNet MSGID */
+		if(msg->ftn_reply==NULL && remsg.ftn_msgid!=NULL)
+			smb_hfield(msg,FIDOREPLYID,strlen(remsg.ftn_msgid),remsg.ftn_msgid);
+
+		if(!remsg.hdr.thread_first) {	/* This msg is first reply */
+			remsg.hdr.thread_first=msg->idx.number;
+			i=smb_putmsghdr(smb,&remsg);
+			smb_unlockmsghdr(smb,&remsg);
+			if(i!=SMB_SUCCESS) {
+				smb_freemsgmem(&remsg);
+				return(i); 
+			}
+		} else {	/* Search for last reply and extend chain */
+			smb_unlockmsghdr(smb,&remsg);
+			memset(&firstmsg,0,sizeof(firstmsg));
+			l=remsg.hdr.thread_first;	/* start with first reply */
+			while(1) {
+				firstmsg.idx.offset=0;
+				firstmsg.hdr.number=l;
+				if(smb_getmsgidx(smb, &firstmsg)!=SMB_SUCCESS) /* invalid thread origin */
+					break;
+				if(smb_lockmsghdr(smb,&remsg)!=SMB_SUCCESS)
+					break;
+				if(smb_getmsghdr(smb, &remsg)!=SMB_SUCCESS) {
+					smb_unlockmsghdr(smb,&remsg); 
+					break;
+				}
+				if(firstmsg.hdr.thread_next && firstmsg.hdr.thread_next!=l) {
+					l=firstmsg.hdr.thread_next;
+					smb_unlockmsghdr(smb,&firstmsg);
+					smb_freemsgmem(&firstmsg);
+					continue; 
+				}
+				firstmsg.hdr.thread_next=msg->idx.number;
+				smb_putmsghdr(smb,&firstmsg);
+				smb_unlockmsghdr(smb,&firstmsg);
+				smb_freemsgmem(&firstmsg);
+				break; 
+			}
+		}
+		smb_freemsgmem(&remsg);
+	}
 
 	if((i=smb_addmsghdr(smb,msg,storage))!=0) // calls smb_unlocksmbhdr() 
 		smb_freemsgdat(smb,offset,length,1);
