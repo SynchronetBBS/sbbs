@@ -1,6 +1,6 @@
 /* services.c */
 
-/* Synchronet Services Server */
+/* Synchronet Services */
 
 /* $Id$ */
 
@@ -932,7 +932,7 @@ const char* DLLCALL services_ver(void)
 
 	COMPILER_DESC(compiler);
 
-	sprintf(ver,"Synchronet Services Server v%s%s  "
+	sprintf(ver,"Synchronet Services v%s%s  "
 		"Compiled %s %s with %s"
 		,SERVICES_VERSION
 #ifdef _DEBUG
@@ -995,7 +995,7 @@ void DLLCALL services_thread(void* arg)
 	signal(SIGPIPE,SIG_IGN);
 #endif
 
-	lprintf("Synchronet Services Server Version %s%s"
+	lprintf("Synchronet Services Version %s%s"
 		,SERVICES_VERSION
 #ifdef _DEBUG
 		," Debug"
