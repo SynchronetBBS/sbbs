@@ -1820,9 +1820,13 @@ static void smtp_thread(void* arg)
 						SKIP_WHITESPACE(p);
 						if(*p==';' || *p==0)	/* comment or blank line */
 							continue;
-						lprintf(LOG_DEBUG,"%04d SMTP executing external process: %s", socket, p);
-						system(mailcmdstr(p, msgtxt_fname, rcptlst_fname, proc_err_fname
-											,host_name, host_ip, relay_user.number, str));
+						mailcmdstr(p, msgtxt_fname, rcptlst_fname, proc_err_fname
+											,host_name, host_ip, relay_user.number, str);
+						lprintf(LOG_DEBUG,"%04d SMTP executing external process: %s", socket, str);
+						i=system(str);
+						if(i!=0)
+							lprintf(LOG_WARNING,"%04d SMTP external process (%s) returned %d (errno: %d)"
+								,str, i, errno);
 						if(flength(proc_err_fname)>0)
 							break;
 						if(!fexist(msgtxt_fname) || !fexist(rcptlst_fname))
