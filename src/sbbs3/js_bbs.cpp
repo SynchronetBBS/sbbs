@@ -840,6 +840,153 @@ js_telnet_gate(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 	return(JS_TRUE);
 }
 
+js_pagesysop(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	*rval = BOOLEAN_TO_JSVAL(sbbs->sysop_page());
+	return(JS_TRUE);
+}
+
+js_pageguru(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	*rval = BOOLEAN_TO_JSVAL(sbbs->guru_page());
+	return(JS_TRUE);
+}
+
+js_multinode_chat(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	sbbs_t*		sbbs;
+	int			channel=1;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	if(argc>1)
+		channel=JSVAL_TO_INT(argv[1]);
+
+	sbbs->multinodechat(channel);
+
+	*rval = JSVAL_VOID;
+	return(JS_TRUE);
+}
+
+js_private_message(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	sbbs->nodemsg();
+
+	*rval = JSVAL_VOID;
+	return(JS_TRUE);
+}
+
+js_private_chat(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	sbbs->privchat();
+
+	*rval = JSVAL_VOID;
+	return(JS_TRUE);
+}
+
+js_get_node_message(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	sbbs->getnmsg();
+
+	*rval = JSVAL_VOID;
+	return(JS_TRUE);
+}
+
+js_put_node_message(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	sbbs_t*		sbbs;
+	int			node;
+	JSString*	js_msg;
+	char*		msg;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	if((node=JSVAL_TO_INT(argv[0]))<1)
+		node=1;
+
+	if((js_msg=JS_ValueToString(cx, argv[1]))==NULL) 
+		return(JS_FALSE);
+
+	if((msg=JS_GetStringBytes(js_msg))==NULL) 
+		return(JS_FALSE);
+
+	sbbs->putnmsg(node,msg);
+
+	*rval = JSVAL_VOID;
+	return(JS_TRUE);
+}
+
+js_get_telegram(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	sbbs_t*		sbbs;
+	int			usernumber;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	usernumber=sbbs->useron.number;
+	if(argc>1)
+		usernumber=JSVAL_TO_INT(argv[0]);
+
+	sbbs->getsmsg(usernumber);
+
+	*rval = JSVAL_VOID;
+	return(JS_TRUE);
+}
+
+js_put_telegram(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	sbbs_t*		sbbs;
+	int			usernumber;
+	JSString*	js_msg;
+	char*		msg;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	if((usernumber=JSVAL_TO_INT(argv[0]))<1)
+		usernumber=1;
+
+	if((js_msg=JS_ValueToString(cx, argv[1]))==NULL) 
+		return(JS_FALSE);
+
+	if((msg=JS_GetStringBytes(js_msg))==NULL) 
+		return(JS_FALSE);
+
+	putsmsg(&sbbs->cfg,usernumber,msg);
+
+	*rval = JSVAL_VOID;
+	return(JS_TRUE);
+}
+
+
 static JSFunctionSpec js_bbs_functions[] = {
 	/* text.dat */
 	{"text",			js_text,			1},		// return text string from text.dat
@@ -868,6 +1015,16 @@ static JSFunctionSpec js_bbs_functions[] = {
 	{"telnet_gate",		js_telnet_gate,		1},		// external telnet gateway (w/opt mode)
 	/* security */
 	{"check_syspass",	js_chksyspass,		0},		// verify system password
+	/* chat */
+	{"page_sysop",		js_pagesysop,		0},		// page sysop for chat
+	{"page_guru",		js_pageguru,		0},		// page guru for chat
+	{"multinode_chat",	js_multinode_chat,	0},		// multi-node chat
+	{"private_message",	js_private_message,	0},		// private inter-node message
+	{"private_chat",	js_private_chat,	0},		// private inter-node chat
+	{"get_node_message",js_get_node_message,0},		// getnmsg()
+	{"put_node_message",js_put_node_message,2},		// putnmsg(nodenum,str)
+	{"get_telegram",	js_get_telegram,	1},		// getsmsg(usernum)
+	{"put_telegram",	js_put_telegram,	2},		// putsmsg(usernum,str)
 	{0}
 };
 
