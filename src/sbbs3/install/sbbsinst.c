@@ -614,7 +614,7 @@ void install_sbbs(dist_t *dist,struct server_ent_t *server)  {
 						}
 					}
 				}
-				printf("Downloading %s     ",url);
+				printf("Downloading %s           ",url);
 				offset=0;
 				while((ret1=read(remote,buf,sizeof(buf)))>=0)  {
 					ret2=write(fout,buf,ret1);
@@ -626,7 +626,9 @@ void install_sbbs(dist_t *dist,struct server_ent_t *server)  {
 					}
 					offset+=ret2;
 					if(flen)
-						printf("\b\b\b\b%3lu%%",(long)(((float)offset/(float)flen)*100.0));
+						printf("\b\b\b\b\b\b\b\b\b\b%3lu%%      ",(long)(((float)offset/(float)flen)*100.0));
+					else
+						printf("\b\b\b\b\b\b\b\b\b\b%10lu",offset);
 					fflush(stdout);
 				}
 				printf("\n");
