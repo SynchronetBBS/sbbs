@@ -1,0 +1,104 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<!-- C++Builder XML Project -->
+<PROJECT>
+  <MACROS>
+    <VERSION value="BCB.06.09"/>
+    <PROJECT value="ThreadCreate"/>
+    <OBJFILES value="ThreadCreate.o MainUnit.o ThreadUnit.o"/>
+    <RESFILES value="ThreadCreate.res"/>
+    <DEFFILE value=""/>
+    <RESDEPEN value="$(RESFILES) MainUnit.xfm"/>
+    <LIBFILES value=""/>
+    <LIBRARIES value="visualclx.a rtl.a"/>
+    <SPARELIBS value="rtl.a visualclx.a"/>
+    <PACKAGES value="rtl.bpi visualclx.bpi dataclx.bpi visualdbclx.bpi netclx.bpi 
+      netdataclx.bpi xmlrtl.bpi indy.bpi webdsnapclx.bpi websnapclx.bpi 
+      soaprtl.bpi"/>
+    <PATHCPP value=".;"/>
+    <PATHPAS value=".;"/>
+    <PATHRC value=".;"/>
+    <PATHASM value=".;"/>
+    <DEBUGLIBPATH value="$(BCB)/lib/debug"/>
+    <RELEASELIBPATH value="$(BCB)/lib/release"/>
+    <LINKER value="ilink32"/>
+    <USERDEFINES value="_DEBUG"/>
+    <SYSDEFINES value=""/>
+    <MAINSOURCE value="ThreadCreate.cpp"/>
+    <INCLUDEPATH value="$(BCB)/stlport:$(BCB)/include:$(BCB)/include/vcl:/usr/include"/>
+    <LIBPATH value="$(BCB)/lib/obj:$(BCB)/lib:/usr/lib:/lib:/usr/X11R6/lib:$(BCB)/bin"/>
+    <WARNINGS value="-w-par"/>
+    <OTHERFILES value=""/>
+  </MACROS>
+  <OPTIONS>
+    <CFLAG1 value="-t -Od -H=$(HOME)/.borland/clx69.csm -Hc -Vx -Ve -X- -r- -a8 -b- -k -y -v 
+      -vi- -c"/>
+    <PFLAGS value="-$YD -$W -$O- -$A8 -v -JPHNE -M"/>
+    <RFLAGS value=""/>
+    <AFLAGS value="/mx /w2 /zd"/>
+    <LFLAGS value="-D&quot;&quot; -aa -Tpe -x -Gn -v"/>
+    <OTHERFILES value=""/>
+  </OPTIONS>
+  <LINKER>
+    <ALLOBJ value="crt1.o $(OBJFILES)"/>
+    <ALLRES value="$(RESFILES)"/>
+    <ALLLIB value="rtle.a $(LIBFILES) $(LIBRARIES) libborcrtl.a libborstl.a libborunwind.a 
+      libdl.so libpthread.so libX11.so libc.so libm.so"/>
+    <OTHERFILES value=""/>
+  </LINKER>
+  <FILELIST>
+      <FILE FILENAME="ThreadCreate.res" FORMNAME="" UNITNAME="ThreadCreate.res" CONTAINERID="ResTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="ThreadCreate.cpp" FORMNAME="" UNITNAME="ThreadCreate" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="MainUnit.cpp" FORMNAME="Form1" UNITNAME="MainUnit" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="ThreadUnit.cpp" FORMNAME="" UNITNAME="ThreadUnit" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+  </FILELIST>
+  <BUILDTOOLS>
+  </BUILDTOOLS>
+
+  <IDEOPTIONS>
+[Version Info]
+IncludeVerInfo=0
+AutoIncBuild=0
+MajorVer=1
+MinorVer=0
+Release=0
+Build=0
+Debug=0
+PreRelease=0
+Special=0
+Private=0
+DLL=0
+Locale=1033
+CodePage=1252
+
+[Version Info Keys]
+CompanyName=
+FileDescription=
+FileVersion=1.0.0.0
+InternalName=
+LegalCopyright=
+LegalTrademarks=
+OriginalFilename=
+ProductName=
+ProductVersion=1.0.0.0
+Comments=
+
+[Debugging]
+DebugSourceDirs=
+
+[Parameters]
+RunParams=
+Launcher=/usr/X11R6/bin/xterm -T KylixDebuggerOutput -e bash -i -c %debuggee%
+UseLauncher=0
+DebugCWD=
+HostApplication=
+RemoteHost=
+RemotePath=
+RemoteLauncher=
+RemoteCWD=
+RemoteDebug=0
+
+[Compiler]
+ShowInfoMsgs=0
+LinkDebugVcl=0
+  </IDEOPTIONS>
+</PROJECT>
