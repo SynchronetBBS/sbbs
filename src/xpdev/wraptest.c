@@ -12,6 +12,7 @@
 #include "filewrap.h"
 #include "sockwrap.h"
 #include "threadwrap.h"
+#include "xpbeep.h"
 
 #define LOCK_FNAME	"test.fil"
 #define LOCK_OFFSET	0
