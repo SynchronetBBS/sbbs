@@ -2662,6 +2662,10 @@ BOOL bounce(smb_t* smb, smbmsg_t* msg, char* err, BOOL immediate)
 		|| (msg->idx.from==0 && msg->from_net.type==NET_NONE)
 		|| (msg->reverse_path!=NULL && *msg->reverse_path==0)) {
 		lprintf("0000 !Deleted undeliverable message from %s", msg->from);
+		i=smb_freemsgdat(smb,msg->hdr.offset,smb_getmsgdatlen(msg),1);
+		if(i!=SMB_SUCCESS)
+			lprintf("0000 !ERROR %d (%s) freeing data blocks for undeliverable message"
+				,i,smb->last_error);
 		return(TRUE);
 	}
 	
