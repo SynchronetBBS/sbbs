@@ -721,6 +721,8 @@ js_put_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 		if(smb_getmsghdr(&(p->smb), &msg)!=0)
 			break;
 
+		smb_freemsghdrmem(&msg);	/* prevent duplicate header fields */
+
 		if(!parse_header_object(cx, p, hdr, &msg))
 			break;
 
