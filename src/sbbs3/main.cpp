@@ -280,8 +280,8 @@ DLLCALL js_CreateArrayOfStrings(JSContext* cx, JSObject* parent, const char* nam
 	if(JS_GetProperty(cx,parent,name,&val) && val!=JSVAL_VOID)
 		array=JSVAL_TO_OBJECT(val);
 	else
-		if((array=JS_NewArrayObject(cx, 0, NULL))==NULL)
-			return(JS_FALSE);
+		if((array=JS_NewArrayObject(cx, 0, NULL))==NULL)	/* Assertion here, in _heap_alloc_dbg, June-21-2004 */
+			return(JS_FALSE);								/* Caused by nntpservice.js? */
 
 	if(!JS_DefineProperty(cx, parent, name, OBJECT_TO_JSVAL(array)
 		,NULL,NULL,flags))
@@ -1603,6 +1603,9 @@ void event_thread(void* arg)
 				sbbs->useron.number=atoi(g.gl_pathv[i]+offset);
 				getuserdat(&sbbs->cfg,&sbbs->useron);
 				if(sbbs->useron.number && flength(g.gl_pathv[i])>0) {
+					sprintf(semfile,"%s.lock",g.gl_pathv[i]);
+					if((file=open(semfile,O_CREAT|O_WRONLY|O_EXCL,S_IREAD|S_IWRITE))==-1)
+						continue;
 					sbbs->online=ON_LOCAL;
 					eprintf(LOG_INFO,"Un-packing QWK Reply packet from %s",sbbs->useron.alias);
 					sbbs->getusrsubs();
@@ -1612,6 +1615,8 @@ void event_thread(void* arg)
 					
 					/* putuserdat? */
 					remove(g.gl_pathv[i]);
+					close(file);
+					remove(semfile);
 				}
 			}
 			globfree(&g);
@@ -1622,6 +1627,9 @@ void event_thread(void* arg)
 			glob(str,0,NULL,&g);
 			for(i=0;i<(int)g.gl_pathc;i++) {
 				sbbs->useron.number=atoi(g.gl_pathv[i]+offset);
+				sprintf(semfile,"%spack%04u.lock",sbbs->cfg.data_dir,sbbs->useron.number);
+				if((file=open(semfile,O_CREAT|O_WRONLY|O_EXCL,S_IREAD|S_IWRITE))==-1)
+					continue;
 				getuserdat(&sbbs->cfg,&sbbs->useron);
 				if(sbbs->useron.number && !(sbbs->useron.misc&(DELETED|INACTIVE))) {
 					eprintf(LOG_INFO,"Packing QWK Message Packet for %s",sbbs->useron.alias);
@@ -1648,6 +1656,8 @@ void event_thread(void* arg)
 					sbbs->online=0;
 				}
 				remove(g.gl_pathv[i]);
+				close(file);
+				remove(semfile);
 			}
 			globfree(&g);
 
