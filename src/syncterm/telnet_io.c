@@ -26,7 +26,6 @@ void send_telnet_cmd(uchar cmd, uchar opt);
 static BYTE* telnet_interpret(BYTE* inbuf, int inlen, BYTE* outbuf, int *outlen)
 {
 	BYTE*   first_iac=NULL;
-	BYTE*	first_cr=NULL;
 	int 	i;
 
 	if(inlen<1) {
@@ -36,16 +35,13 @@ static BYTE* telnet_interpret(BYTE* inbuf, int inlen, BYTE* outbuf, int *outlen)
 
     first_iac=(BYTE*)memchr(inbuf, TELNET_IAC, inlen);
 
-    if(!telnet_cmdlen	&& first_iac==NULL && first_cr==NULL) {
+    if(!telnet_cmdlen	&& first_iac==NULL) {
         *outlen=inlen;
         return(inbuf);	// no interpretation needed
     }
 
-    if(first_iac!=NULL || first_cr!=NULL) {
-		if(first_iac!=NULL && (first_cr==NULL || first_iac<first_cr))
-   			*outlen=first_iac-inbuf;
-		else
-			*outlen=first_cr-inbuf;
+    if(first_iac!=NULL) {
+   		*outlen=first_iac-inbuf;
 	    memcpy(outbuf, inbuf, *outlen);
     } else
     	*outlen=0;
@@ -53,7 +49,7 @@ static BYTE* telnet_interpret(BYTE* inbuf, int inlen, BYTE* outbuf, int *outlen)
     for(i=*outlen;i<inlen;i++) {
         if(inbuf[i]==TELNET_IAC && telnet_cmdlen==1) { /* escaped 255 */
             telnet_cmdlen=0;
-            outbuf[*outlen++]=TELNET_IAC;
+            outbuf[(*outlen)++]=TELNET_IAC;
             continue;
         }
         if(inbuf[i]==TELNET_IAC || telnet_cmdlen) {
@@ -136,7 +132,7 @@ static BYTE* telnet_interpret(BYTE* inbuf, int inlen, BYTE* outbuf, int *outlen)
 
             }
         } else
-        	outbuf[*outlen++]=inbuf[i];
+        	outbuf[(*outlen)++]=inbuf[i];
     }
     return(outbuf);
 }
