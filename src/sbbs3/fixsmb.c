@@ -77,7 +77,7 @@ void sort_index(smb_t* smb)
 	smb->status.total_msgs=l;
 	for(l=0;l<smb->status.total_msgs;l++)
 		if(fwrite(&idx[l],sizeof(idxrec_t),1,smb->sid_fp)<1) {
-			perror("wrtiing index");
+			perror("writing index");
 			break;
 		}
 
@@ -196,13 +196,13 @@ int main(int argc, char **argv)
 		printf("\r%2lu%%  ",(long)(100.0/((float)length/l)));
 		msg.idx.offset=l;
 		if((i=smb_lockmsghdr(&smb,&msg))!=0) {
-			printf("\n(%06lX) smb_lockmsghdr returned %d: %s\n",l,i,smb.last_error);
+			printf("\n(%06lX) smb_lockmsghdr returned %d:\n%s\n",l,i,smb.last_error);
 			continue; 
 		}
 		i=smb_getmsghdr(&smb,&msg);
 		smb_unlockmsghdr(&smb,&msg);
 		if(i!=0) {
-			printf("\n(%06lX) smb_getmsghdr returned %d: %s\n",l,i,smb.last_error);
+			printf("\n(%06lX) smb_getmsghdr returned %d:\n%s\n",l,i,smb.last_error);
 			continue; 
 		}
 		size=smb_hdrblocks(smb_getmsghdrlen(&msg))*SHD_BLOCK_LEN;
@@ -222,6 +222,8 @@ int main(int argc, char **argv)
 		/* Index the header */
 		if(msg.hdr.attr&MSG_DELETE)
 			printf("Not indexing deleted message\n");
+		else if(msg.hdr.number==0)
+			printf("Not indexing invalid message number (0)!\n");
 		else {   
 			msg.offset=n;
 			if(renumber)
