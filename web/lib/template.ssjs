@@ -4,6 +4,9 @@
 /* ^^name^^ is replaced with the URI encoded value of template.name			 */
 /* @@name@@ is replaced with the value if template.name						 */
 /* 																			 */
+/* @@name:sname@@ is replaced with the value of template.name.sname			 */
+/* (^^ and %% are also supported)											 */
+/* 																			 */
 /* @@JS:js_expression@@ is replaced with the return value of js_expression 	 */
 /* (^^ and %% are also supported)											 */
 /* 																			 */
@@ -19,15 +22,12 @@
 
 /* $Id$ */
 
-// Configuration
-template_dir=system.textdir+"html_templates";
-
 template=new Object;
 
 function write_template(filename)  {
-	var inc=new File(template_dir+'/'+filename);
+	var inc=new File(system.text_dir+"html_templates"+'/'+filename);
 	if(!inc.open("r",true,1024)) {
-		horrible_error("Cannot open template file "+template_dir+'/'+filename+"!");
+		horrible_error("Cannot open template file "+system.text_dir+"html_templates"+'/'+filename+"!");
 	}
 	var file='';
 	while(! inc.eof)  {
@@ -57,6 +57,17 @@ function parse_regular_bit(bit, objname, obj) {
 			var res=escape_match(start, eval(exp));
 			return(res);
 		});
+	if(objname=='') {
+		bit=bit.replace(/([%^@]{2})([^:%^@]*?)\:([^::%^@]*?)\1/g,
+			function (matched, start, objname, prop, offset, s) {
+				if(template[objname]==undefined)
+					res='';
+				else
+					res=template[objname][prop];
+				var res=escape_match(start, res);
+				return(res);
+			});
+	}
 	bit=bit.replace(/([%^@]{2})([^:]*?)\1/g,
 		function (matched, start, exp, offset, s) {
 			var res=escape_match(start, template[exp]);
@@ -69,7 +80,7 @@ function escape_match(start, exp, end)  {
 	if(exp==undefined)
 		exp='';
 	if(start=="%%")
-		exp=html_encode(exp,true,false,false);
+		exp=html_encode(exp,false,false,false,false);
 	if(start=="^^")
 		exp=encodeURIComponent(exp);
 	return(exp);
