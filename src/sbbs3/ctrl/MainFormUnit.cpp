@@ -2262,6 +2262,7 @@ void __fastcall TMainForm::ExportSettings(TObject* Sender)
     section = "Global";
     IniFile->WriteString(section,"Hostname",Hostname);
     IniFile->WriteString(section,"CtrlDirectory",CtrlDirectory);
+    IniFile->WriteInteger(section,"JavaScriptMaxBytes",JS_MaxBytes);
 
     /***********************************************************************/
 	section = "BBS";
