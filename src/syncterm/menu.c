@@ -14,6 +14,7 @@ void viewscroll(void)
 	char	*scrollback;
 	struct	text_info txtinfo;
 	int	x,y;
+	struct mouse_event mevent;
 
 	x=wherex();
 	y=wherey();
@@ -35,6 +36,9 @@ void viewscroll(void)
 		switch(key) {
 			case 0:
 				switch(getch()<<8) {
+					case CIO_KEY_MOUSE:
+						getmouse(&mevent);
+						break;
 					case CIO_KEY_UP:
 						top--;
 						break;
