@@ -1168,7 +1168,7 @@ void input_thread(void *arg)
 	pthread_mutex_destroy(&sbbs->input_thread_mutex);
 
 	thread_down();
-	lprintf("Node %d input thread terminated (received %lu bytes in %lu packets)"
+	lprintf("Node %d input thread terminated (received %lu bytes in %lu blocks)"
 		,sbbs->cfg.node_num, total_recv, total_pkts);
 }
 
@@ -1283,8 +1283,8 @@ void output_thread(void* arg)
     sbbs->output_thread_running = false;
 
 	if(total_sent)
-		sprintf(stats,"(sent %lu bytes in %lu packets)"
-			,total_sent, total_pkts);
+		sprintf(stats,"(sent %lu bytes in %lu blocks, %lu average)"
+			,total_sent, total_pkts, total_sent/total_pkts);
 	else
 		stats[0]=0;
 
