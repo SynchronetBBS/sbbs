@@ -42,6 +42,7 @@
 	#define WIN32_LEAN_AND_MEAN	/* Don't bring in excess baggage */
 	#include <windows.h>
 #elif defined(__OS2__)
+	#define INCL_BASE	/* need this for DosSleep prototype */
 	#include <os2.h>
 #endif
 
