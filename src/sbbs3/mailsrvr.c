@@ -420,9 +420,8 @@ static int sockreadline(SOCKET socket, char* buf, int len)
 		buf[rd++]=ch;
 	}
 	if(rd>0 && buf[rd-1]=='\r')
-		buf[--rd]=0;
-	else
-		buf[rd]=0;
+		rd--;
+	buf[rd]=0;
 	
 	return(rd);
 }
@@ -2363,6 +2362,7 @@ static void smtp_thread(void* arg)
 			|| !strnicmp(buf,"SAML FROM:",10)	/* Send AND Mail a Message to a local user */
 			) {
 			p=buf+10;
+			truncsp(p);
 			if(!chk_email_addr(socket,p,host_name,host_ip,NULL,NULL))
 				break;
 			while(*p && *p<=' ') p++;
