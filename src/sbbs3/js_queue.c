@@ -102,9 +102,10 @@ static void parse_queued_value(JSContext *cx, queued_value_t* v, jsval* rval, BO
 /* Queue Object Methods */
 
 static JSBool
-js_wait(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+js_poll(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	msg_queue_t* q;
+	msg_queue_t*	q;
+	queued_value_t*	v;
 	int32 timeout=0;
 
 	if((q=(msg_queue_t*)JS_GetPrivate(cx,obj))==NULL) {
@@ -115,7 +116,12 @@ js_wait(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(argc) 	/* timeout specified */
 		JS_ValueToInt32(cx,argv[0],&timeout);
 
-	*rval = BOOLEAN_TO_JSVAL(msgQueueWait(q, timeout));
+	if((v=msgQueuePeek(q,timeout))==NULL)
+		*rval = JSVAL_FALSE;
+	else if(v->name!=NULL && v->name[0])
+		*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,v->name));
+	else
+		*rval = JSVAL_TRUE;
 
 	return(JS_TRUE);
 }
@@ -218,14 +224,18 @@ js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 /* Queue Object Properites */
 enum {
-	 QUEUE_PROP_READ_LEVEL
+	 QUEUE_PROP_NAME
+	,QUEUE_PROP_DATA_WAITING
+	,QUEUE_PROP_READ_LEVEL
 	,QUEUE_PROP_WRITE_LEVEL
 };
 
 #ifdef _DEBUG
 static char* queue_prop_desc[] = {
-	 "number of values in the read queue - <small>READ ONLY</small>"
-	,"number of values in the write qeueue - <small>READ ONLY</small>"
+	 "name of the queue (if it has one)"
+	,"<i>true</i> if data is waiting to be read from queue"
+	,"number of values in the read queue"
+	,"number of values in the write qeueue"
 	,NULL
 };
 #endif
@@ -243,6 +253,13 @@ static JSBool js_queue_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
     tiny = JSVAL_TO_INT(id);
 
 	switch(tiny) {
+		case QUEUE_PROP_NAME:
+			if(q->name!=NULL && q->name[0])
+				*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,q->name));
+			break;
+		case QUEUE_PROP_DATA_WAITING:
+			*vp = BOOLEAN_TO_JSVAL(INT_TO_BOOL(msgQueueReadLevel(q)));
+			break;
 		case QUEUE_PROP_READ_LEVEL:
 			*vp = INT_TO_JSVAL(msgQueueReadLevel(q));
 			break;
@@ -258,6 +275,8 @@ static JSBool js_queue_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 static jsSyncPropertySpec js_queue_properties[] = {
 /*		 name				,tinyid					,flags,				ver	*/
 
+	{	"name"				,QUEUE_PROP_NAME		,QUEUE_PROP_FLAGS,	312 },
+	{	"data_waiting"		,QUEUE_PROP_DATA_WAITING,QUEUE_PROP_FLAGS,	312 },
 	{	"read_level"		,QUEUE_PROP_READ_LEVEL	,QUEUE_PROP_FLAGS,	312 },
 	{	"write_level"		,QUEUE_PROP_WRITE_LEVEL	,QUEUE_PROP_FLAGS,	312 },
 	{0}
@@ -277,9 +296,10 @@ static JSClass js_queue_class = {
 };
 
 static jsSyncMethodSpec js_queue_functions[] = {
-	{"wait",		js_wait,		0,	JSTYPE_BOOLEAN,	"[timeout]"
-	,JSDOCSTR("wait for a value on the queue up-to <i>timeout</i> milliseconds "
-		"(default: <i>infinite</i>)")
+	{"poll",		js_poll,		0,	JSTYPE_BOOLEAN,	"[timeout]"
+	,JSDOCSTR("poll for a value on the queue up-to <i>timeout</i> milliseconds "
+		"(default: <i>infinite</i>), returns <i>true</i> or the <i>name</i> of "
+		"the value waiting (if it has one), or <i>false</i> if no values are waiting")
 	,312
 	},
 	{"read",		js_read,		0,	JSTYPE_VOID,	"[name]"
@@ -355,11 +375,10 @@ js_queue_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsva
 	}
 
 #ifdef _DEBUG
-	js_DescribeSyncObject(cx,obj,"Class used for uni-directional and bi-directional message queues. "
-		"Used for inter-thread/module communications.",312);
-	js_DescribeSyncConstructor(cx,obj,"To create a new Queue object: "
-		"<tt>var q = new Queue(<i>name</i>,<i>flags</i>)</tt><br>"
-		"where <i>flags</i> = <tt>SOCK_STREAM</tt> for TCP (default) or <tt>SOCK_DGRAM</tt> for UDP");
+	js_DescribeSyncObject(cx,obj,"Class for bi-directional message queues. "
+		"Used for inter-thread/module communications.", 312);
+	js_DescribeSyncConstructor(cx,obj,"To create a new (named) Queue object: "
+		"<tt>var q = new Queue(<i>name</i>)</tt>");
 	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", queue_prop_desc, JSPROP_READONLY);
 #endif
 
