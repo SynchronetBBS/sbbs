@@ -1,8 +1,0 @@
-# This is for the Practical Peripherals "14400FX" and "PM144HC II" modems
-# Updated 03/23/96 Digital Dynamics: Now uses verbal result codes
-
-INCLUDE         GEN2400
-COM_RATE	38400
-LOCKED_RATE     YES
-FLOW_CONTROL    BOTH
-SPEC_INIT	ATS95=3&Q9

@@ -1,6 +1,0 @@
-# This is for USRobotics 14400bps modems
-# Updated 03/23/96 Digital Dynamics: Now uses verbal result codes
-
-INCLUDE 	USR96
-SPEC_INIT	ATS15=8&A1&B1&H1&I0&M4&R2&S0&K3
-COM_RATE	38400

@@ -1,1 +1,0 @@
-@..\exec\scfg4os2 ..\ctrl %1 %2 %3

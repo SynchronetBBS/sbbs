@@ -1,9 +1,0 @@
-# This is for Generic Cirrus Logic Chipset 14.4 FAX/modems
-# Should work with 1414VQE (non-voice), as well as V1414VE/V1414VQE (voice)
-# Updated 03/23/96 Digital Dynamics: Now uses verbal result codes
-
-INCLUDE 	GEN2400
-COM_RATE	38400
-SPEC_INIT	AT\V0%C0
-LOCKED_RATE	YES
-FLOW_CONTROL    BOTH
