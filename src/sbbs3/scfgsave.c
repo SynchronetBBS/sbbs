@@ -159,7 +159,7 @@ BOOL DLLCALL write_node_cfg(scfg_t* cfg, int backup_level)
 	if(cfg->prepped)
 		return(FALSE);
 
-	if(cfg->node_num<1)
+	if(cfg->node_num<1 || cfg->node_num>MAX_NODES)
 		return(FALSE);
 
 	SAFECOPY(str,cfg->node_path[cfg->node_num-1]);
