@@ -41,8 +41,8 @@
 #include "vdd_func.h"
 #include "ringbuf.h"
 
-#define RINGBUF_SIZE_IN		10000
-
+#define RINGBUF_SIZE_IN			10000
+#define DEFAULT_MAX_MSG_SIZE	4000
 
 __declspec(dllexport) void __cdecl VDDDispatch(void) 
 {
@@ -252,7 +252,7 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
  				NULL					// address of read time-out 
 				)) {
 				status->inbuf_full=0;
-				status->inbuf_size=4000;
+				status->inbuf_size=DEFAULT_MAX_MSG_SIZE;
 			}
 			if(status->inbuf_full==MAILSLOT_NO_MESSAGE)
 				status->inbuf_full=0;
@@ -268,7 +268,7 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
  				NULL					// address of read time-out 
 				)) {
 				status->outbuf_full=0;
-				status->outbuf_size=4000;
+				status->outbuf_size=DEFAULT_MAX_MSG_SIZE;
 			}
 			if(status->outbuf_full==MAILSLOT_NO_MESSAGE)
 				status->outbuf_full=0;
@@ -319,7 +319,7 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 				NULL,		// address of number of messages 
  				NULL		// address of read time-out 
 				))
-				retval=4000;
+				retval=DEFAULT_MAX_MSG_SIZE;
 			break;
 
 		case VDD_OUTBUF_FULL:
@@ -343,7 +343,7 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 				NULL,		// address of number of messages 
  				NULL		// address of read time-out 
 				)) 
-				retval=4000;
+				retval=DEFAULT_MAX_MSG_SIZE;
 			break;
 
 		case VDD_ONLINE:
