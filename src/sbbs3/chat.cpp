@@ -282,7 +282,7 @@ void sbbs_t::multinodechat(int channel)
 						break;
 					case 'C':   /* List of action commands */
 						CRLF;
-						for(i=0;i<cfg.total_chatacts;i++) {
+						for(i=0;channel && i<cfg.total_chatacts;i++) {
 							if(cfg.chatact[i]->actset
 								!=cfg.chan[channel-1]->actset)
 								continue;
@@ -397,7 +397,7 @@ void sbbs_t::multinodechat(int channel)
 						break;
 					j++; }
 				if(pgraph[0]) {
-					if(useron.chat&CHAT_ACTION) {
+					if(channel && useron.chat&CHAT_ACTION) {
 						for(i=0;i<cfg.total_chatacts;i++) {
 							if(cfg.chatact[i]->actset
 								!=cfg.chan[channel-1]->actset)
