@@ -1111,6 +1111,7 @@ void event_thread(void* arg)
 
 						eprintf("Running node %u daily event",i);
 						// status("Running node daily event");
+						sbbs->online=ON_LOCAL;
 						sbbs->logentry("!:","Run node daily event");
 						sbbs->external(
 							 sbbs->cmdstr(sbbs->cfg.node_daily,nulstr,nulstr,NULL)
@@ -1229,6 +1230,8 @@ void event_thread(void* arg)
 					node.status=NODE_NETTING;
 					sbbs->putnodedat(sbbs->cfg.qhub[i]->node,&node);
 #endif
+					eprintf("QWK Network call-out: %s",sbbs->cfg.qhub[i]->id); 
+					sbbs->online=ON_LOCAL;
 					sbbs->external(
 						 sbbs->cmdstr(sbbs->cfg.qhub[i]->call,nulstr,nulstr,NULL)
 						,EX_OFFLINE|EX_BG);
@@ -1271,6 +1274,8 @@ void event_thread(void* arg)
 					node.status=NODE_NETTING;
 					sbbs->putnodedat(sbbs->cfg.phub[i]->node,&node);
 #endif
+					eprintf("PostLink Network call-out: %s",sbbs->cfg.phub[i]->name); 
+					sbbs->online=ON_LOCAL;
 					sbbs->external(
 						 sbbs->cmdstr(sbbs->cfg.phub[i]->call,nulstr,nulstr,NULL)
 						,EX_OFFLINE|EX_BG);
@@ -1402,10 +1407,11 @@ void event_thread(void* arg)
 						sbbs->putnodedat(sbbs->cfg.event[i]->node,&node);
 					}
 					strcpy(str,sbbs->cfg.event[i]->code);
-					eprintf("Running event: %s",strupr(str));
+					eprintf("Running timed event: %s",strupr(str));
 					int ex_mode = EX_OFFLINE;
 					if(!(sbbs->cfg.event[i]->misc&EVENT_EXCL))
 						ex_mode |= EX_BG;
+					sbbs->online=ON_LOCAL;
 					sbbs->external(
 						 sbbs->cmdstr(sbbs->cfg.event[i]->cmd,nulstr,nulstr,NULL)
 						,ex_mode
