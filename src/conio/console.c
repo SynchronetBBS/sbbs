@@ -130,11 +130,10 @@ BYTE CursStart;
 BYTE CursEnd;
 WORD *vmem=NULL;
 static int show = 1;
-static int blink = 1;
 BYTE CursRow=0;
 BYTE CursCol=0;
 typedef struct TextLine {
-    u_short	*data;
+    WORD	*data;
     u_char	max_length;	/* Not used, but here for future use */
     u_char	changed:1;
 } TextLine;
@@ -186,13 +185,13 @@ static	fd_set	fdset;		/* File Descriptors to select on */
 
 /* Keyboard stuff */
 WORD	keybuf[0x25];
-#define	K_NEXT		keybuf[0x21] /* *(u_short *)0x41a */
-#define	K_FREE		keybuf[0x22] /* *(u_short *)0x41c */
-#define	K_BUFSTARTP	keybuf[0x23] /* *(u_short *)0x480 */
-#define	K_BUFENDP	keybuf[0x24] /* *(u_short *)0x482 */
-#define	K_BUFSTART	(&keybuf[K_BUFSTARTP]) /* ((u_short *)(0x400 + K_BUFSTARTP)) */
-#define	K_BUFEND	(&keybuf[K_BUFENDP]) /* ((u_short *)(0x400 + keybuf[3])) */
-#define	K_BUF(i)	keybuf[i] /* *((u_short *)((u_char *)0x400 + (i))) */
+#define	K_NEXT		keybuf[0x21] /* *(WORD *)0x41a */
+#define	K_FREE		keybuf[0x22] /* *(WORD *)0x41c */
+#define	K_BUFSTARTP	keybuf[0x23] /* *(WORD *)0x480 */
+#define	K_BUFENDP	keybuf[0x24] /* *(WORD *)0x482 */
+#define	K_BUFSTART	(&keybuf[K_BUFSTARTP]) /* ((WORD *)(0x400 + K_BUFSTARTP)) */
+#define	K_BUFEND	(&keybuf[K_BUFENDP]) /* ((WORD *)(0x400 + keybuf[3])) */
+#define	K_BUF(i)	keybuf[i] /* *((WORD *)((u_char *)0x400 + (i))) */
 
 BYTE	K1_STATUS;
 #define	K1_RSHIFT	0x01
@@ -237,7 +236,7 @@ BYTE	K4_STATUS;
 int flipdelete = 0;		/* Flip meaning of delete and backspace */
 static WORD break_code = 0x00;
 
-static u_short Ascii2Scan[] = {
+static WORD Ascii2Scan[] = {
  0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff,
  0x000e, 0x000f, 0xffff, 0xffff, 0xffff, 0x001c, 0xffff, 0xffff,
  0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff,
@@ -257,10 +256,10 @@ static u_short Ascii2Scan[] = {
 };
 
 struct {
-    u_short	base;
-    u_short	shift;
-    u_short	ctrl;
-    u_short	alt;
+    WORD	base;
+    WORD	shift;
+    WORD	ctrl;
+    WORD	alt;
 } ScanCodes[] = {
     {	0xffff, 0xffff, 0xffff, 0xffff }, /* key  0 */
     {	0x011b, 0x011b, 0x011b, 0xffff }, /* key  1 - Escape key */
@@ -388,15 +387,16 @@ sleep_poll(void)
 }
 
 static void
-setgc(u_short attr)
+setgc(WORD attr)
 {
 	XGCValues v;
-	if (blink && !show && (attr & 0x8000))
-		v.foreground = pixels[(attr >> 12) & 0x07];
+
+	v.background = pixels[(attr >> 12) & 0x07];
+	if ((!show) && (attr & 0x8000))
+		v.foreground = v.background;
 	else
 		v.foreground = pixels[(attr >> 8) & 0x0f];
 
-	v.background = pixels[(attr >> 12) & (blink ? 0x07 : 0x0f)];
 	x11.XChangeGC(dpy, gc, GCForeground|GCBackground, &v);
 }
 
@@ -416,7 +416,6 @@ video_update_text()
 
 	setgc(attr);
 
-
 	for (r = 0; r < (DpyRows+1); ++r) {
 	    int cc = 0;
 
@@ -429,7 +428,7 @@ video_update_text()
 					    lines[r].changed = 1;
 					    break;
 					}
-					if (blink && lines[r].data[c] & 0x8000 && show != os) {
+					if (lines[r].data[c] & 0x8000 && show != os) {
 					    lines[r].changed = 1;
 					    break;
 					}
@@ -443,7 +442,7 @@ video_update_text()
 		reset_poll();
 		lines[r].changed = 0;
 		memcpy(lines[r].data,
-			&vmem[r * DpyCols], sizeof(u_short) * DpyCols);
+			&vmem[r * DpyCols], sizeof(WORD) * DpyCols);
 
 		for (c = 0; c < DpyCols; ++c) {
 			setgc(vmem[r * DpyCols + c]  & 0xff00);
@@ -456,7 +455,7 @@ video_update_text()
 
 	    attr = vmem[CursRow * DpyCols +CursCol] & 0xff00;
 	    v.foreground = pixels[(attr >> 8) & 0x0f] ^
-			pixels[(attr >> 12) & (blink ? 0x07 : 0x0f)];
+			pixels[(attr >> 12) & 0x07];
 	    if (v.foreground) {
 			v.function = GXxor;
 	    } else {
@@ -511,7 +510,7 @@ get_lines()
 
 		for (i = 0; i < (DpyRows+1); ++i) {
 			lines[i].max_length = DpyCols;
-			lines[i].data = (u_short *)malloc(DpyCols * sizeof(u_short));
+			lines[i].data = (WORD *)malloc(DpyCols * sizeof(WORD));
 			if (lines[i].data == NULL)
 				err(1, "Could not allocate data structure for text lines\n");
 			lines[i].changed = 1;
@@ -523,8 +522,8 @@ get_lines()
 
 		for (i = 0; i < (DpyRows+1); ++i) {
 			lines[i].max_length = DpyCols;
-			lines[i].data = (u_short *)realloc(lines[i].data,
-							   DpyCols * sizeof(u_short));
+			lines[i].data = (WORD *)realloc(lines[i].data,
+							   DpyCols * sizeof(WORD));
 			if (lines[i].data == NULL)
 				err(1, "Could not allocate data structure for text lines\n");
 			lines[i].changed = 1;
@@ -696,7 +695,7 @@ video_event(XEvent *ev)
 		KeySym ks;
 		int n;
 		int nlock = 0;
-		u_short scan = 0xffff;
+		WORD scan = 0xffff;
 
 		if (!(ev->xkey.state & ShiftMask)) {
 		    K1_STATUS &= ~K1_LSHIFT;
@@ -1049,19 +1048,6 @@ load_font(char *filename, int width, int height)
     return(0);
 }
 
-/* Calculate 16 bit RGB values for X from the 6 bit DAC values and the
-   palette. This works for 16 and 256 color modes, although we don't really
-   support the latter yet. */
-static void
-dac2rgb(XColor *color, int i)
-{
-    int m;
-
-    color->red   = dac_default16[palette[i]].red << 10;
-    color->green = dac_default16[palette[i]].green << 10;
-    color->blue  = dac_default16[palette[i]].blue << 10;
-}
-
 /* Calculate 'pixels[]' from the current DAC table and palette.
 
    To do: do not use 'pixels[]', use an array of 'XColor's which we can
@@ -1076,7 +1062,9 @@ update_pixels()
     for (i = 0; i < 16; i++) {
 		XColor color;
 
-		dac2rgb(&color, i);
+	    color.red   = dac_default16[palette[i]].red << 10;
+	    color.green = dac_default16[palette[i]].green << 10;
+	    color.blue  = dac_default16[palette[i]].blue << 10;
 		if (x11.XAllocColor(dpy, DefaultColormap(dpy, DefaultScreen(dpy)), &color)) {
 		    pixels[i] = color.pixel;
 		} else if (i < 7)
