@@ -127,6 +127,10 @@ enum {
 	,BBS_PROP_MSG_REPLY_ID
 	,BBS_PROP_MSG_DELIVERY_ATTEMPTS
 
+	/* READ ONLY */
+	,BBS_PROP_BATCH_UPLOAD_TOTAL
+	,BBS_PROP_BATCH_DNLOAD_TOTAL
+
 };
 
 #ifdef _DEBUG
@@ -214,6 +218,9 @@ enum {
 	,"message identifier"
 	,"message replied-to identifier"
 	,"message delivery attempt counter"
+
+	,"number of files in batch upload queue"
+	,"number of files in batch download queue"
 
 	,NULL
 	};
@@ -550,6 +557,12 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 				p=sbbs->current_msg->reply_id;
 			break;
 
+		case BBS_PROP_BATCH_UPLOAD_TOTAL:
+			val=sbbs->batup_total;
+			break;
+		case BBS_PROP_BATCH_DNLOAD_TOTAL:
+			val=sbbs->batdn_total;
+
 		default:
 			return(JS_TRUE);
 	}
@@ -819,6 +832,9 @@ static struct JSPropertySpec js_bbs_properties[] = {
 	{	"msg_reply_id"		,BBS_PROP_MSG_REPLY_ID		,PROP_READONLY	,NULL,NULL},
 	{	"msg_delivery_attempts"	,BBS_PROP_MSG_DELIVERY_ATTEMPTS
 														,PROP_READONLY	,NULL,NULL},
+
+	{	"batch_upload_total",BBS_PROP_BATCH_UPLOAD_TOTAL,PROP_READONLY	,NULL,NULL},
+	{	"batch_dnload_total",BBS_PROP_BATCH_DNLOAD_TOTAL,PROP_READONLY	,NULL,NULL},
 	{0}
 };
 
