@@ -37,6 +37,7 @@
 
 #include <time.h>
 #include <stdio.h>
+#include "xsdkinet.h"	/* SOCKET */
 #include "xsdkdefs.h"
 
 #ifndef GLOBAL
@@ -131,6 +132,12 @@ GLOBAL uchar	name_len;		/* Length of name field in NAME.DAT */
 GLOBAL char 	aborted;		/* Aborted flag - if ctrl-c hit */
 GLOBAL char 	sysop_level;	/* Sysop Level */
 GLOBAL FILE 	*con_fp;		/* Console file pointer (stdout/stderr) */
+
+#ifndef __16BIT__	/* Sockets */
+
+GLOBAL SOCKET	client_socket;
+
+#endif
 
 #ifdef __cplusplus
 	}
