@@ -111,6 +111,7 @@ typedef struct {
 #define MAIL_OPT_DNSBL_IGNORE		(1<<16) /* Dump mail, return success */
 #define MAIL_OPT_DNSBL_BADUSER		(1<<17) /* Refuse mail (bad user name) */
 #define MAIL_OPT_DNSBL_CHKRECVHDRS	(1<<18)	/* Check all Recieved: from addresses */
+#define MAIL_OPT_DNSBL_THROTTLE		(1<<19)	/* Throttle receive from blacklisted servers */
 #define MAIL_OPT_DNSBL_DEBUG		(1<<20) /* Debug DNSBL activity */
 #define MAIL_OPT_SMTP_AUTH_VIA_IP	(1<<21)	/* Allow SMTP authentication via IP */
 #define MAIL_OPT_SEND_INTRANSIT		(1<<22)	/* Send mail, even if already "in transit" */
