@@ -36,7 +36,10 @@
  ****************************************************************************/
 
 /* ANSI */
-#include <malloc.h>
+
+#ifndef __FreeBSD__
+	#include <malloc.h>
+#endif
 
 /* SMB-specific */
 #include "smblib.h"

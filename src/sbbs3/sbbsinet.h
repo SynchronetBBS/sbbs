@@ -104,4 +104,10 @@
 #define SHUT_RDWR		2	/* for shutdown() */
 #endif
 
+#ifndef IPPORT_FTP
+#define IPPORT_FTP		21
+#define IPPORT_TELNET	23
+#define IPPORT_SMTP		25
+#endif
+
 #endif	/* Don't add anything after this line */

@@ -71,7 +71,13 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
-#include <malloc.h>
+
+#ifndef __FreeBSD__
+
+	#include <malloc.h>
+
+#endif
+
 #include <sys/stat.h>
 
 /***********************/

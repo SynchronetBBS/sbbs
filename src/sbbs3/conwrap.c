@@ -12,7 +12,15 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <termios.h>
+
+/* Do the correct thing under BSD */
+#ifndef __FreeBSD__
 #include <sys/kd.h>
+#endif
+#ifdef __FreeBSD__
+#include <sys/kbio.h>
+#endif
+
 #include <sys/time.h>
 #include <sys/types.h>
 #include <signal.h>

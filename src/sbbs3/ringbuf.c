@@ -50,7 +50,11 @@
 #ifdef RINGBUF_USE_STD_RTL
 
 	#ifndef VTOOLSD
+
+	/* FreeBSD uses <stdlib.h> instead of <malloc.h> */
+	#ifndef __FreeBSD__
 	#include <malloc.h>		/* malloc prototype */
+	#endif
     #include <string.h>		/* memcpy prototype */
     #endif
 

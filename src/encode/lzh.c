@@ -35,7 +35,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+
+/* FreeBSD's malloc.h is deprecated, it drops a warning and */
+/* #includes <stdlib.h>, which is already here.             */
+#ifndef __FreeBSD__
 #include <malloc.h>
+#endif
+
 #include "lzh.h"
 
 /****************************************************************************/

@@ -48,7 +48,11 @@
 #endif
 
 /* ANSI C Library headers */
-#include <malloc.h>
+
+#ifndef __FreeBSD__
+	#include <malloc.h>
+#endif
+
 #include <time.h>
 #include <errno.h>
 #include <fcntl.h>
