@@ -97,6 +97,9 @@ enum {
 	,SYS_PROP_MODS_DIR
 	,SYS_PROP_LOGS_DIR
 
+	/* filenames */
+	,SYS_PROP_DEVNULL
+
 };
 
 static JSBool js_system_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
@@ -269,6 +272,10 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 		case SYS_PROP_LOGS_DIR:
 			p=cfg->logs_dir;
 			break;
+
+		case SYS_PROP_DEVNULL:
+			p=_PATH_DEVNULL;
+			break;
 	}
 
 	if(p!=NULL) {	/* string property */
@@ -361,6 +368,8 @@ static struct JSPropertySpec js_system_properties[] = {
 	{	"mods_dir",					SYS_PROP_MODS_DIR		,SYSOBJ_FLAGS,	NULL,	NULL },	
 	{	"logs_dir",					SYS_PROP_LOGS_DIR		,SYSOBJ_FLAGS,	NULL,	NULL },	
 
+	/* filenames */
+	{	"devnull",					SYS_PROP_DEVNULL		,SYSOBJ_FLAGS,	NULL,	NULL },
 	{0}
 };
 
@@ -421,6 +430,9 @@ static char* sys_prop_desc[] = {
 	,"executable file directory"
 	,"modified modules directory (optional)"
 	,"log file directory"
+
+	/* filenames */
+	,"null device filename"
 
 	/* INSERT new tabled properties here */
 
