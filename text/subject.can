@@ -1,0 +1,2 @@
+; Enter filtered (disallowed) message subjects in this file
+; Wildcard characters (*, ^, ~) are allowed and ! negates the match
