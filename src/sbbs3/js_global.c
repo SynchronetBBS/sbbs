@@ -758,7 +758,7 @@ static struct {
 	int		value;
 	char*	name;
 } lowasctbl[32] = {
-	{ 160	,"nbsp"		}  /* NULL non-breaking space */
+	{ 160	,"nbsp"		}, /* NULL non-breaking space */
 	{ 9786	,NULL		}, /* white smiling face */
 	{ 9787	,NULL		}, /* black smiling face */
 	{ 9829	,"hearts"	}, /* black heart suit */
@@ -837,15 +837,6 @@ js_html_encode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 			case '>':
 				j+=sprintf(outbuf+j,"&gt;");
 				break;
-			case CTRL_O:	/* General currency symbol */
-				j+=sprintf(outbuf+j,"&curren;");
-				break;
-			case CTRL_T:	/* Paragraph sign */
-				j+=sprintf(outbuf+j,"&para;");
-				break;
-			case CTRL_U:	/* Section sign */
-				j+=sprintf(outbuf+j,"&sect;");
-				break;
 			default:
 				if(inbuf[i]&0x80) {
 					if(exascii) {
@@ -859,8 +850,17 @@ js_html_encode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 				}
 				else if(inbuf[i]>=' ' && inbuf[i]<DEL)
 					outbuf[j++]=inbuf[i];
-				else if(inbuf[i]>' ') /* strip unknown control chars */
-					j+=sprintf(outbuf+j,"&#%u;",inbuf[i]);
+				else if(inbuf[i]>' ') /* unknown control chars */
+				{
+					if(exascii) {
+						ch=inbuf[i];
+						if(lowasctbl[ch].name!=NULL)
+							j+=sprintf(outbuf+j,"&%s;",lowasctbl[ch].name);
+						else
+							j+=sprintf(outbuf+j,"&#%u;",lowasctbl[ch].value);
+					} else
+						j+=sprintf(outbuf+j,"&#%u;",inbuf[i]);
+				}
 				break;
 		}
 	}
