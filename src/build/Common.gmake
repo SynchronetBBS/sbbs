@@ -181,7 +181,6 @@ OBJODIR :=	$(CCPRE).$(machine).obj.$(BUILDPATH)
 MTOBJODIR :=	$(CCPRE).$(machine).obj.$(BUILDPATH)-mt
 EXEODIR :=	$(CCPRE).$(machine).exe.$(BUILDPATH)
 LDFLAGS	+=	-L$(LIBODIR)
-LDFLAGS +=  -lm
 
 ifeq ($(os),openbsd)
  DELETE :=	rm -f
