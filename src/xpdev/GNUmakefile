@@ -16,7 +16,7 @@
 DEBUG	=	1		# Comment out for release (non-debug) version
 ifdef bcc
 CC	=	bc++
-CFLAGS	=	-w -D__unix__
+CFLAGS	=	-q -w -D__unix__
 else
 CC	=	gcc
 CFLAGS	=	-Wall -O
@@ -42,7 +42,7 @@ CFLAGS	+= -D_THREAD_SAFE
 LFLAGS	:=	-pthread
 else					# Linux / Other UNIX
 ifdef bcc
-LFLAGS	:=	libpthread.a
+LFLAGS	:=	-q libpthread.a
 else
 LFLAGS	:=	-lpthread
 endif
