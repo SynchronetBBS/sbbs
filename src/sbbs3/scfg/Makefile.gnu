@@ -15,7 +15,7 @@
 # $Id$
 
 # Macros
-# DEBUG	=	1		# Comment out for release (non-debug) version
+DEBUG	=	1		# Comment out for release (non-debug) version
 USE_DIALOG =	1		# Comment out for stdio (uifcx) version
 CC		=	gcc
 SLASH	=	/
