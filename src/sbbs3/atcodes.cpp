@@ -152,6 +152,12 @@ char* sbbs_t::atcode(char* sp, char* str)
 		return(str);
 	}
 
+	if(!strcmp(sp,"SERVED")) {
+		extern DWORD served;
+		sprintf(str,"%lu",served);
+		return(str);
+	}
+
 	if(!strcmp(sp,"SOCKET_LIB")) 
 		return(socklib_version(str));
 
