@@ -285,10 +285,14 @@ int sbbs_t::exec_function(csi_t *csi)
 			if(i<=cfg.sys_nodes || criterrs) {
 				if(!noyes(text[ClearErrCounter])) {
 					for(i=1;i<=cfg.sys_nodes;i++) {
-						getnodedat(i,&node,1);
-						node.errors=0;
-						putnodedat(i,&node); }
-					criterrs=0; } }
+						if(getnodedat(i,&node,true)==0) {
+							node.errors=0;
+							putnodedat(i,&node); 
+						}
+					criterrs=0; 
+					} 
+				}
+			}
 			return(0);
 		case CS_ANSI_CAPTURE:           /* Capture ANSI codes */
 			sys_status^=SS_ANSCAP;

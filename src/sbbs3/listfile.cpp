@@ -106,9 +106,12 @@ int sbbs_t::listfiles(uint dirnum, char *filespec, int tofile, long mode)
 		action=NODE_LFIL;
 		getnodedat(cfg.node_num,&thisnode,0);
 		if(thisnode.action!=NODE_LFIL) {	/* was a sync */
-			getnodedat(cfg.node_num,&thisnode,1);
-			thisnode.action=NODE_LFIL;
-			putnodedat(cfg.node_num,&thisnode); } }
+			if(getnodedat(cfg.node_num,&thisnode,true)==0) {
+				thisnode.action=NODE_LFIL;
+				putnodedat(cfg.node_num,&thisnode); 
+			} 
+		} 
+	}
 
 	while(online && found<MAX_FILES) {
 		if(found<0)
@@ -1282,10 +1285,12 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 							sprintf(str,"%s%s",dirpath,fname);
 							sprintf(path,"%s%s",cfg.temp_dir,fname);
 							mv(str,path,1); /* copy the file to temp dir */
-							getnodedat(cfg.node_num,&thisnode,1);
-							thisnode.aux=0xf0;
-							putnodedat(cfg.node_num,&thisnode);
-							CRLF; }
+							if(getnodedat(cfg.node_num,&thisnode,true)==0) {
+								thisnode.aux=0xf0;
+								putnodedat(cfg.node_num,&thisnode);
+							}
+							CRLF; 
+						}
 						for(j=0;j<cfg.total_dlevents;j++)
 							if(!stricmp(cfg.dlevent[j]->ext,f.name+9)
 								&& chk_ar(cfg.dlevent[j]->ar,&useron)) {

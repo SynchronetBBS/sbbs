@@ -157,9 +157,10 @@ void sbbs_t::batchmenu()
 									: cfg.dir[batdn_dir[i]]->path
 									,tmp);
 								mv(str,tmp2,1); /* copy the file to temp dir */
-								getnodedat(cfg.node_num,&thisnode,1);
-								thisnode.aux=0xff;
-								putnodedat(cfg.node_num,&thisnode);
+								if(getnodedat(cfg.node_num,&thisnode,true)==0) {
+									thisnode.aux=0xff;
+									putnodedat(cfg.node_num,&thisnode);
+								}
 								CRLF; 
 							} 
 						}
@@ -410,9 +411,10 @@ BOOL sbbs_t::start_batch_download()
 					: cfg.dir[batdn_dir[i]]->path
 					,fname);
 				mv(str,path,1); /* copy the file to temp dir */
-				getnodedat(cfg.node_num,&thisnode,1);
-				thisnode.aux=40; /* clear the seq dev # */
-				putnodedat(cfg.node_num,&thisnode);
+				if(getnodedat(cfg.node_num,&thisnode,true)==0) {
+					thisnode.aux=40; /* clear the seq dev # */
+					putnodedat(cfg.node_num,&thisnode);
+				}
 				CRLF; 
 			} 
 		}
@@ -448,15 +450,16 @@ BOOL sbbs_t::start_batch_download()
 	}
 
 	sprintf(str,"%sBATCHDN.LST",cfg.node_dir);
-	getnodedat(cfg.node_num,&thisnode,1);
 	action=NODE_DLNG;
 	t=now;
 	if(cur_cps) 
 		t+=(totalsize/(ulong)cur_cps);
 	localtime_r(&t,&tm);
-	thisnode.aux=(tm.tm_hour*60)+tm.tm_min;
-	thisnode.action=action;
-	putnodedat(cfg.node_num,&thisnode); /* calculate ETA */
+	if(getnodedat(cfg.node_num,&thisnode,true)==0) {
+		thisnode.aux=(tm.tm_hour*60)+tm.tm_min;
+		thisnode.action=action;
+		putnodedat(cfg.node_num,&thisnode); /* calculate ETA */
+	}
 	start=time(NULL);
 	error=protocol(cmdstr(cfg.prot[xfrprot]->batdlcmd,str,list,NULL),false);
 	end=time(NULL);

@@ -351,15 +351,18 @@ void sbbs_t::seqwait(uint devnum)
 	for(start=now=time(NULL);online && now-start<90;now=time(NULL)) {
 		if(msgabort())				/* max wait ^^^^ sec */
 			break;
-		getnodedat(cfg.node_num,&thisnode,1);	/* open and lock this record */
+		getnodedat(cfg.node_num,&thisnode,true);	/* open and lock this record */
 		for(i=1;i<=cfg.sys_nodes;i++) {
 			if(i==cfg.node_num) continue;
-			getnodedat(i,&node,1);
-			if((node.status==NODE_INUSE || node.status==NODE_QUIET)
-				&& node.action==NODE_RFSD && node.aux==devnum) {
-				putnodedat(i,&node);
-				break; }
-			putnodedat(i,&node); }
+			if(getnodedat(i,&node,true)==0) {
+				if((node.status==NODE_INUSE || node.status==NODE_QUIET)
+					&& node.action==NODE_RFSD && node.aux==devnum) {
+					putnodedat(i,&node);
+					break; 
+				}
+				putnodedat(i,&node); 
+			}
+		}
 		if(i>cfg.sys_nodes) {
 			thisnode.action=NODE_RFSD;
 			thisnode.aux=devnum;
