@@ -1617,9 +1617,9 @@ static void smtp_thread(void* arg)
 				p=buf+8;
 				while(*p && *p<=' ') p++;
 				if(trashcan(&scfg,p,"subject")) {
-					lprintf("%04d !SMTP BLOCKED SUBJECT '%s' from %s"
+					lprintf("%04d !SMTP BLOCKED SUBJECT (%s) from: %s"
 						,socket, p, reverse_path);
-					sprintf(tmp,"Blocked subject '%s' from %s"
+					sprintf(tmp,"Blocked subject (%s) from: %s"
 						,p, reverse_path);
 					spamlog(&scfg, "SMTP", tmp, host_name, host_ip, rcpt_addr);
 					sockprintf(socket, "554 Subject not allowed.");
@@ -1932,9 +1932,10 @@ static void smtp_thread(void* arg)
 
 			/* Check for blocked recipients */
 			if(trashcan(&scfg,rcpt_addr,"email")) {
-				lprintf("%04d !SMTP BLOCKED RECIPIENT E-MAIL ADDRESS: %s", socket, rcpt_addr);
-				spamlog(&scfg, "SMTP", "Blocked recipient e-mail address"
-					,host_name, host_ip, rcpt_addr);
+				lprintf("%04d !SMTP BLOCKED RECIPIENT E-MAIL (%s) from: %s"
+					,socket, rcpt_addr, reverse_path);
+				sprintf(str,"Blocked recipient e-mail address from: %s",reverse_path);
+				spamlog(&scfg, "SMTP", str, host_name, host_ip, rcpt_addr);
 				sockprintf(socket, "550 Unknown User:%s", buf+8);
 				continue;
 			}
@@ -1967,7 +1968,7 @@ static void smtp_thread(void* arg)
 						!findstr(&scfg,host_ip,relay_list)) {
 						lprintf("%04d !SMTP ILLEGAL RELAY ATTEMPT from %s [%s] to %s"
 							,socket, reverse_path, host_ip, p);
-						sprintf(tmp,"Relay attempt from %s to %s"
+						sprintf(tmp,"Relay attempt from: %s to: %s"
 							,reverse_path, p);
 						spamlog(&scfg, "SMTP", tmp, host_name, host_ip, rcpt_addr);
 						sockprintf(socket, "550 Relay not allowed.");
