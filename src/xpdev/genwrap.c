@@ -151,7 +151,6 @@ void DLLCALL unix_beep(int freq, int dur)
 		tone.frequency=freq;
 		tone.duration=dur;
 		ioctl(speaker_fd,SPKRTONE,&tone);
-		SLEEP(dur);
 		close(speaker_fd);
 		return;
 	}
