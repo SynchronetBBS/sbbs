@@ -43,7 +43,8 @@
 #include "wrapdll.h"	/* DLLEXPORT and DLLCALL */
 
 #if defined(__unix__)
-	#include <unistd.h>	/* usleep */
+	#include <unistd.h>		/* usleep */
+	#include <sys/time.h>	/* struct timeval */
 #endif
 
 #if defined(__cplusplus)
