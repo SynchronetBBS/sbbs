@@ -49,7 +49,7 @@ a.tlink2:hover{ text-decoration: underline; }
 
 #pageNav{ background-image:url(graphics/sync_pbgj1_grey_bg.gif); background-position: bottom left; background-repeat:no-repeat; width:180px; padding-bottom: 90px; padding-top:10px; background-color: #EEEEEE; font: small Verdana,sans-serif;  }
 
-td.main { background-color: #DDDDDD; border-left: 3px solid #ccd2d2; padding-left: 15px; padding-right: 15px; border-right: 3px solid #ccd2d2; }
+td.main { width:100%; background-color: #DDDDDD; border-left: 3px solid #ccd2d2; padding-left: 15px; padding-right: 15px; border-right: 3px solid #ccd2d2; }
 
 table.welcome_main { margin-left:auto; margin-right: auto; border-width: 0px; }
 
