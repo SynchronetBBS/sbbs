@@ -123,6 +123,9 @@ static void umsg(char *str);
 static void upop(char *str);
 static void sethelp(int line, char* file);
 
+/* Interal routines */
+void delwin(int WinNum);
+
 /* Classes */
 class UIFC_PopUp : public Fl_Double_Window  {
 	int handle(int);
@@ -789,7 +792,17 @@ int uifcinifltk(uifcapi_t* uifcapi)
 /****************************************************************************/
 void uifcbail(void)
 {
-	delete MainWin;
+	int i;
+	
+	for(i=CurrWin;i>=0;i--) {
+		delwin(i);
+	}
+
+	if(MainWin != NULL)  {
+		MainWin->hide();
+		delete MainWin;
+	}
+	Fl::wait(5);
 }
 
 /****************************************************************************/
