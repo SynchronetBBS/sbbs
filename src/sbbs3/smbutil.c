@@ -1336,21 +1336,26 @@ void readmsgs(ulong start)
 				break; } }
 }
 
+time_t checktime(void)
+{
+	struct tm tm;
+
+    memset(&tm,0,sizeof(tm));
+    tm.tm_year=94;
+    tm.tm_mday=1;
+    return(mktime(&tm)-0x2D24BD00L);
+}
+
 /***************/
 /* Entry point */
 /***************/
 int main(int argc, char **argv)
 {
-	char cmd[128]="",*p,*s;
-	int i,j,x,y;
-	BOOL create=FALSE;
+	char	cmd[128]="",*p,*s;
+	int		i,j,x,y;
+	time_t	t;
+	BOOL	create=FALSE;
 
-#ifdef __TURBOC__
-	//	timezone=0; 		/* Fix for Borland C++ EST default */
-	//	daylight=0; 		/* Fix for Borland C++ EDT default */
-#elif defined(__WATCOMC__)
-	putenv("TZ=UCT0");  /* Fix for Watcom C++ EDT default */
-#endif
 	setvbuf(stdout,0,_IONBF,0);
 
 	smb.file[0]=0;
@@ -1374,6 +1379,15 @@ int main(int argc, char **argv)
 #endif
 		,smb_lib_ver()
 		);
+
+	putenv("TZ=UCT0");
+	tzset();
+
+	if((t=checktime())!=0) {
+		fprintf(stderr,"Time problem (%ld)\n",t);
+		return(-1);
+	}
+
 	for(x=1;x<argc;x++) {
 		if(
 #ifndef __unix__
