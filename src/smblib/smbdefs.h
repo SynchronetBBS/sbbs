@@ -44,6 +44,10 @@
 /* Macros */
 /**********/
 
+#define SMB_HEADER_ID	"SMB\x1a"		/* <S> <M> <B> <^Z> */
+#define SHD_HEADER_ID	"SHD\x1a"		/* <S> <H> <D> <^Z> */
+#define LEN_HEADER_ID	4
+
 										/* Control characters */
 #define TAB 				'\t'		/* Horizontal tabulation	^I */
 #define LF					'\n'		/* Line feed				^J */
@@ -404,7 +408,7 @@ typedef struct _PACK {		// Index record
 
 typedef struct _PACK {		// Message base header (fixed portion)
 
-    uchar   id[4];          // text or binary unique hdr ID
+    uchar   id[LEN_HEADER_ID];	// SMB<^Z>
     ushort  version;        // version number (initially 100h for 1.00)
     ushort  length;         // length including this struct
 
@@ -424,7 +428,7 @@ typedef struct _PACK {		// Message base status header
 
 typedef struct _PACK {		// Message header
 
-	uchar	id[4];			// SHD<^Z>
+	uchar	id[LEN_HEADER_ID];	// SHD<^Z>
     ushort  type;           // Message type (normally 0)
     ushort  version;        // Version of type (initially 100h for 1.00)
     ushort  length;         // Total length of fixed record + all fields
