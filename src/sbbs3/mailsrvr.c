@@ -37,20 +37,21 @@
 
 /* Platform-specific headers */
 #ifdef _WIN32
-#include <io.h>			/* open/close */
-#include <share.h>		/* share open flags */
-#include <windows.h>
-#include <process.h>	/* _beginthread */
+	#include <io.h>			/* open/close */
+	#include <share.h>		/* share open flags */
+	#include <process.h>	/* _beginthread */
+	#include <windows.h>	/* required for mmsystem.h */
+	#include <mmsystem.h>	/* SND_ASYNC */
 #endif
 
 /* ANSI C Library headers */
 #include <stdio.h>
-#include <stdlib.h>		/* ltoa in GNU C lib */
-#include <stdarg.h>		/* va_list */
-#include <string.h>		/* strrchr */
-#include <ctype.h>		/* isdigit */
-#include <fcntl.h>		/* Open flags */
-#include <errno.h>		/* errno */
+#include <stdlib.h>			/* ltoa in GNU C lib */
+#include <stdarg.h>			/* va_list */
+#include <string.h>			/* strrchr */
+#include <ctype.h>			/* isdigit */
+#include <fcntl.h>			/* Open flags */
+#include <errno.h>			/* errno */
 
 /* Synchronet-specific headers */
 #include "scfgdefs.h"
@@ -123,6 +124,7 @@ static int lprintf(char *fmt, ...)
 #ifdef _WINSOCKAPI_
 
 static WSADATA WSAData;
+static BOOL WSAInitialized=FALSE;
 
 static BOOL winsock_startup(void)
 {
@@ -130,6 +132,7 @@ static BOOL winsock_startup(void)
 
     if((status = WSAStartup(MAKEWORD(1,1), &WSAData))==0) {
 		lprintf("%s %s",WSAData.szDescription, WSAData.szSystemStatus);
+		WSAInitialized=TRUE;
 		return (TRUE);
 	}
 
@@ -2231,7 +2234,7 @@ static void cleanup(int code)
 	update_clients();
 
 #ifdef _WINSOCKAPI_	
-	if(WSACleanup()!=0) 
+	if(WSAInitialized && WSACleanup()!=0) 
 		lprintf("!WSACleanup ERROR %d",ERROR_VALUE);
 #endif
 
@@ -2321,9 +2324,9 @@ void mail_server(void* arg)
 
 	srand(time(NULL));
 
+#ifndef __MINGW32__
 	if(PUTENV("TZ=UCT0"))
 		lprintf("!putenv() FAILED");
-
 	tzset();
 
 	if((t=checktime())!=0) {   /* Check binary time */
@@ -2331,11 +2334,15 @@ void mail_server(void* arg)
 		cleanup(1);
 		return;
     }
+#endif
 
 	if(!winsock_startup()) {
 		cleanup(1);
 		return;
 	}
+
+	t=time(NULL);
+	lprintf("Initializing on %s",ctime(&t));
 
 	/* Initial configuration and load from CNF files */
     memset(&scfg, 0, sizeof(scfg));
