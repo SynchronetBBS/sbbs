@@ -155,7 +155,7 @@ bool sbbs_t::answer()
 									,0,useron.alias);
 								logline("+!",str);
 						}
-						lprintf(LOG_INFO,"%04d !CLIENT IP NOT LISTED in rlogin.can",client_socket);
+						lprintf(LOG_WARNING,"%04d !CLIENT IP NOT LISTED in %s",client_socket,path);
 						useron.number=0;
 						hangup();
 					}
