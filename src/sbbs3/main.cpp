@@ -1776,6 +1776,8 @@ void event_thread(void* arg)
 					if(!(sbbs->cfg.event[i]->misc&EVENT_EXCL)
 						&& sbbs->cfg.event[i]->misc&EX_BG)
 						ex_mode |= EX_BG;
+					if(sbbs->cfg.event[i]->misc&XTRN_SH)
+						ex_mode |= EX_SH;
 					ex_mode|=(sbbs->cfg.event[i]->misc&EX_NATIVE);
 					sbbs->online=ON_LOCAL;
 					sbbs->external(
