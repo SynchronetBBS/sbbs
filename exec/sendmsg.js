@@ -15,7 +15,7 @@ if((msg = prompt("Message"))==null)
 	exit();
 host = dest.slice(hp+1);
 sock = new Socket();
-sock.debug = true;
+//sock.debug = true;
 do {
 	if(!sock.connect(host,25)) {
 		alert("Connection to " + host + " failed with error " + sock.last_error);
