@@ -141,9 +141,7 @@ void sbbs_t::downloadfile(file_t* f)
 	if(f->dir==cfg.user_dir) {
 		rmuserxfers(&cfg,0,useron.number,f->name);
 		if(!getuserxfers(0,0,f->name)) { /* check if any ixt entries left */
-			sprintf(str,"%s%s",f->altpath>0 && f->altpath<=cfg.altpaths ?
-				cfg.altpath[f->altpath-1] : cfg.dir[f->dir]->path,unpadfname(f->name,tmp));
-			remove(str);
+			remove(getfilepath(&cfg,f,str));
 			removefiledat(&cfg,f); 
 		} 
 	}
@@ -297,35 +295,57 @@ void sbbs_t::autohangup()
 
 bool sbbs_t::checkdszlog(file_t* f)
 {
-	char*	p;
 	char	path[MAX_PATH+1];
-	char	str[512];
-	char	fname[128];
+	char	str[MAX_PATH+128];
+	char	fname[MAX_PATH+1];
+	char	rpath[MAX_PATH+1];
+	char*	p;
+	char*	rname;
+	char	code;
+	ulong	bytes;
+	ulong	dte;
+	ulong	cps;
+	ulong	errors;
+	ulong	flows;
+	ulong	block_size;
+	long	serial_no;
 	FILE*	fp;
+	bool	success=false;
 
 	sprintf(path,"%sPROTOCOL.LOG",cfg.node_dir);
 	if((fp=fopen(path,"r"))==NULL)
 		return(false);
 
 	unpadfname(f->name,fname);
-	p=lastchar(fname);
-	if(*p=='.')     /* DSZ log uses FILE instead of FILE. */
-		*p=0;       /* when there isn't an extension.     */
-	strupr(fname);
+
+	/* Increase real path is different (long filename?) */
+	getfilepath(&cfg,f,rpath);
+	rname=getfname(rpath);
+
 	while(!ferror(fp)) {
 		if(!fgets(str,sizeof(str),fp))
 			break;
-		truncstr(str,"\r\n");	/* chop off CRLF */
-		strupr(str);
-		if(strstr(str,fname)) {   /* Only check for name, Bimodem doesn't put path */
-			if(str[0]=='E' || str[0]=='L' || (str[6]==' ' && str[7]=='0'))
-				break;          /* E for Error or L for Lost Carrier */
-			fclose(fp);			/* or only sent 0 bytes! */
-			return(true); 
-		} 
+		sscanf(str,"%c %lu %lu bps %lu cps %lu errors %lu %lu %s %ld"
+			,&code
+			,&bytes
+			,&dte
+			,&cps
+			,&errors
+			,&flows
+			,&block_size
+			,path
+			,&serial_no);
+		p=getfname(path);	/* DSZ stores fullpath, BiModem doesn't */
+		if(stricmp(p,fname)==0 || stricmp(p,rname)==0) {
+			/* E for Error or L for Lost Carrier */
+			/* or only sent 0 bytes! */
+			if(code!='E' && code!='L' && bytes!=0)
+				success=true;
+			break;
+		}
 	}
 	fclose(fp);
-	return(false);
+	return(success);
 }
 
 
