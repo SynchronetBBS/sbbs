@@ -1,0 +1,11 @@
+# ra_emu.src
+
+# Emulate RemoteAccess, Renegade, etc. Mail/Message Prompts
+
+# $id$
+
+# @format.tab-size 8, @format.use-tabs true
+
+!include sbbsdefs.inc
+
+or _sys_misc SM_RA_EMU
