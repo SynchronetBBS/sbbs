@@ -53,7 +53,7 @@ extern const uchar* nular;
 #define MAX_MIME_TYPES			128
 #define MAX_REQUEST_LINE		1024
 #define CGI_ENVIRON_BLOCK_SIZE	10
-#define CGI_HEADS_BLOCK_SIZE	5
+#define CGI_HEADS_BLOCK_SIZE	5		/* lines */
 
 static scfg_t	scfg;
 static BOOL		scfg_reloaded=TRUE;
@@ -330,7 +330,6 @@ static void add_env(http_session_t *session, const char *name,const char *value)
 			sprintf(session->req.cgi_env[session->req.cgi_env_size++],"%s=%s",
 				newname,value);
 			session->req.cgi_env[session->req.cgi_env_size]=NULL;
-			lprintf("%04d Set env: %s to %s",session->socket,newname,value);
 		}
 	}
 }
@@ -627,22 +626,16 @@ static void close_request(http_session_t * session)
 	
 	
 	if(session->req.cgi_heads_size)  {
-		for(i=0;session->req.cgi_heads_size>i;i++)  {
-			lprintf("%04d Freeing header: %s",session->socket,session->req.cgi_heads[i]);
-			free(session->req.cgi_heads[i]);
-		}
-		lprintf("%04d Freeing header array",session->socket);
-		free(session->req.cgi_heads);
+		for(i=0;session->req.cgi_heads_size>i;i++)
+			FREE_AND_NULL(session->req.cgi_heads[i]);
+		FREE_AND_NULL(session->req.cgi_heads);
 		session->req.cgi_heads_size=0;
 	}
 	
 	if(session->req.cgi_env_size)  {
-		for(i=0;i<session->req.cgi_env_size;i++)  {
-			free(session->req.cgi_env[i]);
-			lprintf("%04d Freeing the environment %s",session->socket,session->req.cgi_env[i]);
-		}
-		lprintf("%04d Freeing the environment array",session->socket);
-		free(session->req.cgi_env);
+		for(i=0;i<session->req.cgi_env_size;i++)
+			FREE_AND_NULL(session->req.cgi_env[i]);
+		FREE_AND_NULL(session->req.cgi_env);
 		session->req.cgi_env_size=0;
 	}
 
@@ -1049,23 +1042,20 @@ static BOOL parse_headers(http_session_t * session)
 			add_env(session,env_name,value);
 		}
 	}
-	sprintf(cgi_infilename,"%s/SBBSCGI.%d",startup->cgi_temp_dir,session->socket);
-	lprintf("%04d Creating input file %s",session->socket,cgi_infilename);
+	sprintf(cgi_infilename,"%s/SBBS_CGI.%d",startup->cgi_temp_dir,session->socket);
 	if((fp=fopen(cgi_infilename,"w"))!=NULL)  {
-		lprintf("%04d Created input file %s",session->socket,cgi_infilename);
 		if(content_len)  {
 			p=malloc(content_len);
 			if(p!=NULL)  {
 				read(session->socket,p,content_len);
 				fwrite(p,content_len,1,fp);
-				lprintf("%04d Freeing input buffer");
 				free(p);
 			}
 		}
 		fclose(fp);
 		SAFECOPY(session->req.cgi_infile,cgi_infilename);
 	} else  {
-		lprintf("%04d FAILED! Creating input file",session->socket);
+		lprintf("%04d !ERROR %d creating %s",session->socket,errno,cgi_infilename);
 	}
 	add_env(session,"SERVER_NAME",session->req.host[0] ? session->req.host : startup->host_name );
 	lprintf("%04d Done parsing headers",session->socket);
@@ -1360,7 +1350,7 @@ static void send_cgi_response(http_session_t *session,FILE *output)  {
 	
 		/* Entity Headers */
 		sockprintf(session->socket,"%s: %s",get_header(HEAD_ALLOW),"GET, HEAD, POST");
-		sockprintf(session->socket,"%s: %d",get_header(HEAD_LENGTH),stats.st_size-filepos+1);
+		sockprintf(session->socket,"%s: %d",get_header(HEAD_LENGTH),stats.st_size-filepos);
 
 		/* CGI-generated headers */
 		for(i=0;session->req.cgi_heads[i]!=NULL;i++)  {
@@ -1370,19 +1360,15 @@ static void send_cgi_response(http_session_t *session,FILE *output)  {
 		
 		sendsocket(session->socket,newline,2);
 	}
-	for(i=0;session->req.cgi_heads_size>i;i++)  {
-		lprintf("%04d Freeing header: %s",session->socket,session->req.cgi_heads[i]);
-		free(session->req.cgi_heads[i]);
-	}
-	lprintf("%04d Freeing header array",session->socket);
-	free(session->req.cgi_heads);
+	for(i=0;session->req.cgi_heads_size>i;i++)
+		FREE_AND_NULL(session->req.cgi_heads[i]);
+	FREE_AND_NULL(session->req.cgi_heads);
 	session->req.cgi_heads_size=0;
 	
 	content=malloc(stats.st_size-filepos+1);
 	if(content!=NULL)  {
 		fread(content,stats.st_size-filepos+1,1,output);
 		write(session->socket,content,stats.st_size-filepos+1);
-		lprintf("%04d Freeing reply content",session->socket);
 		free(content);
 	}
 }
@@ -1400,7 +1386,8 @@ static BOOL exec_cgi(http_session_t *session)
 #endif
 
 	SAFECOPY(cmdline,session->req.request);
-	sprintf(cmdline,"%s < %s > %s.out",session->req.request,session->req.cgi_infile,session->req.cgi_infile);
+	sprintf(cmdline,"%s < %s > %s.out"
+		,session->req.request,session->req.cgi_infile,session->req.cgi_infile);
 	sprintf(session->req.request,"%s.out",session->req.cgi_infile);
 	
 	comspec=getenv(  
@@ -1430,12 +1417,9 @@ static BOOL exec_cgi(http_session_t *session)
 		exit(EXIT_FAILURE); /* Should never happen */
 	}
 	/* Free() the environment */
-	for(i=0;i<session->req.cgi_env_size;i++)  {
-		free(session->req.cgi_env[i]);
-		lprintf("%04d Freeing the environment %s",session->socket,session->req.cgi_env[i]);
-	}
-	lprintf("%04d Freeing the environment array",session->socket);
-	free(session->req.cgi_env);
+	for(i=0;i<session->req.cgi_env_size;i++)
+		FREE_AND_NULL(session->req.cgi_env[i]);
+	FREE_AND_NULL(session->req.cgi_env);
 	session->req.cgi_env_size=0;
 	
 	if(child>0)  {
@@ -1454,7 +1438,8 @@ static BOOL exec_cgi(http_session_t *session)
 				return(WEXITSTATUS(status)==EXIT_SUCCESS);
 			}
 			else  {
-				lprintf("%04d FAILED! To open response file: %s",session->socket,session->req.request);
+				lprintf("%04d !ERROR %d opening response file: %s"
+					,session->socket,errno,session->req.request);
 				return(FALSE);
 			}
 		}
@@ -1464,6 +1449,7 @@ static BOOL exec_cgi(http_session_t *session)
 #else
 	sprintf(cmdline,"%s /C %s < %s > %s",comspec,cmdline,session->req.cgi_infile,session->req.request);
 	system(cmdline);
+	unlink(session->req.cgi_infile);
 	return(TRUE);
 #endif
 }
