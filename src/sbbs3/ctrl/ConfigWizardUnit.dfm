@@ -557,9 +557,9 @@ object ConfigWizard: TConfigWizard
     OnClick = BackButtonClick
   end
   object NextButton: TButton
-    Left = 393
+    Left = 392
     Top = 327
-    Width = 88
+    Width = 89
     Height = 31
     Caption = '&Next >'
     TabOrder = 1
@@ -580,6 +580,7 @@ object ConfigWizard: TConfigWizard
     Top = 14
     Width = 360
     Height = 267
+    PageIndex = 5
     TabOrder = 3
     OnPageChanged = WizNotebookPageChanged
     object TPage
@@ -764,7 +765,7 @@ object ConfigWizard: TConfigWizard
           Width = 185
           Height = 24
           Style = csDropDownList
-          ItemHeight = 0
+          ItemHeight = 16
           ParentShowHint = False
           ShowHint = True
           TabOrder = 0
@@ -814,7 +815,7 @@ object ConfigWizard: TConfigWizard
         Top = 40
         Width = 241
         Height = 24
-        ItemHeight = 0
+        ItemHeight = 16
         TabOrder = 0
         OnChange = VerifyInternetAddresses
       end
@@ -915,6 +916,14 @@ object ConfigWizard: TConfigWizard
         AutoSize = False
         Caption = 'Maximum Number of Simultaneous Mail Sessions'
       end
+      object Label15: TLabel
+        Left = 7
+        Top = 208
+        Width = 345
+        Height = 25
+        AutoSize = False
+        Caption = 'Maximum Number of Simultaneous Web Sessions'
+      end
       object NodesEdit: TEdit
         Left = 8
         Top = 40
@@ -984,6 +993,26 @@ object ConfigWizard: TConfigWizard
         Checked = True
         State = cbChecked
         TabOrder = 6
+      end
+      object MaxWebEdit: TEdit
+        Left = 8
+        Top = 232
+        Width = 41
+        Height = 24
+        TabOrder = 7
+        Text = '0'
+      end
+      object MaxWebUpDown: TUpDown
+        Left = 49
+        Top = 232
+        Width = 15
+        Height = 24
+        Associate = MaxWebEdit
+        Min = 0
+        Max = 500
+        Position = 0
+        TabOrder = 8
+        Wrap = False
       end
     end
     object TPage

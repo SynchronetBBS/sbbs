@@ -84,6 +84,9 @@ __published:	// IDE-managed Components
     TCheckBox *NewUsersCheckBox;
     TRadioButton *DeletedEmailSysopButton;
     TCheckBox *AliasesCheckBox;
+    TLabel *Label15;
+    TEdit *MaxWebEdit;
+    TUpDown *MaxWebUpDown;
     void __fastcall NextButtonClick(TObject *Sender);
     void __fastcall CancelButtonClick(TObject *Sender);
     void __fastcall BackButtonClick(TObject *Sender);
