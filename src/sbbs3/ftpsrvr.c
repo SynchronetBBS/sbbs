@@ -2507,6 +2507,9 @@ static void ctrl_thread(void* arg)
 			if(user.level>=SYSOP_LEVEL)
 				sockprintf(sock,
 							" RECYCLE [ALL]");
+			if(sysop)
+				sockprintf(sock,
+							" EXEC <cmd>");
 			sockprintf(sock,"214 Direct comments to sysop@%s.",scfg.sys_inetaddr);
 			continue;
 		}
