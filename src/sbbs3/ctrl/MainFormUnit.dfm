@@ -1950,7 +1950,6 @@ object MainForm: TMainForm
     object ReloadConfigButton: TToolButton
       Left = 256
       Top = 0
-      Hint = 'Reload Configuration Files and Recycle All Servers and Services'
       Action = ReloadConfig
     end
   end
@@ -2584,6 +2583,13 @@ object MainForm: TMainForm
       Hint = 'Stop Telnet Server'
       ImageIndex = 2
       OnExecute = TelnetStopExecute
+    end
+    object TelnetRecycle: TAction
+      Caption = 'Recycle'
+      Enabled = False
+      Hint = 'Recycle Telnet Server'
+      ImageIndex = 55
+      OnExecute = TelnetRecycleExecute
     end
     object TelnetConfigure: TAction
       Hint = 'Configure Telnet Server'

@@ -256,6 +256,7 @@ static void bbs_terminated(int code)
 	Screen->Cursor=crDefault;
 	MainForm->TelnetStart->Enabled=true;
 	MainForm->TelnetStop->Enabled=false;
+	MainForm->TelnetRecycle->Enabled=false;    
     Application->ProcessMessages();
 }
 static void bbs_started(void)
@@ -263,6 +264,7 @@ static void bbs_started(void)
 	Screen->Cursor=crDefault;
 	MainForm->TelnetStart->Enabled=false;
     MainForm->TelnetStop->Enabled=true;
+    MainForm->TelnetRecycle->Enabled=true;    
     Application->ProcessMessages();
 }
 static void bbs_start(void)
@@ -2409,6 +2411,13 @@ void __fastcall TMainForm::ServicesRecycleExecute(TObject *Sender)
 {
 	services_startup.recycle_now=true;
     ServicesRecycle->Enabled=false;
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TMainForm::TelnetRecycleExecute(TObject *Sender)
+{
+	bbs_startup.recycle_now=true;
+    TelnetRecycle->Enabled=false;
 }
 //---------------------------------------------------------------------------
 
