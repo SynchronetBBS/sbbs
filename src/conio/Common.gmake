@@ -1,4 +1,4 @@
-CIOLIB-MT_LIBS		:=	-lncurses
+CIOLIB-MT_LIBS		+=	-lncurses
 #ifndef NO_X
  CIOLIB-MT_LIBS		+=  -lX11
  CIOLIB-MT_LDFLAGS	+=	-L/usr/X11R6/lib
