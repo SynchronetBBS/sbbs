@@ -43,7 +43,8 @@
 #include "genwrap.h"
 
 /* If return value is SMB_ERROR_NOT_FOUND, hash file is left open */
-int SMBCALL smb_findhash(smb_t* smb, hash_t** compare, hash_t* found_hash, BOOL mark)
+int SMBCALL smb_findhash(smb_t* smb, hash_t** compare, hash_t* found_hash, 
+						 long source_mask, BOOL mark)
 {
 	int		retval;
 	BOOL	found=FALSE;
@@ -68,6 +69,9 @@ int SMBCALL smb_findhash(smb_t* smb, hash_t** compare, hash_t* found_hash, BOOL 
 
 			if(hash.flags==0)
 				continue;		/* invalid hash record (!?) */
+
+			if((source_mask&(1<<hash.source))==0)	/* not checking this source type */
+				continue;
 
 			for(c=0;compare[c]!=NULL;c++) {
 
@@ -215,7 +219,7 @@ hash_t* SMBCALL smb_hashstr(ulong msgnum, ulong t, unsigned source, unsigned fla
 
 /* Allocatese and calculates all hashes for a single message				*/
 /* Returns NULL on failure													*/
-hash_t** SMBCALL smb_msghashes(smbmsg_t* msg, const uchar* text, BOOL dupechk)
+hash_t** SMBCALL smb_msghashes(smbmsg_t* msg, const uchar* body)
 {
 	size_t		h=0;
 	uchar		flags=SMB_HASH_CRC16|SMB_HASH_CRC32|SMB_HASH_MD5;
@@ -230,19 +234,17 @@ hash_t** SMBCALL smb_msghashes(smbmsg_t* msg, const uchar* text, BOOL dupechk)
 
 	memset(hashes, 0, sizeof(hash_t*)*SMB_MAX_HASH_COUNT);
 
-	if(msg->id!=NULL
-		&& (hash=smb_hashstr(msg->hdr.number, t, RFC822MSGID, flags, msg->id))!=NULL)
+	if(msg->id!=NULL && 
+		(hash=smb_hashstr(msg->hdr.number, t, SMB_HASH_SOURCE_MSG_ID, flags, msg->id))!=NULL)
 		hashes[h++]=hash;
 
-	if(msg->ftn_msgid!=NULL
-		&& (hash=smb_hashstr(msg->hdr.number, t, FIDOMSGID, flags, msg->ftn_msgid))!=NULL)
+	if(msg->ftn_msgid!=NULL	&& 
+		(hash=smb_hashstr(msg->hdr.number, t, SMB_HASH_SOURCE_FTN_ID, flags, msg->ftn_msgid))!=NULL)
 		hashes[h++]=hash;
 
 	flags|=SMB_HASH_STRIP_WSP;
-	if(!dupechk)
-		flags|=SMB_HASH_MARKED;	/* ignore for dupe checks */
-	if(text!=NULL
-		&& (hash=smb_hashstr(msg->hdr.number, t, TEXT_BODY, flags, text))!=NULL)
+	if(body!=NULL && 
+		(hash=smb_hashstr(msg->hdr.number, t, SMB_HASH_SOURCE_BODY, flags, body))!=NULL)
 		hashes[h++]=hash;
 
 	return(hashes);
@@ -256,9 +258,9 @@ int SMBCALL smb_hashmsg(smb_t* smb, smbmsg_t* msg, const uchar* text, BOOL updat
 	hash_t		found;
 	hash_t**	hashes;	/* This is a NULL-terminated list of hashes */
 
-	hashes=smb_msghashes(msg,text,/* dupechk? */TRUE);
+	hashes=smb_msghashes(msg,text);
 
-	if(smb_findhash(smb, hashes, &found, update)==SMB_SUCCESS && !update) {
+	if(smb_findhash(smb, hashes, &found, SMB_HASH_SOURCE_ALL, update)==SMB_SUCCESS && !update) {
 		retval=SMB_DUPE_MSG;
 		safe_snprintf(smb->last_error,sizeof(smb->last_error)
 			,"duplicate %s: %s found in message #%lu"
@@ -296,7 +298,7 @@ int SMBCALL smb_getmsgidx_by_hash(smb_t* smb, smbmsg_t* msg, unsigned source
 	hashes[1]=NULL;	/* terminate list */
 
 	memset(&found,0,sizeof(found));
-	if((retval=smb_findhash(smb, hashes, &found, FALSE))==SMB_SUCCESS) {
+	if((retval=smb_findhash(smb, hashes, &found, 1<<source, FALSE))==SMB_SUCCESS) {
 		if(found.number==0)
 			retval=SMB_FAILURE;	/* use better error value here? */
 		else {

@@ -137,17 +137,23 @@ char* SMBCALL smb_dfieldtype(ushort type)
 
 char* SMBCALL smb_hashsourcetype(uchar type)
 {
-	if(type==TEXT_BODY || type==TEXT_TAIL)
-		return(smb_dfieldtype(type));
-	return(smb_hfieldtype(type));
+	static char str[8];
+
+	switch(type) {
+		case SMB_HASH_SOURCE_BODY:		return(smb_dfieldtype(TEXT_BODY));
+		case SMB_HASH_SOURCE_MSG_ID:	return(smb_hfieldtype(RFC822MSGID));
+		case SMB_HASH_SOURCE_FTN_ID:	return(smb_hfieldtype(FIDOMSGID));
+	}
+	sprintf(str,"%02Xh",type);
+	return(str);
 }
 
 char* SMBCALL smb_hashsource(smbmsg_t* msg, int source)
 {
 	switch(source) {
-		case RFC822MSGID:
+		case SMB_HASH_SOURCE_MSG_ID:
 			return(msg->id);
-		case FIDOMSGID:
+		case SMB_HASH_SOURCE_FTN_ID:
 			return(msg->ftn_msgid);
 	}
 	return("hash");
