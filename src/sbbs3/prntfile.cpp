@@ -52,19 +52,29 @@ void sbbs_t::printfile(char *str, long mode)
 
 	p=strrchr(str,'.');
 	if(p!=NULL) {
-		if(stricmp(p,".wip")==0)
+		if(stricmp(p,".wip")==0) {
 			wip=1;
-		else if(stricmp(p,".rip")==0)
+			mode|=P_NOPAUSE;
+		}
+		else if(stricmp(p,".rip")==0) {
 			rip=1;
+			mode|=P_NOPAUSE;
+		}
+		else if(stricmp(p,".html")==0)  {
+			html=1;
+			mode|=(P_HTML|P_NOPAUSE);
+		}
 	}
 
-	if(mode&P_NOABORT || wip || rip) {
+	if(mode&P_NOABORT || wip || rip || html) {
 		if(online==ON_REMOTE && console&CON_R_ECHO) {
 			rioctl(IOCM|ABORT);
-			rioctl(IOCS|ABORT); }
-		sys_status&=~SS_ABORT; }
+			rioctl(IOCS|ABORT); 
+		}
+		sys_status&=~SS_ABORT; 
+	}
 
-	if(!tos && !wip && !rip)
+	if(!tos && !wip && !rip && !html)
 		CRLF;
 
 	if((stream=fnopen(&file,str,O_RDONLY))==NULL) {
@@ -72,7 +82,8 @@ void sbbs_t::printfile(char *str, long mode)
 		bputs(text[FileNotFound]);
 		if(SYSOP) bputs(str);
 		CRLF;
-		return; }
+		return; 
+	}
 
 	if(mode&P_OPENCLOSE) {
 		length=filelength(file);
@@ -80,21 +91,25 @@ void sbbs_t::printfile(char *str, long mode)
 			close(file);
 			console=savcon;
 			errormsg(WHERE,ERR_ALLOC,str,length+1L);
-			return; }
+			return; 
+		}
 		buf[lread(file,buf,length)]=0;
 		fclose(stream);
 		putmsg(buf,mode);
-		FREE((char *)buf); }
+		FREE((char *)buf); 
+	}
 	else {
 		putmsg_fp(stream,filelength(file),mode);
-		fclose(stream); }
-	if((mode&P_NOABORT || wip || rip) && online==ON_REMOTE) {
+		fclose(stream); 
+	}
+	if((mode&P_NOABORT || wip || rip || html) && online==ON_REMOTE) {
 		SYNC;
-		rioctl(IOSM|ABORT); }
+		rioctl(IOSM|ABORT); 
+	}
 	if(rip)
 		ansi_getlines();
 	console=savcon;
-	}
+}
 
 void sbbs_t::printtail(char *str, int lines, long mode)
 {
@@ -105,21 +120,26 @@ void sbbs_t::printtail(char *str, int lines, long mode)
 	if(mode&P_NOABORT) {
 		if(online==ON_REMOTE) {
 			rioctl(IOCM|ABORT);
-			rioctl(IOCS|ABORT); }
-		sys_status&=~SS_ABORT; }
+			rioctl(IOCS|ABORT); 
+		}
+		sys_status&=~SS_ABORT; 
+	}
 	if(!tos) {
-		CRLF; }
+		CRLF; 
+	}
 	if((file=nopen(str,O_RDONLY))==-1) {
 		lprintf("File not found: %s",str);
 		bputs(text[FileNotFound]);
 		if(SYSOP) bputs(str);
 		CRLF;
-		return; }
+		return; 
+	}
 	length=filelength(file);
 	if((buf=(char*)MALLOC(length+1L))==NULL) {
 		close(file);
 		errormsg(WHERE,ERR_ALLOC,str,length+1L);
-		return; }
+		return; 
+	}
 	l=lread(file,buf,length);
 	buf[l]=0;
 	close(file);
@@ -130,12 +150,15 @@ void sbbs_t::printtail(char *str, int lines, long mode)
 			cur++;
 		if(cur>=lines) {
 			p++;
-			break; }
-		p--; }
+			break; 
+		}
+		p--; 
+	}
 	putmsg(p,mode);
 	if(mode&P_NOABORT && online==ON_REMOTE) {
 		SYNC;
-		rioctl(IOSM|ABORT); }
+		rioctl(IOSM|ABORT); 
+	}
 	FREE((char *)buf);
 }
 
@@ -156,11 +179,12 @@ void sbbs_t::menu(char *code)
 		sprintf(str,"%smenu/",cfg.text_dir);
 		if(menu_dir[0]) {
 			strcat(str,menu_dir);
-			strcat(str,"/"); }
+			strcat(str,"/"); 
+		}
 		strcat(str,code);
 		strcat(str,".");
-		sprintf(path,"%s%s",str,useron.misc&WIP ? "wip":"rip");
-		if(!(useron.misc&(RIP|WIP)) || !fexistcase(path)) {
+		sprintf(path,"%s%s",str,useron.misc&WIP ? "wip": useron.misc&RIP ? "rip" : "html");
+		if(!(useron.misc&(RIP|WIP|HTML)) || !fexistcase(path)) {
 			sprintf(path,"%smon",str);
 			if((useron.misc&(COLOR|ANSI))!=ANSI || !fexistcase(path)) {
 				sprintf(path,"%sans",str);
