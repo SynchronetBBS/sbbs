@@ -11,7 +11,7 @@ writeln('<td class="main">');
 writeln('<a href="nodelist.ssjs">Who Is Online</a><br />');
 if(user.number==0 || user.security.restrictions&UFLAG_G) {
 	writeln('<a href="newuser.ssjs">Sign up as a New User</a><br />');
-	writeln('<a href="members/login.html">Login with an Existing User Account</a><br />');
+	writeln('<a href="login.ssjs">Login with an Existing User Account</a><br />');
 } else {
 	writeln('<a href="members/userlist.ssjs">User Listing</a><br />');
 	writeln('<a href="members/info.ssjs">Information Menu</a><br />');
