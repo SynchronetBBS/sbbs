@@ -86,6 +86,9 @@
 #include <time.h>
 
 #include "OpenDoor.h"
+#ifdef ODPLAT_NIX
+#define strnicmp	strncasecmp
+#endif
 #include "ODCore.h"
 #include "ODGen.h"
 #include "ODScrn.h"

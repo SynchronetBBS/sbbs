@@ -43,6 +43,9 @@
 #include <stdio.h>
 
 #include "OpenDoor.h"
+#ifdef ODPLAT_NIX
+#define stricmp 	strcasecmp
+#endif
 #include "ODUtil.h"
 #include "ODGen.h"
 
@@ -226,10 +229,14 @@ tODResult ODMakeFilename(char *pszOut, CONST char *pszPath,
    }
 
    /* Ensure there is a trailing backslash, if path was not empty. */
-   if(pszOut[strlen(pszOut) - 1] != '\\' && strlen(pszOut) > 0)
+#ifdef ODPLAT_NIX
+
+#else
+   if(pszOut[strlen(pszOut) - 1] != DIRSEP && strlen(pszOut) > 0)
    {
-      strcat(pszOut, "\\");
+      strcat(pszOut, DIRSEP_STR);
    }
+#endif
 
    /* Append base filename. */
    strcat(pszOut, pszFilename);

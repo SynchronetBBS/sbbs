@@ -842,9 +842,9 @@ INT ODSearchForDropFile(char **papszFileNames, INT nNumFileNames,
 
    /* Next, look for the drop file(s) in the current directory. */
    if((nResult = ODSearchInDir(papszFileNames, nNumFileNames, pszFound,
-      ".\\")) != -1)
+      "."DIRSEP_STR)) != -1)
    {
-      if(pszDirectory != NULL) strcpy(pszDirectory, ".\\");
+      if(pszDirectory != NULL) strcpy(pszDirectory, "."DIRSEP_STR);
       return(nResult);
    }
 

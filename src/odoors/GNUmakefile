@@ -52,7 +52,7 @@ LD	:=	ld
 #
 # Compiler command-line flags.
 #
-CFLAGS	+=	-O2
+CFLAGS	+=	-O2 -g
 # /MTd /Zi - for debug
 #
 #------------------------------------------------------------------------------

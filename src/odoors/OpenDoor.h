@@ -82,6 +82,9 @@
 /* OpenDoors API version number. */
 #define OD_VERSION 0x621
 
+#define DIRSEP		'\\'
+#define DIRSEP_STR	"\\"
+
 /* OpenDoors target platform. */
 #if defined(WIN32) || defined(__WIN32__) || defined(_WIN32)
 #define ODPLAT_WIN32
@@ -96,6 +99,10 @@
 #if defined(__unix__) || defined(__NetBSD__)
 #define ODPLAT_NIX
 #undef ODPLAT_DOS
+#undef DIRSEP
+#define DIRSEP '/'
+#undef DIRSEP_STR
+#define DIRSEP_STR "/"
 #else
 #define ODPLAT_DOS
 #undef ODPLAT_WIN32

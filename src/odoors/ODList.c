@@ -119,18 +119,18 @@ ODAPIDEF BOOL ODCALL od_list_files(char *pszFileSpec)
    if(pszFileSpec == NULL)
    {
       strcpy(szODWorkString, ".");
-      strcpy(szDirectory, ".\\");
+      strcpy(szDirectory, "."DIRSEP_STR);
    }
    else if(*pszFileSpec == '\0')
    {
       strcpy(szODWorkString, ".");
-      strcpy(szDirectory, ".\\");
+      strcpy(szDirectory, "."DIRSEP_STR);
    }
    else
    {
       strcpy(szODWorkString, pszFileSpec);
       strcpy(szDirectory, pszFileSpec);
-      if(szODWorkString[strlen(szODWorkString) - 1] == '\\')
+      if(szODWorkString[strlen(szODWorkString) - 1] == DIRSEP)
       {
          szODWorkString[strlen(szODWorkString) - 1] = '\0';
       }
@@ -441,7 +441,7 @@ static INT ODListFilenameSplit(const char *pszEntirePath, char *pszDrive,
       nToReturn |= DRIVE;
    }
 
-   if((pchCurrentPos = strrchr(pchStart, '\\'))==NULL)
+   if((pchCurrentPos = strrchr(pchStart, DIRSEP))==NULL)
    {
       pszDir[0] = '\0';
    }

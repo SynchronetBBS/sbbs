@@ -60,7 +60,7 @@
 #endif /* ODPLAT_WIN32 */
 
 /* Text mode specific definitions. */
-#ifdef ODPLAT_DOS
+#if defined(ODPLAT_DOS) || defined(ODPLAT_NIX)
 #define OD_TEXTMODE
 #endif /* ODPLAT_DOS */
 

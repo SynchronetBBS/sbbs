@@ -117,14 +117,14 @@ ODAPIDEF void ODCALL ODConfigInit(void)
 
    if((pfConfigFile = fopen(od_control.od_config_filename, "rt")) == NULL)
    {
-      if(strchr(od_control.od_config_filename, '\\') != NULL
+      if(strchr(od_control.od_config_filename, DIRSEP) != NULL
          || strchr(od_control.od_config_filename, ':') != NULL)
       {
          wCurrent = strlen(od_control.od_config_filename);
          pchConfigText = (char *)od_control.od_config_filename + (wCurrent - 1);
          while(wCurrent > 0)
          {
-            if(*pchConfigText == '\\' || *pchConfigText == ':')
+            if(*pchConfigText == DIRSEP || *pchConfigText == ':')
             {
                strcpy(szConfigLine, (char *)pchConfigText + 1);
                pfConfigFile = fopen(szConfigLine, "rt");
@@ -236,7 +236,7 @@ ODAPIDEF void ODCALL ODConfigInit(void)
                      break;
 
                   case 2:
-                     if(pchConfigText[strlen(pchConfigText) - 1] == '\\'
+                     if(pchConfigText[strlen(pchConfigText) - 1] == DIRSEP
                         && pchConfigText[strlen(pchConfigText) - 2] != ':'
                         && strlen(pchConfigText) > 1)
                      {

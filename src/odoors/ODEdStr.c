@@ -1024,7 +1024,7 @@ static BOOL ODEditIsCharValidForPos(char chEntered, INT nPosition)
             /* Filename separators. */
             case ':':
             case '.':
-            case '\\':
+            case DIRSEP:
 
             /* Wildcard characters. */
             case '?':
@@ -1073,7 +1073,7 @@ static BOOL ODEditIsCharValidForPos(char chEntered, INT nPosition)
       case 'w':
          if(chEntered >= 'A' && chEntered <= 'Z') break;
          if(chEntered >= 'a' && chEntered <= 'z') break;
-         if(chEntered == ':' || chEntered == '.' || chEntered == '\\'
+         if(chEntered == ':' || chEntered == '.' || chEntered == DIRSEP
             || chEntered == '*' || chEntered == '?')
          {
             break;
