@@ -128,7 +128,8 @@ if(request.charAt(0)=='?') {	// Handle "special" requests
 			break;
 
 		case "time":
-			writeln(system.timestr() + " " + system.zonestr());
+			t=time();
+			writeln(system.timestr(t) + " " + system.zonestr() + " 0x" + t.toString(16));
 			break;
 
 		case "logon.lst":
