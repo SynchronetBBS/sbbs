@@ -61,7 +61,7 @@ __fastcall TSpyForm::TSpyForm(TComponent* Owner)
     ActiveControl=Terminal;
 }
 //---------------------------------------------------------------------------
-TSpyForm::~TSpyForm()
+__fastcall TSpyForm::~TSpyForm()
 {
 	delete Terminal;
 }
