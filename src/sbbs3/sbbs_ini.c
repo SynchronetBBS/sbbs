@@ -154,9 +154,9 @@ void sbbs_read_ini(
 	ftp->port
 		=iniReadShortInt(fp,section,"Port",ftp->port);
 	ftp->max_clients
-		=iniReadShortInt(fp,section,"MaxClient",ftp->max_clients);
+		=iniReadShortInt(fp,section,"MaxClients",ftp->max_clients);
 	ftp->max_inactivity
-		=iniReadShortInt(fp,section,"MaxClient",ftp->max_inactivity);
+		=iniReadShortInt(fp,section,"MaxInactivity",ftp->max_inactivity);
 	ftp->qwk_timeout
 		=iniReadShortInt(fp,section,"QwkTimeout",ftp->qwk_timeout);
 
@@ -192,13 +192,15 @@ void sbbs_read_ini(
 	mail->relay_port
 		=iniReadShortInt(fp,section,"RelayPort",mail->relay_port);
 	mail->max_clients
-		=iniReadShortInt(fp,section,"MaxClient",mail->max_clients);
+		=iniReadShortInt(fp,section,"MaxClients",mail->max_clients);
 	mail->max_inactivity
-		=iniReadShortInt(fp,section,"MaxClient",mail->max_inactivity);
+		=iniReadShortInt(fp,section,"MaxInactivity",mail->max_inactivity);
 	mail->max_delivery_attempts
 		=iniReadShortInt(fp,section,"MaxDeliveryAttempts",mail->max_delivery_attempts);
 	mail->rescan_frequency
 		=iniReadShortInt(fp,section,"RescanFrequency",mail->rescan_frequency);
+	mail->lines_per_yield
+		=iniReadShortInt(fp,section,"LinesPerYield",100);
 
 	SAFECOPY(mail->relay_server
 		,iniReadString(fp,section,"RelayServer",mail->relay_server));
