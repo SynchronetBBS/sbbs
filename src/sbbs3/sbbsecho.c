@@ -3741,13 +3741,9 @@ void export_echomail(char *sub_code,faddr_t addr)
 				if(msg.ftn_flags!=NULL)
 					f+=sprintf(fmsgbuf+f,"\1FLAGS %.256s\r", msg.ftn_flags);
 
-				if(msg.ftn_msgid!=NULL)	/* use original MSGID */
-					f+=sprintf(fmsgbuf+f,"\1MSGID: %.256s\r", msg.ftn_msgid);
-				else					/* generate MSGID */
-					f+=sprintf(fmsgbuf+f,"\1MSGID: %s %08lX\r"
-						,faddrtoa(&scfg.sub[i]->faddr,NULL)
-						,(msg.idx.time<<5) | (msg.idx.number&0x1f)
-						);
+				f+=sprintf(fmsgbuf+f,"\1MSGID: %.256s\r"
+					,msg.ftn_msgid!=NULL ? msg.ftn_msgid
+						: ftn_msgid(scfg.sub[i],&msg));
 
 				if(msg.ftn_reply!=NULL)			/* use original REPLYID */
 					f+=sprintf(fmsgbuf+f,"\1REPLY: %.256s\r", msg.ftn_reply);
@@ -3755,13 +3751,15 @@ void export_echomail(char *sub_code,faddr_t addr)
 					memset(&orig_msg,0,sizeof(orig_msg));
 					orig_msg.hdr.number=msg.hdr.thread_orig;
 					if(smb_getmsgidx(smb, &orig_msg))
-						f+=sprintf(fmsgbuf+f,"\1REPLY: <%s>",smb->last_error);
-					else
-						f+=sprintf(fmsgbuf+f,"\1REPLY: <%lu.%s@%s> %08lX"
-							,msg.hdr.thread_orig
-							,scfg.sub[i]->code
-							,faddrtoa(&scfg.sub[i]->faddr,NULL)
-							,orig_msg.idx.time);
+						f+=sprintf(fmsgbuf+f,"\1REPLY: <%s>\r",smb->last_error);
+					else {
+						smb_lockmsghdr(&smb[cur_smb],&orig_msg);
+						smb_getmsghdr(&smb[cur_smb],&orig_msg);
+						smb_unlockmsghdr(&smb[cur_smb],&orig_msg);
+						f+=sprintf(fmsgbuf+f,"\1REPLY: %.256s\r"
+							,orig_msg.ftn_msgid!=NULL ? orig_msg.ftn_msgid 
+									: ftn_msgid(scfg.sub[i],&orig_msg));	
+					}
 				}
 				if(msg.ftn_pid!=NULL)	/* use original PID */
 					f+=sprintf(fmsgbuf+f,"\1PID: %.256s\r", msg.ftn_pid);
