@@ -178,11 +178,16 @@ function document_properties(name, obj)
 		prop_name=name + "." + prop;
 
 		if(typeof(obj[prop])=="object" && prop!="socket") {
-			if(obj[prop].length != undefined)	// array ?
-				document_object(prop_name /*+ "[]"*/,obj[prop][0], "array");
-			else
+			if(obj[prop].length!=undefined) {
+				if(typeof(obj[prop][0])=="object") {	// array ?
+					document_object(prop_name /*+ "[]"*/,obj[prop][0], "array");
+					continue;
+				}
+			}
+			else {
 				document_object(prop_name,obj[prop]);
-			continue;
+				continue;
+			}
 		} 
 		if(!prop_hdr) {
 			properties_header(name, obj);
@@ -282,6 +287,7 @@ document_object("file_area"	,file_area);
 document_object("xtrn_area"	,xtrn_area);
 document_object("MsgBase"	,new MsgBase(msg_area.grp_list[0].sub_list[0].code), "class");
 document_object("File"		,new File(system.devnull), "class");
+document_object("Queue"		,new Queue(), "class");
 sock=new Socket();
 sock.descriptor=client.socket.descriptor;
 document_object("Socket"	,sock, "class");
