@@ -8,7 +8,7 @@
       <td class="replymsg">To: <input class="replymsg" type="text" name="to" value="%%from%%" /></td>
     </tr>
     <tr>
-      <td class="replymsg" colspan="2"><textarea class="replymsg" name=body rows="20" cols="80">%%body%%</textarea></td>
+      <td class="replymsg" colspan="2"><textarea class="replymsg" name=body rows="20" cols="80" wrap="hard">%%body%%</textarea></td>
       </tr>
     <tr>
       <td align="center" class="replymsg" colspan="2"><input type="submit" value="Post Reply" /></td>

@@ -7,7 +7,7 @@
       <td class="postmsg">To: <input class="postmsg" type="text" name="to" value="All" /></td>
     </tr>
     <tr>
-      <td class="postmsg" colspan="2"><textarea class="postmsg" name=body rows="20" cols="80"></textarea></td>
+      <td class="postmsg" colspan="2"><textarea class="postmsg" name=body rows="20" cols="80" wrap="hard"></textarea></td>
       </tr>
     <tr>
       <td align="center" class="postmsg" colspan="2"><input type="submit" value="Post Message" /></td>
