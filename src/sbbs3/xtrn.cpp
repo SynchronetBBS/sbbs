@@ -39,6 +39,8 @@
 #include "cmdshell.h"
 #include "telnet.h"
 
+#include <signal.h>			// kill()
+
 #ifdef __unix__
 	#include <sys/wait.h>	// WEXITSTATUS
 
