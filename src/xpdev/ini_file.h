@@ -41,7 +41,7 @@
 #include "genwrap.h"
 #include "str_list.h"	/* strList_t */
 
-#define INI_MAX_VALUE_LEN	128		/* Maximum value length, includes '\0' */
+#define INI_MAX_VALUE_LEN	1024		/* Maximum value length, includes '\0' */
 
 typedef struct {
 	ulong		bit;
