@@ -5,10 +5,20 @@ if(!file_isdir(http_request.real_path)) {
 }
 else {
 	http_reply.status="200 OK";
-	write("Files in: "+http_request.virtual_path+"<br>");
 	var files=directory(http_request.real_path+'/*');
+	writeln("<html><head><title>Files in: "+http_request.virtual_path+"</title></head><body>");
+	write("Files in: "+http_request.virtual_path+"<br>");
+	writeln("<table>");
 	for(fn in files) {
-		files[fn]=files[fn].replace(/^.*\//,'');
-		write('<a href="'+http_request.virtual_path+files[fn]+'">'+files[fn]+"</a><br>");
+		var thisfile=files[fn].replace(/^.*\//,'');
+		write('<tr><td><a href="'+http_request.virtual_path+thisfile+'">'+thisfile+"</a></td>");
+		if(file_isdir(files[fn])) {
+			write('<td>Directory</td>');
+		}
+		else {
+			write('<td>'+file_size(files[fn])+' Bytes</td>');
+		}
+		write("</tr>");
 	}
+	writeln("</table></body></html>");
 }
