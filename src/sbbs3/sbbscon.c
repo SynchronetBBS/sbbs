@@ -256,6 +256,37 @@ static BOOL do_seteuid(BOOL to_new)
 }
 #endif   /* __unix__ */
 
+#ifdef _WINSOCKAPI_
+
+WSADATA WSAData;
+
+static BOOL winsock_startup(void)
+{
+	int		status;             /* Status Code */
+
+    if((status = WSAStartup(MAKEWORD(1,1), &WSAData))==0)
+		return(TRUE);
+
+    fprintf(stderr,"!WinSock startup ERROR %d\n", status);
+	return(FALSE);
+}
+
+static BOOL winsock_cleanup(void)	
+{
+	if(WSACleanup()==0)
+		return(TRUE);
+
+	fprintf(stderr,"!WinSock cleanup ERROR %d\n",ERROR_VALUE);
+	return(FALSE);
+}
+
+#else /* No WINSOCK */
+
+#define winsock_startup()	(TRUE)	
+#define winsock_cleanup()	(TRUE)
+
+#endif
+
 static void thread_up(BOOL up, BOOL setuid)
 {
    	static pthread_mutex_t mutex;
@@ -659,7 +690,7 @@ int main(int argc, char** argv)
 	char*	ctrl_dir;
 	char	str[MAX_PATH+1];
 	char	ini_file[MAX_PATH+1];
-	char	host_name[128];
+	char	host_name[128]="";
 	BOOL	quit=FALSE;
 	FILE*	fp=NULL;
 #ifdef __unix__
@@ -675,7 +706,13 @@ int main(int argc, char** argv)
 	if(ctrl_dir==NULL)
 		ctrl_dir="/sbbs/ctrl";		/* Not set? Use default */
 
+	if(!winsock_startup())
+		return(-1);
+
 	gethostname(host_name,sizeof(host_name)-1);
+
+	if(!winsock_cleanup())
+		return(-1);
 
 	sprintf(ini_file,"%s%c%s.ini",ctrl_dir,BACKSLASH,host_name);
 	if(!fexist(ini_file))
