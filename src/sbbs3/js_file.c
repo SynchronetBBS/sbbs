@@ -36,6 +36,8 @@
  ****************************************************************************/
 
 #include "sbbs.h"
+#include "md5.h"
+#include "base64.h"
 
 #ifdef JAVASCRIPT
 
@@ -722,6 +724,13 @@ enum {
 	,FILE_PROP_POSITION	
 	,FILE_PROP_LENGTH	
 	,FILE_PROP_ATTRIBUTES
+	/* dynamically calculated */
+	,FILE_PROP_CHKSUM
+	,FILE_PROP_CRC16
+	,FILE_PROP_CRC32
+	,FILE_PROP_BASE64
+	,FILE_PROP_MD5_HEX
+	,FILE_PROP_MD5_BASE64
 };
 
 
@@ -764,8 +773,15 @@ static JSBool js_file_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 
 static JSBool js_file_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
+	BYTE*		buf;
+	long		l;
+	long		len;
+	long		offset;
+	ulong		sum;
+	ushort		crc;
+	BYTE		digest[MD5_DIGEST_SIZE];
     jsint       tiny;
-	JSString*	js_str;
+	JSString*	js_str=NULL;
 	private_t*	p;
 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
@@ -841,6 +857,64 @@ static JSBool js_file_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 		case FILE_PROP_ETX:
 			*vp = INT_TO_JSVAL(p->etx);
 			break;
+		case FILE_PROP_CHKSUM:
+		case FILE_PROP_CRC16:
+		case FILE_PROP_CRC32:
+		case FILE_PROP_BASE64:
+		case FILE_PROP_MD5_HEX:
+		case FILE_PROP_MD5_BASE64:
+			*vp = JSVAL_VOID;
+			if(p->fp==NULL)
+				break;
+			offset=ftell(p->fp);			/* save current file position */
+			fseek(p->fp,0,SEEK_SET);
+			len=filelength(fileno(p->fp));
+			if(len<1)
+				break;
+			if((buf=malloc(len*2))==NULL)
+				break;
+			len=fread(buf,sizeof(BYTE),len,p->fp);
+			if(len<1)
+				break;
+
+			switch(tiny) {
+				case FILE_PROP_CHKSUM:
+					for(sum=l=0;l<len;l++)
+						sum+=buf[l];
+					JS_NewNumberValue(cx,sum,vp);
+					break;
+				case FILE_PROP_CRC16:
+					crc=0;
+					ucrc16(0,&crc);
+					for(l=0;l<len;l++)
+						ucrc16(buf[l],&crc);
+					ucrc16(0,&crc);
+					ucrc16(0,&crc);
+					JS_NewNumberValue(cx,crc,vp);
+					break;
+				case FILE_PROP_CRC32:
+					JS_NewNumberValue(cx,crc32(buf,len),vp);
+					break;
+				case FILE_PROP_BASE64:
+					b64_encode(buf,len*2,buf,len);
+					js_str=JS_NewStringCopyZ(cx, buf);
+					break;
+				case FILE_PROP_MD5_HEX:
+					MD5_calc(digest,buf,len);
+					MD5_hex(buf,digest);
+					js_str=JS_NewStringCopyZ(cx, buf);
+					break;
+				case FILE_PROP_MD5_BASE64:
+					MD5_calc(digest,buf,len);
+					b64_encode(buf,len*2,digest,sizeof(digest));
+					js_str=JS_NewStringCopyZ(cx, buf);
+					break;
+			}
+			free(buf);
+			fseek(p->fp,offset,SEEK_SET);	/* restore saved file position */
+			if(js_str!=NULL)
+				*vp = STRING_TO_JSVAL(js_str);
+			break;
 	}
 
 	return(TRUE);
@@ -864,6 +938,13 @@ static struct JSPropertySpec js_file_properties[] = {
 	{	"position"			,FILE_PROP_POSITION		,JSPROP_ENUMERATE,	NULL,NULL},
 	{	"length"			,FILE_PROP_LENGTH		,JSPROP_ENUMERATE,	NULL,NULL},
 	{	"attributes"		,FILE_PROP_ATTRIBUTES	,JSPROP_ENUMERATE,	NULL,NULL},
+	/* dynamically calculated */
+	{	"chksum"			,FILE_PROP_CHKSUM		,FILE_PROP_FLAGS,	NULL,NULL},
+	{	"crc16"				,FILE_PROP_CRC16		,FILE_PROP_FLAGS,	NULL,NULL},
+	{	"crc32"				,FILE_PROP_CRC32		,FILE_PROP_FLAGS,	NULL,NULL},
+	{	"base64"			,FILE_PROP_BASE64		,FILE_PROP_FLAGS,	NULL,NULL},
+	{	"md5_base64"		,FILE_PROP_MD5_BASE64	,FILE_PROP_FLAGS,	NULL,NULL},
+	{	"md5_hex"			,FILE_PROP_MD5_HEX		,FILE_PROP_FLAGS,	NULL,NULL},
 	{0}
 };
 
@@ -882,6 +963,12 @@ static char* file_prop_desc[] = {
 	,"the current file position (offset in bytes), change value to seek within file"
 	,"the current length of the file (in bytes)"
 	,"file mode/attributes"
+	,"calculated 32-bit checksum of file contents"
+	,"calculated 16-bit CRC of file contents"
+	,"calculated 32-bit CRC of file contents"
+	,"base64-encoded file contents"
+	,"base64-encoded calculated MD5 digest of file contents"
+	,"hexadecimal-encoded calculated MD5 digest of file contents"
 	,NULL
 };
 #endif
