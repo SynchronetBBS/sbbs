@@ -773,6 +773,7 @@ void input_thread(void *arg)
 void output_thread(void* arg)
 {
 	char		node[128];
+	char		stats[128];
     BYTE		buf[IO_THREAD_BUF_SIZE];
 	int			i;
     ulong		avail;
@@ -849,8 +850,13 @@ void output_thread(void* arg)
 
     sbbs->output_thread_running = false;
 
-	lprintf("%s output thread terminated (sent %lu bytes in %lu packets)"
-		,node, total_sent, total_pkts);
+	if(total_sent)
+		sprintf(stats,"(sent %lu bytes in %lu packets)"
+			,total_sent, total_pkts);
+	else
+		stats[0]=0;
+
+	lprintf("%s output thread terminated %s", node, stats);
 
 	thread_down();
 }
@@ -903,7 +909,7 @@ void event_thread(void* arg)
 			sprintf(str,"%stime.dab",sbbs->cfg.ctrl_dir);
 			if((file=sbbs->nopen(str,O_RDWR|O_CREAT))==-1) {
 				sbbs->errormsg(WHERE,ERR_OPEN,str,0);
-				return; 
+				break; 
 			}
 			for(i=0;i<sbbs->cfg.total_events;i++) {
 				sbbs->cfg.event[i]->last=0;
@@ -934,7 +940,7 @@ void event_thread(void* arg)
 			sprintf(str,"%spnet.dab",sbbs->cfg.ctrl_dir);
 			if((file=sbbs->nopen(str,O_RDWR|O_CREAT))==-1) {
 				sbbs->errormsg(WHERE,ERR_OPEN,str,0);
-				return;
+				break;
 			}
 			for(i=0;i<sbbs->cfg.total_phubs;i++) {
 				sbbs->cfg.phub[i]->last=0;
@@ -1394,6 +1400,7 @@ void event_thread(void* arg)
 
 		mswait(startup->event_interval*1000);
 	}
+	sbbs->cfg.node_num=0;
     sbbs->event_thread_running = false;
 
 	eprintf("BBS Event thread terminated");
@@ -1884,7 +1891,9 @@ sbbs_t::~sbbs_t()
 
 	lprintf("%s destructor begin", node);
 
+#if 0	// Removed Jun-07-2001 causing long delay when shutting down 
     hangup();	/* close socket handle */
+#endif
 
 	if(client_socket_dup!=INVALID_SOCKET)
 		closesocket(client_socket_dup);	/* close duplicate handle */
