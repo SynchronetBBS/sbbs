@@ -235,9 +235,10 @@ BYTE* cr_expand(BYTE* inbuf, ulong inlen, BYTE* outbuf, ulong& newlen)
 /****************************************************************************/
 /* Runs an external program 												*/
 /****************************************************************************/
-int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
+int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 {
-	char	str[MAX_PATH+1],*p,*p_startup_dir;
+	char	str[MAX_PATH+1],*p;
+	const char* p_startup_dir;
 	char	path[MAX_PATH+1];
 	char	fname[MAX_PATH+1];
     char	fullcmdline[MAX_PATH+1];
@@ -1054,7 +1055,7 @@ static int forkpty(int *amaster, char *name, termios *termp, winsize *winp)
 }
 #endif /* NEED_FORKPTY */
 
-int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
+int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 {
 	char	str[MAX_PATH+1];
 	char	fname[MAX_PATH+1];
@@ -1398,7 +1399,7 @@ uint fakeriobp=0xffff;
 /*****************************************************************************/
 /* Returns command line generated from instr with %c replacments             */
 /*****************************************************************************/
-char * sbbs_t::cmdstr(char *instr, char *fpath, char *fspec, char *outstr)
+char* sbbs_t::cmdstr(char *instr, char *fpath, char *fspec, char *outstr)
 {
 	char	str[256],*cmd;
     int		i,j,len;

@@ -217,10 +217,10 @@ void sbbs_t::logch(char ch, bool comma)
 /* information, function, action, object and access and then attempts to    */
 /* write the error information into the file ERROR.LOG and NODE.LOG         */
 /****************************************************************************/
-void sbbs_t::errormsg(int line, char *source, char action, char *object
-					  ,ulong access, char *extinfo)
+void sbbs_t::errormsg(int line, const char *source, char action, const char *object
+					  ,ulong access, const char *extinfo)
 {
-	char*	src;
+	const char*	src;
     char	str[2048];
 	char 	tmp[512];
     char*	actstr;

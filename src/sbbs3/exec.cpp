@@ -563,7 +563,7 @@ static JSClass js_scope_class ={
         JS_EnumerateStub,JS_ResolveStub,JS_ConvertStub,JS_FinalizeStub 
     }; 
 
-long sbbs_t::js_execfile(char *cmd)
+long sbbs_t::js_execfile(const char *cmd)
 {
 	char*		p;
 	char*		args=NULL;
