@@ -57,7 +57,7 @@ char *ultoac(ulong l, char *string)
 	char str[256];
 	signed char i,j,k;
 
-	ultoa(l,str,10);
+	sprintf(str,"%lu",l);
 	i=strlen(str)-1;
 	j=i/3+1+i;
 	string[j--]=0;
