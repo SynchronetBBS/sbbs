@@ -3388,7 +3388,7 @@ int import_netmail(char *path,fmsghdr_t hdr, FILE *fidomsg)
 	uchar info[512],str[256],tmp[256],subj[256]
 		,*fmsgbuf=NULL,*p,*tp,*sp;
 	int i,match,usernumber;
-	ulong l;
+	ulong length;
 	faddr_t addr;
 
 	hdr.destzone=hdr.origzone=sys_faddr.zone;
@@ -3534,15 +3534,17 @@ int import_netmail(char *path,fmsghdr_t hdr, FILE *fidomsg)
 	/* Importing NetMail */
 	/*********************/
 
-	fmsgbuf=getfmsg(fidomsg,&l);
+	fmsgbuf=getfmsg(fidomsg,&length);
 
-	if(!l && misc&KILL_EMPTY_MAIL) {
+	if(!length && misc&KILL_EMPTY_MAIL) {
 		printf("Empty NetMail - Ignored");
 		if(cfg.log&LOG_IGNORED)
 			logprintf("%s Empty - Ignored",info);
 		if(fmsgbuf)
 			FREE(fmsgbuf);
 		return(0); }
+
+	printf("(%u bytes) ",length);
 
 	i=fmsgtosmsg(fmsgbuf,hdr,usernumber,INVALID_SUB);
 	if(i!=1) {
@@ -3595,7 +3597,7 @@ int import_netmail(char *path,fmsghdr_t hdr, FILE *fidomsg)
 		fwrite(&hdr,sizeof(fmsghdr_t),1,fidomsg); }
 	***/
 	if(cfg.log&LOG_IMPORTED)
-		logprintf("%s Imported",info);
+		logprintf("%s (%u bytes) Imported [misc=%lx]",info,length,misc);
 	return(0);
 }
 
@@ -4567,7 +4569,6 @@ int main(int argc, char **argv)
 				strupr(str);
 				p=strstr(str,"AREA:");
 				if(p==NULL) {					/* Netmail */
-					printf("AREA tag not found, calling import_netmail\n");
 					start_tick=0;
 					if(import_netmail("",hdr,fidomsg))
 						seektonull(fidomsg);
