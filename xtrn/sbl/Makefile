@@ -14,7 +14,11 @@ XSDK	= ..\sdk
 !ifndef SBBS_SRC
  SBBS_SRC	=	../../src/sbbs3
 !endif
-CFLAGS	= -WM -I$(XSDK);$(XPDEV);$(SBBS_SRC)
+!ifndef SMBLIB_SRC
+ SMBLIB_SRC	=	../../src/smblib
+!endif
+
+CFLAGS	= -WM -I$(XSDK);$(XPDEV);$(SBBS_SRC);$(SMBLIB_SRC)
 CFLAGS	= $(CFLAGS) -q -d -H -X- -w-csu -w-pch -w-ccc -w-rch -w-par -w-8004
 OBJS    = xsdk.obj xsdkvars.obj xsdkwrap.obj
 
@@ -35,7 +39,7 @@ sbl.exe: $(OBJS) sbl.obj
     	@echo Linking $@
 	@$(CC) $(CFLAGS) -e$@ $**
 
-SMBIO	= genwrap.obj filewrap.obj dirwrap.obj smblib.obj lzh.obj
+SMBIO	= $(XPDEV)/bcc.win32.lib.debug/xpdev_mt.lib $(SMBLIB_SRC)/bcc.win32.lib.debug/smb.lib
 
 sbl2smb.exe: sbl2smb.obj $(SMBIO)
 	@echo Linking $@
