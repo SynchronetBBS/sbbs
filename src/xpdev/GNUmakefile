@@ -66,7 +66,7 @@ else
     LFLAGS	:= 
    else
     ifeq ($(os),darwin)	# Darwin/Mac OS X
-     CFLAGS	+= -D__unix__ -DUSE_XP_SEMAPHORES -DDARWIN
+     CFLAGS	+= -D__unix__ -DUSE_XP_SEMAPHORES -D__DARWIN__
      LFLAGS	+= -lpthread
      XP_SEM	:= 1
     else			# Linux / Other UNIX
