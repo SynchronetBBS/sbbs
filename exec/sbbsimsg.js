@@ -33,11 +33,13 @@ for(i in list) {
 		break;
 	while(list[i].charAt(0)==' ')		// skip prepended spaces
 		list[i] = list[i].slice(1);
-	if(list[i].charAt(0)==';' ||		// comment? 
-		list[i] == system.inetaddr)		// local system?
-		continue;						// ignore
 
 	word = list[i].split(/\s+/);
+
+	if(word[0].charAt(0)==';' ||		// comment? 
+		word[0] == system.inetaddr)		// local system?
+		continue;						// ignore
+
 	sys.push( { addr: word[0], ip : word[1], failed: false } );
 }
 
