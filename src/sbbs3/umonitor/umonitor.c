@@ -635,7 +635,7 @@ int main(int argc, char** argv)  {
 		uifc.helpbuf=	"`Synchronet Monitor:`\n"
 						"\nToDo: Add help.";
 						
-		j=uifc.list(WIN_ORG|WIN_MID|WIN_ESC|WIN_DYN,0,0,70,&main_dflt,&main_bar
+		j=uifc.list(WIN_ORG|WIN_MID|WIN_ESC|WIN_ACT|WIN_DYN,0,0,70,&main_dflt,&main_bar
 			,str,mopt);
 		if(j==-2)
 			continue;
