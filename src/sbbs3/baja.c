@@ -80,14 +80,21 @@ uint *label_indx=NULL
 	,*call_indx=NULL
 	,*call_line=NULL;
 
+char bin_file[MAX_PATH+1]="";
+
 uint display=0,line=0,labels=0,gotos=0,calls=0,defines=0,case_sens=0;
 
 FILE *out=NULL;
 
-void bail(void)
+void bail(int retval)
 {
-if(out)
-	chsize(fileno(out),0);
+	if(out) 
+		fclose(out);
+
+	if(retval!=0 && bin_file[0]!=0)
+		remove(bin_file);
+
+	exit(retval);
 }
 
 /****************************************************************************/
@@ -158,7 +165,7 @@ long val(char *src, char *p)
 	else {
 		printf("SYNTAX ERROR (expecting integer constant):\n");
 		printf(linestr,src,line,*p ? p : "<end of line>");
-		exit(1);
+		bail(1);
 		return(0); }
 	if(inside) {
 		return(l); }
@@ -327,7 +334,7 @@ void newvar(uchar *in)
 		return;
 	if((var_name=(ulong *)REALLOC(var_name,sizeof(long)*(vars+1)))==NULL) {
 		printf("Too many (%lu) variables!\n",vars);
-		exit(1); }
+		bail(1); }
 	var_name[vars]=l;
 	if(display)
 		printf("newvar(%08lX)=%s\n",l,in);
@@ -358,7 +365,7 @@ void writecrc(uchar *src, uchar *in)
 		if(i==vars) {
 			printf("SYNTAX ERROR (expecting variable name):\n");
 			printf(linestr,src,line,*in ? (char*)in : "<end of line>");
-			exit(1); 
+			bail(1); 
 		}
 	}
 	fwrite(&l,4,1,out);
@@ -447,17 +454,17 @@ void compile(char *src)
 
 	if((in=fopen(src,"rb"))==NULL) {
 		printf("error opening %s for read\n",src);
-		exit(1); }
+		bail(1); }
 	line=0;
 
 	if((str=malloc(1024))==NULL) {
 		printf("malloc error\n");
-		exit(1);
+		bail(1);
 	}
 
 	if((save=malloc(1024))==NULL) {
 		printf("malloc error\n");
-		exit(1);
+		bail(1);
 	}
 
 	while(!feof(in) && !ferror(in)) {
@@ -520,17 +527,17 @@ void compile(char *src)
 			if((define_str=(char **)REALLOC(define_str,sizeof(char *)*(defines+1)))
 				==NULL) {
 				printf("Too many defines.\n");
-				exit(1); }
+				bail(1); }
 			if((define_str[defines]=(char *)MALLOC(strlen(arg)+1))==NULL) {
 				printf("Too many defines.\n");
-				exit(1); }
+				bail(1); }
 			if((define_val=(char **)REALLOC(define_val,sizeof(char *)*(defines+1)))
 				==NULL) {
 				printf("Too many defines.\n");
-				exit(1); }
+				bail(1); }
 			if((define_val[defines]=(char *)MALLOC(strlen(arg2)+1))==NULL) {
 				printf("Too many defines.\n");
-				exit(1); }
+				bail(1); }
 			strcpy(define_str[defines],arg);
 			strcpy(define_val[defines],arg2);
 			defines++;
@@ -712,18 +719,18 @@ void compile(char *src)
 			if(i<labels) {
 				printf("SYNTAX ERROR (duplicate label name):\n");
 				printf(linestr,src,line,p);
-				exit(1); }
+				bail(1); }
 			if((label_name=(char **)REALLOC(label_name,sizeof(char *)*(labels+1)))
 				==NULL) {
 				printf("Too many labels.\n");
-				exit(1); }
+				bail(1); }
 			if((label_indx=(uint *)REALLOC(label_indx,sizeof(int)*(labels+1)))
 				==NULL) {
 				printf("Too many labels.\n");
-				exit(1); }
+				bail(1); }
 			if((label_name[labels]=(char *)MALLOC(strlen(p)+1))==NULL) {
 				printf("Too many labels.\n");
-				exit(1); }
+				bail(1); }
 			strcpy(label_name[labels],p);
 			label_indx[labels]=ftell(out);
 			labels++;
@@ -736,25 +743,25 @@ void compile(char *src)
 			if((goto_label=(char **)REALLOC(goto_label,sizeof(char *)*(gotos+1)))
 				==NULL) {
 				printf("Too many gotos.\n");
-				exit(1); }
+				bail(1); }
 			if((goto_file=(char **)REALLOC(goto_file,sizeof(char *)*(gotos+1)))
 				==NULL) {
 				printf("Too many gotos.\n");
-				exit(1); }
+				bail(1); }
 			if((goto_indx=(uint *)REALLOC(goto_indx,sizeof(int)*(gotos+1)))
 				==NULL) {
 				printf("Too many gotos.\n");
-				exit(1); }
+				bail(1); }
 			if((goto_line=(uint *)REALLOC(goto_line,sizeof(int)*(gotos+1)))
 				==NULL) {
 				printf("Too many gotos.\n");
-				exit(1); }
+				bail(1); }
 			if((goto_label[gotos]=(char *)MALLOC(strlen(arg)+1))==NULL) {
 				printf("Too many gotos.\n");
-				exit(1); }
+				bail(1); }
 			if((goto_file[gotos]=(char *)MALLOC(strlen(str)+1))==NULL) {
 				printf("Too many gotos.\n");
-				exit(1); }
+				bail(1); }
 			strcpy(goto_label[gotos],arg);
 			strcpy(goto_file[gotos],str);
 			goto_indx[gotos]=ftell(out);
@@ -770,25 +777,25 @@ void compile(char *src)
 			if((call_label=(char **)REALLOC(call_label,sizeof(char *)*(calls+1)))
 				==NULL) {
 				printf("Too many calls.\n");
-				exit(1); }
+				bail(1); }
 			if((call_file=(char **)REALLOC(call_file,sizeof(char *)*(calls+1)))
 				==NULL) {
 				printf("Too many calls.\n");
-				exit(1); }
+				bail(1); }
 			if((call_indx=(uint *)REALLOC(call_indx,sizeof(int)*(calls+1)))
 				==NULL) {
 				printf("Too many calls.\n");
-				exit(1); }
+				bail(1); }
 			if((call_line=(uint *)REALLOC(call_line,sizeof(int)*(calls+1)))
 				==NULL) {
 				printf("Too many calls.\n");
-				exit(1); }
+				bail(1); }
 			if((call_label[calls]=(char *)MALLOC(strlen(arg)+1))==NULL) {
 				printf("Too many calls.\n");
-				exit(1); }
+				bail(1); }
 			if((call_file[calls]=(char *)MALLOC(strlen(src)+1))==NULL) {
 				printf("Too many calls.\n");
-				exit(1); }
+				bail(1); }
 
 			strcpy(call_label[calls],arg);
 			strcpy(call_file[calls],src);
@@ -3353,7 +3360,7 @@ void compile(char *src)
 	if(!feof(in)) {
 		printf("SYNTAX ERROR:\n");
 		printf(linestr,src,line,save);
-		exit(1); }
+		bail(1); }
 	fclose(in);
 	free(str);
 	free(save);
@@ -3396,7 +3403,7 @@ int main(int argc, char **argv)
 				default:
 					printf(banner);
 					printf(usage);
-					exit(1); }
+					bail(1); }
 		else
 			strcpy(src,argv[i]);
 
@@ -3405,7 +3412,7 @@ int main(int argc, char **argv)
 
 	if(!src[0]) {
 		printf(usage);
-		exit(1); }
+		bail(1); }
 
 	strcpy(str,src);
 	if(!strchr(str,'.'))
@@ -3430,11 +3437,12 @@ int main(int argc, char **argv)
 			strcat(outdir,"\\");
 		sprintf(str,"%s%s",outdir,outfname); }
 
-	if((out=fopen(str,"wb"))==NULL) {
+	if((out=fopen(str,"w+b"))==NULL) {
 		printf("error opening %s for write\n",str);
-		exit(1); }
+		bail(1); 
+	}
 
-	atexit(bail);
+	sprintf(bin_file,"%.*s",sizeof(bin_file)-1,str);
 
 	printf("\nCompiling %s...\n",src);
 
@@ -3453,7 +3461,7 @@ int main(int argc, char **argv)
 		if(j>=labels) {
 			printf("%s line %d: label (%s) not found.\n"
 				,goto_file[i],goto_line[i],goto_label[i]);
-			exit(1); }
+			bail(1); }
 		fseek(out,(long)(goto_indx[i]+1),SEEK_SET);
 		fwrite(&label_indx[j],2,1,out); }
 
@@ -3467,12 +3475,9 @@ int main(int argc, char **argv)
 		if(j>=labels) {
 			printf("%s line %d: label (%s) not found.\n"
 				,call_file[i],call_line[i],call_label[i]);
-			exit(1); }
+			bail(1); }
 		fseek(out,(long)(call_indx[i]+1),SEEK_SET);
 		fwrite(&label_indx[j],2,1,out); }
-
-	fclose(out);
-	out=NULL; /* so bail() won't truncate */
 
 	printf("\nDone.\n");
 	return(0);
