@@ -985,9 +985,7 @@ void input_thread(void *arg)
 	while(sbbs->online && sbbs->client_socket!=INVALID_SOCKET
 		&& node_socket[sbbs->cfg.node_num-1]!=INVALID_SOCKET) {
 
-		#if defined(_PTH_H_) /* Cooperative multitasking! */
-			pth_yield(NULL);
-		#endif
+		YIELD();
 		pthread_mutex_lock(&sbbs->input_thread_mutex);
 
 #ifdef __unix__
@@ -1201,9 +1199,7 @@ void output_thread(void* arg)
 	sbbs->console|=CON_R_ECHO;
 
 	while(sbbs->client_socket!=INVALID_SOCKET && telnet_socket!=INVALID_SOCKET) {
-	#if defined(_PTH_H_) /* Cooperative multitasking! */
-		pth_yield(NULL);
-	#endif
+		YIELD();
 
     	if(bufbot==buftop)
 	    	avail=RingBufFull(&sbbs->outbuf);
@@ -2722,9 +2718,7 @@ int sbbs_t::incom(void)
 {
 	uchar	ch;
 
-#if defined(_PTH_H_) /* Cooperative multitasking! */
-	pth_yield(NULL);
-#endif
+	YIELD();
 	if(!RingBufRead(&inbuf, &ch, 1))
 		return(NOINP);
 #if 0 // removed Jan-2003
@@ -2743,9 +2737,7 @@ int sbbs_t::outcom(uchar ch)
 		return(TXBOF);
 	sem_post(&output_sem);
 	return(0);
-#if defined(_PTH_H_) /* Cooperative multitasking! */
-	pth_yield(NULL);
-#endif
+	YIELD();
 }
 
 void sbbs_t::putcom(char *str, int len)
@@ -3094,9 +3086,7 @@ void node_thread(void* arg)
 			if(sbbs->exec(&sbbs->main_csi))
 				break;
 
-			#if defined(_PTH_H_) /* Cooperative multitasking! */
-				pth_yield(NULL);
-			#endif
+			YIELD();
 		}
 	}
 
@@ -3824,9 +3814,7 @@ void DLLCALL bbs_thread(void* arg)
 	}
 
 	while(telnet_socket!=INVALID_SOCKET) {
-		#if defined(_PTH_H_) /* Cooperative multitasking! */
-			pth_yield(NULL);
-		#endif
+		YIELD();
 
 		if(node_threads_running==0 && !event_mutex_locked) {	/* check for re-run flags */
 			bool rerun=false;

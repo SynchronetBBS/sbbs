@@ -49,6 +49,11 @@ extern "C" {
 
 	#include <sys/param.h>
 	#include <pthread.h>	/* POSIX threads and mutexes */
+#ifdef __linux__
+	#define YIELD()		sched_yield()
+#else
+	#define YIELD()		pthread_yield()
+#endif
 #if defined(_NEED_SEM)
 	#include "sem.h"
 #else
@@ -122,6 +127,7 @@ extern "C" {
 #define SLEEP(x)		({	int y=x; struct timeval tv; \
 								tv.tv_sec=(y/1000); tv.tv_usec=((y%1000)*1000); \
 								pth_nap(tv); })
+#define YIELD()		pth_yield(NULL)
 #endif
 
 #endif	/* Don't add anything after this line */
