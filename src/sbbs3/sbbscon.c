@@ -1487,7 +1487,7 @@ int main(int argc, char** argv)
 
 #ifdef __unix__
 	if(getuid())  /*  are we running as a normal user?  */
-		bbs_lputs("!Started as non-root user.  Cannot bind() to ports below 1024.");
+		bbs_lputs("!Started as non-root user.  Cannot bind() to ports below %u.", IPPORT_RESERVED);
 	
 	else if(new_uid_name[0]==0)   /*  check the user arg, if we have uid 0 */
 		bbs_lputs("Warning: No user account specified, running as root.");
@@ -1526,18 +1526,17 @@ int main(int argc, char** argv)
 			/* ToDo: Something seems to be broken here on FreeBSD now */
 			/* ToDo: Now, they try to re-bind on FreeBSD */
 			/* ToDo: Seems like I switched problems with Linux */
- 			if(bbs_startup.telnet_port < 1024
+ 			if(bbs_startup.telnet_port < IPPORT_RESERVED
 				|| (bbs_startup.options & BBS_OPT_ALLOW_RLOGIN
-					&& bbs_startup.rlogin_port < 1024))
+					&& bbs_startup.rlogin_port < IPPORT_RESERVED))
 				bbs_startup.options|=BBS_OPT_NO_RECYCLE;
-			if(ftp_startup.port < 1024)
+			if(ftp_startup.port < IPPORT_RESERVED)
 				ftp_startup.options|=FTP_OPT_NO_RECYCLE;
-			if((mail_startup.options & MAIL_OPT_RELAY_TX
-				&& mail_startup.relay_port < 1024)
-				|| (mail_startup.options & MAIL_OPT_ALLOW_POP3
-					&& mail_startup.pop3_port < 1024)
-				|| (!(mail_startup.options & MAIL_OPT_NO_SENDMAIL)
-					&& mail_startup.smtp_port < 1024))
+			if(web_startup.port < IPPORT_RESERVED)
+				web_startup.options|=BBS_OPT_NO_RECYCLE;
+			if((mail_startup.options & MAIL_OPT_ALLOW_POP3
+				&& mail_startup.pop3_port < IPPORT_RESERVED)
+				|| mail_startup.smtp_port < IPPORT_RESERVED)
 				mail_startup.options|=MAIL_OPT_NO_RECYCLE;
 			/* Perhaps a BBS_OPT_NO_RECYCLE_LOW option? */
 			services_startup.options|=BBS_OPT_NO_RECYCLE;
