@@ -112,10 +112,8 @@ char * b64_encode(char *target, const char *source, size_t tlen, size_t slen)  {
 		write=target;
 
 	tend=write+tlen;
-	send=source+slen;
+	send=read+slen;
 	for(;(read < send) && !done;)  {
-		if(! *read)
-			done=1;
 		enc=(int)*(read++);
 		buf=(enc & 0x03)<<4;
 		enc=(enc&0xFC)>>2;
@@ -130,7 +128,7 @@ char * b64_encode(char *target, const char *source, size_t tlen, size_t slen)  {
 				free(tmpbuf);
 			return(NULL);
 		}
-		if(! *read)
+		if(read==send)
 			done=1;
 		buf=(*(read++)<<2)&0x3C;
 		enc=buf|(*read>>6);
@@ -139,7 +137,7 @@ char * b64_encode(char *target, const char *source, size_t tlen, size_t slen)  {
 				free(tmpbuf);
 			return(NULL);
 		}
-		if(! *read)
+		if(read==send)
 			done=1;
 		enc=((int)*(read++))&0x3F;
 		if(add_char(write++, enc, done, tend))  {
@@ -147,7 +145,7 @@ char * b64_encode(char *target, const char *source, size_t tlen, size_t slen)  {
 				free(tmpbuf);
 			return(NULL);
 		}
-		if(! *read)
+		if(read==send)
 			done=1;
 	}
 	*write=0;
