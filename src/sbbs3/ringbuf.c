@@ -135,13 +135,6 @@ DWORD RINGBUFCALL RingBufFull( RingBuf* rb )
 	else
 		retval = rb->size - (tail - head);
 
-#ifdef RINGBUF_SEM
-	if(retval==0)	/* empty */
-		sem_reset(&rb->sem);
-	if(retval<rb->highwater_mark)
-		sem_reset(&rb->highwater_sem);
-#endif
-
 #ifdef RINGBUF_MUTEX
 	pthread_mutex_unlock(&rb->mutex);
 #endif
@@ -256,7 +249,10 @@ DWORD RINGBUFCALL RingBufRead( RingBuf* rb, BYTE* dst,  DWORD cnt )
 		rb->pTail = rb->pStart;
 
 #ifdef RINGBUF_SEM		/* clear semaphores, if appropriate */
-	RingBufFull( rb );
+	if(len-cnt==0)	/* empty */
+		sem_reset(&rb->sem);
+	if(len-cnt<rb->highwater_mark)
+		sem_reset(&rb->highwater_sem);
 #endif
 
 #ifdef RINGBUF_MUTEX
