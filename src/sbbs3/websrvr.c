@@ -3060,6 +3060,7 @@ static BOOL exec_ssjs(http_session_t* session, char *script)  {
 	js_add_request_prop(session,"ars",session->req.ars);
 	js_add_request_prop(session,"request_string",session->req.request_line);
 	js_add_request_prop(session,"host",session->req.host);
+	js_add_request_prop(session,"vhost",session->req.vhost);
 	js_add_request_prop(session,"http_ver",http_vers[session->http_ver]);
 	js_add_request_prop(session,"remote_ip",session->host_ip);
 	js_add_request_prop(session,"remote_host",session->host_name);
