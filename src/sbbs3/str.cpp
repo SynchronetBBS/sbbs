@@ -833,66 +833,78 @@ bool sbbs_t::trashcan(char *insearch, char *name)
 void sbbs_t::errormsg(int line, char *source, char action, char *object
 					  ,ulong access, char *extinfo)
 {
+	char*	src;
     char	str[512];
 	char 	tmp[512];
-    char	actstr[256];
+    char*	actstr;
 
+	/* prevent recursion */
 	if(errormsg_inside)
 		return;
 	errormsg_inside=true;
+
+	/* Don't log path to source code */
+	src=strrchr(source,BACKSLASH);
+	if(src==NULL) 
+		src=source;
+	else
+		src++;
+
 	switch(action) {
 		case ERR_OPEN:
-			strcpy(actstr,"opening");
+			actstr="opening";
 			break;
 		case ERR_CLOSE:
-			strcpy(actstr,"closing");
+			actstr="closing";
 			break;
 		case ERR_FDOPEN:
-			strcpy(actstr,"fdopen");
+			actstr="fdopen";
 			break;
 		case ERR_READ:
-			strcpy(actstr,"reading");
+			actstr="reading";
 			break;
 		case ERR_WRITE:
-			strcpy(actstr,"writing");
+			actstr="writing";
 			break;
 		case ERR_REMOVE:
-			strcpy(actstr,"removing");
+			actstr="removing";
 			break;
 		case ERR_ALLOC:
-			strcpy(actstr,"allocating memory");
+			actstr="allocating memory";
 			break;
 		case ERR_CHK:
-			strcpy(actstr,"checking");
+			actstr="checking";
 			break;
 		case ERR_LEN:
-			strcpy(actstr,"checking length");
+			actstr="checking length";
 			break;
 		case ERR_EXEC:
-			strcpy(actstr,"executing");
+			actstr="executing";
 			break;
 		case ERR_CHDIR:
-			strcpy(actstr,"changing directory");
+			actstr="changing directory";
 			break;
 		case ERR_CREATE:
-			strcpy(actstr,"creating");
+			actstr="creating";
 			break;
 		case ERR_LOCK:
-			strcpy(actstr,"locking");
+			actstr="locking";
 			break;
 		case ERR_UNLOCK:
-			strcpy(actstr,"unlocking");
+			actstr="unlocking";
 			break;
 		case ERR_TIMEOUT:
-    		strcpy(actstr,"time-out waiting for resource");
+    		actstr="time-out waiting for resource";
 			break;
 		case ERR_IOCTL:
-    		strcpy(actstr,"sending IOCTL");
+    		actstr="sending IOCTL";
 			break;
 		default:
-			strcpy(actstr,"UNKNOWN"); }
+			actstr="UNKNOWN"; 
+			break;
+	}
 	lprintf("!Node %d: ERROR %d (0x%X) in %s line %d %s %s access=%d"
-		,cfg.node_num, errno, errno, source, line, actstr, object, access);
+		,cfg.node_num, errno, errno, src, line, actstr, object, access);
 	bprintf("\7\r\nERROR -   action: %s",actstr);   /* tell user about error */
 	bprintf("\7\r\n          object: %s",object);
 	bprintf("\7\r\n          access: %ld",access);
@@ -908,7 +920,7 @@ void sbbs_t::errormsg(int line, char *source, char action, char *object
 	CRLF;
 	sprintf(str,"\r\n    source: %s\r\n      line: %d\r\n    action: %s\r\n"
 		"    object: %s\r\n    access: %ld"
-		,source,line,actstr,object,access);
+		,src,line,actstr,object,access);
 	if(access>9 && (long)access!=-1 && (short)access!=-1 && (char)access!=-1) {
 		sprintf(tmp," (0x%lX)",access);
 		strcat(str,tmp); }
