@@ -628,7 +628,7 @@ void doterm(void)
 		}
 		
 		/* Get local input */
-		if(kbhit()) {
+		while(kbhit()) {
 			key=getch();
 			switch(key) {
 				case 17:	/* CTRL-Q */
