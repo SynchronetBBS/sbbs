@@ -66,7 +66,8 @@ char sbbs_t::getkey(long mode)
 		if(sys_status&SS_ABORT) {
 			if(mode&K_SPIN) /* back space once if on spinning cursor */
 				bputs("\b \b");
-			return(0); }
+			return(0); 
+		}
 
 #if 0	// moved to inkey() on AUG-29-2001
 		if(sys_status&SS_SYSPAGE) {
@@ -212,8 +213,10 @@ char sbbs_t::getkey(long mode)
 						default:
 							if(!(cfg.node_misc&NM_WINOS2))
 								mswait(DELAY_SPIN);
-							break;  }
-					break; }
+							break;  
+					}
+					break; 
+			}
 
 		ch=inkey(mode);
 		if(sys_status&SS_ABORT)
@@ -236,13 +239,15 @@ char sbbs_t::getkey(long mode)
 				while((coldkey=inkey(mode))==0 && online && !(sys_status&SS_ABORT))
 					mswait(1);
 				bputs("\b \b");
-				if(coldkey==BS)
+				if(coldkey==BS || coldkey==DEL)
 					continue;
 				if(coldkey>SP)
-					ungetkey(coldkey); }
+					ungetkey(coldkey); 
+			}
 			if(mode&K_UPPER)
 				return(toupper(ch));
-			return(ch); }
+			return(ch); 
+		}
 		if(sys_status&SS_USERON && !(sys_status&SS_LCHAT)) gettimeleft();
 		else if(online &&
 			((cfg.node_dollars_per_call && now-answertime>SEC_BILLING)
@@ -250,7 +255,8 @@ char sbbs_t::getkey(long mode)
 			console&=~(CON_R_ECHOX|CON_L_ECHOX);
 			console|=(CON_R_ECHO|CON_L_ECHO);
 			bputs(text[TakenTooLongToLogon]);
-			hangup(); }
+			hangup(); 
+		}
 		if(sys_status&SS_USERON && online && (timeleft/60)<(5-timeleft_warn)
 			&& !SYSOP && !(sys_status&SS_LCHAT)) {
 			timeleft_warn=5-(timeleft/60);
@@ -258,7 +264,8 @@ char sbbs_t::getkey(long mode)
 			attr(LIGHTGRAY);
 			bprintf(text[OnlyXminutesLeft]
 				,((ushort)timeleft/60)+1,(timeleft/60) ? "s" : nulstr);
-			RESTORELINE; }
+			RESTORELINE; 
+		}
 
 		if(now!=last_telnet_cmd && now-timeout>=60 && !((now-timeout)%60)) {
 			// Let's make sure the socket is up
@@ -313,14 +320,17 @@ void sbbs_t::mnemonics(char *str)
 	if(!strchr(str,'~')) {
 		mnestr=str;
 		bputs(str);
-		return; }
+		return; 
+	}
 	ctrl_a_codes=strchr(str,1);
 	if(!ctrl_a_codes) {
 		if(str[0]=='@' && str[strlen(str)-1]=='@' && !strchr(str,SP)) {
 			mnestr=str;
 			bputs(str);
-			return; }
-		attr(cfg.color[clr_mnelow]); }
+			return; 
+		}
+		attr(cfg.color[clr_mnelow]); 
+	}
 	l=0L;
 	while(str[l]) {
 		if(str[l]=='~' && str[l+1]!=0) {
@@ -334,14 +344,17 @@ void sbbs_t::mnemonics(char *str)
 			if(!(useron.misc&ANSI))
 				outchar(')');
 			if(!ctrl_a_codes)
-				attr(cfg.color[clr_mnelow]); }
+				attr(cfg.color[clr_mnelow]); 
+		}
 		else {
 			if(str[l]==CTRL_A           /* ctrl-a */
 				&& str[l+1]!=0)	{		/* valid */
 				ctrl_a(str[++l]);       /* skip the ctrl-a */
-				l++; }                  /* skip the attribute code */
-			else
-				outchar(str[l++]); } }
+				l++;                    /* skip the attribute code */
+			} else
+				outchar(str[l++]); 
+		} 
+	}
 	if(!ctrl_a_codes)
 		attr(cfg.color[clr_mnecmd]);
 }
@@ -359,7 +372,8 @@ bool sbbs_t::yesno(char *str)
 	SYNC;
 	if(useron.misc&WIP) {
 		strip_ctrl(question);
-		menu("yesno"); }
+		menu("yesno"); 
+	}
 	else
 		bprintf(text[YesNoQuestion],str);
 	while(online) {
@@ -371,12 +385,15 @@ bool sbbs_t::yesno(char *str)
 			if(bputs(text[Yes]))
 				CRLF;
 			lncntr=0;
-			return(true); }
+			return(true); 
+		}
 		if(ch==text[YN][1]) {
 			if(bputs(text[No]))
 				CRLF;
 			lncntr=0;
-			return(false); } }
+			return(false); 
+		} 
+	}
 	return(true);
 }
 
@@ -393,7 +410,8 @@ bool sbbs_t::noyes(char *str)
 	SYNC;
 	if(useron.misc&WIP) {
 		strip_ctrl(question);
-		menu("noyes"); }
+		menu("noyes"); 
+	}
 	else
 		bprintf(text[NoYesQuestion],str);
 	while(online) {
@@ -405,12 +423,15 @@ bool sbbs_t::noyes(char *str)
 			if(bputs(text[No]))
 				CRLF;
 			lncntr=0;
-			return(true); }
+			return(true); 
+		}
 		if(ch==text[YN][0]) {
 			if(bputs(text[Yes]))
 				CRLF;
 			lncntr=0;
-			return(false); } }
+			return(false); 
+		} 
+	}
 	return(true);
 }
 
@@ -436,35 +457,43 @@ long sbbs_t::getkeys(char *keys, ulong max)
 			attr(LIGHTGRAY);
 			CRLF;
 			lncntr=0;
-			return(-1); }
+			return(-1); 
+		}
 		if(ch && !n && (strchr(str,ch))) {  /* return character if in string */
 			outchar(ch);
 			if(useron.misc&COLDKEYS && ch>SP) {
 				while(online && !(sys_status&SS_ABORT)) {
 					c=getkey(0);
-					if(c==CR || c==BS)
-						break; }
+					if(c==CR || c==BS || c==DEL)
+						break; 
+				}
 				if(sys_status&SS_ABORT) {
 					CRLF;
-					return(-1); }
-				if(c==BS) {
+					return(-1); 
+				}
+				if(c==BS || c==DEL) {
 					bputs("\b \b");
-					continue; } }
+					continue; 
+				} 
+			}
 			attr(LIGHTGRAY);
 			CRLF;
 			lncntr=0;
-			return(ch); }
+			return(ch); 
+		}
 		if(ch==CR && max) {             /* return 0 if no number */
 			attr(LIGHTGRAY);
 			CRLF;
 			lncntr=0;
 			if(n)
 				return(i|0x80000000L);		 /* return number plus high bit */
-			return(0); }
-		if(ch==BS && n) {
+			return(0); 
+		}
+		if((ch==BS || ch==DEL) && n) {
 			bputs("\b \b");
 			i/=10;
-			n--; }
+			n--; 
+		}
 		else if(max && isdigit(ch) && (i*10)+(ch&0xf)<=max && (ch!='0' || n)) {
 			i*=10;
 			n++;
@@ -474,7 +503,10 @@ long sbbs_t::getkeys(char *keys, ulong max)
 				attr(LIGHTGRAY);
 				CRLF;
 				lncntr=0;
-				return(i|0x80000000L); } } }
+				return(i|0x80000000L); 
+			} 
+		} 
+	}
 	return(-1);
 }
 

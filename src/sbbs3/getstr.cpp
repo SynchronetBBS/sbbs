@@ -481,7 +481,7 @@ long sbbs_t::getnum(ulong max)
 			outchar('Q');
 			if(useron.misc&COLDKEYS)
 				ch=getkey(K_UPPER);
-			if(ch==BS) {
+			if(ch==BS || ch==DEL) {
 				bputs("\b \b");
 				continue; }
 			CRLF;
@@ -495,7 +495,7 @@ long sbbs_t::getnum(ulong max)
 			CRLF;
 			lncntr=0;
 			return(i); }
-		else if(ch==BS && n) {
+		else if((ch==BS || ch==DEL) && n) {
 			bputs("\b \b");
 			i/=10;
 			n--; }

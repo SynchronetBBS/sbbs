@@ -452,7 +452,7 @@ uint sbbs_t::gettmplt(char *strout,char *templt, long mode)
 		bputs(str);
 		c=strlen(str); }
 	while((ch=getkey(mode))!=CR && online && !(sys_status&SS_ABORT)) {
-		if(ch==BS) {
+		if(ch==BS || ch==DEL) {
 			if(!c)
 				continue;
 			for(ch=1,c--;c;c--,ch++)
