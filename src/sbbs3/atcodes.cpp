@@ -185,6 +185,9 @@ int sbbs_t::atcodes(char *instr)
 	else if(!strcmp(sp,"PAUSE") || !strcmp(sp,"MORE"))
 		pause();
 
+	else if(!strcmp(sp,"RESETPAUSE"))
+		lncntr=0;
+
 	else if(!strcmp(sp,"NOPAUSE") || !strcmp(sp,"POFF"))
 		sys_status^=SS_PAUSEOFF;
 
