@@ -1,6 +1,6 @@
 object UserListForm: TUserListForm
-  Left = 387
-  Top = 308
+  Left = 185
+  Top = 233
   Width = 870
   Height = 640
   Caption = 'Synchronet User List'
@@ -12,6 +12,7 @@ object UserListForm: TUserListForm
   Font.Style = []
   FormStyle = fsStayOnTop
   OldCreateOrder = False
+  Position = poDefault
   OnClose = FormClose
   OnShow = FormShow
   PixelsPerInch = 120
