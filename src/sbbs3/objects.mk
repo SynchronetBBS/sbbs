@@ -220,7 +220,7 @@ JSEXEC_OBJS = \
 			$(OBJODIR)$(DIRSEP)jsexec$(OFILE)
 
 SEXYZ_OBJS = \
-			$(OBJODIR)$(DIRSEP)sexyz$(OFILE) \
-			$(OBJODIR)$(DIRSEP)xmodem$(OFILE) \
-			$(OBJODIR)$(DIRSEP)zmodem$(OFILE) \
-			$(OBJODIR)$(DIRSEP)telnet$(OFILE)
+			$(MTOBJODIR)$(DIRSEP)sexyz$(OFILE) \
+			$(MTOBJODIR)$(DIRSEP)xmodem$(OFILE) \
+			$(MTOBJODIR)$(DIRSEP)zmodem$(OFILE) \
+			$(MTOBJODIR)$(DIRSEP)telnet$(OFILE)
