@@ -285,10 +285,11 @@ extern "C" {
 
 
 /* General file system wrappers for all platforms and compilers */
-DLLEXPORT long	DLLCALL fdate(char *filename);
-DLLEXPORT BOOL	DLLCALL	isdir(char *filename);
-DLLEXPORT int	DLLCALL getfattr(char* filename);
-DLLEXPORT ulong	DLLCALL getfreediskspace(char* path);
+DLLEXPORT time_t	DLLCALL fdate(char *filename);
+DLLEXPORT time_t	DLLCALL filetime(int fd);
+DLLEXPORT BOOL		DLLCALL	isdir(char *filename);
+DLLEXPORT int		DLLCALL getfattr(char* filename);
+DLLEXPORT ulong		DLLCALL getfreediskspace(char* path);
 
 #ifdef __cplusplus
 }
