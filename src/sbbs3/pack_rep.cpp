@@ -155,7 +155,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 			continue; }
 
 		sub_ptr[j]=last;                   /* set pointer */
-		lputs(remove_ctrl_a(text[QWKPackingSubboard],tmp));	/* ptr to last msg	*/
+		eprintf("%s",remove_ctrl_a(text[QWKPackingSubboard],tmp));	/* ptr to last msg	*/
 		submsgs=0;
 		for(l=0;l<posts;l++) {
 	//		bprintf("\b\b\b\b\b%-5lu",l+1);
@@ -212,7 +212,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 		CRLF;
 
 	if(!msgcnt && !netfiles && !packedmail) {
-		lputs(remove_ctrl_a(text[QWKNoNewMessages],tmp));
+		eprintf("%s",remove_ctrl_a(text[QWKNoNewMessages],tmp));
 		return(false); }
 
 	/*******************/
@@ -222,7 +222,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 	sprintf(tmp2,"%s%s",cfg.temp_dir,ALLFILES);
 	i=external(cmdstr(cfg.qhub[hubnum]->pack,str,tmp2,NULL),EX_OFFLINE);
 	if(!fexist(str)) {
-		lputs(remove_ctrl_a(text[QWKCompressionFailed],tmp));
+		eprintf("%s",remove_ctrl_a(text[QWKCompressionFailed],tmp));
 		if(i)
 			errormsg(WHERE,ERR_EXEC,cmdstr(cfg.qhub[hubnum]->pack,str,tmp2,NULL),i);
 		else
