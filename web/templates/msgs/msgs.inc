@@ -10,7 +10,7 @@
 <<REPEAT messages>>
 <TR bgcolor=@@JS:((template.color++)%2==0)?'"#00868B"':'"#007979"';@@>
 	<TD class="msglist">
-		<INPUT name="offset" value="%%messages:offset%%" type="checkbox">
+		<INPUT name="number" value="%%messages:number%%" type="checkbox">
 	</TD>
 	<TD class="msglist">
 		@@JS:if(@@messages:attachments@@>0) '<img alt="Attachment" src="/graphics/attach.gif">'; else '&nbsp;';@@
