@@ -62,6 +62,25 @@ if(msg.attachments!=undefined) {
 
 if(template.hdr != null)  {
 	template.title="Message: "+template.hdr.subject;
+
+	if(sub=='mail' || user.security.level>=90) {	/* Sysops can dump all message headers */
+		template.hfields="<html><head><title>Message Header Fields</title></head>";
+		template.hfields+="<body>";
+		template.hfields+="<h2>Message Header Fields</h2>";
+		template.hfields+="<table>";
+		var f;
+		for(f in template.hdr)
+			if(typeof(template.hdr[f])!="object")
+				template.hfields+=('<tr valign=top><td>'+ f + ':<td>' + template.hdr[f]);
+		for(f in template.hdr.field_list)
+			template.hfields+=('<tr valign=top><td>type-0x'
+				+ format("%02X",template.hdr.field_list[f].type) + ':<td>'
+				+ strip_ctrl(template.hdr.field_list[f].data));
+
+		template.hfields+="</table>";
+		template.hfields+="</body>";
+		template.hfields+="</html>";
+	}
 }
 
 var tmp=find_np_message(template.idx.offset,true);
