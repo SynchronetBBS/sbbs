@@ -104,9 +104,10 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
       cvs co lib/mozilla/js/freebsd.debug
       etc.
       Note: If you want to get the full source code to the Mozilla JavaScript
-	        library to build it yourself, the cvs repository is:
+            library to build it yourself, the cvs repository is:
             :pserver:anonymous@cvs-mirror.mozilla.org:/cvsroot
             the module name is mozilla/js/src.
+
 
 2. Build Synchronet:
 
@@ -231,7 +232,7 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
       export CVSROOT=:pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs 
       cvs login
       (no password - just hit enter)
-      cvs update docs exec src xtrn
+      cvs update docs exec xtrn src lib include
 
    D. Repeat steps 2, 3 and 4 (only).
 
