@@ -1,6 +1,6 @@
 <p class="navigation">
     <a class="navigation" href="http://^^JS:system.inet_addr^^/">Home</a> : <a class="navigation" href="/members/">Members</a> : 
-    <a class="navigation" href="index.ssjs">Groups</a> : @@JS:if(template.group.name!="E-Mail") '<a class=\"navigation\" href=\"subs.ssjs?msg_grp=^^group:name^^\">%%group:description%%</a> :'; else '';@@
+    <a class="navigation" href="index.ssjs">Groups</a> : @@JS:if(template.group.name!="E-Mail") '<a class="navigation" href="subs.ssjs?msg_grp='+template.group.name+'">'+template.group.description+'</a> :'; else '';@@
     <a class="navigation" href="subinfo.ssjs?msg_sub=^^sub:code^^" title="Click for Sub Info">%%sub:description%%</a> -&#062;
     <a class="navigation" href="post.ssjs?msg_sub=^^sub:code^^&amp;post=new">Post New Message</a></p>
 <form action="management.ssjs" method="post">
@@ -17,7 +17,7 @@
     <!-- %%JS:template.color=0%% -->
     <<REPEAT messages>>
     <tr class=@@JS:((template.color++)%2==0)?'"msglist1"':'"msglist2"';@@>
-    @@JS:template.can_delete?'<td><input name="number" value="%%messages:number%%" type="checkbox"></td>':''@@
+    @@JS:template.can_delete?'<td><input name="number" value="'+template.messages.number+'" type="checkbox"></td>':''@@
 	   <td>
     		@@JS:if(@@messages:attachments@@>0) '<img alt="Attachment" src="/graphics/attach_black.gif" />'; else '&nbsp;';@@
 	   </td>

@@ -80,6 +80,6 @@
 	  %%type%%
 	</td>
   </tr>
-  @@JS:if(template.sub.settings & SUB_FIDO || template.sub.settings & SUB_QNET || template.sub.settings & SUB_PNET) '<tr class="subinfo"><td class="subinfbold">Tagline/Origin</td><td class="subinfonwr">%%tagline%%</td></tr>'; else '';@@
+  @@JS:if(template.sub.settings & SUB_FIDO || template.sub.settings & SUB_QNET || template.sub.settings & SUB_PNET) '<tr class="subinfo"><td class="subinfbold">Tagline/Origin</td><td class="subinfonwr">'+template.tagline+'</td></tr>'; else '';@@
 </table>
 
