@@ -1127,6 +1127,15 @@ void DLLCALL services_thread(void* arg)
 					close_socket(socket);
 					continue;
 				}
+			   #ifdef __FreeBSD__
+				if(setsockopt(socket,SOL_SOCKET,SO_REUSEPORT
+					,(char*)&optval,sizeof(optval))!=0) {
+					lprintf("%04d !ERROR %d setting %s socket option"
+						,socket, ERROR_VALUE, service[i].protocol);
+					close_socket(socket);
+					continue;
+				}
+			   #endif
 			}
 			memset(&addr, 0, sizeof(addr));
 
@@ -1281,15 +1290,25 @@ void DLLCALL services_thread(void* arg)
 						close_socket(client_socket);
 						continue;
 					}
-
+				   #ifdef __FreeBSD__
+					if(setsockopt(client_socket,SOL_SOCKET,SO_REUSEPORT
+						,(char*)&optval,sizeof(optval))!=0) {
+						FREE_AND_NULL(udp_buf);
+						lprintf("%04d %s !ERROR %d setting socket option"
+							,client_socket, service[i].protocol, ERROR_VALUE);
+						close_socket(client_socket);
+						continue;
+					}
+				   #endif
 
 					memset(&addr, 0, sizeof(addr));
 					addr.sin_addr.s_addr = htonl(startup->interface_addr);
 					addr.sin_family = AF_INET;
 					addr.sin_port   = htons(service[i].port);
 
-					if(startup->seteuid!=NULL)
-						startup->seteuid(FALSE);
+					if(startup->seteuid!=NULL && !startup->seteuid(FALSE))
+						addr.sin_port=0;
+
 					result=bind(client_socket, (struct sockaddr *) &addr, sizeof(addr));
 					if(startup->seteuid!=NULL)
 						startup->seteuid(TRUE);
