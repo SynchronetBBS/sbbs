@@ -92,8 +92,7 @@ void __fastcall TClientForm::CloseSocketMenuItemClick(TObject *Sender)
     State << isSelected;
 
     while(ListItem!=NULL) {
-        if(closesocket(atoi(ListItem->Caption.c_str()))==0)
-            socket_open(NULL, FALSE);
+        closesocket(atoi(ListItem->Caption.c_str()));
         ListItem=ListView->GetNextItem(ListItem,sdAll,State);
     }
 }
