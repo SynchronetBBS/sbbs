@@ -76,7 +76,7 @@ struct server_ent_t {
 	char	addr[256];
 };
 
-typdef struct {
+typedef struct {
 	char					version[78];
 	char					tag[20];
 	struct server_ent_t		**servers;
