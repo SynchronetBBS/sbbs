@@ -96,19 +96,23 @@ exit();
 
 function send(msg)
 {
+	sendit=true;
+
 	if(msg==undefined || msg.search(/^[\r\n]*$/)!=-1) {
 		log("Not sending blank message");
-		return;
+		sendit=false;
 	}
 	for(i in exclude) {
 		if(msg.search(exclude[i])>=0) {
 			log("Excluding: " + msg);
-			return;
+			sendit=false;
 		}
 	}
-	log("Sending: " + msg);
-	if(!my_server.send("PRIVMSG "+channel+" :"+expand_tabs(msg)+"\r\n"))
-		alert("send failure");
+	if(sendit) {
+		log("Sending: " + msg);
+		if(!my_server.send("PRIVMSG "+channel+" :"+expand_tabs(msg)+"\r\n"))
+			alert("send failure");
+	}
 }
 
 function expand_tabs(msg)
