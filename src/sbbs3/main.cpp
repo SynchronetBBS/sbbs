@@ -335,7 +335,10 @@ js_printf(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if((p=JS_vsmprintf(JS_GetStringBytes(fmt),(char*)arglist))==NULL)
 		return(JS_FALSE);
 
-	sbbs->bputs(p);
+	if(sbbs->online==ON_LOCAL)
+		eprintf("%s",p);
+	else
+		sbbs->bputs(p);
 	JS_smprintf_free(p);
 
 	*rval = JSVAL_VOID;
