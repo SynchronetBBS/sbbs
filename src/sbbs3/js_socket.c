@@ -369,7 +369,8 @@ js_peek(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	*rval = STRING_TO_JSVAL(str);
 
-	dbprintf(FALSE, p, "received %u bytes",len);
+	dbprintf(FALSE, p, "received %u bytes, lasterror=%d"
+		,len,ERROR_VALUE);
 		
 	return(JS_TRUE);
 }
@@ -437,7 +438,8 @@ js_recvline(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	*rval = STRING_TO_JSVAL(str);
 
-	dbprintf(FALSE, p, "received %u bytes",strlen(buf));
+	dbprintf(FALSE, p, "received %u bytes (recvline) lasterror=%d"
+		,strlen(buf),ERROR_VALUE);
 		
 	return(JS_TRUE);
 }
