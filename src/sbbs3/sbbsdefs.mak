@@ -2,7 +2,7 @@
 
 # C/C++ compiler preprocessor definitions for building SBBS.DLL
 
-# $id$
+# $Id$
 
 SBBSDEFS=	-DSBBS -DSBBS_EXPORTS -DSMB_GETMSGTXT -DSMBDLL -DLZHDLL \
 			-DWRAPPER_DLL

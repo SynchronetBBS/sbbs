@@ -2,11 +2,11 @@
 
 # Synchronet Baja Modules to Display HTML files to TTY/ANSI users
 
+# $Id$
+
 # Created October 09, 2000 by Rob Swindell
 
 # Requires Baja v2.20+
-
-# $id$
 
 # @format.tab-size 8, @format.use-tabs true
 

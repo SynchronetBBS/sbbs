@@ -2,7 +2,7 @@
 
 # Make 'include file' listing object files for SBBS.DLL
 
-# $id$
+# $Id$
 
 # ODIR, SLASH, and OFILE must be pre-defined
 

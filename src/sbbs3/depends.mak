@@ -2,7 +2,7 @@
 
 # Make 'include file' defining dependencies for Synchronet SBBS.DLL
 
-# $id$
+# $Id$
 
 # ODIR, SLASH, and OFILE must be pre-defined
 
