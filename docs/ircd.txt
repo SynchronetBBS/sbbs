@@ -11,7 +11,7 @@ $Id$
 3   .... Installation
 3.1 .... Getting the IRCd up and running
 3.2 .... Linking to the Synchronet IRC Network (irc.synchro.net)
-3.3 .... Using jsexec to run the IRCd
+3.3 .... Using JSexec to run the IRCd
 4   .... About the Synchronet IRC Network (irc.synchro.net)
 5   .... Technical information
 5.1 .... Limits of the Synchronet IRCd
@@ -147,7 +147,7 @@ the IRCd, or if it crashes, it comes back up immediately.)
 so that a completed services.cfg line should look like this:
 
 ;protocol	port	max_clients	options(hex)	command-line
-IRC             6667    10              806             ircd.js
+IRC             6667    0               806             ircd.js
 
 	An example IRC section from services.ini looks like this, and should
 already be present (but commented out) in services.ini for Synchronet 3.11
@@ -155,7 +155,6 @@ and above:
 
 [IRC]
 Port=6667
-MaxClients=100
 Options=STATIC | LOOP
 Command=ircd.js
 
@@ -313,17 +312,17 @@ You should be able to join the typical busy Synchronet IRC channels, #bbs and
 #synchronet, and be able to chat with people across the network.  You can find
 network administrators in #opers if you have any questions or concerns.
 
-[3.3] - Using jsexec to run the IRCd
+[3.3] - Using JSexec to run the IRCd
 
 	There are times where you may wish to run the IRCd service separately
 from Synchronet so that whenever your BBS goes up or down, the IRCd isn't
-affected.  A special program, included with Synchronet, is called "jsexec" and
-is intended for use in this way.  By using jsexec, your IRCd will remain
+affected.  A special program, included with Synchronet, is called "JSexec" and
+is intended for use in this way.  By using JSexec, your IRCd will remain
 operational regardless of what your BBS is doing, while still integrating with
 all of the regular Synchronet features.  In fact, in most respects, running
-the IRCd via jsexec is the preferred method.
+the IRCd via JSexec is the preferred method.
 
-	To run your IRCd with jsexec, make sure that you've followed all the
+	To run your IRCd with JSexec, make sure that you've followed all the
 installation instructions above.  In particular, take a look at your M:Line on
 your ircd.conf and ensure that the last argument is the port you wish to run
 the IRCd on (typically 6667.)  If you're currently running the IRCd through
@@ -332,16 +331,16 @@ services configuration files (services.ini or services.cfg) so that the
 service is not restarted when you bring the BBS back up.
 
 	Just like when you're running the IRCd from within Synchronet, you
-need to tell jsexec that the service you're running is to be 'looped,' which
-is done with the -l option.  Thus, a typical jsexec execution will look like
+need to tell JSexec that the service you're running is to be 'looped,' which
+is done with the -l option.  Thus, a typical JSexec execution will look like
 this:
 
 	jsexec -l ircd
 
 	The above command is typed from within the Synchronet 'exec' directory.
-All console commands and errors are logged to the terminal that jsexec was
+All console commands and errors are logged to the terminal that JSexec was
 started from.  You should see the standard IRCd startup messages, which means
-that the IRCd is now operational through jsexec.  Connecting to the IRCd
+that the IRCd is now operational through JSexec.  Connecting to the IRCd
 should now work as per normal.
 
 =======- 4.0 -- About the Synchronet IRC Network (irc.synchro.net) -==========
@@ -533,6 +532,16 @@ sort of thing.
 	   be defined in a Y:Line for the applicable IRC class for an auto-
 	   connect to be attempted.  Remove the port from the C:Line, or turn
 	   the auto-connect frequency down to 0 in the Y:Line.
+
+	Q: I installed the IRCd, but where are IRC Services? (ChanServ,
+	   NickServ, etc.)
+
+	A: IRC Services are not a part of the Synchronet IRCd.  Instead, we
+	   recommend that you make use of an external services package such
+	   as Andy Church's IRC Services (http://www.ircservices.za.net)
+	   Furthermore, any services package which is compatible with the
+	   Bahamut inter-server protocol should work.  There *may* be an IRC
+	   services package written in Javascript for Synchronet later.
 
 	Q: My question isn't answered in this document, where can I go?
 
