@@ -586,7 +586,7 @@
 "nb[hwMnb] hForward E-mail to NetMail     nb: c%s\r\n"   488 UserDefaultsNetMail
 "nb[hwKnb] hCommand Shell                 nb: c%s\r\n"   489 UserDefaultsCmdShell
 "nb[hwDnb] hDefault to Quiet Mode         nb: c%s\r\n"   490 UserDefaultsQuiet
-"nb[hwWnb] hChange Password\r\n"                        491 UserDefaultsPassword
+"nb[hwWnb] hChange Password or Signature\r\n"               491 UserDefaultsPassword
 "nb[hwAnb] hTemporary/QWK Archive Type    nb: c%s\r\n"   492 UserDefualtsArcType
 "nb[hwZnb] hDefault Download Protocol     nb: c%s "\     493 UserDefaultsProtocol
 	"b%s\r\n"
