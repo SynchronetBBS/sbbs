@@ -264,14 +264,6 @@ for(i in area) {
 	mkdir(attachment_dir);   
 	if(attachment_dir.substr(-1)!='/')
 		attachment_dir+="/";   
-	    
-	md5_fname=attachment_dir + "md5.lst";
-	md5_list=new Array();
-	md5_file=new File(md5_fname);
-	if(md5_file.open("r")) {
-		md5_list=md5_file.readAll();
-		md5_file.close();   
-	} 
 
 	printf("sub: %s, newsgroup: %s\r\n",sub,newsgroup);
 
@@ -545,27 +537,44 @@ for(i in area) {
 
 			parse_news_header(hdr,line);	// from newsutil.js
 		}
-
+			
         if(file!=undefined) {   
-             var partial=false;   
-             if(file.is_open==true) { /* Partial attachment? */   
-                 md5=file.md5_hex;   
-                 file.close();   
-                 partial=true;   
-             }   
-             for(mi=0;mi<md5_list.length;mi++)   
-                 if(md5_list[mi].substr(0,32)==md5)
-                     break;   
-             if(mi<md5_list.length) {   
-                 printf("Duplicate MD5 digest found: %s\r\n",md5_list[mi]);   
-                 if(file_remove(file.name))   
-                     printf("Duplicate file removed: %s\r\n",file.name);   
-                 else   
-                     printf("!ERROR removing duplicate file: %s\r\n",file.name);   
-                 continue;   
-             }   
-			 md5_list.push(format("%s %s",md5,file.name));
-             if(partial)   
+            var partial=false;   
+            if(file.is_open==true) { /* Partial attachment? */   
+                md5=file.md5_hex;   
+                file.close();   
+                partial=true;   
+            }
+			/* Search for duplicate MD5 */
+			var duplicate=false;
+			md5_file=new File(attachment_dir + "md5.lst");
+			if(md5_file.open("r")) {
+				while(!md5_file.eof && !duplicate) {
+					str=md5_file.readln();
+					if(str==null)
+						break;
+					if(str.substr(0,32)==md5)
+						duplicate=true;
+				}
+				md5_file.close();
+			}
+            if(duplicate) {   
+                printf("Duplicate MD5 digest found: %s\r\n",str);   
+                if(file_remove(file.name))   
+                    printf("Duplicate file removed: %s\r\n",file.name);   
+                else   
+                    printf("!ERROR removing duplicate file: %s\r\n",file.name);   
+                continue;   
+            }
+			/* Append MD5 to history file */
+			if(md5_file.open("a")) {
+				md5_file.printf("%s %s\n",md5,file.name);
+				md5_file.close();
+			} else
+				printf("!ERROR %d (%s) creating/appending %s\r\n"
+					,errno, errno_str, md5_file.name);
+
+            if(partial)   
                  file_rename(file.name   
                      ,attachment_dir    
                          + hdr.subject.replace(/\//g,'.').replace(/ /g,'_') + ".part");   
