@@ -395,7 +395,7 @@ ulong DLLCALL getfreediskspace(char* path)
 #else
 		if(avail.u.HighPart)
 #endif
-			return(0x7fffffff);	/* 2GB max */
+			return(0xffffffff);	/* 4GB max */
 
 #ifdef _ANONYMOUS_STRUCT
 		return(avail.LowPart);
