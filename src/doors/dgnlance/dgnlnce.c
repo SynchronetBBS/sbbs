@@ -12,33 +12,41 @@
 
 #ifndef INT64
  #ifdef _MSC_VER
-  #define INT64	_int64
+  #define INT64	__int64
  #else
   #define INT64	long long int
  #endif
 #endif
 
 #ifndef INT64FORMAT
- #ifdef __unix__
-  #define	INT64FORMAT	"lld"
+ #ifdef __BORLANDC__
+  #define	INT64FORMAT	"Ld"
  #else
-  #define INT64FORMAT	"I64d"
+  #ifdef _MSC_VER
+   #define INT64FORMAT	"I64d"
+  #else
+   #define INT64FORMAT		"lld"
+  #endif
  #endif
 #endif
 
 #ifndef QWORD
  #ifdef _MSC_VER
   #define QWORD	unsigned _int64
- #else
+ #e
   #define	QWORD	unsigned long long int
  #endif
 #endif
 
 #ifndef QWORDFORMAT
- #ifdef __unix__
-  #define	QWORDFORMAT	"llu"
+ #ifdef __BORLANDC__
+  #define	QWORDFORMAT	"Lu"
  #else
-  #define QWORDFORMAT	"I64u"
+  #ifdef _MSC_VER
+   #define 	QWORDFORMAT	"I64u"
+  #else
+   #define 	QWORDFORMAT	"llu"
+  #endif
  #endif
 #endif
 
