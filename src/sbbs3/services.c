@@ -1520,10 +1520,8 @@ void DLLCALL services_thread(void* arg)
 			tv.tv_sec=2;
 			tv.tv_usec=0;
 			if((result=select(high_socket+1,&socket_set,NULL,NULL,&tv))<1) {
-				if(result==0) {
-					YIELD();
+				if(result==0)
 					continue;
-				}
 
 				if(ERROR_VALUE==EINTR)
 					lprintf("0000 Services listening interrupted");
