@@ -77,6 +77,9 @@ int uifcinid(uifcapi_t* uifcapi)
     api->list=ulist;
     api->input=uinput;
     api->sethelp=sethelp;
+    api->showhelp=help;
+	api->showbuf=NULL;
+	api->timedisplay=NULL;
 
     setvbuf(stdout,NULL,_IONBF,0);
     api->scrn_len=24;

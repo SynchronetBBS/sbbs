@@ -82,6 +82,9 @@ int uifcinix(uifcapi_t* uifcapi)
     api->list=ulist;
     api->input=uinput;
     api->sethelp=sethelp;
+    api->showhelp=help;
+	api->showbuf=NULL;
+	api->timedisplay=NULL;
 
     setvbuf(stdin,NULL,_IONBF,0);
     setvbuf(stdout,NULL,_IONBF,0);

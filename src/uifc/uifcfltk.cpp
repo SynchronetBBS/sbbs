@@ -797,6 +797,9 @@ int uifcinifltk(uifcapi_t* uifcapi)
     api->list=ulist;
     api->input=uinput;
     api->sethelp=sethelp;
+    api->showhelp=help;
+	api->showbuf=NULL;
+	api->timedisplay=NULL;
 
     api->scrn_len=24;
 	api->scrn_width=80;

@@ -138,6 +138,9 @@ int uifcini(uifcapi_t* uifcapi)
     api->list=ulist;
     api->input=uinput;
     api->sethelp=sethelp;
+    api->showhelp=help;
+	api->showbuf=NULL;
+	api->timedisplay=timedisplay;
 
     if(api->scrn_len!=0) {
         switch(api->scrn_len) {

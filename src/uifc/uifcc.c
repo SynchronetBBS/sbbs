@@ -181,11 +181,9 @@ int uifcinic(uifcapi_t* uifcapi)
     api->list=ulist;
     api->input=uinput;
     api->sethelp=sethelp;
-#ifdef __unix__
     api->showhelp=help;
 	api->showbuf=showbuf;
 	api->timedisplay=timedisplay;
-#endif
 
 #if defined(LOCALE)
   (void) setlocale(LC_ALL, "");
@@ -448,7 +446,6 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 		top=api->scrn_len-height-3-top;
 
 	/* Dynamic Menus */
-#ifdef __unix__
 	if(mode&WIN_DYN
 			&& cur != NULL 
 			&& bar != NULL 
@@ -457,7 +454,6 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 			&& save_menu_cur==*cur
 			&& save_menu_bar==*bar)
 		is_redraw=1;
-#endif
 
 	if(!is_redraw) {
 		if(mode&WIN_SAV && api->savdepth==api->savnum) {
@@ -682,10 +678,8 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 			y=top+3+(*cur);
 	}
 
-	#ifdef __unix__
 	last_menu_cur=cur;
 	last_menu_bar=bar;
-	#endif
 	while(1) {
 	#if 0					/* debug */
 		gotoxy(30,1);
@@ -1148,14 +1142,11 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							return(-1); } } }
 		else
 			mswait(1);
-#ifdef __unix__
 		if(mode&WIN_DYN) {
 			save_menu_cur=*cur;
 			save_menu_bar=*bar;
 			return(-2-i);
 		}
-#endif
-
 		}
 }
 
@@ -1637,33 +1628,30 @@ char *utimestr(time_t *intime)
 /****************************************************************************/
 /* Status popup/down function, see uifc.h for details.						*/
 /****************************************************************************/
-#define UPOP_ROW	12
-#define UPOP_ROWS	3
-#define UPOP_COLS	80
 void upop(char *str)
 {
-	static char sav[UPOP_COLS*UPOP_ROWS*2];
-	char buf[UPOP_COLS*UPOP_ROWS*2];
+	static char sav[26*3*2];
+	char buf[26*3*2];
 	int i,j,k;
 
 	reset_dynamic();
 	hidemouse();
 	if(!str) {
-		puttext(1,UPOP_ROW,UPOP_COLS,UPOP_ROW+UPOP_ROWS,sav);
+		puttext(28,12,53,14,sav);
 		showmouse();
 		return; }
-	gettext(1,UPOP_ROW,UPOP_COLS,UPOP_ROW+UPOP_ROWS,sav);
-	memset(buf,SP,UPOP_COLS*UPOP_ROWS*2);
-	for(i=1;i<(UPOP_COLS+1)*UPOP_COLS*2;i+=2)
+	gettext(28,12,53,14,sav);
+	memset(buf,SP,25*3*2);
+	for(i=1;i<26*3*2;i+=2)
 		buf[i]=(hclr|(bclr<<4));
 		buf[0]='Ú';
-	for(i=2;i<UPOP_COLS*2;i+=2)
+	for(i=2;i<25*2;i+=2)
         buf[i]='Ä';
 		buf[i]='¿'; i+=2;
         buf[i]='³'; i+=2;
 	i+=2;
 	k=strlen(str);
-	i+=(((UPOP_COLS-k)/2)*2);
+	i+=(((23-k)/2)*2);
 	for(j=0;j<k;j++,i+=2) {
 		buf[i]=str[j];
 		buf[i+1]|=BLINK; }
@@ -1674,7 +1662,7 @@ void upop(char *str)
         buf[i]='Ä';
     buf[i]='Ù';
 
-	puttext(1,UPOP_ROW,UPOP_COLS,UPOP_ROW+UPOP_ROWS,buf);
+	puttext(28,12,53,14,buf);
 	showmouse();
 }
 
@@ -1726,7 +1714,6 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 	old_curs=curs_set(0);
 
 	/* Dynamic Menus */
-#ifdef __unix__
 	if(mode&WIN_DYN
 			&& curp != NULL 
 			&& barp != NULL 
@@ -1735,7 +1722,6 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 			&& save_menu_cur==*curp
 			&& save_menu_bar==*barp)
 		is_redraw=1;
-#endif
 
 	if((savscrn=(char *)MALLOC(api->scrn_width*api->scrn_len*2))==NULL) {
 		cprintf("UIFC line %d: error allocating %u bytes\r\n"
@@ -1920,10 +1906,8 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 		puttext(1,1,api->scrn_width,api->scrn_len,savscrn);
 		showmouse();
 	}
-#ifdef __unix__
 	if(is_redraw)			/* Force redraw of menu also. */
 		reset_dynamic();
-#endif
 	FREE(savscrn);
 	FREE(buf);
 	if(old_curs != ERR)

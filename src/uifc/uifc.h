@@ -171,11 +171,9 @@
 #define WIN_PUT 	(1<<13) /* Allows F6 to Put a menu item */
 #define WIN_CHE 	(1<<14) /* Stay active after escape if changes */
 #define WIN_XTR 	(1<<15) /* Add extra line at end for inserting at end */
-#ifdef __unix__
 #define WIN_DYN 	(1<<16) /* Dynamic window - return at least every second */
 #define WIN_HLP 	(1<<17) /* Parse 'Help codes' */
 #define WIN_PACK 	(1<<18) /* Pack text in window (No padding) */
-#endif
 
 #define WIN_MID WIN_L2R|WIN_T2B  /* Place window in middle of screen */
 
@@ -351,7 +349,6 @@ typedef struct {
 /****************************************************************************/
     void    (*sethelp)(int line, char* file);
 
-#ifdef __unix__
 /****************************************************************************/
 /* Shows the current help text												*/
 /****************************************************************************/
@@ -368,7 +365,6 @@ typedef struct {
 /****************************************************************************/
 	void (*timedisplay)(void);
 
-#endif
 } uifcapi_t;
 
 /****************************************************************************/
