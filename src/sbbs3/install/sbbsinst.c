@@ -95,15 +95,17 @@ enum {
 uifcapi_t uifc; /* User Interface (UIFC) Library API */
 
 struct {
-	char install_path[256];
-	BOOL usebcc;
-	char cflags[256];
-	BOOL debug;
-	BOOL symlink;
-	BOOL cvs;
-	char cvstag[256];
-	char cvsroot[256];
-	char make_cmdline[128];
+	char	install_path[256];
+	BOOL	usebcc;
+	char	cflags[256];
+	BOOL	debug;
+	BOOL	symlink;
+	BOOL	cvs;
+	char	cvstag[256];
+	char	cvsroot[256];
+	char	make_cmdline[128];
+	char	sys_desc[1024];
+	struct utsname	name;	
 } params; /* Build parameters */
 
 #define MAKEFILE "/tmp/SBBSmakefile"
@@ -252,6 +254,12 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
+	if(uname(&params.name))  {
+		SAFECOPY(params.name.machine,"Unknown");
+		SAFECOPY(params.name.sysname,params.name.machine);
+	}
+	sprintf(params.sys_desc,"%s-%s",params.name.sysname,params.name.machine);
+
 	distlist=get_distlist();
 
 	if((opt=(char **)MALLOC(sizeof(char *)*(MAX_OPTS+1)))==NULL)
@@ -277,6 +285,7 @@ int main(int argc, char **argv)
 		sprintf(mopt[i++],"%-27.27s%s","Distribution",distlist[dist]->version);
 		sprintf(mopt[i++],"%-27.27s%s","Server"
 			,(distlist[dist]->type==LOCAL_FILE?"Local Files":distlist[dist]->servers[server]->desc));
+		sprintf(mopt[i++],"%-27.27s%s","System Type",params.sys_desc);
 		sprintf(mopt[i++],"%-27.27s%s","Install Path",params.install_path);
 		sprintf(mopt[i++],"%-27.27s%s","Compiler",params.usebcc?"Borland":"GNU");
 		sprintf(mopt[i++],"%-27.27s%s","Compiler Flags",params.cflags);
@@ -305,6 +314,11 @@ int main(int argc, char **argv)
 				}
 				break;
 			case 2:
+				uifc.helpbuf=	"`System Type`\n"
+								"\nToDo: Add help.";
+				uifc.input(WIN_MID,0,0,"System Type",params.sys_desc,40,K_EDIT);
+				break;
+			case 3:
 				uifc.helpbuf=	"`Install Path`\n"
 								"\n"
 								"\nPath to install the Synchronet BBS system into."
@@ -315,7 +329,7 @@ int main(int argc, char **argv)
 								"\n	/home/bbs/sbbs";
 				uifc.input(WIN_MID,0,0,"",params.install_path,50,K_EDIT);
 				break;
-			case 3:
+			case 4:
 				strcpy(opt[0],"Borland");
 				strcpy(opt[1],"GNU");
 				opt[2][0]=0;
@@ -330,12 +344,12 @@ int main(int argc, char **argv)
 					params.usebcc=FALSE;
 				i=0;
 				break;
-			case 4:
+			case 5:
 				uifc.helpbuf=	"`Compiler Flags`\n"
 								"\nToDo: Add help.";
 				uifc.input(WIN_MID,0,0,"Additional Compiler Flags",params.cflags,40,K_EDIT);
 				break;
-			case 5:
+			case 6:
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
 				opt[2][0]=0;
@@ -350,7 +364,7 @@ int main(int argc, char **argv)
 					params.debug=FALSE;
 				i=0;
 				break;
-			case 6:
+			case 7:
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
 				opt[2][0]=0;
@@ -367,12 +381,12 @@ int main(int argc, char **argv)
 					params.symlink=FALSE;
 				i=0;
 				break;
-			case 7:
+			case 8:
 				uifc.helpbuf=	"`Make Command-line`\n"
 								"\n";
 				uifc.input(WIN_MID,0,0,"",params.make_cmdline,65,K_EDIT);
 				break;
-			case 8:
+			case 9:
 				install_sbbs(distlist[dist],distlist[dist]->type==LOCAL_FILE?NULL:distlist[dist]->servers[server]);
 				bail(0);
 				break;
@@ -403,6 +417,7 @@ int main(int argc, char **argv)
 void install_sbbs(struct dist_t *dist,struct server_ent_t *server)  {
 	char	cmd[MAX_PATH+1];
 	char	str[1024];
+	char	fname[MAX_PATH+1];
 	char	sbbsdir[9+MAX_PATH];
 	char	cvstag[7+MAX_PATH];
 	char	buf[1024];
@@ -459,12 +474,20 @@ void install_sbbs(struct dist_t *dist,struct server_ent_t *server)  {
 					printf("Could not download distfile to %s (%d)\n",dist->files[i],errno);
 					exit(EXIT_FAILURE);
 				}
-				sprintf(url,"%s%s",server->addr,dist->files[i]);
+				sprintf(str,dist->files[i],params.sys_desc);
+				sprintf(url,"%s%s",server->addr,str);
 				if((remote=ftpGetURL(url,ftp_user,ftp_pass,&ret1))==NULL)  {
-					printf("Cannot get distribution file %s!\n",dist->files[i]);
-					printf("%s\n- %s\n",url,ftpErrString(ret1));
-					unlink(dist->files[i]);
-					exit(EXIT_FAILURE);
+					/* retry without machine type in name */
+					SAFECOPY(fname,str);
+					sprintf(str,dist->files[i],params.name.sysname);
+					sprintf(url,"%s%s",server->addr,str);
+					if(strcmp(str,fname)==0	/* no change in name? */
+						|| (remote=ftpGetURL(url,ftp_user,ftp_pass,&ret1))==NULL)  {
+						printf("Cannot get distribution file %s!\n",str);
+						printf("%s\n- %s\n",url,ftpErrString(ret1));
+						unlink(str);
+						exit(EXIT_FAILURE);
+					}
 				}
 				while((ret1=remote->read(remote,buf,sizeof(buf)))>0)  {
 					ret2=write(fout,buf,ret1);
@@ -527,15 +550,6 @@ get_distlist(void)
 	ftp_FILE	*list;
 	char	sep[2]={'\t',0};
 	char	str[1024];
-	struct utsname	name;	
-	char	sys_desc[1024];
-
-	if(uname(&name))  {
-		strcpy(name.machine,"Unknown");
-		strcpy(name.sysname,name.machine);
-	}
-	sprintf(sys_desc,"%s-%s",name.sysname,name.machine);
-	printf("Sys: %s\n",sys_desc);
 
 	if((dist=(struct dist_t **)MALLOC(sizeof(void *)*MAX_DISTRIBUTIONS))==NULL)
 		allocfail(sizeof(void *)*MAX_DISTRIBUTIONS);
@@ -543,7 +557,9 @@ get_distlist(void)
 		if((dist[i]=(void *)MALLOC(sizeof(struct dist_t)))==NULL)
 			allocfail(sizeof(struct dist_t));
 
-	sprintf(str,DEFAULT_LIBFILE,sys_desc);
+	sprintf(str,DEFAULT_LIBFILE,params.sys_desc);
+	if(!fexist(str))	/* use lib-linux.tgz if lib-linux-i686.tgz doesn't exist */
+		sprintf(str,DEFAULT_LIBFILE,params.name.sysname);
 	if(fexist(DEFAULT_DISTFILE) && fexist(str))  {
 		if((file=(char **)MALLOC(sizeof(char *)*MAX_DIST_FILES))==NULL)
 			allocfail(sizeof(char *)*MAX_DIST_FILES);
@@ -590,7 +606,7 @@ get_distlist(void)
 			sep[0]=' ';
 			p=strtok(str,sep);
 			p=strtok(NULL,sep);
-			if(strstr(p,sys_desc)==NULL)
+			if(strstr(p,params.sys_desc)==NULL)
 				break;
 			sep[0]='\n';
 			p=strtok(NULL,sep);
@@ -648,20 +664,10 @@ get_distlist(void)
 				r++;
 				break;
 			case 'f':
-				for(j=0,i=2;in_line[i];i++)  {
-					if(in_line[i]=='%' && in_line[i+1]=='s')  {
-						file[f][j]=0;
-						strcat(file[f],sys_desc);
-						j=strlen(file[f]);
-						i++;
-					}
-					else
-						file[f][j++]=in_line[i];
-				}
-				f++;
+				SAFECOPY(file[f++],in_line+2);
 				break;
 			case 't':
-				strcpy(dist[r-1]->tag,in_line+2);
+				SAFECOPY(dist[r-1]->tag,in_line+2);
 				break;
 			case 's':
 				p=in_line+2;
