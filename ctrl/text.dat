@@ -198,7 +198,7 @@
 "\r\n\r\nYou can't upload.\r\n"                         173 R_Upload
 "\r\n\r\nYou can't upload here.\r\n"                    174 CantUploadHere
 "_\r\n\r\nyhFilespec: n"                            175 FileSpec
-"<UNUSED176>"                                           176 Unused176
+"SY: "                                           	  176 SysopPassword
 "\r\n\r\nNo sysop directory specified.\r\n"             177 NoSysopDir
 "\r\n\r\nYou can't upload to sysop.\r\n"                178 CantUploadToSysop
 "-gDirectories of h%-40.40s     "\                   179 DirLstHdr
@@ -207,7 +207,7 @@
 "\r\n_ghFile Libraries ng                   "\     181 LibLstHdr
 	"                       Directories\r\n\r\nh"
 "ng(h%ung) %-40.40s %12.12s h%4u\r\n"             182 LibLstFmt
-"<UNUSED183>"                                           183 Unused183
+"\1n\r\nInvalid NetMail address.\r\n"                   183 InvalidNetMailAddr
 "_\r\ngh%s ngTransfer Policy\r\n\r\nn"            184 TransferPolicyHdr
 "<UNUSED185>"                                           185 Unused185
 "Initial uploads are rewarded with %d%% of the "\       186 TpUpload
