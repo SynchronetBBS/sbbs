@@ -201,10 +201,10 @@ void sbbs_t::show_msg(smbmsg_t msg, long mode)
 			case TEXT_TAIL:
 				smb_fseek(smb.sdt_fp,msg.hdr.offset+msg.dfield[i].offset
 					,SEEK_SET);
-				smb_fread(&xlat,2,1,smb.sdt_fp);
+				smb_fread(&xlat,sizeof(xlat),1,smb.sdt_fp);
 				if(xlat!=XLAT_NONE) 		/* no translations supported */
 					continue;
-				putmsg_fp(smb.sdt_fp,msg.dfield[i].length-2,mode);
+				putmsg_fp(smb.sdt_fp,msg.dfield[i].length-sizeof(xlat),mode);
 				CRLF;
 				break; }
 }
@@ -228,11 +228,11 @@ void sbbs_t::show_msg(smbmsg_t* msg, long mode)
 			case TEXT_TAIL:
 				fseek(smb.sdt_fp,msg->hdr.offset+msg->dfield[i].offset
 					,SEEK_SET);
-				fread(&xlat,2,1,smb.sdt_fp);
+				fread(&xlat,sizeof(xlat),1,smb.sdt_fp);
 				lzh=0;
 				if(xlat==XLAT_LZH) {
 					lzh=1;
-					fread(&xlat,2,1,smb.sdt_fp); }
+					fread(&xlat,sizeof(xlat),1,smb.sdt_fp); }
 				if(xlat!=XLAT_NONE) 		/* no translations supported */
 					continue;
 				if(lzh) {
@@ -260,7 +260,7 @@ void sbbs_t::show_msg(smbmsg_t* msg, long mode)
 					FREE(lzhbuf);
 					FREE(inbuf); }
 				else
-					putmsg_fp(smb.sdt_fp,msg->dfield[i].length-2,mode);
+					putmsg_fp(smb.sdt_fp,msg->dfield[i].length-sizeof(xlat),mode);
 				CRLF;
 				break; }
 }
