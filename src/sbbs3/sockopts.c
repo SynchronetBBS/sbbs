@@ -43,6 +43,7 @@ typedef struct {
 } sockopt_name;
 
 static const sockopt_name option_names[] = {
+	{ "TYPE",			SO_TYPE			},
 	{ "DEBUG",			SO_DEBUG		},
 	{ "LINGER",			SO_LINGER		},
 	{ "SNDBUF",			SO_SNDBUF		},
