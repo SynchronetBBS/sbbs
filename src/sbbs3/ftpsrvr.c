@@ -585,7 +585,7 @@ BOOL js_add_file(JSContext* js_cx, JSObject* array,
 	if(!JS_SetProperty(js_cx, file, "credits", &val))
 		return(FALSE);
 
-	val=INT_TO_JSVAL(time);
+	JS_NewNumberValue(js_cx,time,&val);
 	if(!JS_SetProperty(js_cx, file, "time", &val))
 		return(FALSE);
 

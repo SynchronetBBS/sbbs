@@ -1719,7 +1719,7 @@ JSObject* DLLCALL js_CreateSystemObject(JSContext* cx, JSObject* parent
 
 	/***********************/
 
-	val = INT_TO_JSVAL(uptime);
+	JS_NewNumberValue(cx,uptime,&val);
 	if(!JS_SetProperty(cx, sysobj, "uptime", &val))
 		return(NULL);
 
