@@ -755,7 +755,7 @@ int main(int argc, char** argv)  {
 							break;
 							
 						case SPY_STDINLOST:
-							uifc.msg("STDIN has gone away... you probobly can't close this window.  :-)");
+							uifc.msg("STDIN has gone away... you probably can't close this window.  :-)");
 							break;
 							
 						case SPY_CLOSED:
