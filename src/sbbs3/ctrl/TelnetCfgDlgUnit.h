@@ -82,9 +82,9 @@ __published:
     TCheckBox *KeepAliveCheckBox;
     TCheckBox *AutoLogonCheckBox;
     TTabSheet *RLoginTabSheet;
-    TLabel *Label1;
+    TLabel *RLoginPortLabel;
     TEdit *RLoginPortEdit;
-    TLabel *Label2;
+    TLabel *RLoginInterfaceLabel;
     TEdit *RLoginInterfaceEdit;
     TCheckBox *RLoginEnabledCheckBox;
     TButton *RLoginIPallowButton;

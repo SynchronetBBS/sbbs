@@ -17,7 +17,7 @@ object TelnetCfgDlg: TTelnetCfgDlg
     Top = 4
     Width = 342
     Height = 229
-    ActivePage = SoundTabSheet
+    ActivePage = RLoginTabSheet
     TabOrder = 0
     object GeneralTabSheet: TTabSheet
       Caption = 'General'
@@ -180,7 +180,7 @@ object TelnetCfgDlg: TTelnetCfgDlg
     object RLoginTabSheet: TTabSheet
       Caption = 'RLogin'
       ImageIndex = 3
-      object Label1: TLabel
+      object RLoginPortLabel: TLabel
         Left = 9
         Top = 12
         Width = 96
@@ -188,7 +188,7 @@ object TelnetCfgDlg: TTelnetCfgDlg
         AutoSize = False
         Caption = 'Listening Port'
       end
-      object Label2: TLabel
+      object RLoginInterfaceLabel: TLabel
         Left = 9
         Top = 44
         Width = 96

@@ -221,6 +221,8 @@ void __fastcall TTelnetCfgDlg::RLoginEnabledCheckBoxClick(TObject *Sender)
     RLoginInterfaceEdit->Enabled = RLoginEnabledCheckBox->Checked;
     RLoginIPallowButton->Enabled = RLoginEnabledCheckBox->Checked;
     RLogin2ndNameCheckBox->Enabled = RLoginEnabledCheckBox->Checked;
+    RLoginPortLabel->Enabled = RLoginEnabledCheckBox->Checked;
+    RLoginInterfaceLabel->Enabled = RLoginEnabledCheckBox->Checked;
 }
 //---------------------------------------------------------------------------
 
