@@ -1,9 +1,44 @@
 /* sbbsdefs.js */
 
-/* $id$ */
+/* Synchronet Object Model constants definitions - (mostly bit-fields) */
+
+/* $Id$ */
+
+/****************************************************************************
+ * @format.tab-size 4		(Plain Text/Source Code File Header)			*
+ * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
+ *																			*
+ * Copyright 2001 Rob Swindell - http://www.synchro.net/copyright.html		*
+ *																			*
+ * This program is free software; you can redistribute it and/or			*
+ * modify it under the terms of the GNU General Public License				*
+ * as published by the Free Software Foundation; either version 2			*
+ * of the License, or (at your option) any later version.					*
+ * See the GNU General Public License for more details: gpl.txt or			*
+ * http://www.fsf.org/copyleft/gpl.html										*
+ *																			*
+ * Anonymous FTP access to the most recent released source is available at	*
+ * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
+ *																			*
+ * Anonymous CVS access to the development source and modification history	*
+ * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
+ *     (just hit return, no password is necessary)							*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
+ *																			*
+ * For Synchronet coding style and modification guidelines, see				*
+ * http://www.synchro.net/source.html										*
+ *																			*
+ * You are encouraged to submit any modifications (preferably in Unix diff	*
+ * format) via e-mail to mods@synchro.net									*
+ *																			*
+ * Note: If this box doesn't appear square, then you need to fix your tabs.	*
+ ****************************************************************************/
+
+load("nodedefs.js");
 
 							/********************************************/
-							/* Different bits in system.settings		*/
+							/* system.settings							*/
 							/********************************************/
 SYS_CLOSED		=(1<<0) 	/* System is closed to New Users			*/
 SYS_SYSSTAT		=(1<<1) 	/* Sysops activity included in statistics	*/
@@ -38,9 +73,78 @@ SYS_DELEMAIL	=(1<<29)	/* Physically remove deleted e-mail immed.	*/
 SYS_USRVDELM	=(1<<30)	/* Users can see deleted msgs				*/
 SYS_SYSVDELM	=(1<<31)	/* Sysops can see deleted msgs				*/
 							/********************************************/
-							
+
 							/********************************************/
-							/* Bit values for user.settings				*/
+							/* bbs.sys_status							*/
+							/********************************************/
+SS_UNUSED		=(1<<0)		/* Unused          							*/
+SS_INITIAL		=(1<<1)		/* The bbs data has been initialized.       */
+SS_TMPSYSOP		=(1<<2)		/* Temporary Sysop Status					*/
+SS_USERON		=(1<<3)		/* A User is logged on to the BBS			*/
+SS_LCHAT		=(1<<4)		/* Local chat in progress					*/
+SS_CAP			=(1<<5)		/* Capture is on							*/
+SS_ANSCAP		=(1<<6)		/* Capture ANSI codes too					*/
+SS_FINPUT		=(1<<7)		/* Using file for input 					*/
+SS_COMISR		=(1<<8)		/* Com port ISR is installed				*/
+SS_DAILY		=(1<<9)		/* Execute System Daily Event on logoff 	*/
+SS_INUEDIT		=(1<<10)	/* Inside Alt-Useredit section 				*/
+SS_ABORT		=(1<<11)	/* Global abort input or output flag		*/
+SS_SYSPAGE		=(1<<12)	/* Paging sysop								*/
+SS_SYSALERT		=(1<<13)	/* Notify sysop when users hangs up			*/
+SS_GURUCHAT		=(1<<14)	/* Guru chat in progress					*/
+SS_UNUSED2		=(1<<15)	/* not used in v3 (used to be SS_NODEDAB)	*/
+SS_EVENT		=(1<<16)	/* Time shortened due to upcoming event		*/
+SS_PAUSEON		=(1<<17)	/* Pause on, overriding user default		*/
+SS_PAUSEOFF		=(1<<18)	/* Pause off, overriding user default		*/
+SS_IN_CTRLP		=(1<<19)	/* Inside ctrl-p send node message func		*/
+SS_NEWUSER		=(1<<20)	/* New User online 							*/
+SS_MDMDEBUG		=(1<<21)	/* Modem debug output						*/
+SS_NEST_PF		=(1<<22)	/* Nested in printfile function				*/
+SS_DCDHIGH		=(1<<23)	/* Assume DCD is high always				*/
+SS_SPLITP		=(1<<24)	/* Split-screen private chat				*/
+SS_NEWDAY		=(1<<25)	/* Date changed while online				*/
+SS_RLOGIN		=(1<<26)	/* Current login via BSD RLogin				*/
+SS_FILEXFER		=(1<<27)	/* File transfer in progress, halt spy		*/
+							/********************************************/
+
+							/********************************************/
+							/* console.status							*/
+							/********************************************/
+CON_R_ECHO		=(1<<0)		/* Echo remotely							*/
+CON_R_ECHOX	 	=(1<<1)		/* Echo X's to remote user					*/
+CON_R_INPUT  	=(1<<2)		/* Accept input remotely					*/
+CON_L_ECHO	 	=(1<<3)		/* Echo locally              				*/
+CON_L_ECHOX	 	=(1<<4)		/* Echo X's locally							*/
+CON_L_INPUT  	=(1<<5)		/* Accept input locally						*/
+CON_RAW_IN   	=(1<<8)		/* Raw input mode - no editing capabilities */
+CON_ECHO_OFF 	=(1<<10)	/* Remote & Local echo disabled for ML/MF	*/
+CON_UPARROW  	=(1<<11)	/* Up arrow hit - move up one line			*/
+CON_NO_INACT  	=(1<<13)	/* User inactivity detection disabled		*/
+							/********************************************/
+
+							/********************************************/
+							/* console.attributes (left-shift 4 for bg)	*/
+							/********************************************/
+BLACK			=0			/* dark colors */
+BLUE			=1
+GREEN			=2
+CYAN			=3
+RED				=4
+MAGENTA			=5
+BROWN			=6
+LIGHTGRAY		=7
+DARKGRAY		=8			/* light colors */
+LIGHTBLUE		=9
+LIGHTGREEN		=10
+LIGHTCYAN		=11
+LIGHTRED		=12
+LIGHTMAGENTA	=13
+YELLOW			=14
+WHITE			=15
+BLINK			=0x80		/* blink bit */
+						
+							/********************************************/
+							/* user.settings							*/
 							/********************************************/
 USER_DELETED 	=(1<<0) 	/* Deleted user slot						*/
 USER_ANSI		=(1<<1) 	/* Supports ANSI terminal emulation			*/
@@ -98,7 +202,41 @@ UFLAG_Y			=(1<<24)
 UFLAG_Z			=(1<<25)
 
 							/********************************************/
-							/* Bit values for system.user_question		*/
+							/* Bits in 'mode' for getkey and getstr     */
+							/********************************************/
+K_UPPER 		=(1<<0)		/* Converts all letters to upper case		*/
+K_UPRLWR		=(1<<1)		/* Upper/Lower case automatically			*/
+K_NUMBER		=(1<<2)		/* Allow numbers only						*/
+K_WRAP			=(1<<3)		/* Allows word wrap 						*/
+K_MSG			=(1<<4)		/* Allows ANSI, ^N ^A ^G					*/
+K_SPIN			=(1<<5)		/* Spinning cursor (same as SPIN)			*/
+K_LINE			=(1<<6)		/* Input line (inverse color)				*/
+K_EDIT			=(1<<7)		/* Edit string passed						*/
+K_CHAT			=(1<<8)		/* In chat multi-chat						*/
+K_NOCRLF		=(1<<9)		/* Don't print CRLF after string input      */
+K_ALPHA 		=(1<<10)	/* Only allow alphabetic characters 		*/
+K_GETSTR		=(1<<11)	/* getkey called from getstr()				*/
+K_LOWPRIO		=(1<<12)	/* low priority input						*/
+K_NOEXASC		=(1<<13)	/* No extended ASCII allowed				*/
+K_E71DETECT		=(1<<14)	/* Detect E-7-1 terminal type				*/
+K_AUTODEL		=(1<<15)	/* Auto-delete text (used with K_EDIT)		*/
+K_COLD			=(1<<16)	/* Possible cold key mode					*/
+K_NOECHO		=(1<<17)	/* Don't echo input                         */
+K_TAB			=(1<<18)	/* Treat TAB key as CR						*/
+							/********************************************/
+						
+							/********************************************/
+							/* Bits in 'mode' for putmsg and printfile  */
+							/********************************************/
+P_NOABORT  		=(1<<0)		/* Disallows abortion of a message          */
+P_SAVEATR		=(1<<1)		/* Save the new current attributres after	*/
+							/* msg has printed */
+P_NOATCODES		=(1<<2)		/* Don't allow @ codes                      */
+P_OPENCLOSE		=(1<<3)		/* Open and close the file					*/
+							/********************************************/
+
+							/********************************************/
+							/* system.new_user_questions				*/
 							/********************************************/
 UQ_ALIASES		=(1<<0) 	/* Ask for alias							*/
 UQ_LOCATION		=(1<<1) 	/* Ask for location 						*/
@@ -121,7 +259,7 @@ UQ_NOCOMMAS		=(1<<17)	/* Do not require commas in location		*/
 							/********************************************/
 				
 							/********************************************/
-							/* Different bits in node.settings			*/
+							/* node.settings							*/
 							/********************************************/
 NM_ANSALARM		=(1<<0)		/* Alarm locally on answer					*/
 NM_WFCSCRN		=(1<<1)		/* Wait for call screen                     */
@@ -145,7 +283,7 @@ NM_NOPAUSESPIN	=(1<<18)	/* No spinning cursor at pause prompt		*/
 							/********************************************/
 
 							/********************************************/
-							/* Bit values in netmail_misc				*/
+							/* netmail_misc								*/
 							/********************************************/
 NMAIL_ALLOW 	=(1<<0)		/* Allow NetMail							*/
 NMAIL_CRASH 	=(1<<1)		/* Default netmail to crash					*/

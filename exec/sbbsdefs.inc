@@ -101,6 +101,7 @@
 !define CON_RAW_IN	.8	# Raw input mode - no editing capabilities
 !define CON_ECHO_OFF	.10	# Remote & Local echo disabled for ML/MF
 !define CON_UPARROW	.11	# Up arrow hit - move up one line
+!define CON_NO_INACT	.13	# Disable user inactivity detection
 
 				# String lengths
 
