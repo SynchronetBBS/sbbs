@@ -624,16 +624,18 @@ int DLLCALL getnodedat(scfg_t* cfg, uint number, node_t *node, int* fp)
 		return(errno); 
 	}
 
-	number--;	/* make zero based */
-	for(count=0;count<LOOP_NODEDAB;count++) {
-		if(count)
-			mswait(100);
-		lseek(file,(long)number*sizeof(node_t),SEEK_SET);
-		if(fp!=NULL
-			&& lock(file,(long)number*sizeof(node_t),sizeof(node_t))==-1) 
-			continue; 
-		if(read(file,node,sizeof(node_t))==sizeof(node_t))
-			break;
+	if(filelength(file)>=(long)(number*sizeof(node_t))) {
+		number--;	/* make zero based */
+		for(count=0;count<LOOP_NODEDAB;count++) {
+			if(count)
+				mswait(100);
+			lseek(file,(long)number*sizeof(node_t),SEEK_SET);
+			if(fp!=NULL
+				&& lock(file,(long)number*sizeof(node_t),sizeof(node_t))==-1) 
+				continue; 
+			if(read(file,node,sizeof(node_t))==sizeof(node_t))
+				break;
+		}
 	}
 
 	if(fp==NULL)
