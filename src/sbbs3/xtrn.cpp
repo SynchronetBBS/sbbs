@@ -912,10 +912,16 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 	
 	if(mode&EX_OUTR) {
 		close(out_pipe[1]);	/* close write-end of pipe */
-		while(online || mode&EX_OFFLINE) {
+		while(!terminated) {
 			if(waitpid(pid, &i, WNOHANG)!=0)	/* child exited */
 				break;
 			
+			if(!online && !(mode&EX_OFFLINE)) {
+				sprintf(str,"%s hung-up in external program",useron.alias);
+				logline("X!",str);
+				break;
+			}
+
 			/* Input */	
 			if(mode&EX_INR && RingBufFull(&inbuf)) {
 				if((wr=RingBufRead(&inbuf,buf,sizeof(buf)))!=0)
@@ -942,6 +948,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 		}
 		if(waitpid(pid, &i, WNOHANG)==0)
 			kill(pid, SIGKILL);	/* terminate child process */
+
 		/* close unneeded descriptors */
 		if(mode&EX_INR)
 			close(in_pipe[1]);
