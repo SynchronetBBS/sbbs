@@ -15,22 +15,22 @@
         <th class="main_nodelist">Node</th>
         <th class="main_nodelist">User</th>
         <th class="main_nodelist">Action</th>
-        <th class="main_nodelist">Loction</th>
+        <th class="main_nodelist">Location</th>
         <th class="main_nodelist">Gender</th>
         <th class="main_nodelist">Time</th>  
     </tr>
     <tr>    
 
-<<REPEAT node_list>>
+<<REPEAT who_online>>
             <tr>
-                <td class="main_nodelist" width="1%">@@node_list:node@@</td>  
-                <td class="main_nodelist"><a href="mailto:@@node_list:email@@">@@node_list:user@@</a></td>
-                <td class="main_nodelist">@@node_list:action@@</td>
-                <td class="main_nodelist" width="25%">@@node_list:location@@</td>
-                <td class="main_nodelist" width="1%">@@node_list:gender@@</td>    
-                <td class="main_nodelist" width="1%">@@node_list:timeon@@</td>     
+                <td class="main_nodelist" width="1%">@@who_online:node@@</td>  
+                <td class="main_nodelist"><a href="mailto:@@who_online:email@@">@@who_online:name@@</a></td>
+                <td class="main_nodelist">@@who_online:action@@</td>
+                <td class="main_nodelist" width="25%">@@who_online:location@@</td>
+                <td class="main_nodelist" width="1%">@@who_online:gender@@</td>    
+                <td class="main_nodelist" width="1%">@@who_online:timeon@@</td>     
             </tr>
-<<END REPEAT node_list>>
+<<END REPEAT who_online>>
         
         </tbody>
         </table>
