@@ -2895,7 +2895,7 @@ static void cleanup(int code)
 		lprintf("0000 !WSACleanup ERROR %d",ERROR_VALUE);
 #endif
 
-    lprintf("0000 FTP Server thread terminated");
+    lprintf("#### FTP Server thread terminated");
 	status("Down");
 	if(startup!=NULL && startup->terminated!=NULL)
 		startup->terminated(code);
