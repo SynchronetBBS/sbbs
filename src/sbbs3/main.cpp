@@ -86,8 +86,6 @@ SOCKET	uspy_socket[MAX_NODES];	  /* UNIX domain spy sockets */
 SOCKET	node_socket[MAX_NODES];
 static	SOCKET telnet_socket=INVALID_SOCKET;
 static	SOCKET rlogin_socket=INVALID_SOCKET;
-static	pthread_mutex_t event_mutex;
-static  bool	event_mutex_locked;
 static	sbbs_t*	sbbs=NULL;
 static	scfg_t	scfg;
 static	bool	scfg_reloaded=true;
@@ -1567,9 +1565,6 @@ void event_thread(void* arg)
 		} else
 			check_semaphores=false;
 
-		pthread_mutex_lock(&event_mutex);
-		event_mutex_locked=true;
-
 		sbbs->online=0;	/* reset this from ON_LOCAL */
 
 		if(scfg_reloaded==true) {
@@ -1604,8 +1599,8 @@ void event_thread(void* arg)
 				if(sbbs->cfg.event[i]->misc&EVENT_INIT)
 					sbbs->cfg.event[i]->last=-1;
 			}
-			if(read(file,&lastprepack,sizeof(time_t))!=sizeof(time_t))
-				sbbs->errormsg(WHERE,ERR_READ,str,sizeof(time_t));
+			lastprepack=0;
+			read(file,&lastprepack,sizeof(time_t));	/* expected to fail first time */
 			close(file);
 
 			// Read QNET.DAB
@@ -2165,9 +2160,6 @@ void event_thread(void* arg)
 				} 
 			} 
 		}
-		event_mutex_locked=false;
-		pthread_mutex_unlock(&event_mutex);
-
 		mswait(1000);
 	}
 	sbbs->cfg.node_num=0;
@@ -3662,8 +3654,6 @@ static void cleanup(int code)
 #endif // _DEBUG && _MSC_VER
 #endif // _WIN32
 
-	pthread_mutex_destroy(&event_mutex);
-
 	status("Down");
 	thread_down();
 	if(terminate_server || code)
@@ -3805,8 +3795,6 @@ void DLLCALL bbs_thread(void* arg)
     }
 	hK32 = LoadLibrary("KERNEL32");
 #endif // _WIN32
-
-	pthread_mutex_init(&event_mutex,NULL);
 
 	if(!winsock_startup()) {
 		cleanup(1);
@@ -4125,7 +4113,7 @@ void DLLCALL bbs_thread(void* arg)
 
 	while(!terminate_server) {
 
-		if(node_threads_running==0 && !event_mutex_locked) {	/* check for re-run flags */
+		if(node_threads_running==0) {	/* check for re-run flags */
 			bool rerun=false;
 			for(i=first_node;i<=last_node;i++) {
 				if(sbbs->getnodedat(i,&node,0)!=0)
@@ -4139,19 +4127,8 @@ void DLLCALL bbs_thread(void* arg)
 					sbbs->putnodedat(i,&node);
 				}
 			}
-			if(rerun) {
-				lprintf(LOG_INFO,"Loading configuration files from %s", scfg.ctrl_dir);
-				scfg.node_num=first_node;
-				pthread_mutex_lock(&event_mutex);
-				SAFECOPY(logstr,UNKNOWN_LOAD_ERROR);
-				if(!load_cfg(&scfg, text, TRUE, logstr)) {
-					lprintf(LOG_ERR,"!ERROR %s",logstr);
-					lprintf(LOG_ERR,"!FAILED to load configuration files");
-					break;
-				}
-				scfg_reloaded=true;
-				pthread_mutex_unlock(&event_mutex);
-			}
+			if(rerun)
+				break;
 			if(!(startup->options&BBS_OPT_NO_RECYCLE)) {
 				sprintf(str,"%stelnet.rec",scfg.ctrl_dir);
 				t=fdate(str);
@@ -4505,7 +4482,6 @@ void DLLCALL bbs_thread(void* arg)
 
 	// Wait for Events thread to terminate
 	if(events!=NULL && events->event_thread_running) {
-		pthread_mutex_unlock(&event_mutex);
 		lprintf(LOG_INFO,"Waiting for event thread to terminate...");
 		start=time(NULL);
 		while(events->event_thread_running) {
