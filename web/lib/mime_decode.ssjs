@@ -102,7 +102,7 @@ function mime_decode(hdr, body)
 					for(il in Message.inlines) {
 						var path=http_request.virtual_path;
 						var basepath=path.match(/^(.*\/)[^\/]*$/);
-						re=new RegExp("cid:("+Message.inlines[il]+")","ig");
+						re=new RegExp("cid:("+regex_escape(Message.inlines[il])+")","ig");
 						Message.body=Message.body.replace(re,basepath[1]+"inline.ssjs/"+template.group.number+"/"+template.sub.code+"/"+hdr.number+"/$1");
 					}
 				}
