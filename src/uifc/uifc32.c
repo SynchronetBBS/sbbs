@@ -181,6 +181,10 @@ int uifcini32(uifcapi_t* uifcapi)
 	api->timedisplay=timedisplay;
 	api->getstrxy=ugetstr;
 
+	/* A esc_delay of less than 10 is stupid... silently override */
+	if(api->esc_delay < 10)
+		api->esc_delay=25;
+
 #ifdef __unix__
 	initciowrap(api->mode);
 	#ifdef NCURSES_VERSION_MAJOR
