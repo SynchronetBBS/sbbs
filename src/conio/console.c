@@ -1091,7 +1091,7 @@ init_mode(int mode)
     
     idx = find_vmode(mode & 0x7f);
     if (idx == -1 || vmodelist[idx].type == NOMODE) {
-		fprintf(stderr,"Cannot initialize selected mode\n");
+		fprintf(stderr,"Cannot initialize selected mode (%d)\n",mode);
 		return(-1);
 	}
     vmode = vmodelist[idx];
@@ -1243,15 +1243,13 @@ int
 console_init()
 {
     int fd;
-    int i;    
-    
-	if(dpy!=NULL)
-		return(0);
+    int i;
 
     if(kbd_init()) {
 		fprintf(stderr,"Cannot initialize X keyboard\n");
 		return(-1);
 	}
+
     if(video_init()) {
 		fprintf(stderr,"X video init failure\n");
 		return(-1);
@@ -1271,12 +1269,14 @@ video_init()
     /* If we are running under X, get a connection to the X server and create
        an empty window of size (1, 1). It makes a couple of init functions a
        lot easier. */
-    if(init_window())
-		return(-1);
+	if(dpy==NULL) {
+	    if(init_window())
+			return(-1);
 
-    /* Set VGA emulator to a sane state */
-    if(init_vga())
-		return(-1);
+    	/* Set VGA emulator to a sane state */
+    	if(init_vga())
+			return(-1);
+	}
 
     /* Initialize mode 3 (text, 80x25, 16 colors) */
     if(init_mode(3))
