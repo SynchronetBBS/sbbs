@@ -195,6 +195,11 @@ ifndef NOCVS
 	$(CVS_CO) -r $(CVSTAG) lib/mozilla/js/$(os).$(SUFFIX)
 endif
 
+$(SBBSDIR)/lib/mozilla/nspr/$(os).$(SUFFIX): cvslogin
+ifndef NOCVS
+	$(CVS_CO) -r $(CVSTAG) lib/mozilla/nspr/$(os).$(SUFFIX)
+endif
+
 $(SBBSDIR)/lib/fltk/$(os): cvslogin
 ifndef NOCVS
 	$(CVS_CO) -r $(CVSTAG) lib/fltk/$(os)
