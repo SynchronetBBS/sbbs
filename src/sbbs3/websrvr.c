@@ -1389,6 +1389,8 @@ static BOOL check_request(http_session_t * session)
 		send_error(session,"404 Not Found");
 		return(FALSE);
 	}
+	if(startup->options&WEB_OPT_DEBUG_TX)
+		lprintf("Path is: %s",path);
 	if(isdir(path)) {
 		last_ch=*lastchar(path);
 		if(last_ch!='/' && last_ch!='\\')  {
@@ -1403,6 +1405,8 @@ static BOOL check_request(http_session_t * session)
 		for(i=0; startup->index_file_name!=NULL && startup->index_file_name[i]!=NULL ;i++)  {
 			*last_slash=0;
 			strcat(path,startup->index_file_name[i]);
+			if(startup->options&WEB_OPT_DEBUG_TX)
+				lprintf("Checking for %s",path);
 			if(!stat(path,&sb))
 				break;
 		}
