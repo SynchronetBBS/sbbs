@@ -899,7 +899,8 @@ void event_thread(void* arg)
 	thread_up();
 
 #ifdef JAVASCRIPT
-	sbbs->js_initcx();	/* This must be done in the context of the event thread */
+	if(!(startup->options&BBS_OPT_NO_JAVASCRIPT)) 
+		sbbs->js_initcx();	/* This must be done in the context of the event thread */
 #endif
 
 	while(1) {
@@ -908,6 +909,8 @@ void event_thread(void* arg)
 
 		if(sbbs->terminated || telnet_socket==INVALID_SOCKET)
 			break;
+
+		sbbs->online=0;	/* reset this from ON_LOCAL */
 
 		if(scfg_reloaded==true) {
 
@@ -2536,27 +2539,30 @@ void node_thread(void* arg)
 	sbbs_random(10);	/* Throw away first number */
 
 #ifdef JAVASCRIPT
-	sbbs->js_initcx();	/* This must be done in the context of the node thread */
+	if(!(startup->options&BBS_OPT_NO_JAVASCRIPT)) 
+		sbbs->js_initcx();	/* This must be done in the context of the node thread */
 #endif
 
 	if(sbbs->answer()) {
 
 #ifdef JAVASCRIPT
-		JS_BeginRequest(sbbs->js_cx);	/* Required for multi-thread support */
+		if(sbbs->js_cx!=NULL) {
+			JS_BeginRequest(sbbs->js_cx);	/* Required for multi-thread support */
 
-		/* User Class */
-		if(js_CreateUserClass(sbbs->js_cx, sbbs->js_glob, &sbbs->cfg)==NULL) 
-			lprintf("!JavaScript ERROR creating user class");
+			/* User Class */
+			if(js_CreateUserClass(sbbs->js_cx, sbbs->js_glob, &sbbs->cfg)==NULL) 
+				lprintf("!JavaScript ERROR creating user class");
 
-		/* User Object */
-		if(js_CreateUserObject(sbbs->js_cx, sbbs->js_glob, &sbbs->cfg, "user", sbbs->useron.number)==NULL) 
-			lprintf("!JavaScript ERROR creating user object");
+			/* User Object */
+			if(js_CreateUserObject(sbbs->js_cx, sbbs->js_glob, &sbbs->cfg, "user", sbbs->useron.number)==NULL) 
+				lprintf("!JavaScript ERROR creating user object");
 
-		/* FileArea Object */
-		if(js_CreateFileAreaObject(sbbs->js_cx, sbbs->js_glob, &sbbs->cfg, &sbbs->useron, "")==NULL) 
-			lprintf("!JavaScript ERROR createing file_area object");
+			/* FileArea Object */
+			if(js_CreateFileAreaObject(sbbs->js_cx, sbbs->js_glob, &sbbs->cfg, &sbbs->useron, "")==NULL) 
+				lprintf("!JavaScript ERROR createing file_area object");
 
-		JS_EndRequest(sbbs->js_cx);	/* Required for multi-thread support */
+			JS_EndRequest(sbbs->js_cx);	/* Required for multi-thread support */
+		}
 #endif
 
 		if(sbbs->qwklogon) {
@@ -3070,14 +3076,16 @@ void DLLCALL bbs_thread(void* arg)
 	startup->node_inbuf=node_inbuf;
 
 #ifdef JAVASCRIPT
-	lprintf("JavaScript: %s",JS_GetImplementationVersion());
-	lprintf("JavaScript: Creating runtime: %lu bytes", JAVASCRIPT_RUNTIME_MEMORY);
-	if((js_runtime = JS_NewRuntime(JAVASCRIPT_RUNTIME_MEMORY))==NULL) {
-		lprintf("!JS_NewRuntime failed");
-		cleanup(1);
-		return;
+	if(!(startup->options&BBS_OPT_NO_JAVASCRIPT)) {
+		lprintf("JavaScript: %s",JS_GetImplementationVersion());
+		lprintf("JavaScript: Creating runtime: %lu bytes", JAVASCRIPT_RUNTIME_MEMORY);
+		if((js_runtime = JS_NewRuntime(JAVASCRIPT_RUNTIME_MEMORY))==NULL) {
+			lprintf("!JS_NewRuntime failed");
+			cleanup(1);
+			return;
+		}
+		lprintf("JavaScript: Context stack: %lu bytes", JAVASCRIPT_CONTEXT_STACK);
 	}
-	lprintf("JavaScript: Context stack: %lu bytes", JAVASCRIPT_CONTEXT_STACK);
 #endif
 
     /* open a socket and wait for a client */

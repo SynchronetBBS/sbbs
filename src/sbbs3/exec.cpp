@@ -543,6 +543,12 @@ long sbbs_t::js_execfile(char *cmd)
 	JSScript*	js_script=NULL;
 	jsval		rval;
 	
+	if(js_cx==NULL) {
+		errormsg(WHERE,ERR_CHK,"JavaScript support",0);
+		errormsg(WHERE,ERR_EXEC,cmd,0);
+		return(-1);
+	}
+
 	sprintf(cmdline,"%.*s",sizeof(cmdline)-1,cmd);
 	p=strchr(cmdline,' ');
 	if(p!=NULL) {

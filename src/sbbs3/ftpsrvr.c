@@ -2119,7 +2119,7 @@ static void ctrl_thread(void* arg)
 	struct tm 	cur_tm;
 #ifdef JAVASCRIPT
 	jsval		js_val;
-	JSContext*	js_cx;
+	JSContext*	js_cx=NULL;
 	JSObject*	js_glob;
 	JSObject*	js_ftp;
 #endif
@@ -2144,12 +2144,14 @@ static void ctrl_thread(void* arg)
 #endif
 
 #ifdef JAVASCRIPT
-	if(((js_cx=js_initcx(sock,&js_glob,&js_ftp))==NULL)) {
-		lprintf("%04d !ERROR initializing JavaScript context",sock);
-		sockprintf(sock,"425 Error initializing JavaScript context");
-		ftp_close_socket(&sock,__LINE__);
-		thread_down();
-		return;
+	if(!(startup->options&FTP_OPT_NO_JAVASCRIPT)) {
+		if(((js_cx=js_initcx(sock,&js_glob,&js_ftp))==NULL)) {
+			lprintf("%04d !ERROR initializing JavaScript context",sock);
+			sockprintf(sock,"425 Error initializing JavaScript context");
+			ftp_close_socket(&sock,__LINE__);
+			thread_down();
+			return;
+		}
 	}
 #endif
 
@@ -2438,22 +2440,24 @@ static void ctrl_thread(void* arg)
 			}
 
 #ifdef JAVASCRIPT
-			JS_BeginRequest(js_cx);	/* Required for multi-thread support */
+			if(js_cx!=NULL) {
+				JS_BeginRequest(js_cx);	/* Required for multi-thread support */
 
-			if(js_CreateUserClass(js_cx, js_glob, &scfg)==NULL) 
-				lprintf("%04d !JavaScript ERROR creating user class",sock);
+				if(js_CreateUserClass(js_cx, js_glob, &scfg)==NULL) 
+					lprintf("%04d !JavaScript ERROR creating user class",sock);
 
-			if(js_CreateUserObject(js_cx, js_glob, &scfg, "user", user.number)==NULL) 
-				lprintf("%04d !JavaScript ERROR creating user object",sock);
+				if(js_CreateUserObject(js_cx, js_glob, &scfg, "user", user.number)==NULL) 
+					lprintf("%04d !JavaScript ERROR creating user object",sock);
 
-			if(js_CreateClientObject(js_cx, js_glob, "client", &client, sock)==NULL) 
-				lprintf("%04d !JavaScript ERROR creating client object",sock);
+				if(js_CreateClientObject(js_cx, js_glob, "client", &client, sock)==NULL) 
+					lprintf("%04d !JavaScript ERROR creating client object",sock);
 
-			if(js_CreateFileAreaObject(js_cx, js_glob, &scfg, &user
-				,startup->html_index_file)==NULL) 
-				lprintf("%04d !JavaScript ERROR creating file area object",sock);
+				if(js_CreateFileAreaObject(js_cx, js_glob, &scfg, &user
+					,startup->html_index_file)==NULL) 
+					lprintf("%04d !JavaScript ERROR creating file area object",sock);
 
-			JS_EndRequest(js_cx);	/* Required for multi-thread support */
+				JS_EndRequest(js_cx);	/* Required for multi-thread support */
+			}
 #endif
 
 			if(sysop)
@@ -3464,6 +3468,13 @@ static void ctrl_thread(void* arg)
 				|| !strnicmp(p,html_index_ext,strlen(html_index_ext)))
 				&& !delecmd) {
 #ifdef JAVASCRIPT
+				if(js_cx==NULL) {
+					lprintf("%04d !JavaScript disabled, cannot generate %s",sock,fname);
+					sockprintf(sock, "451 JavaScript disabled");
+					filepos=0;
+					continue;
+				}
+
 				JS_BeginRequest(js_cx);	/* Required for multi-thread support */
 
 				js_val=STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, "name"));
@@ -3972,8 +3983,10 @@ static void ctrl_thread(void* arg)
 #endif
 
 #ifdef JAVASCRIPT
-	lprintf("%04d JavaScript: Destroying context",sock);
-	JS_DestroyContext(js_cx);	/* Free Context */
+	if(js_cx!=NULL) {
+		lprintf("%04d JavaScript: Destroying context",sock);
+		JS_DestroyContext(js_cx);	/* Free Context */
+	}
 #endif
 
 	status(STATUS_WFC);
@@ -4018,8 +4031,8 @@ static void cleanup(int code)
 #endif
 
 #ifdef JAVASCRIPT
-	lprintf("0000 JavaScript: Destroying runtime");
 	if(js_runtime!=NULL) {
+		lprintf("0000 JavaScript: Destroying runtime");
 		JS_DestroyRuntime(js_runtime);
 		js_runtime=NULL;
 	}
@@ -4091,12 +4104,11 @@ void DLLCALL ftp_server(void* arg)
 	if(startup->max_inactivity==0)			startup->max_inactivity=300;	/* seconds */
 	if(startup->index_file_name[0]==0)		strcpy(startup->index_file_name,"00index");
 	if(startup->html_index_file[0]==0)		strcpy(startup->html_index_file,"00index.html");
-	if(startup->html_index_script[0]==0)	strcpy(startup->html_index_script,"ftp-html.js");
-
-	/*temporary*/
-#ifdef JAVASCRIPT
-	startup->options|=FTP_OPT_HTML_INDEX_FILE;
-#endif
+	if(startup->html_index_script[0]==0) {	strcpy(startup->html_index_script,"ftp-html.js");
+											startup->options|=FTP_OPT_HTML_INDEX_FILE;
+	}
+	if(!(startup->options&FTP_OPT_HTML_INDEX_FILE))
+		startup->options|=FTP_OPT_NO_JAVASCRIPT;
 
 	thread_up();
 
@@ -4189,16 +4201,17 @@ void DLLCALL ftp_server(void* arg)
 		strlwr(scfg.dir[i]->code);
 
 #ifdef JAVASCRIPT
-	lprintf("JavaScript: Creating runtime: %lu bytes"
-		,JAVASCRIPT_RUNTIME_MEMORY);
+	if(!(startup->options&FTP_OPT_NO_JAVASCRIPT)) {
+		lprintf("JavaScript: Creating runtime: %lu bytes"
+			,JAVASCRIPT_RUNTIME_MEMORY);
 
-	if((js_runtime = JS_NewRuntime(JAVASCRIPT_RUNTIME_MEMORY))==NULL) {
-		lprintf("!JS_NewRuntime failed");
-		cleanup(1);
-		return;
+		if((js_runtime = JS_NewRuntime(JAVASCRIPT_RUNTIME_MEMORY))==NULL) {
+			lprintf("!JS_NewRuntime failed");
+			cleanup(1);
+			return;
+		}
+		lprintf("JavaScript: Context stack: %lu bytes", JAVASCRIPT_CONTEXT_STACK);
 	}
-
-	lprintf("JavaScript: Context stack: %lu bytes", JAVASCRIPT_CONTEXT_STACK);
 #endif
 
     /* open a socket and wait for a client */
