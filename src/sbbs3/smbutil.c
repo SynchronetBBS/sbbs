@@ -834,6 +834,7 @@ void packmsgs(ulong packable)
 	int i,size;
 	ulong l,m,n,datoffsets=0,length,total,now;
 	FILE *tmp_sdt,*tmp_shd,*tmp_sid;
+	BOOL		error=FALSE;
 	smbhdr_t	hdr;
 	smbmsg_t	msg;
 	datoffset_t *datoffset=NULL;
@@ -1131,34 +1132,46 @@ void packmsgs(ulong packable)
 	fclose(smb.shd_fp);
 	fclose(tmp_shd);
 	sprintf(fname,"%s.shd",smb.file);
-	if(remove(fname)!=0)
+	if(remove(fname)!=0) {
+		error=TRUE;
 		fprintf(stderr,"\n\7!Error %d removing %s\n",errno,fname);
+	}
 	sprintf(tmpfname,"%s.sh$",smb.file);
-	if(rename(tmpfname,fname)!=0)
+	if(!error && rename(tmpfname,fname)!=0) {
+		error=TRUE;
 		fprintf(stderr,"\n\7!Error %d renaming %s to %s\n",errno,tmpfname,fname);
+	}
 
 
 	/* Change *.sd$ into *.sdt */
 	fclose(smb.sdt_fp);
 	fclose(tmp_sdt);
 	sprintf(fname,"%s.sdt",smb.file);
-	if(remove(fname)!=0)
+	if(!error && remove(fname)!=0) {
+		error=TRUE;
 		fprintf(stderr,"\n\7!Error %d removing %s\n",errno,fname);
+	}
 
 	sprintf(tmpfname,"%s.sd$",smb.file);
-	if(rename(tmpfname,fname)!=0)
+	if(!error && rename(tmpfname,fname)!=0) {
+		error=TRUE;
 		fprintf(stderr,"\n\7!Error %d renaming %s to %s\n",errno,tmpfname,fname);
+	}
 
 	/* Change *.si$ into *.sid */
 	fclose(smb.sid_fp);
 	fclose(tmp_sid);
 	sprintf(fname,"%s.sid",smb.file);
-	if(remove(fname)!=0)
+	if(!error && remove(fname)!=0) {
+		error=TRUE;
 		fprintf(stderr,"\n\7!Error %d removing %s\n",errno,fname);
+	}
 
 	sprintf(tmpfname,"%s.si$",smb.file);
-	if(rename(tmpfname,fname)!=0)
+	if(!error && rename(tmpfname,fname)!=0) {
+		error=TRUE;
 		fprintf(stderr,"\n\7!Error %d renaming %s to %s\n",errno,tmpfname,fname);
+	}
 
 	if((i=smb_open(&smb))!=0) {
 		fprintf(stderr,"\n\7!Error %d reopening %s\n",i,smb.file);
