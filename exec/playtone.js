@@ -4,9 +4,6 @@
 
 const REVISION = "$Revision$".split(' ')[1];
 
-const NOT_ABORTABLE	=(1<<0)
-const SHOW_DOT		=(1<<1)
-const SHOW_FREQ		=(1<<2)
 const NO_VISUAL		=(1<<3)
 
 var mode=0; 	/* Optional modes */
@@ -30,19 +27,19 @@ function play(freq, dur)
 		dur="0";
 
 	d=parseInt(dur);
-	if((f=parseInt(freq))!=0)
+	if(isNaN(f=parseInt(freq.charAt(0))))
 		switch(freq.charAt(0).toUpperCase()) {
 			case 'O':               /* default octave */
-				if(parseInt(dur))
+				if(Number(dur.charAt(0)))
 					octave=d;
 				else
 					octave+=d;
 				return;
 			case 'P':               /* pitch variation */
-				if(parseInt(dur))
-					pitch=atof(dur)/32.0;
+				if(Number(dur.charAt(0)))
+					pitch=parseFloat(dur)/32.0;
 				else
-					pitch+=atof(dur);
+					pitch+=parseFloat(dur);
 				return;
 			case 'Q':               /* quit */
 				exit(0);
@@ -50,7 +47,7 @@ function play(freq, dur)
 				f=0;
 				break;
 			case 'S':               /* stacato */
-				if(parseInt(dur))
+				if(Number(dur.charAt(0)))
 					s=d;
 				else
 					s+=d;
@@ -63,7 +60,7 @@ function play(freq, dur)
 					return;
 				truncsp(dur);
 				if(dur.charAt(dur.length-1)=='\\')
-					write(dur);
+					write(truncstr(dur,'\\'));
 				else
 					writeln(dur);
 				return;
@@ -81,14 +78,6 @@ function play(freq, dur)
 				break; 
 	}
 
-	if(f && mode&SHOW_FREQ) {
-		for(i=0;freq[i]>' ';i++)
-			;
-		freq[i]=0;
-		printf("%-4.4s",freq); 
-	}
-	if(mode&SHOW_DOT)
-		printf(".");
 	if(t>10)
 		len=(d*t)-(d*s);
 	else
@@ -108,10 +97,10 @@ function play(freq, dur)
 }
 
 
-printf("\nTone Generation Module  %s  Copyright 2003 Rob Swindell\n\n", REVISION);
+printf("\nSynchronet Tone Generation Module %s\n\n", REVISION);
 
 if(argc<1) {
-	alert("!No filename specified");
+	alert("No filename specified");
 	exit();
 }
 
@@ -120,7 +109,7 @@ if(!file.exists)
 	file.name=system.exec_dir + file.name;
 writeln("Opening " + file.name);
 if(!file.open("r")) {
-	alert("!Error " + file.error + " opening " + file.name);
+	alert("Error " + file.error + " opening " + file.name);
 	exit();
 }
 
@@ -131,9 +120,9 @@ for(i in text) {
 	if(js.terminated)
 		break;
 //	writeln(text[i]);
-	token=text[i].split(/\s+/);
-	cmd=token[0];
-	token.shift();
-	play(cmd, token.join(' '));
+	if(text[i].charAt(0)==':')	/* comment */
+		continue;
+	token=truncsp(text[i]).split(/\s+/);
+	play(token.shift(), token.join(' '));
 }
 
