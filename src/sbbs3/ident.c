@@ -46,7 +46,7 @@ char* identify(SOCKADDR_IN* client_addr, u_short local_port, char* buf
 	int			i;
 	int			result;
 	int			rd;
-	long		val;
+	ulong		val;
 	SOCKET		sock=INVALID_SOCKET;
 	SOCKADDR_IN	addr;
 	struct timeval	tv;
