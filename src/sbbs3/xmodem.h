@@ -45,9 +45,10 @@
 typedef struct {
 
 	SOCKET	sock;											/* socket descriptor */
-	long	mode;
+	long*	mode;
 	FILE*	statfp;
 	FILE*	errfp;
+	uint	block_size;
 
 } xmodem_t;
 
@@ -57,7 +58,7 @@ const char* xmodem_source(void);
 void		xmodem_cancel(xmodem_t* xm);
 int			xmodem_get_ack(xmodem_t* xm, int tries);
 void		xmodem_put_nak(xmodem_t* xm);
-int			xmodem_get_block(xmodem_t* xm, uchar* block, uint block_size, BOOL hdrblock);
+int			xmodem_get_block(xmodem_t* xm, uchar* block, BOOL hdrblock);
 void		xmodem_put_block(xmodem_t* xm, uchar* block, uint block_size, ulong block_num);
 
 #endif	/* Don't add anything after this line */

@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -68,7 +68,9 @@
 #define IGNORE_DCD	(1<<10) /* Ignore DCD								*/
 #define ALARM		(1<<11) /* Alarm when starting and stopping xfer	*/
 #define PAUSE_ABEND	(1<<13)	/* Pause on abnormal exit					*/
-#define TELNET		(1<<14)	/* Telnet IAC escaping						*/
+#define TELNET		(1<<14)	/* Telnet IAC escaping/option negotiation	*/
+#define DEBUG_RX	(1<<15)	/* Echo received chars						*/
+#define DEBUG_TX	(1<<16)	/* Echo sent chars							*/
 
 							/* Zmodem mode bits 						*/
 #define CTRL_ESC	(1<<0)	/* Escape all control chars 				*/

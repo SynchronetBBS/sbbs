@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -39,8 +39,8 @@
 #include "genwrap.h"	/* YIELD */
 #include "conwrap.h"	/* kbhit */
 
-#define getcom(t)	recv_byte(xm->sock,t,xm->mode)
-#define putcom(ch)	send_byte(xm->sock,ch,10,xm->mode)
+#define getcom(t)	recv_byte(xm->sock,t,*xm->mode)
+#define putcom(ch)	send_byte(xm->sock,ch,10,*xm->mode)
 #define newline()	fprintf(xm->statfp,"\n");
 
 void xmodem_put_nak(xmodem_t* xm)
@@ -65,7 +65,7 @@ void xmodem_cancel(xmodem_t* xm)
 /* hdrblock is 1 if attempting to get Ymodem header block, 0 if data block	*/
 /* Returns blocknum if all went well, -1 on error or CAN, and -EOT if EOT	*/
 /****************************************************************************/
-int xmodem_get_block(xmodem_t* xm, uchar* block, uint block_size, BOOL hdrblock)
+int xmodem_get_block(xmodem_t* xm, uchar* block, BOOL hdrblock)
 {
 	uchar	block_num;					/* Block number received in header	*/
 	uchar	chksum,calc_chksum;
@@ -74,20 +74,20 @@ int xmodem_get_block(xmodem_t* xm, uchar* block, uint block_size, BOOL hdrblock)
 	ushort	crc,calc_crc;
 
 	for(errors=0;errors<MAXERRORS;errors++) {
-		i=getcom(10);
+		i=getcom(hdrblock ? 5 : 10);
 		if(eot && i!=EOT)
 			eot=0;
 		if(can && i!=CAN)
 			can=0;
 		switch(i) {
 			case SOH: /* 128 byte blocks */
-				block_size=128;
+				xm->block_size=128;
 				break;
 			case STX: /* 1024 byte blocks */
-				block_size=1024;
+				xm->block_size=1024;
 				break;
 			case EOT:
-				if((xm->mode&(YMODEM|GMODE))==YMODEM && !eot) {
+				if(((*xm->mode)&(YMODEM|GMODE))==YMODEM && !eot) {
 					eot=1;
 					xmodem_put_nak(xm);		/* chuck's double EOT trick */
 					continue; 
@@ -103,11 +103,10 @@ int xmodem_get_block(xmodem_t* xm, uchar* block, uint block_size, BOOL hdrblock)
 				fprintf(xm->statfp,"Cancelled remotely\n");
 				bail(-1);
 				break;
-			case NOINP: 	/* Nothing came in */
-				continue;
 			default:
 				newline();
 				fprintf(xm->statfp,"Received %s  Expected SOH, STX, or EOT\n",chr((uchar)i));
+			case NOINP: 	/* Nothing came in */
 				if(hdrblock)  /* Trying to get Ymodem header block */
 					return(-1);
 				xmodem_put_nak(xm);
@@ -115,46 +114,52 @@ int xmodem_get_block(xmodem_t* xm, uchar* block, uint block_size, BOOL hdrblock)
 		}
 		i=getcom(1);
 		if(i==NOINP) {
+			if(hdrblock)  /* Trying to get Ymodem header block */
+				return(-1);
 			xmodem_put_nak(xm);
 			continue; 
 		}
 		block_num=i;
 		i=getcom(1);
 		if(i==NOINP) {
+			if(hdrblock)  /* Trying to get Ymodem header block */
+				return(-1);
 			xmodem_put_nak(xm);
 			continue; 
 		}
 		if(block_num!=(uchar)~i) {
 			newline();
 			fprintf(xm->statfp,"Block number error\n");
+			if(hdrblock)  /* Trying to get Ymodem header block */
+				return(-1);
 			xmodem_put_nak(xm);
 			continue; 
 		}
 		calc_crc=calc_chksum=0;
-		for(b=0;b<block_size;b++) {
+		for(b=0;b<xm->block_size;b++) {
 			i=getcom(1);
 			if(i==NOINP)
 				break;
 			block[b]=i;
-			if(xm->mode&CRC)
+			if((*xm->mode)&CRC)
 				calc_crc=ucrc16(block[b],calc_crc);
 			else
 				calc_chksum+=block[b]; 
 		}
 
-		if(b<block_size) {
+		if(b<xm->block_size) {
 			xmodem_put_nak(xm);
 			continue; 
 		}
 
-		if(xm->mode&CRC) {
+		if((*xm->mode)&CRC) {
 			crc=getcom(1)<<8;
 			crc|=getcom(1); 
 		}
 		else
 			chksum=getcom(1);
 
-		if(xm->mode&CRC) {
+		if((*xm->mode)&CRC) {
 			if(crc==calc_crc)
 				break;
 			newline();
@@ -168,7 +173,7 @@ int xmodem_get_block(xmodem_t* xm, uchar* block, uint block_size, BOOL hdrblock)
 			fprintf(xm->statfp,"Checksum error\n"); 
 		}
 
-		if(xm->mode&GMODE) {	/* Don't bother sending a NAK. He's not listening */
+		if((*xm->mode)&GMODE) {	/* Don't bother sending a NAK. He's not listening */
 			xmodem_cancel(xm);
 			bail(1); 
 		}
@@ -203,13 +208,13 @@ void xmodem_put_block(xmodem_t* xm, uchar* block, uint block_size, ulong block_n
 	crc=0;
 	for(i=0;i<block_size;i++) {
 		putcom(block[i]);
-		if(xm->mode&CRC)
+		if((*xm->mode)&CRC)
 			crc=ucrc16(block[i],crc);
 		else
 			chksum+=block[i]; 
 	}
 
-	if(xm->mode&CRC) {
+	if((*xm->mode)&CRC) {
 		putcom((uchar)(crc >> 8));
 		putcom((uchar)(crc&0xff)); 
 	}
@@ -228,7 +233,7 @@ int xmodem_get_ack(xmodem_t* xm, int tries)
 
 	for(errors=0;errors<tries;errors++) {
 
-		if(xm->mode&GMODE) {		/* Don't wait for ACK on Ymodem-G */
+		if((*xm->mode)&GMODE) {		/* Don't wait for ACK on Ymodem-G */
 			if(getcom(0)==CAN) {
 				newline();
 				fprintf(xm->statfp,"Cancelled remotely\n");

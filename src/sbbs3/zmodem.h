@@ -241,7 +241,7 @@ typedef struct {
 
 	/* Stuff added by RRS */
 	SOCKET	sock;					/* socket descriptor */
-	long	mode;
+	long*	mode;
 	FILE*	statfp;
 	FILE*	errfp;
 
