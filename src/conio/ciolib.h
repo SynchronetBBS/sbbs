@@ -56,6 +56,7 @@ enum {
 #define	C80			3
 #define MONO		7
 #define C4350		64
+#define C80X50		64
 
 #define COLOR_MODE	C80
 

@@ -4,7 +4,7 @@
 #include "keys.h"
 #include "win32cio.h"
 
-#define VID_MODES	6
+#define VID_MODES	7
 
 const int 	cio_tabs[10]={9,17,25,33,41,49,57,65,73,80};
 
@@ -22,6 +22,7 @@ const struct vid_mode vid_modes[VID_MODES]={
 	,{C80,80,25,1}
 	,{MONO,80,25,1}
 	,{C4350,80,50,1}
+	,{C80X50,80,50,1}
 };
 
 static struct cio_mouse_event	cio_last_button_press;
