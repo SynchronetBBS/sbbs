@@ -941,7 +941,6 @@ BOOL 	md(char *path);
 
 	/* file.cpp */
 	BOOL	filematch(char *filename, char *filespec);
-	uint	delfiles(char *path, char *spec);
 
 #endif /* SBBS */
 

@@ -267,30 +267,6 @@ extern "C" BOOL filematch(char *filename, char *filespec)
 	return(TRUE);
 }
 
-/****************************************************************************/
-/* Deletes all files in dir 'path' that match file spec 'spec'              */
-/****************************************************************************/
-extern "C" uint delfiles(char *inpath, char *spec)
-{
-	char	path[MAX_PATH+1];
-    uint	i,files=0;
-	glob_t	g;
-
-	strcpy(path,inpath);
-	backslash(path);
-	strcat(path,spec);
-	glob(path,0,NULL,&g);
-	for(i=0;i<g.gl_pathc;i++) {
-		if(isdir(g.gl_pathv[i]))
-			continue;
-		CHMOD(g.gl_pathv[i],S_IWRITE);	// Incase it's been marked RDONLY
-		if(remove(g.gl_pathv[i])==0)
-			files++;
-	}
-	globfree(&g);
-	return(files);
-}
-
 /*****************************************************************************/
 /* Checks the filename 'fname' for invalid symbol or character sequences     */
 /*****************************************************************************/
