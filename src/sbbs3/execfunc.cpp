@@ -370,6 +370,15 @@ int sbbs_t::exec_function(csi_t *csi)
 					}
 					continue;
 				}
+				if(ch==16) {		/* Ctrl-P Private node-node comm */
+					nodesync(); 	/* read any waiting messages */
+					nodemsg();		/* send a message */
+					continue; 
+				}
+				if(ch==21) {	/* Ctrl-U Users online */
+					whos_online(true); 	/* list users */
+					continue;
+				}
 				if(node_inbuf[i-1]!=NULL) 
 					RingBufWrite(node_inbuf[i-1],(uchar*)&ch,1);
 			}
