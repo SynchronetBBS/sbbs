@@ -1,0 +1,31 @@
+# Available Options:
+# NEED_SMBLIB       = Set flags suitable for building with the curses lib
+
+# You really should set this first.
+SMBLIB_SRC	?=	$(XPDEV)../smblib/
+
+SMBLIB_LFLAGS	+=	-L$(SMBLIB_SRC) -lsmblib
+SMBLIB_ODIR	?=	$(XPDEV)../smblib/$(LIBODIR)
+SMBLIB_TARGET	:=	$(SMBLIB_ODIR)/libsmb.a
+SMBLIB_OBJS	:= \
+        $(SMBLIB_ODIR)/smblib.o \
+        $(SMBLIB_ODIR)/smbtxt.o \
+        $(SMBLIB_ODIR)/smbdump.o \
+        $(SMBLIB_ODIR)/crc16.o \
+        $(SMBLIB_ODIR)/crc32.o \
+        $(SMBLIB_ODIR)/md5.o \
+        $(SMBLIB_ODIR)/lzh.o \
+        $(SMBLIB_ODIR)/filewrap.o
+
+vpath %.c $(SMBLIB_SRC)
+vpath %.cpp $(SMBLIB_SRC)
+
+# Implicit C Compile Rule
+$(SMBLIB_ODIR)/%.o : %.c $(BUILD_DEPENDS)
+	@echo $(COMPILE_MSG) $<
+	$(QUIET)$(CC) $(CFLAGS) -o $@ -c $<
+
+$(SMBLIB_ODIR)/libsmb.a: $(SMBLIB_OBJS) $(BUILD_DEPENDS)
+	ar rc $@ $(SMBLIB_OBJS)
+	ranlib $@
+
