@@ -35,7 +35,7 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#define SMBUTIL_VER "2.10"
+#define SMBUTIL_VER "2.20"
 
 #define NOANALYSIS		(1L<<0)
 
@@ -95,6 +95,7 @@ char *usage=
 "       m    = maintain msg base - delete old msgs and msgs over max\n"
 "       p[k] = pack msg base (k specifies minimum packable Kbytes)\n"
 "opts:\n"
+"		c	 = create message base if it doesn't exist\n"
 "       a    = always pack msg base (disable compression analysis)\n"
 "       z[n] = set time zone (n=min +/- from UT or 'EST','EDT','CST',etc)\n"
 ;
@@ -1321,6 +1322,7 @@ int main(int argc, char **argv)
 {
 	char cmd[128]="",*p,*s;
 	int i,j,x,y;
+	BOOL create=FALSE;
 
 #ifdef __TURBOC__
 //	timezone=0; 		/* Fix for Borland C++ EST default */
@@ -1375,6 +1377,9 @@ for(x=1;x<argc;x++) {
 						tzone=PDT;
 					j=strlen(argv[x])-1;
 					break;
+				case 'C':
+					create=TRUE;
+					break;
 				default:
 					printf("\nUnknown opt '%c'\n",argv[x][j]);
 				case '?':
@@ -1395,9 +1400,20 @@ for(x=1;x<argc;x++) {
 				printf("\n\7!Error %d opening %s message base\n",i,smb.file);
 				exit(1); }
 			if(!filelength(fileno(smb.shd_fp))) {
-				printf("Empty\n");
-				smb_close(&smb);
-				continue; }
+				if(!create) {
+					printf("Empty\n");
+					smb_close(&smb);
+					continue; }
+				smb.status.max_crcs=0;
+				smb.status.max_age=0;
+				smb.status.max_msgs=1000;
+				smb.status.attr=0;
+				if((i=smb_create(&smb))!=0) {
+					smb_close(&smb);
+					printf("!Error %d (%s) creating %s\n",i,smb.last_error,smb.file);
+					continue; 
+				} 
+			}
 			for(y=0;cmd[y];y++)
 				switch(toupper(cmd[y])) {
 					case 'I':
