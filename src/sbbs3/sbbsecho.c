@@ -1616,13 +1616,7 @@ int attachment(char *bundlename,faddr_t dest, int mode)
 			if(!(hdr.attr&FIDO_FILE))		/* Not a file attach */
 				continue;
 			num_mfncrc++;
-			p=strrchr(hdr.subj,'/');
-			if(p==NULL)
-				p=strrchr(hdr.subj,'\\');
-			if(p!=NULL)
-				p++;
-			else
-				p=hdr.subj;
+			p=getfname(hdr.subj);
 			if((mfncrc=(long *)REALLOC(mfncrc,num_mfncrc*sizeof(long)))==NULL) {
 				printf("ERROR allocating %lu bytes for bundle name crc.\n"
 					,num_mfncrc*sizeof(long));
@@ -1750,13 +1744,7 @@ void pack_bundle(char *infile,faddr_t dest)
 				logprintf("ERROR line %d removing %s %s",__LINE__,str
 					,strerror(errno));
 		if(fexist(str)) {
-			p=strrchr(str,'/');
-			if(p==NULL)
-				p=strrchr(str,'\\');
-			if(p!=NULL)
-				p++;
-			else
-				p=str;
+			p=getfname(str);
 			if(flength(str)>=cfg.maxbdlsize)
 				continue;
 			file=sopen(str,O_WRONLY,SH_DENYRW);
@@ -1774,13 +1762,7 @@ void pack_bundle(char *infile,faddr_t dest)
 			if(misc&FLO_MAILER)
 				j=write_flofile(str,dest);
 			else {
-				p=strrchr(str,'/');
-				if(p==NULL)
-					p=strrchr(str,'\\');
-				if(p!=NULL)
-					p++;
-				else
-					p=str;
+				p=getfname(str);
 				j=attachment(p,dest,ATTACHMENT_ADD); }
 			if(j)
 				bail(1);
