@@ -59,12 +59,12 @@ typedef struct list_node {
 typedef struct {
 	list_node_t*		first;		/* first node in list (or NULL) */
 	list_node_t*		last;		/* last node in list (or NULL) */
-	unsigned long		flags;		/* flags passed to listInit() */
+	unsigned long		flags;		/* private use flags */
 	long				count;		/* number of nodes in list */
 } link_list_t;
 
 /* Initialization, Allocation, and Freeing of Lists and Nodes */
-link_list_t*	listInit(link_list_t*, unsigned long flags);
+link_list_t*	listInit(link_list_t* /* NULL to auto-allocate */);
 link_list_t*	listFree(link_list_t*);
 void			listFreeNodes(link_list_t*);
 void			listFreeNodeData(list_node_t* node);

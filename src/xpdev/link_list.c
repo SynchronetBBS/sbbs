@@ -39,8 +39,10 @@
 #include <string.h>		/* memset */
 #include "link_list.h"
 
-link_list_t* listInit(link_list_t* list, unsigned long flags)
+link_list_t* listInit(link_list_t* list)
 {
+	unsigned long flags=0;
+
 	if(flags&LINK_LIST_MALLOC || list==NULL) {
 		if((list=(link_list_t*)malloc(sizeof(link_list_t)))==NULL)
 			return(NULL);
