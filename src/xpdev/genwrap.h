@@ -260,7 +260,7 @@ extern "C" {
 DLLEXPORT int		DLLCALL	xp_random(int);
 DLLEXPORT char*		DLLCALL os_version(char *str);
 DLLEXPORT char*		DLLCALL	lastchar(const char* str);
-DLLEXPORT int		DLLCALL safe_snprintf(char *dst, size_t size, char *fmt, ...)
+DLLEXPORT int		DLLCALL safe_snprintf(char *dst, size_t size, char *fmt, ...);
 #if defined(__cplusplus)
 }
 #endif
