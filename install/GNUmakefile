@@ -125,8 +125,8 @@ else
 	$(INSBIN) $(SBBSDIR)/src/sbbs3/scfg/$(CCPRE).$(os).lib.$(SUFFIX)/libmailsrvr.so $(SBBSDIR)/exec/libmailsrvr.so
 	$(INSBIN) $(SBBSDIR)/src/sbbs3/scfg/$(CCPRE).$(os).lib.$(SUFFIX)/libservices.so $(SBBSDIR)/exec/libservices.so
 	$(INSBIN) $(SBBSDIR)/src/sbbs3/scfg/$(CCPRE).$(os).lib.$(SUFFIX)/libwebsrvr.so $(SBBSDIR)/exec/libwebsrvr.so
-# Terrible kludge... must fix this to allow moz JS libs and such.
-	ln -s $(SBBSDIR)/lib/mozilla/*/$(os).$(SUFFIX)/*.so $(SBBSDIR)/exec/
+# kludge... must fix this to allow moz JS libs and such.  ToDo
+	$(INSBIN) $(SBBSDIR)/lib/mozilla/*/$(os).$(SUFFIX)/*.so $(SBBSDIR)/exec/
 	-chown -R $(SBBSCHOWN) $(SBBSDIR)
 	-chown -h $(SBBSCHOWN) $(SBBSDIR)/exec/*
 endif
