@@ -83,11 +83,7 @@ long DLLCALL filelength(int fd)
 }
 
 /* Sets a lock on a portion of a file */
-#ifdef __QNX__
 int DLLCALL lock(int fd, long pos, long len)
-#else	/* Not QNX */
-int DLLCALL lock(int fd, long pos, int len)
-#endif
 {
 	#if defined(F_SANERDLCKNO) || !defined(BSD)
  		struct flock alock;
@@ -122,11 +118,7 @@ int DLLCALL lock(int fd, long pos, int len)
 }
 
 /* Removes a lock from a file record */
-#ifdef __QNX__
 int DLLCALL unlock(int fd, long pos, long len)
-#else
-int DLLCALL unlock(int fd, long pos, int len)
-#endif
 {
 
 #if defined(F_SANEUNLCK) || !defined(BSD)
@@ -219,7 +211,7 @@ int DLLCALL sopen(const char *fn, int access, int share, ...)
 	#define LK_UNLCK LK_UNLOCK
 #endif
 
-int DLLCALL lock(int file, long offset, int size) 
+int DLLCALL lock(int file, long offset, long size) 
 {
 	int	i;
 	long	pos;
@@ -233,7 +225,7 @@ int DLLCALL lock(int file, long offset, int size)
 	return(i);
 }
 
-int DLLCALL unlock(int file, long offset, int size)
+int DLLCALL unlock(int file, long offset, long size)
 {
 	int	i;
 	long	pos;
