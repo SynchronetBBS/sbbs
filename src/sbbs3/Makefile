@@ -295,4 +295,4 @@ $(ASC2ANS): asc2ans.c
 	@echo Creating $@
 	$(QUIET)$(CC) $(CFLAGS) -n$(EXEODIR) $** 
 
-
+SMBLIB:

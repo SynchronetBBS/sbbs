@@ -16,9 +16,6 @@
 SRC_ROOT	=	..
 include $(SRC_ROOT)/build/Common.gmake
 
-vpath %.c $(SMBLIB_SRC)
-vpath %.cpp $(SMBLIB_SRC)
-
 UTIL_LDFLAGS	+=	$(SMBLIB_LDFLAGS) $(UIFC-MT_LDFLAGS) $(CIOLIB-MT_LDFLAGS) $(XPDEV_LDFLAGS)
 UTIL_LIBS	+=	$(SMBLIB_LIBS)
 
