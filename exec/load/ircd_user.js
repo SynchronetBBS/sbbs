@@ -1406,10 +1406,11 @@ function User_Work() {
 			var str = cmdline.slice(cmdline.indexOf(" ")+1);
 			if (str[0] == ":")
 				str = str.slice(1);
-			if (cmd[1][1] == "#")
-				var services_target = "ChanServ";
+			var services_target;
+			if (cmd[1][0] == "#")
+				services_target = "ChanServ";
 			else
-				var services_target = "NickServ";
+				services_target = "NickServ";
 			this.services_msg(services_target,"IDENTIFY " + str);
 			break;
 		default:

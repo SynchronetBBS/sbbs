@@ -566,7 +566,8 @@ function IRCClient_do_join(chan_name,join_key) {
 				return 0;
 			}
 			if ((Channels[chan].mode&CHANMODE_LIMIT) &&
-			    (Channels[chan].count_users() >= Channels[chan].arg[CHANMODE_LIMIT])) {
+			    (true_array_len(Channels[chan].users) >=
+			     Channels[chan].arg[CHANMODE_LIMIT])) {
 				this.numeric("471", Channels[chan].nam + " :Cannot join channel (+l: channel is full)");
 				return 0;
 			}
