@@ -1,6 +1,6 @@
 object MainForm: TMainForm
-  Left = 372
-  Top = 353
+  Left = 388
+  Top = 356
   Width = 640
   Height = 400
   Caption = 'Synchronet Control Panel'
@@ -10,7 +10,7 @@ object MainForm: TMainForm
   DragMode = dmAutomatic
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
-  Font.Height = -14
+  Font.Height = -11
   Font.Name = 'MS Sans Serif'
   Font.Style = []
   Icon.Data = {
@@ -46,11 +46,11 @@ object MainForm: TMainForm
   OnCloseQuery = FormCloseQuery
   OnCreate = FormCreate
   OnShow = FormShow
-  PixelsPerInch = 120
-  TextHeight = 16
+  PixelsPerInch = 96
+  TextHeight = 13
   object HorizontalSplitter: TSplitter
     Left = 0
-    Top = 195
+    Top = 164
     Width = 632
     Height = 1
     Cursor = crVSplit
@@ -61,9 +61,9 @@ object MainForm: TMainForm
   end
   object Logo: TImage
     Left = 0
-    Top = 196
+    Top = 165
     Width = 632
-    Height = 131
+    Height = 162
     Align = alClient
     Center = True
     IncrementalDisplay = True
@@ -1888,8 +1888,13 @@ object MainForm: TMainForm
       ParentShowHint = False
       ShowHint = True
     end
-    object ViewStatsButton: TToolButton
+    object ViewWebServerButton: TToolButton
       Left = 94
+      Top = 0
+      Action = ViewWebServer
+    end
+    object ViewStatsButton: TToolButton
+      Left = 117
       Top = 0
       Hint = 'View Statistics Window'
       Action = ViewStats
@@ -1897,12 +1902,12 @@ object MainForm: TMainForm
       ShowHint = True
     end
     object ViewClientsButton: TToolButton
-      Left = 117
+      Left = 140
       Top = 0
       Action = ViewClients
     end
     object ToolButton2: TToolButton
-      Left = 140
+      Left = 163
       Top = 0
       Width = 8
       Caption = 'ToolButton2'
@@ -1910,19 +1915,19 @@ object MainForm: TMainForm
       Style = tbsSeparator
     end
     object SoundButton: TToolButton
-      Left = 148
+      Left = 171
       Top = 0
       Action = SoundToggle
       ParentShowHint = False
       ShowHint = True
     end
     object SysopAvailButton: TToolButton
-      Left = 171
+      Left = 194
       Top = 0
       Action = ChatToggle
     end
     object ToolButton1: TToolButton
-      Left = 194
+      Left = 217
       Top = 0
       Width = 8
       Caption = 'ToolButton1'
@@ -1930,17 +1935,17 @@ object MainForm: TMainForm
       Style = tbsSeparator
     end
     object UserListButton: TToolButton
-      Left = 202
+      Left = 225
       Top = 0
       Action = UserList
     end
     object EditUserButton: TToolButton
-      Left = 225
+      Left = 248
       Top = 0
       Action = UserEdit
     end
     object ToolButton3: TToolButton
-      Left = 248
+      Left = 271
       Top = 0
       Width = 8
       Caption = 'ToolButton3'
@@ -1948,7 +1953,7 @@ object MainForm: TMainForm
       Style = tbsSeparator
     end
     object ReloadConfigButton: TToolButton
-      Left = 256
+      Left = 279
       Top = 0
       Action = ReloadConfig
     end
@@ -1957,7 +1962,7 @@ object MainForm: TMainForm
     Left = 0
     Top = 30
     Width = 632
-    Height = 165
+    Height = 134
     Align = alTop
     BevelOuter = bvNone
     Constraints.MinHeight = 100
@@ -1965,18 +1970,18 @@ object MainForm: TMainForm
     TabOrder = 1
     Visible = False
     object TopVerticalSplitter: TSplitter
-      Left = 289
+      Left = 235
       Top = 0
-      Width = 3
-      Height = 165
+      Width = 2
+      Height = 134
       Cursor = crHSplit
       MinSize = 1
     end
     object UpperLeftPageControl: TPageControl
       Left = 0
       Top = 0
-      Width = 289
-      Height = 165
+      Width = 235
+      Height = 134
       Align = alLeft
       DockSite = True
       TabOrder = 0
@@ -1984,10 +1989,10 @@ object MainForm: TMainForm
       OnUnDock = PageControlUnDock
     end
     object UpperRightPageControl: TPageControl
-      Left = 292
+      Left = 237
       Top = 0
-      Width = 340
-      Height = 165
+      Width = 395
+      Height = 134
       Align = alClient
       DockSite = True
       TabOrder = 1
@@ -1997,26 +2002,26 @@ object MainForm: TMainForm
   end
   object BottomPanel: TPanel
     Left = 0
-    Top = 196
+    Top = 165
     Width = 632
-    Height = 131
+    Height = 162
     Align = alClient
     BevelOuter = bvNone
     TabOrder = 2
     Visible = False
     object BottomVerticalSplitter: TSplitter
-      Left = 289
+      Left = 235
       Top = 0
-      Width = 3
-      Height = 131
+      Width = 2
+      Height = 162
       Cursor = crHSplit
       MinSize = 1
     end
     object LowerLeftPageControl: TPageControl
       Left = 0
       Top = 0
-      Width = 289
-      Height = 131
+      Width = 235
+      Height = 162
       Align = alLeft
       DockSite = True
       TabOrder = 0
@@ -2024,10 +2029,10 @@ object MainForm: TMainForm
       OnUnDock = PageControlUnDock
     end
     object LowerRightPageControl: TPageControl
-      Left = 292
+      Left = 237
       Top = 0
-      Width = 340
-      Height = 131
+      Width = 395
+      Height = 162
       Align = alClient
       DockSite = True
       TabOrder = 1
@@ -2599,6 +2604,10 @@ object MainForm: TMainForm
       object ViewFtpServerMenuItem: TMenuItem
         Action = ViewFtpServer
       end
+      object ViewWebServerMenuItem: TMenuItem
+        Action = ViewWebServer
+        Hint = 'View Web Server Window'
+      end
       object ViewEventsMenuItem: TMenuItem
         Action = ViewEvents
       end
@@ -2663,7 +2672,6 @@ object MainForm: TMainForm
     end
     object TelnetRecycle: TAction
       Caption = 'Recycle'
-      Enabled = False
       Hint = 'Recycle Telnet Server'
       ImageIndex = 55
       OnExecute = TelnetRecycleExecute
@@ -2735,6 +2743,10 @@ object MainForm: TMainForm
       Hint = 'View FTP Server Window'
       ImageIndex = 11
       OnExecute = ViewFtpServerExecute
+    end
+    object ViewWebServer: TAction
+      Caption = '&Web Server'
+      OnExecute = ViewWebServerExecute
     end
     object FtpStart: TAction
       Hint = 'Start FTP Server'

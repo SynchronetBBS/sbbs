@@ -60,6 +60,7 @@ USEFORM("MailCfgDlgUnit.cpp", MailCfgDlg);
 USEFORM("FtpCfgDlgUnit.cpp", FtpCfgDlg);
 USEFORM("ServicesCfgDlgUnit.cpp", ServicesCfgDlg);
 USEFORM("PreviewFormUnit.cpp", PreviewForm);
+USEFORM("WebFormUnit.cpp", WebForm);
 //---------------------------------------------------------------------------
 #include "MainFormUnit.h"
 #include "SpyFormUnit.h"
@@ -75,17 +76,17 @@ WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR cmd, int)
         Application->Initialize();
         Application->Title = "Synchronet Control Panel";
 		Application->CreateForm(__classid(TMainForm), &MainForm);
-		Application->CreateForm(__classid(TTelnetForm), &TelnetForm);
-		Application->CreateForm(__classid(TFtpForm), &FtpForm);
-		Application->CreateForm(__classid(TMailForm), &MailForm);
-		Application->CreateForm(__classid(TNodeForm), &NodeForm);
-		Application->CreateForm(__classid(TStatsForm), &StatsForm);
-		Application->CreateForm(__classid(TClientForm), &ClientForm);
-		Application->CreateForm(__classid(TUserListForm), &UserListForm);
-		Application->CreateForm(__classid(TEventsForm), &EventsForm);
-		Application->CreateForm(__classid(TServicesForm), &ServicesForm);
-
-        if(cmd[0])
+         Application->CreateForm(__classid(TTelnetForm), &TelnetForm);
+         Application->CreateForm(__classid(TFtpForm), &FtpForm);
+         Application->CreateForm(__classid(TMailForm), &MailForm);
+         Application->CreateForm(__classid(TNodeForm), &NodeForm);
+         Application->CreateForm(__classid(TStatsForm), &StatsForm);
+         Application->CreateForm(__classid(TClientForm), &ClientForm);
+         Application->CreateForm(__classid(TUserListForm), &UserListForm);
+         Application->CreateForm(__classid(TEventsForm), &EventsForm);
+         Application->CreateForm(__classid(TServicesForm), &ServicesForm);
+         Application->CreateForm(__classid(TWebForm), &WebForm);
+         if(cmd[0])
             SAFECOPY(MainForm->ini_file,cmd);
         else
             sbbs_get_ini_fname(MainForm->ini_file, MainForm->global.ctrl_dir, NULL /* auto-hostname */);

@@ -12,8 +12,8 @@
       EventsFormUnit.obj ConfigWizardUnit.obj ServicesFormUnit.obj 
       TelnetCfgDlgUnit.obj MailCfgDlgUnit.obj FtpCfgDlgUnit.obj 
       ServicesCfgDlgUnit.obj ..\sbbs_ini.obj ..\..\xpdev\ini_file.obj 
-      ..\..\xpdev\dirwrap.obj 
-      ..\..\xpdev\str_list.obj PreviewFormUnit.obj ..\..\xpdev\genwrap.obj"/>
+      ..\..\xpdev\str_list.obj PreviewFormUnit.obj ..\..\xpdev\genwrap.obj 
+      WebFormUnit.obj"/>
     <RESFILES value="sbbsctrl.res"/>
     <IDLFILES value=""/>
     <IDLGENFILES value=""/>
@@ -25,7 +25,7 @@
       UserListFormUnit.dfm UserMsgFormUnit.dfm PropertiesDlgUnit.dfm 
       EventsFormUnit.dfm ConfigWizardUnit.dfm ServicesFormUnit.dfm 
       TelnetCfgDlgUnit.dfm MailCfgDlgUnit.dfm FtpCfgDlgUnit.dfm 
-      ServicesCfgDlgUnit.dfm PreviewFormUnit.dfm"/>
+      ServicesCfgDlgUnit.dfm PreviewFormUnit.dfm WebFormUnit.dfm"/>
     <LIBFILES value="sbbs.lib mailsrvr.lib ftpsrvr.lib services.lib"/>
     <LIBRARIES value="bcb2kaxserver.lib indy.lib dbxcds.lib dclocx.lib soaprtl.lib bcbie.lib 
       nmfast.lib dbexpress.lib inetdbxpress.lib inetdbbde.lib dsnapcon.lib 
@@ -57,9 +57,8 @@
     <OTHERFILES value=""/>
   </MACROS>
   <OPTIONS>
-    <IDLCFLAGS value="-I..\. -IC:\Borland\CBuilder6\Projects -I.. -I..\..\xpdev 
-      -I$(BCB)\include -I$(BCB)\include\vcl -src_suffix cpp -DSBBS -D_DEBUG 
-      -DRINGBUF_SEM -boa"/>
+    <IDLCFLAGS value="-I..\. -IC:\Borland\CBuilder6\Projects -I.. -I..\..\xpdev -I$(BCB)\include 
+      -I$(BCB)\include\vcl -src_suffix cpp -DSBBS -D_DEBUG -DRINGBUF_SEM -boa"/>
     <CFLAG1 value="-Od -H=c:\borland\CBUILD~2\lib\vcl60.csm -Hc -Vx -Ve -X- -r- -a8 -b- -k -y 
       -v -vi- -c -tW -tWM"/>
     <PFLAGS value="-$Y+ -$W -$O- -$A8 -v -JPHNE -M"/>
@@ -111,6 +110,7 @@
       <FILE FILENAME="..\..\xpdev\str_list.c" FORMNAME="" UNITNAME="str_list" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="PreviewFormUnit.cpp" FORMNAME="PreviewForm" UNITNAME="PreviewFormUnit" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="..\..\xpdev\genwrap.c" FORMNAME="" UNITNAME="genwrap" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="WebFormUnit.cpp" FORMNAME="WebForm" UNITNAME="WebFormUnit" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
   </FILELIST>
   <BUILDTOOLS>
   </BUILDTOOLS>
