@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -64,9 +64,14 @@
 
 #endif
 
-/* Do not include web server in 3.10-Win32 release build */
+/* Temporary: Do not include web server in 3.1x-Win32 release build */
 #if defined(_MSC_VER)
 	#define NO_WEB_SERVER
+#endif
+
+/* Services doesn't work without JavaScript support */
+#if !defined(JAVASCRIPT)
+	#define	NO_SERVICES
 #endif
 
 /* Constants */
@@ -732,10 +737,8 @@ static void terminate(void)
 #ifndef NO_MAIL_SERVER
 	mail_terminate();
 #endif
-#ifdef JAVASCRIPT
-  #ifndef NO_SERVICES
+#ifndef NO_SERVICES
 	services_terminate();
-  #endif
 #endif
 
 	while(bbs_running || ftp_running || web_running || mail_running || services_running)  {
@@ -1462,25 +1465,33 @@ int main(int argc, char** argv)
 	_beginthread((void(*)(void*))handle_sigs,0,NULL);
 #endif
 
-#ifndef NO_TELNET_SERVER
+#ifdef NO_TELNET_SERVER
+	run_bbs=FALSE;
+#else
 	if(run_bbs)
 		_beginthread((void(*)(void*))bbs_thread,0,&bbs_startup);
 #endif
-#ifndef NO_FTP_SERVER
+#ifdef NO_FTP_SERVER
+	run_ftp=FALSE;
+#else
 	if(run_ftp)
 		_beginthread((void(*)(void*))ftp_server,0,&ftp_startup);
 #endif
-#ifndef NO_MAIL_SERVER
+#ifdef NO_MAIL_SERVER
+	run_mail=FALSE;
+#else
 	if(run_mail)
 		_beginthread((void(*)(void*))mail_server,0,&mail_startup);
 #endif
-#ifdef JAVASCRIPT
-#ifndef NO_SERVICES
+#ifdef NO_SERVICES
+	run_services=FALSE;
+#else
 	if(run_services)
 		_beginthread((void(*)(void*))services_thread,0,&services_startup);
 #endif
-#endif
-#ifndef NO_WEB_SERVER
+#ifdef NO_WEB_SERVER
+	run_web=FALSE;
+#else
 	if(run_web)
 		_beginthread((void(*)(void*))web_server,0,&web_startup);
 #endif
