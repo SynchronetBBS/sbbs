@@ -48,6 +48,7 @@
 #include <stdarg.h>
 #include <sys/stat.h>
 
+#include "xpbeep.h"
 #include "conwrap.h"
 #include "genwrap.h"
 #include "dirwrap.h"

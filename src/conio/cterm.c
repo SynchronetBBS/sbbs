@@ -36,6 +36,7 @@
 
 #include <genwrap.h>
 #include <ciolib.h>
+#include <xpbeep.h>
 #include <keys.h>
 
 #include "cterm.h"
@@ -169,7 +170,7 @@ void playnote(int notenum, int notelen, int dotted)
 			break;
 	}
 	duration-=pauselen;
-	BEEP((note_frequency[notenum]+500)/1000,duration);
+	BEEP(((double)note_frequency[notenum])/1000,duration);
 	SLEEP(pauselen);
 }
 

@@ -62,6 +62,7 @@
 #include "ini_file.h"
 #include "eventwrap.h"
 #include "threadwrap.h"
+#include "xpbeep.h"
 
 /* sbbs */
 #include "ringbuf.h"

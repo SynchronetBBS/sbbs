@@ -41,7 +41,8 @@
 #include <stdlib.h>
 #include <ctype.h>
 
-#include "genwrap.h"	/* BEEP */
+#include "xpbeep.h"	/* BEEP */
+#include "genwrap.h"
 #include "dirwrap.h"	/* getfname */
 #include "conwrap.h"	/* kbhit */
 

@@ -43,6 +43,7 @@
 #include "gen_defs.h"	/* uchar, ushort, uint, ulong, etc. */
 #include "nodedefs.h"	/* node_t */
 #include "fidodefs.h"	/* fmsghdr_t, fpkthdr_t, FIDO_*, etc. */
+#include "xpbeep.h"		/* BEEP() */
 
 /*************/
 /* Constants */
