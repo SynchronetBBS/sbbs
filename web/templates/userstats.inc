@@ -122,7 +122,7 @@
     <td>
 	  Uploads:
 	</td>
-	<td allign="right">
+	<td align="right">
 	  %%bytes_uploaded%%
 	</td>
 	<td colspan="6">
@@ -133,7 +133,7 @@
     <td>
 	  Downloads:
 	</td>
-	<td allign="right">
+	<td align="right">
 	  %%bytes_downloaded%%
 	</td>
 	<td colspan="6">
