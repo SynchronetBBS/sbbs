@@ -101,8 +101,8 @@ Version %%JS:system.full_version%%</p>
 %%JS:system.compiled_with%%</p>
 <p>%%JS:system.copyright%% - <a href="http://www.synchro.net/">http://www.synchro.net</a></p>
 <p>%%JS:system.js_version%%</p>
-<p>%%JS:system.socket_lib%%</P>
-<p>%%JS:system.os_version%%</P>
+<p>%%JS:system.socket_lib%%</p>
+<p>%%JS:system.os_version%%</p>
 <table>
 <tr>
     <td><pre class="leftalign">@@sysinfo@@</pre></td>

@@ -17,7 +17,7 @@
 		  <input name="offset" value="%%messages:offset%%" type="checkbox" />
 	   </td>
 	   <td class="msglist">
-    		@@JS:if(@@messages:attachments@@>0) '<img alt="Attachment" src="/graphics/attach.gif">'; else '&nbsp;';@@
+    		@@JS:if(@@messages:attachments@@>0) '<img alt="Attachment" src="/graphics/attach.gif" />'; else '&nbsp;';@@
 	   </td>
 	   <td class="msglist">
 		  <a class="msglist" href="msg.ssjs?msg_grp=^^group:number^^&amp;msg_sub=^^sub:code^^&amp;message=^^messages:number^^">%%messages:subject%%</a>
@@ -28,15 +28,15 @@
 	   <td class="msglist">
 		  %%messages:to%%
 	   </td>
-	   <td class="msglist" nowrap>
+	   <td class="msglist" nowrap="nowrap">
 		  %%JS:system.timestr(@@messages:when_written_time@@)%%
 	   </td>
     </tr>
     <<END REPEAT messages>>
     </table>
-    <br>
-    <div align="center"><input class="msg" type="submit" name="Delete" value="Delete Message(s)"></div>
+    <br />
+    <div align="center"><input class="msg" type="submit" name="Delete" value="Delete Message(s)" /></div>
 </form>
 <div align="center">@@pagelinks@@</div>
-<br>
+<br />
 

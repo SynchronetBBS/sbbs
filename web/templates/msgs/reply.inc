@@ -1,11 +1,11 @@
 <form action="savemsg.ssjs" method="post">
 <table class="replymsg" border="0" cellspacing="2" cellpadding="0">
-<input type="hidden" name="msg_grp" value="%%group:number%%">
-<input type="hidden" name="msg_sub" value="%%sub:code%%">
+<input type="hidden" name="msg_grp" value="%%group:number%%" />
+<input type="hidden" name="msg_sub" value="%%sub:code%%" />
   <tbody>
     <tr>
-      <td class="replymsg">Subject: <input class="replymsg" type="text" name="subject" value="%%subject%%"></td>
-      <td class="replymsg">To: <input class="replymsg" type="text" name="to" value="%%from%%"></td>
+      <td class="replymsg">Subject: <input class="replymsg" type="text" name="subject" value="%%subject%%" /></td>
+      <td class="replymsg">To: <input class="replymsg" type="text" name="to" value="%%from%%" /></td>
     </tr>
     <tr>
       <td class="replymsg" colspan="2"><textarea class="replymsg" name=body rows="20" cols="80">%%body%%</textarea></td>

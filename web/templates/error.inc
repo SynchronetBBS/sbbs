@@ -1,2 +1,2 @@
-<H2>ERROR!</H2>
-<H3>%%err%%</H3>
+<h2>ERROR!</h2>
+<h3>%%err%%</h3>
