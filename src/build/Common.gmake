@@ -182,17 +182,13 @@ MTOBJODIR :=	$(CCPRE).$(machine).obj.$(BUILDPATH)-mt
 EXEODIR :=	$(CCPRE).$(machine).exe.$(BUILDPATH)
 LDFLAGS	+=	-L$(LIBODIR)
 
-ifeq ($(os),netbsd)
+ifeq ($(os),openbsd)
  DELETE :=	rm -f
 else
- ifeq ($(os),openbsd)
+ ifeq ($(os),sunos)
   DELETE :=	rm -f
  else
-  ifeq ($(os),sunos)
-   DELETE :=	rm -f
-  else
-   DELETE	=	rm -fv
-  endif
+  DELETE	=	rm -fv
  endif
 endif
 
@@ -221,7 +217,7 @@ ifeq ($(os),sunos)    # Solaris
  CFLAGS	+= -D__solaris__ -DNEEDS_DAEMON -DNEEDS_FORKPTY -DNEEDS_SETENV -DNEEDS_CFMAKERAW
 endif
 ifeq ($(os),netbsd)	# NetBSD
- CFLAGS	+=	-D__unix__ -I/usr/pkg/include -I/usr/pkg/pthreads/include -DNEEDS_FORKPTY
+ CFLAGS	+=	-D__unix__
 endif
 ifeq ($(os),darwin)
  CFLAGS +=  -D__unix__ -fno-common -D__DARWIN__
@@ -246,9 +242,8 @@ else
   XP_SEM    :=    1
  else
   ifeq ($(os),netbsd)    # NetBSD
-   CFLAGS    +=	-D__unix__
    MT_CFLAGS	+=	-DUSE_XP_SEMAPHORES
-   MT_LDFLAGS    +=    -L/usr/pkg/lib -L/usr/pkg/pthreads/lib -lpthread
+   MT_LDFLAGS    +=    -lpthread
    XP_SEM    :=    1
   else
    ifeq ($(os),qnx)    # QNX

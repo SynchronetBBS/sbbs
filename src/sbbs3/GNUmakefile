@@ -30,11 +30,6 @@ ifeq ($(os),sunos)    # Solaris
  LDFLAGS += -lsocket -lnsl -lrt
 endif
 
-ifeq ($(os),netbsd)
- LDFLAGS += -L/usr/pkg/lib
- UTIL_LDFLAGS	+=	-lpth -L/usr/pkg/lib
-endif
-
 # So far, only QNX has sem_timedwait()
 ifeq ($(os),qnx)
  LDFLAGS += -lsocket

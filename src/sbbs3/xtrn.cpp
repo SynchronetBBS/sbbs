@@ -48,12 +48,10 @@
 
 #if defined(__FreeBSD__)
 	#include <libutil.h>	// forkpty()
-#elif defined(__OpenBSD__)
+#elif defined(__OpenBSD__) || defined(__NetBSD__) || defined(__DARWIN__)
 	#include <util.h>
 #elif defined(__linux__)
 	#include <pty.h>
-#elif defined(__DARWIN__)
-	#include <util.h>
 #elif defined(__QNX__)
 #if 0
 	#include <unix.h>
@@ -154,7 +152,7 @@
 #ifndef TTYDEF_CFLAG
 	#define TTYDEF_CFLAG    (CREAD | CS8 | HUPCL)
 #endif
-#if defined(__QNX__) || defined(__solaris__)
+#if defined(__QNX__) || defined(__solaris__) || defined(__NetBSD__)
 	static cc_t     ttydefchars[NCCS] = {
         CEOF,   CEOL,   CEOL,   CERASE, CWERASE, CKILL, CREPRINT,
         CERASE2, CINTR, CQUIT,  CSUSP,  CDSUSP, CSTART, CSTOP,  CLNEXT,
