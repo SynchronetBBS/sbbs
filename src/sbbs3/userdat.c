@@ -472,7 +472,7 @@ char* DLLCALL username(scfg_t* cfg, int usernumber,char *strin)
 /****************************************************************************/
 /* Puts 'name' into slot 'number' in user/name.dat							*/
 /****************************************************************************/
-int putusername(scfg_t* cfg, int number, char *name)
+int DLLCALL putusername(scfg_t* cfg, int number, char *name)
 {
 	char str[256];
 	int file;
