@@ -33,6 +33,14 @@ enum {
 	,MODE_EXTAUX
 	};
 
+enum {
+	 SPY_NOSOCKET
+	,SPY_NOCONNECT
+	,SPY_SOCKETLOST
+	,SPY_STDINLOST
+	,SPY_CLOSED
+	};
+
 /********************/
 /* Global Variables */
 /********************/
@@ -60,7 +68,7 @@ void allocfail(uint size)
     bail(1);
 }
 
-void spyon(char *sockname)  {
+int spyon(char *sockname)  {
 	SOCKET		spy_sock=INVALID_SOCKET;
 	struct sockaddr_un spy_name;
 	socklen_t	spy_len;
@@ -71,6 +79,7 @@ void spyon(char *sockname)  {
 	struct	termios	old_tio;
 	struct pollfd pset[2];
 	BOOL	b;
+	int		retval=0;
 
 	/* ToDo Test for it actually being a socket! */
 	/* Well, it will fail to connect won't it?   */
@@ -78,14 +87,14 @@ void spyon(char *sockname)  {
 
 	if((spy_sock=socket(PF_LOCAL,SOCK_STREAM,0))==INVALID_SOCKET)  {
 		printf("ERROR %d creating local spy socket", errno);
-		return;
+		return(SPY_NOSOCKET);
 	}
 	
 	spy_name.sun_family=AF_LOCAL;
 	SAFECOPY(spy_name.sun_path,sockname);
 	spy_len=SUN_LEN(&spy_name);
 	if(connect(spy_sock,(struct sockaddr *)&spy_name,spy_len))  {
-		return;
+		return(SPY_NOCONNECT);
 	}
 	i=1;
 
@@ -107,12 +116,14 @@ void spyon(char *sockname)  {
 		if(!socket_check(spy_sock,NULL,&b,0)) {
 			close(spy_sock);
 			spy_sock=INVALID_SOCKET;
+			retval=SPY_SOCKETLOST;
 			break;
 		}
 		if(pset[0].revents)  {
 			if(pset[0].revents&(POLLNVAL|POLLHUP|POLLERR))  {
 				close(spy_sock);
 				spy_sock=INVALID_SOCKET;
+				retval=SPY_STDINLOST;
 				break;
 			}
 			else  {
@@ -122,6 +133,7 @@ void spyon(char *sockname)  {
 						case CTRL('c'):
 							close(spy_sock);
 							spy_sock=INVALID_SOCKET;
+							retval=SPY_CLOSED;
 							break;
 						default:
 							write(spy_sock,&key,1);
@@ -130,6 +142,7 @@ void spyon(char *sockname)  {
 				else if(i<0) {
 					close(spy_sock);
 					spy_sock=INVALID_SOCKET;
+					retval=SPY_STDINLOST;
 					break;
 				}
 			}
@@ -138,6 +151,7 @@ void spyon(char *sockname)  {
 			if(pset[1].revents&(POLLNVAL|POLLHUP|POLLERR))  {
 				close(spy_sock);
 				spy_sock=INVALID_SOCKET;
+				retval=SPY_SOCKETLOST;
 				break;
 			}
 			else  {
@@ -147,6 +161,7 @@ void spyon(char *sockname)  {
 				else if(i<0) {
 					close(spy_sock);
 					spy_sock=INVALID_SOCKET;
+					retval=SPY_SOCKETLOST;
 					break;
 				}
 			}
@@ -532,7 +547,7 @@ int main(int argc, char** argv)  {
 	int		dist=0;
 	int		server=0;
 	char revision[16];
-	char str[256],ctrl_dir[41],*p,debug=0;
+	char str[256],str2[256],ctrl_dir[41],*p,debug=0;
 	char title[256];
 	int sys_nodes,node_num=0,onoff=0;
 	int i,j,mode=0,misc;
@@ -699,12 +714,37 @@ int main(int argc, char** argv)  {
 			i=0;
 			uifc.helpbuf=	"`Node Options:`\n"
 							"\nToDo: Add help";
-			switch(uifc.list(WIN_MID,0,0,0,&i,0,"Node Options",opt))  {
+			switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"Node Options",opt))  {
 				case 0:	/* Spy */
 					snprintf(str,sizeof(str),"%slocalspy%d.sock", ctrl_dir, j+1);
 					endwin();
-					spyon(str);
+					i=spyon(str);
 					refresh();
+					switch(i) {
+						case SPY_NOSOCKET:
+							uifc.msg("Could not create socket");
+							break;
+							
+						case SPY_NOCONNECT:
+							sprintf(str2,"Failed to connect to %s",str);
+							uifc.msg(str2);
+							break;
+							
+						case SPY_SOCKETLOST:
+							uifc.msg("Spy socket lost");
+							break;
+							
+						case SPY_STDINLOST:
+							uifc.msg("STDIN has gone away... you probobly can't close this window.  :-)");
+							break;
+							
+						case SPY_CLOSED:
+							break;
+							
+						default:
+							sprintf(str,"Unknown return code %d",i);
+							uifc.msg(str);
+					}
 					break;
 
 				case 1: /* Node Toggles */
