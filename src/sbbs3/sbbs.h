@@ -65,9 +65,7 @@
 #include <sys/ioctl.h>	/* FIONBIO */
 #endif
 
-#ifdef _MSC_VER			/* Visual C++ */
-
-#include <direct.h>		/* _mkdir() prototype */
+#ifndef __BORLANDC__
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -76,17 +74,29 @@ int unlock(int file, long offset, int size);
 #ifdef __cplusplus
 }
 #endif
+#endif /* __BORLANDC__ */
+
+#ifdef _MSC_VER			/* Visual C++ */
+#include <direct.h>		/* _mkdir() prototype */
+
+#define O_DENYNONE	_SH_DENYNO
+#define O_DENYALL	_SH_DENYRW
+#define S_IWRITE	_S_IWRITE
+
 #endif	/* _MSC_VER */
+
+#ifdef __GNUC__
+#define O_DENYNONE	0
+
+#warning "ultoa needs to be defined or replaced"
+#define ultoa	ltoa
+#endif	/* __GNUC__ */
 
 #ifdef _WIN32
 #include <io.h>
 #include <share.h>
 #include <malloc.h>
 #include <process.h>	/* _beginthread */
-#endif
-
-#if 0 /* what for? */
-#include <conio.h>
 #endif
 
 #include <time.h>
