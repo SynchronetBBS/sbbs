@@ -45,6 +45,7 @@
 #if defined(__unix__)
 	#include <unistd.h>		/* usleep */
 	#include <sys/time.h>	/* struct timeval */
+	#include <sched.h>		/* sched_yield */
 #endif
 
 #if defined(__QNX__)
