@@ -1780,7 +1780,7 @@ bool sbbs_t::init()
 		thisnode.action=0;
 		thisnode.useron=0;
 		thisnode.aux=0;
-		thisnode.misc&=(NODE_EVENT|NODE_LOCK);
+		thisnode.misc&=(NODE_EVENT|NODE_LOCK|NODE_RRUN);
 		criterrs=thisnode.errors;
 		putnodedat(cfg.node_num,&thisnode);
 	}
