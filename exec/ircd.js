@@ -2890,7 +2890,7 @@ function IRCClient_set_chanmode(chan,modeline,bounce_modes) {
 				for (member in chan.modelist[cm]) {
 					cmode.delmodes += MODE[cm].modechar;
 					cmode.delmodeargs += " " +
-						chan.modelist[cm][member];
+						chan.modelist[cm][member].nick;
 					delete chan.modelist[cm][member];
 				}
 			}
