@@ -92,6 +92,41 @@ void mousedrag(unsigned char *scrollback)
 	}
 }
 
+void update_status(struct bbslist *bbs)
+{
+	char buf[160];
+	int oldscroll;
+	int olddmc;
+	struct	text_info txtinfo;
+	int now;
+	static int lastupd=0;
+	int	timeon;
+
+	now=time(NULL);
+	if(now==lastupd)
+		return;
+	lastupd=now;
+	timeon=now - bbs->connected;
+    gettextinfo(&txtinfo);
+	oldscroll=_wscroll;
+	olddmc=dont_move_cursor;
+	dont_move_cursor=TRUE;
+	textattr(YELLOW|(BLUE<<4));
+	/* Move to status line thinger */
+	window(term.x-1,term.y+term.height-1,term.x+term.width-2,term.y+term.height-1);
+	gotoxy(1,1);
+	_wscroll=0;
+	if(timeon>359999)
+		cprintf(" %-29.29s \263 %-6.6s \263 Connected: Too Long \263 CTRL-S for menu ",bbs->name,conn_types[bbs->conn_type]);
+	else
+		cprintf(" %-29.29s \263 %-6.6s \263 Connected: %02d:%02d:%02d \263 CTRL-S for menu ",bbs->name,conn_types[bbs->conn_type],timeon/3600,(timeon-(timeon/3600))/60,timeon%60);
+	_wscroll=oldscroll;
+	textattr(txtinfo.attribute);
+	window(txtinfo.winleft,txtinfo.wintop,txtinfo.winright,txtinfo.winbottom);
+	dont_move_cursor=olddmc;
+	gotoxy(txtinfo.curx,txtinfo.cury);
+}
+
 void doterm(struct bbslist *bbs)
 {
 	unsigned char ch[2];
@@ -117,6 +152,8 @@ void doterm(struct bbslist *bbs)
 	for(;;) {
 		/* Get remote input */
 		i=conn_recv(buf,sizeof(buf));
+		if(!term.nostatus)
+			update_status(bbs);
 		switch(i) {
 			case -1:
 				free(scrollback);
@@ -202,7 +239,8 @@ void doterm(struct bbslist *bbs)
 							conn_send("\r",1,0);
 					}
 					break;
-				case 17:	/* CTRL-Q */
+				case 0x2300:	/* ALT-H */
+				case 17:		/* CTRL-Q */
 					cterm_end();
 					free(scrollback);
 					conn_close();
