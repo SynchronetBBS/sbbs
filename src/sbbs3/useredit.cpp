@@ -974,7 +974,7 @@ void sbbs_t::maindflts(user_t* user)
 					console|=CON_R_ECHOX;
 					if(!(cfg.sys_misc&SM_ECHO_PW))
 						console|=CON_L_ECHOX;
-					getstr(tmp,LEN_PASS,K_UPPER);
+					getstr(tmp,LEN_PASS*2,K_UPPER);
 					console&=~(CON_R_ECHOX|CON_L_ECHOX);
 					if(strcmp(str,tmp)) {
 						bputs(text[WrongPassword]);
