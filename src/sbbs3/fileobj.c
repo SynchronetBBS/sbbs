@@ -111,7 +111,7 @@ JSObject* DLLCALL js_CreateFileAreaObject(scfg_t* cfg, JSContext* cx, JSObject* 
 		for(d=0;d<cfg->total_dirs;d++) {
 			if(cfg->dir[d]->lib!=l)
 				continue;
-			if(!chk_ar(cfg,cfg->dir[d]->dl,user))
+			if(!chk_ar(cfg,cfg->dir[d]->ar,user))
 				continue;
 
 			if((dirobj=JS_NewObject(cx, &js_file_area_class, NULL, NULL))==NULL)
