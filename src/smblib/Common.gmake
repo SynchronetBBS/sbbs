@@ -15,7 +15,7 @@ SMBLIB_OBJS	:= \
         $(SMBLIB_ODIR)/crc16.o \
         $(SMBLIB_ODIR)/crc32.o \
         $(SMBLIB_ODIR)/md5.o \
-        $(SMBLIB_ODIR)/lzh.o \
+        $(SMBLIB_ODIR)/lzh.o
 
 ifdef NEED_SMBLIB
 	CFLAGS	+=	$(SMBLIB_CFLAGS)
