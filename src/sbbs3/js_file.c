@@ -1123,7 +1123,8 @@ JSObject* DLLCALL js_CreateFileObject(JSContext* cx, JSObject* parent, char *nam
 	JSObject* obj;
 	private_t*	p;
 
-	obj = JS_DefineObject(cx, parent, name, &js_file_class, NULL, JSPROP_ENUMERATE);
+	obj = JS_DefineObject(cx, parent, name, &js_file_class, NULL
+		,JSPROP_ENUMERATE|JSPROP_READONLY);
 
 	if(obj==NULL)
 		return(NULL);

@@ -1411,7 +1411,8 @@ JSObject* DLLCALL js_CreateSystemObject(JSContext* cx, JSObject* parent
 	JSObject*	node_list;
 	JSString*	js_str;
 
-	sysobj = JS_DefineObject(cx, parent, "system", &js_system_class, NULL, JSPROP_ENUMERATE);
+	sysobj = JS_DefineObject(cx, parent, "system", &js_system_class, NULL
+		,JSPROP_ENUMERATE|JSPROP_READONLY);
 
 	if(sysobj==NULL)
 		return(NULL);
@@ -1526,7 +1527,8 @@ JSObject* DLLCALL js_CreateSystemObject(JSContext* cx, JSObject* parent
 	if(!JS_SetProperty(cx, sysobj, "uptime", &val))
 		return(NULL);
 
-	statsobj = JS_DefineObject(cx, sysobj, "stats", &js_sysstats_class, NULL, JSPROP_ENUMERATE);
+	statsobj = JS_DefineObject(cx, sysobj, "stats", &js_sysstats_class, NULL
+		,JSPROP_ENUMERATE|JSPROP_READONLY);
 
 	if(statsobj==NULL)
 		return(NULL);

@@ -161,7 +161,7 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 		areaobj = JSVAL_TO_OBJECT(val);
 	else
 		areaobj = JS_DefineObject(cx, parent, "msg_area", &js_msg_area_class
-									, NULL, JSPROP_ENUMERATE);
+									, NULL, JSPROP_ENUMERATE|JSPROP_READONLY);
 
 	if(areaobj==NULL)
 		return(NULL);

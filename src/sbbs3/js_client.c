@@ -145,7 +145,8 @@ JSObject* DLLCALL js_CreateClientObject(JSContext* cx, JSObject* parent
 {
 	JSObject*	obj;
 
-	obj = JS_DefineObject(cx, parent, name, &js_client_class, NULL, JSPROP_ENUMERATE);
+	obj = JS_DefineObject(cx, parent, name, &js_client_class, NULL
+		,JSPROP_ENUMERATE|JSPROP_READONLY);
 
 	if(obj==NULL)
 		return(NULL);

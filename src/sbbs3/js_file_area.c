@@ -72,7 +72,7 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 		areaobj = JSVAL_TO_OBJECT(val);
 	else
 		areaobj = JS_DefineObject(cx, parent, "file_area", &js_file_area_class
-								, NULL, JSPROP_ENUMERATE);
+								, NULL, JSPROP_ENUMERATE|JSPROP_READONLY);
 	if(areaobj==NULL)
 		return(NULL);
 

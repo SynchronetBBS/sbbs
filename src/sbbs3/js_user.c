@@ -807,14 +807,14 @@ js_user_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval
 
 	/* user.stats */
 	if((statsobj=JS_DefineObject(cx, obj, "stats"
-		,&js_user_stats_class, NULL, JSPROP_ENUMERATE))==NULL) 
+		,&js_user_stats_class, NULL, JSPROP_ENUMERATE|JSPROP_READONLY))==NULL) 
 		return(JS_FALSE);
 
 	JS_DefineProperties(cx, statsobj, js_user_stats_properties);
 
 	/* user.security */
 	if((securityobj=JS_DefineObject(cx, obj, "security"
-		,&js_user_security_class, NULL, JSPROP_ENUMERATE))==NULL) 
+		,&js_user_security_class, NULL, JSPROP_ENUMERATE|JSPROP_READONLY))==NULL) 
 		return(JS_FALSE);
 
 	JS_DefineProperties(cx, securityobj, js_user_security_properties);
@@ -864,7 +864,7 @@ JSObject* DLLCALL js_CreateUserObject(JSContext* cx, JSObject* parent, scfg_t* c
 		userobj = JSVAL_TO_OBJECT(val);
 	else
 		userobj = JS_DefineObject(cx, parent, name, &js_user_class
-								, NULL, JSPROP_ENUMERATE);
+								, NULL, JSPROP_ENUMERATE|JSPROP_READONLY);
 	if(userobj==NULL)
 		return(NULL);
 
@@ -891,7 +891,7 @@ JSObject* DLLCALL js_CreateUserObject(JSContext* cx, JSObject* parent, scfg_t* c
 
 	/* user.stats */
 	statsobj = JS_DefineObject(cx, userobj, "stats"
-		,&js_user_stats_class, NULL, JSPROP_ENUMERATE);
+		,&js_user_stats_class, NULL, JSPROP_ENUMERATE|JSPROP_READONLY);
 
 	if(statsobj==NULL) {
 		free(p);
@@ -909,7 +909,7 @@ JSObject* DLLCALL js_CreateUserObject(JSContext* cx, JSObject* parent, scfg_t* c
 
 	/* user.security */
 	securityobj = JS_DefineObject(cx, userobj, "security"
-		,&js_user_security_class, NULL, JSPROP_ENUMERATE);
+		,&js_user_security_class, NULL, JSPROP_ENUMERATE|JSPROP_READONLY);
 
 	if(securityobj==NULL) {
 		free(p);

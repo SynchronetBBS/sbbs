@@ -2745,7 +2745,8 @@ JSObject* js_CreateBbsObject(JSContext* cx, JSObject* parent)
 {
 	JSObject* obj;
 
-	obj = JS_DefineObject(cx, parent, "bbs", &js_bbs_class, NULL, JSPROP_ENUMERATE);
+	obj = JS_DefineObject(cx, parent, "bbs", &js_bbs_class, NULL
+		,JSPROP_ENUMERATE|JSPROP_READONLY);
 
 	if(obj==NULL)
 		return(NULL);

@@ -1199,7 +1199,8 @@ JSObject* js_CreateConsoleObject(JSContext* cx, JSObject* parent)
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(NULL);
 
-	if((obj=JS_DefineObject(cx, parent, "console", &js_console_class, NULL, JSPROP_ENUMERATE))==NULL)
+	if((obj=JS_DefineObject(cx, parent, "console", &js_console_class, NULL
+		,JSPROP_ENUMERATE|JSPROP_READONLY))==NULL)
 		return(NULL);
 
 	if(!JS_DefineProperties(cx, obj, js_console_properties))

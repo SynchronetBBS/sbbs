@@ -609,7 +609,7 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 		
 		/* server object */
 		if((server=JS_DefineObject(js_cx, js_glob, "server", &js_server_class
-			,NULL,JSPROP_ENUMERATE))==NULL)
+			,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))==NULL)
 			break;
 
 		if(!JS_DefineProperties(js_cx, server, js_server_properties))

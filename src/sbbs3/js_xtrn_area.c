@@ -146,7 +146,7 @@ JSObject* DLLCALL js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_
 		areaobj = JSVAL_TO_OBJECT(val);
 	else
 		areaobj = JS_DefineObject(cx, parent, "xtrn_area", &js_xtrn_area_class
-									, NULL, JSPROP_ENUMERATE);
+									, NULL, JSPROP_ENUMERATE|JSPROP_READONLY);
 
 	if(areaobj==NULL)
 		return(NULL);

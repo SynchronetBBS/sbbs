@@ -496,11 +496,11 @@ js_initcx(JSRuntime* runtime, SOCKET sock, JSObject** glob, JSObject** ftp)
 			break;
 
 		if((*ftp=JS_DefineObject(js_cx, js_glob, "ftp", &js_ftp_class
-			,NULL,0))==NULL)
+			,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))==NULL)
 			break;
 
 		if((server=JS_DefineObject(js_cx, js_glob, "server", &js_server_class
-			,NULL,0))==NULL)
+			,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))==NULL)
 			break;
 
 		sprintf(ver,"%s %s",FTP_SERVER,revision);

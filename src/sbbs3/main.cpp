@@ -735,7 +735,7 @@ bool sbbs_t::js_init()
 
 		/* Server Object */
 		if((server=JS_DefineObject(js_cx, js_glob, "server", &js_server_class
-			,NULL,JSPROP_ENUMERATE))==NULL)
+			,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))==NULL)
 			break;
 
 		js_DescribeObject(js_cx,server,"Server-specifc properties");

@@ -1786,7 +1786,7 @@ JSObject* DLLCALL js_CreateHttpReplyObject(JSContext* cx
 	}
 	else
 		reply = JS_DefineObject(cx, parent, "http_reply", NULL
-									, NULL, JSPROP_ENUMERATE);
+									, NULL, JSPROP_ENUMERATE|JSPROP_READONLY);
 
 	if((js_str=JS_NewStringCopyZ(cx, "200 OK"))==NULL)
 		return(FALSE);
@@ -1800,7 +1800,7 @@ JSObject* DLLCALL js_CreateHttpReplyObject(JSContext* cx
 	}
 	else
 		headers = JS_DefineObject(cx, reply, "header", NULL
-									, NULL, JSPROP_ENUMERATE);
+									, NULL, JSPROP_ENUMERATE|JSPROP_READONLY);
 
 	if((js_str=JS_NewStringCopyZ(cx, "text/html"))==NULL)
 		return(FALSE);
@@ -1826,7 +1826,7 @@ JSObject* DLLCALL js_CreateHttpRequestObject(JSContext* cx
 	}
 	else
 		request = JS_DefineObject(cx, parent, "http_request", NULL
-									, NULL, JSPROP_ENUMERATE);
+									, NULL, JSPROP_ENUMERATE|JSPROP_READONLY);
 
 	if((js_str=JS_NewStringCopyZ(session->js_cx, methods[session->req.method]))==NULL)
 		return(FALSE);
@@ -1845,7 +1845,7 @@ JSObject* DLLCALL js_CreateHttpRequestObject(JSContext* cx
 	}
 	else
 		query = JS_DefineObject(cx, request, "query", NULL
-									, NULL, JSPROP_ENUMERATE);
+									, NULL, JSPROP_ENUMERATE|JSPROP_READONLY);
 
 	
 	/* Return existing object if it's already been created */
@@ -1855,7 +1855,7 @@ JSObject* DLLCALL js_CreateHttpRequestObject(JSContext* cx
 	}
 	else
 		headers = JS_DefineObject(cx, request, "header", NULL
-									, NULL, JSPROP_ENUMERATE);
+									, NULL, JSPROP_ENUMERATE|JSPROP_READONLY);
 
 	session->js_query=query;
 	session->js_header=headers;
@@ -1990,7 +1990,8 @@ js_initcx(JSRuntime* runtime, SOCKET sock, JSObject** glob, http_session_t *sess
 		if(js_CreateSystemObject(js_cx, js_glob, &scfg, uptime, startup->host_name)==NULL) 
 			break;
 
-		if((server=JS_DefineObject(js_cx, js_glob, "server", NULL,NULL,0))==NULL)
+		if((server=JS_DefineObject(js_cx, js_glob, "server", NULL,NULL
+			,JSPROP_ENUMERATE|JSPROP_READONLY))==NULL)
 			break;
 
 		sprintf(ver,"%s %s",server_name,revision);
