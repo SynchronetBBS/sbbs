@@ -234,7 +234,7 @@ char sbbs_t::getkey(long mode)
 				else
 					outchar(ch);
 				while((coldkey=inkey(mode))==0 && online && !(sys_status&SS_ABORT))
-					checkline();
+					mswait(1);
 				bputs("\b \b");
 				if(coldkey==BS)
 					continue;
