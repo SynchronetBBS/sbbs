@@ -220,6 +220,9 @@ __published:	// IDE-managed Components
     TMenuItem *N9;
     TMenuItem *UserEditTrayMenuItem;
     TMenuItem *BBSEditNupGuessMenuItem;
+    TMenuItem *BBSEditEmailFilterMenuItem;
+    TMenuItem *BBSEditBadEmailMessageMenuItem;
+    TMenuItem *ViewHackAttemptLogMenuItem;
     void __fastcall FileExitMenuItemClick(TObject *Sender);
 	void __fastcall ViewToolbarMenuItemClick(TObject *Sender);
 	void __fastcall FormClose(TObject *Sender, TCloseAction &Action);

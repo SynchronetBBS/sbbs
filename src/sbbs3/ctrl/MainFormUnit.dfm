@@ -2250,6 +2250,16 @@ object MainForm: TMainForm
           Hint = 'BADNAME.MSG'
           OnClick = TextMenuItemEditClick
         end
+        object BBSEditEmailFilterMenuItem: TMenuItem
+          Caption = 'E-mail Address Filter'
+          Hint = 'EMAIL.CAN'
+          OnClick = TextMenuItemEditClick
+        end
+        object BBSEditBadEmailMessageMenuItem: TMenuItem
+          Caption = 'E-mail Address Filter Message'
+          Hint = 'BADEMAIL.MSG'
+          OnClick = TextMenuItemEditClick
+        end
         object BBSEditFilenameFilter: TMenuItem
           Caption = 'File Name Filter'
           Hint = 'FILE.CAN'
@@ -2466,6 +2476,12 @@ object MainForm: TMainForm
       object ViewStatusBarMenuItem: TMenuItem
         Caption = '&Status Bar'
         OnClick = ViewStatusBarMenuItemClick
+      end
+      object ViewHackAttemptLogMenuItem: TMenuItem
+        AutoHotkeys = maManual
+        Caption = 'Hack Attempt Log...'
+        Hint = 'HACK.LOG'
+        OnClick = DataMenuItemClick
       end
     end
     object HelpMenuItem: TMenuItem
