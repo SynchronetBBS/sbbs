@@ -185,13 +185,13 @@ tODResult ODKrnlInitialize(void)
    sigaddset(&block,SIGHUP);
    sigprocmask(SIG_BLOCK,&block,NULL);
 
-   /* Run kernel on SIGALRM */
+   /* Run kernel on SIGALRM (Every 1 second) */
    act.sa_handler=sig_run_kernel;
    act.sa_flags=0;
    sigemptyset(&(act.sa_mask));
    sigaction(SIGALRM,&act,NULL);
-   itv.it_interval.tv_sec=0;
-   itv.it_interval.tv_usec=250000;
+   itv.it_interval.tv_sec=1;
+   itv.it_interval.tv_usec=0;
    itv.it_value.tv_sec=0;
    itv.it_value.tv_usec=250000;
    setitimer(ITIMER_REAL,&itv,NULL);

@@ -304,6 +304,10 @@ tODResult ODInQueueGetNextEvent(tODInQueueHandle hInQueue,
    tODInputEvent *pEvent, tODMilliSec Timeout)
 {
    tInputQueueInfo *pInputQueueInfo = ODHANDLE2PTR(hInQueue, tInputQueueInfo);
+#ifdef ODPLAT_NIX
+   struct timeval tv;
+   fd_set in;
+#endif
 
    ASSERT(pInputQueueInfo != NULL);
    ASSERT(pEvent != NULL);

@@ -779,6 +779,7 @@ ODAPIDEF void ODCALL od_sleep(tODMilliSec Milliseconds)
 {
 #ifdef ODPLAT_NIX
    struct timeval tv;
+   fd_set in;
 #endif
    /* Log function entry if running in trace mode. */
    TRACE(TRACE_API, "od_sleep()");
@@ -810,13 +811,16 @@ ODAPIDEF void ODCALL od_sleep(tODMilliSec Milliseconds)
 #endif /* ODPLAT_WIN32 */
 
 #ifdef ODPLAT_NIX
-   /* Prevent 100% CPU usage! */
-   if(Milliseconds==0)
-      Milliseconds=1;
-	  
+   FD_ZERO(&in);
    tv.tv_sec=Milliseconds/1000;
    tv.tv_usec=(Milliseconds%1000)*1000;
-   select(0,NULL,NULL,NULL,&tv);
+   if(Milliseconds==0)  {
+      tv.tv_usec=1000;
+      FD_SET(1,&in);
+   }
+
+   if(select(2,Milliseconds?NULL:&in,NULL,NULL,&tv)>0)
+      od_kernel();
 #endif
 
    OD_API_EXIT();
