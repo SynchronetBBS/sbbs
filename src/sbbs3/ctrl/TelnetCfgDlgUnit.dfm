@@ -1,6 +1,6 @@
 object TelnetCfgDlg: TTelnetCfgDlg
-  Left = 402
-  Top = 155
+  Left = 366
+  Top = 194
   BorderStyle = bsDialog
   Caption = 'Telnet Server Configuration'
   ClientHeight = 288
@@ -17,8 +17,8 @@ object TelnetCfgDlg: TTelnetCfgDlg
     Top = 4
     Width = 342
     Height = 229
-    ActivePage = TelnetTabSheet
-    TabIndex = 1
+    ActivePage = GeneralTabSheet
+    TabIndex = 0
     TabOrder = 0
     object GeneralTabSheet: TTabSheet
       Caption = 'General'
@@ -89,7 +89,7 @@ object TelnetCfgDlg: TTelnetCfgDlg
         TabOrder = 1
       end
       object HostnameCheckBox: TCheckBox
-        Left = 6
+        Left = 9
         Top = 108
         Width = 144
         Height = 24
@@ -134,7 +134,7 @@ object TelnetCfgDlg: TTelnetCfgDlg
         TabOrder = 2
       end
       object IdentityCheckBox: TCheckBox
-        Left = 6
+        Left = 9
         Top = 140
         Width = 144
         Height = 24
