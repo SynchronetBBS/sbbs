@@ -56,6 +56,7 @@ else
     lastuser=system.stats.total_users;		// v3.10
 
 var sent=0;
+var rcpt_list=new Array();
 
 for(i=1; i<=lastuser; i++)
 {
@@ -74,19 +75,17 @@ for(i=1; i<=lastuser; i++)
 		hdr = { to_ext: String(u.number) };
 	
 	hdr.to = u.alias;
-	hdr.from = system.operator;
-	hdr.from_ext = "1";
-	hdr.subject = subj;  
+	rcpt_list.push(hdr);
 
-	printf("Sending mail to %s #%u\r\n", hdr.to, i);
-
-	if(!msgbase.save_msg(hdr, msgtxt))
-		log("!ERROR " + msgbase.last_error + "saving bulkmail message");
-	else {
-		log(format("Sent bulk mail message to: %s #%u", u.alias, i));
-		sent++;
-	}
+	printf("Sending mail to %s #%u\r\n", u.alias, i);
+	log(format("Sending bulk mail message to: %s #%u", u.alias, i));
+	sent++;
 }
+
+hdr = { from: system.operator, from_ext: "1", subject: subj };  
+
+if(!msgbase.save_msg(hdr, msgtxt, rcpt_list))
+	log("!ERROR " + msgbase.last_error + "saving bulkmail message");
 
 msgbase.close();
 
