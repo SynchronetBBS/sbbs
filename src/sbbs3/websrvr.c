@@ -753,6 +753,9 @@ static void close_request(http_session_t * session)
 	if(session->subscan!=NULL)
 		putmsgptrs(&scfg, session->user.number, session->subscan);
 
+	if(session->req.fp!=NULL)
+		fclose(session->req.fp);
+
 	if(session->req.cleanup_file!=NULL) {
 		if(!(startup->options&WEB_OPT_DEBUG_SSJS))
 			remove(session->req.cleanup_file);
@@ -2750,8 +2753,10 @@ static BOOL exec_ssjs(http_session_t* session)  {
 
 	if(js_script!=NULL) 
 		JS_DestroyScript(session->js_cx, js_script);
-	if(session->req.fp!=NULL)
+	if(session->req.fp!=NULL) {
 		fclose(session->req.fp);
+		session->req.fp=NULL;
+	}
 
 	SAFECOPY(session->req.physical_path, path);
 	session->req.dynamic=IS_SSJS;
