@@ -1538,7 +1538,7 @@ static BOOL check_request(http_session_t * session)
 	return(TRUE);
 }
 
-static BOOL exec_cgi(http_session_t *session)  
+static BOOL exec_cgi(http_session_t *session)
 {
 	char	cmdline[MAX_PATH+256];
 #ifdef __unix__
@@ -1564,6 +1564,8 @@ static BOOL exec_cgi(http_session_t *session)
 	BOOL	done_wait=FALSE;
 	BOOL	got_valid_headers=FALSE;
 	time_t	start;
+	char	cgipath[MAX_PATH+1];
+	char	*p;
 #endif
 
 	SAFECOPY(cmdline,session->req.physical_path);
@@ -1619,6 +1621,13 @@ static BOOL exec_cgi(http_session_t *session)
 		close(err_pipe[0]);		/* close read-end of pipe */
 		dup2(err_pipe[1],2);	/* stderr */
 		close(err_pipe[1]);		/* close excess file descriptor */
+
+		SAFECOPY(cgipath,cmdline);
+		if((p=strrchr(cgipath,'/'))!=NULL)
+		{
+			*p=0;
+			chdir(cgipath);
+		}
 
 		/* Execute command */
 		execl(cmdline,cmdline,NULL);
