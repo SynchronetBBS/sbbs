@@ -244,7 +244,7 @@ xp_sem_setvalue(xp_sem_t *sem, int sval)
 	_SEM_CHECK_VALIDITY(sem);
 
 	pthread_mutex_lock(&(*sem)->lock);
-	(int)(*sem)->count=sval;
+	(*sem)->count=(u_int32_t)sval;
 	if (((*sem)->nwaiters > 0) && sval) {
 		/*
 		 * We must use pthread_cond_broadcast() rather than
