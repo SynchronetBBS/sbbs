@@ -58,6 +58,7 @@ int DLLCALL getmail(scfg_t* cfg, int usernumber, BOOL sent)
 		return(0);
 	if(!usernumber) 
 		return(l/sizeof(idxrec_t)); 	/* Total system e-mail */
+	smb.subnum=INVALID_SUB;
 	if(smb_open(&smb)!=0) 
 		return(0); 
 	while(!smb_feof(smb.sid_fp)) {
@@ -297,6 +298,7 @@ void sbbs_t::delallmail(uint usernumber)
 		return; }
 	sprintf(smb.file,"%smail",cfg.data_dir);
 	smb.retry_time=cfg.smb_retry_time;
+	smb.subnum=INVALID_SUB;
 	if((i=smb_open(&smb))!=0) {
 		errormsg(WHERE,ERR_OPEN,smb.file,i,smb.last_error);
 		smb_stack(&smb,SMB_STACK_POP);

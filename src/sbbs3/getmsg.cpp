@@ -337,6 +337,7 @@ ulong sbbs_t::getmsgnum(uint subnum, time_t t)
 
 	sprintf(smb.file,"%s%s",cfg.sub[subnum]->data_dir,cfg.sub[subnum]->code);
 	smb.retry_time=cfg.smb_retry_time;
+	smb.subnum=subnum;
 	if((i=smb_open(&smb))!=0) {
 		errormsg(WHERE,ERR_OPEN,smb.file,i,smb.last_error);
 		return(0); }
@@ -395,6 +396,7 @@ time_t sbbs_t::getmsgtime(uint subnum, ulong ptr)
 
 	sprintf(smb.file,"%s%s",cfg.sub[subnum]->data_dir,cfg.sub[subnum]->code);
 	smb.retry_time=cfg.smb_retry_time;
+	smb.subnum=subnum;
 	if((i=smb_open(&smb))!=0) {
 		errormsg(WHERE,ERR_OPEN,smb.file,i,smb.last_error);
 		return(0); }
@@ -464,6 +466,7 @@ ulong sbbs_t::getlastmsg(uint subnum, ulong *ptr, time_t *t)
 
 	sprintf(smb.file,"%s%s",cfg.sub[subnum]->data_dir,cfg.sub[subnum]->code);
 	smb.retry_time=cfg.smb_retry_time;
+	smb.subnum=subnum;
 	if((i=smb_open(&smb))!=0) {
 		errormsg(WHERE,ERR_OPEN,smb.file,i,smb.last_error);
 		return(0); }

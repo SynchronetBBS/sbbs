@@ -431,6 +431,7 @@ for(i=0;i<total_subs;i++) {
 		,LEN_GSNAME,grp[sub[i]->grp]->sname,sub[i]->lname);
 	sprintf(smb.file,"%s%s",sub[i]->data_dir,sub[i]->code);
 	smb.retry_time=30;
+	smb.sunum=i;
 	if((j=smb_open(&smb))!=0) {
 		printf("smb_open returned %d\n",j);
 		continue; }

@@ -2748,6 +2748,7 @@ void node_thread(void* arg)
 		lprintf("Purging deleted/expired e-mail");
 		sprintf(sbbs->smb.file,"%smail",sbbs->cfg.data_dir);
 		sbbs->smb.retry_time=sbbs->cfg.smb_retry_time;
+		sbbs->smb.subnum=INVALID_SUB;
 		if((i=smb_open(&sbbs->smb))!=0)
 			sbbs->errormsg(WHERE,ERR_OPEN,sbbs->smb.file,i,sbbs->smb.last_error);
 		else {

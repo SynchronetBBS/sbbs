@@ -1140,6 +1140,7 @@ bool sbbs_t::movemsg(smbmsg_t* msg, uint subnum)
 
 	sprintf(smb.file,"%s%s",cfg.sub[newsub]->data_dir,cfg.sub[newsub]->code);
 	smb.retry_time=cfg.smb_retry_time;
+	smb.subnum=newsub;
 	if((i=smb_open(&smb))!=0) {
 		FREE(buf);
 		smb_stack(&smb,SMB_STACK_POP);

@@ -322,6 +322,7 @@ void sbbs_t::qwk_success(ulong msgcnt, char bi, char prepack)
 	if(useron.qwk&(QWK_EMAIL|QWK_ALLMAIL)) {
 		sprintf(smb.file,"%smail",cfg.data_dir);
 		smb.retry_time=cfg.smb_retry_time;
+		smb.subnum=INVALID_SUB;
 		if((i=smb_open(&smb))!=0) {
 			errormsg(WHERE,ERR_OPEN,smb.file,i,smb.last_error);
 			return; }

@@ -134,6 +134,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 			smb_stack(&smb,SMB_STACK_PUSH);
 			sprintf(smb.file,"%smail",cfg.data_dir);
 			smb.retry_time=cfg.smb_retry_time;
+			smb.subnum=INVALID_SUB;
 			if((k=smb_open(&smb))!=0) {
 				errormsg(WHERE,ERR_OPEN,smb.file,k,smb.last_error);
 				smb_stack(&smb,SMB_STACK_POP);
@@ -191,6 +192,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 			lastsub=INVALID_SUB;
 			sprintf(smb.file,"%s%s",cfg.sub[j]->data_dir,cfg.sub[j]->code);
 			smb.retry_time=cfg.smb_retry_time;
+			smb.subnum=j;
 			if((k=smb_open(&smb))!=0) {
 				errormsg(WHERE,ERR_OPEN,smb.file,k,smb.last_error);
 				continue; 

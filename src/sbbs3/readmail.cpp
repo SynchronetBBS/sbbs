@@ -70,6 +70,7 @@ void sbbs_t::readmail(uint usernumber, int which)
 		return; }
 	sprintf(smb.file,"%smail",cfg.data_dir);
 	smb.retry_time=cfg.smb_retry_time;
+	smb.subnum=INVALID_SUB;
 	if((i=smb_open(&smb))!=0) {
 		smb_stack(&smb,SMB_STACK_POP);
 		errormsg(WHERE,ERR_OPEN,smb.file,i,smb.last_error);
@@ -209,6 +210,7 @@ void sbbs_t::readmail(uint usernumber, int which)
 
 		if(domsg && !(sys_status&SS_ABORT)) {
 
+			msg.subnum=INVALID_SUB;
 			show_msg(&msg
 				,msg.from_ext && msg.idx.from==1 && !msg.from_net.type
 					? 0:P_NOATCODES);
