@@ -1884,8 +1884,7 @@ int natvpgm_cfg()
 
 while(1) {
 	for(i=0;i<MAX_OPTS && i<cfg.total_natvpgms;i++)
-		sprintf(opt[i],"%-12s %-12s",cfg.natvpgm[i]->name
-			,cfg.natvpgm[i]->misc&OS2_POPEN ? "(port open)":nulstr);
+		sprintf(opt[i],"%-12s",cfg.natvpgm[i]->name);
 	opt[i][0]=0;
 	j=WIN_ACT|WIN_CHE|WIN_L2R|WIN_SAV;
 	uifc.savnum=0;
