@@ -2,6 +2,8 @@
 
 // Synchronet Newsgroup Link/Gateway Module
 
+// $Id$
+
 // Configuration file (in ctrl/newslink.cfg) format:
 
 // ;this line is a comment
@@ -12,11 +14,12 @@
 // area		subboard (internal code) newsgroup
 // ...
 
-const VERSION="1.00 Beta"
+const REVISION = "$Revision$".split(' ')[1];
 
-printf("Synchronet NewsLink session started (v%s)\r\n", VERSION);
+printf("Synchronet NewsLink %s session started\r\n", REVISION);
 
-var tearline = format("--- Synchronet NewsLink v%s\r\n",VERSION);
+var tearline = format("--- Synchronet %s%s-%s NewsLink %s\r\n"
+					  ,system.version,system.revision,system.platform,REVISION);
 var tagline	=  format(" *  %s - %s - telnet://%s\r\n"
 					  ,system.name,system.location,system.inetaddr);
 var antispam = format("remove-%s-this."
@@ -322,8 +325,8 @@ for(i in area) {
 			+ system.inetaddr
 			+ " [Synchronet "
 			+ system.version + system.revision 
-			+ "/" + system.platform
-			+ " NewsLink " + VERSION
+			+ "-" + system.platform
+			+ " NewsLink " + REVISION
 			+ "]"
 			);
 
@@ -550,7 +553,7 @@ readln();
 
 delete socket;
 
-printf("Synchronet NewsLink session complete (%lu exported, %lu imported)\r\n"
-	   ,exported, imported);
+printf("Synchronet NewsLink %s session complete (%lu exported, %lu imported)\r\n"
+	   ,REVISION, exported, imported);
 
 /* End of newslink.js */
