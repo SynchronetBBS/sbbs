@@ -1375,7 +1375,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 /*************************************************************************/
 /* This function is a windowed input string input routine.               */
 /*************************************************************************/
-int uinput(int mode, int left, int top, char *prompt, char *str,
+int uinput(int mode, int left, int top, char *inprompt, char *str,
 	int max, int kmode)
 {
 	unsigned char save_buf[2048],in_win[2048]
@@ -1384,9 +1384,11 @@ int uinput(int mode, int left, int top, char *prompt, char *str,
 	int height=3;
 	int i,plen,slen,j;
 	int	iwidth;
+	char *prompt;
 
 	reset_dynamic();
-	plen=strlen(prompt);
+	plen=strlen(inprompt);
+	prompt=strdup(inprompt);
 	if(!plen)
 		slen=4;
 	else
@@ -1406,6 +1408,16 @@ int uinput(int mode, int left, int top, char *prompt, char *str,
 		gettext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT+left+width+1
 			,SCRN_TOP+top+height,save_buf);
 	iwidth=width-plen-slen;
+	while(iwidth<1 && plen>4) {
+		plen=strlen(prompt);
+		prompt[plen-1]=0;
+		prompt[plen-2]='.';
+		prompt[plen-3]='.';
+		prompt[plen-4]='.';
+		plen--;
+		iwidth=width-plen-slen;
+	}
+
 	i=0;
 	in_win[i++]='É';
 	in_win[i++]=hclr|(bclr<<4);
@@ -1495,6 +1507,7 @@ int uinput(int mode, int left, int top, char *prompt, char *str,
 	if(mode&WIN_SAV)
 		puttext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT+left+width+1
 			,SCRN_TOP+top+height,save_buf);
+	free(prompt);
 	return(i);
 }
 
