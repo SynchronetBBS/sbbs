@@ -44,37 +44,13 @@ if_true
 	add c 1
 	goto top
 	end_if
-compare_str "GUEST"
-if_true
-	setstr "%q"
-	compare_str "VERTx"
-	if_true
-		no_yes "Are you a registered Synchronet owner"
-		if_false
-			print "\r\n\1h\1rLogon as \1wNEW\1r to create your account.\r\n"
-			goto top
-			end_if
-		end_if
-	setstr "Guest"
-	end_if
 compare_str "NEW"
 if_true
-	setstr "%q"
-	compare_str "VERTx"
-	if_true
-		yes_no "Are you calling just to download the Synchronet DEMO"
-		if_true
-			setstr "Guest"
-			login "PW: "
-			if_true
-				logon
-				if_true
-					return
-					end_if
-				end_if
-			end_if
-		end_if
 	newuser
+	if_false
+		add c 1
+		goto top
+		end_if
 	logon
 	return
 	end_if
