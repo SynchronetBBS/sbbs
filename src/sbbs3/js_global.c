@@ -1414,10 +1414,7 @@ static jsMethodSpec js_global_functions[] = {
 	,JSDOCSTR("returns base64-encoded version of text string or <i>null</i> on error")
 	},
 	{"base64_decode",	js_b64_decode,		1,	JSTYPE_STRING,	JSDOCSTR("string text")
-	,JSDOCSTR("returns base64-decoded text string or <i>null</i> on error")
-	},
-	{"md5_calc",		js_md5_calc,		1,	JSTYPE_STRING,	JSDOCSTR("string text [,bool hex]")
-	,JSDOCSTR("calculate and return MD5 digest of string encoded in base64 (default) or hexadecimal")
+	,JSDOCSTR("returns base64-decoded text string or <i>null</i> on error (not useful for binary data)")
 	},
 	{"crc16_calc",		js_crc16,			1,	JSTYPE_NUMBER,	JSDOCSTR("string text")
 	,JSDOCSTR("calculate and return 16-bit CRC of text string")
@@ -1427,6 +1424,9 @@ static jsMethodSpec js_global_functions[] = {
 	},		
 	{"chksum_calc",		js_chksum,			1,	JSTYPE_NUMBER,	JSDOCSTR("string text")
 	,JSDOCSTR("calculate and return 32-bit checksum of text string")
+	},
+	{"md5_calc",		js_md5_calc,		1,	JSTYPE_STRING,	JSDOCSTR("string text [,bool hex]")
+	,JSDOCSTR("calculate and return 128-bit MD5 digest of text string, result encoded in base64 (default) or hexadecimal")
 	},
 	{"resolve_ip",		js_resolve_ip,		1,	JSTYPE_STRING,	JSDOCSTR("string hostname")
 	,JSDOCSTR("resolve IP address of specified hostname")
