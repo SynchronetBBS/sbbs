@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -475,25 +475,25 @@ typedef struct _PACK {		/* Message base status header */
 
 typedef struct _PACK {		/* Message header */
 
-	uchar	id[LEN_HEADER_ID];	/* SHD<^Z> */
-    ushort  type;           /* Message type (normally 0) */
-    ushort  version;        /* Version of type (initially 100h for 1.00) */
-    ushort  length;         /* Total length of fixed record + all fields */
-	ushort	attr;			/* Attributes (bit field) (duped in SID) */
-	ulong	auxattr;		/* Auxillary attributes (bit field) */
-    ulong   netattr;        /* Network attributes */
-	when_t	when_written;	/* Date/time/zone message was written */
-	when_t	when_imported;	/* Date/time/zone message was imported */
-    ulong   number;         /* Message number */
-    ulong   thread_orig;    /* Original message number in thread */
-    ulong   thread_next;    /* Next message in thread */
-    ulong   thread_first;   /* First reply to this message */
-	ushort	delivery_attempts;	/* Delivery attempt counter */
-	ulong	times_downloaded;	/* Total number of times downloaded */
-	ulong	last_downloaded;	/* Date/time of last download */
-	uchar	reserved[6];	/* Reserved for future use */
-    ulong   offset;         /* Offset for buffer into data file (0 or mod 256) */
-	ushort	total_dfields;	/* Total number of data fields */
+	/* 00 */ uchar	id[LEN_HEADER_ID];	/* SHD<^Z> */
+    /* 04 */ ushort	type;				/* Message type (normally 0) */
+    /* 06 */ ushort	version;			/* Version of type (initially 100h for 1.00) */
+    /* 08 */ ushort	length;				/* Total length of fixed record + all fields */
+	/* 0a */ ushort	attr;				/* Attributes (bit field) (duped in SID) */
+	/* 0c */ ulong	auxattr;			/* Auxillary attributes (bit field) */
+    /* 10 */ ulong	netattr;			/* Network attributes */
+	/* 14 */ when_t	when_written;		/* Date/time/zone message was written */
+	/* 1a */ when_t	when_imported;		/* Date/time/zone message was imported */
+    /* 20 */ ulong	number;				/* Message number */
+    /* 24 */ ulong	thread_orig;		/* Original message number in thread */
+    /* 28 */ ulong	thread_next;		/* Next message in thread */
+    /* 2c */ ulong	thread_first;		/* First reply to this message */
+	/* 30 */ ushort	delivery_attempts;	/* Delivery attempt counter */
+	/* 32 */ ulong	times_downloaded;	/* Total number of times downloaded */
+	/* 36 */ ulong	last_downloaded;	/* Date/time of last download */
+	/* 3a */ uchar	reserved[6];		/* Reserved for future use */
+    /* 40 */ ulong	offset;				/* Offset for buffer into data file (0 or mod 256) */
+	/* 44 */ ushort	total_dfields;		/* Total number of data fields */
 
 	} msghdr_t;
 
