@@ -11,7 +11,7 @@
 // port		TCP port number (defaults to 119)
 // user		username (optional)
 // pass		password (optional)
-// area		subboard (internal code) newsgroup flags
+// area		subboard (internal code) newsgroup flags [attachment_dir]
 // ...
 
 // Defined area flags:
@@ -20,6 +20,7 @@
 // t		do not add tearline to imported messages
 // a		convert extended-ASCII chars to ASCII on imported messages
 // r		remove "Newsgroups:" header field from imported messages
+// u		uudecode attachments
 
 const REVISION = "$Revision$".split(' ')[1];
 
@@ -47,7 +48,7 @@ var reset_export_ptrs = false;		// Reset export pointers, export all messages
 var update_export_ptrs = false;		// Update export pointers, don't export anything
 var email_addresses = true;			// Include e-mail addresses in headers
 var import_amount = 0;				// Import a fixed number of messages per group
-var lines_per_yield = 10;			// Release time-slices ever x number of lines
+var lines_per_yield = 5;			// Release time-slices ever x number of lines
 
 // Parse arguments
 for(i=0;i<argc;i++) {
@@ -241,6 +242,13 @@ for(i in area) {
 		continue;
 	}
 
+	attachment_dir=area[i][4];
+	if(attachment_dir==undefined)
+		attachment_dir=msgbase.cfg.data_dir+"attach";
+	mkdir(attachment_dir);
+	if(attachment_dir.substr(-1)!='/')
+		attachment_dir+="/";
+
 	/*********************/
 	/* Read Pointer File */
 	/*********************/
@@ -425,21 +433,25 @@ for(i in area) {
 				printf("!ARTICLE %lu ERROR: %s\r\n",ptr,rsp);
 			continue;
 		}
-		if(flags.indexOf('n')==-1)
-			body=format("\1n\1b\1hFrom Newsgroup\1n\1b: \1h\1c%s\1n\r\n\r\n",newsgroup);
-		else
-			body="";
+		body="";
 		header=true;
 		var hdr={ from: "", to: newsgroup, subject: "", id: "" };
 		var line_counter=0;
+		var recv_lines=0;
+		var file;
 		while(socket.is_connected) {
+
+			if(recv_lines && lines_per_yield && (recv_lines%lines_per_yield)==0)
+				sleep(1);
 
 			line = socket.recvline(512 /*maxlen*/, 300 /*timeout*/);
 
 			if(line==null) {
-				print("!TIMEOUT waiting for text line");
+				print("!TIMEOUT waiting for text line\r\n");
 				break;
 			}
+
+			recv_lines++;
 
 			//printf("msgtxt: %s\r\n",line);
 
@@ -455,16 +467,50 @@ for(i in area) {
 			if(!header) {	/* Body text, append to 'body' */
 				if(line.charAt(0)=='.')
 					line=line.slice(1);		// Skip prepended dots
+
+				if(flags.indexOf('u')>=0) {	// uudecode attachments
+					if(line.substr(0,6)=="begin ") {
+						// Parse uuencode header
+						arg=line.split(' ');
+						arg.splice(0,2);	// strip "begin 666 "
+						fname=getfilename(arg.join("_"));		// replace spaces in filename with underscores
+						if(file_exists(attachment_dir + fname)) // generate unique name, if necessary
+							fname=ptr + "_" + fname;
+						fname=attachment_dir + fname;
+
+						file=new File(fname);
+						file.uuencoded=true;
+						if(file.open("wb"))
+							printf("Receiving/decoding attachment: %s\r\n",file.name);
+						else
+							printf("!ERROR %s opening %s\r\n",errno_str,file.name);
+						continue;
+					} 
+					if(file!=undefined && file.is_open==true) {
+						if(line=="end")
+							file.close();
+						else
+							if(!file.write(line))
+								printf("!ERROR decoding/writing: %s\r\n",line);
+						continue;
+					}
+				}
 				body += line;
 				body += "\r\n";
 				line_counter++;
-				if(lines_per_yield && (line_counter%lines_per_yield)==0)
-					sleep(1);
 				continue;
 			}
 			//print(line);
 
 			parse_news_header(hdr,line);	// from newsutil.js
+		}
+
+		if(file!=undefined)
+			file.close();
+
+		if(truncsp(body).length==0) {
+			printf("Not importing blank message: %lu",ptr);
+			continue;
 		}
 
 		if(hdr.to==newsgroup && hdr.newsgroups!=undefined)
@@ -487,6 +533,9 @@ for(i in area) {
 			continue;
 		}
 
+		if(flags.indexOf('n')==-1)
+			body=format("\1n\1b\1hFrom Newsgroup\1n\1b: \1h\1c%s\1n\r\n\r\n",newsgroup) + body;
+
 		if(flags.indexOf('a')>=0) {	// import ASCII only (convert ex-ASCII to ASCII)
 			body = ascii_str(body);
 			hdr.subject = ascii_str(hdr.subject);
@@ -500,8 +549,8 @@ for(i in area) {
 			body += tearline;
 		if(msgbase.save_msg(hdr,body)) {
 			imported++;
-			printf("Message %lu imported into %s (%lu of %lu total)\r\n"
-				,ptr,sub,imported,msgbase.total_msgs);
+			printf("Message %lu imported into %s (%lu of %lu total) %lu lines\r\n"
+				,ptr, sub, imported, msgbase.total_msgs, line_counter);
 		} else
 			printf("!IMPORT %lu ERROR: %s\r\n", ptr, msgbase.last_error);
 	}
