@@ -134,7 +134,6 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 			for(c=0;str[c];c++)
 				if(str[c]==' ')
 					str[c]='_';
-			strlwr(str);
 			val=STRING_TO_JSVAL(JS_NewStringCopyZ(cx, str));
 			if(!JS_SetProperty(cx, subobj, "newsgroup", &val))
 				return(NULL);
