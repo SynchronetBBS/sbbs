@@ -94,7 +94,7 @@ static DWORD	served=0;
 static BOOL		recycle_server=FALSE;
 static char		revision[16];
 static char 	*text[TOTAL_TEXT];
-#ifdef _DEBUG
+#if 0 //def _DEBUG
 	static BYTE 	socket_debug[0x10000]={0};
 
 	#define	SOCKET_DEBUG_CTRL		(1<<0)	// 0x01
@@ -1138,11 +1138,11 @@ int sockreadline(SOCKET socket, char* buf, int len, time_t* lastactive)
 			recverror(socket,i,__LINE__);
 			return(i);
 		}
-#ifdef _DEBUG
+#ifdef SOCKET_DEBUG_RECV_CHAR
 		socket_debug[socket]|=SOCKET_DEBUG_RECV_CHAR;
 #endif
 		i=recv(socket, &ch, 1, 0);
-#ifdef _DEBUG
+#ifdef SOCKET_DEBUG_RECV_CHAR
 		socket_debug[socket]&=~SOCKET_DEBUG_RECV_CHAR;
 #endif
 		if(i<1) {
@@ -1365,7 +1365,7 @@ static void send_thread(void* arg)
 		return;
 	}
 
-#if defined(_DEBUG) && defined(SOCKET_DEBUG_SENDTHREAD)
+#ifdef SOCKET_DEBUG_SENDTHREAD
 			socket_debug[xfer.ctrl_sock]|=SOCKET_DEBUG_SENDTHREAD;
 #endif
 
@@ -1432,11 +1432,11 @@ static void send_thread(void* arg)
 		if(rd<1) /* EOF or READ error */
 			break;
 
-#ifdef _DEBUG
+#ifdef SOCKET_DEBUG_SEND
 		socket_debug[xfer.ctrl_sock]|=SOCKET_DEBUG_SEND;
 #endif
 		wr=sendsocket(*xfer.data_sock,buf,rd);
-#ifdef _DEBUG
+#ifdef SOCKET_DEBUG_SEND
 		socket_debug[xfer.ctrl_sock]&=~SOCKET_DEBUG_SEND;
 #endif
 		if(wr<1) {
@@ -1572,7 +1572,7 @@ static void send_thread(void* arg)
 	else if(xfer.delfile && !error)
 		remove(xfer.filename);
 
-#if defined(_DEBUG) && defined(SOCKET_DEBUG_SENDTHREAD)
+#if defined(SOCKET_DEBUG_SENDTHREAD)
 			socket_debug[xfer.ctrl_sock]&=~SOCKET_DEBUG_SENDTHREAD;
 #endif
 
@@ -1683,11 +1683,11 @@ static void receive_thread(void* arg)
 			continue;
 		}
 
-#if defined(_DEBUG) && defined(SOCKET_DEBUG_RECV_BUF)
+#if defined(SOCKET_DEBUG_RECV_BUF)
 		socket_debug[xfer.ctrl_sock]|=SOCKET_DEBUG_RECV_BUF;
 #endif
 		rd=recv(*xfer.data_sock,buf,sizeof(buf),0);
-#if defined(_DEBUG) && defined(SOCKET_DEBUG_RECV_BUF)
+#if defined(SOCKET_DEBUG_RECV_BUF)
 		socket_debug[xfer.ctrl_sock]&=~SOCKET_DEBUG_RECV_BUF;
 #endif
 		if(rd<1) {
@@ -1952,11 +1952,11 @@ static void filexfer(SOCKADDR_IN* addr, SOCKET ctrl_sock, SOCKET pasv_sock, SOCK
 		FD_ZERO(&socket_set);
 		FD_SET(pasv_sock,&socket_set);
 
-#if defined(_DEBUG) && defined(SOCKET_DEBUG_SELECT)
+#if defined(SOCKET_DEBUG_SELECT)
 		socket_debug[ctrl_sock]|=SOCKET_DEBUG_SELECT;
 #endif
 		result=select(pasv_sock+1,&socket_set,NULL,NULL,&tv);
-#if defined(_DEBUG) && defined(SOCKET_DEBUG_SELECT)
+#if defined(SOCKET_DEBUG_SELECT)
 		socket_debug[ctrl_sock]&=~SOCKET_DEBUG_SELECT;
 #endif
 		if(result<1) {
@@ -1969,11 +1969,11 @@ static void filexfer(SOCKADDR_IN* addr, SOCKET ctrl_sock, SOCKET pasv_sock, SOCK
 		}
 			
 		addr_len=sizeof(SOCKADDR_IN);
-#ifdef _DEBUG
+#ifdef SOCKET_DEBUG_ACCEPT
 		socket_debug[ctrl_sock]|=SOCKET_DEBUG_ACCEPT;
 #endif
 		*data_sock=accept(pasv_sock,(struct sockaddr*)addr,&addr_len);
-#ifdef _DEBUG
+#ifdef SOCKET_DEBUG_ACCEPT
 		socket_debug[ctrl_sock]&=~SOCKET_DEBUG_ACCEPT;
 #endif
 		if(*data_sock==INVALID_SOCKET) {
@@ -2462,16 +2462,16 @@ static void ctrl_thread(void* arg)
 	}
 	sockprintf(sock,"220 Please enter your user name.");
 
-#ifdef _DEBUG
+#ifdef SOCKET_DEBUG_CTRL
 	socket_debug[sock]|=SOCKET_DEBUG_CTRL;
 #endif
 	while(1) {
 
-#ifdef _DEBUG
+#ifdef SOCKET_DEBUG_READLINE
 		socket_debug[sock]|=SOCKET_DEBUG_READLINE;
 #endif
 		rd = sockreadline(sock, buf, sizeof(buf), &lastactive);
-#ifdef _DEBUG
+#ifdef SOCKET_DEBUG_READLINE
 		socket_debug[sock]&=~SOCKET_DEBUG_READLINE;
 #endif
 		if(rd<1) {
@@ -2781,7 +2781,7 @@ static void ctrl_thread(void* arg)
 		}
 
 
-#ifdef _DEBUG
+#ifdef SOCKET_DEBUG_CTRL
 		if(!stricmp(cmd, "SITE DEBUG")) {
 			sockprintf(sock,"211-Debug");
 			for(i=0;i<sizeof(socket_debug);i++) 
@@ -3932,7 +3932,7 @@ static void ctrl_thread(void* arg)
 					} 
 				}
 			}
-#if defined(_DEBUG) && defined(SOCKET_DEBUG_DOWNLOAD)
+#if defined(SOCKET_DEBUG_DOWNLOAD)
 			socket_debug[sock]|=SOCKET_DEBUG_DOWNLOAD;
 #endif
 
@@ -3968,7 +3968,7 @@ static void ctrl_thread(void* arg)
 					,sock,user.alias,vpath(lib,dir,str),p,cmd);
 			}
 			filepos=0;
-#if defined(_DEBUG) && defined(SOCKET_DEBUG_DOWNLOAD)
+#if defined(SOCKET_DEBUG_DOWNLOAD)
 			socket_debug[sock]&=~SOCKET_DEBUG_DOWNLOAD;
 #endif
 			continue;
@@ -4291,7 +4291,7 @@ static void ctrl_thread(void* arg)
 			,sock,user.alias,cmd);
 	} /* while(1) */
 
-#if defined(_DEBUG) && defined(SOCKET_DEBUG_TERMINATE)
+#if defined(SOCKET_DEBUG_TERMINATE)
 	socket_debug[sock]|=SOCKET_DEBUG_TERMINATE;
 #endif
 
@@ -4362,11 +4362,11 @@ static void ctrl_thread(void* arg)
 
 	client_off(sock);
 
-#ifdef _DEBUG
+#ifdef SOCKET_DEBUG_CTRL
 	socket_debug[sock]&=~SOCKET_DEBUG_CTRL;
 #endif
 
-#if defined(_DEBUG) && defined(SOCKET_DEBUG_TERMINATE)
+#if defined(SOCKET_DEBUG_TERMINATE)
 	socket_debug[sock]&=~SOCKET_DEBUG_TERMINATE;
 #endif
 
