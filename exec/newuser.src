@@ -1,0 +1,142 @@
+!include sbbsdefs.inc
+cls
+
+print "\1y\1hWhere did you hear about this BBS? "
+getstr str 30 K_LINE
+set_user_string USER_STRING_ADDRESS
+
+int i qnet
+str tmp
+
+no_yes "\r\nIs this account for QWK Networking (PonyNet, Dove-Net, etc..) \1w\1iONLY\1n\1h\1b"
+if_false
+	no_yes "\r\nARE YOU \1wPOSITIVE\1n\1h\1b (If you're unsure, press '\1wN\1b')"
+	if_false
+		set qnet 1
+		end_if
+	end_if
+compare qnet 1
+if_true
+	copy str _useron.alias
+	strupr str
+	set_user_string USER_STRING_ALIAS
+	goto chk_qwk_id
+	:get_qwk_id
+	crlf
+	print "\1n\1g\1h o \1wYour logon name must match your BBS's QWK ID.\r\n"
+	print "\1g o\1w Your logon name is currently \"\1y@ALIAS@\1w\"\r\n\r\n"
+	print "This is an invalid QWK ID. Your QWK ID MUST be "
+	print "between 2 and 8 characters in\r\n"
+	print "length, must begin with a letter and contain only valid "
+	print "DOS filename characters.\r\n\r\n"
+	print "\1y\1hYour correct QWK ID (as configured in your "
+	print "BBS software) is: "
+	getstr str 8 K_UPPER|K_LINE|K_NOEXASC
+	set_user_string USER_STRING_ALIAS
+	if_false
+		print "\1h\1r\r\nSorry, can't use that name.\r\n"
+		goto get_qwk_id
+		end_if
+	:chk_qwk_id
+	strlen i _useron.alias
+	compare i 8
+	if_greater # more than 8 chars
+		goto get_qwk_id
+		end_if
+	compare_substr _useron.alias " "
+	if_true # contains spaces
+		goto get_qwk_id
+		end_if
+	compare_substr _useron.alias "."
+	if_true # contains dots
+		goto get_qwk_id
+                end_if
+	compare_substr _useron.alias ":"
+	if_true
+                goto get_qwk_id
+                end_if
+	compare_substr _useron.alias ";"
+	if_true
+                goto get_qwk_id
+                end_if
+	compare_substr _useron.alias "\\"
+	if_true
+		goto get_qwk_id
+                end_if
+	compare_substr _useron.alias "//"
+	if_true
+		goto get_qwk_id
+                end_if
+	compare_substr _useron.alias "|"
+	if_true
+		goto get_qwk_id
+                end_if
+	compare_substr _useron.alias "+"
+	if_true
+		goto get_qwk_id
+                end_if
+	compare_substr _useron.alias "\""
+	if_true
+		goto get_qwk_id
+                end_if
+	toggle_user_flag R Q
+	toggle_user_flag E L
+	toggle_user_flag E T
+	toggle_user_flag E D
+	toggle_user_flag E M
+	end_if
+
+no_yes "\r\nAre you a sysop of a \1wSynchronet\1b BBS (unsure, hit '\1wN\1b')"
+if_true
+	return
+	end_if
+toggle_user_flag 1 S
+yes_no "\r\nDo you wish to access the Synchronet BBS List database"
+if_true
+	exec_xtrn SBL
+	end_if
+
+
+!include file_io.inc
+!include sbbsdefs.inc
+
+int msg_file
+int tmpfile
+str tmp
+
+:newuser_msg
+fopen tmpfile O_CREAT|O_TRUNC|O_WRONLY "%nnewuser.tmp"
+    if_false
+      printf "\r\nError opening TMP File!\r\n"
+      return
+    else
+      fprintf tmpfile "%%a\r\n%%1\r\nPony's Corral BBS\r\n1\r\nWelcome NewUser!"
+      fclose tmpfile
+    end_if
+
+
+     fopen tmpfile O_CREAT|O_TRUNC|O_WRONLY "%nemail.bat"
+              if_true
+         sprintf str "%%!smbutil.exe i%%znewuser.txt %%jmail.shd < %%nnewuser.tmp"
+                  fprintf tmpfile "%s" str
+                  fclose tmpfile
+                  sprintf str "%%nemail.bat"
+                  exec "%s"
+                  sprintf str "%%nemail.bat"
+                  remove_file str
+              else
+                printf "\r\nError opening TMP File!\r\n"
+              end_if
+
+cls
+print "\r\n\r\nhbþþþþþþþþþþþþþþþþþþþþþþþþþþþþþþþþþþþþþ"
+print "\r\n\1n\1k7You have new Email which must be Readn"
+print "\r\nhbþþþþþþþþþþþþþþþþþþþþþþþþþþþþþþþþþþþþþ\r\n\r\n"
+pause
+mail_read
+
+
+return
+
+
+#end Newuser
