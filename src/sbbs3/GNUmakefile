@@ -37,8 +37,8 @@ ifdef bcc
  LD		=	ilink -q
  CFLAGS +=	-mm -md -D__unix__ -w-csu -w-pch -w-ccc -w-rch -w-par -w-aus
 else
- CCPRE	:=	gcc
  CFLAGS	+=	-MMD -Wall
+ CCPRE	:=	gcc
  ifdef BUILD_DEPENDS
   CC		=	../build/mkdep -a
   CCPP	=	../build/mkdep -a
@@ -209,35 +209,39 @@ MONO_OBJS	= $(CON_OBJS) $(FTP_OBJS) $(WEB_OBJS) \
 			$(MAIL_OBJS) $(SERVICE_OBJS)
 
 # Monolithic Synchronet executable Build Rule
-$(SBBSMONO): $(MONO_OBJS) $(OBJS) $(LIBS) $(LIBODIR)/ver.o $(BUILD_DEPENDS)
-    ifndef BUILD_DEPENDS
+FORCE$(SBBSMONO): \
+	$(MONO_OBJS) $(OBJS) $(LIBS) $(LIBODIR)/ver.o
+
+$(SBBSMONO): $(MONO_OBJS) $(OBJS) $(LIBS) $(LIBODIR)/ver.o
 	@echo Linking $@
 	@$(CCPP) -o $@ $(LFLAGS) $^
-    endif
 
 # Synchronet BBS library Link Rule
-$(SBBS): $(OBJS) $(LIBS) $(LIBODIR)/ver.o $(BUILD_DEPENDS)
-    ifndef BUILD_DEPENDS
+FORCE$(SBBS): \
+	$(OBJS) $(LIBS) $(LIBODIR)/ver.o
+
+$(SBBS): $(OBJS) $(LIBS) $(LIBODIR)/ver.o
 	$(LD) $(LFLAGS) -S -o $(SBBS) $^ $(LIBS) -o $@
-    endif
 
 # FTP Server Link Rule
-$(FTPSRVR): $(LIBODIR)/ftpsrvr.o $(SBBSLIB) $(BUILD_DEPENDS)
-    ifndef BUILD_DEPENDS
+FORCE$(FTPSRVR): \
+	$(LIBODIR)/ftpsrvr.o $(SBBSLIB)
+
+$(FTPSRVR): $(LIBODIR)/ftpsrvr.o $(SBBSLIB)
 	$(LD) $(LFLAGS) -S $^ $(LIBS) -o $@ 
-    endif
 
 # Mail Server Link Rule
-$(MAILSRVR): $(MAIL_OBJS) $(SBBSLIB) $(BUILD_DEPENDS)
-    ifndef BUILD_DEPENDS
+FORCE$(MAILSRVR): $(MAIL_OBJS) $(SBBSLIB)
+
+$(MAILSRVR): $(MAIL_OBJS) $(SBBSLIB)
 	$(LD) $(LFLAGS) -S $^ $(LIBS) -o $@
-    endif
 
 # Synchronet Console Build Rule
-$(SBBSCON): $(CON_OBJS) $(SBBSLIB) $(BUILD_DEPENDS)
-    ifndef BUILD_DEPENDS
+FORCE$(SBBSCON): \
+	$(CON_OBJS) $(SBBSLIB)
+
+$(SBBSCON): $(CON_OBJS) $(SBBSLIB)
 	@$(CC) $(CFLAGS) -o $@ $^
-    endif
 
 # Specifc Compile Rules
 $(LIBODIR)/ftpsrvr.o: ftpsrvr.c ftpsrvr.h $(BUILD_DEPENDS)
@@ -269,46 +273,74 @@ $(LIBODIR)/services.o: services.c services.h $(BUILD_DEPENDS)
 	@$(CC) $(CFLAGS) -DSERVICES_EXPORTS -o $@ -c $<
 
 # Baja Utility
+FORCE$(BAJA): \
+	$(EXEODIR)/baja.o $(EXEODIR)/ars.o $(EXEODIR)/crc32.o \
+	$(EXEODIR)/genwrap.o $(EXEODIR)/filewrap.o
+
 $(BAJA): $(EXEODIR)/baja.o $(EXEODIR)/ars.o $(EXEODIR)/crc32.o \
-	$(EXEODIR)/genwrap.o $(EXEODIR)/filewrap.o $(BUILD_DEPENDS)
-    ifndef BUILD_DEPENDS
+	$(EXEODIR)/genwrap.o $(EXEODIR)/filewrap.o
 	@echo Linking $@
 	@$(CC) -o $@ $^
-    endif
 
 # Node Utility
-$(NODE): $(EXEODIR)/node.o $(EXEODIR)/genwrap.o $(EXEODIR)/filewrap.o $(BUILD_DEPENDS)
-    ifndef BUILD_DEPENDS
+FORCE$(NODE): \
+	$(EXEODIR)/node.o $(EXEODIR)/genwrap.o $(EXEODIR)/filewrap.o
+
+$(NODE): $(EXEODIR)/node.o $(EXEODIR)/genwrap.o $(EXEODIR)/filewrap.o
 	@echo Linking $@
 	@$(CC) -o $@ $^ 
-    endif
 
 SMBLIB = $(EXEODIR)/smblib.o $(EXEODIR)/filewrap.o $(EXEODIR)/crc16.o
 
 # FIXSMB Utility
-$(FIXSMB): $(EXEODIR)/fixsmb.o $(SMBLIB) $(EXEODIR)/genwrap.o $(EXEODIR)/str_util.o $(BUILD_DEPENDS)
-    ifndef BUILD_DEPENDS
+FORCE$(FIXSMB): \
+	$(EXEODIR)/fixsmb.o $(SMBLIB) $(EXEODIR)/genwrap.o $(EXEODIR)/str_util.o
+
+$(FIXSMB): $(EXEODIR)/fixsmb.o $(SMBLIB) $(EXEODIR)/genwrap.o $(EXEODIR)/str_util.o
 	@echo Linking $@
 	@$(CC) -o $@ $^
-    endif
 
 # CHKSMB Utility
-$(CHKSMB): $(EXEODIR)/chksmb.o $(SMBLIB) $(EXEODIR)/conwrap.o $(EXEODIR)/dirwrap.o $(EXEODIR)/genwrap.o $(BUILD_DEPENDS)
-    ifndef BUILD_DEPENDS
+FORCE$(CHKSMB): \
+	$(EXEODIR)/chksmb.o $(SMBLIB) $(EXEODIR)/conwrap.o $(EXEODIR)/dirwrap.o $(EXEODIR)/genwrap.o
+
+$(CHKSMB): $(EXEODIR)/chksmb.o $(SMBLIB) $(EXEODIR)/conwrap.o $(EXEODIR)/dirwrap.o $(EXEODIR)/genwrap.o
 	@echo Linking $@
 	@$(CC) -o $@ $^
-    endif
 
 # SMB Utility
+FORCE$(SMBUTIL): \
+	$(EXEODIR)/smbutil.o $(SMBLIB) $(EXEODIR)/conwrap.o $(EXEODIR)/dirwrap.o \
+	$(EXEODIR)/genwrap.o $(EXEODIR)/smbtxt.o $(EXEODIR)/crc32.o $(EXEODIR)/lzh.o \
+	$(EXEODIR)/date_str.o $(EXEODIR)/str_util.o
+
 $(SMBUTIL): $(EXEODIR)/smbutil.o $(SMBLIB) $(EXEODIR)/conwrap.o $(EXEODIR)/dirwrap.o \
 	$(EXEODIR)/genwrap.o $(EXEODIR)/smbtxt.o $(EXEODIR)/crc32.o $(EXEODIR)/lzh.o \
-	$(EXEODIR)/date_str.o $(EXEODIR)/str_util.o $(BUILD_DEPENDS)
-    ifndef BUILD_DEPENDS
+	$(EXEODIR)/date_str.o $(EXEODIR)/str_util.o
 	@echo Linking $@
 	@$(CC) -o $@ $^
-    endif
 
 # SBBSecho (FidoNet Packet Tosser)
+FORCE$(SBBSECHO): \
+	$(EXEODIR)/sbbsecho.o \
+	$(EXEODIR)/ars.o \
+	$(EXEODIR)/crc32.o \
+	$(EXEODIR)/date_str.o \
+	$(EXEODIR)/load_cfg.o \
+	$(EXEODIR)/scfglib1.o \
+	$(EXEODIR)/scfglib2.o \
+	$(EXEODIR)/nopen.o \
+	$(EXEODIR)/str_util.o \
+	$(EXEODIR)/dat_rec.o \
+	$(EXEODIR)/userdat.o \
+	$(EXEODIR)/rechocfg.o \
+	$(EXEODIR)/conwrap.o \
+	$(EXEODIR)/dirwrap.o \
+	$(EXEODIR)/genwrap.o \
+	$(SMBLIB) \
+	$(EXEODIR)/smbtxt.o \
+	$(EXEODIR)/lzh.o
+
 $(SBBSECHO): \
 	$(EXEODIR)/sbbsecho.o \
 	$(EXEODIR)/ars.o \
@@ -327,13 +359,22 @@ $(SBBSECHO): \
 	$(EXEODIR)/genwrap.o \
 	$(SMBLIB) \
 	$(EXEODIR)/smbtxt.o \
-	$(EXEODIR)/lzh.o $(BUILD_DEPENDS)
-    ifndef BUILD_DEPENDS
+	$(EXEODIR)/lzh.o
 	@echo Linking $@
 	@$(CC) -o $@ $^
-    endif
 
 # SBBSecho Configuration Program
+FORCE$(ECHOCFG): \
+	$(EXEODIR)/echocfg.o \
+	$(EXEODIR)/rechocfg.o \
+	$(UIFC_OBJS) \
+	$(EXEODIR)/nopen.o \
+	$(EXEODIR)/crc16.o \
+	$(EXEODIR)/str_util.o \
+	$(EXEODIR)/filewrap.o \
+	$(EXEODIR)/genwrap.o \
+	$(EXEODIR)/dirwrap.o
+
 $(ECHOCFG): \
 	$(EXEODIR)/echocfg.o \
 	$(EXEODIR)/rechocfg.o \
@@ -343,13 +384,27 @@ $(ECHOCFG): \
 	$(EXEODIR)/str_util.o \
 	$(EXEODIR)/filewrap.o \
 	$(EXEODIR)/genwrap.o \
-	$(EXEODIR)/dirwrap.o $(BUILD_DEPENDS)
-    ifndef BUILD_DEPENDS
+	$(EXEODIR)/dirwrap.o
 	@echo Linking $@
 	@$(CC) -o $@ $^ $(UIFC_LFLAGS)
-    endif
 
 # ADDFILES
+FORCE$(ADDFILES): \
+	$(EXEODIR)/addfiles.o \
+	$(EXEODIR)/ars.o \
+	$(EXEODIR)/date_str.o \
+	$(EXEODIR)/load_cfg.o \
+	$(EXEODIR)/scfglib1.o \
+	$(EXEODIR)/scfglib2.o \
+	$(EXEODIR)/nopen.o \
+	$(EXEODIR)/crc16.o \
+	$(EXEODIR)/str_util.o \
+	$(EXEODIR)/dat_rec.o \
+	$(EXEODIR)/filedat.o \
+	$(EXEODIR)/filewrap.o \
+	$(EXEODIR)/dirwrap.o \
+	$(EXEODIR)/genwrap.o
+
 $(ADDFILES): \
 	$(EXEODIR)/addfiles.o \
 	$(EXEODIR)/ars.o \
@@ -364,13 +419,27 @@ $(ADDFILES): \
 	$(EXEODIR)/filedat.o \
 	$(EXEODIR)/filewrap.o \
 	$(EXEODIR)/dirwrap.o \
-	$(EXEODIR)/genwrap.o $(BUILD_DEPENDS)
-    ifndef BUILD_DEPENDS
+	$(EXEODIR)/genwrap.o
 	@echo Linking $@
 	@$(CC) -o $@ $^
-    endif
 
 # FILELIST
+FORCE$(FILELIST): \
+	$(EXEODIR)/filelist.o \
+	$(EXEODIR)/ars.o \
+	$(EXEODIR)/date_str.o \
+	$(EXEODIR)/load_cfg.o \
+	$(EXEODIR)/scfglib1.o \
+	$(EXEODIR)/scfglib2.o \
+	$(EXEODIR)/nopen.o \
+	$(EXEODIR)/crc16.o \
+	$(EXEODIR)/str_util.o \
+	$(EXEODIR)/dat_rec.o \
+	$(EXEODIR)/filedat.o \
+	$(EXEODIR)/filewrap.o \
+	$(EXEODIR)/dirwrap.o \
+	$(EXEODIR)/genwrap.o
+
 $(FILELIST): \
 	$(EXEODIR)/filelist.o \
 	$(EXEODIR)/ars.o \
@@ -385,13 +454,27 @@ $(FILELIST): \
 	$(EXEODIR)/filedat.o \
 	$(EXEODIR)/filewrap.o \
 	$(EXEODIR)/dirwrap.o \
-	$(EXEODIR)/genwrap.o $(BUILD_DEPENDS)
-    ifndef BUILD_DEPENDS
+	$(EXEODIR)/genwrap.o
 	@echo Linking $@
 	@$(CC) -o $@ $^
-    endif
 
 # MAKEUSER
+FORCE$(MAKEUSER): \
+	$(EXEODIR)/makeuser.o \
+	$(EXEODIR)/ars.o \
+	$(EXEODIR)/date_str.o \
+	$(EXEODIR)/load_cfg.o \
+	$(EXEODIR)/scfglib1.o \
+	$(EXEODIR)/scfglib2.o \
+	$(EXEODIR)/nopen.o \
+	$(EXEODIR)/crc16.o \
+	$(EXEODIR)/str_util.o \
+	$(EXEODIR)/dat_rec.o \
+	$(EXEODIR)/userdat.o \
+	$(EXEODIR)/filewrap.o \
+	$(EXEODIR)/dirwrap.o \
+	$(EXEODIR)/genwrap.o
+
 $(MAKEUSER): \
 	$(EXEODIR)/makeuser.o \
 	$(EXEODIR)/ars.o \
@@ -406,18 +489,20 @@ $(MAKEUSER): \
 	$(EXEODIR)/userdat.o \
 	$(EXEODIR)/filewrap.o \
 	$(EXEODIR)/dirwrap.o \
-	$(EXEODIR)/genwrap.o $(BUILD_DEPENDS)
-    ifndef BUILD_DEPENDS
+	$(EXEODIR)/genwrap.o
 	@echo Linking $@
 	@$(CC) -o $@ $^
-    endif
+
+FORCE$(ANS2MSG): $(ANS2MSG).o
+
+FORCE$(MSG2ANS): $(MSG2ANS).o
 
 depend:
 	@$(DELETE) $(LIBODIR)/.depend
 	@$(DELETE) $(EXEODIR)/.depend
-	$(MAKE) BUILD_DEPENDS=notarealfile
+	$(MAKE) BUILD_DEPENDS=FORCE
 
-$(BUILD_DEPENDS):
+FORCE:
 
 -include $(LIBODIR)/.depend
 -include $(EXEODIR)/.depend
