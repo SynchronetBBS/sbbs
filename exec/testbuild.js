@@ -72,6 +72,8 @@ for(i in builds) {
 	}
 }
 
+send_email("Builds successful!",builds);
+
 function file_contents(fname)
 {
 	var file = new File(fname);
@@ -101,7 +103,7 @@ function send_email(subject, body)
 	};
 
 	if(!msgbase.save_msg(hdr, body))
-		log(LOG_ERR, "!ERROR " + msgbase.last_error + "saving mail message");
+		log(LOG_ERR, "!ERROR " + msgbase.last_error + " saving mail message");
 	else
 		log(LOG_INFO, "E-mail sent.");
 
