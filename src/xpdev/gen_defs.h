@@ -123,6 +123,12 @@ enum {
 #define HANDLE	void*
 #endif
 
+/* Custom Types */
+typedef struct {
+	char*	name;
+	char*	value;
+} named_string_t;
+
 #define SAFECOPY(dst,src)	sprintf(dst,"%.*s",(int)sizeof(dst)-1,src)
 
 /****************************************************************************/
