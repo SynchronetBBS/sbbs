@@ -3,7 +3,12 @@ load("html_inc/template.ssjs");
 load("html_inc/msgsconfig.ssjs");
 
 /* Flags for clean_msg_headers() */
-CLEAN_MSG_REPLY	=	(1<<0);
+var CLEAN_MSG_REPLY	=	(1<<0);
+
+/* Gets for get_message_offsets() */
+var GET_ALL_MESSAGES =	0;
+var GET_MY_MESSAGES	 =	1;
+var GET_MY_UNREAD_MESSAGES = 2;
 
 http_reply.header["Pragma"]="no-cache";
 http_reply.header["Expires"]="0";
@@ -29,7 +34,7 @@ var title=null;
 var body=null;
 var err=null;
 
-function get_my_message_offsets()
+function get_message_offsets(type)
 {
 	offsets=new Array;
 	var last_offset;
@@ -39,34 +44,19 @@ function get_my_message_offsets()
 	for(last_offset=0; (idx=msgbase.get_msg_index(true,last_offset)) != null;last_offset++) {
 		if(idx.attr&MSG_DELETE)
 			continue;
-		if(!idx_to_user(idx))
+		if(sub=='mail' && idx.to!=user.number)
 			continue;
+		if(type==GET_MY_MESSAGES || type==GET_MY_UNREAD_MESSAGES) {
+			if(!idx_to_user(idx))
+				continue;
+		}
+		if(type==GET_MY_UNREAD_MESSAGES) {
+			if(idx.attr&MSG_READ)
+				continue;
+		}
 		if(idx.attr&MSG_MODERATED && !(idx.attr&MSG_VALIDATED))
 			break;
 		msg=new Array;
-		msg.idx=idx;
-		msg.offset=last_offset;
-		offsets.push(msg);
-	}
-	return(offsets);
-}
-
-function get_all_message_offsets()
-{
-	offsets=new Array;
-	var last_offset;
-	var hdr;
-
-	for(last_offset=0; (idx=msgbase.get_msg_index(true,last_offset)) != null;last_offset++) {
-		if(idx.attr&MSG_DELETE)
-			continue;
-		if(idx.attr&MSG_PRIVATE && !idx_to_user(idx))
-			continue;
-		if(idx.attr&MSG_MODERATED && !(idx.attr&MSG_VALIDATED))
-			break;
-		if(sub=='mail' && idx.to!=user.number)
-			continue;
-		msg=new Object;
 		msg.idx=idx;
 		msg.offset=last_offset;
 		offsets.push(msg);

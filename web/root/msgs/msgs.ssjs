@@ -5,6 +5,53 @@ if(msgbase.open!=undefined && msgbase.open()==false) {
 	error(msgbase.last_error);
 }
 
+var ShowMsgs=GET_ALL_MESSAGES;
+
+if(http_request.query.show_messages != undefined) {
+	switch(http_request.query.show_messages[0]) {
+		case 'All':
+			ShowMsgs=GET_ALL_MESSAGES;
+			break;
+		case 'Yours':
+			ShowMsgs=GET_MY_MESSAGES;
+			break;
+		case 'YourUnread':
+			ShowMsgs=GET_MY_UNREAD_MESSAGES;
+			break;
+	}
+}
+
+var new_query='';
+for(key in http_request.query) {
+	if(key != 'show_messages') {
+		if(new_query.length>0)
+			new_query+='&amp;';
+		new_query+=encodeURIComponent(key);
+		new_query+='=';
+		new_query+=encodeURIComponent(http_request.query[key]);
+	}
+}
+if(new_query.length>0)
+	new_query+='&amp;';
+new_query+='show_messages=';
+switch(ShowMsgs) {
+	case GET_ALL_MESSAGES:
+		template.show_choice='<a href="'+http_request.virtual_path+'?'+new_query+'Yours">'+show_messages_yours_html+'</a>';
+		template.show_choice+=show_messages_spacer_html;
+		template.show_choice+='<a href="'+http_request.virtual_path+'?'+new_query+'YourUnread">'+show_messages_your_unread_html+'</a>';
+		break;
+	case GET_MY_MESSAGES:
+		template.show_choice='<a href="'+http_request.virtual_path+'?'+new_query+'All">'+show_messages_all_html+'</a>';
+		template.show_choice+=show_messages_spacer_html;
+		template.show_choice+='<a href="'+http_request.virtual_path+'?'+new_query+'YourUnread">'+show_messages_your_unread_html+'</a>';
+		break;
+	case GET_MY_UNREAD_MESSAGES:
+		template.show_choice='<a href="'+http_request.virtual_path+'?'+new_query+'All">'+show_messages_all_html+'</a>';
+		template.show_choice+=show_messages_spacer_html;
+		template.show_choice+='<a href="'+http_request.virtual_path+'?'+new_query+'Yours">'+show_messages_yours_html+'</a>';
+		break;
+}
+
 /* Ensure that offset is an even multiple of max_messages */
 offset-=offset%max_messages;
 
@@ -19,14 +66,12 @@ if(offset > 0)  {
 var currpage=Math.floor(offset/max_messages);
 var msgcount=0;
 var msgarray;
-if(sub=='mail') {
-	msgarray=get_my_message_offsets();
+msgarray=get_message_offsets(ShowMsgs);
+
+if(sub=='mail')
 	template.can_delete=true;
-}
-else {
-	msgarray=get_all_message_offsets();
+else
 	template.can_delete=msg_area.sub[sub].is_operator;
-}
 var total_pages=Math.floor(msgarray.length/max_messages+(msgarray.length%max_messages?1:0));
 if(total_pages==0)
 	total_pages=1;
