@@ -170,7 +170,8 @@ typedef struct  {
 	BOOL		keep_alive;
 	char		ars[256];
 	char    	auth[128];				/* UserID:Password */
-	char		host[128];				/* The requested host. (virtual hosts) */
+	char		host[128];				/* The requested host. (as used for self-referencing URLs) */
+	char		vhost[128];				/* The requested host. (virtual host) */
 	int			send_location;
 	const char*	mime_type;
 	link_list_t	headers;
@@ -1613,6 +1614,9 @@ static char *get_request(http_session_t * session, char *req_line)
 	if(!strnicmp(session->req.physical_path,http_scheme,http_scheme_len)) {
 		/* Set HOST value... ignore HOST header */
 		SAFECOPY(session->req.host,session->req.physical_path+http_scheme_len);
+		SAFECOPY(session->req.vhost,session->req.host);
+		/* Remove port specification */
+		strtok(session->req.vhost,":");
 		strtok(session->req.physical_path,"/");
 		p=strtok(NULL,"/");
 		if(p==NULL) {
@@ -1679,9 +1683,11 @@ static BOOL get_request_headers(http_session_t * session)
 				case HEAD_HOST:
 					if(session->req.host[0]==0) {
 						SAFECOPY(session->req.host,value);
-						if(startup->options&WEB_OPT_DEBUG_RX)
-							lprintf(LOG_INFO,"%04d Grabbing from virtual host: %s"
-								,session->socket,value);
+						SAFECOPY(session->req.vhost,value);
+						/* Remove port part of host (Win32 doesn't allow : in dir names) */
+						/* Either an existing : will be replaced with a null, or nothing */
+						/* Will happen... the return value is not relevent here */
+						strtok(session->req.vhost,":");
 					}
 					break;
 				default:
@@ -1697,11 +1703,11 @@ static BOOL get_fullpath(http_session_t * session)
 	char	str[MAX_PATH+1];
 
 	if(!(startup->options&WEB_OPT_VIRTUAL_HOSTS))
-		session->req.host[0]=0;
-	if(session->req.host[0]) {
-		safe_snprintf(str,sizeof(str),"%s/%s",root_dir,session->req.host);
+		session->req.vhost[0]=0;
+	if(session->req.vhost[0]) {
+		safe_snprintf(str,sizeof(str),"%s/%s",root_dir,session->req.vhost);
 		if(isdir(str))
-			safe_snprintf(str,sizeof(str),"%s/%s%s",root_dir,session->req.host,session->req.physical_path);
+			safe_snprintf(str,sizeof(str),"%s/%s%s",root_dir,session->req.vhost,session->req.physical_path);
 		else
 			safe_snprintf(str,sizeof(str),"%s%s",root_dir,session->req.physical_path);
 	} else
