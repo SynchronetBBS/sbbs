@@ -171,6 +171,9 @@ machine		:=	$(shell if uname -m | egrep -v "(i[3456789]|x)86" > /dev/null; then 
 ifeq ($(machine),sun4u)
  CFLAGS +=      -D__BIG_ENDIAN__
 endif
+ifeq ($(machine),power_macintosh)
+ CFLAGS +=      -D__BIG_ENDIAN__
+endif
 ifeq ($(machine),)
  machine	:=	$(os)
 else
