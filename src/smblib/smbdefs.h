@@ -109,7 +109,7 @@
 #define SDT_BLOCK_LEN		256 		/* Size of data blocks */
 #define SHD_BLOCK_LEN		256 		/* Size of header blocks */
 
-#define SMB_MAX_HDR_LEN		0xffffL		/* Message header length is 16-bit */
+#define SMB_MAX_HDR_LEN		0xffffU		/* Message header length is 16-bit */
 
 #define SMB_SELFPACK		0			/* Self-packing storage allocation */
 #define SMB_FASTALLOC		1			/* Fast allocation */
@@ -119,7 +119,7 @@
 
 										/* Common smblib errors values */
 #define SMB_ERR_NOT_OPEN	-100		/* Message base not open */
-#define SMB_BAD_HDR_LEN		-101		/* Invalid message header length (>64k) */
+#define SMB_ERR_HDR_LEN		-101		/* Invalid message header length (>64k) */
 
 										/* Time zone macros for when_t.zone */
 #define DAYLIGHT			0x8000		/* Daylight savings is active */

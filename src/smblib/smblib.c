@@ -613,10 +613,10 @@ int SMBCALL smb_getlastidx(smb_t* smb, idxrec_t *idx)
 /* Figures out the total length of the header record for 'msg'              */
 /* Returns length 															*/
 /****************************************************************************/
-uint SMBCALL smb_getmsghdrlen(smbmsg_t* msg)
+ulong SMBCALL smb_getmsghdrlen(smbmsg_t* msg)
 {
 	int i;
-	int length;
+	ulong length;
 
 	/* fixed portion */
 	length=sizeof(msghdr_t);
@@ -997,6 +997,12 @@ int SMBCALL smb_hfield(smbmsg_t* msg, ushort type, size_t length, void* data)
 	hfield_t*	hp;
 	int i;
 
+	if(msg->hdr.length==0) 	/* uninitialized */
+		msg->hdr.length=(ushort)smb_getmsghdrlen(msg);
+
+	if(msg->hdr.length+length>SMB_MAX_HDR_LEN)
+		return(SMB_ERR_HDR_LEN);
+
 	i=msg->total_hfields;
 	if((hp=(hfield_t *)REALLOC(msg->hfield,sizeof(hfield_t)*(i+1)))==NULL) 
 		return(1);
@@ -1018,6 +1024,10 @@ int SMBCALL smb_hfield(smbmsg_t* msg, ushort type, size_t length, void* data)
 	}
 	else
 		msg->hfield_dat[i]=NULL;
+
+	/* Maintain hdr.length so we don't exceed SMB_MAX_HDR_LEN */
+	msg->hdr.length+=sizeof(hfield_t);
+	msg->hdr.length+=length;
 	return(0);
 }
 
@@ -1159,6 +1169,14 @@ int SMBCALL smb_addmsghdr(smb_t* smb, smbmsg_t* msg, int storage)
 	long	l;
 	ulong	hdrlen;
 
+	hdrlen=smb_getmsghdrlen(msg);
+	if(hdrlen>SMB_MAX_HDR_LEN) { /* headers are limited to 64k in size */
+		sprintf(smb->last_error
+			,"illegal message header length (%lu > %u)"
+			,hdrlen,SMB_MAX_HDR_LEN);
+		return(SMB_ERR_HDR_LEN);
+	}
+
 	if(!smb->locked && smb_locksmbhdr(smb))
 		return(1);
 	if(smb_getstatus(smb)) {
@@ -1171,13 +1189,6 @@ int SMBCALL smb_addmsghdr(smb_t* smb, smbmsg_t* msg, int storage)
 		return(i);
 	}
 
-	hdrlen=smb_getmsghdrlen(msg);
-	if(hdrlen>SMB_MAX_HDR_LEN) { /* headers are limited to 64k in size */
-		sprintf(smb->last_error
-			,"illegal message header length (%lu > %ld)"
-			,hdrlen,SMB_MAX_HDR_LEN);
-		return(SMB_BAD_HDR_LEN);
-	}
 	msg->hdr.length=(ushort)hdrlen;
 	if(storage==SMB_HYPERALLOC)
 		l=smb_hallochdr(smb);
@@ -1274,9 +1285,9 @@ int SMBCALL smb_putmsghdr(smb_t* smb, smbmsg_t* msg)
 	hdrlen=smb_getmsghdrlen(msg);
 	if(hdrlen>SMB_MAX_HDR_LEN) { /* headers are limited to 64k in size */
 		sprintf(smb->last_error
-			,"illegal message header length (%lu > %ld)"
+			,"illegal message header length (%lu > %u)"
 			,hdrlen,SMB_MAX_HDR_LEN);
-		return(SMB_BAD_HDR_LEN);
+		return(SMB_ERR_HDR_LEN);
 	}
 	if(smb_hdrblocks(hdrlen) > smb_hdrblocks(msg->hdr.length)) {
 		sprintf(smb->last_error,"illegal header length increase: "
