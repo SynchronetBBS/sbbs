@@ -37,21 +37,23 @@
 
 /* Platform-specific headers */
 #ifdef _WIN32
-#include <io.h>			/* _findfirst */
-#include <share.h>		/* SH_DENYNO */
-#include <direct.h>		/* _mkdir/_rmdir() */
-#include <process.h>	/* _beginthread */
+	#include <io.h>			/* _findfirst */
+	#include <share.h>		/* SH_DENYNO */
+	#include <direct.h>		/* _mkdir/_rmdir() */
+	#include <process.h>	/* _beginthread */
+	#include <windows.h>	/* required for mmsystem.h */
+	#include <mmsystem.h>	/* SND_ASYNC */
 #endif
 
 /* ANSI C Library headers */
 #include <stdio.h>
-#include <stdlib.h>		/* ltoa in GNU C lib */
-#include <stdarg.h>		/* va_list, varargs */
-#include <string.h>		/* strrchr */
-#include <fcntl.h>		/* O_WRONLY, O_RDONLY, etc. */
-#include <errno.h>		/* EACCES */
-#include <ctype.h>		/* toupper */
-#include <sys/stat.h>	/* S_IWRITE */
+#include <stdlib.h>			/* ltoa in GNU C lib */
+#include <stdarg.h>			/* va_list, varargs */
+#include <string.h>			/* strrchr */
+#include <fcntl.h>			/* O_WRONLY, O_RDONLY, etc. */
+#include <errno.h>			/* EACCES */
+#include <ctype.h>			/* toupper */
+#include <sys/stat.h>		/* S_IWRITE */
 
 /* Synchronet-specific headers */
 #include "sbbsinet.h"
@@ -150,6 +152,7 @@ static int lprintf(char *fmt, ...)
 #ifdef _WINSOCKAPI_
 
 static WSADATA WSAData;
+static BOOL WSAInitialized=FALSE;
 
 static BOOL winsock_startup(void)
 {
@@ -157,6 +160,7 @@ static BOOL winsock_startup(void)
 
     if((status = WSAStartup(MAKEWORD(1,1), &WSAData))==0) {
 		lprintf("%s %s",WSAData.szDescription, WSAData.szSystemStatus);
+		WSAInitialized=TRUE;
 		return (TRUE);
 	}
 
@@ -494,6 +498,7 @@ static void send_thread(void* arg)
 	char*		p;
 	char		buf[8192];
 	char		fname[MAX_PATH];
+	int			i;
 	int			rd;
 	int			wr;
 	ulong		total=0;
@@ -525,7 +530,7 @@ static void send_thread(void* arg)
 
 	*xfer.inprogress=TRUE;
 	*xfer.aborted=FALSE;
-	if(startup->options&FTP_OPT_DEBUG_DATA)
+	if(startup->options&FTP_OPT_DEBUG_DATA || xfer.filepos)
 		lprintf("%04d DATA socket %d sending from offset %ld"
 			,xfer.ctrl_sock,*xfer.data_sock,xfer.filepos);
 
@@ -554,6 +559,8 @@ static void send_thread(void* arg)
 		}
 		rd=fread(buf,sizeof(char),sizeof(buf),fp);
 		if(rd<1) {
+			lprintf("%04d !READ ERROR (%d) on %s",xfer.ctrl_sock,errno,xfer.filename);
+			error=TRUE;
 			break;
 		}
 		wr=send(*xfer.data_sock,buf,rd,0);
@@ -585,6 +592,9 @@ static void send_thread(void* arg)
 		*xfer.lastactive=time(NULL);
 		mswait(1);
 	}
+
+	if((i=ferror(fp))!=0) 
+		lprintf("%04d !FILE ERROR %d (%d)",xfer.ctrl_sock,i,errno);
 
 	close_socket(xfer.data_sock,__LINE__);	/* Signal end of file */
 	if(startup->options&FTP_OPT_DEBUG_DATA)
@@ -2904,7 +2914,7 @@ static void cleanup(int code)
 	update_clients();
 
 #ifdef _WINSOCKAPI_
-	if(WSACleanup()!=0) 
+	if(WSAInitialized && WSACleanup()!=0) 
 		lprintf("!WSACleanup ERROR %d",ERROR_VALUE);
 #endif
 
@@ -2984,9 +2994,9 @@ void ftp_server(void* arg)
 
 	srand(time(NULL));
 
+#ifndef __MINGW32__
 	if(PUTENV("TZ=UCT0"))
 		lprintf("!putenv() FAILED");
-
 	tzset();
 
 	if((t=checktime())!=0) {   /* Check binary time */
@@ -2994,11 +3004,15 @@ void ftp_server(void* arg)
 		cleanup(1);
 		return;
     }
+#endif
 
 	if(!winsock_startup()) {
 		cleanup(1);
 		return;
 	}
+
+	t=time(NULL);
+	lprintf("Initializing on %s",ctime(&t));
 
 #ifdef _WIN32
     if((socket_mutex=CreateMutex(NULL,FALSE,NULL))==NULL) {
