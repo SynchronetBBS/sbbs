@@ -8,7 +8,7 @@ if(msgbase.open!=undefined && msgbase.open()==false) {
 	error(msgbase.last_error);
 }
 
-if(http_request.query.Action=="Delete Message(s)") {
+if(http_request.query.Action=="Delete Selected Message(s)") {
 	var hdr;
 	var deleted=0;
 	var errors=0;
