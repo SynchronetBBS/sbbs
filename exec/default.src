@@ -347,6 +347,7 @@ end_cmd
 print "Problem in command shell."
 pause
 hangup
+return
 
 ############################### E-mail Section ################################
 
