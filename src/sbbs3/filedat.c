@@ -390,7 +390,7 @@ BOOL DLLCALL getfileixb(scfg_t* cfg, file_t* f)
 		fname[l]=fname[l+1];
 	for(l=0;l<length;l+=F_IXBSIZE) {
 		sprintf(str,"%11.11s",ixbbuf+l);
-		if(!strcmp(str,fname))
+		if(!stricmp(str,fname))
 			break; 
 	}
 	if(l>=length) {
@@ -450,7 +450,7 @@ BOOL DLLCALL removefiledat(scfg_t* cfg, file_t* f)
 		for(c=0;c<11;c++)
 			ixbname[c]=ixbbuf[l+c];
 		ixbname[c]=0;
-		if(strcmp(ixbname,fname))
+		if(stricmp(ixbname,fname))
 			if(lwrite(file,&ixbbuf[l],F_IXBSIZE)!=F_IXBSIZE) {
 				close(file);
 //				errormsg(WHERE,ERR_WRITE,str,F_IXBSIZE);
