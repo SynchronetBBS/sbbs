@@ -149,6 +149,11 @@ ifdef USE_CURSES
  UIFC_OBJS +=	$(EXEODIR)/uifcc.o
 endif
 
+#The following is needed for nspr support on Linux
+ifeq ($(os),linux)
+ LFLAGS	+=	-ldl
+endif
+
 include targets.mk		# defines all targets
 include objects.mk		# defines $(OBJS)
 include sbbsdefs.mk		# defines $(SBBSDEFS)
