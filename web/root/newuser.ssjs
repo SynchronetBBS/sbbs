@@ -2,7 +2,7 @@
  * New user sign-up form for Synchronet
  */
 
-/* $Id $ */
+/* $Id$ */
 
 load("sbbsdefs.js");
 
