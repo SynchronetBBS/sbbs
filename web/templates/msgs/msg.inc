@@ -1,7 +1,7 @@
 <CENTER>
 <A HREF="http://^^JS:system.inet_addr^^">Home</A> : <A HREF="index.ssjs">Groups</A> : <A HREF="subs.ssjs?msg_grp=^^group:number^^">%%group:description%%</A> :
-<A HREF="msgs.ssjs?msg_grp=^^group:number^^&msg_sub=^^sub:code^^">%%sub:description%%</A>
-<A HREF="subinfo.ssjs?msg_grp=^^group:number^^&msg_sub=^^sub:code^^">[?]</A><BR>
+<A HREF="msgs.ssjs?msg_grp=^^group:number^^&amp;msg_sub=^^sub:code^^">%%sub:description%%</A>
+<A HREF="subinfo.ssjs?msg_grp=^^group:number^^&amp;msg_sub=^^sub:code^^">[?]</A><BR>
 <TABLE BORDER=0 width="95%">
 <TR><TD nowrap>Subject:</TD><TD nowrap>%%hdr:subject%%</TD>
 <TD nowrap>To:</TD><TD nowrap>%%hdr:to%%</TD></TR>
@@ -22,5 +22,5 @@
 <a href="attachments.ssjs/^^group:number^^/^^sub:code^^/^^hdr:number^^/^^attachments:name^^">%%attachments:name%%</a><br>
 <<END REPEAT attachments>>
 @@JS:if(template.attachments==undefined) '-->'; else '';@@
-<A HREF="reply.ssjs?msg_grp=^^group:number^^&msg_sub=^^sub:code^^&reply_to=^^hdr:number^^">Reply</A>
+<A HREF="reply.ssjs?msg_grp=^^group:number^^&amp;msg_sub=^^sub:code^^&amp;reply_to=^^hdr:number^^">Reply</A>
 </CENTER>
