@@ -203,6 +203,9 @@ int unixtojulian(time_t unix_time)
 /****************************************************************************/
 /* Convert julian date into unix format 									*/
 /****************************************************************************/
+#ifdef __BORLANDC__
+#pragma argsused
+#endif
 time_t juliantounix(ulong j)
 {
 #if 0 /* julian time */
