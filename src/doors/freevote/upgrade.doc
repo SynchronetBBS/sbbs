@@ -1,0 +1,22 @@
+!!!!WARRNING!!!!
+
+If you had v2.0 to 2.7 installed on your system READ THIS!
+
+If you have v2.8 or v3.x installed on your system, no upgrade is neccessary.
+
+Please run the v2xtov28.exe utility to upgrade your question file, if
+you had 2.0 - 2.7 istalled.
+
+Run this program in the utility that the FREEVOTE.QST file is located!
+
+This has to be run for the door to function properly.
+
+Sorry about this but the reserved flag was not zeroed properly so it's value
+was either 1 or 0 depending on the version. So this upgrade is necessary.
+
+This new flag is the one used for forced questions, if this is not run all
+of the questions you have now installed could turn into forced questions!
+This program zeros that flag so that it defaults all old questions to
+non-forced...
+
+Franz

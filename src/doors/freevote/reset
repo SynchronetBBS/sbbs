@@ -1,0 +1,12 @@
+#!/bin/sh
+echo
+echo This will erase all the questions!
+echo Ya sure ya want to do that?
+echo press enter twice to procceed or CTRL-C to quit
+read temp
+read temp
+rm freevote.qst
+rm freevote.usr
+rm freevote.tmp
+echo
+echo Done! FrEevOtE is now RESET and ready to go!

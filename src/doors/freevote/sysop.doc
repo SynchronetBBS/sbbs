@@ -1,0 +1,499 @@
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+FrEevOtE v3.3 Documentation
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+!!!WARNING!!! If you are upgrading from v2.7 or earlier please run the
+v2xtov28.exe program to upgrade the question file! .. read UPGRADE.DOC
+for more info!
+
+IMPORTANT NOTE (since version 3.0):
+This version had a bug which did not add users answers .. whoops .... it's
+fixed now ...
+
+Welcome to FrEevOtE v3.3
+
+What is Freevote?: Totally FREE voting door with the best features of them all
+I made it to compare to EZVote 6.1 and the Renegade BBS Software voting door.
+And I tried to make it better.
+
+Why is it free?: Because I hate people who charge for voting doors! And I 
+don't have to worry about anything. And just because I didn't wanna pay for
+any $20 voting door (that's why freevote was born)
+
+Please send in donations if you wish to see more new features in this door,
+READ DONATION.DOC! You don't have to pay, but it will for sure make me
+motivated to make new versions and add all those features i wanted to add!
+
+What's the difference from the first version?: Read WHATSNEW.DOC!
+
+This door is a remake of an example door from OPENDOORS programming toolkit!
+I think I spent more time on this door by now than it would take me to write
+the original door. But still so that you know. Actually by this time it is 
+about 80% my code!
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+FEATURES!
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+So what are those cool features:
+
+Up to 15 one-lined answers per question, or seven 2-lined answers, the 
+creator of the question chooses which!
+
+Users can add questions if the sysop allows it!
+
+Questions can be posted anonymously. Only the sysop will see who created it
+Even before he votes on the question (users can't see that)
+
+Questions can allow multiple answers to be checked. To allow check all that
+applies kind of questions. This is chosen by the question creator
+
+Users can change their previous votes if the sysop allows it!
+
+Users can delete the questions they have created if the sysop allows it!
+
+Up to 400 Questions!
+
+A nice graph display of answers!
+
+You can set the program to delete old questions if you like!
+
+Answers can be added by user if the creator of the question allows it!
+
+4 ways of forcing voting (-F, -FQ, -FNQ and -FA command line arguments)!
+
+let users see a message on how many they have not voted only, no voting
+(-FC argument)
+
+multinode aware ... it locks files so two, or more, nodes can run at the 
+same time without anything bad happening.
+
+Multitasker aware, it releases time slices.
+
+Sysop can add questions which are forced just like if you used the -FNQ
+switch, but if you create such a question it will be forced everytime
+any user enters the door with any options. Except if the user is the sysop!
+
+You can lock out bad users! Look at the SYSOP Control! section of this doc
+
+This door is very configurable! Just look at all teh otpions in the .cfg file!
+
+Create your own ASCII ANSI AVATAR RIP main menu files if you wish...
+read "Main Menu Display Files" in this file
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+FREEWARE!
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+This program is freeeware which means ya should not charge for it, unless the 
+cost covers your distribution charges. I accept donations but Ya don't need 
+to send no money .. the software is FREE!!!! Ya got too much to pay just 
+running a board! But ya can send me donations if you think I deserve them :)
+
+This software is the copyright (c)1995-1996 of George Lebl, excluding the
+parts which were written by the author of opendoors, Brian Pirie. 
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+DISCLAIMER!
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+I think it would be really lame to blame anything on me since this is 
+freeware. So this means I'm not responsible for anything that happens to you
+by the use of any of the files in this package. This means if Freevote erases
+your hd and the monitor blows up and your house burns down and the russians
+drop an A-bomb on yer city ... I ain't responsible, You as a user are!
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+Other legal stuff
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+This package should not be altered, unless you ask my permission and i say 
+yes ... it should contain these files:
+
+SYSOP.DOC
+FREEVOTE.EXE
+FREEVOTE.CFG
+WHATSNEW.DOC
+RESET.BAT
+FILE_ID.DIZ
+FREEVOTE.BAT
+UPGRADE.DOC   <--READ!!!!
+V2XTOV28.EXE  <--Run for upgrade from 2.0 - 2.7 to v2.8 format
+FRANZ.DOC
+DONATION.DOC  <--Please send donations!
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+Getting newer versions!
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+Ok If you got WWW go to
+
+http://www.azstarnet.com/~franz/
+
+If ya only got ftp the files should be usually on
+
+ftp.uniserve.com /pub/bbs_doors
+or 
+ftp.wustl.edu /pub/MSDOS_UPLOADS/bbs/doors
+
+if ya only got internet e-mail use the e-mail freq site (it should work)
+
+TO: getfile@peacebbs.org
+SUBJECT: <the file name goes here>
+put anything in the body
+
+FIDO FREQing should be available at 1:300/705. by filename only.
+
+or you can call my bbs and ask for verification! [520] 297-0889
+
+The File naming covention since v2.0 is
+
+FVOTE_??.ZIP
+      ^^
+      ||
+      +--- the version number ... (e.g. "33" for 3.3) 
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+Installation!
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+Well to get you up and running fast, let's get to the instalation. Copy all 
+files into a directory (e.g. C:\FREEVOTE) and edit the FREEVOTE.CFG file to 
+your systems specifications. You can also use the example freevote.bat and
+edit it to your system specifications and then run the program from that!
+
+You should also run maintanance every day! This is done by the -M command
+line argument! The maintanance takes care of packing question and user file
+and deleting questions that are too old (if you set it up that way in the 
+.cfg file) It is not neccessary to run the maintanance but then if you delete
+a question it will decrease your 400 question limit, and if you have timed
+deletion set up it will not work. (BTW as a sysop you can create questions 
+that will never be deleted by the timed deletion!) Anywayz ... you should 
+make sure that nobody else is voting while you run the maintanance! Running 
+it in your nightly batch file is recomended!
+
+If your bbs software cannot pass the comport information through the door 
+file, then edit the comport options in the .CFG file. If you run a multiple
+nodes on such a system create more .CFG files (e.g. FV1.CFG, FV2.CFG) edit
+these ... (You have to put all the settins in both af them!) and start the
+FREEVOTE.EXE with the -C option (e.g. FREEVOTE.EXE -Cfv1.cfg)
+
+If you have a bbs software that passes the comport information leave the 
+comport settings in the .CFG file commented out. Even on a multinode system.
+
+If you want to set up Freevote to tell the user if there are new questions or
+not set up your bbs software to run freevote during the user logon and run it 
+with the -FA parameter. this will count the questions the user has not 
+answered and ask him if he wants to go vote on them. If you want the user to 
+go vote on them right ahead without counting the questions, use the -F 
+parameter. If you want to prevent the user from quitting or skipping 
+questions and so forcing the user to vote on all the questions before he can
+procceed, use the -FNQ argument. This will force user to answer all questions
+and then it will just quit and never enter the main menu. Or if you want the
+questions to appear just as if they were in you bbs with no press enter mesages
+just the questions, use -FQ argument this will be the same as -FNQ but without
+the stupid messages:) Read more about this in the command line parameters 
+section of this manual!
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+Sample batch files:
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+Let's say your bbs system is in c:\bbs your dropfiles for node 1 are in
+c:\bbs\node1, and in c:\bbs\node2 for node2 .. etc... Freevote is installed
+in c:\doors\freevote. This is example batch file which would be called with 
+one command line argument which would be the node number (e.g. 
+"FREEVOTE.BAT 2" for node 2)
+
+FREEVOTE.BAT
+
+  @echo off
+  c:
+  cd \doors\freevote
+  REM change to the freevote dir
+
+  freevote -n%1 -pc:\bbs\node%1
+  REM call freevote with -n<node number> and -p<dropfile path> arguments
+
+  cd \bbs\node%1
+  REM get back to you bbs\node<node number> directory
+
+In your nightly maintanance batch file you would add:
+
+  c:
+  cd \doors\freevote
+  REM change to the freevote dir
+
+  freevote -m
+  REM call freevote to run maintanance
+
+This setup should work for most systems. Just change the path to your 
+specifications.
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+Upgrading
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+From v2.8
+---------
+No conversion neccessary, just unzip this archive to the freevote directory
+
+From v2.0 - 2.7
+---------------------
+Jusdt unzip the whole thing into your freevote directory, then run the
+v2xtov28.exe program to upgrade the question file! Read UPGRADE.DOC
+for more info!
+
+From v1 (freevote.zip)
+----------------------
+
+Delete everything in your current freevote directory and install it as new.
+There is no way to upgrade because v2 needs more info than is stored in the
+v1 files. So all your old questions will be lost. 
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+Main Menu Display Files
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+You can create your own menus just by creating ANSI, ASCII, AVATAR or a RIP
+file and naming it apropriately
+
+Extentions are .ASC for ASCII, .ANS for ANSI, .AVT for AVATAR, .RIP for RIP
+Each file can be in all or just some of these formats. For example if you
+have created files for ANSI and RIP, if an ansi or avatar user logs in he
+sees the ansi menu, if a rip user logs in he sees the rip menu, if an ascii
+user logs in he sees the default built in menu for ascii users.
+
+To create one menu file displayed to all users no matter what security they
+are, create a file named MMENU with the right extentions.
+
+If you want to create a menufile for a specific security level only
+create a file called MM<security> (e.g. MM100.ASC or MM20.RIP). If this
+file is found for the right security level then it is displayed even if
+MMENU file exists.
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+COMMAND LINE
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+Options:
+  
+  -C   =   Run the game with config file differen from FREEVOTE.CFG
+           (e.g. -Cfvalt.cfg = run FREEVOTE with the FVALT.CFG file)
+
+  -L   =   Force local operation. Does not read the drop file and ask for 
+           your name.
+
+  -P   =   Use drop file in dir specified after this option. You can also 
+           specify a drop file to use. (e.g. -Pc:\ra\doorinfo1.def)
+
+  -S   =   The user security! Will be read from the dropfile otherwise!
+
+  -F   =   Forces the user to vote on all new questions when he enters the
+           door then asks him if he wants to goto the menu or quit.
+
+  -FA  =   Counts the questions the user has not answered and asks him if he
+           wants to enter the door. This is the most user friendly way of 
+           forcing voting. It also if there were questions and the user has 
+           voted on all of them, it asks him if he wants to enter the main
+           menu or just quit to the BBS. 
+
+  -FNQ =   Forces the user to vote on all new questions when he enters the 
+           door but he HAS to answer the question, he cannot [S]kip nor [Q]uit
+           after he answers all questions the door exits so the user doesn't
+           actually get into the main menu. This is good if you need some 
+           system oriented questions to be asked and want all the users to
+           answer! Just put "freevote -fnq" into the login sequence. 
+  
+  -FQ  =   Same as -FNQ but it is a quiet mode so no messages like press 
+           enter or returning or you have voted on .... it's just the 
+           questions nothing else.
+
+  -FC  =   like -FA, but it is does not ask the user if he wants to enter the 
+           door it will just cound the unanswered questions display that 
+           message to the user and say press enter to continue and then it 
+           quits thi sis good for adding just a message to your logon wthout 
+           making it messy.
+  
+  -N   =   Set node #. It is only used in the status line.
+
+  -LOG =   Log the usage into "FREEVOTE.LOG" file. It was default in v1, but
+           it bugged me so I made it only an option
+
+  -RDBPS = Forces the game to read the locked port rate. This was default in 
+           the past and had caused problems!. This argument is only used for
+           solving problems with locked bps fossil driver setups!
+
+  -M   =   Run maintanance! This should be run once a day while nobody else is 
+           online! It only runs in local mode! Running "FREEVOTE -M" in your
+           nightly maintanance file is recomended!
+
+  -NAD =   No autodetection of terminal emulation! It is done if you do not
+           specify this option!
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+SYSOP Control!
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+You can control how the door works in different ways!
+
+Edit the .cfg file, there is a ton of options there ....
+
+You can now lock bad users out by creating a BADUSERS.TXT file and putting
+the user names each on a separate line!
+
+SUGGESTION:
+If you wish different security levels to have different access then create
+a .cfg file for each security level and then have your bbs software start
+freevote with the apropriate .cfg file! For example you migth have a low
+access and high access .. so you would create two .cfg files, fvl.cfg and
+fvh.cfg, then you would have your bbs software use the -cfvl.cfg argumet
+for low level users, and -cfvh.cfg for high level users!
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+Problems, Special Setups!
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+If you have problems with reading the dropfile. you might try editting the
+BBSDir parameter in the .cfg file. then you would call freevote without 
+any parameters.
+
+If you have this problem on a multinode system, create a .cfg file for every
+node (e.g. FV1.CFG, FV2.CFG ...) then call freevote with just the -C 
+parameter.
+
+for example for node 2:
+
+freevote -Cfv2.cfg
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+If the users are suddenly forced to vote even on questions you created before
+the upgrade to 2.8 or 3.x, you did not run the upgrade program which reset
+the reserved flag used for this! Read UPGRADE.DOC!
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+If you want multiple sessions of freevote, like if you wanted to have one for
+system specific questions and one for user questions and fun. Then you'll
+have to create two different directories and install it like two separate 
+doors! There are yet no specific functions for this.
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+That's IT!!!
+
+You've done it ....
+
+run FREEVOTE -L to test it local, and enjoy the voting
+
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+REGISTRATION:
+
+Ok PLEASE send me donations! If you do there WILL be future versions, if you
+don't, there might not.
+
+Beer isn't cheap and doing this program for free kindda sux, I have not
+recieved any donations. So please send some money to keep me motivated!
+
+You don't have to pay but if you can and think that this software is good nuff
+for you, please send some money (for sure it's less then any other door that
+does this much!) I don't wanna make it shareware .. and i won't ... but I
+know hundereds of peaople use freevote and not one sent in a donation.
+
+Franz
+12460 n granville cyn way
+tucson,az 85737
+USA
+
+Donations should be cash or money order only!!!! I don't wanna deal with 
+returned checks or stuff like that. But remember it's not a shareware and you
+don't have to pay .. but it will prolly make me make the door better than it 
+is.
+
+anywayz ... just enjoy .. ya don't heftta pay ... oh yeah if ya want to send 
+me comments about it send it to
+
+franz@azstarnet.com
+
+and look at my page (will have the newest ver of FrEevOtE!)
+
+http://www.azstarnet.com/~franz/
+
+new files are usually on
+
+ftp.uniserve.com /pub/bbs_doors
+or
+ftp.wustl.edu /pub/MSDOS_UPLOADS/bbs/doors
+
+if ya wanna call my bbs call (you can d/l all my stuff on fisrt call!):
+
+Franz's BBS [520] 297-0889
+
+There needs to be a free door like this don't ya think.
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+SUGGESTIONS:
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+Anywayz if you find something you like on other doors or you just made it up
+bitch to me about it and maybe i will make another version. Lately due to
+requests and bug reports i have released 3 versions in one week! (2.4, 2.5 and
+2.6) and now due to requests i released 2.7
+
+...and now the v2.8! .. and v3.0 and 3.1 and 3.2.. and ... but i keep being
+more and more lazy on the door as i have not gotten any donations.
+
+heheh this paragraph was updated so many times it sounds funny ....:)
+
+There are two effective ways of getting me to do something, send me 20 e-mails
+a day, send me money, buy me a beer, well that's three ...:)
+
+Have phun and go vote!
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+Other software I wrote:
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+New York 2008: RPG Door Game .. LORD alike but a bit more complicated and 
+               certainly different setting! (shareware $15)
+               (newest version as of this v0.10 WIDE BETA 1)
+
+Dirty Wall: A Wall door. The best looking, but not too configurable.
+            It looks like a real wall, with bricks and everything.
+            This is a different implementation of a poster program which i
+            wrote for my bbs, and now it is a REAL door for any BBS software
+            (freeware)
+            (newest version as of this v2.2)
+            
+FrEevOtE: Well that's this little program (freeware)
+          (newest version as of this v3.3)
+
+KeWlcHaT: Sysop chatting/paging door, pretty kewl but simple. (freeware)
+          (newest version as of this v1.2)
+
+BULLS: ANSI, ASCII bulletin maker, very simple but I use it all the time!
+       (freeware) (newest version as of this v1.2)
+
+Jackpot: New York 2008 IGM. (freeware, source released for v1.0)
+         (lost the source to the latest version in an HD crash)
+         (newest version as of this v1.2 development stopped!)
+
+Franz's Bar: New York 2008 IGM. ($1-donation-ware) (lost the source in a crash)
+             (newest version as of this v1.3 development stopped!)
+
+Shoot Em: New York 2008 IGM. ($1-donation-ware) (lost the source in a crash)
+          (newest version as of this v1.1 development stopped!)
+
+HIDET: Encryption program (almost shareware, I require a $10 payment, but
+       there is no crippling and i released the source) Unbeatable but slow
+       Latest version is v2.2 which is stable and probably the last version
+       anybody interested i will e-mail the source or encryption algorithm.
+       It has a few neat things to it! I might rewrite the algorithm in C 
+       and make a cross platform encryption program. I'd consider it freeware!
+
+Battle: MARS Type programming game. For Windows 3.1. (wanted $10) but it again
+        ain't crippled and ain't really good, and does not follow standards
+        and i haven't received a single reg nor feedback in 4 years:)
+        (newest version as of this v1)
+
+Things: REALLY STUPID program for Win3.1 If you find it DON't D/l it ... hehehe
+        You might laugh yourself to death by it's stupidity. but it's 300k 
+        long! (newest version as of this v1)

@@ -1,0 +1,196 @@
+------------------------------------
+What's New file for -=< FrEevOtE >=- 
+------------------------------------
+
+v3.3 (*nix/win32 support) (8/13/03)
+===================================
+
+* Now runs on FreeBSD, NetBSD, OpenBSD, and Linux
+
+v3.2 (minor released, been bugged by a user to add stuff) (6/21/96)
+===================================================================
+
+* Two Color Schemes (except for question editor which only uses
+  the default colors.
+* You can now create your own ASCII, ANSI, AVATAR or RIP main menu
+  you can have one general one and/or one for each security level
+
+v3.1 (minor release, I dunno felt like it) (4/4/96)
+===================================================
+
+* The reset option in question editor now also alows you to have everybody
+  vote on the question again
+* The total votes is now displayed in the question editor.
+* Erase Answer option in the question editor.
+* Userfile saving routine better (well more space-saving)
+* Users could not add answers bug fixed!!!!!
+
+v3.0 (major release, due to me being a bit bored) (3/31/96)
+===========================================================
+
+* Question editor.
+* Compiled with the new version of Opendoors (6.00)
+* A bug in adding answers fixed.
+* Much kewler local logon window.
+* Sysop now sees if the question was posted anonymously.
+* AddSecurity .cfg file keyword added, to limit which security group can add
+  questions.
+* MinSecurity .cfg file keyword added, to limit who has access to the door.
+* -S command line option added to override user security.
+* Send some money to see more and more features here. I'm tired of working for
+  free:) ... So to see this door grow send a donation!
+
+v2.8 (minor release, due to requests)
+=====================================
+
+* Bad users file. If you want to lock a user out of the door just create
+  a file called BADUSERS.TXT and put the names there, one on each line!
+* Automatic terminal emulation autodetection, you can turn it off to speed
+  up processing by using the -NAD argument!
+* You can now post forced questions as the sysop!
+* Small potential bug fixed when writing flags for new questions.
+* The door is now more rip aware, it actually works well under RIP ...
+* Names have now leading spaces and trailing spaces trimmed for security!
+
+v2.7 (minor release, due to requests)
+=====================================
+
+* -FC count questions command line option .... counts questions only and then 
+  quits ...
+* Ya can disable the paging option and it will also not be visible if it's
+  outside paging hours.
+* Ya can now restrict users to create multiple answer questions (check all 
+  that aplies type questions) in the .cfg file.
+* Ya can restrict anonymous posting in the .cfg file.
+* For adding answers ya can select if users should not have the option or 
+  leave it up to the question creator or make it forced. 
+* There is an option so that the creator now may allow one user to add more 
+  than one answer if he allows adding answers to his question. you can restrict 
+  this option to never be used or to be forced, just like above.
+* You can now set it so that if a user creates a question it allows him to
+  view it's results even if he hasn't voted on it yet.
+
+v2.6 (just a rerelease, changed something)
+==========================================
+
+* Since the request for the -FQ said absolutely no messages and there was 
+  the one with the you have voted on all questions so i killed it and gave 
+  him another ver .. but i didn't checnge the ver # so it's still v2.6
+
+v2.6 (minor release)
+====================
+
+* Redone the question saving so that if user quits while voting on a multiple
+  vote questions it won't record the vote.
+* Also redone some voting and chaging votes routines for more stability on
+  multiple nodes!
+* This made the voting and changing votes stable if two nodes are voting on 
+  the same questions, which would now not cause problems (theoretically)....
+* Made the multiple voting nicer and easier to vote.
+* Added another vote forcing, -FQ, force quiet same as -f but no messages,
+  just questions, or request.
+* On -FNQ and -FA I made not entering freevote after voting the default, 
+  on request
+* Sysop access level can now allways view results of questions they have 
+  not yet answered.
+* I view unsnaswered was set up there was a display bug on view resluts of 
+  all.
+
+v2.5 (bugfix release)
+=====================
+
+* Whoops! v2.4 added a bug that would not allow for the creation of new 
+  user file so if you did not use it before it was impossible to use it ...
+  sorry guys ...
+
+v2.4 (bugfix release)
+=====================
+
+* A major bug fixed which caused a userfile copyover and user deletes if 
+  there were more than 38 users! .. This is a serious BUG ... Install this
+  version as soon as possible!
+
+v2.3 (minor release)
+====================
+
+* Better time slice releasing! Will work much better under multitaskers!
+* If -FA is used it now asks the user if he wants to enter the door once he
+  has voted on the new questions, instead of kicking him in there. 
+* Whoops forgot to put the paging config into the .cfg file it is there now!
+  there are hours of the day and the page duration!
+
+v2.2 (minor release)
+====================
+
+* Answers are now separated by alternating form cyan to yellow for easier 
+  reading, but it can be turned back to green only in the .cfg file!
+* You now allow users to change their vote but not to mark questions as 
+  unanswered!
+
+v2.1 (minor release)
+====================
+
+* Bug fixed in marking questions already voted on. Only occured when user 
+  decided to mark a question he added answer to, to mark as unanswered
+* -FA Command line parameter. A nice force. Counts the new questions and asks
+  the user if he wants to go vote on those topics or quit.
+
+v2.0 (major release)
+====================
+
+* The graph has the highest percentage as top, not 100%
+* When voting on all new user can [S]kip a question
+* You don't get kicked outta the delete menu after deleting a question, so you
+  can delete as many as you want.
+* Some displays are made to look better
+* Questions being added require at last two answers!
+* -F command line argument. Forces the user to vote on all new questions when 
+  he enters the door and then asks him if he wants to enter the door.
+* -FNQ command line argument, it forces the user to answer all new questions, 
+  and he cannot quit nor skip any question. after that it will not ask him
+  if he wants to enter the door but it will quit automatically. this overides 
+  the -F argument.
+* The question file is now packed every time when the door is run and it finds
+  deleted questions to prevent full file error. You have to run "freevote -m"
+  to run it's maintanance though. This should be run every day!
+* You can edit after how many days a question should be deleted.
+* The userfile is now packed to prevent it growing too long.
+* Run the RESET.BAT to delete all questions!
+* -N command line argument. Selects node. Node only used in the status line.
+* -LOG command line argument, turns on file logging.
+* The answers can now be in 2 or 1 line format. The creator of the question
+  chooses that. If two line mode is enabled for the question only 7 answers
+  can be added.
+* The questions may be set to allow the user to vote for more than one answer
+  per question.
+* Users can add questions anonymously. Sysop access level users will allways
+  see the creator anywayz.
+* Sysop access level users can add questions which will never be deleted
+  for being old.
+* The highest percentage is now red on the graph!
+* The question maximum raised to 400!
+* User can delete their own questions if the sysop allows it.
+* Users can change their vote to a question, if the syop allows it.
+* Users can set a question as ununswered if changing of question answers is
+  allowed!
+* The door can read either hanldes or real names from the dropfile!
+* The door should now have no problem with RIP users getting ASCII!
+* -RDBPS command line argument. Forces the game to read the locked port rate.
+  This was default in the past and had caused problems!.
+* Bug with -p command line argument found in version one fixed!
+* Sysop access level users can see who created the question BEFORE they vote
+  on it.
+
+v1 (major release)
+==================
+
+I have not recorded all the changes from EZVote 5 which it was made from!
+But there was a lot, especially:
+
+* Vote on all and see results of all questions
+* 300 questions
+* better displays
+* killed the logoff option
+* added better local login parameter.
+* better command line parameters than EZVote
+* more ... can't remember!
