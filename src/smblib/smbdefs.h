@@ -117,9 +117,27 @@
 
 #define SMB_EMAIL			1			/* User numbers stored in Indexes */
 
-										/* Common smblib errors values */
+#define SMB_SUCCESS			0			/* Successful result/return code */
+#define SMB_FAILURE			-1			/* Generic error (discouraged) */
+
+										/* Standard smblib errors values */
 #define SMB_ERR_NOT_OPEN	-100		/* Message base not open */
 #define SMB_ERR_HDR_LEN		-101		/* Invalid message header length (>64k) */
+#define SMB_ERR_HDR_OFFSET	-102		/* Invalid message header offset */
+#define SMB_ERR_HDR_ID		-103		/* Invalid header ID */
+#define SMB_ERR_HDR_VER		-104		/* Unsupported version */
+#define SMB_ERR_HDR_FIELD	-105		/* Missing header field */
+#define SMB_ERR_NOT_FOUND	-110		/* Item not found */
+#define SMB_ERR_OPEN		-200		/* File open error */
+#define SMB_ERR_SEEK		-201		/* File seek/setpos error */
+#define SMB_ERR_LOCK		-202		/* File lock error */
+#define SMB_ERR_READ		-203		/* File read error */
+#define SMB_ERR_WRITE		-204		/* File write error */
+#define SMB_ERR_TIMEOUT		-205		/* File operation timed-out */
+#define SMB_ERR_FILE_LEN	-206		/* File length invalid */
+#define SMB_ERR_MEM			-300		/* Memory allocation error */
+
+#define SMB_DUPE_MSG		1			/* Duplicate message detected by smb_addcrc() */
 
 										/* Time zone macros for when_t.zone */
 #define DAYLIGHT			0x8000		/* Daylight savings is active */
