@@ -96,6 +96,15 @@ bool sbbs_t::answer()
 	if(rlogin_name[0]==0)
 		sys_status&=~SS_RLOGIN;
 
+	if(!(sys_status&SS_RLOGIN)) {
+		/* Disable Telnet Terminal Echo */
+		sprintf(str,"%c%c%c",TELNET_IAC,TELNET_WILL,TELNET_ECHO);
+		putcom(str,3);
+		/* Will supress Go Ahead */
+		sprintf(str,"%c%c%c",TELNET_IAC,TELNET_WILL,TELNET_SUP_GA);
+		putcom(str,3);
+	}
+
 	/* Detect terminal type */
     mswait(200);
 	rioctl(IOFI);		/* flush input buffer */
@@ -166,15 +175,6 @@ bool sbbs_t::answer()
             strcat(str2,tmp);
         }
         lputs(str2);
-	}
-
-	if(!(sys_status&SS_RLOGIN)) {
-		/* Disable Telnet Terminal Echo */
-		sprintf(str,"%c%c%c",TELNET_IAC,TELNET_WILL,TELNET_ECHO);
-		putcom(str,3);
-		/* Will supress Go Ahead */
-		sprintf(str,"%c%c%c",TELNET_IAC,TELNET_WILL,TELNET_SUP_GA);
-		putcom(str,3);
 	}
 
 	/* AutoLogon via IP or Caller ID here */
