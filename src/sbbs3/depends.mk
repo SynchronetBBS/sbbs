@@ -49,16 +49,16 @@ $(LIBODIR)$(SLASH)misc.$(OFILE):		$(HEADERS) ars_defs.h crc32.h
 $(LIBODIR)$(SLASH)msgtoqwk.$(OFILE):	$(HEADERS) qwk.h
 $(LIBODIR)$(SLASH)netmail.$(OFILE):		$(HEADERS) qwk.h
 $(LIBODIR)$(SLASH)newuser.$(OFILE):		$(HEADERS)
-$(LIBODIR)$(SLASH)pack_qwk.$(OFILE):	$(HEADERS) qwk.h post.h
-$(LIBODIR)$(SLASH)pack_rep.$(OFILE):	$(HEADERS) qwk.h post.h
+$(LIBODIR)$(SLASH)pack_qwk.$(OFILE):	$(HEADERS) qwk.h 
+$(LIBODIR)$(SLASH)pack_rep.$(OFILE):	$(HEADERS) qwk.h
 $(LIBODIR)$(SLASH)postmsg.$(OFILE):		$(HEADERS)
 $(LIBODIR)$(SLASH)prntfile.$(OFILE):	$(HEADERS)
 $(LIBODIR)$(SLASH)putmsg.$(OFILE):		$(HEADERS)
 $(LIBODIR)$(SLASH)putnode.$(OFILE):		$(HEADERS)
-$(LIBODIR)$(SLASH)qwk.$(OFILE):			$(HEADERS) qwk.h post.h
+$(LIBODIR)$(SLASH)qwk.$(OFILE):			$(HEADERS) qwk.h
 $(LIBODIR)$(SLASH)qwktomsg.$(OFILE):	$(HEADERS) qwk.h
 $(LIBODIR)$(SLASH)readmail.$(OFILE):	$(HEADERS)
-$(LIBODIR)$(SLASH)readmsgs.$(OFILE):	$(HEADERS) post.h
+$(LIBODIR)$(SLASH)readmsgs.$(OFILE):	$(HEADERS)
 $(LIBODIR)$(SLASH)ringbuf.$(OFILE):		$(HEADERS)
 $(LIBODIR)$(SLASH)scandirs.$(OFILE):	$(HEADERS)
 $(LIBODIR)$(SLASH)scansubs.$(OFILE):	$(HEADERS)

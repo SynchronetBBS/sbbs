@@ -10,7 +10,6 @@ HEADERS = \
 	client.h \
 	cmdshell.h \
 	nodedefs.h \
-	post.h \
 	ringbuf.h \
 	riodefs.h \
 	sbbs.h \
