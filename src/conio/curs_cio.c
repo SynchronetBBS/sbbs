@@ -740,7 +740,7 @@ int curs_getch(void)
 		while((ch=getch())==ERR) {
 			delay(1);
 		}
-		if(ch & KEY_CODE_YES) {
+		if(ch > 255) {
 			switch(ch) {
 				case KEY_DOWN:            /* Down-arrow */
 					curs_nextgetch=0x50;
