@@ -288,7 +288,7 @@ time_t DLLCALL fdate(char *filename)
 /****************************************************************************/
 long DLLCALL flength(char *filename)
 {
-#if defined(__BORLANDC__)	/* stat() doesn't work right */
+#if defined(__BORLANDC__) && !defined(__unix__)	/* stat() doesn't work right */
 
 	long	handle;
 	struct _finddata_t f;
