@@ -68,12 +68,6 @@ char sbbs_t::getkey(long mode)
 			return(0); 
 		}
 
-#if 0	// moved to inkey() on AUG-29-2001
-		if(sys_status&SS_SYSPAGE) {
-			sbbs_beep(sbbs_random(800),100);
-		}
-#endif
-
 		if(mode&K_SPIN)
 			switch(spin) {
 				case 0:
@@ -82,25 +76,20 @@ char sbbs_t::getkey(long mode)
 							outchar(BS);
 							outchar('³');
 							break;
-						case 10:
+						case 1:
 							outchar(BS);
 							outchar('/');
 							break;
-						case 20:
+						case 2:
 							outchar(BS);
 							outchar('Ä');
 							break;
-						case 30:
+						case 3:
 							outchar(BS);
 							outchar('\\');
-							break;
-						case 40:
 							c=0;
 							break;
-						default:
-							if(!(cfg.node_misc&NM_WINOS2))
-								mswait(DELAY_SPIN);
-							break;  }
+					}
 					break;
 				case 1:
 					switch(c++) {
@@ -108,33 +97,28 @@ char sbbs_t::getkey(long mode)
 							outchar(BS);
 							outchar('°');
 							break;
-						case 10:
+						case 1:
 							outchar(BS);
 							outchar('±');
 							break;
-						case 20:
+						case 2:
 							outchar(BS);
 							outchar('²');
 							break;
-						case 30:
+						case 3:
 							outchar(BS);
 							outchar('Û');
 							break;
-						case 40:
+						case 4:
 							outchar(BS);
 							outchar('²');
 							break;
-						case 50:
+						case 5:
 							outchar(BS);
 							outchar('±');
-							break;
-						case 60:
 							c=0;
 							break;
-						default:
-							if(!(cfg.node_misc&NM_WINOS2))
-								mswait(DELAY_SPIN);
-							break;  }
+					}
 					break;
 				case 2:
 					switch(c++) {
@@ -142,25 +126,20 @@ char sbbs_t::getkey(long mode)
 							outchar(BS);
 							outchar('-');
 							break;
-						case 10:
+						case 1:
 							outchar(BS);
 							outchar('=');
 							break;
-						case 20:
+						case 2:
 							outchar(BS);
 							outchar('ð');
 							break;
-						case 30:
+						case 3:
 							outchar(BS);
 							outchar('=');
-							break;
-						case 40:
 							c=0;
 							break;
-						default:
-							if(!(cfg.node_misc&NM_WINOS2))
-								mswait(DELAY_SPIN);
-							break;  }
+					}
 					break;
 				case 3:
 					switch(c++) {
@@ -168,25 +147,20 @@ char sbbs_t::getkey(long mode)
 							outchar(BS);
 							outchar('Ú');
 							break;
-						case 10:
+						case 1:
 							outchar(BS);
 							outchar('À');
 							break;
-						case 20:
+						case 2:
 							outchar(BS);
 							outchar('Ù');
 							break;
-						case 30:
+						case 3:
 							outchar(BS);
 							outchar('¿');
-							break;
-						case 40:
 							c=0;
 							break;
-						default:
-							if(!(cfg.node_misc&NM_WINOS2))
-								mswait(DELAY_SPIN);
-							break;  }
+					}
 					break;
 				case 4:
 					switch(c++) {
@@ -194,30 +168,24 @@ char sbbs_t::getkey(long mode)
 							outchar(BS);
 							outchar('Ü');
 							break;
-						case 10:
+						case 1:
 							outchar(BS);
 							outchar('Þ');
 							break;
-						case 20:
+						case 2:
 							outchar(BS);
 							outchar('ß');
 							break;
-						case 30:
+						case 3:
 							outchar(BS);
 							outchar('Ý');
-							break;
-						case 40:
 							c=0;
 							break;
-						default:
-							if(!(cfg.node_misc&NM_WINOS2))
-								mswait(DELAY_SPIN);
-							break;  
 					}
 					break; 
 			}
 
-		ch=inkey(mode);
+		ch=inkey(mode,mode&K_SPIN ? 250:1000);
 		if(sys_status&SS_ABORT)
 			return(0);
 		now=time(NULL);
@@ -303,7 +271,8 @@ char sbbs_t::getkey(long mode)
 			timeout=now; 
 		}
 
-		} while(online);
+	} while(online);
+
 	return(0);
 }
 
