@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -94,7 +94,10 @@ void sbbs_get_ini_fname(char* ini_file, char* ctrl_dir, char* pHostName)
 	if(fexistcase(ini_file))
 		return;
 #endif
-	sprintf(ini_file,"%ssbbs.ini",path);
+	iniFileName(ini_file,MAX_PATH,ctrl_dir,"sbbs.ini");
+	if(fexistCase(ini_file))
+		return;
+	iniFileName(ini_file,MAX_PATH,ctrl_dir,"startup.ini");
 }
 
 static void read_ini_globals(FILE* fp, global_startup_t* global)
