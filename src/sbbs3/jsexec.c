@@ -55,6 +55,7 @@ FILE*		statfp;
 char		revision[16];
 BOOL		pause_on_exit=FALSE;
 BOOL		pause_on_error=FALSE;
+BOOL		terminated=FALSE;
 
 void banner(FILE* fp)
 {
@@ -94,7 +95,7 @@ void usage(FILE* fp)
 		);
 }
 
-#ifdef _WINSOCKAPI_
+#if defined(_WINSOCKAPI_)
 
 WSADATA WSAData;
 static BOOL WSAInitialized=FALSE;
@@ -122,7 +123,7 @@ static BOOL winsock_startup(void)
 void bail(int code)
 {
 
-#ifdef _WINSOCKAPI_
+#if defined(_WINSOCKAPI_)
 	if(WSAInitialized && WSACleanup()!=0) 
 		fprintf(errfp,"!WSACleanup ERROR %d\n",ERROR_VALUE);
 #endif
@@ -148,6 +149,8 @@ js_log(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		    return(JS_FALSE);
 		fprintf(errfp,JS_GetStringBytes(str));
 	}
+	if(argc)
+		fprintf(errfp,"\n");
 
 	*rval = JSVAL_VOID;
     return(JS_TRUE);
@@ -376,6 +379,9 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 static JSBool
 js_BranchCallback(JSContext *cx, JSScript *script)
 {
+	JSObject*	obj=js_glob;
+	jsval		val=JSVAL_VOID;
+
 	branch.counter++;
 
 	/* Infinite loop? */
@@ -390,6 +396,17 @@ js_BranchCallback(JSContext *cx, JSScript *script)
 
 	if(branch.gc_freq && (branch.counter%branch.gc_freq)==0)
 		JS_MaybeGC(cx);
+
+	if(terminated) {
+	
+		if(JS_GetProperty(js_cx, js_glob, "server", &val) && val!=JSVAL_VOID)
+			obj=JSVAL_TO_OBJECT(val);
+
+		val=JSVAL_TRUE;
+		JS_SetProperty(js_cx, obj, "terminated", &val);
+
+		terminated=FALSE;	/* No need to repeat this */
+	}
 
     return(JS_TRUE);
 }
@@ -558,7 +575,7 @@ long js_exec(const char *fname, char** args)
 		if(!fgets(line,sizeof(line),fp))
 			break;
 		line_no++;
-#ifdef __unix__	/* Support Unix Shell Scripts that start with #!/path/to/jsexec */
+#if defined(__unix__)	/* Support Unix Shell Scripts that start with #!/path/to/jsexec */
 		if(line_no==1 && strncmp(line,"#!",2)==0)
 			strcpy(line,"\n");	/* To keep line count correct */
 #endif
@@ -571,6 +588,9 @@ long js_exec(const char *fname, char** args)
 		memcpy(js_buf+js_buflen,line,len);
 		js_buflen+=len;
 	}
+	if(fp!=NULL && fp!=stdin)
+		fclose(fp);
+
 	if((js_script=JS_CompileScript(js_cx, js_scope, js_buf, js_buflen, fname==NULL ? NULL : path, 1))==NULL) {
 		fprintf(errfp,"!Error compiling script from %s\n",path);
 		return(-1);
@@ -590,14 +610,25 @@ long js_exec(const char *fname, char** args)
 
 	JS_GC(js_cx);
 
-	if(fp!=NULL && fp!=stdin)
-		fclose(fp);
-
 	if(js_buf!=NULL)
 		free(js_buf);
 
 	return(result);
 }
+
+void break_handler(void)
+{
+	fprintf(stderr,"\n-> Terminated Locally <-\n");
+	terminated=TRUE;
+}
+
+#if defined(_WIN32)
+BOOL WINAPI ControlHandler(DWORD CtrlType)
+{
+	break_handler();
+	return TRUE;
+}
+#endif
 
 /*********************/
 /* Entry point (duh) */
@@ -714,6 +745,11 @@ int main(int argc, char **argv, char** environ)
 		bail(1);
 	}
 	fprintf(statfp,"\n");
+
+	/* Install Ctrl-C/Break signal handler here */
+#if defined(_WIN32)
+	SetConsoleCtrlHandler(ControlHandler, TRUE /* Add */);
+#endif
 
 	result=js_exec(module,&argv[argn]);
 
