@@ -1438,7 +1438,7 @@ char attachment(char *bundlename,faddr_t dest,char cleanup)
 	size_t		f;
 	glob_t		g;
 
-	if(bundlename==NULL) {
+	if(bundlename==NULL && cleanup!=1) {
 		logprintf("ERROR line %d NULL bundlename",__LINE__);
 		return(1);
 	}
@@ -1460,12 +1460,13 @@ char attachment(char *bundlename,faddr_t dest,char cleanup)
 
 	if(cleanup==1) {				/* Create netmail attaches */
 
-	if(!filelength(file)) {
-		fclose(stream);
-		return(0); }
-									/* Get attach names from existing MSGs */
-	sprintf(str,"%s*.msg",scfg.netmail_dir);
-	if(glob(str,0,NULL,&g)==0) {
+		if(!filelength(file)) {
+			fclose(stream);
+			return(0); 
+		}
+										/* Get attach names from existing MSGs */
+		sprintf(str,"%s*.msg",scfg.netmail_dir);
+		glob(str,0,NULL,&g);
 		for(f=0;f<g.gl_pathc;f++) {
 
 			path=g.gl_pathv[f];
@@ -1474,21 +1475,24 @@ char attachment(char *bundlename,faddr_t dest,char cleanup)
 				printf("\7ERROR line %d opening %s\n",__LINE__,path);
 				logprintf("ERROR line %d opening %s %s",__LINE__,path
 					,sys_errlist[errno]);
-				continue; }
+				continue; 
+			}
 			if(filelength(fmsg)<sizeof(fmsghdr_t)) {
 				printf("\7ERROR %s has invalid length of %u bytes\n",path
 					,filelength(fmsg));
 				logprintf("ERROR line %d %s has invalid length of %u bytes"
 					,__LINE__,path,filelength(fmsg));
 				fclose(fidomsg);
-				continue; }
+				continue; 
+			}
 			if(fread(&hdr,sizeof(fmsghdr_t),1,fidomsg)!=1) {
 				fclose(fidomsg);
 				printf("\7ERROR reading %u bytes from %s"
 					,sizeof(fmsghdr_t),path);
 				logprintf("ERROR line %d reading %u bytes from %s"
 					,__LINE__,sizeof(fmsghdr_t),path);
-				continue; }
+				continue; 
+			}
 			fclose(fidomsg);
 			if(!(hdr.attr&FIDO_FILE))		/* Not a file attach */
 				continue;
@@ -1502,31 +1506,32 @@ char attachment(char *bundlename,faddr_t dest,char cleanup)
 					,num_mfncrc*sizeof(long));
 				logprintf("ERROR line %d allocating %lu for bundle name crc"
 					,__LINE__,num_mfncrc*sizeof(long));
-				continue; }
-			mfncrc[num_mfncrc-1]=crc32(strupr(p)); }
-
-			while(!feof(stream)) {
-				if(!fread(&attach,1,sizeof(attach_t),stream))
-					break;
-				sprintf(str,"%s%s",cfg.outbound,attach.fname);
-				if(!fexist(str))
-					continue;
-				fncrc=crc32(strupr(attach.fname));
-				for(crcidx=0;crcidx<num_mfncrc;crcidx++)
-					if(mfncrc[crcidx]==fncrc)
-						break;
-				if(crcidx==num_mfncrc)
-					if(create_netmail(0,str,"\1FLAGS KFS\r",attach.dest,1))
-						error=1; }
-			if(!error)				/* don't truncate if an error occured */
-				chsize(file,0L);
-			fclose(stream);
-			if(num_mfncrc)
-				FREE(mfncrc);
-			globfree(&g);
-			return(0); 
+				continue; 
+			}
+			mfncrc[num_mfncrc-1]=crc32(strupr(p)); 
 		}
 		globfree(&g);
+
+		while(!feof(stream)) {
+			if(!fread(&attach,1,sizeof(attach_t),stream))
+				break;
+			sprintf(str,"%s%s",cfg.outbound,attach.fname);
+			if(!fexist(str))
+				continue;
+			fncrc=crc32(strupr(attach.fname));
+			for(crcidx=0;crcidx<num_mfncrc;crcidx++)
+				if(mfncrc[crcidx]==fncrc)
+					break;
+			if(crcidx==num_mfncrc)
+				if(create_netmail(0,str,"\1FLAGS KFS\r",attach.dest,1))
+					error=1; 
+		}
+		if(!error)				/* don't truncate if an error occured */
+			chsize(file,0L);
+		fclose(stream);
+		if(num_mfncrc)
+			FREE(mfncrc);
+		return(0); 
 	}
 
 	while(!feof(stream)) {
