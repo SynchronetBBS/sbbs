@@ -156,7 +156,7 @@ void bail(int code)
 
 //	YIELD();
 
-	if(1 /* code && mode&PAUSE_ABEND */) {
+	if(code && mode&PAUSE_ABEND) {
 		printf("Hit enter to continue...");
 		getchar();
 	}
@@ -209,7 +209,7 @@ void send_telnet_cmd(SOCKET sock, uchar cmd, uchar opt)
 	buf[1]=cmd;
 	buf[2]=opt;
 
-	fprintf(statfp,"\nSending telnet command: %s %s"
+	fprintf(statfp,"Sending telnet command: %s %s"
 		,telnet_cmd_desc(buf[1]),telnet_opt_desc(buf[2]));
 	if(send(sock,buf,sizeof(buf),0)==sizeof(buf))
 		fprintf(statfp,"\n");
@@ -283,6 +283,9 @@ uint recv_byte(SOCKET sock, unsigned timeout, long mode)
 				else
 					fprintf(statfp,"T<%s> ",telnet_opt_desc(ch));
 #endif
+				if(telnet_cmdlen==3)
+					fprintf(statfp,"Received telnet command: %s %s\n"
+						,telnet_cmd_desc(telnet_cmd),telnet_opt_desc(ch));
 				if(telnet_cmdlen==3 && telnet_cmd==TELNET_DO)
 					send_telnet_cmd(sock, TELNET_WILL,ch);
 	/*
@@ -880,7 +883,7 @@ void receive_files(char** fname, int fnames, FILE* log)
 	ulong	total_bytes=0;
 	FILE*	fp;
 	time_t	t,startfile,ftime;
-	time_t	now,last_status;
+	time_t	now,last_status=0;
 
 	if(fnames>1)
 		fprintf(statfp,"Receiving %u files\n",fnames);
