@@ -1821,13 +1821,10 @@ tODResult ODComOpenFromExistingHandle(tPortHandle hPort,
 
 #ifdef INCLUDE_SOCKET_COM
 	if(pPortInfo->Method == kComMethodSocket) {
-		int bufsize=1024;
 
 		pPortInfo->socket = dwExistingHandle;
 
         pPortInfo->bIsOpen = TRUE;
-
-		setsockopt(pPortInfo->socket, SOL_SOCKET, SO_SNDBUF, &bufsize, sizeof(bufsize));
 
 		return(kODRCSuccess);
 	}
