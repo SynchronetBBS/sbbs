@@ -66,7 +66,8 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 		==NULL) {
 		errormsg(WHERE,ERR_ALLOC,fname
 			,cfg.level_linespermsg[useron_level]*MAX_LINE_LEN);
-		return(false); }
+		return(false); 
+	}
 
 	if(mode&WM_NETMAIL ||
 		(!(mode&(WM_EMAIL|WM_NETMAIL)) && cfg.sub[subnum]->misc&SUB_PNET))
@@ -127,13 +128,15 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 			if((stream=fnopen(&file,str,O_RDONLY))==NULL) {
 				errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
 				LFREE(buf);
-				return(false); }
+				return(false); 
+			}
 
 			if((file=nopen(msgtmp,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
 				errormsg(WHERE,ERR_OPEN,msgtmp,O_WRONLY|O_CREAT|O_TRUNC);
 				LFREE(buf);
 				fclose(stream);
-				return(false); }
+				return(false); 
+			}
 
 			l=ftell(stream);			/* l now points to start of message */
 
@@ -145,7 +148,8 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 					fclose(stream);
 					close(file);
 					LFREE(buf);
-					return(false); }
+					return(false); 
+				}
 				if(!i && linesquoted)
 					break;
 				if(!i || quote[0]=='A') {                   /* Quote all */
@@ -156,8 +160,10 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 						quotestr(str);
 						sprintf(tmp,qstr,str);
 						write(file,tmp,strlen(tmp));
-						linesquoted++; }
-					break; }
+						linesquoted++; 
+					}
+					break; 
+				}
 				if(quote[0]=='L') {
 					fseek(stream,l,SEEK_SET);
 					i=1;
@@ -168,8 +174,10 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 							break;
 						quotestr(str);
 						bprintf("%3d: %.74s\r\n",i,str);
-						i++; }
-					continue; }
+						i++; 
+					}
+					continue; 
+				}
 
 				if(!isdigit(quote[0]))
 					break;
@@ -185,7 +193,8 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 					while(!feof(stream) && !ferror(stream) && j<i) {
 						if(!fgets(tmp,255,stream))
 							break;
-						j++; }		/* skip beginning */
+						j++; /* skip beginning */
+					}		
 					tp=strchr(p,'-');   /* tp for temp pointer */
 					if(tp) {		 /* range */
 						i=atoi(tp+1);
@@ -196,38 +205,49 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 							sprintf(tmp,qstr,str);
 							write(file,tmp,strlen(tmp));
 							linesquoted++;
-							j++; } }
+							j++; 
+						} 
+					}
 					else {			/* one line */
 						if(fgets(str,255,stream)) {
 							quotestr(str);
 							sprintf(tmp,qstr,str);
 							write(file,tmp,strlen(tmp));
-							linesquoted++; } }
+							linesquoted++; 
+						} 
+					}
 					p=strchr(p,',');
 					// if(!p) p=strchr(p,SP);  02/05/96 huh?
-					} }
+				} 
+			}
 
 			fclose(stream);
-			close(file); } }
+			close(file); 
+		} 
+	}
 	else {
 		strcpy(tmp,"QUOTES.TXT");
 		if(useron.xedit && cfg.xedit[useron.xedit-1]->misc&XTRN_LWRCASE)
 			strlwr(tmp);
 		sprintf(str,"%s%s",cfg.node_dir,tmp);
-		remove(str); }
+		remove(str); 
+	}
 
 	if(!online || sys_status&SS_ABORT) {
 		LFREE(buf);
-		return(false); }
+		return(false); 
+	}
 
 	if(!(mode&WM_EXTDESC)) {
 		if(mode&WM_FILE) {
 			c=12;
 			CRLF;
-			bputs(text[Filename]); }
+			bputs(text[Filename]); 
+		}
 		else {
 			c=LEN_TITLE;
-			bputs(text[SubjectPrompt]); }
+			bputs(text[SubjectPrompt]); 
+		}
 		if(!(mode&(WM_EMAIL|WM_NETMAIL)) && !(mode&WM_FILE)
 			&& cfg.sub[subnum]->misc&(SUB_QNET /* |SUB_PNET */ ))
 			c=25;
@@ -236,17 +256,21 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 		if(!getstr(title,c,mode&WM_FILE ? K_LINE|K_UPPER : K_LINE|K_EDIT|K_AUTODEL)
 			&& useron_level && useron.logons) {
 			LFREE(buf);
-			return(false); }
+			return(false); 
+		}
 		if(!(mode&(WM_EMAIL|WM_NETMAIL)) && cfg.sub[subnum]->misc&SUB_QNET
 			&& !SYSOP
 			&& (!stricmp(title,"DROP") || !stricmp(title,"ADD")
 			|| !strnicmp(dest,"SBBS",4))) {
 			LFREE(buf);   /* Users can't post DROP or ADD in QWK netted subs */
-			return(false); } }	/* or messages to "SBBS" */
+			return(false); /* or messages to "SBBS" */
+		}
+	}
 
 	if(!online || sys_status&SS_ABORT) {
 		LFREE(buf);
-		return(false); }
+		return(false); 
+	}
 
 	/* Create WWIV compatible EDITOR.INF file */
 
@@ -265,14 +289,16 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 		if(top[0] && !(mode&WM_NOTOP)) {
 			strcpy((char *)buf,top);
 			strcat((char *)buf,crlf);
-			l=strlen((char *)buf); }
+			l=strlen((char *)buf); 
+		}
 		else
 			l=0;
 		while(l<(ulong)(cfg.level_linespermsg[useron_level]*MAX_LINE_LEN)) {
 			c=getkey(0);
 			if(sys_status&SS_ABORT) {  /* Ctrl-C */
 				LFREE(buf);
-				return(false); }
+				return(false); 
+			}
 			if((c==ESC || c==CTRL_A) && useron.rest&FLAG('A')) /* ANSI restriction */
 				continue;
 			if(c==BEL && useron.rest&FLAG('B'))   /* Beep restriction */
@@ -280,10 +306,12 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 			if(!(console&CON_RAW_IN))	/* Ctrl-Z was hit */
 				break;
 			outchar(c);
-			buf[l++]=c; }
+			buf[l++]=c; 
+		}
 		buf[l]=0;
 		if(l==(ulong)cfg.level_linespermsg[useron_level]*MAX_LINE_LEN)
-			bputs(text[OutOfBytes]); }
+			bputs(text[OutOfBytes]); 
+	}
 
 
 	else if((online==ON_LOCAL && cfg.node_misc&NM_LCL_EDIT && cfg.node_editor[0])
@@ -293,7 +321,8 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 			if(online==ON_REMOTE)
 				ex_mode|=(EX_OUTR|EX_INR);
 			if(cfg.xedit[useron.xedit-1]->misc&WWIVCOLOR)
-				ex_mode|=EX_WWIV; }
+				ex_mode|=EX_WWIV; 
+		}
 		if(useron.xedit && cfg.xedit[useron.xedit-1]->misc&XTRN_NATIVE)
 			ex_mode|=EX_NATIVE;
 		if(useron.xedit && cfg.xedit[useron.xedit-1]->misc&XTRN_SH)
@@ -303,14 +332,16 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 			remove(msgtmp);
 		if(linesquoted) {
 			qlen=flength(msgtmp);
-			qtime=fdate(msgtmp); }
+			qtime=fdate(msgtmp); 
+		}
 		if(online==ON_LOCAL) {
 			if(cfg.node_misc&NM_LCL_EDIT && cfg.node_editor[0])
 				external(cmdstr(cfg.node_editor,msgtmp,nulstr,NULL)
 					,0,cfg.node_dir); 
 			else
 				external(cmdstr(cfg.xedit[useron.xedit-1]->lcmd,msgtmp,nulstr,NULL)
-					,ex_mode,cfg.node_dir); }
+					,ex_mode,cfg.node_dir); 
+		}
 
 		else {
 			CLS;
@@ -322,24 +353,28 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 		if(!fexist(msgtmp) || !online
 			|| (linesquoted && qlen==flength(msgtmp) && qtime==fdate(msgtmp))) {
 			LFREE(buf);
-			return(false); }
+			return(false); 
+		}
 		buf[0]=0;
 		if(!(mode&WM_NOTOP))
 			strcpy((char *)buf,top);
 		if((file=nopen(msgtmp,O_RDONLY))==-1) {
 			errormsg(WHERE,ERR_OPEN,msgtmp,O_RDONLY);
 			LFREE(buf);
-			return(false); }
+			return(false); 
+		}
 		length=filelength(file);
 		l=strlen((char *)buf);	  /* reserve space for top and terminating null */
 		/* truncate if too big */
 		if(length>(long)((cfg.level_linespermsg[useron_level]*MAX_LINE_LEN)-(l+1))) {
 			length=(cfg.level_linespermsg[useron_level]*MAX_LINE_LEN)-(l+1);
-			bputs(text[OutOfBytes]); }
+			bputs(text[OutOfBytes]); 
+		}
 		lread(file,buf+l,length);
 		close(file);
 		// remove(msgtmp); 	   /* no need to save the temp input file */
-		buf[l+length]=0; }
+		buf[l+length]=0; 
+	}
 	else {
 		buf[0]=0;
 		if(linesquoted) {
@@ -364,7 +399,8 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 	if((stream=fnopen(&file,fname,O_WRONLY|O_CREAT|O_TRUNC))==NULL) {
 		errormsg(WHERE,ERR_OPEN,fname,O_WRONLY|O_CREAT|O_TRUNC);
 		LFREE(buf);
-		return(false); }
+		return(false); 
+	}
 	for(l=i=0;buf[l] && i<cfg.level_linespermsg[useron_level];l++) {
 		if((uchar)buf[l]==141 && useron.xedit
     		&& cfg.xedit[useron.xedit-1]->misc&QUICKBBS) {
@@ -395,7 +431,8 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 			buf[l+1]='+';
 		if(buf[l]==LF)
 			i++;
-		fputc(buf[l],stream); }
+		fputc(buf[l],stream); 
+	}
 
 	if(buf[l])
 		bputs(text[NoMoreLines]);
@@ -448,7 +485,8 @@ void sbbs_t::editor_inf(int xeditnum,char *dest, char *title, long mode
 		sprintf(str,"%sMSGINF",cfg.node_dir);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC);
-			return; }
+			return; 
+		}
 		sprintf(str,"%s\r\n%s\r\n%s\r\n%u\r\n%s\r\n%s\r\n"
 			,(subnum!=INVALID_SUB && cfg.sub[subnum]->misc&SUB_NAME) ? useron.name
 				: useron.alias
@@ -459,7 +497,8 @@ void sbbs_t::editor_inf(int xeditnum,char *dest, char *title, long mode
 				:cfg.sub[subnum]->sname
 			,mode&WM_PRIVATE ? "YES":"NO");
 		write(file,str,strlen(str));
-		close(file); }
+		close(file); 
+	}
 	else {
 		strcpy(tmp,"EDITOR.INF");
 		if(useron.xedit && cfg.xedit[useron.xedit-1]->misc&XTRN_LWRCASE)
@@ -467,14 +506,16 @@ void sbbs_t::editor_inf(int xeditnum,char *dest, char *title, long mode
 		sprintf(str,"%s%s",cfg.node_dir,tmp);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC);
-			return; }
+			return; 
+		}
 		sprintf(str,"%s\r\n%s\r\n%u\r\n%s\r\n%s\r\n%u\r\n"
 			,title,dest,useron.number
 			,(subnum!=INVALID_SUB && cfg.sub[subnum]->misc&SUB_NAME) ? useron.name
 			: useron.alias
 			,useron.name,useron.level);
 		write(file,str,strlen(str));
-		close(file); }
+		close(file); 
+	}
 }
 
 
@@ -493,37 +534,47 @@ void sbbs_t::removeline(char *str, char *str2, char num, char skip)
 
 	if((file=nopen(str,O_RDONLY))==-1) {
 		errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
-		return; }
+		return; 
+	}
 	flen=filelength(file);
 	slen=strlen(str2);
 	if((buf=(char *)MALLOC(flen))==NULL) {
 		close(file);
 		errormsg(WHERE,ERR_ALLOC,str,flen);
-		return; }
+		return; 
+	}
 	if(lread(file,buf,flen)!=flen) {
 		close(file);
 		errormsg(WHERE,ERR_READ,str,flen);
 		FREE(buf);
-		return; }
+		return; 
+	}
 	close(file);
 	if((stream=fnopen(&file,str,O_WRONLY|O_TRUNC))==NULL) {
 		close(file);
 		errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_TRUNC);
 		FREE(buf);
-		return; }
+		return; 
+	}
 	for(i=0;l<flen && i<skip;l++) {
 		fputc(buf[l],stream);
 		if(buf[l]==LF)
-			i++; }
+			i++; 
+	}
 	while(l<flen) {
 		if(!strncmp((char *)buf+l,str2,slen)) {
 			for(i=0;i<num && l<flen;i++) {
 				while(l<flen && buf[l]!=LF) l++;
-				l++; } }
+				l++; 
+			} 
+		}
 		else {
 			for(i=0;i<num && l<flen;i++) {
 				while(l<flen && buf[l]!=LF) fputc(buf[l++],stream);
-				fputc(buf[l++],stream); } } }
+				fputc(buf[l++],stream); 
+			} 
+		} 
+	}
 	fclose(stream);
 	FREE((char *)buf);
 }
@@ -542,13 +593,15 @@ ulong sbbs_t::msgeditor(char *buf, char *top, char *title)
 
 	if(online==ON_REMOTE) {
 		rioctl(IOCM|ABORT);
-		rioctl(IOCS|ABORT); }
+		rioctl(IOCS|ABORT); 
+	}
 
 	maxlines=cfg.level_linespermsg[useron.level];
 
 	if((str=(char **)MALLOC(sizeof(char *)*(maxlines+1)))==NULL) {
 		errormsg(WHERE,ERR_ALLOC,"msgeditor",sizeof(char *)*(maxlines+1));
-		return(0); }
+		return(0); 
+	}
 	m=strlen(buf);
 	l=0;
 	while(l<m && lines<maxlines) {
@@ -560,11 +613,13 @@ ulong sbbs_t::msgeditor(char *buf, char *top, char *title)
 			FREE(str);
 			if(online==ON_REMOTE)
 				rioctl(IOSM|ABORT);
-			return(0); }
+			return(0); 
+		}
 		for(i=0;i<79 && l<m;i++,l++) {
 			if(buf[l]==CR) {
 				l+=2;
-				break; }
+				break; 
+			}
 			if(buf[l]==TAB) {
 				if(!(i%8))                  /* hard-coded tabstop of 8 */
 					str[lines][i++]=SP;     /* for expansion */
@@ -618,13 +673,16 @@ ulong sbbs_t::msgeditor(char *buf, char *top, char *title)
 				for(i=0;i<lines;i++)
 					FREE(str[i]);
 				FREE(str);
-				return(0); }
-			str[line][0]=0; }
+				return(0); 
+			}
+			str[line][0]=0; 
+		}
 		if(line>(maxlines-10)) {
 			if(line==maxlines)
 				bputs(text[NoMoreLines]);
 			else
-				bprintf(text[OnlyNLinesLeft],maxlines-line); }
+				bprintf(text[OnlyNLinesLeft],maxlines-line); 
+		}
 		strcpy(strin,str[line]);
 		do {
 			if(!line)
@@ -635,20 +693,23 @@ ulong sbbs_t::msgeditor(char *buf, char *top, char *title)
 		if(sys_status&SS_ABORT) {
 			if(line==lines)
 				FREE(str[line]);
-			continue; }
+			continue; 
+		}
 		if(strin[0]=='/' && strlen(strin)<8) {
 			if(!stricmp(strin,"/DEBUG") && SYSOP) {
 				if(line==lines)
 					FREE(str[line]);
 				bprintf("\r\nline=%d lines=%d rows=%d\r\n",line,lines,rows);
-				continue; }
+				continue; 
+			}
 			else if(!stricmp(strin,"/ABT")) {
 				if(line==lines) 		/* delete a line */
 					FREE(str[line]);
 				for(i=0;i<lines;i++)
 					FREE(str[i]);
 				FREE(str);
-				return(0); }
+				return(0); 
+			}
 			else if(toupper(strin[1])=='D') {
 				if(line==lines)         /* delete a line */
 					FREE(str[line]);
@@ -664,10 +725,13 @@ ulong sbbs_t::msgeditor(char *buf, char *top, char *title)
 					lines--;
 					while(i<lines) {
 						str[i]=str[i+1];
-						i++; }
+						i++; 
+					}
 					if(line>lines)
-						line=lines; }
-				continue; }
+						line=lines; 
+				}
+				continue; 
+			}
 			else if(toupper(strin[1])=='I') {
 				if(line==lines)         /* insert a line before number x */
 					FREE(str[line]);
@@ -686,10 +750,13 @@ ulong sbbs_t::msgeditor(char *buf, char *top, char *title)
 						for(i=0;i<lines;i++)
 							FREE(str[i]);
 						FREE(str);
-						return(0); }
+						return(0); 
+					}
 					str[i][0]=0;
-					line=++lines; }
-				continue; }
+					line=++lines; 
+				}
+				continue; 
+			}
 			else if(toupper(strin[1])=='E') {
 				if(line==lines)         /* edit a line */
 					FREE(str[line]);
@@ -699,12 +766,14 @@ ulong sbbs_t::msgeditor(char *buf, char *top, char *title)
 				j=K_MSG|K_EDIT; /* use j for the getstr mode */
 				if(i==-1) { /* /E means edit last line */
 					i=lines-1;
-					j|=K_WRAP; }    /* wrap when editing last line */
+					j|=K_WRAP;	/* wrap when editing last line */
+				}    
 				if(i>=lines || i<0)
 					bputs(text[InvalidLineNumber]);
 				else
 					getstr(str[i],79,j);
-				continue; }
+				continue; 
+			}
 			else if(!stricmp(strin,"/CLR")) {
 				bputs(text[MsgCleared]);
 				if(line!=lines)
@@ -714,7 +783,8 @@ ulong sbbs_t::msgeditor(char *buf, char *top, char *title)
 				line=0;
 				lines=0;
 				putmsg(top,P_SAVEATR|P_NOATCODES);
-				continue; }
+				continue; 
+			}
 			else if(toupper(strin[1])=='L') {   /* list message */
 				if(line==lines)
 					FREE(str[line]);
@@ -726,20 +796,24 @@ ulong sbbs_t::msgeditor(char *buf, char *top, char *title)
 				attr(LIGHTGRAY);
 				putmsg(top,P_SAVEATR|P_NOATCODES);
 				if(!lines) {
-					continue; }
+					continue; 
+				}
 				j=atoi(strin+2);
 				if(j) j--;  /* start from line j */
 				while(j<lines && !msgabort()) {
 					if(i) { /* line numbers */
 						sprintf(tmp,"%3d: %-.74s",j+1,str[j]);
-						putmsg(tmp,P_SAVEATR|P_NOATCODES); }
+						putmsg(tmp,P_SAVEATR|P_NOATCODES); 
+					}
 					else
 						putmsg(str[j],P_SAVEATR|P_NOATCODES);
 					cleartoeol();  /* delete to end of line */
 					CRLF;
-					j++; }
+					j++; 
+				}
 				SYNC;
-				continue; }
+				continue; 
+			}
 			else if(!stricmp(strin,"/S")) { /* Save */
 				if(line==lines)
 					FREE(str[line]);
@@ -752,20 +826,25 @@ ulong sbbs_t::msgeditor(char *buf, char *top, char *title)
 					bputs(text[SubjectPrompt]);
 					getstr(title,LEN_TITLE,K_LINE|K_EDIT|K_AUTODEL);
 					SYNC;
-					CRLF; }
-				continue; }
+					CRLF; 
+				}
+				continue; 
+			}
 			else if(!stricmp(strin,"/?")) {
 				if(line==lines)
 					FREE(str[line]);
 				menu("editor"); /* User Editor Commands */
 				SYNC;
-				continue; }
+				continue; 
+			}
 			else if(!stricmp(strin,"/ATTR"))    {
 				if(line==lines)
 					FREE(str[line]);
 				menu("attr");   /* User ANSI Commands */
 				SYNC;
-				continue; } }
+				continue; 
+			} 
+		}
 		strcpy(str[line],strin);
 		if(line<maxlines)
 			line++;
@@ -777,7 +856,8 @@ ulong sbbs_t::msgeditor(char *buf, char *top, char *title)
 			outchar(CR);
 			cursor_up();
 			cleartoeol();
-			line-=2; }
+			line-=2; 
+		}
 		}
 	if(!online) {
 		for(i=0;i<lines;i++)
@@ -810,7 +890,8 @@ void sbbs_t::editfile(char *str)
 	remove(str2);
 	if(cfg.node_editor[0] && online==ON_LOCAL) {
 		external(cmdstr(cfg.node_editor,str,nulstr,NULL),0,cfg.node_dir);
-		return; }
+		return; 
+	}
 	if(useron.xedit) {
 		editor_inf(useron.xedit,nulstr,nulstr,0,INVALID_SUB);
 		if(cfg.xedit[useron.xedit-1]->misc&XTRN_NATIVE)
@@ -821,7 +902,8 @@ void sbbs_t::editfile(char *str)
 			if(online==ON_REMOTE)
 				mode|=(EX_OUTR|EX_INR);
 			if(cfg.xedit[useron.xedit-1]->misc&WWIVCOLOR)
-				mode|=EX_WWIV; }
+				mode|=EX_WWIV; 
+		}
 		if(online==ON_LOCAL)
 			external(cmdstr(cfg.xedit[useron.xedit-1]->lcmd,str,nulstr,NULL),mode,cfg.node_dir);
 		else {
@@ -830,10 +912,12 @@ void sbbs_t::editfile(char *str)
 			external(cmdstr(cfg.xedit[useron.xedit-1]->rcmd,str,nulstr,NULL),mode,cfg.node_dir);
 			rioctl(IOSM|PAUSE|ABORT); 
 		}
-		return; }
+		return; 
+	}
 	if((buf=(char *)MALLOC(maxlines*MAX_LINE_LEN))==NULL) {
 		errormsg(WHERE,ERR_ALLOC,nulstr,maxlines*MAX_LINE_LEN);
-		return; }
+		return; 
+	}
 	if((file=nopen(str,O_RDONLY))!=-1) {
 		length=filelength(file);
 		if(length>(long)maxlines*MAX_LINE_LEN) {
@@ -841,30 +925,37 @@ void sbbs_t::editfile(char *str)
 			bprintf("\7\r\nFile size (%lu bytes) is larger than (%lu).\r\n"
 				,length,(ulong)maxlines*MAX_LINE_LEN);
 			close(file);
-			FREE(buf); }
+			FREE(buf); 
+		}
 		if(read(file,buf,length)!=length) {
 			close(file);
 			FREE(buf);
 			errormsg(WHERE,ERR_READ,str,length);
-			return; }
+			return; 
+		}
 		buf[length]=0;
-		close(file); }
+		close(file); 
+	}
 	else {
 		buf[0]=0;
-		bputs(text[NewFile]); }
+		bputs(text[NewFile]); 
+	}
 	if(!msgeditor(buf,nulstr,nulstr)) {
 		FREE(buf);
-		return; }
+		return; 
+	}
 	bputs(text[Saving]);
 	if((file=nopen(str,O_CREAT|O_WRONLY|O_TRUNC))==-1) {
 		errormsg(WHERE,ERR_OPEN,str,O_CREAT|O_WRONLY|O_TRUNC);
 		FREE(buf);
-		return; }
+		return; 
+	}
 	if((size_t)write(file,buf,strlen(buf))!=strlen(buf)) {
 		close(file);
 		errormsg(WHERE,ERR_WRITE,str,strlen(buf));
 		FREE(buf);
-		return; }
+		return; 
+	}
 	for(l=lines=0;buf[l];l++)
 		if(buf[l]==LF)
 			lines++;
@@ -897,7 +988,8 @@ void sbbs_t::copyfattach(uint to, uint from, char *title)
 			mv(str3,str2,1);
 		if(!p)
 			break;
-		tp=p+1; }
+		tp=p+1; 
+	}
 }
 
 
@@ -916,16 +1008,20 @@ void sbbs_t::forwardmail(smbmsg_t *msg, int usernumber)
 
 	if(useron.etoday>=cfg.level_emailperday[useron.level] && !SYSOP) {
 		bputs(text[TooManyEmailsToday]);
-		return; }
+		return; 
+	}
 	if(useron.rest&FLAG('F')) {
 		bputs(text[R_Forward]);
-		return; }
+		return; 
+	}
 	if(usernumber==1 && useron.rest&FLAG('S')) {
 		bprintf(text[R_Feedback],cfg.sys_op);
-		return; }
+		return; 
+	}
 	if(usernumber!=1 && useron.rest&FLAG('E')) {
 		bputs(text[R_Email]);
-		return; }
+		return; 
+	}
 
 	msg->idx.attr&=~(MSG_READ|MSG_DELETE);
 	msg->hdr.attr=msg->idx.attr;
@@ -947,16 +1043,19 @@ void sbbs_t::forwardmail(smbmsg_t *msg, int usernumber)
 
 	if((i=smb_open_da(&smb))!=0) {
 		errormsg(WHERE,ERR_OPEN,smb.file,i,smb.last_error);
-		return; }
+		return; 
+	}
 	if((i=smb_incmsg_dfields(&smb,msg,1))!=0) {
 		errormsg(WHERE,ERR_WRITE,smb.file,i);
-		return; }
+		return; 
+	}
 	smb_close_da(&smb);
 
 
 	if((i=smb_addmsghdr(&smb,msg,SMB_SELFPACK))!=0) {
 		errormsg(WHERE,ERR_WRITE,smb.file,i);
-		return; }
+		return; 
+	}
 
 	if(msg->hdr.auxattr&MSG_FILEATTACH)
 		copyfattach(usernumber,useron.number,msg->subj);
@@ -974,11 +1073,13 @@ void sbbs_t::forwardmail(smbmsg_t *msg, int usernumber)
 	if(usernumber==1) {
 		useron.fbacks++;
 		logon_fbacks++;
-		putuserrec(&cfg,useron.number,U_FBACKS,5,ultoa(useron.fbacks,tmp,10)); }
+		putuserrec(&cfg,useron.number,U_FBACKS,5,ultoa(useron.fbacks,tmp,10)); 
+	}
 	else {
 		useron.emails++;
 		logon_emails++;
-		putuserrec(&cfg,useron.number,U_EMAILS,5,ultoa(useron.emails,tmp,10)); }
+		putuserrec(&cfg,useron.number,U_EMAILS,5,ultoa(useron.emails,tmp,10)); 
+	}
 	useron.etoday++;
 	putuserrec(&cfg,useron.number,U_ETODAY,5,ultoa(useron.etoday,tmp,10));
 
@@ -988,10 +1089,13 @@ void sbbs_t::forwardmail(smbmsg_t *msg, int usernumber)
 			&& (node.status==NODE_INUSE || node.status==NODE_QUIET)) {
 			sprintf(str,text[EmailNodeMsg],cfg.node_num,useron.alias);
 			putnmsg(&cfg,i,str);
-			break; } }
+			break; 
+		} 
+	}
 	if(i>cfg.sys_nodes) {	/* User wasn't online, so leave short msg */
 		sprintf(str,text[UserSentYouMail],useron.alias);
-		putsmsg(&cfg,usernumber,str); }
+		putsmsg(&cfg,usernumber,str); 
+	}
 }
 
 /****************************************************************************/
@@ -1016,7 +1120,8 @@ void sbbs_t::automsg()
 			case 'W':
 				if(useron.rest&FLAG('W')) {
 					bputs(text[R_AutoMsg]);
-					break; }
+					break; 
+				}
 				action=NODE_AMSG;
 				SYNC;
 				bputs("\r\n3 lines:\r\n");
@@ -1033,10 +1138,12 @@ void sbbs_t::automsg()
 				if(yesno(text[OK])) {
 					if(useron.exempt&FLAG('A')) {
 						if(!noyes(text[AnonymousQ]))
-							anon=1; }
+							anon=1; 
+					}
 					if((file=nopen(automsg,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
 						errormsg(WHERE,ERR_OPEN,automsg,O_WRONLY|O_CREAT|O_TRUNC);
-						return; }
+						return; 
+					}
 					if(anon)
 						sprintf(tmp,"%.80s",text[Anonymous]);
 					else
@@ -1045,10 +1152,13 @@ void sbbs_t::automsg()
 					strcat(str,"          ");
 					write(file,str,strlen(str));
 					write(file,buf,strlen(buf));
-					close(file); }
+					close(file); 
+				}
 				break;
 			case 'Q':
-				return; } }
+				return; 
+		} 
+	}
 }
 
 /****************************************************************************/
@@ -1081,11 +1191,13 @@ void sbbs_t::editmsg(smbmsg_t *msg, uint subnum)
 
 	if((i=smb_locksmbhdr(&smb))!=0) {
 		errormsg(WHERE,ERR_LOCK,smb.file,i);
-		return; }
+		return; 
+	}
 
 	if((i=smb_getstatus(&smb))!=0) {
 		errormsg(WHERE,ERR_READ,smb.file,i);
-		return; }
+		return; 
+	}
 
 	if(!(smb.status.attr&SMB_HYPERALLOC)) {
 		if((i=smb_open_da(&smb))!=0) {
@@ -1102,18 +1214,20 @@ void sbbs_t::editmsg(smbmsg_t *msg, uint subnum)
 	for(x=1;x<msg->hdr.total_dfields;x++) { 	/* Clear the other data fields */
 		msg->dfield[x].type=UNUSED; 			/* so we leave the header length */
 		msg->dfield[x].length=0;				/* unchanged */
-		msg->dfield[x].offset=0; }
+		msg->dfield[x].offset=0; 
+	}
 
 
-	if(smb.status.attr&SMB_HYPERALLOC) {
-		offset=smb_hallocdat(&smb); }
+	if(smb.status.attr&SMB_HYPERALLOC)
+		offset=smb_hallocdat(&smb); 
 	else {
 		if((subnum!=INVALID_SUB && cfg.sub[subnum]->misc&SUB_FAST)
 			|| (subnum==INVALID_SUB && cfg.sys_misc&SM_FASTMAIL))
 			offset=smb_fallocdat(&smb,length,1);
 		else
 			offset=smb_allocdat(&smb,length,1);
-		smb_close_da(&smb); }
+		smb_close_da(&smb); 
+	}
 
 	msg->hdr.offset=offset;
 	if((file=open(msgtmp,O_RDONLY|O_BINARY))==-1
@@ -1121,7 +1235,8 @@ void sbbs_t::editmsg(smbmsg_t *msg, uint subnum)
 		smb_unlocksmbhdr(&smb);
 		smb_freemsgdat(&smb,offset,length,1);
 		errormsg(WHERE,ERR_OPEN,msgtmp,O_RDONLY|O_BINARY);
-		return; }
+		return; 
+	}
 
 	setvbuf(instream,NULL,_IOFBF,2*1024);
 	fseek(smb.sdt_fp,offset,SEEK_SET);
@@ -1136,7 +1251,8 @@ void sbbs_t::editmsg(smbmsg_t *msg, uint subnum)
 		if(j>1 && (j!=x || feof(instream)) && buf[j-1]==LF && buf[j-2]==CR)
 			buf[j-1]=buf[j-2]=0;	/* Convert to NULL */
 		fwrite(buf,j,1,smb.sdt_fp);
-		x=SDT_BLOCK_LEN; }
+		x=SDT_BLOCK_LEN; 
+	}
 	fflush(smb.sdt_fp);
 	fclose(instream);
 
@@ -1155,6 +1271,8 @@ bool sbbs_t::movemsg(smbmsg_t* msg, uint subnum)
 	uint i;
 	int newgrp,newsub,storage;
 	ulong offset,length;
+	smbmsg_t	newmsg=*msg;
+	smb_t		newsmb;
 
 	for(i=0;i<usrgrps;i++)		 /* Select New Group */
 		uselect(1,i,"Message Group",cfg.grp[usrgrp[i]]->lname,0);
@@ -1170,85 +1288,86 @@ bool sbbs_t::movemsg(smbmsg_t* msg, uint subnum)
 	length=smb_getmsgdatlen(msg);
 	if((buf=(char *)MALLOC(length))==NULL) {
 		errormsg(WHERE,ERR_ALLOC,smb.file,length);
-		return(false); }
+		return(false); 
+	}
 
 	fseek(smb.sdt_fp,msg->hdr.offset,SEEK_SET);
 	fread(buf,length,1,smb.sdt_fp);
 
-	if((i=smb_stack(&smb,SMB_STACK_PUSH))!=0) {
+	sprintf(newsmb.file,"%s%s",cfg.sub[newsub]->data_dir,cfg.sub[newsub]->code);
+	newsmb.retry_time=cfg.smb_retry_time;
+	newsmb.subnum=newsub;
+	if((i=smb_open(&newsmb))!=0) {
 		FREE(buf);
-		errormsg(WHERE,ERR_OPEN,cfg.sub[newsub]->code,i);
-		return(false); }
+		errormsg(WHERE,ERR_OPEN,newsmb.file,i,newsmb.last_error);
+		return(false); 
+	}
 
-	sprintf(smb.file,"%s%s",cfg.sub[newsub]->data_dir,cfg.sub[newsub]->code);
-	smb.retry_time=cfg.smb_retry_time;
-	smb.subnum=newsub;
-	if((i=smb_open(&smb))!=0) {
-		FREE(buf);
-		smb_stack(&smb,SMB_STACK_POP);
-		errormsg(WHERE,ERR_OPEN,smb.file,i,smb.last_error);
-		return(false); }
-
-	if(filelength(fileno(smb.shd_fp))<1) {	 /* Create it if it doesn't exist */
-		smb.status.max_crcs=cfg.sub[newsub]->maxcrcs;
-		smb.status.max_msgs=cfg.sub[newsub]->maxmsgs;
-		smb.status.max_age=cfg.sub[newsub]->maxage;
-		smb.status.attr=cfg.sub[newsub]->misc&SUB_HYPER ? SMB_HYPERALLOC :0;
-		if((i=smb_create(&smb))!=0) {
+	if(filelength(fileno(newsmb.shd_fp))<1) {	 /* Create it if it doesn't exist */
+		newsmb.status.max_crcs=cfg.sub[newsub]->maxcrcs;
+		newsmb.status.max_msgs=cfg.sub[newsub]->maxmsgs;
+		newsmb.status.max_age=cfg.sub[newsub]->maxage;
+		newsmb.status.attr=cfg.sub[newsub]->misc&SUB_HYPER ? SMB_HYPERALLOC :0;
+		if((i=smb_create(&newsmb))!=0) {
 			FREE(buf);
-			smb_close(&smb);
-			smb_stack(&smb,SMB_STACK_POP);
-			errormsg(WHERE,ERR_CREATE,smb.file,i);
-			return(false); } }
+			smb_close(&newsmb);
+			errormsg(WHERE,ERR_CREATE,newsmb.file,i,newsmb.last_error);
+			return(false); 
+		} 
+	}
 
-	if((i=smb_locksmbhdr(&smb))!=0) {
+	if((i=smb_locksmbhdr(&newsmb))!=0) {
 		FREE(buf);
-		smb_close(&smb);
-		smb_stack(&smb,SMB_STACK_POP);
-		errormsg(WHERE,ERR_LOCK,smb.file,i);
-		return(false); }
+		smb_close(&newsmb);
+		errormsg(WHERE,ERR_LOCK,newsmb.file,i,newsmb.last_error);
+		return(false); 
+	}
 
-	if((i=smb_getstatus(&smb))!=0) {
+	if((i=smb_getstatus(&newsmb))!=0) {
 		FREE(buf);
-		smb_close(&smb);
-		smb_stack(&smb,SMB_STACK_POP);
-		errormsg(WHERE,ERR_READ,smb.file,i);
-		return(false); }
+		smb_close(&newsmb);
+		errormsg(WHERE,ERR_READ,newsmb.file,i,newsmb.last_error);
+		return(false); 
+	}
 
-	if(smb.status.attr&SMB_HYPERALLOC) {
-		offset=smb_hallocdat(&smb);
-		storage=SMB_HYPERALLOC; }
+	if(newsmb.status.attr&SMB_HYPERALLOC) {
+		offset=smb_hallocdat(&newsmb);
+		storage=SMB_HYPERALLOC; 
+	}
 	else {
-		if((i=smb_open_da(&smb))!=0) {
+		if((i=smb_open_da(&newsmb))!=0) {
 			FREE(buf);
-			smb_close(&smb);
-			smb_stack(&smb,SMB_STACK_POP);
-			errormsg(WHERE,ERR_OPEN,smb.file,i,smb.last_error);
-			return(false); }
+			smb_close(&newsmb);
+			errormsg(WHERE,ERR_OPEN,newsmb.file,i,newsmb.last_error);
+			return(false); 
+		}
 		if(cfg.sub[newsub]->misc&SUB_FAST) {
-			offset=smb_fallocdat(&smb,length,1);
-			storage=SMB_FASTALLOC; }
+			offset=smb_fallocdat(&newsmb,length,1);
+			storage=SMB_FASTALLOC; 
+		}
 		else {
-			offset=smb_allocdat(&smb,length,1);
-			storage=SMB_SELFPACK; }
-		smb_close_da(&smb); }
+			offset=smb_allocdat(&newsmb,length,1);
+			storage=SMB_SELFPACK; 
+		}
+		smb_close_da(&newsmb); 
+	}
 
-	msg->hdr.offset=offset;
-	msg->hdr.version=smb_ver();
+	newmsg.hdr.offset=offset;
+	newmsg.hdr.version=smb_ver();
 
-	fseek(smb.sdt_fp,offset,SEEK_SET);
-	fwrite(buf,length,1,smb.sdt_fp);
-	fflush(smb.sdt_fp);
+	fseek(newsmb.sdt_fp,offset,SEEK_SET);
+	fwrite(buf,length,1,newsmb.sdt_fp);
+	fflush(newsmb.sdt_fp);
 	FREE(buf);
 
-	i=smb_addmsghdr(&smb,msg,storage);	// calls smb_unlocksmbhdr() 
-	smb_close(&smb);
-	smb_stack(&smb,SMB_STACK_POP);
+	i=smb_addmsghdr(&newsmb,&newmsg,storage);	// calls smb_unlocksmbhdr() 
+	smb_close(&newsmb);
 
 	if(i) {
-		smb_freemsgdat(&smb,offset,length,1);
-		errormsg(WHERE,ERR_WRITE,smb.file,i);
-		return(false); }
+		smb_freemsgdat(&newsmb,offset,length,1);
+		errormsg(WHERE,ERR_WRITE,newsmb.file,i,newsmb.last_error);
+		return(false); 
+	}
 
 	bprintf("\r\nMoved to %s %s\r\n\r\n"
 		,cfg.grp[usrgrp[newgrp]]->sname,cfg.sub[newsub]->lname);
@@ -1302,6 +1421,8 @@ ushort sbbs_t::chmsgattr(ushort attr)
 				attr^=MSG_LOCKED;
 				break;
 			default:
-				return(attr); } }
+				return(attr); 
+		} 
+	}
 	return(attr);
 }
