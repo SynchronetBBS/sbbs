@@ -1562,6 +1562,7 @@ static void smtp_thread(void* arg)
 				if(*p=='.') p++;	/* Transparency (RFC821 4.5.2) */
 				if(msgtxt!=NULL) 
 					fprintf(msgtxt, "%s\r\n", p);
+				mswait(1);
 				continue;
 			}
 			/* RFC822 Header parsing */
