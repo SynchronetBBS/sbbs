@@ -331,7 +331,7 @@ static int mail_lputs(char *str)
             }
         }
         if(LogStream==NULL)
-            LogStream=fopen(LogFileName.c_str(),"a");
+            LogStream=fsopen(LogFileName.c_str(),"a",SH_DENYNONE);
 
         if(LogStream!=NULL) {
 			Line=Now().FormatString("hh:mm:ss")+"  ";
@@ -441,7 +441,7 @@ static int ftp_lputs(char *str)
             }
         }
         if(LogStream==NULL)
-            LogStream=fopen(LogFileName.c_str(),"a");
+            LogStream=fsopen(LogFileName.c_str(),"a",SH_DENYNONE);
 
         if(LogStream!=NULL) {
             Line=Now().FormatString("hh:mm:ss")+"  ";
