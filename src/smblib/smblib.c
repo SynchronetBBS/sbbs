@@ -68,7 +68,7 @@
 #include "filewrap.h"
 
 /* Use smb_ver() and smb_lib_ver() to obtain these values */
-#define SMBLIB_VERSION		"2.20"      /* SMB library version */
+#define SMBLIB_VERSION		"2.21"      /* SMB library version */
 #define SMB_VERSION 		0x0121		/* SMB format version */
 										/* High byte major, low byte minor */
 
@@ -1104,6 +1104,49 @@ int SMBCALL smb_hfield(smbmsg_t* msg, ushort type, size_t length, void* data)
 	msg->hdr.length+=length;
 	return(SMB_SUCCESS);
 }
+
+/****************************************************************************/
+/* Appends data to an existing header field (in memory only)				*/
+/****************************************************************************/
+int SMBCALL smb_hfield_append(smbmsg_t* msg, ushort type, size_t length, void* data)
+{
+	int		i;
+	BYTE*	p;
+
+	if(length==0)	/* nothing to append */
+		return(SMB_SUCCESS);
+
+	if(msg->total_hfields<1)
+		return(SMB_ERR_NOT_FOUND);
+
+	/* search for the last header field of this type */
+	for(i=msg->total_hfields-1;i>=0;i--)
+		if(msg->hfield[i].type == type)
+			break;
+	if(i<0)
+		return(SMB_ERR_NOT_FOUND);
+
+	if(msg->hdr.length==0) 	/* uninitialized */
+		msg->hdr.length=(ushort)smb_getmsghdrlen(msg);
+
+	if(msg->hdr.length+length>SMB_MAX_HDR_LEN)
+		return(SMB_ERR_HDR_LEN);
+
+	if((p=(BYTE*)REALLOC(msg->hfield_dat[i],msg->hfield[i].length+length+1))==NULL) 
+		return(SMB_ERR_MEM);	/* Allocate 1 extra for ASCIIZ terminator */
+
+	msg->hfield_dat[i]=p;
+	p+=msg->hfield[i].length;	/* skip existing data */
+	memset(p,0,length+1);
+	memcpy(p,data,length);		/* append */
+	msg->hfield[i].length+=length;
+	set_convenience_ptr(msg,type,msg->hfield_dat[i]);
+
+	/* Maintain hdr.length so we don't exceed SMB_MAX_HDR_LEN */
+	msg->hdr.length+=length;
+	return(SMB_SUCCESS);
+}
+
 
 /****************************************************************************/
 /* Searches for a specific header field (by type) and returns it			*/
