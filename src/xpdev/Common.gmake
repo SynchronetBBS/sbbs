@@ -125,11 +125,6 @@ else
  endif
 endif
 
-ifdef NEED_THREADS
- CFLAGS += $(PTHREAD_CFLAGS)
- LDFLAGS	+= $(PTHREAD_LDFLAGS)
-endif
-
 ifdef DEBUG
  CFLAGS	+=	-ggdb
  CFLAGS	+=	-D_DEBUG
@@ -150,7 +145,13 @@ ifdef NEED_UIFC
  OBJS	+=	$(UIFC_OBJS)
 endif
 ifdef XP_SEM
- OBJS	+= $(LIBODIR)$(SLASH)xpsem.$(OFILE)
+ PTHREAD_OBJS	+= $(LIBODIR)$(SLASH)xpsem.$(OFILE)
+endif
+
+ifdef NEED_THREADS
+ CFLAGS += $(PTHREAD_CFLAGS)
+ LDFLAGS	+= $(PTHREAD_LDFLAGS)
+ OBJS	+= $(PTHREAD_OBJS)
 endif
 
 depend:
