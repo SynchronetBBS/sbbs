@@ -2275,7 +2275,7 @@ static void ctrl_thread(void* arg)
 		cmd=buf;
 		while(((BYTE)*cmd)==TELNET_IAC) {
 			cmd++;
-			lprintf("%04d RX: Telnet cmd %d",sock,(BYTE)*cmd);
+			lprintf("%04d RX: Telnet cmd: %s",sock,telnet_cmd_desc(*cmd));
 			cmd++;
 		}
 		while(*cmd && *cmd<' ') {
