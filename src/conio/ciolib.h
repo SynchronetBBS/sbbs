@@ -128,6 +128,39 @@ extern int directvideo;
 extern "C" {
 #endif
 int initciolib(int mode);
+
+int ciolib_movetext(int sx, int sy, int ex, int ey, int dx, int dy);
+char *ciolib_cgets(char *str);
+int ciolib_cscanf (char *format , ...);
+int ciolib_kbhit(void);
+int ciolib_getch(void);
+int ciolib_getche(void);
+int ciolib_ungetch(int ch);
+void ciolib_gettextinfo(struct text_info *info);
+int ciolib_wherex(void);
+int ciolib_wherey(void);
+void ciolib_wscroll(void);
+void ciolib_gotoxy(int x, int y);
+void ciolib_clreol(void);
+void ciolib_clrscr(void);
+int ciolib_cputs(char *str);
+int	ciolib_cprintf(char *fmat, ...);
+void ciolib_textbackground(int colour);
+void ciolib_textcolor(int colour);
+void ciolib_highvideo(void);
+void ciolib_lowvideo(void);
+void ciolib_normvideo(void);
+int ciolib_puttext(int a,int b,int c,int d,unsigned char *e);
+int ciolib_gettext(int a,int b,int c,int d,unsigned char *e);
+void ciolib_textattr(unsigned char a);
+void ciolib_delay(long a);
+int ciolib_putch(unsigned char a);
+void ciolib_setcursortype(int a);
+void ciolib_textmode(int mode);
+void ciolib_window(int sx, int sy, int ex, int ey);
+void ciolib_delline(void);
+void ciolib_insline(void);
+char *ciolib_getpass(const char *prompt);
 #ifdef __cplusplus
 }
 #endif
