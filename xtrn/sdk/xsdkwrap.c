@@ -230,6 +230,9 @@ void _termios_setup(void)
 
 int kbhit(void)
 {
+	if(!isatty(fileno(stdin)))
+		return(0);
+
 	// set up select() args
 	FD_ZERO(&inp);
 	FD_SET(0, &inp);
