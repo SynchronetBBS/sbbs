@@ -582,6 +582,8 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 	lprintf(LOG_ERR,"%04d %s !JavaScript %s%s%s: %s",sock,prot,warning,file,line,message);
 }
 
+#if 0
+
 /* Server Object Properites */
 enum {
 	 SERVER_PROP_TERMINATED
@@ -653,6 +655,8 @@ static JSClass js_server_class = {
 		,JS_ConvertStub		/* convert		*/
 		,JS_FinalizeStub	/* finalize		*/
 }; 
+
+#endif
 
 /* Server Methods */
 

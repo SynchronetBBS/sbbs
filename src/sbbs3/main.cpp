@@ -300,12 +300,14 @@ DLLCALL js_DescribeSyncConstructor(JSContext* cx, JSObject* obj, const char* str
 
 #ifdef _DEBUG
 
+#if 0
 static char* server_prop_desc[] = {
 
 	 "server name and version number"
 	,"detailed version/build information"
 	,NULL
 };
+#endif
 
 
 static const char* method_array_name = "_method_list";
