@@ -246,7 +246,8 @@ public:
 	uchar 	curatr; 		/* Current Text Attributes Always */
 	long 	lncntr; 		/* Line Counter - for PAUSE */
 	long 	tos;			/* Top of Screen */
-	long 	rows;			/* Current Rows for User */
+	long 	rows;			/* Current number of Rows for User */
+	long	cols;			/* Current number of Columns for User */
 	long 	autoterm;		/* Autodetected terminal type */
 	char 	slbuf[SAVE_LINES][LINE_BUFSIZE+1]; /* Saved for redisplay */
 	char 	slatr[SAVE_LINES];	/* Starting attribute of each line */
