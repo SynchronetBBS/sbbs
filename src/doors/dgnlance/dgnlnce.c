@@ -334,7 +334,7 @@ checkday(void)
 	}
     }
     outfile = fopen("data/characte.lan", "wb");
-    fprintf(outfile, "%d\n", i);
+    fprintf(outfile, "%u\n", i);
     for (j = 0; j < i; j++) {
 	writenextuser(playerlist[j], outfile);
 	free(playerlist[j]);
@@ -441,7 +441,7 @@ saveuser(struct playertype * plr)
 	}
     }
     outfile = fopen("data/characte.lan", "wb");
-    fprintf(outfile, "%d\n", i);
+    fprintf(outfile, "%u\n", i);
     for (j = 0; j < i; j++) {
 	writenextuser(playerlist[j], outfile);
 	free(playerlist[j]);
@@ -762,8 +762,6 @@ void
 bmode(void)
 {
     double          roll;	       /* Used for To Hit and damage rolls */
-    FILE           *outfile;
-    int             okea;
     int             tint;
     if ((opp.hps > opp.damage) && user.damage < user.hps) {
 	roll = opponentattack();
@@ -1330,7 +1328,6 @@ vic(void)
 void
 create(BOOL isnew)
 {
-    DWORD           newnum;
     user.vary = supplant();
     user.strength = 12;
     user.status = ONLINE;
@@ -1506,7 +1503,6 @@ void
 spy(void)
 {
     char            aa[31];
-    int             a;
     od_clr_scr();
     od_disp_str("Spying on another user eh.. well you may spy, but to keep\r\n");
     od_disp_str("you from copying this person's stats, they will not be   \r\n");
