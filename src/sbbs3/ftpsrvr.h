@@ -99,10 +99,14 @@ typedef struct {
 #define FTP_OPT_NO_HOST_LOOKUP	(1<<11)
 #define FTP_OPT_MUTE			(1<<31)
 
+#ifdef _WIN32
 #ifdef FTPSRVR_EXPORTS
 #define FTP_CALL __declspec( dllexport )
 #else
 #define FTP_CALL __declspec( dllimport )
+#endif
+#else	/* !_WIN32 */
+#define FTP_CALL
 #endif
 
 #ifdef __cplusplus

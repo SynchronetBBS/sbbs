@@ -35,23 +35,27 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-
+/* Platform-specific headers */
+#ifdef _WIN32
 #include <io.h>			/* _findfirst */
-#include <fcntl.h>		/* O_WRONLY, O_RDONLY, etc. */
-#include <sys/stat.h>	/* S_IWRITE */
-#include <stdio.h>
 #include <share.h>		/* SH_DENYNO */
-#include <winsock2.h>
+#include <direct.h>		/* _mkdir/_rmdir() */
 #include <process.h>	/* _beginthread */
+#endif
+
+/* ANSI headers */
+#include <stdio.h>
+#include <stdarg.h>		/* va_list, varargs */
+#include <fcntl.h>		/* O_WRONLY, O_RDONLY, etc. */
 #include <errno.h>		/* EACCES */
+#include <sys/stat.h>	/* S_IWRITE */
+
+/* Synchronet-specific headers */
+#include "sbbsinet.h"
 #include "ftpsrvr.h"
 #include "scfgdefs.h"
 #include "userdat.h"
 #include "telnet.h"
-
-#ifdef _WIN32	/* Windows */
-#include <direct.h>		/* _mkdir/_rmdir() */
-#endif
 
 /* Constants */
 
@@ -76,25 +80,31 @@
 static const char *mon[]={"Jan","Feb","Mar","Apr","May","Jun"
             ,"Jul","Aug","Sep","Oct","Nov","Dec"};
 
-__declspec(dllimport) BOOL	load_cfg(scfg_t* cfg, char* text[]);
-__declspec(dllimport) BOOL	fexist(char *filespec);
-__declspec(dllimport) long	flength(char *filespec);
-__declspec(dllimport) long	fdate(char *filespec);
+#ifdef _WIN32
+#define IMPORT	__declspec(dllimport)
+#else
+#define IMPORT
+#endif
 
-__declspec(dllimport) BOOL	getfileixb(scfg_t* cfg, file_t* f);
-__declspec(dllimport) BOOL	getfiledat(scfg_t* cfg, file_t* f);
+IMPORT BOOL	load_cfg(scfg_t* cfg, char* text[]);
+IMPORT BOOL	fexist(char *filespec);
+IMPORT long	flength(char *filespec);
+IMPORT long	fdate(char *filespec);
 
-__declspec(dllimport) BOOL	putfiledat(scfg_t* cfg, file_t* f);
-__declspec(dllimport) BOOL	removefiledat(scfg_t* cfg, file_t* f);
-__declspec(dllimport) BOOL  addfiledat(scfg_t* cfg, file_t* f);
-__declspec(dllimport) BOOL	findfile(scfg_t* cfg, uint dirnum, char *filename);
+IMPORT BOOL	getfileixb(scfg_t* cfg, file_t* f);
+IMPORT BOOL	getfiledat(scfg_t* cfg, file_t* f);
 
-__declspec(dllimport) char*	padfname(char *filename, char *str);
-__declspec(dllimport) char*	unpadfname(char *filename, char *str);
+IMPORT BOOL	putfiledat(scfg_t* cfg, file_t* f);
+IMPORT BOOL	removefiledat(scfg_t* cfg, file_t* f);
+IMPORT BOOL  addfiledat(scfg_t* cfg, file_t* f);
+IMPORT BOOL	findfile(scfg_t* cfg, uint dirnum, char *filename);
 
-__declspec(dllimport) BOOL	trashcan(scfg_t* cfg, char *insearch, char *name);
+IMPORT char*	padfname(char *filename, char *str);
+IMPORT char*	unpadfname(char *filename, char *str);
 
-__declspec(dllimport) ulong getfreediskspace(char* path);
+IMPORT BOOL	trashcan(scfg_t* cfg, char *insearch, char *name);
+
+IMPORT ulong getfreediskspace(char* path);
 
 BOOL direxist(char *dir)
 {
@@ -308,6 +318,11 @@ c=strlen(str);
 while(c && (uchar)str[c-1]<=' ') c--;
 str[c]=0;
 }
+
+#ifdef _WIN32
+#define O_DENYNONE	OF_SHARE_DENY_NONE
+#define O_DENYALL	OF_SHARE_EXCLUSIVE
+#endif
 
 int nopen(char *str, int access)
 {

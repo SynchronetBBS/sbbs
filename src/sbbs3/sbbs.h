@@ -52,11 +52,6 @@
 #include <windows.h>
 #include <process.h>	/* _beginthread() prototype */
 
-/* IP/socket stuff */
-#include <winsock.h>
-#define ENOTSOCK	WSAENOTSOCK
-#define ECONNRESET	WSAECONNRESET
-
 #define O_DENYNONE	OF_SHARE_DENY_NONE
 #define O_DENYALL	OF_SHARE_EXCLUSIVE
 
@@ -64,15 +59,6 @@
 
 #include <unistd.h>		/* close */
 
-/* IP/socket stuff */
-#define SOCKET			int
-#define SOCKET_ERROR	-1
-#define INVALID_SOCKET  (SOCKET)(~0)
-#define closesocket		close
-#define ioctlsocket		ioctl
-#include <netinet/in.h>	/* IPPROTO_IP */
-#include <sys/socket.h>	/* socket/bind/etc. */
-#include <sys/ioctl.h>	/* FIONBIO */
 #endif
 
 /*********************/
@@ -120,6 +106,7 @@ int unlock(int file, long offset, int size);
 /***********************/
 /* Synchronet-specific */
 /***********************/
+#include "sbbsinet.h"
 #include "smblib.h"
 #include "ars_defs.h"
 #include "scfgdefs.h"
