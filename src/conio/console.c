@@ -37,7 +37,6 @@
 #include <fcntl.h>
 #include <limits.h>
 #include <paths.h>
-#include <signal.h>
 #include <stdio.h>
 #include <unistd.h>	/* sysconf() */
 
@@ -342,12 +341,7 @@ mouse_t		mouse_status;
 
 void tty_pause()
 {
-    sigset_t set;
-
-    sigprocmask(0, 0, &set);
-    sigdelset(&set, SIGIO);
-    sigdelset(&set, SIGALRM);
-    sigsuspend(&set);
+	usleep(1000);
 }
 
 volatile int	poll_cnt = 0;
@@ -486,15 +480,9 @@ video_update_text()
 }
 
 void
-video_update(void *unused)
+video_update()
 {
-    sigset_t sigset;
 	static int icnt = 3;
-
-    sigemptyset(&sigset);
-    sigaddset(&sigset, SIGIO);
-    sigaddset(&sigset, SIGALRM);
-    sigprocmask(SIG_BLOCK, &sigset, 0);
 
     	if (--icnt == 0) {
 	    icnt = 6;
@@ -504,19 +492,6 @@ video_update(void *unused)
 	    /* quick and dirty */
 		video_update_text();
 
-    sigemptyset(&sigset);
-    sigaddset(&sigset, SIGIO);
-    sigaddset(&sigset, SIGALRM);
-    sigprocmask(SIG_UNBLOCK, &sigset, 0);
-}
-
-/*
-** periodic updates
-*/
-void
-sigalrm(int sig)
-{
-    video_update(NULL);
 }
 
 /* Get memory for the text line buffer. */
@@ -950,61 +925,54 @@ video_event(XEvent *ev)
 }
 
 void
-video_async_event(int sig)
+video_async_event(void *crap)
 {
-    sigset_t sigset;
-
-    sigemptyset(&sigset);
-    sigaddset(&sigset, SIGIO);
-    sigaddset(&sigset, SIGALRM);
-    sigprocmask(SIG_BLOCK, &sigset, 0);
+	int x;
+	fd_set fdset;
+	XEvent ev;  
+	static struct timeval tv;
 
 	for (;;) {
-                int x;
-                fd_set fdset;
-                XEvent ev;  
-                static struct timeval tv;
-				tv.tv_sec=0;
-				tv.tv_usec=0;
-                /*
-                 * Handle any events just sitting around...
-                 */
-                XFlush(dpy);
-                while (QLength(dpy) > 0) {
-                        XNextEvent(dpy, &ev);
-                        video_event(&ev);
-                }
+		video_update();
 
-                FD_ZERO(&fdset);
-                FD_SET(xfd, &fdset);
+		tv.tv_sec=0;
+		tv.tv_usec=54925;
+		/*
+		* Handle any events just sitting around...
+		*/
+		XFlush(dpy);
+		while (QLength(dpy) > 0) {
+			XNextEvent(dpy, &ev);
+			video_event(&ev);
+		}
 
-                x = select(xfd+1, &fdset, 0, 0, &tv);
+		FD_ZERO(&fdset);
+		FD_SET(xfd, &fdset);
 
-                switch (x) {
-                case -1:
-                        /*
-                         * Errno might be wrong, so we just select again.
-                         * This could cause a problem is something really
-                         * was wrong with select....
-                         */
+		x = select(xfd+1, &fdset, 0, 0, &tv);
 
-                        perror("select");
-						sigprocmask(SIG_UNBLOCK, &sigset, 0);
-                        return;
-                case 0:
-			XFlush(dpy);
-                        return;
-                default:
-                        if (FD_ISSET(xfd, &fdset)) {
-                                do {
-                                        XNextEvent(dpy, &ev);
-                                        video_event(&ev);
-                                } while (QLength(dpy));
-                        }
-                        break;
-                }
-        }
-		sigprocmask(SIG_UNBLOCK, &sigset, 0);
+		switch (x) {
+			case -1:
+				/*
+				* Errno might be wrong, so we just select again.
+				* This could cause a problem is something really
+				* was wrong with select....
+				*/
+
+				perror("select");
+				break;
+			case 0:
+				XFlush(dpy);
+				break;
+			default:
+				if (FD_ISSET(xfd, &fdset)) {
+					do {
+						XNextEvent(dpy, &ev);
+						video_event(&ev);
+					} while (QLength(dpy));
+				}
+		}
+	}
 }
 
 /* Resize the window, using information from 'vga_status[]'. This function is
@@ -1203,23 +1171,6 @@ prepare_lut()
     return;
 }
 
-int
-timer_init(void)
-{
-    struct itimerval	itv;
-    struct timeval	tv;
-    time_t		tv_sec;
-    struct timezone	tz;
-
-    signal(SIGALRM, sigalrm);
-    itv.it_interval.tv_sec = 0;
-    itv.it_interval.tv_usec = 54925;	/* 1193182/65536 times per second */
-    itv.it_value.tv_sec = 0;
-    itv.it_value.tv_usec = 54925;	/* 1193182/65536 times per second */
-    setitimer(ITIMER_REAL, &itv, 0);
-	return(0);
-}
-
 /* Get a connection to the X server and create the window. */
 int
 init_window()
@@ -1227,42 +1178,11 @@ init_window()
     XGCValues gcv;
     int i;
 
-    {
-	/*
-	 * Arg...  I can no longer change X's fd out from under it.
-	 * Open up all the available fd's, leave 3 behind for X
-	 * to play with, open X and then release all the other fds
-	 */
-	int nfds = sysconf(_SC_OPEN_MAX);
-	int *fds = (int *)malloc(sizeof(int) * nfds);
-	i = 0;
-	if (fds)
-	    for (i = 0; i < nfds && (i == 0 || fds[i-1] < 63); ++i)
-		if ((fds[i] = open(_PATH_DEVNULL, 0)) < 0)
-		    break;
-	/*
-	 * Leave 3 fds behind for X to play with
-	 */
-	if (i > 0) close(fds[--i]);
-	if (i > 0) close(fds[--i]);
-	if (i > 0) close(fds[--i]);
-
 	dpy = XOpenDisplay(NULL);
-
-	while (i > 0)
-	    close(fds[--i]);
-    }
     if (dpy == NULL) {
 		return(-1);
 	}
     xfd = ConnectionNumber(dpy);
-
-	if (fcntl(xfd, F_SETOWN, getpid()) < 0) {
-/*@*/                   perror("SETOWN");
-	}
-	fcntl(xfd,F_SETFL,fcntl(xfd,F_GETFL) | FASYNC);
-
-	signal(SIGIO, video_async_event);
 
     /* Create window, but defer setting a size and GC. */
     win = XCreateSimpleWindow(dpy, DefaultRootWindow(dpy), 0, 0,
@@ -1339,15 +1259,9 @@ console_init()
 {
     int fd;
     int i;    
-    sigset_t sigset;
     
 	if(dpy!=NULL)
 		return(0);
-
-    sigemptyset(&sigset);
-    sigaddset(&sigset, SIGIO);
-    sigaddset(&sigset, SIGALRM);
-    sigprocmask(SIG_BLOCK, &sigset, 0);
 
     if(kbd_init())
 		return(-1);
@@ -1355,13 +1269,8 @@ console_init()
 		return(-1);
     if(mouse_init())
 		return(-1);
-    if(timer_init())
-		return(-1);
 
-    sigemptyset(&sigset);
-    sigaddset(&sigset, SIGIO);
-    sigaddset(&sigset, SIGALRM);
-    sigprocmask(SIG_UNBLOCK, &sigset, 0);
+	_beginthread(video_async_event,16384,NULL);
 	return(0);
 }
 

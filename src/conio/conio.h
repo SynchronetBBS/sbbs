@@ -3,9 +3,17 @@
 #ifndef _CIOWRAP_H_
 #define _CIOWRAP_H_
 
+enum {
+	 CIOWRAP_AUTO_MODE
+	,CIOWRAP_CURSES_MODE
+	,CIOWRAP_CURSES_IBM_MODE
+	,CIOWRAP_ANSI_MODE
+	,CIOWRAP_X_MODE
+	,CIOWRAP_CONIO_MODE
+};
+
 #ifndef __unix__
 #include <conio.h>
-#define initciowrap(x)
 #else
 
 #ifndef BOOL
@@ -55,13 +63,6 @@ enum
 	_NORMALCURSOR
 };
 
-enum
-{
-	 X_MODE
-	,CURSES_MODE
-	,ANSI_MODE
-};
-
 struct text_info {
 	unsigned char winleft;        /* left window coordinate */
 	unsigned char wintop;         /* top window coordinate */
@@ -76,6 +77,8 @@ struct text_info {
 	unsigned char curx;           /* x-coordinate in current window */
 	unsigned char cury;           /* y-coordinate in current window */
 };
+
+#endif
 
 typedef struct {
 	int		mode;
@@ -99,43 +102,20 @@ typedef struct {
 	void	(*lowvideo)		(void);
 	void	(*normvideo)	(void);
 	void	(*textmode)		(int);
+	int		(*ungetch)		(int);
+	int		(*movetext)		(int,int,int,int,int,int);
+	char	*(*cgets)		(char *);
+	int		(*cscanf)		(char *,...);
+	char	*(*getpass)		(const char *);
+	void	(*wscroll)		(void);
+	void	(*window)		(int,int,int,int);
+	void	(*delline)		(void);
+	void	(*insline)		(void);
+	int		(*cprintf)		(char *,...);
+	int		(*cputs)		(char *);
+	void	(*textbackground)	(int);
+	void	(*textcolor)	(int);
 } cioapi_t;
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-int movetext(int sx, int sy, int ex, int ey, int dx, int dy);
-char *cgets(char *str);
-int cscanf (char *format , ...);
-int kbhit(void);
-#ifndef NEEC_CURSES_GETCH
- int getch(void);
-#endif
-int getche(void);
-int ungetch(int ch);
-void gettextinfo(struct text_info *info);
-int wherex(void);
-int wherex(void);
-void wscroll(void);
-void gotoxy(int x, int y);
-void clreol(void);
-void clrscr(void);
-int cputs(char *str);
-int	cprintf(char *fmat, ...);
-void textbackground(int colour);
-void textcolor(int colour);
-void highvideo(void);
-void lowvideo(void);
-void normvideo(void);
-int puttext(int a,int b,int c,int d,char *e);
-int gettext(int a,int b,int c,int d,char *e);
-void textattr(unsigned char a);
-void delay(long a);
-int putch(unsigned char a);
-void _setcursortype(int a);
-#ifdef __cplusplus
-}
-#endif
 
 extern cioapi_t cio_api;
 extern int _wscroll;
@@ -143,6 +123,48 @@ extern int directvideo;
 
 #define _conio_kbhit()		kbhit()
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+int initciowrap(int mode);
+#ifdef __cplusplus
+}
+#endif
+
+#ifndef CIOWRAP_NO_MACROS
+	#define cscanf					ciowrap_cscanf
+	#define cprintf					ciowrap_cprintf
+
+	#define movetext(a,b,c,d,e,f)	ciowrap_movetext(a,b,c,d,e,f)
+	#define cgets(a)				ciowrap_cgets(a)
+	#define kbhit()					ciowrap_kbhit()
+	#define getch()					ciowrap_getch()
+	#define getchr()				ciowrap_getche()
+	#define ungetch(a)				ciowrap_ungetch(a)
+	#define gettextinfo(a)			ciowrap_gettextinfo(a)
+	#define wherex()				ciowrap_wherex()
+	#define wherey()				ciowrap_wherey()
+	#define	wscroll()				ciowrap_wscroll()
+	#define gotoxy(a,b)				ciowrap_gotoxy(a,b)
+	#define clreol()				ciowrap_clreol()
+	#define clrscr()				ciowrap_clrscr()
+	#define cputs(a)				ciowrap_cputs(a)
+	#define textbackground(a)		ciowrap_textbackground(a)
+	#define textcolor(a)			ciowrap_textcolor(a)
+	#define highvideo()				ciowrap_highvideo()
+	#define lowvideo()				ciowrap_lowvideo()
+	#define normvideo()				ciowrap_normvideo()
+	#define puttext(a,b,c,d,e)		ciowrap_puttext(a,b,c,d,e)
+	#define gettext(a,b,c,d,e)		ciowrap_gettext(a,b,c,d,e)
+	#define textattr(a)				ciowrap_textattr(a)
+	#define delay(a)				ciowrap_delay(a)
+	#define putch(a)				ciowrap_putch(a)
+	#define _setcursortype(a)		ciowrap_setcursortype(a)
+	#define textmode(a)				ciowrap_textmode(a)
+	#define window(a,b,c,d)			ciowrap_window(a,b,c,d)
+	#define delline()				ciowrap_delline()
+	#define insline					ciowrap_insline()
+	#define getpass(a)				ciowrap_getpass(a);
 #endif
 
 #endif	/* Do not add anything after this line */

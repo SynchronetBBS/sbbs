@@ -134,31 +134,6 @@ typedef union
     } r_b;
 } reg86_t;
 
-/* layout must match definition of struct sigcontext in <machine/signal.h> */
-
-typedef struct
-{
-    int		onstack;
-    reg86_t	gs;
-    reg86_t	fs;
-    reg86_t	es;
-    reg86_t	ds;
-    reg86_t	edi;
-    reg86_t	esi;
-    reg86_t	ebp;
-    reg86_t	isp;
-    reg86_t	ebx;
-    reg86_t	edx;
-    reg86_t	ecx;
-    reg86_t	eax;
-    int		pad[2];
-    reg86_t	eip;
-    reg86_t	cs;
-    reg86_t	efl;
-    reg86_t	esp;
-    reg86_t	ss;
-} registers_t;
-
 /*
  * Video modes
  *

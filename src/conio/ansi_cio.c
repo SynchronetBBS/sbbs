@@ -597,7 +597,7 @@ void ansi_fixterm(void)
 }
 #endif
 
-void ansi_initciowrap(long inmode)
+int ansi_initciowrap(long inmode)
 {
 	int i;
 	char *init="\033[0m\033[2J\033[1;1H";
@@ -622,4 +622,5 @@ void ansi_initciowrap(long inmode)
 	for(i=0;i<ansi_rows*ansi_cols;i++)
 		vmem[i]=0x0720;
 	_beginthread(ansi_keythread,1024,NULL);
+	return(1);
 }

@@ -15,7 +15,7 @@ int ansi_wherey(void);
 int ansi_wherex(void);
 int ansi_putch(unsigned char ch);
 void ansi_gotoxy(int x, int y);
-void ansi_initciowrap(long inmode);
+int ansi_initciowrap(long inmode);
 void ansi_gettextinfo(struct text_info *info);
 void ansi_setcursortype(int type);
 int ansi_getch(void);

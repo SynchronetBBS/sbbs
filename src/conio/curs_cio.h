@@ -2,6 +2,8 @@
 
 #ifdef __unix__
 #include "conio.h"
+#undef getch
+#undef ungetch
 #include "curs_fix.h"
 
 #ifdef __cplusplus
@@ -18,7 +20,7 @@ int curs_wherex(void);
 int _putch(unsigned char ch, BOOL refresh_now);
 int curs_putch(unsigned char ch);
 void curs_gotoxy(int x, int y);
-void curs_initciowrap(long inmode);
+int curs_initciowrap(long inmode);
 void curs_gettextinfo(struct text_info *info);
 void curs_setcursortype(int type);
 int curs_getch(void);

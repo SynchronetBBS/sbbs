@@ -1,6 +1,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 
+#define CIOWRAP_NO_MACROS
 #include "conio.h"
 
 #ifndef _WIN32
@@ -11,9 +12,7 @@
  #undef getch
 #endif
 
-#ifdef USE_ANSI
- #include "ansi_cio.h"
-#endif
+#include "ansi_cio.h"
 
 cioapi_t	cio_api;
 
@@ -24,12 +23,45 @@ int _wscroll=1;
 int directvideo=0;
 static int initialized=0;
 
-void initciowrap(int mode)
-{
+int ciowrap_movetext(int sx, int sy, int ex, int ey, int dx, int dy);
+char *ciowrap_cgets(char *str);
+int ciowrap_cscanf (char *format , ...);
+int ciowrap_kbhit(void);
+int ciowrap_getch(void);
+int ciowrap_getche(void);
+int ciowrap_ungetch(int ch);
+void ciowrap_gettextinfo(struct text_info *info);
+int ciowrap_wherex(void);
+int ciowrap_wherey(void);
+void ciowrap_wscroll(void);
+void ciowrap_gotoxy(int x, int y);
+void ciowrap_clreol(void);
+void ciowrap_clrscr(void);
+int ciowrap_cputs(char *str);
+int	ciowrap_cprintf(char *fmat, ...);
+void ciowrap_textbackground(int colour);
+void ciowrap_textcolor(int colour);
+void ciowrap_highvideo(void);
+void ciowrap_lowvideo(void);
+void ciowrap_normvideo(void);
+int ciowrap_puttext(int a,int b,int c,int d,unsigned char *e);
+int ciowrap_gettext(int a,int b,int c,int d,unsigned char *e);
+void ciowrap_textattr(unsigned char a);
+void ciowrap_delay(long a);
+int ciowrap_putch(unsigned char a);
+void ciowrap_setcursortype(int a);
+void ciowrap_textmode(int mode);
+void ciowrap_window(int sx, int sy, int ex, int ey);
+void ciowrap_delline(void);
+void ciowrap_insline(void);
+char *ciowrap_getpass(const char *prompt);
+
 #ifndef _WIN32
  #ifndef NO_X
+int try_x_init(int mode)
+{
 	if(!console_init()) {
-		cio_api.mode=X_MODE;
+		cio_api.mode=CIOWRAP_X_MODE;
 		cio_api.puttext=x_puttext;
 		cio_api.gettext=x_gettext;
 		cio_api.textattr=x_textattr;
@@ -45,33 +77,17 @@ void initciowrap(int mode)
 		cio_api.getche=x_getche;
 		cio_api.beep=x_beep;
 		cio_api.textmode=x_textmode;
+		return(1);
 	}
-	else {
-		fprintf(stderr,"X init failed\n");
- #endif /* NO_X */
-#endif /* !(_WIN32) */
-#ifdef USE_ANSI
-		ansi_initciowrap(mode);
-		cio_api.mode=ANSI_MODE;
-		cio_api.puttext=ansi_puttext;
-		cio_api.gettext=ansi_gettext;
-		cio_api.textattr=ansi_textattr;
-		cio_api.kbhit=ansi_kbhit;
-		cio_api.delay=ansi_delay;
-		cio_api.wherey=ansi_wherey;
-		cio_api.wherex=ansi_wherex;
-		cio_api.putch=ansi_putch;
-		cio_api.gotoxy=ansi_gotoxy;
-		cio_api.gettextinfo=ansi_gettextinfo;
-		cio_api.setcursortype=ansi_setcursortype;
-		cio_api.getch=ansi_getch;
-		cio_api.getche=ansi_getche;
-		cio_api.beep=ansi_beep;
-		cio_api.textmode=ansi_textmode;
-#else
- #ifndef _WIN32
-		curs_initciowrap(mode);
-		cio_api.mode=CURSES_MODE;
+	fprintf(stderr,"X init failed\n");
+	return(0);
+}
+ #endif
+
+int try_curses_init(int mode)
+{
+	if(curs_initciowrap(mode)) {
+		cio_api.mode=CIOWRAP_CURSES_IBM_MODE;
 		cio_api.puttext=curs_puttext;
 		cio_api.gettext=curs_gettext;
 		cio_api.textattr=curs_textattr;
@@ -87,37 +103,126 @@ void initciowrap(int mode)
 		cio_api.getche=curs_getche;
 		cio_api.beep=beep;
 		cio_api.textmode=curs_textmode;
- #endif /* !(_WIN32) */
-#endif /* ANSI */
-#ifndef _WIN32
- #ifndef NO_X
+		return(1);
 	}
- #endif
-#endif /* !(_WIN32) */
+	fprintf(stderr,"Curses init failed\n");
+	return(0);
+}
+#endif
+
+int try_ansi_init(int mode)
+{
+	if(ansi_initciowrap(mode)) {
+		cio_api.mode=CIOWRAP_ANSI_MODE;
+		cio_api.puttext=ansi_puttext;
+		cio_api.gettext=ansi_gettext;
+		cio_api.textattr=ansi_textattr;
+		cio_api.kbhit=ansi_kbhit;
+		cio_api.delay=ansi_delay;
+		cio_api.wherey=ansi_wherey;
+		cio_api.wherex=ansi_wherex;
+		cio_api.putch=ansi_putch;
+		cio_api.gotoxy=ansi_gotoxy;
+		cio_api.gettextinfo=ansi_gettextinfo;
+		cio_api.setcursortype=ansi_setcursortype;
+		cio_api.getch=ansi_getch;
+		cio_api.getche=ansi_getche;
+		cio_api.beep=ansi_beep;
+		cio_api.textmode=ansi_textmode;
+		return(1);
+	}
+	fprintf(stderr,"ANSI init failed\n");
+	return(0);
+}
+
+#ifdef _WIN32
+int try_ciowrap_init(int mode)
+{
+	/* This should test for something or other */
+	if(1) {
+		cio_api.mode=CIOWRAP_CIOWRAP_MODE;
+		cio_api.puttext=puttext;
+		cio_api.gettext=gettext;
+		cio_api.textattr=textattr;
+		cio_api.kbhit=kbhit;
+		cio_api.delay=delay;
+		cio_api.wherey=wherey;
+		cio_api.wherex=wherex;
+		cio_api.putch=putch;
+		cio_api.gotoxy=gotoxy;
+		cio_api.gettextinfo=gettextinfo;
+		cio_api.setcursortype=setcursortype;
+		cio_api.getch=getch;
+		cio_api.getche=getche;
+		cio_api.beep=beep;
+		cio_api.textmode=textmode;
+		return(1);
+	}
+	fprintf(stderr,"CONIO init failed\n");
+	return(0);
+}
+#endif
+
+
+int initciowrap(int mode)
+{
+	switch(mode) {
+		case CIOWRAP_AUTO_MODE:
+#ifdef _WIN32
+			if(!try_ciowrap_init(mode))
+#else
+			if(!try_x_init(mode))
+				if(!try_curses_init(mode))
+#endif
+					try_ansi_init(mode);
+			break;
+#ifdef _WIN32
+		case CIOWRAP_ciowrap_MODE:
+			try_ciowrap_init(mode);
+			break;
+#else
+		case CIOWRAP_CURSES_MODE:
+		case CIOWRAP_CURSES_IBM_MODE:
+			try_curses_init(mode);
+			break;
+		case CIOWRAP_X_MODE:
+			try_x_init(mode);
+			break;
+#endif
+		case CIOWRAP_ANSI_MODE:
+			try_ansi_init(mode);
+			break;
+	}
+	if(cio_api.mode==CIOWRAP_AUTO_MODE) {
+		fprintf(stderr,"CIOWRAP initialization failed!");
+		return(-1);
+	}
+
 	initialized=1;
-	gettextinfo(&cio_textinfo);
+	ciowrap_gettextinfo(&cio_textinfo);
 	cio_textinfo.winleft=1;
 	cio_textinfo.wintop=1;
 	cio_textinfo.winright=cio_textinfo.screenwidth;
 	cio_textinfo.winbottom=cio_textinfo.screenheight;
 	cio_textinfo.normattr=7;
+	return(0);
 }
 
-int kbhit(void)
+int ciowrap_kbhit(void)
 {
 	if(!initialized)
-		initciowrap(3);
+		initciowrap(CIOWRAP_AUTO_MODE);
 	if(ungotch)
 		return(1);
 	return(cio_api.kbhit());
 }
 
-int getch(void)
+int ciowrap_getch(void)
 {
 	int ch;
 
 	if(!initialized)
-		initciowrap(3);
+		initciowrap(CIOWRAP_AUTO_MODE);
 	if(ungotch) {
 		ch=ungotch;
 		ungotch=0;
@@ -126,49 +231,49 @@ int getch(void)
 	return(cio_api.getch());
 }
 
-int getche(void)
+int ciowrap_getche(void)
 {
 	int ch;
 
 	if(!initialized)
-		initciowrap(3);
+		initciowrap(CIOWRAP_AUTO_MODE);
 	if(ungotch) {
 		ch=ungotch;
 		ungotch=0;
-		putch(ch);
+		ciowrap_putch(ch);
 		return(ch);
 	}
 	return(cio_api.getche());
 }
 
-int ungetch(int ch)
+int ciowrap_ungetch(int ch)
 {
 	if(!initialized)
-		initciowrap(3);
+		initciowrap(CIOWRAP_AUTO_MODE);
 	if(ungotch)
 		return(EOF);
 	ungotch=ch;
 	return(ch);
 }
 
-int movetext(int sx, int sy, int ex, int ey, int dx, int dy)
+int ciowrap_movetext(int sx, int sy, int ex, int ey, int dx, int dy)
 {
 	int width;
 	int height;
 	char *buf;
 
 	if(!initialized)
-		initciowrap(3);
+		initciowrap(CIOWRAP_AUTO_MODE);
 	width=ex-sx;
 	height=ey-sy;
 	buf=(char *)malloc((width+1)*(height+1)*2);
 	if(buf==NULL)
 		return(0);
-	if(!gettext(sx,sy,ex,ey,buf)) {
+	if(!ciowrap_gettext(sx,sy,ex,ey,buf)) {
 		free(buf);
 		return(0);
 	}
-	if(!puttext(dx,dy,dx+width,dy+height,buf)) {
+	if(!ciowrap_puttext(dx,dy,dx+width,dy+height,buf)) {
 		free(buf);
 		return(0);
 	}
@@ -176,7 +281,7 @@ int movetext(int sx, int sy, int ex, int ey, int dx, int dy)
 	return(1);
 }
 
-char *cgets(char *str)
+char *ciowrap_cgets(char *str)
 {
 	int	maxlen;
 	int len=0;
@@ -184,12 +289,12 @@ char *cgets(char *str)
 	int ch;
 
 	if(!initialized)
-		initciowrap(3);
+		initciowrap(CIOWRAP_AUTO_MODE);
 	maxlen=*(unsigned char *)str;
-	while((ch=getche())!='\n') {
+	while((ch=ciowrap_getche())!='\n') {
 		switch(ch) {
 			case 0:	/* Skip extended keys */
-				ch=getche();
+				ch=ciowrap_getche();
 				break;
 			case '\n':
 				str[len+2]=0;
@@ -202,7 +307,7 @@ char *cgets(char *str)
 					cio_api.beep();
 					break;
 				}
-				putch('\b');
+				ciowrap_putch('\b');
 				len--;
 				break;
 			default:
@@ -217,22 +322,22 @@ char *cgets(char *str)
 	}
 }
 
-int cscanf (char *format , ...)
+int ciowrap_cscanf (char *format , ...)
 {
 	char str[255];
     va_list argptr;
 	int ret;
 
 	if(!initialized)
-		initciowrap(3);
+		initciowrap(CIOWRAP_AUTO_MODE);
 	str[0]=-1;
 	va_start(argptr,format);
-	ret=vsscanf(cgets(str),format,argptr);
+	ret=vsscanf(ciowrap_cgets(str),format,argptr);
 	va_end(argptr);
 	return(ret);
 }
 
-char *getpass(const char *prompt)
+char *ciowrap_getpass(const char *prompt)
 {
 	static char pass[9];
 	int len=0;
@@ -240,7 +345,7 @@ char *getpass(const char *prompt)
 	int ch;
 
 	if(!initialized)
-		initciowrap(3);
+		initciowrap(CIOWRAP_AUTO_MODE);
 	while((ch=getch())!='\n') {
 		switch(ch) {
 			case 0:	/* Skip extended keys */
@@ -268,10 +373,10 @@ char *getpass(const char *prompt)
 	}
 }
 
-void gettextinfo(struct text_info *info)
+void ciowrap_gettextinfo(struct text_info *info)
 {
 	if(!initialized)
-		initciowrap(3);
+		initciowrap(CIOWRAP_AUTO_MODE);
 	else {
 		cio_api.gettextinfo(&cio_textinfo);
 	}
@@ -291,57 +396,57 @@ void gettextinfo(struct text_info *info)
 	}
 }
 
-void wscroll(void)
+void ciowrap_wscroll(void)
 {
 	char *buf;
 	int os;
 	struct text_info ti;
 
 	if(!initialized)
-		initciowrap(3);
-	gettextinfo(&ti);
+		initciowrap(CIOWRAP_AUTO_MODE);
+	ciowrap_gettextinfo(&ti);
 	if(!_wscroll)
 		return;
-	movetext(ti.winleft,ti.wintop+1,ti.winright,ti.winbottom,ti.winleft,ti.wintop);
-	gotoxy(1,ti.winbottom-ti.winleft+1);
+	ciowrap_movetext(ti.winleft,ti.wintop+1,ti.winright,ti.winbottom,ti.winleft,ti.wintop);
+	ciowrap_gotoxy(1,ti.winbottom-ti.winleft+1);
 	os=_wscroll;
 	_wscroll=0;
-	cprintf("%*s",ti.winright-ti.winleft+1,"");
+	ciowrap_cprintf("%*s",ti.winright-ti.winleft+1,"");
 	_wscroll=os;
-	gotoxy(ti.curx,ti.cury);
+	ciowrap_gotoxy(ti.curx,ti.cury);
 }
 
-int wherex(void)
+int ciowrap_wherex(void)
 {
 	int x;
 
 	if(!initialized)
-		initciowrap(3);
+		initciowrap(CIOWRAP_AUTO_MODE);
 	x=cio_api.wherex();
 	x=x-cio_textinfo.winleft+1;
 	return(x);
 }
 
-int wherey(void)
+int ciowrap_wherey(void)
 {
 	int y;
 
 	if(!initialized)
-		initciowrap(3);
+		initciowrap(CIOWRAP_AUTO_MODE);
 	y=cio_api.wherey();
 	y=y-cio_textinfo.wintop+1;
 	return(y);
 }
 
-void gotoxy(int x, int y)
+void ciowrap_gotoxy(int x, int y)
 {
 	int nx;
 	int ny;
 	struct text_info ti;
 
 	if(!initialized)
-		initciowrap(3);
-	gettextinfo(&ti);
+		initciowrap(CIOWRAP_AUTO_MODE);
+	ciowrap_gettextinfo(&ti);
 	if(		x < 1
 			|| x > ti.winright-ti.winleft+1
 			|| y < 1
@@ -352,32 +457,32 @@ void gotoxy(int x, int y)
 	cio_api.gotoxy(nx,ny);
 }
 
-void textmode(mode)
+void ciowrap_textmode(mode)
 {
 	if(!initialized)
-		initciowrap(3);
+		initciowrap(CIOWRAP_AUTO_MODE);
 	if(mode==-1) {
-		gettextinfo(&cio_textinfo);
+		ciowrap_gettextinfo(&cio_textinfo);
 		cio_api.textmode(lastmode);
 		lastmode=cio_textinfo.currmode;
 	}
 	else {
-		gettextinfo(&cio_textinfo);
+		ciowrap_gettextinfo(&cio_textinfo);
 		lastmode=cio_textinfo.currmode;
 		cio_api.textmode(mode);
 	}
-	gettextinfo(&cio_textinfo);
+	ciowrap_gettextinfo(&cio_textinfo);
 	cio_textinfo.winleft=1;
 	cio_textinfo.wintop=1;
 	cio_textinfo.winright=cio_textinfo.screenwidth;
 	cio_textinfo.winbottom=cio_textinfo.screenheight;
 }
 
-void window(int sx, int sy, int ex, int ey)
+void ciowrap_window(int sx, int sy, int ex, int ey)
 {
 	if(!initialized)
-		initciowrap(3);
-	gettextinfo(&cio_textinfo);
+		initciowrap(CIOWRAP_AUTO_MODE);
+	ciowrap_gettextinfo(&cio_textinfo);
 	if(		   sx < 1
 			|| sy < 1
 			|| ex < 1
@@ -393,72 +498,72 @@ void window(int sx, int sy, int ex, int ey)
 	cio_textinfo.wintop=sy;
 	cio_textinfo.winright=ex;
 	cio_textinfo.winbottom=ey;
-	gotoxy(1,1);
+	ciowrap_gotoxy(1,1);
 }
 
-void clreol(void)
+void ciowrap_clreol(void)
 {
 	int os;
 	struct text_info	ti;
 
 	if(!initialized)
-		initciowrap(3);
-	gettextinfo(&ti);
+		initciowrap(CIOWRAP_AUTO_MODE);
+	ciowrap_gettextinfo(&ti);
 	os=_wscroll;
 	_wscroll=0;
-	cprintf("%*s",ti.winright-ti.curx+1,"");
+	ciowrap_cprintf("%*s",ti.winright-ti.curx+1,"");
 	_wscroll=os;
-	gotoxy(ti.curx,ti.cury);
+	ciowrap_gotoxy(ti.curx,ti.cury);
 }
 
-void clrscr(void)
+void ciowrap_clrscr(void)
 {
 	char *buf;
 	int i;
 	struct text_info ti;
 
 	if(!initialized)
-		initciowrap(3);
-	gettextinfo(&ti);
+		initciowrap(CIOWRAP_AUTO_MODE);
+	ciowrap_gettextinfo(&ti);
 
 	buf=(char *)malloc(ti.screenheight*ti.screenwidth*2);
 	for(i=0;i<ti.screenheight*ti.screenwidth*2;) {
 		buf[i++]=' ';
 		buf[i++]=ti.attribute;
 	}
-	puttext(1,1,ti.screenwidth,ti.screenheight,buf);
+	ciowrap_puttext(1,1,ti.screenwidth,ti.screenheight,buf);
 	free(buf);
 }
 
-void delline(void)
+void ciowrap_delline(void)
 {
 	struct text_info ti;
 
 	if(!initialized)
-		initciowrap(3);
-	gettextinfo(&ti);
+		initciowrap(CIOWRAP_AUTO_MODE);
+	ciowrap_gettextinfo(&ti);
 
-	movetext(ti.winleft,ti.cury+1,ti.winright,ti.winbottom,ti.winleft,ti.cury);
-	gotoxy(1,ti.winbottom-ti.wintop+1);
-	clreol();
-	gotoxy(ti.curx,ti.cury);
+	ciowrap_movetext(ti.winleft,ti.cury+1,ti.winright,ti.winbottom,ti.winleft,ti.cury);
+	ciowrap_gotoxy(1,ti.winbottom-ti.wintop+1);
+	ciowrap_clreol();
+	ciowrap_gotoxy(ti.curx,ti.cury);
 }
 
-void insline(void)
+void ciowrap_insline(void)
 {
 	struct text_info ti;
 
 	if(!initialized)
-		initciowrap(3);
-	gettextinfo(&ti);
+		initciowrap(CIOWRAP_AUTO_MODE);
+	ciowrap_gettextinfo(&ti);
 
-	movetext(ti.winleft,ti.cury,ti.winright,ti.winbottom,ti.winleft,ti.cury+1);
-	gotoxy(1,ti.cury);
-	clreol();
-	gotoxy(ti.curx,ti.cury);
+	ciowrap_movetext(ti.winleft,ti.cury,ti.winright,ti.winbottom,ti.winleft,ti.cury+1);
+	ciowrap_gotoxy(1,ti.cury);
+	ciowrap_clreol();
+	ciowrap_gotoxy(ti.curx,ti.cury);
 }
 
-int cprintf(char *fmat, ...)
+int ciowrap_cprintf(char *fmat, ...)
 {
     va_list argptr;
 	int		pos;
@@ -470,7 +575,7 @@ int cprintf(char *fmat, ...)
 #endif
 
 	if(!initialized)
-		initciowrap(3);
+		initciowrap(CIOWRAP_AUTO_MODE);
     va_start(argptr,fmat);
 #ifdef WIN32
 	ret=vnsprintf(str,sizeof(str)-1,fmat,argptr);
@@ -483,7 +588,7 @@ int cprintf(char *fmat, ...)
 #endif
     va_end(argptr);
 	if(ret>=0)
-		cputs(str);
+		ciowrap_cputs(str);
 	else
 		ret=EOF;
 #ifndef WIN32
@@ -492,118 +597,118 @@ int cprintf(char *fmat, ...)
     return(ret);
 }
 
-int cputs(char *str)
+int ciowrap_cputs(char *str)
 {
 	int		pos;
 	int		ret=0;
 
 	if(!initialized)
-		initciowrap(3);
+		initciowrap(CIOWRAP_AUTO_MODE);
 	for(pos=0;str[pos];pos++)
 	{
 		ret=str[pos];
 		if(str[pos]=='\n')
-			putch('\r');
-		putch(str[pos]);
+			ciowrap_putch('\r');
+		ciowrap_putch(str[pos]);
 	}
 	return(ret);
 }
 
-void textbackground(int colour)
+void ciowrap_textbackground(int colour)
 {
 	unsigned char attr;
 
 	if(!initialized)
-		initciowrap(3);
-	gettextinfo(&cio_textinfo);
+		initciowrap(CIOWRAP_AUTO_MODE);
+	ciowrap_gettextinfo(&cio_textinfo);
 	attr=cio_textinfo.attribute;
 	attr&=143;
 	attr|=(colour<<4);
-	textattr(attr);
+	ciowrap_textattr(attr);
 }
 
-void textcolor(int colour)
+void ciowrap_textcolor(int colour)
 {
 	unsigned char attr;
 
 	if(!initialized)
-		initciowrap(3);
-	gettextinfo(&cio_textinfo);
+		initciowrap(CIOWRAP_AUTO_MODE);
+	ciowrap_gettextinfo(&cio_textinfo);
 	attr=cio_textinfo.attribute;
 	attr&=240;
 	attr|=colour;
-	textattr(attr);
+	ciowrap_textattr(attr);
 }
 
-void highvideo(void)
+void ciowrap_highvideo(void)
 {
 	int attr;
 
 	if(!initialized)
-		initciowrap(3);
-	gettextinfo(&cio_textinfo);
+		initciowrap(CIOWRAP_AUTO_MODE);
+	ciowrap_gettextinfo(&cio_textinfo);
 	attr=cio_textinfo.attribute;
 	attr |= 8;
-	textattr(attr);
+	ciowrap_textattr(attr);
 }
 
-void lowvideo(void)
+void ciowrap_lowvideo(void)
 {
 	int attr;
 
 	if(!initialized)
-		initciowrap(3);
-	gettextinfo(&cio_textinfo);
+		initciowrap(CIOWRAP_AUTO_MODE);
+	ciowrap_gettextinfo(&cio_textinfo);
 	attr=cio_textinfo.attribute;
 	attr &= 0xf7;
-	textattr(attr);
+	ciowrap_textattr(attr);
 }
 
-void normvideo(void)
+void ciowrap_normvideo(void)
 {
 	if(!initialized)
-		initciowrap(3);
-	textattr(0x07);
+		initciowrap(CIOWRAP_AUTO_MODE);
+	ciowrap_textattr(0x07);
 }
 
-int puttext(int a,int b,int c,int d,char *e)
+int ciowrap_puttext(int a,int b,int c,int d,unsigned char *e)
 {
 	if(!initialized)
-		initciowrap(3);
+		initciowrap(CIOWRAP_AUTO_MODE);
 	return(cio_api.puttext(a,b,c,d,e));
 }
 
-int gettext(int a,int b,int c,int d,char *e)
+int ciowrap_gettext(int a,int b,int c,int d,unsigned char *e)
 {
 	if(!initialized)
-		initciowrap(3);
+		initciowrap(CIOWRAP_AUTO_MODE);
 	return(cio_api.gettext(a,b,c,d,e));
 }
 
-void textattr(unsigned char a)
+void ciowrap_textattr(unsigned char a)
 {
 	if(!initialized)
-		initciowrap(3);
+		initciowrap(CIOWRAP_AUTO_MODE);
 	cio_api.textattr(a);
 }
 
-void delay(long a)
+void ciowrap_delay(long a)
 {
 	if(!initialized)
-		initciowrap(3);
+		initciowrap(CIOWRAP_AUTO_MODE);
 	cio_api.delay(a);
 }
 
-int putch(unsigned char a)
+int ciowrap_putch(unsigned char a)
 {
 	if(!initialized)
-		initciowrap(3);
+		initciowrap(CIOWRAP_AUTO_MODE);
 	return(cio_api.putch(a));
 }
 
-void _setcursortype(int a)
+void ciowrap_setcursortype(int a)
 {
 	if(!initialized)
-		initciowrap(3);
+		initciowrap(CIOWRAP_AUTO_MODE);
 	cio_api.setcursortype(a);
 }

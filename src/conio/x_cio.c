@@ -1,6 +1,8 @@
 #include <stdarg.h>
 #include <stdio.h>
 
+#include <threadwrap.h>
+
 #include "conio.h"
 #include "x_cio.h"
 #include "console.h"

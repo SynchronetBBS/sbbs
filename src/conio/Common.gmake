@@ -18,11 +18,9 @@ ifndef NO_X
 else
  CIOWRAP_CFLAGS	+=	-DNO_X
 endif
-ifdef USE_ANSI
- CIOWRAP_CFLAGS	+=	-DUSE_ANSI
- CIOWRAP_LDFLAGS	+=	-pthread
- CIOWRAP_OBJS	+=	$(LIBODIR)/ansi_cio.o $(LIBODIR)/threadwrap.o
-endif
+CIOWRAP_LDFLAGS	+=	${PTHREAD_LDFLAGS}
+CIOWRAP_CFLAGS	+=	$(PTHREAD_CFLAGS)
+CIOWRAP_OBJS	+=	$(LIBODIR)/ansi_cio.o $(LIBODIR)/threadwrap.o
 CIOWRAP_OBJS	+=	$(LIBODIR)/curs_cio.o $(LIBODIR)/conio.o
 CIOWRAP_CFLAGS	+=	-I$(UIFC_SRC)
 
