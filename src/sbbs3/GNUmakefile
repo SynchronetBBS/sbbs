@@ -20,6 +20,10 @@ ifndef DEBUG
  endif
 endif
 
+#USE_DIALOG =   1       # Dialog vesrion of UIFC
+USE_FLTK =     1       # Use Windowed version
+USE_CURSES      =       1       # Curses version of UIFC
+
 ifdef DEBUG
  BUILD	=	debug
 else
@@ -108,9 +112,14 @@ endif
 
 # The following are needed for echocfg
 ifdef USE_FLTK
- CFLAGS += -DUSE_CURSES -DUSE_FLTK -I../../include/fltk
- LFLAGS_FLTK = -L../../lib/fltk/$(os) -L/usr/X11R6/lib -lfltk -lX11 -lcurses
+ CFLAGS += -DUSE_FLTK -I../../include/fltk
+ LFLAGS_FLTK = -L../../lib/fltk/$(os) -L/usr/X11R6/lib -lm -lfltk -lX11
  UIFC_FLTK = $(EXEODIR)/uifcfltk.o
+endif
+ifdef USE_CURSES
+ CFLAGS += -DUSE_CURSES
+ LFLAGS_CURSES = -lcurses
+ UIFC_CURSES = $(EXEODIR)/uifcc.o
 endif
 
 include targets.mk		# defines all targets
@@ -274,12 +283,13 @@ $(ECHOCFG): \
 	$(EXEODIR)/uifcx.o \
 	$(EXEODIR)/uifcc.o \
 	$(UIFC_FLTK) \
+	$(UIFC_CURSES) \
 	$(EXEODIR)/nopen.o \
 	$(EXEODIR)/str_util.o \
 	$(EXEODIR)/filewrap.o \
 	$(EXEODIR)/genwrap.o
 	@echo Linking $@
-	@$(CC) -o $@ $^ $(LFLAGS_FLTK)
+	$(CC) -o $@ $^ $(LFLAGS_FLTK) $(LFLAGS_CURSES)
 
 # ADDFILES
 $(ADDFILES): \
