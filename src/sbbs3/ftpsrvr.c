@@ -58,6 +58,7 @@
 #include <sys/stat.h>		/* S_IWRITE */
 
 /* Synchronet-specific headers */
+#undef SBBS	/* this shouldn't be defined unless building sbbs.dll/libsbbs.so */
 #include "sbbs.h"
 #include "text.h"			/* TOTAL_TEXT */
 #include "ftpsrvr.h"

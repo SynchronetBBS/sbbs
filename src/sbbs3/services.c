@@ -64,6 +64,7 @@
 #define JAVASCRIPT	/* required to include JS API headers */
 #endif
 #define SERVICES_INI_BITDESC_TABLE	/* required to defined service_options */
+#undef SBBS	/* this shouldn't be defined unless building sbbs.dll/libsbbs.so */
 #include "sbbs.h"
 #include "services.h"
 #include "ident.h"	/* identify() */

@@ -97,6 +97,7 @@
 #define JAVASCRIPT
 #endif
 
+#undef SBBS	/* this shouldn't be defined unless building sbbs.dll/libsbbs.so */
 #include "sbbs.h"
 #include "sockwrap.h"		/* sendfilesocket() */
 #include "threadwrap.h"		/* pthread_mutex_t */
