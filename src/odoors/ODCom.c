@@ -1958,6 +1958,7 @@ tODResult ODComClose(tPortHandle hPort)
 
 #ifdef INCLUDE_STDIO_COM
 	  case kComMethodStdIO:
+		 tcsetattr(fileno(stdin),TCSANOW,&tio_default);
 	     break;
 #endif
 
