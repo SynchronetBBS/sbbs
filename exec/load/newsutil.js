@@ -42,11 +42,22 @@ function write_news_header(hdr,writeln)
 	if(hdr.ftn_reply!=undefined)
 		writeln("X-FTN-REPLY: " + hdr.ftn_reply);
 
+	var content_type;
+
 	if(hdr.field_list!=undefined) {
 		for(i in hdr.field_list) 
-			if(hdr.field_list[i].type==RFC822HEADER)
+			if(hdr.field_list[i].type==RFC822HEADER) {
+				if(hdr.field_list[i].data.toLowerCase().indexOf("content-type:")==0)
+					content_type = hdr.field_list[i].data;
 				writeln(hdr.field_list[i].data);
+			}
 	}
+	if(content_type==undefined) {
+		/* No content-type specified, so assume IBM code-page 437 (full ex-ASCII) */
+		writeln("Content-Type: text/plain; charset=cp437");
+		writeln("Content-Transfer-Encoding: 8bit");
+	}
+
 }
 
 function parse_news_header(hdr, line)
