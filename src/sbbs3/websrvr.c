@@ -1338,7 +1338,7 @@ static int pipereadline(int pipe, char *buf, size_t length)
 
 #if defined(_WIN32)
 		ret=0;
-		ReadFile(pipe, &ch, 1, &ret, NULL);
+		ReadFile(pipe, &ch, 1, (DWORD*)&ret, NULL);
 #else
 		ret=read(pipe, &ch, 1);
 #endif
@@ -2493,7 +2493,7 @@ static BOOL exec_cgi(http_session_t *session)
 	start=time(NULL);
 
 	SAFECOPY(cgi_status,session->req.status);
-	SAFEPRINTF(content_type,"%s: %s",get_header(HEAD_TYPE),startup->default_cgi_content);
+	SAFEPRINTF2(content_type,"%s: %s",get_header(HEAD_TYPE),startup->default_cgi_content);
 	while(server_socket!=INVALID_SOCKET) {
 
 		if((time(NULL)-start) >= startup->max_cgi_inactivity)  {
