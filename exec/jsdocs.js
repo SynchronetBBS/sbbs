@@ -3,6 +3,15 @@
 // This script will (eventually be used to) generated HTML documentation of the
 // Synchronet JavaScript object model
 
+function document_methods(name,obj)
+{
+	if(obj._method_list == undefined)
+		return;
+
+	for(method in obj._method_list)
+		printf("%-8s %s.%s()\r\n","",name,obj._method_list[method].name);
+}
+
 function document_object(name,obj)
 {
 	var prop_name;
@@ -17,6 +26,8 @@ function document_object(name,obj)
 				document_object(prop_name,obj[prop]);
 		}
 	}
+
+	document_methods(name,obj);
 }
 
 document_object("client"	,client);
@@ -27,3 +38,4 @@ document_object("server"	,server);
 document_object("console"	,console);
 document_object("msg_area"	,msg_area);
 document_object("file_area"	,file_area);
+document_object("File"		,new File("bogusfile"));
