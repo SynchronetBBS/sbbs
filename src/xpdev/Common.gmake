@@ -30,7 +30,7 @@ else
  ifdef DONT_CLOBBER_CC
   CC	?=	gcc
  else
-  CC	?=	gcc
+  CC	:=	gcc
  endif
  CCPRE	:=	$(CC)
  CXX	?=	g++
