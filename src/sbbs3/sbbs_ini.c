@@ -1,0 +1,243 @@
+/* sbbs_ini.c */
+
+#include "sbbs_ini.h"
+
+static const char*	nulstr="";
+
+static ini_bitdesc_t bbs_options[] = {
+
+	{ BBS_OPT_KEEP_ALIVE			,"KEEP_ALIVE"			},
+	{ BBS_OPT_XTRN_MINIMIZED		,"XTRN_MINIMIZED"		},
+	{ BBS_OPT_AUTO_LOGON			,"AUTO_LOGON"			},
+	{ BBS_OPT_DEBUG_TELNET			,"DEBUG_TELNET"			},
+	{ BBS_OPT_SYSOP_AVAILABLE		,"SYSOP_AVAILABLE"		},
+	{ BBS_OPT_ALLOW_RLOGIN			,"ALLOW_RLOGIN"			},
+	{ BBS_OPT_USE_2ND_RLOGIN		,"USE_2ND_RLOGIN"		},
+	{ BBS_OPT_NO_QWK_EVENTS			,"NO_QWK_EVENTS"		},
+	{ BBS_OPT_NO_HOST_LOOKUP		,"NO_HOST_LOOKUP"		},
+	{ BBS_OPT_GET_IDENT				,"GET_IDENT"			},
+	{ BBS_OPT_NO_JAVASCRIPT			,"NO_JAVASCRIPT"		},
+	{ BBS_OPT_LOCAL_TIMEZONE		,"LOCAL_TIMEZONE"		},
+	{ BBS_OPT_MUTE					,"MUTE"					},
+	/* terminator */										
+	{ -1							,NULL					}
+};
+
+static ini_bitdesc_t ftp_options[] = {
+
+	{ FTP_OPT_DEBUG_RX				,"DEBUG_RX"				},
+	{ FTP_OPT_DEBUG_DATA			,"DEBUG_DATA"			},	
+	{ FTP_OPT_INDEX_FILE			,"INDEX_FILE"			},
+	{ FTP_OPT_DEBUG_TX				,"DEBUG_TX"				},
+	{ FTP_OPT_ALLOW_QWK				,"ALLOW_QWK"			},
+	{ FTP_OPT_NO_LOCAL_FSYS			,"LOCAL_FSYS"			},
+	{ FTP_OPT_DIR_FILES				,"DIR_FILES"			},
+	{ FTP_OPT_KEEP_TEMP_FILES		,"KEEP_TEMP_FILES"		},
+	{ FTP_OPT_HTML_INDEX_FILE		,"HTML_INDEX_FILE"		},
+	{ FTP_OPT_NO_HOST_LOOKUP		,"NO_HOST_LOOKUP"		},
+	{ FTP_OPT_NO_JAVASCRIPT			,"NO_JAVASCRIPT"		},
+	{ FTP_OPT_LOCAL_TIMEZONE		,"LOCAL_TIMEZONE"		},
+	{ FTP_OPT_MUTE					,"MUTE"					},
+	/* terminator */										
+	{ -1							,NULL					}
+};
+
+static ini_bitdesc_t mail_options[] = {
+
+	{ MAIL_OPT_DEBUG_RX_HEADER		,"DEBUG_RX_HEADER"		},
+	{ MAIL_OPT_DEBUG_RX_BODY		,"DEBUG_RX_BODY"		},	
+	{ MAIL_OPT_ALLOW_POP3			,"ALLOW_POP3"			},
+	{ MAIL_OPT_DEBUG_TX				,"DEBUG_TX"				},
+	{ MAIL_OPT_DEBUG_RX_RSP			,"DEBUG_RX_RSP"			},
+	{ MAIL_OPT_RELAY_TX				,"RELAY_TX"				},
+	{ MAIL_OPT_DEBUG_POP3			,"DEBUG_POP3"			},
+	{ MAIL_OPT_ALLOW_RX_BY_NUMBER	,"ALLOW_RX_BY_NUMBER"	},
+	{ MAIL_OPT_NO_HOST_LOOKUP		,"NO_HOST_LOOKUP"		},
+	{ MAIL_OPT_USE_TCP_DNS			,"USE_TCP_DNS"			},
+	{ MAIL_OPT_NO_SENDMAIL			,"NO_SENDMAIL"			},
+	{ MAIL_OPT_ALLOW_RELAY			,"ALLOW_RELAY"			},
+	{ MAIL_OPT_DNSBL_REFUSE			,"DNSBL_REFUSE"			},
+	{ MAIL_OPT_DNSBL_IGNORE			,"DNSBL_IGNORE"			},
+	{ MAIL_OPT_DNSBL_BADUSER		,"DNSBL_BADUSER"		},
+	{ MAIL_OPT_LOCAL_TIMEZONE		,"LOCAL_TIMEZONE"		},
+	{ MAIL_OPT_MUTE					,"MUTE"					},
+	/* terminator */
+	{ -1							,NULL					}
+};
+
+static ini_bitdesc_t service_options[] = {
+
+	{ BBS_OPT_NO_HOST_LOOKUP		,"NO_HOST_LOOKUP"		},
+	{ BBS_OPT_GET_IDENT				,"GET_IDENT"			},
+	{ BBS_OPT_MUTE					,"MUTE"					},
+	/* terminator */				
+	{ -1							,NULL					}
+};
+
+
+void sbbs_read_ini(
+	 FILE*					fp
+	,BOOL*					run_bbs
+	,bbs_startup_t*			bbs
+	,BOOL*					run_ftp
+	,ftp_startup_t*			ftp
+	,BOOL*					run_mail		
+	,mail_startup_t*		mail
+	,BOOL*					run_services
+	,services_startup_t*	services
+	)
+{
+	const char*	section;
+	char*		ctrl_dir;
+	char*		host_name;
+
+	section = "Global";
+
+	ctrl_dir=iniReadString(fp,section,"CtrlDirectory",nulstr);
+	if(*ctrl_dir) {
+		SAFECOPY(bbs->ctrl_dir,ctrl_dir);
+		SAFECOPY(ftp->ctrl_dir,ctrl_dir);
+		SAFECOPY(mail->ctrl_dir,ctrl_dir);
+		SAFECOPY(services->ctrl_dir,ctrl_dir);
+	}
+
+	host_name=iniReadString(fp,section,"HostName",nulstr);
+	if(*host_name) {
+		SAFECOPY(bbs->host_name,host_name);
+		SAFECOPY(ftp->host_name,host_name);
+		SAFECOPY(mail->host_name,host_name);
+		SAFECOPY(services->host_name,host_name);
+	}
+																		
+	/***********************************************************************/
+	section = "BBS";
+
+	*run_bbs
+		=iniReadBool(fp,section,"AutoStart",TRUE);
+
+	bbs->telnet_interface
+		=iniReadIpAddress(fp,section,"TelnetInterface",0);
+	bbs->telnet_port
+		=iniReadShortInt(fp,section,"TelnetPort",bbs->telnet_port);
+
+	bbs->rlogin_interface
+		=iniReadIpAddress(fp,section,"RLoginInterface",0);
+	bbs->rlogin_port
+		=iniReadShortInt(fp,section,"RloginPort",bbs->rlogin_port);
+
+	bbs->first_node
+		=iniReadShortInt(fp,section,"FirstNode",bbs->first_node);
+	bbs->last_node
+		=iniReadShortInt(fp,section,"FirstNode",bbs->last_node);
+
+	bbs->xtrn_polls_before_yield
+		=iniReadInteger(fp,section,"ExternalYield",bbs->xtrn_polls_before_yield);
+	bbs->js_max_bytes
+		=iniReadInteger(fp,section,"JS_MaxBytes",0);
+
+	SAFECOPY(bbs->answer_sound
+		,iniReadString(fp,section,"AnswerSound",nulstr));
+	SAFECOPY(bbs->hangup_sound
+		,iniReadString(fp,section,"HangupSound",nulstr));
+
+	bbs->options
+		=iniReadBitField(fp,section,"Options",bbs_options,bbs->options);
+
+	/***********************************************************************/
+	section = "FTP";
+
+	*run_ftp
+		=iniReadBool(fp,section,"AutoStart",TRUE);
+
+	ftp->interface_addr
+		=iniReadIpAddress(fp,section,"Interface",0);
+	ftp->port
+		=iniReadShortInt(fp,section,"Port",ftp->port);
+	ftp->max_clients
+		=iniReadShortInt(fp,section,"MaxClient",ftp->max_clients);
+	ftp->max_inactivity
+		=iniReadShortInt(fp,section,"MaxClient",ftp->max_inactivity);
+	ftp->qwk_timeout
+		=iniReadShortInt(fp,section,"QwkTimeout",ftp->qwk_timeout);
+
+	SAFECOPY(ftp->index_file_name
+		,iniReadString(fp,section,"IndexFileName","00index"));
+	SAFECOPY(ftp->html_index_file
+		,iniReadString(fp,section,"HtmlIndexFile","00index.html"));
+	SAFECOPY(ftp->html_index_script
+		,iniReadString(fp,section,"HtmlIndexScript","ftp-html.js"));
+
+	SAFECOPY(ftp->answer_sound
+		,iniReadString(fp,section,"AnswerSound",nulstr));
+	SAFECOPY(ftp->hangup_sound
+		,iniReadString(fp,section,"HangupSound",nulstr));
+	SAFECOPY(ftp->hack_sound
+		,iniReadString(fp,section,"HackAttemptSound",nulstr));
+
+	ftp->options
+		=iniReadBitField(fp,section,"Options",ftp_options,ftp->options);
+
+	/***********************************************************************/
+	section = "Mail";
+
+	*run_mail
+		=iniReadBool(fp,section,"AutoStart",TRUE);
+
+	mail->interface_addr
+		=iniReadIpAddress(fp,section,"Interface",0);
+	mail->smtp_port
+		=iniReadShortInt(fp,section,"SMTPPort",mail->smtp_port);
+	mail->pop3_port
+		=iniReadShortInt(fp,section,"POP3Port",mail->pop3_port);
+	mail->relay_port
+		=iniReadShortInt(fp,section,"RelayPort",mail->relay_port);
+	mail->max_clients
+		=iniReadShortInt(fp,section,"MaxClient",mail->max_clients);
+	mail->max_inactivity
+		=iniReadShortInt(fp,section,"MaxClient",mail->max_inactivity);
+	mail->max_delivery_attempts
+		=iniReadShortInt(fp,section,"MaxDeliveryAttempts",mail->max_delivery_attempts);
+	mail->rescan_frequency
+		=iniReadShortInt(fp,section,"RescanFrequency",mail->rescan_frequency);
+
+	SAFECOPY(mail->relay_server
+		,iniReadString(fp,section,"RelayServer",mail->relay_server));
+	SAFECOPY(mail->dns_server
+		,iniReadString(fp,section,"DNSServer",mail->dns_server));
+
+	SAFECOPY(mail->default_user
+		,iniReadString(fp,section,"DefaultUser",mail->dns_server));
+
+	SAFECOPY(mail->dnsbl_hdr
+		,iniReadString(fp,section,"DNSBlacklistHeader",mail->dnsbl_hdr));
+	SAFECOPY(mail->dnsbl_tag
+		,iniReadString(fp,section,"DNSBlacklistSubject",mail->dnsbl_tag));
+
+	SAFECOPY(mail->pop3_sound
+		,iniReadString(fp,section,"POP3Sound",nulstr));
+	SAFECOPY(mail->inbound_sound
+		,iniReadString(fp,section,"InboundSound",nulstr));
+	SAFECOPY(mail->outbound_sound
+		,iniReadString(fp,section,"OutboundSound",nulstr));
+
+	mail->options
+		=iniReadBitField(fp,section,"Options",mail_options,mail->options);
+
+	/***********************************************************************/
+	section = "Services";
+
+	*run_services
+		=iniReadBool(fp,section,"AutoStart",TRUE);
+
+	services->interface_addr
+		=iniReadIpAddress(fp,section,"Interface",0);
+
+	SAFECOPY(services->answer_sound
+		,iniReadString(fp,section,"AnswerSound",nulstr));
+	SAFECOPY(services->hangup_sound
+		,iniReadString(fp,section,"HangupSound",nulstr));
+
+	services->options
+		=iniReadBitField(fp,section,"Options",service_options,services->options);
+
+}
