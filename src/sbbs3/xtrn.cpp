@@ -989,10 +989,8 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 		}	
 
 		execvp(argv[0],argv);
-		close(0);	/* close stdin */
-		close(1);	/* close stdout */
-		close(2);	/* close stderr */
-		errormsg(WHERE,ERR_EXEC,argv[0],0);
+		sprintf(str,"!ERROR %d executing %s",errno,argv[0]);
+		errorlog(str);
 		exit(-1);	/* should never get here */
 	}
 	
