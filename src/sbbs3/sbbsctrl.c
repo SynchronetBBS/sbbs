@@ -45,7 +45,7 @@ bbs_startup_t	bbs_startup;
 /************************************************/
 /* Truncates white-space chars off end of 'str' */
 /************************************************/
-void truncsp(char *str)
+static void truncsp(char *str)
 {
 	uint c;
 
