@@ -499,12 +499,12 @@ set this option to Yes. If this option is set to No, the user notes
 						i=cfg.sys_misc&SM_LOCAL_TZ ? 0:1;
 						SETHELP(WHERE);
 /*
-.Use Local/System Time Zone:.
+Use Local/System Time Zone:
 
 If you would like the times to be displayed adjusting for the local
-time zone, set this optiont to Yes. If this option is set to Yes, then
+time zone, set this optiont to Yes. If this option is set to Yes, then
 all times will be stored in GMT/UTC representation. If this option is
-set to No, then all times will be stored in local representation.
+set to No, then all times will be stored in local representation.
 */
 						i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 							,"Use Local/System Time Zone",opt);
