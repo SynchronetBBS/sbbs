@@ -47,6 +47,8 @@
  *              Jan 13, 1997  6.10  BP   Fixes for Door32 support.
  *              Oct 19, 2001  6.20  RS   Added TCP/IP socket (telnet) support.
  *              Oct 22, 2001  6.21  RS   Fixed disconnected socket detection.
+ *              Aug 22, 2002  6.22  RS   Fixed bugs in ODComCarrier and ODComWaitEvent
+ *              Aug 22, 2002  6.22  MD   Modified socket functions for non-blocking use.
  */
 
 #define BUILDING_OPENDOORS
@@ -2654,6 +2656,7 @@ tODResult ODComGetByte(tPortHandle hPort, char *pbtNext, BOOL bWait)
 		{
 			fd_set	socket_set;
 			struct	timeval tv;
+			int		select_ret, recv_ret;
 
 			FD_ZERO(&socket_set);
 			FD_SET(pPortInfo->socket,&socket_set);
@@ -2661,11 +2664,23 @@ tODResult ODComGetByte(tPortHandle hPort, char *pbtNext, BOOL bWait)
 			tv.tv_sec=0;
 			tv.tv_usec=0;
 
-			if(select(pPortInfo->socket+1,&socket_set,NULL,NULL,bWait ? NULL : &tv) != 1)
-	         return(bWait ? kODRCGeneralFailure : kODRCNothingWaiting);
+			select_ret = select(pPortInfo->socket+1, &socket_set, NULL, NULL, bWait ? NULL : &tv);
+			if (select_ret == SOCKET_ERROR)
+				return (kODRCGeneralFailure);
+			if (select_ret == 0)
+				return (kODRCNothingWaiting);
 
-			if(recv(pPortInfo->socket,pbtNext,1,0) != 1)
-	         return(bWait ? kODRCGeneralFailure : kODRCNothingWaiting);
+			do {
+				recv_ret = recv(pPortInfo->socket, pbtNext, 1, 0);
+				if(recv_ret != SOCKET_ERROR)
+					break;
+				if(WSAGetLastError() != WSAEWOULDBLOCK)
+					return (kODRCGeneralFailure);
+				Sleep(50);
+			} while (bWait);
+
+			if (recv_ret == 0)
+				 return (kODRCNothingWaiting);
 
 			break;
 		}
@@ -2797,6 +2812,7 @@ keep_going:
 		{
 			fd_set	socket_set;
 			struct	timeval tv;
+			int		send_ret;
 
 			FD_ZERO(&socket_set);
 			FD_SET(pPortInfo->socket,&socket_set);
@@ -2807,8 +2823,15 @@ keep_going:
 			if(select(pPortInfo->socket+1,NULL,&socket_set,NULL,&tv) != 1)
 	         return(kODRCGeneralFailure);
 
-			if(send(pPortInfo->socket,&btToSend,1,0) != 1)
-				return(kODRCGeneralFailure);
+			do {
+				send_ret = send(pPortInfo->socket, &btToSend, 1, 0);
+				if (send_ret != 1)
+					Sleep(50);
+			} while ((send_ret == SOCKET_ERROR) && (WSAGetLastError() == WSAEWOULDBLOCK));
+
+			if (send_ret == SOCKET_ERROR)
+				return (kODRCGeneralFailure);
+
 			break;
 		}
 #endif /* INCLUDE_SOCKET_COM */
@@ -3238,6 +3261,7 @@ try_again:
 		{
 			fd_set	socket_set;
 			struct	timeval tv;
+			int     send_ret;
 
 			FD_ZERO(&socket_set);
 			FD_SET(pPortInfo->socket,&socket_set);
@@ -3248,9 +3272,16 @@ try_again:
 			if(select(pPortInfo->socket+1,NULL,&socket_set,NULL,&tv) != 1)
 	         return(kODRCGeneralFailure);
 
-			if(send(pPortInfo->socket,pbtBuffer,nSize,0) != nSize)
-				return(kODRCGeneralFailure);
-			break;
+			do {
+				send_ret = send(pPortInfo->socket, pbtBuffer, nSize, 0);
+				if (send_ret != SOCKET_ERROR)
+					break;
+				Sleep(25);
+			} while (WSAGetLastError() == WSAEWOULDBLOCK);
+
+			if (send_ret != nSize)
+				return (kODRCGeneralFailure);
+      break;
 		}
 #endif /* INCLUDE_SOCKET_COM */
 
@@ -3405,7 +3436,7 @@ tODResult ODComWaitEvent(tPortHandle hPort, tComEvent Event)
 					if(select(pPortInfo->socket+1,&socket_set,NULL,NULL,NULL)
 						==SOCKET_ERROR)
 						break;
-					if(recv(pPortInfo->socket,&ch,1,MSG_PEEK)!=1)
+					if(recv(pPortInfo->socket, &ch, 1, MSG_PEEK)!=1)
 						break;
 				}
 			} 
