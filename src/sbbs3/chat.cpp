@@ -169,7 +169,7 @@ void sbbs_t::multinodechat(int channel)
 		attr(cfg.color[clr_multichat]);
 		SYNC;
 		sys_status&=~SS_ABORT;
-		if((ch=inkey(0,250))!=0 || wordwrap[0]) {
+		if((ch=inkey(K_NONE,250))!=0 || wordwrap[0]) {
 			if(ch=='/') {
 				bputs(text[MultiChatCommandPrompt]);
 				strcpy(str,"ACELWQ?*");
@@ -1248,7 +1248,7 @@ void sbbs_t::nodemsg()
 		mnemonics(text[PrivateMsgPrompt]);
 		sys_status&=~SS_ABORT;
 		while(online) { 	 /* Watch for incoming messages */
-			ch=toupper(inkey(0,1000));
+			ch=toupper(inkey(K_NONE,1000));
 			if(ch && strchr("TMCQ\r",ch))
 				break;
 			if(sys_status&SS_ABORT)
@@ -1812,7 +1812,7 @@ void sbbs_t::localguru(char *gurubuf, int gurunum)
 		action=NODE_GCHT;
 		SYNC;
 		if(wordwrap[0]==0) {
-			if((ch=inkey(0,1000))==0) {
+			if((ch=inkey(K_NONE,1000))==0) {
 				if(str[0]) {
 					attr(cfg.color[clr_chatlocal]);
 					guruchat(str,gurubuf,gurunum,lastanswer); 
