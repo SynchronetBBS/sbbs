@@ -1989,13 +1989,13 @@ static void sendmail_thread(void* arg)
 			msg.offset=offset;
 
 			if((i=smb_lockmsghdr(&smb,&msg))!=0) {
-				lprintf("0000 !SendMail: ERROR %d locking message header #%lu"
+				lprintf("0000 !SEND ERROR %d locking message header #%lu"
 					,i,msg.idx.number);
 				continue;
 			}
 			if((i=smb_getmsghdr(&smb,&msg))!=0) {
 				smb_unlockmsghdr(&smb,&msg);
-				lprintf("0000 !SendMail: ERROR %d reading message header #%lu"
+				lprintf("0000 !SEND ERROR %d reading message header #%lu"
 					,i,msg.idx.number);
 				continue; 
 			}
@@ -2007,7 +2007,7 @@ static void sendmail_thread(void* arg)
 			active_sendmail=1;
 			update_clients();
 
-			lprintf("0000 SendMail: Message #%lu from %s to %s"
+			lprintf("0000 SEND Message #%lu from %s to %s"
 				,msg.hdr.number, msg.from, msg.to_net.addr);
 			status("SendMail");
 #ifdef _WIN32
@@ -2015,9 +2015,9 @@ static void sendmail_thread(void* arg)
 				PlaySound(startup->outbound_sound, NULL, SND_ASYNC|SND_FILENAME);
 #endif
 
-			lprintf("0000 SendMail: getting message text");
+			lprintf("0000 SEND getting message text");
 			if((msgtxt=smb_getmsgtxt(&smb,&msg,GETMSGTXT_TAILS))==NULL) {
-				lprintf("0000 !SendMail: ERROR retrieving message text");
+				lprintf("0000 !SEND ERROR retrieving message text");
 				continue;
 			}
 
@@ -2030,7 +2030,7 @@ static void sendmail_thread(void* arg)
 
 				p=strrchr(to,'@');
 				if(p==NULL) {
-					lprintf("0000 !SendMail: INVALID destination address: %s", to);
+					lprintf("0000 !SEND INVALID destination address: %s", to);
 					sprintf(err,"Invalid destination address: %s", to);
 					bounce(&smb,&msg,err,TRUE);
 					continue;
@@ -2038,10 +2038,10 @@ static void sendmail_thread(void* arg)
 				if((dns=resolve_ip(startup->dns_server))==0) 
 					continue;
 				p++;
-				lprintf("0000 SendMail: getting MX records for %s from %s",p,startup->dns_server);
+				lprintf("0000 SEND getting MX records for %s from %s",p,startup->dns_server);
 				if((i=dns_getmx(p, mx, mx2, startup->interface_addr, dns
 					,startup->options&MAIL_OPT_USE_TCP_DNS ? TRUE : FALSE))!=0) {
-					lprintf("0000 !SendMail: ERROR %d obtaining MX records for %s from %s"
+					lprintf("0000 !SEND ERROR %d obtaining MX records for %s from %s"
 						,i,p,startup->dns_server);
 					sprintf(err,"Error %d obtaining MX record for %s",i,p);
 					bounce(&smb,&msg,err,FALSE);
@@ -2051,21 +2051,21 @@ static void sendmail_thread(void* arg)
 			}
 
 
-			lprintf("0000 SendMail: opening socket");
+			lprintf("0000 SEND opening socket");
 			if((sock=mail_open_socket(SOCK_STREAM))==INVALID_SOCKET) {
-				lprintf("0000 !SendMail: ERROR %d opening socket", ERROR_VALUE);
+				lprintf("0000 !SEND ERROR %d opening socket", ERROR_VALUE);
 				continue;
 			}
 
-			lprintf("%04d SendMail: socket opened",sock);
+			lprintf("%04d SEND socket opened",sock);
 
 			memset(&addr,0,sizeof(addr));
 			addr.sin_addr.s_addr = htonl(startup->interface_addr);
 			addr.sin_family = AF_INET;
 
-			lprintf("%04d SendMail: binding socket",sock);
+			lprintf("%04d SEND binding socket",sock);
 			if((i=bind(sock, (struct sockaddr *) &addr, sizeof (addr)))!=0) {
-				lprintf("%04d !SendMail: ERROR %d (%d) binding socket", sock, i, ERROR_VALUE);
+				lprintf("%04d !SEND ERROR %d (%d) binding socket", sock, i, ERROR_VALUE);
 				continue;
 			}
 
@@ -2078,7 +2078,7 @@ static void sendmail_thread(void* arg)
 					server=mx2;	/* Give second mx record a try */
 				}
 				
-				lprintf("%04d SendMail: resolving SMTP host name: %s", sock, server);
+				lprintf("%04d SEND resolving SMTP host name: %s", sock, server);
 				ip_addr=resolve_ip(server);
 				if(!ip_addr)  {
 					sprintf(err,"Failed to resolve SMTP host name: %s",server);
@@ -2093,12 +2093,12 @@ static void sendmail_thread(void* arg)
 				else
 					server_addr.sin_port = htons(IPPORT_SMTP);
 				
-				lprintf("%04d SendMail: connecting to port %u on %s [%s]"
+				lprintf("%04d SEND connecting to port %u on %s [%s]"
 					,sock
 					,ntohs(server_addr.sin_port)
 					,server,inet_ntoa(server_addr.sin_addr));
 				if((i=connect(sock, (struct sockaddr *)&server_addr, sizeof(server_addr)))!=0) {
-					lprintf("%04d !SendMail: ERROR %d (%d) connecting to SMTP server: %s"
+					lprintf("%04d !SEND ERROR %d (%d) connecting to SMTP server: %s"
 						,sock
 						,i,ERROR_VALUE, server);
 					sprintf(err,"Error %d connecting to SMTP server: %s"
@@ -2112,7 +2112,7 @@ static void sendmail_thread(void* arg)
 				continue;
 			}
 
-			lprintf("%04d SendMail: connected to %s",sock,server);
+			lprintf("%04d SEND connected to %s",sock,server);
 
 			/* HELO */
 			if(!sockgetrsp(sock,"220",buf,sizeof(buf))) {
@@ -2157,23 +2157,23 @@ static void sendmail_thread(void* arg)
 				bounce(&smb,&msg,err,buf[0]=='5');
 				continue;
 			}
-			lprintf("%04d SendMail: sending message text",sock);
+			lprintf("%04d SEND sending message text",sock);
 			sockmsgtxt(sock,&msg,msgtxt,fromaddr,-1);
 			if(!sockgetrsp(sock,"250", buf, sizeof(buf))) {
 				sprintf(err,"%s replied with '%s' instead of 250",server,buf);
 				bounce(&smb,&msg,err,buf[0]=='5');
 				continue;
 			}
-			lprintf("%04d SendMail: transfer successful",sock);
+			lprintf("%04d SEND transfer successful",sock);
 
 			msg.hdr.attr|=MSG_DELETE;
 			msg.idx.attr=msg.hdr.attr;
 			if((i=smb_lockmsghdr(&smb,&msg))!=0) 
-				lprintf("%04d !SendMail: ERROR %d locking message header #%lu"
+				lprintf("%04d !SEND ERROR %d locking message header #%lu"
 					,sock
 					,i,msg.hdr.number);
 			if((i=smb_putmsg(&smb,&msg))!=0)
-				lprintf("%04d !SendMail: ERROR %d deleting message #%lu"
+				lprintf("%04d !SEND ERROR %d deleting message #%lu"
 					,sock
 					,i,msg.hdr.number);
 			smb_unlockmsghdr(&smb,&msg);
