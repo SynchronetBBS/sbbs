@@ -2749,11 +2749,15 @@ void sbbs_t::riosync(char abortable)
 		return;
 	time_t start=time(NULL);
 	while(online && rioctl(TXBC)) {				/* wait up to three minutes for tx buf empty */
+		if(sys_status&SS_ABORT)
+			break;
+#if 0	/* this isn't necessary (or desired) on a TCP/IP connection */
 		if(abortable && rioctl(RXBC)) { 		/* incoming characer */
 			rioctl(IOFO);						/* flush output */
 			sys_status|=SS_ABORT;				/* set abort flag so no pause */
 			break;								/* abort sync */
 		}
+#endif
 		if(time(NULL)-start>180) {				/* timeout */
 			logline("!!","riosync timeout"); 
 			break;
