@@ -252,6 +252,7 @@ $(FIXSMB): $(FIXSMB_OBJS)
 CHKSMB_OBJS = \
 	$(LIBODIR)/chksmb.o \
 	$(SMBLIB_OBJS) \
+	$(LIBODIR)/smbdump.o \
 	$(LIBODIR)/conwrap.o \
 	$(LIBODIR)/dirwrap.o \
 	$(LIBODIR)/genwrap.o
@@ -269,6 +270,7 @@ SMBUTIL_OBJS = \
 	$(LIBODIR)/dirwrap.o \
 	$(LIBODIR)/genwrap.o \
 	$(LIBODIR)/smbtxt.o \
+	$(LIBODIR)/smbdump.o \
 	$(LIBODIR)/crc32.o \
 	$(LIBODIR)/lzh.o \
 	$(LIBODIR)/date_str.o \
