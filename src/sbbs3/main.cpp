@@ -989,7 +989,6 @@ void input_thread(void *arg)
 	while(sbbs->online && sbbs->client_socket!=INVALID_SOCKET
 		&& node_socket[sbbs->cfg.node_num-1]!=INVALID_SOCKET) {
 
-		YIELD();
 		pthread_mutex_lock(&sbbs->input_thread_mutex);
 
 #ifdef __unix__
@@ -1203,7 +1202,6 @@ void output_thread(void* arg)
 	sbbs->console|=CON_R_ECHO;
 
 	while(sbbs->client_socket!=INVALID_SOCKET && telnet_socket!=INVALID_SOCKET) {
-		YIELD();
 
     	if(bufbot==buftop)
 	    	avail=RingBufFull(&sbbs->outbuf);
@@ -2709,7 +2707,6 @@ int sbbs_t::incom(void)
 {
 	uchar	ch;
 
-	YIELD();
 	if(!RingBufRead(&inbuf, &ch, 1))
 		return(NOINP);
 #if 0 // removed Jan-2003
@@ -3075,8 +3072,6 @@ void node_thread(void* arg)
 				}
 			if(sbbs->exec(&sbbs->main_csi))
 				break;
-
-			YIELD();
 		}
 	}
 
@@ -3804,7 +3799,6 @@ void DLLCALL bbs_thread(void* arg)
 	}
 
 	while(telnet_socket!=INVALID_SOCKET) {
-		YIELD();
 
 		if(node_threads_running==0 && !event_mutex_locked) {	/* check for re-run flags */
 			bool rerun=false;
