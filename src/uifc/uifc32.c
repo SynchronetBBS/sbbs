@@ -117,6 +117,7 @@ void uifc_mouse_enable(void)
 	ciomouse_addevent(CIOLIB_BUTTON_1_DRAG_MOVE);
 	ciomouse_addevent(CIOLIB_BUTTON_1_DRAG_END);
 	ciomouse_addevent(CIOLIB_BUTTON_1_CLICK);
+	ciomouse_addevent(CIOLIB_BUTTON_2_CLICK);
 	ciomouse_addevent(CIOLIB_BUTTON_3_CLICK);
 	showmouse();
 }
@@ -1627,6 +1628,8 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 	BOOL	gotdecimal=FALSE;
 	int	soffset=0;
 	struct mouse_event	mevnt;
+	unsigned char	*pastebuf=NULL;
+	unsigned char	*pb=NULL;
 
 	if((str=(uchar *)malloc(max+1))==NULL) {
 		cprintf("UIFC line %d: error allocating %u bytes\r\n"
@@ -1669,6 +1672,17 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 					if(i>j)
 						i=j;
 				}
+				if(mevnt.startx>=left
+						&& mevnt.startx<=left+width
+						&& (mevnt.event==CIOLIB_BUTTON_2_CLICK
+						|| mevnt.event==CIOLIB_BUTTON_3_CLICK)) {
+					i=mevnt.startx-left+soffset;
+					if(i>j)
+						i=j;
+					pastebuf=getcliptext();
+					pb=pastebuf;
+					f=0;
+				}
 			}
 		}
 
@@ -1699,11 +1713,20 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 		if(i>j) j=i;
 		str[j]=0;
 		getstrupd(left, top, width, str, i, &soffset);
-		if(f || (ch=inkey())!=0)
+		if(f || pb!=NULL || (ch=inkey())!=0)
 		{
-			if(f)
+			if(f) {
 				ch=f;
-			f=0;
+				f=0;
+			}
+			else if(pb!=NULL) {
+				ch=*(pb++);
+				if(!*pb) {
+					free(pastebuf);
+					pastebuf=NULL;
+					pb=NULL;
+				}
+			}
 			if(ch==CIO_KEY_MOUSE) {
 				if((ch=uifc_getmouse(&mevnt))==0) {
 					if(mevnt.startx>=left
@@ -1712,6 +1735,16 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 						i=mevnt.startx-left+soffset;
 						if(i>j)
 							i=j;
+					}
+					if(mevnt.startx>=left
+							&& mevnt.startx<=left+width
+							&& (mevnt.event==CIOLIB_BUTTON_2_CLICK
+							|| mevnt.event==CIOLIB_BUTTON_3_CLICK)) {
+						i=mevnt.startx-left+soffset;
+						if(i>j)
+							i=j;
+						pastebuf=getcliptext();
+						pb=pastebuf;
 					}
 				}
 			}
@@ -1791,6 +1824,8 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 					{
 						cursor=_NOCURSOR;
 						_setcursortype(cursor);
+						if(pastebuf!=NULL)
+							free(pastebuf);
 						return(-1);
 					}
 				case CR:
@@ -1870,6 +1905,8 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 	strcpy(outstr,str);
 	cursor=_NOCURSOR;
 	_setcursortype(cursor);
+	if(pastebuf!=NULL)
+		free(pastebuf);
 	return(j);
 }
 
