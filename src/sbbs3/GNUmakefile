@@ -130,7 +130,7 @@ $(EXEODIR)/%.o : %.cpp
    ifndef bcc
 	@echo Compiling $<
    endif
-	@$(CC) $(CFLAGS) -o $@ -c $<
+	@$(CCPP) $(CFLAGS) -o $@ -c $<
 
 # Implicit C Compile Rule for SBBS
 $(LIBODIR)/%.o : %.c
