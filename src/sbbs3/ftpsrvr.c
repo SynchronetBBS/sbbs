@@ -4232,7 +4232,8 @@ static void ctrl_thread(void* arg)
 	tmp_sock=sock;
 	ftp_close_socket(&tmp_sock,__LINE__);
 
-	active_clients--;
+	if(active_clients>0)
+		active_clients--;
 	update_clients();
 
 	thread_down();
