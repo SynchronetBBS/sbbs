@@ -2411,10 +2411,20 @@ bool sbbs_t::init()
 #endif
 		);
 	if(comspec==NULL) {
-#if defined(__unix__) && defined(_PATH_BSHELL)
-		comspec =  _PATH_BSHELL;
+		errormsg(WHERE, ERR_CHK, 
+#ifdef __unix__
+		"SHELL"
 #else
-		errormsg(WHERE, ERR_CHK, "SHELL or COMSPEC environment variable", 0);
+		"COMSPEC"
+#endif
+		" environment variable", 0);
+#if defined(__unix__)
+	#if defined(_PATH_BSHELL)
+		comspec =  _PATH_BSHELL;
+	#else
+		comspec = "/bin/sh";
+	#endif
+#else
 		return(false);
 #endif
 	}
