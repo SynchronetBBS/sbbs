@@ -1000,6 +1000,7 @@ void input_thread(void *arg)
 				else
 					lprintf("Node %d !ERROR %d input->select socket %d"
                 		,sbbs->cfg.node_num, ERROR_VALUE, sock);
+				break;
 			}
 #ifdef __unix__
 			else  {
@@ -1009,9 +1010,9 @@ void input_thread(void *arg)
 					close_socket(uspy_socket[sbbs->cfg.node_num-1]);
 					uspy_socket[sbbs->cfg.node_num-1]=INVALID_SOCKET;
 				}
+				continue;
 			}
 #endif
-			break;
 		}
 
 		if(sbbs->client_socket==INVALID_SOCKET) {
@@ -1054,6 +1055,7 @@ void input_thread(void *arg)
 				else
 					lprintf("Node %d !ERROR %d receiving from socket %d"
         	        	,sbbs->cfg.node_num, ERROR_VALUE, sock);
+				break;
 			}
 #ifdef __unix__
 			else  {
@@ -1063,9 +1065,9 @@ void input_thread(void *arg)
 					close_socket(uspy_socket[sbbs->cfg.node_num-1]);
 					uspy_socket[sbbs->cfg.node_num-1]=INVALID_SOCKET;
 				}
+				continue;
 			}
 #endif
-			break;
 		}
 
 		if(rd == 0 && sock==sbbs->client_socket)
@@ -3879,6 +3881,11 @@ void DLLCALL bbs_thread(void* arg)
 				if(uspy_listen_socket[i-1]+1>high_socket_set)
 					high_socket_set=uspy_listen_socket[i-1]+1;
 			}
+			if(uspy_socket[i-1]!=INVALID_SOCKET)  {
+				FD_SET(uspy_socket[i-1],&socket_set);
+				if(uspy_socket[i-1]+1>high_socket_set)
+					high_socket_set=uspy_socket[i-1]+1;
+			}
 		}
 #endif
 
@@ -3934,6 +3941,13 @@ void DLLCALL bbs_thread(void* arg)
 						uspy_socket[i-1]=new_socket;
 						sprintf(str,"Spy connection established to node %d\n",i);
 						send(uspy_socket[i-1],str,strlen(str),0);
+					}
+				}
+				if(uspy_socket[i-1]!=INVALID_SOCKET
+				&& FD_ISSET(uspy_socket[i-1],&socket_set))  {
+					if(!socket_check(uspy_socket[i-1],NULL,NULL,0)) {
+						close_socket(uspy_socket[i-1]);
+						uspy_socket[i-1]=INVALID_SOCKET;
 					}
 				}
 			}
