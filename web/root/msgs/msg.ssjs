@@ -20,8 +20,13 @@ if(sub=='mail') {
 }
 else {
 	template.sub=msg_area.grp_list[g].sub_list[s];
+	if(!msg_area.grp_list[g].sub_list[s].can_read)
+		error("You can't read messages in this sub!");
 }
 
+template.idx=msgbase.get_msg_index(false,m);
+if(sub=='mail' && tempalte.idx.to!=user.number)
+	error("You can only read e-mail messages addressed to yourself!");
 template.hdr=msgbase.get_msg_header(false,m);
 template.body=msgbase.get_msg_body(false,m,true,true);
 
