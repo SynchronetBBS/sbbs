@@ -231,7 +231,8 @@ static time_t time_gm( struct tm* ti )  {
 	t=(ti->tm_year-70)*365;
 	t+=(ti->tm_year-69)/4;
 	t+=monthdays[ti->tm_mon];
-	if(ti->tm_mon >= 2 && ti->tm_year+1900%400 ? (ti->tm_year+1900%100 ? (ti->tm_year+1900%4 ? 0:1):0):1)
+	if(ti->tm_mon >= 2 
+		&& ti->tm_year+1900%400 ? (ti->tm_year+1900%100 ? (ti->tm_year+1900%4 ? 0:1):0):1)
 		++t;
 	t += ti->tm_mday - 1;
 	t = t * 24 + ti->tm_hour;
@@ -374,15 +375,16 @@ static void init_enviro(http_session_t *session)  {
 	add_env(session,"REMOTE_ADDR",session->host_ip);
 }
 
-static int sockprint(SOCKET sock, const char *str)  {
+static int sockprint(SOCKET sock, const char *str)
+{
 	int len;
 	int	result;
 	int written=0;
 
-	if(startup->options&WEB_OPT_DEBUG_TX)
-		lprintf("%04d TX: %s", sock, str);
 	if(sock==INVALID_SOCKET)
 		return(0);
+	if(startup->options&WEB_OPT_DEBUG_TX)
+		lprintf("%04d TX: %s", sock, str);
 	len=strlen(str);
 	while((result=sendsocket(sock,str+written,len-written))>0)  {
 		written+=result;
@@ -394,24 +396,19 @@ static int sockprint(SOCKET sock, const char *str)  {
 	return(len);
 }
 
-static int sockprinttwo(SOCKET sock, const char *head, const char *value, BOOL colon)  {
+static int sockprintvalue(SOCKET sock, const char *head, const char *value, BOOL colon)  
+{
 	int total=0;
 
-	if(sock==INVALID_SOCKET)
-		return(0);
 	total+=sockprint(sock,head);
-	if(colon)  {
+	if(colon)
 		total+=sockprint(sock,": ");
-	}
-	else  {
+	else
 		total+=sockprint(sock," ");
-	}
 	
 	total+=sockprint(sock,value);
 	total+=sockprint(sock,newline);
 
-	if(sock==INVALID_SOCKET)
-		return(0);
 	return(total);
 }
 
@@ -741,35 +738,38 @@ static BOOL send_headers(http_session_t *session, const char *status)
 		send_file=FALSE;
 	}
 	/* Status-Line */
-	sockprinttwo(session->socket,http_vers[session->http_ver],status_line,FALSE);
+	sockprintvalue(session->socket,http_vers[session->http_ver],status_line,FALSE);
 
 	/* General Headers */
 	ti=time(NULL);
 	if(gmtime_r(&ti,&tm)==NULL)
 		memset(&tm,0,sizeof(tm));
-	sprintf(status_line,"%s: %s, %02d %s %04d %02d:%02d:%02d GMT",get_header(HEAD_DATE),days[tm.tm_wday],tm.tm_mday,months[tm.tm_mon],tm.tm_year+1900,tm.tm_hour,tm.tm_min,tm.tm_sec);
+	sprintf(status_line,"%s: %s, %02d %s %04d %02d:%02d:%02d GMT"
+		,get_header(HEAD_DATE)
+		,days[tm.tm_wday],tm.tm_mday,months[tm.tm_mon]
+		,tm.tm_year+1900,tm.tm_hour,tm.tm_min,tm.tm_sec);
 	sockprint(session->socket,status_line);
 	sockprint(session->socket,newline);
 	if(session->req.keep_alive)
-		sockprinttwo(session->socket,get_header(HEAD_CONNECTION),"Keep-Alive",TRUE);
+		sockprintvalue(session->socket,get_header(HEAD_CONNECTION),"Keep-Alive",TRUE);
 	else
-		sockprinttwo(session->socket,get_header(HEAD_CONNECTION),"Close",TRUE);
+		sockprintvalue(session->socket,get_header(HEAD_CONNECTION),"Close",TRUE);
 
 	/* Response Headers */
-	sockprinttwo(session->socket,get_header(HEAD_SERVER),VERSION_NOTICE,TRUE);
+	sockprintvalue(session->socket,get_header(HEAD_SERVER),VERSION_NOTICE,TRUE);
 	
 	/* Entity Headers */
 	if(session->req.dynamic)
-		sockprinttwo(session->socket,get_header(HEAD_ALLOW),"GET, HEAD, POST",TRUE);
+		sockprintvalue(session->socket,get_header(HEAD_ALLOW),"GET, HEAD, POST",TRUE);
 	else
-		sockprinttwo(session->socket,get_header(HEAD_ALLOW),"GET, HEAD",TRUE);
+		sockprintvalue(session->socket,get_header(HEAD_ALLOW),"GET, HEAD",TRUE);
 
 	if(session->req.send_location) {
-		sockprinttwo(session->socket,get_header(HEAD_LOCATION),(session->req.virtual_path),TRUE);
+		sockprintvalue(session->socket,get_header(HEAD_LOCATION),(session->req.virtual_path),TRUE);
 	}
 	if(session->req.keep_alive) {
 		if(ret)  {
-			sockprinttwo(session->socket,get_header(HEAD_LENGTH),"0",TRUE);
+			sockprintvalue(session->socket,get_header(HEAD_LENGTH),"0",TRUE);
 		}
 		else  {
 			sprintf(status_line,"%s: %d",get_header(HEAD_LENGTH),(int)stats.st_size);
@@ -779,7 +779,7 @@ static BOOL send_headers(http_session_t *session, const char *status)
 	}
 
 	if(!ret && !session->req.dynamic)  {
-		send_file=sockprinttwo(session->socket,get_header(HEAD_TYPE)
+		send_file=sockprintvalue(session->socket,get_header(HEAD_TYPE)
 			,session->req.mime_type,TRUE);
 
 		gmtime_r(&stats.st_mtime,&tm);
@@ -839,10 +839,14 @@ static void send_error(http_session_t * session, char *message)
 	if(fexist(session->req.physical_path))
 		sock_sendfile(session->socket,session->req.physical_path);
 	else {
-		lprintf("%04d Error message file %s doesn't exist.",session->socket,session->req.physical_path);
-		sockprintf(session->socket,"<HTML><HEAD><TITLE>%s Error</TITLE></HEAD><BODY><H1>%s Error</H1><BR><H3>In addition, \
-			I can't seem to find the %s error file</H3><br>please notify <a href=\"mailto:SysOp@%s\">\
-			The SysOp</a></BODY></HTML>"
+		lprintf("%04d Error message file %s doesn't exist."
+			,session->socket,session->req.physical_path);
+		sockprintf(session->socket
+			,"<HTML><HEAD><TITLE>%s Error</TITLE></HEAD>"
+			"<BODY><H1>%s Error</H1><BR><H3>In addition, "
+			"I can't seem to find the %s error file</H3><br>"
+			"please notify <a href=\"mailto:SysOp@%s\">"
+			"The SysOp</a></BODY></HTML>"
 			,error_code,error_code,error_code,scfg.sys_inetaddr);
 	}
 	close_request(session);
@@ -1135,32 +1139,36 @@ static void unescape(char *p)
 	*(dst)=0;
 }
 
-static void js_parse_post(http_session_t * session)  {
+static void js_parse_post(http_session_t * session)  
+{
 	char		*p;
 	char		*key;
 	char		*value;
 	JSString*	js_str;
 
-	if(session->req.post_data != NULL)  {
-		p=session->req.post_data;
-		while((key=strtok(p,"="))!=NULL)  {
-			p=NULL;
-			if(key != NULL)  {
-				value=strtok(NULL,"&");
-				if(value != NULL)  {
-					unescape(value);
-					unescape(key);
-					if((js_str=JS_NewStringCopyZ(session->js_cx, value))==NULL)
-						return;
-					JS_DefineProperty(session->js_cx, session->js_query, key, STRING_TO_JSVAL(js_str)
-						,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
-				}
-			}
-		}
+	if(session->req.post_data == NULL)
+		return;
+
+	p=session->req.post_data;
+	while((key=strtok(p,"="))!=NULL)  {
+		p=NULL;
+		if(key == NULL)
+			continue;
+		value=strtok(NULL,"&");
+		if(value == NULL)
+			continue;
+
+		unescape(value);
+		unescape(key);
+		if((js_str=JS_NewStringCopyZ(session->js_cx, value))==NULL)
+			return;
+		JS_DefineProperty(session->js_cx, session->js_query, key, STRING_TO_JSVAL(js_str)
+			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 	}
 }
 
-static void js_add_header(http_session_t * session, char *key, char *value)  {
+static void js_add_header(http_session_t * session, char *key, char *value)  
+{
 	JSString*	js_str;
 
 	if((js_str=JS_NewStringCopyZ(session->js_cx, value))==NULL)
@@ -1321,12 +1329,9 @@ static int is_dynamic(http_session_t * session,char *req)  {
 		return(IS_SSJS);
 	}
 
-	if(!(startup->options&BBS_OPT_NO_JAVASCRIPT) && stricmp(p,startup->js_ext)==0)
-		return(IS_JS);
-
-	if(!(startup->options&WEB_OPT_NO_CGI)) {
-		for(i=0;i<10&&startup->cgi_ext[i][0];i++)  {
-			if(!(startup->options&BBS_OPT_NO_JAVASCRIPT) && stricmp(p,startup->cgi_ext[i])==0)  {
+	if(!(startup->options&WEB_OPT_NO_CGI) && startup->cgi_ext!=NULL) {
+		for(i=0; startup->cgi_ext[i]!=NULL; i++)  {
+			if(stricmp(p,startup->cgi_ext[i])==0)  {
 				init_enviro(session);
 				return(IS_CGI);
 			}
@@ -1463,7 +1468,7 @@ static BOOL check_request(http_session_t * session)
 		}
 		last_slash=strrchr(path,'/');
 		last_slash++;
-		for(i=0;i<4 && startup->index_file_name[i][0];i++)  {
+		for(i=0; startup->index_file_name!=NULL && startup->index_file_name[i]!=NULL ;i++)  {
 			*last_slash=0;
 			strcat(path,startup->index_file_name[i]);
 			if(fexist(path))
@@ -1729,7 +1734,8 @@ static BOOL exec_cgi(http_session_t *session)
 								case HEAD_TYPE:
 									got_valid_headers=TRUE;
 								default:
-									session->req.dynamic_heads=add_list(session->req.dynamic_heads,buf);
+									session->req.dynamic_heads
+										=add_list(session->req.dynamic_heads,buf);
 							}
 						}
 					}
@@ -1803,7 +1809,8 @@ static BOOL exec_cgi(http_session_t *session)
 /* JavaScript stuff */
 /********************/
 
-JSObject* DLLCALL js_CreateHttpReplyObject(JSContext* cx, JSObject* parent, http_session_t *session)
+JSObject* DLLCALL js_CreateHttpReplyObject(JSContext* cx
+										   ,JSObject* parent, http_session_t *session)
 {
 	JSObject*	reply;
 	JSObject*	headers;
@@ -1841,7 +1848,8 @@ JSObject* DLLCALL js_CreateHttpReplyObject(JSContext* cx, JSObject* parent, http
 	return(reply);
 }
 
-JSObject* DLLCALL js_CreateHttpRequestObject(JSContext* cx, JSObject* parent, http_session_t *session)
+JSObject* DLLCALL js_CreateHttpRequestObject(JSContext* cx
+											 ,JSObject* parent, http_session_t *session)
 {
 	JSObject*	request;
 	JSObject*	query;
@@ -2190,7 +2198,8 @@ static BOOL exec_ssjs(http_session_t* session)  {
 		JS_IdToValue(session->js_cx,heads->vector[i],&val);
 		js_str=JSVAL_TO_STRING(val);
 		JS_GetProperty(session->js_cx,headers,JS_GetStringBytes(js_str),&val);
-		snprintf(str,MAX_REQUEST_LINE+1,"%s: %s",JS_GetStringBytes(js_str),JS_GetStringBytes(JSVAL_TO_STRING(val)));
+		snprintf(str,MAX_REQUEST_LINE+1,"%s: %s"
+			,JS_GetStringBytes(js_str),JS_GetStringBytes(JSVAL_TO_STRING(val)));
 		session->req.dynamic_heads=add_list(session->req.dynamic_heads,str);
 	}
 	JS_DestroyIdArray(session->js_cx, heads);
@@ -2226,7 +2235,8 @@ static void respond(http_session_t * session)
 			send_error(session,"500 Internal Server Error");
 			return;
 		}
-		sprintf(session->req.physical_path,"%s/SBBS_SSJS.%d.html",startup->cgi_temp_dir,session->socket);
+		sprintf(session->req.physical_path
+			,"%s/SBBS_SSJS.%d.html",startup->cgi_temp_dir,session->socket);
 	}
 
 	if(session->http_ver > HTTP_0_9)  {
@@ -2427,12 +2437,10 @@ void DLLCALL web_server(void* arg)
 
 	/* Setup intelligent defaults */
 	if(startup->port==0)					startup->port=IPPORT_HTTP;
-	if(startup->index_file_name[0][0]==0)	SAFECOPY(startup->index_file_name[0],"index.html");
 	if(startup->root_dir[0]==0)				SAFECOPY(startup->root_dir,"../html");
 	if(startup->error_dir[0]==0)			SAFECOPY(startup->error_dir,"../html/error");
 	if(startup->max_inactivity==0) 			startup->max_inactivity=120; /* seconds */
 	if(startup->js_max_bytes==0)			startup->js_max_bytes=JAVASCRIPT_MAX_BYTES;
-	if(startup->cgi_ext[0][0]==0)			SAFECOPY(startup->cgi_ext[0],"cgi");
 	if(startup->ssjs_ext[0]==0)				SAFECOPY(startup->ssjs_ext,"ssjs");
 
 	/* Copy html directories */
