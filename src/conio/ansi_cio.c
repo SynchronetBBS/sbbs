@@ -318,11 +318,9 @@ static void ansi_keyparse(void *par)
 	int		i;
 	char	*p;
 	int		timeout=0;
-	int		timedout;
 
-	sem_post(initialized);
+	sem_post(&initialized);
 	for(;;) {
-		timedout=0;
 		if(timeout) {
 			if(sem_trywait_block(&got_key,timeout)) {
 				gotesc=0;
@@ -400,7 +398,7 @@ static void ansi_keythread(void *params)
 {
 	_beginthread(ansi_keyparse,1024,NULL);
 
-	sem_post(initialized);
+	sem_post(&initialized);
 	for(;;) {
 		sem_wait(&used_key);
 		if(fread(&ansi_raw_inch,1,1,stdin)==1)
