@@ -123,9 +123,13 @@ CON_NO_INACT  	=(1<<13)	/* User inactivity detection disabled		*/
 							/********************************************/
 
 							/********************************************/
-							/* console.attributes (left-shift 4 for bg)	*/
+							/* console.attributes, also used for ansi()	*/
 							/********************************************/
-BLACK			=0			/* dark colors */
+BLINK			=0x80		/* blink bit */
+HIGH			=0x08		/* high intensity foreground bit */
+
+							/* foreground colors */
+BLACK			=0			/* dark colors (HIGH bit unset) */
 BLUE			=1
 GREEN			=2
 CYAN			=3
@@ -133,7 +137,7 @@ RED				=4
 MAGENTA			=5
 BROWN			=6
 LIGHTGRAY		=7
-DARKGRAY		=8			/* light colors */
+DARKGRAY		=8			/* light colors (HIGH bit set) */
 LIGHTBLUE		=9
 LIGHTGREEN		=10
 LIGHTCYAN		=11
@@ -141,7 +145,17 @@ LIGHTRED		=12
 LIGHTMAGENTA	=13
 YELLOW			=14
 WHITE			=15
-BLINK			=0x80		/* blink bit */
+
+							/* background colors */
+ANSI_NORMAL		=0x100		/* special value for ansi() */
+BG_BLACK		=0x200		/* special value for ansi() */
+BG_BLUE			=(BLUE<<4)
+BG_GREEN		=(GREEN<<4)
+BG_CYAN			=(CYAN<<4)
+BG_RED			=(RED<<4)
+BG_MAGENTA		=(MAGENTA<<4)
+BG_BROWN		=(BROWN<<4)
+BG_LIGHTGRAY	=(LIGHTGRAY<<4)
 						
 							/********************************************/
 							/* user.settings							*/
