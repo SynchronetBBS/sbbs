@@ -438,10 +438,11 @@ BOOL read_attr_cfg(scfg_t* cfg, char* error)
 	for(cfg->total_colors=0;!feof(instream) && !ferror(instream);cfg->total_colors++) {
 		if(readline(&offset,str,4,instream)==NULL)
 			break;
-		if(cfg->total_colors>=MIN_COLORS)
+		if(cfg->total_colors>=MIN_COLORS) {
 			if((p=realloc(cfg->color,cfg->total_colors+1))==NULL)
 				break;
-		cfg->color=p;
+			cfg->color=p;
+		}
 		cfg->color[cfg->total_colors]=attrstr(str); 
 	}
 	fclose(instream);
