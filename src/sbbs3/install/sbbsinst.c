@@ -612,12 +612,12 @@ get_distlist(void)
 			"%s\n- %s\n"
 			"%s\n- %s\n"
 			"%s\n- %s\n"
-			"%s\n- %s\n",
-			DIST_LIST_URL1,ftpErrString(ret1),
-			DIST_LIST_URL2,ftpErrString(ret2),
-			DIST_LIST_URL3,ftpErrString(ret3),
-			DIST_LIST_URL4,ftpErrString(ret4),
-			DIST_LIST_URL5,ftpErrString(ret5),
+			"%s\n- %s\n"
+			,DIST_LIST_URL1,ftpErrString(ret1)
+			,DIST_LIST_URL2,ftpErrString(ret2)
+			,DIST_LIST_URL3,ftpErrString(ret3)
+			,DIST_LIST_URL4,ftpErrString(ret4)
+			,DIST_LIST_URL5,ftpErrString(ret5)
 			);
 		exit(EXIT_FAILURE);
 	}
