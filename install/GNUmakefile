@@ -70,7 +70,9 @@ ifdef JSLIB
  MKFLAGS	+=	JSLIB=$(JSLIB)
 endif
 
-all: binaries baja externals
+MKFLAGS	+=	BAJAPATH=../src/sbbs3/$(CCPRE).$(os).exe.$(SUFFIX)/baja
+
+all: binaries baja externals $(SBBSDIR)/docs
 
 binaries:	sbbs3 scfg
 
@@ -80,7 +82,6 @@ externals:	sbj sbl
 sbbs3:	$(SBBSDIR)/src/sbbs3 $(SBBSDIR)/src/uifc $(SBBSDIR)/src/xpdev \
     $(SBBSDIR)/src/mozilla $(SBBSDIR)/lib/mozilla/js/$(os).$(SUFFIX)
 	$(MAKE) -C $(SBBSDIR)/src/sbbs3 $(MKFLAGS)
-      MKFLAGS	+=	BAJAPATH=../src/sbbs3/$(CCPRE).$(os).exe.$(SUFFIX)/baja
 
 scfg:	$(SBBSDIR)/src/sbbs3 $(SBBSDIR)/src/uifc $(SBBSDIR)/src/xpdev
 	$(MAKE) -C $(SBBSDIR)/src/sbbs3/scfg $(MKFLAGS)
@@ -94,7 +95,9 @@ sbj:	$(SBBSDIR)/xtrn
 sbl:	$(SBBSDIR)/xtrn
 	$(MAKE) -C $(SBBSDIR)/xtrn/sbl $(MKFLAGS) SBBS_SRC=$(SBBSDIR)/src/sbbs3 XPDEV=$(SBBSDIR)/src/xpdev
 
-install: all $(SBBSDIR)/ctrl $(SBBSDIR)/text $(SBBSDIR)/node1 $(SBBSDIR)/node2 $(SBBSDIR)/node3 $(SBBSDIR)/node4
+node_dirs:	$(SBBSDIR)/node1 $(SBBSDIR)/node2 $(SBBSDIR)/node3 $(SBBSDIR)/node4
+
+install: all $(SBBSDIR)/ctrl $(SBBSDIR)/text node_dirs
 ifeq ($(INSTALL),UNIX)
 	@echo ERROR: UNIX Install type not yet supported.
 	fail
@@ -191,9 +194,4 @@ endif
 
 $(SBBSDIR):
 	@[ ! -e $(SBBSDIR) ] && mkdir $(SBBSDIR);
-
-update:	$(SBBSDIR)/src/mozilla $(SBBSDIR)/src/xpdev $(SBBSDIR)/src/uifc $(SBBSDIR)/src/sbbs3 $(SBBSDIR)/xtrn \
-     $(SBBSDIR)/node1 $(SBBSDIR)/exec $(SBBSDIR)/text $(SBBSDIR)/ctrl
-
-update-src: $(SBBSDIR)/src/xpdev $(SBBSDIR)/src/uifc $(SBBSDIR)/src/sbbs3 $(SBBSDIR)/xtrn
 
