@@ -256,7 +256,8 @@ int win32_keyboardio(int isgetch)
 
 		switch(input.EventType) {
 			case KEY_EVENT:
-				lastch=win32_getchcode(input.Event.KeyEvent.wVirtualKeyCode, input.Event.KeyEvent.dwControlKeyState);
+				if(input.Event.KeyEvent.bKeydown)
+					lastch=win32_getchcode(input.Event.KeyEvent.wVirtualKeyCode, input.Event.KeyEvent.dwControlKeyState);
 				break;
 			case MOUSE_EVENT:
 				if(domouse) {
