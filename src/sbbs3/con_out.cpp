@@ -295,6 +295,8 @@ void sbbs_t::cursor_home(void)
 
 void sbbs_t::cursor_up(int count)
 {
+	if(count<1)
+		return;
 	if(!(useron.misc&ANSI))
 		return;
 	if(count>1)
@@ -305,6 +307,8 @@ void sbbs_t::cursor_up(int count)
 
 void sbbs_t::cursor_down(int count)
 {
+	if(count<1)
+		return;
 	if(!(useron.misc&ANSI))
 		return;
 	if(count>1)
@@ -315,6 +319,8 @@ void sbbs_t::cursor_down(int count)
 
 void sbbs_t::cursor_right(int count)
 {
+	if(count<1)
+		return;
 	if(useron.misc&ANSI) {
 		if(count>1)
 			rprintf("\x1b[%dC",count);
@@ -328,6 +334,8 @@ void sbbs_t::cursor_right(int count)
 
 void sbbs_t::cursor_left(int count)
 {
+	if(count<1)
+		return;
 	if(useron.misc&ANSI) {
 		if(count>1)
 			rprintf("\x1b[%dD",count);
