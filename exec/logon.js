@@ -28,7 +28,7 @@ if(user.security.restrictions&UFLAG_G) {
 		if(!location || !location.length)
 			continue;
 		bbs.log_str("  " + location);
-		bbs.location=location;
+		user.location=location;
 		break;
 	}
 
