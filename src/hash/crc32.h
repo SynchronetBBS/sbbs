@@ -38,13 +38,18 @@
 #ifndef _CRC32_H_
 #define _CRC32_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern long crc32tbl[];
 
-#define ucrc32(ch,crc) (crc32tbl[(crc^ch)&0xff]^(crc>>8))
+unsigned long crc32(char* buf, unsigned long len);
 
 #ifdef __cplusplus
-extern "C"
+}
 #endif
-unsigned long crc32(char *buf, unsigned long len);
 
-#endif
+#define ucrc32(ch,crc) (crc32tbl[(crc^(ch))&0xff]^(crc>>8))
+
+#endif	/* Don't add anything after this line */

@@ -38,13 +38,18 @@
 #ifndef _CRC16_H_
 #define _CRC16_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern unsigned short crc16tbl[];
+
+unsigned short crc16(char *data, unsigned long len);
+
+#ifdef __cplusplus
+}
+#endif
 
 #define ucrc16(ch,crc) (crc16tbl[((crc>>8)&0xff)^(unsigned char)ch]^(crc << 8))
 
-#ifdef __cplusplus
-extern "C"
-#endif
-unsigned short crc16(char *data, unsigned long len);
-
-#endif
+#endif	/* Don't add anything after this line */
