@@ -4360,7 +4360,7 @@ void DLLCALL bbs_thread(void* arg)
 					identity++;
 				lprintf(LOG_INFO,"%04d Identity: %s",client_socket, identity);
 			}
-			sbbs->bprintf("\r                      \r");
+			sbbs->putcom(crlf);
 		}
 		/* Initialize client display */
 		client.size=sizeof(client);
