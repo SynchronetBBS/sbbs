@@ -817,7 +817,7 @@ extern "C" {
 	DLLEXPORT void		DLLCALL refresh_cfg(scfg_t* cfg);
 
 	/* scfglib1.c */
-	DLLEXPORT char *	DLLCALL prep_dir(char* base, char* dir);
+	DLLEXPORT char *	DLLCALL prep_dir(char* base, char* dir, size_t buflen);
 
 	/* logfile.cpp */
 	DLLEXPORT BOOL		DLLCALL hacklog(scfg_t* cfg, char* prot, char* user, char* text 

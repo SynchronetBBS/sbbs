@@ -1252,7 +1252,7 @@ void event_thread(void* arg)
 			memcpy(&sbbs->cfg,&scfg,sizeof(scfg_t));
 
 //			sprintf(sbbs->cfg.temp_dir, "temp/%08lX", sbbs_random(INT_MAX));
-			prep_dir(sbbs->cfg.data_dir, sbbs->cfg.temp_dir);
+			prep_dir(sbbs->cfg.data_dir, sbbs->cfg.temp_dir, sizeof(sbbs->cfg.temp_dir));
 
 			// Read TIME.DAB
 			sprintf(str,"%stime.dab",sbbs->cfg.ctrl_dir);
@@ -1838,10 +1838,10 @@ sbbs_t::sbbs_t(ushort node_num, DWORD addr, char* name, SOCKET sd,
 	cfg.node_num=node_num;
 	if(node_num>0) {
 		strcpy(cfg.node_dir, cfg.node_path[node_num-1]);
-		prep_dir(cfg.node_dir, cfg.temp_dir);
+		prep_dir(cfg.node_dir, cfg.temp_dir, sizeof(cfg.temp_dir));
 	} else {
 //		sprintf(cfg.temp_dir, "temp/%08lX", sbbs_random(INT_MAX));
-    	prep_dir(cfg.data_dir, cfg.temp_dir);
+    	prep_dir(cfg.data_dir, cfg.temp_dir, sizeof(cfg.temp_dir));
 	}
 
 	terminated = false;

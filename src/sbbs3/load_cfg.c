@@ -72,10 +72,10 @@ BOOL DLLCALL load_cfg(scfg_t* cfg, char* text[], BOOL prep, char* error)
 
 	if(prep)
 		for(i=0;i<cfg->sys_nodes;i++) 
-			prep_dir(cfg->ctrl_dir, cfg->node_path[i]);
+			prep_dir(cfg->ctrl_dir, cfg->node_path[i], sizeof(cfg->node_path[i]));
 
 	SAFECOPY(cfg->node_dir,cfg->node_path[cfg->node_num-1]);
-	prep_dir(cfg->ctrl_dir, cfg->node_dir);
+	prep_dir(cfg->ctrl_dir, cfg->node_dir, sizeof(cfg->node_dir));
 	if(read_node_cfg(cfg, error)==FALSE)
 		return(FALSE);
 	if(read_msgs_cfg(cfg, error)==FALSE)
@@ -140,13 +140,13 @@ void prep_cfg(scfg_t* cfg)
 #endif
 
 	/* Fix-up paths */
-	prep_dir(cfg->ctrl_dir, cfg->data_dir);
-	prep_dir(cfg->ctrl_dir, cfg->exec_dir);
-	prep_dir(cfg->ctrl_dir, cfg->text_dir);
+	prep_dir(cfg->ctrl_dir, cfg->data_dir, sizeof(cfg->data_dir));
+	prep_dir(cfg->ctrl_dir, cfg->exec_dir, sizeof(cfg->exec_dir));
+	prep_dir(cfg->ctrl_dir, cfg->text_dir, sizeof(cfg->text_dir));
 
-	prep_dir(cfg->ctrl_dir, cfg->netmail_dir);
-	prep_dir(cfg->ctrl_dir, cfg->echomail_dir);
-	prep_dir(cfg->ctrl_dir, cfg->fidofile_dir);
+	prep_dir(cfg->ctrl_dir, cfg->netmail_dir, sizeof(cfg->netmail_dir));
+	prep_dir(cfg->ctrl_dir, cfg->echomail_dir, sizeof(cfg->echomail_dir));
+	prep_dir(cfg->ctrl_dir, cfg->fidofile_dir, sizeof(cfg->fidofile_dir));
 
 	prep_path(cfg->netmail_sem);
 	prep_path(cfg->echomail_sem);
@@ -169,7 +169,7 @@ void prep_cfg(scfg_t* cfg)
 #endif
 		if(!cfg->sub[i]->data_dir[0])	/* no data storage path specified */
 			sprintf(cfg->sub[i]->data_dir,"%ssubs",cfg->data_dir);
-		prep_dir(cfg->ctrl_dir, cfg->sub[i]->data_dir);
+		prep_dir(cfg->ctrl_dir, cfg->sub[i]->data_dir, sizeof(cfg->sub[i]->data_dir));
 
 		/* default QWKnet tagline */
 		if(!cfg->sub[i]->tagline[0])
@@ -186,7 +186,7 @@ void prep_cfg(scfg_t* cfg)
 
 	for(i=0;i<cfg->total_libs;i++) {
 		if(cfg->lib[i]->parent_path[0])
-			prep_dir(cfg->ctrl_dir, cfg->lib[i]->parent_path);
+			prep_dir(cfg->ctrl_dir, cfg->lib[i]->parent_path, sizeof(cfg->lib[i]->parent_path));
 	}
 
 	for(i=0;i<cfg->total_dirs;i++) {
@@ -196,14 +196,14 @@ void prep_cfg(scfg_t* cfg)
 
 		if(!cfg->dir[i]->data_dir[0])	/* no data storage path specified */
 			sprintf(cfg->dir[i]->data_dir,"%sdirs",cfg->data_dir);
-		prep_dir(cfg->ctrl_dir, cfg->dir[i]->data_dir);
+		prep_dir(cfg->ctrl_dir, cfg->dir[i]->data_dir, sizeof(cfg->dir[i]->data_dir));
 
 		if(!cfg->dir[i]->path[0])		/* no file storage path specified */
             sprintf(cfg->dir[i]->path,"%sdirs/%s/",cfg->data_dir,cfg->dir[i]->code);
 		else if(cfg->lib[cfg->dir[i]->lib]->parent_path[0])
-			prep_dir(cfg->lib[cfg->dir[i]->lib]->parent_path, cfg->dir[i]->path);
+			prep_dir(cfg->lib[cfg->dir[i]->lib]->parent_path, cfg->dir[i]->path, sizeof(cfg->dir[i]->path));
 		else
-			prep_dir(cfg->ctrl_dir, cfg->dir[i]->path);
+			prep_dir(cfg->ctrl_dir, cfg->dir[i]->path, sizeof(cfg->dir[i]->path));
 
 		prep_path(cfg->dir[i]->upload_sem);
 	}
@@ -222,13 +222,13 @@ void prep_cfg(scfg_t* cfg)
 		strlwr(cfg->xtrnsec[i]->code); 	/* temporary Unix-compatibility hack */
 #endif
 	for(i=0;i<cfg->total_xtrns;i++) {
-		prep_dir(cfg->ctrl_dir, cfg->xtrn[i]->path);
+		prep_dir(cfg->ctrl_dir, cfg->xtrn[i]->path, sizeof(cfg->xtrn[i]->path));
 	}
 	for(i=0;i<cfg->total_events;i++) {
 #ifdef __unix__
 		strlwr(cfg->event[i]->code); 	/* temporary Unix-compatibility hack */
 #endif
-		prep_dir(cfg->ctrl_dir, cfg->event[i]->dir);
+		prep_dir(cfg->ctrl_dir, cfg->event[i]->dir, sizeof(cfg->event[i]->dir));
 	}
 
 	cfg->prepped=TRUE;	/* data prepared for run-time, DO NOT SAVE TO DISK! */
@@ -443,7 +443,7 @@ static void free_attr_cfg(scfg_t* cfg)
 	cfg->total_colors=0;
 }
 
-char* DLLCALL prep_dir(char* base, char* path)
+char* DLLCALL prep_dir(char* base, char* path, size_t buflen)
 {
 #ifdef __unix__
 	char	*p;
@@ -471,10 +471,10 @@ char* DLLCALL prep_dir(char* base, char* path)
 
 	backslashcolon(str);
 	strcat(str,".");                // Change C: to C:. and C:\SBBS\ to C:\SBBS\.
-	FULLPATH(abspath,str,LEN_DIR+1);	// Change C:\SBBS\NODE1\..\EXEC to C:\SBBS\EXEC
+	FULLPATH(abspath,str,buflen);	// Change C:\SBBS\NODE1\..\EXEC to C:\SBBS\EXEC
 	backslash(abspath);
 
-	sprintf(path,"%.*s",LEN_DIR,abspath);
+	sprintf(path,"%.*s",(int)(buflen-1),abspath);
 	return(path);
 }
 

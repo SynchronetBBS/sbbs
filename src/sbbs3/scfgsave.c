@@ -144,7 +144,7 @@ BOOL DLLCALL write_node_cfg(scfg_t* cfg, int backup_level)
 		return(FALSE);
 
 	sprintf(str,cfg->node_path[cfg->node_num-1]);
-	prep_dir(cfg->ctrl_dir,str);
+	prep_dir(cfg->ctrl_dir,str,sizeof(str));
 	md(str);
 	strcat(str,"node.cnf");
 	backup(str, backup_level, TRUE);
@@ -477,7 +477,7 @@ BOOL DLLCALL write_msgs_cfg(scfg_t* cfg, int backup_level)
 				sprintf(smb.file,"%ssubs",cfg->data_dir);
 			else
 				sprintf(smb.file,"%s",cfg->sub[i]->data_dir);
-			prep_dir(cfg->ctrl_dir,smb.file);
+			prep_dir(cfg->ctrl_dir,smb.file,sizeof(smb.file));
 			strcat(smb.file,cfg->sub[i]->code);
 			if(smb_open(&smb)!=0) {
 				/* errormsg(WHERE,ERR_OPEN,smb.file,x); */
@@ -609,7 +609,7 @@ BOOL DLLCALL write_msgs_cfg(scfg_t* cfg, int backup_level)
 
 	if(!no_msghdr) {
 		strcpy(dir,cfg->data_dir);
-		prep_dir(cfg->ctrl_dir,dir);
+		prep_dir(cfg->ctrl_dir,dir,sizeof(dir));
 		sprintf(smb.file,"%smail",dir);
 		if(smb_open(&smb)!=0) {
 			return(FALSE); 
@@ -820,13 +820,13 @@ BOOL DLLCALL write_file_cfg(scfg_t* cfg, int backup_level)
 						sprintf(path,"%sdirs/%s/",cfg->data_dir,cfg->dir[i]->code);
 					else if(cfg->lib[cfg->dir[i]->lib]->parent_path[0]) {
 						SAFECOPY(path,cfg->lib[cfg->dir[i]->lib]->parent_path);
-						prep_dir(cfg->ctrl_dir,path);
+						prep_dir(cfg->ctrl_dir,path,sizeof(path));
 						md(path);
 						backslash(path);
 						strcat(path,cfg->dir[i]->path);
 					}
 					else
-						prep_dir(cfg->ctrl_dir, path);
+						prep_dir(cfg->ctrl_dir, path,sizeof(path));
 					md(path); 
 				}
 #endif

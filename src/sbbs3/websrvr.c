@@ -2094,8 +2094,8 @@ void DLLCALL web_server(void* arg)
 	SAFECOPY(error_dir,startup->error_dir);
 
 	/* Change to absolute path */
-	prep_dir(startup->ctrl_dir, root_dir);
-	prep_dir(startup->ctrl_dir, error_dir);
+	prep_dir(startup->ctrl_dir, root_dir, sizeof(root_dir));
+	prep_dir(startup->ctrl_dir, error_dir, sizeof(error_dir));
 
 	/* Trim off trailing slash/backslash */
 	if(*(p=lastchar(root_dir))==BACKSLASH)	*p=0;

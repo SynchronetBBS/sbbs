@@ -4488,7 +4488,7 @@ void DLLCALL ftp_server(void* arg)
 			uptime=time(NULL);	/* this must be done *after* setting the timezone */
 
 		/* Use DATA/TEMP for temp dir - should ch'd to be FTP/HOST specific */
-		prep_dir(scfg.data_dir, scfg.temp_dir);
+		prep_dir(scfg.data_dir, scfg.temp_dir, sizeof(scfg.temp_dir));
 
 		if(!startup->max_clients) {
 			startup->max_clients=scfg.sys_nodes;
