@@ -607,7 +607,7 @@ enum {
 	,No
 	,NoYesQuestion
 	,Pause
-	,Wait
+	,Unused564 /* was Wait */
 	,SysStatsLogHdr
 	,NodeStatsLogHdr
 	,ReducedTime
