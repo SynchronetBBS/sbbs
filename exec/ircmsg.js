@@ -14,7 +14,7 @@ for(i=0;i<argc;i++) {
 		case "-s":
 			server=argv[++i];
 			break;
-		case "-j";
+		case "-j":
 			join=true;
 			break;
 		case "-c":
