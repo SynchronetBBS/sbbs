@@ -3,12 +3,12 @@ CXX	= g++
 UIFC_SRC	=	../../../../uifc
 XPDEV_SRC	=	../../../../xpdev
 ODOOR_SRC	=	../../../../odoors
-CFLAGS = ${CFLAGS} -O2
-CFLAGS = ${CFLAGS} -g
-CFLAGS = ${CFLAGS} -I${ODOOR_SRC} -I${XPDEV_SRC} -I${UIFC_SRC}
+CFLAGS += -O2
+CFLAGS += -g
+CFLAGS += -I${ODOOR_SRC} -I${XPDEV_SRC} -I${UIFC_SRC}
 # Needed for struct alignment!
-CFLAGS = ${CFLAGS} -fshort-enums
-LDFLAGS = ${LDFLAGS} -L${ODOOR_SRC}
+CFLAGS += -fshort-enums
+LDFLAGS += -L${ODOOR_SRC}
 
 all : jackpot
 
