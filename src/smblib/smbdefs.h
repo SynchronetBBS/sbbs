@@ -551,14 +551,8 @@ typedef struct {				// Message
 				*ftn_flags,		// FTN FLAGS
 				*ftn_msgid,		// FTN MSGID
 				*ftn_reply;		// FTN REPLY
-	union {
-		char*	summary;		// Summary 
-		char*	description;	// (or file description)
-	};
-	union {
-		char*	subj;			// Subject 
-		char*	name;			// (or filename)
-	};
+	char*		summary;		// Summary 
+	char*		subj;			// Subject 
 	ushort		to_agent,		// Type of agent message is to
 				from_agent, 	// Type of agent message is from
 				replyto_agent;	// Type of agent replies should be sent to
