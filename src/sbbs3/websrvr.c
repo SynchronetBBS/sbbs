@@ -478,98 +478,68 @@ static time_t decode_date(char *date)
 	ti.tm_gmtoff=0;		/* offset from UTC in seconds */
 #endif
 
-/**	lprintf("Parsing date: %s",date); **/
 	token=strtok(date,",");
 	/* This probobly only needs to be 9, but the extra one is for luck. */
 	if(strlen(date)>15) {
 		/* asctime() */
-		if(startup->options&WEB_OPT_DEBUG_RX)
-			lprintf("asctime() Date: %s",token);
 		/* Toss away week day */
 		token=strtok(date," ");
 		token=strtok(NULL," ");
 		if(token==NULL)
 			return(0);
-		if(startup->options&WEB_OPT_DEBUG_RX)
-			lprintf("Month: %s",token);
 		ti.tm_mon=getmonth(token);
 		token=strtok(NULL," ");
 		if(token==NULL)
 			return(0);
-		if(startup->options&WEB_OPT_DEBUG_RX)
-			lprintf("MDay: %s",token);
 		ti.tm_mday=atoi(token);
 		token=strtok(NULL,":");
 		if(token==NULL)
 			return(0);
-		if(startup->options&WEB_OPT_DEBUG_RX)
-			lprintf("Hour: %s",token);
 		ti.tm_hour=atoi(token);
 		token=strtok(NULL,":");
 		if(token==NULL)
 			return(0);
-		if(startup->options&WEB_OPT_DEBUG_RX)
-			lprintf("Minute: %s",token);
 		ti.tm_min=atoi(token);
 		token=strtok(NULL," ");
 		if(token==NULL)
 			return(0);
-		if(startup->options&WEB_OPT_DEBUG_RX)
-			lprintf("Second: %s",token);
 		ti.tm_sec=atoi(token);
 		token=strtok(NULL,"");
 		if(token==NULL)
 			return(0);
-		if(startup->options&WEB_OPT_DEBUG_RX)
-			lprintf("Year: %s",token);
 		ti.tm_year=atoi(token)-1900;
 	}
 	else  {
 		/* RFC 1123 or RFC 850 */
-		if(startup->options&WEB_OPT_DEBUG_RX)
-			lprintf("RFC Date");
 		token=strtok(NULL," -");
 		if(token==NULL)
 			return(0);
-		if(startup->options&WEB_OPT_DEBUG_RX)
-			lprintf("MDay: %s",token);
 		ti.tm_mday=atoi(token);
 		token=strtok(NULL," -");
 		if(token==NULL)
 			return(0);
-		if(startup->options&WEB_OPT_DEBUG_RX)
-			lprintf("Month: %s",token);
 		ti.tm_mon=getmonth(token);
 		token=strtok(NULL," ");
 		if(token==NULL)
 			return(0);
-		if(startup->options&WEB_OPT_DEBUG_RX)
-			lprintf("Year: %s",token);
 		ti.tm_year=atoi(token);
 		token=strtok(NULL,":");
 		if(token==NULL)
 			return(0);
-		if(startup->options&WEB_OPT_DEBUG_RX)
-			lprintf("Hour: %s",token);
 		ti.tm_hour=atoi(token);
 		token=strtok(NULL,":");
 		if(token==NULL)
 			return(0);
-		if(startup->options&WEB_OPT_DEBUG_RX)
-			lprintf("Min: %s",token);
 		ti.tm_min=atoi(token);
 		token=strtok(NULL," ");
 		if(token==NULL)
 			return(0);
-		if(startup->options&WEB_OPT_DEBUG_RX)
-			lprintf("Sec: %s",token);
 		ti.tm_sec=atoi(token);
 		if(ti.tm_year>1900)
 			ti.tm_year -= 1900;
 	}
 
 	t=time_gm(&ti);
-/**	lprintf("Parsed date as: %d",t); **/
 	return(t);
 }
 
@@ -650,7 +620,6 @@ static const char* get_mime_type(char *ext)
 {
 	uint i;
 
-	lprintf("Getting mime-type for %s",ext);
 	if(ext==NULL)
 		return(unknown_mime_type);
 
@@ -677,19 +646,16 @@ static BOOL send_headers(http_session_t *session, const char *status)
 		SAFECOPY(status_line,"304 Not Modified");
 		ret=-1;
 		send_file=FALSE;
-		lprintf("%04d Not modified",session->socket);
 	}
 	if(session->req.send_location==MOVED_PERM)  {
 		SAFECOPY(status_line,"301 Moved Permanently");
 		ret=-1;
 		send_file=FALSE;
-		lprintf("%04d Moved Permanently",session->socket);
 	}
 	if(session->req.send_location==MOVED_TEMP)  {
 		SAFECOPY(status_line,"302 Moved Temporarily");
 		ret=-1;
 		send_file=FALSE;
-		lprintf("%04d Moved Temporarily",session->socket);
 	}
 	/* Status-Line */
 	sockprintf(session->socket,"%s %s",http_vers[session->http_ver],status_line);
@@ -715,11 +681,9 @@ static BOOL send_headers(http_session_t *session, const char *status)
 
 	if(session->req.send_location) {
 		sockprintf(session->socket,"%s: %s",get_header(HEAD_LOCATION),(session->req.virtual_path));
-		lprintf("%04d Sending location as %s",session->socket,session->req.virtual_path);
 	}
 	if(!ret && !session->req.was_cgi) {
 		sockprintf(session->socket,"%s: %d",get_header(HEAD_LENGTH),stats.st_size);
-		lprintf("%04d Sending stats for: %s",session->socket,session->req.physical_path);
 
 		send_file=sockprintf(session->socket,"%s: %s",get_header(HEAD_TYPE)
 			,session->req.mime_type);
@@ -740,7 +704,6 @@ static BOOL send_headers(http_session_t *session, const char *status)
 		p=session->req.cgi_heads;
 		while(p != NULL)  {
 			sockprintf(session->socket,"%s",p->val);
-			lprintf("%04d Sending header: %s",session->socket,p->val);
 			p=p->next;
 		}
 	}
@@ -754,7 +717,8 @@ static void sock_sendfile(SOCKET socket,char *path)
 {
 	int		file;
 
-	lprintf("%04d Sending %s",socket,path);
+	if(startup->options&WEB_OPT_DEBUG_TX)
+		lprintf("%04d Sending %s",socket,path);
 	if((file=open(path,O_RDONLY|O_BINARY))==-1)
 		lprintf("%04d !ERROR %d opening %s",socket,errno,path);
 	else {
@@ -781,9 +745,10 @@ static void send_error(http_session_t * session, char *message)
 		sock_sendfile(session->socket,session->req.physical_path);
 	else {
 		lprintf("%04d Error message file %s doesn't exist.",session->socket,session->req.physical_path);
-		sockprintf(session->socket,"<HTML><HEAD><TITLE>Gadzooks!</TITLE></HEAD><BODY><H1>%s Error</H1><BR><H3>Plus, \
-		I can't seem to find the %s error file</H3></BODY></HTML>",error_code,error_code);
-		/* ToDo: Should include sysop e-mail address or something too. */
+		sockprintf(session->socket,"<HTML><HEAD><TITLE>%s Error</TITLE></HEAD><BODY><H1>%s Error</H1><BR><H3>In addition, \
+			I can't seem to find the %s error file</H3><br>please notify <a href=\"mailto:SysOp@%s\">\
+			The SysOp</a></BODY></HTML>"
+			,error_code,error_code,error_code,scfg.sys_inetaddr);
 	}
 	close_request(session);
 }
@@ -796,7 +761,8 @@ static BOOL check_ars(http_session_t * session)
 	BOOL	authorized;
 
 	if(session->req.auth[0]==0) {
-		lprintf("%04d !No authentication information",session->socket);
+		if(startup->options&WEB_OPT_DEBUG_RX)
+			lprintf("%04d !No authentication information",session->socket);
 		return(FALSE);
 	}
 
@@ -815,7 +781,6 @@ static BOOL check_ars(http_session_t * session)
 				,session->socket,username);
 		return(FALSE);
 	}
-	lprintf("%04d User number: %d",session->socket,session->user.number);
 	getuserdat(&scfg, &session->user);
 	if(session->user.pass[0] && stricmp(session->user.pass,password)) {
 		/* Should go to the hack log? */
@@ -857,7 +822,6 @@ static void b64_decode(uchar *p)
 
 	write=p;
 	read=write;
-	lprintf("B64 Decoding: %s",p);
 	for(;*read;read++) {
 		working<<=6;
 		i=strchr(base64alphabet,(char)*read);
@@ -873,7 +837,6 @@ static void b64_decode(uchar *p)
 		}
 	}
 	*write=0;
-	lprintf("B64 Decoded: %s",p);
 	return;
 }
 
@@ -957,8 +920,8 @@ static int sockreadline(http_session_t * session, char *buf, size_t length)
 	else
 		buf[i]=0;
 
-/*	if(startup->options&WEB_OPT_DEBUG_RX) */
-	lprintf("%04d RX: %s",session->socket,buf);
+	if(startup->options&WEB_OPT_DEBUG_RX)
+		lprintf("%04d RX: %s",session->socket,buf);
 	return(i);
 }
 
@@ -994,7 +957,6 @@ static int pipereadline(int pipe, char *buf, size_t length)
 	else
 		buf[i]=0;
 
-	lprintf("CGI: Recieved %s",buf);
 	return(i);
 }
 
@@ -1022,7 +984,6 @@ int recvbufsocket(int sock, char *buf, long count)
 	}
 
 	if(rd==count)  {
-		lprintf("POST: %s",buf);
 		return(rd);
 	}
 
@@ -1040,7 +1001,6 @@ static BOOL parse_headers(http_session_t * session)
 	size_t	content_len=0;
 	char	env_name[128];
 
-	lprintf("%04d Parsing headers",session->socket);
 	while(sockreadline(session,req_line,sizeof(req_line))>0) {
 		while((recvfrom(session->socket,next_char,1,MSG_PEEK,NULL,0)>0) 
 			&& (next_char[0]=='\t' || next_char[0]==' ')) {
@@ -1098,8 +1058,9 @@ static BOOL parse_headers(http_session_t * session)
 				case HEAD_HOST:
 					if(session->req.host[0]==0) {
 						SAFECOPY(session->req.host,value);
-						lprintf("%04d Grabbing from virtual host: %s"
-							,session->socket,value);
+						if(startup->options&WEB_OPT_DEBUG_RX)
+							lprintf("%04d Grabbing from virtual host: %s"
+								,session->socket,value);
 					}
 					break;
 				default:
@@ -1111,8 +1072,7 @@ static BOOL parse_headers(http_session_t * session)
 	}
 	if(content_len)  {
 		if((session->req.post_data=malloc(content_len+1)) != NULL)  {
-			lprintf("%04d Recieved %d bytes of POST data",session->socket,
-				recvbufsocket(session->socket,session->req.post_data,content_len));
+			recvbufsocket(session->socket,session->req.post_data,content_len);
 			session->req.post_len=content_len;
 		}
 		else  {
@@ -1124,7 +1084,6 @@ static BOOL parse_headers(http_session_t * session)
 		session->req.post_data=NULL;
 	}
 	add_env(session,"SERVER_NAME",session->req.host[0] ? session->req.host : startup->host_name );
-	lprintf("%04d Done parsing headers",session->socket);
 	return TRUE;
 }
 
@@ -1157,11 +1116,9 @@ static int get_version(char *p)
 		return(0);
 	for(i=1;http_vers[i]!=NULL;i++) {
 		if(!stricmp(p,http_vers[i])) {
-			lprintf("Got version: %s (%d)",http_vers[i],i);
 			return(i);
 		}
 	}
-	lprintf("Got version: %s (%d)",http_vers[i-1],i-1);
 	return(i-1);
 }
 
@@ -1221,25 +1178,28 @@ static BOOL get_req(http_session_t * session)
 {
 	char	req_line[MAX_REQUEST_LINE];
 	char *	p;
+	fd_set	sockset;
+	struct timeval tv={startup->max_inactivity,0};
 	
-	if(sockreadline(session,req_line,sizeof(req_line))>0) {
-		lprintf("%04d Got request line: %s",session->socket,req_line);
-		p=NULL;
-		p=get_method(session,req_line);
-		if(p!=NULL) {
-			lprintf("%04d Method: %s"
-				,session->socket,methods[session->req.method]);
-			p=get_request(session,p);
-			lprintf("%04d Request: %s"
-				,session->socket,session->req.virtual_path);
-			session->http_ver=get_version(p);
-			if(session->http_ver>=HTTP_1_1)
-				session->req.keep_alive=TRUE;
-			add_env(session,"SERVER_PROTOCOL",session->http_ver ? 
-				http_vers[session->http_ver] : "HTTP/0.9");
-			lprintf("%04d Version: %s"
-				,session->socket,http_vers[session->http_ver]);
-			return(TRUE);
+	FD_ZERO(&sockset);
+	FD_SET(session->socket,&sockset);
+	if(select(session->socket+1,&sockset,NULL,NULL,&tv)<=0)  {
+		session->req.keep_alive=FALSE;
+	} else  {
+		if(sockreadline(session,req_line,sizeof(req_line))>0) {
+			if(startup->options&WEB_OPT_DEBUG_RX)
+				lprintf("%04d Got request line: %s",session->socket,req_line);
+			p=NULL;
+			p=get_method(session,req_line);
+			if(p!=NULL) {
+				p=get_request(session,p);
+				session->http_ver=get_version(p);
+				if(session->http_ver>=HTTP_1_1)
+					session->req.keep_alive=TRUE;
+				add_env(session,"SERVER_PROTOCOL",session->http_ver ? 
+					http_vers[session->http_ver] : "HTTP/0.9");
+				return(TRUE);
+			}
 		}
 	}
 	close_request(session);
@@ -1254,8 +1214,6 @@ static BOOL check_request(http_session_t * session)
 	char*	last_slash;
 	FILE*	file;
 	
-	lprintf("%04d Validating request: %s"
-		,session->socket,session->req.physical_path);
 	if(!(startup->options&WEB_OPT_VIRTUAL_HOSTS))
 		session->req.host[0]=0;
 	if(session->req.host[0]) {
@@ -1284,8 +1242,6 @@ static BOOL check_request(http_session_t * session)
 		session->req.send_location=MOVED_PERM;
 	}
 	if(strnicmp(path,root_dir,strlen(root_dir))) {
-		lprintf("%04d path = '%s'",session->socket,path);
-		lprintf("%04d root_dir = '%s'",session->socket,root_dir);
 		send_error(session,"400 Bad Request");
 		session->req.keep_alive=FALSE;
 		return(FALSE);
@@ -1388,16 +1344,23 @@ static BOOL exec_cgi(http_session_t *session)
 		lprintf("%04d Can't create in_pipe",session->socket,buf);
 		return(FALSE);
 	}
+    fcntl(in_pipe[0],F_SETFL,fcntl(in_pipe[0],F_GETFL)|O_NONBLOCK);
+    fcntl(in_pipe[1],F_SETFL,fcntl(in_pipe[1],F_GETFL)|O_NONBLOCK);
 
 	if(pipe(out_pipe)!=0) {
 		lprintf("%04d Can't create out_pipe",session->socket,buf);
 		return(FALSE);
 	}
+    fcntl(out_pipe[0],F_SETFL,fcntl(out_pipe[0],F_GETFL)|O_NONBLOCK);
+    fcntl(out_pipe[1],F_SETFL,fcntl(out_pipe[1],F_GETFL)|O_NONBLOCK);
+
 
 	if(pipe(err_pipe)!=0) {
 		lprintf("%04d Can't create err_pipe",session->socket,buf);
 		return(FALSE);
 	}
+    fcntl(err_pipe[0],F_SETFL,fcntl(err_pipe[0],F_GETFL)|O_NONBLOCK);
+    fcntl(err_pipe[1],F_SETFL,fcntl(err_pipe[1],F_GETFL)|O_NONBLOCK);
 
 	if((child=fork())==0)  {
 		/* Set up environment */
@@ -1435,123 +1398,55 @@ static BOOL exec_cgi(http_session_t *session)
 		session->req.cgi_env=p;
 	}
 
-	if(child>0)  {
-		post_offset+=write(in_pipe[1],
-			session->req.post_data+post_offset,
-			session->req.post_len-post_offset);
+	if(child==0)  {
+		close(in_pipe[1]);		/* close write-end of pipe */
+		close(out_pipe[0]);		/* close read-end of pipe */
+		close(err_pipe[0]);		/* close read-end of pipe */
+		return(FALSE);
+	}
 
-		high_fd=out_pipe[0];
-		if(err_pipe[0]>high_fd)
-			high_fd=err_pipe[0];
-		if(in_pipe[1]>high_fd)
-			high_fd=in_pipe[1];
-		if(session->socket>high_fd)
-			high_fd=session->socket;
+	post_offset+=write(in_pipe[1],
+		session->req.post_data+post_offset,
+		session->req.post_len-post_offset);
 
-		/* ToDo: Magically set done_parsing_headers for nph-* scripts */
-		SAFECOPY(cgi_status,"200 OK");
-		while(!done_reading)  {
-			if(!done_wait)
-				done_wait = (waitpid(child,&status,WNOHANG)==child);
+	high_fd=out_pipe[0];
+	if(err_pipe[0]>high_fd)
+		high_fd=err_pipe[0];
+	if(in_pipe[1]>high_fd)
+		high_fd=in_pipe[1];
+	if(session->socket>high_fd)
+		high_fd=session->socket;
 
-			tv.tv_sec=startup->max_cgi_inactivity;
-			tv.tv_usec=0;
+	/* ToDo: Magically set done_parsing_headers for nph-* scripts */
+	cgi_status[0]=0;
+	while(!done_reading)  {
+		if(!done_wait)
+			done_wait = (waitpid(child,&status,WNOHANG)==child);
 
-			FD_ZERO(&read_set);
-			FD_SET(out_pipe[0],&read_set);
-			FD_SET(err_pipe[0],&read_set);
-			FD_SET(session->socket,&read_set);
-			FD_ZERO(&write_set);
-			if(post_offset < session->req.post_len)
-				FD_SET(in_pipe[1],&write_set);
+		tv.tv_sec=startup->max_cgi_inactivity;
+		tv.tv_usec=0;
 
-			if(!done_reading && (select(high_fd+1,&read_set,&write_set,NULL,&tv)>0))  {
-				if(FD_ISSET(session->socket,&read_set))  {
-					done_reading=TRUE;
-				}
-				if(FD_ISSET(in_pipe[1],&write_set))  {
-					if(post_offset < session->req.post_len)  {
-						i=post_offset;
-						post_offset+=write(in_pipe[1],
-							session->req.post_data+post_offset,
-							session->req.post_len-post_offset);
-						if(post_offset>=session->req.post_len)
-							close(in_pipe[1]);
-						if(i!=post_offset)  {
-							start=time(NULL);
-						}
-						if(i<0)  {
-							done_reading=TRUE;
-						}
-					}
-				}
-				if(FD_ISSET(out_pipe[0],&read_set))  {
-					if(done_parsing_headers && got_valid_headers)  {
-						i=read(out_pipe[0],buf,1);
-						if(i>0)  {
-							start=time(NULL);
-							write(session->socket,buf,i);
-						}
-						if(i<=0)  {
-							done_reading=TRUE;
-						}
-					}
-					else  {
-						/* This is the tricky part */
-						i=pipereadline(out_pipe[0],buf,MAX_REQUEST_LINE);
-						if(i<0)  {
-							done_reading=TRUE;
-							got_valid_headers=FALSE;
-						}
-						if(i>0)  {
-							start=time(NULL);
-						}
+		FD_ZERO(&read_set);
+		FD_SET(out_pipe[0],&read_set);
+		FD_SET(err_pipe[0],&read_set);
+		FD_SET(session->socket,&read_set);
+		FD_ZERO(&write_set);
+		if(post_offset < session->req.post_len)
+			FD_SET(in_pipe[1],&write_set);
 
-						if(!done_parsing_headers && *buf)  {
-							SAFECOPY(header,buf);
-							directive=strtok(header,":");
-							if(directive != NULL)  {
-								value=strtok(NULL,"");
-								i=get_header_type(directive);
-								switch (i)  {
-									case HEAD_LOCATION:
-										got_valid_headers=TRUE;
-										if(*value=='/')  {
-											unescape(value);
-											SAFECOPY(session->req.virtual_path,value);
-											session->req.send_location=MOVED_STAT;
-											if(! *cgi_status)
-												SAFECOPY(cgi_status,"302 Moved Temporarily");
-										} else  {
-											SAFECOPY(session->req.virtual_path,value);
-											session->req.send_location=MOVED_STAT;
-											if(! *cgi_status)
-												SAFECOPY(cgi_status,"302 Moved Temporarily");
-										}
-										break;
-									case HEAD_STATUS:
-										SAFECOPY(cgi_status,value);
-										break;
-									case HEAD_TYPE:
-										got_valid_headers=TRUE;
-									default:
-										session->req.cgi_heads=add_list(session->req.cgi_heads,buf);
-								}
-							}
-						}
-						else  {
-							if(got_valid_headers)  {
-								session->req.was_cgi=TRUE;
-								send_headers(session,cgi_status);
-							}
-							done_parsing_headers=TRUE;
-						}
-					}
-				}
-				if(FD_ISSET(err_pipe[0],&read_set))  {
-					i=read(err_pipe[0],buf,1);
-					buf[i]=0;
-					if(i>0)  {
+		if(!done_reading && (select(high_fd+1,&read_set,&write_set,NULL,&tv)>0))  {
+			if(FD_ISSET(session->socket,&read_set))  {
+				done_reading=TRUE;
+			}
+			if(FD_ISSET(in_pipe[1],&write_set))  {
+				if(post_offset < session->req.post_len)  {
+					i=post_offset;
+					post_offset+=write(in_pipe[1],
+						session->req.post_data+post_offset,
+						session->req.post_len-post_offset);
+					if(post_offset>=session->req.post_len)
+						close(in_pipe[1]);
+					if(i!=post_offset)  {
 						start=time(NULL);
 					}
 					if(i<0)  {
@@ -1559,51 +1454,126 @@ static BOOL exec_cgi(http_session_t *session)
 					}
 				}
 			}
-			else  {
-				if(!done_wait)
-					done_wait = (waitpid(child,&status,WNOHANG)==child);
+			if(FD_ISSET(out_pipe[0],&read_set))  {
+				if(done_parsing_headers && got_valid_headers)  {
+					i=read(out_pipe[0],buf,MAX_REQUEST_LINE);
+					if(i>0)  {
+						start=time(NULL);
+						write(session->socket,buf,i);
+					}
+					if(i<=0)  {
+						done_reading=TRUE;
+					}
+				}
+				else  {
+					/* This is the tricky part */
+					i=pipereadline(out_pipe[0],buf,MAX_REQUEST_LINE);
+					if(i<0)  {
+						done_reading=TRUE;
+						got_valid_headers=FALSE;
+					}
+					if(i>0)  {
+						start=time(NULL);
+					}
 
-				if((time(NULL)-start) >= startup->max_cgi_inactivity)  {
-					/* timeout */
-					lprintf("%04d CGI Script %s Timed out",session->socket,cmdline);
-					if(!done_wait)  {
-						kill(child,SIGTERM);
-						mswait(1000);
-						done_wait = (waitpid(child,&status,WNOHANG)==child);
-						if(!done_wait)  {
-							kill(child,SIGKILL);
-							done_wait = (waitpid(child,&status,0)==child);
+					if(!done_parsing_headers && *buf)  {
+						SAFECOPY(header,buf);
+						directive=strtok(header,":");
+						if(directive != NULL)  {
+							value=strtok(NULL,"");
+							i=get_header_type(directive);
+							switch (i)  {
+								case HEAD_LOCATION:
+									got_valid_headers=TRUE;
+									if(*value=='/')  {
+										unescape(value);
+										SAFECOPY(session->req.virtual_path,value);
+										session->req.send_location=MOVED_STAT;
+										if(cgi_status[0]==0)
+											SAFECOPY(cgi_status,"302 Moved Temporarily");
+									} else  {
+										SAFECOPY(session->req.virtual_path,value);
+										session->req.send_location=MOVED_STAT;
+										if(cgi_status[0]==0)
+											SAFECOPY(cgi_status,"302 Moved Temporarily");
+									}
+									break;
+								case HEAD_STATUS:
+									SAFECOPY(cgi_status,value);
+									break;
+								case HEAD_TYPE:
+									got_valid_headers=TRUE;
+								default:
+									session->req.cgi_heads=add_list(session->req.cgi_heads,buf);
+							}
 						}
+					}
+					else  {
+						if(got_valid_headers)  {
+							session->req.was_cgi=TRUE;
+							if(cgi_status[0]==0)
+								SAFECOPY(cgi_status,"200 OK");
+							send_headers(session,cgi_status);
+						}
+						done_parsing_headers=TRUE;
 					}
 				}
 			}
-		}
-		if(!done_wait)  {
-			lprintf("%04d CGI Script %s must die!",session->socket,cmdline);
-			kill(child,SIGTERM);
-			mswait(1000);
-			done_wait = (waitpid(child,&status,WNOHANG)==child);
-			if(!done_wait)  {
-				kill(child,SIGKILL);
-				done_wait = (waitpid(child,&status,0)==child);
+			if(FD_ISSET(err_pipe[0],&read_set))  {
+				i=read(err_pipe[0],buf,MAX_REQUEST_LINE);
+				buf[i]=0;
+				if(i>0)  {
+					start=time(NULL);
+				}
+				if(i<0)  {
+					done_reading=TRUE;
+				}
 			}
 		}
-				
-		while(session->req.cgi_heads != NULL)  {
-			FREE_AND_NULL(session->req.cgi_heads->val);
-			p=session->req.cgi_heads->next;
-			FREE_AND_NULL(session->req.cgi_heads);
-			session->req.cgi_heads=p;
+		else  {
+			if(!done_wait)
+				done_wait = (waitpid(child,&status,WNOHANG)==child);
+
+			if((time(NULL)-start) >= startup->max_cgi_inactivity)  {
+				/* timeout */
+				lprintf("%04d CGI Script %s Timed out",session->socket,cmdline);
+				if(!done_wait)  {
+					kill(child,SIGTERM);
+					mswait(1000);
+					done_wait = (waitpid(child,&status,WNOHANG)==child);
+					if(!done_wait)  {
+						kill(child,SIGKILL);
+						done_wait = (waitpid(child,&status,0)==child);
+					}
+				}
+			}
+			if(done_wait)
+				done_reading=TRUE;
 		}
-		close(in_pipe[1]);		/* close write-end of pipe */
-		close(out_pipe[0]);		/* close read-end of pipe */
-		close(err_pipe[0]);		/* close read-end of pipe */
-		lprintf("%04d Done CGI execution",session->socket);
-		if(!done_parsing_headers || !got_valid_headers)
-			return(FALSE);
-		return(TRUE);
 	}
-	return(FALSE);
+	if(!done_wait)  {
+		lprintf("%04d CGI Script %s still alive on client exit",session->socket,cmdline);
+		kill(child,SIGTERM);
+		mswait(1000);
+		done_wait = (waitpid(child,&status,WNOHANG)==child);
+		if(!done_wait)  {
+			kill(child,SIGKILL);
+			done_wait = (waitpid(child,&status,0)==child);
+		}
+	}
+			
+	while(session->req.cgi_heads != NULL)  {
+		FREE_AND_NULL(session->req.cgi_heads->val);
+		p=session->req.cgi_heads->next;
+		FREE_AND_NULL(session->req.cgi_heads);
+		session->req.cgi_heads=p;
+	}
+	close(in_pipe[1]);		/* close write-end of pipe */
+	close(out_pipe[0]);		/* close read-end of pipe */
+	close(err_pipe[0]);		/* close read-end of pipe */
+	if(!done_parsing_headers || !got_valid_headers)
+		return(FALSE);
+	return(TRUE);
 #else
 	/* Win32 exec_cgi() */
 	return(FALSE);
@@ -1909,8 +1879,11 @@ static void respond(http_session_t * session)
 		session->req.mime_type=get_mime_type(strrchr(session->req.physical_path,'.'));
 		send_file=send_headers(session,"200 OK");
 	}
-	if(send_file)
+	if(send_file)  {
+		lprintf("%04d Sending file",session->socket);
 		sock_sendfile(session->socket,session->req.physical_path);
+		lprintf("%04d Sent file",session->socket);
+	}
 	close_request(session);
 }
 
