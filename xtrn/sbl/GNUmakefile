@@ -23,7 +23,7 @@ ifndef SBBS_SRC
  SBBS_SRC	=	../../src/sbbs3
 endif
 
-vpath %.c $(XPDEV) $(XSDK)
+vpath %.c $(XPDEV) $(XSDK) $(SBBS_SRC)
 
 ifndef os
  os              =       $(shell uname)
@@ -71,14 +71,13 @@ all: sbl sbl2smb smb2sbl sblpack
 sbl: sbl.o xsdk.o xsdkvars.o xsdkwrap.o
 	$(CC) $(CFLAGS) $(LFLAGS) $^ -o $@ $(LIBS)
 
-SMBIO	=	$(XPDEV)/genwrap.o $(XPDEV)/filewrap.o $(XPDEV)/dirwrap.o \
-		$(SBBS_SRC)/smblib.o $(SBBS_SRC)/lzh.o
+SMBIO	=	genwrap.o filewrap.o $(XPDEV)/dirwrap.o smblib.o lzh.o
 
 sbl2smb: sbl2smb.o $(SMBIO)
 
 smb2sbl: smb2sbl.o $(SMBIO)
 
-sblpack: sblpack.o $(XPDEV)/filewrap.o
+sblpack: sblpack.o filewrap.o
 
 clean:
-	rm -f *.o
+	rm -f sbl sbl2smb smb2sbl sblpack *.o
