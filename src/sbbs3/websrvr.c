@@ -191,6 +191,7 @@ typedef struct  {
 	int			dynamic;
 	struct log_data	*ld;
 	char		request_line[MAX_REQUEST_LINE+1];
+	BOOL		finished;				/* Done processing request. */
 
 	/* CGI parameters */
 	char		query_str[MAX_REQUEST_LINE+1];
@@ -1062,7 +1063,7 @@ static void send_error(http_session_t * session, const char* message)
 				session->req.ld->size=strlen(sbuf);
 		}
 	}
-	close_request(session);
+	session->req.finished=TRUE;
 }
 
 void http_logon(http_session_t * session, user_t *usr)
@@ -1229,8 +1230,10 @@ static BOOL check_ars(http_session_t * session)
 	if(!http_checkuser(session))
 		return(FALSE);
 
-	if(session->req.ld!=NULL)
+	if(session->req.ld!=NULL) {
+		FREE_AND_NULL(session->req.ld->user);
 		session->req.ld->user=strdup(username);
+	}
 
 	ar = arstr(NULL,session->req.ars,&scfg);
 	authorized=chk_ar(&scfg,ar,&session->user);
@@ -1290,7 +1293,7 @@ static int sockreadline(http_session_t * session, char *buf, size_t length)
 		if(!socket_check(session->socket,&rd,NULL,startup->max_inactivity*1000) 
 			|| !rd || recv(session->socket, &ch, 1, 0)!=1)  {
 			session->req.keep_alive=FALSE;
-			close_request(session);
+			session->req.finished=TRUE;
 			return(-1);        /* time-out */
 		}
 
@@ -1564,12 +1567,16 @@ static BOOL parse_headers(http_session_t * session)
 					}
 					break;
 				case HEAD_REFERER:
-					if(session->req.ld!=NULL)
+					if(session->req.ld!=NULL) {
+						FREE_AND_NULL(session->req.ld->referrer);
 						session->req.ld->referrer=strdup(value);
+					}
 					break;
 				case HEAD_AGENT:
-					if(session->req.ld!=NULL)
+					if(session->req.ld!=NULL) {
+						FREE_AND_NULL(session->req.ld->agent);
 						session->req.ld->agent=strdup(value);
+					}
 					break;
 				default:
 					break;
@@ -1820,8 +1827,10 @@ static BOOL get_req(http_session_t * session, char *request_line)
 		SAFECOPY(req_line,request_line);
 		is_redir=1;
 	}
-	if(session->req.ld!=NULL)
+	if(session->req.ld!=NULL) {
+		FREE_AND_NULL(session->req.ld->request);
 		session->req.ld->request=strdup(req_line);
+	}
 	if(req_line[0]) {
 		p=NULL;
 		p=get_method(session,req_line);
@@ -1836,8 +1845,10 @@ static BOOL get_req(http_session_t * session, char *request_line)
 				send_error(session,error_500);
 				return(FALSE);
 			}
-			if(session->req.ld!=NULL)
+			if(session->req.ld!=NULL) {
+				FREE_AND_NULL(session->req.ld->vhost);
 				session->req.ld->vhost=strdup(session->req.vhost);
+			}
 			session->req.dynamic=is_dynamic_req(session);
 			if(session->req.query_str[0])  {
 				switch(session->req.dynamic) {
@@ -3135,7 +3146,7 @@ static void respond(http_session_t * session)
 			send_error(session,error_500);
 			return;
 		}
-		close_request(session);
+		session->req.finished=TRUE;
 		return;
 	}
 
@@ -3167,7 +3178,7 @@ static void respond(http_session_t * session)
 			lprintf(LOG_INFO,"%04d Sent file: %s (%d bytes)"
 				,session->socket, session->req.physical_path, snt);
 	}
-	close_request(session);
+	session->req.finished=TRUE;
 }
 
 void http_session_thread(void* arg)
@@ -3180,6 +3191,7 @@ void http_session_thread(void* arg)
 	char			*redirp;
 	http_session_t	session=*(http_session_t*)arg;	/* copies arg BEFORE it's freed */
 	int				loop_count;
+	BOOL			init_error;
 
 	FREE_AND_NULL(arg);
 
@@ -3250,29 +3262,48 @@ void http_session_thread(void* arg)
 	session.subscan=(subscan_t*)malloc(sizeof(subscan_t)*scfg.total_subs);
 
 	while(!session.finished && server_socket!=INVALID_SOCKET) {
+		init_error=FALSE;
 	    memset(&(session.req), 0, sizeof(session.req));
 		redirp=NULL;
 		loop_count=0;
+		session.req.ld=NULL;
+		if(startup->options&WEB_OPT_HTTP_LOGGING) {
+			if((session.req.ld=(struct log_data*)malloc(sizeof(struct log_data)))==NULL)
+				lprintf(LOG_ERR,"%04d Cannot allocate memory for log data!",session.socket);
+		}
+		if(session.req.ld!=NULL) {
+			memset(session.req.ld,0,sizeof(struct log_data));
+			session.req.ld->hostname=strdup(session.host_name);
+		}
 		while((redirp==NULL || session.req.send_location >= MOVED_TEMP)
-				 && !session.finished && server_socket!=INVALID_SOCKET) {
+				 && !session.finished && !session.req.finished 
+				 && server_socket!=INVALID_SOCKET) {
 			SAFECOPY(session.req.status,"200 OK");
 			session.req.send_location=NO_LOCATION;
-			session.req.ld=NULL;
-			if(startup->options&WEB_OPT_HTTP_LOGGING) {
-				if((session.req.ld=(struct log_data*)malloc(sizeof(struct log_data)))==NULL)
-					lprintf(LOG_ERR,"%04d Cannot allocate memory for log data!",session.socket);
+			if(session.req.headers==NULL) {
+				if((session.req.headers=strListInit())==NULL) {
+					lprintf(LOG_ERR,"%04d !ERROR allocating memory for header list",session.socket);
+					init_error=TRUE;
+				}
 			}
-			if(session.req.ld!=NULL) {
-				memset(session.req.ld,0,sizeof(struct log_data));
-				session.req.ld->hostname=strdup(session.host_name);
+			if(session.req.cgi_env==NULL) {
+				if((session.req.cgi_env=strListInit())==NULL) {
+					lprintf(LOG_ERR,"%04d !ERROR allocating memory for CGI environment list",session.socket);
+					init_error=TRUE;
+				}
 			}
-			if((session.req.headers=strListInit())==NULL
-				|| (session.req.cgi_env=strListInit())==NULL
-				|| (session.req.dynamic_heads=strListInit())==NULL) {
-				lprintf(LOG_ERR,"%04d !ERROR allocating memory for string lists",session.socket);
-				break;	/* We should probably send "system error" type status here (?) */
+			if(session.req.dynamic_heads==NULL) {
+				if((session.req.dynamic_heads=strListInit())==NULL) {
+					lprintf(LOG_ERR,"%04d !ERROR allocating memory for dynamic header list",session.socket);
+					init_error=TRUE;
+				}
 			}
+
 			if(get_req(&session,redirp)) {
+				if(init_error) {
+					send_error(&session, error_500);
+					continue;
+				}
 				/* At this point, if redirp is non-NULL then the headers have already been parsed */
 				if((session.http_ver<HTTP_1_0)||redirp!=NULL||parse_headers(&session)) {
 					if(check_request(&session)) {
@@ -3289,6 +3320,7 @@ void http_session_thread(void* arg)
 				}
 			}
 		}
+		close_request(&session);
 	}
 
 	http_logoff(&session,socket,__LINE__);
