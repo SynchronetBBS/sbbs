@@ -639,10 +639,8 @@ int choose_server(char **opts)
 
 	uifc.helpbuf=	"`Server List:`\n"
 				"\nToDo: Add help.";
-	uifc.savnum++;
 	i=uifc.list(WIN_MID|WIN_ACT|WIN_SAV,0,0,0,&srvr_dflt,0
 		,"Select Server",opts);
-	uifc.savnum--;
 	return(i);
 
 }
