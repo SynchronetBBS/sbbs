@@ -84,7 +84,7 @@ object TelnetForm: TTelnetForm
       Align = alClient
       AutoSize = False
       BorderStyle = sbsSunken
-      Caption = 'Status'
+      Caption = 'Down'
       TabOrder = 0
     end
     object ToolButton3: TToolButton

@@ -89,7 +89,7 @@ object ServicesForm: TServicesForm
       Align = alClient
       AutoSize = False
       BorderStyle = sbsSunken
-      Caption = 'Status'
+      Caption = 'Down'
       TabOrder = 0
     end
   end

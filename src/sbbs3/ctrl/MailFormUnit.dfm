@@ -79,7 +79,7 @@ object MailForm: TMailForm
       Hint = 'Mail Server Status'
       AutoSize = False
       BorderStyle = sbsSunken
-      Caption = 'Status'
+      Caption = 'Down'
       TabOrder = 0
     end
     object ToolButton1: TToolButton

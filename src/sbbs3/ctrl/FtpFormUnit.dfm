@@ -74,7 +74,7 @@ object FtpForm: TFtpForm
       Hint = 'FTP Server Status'
       AutoSize = False
       BorderStyle = sbsSunken
-      Caption = 'Status'
+      Caption = 'Down'
       ParentShowHint = False
       ShowHint = True
       TabOrder = 0
