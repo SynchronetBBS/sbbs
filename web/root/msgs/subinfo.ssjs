@@ -34,6 +34,8 @@ else {
 	}
 }
 
+template.backurl=http_request.header.referer;
+
 write_template("header.inc");
 write_template("msgs/subinfo.inc");
 write_template("footer.inc");

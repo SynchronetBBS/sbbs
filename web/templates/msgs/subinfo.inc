@@ -1,91 +1,85 @@
+<p class="navigation"><a class="navigation" href="@@backurl@@">Back to previous page</a></p>
 <table class="subinfo">
   <tr class="subinfo">
-    <td>
-	  Description:
+    <td class="subinfbold">
+	  Description
 	</td>
     <td>
 	  %%sub:description%%
 	</td>
   </tr>
   <tr class="subinfo">
-    <td>
-	  Newsgroup Name:
+    <td class="subinfo">
+	  Newsgroup Name
 	</td>
     <td>
 	  %%sub:newsgroup%%
 	</td>
   </tr>
   <tr class="subinfo">
-    <td>
-	  Name:
+    <td class="subinfbold">
+	  Name
 	</td>
     <td>
 	  %%sub:name%%
 	</td>
   </tr>
   <tr class="subinfo">
-    <td>
-	  QWK Name:
+    <td class="subinfbold">
+	  QWK Name
 	</td>
     <td>
 	  %%sub:qwk_name%%
 	</td>
   </tr>
   <tr class="subinfo">
-    <td>
-	  Is Moderated:
+    <td class="subinfbold">
+	  Is Moderated
 	</td>
     <td>
 	  %%sub:is_moderated%%
 	</td>
   </tr>
   <tr class="subinfo">
-    <td>
-	  Can Post:
+    <td class="subinfbold">
+	  Can Post
 	</td>
     <td>
 	  %%sub:can_post%%
 	</td>
   </tr>
   <tr class="subinfo">
-    <td>
-	  Can Read:
+    <td class="subinfbold">
+	  Can Read
 	</td>
     <td>
 	  %%sub:can_read%%
 	</td>
   </tr>
   <tr class="subinfo">
-    <td>
-	  Am Operator:
+    <td class="subinfbold">
+	  Am Operator
 	</td>
     <td>
 	  %%sub:is_operator%%
 	</td>
   </tr>
   <tr class="subinfo">
-    <td>
-	  Max Msgs:
+    <td class="subinfbold">
+	  Max Msgs
 	</td>
     <td>
 	  %%sub:max_msgs%%
 	</td>
   </tr>
   <tr class="subinfo">
-    <td>
-	  Network Type:
+    <td class="subinfbold">
+	  Network Type
 	</td>
     <td>
 	  %%type%%
 	</td>
   </tr>
-  <tr class="subinfo">
-    <td>
-	  Tagline/Origin:
-	</td>
-    <td>
-	  %%tagline%%
-	</td>
-  </tr>
+  @@JS:if(template.sub.settings & SUB_FIDO || template.sub.settings & SUB_QNET || template.sub.settings & SUB_PNET) '<tr class="subinfo"><td class="subinfbold">Tagline/Origin</td><td class="subinfonwr">%%tagline%%</td></tr>'; else '';@@
 </table>
 
