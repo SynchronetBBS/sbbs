@@ -792,7 +792,7 @@ extern "C" {
 	DLLEXPORT BOOL		DLLCALL hacklog(scfg_t* cfg, char* prot, char* user, char* text 
 										,char* host, SOCKADDR_IN* addr);
 	DLLEXPORT BOOL		DLLCALL spamlog(scfg_t* cfg, char* prot, char* reason
-										,char* host, char* ip_addr);
+										,char* host, char* ip_addr, char* to);
 
 	DLLEXPORT char *	DLLCALL remove_ctrl_a(char* instr, char* outstr);
 
