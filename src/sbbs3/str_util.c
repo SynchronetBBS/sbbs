@@ -234,11 +234,12 @@ char* DLLCALL ultoac(ulong l, char *string)
 /****************************************************************************/
 char* DLLCALL truncsp(char *str)
 {
-	uint c;
+	size_t c;
 
 	c=strlen(str);
 	while(c && (uchar)str[c-1]<=' ') c--;
-	str[c]=0;
+	if(str[c]!=0)
+		str[c]=0;
 	return(str);
 }
 
@@ -250,7 +251,7 @@ char* DLLCALL truncstr(char* str, const char* set)
 	char* p;
 
 	p=strpbrk(str,set);
-	if(p!=NULL)
+	if(p!=NULL && *p!=0)
 		*p=0;
 
 	return(p);
