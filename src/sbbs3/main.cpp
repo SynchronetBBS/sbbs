@@ -72,6 +72,84 @@ static scfg_t	scfg;
 static bool		scfg_reloaded=true;
 static char *	text[TOTAL_TEXT];
 
+#ifdef JAVASCRIPT
+JSRuntime* js_runtime=NULL;
+
+static JSBool
+Print(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+    uintN		i;
+    JSString *	str;
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return JS_FALSE;
+
+    for (i = 0; i < argc; i++) {
+		str = JS_ValueToString(cx, argv[i]);
+		if (!str)
+		    return JS_FALSE;
+		sbbs->bputs(JS_GetStringBytes(str));
+		}
+	sbbs->bputs(crlf);
+    return JS_TRUE;
+}
+
+static JSBool
+Load(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char		path[MAX_PATH+1];
+    uintN		i;
+    JSString*	str;
+    const char*	filename;
+    JSScript*	script;
+    JSBool		ok;
+    jsval		result;
+//    JSErrorReporter older;
+
+    for (i = 0; i < argc; i++) {
+		str = JS_ValueToString(cx, argv[i]);
+		if (!str)
+			return JS_FALSE;
+		argv[i] = STRING_TO_JSVAL(str);
+		filename = JS_GetStringBytes(str);
+		errno = 0;
+//    older = JS_SetErrorReporter(cx, my_LoadErrorReporter);
+		if(!strchr(filename,BACKSLASH))
+			sprintf(path,"%s%s",scfg.exec_dir,filename);
+		else
+			strcpy(path,filename);
+		script = JS_CompileFile(cx, obj, path);
+		if (!script)
+			ok = JS_FALSE;
+		else {
+			ok = JS_ExecuteScript(cx, obj, script, &result);
+			JS_DestroyScript(cx, script);
+			}
+//    JS_SetErrorReporter(cx, older);
+		if (!ok)
+			return JS_FALSE;
+    }
+
+    return JS_TRUE;
+}
+
+
+static JSClass js_global_class ={
+        "global",0, 
+        JS_PropertyStub,JS_PropertyStub,JS_PropertyStub,JS_PropertyStub, 
+        JS_EnumerateStub,JS_ResolveStub,JS_ConvertStub,JS_FinalizeStub 
+    }; 
+
+static JSFunctionSpec js_global_functions[] = {
+    {"print",           Print,          0},			/* Print a string, auto-crlf */
+    {"load",            Load,           1},			/* Load and execute a javascript file */
+    {0}
+};
+
+
+#endif
+
 #ifdef _WINSOCKAPI_
 
 WSADATA WSAData;
@@ -185,13 +263,16 @@ int close_socket(SOCKET sock)
 	return(result);
 }
 
-/* Return true if connected */
-bool socket_check(SOCKET sock)
+/* Return true if connected, optionally sets *rd_p to true if read data available */
+bool socket_check(SOCKET sock, bool* rd_p)
 {
 	char	ch;
-	int		i;
+	int		i,rd;
 	fd_set	socket_set;
 	struct	timeval tv;
+
+	if(rd_p!=NULL)
+		*rd_p=false;
 
 	FD_ZERO(&socket_set);
 	FD_SET(sock,&socket_set);
@@ -203,8 +284,15 @@ bool socket_check(SOCKET sock)
 	if(i==SOCKET_ERROR)
 		return(false);
 
-	if(i==0 || recv(sock,&ch,1,MSG_PEEK)==1) 
+	if(i==0) 
 		return(true);
+
+	rd=recv(sock,&ch,1,MSG_PEEK);
+	if(rd==1) {
+		if(rd_p!=NULL)
+			*rd_p=true;
+		return(true);
+	}
 
 	return(false);
 }
@@ -280,7 +368,7 @@ BYTE* telnet_interpret(sbbs_t* sbbs, BYTE* inbuf, int inlen,
             sbbs->telnet_cmd[sbbs->telnet_cmdlen++]=inbuf[i];
             if(sbbs->telnet_cmdlen==2 && inbuf[i]<TELNET_WILL) {
 				if(startup->options&BBS_OPT_DEBUG_TELNET)
-            		lprintf("Node %d %s telnet command: %s"
+            		lprintf("Node %d %s telnet cmd: %s"
 	                	,sbbs->cfg.node_num
 						,sbbs->telnet_mode&TELNET_MODE_GATE ? "passed-through" : "received"
                 		,telnet_cmd_desc(sbbs->telnet_cmd[2]));
@@ -305,7 +393,7 @@ BYTE* telnet_interpret(sbbs_t* sbbs, BYTE* inbuf, int inlen,
 					}
 				}
 				if(startup->options&BBS_OPT_DEBUG_TELNET)
-					lprintf("Node %d %s telnet command: %s %s"
+					lprintf("Node %d %s telnet cmd: %s %s"
 	                    ,sbbs->cfg.node_num
 						,sbbs->telnet_mode&TELNET_MODE_GATE ? "passed-through" : "received"
 						,telnet_cmd_desc(sbbs->telnet_cmd[1])
@@ -418,20 +506,20 @@ void input_thread(void *arg)
 		total_recv+=rd;
 		total_pkts++;
 
+        // telbuf and wr are modified to reflect telnet escaped data
+		wrbuf=telnet_interpret(sbbs, inbuf, rd, telbuf, wr);
+		if(wr > (int)sizeof(telbuf)) 
+			lprintf("!TELBUF OVERFLOW (%d>%d)",wr,sizeof(telbuf));
+
 		/* First level Ctrl-C checking */
 		if(sbbs->rio_abortable 
 			&& !(sbbs->telnet_mode&(TELNET_MODE_BIN_RX|TELNET_MODE_GATE))
-			&& memchr(inbuf, 3, rd)) {	
+			&& memchr(wrbuf, 3, wr)) {	
     		lprintf("Node %d Ctrl-C hit with %lu bytes in output buffer"
 				,sbbs->cfg.node_num,RingBufFull(&sbbs->outbuf));
 			sbbs->sys_status|=SS_ABORT;
     		RingBufReInit(&sbbs->outbuf);	/* Flush output buffer */
 		}
-
-        // telbuf and wr are modified to reflect telnet escaped data
-		wrbuf=telnet_interpret(sbbs, inbuf, rd, telbuf, wr);
-		if(wr > (int)sizeof(telbuf)) 
-			lprintf("!TELBUF OVERFLOW (%d>%d)",wr,sizeof(telbuf));
 
 		avail=RingBufFree(&sbbs->inbuf);
 
@@ -532,7 +620,7 @@ void output_thread(void* arg)
 
     sbbs->output_thread_running = false;
 
-	lprintf("%s output thread terminated (sent %lu byts in %lu packets)"
+	lprintf("%s output thread terminated (sent %lu bytes in %lu packets)"
 		,node, total_sent, total_pkts);
 
 	thread_down();
@@ -541,6 +629,7 @@ void output_thread(void* arg)
 void event_thread(void* arg)
 {
 	char		str[256];
+	char		bat_list[MAX_PATH+1];
 	char		semfile[128];
 	int			i,j,k;
 	int			file;
@@ -644,6 +733,9 @@ void event_thread(void* arg)
 					lprintf("Un-packing QWK Reply packet from %s",sbbs->useron.alias);
 					sbbs->getusrsubs();
 					sbbs->unpack_rep(g.gl_pathv[i]);
+					sbbs->batch_create_list();	/* FREQs? */
+					sbbs->batdn_total=0;
+					
 					/* putuserdat? */
 					remove(g.gl_pathv[i]);
 				}
@@ -664,12 +756,18 @@ void event_thread(void* arg)
 					sbbs->getmsgptrs();
 					sbbs->getusrsubs();
 					sbbs->batdn_total=0;
+
+					sbbs->last_ns_time=sbbs->ns_time=sbbs->useron.ns_time;
+					sprintf(bat_list,"%sfile/%04u.dwn",sbbs->cfg.data_dir,sbbs->useron.number);
+					sbbs->batch_add_list(bat_list);
+
 					sprintf(str,"%sfile%c%04u.qwk"
 						,sbbs->cfg.data_dir,BACKSLASH,sbbs->useron.number);
-					if(sbbs->pack_qwk(str,&l,1)) {
+					if(sbbs->pack_qwk(str,&l,true /* pre-pack */)) {
 						lprintf("Packing completed");
 						sbbs->qwk_success(l,0,1);
 						sbbs->putmsgptrs(); 
+						remove(bat_list);
 					} else
 						lprintf("No packet created (no new messages)");
 					sbbs->delfiles(sbbs->cfg.temp_dir,ALLFILES);
@@ -711,7 +809,7 @@ void event_thread(void* arg)
 						sbbs->batdn_total=0;
 						sprintf(str,"%sfile%c%04u.qwk"
 							,sbbs->cfg.data_dir,BACKSLASH,sbbs->useron.number);
-						if(sbbs->pack_qwk(str,&l,1)) {
+						if(sbbs->pack_qwk(str,&l,true /* pre-pack */)) {
 							sbbs->qwk_success(l,0,1);
 							sbbs->putmsgptrs(); 
 						}
@@ -1135,6 +1233,10 @@ sbbs_t::sbbs_t(ushort node_num, DWORD addr, char* name, SOCKET sd,
 	nodefile_fp=NULL;
 	node_ext_fp=NULL;
 
+#ifdef JAVASCRIPT
+	js_cx=NULL;	/* context */
+#endif
+
 	for(i=0;i<TOTAL_TEXT;i++)
 		text[i]=text_sav[i]=global_text[i];
 
@@ -1327,6 +1429,27 @@ bool sbbs_t::init()
 
 /** Put in if(cfg.node_num) ? (not needed for server and event threads) */
 	backout();
+
+#ifdef JAVASCRIPT
+
+    if((js_cx = JS_NewContext(js_runtime, JAVASCRIPT_CONTEXT_STACK))==NULL)
+		return(false);
+
+	JS_SetContextPrivate(js_cx, this);	/* Store a pointer to sbbs_t instance */
+
+//    JS_SetErrorReporter(js_cx, js_ErrorReporter);
+
+    if((js_glob = JS_NewObject(js_cx, &js_global_class, NULL, NULL)) ==NULL)
+		return(false);
+
+    if (!JS_InitStandardClasses(js_cx, js_glob))
+		return(false);
+
+    if (!JS_DefineFunctions(js_cx, js_glob, js_global_functions))
+		return(false);
+
+
+#endif
 
 	/* Reset COMMAND SHELL */
 
@@ -1583,6 +1706,14 @@ sbbs_t::~sbbs_t()
 	/********************************/
 	/* Free allocated class members */
 	/********************************/
+
+#ifdef JAVASCRIPT
+	/* Free Context */
+	if(js_cx!=NULL) {	
+		JS_DestroyContext(js_cx);
+		js_cx=NULL;
+	}
+#endif
 
 	/* Reset text.dat */
 
@@ -2490,6 +2621,13 @@ static void cleanup(int code)
 #endif
 	pthread_mutex_destroy(&event_mutex);
 
+#ifdef JAVASCRIPT
+	if(js_runtime!=NULL) {
+		JS_DestroyRuntime(js_runtime);
+		js_runtime=NULL;
+	}
+#endif
+
     lputs("BBS System thread terminated");
 	status("Down");
 	if(startup->terminated!=NULL)
@@ -2655,6 +2793,14 @@ void DLLCALL bbs_thread(void* arg)
 	}
 
 	startup->node_inbuf=node_inbuf;
+
+#ifdef JAVASCRIPT
+	if((js_runtime = JS_NewRuntime(JAVASCRIPT_RUNTIME_MEMORY))==NULL) {
+		lprintf("!JS_NewRuntime failed");
+		cleanup(1);
+		return;
+	}
+#endif
 
     /* open a socket and wait for a client */
 
