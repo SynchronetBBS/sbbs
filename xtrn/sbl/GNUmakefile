@@ -71,7 +71,7 @@ all: sbl sbl2smb smb2sbl sblpack
 sbl: sbl.o xsdk.o xsdkvars.o xsdkwrap.o
 	$(CC) $(CFLAGS) $(LFLAGS) $^ -o $@ $(LIBS)
 
-SMBIO	=	genwrap.o filewrap.o $(XPDEV)/dirwrap.o smblib.o lzh.o
+SMBIO	=	genwrap.o filewrap.o dirwrap.o smblib.o lzh.o
 
 sbl2smb: sbl2smb.o $(SMBIO)
 
