@@ -1153,6 +1153,26 @@ int SMBCALL smb_hfield_str(smbmsg_t* msg, ushort type, const char* str)
 }
 
 /****************************************************************************/
+/* Convenience function to add an ASCIIZ string header field				*/
+/****************************************************************************/
+int	SMBCALL smb_hfield_netaddr(smbmsg_t* msg, ushort type, const char* str, ushort* nettype)
+{
+	fidoaddr_t	sys_addr = {0,0,0,0};	/* replace unspecified fields with 0 (don't assume 1:1/1) */
+	fidoaddr_t	fidoaddr;
+	ushort		tmp_nettype=NET_UNKNOWN;
+
+	if(nettype==NULL)
+		nettype=&tmp_nettype;
+	if(*nettype==NET_UNKNOWN)
+		*nettype=smb_netaddr_type(str);
+	if(*nettype==NET_FIDO) {
+		fidoaddr=smb_atofaddr(&sys_addr,str);
+		return smb_hfield_bin(msg,type,fidoaddr);
+	} else
+		return smb_hfield_str(msg,type,str);
+}
+
+/****************************************************************************/
 /* Appends data to an existing header field (in memory only)				*/
 /****************************************************************************/
 int SMBCALL smb_hfield_append(smbmsg_t* msg, ushort type, size_t length, void* data)
