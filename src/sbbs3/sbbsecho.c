@@ -3445,7 +3445,7 @@ int import_netmail(char *path,fmsghdr_t hdr, FILE *fidomsg)
 			if(!sp) sp=strrchr(tp,'\\');
 			if(sp) tp=sp+1;
 			sprintf(str,"%s%s",scfg.fidofile_dir,tp);
-			sprintf(tmp,"%sFILE/%04u.IN",scfg.data_dir,usernumber);
+			sprintf(tmp,"%sfile/%04u.in",scfg.data_dir,usernumber);
 			MKDIR(tmp);
 			backslash(tmp);
 			strcat(tmp,tp);
@@ -3688,8 +3688,8 @@ void export_echomail(char *sub_code,faddr_t addr)
 
 				if(!(scfg.sub[i]->misc&SUB_NOTAG)) {
 					if(!tear) {  /* No previous tear line */
-						sprintf(str,"--- SBBSecho v%s-%s (rev %s)\r"
-							,SBBSECHO_VER,PLATFORM_DESC,revision);
+						sprintf(str,"--- SBBSecho v%s-%s\r"
+							,SBBSECHO_VER,PLATFORM_DESC);
 						strcat((char *)fmsgbuf,str); }
 
 					sprintf(str," * Origin: %s (%s)\r"
@@ -4688,17 +4688,17 @@ for(f=0;f<g.gl_pathc && !kbhit();f++) {
 			attr|=ATTR_CRASH;
 		else if(hdr.attr&FIDO_HOLD)
 			attr|=ATTR_HOLD;
-		if(attr&ATTR_CRASH) ch='C';
-		else if(attr&ATTR_HOLD) ch='H';
-		else if(attr&ATTR_DIRECT) ch='D';
-		else ch='O';
+		if(attr&ATTR_CRASH) ch='c';
+		else if(attr&ATTR_HOLD) ch='h';
+		else if(attr&ATTR_DIRECT) ch='d';
+		else ch='o';
 		if(addr.zone==scfg.faddr[0].zone) /* Default zone, use default outbound */
 			strcpy(outbound,cfg.outbound);
 		else						 /* Inter-zone outbound is OUTBOUND.XXX */
 			sprintf(outbound,"%.*s.%03x/"
 				,(int)strlen(cfg.outbound)-1,cfg.outbound,addr.zone);
 		if(addr.point) {			/* Point destination is OUTBOUND.PNT */
-			sprintf(str,"%04X%04X.pnt"
+			sprintf(str,"%04x%04x.pnt"
 				,addr.net,addr.node);
 			strcat(outbound,str); }
 		if(outbound[strlen(outbound)-1]=='\\'
@@ -4707,9 +4707,9 @@ for(f=0;f<g.gl_pathc && !kbhit();f++) {
 		MKDIR(outbound);
 		backslash(outbound);
 		if(addr.point)
-			sprintf(packet,"%s%08X.%cUT",outbound,addr.point,ch);
+			sprintf(packet,"%s%08x.%cut",outbound,addr.point,ch);
 		else
-			sprintf(packet,"%s%04X%04X.%cUT",outbound,addr.net,addr.node,ch);
+			sprintf(packet,"%s%04x%04x.%cut",outbound,addr.net,addr.node,ch);
 		if(hdr.attr&FIDO_FILE)
 			if(write_flofile(hdr.subj,addr))
 				bail(1); }
