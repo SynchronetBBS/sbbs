@@ -329,9 +329,9 @@ int DLLCALL getuserdat(scfg_t* cfg, user_t *user)
 	getrec(userdat,U_QWK,8,str);
 	if(str[0]<' ') { 			   /* v1c, so set defaults */
 		if(user->rest&FLAG('Q'))
-			user->qwk=(QWK_RETCTLA);
+			user->qwk=QWK_DEFAULT|QWK_RETCTLA;
 		else
-			user->qwk=(QWK_FILES|QWK_ATTACH|QWK_EMAIL|QWK_DELMAIL); 
+			user->qwk=QWK_DEFAULT; 
 	}
 	else
 		user->qwk=ahtoul(str);
