@@ -165,7 +165,7 @@ ftp_get sock str qwk
 if_true
 	lprintf "QNET-FTP: Downloaded %s successfully" str
 else
-	lprintf "QNET-FTP: %s NOT downloaded (no new messages?)" str
+	lprintf "QNET-FTP: %s NOT downloaded socket_error=%d (no new messages?)" str _socket_error
 	end_if
 
 #################
