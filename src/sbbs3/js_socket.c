@@ -241,12 +241,16 @@ js_accept(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 static JSBool
 js_connect(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
+	int			result;
+	long		val;
 	ulong		ip_addr;
 	ushort		port;
 	JSString*	str;
 	private_t*	p;
 	SOCKADDR_IN	addr;
-
+	fd_set		socket_set;
+	struct		timeval tv = {0, 0};
+	
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
 		JS_ReportError(cx,getprivate_failure,WHERE);
 		return(JS_FALSE);
@@ -263,6 +267,11 @@ js_connect(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	port = js_port(cx,argv[1],p->type);
 
+	tv.tv_sec = 10;	/* default time-out */
+
+	if(argc>2)	/* time-out value specified */
+		JS_ValueToInt32(cx,argv[2],(int32*)&tv.tv_sec);
+
 	dbprintf(FALSE, p, "connecting to port %u at %s", port, JS_GetStringBytes(str));
 
 	memset(&addr,0,sizeof(addr));
@@ -270,7 +279,23 @@ js_connect(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	addr.sin_family = AF_INET;
 	addr.sin_port   = htons(port);
 
-	if(connect(p->sock, (struct sockaddr *)&addr, sizeof(addr))!=0) {
+	/* always set to nonblocking here */
+	val=1;
+	ioctlsocket(p->sock,FIONBIO,&val);	
+
+	result=connect(p->sock, (struct sockaddr *)&addr, sizeof(addr));
+	
+	if(result==SOCKET_ERROR && ERROR_VALUE==EWOULDBLOCK) {
+		FD_ZERO(&socket_set);
+		FD_SET(p->sock,&socket_set);
+		if(select(p->sock+1,NULL,&socket_set,NULL,&tv)==1)
+			result=0;	/* success */
+	}
+
+	/* Restore original setting here */
+	ioctlsocket(p->sock,FIONBIO,(ulong*)&(p->nonblocking));
+
+	if(result!=0) {
 		p->last_error=ERROR_VALUE;
 		dbprintf(TRUE, p, "connect failed with error %d",ERROR_VALUE);
 		*rval = JSVAL_FALSE;
@@ -1171,8 +1196,9 @@ static jsMethodSpec js_socket_functions[] = {
 	{"bind",		js_bind,		0,	JSTYPE_BOOLEAN,	JSDOCSTR("[port]")
 	,JSDOCSTR("bind socket to a port (number or service name)")
 	},
-	{"connect",     js_connect,     2,	JSTYPE_BOOLEAN,	JSDOCSTR("host, port")
-	,JSDOCSTR("connect to a remote port (number or service name) on the specified host (IP address or host name)")
+	{"connect",     js_connect,     2,	JSTYPE_BOOLEAN,	JSDOCSTR("host, port [,timeout")
+	,JSDOCSTR("connect to a remote port (number or service name) on the specified host (IP address or host name)"
+	", default <i>timeout</i> value is <i>10</i> (seconds)")
 	},
 	{"listen",		js_listen,		0,	JSTYPE_BOOLEAN,	""					
 	,JSDOCSTR("place socket in a state to listen for incoming connections (use before an accept)")
