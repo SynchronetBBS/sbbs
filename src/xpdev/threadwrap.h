@@ -70,7 +70,7 @@ extern "C" {
 	/* No Win32 implementation for sem_getvalue() */
 
 	/* POSIX mutexes */
-#if 1	/* Implemented as Win32 Critical Sections */
+#if 0	/* Implemented as Win32 Critical Sections */
 	typedef CRITICAL_SECTION pthread_mutex_t;
 	#define pthread_mutex_init(pmtx,v)	InitializeCriticalSection(pmtx)
 	#define pthread_mutex_lock(pmtx)	EnterCriticalSection(pmtx)
