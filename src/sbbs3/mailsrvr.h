@@ -55,7 +55,7 @@ typedef struct {
 	WORD	reserved_word1;
     DWORD   interface_addr;
     DWORD	options;			/* See MAIL_OPT definitions */
-    DWORD	user_id;			/* Unix uid to use for threads */
+    DWORD	reserved_dword8;
     DWORD	reserved_dword7;
     DWORD	reserved_dword6;
     DWORD	reserved_dword5;

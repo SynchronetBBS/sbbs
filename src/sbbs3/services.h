@@ -50,7 +50,7 @@ typedef struct {
     DWORD   interface_addr;
     DWORD	options;			/* See BBS_OPT definitions */
     DWORD	js_max_bytes;
-    DWORD	user_id;			/* Unix uid to use for threads */
+    DWORD	reserved_dword4;
     DWORD	reserved_dword3;
     DWORD	reserved_dword2;
     DWORD	reserved_dword1;
