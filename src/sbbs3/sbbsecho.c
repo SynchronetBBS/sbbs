@@ -698,12 +698,12 @@ void netmail_arealist(char type,faddr_t addr)
 								truncsp(str);
 								strcat(str,"\r\n");
 								p=str;
-								while(*p && *p<=SP) p++;
+								SKIP_WHITESPACE(p);
 								if(*p==';')     /* Ignore Comment Lines */
 									continue;
 								strcpy(temp,p);
 								p=temp;
-								while(*p && *p>SP) p++;
+								FIND_WHITESPACE(p);
 								*p=0;
 								if(!(misc&ELIST_ONLY)) {
 									for(y=0;y<cfg.areas;y++)
@@ -775,12 +775,12 @@ int check_elists(char *areatag,faddr_t addr)
 							truncsp(str);
 							strcat(str,"\r\n");
 							p=str;
-							while(*p && *p<=SP) p++;
+							SKIP_WHITESPACE(p);
 							if(*p==';')     /* Ignore Comment Lines */
 								continue;
 							strcpy(str,p);
 							p=str;
-							while(*p && *p>SP) p++;
+							FIND_WHITESPACE(p);
 							*p=0;
 							if(!stricmp(areatag,str)) {
 								match=1;
@@ -836,25 +836,25 @@ void alter_areas(area_t add_area,area_t del_area,faddr_t addr)
 		truncsp(fields);
 		strcat(fields,"\r\n");
 		p=fields;
-		while(*p && *p<=SP) p++;
+		SKIP_WHITESPACE(p);
 		if(*p==';') {    /* Skip Comment Lines */
 			fprintf(afileout,"%s",fields);
 			continue; }
-		sprintf(field1,"%-.81s",p);         /* Internal Code Field */
+		SAFECOPY(field1,p);         /* Internal Code Field */
 		tp=field1;
-		while(*tp && *tp>SP) tp++;
+		FIND_WHITESPACE(tp);
 		*tp=0;
-		while(*p && *p>SP) p++;
-		while(*p && *p<=SP) p++;
-		sprintf(field2,"%-.81s",p);         /* Areatag Field */
+		FIND_WHITESPACE(p);
+		SKIP_WHITESPACE(p);
+		SAFECOPY(field2,p);         /* Areatag Field */
 		tp=field2;
-		while(*tp && *tp>SP) tp++;
+		FIND_WHITESPACE(tp);
 		*tp=0;
-		while(*p && *p>SP) p++;
-		while(*p && *p<=SP) p++;
+		FIND_WHITESPACE(p);
+		SKIP_WHITESPACE(p);
 		if((tp=strchr(p,';'))!=NULL) {
-			sprintf(field3,"%-.81s",p);     /* Comment Field (if any) */
-			while(*tp && *tp>SP) tp++;
+			SAFECOPY(field3,p);     /* Comment Field (if any) */
+			FIND_WHITESPACE(tp);
 			*tp=0; }
 		else
 			field3[0]=0;
@@ -994,12 +994,12 @@ void alter_areas(area_t add_area,area_t del_area,faddr_t addr)
 								truncsp(str);
 								strcat(str,"\r\n");
 								p=str;
-								while(*p && *p<=SP) p++;
+								SKIP_WHITESPACE(p);
 								if(*p==';')     /* Ignore Comment Lines */
 									continue;
 								strcpy(str,p);
 								p=str;
-								while(*p && *p>SP) p++;
+								FIND_WHITESPACE(p);
 								*p=0;
 								if(!stricmp(add_area.tag[0],"+ALL")) {
 									sprintf(fields,"%.1024s",str);
@@ -1092,7 +1092,7 @@ void alter_config(faddr_t addr, char *old, char *new, int option)
 			break;
 		truncsp(str);
 		p=str;
-		while(*p && *p<=SP) p++;
+		SKIP_WHITESPACE(p);
 		if(*p==';') {
 			fprintf(outfile,"%s\r\n",str);
 			continue; }
@@ -1101,15 +1101,15 @@ void alter_config(faddr_t addr, char *old, char *new, int option)
 		if(tp)
 			*tp=0;								/* Chop off at space */
 		strupr(tmp);							/* Convert code to uppercase */
-		while(*p>SP) p++;						/* Skip code */
-		while(*p && *p<=SP) p++;                /* Skip white space */
+		FIND_WHITESPACE(p);						/* Skip code */
+		SKIP_WHITESPACE(p);						/* Skip white space */
 
 		if(option==0 && !strcmp(tmp,"USEPACKER")) {     /* Change Compression */
 			if(!*p)
 				continue;
 			strcpy(tmp2,p);
 			p=tmp2;
-			while(*p && *p>SP) p++;
+			FIND_WHITESPACE(p);
 			*p=0;
 			p++;
 			if(!stricmp(new,tmp2)) {   /* Add to new definition */
@@ -1136,10 +1136,10 @@ void alter_config(faddr_t addr, char *old, char *new, int option)
 				continue;
 			taddr=atofaddr(p);
 			if(!memcmp(&cfg.nodecfg[i].faddr,&taddr,sizeof(faddr_t))) {
-				while(*p && *p>SP) p++; 	/* Skip over address */
-				while(*p && *p<=SP) p++;	/* Skip over whitespace */
-				while(*p && *p>SP) p++; 	/* Skip over password */
-				while(*p && *p<=SP) p++;	/* Skip over whitespace */
+				FIND_WHITESPACE(p); 	/* Skip over address */
+				SKIP_WHITESPACE(p);	/* Skip over whitespace */
+				FIND_WHITESPACE(p); 	/* Skip over password */
+				SKIP_WHITESPACE(p);	/* Skip over whitespace */
 				fprintf(outfile,"%-10s %s %s %s\r\n",tmp
 					,faddrtoa(&cfg.nodecfg[i].faddr,NULL),new,p);
 				continue; } }
@@ -1235,8 +1235,8 @@ void command(char *instr,faddr_t addr)
 	}
 
 	if((p=strstr(instr,"COMPRESSION"))!=NULL) {
-		while(*p && *p>SP) p++;
-		while(*p && *p<=SP) p++;
+		FIND_WHITESPACE(p);
+		SKIP_WHITESPACE(p);
 		for(i=0;i<cfg.arcdefs;i++)
 			if(!stricmp(p,cfg.arcdef[i].name))
 				break;
@@ -1265,11 +1265,11 @@ void command(char *instr,faddr_t addr)
 	}
 
 	if((p=strstr(instr,"PASSWORD"))!=NULL) {
-		while(*p && *p>SP) p++;
-		while(*p && *p<=SP) p++;
+		FIND_WHITESPACE(p);
+		SKIP_WHITESPACE(p);
 		sprintf(temp,"%-.25s",p);
 		p=temp;
-		while(*p && *p>SP) p++;
+		FIND_WHITESPACE(p);
 		*p=0;
 		if(node>=cfg.nodecfgs)		   /* Should never happen */
 			return;
@@ -1380,8 +1380,7 @@ char *process_areafix(faddr_t addr,char HUGE16 *inbuf,char *password)
 	p=(char *)inbuf;
 
 	while(*p==1) {				/* Skip kludge lines 11/05/95 */
-		while(*p && *p!=CR)
-			p++;				/* Skip meat */
+		FIND_CHAR(p,'\n');
 		if(*p)
 			p++; }				/* Skip CR */
 
@@ -4002,7 +4001,8 @@ int main(int argc, char **argv)
 {
 	FILE*	fidomsg;
 	char	packet[MAX_PATH+1];
-	char	ch,str[1025],fname[256],path[512],sub_code[9]
+	char	ch,str[1025],fname[256],path[512]
+			,sub_code[LEN_EXTCODE+1]
 			,*p,*tp
 			,areatagstr[128],outbound[128]
 			,password[16];
@@ -4186,7 +4186,7 @@ int main(int argc, char **argv)
 				|| argv[i][1]==':' || strchr(argv[i],'.'))
 				sprintf(cfg.cfgfile,"%.100s",argv[i]);
 			else
-				sprintf(sub_code,"%.8s",argv[i]); }  }
+				sprintf(sub_code,"%.*s",LEN_EXTCODE,argv[i]); }  }
 
 	if(!(misc&(IMPORT_NETMAIL|IMPORT_ECHOMAIL)))
 		misc&=~IMPORT_PACKETS;
@@ -4246,7 +4246,7 @@ int main(int argc, char **argv)
 			break;
 		truncsp(str);
 		p=str;
-		while(*p && *p<=SP) p++;	/* Find first printable char */
+		SKIP_WHITESPACE(p);	/* Find first printable char */
 		if(*p==';' || !*p)          /* Ignore blank lines or start with ; */
 			continue;
 		if((cfg.area=(areasbbs_t *)REALLOC(cfg.area,sizeof(areasbbs_t)*
@@ -4257,9 +4257,9 @@ int main(int argc, char **argv)
 
 		cfg.area[cfg.areas].sub=INVALID_SUB;	/* Default to passthru */
 
-		sprintf(tmp,"%-.8s",p);
+		sprintf(tmp,"%-.*s",LEN_EXTCODE,p);
 		tp=tmp;
-		while(*tp>SP) tp++;
+		FIND_WHITESPACE(tp);
 		*tp=0;
 		for(i=0;i<scfg.total_subs;i++)
 			if(!stricmp(tmp,scfg.sub[i]->code))
@@ -4270,13 +4270,10 @@ int main(int argc, char **argv)
 			printf("\n%s: Unrecongized internal code, assumed passthru",tmp);
 			logprintf("%s: Unrecognized internal code, assumed passthru",tmp); }
 
-		while(*p>SP) p++;				/* Skip code */
-		while(*p && *p<=SP) p++;		/* Skip white space */
+		FIND_WHITESPACE(p);				/* Skip code */
+		SKIP_WHITESPACE(p);				/* Skip white space */
 		sprintf(tmp,"%-.50s",p);        /* Area tag */
-		if((tp=strchr(tmp,TAB))!=NULL)	/* Chop off any TABs */
-			*tp=0;
-		if((tp=strchr(tmp,SP))!=NULL)	/* Chop off any spaces */
-			*tp=0;
+		truncstr(tmp,"\t ");
 		strupr(tmp);
 		if(tmp[0]=='*')         /* UNKNOWN-ECHO area */
 			cfg.badecho=cfg.areas;
@@ -4288,8 +4285,8 @@ int main(int argc, char **argv)
 		strupr(tmp);
 		cfg.area[cfg.areas].tag=crc32(tmp,0);
 
-		while(*p>SP) p++;				/* Skip tag */
-		while(*p && *p<=SP) p++;		/* Skip white space */
+		FIND_WHITESPACE(p);		/* Skip tag */
+		SKIP_WHITESPACE(p);		/* Skip white space */
 
 		while(*p && *p!=';') {
 			if((cfg.area[cfg.areas].uplink=(faddr_t *)
@@ -4299,8 +4296,8 @@ int main(int argc, char **argv)
 					,cfg.areas+1);
 				bail(1); }
 			cfg.area[cfg.areas].uplink[cfg.area[cfg.areas].uplinks]=atofaddr(p);
-			while(*p>SP) p++;			/* Skip address */
-			while(*p && *p<=SP) p++;	/* Skip white space */
+			FIND_WHITESPACE(p);	/* Skip address */
+			SKIP_WHITESPACE(p);	/* Skip white space */
 			cfg.area[cfg.areas].uplinks++; }
 
 		if(cfg.area[cfg.areas].sub!=INVALID_SUB || cfg.area[cfg.areas].uplinks)
@@ -4492,7 +4489,7 @@ int main(int argc, char **argv)
 
 			if(misc&SECURE) {
 				k=matchnode(pkt_faddr,1);
-				sprintf(password,"%.8s",pkthdr.password);
+				sprintf(password,"%.*s",FIDO_PASS_LEN,pkthdr.password);
 				if(k<cfg.nodecfgs && cfg.nodecfg[k].pktpwd[0] &&
 					stricmp(password,cfg.nodecfg[k].pktpwd)) {
 					sprintf(str,"Packet %s from %s - "
@@ -4598,7 +4595,7 @@ int main(int argc, char **argv)
 				}
 
 				p+=5;								/* Skip "AREA:" */
-				while(*p && *p<=SP) p++;			/* Skip any white space */
+				SKIP_WHITESPACE(p);			/* Skip any white space */
 				printf("%21s: ",p);                 /* Show areaname: */
 				SAFECOPY(areatagstr,p);
 				strupr(p);
