@@ -144,6 +144,7 @@ $(SBBSECHO): sbbsecho.c rechocfg.c smbtxt.c crc32.c lzh.c $(SMBLIB) \
 	$(LIBODIR)\str_util.obj \
 	$(LIBODIR)\date_str.obj \
 	userdat.c \
+	dat_rec.c \
 	genwrap.c \
 	dirwrap.c \
 	$(LIBODIR)\load_cfg.obj \
@@ -166,7 +167,7 @@ $(ADDFILES): addfiles.c \
 	$(LIBODIR)\nopen.obj \
 	$(LIBODIR)\str_util.obj \
 	$(LIBODIR)\date_str.obj \
-	userdat.c \
+	dat_rec.c \
 	filedat.c \
 	genwrap.c \
 	dirwrap.c \

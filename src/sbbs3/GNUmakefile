@@ -224,6 +224,7 @@ $(SBBSECHO): \
 	$(EXEODIR)/scfglib2.o \
 	$(EXEODIR)/nopen.o \
 	$(EXEODIR)/str_util.o \
+	$(EXEODIR)/dat_rec.o \
 	$(EXEODIR)/userdat.o \
 	$(EXEODIR)/rechocfg.o \
 	$(EXEODIR)/conwrap.o \
@@ -257,7 +258,7 @@ $(ADDFILES): \
 	$(EXEODIR)/scfglib2.o \
 	$(EXEODIR)/nopen.o \
 	$(EXEODIR)/str_util.o \
-	$(EXEODIR)/userdat.o \
+	$(EXEODIR)/dat_rec.o \
 	$(EXEODIR)/filedat.o \
 	$(EXEODIR)/filewrap.o \
 	$(EXEODIR)/dirwrap.o \
