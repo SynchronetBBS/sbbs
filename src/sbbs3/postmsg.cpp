@@ -45,6 +45,7 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 {
 	char	str[256],touser[256],title[LEN_TITLE+1],buf[SDT_BLOCK_LEN]
 			,top[256];
+	char	msg_id[256];
 	ushort	xlat,msgattr;
 	int 	i,j,x,file,storage;
 	ulong	l,length,offset,crc=0xffffffff;
@@ -218,7 +219,6 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 		storage=SMB_HYPERALLOC; }
 	else {
 		if((i=smb_open_da(&smb))!=0) {
-			smb_unlocksmbhdr(&smb);
 			smb_close(&smb);
 			smb_stack(&smb,SMB_STACK_POP);
 			errormsg(WHERE,ERR_OPEN,smb.file,i,smb.last_error);
@@ -234,7 +234,6 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 	if((file=open(str,O_RDONLY|O_BINARY))==-1
 		|| (instream=fdopen(file,"rb"))==NULL) {
 		smb_freemsgdat(&smb,offset,length,1);
-		smb_unlocksmbhdr(&smb);
 		smb_close(&smb);
 		smb_stack(&smb,SMB_STACK_POP);
 		errormsg(WHERE,ERR_OPEN,str,O_RDONLY|O_BINARY);
@@ -263,10 +262,35 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 
 	memset(&msg,0,sizeof(smbmsg_t));
 	msg.hdr.version=smb_ver();
-	msg.hdr.attr=msg.idx.attr=msgattr;
+	msg.hdr.attr=msgattr;
 	msg.hdr.when_written.time=msg.hdr.when_imported.time=time(NULL);
 	msg.hdr.when_written.zone=msg.hdr.when_imported.zone=cfg.sys_timezone;
+
+	/* using the idx records here is not technically necessary, just for convenience */
+	msg.idx.attr=msg.hdr.attr;
+	msg.idx.time=msg.hdr.when_written.time;
+
+	/* Generate default (RFC822) message-id (always) */
+	sprintf(msg_id,"<%08lX.%lu.%s@%s>"
+		,msg.idx.time
+		,smb.status.last_msg+1	/* this *will* be the new message number */
+		,cfg.sub[subnum]->code,cfg.sys_inetaddr);
+	smb_hfield(&msg,RFC822MSGID,strlen(msg_id),msg_id);
+
+	/* Generate FTN MSGID */
+	if(cfg.sub[subnum]->misc&SUB_FIDO) {
+		sprintf(msg_id,"<%lu.%s@%s> %08lX"
+			,smb.status.last_msg+1	/* this *will* be the new message number */
+			,cfg.sub[subnum]->code,faddrtoa(&cfg.sub[subnum]->faddr,NULL)
+			,msg.idx.time
+			);
+		smb_hfield(&msg,FIDOMSGID,strlen(msg_id),msg_id);
+	}
 	if(remsg) {
+		if(remsg->ftn_msgid!=NULL)
+			smb_hfield(&msg,FIDOREPLYID,strlen(remsg->ftn_msgid),remsg->ftn_msgid);
+		if(remsg->id!=NULL)
+			smb_hfield(&msg,RFC822REPLYID,strlen(remsg->id),remsg->id);
 		msg.hdr.thread_orig=remsg->hdr.number;
 		if(!remsg->hdr.thread_first) {
 			remsg->hdr.thread_first=smb.status.last_msg+1;
@@ -300,7 +324,6 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 		i=smb_addcrc(&smb,crc);
 		if(i) {
 			smb_freemsgdat(&smb,offset,length,1);
-			smb_unlocksmbhdr(&smb);
 			smb_close(&smb);
 			smb_stack(&smb,SMB_STACK_POP);
 			attr(cfg.color[clr_err]);
@@ -328,8 +351,7 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 
 	smb_dfield(&msg,TEXT_BODY,length);
 
-	smb_unlocksmbhdr(&smb);
-	i=smb_addmsghdr(&smb,&msg,storage);
+	i=smb_addmsghdr(&smb,&msg,storage);	// calls smb_unlocksmbhdr() 
 	smb_close(&smb);
 	smb_stack(&smb,SMB_STACK_POP);
 
@@ -459,8 +481,7 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, char* msg
 	}
 	smb_dfield(msg,TEXT_BODY,length);
 
-	smb_unlocksmbhdr(smb);
-	if((i=smb_addmsghdr(smb,msg,storage))!=0) 
+	if((i=smb_addmsghdr(smb,msg,storage))!=0) // calls smb_unlocksmbhdr() 
 		smb_freemsgdat(smb,offset,length,1);
 
 	return(i);
