@@ -75,33 +75,36 @@ static const char* prompt =
 static const char* usage  = "usage: %s [[option] [...]]\n"
 							"\n"
 							"Telnet server options:\n\n"
-							"\ttd         enable Telnet option debug output\n"
 							"\ttf<node>   set first Telnet node number\n"
 							"\ttl<node>   set last Telnet node number\n"
 							"\ttp<port>   set Telnet server port\n"
 							"\trp<port>   set RLogin server port (and enable RLogin server)\n"
 							"\tr2         use second RLogin name in BSD RLogin\n"
+							"\tal         enable auto-logon via IP address\n"
+							"\ttd         enable Telnet option debug output\n"
 							"\tnq         disable QWK events\n"
+							"\tsa         sysop available for chat\n"
 							"\n"
 							"FTP server options:\n"
 							"\n"
-							"\tf-         disable FTP server\n"
 							"\tfp<port>   set FTP server port\n"
+							"\tf-         disable FTP server\n"
 							"\n"
 							"Mail server options:\n"
 							"\n"
-							"\tm-         disable Mail server\n"
-							"\tp-         disable POP3 server\n"
-							"\ts-         disable SendMail thread\n"
 							"\tsp<port>   set SMTP server port\n"
 							"\tsr<port>   set SMTP relay port\n"
 							"\tpp<port>   set POP3 server port\n"
+							"\tm-         disable Mail server\n"
+							"\tp-         disable POP3 server\n"
+							"\ts-         disable SendMail thread\n"
 							"\n"
 							"Global options:\n"
 							"\n"
 #ifdef __unix__
 							"\tun<user>   set username for BBS to run as\n"
 #endif
+							"\tgi         get user identity (using IDENT protocol)\n"
 							"\tnh         disable hostname lookups\n"
 							"\tnj         disable JavaScript support\n"
 							"\tns         disable Services (no services module)\n"
@@ -556,6 +559,16 @@ int main(int argc, char** argv)
 			return(0);
 		}
 		switch(toupper(*(arg++))) {
+			case 'A':
+				switch(toupper(*(arg++))) {
+					case 'L': /* Auto-logon via IP */
+						bbs_startup.options|=BBS_OPT_AUTO_LOGON;
+						break;
+					default:
+						printf(usage,argv[0]);
+						return(0);
+				}
+				break;
 			case 'T':	/* Telnet settings */
 				switch(toupper(*(arg++))) {
 					case 'D': /* debug output */
@@ -602,6 +615,19 @@ int main(int argc, char** argv)
 						return(0);
 				}
 				break;
+			case 'G':	/* GET */
+				switch(toupper(*(arg++))) {
+					case 'I': /* Identity */
+						bbs_startup.options|=BBS_OPT_GET_IDENT;
+						ftp_startup.options|=BBS_OPT_GET_IDENT;
+						mail_startup.options|=BBS_OPT_GET_IDENT;
+						services_startup.options|=BBS_OPT_GET_IDENT;
+						break;
+					default:
+						printf(usage,argv[0]);
+						return(0);
+				}
+				break;
 			case 'S':	/* SMTP/SendMail */
 				switch(toupper(*(arg++))) {
 					case '-':
@@ -612,6 +638,9 @@ int main(int argc, char** argv)
 						break;
 					case 'R':
 					    mail_startup.relay_port=atoi(arg);
+						break;
+					case 'A': /* Sysop available for chat */
+						bbs_startup.options|=BBS_OPT_SYSOP_AVAILABLE;
 						break;
 					default:
 						printf(usage,argv[0]);
