@@ -588,7 +588,7 @@ function combine_parts(list)
 
 		var pi;
 		for(pi=1;pi<=obj.total;pi++) {
-			printf("Processing part %u of %u\r\n",pi,obj.total);
+			printf("Processing part %u of %u: ",pi,obj.total);
 			var prefix=format("part%u.",pi);
 			sub_code=obj[prefix + "sub"];
 			var msgbase=new MsgBase(sub_code);
@@ -614,9 +614,19 @@ function combine_parts(list)
 
 			first_line=obj[prefix + "first_line"];
 			last_line=obj[prefix + "last_line"];
-			for(var l=first_line;l<=last_line;l++)
-				file.write(lines[l]);
+			end=obj[prefix + "end"];
+			for(var l=first_line;l<=last_line;l++) {
+				if(!file.write(lines[l]))
+					break;
+			}
+			printf("%u lines\r\n",l-first_line);
 
+			file.flush();
+			if(end!=undefined && file.length != end) {
+				printf("!Length after decode (%lu) not as expected (%lu)\r\n"
+					,file.length, end);
+				break;
+			}
 			if(!msgbase.remove_msg(ptr) && remove_msg)
 				printf("!FAILED to remove message number %ld\r\n",ptr);
 
