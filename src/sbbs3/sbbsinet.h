@@ -41,9 +41,14 @@
 /***************/
 /* OS-specific */
 /***************/
-#if defined _WIN32	|| defined __OS2__	/* WinSock */
+#if defined _WIN32	|| defined __OS2__	/* Use WinSock */
 
 #include <winsock.h>	/* socket/bind/etc. */
+
+/* Let's agree on a standard WinSock symbol here, people */
+#ifndef _WINSOCKAPI_
+#define _WINSOCKAPI_	
+#endif
 
 #elif defined __unix__	/* Unix-variant */
 
@@ -64,8 +69,11 @@
 
 #undef  EINTR
 #define EINTR			WSAEINTR
+#undef  ENOTSOCK
 #define ENOTSOCK		WSAENOTSOCK
+#undef  EWOULDBLOCK
 #define EWOULDBLOCK		WSAEWOULDBLOCK
+#undef  ECONNRESET
 #define ECONNRESET		WSAECONNRESET
 
 #define s_addr			S_un.S_addr
