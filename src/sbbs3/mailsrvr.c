@@ -1369,6 +1369,10 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 	char	line[64];
 	char	file[MAX_PATH+1];
 	char*	warning;
+	SOCKET*		sock;
+
+	if((sock=(SOCKET*)JS_GetContextPrivate(cx))==NULL)
+		return;
 
 	if(report==NULL) {
 		lprintf(LOG_ERR,"!JavaScript: %s", message);
@@ -1393,9 +1397,45 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 	} else
 		warning="";
 
-	lprintf(LOG_ERR,"!JavaScript %s%s%s: %s",warning,file,line,message);
+	lprintf(LOG_ERR,"%04d !JavaScript %s%s%s: %s"
+		,*sock, warning ,file, line, message);
 }
 
+static JSBool
+js_log(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+    uintN		i=0;
+	int32		level=LOG_INFO;
+    JSString*	str=NULL;
+	SOCKET*		sock;
+
+	if((sock=(SOCKET*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	if(JSVAL_IS_NUMBER(argv[i]))
+		JS_ValueToInt32(cx,argv[i++],&level);
+
+	for(; i<argc; i++) {
+		if((str=JS_ValueToString(cx, argv[i]))==NULL)
+			return(JS_FALSE);
+		lprintf(level,"%04d JavaScript: %s",*sock,JS_GetStringBytes(str));
+	}
+
+	if(str==NULL)
+		*rval = JSVAL_VOID;
+	else
+		*rval = STRING_TO_JSVAL(str);
+
+    return(JS_TRUE);
+}
+
+static JSFunctionSpec js_global_functions[] = {
+	{"write",			js_log,				0},
+	{"writeln",			js_log,				0},
+	{"print",			js_log,				0},
+	{"log",				js_log,				0},
+    {0}
+};
 
 static BOOL
 js_mailproc(SOCKET sock, client_t* client, user_t* user
@@ -1432,8 +1472,13 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user
 
 		JS_SetErrorReporter(js_cx, js_ErrorReporter);
 
+		JS_SetContextPrivate(js_cx, &sock);
+
 		/* Global Object */
-		if((js_glob=js_CreateGlobalObject(js_cx, &scfg, NULL /*js_global_functions*/))==NULL)
+		if((js_glob=js_CreateGlobalObject(js_cx, &scfg, NULL))==NULL)
+			break;
+
+		if (!JS_DefineFunctions(js_cx, js_glob, js_global_functions))
 			break;
 
 		/* Internal JS Object */
