@@ -264,7 +264,7 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 				wrslot,					// mailslot handle 
  				&status->outbuf_size,	// address of maximum message size 
 				&status->outbuf_full,	// address of size of next message 
-				&count,					// address of number of messages 
+				NULL,					// address of number of messages 
  				NULL					// address of read time-out 
 				)) {
 				status->outbuf_full=0;
@@ -301,7 +301,7 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 				rdslot,		// mailslot handle 
  				NULL,		// address of maximum message size 
 				&retval,	// address of size of next message 
-				&count,		// address of number of messages 
+				NULL,		// address of number of messages 
  				NULL		// address of read time-out 
 				))
 				retval=0;
