@@ -4,8 +4,6 @@
 # Makefile for Synchronet BBS Configuration Utility (SCFG)				#
 # For use with Borland C++ Builder 5+ or Borland C++ 5.5 for Win32      #
 # @format.tab-size 4													#
-#																		#
-# usage: make -f makefile.bor											#
 #########################################################################
 
 # $Id$
