@@ -637,9 +637,11 @@ int ciolib_cputs(char *str)
 {
 	int		pos;
 	int		ret=0;
+	int		olddmc;
 
 	CIOLIB_INIT();
-	
+
+	olddmc=dont_move_cursor;	
 	dont_move_cursor=1;
 	for(pos=0;str[pos];pos++)
 	{
@@ -648,7 +650,7 @@ int ciolib_cputs(char *str)
 			ciolib_putch('\r');
 		ciolib_putch(str[pos]);
 	}
-	dont_move_cursor=0;
+	dont_move_cursor=olddmc;
 	ciolib_gotoxy(ciolib_wherex(),ciolib_wherey());
 	return(ret);
 }
