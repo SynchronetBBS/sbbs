@@ -6,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -1945,8 +1945,36 @@ void __fastcall TMainForm::SaveSettings(TObject* Sender)
 //---------------------------------------------------------------------------
 void __fastcall TMainForm::ImportSettings(TObject* Sender)
 {
-    // Read Registry keys
-	TMemIniFile* IniFile=new TMemIniFile("sbbs.ini");
+    OpenDialog->Filter="Settings files (*.ini)|*.ini|All files|*.*";
+    OpenDialog->FileName=CtrlDirectory+"sbbs.ini";
+    if(!OpenDialog->Execute())
+    	return;
+
+    FILE* fp;
+
+    if((fp=fopen(OpenDialog->FileName.c_str(),"r"))==NULL) {
+    	char str[MAX_PATH*2];
+        char err[MAX_PATH];
+        SAFECOPY(err,truncsp(strerror(errno)));
+    	sprintf(str,"ERROR (%s) opening %s"
+        	,err
+            ,OpenDialog->FileName.c_str());
+        Application->MessageBox(str,"Import Error",MB_OK|MB_ICONEXCLAMATION);
+    	return;
+    }
+    
+	StatusBar->Panels->Items[4]->Text="Importing Settings...";
+
+    sbbs_read_ini(fp
+    	,(BOOL*)&SysAutoStart   		,&bbs_startup
+    	,(BOOL*)&FtpAutoStart 			,&ftp_startup
+    	,(BOOL*)&WebAutoStart 			,&web_startup
+    	,(BOOL*)&MailAutoStart 	    	,&mail_startup
+    	,(BOOL*)&ServicesAutoStart     	,&services_startup
+        );
+    fclose(fp);
+
+	TMemIniFile* IniFile=new TMemIniFile(OpenDialog->FileName);
 
     const char* section = "sbbsctrl";
 
@@ -2106,32 +2134,25 @@ void __fastcall TMainForm::ImportSettings(TObject* Sender)
 
     delete IniFile;
 
-    FILE* fp;
-
-    if((fp=fopen("sbbs.ini","r"))==NULL)
-    	return;
-
-    sbbs_read_ini(fp
-    	,(BOOL*)&SysAutoStart   		,&bbs_startup
-    	,(BOOL*)&FtpAutoStart 			,&ftp_startup
-    	,(BOOL*)&WebAutoStart 			,&web_startup
-    	,(BOOL*)&MailAutoStart 	    	,&mail_startup
-    	,(BOOL*)&ServicesAutoStart     	,&services_startup
-        );
-    fclose(fp);
+    Application->MessageBox(AnsiString("Successfully imported settings from "
+    	+ OpenDialog->FileName).c_str(),"Successful Import",MB_OK);
 }
 //---------------------------------------------------------------------------
 void __fastcall TMainForm::ExportSettings(TObject* Sender)
 {
 	char str[128];
 
+    SaveDialog->Filter="Settings files (*.ini)|*.ini|All files|*.*";
+    SaveDialog->FileName=CtrlDirectory+"sbbs.ini";
+    if(!SaveDialog->Execute())
+    	return;
+
+	TMemIniFile* IniFile=new TMemIniFile(SaveDialog->FileName);
+
 	StatusBar->Panels->Items[4]->Text="Exporting Settings...";
 
     NodeForm->Timer->Interval=NodeDisplayInterval*1000;
     ClientForm->Timer->Interval=ClientDisplayInterval*1000;
-
-    // Write Registry keys
-	TMemIniFile* IniFile=new TMemIniFile("sbbs.ini");
 
     const char* section = "SBBSCTRL::Settings";
 
@@ -2360,6 +2381,8 @@ void __fastcall TMainForm::ExportSettings(TObject* Sender)
 
     delete IniFile;
 
+    Application->MessageBox(AnsiString("Successfully exported settings to "
+    	+ SaveDialog->FileName).c_str(),"Successful Export",MB_OK);
 }
 //---------------------------------------------------------------------------
 

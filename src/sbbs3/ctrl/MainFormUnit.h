@@ -59,6 +59,7 @@
 #include <vcl\Registry.hpp>	/* TRegistry */
 #include "trayicon.h"
 #include "Trayicon.h"
+#include <Dialogs.hpp>
 //---------------------------------------------------------------------------
 #define APP_TITLE "Synchronet Control Panel"
 #define REG_KEY "\\Software\\Swindell\\"APP_TITLE"\\"
@@ -260,8 +261,10 @@ __published:	// IDE-managed Components
 	TMenuItem *DNSBLExemptions;
 	TMenuItem *BBSEditIPFilterSilent;
 	TMenuItem *ExternalMailProc;
+	TOpenDialog *OpenDialog;
+	TSaveDialog *SaveDialog;
 	TMenuItem *BBSEditNewUserEmail;
-    void __fastcall FileExitMenuItemClick(TObject *Sender);
+	void __fastcall FileExitMenuItemClick(TObject *Sender);
 	void __fastcall ViewToolbarMenuItemClick(TObject *Sender);
 	void __fastcall FormClose(TObject *Sender, TCloseAction &Action);
 	void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
