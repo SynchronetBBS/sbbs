@@ -472,7 +472,7 @@ static char* sys_prop_desc[] = {
 	,"private host name that uniquely identifies this system on the local network"
 
 	/* Manually created (non-tabled) properties */
-	,"public host name that uniquely identifies this system on the Internet (usually the same as <i>system.inetaddr</i>)"
+	,"public host name that uniquely identifies this system on the Internet (usually the same as <i>system.inet_addr</i>)"
 	,"Synchronet version number (e.g. '3.10')"
 	,"Synchronet revision letter (e.g. 'k')"
 	,"Synchronet alpha/beta designation (e.g. ' beta')"
