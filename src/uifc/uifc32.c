@@ -403,7 +403,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 		}
 	}
 	if(mode&WIN_L2R)
-		left=(s_right-s_left+1)/2-(width/2)+(s_left);
+		left=(api->scrn_width-width)/2-s_left+1;
 	else if(mode&WIN_RHT)
 		left=api->scrn_width-(width+4+left);
 	if(mode&WIN_T2B)
@@ -1143,7 +1143,7 @@ int uinput(int mode, int left, int top, char *prompt, char *str,
 	if(mode&WIN_T2B)
 		top=(api->scrn_len/2)-(height/2)-2;
 	if(mode&WIN_L2R)
-		left=(s_right-s_left+1)/2-(width/2)+(s_left);
+		left=(api->scrn_width-width)/2-SCRN_LEFT+1;
 	if(mode&WIN_SAV)
 		gettext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT+left+width+1
 			,SCRN_TOP+top+height,save_buf);
