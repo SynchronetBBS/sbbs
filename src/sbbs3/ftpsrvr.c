@@ -1515,6 +1515,8 @@ static void ctrl_thread(void* arg)
 			/* Adjust User Total Logons/Logons Today */
 			adjustuserrec(&scfg,user.number,U_LOGONS,5,1);
 			putuserrec(&scfg,user.number,U_LTODAY,5,ultoa(user.ltoday+1,str,10));
+			putuserrec(&scfg,user.number,U_MODEM,LEN_MODEM,"FTP");
+
 			continue;
 		}
 
