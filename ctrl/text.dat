@@ -42,7 +42,7 @@
 "nm\r\nForwarded by h%snm on "\                    040 ForwardedFrom
 	"h%sn\r\n"
 "nm\r\nMail forwarded to h%s nm#%d.n\r\n"         041 Forwarded
-"bhAuto message by: c%sn\r\n\r\n"                   042 AutoMsgBy
+"bhAuto message by: c%sb on %sn\r\n\r\n"           042 AutoMsgBy
 "\r\nAuto Message - ~Read, ~Write, or ~Quit: "          043 AutoMsg
 "n\r\nYou can't write to the auto-message.\r\n"        044 R_AutoMsg
 "n\r\nYou have no mail.\r\n"                           045 NoMailWaiting
@@ -398,7 +398,7 @@
 "_yhEnter your sex (M/F): w"                        342 EnterYourSex
 "_yhEnter your street address: w"                   343 EnterYourAddress
 "_yhEnter your voice phone number: w"               344 EnterYourPhoneNumber
-"_yhEnter your birthday (MM/DD/YY): w"              345 EnterYourBirthday
+"_yhEnter your birthday (%s): w"                    345 EnterYourBirthday
 "_yhEnter your city, state: w"                      346 EnterYourCityState
 "_yhEnter your zip (or postal) code: w"             347 EnterYourZipCode
 "_yhEnter a description of your computer: w"        348 EnterYourComputer
