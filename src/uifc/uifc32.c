@@ -1378,6 +1378,8 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							return((*cur)|MSK_DEL); 
 						}
 						break;
+					default:
+						return(-2-i);
 				} 
 			}
 			else {
@@ -1518,16 +1520,15 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 								api->savdepth--; 
 							}
 							return(-1);
-				} 
-			} 
+						default:
+							return(-2-i);
+			}
 		}
 		else
 			mswait(1);
 		if(mode&WIN_DYN) {
 			save_menu_cur=*cur;
 			save_menu_bar=*bar;
-		}
-		if(mode&WIN_DYN || mode&WIN_EXTKEYS) {
 			return(-2-i);
 	}
 }
