@@ -55,10 +55,10 @@ if(template.hdr != null)  {
 	template.title="Message: "+template.hdr.subject;
 }
 
-var tmp=find_np_message(template.hdr.offset,true);
+var tmp=find_np_message(get_msg_offset(template.hdr.number),true);
 if(tmp!=undefined)
 	template.nextlink='<a href="msg.ssjs?msg_sub='+sub+'&amp;message='+tmp+'">'+next_msg_html+'</a>';
-var tmp=find_np_message(template.hdr.offset,false);
+tmp=find_np_message(get_msg_offset(template.hdr.number),false);
 if(tmp!=undefined)
 	template.prevlink='<a href="msg.ssjs?msg_sub='+sub+'&amp;message='+tmp+'">'+prev_msg_html+'</a>';
 
