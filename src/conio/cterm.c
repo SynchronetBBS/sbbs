@@ -22,6 +22,8 @@ struct terminal {
 	char *scrollback;
 	int backpos;
 	int backlines;
+	int	xpos;
+	int ypos;
 };
 
 static struct terminal term;
@@ -97,14 +99,7 @@ void clear2eol(void)
 	char *buf;
 	int i,j;
 
-	buf=(char *)malloc((term.width-wherex()+1)*2);
-	j=0;
-	for(i=wherex();i<=term.width;i++) {
-		buf[j++]=' ';
-		buf[j++]=term.attr;
-	}
-	puttext(term.x+wherex(),term.y+wherey(),term.x+term.width,term.y+wherey(),buf);
-	free(buf);
+	clreol();
 }
 
 void clearscreen(char attr)
@@ -112,24 +107,15 @@ void clearscreen(char attr)
 	char *buf;
 	int x,y,j;
 
-	term.backpos+=term.height;
 	if(term.scrollback!=NULL) {
+		term.backpos+=term.height;
 		if(term.backpos>term.backlines) {
 			memmove(term.scrollback,term.scrollback+term.width*2*(term.backpos-term.backlines),term.width*2*(term.backlines-(term.backpos-term.backlines)));
 			term.backpos=term.backlines;
 		}
 		gettext(term.x+1,term.y+1,term.x+term.width,term.y+term.height,term.scrollback+(term.backpos-term.height)*term.width*2);
 	}
-	buf=(char *)malloc(term.width*(term.height)*2);
-	j=0;
-	for(x=0;x<term.width;x++) {
-		for(y=0;y<term.height;y++) {
-			buf[j++]=' ';
-			buf[j++]=attr;
-		}
-	}
-	puttext(term.x+1,term.y+1,term.x+term.width,term.y+term.height,buf);
-	free(buf);
+	clrscr();
 }
 
 void do_ansi(char *retbuf, int retsize)
@@ -524,7 +510,7 @@ void cterm_init(int height, int width, int xpos, int ypos, int backlines, unsign
 		memset(term.scrollback,0,term.width*2*term.backlines);
 	textattr(term.attr);
 	_setcursortype(_NORMALCURSOR);
-	window(term.x+1,term.y+1,term.x+term.width,term.y+term.height);
+	window(term.x,term.y,term.x+term.width-1,term.y+term.height-1);
 	clrscr();
 	gotoxy(1,1);
 }
@@ -536,9 +522,14 @@ char *cterm_write(unsigned char *buf, int buflen, char *retbuf, int retsize)
 	int	key;
 	int i,j,k;
 	char	*ret;
+	struct text_info	ti;
 
 	if(retbuf!=NULL)
 		retbuf[0]=0;
+	gettextinfo(&ti);
+	window(term.x,term.y,term.x+term.width-1,term.y+term.height-1);
+	gotoxy(term.xpos,term.ypos);
+	textattr(term.attr);
 	ch[1]=0;
 	switch(buflen) {
 		case 0:
@@ -602,6 +593,14 @@ char *cterm_write(unsigned char *buf, int buflen, char *retbuf, int retsize)
 			prn[0]=0;
 			break;
 	}
+	term.xpos=wherex();
+	term.ypos=wherey();
+#if 0
+	window(ti.winleft,ti.wintop,ti.winright,ti.wintop);
+	gotoxy(ti.curx,ti.cury);
+	textattr(ti.attribute);
+#endif
+
 	return(retbuf);
 }
 
