@@ -471,48 +471,6 @@ static int sockprintf(SOCKET sock, char *fmt, ...)
 	return(len);
 }
 
-static char *cleanpath(char *target, char *path, size_t size)  {
-	char	*out;
-	char	*p;
-	char	*p2;
-	
-	out=target;
-	*out=0;
-
-	if(*path != '/' && *path != '\\')  {
-		p=getcwd(target,size);
-		if(p==NULL || strlen(p)+strlen(path)>=size)
-			return(NULL);
-		out=strrchr(target,'\0');
-		*(out++)='/';
-		*out=0;
-		out--;
-	}
-	strncat(target,path,size-1);
-	
-	for(;*out;out++)  {
-		while(*out=='/' || *out=='\\')  {
-			if(*(out+1)=='/' || *(out+1)=='\\')
-				memmove(out,out+1,strlen(out));
-			else if(*(out+1)=='.' && (*(out+2)=='/' || *(out+2)=='\\'))
-				memmove(out,out+2,strlen(out)-1);
-			else if(*(out+1)=='.' && *(out+2)=='.' && (*(out+3)=='/' || *(out+3)=='\\'))  {
-				*out=0;
-				p=strrchr(target,'/');
-				p2=strrchr(target,'\\');
-				if(p2>p)
-					p=p2;
-				memmove(p,out+3,strlen(out+3)+1);
-				out=p;
-			}
-			else  {
-				out++;
-			}
-		}
-	}
-	return(target);
-}
-
 static int getmonth(char *mon)
 {
 	int	i;
@@ -1453,7 +1411,7 @@ static BOOL check_request(http_session_t * session)
 	} else
 		sprintf(str,"%s%s",root_dir,session->req.physical_path);
 	
-	if(cleanpath(path,str,sizeof(session->req.physical_path))==NULL) {
+	if(FULLPATH(path,str,sizeof(session->req.physical_path))==NULL) {
 		send_error(session,"404 Not Found");
 		return(FALSE);
 	}
