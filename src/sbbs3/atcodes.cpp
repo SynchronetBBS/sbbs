@@ -512,7 +512,7 @@ char* sbbs_t::atcode(char* sp, char* str)
 	}
 
 	if(!strcmp(sp,"CONF")) {
-		sprintf("%s %s"
+		sprintf(str,"%s %s"
 			,usrgrps ? cfg.grp[usrgrp[curgrp]]->sname :nulstr
 			,usrgrps ? cfg.sub[usrsub[curgrp][cursub[curgrp]]]->sname : nulstr);
 		return(str);
