@@ -330,6 +330,30 @@ char* DLLCALL net_addr(net_t* net)
 	return(net->addr);
 }
 
+static ulong msgid_serialno(smbmsg_t* msg)
+{
+	return (msg->idx.time<<5) | (msg->idx.number&0x1f);
+}
+
+/****************************************************************************/
+/* Returns a FidoNet FTS-9 compliant message-ID								*/
+/****************************************************************************/
+char* DLLCALL ftn_msgid(sub_t *sub, smbmsg_t* msg)
+{
+	static char msgid[256];
+
+	snprintf(msgid,sizeof(msgid)
+		,"%s %08lX %lu.%s %08lX\r"
+		,faddrtoa(&sub->faddr,NULL)
+		,msgid_serialno(msg)
+		,msg->idx.number
+		,sub->code
+		,msgid_serialno(msg)
+		);
+
+	return(msgid);
+}
+
 /****************************************************************************/
 /* Returns string for 2 digit hex+ numbers up to 575						*/
 /****************************************************************************/

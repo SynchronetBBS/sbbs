@@ -780,6 +780,7 @@ extern "C" {
 	DLLEXPORT BOOL		DLLCALL validattr(char a);
 	DLLEXPORT size_t	DLLCALL strip_invalid_attr(char *str);
 	DLLEXPORT ushort	DLLCALL subject_crc(char *subj);
+	DLLEXPORT char *	DLLCALL ftn_msgid(sub_t* sub, smbmsg_t* msg);
 
 	/* date_str.c */
 	DLLEXPORT char *	DLLCALL zonestr(short zone);
