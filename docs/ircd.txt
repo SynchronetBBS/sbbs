@@ -1,3 +1,4 @@
+$Id$
 
 		** ircd.js : The Synchronet IRCd Service **
 		     by: Randy Sommerfeld <cyan@rrx.ca>
@@ -10,6 +11,7 @@
 3   .... Installation
 3.1 .... Getting the IRCd up and running
 3.2 .... Linking to the Synchronet IRC Network (irc.synchro.net)
+3.3 .... Using jsexec to run the IRCd
 4   .... About the Synchronet IRC Network (irc.synchro.net)
 5   .... Technical information
 5.1 .... Limits of the Synchronet IRCd
@@ -248,7 +250,32 @@ Only steps 1 and 2 need be followed, but heed the document's warning:
 You do not need to create a new QWK-ID for the IRCd if you already have an
 existing one for DOVE-Net.
 
-	(2) Edit your ircd.conf and include a C/N line pair for connecting to
+	(2) Setup the "dyndns.js" module with your appropriate QWK-id
+information so that the hostname "mybbs.synchro.net" will point towards your
+correct IP address.  This is required so that users who try to reach your IRC
+server will be able to resolve the hostname used on the IRC network.  That
+way, if anyone wishes to connect to your server/BBS specifically, they'll be
+able to use "mybbs.synchro.net" (i.e. if your server happens to be faster,
+closer, or offers interesting BBS features.)  The dyndns.js module comes
+with Synchronet 3.11.
+
+	To enable the dyndns module, add a timed event inside of SCFG under
+"External Programs->Timed Events" to run the command "?dyndns <pass>" every
+now and then.  Replace <pass> with your exact QWK password.  Running the
+module once per day is usually acceptible, although you may want to run it
+more often if your IP address is prone to changing rapidly.
+
+	After the timed event has been configured, force the event to be ran.
+This can be done at the BBS itself (by using ";EXEC ?dyndns <pass>" from the
+BBS main manu.)  Then, after about 3 or 5 minutes, attempt to ping your new
+hostname (qwk-id.synchro.net, where 'qwk-id' is your qwk-id.)  It is very
+important that the IP address you're connecting to the Synchronet IRC Network
+from and the IP address that your new hostname (in the form of
+qwk-id.synchro.net) resolves to are exactly the same, otherwise you won't be
+able to link.  This is to prevent anyone from arbitrarily linking their server
+to the network by utilizing your qwk-id.
+
+	(3) Edit your ircd.conf and include a C/N line pair for connecting to
 'vert.synchro.net'.  These should be commented out in the stock ircd.conf, and
 will look like this:
 
@@ -265,7 +292,7 @@ chooses to echo a '*' back instead.  An asterik in the N:Line also forbids any
 servers from connecting *to* you, which is important, since you'll only be
 doing outbound connects with this C/N pair.
 
-	(3) Restart your BBS (or, if you know how to become an IRC operator,
+	(4) Restart your BBS (or, if you know how to become an IRC operator,
 simply use the /REHASH command), and you should see a message similar to the
 following in your Synchronet console:
 
@@ -285,6 +312,37 @@ they should be.
 You should be able to join the typical busy Synchronet IRC channels, #bbs and
 #synchronet, and be able to chat with people across the network.  You can find
 network administrators in #opers if you have any questions or concerns.
+
+[3.3] - Using jsexec to run the IRCd
+
+	There are times where you may wish to run the IRCd service seperately
+from Synchronet so that whenever your BBS goes up or down, the IRCd isn't
+affected.  A special program, included with Synchronet, is called "jsexec" and
+is intended for use in this way.  By using jsexec, your IRCd will remain
+operational regardless of what your BBS is doing, while still integrating with
+all of the regular Synchronet features.  In fact, in most respects, running
+the IRCd via jsexec is the preferred method.
+
+	To run your IRCd with jsexec, make sure that you've followed all the
+installation instructions above.  In particular, take a look at your M:Line on
+your ircd.conf and ensure that the last argument is the port you wish to run
+the IRCd on (typically 6667.)  If you're currently running the IRCd through
+Synchronet, shutdown your BBS and comment out (or remove) the sections in your
+services configuration files (services.ini or services.cfg) so that the
+service is not restarted when you bring the BBS back up.
+
+	Just like when you're running the IRCd from within Synchronet, you
+need to tell jsexec that the service you're running is to be 'looped,' which
+is done with the -l option.  Thus, a typical jsexec execution will look like
+this:
+
+	jsexec -l ircd
+
+	The above command is typed from within the Synchronet 'exec' directory.
+All console commands and errors are logged to the terminal that jsexec was
+started from.  You should see the standard IRCd startup messages, which means
+that the IRCd is now operational through jsexec.  Connecting to the IRCd
+should now work as per normal.
 
 =======- 4.0 -- About the Synchronet IRC Network (irc.synchro.net) -==========
 
@@ -467,8 +525,8 @@ sort of thing.
 	   sockets may be stuck in 'TIME_WAIT' or similar, in which case you
 	   should wait until they expire (as viewable with "netstat".)
 
-	Q: Ack, my server keeps on trying to auto-connect to other servers,
-	   and I don't want this!  What do I do?
+	Q: My server keeps on trying to auto-connect to other servers, and I
+	   don't want this!  What do I do?
 
 	A: The IRCd will attempt to auto-connect if there's a port defined in
 	   the C:Line for that server.  Furthermore, a connect frequency must
