@@ -38,7 +38,7 @@
 #ifndef _CONWRAP_H
 #define _CONWRAP_H
 
-#ifdef __unix__
+#if defined(__unix__)
 
 	int kbhit(void);
 	int getch(void);

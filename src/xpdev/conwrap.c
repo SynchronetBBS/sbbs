@@ -7,18 +7,17 @@
 
 /* @format.tab-size 4, @format.use-tabs true */
 
-#ifdef __unix__
+#if defined(__unix__)
 
 #include <stdlib.h>
 #include <unistd.h>
 #include <termios.h>
 
 /* Do the correct thing under BSD */
-#ifndef __FreeBSD__
-#include <sys/kd.h>
-#endif
-#ifdef __FreeBSD__
-#include <sys/kbio.h>
+#if defined(__FreeBSD__)
+	#include <sys/kbio.h>
+#else /* Linux and others */
+	#include <sys/kd.h>
 #endif
 
 #include <sys/time.h>
@@ -27,11 +26,11 @@
 
 #include "conwrap.h"	// Verify prototypes
 
-struct termios current;            // our current term settings
-struct termios original;           // old termios settings
-struct timeval timeout = {0, 0};   // passed in select() call
-fd_set inp;                        // ditto
-int beensetup = 0;                 // has _termios_setup() been called?
+static struct termios current;            // our current term settings
+static struct termios original;           // old termios settings
+static struct timeval timeout = {0, 0};   // passed in select() call
+static fd_set inp;                        // ditto
+static int beensetup = 0;                 // has _termios_setup() been called?
 
 /*
 	I'm using a variable function here simply for the sake of speed.  The
