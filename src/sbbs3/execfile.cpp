@@ -277,7 +277,7 @@ int sbbs_t::exec_file(csi_t *csi)
 				bputs(text[CantUploadHere]);
 				return(0); }
 
-			if(gettotalfiles(i)>=cfg.dir[i]->maxfiles)
+			if(getfiles(&cfg,i)>=cfg.dir[i]->maxfiles)
 				bputs(text[DirFull]);
 			else {
 				upload(i);
@@ -288,7 +288,7 @@ int sbbs_t::exec_file(csi_t *csi)
 			if(cfg.user_dir==INVALID_DIR) {
 				bputs(text[NoUserDir]);
 				return(0); }
-			if(gettotalfiles(cfg.user_dir)>=cfg.dir[cfg.user_dir]->maxfiles)
+			if(getfiles(&cfg,cfg.user_dir)>=cfg.dir[cfg.user_dir]->maxfiles)
 				bputs(text[UserDirFull]);
 			else if(useron.rest&FLAG('U'))
 				bputs(text[R_Upload]);
@@ -303,7 +303,7 @@ int sbbs_t::exec_file(csi_t *csi)
 			if(cfg.sysop_dir==INVALID_DIR) {
 				bputs(text[NoSysopDir]);
 				return(0); }
-			if(gettotalfiles(cfg.sysop_dir)>=cfg.dir[cfg.sysop_dir]->maxfiles)
+			if(getfiles(&cfg,cfg.sysop_dir)>=cfg.dir[cfg.sysop_dir]->maxfiles)
 				bputs(text[DirFull]);
 			else if(useron.rest&FLAG('U'))
 				bputs(text[R_Upload]);

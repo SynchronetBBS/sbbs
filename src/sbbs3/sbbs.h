@@ -346,7 +346,6 @@ public:
 
 	int		dir_op(uint dirnum);
 	int		getuserxfers(int fromuser, int destuser, char *fname);
-	uint	gettotalfiles(uint dirnum);
 	void	getnodeext(uint number, char * str);
 	void	putnodeext(uint number, char * str);
 	void	getnodedat(uint number, node_t * node, bool lock);

@@ -154,18 +154,6 @@ int sbbs_t::getuserxfers(int fromuser, int destuser, char *fname)
 }
 
 /****************************************************************************/
-/* Returns the number of files in the database for 'dir'					*/
-/****************************************************************************/
-uint sbbs_t::gettotalfiles(uint dirnum)
-{
-	char str[81];
-
-	sprintf(str,"%s%s.ixb", cfg.dir[dirnum]->data_dir, cfg.dir[dirnum]->code);
-	return((uint)(flength(str)/F_IXBSIZE));
-}
-
-
-/****************************************************************************/
 /* Fills the timeleft variable with the correct value. Hangs up on the      */
 /* user if their time is up.                                                */
 /* Called from functions main_sec and xfer_sec                              */
