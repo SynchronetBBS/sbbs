@@ -60,6 +60,7 @@ extern "C" {
 	#else
 		#include <semaphore.h>	/* POSIX semaphores */
 	#endif
+	#include "xpbsem.h"
 
 #elif defined(_WIN32)	
 
@@ -94,7 +95,13 @@ int sem_trywait_block(sem_t* psem, unsigned long timeout);
 
 
 /* Change semaphore to "unsignaled" (NOT POSIX) */
+#ifdef USE_XP_SEMAPHORES
+#define	sem_reset(psem)					xp_sem_setvalue((psem), 0)
+#else
 #define sem_reset(psem)					while(sem_trywait(psem)==0)
+#else
+
+#endif
 
 #if defined(__cplusplus)
 }

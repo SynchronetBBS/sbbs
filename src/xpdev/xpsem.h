@@ -70,6 +70,7 @@ int	 xp_sem_wait (xp_sem_t *);
 int	 xp_sem_trywait (xp_sem_t *);
 int	 xp_sem_post (xp_sem_t *);
 int	 xp_sem_getvalue (xp_sem_t *, int *);
+int	 xp_sem_setvalue (xp_sem_t *, int);
 int  xp_sem_timedwait (xp_sem_t *sem, const struct timespec *abs_timeout);
 #if defined(__cplusplus)
 }

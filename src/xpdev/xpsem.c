@@ -36,6 +36,7 @@
 #include <pthread.h>
 #include <sys/time.h>
 #include <stdlib.h>
+#include "gen_defs.h"
 
 int
 xp_sem_init(xp_sem_t *sem, int pshared, unsigned int value)
@@ -231,6 +232,31 @@ xp_sem_getvalue(xp_sem_t *sem, int *sval)
 
 	pthread_mutex_lock(&(*sem)->lock);
 	*sval = (int)(*sem)->count;
+	pthread_mutex_unlock(&(*sem)->lock);
+
+	retval = 0;
+  RETURN:
+	return retval;
+}
+
+int
+xp_sem_setvalue(xp_sem_t *sem, int sval)
+{
+	int	retval;
+
+	_SEM_CHECK_VALIDITY(sem);
+
+	pthread_mutex_lock(&(*sem)->lock);
+	(int)(*sem)->count=sval;
+	if (((*sem)->nwaiters > 0) && sval) {
+		/*
+		 * We must use pthread_cond_broadcast() rather than
+		 * pthread_cond_signal() in order to assure that the highest
+		 * priority thread is run by the scheduler, since
+		 * pthread_cond_signal() signals waiting threads in FIFO order.
+		 */
+		pthread_cond_broadcast(&(*sem)->gtzero);
+	}
 	pthread_mutex_unlock(&(*sem)->lock);
 
 	retval = 0;
