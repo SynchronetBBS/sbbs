@@ -34,7 +34,7 @@ var antispam = format(".remove-%s-this"
 var cfg_fname = system.ctrl_dir + "newslink.cfg";
 
 load("sbbsdefs.js");
-load("newsutil.js");
+load("newsutil.js");	// write_news_header() and parse_news_header()
 
 var debug = false;
 var slave = false;
@@ -332,7 +332,7 @@ for(i in area) {
 		if(hdr.from_org==undefined && !hdr.from_net_type)
 			hdr.from_org=system.name;
 
-		write_news_header(hdr); // from newsutil.js
+		write_news_header(hdr,writeln); // from newsutil.js
 
 		writeln("X-Gateway: "
 			+ system.inetaddr

@@ -466,7 +466,7 @@ while(client.socket.is_connected) {
 				if(hdr.from_org==undefined && !hdr.from_net_type)
 					hdr.from_org=system.name;
 		
-				write_news_header(hdr);	// from newsutil.js
+				write_news_header(hdr,writeln);	// from newsutil.js
 			}
 			if(hdr!=null && body!=null)	/* both, separate with blank line */
 				writeln("");

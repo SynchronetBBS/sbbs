@@ -6,7 +6,7 @@
 // $Id$
 
 
-function write_news_header(hdr)
+function write_news_header(hdr,writeln)
 {
 	/* Required header fields */
 	writeln("To: " + hdr.to);
