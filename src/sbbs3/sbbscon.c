@@ -75,7 +75,6 @@
 
 /* Constants */
 #define SBBS_PID_FILE	"/var/run/sbbs.pid"
-#define SBBS_LOG_NAME	"synchronet"
 
 /* Global variables */
 BOOL				terminated=FALSE;
@@ -121,7 +120,8 @@ uid_t				old_uid;
 gid_t				new_gid;
 gid_t				old_gid;
 BOOL				is_daemon=FALSE;
-char				daemon_type[2];
+char				log_facility[2];
+char				log_ident[128];
 BOOL				std_facilities=FALSE;
 FILE *				pidf;
 #endif
@@ -806,7 +806,8 @@ static void read_startup_ini(BOOL recycle
 		SAFECOPY(new_gid_name,iniReadString(fp,"UNIX","Group","",value));
 		if(!recycle)
 			is_daemon=iniReadBool(fp,"UNIX","Daemonize",FALSE);
-		SAFECOPY(daemon_type,iniReadString(fp,"UNIX","LogFacility","U",value));
+		SAFECOPY(log_facility,iniReadString(fp,"UNIX","LogFacility","U",value));
+		SAFECOPY(log_ident,iniReadString(fp,"UNIX","LogIdent","synchronet",value));
 		umask(iniReadInteger(fp,"UNIX","umask",077));
 	}
 #endif
@@ -1216,7 +1217,7 @@ int main(int argc, char** argv)
 				case 'D': /* Run as daemon */
 					is_daemon=TRUE;
 					if(*arg)
-						SAFECOPY(daemon_type,arg++);
+						SAFECOPY(log_facility,arg++);
 				break;
 #endif
 			case 'T':	/* Telnet settings */
@@ -1491,39 +1492,39 @@ int main(int argc, char** argv)
 /* Daemonize / Set uid/gid */
 #ifdef __unix__
 
-	switch(toupper(daemon_type[0])) {
+	switch(toupper(log_facility[0])) {
 		case '0':
-			openlog(SBBS_LOG_NAME,LOG_CONS,LOG_LOCAL0);
+			openlog(log_ident,LOG_CONS,LOG_LOCAL0);
 			break;
 		case '1':
-			openlog(SBBS_LOG_NAME,LOG_CONS,LOG_LOCAL1);
+			openlog(log_ident,LOG_CONS,LOG_LOCAL1);
 			break;
 		case '2':
-			openlog(SBBS_LOG_NAME,LOG_CONS,LOG_LOCAL2);
+			openlog(log_ident,LOG_CONS,LOG_LOCAL2);
 			break;
 		case '3':
-			openlog(SBBS_LOG_NAME,LOG_CONS,LOG_LOCAL3);
+			openlog(log_ident,LOG_CONS,LOG_LOCAL3);
 			break;
 		case '4':
-			openlog(SBBS_LOG_NAME,LOG_CONS,LOG_LOCAL4);
+			openlog(log_ident,LOG_CONS,LOG_LOCAL4);
 			break;
 		case '5':
-			openlog(SBBS_LOG_NAME,LOG_CONS,LOG_LOCAL5);
+			openlog(log_ident,LOG_CONS,LOG_LOCAL5);
 			break;
 		case '6':
-			openlog(SBBS_LOG_NAME,LOG_CONS,LOG_LOCAL6);
+			openlog(log_ident,LOG_CONS,LOG_LOCAL6);
 			break;
 		case '7':
-			openlog(SBBS_LOG_NAME,LOG_CONS,LOG_LOCAL7);
+			openlog(log_ident,LOG_CONS,LOG_LOCAL7);
 			break;
 		case 'F':	/* this is legacy */
 		case 'S':
 			/* Use standard facilities */
-			openlog(SBBS_LOG_NAME,LOG_CONS,LOG_USER);
+			openlog(log_ident,LOG_CONS,LOG_USER);
 			std_facilities = TRUE;
 			break;
 		default:
-			openlog(SBBS_LOG_NAME,LOG_CONS,LOG_USER);
+			openlog(log_ident,LOG_CONS,LOG_USER);
 	}
 	if(is_daemon) {
 
@@ -1678,7 +1679,7 @@ int main(int argc, char** argv)
 #ifdef __unix__
 			if(!isatty(STDIN_FILENO))  {		/* Controlling terminal has left us *sniff* */
 				int fd;
-				openlog(SBBS_LOG_NAME,LOG_CONS,LOG_USER);
+				openlog(log_ident,LOG_CONS,LOG_USER);
     			if ((fd = open(_PATH_DEVNULL, O_RDWR, 0)) != -1) {
         			(void)dup2(fd, STDIN_FILENO);
         			(void)dup2(fd, STDOUT_FILENO);
