@@ -1939,6 +1939,19 @@ object MainForm: TMainForm
       Top = 0
       Action = UserEdit
     end
+    object ToolButton3: TToolButton
+      Left = 248
+      Top = 0
+      Width = 8
+      Caption = 'ToolButton3'
+      ImageIndex = 28
+      Style = tbsSeparator
+    end
+    object ReloadConfigButton: TToolButton
+      Left = 256
+      Top = 0
+      Action = ReloadConfig
+    end
   end
   object TopPanel: TPanel
     Left = 0
@@ -2052,7 +2065,7 @@ object MainForm: TMainForm
   end
   object MainMenu: TMainMenu
     Images = ImageList
-    Left = 296
+    Left = 328
     object FileMenuItem: TMenuItem
       Caption = 'File'
       object FileOpenMenuItem: TMenuItem
@@ -2098,6 +2111,9 @@ object MainForm: TMainForm
         Caption = 'Configuration &Wizard'
         ImageIndex = 61
         OnClick = BBSConfigWizardMenuItemClick
+      end
+      object ReloadConfigurationFiles1: TMenuItem
+        Action = ReloadConfig
       end
       object BBSLoginMenuItem: TMenuItem
         Caption = '&Login'
@@ -2639,6 +2655,12 @@ object MainForm: TMainForm
       Caption = '&Events'
       ImageIndex = 49
       OnExecute = ViewEventsExecute
+    end
+    object ReloadConfig: TAction
+      Caption = '&Reload Configuration'
+      Hint = 'Reload Configuration Files'
+      ImageIndex = 55
+      OnExecute = ReloadConfigExecute
     end
   end
   object ImageList: TImageList
@@ -4794,7 +4816,7 @@ object MainForm: TMainForm
     Top = 65532
   end
   object TrayPopupMenu: TPopupMenu
-    Left = 266
+    Left = 298
     Top = 4
     object RestoreTrayMenuItem: TMenuItem
       Caption = 'Restore'

@@ -610,7 +610,7 @@ void __fastcall TMainForm::FormCreate(TObject *Sender)
 
     // Verify SBBS.DLL version
     long bbs_ver = bbs_ver_num();
-    if(bbs_ver < (0x300<<8) || bbs_ver > (0x399<<8)) {
+    if(bbs_ver < (0x31000 | 'D'-'A') || bbs_ver > (0x399<<8)) {
         char str[128];
         sprintf(str,"Incorrect SBBS.DLL Version (%lX)",bbs_ver);
     	Application->MessageBox(str,"ERROR",MB_OK|MB_ICONEXCLAMATION);
@@ -714,15 +714,6 @@ void __fastcall TMainForm::FormCloseQuery(TObject *Sender, bool &CanClose)
             return;
         FtpStopExecute(Sender);
     }
-#if 0 // Moved to FormClose()
-    time_t start=time(NULL);
-	while(TelnetStop->Enabled || MailStop->Enabled || FtpStop->Enabled) {
-        if(time(NULL)-start>15)
-            break;
-        Application->ProcessMessages();
-        Sleep(1);
-    }
-#endif    
 
     CanClose=true;
 }
@@ -1338,6 +1329,11 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
         return;
     }
 
+    if(FirstRun) {
+    	Sleep(3000);	// Let 'em see the logo for a bit
+        BBSConfigWizardMenuItemClick(Sender);
+    }
+
     if(bbs_startup.options&BBS_OPT_MUTE)
     	SoundToggle->Checked=false;
     else
@@ -1415,9 +1411,6 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     StatsTimer->Interval=cfg.node_stat_check*1000;
 	StatsTimer->Enabled=true;
     Initialized=true;
-
-    if(FirstRun)
-        BBSConfigWizardMenuItemClick(Sender);
 }
 //---------------------------------------------------------------------------
 void __fastcall TMainForm::SaveSettings(TObject* Sender)
@@ -1974,21 +1967,14 @@ void __fastcall TMainForm::RestoreTrayMenuItemClick(TObject *Sender)
 //---------------------------------------------------------------------------
 void __fastcall TMainForm::BBSConfigWizardMenuItemClick(TObject *Sender)
 {
-#if 0
-    char str[512];
-
-    sprintf(str,"%sSCFGWIZ %s",cfg.exec_dir,cfg.ctrl_dir);
-    WinExec(str,SW_SHOWNORMAL);
-#else
     TConfigWizard* ConfigWizard;
 
     Application->CreateForm(__classid(TConfigWizard), &ConfigWizard);
 	if(ConfigWizard->ShowModal()==mrOk) {
         SaveSettings(Sender);
+        ReloadConfigExecute(Sender);
     }
     delete ConfigWizard;
-
-#endif
 }
 //---------------------------------------------------------------------------
 
@@ -1997,6 +1983,25 @@ void __fastcall TMainForm::PageControlUnDock(TObject *Sender,
 {
     if(NewTarget==NULL) /* Desktop */
         Allow=UndockableForms;
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TMainForm::ReloadConfigExecute(TObject *Sender)
+{
+	if(!load_cfg(&cfg, NULL, TRUE)) {
+    	Application->MessageBox("Failed to re-load configuration files.","ERROR"
+	        ,MB_OK|MB_ICONEXCLAMATION);
+        Application->Terminate();
+    }
+
+    node_t node;
+    for(int i=0;i<cfg.sys_nodes;i++) {
+       	if(NodeForm->getnodedat(i+1,&node,true))
+            break;
+        node.misc|=NODE_RRUN;
+        if(NodeForm->putnodedat(i+1,&node))
+            break;
+    }
 }
 //---------------------------------------------------------------------------
 
