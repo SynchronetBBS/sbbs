@@ -2745,6 +2745,8 @@ void getzpt(FILE *stream, fmsghdr_t *hdr)
 	pos=ftell(stream);
 	len=fread(buf,1,0x1000,stream);
 	for(i=0;i<len;i++) {
+		if(buf[i]=='\n')	/* ignore line-feeds */
+			continue;
 		if((!i || cr) && buf[i]==1) {	/* kludge */
 			if(!strncmp(buf+i+1,"TOPT ",5))
 				hdr->destpoint=atoi(buf+i+6);
