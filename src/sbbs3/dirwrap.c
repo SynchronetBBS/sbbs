@@ -1,0 +1,469 @@
+/* dirwrap.c */
+
+/* Directory-related system-call wrappers */
+
+/* $Id$ */
+
+/****************************************************************************
+ * @format.tab-size 4		(Plain Text/Source Code File Header)			*
+ * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
+ *																			*
+ * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ *																			*
+ * This program is free software; you can redistribute it and/or			*
+ * modify it under the terms of the GNU General Public License				*
+ * as published by the Free Software Foundation; either version 2			*
+ * of the License, or (at your option) any later version.					*
+ * See the GNU General Public License for more details: gpl.txt or			*
+ * http://www.fsf.org/copyleft/gpl.html										*
+ *																			*
+ * Anonymous FTP access to the most recent released source is available at	*
+ * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
+ *																			*
+ * Anonymous CVS access to the development source and modification history	*
+ * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
+ *     (just hit return, no password is necessary)							*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
+ *																			*
+ * For Synchronet coding style and modification guidelines, see				*
+ * http://www.synchro.net/source.html										*
+ *																			*
+ * You are encouraged to submit any modifications (preferably in Unix diff	*
+ * format) via e-mail to mods@synchro.net									*
+ *																			*
+ * Note: If this box doesn't appear square, then you need to fix your tabs.	*
+ ****************************************************************************/
+
+#ifdef _WIN32
+
+#include <windows.h>	/* WINAPI, etc */
+#include <io.h>			/* _findfirst */
+
+#elif defined __unix__
+
+#include <unistd.h>		/* usleep */
+#include <fcntl.h>		/* O_NOCCTY */
+#include <ctype.h>		/* toupper */
+
+#ifdef __FreeBSD__
+#include <sys/param.h>
+#include <sys/mount.h>
+#include <sys/kbio.h>
+#endif
+
+#include <sys/ioctl.h>	/* ioctl */
+
+#ifdef __GLIBC__		/* actually, BSD, but will work for now */
+#include <sys/vfs.h>    /* statfs() */
+#endif
+
+#endif
+
+#include <sys/types.h>	/* _dev_t */
+#include <sys/stat.h>	/* struct stat */
+
+#include <stdio.h>		/* sprintf */
+#include <stdlib.h>		/* rand */
+#include <errno.h>		/* ENOENT definitions */
+
+#include "dirwrap.h"	/* DLLCALL */
+
+/****************************************************************************/
+/* Return the filename portion of a full pathname							*/
+/****************************************************************************/
+char* DLLCALL getfname(char* path)
+{
+	char *fname;
+
+	fname=strrchr(path,'/');
+	if(fname==NULL) 
+		fname=strrchr(path,'\\');
+	if(fname!=NULL) 
+		fname++;
+	else 
+		fname=path;
+	return(fname);
+}
+
+#if !defined(__unix__)
+/****************************************************************************/
+/* Win32 (minimal) implementation of POSIX.2 glob() function				*/
+/* This code _may_ work on other DOS-based platforms (e.g. OS/2)			*/
+/****************************************************************************/
+static int glob_compare( const void *arg1, const void *arg2 )
+{
+   /* Compare all of both strings: */
+   return stricmp( * ( char** ) arg1, * ( char** ) arg2 );
+}
+
+#ifdef __BORLANDC__
+	#pragma argsused
+#endif
+
+int	DLLCALL	glob(const char *pattern, int flags, void* unused, glob_t* glob)
+{
+    struct	_finddata_t ff;
+	long	ff_handle;
+	size_t	found=0;
+	char	path[MAX_PATH+1];
+	char*	p;
+	char**	new_pathv;
+
+	if(!(flags&GLOB_APPEND)) {
+		glob->gl_pathc=0;
+		glob->gl_pathv=NULL;
+	}
+
+	ff_handle=_findfirst((char*)pattern,&ff);
+	while(ff_handle!=-1) {
+		if(!(flags&GLOB_ONLYDIR) || ff.attrib&_A_SUBDIR) {
+			if((new_pathv=realloc(glob->gl_pathv
+				,(glob->gl_pathc+1)*sizeof(char*)))==NULL) {
+				globfree(glob);
+				return(GLOB_NOSPACE);
+			}
+			glob->gl_pathv=new_pathv;
+
+			/* build the full pathname */
+			strcpy(path,pattern);
+			p=getfname(path);
+			*p=0;
+			strcat(path,ff.name);
+
+			if((glob->gl_pathv[glob->gl_pathc]=malloc(strlen(path)+2))==NULL) {
+				globfree(glob);
+				return(GLOB_NOSPACE);
+			}
+			strcpy(glob->gl_pathv[glob->gl_pathc],path);
+			if(flags&GLOB_MARK && ff.attrib&_A_SUBDIR)
+				strcat(glob->gl_pathv[glob->gl_pathc],"/");
+
+			glob->gl_pathc++;
+			found++;
+		}
+		if(_findnext(ff_handle, &ff)!=0) {
+			_findclose(ff_handle);
+			ff_handle=-1; 
+		} 
+	}
+
+	if(found==0)
+		return(GLOB_NOMATCH);
+
+	if(!(flags&GLOB_NOSORT)) {
+		qsort(glob->gl_pathv,found,sizeof(char*),glob_compare);
+	}
+
+	return(0);	/* success */
+}
+
+void DLLCALL globfree(glob_t* glob)
+{
+	size_t i;
+
+	if(glob==NULL)
+		return;
+
+	if(glob->gl_pathv!=NULL) {
+		for(i=0;i<glob->gl_pathc;i++)
+			if(glob->gl_pathv[i]!=NULL)
+				free(glob->gl_pathv[i]);
+
+		free(glob->gl_pathv);
+		glob->gl_pathv=NULL;
+	}
+	glob->gl_pathc=0;
+}
+
+#endif /* !defined(__unix__) */
+
+/****************************************************************************/
+/* POSIX directory operations using Microsoft _findfirst/next API.			*/
+/****************************************************************************/
+#if defined(_MSC_VER)
+DIR* opendir(const char* dirname)
+{
+	DIR*	dir;
+
+	if((dir=(DIR*)calloc(1,sizeof(DIR)))==NULL) {
+		errno=ENOMEM;
+		return(NULL);
+	}
+	sprintf(dir->filespec,"%.*s",sizeof(dir->filespec)-5,dirname);
+	if(*dir->filespec && dir->filespec[strlen(dir->filespec)-1]!='\\')
+		strcat(dir->filespec,"\\");
+	strcat(dir->filespec,"*.*");
+	dir->handle=_findfirst(dir->filespec,&dir->finddata);
+	if(dir->handle==-1) {
+		errno=ENOENT;
+		free(dir);
+		return(NULL);
+	}
+	return(dir);
+}
+struct dirent* readdir(DIR* dir)
+{
+	if(dir==NULL)
+		return(NULL);
+	if(dir->end==TRUE)
+		return(NULL);
+	if(dir->handle==-1)
+		return(NULL);
+	sprintf(dir->dirent.d_name,"%.*s",sizeof(struct dirent)-1,dir->finddata.name);
+	if(_findnext(dir->handle,&dir->finddata)!=0)
+		dir->end=TRUE;
+	return(&dir->dirent);
+}
+int closedir (DIR* dir)
+{
+	if(dir==NULL)
+		return(-1);
+	_findclose(dir->handle);
+	free(dir);
+	return(0);
+}
+void rewinddir(DIR* dir)
+{
+	if(dir==NULL)
+		return;
+	_findclose(dir->handle);
+	dir->end=FALSE;
+	dir->handle=_findfirst(dir->filespec,&dir->finddata);
+}
+#endif /* defined(_MSC_VER) */
+
+/****************************************************************************/
+/* Returns the time/date of the file in 'filename' in time_t (unix) format  */
+/****************************************************************************/
+time_t DLLCALL fdate(char *filename)
+{
+	struct stat st;
+
+	if(access(filename,0)==-1)
+		return(-1);
+
+	if(stat(filename, &st)!=0)
+		return(-1);
+
+	return(st.st_mtime);
+}
+
+/****************************************************************************/
+/* Returns the length of the file in 'filename'                             */
+/****************************************************************************/
+long DLLCALL flength(char *filename)
+{
+#ifdef __BORLANDC__	/* stat() doesn't work right */
+
+	long	handle;
+	struct _finddata_t f;
+
+	if(access(filename,0)==-1)
+		return(-1L);
+
+	if((handle=_findfirst(filename,&f))==-1)
+		return(-1);
+
+ 	_findclose(handle);
+
+	return(f.size);
+
+#else 
+
+	struct stat st;
+
+	if(access(filename,0)==-1)
+		return(-1L);
+
+	if(stat(filename, &st)!=0)
+		return(-1L);
+
+	return(st.st_size);
+
+#endif
+}
+
+/****************************************************************************/
+/* Checks the file system for the existence of one or more files.			*/
+/* Returns TRUE if it exists, FALSE if it doesn't.                          */
+/* 'filespec' may contain wildcards!										*/
+/****************************************************************************/
+BOOL DLLCALL fexist(char *filespec)
+{
+#ifdef _WIN32
+
+	long	handle;
+	struct _finddata_t f;
+
+	if(access(filespec,0)==-1 && !strchr(filespec,'*') && !strchr(filespec,'?'))
+		return(FALSE);
+
+	if((handle=_findfirst(filespec,&f))==-1)
+		return(FALSE);
+
+ 	_findclose(handle);
+
+ 	if(f.attrib&_A_SUBDIR)
+		return(FALSE);
+
+	return(TRUE);
+
+#elif defined(__unix__)	/* portion by cmartin */
+
+	glob_t g;
+    int c;
+    int l;
+
+	if(access(filespec,0)==-1 && !strchr(filespec,'*') && !strchr(filespec,'?'))
+		return(FALSE);
+
+    // start the search
+    glob(filespec, GLOB_MARK | GLOB_NOSORT, NULL, &g);
+
+    if (!g.gl_pathc) {
+	    // no results
+    	globfree(&g);
+    	return FALSE;
+    }
+
+    // make sure it's not a directory
+	c = g.gl_pathc;
+    while (c--) {
+    	l = strlen(g.gl_pathv[c]);
+    	if (l && g.gl_pathv[c][l-1] != '/') {
+        	globfree(&g);
+            return TRUE;
+        }
+    }
+        
+    globfree(&g);
+    return FALSE;
+
+#else
+
+#warning "fexist() port needs to support wildcards!"
+
+	return(FALSE);
+
+#endif
+}
+
+/****************************************************************************/
+/* Returns TRUE if the filename specified is a directory					*/
+/****************************************************************************/
+BOOL DLLCALL isdir(char *filename)
+{
+	struct stat st;
+
+	if(stat(filename, &st)!=0)
+		return(FALSE);
+
+	return((st.st_mode&S_IFDIR) ? TRUE : FALSE);
+}
+
+/****************************************************************************/
+/* Returns the attributes (mode) for specified 'filename'					*/
+/****************************************************************************/
+int DLLCALL getfattr(char* filename)
+{
+#ifdef _WIN32
+	long handle;
+	struct _finddata_t	finddata;
+
+	if((handle=_findfirst(filename,&finddata))==-1) {
+		errno=ENOENT;
+		return(-1);
+	}
+	_findclose(handle);
+	return(finddata.attrib);
+#else
+	struct stat st;
+
+	if(stat(filename, &st)!=0) {
+		errno=ENOENT;
+		return(-1L);
+	}
+
+	return(st.st_mode);
+#endif
+}
+
+/****************************************************************************/
+/* Return free disk space in bytes (up to a maximum of 4GB)					*/
+/****************************************************************************/
+#ifdef _WIN32
+	typedef BOOL(WINAPI * GetDiskFreeSpaceEx_t)
+		(LPCTSTR,PULARGE_INTEGER,PULARGE_INTEGER,PULARGE_INTEGER); 
+#endif
+
+ulong DLLCALL getfreediskspace(char* path)
+{
+#ifdef _WIN32
+	char			root[16];
+	DWORD			TotalNumberOfClusters;
+	DWORD			NumberOfFreeClusters;
+	DWORD			BytesPerSector;
+	DWORD			SectorsPerCluster;
+	ULARGE_INTEGER	avail;
+	ULARGE_INTEGER	size;
+	static HINSTANCE hK32;
+	GetDiskFreeSpaceEx_t GetDiskFreeSpaceEx;
+
+	if(hK32 == NULL)
+		hK32 = LoadLibrary("KERNEL32");
+	GetDiskFreeSpaceEx 
+		= (GetDiskFreeSpaceEx_t)GetProcAddress(hK32,"GetDiskFreeSpaceExA");
+ 
+	if (GetDiskFreeSpaceEx!=NULL) {	/* Windows 95-OSR2 or later */
+		if(!GetDiskFreeSpaceEx(
+			path,		// pointer to the directory name
+			&avail,		// receives the number of bytes on disk avail to the caller
+			&size,		// receives the number of bytes on disk
+			NULL))		// receives the free bytes on disk
+			return(0);
+#ifdef _ANONYMOUS_STRUCT
+		if(avail.HighPart)
+#else
+		if(avail.u.HighPart)
+#endif
+			return(0xffffffff);	/* 4GB max */
+
+#ifdef _ANONYMOUS_STRUCT
+		return(avail.LowPart);
+#else
+		return(avail.u.LowPart);
+#endif
+	}
+
+	/* Windows 95 (old way), limited to 2GB */
+	sprintf(root,"%.3s",path);
+	if(!GetDiskFreeSpace(
+		root,					// pointer to root path
+		&SectorsPerCluster,		// pointer to sectors per cluster
+		&BytesPerSector,		// pointer to bytes per sector
+		&NumberOfFreeClusters,	// pointer to number of free clusters
+		&TotalNumberOfClusters  // pointer to total number of clusters
+		))
+		return(0);
+
+	return(NumberOfFreeClusters*SectorsPerCluster*BytesPerSector);
+
+
+/* statfs is also used under FreeBSD */
+#elif defined(__GLIBC__) || defined(__FreeBSD__)
+
+	struct statfs fs;
+
+    if (statfs(path, &fs) < 0)
+    	return 0;
+
+    return fs.f_bsize * fs.f_bavail;
+    
+#else
+
+	#warning OS-specific code needed here
+	return(0);
+
+#endif
+}
