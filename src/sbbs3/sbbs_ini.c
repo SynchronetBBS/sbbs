@@ -15,6 +15,7 @@ static ini_bitdesc_t bbs_options[] = {
 	{ BBS_OPT_USE_2ND_RLOGIN		,"USE_2ND_RLOGIN"		},
 	{ BBS_OPT_NO_QWK_EVENTS			,"NO_QWK_EVENTS"		},
 	{ BBS_OPT_NO_HOST_LOOKUP		,"NO_HOST_LOOKUP"		},
+	{ BBS_OPT_NO_RECYCLE			,"NO_RECYCLE"			},
 	{ BBS_OPT_GET_IDENT				,"GET_IDENT"			},
 	{ BBS_OPT_NO_JAVASCRIPT			,"NO_JAVASCRIPT"		},
 	{ BBS_OPT_LOCAL_TIMEZONE		,"LOCAL_TIMEZONE"		},
@@ -35,6 +36,7 @@ static ini_bitdesc_t ftp_options[] = {
 	{ FTP_OPT_KEEP_TEMP_FILES		,"KEEP_TEMP_FILES"		},
 	{ FTP_OPT_HTML_INDEX_FILE		,"HTML_INDEX_FILE"		},
 	{ FTP_OPT_NO_HOST_LOOKUP		,"NO_HOST_LOOKUP"		},
+	{ FTP_OPT_NO_RECYCLE			,"NO_RECYCLE"			},
 	{ FTP_OPT_NO_JAVASCRIPT			,"NO_JAVASCRIPT"		},
 	{ FTP_OPT_LOCAL_TIMEZONE		,"LOCAL_TIMEZONE"		},
 	{ FTP_OPT_MUTE					,"MUTE"					},
@@ -59,6 +61,7 @@ static ini_bitdesc_t mail_options[] = {
 	{ MAIL_OPT_DNSBL_REFUSE			,"DNSBL_REFUSE"			},
 	{ MAIL_OPT_DNSBL_IGNORE			,"DNSBL_IGNORE"			},
 	{ MAIL_OPT_DNSBL_BADUSER		,"DNSBL_BADUSER"		},
+	{ MAIL_OPT_NO_RECYCLE			,"NO_RECYCLE"			},
 	{ MAIL_OPT_LOCAL_TIMEZONE		,"LOCAL_TIMEZONE"		},
 	{ MAIL_OPT_MUTE					,"MUTE"					},
 	/* terminator */
@@ -69,6 +72,7 @@ static ini_bitdesc_t service_options[] = {
 
 	{ BBS_OPT_NO_HOST_LOOKUP		,"NO_HOST_LOOKUP"		},
 	{ BBS_OPT_GET_IDENT				,"GET_IDENT"			},
+	{ BBS_OPT_NO_RECYCLE			,"NO_RECYCLE"			},
 	{ BBS_OPT_MUTE					,"MUTE"					},
 	/* terminator */				
 	{ -1							,NULL					}

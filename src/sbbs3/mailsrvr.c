@@ -3040,19 +3040,20 @@ void DLLCALL mail_server(void* arg)
 
 		while (server_socket!=INVALID_SOCKET) {
 
-			sprintf(path,"%smailsrvr.rec",scfg.ctrl_dir);
-			t=fdate(path);
-			if(!active_clients && t!=-1 && t>initialized) {
-				lprintf("0000 Recycle semaphore file (%s) detected",path);
-				initialized=t;
-				break;
+			if(!(startup->options&MAIL_OPT_NO_RECYCLE)) {
+				sprintf(path,"%smailsrvr.rec",scfg.ctrl_dir);
+				t=fdate(path);
+				if(!active_clients && t!=-1 && t>initialized) {
+					lprintf("0000 Recycle semaphore file (%s) detected",path);
+					initialized=t;
+					break;
+				}
+				if(!active_clients && startup->recycle_now==TRUE) {
+					lprintf("0000 Recycle semaphore signaled");
+					startup->recycle_now=FALSE;
+					break;
+				}
 			}
-			if(!active_clients && startup->recycle_now==TRUE) {
-				lprintf("0000 Recycle semaphore signaled");
-				startup->recycle_now=FALSE;
-				break;
-			}
-
 			/* now wait for connection */
 
 			FD_ZERO(&socket_set);

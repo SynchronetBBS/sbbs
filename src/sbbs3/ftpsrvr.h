@@ -101,6 +101,7 @@ typedef struct {
 #define FTP_OPT_KEEP_TEMP_FILES		(1<<7)	/* Don't delete temp files (for debugging) */
 #define FTP_OPT_HTML_INDEX_FILE		(1<<8)	/* Auto-generate HTML index files */
 #define FTP_OPT_NO_HOST_LOOKUP		(1<<11)
+#define FTP_OPT_NO_RECYCLE			(1<<27)	/* Disable recycling of server		*/
 #define FTP_OPT_NO_JAVASCRIPT		(1<<29)	/* JavaScript disabled				*/
 #define FTP_OPT_LOCAL_TIMEZONE		(1<<30)	/* Don't force UTC/GMT */
 #define FTP_OPT_MUTE				(1<<31)

@@ -1179,17 +1179,19 @@ void DLLCALL services_thread(void* arg)
 			for(i=0;i<(int)services;i++) 
 				total_clients+=service[i].clients;
 
-			sprintf(path,"%sservices.rec",scfg.ctrl_dir);
-			t=fdate(path);
-			if(!total_clients && t!=-1 && t>initialized) {
-				lprintf("0000 Recycle semaphore file (%s) detected",path);
-				initialized=t;
-				break;
-			}
-			if(!total_clients && startup->recycle_now==TRUE) {
-				lprintf("0000 Recycle semaphore signaled");
-				startup->recycle_now=FALSE;
-				break;
+			if(!(startup->options&BBS_OPT_NO_RECYCLE)) {
+				sprintf(path,"%sservices.rec",scfg.ctrl_dir);
+				t=fdate(path);
+				if(!total_clients && t!=-1 && t>initialized) {
+					lprintf("0000 Recycle semaphore file (%s) detected",path);
+					initialized=t;
+					break;
+				}
+				if(!total_clients && startup->recycle_now==TRUE) {
+					lprintf("0000 Recycle semaphore signaled");
+					startup->recycle_now=FALSE;
+					break;
+				}
 			}
 
 			/* Setup select() parms */

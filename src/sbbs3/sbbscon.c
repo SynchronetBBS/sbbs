@@ -1116,8 +1116,10 @@ int main(int argc, char** argv)
 		}
 
 		printf("Running as daemon\n");
-		if(daemon(TRUE,FALSE))  /* Daemonize, DON'T switch to / and DO close descriptors */
+		if(daemon(TRUE,FALSE))  { /* Daemonize, DON'T switch to / and DO close descriptors */
+			printf("!ERROR %d running as daemon",errno);
 			is_daemon=FALSE;
+		}
 	}
 
 	old_uid = getuid();
@@ -1205,6 +1207,12 @@ int main(int argc, char** argv)
 			char str[256];
 			sprintf(str,"Successfully changed user_id to %s", new_uid_name);
 			bbs_lputs(str);
+
+			/* Can't recycle servers (re-bind ports) as non-root user */
+ 			bbs_startup.options|=BBS_OPT_NO_RECYCLE;
+			ftp_startup.options|=FTP_OPT_NO_RECYCLE;
+			mail_startup.options|=MAIL_OPT_NO_RECYCLE;
+			service_startup.options|=BBS_OPT_NO_RECYCLE;
 		}
 	}
 
