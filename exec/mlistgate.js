@@ -159,9 +159,10 @@ for(i in area) {
 		delete hdr.thread_next;
 		delete hdr.thread_first;
 
-		while(area[i].length) {	/* For each list server... */
+		var listservers = area[i];
+		while(listservers.length) {	/* For each list server... */
 
-			listserv=area[i].shift();
+			listserv=listservers.shift();
 	
 			/* Address message to list server e-mail address */
 		    hdr.to_net_addr = listserv; 
