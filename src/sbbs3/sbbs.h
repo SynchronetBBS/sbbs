@@ -917,10 +917,6 @@ BOOL 	md(char *path);
 
 	BOOL	filematch(char *filename, char *filespec);
 
-	/* chat.cpp */
-	void	packchatpass(char *pass, node_t* node);
-	char *	unpackchatpass(char *pass, node_t* node);
-
 #endif /* SBBS */
 
 extern const char* wday[];	/* abbreviated weekday names */
