@@ -687,7 +687,7 @@ static void pop3_thread(void* arg)
 			break;
 		}
 
-		sockprintf(socket,"+OK Synchronet POP3 Server %s/%s Ready"
+		sockprintf(socket,"+OK Synchronet POP3 Server %s-%s Ready"
 			,revision,PLATFORM_DESC);
 
 		/* Requires USER command first */
@@ -998,11 +998,12 @@ static void pop3_thread(void* arg)
 					,socket,strlen(msgtxt));
 				lines_sent=sockmsgtxt(socket,&msg,msgtxt,fromaddr,lines);
 				/* if(startup->options&MAIL_OPT_DEBUG_POP3) */
-				if(lines_sent!=lines)
-					lprintf("%04d !POP3 ERROR sending message text (sent %lu of %lu lines)"
-						,lines_sent,lines);
+				if(lines!=-1 && lines_sent!=lines)
+					lprintf("%04d !POP3 ERROR sending message text (sent %ld of %ld lines)"
+						,socket,lines_sent,lines);
 				else {
-					lprintf("%04d POP3 message transfer complete (%lu lines)",socket,lines);
+					lprintf("%04d POP3 message transfer complete (%lu lines)"
+						,socket,lines_sent);
 
 					msg.hdr.attr|=MSG_READ;
 					msg.idx.attr=msg.hdr.attr;
@@ -1400,7 +1401,7 @@ static void smtp_thread(void* arg)
 	sprintf(str,"SMTP: %s",host_ip);
 	status(str);
 
-	sockprintf(socket,"220 %s Synchronet SMTP Server %s/%s Ready"
+	sockprintf(socket,"220 %s Synchronet SMTP Server %s-%s Ready"
 		,startup->host_name,revision,PLATFORM_DESC);
 	while(1) {
 		rd = sockreadline(socket, buf, sizeof(buf));
@@ -1669,7 +1670,7 @@ static void smtp_thread(void* arg)
 
 					snprintf(hdrfield,sizeof(hdrfield),
 						"Received: from %s (%s [%s])\r\n"
-						"          by %s [%s] (Synchronet Mail Server %s/%s) with %s\r\n"
+						"          by %s [%s] (Synchronet Mail Server %s-%s) with %s\r\n"
 						"          for %s; %s"
 						,host_name,hello_name,host_ip
 						,startup->host_name,inet_ntoa(server_addr.sin_addr)
@@ -2322,6 +2323,7 @@ static void smtp_thread(void* arg)
 BOOL bounce(smb_t* smb, smbmsg_t* msg, char* err, BOOL immediate)
 {
 	char		str[128],full_err[512];
+	char		attempts[64];
 	int			i;
 	ushort		agent=AGENT_PROCESS;
 	smbmsg_t	newmsg;
@@ -2392,8 +2394,12 @@ BOOL bounce(smb_t* smb, smbmsg_t* msg, char* err, BOOL immediate)
 	smb_hfield(&newmsg, SENDERAGENT, sizeof(agent), &agent);
 	
 	/* Put error message in subject for now */
-	sprintf(full_err,"Delivery failure of message to %s after %u attempts: %s"
-		,(char*)msg->to_net.addr, msg->hdr.delivery_attempts, err);
+	if(msg->hdr.delivery_attempts>1)
+		sprintf(attempts," after %u attempts", msg->hdr.delivery_attempts);
+	else
+		attempts[0]=0;
+	sprintf(full_err,"Delivery failure of message to %s%s: %s"
+		,(char*)msg->to_net.addr, attempts, err);
 	smb_hfield(&newmsg, SUBJECT, (ushort)strlen(full_err), full_err);
 
 	if((i=smb_addmsghdr(smb,&newmsg,SMB_SELFPACK))!=0)
