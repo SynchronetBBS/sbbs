@@ -386,7 +386,7 @@ static int sockprint(SOCKET sock, const char *str)
 		lprintf("%04d TX: %s", sock, str);
 	len=strlen(str);
 
-	while(socket_check(sock,NULL,&wr,60000) && wr)  {
+	while(socket_check(sock,NULL,&wr,60000) && wr && written<len)  {
 		result=sendsocket(sock,str+written,len-written);
 		if(result==SOCKET_ERROR) {
 			if(ERROR_VALUE==ECONNRESET) 
