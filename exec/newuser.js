@@ -1,4 +1,4 @@
-// newuser.src
+// newuser.js
 
 // New user login module
 
