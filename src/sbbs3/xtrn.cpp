@@ -450,7 +450,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 			sprintf(str,"\\\\.\\mailslot\\sbbsexec\\rd%d"
 				,cfg.node_num);
 			rdslot=CreateMailslot(str
-				,sizeof(buf)			// Maximum message size (0=unlimited)
+				,sizeof(buf)/2			// Maximum message size (0=unlimited)
 				,0						// Read time-out
 				,NULL);                 // Security
 			if(rdslot==INVALID_HANDLE_VALUE) {
@@ -1474,8 +1474,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 			memcpy(term.c_cc,ttydefchars,sizeof(term.c_cc));
 		}
 		winsize.ws_row=rows;
-		// #warning Currently cols are forced to 80 apparently TODO
-		winsize.ws_col=80;
+		winsize.ws_col=cols;
 		if((pid=forkpty(&in_pipe[1],NULL,&term,&winsize))==-1) {
 			pthread_mutex_unlock(&input_thread_mutex);
 			errormsg(WHERE,ERR_EXEC,fullcmdline,0);
