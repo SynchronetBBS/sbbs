@@ -31,8 +31,8 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#ifdef EXPORT32
-	#undef EXPORT32
+#ifdef LZHEXPORT
+	#undef LZHEXPORT
 #endif
 
 #ifdef _WIN32
@@ -45,13 +45,13 @@
 		#define LZHCALL
 	#endif
 	#ifdef LZHDLL
-		#define EXPORT32 __declspec( dllexport )
+		#define LZHEXPORT __declspec( dllexport )
 	#else
-		#define EXPORT32 __declspec( dllimport )
+		#define LZHEXPORT __declspec( dllimport )
 	#endif
 #else	/* !_WIN32 */
 	#define LZHCALL
-	#define EXPORT32
+	#define LZHEXPORT
 #endif
 
 #ifndef uchar
@@ -61,8 +61,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-EXPORT32 long LZHCALL lzh_encode(uchar *inbuf, long inlen, uchar *outbuf);
-EXPORT32 long LZHCALL lzh_decode(uchar *inbuf, long inlen, uchar *outbuf);
+LZHEXPORT long LZHCALL lzh_encode(uchar *inbuf, long inlen, uchar *outbuf);
+LZHEXPORT long LZHCALL lzh_decode(uchar *inbuf, long inlen, uchar *outbuf);
 #ifdef __cplusplus
 }
 #endif
