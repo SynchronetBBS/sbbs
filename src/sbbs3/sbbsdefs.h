@@ -264,6 +264,7 @@
 #define SUB_HYPER		(1L<<27)	/* Hyper allocation */
 #define SUB_EDIT		(1L<<28)	/* Users can edit message text after posting */
 #define SUB_EDITLAST	(1L<<29)	/* Users can edit last message only */
+#define SUB_NOUSERSIG	(1L<<30)	/* Suppress user signatures */
 #define SUB_HDRMOD		(1L<<31)	/* Modified sub-board header info (SCFG) */
 
                                     /* Bit values for dir[x].misc */
