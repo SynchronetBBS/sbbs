@@ -1680,7 +1680,7 @@ void event_thread(void* arg)
 							close(file);
 							if(now-sbbs->cfg.event[i]->last<(60*60))	/* event is done */
 								break; 
-							if(now-start>(60*60)) {
+							if(now-start>(90*60)) {
 								eprintf("!TIMEOUT waiting for event to complete");
 								break;
 							}
@@ -1729,7 +1729,7 @@ void event_thread(void* arg)
 							if(j>sbbs->cfg.sys_nodes) /* all nodes either offline or in limbo */
 								break;
 							eprintf("Waiting for node %d (status=%d)",j,node.status);
-							if(now-start>(60*60)) {
+							if(now-start>(90*60)) {
 								eprintf("!TIMEOUT waiting for node %d to become inactive",j);
 								break;
 							}
@@ -1872,6 +1872,7 @@ sbbs_t::sbbs_t(ushort node_num, DWORD addr, char* name, SOCKET sd,
 	outchar_esc = 0;
 	nodemsg_inside = 0;	/* allows single nest */
 	hotkey_inside = 0;	/* allows single nest */
+	event_time = 0;
 	nodesync_inside = false;
 	errorlog_inside = false;
 	errormsg_inside = false;
