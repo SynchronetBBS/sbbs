@@ -135,7 +135,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 		if(!msgs || last<=subscan[j].ptr) {
 			if(subscan[j].ptr>last) {
 				subscan[j].ptr=last;
-				subscan[j].ptr=last; }
+				subscan[j].last=last; }
 			eprintf(LOG_INFO,remove_ctrl_a(text[NScanStatusFmt],tmp)
 				,cfg.grp[cfg.sub[j]->grp]->sname
 				,cfg.sub[j]->lname,0L,msgs);
