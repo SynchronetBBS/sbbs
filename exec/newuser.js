@@ -54,7 +54,7 @@ function chk_qwk_id(str)
 	if(str.indexOf('&')>=0)
 		return(false);
 
-	if(system.matchuser(str,true) || system.trashcan(str))
+	if(system.matchuser(str,true)!=user.number || system.trashcan(str))
 		return(false);
 
 	return(true);
