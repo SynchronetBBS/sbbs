@@ -126,7 +126,7 @@ else
 endif
 
 # CVS checkout command-line
-CVS_CO = @cd $(SBBSDIR); cvs -z3 -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs co
+CVS_CO = @cd $(SBBSDIR); cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs co
 
 $(SBBSDIR)/ctrl: cvslogin
 ifndef NOCVS

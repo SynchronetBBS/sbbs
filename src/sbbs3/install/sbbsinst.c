@@ -98,7 +98,7 @@ struct {
 
 #define MAKEFILE "/tmp/SBBSmakefile"
 
-#define CVSCOMMAND "cvs -z3 "
+#define CVSCOMMAND "cvs "
 
 char **opt;
 char tmp[256];
@@ -420,7 +420,7 @@ void install_sbbs(struct dist_t *release,struct server_ent_t *server)  {
 				printf("Could not checkout install makefile.\n");
 				exit(EXIT_FAILURE);
 			}
-			sprintf(cmd,"gmake -f install/GNUmakefile");
+			sprintf(cmd,"gmake install -f install/GNUmakefile");
 			if(system(cmd))  {
 				printf("'Nuff said.\n");
 				exit(EXIT_FAILURE);
@@ -486,7 +486,6 @@ get_distlist(void)
 			allocfail(sizeof(struct dist_t));
 
 	while((list->gets(in_line,sizeof(in_line),list))!=NULL)  {
-		printf("Parsing: %s",in_line);
 		i=strlen(in_line);
 		while(i>0 && in_line[i]<=' ')
 			in_line[i--]=0;
