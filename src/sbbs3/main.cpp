@@ -2029,7 +2029,10 @@ bool sbbs_t::init()
 	node.status=NODE_OFFLINE;
 	while(filelength(nodefile)<(long)(cfg.sys_nodes*sizeof(node_t))) {
 		lseek(nodefile,0L,SEEK_END);
-		write(nodefile,&node,sizeof(node_t)); 
+		if(write(nodefile,&node,sizeof(node_t))!=sizeof(node_t)) {
+			errormsg(WHERE,ERR_WRITE,str,sizeof(node_t));
+			break; 
+		}
 	}
 	for(i=0; cfg.node_num>0 && i<LOOP_NODEDAB; i++) {
 		if(lock(nodefile,(cfg.node_num-1)*sizeof(node_t),sizeof(node_t))==0) {
