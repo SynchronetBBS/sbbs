@@ -267,16 +267,7 @@ int main(int argc, char** argv)  {
 	char	host_name[128]="";
 	char	ini_file[MAX_PATH+1];
 	FILE*				fp;
-	BOOL				run_bbs;
 	bbs_startup_t		bbs_startup;
-	BOOL				run_ftp;
-	ftp_startup_t		ftp_startup;
-	BOOL				run_web;
-	web_startup_t		web_startup;
-	BOOL				run_mail;
-	mail_startup_t		mail_startup;
-	BOOL				run_services;
-	services_startup_t	services_startup;
 
 	sscanf("$Revision$", "%*s %s", revision);
 
@@ -309,62 +300,13 @@ int main(int argc, char** argv)  {
     bbs_startup.size=sizeof(bbs_startup);
     strcpy(bbs_startup.ctrl_dir,ctrl_dir);
 
-	/* Initialize FTP startup structure */
-    memset(&ftp_startup,0,sizeof(ftp_startup));
-    ftp_startup.size=sizeof(ftp_startup);
-    strcpy(ftp_startup.index_file_name,"00index");
-    strcpy(ftp_startup.ctrl_dir,ctrl_dir);
-
-	/* Initialize Web Server startup structure */
-    memset(&web_startup,0,sizeof(web_startup));
-    web_startup.size=sizeof(web_startup);
-    strcpy(web_startup.ctrl_dir,ctrl_dir);
-
-	/* Initialize Mail Server startup structure */
-    memset(&mail_startup,0,sizeof(mail_startup));
-    mail_startup.size=sizeof(mail_startup);
-    strcpy(mail_startup.ctrl_dir,ctrl_dir);
-
-	/* Look up DNS server address */
-	{
-		FILE*	fp;
-		char*	p;
-		char	str[128];
-
-		if((fp=fopen("/etc/resolv.conf","r"))!=NULL) {
-			while(!feof(fp)) {
-				if(fgets(str,sizeof(str),fp)==NULL)
-					break;
-				truncsp(str);
-				p=str;
-				while(*p && *p<=' ') p++;	/* skip white-space */
-				if(strnicmp(p,"nameserver",10)!=0) /* no match */
-					continue;
-				p+=10;	/* skip "nameserver" */
-				while(*p && *p<=' ') p++;	/* skip more white-space */
-				SAFECOPY(mail_startup.dns_server,p);
-				break;
-			}
-			fclose(fp);
-		}
-	}
-
-	/* Initialize Services startup structure */
-    memset(&services_startup,0,sizeof(services_startup));
-    services_startup.size=sizeof(services_startup);
-    strcpy(services_startup.ctrl_dir,ctrl_dir);
-
 	/* Read .ini file here */
 	if(ini_file[0]!=0 && (fp=fopen(ini_file,"r"))!=NULL) {
 		printf("Reading %s\n",ini_file);
 	}
 	/* We call this function to set defaults, even if there's no .ini file */
 	sbbs_read_ini(fp, 
-		&run_bbs,		&bbs_startup,
-		&run_ftp,		&ftp_startup, 
-		&run_web,		&web_startup,
-		&run_mail,		&mail_startup, 
-		&run_services,	&services_startup);
+		NULL, &bbs_startup, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
 	/* close .ini file here */
 	if(fp!=NULL)
