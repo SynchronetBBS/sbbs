@@ -191,9 +191,9 @@ function dec_to_ip(ip) {
 
 function terminate_everything(terminate_reason) {
 	for(thisClient in Clients) {
-		var client = Clients[thisClient];
-		if (client.local)
-			client.quit(terminate_reason,false)
+		var Client = Clients[thisClient];
+		if (Client.local)
+			Client.quit(terminate_reason,false)
 	}
 }
 
@@ -833,11 +833,12 @@ for (cmdarg=0;cmdarg<argc;cmdarg++) {
 read_config_file();
 log(VERSION + " started.");
 
+if(this.branch!=undefined)
+	branch.limit=0; // we're not an infinite loop.
+
 ///// Main Loop /////
 while (!server.terminated) {
 
-	if(this.branch!=undefined)
-		branch.limit=0; // we're not an infinite loop.
 	mswait(1); // don't peg the CPU
 
 	if(server.terminated)
