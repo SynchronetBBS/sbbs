@@ -433,6 +433,9 @@ while(client.socket.is_connected) {
 					case "subject":
 						hdr.subject=data;
 						break;
+					case "references":
+						hdr.reply_id=data;
+						break;
 					case "newsgroups":
 						newsgroups=data.split(',');
 						break;
