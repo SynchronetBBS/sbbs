@@ -889,6 +889,8 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 
 	/* Create hdr.field_list[] with repeating header fields (including type and data) */
 	if((array=JS_NewArrayObject(cx,0,NULL))!=NULL) {
+		JS_DefineProperty(cx,hdrobj,"field_list",OBJECT_TO_JSVAL(array)
+			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 		items=0;
 		for(i=0;i<msg.total_hfields;i++) {
 			switch(msg.hfield[i].type) {
@@ -928,8 +930,6 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 				,NULL,NULL,JSPROP_ENUMERATE);
 			items++;
 		}
-		JS_DefineProperty(cx,hdrobj,"field_list",OBJECT_TO_JSVAL(array)
-			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 	}
 
 	smb_freemsgmem(&msg);
