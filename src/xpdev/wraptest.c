@@ -72,7 +72,7 @@ int main()
 	printf("sleeping... ");
 	fflush(stdout);
 	SLEEP(5000);
-	printf("slept %d seconds\n",time(NULL)-t);
+	printf("slept %ld seconds\n",time(NULL)-t);
 
 	/* glob test */
 	printf("\nglob(%s) test\n",glob_pattern);
