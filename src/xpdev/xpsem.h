@@ -110,13 +110,6 @@ struct pthread_rwlockattr {
         int             pshared;
 	};
 
-struct pthread_rwlock {
-        pthread_mutex_t lock;   /* monitor lock */
-	int             state;  /* 0 = idle  >0 = # of readers  -1 = writer */
-	pthread_cond_t  read_signal;
-	pthread_cond_t  write_signal;
-	int             blocked_writers;
-	};
 /* End thread_private.h kluge */
 
 #endif /* _XPSEM_H_ */
