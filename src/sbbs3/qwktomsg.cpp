@@ -376,7 +376,7 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 	if((i=smb_addmsg(&smb,&msg,storage,dupechk_hashes,xlat,(uchar*)body,(uchar*)tail))==SMB_SUCCESS)
 		success=true;
 	else if(i==SMB_DUPE_MSG) {
-		bprintf("\r\n%s\r\n",smb.last_error);
+		bprintf("\r\n!%s\r\n",smb.last_error);
 		if(!fromhub) {
 			if(subnum==INVALID_SUB) {
 				sprintf(str,"%s duplicate e-mail attempt (%s)",useron.alias,smb.last_error);
