@@ -2554,9 +2554,13 @@ void http_session_thread(void* arg)
 		while((redirp==NULL || session.req.send_location >= MOVED_TEMP)
 				 && !session.finished && server_socket!=INVALID_SOCKET) {
 			session.req.send_location=NO_LOCATION;
-			session.req.ld=malloc(sizeof(struct log_data));
+			if(startup->logfile_base[0])
+				session.req.ld=malloc(sizeof(struct log_data));
+			else
+				session.req.ld=NULL;
 			if(session.req.ld==NULL)
-				lprintf(LOG_ERR,"Cannot allocate memory for log data!");
+				if(startup->logfile_base[0])
+					lprintf(LOG_ERR,"Cannot allocate memory for log data!");
 			else {
 				memset(session.req.ld,0,sizeof(struct log_data));
 				session.req.ld->hostname=strdup(session.host_name);
