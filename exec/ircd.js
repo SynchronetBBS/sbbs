@@ -3905,7 +3905,7 @@ function IRCClient_server_commands(origin, command, cmdline) {
 				if (chan.created > parseInt(cmd[1]))
 					chan.created = parseInt(cmd[1]);
 
-				this.bcast_to_servers_raw(":" + servername + " SJOIN " + chan.created + " " + chan.nam + " " + chan.chanmode(true) + " :" + new_chan_members)
+				this.bcast_to_servers_raw(":" + ThisOrigin.nick + " SJOIN " + chan.created + " " + chan.nam + " " + chan.chanmode(true) + " :" + new_chan_members)
 			} else {
 				ThisOrigin.channels.push(chan.nam.toUpperCase());
 				chan.users.push(ThisOrigin.id);
