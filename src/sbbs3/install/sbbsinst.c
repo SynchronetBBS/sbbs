@@ -343,16 +343,16 @@ void write_makefile(void)
 		return;
 	}
 	if(!params.release)
-		fprintf(makefile,"\t DEBUG    :=  1\n");
+		fprintf(makefile,"DEBUG    :=  1\n");
 
 	if(params.symlink)
-		fprintf(makefile,"\t INSBIN   :=	ln -s\n");
+		fprintf(makefile,"INSBIN   :=	ln -s\n");
 	else
-		fprintf(makefile,"\t INSBIN   :=	install -c -s\n");
+		fprintf(makefile,"INSBIN   :=	install -c -s\n");
 
 	if(params.usebcc)  {
 		ccpre="bcc";
-		fprintf(makefile,"\t MKFLAGS	+=	bcc=1\n");
+		fprintf(makefile,"MKFLAGS	+=	bcc=1\n");
 	}
 	else 
 		ccpre="gcc";
@@ -380,16 +380,16 @@ endif
 */
 	if(params.release)  {
 		build="release";
-		fprintf(makefile,"\t MKFLAGS	+=	RELEASE=1\n");
+		fprintf(makefile,"MKFLAGS	+=	RELEASE=1\n");
 	} else {
 		build="debug";
-		fprintf(makefile,"\t MKFLAGS	+=	DEBUG=1\n");
+		fprintf(makefile,"MKFLAGS	+=	DEBUG=1\n");
 	}
 	if(params.cflags[0]) {
 		sprintf(cflags,"CFLAGS=%s",params.cflags);
 		putenv(cflags);
 	}
-	fprintf(makefile,"\t SBBSDIR := %s\n",params.install_path);
+	fprintf(makefile,"SBBSDIR := %s\n",params.install_path);
 
 /* Not supported
 ifdef JSLIB
@@ -397,43 +397,41 @@ ifdef JSLIB
 endif
 */
 
-	fprintf(makefile,"\t all: binaries baja externals\n\n");
-	fprintf(makefile,"\t externals:	sbj sbl\n\n");
-	fprintf(makefile,"\t binaries:	sbbs3 scfg\n\n");
+	fprintf(makefile,"all: binaries baja externals\n\n");
+	fprintf(makefile,"externals:	sbj sbl\n\n");
+	fprintf(makefile,"binaries:	sbbs3 scfg\n\n");
 
-	fprintf(makefile,"\t sbbs3:	");
+	fprintf(makefile,"sbbs3:	");
 	if(params.cvs)
 	fprintf(makefile,"\t $(SBBSDIR)/src/sbbs3 $(SBBSDIR)/src/uifc $(SBBSDIR)/src/xpdev $(SBBSDIR)/src/mozilla \\\n");
-	fprintf(makefile,"\t  $(SBBSDIR)/src/mozilla $(SBBSDIR)/lib/mozilla/js/%s.%s\n",platform,build);
-	fprintf(makefile,"\t \n");	
+	fprintf(makefile,"\t  $(SBBSDIR)/src/mozilla $(SBBSDIR)/lib/mozilla/js/%s.%s\n\n",platform,build);
 	fprintf(makefile,"\t 	gmake -C $(SBBSDIR)/src/sbbs3 $(MKFLAGS)\n");
 	fprintf(makefile,"\t \t    MKFLAGS	+=	BAJAPATH=../src/sbbs3/%s.%s.exe.%s/baja\n\n",ccpre,platform,build);
 
-	fprintf(makefile,"\t scfg:");
+	fprintf(makefile,"scfg:");
 	if(params.cvs)
-		fprintf(makefile,"\t 	$(SBBSDIR)/src/sbbs3 $(SBBSDIR)/src/uifc $(SBBSDIR)/src/xpdev");
-	fprintf(makefile,"\t \n");
+		fprintf(makefile,"\t 	$(SBBSDIR)/src/sbbs3 $(SBBSDIR)/src/uifc $(SBBSDIR)/src/xpdev\n");
 	fprintf(makefile,"\t 	gmake -C $(SBBSDIR)/src/sbbs3/scfg $(MKFLAGS)\n\n");
 
-	fprintf(makefile,"\t baja:");
+	fprintf(makefile,"baja:");
 	if(params.cvs)
 		fprintf(makefile,"\t 	$(SBBSDIR)/exec");
 	fprintf(makefile,"\t  binaries\n");
 	fprintf(makefile,"\t 	gmake -C $(SBBSDIR)/exec $(MKFLAGS)\n\n");
 
-	fprintf(makefile,"\t sbj:");
+	fprintf(makefile,"sbj:");
 	if(params.cvs)
 		fprintf(makefile,"\t 	$(SBBSDIR)/xtrn");
 	fprintf(makefile,"\t \n");
 	fprintf(makefile,"\t 	gmake -C $(SBBSDIR)/xtrn/sbj $(MKFLAGS)\n\n");
 
-	fprintf(makefile,"\t sbl:");
+	fprintf(makefile,"sbl:");
 	if(params.cvs)
 		fprintf(makefile,"\t 	$(SBBSDIR)/xtrn");
 	fprintf(makefile,"\t \n");
 	fprintf(makefile,"\t 	gmake -C $(SBBSDIR)/xtrn/sbl $(MKFLAGS)\n\n");
 
-	fprintf(makefile,"\t install: all");
+	fprintf(makefile,"install: all");
 	if(params.cvs)
 		fprintf(makefile,"\t  ctrl text node1 node2 node3 node4");
 	fprintf(makefile,"\t \n");
@@ -470,42 +468,42 @@ fprintf(makefile,"\t 	chown -R $(SBBSCHOWN) $(SBBSDIR)");
 	if(params.cvs)  {
 		sprintf(cvs_co,"\tcd $(SBBSDIR); %s co -r %s", CVSCOMMAND, params.cvstag);
 
-		fprintf(makefile,"\t $(SBBSDIR)/ctrl: cvslogin\n");
-		fprintf(makefile,"\t %s ctrl\n\n",cvs_co);
+		fprintf(makefile,"$(SBBSDIR)/ctrl: cvslogin\n");
+		fprintf(makefile,"\t%s ctrl\n\n",cvs_co);
 
-		fprintf(makefile,"\t $(SBBSDIR)/text: cvslogin\n");
-		fprintf(makefile,"\t %s text\n\n",cvs_co);
+		fprintf(makefile,"$(SBBSDIR)/text: cvslogin\n");
+		fprintf(makefile,"\t%s text\n\n",cvs_co);
 
-		fprintf(makefile,"\t $(SBBSDIR)/exec: cvslogin\n");
-		fprintf(makefile,"\t %s exec\n\n",cvs_co);
+		fprintf(makefile,"$(SBBSDIR)/exec: cvslogin\n");
+		fprintf(makefile,"\t%s exec\n\n",cvs_co);
 
 		for(i=1;i<=4;i++) {
-			fprintf(makefile,"\t $(SBBSDIR)/node%d: cvslogin\n",i);
-			fprintf(makefile,"\t %s node%d\n\n",cvs_co,i);
+			fprintf(makefile,"$(SBBSDIR)/node%d: cvslogin\n",i);
+			fprintf(makefile,"\t%s node%d\n\n",cvs_co,i);
 		}
 
-		fprintf(makefile,"\t $(SBBSDIR)/xtrn: cvslogin\n");
-		fprintf(makefile,"\t %s xtrn\n\n",cvs_co);
+		fprintf(makefile,"$(SBBSDIR)/xtrn: cvslogin\n");
+		fprintf(makefile,"\t%s xtrn\n\n",cvs_co);
 
-		fprintf(makefile,"\t $(SBBSDIR)/src/sbbs3: cvslogin\n");
-		fprintf(makefile,"\t %s src/sbbs3\n\n",cvs_co);
+		fprintf(makefile,"$(SBBSDIR)/src/sbbs3: cvslogin\n");
+		fprintf(makefile,"\t%s src/sbbs3\n\n",cvs_co);
 
-		fprintf(makefile,"\t $(SBBSDIR)/src/uifc: cvslogin\n");
-		fprintf(makefile,"\t %s src/uifc\n\n",cvs_co);
+		fprintf(makefile,"$(SBBSDIR)/src/uifc: cvslogin\n");
+		fprintf(makefile,"\t%s src/uifc\n\n",cvs_co);
 
-		fprintf(makefile,"\t $(SBBSDIR)/src/xpdev: cvslogin\n");
-		fprintf(makefile,"\t %s src/xpdev\n\n",cvs_co);
+		fprintf(makefile,"$(SBBSDIR)/src/xpdev: cvslogin\n");
+		fprintf(makefile,"\t%s src/xpdev\n\n",cvs_co);
 
-		fprintf(makefile,"\t $(SBBSDIR)/src/mozilla: cvslogin\n");
-		fprintf(makefile,"\t %s src/mozilla\n\n",cvs_co);
+		fprintf(makefile,"$(SBBSDIR)/src/mozilla: cvslogin\n");
+		fprintf(makefile,"\t%s src/mozilla\n\n",cvs_co);
 
-		fprintf(makefile,"\t $(SBBSDIR)/lib/mozilla/js/%s.%s: cvslogin\n",platform,build);
-		fprintf(makefile,"\t %s lib/mozilla/js/%s.%s\n\n",cvs_co, platform, build);
+		fprintf(makefile,"$(SBBSDIR)/lib/mozilla/js/%s.%s: cvslogin\n",platform,build);
+		fprintf(makefile,"\t%s lib/mozilla/js/%s.%s\n\n",cvs_co, platform, build);
 
 
-		fprintf(makefile,"\t cvslogin: $(SBBSDIR)\n");
-		fprintf(makefile,"\t 	@echo Press \\<ENTER\\> when prompted for password\n");
-		fprintf(makefile,"\t 	@$(CVSCOMMAND) login\n\n");
+		fprintf(makefile,"cvslogin: $(SBBSDIR)\n");
+		fprintf(makefile,"\t@echo Press \\<ENTER\\> when prompted for password\n");
+		fprintf(makefile,"\t@$(CVSCOMMAND) login\n\n");
 	}
 	fprintf(makefile,"\t $(SBBSDIR):\n");
 	fprintf(makefile,"\t 	@[ ! -e $(SBBSDIR) ] && mkdir $(SBBSDIR);\n");
