@@ -21,7 +21,7 @@ template.posted=http_request.query;
 template.errs=new Object;
 
 /* Plain GET with no query, just display the sign-up page */
-if(http_request.method=='get') {
+if(http_request.method=='GET') {
 	template.gender_list='<select name="gender">\n<option value="M">Male</option>\n<option value="F">Female</option>\n</select>';
 	showform();
 }
