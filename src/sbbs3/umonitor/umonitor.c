@@ -1066,7 +1066,7 @@ int main(int argc, char** argv)  {
 						do_cmd(str);
 						break;
 					case 1:
-						sprintf(str,"%suedit",cfg.exec_dir);
+						sprintf(str,"%suedit ",cfg.exec_dir);
 						for(j=1; j<argc; j++) {
 							strcat(str,"'");
 							strcat(str,argv[j]);
