@@ -315,6 +315,24 @@ ulong _beginthread(void( *start_address )( void * )
 #endif	/* __unix__ */
 
 /****************************************************************************/
+/* Win32 implementation of POSIX sem_getvalue() function					*/
+/****************************************************************************/
+#ifdef _WIN32
+int sem_getvalue(sem_t* psem, int* val)
+{
+	if(psem==NULL || val==NULL)
+		return(-1);
+
+	if(WaitForSingleObject(*(psem),0)==WAIT_OBJECT_0)
+		*val=1;
+	else
+		*val=0;
+
+	return(0);
+}
+#endif
+
+/****************************************************************************/
 /* Return free disk space in bytes (up to a maximum of 4GB)					*/
 /****************************************************************************/
 #ifdef _WIN32
