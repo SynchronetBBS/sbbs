@@ -456,6 +456,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define CON_NO_INACT	(1<<13)	/* Console inactivity detection disabled	*/
 #define CON_BACKSPACE	(1<<14)	/* Backspace hit, exiting from getstr()		*/
 #define CON_LEFTARROW	(1<<15)	/* Left arrow hit, exiting from getstr()	*/
+#define CON_INSERT		(1<<16)	/* Insert mode, for getstr()				*/
 																			
 							/* Number of milliseconds						*/
 #define DELAY_HANGUP 250    /* Delay before modem drops carrier				*/
