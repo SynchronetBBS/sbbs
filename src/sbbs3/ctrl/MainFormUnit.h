@@ -340,6 +340,7 @@ __published:	// IDE-managed Components
     void __fastcall ViewClientsExecute(TObject *Sender);
     void __fastcall UserEditExecute(TObject *Sender);
     void __fastcall SaveSettings(TObject *Sender);
+    bool __fastcall SaveIniSettings(TObject* Sender);    
     void __fastcall SaveRegistrySettings(TObject* Sender);    
     void __fastcall ImportSettings(TObject *Sender);
     void __fastcall ImportFormSettings(TMemIniFile* IniFile, const char* section, TForm* form);

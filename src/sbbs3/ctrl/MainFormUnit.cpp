@@ -777,6 +777,7 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
         
     memset(&bbs_startup,0,sizeof(bbs_startup));
     bbs_startup.size=sizeof(bbs_startup);
+    bbs_startup.cbdata=&bbs_startup;
     bbs_startup.first_node=1;
     bbs_startup.last_node=4;
 	bbs_startup.options=BBS_OPT_XTRN_MINIMIZED|BBS_OPT_SYSOP_AVAILABLE;
@@ -796,6 +797,7 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
 
     memset(&mail_startup,0,sizeof(mail_startup));
     mail_startup.size=sizeof(mail_startup);
+    mail_startup.cbdata=&mail_startup;
     mail_startup.smtp_port=IPPORT_SMTP;
     mail_startup.relay_port=IPPORT_SMTP;
     mail_startup.pop3_port=110;
@@ -817,6 +819,7 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
 
     memset(&ftp_startup,0,sizeof(ftp_startup));
     ftp_startup.size=sizeof(ftp_startup);
+    ftp_startup.cbdata=&ftp_startup;
     ftp_startup.port=IPPORT_FTP;
     ftp_startup.interface_addr=INADDR_ANY;
 	ftp_startup.lputs=ftp_lputs;
@@ -836,6 +839,7 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
 
     memset(&web_startup,0,sizeof(web_startup));
     web_startup.size=sizeof(web_startup);
+    web_startup.cbdata=&web_startup;
 	web_startup.lputs=web_lputs;
     web_startup.status=web_status;
     web_startup.clients=web_clients;
@@ -847,6 +851,7 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
 
     memset(&services_startup,0,sizeof(services_startup));
     services_startup.size=sizeof(services_startup);
+    services_startup.cbdata=&services_startup;
     services_startup.interface_addr=INADDR_ANY;
     services_startup.lputs=service_lputs;
     services_startup.status=services_status;
@@ -2026,7 +2031,8 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
         if(Registry->ValueExists("ServicesOptions"))
             services_startup.options=Registry->ReadInteger("ServicesOptions");
 
-        Registry->WriteBool("Imported",true);   /* Use the .ini file for these settings from now on */
+        if(SaveIniSettings(Sender))
+            Registry->WriteBool("Imported",true);   /* Use the .ini file for these settings from now on */
     }
 
     Registry->CloseKey();
@@ -2166,9 +2172,7 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     if(ServicesAutoStart)
         ServicesStartExecute(Sender);
 
-//    NodeForm->Timer->Interval=NodeDisplayInterval*1000;
     NodeForm->Timer->Enabled=true;
-//    ClientForm->Timer->Interval=ClientDisplayInterval*1000;
     ClientForm->Timer->Enabled=true;
 
     StatsTimer->Interval=cfg.node_stat_check*1000;
@@ -2436,33 +2440,40 @@ void __fastcall TMainForm::SaveRegistrySettings(TObject* Sender)
     Registry->CloseKey();
     delete Registry;
 }
-
 //---------------------------------------------------------------------------
 void __fastcall TMainForm::SaveSettings(TObject* Sender)
 {
-	StatusBar->Panels->Items[4]->Text="Saving Settings...";
-
+    SaveIniSettings(Sender);
+    SaveRegistrySettings(Sender);
+}
+//---------------------------------------------------------------------------
+bool __fastcall TMainForm::SaveIniSettings(TObject* Sender)
+{
     FILE* fp=NULL;
-   	if(ini_file[0]) {
-        if((fp=fopen(ini_file,"r+"))==NULL) {
-            char err[MAX_PATH*2];
-            SAFEPRINTF2(err,"Error %d opening initialization file: %s",errno,ini_file);
-            Application->MessageBox(err,"ERROR",MB_OK|MB_ICONEXCLAMATION);
-        } else {
-            if(sbbs_write_ini(fp
-                ,&cfg
-                ,&global
-                ,SysAutoStart		,&bbs_startup
-                ,FtpAutoStart		,&ftp_startup
-                ,WebAutoStart		,&web_startup
-                ,MailAutoStart		,&mail_startup
-                ,ServicesAutoStart	,&services_startup
-                ))
-            fclose(fp);
-        }
+   	if(ini_file[0]==0)
+        return(false);
+
+    if((fp=fopen(ini_file,"r+"))==NULL) {
+        char err[MAX_PATH*2];
+        SAFEPRINTF2(err,"Error %d opening initialization file: %s",errno,ini_file);
+        Application->MessageBox(err,"ERROR",MB_OK|MB_ICONEXCLAMATION);
+        return(false);
     }
 
-    SaveRegistrySettings(Sender);
+	StatusBar->Panels->Items[4]->Text="Saving Settings to " + AnsiString(ini_file) + " ...";
+
+    bool success = sbbs_write_ini(fp
+        ,&cfg
+        ,&global
+        ,SysAutoStart		,&bbs_startup
+        ,FtpAutoStart		,&ftp_startup
+        ,WebAutoStart		,&web_startup
+        ,MailAutoStart		,&mail_startup
+        ,ServicesAutoStart	,&services_startup
+        );
+    fclose(fp);
+
+    return(success);
 }
 
 //---------------------------------------------------------------------------
