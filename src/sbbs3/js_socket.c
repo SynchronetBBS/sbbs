@@ -349,8 +349,7 @@ js_sendto(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	}
 
 	/* port */
-	JS_ValueToInt32(cx, argv[2], &i);
-	port = (ushort)i;
+	port = js_port(cx,argv[2],p->type);
 
 	dbprintf(FALSE, p, "sending %d bytes to port %u at %s"
 		,len, port, JS_GetStringBytes(ip_str));
