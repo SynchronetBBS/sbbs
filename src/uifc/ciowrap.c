@@ -77,7 +77,7 @@ int puttext(int sx, int sy, int ex, int ey, unsigned char *fill)
 	return(1);
 }
 
-int gettext(int sx, int sy, int ex, int ey, unsigned char *fill)
+int cio_gettext(int sx, int sy, int ex, int ey, unsigned char *fill)
 {
 	int x,y;
 	int fillpos=0;

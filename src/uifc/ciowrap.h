@@ -31,7 +31,8 @@ struct text_info {
 
 short curses_color(short color);
 int puttext(int sx, int sy, int ex, int ey, unsigned char *fill);
-int gettext(int sx, int sy, int ex, int ey, unsigned char *fill);
+#define gettext(x1,y1,x2,y2,z)	cio_gettext(x1,y1,x2,y2,z)
+int cio_gettext(int sx, int sy, int ex, int ey, unsigned char *fill);
 void textattr(unsigned char attr);
 int kbhit(void);
 #ifndef __QNX__
