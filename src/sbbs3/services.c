@@ -876,21 +876,20 @@ void DLLCALL services_terminate(void)
 
 #define NEXT_FIELD(p)	while(*p && *p>' ') p++; while(*p && *p<=' ') p++;
 
-static BOOL read_services_cfg(void)
+static service_t* read_services_cfg(char* services_cfg, DWORD* services)
 {
 	char*	p;
 	char*	tp;
-	char	path[MAX_PATH+1];
 	char	line[1024];
 	FILE*	fp;
+	service_t*	service=NULL;
 
-	sprintf(path,"%sservices.cfg",scfg.ctrl_dir);
-	if((fp=fopen(path,"r"))==NULL) {
-		lprintf("!ERROR %d opening %s",errno,path);
-		return(FALSE);
+	if((fp=fopen(services_cfg,"r"))==NULL) {
+		lprintf("!ERROR %d opening %s",errno,services_cfg);
+		return(NULL);
 	}
 
-	for(services=0;!feof(fp) && services<MAX_SERVICES;) {
+	for((*services)=0;!feof(fp) && (*services)<MAX_SERVICES;) {
 		if(!fgets(line,sizeof(line)-1,fp))
 			break;
 		p=line;
@@ -898,34 +897,34 @@ static BOOL read_services_cfg(void)
 		if(*p==0 || *p==';')	/* ignore blank lines or comments */
 			continue;
 		
-		if((service=(service_t*)realloc(service,sizeof(service_t)*(services+1)))==NULL) {
+		if((service=(service_t*)realloc(service,sizeof(service_t)*((*services)+1)))==NULL) {
 			lprintf("!MALLOC FAILURE");
 			return(FALSE);
 		}
-		memset(&service[services],0,sizeof(service_t));
-		service[services].socket=INVALID_SOCKET;
+		memset(&service[*services],0,sizeof(service_t));
+		service[*services].socket=INVALID_SOCKET;
 
 		tp=p; 
 		while(*tp && *tp>' ') tp++; 
 		*tp=0;
-		sprintf(service[services].protocol,"%.*s",sizeof(service[0].protocol),p);
+		sprintf(service[*services].protocol,"%.*s",sizeof(service[0].protocol),p);
 		p=tp+1;
 		while(*p && *p<=' ') p++;
-		service[services].port=atoi(p);
+		service[*services].port=atoi(p);
 		NEXT_FIELD(p);
-		service[services].max_clients=strtol(p,NULL,10);
+		service[*services].max_clients=strtol(p,NULL,10);
 		NEXT_FIELD(p);
-		service[services].options=strtol(p,NULL,16);
+		service[*services].options=strtol(p,NULL,16);
 		NEXT_FIELD(p);
 
-		sprintf(service[services].cmd,"%.*s",sizeof(service[0].cmd),p);
-		truncsp(service[services].cmd);
+		sprintf(service[*services].cmd,"%.*s",sizeof(service[0].cmd),p);
+		truncsp(service[*services].cmd);
 
-		services++;
+		(*services)++;
 	}
 	fclose(fp);
 
-	return(TRUE);
+	return(service);
 }
 
 static void cleanup(int code)
@@ -1070,7 +1069,9 @@ void DLLCALL services_thread(void* arg)
 	active_clients=0;
 	update_clients();
 
-	if(!read_services_cfg()) {
+	if(startup->services_cfg[0]==0)			
+		sprintf(startup->services_cfg,"%sservices.cfg",scfg.ctrl_dir);
+	if((service=read_services_cfg(startup->services_cfg, &services))==NULL) {
 		lprintf("!Failure reading configuration file");
 		cleanup(1);
 		return;
