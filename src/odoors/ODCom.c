@@ -3438,9 +3438,10 @@ tODResult ODComWaitEvent(tPortHandle hPort, tComEvent Event)
 					if(select(pPortInfo->socket+1,&socket_set,NULL,NULL,NULL)
 						==SOCKET_ERROR)
 						break;
-					while ((recv_ret = recv(pPortInfo->socket, &ch, 1, MSG_PEEK) != 1) && (WSAGetLastError() == WSAEWOULDBLOCK))
-						Sleep(25);
-					if (recv_ret == SOCKET_ERROR)
+					recv_ret = recv(pPortInfo->socket, &ch, 1, MSG_PEEK);
+					if(recv_ret == SOCKET_ERROR && WSAGetLastError() == WSAEWOULDBLOCK)
+						continue;
+					if (recv_ret != 1)
 						break;
 				}
 			} 
