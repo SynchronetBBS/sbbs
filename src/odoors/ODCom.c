@@ -2782,27 +2782,30 @@ tODResult ODComGetByte(tPortHandle hPort, char *pbtNext, BOOL bWait)
 		{
 			fd_set	socket_set;
 			struct	timeval tv;
-			int		select_ret, recv_ret;
+			int		select_ret=-1;
+			int		recv_ret;
 
-			FD_ZERO(&socket_set);
-			FD_SET(STDIN_FILENO,&socket_set);
+			while(select_ret==-1) {
+				FD_ZERO(&socket_set);
+				FD_SET(STDIN_FILENO,&socket_set);
 
-			tv.tv_sec=0;
-			tv.tv_usec=0;
+				tv.tv_sec=0;
+				tv.tv_usec=0;
 
-			select_ret = select(STDIN_FILENO+1, &socket_set, NULL, NULL, bWait ? NULL : &tv);
-			if (select_ret == -1)
-				return (kODRCGeneralFailure);
-			if (select_ret == 0)
-				return (kODRCNothingWaiting);
+				select_ret = select(STDIN_FILENO+1, &socket_set, NULL, NULL, bWait ? NULL : &tv);
+				if (select_ret == -1) {
+					if(errno==EINTR)
+						continue;
+					return (kODRCGeneralFailure);
+				}
+				if (select_ret == 0)
+					return (kODRCNothingWaiting);
+			}
 
 			recv_ret = fread(pbtNext, 1, 1, stdin);
 			if(recv_ret != -1)
 				break;
 			return (kODRCGeneralFailure);
-
-			if (recv_ret == 0)
-				 return (kODRCNothingWaiting);
 
 			break;
 		}
@@ -2963,21 +2966,26 @@ keep_going:
 	    {
 		fd_set  fdset;
 		struct  timeval tv;
-		int             send_ret;
+		int             retval=-1;
 
-		FD_ZERO(&fdset);
-		FD_SET(STDOUT_FILENO,&fdset);
+		while(retval==-1) {
+			FD_ZERO(&fdset);
+			FD_SET(STDOUT_FILENO,&fdset);
 
-		tv.tv_sec=1;
-		tv.tv_usec=0;
+			tv.tv_sec=1;
+			tv.tv_usec=0;
 
-		if(select(STDOUT_FILENO+1,NULL,&fdset,NULL,&tv) != 1)
-			return(kODRCGeneralFailure);
+			retval=select(STDOUT_FILENO+1,NULL,&fdset,NULL,&tv);
+			if(retval!=1) {
+				if(retval==-1 && errno==EINTR)
+					continue;
+				return(kODRCGeneralFailure);
+			}
+		}
 
-		    if((send_ret=fwrite(&btToSend,1,1,stdout))!=1)
-			   return(kODRCGeneralFailure);
-
-			break;
+	    if(fwrite(&btToSend,1,1,stdout)!=1)
+		   return(kODRCGeneralFailure);
+		break;
 		}
 #endif
 
@@ -3443,7 +3451,7 @@ try_again:
 			int pos=0;
 			fd_set  fdset;
 			struct  timeval tv;
-			int     send_ret;
+			int     retval;
 
 			while(pos<nSize) {
 				FD_ZERO(&fdset);
@@ -3452,15 +3460,19 @@ try_again:
 				tv.tv_sec=1;
 				tv.tv_usec=0;
 
-				if(select(STDOUT_FILENO+1,NULL,&fdset,NULL,&tv) != 1)
+				retval=select(STDOUT_FILENO+1,NULL,&fdset,NULL,&tv);
+				if(retval!=1) {
+					if(retval==-1 && errno==EINTR)
+						continue;
 					return(kODRCGeneralFailure);
+				}
 
-				send_ret=fwrite(pbtBuffer+pos,1,nSize-pos,stdout);
-				if(send_ret!=nSize-pos) {
+				retval=fwrite(pbtBuffer+pos,1,nSize-pos,stdout);
+				if(retval!=nSize-pos) {
 					od_sleep(1);
 				}
 
-				pos+=send_ret;
+				pos+=retval;
 			}
 		    break;
 		}
@@ -3625,7 +3637,7 @@ tODResult ODComWaitEvent(tPortHandle hPort, tComEvent Event)
 					if (recv_ret != 1)
 						break;
 				}
-			} 
+			}
 			else
 			{
 				VERIFY_CALL(FALSE);
