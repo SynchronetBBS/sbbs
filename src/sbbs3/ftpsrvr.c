@@ -2292,6 +2292,8 @@ static void ctrl_thread(void* arg)
 				lprintf("%04d %s %.4s by alias: %s"
 					,sock,user.alias,cmd,p);
 				p=getfname(fname);
+				if(dir>=0)
+					lib=scfg.dir[dir]->lib;
 			}
 			if(!success && lib<0 && (tp=strchr(p,'/'))!=NULL) {
 				dir=-1;
