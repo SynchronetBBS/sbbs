@@ -59,7 +59,7 @@ char tmp[256];
 char **mdm_type;
 char **mdm_file;
 int  mdm_types;
-int  backup_level=3;
+int  backup_level=5;
 
 read_cfg_text_t txt={
 	"\7\r\nError opening %s for read.\r\n",
