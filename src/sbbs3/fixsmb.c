@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -40,9 +40,7 @@
 #include <string.h>	/* strnicmp */
 #include <ctype.h>	/* toupper */
 
-#include "genwrap.h"	/* strnicmp */
-#include "filewrap.h"
-#include "smblib.h"
+#include "sbbs.h"
 
 char *usage="usage: fixsmb [/opts] <smb_file>\n"
 			"\n"
@@ -51,45 +49,6 @@ char *usage="usage: fixsmb [/opts] <smb_file>\n"
 			"\n"
 			"   ex: FIXSMB /M MAIL\n"
 			"   or: FIXSMB DEBATE\n";
-
-void remove_re(char *str)
-{
-	while(!strnicmp(str,"RE:",3)) {
-		strcpy(str,str+3);
-		while(str[0]==SP)
-			strcpy(str,str+1); }
-}
-
-/****************************************************************************/
-/* Updates 16-bit "rcrc" with character 'ch'                                */
-/****************************************************************************/
-void ucrc16(uchar ch, ushort *rcrc) {
-	ushort i, cy;
-    uchar nch=ch;
- 
-	for (i=0; i<8; i++) {
-		cy=*rcrc & 0x8000;
-		*rcrc<<=1;
-		if (nch & 0x80) *rcrc |= 1;
-		nch<<=1;
-		if (cy) *rcrc ^= 0x1021; }
-}
-
-/****************************************************************************/
-/* Returns 16-crc of string (not counting terminating NULL) 				*/
-/****************************************************************************/
-ushort crc16(char *str)
-{
-	int 	i=0;
-	ushort	crc=0;
-
-	ucrc16(0,&crc);
-	while(str[i])
-		ucrc16(str[i++],&crc);
-	ucrc16(0,&crc);
-	ucrc16(0,&crc);
-	return(crc);
-}
 
 #define MAIL (1<<0)
 
@@ -200,10 +159,7 @@ int main(int argc, char **argv)
 			msg.idx.number=n;
 			msg.idx.attr=msg.hdr.attr;
 			msg.idx.time=msg.hdr.when_imported.time;
-			SAFECOPY(str,msg.subj);
-			strlwr(str);
-			remove_re(str);
-			msg.idx.subj=crc16(str);
+			msg.idx.subj=subject_crc(msg.subj);
 			if(smb.status.attr&SMB_EMAIL) {
 				if(msg.to_ext)
 					msg.idx.to=atoi(msg.to_ext);
@@ -216,10 +172,10 @@ int main(int argc, char **argv)
 			else {
 				SAFECOPY(str,msg.to);
 				strlwr(str);
-				msg.idx.to=crc16(str);
+				msg.idx.to=crc16(str,0);
 				SAFECOPY(str,msg.from);
 				strlwr(str);
-				msg.idx.from=crc16(str); }
+				msg.idx.from=crc16(str,0); }
 			if((i=smb_putmsg(&smb,&msg))!=0) {
 				printf("\nsmb_putmsg returned %d\n",i);
 				continue; }
