@@ -323,7 +323,7 @@ void sbbs_t::mnemonics(char *str)
 		attr(cfg.color[clr_mnelow]); }
 	l=0L;
 	while(str[l]) {
-		if(str[l]=='~' && str[l+1]) {
+		if(str[l]=='~' && str[l+1]!=0) {
 			if(!(useron.misc&ANSI))
 				outchar('(');
 			l++;
@@ -336,7 +336,8 @@ void sbbs_t::mnemonics(char *str)
 			if(!ctrl_a_codes)
 				attr(cfg.color[clr_mnelow]); }
 		else {
-			if(str[l]==CTRL_A) {        /* ctrl-a */
+			if(str[l]==CTRL_A           /* ctrl-a */
+				&& str[l+1]!=0)	{		/* valid */
 				ctrl_a(str[++l]);       /* skip the ctrl-a */
 				l++; }                  /* skip the attribute code */
 			else
