@@ -2858,6 +2858,11 @@ void DLLCALL mail_server(void* arg)
 				lprintf("0000 Recycle semaphore detected");
 				break;
 			}
+			if(!active_clients && startup->recycle_now==TRUE) {
+				lprintf("0000 Recycle semaphore signaled");
+				startup->recycle_now=FALSE;
+				break;
+			}
 
 			/* now wait for connection */
 

@@ -4381,8 +4381,8 @@ void DLLCALL ftp_server(void* arg)
 			cleanup(1,__LINE__);
 			return;
 		}
-#endif
 
+#endif
 		/* Initial configuration and load from CNF files */
 		sprintf(scfg.ctrl_dir, "%.*s",(int)sizeof(scfg.ctrl_dir)-1
     		,startup->ctrl_dir);
@@ -4499,7 +4499,12 @@ void DLLCALL ftp_server(void* arg)
 
 			sprintf(path,"%sftpsrvr.rec",scfg.ctrl_dir);
 			if(!active_clients && fdate(path)>initialized) {
-				lprintf("0000 Recycle semaphore detected");
+				lprintf("0000 Recycle semaphore file detected");
+				break;
+			}
+			if(!active_clients && startup->recycle_now==TRUE) {
+				lprintf("0000 Recycle semaphore signaled");
+				startup->recycle_now=FALSE;
 				break;
 			}
 
