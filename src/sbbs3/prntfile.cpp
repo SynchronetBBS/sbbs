@@ -143,7 +143,7 @@ void sbbs_t::printtail(char *str, int lines, long mode)
 /****************************************************************************/
 void sbbs_t::menu(char *code)
 {
-    char str[256],path[256];
+    char str[MAX_PATH+1],path[MAX_PATH+1];
 
 	sys_status&=~SS_ABORT;
 	if(menu_file[0])
@@ -156,12 +156,15 @@ void sbbs_t::menu(char *code)
 		strcat(str,code);
 		strcat(str,".");
 		sprintf(path,"%s%s",str,useron.misc&WIP ? "wip":"rip");
-		if(!(useron.misc&(RIP|WIP)) || !fexist(path)) {
+		if(!(useron.misc&(RIP|WIP)) || !fexistcase(path)) {
 			sprintf(path,"%smon",str);
-			if((useron.misc&(COLOR|ANSI))!=ANSI || !fexist(path)) {
+			if((useron.misc&(COLOR|ANSI))!=ANSI || !fexistcase(path)) {
 				sprintf(path,"%sans",str);
-				if(!(useron.misc&ANSI) || !fexist(path))
-					sprintf(path,"%sasc",str); } } }
+				if(!(useron.misc&ANSI) || !fexistcase(path))
+					sprintf(path,"%sasc",str); 
+			} 
+		} 
+	}
 
 	printfile(path,P_OPENCLOSE);
 }
