@@ -2473,7 +2473,7 @@ void DLLCALL web_server(void* arg)
 			return;
 		}
 
-		result = listen(server_socket, 16);
+		result = listen(server_socket, 0);
 
 		if(result != 0) {
 			lprintf("!ERROR %d (%d) listening on HTTP socket", result, ERROR_VALUE);
