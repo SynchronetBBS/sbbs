@@ -782,11 +782,14 @@ extern "C" {
 	/* js_file_area.c */
 	DLLEXPORT JSObject* DLLCALL js_CreateFileAreaObject(scfg_t* cfg, JSContext* cx, JSObject* parent
 													,user_t* user, char* html_index_file);
+	/* js_socket.c */
+	DLLEXPORT JSObject* DLLCALL js_CreateSocketClass(JSContext* cx, JSObject* parent);
+
 	/* js_console.cpp */
 	JSObject* js_CreateConsoleObject(JSContext* cx, JSObject* parent);
 
-	/* js_socket.c */
-	JSObject* DLLCALL js_CreateSocketClass(JSContext* cx, JSObject* parent);
+	/* js_bbs.cpp */
+	JSObject* js_CreateBbsObject(JSContext* cx, JSObject* parent);
 
 #endif
 
