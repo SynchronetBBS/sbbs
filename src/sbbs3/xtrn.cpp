@@ -795,11 +795,13 @@ BYTE* lf_expand(BYTE* inbuf, ulong inlen, BYTE* outbuf, ulong& newlen)
     return(outbuf);
 }
 
+#define MAX_ARGS 1000
+
 int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 {
 	char	str[256];
 	char	fname[128];
-	char*	argv[30];
+	char*	argv[MAX_ARGS];
 	char*	p;
 	BYTE*	bp;
 	BYTE	buf[XTRN_IO_BUF_LEN];
@@ -892,7 +894,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 		} else {
 			argv[0]=cmdline;	/* point to the beginning of the string */
 			argc=1;
-			for(i=0;cmdline[i];i++)	/* Break up command line */
+			for(i=0;cmdline[i] && argc<MAX_ARGS;i++)	/* Break up command line */
 				if(cmdline[i]==SP) {
 					cmdline[i]=0;			/* insert nulls */
 					argv[argc++]=cmdline+i+1; /* point to the beginning of the next arg */
