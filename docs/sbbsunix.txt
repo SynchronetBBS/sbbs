@@ -212,7 +212,7 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
             gcc.<os>.lib.<build> directory:
             export LD_LIBRARY_PATH=/sbbs/src/sbbs3/gcc.linux.lib.debug
 
-   D. Build the required Baja {tm} modules:
+   D. Build the required Baja {tm} modules (exec/*.bin):
       gmake
 
 
