@@ -79,49 +79,21 @@ var SOCK_RAW        =3               /* raw-protocol interface */
 var SOCK_RDM        =4               /* reliably-delivered message */
 var SOCK_SEQPACKET  =5               /* sequenced packet stream */
 
-/*
- * Option flags per-socket.
- */
-var SO_DEBUG        =0x0001          /* turn on debugging info recording */
-var SO_ACCEPTCONN   =0x0002          /* socket has had listen() */
-var SO_REUSEADDR    =0x0004          /* allow local address reuse */
-var SO_KEEPALIVE    =0x0008          /* keep connections alive */
-var SO_DONTROUTE    =0x0010          /* just use interface addresses */
-var SO_BROADCAST    =0x0020          /* permit sending of broadcast msgs */
-var SO_USELOOPBACK  =0x0040          /* bypass hardware when possible */
-var SO_LINGER       =0x0080          /* linger on close if data present */
-var SO_OOBINLINE    =0x0100          /* leave received OOB data in line */
-
-var SO_DONTLINGER   =(~SO_LINGER)
-
-/*
- * Additional options.
- */
-var SO_SNDBUF       =0x1001          /* send buffer size */
-var SO_RCVBUF       =0x1002          /* receive buffer size */
-var SO_SNDLOWAT     =0x1003          /* send low-water mark */
-var SO_RCVLOWAT     =0x1004          /* receive low-water mark */
-var SO_SNDTIMEO     =0x1005          /* send timeout */
-var SO_RCVTIMEO     =0x1006          /* receive timeout */
-var SO_ERROR        =0x1007          /* get error status and clear */
-var SO_TYPE         =0x1008          /* get socket type */
-
-/*
- * WinSock 2 extension -- new options
- */
-var SO_GROUP_ID       =0x2001      /* ID of a socket group */
-var SO_GROUP_PRIORITY =0x2002      /* the relative priority within a group*/
-var SO_MAX_MSG_SIZE   =0x2003      /* maximum message size */
-var SO_PROTOCOL_INFOA =0x2004      /* WSAPROTOCOL_INFOA structure */
-var SO_PROTOCOL_INFOW =0x2005      /* WSAPROTOCOL_INFOW structure */
-var PVD_CONFIG        =0x3001          /* configuration info for service provider */
-
-/*
- * TCP options.
- */
-var TCP_NODELAY     =0x0001
-
-/*
- * Level number for (get/set)sockopt() to apply to socket itself.
- */
-var SOL_SOCKET      =0xffff          /* options for socket level */
+/* Option name parameter to Socket.getoption/setoption */
+var sockopts = [
+	"TYPE",
+	"DEBUG",		
+	"LINGER", 
+	"SNDBUF",		
+	"RCVBUF",		
+	"SNDLOWAT",	
+	"RCVLOWAT",	
+	"SNDTIMEO",	
+	"RCVTIMEO",
+	"REUSEADDR",	
+	"KEEPALIVE",	
+	"DONTROUTE",	
+	"BROADCAST",	
+	"OOBINLINE",	
+	"ACCEPTCONN",	
+];
