@@ -653,17 +653,6 @@ bool sbbs_t::ftp_get(csi_t* csi, SOCKET ctrl_sock, char* src, char* dest, bool d
 	if((data_sock=ftp_data_sock(csi, ctrl_sock, &addr))==INVALID_SOCKET)
 		return(false);
 
-	if(dir)
-		sprintf(cmd,"LIST %s",src);
-	else
-		sprintf(cmd,"RETR %s",src);
-
-	if(!ftp_cmd(csi,ctrl_sock,cmd,rsp) 
-		|| atoi(rsp)!=150 /* Open data connection */) {
-		close_socket(data_sock);
-		return(false);
-	}
-
 	if(csi->ftp_mode&CS_FTP_PASV) {
 
 #if 0	// Debug
@@ -711,6 +700,16 @@ bool sbbs_t::ftp_get(csi_t* csi, SOCKET ctrl_sock, char* src, char* dest, bool d
 		data_sock=accept_sock;
 	}
 
+	if(dir)
+		sprintf(cmd,"LIST %s",src);
+	else
+		sprintf(cmd,"RETR %s",src);
+
+	if(!ftp_cmd(csi,ctrl_sock,cmd,rsp) 
+		|| atoi(rsp)!=150 /* Open data connection */) {
+		close_socket(data_sock);
+		return(false);
+	}
 
 	if(!dir)
 		if((fp=fopen(dest,"wb"))==NULL) {
@@ -783,14 +782,6 @@ bool sbbs_t::ftp_put(csi_t* csi, SOCKET ctrl_sock, char* src, char* dest)
 	if((data_sock=ftp_data_sock(csi, ctrl_sock, &addr))==INVALID_SOCKET)
 		return(false);
 
-	sprintf(cmd,"STOR %s",dest);
-
-	if(!ftp_cmd(csi,ctrl_sock,cmd,rsp) 
-		|| atoi(rsp)!=150 /* Open data connection */) {
-		close_socket(data_sock);
-		return(false);
-	}
-
 	if(csi->ftp_mode&CS_FTP_PASV) {
 
 #if 0	// Debug
@@ -838,8 +829,15 @@ bool sbbs_t::ftp_put(csi_t* csi, SOCKET ctrl_sock, char* src, char* dest)
 		data_sock=accept_sock;
 	}
 
-
 	if((fp=fopen(src,"rb"))==NULL) {
+		close_socket(data_sock);
+		return(false);
+	}
+
+	sprintf(cmd,"STOR %s",dest);
+
+	if(!ftp_cmd(csi,ctrl_sock,cmd,rsp) 
+		|| atoi(rsp)!=150 /* Open data connection */) {
 		close_socket(data_sock);
 		return(false);
 	}
