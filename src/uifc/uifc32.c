@@ -98,11 +98,6 @@ static int *last_menu_bar=NULL;
 static int save_menu_cur=-1;
 static int save_menu_bar=-1;
 
-#ifdef _WIN32
-#define kbhit()	console_hit()
-int	console_hit(void);
-#endif
-
 static void reset_dynamic(void) {
 	last_menu_cur=NULL;
 	last_menu_bar=NULL;
