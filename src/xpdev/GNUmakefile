@@ -5,7 +5,7 @@
 # For use with GNU make and GNU C Compiler								#
 # @format.tab-size 4, @format.use-tabs true								#
 #																		#
-# usage: gmake															#
+# usage: gmake [os=target_os]											#
 #########################################################################
 
 # $Id$
@@ -15,10 +15,6 @@ DEBUG	=	1		# Comment out for release (non-debug) version
 CC		=	gcc
 SLASH	=	/
 OFILE	=	o
-
-LD		=	ld
-LIBFILE	=	.a
-EXEFILE	=	
 
 ifndef $(os)
 os		=	$(shell uname)
@@ -31,10 +27,8 @@ DELETE	=	rm -fv
 
 ifeq ($(os),FreeBSD)	# FreeBSD
 CFLAGS	+= -D_THREAD_SAFE
-# Uses pthread
 LFLAGS	:=	-pthread
-else			# Linux / Other UNIX
-# Math and pthread libraries needed
+else					# Linux / Other UNIX
 LFLAGS	:=	-lpthread
 endif
 
@@ -46,8 +40,7 @@ ODIR	:=	$(ODIR).release
 endif
 
 include objects.mk		# defines $(OBJS)
-
-all: $(ODIR) $(ODIR)/wraptest
+include targets.mk		# defines all and clean targets
 
 # Implicit C Compile Rule
 $(ODIR)/%.o : %.c
@@ -59,7 +52,7 @@ $(ODIR):
 	mkdir $(ODIR)
 
 # Executable Build Rule
-$(ODIR)/wraptest: $(ODIR)/wraptest.o $(OBJS)
+$(WRAPTEST): $(ODIR)/wraptest.o $(OBJS)
 	@echo Linking $@
 	@$(CC) $(LFLAGS) $^ -o $@
 
