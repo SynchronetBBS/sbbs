@@ -35,11 +35,7 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-
-#ifdef _WIN32
-#include <windows.h>
-#endif
-#include "client.h"
+#include "client.h"				/* client_t */
 
 typedef struct {
 
@@ -106,10 +102,14 @@ typedef struct {
 #define MAIL_OPT_USE_TCP_DNS		(1<<12)
 #define MAIL_OPT_MUTE				(1<<31)
 
-#ifdef MAILSRVR_EXPORTS
-#define MAIL_CALL __declspec( dllexport )
-#else
-#define MAIL_CALL __declspec( dllimport )
+#ifdef _WIN32
+	#ifdef MAILSRVR_EXPORTS
+		#define MAIL_CALL __declspec( dllexport )
+	#else
+		#define MAIL_CALL __declspec( dllimport )
+	#endif
+#else /* !_WIN32 */
+	#define MAIL_CALL
 #endif
 
 #ifdef __cplusplus

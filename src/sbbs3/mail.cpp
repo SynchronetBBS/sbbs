@@ -255,7 +255,7 @@ mail_t* loadmail(smb_t* smb, long* msgs, uint usernumber
 	return(mail);
 }
 
-extern "C" __declspec(dllexport) void freemail(mail_t* mail)
+extern "C" void freemail(mail_t* mail)
 {
 	FREE(mail);
 }
