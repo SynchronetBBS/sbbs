@@ -179,10 +179,23 @@ int win32_keyboardio(int isgetch)
 				OutputDebugString(str);
 #endif
 
-				if(input.Event.KeyEvent.dwControlKeyState & (LEFT_ALT_PRESSED|RIGHT_ALT_PRESSED)
-						&& isalpha(input.Event.KeyEvent.uChar.AsciiChar)) {
-					lastch=altkeys[toupper(input.Event.KeyEvent.uChar.AsciiChar)-'A']<<8;
-					break;
+				if(input.Event.KeyEvent.dwControlKeyState & (LEFT_ALT_PRESSED|RIGHT_ALT_PRESSED)) {
+					if(isalpha(input.Event.KeyEvent.uChar.AsciiChar)) {
+						lastch=altkeys[toupper(input.Event.KeyEvent.uChar.AsciiChar)-'A']<<8;
+						break;
+					}
+					if(input.Event.KeyEvent.wVirtualScanCode >= CIO_KEY_F(1)
+							&& input.Event.KeyEvent.wVirtualScanCode <= CIO_KEY_F(10)) {
+						/* Magic number to convert from Fx to ALT-Fx */
+						lastch=input.Event.KeyEvent.wVirtualScanCode+45;
+						break;
+					}
+					if(input.Event.KeyEvent.wVirtualScanCode == CIO_KEY_F(11)
+							&& input.Event.KeyEvent.wVirtualScanCode == CIO_KEY_F(12)) {
+						/* Magic number to convert from F(x>10) to ALT-Fx */
+						lastch=input.Event.KeyEvent.wVirtualScanCode+6;
+						break;
+					}
 				}
 
 				if(input.Event.KeyEvent.uChar.AsciiChar)
