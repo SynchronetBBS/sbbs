@@ -1678,26 +1678,15 @@ bool sbbs_t::exec_xtrn(uint xtrnnum)
 		mode|=EX_SH;
 	if(cfg.xtrn[xtrnnum]->misc&IO_INTS)
 		mode|=(EX_OUTR|EX_INR|EX_OUTL);
-	if(cfg.xtrn[xtrnnum]->misc&WWIVCOLOR)
-		mode|=EX_WWIV;
-	if(cfg.xtrn[xtrnnum]->misc&SWAP)
-		mode|=EX_SWAP;
-	if(cfg.xtrn[xtrnnum]->misc&XTRN_NATIVE)
-		mode|=EX_NATIVE;
-	if(cfg.xtrn[xtrnnum]->misc&XTRN_CHKTIME)
-		mode|=EX_CHKTIME;
-	if(cfg.xtrn[xtrnnum]->misc&MODUSERDAT) {	 /* Delete MODUSER.DAT */
+	mode|=(cfg.xtrn[xtrnnum]->misc&(XTRN_CHKTIME|XTRN_NATIVE|XTRN_NOECHO|WWIVCOLOR));
+	if(cfg.xtrn[xtrnnum]->misc&MODUSERDAT) {		/* Delete MODUSER.DAT */
 		sprintf(str,"%sMODUSER.DAT",dropdir);       /* if for some weird  */
 		remove(str); 								/* reason it's there  */
 	}
 
 	start=time(NULL);
 	external(cmdstr(cfg.xtrn[xtrnnum]->cmd,path
-#if 0	/* old way */
-		,dropdir
-#else	/* new way, as of Feb-20-2003 */
 		,cfg.xtrn[xtrnnum]->path
-#endif
 		,NULL)
 		,mode
 		,cfg.xtrn[xtrnnum]->path);

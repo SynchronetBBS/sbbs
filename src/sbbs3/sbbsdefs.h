@@ -400,6 +400,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define XTRN_LWRCASE	(1<<17)		/* Use lowercase drop-file names		*/
 #define XTRN_SH			(1<<18)		/* Use command shell to execute			*/
 #define XTRN_PAUSE		(1<<19)		/* Force a screen pause on exit			*/
+#define XTRN_NOECHO		(1<<20)		/* Don't echo stdin to stdout			*/
 
 									/* Bits in cfg.xtrn_misc				*/
 #define XTRN_NO_MUTEX	(1<<0)		/* Do not use exec_mutex for FOSSIL VXD	*/
@@ -740,14 +741,15 @@ enum {							/* readmail and delmailidx which types		*/
 #define EX_OUTR     (1<<1)		/* Copy DOS output to remote                */
 #define EX_OUTL 	(1<<2)		/* Use _lputc() for local DOS output		*/
 #define EX_INR		(1<<3)		/* Trap int 16h keyboard input requests     */
-#define EX_WWIV 	(1<<4)		/* Expand WWIV color codes to ANSI sequence */
-#define EX_SWAP 	(1<<5)		/* Swap out for this external				*/
-#define EX_POPEN	(1<<7)		/* Leave COM port open						*/
+#define EX_WWIV 	WWIVCOLOR	/* Expand WWIV color codes to ANSI sequence */
+#define EX_SWAP 	(1<<5)		/* Swap out for this external (*legacy*)	*/
+#define EX_POPEN	(1<<7)		/* Leave COM port open	(*legacy*)			*/
 #define EX_OFFLINE	(1<<8)		/* Run this program offline					*/
 #define EX_BG		(1<<10)		/* Back-ground/detached process				*/
 #define EX_BIN		(1<<11)		/* Binary mode (no Unix LF to CRLF)			*/
-#define EX_NATIVE	(1<<14)		/* Native 32-bit application (XTRN_NATIVE)	*/
-#define EX_CHKTIME	(1<<16)		/* Check time left (XTRN_CHKTIME)			*/
+#define EX_NATIVE	XTRN_NATIVE		/* Native 32-bit application 			*/
+#define EX_CHKTIME	XTRN_CHKTIME	/* Check time left						*/
+#define EX_NOECHO	XTRN_NOECHO		/* Don't echo stdin to stdout 			*/
 
 #if defined(__unix)
 #define EX_WILDCARD	EX_SH		/* Expand wildcards using 'sh' on Unix		*/

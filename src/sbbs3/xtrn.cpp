@@ -788,7 +788,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 						&& WriteFile(wrslot,bp,wr,&len,NULL)==TRUE) {
 						RingBufRead(&inbuf, NULL, len);
 						wr=len;
-						if(use_pipes) {
+						if(use_pipes && !(mode&EX_NOECHO)) {
 							/* echo */
 							RingBufWrite(&outbuf, bp, wr);
 						}
