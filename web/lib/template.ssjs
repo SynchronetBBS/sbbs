@@ -47,41 +47,47 @@ function write_template(filename)  {
 }
 
 function parse_regular_bit(bit, objname, obj) {
-	bit=bit.replace(new RegExp('([%^@]{2})'+objname+':(.*?)\\1',"g"),
+if(bit.match(/\)JS:/)) {
+	write("<PLAINTEXT>1:"+bit);
+}
+	if(objname=="JS")
+		return(bit);
+	bit=bit.replace(new RegExp('([%^@])\\1'+objname+':([^^%@\r\n]*?)\\1\\1',"g"),
 		function (matched, start, exp, offset, s) {
-			var res=escape_match(start, obj[exp]);
-			return(res);
-		});
-	bit=bit.replace(/([%^@]{2})JS:(.*?)\1/g,
-		function (matched, start, exp, offset, s) {
-			var res=escape_match(start, eval(exp));
+			var res=matched;
+			if(obj[exp]!=undefined)
+				res=escape_match(start, obj[exp]);
 			return(res);
 		});
 	if(objname=='') {
-		bit=bit.replace(/([%^@]{2})([^:%^@]*?)\:([^::%^@]*?)\1/g,
+		bit=bit.replace(/([%^@])\1([^^%@\r\n]*?)\:([^:%^@\r\n]*?)\1\1/g,
 			function (matched, start, objname, prop, offset, s) {
-				if(template[objname]==undefined)
-					res='';
-				else
-					res=template[objname][prop];
-				var res=escape_match(start, res);
+				var res=matched;
+				if(template[objname]!=undefined)
+					res=escape_match(start, template[objname][prop]);
 				return(res);
 			});
+		bit=bit.replace(/([%^@])\1([^:^%@\r\n]*?)\1\1/g,
+			function (matched, start, exp, offset, s) {
+				var res=escape_match(start, template[exp]);
+				return(res);
+			});
+		bit=bit.replace(/([%^@])\1JS:([\x00-\xff]*?)\1\1/g,
+			function (matched, start, exp, offset, s) {
+				var res=escape_match(start, eval(exp));
+				return(res);
+			});
+		bit=bit.replace(/([%^@])\1(.*?)\1\1/g,'');
 	}
-	bit=bit.replace(/([%^@]{2})([^:]*?)\1/g,
-		function (matched, start, exp, offset, s) {
-			var res=escape_match(start, template[exp]);
-			return(res);
-		});
 	return bit;
 }
 
 function escape_match(start, exp, end)  {
 	if(exp==undefined)
 		exp='';
-	if(start=="%%")
+	if(start=="%")
 		exp=html_encode(exp,false,false,false,false);
-	if(start=="^^")
+	if(start=="^")
 		exp=encodeURIComponent(exp);
 	return(exp);
 }
