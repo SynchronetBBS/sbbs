@@ -404,6 +404,10 @@ static BOOL js_CreateEnvObject(JSContext* cx, JSObject* glob, char** env)
 	if((js_env=JS_NewObject(js_cx, NULL, NULL, glob))==NULL)
 		return(FALSE);
 
+	if(!JS_DefineProperty(cx, glob, "env", OBJECT_TO_JSVAL(js_env)
+		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE))
+		return(FALSE);
+
 	for(i=0;env[i]!=NULL;i++) {
 		SAFECOPY(name,env[i]);
 		truncstr(name,"=");
@@ -416,10 +420,6 @@ static BOOL js_CreateEnvObject(JSContext* cx, JSObject* glob, char** env)
 			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE))
 			return(FALSE);
 	}
-
-	if(!JS_DefineProperty(cx, glob, "env", OBJECT_TO_JSVAL(js_env)
-		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE))
-		return(FALSE);
 
 	return(TRUE);
 }
