@@ -94,7 +94,7 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	scfg_t*		cfg;
 
 	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
-		return JS_FALSE;
+		return(JS_FALSE);
 
     tiny = JSVAL_TO_INT(id);
 
@@ -231,7 +231,7 @@ static JSBool js_system_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	scfg_t*		cfg;
 
 	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
-		return JS_FALSE;
+		return(JS_FALSE);
 
     tiny = JSVAL_TO_INT(id);
 
@@ -339,7 +339,7 @@ static JSBool js_sysstats_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	ulong		l;
 
 	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
-		return JS_FALSE;
+		return(JS_FALSE);
 
     tiny = JSVAL_TO_INT(id);
 

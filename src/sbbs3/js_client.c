@@ -62,7 +62,7 @@ static JSBool js_client_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	client_t*	client;
 
 	if((client=(client_t*)JS_GetPrivate(cx,obj))==NULL)
-		return JS_FALSE;
+		return(JS_FALSE);
 
     tiny = JSVAL_TO_INT(id);
 
