@@ -1,7 +1,7 @@
 Synchronet for Unix
 -=-=-=-=-=-=-=-=-=-
 
-By: Rob Swindell
+By: Rob Swindell (digital man)
 http://www.synchro.net
 
 $Id$
@@ -11,23 +11,35 @@ instructions in this file may change over time, so be sure to get the current
 version of this file at ftp://vert.synchro.net/Synchronet/sbbsunix.txt
 or via CVSweb at 
 http://cvs.synchro.net/cgi-bin/cvsweb.cgi/~checkout~/docs/sbbsunix.txt
-
-Note: For additional tips on running Synchronet on FreeBSD, see
-      http://sync.bbsdev.net/tips.html
+or ViewCVS at
+http://cvs.synchro.net/cgi-bin/viewcvs.cgi/~checkout~/docs/sbbsunix.txt
 
 
 Answers to Frequently Asked Questions
 =====================================
 
 Q. What flavors of Unix (and Unix-like operating systems) are supported?
-A. Currently, Linux-x86, FreeBSD-x86, OpenBSD-x86, and Solaris-x86.
-   There are currently issues linking the Mozilla libraries (libjs.a and
-   libnspr4.lib) on RedHat Linux 9 and Mandrake Linux 9. We are working
-   on resolving this issue.
+A. Currently, Linux, FreeBSD, OpenBSD, NetBSD, QNX and Solaris-x86.
 
 Q. What distributions of Linux are supported?
 A. Should work with any GNU/Linux-x86 distribution (e.g. RedHat, Mandrake, 
    Debian, Slackware, etc.).
+
+Q. Linking error: undefined reference: '__ctype_b'
+A: There are currently issues linking the provided Mozilla libraries for Linux
+   (libjs.a and libnspr4.lib) on RedHat Linux 9 and Mandrake Linux 9 using
+   glibc v2.3.2-11+.
+ 
+   We are working on resolving this issue permanently, but in the mean-time, 
+   there are currently two available work-arounds:
+
+   1. Download and extract ftp://ftp.synchro.net/lib-linux-rh9.tgz for
+      RH9-compatible versions of the Mozilla libraries.
+
+   or:
+
+   2. Build the Mozilla libraries from source,
+      see http://mannsoft.ca/howtos.php for detailed instructions.
 
 Q. Are non-x86 (Alpha, SPARC, 68k, PowerPC, etc) processors supported?
 A. Not currently. Synchronet assumes a little-endian processor. It *may* work
@@ -226,6 +238,8 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
    5. To change the default settings, edit the file:
       /sbbs/ctrl/sbbs.ini
 
+   6. For more details, see /sbbs/docs/sbbscon.txt
+
 
 7. Debugging:
 
@@ -260,6 +274,144 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
    E. Shutdown and re-run sbbs.
 
    F. You're done. :-)
+
+
+Default Configuration (SCFG) Screen-shots
+=========================================
+
+[Viewable File Type]
+1: File Extension        zip
+2: Command Line          unzip -l %s
+3: Access Requirements   UNIX
+
+[Testable File Type]
+1: File Extension        zip
+2: Command Line          unzip -t %f
+3: Working String        Testing ZIP Integrity...
+4: Access Requirements   UNIX
+
+[Extractable File Type]
+1: File Extension        zip
+2: Command Line          unzip -o -j %f %s -d %g
+3: Access Requirements   UNIX
+
+[Compressable File Type]
+1: File Extension        zip
+2: Command Line          zip -j -D %f %s
+3: Access Requirements   UNIX
+
+[File Transfer Protocol]
+1: Mnemonic (Command Key)   X
+2: Protocol Name            Xmodem (SZ)
+3: Access Requirements      UNIX
+4: Upload Command Line      rz --xmodem
+5: Download Command Line    sz --xmodem %f
+6: Batch UL Command Line
+7: Batch DL Command Line
+8: Bidir Command Line
+9: Uses DSZLOG              No
+
+[File Transfer Protocol]
+1: Mnemonic (Command Key)   Y
+2: Protocol Name            Ymodem (SZ)
+3: Access Requirements      UNIX
+4: Upload Command Line      rz --ymodem
+5: Download Command Line    sz --ymodem %f
+6: Batch UL Command Line    rz --ymodem
+7: Batch DL Command Line    sz --ymodem %s
+8: Bidir Command Line
+9: Uses DSZLOG              No
+
+[File Transfer Protocol]
+1: Mnemonic (Command Key)   Z
+2: Protocol Name            Zmodem (SZ)
+3: Access Requirements      UNIX
+4: Upload Command Line      rz -p -R
+5: Download Command Line    sz %f
+6: Batch UL Command Line    rz -p -R
+7: Batch DL Command Line    sz %s
+8: Bidir Command Line
+9: Uses DSZLOG              No
+
+[Native (32-bit) Program List]
+ 1: cmd.exe
+ 2: sh
+ 3: csh
+ 4: bash
+ 5: node
+ 6: sz
+ 7: rz
+ 8: zip
+ 9: unzip
+10: pkzip25
+
+[Pico (Pine Composer) Editor]
+ 1: Name                            Pico (Pine Composer)
+ 2: Internal Code                   PICO
+ 3: Remote Command Line             pico -t -o %g %f
+ 4: Access Requirements             UNIX
+ 5: Intercept Standard I/O          Yes
+ 6: Native (32-bit) Executable      Yes
+ 7: Use Shell to Execute            No
+ 8: Quoted Text                     Prompt User
+ 9: QuickBBS Style (MSGTMP)         No
+10: Expand Line Feeds to CRLF       Yes
+11: Strip FidoNet Kludge Lines      No
+12: BBS Drop File Type              None
+
+[Synchronet BBS List]
+ 1: Name                       Synchronet BBS List
+ 2: Internal Code              SBL
+ 3: Start-up Directory         ../xtrn/sbl
+ 4: Command Line               sbl%.
+ 5: Clean-up Command Line
+ 6: Execution Cost             None
+ 7: Access Requirements
+ 8: Execution Requirements
+ 9: Multiple Concurrent Users  Yes
+10: Intercept Standard I/O     No
+11: Native (32-bit) Executable Yes
+12: Use Shell to Execute       No
+13: Modify User Data           No
+14: Execute on Event           No
+15: BBS Drop File Type         Synchronet      XTRN.DAT
+16: Place Drop File In         Node Directory
+
+[Synchronet Blackjack!]
+ 1: Name                       Synchronet Blackjack!
+ 2: Internal Code              SBJ
+ 3: Start-up Directory         ../xtrn/sbj
+ 4: Command Line               sbj%. /l
+ 5: Clean-up Command Line      sbjclean%.
+ 6: Execution Cost             None
+ 7: Access Requirements
+ 8: Execution Requirements
+ 9: Multiple Concurrent Users  Yes
+10: Intercept Standard I/O     No
+11: Native (32-bit) Executable Yes
+12: Use Shell to Execute       No
+13: Modify User Data           Yes
+14: Execute on Event           No
+15: BBS Drop File Type         Synchronet      XTRN.DAT
+16: Place Drop File In         Node Directory
+
+[Synchronet Configuration]
+ 1: Name                       Synchronet Configuration
+ 2: Internal Code              SCFG
+ 3: Start-up Directory
+ 4: Command Line               %!scfg -d -l%r
+ 5: Clean-up Command Line
+ 6: Execution Cost             None
+ 7: Access Requirements        SYSOP
+ 8: Execution Requirements
+ 9: Multiple Concurrent Users  No
+10: Intercept Standard I/O     Yes
+11: Native (32-bit) Executable Yes
+12: Use Shell to Execute       No
+13: Modify User Data           No
+14: Execute on Event           No
+15: BBS Drop File Type         None
+16: Place Drop File In         Node Directory
 
 
 Send comments/questions to rob@synchro.net
