@@ -232,7 +232,6 @@ BYTE* telnet_interpret(sbbs_t* sbbs, BYTE* inbuf, int inlen,
 	BYTE*	first_cr=NULL;
 	int 	i;
 
-
     first_iac=(BYTE*)memchr(inbuf, TELNET_IAC, inlen);
 
 	if(!(sbbs->telnet_mode&(TELNET_MODE_BIN_RX|TELNET_MODE_GATE)) 
@@ -262,6 +261,10 @@ BYTE* telnet_interpret(sbbs_t* sbbs, BYTE* inbuf, int inlen,
 			&& !(sbbs->console&CON_RAW_IN)) {
 			if(sbbs->telnet_last_rxch==CR
 				&& (inbuf[i]==LF || inbuf[i]==0)) { // CR/LF or CR/NUL, ignore 2nd char
+#if 0 /* Debug CR/LF problems */
+				lprintf("Node %d CR/%02Xh detected and ignored"
+					,sbbs->cfg.node_num, inbuf[i]);
+#endif
 				sbbs->telnet_last_rxch=inbuf[i];
 				continue;
 			}
@@ -357,7 +360,7 @@ void input_thread(void *arg)
         	if(ERROR_VALUE == ENOTSOCK)
                 lprintf("Node %d socket closed by peer on input->select", sbbs->cfg.node_num);
 			else if(ERROR_VALUE==EINTR)
-				lprintf("Node %d input_thread interrupted",sbbs->cfg.node_num);
+				lprintf("Node %d input thread interrupted",sbbs->cfg.node_num);
             else if(ERROR_VALUE==ECONNRESET) 
 				lprintf("Node %d connection reset by peer on input->select", sbbs->cfg.node_num);
             else if(ERROR_VALUE==ECONNABORTED) 
@@ -414,6 +417,16 @@ void input_thread(void *arg)
 
 		total_recv+=rd;
 		total_pkts++;
+
+		/* First level Ctrl-C checking */
+		if(sbbs->rio_abortable 
+			&& !(sbbs->telnet_mode&(TELNET_MODE_BIN_RX|TELNET_MODE_GATE))
+			&& memchr(inbuf, 3, rd)) {	
+    		lprintf("Node %d Ctrl-C hit with %lu bytes in output buffer"
+				,sbbs->cfg.node_num,RingBufFull(&sbbs->outbuf));
+			sbbs->sys_status|=SS_ABORT;
+    		RingBufReInit(&sbbs->outbuf);	/* Flush output buffer */
+		}
 
         // telbuf and wr are modified to reflect telnet escaped data
 		wrbuf=telnet_interpret(sbbs, inbuf, rd, telbuf, wr);
@@ -1836,9 +1849,11 @@ int sbbs_t::incom(void)
 		return(NOINP);
 
 	if(rio_abortable && ch==3) { 		/* Ctrl-C */
+#if 0 /* moved into input_thread */
     	lprintf("Node %d Ctrl-C hit",cfg.node_num);
 		sys_status|=SS_ABORT;
 		rioctl(IOFO);
+#endif
 		return(NOINP); }
 	return(ch);
 }
