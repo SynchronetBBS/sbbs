@@ -1127,8 +1127,15 @@ int getstr(char *strout, size_t maxlen, long mode)
 				}
 				break;
 			case 0x7f:	/* Ctrl-BkSpc (DEL) Delete current char */
-				if(i==l)
+				if(i==l) {	/* Backspace if end of line */
+					if(i) {
+						i--;
+						l--;
+						if(!(mode&K_NOECHO))
+							bputs("\b \b");
+					}
 					break;
+				}
 				l--;
 				z=i;
 				while(z<l)	{		/* move the characters in the line */
