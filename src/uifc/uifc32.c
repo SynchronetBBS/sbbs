@@ -749,8 +749,6 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 		i=0;
 		if(kbwait()) {
 			i=inkey();
-			if(i==BS)
-				i=ESC;
 			if(i==CIO_KEY_MOUSE) {
 				if((i=uifc_getmouse(&mevnt))==0) {
 					/* Clicked in menu */
@@ -820,6 +818,41 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							|| mevnt.starty>s_top+top+height-1)
 						i=ESC;
 				}
+			}
+			/* For compatibility with terminals lacking special keys */
+			switch(i) {
+				case '\b':
+					i=ESC;
+					break;
+				case '+':
+					i=CIO_KEY_IC;	/* insert */
+					break;
+				case '-':
+				case DEL:
+					i=CIO_KEY_DC;	/* delete */
+					break;
+				case CTRL_B:
+					i=CIO_KEY_HOME;
+					break;
+				case CTRL_E:
+					i=CIO_KEY_END;
+					break;
+				case CTRL_U:
+					i=CIO_KEY_PPAGE;
+					break;
+				case CTRL_D:
+					i=CIO_KEY_NPAGE;
+					break;
+				case CTRL_Z:
+					i=CIO_KEY_F(1);	/* help */
+					break;
+				case CTRL_C:
+					i=CIO_KEY_F(5);	/* copy */
+					break;
+				case CTRL_V:
+					i=CIO_KEY_F(6);	/* paste */
+					break;
+
 			}
 			if(i>255) {
 				s=0;
@@ -1541,6 +1574,10 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 				|| (f >= 0xff && f != CIO_KEY_DC) 
 				|| (f == '\t' && mode&K_TABEXIT) 
 				|| (f == '%' && mode&K_SCANNING)
+				|| f==CTRL_B
+				|| f==CTRL_E
+				|| f==CTRL_V
+				|| f==CTRL_Z
 				|| f==0)
 		{
 			getstrupd(left, top, width, str, i, &soffset);
@@ -1580,6 +1617,7 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 				*lastkey=ch;
 			switch(ch)
 			{
+				case CTRL_Z:
 				case CIO_KEY_F(1):	/* F1 Help */
 					api->showhelp();
 					continue;
@@ -1595,18 +1633,21 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 						i++;
 					}
 					continue;
+				case CTRL_B:
 				case CIO_KEY_HOME:	/* home */
 					if(i)
 					{
 						i=0;
 					}
 					continue;
+				case CTRL_E:
 				case CIO_KEY_END:	/* end */
 					if(i<j)
 					{
 						i=j;
 					}
 					continue;
+				case CTRL_V:
 				case CIO_KEY_IC:	/* insert */
 					ins=!ins;
 					if(ins)
@@ -1643,7 +1684,7 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 						j--;
 					}
 					continue;
-				case 3:
+				case CTRL_C:
 				case ESC:
 					{
 						cursor=_NOCURSOR;
@@ -1666,13 +1707,13 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 					if(mode&K_DEUCEEXIT)
 						ch=CR;
 					break;
-				case 24:   /* ctrl-x  */
+				case CTRL_X:
 					if(j)
 					{
 						i=j=0;
 					}
 					continue;
-				case 25:   /* ctrl-y */
+				case CTRL_Y:
 					if(i<j)
 					{
 						j=i;
