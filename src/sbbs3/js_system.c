@@ -546,8 +546,18 @@ static JSBool
 js_zonestr(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	JSString*	js_str;
+	short		zone;
+	scfg_t*		cfg;
 
-	js_str = JS_NewStringCopyZ(cx, zonestr((short)(JSVAL_TO_INT(argv[0]))));
+	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
+		return(JS_FALSE);
+
+	if(argc<1)
+		zone=cfg->sys_timezone;
+	else
+		zone=(short)(JSVAL_TO_INT(argv[0]));
+
+	js_str = JS_NewStringCopyZ(cx, zonestr(zone));
 
 	*rval = STRING_TO_JSVAL(js_str);
 	return(JS_TRUE);
@@ -579,7 +589,7 @@ js_timestr(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 static JSFunctionSpec js_system_functions[] = {
 	{"matchuser",		js_matchuser,		1},		// exact user name matching
 	{"trashcan",		js_trashcan,		2},		// search file for pseudo-regexp
-	{"zonestr",			js_zonestr,			1},		// convert zone int to string
+	{"zonestr",			js_zonestr,			0},		// convert zone int to string
 	{"timestr",			js_timestr,			0},		// convert a time_t into a string
 	{0}
 };
