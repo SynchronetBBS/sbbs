@@ -39,6 +39,7 @@
 #define _SMBDEFS_H
 
 #include <stdio.h>
+#include "dirwrap.h"	/* MAX_PATH */
 
 /**********/
 /* Macros */
@@ -136,6 +137,7 @@
 #define SMB_ERR_WRITE		-204		/* File write error */
 #define SMB_ERR_TIMEOUT		-205		/* File operation timed-out */
 #define SMB_ERR_FILE_LEN	-206		/* File length invalid */
+#define SMB_ERR_DELETE		-207		/* File deletion error */
 #define SMB_ERR_MEM			-300		/* Memory allocation error */
 
 #define SMB_DUPE_MSG		1			/* Duplicate message detected by smb_addcrc() */
@@ -548,9 +550,15 @@ typedef struct {				// Message
 				*ftn_area,		// FTN AREA
 				*ftn_flags,		// FTN FLAGS
 				*ftn_msgid,		// FTN MSGID
-				*ftn_reply,		// FTN REPLY
-				*subj,			// Subject (or filename)
-				*summary;		// Summary (or file description)
+				*ftn_reply;		// FTN REPLY
+	union {
+		char*	summary;		// Summary 
+		char*	description;	// (or file description)
+	};
+	union {
+		char*	subj;			// Subject 
+		char*	name;			// (or filename)
+	};
 	ushort		to_agent,		// Type of agent message is to
 				from_agent, 	// Type of agent message is from
 				replyto_agent;	// Type of agent replies should be sent to
@@ -582,7 +590,7 @@ typedef struct {			// Message base
 	smbstatus_t status; 	// Status header record
 	int		locked;			// SMB header is locked
 	char	shd_buf[SHD_BLOCK_LEN]; 	// File I/O buffer for header file
-	char	last_error[128];			// Last error message
+	char	last_error[MAX_PATH*2];		// Last error message
 
 	/* Private member variables (not initialized by or used by smblib) */
 	uint	subnum;			// Sub-board number

@@ -68,7 +68,7 @@
 #include "filewrap.h"
 
 /* Use smb_ver() and smb_lib_ver() to obtain these values */
-#define SMBLIB_VERSION		"2.23"      /* SMB library version */
+#define SMBLIB_VERSION		"2.30"      /* SMB library version */
 #define SMB_VERSION 		0x0121		/* SMB format version */
 										/* High byte major, low byte minor */
 
@@ -107,8 +107,12 @@ static char* DLLCALL truncsp(char *str)
 int SMBCALL smb_open(smb_t* smb)
 {
     int file;
-    char str[128];
+    char str[MAX_PATH+1];
 	smbhdr_t hdr;
+
+	/* Check for message-base lock semaphore file (under maintenance?) */
+	if(smb_islocked(smb))
+		return(SMB_ERR_OPEN);
 
 	/* Set default values, if uninitialized */
 	if(!smb->retry_time)
@@ -234,7 +238,7 @@ void SMBCALL smb_close(smb_t* smb)
 int SMBCALL smb_open_da(smb_t* smb)
 {
 	int 	file;
-	char	str[128];
+	char	str[MAX_PATH+1];
 	time_t	start=0;
 
 	sprintf(str,"%s.sda",smb->file);
@@ -281,7 +285,7 @@ void SMBCALL smb_close_da(smb_t* smb)
 int SMBCALL smb_open_ha(smb_t* smb)
 {
 	int 	file;
-	char	str[128];
+	char	str[MAX_PATH+1];
 	time_t	start=0;
 
 	sprintf(str,"%s.sha",smb->file);
@@ -318,6 +322,56 @@ void SMBCALL smb_close_ha(smb_t* smb)
 	if(smb->sha_fp!=NULL)
 		fclose(smb->sha_fp);
 	smb->sha_fp=NULL;
+}
+
+/****************************************************************************/
+/* This set of functions is used to exclusively-lock an entire message base	*/
+/* against any other process opening any of the message base files.			*/
+/* Currently, this is only used while smbutil packs a message base.			*/
+/* This is achieved with a semaphore lock file (e.g. mail.lock).			*/
+/****************************************************************************/
+static char* smb_lockfname(smb_t* smb, char* fname)
+{
+	sprintf(fname,"%s.lock",smb->file);
+	return(fname);
+}
+
+int SMBCALL smb_lock(smb_t* smb)
+{
+	char	str[MAX_PATH+1];
+	int		file;
+
+	smb_lockfname(smb,str);
+	if((file=open(str,O_CREAT|O_EXCL|O_RDWR,S_IREAD|S_IWRITE))==-1) {
+		sprintf(smb->last_error,"%d (%s) creating %s"
+			,errno,STRERROR(errno),str);
+		return(SMB_ERR_LOCK);
+	}
+	close(file);
+	return(0);
+}
+
+int SMBCALL smb_unlock(smb_t* smb)
+{
+	char	str[MAX_PATH+1];
+
+	smb_lockfname(smb,str);
+	if(remove(str)!=0) {
+		sprintf(smb->last_error,"%d (%s) removing %s"
+			,errno,STRERROR(errno),str);
+		return(SMB_ERR_DELETE);
+	}
+	return(0);
+}
+
+int SMBCALL smb_islocked(smb_t* smb)
+{
+	char	str[MAX_PATH+1];
+
+	if(access(smb_lockfname(smb,str),0)!=0)
+		return(0);
+	sprintf(smb->last_error,"%s exists",str);
+	return(1);
 }
 
 /****************************************************************************/
@@ -1231,7 +1285,7 @@ int SMBCALL smb_dfield(smbmsg_t* msg, ushort type, ulong length)
 /****************************************************************************/
 int SMBCALL smb_addcrc(smb_t* smb, ulong crc)
 {
-	char	str[128];
+	char	str[MAX_PATH+1];
 	int 	file;
 	int		wr;
 	long	length;
@@ -1532,7 +1586,7 @@ int SMBCALL smb_putmsghdr(smb_t* smb, smbmsg_t* msg)
 /****************************************************************************/
 int SMBCALL smb_create(smb_t* smb)
 {
-    char        str[128];
+    char        str[MAX_PATH+1];
 	smbhdr_t	hdr;
 
 	if(smb->shd_fp==NULL || smb->sdt_fp==NULL || smb->sid_fp==NULL) {
