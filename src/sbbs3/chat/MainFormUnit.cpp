@@ -186,7 +186,7 @@ void __fastcall TMainForm::LocalKeyPress(TObject *Sender, char &Key)
 {
     char c;
 
-    if(out==-1) {
+    if(out==-1 || Local->ReadOnly==true) {
         Beep();
         return;
     }
@@ -225,12 +225,13 @@ void __fastcall TMainForm::InputTimerTick(TObject *Sender)
         /* Got char, display it */
         if(ch=='\r')
             Remote->Lines->Add("");
-        else if(ch==BS || ch==DEL)    // backspace
-            Remote->Lines->Text
-                =Remote->Lines->Text.SetLength(Remote->Lines->Text.Length()-1);
-        else {
+        else if(ch==BS || ch==DEL) {  // backspace
+            Remote->Text
+                =Remote->Text.SetLength(Remote->Text.Length()-1);
+            /* Need to scroll window down here */
+        } else {
             Remote->SelLength=0;
-            Remote->SelStart=Remote->Lines->Text.Length();
+            Remote->SelStart=Remote->Text.Length();
             Remote->SelText=AnsiString(ch);
         }
 
