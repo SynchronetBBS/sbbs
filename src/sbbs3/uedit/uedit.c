@@ -1,4 +1,4 @@
-/* umonitor.c */
+/* uedit.c */
 
 /* Synchronet for *nix user editor */
 
@@ -207,7 +207,7 @@ int edit_security(scfg_t *cfg, user_t *user)
 {
 	int 	i,j;
 	char 	**opt;
-	char	onech[2];
+	char	str[256];
 
 	if((opt=(char **)MALLOC(sizeof(char *)*(MAX_OPTS+1)))==NULL)
 		allocfail(sizeof(char *)*(MAX_OPTS+1));
@@ -215,8 +215,128 @@ int edit_security(scfg_t *cfg, user_t *user)
 		if((opt[i]=(char *)MALLOC(MAX_OPLN))==NULL)
 			allocfail(MAX_OPLN);
 
-	
-	
+	j=0;
+	while(1) {
+		i=0;
+		sprintf(opt[i++],"Level:        %-d",user->level);
+		sprintf(opt[i++],"Expiration:   %s",user->expire?unixtodstr(cfg, user->expire, str):"Never");
+		sprintf(opt[i++],"Flag Set 1:   %s",ltoaf(user->flags1,str));
+		sprintf(opt[i++],"Flag Set 2:   %s",ltoaf(user->flags2,str));
+		sprintf(opt[i++],"Flag Set 3:   %s",ltoaf(user->flags3,str));
+		sprintf(opt[i++],"Flag Set 4:   %s",ltoaf(user->flags4,str));
+		sprintf(opt[i++],"Exemptions:   %s",ltoaf(user->exempt,str));
+		sprintf(opt[i++],"Restrictions: %s",ltoaf(user->rest,str));
+		sprintf(opt[i++],"Credits:      %-lu",user->cdt);
+		sprintf(opt[i++],"Free Credits: %-lu",user->freecdt);
+		sprintf(opt[i++],"Minutes:      %-lu",user->min);
+		opt[i][0]=0;
+		switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&j,0,"Security Settings",opt)) {
+			case -1:
+				freeopt(opt);
+				return(0);
+				break;
+			case 0:
+				/* Level */
+				sprintf(str,"%d",user->level);
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Level",str,2,K_EDIT|K_NUMBER);
+				if(uifc.changes) {
+					modified=1;
+					user->level=atoi(str);
+				}
+				break;
+			case 1:
+				/* Expiration */
+				unixtodstr(cfg,user->expire,str);
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Expiration",str,8,K_EDIT);
+				if(uifc.changes && dstrtounix(cfg, str)!=user->expire) {
+					modified=1;
+					user->expire=dstrtounix(cfg, str);
+				}
+				break;
+			case 2:
+				/* Flag Set 1 */
+				ltoaf(user->flags1,str);
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Flag Set 1",str,26,K_EDIT|K_UPPER|K_ALPHA);
+				if(uifc.changes) {
+					modified=1;
+					user->flags1=aftol(str);
+				}
+				break;
+			case 3:
+				/* Flag Set 2 */
+				ltoaf(user->flags2,str);
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Flag Set 2",str,26,K_EDIT|K_UPPER|K_ALPHA);
+				if(uifc.changes) {
+					modified=1;
+					user->flags2=aftol(str);
+				}
+				break;
+			case 4:
+				/* Flag Set 3 */
+				ltoaf(user->flags3,str);
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Flag Set 3",str,26,K_EDIT|K_UPPER|K_ALPHA);
+				if(uifc.changes) {
+					modified=1;
+					user->flags3=aftol(str);
+				}
+				break;
+			case 5:
+				/* Flag Set 4 */
+				ltoaf(user->flags4,str);
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Flag Set 4",str,26,K_EDIT|K_UPPER|K_ALPHA);
+				if(uifc.changes) {
+					modified=1;
+					user->flags4=aftol(str);
+				}
+				break;
+			case 6:
+				/* Exemptions */
+				ltoaf(user->exempt,str);
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Exemptions",str,26,K_EDIT|K_UPPER|K_ALPHA);
+				if(uifc.changes) {
+					modified=1;
+					user->exempt=aftol(str);
+				}
+				break;
+			case 7:
+				/* Restrictions */
+				ltoaf(user->rest,str);
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Restrictions",str,26,K_EDIT|K_UPPER|K_ALPHA);
+				if(uifc.changes) {
+					modified=1;
+					user->rest=aftol(str);
+				}
+				break;
+			case 8:
+				/* Credits */
+				sprintf(str,"%lu",user->cdt);
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Credits",str,10,K_EDIT|K_NUMBER);
+				if(uifc.changes) {
+					modified=1;
+					user->cdt=strtoul(str,NULL,10);
+				}
+				break;
+			case 9:
+				/* Free Credits */
+				sprintf(str,"%lu",user->freecdt);
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Free Credits",str,10,K_EDIT|K_NUMBER);
+				if(uifc.changes) {
+					modified=1;
+					user->freecdt=strtoul(str,NULL,10);
+				}
+				break;
+			case 10:
+				/* Minutes */
+				sprintf(str,"%lu",user->min);
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Minutes",str,10,K_EDIT|K_NUMBER);
+				if(uifc.changes) {
+					modified=1;
+					user->min=strtoul(str,NULL,10);
+				}
+				break;
+		}
+	}
+
 	return(0);
 }
 
@@ -266,6 +386,7 @@ int edit_personal(scfg_t *cfg, user_t *user)
 		sprintf(opt[i++],"Location:   %s",user->location);
 		sprintf(opt[i++],"Address:    %s",user->address);
 		sprintf(opt[i++],"Postal/Zip: %s",user->zipcode);
+		opt[i][0]=0;
 		uifc.changes=FALSE;
 		switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&j,0,"Personal Settings",opt)) {
 			case -1:
@@ -378,30 +499,34 @@ int edit_user(scfg_t *cfg, int usernum)
 
 	user.number=usernum;
 	getuserdat(cfg,&user);
-	i=0;
-	strcpy(opt[i++],"Reload");
-	strcpy(opt[i++],"Delete");
-	if (user.misc & INACTIVE)
-		strcpy(opt[i++],"Activate");
-	else
-		strcpy(opt[i++],"Deactivate");
-	strcpy(opt[i++],"Personal");
-	strcpy(opt[i++],"Security");
-	strcpy(opt[i++],"Statistics");
-	strcpy(opt[i++],"Settings");
-	strcpy(opt[i++],"MSG/File Settings");
-	strcpy(opt[i++],"Extended Comment");
-	opt[i][0]=0;
-	i=0;
 
 	modified=0;
+	j=0;
 	while(1) {
-		switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"Edit User",opt)) {
+		i=0;
+		strcpy(opt[i++],"Reload");
+		if (user.misc & DELETED)
+			strcpy(opt[i++],"Undelete");
+		else
+			strcpy(opt[i++],"Delete");
+		if (user.misc & INACTIVE)
+			strcpy(opt[i++],"Activate");
+		else
+			strcpy(opt[i++],"Deactivate");
+		strcpy(opt[i++],"Personal");
+		strcpy(opt[i++],"Security");
+		strcpy(opt[i++],"Statistics");
+		strcpy(opt[i++],"Settings");
+		strcpy(opt[i++],"MSG/File Settings");
+		strcpy(opt[i++],"Extended Comment");
+		opt[i][0]=0;
+
+		switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&j,0,"Edit User",opt)) {
 			case -1:
 				if(modified) {
-					j=check_save(cfg,&user);
+					i=check_save(cfg,&user);
 				}
-				if(j!=-1) {
+				if(i!=-1) {
 					freeopt(opt);
 					return(0);
 				}
@@ -410,10 +535,13 @@ int edit_user(scfg_t *cfg, int usernum)
 			case 0:
 				if(modified && confirm("This will undo any changes you have made.  Continue?")==1) {
 					getuserdat(cfg,&user);
+					modified=0;
 				}
+				modified=0;
+				break;
 
 			case 1:
-				user.misc |= DELETED;
+				user.misc ^= DELETED;
 				modified=1;
 				break;
 
@@ -621,7 +749,7 @@ int main(int argc, char** argv)  {
 							"\n"
 							"\nIf you want to exit the Synchronet user editor,"
 							"\nselect `Yes`. Otherwise, select `No` or hit ~ ESC ~.";
-			if(confirm("Exit Synchronet Monitor"))
+			if(confirm("Exit Synchronet User Editor"))
 				bail(0);
 			continue;
 		}
