@@ -146,7 +146,7 @@ js_format(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		if(JSVAL_IS_STRING(argv[i])) {
 			if((str=JS_ValueToString(cx, argv[i]))==NULL)
 			    return(JS_FALSE);
-			arglist[i-1]=JS_GetStringBytes(str);
+			arglist[i-1]=JS_GetStringBytes(str);	/* exception here July-29-2002 */
 		}
 		else if(JSVAL_IS_DOUBLE(argv[i]))
 			arglist[i-1]=(char*)(unsigned long)*JSVAL_TO_DOUBLE(argv[i]);
@@ -404,6 +404,40 @@ js_truncsp(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	*rval = STRING_TO_JSVAL(js_str);
 	return(JS_TRUE);
 }
+
+static JSBool
+js_truncstr(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		p;
+	char*		str;
+	char*		set;
+	JSString*	js_str;
+	JSString*	js_set;
+
+	if((js_str=JS_ValueToString(cx, argv[0]))==NULL) 
+		return(JS_FALSE);
+
+	if((js_set=JS_ValueToString(cx, argv[1]))==NULL) 
+		return(JS_FALSE);
+
+	if((str=JS_GetStringBytes(js_str))==NULL) 
+		return(JS_FALSE);
+
+	if((set=JS_GetStringBytes(js_set))==NULL) 
+		return(JS_FALSE);
+
+
+	if((p=dupestr(str))==NULL)
+		return(JS_FALSE);
+
+	truncstr(p,set);
+
+	js_str = JS_NewStringCopyZ(cx, p);
+	free(p);
+	*rval = STRING_TO_JSVAL(js_str);
+	return(JS_TRUE);
+}
+
 
 static JSBool
 js_fexist(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
@@ -691,6 +725,7 @@ static JSFunctionSpec js_global_functions[] = {
 	{"strip_ctrl",		js_strip_ctrl,		1},		/* strip ctrl chars from string */
 	{"strip_exascii",	js_strip_exascii,	1},		/* strip ex-ascii chars from string */
 	{"truncsp",			js_truncsp,			1},		/* truncate space off end of string */
+	{"truncstr",		js_truncstr,		2},		/* truncate string at first char in set */
 	{"file_exists",		js_fexist,			1},		/* verify file existence */
 	{"file_remove",		js_remove,			1},		/* delete a file */
 	{"file_isdir",		js_isdir,			1},		/* check if directory */
