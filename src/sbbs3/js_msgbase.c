@@ -98,6 +98,9 @@ js_msgbase_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, js
 		return(JS_FALSE);
 	}
 
+	if(JSVAL_IS_OBJECT(*rval) && p->smb.subnum!=INVALID_SUB)
+		js_CreateMsgAreaProperties(cx, JSVAL_TO_OBJECT(*rval), scfg->sub[p->smb.subnum]);
+
 	return(JS_TRUE);
 }
 
@@ -804,25 +807,6 @@ js_save_msg(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	return(JS_TRUE);
 }
 
-static JSBool
-js_get_msg_area_info(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
-{
-	private_t*	p;
-
-	*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
-
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
-		return(JS_FALSE);
-
-	if(p->smb.subnum==INVALID_SUB || p->smb.subnum>scfg->total_subs)
-		return(JS_TRUE);
-	
-	js_CreateMsgAreaProperties(cx, obj, scfg->sub[p->smb.subnum]);
-
-	*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
-	return(JS_TRUE);
-}
-
 /* MsgBase Object Properites */
 enum {
 	 SMB_PROP_LAST_ERROR
@@ -958,7 +942,6 @@ static JSFunctionSpec js_msgbase_functions[] = {
 	{"put_msg_header",		js_put_msg_header,		2},		/* put_msg_header(by_offset, number, hdrObj) */
 	{"get_msg_body",		js_get_msg_body,		2},		/* get_msg_body(by_offset, number, [strip_ctrl_a]) */
 	{"get_msg_tail",		js_get_msg_tail,		2},		/* get_msg_body(by_offset, number, [strip_ctrl_a]) */
-	{"get_msg_area_info",	js_get_msg_area_info,	0},
 	{"save_msg",			js_save_msg,			2},		/* save_msg(code, hdr, body) */
 	{0}
 };

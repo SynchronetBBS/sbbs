@@ -209,7 +209,6 @@ for(i in area) {
 		printf("!ERROR opening msgbase: %s\r\n",sub);
 		continue;
 	}
-	msgbase.get_msg_area_info();
 
 	/*********************/
 	/* Read Pointer File */
