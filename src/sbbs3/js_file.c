@@ -498,6 +498,8 @@ js_writeall(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 static JSBool
 js_lock(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
+	int32		offset=0;
+	int32		len=0;
 	private_t*	p;
 
 	*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
@@ -508,7 +510,18 @@ js_lock(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(p->fp==NULL)
 		return(JS_TRUE);
 
-	if(lock(fileno(p->fp),JSVAL_TO_INT(argv[0]),JSVAL_TO_INT(argv[1]))==0)
+	/* offset */
+	if(argc)
+		JS_ValueToInt32(cx,argv[0],&offset);
+
+	/* length */
+	if(argc>1)
+		JS_ValueToInt32(cx,argv[1],&len);
+
+	if(len==0)
+		len=filelength(fileno(p->fp))-offset;
+
+	if(lock(fileno(p->fp),offset,len)==0)
 		*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
 
 	return(JS_TRUE);
@@ -517,6 +530,8 @@ js_lock(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 static JSBool
 js_unlock(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
+	int32		offset=0;
+	int32		len=0;
 	private_t*	p;
 
 	*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
@@ -526,6 +541,17 @@ js_unlock(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	if(p->fp==NULL)
 		return(JS_TRUE);
+
+	/* offset */
+	if(argc)
+		JS_ValueToInt32(cx,argv[0],&offset);
+
+	/* length */
+	if(argc>1)
+		JS_ValueToInt32(cx,argv[1],&len);
+
+	if(len==0)
+		len=filelength(fileno(p->fp))-offset;
 
 	if(unlock(fileno(p->fp),JSVAL_TO_INT(argv[0]),JSVAL_TO_INT(argv[1]))==0)
 		*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
