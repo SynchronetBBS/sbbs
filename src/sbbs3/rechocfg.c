@@ -12,12 +12,10 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <fcntl.h>
-#include <share.h>
 #include <malloc.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
-#include <process.h>
 #include <sys/stat.h>
 
 #include "sbbs.h"
