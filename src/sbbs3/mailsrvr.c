@@ -1894,7 +1894,7 @@ static void smtp_thread(void* arg)
 		thread_down();
 		return;
 	} 
-	memset(mailproc_match,0,sizeof(BOOL)*mailproc_count);
+	memset(mailproc_match,FALSE,sizeof(BOOL)*mailproc_count);
 
 	memset(&smb,0,sizeof(smb));
 	memset(&msg,0,sizeof(msg));
@@ -3011,8 +3011,8 @@ static void smtp_thread(void* arg)
 				continue;
 			}
 
+			memset(mailproc_match,FALSE,sizeof(BOOL)*mailproc_count);
 			for(i=0;i<mailproc_count;i++) {
-				mailproc_match[i]=FALSE;
 				if(mailproc_list[i].to!=NULL) {
 					for(j=0;mailproc_list[i].to[j]!=NULL;j++) {
 						if(stricmp(p,mailproc_list[i].to[j])==0) {
@@ -3021,6 +3021,8 @@ static void smtp_thread(void* arg)
 								break;
 						}
 					}
+					if(mailproc_list[i].to[j]!=NULL)
+						break;
 				}
 			}
 			/* destined for an external mail processor */
