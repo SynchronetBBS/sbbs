@@ -33,6 +33,7 @@ $(SMBLIB_ODIR)/%.o : %.c $(BUILD_DEPENDS)
 	$(QUIET)$(CC) $(CFLAGS) -o $@ -c $<
 
 $(SMBLIB_ODIR)/libsmb.a: $(SMBLIB_OBJS) $(BUILD_DEPENDS)
-	ar rc $@ $(SMBLIB_OBJS)
-	ranlib $@
+	@echo Creating $<
+	@(QUIET)ar rc $@ $(SMBLIB_OBJS)
+	@(QUIET)ranlib $@
 
