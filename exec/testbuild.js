@@ -25,10 +25,10 @@ var build_output = "build_output.txt";
 
 if(platform=="win32") {
 	archive="sbbs_src.zip";
-	archive_cmd="pkzip25 -add -dir -excl=*.txt " + archive;
+	archive_cmd="pkzip25 -add -dir -excl=*output.txt " + archive;
 } else {
 	archive="sbbs_src.tgz";
-	archive_cmd="tar czvf " + archive;
+	archive_cmd="tar -czvf " + archive + " *";
 }
 
 var builds
@@ -55,6 +55,21 @@ if(platform=="win32") {
 	builds.push(["src/sbbs3/install",	"gmake"]);
 	builds.push(["src/sbbs3/umonitor",	"gmake"]);
 	builds.push(["src/sbbs3/uedit",		"gmake"]);
+}
+
+var file = new File("README.TXT");
+if(file.open("wt")) {
+	file.writeln("This archive contains a successful " + system.platform + " build");
+	file.writeln("of the following Synchronet projects as of " + system.timestr());
+	file.writeln("using the command-lines shown:");
+	file.writeln();
+	for(i in builds) {
+		if(builds[i][0].length)
+			file.printf("%-40s %s", builds[i][0], builds[i][1]);
+	}
+	file.writeln();
+	file.writeln("For more details, goto http://synchro.net/docs/source.html");
+	file.close();
 }
 
 var start = time();
