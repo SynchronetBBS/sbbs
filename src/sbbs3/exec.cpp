@@ -646,6 +646,8 @@ long sbbs_t::js_execfile(const char *cmd)
 
 	JS_ExecuteScript(js_cx, js_scope, js_script, &rval);
 
+	JS_GetProperty(js_cx, js_glob, "exit_code", &rval);
+
 	JS_DestroyScript(js_cx, js_script);
 
 	JS_ClearScope(js_cx, js_scope);

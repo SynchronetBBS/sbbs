@@ -243,10 +243,11 @@ js_beep(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 static JSBool
 js_exit(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-#if 0	/* Removed Mar-12-2003: this is now done before compiling script */
-	JS_ClearPendingException(cx);
-#endif
 	*rval = JSVAL_VOID;
+	if(argc)
+		JS_DefineProperty(cx, obj, "exit_code", argv[0]
+			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+
 	return(JS_FALSE);
 }
 
@@ -1447,8 +1448,9 @@ static JSClass js_global_class = {
 };
 
 static jsMethodSpec js_global_functions[] = {
-	{"exit",			js_exit,			0,	JSTYPE_VOID,	""
-	,JSDOCSTR("stop execution")
+	{"exit",			js_exit,			0,	JSTYPE_VOID,	"[number exit_code]"
+	,JSDOCSTR("stop script execution, "
+		"optionally setting the global property <tt>exit_code</tt> to the specified numeric value")
 	},		
 	{"load",            js_load,            1,	JSTYPE_BOOLEAN,	JSDOCSTR("string filename [,args]")
 	,JSDOCSTR("load and execute a JavaScript file, returns <i>true</i> if the execution was successful")
