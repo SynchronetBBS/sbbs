@@ -87,7 +87,8 @@ char *binstr(uchar *buf, ushort length)
 
 	str[0]=0;
 	for(i=0;i<length;i++)
-		if(buf[i] && (buf[i]<SP || buf[i]>=0x7f))
+		if(buf[i] && (buf[i]<SP || buf[i]>=0x7f)
+			&& buf[i]!='\r' && buf[i]!='\n' && buf[i]!='\t')
 			break;
 	if(i==length)		/* not binary */
 		return((char*)buf);
@@ -103,60 +104,58 @@ void sbbs_t::msghdr(smbmsg_t* msg)
 {
 	int i;
 
-	/* required variable fields */
-	bprintf("%-20.20s %s\r\n"	,"subj"				,msg->subj);
-	bprintf("%-20.20s %s\r\n"	,"from"				,msg->from);
-	bprintf("%-20.20s %s\r\n"	,"to"				,msg->to);
+	CRLF;
+
+	/* variable fields */
+	for(i=0;i<msg->total_hfields;i++)
+		bprintf("%-16.16s %s\r\n"
+			,smb_hfieldtype(msg->hfield[i].type)
+			,binstr((uchar *)msg->hfield_dat[i],msg->hfield[i].length));
+
 	/* fixed fields */
-	bprintf("%-20.20s %s %s\r\n","when_written"	
+	bprintf("%-16.16s %s %s\r\n","when_written"	
 		,timestr((time_t *)&msg->hdr.when_written.time), zonestr(msg->hdr.when_written.zone));
-	bprintf("%-20.20s %s %s\r\n","when_imported"	
+	bprintf("%-16.16s %s %s\r\n","when_imported"	
 		,timestr((time_t *)&msg->hdr.when_imported.time), zonestr(msg->hdr.when_imported.zone));
-	bprintf("%-20.20s %04Xh\r\n","type"				,msg->hdr.type);
-	bprintf("%-20.20s %04Xh\r\n","version"			,msg->hdr.version);
-	bprintf("%-20.20s %04Xh\r\n","attr"				,msg->hdr.attr);
-	bprintf("%-20.20s %08lXh\r\n","auxattr"			,msg->hdr.auxattr);
-	bprintf("%-20.20s %08lXh\r\n","netattr"			,msg->hdr.netattr);
-	bprintf("%-20.20s %ld\r\n"	 ,"number"			,msg->hdr.number);
+	bprintf("%-16.16s %04Xh\r\n","type"				,msg->hdr.type);
+	bprintf("%-16.16s %04Xh\r\n","version"			,msg->hdr.version);
+	bprintf("%-16.16s %04Xh\r\n","attr"				,msg->hdr.attr);
+	bprintf("%-16.16s %08lXh\r\n","auxattr"			,msg->hdr.auxattr);
+	bprintf("%-16.16s %08lXh\r\n","netattr"			,msg->hdr.netattr);
+	bprintf("%-16.16s %ld\r\n"	 ,"number"			,msg->hdr.number);
+	bprintf("%-16.16s %06lXh\r\n","header offset"	,msg->idx.offset);
+	bprintf("%-16.16s %u\r\n"	 ,"header length"	,msg->hdr.length);
+
 	/* optional fixed fields */
 	if(msg->hdr.thread_orig)
-		bprintf("%-20.20s %ld\r\n"	,"thread_orig"		,msg->hdr.thread_orig);
+		bprintf("%-16.16s %ld\r\n"	,"thread_orig"		,msg->hdr.thread_orig);
 	if(msg->hdr.thread_next)
-		bprintf("%-20.20s %ld\r\n"	,"thread_next"		,msg->hdr.thread_next);
+		bprintf("%-16.16s %ld\r\n"	,"thread_next"		,msg->hdr.thread_next);
 	if(msg->hdr.thread_first)
-		bprintf("%-20.20s %ld\r\n"	,"thread_first"		,msg->hdr.thread_first);
+		bprintf("%-16.16s %ld\r\n"	,"thread_first"		,msg->hdr.thread_first);
 	if(msg->hdr.delivery_attempts)
-		bprintf("%-20.20s %hu\r\n"	,"delivery_attempts",msg->hdr.delivery_attempts);
+		bprintf("%-16.16s %hu\r\n"	,"delivery_attempts",msg->hdr.delivery_attempts);
 	if(msg->hdr.times_downloaded)
-		bprintf("%-20.20s %lu\r\n"	,"times_downloaded"	,msg->hdr.times_downloaded);
+		bprintf("%-16.16s %lu\r\n"	,"times_downloaded"	,msg->hdr.times_downloaded);
 	if(msg->hdr.last_downloaded)
-		bprintf("%-20.20s %s\r\n"	,"last_downloaded"	,timestr((time_t*)&msg->hdr.last_downloaded));
+		bprintf("%-16.16s %s\r\n"	,"last_downloaded"	,timestr((time_t*)&msg->hdr.last_downloaded));
+
+	/* convenience integers */
 	if(msg->expiration)
-		bprintf("%-20.20s %s\r\n"	,"expiration"	
+		bprintf("%-16.16s %s\r\n"	,"expiration"	
 			,timestr((time_t *)&msg->expiration));
 	if(msg->priority)
-		bprintf("%-20.20s %lu\r\n"	,"priority"			,msg->priority);
+		bprintf("%-16.16s %lu\r\n"	,"priority"			,msg->priority);
 	if(msg->cost)
-		bprintf("%-20.20s %lu\r\n"	,"cost"				,msg->cost);
+		bprintf("%-16.16s %lu\r\n"	,"cost"				,msg->cost);
 
-	bprintf("%-20.20s %06lXh\r\n"	,"header offset"	,msg->idx.offset);
-	bprintf("%-20.20s %u\r\n"		,"header length"	,msg->hdr.length);
-	for(i=0;i<msg->total_hfields;i++)
-		bprintf("field[%u].type        %02Xh\r\n"
-				"field[%u].length      %d\r\n"
-				"field[%u]_dat         %s\r\n"
-				,i,msg->hfield[i].type
-				,i,msg->hfield[i].length
-				,i,binstr((uchar *)msg->hfield_dat[i],msg->hfield[i].length));
-
-	bprintf("%-20.20s %06lXh\r\n"	,"data offset"		,msg->hdr.offset);
+	bprintf("%-16.16s %06lXh\r\n"	,"data offset"		,msg->hdr.offset);
 	for(i=0;i<msg->hdr.total_dfields;i++)
-		bprintf("data field[%u].type   %02Xh\r\n"
-				"data field[%u].offset %lu\r\n"
-				"data field[%u].length %lu\r\n"
-				,i,msg->dfield[i].type
-				,i,msg->dfield[i].offset
-				,i,msg->dfield[i].length);
+		bprintf("data field[%u]    %s, offset %lu, length %lu\r\n"
+				,i
+				,smb_dfieldtype(msg->dfield[i].type)
+				,msg->dfield[i].offset
+				,msg->dfield[i].length);
 }
 
 /****************************************************************************/
