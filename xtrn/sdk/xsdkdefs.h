@@ -94,6 +94,9 @@
 #define ulong unsigned long
 #endif
 
+									/* Valid bits for xsdk_mode			*/
+#define XSDK_MODE_NOCONSOLE	(1<<0)	/* No Local Console					*/
+
 							/* Bits in 'mode' for getkey and getstr     */
 #define K_UPPER		(1<<0)	/* Converts all letters to upper case 		*/
 #define K_UPRLWR    (1<<1)  /* Upper/Lower case automatically           */

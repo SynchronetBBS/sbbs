@@ -71,6 +71,7 @@
 #endif
 
 extern char *xsdk_ver;	/* XSDK version number */
+extern ulong xsdk_mode;	/* XSDK mode bits */
 extern int mswtyp;		/* MSwait type */
 
 /***********************/
