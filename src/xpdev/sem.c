@@ -34,7 +34,6 @@
 #include <errno.h>
 #include "sem.h"
 #include <pthread.h>
-#include "pthread_private.h"
 
 int
 sem_init(sem_t *sem, int pshared, unsigned int value)

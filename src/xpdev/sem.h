@@ -69,4 +69,52 @@ int	 sem_getvalue __P((sem_t *, int *));
 __END_DECLS
 #endif /* KERNEL */
 
+/*
+* $Id$
+*/
+
+/* Begin thread_private.h kluge */
+/*
+ * These come out of (or should go into) thread_private.h - rather than have 
+ * to copy (or symlink) the files from the source tree these definitions are 
+ * inlined here.  Obviously these go away when this module is part of libc.
+*/
+
+struct sem {
+#define SEM_MAGIC       ((u_int32_t) 0x09fa4012)
+        u_int32_t       magic;
+        pthread_mutex_t lock;
+        pthread_cond_t  gtzero;
+        u_int32_t       count;
+        u_int32_t       nwaiters;
+};
+
+extern pthread_once_t _thread_init_once;
+extern int _threads_initialized;
+extern void  _thread_init __P((void));
+#define THREAD_INIT() \
+	(void) pthread_once(&_thread_init_once, _thread_init)
+#define THREAD_SAFE() \
+	(_threads_initialized != 0)
+
+#define _SEM_CHECK_VALIDITY(sem)		\
+	if ((*(sem))->magic != SEM_MAGIC) {	\
+		errno = EINVAL;			\
+		retval = -1;			\
+		goto RETURN;			\
+	}
+
+struct pthread_rwlockattr {
+        int             pshared;
+	};
+
+struct pthread_rwlock {
+        pthread_mutex_t lock;   /* monitor lock */
+	int             state;  /* 0 = idle  >0 = # of readers  -1 = writer */
+	pthread_cond_t  read_signal;
+	pthread_cond_t  write_signal;
+	int             blocked_writers;
+	};
+/* End thread_private.h kluge */
+
 #endif /* _SEMAPHORE_H_ */
