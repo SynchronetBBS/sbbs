@@ -41,6 +41,8 @@
 
 #undef JAVASCRIPT
 
+#define __COLORS
+#include "ciolib.h"
 #include "uifc.h"
 #include "sbbs.h"
 #include "sbbsecho.h"
@@ -110,7 +112,7 @@ int main(int argc, char **argv)
 	nodecfg_t savnodecfg;
 	arcdef_t savarcdef;
 	BOOL door_mode=FALSE;
-	BOOL gui_mode=FALSE;
+	int		ciolib_mode=CIOLIB_MODE_AUTO;
 
 	fprintf(stderr,"\nSBBSecho Configuration  Version %s  Copyright 2003 "
 		"Rob Swindell\n\n",SBBSECHO_VER);
@@ -120,17 +122,43 @@ int main(int argc, char **argv)
 	for(i=1;i<argc;i++) {
 		if(argv[i][0]=='-')
 			switch(toupper(argv[i][1])) {
-				case 'G':
-					gui_mode=TRUE;
-					break;
-				case 'T':
-					gui_mode=FALSE;
-					break;
-				case 'D':
-					door_mode=TRUE;
-					break;
+                case 'D':
+					printf("NOTICE: The -d option is depreciated, use -id instead\r\n");
+					SLEEP(2000);
+                    door_mode=TRUE;
+                    break;
+                case 'L':
+                    uifc.scrn_len=atoi(argv[i]+2);
+                    break;
+                case 'E':
+                    uifc.esc_delay=atoi(argv[i]+2);
+                    break;
 				case 'I':
-					uifc.mode|=UIFC_IBM;
+					switch(toupper(argv[i][2])) {
+						case 'A':
+							ciolib_mode=CIOLIB_MODE_ANSI;
+							break;
+						case 'C':
+							ciolib_mode=CIOLIB_MODE_CURSES;
+							break;
+						case 0:
+							printf("NOTICE: The -i option is depreciated, use -if instead\r\n");
+							SLEEP(2000);
+						case 'F':
+							ciolib_mode=CIOLIB_MODE_CURSES_IBM;
+							break;
+						case 'X':
+							ciolib_mode=CIOLIB_MODE_X;
+							break;
+						case 'W':
+							ciolib_mode=CIOLIB_MODE_CONIO;
+							break;
+						case 'D':
+		                    door_mode=TRUE;
+		                    break;
+						default:
+							goto USAGE;
+					}
 					break;
 		        case 'M':   /* Monochrome mode */
         			uifc.mode|=UIFC_MONO;
@@ -138,9 +166,30 @@ int main(int argc, char **argv)
                 case 'C':
         			uifc.mode|=UIFC_COLOR;
                     break;
-                case 'E':
-                    uifc.esc_delay=atoi(argv[i]+2);
+                case 'V':
+                    textmode(atoi(argv[i]+2));
                     break;
+                default:
+					USAGE:
+                    printf("\nusage: echocfg [ctrl_dir] [options]"
+                        "\n\noptions:\n\n"
+                        "-c  =  force color mode\r\n"
+						"-m  =  force monochrome mode\r\n"
+                        "-e# =  set escape delay to #msec\r\n"
+						"-iX =  set interface mode to X (default=auto) where X is one of:\r\n"
+#ifdef __unix__
+						"       X = X11 mode\r\n"
+						"       C = Curses mode\r\n"
+						"       F = Curses mode with forced IBM charset\r\n"
+#else
+						"       W = Win32 native mode\r\n"
+#endif
+						"       A = ANSI mode\r\n"
+						"       D = standard input/output/door mode\r\n"
+                        "-v# =  set video mode to # (default=auto)\r\n"
+                        "-l# =  set screen lines to # (default=auto-detect)\r\n"
+                        );
+        			exit(0);
 		}
 		else
 			strcpy(str,argv[1]);
@@ -178,10 +227,16 @@ int main(int argc, char **argv)
 			exit(1); 
 		}
 	uifc.size=sizeof(uifc);
-	if(!door_mode)
-		i=uifcini32(&uifc);
+	if(!door_mode) {
+		i=initciolib(ciolib_mode);
+		if(i!=0) {
+    		printf("ciolib library init returned error %d\n",i);
+    		exit(1);
+		}
+    	i=uifcini32(&uifc);  /* curses/conio/X/ANSI */
+	}
 	else
-		i=uifcinix(&uifc);
+    	i=uifcinix(&uifc);  /* stdio */
 
 	if(i!=0) {
 		printf("uifc library init returned error %d\n",i);
