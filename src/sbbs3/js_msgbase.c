@@ -1289,7 +1289,7 @@ js_get_msg_tail(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 static JSBool
 js_save_msg(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	char*		body="";
+	char*		body=NULL;
 	uintN		n;
     jsuint      i;
     jsuint      rcpt_list_length;
@@ -1324,21 +1324,28 @@ js_save_msg(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	for(n=0;n<argc;n++) {
 		if(JSVAL_IS_OBJECT(argv[n])) {
 			objarg = JSVAL_TO_OBJECT(argv[n]);
-			if(JS_IsArrayObject(cx, objarg)) 	/* recipient_list is an array of objects */
-				rcpt_list = objarg;
-			else
-				hdr = objarg;
-		}
-		else if(JSVAL_IS_STRING(argv[n])) {
-			if((body=JS_GetStringBytes(JSVAL_TO_STRING(argv[n])))==NULL) {
-				JS_ReportError(cx,"JS_GetStringBytes failed");
-				return(JS_FALSE);
+			if(JS_IsArrayObject(cx, objarg)) {		/* recipient_list is an array of objects */
+				if(body!=NULL && rcpt_list==NULL) {	/* body text already specified */
+					rcpt_list = objarg;
+					continue;
+				}
 			}
+			else if(hdr==NULL) {
+				hdr = objarg;
+				continue;
+			}
+		}
+		if(body==NULL 
+			&& (body=JS_GetStringBytes(JS_ValueToString(cx,argv[n])))==NULL) {
+			JS_ReportError(cx,"JS_GetStringBytes failed");
+			return(JS_FALSE);
 		}
 	}
 
 	if(hdr==NULL)
 		return(JS_TRUE);
+	if(body==NULL)
+		body="";
 
 	if(rcpt_list!=NULL) {
 		if(!JS_GetArrayLength(cx, rcpt_list, &rcpt_list_length))
@@ -1612,7 +1619,7 @@ static jsSyncMethodSpec js_msgbase_functions[] = {
 	,JSDOCSTR("mark message as deleted")
 	,311
 	},
-	{"save_msg",		js_save_msg,		2, JSTYPE_BOOLEAN,	JSDOCSTR("object header [,string body_text] [,array rcpt_list]")
+	{"save_msg",		js_save_msg,		2, JSTYPE_BOOLEAN,	JSDOCSTR("object header [,body_text] [,array rcpt_list]")
 	,JSDOCSTR("create a new message in message base, the <i>header</i> object may contain the following properties:<br>"
 	"<table>"
 	"<tr><td><tt>subject</tt><td>Message subject <i>(required)</i>"
@@ -1722,7 +1729,7 @@ js_msgbase_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, js
 	} else {
 		for(p->smb.subnum=0;p->smb.subnum<scfg->total_subs;p->smb.subnum++) {
 			if(!stricmp(scfg->sub[p->smb.subnum]->code,base))	/* null ptr dereference here Apr-16-2003 */
-				break;
+				break;											/* and again, Aug-18-2004 upon recycle */
 		}
 		if(p->smb.subnum<scfg->total_subs) {
 			cfgobj=JS_NewObject(cx,NULL,NULL,obj);
