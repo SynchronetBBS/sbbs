@@ -155,6 +155,7 @@ extern "C" {
 int		sendfilesocket(int sock, int file, long *offset, long count);
 int		recvfilesocket(int sock, int file, long *offset, long count);
 BOOL	socket_check(SOCKET sock, BOOL* rd_p, BOOL* wr_p, DWORD timeout);
+int 	retry_bind(SOCKET s, const struct sockaddr *addr, socklen_t addrlen, int retries, int wait_secs, int *(lprintf)(int level, char *fmt, ...));
 
 #ifdef __cplusplus
 }

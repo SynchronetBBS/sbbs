@@ -42,7 +42,7 @@
 #include <string.h>
 
 #include "genwrap.h"	/* SLEEP */
-#include "gen_defs.h"	/* BOOL */
+#include "gen_defs.h"	/* BOOL/LOG_WARNING */
 #include "sockwrap.h"	/* sendsocket */
 #include "filewrap.h"	/* filelength */
 
@@ -229,4 +229,34 @@ BOOL socket_check(SOCKET sock, BOOL* rd_p, BOOL* wr_p, DWORD timeout)
 	}
 
 	return(FALSE);
+}
+
+int retry_bind(SOCKET s, const struct sockaddr *addr, socklen_t addrlen, int retries, int wait_secs, int *(lprintf)(int level, char *fmt, ...))
+{
+	int		result=-1;
+	int		i;
+
+	for(i=0;i<=retries;i++) {
+		result = bind(s,addr,addrlen);
+		if(result != 0) {
+			if(lprintf!=NULL) {
+				if(addr->sa_family==AF_INET) {
+					lprintf(LOG_WARNING,"%04d !WARNING %d (%d) error binding socket to port %d"
+						,s, result, ERROR_VALUE,((SOCKADDR_IN *)(addr))->sin_port);
+				}
+				else {
+					lprintf(LOG_WARNING,"%04d !WARNING %d (%d) error binding socket"
+						,s, result, ERROR_VALUE);
+				}
+			}
+			if(i<retries) {
+				if(lprintf!=NULL)
+					lprintf(LOG_WARNING,"%04d Will retry in %d seconds",s ,wait_secs);
+				SLEEP(wait_secs*1000);
+			}
+		}
+		else
+			break;
+	}
+	return(result);
 }
