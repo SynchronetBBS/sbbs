@@ -16,13 +16,26 @@ if(http_request.query.value_fmt_string
 	&& strip_ctrl(http_request.query.value_fmt_string).length)
 	value_fmt_string = strip_ctrl(http_request.query.value_fmt_string);
 
-var redir = strip_ctrl(http_request.query.redirect);
-if(!redir)
-	redir = http_request.header.referer;
+var return_link_url = http_request.header.referer;
+if(http_request.query.return_link_url && http_request.query.return_link_url.length)
+	return_link_url = strip_ctrl(http_request.query.return_link_url);
+
+var return_link_title = "Click here to return to " + return_link_url.toString().italics();
+if(http_request.query.return_link_title && http_request.query.return_link_title.length)
+	return_link_title = strip_ctrl(http_request.query.return_link_title);
+
+var redirect = http_request.query.redirect[0];
 
 function results(level, text)
 {
 	log(level,text);
+
+	if(redirect) {
+		http_reply.status='307 Temporary Redirect';
+		http_reply.header.location=redirect;
+		exit();
+	}
+
 	writeln("<html>");
 	writeln("<head>");
 	writeln("<title>Sending e-mail</title>");
@@ -34,7 +47,7 @@ function results(level, text)
 		writeln("!ERROR: ".bold());
 	writeln(text);
 	writeln("<p>");
-	writeln(("Click here to return to " + redir.toString().italics()).link(redir));
+	writeln(return_link_title.link(return_link_url));
 	writeln("</body>");
 	writeln("</html>");
 	exit();
