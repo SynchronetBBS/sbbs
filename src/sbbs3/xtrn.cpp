@@ -413,8 +413,8 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
         startup_info.dwFlags|=STARTF_USESHOWWINDOW;
     }
 
-	/* temporary */
 	if(native) {
+		/* temporary */
 		FILE* fp;
 		sprintf(fname,"%sDOOR32.SYS",cfg.node_dir);
 		fp=fopen(fname,"wb");
@@ -430,6 +430,8 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 			,useron.misc&ANSI ? 1 : 0
 			,cfg.node_num);
 		fclose(fp);
+
+		/* not temporary */
 		SuspendThread(input_thread);
 	}
 
@@ -722,7 +724,9 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 {
 	char	str[256];
+	char	fname[128];
 	char*	p;
+    bool	native=false;			// DOS program by default
 		
 	if(cmdline[0]=='*') {   /* Baja module */
 		sprintf(str,"%.*s",sizeof(str)-1,cmdline+1);
@@ -733,9 +737,50 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 		return(exec_bin(str,&main_csi)); 
 	}
 
-	bprintf("\r\nExternal programs are not yet supported in Synchronet for Linux\r\n");
+	attr(cfg.color[clr_external]);        /* setup default attributes */
 
-//	system(cmdline);	This is going to be a lot of work for me... :-)
+    strcpy(str,cmdline);		/* Set str to program name only */
+    p=strchr(str,SP);
+    if(p) *p=0;
+    strcpy(fname,str);
+
+    p=strrchr(fname,'/');
+    if(!p) p=strrchr(fname,'\\');
+    if(!p) p=strchr(fname,':');
+    if(!p) p=fname;
+    else   p++;
+
+    for(i=0;i<cfg.total_natvpgms;i++)
+        if(!stricmp(p,cfg.natvpgm[i]->name))
+            break;
+    if(i<cfg.total_natvpgms || mode&EX_NATIVE)
+        native=true;
+
+	if(!native) {
+		bprintf("\r\nExternal DOS programs are not yet supported in Synchronet for Linux\r\n");
+		return(-1);
+	}
+
+ 	if(native) { // Native (32-bit) external
+
+		// Current environment passed to child process
+		sprintf(dszlog,"DSZLOG=%sPROTOCOL.LOG",cfg.node_dir);
+		if(putenv(dszlog)) 		/* Makes the DSZ LOG active */
+        	errormsg(WHERE,ERR_WRITE,"environment",0);
+		sprintf(sbbsnode,"SBBSNODE=%s",cfg.node_dir);
+		putenv(sbbsnode);		/* create environment var to contain node num */
+		sprintf(sbbsnnum,"SBBSNNUM=%d",cfg.node_num);
+		putenv(sbbsnnum);	   /* create environment var to contain node num */
+
+	} else {
+		/* setup DOSemu env here */
+	}
+
+	if(startup_dir!=NULL && startup_dir[0])
+		chdir(startup_dir);
+
+	system(cmdline);	/* This is going to be a lot of work for me... :-) */
+
 	return(0);
 }
 
