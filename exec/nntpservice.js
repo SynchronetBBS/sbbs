@@ -447,7 +447,7 @@ while(client.socket.is_connected) {
 			}
 			writeln("340 send article to be posted. End with <CR-LF>.<CR-LF>");
 
-			var hdr=new Object();
+			var hdr={ from: "", to: "", subject: "", id: "" };
 			if(!(user.security.restrictions&(UFLAG_G|UFLAG_Q))) {	// !Guest and !Network Node
 				hdr.from=user.alias;
 				hdr.from_ext=user.number;
