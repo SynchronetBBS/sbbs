@@ -85,6 +85,7 @@ js_load(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     jsval		result;
 	scfg_t*		cfg;
 	JSObject*	js_argv;
+	JSBool		success;
 
 	*rval=JSVAL_FALSE;
 
@@ -119,11 +120,16 @@ js_load(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	JS_ClearPendingException(cx);
 
 	if((script=JS_CompileFile(cx, obj, path))==NULL)
-		return(JS_TRUE);
+		return(JS_FALSE);
 
-	*rval = BOOLEAN_TO_JSVAL(JS_ExecuteScript(cx, obj, script, &result));
+	success = JS_ExecuteScript(cx, obj, script, &result);
 
 	JS_DestroyScript(cx, script);
+
+	if(!success)
+		return(JS_FALSE);
+
+	*rval = result;
 
     return(JS_TRUE);
 }
