@@ -2014,6 +2014,9 @@ static void sendmail_thread(void* arg)
 		smb_rewind(smb.sid_fp);
 		for(offset=0;offset<total_msgs;offset++) {
 
+			if(server_socket==INVALID_SOCKET)	/* server stopped */
+				break;
+
 			if(active_sendmail!=0) {
 				active_sendmail=0;
 				update_clients();
