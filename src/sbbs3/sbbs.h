@@ -288,8 +288,10 @@ public:
 	uint	*curdir;		/* Current directory for each library */
 	uint 	*usrgrp;		/* Real group numbers */
 	uint	usrgrps;		/* Number groups this user has access to */
+	uint	usrgrp_total;	/* Total number of groups */
 	uint 	*usrlib;		/* Real library numbers */
 	uint	usrlibs;		/* Number of libs this user can access */
+	uint	usrlib_total;	/* Total number of libraries */
 	uint 	**usrsub;		/* Real sub numbers */
 	uint	*usrsubs;		/* Num of subs with access for each grp */
 	uint 	**usrdir;		/* Real dir numbers */

@@ -1686,6 +1686,7 @@ sbbs_t::sbbs_t(ushort node_num, DWORD addr, char* name, SOCKET sd,
 	usrgrp=NULL;
 	usrsubs=NULL;
 	usrsub=NULL;
+	usrgrp_total=0;
 
 	subscan=NULL;
 
@@ -1693,6 +1694,7 @@ sbbs_t::sbbs_t(ushort node_num, DWORD addr, char* name, SOCKET sd,
 	usrlib=NULL;
 	usrdirs=NULL;
 	usrdir=NULL;
+	usrlib_total=0;
 
 	batup_desc=NULL;
 	batup_name=NULL;
@@ -1863,23 +1865,25 @@ bool sbbs_t::init()
 
 	if(cfg.total_grps) {
 
-		if((cursub=(uint *)MALLOC(sizeof(uint)*cfg.total_grps))==NULL) {
-			errormsg(WHERE, ERR_ALLOC, "cursub", sizeof(uint)*cfg.total_grps);
+		usrgrp_total = cfg.total_grps;
+
+		if((cursub=(uint *)MALLOC(sizeof(uint)*usrgrp_total))==NULL) {
+			errormsg(WHERE, ERR_ALLOC, "cursub", sizeof(uint)*usrgrp_total);
 			return(false);
 		}
 
-		if((usrgrp=(uint *)MALLOC(sizeof(uint)*cfg.total_grps))==NULL) {
-			errormsg(WHERE, ERR_ALLOC, "usrgrp", sizeof(uint)*cfg.total_grps);
+		if((usrgrp=(uint *)MALLOC(sizeof(uint)*usrgrp_total))==NULL) {
+			errormsg(WHERE, ERR_ALLOC, "usrgrp", sizeof(uint)*usrgrp_total);
 			return(false);
 		}
 
-		if((usrsubs=(uint *)MALLOC(sizeof(uint)*cfg.total_grps))==NULL) {
-			errormsg(WHERE, ERR_ALLOC, "usrsubs", sizeof(uint)*cfg.total_grps);
+		if((usrsubs=(uint *)MALLOC(sizeof(uint)*usrgrp_total))==NULL) {
+			errormsg(WHERE, ERR_ALLOC, "usrsubs", sizeof(uint)*usrgrp_total);
 			return(false);
 		}
 
-		if((usrsub=(uint **)calloc(cfg.total_grps,sizeof(uint *)))==NULL) {
-			errormsg(WHERE, ERR_ALLOC, "usrsub", sizeof(uint)*cfg.total_grps);
+		if((usrsub=(uint **)calloc(usrgrp_total,sizeof(uint *)))==NULL) {
+			errormsg(WHERE, ERR_ALLOC, "usrsub", sizeof(uint)*usrgrp_total);
 			return(false);
 		}
  
@@ -1888,7 +1892,6 @@ bool sbbs_t::init()
 			return(false);
 		}
 	}
-
 
 	for(i=l=0;i<(uint)cfg.total_grps;i++) {
 		for(j=k=0;j<cfg.total_subs;j++)
@@ -1905,23 +1908,25 @@ bool sbbs_t::init()
 
 	if(cfg.total_libs) {
 
-		if((curdir=(uint *)MALLOC(sizeof(uint)*cfg.total_libs))==NULL) {
-			errormsg(WHERE, ERR_ALLOC, "curdir", sizeof(uint)*cfg.total_libs);
+		usrlib_total = cfg.total_libs;
+
+		if((curdir=(uint *)MALLOC(sizeof(uint)*usrlib_total))==NULL) {
+			errormsg(WHERE, ERR_ALLOC, "curdir", sizeof(uint)*usrlib_total);
 			return(false);
 		}
 
-		if((usrlib=(uint *)MALLOC(sizeof(uint)*cfg.total_libs))==NULL) {
-			errormsg(WHERE, ERR_ALLOC, "usrlib", sizeof(uint)*cfg.total_libs);
+		if((usrlib=(uint *)MALLOC(sizeof(uint)*usrlib_total))==NULL) {
+			errormsg(WHERE, ERR_ALLOC, "usrlib", sizeof(uint)*usrlib_total);
 			return(false);
 		}
 
-		if((usrdirs=(uint *)MALLOC(sizeof(uint)*cfg.total_libs))==NULL) {
-			errormsg(WHERE, ERR_ALLOC, "usrdirs", sizeof(uint)*cfg.total_libs);
+		if((usrdirs=(uint *)MALLOC(sizeof(uint)*usrlib_total))==NULL) {
+			errormsg(WHERE, ERR_ALLOC, "usrdirs", sizeof(uint)*usrlib_total);
 			return(false);
 		}
 
-		if((usrdir=(uint **)calloc(cfg.total_libs,sizeof(uint *)))==NULL) {
-			errormsg(WHERE, ERR_ALLOC, "usrdir", sizeof(uint)*cfg.total_libs);
+		if((usrdir=(uint **)calloc(usrlib_total,sizeof(uint *)))==NULL) {
+			errormsg(WHERE, ERR_ALLOC, "usrdir", sizeof(uint)*usrlib_total);
 			return(false);
 		}
 	}
@@ -2104,7 +2109,7 @@ sbbs_t::~sbbs_t()
 	global_int_vars=0;
 
 	/* Sub-board variables */
-	for(i=0;i<cfg.total_grps && usrsub!=NULL;i++)
+	for(i=0;i<usrgrp_total && usrsub!=NULL;i++)
 		FREE_AND_NULL(usrsub[i]);	/* exception here (ptr=0xfdfdfdfd) on exit July-10-2002 */
 
 	FREE_AND_NULL(cursub);
@@ -2114,7 +2119,7 @@ sbbs_t::~sbbs_t()
 	FREE_AND_NULL(subscan);
 
 	/* File Directory variables */
-	for(i=0;i<cfg.total_libs && usrdir!=NULL;i++)
+	for(i=0;i<usrlib_total && usrdir!=NULL;i++)
 		FREE_AND_NULL(usrdir[i]);
 
 	FREE_AND_NULL(curdir);
