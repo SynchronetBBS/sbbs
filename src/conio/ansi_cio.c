@@ -31,6 +31,8 @@ int		ansi_row=0;
 int		ansi_col=0;
 int		force_move=1;
 
+int		outfd;
+
 /* Control sequence table definitions. */
 typedef struct
 {
@@ -137,7 +139,7 @@ void ansi_sendch(char ch)
 				ansi_row=ansi_rows-1;
 			}
 		}
-		fwrite(&ch,1,1,stdout);
+		write(outfd,&ch,1);
 		if(ch<' ')
 			force_move=1;
 	}
@@ -148,7 +150,7 @@ void ansi_sendstr(char *str,int len)
 	if(len==-1)
 		len=strlen(str);
 	if(len) {
-		fwrite(str,len,1,stdout);
+		write(outfd,str,len);
 	}
 }
 
@@ -639,6 +641,8 @@ int ansi_initciolib(long inmode)
 		atexit(ansi_fixterm);
 	}
 #endif
+	outfd=dup(fileno(stdout));
+	fclose(stdout);
 	vmem=(WORD *)malloc(ansi_rows*ansi_cols*sizeof(WORD));
 	ansi_sendstr(init,-1);
 	for(i=0;i<ansi_rows*ansi_cols;i++)
