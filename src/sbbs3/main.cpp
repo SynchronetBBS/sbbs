@@ -1159,7 +1159,8 @@ void event_thread(void* arg)
 						&& !(sbbs->useron.misc&(DELETED|INACTIVE))	 /* Pre-QWK */
 						&& sbbs->chk_ar(sbbs->cfg.preqwk_ar,&sbbs->useron)) { 
 						for(k=1;k<=sbbs->cfg.sys_nodes;k++) {
-							sbbs->getnodedat(k,&node,0);
+							if(sbbs->getnodedat(k,&node,0)!=0)
+								continue;
 							if((node.status==NODE_INUSE || node.status==NODE_QUIET
 								|| node.status==NODE_LOGON) && node.useron==i)
 								break; 
@@ -1200,7 +1201,8 @@ void event_thread(void* arg)
 			/* Node Daily Events */
 			for(i=first_node;i<=last_node;i++) {
 				// Node Daily Event
-				sbbs->getnodedat(i,&node,0);
+				if(sbbs->getnodedat(i,&node,0)!=0)
+					continue;
 				if(node.misc&NODE_EVENT && node.status==NODE_WFC) {
 					sbbs->getnodedat(i,&node,1);
 					node.status=NODE_EVENT_RUNNING;
@@ -1418,7 +1420,8 @@ void event_thread(void* arg)
 							if(now-lastnodechk<10)
 								continue;
 							for(j=first_node;j<=last_node;j++) {
-								sbbs->getnodedat(j,&node,1);
+								if(sbbs->getnodedat(j,&node,1)!=0)
+									continue;
 								if(node.status==NODE_WFC)
 									node.status=NODE_EVENT_LIMBO;
 								node.aux=sbbs->cfg.event[i]->node;
@@ -1467,7 +1470,8 @@ void event_thread(void* arg)
 #endif
 							// Check/change the status of the nodes that we're in control of
 							for(j=first_node;j<=last_node;j++) {
-								sbbs->getnodedat(j,&node,1);
+								if(sbbs->getnodedat(j,&node,1)!=0)
+									continue;
 								if(node.status==NODE_WFC) {
 									if(j==sbbs->cfg.event[i]->node)
 										node.status=NODE_EVENT_WAITING;
@@ -1479,7 +1483,8 @@ void event_thread(void* arg)
 							}
 
 							for(j=1;j<=sbbs->cfg.sys_nodes;j++) {
-								sbbs->getnodedat(j,&node,0);
+								if(sbbs->getnodedat(j,&node,0)!=0)
+									continue;
 								if(j==sbbs->cfg.event[i]->node) {
 									if(node.status!=NODE_EVENT_WAITING)
 										break;
@@ -1508,7 +1513,8 @@ void event_thread(void* arg)
 					|| sbbs->cfg.event[i]->node>last_node) {
 					sbbs->cfg.event[i]->last=now;
 					for(j=first_node;j<=last_node;j++) {
-						sbbs->getnodedat(j,&node,1);
+						if(sbbs->getnodedat(j,&node,1)!=0)
+							continue;
 						node.status=NODE_WFC;
 						sbbs->putnodedat(j,&node);
 					}
@@ -1550,7 +1556,8 @@ void event_thread(void* arg)
 					if(sbbs->cfg.event[i]->misc&EVENT_EXCL) { /* exclusive event */
 						// Check/change the status of the nodes that we're in control of
 						for(j=first_node;j<=last_node;j++) {
-							sbbs->getnodedat(j,&node,1);
+							if(sbbs->getnodedat(j,&node,1)!=0)
+								continue;
 							node.status=NODE_WFC;
 							sbbs->putnodedat(j,&node);
 						}
@@ -3405,7 +3412,8 @@ void DLLCALL bbs_thread(void* arg)
 		if(node_threads_running==0) {	/* check for re-run flags */
 			bool rerun=false;
 			for(i=first_node;i<=last_node;i++) {
-				sbbs->getnodedat(i,&node,0);
+				if(sbbs->getnodedat(i,&node,0)!=0)
+					continue;
 				if(node.misc&NODE_RRUN) {
 					sbbs->getnodedat(i,&node,1);
 					if(!rerun)
@@ -3591,7 +3599,9 @@ void DLLCALL bbs_thread(void* arg)
 		client_on(client_socket,&client,FALSE /* update */);
 
 		for(i=first_node;i<=last_node;i++) {
-			sbbs->getnodedat(i,&node,1);
+			node.status=-1;	/* paranoia: make sure node.status!=NODE_WFC by default */
+			if(sbbs->getnodedat(i,&node,1)!=0)
+				continue;
 			if(node.status==NODE_WFC) {
 				node.status=NODE_LOGON;
 				sbbs->putnodedat(i,&node);
