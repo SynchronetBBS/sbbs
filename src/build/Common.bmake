@@ -147,9 +147,10 @@ CCPRE	=	bcc
 LD		=	ilink32
 OUTPUT	=	-o
 LOUTPUT	=	$(OUTPUT)
-CFLAGS	=	-WM -q 
+CFLAGS	=	-q 
 LDFLAGS	=	$(CFLAGS)
-CFLAGS  =	$(CFLAGS) -M -WD -WM -X-
+CFLAGS  =	$(CFLAGS) -M -WD -X-
+MT_CFLAGS = -WM 
 !ifdef DEBUG
 CFLAGS	=	$(CFLAGS) -v
 !endif
