@@ -49,7 +49,7 @@ int sbbs_t::exec_function(csi_t *csi)
 	char	ansi_seq[32];
 	int		ansi_len;
 	int		in;
-	int		s,file;
+	int		s;
 	uint 	i,j,k;
 	long	l;
 	stats_t stats;
@@ -283,14 +283,10 @@ int sbbs_t::exec_function(csi_t *csi)
 				CRLF; }
 			return(0);
 		case CS_PAGE_SYSOP:
-			if(startup->options&BBS_OPT_SYSOP_AVAILABLE 
-				|| (cfg.sys_chat_ar[0] && chk_ar(cfg.sys_chat_ar,&useron))
-				|| useron.exempt&FLAG('C')) {
-				sysop_page();
-				return(0); }
-			bprintf(text[SysopIsNotAvailable],cfg.sys_op);
+			csi->logic=sysop_page();
 			return(0);
 		case CS_PAGE_GURU:
+#if 0 /* old way */
 			csi->logic=LOGIC_FALSE;
 			for(i=0;i<cfg.total_gurus;i++)
 				if(!stricmp(csi->str,cfg.guru[i]->code)
@@ -299,6 +295,7 @@ int sbbs_t::exec_function(csi_t *csi)
 			if(i>=cfg.total_gurus)
 				return(0);
 			sprintf(str,"%s%s.dat", cfg.ctrl_dir, cfg.guru[i]->code);
+			int file;
 			if((file=nopen(str,O_RDONLY))==-1) {
 				errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
 				return(0); }
@@ -312,6 +309,9 @@ int sbbs_t::exec_function(csi_t *csi)
 			localguru((char*)p,i);
 			FREE(p);
 			csi->logic=LOGIC_TRUE;
+#else
+			csi->logic=guru_page();
+#endif
 			return(0);
 		case CS_SPY:
 			i=atoi(csi->str);
