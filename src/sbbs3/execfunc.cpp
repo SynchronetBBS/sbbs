@@ -195,7 +195,7 @@ int sbbs_t::exec_function(csi_t *csi)
 			csi->logic=guru_page() ? LOGIC_TRUE:LOGIC_FALSE;
 			return(0);
 		case CS_SPY:
-			csi->logic_state=spy(atoi(csi->str)) ? LOGIC_TRUE:LOGIC_FALSE;
+			csi->logic=spy(atoi(csi->str)) ? LOGIC_TRUE:LOGIC_FALSE;
 			return(0);
 		case CS_PRIVATE_CHAT:
 			privchat();
