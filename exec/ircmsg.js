@@ -1,6 +1,10 @@
 /* ircmsg.js */
 
+/* $Id$
+
 load("irclib.js");	// Thanks Cyan!
+
+const REVISION = "$Revision$".split(' ')[1];
 
 var server="irc.synchro.net";
 var channel="#channel";
@@ -39,14 +43,13 @@ if (!my_server) {
         log("!Couldn't connect to " + server);
         exit();
 }
-my_server.poll(5);
-while(my_server.data_waiting && (response=my_server.recvline()))
+while(my_server.poll(5) && (response=my_server.recvline()))
 	log(response);
 
 if(join) {
 	log("Joining: " + channel);
 	my_server.send("JOIN " + channel + "\r\n");
-	while(my_server.data_waiting && (response=my_server.recvline()))
+	while(my_server.poll(5) && (response=my_server.recvline()))
 		log(response);
 }
 if(msg)
@@ -54,7 +57,7 @@ if(msg)
 else while(msg=readln())
 	send(msg);
 
-while(my_server.data_waiting && (response=my_server.recvline()))
+while(my_server.poll(5) && (response=my_server.recvline()))
 	log(response);
 
 IRC_quit(my_server);
