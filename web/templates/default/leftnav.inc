@@ -25,6 +25,6 @@
       @@JS:if(template.show_nodelist)'Who\'s Online now ...<br /><br /><table class="main_nodelist"><tbody><tr><td class="main_nodelist"><a href="mailto:'+template.user_email+'">'+template.user_name+'</a> '+template.node_action+'</td></tr></tbody></table>';@@
  
 	 </div>
-	                         
+	 </td>                        
 <!-- end Left Navigation -->
             
