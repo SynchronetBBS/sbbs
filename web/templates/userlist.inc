@@ -1,6 +1,6 @@
 <CENTER>
 <TABLE>
-<TR bgcolor=white><TH><font color=black>Alias</font></TH><TH><font color=black>Location</font></TH><TH><font color=black>Connection</font></TH><TH><font color=black>Last On</font></TH></TR>
+<TR bgcolor=white><TH><a href="userlist.ssjs?sort=alias"><font color=black>Alias</font></a></TH><TH><a href="userlist.ssjs?sort=location"><font color=black>Location</font></a></TH><TH><a href="userlist.ssjs?sort=connection"><font color=black>Connection</font></a></TH><TH><a href="userlist.ssjs?sort=laston"><font color=black>Last On</font></a></TH></TR>
 <<REPEAT users>>
 <TR>
   <TD>
