@@ -1290,12 +1290,33 @@ static int is_dynamic_req(http_session_t* session)
 
 static char *get_request(http_session_t * session, char *req_line)
 {
-	char *	p;
-	char *  retval;
+	char*	p;
+	char*	retval;
 	int		offset;
 
-	while(*req_line && *req_line<' ') req_line++;
+	SKIP_WHITESPACE(req_line);
 	SAFECOPY(session->req.virtual_path,req_line);
+
+	/* Must initialize physical_path before calling is_dynamic_req() */
+	SAFECOPY(session->req.physical_path,session->req.virtual_path);
+	unescape(session->req.physical_path);
+	if(!strnicmp(session->req.physical_path,http_scheme,http_scheme_len)) {
+		/* Set HOST value... ignore HOST header */
+		SAFECOPY(session->req.host,session->req.physical_path+http_scheme_len);
+		strtok(session->req.physical_path,"/");
+		p=strtok(NULL,"/");
+		if(p==NULL) {
+			/* Do not allow host values larger than 128 bytes */
+			session->req.host[0]=0;
+			p=session->req.physical_path+http_scheme_len;
+		}
+		offset=p-session->req.physical_path;
+		memmove(session->req.physical_path
+			,session->req.physical_path+offset
+			,strlen(session->req.physical_path+offset)+1	/* move '\0' terminator too */
+			);
+	}
+
 	strtok(session->req.virtual_path," \t");
 	retval=strtok(NULL," \t");
 	strtok(session->req.virtual_path,"?");
@@ -1314,24 +1335,6 @@ static char *get_request(http_session_t * session, char *req_line)
 		}
 	}
 	
-	unescape(session->req.virtual_path);
-	SAFECOPY(session->req.physical_path,session->req.virtual_path);
-	if(!strnicmp(session->req.physical_path,http_scheme,http_scheme_len)) {
-		/* Set HOST value... ignore HOST header */
-		SAFECOPY(session->req.host,session->req.physical_path+http_scheme_len);
-		strtok(session->req.physical_path,"/");
-		p=strtok(NULL,"/");
-		if(p==NULL) {
-			/* Do not allow host values larger than 128 bytes */
-			session->req.host[0]=0;
-			p=session->req.physical_path+http_scheme_len;
-		}
-		offset=p-session->req.physical_path;
-		memmove(session->req.physical_path
-			,session->req.physical_path+offset
-			,strlen(session->req.physical_path+offset)+1	/* move '\0' terminator too */
-			);
-	}
 	return(retval);
 }
 
