@@ -36,6 +36,11 @@ for(i=0;i<argc;i++) {
 	}
 }
 
+if(msg == undefined || msg=='') {
+	log("Cowardly refusing to send empty message");
+	exit();
+}
+
 log("Using nick: " + nick);
 log("Connecting to: " +server+ " port " + port);
 my_server = IRC_client_connect(server,nick,undefined,undefined,port);
