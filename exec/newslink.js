@@ -352,8 +352,11 @@ for(i in area) {
 			continue;
 		if(hdr.attr&MSG_DELETE)	/* marked for deletion */
 			continue;
-		if(hdr.attr&MSG_MODERATED && !(hdr.attr&MSG_VALIDATED))
-			continue;
+		if(hdr.attr&MSG_MODERATED && !(hdr.attr&MSG_VALIDATED)) {
+			print("Stopping at unvalidated moderated message: " + ptr);
+			ptr--;
+			break;
+		}
 		if(hdr.attr&MSG_PRIVATE)/* no private messages on NNTP */
 			continue;
 		if(hdr.from_net_type==NET_INTERNET)	/* no dupe loop */
