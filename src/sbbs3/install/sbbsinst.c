@@ -381,7 +381,7 @@ endif
 
 	fputs("all: binaries baja externals\n\n",makefile);
 	fputs("externals:	sbj sbl\n\n",makefile);
-	fputs("fbinaries:	sbbs3 scfg\n\n",makefile);
+	fputs("binaries:	sbbs3 scfg\n\n",makefile);
 
 	fputs("sbbs3:	",makefile);
 	if(params.cvs)
