@@ -1348,14 +1348,40 @@ void readmsgs(ulong start)
 	}
 }
 
-time_t checktime(void)
+ushort str2tzone(const char* str)
 {
-	struct tm tm;
+	char tmp[32];
+	ushort zone;
 
-    memset(&tm,0,sizeof(tm));
-    tm.tm_year=94;
-    tm.tm_mday=1;
-    return(mktime(&tm)-0x2D24BD00L);
+	if(isdigit(*str) || *str=='-' || *str=='+') { /* [+|-]HHMM format */
+		if(*str=='+') str++;
+		sprintf(tmp,"%.*s",*str=='-'? 3:2,str);
+		zone=atoi(tmp)*60;
+		str+=(*str=='-') ? 3:2;
+		if(zone<0)
+			zone-=atoi(str);
+		else
+			zone+=atoi(str);
+		return zone;
+	}
+	if(!stricmp(str,"EST") || !stricmp(str,"Eastern Standard Time"))
+		return EST;
+	if(!stricmp(str,"EDT") || !stricmp(str,"Eastern Daylight Time"))
+		return EDT;
+	if(!stricmp(str,"CST") || !stricmp(str,"Central Standard Time"))
+		return CST;
+	if(!stricmp(str,"CDT") || !stricmp(str,"Central Daylight Time"))
+		return CDT;
+	if(!stricmp(str,"MST") || !stricmp(str,"Mountain Standard Time"))
+		return MST;
+	if(!stricmp(str,"MDT") || !stricmp(str,"Mountain Daylight Time"))
+		return MDT;
+	if(!stricmp(str,"PST") || !stricmp(str,"Pacific Standard Time"))
+		return PST;
+	if(!stricmp(str,"PDT") || !stricmp(str,"Pacific Daylight Time"))
+		return PDT;
+
+	return 0;	/* UTC */
 }
 
 /***************/
@@ -1375,6 +1401,8 @@ int main(int argc, char **argv)
 	int		i,j,x,y;
 	long	count=-1;
 	BOOL	create=FALSE;
+	time_t	now;
+	struct	tm* tm;
 
 	setvbuf(stdout,0,_IONBF,0);
 
@@ -1390,16 +1418,17 @@ int main(int argc, char **argv)
 		,revision
 		,smb_lib_ver()
 		);
-#if 0
-	putenv("TZ=UTC0");
+
+	/* Automatically detect the system time zone (if possible) */
 	tzset();
-
-	if((t=checktime())!=0) {
-		fprintf(stderr,"!TIME PROBLEM (%ld)\n",t);
-		return(-1);
+	now=time(NULL);
+	if((tm=localtime(&now))!=NULL) {
+		if(tm->tm_isdst<=0)
+			tzone=str2tzone(tzname[0]);
+		else
+			tzone=str2tzone(tzname[1]);
 	}
-#endif
-
+	
 	for(x=1;x<argc && x>0;x++) {
 		if(
 #ifndef __unix__
@@ -1425,24 +1454,7 @@ int main(int argc, char **argv)
 						subj="Anouncement";
 						break;
 					case 'Z':
-						if(isdigit(argv[x][j+1]))
-							tzone=atoi(argv[x]+j+1);
-						else if(!stricmp(argv[x]+j+1,"EST"))
-							tzone=EST;
-						else if(!stricmp(argv[x]+j+1,"EDT"))
-							tzone=EDT;
-						else if(!stricmp(argv[x]+j+1,"CST"))
-							tzone=CST;
-						else if(!stricmp(argv[x]+j+1,"CDT"))
-							tzone=CDT;
-						else if(!stricmp(argv[x]+j+1,"MST"))
-							tzone=MST;
-						else if(!stricmp(argv[x]+j+1,"MDT"))
-							tzone=MDT;
-						else if(!stricmp(argv[x]+j+1,"PST"))
-							tzone=PST;
-						else if(!stricmp(argv[x]+j+1,"PDT"))
-							tzone=PDT;
+						tzone=str2tzone(argv[x]+j+1);
 						j=strlen(argv[x])-1;
 						break;
 					case 'C':
