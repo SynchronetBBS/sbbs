@@ -521,7 +521,6 @@ typedef struct {				// Message
 	ulong		offset; 		// Offset (number of records) into index
 	uchar		forwarded;		// Forwarded from agent to another
 	when_t		expiration; 	// Message will exipre on this day (if >0)
-	uint		subnum;			// Sub-board number (not initialized by smblib)
 
 	} smbmsg_t;
 
@@ -538,7 +537,11 @@ typedef struct {			// Message base
 	smbstatus_t status; 	// Status header record
 	char	shd_buf[SHD_BLOCK_LEN]; 	// File I/O buffer for header file
 	char	last_error[128];			// Last error message
-	uint	subnum;			// Sub-board number (not initialized by smblib)
+
+	/* Private member variables (not initialized by or used by smblib) */
+	uint	subnum;			// Sub-board number
+	long	msgs;			// Number of messages loaded (for user)
+	long	curmsg;			// Current message number (for user)
 
     } smb_t;
 
