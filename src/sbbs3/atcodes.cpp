@@ -86,6 +86,8 @@ char* sbbs_t::atcode(char* sp, char* str)
 {
 	char*	tp;
 	uint	i;
+	uint	ugrp;
+	uint	usub;
 	long	l;
     stats_t stats;
     node_t  node;
@@ -645,45 +647,97 @@ char* sbbs_t::atcode(char* sp, char* str)
 		return(nulstr);
 	}
 
-	if(!strcmp(sp,"GRP"))
+	if(!strcmp(sp,"GRP")) {
+		if(SMB_IS_OPEN(&smb)) {
+			if(smb.subnum==INVALID_SUB)
+				return("Local");
+			if(smb.subnum<cfg.total_subs)
+				return(cfg.grp[cfg.sub[smb.subnum]->grp]->sname);
+		}
 		return(usrgrps ? cfg.grp[usrgrp[curgrp]]->sname : nulstr);
+	}
 
-	if(!strcmp(sp,"GRPL"))
+	if(!strcmp(sp,"GRPL")) {
+		if(SMB_IS_OPEN(&smb)) {
+			if(smb.subnum==INVALID_SUB)
+				return("Local");
+			if(smb.subnum<cfg.total_subs)
+				return(cfg.grp[cfg.sub[smb.subnum]->grp]->lname);
+		}
 		return(usrgrps ? cfg.grp[usrgrp[curgrp]]->lname : nulstr);
+	}
 
 	if(!strcmp(sp,"GN")) {
-		sprintf(str,"%u",usrgrps ? curgrp+1 : 0);
+		if(SMB_IS_OPEN(&smb))
+			ugrp=getusrgrp(smb.subnum);
+		else 
+			ugrp=usrgrps ? curgrp+1 : 0;
+		sprintf(str,"%u",ugrp);
 		return(str);
 	}
 
 	if(!strcmp(sp,"GL")) {
-		sprintf(str,"%-4u",usrgrps ? curgrp+1 : 0);
+		if(SMB_IS_OPEN(&smb))
+			ugrp=getusrgrp(smb.subnum);
+		else 
+			ugrp=usrgrps ? curgrp+1 : 0;
+		sprintf(str,"%-4u",ugrp);
 		return(str);
 	}
 
 	if(!strcmp(sp,"GR")) {
-		sprintf(str,"%4u",usrgrps ? curgrp+1 : 0);
+		if(SMB_IS_OPEN(&smb))
+			ugrp=getusrgrp(smb.subnum);
+		else 
+			ugrp=usrgrps ? curgrp+1 : 0;
+		sprintf(str,"%4u",ugrp);
 		return(str);
 	}
 
-	if(!strcmp(sp,"SUB"))
+	if(!strcmp(sp,"SUB")) {
+		if(SMB_IS_OPEN(&smb)) {
+			if(smb.subnum==INVALID_SUB)
+				return("Mail");
+			else if(smb.subnum<cfg.total_subs)
+				return(cfg.sub[smb.subnum]->sname);
+		}
 		return(usrgrps ? cfg.sub[usrsub[curgrp][cursub[curgrp]]]->sname : nulstr);
+	}
 
-	if(!strcmp(sp,"SUBL"))
+	if(!strcmp(sp,"SUBL")) {
+		if(SMB_IS_OPEN(&smb)) {
+			if(smb.subnum==INVALID_SUB)
+				return("Mail");
+			else if(smb.subnum<cfg.total_subs)
+				return(cfg.sub[smb.subnum]->lname);
+		}
 		return(usrgrps  ? cfg.sub[usrsub[curgrp][cursub[curgrp]]]->lname : nulstr);
+	}
 
 	if(!strcmp(sp,"SN")) {
-		sprintf(str,"%u",usrgrps ? cursub[curgrp]+1 : 0);
+		if(SMB_IS_OPEN(&smb))
+			usub=getusrsub(smb.subnum);
+		else
+			usub=usrgrps ? cursub[curgrp]+1 : 0;
+		sprintf(str,"%u",usub);
 		return(str);
 	}
 
 	if(!strcmp(sp,"SL")) {
-		sprintf(str,"%-4u",usrgrps ? cursub[curgrp]+1 : 0);
+		if(SMB_IS_OPEN(&smb))
+			usub=getusrsub(smb.subnum);
+		else
+			usub=usrgrps ? cursub[curgrp]+1 : 0;
+		sprintf(str,"%-4u",usub);
 		return(str);
 	}
 
 	if(!strcmp(sp,"SR")) {
-		sprintf(str,"%4u",usrgrps ? cursub[curgrp]+1 : 0);
+		if(SMB_IS_OPEN(&smb))
+			usub=getusrsub(smb.subnum);
+		else
+			usub=usrgrps ? cursub[curgrp]+1 : 0;
+		sprintf(str,"%4u",usub);
 		return(str);
 	}
 
@@ -937,13 +991,8 @@ char* sbbs_t::atcode(char* sp, char* str)
 		return(nulstr);
 	}
 	if(!strcmp(sp,"SMB_GROUP_NUM")) {
-		if(smb.subnum!=INVALID_SUB && smb.subnum<cfg.total_subs) {
-			uint ugrp;
-			for(ugrp=0;ugrp<usrgrps;ugrp++)
-				if(usrgrp[ugrp]==cfg.sub[smb.subnum]->grp)
-					break;
-			sprintf(str,"%u",ugrp+1);
-		}
+		if(smb.subnum!=INVALID_SUB && smb.subnum<cfg.total_subs)
+			sprintf(str,"%u",getusrgrp(smb.subnum));
 		return(str);
 	}
 	if(!strcmp(sp,"SMB_SUB")) {
@@ -968,17 +1017,8 @@ char* sbbs_t::atcode(char* sp, char* str)
 		return(nulstr);
 	}
 	if(!strcmp(sp,"SMB_SUB_NUM")) {
-		if(smb.subnum!=INVALID_SUB && smb.subnum<cfg.total_subs) {
-			uint ugrp;
-			for(ugrp=0;ugrp<usrgrps;ugrp++)
-				if(usrgrp[ugrp]==cfg.sub[smb.subnum]->grp)
-					break;
-			uint usub;
-			for(usub=0;usub<usrsubs[ugrp];usub++)
-				if(usrsub[ugrp][usub]==smb.subnum)
-					break;
-			sprintf(str,"%u",usub+1);
-		}
+		if(smb.subnum!=INVALID_SUB && smb.subnum<cfg.total_subs)
+			sprintf(str,"%u",getusrsub(smb.subnum));
 		return(str);
 	}
 	if(!strcmp(sp,"SMB_MSGS")) {
