@@ -190,6 +190,7 @@ js_connect(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		return(JS_FALSE);
 
 	str = JS_ValueToString(cx, argv[0]);
+	dbprintf(FALSE, p, "resolving hostname: %s", JS_GetStringBytes(str));
 	if((ip_addr=resolve_ip(JS_GetStringBytes(str)))==0) {
 		p->last_error=ERROR_VALUE;
 		dbprintf(TRUE, p, "resolve_ip failed with error %d",ERROR_VALUE);
