@@ -160,7 +160,7 @@ int main(int argc, char **argv)
 	/* Defaults */
 	/************/
 	SAFECOPY(params.install_path,"/usr/local/sbbs");
-	SAFECOPY(params.make_cmdline,
+	strcpy(params.make_cmdline,
 #if defined(__linux__)
 		"make"
 #else
