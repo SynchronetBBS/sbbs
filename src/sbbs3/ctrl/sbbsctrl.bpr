@@ -41,7 +41,7 @@
     <SYSDEFINES value="NO_STRICT;_VIS_NOLIB"/>
     <MAINSOURCE value="sbbsctrl.cpp"/>
     <INCLUDEPATH value="..\;..;..\..\xpdev;d:\Borland\CBuilder5\Projects;C:\Borland\CBuilder5\Projects;$(BCB)\include;$(BCB)\include\vcl"/>
-    <LIBPATH value="..\;..;..\..\xpdev;d:\Borland\CBuilder5\Projects;$(BCB)\Projects\Lib;C:\Borland\CBuilder5\Projects;$(BCB)\lib\obj;$(BCB)\lib"/>
+    <LIBPATH value="..\;..;..\..\xpdev;d:\Borland\CBuilder5\Projects;$(BCB)\Projects\Lib;C:\Borland\CBuilder5\Projects;$(BCB)\lib\obj;$(BCB)\lib;$(BCB)\lib\Psdk"/>
     <WARNINGS value="-w-par -w-csu"/>
     <WARNOPTSTR value=""/>
     <OTHERFILES value=""/>
@@ -61,7 +61,7 @@
   <LINKER>
     <ALLOBJ value="c0w32.obj sysinit.obj $(OBJFILES)"/>
     <ALLRES value="$(RESFILES)"/>
-    <ALLLIB value="$(LIBFILES) $(LIBRARIES) import32.lib cp32mt.lib"/>
+    <ALLLIB value="$(LIBFILES) $(LIBRARIES) import32.lib cp32mt.lib IpHlpApi.lib"/>
     <OTHERFILES value=""/>
   </LINKER>
   <FILELIST>
