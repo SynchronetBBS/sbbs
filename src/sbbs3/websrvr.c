@@ -2267,7 +2267,7 @@ static BOOL exec_cgi(http_session_t *session)
 		}
 		else  {
 			if((time(NULL)-start) >= startup->max_cgi_inactivity)  {
-				lprintf(LOG_ERR,"%04d CGI Process %s Timed out",session->socket,cmdline);
+				lprintf(LOG_ERR,"%04d CGI Process %s Timed out",session->socket,getfname(cmdline));
 				done_reading=TRUE;
 				start=0;
 			}
@@ -2290,7 +2290,7 @@ static BOOL exec_cgi(http_session_t *session)
 	if(!done_wait)  {
 		if(start)
 			lprintf(LOG_NOTICE,"%04d CGI Process %s still alive on client exit"
-				,session->socket,cmdline);
+				,session->socket,getfname(cmdline));
 		kill(child,SIGTERM);
 		mswait(1000);
 		done_wait = (waitpid(child,&status,WNOHANG)==child);
@@ -2303,12 +2303,14 @@ static BOOL exec_cgi(http_session_t *session)
 	close(out_pipe[0]);		/* close read-end of pipe */
 	close(err_pipe[0]);		/* close read-end of pipe */
 	if(!got_valid_headers) {
-		lprintf(LOG_ERR,"%04d CGI Process %s did not generate valid headers",session->socket,cmdline);
+		lprintf(LOG_ERR,"%04d CGI Process %s did not generate valid headers"
+			,session->socket,getfname(cmdline));
 		return(FALSE);
 	}
 
 	if(!done_parsing_headers) {
-		lprintf(LOG_ERR,"%04d CGI Process %s did not send data header termination",session->socket,cmdline);
+		lprintf(LOG_ERR,"%04d CGI Process %s did not send data header termination"
+			,session->socket,getfname(cmdline));
 		return(FALSE);
 	}
 
@@ -2416,7 +2418,8 @@ static BOOL exec_cgi(http_session_t *session)
 	while(server_socket!=INVALID_SOCKET) {
 
 		if((time(NULL)-start) >= startup->max_cgi_inactivity)  {
-			lprintf(LOG_WARNING,"%04d CGI Process %s Timed out",session->socket,cmdline);
+			lprintf(LOG_WARNING,"%04d CGI Process %s Timed out"
+				,session->socket,getfname(cmdline));
 			break;
 		}
 
@@ -2510,10 +2513,11 @@ static BOOL exec_cgi(http_session_t *session)
 
     if(GetExitCodeProcess(process_info.hProcess, &retval)==FALSE)
 	    lprintf(LOG_ERR,"%04d !ERROR GetExitCodeProcess(%s) returned %d"
-			,session->socket,cmdline,GetLastError());
+			,session->socket,getfname(cmdline),GetLastError());
 
 	if(retval==STILL_ACTIVE) {
-		lprintf(LOG_WARNING,"%04d Terminating CGI process: %s",session->socket,cmdline);
+		lprintf(LOG_WARNING,"%04d Terminating CGI process: %s"
+			,session->socket,getfname(cmdline));
 		TerminateProcess(process_info.hProcess, GetLastError());
 	}	
 
@@ -2524,10 +2528,12 @@ static BOOL exec_cgi(http_session_t *session)
 	CloseHandle(process_info.hProcess);
 
 	if(!got_valid_headers)
-		lprintf(LOG_WARNING,"%04d !CGI Process %s did not generate valid headers",session->socket,cmdline);
+		lprintf(LOG_WARNING,"%04d !CGI Process %s did not generate valid headers"
+			,session->socket,getfname(cmdline));
 	
 	if(!done_parsing_headers)
-		lprintf(LOG_WARNING,"%04d !CGI Process %s did not send data header termination",session->socket,cmdline);
+		lprintf(LOG_WARNING,"%04d !CGI Process %s did not send data header termination"
+			,session->socket,getfname(cmdline));
 
 	return(TRUE);
 #endif
