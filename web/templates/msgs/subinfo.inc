@@ -1,7 +1,7 @@
 <table class="subinfo">
   <tr class="subinfo">
     <td>
-	  Long Name:
+	  Description:
 	</td>
     <td>
 	  %%sub:description%%
@@ -17,7 +17,7 @@
   </tr>
   <tr class="subinfo">
     <td>
-	  Short Name:
+	  Name:
 	</td>
     <td>
 	  %%sub:name%%
