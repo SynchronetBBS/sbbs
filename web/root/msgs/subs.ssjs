@@ -7,14 +7,14 @@ var new_query='';
 for(key in http_request.query) {
 	if(key != 'show_all_subs') {
 		if(new_query.length>0)
-			new_query+='&';
+			new_query+='&amp;';
 		new_query+=encodeURIComponent(key);
 		new_query+='=';
 		new_query+=encodeURIComponent(http_request.query[key]);
 	}
 }
 if(new_query.length>0)
-	new_query+='&';
+	new_query+='&amp;';
 new_query+='show_all_subs=';
 template.showall_toggle='<a href="'+http_request.virtual_path+'?'+new_query
 if(ShowAll)
