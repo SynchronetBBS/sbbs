@@ -1,5 +1,10 @@
 // xtrn_sec.js
 
+// Synchronet External Program Section
+// Menus displayed to users via Telnet/RLogin
+
+// $Id$
+
 load("sbbsdefs.js");
 
 /* text.dat entries */
@@ -25,7 +30,7 @@ while(bbs.online) {
 
 	var xsec=0;
 	if(xtrn_area.sec_list.length > 1) {
-		if(file_exists(system.text_dir + "menu/xtrn_sec.*")) {
+		if(file_exists(system.text_dir + "menu/xtrn_sec.asc")) {
 			bbs.menu("xtrn_sec");
 			xsec=console.getnum(xtrn_area.sec_list.length);
 			if(xsec<=0)
@@ -50,8 +55,8 @@ while(bbs.online) {
 			break; 
 		}
 
-		if(file_exists(system.text_dir + "menu/xtrn" + xtrn_area.sec_list.number+1 + ".*")) {
-			bbs.menu(system.text_dir + "menu/xtrn" + xtrn_area.sec_list.number+1); 
+		if(file_exists(system.text_dir + "menu/xtrn" + (xtrn_area.sec_list[xsec].number+1) + ".asc")) {
+			bbs.menu("xtrn" + (xtrn_area.sec_list[xsec].number+1)); 
 		}
 		else {
 			printf(bbs.text(XtrnProgLstHdr),xtrn_area.sec_list[xsec].name);
