@@ -344,19 +344,24 @@ bool sbbs_t::upload(uint dirnum)
 		if(!dir_op(dirnum)) return(false); 
 	}
 	bputs(text[SearchingForDupes]);
+	if(findfile(&cfg,dirnum,f.name)) {
+		bputs(text[SearchedForDupes]);
+		bprintf(text[FileAlreadyOnline],fname);
+		return(false); 	 /* File is already in database */
+	}
 	for(i=k=0;i<usrlibs;i++) {
 		for(j=0;j<usrdirs[i];j++,k++) {
 			outchar('.');
 			if(k && !(k%5))
 				bputs("\b\b\b\b\b     \b\b\b\b\b");
-			if((usrdir[i][j]==dirnum || cfg.dir[usrdir[i][j]]->misc&DIR_DUPES)
+			if(usrdir[i][j]==dirnum)
+				continue;	/* we already checked this dir */
+			if(cfg.dir[usrdir[i][j]]->misc&DIR_DUPES
 				&& findfile(&cfg,usrdir[i][j],f.name)) {
 				bputs(text[SearchedForDupes]);
-				bprintf(text[FileAlreadyOnline],f.name);
+				bprintf(text[FileAlreadyOnline],fname);
 				if(!dir_op(dirnum))
 					return(false); 	 /* File is in database for another dir */
-				if(usrdir[i][j]==dirnum)
-					return(false); /* don't allow duplicates */
 			}
 		}
 	}
@@ -475,7 +480,7 @@ bool sbbs_t::upload(uint dirnum)
 			else {
 				for(i=0;i<batup_total;i++)
 					if(!strcmp(batup_name[i],f.name)) {
-						bprintf(text[FileAlreadyInQueue],f.name);
+						bprintf(text[FileAlreadyInQueue],fname);
 						return(false); 
 					}
 				strcpy(batup_name[batup_total],f.name);
@@ -485,7 +490,7 @@ bool sbbs_t::upload(uint dirnum)
 				batup_alt[batup_total]=altul;
 				batup_total++;
 				bprintf(text[FileAddedToUlQueue]
-					,f.name,batup_total,cfg.max_batup); 
+					,fname,batup_total,cfg.max_batup); 
 			} 
 		} else {
 			for(i=0;i<cfg.total_prots;i++)
