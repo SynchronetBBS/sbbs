@@ -875,15 +875,15 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 		,useron.alias
 		,hdr.to,smb_faddrtoa(&fidoaddr,tmp));
 	logline("EN",str);
-	}
+}
 
-	/****************************************************************************/
-	/* Returns the FidoNet address kept in str as ASCII.                        */
-	/****************************************************************************/
-	faddr_t atofaddr(scfg_t* cfg, char *str)
-	{
-		char *p;
-		faddr_t addr;
+/****************************************************************************/
+/* Returns the FidoNet address kept in str as ASCII.                        */
+/****************************************************************************/
+faddr_t atofaddr(scfg_t* cfg, char *str)
+{
+	char *p;
+	faddr_t addr;
 
 	addr.zone=addr.net=addr.node=addr.point=0;
 	if((p=strchr(str,':'))!=NULL) {
