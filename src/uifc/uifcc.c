@@ -193,11 +193,13 @@ int uifcinic(uifcapi_t* uifcapi)
 	
     api->scrn_len=height;
     if(api->scrn_len<MIN_LINES || api->scrn_len>MAX_LINES) {
+		uifcbail();
         fprintf(stderr,"\7UIFC: Screen length (%u) must be between %d and %d lines\n"
             ,api->scrn_len,MIN_LINES,MAX_LINES);
         return(-2);
     }
     if(width*height*2>MAX_BFLN) {
+		uifcbail();
         fprintf(stderr,"\7UIFC: Screen size (%u x %u) must be smaller than %u\n"
             ,api->scrn_len,width,height,(uchar)(MAX_BFLN/2));
         return(-2);
@@ -207,6 +209,7 @@ int uifcinic(uifcapi_t* uifcapi)
 	
 
     if(width<80) {
+		uifcbail();
         fprintf(stderr,"\7UIFC: Screen width (%u) must be at least 80 characters\n"
             ,width);
         return(-3);
@@ -290,12 +293,12 @@ static void showmouse(void)
 
 void uifcbail(void)
 {
-curs_set(1);
-clear();
-nl();
-nocbreak();
-refresh();
-endwin();
+	curs_set(1);
+	clear();
+	nl();
+	nocbreak();
+	refresh();
+	endwin();
 }
 
 /****************************************************************************/
