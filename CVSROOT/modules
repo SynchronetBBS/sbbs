@@ -25,6 +25,16 @@
 # can be useful for creating a module that consists of many directories
 # spread out over the entire source repository.
 lib-linux -d lib &lib/mozilla/js/linux.release &lib/mozilla/nspr/linux.release
-lib-win32 -d lib &lib/fltk/win32 &lib/mozilla/js/win32.release &lib/mozilla/nspr/win32.release
-src-sbbs3 -a src/build src/sbbs3 src/xpdev src/uifc include
+lib-win32 -d lib &lib/mozilla/js/win32.release &lib/mozilla/nspr/win32.release
+src-sbbs3 -a src/build src/sbbs3 src/xpdev src/uifc include/mozilla
 run-sbbs3 -a ctrl text exec xtrn node1 node2 node3 node4 docs
+install install
+include include
+lib	lib
+src 	src
+docs 	docs
+ctrl	ctrl
+text	text
+exec	exec
+xtrn	xtrn
+docs	docs
