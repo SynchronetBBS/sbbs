@@ -36,6 +36,7 @@
  ****************************************************************************/
 
 #include "sbbs.h"
+#include "md5.h"
 #include "base64.h"
 
 #ifdef JAVASCRIPT
@@ -949,6 +950,38 @@ js_b64_decode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 }
 
 static JSBool
+js_md5_calc(JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* rval)
+{
+	BYTE		digest[MD5_DIGEST_SIZE];
+	JSBool		hex=JS_FALSE;
+	char*		inbuf;
+	char		outbuf[64];
+	JSString*	js_str;
+
+	*rval = JSVAL_NULL;
+
+	if((inbuf=JS_GetStringBytes(JS_ValueToString(cx, argv[0])))==NULL) 
+		return(JS_FALSE);
+
+	if(argc>1 && JSVAL_IS_BOOLEAN(argv[1]))
+		hex=JSVAL_TO_BOOLEAN(argv[1]);
+
+	MD5_calc(digest,inbuf,strlen(inbuf));
+
+	if(hex)
+		MD5_hex(outbuf,digest);
+	else
+		b64_encode(outbuf,sizeof(outbuf),digest,sizeof(digest));
+
+	js_str = JS_NewStringCopyZ(cx, outbuf);
+	if(js_str==NULL)
+		return(JS_FALSE);
+
+	*rval = STRING_TO_JSVAL(js_str);
+	return(JS_TRUE);
+}
+
+static JSBool
 js_truncsp(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char*		p;
@@ -1250,7 +1283,7 @@ static jsMethodSpec js_global_functions[] = {
 	,JSDOCSTR("calculate and return 32-bit CRC of string")
 	},		
 	{"chksum",			js_chksum,			1,	JSTYPE_NUMBER,	JSDOCSTR("string text")
-	,JSDOCSTR("calculate and return 32-bit chksum of string")
+	,JSDOCSTR("calculate and return 32-bit checksum of string")
 	},
 	{"ctrl",			js_ctrl,			1,	JSTYPE_STRING,	JSDOCSTR("number or string")
 	,JSDOCSTR("return ASCII control character representing character passed - Example: <tt>ctrl('C') returns '\3'</tt>")
@@ -1328,6 +1361,9 @@ static jsMethodSpec js_global_functions[] = {
 	},
 	{"base64_decode",	js_b64_decode,		1,	JSTYPE_STRING,	JSDOCSTR("string text")
 	,JSDOCSTR("returns base64-decoded string or <i>null</i> on error")
+	},
+	{"md5_calc",		js_md5_calc,		1,	JSTYPE_STRING,	JSDOCSTR("string text [,bool hex]")
+	,JSDOCSTR("returns MD5 digest of string in base64 (default) or hexadecimal encoding")
 	},
 	{0}
 };
