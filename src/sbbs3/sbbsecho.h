@@ -97,10 +97,6 @@
 
 #define LOG_DEFAULTS	0xffffffL		/* Low 24 bits default to ON */
 
-#define PKT_TWO_PLUS	0				/* Type 2+ Packet Header  */
-#define PKT_TWO_TWO 	1				/* Type 2.2 Packet Header */
-#define PKT_TWO 		2				/* Old Type Packet Header */
-
 #define MAX_OPEN_SMBS	2
 #define DFLT_OPEN_PKTS  4
 #define MAX_TOTAL_PKTS  100
