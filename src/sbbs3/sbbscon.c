@@ -65,8 +65,8 @@
 #endif
 
 /* Do not include web server in 3.10-Win32 release build */
-#if !defined(_MSC_VER)
-	#define WEB_SERVER
+#if defined(_MSC_VER)
+	#define NO_WEB_SERVER
 #endif
 
 /* Constants */
@@ -116,6 +116,7 @@ static const char* prompt;
 
 static const char* usage  = "\nusage: %s [[setting] [...]] [path/ini_file]\n"
 							"\n"
+#ifndef NO_TELNET_SERVER
 							"Telnet server settings:\n\n"
 							"\ttf<node>   set first Telnet node number\n"
 							"\ttl<node>   set last Telnet node number\n"
@@ -129,12 +130,16 @@ static const char* usage  = "\nusage: %s [[setting] [...]] [path/ini_file]\n"
 							"\ttq         disable QWK events\n"
 							"\tt-         disable Telnet/RLogin server\n"
 							"\n"
+#endif
+#ifndef NO_FTP_SERVER
 							"FTP server settings:\n"
 							"\n"
 							"\tfp<port>   set FTP server port\n"
 							"\tfo<value>  set FTP server options value (advanced)\n"
 							"\tf-         disable FTP server\n"
 							"\n"
+#endif
+#ifndef NO_MAIL_SERVER
 							"Mail server settings:\n"
 							"\n"
 							"\tms<port>   set SMTP server port\n"
@@ -147,11 +152,14 @@ static const char* usage  = "\nusage: %s [[setting] [...]] [path/ini_file]\n"
 							"\tmp-        disable POP3 server\n"
 							"\tms-        disable SendMail thread\n"
 							"\n"
+#endif
+#ifndef NO_SERVICES
 							"Services settings:\n"
 							"\n"
 							"\tso<value>  set Services option value (advanced)\n"
 							"\ts-         disable Services (no services module)\n"
 							"\n"
+#endif
 							"Global settings:\n"
 							"\n"
 							"\thn[host]   set hostname for this instance\n"
@@ -366,6 +374,40 @@ static void client_on(BOOL on, int sock, client_t* client, BOOL update)
 		client_count--;
 	pthread_mutex_unlock(&mutex);
 	lputs(NULL); /* update displayed stats */
+}
+
+static int con_lputs(char *str)
+{
+	char		logline[512];
+	char		tstr[64];
+	time_t		t;
+	struct tm	tm;
+
+#ifdef __unix__
+	if (is_daemon)  {
+		if(str==NULL)
+			return(0);
+		if (std_facilities)
+			syslog(LOG_INFO|LOG_AUTH,"%s",str);
+		else
+			syslog(LOG_INFO,"     %s",str);
+		return(strlen(str));
+	}
+#endif
+
+	t=time(NULL);
+	if(localtime_r(&t,&tm)==NULL)
+		tstr[0]=0;
+	else
+		sprintf(tstr,"%d/%d %02d:%02d:%02d "
+			,tm.tm_mon+1,tm.tm_mday
+			,tm.tm_hour,tm.tm_min,tm.tm_sec);
+
+	sprintf(logline,"%s     %.*s",tstr,(int)sizeof(logline)-32,str);
+	truncsp(logline);
+	lputs(logline);
+	
+    return(strlen(logline)+1);
 }
 
 /****************************************************************************/
@@ -678,20 +720,28 @@ static void terminate(void)
 {
 	ulong count=0;
 
+#ifndef NO_TELNET_SERVER
 	bbs_terminate();
+#endif
+#ifndef NO_FTP_SERVER
 	ftp_terminate();
-#ifdef WEB_SERVER
+#endif
+#ifndef NO_WEB_SERVER
 	web_terminate();
 #endif
+#ifndef NO_MAIL_SERVER
 	mail_terminate();
+#endif
 #ifdef JAVASCRIPT
+  #ifndef NO_SERVICES
 	services_terminate();
+  #endif
 #endif
 
 	while(bbs_running || ftp_running || web_running || mail_running || services_running)  {
 		if(count && (count%10)==0) {
 			if(bbs_running)
-				bbs_lputs("BBS System thread still running");
+				con_lputs("BBS System thread still running");
 			if(ftp_running)
 				ftp_lputs("FTP Server thread still running");
 			if(web_running)
@@ -1009,7 +1059,7 @@ int main(int argc, char** argv)
 	/* Read .ini file here */
 	if(ini_file[0]!=0 && (fp=fopen(ini_file,"r"))!=NULL) {
 		sprintf(str,"Reading %s",ini_file);
-		bbs_lputs(str);
+		con_lputs(str);
 	}
 
 	prompt = "[Threads: %d  Sockets: %d  Clients: %d  Served: %lu] (?=Help): ";
@@ -1386,7 +1436,7 @@ int main(int argc, char** argv)
     scfg.size=sizeof(scfg);
 	SAFECOPY(error,UNKNOWN_LOAD_ERROR);
 	sprintf(str,"Loading configuration files from %s", scfg.ctrl_dir);
-	bbs_lputs(str);
+	con_lputs(str);
 	if(!load_cfg(&scfg, NULL /* text.dat */, TRUE /* prep */, error)) {
 		fprintf(stderr,"\n!ERROR Loading Configuration Files: %s\n", error);
         return(-1);
@@ -1408,31 +1458,39 @@ int main(int argc, char** argv)
 	_beginthread((void(*)(void*))handle_sigs,0,NULL);
 #endif
 
+#ifndef NO_TELNET_SERVER
 	if(run_bbs)
 		_beginthread((void(*)(void*))bbs_thread,0,&bbs_startup);
+#endif
+#ifndef NO_FTP_SERVER
 	if(run_ftp)
 		_beginthread((void(*)(void*))ftp_server,0,&ftp_startup);
+#endif
+#ifndef NO_MAIL_SERVER
 	if(run_mail)
 		_beginthread((void(*)(void*))mail_server,0,&mail_startup);
+#endif
 #ifdef JAVASCRIPT
+#ifndef NO_SERVICES
 	if(run_services)
 		_beginthread((void(*)(void*))services_thread,0,&services_startup);
 #endif
-#ifdef WEB_SERVER
+#endif
+#ifndef NO_WEB_SERVER
 	if(run_web)
 		_beginthread((void(*)(void*))web_server,0,&web_startup);
 #endif
 
 #ifdef __unix__
 	if(getuid())  /*  are we running as a normal user?  */
-		bbs_lputs("!Started as non-root user.  Cannot bind() to ports below 1024.");
+		con_lputs("!Started as non-root user.  Cannot bind() to ports below 1024.");
 	
 	else if(new_uid_name[0]==0)   /*  check the user arg, if we have uid 0 */
-		bbs_lputs("Warning: No user account specified, running as root.");
+		con_lputs("Warning: No user account specified, running as root.");
 	
 	else 
 	{
-		bbs_lputs("Waiting for child threads to bind ports...");
+		con_lputs("Waiting for child threads to bind ports...");
 		while((run_bbs && !(bbs_running || bbs_stopped)) 
 				|| (run_ftp && !(ftp_running || ftp_stopped)) 
 				|| (run_web && !(web_running || web_stopped)) 
@@ -1440,25 +1498,25 @@ int main(int argc, char** argv)
 				|| (run_services && !(services_running || services_stopped)))  {
 			mswait(1000);
 			if(run_bbs && !(bbs_running || bbs_stopped))
-				bbs_lputs("Waiting for BBS thread");
+				con_lputs("Waiting for BBS thread");
 			if(run_web && !(web_running || web_stopped))
-				bbs_lputs("Waiting for Web thread");
+				con_lputs("Waiting for Web thread");
 			if(run_ftp && !(ftp_running || ftp_stopped))
-				bbs_lputs("Waiting for FTP thread");
+				con_lputs("Waiting for FTP thread");
 			if(run_mail && !(mail_running || mail_stopped))
-				bbs_lputs("Waiting for Mail thread");
+				con_lputs("Waiting for Mail thread");
 			if(run_services && !(services_running || services_stopped))
-				bbs_lputs("Waiting for Services thread");
+				con_lputs("Waiting for Services thread");
 		}
 
 		if(!do_setuid())
 				/* actually try to change the uid of this process */
-			bbs_lputs("!Setting new user_id failed!  (Does the user exist?)");
+			con_lputs("!Setting new user_id failed!  (Does the user exist?)");
 	
 		else {
 			char str[256];
 			sprintf(str,"Successfully changed user_id to %s", new_uid_name);
-			bbs_lputs(str);
+			con_lputs(str);
 
 			/* Can't recycle servers (re-bind ports) as non-root user */
 			/* ToDo: Something seems to be broken here on FreeBSD now */
@@ -1482,6 +1540,7 @@ int main(int argc, char** argv)
 				case 'q':
 					quit=TRUE;
 					break;
+#ifndef NO_TELNET_SERVER
 				case 'w':	/* who's online */
 					printf("\nNodes in use:\n");
 				case 'n':	/* nodelist */
@@ -1519,9 +1578,11 @@ int main(int argc, char** argv)
 					putnodedat(&scfg,n,&node,file);
 					printnodedat(&scfg,n,&node);
 					break;
+#endif
 				default:
 					printf("\nSynchronet Console Version %s%c Help\n\n",VERSION,REVISION);
 					printf("q   = quit\n");
+#ifndef NO_TELNET_SERVER
 					printf("n   = node list\n");
 					printf("w   = who's online\n");
 					printf("l   = lock node (toggle)\n");
@@ -1530,6 +1591,7 @@ int main(int argc, char** argv)
 #if 0	/* to do */	
 					printf("c#  = chat with node #\n");
 					printf("s#  = spy on node #\n");
+#endif
 #endif
 					break;
 			}

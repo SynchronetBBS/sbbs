@@ -103,13 +103,13 @@ ifeq ($(os),linux)    # Linux
 endif
 
 ifeq ($(os),sunos)    # Solaris
- CFLAGS	+= -D_REENTRANT -D__solaris__ -DNEEDS_DAEMON -D_POSIX_PTHREAD_SEMANTICS -DNEEDS_FORKPTY
- LFLAGS += -lm -lpthread -lsocket -lnsl -lrt
+ CFLAGS	:= -D_REENTRANT -D__solaris__ -DNEEDS_DAEMON -D_POSIX_PTHREAD_SEMANTICS -DNEEDS_FORKPTY
+ LFLAGS := -lm -lpthread -lsocket -lnsl -lrt
 endif
 
 ifeq ($(os),netbsd)
- CFLAGS += -D_REENTRANT -D__unix__ -I/usr/pkg/include -DNEEDS_FORKPTY
- LFLAGS += -lm -lpthread -L/usr/pkg/lib -L/usr/pkg/pthreads/lib
+ CFLAGS := -D_REENTRANT -D__unix__ -I/usr/pkg/include -DNEEDS_FORKPTY
+ LFLAGS := -lm -lpthread -L/usr/pkg/lib -L/usr/pkg/pthreads/lib
 endif
 
 # So far, only QNX has sem_timedwait()
@@ -177,8 +177,14 @@ vpath %.c $(XPDEV) $(UIFC)
 vpath %.cpp $(UIFC)
 
 LFLAGS		+=	-L./$(LIBODIR)
-SBBSLDFLAGS	:=	$(LFLAGS) -rpath-link ./$(LIBODIR) -rpath ./
+SBBSLDFLAGS	:=	$(LFLAGS) -rpath-link ./$(LIBODIR) -rpath ./ 
 LFLAGS		+=	-Wl,-rpath-link,./$(LIBODIR),-rpath,./
+ifeq ($(os),freebsd)
+LFLAGS		+=	-pthread
+endif
+ifeq ($(os),openbsd)
+LFLAGS		+=	-pthread
+endif
 
 # Implicit C Compile Rule for SBBS
 $(LIBODIR)/%.o : %.c $(BUILD_DEPENDS)
@@ -201,10 +207,6 @@ $(EXEODIR):
 	mkdir $(EXEODIR)
 
 CON_OBJS	= $(LIBODIR)/sbbscon.o $(LIBODIR)/conwrap.o \
-		  $(LIBODIR)/sbbs_ini.o
-FTPCON_OBJS	= $(LIBODIR)/sbbsftp.o $(LIBODIR)/conwrap.o \
-		  $(LIBODIR)/sbbs_ini.o
-WEBCON_OBJS	= $(LIBODIR)/sbbsweb.o $(LIBODIR)/conwrap.o \
 		  $(LIBODIR)/sbbs_ini.o
 CON_LDFLAGS	= -lftpsrvr -lwebsrvr -lmailsrvr -lservices
 FTP_OBJS	= $(LIBODIR)/ftpsrvr.o
@@ -497,6 +499,69 @@ FORCE$(ANS2MSG): $(ANS2MSG).o
 
 # MSG2NAS
 FORCE$(MSG2ANS): $(MSG2ANS).o
+
+# Single servers
+FTPCON_OBJS	= $(LIBODIR)/sbbsftp.o $(LIBODIR)/conwrap.o \
+		  $(LIBODIR)/sbbs_ini.o
+WEBCON_OBJS	= $(LIBODIR)/sbbsweb.o $(LIBODIR)/conwrap.o \
+		  $(LIBODIR)/sbbs_ini.o
+MAILCON_OBJS	= $(LIBODIR)/sbbsmail.o $(LIBODIR)/conwrap.o \
+		  $(LIBODIR)/sbbs_ini.o
+SRVCCON_OBJS	= $(LIBODIR)/sbbssrvc.o $(LIBODIR)/conwrap.o \
+		  $(LIBODIR)/sbbs_ini.o
+BBSCON_OBJS	= $(LIBODIR)/sbbs_bbs.o $(LIBODIR)/conwrap.o \
+		  $(LIBODIR)/sbbs_ini.o
+
+$(LIBODIR)/sbbsweb.o : 
+   ifndef bcc
+	@echo $(COMPILE_MSG) $<
+   endif
+	@$(CC) $(CFLAGS) -o $@ -c sbbscon.c -DNO_TELNET_SERVER -DNO_FTP_SERVER -DNO_MAIL_SERVER -DNO_SERVICES
+
+$(LIBODIR)/sbbsftp.o : 
+   ifndef bcc
+	@echo $(COMPILE_MSG) $<
+   endif
+	@$(CC) $(CFLAGS) -o $@ -c sbbscon.c -DNO_TELNET_SERVER -DNO_MAIL_SERVER -DNO_SERVICES -DNO_WEB_SERVER
+
+$(LIBODIR)/sbbsmail.o : 
+   ifndef bcc
+	@echo $(COMPILE_MSG) $<
+   endif
+	@$(CC) $(CFLAGS) -o $@ -c sbbscon.c -DNO_TELNET_SERVER -DNO_FTP_SERVER -DNO_SERVICES -DNO_WEB_SERVER
+
+$(LIBODIR)/sbbssrvc.o : 
+   ifndef bcc
+	@echo $(COMPILE_MSG) $<
+   endif
+	@$(CC) $(CFLAGS) -o $@ -c sbbscon.c -DNO_TELNET_SERVER -DNO_FTP_SERVER -DNO_MAIL_SERVER -DNO_WEB_SERVER
+
+$(LIBODIR)/sbbs_bbs.o : 
+   ifndef bcc
+	@echo $(COMPILE_MSG) $<
+   endif
+	@$(CC) $(CFLAGS) -o $@ -c sbbscon.c -DNO_FTP_SERVER -DNO_MAIL_SERVER -DNO_SERVICES -DNO_WEB_SERVER
+
+$(SBBSWEB): $(WEBCON_OBJS) $(SBBSLIB) $(WEBSRVR)
+	@echo Linking $@
+	@$(CC) $(CFLAGS) $(LFLAGS) -lwebsrvr -o $@ $(WEBCON_OBJS) $(SBBSLIB)
+
+$(SBBSFTP): $(FTPCON_OBJS) $(SBBSLIB) $(FTPSRVR)
+	@echo Linking $@
+	@$(CC) $(CFLAGS) $(LFLAGS) -lftpsrvr -o $@ $(FTPCON_OBJS) $(SBBSLIB)
+
+$(SBBSMAIL): $(MAILCON_OBJS) $(SBBSLIB) $(MAILSRVR)
+	@echo Linking $@
+	@$(CC) $(CFLAGS) $(LFLAGS) -lmailsrvr -o $@ $(MAILCON_OBJS) $(SBBSLIB)
+
+$(SBBSSRVC): $(SRVCCON_OBJS) $(SBBSLIB) $(SERVICES)
+	@echo Linking $@
+	@$(CC) $(CFLAGS) $(LFLAGS) -lservices -o $@ $(SRVCCON_OBJS) $(SBBSLIB)
+
+$(SBBS_BBS): $(BBSCON_OBJS) $(SBBSLIB)
+	@echo Linking $@
+	@$(CC) $(CFLAGS) $(LFLAGS) -o $@ $(BBSCON_OBJS) $(SBBSLIB)
+
 
 depend:
 	@$(DELETE) $(LIBODIR)/.depend
