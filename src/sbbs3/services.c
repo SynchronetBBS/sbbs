@@ -1402,8 +1402,10 @@ void DLLCALL services_thread(void* arg)
 		service=NULL;
 
 		cleanup(0);
-		if(!terminated)
+		if(!terminated) {
 			lprintf("Recycling server...");
+			mswait(2000);
+		}
 
 	} while(!terminated);
 }

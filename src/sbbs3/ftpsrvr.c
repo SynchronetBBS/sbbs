@@ -4595,8 +4595,10 @@ void DLLCALL ftp_server(void* arg)
 
 		cleanup(0,__LINE__);
 
-		if(recycle_server) 
+		if(recycle_server) {
 			lprintf("Recycling server...");
+			mswait(2000);
+		}
 
 	} while(recycle_server);
 }
