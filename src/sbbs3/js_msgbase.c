@@ -411,9 +411,11 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 	else {
 		if(p->smb.subnum==INVALID_SUB)
 			sprintf(msg_id,"<%08lX.%lu@%s>"
-				,msg.hdr.when_written.time,msg.idx.number,scfg->sys_inetaddr);
+				,msg.hdr.when_written.time
+				,msg.idx.number,scfg->sys_inetaddr);
 		else
-			sprintf(msg_id,"<%lu.%s@%s>"
+			sprintf(msg_id,"<%08lX.%lu.%s@%s>"
+				,msg.hdr.when_written.time
 				,msg.idx.number,scfg->sub[p->smb.subnum]->code,scfg->sys_inetaddr);
 		val=msg_id;
 	}
@@ -475,8 +477,85 @@ js_put_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 	return(JS_TRUE);
 }
 
+static char* get_msg_text(smb_t* smb, smbmsg_t* msg, BOOL strip_ctrl_a, ulong mode)
+{
+	char*		buf;
+
+	if(smb_getmsgidx(smb, msg)!=0)
+		return(NULL);
+
+	if(smb_lockmsghdr(smb,msg)!=0)
+		return(NULL);
+
+	if(smb_getmsghdr(smb, msg)!=0) {
+		smb_unlockmsghdr(smb, msg); 
+		return(NULL);
+	}
+
+	if((buf=smb_getmsgtxt(smb, msg, mode))==NULL) {
+		smb_unlockmsghdr(smb,msg); 
+		return(NULL);
+	}
+
+	smb_unlockmsghdr(smb, msg); 
+
+	if(strip_ctrl_a) {
+		char* newbuf;
+		if((newbuf=malloc(strlen(buf)+1))!=NULL) {
+			int i,j;
+			for(i=j=0;buf[i];i++) {
+				if(buf[i]==CTRL_A)
+					i++;
+				else newbuf[j++]=buf[i]; 
+			}
+			newbuf[j]=0;
+			strcpy(buf,newbuf);
+			free(newbuf);
+		}
+	}
+	return(buf);
+}
+
 static JSBool
 js_get_msg_body(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		buf;
+	smbmsg_t	msg;
+	JSBool		strip_ctrl_a=JS_FALSE;
+	JSBool		tails=JS_TRUE;
+	private_t*	p;
+
+	*rval = JSVAL_NULL;
+	
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+		return(JS_FALSE);
+
+	if(!SMB_IS_OPEN(&(p->smb)))
+		return(JS_TRUE);
+
+	memset(&msg,0,sizeof(msg));
+
+	if(JSVAL_TO_BOOLEAN(argv[0])==JS_TRUE)	/* Get by offset */
+		msg.offset=JSVAL_TO_INT(argv[1]);
+	else									/* Get by number */
+		msg.hdr.number=JSVAL_TO_INT(argv[1]);
+
+	if(argc>2)
+		strip_ctrl_a=JSVAL_TO_BOOLEAN(argv[2]);
+
+	buf = get_msg_text(&(p->smb), &msg, strip_ctrl_a, tails ? GETMSGTXT_TAILS : 0);
+	if(buf==NULL)
+		return(JS_TRUE);
+
+	*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,buf));
+
+	smb_freemsgtxt(buf);
+
+	return(JS_TRUE);
+}
+
+static JSBool
+js_get_msg_tail(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char*		buf;
 	smbmsg_t	msg;
@@ -501,38 +580,9 @@ js_get_msg_body(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 	if(argc>2)
 		strip_ctrl_a=JSVAL_TO_BOOLEAN(argv[2]);
 
-	if(smb_getmsgidx(&(p->smb), &msg)!=0)
+	buf = get_msg_text(&(p->smb), &msg, strip_ctrl_a, GETMSGTXT_TAILS|GETMSGTXT_NO_BODY);
+	if(buf==NULL)
 		return(JS_TRUE);
-
-	if(smb_lockmsghdr(&(p->smb),&msg)!=0)
-		return(JS_TRUE);
-
-	if(smb_getmsghdr(&(p->smb), &msg)!=0) {
-		smb_unlockmsghdr(&(p->smb),&msg); 
-		return(JS_TRUE);
-	}
-
-	if((buf=smb_getmsgtxt(&(p->smb), &msg, GETMSGTXT_TAILS))==NULL) {
-		smb_unlockmsghdr(&(p->smb),&msg); 
-		return(JS_TRUE);
-	}
-
-	smb_unlockmsghdr(&(p->smb),&msg); 
-
-	if(strip_ctrl_a) {
-		char* newbuf;
-		if((newbuf=malloc(strlen(buf)+1))!=NULL) {
-			int i,j;
-			for(i=j=0;buf[i];i++) {
-				if(buf[i]==CTRL_A)
-					i++;
-				else newbuf[j++]=buf[i]; 
-			}
-			newbuf[j]=0;
-			strcpy(buf,newbuf);
-			free(newbuf);
-		}
-	}
 
 	*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,buf));
 
@@ -721,6 +771,7 @@ static JSFunctionSpec js_msgbase_functions[] = {
 	{"get_msg_header",	js_get_msg_header,	2},		/* get_msg_header(by_offset, number) */
 	{"put_msg_header",	js_put_msg_header,	2},		/* put_msg_header(by_offset, number, hdrObj) */
 	{"get_msg_body",	js_get_msg_body,	2},		/* get_msg_body(by_offset, number, [strip_ctrl_a]) */
+	{"get_msg_tail",	js_get_msg_tail,	2},		/* get_msg_body(by_offset, number, [strip_ctrl_a]) */
 	{"save_msg",		js_save_msg,		2},		/* save_msg(code, hdr, body) */
 	{0}
 };
