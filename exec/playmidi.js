@@ -222,7 +222,7 @@ while(!file.eof && !js.terminated) {
 							if(delta) {
 								sleep(delta*ticks_per_msec());
 								if(tonefile)
-									tonefile.writeln("r " + delta*ticks_per_msec());
+									tonefile.writeln("r " + Math.floor(delta*ticks_per_msec()));
 							}
 							note_on=note;
 							break;
@@ -239,7 +239,7 @@ while(!file.eof && !js.terminated) {
 								writeln("\t\tPlaying " + Math.floor(freq) + " for " + delta);
 								beep(freq,delta*ticks_per_msec());
 								if(tonefile)
-									tonefile.writeln(Math.floor(freq) +" "+ delta*ticks_per_msec());
+									tonefile.writeln(Math.floor(freq) +" "+ Math.floor(delta*ticks_per_msec()));
 							}
 							note_on=0;
 							break;
