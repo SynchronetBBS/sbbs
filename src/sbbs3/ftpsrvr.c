@@ -1714,12 +1714,15 @@ static void receive_thread(void* arg)
 						break;
 				if(i<scfg.total_fextrs) {
 					sprintf(tmp,"%sFILE_ID.DIZ",scfg.temp_dir);
-					remove(tmp);
-					system(cmdstr(xfer.user,scfg.fextr[i]->cmd,fname,"FILE_ID.DIZ",cmd));
-					if(!fexist(tmp)) {
-						sprintf(tmp,"%sDESC.SDI",scfg.temp_dir);
+					if(fexistcase(tmp))
 						remove(tmp);
+					system(cmdstr(xfer.user,scfg.fextr[i]->cmd,fname,"FILE_ID.DIZ",cmd));
+					if(!fexistcase(tmp)) {
+						sprintf(tmp,"%sDESC.SDI",scfg.temp_dir);
+						if(fexistcase(tmp))
+							remove(tmp);
 						system(cmdstr(xfer.user,scfg.fextr[i]->cmd,fname,"DESC.SDI",cmd)); 
+						fexistcase(tmp);	/* fixes filename case */
 					}
 					if((file=nopen(tmp,O_RDONLY))!=-1) {
 						memset(ext,0,sizeof(ext));
