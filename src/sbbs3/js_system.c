@@ -92,6 +92,8 @@ enum {
 	,SYS_PROP_TEXT_DIR
 	,SYS_PROP_TEMP_DIR
 	,SYS_PROP_EXEC_DIR
+	,SYS_PROP_MODS_DIR
+	,SYS_PROP_LOGS_DIR
 
 };
 
@@ -253,6 +255,12 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 		case SYS_PROP_EXEC_DIR:
 			p=cfg->exec_dir;
 			break;
+		case SYS_PROP_MODS_DIR:
+			p=cfg->mods_dir;
+			break;
+		case SYS_PROP_LOGS_DIR:
+			p=cfg->logs_dir;
+			break;
 	}
 
 	if(p!=NULL) {	/* string property */
@@ -340,6 +348,8 @@ static struct JSPropertySpec js_system_properties[] = {
 	{	"text_dir",					SYS_PROP_TEXT_DIR		,SYSOBJ_FLAGS,	NULL,	NULL },	
 	{	"temp_dir",					SYS_PROP_TEMP_DIR		,SYSOBJ_FLAGS,	NULL,	NULL },	
 	{	"exec_dir",					SYS_PROP_EXEC_DIR		,SYSOBJ_FLAGS,	NULL,	NULL },	
+	{	"mods_dir",					SYS_PROP_MODS_DIR		,SYSOBJ_FLAGS,	NULL,	NULL },	
+	{	"logs_dir",					SYS_PROP_LOGS_DIR		,SYSOBJ_FLAGS,	NULL,	NULL },	
 
 	{0}
 };
