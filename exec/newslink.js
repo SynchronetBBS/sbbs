@@ -520,7 +520,7 @@ for(i in area) {
 
 		
 		if(file!=undefined) {
-			var parital=false;
+			var partial=false;
 			if(file.is_open==true) { /* Partial attachment? */
 				md5=file.md5_hex;
 				file.close();
