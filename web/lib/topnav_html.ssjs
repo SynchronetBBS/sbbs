@@ -52,7 +52,7 @@ if(http_request.virtual_path=="/msgs/subs.ssjs")
 	template.topnav.push({html: '<a class="tlink" href="/msgs">Message Groups</a><span class="tlink">'+template.group.description+'</span>'});
 
 if(http_request.virtual_path=="/msgs/subinfo.ssjs" && sub!='mail') {
-	template.topnav.push({html: '<a class="tlink" href="/msgs">Message Groups</a><a class="tlink" href="/msgs/subs.ssjs?msg_grp='+msg_area.grp[template.sub.grp_name].name+'">'+template.sub.grp_name+'</a>'});
+	template.topnav.push({html: '<a class="tlink" href="/msgs">Message Groups</a><a class="tlink" href="/msgs/subs.ssjs?msg_grp='+template.sub.grp_name+'">'+template.sub.grp_name+'</a>'});
 	template.topnav.push({html: '<a class="tlink" href="/msgs/msgs.ssjs?msg_sub='+template.sub.code+'">'+template.sub.description+'</a><span class="tlink">Sub Information</span>'});
 }
 
