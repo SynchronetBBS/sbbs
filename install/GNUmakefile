@@ -2,7 +2,7 @@
 #
 # Usage:
 # ------
-# gmake install [variable=value]...
+# [g]make install [variable=value]...
 #
 # variables:
 # ----------
@@ -83,20 +83,20 @@ externals:	sbj sbl
 
 sbbs3:	$(SBBSDIR)/src/sbbs3 $(SBBSDIR)/src/uifc $(SBBSDIR)/src/xpdev \
     $(SBBSDIR)/src/mozilla $(SBBSDIR)/lib/mozilla/js/$(os).$(SUFFIX)
-	gmake -C $(SBBSDIR)/src/sbbs3 $(MKFLAGS)
+	$(MAKE) -C $(SBBSDIR)/src/sbbs3 $(MKFLAGS)
       MKFLAGS	+=	BAJAPATH=../src/sbbs3/$(CCPRE).$(os).exe.$(SUFFIX)/baja
 
 scfg:	$(SBBSDIR)/src/sbbs3 $(SBBSDIR)/src/uifc $(SBBSDIR)/src/xpdev
-	gmake -C $(SBBSDIR)/src/sbbs3/scfg $(MKFLAGS)
+	$(MAKE) -C $(SBBSDIR)/src/sbbs3/scfg $(MKFLAGS)
 
 baja:	$(SBBSDIR)/exec binaries
-	gmake -C $(SBBSDIR)/exec $(MKFLAGS)
+	$(MAKE) -C $(SBBSDIR)/exec $(MKFLAGS)
 
 sbj:	$(SBBSDIR)/xtrn
-	gmake -C $(SBBSDIR)/xtrn/sbj $(MKFLAGS)
+	$(MAKE) -C $(SBBSDIR)/xtrn/sbj $(MKFLAGS)
 
 sbl:	$(SBBSDIR)/xtrn
-	gmake -C $(SBBSDIR)/xtrn/sbl $(MKFLAGS) SBBS_SRC=$(SBBSDIR)/src/sbbs3 XPDEV=$(SBBSDIR)/src/xpdev
+	$(MAKE) -C $(SBBSDIR)/xtrn/sbl $(MKFLAGS) SBBS_SRC=$(SBBSDIR)/src/sbbs3 XPDEV=$(SBBSDIR)/src/xpdev
 
 install: all $(SBBSDIR)/ctrl $(SBBSDIR)/text $(SBBSDIR)/node1 $(SBBSDIR)/node2 $(SBBSDIR)/node3 $(SBBSDIR)/node4
 ifeq ($(INSTALL),UNIX)
