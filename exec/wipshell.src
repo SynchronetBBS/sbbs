@@ -1,0 +1,375 @@
+# WIPSHELL.SRC
+
+# WIP Windows Interface Protocol {tm} Durand Communications Networks, Inc.
+# Command Shell for Synchronet Multinode BBS Software
+# Copyright 1995 Digital Dynamics
+
+!include sbbsdefs.inc
+
+compare_user_misc UM_COLDKEYS
+if_true
+	toggle_user_misc UM_COLDKEYS
+	end_if
+
+str tmp
+
+cmd_home
+clear_abort
+cls
+printfile_remote "%zMENU\WIPMAIN.WIP"
+node_action NODE_MAIN
+inc_main_cmds
+sync
+print_local "[WIP] Main Menu: "
+
+getkey
+logkey_comma
+
+cmdkey C
+	print_local "Chat\r\n"
+        chat_section
+        end_cmd
+
+cmdkey D
+	print_local "Default Settings\r\n"
+        user_defaults
+        end_cmd
+
+cmdkey E
+	print_local "E-mail\r\n"
+	cmd_home
+	clear_abort
+	cls
+	printfile_remote "%zMENU\E-MAIL.WIP"
+	sync
+	print_local "\r\n[WIP] E-mail Menu: "
+	getkey
+	logkey
+	cmdkey S
+		print_local "Send\r\n"
+		call sendmail
+		end_cmd
+	cmdkey F
+		print_local "Feedback\r\n"
+		setstr "1"
+		mail_send
+		end_cmd
+	cmdkey R
+		print_local "Read\r\n"
+		mail_read
+		end_cmd
+	cmdkey K
+		print_local "Kill\r\n"
+		mail_read_sent
+		end_cmd
+	cmdkey N
+		print_local "NetMail\r\n"
+		call sendnetmail
+		end_cmd
+	cmdkey Q
+		print_local "Quit\r\n"
+		cmd_pop
+		end_cmd
+	end_cmd
+
+cmdkey I
+	print_local "Info\r\n"
+	cmd_home
+	clear_abort
+	cls
+	printfile_remote "%zMENU\INFO.WIP"
+	sync
+	print_local "\r\n[WIP] Info Menu: "
+	getkey
+	logkey
+	cmdkey T
+		print_local "Text Files\r\n"
+		text_file_section
+		end_cmd
+	cmdkey I
+		print_local "System\r\n"
+		info_system
+		end_cmd
+	cmdkey Y
+		print_local "Your Stats\r\n"
+		info_user
+		end_cmd
+	cmdkey L
+		print_local "Callers\r\n"
+		userlist_logons
+		end_cmd
+	cmdkey U
+		print_local "User List\r\n"
+		userlist_all
+                end_cmd
+	cmdkey Q
+		print_local "Quit\r\n"
+		cmd_pop
+		end_cmd
+	end_cmd
+
+cmdkey M
+	print_local "Messages\r\n"
+	cmd_home
+	clear_abort
+	cls
+	printfile_remote "%zMENU\MSGS.WIP"
+	sync
+	print_local "\r\n[WIP] Messages Menu: "
+	getkey
+	logkey
+	cmdkey C
+		print_local "Configure\r\n"
+		call msg_cfg
+		end_cmd
+	cmdkey R
+		print_local "Read\r\n"
+		msg_select_area
+		if_true
+			msg_read
+			end_if
+                end_cmd
+	cmdkey N
+		print_local "New Scan\r\n"
+		msg_new_scan_all
+                end_cmd
+	cmdkey P
+		print_local "Post\r\n"
+		msg_select_area
+		if_true
+			msg_post
+			end_if
+		end_cmd
+	cmdkey Q
+		print_local "QWK\r\n"
+		msg_qwk
+		end_cmd
+	cmdkey X
+		print_local "Quit\r\n"
+		cmd_pop
+		end_cmd
+	end_cmd
+
+
+cmdkey O
+	print_local "Logoff\r\n"
+	call logoffbbs
+	end_cmd
+
+cmdkey S
+	print_local "Match Maker\r\n"
+	exec_xtrn SMM
+	end_cmd
+
+cmdkey X
+	print_local "Doors\r\n"
+        xtrn_section
+        end_cmd
+
+cmdkey F
+	call file_transfers
+	end_cmd
+
+end_cmd
+
+# End of main menu loop
+
+:sendmail
+print "\r\nbhSend E-mail to (User name or number): n"
+getname 25
+compare_str ""
+if_true
+	return
+	end_if
+compare_str "SYSOP"
+if_true
+	setstr "1"
+	end_if
+no_yes "\r\nAttach a file"
+if_false
+	mail_send_file
+else
+	mail_send
+	end_if
+return
+
+:sendnetmail
+no_yes "\r\nAttach a file"
+if_false
+	mail_send_netfile
+else
+	mail_send_netmail
+	end_if
+return
+
+:msg_cfg
+cmd_home
+clear_abort
+cls
+printfile "%zMENU\MSGCFG.WIP"
+sync
+print_local "\r\n[WIP] Message Scan Config: "
+getkey
+logkey
+cmdkey N
+	print_local "New Scan\r\n"
+	msg_new_scan_cfg
+	end_cmd
+
+cmdkey P
+	print_local "Pointers\r\n"
+	msg_ptrs_cfg
+	end_cmd
+
+cmdkey I
+	print_local "Re-init\r\n"
+	msg_ptrs_reinit
+	end_cmd
+cmd_pop
+return
+
+:file_transfers
+
+cmd_home
+clear_abort
+cls
+printfile_remote "%zMENU\WIPFILE.WIP"
+node_action NODE_XFER
+inc_file_cmds
+sync
+print_local "[WIP] File Menu: "
+
+getkey
+logkey_comma
+
+cmdkey B
+	print_local "Batch\r\n"
+	file_batch_section
+	end_cmd
+
+cmdkey C
+	print_local "Config\r\n"
+	menu XFERCFG
+	async
+	print "\r\nyhConfig: n"
+	getcmd ?QBEP\r
+	logkey
+
+	cmdkey P
+		file_ptrs_cfg
+		end_cmd
+
+	cmdkey B
+		toggle_user_misc UM_BATCHFLAG
+		end_cmd
+
+	cmdkey E
+		toggle_user_misc UM_EXTDESC
+                end_cmd
+        end_cmd
+
+
+cmdkey D
+	print_local "Download\r\n"
+	file_download_batch
+	if_true
+		end_cmd
+		end_if
+	getfilespec
+	if_true
+		file_download
+		end_if
+        end_cmd
+
+cmdkey E
+	print_local "File Info\r\n"
+	getfilespec
+	if_true
+		file_list_extended
+		end_if
+        end_cmd
+
+cmdkey F
+	print_local "Find Text\r\n"
+	file_find_text_all
+	end_cmd
+
+cmdkey L
+	print_local "List Files\r\n"
+	file_select_area
+	if_false
+		end_cmd
+		end_if
+	setstr "*.*"
+	file_list
+        end_cmd
+
+cmdkey N
+	print_local "New Files\r\n"
+	date_str tmp _ns_time
+	sprintf str "bhUse c%sb for new file scan date/time" tmp
+	yes_no "%s"
+	if_false
+		file_ptrs_cfg
+		if_false
+			end_cmd
+			end_if
+		end_if
+	file_new_scan_all
+	end_cmd
+
+cmdkey R
+	print_local "Remove Files\r\n"
+	getfilespec
+	if_true
+		file_remove
+		end_if
+        end_cmd
+
+cmdkey S
+	print_local "Search for Filename\r\n"
+	file_find_name_all
+        end_cmd
+
+cmdkey U
+	print_local "Upload\r\n"
+	no_yes "Upload file to Sysop only"
+	if_false
+		file_upload_user
+		end_cmd
+		end_if
+	file_select_area
+	if_false
+		end_cmd
+		end_if
+	chkfile "..\text\menu\upload.*"
+	if_true
+		menu upload
+                end_if
+	file_upload
+        end_cmd
+
+cmdkey V
+	print_local "View file\r\n"
+	getfilespec
+	if_true
+		file_view
+		end_if
+        end_cmd
+cmdpop
+return
+
+
+
+:logoffbbs
+file_download_batch
+if_false
+	logoff
+	end_if
+return
+
+
+
+# End of WIPSHELL.SRC
+
+

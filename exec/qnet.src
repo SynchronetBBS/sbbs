@@ -1,0 +1,477 @@
+# QNET.SRC
+
+###############################################################################
+#		  Baja module for performing QWKnet call-outs		      #
+#		   Requires Synchronet v2.3 and Baja v2.10		      #
+#			Copyright 1996 Digital Dynamics 		      #
+###############################################################################
+
+# Usage: *QNET HUBID PHONE PASSWORD ATTEMPTS
+# Example: *QNET VERT 1-714-529-9721 YOURPASS 100
+
+# You may use the QNET.BIN module INSTEAD of your normal terminal/script
+# QWKnet call-out routine. You can do this by changing
+#
+# SCFG->Networks->QWK->Hubs->VERT->Call-out Command Line to:
+#
+# *QNET VERT 1-714-529-9721 YOURPASS 100
+#
+# The asterisk is important! 100 is the number of dial attempts, YOURPASS is
+# your QWKnet password here on Vertrauen. Remove 1-714 if you're in the 714
+# area code.
+#
+# No modification or recompilation of this module should be necessary.
+
+!include sbbsdefs.inc
+!include file_io.inc
+
+# Constants (change for your preferences)
+
+!define INIT_ATTEMPTS 5
+!define MAX_INACTIVITY	  30	# 30 seconds of host inactivity
+
+# Must be FIRST function call (or module will immediately terminate)
+set _online ON_LOCAL
+# print_local "QNET.SRC\r\n"
+# Force DCD to be assumed HIGH and user online and NO screen pausing
+or _sys_status SS_DCDHIGH|SS_USERON|SS_PAUSEOFF
+# Turn off the ^C status flag
+not _sys_status SS_ABORT
+# Set console for Local Input/Output only
+set _console CON_L_INPUT|CON_L_ECHO
+
+# Make sure there is a COM port configured
+compare _DTE_RATE 0
+if_equal
+	print "BAJAQNET: No COM port configured.\7\r\n\r\n"
+	pause
+	return
+	end_if
+
+# Variables
+int i start connect end logfile argc argv attempt result
+str tmp rep qwk log hubid phone password attempts
+
+# Mark beginning time
+time start
+set connect 0
+
+# Process command line arguments
+set hubid ""
+set phone ""
+set password ""
+set attempts ""
+
+set _lncntr 0
+cls
+strupr str
+# Display command line
+print "BAJAQNET: %s\r\n"
+set argc 0
+:process_args
+compare_str ""
+if_true
+	goto end_args
+	end_if
+sprintf tmp "%.1s" str
+shift_str 1
+compare tmp " "
+if_true
+	add argc 1
+	goto process_args
+	end_if
+switch argc
+	case 0
+		strcat hubid tmp
+		end_case
+	case 1
+		strcat phone tmp
+		end_case
+	case 2
+		strcat password tmp
+		end_case
+	case 3
+		strcat attempts tmp
+		end_case
+	default
+		goto usage
+	end_switch
+goto process_args
+
+:usage
+crlf
+print "Usage: QNET hubid phone password attempts\r\n\r\n"
+print "Example: QNET VERT 1-714-529-9721 YOURPASS 100\r\n\r\n\7"
+pause
+return
+
+:end_args
+compare hubid ""
+if_true
+	goto usage
+	end_if
+compare phone ""
+if_true
+	goto usage
+	end_if
+compare password ""
+if_true
+	goto usage
+	end_if
+compare attempts ""
+if_true
+	goto usage
+	end_if
+
+sprintf log "%%j\%s.LOG" hubid
+sprintf rep "%%j\%s.REP" hubid
+sprintf qwk "%%j\%s.QWK" hubid
+chkfile qwk
+if_true
+	printf "\7BAJAQNET: %s already exists!\r\n" qwk
+	set i 0
+	:check_qwk
+	sprintf qwk "%%j%s.QW%ld" hubid i
+	chkfile qwk
+	if_true
+		printf "\7BAJAQNET: %s already exists!\r\n" qwk
+		add i 1
+		compare i 10
+		if_equal
+			goto exit
+			end_if
+		goto check_qwk
+		end_if
+	end_if
+
+fopen logfile O_WRONLY|O_APPEND|O_CREAT log
+if_false
+	printf "\7BAJAQNET: Error (%d) opening %s\r\n" _errno log
+	goto exit
+	end_if
+
+time_str str start
+fprintf logfile "BAJAQNET: Launched: %s\r\n" str
+
+# Required for receiving responses from modem
+set _online ON_REMOTE
+or _console CON_R_INPUT
+
+set attempt 0
+:init
+call flush_input
+add attempt 1
+compare attempt INIT_ATTEMPTS
+if_greater
+	setstr "BAJAQNET: Modem initialization failed!\r\n"
+	print str
+	fwrite logfile str
+	goto exit
+        end_if
+print "BAJAQNET: Initializing modem\r\n"
+
+print_remote "ATX4E0H0M0V0\r"
+getstr str 80 K_NOECHO
+if_false
+	print "BAJAQNET: No response\r\n"
+	goto exit
+	end_if
+compare_str "0"
+if_false
+	print "BAJAQNET: Modem returned %s\r\n"
+	goto init
+	end_if
+
+set attempt 0
+:dial
+add attempt 1
+compare attempt attempts
+if_greater
+	fprintf logfile "BAJAQNET: No connect after %s attempts\r\n" attempts
+	goto exit
+	end_if
+printf "BAJAQNET: Dialing %s at %s (Attempt: %ld of %s)\r\n" hubid phone attempt attempts
+mswait 1000
+copy str phone
+print_remote "ATDT%s\r"
+getstr str 80 K_NOECHO
+if_false
+	goto exit
+	end_if
+print "BAJAQNET: "
+copy result str
+switch result
+	case 0
+		print "Modem responded with '%s'\r\n"
+		fprintf logfile "BAJAQNET: Modem repsoned with '%s'\r\n" str
+		goto dial
+	case 2
+		print "RING\r\n"
+		goto dial
+	case 3
+		print "NO CARRIER\r\n"
+		goto dial
+	case 4
+		print "ERROR\r\n"
+		goto dial
+	case 6
+		print "NO DIALTONE\r\n"
+		goto dial
+	case 7
+		print "BUSY\r\n"
+		goto dial
+	case 8
+		print "NO ANSWER\r\n"
+		goto dial
+	default
+		print "Connection established (Result Code: %s)\r\n"
+		time connect
+		ftime_str str "%X" connect
+		fprintf logfile "BAJAQNET: Connected: %s\r\n" str
+	end_switch
+
+# Normal use of DCD
+not _sys_status SS_DCDHIGH
+# Wait a second
+mswait 1000
+# Send ESC ESC for front-end mailers
+print_remote "\x1b\x1b"
+# Wait for NN: prompt
+print "BAJAQNET: Waiting for NN: prompt "
+setstr "NN:"
+call waitfor
+print " \r\n"
+# Notify Hub of Script Type and Version
+print_remote "Baja Qnet Version 1.10"
+mswait 2000
+# Send our QWK ID
+print_remote "\24%q\r"
+# Wait for PW: prompt
+print "BAJAQNET: Waiting for PW: prompt "
+setstr "PW:"
+call waitfor
+print " \r\n"
+# Send our PASSWORD
+copy str password
+print_remote "%s\r"
+# Wait for QWK: prompt
+print "BAJAQNET: Waiting for QWK: prompt "
+setstr "QWK:"
+call waitfor
+print " \r\n"
+
+chkfile rep
+if_true
+	###################
+	# Send REP packet #
+	###################
+	print "BAJAQNET: Sending REP packet\r\n"
+	print_remote "UZN"
+	mswait 1000
+	call flush_input
+	send_file_via Z rep
+	get_file_length i rep
+	sprintf str "BAJAQNET: Upload of REP packet (%lu bytes) " i
+	print str
+	fwrite logfile str
+	if_true
+		print "successful\r\n"
+		fprintf logfile "successful\r\n"
+		remove_file rep
+	else
+		print "\7UNSUCCESSFUL!\r\n"
+		fprintf logfile "UNSUCCESSFUL!\r\n"
+		end_if
+	#mswait 1000
+	#call flush_input
+	# Wait for QWK: prompt
+	print "BAJAQNET: Waiting for QWK: prompt "
+	setstr "QWK:"
+	call waitfor
+	print " \r\n"
+	end_if
+
+#######################
+# Download QWK packet #
+#######################
+print "BAJAQNET: Scanning for new messages "
+int sm nm ss
+
+print_remote "DL"
+setstr "PROTOCOL OR "
+call waitfor
+print " \r\n"
+if_false
+	setstr "BAJAQNET: No new messages.\r\n"
+	print str
+	fwrite logfile str
+	print_remote "Q"
+	goto exit
+	end_if
+print "BAJAQNET: Receiving QWK packet\r\n"
+print_remote "ZN"
+mswait 1000
+call flush_input
+receive_file_via Z qwk
+sprintf str "BAJAQNET: Download of QWK packet "
+print_local "%s"
+fwrite logfile str
+chkfile qwk
+if_true
+	get_file_length i qwk
+	sprintf str "(%lu bytes) successful\r\n" i
+else
+	setstr "UNSUCCESSFUL!\r\n"
+	end_if
+print_local "%s"
+fwrite logfile str
+mswait 2000
+copy _sys_misc sm
+copy _node_misc nm
+print_remote "Q"
+goto exit
+
+###############################################################################
+# Wait for a specific text string (contained in current command string)       #
+# Automatically hits ENTER for HIT A KEY prompts			      #
+# Times-out after 30 seconds of host inactivity 			      #
+# Sets logic state to TRUE if the string is located and returns 	      #
+# Sets logic state to FALSE if QWK: is found before the string and returns    #
+###############################################################################
+:waitfor
+str waitforstr waitforbuf
+int cursor t1 t2
+copy waitforstr str
+:waitfor_reset
+set waitforbuf ""
+:waitfor_nextchar
+time t1
+:waitfor_checkinput
+inkey
+if_false
+	time t2
+	sub t2 t1
+	compare t2 MAX_INACTIVITY
+	if_greater
+		goto timeout
+		end_if
+	goto waitfor_checkinput
+	end_if
+
+# Control key?
+compare_keys "^M^J^L^G^H"
+if_true
+	:spin_cursor
+	and cursor 3
+	switch cursor
+		case 0
+			print_local "-"
+			end_case
+		case 1
+			print_local "\\"
+			end_case
+		case 2
+			print_local "|"
+			end_case
+		case 3
+			print_local "/"
+			end_case
+		end_switch
+	print_local "\b"
+	add cursor 1
+	# Clear input buffer and continue
+	goto waitfor_reset
+	end_if
+
+ungetkey
+:waitfor_additional
+inkey
+if_true
+	compare_keys "^M^J^L^G^H"
+	if_true
+		# Clear ungetkey buffer
+		setstr "\r"
+		ungetstr
+		getstr str 0 K_NOECHO
+		goto spin_cursor
+		end_if
+	ungetkey
+	goto waitfor_additional
+	end_if
+setstr "\r"
+ungetstr
+getstr str 128 K_NOECHO
+if_false
+        fprintf logfile "getstr returned FALSE\r\n"
+	setlogic FALSE
+	return
+	end_if
+strcat waitforbuf str
+# Handle Pause Prompt
+compare_substr waitforbuf "HIT A KEY"
+if_true
+        fprintf logfile "received hit a key prompt\r\n"
+	print_remote "\r"
+	goto waitfor_reset
+	end_if
+# Handle ANSI Cursor Position Request
+compare_substr waitforbuf "[6n"
+if_true
+	print_remote "\r"
+	goto waitfor_reset
+	end_if
+# Return TRUE if string found
+compare_substr waitforbuf waitforstr
+if_true
+	setlogic TRUE
+	return
+	end_if
+# Return FALSE if QWK: prompt found instead
+compare waitforbuf "QWK: "
+if_true
+	setlogic FALSE
+        return
+        end_if
+
+goto waitfor_nextchar
+
+
+#####################################################################
+# Flush (remove, do not process) any characters in the input buffer #
+#####################################################################
+:flush_input
+inkey
+if_true # Flush input buffer
+        goto flush_input
+        end_if
+return
+
+###################################################
+# Timeout routine (falls-through to Exit routine) #
+###################################################
+:timeout
+print_local "\r\nBAJAQNET: \7Time-out!\7\r\n"
+fprintf logfile "BAJAQNET: Time-out\r\n"
+
+#################
+# Exit routine	#
+#################
+:exit
+print_local "BAJAQNET: Exiting...\r\n"
+# Mark ending time
+time end
+time_str str end
+fprintf logfile "BAJAQNET: Terminated: %s\r\n" str
+compare connect 0
+if_not_equal
+	copy i end
+	sub i connect
+	second_str tmp i
+	fprintf logfile "BAJAQNET: Time online: %s\r\n" tmp
+	end_if
+hangup
+not _sys_status SS_DCDHIGH
+mswait 2000
+return
+
+# End of QNET.SRC

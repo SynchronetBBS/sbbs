@@ -1,0 +1,68 @@
+This is an example of the Synchronet Interface File (SIF) Format:
+
+To execute this SIF, yype ;SIF at the main prompt and enter EXAMPLE as the 
+filename.
+
+Only text between STX (Start of text / Ctrl-B) and ETX (End of text / Ctrl-C)
+will be displayed to the user. After each ETX is the input mode specifier
+('c'haracter or 's'tring), then an optional mode modifier ('u'ppercase,
+'n'umeric, or 'f'orced captialization), then an optional 'l' for an input line
+to be displayed, then an optional 'r' if the data file should contain a CRLF
+after this field, then the maximum length of the string (if 's'tring mode and a
+template isn't specified), then an optional . followed by the minimum length
+of the string, and last an optional string in double-quotes that either
+specifies what keys will be accepted ('c'haracter mode) or an input template
+('s'tring mode).
+
+Inside the text area, we should use Synchronet Ctrl-A sequences for changing
+the text attributes and clearing the screen. Embeded ANSI sequences can be used
+but are not suggested as they will be displayed to ALL users (ANSI or not), and
+Ctrl-A sequences are filtered for non-ANSI users, and modified for Monochrome
+ANSI users. See SBBS\TEXT\MENU\ATTR.ALL for more information on Ctrl-A codes.
+
+Text is going to start here: 
+n
+Hello, this is an example hSIFn file.
+
+Please answer the following input prompts.
+
+mhSelect Onen
+
+A) Selection A
+B) Selection B
+C) Selection C
+
+yhWhich: nc"ABC" Text in this area is just for comments
+
+yhEnter any character: rc
+
+yhEnter any character (converted to uppercase automatically): ncu
+
+yhEnter any number (allows CR): cnl
+
+yhEnter any number (disallows CR): bc"0123456789"
+
+bhEnter a string: ws30
+
+yhEnter a string of at least 4 characters: sl8.4
+
+yhEnter a string (converted to uppercase automatically): nsu10
+
+yhEnter a numeric value of at least one digit: snl5.1
+
+yhEnter your name (forced capitalization): nsf30
+
+yhEnter your phone number (must be complete): ws.12"NNN-NNN-NNNN"
+                                                    ^ notice that the max 
+		length wasn't needed because the template was specified
+
+yhEnter your birthdate (can be incomplete): sl"NN/NN/NN"
+
+bhAre you sure (Y/N) ? wc"YN"
+
+chAll done!
+
+everything after this point doesn't matter..... (cause we're not between STX
+and ETX)
+
+See Customization chapter in the sysop manual for more information.

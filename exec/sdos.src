@@ -1,0 +1,680 @@
+# SDOS.SRC
+
+# DOS shell for Synchronet version 2 systems
+
+# Thanks to Yojimbo for the BDOS shell that inspired this one
+
+!include sbbsdefs.inc
+
+# Give a bogus DOS error so they think they're in real DOS
+print "nSpecified COMMAND search directory bad\r\n\r\n"
+print "Microsoft(R) MS-DOS(R) Version 5.00\r\n"
+print "             (C)Copyright Microsoft Corp 1981-1991.\r\n"
+
+:root
+cmd_home
+
+# Update node status
+node_action node_main
+async
+
+inc_main_cmds
+
+call display_prompt
+print ">n"
+getstr 128
+logstr
+
+compare_word "cd"
+if_true
+	shift_str 2
+	compare_word " "
+	if_true
+		shift_str 1
+		end_if
+	compare_word "\\"
+	if_true
+		shift_str 1
+		end_if
+	compare_word "mail"
+	if_true
+		cmd_pop
+		goto mail
+		end_if
+	compare_word "files"
+	if_true
+		cmd_pop
+		goto files
+		end_if
+	print "Invalid directory\r\n"
+	end_cmd
+	end_if
+
+cmdstr "dir"
+	menu sdos\root
+	end_cmd
+
+call global
+end_cmd
+
+:display_prompt
+
+pause_reset
+print "n\r\nC:\\"
+return
+
+
+##############################################################################
+# This is where we go when it's not a valid command
+# Let's really try to act like DOS now (i.e. fake 'em out)
+##############################################################################
+
+:global
+
+# Just <CR>, so ignore
+compare_str ""
+if_true
+	return
+	end_if
+
+# String commands start with a semicolon
+compare_word ";"
+if_true
+	shift_str 1
+	exec_bin str_cmds
+	return
+	end_if
+
+compare_str "sysop"
+if_true
+	menu sysmain
+	return
+	end_if
+
+compare_str "type"
+if_True
+	print "Required paramater missing\r\n"
+	return
+	end_if
+
+compare_word "type "
+if_true
+	shift_str 5
+	call type
+	return
+	end_if
+
+# Global BBS commands
+compare_str "chat"
+if_true
+	chat_section
+	return
+	end_if
+
+compare_str "open"
+if_true
+	print "External program name missing\r\n"
+	return
+        end_if
+
+compare_word "open "
+if_true
+	shift_str 5
+	xtrn_exec
+	return
+	end_if
+
+compare_str "doors"
+if_true
+	xtrn_section
+	return
+	end_if
+
+compare_str "gfiles"
+if_true
+	text_file_section
+	return
+	end_if
+
+compare_str "automsg"
+if_true
+	auto_message
+	return
+	end_if
+
+compare_str "setup"
+if_true
+	user_defaults
+	return
+	end_if
+
+compare_str "logoff"
+if_true
+	file_download_batch
+	if_true
+		return
+                end_if
+	logoff
+	return
+	end_if
+
+compare_str "ver"
+if_True
+	info_version
+	return
+	end_if
+
+compare_str "exit"
+if_true
+	logoff_fast
+	return
+	end_if
+
+# DOS Stuff
+compare_word "dir"
+if_true
+	shift_str 3
+	compare_word " "
+	if_true
+		shift_str 1
+		end_if
+	compare_str ".."
+	if_true
+		menu sdos\root
+		return
+		end_if
+	compare_word ".."
+	if_true
+		shift_str 2
+		end_if
+	compare_str ""
+	if_true
+		menu sdos\root
+		return
+		end_if
+	compare_word "\\"
+	if_true
+		shift_str 1
+		end_if
+	compare_str ""
+	if_true
+		menu sdos\root
+		return
+		end_if
+	compare_word "files"
+	if_true
+		menu sdos\files
+		return
+		end_if
+	compare_word "mail"
+	if_true
+		menu sdos\mail
+		return
+		end_if
+	shift_str 1
+	compare_word ":"
+	if_true
+		print "Invalid drive specification\r\n"
+		return
+		end_if
+	print "\r\n Volume in drive C is BBS\r\n"
+	print " Volume Serial Number is 9156-8BEA\r\n"
+	print "Invalid directory\r\n"
+	return
+	end_if
+
+# Fake environment
+compare_str "set"
+if_true
+	print "COMSPEC=C:\\COMMAND.COM\r\n"
+	print "PROMPT=$p$g\r\n"
+	print "PATH=C:\\\r\n"
+	print "SBBSCTRL=C:\\SBBS\\CTRL\r\n"
+	print "SBBSNODE=C:\\BBS\\NODE@NODE@\\\r\n"
+	print "SBBSNNUM=@NODE@\r\n"
+	return
+	end_if
+
+# Pretend we set it
+compare_word "set "
+if_true
+	return
+	end_if
+
+# Echo
+compare_str "echo"
+if_true
+	print "ECHO is on\r\n"
+	return
+	end_if
+
+compare_word "echo "
+if_true
+	shift_str 5
+	printstr
+	crlf
+	return
+	end_if
+
+# Del, Erase, Copy
+compare_str "del"
+if_true
+	print "Required parameter missing\r\n"
+	return
+        end_if
+
+compare_word "del "
+if_true
+	print "Sharing violation\r\n"
+	return
+	end_if
+
+compare_str "erase"
+if_true
+	print "Required parameter missing\r\n"
+	return
+        end_if
+
+compare_word "erase "
+if_true
+	print "Sharing violation\r\n"
+	return
+	end_if
+
+compare_str "copy"
+if_true
+	print "Required parameter missing\r\n"
+	return
+        end_if
+
+compare_word "copy "
+if_true
+	print "Sharing violation\r\n"
+	return
+        end_if
+
+# Changing drive letter?
+
+shift_str 1
+compare_word ":"
+if_true
+        print "Invalid drive specification\r\n"
+        return
+        end_if
+print "Bad command or file name\r\n"
+return
+
+:files
+
+cmd_home
+call display_prompt
+
+print "FILES>n"
+getstr 128
+logstr
+
+compare_word "cd"
+if_true
+	shift_str 2
+	compare_word " "
+	if_true
+		shift_str 1
+		end_if
+	compare_str ".."
+	if_true
+		cmd_pop
+		goto root
+		end_if
+	compare_word ".."
+	if_true
+		shift_str 2
+                end_if
+	compare_str "\\"
+	if_true
+		cmd_pop
+		goto root
+		end_if
+	compare_str "\\mail"
+	if_true
+		cmd_pop
+		goto mail
+                end_if
+	print "Invalid directory\r\n"
+	end_cmd
+        end_if
+
+cmdstr "dir"
+	menu sdos\files
+	end_cmd
+
+cmdstr "batch"
+	file_batch_section
+	end_cmd
+
+cmdstr "download"
+	file_download_batch
+	if_true
+		end_cmd
+		end_if
+	getfilespec
+	if_true
+		file_download
+		end_if
+        end_cmd
+
+compare_word "download "
+if_true
+	shift_str 9
+	file_download
+	end_cmd
+	end_if
+
+cmdstr "extended"
+	getfilespec
+	if_true
+		file_list_extended
+		end_if
+        end_cmd
+
+compare_word "extended "
+if_true
+	shift_str 9
+	file_list_extended
+	end_cmd
+	end_If
+
+cmdstr "find"
+	file_find_text
+	end_cmd
+
+cmdstr "area"
+	file_select_area
+	end_cmd
+
+cmdstr "list"
+	getfilespec
+	if_true
+		file_list
+		end_if
+        end_cmd
+
+compare_word "list "
+if_true
+	shift_str 5
+	file_list
+	end_cmd
+	end_if
+
+cmdstr "newscan"
+	file_new_scan
+	end_cmd
+
+cmdstr "remove"
+	getfilespec
+	if_true
+		file_remove
+		end_if
+        end_cmd
+
+compare_word "remove "
+if_True
+	shift_str 7
+	file_remove
+	end_cmd
+	end_if
+
+cmdstr "search"
+	file_find_name
+	end_cmd
+
+cmdstr "temp"
+	file_temp_section
+	end_cmd
+
+cmdstr "upload"
+	chkfile "..\text\menu\upload.*"
+	if_true
+		menu upload
+		end_if
+	file_upload
+        end_cmd
+
+cmdstr "view"
+	getfilespec
+	if_true
+		file_view
+		end_if
+        end_cmd
+
+compare_word "view "
+if_True
+	shift_str 5
+	file_view
+	end_cmd
+	end_if
+
+cmdstr "config"
+	file_ptrs_cfg
+	end_cmd
+
+call global
+end_cmd
+
+:type
+
+compare_word nodes
+if_true
+	nodelist_all
+	return
+	end_if
+
+compare_word logon
+if_true
+	userlist_logons
+	return
+	end_if
+
+compare_word users
+if_true
+	userlist_all
+	return
+	end_if
+
+compare_word system
+if_true
+	info_system
+	return
+	end_if
+
+compare_word your
+if_true
+	info_user
+	return
+	end_if
+
+print "File not found - "
+printstr
+crlf
+return
+
+
+:mail
+
+cmd_home
+
+# Update node status
+node_action node_main
+async
+
+inc_main_cmds
+
+call display_prompt
+
+print "MAIL>n"
+getstr 128
+logstr
+
+compare_word "cd"
+if_true
+	shift_str 2
+	compare_word " "
+	if_true
+		shift_str 1
+		end_if
+	compare_str ".."
+	if_true
+		cmd_pop
+		goto root
+                end_if
+	compare_word ".."
+	if_true
+		shift_str 2
+		end_if
+	compare_str "\\"
+	if_true
+		cmd_pop
+		goto root
+		end_if
+	compare_str "\\files"
+	if_true
+		cmd_pop
+		goto files
+		end_if
+	print "Invalid directory\r\n"
+	end_cmd
+        end_if
+
+cmdstr "dir"
+	menu sdos\mail
+	end_cmd
+
+cmdstr "config"
+	call main_cfg
+	end_cmd
+
+cmdstr "send"
+	print "_\r\nbhE-mail (User name or number): w"
+	getname 25
+	compare_str ""
+	if_true
+		end_cmd
+		end_if
+	compare_str "SYSOP"
+	if_true
+		setstr "1"
+		end_if
+	mail_send
+        end_cmd
+
+cmdstr "sendfile"
+	print "_\r\nbhE-mail (User name or number): w"
+	getname 25
+	compare_str ""
+	if_true
+		end_cmd
+		end_if
+	compare_str "SYSOP"
+	if_true
+		setstr "1"
+		end_if
+	mail_send_file
+        end_cmd
+
+cmdstr "read"
+	mail_read
+	end_cmd
+
+cmdstr "feedback"
+	setstr "1"
+	mail_send_feedback
+	end_cmd
+
+cmdstr "netmail"
+	no_yes "\r\nAttach a file"
+	if_true
+		mail_send_netmail
+	else
+		mail_send_netfile
+		end_if
+	end_cmd
+
+cmdstr "readsent"
+	mail_read_sent
+        end_cmd
+
+cmdstr "area"
+	msg_select_area
+	end_cmd
+
+cmdstr "post"
+	msg_post
+	end_cmd
+
+cmdstr "newscan"
+	msg_new_scan
+	end_cmd
+
+cmdstr "find"
+	msg_find_text
+	end_cmd
+
+cmdstr "yourmsgs"
+	msg_your_scan
+	end_cmd
+
+cmdstr "qwk"
+	msg_qwk
+	end_cmd
+
+cmdstr "readmsgs"
+	msg_read
+	end_Cmd
+
+
+call global
+end_cmd
+
+########################### Main Config Section  ##############################
+
+:main_cfg
+
+compare_user_misc UM_expert
+if_false
+	menu MAINCFG
+	end_if
+async
+print "\r\nyhConfig: n"
+getcmd ?QNPIS\r
+logkey
+
+cmdkey ?
+	compare_user_misc UM_expert
+	if_true
+		menu MAINCFG
+		end_if
+	goto main_cfg
+	end_cmd
+
+cmdkey N
+	msg_new_scan_cfg
+	return
+	end_cmd
+
+cmdkey S
+	msg_your_scan_cfg
+	return
+	end_cmd
+
+cmdkey P
+	msg_ptrs_cfg
+	return
+	end_cmd
+
+cmdkey I
+	msg_ptrs_reinit
+	return
+	end_cmd
+
+return
+
+# End of SDOS.SRC

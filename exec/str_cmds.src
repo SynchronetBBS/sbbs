@@ -1,0 +1,367 @@
+# STR_CMDS.SRC
+
+# Global String Command Module for Synchronet
+
+# This is NOT a command shell, DO NOT add to SCFG->Command Shells
+
+# This module is loaded from command shells with the EXEC_BIN function
+
+# It contains mostly sysop commands (i.e. ;DOS)
+
+# The command string must be the current string (obtained with SETSTR, GETSTR
+# or similar function) before this module is loaded.
+
+!include nodedefs.inc
+
+# Remove any trailing spaces
+
+truncsp str
+
+logstr
+compare_ars SYSOP
+if_true
+
+	######################## SYSOP Functions ##############################
+
+	compare_str "ERR"
+	if_true
+		error_log
+		return
+		end_if
+
+	compare_str "GURU"
+	if_true
+		guru_log
+		return
+		end_if
+
+	compare_str "CHUSER"
+	if_true
+		change_user
+		return
+		end_if
+
+	compare_str "ANSCAP"
+	if_true
+		ansi_capture
+		return
+		end_if
+
+	compare_str "LIST"
+	if_true
+		list_text_file
+		return
+		end_if
+
+	compare_str "EDIT"
+	if_true
+		edit_text_file
+		return
+		end_if
+
+	compare_str "LOG"
+	if_true
+		system_log
+		return
+		end_if
+
+	compare_str "MEM"
+	if_true
+		show_mem
+		return
+		end_if
+
+	compare_str "YLOG"
+	if_true
+		system_ylog
+		return
+		end_if
+
+	compare_str "SS"
+	if_true
+		system_stats
+		return
+		end_if
+
+	compare_word "NS"
+        if_true
+		shift_str 2
+		compare_word " "
+		if_true
+			shift_str 1
+			end_if
+		node_stats
+		return
+                end_if
+
+	compare_word "EXEC"
+	if_true
+		shift_str 4
+		compare_word " "
+		if_true
+			shift_str 1
+			end_if
+		exec_int %s
+		return
+		end_if
+
+	compare_word "CALL "
+	if_true
+		shift_str 5
+		exec command /c rem >> %jQNET\%s.NOW
+		end_if
+
+	compare_word "NODE"
+	if_true
+		exec_int %!%s
+		return
+		end_if
+
+	compare_word "DOWN "
+	if_true
+		shift_str 5
+		exec_int %!node down %s
+		return
+                end_if
+
+	compare_word "RERUN "
+	if_true
+		shift_str 6
+		exec_int %!node rerun %s
+		return
+                end_if
+
+	compare_str "SLOG"
+	if_true
+		exec_int %!SLOG /P
+		return
+		end_if
+
+	compare_str "NLOG"
+        if_true
+		exec_int %!SLOG %n /P
+		return
+		end_if
+
+	compare_word "NLOG "
+        if_true
+		shift_str 5
+		exec_int %!SLOG ..\NODE%s /P
+		return
+                end_if
+
+	compare_word "UEDIT"
+        if_true
+		shift_str 5
+		compare_word " "
+		if_true
+			shift_str 1
+			end_if
+                user_edit
+		return
+                end_if
+
+	compare_str "MAIL"
+	if_true
+		mail_read_all
+		return
+		end_if
+
+        compare_str "BULKMAIL"
+        if_true
+		print "\r\nEnter ARS matches to send mail to or [CR] to send "
+		print "by name/number\r\nARS to match: "
+		getstrupr 40
+                mail_send_bulk
+		return
+                end_if
+
+	compare_str "DOS"
+	if_true
+		chksyspass
+		if_true
+			exec_int command.com
+			end_if
+		return
+		end_if
+
+	compare_str "DIR"
+	if_true
+		chksyspass
+		if_true
+			exec_int command /c dir %f /p
+			end_if
+		return
+                end_if
+
+	compare_word "LOAD "
+	if_true
+		shift_str 5
+		load_text %s
+		return
+		end_if
+
+	compare_word "DIR "
+	if_true
+		chksyspass
+		if_true
+			shift_str 4
+			exec_int command /c dir %s /p
+			end_if
+		return
+		end_if
+
+	compare_word "UPLOAD"
+	if_true
+		shift_str 7
+		file_upload_bulk
+		return
+		end_if
+
+	compare_word "ALTUL"
+	if_true
+		shift_str 6
+		file_set_alt_path
+		return
+		end_if
+
+	compare_word "RESORT"
+	if_true
+		shift_str 7
+		file_resort_directory
+		return
+		end_if
+
+	compare_word "OLDUL"
+	if_true
+		shift_str 6
+		file_find_old_uploads
+		return
+		end_if
+
+	compare_word "OLD"
+	if_true
+		shift_str 4
+		file_find_old
+		return
+		end_if
+
+	compare_word "OFFLINE"
+	if_true
+		shift_str 8
+		file_find_offline
+		return
+		end_if
+
+	compare_word "CLOSE"
+	if_true
+		shift_str 6
+		file_find_open
+		return
+		end_if
+
+	compare_word "GET"
+	if_true
+		shift_str 3
+		compare_word " "
+		if_true
+			shift_str 1
+			end_if
+		compare_str ""
+		if_true
+			print "\r\nPath and filename: "
+			getstr 60
+			compare_str ""
+			if_true
+				return
+				end_if
+			end_if
+		file_get
+		return
+		end_if
+
+	compare_word "PUT"
+	if_true
+		shift_str 3
+		compare_word " "
+		if_true
+			shift_str 1
+			end_if
+		compare_str ""
+		if_true
+			print "\r\nPath and filename: "
+			getstr 60
+			compare_str ""
+			if_true
+				return
+                                end_if
+			end_if
+		file_put
+		return
+		end_if
+        end_if
+
+############################# Exemption Functions #############################
+
+
+# Quiet Node
+compare_ars exempt Q
+if_true
+	compare_str "QUIET"
+	if_true
+		compare_ars QUIET
+		if_true
+			exec_int %!node status=3 %#
+		else
+			exec_int %!node status=4 %#
+			end_if
+		return
+		end_if
+
+	compare_str "ANON"
+	if_true
+		toggle_node_misc NODE_ANON
+		exec_int %!node list %#
+		return
+		end_if
+	end_if
+
+# Lock Node
+compare_ars exempt N
+if_true
+        compare_word "LOCK "
+        if_true
+                shift_str 5
+                exec_int %!node lock %s
+		return
+                end_if
+	end_if
+
+# Interrupt Node
+compare_ars exempt I
+if_true
+	compare_word "INTR "
+        if_true
+                shift_str 5
+                exec_int %!node intr %s
+                return
+                end_if
+	end_if
+
+# Chat
+compare_ars exempt C
+if_true
+	compare_str "CHAT"
+	if_true
+		page_sysop
+		return
+		end_if
+	end_if
+
+compare_str "POFF"
+if_true
+	toggle_node_misc NODE_POFF
+	end_if
+
+# None of the above (unrecognized)
+return

@@ -1,0 +1,29 @@
+// Main QWK Networking SALT script for calling Synchronet QWK Network Hub(s)
+
+main()
+{
+
+// These two paths need to point to your SBBS\DATA directory
+
+copystr("C:\SBBS\DATA",_down_dir,0,40);
+copystr("C:\SBBS\DATA",_up_dir,0,40);
+
+// Add additional call lines for other systems
+// the first parameter must be sbbsqnet, the second is the HUB's system ID,
+// the third is phone number list, the fourth is your logon name (should be
+// same as your system's QWKID), the fifth is your password, and the sixth is
+// the maximum retry count
+
+// The phone number list can either contain a list of dialing directory
+// entries, or a manual phone number preceeded by an 'M'.
+// Example; both of the following are valid phone number lists:
+// "1 2 3" and "m1-714-529-9525"
+// You can only have one number per hub using the manual dial method.
+
+call("sbbsqnet","VERT","m1-714-529-9721","QWKID","password","3");
+
+cputs_tr("~~ATM0H1^M");
+
+exittelix(0,0);
+}
+

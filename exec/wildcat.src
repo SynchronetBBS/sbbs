@@ -1,0 +1,641 @@
+# WILDCAT.SRC
+
+!include sbbsdefs.inc
+
+:main
+cmd_home
+async
+compare_ars expert
+if_false
+	clear_abort
+	menu WILDCAT\MAIN
+	print "\r\nwhCommand >>? n"
+else
+	print "\r\nyh@GRP@ @SUB@, wMAIN MENUy: ? n"
+	end_if
+
+node_action node_main
+
+getcmd 1AEMHUQCNFTJGPIYWVSBDR?\r
+
+# Write command to log file
+logkey_comma
+
+# Commands
+cmdkey ?
+	compare_ars expert
+	if_true
+		menu WILDCAT\MAIN
+		end_if
+	end_cmd
+cmdkey M
+	cmd_pop
+	goto message
+	end_cmd
+cmdkey U
+	print "\r\nchList Users\r\n"
+	mnemonics "\r\n~Logons Today, ~Sub-board, or ~All: "
+	getcmd LSA\r
+	cmdkey L
+		userlist_logons
+		end_cmd
+	cmdkey S
+		userlist_sub
+		end_cmd
+	cmdkey A
+		userlist_all
+		end_cmd
+	end_cmd
+
+cmdkey N
+	menu LOGON
+	pause
+	end_cmd
+
+cmdkey C
+	setstr "1"
+	mail_send_feedback
+	end_cmd
+cmdkey F
+	cmd_pop
+	goto transfers
+	end_cmd
+cmdkey T
+	chat_section
+	end_cmd
+cmdkey J
+	msg_select_area
+	end_cmd
+cmdkey G
+	file_download_batch
+	if_true
+		end_cmd
+                end_if
+	compare_ars expert
+	if_false
+		logoff
+	else
+		logoff_fast
+		end_if
+	end_cmd
+
+cmdkey P
+	page_sysop
+	pause
+	end_cmd
+
+cmdkey I
+	menu ..\ANSWER
+	pause
+	end_cmd
+
+cmdkey Y
+	user_defaults
+	end_cmd
+
+cmdkey W
+	nodelist_users
+	crlf
+	pause
+	end_cmd
+
+cmdkey S
+	info_system
+	crlf
+	pause
+	end_cmd
+
+cmdkey B
+	text_file_section
+	end_cmd
+
+cmdkey D
+	xtrn_section
+	end_cmd
+
+cmdkey E
+	call E-mail
+	end_cmd
+
+cmdkey A
+	auto_message
+	end_cmd
+
+cmdkey V
+	print "\r\nyhUsername search string: w"
+	getname 25
+	finduser
+	if_true
+		print "yhVerified: w"
+		printstr
+		crlf
+		end_if
+	end_cmd
+
+cmdkey H
+	toggle_user_misc UM_EXPERT
+	print "\r\nExpert mode is now: "
+	compare_ars EXPERT
+	if_true
+		print "ON"
+	else
+		print "OFF"
+		end_if
+	crlf
+        end_cmd
+
+cmdkey 1
+	compare_ars SYSOP or exempt Q or I or N
+	if_true
+		cmd_pop
+		goto sysop
+		end_if
+	end_cmd
+
+cmdkey R
+	info_user
+	pause
+	end_cmd
+
+end_cmd
+
+############################### E-mail Section ################################
+
+:e-mail
+cmd_home
+compare_ars expert
+if_false
+	menu E-MAIL
+	end_if
+async
+print "\r\nyhE-mail: n"
+getcmd ?SRFNUKQ\r
+logkey
+
+cmdkey ?
+	compare_ars expert
+	if_true
+		menu E-MAIL
+		end_if
+	end_cmd
+
+cmdkey S
+	print "_\r\nbhE-mail (User name or number): w"
+	getname 25
+	compare_str ""
+	if_true
+		end_cmd
+		end_if
+	compare_str "SYSOP"
+	if_true
+		setstr "1"
+		end_if
+	mail_send
+	end_cmd
+
+cmdkey U
+	print "_\r\nbhE-mail (User name or number): w"
+	getname 25
+	compare_str ""
+	if_true
+		end_cmd
+		end_if
+	compare_str "SYSOP"
+	if_true
+		setstr "1"
+		end_if
+	mail_send_file
+        end_cmd
+
+cmdkey R
+	mail_read
+	end_cmd
+
+cmdkey F
+	setstr "1"
+	mail_send_feedback
+	end_cmd
+
+cmdkey N
+	no_yes "\r\nAttach a file"
+	if_true
+		mail_send_netmail
+	else
+		mail_send_netfile
+		end_if
+	end_cmd
+
+cmdkey K
+	mail_read_sent
+	end_cmd
+
+cmdkey Q
+	cmd_pop
+	return
+	end_cmd
+
+cmd_pop
+return
+
+################################ File Section #################################
+
+:transfers
+cmd_home
+async
+compare_ars expert
+if_false
+	clear_abort
+	menu WILDCAT\FILE
+	print "\r\nwhCommand >>? n"
+else
+	print "\r\nyh@LIB@ @DIR@, wFILE MENUy: ? n"
+	end_if
+
+# Update node status
+node_action node_xfer
+getcmd 1QLDUNVMSGPIJEFH?\r
+logkey_comma
+
+cmdkey ?
+	compare_ars expert
+	if_true
+		menu WILDCAT\FILE
+		end_if
+	end_cmd
+
+cmdkey H
+	toggle_user_misc UM_EXPERT
+	print "\r\nExpert mode is now: "
+	compare_ars EXPERT
+	if_true
+		print "ON"
+	else
+		print "OFF"
+		end_if
+	crlf
+        end_cmd
+
+cmdkey Q
+	cmd_pop
+	goto main
+	end_cmd
+
+cmdkey L
+	setstr "*.*"
+	file_list
+        end_cmd
+
+cmdkey D
+	print "\r\nchDownload File(s)\r\n"
+	file_download_batch
+	if_true
+		end_cmd
+                end_if
+	getfilespec
+	if_true
+		file_download
+		end_if
+        end_cmd
+
+cmdkey U
+	print "\r\nchUpload File\r\n"
+	chkfile "..\text\menu\upload.*"
+	if_true
+		menu upload
+                end_if
+	file_upload
+	end_cmd
+
+cmdkey N
+	print "\r\nbhUse c@NEWFILETIME@b for new file scan date/time"
+	yes_no ""
+	if_false
+		file_ptrs_cfg
+		if_false
+			end_cmd
+			end_if
+		end_if
+	file_new_scan
+	end_cmd
+
+cmdkey V
+	print "\r\nchView File(s)\r\n"
+	getfilespec
+	if_true
+		file_view
+		end_if
+        end_cmd
+
+cmdkey M
+	cmd_pop
+	goto message
+	end_cmd
+
+cmdkey S
+	print "\r\nchSearch for Filename(s)\r\n"
+	file_find_name
+        end_cmd
+
+cmdkey G
+	file_download_batch
+	if_true
+		end_cmd
+                end_if
+	compare_ars expert
+	if_false
+		logoff
+	else
+		logoff_fast
+		end_if
+	end_cmd
+
+cmdkey P
+	info_user
+	pause
+	end_cmd
+
+cmdkey I
+	print "\r\nchList Extended File Information\r\n"
+	getfilespec
+	if_true
+		file_list_extended
+		end_if
+        end_cmd
+
+cmdkey J
+	file_select_area
+        end_cmd
+
+cmdkey E
+	file_batch_section
+        end_cmd
+
+cmdkey F
+	info_xfer_policy
+	pause
+	cls
+	info_directory
+	end_cmd
+
+cmdkey 1
+	compare_ars SYSOP or exempt Q or I or N
+	if_true
+		cmd_pop
+		goto sysop
+		end_if
+        end_cmd
+
+end_cmd
+
+############################### Message Section ###############################
+
+:message
+cmd_home
+async
+compare_ars expert
+if_false
+	clear_abort
+	menu WILDCAT\MSG
+	print "\r\nwhCommand >>? n"
+else
+	print "\r\nyh@GRP@ @SUB@, wMESSAGE MENUy: ? n"
+	end_if
+
+# Update node status
+node_action node_main
+getcmd 1GREFSQCUHJT?\r
+logkey_comma
+
+cmdkey ?
+	compare_ars expert
+	if_true
+		menu WILDCAT\MSG
+		end_if
+	end_cmd
+
+cmdkey Q
+	cmd_pop
+	goto main
+	end_cmd
+
+cmdkey R
+	cmd_home
+	print "n\r\nyhReading Messages: [wNy]ew messages, [wSy]earch, "
+	print "[wUy]nread personal,\r\n"
+	print "[wJy]oin, or [wENTERy] to quit? "
+	getstr 5
+	logkey
+
+	cmdstr N
+		msg_new_scan
+		end_cmd
+
+	cmdstr S
+		msg_find_text
+		end_cmd
+
+	cmdstr U
+		msg_your_scan
+		end_cmd
+
+	cmdstr J
+		msg_select_area
+		end_cmd
+
+	cmdstr ""
+		cmd_pop
+		end_cmd
+	print "Invalid command.\r\n"
+	cmd_pop
+	end_cmd
+
+cmdkey E
+	msg_select_area
+	if_true
+		msg_post
+		end_if
+	end_cmd
+
+cmdkey F
+	cmd_pop
+	goto transfers
+	end_cmd
+
+cmdkey S
+	print "\r\nchSearch for Text in Messages\r\n"
+	msg_find_text
+        end_cmd
+
+cmdkey C
+	print "\r\nchCheck for Messages Posted to You\r\n"
+	msg_your_scan
+        end_cmd
+
+cmdkey U
+	cmd_home
+	compare_ars expert
+	if_false
+		menu MAINCFG
+		end_if
+	async
+	print "\r\nyhConfig: n"
+	getcmd ?QNPIS
+	logkey
+
+	cmdkey ?
+		compare_ars expert
+		if_true
+			menu MAINCFG
+			end_if
+		end_cmd
+
+	cmdkey N
+		msg_new_scan_cfg
+		end_cmd
+
+	cmdkey S
+		msg_your_scan_cfg
+		end_cmd
+
+	cmdkey P
+		msg_ptrs_cfg
+		end_cmd
+
+	cmdkey I
+		msg_ptrs_reinit
+		end_cmd
+
+	cmdkey Q
+		cmd_pop
+		end_cmd
+
+	end_cmd
+
+cmdkey H
+	toggle_user_misc UM_EXPERT
+	print "\r\nExpert mode is now: "
+	compare_ars EXPERT
+	if_true
+		print "ON"
+	else
+		print "OFF"
+		end_if
+	crlf
+        end_cmd
+
+cmdkey J
+	msg_select_area
+        end_cmd
+
+cmdkey T
+	msg_qwk
+        end_cmd
+
+cmdkey G
+	file_download_batch
+	if_true
+		end_cmd
+                end_if
+	compare_ars expert
+	if_false
+		logoff
+	else
+		logoff_fast
+		end_if
+        end_cmd
+
+cmdkey 1
+	compare_ars SYSOP or exempt Q or I or N
+	if_true
+		cmd_pop
+		goto sysop
+		end_if
+        end_cmd
+
+end_cmd
+
+################################ Sysop Section ################################
+
+:sysop
+cmd_home
+async
+compare_ars expert
+if_false
+	clear_abort
+	menu WILDCAT\SYSOP
+	print "\r\nwhCommand >>? n"
+else
+	print "\r\nyh@GRP@ @SUB@, wSYSOP MENUy: ? n"
+	end_if
+
+# Update node status
+node_action node_main
+getcmd JUQ?NFD1G2A\r
+logkey_comma
+
+cmdkey ?
+	compare_ars expert
+	if_true
+		menu WILDCAT\SYSOP
+		end_if
+	end_cmd
+
+cmdkey J
+	msg_select_area
+        end_cmd
+
+cmdkey U
+	chksyspass
+	if_true
+		setstr "1"
+		user_edit
+		end_if
+	end_cmd
+
+cmdkey Q
+	cmd_pop
+	goto main
+	end_cmd
+
+cmdkey F
+	cmd_pop
+	goto transfers
+	end_cmd
+
+cmdkey D
+	chksyspass
+	if_true
+		exec_int command
+		end_if
+	end_cmd
+
+cmdkey 1
+	cmd_pop
+	goto message
+	end_cmd
+
+cmdkey G
+	file_download_batch
+	if_true
+		end_cmd
+                end_if
+	compare_ars expert
+	if_false
+		logoff
+	else
+		logoff_fast
+		end_if
+        end_cmd
+
+cmdkey 2
+	cmd_pop
+	goto transfers
+	end_cmd
+
+cmdkey A
+	exec_int command /c %!SLOG
+	end_cmd
+
+end_cmd
+
+

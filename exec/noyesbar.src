@@ -1,0 +1,46 @@
+# NOYESBAR.SRC
+
+# Sep 28 1995 - Digital Man
+str tmp
+
+copy tmp str
+setstr "N"
+print "nbh@QUESTION@? "
+:top
+compare_str "N"
+if_equal
+	print "h4w[No]nbh Yes "
+else
+	print "nbh No 4w[Yes]"
+	end_if
+getkey
+print "\b\b\b\b\b\b\b\b\b\1n\1h\1>"
+compare_key ^M
+if_true
+	ungetstr
+	copy str tmp
+	return
+	end_if
+
+compare_keys "YN"
+if_true
+	ungetkey
+	copy str tmp
+	return
+	end_if
+
+compare_key ^@
+if_true
+	copy str tmp
+	return
+	end_if
+
+# Toggle
+compare_str "Y"
+if_true
+	setstr "N"
+else
+	setstr "Y"
+	end_if
+goto top
+

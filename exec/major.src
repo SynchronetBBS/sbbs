@@ -1,0 +1,345 @@
+# MAJOR.SRC
+
+# MajorBBS Clone Command Shell for Synchronet
+
+!include sbbsdefs.inc
+
+:main
+cmd_home
+menu MAJOR\MAIN
+getstr 10
+compare_str ""
+if_true
+	end_cmd
+	end_if
+ungetstr
+getkey
+node_action node_main
+logkey_comma
+
+cmdkey ?
+	end_cmd
+
+cmdkey T
+	chat_section
+	end_cmd
+
+cmdkey I
+	text_file_section
+	end_cmd
+
+cmdkey F
+	call message
+	end_cmd
+
+cmdkey E
+	cmd_home
+	menu MAJOR\EMAIL
+	getstr 10
+	compare_str ""
+	if_true
+		end_cmd
+		end_if
+	ungetstr
+	getkey
+        logkey
+
+	cmdkey R
+		mail_read
+		end_cmd
+
+	cmdkey W
+		print "_\r\nbhE-mail (User name or number): w"
+		getname 25
+		compare_str ""
+		if_true
+			end_cmd
+			end_if
+		compare_str "SYSOP"
+		if_true
+			setstr "1"
+			end_if
+		mail_send
+		end_cmd
+
+	cmdkey S
+		no_yes "\r\nAttach a file"
+		if_true
+			mail_send_netmail
+		else
+			mail_send_netfile
+			end_if
+		end_cmd
+
+	cmdkey U
+		print "_\r\nbhE-mail (User name or number): w"
+		getname 25
+		compare_str ""
+		if_true
+			end_cmd
+			end_if
+		compare_str "SYSOP"
+		if_true
+			setstr "1"
+			end_if
+		mail_send_file
+		end_cmd
+
+	cmdkey E
+		mail_read_sent
+		end_cmd
+
+	cmdkey X
+		cmd_pop
+		end_cmd
+
+	end_cmd
+
+cmdkey L
+	call transfers
+	end_cmd
+
+cmdkey D
+	xtrn_section
+	end_cmd
+
+cmdkey A
+	cmd_home
+	menu MAJOR\USERDEFS
+	getstr 10
+	compare_str ""
+	if_true
+		end_cmd
+		end_if
+	ungetstr
+	getkey
+        logkey
+
+	cmdkey S
+		info_user
+		end_cmd
+
+	cmdkey A
+		user_defaults
+		end_cmd
+
+	cmdkey X
+		cmd_pop
+		end_cmd
+
+	end_cmd
+
+cmdkey R
+	print "\r\nchList Users\r\n"
+	mnemonics "\r\n~Logons Today, ~Sub-board, or ~All: "
+	getcmd LSA\r
+
+	cmdkey L
+		userlist_logons
+		end_cmd
+	cmdkey S
+		userlist_sub
+		end_cmd
+	cmdkey A
+		userlist_all
+		end_cmd
+
+	# fall-through for CR, Ctrl-C, etc
+        end_cmd
+
+cmdkey S
+	compare_ars SYSOP or exempt Q or I or N
+	if_true
+		call sysop
+		end_if
+	end_cmd
+
+cmdkey X
+	file_download_batch
+	if_true
+		end_cmd
+                end_if
+	logoff
+	end_cmd
+
+end_cmd
+
+############################### Message Section ###############################
+
+:message
+cmd_home
+menu MAJOR\MSG
+getstr 10
+compare_str ""
+if_true
+	end_cmd
+        end_if
+ungetstr
+getkey
+
+# Update node status
+node_action node_main
+logkey_comma
+
+cmdkey ?
+	end_cmd
+
+cmdkey X
+	cmd_pop
+	return
+	end_cmd
+
+cmdkey R
+	msg_read
+	end_cmd
+
+cmdkey W
+	msg_post
+	end_cmd
+
+cmdkey Q
+	cmd_home
+	menu MAJOR\QUICKSCN
+	getstr 10
+	compare_str ""
+	if_true
+		end_cmd
+		end_if
+	ungetstr
+	getkey
+        logkey
+
+	cmdstr S
+                msg_new_scan
+                end_cmd
+
+	cmdstr L
+		msg_your_scan
+                end_cmd
+
+	cmdstr K
+		msg_find_text
+                end_cmd
+
+	cmdstr C
+		cmd_home
+		menu MAINCFG
+		async
+		print "\r\nyhConfig: n"
+		getcmd ?QNPIS
+		logkey
+
+		cmdkey ?
+			compare_ars expert
+			if_true
+				menu MAINCFG
+				end_if
+			end_cmd
+
+		cmdkey N
+			msg_new_scan_cfg
+			end_cmd
+
+		cmdkey S
+			msg_your_scan_cfg
+			end_cmd
+
+		cmdkey P
+			msg_ptrs_cfg
+			end_cmd
+
+		cmdkey I
+			msg_ptrs_reinit
+			end_cmd
+
+		cmdkey Q
+			cmd_pop
+			end_cmd
+
+		end_cmd
+        cmd_pop
+        end_cmd
+
+cmdkey T
+	chat_section
+	end_cmd
+
+cmdkey S
+	msg_select_area
+	end_cmd
+
+cmdkey F
+	call transfers
+        end_cmd
+
+cmd_pop
+return
+
+############################ Transfer Menu Commands ###########################
+:transfers
+cmd_home
+menu MAJOR\FILE
+getstr 10
+compare_str ""
+if_true
+	end_cmd
+	end_if
+ungetstr
+getkey
+logkey
+
+cmdkey F
+	print "\r\nchList Files\r\n"
+	getfilespec
+	if_true
+		file_list
+		end_if
+	end_cmd
+
+cmdkey D
+	print "\r\nchDownload File(s)\r\n"
+	file_download_batch
+	if_true
+		end_cmd
+                end_if
+	getfilespec
+	if_true
+		file_download
+		end_if
+	end_cmd
+
+cmdkey U
+	print "\r\nchUpload File\r\n"
+	chkfile "..\text\menu\upload.*"
+	if_true
+		menu upload
+                end_if
+	file_upload
+	end_cmd
+
+cmdkey S
+	file_select_area
+	end_cmd
+
+cmdkey X
+	cmd_pop
+	return
+	end_cmd
+
+end_cmd
+
+############################## Sysop Commands #################################
+
+:sysop
+menu sysmain
+print "n\r\nchSelect an option (or X to exit): n"
+getstrupr 40
+
+compare_str "X"
+if_true
+        return
+	end_if
+
+exec_bin str_cmds
+goto sysop
+

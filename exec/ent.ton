@@ -1,0 +1,299 @@
+: Now we're going to set-up and play a song
+
+Visual		The Entertainer
+
+pitch	323.50	All commands can be abreviated with just one character
+t	200
+s	10
+:r	 10	 Rest before we begin
+
+:intro
+
+o	6
+
+d	1
+e	1
+c	1
+o      -1
+a	2
+b	1
+g	1
+r	1
+
+d	1
+e	1
+c	1
+o      -1
+a	2
+b	1
+g	1
+r	1
+
+d	1
+e	1
+c	1
+o      -1
+a	2
+b	1
+a	1
+G	1
+g	2
+r	2
+
+g5	1
+r	1
+
+: begin
+o	5
+
+d4	1
+D4	1
+e4	1
+c5	2
+e4	1
+c5	2
+e4	1
+c5      3
+
+a3	1
+r	1
+g3	1
+
+c	1
+d	1
+D	1
+e	1
+c	1
+d	1
+e	2
+b4	1
+d	2
+c	1
+
+r	1
+
+g3	1
+r	1
+g3	1
+r	1
+
+d4	1
+D4	1
+e4	1
+c5	2
+e4	1
+c5	2
+e4	1
+c5      3
+
+a3	1
+r	1
+g3      1
+r	1
+
+a4	1
+g4	1
+F4	1
+a4	1
+c5	1
+e5	2
+d5	1
+c5	1
+b4	1
+d5	1
+
+r	1
+g3	1
+r	1
+a3	1
+r	1
+
+d4	1
+D4	1
+e4	1
+c5	2
+e4	1
+c5	2
+e4	1
+c5      3
+
+a3	1
+r	1
+g3      1
+
+c	1
+d	1
+D	1
+e	1
+c	1
+d	1
+e	2
+b4	1
+d	2
+c	1
+
+r	1
+
+g3	1
+r	1
+g3	1
+r       1
+
+c	1
+d	1
+e	1
+c	1
+d	1
+e       2
+
+c	1
+d	1
+c	1
+e	1
+c	1
+d	1
+e	2
+
+c	1
+d	1
+c	1
+e	1
+c	1
+d	1
+e       2
+b4	1
+d	2
+c       1
+
+r	1
+g3	1
+r	1
+a3	1
+r       1
+
+: repeat
+
+d4	1
+D4	1
+e4	1
+c5	2
+e4	1
+c5	2
+e4	1
+c5      3
+
+a3	1
+r	1
+g3	1
+
+c	1
+d	1
+D	1
+e	1
+c	1
+d	1
+e	2
+b4	1
+d	2
+c	1
+
+r	1
+
+g3	1
+r	1
+g3	1
+r	1
+
+d4	1
+D4	1
+e4	1
+c5	2
+e4	1
+c5	2
+e4	1
+c5      3
+
+a3	1
+r	1
+g3      1
+r	1
+
+a4	1
+g4	1
+F4	1
+a4	1
+c5	1
+e5	2
+d5	1
+c5	1
+b4	1
+d5	1
+
+r	1
+g3	1
+r	1
+a3	1
+r	1
+
+d4	1
+D4	1
+e4	1
+c5	2
+e4	1
+c5	2
+e4	1
+c5      3
+
+a3	1
+r	1
+g3      1
+
+c	1
+d	1
+D	1
+e	1
+c	1
+d	1
+e	2
+b4	1
+d	2
+c	1
+
+r	1
+
+g3	1
+r	1
+g3	1
+r       1
+
+c	1
+d	1
+e	1
+c	1
+d	1
+e       2
+
+c	1
+d	1
+c	1
+e	1
+c	1
+d	1
+e	2
+
+c	1
+d	1
+c	1
+e	1
+c	1
+d	1
+e       2
+b4	1
+d	2
+c       1
+
+r	1
+g3	1
+r	1
+c3	1
+

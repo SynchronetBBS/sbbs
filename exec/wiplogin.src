@@ -1,0 +1,122 @@
+# WIPLOGIN.SRC
+
+# ANSWER.WIP requires button press
+
+!include sbbsdefs.inc
+
+getkey
+
+#########################
+# TEXT.DAT Replacements #
+#########################
+
+replace_text 48  "@MENU:NUMBER@"
+replace_text 83  "@MENU:NUMBER@"
+replace_text 86  "@MENU:NUMBER@"
+replace_text 87  "@MENU:NUMBER@"
+replace_text 268 ""
+replace_text 292 ""
+replace_text 384 "@MENU:NUMBER@"
+replace_text 494 "@MENU:KEYBOARD@"
+replace_text 503 "@MENU:NUMBER@"
+replace_text 506 ""
+replace_text 559 "@MENU:YESNO@"
+replace_text 560 ""
+replace_text 561 ""
+replace_text 562 "@MENU:NOYES@"
+replace_text 563 "@MENU:PAUSE@"
+replace_text 570 ""
+replace_text 652 "@MENU:NUMBER@"
+replace_text 653 "@MENU:NUMBER@"
+replace_text 654 "@MENU:NUMBER@"
+replace_text 655 "@MENU:NUMBER@"
+
+##############
+# Login Menu #
+##############
+
+int c m
+
+:top
+compare c 10
+if_greater_or_equal
+	hangup
+	return
+	end_if
+
+cmd_home
+clear_abort
+cls
+printfile "%zMENU\LOGIN.WIP"
+sync
+print_local "\r\n[WIP] Login Menu: "
+
+getkey
+logkey_comma
+
+cmdkey L
+	print_local "Login\r\n"
+	print_local "Enter name: "
+	printfile "%zMENU\NAMEPASS.WIP"
+	getstr str 25 K_UPRLWR|K_LOWPRIO|K_NOECHO
+	truncsp str
+	compare_str ""
+	if_true
+		add c 1
+		end_cmd
+		end_if
+	print_local "Password: "
+	login ""
+	getkey
+	if_true
+		logon
+		if_true
+			return
+			end_if
+		end_if
+	pause
+	add c 2
+	end_cmd
+
+cmdkey N
+	print_local "New\r\n"
+	setstr "%q"
+	compare_str "VERT"
+	if_true
+		yes_no "Are you calling just to download Synchronet BBS software"
+		if_true
+			setstr "Guest"
+			login "Password: "
+			if_true
+				logon
+				if_true
+					return
+					end_if
+				end_if
+			end_if
+		end_if
+	newuser
+	logon
+	return
+	end_cmd
+
+cmdkey G
+	print_local "Guest\r\n"
+	setstr "guest"
+	login "Password: "
+	if_true
+		logon
+		if_true
+			return
+			end_if
+		end_if
+	end_cmd
+
+cmdkey H
+	print_local "Hang-up\r\n"
+	hangup
+	return
+	end_cmd
+
+end_cmd
+

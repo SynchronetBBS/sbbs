@@ -1,0 +1,106 @@
+# DIR.SRC
+
+# Test of Directory System Functions
+
+!include sbbsdefs.inc
+!include dir_attr.inc
+
+int dir fattr flen ftime bytes files i
+str path name attr time date
+
+print "Directory of: "
+getstrupr path 60
+open_dir dir path
+if_false
+	printf "Unable to open %s\r\n" path
+	return
+	end_if
+printf "Directory of %s\r\n\r\n" path
+:next
+	copy i _sys_status
+	and i SS_ABORT
+	compare i 0
+	if_not_equal # Ctrl-C hit
+		print "Aborted.\n"
+		goto end
+		end_if
+	read_dir dir name
+	if_false
+		goto end
+		end_if
+	# Increment file counter
+	add files 1
+	sprintf str "%s\\%s" path name
+	get_file_attrib fattr str
+	get_file_length flen str
+	# Add to total byte counter
+	compare flen 0
+	if_greater
+		add bytes flen
+		end_if
+	get_file_time ftime str
+	ftime_str time "%H:%M:%S" ftime
+	ftime_str date "%m/%d/%y" ftime
+
+	set attr ""
+
+	copy i fattr
+	and i FA_RDONLY
+	compare i 0
+	if_not_equal
+		strcat attr "r"
+	else
+		strcat attr "-"
+		end_if
+
+	copy i fattr
+	and i FA_HIDDEN
+	compare i 0
+	if_not_equal
+		strcat attr "h"
+	else
+		strcat attr "-"
+                end_if
+
+	copy i fattr
+	and i FA_SYSTEM
+	compare i 0
+	if_not_equal
+		strcat attr "s"
+	else
+		strcat attr "-"
+                end_if
+
+	copy i fattr
+	and i FA_LABEL
+	compare i 0
+	if_not_equal
+		strcat attr "l"
+	else
+		strcat attr "-"
+                end_if
+
+	copy i fattr
+	and i FA_DIREC
+	compare i 0
+	if_not_equal
+		strcat attr "d"
+	else
+		strcat attr "-"
+                end_if
+
+	copy i fattr
+	and i FA_ARCH
+	compare i 0
+	if_not_equal
+		strcat attr "a"
+	else
+		strcat attr "-"
+                end_if
+
+	printf "%s %10ld  %s  %s  %s\r\n" attr flen date time name
+	goto next
+:end
+close_dir dir
+printf "\r\n%lu total bytes in %lu files\r\n" bytes files
+

@@ -1,0 +1,48 @@
+
+!|1K|w0010271610|W00|1B0000020PX4050E000F080700000000000000
+!|1U0707HL0P0000<>Synchronet Main Menu<>|1B0000020PWW050E000F080700000000000000
+!|1U0710HL7T0000<><>|c00|Y00000100|1B0000020QPI010E000F080900000000000000
+!|1U0Y1E1W1O2800<>  P  <>P|1U0Y1S1W222A00<>  R  <>R
+!|1U0Y261W2G2600<>  N  <>((Make a choice::ns@_S_ub-board,ng@_G_roup,na@_A_ll,^\
+M@_Q_uit))
+!|1U0Y2K1W2U2I00<>  Z  <>((Make a choice::zs@_S_ub-board,zg@_G_roup,za@_A_ll,^\
+M@_Q_uit))
+!|1U0Y2Y1W381U00<>  B  <>((Make a choice::bs@_S_ub-board,bg@_G_roup,ba@_A_ll,^\
+M@_Q_uit))
+!|1U0Y3C1W3M2900<>  Q  <>Q
+!|1U0Y3Q1W401YY0<>  F  <>((Make a choice::fs@_S_ub-board,fg@_G_roup,fa@_A_ll,^\
+M@_Q_uit))
+!|1U0Y441W4E2B00<>  S  <>((Make a choice::ss@_S_ub-board,sg@_G_roup,sa@_A_ll,^\
+M@_Q_uit))
+!|1U0Y4I1W4S1T00<>  A  <>((Choose one::ar@_R_ead,aw@_W_rite,^M@_Q_uit))
+!|1B0000020QPI010E000F080100000000000000|1U0Y5A1W5K1600<>  *  <>*
+!|1U0Y5O1W5Y2500<>  M  <>/*
+!|1U0Y621W6C2100<>  I  <>((Choose one::ii@_S_ystem,iv@_V_ersion,iy@_Y_our Stat\
+s,is@S_u_b-board,^M@_Q_uit))
+!|1U0Y6G1W6Q2D00<>  U  <>((Choose one::ul@_L_ogons Today,us@_S_ub-board,ua@_A_\
+ll,^M@_Q_uit))
+!|1U0Y6U1W742400<>  L  <>/L|1U0Y781W7I2200<>  J  <>J
+!|1B0000020QPI010E000F080300000000000000|1U8W1E9U1O1200<>&<>&
+!|1U8W1S9U222700<>O<>O$MKILL$|1U8W269U2G0L00<> ^U  <>^U
+!|1U8W2K9U2U0G00<> ^P  <>^P|1U8W2Y9U380B00<> ^K  <>^K
+!|1B0000020QPE010E000F080C00000000000000|1U7U3Y8S483G00<>{<>{
+!|1U8W3Y9U483I00<>}<>}|1U7U4C8S4M2K00<>[<>[|1U8W4C9U4M2L00<>]<>]
+!|1B0000020QPI010E000F080200000000000000|1U8W5A9U5K1X00<>  E  <>E
+!|1U8W5O9U5Y2C00<>  T  <>T|1U8W629U6C1Z00<>  G  <>G|1U8W6G9U6Q2G00<>  X  <>X
+!|1U8W6U9U741V00<>  C  <>C|1U8W789U7I1W00<>  D  <>D|@2S11Message Functions|c0F
+!|@2T12Message Functions|c00|@B111Control Functions|c0F|@B212Control Functions
+!|c00|@2N4VListing Functions|c0F|@2O4WListing Functions|c00
+!|@AV3HSub-board Selection|c0F|@AW3ISub-board Selection|c00
+!|@B44VOther Selections|c0F|@B54WOther Selections|c00|@281FPost Message
+!|@281TRead Messages|@2827New Message Scan|@282LContinuous Message Scan
+!|@282ZBrowse Message Scan|@283DQWK Packet Transfer|@283RFind Text in Messages
+!|@2845Search for Your Messages|@284JRead/Write Auto-Message
+!|@285BSub-boards within Group|@285PMessage Groups|@2863Information Commands
+!|@286HUser Lists|@286VList All Nodes|@2879Jump to a Message Area
+!|@AA1FConfiguration Commands|@AA1TLogoff (also /0)
+!|@AA27List Users Online (Anywhere)|@AA2LSend Message to Another Node
+!|@AA2ZControl Key Command Menu|@AA3YChange Sub, or Type Number
+!|@AA4CChange Group, or Type /Number|@AA5BElectronic Mail Commands
+!|@AA5PFile Transfers|@AA63General Text File Sections|@AA6HExternal Programs
+!|@AA6VChat Commands|@AA79Account Default Configuration|100AC$ETW$|#|#|#
+

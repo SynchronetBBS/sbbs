@@ -1,0 +1,178 @@
+# FILE_IO.SRC
+
+# Baja module for performing various i/o operations on a single file
+
+!include file_io.inc
+
+# Variables
+int file
+int len
+int pos
+int time
+int int
+str buf
+str name
+
+# Get filename to open
+print "\r\nFilename: "
+getstr
+copy name str
+fopen file O_RDWR|O_CREAT|O_DENYNONE str
+if_false
+	printf "Failed to open %s\r\n" name
+	return
+	end_if
+
+cmd_home
+fget_length file len
+fget_pos    file pos
+
+crlf
+printf "Filename=%s\r\n" name
+fget_time file time
+time_str str time
+printf "Buf=%s\r\nInt=%ld  Pos=%ld  Len=%ld  Time=%s\r\n" buf int pos len str
+feof file
+if_true
+	print "At EOF\r\n"
+	end_if
+crlf
+print "[R] Read buf       [W] Write buf\r\n"
+print "[G] Get int        [P] Put int\r\n"
+print "[S] Seek           [B] Rewind\r\n"
+print "[L] Lock           [U] Unlock\r\n"
+print "[F] Fprintf        [C] Change len\r\n"
+print "[D] Change date    [Z] End of file\r\n"
+print "[E] ETX Char\r\n"
+crlf
+print "Which or [Q]uit: "
+getkey
+printkey
+crlf
+
+cmdkey Q
+	print "Close: "
+	fclose file
+	call success
+	cmdpop
+	return
+	end_cmd
+
+cmdkey S
+	print "Seek to: "
+	getstr
+	copy pos str
+	fset_pos file pos
+	call success
+	end_cmd
+
+cmdkey B
+	print "Rewinding...\r\n"
+	fset_pos file 0
+	call success
+	end_cmd
+
+
+cmdkey Z
+	print "Seeking to End of File...\r\n"
+	fset_pos file 0 SEEK_END
+	call success
+        end_cmd
+
+cmdkey R
+	print "Length to read: "
+	getstr
+	copy len str
+	fread file buf len
+	call success
+	end_cmd
+
+cmdkey G
+	print "Length to read: "
+	getstr
+	copy len str
+	fread file int len
+	call success
+	end_cmd
+
+cmdkey P
+	print "Length to write: "
+	getstr
+	copy len str
+	print "Int: "
+	getstr
+	copy int str
+	fwrite file int len
+	call success
+	end_cmd
+
+cmdkey W	
+	print "Length to write: "
+	getstr
+	copy len str
+	print "String: "
+	getstr
+	fwrite file str len
+	call success
+	end_cmd
+
+cmdkey F
+	print "String: "
+	getstr
+	fprintf file "%s" str
+	call success
+	end_cmd
+
+cmdkey L
+	print "Length to lock: "
+	getstr
+	copy len str
+	flock file len
+	call success
+	end_cmd
+
+cmdkey U
+	print "Length to unlock: "
+	getstr
+	copy len str
+	funlock file len
+	call success
+	end_cmd
+
+cmdkey C
+	print "New length of file: "
+	getstr
+	copy len str
+	fset_length file len
+	call success
+	end_cmd
+
+cmdkey E
+	yes_no "Use ETX (3) instead of NULL (0) for terminating text"
+	if_true
+		fset_etx 3
+	else
+		fset_etx 0
+		end_if
+	end_cmd
+
+cmdkey D
+	print "New file date (MM/DD/YY): "
+	getstr
+	date_int time str
+	fset_time file time
+	call success
+	end_cmd	
+
+end_cmd
+
+
+# Print "Successful" or "Unsuccessful" based on the current logic state
+:success
+if_true
+	print "Successful\r\n"
+else
+	print "Unsuccessful\r\n"
+	end_if
+return
+

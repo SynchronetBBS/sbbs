@@ -1,0 +1,91 @@
+;Logon to Synchronet and transfer QWK packets using Zmodem
+;This script file is for use with Qmodem!
+GRAPHICS ANSI
+TURNOFF NOISE
+STRING SYSNAME PHONE ACCOUNT PASS RETRY DATADIR REP QWK INFO
+
+ASSIGN SYSNAME "XXXX"                  ; System being called
+ASSIGN PHONE "XXXXXXX^M"               ; System phone number
+ASSIGN ACCOUNT "XXXXXX^M"              ; Account on system
+ASSIGN PASS "XXXXXXXX^M"               ; Password
+ASSIGN RETRY "20"                      ; # of times to retry
+ASSIGN DATADIR "\SYNCHRO\DATA"         ; Download directory
+ASSIGN REP "$DATADIR\$SYSNAME.REP"     ; REP is the name of the REPLY packet
+ASSIGN QWK "$DATADIR\$SYSNAME.QWK"     ; QWK is the name of the QWK packet
+ASSIGN INFO "$DATADIR\$SYSNAME.LOG"    ; INFO is the name of the LOG file
+
+
+
+CLRSCR                                  ; Clear the screen
+
+LOG $INFO                               ; Open the log file
+STAMP Qmodem QWK log opened
+DISPLAYLN "SBBSQNET: Initialized "      ; Display this line
+
+DISPLAYLN "SBBSQNET: Calling $SYSNAME"  ; Information line
+STAMP Calling $SYSNAME
+
+DISPLAYLN "SBBSQNET: Dialing $PHONE"    ; Information line
+DELAY 1000
+SEND "ATM0^M"
+        WHEN "BUSY" LOOP
+        WHEN "NO DIAL TONE" LOOP
+        TIMEOUT 45 LOOP
+
+LOOP:
+        DECR RETRY
+        IF "$RETRY" = "0" ENDQWK
+        DELAY 1000
+        SEND "ATDT $PHONE"
+        WAITFOR "CONNECT"
+        DELAY 2000
+        IF $ONLINE DONE
+
+GOTO LOOP
+
+DONE:
+
+TIMEOUT 600 ENDQWK                      ; wait up to 10 minutes for sucess
+WHEN "HIT A KEY" "^M"
+WAITFOR "NN:"
+SEND    "^M"
+WAITFOR "NN:"
+SEND    "$ACCOUNT"
+DELAY   100
+WAITFOR "PW:"
+SEND    "$PASS"
+WAITFOR "QWK:"
+
+EXIST $REP UPREP                        ; If the reply exists, send it
+
+RECEIVE:
+        STAMP Download QWK packet
+        DELAY 1000
+        SEND "DL"
+        WHEN "No New Messages" ENDQWK
+        WAITFOR "PROTOCOL"
+        SEND "ZN"
+        DOWNLOAD Z $QWK
+        WAITFOR "QWK:"
+        SEND "Q"
+
+ENDQWK:
+        SEND "Q"
+        HANGUP
+        STAMP Qmodem QWK log closed
+        TURNOFF LOG
+        SYSTEM X
+
+UPREP:
+        STAMP Upload REPly packet
+        DELAY 1000
+        SEND "UZN"
+        WAITFOR "Start Transfer Now"
+        UPLOAD Z $REP
+        IF $SUCCESS DELREP
+        GOTO RECEIVE
+
+DELREP:
+        DOS "del $REP^M"
+        WAITFOR "QWK:"
+        GOTO RECEIVE

@@ -1,0 +1,369 @@
+# PCBOARD.SRC
+
+# PCBoard v15.1 menu/command emulation
+
+!include sbbsdefs.inc
+
+menu pcboard\welcome
+
+cmd_home
+compare_ars expert
+if_false
+	cls
+	menu pcboard\brdm
+	end_if
+node_action node_main
+async
+print "n\r\nyh(r@MINLEFT@y min. left) @GRP@ (@GN@) @SUB@ (@SN@) "
+print "Command? n"
+getstr 60
+
+compare_str ""
+if_true
+	end_cmd
+	end_if
+
+cmdstr ?
+	compare_ars expert
+	if_true
+		cls
+		menu pcboard\brdm
+		end_if
+	end_cmd
+
+cmdstr HELP
+	compare_ars expert
+	if_true
+		cls
+		menu pcboard\brdm
+		end_if
+	end_cmd
+
+cmdstr F
+	file_select_area
+	if_true
+		setstr "*.*"
+		file_list
+		end_if
+	end_cmd
+
+cmdstr EXT
+	file_select_area
+	if_true
+		setstr "*.*"
+		file_list_extended
+		end_if
+	end_cmd
+
+cmdstr VIEW
+	getfilespec
+	if_true
+		file_view
+		end_if
+	end_cmd
+
+cmdstr BATCH
+	file_batch_section
+	end_cmd
+
+cmdstr REMOVE
+	getfilespec
+	if_true
+		file_remove
+		end_if
+	end_cmd
+
+cmdstr D
+	file_download_batch
+	if_true
+		end_cmd
+                end_if
+	getfilespec
+	if_true
+		file_download
+		end_if
+	end_cmd
+
+cmdstr U
+	chkfile "..\text\menu\upload.*"
+	if_true
+		menu upload
+                end_if
+	file_upload
+	end_cmd
+
+cmdstr L
+	file_find_name
+	end_cmd
+
+cmdstr N
+	print "\r\nbhUse c@LASTNEW@b for new file scan date"
+	yes_no ""
+	if_false
+		file_ptrs_cfg
+		if_false
+			end_cmd
+			end_if
+		end_if
+	file_new_scan
+        end_cmd
+
+cmdstr Z
+	file_find_text
+	end_cmd
+
+cmdstr T
+	file_temp_section
+	end_cmd
+
+cmdstr C
+	setstr "1"
+	mail_send_feedback
+	crlf
+	end_cmd
+
+cmdstr Y
+	msg_your_scan
+	end_cmd
+
+cmdstr TS
+	msg_find_Text
+	end_cmd
+
+cmdstr QWK
+	msg_qwk
+	end_cmd
+
+cmdstr AUTO
+	auto_message
+	end_cmd
+
+cmdstr SELECT
+	msg_new_scan_cfg
+	end_cmd
+
+cmdstr A
+	msg_ptrs_cfg
+	end_cmd
+
+cmdstr R
+	msg_read
+	end_cmd
+
+cmdstr S
+	info_system
+	end_cmd
+
+cmdstr E
+	msg_post
+	end_cmd
+
+cmdstr RN
+	msg_new_scan
+	end_Cmd
+
+cmdstr RC
+	msg_cont_scan
+	end_cmd
+
+cmdstr JOIN
+	msg_select_area
+	end_cmd
+
+compare_word "JOIN "
+if_true
+	shift_str 5
+	msg_set_area
+	end_cmd
+	end_if
+
+cmdstr J
+	msg_select_area
+	end_cmd
+
+cmdstr M
+	call e-mail
+	end_cmd
+
+cmdstr X
+	toggle_user_misc UM_EXPERT
+	print "\r\nExpert mode is now: "
+	compare_ars EXPERT
+	if_true
+		print "ON"
+	else
+		print "OFF"
+		end_if
+	crlf
+	end_cmd
+
+cmdstr B
+	text_file_section
+	end_cmd
+
+cmdstr V
+	info_user
+	end_cmd
+
+cmdstr G
+	file_download_batch
+	if_true
+		end_cmd
+                end_if
+	logoff
+	end_cmd
+
+cmdstr W
+	user_defaults
+	end_cmd
+
+cmdstr O
+	page_sysop
+	end_cmd
+
+cmdstr P
+	private_message
+	end_cmd
+
+cmdstr I
+	menu ..\ANSWER
+	menu pcboard\welcome
+	end_cmd
+
+cmdstr WHO
+	nodelist_users
+	end_cmd
+
+cmdstr CHAT
+	chat_section
+	end_cmd
+
+cmdstr NEWS
+	menu LOGON
+	end_cmd
+
+cmdstr DOOR
+	xtrn_section
+        end_cmd
+
+cmdstr OPEN
+	xtrn_section
+	end_cmd
+
+compare_word "OPEN "
+if_true
+	shift_str 5
+	xtrn_exec
+	end_cmd
+        end_if
+
+compare_word "USER "
+if_true
+	shift_str 5
+	crlf
+	finduser
+	if_true
+		print "yhVerified: w"
+		printstr
+		crlf
+                end_if
+	end_cmd
+	end_If
+
+cmdstr USER
+	print "\r\nyhUsername search string (Enter=List Conferences Users): w"
+        getname 25
+	compare_str ""
+	if_true
+		userlist_sub
+	else
+		crlf
+		finduser
+		if_true
+			print "yhVerified: w"
+			printstr
+			crlf
+			end_if
+		end_cmd
+		end_If
+	end_cmd
+
+print "\r\nrhInvalid Entry!  Please try again, @FIRST@ ...\r\n"
+end_cmd
+
+:e-mail
+cmd_home
+compare_ars expert
+if_false
+	menu E-MAIL
+	end_if
+async
+print "\r\nyhE-mail: n"
+getcmd ?SRFNUKQ\r
+logkey
+
+cmdkey ?
+	compare_ars expert
+	if_true
+		menu E-MAIL
+		end_if
+	end_cmd
+
+cmdkey S
+	print "_\r\nbhE-mail (User name or number): w"
+	getname 25
+	compare_str ""
+	if_true
+		end_cmd
+		end_if
+	compare_str "SYSOP"
+	if_true
+		setstr "1"
+		end_if
+	mail_send
+	end_cmd
+
+cmdkey U
+	print "_\r\nbhE-mail (User name or number): w"
+	getname 25
+	compare_str ""
+	if_true
+		end_cmd
+		end_if
+	compare_str "SYSOP"
+	if_true
+		setstr "1"
+		end_if
+	mail_send_file
+        end_cmd
+
+cmdkey R
+	mail_read
+	end_cmd
+
+cmdkey F
+	setstr "1"
+	mail_send_feedback
+	end_cmd
+
+cmdkey N
+	no_yes "\r\nAttach a file"
+	if_true
+		mail_send_netmail
+	else
+		mail_send_netfile
+		end_if
+	end_cmd
+
+cmdkey K
+	mail_read_sent
+	end_cmd
+
+cmdkey Q
+	cmd_pop
+	return
+	end_cmd
+
+cmd_pop
+return
+

@@ -1,0 +1,130 @@
+# Synchronet v2.20 Logon Module
+
+!include sbbsdefs.inc
+
+compare_ars rest G
+if_true
+	:get_name
+	print "\1y\1hFor our records, please enter your full name: \1w"
+	getname 25
+	compare_str ""
+	if_true
+		goto get_name
+		end_if
+	log "Guest: "
+	logstr
+	set_user_string user_string_realname
+	
+	:get_loc
+	print "\1y\1hPlease enter your location (City, State): \1w"
+	getname 30
+	compare_str ""
+	if_true
+		goto get_loc
+		end_if
+	log "  "
+	logstr
+	set_user_string user_string_location
+
+	:get_phone
+	print "\1y\1hPlease enter your voice telephone number: "
+	get_template nnn-nnn-nnnn
+	compare_str ""
+	if_true
+		goto get_phone
+		end_if
+	log "  "
+	logstr
+	set_user_string user_string_phone
+	log "\r\n"
+	:get_mag
+	print "yhWhere did you hear about this BBS?\r\n: w"
+	getstr 70
+	compare_str ""
+	if_true
+		goto get_mag
+		end_if
+	logstr
+	log "\r\n"
+	end_if
+
+compare_ars rest G or rest X or local
+if_false
+	no_yes Do you want to enter the \1cSynchronet Match Maker\1b
+	if_false
+		exec_xtrn smm
+		end_if
+	end_if
+
+compare_user_misc UM_ANSI
+if_true
+	compare_user_chat CHAT_SPLITP
+	if_false
+		toggle_user_chat CHAT_SPLITP
+		end_if
+	end_if
+
+###############################################################################
+# Replaces the 2.1 Logon stuff
+##############################
+int i
+
+# Logon screens
+
+compare_ars LOCAL
+if_true
+	goto logon_event
+	end_if
+set i 0
+:logon_screens
+	add i 1
+	compare i 1
+	if_equal
+		set str "LOGON"
+	else
+		sprintf str "LOGON%ld" i
+		end_if
+	chkfile "%zMENU\%s.*"
+	if_false
+		goto logon_event
+		end_if
+	menu "%s"
+	compare_user_misc UM_WIP
+	if_true
+		getkey
+		end_if
+	goto logon_screens
+
+:logon_event
+cls
+user_event event_logon
+
+# Last few callers
+clear_abort
+cls
+setstr "%jLOGON.LST"
+get_file_length i str
+compare i 1
+if_less
+	print "\1n\1g\1hYou are the first caller of the day!\r\n"
+else
+	print "\1n\1g\1hLast few callers:\1n\r\n"
+	printtail str P_NOATCODES 4
+	crlf
+	endif
+
+# Auto-message
+setstr "%jMSGS\\AUTO.MSG"
+get_file_length i str
+compare i 0 
+if_greater
+	printfile str P_NOATCODES
+	crlf
+	end_if
+
+# Automatically set shell to WIPSHELL
+compare_user_misc UM_WIP
+if_true
+	setstr "WIPSHELL"
+	set_shell
+	end_if

@@ -1,0 +1,378 @@
+# SIMPLE.SRC
+
+# Copyright 1995 Digital Dynamics
+
+# Simple Synchronet Command Shell - for beginner/first-time users
+
+!include sbbsdefs.inc
+
+replace_text 563 "\1n\1h\1b{\1wContinue? Yes/No\1b} "
+
+# Set return point for main menu commands (via end_cmd)
+cmd_home
+# Update node status
+node_action node_main
+cls
+async
+
+menu simple\main
+menu simple\prompt
+print "n"
+
+getstrupr 10
+crlf
+pause_reset
+
+# Write command to log file
+logstr
+
+# Commands
+
+cmdstr C
+	chat_section
+	end_cmd
+
+cmdstr CHAT
+	chat_section
+	end_cmd
+
+cmdstr Q
+	msg_qwk
+	end_cmd
+
+# Send Post/Email menu
+cmdstr S
+	cmd_home
+	cls
+        async
+	menu simple\sendmsg
+	menu simple\prompt
+	print "n"
+	getstrupr 10
+	crlf
+	pause_reset
+
+      # Send Email
+	cmdstr E
+		call sendmail
+		end_cmd
+
+	cmdstr EMAIL
+		call sendmail
+		end_cmd
+
+      # Post Message
+	cmdstr P
+		call postmessage
+		end_cmd
+
+	cmdstr POST
+		call postmessage
+		end_cmd
+
+      # Send NetMail
+	cmdstr N
+		call sendnetmail
+		end_cmd
+
+	cmdstr NETMAIL
+		call sendnetmail
+		end_cmd
+
+      # Quit back to main
+	cmdstr Q
+		cmd_pop
+		end_cmd
+end_cmd
+
+# Read messages/mail menu
+cmdstr R
+	cmd_home
+	cls
+	async
+	menu simple\readmsg
+	menu simple\prompt
+	print "n"
+	getstrupr 10
+	crlf
+	pause_reset
+
+      # Read your Email
+	cmdstr E
+		mail_read
+		end_cmd
+
+	cmdstr EMAIL
+		mail_read
+		end_cmd
+
+      # Read your sent Email
+	cmdstr F
+		mail_read_sent
+		end_cmd
+
+      # Read messages in a conference
+	cmdstr A
+		msg_select_area
+		if_true
+			msg_read
+			end_if
+		end_cmd
+
+	cmdstr ALL
+		msg_read
+		end_cmd
+
+      # Bulletins
+	cmdstr B
+		text_file_section
+		end_cmd
+
+      # Read all new messages
+	cmdstr N
+		print "lbhScanning for new messages...\r\n"
+		msg_new_scan_all
+		end_cmd
+
+	cmdstr NEW
+		print "lbhScanning for new messages...\r\n"
+		msg_new_scan_all
+		end_cmd
+
+      # Read all new messages TO: YOU
+	cmdstr Y
+		print "lbhScanning for your messages...\r\n"
+		msg_your_scan_all
+		end_cmd
+
+	cmdstr YOU
+		print "lbhScanning for your messages...\r\n"
+		msg_your_scan_all
+		end_cmd
+
+	cmdstr YOUR
+		print "lbhScanning for your messages...\r\n"
+		msg_your_scan_all
+		end_cmd
+
+	cmdstr C
+	       call msg_cfg
+	       end_cmd
+
+      # Quit back to main menu
+	cmdstr Q
+		cmd_pop
+		end_cmd
+end_cmd
+
+#Open door menu
+cmdstr O
+	xtrn_section
+	end_cmd
+
+cmdstr OPEN
+	xtrn_section
+	end_cmd
+
+cmdstr DOOR
+	xtrn_section
+	end_cmd
+
+cmdstr DOORS
+	xtrn_section
+	end_cmd
+
+#Account config (user defaults)
+cmdstr A
+	user_defaults
+	end_cmd
+
+#Page another user
+cmdstr P
+	private_message
+	pause_reset
+	end_cmd
+
+#List users online
+cmdstr L
+	cls
+	nodelist_users
+	end_cmd
+
+#List files
+cmdstr F
+	cmd_home
+	cls
+	async
+	menu simple\filelist
+	menu simple\prompt
+	print "n"
+	getstrupr 10
+	crlf
+        pause_reset
+
+	cmdstr A
+		file_select_area
+		if_false
+			end_cmd
+			end_if
+		setstr "*.*"
+		file_list
+		end_cmd
+
+	cmdstr N
+		print "\r\nbhUse c@NEWFILETIME@b for new file scan "
+		yes_no "date/time"
+		if_false
+			file_ptrs_cfg
+			if_false
+				end_cmd
+				end_if
+			end_if
+		file_new_scan_all
+		end_cmd
+
+	cmdstr F
+		print "\r\nchFind Text in File Descriptions (no wildcards)\r\n"
+		file_find_text_all
+		end_cmd
+
+	cmdstr S
+		print "\r\nchSearch for Filename(s)\r\n"
+		file_find_name_all
+		end_cmd
+
+      # Quit back to main menu
+	cmdstr Q
+		cmd_pop
+		end_cmd
+end_cmd
+
+
+#Download file
+cmdstr D
+	file_download_batch
+	if_true
+		end_cmd
+		end_if
+	print "\r\nEnter the filename or wildcard to download\r\n"
+	getfilespec
+	if_true
+		file_download
+		endif
+	end_cmd
+
+#Upload a file
+cmdstr U
+	file_select_area
+	if_false
+		end_cmd
+		end_if
+	chkfile "..\text\menu\upload.*"
+	if_true
+		menu upload
+                end_if
+	file_upload
+	end_cmd
+
+#Logoff
+cmdstr G
+	call logoffbbs
+	end_cmd
+
+cmdstr BYE
+	call logoffbbs
+	end_cmd
+
+cmdstr GOODBYE
+	call logoffbbs
+	end_cmd
+
+cmdstr OFF
+	call logoffbbs
+	end_cmd
+
+cmdstr LOGOFF
+	call logoffbbs
+	end_cmd
+
+#fall through
+end_cmd
+
+:logoffbbs
+file_download_batch
+if_false
+	logoff
+	endif
+return
+
+:sendmail
+print "\r\nbhSend E-mail to (User name or number): n"
+getname 25
+compare_str ""
+if_true
+	return
+	end_if
+compare_str "SYSOP"
+if_true
+	setstr "1"
+	end_if
+no_yes "\r\nAttach a file"
+if_false
+	mail_send_file
+else
+	mail_send
+	end_if
+return
+
+:sendnetmail
+no_yes "\r\nAttach a file"
+if_false
+	mail_send_netfile
+else
+	mail_send_netmail
+	end_if
+return
+
+
+:postmessage
+msg_select_area
+if_true
+	msg_post
+	end_if
+return
+
+########################### Msg Config Section	##############################
+
+:msg_cfg
+
+menu MAINCFG
+async
+print "\r\nyhCommand: n"
+getstrupr 10
+logkey
+
+cmdkey N
+	msg_new_scan_cfg
+	return
+	end_cmd
+
+cmdkey S
+	msg_your_scan_cfg
+	return
+	end_cmd
+
+cmdkey P
+	msg_ptrs_cfg
+	return
+	end_cmd
+
+cmdkey I
+	msg_ptrs_reinit
+	return
+	end_cmd
+
+return
+
+
+#end of SIMPLE.SRC

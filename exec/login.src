@@ -1,0 +1,77 @@
+# LOGIN.SRC
+
+# Baja login module for Synchronet BBS v2.2
+
+!include sbbsdefs.inc
+
+logout
+
+node_status NODE_LOGON
+
+compare_ars WIP
+if_true
+	exec_bin WIPLOGIN
+	return
+	end_if
+
+int c
+
+:top
+compare c 10
+if_greater_or_equal
+	hangup
+	return
+	end_if
+
+print "\r\n\1nEnter Name, Number, '\1hNew\1n', or '\1hGuest\1n'\r\nNN: "
+getstr str 25 K_UPRLWR|K_LOWPRIO|K_E71DETECT
+truncsp str
+compare_str ""
+if_true
+	add c 1
+	goto top
+	end_if
+compare_str "GUEST"
+if_true
+	setstr "%q"
+	compare_str "VERT"
+	if_true
+		no_yes "Are you a registered Synchronet owner"
+		if_false
+			print "\r\n\1h\1rLogon as \1wNEW\1r to create your account.\r\n"
+			goto top
+			end_if
+		end_if
+	setstr "Guest"
+	end_if
+compare_str "NEW"
+if_true
+	setstr "%q"
+	compare_str "VERT"
+	if_true
+		yes_no "Are you calling just to download the Synchronet DEMO"
+		if_true
+			setstr "Guest"
+			login "PW: "
+			if_true
+				logon
+				if_true
+					return
+					end_if
+				end_if
+			end_if
+		end_if
+	newuser
+	logon
+	return
+	end_if
+login "PW: "
+if_true
+	logon
+	if_true
+		return
+		end_if
+	end_if
+add c 2
+goto top
+

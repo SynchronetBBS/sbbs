@@ -1,0 +1,168 @@
+# MATRIX.SRC
+
+# Baja answer module for Synchronet BBS v2.2
+
+!include sbbsdefs.inc
+!define LAST 2
+logout
+node_status NODE_LOGON
+
+compare_ars WIP
+if_true
+	exec_bin WIPLOGIN
+	return
+        end_if
+
+int c m
+
+:top
+compare c 10
+if_greater_or_equal
+	hangup
+	return
+	end_if
+
+# Trigger scripts with old style prompt
+print "NN: "
+pause_reset
+cls
+cmd_home
+compare_user_misc UM_ANSI
+if_true
+	print "\x1b[H"
+else
+	cls
+        end_if
+
+print "                        "
+print "4yh"
+print "ษออออออออออออออออออออออออออออออปn\r\n"
+print "                        "
+print "4yh"
+print "บ         Logon Matrix         บnbฐฐn\r\n"
+print "                        "
+print "4yh"
+print "ฬออออออออออออออออออออออออออออออนnbฐฐn\r\n"
+print "                        4yhบ "
+compare m 0
+	if_equal
+		print "7bh"
+	else
+		print " 4wh"
+	end_if
+print " Existing User Account     "
+print "4y บnbฐฐn\r\n                        4yhบ "
+compare m 1
+	if_equal
+		print "7bh"
+	else
+		print " 4wh"
+	end_if
+print " New User Account          "
+print "4y บnbฐฐn\r\n                        4yhบ "
+compare m 2
+	if_equal
+		print "7bh"
+	else
+		print " 4wh"
+	end_if
+print " Guest User Account        "
+print "4y บnbฐฐn\r\n                        4yh"
+print "ศออออออออออออออออออออออออออออออผnbฐฐn\r\nnb"
+print "                         "
+print " ฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐn\r\n"
+
+#sync
+getkey
+
+# Down Arrow, Ctrl-J or 'D'
+cmdkeys ^JD
+	add m 1
+	compare m LAST
+	if_greater
+		set m 0
+		end_if
+	pause_reset
+	end_cmd
+
+# Up Arrow, Ctrl-^ or 'U'
+cmdkeys ^^U
+	sub m 1
+	compare m 0
+	if_less
+		set m LAST
+		end_if
+	pause_reset
+	end_cmd
+
+# Home or Ctrl-B
+cmdkey ^B
+	set m 0
+	end_cmd
+
+# End of Ctrl-E
+cmdkey ^E
+	set m LAST
+        end_cmd
+
+cmdkeys ABCDEFGHIJKLMNOPQRSTUVWXYZ*
+	ungetkey
+	cmd_pop
+	end_cmd
+
+switch m
+	case 0
+		cls
+		print "Login: "
+		getstr str 25 K_UPRLWR|K_LOWPRIO|K_E71DETECT
+		truncsp str
+		compare_str ""
+		if_true
+			add c 1
+			goto top
+			end_if
+		login "PW: "
+		if_true
+			logon
+			if_true
+				return
+				end_if
+			end_if
+		pause
+		add c 2
+		goto top
+		end_case
+	case 1
+		setstr "%q"
+		compare_str "VERT"
+		if_true
+			yes_no Are you calling just to download Synchronet BBS software
+			if_true
+				setstr "Guest"
+				login "PW: "
+				if_true
+					logon
+					if_true
+						return
+						end_if
+					end_if
+				end_if
+			end_if
+		newuser
+		logon
+		return
+		end_case
+
+	case 2
+		setstr "guest"
+		login "PW: "
+		if_true
+			logon
+			if_true
+				return
+				end_if
+			end_if
+		end_case
+	end_switch
+goto top
+
