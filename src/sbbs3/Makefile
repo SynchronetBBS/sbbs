@@ -17,7 +17,7 @@ SRC_ROOT	=	..
 !include $(SRC_ROOT)\build\Common.bmake
 
 UTIL_LDFLAGS	=	$(SMBLIB_LDFLAGS) $(UIFC-MT_LDFLAGS) $(CIOLIB-MT_LDFLAGS) $(XPDEV_LDFLAGS)
-CFLAGS	=	$(CFLAGS) -w-csu -w-par 
+CFLAGS	=	$(CFLAGS) -w-csu -w-par -w-aus
 MKSHLIB	=	$(CC) -WD
 
 # JS and NSPR setup stuff...
