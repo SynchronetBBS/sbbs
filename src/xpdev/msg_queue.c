@@ -150,11 +150,11 @@ static BOOL list_wait(link_list_t* list, long timeout)
 {
 #if defined(LINK_LIST_THREADSAFE)
 	if(timeout<0)	/* infinite */
-		return listSemWait(list)==0;
+		return listSemWait(list);
 	if(timeout==0)	/* poll */
-		return listSemTryWait(list)==0;
+		return listSemTryWait(list);
 
-	return listSemTryWaitBlock(list,timeout)==0;
+	return listSemTryWaitBlock(list,timeout);
 #else
 	clock_t	start;
 	long	count;
