@@ -66,6 +66,7 @@ extern "C" {
 	typedef HANDLE sem_t;
 	#define sem_init(psem,ps,v)			*(psem)=CreateSemaphore(NULL,v,INT_MAX,NULL)
 	#define sem_wait(psem)				WaitForSingleObject(*(psem),INFINITE)
+	#define sem_trywait(psem)			(WaitForSingleObject(*(psem),0)==WAIT_OBJECT_0?0:EAGAIN)
 	#define sem_post(psem)				ReleaseSemaphore(*(psem),1,NULL)
 	#define sem_destroy(psem)			CloseHandle(*(psem))
 	/* No Win32 implementation for sem_getvalue() */
