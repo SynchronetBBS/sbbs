@@ -84,6 +84,8 @@ for(i=0;i<argc;i++) {
 
 if(this.js==undefined) 		// v3.10?
 	js = { terminated: false };
+else
+	js.auto_terminate = false;
 
 // Write a string to the server socket
 function write(str)

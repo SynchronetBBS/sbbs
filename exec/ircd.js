@@ -1009,6 +1009,7 @@ for (pl in PLines) {
 }
 
 js.branch_limit=0; // we're not an infinite loop.
+js.auto_terminate=false; // we handle our own termination requests
 
 ///// Main Loop /////
 while (!server.terminated) {
