@@ -217,7 +217,7 @@ void sbbs_t::readmail(uint usernumber, int which)
 			if(msg.hdr.auxattr&MSG_FILEATTACH) {  /* Attached file */
 				smb_getmsgidx(&smb,&msg);
 				strcpy(str,msg.subj);					/* filenames in title */
-				strupr(str);
+//				strupr(str);
 				tp=str;
 				while(online) {
 					p=strchr(tp,SP);
