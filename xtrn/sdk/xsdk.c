@@ -522,6 +522,18 @@ void mnemonics(char *str)
 	attr(LIGHTGRAY);
 }
 
+int keyhit()
+{
+#ifndef __16BIT__
+	int cnt=0;
+	if(ioctlsocket(client_socket,FIONREAD,&cnt))
+    	return(0);
+    return(cnt);
+#else
+	return(kbhit());
+#endif
+}
+
 /****************************************************************************/
 /* If a key has been pressed, the ASCII code is returned. If not, 0 is		*/
 /* returned. Ctrl-P and Ctrl-U are intercepted here.						*/

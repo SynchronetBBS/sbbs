@@ -44,9 +44,11 @@
 /*********************************************/
 #ifndef __unix__
 	#include <io.h>
-	#include <dos.h>
 	#include <share.h>
 	#include <conio.h>
+#endif
+#ifdef __16BIT__
+	#include <dos.h>
 #endif
 #ifdef _WIN32
 	#include <windows.h>
@@ -144,6 +146,10 @@ char noyes(char *str);
 	  key, otherwise it returns 0
 	- Does not wait for a keystroke */
 char inkey(long mode);
+
+/* Key hit?
+	- Returns non-zero if key hit, 0 otherwise */
+int keyhit(void);
 
 /* Get a Key
 	- Waits for the local or remote user to hit a valid key

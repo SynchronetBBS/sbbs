@@ -303,7 +303,7 @@ int main(int argc, char **argv)
 
 	putchar(5); /* ctrl-e */
 	mswait(500);
-	if(kbhit()) {
+	if(keyhit()) {
 #ifdef __16BIT__
 		while(_bios_keybrd(1))
 			_bios_keybrd(0);
@@ -580,7 +580,7 @@ while(1) {
 		,ibet<credits/1024L ? ibet : credits/1024L);
 	chat();
 	mnemonics(str);
-	if(autoplay && kbhit())
+	if(autoplay && keyhit())
 		autoplay=0;
 	if(autoplay)
 		i=ibet;
@@ -783,7 +783,7 @@ while(1) {
 			strcat(str,", or [Stand]: ");
 			chat();
 			mnemonics(str);
-			if(autoplay && kbhit())
+			if(autoplay && keyhit())
 				autoplay=0;
 
 
