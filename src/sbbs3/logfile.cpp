@@ -37,6 +37,35 @@
 
 #include "sbbs.h"
 
+extern "C" BOOL hacklog(scfg_t* cfg, char* prot, char* user, char* text, char* host, SOCKADDR_IN* addr)
+{
+	char	hdr[512];
+	char	fname[MAX_PATH+1];
+	int		file;
+	time_t	now=time(NULL);
+
+	sprintf(fname,"%shack.log",cfg->data_dir);
+
+	if((file=sopen(fname,O_CREAT|O_WRONLY|O_BINARY|O_APPEND,SH_DENYWR))==-1)
+		return(FALSE);
+
+	sprintf(hdr,"SUSPECTED %s HACK ATTEMPT from %s on %.24s\r\nUsing port %u at %s [%s]\r\nDetails: "
+		,prot
+		,user
+		,ctime(&now)
+		,addr->sin_port
+		,host
+		,inet_ntoa(addr->sin_addr)
+		);
+	write(file,hdr,strlen(hdr));
+	write(file,text,strlen(text));
+	write(file,crlf,2);
+	write(file,crlf,2);
+	close(file);
+
+	return(TRUE);
+}
+
 void sbbs_t::logentry(char *code, char *entry)
 {
 	char str[512];

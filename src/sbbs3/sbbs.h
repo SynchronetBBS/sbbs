@@ -762,6 +762,10 @@ extern "C" {
 	/* seconds to HH:MM:SS */
 	DLLEXPORT char *	DLLCALL sectostr(uint sec, char *str);		
 
+	/* logfile.cpp */
+	DLLEXPORT BOOL		DLLCALL hacklog(scfg_t* cfg, char* prot, char* user, char* text, 
+										char* host, SOCKADDR_IN* addr);
+
 #ifdef SBBS /* These aren't exported */
 
 	/* misc.c */
