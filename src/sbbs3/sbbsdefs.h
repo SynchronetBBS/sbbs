@@ -62,6 +62,7 @@
 #define ILLEGAL_FILENAME_CHARS	"\\/|<>+[]:=\";,%"
 
 #define BIND_FAILURE_HELP	"!Another application or service may be using this port"
+#define UNKNOWN_LOAD_ERROR	"Unknown load error - Library mismatch?"
 
 #ifdef JAVASCRIPT
 	#define	JAVASCRIPT_MAX_BYTES		(8*1024*1024)
