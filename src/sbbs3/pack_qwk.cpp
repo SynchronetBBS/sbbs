@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -504,19 +504,26 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 			lprintf(LOG_INFO,"%s",str);
 	}
 
+	lprintf(LOG_DEBUG,"%s %d",__FILE__,__LINE__);
 	fclose(qwk);			/* close MESSAGE.DAT */
+	lprintf(LOG_DEBUG,"%s %d",__FILE__,__LINE__);
 	if(personal) {
+		lprintf(LOG_DEBUG,"%s %d",__FILE__,__LINE__);
 		fclose(personal);		 /* close PERSONAL.NDX */
 		sprintf(str,"%sPERSONAL.NDX",cfg.temp_dir);
+		lprintf(LOG_DEBUG,"%s %d",__FILE__,__LINE__);
 		if(!flength(str))
 			remove(str); 
 	}
 	CRLF;
+	lprintf(LOG_DEBUG,"%s %d",__FILE__,__LINE__);
 
 	if(!prepack && (sys_status&SS_ABORT || !online))
 		return(false);
 
+	lprintf(LOG_DEBUG,"%s %d",__FILE__,__LINE__);
 	if(/*!prepack && */ useron.rest&FLAG('Q')) { /* If QWK Net node, check for files */
+		lprintf(LOG_DEBUG,"%s %d",__FILE__,__LINE__);
 		sprintf(str,"%sqnet/%s.out/",cfg.data_dir,useron.alias);
 		dir=opendir(str);
 		while(dir!=NULL && (dirent=readdir(dir))!=NULL) {    /* Move files into temp dir */
@@ -540,6 +547,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 	}
 
 	if(batdn_total) {
+		lprintf(LOG_DEBUG,"%s %d",__FILE__,__LINE__);
 		for(i=0,totalcdt=0;i<batdn_total;i++)
 			if(!is_download_free(&cfg,batdn_dir[i],&useron))
 				totalcdt+=batdn_cdt[i];
@@ -580,6 +588,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 
 	if(!(*msgcnt) && !mailmsgs && !files && !netfiles && !batdn_total
 		&& (prepack || !preqwk)) {
+		lprintf(LOG_DEBUG,"%s %d",__FILE__,__LINE__);
 		bputs(text[QWKNoNewMessages]);
 		return(false); 
 	}
@@ -588,6 +597,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 		/***********************/					/* packets */
 		/* Copy QWK Text files */
 		/***********************/
+		lprintf(LOG_DEBUG,"%s %d",__FILE__,__LINE__);
 		sprintf(str,"%sQWK/HELLO",cfg.text_dir);
 		if(fexistcase(str)) {
 			sprintf(tmp2,"%sHELLO",cfg.temp_dir);
@@ -604,6 +614,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 			mv(str,tmp2,1); 
 		}
 		sprintf(str,"%sQWK/BLT-*",cfg.text_dir);
+		lprintf(LOG_DEBUG,"%s %d",__FILE__,__LINE__);
 		glob(str,0,NULL,&g);
 		for(i=0;i<(uint)g.gl_pathc;i++) { 			/* Copy BLT-*.* files */
 			fname=getfname(g.gl_pathv[i]);
@@ -615,9 +626,11 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 			}
 		}
 		globfree(&g);
+		lprintf(LOG_DEBUG,"%s %d",__FILE__,__LINE__);
 	}
 
 	if(prepack) {
+		lprintf(LOG_DEBUG,"%s %d",__FILE__,__LINE__);
 		for(i=1;i<=cfg.sys_nodes;i++) {
 			getnodedat(i,&node,0);
 			if((node.status==NODE_INUSE || node.status==NODE_QUIET
@@ -631,9 +644,12 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 	/*******************/
 	/* Compress Packet */
 	/*******************/
+	lprintf(LOG_DEBUG,"%s %d",__FILE__,__LINE__);
 	sprintf(tmp2,"%s%s",cfg.temp_dir,ALLFILES);
+	lprintf(LOG_DEBUG,"%s %d",__FILE__,__LINE__);
 	i=external(cmdstr(temp_cmd(),packet,tmp2,NULL)
 		,ex|EX_WILDCARD);
+	lprintf(LOG_DEBUG,"%s %d",__FILE__,__LINE__);
 	if(!fexist(packet)) {
 		bputs(text[QWKCompressionFailed]);
 		if(i)
