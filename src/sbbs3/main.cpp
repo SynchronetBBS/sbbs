@@ -909,6 +909,9 @@ static BYTE* telnet_interpret(sbbs_t* sbbs, BYTE* inbuf, int inlen,
 void sbbs_t::send_telnet_cmd(uchar cmd, uchar opt)
 {
 	char buf[16];
+	
+	if(sys_status&SS_RLOGIN)	
+		return; /* RLogin does not use Telnet commands */
 
 	if(cmd<TELNET_WILL) {
 		if(startup->options&BBS_OPT_DEBUG_TELNET)
