@@ -78,6 +78,8 @@
 
 #define s_addr			S_un.S_addr
 
+#define socklen_t		int
+
 #define ERROR_VALUE		WSAGetLastError()
 
 #else	/* BSD sockets */
