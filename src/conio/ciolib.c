@@ -1,4 +1,5 @@
 #include <stdarg.h>
+#include <stdlib.h>	/* malloc */
 #include <stdio.h>
 
 #define CIOLIB_NO_MACROS
@@ -136,25 +137,25 @@ int try_ansi_init(int mode)
 }
 
 #ifdef _WIN32
-int try_ciolib_init(int mode)
+int try_conio_init(int mode)
 {
 	/* This should test for something or other */
 	if(isatty(fileno(stdout))) {
-		cio_api.mode=CIOLIB_CIOLIB_MODE;
+		cio_api.mode=CIOLIB_CONIO_MODE;
 		cio_api.puttext=puttext;
 		cio_api.gettext=gettext;
 		cio_api.textattr=textattr;
 		cio_api.kbhit=kbhit;
-		cio_api.delay=delay;
+//		cio_api.delay=delay;
 		cio_api.wherey=wherey;
 		cio_api.wherex=wherex;
 		cio_api.putch=putch;
 		cio_api.gotoxy=gotoxy;
 		cio_api.gettextinfo=gettextinfo;
-		cio_api.setcursortype=setcursortype;
+		cio_api.setcursortype=_setcursortype;
 		cio_api.getch=getch;
 		cio_api.getche=getche;
-		cio_api.beep=beep;
+//		cio_api.beep=beep;
 		cio_api.textmode=textmode;
 		return(1);
 	}
@@ -169,7 +170,7 @@ int initciolib(int mode)
 	switch(mode) {
 		case CIOLIB_AUTO_MODE:
 #ifdef _WIN32
-			if(!try_ciolib_init(mode))
+			if(!try_conio_init(mode))
 #else
 			if(!try_x_init(mode))
 				if(!try_curses_init(mode))
@@ -177,8 +178,8 @@ int initciolib(int mode)
 					try_ansi_init(mode);
 			break;
 #ifdef _WIN32
-		case CIOLIB_ciolib_MODE:
-			try_ciolib_init(mode);
+		case CIOLIB_CONIO_MODE:
+			try_conio_init(mode);
 			break;
 #else
 		case CIOLIB_CURSES_MODE:
@@ -580,8 +581,8 @@ int ciolib_cprintf(char *fmat, ...)
 	if(!initialized)
 		initciolib(CIOLIB_AUTO_MODE);
     va_start(argptr,fmat);
-#ifdef WIN32
-	ret=vnsprintf(str,sizeof(str)-1,fmat,argptr);
+#ifdef _WIN32
+	ret=vsnprintf(str,sizeof(str)-1,fmat,argptr);
 #else
     ret=vsnprintf(NULL,0,fmat,argptr);
 	str=(char *)malloc(ret+1);
@@ -594,7 +595,7 @@ int ciolib_cprintf(char *fmat, ...)
 		ciolib_cputs(str);
 	else
 		ret=EOF;
-#ifndef WIN32
+#ifndef _WIN32
 	free(str);
 #endif
     return(ret);

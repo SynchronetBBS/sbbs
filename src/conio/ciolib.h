@@ -12,8 +12,9 @@ enum {
 	,CIOLIB_CONIO_MODE
 };
 
-#ifndef __unix__
+#ifndef __unix__		/* presumably, Win32 */
 #include <conio.h>
+#include <io.h>			/* isatty */
 #else
 
 #ifndef BOOL
@@ -83,14 +84,14 @@ struct text_info {
 typedef struct {
 	int		mode;
 	void	(*clreol)		(void);
-	int		(*puttext)		(int,int,int,int,unsigned char *);
-	int		(*gettext)		(int,int,int,int,unsigned char *);
-	void	(*textattr)		(unsigned char);
+	int		(*puttext)		(int,int,int,int,void *);
+	int		(*gettext)		(int,int,int,int,void *);
+	void	(*textattr)		(int);
 	int		(*kbhit)		(void);
 	void	(*delay)		(long);
 	int		(*wherex)		(void);
 	int		(*wherey)		(void);
-	int		(*putch)		(unsigned char);
+	int		(*putch)		(int);
 	void	(*gotoxy)		(int,int);
 	void	(*clrscr)		(void);
 	void	(*gettextinfo)	(struct text_info *);

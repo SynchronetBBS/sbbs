@@ -601,7 +601,7 @@ void ansi_fixterm(void)
 }
 #endif
 
-int ansi_initciowrap(long inmode)
+int ansi_initciolib(long inmode)
 {
 	int i;
 	char *init="\033[0m\033[2J\033[1;1H";
