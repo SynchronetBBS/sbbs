@@ -63,6 +63,9 @@
 	#include <dos.h>
 #endif
 
+/* gets is dangerous */
+#define gets(str)  fgets((str), sizeof(str) - 1, stdin)
+
 /********************/
 /* Global variables */
 /********************/
