@@ -78,26 +78,41 @@ static char* msg_area_prop_desc[] = {
 
 BOOL DLLCALL js_CreateMsgAreaProperties(JSContext* cx, JSObject* subobj, sub_t* sub)
 {
+	JSString* js_str;
 
-	JS_DefineProperty(cx, subobj, "code", STRING_TO_JSVAL(JS_NewStringCopyZ(cx, sub->code))
+	if((js_str=JS_NewStringCopyZ(cx, sub->code))==NULL)
+		return(FALSE);
+	JS_DefineProperty(cx, subobj, "code", STRING_TO_JSVAL(js_str)
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 
-	JS_DefineProperty(cx, subobj, "name", STRING_TO_JSVAL(JS_NewStringCopyZ(cx, sub->sname))
+	if((js_str=JS_NewStringCopyZ(cx, sub->sname))==NULL)
+		return(FALSE);
+	JS_DefineProperty(cx, subobj, "name", STRING_TO_JSVAL(js_str)
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 
-	JS_DefineProperty(cx, subobj, "description", STRING_TO_JSVAL(JS_NewStringCopyZ(cx, sub->lname))
+	if((js_str=JS_NewStringCopyZ(cx, sub->lname))==NULL)
+		return(FALSE);
+	JS_DefineProperty(cx, subobj, "description", STRING_TO_JSVAL(js_str)
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 
-	JS_DefineProperty(cx, subobj, "qwk_name", STRING_TO_JSVAL(JS_NewStringCopyZ(cx, sub->qwkname))
+	if((js_str=JS_NewStringCopyZ(cx, sub->qwkname))==NULL)
+		return(FALSE);
+	JS_DefineProperty(cx, subobj, "qwk_name", STRING_TO_JSVAL(js_str)
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 
-	JS_DefineProperty(cx, subobj, "data_dir", STRING_TO_JSVAL(JS_NewStringCopyZ(cx, sub->data_dir))
+	if((js_str=JS_NewStringCopyZ(cx, sub->data_dir))==NULL)
+		return(FALSE);
+	JS_DefineProperty(cx, subobj, "data_dir", STRING_TO_JSVAL(js_str)
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 
-	JS_DefineProperty(cx, subobj, "fidonet_origin", STRING_TO_JSVAL(JS_NewStringCopyZ(cx, sub->origline))
+	if((js_str=JS_NewStringCopyZ(cx, sub->origline))==NULL)
+		return(FALSE);
+	JS_DefineProperty(cx, subobj, "fidonet_origin", STRING_TO_JSVAL(js_str)
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 
-	JS_DefineProperty(cx, subobj, "qwknet_tagline", STRING_TO_JSVAL(JS_NewStringCopyZ(cx, sub->tagline))
+	if((js_str=JS_NewStringCopyZ(cx, sub->tagline))==NULL)
+		return(FALSE);
+	JS_DefineProperty(cx, subobj, "qwknet_tagline", STRING_TO_JSVAL(js_str)
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 
 	JS_DefineProperty(cx, subobj, "settings", INT_TO_JSVAL(sub->misc)
@@ -135,6 +150,7 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 	JSObject*	subobj;
 	JSObject*	grp_list;
 	JSObject*	sub_list;
+	JSString*	js_str;
 	jsval		val;
 	jsuint		index;
 	uint		c,l,d;
@@ -166,18 +182,22 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 		if(user!=NULL && !chk_ar(cfg,cfg->grp[l]->ar,user))
 			continue;
 
-		if((grpobj=JS_NewObject(cx, &js_msg_area_class, NULL, NULL))==NULL)
+		if((grpobj=JS_NewObject(cx, NULL, NULL, NULL))==NULL)
 			return(NULL);
 
 		val=INT_TO_JSVAL(l);
 		if(!JS_SetProperty(cx, grpobj, "number", &val))
 			return(NULL);
 
-		val=STRING_TO_JSVAL(JS_NewStringCopyZ(cx, cfg->grp[l]->sname));
+		if((js_str=JS_NewStringCopyZ(cx, cfg->grp[l]->sname))==NULL)
+			return(NULL);
+		val=STRING_TO_JSVAL(js_str);
 		if(!JS_SetProperty(cx, grpobj, "name", &val))
 			return(NULL);
 
-		val=STRING_TO_JSVAL(JS_NewStringCopyZ(cx, cfg->grp[l]->lname));
+		if((js_str=JS_NewStringCopyZ(cx, cfg->grp[l]->lname))==NULL)
+			return(NULL);
+		val=STRING_TO_JSVAL(js_str);
 		if(!JS_SetProperty(cx, grpobj, "description", &val))
 			return(NULL);
 
@@ -199,7 +219,7 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 			if(user!=NULL && !chk_ar(cfg,cfg->sub[d]->ar,user))
 				continue;
 
-			if((subobj=JS_NewObject(cx, &js_msg_area_class, NULL, NULL))==NULL)
+			if((subobj=JS_NewObject(cx, NULL, NULL, NULL))==NULL)
 				return(NULL);
 
 			if(!js_CreateMsgAreaProperties(cx, subobj, cfg->sub[d]))
@@ -217,7 +237,9 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 					if(str[c]==' ')
 						str[c]='_';
 			}
-			val=STRING_TO_JSVAL(JS_NewStringCopyZ(cx, str));
+			if((js_str=JS_NewStringCopyZ(cx, str))==NULL)
+				return(NULL);
+			val=STRING_TO_JSVAL(js_str);
 			if(!JS_SetProperty(cx, subobj, "newsgroup", &val))
 				return(NULL);
 			
@@ -241,14 +263,17 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 			if(!JS_SetProperty(cx, subobj, "can_post", &val))
 				return(NULL);
 
-			if(user==NULL || chk_ar(cfg,cfg->sub[d]->op_ar,user))
+			if(user!=NULL &&
+				(user->level>=SYSOP_LEVEL ||
+					cfg->sub[d]->op_ar[0]!=0 && chk_ar(cfg,cfg->sub[d]->op_ar,user)))
 				val=BOOLEAN_TO_JSVAL(JS_TRUE);
 			else
 				val=BOOLEAN_TO_JSVAL(JS_FALSE);
 			if(!JS_SetProperty(cx, subobj, "is_operator", &val))
 				return(NULL);
 
-			if(user==NULL || chk_ar(cfg,cfg->sub[d]->mod_ar,user))
+			if(cfg->sub[d]->mod_ar[0]!=0 && user!=NULL 
+				&& chk_ar(cfg,cfg->sub[d]->mod_ar,user))
 				val=BOOLEAN_TO_JSVAL(JS_TRUE);
 			else
 				val=BOOLEAN_TO_JSVAL(JS_FALSE);
