@@ -113,6 +113,7 @@ include sbbsdefs.mk		# defines $(SBBSDEFS)
 SBBSLIB	=	$(LIBODIR)/sbbs.a
 
 vpath %.c $(XPDEV) $(UIFC)
+vpath %.cpp $(UIFC)
 
 # Implicit C Compile Rule for utils
 $(EXEODIR)/%.o : %.c
@@ -257,12 +258,15 @@ $(ECHOCFG): \
 	$(EXEODIR)/echocfg.o \
 	$(EXEODIR)/rechocfg.o \
 	$(EXEODIR)/uifcx.o \
+	$(EXEODIR)/uifcc.o \
+	$(EXEODIR)/uifcfltk.o \
 	$(EXEODIR)/nopen.o \
 	$(EXEODIR)/str_util.o \
 	$(EXEODIR)/filewrap.o \
-	$(EXEODIR)/genwrap.o
+	$(EXEODIR)/genwrap.o \
+	../../lib/fltk/$(os)/libfltk.a
 	@echo Linking $@
-	@$(CC) -o $@ $^
+	@$(CC) -DUSE_CURSES -DUSE_FLTK -I../../include/fltk -o $@ $^
 
 # ADDFILES
 $(ADDFILES): \
