@@ -1455,7 +1455,7 @@ static void send_thread(void* arg)
 		if(wr!=rd) {
 			if(wr==SOCKET_ERROR) {
 				if(ERROR_VALUE==EWOULDBLOCK) {
-					lprintf("%04d DATA send would block, retrying",xfer.ctrl_sock);
+					/*lprintf("%04d DATA send would block, retrying",xfer.ctrl_sock);*/
 					mswait(1);
 					continue;
 				}
@@ -1713,7 +1713,7 @@ static void receive_thread(void* arg)
 			}
 			if(rd==SOCKET_ERROR) {
 				if(ERROR_VALUE==EWOULDBLOCK) {
-					lprintf("%04d DATA recv would block, retrying",xfer.ctrl_sock);
+					/*lprintf("%04d DATA recv would block, retrying",xfer.ctrl_sock);*/
 					mswait(1);
 					continue;
 				}
