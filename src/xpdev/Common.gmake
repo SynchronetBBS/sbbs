@@ -141,9 +141,6 @@ CFLAGS	+=	-I$(XPDEV)
 -include targets.mk
 -include $(XPDEV)rules.mk
 -include objects.mk		# defines $(OBJS)
-ifdef NEED_UIFC
- OBJS	+=	$(UIFC_OBJS)
-endif
 ifdef XP_SEM
  PTHREAD_OBJS	+= $(LIBODIR)$(SLASH)xpsem.$(OFILE)
 endif
