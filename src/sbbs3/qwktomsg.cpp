@@ -292,7 +292,7 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 		}
 		p=header+i+7;					/* Skip "@MSGID:" */
 		while(*p && *p<=SP) p++;		/* Skip any spaces */
-		truncsp(p);
+		truncstr(p," ");				/* Truncate at first space char */
 		smb_hfield(&msg,RFC822MSGID,strlen(p),p);
 	}
 	if(!strnicmp(header+skip,"@REPLY:",7)) {
@@ -306,7 +306,7 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 		}
 		p=header+i+7;					/* Skip "@REPLY:" */
 		while(*p && *p<=SP) p++;		/* Skip any spaces */
-		truncsp(p);
+		truncstr(p," ");				/* Truncate at first space char */
 		smb_hfield(&msg,RFC822REPLYID,strlen(p),p);
 	}
 	if(!strnicmp(header+skip,"@TZ:",4)) {
