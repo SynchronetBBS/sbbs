@@ -1016,30 +1016,17 @@ void http_logon(http_session_t * session, user_t *usr)
 
 	lprintf(LOG_DEBUG,"%04d HTTP Logon (%d)",session->socket,session->user.number);
 
-	if(session->user.number==0) {
+	if(session->subscan!=NULL)
+		getmsgptrs(&scfg,session->user.number,session->subscan);
+
+	if(session->user.number==0)
 		SAFECOPY(session->username,unknown);
-		if(session->subscan!=NULL) {
-			/* Initialize to configured defaults */
-			for(i=0;i<scfg.total_subs;i++) {
-				session->subscan[i].ptr=session->subscan[i].sav_ptr=0;
-				session->subscan[i].last=session->subscan[i].sav_last=0;
-				session->subscan[i].cfg=0xff;
-				if(!(scfg.sub[i]->misc&SUB_NSDEF))
-					session->subscan[i].cfg&=~SUB_CFG_NSCAN;
-				if(!(scfg.sub[i]->misc&SUB_SSDEF))
-				session->subscan[i].cfg&=~SUB_CFG_SSCAN;
-				session->subscan[i].sav_cfg=session->subscan[i].cfg;
-			}
-		}
-	}
 	else {
 		SAFECOPY(session->username,session->user.alias);
 		/* Adjust Connect and host */
 		putuserrec(&scfg,session->user.number,U_MODEM,LEN_MODEM,"HTTP");
 		putuserrec(&scfg,session->user.number,U_COMP,LEN_COMP,session->host_name);
 		putuserrec(&scfg,session->user.number,U_NOTE,LEN_NOTE,session->host_ip);
-		if(session->subscan!=NULL)
-			getmsgptrs(&scfg,session->user.number,session->subscan);
 	}
 	session->client.user=session->username;
 	client_on(session->socket, &session->client, /* update existing client record? */TRUE);

@@ -59,9 +59,6 @@ extern "C" BOOL DLLCALL getmsgptrs(scfg_t* cfg, uint usernumber, subscan_t* subs
 	long	length;
 	FILE	*stream;
 
-	if(!usernumber)
-		return(FALSE);
-
 	/* Initialize to configured defaults */
 	for(i=0;i<cfg->total_subs;i++) {
 		subscan[i].ptr=subscan[i].sav_ptr=0;
@@ -73,6 +70,9 @@ extern "C" BOOL DLLCALL getmsgptrs(scfg_t* cfg, uint usernumber, subscan_t* subs
 			subscan[i].cfg&=~SUB_CFG_SSCAN;
 		subscan[i].sav_cfg=subscan[i].cfg; 
 	}
+
+	if(!usernumber)
+		return(FALSE);
 
 	sprintf(str,"%suser/ptrs/%4.4u.ixb", cfg->data_dir,usernumber);
 	if((stream=fnopen(&file,str,O_RDONLY))==NULL)
