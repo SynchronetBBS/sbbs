@@ -49,7 +49,15 @@
 #define ESC 	0x1b				/* Escape					^[	*/
 #define SP		0x20				/* Space						*/
 
-									/* Unsigned type short-hands	*/
+#ifndef MAX_PATH
+	#ifdef MAXPATHLEN
+		#define MAX_PATH MAXPATHLEN	/* clib.h */
+	#else
+		#define MAX_PATH 127		/* MS-DOS max */
+	#endif
+#endif
+
+/* Unsigned type short-hands	*/
 #define uchar	unsigned char
 #define ushort  unsigned short
 #define uint    unsigned int

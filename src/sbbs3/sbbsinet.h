@@ -45,7 +45,10 @@
 
 #include <winsock.h>	/* socket/bind/etc. */
 
+#undef  EINTR
+#define EINTR		WSAEINTR
 #define ENOTSOCK	WSAENOTSOCK
+#define EWOULDBLOCK	WSAEWOULDBLOCK
 #define ECONNRESET	WSAECONNRESET
 
 #elif defined(__unix__)	/* Unix-variant */
@@ -55,6 +58,8 @@
 #include <sys/ioctl.h>	/* FIONBIO */
 #include <unistd.h>		/* close */
 
+#define HOSTENT			struct hostent
+#define SOCKADDR_IN		struct sockaddr_in
 #define SOCKET			int
 #define SOCKET_ERROR	-1
 #define INVALID_SOCKET  (SOCKET)(~0)

@@ -43,7 +43,7 @@
 #include <process.h>	/* _beginthread */
 #endif
 
-/* ANSI headers */
+/* ANSI C Library headers */
 #include <stdio.h>
 #include <stdarg.h>		/* va_list, varargs */
 #include <fcntl.h>		/* O_WRONLY, O_RDONLY, etc. */
@@ -52,8 +52,8 @@
 
 /* Synchronet-specific headers */
 #include "sbbsinet.h"
-#include "ftpsrvr.h"
 #include "scfgdefs.h"
+#include "ftpsrvr.h"
 #include "userdat.h"
 #include "telnet.h"
 
@@ -167,7 +167,7 @@ static BOOL winsock_startup(void)
 
 #else /* No WINSOCK */
 
-#define winsock_startup()	(TRUE)	1
+#define winsock_startup()	(TRUE)
 
 #endif
 
@@ -241,6 +241,9 @@ int close_socket(SOCKET* sock, int line)
 	int		result;
 	ulong	l=0;
 
+#ifndef _WIN32
+#define ReleaseMutex(x)
+#else
 	if((result=WaitForSingleObject(socket_mutex,5000))!=WAIT_OBJECT_0) 
 		lprintf("%04d !ERROR %d getting socket mutex from line %d"
 			,*sock,ERROR_VALUE,line);
@@ -249,7 +252,8 @@ int close_socket(SOCKET* sock, int line)
 		ReleaseMutex(socket_mutex);
 		lprintf("!BAD socket pointer in close_socket from line %d",line);
 		return(-1);
-	}	
+	}
+#endif
 	if((*sock)==INVALID_SOCKET) {
 		ReleaseMutex(socket_mutex);
 		lprintf("!INVALID_SOCKET in close_socket from line %d",line);
@@ -292,11 +296,11 @@ static int sockprintf(SOCKET sock, char *fmt, ...)
     va_end(argptr);
 	while((result=send(sock,sbuf,len,0))!=len) {
 		if(result==SOCKET_ERROR) {
-			if(ERROR_VALUE==WSAEWOULDBLOCK) {
+			if(ERROR_VALUE==EWOULDBLOCK) {
 				Sleep(1);
 				continue;
 			}
-			if(ERROR_VALUE==WSAECONNRESET) 
+			if(ERROR_VALUE==ECONNRESET) 
 				lprintf("%04d Connection reset by peer on send",sock);
 			else
 				lprintf("%04d !ERROR %d sending",sock,ERROR_VALUE);
@@ -320,8 +324,19 @@ str[c]=0;
 }
 
 #ifdef _WIN32
+
 #define O_DENYNONE	OF_SHARE_DENY_NONE
 #define O_DENYALL	OF_SHARE_EXCLUSIVE
+
+#elif defined(__unix__)
+
+#define O_DENYNONE	0
+#define O_DENYALL	0
+#define O_BINARY	0
+#define SH_DENYNO	0
+#define SH_DENYRW	0
+#define SH_DENYWR	0
+
 #endif
 
 int nopen(char *str, int access)
@@ -429,7 +444,7 @@ void recverror(SOCKET socket, int rd)
 	if(rd==0) 
 		lprintf("%04d Socket closed by peer",socket);
 	else if(rd==SOCKET_ERROR) {
-		if(ERROR_VALUE==WSAECONNRESET) 
+		if(ERROR_VALUE==ECONNRESET) 
 			lprintf("%04d Connection reset by peer on receive",socket);
 		else
 			lprintf("%04d !ERROR %d receiving on socket", socket, ERROR_VALUE);
@@ -450,7 +465,7 @@ int sockreadline(SOCKET socket, char* buf, int len, time_t* lastactive)
 			return(0);
 		}
 		if(i<1) {
-			if(ERROR_VALUE==WSAEWOULDBLOCK) {
+			if(ERROR_VALUE==EWOULDBLOCK) {
 				if((time(NULL)-(*lastactive))>startup->max_inactivity) {
 					lprintf("%04d Disconnecting due to to inactivity.",socket);
 					sockprintf(socket,"421 Disconnecting due to inactivity (%u seconds)."
@@ -570,7 +585,7 @@ static void send_thread(void* arg)
 		wr=send(*xfer.data_sock,buf,rd,0);
 		if(wr!=rd) {
 			if(wr==SOCKET_ERROR) {
-				if(ERROR_VALUE==WSAECONNRESET) 
+				if(ERROR_VALUE==ECONNRESET) 
 					lprintf("%04d DATA Connection reset by peer, sending on socket %d"
 						,xfer.ctrl_sock,*xfer.data_sock);
 				else
@@ -716,7 +731,7 @@ static void receive_thread(void* arg)
 				break;
 			}
 			if(rd==SOCKET_ERROR) {
-				if(ERROR_VALUE==WSAECONNRESET) 
+				if(ERROR_VALUE==ECONNRESET) 
 					lprintf("%04d Connection reset by peer, receiving on socket %d"
 						,xfer.ctrl_sock,*xfer.data_sock);
 				else
@@ -1251,8 +1266,10 @@ static void ctrl_thread(void* arg)
 
 	free(arg);
 
+#ifdef _WIN32
 	if(startup->answer_sound[0] && !(startup->options&FTP_OPT_MUTE)) 
 		PlaySound(startup->answer_sound, NULL, SND_ASYNC|SND_FILENAME);
+#endif
 
 	l=1;
 
@@ -2882,8 +2899,10 @@ static void ctrl_thread(void* arg)
 	if(user.number)
 		lprintf("%04d %s logged off.",sock,user.alias);
 
+#ifdef _WIN32
 	if(startup->hangup_sound[0] && !(startup->options&FTP_OPT_MUTE)) 
 		PlaySound(startup->hangup_sound, NULL, SND_ASYNC|SND_FILENAME);
+#endif
 
 	status(STATUS_WFC);
 
@@ -3125,7 +3144,7 @@ void ftp_server(void* arg)
 
 		if(client_socket == INVALID_SOCKET)
 		{
-			if(ERROR_VALUE == WSAENOTSOCK || ERROR_VALUE == WSAEINTR)
+			if(ERROR_VALUE == ENOTSOCK || ERROR_VALUE == EINTR)
             	lprintf ("FTP socket closed while listening");
             else
 				lprintf ("!ERROR %d accept failed", ERROR_VALUE);

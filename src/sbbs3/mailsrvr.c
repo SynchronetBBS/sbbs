@@ -35,28 +35,41 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-
-#include <stdio.h>
+/* Platform-specific headers */
 #ifdef _WIN32
-#include <winsock2.h>
-#endif
+#include <windows.h>
 #include <process.h>	/* _beginthread */
-#include "mailsrvr.h"
+#endif
+
+/* ANSI C Library headers */
+#include <stdio.h>
+#include <stdarg.h>		/* va_list */
+
+/* Synchronet-specific headers */
 #include "scfgdefs.h"
+#include "mailsrvr.h"
 #include "userdat.h"
 #include "smblib.h"
 #include "crc32.h"
+#include "sbbsinet.h"
 
+/* Constants */
 #define MAIL_VERSION "1.10"
 
-__declspec(dllimport) BOOL		load_cfg(scfg_t* cfg, char* text[]);
-__declspec(dllimport) ushort	crc16(char *str);
-__declspec(dllimport) char *	zonestr(short zone);
-__declspec(dllimport) int		putsmsg(scfg_t* cfg, int usernumber, char *strin);
-__declspec(dllimport) mail_t*	loadmail(smb_t* smb, ulong* msgs, uint usernumber
+#ifdef _WIN32
+#define IMPORT	__declspec(dllimport)
+#else
+#define IMPORT
+#endif
+
+IMPORT BOOL		load_cfg(scfg_t* cfg, char* text[]);
+IMPORT ushort	crc16(char *str);
+IMPORT char *	zonestr(short zone);
+IMPORT int		putsmsg(scfg_t* cfg, int usernumber, char *strin);
+IMPORT mail_t*	loadmail(smb_t* smb, ulong* msgs, uint usernumber
 									,int which, long mode);
-__declspec(dllimport) void		freemail(mail_t* mail);
-__declspec(dllimport) BOOL		trashcan(scfg_t* cfg, char *insearch, char *name);
+IMPORT void		freemail(mail_t* mail);
+IMPORT BOOL		trashcan(scfg_t* cfg, char *insearch, char *name);
 
 int dns_getmx(char* name, char* mx, char* mx2, DWORD intf, DWORD ip_addr, BOOL use_tcp);
 
@@ -118,7 +131,7 @@ static BOOL winsock_startup(void)
 
 #else /* No WINSOCK */
 
-#define winsock_startup()	(TRUE)	1
+#define winsock_startup()	(TRUE)
 
 #endif
 
@@ -222,11 +235,11 @@ static int sockprintf(SOCKET sock, char *fmt, ...)
     va_end(argptr);
 	while((result=send(sock,sbuf,len,0))!=len) {
 		if(result==SOCKET_ERROR) {
-			if(ERROR_VALUE==WSAEWOULDBLOCK) {
+			if(ERROR_VALUE==EWOULDBLOCK) {
 				Sleep(1);
 				continue;
 			}
-			if(ERROR_VALUE==WSAECONNRESET) 
+			if(ERROR_VALUE==ECONNRESET) 
 				lprintf("%04d Connection reset by peer on send",sock);
 			else
 				lprintf("!ERROR %d sending on socket %d",ERROR_VALUE,sock);
@@ -252,7 +265,7 @@ static void recverror(SOCKET socket, int rd)
 	if(rd==0) 
 		lprintf("Socket %d closed",socket);
 	else if(rd==SOCKET_ERROR) {
-		if(ERROR_VALUE==WSAECONNRESET) 
+		if(ERROR_VALUE==ECONNRESET) 
 			lprintf("%04d Connection reset by peer on receive",socket);
 		else
 			lprintf("Error %d on socket %d", ERROR_VALUE, socket);
@@ -271,7 +284,7 @@ static int sockreadline(SOCKET socket, char* buf, int len)
 	while(rd<len-1) {
 		i= recv(socket, &ch, 1, 0);
 		if(i<1) {
-			if(ERROR_VALUE==WSAEWOULDBLOCK) {
+			if(ERROR_VALUE==EWOULDBLOCK) {
 				if((time(NULL)-start)>startup->max_inactivity) {
 					lprintf("!Socket %d inactive",socket);
 					return(0);
@@ -2502,9 +2515,9 @@ void mail_server(void* arg)
 				lprintf("select returned zero");
 				break;
 			}
-			if(ERROR_VALUE==WSAEINTR)
+			if(ERROR_VALUE==EINTR)
 				lprintf("Mail Server listening interrupted");
-			else if(ERROR_VALUE == WSAENOTSOCK)
+			else if(ERROR_VALUE == ENOTSOCK)
             	lprintf("Mail Server sockets closed");
 			else
 				lprintf("!ERROR %d selecting sockets",ERROR_VALUE);
@@ -2520,7 +2533,7 @@ void mail_server(void* arg)
 
 			if (client_socket == INVALID_SOCKET)
 			{
-				if(ERROR_VALUE == WSAENOTSOCK)
+				if(ERROR_VALUE == ENOTSOCK)
             		lprintf("SMTP Socket closed while listening");
 				else
 					lprintf("!ERROR %d accept failed", ERROR_VALUE);
@@ -2567,7 +2580,7 @@ void mail_server(void* arg)
 
 			if (client_socket == INVALID_SOCKET)
 			{
-				if(ERROR_VALUE == WSAENOTSOCK)
+				if(ERROR_VALUE == ENOTSOCK)
             		lprintf("POP3 Socket closed while listening");
 				else
 					lprintf("!ERROR %d accept failed", ERROR_VALUE);
