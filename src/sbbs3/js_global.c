@@ -123,12 +123,13 @@ js_load(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	}
 
 	errno = 0;
-	if(strcspn(filename,"/\\")==strlen(filename)) {
+	if(isfullpath(filename))
+		strcpy(path,filename);
+	else {
 		sprintf(path,"%s%s",cfg->mods_dir,filename);
 		if(cfg->mods_dir[0]==0 || !fexistcase(path))
 			sprintf(path,"%s%s",cfg->exec_dir,filename);
-	} else
-		strcpy(path,filename);
+	}
 
 	JS_ClearPendingException(cx);
 
