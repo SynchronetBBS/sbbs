@@ -1,6 +1,6 @@
 /* gen_defs.h */
 
-/* Synchronet general constant and macro definitions */
+/* General(ly useful) constant, macro, and type definitions */
 
 /* $Id$ */
 
@@ -37,6 +37,13 @@
 
 #ifndef _GEN_DEFS_H
 #define _GEN_DEFS_H
+
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN	/* Don't bring in excess baggage */
+#include <windows.h>
+#endif
+
+#include <sys/types.h>
 
 									/* Control characters */
 #define STX 	0x02				/* Start of text			^B	*/
@@ -94,11 +101,9 @@ enum {
 
 /* Unsigned type short-hands	*/
 #ifndef uchar
-#define uchar	unsigned char
+	#define uchar	unsigned char
 #endif
-#ifdef __GLIBC__
-	#include <sys/types.h>
-#else
+#ifndef __GLIBC__
 	#ifndef ushort
 	#define ushort  unsigned short
 	#define uint    unsigned int
