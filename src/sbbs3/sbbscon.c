@@ -194,13 +194,10 @@ static const char* services_usage  = "Services settings:\n"
 							"\n"
 							;
 
-static int log_puts(int level, char *str)
+static int lputs(int level, char *str)
 {
 	static pthread_mutex_t mutex;
 	static BOOL mutex_initialized;
-
-	if(!(bbs_startup.log_mask&(1<<level)))
-		return(0);
 
 #ifdef __unix__
 
@@ -230,6 +227,18 @@ static int log_puts(int level, char *str)
 	pthread_mutex_unlock(&mutex);
 
     return(prompt_len);
+}
+
+static int lprintf(int level, char *fmt, ...)
+{
+	va_list argptr;
+	char sbuf[1024];
+
+    va_start(argptr,fmt);
+    vsnprintf(sbuf,sizeof(sbuf),fmt,argptr);
+	sbuf[sizeof(sbuf)-1]=0;
+    va_end(argptr);
+    return(lputs(level,sbuf));
 }
 
 #ifdef __unix__
@@ -267,8 +276,8 @@ static BOOL do_seteuid(BOOL to_new)
 	pthread_mutex_unlock(&mutex);
 
 	if(!result) {
-		log_puts(LOG_ERR,"!seteuid FAILED");
-		log_puts(LOG_ERR,strerror(errno));
+		lputs(LOG_ERR,"!seteuid FAILED");
+		lputs(LOG_ERR,strerror(errno));
 	}
 	return result;
 }
@@ -287,15 +296,15 @@ BOOL do_setuid(BOOL force)
 	setreuid(-1,old_uid);
 	if(setregid(new_gid,new_gid))
 	{
-		log_puts(LOG_ERR,"!setgid FAILED");
-		log_puts(LOG_ERR,strerror(errno));
+		lputs(LOG_ERR,"!setgid FAILED");
+		lputs(LOG_ERR,strerror(errno));
 		result=FALSE;
 	}
 
 	if(setreuid(new_uid,new_uid))
 	{
-		log_puts(LOG_ERR,"!setuid FAILED");
-		log_puts(LOG_ERR,strerror(errno));
+		lputs(LOG_ERR,"!setuid FAILED");
+		lputs(LOG_ERR,strerror(errno));
 		result=FALSE;
 	}
 	if(force && (!result))
@@ -316,7 +325,7 @@ static BOOL winsock_startup(void)
     if((status = WSAStartup(MAKEWORD(1,1), &WSAData))==0)
 		return(TRUE);
 
-    fprintf(stderr,"!WinSock startup ERROR %d\n", status);
+    lprintf(LOG_ERR,"!WinSock startup ERROR %d", status);
 	return(FALSE);
 }
 
@@ -325,7 +334,7 @@ static BOOL winsock_cleanup(void)
 	if(WSACleanup()==0)
 		return(TRUE);
 
-	fprintf(stderr,"!WinSock cleanup ERROR %d\n",ERROR_VALUE);
+	lprintf(LOG_ERR,"!WinSock cleanup ERROR %d",ERROR_VALUE);
 	return(FALSE);
 }
 
@@ -359,7 +368,7 @@ static void thread_up(void* p, BOOL up, BOOL setuid)
     else if(thread_count>0)
     	thread_count--;
 	pthread_mutex_unlock(&mutex);
-	log_puts(LOG_INFO,NULL); /* update displayed stats */
+	lputs(LOG_INFO,NULL); /* update displayed stats */
 }
 
 static void socket_open(void* p, BOOL open)
@@ -378,7 +387,7 @@ static void socket_open(void* p, BOOL open)
     else if(socket_count>0)
     	socket_count--;
 	pthread_mutex_unlock(&mutex);
-	log_puts(LOG_INFO,NULL); /* update displayed stats */
+	lputs(LOG_INFO,NULL); /* update displayed stats */
 }
 
 static void client_on(void* p, BOOL on, int sock, client_t* client, BOOL update)
@@ -398,7 +407,7 @@ static void client_on(void* p, BOOL on, int sock, client_t* client, BOOL update)
 	} else if(!on && client_count>0)
 		client_count--;
 	pthread_mutex_unlock(&mutex);
-	log_puts(LOG_INFO,NULL); /* update displayed stats */
+	lputs(LOG_INFO,NULL); /* update displayed stats */
 }
 
 /****************************************************************************/
@@ -410,6 +419,9 @@ static int bbs_lputs(void* p, int level, char *str)
 	char		tstr[64];
 	time_t		t;
 	struct tm	tm;
+
+	if(!(bbs_startup.log_mask&(1<<level)))
+		return(0);
 
 #ifdef __unix__
 	if (is_daemon)  {
@@ -433,7 +445,7 @@ static int bbs_lputs(void* p, int level, char *str)
 
 	sprintf(logline,"%s     %.*s",tstr,(int)sizeof(logline)-32,str);
 	truncsp(logline);
-	log_puts(level,logline);
+	lputs(level,logline);
 	
     return(strlen(logline)+1);
 }
@@ -493,7 +505,7 @@ static int ftp_lputs(void* p, int level, char *str)
 
 	sprintf(logline,"%sftp  %.*s",tstr,(int)sizeof(logline)-32,str);
 	truncsp(logline);
-	log_puts(level,logline);
+	lputs(level,logline);
 	
     return(strlen(logline)+1);
 }
@@ -549,7 +561,7 @@ static int mail_lputs(void* p, int level, char *str)
 
 	sprintf(logline,"%smail %.*s",tstr,(int)sizeof(logline)-32,str);
 	truncsp(logline);
-	log_puts(level,logline);
+	lputs(level,logline);
 	
     return(strlen(logline)+1);
 }
@@ -605,7 +617,7 @@ static int services_lputs(void* p, int level, char *str)
 
 	sprintf(logline,"%ssrvc %.*s",tstr,(int)sizeof(logline)-32,str);
 	truncsp(logline);
-	log_puts(level,logline);
+	lputs(level,logline);
 	
     return(strlen(logline)+1);
 }
@@ -661,7 +673,7 @@ static int event_lputs(int level, char *str)
 
 	sprintf(logline,"%sevnt %.*s",tstr,(int)sizeof(logline)-32,str);
 	truncsp(logline);
-	log_puts(level,logline);
+	lputs(level,logline);
 	
     return(strlen(logline)+1);
 }
@@ -701,7 +713,7 @@ static int web_lputs(void* p, int level, char *str)
 
 	sprintf(logline,"%sweb  %.*s",tstr,(int)sizeof(logline)-32,str);
 	truncsp(logline);
-	log_puts(level,logline);
+	lputs(level,logline);
 	
     return(strlen(logline)+1);
 }
@@ -845,7 +857,7 @@ void _sighandler_quit(int sig)
 	/* Can I get away with leaving this locked till exit? */
 
 	sprintf(str,"     Got quit signal (%d)",sig);
-	log_puts(LOG_NOTICE,str);
+	lputs(LOG_NOTICE,str);
 	terminate();
 
 	if(is_daemon)
@@ -857,7 +869,7 @@ void _sighandler_quit(int sig)
 void _sighandler_rerun(int sig)
 {
 
-	log_puts(LOG_NOTICE,"     Got HUP (rerun) signal");
+	lputs(LOG_NOTICE,"     Got HUP (rerun) signal");
 
 	/*
 	Currently, rereading the ini appears to case 100% CPU issues. - ToDo
@@ -899,7 +911,7 @@ static void handle_sigs(void)  {
 	while(1)  {
 		sigwait(&sigs,&sig);    /* wait here until signaled */
 		sprintf(str,"     Got signal (%d)",sig);
-		log_puts(LOG_NOTICE,str);
+		lputs(LOG_NOTICE,str);
 		switch(sig)  {
 			/* QUIT-type signals */
 			case SIGINT:
@@ -913,7 +925,7 @@ static void handle_sigs(void)  {
 				break;
 			default:
 				sprintf(str,"     Signal has no handler (unexpected)");
-				log_puts(LOG_NOTICE,str);
+				lputs(LOG_NOTICE,str);
 		}
 	}
 }
@@ -1520,14 +1532,14 @@ int main(int argc, char** argv)
     SAFECOPY(scfg.ctrl_dir,bbs_startup.ctrl_dir);
 
 	if(chdir(scfg.ctrl_dir)!=0)
-		fprintf(stderr,"\n!ERROR %d changing directory to: %s\n", errno, scfg.ctrl_dir);
+		lprintf(LOG_ERR,"\n!ERROR %d changing directory to: %s\n", errno, scfg.ctrl_dir);
 
     scfg.size=sizeof(scfg);
 	SAFECOPY(error,UNKNOWN_LOAD_ERROR);
 	sprintf(str,"Loading configuration files from %s", scfg.ctrl_dir);
 	bbs_lputs(NULL,LOG_INFO,str);
 	if(!load_cfg(&scfg, NULL /* text.dat */, TRUE /* prep */, error)) {
-		fprintf(stderr,"\n!ERROR Loading Configuration Files: %s\n", error);
+		lprintf(LOG_ERR,"\n!ERROR Loading Configuration Files: %s\n", error);
         return(-1);
     }
 
@@ -1730,7 +1742,7 @@ int main(int argc, char** argv)
 #endif
 					break;
 			}
-			log_puts(LOG_INFO,"");	/* redisplay prompt */
+			lputs(LOG_INFO,"");	/* redisplay prompt */
 		}
 
 	terminate();
