@@ -21,7 +21,7 @@ str fname
 
 printf "\r\nSynchronet BullsEye! Version 1.00 by Rob Swindell\r\n"
 pause_reset
-set str "%zBULLSEYE.CFG"
+set str "%zbullseye.cfg"
 fopen file O_RDONLY str
 if_false
 	printf "\r\n!ERROR %ld opening %s\r\n" _errno str
@@ -43,7 +43,7 @@ set total 0
 
 # Display menu, list bulletins, display prompt, etc.
 :menu
-printfile "%zBULLSEYE.ASC"
+printfile "%zbullseye.asc"
 print "\1n\r\n\1b\1hEnter number of bulletin to view or press (\1wENTER\1b) to continue: \1w"
 getnum b total
 compare b 1
