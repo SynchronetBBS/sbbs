@@ -36,6 +36,7 @@
  ****************************************************************************/
 
 #include <string.h>     /* strlen() */
+#include <stdarg.h>	/* vsnprintf() */
 #include <stdlib.h>		/* RAND_MAX */
 #include <fcntl.h>		/* O_NOCTTY */
 #include <time.h>		/* clock() */
