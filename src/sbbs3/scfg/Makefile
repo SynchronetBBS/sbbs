@@ -10,7 +10,7 @@
 
 # Macros
 #DEBUG	=	1				# Comment out for release (non-debug) version
-USE_FLTK=	1
+#USE_FLTK=	1
 USE_UIFC32= 1
 CC		=	bcc32
 LD		=	ilink32
