@@ -2166,7 +2166,7 @@ void __fastcall TMainForm::ViewLogClick(TObject *Sender)
         t=time(NULL);
         t-=((TMenuItem*)Sender)->Tag*24*60*60;
     }
-    tm=gmtime(&t);
+    tm=localtime(&t);
     if(tm==NULL)
         return;
 
