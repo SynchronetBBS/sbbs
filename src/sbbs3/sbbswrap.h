@@ -235,6 +235,10 @@ extern "C" {
 	#define PLATFORM_DESC	"DOS"
 #elif defined(__linux__)
 	#define PLATFORM_DESC	"Linux"
+#elif defined(__FreeBSD__)
+	#define PLATFORM_DESC	"FreeBSD"
+#elif defined(BSD)
+	#define PLATFORM_DESC	"BSD"
 #elif defined(__unix__)
 	#define PLATFORM_DESC	"Unix"
 #else
