@@ -791,6 +791,8 @@ void msg_opts()
 			,cfg.sys_misc&SM_FWDTONET ? "Yes" : "No");
 		sprintf(opt[i++],"%-33.33s%s","Kill Read E-mail"
 			,cfg.sys_misc&SM_DELREADM ? "Yes" : "No");
+		sprintf(opt[i++],"%-33.33s%s","Receive E-mail by Real Name"
+			,cfg.msg_misc&MM_REALNAME ? "Yes" : "No");
 		sprintf(opt[i++],"%-33.33s%s","Users Can View Deleted Messages"
 			,cfg.sys_misc&SM_USRVDELM ? "Yes" : cfg.sys_misc&SM_SYSVDELM
 				? "Sysops Only":"No");
@@ -1101,7 +1103,7 @@ This value is the maximum number of days that mail will be kept.
 				strcpy(opt[0],"Daily");
 				strcpy(opt[1],"Immediately");
 				opt[2][0]=0;
-				i=0;
+				i=cfg.sys_misc&SM_DELEMAIL ? 0:1;
 				SETHELP(WHERE);
 /*
 Purge Deleted E-mail:
@@ -1143,7 +1145,7 @@ CRCs will be automatically purged.
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
 				opt[2][0]=0;
-				i=1;
+				i=cfg.sys_misc&SM_ANON_EM ? 0:1;
 				SETHELP(WHERE);
 /*
 Allow Anonymous E-mail:
@@ -1165,7 +1167,7 @@ anonymously, set this option to Yes.
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
 				opt[2][0]=0;
-				i=0;
+				i=cfg.sys_misc&SM_QUOTE_EM ? 0:1;
 				SETHELP(WHERE);
 /*
 Allow Quoting in E-mail:
@@ -1187,7 +1189,7 @@ responding in E-mail, set this option to Yes.
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
 				opt[2][0]=0;
-				i=0;
+				i=cfg.sys_misc&SM_FILE_EM ? 0:1;
 				SETHELP(WHERE);
 /*
 Allow File Attachment Uploads in E-mail:
@@ -1209,7 +1211,7 @@ an E-mail message, set this option to Yes.
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
 				opt[2][0]=0;
-				i=0;
+				i=cfg.sys_misc&SM_FWDTONET ? 0:1;
 				SETHELP(WHERE);
 /*
 Allow Users to Have Their E-mail Forwarded to NetMail:
@@ -1232,7 +1234,7 @@ set this option to Yes.
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
 				opt[2][0]=0;
-				i=1;
+				i=cfg.sys_misc&SM_DELREADM ? 0:1;
 				SETHELP(WHERE);
 /*
 Kill Read E-mail Automatically:
@@ -1251,6 +1253,30 @@ automatically deleted when message base maintenance is run.
 					uifc.changes=1; }
                 break;
 			case 13:
+				strcpy(opt[0],"Yes");
+				strcpy(opt[1],"No");
+				opt[2][0]=0;
+				i=cfg.msg_misc&MM_REALNAME ? 0:1;
+				SETHELP(WHERE);
+/*
+`Receive E-mail by Real Name:`
+
+If this option is set to ~Yes~, e-mail messages may be received when
+addressed to a user's real name (rather than their alias).
+*/
+
+				i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
+					,"Receive E-mail by Real Name",opt);
+				if(!i && !(cfg.msg_misc&MM_REALNAME)) {
+					cfg.msg_misc|=MM_REALNAME;
+					uifc.changes=1; 
+				}
+				else if(i==1 && cfg.msg_misc&MM_REALNAME) {
+					cfg.msg_misc&=~MM_REALNAME;
+					uifc.changes=1; 
+				}
+                break;
+			case 14:
 				strcpy(opt[0],"Yes");
 				strcpy(opt[1],"No");
 				strcpy(opt[2],"Sysops Only");
@@ -1287,7 +1313,7 @@ appropriate) can view deleted messages.
 					cfg.sys_misc&=~SM_USRVDELM;
 					uifc.changes=1; }
                 break;
-			case 14:
+			case 15:
 				SETHELP(WHERE);
 /*
 Extra Attribute Codes...
