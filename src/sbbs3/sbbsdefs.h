@@ -47,10 +47,10 @@
 /*************/
 
 #define VERSION 	"3.00"  /* Version: Major.minor  */
-#define REVISION	'C'
+#define REVISION	'D'
 #define VERSION_NOTICE		"Synchronet BBS for "PLATFORM_DESC\
 								"  Version 3.00  "
-#define COPYRIGHT_NOTICE	"Copyright 2000 Rob Swindell"
+#define COPYRIGHT_NOTICE	"Copyright 2001 Rob Swindell"
 #define QWK_HEADER			"Produced by Synchronet BBS  Version 3  "\
 								COPYRIGHT_NOTICE
 
@@ -163,6 +163,17 @@
 #define NM_7BITONLY		(1L<<16)	/* Except 7-bit input only (E71 terminals)	*/
 #define NM_RESETVID		(1L<<17)	/* Reset video mode between callers?		*/
 #define NM_NOPAUSESPIN	(1L<<18)	/* No spinning cursor at pause prompt		*/
+
+									/* Miscellaneous Modem Settings (mdm_misc)  */
+#define MDM_CTS 		(1<<0)		/* Use hardware send flow control			*/
+#define MDM_RTS 		(1<<1)		/* Use hardware recv flow control			*/
+#define MDM_STAYHIGH	(1<<2)		/* Stay at highest DTE rate 				*/
+#define MDM_CALLERID	(1<<3)		/* Supports Caller ID						*/
+#define MDM_DUMB		(1<<4)		/* Just watch DCD for answer - dumb modem	*/
+#define MDM_NODTR		(1<<5)		/* Don't drop DTR for hang-up               */
+#define MDM_KNOWNRES	(1<<6)		/* Allow known result codes only			*/
+#define MDM_VERBAL		(1<<7)		/* Use verbal result codes					*/
+
 						
 									/* Bit values for level_misc[x] 	*/
 #define LEVEL_EXPTOLVL (1<<0)		/* Expire to level_expireto[x]		*/
