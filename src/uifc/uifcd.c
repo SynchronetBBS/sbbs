@@ -111,116 +111,121 @@ int ulist(int mode, char left, int top, char width, int *cur, int *bar
 	, char *title, char **option)
 {
 
-    // Ignoring the mode bits...
     int cnt;
     int cnt2;
     int freecnt;
     int i;
     char **it;
-    char *str;
-    char key=49;
+    char str[128];;
+    char key;
     int ret;
 
+	/* Count number of menu options */
     for(cnt=0;cnt<MAX_OPTS;cnt++)
-	if(option[cnt][0]==0)
-	    break;
+		if(option[cnt][0]==0)
+		    break;
     freecnt=cnt+4;
 
     // Allocate and fill **it
     it=(char **)MALLOC(sizeof(char *)*2*(cnt+4));
+	if(it==NULL)
+		return(-1);
 
-    for(i=0;i<(cnt+4)*2;i++)
-        it[i]=(char *)MALLOC(64);
-
-    str=(char *)MALLOC(64);
-    strcpy(str,"1");
+    for(i=0;i<(cnt+4)*2;i++) {
+        it[i]=(char *)MALLOC(MAX_OPLN+1);
+		if(it[i]==NULL)
+			return(-1);
+	}
 
     cnt2 = 0;
+	key='1';
     for(i=0;i<cnt;i++)  {
-	str[0]=key;
-	strcpy(it[cnt2++],str);
-	key++;
-	if(key==58) key=65;
-	strcpy(it[cnt2++],option[i]);
-	if(width<strlen(option[i]+12)) width=strlen(option[i])+12;
+		sprintf(it[cnt2++],"%c",key);
+		if(key=='9') 
+			key='A';
+		else
+			key++;
+		/* What are you going to do when there are more than 25 options? */
+		/* Why not do this instead (just number all options): */
+		// sprintf(it[cnt2++],"%d",i+1);
+		/* ??? */
+		strcpy(it[cnt2++],option[i]);
+		if(width<strlen(option[i]+12)) 
+			width=strlen(option[i])+12;
     }
     if(mode&WIN_INS)  {
-	key=33;
-	str[0]=key;
-	strcpy(it[cnt2++],str);
-        strcpy(it[cnt2++],"Add New");
-	cnt++;
+		strcpy(it[cnt2++],"!");
+		strcpy(it[cnt2++],"Add New");
+		cnt++;
     }
     if(mode&WIN_DEL)  {
-	key=64;
-	str[0]=key;
-	strcpy(it[cnt2++],str);
-        strcpy(it[cnt2++],"Delete");
-	cnt++;
+		strcpy(it[cnt2++],"@");
+		strcpy(it[cnt2++],"Delete");
+		cnt++;
     }
-    if(width<strlen(title)+4) width=strlen(title)+4;
+    if(width<strlen(title)+4) 
+		width=strlen(title)+4;
 
     do {
         i=*cur;
         if(i<0) i=0;
-	if(strcmp(option[0],"Yes")==0 && strcmp(option[1],"No")==0 && cnt==2)  {
-	    ret=dialog_yesno("Yes/No",title,5,width);
-	    if(ret) ret=1; else ret=0;
-	}
-	else if(strcmp(option[0],"No")==0 && strcmp(option[1],"Yes")==0 && cnt==2)  {
-	    ret=dialog_noyes("Yes/No",title,5,width);
-	    if(ret) ret=0; else ret=1;
-	}
-	else  {
-            dialog_clear_norefresh();
-            ret=dialog_menu(title, "SCFG Menu", 22, width, 15, cnt, it, str, &i, 0);
+		if(strcmp(option[0],"Yes")==0 && strcmp(option[1],"No")==0 && cnt==2)  {
+			ret=dialog_yesno("Yes/No",title,5,width);
+			if(ret) ret=1; else ret=0;
+		}
+		else if(strcmp(option[0],"No")==0 && strcmp(option[1],"Yes")==0 && cnt==2)  {
+			ret=dialog_noyes("Yes/No",title,5,width);
+			if(ret) ret=0; else ret=1;
+		}
+		else  {
+			dialog_clear_norefresh();
+			ret=dialog_menu(title, "SCFG Menu", 22, width, 15, cnt, it, str, &i, 0);
 
-            if(ret==1) ret = -1;
-            if(ret==0)  {
-	        ret = str[0];
-	        ret -= 49;
-	        if(ret==-16) ret = -2;
-	        if(ret==15) ret = -3;
-	        if(ret>10) ret -= 7;
-            }
-	}
-        if(ret==-2)  {
-            dialog_clear_norefresh();
-	    if(freecnt-4>0)  {
-	        ret=dialog_menu(title, "Insert Where?", 22, width, 15, freecnt-4, it, str, 0, 0);
-	        if(ret==1) ret=-2;
-	        if(ret==-1) ret=-2;
-	        if(ret==0)  {
-		    ret=str[0];
-		    ret -= 49;
-		    if(ret>10) ret -= 7;
-	        }
-	        ret |= MSK_INS;
-	    }
-	    else ret=MSK_INS;
-        }
-        if(ret==-3)  {
-            dialog_clear_norefresh();
-	    if(freecnt-4>0)  {
-	        ret=dialog_menu(title, "Delete Which?", 22, width, 15, freecnt-4, it, str, 0, 0);
-	        if(ret==1) ret=-3;
-	        if(ret==-1) ret=-3;
-	        if(ret==0)  {
-		    ret=str[0];
-		    ret -= 49;
-		    if(ret>10) ret -= 7;
-	        }
-	        ret |= MSK_DEL;
-	    }
-	    else ret=MSK_DEL;
-        }
+			if(ret==1) ret = -1;
+			if(ret==0)  {
+				ret = str[0];
+				ret -= '1';
+				if(ret==-16) ret = -2;
+				if(ret==15) ret = -3;
+				if(ret>10) ret -= 7;
+			}
+		}
+		if(ret==-2)  {
+			dialog_clear_norefresh();
+			if(freecnt-4>0)  {
+				ret=dialog_menu(title, "Insert Where?", 22, width, 15, freecnt-4, it, str, 0, 0);
+				if(ret==1) ret=-2;
+				if(ret==-1) ret=-2;
+				if(ret==0)  {
+					ret=str[0];
+					ret -= 49;
+					if(ret>10) ret -= 7;
+				}
+				ret |= MSK_INS;
+			}
+			else ret=MSK_INS;
+		}
+		if(ret==-3)  {
+			dialog_clear_norefresh();
+			if(freecnt-4>0)  {
+				ret=dialog_menu(title, "Delete Which?", 22, width, 15, freecnt-4, it, str, 0, 0);
+				if(ret==1) ret=-3;
+				if(ret==-1) ret=-3;
+				if(ret==0)  {
+					ret=str[0];
+					ret -= 49;
+					if(ret>10) ret -= 7;
+				}
+				ret |= MSK_DEL;
+			}
+			else ret=MSK_DEL;
+		}
     } while(ret<-1);
 
     // free() the strings!
 
     for(i=0;i<(freecnt)*2;i++)
-	free(it[i]);
-    free(str);
+		free(it[i]);
     free(it);
     
     return(ret);
