@@ -56,6 +56,7 @@
 #include <Graphics.hpp>
 #include <vcl\Registry.hpp>	/* TRegistry */
 #include "trayicon.h"
+#include "Trayicon.h"
 //---------------------------------------------------------------------------
 #define APP_TITLE "Synchronet Control Panel"
 #define REG_KEY "\\Software\\Swindell\\"APP_TITLE"\\"
@@ -307,6 +308,7 @@ __published:	// IDE-managed Components
     void __fastcall ServicesStopExecute(TObject *Sender);
     void __fastcall ServicesConfigureExecute(TObject *Sender);
     void __fastcall UserTruncateMenuItemClick(TObject *Sender);
+	void __fastcall TrayIconClick(TObject *Sender);
 private:	// User declarations
 public:		// User declarations
     __fastcall TMainForm(TComponent* Owner);
@@ -321,6 +323,7 @@ public:		// User declarations
     AnsiString		CtrlDirectory;
     AnsiString      LoginCommand;
     AnsiString      ConfigCommand;
+    AnsiString		Password;
     bool            MinimizeToSysTray;
     bool            UndockableForms;
     scfg_t		    cfg;

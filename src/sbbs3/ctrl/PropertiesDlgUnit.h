@@ -34,6 +34,10 @@ __published:
     TEdit *ClientIntEdit;
     TUpDown *ClientIntUpDown;
     TCheckBox *UndockableCheckBox;
+	TLabel *PasswordLabel;
+	TEdit *PasswordEdit;
+	void __fastcall FormShow(TObject *Sender);
+	void __fastcall TrayIconCheckBoxClick(TObject *Sender);
 private:
 public:
 	virtual __fastcall TPropertiesDlg(TComponent* AOwner);

@@ -3,20 +3,24 @@ object PropertiesDlg: TPropertiesDlg
   Top = 224
   BorderStyle = bsDialog
   Caption = 'Control Panel Properties'
-  ClientHeight = 261
+  ClientHeight = 294
   ClientWidth = 433
   Color = clBtnFace
   ParentFont = True
   OldCreateOrder = True
   Position = poScreenCenter
   ShowHint = True
+  OnShow = FormShow
+  DesignSize = (
+    433
+    294)
   PixelsPerInch = 120
   TextHeight = 16
   object Bevel1: TBevel
     Left = 10
     Top = 10
     Width = 306
-    Height = 237
+    Height = 270
     Anchors = [akLeft, akTop, akRight, akBottom]
     Shape = bsFrame
   end
@@ -59,6 +63,14 @@ object PropertiesDlg: TPropertiesDlg
     Height = 24
     AutoSize = False
     Caption = 'Client Display Interval (in seconds)'
+  end
+  object PasswordLabel: TLabel
+    Left = 24
+    Top = 248
+    Width = 110
+    Height = 24
+    AutoSize = False
+    Caption = 'Password'
   end
   object OKBtn: TButton
     Left = 329
@@ -114,7 +126,7 @@ object PropertiesDlg: TPropertiesDlg
   end
   object TrayIconCheckBox: TCheckBox
     Left = 24
-    Top = 182
+    Top = 214
     Width = 281
     Height = 24
     Hint = 'Create tray icon when minimized'
@@ -122,6 +134,7 @@ object PropertiesDlg: TPropertiesDlg
     ParentShowHint = False
     ShowHint = True
     TabOrder = 4
+    OnClick = TrayIconCheckBoxClick
   end
   object NodeIntEdit: TEdit
     Left = 256
@@ -171,7 +184,7 @@ object PropertiesDlg: TPropertiesDlg
   end
   object UndockableCheckBox: TCheckBox
     Left = 24
-    Top = 214
+    Top = 182
     Width = 281
     Height = 24
     Hint = 'Allow child windows to be "un-docked" from main window'
@@ -179,5 +192,16 @@ object PropertiesDlg: TPropertiesDlg
     ParentShowHint = False
     ShowHint = True
     TabOrder = 10
+  end
+  object PasswordEdit: TEdit
+    Left = 136
+    Top = 248
+    Width = 169
+    Height = 24
+    Hint = 'Required password for restoring from system tray icon'
+    ParentShowHint = False
+    PasswordChar = '*'
+    ShowHint = True
+    TabOrder = 11
   end
 end

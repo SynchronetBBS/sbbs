@@ -1371,6 +1371,8 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     	LoginCommand=Registry->ReadString("LoginCommand");
     if(Registry->ValueExists("ConfigCommand"))
     	ConfigCommand=Registry->ReadString("ConfigCommand");
+    if(Registry->ValueExists("Password"))
+    	Password=Registry->ReadString("Password");
     if(Registry->ValueExists("MinimizeToSysTray"))
     	MinimizeToSysTray=Registry->ReadBool("MinimizeToSysTray");
 	if(Registry->ValueExists("NodeDisplayInterval"))
@@ -1782,6 +1784,7 @@ void __fastcall TMainForm::SaveSettings(TObject* Sender)
     Registry->WriteString("CtrlDirectory",CtrlDirectory);
     Registry->WriteString("LoginCommand",LoginCommand);
     Registry->WriteString("ConfigCommand",ConfigCommand);
+    Registry->WriteString("Password",Password);
     Registry->WriteBool("MinimizeToSysTray",MinimizeToSysTray);
     Registry->WriteInteger("NodeDisplayInterval",NodeDisplayInterval);
     Registry->WriteInteger("ClientDisplayInterval",ClientDisplayInterval);
@@ -1958,7 +1961,7 @@ void __fastcall TMainForm::ForceNetworkCalloutMenuItemClick(
     for(i=0;i<cfg.total_qhubs;i++)
     	CodeInputForm->ComboBox->Items->Add(
             AnsiString(cfg.qhub[i]->id).UpperCase());
-    CodeInputForm->ComboBox->ItemIndex=0;            
+    CodeInputForm->ComboBox->ItemIndex=0;
     if(CodeInputForm->ShowModal()==mrOk
     	&& CodeInputForm->ComboBox->Text.Length()) {
         for(i=0;i<cfg.total_qhubs;i++) {
@@ -2215,6 +2218,13 @@ void __fastcall TMainForm::WebPageMenuItemClick(TObject *Sender)
 void __fastcall TMainForm::FormMinimize(TObject *Sender)
 {
     if(MinimizeToSysTray) {
+    	if(Password.Length()) {
+        	TrayIcon->RestoreOn=imNone;
+            TrayIcon->PopupMenuOn=imNone;
+        } else {
+        	TrayIcon->RestoreOn=imDoubleClick;
+			TrayIcon->PopupMenuOn=imRightClickUp;
+            }
         TrayIcon->Visible=true;
         TrayIcon->Minimize();
     }
@@ -2236,10 +2246,12 @@ void __fastcall TMainForm::PropertiesExecute(TObject *Sender)
     PropertiesDlg->ClientIntUpDown->Position=ClientDisplayInterval;
     PropertiesDlg->TrayIconCheckBox->Checked=MinimizeToSysTray;
     PropertiesDlg->UndockableCheckBox->Checked=UndockableForms;
+    PropertiesDlg->PasswordEdit->Text=Password;
 	if(PropertiesDlg->ShowModal()==mrOk) {
         LoginCommand=PropertiesDlg->LoginCmdEdit->Text;
         ConfigCommand=PropertiesDlg->ConfigCmdEdit->Text;
         CtrlDirectory=PropertiesDlg->CtrlDirEdit->Text;
+        Password=PropertiesDlg->PasswordEdit->Text;
         NodeDisplayInterval=PropertiesDlg->NodeIntUpDown->Position;
         ClientDisplayInterval=PropertiesDlg->ClientIntUpDown->Position;
         MinimizeToSysTray=PropertiesDlg->TrayIconCheckBox->Checked;
@@ -2332,6 +2344,26 @@ void __fastcall TMainForm::UserTruncateMenuItemClick(TObject *Sender)
     char str[128];
     sprintf(str,"%u Deleted User Records Removed",deleted);
    	Application->MessageBox(str,"Users Truncated",MB_OK);
+}
+//---------------------------------------------------------------------------
+void __fastcall TMainForm::TrayIconClick(TObject *Sender)
+{
+	static inside;
+
+    if(inside)
+    	return;
+    inside=true;
+	if(Password.Length()) {
+    	Application->CreateForm(__classid(TCodeInputForm), &CodeInputForm);
+    	CodeInputForm->Label->Caption="Password";
+        CodeInputForm->Edit->Visible=true;
+        CodeInputForm->Edit->PasswordChar='*';
+	    if(CodeInputForm->ShowModal()==mrOk
+        	&& CodeInputForm->Edit->Text.AnsiCompareIC(Password)==0)
+            TrayIcon->Restore();
+        delete CodeInputForm;
+    }
+    inside=false;
 }
 //---------------------------------------------------------------------------
 
