@@ -66,6 +66,7 @@ OBJS	=	$(LIBODIR)$(SLASH)ansiterm.$(OFILE)\
 			$(LIBODIR)$(SLASH)mail.$(OFILE)\
 			$(LIBODIR)$(SLASH)main.$(OFILE)\
 			$(LIBODIR)$(SLASH)md5.$(OFILE)\
+			$(LIBODIR)$(SLASH)msgdate.$(OFILE)\
 			$(LIBODIR)$(SLASH)msgtoqwk.$(OFILE)\
 			$(LIBODIR)$(SLASH)netmail.$(OFILE)\
 			$(LIBODIR)$(SLASH)newuser.$(OFILE)\

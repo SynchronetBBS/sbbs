@@ -342,6 +342,10 @@ SOURCE=.\md5.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\msgdate.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\msgtoqwk.cpp
 # End Source File
 # Begin Source File
