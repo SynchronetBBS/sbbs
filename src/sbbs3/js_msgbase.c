@@ -511,7 +511,7 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
 	/* Message-ID */
-	if(msg.id!=NULL)
+	if(msg.id!=NULL && *msg.id!=0)
 		val=msg.id;
 	else {
 		if(p->smb.subnum==INVALID_SUB)
