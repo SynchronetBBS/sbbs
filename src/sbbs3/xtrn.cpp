@@ -984,7 +984,6 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 		winsize.ws_row=rows;
 		// #warning Currently cols are forced to 80 apparently TODO
 		winsize.ws_col=80;
-		lprintf("Node %d forking new pty.",cfg.node_num);
 		if((pid=forkpty(&in_pipe[1],NULL,NULL,&winsize))==-1) {
 			pthread_mutex_unlock(&input_thread_mutex);
 			errormsg(WHERE,ERR_EXEC,cmdline,0);
