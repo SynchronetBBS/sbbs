@@ -5,5 +5,5 @@ UIFC_CFLAGS   =       -I$(UIFC_SRC)
 UIFC_LDFLAGS  =       -L$(UIFC_SRC)$(DIRSEP)$(LIBODIR)
 UIFC-MT_CFLAGS   =       -I$(UIFC_SRC)
 UIFC-MT_LDFLAGS  =       -L$(UIFC_SRC)$(DIRSEP)$(LIBODIR)
-UIFC_LIBS	=	-luifc
-UIFC-MT_LIBS	=	-luifc_mt
+UIFC_LIBS	=	$(UL_PRE)uifc$(UL_SUF)
+UIFC-MT_LIBS	=	$(UL_PRE)uifc_mt$(UL_SUF)
