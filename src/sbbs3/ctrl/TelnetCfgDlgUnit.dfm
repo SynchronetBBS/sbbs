@@ -1,6 +1,6 @@
 object TelnetCfgDlg: TTelnetCfgDlg
-  Left = 755
-  Top = 113
+  Left = 484
+  Top = 622
   BorderStyle = bsDialog
   Caption = 'Telnet Server Configuration'
   ClientHeight = 234
@@ -88,7 +88,7 @@ object TelnetCfgDlg: TTelnetCfgDlg
         TabOrder = 2
       end
       object KeepAliveCheckBox: TCheckBox
-        Left = 150
+        Left = 148
         Top = 55
         Width = 117
         Height = 20
@@ -110,7 +110,7 @@ object TelnetCfgDlg: TTelnetCfgDlg
         TabOrder = 4
       end
       object XtrnMinCheckBox: TCheckBox
-        Left = 150
+        Left = 148
         Top = 80
         Width = 117
         Height = 20
@@ -132,7 +132,7 @@ object TelnetCfgDlg: TTelnetCfgDlg
         TabOrder = 6
       end
       object AutoLogonCheckBox: TCheckBox
-        Left = 150
+        Left = 148
         Top = 106
         Width = 117
         Height = 19
@@ -145,7 +145,7 @@ object TelnetCfgDlg: TTelnetCfgDlg
         TabOrder = 7
       end
       object HostnameCheckBox: TCheckBox
-        Left = 150
+        Left = 148
         Top = 5
         Width = 117
         Height = 19
@@ -198,7 +198,7 @@ object TelnetCfgDlg: TTelnetCfgDlg
         Left = 72
         Top = 11
         Width = 169
-        Height = 24
+        Height = 21
         TabOrder = 0
       end
       object AnswerSoundButton: TButton
@@ -214,7 +214,7 @@ object TelnetCfgDlg: TTelnetCfgDlg
         Left = 72
         Top = 37
         Width = 169
-        Height = 24
+        Height = 21
         TabOrder = 2
       end
       object HangupSoundButton: TButton
@@ -229,7 +229,7 @@ object TelnetCfgDlg: TTelnetCfgDlg
     end
   end
   object OKBtn: TButton
-    Left = 25
+    Left = 20
     Top = 201
     Width = 76
     Height = 25
@@ -240,7 +240,7 @@ object TelnetCfgDlg: TTelnetCfgDlg
     OnClick = OKBtnClick
   end
   object CancelBtn: TButton
-    Left = 110
+    Left = 104
     Top = 201
     Width = 75
     Height = 25
@@ -250,7 +250,7 @@ object TelnetCfgDlg: TTelnetCfgDlg
     TabOrder = 2
   end
   object ApplyBtn: TButton
-    Left = 194
+    Left = 189
     Top = 201
     Width = 76
     Height = 25
