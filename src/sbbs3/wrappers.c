@@ -83,10 +83,11 @@
 #define STAT		struct stat
 #endif
 
-/****************************************************************************/
-/* POSIX.2 directory pattern matching function								*/
-/****************************************************************************/
-#ifndef __unix__
+/* Win32 (minimal) implementation of POSIX.2 glob() function */
+/* This code _may_ work on other DOS-based platforms (e.g. OS/2) */
+
+#if !defined(__unix__)
+
 #ifdef __BORLANDC__
 	#pragma argsused
 #endif
@@ -171,7 +172,8 @@ void DLLCALL globfree(glob_t* glob)
 	}
 	glob->gl_pathc=0;
 }
-#endif
+
+#endif /* !defined(__unix__) */
 
 /****************************************************************************/
 /* Returns the time/date of the file in 'filename' in time_t (unix) format  */
@@ -201,7 +203,6 @@ BOOL DLLCALL isdir(char *filename)
 
 	return((st.st_mode&S_IFDIR) ? TRUE : FALSE);
 }
-
 
 /****************************************************************************/
 /* Returns the attributes (mode) for specified 'filename'					*/
@@ -310,8 +311,8 @@ char* strrev(char* str)
 /* Wrapper for Win32 create/begin thread function							*/
 /* Uses POSIX threads														*/
 /****************************************************************************/
-#ifdef __unix__
-#ifdef _POSIX_THREADS
+#if defined(__unix__) && defined(SBBS)
+#if defined(_POSIX_THREADS)
 ulong _beginthread(void( *start_address )( void * )
 		,unsigned stack_size, void *arglist)
 {
