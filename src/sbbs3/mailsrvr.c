@@ -2126,6 +2126,7 @@ static void smtp_thread(void* arg)
 			hdr_lines++;
 			continue;
 		}
+		strip_ctrl(buf);
 		lprintf("%04d SMTP RX: %s", socket, buf);
 		if(!strnicmp(buf,"HELO",4)) {
 			p=buf+4;
@@ -2362,7 +2363,6 @@ static void smtp_thread(void* arg)
 			|| !strnicmp(buf,"SAML FROM:",10)	/* Send AND Mail a Message to a local user */
 			) {
 			p=buf+10;
-			truncsp(p);
 			if(!chk_email_addr(socket,p,host_name,host_ip,NULL,NULL))
 				break;
 			while(*p && *p<=' ') p++;
