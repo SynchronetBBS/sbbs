@@ -5,7 +5,7 @@
 /* $Id$ */
 
 load("sbbsdefs.js");
-load("/usr/bbs/sbbs/exec/html_inc/template.ssjs");
+load("html_inc/template.ssjs");
 
 var fields=new Array("alias","name","handle","netmail","address","location","zipcode","phone","birthdate","gender");
 var required=new Array("name","netmail","address","location","zipcode","phone","birthdate","gender");
