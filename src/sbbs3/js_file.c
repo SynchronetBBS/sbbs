@@ -399,14 +399,18 @@ js_readall(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 }
 
 static JSBool
-js_ini_read(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+js_iniGetValue(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char*	section;
 	char*	key;
+	char**	list;
+	int32	i;
+	jsval	val;
 	jsval	dflt=argv[2];
 	private_t*	p;
+	JSObject*	array;
 
-	*rval = JSVAL_NULL;
+	*rval = JSVAL_VOID;
 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
 		JS_ReportError(cx,getprivate_failure,WHERE);
@@ -429,6 +433,17 @@ js_ini_read(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 			JS_NewNumberValue(cx
 				,iniReadFloat(p->fp,section,key,*JSVAL_TO_DOUBLE(dflt)),rval);
 			break;
+		case JSVAL_OBJECT:
+		    array = JS_NewArrayObject(cx, 0, NULL);
+			list=iniReadStringList(p->fp,section,key,",",JS_GetStringBytes(JS_ValueToString(cx,dflt)));
+			for(i=0;list && list[i];i++) {
+				val=STRING_TO_JSVAL(JS_NewStringCopyZ(cx,list[i]));
+				if(!JS_SetElement(cx, array, i, &val))
+					break;
+			}
+			iniFreeStringList(list);
+			*rval = OBJECT_TO_JSVAL(array);
+			break;
 		default:
 			if(JSVAL_IS_INT(dflt)) {
 				*rval = INT_TO_JSVAL(
@@ -440,6 +455,106 @@ js_ini_read(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	return(JS_TRUE);
 }
+
+static JSBool
+js_iniGetSections(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char**		list;
+    jsint       i;
+    jsval       val;
+    JSObject*	array;
+	private_t*	p;
+
+	*rval = JSVAL_NULL;
+
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx,getprivate_failure,WHERE);
+		return(JS_FALSE);
+	}
+
+    array = JS_NewArrayObject(cx, 0, NULL);
+
+	list = iniReadSectionList(p->fp);
+    for(i=0;list && list[i];i++) {
+		val=STRING_TO_JSVAL(JS_NewStringCopyZ(cx,list[i]));
+        if(!JS_SetElement(cx, array, i, &val))
+			break;
+	}
+	iniFreeStringList(list);
+
+    *rval = OBJECT_TO_JSVAL(array);
+
+    return(JS_TRUE);
+}
+
+static JSBool
+js_iniGetKeys(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		section;
+	char**		list;
+    jsint       i;
+    jsval       val;
+    JSObject*	array;
+	private_t*	p;
+
+	*rval = JSVAL_NULL;
+
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx,getprivate_failure,WHERE);
+		return(JS_FALSE);
+	}
+
+	section=JS_GetStringBytes(JS_ValueToString(cx, argv[0]));
+    array = JS_NewArrayObject(cx, 0, NULL);
+
+	list = iniReadKeyList(p->fp,section);
+    for(i=0;list && list[i];i++) {
+		val=STRING_TO_JSVAL(JS_NewStringCopyZ(cx,list[i]));
+        if(!JS_SetElement(cx, array, i, &val))
+			break;
+	}
+	iniFreeStringList(list);
+
+    *rval = OBJECT_TO_JSVAL(array);
+
+    return(JS_TRUE);
+}
+
+static JSBool
+js_iniGetObject(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		section;
+	char*		val;
+	char**		list;
+    jsint       i;
+    JSObject*	object;
+	private_t*	p;
+
+	*rval = JSVAL_NULL;
+
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx,getprivate_failure,WHERE);
+		return(JS_FALSE);
+	}
+
+	section=JS_GetStringBytes(JS_ValueToString(cx, argv[0]));
+    object = JS_NewObject(cx, NULL, NULL, obj);
+
+	list = iniReadKeyList(p->fp,section);
+    for(i=0;list && list[i];i++) {
+		if((val=iniReadString(p->fp,section,list[i],NULL))==NULL)
+			continue;
+		JS_DefineProperty(cx, object, list[i], STRING_TO_JSVAL(JS_NewStringCopyZ(cx,val))
+			,NULL,NULL,JSPROP_ENUMERATE);
+
+	}
+	iniFreeStringList(list);
+
+    *rval = OBJECT_TO_JSVAL(object);
+
+    return(JS_TRUE);
+}
+
 
 static JSBool
 js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
@@ -1152,9 +1267,20 @@ static jsMethodSpec js_file_functions[] = {
 	{"readAll",			js_readall,			0,	JSTYPE_ARRAY,	""
 	,JSDOCSTR("read all lines into an array of strings")
 	},
-	{"iniRead",			js_ini_read,		3,	JSTYPE_STRING,	JSDOCSTR("section, key, default")
+	{"iniGetSections",	js_iniGetSections,	0,	JSTYPE_ARRAY,	""
+	,JSDOCSTR("read all sections from a .ini file and return section names as an array")
+	},
+	{"iniGetKeys",		js_iniGetKeys,		0,	JSTYPE_ARRAY,	JSDOCSTR("section")
+	,JSDOCSTR("read all key names from the specified <i>section</i> in .ini file and return key names as an array")
+	},
+	{"iniGetValue",		js_iniGetValue,		3,	JSTYPE_STRING,	JSDOCSTR("section, key, default")
 	,JSDOCSTR("read a key from a .ini file and return its value, "
-		"may return <i>bool</i>, <i>string</i>, or <i>number</i> value")
+		"may return <i>bool</i>, <i>number</i>, <i>string</i>, or <i>array of string</i> "
+		"(based on type of the default value specified)")
+	},
+	{"iniGetObject",	js_iniGetObject,	1,	JSTYPE_OBJECT,	JSDOCSTR("section")
+	,JSDOCSTR("read an entire section from a .ini file "
+		"and return all of its keys and values as properties of an object")
 	},
 	{"write",			js_write,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("string text [,len]")
 	,JSDOCSTR("write a string to the file (optionally unix-to-unix or base64 decoding in the process)")
