@@ -102,9 +102,11 @@ int lprintf(char *fmat, ...)
 char *cmdstr(char *instr, char *fpath, char *fspec, char *outstr)
 {
     static char cmd[MAX_PATH+1];
-	char sfpath[MAX_PATH+1];
     char str[MAX_PATH+1];
     int i,j,len;
+#ifdef _WIN32
+	char sfpath[MAX_PATH+1];
+#endif
 
 	len=strlen(instr);
 	for(i=j=0;i<len && j<128;i++) {
@@ -378,7 +380,7 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 		else {
 			p++;
 			while(*p==SP) p++; }
-		sprintf(tmp,"%.*s",LEN_FDESC-strlen(f.desc),p);
+		sprintf(tmp,"%.*s",(int)(LEN_FDESC-strlen(f.desc)),p);
 		strcat(f.desc,tmp);
 
 		if(nextline[0]==SP || strlen(p)>LEN_FDESC) {	/* ext desc */
@@ -500,7 +502,7 @@ void synclist(char *inpath, int dirnum)
 	length=filelength(file);
 	if(length%F_IXBSIZE) {
 		close(file);
-		printf("ERR_LEN %s\n");
+		printf("ERR_LEN (%ld) of %s\n",length,str);
 		return; }
 	if((ixbbuf=(uchar HUGE16 *)MALLOC(length))==NULL) {
 		close(file);
@@ -605,10 +607,6 @@ int main(int argc, char **argv)
 	long l;
 	file_t	f;
 
-	putenv("TZ=UCT0");
-	_fmode=O_BINARY;
-	setvbuf(stdout,NULL,_IONBF,0);
-
 	fprintf(stderr,"\nADDFILES Version %s (%s) - Adds files to Synchronet "
 		"Filebase\n"
 		,ADDFILES_VER
@@ -626,8 +624,6 @@ int main(int argc, char **argv)
 		exit(1); 
 	}
 
-	putenv("TZ=UCT0");
-
 	SAFECOPY(scfg.ctrl_dir,p);
 	printf("Reading configuration files from %s\n",scfg.ctrl_dir);
 	if(!load_cfg(&scfg,NULL,TRUE,error)) {
@@ -635,6 +631,9 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 	printf("\n\n");
+
+	if(!(scfg.sys_misc&SM_LOCAL_TZ))
+		putenv("TZ=UTC0");
 
 	if(argv[1][0]=='*') {
 		if(argv[1][1])
