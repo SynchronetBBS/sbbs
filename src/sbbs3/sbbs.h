@@ -547,7 +547,7 @@ public:
 	uint	hotkey_inside;
 	uchar	lastnodemsg;	/* Number of node last message was sent to */
 	char	lastnodemsguser[LEN_ALIAS+1];
-	void	guruchat(char *line, char *guru, int gurunum);
+	void	guruchat(char* line, char* guru, int gurunum, char* last_answer);
 	bool	guruexp(char **ptrptr, char *line);
 	void	localguru(char *guru, int gurunum);
 	bool	sysop_page(void);
