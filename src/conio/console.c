@@ -1110,9 +1110,9 @@ init_mode(int mode)
     pidx = vmode.paramindex;
 
     /* Preset VGA registers. */
-    memcpy(VGA_CRTC, (u_int8_t *)&videoparams[pidx][CRTC_Ofs],
+    memcpy(VGA_CRTC, (unsigned char *)&videoparams[pidx][CRTC_Ofs],
 	   sizeof(VGA_CRTC));
-    memcpy(VGA_ATC, (u_int8_t *)&videoparams[pidx][ATC_Ofs],
+    memcpy(VGA_ATC, (unsigned char *)&videoparams[pidx][ATC_Ofs],
 	   sizeof(VGA_ATC));
 
     VideoMode=mode & 0x7f;

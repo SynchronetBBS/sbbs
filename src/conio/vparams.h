@@ -36,7 +36,7 @@
    supposed to be included only from 'video.c' and needs some type definitions
    from 'video.h'. */
 
-u_int8_t videoparams[][64] = {
+unsigned char videoparams[][64] = {
 	/* Mode 0: Text, 40x25, CGA (200 lines) */
 	{ 0x28, 0x18, 0x08, 0x00, 0x08, 0x09, 0x03, 0x00,
 	  0x02, 0x63, 0x2d, 0x27, 0x28, 0x90, 0x2b, 0xa0,
@@ -461,7 +461,7 @@ struct dac_colors dac_default256[] = {
 
 /* The Static Functionality Table, a collection of mode-independent status
    info. */
-u_int8_t static_functionality_table[] = {
+unsigned char static_functionality_table[] = {
 	0x0c,			/* Video modes 0 - 7 */
 	0,			/* Video modes 8 - 15 */
 	0,			/* Video modes 16 - 23 */
