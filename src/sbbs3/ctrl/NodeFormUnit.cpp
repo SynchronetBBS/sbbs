@@ -390,6 +390,21 @@ void __fastcall TNodeForm::LockNodeButtonClick(TObject *Sender)
 }
 //---------------------------------------------------------------------------
 
+void __fastcall TNodeForm::RerunNodeButtonClick(TObject *Sender)
+{
+	int i;
+    node_t node;
+
+    for(i=0;i<ListBox->Items->Count;i++)
+    	if(ListBox->Selected[i]==true) {
+        	getnodedat(&MainForm->cfg,i+1,&node,1);
+            node.misc^=NODE_RRUN;
+            putnodedat(&MainForm->cfg,i+1,&node);
+        }
+}
+
+//---------------------------------------------------------------------------
+
 void __fastcall TNodeForm::ListBoxKeyPress(TObject *Sender, char &Key)
 {
 	if(Key==1) // ctrl-a
@@ -477,6 +492,26 @@ void __fastcall TNodeForm::SpyButtonClick(TObject *Sender)
                 SpyForms[i]->Caption="Node "+AnsiString(i+1);
             }
             SpyForms[i]->Show();
+        }
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TNodeForm::UserEditButtonClick(TObject *Sender)
+{
+    int     i;
+    char    str[128];
+    node_t  node;
+
+    for(i=0;i<ListBox->Items->Count;i++)
+    	if(ListBox->Selected[i]==true) {
+        	getnodedat(&MainForm->cfg,i+1,&node,0);
+            if(node.useron==0)
+                continue;
+            sprintf(str,"%sUSEREDIT %s %d"
+                ,MainForm->cfg.exec_dir
+                ,MainForm->cfg.data_dir
+                ,node.useron);
+            WinExec(str,SW_SHOWNORMAL);
         }
 }
 //---------------------------------------------------------------------------

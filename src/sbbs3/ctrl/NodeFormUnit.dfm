@@ -10,15 +10,15 @@ object NodeForm: TNodeForm
   DragMode = dmAutomatic
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
-  Font.Height = -11
+  Font.Height = -14
   Font.Name = 'MS Sans Serif'
   Font.Style = []
   OldCreateOrder = False
   Position = poDefault
   OnHide = FormHide
   OnShow = FormShow
-  PixelsPerInch = 96
-  TextHeight = 13
+  PixelsPerInch = 120
+  TextHeight = 16
   object Toolbar: TToolBar
     Left = 0
     Top = 0
@@ -65,38 +65,54 @@ object NodeForm: TNodeForm
       ImageIndex = 17
       OnClick = InterruptNodeButtonClick
     end
-    object ClearErrorButton: TToolButton
+    object RerunToolButton: TToolButton
       Left = 115
+      Top = 0
+      Hint = 'Rerun Node(s)'
+      Caption = 'RerunToolButton'
+      ImageIndex = 55
+      OnClick = RerunNodeButtonClick
+    end
+    object ClearErrorButton: TToolButton
+      Left = 138
       Top = 0
       Hint = 'Clear Errors on Node(s)'
       Caption = 'ClearErrorButton'
-      ImageIndex = 33
+      ImageIndex = 31
       OnClick = ClearErrorButtonClick
-    end
-    object ChatButton: TToolButton
-      Left = 138
-      Top = 0
-      Hint = 'Chat with User'
-      Caption = 'ChatButton'
-      ImageIndex = 39
-      OnClick = ChatButtonClick
     end
     object SpyButton: TToolButton
       Left = 161
       Top = 0
       Hint = 'Spy on Node(s)'
       Caption = 'SpyButton'
-      ImageIndex = 41
+      ImageIndex = 39
       OnClick = SpyButtonClick
+    end
+    object ChatButton: TToolButton
+      Left = 184
+      Top = 0
+      Hint = 'Chat with User'
+      Caption = 'ChatButton'
+      ImageIndex = 37
+      OnClick = ChatButtonClick
+    end
+    object UserEditButton: TToolButton
+      Left = 207
+      Top = 0
+      Hint = 'Edit User'
+      Caption = 'UserEditButton'
+      ImageIndex = 27
+      OnClick = UserEditButtonClick
     end
   end
   object ListBox: TListBox
     Left = 0
     Top = 25
     Width = 269
-    Height = 162
+    Height = 157
     Align = alClient
-    ItemHeight = 13
+    ItemHeight = 16
     MultiSelect = True
     PopupMenu = PopupMenu
     TabOrder = 1
@@ -111,17 +127,22 @@ object NodeForm: TNodeForm
     Left = 128
     Top = 72
     object LockMenuItem: TMenuItem
-      Caption = 'Lock'
+      Caption = 'Lock Node'
       ImageIndex = 19
       OnClick = LockNodeButtonClick
     end
     object DownMenuItem: TMenuItem
-      Caption = 'Down'
+      Caption = 'Down Node'
       ImageIndex = 21
       OnClick = DownButtonClick
     end
+    object RerunMenuItem: TMenuItem
+      Caption = 'Rerun Node'
+      ImageIndex = 55
+      OnClick = RerunNodeButtonClick
+    end
     object InterruptMenuItem: TMenuItem
-      Caption = 'Interrupt'
+      Caption = 'Interrupt Node'
       ImageIndex = 17
       OnClick = InterruptNodeButtonClick
     end
@@ -131,7 +152,7 @@ object NodeForm: TNodeForm
       OnClick = ClearErrorButtonClick
     end
     object ChatMenuItem: TMenuItem
-      Caption = 'Chat with User'
+      Caption = 'Chat w/User'
       ImageIndex = 39
       OnClick = ChatButtonClick
     end
@@ -139,6 +160,12 @@ object NodeForm: TNodeForm
       Caption = 'Spy on Node'
       ImageIndex = 41
       OnClick = SpyButtonClick
+    end
+    object EditUser1: TMenuItem
+      Caption = 'Edit User'
+      Hint = 'EditUserMenuItem'
+      ImageIndex = 27
+      OnClick = UserEditButtonClick
     end
     object N1: TMenuItem
       Caption = '-'
