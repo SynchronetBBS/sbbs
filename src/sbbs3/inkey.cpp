@@ -282,9 +282,10 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 								return(CTRL_F);	/* ctrl-f (rt arrow) */
 							case 'D':
 								return(0x1d);	/* ctrl-] (lf arrow) */
-							case 'H':
+							case 'H':	/* ANSI:  home cursor */
 								return(CTRL_B);	/* ctrl-b (beg line) */
-							case 'K':
+							case 'F'	/* Xterm: cursor preceding line */
+							case 'K':	/* ANSI:  clear-to-end-of-line */
 								return(CTRL_E);	/* ctrl-e (end line) */
 						}
 						ungetkey(ESC);
