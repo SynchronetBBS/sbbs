@@ -23,12 +23,12 @@
       UserListFormUnit.dfm UserMsgFormUnit.dfm PropertiesDlgUnit.dfm 
       EventsFormUnit.dfm"/>
     <LIBFILES value="sbbs.lib mailsrvr.lib ftpsrvr.lib"/>
-    <LIBRARIES value="VCLX50.lib bcbsmp50.lib IcsBcb50.lib vcl50.lib"/>
-    <SPARELIBS value="vcl50.lib IcsBcb50.lib bcbsmp50.lib VCLX50.lib"/>
+    <LIBRARIES value="VCLX50.lib bcbsmp50.lib vcl50.lib"/>
+    <SPARELIBS value="vcl50.lib bcbsmp50.lib VCLX50.lib"/>
     <PACKAGES value="vcl50.bpi vclx50.bpi vcljpg50.bpi bcbsmp50.bpi vclmid50.bpi vcldb50.bpi 
       vclbde50.bpi inet50.bpi inetdb50.bpi vcldbx50.bpi qrpt50.bpi teeui50.bpi 
       teedb50.bpi tee50.bpi dss50.bpi nmfast50.bpi dclocx50.bpi"/>
-    <PATHCPP value=".;..\..\sbbs3"/>
+    <PATHCPP value=".;.."/>
     <PATHPAS value=".;"/>
     <PATHRC value=".;"/>
     <PATHASM value=".;"/>
@@ -38,13 +38,13 @@
     <USERDEFINES value="SBBS"/>
     <SYSDEFINES value="NO_STRICT;_VIS_NOLIB"/>
     <MAINSOURCE value="sbbsctrl.cpp"/>
-    <INCLUDEPATH value="..\;..\..\sbbs3;d:\Borland\CBuilder5\Projects\;C:\Borland\CBuilder5\Projects\;$(BCB)\include;$(BCB)\include\vcl"/>
-    <LIBPATH value="..\;..\..\sbbs3;d:\Borland\CBuilder5\Projects\;$(BCB)\Projects\Lib;C:\Borland\CBuilder5\Projects\;$(BCB)\lib\obj;$(BCB)\lib"/>
+    <INCLUDEPATH value="..\;..;d:\Borland\CBuilder5\Projects\;C:\Borland\CBuilder5\Projects\;$(BCB)\include;$(BCB)\include\vcl"/>
+    <LIBPATH value="..\;..;d:\Borland\CBuilder5\Projects\;$(BCB)\Projects\Lib;C:\Borland\CBuilder5\Projects\;$(BCB)\lib\obj;$(BCB)\lib"/>
     <WARNINGS value="-w-par -w-csu"/>
     <WARNOPTSTR value=""/>
   </MACROS>
   <OPTIONS>
-    <IDLCFLAGS value="-I..\. -I..\..\sbbs3 -Id:\Borland\CBuilder5\Projects\. 
+    <IDLCFLAGS value="-I..\. -I.. -Id:\Borland\CBuilder5\Projects\. 
       -IC:\Borland\CBuilder5\Projects\. -I$(BCB)\include -I$(BCB)\include\vcl 
       -src_suffix cpp -DSBBS -boa"/>
     <CFLAG1 value="-Od -H=$(BCB)\lib\vcl50.csm -Hc -Vx -Ve -X- -a8 -b- -k- -vi -c -tW -tWM"/>
@@ -65,7 +65,7 @@ AutoIncBuild=1
 MajorVer=1
 MinorVer=1
 Release=0
-Build=0
+Build=1
 Debug=0
 PreRelease=0
 Special=0
@@ -77,7 +77,7 @@ CodePage=1252
 [Version Info Keys]
 CompanyName=Rob Swindell
 FileDescription=Synchronet BBS Control Panel
-FileVersion=1.1.0.0
+FileVersion=1.1.0.1
 InternalName=
 LegalCopyright=
 LegalTrademarks=
