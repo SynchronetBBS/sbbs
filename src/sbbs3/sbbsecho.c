@@ -4574,7 +4574,7 @@ int main(int argc, char **argv)
 
 				/* Read fixed-length header fields */
 				if(fread(&pkdmsg,sizeof(BYTE),sizeof(pkdmsg),fidomsg)!=sizeof(pkdmsg))
-					grunged=TRUE;
+					continue;
 				
 				if(pkdmsg.type==2) { /* Recognized type, copy fields */
 					hdr.orignode = pkdmsg.orignode;
