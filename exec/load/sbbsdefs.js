@@ -590,6 +590,19 @@ var FI_USERXFER  	=6			/* User Xfer Download                       */
 var FI_CLOSE 	  	=7			/* Close any open records					*/
 					    		/********************************************/
 
+					    		/********************************************/
+								/* Log "levels" supported by log() function */
+					    		/********************************************/
+var LOG_EMERG       =0			/* system is unusable						*/
+var LOG_ALERT       =1			/* action must be taken immediately			*/   
+var LOG_CRIT        =2			/* critical conditions						*/   
+var LOG_ERR         =3			/* error conditions							*/   
+var LOG_WARNING     =4			/* warning conditions						*/   
+var LOG_NOTICE      =5			/* normal but significant condition			*/   
+var LOG_INFO        =6			/* informational							*/   
+var LOG_DEBUG       =7			/* debug-level messages						*/   
+					    		/********************************************/
+
 								/* Message attributes */
 var MSG_PRIVATE 		=(1<<0)
 var MSG_READ			=(1<<1)
@@ -637,3 +650,9 @@ var NET_QWK				=4		// QWK
 var NET_INTERNET		=5		// NNTP
 var NET_WWIV			=6		// WWIV
 var NET_MHS				=7		// MHS
+
+								/* Agent types */
+var AGENT_PERSON		=0		/* Human */
+var AGENT_PROCESS		=1		/* Unknown process type */
+var AGENT_SMBUTIL		=2		/* Imported via Synchronet SMBUTIL */
+var AGENT_SMTPSYSMSG	=3		/* Synchronet SMTP server system message */
