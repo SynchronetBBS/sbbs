@@ -1448,6 +1448,7 @@ void output_thread(void* arg)
     ulong		avail;
 	ulong		total_sent=0;
 	ulong		total_pkts=0;
+	ulong		short_sends=0;
     ulong		bufbot=0;
     ulong		buftop=0;
 	sbbs_t*		sbbs = (sbbs_t*) arg;
@@ -1503,7 +1504,8 @@ void output_thread(void* arg)
 
         if(bufbot==buftop) { // linear buf empty, read from ring buf
             if(avail>sizeof(buf)) {
-                lprintf(LOG_DEBUG,"Reducing output buffer");
+                lprintf(LOG_WARNING,"!%s: Insufficient linear output buffer (%lu > %lu)"
+					,node, avail, sizeof(buf));
                 avail=sizeof(buf);
             }
             buftop=RingBufRead(&sbbs->outbuf, buf, avail);
@@ -1544,6 +1546,11 @@ void output_thread(void* arg)
 #endif
 		}
 
+		if(i!=(int)(buftop-bufbot)) {
+			lprintf(LOG_WARNING,"!%s: Short socket send (%u instead of %u)"
+				,node, i ,buftop-bufbot);
+			short_sends++;
+		}
 		bufbot+=i;
 		total_sent+=i;
 		total_pkts++;
@@ -1554,8 +1561,8 @@ void output_thread(void* arg)
     sbbs->output_thread_running = false;
 
 	if(total_sent)
-		sprintf(stats,"(sent %lu bytes in %lu blocks, %lu average)"
-			,total_sent, total_pkts, total_sent/total_pkts);
+		sprintf(stats,"(sent %lu bytes in %lu blocks, %lu average, %lu short)"
+			,total_sent, total_pkts, total_sent/total_pkts, short_sends);
 	else
 		stats[0]=0;
 
