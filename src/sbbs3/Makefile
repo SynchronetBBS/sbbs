@@ -42,18 +42,19 @@ CFLAGS	=	$(CFLAGS) -DWRAPPER_EXPORTS
 !ifdef DEBUG
 CFLAGS	=	$(CFLAGS) -v -Od -D_DEBUG 
 LFLAGS	=	$(LFLAGS) -v
-LIBODIR	=	$(LIBODIR).debug
-EXEODIR	=	$(EXEODIR).debug
+BUILD	=	debug
 !else
 CFLAGS	=	$(CFLAGS)
-LIBODIR	=	$(LIBODIR).release
-EXEODIR	=	$(EXEODIR).release
+BUILD	=	release
 !endif
+
+LIBODIR	=	$(LIBODIR).$(BUILD)
+EXEODIR	=	$(EXEODIR).$(BUILD)
 
 # JavaScript Support
 !ifdef JS
 CFLAGS	= 	$(CFLAGS) -DJAVASCRIPT -I../../include/mozilla/js
-LIBS	=	..\..\lib\mozilla\js\win32.debug\js32omf.lib
+LIBS	=	..\..\lib\mozilla\js\win32.$(BUILD)\js32omf.lib
 !endif
 
 default: dlls mono utils
