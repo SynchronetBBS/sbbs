@@ -37,6 +37,8 @@
 
 #if defined(__unix__)
 	#include <sys/wait.h>		/* waitpid() */
+	#include <sys/types.h>
+	#include <signal.h>			/* kill() */
 #endif
 
 #ifndef JAVASCRIPT
@@ -377,6 +379,11 @@ static BOOL is_cgi(http_session_t *session)
 #ifdef __unix__
 	/* NOTE: (From the FreeBSD man page) 
 	   "Access() is a potential security hole and should never be used." */
+	   
+	/* ToDo: This is actually quite nasty and should be replaced by		*
+	 * ToDo: SOMETHING.  Perhaps a cgi extensions ini variable or 		*
+	 * ToDo: something?  Especially since Windows can't di this anyways	*/
+	 	 
 	if(!access(session->req.physical_path,X_OK))
 		return(TRUE);
 #endif
@@ -607,7 +614,7 @@ static int close_socket(SOCKET sock)
 
 static void close_request(http_session_t * session)
 {
-	if(!session->req.keep_alive) {
+	if(!session->req.keep_alive || !socket_check(session->socket,NULL)) {
 		close_socket(session->socket);
 		session->socket=INVALID_SOCKET;
 		session->finished=TRUE;
@@ -714,7 +721,7 @@ static BOOL send_headers(http_session_t *session, const char *status)
 		sockprintf(session->socket,"%s: %d",get_header(HEAD_LENGTH),stats.st_size);
 		lprintf("%04d Sending stats for: %s",session->socket,session->req.physical_path);
 
-		sockprintf(session->socket,"%s: %s",get_header(HEAD_TYPE)
+		send_file=sockprintf(session->socket,"%s: %s",get_header(HEAD_TYPE)
 			,session->req.mime_type);
 
 		gmtime_r(&stats.st_mtime,&tm);
@@ -723,7 +730,7 @@ static BOOL send_headers(http_session_t *session, const char *status)
 			,days[tm.tm_wday],tm.tm_mday,months[tm.tm_mon]
 			,tm.tm_year+1900,tm.tm_hour,tm.tm_min,tm.tm_sec);
 	} else 
-		if(ret)
+		if(ret && !session->req.was_cgi)
 			sockprintf(session->socket,"%s: 0",get_header(HEAD_LENGTH));
 
 	if(session->req.was_cgi)  {
@@ -737,7 +744,8 @@ static BOOL send_headers(http_session_t *session, const char *status)
 		}
 	}
 
-	sendsocket(session->socket,newline,2);
+	/* Will fail if socket becomes invalid - I think */
+	send_file=(sendsocket(session->socket,newline,2)>0);
 	return(send_file);
 }
 
@@ -753,7 +761,6 @@ static void sock_sendfile(SOCKET socket,char *path)
 			lprintf("%04d !ERROR %d sending %s"
 				, socket, errno, path);
 		close(file);
-		/* sendfilesocket() does not close() */
 	}
 }
 
@@ -773,7 +780,9 @@ static void send_error(http_session_t * session, char *message)
 		sock_sendfile(session->socket,session->req.physical_path);
 	else {
 		lprintf("%04d Error message file %s doesn't exist.",session->socket,session->req.physical_path);
-		/* It really needs to send some kind of default HTML error text here */
+		sockprintf(session->socket,"<HTML><HEAD><TITLE>Gadzooks!</TITLE></HEAD><BODY><H1>%s Error</H1><BR><H3>Plus, \
+		I can't seem to find the %s error file</H3></BODY></HTML>",error_code,error_code);
+		/* ToDo: Should include sysop e-mail address or something too. */
 	}
 	close_request(session);
 }
@@ -825,7 +834,7 @@ static BOOL check_ars(http_session_t * session)
 
 	if(authorized)  {
 		add_env(session,"AUTH_TYPE","Basic");
-		/* Should use name if set to do so somewhere ToDo */
+		/* Should use real name if set to do so somewhere ToDo */
 		add_env(session,"REMOTE_USER",session->user.alias);
 		return(TRUE);
 	}
@@ -943,13 +952,13 @@ static int sockreadline(http_session_t * session, char *buf, size_t length)
 		i=length;
 		
 	if(i>0 && buf[i-1]=='\r')
-		buf[i-1]=0;
+		buf[--i]=0;
 	else
 		buf[i]=0;
 
 /*	if(startup->options&WEB_OPT_DEBUG_RX) */
 	lprintf("%04d RX: %s",session->socket,buf);
-	return(0);
+	return(i);
 }
 
 static int pipereadline(int pipe, char *buf, size_t length)
@@ -958,12 +967,15 @@ static int pipereadline(int pipe, char *buf, size_t length)
 	DWORD	i;
 	time_t	start;
 
-	start=time(NULL); /* ToDo: Put max_cgi_inactivity support in here */
+	start=time(NULL);
 	for(i=0;TRUE;) {
-		/* ToDo: Put max_cgi_inactivity support in here */
-
+		if(time(NULL)-start>startup->max_cgi_inactivity) {
+			return(-1);
+		}
+		
 		if(read(pipe, &ch, 1)==1)  {
-
+			start=time(NULL);
+			
 			if(ch=='\n')
 				break;
 
@@ -977,25 +989,35 @@ static int pipereadline(int pipe, char *buf, size_t length)
 		i=length;
 		
 	if(i>0 && buf[i-1]=='\r')
-		buf[i-1]=0;
+		buf[--i]=0;
 	else
 		buf[i]=0;
 
 	lprintf("CGI: Recieved %s",buf);
-	return(0);
+	return(i);
 }
 
 int recvbufsocket(int sock, char *buf, long count)
 {
 	int		rd=0;
+	int		i;
+	time_t	start;
 
 	if(count<1) {
 		errno=ERANGE;
 		return(0);
 	}
 
-	while(rd<count && socket_check(sock,FALSE))  {
-		rd+=read(sock,buf,count-rd);
+	/* ToDo Timeout here too? */
+	while(rd<count && socket_check(sock,NULL))  {
+		i=read(sock,buf,count-rd);
+		if(i<=0)  {
+			*buf=0;
+			return(0);
+		}
+
+		rd+=i;
+		start=time(NULL);
 	}
 
 	if(rd==count)  {
@@ -1004,7 +1026,7 @@ int recvbufsocket(int sock, char *buf, long count)
 	}
 
 	*buf=0;
-	return(-1);
+	return(0);
 }
 
 static BOOL parse_headers(http_session_t * session)
@@ -1018,8 +1040,7 @@ static BOOL parse_headers(http_session_t * session)
 	char	env_name[128];
 
 	lprintf("%04d Parsing headers",session->socket);
-	while(!sockreadline(session,req_line,sizeof(req_line))&&strlen(req_line)) {
-		/* Check this... SHOULD append lines starting with spaces or horizontal tabs. */
+	while(sockreadline(session,req_line,sizeof(req_line))>0) {
 		while((recvfrom(session->socket,next_char,1,MSG_PEEK,NULL,0)>0) 
 			&& (next_char[0]=='\t' || next_char[0]==' ')) {
 			i=strlen(req_line);
@@ -1040,7 +1061,7 @@ static BOOL parse_headers(http_session_t * session)
 					SAFECOPY(session->req.auth,p);
 					break;
 				case HEAD_ENCODE:
-					/* Not implemented  - POST */
+					/* Not implemented - In fact, all ENCODING stiff is dead now. */
 					break;
 				case HEAD_LENGTH:
 					add_env(session,"CONTENT_LENGTH",value);
@@ -1059,10 +1080,10 @@ static BOOL parse_headers(http_session_t * session)
 					session->req.if_modified_since=decode_date(value);
 					break;
 				case HEAD_REFERER:
-					/* Not implemented  - usefull for logging/CGI */
+					/* Not implemented  - usefull for logging */
 					break;
 				case HEAD_USERAGENT:
-					/* usefull for logging/CGI */
+					/* usefull for logging */
 					SAFECOPY(session->useragent,value);
 					break;
 				case HEAD_CONNECTION:
@@ -1095,6 +1116,7 @@ static BOOL parse_headers(http_session_t * session)
 		}
 		else  {
 			lprintf("%04d !ERROR Allocating %d bytes of memory",session->socket,content_len);
+			return(FALSE);
 		}
 	}
 	else  {
@@ -1199,7 +1221,7 @@ static BOOL get_req(http_session_t * session)
 	char	req_line[MAX_REQUEST_LINE];
 	char *	p;
 	
-	if(!sockreadline(session,req_line,sizeof(req_line))) {
+	if(sockreadline(session,req_line,sizeof(req_line))>0) {
 		lprintf("%04d Got request line: %s",session->socket,req_line);
 		p=NULL;
 		p=get_method(session,req_line);
@@ -1326,26 +1348,29 @@ static BOOL exec_cgi(http_session_t *session)
 {
 	char	cmdline[MAX_PATH+256];
 #ifdef __unix__
-	int		i;
-	int		status;
-	pid_t	child;
+	/* ToDo: Damn, that's WAY too many variables */
+	int		i=0;
+	int		status=0;
+	pid_t	child=0;
 	int		in_pipe[2];
 	int		out_pipe[2];
 	int		err_pipe[2];
-	void	*p;
-	struct timeval tv;
+	void	*p=NULL;
+	struct timeval tv={0,0};
 	fd_set	read_set;
 	fd_set	write_set;
-	int		high_fd;
+	int		high_fd=0;
 	char	buf[MAX_REQUEST_LINE+1];
 	size_t	post_offset=0;
 	BOOL	done_parsing_headers=FALSE;
 	BOOL	done_reading=FALSE;
 	char	cgi_status[MAX_REQUEST_LINE+1];
 	char	header[MAX_REQUEST_LINE+1];
-	char	*directive;
-	char	*value;
+	char	*directive=NULL;
+	char	*value=NULL;
 	BOOL	done_wait=FALSE;
+	BOOL	got_valid_headers=FALSE;
+	time_t	start;
 #endif
 
 	SAFECOPY(cmdline,session->req.physical_path);
@@ -1354,26 +1379,24 @@ static BOOL exec_cgi(http_session_t *session)
 
 	lprintf("Executing %s",cmdline);
 
+	/* ToDo: Should only do this if the Content-Length header was NOT sent */
+	session->req.keep_alive=FALSE;
+
 	/* Set up I/O pipes */
 	if(pipe(in_pipe)!=0) {
-		fcntl(in_pipe[0],F_SETFL,fcntl(in_pipe[0],F_GETFL)|O_NONBLOCK);
-		fcntl(in_pipe[1],F_SETFL,fcntl(in_pipe[1],F_GETFL)|O_NONBLOCK);
 		lprintf("%04d Can't create in_pipe",session->socket,buf);
 		return(FALSE);
 	}
+
 	if(pipe(out_pipe)!=0) {
-		fcntl(out_pipe[0],F_SETFL,fcntl(out_pipe[0],F_GETFL)|O_NONBLOCK);
-		fcntl(out_pipe[1],F_SETFL,fcntl(out_pipe[1],F_GETFL)|O_NONBLOCK);
 		lprintf("%04d Can't create out_pipe",session->socket,buf);
 		return(FALSE);
 	}
+
 	if(pipe(err_pipe)!=0) {
-		fcntl(err_pipe[0],F_SETFL,fcntl(err_pipe[0],F_GETFL)|O_NONBLOCK);
-		fcntl(err_pipe[1],F_SETFL,fcntl(err_pipe[1],F_GETFL)|O_NONBLOCK);
 		lprintf("%04d Can't create err_pipe",session->socket,buf);
 		return(FALSE);
 	}
-
 
 	if((child=fork())==0)  {
 		/* Set up environment */
@@ -1398,7 +1421,11 @@ static BOOL exec_cgi(http_session_t *session)
 		lprintf("FAILED! execl()");
 		exit(EXIT_FAILURE); /* Should never happen */
 	}
+	close(in_pipe[0]);		/* close excess file descriptor */
+	close(out_pipe[1]);		/* close excess file descriptor */
+	close(err_pipe[1]);		/* close excess file descriptor */
 
+	start=time(NULL);
 	/* Free() the environment */
 	while(session->req.cgi_env != NULL)  {
 		FREE_AND_NULL(session->req.cgi_env->val);
@@ -1417,48 +1444,69 @@ static BOOL exec_cgi(http_session_t *session)
 			high_fd=err_pipe[0];
 		if(in_pipe[1]>high_fd)
 			high_fd=in_pipe[1];
+		if(session->socket>high_fd)
+			high_fd=session->socket;
 
-		/* ToDo: Put max_cgi_inactivity support in here */
 		/* ToDo: Magically set done_parsing_headers for nph-* scripts */
-		tv.tv_sec=5;
-		tv.tv_usec=0;
 		SAFECOPY(cgi_status,"200 OK");
 		while(!done_reading)  {
-			done_wait |= (waitpid(child,&status,WNOHANG)==child);
+			if(!done_wait)
+				done_wait = (waitpid(child,&status,WNOHANG)==child);
 
-			if(done_wait)  {
-				tv.tv_sec=0;
-				tv.tv_usec=10;
-			}
+			tv.tv_sec=startup->max_cgi_inactivity;
+			tv.tv_usec=0;
 
 			FD_ZERO(&read_set);
 			FD_SET(out_pipe[0],&read_set);
 			FD_SET(err_pipe[0],&read_set);
+			FD_SET(session->socket,&read_set);
 			FD_ZERO(&write_set);
 			if(post_offset < session->req.post_len)
 				FD_SET(in_pipe[1],&write_set);
 
-			if(!done_reading && select(high_fd+1,&read_set,&write_set,NULL,&tv))  {
+			if(!done_reading && (select(high_fd+1,&read_set,&write_set,NULL,&tv)>0))  {
+				if(FD_ISSET(session->socket,&read_set))  {
+					done_reading=TRUE;
+				}
 				if(FD_ISSET(in_pipe[1],&write_set))  {
 					if(post_offset < session->req.post_len)  {
+						i=post_offset;
 						post_offset+=write(in_pipe[1],
 							session->req.post_data+post_offset,
 							session->req.post_len-post_offset);
 						if(post_offset>=session->req.post_len)
-							close(in_pipe[1]);	
+							close(in_pipe[1]);
+						if(i!=post_offset)  {
+							start=time(NULL);
+						}
+						if(i<0)  {
+							done_reading=TRUE;
+						}
 					}
 				}
 				if(FD_ISSET(out_pipe[0],&read_set))  {
-					if(done_parsing_headers)  {
-						i=read(out_pipe[0],buf,MAX_REQUEST_LINE);
-						write(session->socket,buf,i);
+					if(done_parsing_headers && got_valid_headers)  {
+						i=read(out_pipe[0],buf,1);
+						if(i>0)  {
+							start=time(NULL);
+							write(session->socket,buf,i);
+						}
+						if(i<=0)  {
+							done_reading=TRUE;
+						}
 					}
 					else  {
 						/* This is the tricky part */
-						if(pipereadline(out_pipe[0],buf,MAX_REQUEST_LINE))  {
-							/* ToDo: Put max_cgi_inactivity support in here */
+						i=pipereadline(out_pipe[0],buf,MAX_REQUEST_LINE);
+						if(i<0)  {
+							done_reading=TRUE;
+							got_valid_headers=FALSE;
 						}
-						if(*buf)  {
+						if(i>0)  {
+							start=time(NULL);
+						}
+
+						if(!done_parsing_headers && *buf)  {
 							SAFECOPY(header,buf);
 							directive=strtok(header,":");
 							if(directive != NULL)  {
@@ -1466,6 +1514,7 @@ static BOOL exec_cgi(http_session_t *session)
 								i=get_header_type(directive);
 								switch (i)  {
 									case HEAD_LOCATION:
+										got_valid_headers=TRUE;
 										if(*value=='/')  {
 											unescape(value);
 											SAFECOPY(session->req.virtual_path,value);
@@ -1478,40 +1527,79 @@ static BOOL exec_cgi(http_session_t *session)
 											if(! *cgi_status)
 												SAFECOPY(cgi_status,"302 Moved Temporarily");
 										}
+										break;
 									case HEAD_STATUS:
 										SAFECOPY(cgi_status,value);
 										break;
+									case HEAD_TYPE:
+										got_valid_headers=TRUE;
 									default:
 										session->req.cgi_heads=add_list(session->req.cgi_heads,buf);
 								}
 							}
 						}
 						else  {
-							/* ToDo: Should only do this if the Content-Length header was NOT sent */
-							session->req.keep_alive=FALSE;
-							session->req.was_cgi=TRUE;
-							send_headers(session,cgi_status);
+							if(got_valid_headers)  {
+								session->req.was_cgi=TRUE;
+								send_headers(session,cgi_status);
+							}
 							done_parsing_headers=TRUE;
 						}
 					}
 				}
 				if(FD_ISSET(err_pipe[0],&read_set))  {
-					i=read(err_pipe[0],buf,1024);
+					i=read(err_pipe[0],buf,1);
 					buf[i]=0;
-					lprintf("%04d ERR: %s",session->socket,buf);
+					if(i>0)  {
+						start=time(NULL);
+					}
+					if(i<0)  {
+						done_reading=TRUE;
+					}
 				}
 			}
 			else  {
-				if(done_wait)
-					done_reading=TRUE;
+				if(!done_wait)
+					done_wait = (waitpid(child,&status,WNOHANG)==child);
+
+				if((time(NULL)-start) >= startup->max_cgi_inactivity)  {
+					/* timeout */
+					lprintf("%04d CGI Script %s Timed out",session->socket,cmdline);
+					if(!done_wait)  {
+						kill(child,SIGTERM);
+						mswait(1000);
+						done_wait = (waitpid(child,&status,WNOHANG)==child);
+						if(!done_wait)  {
+							kill(child,SIGKILL);
+							done_wait = (waitpid(child,&status,0)==child);
+						}
+					}
+				}
 			}
 		}
+		if(!done_wait)  {
+			lprintf("%04d CGI Script %s must die!",session->socket,cmdline);
+			kill(child,SIGTERM);
+			mswait(1000);
+			done_wait = (waitpid(child,&status,WNOHANG)==child);
+			if(!done_wait)  {
+				kill(child,SIGKILL);
+				done_wait = (waitpid(child,&status,0)==child);
+			}
+		}
+				
 		while(session->req.cgi_heads != NULL)  {
 			FREE_AND_NULL(session->req.cgi_heads->val);
 			p=session->req.cgi_heads->next;
 			FREE_AND_NULL(session->req.cgi_heads);
 			session->req.cgi_heads=p;
 		}
+		close(in_pipe[1]);		/* close write-end of pipe */
+		close(out_pipe[0]);		/* close read-end of pipe */
+		close(err_pipe[0]);		/* close read-end of pipe */
+		lprintf("%04d Done CGI execution",session->socket);
+		if(!done_parsing_headers || !got_valid_headers)
+			return(FALSE);
 		return(TRUE);
 	}
 	return(FALSE);
