@@ -642,9 +642,26 @@ int ansi_initciolib(long inmode)
 	char *init="\033[0m\033[2J\033[1;1H";
 
 #ifdef _WIN32
-	setmode(fileno(stdout),_O_BINARY);
-	setmode(fileno(stdin),_O_BINARY);
-	setvbuf(stdout, NULL, _IONBF, 0);
+	if(isatty(fileno(stdin))) {
+		if(!GetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), &conmode))
+			return(0);
+		conmode&=~(ENABLE_PROCESSED_INPUT|ENABLE_QUICK_EDIT_MODE);
+		conmode|=ENABLE_MOUSE_INPUT;
+		if(!SetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), conmode))
+			return(0);
+
+		if(!GetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), &conmode))
+			return(0);
+		conmode&=~ENABLE_PROCESSED_OUTPUT;
+		conmode&=~ENABLE_WRAP_AT_EOL_OUTPUT;
+		if(!SetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), conmode))
+			return(0);
+	}
+	else {
+		setmode(fileno(stdout),_O_BINARY);
+		setmode(fileno(stdin),_O_BINARY);
+		setvbuf(stdout, NULL, _IONBF, 0);
+	}
 #else
 	struct termios tio_raw;
 
