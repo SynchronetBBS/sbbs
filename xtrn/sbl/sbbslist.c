@@ -347,7 +347,7 @@ BOOL check_imsg_support(ulong ip_addr)
 	send(sock,buf,strlen(buf),0);
 
 	/* Get response */
-	while((rd=sockreadline(sock,buf,sizeof(buf),30))>0) {
+	while((rd=sockreadline(sock,buf,sizeof(buf),60))>0) {
 		printf("%s\n",buf);
 		if(strstr(buf,"Synchronet")) {
 			success=TRUE;
@@ -390,7 +390,7 @@ BOOL check_imsg_support(ulong ip_addr)
 	}
 
 	/* Get response */
-	while((rd=sockreadline(sock,buf,sizeof(buf),10))>0) {
+	while((rd=sockreadline(sock,buf,sizeof(buf),60))>0) {
 		printf("%s\r\n",buf);
 		if(strstr(buf,"Synchronet")) {
 			success=TRUE;
@@ -448,10 +448,11 @@ int main(int argc, char **argv)
 		return(1);
 	}
 
+#if 0
 	if(_putenv("TZ=UCT0"))
 		printf("!putenv() FAILED");
 	tzset();
-
+#endif
 	now=time(NULL);
 
 	if((i=_sopen("SBL.DAB",O_RDWR|O_BINARY,SH_DENYNO,S_IREAD|S_IWRITE))==-1) {
@@ -588,23 +589,7 @@ int main(int argc, char **argv)
 				sysop="";
 				nodes[0]=0;
 			}
-			if(i && !stricmp(bbs.number[i].modem.number,bbs.number[i-1].modem.number))
-				continue;	// duplicate
-			if(i && !stricmp(bbs.number[i].modem.location,bbs.number[i-1].modem.location))
-				location="";
-			else
-				location=bbs.number[i].modem.location;
-			fprintf(shrt,"%-25.25s %-25.25s %s\r\n"
-				,i ? "" : bbs.name, location
-				,bbs.number[i].modem.number);
-			if(!i) {
-				fprintf(html,"<A NAME=\"%s.index\">",bbs.name);
-				fprintf(html,"<TR BGCOLOR=\"#EEEEEE\">");
-			} else
-				fprintf(html,"<TR>");
-				sprintf(name,"<A HREF=\"#%s\">%s</A>",bbs.name,bbs.name);
-
-			if(bbs.number[i].modem.min_rate==0xffff /* && bbs.name[0]=='E' */) {
+			if(bbs.number[i].modem.min_rate==0xffff) {
 
 				telnet_port=bbs.number[i].telnet.port;
 				if(telnet_port==0)
@@ -621,6 +606,54 @@ int main(int argc, char **argv)
 					*p=0;
 					telnet_port=atoi(p+1);
 				}
+				printf("Resolving IP address for: %s",telnet_addr);
+				ip_addr=resolve_ip(telnet_addr);
+				printf("\n");
+
+				if(ip_addr!=0) {
+					for(ip=0;ip<ip_total;ip++)
+						if(ip_addr==ip_list[ip])
+							break;
+					if(ip<ip_total)	/* already verified, ignore */
+						continue;
+				}
+			}
+
+			if(i && !stricmp(bbs.number[i].modem.number,bbs.number[i-1].modem.number))
+				continue;	// duplicate
+			if(i && !stricmp(bbs.number[i].modem.location,bbs.number[i-1].modem.location))
+				location="";
+			else
+				location=bbs.number[i].modem.location;
+			fprintf(shrt,"%-25.25s %-25.25s %s\r\n"
+				,i ? "" : bbs.name, location
+				,bbs.number[i].modem.number);
+			if(!i) {
+				fprintf(html,"<A NAME=\"%s.index\">",bbs.name);
+				fprintf(html,"<TR BGCOLOR=\"#EEEEEE\">");
+			} else
+				fprintf(html,"<TR>");
+				sprintf(name,"<A HREF=\"#%s\">%s</A>",bbs.name,bbs.name);
+
+			if(bbs.number[i].modem.min_rate==0xffff) {
+
+#if 0	// moved
+				telnet_port=bbs.number[i].telnet.port;
+				if(telnet_port==0)
+					telnet_port=23;
+				strcpy(telnet_addr_buf,bbs.number[i].telnet.addr);
+				telnet_addr=telnet_addr_buf;
+
+				if(!strnicmp(telnet_addr,"TELNET:",7))
+					telnet_addr+=7;
+				if(!strnicmp(telnet_addr,"//",2))
+					telnet_addr+=2;
+				p=strchr(telnet_addr,':');
+				if(p!=NULL) {
+					*p=0;
+					telnet_port=atoi(p+1);
+				}
+#endif
 
 #if !VERIFY	/* set to 1 for no-verification */
 				verified=TRUE;
@@ -629,7 +662,7 @@ int main(int argc, char **argv)
 				printf("Verifying %d/%d %s:%d "
 					,total_attempts,total_systems,telnet_addr,telnet_port);
 
-				ip_addr=resolve_ip(telnet_addr);
+//				ip_addr=resolve_ip(telnet_addr);	/* already done above */
 				if(!ip_addr) 
 					strcpy(verify_result,"bad hostname");
 				else {
@@ -700,11 +733,7 @@ int main(int argc, char **argv)
 								sprintf(verify_result,"non-Synchronet");
 							}
 							/* Check Finger */
-							for(ip=0;ip<ip_total;ip++)
-								if(ip_addr==ip_list[ip])
-									break;
-							if(ip>=ip_total && !fingered) {	/* not already checked */
-								ip_list[ip_total++]=ip_addr;
+							if(!fingered) {	/* not already checked */
 								if(check_imsg_support(ip_addr)) {
 									fingered=TRUE;
 									printf("[IM]");
@@ -715,6 +744,7 @@ int main(int argc, char **argv)
 						}
 					}
 
+					ip_list[ip_total++]=ip_addr;
 					closesocket(sock);
 				}
 
