@@ -96,4 +96,5 @@ var sockopts = [
 	"BROADCAST",
 	"OOBINLINE",
 	"ACCEPTCONN",
+	"TCP_NODELAY",
 ];
