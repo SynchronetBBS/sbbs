@@ -110,7 +110,7 @@
 
 #endif	/* __unix__ */
 
-#define XTRN_IO_BUF_LEN 5000
+#define XTRN_IO_BUF_LEN 10000	/* 50% of IO_THREAD_BUF_SIZE */
 
 /*****************************************************************************/
 /* Interrupt routine to expand WWIV Ctrl-C# codes into ANSI escape sequences */
@@ -301,6 +301,8 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 	HANDLE	hungup_event=NULL;
 	HANDLE	rdoutpipe;
 	HANDLE	wrinpipe;
+	HANDLE	harray[3];
+	DWORD	hcount;
     PROCESS_INFORMATION process_info;
 	DWORD	hVM;
 	DWORD	rd;
@@ -443,7 +445,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 				,str	// pointer to event-object name
 				))==NULL) {
 				XTRN_CLEANUP;
-				errormsg(WHERE, ERR_CREATE, "exec start event", 0);
+				errormsg(WHERE, ERR_CREATE, str, 0);
 				return(GetLastError());
 			}
 
@@ -542,15 +544,15 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		sa.lpSecurityDescriptor = NULL;
 		sa.bInheritHandle = TRUE;
 
-		// Create the child output pipe.
-		if(!CreatePipe(&rdoutpipe,&startup_info.hStdOutput,&sa,0)) {
+		// Create the child output pipe (override default 4K buffer size)
+		if(!CreatePipe(&rdoutpipe,&startup_info.hStdOutput,&sa,sizeof(buf))) {
 			errormsg(WHERE,ERR_CREATE,"stdout pipe",0);
 			return(GetLastError());
 		}
 		startup_info.hStdError=startup_info.hStdOutput;
 
 		// Create the child input pipe.
-		if(!CreatePipe(&startup_info.hStdInput,&wrinpipe,&sa,0)) {
+		if(!CreatePipe(&startup_info.hStdInput,&wrinpipe,&sa,sizeof(buf))) {
 			errormsg(WHERE,ERR_CREATE,"stdin pipe",0);
 			return(GetLastError());
 		}
@@ -705,14 +707,8 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
         }
 		if((native && !use_pipes) || mode&EX_OFFLINE) {	
 			/* Monitor for process termination only */
-            if(GetExitCodeProcess(process_info.hProcess, &retval)==FALSE) {
-                errormsg(WHERE, ERR_CHK, "ExitCodeProcess"
-                   ,(DWORD)process_info.hProcess);
-                break;
-            }
-            if(retval!=STILL_ACTIVE)
-                break;
-        	Sleep(500);
+			if(WaitForSingleObject(process_info.hProcess,1000)==WAIT_OBJECT_0)
+				break;
 		} else {
 
 			if(nt || use_pipes) {	// Windows NT/2000
@@ -863,11 +859,6 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 						errormsg(WHERE, ERR_IOCTL, SBBSEXEC_VXD, SBBSEXEC_IOCTL_READ);
 						break;
 					}
-#if 0
-					if(rd>1)
-                		lprintf("read %d bytes from xtrn", rd);
-#endif
-
 					if(mode&EX_WWIV) {
                 		bp=wwiv_expand(buf, rd, wwiv_buf, rd, useron.misc, wwiv_flag);
 						if(rd>sizeof(wwiv_buf))
@@ -884,31 +875,35 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 					RingBufWrite(&outbuf, bp, rd);
 				}
 			}
-            if(!rd && !wr) {
-				if(hungup || ++loop_since_io>=1000) {
-	                if(GetExitCodeProcess(process_info.hProcess, &retval)==FALSE) {
-	                    errormsg(WHERE, ERR_CHK, "ExitCodeProcess"
-						,(DWORD)process_info.hProcess);
+#ifdef _DEBUG
+			if(rd>1) {
+				sprintf(str,"Node %d read %5d bytes from xtrn", cfg.node_num, rd);
+				OutputDebugString(str);
+			}
+#endif
+            if((!rd && !wr) || hungup) {
+				loop_since_io++;
+				if((loop_since_io%300)==0) {
+#ifdef _DEBUG
+					sprintf(str,"Node %d xtrn idle\n",cfg.node_num);
+					OutputDebugString(str);
+#endif
+					// Let's make sure the socket is up
+					// Sending will trigger a socket d/c detection
+					if(!(startup->options&BBS_OPT_NO_TELNET_GA))
+						send_telnet_cmd(TELNET_GA,0);
+
+					// Check if the node has been interrupted
+					getnodedat(cfg.node_num,&thisnode,0);
+					if(thisnode.misc&NODE_INTR)
 						break;
-					}
-					if(retval!=STILL_ACTIVE)
-	                    break;
-
-					if(!(loop_since_io%3000)) {
-						OutputDebugString(".");
-
-						// Let's make sure the socket is up
-						// Sending will trigger a socket d/c detection
-						if(!(startup->options&BBS_OPT_NO_TELNET_GA))
-							send_telnet_cmd(TELNET_GA,0);
-
-						// Check if the node has been interrupted
-						getnodedat(cfg.node_num,&thisnode,0);
-						if(thisnode.misc&NODE_INTR)
-							break;
-					}
-					YIELD();
 				}
+				hcount=0;
+				harray[hcount++]=process_info.hProcess;
+				if(!hungup)
+					harray[hcount++]=inbuf.sem;
+				if(WaitForMultipleObjects(hcount,harray,FALSE,100)==WAIT_OBJECT_0)
+					break;
             } else
 				loop_since_io=0;
         }
@@ -930,6 +925,9 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 	}
 
     if(!(mode&EX_BG)) {			/* !background execution */
+
+        if(GetExitCodeProcess(process_info.hProcess, &retval)==FALSE)
+            errormsg(WHERE, ERR_CHK, "ExitCodeProcess",(DWORD)process_info.hProcess);
 
 		if(retval==STILL_ACTIVE) {
 			lprintf("Node %d Terminating process from line %d",cfg.node_num,__LINE__);
