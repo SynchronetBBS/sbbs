@@ -63,8 +63,9 @@
 /* Global Variables */
 /********************/
 uifcapi_t uifc; /* User Interface (UIFC) Library API */
-const char *YesStr="Yes";
-const char *NoStr="No";
+char *YesStr="Yes";
+char *NoStr="No";
+int 		modified=0;
 
 int lprintf(char *fmt, ...)
 {
@@ -107,8 +108,211 @@ void freeopt(char** opt)
 	free(opt);
 }
 
+int confirm(char *prompt)
+{
+	int i=0;
+	char *opt[3]={
+		 YesStr
+		,NoStr
+		,""
+	};
+
+	i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,prompt,opt);
+	if(i==0)
+		return(1);
+	return(0);	
+}
+
+int check_save(scfg_t *cfg,user_t *user)
+{
+	if(modified) {
+		if(confirm("Save Changes?")) {
+			putuserdat(cfg,user);
+		}
+	}
+	return(0);
+}
+
+/* Edit "Extended comment" */
+int edit_comment(scfg_t *cfg, user_t *user)
+{
+	return(0);
+}
+
+/* MSG and File settings
+ *      - Message Options
+ *      - QWK Message Packet
+ *      - File Options
+ */
+int edit_msgfile(scfg_t *cfg, user_t *user)
+{
+	return(0);
+}
+
+/* Settings
+ *     - Terminal Settings
+ *     - Logon Toggles
+ *     - Chat Toggles
+ *     - Command Shell
+ */
+int edit_settings(scfg_t *cfg, user_t *user)
+{
+	return(0);
+}
+
+/* Statistics
+ *     First On
+ *     Last On
+ *     Total Logons
+ *     Todays Logons
+ *     Total Posts
+ *     Todays Posts
+ *     Total Uploads
+ *     Todays Uploads
+ *     Total Time On
+ *     Todays Time On
+ *     Last Call
+ *     Extra
+ *     Total Downloads
+ *     Bytes
+ *     Leech
+ *     Total Email
+ *     Todays Email
+ *     Email to Sysop
+ */
+int edit_stats(scfg_t *cfg, user_t *user)
+{
+	return(0);
+}
+
+/* Security settings
+ *     Level
+ *     Expiration
+ *     Flag Set 1
+ *     Flag Set 2
+ *     Flag Set 3
+ *     Flag Set 4
+ *     Exemptions
+ *     Restrictions
+ *     Credits
+ *     Free Credits
+ *     Minutes
+ */
+int edit_security(scfg_t *cfg, user_t *user)
+{
+	return(0);
+}
+
+/*
+ * Personal settings... 
+ *     Real Name
+ *     Computer
+ *     NetMail
+ *     Phone
+ *     Note
+ *     Comment
+ *     Gender
+ *     Connection
+ *     Handle
+ *     Bitrate
+ *     Password
+ *     Address 1
+ *     Address 2
+ *     Postal/ZIP?
+ */
+int edit_personal(scfg_t *cfg, user_t *user)
+{
+	return(0);
+}
+
+/*
+ * This is where the good stuff happens
+ */
 int edit_user(scfg_t *cfg, int usernum)
 {
+	char**	opt;
+	int 	i,j;
+	user_t	user;
+
+	if((opt=(char **)MALLOC(sizeof(char *)*(MAX_OPTS+1)))==NULL)
+		allocfail(sizeof(char *)*(MAX_OPTS+1));
+	for(i=0;i<(MAX_OPTS+1);i++)
+		if((opt[i]=(char *)MALLOC(MAX_OPLN))==NULL)
+			allocfail(MAX_OPLN);
+
+	user.number=usernum;
+	getuserdat(cfg,&user);
+	i=0;
+	strcpy(opt[i++],"Reload");
+	strcpy(opt[i++],"Delete");
+	if (user.misc & INACTIVE)
+		strcpy(opt[i++],"Activate");
+	else
+		strcpy(opt[i++],"Deactivate");
+	strcpy(opt[i++],"Personal");
+	strcpy(opt[i++],"Security");
+	strcpy(opt[i++],"Statistics");
+	strcpy(opt[i++],"Settings");
+	strcpy(opt[i++],"MSG/File Settings");
+	strcpy(opt[i++],"Extended Comment");
+	opt[i][0]=0;
+	i=0;
+
+	modified=0;
+	while(1) {
+		switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"Edit User",opt)) {
+			case -1:
+				if(modified) {
+					check_save(cfg,&user);
+				}
+				freeopt(opt);
+				return(0);
+				break;
+
+			case 0:
+				if(modified && confirm("This will undo any changes you have made.  Continue?")) {
+					getuserdat(cfg,&user);
+				}
+
+			case 1:
+				user.misc |= DELETED;
+				modified=1;
+				break;
+
+			case 2:
+				user.misc ^= INACTIVE;
+				modified=1;
+				break;
+
+			case 3:
+				edit_personal(cfg,&user);
+				break;
+
+			case 4:
+				edit_security(cfg,&user);
+				break;
+
+			case 5:
+				edit_stats(cfg,&user);
+				break;
+
+			case 6:
+				edit_settings(cfg,&user);
+				break;
+
+			case 7:
+				edit_msgfile(cfg,&user);
+				break;
+
+			case 8:
+				edit_comment(cfg,&user);
+				break;
+
+			default:
+				break;
+		}
+	}
+	
 	return(0);
 }
 
@@ -256,7 +460,7 @@ int main(int argc, char** argv)  {
 					"\nToDo: Add Help";
 
 	while(1) {
-		j=uifc.list(WIN_L2R|WIN_ESC|WIN_ACT|WIN_DYN,0,5,70,&main_dflt,&main_bar
+		j=uifc.list(WIN_L2R|WIN_ESC|WIN_ACT|WIN_DYN|WIN_ORG,0,5,70,&main_dflt,&main_bar
 			,title,mopt);
 
 		if(j == -2)
@@ -275,16 +479,11 @@ int main(int argc, char** argv)  {
 			continue;
 
 		if(j==-1) {
-			i=0;
-			strcpy(opt[0],YesStr);
-			strcpy(opt[1],NoStr);
-			opt[2][0]=0;
 			uifc.helpbuf=	"`Exit Synchronet User Editor:`\n"
 							"\n"
 							"\nIf you want to exit the Synchronet user editor,"
 							"\nselect `Yes`. Otherwise, select `No` or hit ~ ESC ~.";
-			i=uifc.list(WIN_MID,0,0,0,&i,0,"Exit Synchronet Monitor",opt);
-			if(!i)
+			if(confirm("Exit Synchronet Monitor"))
 				bail(0);
 			continue;
 		}
