@@ -166,7 +166,7 @@ void nextplayer(void);
 char lastplayer(void);
 char firstplayer(void);
 void getnodemsg(void);
-void putnodemsg(char *msg,char nodenumber);
+void putnodemsg(char *msg, uint nodenumber);
 void putallnodemsg(char *msg);
 void syncplayer(void);
 void syncdealer(void);
@@ -185,182 +185,211 @@ char *left(void);
 void strip_symbols(char *str);
 void debug(void);
 
+#ifndef __BORLANDC__
+int random(int n)
+{
+	float f;
+
+	if(n<2)
+		return(0);
+	f=(float)rand()/(float)RAND_MAX;
+
+	return((int)(n*f));
+}
+#endif
+
 /****************************************************************************/
 /* Entry point																*/
 /****************************************************************************/
 int main(int argc, char **argv)
 {
-	char str[81],ch,*p;
+	char str[81],*p;
 	int i,file;
 	FILE *stream;
 
-node_dir[0]=0;
-for(i=1;i<argc;i++)
-	if(!stricmp(argv[i],"/L"))
-		logit=1;
-	else if(!stricmp(argv[i],"/T"))
-		tutor=2;
-	else if(!stricmp(argv[i],"/S"))
-		tutor=1;
-	else strcpy(node_dir,argv[i]);
+	node_dir[0]=0;
+	for(i=1;i<argc;i++)
+		if(!stricmp(argv[i],"/L"))
+			logit=1;
+		else if(!stricmp(argv[i],"/T"))
+			tutor=2;
+		else if(!stricmp(argv[i],"/S"))
+			tutor=1;
+		else strcpy(node_dir,argv[i]);
 
-p=getenv("SBBSNODE");
-if(!node_dir[0] && p)
-	strcpy(node_dir,p);
+	p=getenv("SBBSNODE");
+	if(!node_dir[0] && p)
+		strcpy(node_dir,p);
 
-if(!node_dir[0]) {	  /* node directory not specified */
-	bputs("usage: sbj <node directory> [/options]\r\n");
-	bputs("\r\noptions: L = log wins/losses for each day\r\n");
-	getch();
-	return(1); }
+	if(!node_dir[0]) {	  /* node directory not specified */
+		bputs("usage: sbj <node directory> [/options]\r\n");
+		bputs("\r\noptions: L = log wins/losses for each day\r\n");
+		getch();
+		return(1); }
 
-if(node_dir[strlen(node_dir)-1]!='\\')  /* make sure node_dir ends in '\' */
-	strcat(node_dir,"\\");
+	if(node_dir[strlen(node_dir)-1]!='\\')  /* make sure node_dir ends in '\' */
+		strcat(node_dir,"\\");
 
-initdata(); 								/* read XTRN.DAT and more */
-credits=user_cdt;
-total_nodes=sys_nodes;
-
-remove("DEBUG.LOG");
-
-if((file=nopen("SBJ.CFG",O_RDONLY))==-1) {  /* open config file */
-	bputs("Error opening SBJ.CFG\r\n");
-	pause();
-	return(1); }
-if((stream=fdopen(file,"rb"))==NULL) {      /* convert to stream */
-	bputs("Error converting SBJ.CFG handle to stream\r\n");
-	pause();
-	return(1); }
-fgets(str,81,stream);						/* number of decks in shoe */
-total_decks=sys_decks=atoi(str);
-fgets(str,81,stream);						/* min bet (in k) */
-min_bet=atoi(str);
-fgets(str,81,stream);						/* max bet (in k) */
-max_bet=atoi(str);
-fgets(str,81,stream);						/* default bet (in k) */
-ibet=atoi(str);
-fclose(stream);
-if(!total_decks || total_decks>MAX_DECKS) {
-	bputs("Invalid number of decks in SBJ.CFG\r\n");
-	pause();
-	return(1); }
-if(!max_bet) {
-	bputs("Invalid max bet in SBJ.CFG\r\n");
-	pause();
-	return(1); }
-if(min_bet>max_bet) {
-	bputs("Invalid min bet in SBJ.CFG\r\n");
-	pause();
-    return(1); }
-if(ibet>max_bet || ibet<min_bet) {
-	bputs("Invalid default bet in SBJ.CFG\r\n");
-	pause();
-    return(1); }
-
-if(!fexist("CARD.DAB")) {
-	cur_card=0;
-	dc=0;
-	memset(dealer,0,sizeof(dealer));
-	memset(card,0,sizeof(card));
-	putcarddat(); }
-else {
-	getcarddat();
-	if(total_decks!=sys_decks) {
-		remove("CARD.DAB");
-		total_decks=sys_decks;
-		putcarddat(); } }
-
-if(!fexist("GAME.DAB"))         /* File's not there */
-	create_gamedab();
-
-open_gamedab();
-
-getgamedat(0);
-if(total_nodes!=sys_nodes) {  /* total nodes changed */
-	close(gamedab);
+	initdata(); 								/* read XTRN.DAT and more */
+	credits=user_cdt;
 	total_nodes=sys_nodes;
-	create_gamedab();
-	open_gamedab(); }
 
-randomize();
+	remove("DEBUG.LOG");
 
-while(_bios_keybrd(1))	 /* clear input buffer */
-	_bios_keybrd(0);
-putchar(5); /* ctrl-e */
-mswait(500);
-if(_bios_keybrd(1)) {
-	while(_bios_keybrd(1))
+	if((file=nopen("SBJ.CFG",O_RDONLY))==-1) {  /* open config file */
+		bputs("Error opening SBJ.CFG\r\n");
+		pause();
+		return(1); }
+	if((stream=fdopen(file,"rb"))==NULL) {      /* convert to stream */
+		bputs("Error converting SBJ.CFG handle to stream\r\n");
+		pause();
+		return(1); }
+	fgets(str,81,stream);						/* number of decks in shoe */
+	total_decks=sys_decks=atoi(str);
+	fgets(str,81,stream);						/* min bet (in k) */
+	min_bet=atoi(str);
+	fgets(str,81,stream);						/* max bet (in k) */
+	max_bet=atoi(str);
+	fgets(str,81,stream);						/* default bet (in k) */
+	ibet=atoi(str);
+	fclose(stream);
+	if(!total_decks || total_decks>MAX_DECKS) {
+		bputs("Invalid number of decks in SBJ.CFG\r\n");
+		pause();
+		return(1); }
+	if(!max_bet) {
+		bputs("Invalid max bet in SBJ.CFG\r\n");
+		pause();
+		return(1); }
+	if(min_bet>max_bet) {
+		bputs("Invalid min bet in SBJ.CFG\r\n");
+		pause();
+		return(1); }
+	if(ibet>max_bet || ibet<min_bet) {
+		bputs("Invalid default bet in SBJ.CFG\r\n");
+		pause();
+		return(1); }
+
+	if(!fexist("CARD.DAB")) {
+		cur_card=0;
+		dc=0;
+		memset(dealer,0,sizeof(dealer));
+		memset(card,0,sizeof(card));
+		putcarddat(); }
+	else {
+		getcarddat();
+		if(total_decks!=sys_decks) {
+			remove("CARD.DAB");
+			total_decks=sys_decks;
+			putcarddat(); } }
+
+	if(!fexist("GAME.DAB"))         /* File's not there */
+		create_gamedab();
+
+	open_gamedab();
+
+	getgamedat(0);
+	if(total_nodes!=sys_nodes) {  /* total nodes changed */
+		close(gamedab);
+		total_nodes=sys_nodes;
+		create_gamedab();
+		open_gamedab(); }
+
+	srand((unsigned)time(NULL));
+
+#ifdef __16BIT__
+	while(_bios_keybrd(1))	 /* clear input buffer */
 		_bios_keybrd(0);
-	bputs("\r\n\1r\1h\1i*** ATTENTION ***\1n\1h\r\n");
-	bputs("\r\nSynchronet Blackjack uses Ctrl-E (ENQ) for the 'club' card "
-		"symbol.");
-	bputs("\r\nYour terminal responded to this control character with an "
-		"answerback string.");
-	bputs("\r\nYou will need to disable all Ctrl-E (ENQ) answerback "
-		"strings (Including \r\nCompuserve Quick B transfers) if you wish to "
-		"toggle card symbols on.\r\n\r\n");
-	symbols=0;
-	pause(); }
+#endif
 
-cls();
-bputs("\1n \1h\1cSynchronet\r\n");
-bputs("\1n\0011\1k Blackjack! \r\n");
-bputs("\1n\1r\1h   v2.33\r\n");
-bprintf("\1n\1r(XSDK v%s)\r\n",xsdk_ver);
+	putchar(5); /* ctrl-e */
+	mswait(500);
+	if(kbhit()) {
+#ifdef __16BIT__
+		while(_bios_keybrd(1))
+			_bios_keybrd(0);
+#else
+		getkey(0);
+#endif
+		bputs("\r\n\1r\1h\1i*** ATTENTION ***\1n\1h\r\n");
+		bputs("\r\nSynchronet Blackjack uses Ctrl-E (ENQ) for the 'club' card "
+			"symbol.");
+		bputs("\r\nYour terminal responded to this control character with an "
+			"answerback string.");
+		bputs("\r\nYou will need to disable all Ctrl-E (ENQ) answerback "
+			"strings (Including \r\nCompuserve Quick B transfers) if you wish to "
+			"toggle card symbols on.\r\n\r\n");
+		symbols=0;
+		pause(); }
 
-getgamedat(1);
-node[node_num-1]=0;
-putgamedat();
+	getgamedat(1);
+	node[node_num-1]=0;
+	putgamedat();
 
-sec_warn=120;	/* Override default inactivity timeout values */
-sec_timeout=180;
+	/* Override default mnemonic colors */
+	mnehigh=RED|HIGH;
+	mnelow=CYAN|HIGH;
 
-while(1) {
-	aborted=0;
-	mnemonics("\r\n~Instructions\r\n");
-	mnemonics("~Join Game\r\n");
-	mnemonics("~List Players\r\n");
-	mnemonics("~Rules of the Game\r\n");
-	mnemonics("~Toggle Card Symbols\r\n");
-	sprintf(str,"~Quit to %s\r\n",sys_name);
-	mnemonics(str);
-	nodesync();
-	bprintf("\1_\r\n\1y\1hWhich: \1n");
-	switch(getkeys("IJLRTQ|!",0)) {
-		#if DEBUG
-		case '!':
-			if(!com_port)
-				autoplay=1;
-			break;
-		case '|':
-			debug();
-			break;
-		#endif
-		case 'I':
-			printfile("SBJ.MSG");
-			break;
-		case 'L':
-			listplayers();
-			bprintf(ShoeStatus,cur_card,total_decks*52);
-			break;
-		case 'R':
-			bprintf("\1n\1c\r\nMinimum bet: \1h%uk",min_bet);
-			bprintf("\1n\1c\r\nMaximum bet: \1h%uk\r\n",max_bet);
-			bprintf("\1w\1h\r\nCard decks in shoe: \1h%u\r\n",sys_decks);
-			break;
-		case 'T':
-			symbols=!symbols;
-			bprintf("\1_\1w\r\nCard symbols now: %s\r\n",symbols ? "ON":"OFF");
-			break;
-		case 'Q':
-			exit(0);
-		case 'J':
-			sec_warn=60;	/* Override default inactivity timeout values */
-			sec_timeout=90;
-			play();
-			sec_warn=120;
-			sec_timeout=180;
-			break; } }
+	/* Override default inactivity timeout values */
+	sec_warn=120;	
+	sec_timeout=180;
+
+#define SBJ_INDENT "                                "
+	while(1) {
+		cls();
+		center("\1n\1h\1cSynchronet \1rBlackjack! \1cv3.00\r\n");
+		sprintf(str,"\1w(XSDK v%s)\r\n\r\n",xsdk_ver);
+		center(str);
+
+		aborted=0;
+		mnemonics(SBJ_INDENT"~Instructions\r\n");
+		mnemonics(SBJ_INDENT"~Join/Begin Game\r\n");
+		mnemonics(SBJ_INDENT"~List Players\r\n");
+		mnemonics(SBJ_INDENT"~Rules of the Game\r\n");
+		mnemonics(SBJ_INDENT"~Toggle Card Symbols\r\n");
+		sprintf(str,SBJ_INDENT"~Quit to %s\r\n",sys_name);
+		mnemonics(str);
+		nodesync();
+		bprintf("\1_\r\n"SBJ_INDENT"\1y\1hWhich: \1n");
+		switch(getkeys("IJBLRTQ|!",0)) {
+			#if DEBUG
+			case '!':
+				if(!com_port)
+					autoplay=1;
+				break;
+			case '|':
+				debug();
+				break;
+			#endif
+			case 'I':
+				cls();
+				printfile("SBJ.MSG");
+				break;
+			case 'L':
+				listplayers();
+				bprintf(ShoeStatus,cur_card,total_decks*52);
+				break;
+			case 'R':
+				bprintf("\1n\1c\r\nMinimum bet: \1h%uk",min_bet);
+				bprintf("\1n\1c\r\nMaximum bet: \1h%uk\r\n",max_bet);
+				bprintf("\1w\1h\r\nCard decks in shoe: \1h%u\r\n",sys_decks);
+				break;
+			case 'T':
+				symbols=!symbols;
+				bprintf("\1_\1w\r\nCard symbols now: %s\r\n",symbols ? "ON":"OFF");
+				break;
+			case 'Q':
+				exit(0);
+			case 'J':
+			case 'B':
+				sec_warn=60;	/* Override default inactivity timeout values */
+				sec_timeout=90;
+				play();
+				sec_warn=120;
+				sec_timeout=180;
+				break; 
+		} 
+	}
 }
 
 #if DEBUG
@@ -433,9 +462,11 @@ bputs("\r\n");
 
 void wrong(char action)
 {
+#ifdef __16BIT__
 sound(100);
 mswait(500);
 nosound();
+#endif
 bputs("Dealer says you should have ");
 switch(action) {
 	case 'H':
@@ -473,7 +504,7 @@ void play()
 	uint max;
 	long val;
 	time_t start,now;
-	struct dosdate_t date;
+	struct tm* tm;
 
 sprintf(str,"MESSAGE.%d",node_num);         /* remove message if waiting */
 if(fexist(str))
@@ -545,7 +576,7 @@ while(1) {
 		,ibet<credits/1024L ? ibet : credits/1024L);
 	chat();
 	mnemonics(str);
-	if(autoplay && _bios_keybrd(1))
+	if(autoplay && kbhit())
 		autoplay=0;
 	if(autoplay)
 		i=ibet;
@@ -748,7 +779,7 @@ while(1) {
 			strcat(str,", or [Stand]: ");
 			chat();
 			mnemonics(str);
-			if(autoplay && _bios_keybrd(1))
+			if(autoplay && kbhit())
 				autoplay=0;
 
 
@@ -866,9 +897,10 @@ while(1) {
 		while(j++<19)
 			strcat(str," ");
 		if(logit) {
-			_dos_getdate(&date);
+			now=time(NULL);
+			tm=localtime(&now);
 			sprintf(log,"%02d%02d%02d.LOG"                  /* log winnings */
-				,date.month,date.day,date.year-1900);
+				,tm->tm_mon+1,tm->tm_mday,tm->tm_year%100);
 			if((file=nopen(log,O_RDONLY))!=-1) {
 				read(file,tmp,filelength(file));
 				tmp[filelength(file)]=0;
@@ -888,7 +920,7 @@ while(1) {
 				|| (pc[i]==2 && player[i][0].suit==player[i][1].suit)))
 				j*=2;
 			else if(h==21 && pc[i]==2)	/* regular blackjack */
-				j*=1.5; /* blackjack pays 1« to 1 */
+				j*=1.5; /* blackjack pays 1 1/2 to 1 */
 			sprintf(tmp,"\1n\1h\1m\1iWon!\1n\1h %u\1n\1mk",j);
 			strcat(str,tmp);
 			credits+=j*1024L;
@@ -1093,7 +1125,7 @@ for(i=0;i<total_decks;i++)
 	memcpy(shufdeck+(i*52),newdeck,sizeof(newdeck));	  /* fresh decks */
 
 i=0;
-while(i<(total_decks*52)-1) {
+while(i<(uint)(total_decks*52)-1) {
 	j=random((total_decks*52)-1);
 	if(!shufdeck[j].value)	/* card already used */
 		continue;
@@ -1145,7 +1177,7 @@ free(buf);
 /****************************************************************************/
 /* This function creates a message for a certain node.						*/
 /****************************************************************************/
-void putnodemsg(char *msg, char nodenumber)
+void putnodemsg(char *msg, uint nodenumber)
 {
 	char str[81];
 	int file;
