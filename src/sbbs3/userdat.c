@@ -688,8 +688,10 @@ int DLLCALL putnodedat(scfg_t* cfg, uint number, node_t* node, int file)
 	int		wrerr;
 	int		attempts;
 
-	if(!number || number>cfg->sys_nodes) 
+	if(!number || number>cfg->sys_nodes || file<0) {
+		close(file);
 		return(-1);
+	}
 
 	number--;	/* make zero based */
 	for(attempts=0;attempts<10;attempts++) {
