@@ -5,12 +5,16 @@
 load("sbbsdefs.js");
 
 var log_results = true;
+var log_request = true;
 var referers = [];
 var recipients = [ "sysop" ];
+var disabled = false;
 
 var cfg_file = new File(file_cfgname(system.ctrl_dir, "formmail.ini"));
 if(cfg_file.open("r")) {
+	disabled = cfg_file.iniGetValue(null,"Disabled",disabled);
 	log_results = cfg_file.iniGetValue(null,"LogResults",log_results);
+	log_request = cfg_file.iniGetValue(null,"LogRequest",log_request);
 	referers = cfg_file.iniGetValue(null,"Referers",referers);
 	recipients = cfg_file.iniGetValue(null,"Recipients",recipients);
 	cfg_file.close();
@@ -70,6 +74,10 @@ var title = "Thank You";
 if(http_request.query.title)
 	title = http_request.query.title;
 
+// Test if script disabled here
+if(disabled)
+	results(LOG_WARNING,"This script has been disabled by the system operator");
+
 // Test for required form fields here
 var redirect;
 if(http_request.query.redirect)
@@ -94,8 +102,10 @@ if(referers.length && !find(http_request.header.referer,referers))
 // Send HTTP/HTML results here
 function results(level, text, missing)
 {
-	if(level<=LOG_WARNING)
+	if(level<=LOG_ERR)
 		text = "!ERROR: ".bold() + text;
+	else if(level==LOG_WARNING)
+		text = "!WARNING: ".bold() + text;
 
 	var plain_text = text.replace(/<[^>]*>/g,"");	// strip HTML tags
 
@@ -106,6 +116,13 @@ function results(level, text, missing)
 		var file = new File(fname);
 		if(file.open("a")) {
 			file.printf("%s  %s\n",strftime("%b-%d-%y %H:%M"),plain_text);
+			if(log_request) {
+				file.writeln("\thttp_request:");
+				var f;
+				for(f in http_request)
+					if(http_request[f].length)
+						file.writeln("\t" + f + " = " + http_request[f]);
+			}
 			file.close();
 		}
 	}
