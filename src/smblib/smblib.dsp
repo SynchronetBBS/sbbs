@@ -37,11 +37,12 @@ RSC=rc.exe
 # PROP BASE Target_Dir ""
 # PROP Use_MFC 0
 # PROP Use_Debug_Libraries 0
-# PROP Output_Dir "msvc.win32.release"
-# PROP Intermediate_Dir "msvc.win32.release"
+# PROP Output_Dir "msvc.win32.lib.release"
+# PROP Intermediate_Dir "msvc.win32.lib.release"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /YX /FD /c
-# ADD CPP /nologo /W3 /GX /O2 /I "..\xpdev" /D "NDEBUG" /D "WIN32" /D "_MBCS" /D "_LIB" /D "SMB_EXPORTS" /D "MD5_EXPORTS" /YX /Zl /FD /c
+# ADD CPP /nologo /W3 /GX /O2 /I "..\xpdev" /D "NDEBUG" /D "WIN32" /D "_MBCS" /D "_LIB" /D "SMB_EXPORTS" /D "MD5_EXPORTS" /Zl /FD /c
+# SUBTRACT CPP /YX
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
 BSC32=bscmake.exe
@@ -60,8 +61,8 @@ LIB32=link.exe -lib
 # PROP BASE Target_Dir ""
 # PROP Use_MFC 0
 # PROP Use_Debug_Libraries 1
-# PROP Output_Dir "msvc.win32.debug"
-# PROP Intermediate_Dir "msvc.win32.debug"
+# PROP Output_Dir "msvc.win32.lib.debug"
+# PROP Intermediate_Dir "msvc.win32.lib.debug"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /YX /FD /GZ /c
 # ADD CPP /nologo /W3 /Gm /GX /ZI /Od /I "..\xpdev" /D "_DEBUG" /D "WIN32" /D "_MBCS" /D "_LIB" /D "SMB_EXPORTS" /D "MD5_EXPORTS" /YX /Zl /FD /GZ /c
