@@ -776,7 +776,7 @@ extern "C" {
 	DLLEXPORT char *	DLLCALL prep_file_desc(char *str);
 
 	/* load_cfg.c */
-	DLLEXPORT BOOL		DLLCALL load_cfg(scfg_t* cfg, char* text[], BOOL prep);
+	DLLEXPORT BOOL		DLLCALL load_cfg(scfg_t* cfg, char* text[], BOOL prep, char* error);
 	DLLEXPORT void		DLLCALL free_cfg(scfg_t* cfg);
 	DLLEXPORT void		DLLCALL free_text(char* text[]);
 
