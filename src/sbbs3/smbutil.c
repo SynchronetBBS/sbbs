@@ -59,6 +59,7 @@
 #include "smbwrap.h"
 #include "smblib.h"
 #include "crc32.h"
+#include "gen_defs.h"	/* MAX_PATH */
 
 #ifdef __WATCOMC__
 	#include <dos.h>
