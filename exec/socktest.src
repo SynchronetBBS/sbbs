@@ -1,0 +1,63 @@
+!include sbbsdefs.inc
+
+int sock len
+str buf
+
+socket_open sock
+if_false
+	print "open failure\r\n"
+	return
+	end_if
+setstr "cvs.synchro.net"
+socket_connect sock str 23
+if_false
+	print "connect failure\r\n"
+	return
+	end_if
+
+or _console CON_RAW_IN
+loop
+
+	inchar
+	if_true
+		compare_key ^]
+		if_equal
+			break
+			end_if
+		copy_char buf
+		socket_write sock buf
+		if_false
+			print "\r\nError writing to socket\r\n"
+			break
+			end_if
+		continue
+		end_if
+
+	socket_check sock
+	if_false
+		print "\r\nSocket disconnected\r\n"
+		break
+		end_if
+
+	socket_nread sock len
+	if_false
+		print "\r\nError getting read length\r\n"
+		break
+		end_if
+
+	compare len 0
+	if_equal
+		continue
+		end_if
+
+#	printf "reading %d" len
+
+	socket_read sock buf len
+	if_true
+		pause_reset
+		print buf
+		end_if
+	end_loop
+
+socket_close sock
+xor _console CON_RAW_IN
