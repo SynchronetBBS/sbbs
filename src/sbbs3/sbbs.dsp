@@ -230,6 +230,10 @@ SOURCE=.\getnode.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\getstats.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\getstr.cpp
 # End Source File
 # Begin Source File

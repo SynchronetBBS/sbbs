@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -314,22 +314,6 @@ void sbbs_t::msgtotxt(smbmsg_t* msg, char *str, int header, int tails)
 	} else if(smb_getmsgdatlen(msg)>2)
 		errormsg(WHERE,ERR_READ,smb.file,smb_getmsgdatlen(msg));
 	fclose(out);
-}
-
-
-/****************************************************************************/
-/* Returns total number of posts in a sub-board 							*/
-/****************************************************************************/
-ulong DLLCALL getposts(scfg_t* cfg, uint subnum)
-{
-	char str[128];
-	ulong l;
-
-	sprintf(str,"%s%s.sid",cfg->sub[subnum]->data_dir,cfg->sub[subnum]->code);
-	l=flength(str);
-	if((long)l==-1)
-		return(0);
-	return(l/sizeof(idxrec_t));
 }
 
 /****************************************************************************/

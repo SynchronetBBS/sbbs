@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -102,23 +102,6 @@ uint sbbs_t::finduser(char *instr)
 		pass++; }
 	bputs(text[UnknownUser]);
 	fclose(stream);
-	return(0);
-}
-
-/****************************************************************************/
-/* Returns the number of files in the directory 'dirnum'                    */
-/****************************************************************************/
-long DLLCALL getfiles(scfg_t* cfg, uint dirnum)
-{
-	char str[256];
-	long l;
-
-	if(dirnum>=cfg->total_dirs)	/* out of range */
-		return(0);
-	sprintf(str,"%s%s.ixb",cfg->dir[dirnum]->data_dir, cfg->dir[dirnum]->code);
-	l=flength(str);
-	if(l>0L)
-		return(l/F_IXBSIZE);
 	return(0);
 }
 

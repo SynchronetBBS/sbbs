@@ -38,6 +38,7 @@ OBJS	=	$(LIBODIR)$(SLASH)ansiterm.$(OFILE)\
 			$(LIBODIR)$(SLASH)getmail.$(OFILE)\
 			$(LIBODIR)$(SLASH)getmsg.$(OFILE)\
 			$(LIBODIR)$(SLASH)getnode.$(OFILE)\
+			$(LIBODIR)$(SLASH)getstats.$(OFILE)\
 			$(LIBODIR)$(SLASH)getstr.$(OFILE)\
 			$(LIBODIR)$(SLASH)ini_file.$(OFILE)\
 			$(LIBODIR)$(SLASH)inkey.$(OFILE)\
