@@ -6,6 +6,12 @@
 </center>
 	<form action="newuser.ssjs" method="post">
 		<table class="newuser" cellpadding="0" cellspacing="2">
+			@@nupstart@@
+			<tr>
+				<td class="newuser" align="right">%%errs:nupass%% %%nupass_required%% New User Password:</td>
+				<td class="newuser" align="left"><input type="password" name="nupass" size="25" maxlength="25" value="" /></td>
+			</tr>
+			@@nupend@@
 			<tr>
 				<td class="newuser" align="right">%%errs:alias%% %%alias_required%% Alias:</td>
 				<td class="newuser" align="left"><input type="text" name="alias" size="25" maxlength="25" value="%%posted:alias%%" /></td>

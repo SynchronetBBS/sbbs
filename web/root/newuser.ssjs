@@ -31,6 +31,9 @@ template.title=system.name+" new user signup";
 template.posted=http_request.query;
 template.errs=new Object;
 
+/* Get the current NUP... 3.12a had it in the wrong place */
+template.nup=((this.login==undefined)?system.newuser_magic_word:system.newuser_password);
+
 /* System is closed to new users */
 if(system.settings & SYS_CLOSED) {
 	write_template("header.inc");
@@ -40,6 +43,18 @@ if(system.settings & SYS_CLOSED) {
 }
 
 /* Set up fields and required array */
+if(template.nup != '') {
+	template.nupstart='';
+	required.push("nupass");
+	template.nupass=required_str;
+	template.nupend='';
+}
+else {
+	template.nupstart='<!--';
+	template.nupass=optional_str;
+	template.nupend='-->';
+}
+
 template.RealNameIs="Real Name";
 if(system.newuser_questions & UQ_ALIASES) {
 	required.push("alias");
@@ -182,10 +197,20 @@ else {
 		if(err)
 			showform()
 	}
+
+	if(template.nup != '') {
+		if(http_request.query['nupass'][0]!=template.nup) {
+			err=1;
+			template.errs['nupass']='Incorrect';
+			template.err_message+="Incorrect new user password, attempt has been logged!";
+			log(LOG_WARNING, "!ERROR New user signup for "+http_request.query['alias'][0]+" from "+http_request.remote_host+" ("+http_request.remote_ip+") with incorrect new user password ("+http_request.query['nupass'][0]+")");
+		}
+	}
+
 	if(system.newuser_questions & UQ_LOCATION && !(system.newuser_questions & UQ_NOCOMMAS)) {
 		if(http_request.query["location"][0].search(/,./)==-1) {
 			err=1;
-			template.errs[fields[field]]='Format should be "City, State"';
+			template.errs['location']='Format should be "City, State"';
 			template.err_message+="Bad location format.\r\n";
 		}
 	}
