@@ -11,43 +11,43 @@
 #define FLIGHTS_PER_DAY	3
 
 #ifndef INT64
- #ifdef _MSC_VER
-  #define INT64	__int64
- #else
-  #define INT64	long long int
- #endif
+#ifdef _MSC_VER
+#define INT64	__int64
+#else
+#define INT64	long long int
+#endif
 #endif
 
 #ifndef INT64FORMAT
- #ifdef __BORLANDC__
-  #define	INT64FORMAT	"Ld"
- #else
-  #ifdef _MSC_VER
-   #define INT64FORMAT	"I64d"
-  #else
-   #define INT64FORMAT		"lld"
-  #endif
- #endif
+#ifdef __BORLANDC__
+#define	INT64FORMAT	"Ld"
+#else
+#ifdef _MSC_VER
+#define INT64FORMAT	"I64d"
+#else
+#define INT64FORMAT		"lld"
+#endif
+#endif
 #endif
 
 #ifndef QWORD
- #ifdef _MSC_VER
-  #define QWORD	unsigned _int64
- #else
-  #define	QWORD	unsigned long long int
- #endif
+#ifdef _MSC_VER
+#define QWORD	unsigned _int64
+#else
+#define	QWORD	unsigned long long int
+#endif
 #endif
 
 #ifndef QWORDFORMAT
- #ifdef __BORLANDC__
-  #define	QWORDFORMAT	"Lu"
- #else
-  #ifdef _MSC_VER
-   #define 	QWORDFORMAT	"I64u"
-  #else
-   #define 	QWORDFORMAT	"llu"
-  #endif
- #endif
+#ifdef __BORLANDC__
+#define	QWORDFORMAT	"Lu"
+#else
+#ifdef _MSC_VER
+#define 	QWORDFORMAT	"I64u"
+#else
+#define 	QWORDFORMAT	"llu"
+#endif
+#endif
 #endif
 
 enum {
@@ -83,55 +83,39 @@ struct playertype {
     WORD            power;	       /* Weapon Power */
     QWORD           wins;	       /* Wins so far */
     QWORD           loses;	       /* Losses so far */
+    WORD            battles;	       /* Battles left today */
+    WORD            fights;	       /* Fights left today */
+    /* Players variance... applied to various rolls, Generally, how good the
+     * player is feeling. Is set at start and not modified */
+    double          vary;
 };
 
-struct opponent {
-    char            name[31];
-    QWORD           gold;
-    WORD            strength;
-    WORD            dexterity;
-    WORD            luck;
-    WORD            hps;
-    WORD            damage;
-    WORD            attack;
-    WORD            power;
-    WORD            armour;
-};
+/* player[0] is the current enemy */
+#define opp	player[0]
 
 const char      dots[] = "...............................................";
-
-QWORD           required[29];	       /* In these arrays, 0 isn't actually
-				        * used */
-char            wname[26][31];
-char            sname[26][31];
+/* In these arrays, 0 isn't actually used */
+QWORD           required[29];	       /* Experience required for each level */
+char            wname[26][31];	       /* Array of weapon names */
+char            sname[26][31];	       /* Array of shield names */
 char            temp[81];
-DWORD           cost[26];
-DWORD           w2[26];
-DWORD           w3[26];
-double          vary;
-double          vary2;
-double          roll;
-QWORD           gain_exp;
-char            blt[5][61];
-FILE           *infile;
-FILE           *outfile;
-FILE           *messfile;
-struct opponent opp;
+DWORD           cost[26];	       /* Array of weapon/shield costs */
+DWORD           w2[26];		       /* Weapon "attack" values */
+DWORD           w3[26];		       /* Weapon "power" values */
+FILE           *infile;		       /* Current input file */
 DWORD           player_num;	       /* Current Player Number */
 DWORD           curr_opp;	       /* Player number who is currently
 				        * being fought */
-int             dog;
 DWORD           number_of_players;
-int             okea;
-int             trips;
-int             tint;
-BOOL            play;
-BOOL            doga;
-BOOL            uni;
-BOOL            live;
+BOOL            doga;		       /* The current fight is a Battle
+				        * between players */
+struct playertype player[31];
+
+/**********************************************************/
+/* These variables are used for the stat adjustment stuff */
+/**********************************************************/
 BOOL            partone;
 BOOL            bothover;
-struct playertype player[31];
 WORD            temp1a, temp1b, temp1c, temp1d, temp1e, temp1f;
 /************************/
 /* Functions from xpdev */
@@ -207,29 +191,29 @@ pausescr(void)
 double
 playerattack(void)
 {
-    return ((player[player_num].attack * player[player_num].strength * player[player_num].dexterity * (xp_random(5) + 1) * vary) /
-	    (opp.armour * opp.dexterity * opp.luck * vary2));
+    return ((player[player_num].attack * player[player_num].strength * player[player_num].dexterity * (xp_random(5) + 1) * player[player_num].vary) /
+	    (opp.armour * opp.dexterity * opp.luck * opp.vary));
 }
 
 double
 playerattack2(void)
 {
-    return ((player[player_num].power * player[player_num].strength * (xp_random(5) + 1) * (xp_random(5) + 1) * vary) /
-	    ((opp.armour) * opp.luck * vary2));
+    return ((player[player_num].power * player[player_num].strength * (xp_random(5) + 1) * (xp_random(5) + 1) * player[player_num].vary) /
+	    ((opp.armour) * opp.luck * opp.vary));
 }
 
 double
 opponentattack(void)
 {
-    return ((opp.attack * opp.strength * opp.dexterity * (xp_random(5) + 1) * vary2) /
-	    (player[player_num].armour * player[player_num].dexterity * player[player_num].luck * vary));
+    return ((opp.attack * opp.strength * opp.dexterity * (xp_random(5) + 1) * opp.vary) /
+	    (player[player_num].armour * player[player_num].dexterity * player[player_num].luck * player[player_num].vary));
 }
 
 double
 opponentattack2(void)
 {
-    return ((opp.power * opp.strength * (xp_random(5) + 1) * (xp_random(5) + 1) * vary2) /
-	    ((player[player_num].armour) * player[player_num].luck * vary));
+    return ((opp.power * opp.strength * (xp_random(5) + 1) * (xp_random(5) + 1) * opp.vary) /
+	    ((player[player_num].armour) * player[player_num].luck * player[player_num].vary));
 }
 
 double
@@ -275,6 +259,7 @@ checkday(void)
 {
     char            oldy[256];
     DWORD           h, i;
+    FILE           *outfile;
     for (i = 1; i < number_of_players; i++) {
 	for (h = i + 1; h <= number_of_players; h++) {
 	    if (player[h].experience > player[i].experience) {
@@ -297,8 +282,11 @@ checkday(void)
 	fputs(date(), infile);
 	fputs("\n", infile);
 	for (i = 1; i <= number_of_players; i++) {
+	    player[i].battles = BATTLES_PER_DAY;
+	    player[i].fights = FIGHTS_PER_DAY;
 	    player[i].flights = FLIGHTS_PER_DAY;
 	    player[i].status = ALIVE;
+	    player[i].vary = supplant();
 	}
 	outfile = fopen("data/record.lan", "wb");
 	fclose(outfile);
@@ -330,6 +318,7 @@ void
 leave(void)
 {
     int             a;
+    FILE           *outfile;
     nl();
     outfile = fopen("data/characte.lan", "wb");
     fprintf(outfile, "%lu\n", number_of_players);
@@ -340,14 +329,14 @@ leave(void)
 	fprintf(outfile, "%u\n", player[a].status);
 	if (player[a].status == DEAD)
 	    fprintf(outfile, "%s\n", player[a].killer);
-	fprintf(outfile, "%u %u %u %u %u %u %" QWORDFORMAT " %u %u %u %u %" QWORDFORMAT " %u %" QWORDFORMAT " %" QWORDFORMAT " %" QWORDFORMAT " %u\n",
+	fprintf(outfile, "%u %u %u %u %u %u %" QWORDFORMAT " %u %u %u %u %" QWORDFORMAT " %u %" QWORDFORMAT " %" QWORDFORMAT " %" QWORDFORMAT " %u %u %u %1.4f\n",
 		player[a].strength, player[a].intelligence,
 		player[a].luck, player[a].dexterity, player[a].constitution,
 		player[a].charisma, player[a].experience,
 		player[a].r, player[a].hps, player[a].weapon,
 		player[a].armour, player[a].gold,
 	 player[a].flights, player[a].bank, player[a].wins, player[a].loses,
-		player[a].plus);
+	player[a].plus, player[a].fights, player[a].battles, player[a].vary);
     }
     fclose(outfile);
 }
@@ -364,7 +353,7 @@ heal(void)
     od_set_color(L_CYAN, D_BLACK);
     od_disp_str("How many do points do you want healed? ");
     od_input_str(temp, 3, '0', '9');
-    opt = atoi(temp);
+    opt = strtoul(temp, NULL, 10);
     if (!temp[0])
 	opt = player[player_num].damage;
     if (((opt) * (player[player_num].r) * 10) > player[player_num].gold) {
@@ -381,6 +370,7 @@ heal(void)
 void
 findo(void)
 {
+    int             okea;
     nl();
     od_set_color(L_YELLOW, D_BLACK);
     od_disp_str("The Vile Enemy Dropped Something!\r\n");
@@ -410,6 +400,7 @@ mutantvictory(void)
 {
     int             bt;
     int             d;
+    FILE           *outfile;
     if (!doga)
 	opp.gold = opp.gold * supplant();
     nl();
@@ -452,9 +443,9 @@ mutantvictory(void)
 	fprintf(outfile, "%s conquered %s\r\n", player[player_num].pseudo, player[i].pseudo);
 	fclose(outfile);
     }
-    gain_exp *= supplant();
-    player[player_num].experience += gain_exp;
-    od_printf("You obtain %" QWORDFORMAT " exp points.\r\n", gain_exp);
+    opp.experience *= supplant();
+    player[player_num].experience += opp.experience;
+    od_printf("You obtain %" QWORDFORMAT " exp points.\r\n", opp.experience);
     doga = FALSE;
 }
 
@@ -501,6 +492,9 @@ quickexit(void)
 void
 amode(void)
 {
+    double          roll;	       /* Used for To Hit and damage rolls */
+    int             okea;
+int             tint;
     roll = playerattack();
     if (roll < 1.5) {
 	tint = xp_random(3) + 1;
@@ -558,7 +552,6 @@ amode(void)
 	    if (okea < 30)
 		findo();
 	    mutantvictory();
-	    live = FALSE;
 	}
     }
 }
@@ -566,7 +559,11 @@ amode(void)
 void
 bmode(void)
 {
-    if ((opp.hps > opp.damage) && live) {
+    double          roll;	       /* Used for To Hit and damage rolls */
+    FILE           *outfile;
+    int             okea;
+int             tint;
+    if ((opp.hps > opp.damage) && player[player_num].damage < player[player_num].hps) {
 	roll = opponentattack();
 	if (roll < 1.5) {
 	    od_set_color(D_GREEN, D_BLACK);
@@ -616,9 +613,6 @@ bmode(void)
 		    fprintf(outfile, "%s killed %s\r\n", player[player_num].name, player[curr_opp].name);
 		    fclose(outfile);
 		}
-		live = FALSE;
-		leave();
-		play = FALSE;
 	    }
 	}
     }
@@ -639,7 +633,7 @@ statshow(void)
     od_printf("Steel  (in bank): %" QWORDFORMAT "\r\n", player[player_num].bank);
     nl();
     od_set_color(L_BLUE, D_BLACK);
-    od_printf("Battles: %u   Retreats: %u    Fights: %u   Hps: %u(%u)\r\n", BATTLES_PER_DAY - dog, player[player_num].flights, FIGHTS_PER_DAY - trips, player[player_num].hps - player[player_num].damage, player[player_num].hps);
+    od_printf("Battles: %u   Retreats: %u    Fights: %u   Hps: %u(%u)\r\n", player[player_num].battles, player[player_num].flights, player[player_num].fights, player[player_num].hps - player[player_num].damage, player[player_num].hps);
     nl();
     od_set_color(L_CYAN, D_BLACK);
     od_printf("Weapon: %s     Armor: %s\r\n", wname[player[player_num].weapon], sname[player[player_num].armour]);
@@ -830,25 +824,54 @@ void
 attackmodes(void)
 {
     if (opp.dexterity > player[player_num].dexterity) {
-	if (play)
+	if (player[player_num].damage < player[player_num].hps && opp.damage < opp.hps)
 	    bmode();
-	if (play)
+	if (player[player_num].damage < player[player_num].hps && opp.damage < opp.hps)
 	    amode();
     } else if (opp.dexterity < player[player_num].dexterity) {
-	if (play)
+	if (player[player_num].damage < player[player_num].hps && opp.damage < opp.hps)
 	    amode();
-	if (play)
+	if (player[player_num].damage < player[player_num].hps && opp.damage < opp.hps)
 	    bmode();
     } else {
-	if (play)
+	if (player[player_num].damage < player[player_num].hps && opp.damage < opp.hps)
 	    amode();
-	if (play)
+	if (player[player_num].damage < player[player_num].hps && opp.damage < opp.hps)
 	    bmode();
     }
 }
 
+double
+readfloat(float deflt)
+{
+    char            buf[101];
+    int             pos = 0;
+    int             rd;
+    double          ret;
+    buf[0] = 0;
+    while ((rd = fgetc(infile)) != EOF) {
+	if (rd == '\r')
+	    continue;
+	if (rd == '\n') {
+	    ungetc('\n', infile);
+	    break;
+	}
+	/* Skip leading spaces */
+	if (!pos && isspace(rd))
+	    continue;
+	if (isspace(rd))
+	    break;
+	buf[pos++] = rd;
+    }
+    if (!pos)
+	return (deflt);
+    buf[pos++] = 0;
+    ret = strtod(buf, NULL);
+    return (ret);
+}
+
 QWORD
-readnumb(void)
+readnumb(QWORD deflt)
 {
     char            buf[101];
     int             pos = 0;
@@ -869,8 +892,10 @@ readnumb(void)
 	    break;
 	buf[pos++] = rd;
     }
+    if (!pos)
+	return (deflt);
     buf[pos++] = 0;
-    ret = strtoll(buf, NULL, 10);
+    ret = strtoull(buf, NULL, 10);
     return (ret);
 }
 
@@ -889,21 +914,21 @@ searcher(void)
 {
     int             a;
     int             rd;
-    trips++;
-    rd = xp_random(readnumb() - 1) + 1;
+    player[player_num].fights--;
+    rd = xp_random(readnumb(0) - 1) + 1;
     endofline();
     for (a = 1; a <= rd; a++) {
 	readline(opp.name, sizeof(opp.name));
-	opp.hps = readnumb();
+	opp.hps = readnumb(10);
 	opp.damage = 0;
-	opp.attack = readnumb();
-	opp.power = readnumb();
-	opp.armour = readnumb();
-	opp.luck = readnumb();
-	opp.strength = readnumb();
-	opp.dexterity = readnumb();
-	opp.gold = readnumb();
-	gain_exp = readnumb();
+	opp.attack = readnumb(1);
+	opp.power = readnumb(1);
+	opp.armour = readnumb(1);
+	opp.luck = readnumb(1);
+	opp.strength = readnumb(6);
+	opp.dexterity = readnumb(6);
+	opp.gold = readnumb(0);
+	opp.experience = readnumb(0);
 	endofline();
     }
     fclose(infile);
@@ -928,6 +953,7 @@ searcher(void)
     opp.hps *= supplant();
     if (opp.hps < 1)
 	opp.hps = 1;
+    opp.vary = supplant();
 }
 
 void
@@ -945,7 +971,7 @@ doggie(void)
     int             a;
     DWORD           enemy;
     BOOL            finder;
-    if (dog <= BATTLES_PER_DAY) {
+    if (player[player_num].battles == 0) {
 	nl();
 	checkday();
 	for (finder = FALSE; finder == FALSE;) {
@@ -974,7 +1000,7 @@ doggie(void)
 		    od_set_color(L_CYAN, D_BLACK);
 		    od_disp_str("Enter the rank # of your opponent: ");
 		    od_input_str(tmphh, 2, '0', '9');
-		    enemy = atoi(tmphh);
+		    enemy = strtoul(tmphh, NULL, 10);
 		    if ((enemy == 0) || (!strcmp(player[enemy].pseudo, player[player_num].pseudo)) || (player[enemy].status == DEAD))
 			return;
 		}
@@ -991,9 +1017,9 @@ doggie(void)
 	SAFECOPY(opp.name, player[curr_opp].pseudo);
 	opp.hps = player[curr_opp].hps;
 	opp.damage = player[curr_opp].hps;
-	vary2 = supplant();
+	opp.vary = player[curr_opp].vary;
 	doga = TRUE;
-	dog++;
+	player[player_num].battles--;
 	opp.attack = w2[player[curr_opp].weapon];
 	opp.power = w3[player[curr_opp].weapon];
 	opp.armour = player[curr_opp].armour;
@@ -1001,7 +1027,7 @@ doggie(void)
 	opp.strength = player[curr_opp].strength;
 	opp.dexterity = player[curr_opp].dexterity;
 	opp.gold = player[curr_opp].gold;
-	gain_exp = player[curr_opp].experience / 10;
+	opp.experience = player[curr_opp].experience / 10;
 	finder = FALSE;
 	battle();
     }
@@ -1013,8 +1039,7 @@ battle(void)
     WORD            playerrem;
     char            option;
     nl();
-    live = TRUE;
-    while (live == TRUE) {
+    while (player[player_num].damage < player[player_num].hps && opp.damage < opp.hps) {
 	playerrem = player[player_num].hps - player[player_num].damage;
 	nl();
 	od_set_color(L_YELLOW, D_BLACK);
@@ -1049,8 +1074,7 @@ battle(void)
 		    od_set_color(D_GREEN, D_BLACK);
 		    od_disp_str("You Ride away on a Silver Dragon.\r\n");
 		    doga = FALSE;
-		    live = FALSE;
-		    uni = FALSE;
+			return;
 		}
 		break;
 	}
@@ -1157,43 +1181,6 @@ weaponlist(void)
 }
 
 void
-readlist(void)
-{
-    int             i;
-    infile = fopen("data/characte.lan", "rb");
-    readline(temp, sizeof(temp));
-    number_of_players = atoi(temp);
-    for (i = 1; i <= number_of_players; i++) {
-	readline(player[i].name, sizeof(player[i].name));
-	readline(player[i].pseudo, sizeof(player[i].pseudo));
-	readline(player[i].gaspd, sizeof(player[i].gaspd));
-	fgets(temp, sizeof(temp), infile);
-	player[i].status = atoi(temp);
-	if (player[i].status == DEAD)
-	    readline(player[i].killer, sizeof(player[i].killer));
-	player[i].strength = readnumb();
-	player[i].intelligence = readnumb();
-	player[i].luck = readnumb();
-	player[i].dexterity = readnumb();
-	player[i].constitution = readnumb();
-	player[i].charisma = readnumb();
-	player[i].experience = readnumb();
-	player[i].r = readnumb();
-	player[i].hps = readnumb();
-	player[i].weapon = readnumb();
-	player[i].armour = readnumb();
-	player[i].gold = readnumb();
-	player[i].flights = readnumb();
-	player[i].bank = readnumb();
-	player[i].wins = readnumb();
-	player[i].loses = readnumb();
-	player[i].plus = readnumb();
-	endofline();
-    }
-    fclose(infile);
-}
-
-void
 weaponshop(void)
 {
     WORD            buy;
@@ -1220,7 +1207,7 @@ weaponshop(void)
 		nl();
 		od_disp_str("Enter weapon/armour # you wish buy: ");
 		od_input_str(temp, 2, '0', '9');
-		buy = atoi(temp);
+		buy = strtoul(temp, NULL, 10);
 		if (buy == 0)
 		    return;
 		if (cost[buy] > player[player_num].gold)
@@ -1362,8 +1349,9 @@ gamble(void)
 {
     char            tempgd[6];
     INT32           realgold;
+    int             okea;
     nl();
-    if (trips >= FIGHTS_PER_DAY)
+    if (player[player_num].fights == 0)
 	od_disp_str("The Shooting Gallery is closed until tomorrow!\r\n");
     else {
 	od_clr_scr();
@@ -1374,7 +1362,7 @@ gamble(void)
 	od_disp_str("How many Steel pieces do you wish to wager? ");
 	od_set_color(D_GREY, D_BLACK);
 	od_input_str(tempgd, sizeof(tempgd) - 1, '0', '9');
-	realgold = strtoll(tempgd, NULL, 10);
+	realgold = strtoull(tempgd, NULL, 10);
 	if (realgold > player[player_num].gold) {
 	    nl();
 	    od_disp_str("You do not have enough Steel!\r\n");
@@ -1405,21 +1393,16 @@ void
 afight(int lev)
 {
     char            fname[32];
-    uni = TRUE;
-    while (uni) {
-	if (trips >= FIGHTS_PER_DAY) {
+	if (player[player_num].fights == 0) {
 	    nl();
 	    od_set_color(D_MAGENTA, D_BLACK);
 	    od_disp_str("It's Getting Dark Out!\r\n");
 	    od_disp_str("Return to the Nearest Inn!\r\n");
-	    uni = FALSE;
 	} else {
 	    od_clr_scr();
 	    sprintf(fname, "data/junkm%d.lan", lev);
 	    fight(fname);
-	    uni = FALSE;
 	}
-    }
 }
 
 void
@@ -1428,6 +1411,8 @@ bulletin(void)
     BOOL            endfil;
     int             countr;
     char            tempcoun[3];
+    char            blt[5][61];
+    FILE           *messfile;
     od_clr_scr();
     countr = 0;
     endfil = FALSE;
@@ -1476,7 +1461,7 @@ training(void)
     int             realtrain;
     int             tttgld;
     nl();
-    if (trips >= FIGHTS_PER_DAY)
+    if (player[player_num].fights == 0)
 	od_disp_str("The Training Grounds are closed until tomorrow!\r\n");
     else {
 	od_clr_scr();
@@ -1569,13 +1554,9 @@ main(int argc, char **argv)
     atexit(leave);
 
     od_init();
-    vary = supplant();
-    dog = 0;
     doga = FALSE;
     for (i = 1; i <= 30; i++)
 	player[i].damage = 0;
-    play = TRUE;
-    trips = 0;
     found = FALSE;
     nl();
     nl();
@@ -1596,32 +1577,35 @@ main(int argc, char **argv)
     od_send_file("text/bullet.lan");
     infile = fopen("data/characte.lan", "rb");
     fgets(temp, sizeof(temp), infile);
-    number_of_players = atoi(temp);
+    number_of_players = strtoul(temp, NULL, 10);
     for (i = 1; i <= number_of_players; i++) {
 	readline(player[i].name, sizeof(player[i].name));
 	readline(player[i].pseudo, sizeof(player[i].pseudo));
 	readline(player[i].gaspd, sizeof(player[i].gaspd));
 	fgets(temp, sizeof(temp), infile);
-	player[i].status = atoi(temp);
+	player[i].status = strtoul(temp, NULL, 10);
 	if (player[i].status == DEAD)
 	    readline(player[i].killer, sizeof(player[i].killer));
-	player[i].strength = readnumb();
-	player[i].intelligence = readnumb();
-	player[i].luck = readnumb();
-	player[i].dexterity = readnumb();
-	player[i].constitution = readnumb();
-	player[i].charisma = readnumb();
-	player[i].experience = readnumb();
-	player[i].r = readnumb();
-	player[i].hps = readnumb();
-	player[i].weapon = readnumb();
-	player[i].armour = readnumb();
-	player[i].gold = readnumb();
-	player[i].flights = readnumb();
-	player[i].bank = readnumb();
-	player[i].wins = readnumb();
-	player[i].loses = readnumb();
-	player[i].plus = readnumb();
+	player[i].strength = readnumb(6);
+	player[i].intelligence = readnumb(6);
+	player[i].luck = readnumb(6);
+	player[i].dexterity = readnumb(6);
+	player[i].constitution = readnumb(6);
+	player[i].charisma = readnumb(6);
+	player[i].experience = readnumb(0);
+	player[i].r = readnumb(1);
+	player[i].hps = readnumb(10);
+	player[i].weapon = readnumb(1);
+	player[i].armour = readnumb(1);
+	player[i].gold = readnumb(0);
+	player[i].flights = readnumb(3);
+	player[i].bank = readnumb(0);
+	player[i].wins = readnumb(0);
+	player[i].loses = readnumb(0);
+	player[i].plus = readnumb(0);
+	player[i].fights = readnumb(FIGHTS_PER_DAY);
+	player[i].battles = readnumb(BATTLES_PER_DAY);
+	player[i].vary = readfloat(supplant());
 	endofline();
     }
     fclose(infile);
@@ -1645,8 +1629,8 @@ main(int argc, char **argv)
     }
     checkday();
     if (player[player_num].flights < 1) {
-	trips = FIGHTS_PER_DAY;
-	dog = BATTLES_PER_DAY;
+	player[player_num].fights = 0;
+	player[player_num].battles = 0;
     } else
 	player[player_num].flights--;
     nl();
@@ -1656,8 +1640,8 @@ main(int argc, char **argv)
     od_set_color(L_BLUE, D_BLACK);
     for (i = 1; i <= 25; i++) {
 	readline(wname[i], sizeof(wname[i]));
-	w2[i] = readnumb();
-	w3[i] = readnumb();
+	w2[i] = readnumb(1);
+	w3[i] = readnumb(1);
 	endofline();
     }
     fclose(infile);
@@ -1668,7 +1652,7 @@ main(int argc, char **argv)
     fclose(infile);
     infile = fopen("data/prices.lan", "rb");
     for (i = 1; i <= 25; i++) {
-	cost[i] = readnumb();
+	cost[i] = readnumb(100000000);
 	endofline();
     }
     fclose(infile);
@@ -1676,17 +1660,15 @@ main(int argc, char **argv)
     player[player_num].power = w3[player[player_num].weapon];
     infile = fopen("data/experience.lan", "rb");
     for (i = 1; i <= 28; i++) {
-	required[i] = readnumb();
+	required[i] = readnumb(100000000);
 	endofline();
     }
     fclose(infile);
     od_set_color(L_YELLOW, D_BLACK);
     player[player_num].status = ALIVE;
-    vary2 = 1;
     statshow();
-    for (play = TRUE; play;) {
+    while(player[player_num].damage < player[player_num].hps) {
 	levelupdate();
-	vary2 = 1;
 	if (((player[player_num].wins + 1) * 4) < (player[player_num].loses)) {
 	    nl();
 	    od_disp_str("As you were Travelling along a Wilderness Path an   \r\n");
@@ -1710,7 +1692,7 @@ main(int argc, char **argv)
 		od_disp_str("LEAVE KRYNN? Are you sure? ");
 		if (od_get_answer("YN") == 'Y') {
 		    od_disp_str("Yes\r\n");
-		    play = FALSE;
+		    return(0);
 		} else
 		    od_disp_str("No\r\n");
 		break;
