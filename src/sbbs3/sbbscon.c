@@ -43,7 +43,7 @@
 #include "mailsrvr.h"	/* mail_startup_t, mail_server */
 
 /* Constants */
-#define SBBSCON_VERSION		"1.00"
+#define SBBSCON_VERSION		"1.10"
 
 /* Global variables */
 BOOL			bbs_running=FALSE;
@@ -54,6 +54,19 @@ BOOL			mail_running=FALSE;
 mail_startup_t	mail_startup;
 
 static const char* prompt = "Command (?=Help): ";
+
+static const char* usage  = "\r\nusage: %s [[option] [...]]\r\n"
+							"\r\noptions:\r\n\r\n"
+							"defaults   show default settings\r\n"
+							"tf<node>   set First Telnet Node Number\r\n"
+							"tl<node>   set Last Telnet Node Number\r\n"
+							"tp<port>   set Telnet Server Port\r\n"
+							"rp<port>   set RLogin Server Port (and enable RLogin Server)\r\n"
+							"fp<port>   set FTP Server Port\r\n"
+							"sp<port>   set SMTP Server Port\r\n"
+							"sr<port>   set SMTP Relay Port\r\n"
+							"pp<port>   set POP3 Server Port\r\n"
+							;
 
 static void lputs(char *str)
 {
@@ -197,11 +210,13 @@ static void mail_terminated(int code)
 /****************************************************************************/
 int main(int argc, char** argv)
 {
+	int		i;
 	char	ch;
+	char*	arg;
 	char*	ctrl_dir;
 	BOOL	quit=FALSE;
 
-	printf("\nSynchronet BBS Console Version %s  Copyright 2000 Rob Swindell\n"
+	printf("\nSynchronet BBS Console Version %s  Copyright 2001 Rob Swindell\n"
 		,SBBSCON_VERSION);
 
 	ctrl_dir=getenv("SBBSCTRL");	/* read from environment variable */
@@ -217,9 +232,10 @@ int main(int argc, char** argv)
     bbs_startup.telnet_interface=INADDR_ANY;
 	bbs_startup.options|=BBS_OPT_NO_QWK_EVENTS;
 
-#ifdef USE_RLOGIN
     bbs_startup.rlogin_port=513;
     bbs_startup.rlogin_interface=INADDR_ANY;
+
+#ifdef USE_RLOGIN
 	bbs_startup.options|=BBS_OPT_ALLOW_RLOGIN;
 #endif
 
@@ -263,6 +279,82 @@ int main(int argc, char** argv)
     mail_startup.terminated=mail_terminated;
 	mail_startup.options|=MAIL_OPT_ALLOW_POP3;
     strcpy(mail_startup.ctrl_dir,ctrl_dir);
+
+	/* Process arguments */
+	for(i=1;i<argc;i++) {
+		arg=argv[i];
+		if(*arg=='-')/* ignore prepended slashes */
+			arg++;
+		if(!stricmp(arg,"defaults")) {
+			printf("default settings\r\n");
+			return(0);
+		}
+		switch(toupper(*(arg++))) {
+			case 'T':	/* Telnet settings */
+				switch(toupper(*(arg++))) {
+					case 'P':
+						bbs_startup.telnet_port=atoi(arg);
+						break;
+					case 'F':
+						bbs_startup.first_node=atoi(arg);
+						break;
+					case 'L':
+						bbs_startup.last_node=atoi(arg);
+						break;
+					default:
+						printf(usage,argv[0]);
+						return(0);
+				}
+				break;
+			case 'R':	/* RLogin */
+				bbs_startup.options|=BBS_OPT_ALLOW_RLOGIN;
+				switch(toupper(*(arg++))) {
+					case 'P':
+						bbs_startup.rlogin_port=atoi(arg);
+						break;
+					default:
+						printf(usage,argv[0]);
+						return(0);
+				}
+				break;
+			case 'F':	/* FTP */
+				switch(toupper(*(arg++))) {
+					case 'P':
+						ftp_startup.port=atoi(arg);
+						break;
+					default:
+						printf(usage,argv[0]);
+						return(0);
+				}
+				break;
+			case 'S':	/* SMTP */
+				switch(toupper(*(arg++))) {
+					case 'P':
+						mail_startup.smtp_port=atoi(arg);
+						break;
+					case 'R':
+					    mail_startup.relay_port=atoi(arg);
+						break;
+					default:
+						printf(usage,argv[0]);
+						return(0);
+				}
+				break;
+			case 'P':	/* POP3 */
+				switch(toupper(*(arg++))) {
+					case 'P':
+						mail_startup.pop3_port=atoi(arg);
+						break;
+					default:
+						printf(usage,argv[0]);
+						return(0);
+				}
+				break;
+			default:
+				printf(usage,argv[0]);
+				return(0);
+		}
+	}
 
 	_beginthread((void(*)(void*))bbs_thread,0,&bbs_startup);
 	_beginthread((void(*)(void*))ftp_server,0,&ftp_startup);
