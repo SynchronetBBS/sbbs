@@ -40,10 +40,11 @@
 
 #include "gen_defs.h"	/* uchar */
 
-#define FIDO_NAME_LEN	36
-#define FIDO_SUBJ_LEN	72
-#define FIDO_TIME_LEN	20
-#define FIDO_PASS_LEN	8
+#define FIDO_NAME_LEN	36			/* Includes '\0' terminator				*/
+#define FIDO_SUBJ_LEN	72			/* Includes '\0' terminator				*/
+#define FIDO_TIME_LEN	20			/* Includes '\0' terminator				*/
+#define FIDO_PASS_LEN	8			/* Does NOT include '\0' terminator		*/
+
 									/* Attribute bits for fmsghdr_t.attr	*/
 #define FIDO_PRIVATE	(1<<0)		/* Private message						*/
 #define FIDO_CRASH		(1<<1)		/* Crash-mail (send immediately)		*/
@@ -132,7 +133,7 @@ typedef struct _PACK {				/* FidoNet Packed Message Header 		*/
 
 #define FIDO_PACKED_MSG_HDR_LEN 34	/* Fixed header fields only */
 
-typedef struct _PACK {				/* FidoNet stored msg (*.msg) header	*/
+typedef struct _PACK {				/* FidoNet Stored Message Header *.msg	*/
 	char	from[FIDO_NAME_LEN],	/* From user							*/
 			to[FIDO_NAME_LEN], 		/* To user								*/
 			subj[FIDO_SUBJ_LEN],	/* Message title						*/
