@@ -75,12 +75,21 @@ void __fastcall TUserListForm::ListViewCompare(TObject *Sender,
 {
     /* Decimal compare */
     if (ColumnToSort == 0 || ColumnToSort==3 || ColumnToSort==4
-    || ColumnToSort == 12) {
+    || ColumnToSort == 12   /* logons */
+    || ColumnToSort == 13   /* First On */
+    || ColumnToSort == 14   /* Last On */
+    ) {
         int num1, num2;
 
         if(ColumnToSort==0) {
             num1=Item1->Caption.ToIntDef(0);
             num2=Item2->Caption.ToIntDef(0);
+        } else if(ColumnToSort>12) {    /* Date */
+            int ix = ColumnToSort - 1;
+            num1=dstrtounix(&MainForm->cfg
+                ,Item1->SubItems->Strings[ix].c_str());
+            num2=dstrtounix(&MainForm->cfg
+                ,Item2->SubItems->Strings[ix].c_str());
         } else {
             int ix = ColumnToSort - 1;
             num1=Item1->SubItems->Strings[ix].ToIntDef(0);

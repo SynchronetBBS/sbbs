@@ -84,7 +84,6 @@ object UserListForm: TUserListForm
         Width = 70
       end>
     PopupMenu = PopupMenu
-    SortType = stText
     TabOrder = 0
     ViewStyle = vsReport
     OnColumnClick = ListViewColumnClick
