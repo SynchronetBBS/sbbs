@@ -418,6 +418,7 @@ void install_sbbs(struct dist_t *dist,struct server_ent_t *server)  {
 	char	cmd[MAX_PATH+1];
 	char	str[1024];
 	char	fname[MAX_PATH+1];
+	char	dstfname[MAX_PATH+1];
 	char	sbbsdir[9+MAX_PATH];
 	char	cvstag[7+MAX_PATH];
 	char	buf[1024];
@@ -470,45 +471,54 @@ void install_sbbs(struct dist_t *dist,struct server_ent_t *server)  {
 			break;
 		case DIST_SET:
 			for(i=0;dist->files[i][0];i++)  {
-				if((fout=open(dist->files[i],O_WRONLY|O_TRUNC|O_CREAT,S_IRUSR|S_IWUSR))<0)  {
-					printf("Could not download distfile to %s (%d)\n",dist->files[i],errno);
+				sprintf(fname,dist->files[i],params.sys_desc);
+				SAFECOPY(dstfname,fname);
+				if((fout=open(fname,O_WRONLY|O_TRUNC|O_CREAT,S_IRUSR|S_IWUSR))<0)  {
+					printf("Could not download distfile to %s (%d)\n",fname,errno);
 					exit(EXIT_FAILURE);
 				}
-				sprintf(str,dist->files[i],params.sys_desc);
-				sprintf(url,"%s%s",server->addr,str);
+				sprintf(url,"%s%s",server->addr,fname);
 				if((remote=ftpGetURL(url,ftp_user,ftp_pass,&ret1))==NULL)  {
 					/* retry without machine type in name */
-					SAFECOPY(fname,str);
-					sprintf(str,dist->files[i],params.name.sysname);
-					sprintf(url,"%s%s",server->addr,str);
-					if(strcmp(str,fname)==0	/* no change in name? */
+					SAFECOPY(str,fname);
+					sprintf(fname,dist->files[i],params.name.sysname);
+					sprintf(url,"%s%s",server->addr,fname);
+					if(stricmp(str,fname)==0	/* no change in name? */
 						|| (remote=ftpGetURL(url,ftp_user,ftp_pass,&ret1))==NULL)  {
-						printf("Cannot get distribution file %s!\n",str);
-						printf("%s\n- %s\n",url,ftpErrString(ret1));
-						unlink(str);
-						exit(EXIT_FAILURE);
+						/* retry using "all" for system name */
+						sprintf(fname,dist->files[i],"all");
+						if((remote=ftpGetURL(url,ftp_user,ftp_pass,&ret1))==NULL)  {
+							printf("Cannot get distribution file %s!\n",fname);
+							printf("%s\n- %s\n",url,ftpErrString(ret1));
+							close(fout);
+							unlink(dstfname);
+							exit(EXIT_FAILURE);
+						}
 					}
 				}
 				while((ret1=remote->read(remote,buf,sizeof(buf)))>0)  {
 					ret2=write(fout,buf,ret1);
 					if(ret2!=ret1)  {
-						printf("Error writing to %s\n",dist->files[i]);
-						unlink(dist->files[i]);
+						printf("Error writing to %s\n",dstfname);
+						close(fout);
+						unlink(dstfname);
 						exit(EXIT_FAILURE);
 					}
 				}
 				if(ret1<0)  {
-					printf("Error downloading %s\n",dist->files[i]);
-					unlink(dist->files[i]);
+					printf("Error downloading %s\n",fname);
+					close(fout);
+					unlink(dstfname);
 					exit(EXIT_FAILURE);
 				}
-				sprintf(cmd,"gzip -dc %s | tar -xvf -",dist->files[i]);
+				close(fout);
+				sprintf(cmd,"gzip -dc %s | tar -xvf -",dstfname);
 				if(system(cmd))  {
-					printf("Error extracting %s\n",dist->files[i]);
-					unlink(dist->files[i]);
+					printf("Error extracting %s\n",dstfname);
+					unlink(dstfname);
 					exit(EXIT_FAILURE);
 				}
-				unlink(dist->files[i]);
+				unlink(dstfname);
 			}
 			if(system(params.make_cmdline))  {
 				printf(MAKE_ERROR);
@@ -537,7 +547,7 @@ struct dist_t **
 get_distlist(void)
 {
 	int ret1,ret2,ret3,ret4;
-	int i,j;
+	int i;
 	char	in_line[256];
 	struct dist_t	**dist;
 	char	**file=NULL;
@@ -558,9 +568,11 @@ get_distlist(void)
 			allocfail(sizeof(struct dist_t));
 
 	sprintf(str,DEFAULT_LIBFILE,params.sys_desc);
-	if(!fexist(str))	/* use lib-linux.tgz if lib-linux-i686.tgz doesn't exist */
+	if(!fexistcase(str))	/* use lib-linux.tgz if lib-linux-i686.tgz doesn't exist */
 		sprintf(str,DEFAULT_LIBFILE,params.name.sysname);
-	if(fexist(DEFAULT_DISTFILE) && fexist(str))  {
+	if(!fexistcase(str))	/* use lib-all.tgz if all else fails */
+		sprintf(str,DEFAULT_LIBFILE,"all");
+	if(fexist(DEFAULT_DISTFILE) && fexistcase(str))  {
 		if((file=(char **)MALLOC(sizeof(char *)*MAX_DIST_FILES))==NULL)
 			allocfail(sizeof(char *)*MAX_DIST_FILES);
 		for(i=0;i<MAX_DIST_FILES;i++)
