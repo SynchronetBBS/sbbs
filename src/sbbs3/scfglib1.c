@@ -918,4 +918,30 @@ void free_msgs_cfg(scfg_t* cfg)
 
 }
 
+/************************************************************/
+/* Create data and sub-dirs off data if not already created */
+/************************************************************/
+void make_data_dirs(scfg_t* cfg)
+{
+	char str[MAX_PATH+1];
 
+	md(cfg->data_dir);
+	sprintf(str,"%ssubs",cfg->data_dir);
+	md(str);
+	sprintf(str,"%sdirs",cfg->data_dir);
+	md(str);
+	sprintf(str,"%stext",cfg->data_dir);
+	md(str);
+	sprintf(str,"%smsgs",cfg->data_dir);
+	md(str);
+	sprintf(str,"%suser",cfg->data_dir);
+	md(str);
+	sprintf(str,"%suser/ptrs",cfg->data_dir);
+	md(str);
+	sprintf(str,"%slogs",cfg->data_dir);
+	md(str);
+	sprintf(str,"%sqnet",cfg->data_dir);
+	md(str);
+	sprintf(str,"%sfile",cfg->data_dir);
+	md(str);
+}
