@@ -80,7 +80,7 @@ $(SBBSMONO): sbbscon.c sbbs_ini.c $(XPDEV)ini_file.c $(OBJS) \
 	$(LIBODIR)\ver.$(OFILE) $(LIBODIR)\ftpsrvr.$(OFILE) \
 	$(LIBODIR)\mailsrvr.$(OFILE) $(LIBODIR)\mxlookup.$(OFILE) $(LIBODIR)\mime.$(OFILE) \
 	$(LIBODIR)\services.$(OFILE)
-	@$(CC) $(CFLAGS) -WM -e$(SBBSMONO) $** $(LIBS)
+	@$(CC) $(CFLAGS) -DWRAPPER_EXPORTS -WM -e$(SBBSMONO) $** $(LIBS)
 
 # SBBS DLL Link Rule
 $(SBBS): $(OBJS) $(LIBODIR)\ver.$(OFILE)
