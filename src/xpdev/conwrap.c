@@ -80,7 +80,9 @@ void _termios_reset(void)
 /************************************************
   This pair of functions handles Ctrl-Z presses
 ************************************************/
-
+#if defined(__BORLANDC__)
+        #pragma argsused
+#endif
 void _sighandler_stop(int sig)
 {
     // clean up the terminal
@@ -89,7 +91,9 @@ void _sighandler_stop(int sig)
     // ... and stop
 	kill(getpid(), SIGSTOP);
 }
-
+#if defined(__BORLANDC__)
+        #pragma argsused
+#endif
 void _sighandler_cont(int sig)
 {
     // restore terminal
