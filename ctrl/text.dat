@@ -52,8 +52,8 @@
 "_\r\nghMail Waiting:\r\n\r\n"                       046 MailWaitingLstHdr
 "gh%3d: ng%-25.25s h%cng %.46s\r\n"              047 MailWaitingLstFmt
 "_\r\nyhStart with number [w%luy]: w"             048 StartWithN
-"-\r\ngReading E-mail (h?ng=Menu) (h%ung of "\  049 ReadingMail
-	"h%ung): n"
+"\r\nncþ bhReading E-mail ncþ bh(w?b=Menu)"\  049 ReadingMail
+	" (w%ub of w%ub): n"
 "n\r\nYou can't reply to an anonymous message.\r\n"    050 CantReplyToAnonMsg
 "  hbRenb: hc%sn\r\n\r\n"                        051 Regarding
 "  hbRenb: hc%s\r\n  "\				052 RegardingByOn
@@ -69,12 +69,13 @@
 "n\r\nYou have no sent messages pending.\r\n"          059 NoMailSent
 "\r\nghMail that you've sent still pending:"\         060 MailSentLstHdr
 	"\r\n\r\nn"
-"-\r\ngReading Sent E-mail (h?ng=Menu) "\          061 ReadingSentMail
-	"(h%ung of h%ung): n"
+"n\r\ncþ hbReading Sent E-mail ncþ hb"\		061 ReadingSentMail
+	"(w?b=Menu) (w%ub of w%ub): n"
 "hm\r\nSending Internet Mail To: w%sm\r\n"\         062 InternetMailing
 	"                    From: w%s\r\n"
 "n\r\nNo mail on system.\r\n"                          063 NoMailOnSystem
-"-\r\ngReading All E-mail (h%ung of h%ung): n" 064 ReadingAllMail
+"n\r\ncþ hbReading All E-mail ncþ hb"\		064 ReadingAllMail
+	"(w%u bof w%ub): n" 
 "_\r\ngh      From                   "\              065 MailOnSystemLstHdr
 	"To                     Subject\r\nn"
 "gh%4d:ng %-22.22s %-22.22s h%cng %.25s\r\n"     066 MailOnSystemLstFmt
@@ -83,7 +84,7 @@
 "-\r\nc%-15.15s yh%-40.40s        w%u"             068 SearchSubFmt
 "\r\nNo messages have been posted on %s %s\r\n"         069 NoMsgsOnSub
 "\r\nncPost : [h%unc][h%unc] h%lunc/h%lu"   070 ZScanPostHdr
-"_\r\nchReading nc[h%unc] %s "\                 071 ReadingSub
+"n\r\ncþ hbReading ncþ [h%unc] %s "\           071 ReadingSub
 	"[h%unc] %s (h?nc=Menu) (h%lunc of h%lunc): n"
 "\r\nYou didn't post message #%d\r\n"                   072 YouDidntPostMsgN
 "\r\nDelete message #%lu '%s'"                          073 DeletePostQ
