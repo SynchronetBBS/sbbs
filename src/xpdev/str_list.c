@@ -122,7 +122,7 @@ str_list_t strListRemove(str_list_t* list, size_t index)
 	return(lp);
 }
 
-str_list_t strListAddAt(str_list_t* list, const char* str, size_t count)
+str_list_t strListAdd(str_list_t* list, const char* str, size_t index)
 {
 	char* buf;
 
@@ -131,12 +131,10 @@ str_list_t strListAddAt(str_list_t* list, const char* str, size_t count)
 
 	strcpy(buf,str);
 
-	return(str_list_append(list,buf,count));
-}
+	if(index==0)
+		index=strListCount(*list);
 
-str_list_t strListAdd(str_list_t* list, const char* str)
-{
-	return strListAddAt(list,str,strListCount(*list));
+	return(str_list_append(list,buf,index));
 }
 
 str_list_t	strListAddList(str_list_t* list, const str_list_t add_list)
@@ -146,7 +144,7 @@ str_list_t	strListAddList(str_list_t* list, const str_list_t add_list)
 
 	count=strListCount(*list);
 	for(i=0; add_list[i]!=NULL; i++)
-		strListAddAt(list,add_list[i],count++);
+		strListAdd(list,add_list[i],count++);
 
 	return(*list);
 }
@@ -183,7 +181,7 @@ str_list_t strListSplit(str_list_t* list, char* str, const char* delimit)
 	}
 
 	for(token = strtok(str, delimit); token!=NULL; token=strtok(NULL, delimit))
-		strListAdd(list, token);
+		strListAdd(list, token, 0);
 
 	return(*list);
 }
@@ -294,7 +292,7 @@ str_list_t strListReadFile(FILE* fp, str_list_t* list, size_t max_line_len)
 	while(!feof(fp)) {
 		if(fgets(buf,max_line_len+1,fp)==NULL)
 			break;
-		strListAddAt(list, buf, count++);
+		strListAdd(list, buf, count++);
 	}
 
 	free(buf);
@@ -312,7 +310,7 @@ size_t strListWriteFile(FILE* fp, const str_list_t list, const char* separator)
 	for(i=0; list[i]!=NULL; i++) {
 		if(fputs(list[i],fp)==EOF)
 			break;
-		if(seperator!=NULL && fputs(seperator,fp)==EOF)
+		if(separator!=NULL && fputs(separator,fp)==EOF)
 			break;
 	}
 	

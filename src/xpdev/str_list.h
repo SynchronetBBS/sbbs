@@ -57,10 +57,7 @@ void		strListFreeStrings(str_list_t list);
 
 /* Pass a pointer to a string list, the string to add (append) */
 /* Returns the updated list or NULL on error */
-str_list_t	strListAdd(str_list_t* list, const char* str);
-
-/* Adds a string into the list at a specific index */
-str_list_t	strListAddAt(str_list_t* list, const char* str, size_t index);
+str_list_t	strListAdd(str_list_t* list, const char* str, size_t index);
 
 /* Append a string list onto another string list */
 str_list_t	strListAddList(str_list_t* list, const str_list_t append_list);

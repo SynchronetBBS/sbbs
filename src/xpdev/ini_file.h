@@ -85,6 +85,12 @@ void*		iniFreeStringList(str_list_t list);
 /* Free named string list returned from iniGetNamedStringList */
 void*		iniFreeNamedStringList(named_string_t** list);
 
+
+/* File I/O Functions */
+str_list_t	iniReadFile(FILE* fp);
+BOOL		iniWriteFile(FILE* fp, const str_list_t list);
+
+
 #if defined(__cplusplus)
 }
 #endif

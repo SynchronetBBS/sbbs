@@ -39,6 +39,7 @@
 #include <string.h>		/* strlen */
 #include <ctype.h>		/* isdigit */
 #include "sockwrap.h"	/* inet_addr */
+#include "filewrap.h"	/* chsize */
 #include "ini_file.h"
 
 #define INI_MAX_LINE_LEN	256		/* Maximum length of entire line, includes '\0' */
@@ -152,7 +153,7 @@ str_list_t iniGetStringList(FILE* fp, const char* section, const char* key
 	token=strtok(list,sep);
 	while(token!=NULL) {
 		truncsp(token);
-		if(strListAddAt(&lp,token,items++)==NULL)
+		if(strListAdd(&lp,token,items++)==NULL)
 			break;
 		token=strtok(NULL,sep);
 	}
@@ -215,7 +216,7 @@ str_list_t iniGetSectionList(FILE* fp, const char* prefix)
 		if(prefix!=NULL)
 			if(strnicmp(p,prefix,strlen(prefix))!=0)
 				continue;
-		if(strListAddAt(&lp,p,items++)==NULL)
+		if(strListAdd(&lp,p,items++)==NULL)
 			break;
 	}
 
@@ -255,7 +256,7 @@ str_list_t iniGetKeyList(FILE* fp, const char* section)
 			continue;
 		*tp=0;
 		truncsp(p);
-		if(strListAddAt(&lp,p,items++)==NULL)
+		if(strListAdd(&lp,p,items++)==NULL)
 			break;
 	}
 
@@ -432,4 +433,28 @@ ulong iniGetBitField(FILE* fp, const char* section, const char* key,
 	}
 
 	return(v);
+}
+
+str_list_t iniReadFile(FILE* fp)
+{
+	size_t		i;
+	str_list_t	list;
+	
+	rewind(fp);
+
+	list = strListReadFile(fp, NULL, INI_MAX_VALUE_LEN);
+	if(list!=NULL) {
+		/* truncate the white-space off end of strings */
+		for(i=0; list[i]!=NULL; i++)
+			truncsp(list[i]);
+	}
+
+	return(list);
+}
+
+BOOL iniWriteFile(FILE* fp, const str_list_t list)
+{
+	rewind(fp);
+	chsize(fileno(fp),0);	/* truncate */
+	return(strListWriteFile(fp,list,"\n") == strListCount(list));
 }
