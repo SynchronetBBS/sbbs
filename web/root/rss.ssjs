@@ -2,9 +2,13 @@
 
 // $Id$
 
+load("sbbsdefs.js");
+
 var REVISION = "$Revision$".split(' ')[1];
 
 //log(LOG_INFO,"Synchronet RSS " + REVISION);
+
+var link_root = "http://" + http_request.header.host + http_request.request_string;
 
 var ini_fname = file_cfgname(system.ctrl_dir, "rss.ini");
 
@@ -34,7 +38,7 @@ if(channel==undefined) {
 	writeln('<ul>');
 	for(c in channel_list)
 		writeln('<li>' 
-			+ channel_list[c].name.link(http_request.request_string + "?channel=" + channel_list[c].name));
+			+ channel_list[c].name.link(link_root + "?channel=" + channel_list[c].name));
 	writeln('</ul>');
 	writeln('</body>');
 	writeln('</html>');
@@ -48,24 +52,44 @@ if(sub==undefined) {
 }
 
 if(http_request.query["item"]) {
+
+	load("../web/lib/template.ssjs");
+
+	var msgbase=new MsgBase(channel.sub);
+	if(!msgbase.open())
+		writeln('Error: ' + msgbase.error);
+	else {
+		template.hdr = msgbase.get_msg_header(false,Number(http_request.query["item"]));
+		if(!template.hdr)
+			writeln('Error: ' + msgbase.error);
+		else
+			template.body= msgbase.get_msg_body(false, template.hdr.number);
+	}
+
+	write_template("header.inc");
+	write_template("msgs/msg.inc");
+	write_template("footer.inc");
+
+	if(0) {
 	writeln('<html>');
 	writeln('<body>');
 	var msgbase=new MsgBase(channel.sub);
 	if(!msgbase.open())
 		writeln('Error: ' + msgbase.error);
 	else {
-		var hdr = msgbase.get_msg_header(true,Number(http_request.query["item"]));
+		var hdr = msgbase.get_msg_header(false,Number(http_request.query["item"]));
 		if(!hdr)
 			writeln('Error: ' + msgbase.error);
 		else {
 			for(h in hdr)
-				writeln(h + ": " + hdr[h]);
+				writeln(h + ": " + hdr[h] + '<br>');
 		}
 	}
 	writeln('</body>');
 	writeln('</html>');
+	}
 
-//		exit();
+	exit();
 }
 
 writeln('<rss version="0.91">');
@@ -73,14 +97,14 @@ writeln('\t<channel>');
 writeln('\t\t<title>'		+ sub.name			+ '</title>');
 writeln("\t\t<description>" + sub.description	+ "</description>");
 
-writeln('\t\t<link>' + http_request.request_string + '</link>');
+writeln('\t\t<link>' + link_root + '</link>');
 writeln('\t\t<language>en-us</language>');
 
-function encode(str)
+function encode(str, wspace)
 {
 	return(strip_ctrl(html_encode(str
 		,true	/* ex-ASCII */
-		,false	/* white-space */
+		,wspace	/* white-space */
 		,false	/* ANSI */
 		,false	/* Ctrl-A */
 		)));
@@ -97,7 +121,7 @@ if(msgbase.open()) {
 	var total_msgs = msgbase.total_msgs;
 	for(i=0;i<total_msgs;i++) {
 		var hdr = msgbase.get_msg_header(true,i);
-		if(!hdr)
+		if(!hdr || hdr.attr&MSG_DELETE)
 			continue;
 		var body = msgbase.get_msg_body(true,i);
 		if(!body)
@@ -107,8 +131,8 @@ if(msgbase.open()) {
 		writeln('\t\t\t\t<title>' + encode(hdr.subject) + '</title>');
 		writeln('\t\t\t\t<author>' + encode(hdr.from) + '</author>');
 		writeln('\t\t\t\t<guid>' + encode(hdr.id) + '</guid>');
-		writeln('\t\t\t\t<description>' + encode(body) + '</description>');
-//		writeln('\t\t\t\t<link>' + http_request.request_string + '?item=' + hdr.number + '</link>');
+		writeln('\t\t\t\t<description>' + encode(body.slice(0,500)) + '</description>');
+		writeln('\t\t\t\t<link>' + link_root + '&item=' + hdr.number + '</link>');
 		writeln('\t\t\t</item>');
 	}
     msgbase.close();
