@@ -1742,8 +1742,8 @@ void DLLCALL services_thread(void* arg)
 			sprintf(startup->cfg_file,"%sservices.cfg",scfg.ctrl_dir);
 		service=read_services_cfg(service, startup->cfg_file, &services);
 
-		if(startup->ini_file[0]==0)			
-			sprintf(startup->ini_file,"%sservices.ini",scfg.ctrl_dir);
+		if(startup->ini_file[0]==0)
+			iniFileName(startup->ini_file,sizeof(startup->ini_file),scfg.ctrl_dir,"services.ini");
 		service=read_services_ini(service, startup->ini_file, &services);
 
 		if(service==NULL) {
