@@ -172,7 +172,9 @@ int initciolib(int mode)
 #ifdef _WIN32
 			if(!try_conio_init(mode))
 #else
+#ifndef NO_X
 			if(!try_x_init(mode))
+#endif
 				if(!try_curses_init(mode))
 #endif
 					try_ansi_init(mode);
