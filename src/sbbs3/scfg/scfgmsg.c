@@ -66,7 +66,7 @@ return(out);
 void clearptrs(int subnum)
 {
 	char str[256];
-	ushort idx,ch;
+	ushort idx,scancfg;
 	int file,i,gi;
 	long l=0L;
 	glob_t g;
@@ -88,26 +88,30 @@ void clearptrs(int subnum)
                 for(i=0;i<cfg.total_subs;i++)
                     if(cfg.sub[i]->ptridx==idx)
                         break;
-                write(file,&l,4);
-                write(file,&l,4);
-                ch=0xff;			/* default to scan ON for unknown sub */
+                write(file,&l,sizeof(l));
+                write(file,&l,sizeof(l));
+                scancfg=0xff;
                 if(i<cfg.total_subs) {
                     if(!(cfg.sub[i]->misc&SUB_NSDEF))
-                        ch&=~5;
+                        scancfg&=~SUB_CFG_NSCAN;
                     if(!(cfg.sub[i]->misc&SUB_SSDEF))
-                        ch&=~2; }
-                write(file,&ch,2); }
+                        scancfg&=~SUB_CFG_SSCAN; 
+				} else	/* Default to scan OFF for unknown sub */
+					scancfg&=~(SUB_CFG_NSCAN|SUB_CFG_SSCAN);
+                write(file,&scancfg,sizeof(scancfg)); 
+			}
             lseek(file,((long)cfg.sub[subnum]->ptridx)*10L,SEEK_SET);
-            write(file,&l,4);	/* date set to null */
-            write(file,&l,4);	/* date set to null */
-            ch=0xff;
+            write(file,&l,sizeof(l));	/* date set to null */
+            write(file,&l,sizeof(l));	/* date set to null */
+            scancfg=0xff;
             if(!(cfg.sub[subnum]->misc&SUB_NSDEF))
-                ch&=~5;
+                scancfg&=~SUB_CFG_NSCAN;
             if(!(cfg.sub[subnum]->misc&SUB_SSDEF))
-                ch&=~2;
-            write(file,&ch,2);
-            close(file); }
-        }
+                scancfg&=~SUB_CFG_SSCAN;
+            write(file,&scancfg,sizeof(scancfg));
+            close(file); 
+		}
+    }
 	globfree(&g);
     uifc.pop(0);
 }
@@ -712,7 +716,7 @@ import into the current message group.
 							cfg.sub[j]->maxmsgs=1000;
 					}
 					if(j==cfg.total_subs) {	/* adding new sub-board */
-						for(ptridx=0;ptridx>-1;ptridx++) {
+						for(ptridx=0;ptridx<USHRT_MAX;ptridx++) {
 							for(n=0;n<cfg.total_subs;n++)
 								if(cfg.sub[n]->ptridx==ptridx)
 									break;
