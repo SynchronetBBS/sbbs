@@ -902,6 +902,8 @@ for (pl in PLines) {
 
 if(this.branch!=undefined)
 	branch.limit=0; // we're not an infinite loop.
+else if (this.js!=undefined)
+	js.branch_limit=0; // new style branch limit definition
 
 ///// Main Loop /////
 while (!server.terminated) {
@@ -1755,7 +1757,7 @@ function IRCClient_do_join(chan_name,join_key) {
 		this.numeric("405", chan_name + " :You have joined too many channels.");
 		return 0;
 	}
-	chan = chan_name.toUpperCase().slice(0,max_chanlen);
+	var chan = chan_name.toUpperCase().slice(0,max_chanlen);
 	if (Channels[chan] != undefined) {
 		if (!this.parent) {
 			if ((Channels[chan].mode&CHANMODE_INVITE) &&
@@ -1781,20 +1783,18 @@ function IRCClient_do_join(chan_name,join_key) {
 		}
 		// add to existing channel
 		Channels[chan].users.push(this.id);
-		str="JOIN :" + Channels[chan].nam;
+		var str="JOIN :" + Channels[chan].nam;
 		if (this.parent)
 			this.bcast_to_channel(Channels[chan].nam, str, false);
 		else
 			this.bcast_to_channel(Channels[chan].nam, str, true);
 		if (chan_name[0] != "&")
-			server_bcast_to_servers(":" + servername + " SJOIN " + Channels[chan].created + " " + Channels[chan].nam + " " + Channels[chan].chanmode() + " :" + this.nick);
+			server_bcast_to_servers(":" + this.nick + " SJOIN " + Channels[chan].created + " " + Channels[chan].nam);
 	} else {
 		// create a new channel
 		Channels[chan]=new Channel(chan);
 		Channels[chan].nam=chan_name.slice(0,max_chanlen);
 		Channels[chan].mode=CHANMODE_NONE;
-//		Channels[chan].mode|=CHANMODE_TOPIC;
-//		Channels[chan].mode|=CHANMODE_NOOUTSIDE;
 		Channels[chan].topic="";
 		Channels[chan].created=time();
 		Channels[chan].users = new Array();
@@ -1805,7 +1805,6 @@ function IRCClient_do_join(chan_name,join_key) {
 		Channels[chan].modelist[CHANLIST_OP].push(this.id);
 		str="JOIN :" + chan_name;
 		this.originatorout(str,this);
-//		this.ircout("MODE " + chan_name + " " + Channels[chan].chanmode());
 		if (chan_name[0] != "&")
 			server_bcast_to_servers(":" + servername + " SJOIN " + Channels[chan].created + " " + Channels[chan].nam + " " + Channels[chan].chanmode() + " :@" + this.nick);
 	}
@@ -1824,10 +1823,10 @@ function IRCClient_do_part(chan_name) {
 		this.numeric403(chan_name);
 		return 0;
 	}
-	chan = chan_name.toUpperCase();
+	var chan = chan_name.toUpperCase();
 	if (Channels[chan] != undefined) {
 		if (this.onchannel(chan)) {
-			str = "PART " + Channels[chan].nam;
+			var str = "PART " + Channels[chan].nam;
 			if (this.parent)
 				this.bcast_to_channel(Channels[chan].nam, str, false);
 			else
@@ -1851,7 +1850,7 @@ function IRCClient_part_all() {
 }
 
 function IRCClient_get_usermode() {
-	tmp_mode = "+";
+	var tmp_mode = "+";
 	if (this.mode&USERMODE_INVISIBLE)
 		tmp_mode += "i";
 	if (this.mode&USERMODE_OPER)
@@ -2187,13 +2186,13 @@ function IRCClient_affect_mode_list(list_bit,chan) {
 		for (tmp_index in chan_tmplist[x]) {
 			if (list_bit >= CHANLIST_BAN) {
 				if (x == CHANLIST_BAN) {
-					set_ban = create_ban_mask(chan_tmplist[x][tmp_index]);
+					var set_ban = create_ban_mask(chan_tmplist[x][tmp_index]);
 					if (chan.count_modelist(CHANLIST_BAN) >= max_bans) {
 						this.numeric(478, chan.nam + " " + set_ban + " :Cannot add ban, channel's ban list is full.");
 					} else if (set_ban && !chan.isbanned(set_ban)) {
 						addmodes += "b";
 						addmodeargs += " " + set_ban;
-						banid = chan.add_modelist(set_ban,CHANLIST_BAN);
+						var banid = chan.add_modelist(set_ban,CHANLIST_BAN);
 						chan.bantime[banid] = time();
 						chan.bancreator[banid] = this.ircnuh;
 					}
@@ -2202,14 +2201,14 @@ function IRCClient_affect_mode_list(list_bit,chan) {
 						if (chan_tmplist[CHANLIST_UNBAN][tmp_index].toUpperCase() == chan.modelist[CHANLIST_BAN][ban].toUpperCase()) {
 							delmodes += "b";
 							delmodeargs += " " + chan_tmplist[CHANLIST_UNBAN][tmp_index];
-							banid = chan.del_modelist(chan_tmplist[CHANLIST_UNBAN][tmp_index],CHANLIST_BAN);
+							var banid = chan.del_modelist(chan_tmplist[CHANLIST_UNBAN][tmp_index],CHANLIST_BAN);
 							delete chan.bantime[banid];
 							delete chan.bancreator[banid];
 						}
 					}
 				}
 			} else {
-				tmp_nick = searchbynick(chan_tmplist[x][tmp_index]);
+				var tmp_nick = searchbynick(chan_tmplist[x][tmp_index]);
 				if (!tmp_nick)
 					tmp_nick = searchbynick(search_nickbuf(chan_tmplist[x][tmp_index]));
 				if (tmp_nick) { // FIXME: check for user existing on channel?
@@ -2590,11 +2589,11 @@ function IRCClient_registered_commands(command, cmdline) {
 			}
 			if (cmd[1][0] == ":")
 				cmd[1]=cmd[1].slice(1);
-			the_channels = cmd[1].split(",");
-			the_keys = "";
+			var the_channels = cmd[1].split(",");
+			var the_keys = "";
 			if (cmd[2])
 				the_keys = cmd[2].split(",");
-			key_counter = 0;
+			var key_counter = 0;
 			for(jchan in the_channels) {
 				regexp = "^[0]{1,}$" // 0 is a special case.
 				if(the_channels[jchan].match(regexp)) {
@@ -2623,7 +2622,7 @@ function IRCClient_registered_commands(command, cmdline) {
 				this.numeric482(chanid.nam);
 				break;
 			}
-			nickid = searchbynick(cmd[2]);
+			var nickid = searchbynick(cmd[2]);
 			if (!nickid) {
 				nickid = searchbynick(search_nickbuf(cmd[2]));
 				if (!nickid) {
@@ -3509,7 +3508,7 @@ function IRCClient_server_commands(origin, command, cmdline) {
 				if ((cmd[4] == "") && cmd[5])
 					tmp_modeargs++;
 
-				chan_members = ircstring(cmdline,4+tmp_modeargs).split(' ');
+				var chan_members = ircstring(cmdline,4+tmp_modeargs).split(' ');
 
 				if (chan_members == "") {
 					oper_notice("Notice","Server " + this.nick + " trying to SJOIN empty channel " + cmd[2]);
@@ -3517,11 +3516,11 @@ function IRCClient_server_commands(origin, command, cmdline) {
 				}
 			}
 
-			chan = searchbychannel(cmd[2]);
+			var chan = searchbychannel(cmd[2]);
 			if (!chan) {
-				cn_tuc = cmd[2].toUpperCase();
+				var cn_tuc = cmd[2].toUpperCase();
 				Channels[cn_tuc]=new Channel(cn_tuc);
-				chan = Channels[cn_tuc];
+				var chan = Channels[cn_tuc];
 				chan.nam = cmd[2];
 				chan.created = cmd[1];
 				chan.topic = "";
@@ -3533,9 +3532,9 @@ function IRCClient_server_commands(origin, command, cmdline) {
 			}
 			if (cmd[3]) {
 				if (chan.created == cmd[1])
-					bounce_modes = false;
+					var bounce_modes = false;
 				else
-					bounce_modes = true;
+					var bounce_modes = true;
 
 				if (chan.created >= cmd[1]) {
 					if (mode_args)
@@ -3545,8 +3544,8 @@ function IRCClient_server_commands(origin, command, cmdline) {
 				}
 
 				for (member in chan_members) {
-					is_op = false;
-					is_voice = false;
+					var is_op = false;
+					var is_voice = false;
 					if (chan_members[member][0] == "@") {
 						is_op = true;
 						chan_members[member] = chan_members[member].slice(1);
@@ -3555,7 +3554,7 @@ function IRCClient_server_commands(origin, command, cmdline) {
 						is_voice = true;
 						chan_members[member] = chan_members[member].slice(1);
 					}
-					member_obj = searchbynick(chan_members[member]);
+					var member_obj = searchbynick(chan_members[member]);
 					if (!member_obj)
 						break;
 					member_obj.channels.push(chan.nam.toUpperCase());
@@ -3572,17 +3571,18 @@ function IRCClient_server_commands(origin, command, cmdline) {
 						}
 					}
 				}
+				this.bcast_to_servers_raw(":" + servername + " SJOIN " + chan.created + " " + chan.nam + " " + chan.chanmode(true) + " :" + ircstring(cmdline))
 			} else {
 				ThisOrigin.channels.push(chan.nam.toUpperCase());
 				chan.users.push(ThisOrigin.id);
 				ThisOrigin.bcast_to_channel(chan.nam, "JOIN " + chan.nam, false);
+				this.bcast_to_servers_raw(":" + ThisOrigin.nick + " SJOIN " + chan.created + " " + chan.nam);
 			}
-			this.bcast_to_servers_raw(":" + servername + " SJOIN " + chan.created + " " + chan.nam + " " + chan.chanmode(true) + " :" + ircstring(cmdline))
 			break;
 		case "SQUIT":
 			if (!cmd[2])
 				break;
-			sq_server = searchbyserver(cmd[1]);
+			var sq_server = searchbyserver(cmd[1]);
 			if (!sq_server)
 				break;
 			sq_server.quit(ThisOrigin.nick + " " + sq_server.nick);
