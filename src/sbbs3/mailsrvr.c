@@ -2071,23 +2071,25 @@ static void smtp_thread(void* arg)
 					telegram_buf[length+strlen(str)]=0;	/* Need ASCIIZ */
 
 					/* Send telegram to users */
-					rewind(rcptlst);
-					rcpt_count=0;
-					while(!feof(rcptlst)  && rcpt_count<startup->max_recipients) {
-						if(fgets(str,sizeof(str),rcptlst)==NULL)
-							break;
-						usernum=atoi(str);
-						if(fgets(rcpt_name,sizeof(rcpt_name),rcptlst)==NULL)
-							break;
-						truncsp(rcpt_name);
-						if(fgets(rcpt_addr,sizeof(rcpt_addr),rcptlst)==NULL)
-							break;
-						truncsp(rcpt_addr);
-						putsmsg(&scfg,usernum,telegram_buf);
-						lprintf(LOG_INFO,"%04d SMTP Created telegram (%ld/%u bytes) from %s to %s <%s>"
-							,socket, length, strlen(telegram_buf), sender_addr, rcpt_name, rcpt_addr);
-						rcpt_count++;
+					sec_list=iniGetSectionList(rcptlst,NULL);	/* Each section is a recipient */
+					for(rcpt_count=0; sec_list!=NULL
+						&& sec_list[rcpt_count]!=NULL 
+						&& rcpt_count<startup->max_recipients; rcpt_count++) {
+
+						section=sec_list[rcpt_count];
+
+						SAFECOPY(rcpt_name,iniGetString(rcptlst,section	,smb_hfieldtype(RECIPIENT),"unknown",value));
+						usernum=iniGetInteger(rcptlst,section			,smb_hfieldtype(RECIPIENTEXT),0);
+						SAFECOPY(rcpt_addr,iniGetString(rcptlst,section	,smb_hfieldtype(RECIPIENTNETADDR),str,value));
+
+						if((i=putsmsg(&scfg,usernum,telegram_buf))==0)
+							lprintf(LOG_INFO,"%04d SMTP Created telegram (%ld/%u bytes) from %s to %s <%s>"
+								,socket, length, strlen(telegram_buf), sender_addr, rcpt_name, rcpt_addr);
+						else
+							lprintf(LOG_ERR,"%04d !SMTP ERROR %d creating telegram from %s to %s <%s>"
+								,socket, i, sender_addr, rcpt_name, rcpt_addr);
 					}
+					iniFreeStringList(sec_list);
 					free(telegram_buf);
 					sockprintf(socket,ok_rsp);
 					telegram=FALSE;
