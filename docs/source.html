@@ -101,7 +101,17 @@ and all the DLLs, you may use <i>Borland C++</i> or <i>C++ Builder</i> instead, 
 But note: if you rebuild any of the DLLs, you must also re-link <tt>sbbsctrl.exe</tt> with the
 Borland import libraries for those DLLs (see <tt>src/sbbs3/ctrl/makelibs.bat</tt>
 for details). 
-
+<p>
+<b>Caveat:</b> There is a known limitation with the Borland C run-time library (RTL) which may effect any Synchronet
+system built soley with Borland C++: The Borland C RTL is limited to <i>50</i> open files.
+Microsoft's C RTL does not have this limitation. The solution requires you have the
+source code to the Borland C RTL (normally in the <tt>Source\rtl</tt> directory):
+<ul>
+<li>Increase the value for the <tt>_NFILE</tt> definition in <tt>include/io.h</tt>
+<li>Compile <tt>rtl\Source\io\files.c</tt> and <tt>files2.c</tt>
+<li>Link <tt>files.obj</tt> and <tt>files2.obj</tt> with your Synchronet executable
+	(i.e. <tt>sbbs.exe</tt> or <tt>sbbsmono.exe</tt>)
+</ul>
 <p>
 As for the build files: the <tt>.dsp</tt> and <tt>.dsw</tt> files are used by <i> Microsoft Visual
 C++</i>,
