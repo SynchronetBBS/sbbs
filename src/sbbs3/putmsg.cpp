@@ -212,11 +212,11 @@ char sbbs_t::putmsg(char HUGE16 *str, long mode)
 			l+=2; 
 		}
 		else {
-			if(str[l]==LF) {
+			if(str[l]=='\n') {
 				if(exatr) 	/* clear at newline for extra attr codes */
 					attr(LIGHTGRAY);
-				if(l && str[l-1]!=CR)	/* convert sole LF to CR/LF */
-					outchar(CR);
+				if(l==0 || str[l-1]!='\r')	/* expand sole LF to CR/LF */
+					outchar('\r');
 			}
 
 			/* ansi escape sequence */
