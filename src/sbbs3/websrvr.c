@@ -1296,6 +1296,8 @@ static char *get_request(http_session_t * session, char *req_line)
 
 	SKIP_WHITESPACE(req_line);
 	SAFECOPY(session->req.virtual_path,req_line);
+	strtok(session->req.virtual_path," \t");
+	retval=strtok(NULL," \t");
 
 	/* Must initialize physical_path before calling is_dynamic_req() */
 	SAFECOPY(session->req.physical_path,session->req.virtual_path);
@@ -1317,8 +1319,6 @@ static char *get_request(http_session_t * session, char *req_line)
 			);
 	}
 
-	strtok(session->req.virtual_path," \t");
-	retval=strtok(NULL," \t");
 	strtok(session->req.virtual_path,"?");
 	p=strtok(NULL,"");
 	session->req.dynamic=is_dynamic_req(session);
