@@ -164,6 +164,7 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 
 	sprintf(smb.file,"%s%s",cfg.sub[subnum]->data_dir,cfg.sub[subnum]->code);
 	smb.retry_time=cfg.smb_retry_time;
+	smb.subnum=subnum;
 	if((i=smb_open(&smb))!=0) {
 		smb_stack(&smb,SMB_STACK_POP);
 		errormsg(WHERE,ERR_OPEN,smb.file,i,smb.last_error);
@@ -347,7 +348,7 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 	return(true);
 }
 
-extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, uint subnum, smbmsg_t* msg, char* msgbuf)
+extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, char* msgbuf)
 {
 	char	pad=0;
 	ushort	xlat;
@@ -359,26 +360,26 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, uint subnum, smbmsg_t* m
 	ulong	crc=0xffffffff;
 
 	if(!SMB_IS_OPEN(smb)) {
-		if(subnum==INVALID_SUB)
+		if(smb->subnum==INVALID_SUB)
 			sprintf(smb->file,"%smail",cfg->data_dir);
 		else
-			sprintf(smb->file,"%s%s",cfg->sub[subnum]->data_dir,cfg->sub[subnum]->code);
+			sprintf(smb->file,"%s%s",cfg->sub[smb->subnum]->data_dir,cfg->sub[smb->subnum]->code);
 		smb->retry_time=cfg->smb_retry_time;
 		if((i=smb_open(smb))!=0)
 			return(i);
 	}
 
 	if(filelength(fileno(smb->shd_fp))<1) {	 /* Create it if it doesn't exist */
-		if(subnum==INVALID_SUB) {
+		if(smb->subnum==INVALID_SUB) {
 			smb->status.max_crcs=cfg->mail_maxcrcs;
 			smb->status.max_age=cfg->mail_maxage;
 			smb->status.max_msgs=MAX_SYSMAIL;
 			smb->status.attr=SMB_EMAIL;
 		} else {
-			smb->status.max_crcs=cfg->sub[subnum]->maxcrcs;
-			smb->status.max_msgs=cfg->sub[subnum]->maxmsgs;
-			smb->status.max_age=cfg->sub[subnum]->maxage;
-			smb->status.attr=cfg->sub[subnum]->misc&SUB_HYPER ? SMB_HYPERALLOC : 0;
+			smb->status.max_crcs=cfg->sub[smb->subnum]->maxcrcs;
+			smb->status.max_msgs=cfg->sub[smb->subnum]->maxmsgs;
+			smb->status.max_age=cfg->sub[smb->subnum]->maxage;
+			smb->status.attr=cfg->sub[smb->subnum]->misc&SUB_HYPER ? SMB_HYPERALLOC : 0;
 		}
 		if((i=smb_create(smb))!=0) 
 			return(i); 
@@ -406,8 +407,8 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, uint subnum, smbmsg_t* m
 			smb_unlocksmbhdr(smb);
 			return(i);
 		}
-		if((subnum==INVALID_SUB && cfg->sys_misc&SM_FASTMAIL)
-			|| (subnum!=INVALID_SUB && cfg->sub[subnum]->misc&SUB_FAST)) {
+		if((smb->subnum==INVALID_SUB && cfg->sys_misc&SM_FASTMAIL)
+			|| (smb->subnum!=INVALID_SUB && cfg->sub[smb->subnum]->misc&SUB_FAST)) {
 			offset=smb_fallocdat(smb,length,1);
 			storage=SMB_FASTALLOC; 
 		} else {
@@ -443,10 +444,10 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, uint subnum, smbmsg_t* m
 	msg->hdr.when_imported.time=time(NULL);
 	msg->hdr.when_imported.zone=cfg->sys_timezone;
 	msg->hdr.offset=offset;
-	if(subnum!=INVALID_SUB) {	/* enforce anonymous/private posts only */
-		if(cfg->sub[subnum]->misc&SUB_PONLY)
+	if(smb->subnum!=INVALID_SUB) {	/* enforce anonymous/private posts only */
+		if(cfg->sub[smb->subnum]->misc&SUB_PONLY)
 			msg->hdr.attr|=MSG_PRIVATE;
-		if(cfg->sub[subnum]->misc&SUB_AONLY)
+		if(cfg->sub[smb->subnum]->misc&SUB_AONLY)
 			msg->hdr.attr|=MSG_ANONYMOUS;
 	}
 	smb_dfield(msg,TEXT_BODY,length);
