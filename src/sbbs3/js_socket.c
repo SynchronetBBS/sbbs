@@ -139,6 +139,33 @@ static ushort js_port(JSContext* cx, jsval val, int type)
 	return(0);
 }
 
+SOCKET DLLCALL js_socket(JSContext *cx, jsval val)
+{
+	void*		vp;
+	SOCKET		sock=INVALID_SOCKET;
+
+	if(JSVAL_IS_OBJECT(val)) {
+		if((vp=JS_GetPrivate(cx,JSVAL_TO_OBJECT(val)))!=NULL)
+			sock=*(SOCKET*)vp;
+	} else
+		JS_ValueToInt32(cx,val,(int32*)&sock);
+
+	return(sock);
+}
+
+void DLLCALL js_timeval(JSContext* cx, jsval val, struct timeval* tv)
+{
+	jsdouble jsd;
+
+	if(JSVAL_IS_INT(val))
+		tv->tv_sec = JSVAL_TO_INT(val);
+	else if(JSVAL_IS_DOUBLE(val)) {
+		JS_ValueToNumber(cx,val,&jsd);
+		tv->tv_sec = (int)jsd;
+		tv->tv_usec = (int)(jsd*1000000.0)%1000000;
+	}
+}
+
 static JSBool
 js_bind(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
@@ -236,19 +263,6 @@ js_accept(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	dbprintf(FALSE, p, "accepted connection");
 	*rval = OBJECT_TO_JSVAL(sockobj);
 	return(JS_TRUE);
-}
-
-void js_timeval(JSContext* cx, jsval val, struct timeval* tv)
-{
-	jsdouble jsd;
-
-	if(JSVAL_IS_INT(val))
-		tv->tv_sec = JSVAL_TO_INT(val);
-	else if(JSVAL_IS_DOUBLE(val)) {
-		JS_ValueToNumber(cx,val,&jsd);
-		tv->tv_sec = (int)jsd;
-		tv->tv_usec = (int)(jsd*1000000.0)%1000000;
-	}
 }
 
 static JSBool
