@@ -18,11 +18,13 @@
            		@@JS:if(user.number || (this.login!=undefined && system.matchuser("Guest")))'<a href="/msgs">Message Groups</a>'@@ 
            		<a href="%%ftp_url%%">File Libraries</a>
         	</p>
-		</div> 
-
+		</div>
+		
 <!-- start Nodelisting -->
 
-      @@JS:if(template.show_nodelist)'Who\'s Online now ...<br /><br /><table class="main_nodelist"><tbody><tr><td class="main_nodelist"><a href="mailto:'+template.user_email+'">'+template.user_name+'</a> '+template.node_action+'</td></tr></tbody></table></div>';@@
-                        
+      @@JS:if(template.show_nodelist)'Who\'s Online now ...<br /><br /><table class="main_nodelist"><tbody><tr><td class="main_nodelist"><a href="mailto:'+template.user_email+'">'+template.user_name+'</a> '+template.node_action+'</td></tr></tbody></table>';@@
+ 
+	 </div>
+	                         
 <!-- end Left Navigation -->
             
