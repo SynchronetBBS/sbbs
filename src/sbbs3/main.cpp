@@ -790,7 +790,6 @@ static BOOL winsock_startup(void)
 static BYTE* telnet_interpret(sbbs_t* sbbs, BYTE* inbuf, int inlen,
   									BYTE* outbuf, int& outlen)
 {
-	char	str[32];
 	BYTE*   first_iac=NULL;
 	BYTE*	first_cr=NULL;
 	int 	i;
