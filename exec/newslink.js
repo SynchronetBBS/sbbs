@@ -102,6 +102,24 @@ function readln(str)
 	return(rsp);
 }
 
+function unique_fname(dir,fname)
+{
+	var new_fname=fname;
+	var file_num=0;
+	var ext;
+	while(file_exists(dir + new_fname) && file_num<1000) { 
+		// generate unique name, if necessary
+		ext=fname.lastIndexOf('.');
+		if(ext<0)
+			ext="";
+		else
+			ext=fname.slice(ext);
+		// Convert filename.ext to filename.<article>.ext
+		new_fname=format("%.*s.%lu%s",fname.length-ext.length,fname,file_num++,ext);
+	}
+	return(dir + new_fname);
+}
+
 var server;
 var port=119;
 var username;
@@ -120,9 +138,10 @@ if(!cfg_file.open("r")) {
 }
 
 while(!cfg_file.eof) {
-	line = truncsp(cfg_file.readln());
+	line = cfg_file.readln();
 	if(line==null || line[0] == ';' || !line.length || line==undefined)
 		continue;
+	line = truncsp(line);
 	str=line.split(/\s+/);
 	switch(str[0].toLowerCase()) {
 		case "disabled":
@@ -463,6 +482,7 @@ for(i in area) {
 		var recv_lines=0;
         var file=undefined;   
         var md5; 
+		var attachment = new Array();
 		while(socket.is_connected) {
 
 			if(recv_lines && lines_per_yield && (recv_lines%lines_per_yield)==0)
@@ -492,40 +512,111 @@ for(i in area) {
 				if(line.charAt(0)=='.')
 					line=line.slice(1);		// Skip prepended dots
 
-                if(flags.indexOf('b')>=0) {        // decode attachments   
+                if(flags.indexOf('b')>=0) {        // decode attachments
+					attachment.push(line+"\r\n");
+					if(file==undefined
+						&& line.substr(0,8)=="=ybegin " 
+						&& line.indexOf(" line=")>0
+						&& (size=line.indexOf(" size="))>0
+						&& (name=line.indexOf(" name="))>0) {
+
+						printf("yenc header: %s\r\n",line);
+
+						size=parseInt(line.slice(size+6),10);
+						fname=file_getname(line.slice(name+6));
+
+						if((total=line.indexOf(" total="))>0)
+							total=parseInt(line.slice(total+7),10);
+
+						if(total>1)	/* multipart */
+							continue;
+
+						/* part? */
+						if((part=line.indexOf(" part="))>0)
+							part=parseInt(line.slice(part+6),10);
+
+						if(part>1) /* multipart */
+							continue;
+
+						if(part>0) {
+							line = socket.recvline(512 /*maxlen*/, 300 /*timeout*/);
+							attachment.push(line+"\r\n");
+							printf("ypart header: %s\r\n",line);
+							if(line.substr(0,7)!="=ypart "
+								|| (begin=line.indexOf(" begin="))<1
+								|| (end=line.indexOf(" end="))<1) {
+								printf("!yEnc MALFORMED ypart line: %s\r\n",line);
+								continue;
+							}
+							if(begin!=1 || end!=size)	/* multipart */
+								continue;
+						}
+
+						fname=unique_fname(attachment_dir,fname);
+                        file=new File(fname);   
+                        file.yenc=true;   
+                        if(file.open("w+b"))   
+                            printf("Receiving/decoding attachment: %s\r\n",file.name);
+                        else   
+                            printf("!ERROR %s opening %s\r\n",errno_str,file.name);
+                        continue;   
+					}	
+
                     if(file==undefined && line.substr(0,6)=="begin ") {   
 						 // Parse uuencode header   
 						 arg=line.split(/\s+/);   
 						 arg.splice(0,2);        // strip "begin 666 "   
 						 fname=file_getname(arg.join(" "));   
-						 if(file_exists(attachment_dir + fname)) { // generate unique name, if necessary   
-							 ext=fname.lastIndexOf('.');   
-							 if(ext<0)   
-								 ext="";   
-							 else   
-								 ext=fname.slice(ext);   
-							 // Convert filename.ext to filename.<article>.ext   
-							 fname=format("%.*s.%lu%s",fname.length-ext.length,fname,ptr,ext);   
-						 }   
-						 fname=attachment_dir + fname;   
-    
+						 fname=unique_fname(attachment_dir,fname);    
                          file=new File(fname);   
                          file.uue=true;   
                          if(file.open("w+b"))   
                              printf("Receiving/decoding attachment: %s\r\n",file.name);   
                          else   
-                             printf("!ERROR %s opening %s\r\n",errno_str,file.name);   
+                             printf("!ERROR %s opening %s\r\n",errno_str,file.name);
                          continue;   
                      }    
                      if(file!=undefined && file.is_open==true) {   
-                         if(line=="end") {   
+                        if(file.uue && line=="end") {   
                              md5=file.md5_hex;   
-                             file.close();   
-                         } else   
-                             if(!file.write(line))   
-                                 printf("!ERROR decoding/writing: %s\r\n",line);   
-                         continue;   
-					}   
+                             file.close();
+							 continue;
+						}
+						if(file.yenc && line.substr(0,6)=="=yend "
+							&& (part_size=line.indexOf(" size="))>0) {
+							part_size=parseInt(line.slice(part_size+6),10);
+							if(part_size!=size)	{ /* multi-part, ignore */
+								file.remove();
+								delete file;
+								continue;
+							}
+							if((crc32=line.indexOf(" pcrc32="))>0)
+								crc32=parseInt(line.slice(crc32+8),16);
+							else if((crc32=line.indexOf(" crc32="))>0)
+								crc32=parseInt(line.slice(crc32+7),16);
+							else
+								crc32=undefined;
+
+							if(crc32!=undefined) {
+								file_crc32=file.crc32;
+								if(crc32!=file_crc32) {
+									printf("!yEnc CRC-32 mismatch, actual: %08lX, trailer: %s\r\n"
+										,file_crc32,line);
+									file.remove();
+									delete file;
+									continue;
+								}
+							}
+
+							md5=file.md5_hex;
+							file.close();
+							continue;
+						}
+
+						if(!file.write(line))   
+							printf("!ERROR decoding/writing: %s\r\n",line);   
+                        continue;   
+					}
                 } 
 
 				body += line;
@@ -539,48 +630,43 @@ for(i in area) {
 		}
 			
         if(file!=undefined) {   
-            var partial=false;   
-            if(file.is_open==true) { /* Partial attachment? */   
-                md5=file.md5_hex;   
-                file.close();   
-                partial=true;   
-            }
-			/* Search for duplicate MD5 */
-			var duplicate=false;
-			md5_file=new File(attachment_dir + "md5.lst");
-			if(md5_file.open("r")) {
-				while(!md5_file.eof && !duplicate) {
-					str=md5_file.readln();
-					if(str==null)
-						break;
-					if(str.substr(0,32)==md5)
-						duplicate=true;
+            if(file.is_open==true) { /* Incomplete attachment? */
+				print("!Incomplete attachment: " + file_getname(file.name));
+                file.close();
+				body = body + attachment;	// restore encoded lines
+            } else {
+				/* Search for duplicate MD5 */
+				print("Searching for duplicate file");
+				var duplicate=false;
+				md5_file=new File(attachment_dir + "md5.lst");
+				if(md5_file.open("r")) {
+					while(!md5_file.eof && !duplicate) {
+						str=md5_file.readln();
+						if(str==null)
+							break;
+						if(str.substr(0,32)==md5)
+							duplicate=true;
+					}
+					md5_file.close();
 				}
-				md5_file.close();
+				if(duplicate) {   
+					printf("Duplicate MD5 digest found: %s\r\n",str);   
+					if(file_remove(file.name))   
+						printf("Duplicate file removed: %s\r\n",file.name);   
+					else   
+						printf("!ERROR removing duplicate file: %s\r\n",file.name);   
+					continue;   
+				}
+				/* Append MD5 to history file */
+				if(md5_file.open("a")) {
+					md5_file.printf("%s %s\n",md5,file_getname(file.name));
+					md5_file.close();
+				} else
+					printf("!ERROR %d (%s) creating/appending %s\r\n"
+						,errno, errno_str, md5_file.name);
 			}
-            if(duplicate) {   
-                printf("Duplicate MD5 digest found: %s\r\n",str);   
-                if(file_remove(file.name))   
-                    printf("Duplicate file removed: %s\r\n",file.name);   
-                else   
-                    printf("!ERROR removing duplicate file: %s\r\n",file.name);   
-                continue;   
-            }
-			/* Append MD5 to history file */
-			if(md5_file.open("a")) {
-				md5_file.printf("%s %s\n",md5,file_getname(file.name));
-				md5_file.close();
-			} else
-				printf("!ERROR %d (%s) creating/appending %s\r\n"
-					,errno, errno_str, md5_file.name);
-
-            if(partial)   
-                 file_rename(file.name   
-                     ,attachment_dir    
-                         + hdr.subject.replace(/\//g,'.').replace(/ /g,'_') + ".part");   
-         } 
-
-
+        } 
+		
 		if(truncsp(body).length==0) {
 			printf("Message %lu not imported (blank)\r\n",ptr);
 			continue;
