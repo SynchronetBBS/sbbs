@@ -244,7 +244,6 @@ js_ascii(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 static JSBool
 js_strip_ctrl(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	ulong		sum=0;
 	char*		p;
 	JSString*	js_str;
 

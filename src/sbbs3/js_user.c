@@ -322,7 +322,7 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
 	char*		str;
 	char		tmp[64];
-	ulong		val;
+	jsint		val;
 	ulong		usermisc;
     jsint       tiny;
 	JSString*	js_str;
@@ -341,7 +341,7 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 
 	switch(tiny) {
 		case USER_PROP_NUMBER:
-			JS_ValueToInt32(cx, *vp, &p->usernumber);
+			JS_ValueToInt32(cx, *vp, (jsint*)&p->usernumber);
 			break;
 		case USER_PROP_ALIAS:
 			/* update USER.DAT */

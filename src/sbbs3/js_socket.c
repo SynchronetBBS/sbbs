@@ -150,7 +150,6 @@ js_close(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 static JSBool
 js_bind(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	int			i;
 	SOCKADDR_IN	addr;
 	private_t*	p;
 
@@ -163,7 +162,7 @@ js_bind(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(argc)
 		addr.sin_port = (ushort)JSVAL_TO_INT(argv[0]);
 
-	if((i=bind(p->sock, (struct sockaddr *) &addr, sizeof (addr)))!=0) {
+	if(bind(p->sock, (struct sockaddr *) &addr, sizeof (addr))!=0) {
 		p->last_error=ERROR_VALUE;
 		dbprintf(TRUE, p, "bind failed with error %d",ERROR_VALUE);
 		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
@@ -178,7 +177,6 @@ js_bind(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 static JSBool
 js_connect(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	int			i;
 	ulong		ip_addr;
 	ushort		port;
 	JSString*	str;
@@ -208,7 +206,7 @@ js_connect(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	addr.sin_family = AF_INET;
 	addr.sin_port   = htons(port);
 
-	if((i=connect(p->sock, (struct sockaddr *)&addr, sizeof(addr)))!=0) {
+	if(connect(p->sock, (struct sockaddr *)&addr, sizeof(addr))!=0) {
 		p->last_error=ERROR_VALUE;
 		dbprintf(TRUE, p, "connect failed with error %d",ERROR_VALUE);
 		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);

@@ -124,7 +124,7 @@ js_open(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char*		mode="w+";	/* default mode */
 	uintN		i;
-	JSBool		bufsize=2*1024;
+	jsint		bufsize=2*1024;
 	JSString*	str;
 	private_t*	p;
 
@@ -459,7 +459,6 @@ js_writeall(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     jsuint      i;
     jsuint      limit;
     JSObject*	array;
-    JSObject*	elem;
     jsval       elemval;
 	private_t*	p;
 
@@ -483,7 +482,6 @@ js_writeall(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     for(i=0;i<limit;i++) {
         if(!JS_GetElement(cx, array, i, &elemval))
 			break;
-        elem = JSVAL_TO_OBJECT(elemval);
         js_writeln(cx, obj, 1, &elemval, rval);
 		if(*rval!=BOOLEAN_TO_JSVAL(JSVAL_TRUE))
 			break;

@@ -68,7 +68,7 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 	JSObject*	lib_list;
 	JSObject*	dir_list;
 	jsval		val;
-	jsint		index;
+	jsuint		index;
 	uint		l,d;
 	JSBool		found;
 

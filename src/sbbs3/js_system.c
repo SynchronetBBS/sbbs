@@ -634,7 +634,7 @@ static JSBool js_node_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 static JSBool js_node_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
 	uint		node_num;
-	uint		val=0;
+	jsint		val=0;
     jsint       tiny;
 	node_t		node;
 	scfg_t*		cfg;
