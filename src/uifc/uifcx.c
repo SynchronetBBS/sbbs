@@ -1,5 +1,7 @@
 /* uifcx.c */
 
+/* Standard I/O Implementation of UIFC (user interface) library */
+
 /* $Id$ */
 
 /****************************************************************************
@@ -53,6 +55,10 @@ static void umsg(char *str);
 static void upop(char *str);
 static void sethelp(int line, char* file);
 
+/****************************************************************************/
+/* Initialization function, see uifc.h for details.							*/
+/* Returns 0 on success.													*/
+/****************************************************************************/
 int uifcinix(uifcapi_t* uifcapi)
 {
 
@@ -76,16 +82,25 @@ int uifcinix(uifcapi_t* uifcapi)
     return(0);
 }
 
-
+/****************************************************************************/
+/* Exit/uninitialize UIFC implementation.									*/
+/****************************************************************************/
 void uifcbail(void)
 {
 }
 
+/****************************************************************************/
+/* Clear screen, fill with background attribute, display application title.	*/
+/* Returns 0 on success.													*/
+/****************************************************************************/
 int uscrn(char *str)
 {
     return(0);
 }
 
+/****************************************************************************/
+/* Local utility function.													*/
+/****************************************************************************/
 static int which(char* prompt, int max)
 {
     char    str[41];
@@ -101,15 +116,9 @@ static int which(char* prompt, int max)
     }
 }
 
-/**************************************************************************/
-/* General menu display function. SCRN_* macros define virtual screen     */
-/* limits. *cur is a pointer to the current option. Returns option number */
-/* positive value for selected option or -1 for ESC, -2 for INS or -3 for */
-/* DEL. Menus can centered left to right and top to bottom automatically. */
-/* mode bits are set with macros WIN_*									  */
-/* option is an array of char arrays, first element of last char array    */
-/* must be NULL.                                                          */
-/**************************************************************************/
+/****************************************************************************/
+/* General menu function, see uifc.h for details.							*/
+/****************************************************************************/
 int ulist(int mode, char left, int top, char width, int *cur, int *bar
 	, char *title, char **option)
 {
@@ -263,20 +272,8 @@ void umsg(char *str)
 }
 
 /****************************************************************************/
-/* Performs printf() through puttext() routine								*/
+/* Status popup/down function, see uifc.h for details.						*/
 /****************************************************************************/
-int uprintf(char x, char y, char attr, char *fmat, ...)
-{
-    int     i;
-	va_list argptr;
-
-    va_start(argptr,fmat);
-    i=vprintf(fmat,argptr);
-    va_end(argptr);
-
-    return(i);
-}
-
 void upop(char *str)
 {
     if(str==NULL)
@@ -285,15 +282,18 @@ void upop(char *str)
         printf("\r%-79s",str);
 }
 
+/****************************************************************************/
+/* Sets the current help index by source code file and line number.			*/
+/****************************************************************************/
 void sethelp(int line, char* file)
 {
     helpline=line;
     helpfile=file;
 }
 
-/************************************************************/
-/* Help (F1) key function. Uses helpbuf as the help input.	*/
-/************************************************************/
+/****************************************************************************/
+/* Help function.															*/
+/****************************************************************************/
 void help()
 {
 	char hbuf[HELPBUF_SIZE],str[256];
