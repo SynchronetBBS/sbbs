@@ -125,7 +125,7 @@ BOOL DLLCALL backup(char *fname, int backup_level, BOOL ren)
 	for(i=backup_level;i;i--) {
 		sprintf(newname,"%.*s.%d%s",len,fname,i-1,ext);
 		if(i==backup_level)
-			if(remove(newname)!=0)
+			if(fexist(newname) && remove(newname)!=0)
 				return(FALSE);
 		if(i==1) {
 			if(ren == TRUE) {
@@ -137,7 +137,7 @@ BOOL DLLCALL backup(char *fname, int backup_level, BOOL ren)
 			continue; 
 		}
 		sprintf(oldname,"%.*s.%d%s",len,fname,i-2,ext);
-		if(rename(oldname,newname)!=0)
+		if(fexist(oldname) && rename(oldname,newname)!=0)
 			return(FALSE);
 	}
 
