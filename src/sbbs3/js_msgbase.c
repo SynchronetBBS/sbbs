@@ -323,11 +323,12 @@ static JSBool
 js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char		date[128];
-	char		msg_id[128];
-	char		reply_id[128];
+	char		msg_id[256];
+	char		reply_id[256];
 	char*		val;
 	ulong		l;
 	smbmsg_t	msg;
+	smbmsg_t	orig_msg;
 	JSObject*	hdrobj;
 	private_t*	p;
 
@@ -455,13 +456,23 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 		val=msg.reply_id;
 	else {
 		reply_id[0]=0;
-		if(p->smb.subnum!=INVALID_SUB && msg.hdr.thread_orig)
-			sprintf(reply_id,"<%lu.%s@%s>"
-				,msg.hdr.thread_orig,scfg->sub[p->smb.subnum]->code,scfg->sys_inetaddr);
+		if(p->smb.subnum!=INVALID_SUB && msg.hdr.thread_orig) {
+			memset(&orig_msg,0,sizeof(orig_msg));
+			orig_msg.hdr.number=msg.hdr.thread_orig;
+			if(smb_getmsgidx(&(p->smb), &orig_msg))
+				sprintf(reply_id,"<%s>",p->smb.last_error);
+			else
+				sprintf(reply_id,"<%08lX.%lu.%s@%s>"
+					,orig_msg.idx.time
+					,msg.hdr.thread_orig
+					,scfg->sub[p->smb.subnum]->code
+					,scfg->sys_inetaddr);
+		}
 		val=reply_id;
 	}
-	JS_DefineProperty(cx, hdrobj, "reply_id", STRING_TO_JSVAL(JS_NewStringCopyZ(cx,val))
-		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+	if(val[0])
+		JS_DefineProperty(cx, hdrobj, "reply_id", STRING_TO_JSVAL(JS_NewStringCopyZ(cx,val))
+			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
 	/* Message-ID */
 	if(msg.id!=NULL)
@@ -469,11 +480,11 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 	else {
 		if(p->smb.subnum==INVALID_SUB)
 			sprintf(msg_id,"<%08lX.%lu@%s>"
-				,msg.hdr.when_written.time
+				,msg.idx.time
 				,msg.idx.number,scfg->sys_inetaddr);
 		else
 			sprintf(msg_id,"<%08lX.%lu.%s@%s>"
-				,msg.hdr.when_written.time
+				,msg.idx.time
 				,msg.idx.number,scfg->sub[p->smb.subnum]->code,scfg->sys_inetaddr);
 		val=msg_id;
 	}
