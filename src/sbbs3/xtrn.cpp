@@ -43,6 +43,8 @@
 	#include <sys/wait.h>	// WEXITSTATUS
 #endif
 
+#define XTRN_IO_BUF_LEN 5000
+
 /*****************************************************************************/
 /* Interrupt routine to expand WWIV Ctrl-C# codes into ANSI escape sequences */
 /*****************************************************************************/
@@ -163,8 +165,6 @@ BYTE* telnet_expand(BYTE* inbuf, ulong inlen, BYTE* outbuf, ulong& newlen, bool&
 #ifdef _WIN32
 
 #include "execvxd.h"	/* Win9X FOSSIL VxD API */
-
-#define XTRN_IO_BUF_LEN 5000
 
 extern SOCKET node_socket[];
 
@@ -779,16 +779,41 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 
 #else	/* !WIN32 */
 
+/*****************************************************************************/
+// Expands Unix LF to CRLF
+/*****************************************************************************/
+BYTE* lf_expand(BYTE* inbuf, ulong inlen, BYTE* outbuf, ulong& newlen)
+{
+	ulong	i,j;
+
+	for(i=j=0;i<inlen;i++) {
+		if(inbuf[i]=='\n' && (!i || inbuf[i-1]!='\r'))
+			outbuf[j++]='\r';
+		outbuf[j++]=inbuf[i];
+	}
+	newlen=j;
+    return(outbuf);
+}
+
 int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 {
 	char	str[256];
 	char	fname[128];
 	char*	argv[30];
 	char*	p;
-    bool	native=false;			// DOS program by default
+	BYTE*	bp;
+	BYTE	buf[XTRN_IO_BUF_LEN];
+    BYTE 	output_buf[XTRN_IO_BUF_LEN*2];
+    ulong	output_len;
+	bool	native=false;			// DOS program by default
 	int		i;
+	int		rd;
+	int		wr;
 	int		argc;
 	pid_t	pid;
+	int		in_pipe[2];
+	int		out_pipe[2];
+	bool	telnet_flag=false;
 
 	XTRN_LOADABLE_MODULE;
 	XTRN_LOADABLE_JS_MODULE;
@@ -832,14 +857,27 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 		/* setup DOSemu env here */
 	}
 
-	pthread_mutex_lock(&input_thread_mutex);
+	if(!(mode&EX_INR))
+		pthread_mutex_lock(&input_thread_mutex);
+#if 1	
+	if(mode&EX_INR)
+		if(pipe(in_pipe)!=0) {
+			errormsg(WHERE,ERR_CREATE,"in_pipe",0);
+			return(-1);
+		}
+#endif		
+	if(mode&EX_OUTR)
+		if(pipe(out_pipe)!=0) {
+			errormsg(WHERE,ERR_CREATE,"out_pipe",0);
+			return(-1);
+		}
 
 	if((pid=fork())==-1) {
 		pthread_mutex_unlock(&input_thread_mutex);
 		errormsg(WHERE,ERR_EXEC,cmdline,0);
 		return(-1);
 	}
-
+	
 	if(pid==0) {	/* child process */
 		if(startup_dir!=NULL && startup_dir[0])
 			chdir(startup_dir);
@@ -855,16 +893,54 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 			}
 		argv[argc]=0;
 
-		if(mode&EX_INR) 
-			dup2(client_socket,0);	/* redirect stdin to socket */
+		if(mode&EX_INR)  {
+			close(in_pipe[1]);		/* close write-end of pipe */
+			dup2(in_pipe[0],0);		/* redirect stdin */
+			close(in_pipe[0]);		/* close excess file descriptor */
+		}
 
 		if(mode&EX_OUTR) {
-			dup2(client_socket,1);	/* stdout */
-			dup2(client_socket,2);	/* stderr */
+			close(out_pipe[0]);		/* close read-end of pipe */
+			dup2(out_pipe[1],1);	/* stdout */
+			dup2(out_pipe[1],2);	/* stderr */
+			close(out_pipe[1]);		/* close excess file descriptor */
 		}	
 
 		execvp(argv[0],argv);
+		errormsg(WHERE,ERR_EXEC,cmdline,0);
 		exit(-1);	/* should never get here */
+	}
+	
+	if(mode&EX_OUTR) {
+		close(out_pipe[1]);	/* close write-end of pipe */
+		while((online || mode&EX_OFFLINE)) {
+			if(waitpid(pid, &i, WNOHANG)!=0)	/* child exited */
+				break;
+			
+			/* Input */	
+			if(mode&EX_INR && RingBufFull(&inbuf)) {
+				if((wr=RingBufRead(&inbuf,buf,sizeof(buf)))!=0)
+					write(in_pipe[1],buf,wr);
+			}
+				
+			/* Output */
+			ioctl(out_pipe[0],FIONREAD,&rd);	/* peek at input */
+			if(!rd) {
+				mswait(1);
+				continue;
+			}
+			if((rd=read(out_pipe[0],buf,sizeof(buf)))<1) {
+				mswait(1);
+				continue;
+			}
+			if(mode&EX_BIN)	/* telnet IAC expansion */
+           		bp=telnet_expand(buf, rd, output_buf, output_len, telnet_flag);
+			else			/* LF to CRLF expansion */
+				bp=lf_expand(buf, rd, output_buf, output_len);
+			
+			RingBufWrite(&outbuf, bp, output_len);
+			sem_post(&output_sem);	
+		}
 	}
 
 	waitpid(pid, &i, 0);
