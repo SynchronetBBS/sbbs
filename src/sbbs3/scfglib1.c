@@ -375,11 +375,21 @@ BOOL read_main_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 	get_str(cfg->logoff_mod,instream);
 	get_str(cfg->newuser_mod,instream);
 	get_str(cfg->login_mod,instream);
-	if(!cfg->login_mod[0]) strcpy(cfg->login_mod,"LOGIN");
+	if(!cfg->login_mod[0]) strcpy(cfg->login_mod,"login");
 	get_str(cfg->logout_mod,instream);
 	get_str(cfg->sync_mod,instream);
 	get_str(cfg->expire_mod,instream);
 	get_int(c,instream);
+
+#if	1	/* temporary hack for Unix compatibility */
+	strlwr (cfg->logon_mod);
+	strlwr (cfg->logoff_mod);
+	strlwr (cfg->newuser_mod);
+	strlwr (cfg->login_mod);
+	strlwr (cfg->logout_mod);
+	strlwr (cfg->sync_mod);
+	strlwr (cfg->expire_mod);
+#endif
 
 	for(i=0;i<224;i++)					/* unused - initialized to NULL */
 		get_int(n,instream);
@@ -452,6 +462,7 @@ BOOL read_main_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 
 		get_alloc(&offset,cfg->shell[i]->name,40,instream);
 		get_str(cfg->shell[i]->code,instream);
+		strlwr(cfg->shell[i]->code);	/* temporary Unix-compatibility hack */
 	#ifdef SCFG
 		get_str(cfg->shell[i]->ar,instream);
 	#else
@@ -605,6 +616,7 @@ BOOL read_msgs_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 	#endif
 
 		get_str(cfg->sub[i]->code,instream);
+		strlwr(cfg->sub[i]->code); /* temporary Unix-compatibility hack */
 
 	#ifdef SCFG
 		get_str(cfg->sub[i]->data_dir,instream);

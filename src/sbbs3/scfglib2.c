@@ -404,6 +404,7 @@ BOOL read_file_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 			cfg->lib[cfg->dir[i]->lib]->offline_dir=i;
 
 		get_str(cfg->dir[i]->code,instream);
+		strlwr(cfg->dir[i]->code); 	/* temporary Unix-compatibility hack */
 
 	#ifdef SCFG
 		get_str(cfg->dir[i]->data_dir,instream);
@@ -496,6 +497,7 @@ BOOL read_file_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 
 		get_alloc(&offset,cfg->txtsec[i]->name,40,instream);
 		get_str(cfg->txtsec[i]->code,instream);
+		strlwr(cfg->txtsec[i]->code); 	/* temporary Unix-compatibility hack */
 	#ifdef SCFG
 		get_str(cfg->txtsec[i]->ar,instream);
 	#else
@@ -626,6 +628,7 @@ BOOL read_xtrn_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 
 		get_alloc(&offset,cfg->xtrnsec[i]->name,40,instream);
 		get_str(cfg->xtrnsec[i]->code,instream);
+		strlwr(cfg->xtrnsec[i]->code); 	/* temporary Unix-compatibility hack */
 	#ifdef SCFG
 		get_str(cfg->xtrnsec[i]->ar,instream);
 	#else
@@ -717,6 +720,7 @@ BOOL read_xtrn_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 		memset(cfg->event[i],0,sizeof(event_t));
 
 		get_str(cfg->event[i]->code,instream);
+		strlwr (cfg->event[i]->code); 	/* temporary Unix-compatibility hack */
 		get_alloc(&offset,cfg->event[i]->cmd,LEN_CMD,instream);
 		get_int(cfg->event[i]->days,instream);
 		get_int(cfg->event[i]->time,instream);
@@ -811,6 +815,7 @@ BOOL read_chat_cfg(scfg_t* cfg, read_cfg_text_t* txt)
 
 		get_alloc(&offset,cfg->guru[i]->name,25,instream);
 		get_str(cfg->guru[i]->code,instream);
+		strlwr (cfg->guru[i]->code); 	/* temporary Unix-compatibility hack */
 
 	#ifdef SCFG
 		get_str(cfg->guru[i]->ar,instream);
