@@ -62,7 +62,7 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 	static	DWORD	online_poll;
 	static	DWORD	status_poll;
 	static	DWORD	yields;
-	static  HANDLE	hungup_event;
+	static  HANDLE	hungup_event=NULL;
 	static  HANDLE	rdslot=INVALID_HANDLE_VALUE;
 	static  HANDLE	wrslot=INVALID_HANDLE_VALUE;
 	static  RingBuf	rdbuf;
@@ -74,7 +74,7 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 	switch(getBL()) {
 
 		case VDD_OPEN:
-#if 0
+#if defined(_DEBUG)
 			sprintf(str,"sbbsexec%d.log",node_num);
 			fp=fopen(str,"wb");
 #endif
@@ -145,7 +145,8 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 			}
 			CloseHandle(rdslot);
 			CloseHandle(wrslot);
-			CloseHandle(hungup_event);
+			if(hungup_event!=NULL)
+				CloseHandle(hungup_event);
 			RingBufDispose(&rdbuf);
 			status_poll=0;
 			retval=0;
