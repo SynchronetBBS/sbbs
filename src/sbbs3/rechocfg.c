@@ -265,7 +265,7 @@ void read_echo_cfg()
 printf("\nReading %s\n",cfg.cfgfile);
 if((stream=fnopen(&file,cfg.cfgfile,O_RDONLY))==NULL) {
     printf("Unable to open %s for read.\n",cfg.cfgfile);
-    exit(1); }
+	bail(1); }
 
 cfg.maxpktsize=DFLT_PKT_SIZE;
 cfg.maxbdlsize=DFLT_BDL_SIZE;
@@ -293,7 +293,7 @@ while(1) {
             ,sizeof(arcdef_t)*(cfg.arcdefs+1)))==NULL) {
 			printf("\nError allocating %u bytes of memory for arcdef #%u.\n"
                 ,sizeof(arcdef_t)*(cfg.arcdefs+1),cfg.arcdefs+1);
-            exit(1); }
+            bail(1); }
         sprintf(cfg.arcdef[cfg.arcdefs].name,"%-.25s",p);
         tp=cfg.arcdef[cfg.arcdefs].name;
         while(*tp && *tp>SP) tp++;
@@ -451,7 +451,7 @@ while(1) {
 					,sizeof(nodecfg_t)*(j+1)))==NULL) {
 					printf("\nError allocating memory for nodecfg #%u.\n"
 						,j+1);
-					exit(1); }
+					bail(1); }
 				memset(&cfg.nodecfg[j],0,sizeof(nodecfg_t));
 				cfg.nodecfg[j].faddr=addr; }
 			cfg.nodecfg[j].arctype=i; } }
@@ -469,7 +469,7 @@ while(1) {
                 ,sizeof(nodecfg_t)*(j+1)))==NULL) {
 				printf("\nError allocating memory for nodecfg #%u.\n"
                     ,j+1);
-                exit(1); }
+                bail(1); }
             memset(&cfg.nodecfg[j],0,sizeof(nodecfg_t));
             cfg.nodecfg[j].faddr=addr; }
         sprintf(cfg.nodecfg[j].pktpwd,"%.8s",p); }
@@ -495,7 +495,7 @@ while(1) {
 					,sizeof(nodecfg_t)*(j+1)))==NULL) {
 					printf("\nError allocating memory for nodecfg #%u.\n"
 						,j+1);
-					exit(1); }
+					bail(1); }
 				memset(&cfg.nodecfg[j],0,sizeof(nodecfg_t));
 				cfg.nodecfg[j].faddr=addr; }
 			if(!strcmp(str,"2+"))
@@ -519,7 +519,7 @@ while(1) {
                     ,sizeof(nodecfg_t)*(j+1)))==NULL) {
 					printf("\nError allocating memory for nodecfg #%u.\n"
                         ,j+1);
-                    exit(1); }
+                    bail(1); }
                 memset(&cfg.nodecfg[j],0,sizeof(nodecfg_t));
                 cfg.nodecfg[j].faddr=addr; }
 			cfg.nodecfg[j].attr|=SEND_NOTIFY; } }
@@ -549,7 +549,7 @@ while(1) {
                     ,sizeof(nodecfg_t)*(j+1)))==NULL) {
 					printf("\nError allocating memory for nodecfg #%u.\n"
                         ,j+1);
-                    exit(1); }
+                    bail(1); }
                 memset(&cfg.nodecfg[j],0,sizeof(nodecfg_t));
                 cfg.nodecfg[j].faddr=addr; }
             cfg.nodecfg[j].attr|=attr; } }
@@ -572,7 +572,7 @@ while(1) {
                     ,sizeof(nodecfg_t)*(j+1)))==NULL) {
 					printf("\nError allocating memory for nodecfg #%u.\n"
                         ,j+1);
-                    exit(1); }
+                    bail(1); }
                 memset(&cfg.nodecfg[j],0,sizeof(nodecfg_t));
                 cfg.nodecfg[j].faddr=addr; }
 			cfg.nodecfg[j].route=route_addr; } }
@@ -588,7 +588,7 @@ while(1) {
 				,sizeof(nodecfg_t)*(i+1)))==NULL) {
 				printf("\nError allocating memory for nodecfg #%u.\n"
 					,i+1);
-				exit(1); }
+				bail(1); }
 			memset(&cfg.nodecfg[i],0,sizeof(nodecfg_t));
 			cfg.nodecfg[i].faddr=addr; }
 		cfg.nodecfg[i].flag=NULL;
@@ -617,7 +617,7 @@ while(1) {
 					,sizeof(flag_t)*(j+1)))==NULL) {
 					printf("\nError allocating memory for nodecfg #%u "
 						"flag #%u.\n",cfg.nodecfgs,j+1);
-					exit(1); }
+					bail(1); }
 				cfg.nodecfg[i].numflags++;
 				sprintf(cfg.nodecfg[i].flag[j].flag,"%.4s",tp); }
 			while(*p && *p<=SP) p++; } }
@@ -627,7 +627,7 @@ while(1) {
 			,sizeof(echolist_t)*(cfg.listcfgs+1)))==NULL) {
 			printf("\nError allocating memory for echolist cfg #%u.\n"
 				,cfg.listcfgs+1);
-			exit(1); }
+			bail(1); }
 		memset(&cfg.listcfg[cfg.listcfgs],0,sizeof(echolist_t));
 		++cfg.listcfgs;
 		/* Need to forward requests? */
@@ -675,7 +675,7 @@ while(1) {
 					,sizeof(flag_t)*(j+1)))==NULL) {
 					printf("\nError allocating memory for listcfg #%u "
 						"flag #%u.\n",cfg.listcfgs,j+1);
-					exit(1); }
+					bail(1); }
 				cfg.listcfg[cfg.listcfgs-1].numflags++;
 				sprintf(cfg.listcfg[cfg.listcfgs-1].flag[j].flag,"%.4s",tp); }
 			while(*p && *p<=SP) p++; } }
