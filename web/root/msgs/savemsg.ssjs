@@ -75,7 +75,7 @@ if(sub != 'mail') {
 
 /* Sig stuff */
 if(sub != 'mail') {
-    if(!(msgbase.cfg.settings&SUB_NOUSERSIG) && !(hdrs.attr&MSG_ANONYMOUS)) {
+    if(sub=='mail' || (!(msgbase.cfg.settings&SUB_NOUSERSIG) && !(hdrs.attr&MSG_ANONYMOUS))) {
 	   sigfile=new File(format("%suser/%04u.sig",system.data_dir,user.number));
 	   if(sigfile.exists) {
 		  sigfile.open("r",true);
