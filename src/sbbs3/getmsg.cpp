@@ -226,6 +226,8 @@ void sbbs_t::show_msg(smbmsg_t* msg, long mode)
 		switch(msg->dfield[i].type) {
 			case TEXT_BODY:
 			case TEXT_TAIL:
+				if(msg->dfield[i].length < sizeof(xlat))	/* Invalid length */
+					continue;
 				fseek(smb.sdt_fp,msg->hdr.offset+msg->dfield[i].offset
 					,SEEK_SET);
 				fread(&xlat,sizeof(xlat),1,smb.sdt_fp);
@@ -262,7 +264,8 @@ void sbbs_t::show_msg(smbmsg_t* msg, long mode)
 				else
 					putmsg_fp(smb.sdt_fp,msg->dfield[i].length-sizeof(xlat),mode);
 				CRLF;
-				break; }
+				break; 
+	}
 }
 
 #endif
