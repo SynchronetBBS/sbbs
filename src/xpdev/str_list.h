@@ -62,6 +62,11 @@ str_list_t	strListAddAt(str_list_t* list, char* str, size_t index);
 /* Count the number of strings in the list and returns the count */
 size_t		strListCount(str_list_t list);
 
+void		strListSortAlpha(str_list_t list);
+void		strListSortAlphaReverse(str_list_t list);
+void		strListSortAlphaCase(str_list_t list);
+void		strListSortAlphaCaseReverse(str_list_t list);
+
 #if defined(__cplusplus)
 }
 #endif

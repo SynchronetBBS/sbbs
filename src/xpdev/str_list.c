@@ -35,7 +35,7 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#include <stdlib.h>		/* malloc */
+#include <stdlib.h>		/* malloc and qsort */
 #include "str_list.h"
 
 str_list_t strListAlloc()
@@ -83,6 +83,46 @@ str_list_t strListAddAt(str_list_t* list, char* str, size_t count)
 str_list_t strListAdd(str_list_t* list, char* str)
 {
 	return strListAddAt(list,str,strListCount(*list));
+}
+
+static int strListCompareAlpha(const void *arg1, const void *arg2)
+{
+   return stricmp(*(char**)arg1, *(char**)arg2);
+}
+
+static int strListCompareAlphaReverse(const void *arg1, const void *arg2)
+{
+   return stricmp(*(char**)arg2, *(char**)arg1);
+}
+
+static int strListCompareAlphaCase(const void *arg1, const void *arg2)
+{
+   return strcmp(*(char**)arg1, *(char**)arg2);
+}
+
+static int strListCompareAlphaCaseReverse(const void *arg1, const void *arg2)
+{
+   return strcmp(*(char**)arg2, *(char**)arg1);
+}
+
+void strListSortAlpha(str_list_t list)
+{
+	qsort(list,strListCount(list),sizeof(char*),strListCompareAlpha);
+}
+
+void strListSortAlphaReverse(str_list_t list)
+{
+	qsort(list,strListCount(list),sizeof(char*),strListCompareAlphaReverse);
+}
+
+void strListSortAlphaCase(str_list_t list)
+{
+	qsort(list,strListCount(list),sizeof(char*),strListCompareAlphaCase);
+}
+
+void strListSortAlphaCaseReverse(str_list_t list)
+{
+	qsort(list,strListCount(list),sizeof(char*),strListCompareAlphaCaseReverse);
 }
 
 void strListFree(str_list_t* list)
