@@ -37,6 +37,9 @@
 
 #include "sbbs.h"
 #include "cmdshell.h"
+#ifndef USHRT_MAX
+	#define USHRT_MAX ((1<<sizeof(unsigned short))-1)
+#endif
 
 /* convenient space-saving global variables */
 char* crlf="\r\n";
