@@ -1244,8 +1244,8 @@ void input_thread(void *arg)
 	while(sbbs->online && sbbs->client_socket!=INVALID_SOCKET
 		&& node_socket[sbbs->cfg.node_num-1]!=INVALID_SOCKET) {
 
-		lprintf(LOG_DEBUG,"Node %d %s %d", sbbs->cfg.node_num,__FILE__,__LINE__);
-		pthread_mutex_lock(&sbbs->input_thread_mutex);
+		if(pthread_mutex_lock(&sbbs->input_thread_mutex)!=0)
+			sbbs->errormsg(WHERE,ERR_LOCK,"input_thread_mutex",0);
 
 		FD_ZERO(&socket_set);
 		FD_SET(sbbs->client_socket,&socket_set);
@@ -1261,10 +1261,9 @@ void input_thread(void *arg)
 		tv.tv_sec=1;
 		tv.tv_usec=0;
 
-		lprintf(LOG_DEBUG,"Node %d %s %d", sbbs->cfg.node_num,__FILE__,__LINE__);
 		if((i=select(high_socket+1,&socket_set,NULL,NULL,&tv))<1) {
-			lprintf(LOG_DEBUG,"Node %d %s %d", sbbs->cfg.node_num,__FILE__,__LINE__);
-			pthread_mutex_unlock(&sbbs->input_thread_mutex);
+			if(pthread_mutex_unlock(&sbbs->input_thread_mutex)!=0)
+				sbbs->errormsg(WHERE,ERR_UNLOCK,"input_thread_mutex",0);
 			if(i==0)
 				continue;
 
@@ -1300,7 +1299,6 @@ void input_thread(void *arg)
 			}
 #endif
 		}
-		lprintf(LOG_DEBUG,"Node %d %s %d", sbbs->cfg.node_num,__FILE__,__LINE__);
 
 		if(sbbs->client_socket==INVALID_SOCKET)
 			break;
@@ -1322,9 +1320,9 @@ void input_thread(void *arg)
 		else
 			continue;
 
-		lprintf(LOG_DEBUG,"Node %d %s %d", sbbs->cfg.node_num,__FILE__,__LINE__);
 		if(sbbs->client_socket==INVALID_SOCKET) {
-			pthread_mutex_unlock(&sbbs->input_thread_mutex);
+			if(pthread_mutex_unlock(&sbbs->input_thread_mutex)!=0)
+				sbbs->errormsg(WHERE,ERR_UNLOCK,"input_thread_mutex",0);
 			break;
 		}
 
@@ -1346,11 +1344,10 @@ void input_thread(void *arg)
 	    if(rd > (int)sizeof(inbuf))
         	rd=sizeof(inbuf);
 
-		lprintf(LOG_DEBUG,"Node %d %s %d", sbbs->cfg.node_num,__FILE__,__LINE__);
     	rd = recv(sock, (char*)inbuf, rd, 0);
-		lprintf(LOG_DEBUG,"Node %d %s %d", sbbs->cfg.node_num,__FILE__,__LINE__);
 
-		pthread_mutex_unlock(&sbbs->input_thread_mutex);
+		if(pthread_mutex_unlock(&sbbs->input_thread_mutex)!=0)
+			sbbs->errormsg(WHERE,ERR_UNLOCK,"input_thread_mutex",0);
 
 		if(rd == SOCKET_ERROR)
 		{
