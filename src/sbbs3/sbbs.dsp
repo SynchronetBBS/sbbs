@@ -221,6 +221,10 @@ SOURCE=.\js_console.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\js_file.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\js_file_area.c
 # End Source File
 # Begin Source File
