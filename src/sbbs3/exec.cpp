@@ -512,8 +512,8 @@ long sbbs_t::exec_bin(char *mod, csi_t *csi)
 	clearvars(&bin);
 
 	sprintf(str,"%s%s.bin",cfg.exec_dir,mod);
-	if((file=nopen(str,O_RDONLY|O_BINARY))==-1) {
-		errormsg(WHERE,ERR_OPEN,str,O_RDONLY|O_BINARY);
+	if((file=nopen(str,O_RDONLY))==-1) {
+		errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
 		return(-1); }
 
 	bin.length=filelength(file);
