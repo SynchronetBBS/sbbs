@@ -961,7 +961,7 @@ while(!done) {
 		sprintf(str,"%u times a day",1440/cfg.qhub[num]->freq);
 		sprintf(opt[i++],"%-27.27s%s","Call-out Frequency",str); }
 	else {
-		sprintf(str,"%2.2d:%2.2d",cfg.qhub[num]->time/60,cfg.qhub[num]->time%60);
+		sprintf(str,"%2.2u:%2.2u",cfg.qhub[num]->time/60,cfg.qhub[num]->time%60);
 		sprintf(opt[i++],"%-27.27s%s","Call-out Time",str); }
 	strcpy(opt[i++],"Networked Sub-boards...");
 	opt[i][0]=0;
@@ -1078,7 +1078,7 @@ hub more than once a day at predetermined intervals, set this option to
 			i=ulist(WIN_MID|WIN_SAV,0,0,0,&i,0
 				,"Perform Call-out at a Specific Time",opt);
 			if(i==0) {
-				sprintf(str,"%2.2d:%2.2d",cfg.qhub[num]->time/60
+				sprintf(str,"%2.2u:%2.2u",cfg.qhub[num]->time/60
 					,cfg.qhub[num]->time%60);
 				SETHELP(WHERE);
 /*
@@ -1337,7 +1337,7 @@ while(!done) {
 		sprintf(str,"%u times a day",1440/cfg.phub[num]->freq);
 		sprintf(opt[i++],"%-27.27s%s","Call-out Frequency",str); }
 	else {
-		sprintf(str,"%2.2d:%2.2d",cfg.phub[num]->time/60
+		sprintf(str,"%2.2u:%2.2u",cfg.phub[num]->time/60
 			,cfg.phub[num]->time%60);
 		sprintf(opt[i++],"%-27.27s%s","Call-out Time",str); }
 	opt[i][0]=0;
@@ -1429,7 +1429,7 @@ once a day at predetermined intervals, set this option to No.
 			i=ulist(WIN_MID|WIN_SAV,0,0,0,&i,0
 				,"Perform Call-out at a Specific Time",opt);
 			if(i==0) {
-				sprintf(str,"%2.2d:%2.2d",cfg.phub[num]->time/60
+				sprintf(str,"%2.2u:%2.2u",cfg.phub[num]->time/60
 					,cfg.phub[num]->time%60);
 				SETHELP(WHERE);
 /*
