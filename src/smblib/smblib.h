@@ -40,8 +40,8 @@
 
 #include "lzh.h"
 
-#ifdef EXPORT32
-	#undef EXPORT32
+#ifdef SMBEXPORT
+	#undef SMBEXPORT
 #endif
 
 #ifdef _WIN32
@@ -54,19 +54,19 @@
 		#define SMBCALL
 	#endif
 	#ifdef SMBDLL
-		#define EXPORT32 __declspec( dllexport )
+		#define SMBEXPORT __declspec( dllexport )
 	#else
-		#define EXPORT32 __declspec( dllimport )
+		#define SMBEXPORT __declspec( dllimport )
 	#endif
 #elif defined __unix__
 	#define SMBCALL
-	#define EXPORT32
+	#define SMBEXPORT
 #elif defined __FLAT__
 	#define SMBCALL
-	#define EXPORT32	_export
+	#define SMBEXPORT	_export
 #else
 	#define SMBCALL
-	#define EXPORT32
+	#define SMBEXPORT
 #endif
 
 #include "smbdefs.h"
@@ -82,67 +82,67 @@
 extern "C" {
 #endif
 
-EXPORT32 int 	SMBCALL smb_ver(void);
-EXPORT32 char *	SMBCALL smb_lib_ver(void);
-EXPORT32 int 	SMBCALL smb_open(smb_t* smb);
-EXPORT32 void	SMBCALL smb_close(smb_t* smb);
-EXPORT32 int 	SMBCALL smb_open_da(smb_t* smb);
-EXPORT32 void	SMBCALL smb_close_da(smb_t* smb);
-EXPORT32 int 	SMBCALL smb_open_ha(smb_t* smb);
-EXPORT32 void	SMBCALL smb_close_ha(smb_t* smb);
-EXPORT32 int 	SMBCALL smb_create(smb_t* smb);
-EXPORT32 int 	SMBCALL smb_stack(smb_t* smb, int op);
-EXPORT32 int 	SMBCALL smb_trunchdr(smb_t* smb);
-EXPORT32 int 	SMBCALL smb_locksmbhdr(smb_t* smb);
-EXPORT32 int 	SMBCALL smb_getstatus(smb_t* smb);
-EXPORT32 int 	SMBCALL smb_putstatus(smb_t* smb);
-EXPORT32 int 	SMBCALL smb_unlocksmbhdr(smb_t* smb);
-EXPORT32 int 	SMBCALL smb_getmsgidx(smb_t* smb, smbmsg_t* msg);
-EXPORT32 int 	SMBCALL smb_getlastidx(smb_t* smb, idxrec_t *idx);
-EXPORT32 uint	SMBCALL smb_getmsghdrlen(smbmsg_t* msg);
-EXPORT32 ulong	SMBCALL smb_getmsgdatlen(smbmsg_t* msg);
-EXPORT32 int 	SMBCALL smb_lockmsghdr(smb_t* smb, smbmsg_t* msg);
-EXPORT32 int 	SMBCALL smb_getmsghdr(smb_t* smb, smbmsg_t* msg);
-EXPORT32 int 	SMBCALL smb_unlockmsghdr(smb_t* smb, smbmsg_t* msg);
-EXPORT32 int 	SMBCALL smb_addcrc(smb_t* smb, ulong crc);
-EXPORT32 int 	SMBCALL smb_hfield(smbmsg_t* msg, ushort type, ushort length, void* data);
-EXPORT32 int 	SMBCALL smb_dfield(smbmsg_t* msg, ushort type, ulong length);
-EXPORT32 int 	SMBCALL smb_addmsghdr(smb_t* smb, smbmsg_t* msg,int storage);
-EXPORT32 int 	SMBCALL smb_putmsg(smb_t* smb, smbmsg_t* msg);
-EXPORT32 int 	SMBCALL smb_putmsgidx(smb_t* smb, smbmsg_t* msg);
-EXPORT32 int 	SMBCALL smb_putmsghdr(smb_t* smb, smbmsg_t* msg);
-EXPORT32 void	SMBCALL smb_freemsgmem(smbmsg_t* msg);
-EXPORT32 ulong	SMBCALL smb_hdrblocks(ulong length);
-EXPORT32 ulong	SMBCALL smb_datblocks(ulong length);
-EXPORT32 long	SMBCALL smb_allochdr(smb_t* smb, ulong length);
-EXPORT32 long	SMBCALL smb_fallochdr(smb_t* smb, ulong length);
-EXPORT32 long	SMBCALL smb_hallochdr(smb_t* smb);
-EXPORT32 long	SMBCALL smb_allocdat(smb_t* smb, ulong length, ushort headers);
-EXPORT32 long	SMBCALL smb_fallocdat(smb_t* smb, ulong length, ushort headers);
-EXPORT32 long	SMBCALL smb_hallocdat(smb_t* smb);
-EXPORT32 int 	SMBCALL smb_incdat(smb_t* smb, ulong offset, ulong length, ushort headers);
-EXPORT32 int 	SMBCALL smb_freemsg(smb_t* smb, smbmsg_t* msg);
-EXPORT32 int 	SMBCALL smb_freemsgdat(smb_t* smb, ulong offset, ulong length, ushort headers);
-EXPORT32 int 	SMBCALL smb_freemsghdr(smb_t* smb, ulong offset, ulong length);
-EXPORT32 void	SMBCALL smb_freemsgtxt(char HUGE16* buf);
-EXPORT32 int	SMBCALL	smb_copymsgmem(smbmsg_t* destmsg, smbmsg_t* srcmsg);
-EXPORT32 char HUGE16*  SMBCALL smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, ulong mode);
+SMBEXPORT int 	SMBCALL smb_ver(void);
+SMBEXPORT char *	SMBCALL smb_lib_ver(void);
+SMBEXPORT int 	SMBCALL smb_open(smb_t* smb);
+SMBEXPORT void	SMBCALL smb_close(smb_t* smb);
+SMBEXPORT int 	SMBCALL smb_open_da(smb_t* smb);
+SMBEXPORT void	SMBCALL smb_close_da(smb_t* smb);
+SMBEXPORT int 	SMBCALL smb_open_ha(smb_t* smb);
+SMBEXPORT void	SMBCALL smb_close_ha(smb_t* smb);
+SMBEXPORT int 	SMBCALL smb_create(smb_t* smb);
+SMBEXPORT int 	SMBCALL smb_stack(smb_t* smb, int op);
+SMBEXPORT int 	SMBCALL smb_trunchdr(smb_t* smb);
+SMBEXPORT int 	SMBCALL smb_locksmbhdr(smb_t* smb);
+SMBEXPORT int 	SMBCALL smb_getstatus(smb_t* smb);
+SMBEXPORT int 	SMBCALL smb_putstatus(smb_t* smb);
+SMBEXPORT int 	SMBCALL smb_unlocksmbhdr(smb_t* smb);
+SMBEXPORT int 	SMBCALL smb_getmsgidx(smb_t* smb, smbmsg_t* msg);
+SMBEXPORT int 	SMBCALL smb_getlastidx(smb_t* smb, idxrec_t *idx);
+SMBEXPORT uint	SMBCALL smb_getmsghdrlen(smbmsg_t* msg);
+SMBEXPORT ulong	SMBCALL smb_getmsgdatlen(smbmsg_t* msg);
+SMBEXPORT int 	SMBCALL smb_lockmsghdr(smb_t* smb, smbmsg_t* msg);
+SMBEXPORT int 	SMBCALL smb_getmsghdr(smb_t* smb, smbmsg_t* msg);
+SMBEXPORT int 	SMBCALL smb_unlockmsghdr(smb_t* smb, smbmsg_t* msg);
+SMBEXPORT int 	SMBCALL smb_addcrc(smb_t* smb, ulong crc);
+SMBEXPORT int 	SMBCALL smb_hfield(smbmsg_t* msg, ushort type, ushort length, void* data);
+SMBEXPORT int 	SMBCALL smb_dfield(smbmsg_t* msg, ushort type, ulong length);
+SMBEXPORT int 	SMBCALL smb_addmsghdr(smb_t* smb, smbmsg_t* msg,int storage);
+SMBEXPORT int 	SMBCALL smb_putmsg(smb_t* smb, smbmsg_t* msg);
+SMBEXPORT int 	SMBCALL smb_putmsgidx(smb_t* smb, smbmsg_t* msg);
+SMBEXPORT int 	SMBCALL smb_putmsghdr(smb_t* smb, smbmsg_t* msg);
+SMBEXPORT void	SMBCALL smb_freemsgmem(smbmsg_t* msg);
+SMBEXPORT ulong	SMBCALL smb_hdrblocks(ulong length);
+SMBEXPORT ulong	SMBCALL smb_datblocks(ulong length);
+SMBEXPORT long	SMBCALL smb_allochdr(smb_t* smb, ulong length);
+SMBEXPORT long	SMBCALL smb_fallochdr(smb_t* smb, ulong length);
+SMBEXPORT long	SMBCALL smb_hallochdr(smb_t* smb);
+SMBEXPORT long	SMBCALL smb_allocdat(smb_t* smb, ulong length, ushort headers);
+SMBEXPORT long	SMBCALL smb_fallocdat(smb_t* smb, ulong length, ushort headers);
+SMBEXPORT long	SMBCALL smb_hallocdat(smb_t* smb);
+SMBEXPORT int 	SMBCALL smb_incdat(smb_t* smb, ulong offset, ulong length, ushort headers);
+SMBEXPORT int 	SMBCALL smb_freemsg(smb_t* smb, smbmsg_t* msg);
+SMBEXPORT int 	SMBCALL smb_freemsgdat(smb_t* smb, ulong offset, ulong length, ushort headers);
+SMBEXPORT int 	SMBCALL smb_freemsghdr(smb_t* smb, ulong offset, ulong length);
+SMBEXPORT void	SMBCALL smb_freemsgtxt(char HUGE16* buf);
+SMBEXPORT int	SMBCALL	smb_copymsgmem(smbmsg_t* destmsg, smbmsg_t* srcmsg);
+SMBEXPORT char HUGE16*  SMBCALL smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, ulong mode);
 
 /* FILE pointer I/O functions */
 
-EXPORT32 int 	SMBCALL smb_feof(FILE* fp);
-EXPORT32 int 	SMBCALL smb_ferror(FILE* fp);
-EXPORT32 int 	SMBCALL smb_fflush(FILE* fp);
-EXPORT32 int 	SMBCALL smb_fgetc(FILE* fp);
-EXPORT32 int 	SMBCALL smb_fputc(int ch, FILE* fp);
-EXPORT32 int 	SMBCALL smb_fseek(FILE* fp, long offset, int whence);
-EXPORT32 long	SMBCALL smb_ftell(FILE* fp);
-EXPORT32 long	SMBCALL smb_fread(void HUGE16* buf, long bytes, FILE* fp);
-EXPORT32 long	SMBCALL smb_fwrite(void HUGE16* buf, long bytes, FILE* fp);
-EXPORT32 long	SMBCALL smb_fgetlength(FILE* fp);
-EXPORT32 int 	SMBCALL smb_fsetlength(FILE* fp, long length);
-EXPORT32 void	SMBCALL smb_rewind(FILE* fp);
-EXPORT32 void	SMBCALL smb_clearerr(FILE* fp);
+SMBEXPORT int 	SMBCALL smb_feof(FILE* fp);
+SMBEXPORT int 	SMBCALL smb_ferror(FILE* fp);
+SMBEXPORT int 	SMBCALL smb_fflush(FILE* fp);
+SMBEXPORT int 	SMBCALL smb_fgetc(FILE* fp);
+SMBEXPORT int 	SMBCALL smb_fputc(int ch, FILE* fp);
+SMBEXPORT int 	SMBCALL smb_fseek(FILE* fp, long offset, int whence);
+SMBEXPORT long	SMBCALL smb_ftell(FILE* fp);
+SMBEXPORT long	SMBCALL smb_fread(void HUGE16* buf, long bytes, FILE* fp);
+SMBEXPORT long	SMBCALL smb_fwrite(void HUGE16* buf, long bytes, FILE* fp);
+SMBEXPORT long	SMBCALL smb_fgetlength(FILE* fp);
+SMBEXPORT int 	SMBCALL smb_fsetlength(FILE* fp, long length);
+SMBEXPORT void	SMBCALL smb_rewind(FILE* fp);
+SMBEXPORT void	SMBCALL smb_clearerr(FILE* fp);
 
 #ifdef __cplusplus
 }
