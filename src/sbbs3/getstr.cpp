@@ -120,7 +120,9 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 
 	while(!(sys_status&SS_ABORT) && online && input_thread_running) {
 		if(mode&K_LEFTEXIT
-			&& console&(CON_UPARROW|CON_LEFTARROW|CON_BACKSPACE|CON_DELETELINE))
+			&& console&(CON_LEFTARROW|CON_BACKSPACE|CON_DELETELINE))
+			break;
+		if(console&CON_UPARROW)
 			break;
 		if((ch=getkey(mode|K_GETSTR))==CR)
 			break;
@@ -445,7 +447,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 			case 30:  /* Ctrl-^/Up Arrow */
 				if(!(mode&K_EDIT))
 					break;
-#if 0
+#if 1
 				if(i>l)
 					l=i;
 				str1[l]=0;
