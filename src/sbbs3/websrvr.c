@@ -98,7 +98,6 @@
 #endif
 
 #include "sbbs.h"
-#include "link_list.h"
 #include "sockwrap.h"		/* sendfilesocket() */
 #include "threadwrap.h"		/* pthread_mutex_t */
 #include "semwrap.h"
