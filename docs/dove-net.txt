@@ -1,5 +1,7 @@
-DOVE-Net Introduction and Instructions 12/08/00, Updated 11/14/02
--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+DOVE-Net Introduction, Rules and Instructions
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+$Id$
 
 Q. What is DOVE-Net?
 
@@ -42,6 +44,58 @@ A. Connecting BBS sysops and users without a lot of politics and red tape.
    remember. Private messages are allowed, but when possible, routed NetMail
    is preferred. DOVE-Net has very few rules, and the few that do exist are
    often bent.
+
+
+Rules
+=====
+DOVE-Net has mostly been a self-moderated network. This means that the sysops
+of DOVE-Net have decided when a specific message, user, or thread is deemed
+inappropriate. However, today, most of the users of DOVE-Net are also the 
+sysops of DOVE-Net. And when there are too many "kings", you can have chaos.
+The ultimate "king" of DOVE-Net is me, Digital Man (Rob Swindell). I don't
+claim this title because I want to, but rather because I have to: someone has
+to be "king" or NC (Network Coordinator), or whatever-you-want-to-call-it.
+
+If a sysop has a complaint or suggestion about DOVE-Net, they usually e-mail
+me or post on the "DOVE-Net Sysops Only" conference. The "DOVE-Net Sysops
+Only" conference is the preferred venue for internal DOVE-Net discussion
+(and test messages). However, this conference is not guaranteed to be limited
+to "DOVE-Net Sysops Only" (some sysops do slip up and allow access to normal
+users). So for the most sensitive matters, it is recommended that sysops send
+me e-mail.
+
+DOVE-Net has survived and even at times thrived for over a dozen years
+without a specific set of "rules", but recent user activies have convinced me
+that I need to "lay down the law". So here we go:
+
+The following actions are not allowed:
+
+	1. Excessive personal attacks
+	2. Excessive use of profanity
+	3. Excessive off-topic messages
+	4. Excessive advertisements
+	5. Excessive use of capital letters
+	6. Excessive use of non-English text
+        7. Encoded, encrypted, or otherwise indecipherable messages
+	8. Fraudulent messages
+	9. Impersonating someone you are not
+
+How do you know if an action constitutes "excessive" behavior or not? Compare
+your actions to those of other long-time DOVE-Net sysops and users. If your
+messages seem "out of place" it's probably because they are.
+
+A violation of these rules may result in a warning, a reprimand, or in the
+worst cases, temporary or permanent expulsion from DOVE-Net. Or there may be
+no consequences at all. There may be no warning at all. I give no guarantee
+of consistent, fair, or impartial enforcement of these rules. But generally
+speaking, if you use common sense and don't abuse the network or the sysops
+or users in the network, you'll do just fine. I certainly gain no pleasure
+from enforcing rules and would rather everyone "just get along" and the net
+continue to self-rule as it has since King Drafus and I created it so many
+years ago.
+
+DOVE-Net is not a democracy. You are not guaranteed "free speech" or
+"equal opportunity". DOVE-Net access is a privilege, not a right.
 
 
 Instructions
@@ -153,22 +207,22 @@ This is the preferred method of QWKnet packet transfers.
 Terminology (as used in this document)
 --------------------------------------
 
-Hub:            A BBS that feeds another BBS messages for a message network
-Node:           A BBS that calls another BBS to exchange messages for a network
-                A BBS can be (and most often is) either "both a node and a hub"
-                or "only a node", if you're joining DOVE-Net for the first time,
-                then your system will be "only a node".
-QWK:            Message packet format used for off-line mail readers
-QWKnet:         Message networking technology using QWK packets
-Fido:           Message networking technology based on Fido BBS software
-FidoNet:        The single largest amateur message network on Earth {tm}
-Echo:           Message area that is connected to multiple BBSes via message
-                network
-NetMail:        Private message between one user and another not stored in a
-                topical message area (echo), similar in princicple to Internet 
-                e-mail
-SMB:            Synchronet Message Base format, download SMB_*.ZIP from
-                Vertrauen for technical specification and C library
+Hub:      A BBS that feeds another BBS messages for a message network
+Node:     A BBS that calls another BBS to exchange messages for a network
+          A BBS can be (and most often is) either "both a node and a hub"
+          or "only a node", if you're joining DOVE-Net for the first time,
+          then your system will be "only a node".
+QWK:      Message packet format used for off-line mail readers
+QWKnet:   Message networking technology using QWK packets
+Fido:     Message networking technology based on Fido BBS software
+FidoNet:  The single largest amateur message network on Earth {tm}
+Echo:     Message area that is connected to multiple BBSes via message
+          network
+NetMail:  Private message between one user and another not stored in a
+          topical message area (echo), similar in princicple to Internet 
+          e-mail
+SMB:      Synchronet Message Base format, download SMB_*.ZIP from
+          Vertrauen for technical specification and C library
 
 
 QWK Technical Notes
@@ -259,10 +313,25 @@ Conf  Name					Access Requirements
 2010  DOVE-Net Sysops Only			LEVEL 90 OR REST Q
 
 
+Access Requirements
+-------------------
+The "DOVE-Net Sysops Only" conference MUST NOT be publicly accessible. This
+message area is for discussion among DOVE-Net Sysops ONLY. This is the
+correct message area to use for "test messages".
+
+The "Synchronet Data" conference contains messages not intended for human
+consumption (the messages are used to synchronize the global BBS List and
+Match Maker databases), so this message area should not be publicly
+accessible.
+
+The "Synchronet Sysops Only" conference should not be publicly accessible,
+except for users that claim to be Synchronet Sysops.
+
+
 Gateways
 --------
-You *must* not gate DOVE-Net conferences to any other network without explicit,
-prior permission. 
+You *must* not gate DOVE-Net conferences to any other network without
+explicit, prior permission. 
 
 The following DOVE-Net conferences are already gated to other networks:
 
