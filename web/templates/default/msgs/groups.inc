@@ -10,7 +10,7 @@
 </tr>
 <<REPEAT groups>>
 <tr>
-	<td class="grouplist"><a class="grouplist" href="subs.ssjs?msg_grp=^^groups:name^^">%%groups:description%%</a></td>
+    <td class="grouplist"><a class="grouplist" href="subs.ssjs?msg_grp=^^groups:name^^">%%groups:description%%</a></td>
     <td class="grouplist" align="right">@@JS:msg_area.grp['@@groups:name@@'].sub_list.length@@</td>
 </tr>
 <<END REPEAT groups>>

@@ -7,94 +7,94 @@
 
 <table class="sysinfo" cellpadding="2" cellspacing="2">
   <tr>
-	<td class="sysinfo">
+    <td class="sysinfo">
       System:
-	</td >
-	<td class="sysinfo">
+    </td >
+    <td class="sysinfo">
       %%JS:system.name%%
-	</td >
+    </td >
   </tr>
   <tr>
-	<td class="sysinfo">
+    <td class="sysinfo">
       QWK ID:
-	</td >
-	<td class="sysinfo">
+    </td >
+    <td class="sysinfo">
       %%JS:system.qwk_id%%
-	</td >
+    </td >
   </tr>
 <<REPEAT fidoaddrs>>
   <tr>
-	<td class="sysinfo">
+    <td class="sysinfo">
       FidoNet Address:
-	</td >
-	<td class="sysinfo">
+    </td >
+    <td class="sysinfo">
       %%fidoaddrs:address%%
-	</td >
+    </td >
   </tr>
 <<END REPEAT fidoaddrs>>
   <tr>
-	<td class="sysinfo">
+    <td class="sysinfo">
       Location:
-	</td >
-	<td class="sysinfo">
+    </td >
+    <td class="sysinfo">
       %%JS:system.location%%
-	</td >
+    </td >
   </tr>
   <tr>
-	<td class="sysinfo">
+    <td class="sysinfo">
       Operator:
-	</td >
-	<td class="sysinfo">
+    </td >
+    <td class="sysinfo">
       %%JS:system.operator%%
-	</td >
+    </td >
   </tr>
   <tr>
-	<td class="sysinfo">
+    <td class="sysinfo">
       Nodes:
-	</td >
-	<td class="sysinfo">
-	  %%JS:system.nodes%%
-	</td >
+    </td >
+    <td class="sysinfo">
+      %%JS:system.nodes%%
+    </td >
   </tr>
   <tr>
-	<td class="sysinfo">
+    <td class="sysinfo">
       Node Phone:
-	</td >
-	<td class="sysinfo">
-	  Telnet and RLogin Only
-	</td >
+    </td >
+    <td class="sysinfo">
+      Telnet and RLogin Only
+    </td >
   </tr>
   <tr>
-	<td class="sysinfo">
+    <td class="sysinfo">
       Total Logons:
-	</td >
-	<td class="sysinfo">
-	  %%JS:system.stats.total_logons%%
-	</td >
+    </td >
+    <td class="sysinfo">
+      %%JS:system.stats.total_logons%%
+    </td >
   </tr>
   <tr>
-	<td class="sysinfo">
+    <td class="sysinfo">
       Logons Today:
-	</td >
-	<td class="sysinfo">
-	  %%JS:system.stats.logons_today%%
-	</td >
+    </td >
+    <td class="sysinfo">
+      %%JS:system.stats.logons_today%%
+    </td >
   </tr>
   <tr>
-	<td class="sysinfo">
+    <td class="sysinfo">
       Total Time:
-	</td >
-	<td class="sysinfo">
-	  %%JS:system.stats.total_timeon%%
-	</td >
+    </td >
+    <td class="sysinfo">
+      %%JS:system.stats.total_timeon%%
+    </td >
   </tr>
   <tr>
-	<td class="sysinfo">
+    <td class="sysinfo">
       Time Today:
-	</td >
-	<td class="sysinfo">
-	  %%JS:system.stats.timeon_today%%
-	</td >
+    </td >
+    <td class="sysinfo">
+      %%JS:system.stats.timeon_today%%
+    </td >
   </tr>
 </table>
 <div align="center">

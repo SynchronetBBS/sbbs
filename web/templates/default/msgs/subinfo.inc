@@ -7,83 +7,83 @@
 <table class="subinfo">
   <tr class="subinfo">
     <td class="subinfbold">
-	  Description
-	</td>
+      Description
+    </td>
     <td>
-	  %%sub:description%%
-	</td>
+      %%sub:description%%
+    </td>
   </tr>
   <tr class="subinfo">
     <td class="subinfo">
-	  Newsgroup Name
-	</td>
+      Newsgroup Name
+    </td>
     <td>
-	  %%sub:newsgroup%%
-	</td>
+      %%sub:newsgroup%%
+    </td>
   </tr>
   <tr class="subinfo">
     <td class="subinfbold">
-	  Name
-	</td>
+      Name
+    </td>
     <td>
-	  %%sub:name%%
-	</td>
+      %%sub:name%%
+    </td>
   </tr>
   <tr class="subinfo">
     <td class="subinfbold">
-	  QWK Name
-	</td>
+      QWK Name
+    </td>
     <td>
-	  %%sub:qwk_name%%
-	</td>
+      %%sub:qwk_name%%
+    </td>
   </tr>
   <tr class="subinfo">
     <td class="subinfbold">
-	  Is Moderated
-	</td>
+      Is Moderated
+    </td>
     <td>
-	  %%sub:is_moderated%%
-	</td>
+      %%sub:is_moderated%%
+    </td>
   </tr>
   <tr class="subinfo">
     <td class="subinfbold">
-	  Can Post
-	</td>
+      Can Post
+    </td>
     <td>
-	  %%sub:can_post%%
-	</td>
+      %%sub:can_post%%
+    </td>
   </tr>
   <tr class="subinfo">
     <td class="subinfbold">
-	  Can Read
-	</td>
+      Can Read
+    </td>
     <td>
-	  %%sub:can_read%%
-	</td>
+      %%sub:can_read%%
+    </td>
   </tr>
   <tr class="subinfo">
     <td class="subinfbold">
-	  Am Operator
-	</td>
+      Am Operator
+    </td>
     <td>
-	  %%sub:is_operator%%
-	</td>
+      %%sub:is_operator%%
+    </td>
   </tr>
   <tr class="subinfo">
     <td class="subinfbold">
-	  Max Msgs
-	</td>
+      Max Msgs
+    </td>
     <td>
-	  %%sub:max_msgs%%
-	</td>
+      %%sub:max_msgs%%
+    </td>
   </tr>
   <tr class="subinfo">
     <td class="subinfbold">
-	  Network Type
-	</td>
+      Network Type
+    </td>
     <td>
-	  %%type%%
-	</td>
+      %%type%%
+    </td>
   </tr>
   @@JS:if(template.sub.settings & SUB_FIDO || template.sub.settings & SUB_QNET || template.sub.settings & SUB_PNET) '<tr class="subinfo"><td class="subinfbold">Tagline/Origin</td><td class="subinfonwr">'+template.tagline+'</td></tr>'; else '';@@
 </table>

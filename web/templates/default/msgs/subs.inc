@@ -12,7 +12,7 @@
 </tr>
 <<REPEAT subs>>
 <tr>
-	<td class="sublist"><a class="msglist" href="msgs.ssjs?msg_sub=^^subs:code^^">%%subs:description%%</a></td>
+    <td class="sublist"><a class="msglist" href="msgs.ssjs?msg_sub=^^subs:code^^">%%subs:description%%</a></td>
     <td class="sublistright"><a class="msglistnu" href="subinfo.ssjs?msg_sub=^^subs:code^^" title="Click for Sub Info">%%subs:messages%%</a></td>
     <td class="sublistright" nowrap="nowrap">%%subs:lastmsg%%</td>
 </tr>

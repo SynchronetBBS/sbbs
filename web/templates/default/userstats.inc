@@ -20,18 +20,18 @@
   <td class="userstats"> 
   <table width="100%" border="0" cellpadding="0" cellspacing="0">
     <tr>
-	  <td class="userstats" align="left">%%JS:user.stats.timeon_today%%&nbsp;</td>
-	  <td class="userstats" align="right">&nbsp;%%JS:user.limits.time_per_day;%%</td>
-	</tr>
+      <td class="userstats" align="left">%%JS:user.stats.timeon_today%%&nbsp;</td>
+      <td class="userstats" align="right">&nbsp;%%JS:user.limits.time_per_day;%%</td>
+    </tr>
   </table>
   </td>
   <td class="userstats">Last Call:</td>
   <td class="userstats">
     <table width="100%" border="0" cellpadding="0" cellspacing="0">
     <tr>
-	  <td class="userstats" align="left">%%JS:user.stats.timeon_last_logon%%&nbsp;</td>
-	  <td class="userstats" align="right">&nbsp;%%JS:user.limits.time_per_logon;%%</td>
-	</tr>
+      <td class="userstats" align="left">%%JS:user.stats.timeon_last_logon%%&nbsp;</td>
+      <td class="userstats" align="right">&nbsp;%%JS:user.limits.time_per_logon;%%</td>
+    </tr>
     </table>
   </td>
   <td class="userstats">Extra:</td>
@@ -44,18 +44,18 @@
   <td class="userstats">
     <table width="100%" border="0" cellpadding="0" cellspacing="0">
     <tr>
-	  <td class="userstats" align="left">%%JS:user.stats.logons_today%%&nbsp;</td>
-	  <td class="userstats" align="right">&nbsp;%%JS:user.limits.logons_per_day%%</td>
-	</tr>
+      <td class="userstats" align="left">%%JS:user.stats.logons_today%%&nbsp;</td>
+      <td class="userstats" align="right">&nbsp;%%JS:user.limits.logons_per_day%%</td>
+    </tr>
     </table>
   </td>
   <td class="userstats">Posts:</td>
   <td class="userstats">
     <table width="100%" border="0" cellpadding="0" cellspacing="0">
     <tr>
-	  <td class="userstats" align="left">%%JS:user.stats.total_posts%%&nbsp;</td>
-	  <td class="userstats" align="right">&nbsp;%%pinfo%%</td>
-	</tr>
+      <td class="userstats" align="left">%%JS:user.stats.total_posts%%&nbsp;</td>
+      <td class="userstats" align="right">&nbsp;%%pinfo%%</td>
+    </tr>
     </table>
   </td>
   <td class="userstats">Today:</td>
@@ -76,23 +76,23 @@
 </tr>
   <tr>
     <td class="userstats">Uploads:</td>
-	<td class="userstats" align="right">%%bytes_uploaded%%</td>
-	<td class="userstats" colspan="6">bytes in %%files_uploaded%% files</td>
+    <td class="userstats" align="right">%%bytes_uploaded%%</td>
+    <td class="userstats" colspan="6">bytes in %%files_uploaded%% files</td>
   </tr>
   <tr>
     <td class="userstats">Downloads:</td>
-	<td class="userstats" align="right">%%bytes_downloaded%%</td>
-	<td class="userstats" colspan="6">bytes in %%files_downloaded%% files</td>
+    <td class="userstats" align="right">%%bytes_downloaded%%</td>
+    <td class="userstats" colspan="6">bytes in %%files_downloaded%% files</td>
   </tr>
   <tr>
     <td class="userstats">Credits:</td>
-	<td class="userstats" align="right">%%credits%%</td>
-	<td class="userstats" colspan="6">free: %%freecreds%% (%%freeday%% per day)</td>
+    <td class="userstats" align="right">%%credits%%</td>
+    <td class="userstats" colspan="6">free: %%freecreds%% (%%freeday%% per day)</td>
   </tr>
   <tr>
     <td class="userstats">Minutes:</td>
-	<td class="userstats" align="right">%%tbank%%</td>
-	<td class="userstats" colspan="6">&nbsp;</td>
+    <td class="userstats" align="right">%%tbank%%</td>
+    <td class="userstats" colspan="6">&nbsp;</td>
   </tr>
 </table>
 <br />

@@ -13,12 +13,12 @@
       <td class="postmsg">To: <input class="postmsg" type="text" name="to" 
         @@JS:template.sub.code=='mail' ? "" : "value='All'"@@ /></td>
     </tr>
-	<tr>
-	  <td class="postmsg" colspan="2">@@anonnote@@</td>
-	</tr>
-	<tr>
-	  <td class="postmsg" colspan="2">@@privnote@@</td>
-	</tr>
+    <tr>
+      <td class="postmsg" colspan="2">@@anonnote@@</td>
+    </tr>
+    <tr>
+      <td class="postmsg" colspan="2">@@privnote@@</td>
+    </tr>
     <tr>
       <td class="postmsg" colspan="2"><textarea class="postmsg" name=body rows="20" cols="80" wrap="hard"></textarea></td>
       </tr>
