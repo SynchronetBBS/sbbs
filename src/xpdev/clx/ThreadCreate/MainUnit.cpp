@@ -15,12 +15,14 @@ __fastcall TForm1::TForm1(TComponent* Owner)
 	: TForm(Owner)
 {
 	CriticalSection = new TCriticalSection();
+    List = new TList();
 }
 //---------------------------------------------------------------------------
 void __fastcall TForm1::CreateButtonClick(TObject *Sender)
 {
 	TMyThread* NewThread = new TMyThread(true);
 
+    NewThread->List=List;
     NewThread->Log=Log;
     NewThread->CriticalSection = CriticalSection;
     ListBox->Items->AddObject(NewThread->ThreadID, NewThread);
@@ -38,3 +40,9 @@ void __fastcall TForm1::KillButtonClick(TObject *Sender)
         }
 }
 //---------------------------------------------------------------------------
+void __fastcall TForm1::TimerTick(TObject *Sender)
+{
+	StatusBar->SimpleText = AnsiString(List->Count);
+}
+//---------------------------------------------------------------------------
+
