@@ -217,3 +217,13 @@ function IRC_check_host(host,wilds,uh,nick) {
 		return 1;
 	return 0;
 }
+
+// Splits a "nick!user@host" string into its three distinct parts.
+// RETURNS: An array containing nick in [0], user in [1], and host in [2].
+function IRC_split_nuh(str) {
+	var tmp = new Array;
+	tmp[0] = str.split("!")[0];
+	tmp[1] = str.split("!")[1].split("@")[0];
+	tmp[2] = str.split("@")[1];
+	return tmp;
+}
