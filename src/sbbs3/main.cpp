@@ -2867,17 +2867,9 @@ void sbbs_t::logoffstats()
 			errormsg(WHERE,ERR_OPEN,str,O_RDWR);
 			return; 
 		}
-		lseek(file,12L,SEEK_SET);   /* Skip timestamp, logons and logons today */
-		read(file,&stats.timeon,4);   /* Total time on system  */
-		read(file,&stats.ttoday,4); /* Time today on system  */
-		read(file,&stats.uls,4);        /* Uploads today         */
-		read(file,&stats.ulb,4);        /* Upload bytes today    */
-		read(file,&stats.dls,4);        /* Downloads today       */
-		read(file,&stats.dlb,4);        /* Download bytes today  */
-		read(file,&stats.ptoday,4); 	/* Posts today			 */
-		read(file,&stats.etoday,4); /* Emails today          */
-		read(file,&stats.ftoday,4); /* Feedback sent today  */
-		read(file,&stats.nusers,2); /* New users today		*/
+		memset(&stats,0,sizeof(stats));
+		lseek(file,4L,SEEK_SET);   /* Skip timestamp, logons and logons today */
+		read(file,&stats,sizeof(stats));  
 
 		if(!(useron.rest&FLAG('Q'))) {	/* Don't count QWKnet nodes */
 			stats.timeon+=(now-logontime)/60;
@@ -2890,20 +2882,14 @@ void sbbs_t::logoffstats()
 		stats.dlb+=logon_dlb;
 		stats.etoday+=logon_emails;
 		stats.ftoday+=logon_fbacks;
+
+#if 0 // This is now handled in newuserdat()
 		if(sys_status&SS_NEWUSER)
 			stats.nusers++;
+#endif
 
-		lseek(file,12L,SEEK_SET);
-		write(file,&stats.timeon,4);	/* Total time on system  */
-		write(file,&stats.ttoday,4);    /* Time today on system  */
-		write(file,&stats.uls,4);       /* Uploads today         */
-		write(file,&stats.ulb,4);       /* Upload bytes today    */
-		write(file,&stats.dls,4);       /* Downloads today       */
-		write(file,&stats.dlb,4);       /* Download bytes today  */
-		write(file,&stats.ptoday,4);    /* Posts today           */
-		write(file,&stats.etoday,4);    /* Emails today          */
-		write(file,&stats.ftoday,4);	/* Feedback sent today	 */
-		write(file,&stats.nusers,2);	/* New users today		 */
+		lseek(file,4L,SEEK_SET);
+		write(file,&stats,sizeof(stats));
 		close(file); 
 	}
 }
