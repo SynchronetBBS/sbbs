@@ -76,11 +76,14 @@ extern "C" {
 
 #elif defined(_WIN32)	
 
+	#include <process.h>	/* _beginthread */
+	#include <limits.h>		/* INT_MAX */
+
 	/* POSIX semaphores */
 	typedef HANDLE sem_t;
-	#define sem_init(psem,ps,v)			ResetEvent(*(psem))
+	#define sem_init(psem,ps,v)			*(psem)=CreateSemaphore(NULL,v,INT_MAX,NULL)
 	#define sem_wait(psem)				WaitForSingleObject(*(psem),INFINITE)
-	#define sem_post(psem)				SetEvent(*(psem))
+	#define sem_post(psem)				ReleaseSemaphore(*(psem),1,NULL)
 	#define sem_destroy(psem)			CloseHandle(*(psem))
 	DLLEXPORT int DLLCALL sem_getvalue(sem_t*, int* val);
 
