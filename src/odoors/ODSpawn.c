@@ -240,7 +240,7 @@ ODAPIDEF BOOL ODCALL od_spawn(char *pszCommandLine)
    sigaddset(&block,SIGALRM);
    sigprocmask(SIG_UNBLOCK,&block,NULL);
 
-   return(retval==-1);
+   return(retval!=-1 && retval != 127);
 #endif
 }
 
