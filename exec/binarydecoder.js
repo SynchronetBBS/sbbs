@@ -423,8 +423,8 @@ function combine_parts(list)
 	for(li=0; li<list.length; li++) {
 		if(list[li].parts!=list[li].total)
 			continue;
-		printf("File complete: %s (%lu parts)\r\n",list[li].name,list[li].parts);
-		console.pause();
+		printf("File complete: %s (%s parts)\r\n"
+			,list[li].name,list[li].parts.toString());
 	}
 }
 
