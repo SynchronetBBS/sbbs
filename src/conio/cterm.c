@@ -454,14 +454,18 @@ void do_ansi(char *retbuf, int retsize)
 					i=atoi(term.escbuf+1);
 					switch(i) {
 						case 6:
-							sprintf(tmp,"%c[%d;%dR",27,wherey(),wherex());
-							if(strlen(retbuf)+strlen(tmp) < retsize)
-								strcat(retbuf,tmp);
+							if(retbuf!=NULL) {
+								sprintf(tmp,"%c[%d;%dR",27,wherey(),wherex());
+								if(strlen(retbuf)+strlen(tmp) < retsize)
+									strcat(retbuf,tmp);
+							}
 							break;
 						case 255:
-							sprintf(tmp,"%c[%d;%dR",27,term.height,term.width);
-							if(strlen(retbuf)+strlen(tmp) < retsize)
-								strcat(retbuf,tmp);
+							if(retbuf!=NULL) {
+								sprintf(tmp,"%c[%d;%dR",27,term.height,term.width);
+								if(strlen(retbuf)+strlen(tmp) < retsize)
+									strcat(retbuf,tmp);
+							}
 							break;
 					}
 					break;
@@ -533,7 +537,9 @@ char *cterm_write(unsigned char *buf, int buflen, char *retbuf, int retsize)
 	int i,j,k;
 	char	*ret;
 
-	retbuf[0]=0;
+	if(retbuf!=NULL)
+		retbuf[0]=0;
+	ch[1]=0;
 	switch(buflen) {
 		case 0:
 			break;
