@@ -39,7 +39,7 @@
 #include <io.h>
 #include <stdio.h>
 #include <sys/stat.h>
-//#include <sys/locking.h>
+#include <sys/locking.h>
 #include <fcntl.h>
 #include <share.h>
 #include "NodeFormUnit.h"
@@ -147,7 +147,7 @@ void __fastcall TNodeForm::TimerTick(TObject *Sender)
 	static int nodedab;
     char	str[128],tmp[128];
     char*   mer;
-    int		i,n,rd,rderr,hour;
+    int		i,n,rd,hour;
     node_t	node;
 
     if(nodedab<1) {
@@ -163,27 +163,16 @@ void __fastcall TNodeForm::TimerTick(TObject *Sender)
 	    lseek(nodedab, n*sizeof(node_t), SEEK_SET);
         if(eof(nodedab))
         	break;
-/*
-        if(locking(nodedab, LK_LOCK, sizeof(node_t))!=0) {
-        	ListBox->Items->Add("Error "+AnsiString(errno)+" locking record for"
-	            " node "+AnsiString(n+1));
-            break;
-        }
-*/
+        if(locking(nodedab, LK_NBLCK, sizeof(node_t))!=0)
+        	continue;
+
         rd=read(nodedab,&node, sizeof(node_t));
-/*
-        rderr=errno;
         lseek(nodedab, n*sizeof(node_t), SEEK_SET);
         locking(nodedab, LK_UNLCK, sizeof(node_t));
-*/
-        if(rd!=sizeof(node_t)) {
+
+        if(rd!=sizeof(node_t))
         	continue;
-/*
-        	ListBox->Items->Add("Error "+AnsiString(rderr)+" reading record for"
-	            " node "+AnsiString(n+1));
-            break;
-*/
-        }
+            
 		sprintf(str,"%3d ",n+1);
         switch(node.status) {
             case NODE_WFC:
