@@ -373,6 +373,7 @@ public:		// User declarations
     services_startup_t  services_startup;
     int             NodeDisplayInterval;
     int             ClientDisplayInterval;
+    WORD			SemFileCheckFrequency;
     int             SpyTerminalWidth;
     int             SpyTerminalHeight;
     TFont*          SpyTerminalFont;

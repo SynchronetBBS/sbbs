@@ -278,6 +278,7 @@ static void bbs_start(void)
         ,MainForm->TempDirectory.c_str());
     SAFECOPY(MainForm->bbs_startup.host_name
         ,MainForm->Hostname.c_str());
+    MainForm->bbs_startup.sem_chk_freq=MainForm->SemFileCheckFrequency;
     MainForm->bbs_startup.js_max_bytes=MainForm->JS_MaxBytes;
 	_beginthread((void(*)(void*))bbs_thread,0,&MainForm->bbs_startup);
     Application->ProcessMessages();
@@ -456,6 +457,7 @@ static void mail_start(void)
         ,MainForm->CtrlDirectory.c_str());
     SAFECOPY(MainForm->mail_startup.host_name
         ,MainForm->Hostname.c_str());
+    MainForm->mail_startup.sem_chk_freq=MainForm->SemFileCheckFrequency;
 	_beginthread((void(*)(void*))mail_server,0,&MainForm->mail_startup);
     Application->ProcessMessages();
 }
@@ -581,6 +583,7 @@ static void ftp_start(void)
         ,MainForm->TempDirectory.c_str());
     SAFECOPY(MainForm->ftp_startup.host_name
         ,MainForm->Hostname.c_str());
+    MainForm->ftp_startup.sem_chk_freq=MainForm->SemFileCheckFrequency;
     MainForm->ftp_startup.js_max_bytes=MainForm->JS_MaxBytes;
 	_beginthread((void(*)(void*))ftp_server,0,&MainForm->ftp_startup);
     Application->ProcessMessages();
@@ -598,8 +601,9 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
     JS_MaxBytes=JAVASCRIPT_MAX_BYTES;
     MinimizeToSysTray=false;
     UndockableForms=false;
-    NodeDisplayInterval=1;  /* seconds */
+    NodeDisplayInterval=1;  	/* seconds */
     ClientDisplayInterval=5;    /* seconds */
+    SemFileCheckFrequency=5;	/* seconds */
     Initialized=false;
 
     char* p;
@@ -835,6 +839,7 @@ void __fastcall TMainForm::ServicesStartExecute(TObject *Sender)
         ,MainForm->CtrlDirectory.c_str());
     SAFECOPY(MainForm->services_startup.host_name
         ,MainForm->Hostname.c_str());
+    MainForm->services_startup.sem_chk_freq=SemFileCheckFrequency;        
     MainForm->services_startup.js_max_bytes=MainForm->JS_MaxBytes;
 	_beginthread((void(*)(void*))services_thread,0,&MainForm->services_startup);
     Application->ProcessMessages();
@@ -1422,6 +1427,8 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     	NodeDisplayInterval=Registry->ReadInteger("NodeDisplayInterval");
 	if(Registry->ValueExists("ClientDisplayInterval"))
     	ClientDisplayInterval=Registry->ReadInteger("ClientDisplayInterval");
+	if(Registry->ValueExists("SemFileCheckFrequency"))
+    	SemFileCheckFrequency=Registry->ReadInteger("SemFileCheckFrequency");
 
     if(Registry->ValueExists("MailLogFile"))
     	MailLogFile=Registry->ReadInteger("MailLogFile");
@@ -1869,6 +1876,7 @@ void __fastcall TMainForm::SaveSettings(TObject* Sender)
     Registry->WriteBool("MinimizeToSysTray",MinimizeToSysTray);
     Registry->WriteInteger("NodeDisplayInterval",NodeDisplayInterval);
     Registry->WriteInteger("ClientDisplayInterval",ClientDisplayInterval);
+    Registry->WriteInteger("SemFileCheckFrequency",SemFileCheckFrequency);
 
     Registry->WriteInteger("SysAutoStart",SysAutoStart);
     Registry->WriteInteger("MailAutoStart",MailAutoStart);
@@ -2151,6 +2159,8 @@ void __fastcall TMainForm::ImportSettings(TObject* Sender)
     	,NodeDisplayInterval);
    	ClientDisplayInterval=IniFile->ReadInteger(section,"ClientDisplayInterval"
     	,ClientDisplayInterval);
+    SemFileCheckFrequency=IniFile->ReadInteger(section,"SemFileCheckFrequency"
+    	,SemFileCheckFrequency);
 
    	MailLogFile=IniFile->ReadInteger(section,"MailLogFile",true);
    	FtpLogFile=IniFile->ReadInteger(section,"FtpLogFile",true);
@@ -2785,6 +2795,7 @@ void __fastcall TMainForm::PropertiesExecute(TObject *Sender)
     PropertiesDlg->TempDirEdit->Text=TempDirectory;    
     PropertiesDlg->NodeIntUpDown->Position=NodeDisplayInterval;
     PropertiesDlg->ClientIntUpDown->Position=ClientDisplayInterval;
+    PropertiesDlg->SemFreqUpDown->Position=SemFileCheckFrequency;
     PropertiesDlg->TrayIconCheckBox->Checked=MinimizeToSysTray;
     PropertiesDlg->UndockableCheckBox->Checked=UndockableForms;
     PropertiesDlg->PasswordEdit->Text=Password;
@@ -2802,6 +2813,7 @@ void __fastcall TMainForm::PropertiesExecute(TObject *Sender)
         Password=PropertiesDlg->PasswordEdit->Text;
         NodeDisplayInterval=PropertiesDlg->NodeIntUpDown->Position;
         ClientDisplayInterval=PropertiesDlg->ClientIntUpDown->Position;
+        SemFileCheckFrequency=PropertiesDlg->SemFreqUpDown->Position;
         MinimizeToSysTray=PropertiesDlg->TrayIconCheckBox->Checked;
         UndockableForms=PropertiesDlg->UndockableCheckBox->Checked;
         JS_MaxBytes

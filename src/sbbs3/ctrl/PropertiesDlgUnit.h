@@ -32,7 +32,6 @@ __published:
 	TLabel *Label5;
 	TEdit *ClientIntEdit;
 	TUpDown *ClientIntUpDown;
-	TCheckBox *UndockableCheckBox;
 	TCheckBox *TrayIconCheckBox;
 	TLabel *PasswordLabel;
 	TEdit *PasswordEdit;
@@ -56,6 +55,10 @@ __published:
 	TEdit *MaxLogLenEdit;
 	TLabel *Label9;
 	TEdit *TempDirEdit;
+	TCheckBox *UndockableCheckBox;
+	TLabel *Label10;
+	TEdit *SemFreqEdit;
+	TUpDown *SemFreqUpDown;
 	void __fastcall FormShow(TObject *Sender);
 	void __fastcall TrayIconCheckBoxClick(TObject *Sender);
 	void __fastcall SourceComboBoxChange(TObject *Sender);
