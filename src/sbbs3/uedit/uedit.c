@@ -1454,6 +1454,7 @@ int edit_user(scfg_t *cfg, int usernum)
 	char**	opt;
 	int 	i,j;
 	user_t	user;
+	char	str[256];
 
 	if((opt=(char **)MALLOC(sizeof(char *)*(MAX_OPTS+1)))==NULL)
 		allocfail(sizeof(char *)*(MAX_OPTS+1));
@@ -1485,7 +1486,8 @@ int edit_user(scfg_t *cfg, int usernum)
 		strcpy(opt[i++],"Extended Comment");
 		opt[i][0]=0;
 
-		switch(uifc.list(WIN_ORG|WIN_ACT,0,0,0,&j,0,"Edit User",opt)) {
+		sprintf(str,"Edit User: %d (%s)",user.number,user.name[0]?user.name:user.alias);
+		switch(uifc.list(WIN_ORG|WIN_ACT,0,0,0,&j,0,str,opt)) {
 			case -1:
 				if(modified) {
 					i=check_save(cfg,&user);
@@ -1559,6 +1561,7 @@ int main(int argc, char** argv)  {
 	int		done;
 	int		last;
 	user_t	user;
+	int		edtuser=0;
 	/******************/
 	/* Ini file stuff */
 	/******************/
@@ -1621,8 +1624,7 @@ int main(int argc, char** argv)  {
 	uifc.esc_delay=500;
 
 	for(i=1;i<argc;i++) {
-        if(argv[i][0]=='-'
-            )
+        if(argv[i][0]=='-')
             switch(toupper(argv[i][1])) {
                 case 'C':
         			uifc.mode|=UIFC_COLOR;
@@ -1647,7 +1649,9 @@ int main(int argc, char** argv)  {
 						,argv[0]
                         );
         			exit(0);
-           }
+		}
+		if(atoi(argv[i]))
+			edtuser=atoi(argv[i]);
     }
 
 	signal(SIGPIPE, SIG_IGN);   
@@ -1679,6 +1683,11 @@ int main(int argc, char** argv)  {
 	if(uifc.scrn(title)) {
 		printf(" USCRN (len=%d) failed!\n",uifc.scrn_len+1);
 		bail(1);
+	}
+
+	if(edtuser) {
+		edit_user(&cfg, edtuser);
+		bail(0);
 	}
 
 	strcpy(mopt[0],"New User");
