@@ -665,7 +665,7 @@ static void web_terminated(int code)
 	web_stopped=TRUE;
 }
 
-static void terminate()
+static void terminate(void)
 {
 	bbs_terminate();
 	ftp_terminate();
