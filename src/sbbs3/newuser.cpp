@@ -222,7 +222,8 @@ void sbbs_t::newuser()
 		if(!online) return;
 		while(!(sys_status&SS_RLOGIN) && /* cfg.uq&UQ_EMAIL && */ online) {
 			bputs(text[EnterNetMailAddress]);
-			if(getstr(useron.netmail,LEN_NETMAIL,K_EDIT|K_AUTODEL|K_LINE))
+			if(getstr(useron.netmail,LEN_NETMAIL,K_EDIT|K_AUTODEL|K_LINE)
+				&& !trashcan(useron.netmail,"email"))
 				break;
 		}
 		if(useron.netmail[0] && cfg.sys_misc&SM_FWDTONET && yesno(text[ForwardMailQ]))
