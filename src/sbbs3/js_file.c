@@ -51,6 +51,8 @@ typedef struct
 	BOOL	external;	/* externally created, don't close */
 	BOOL	debug;
 	BOOL	uuencoded;
+	BOOL	b64encoded;
+	BOOL	network_byte_order;
 
 } private_t;
 
@@ -199,7 +201,8 @@ js_read(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	char*		cp;
 	char*		buf;
 	char*		uubuf;
-	int32		len=512;
+	int32		len;
+	int32		offset;
 	int32		uulen;
 	JSString*	str;
 	private_t*	p;
@@ -216,6 +219,14 @@ js_read(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	if(argc)
 		JS_ValueToInt32(cx,argv[0],&len);
+	else {
+		len=filelength(fileno(p->fp));
+		offset=ftell(p->fp);
+		if(offset>0)
+			len-=offset;
+	}
+	if(len<0)
+		len=512;
 
 	if((buf=malloc(len+1))==NULL)
 		return(JS_TRUE);
@@ -230,11 +241,14 @@ js_read(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		if(cp) *cp=0; 
 	}
 
-	if(p->uuencoded) {
+	if(p->uuencoded || p->b64encoded) {
 		uulen=len*2;
 		if((uubuf=malloc(uulen))==NULL)
 			return(JS_TRUE);
-		uulen=uuencode(uubuf,uulen,buf,len);
+		if(p->uuencoded)
+			uulen=uuencode(uubuf,uulen,buf,len);
+		else
+			uulen=b64_encode(uubuf,uulen,buf,len);
 		if(uulen>=0) {
 			free(buf);
 			buf=uubuf;
@@ -327,12 +341,18 @@ js_readbin(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 				*rval = INT_TO_JSVAL(b);
 			break;
 		case sizeof(WORD):
-			if(fread(&w,1,size,p->fp)==size)
+			if(fread(&w,1,size,p->fp)==size) {
+				if(p->network_byte_order)
+					w=ntohs(w);
 				*rval = INT_TO_JSVAL(w);
+			}
 			break;
 		case sizeof(DWORD):
-			if(fread(&l,1,size,p->fp)==size)
+			if(fread(&l,1,size,p->fp)==size) {
+				if(p->network_byte_order)
+					l=ntohl(l);
 				JS_NewNumberValue(cx,l,rval);
+			}
 			break;
 	}
 		
@@ -393,8 +413,12 @@ js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	cp=JS_GetStringBytes(JS_ValueToString(cx, argv[0]));
 	len=strlen(cp);
 
-	if(p->uuencoded && len && (uubuf=malloc(len))!=NULL) {
-		len=uudecode(uubuf,len,cp,len);
+	if((p->uuencoded || p->b64encoded)
+		&& len && (uubuf=malloc(len))!=NULL) {
+		if(p->uuencoded)
+			len=uudecode(uubuf,len,cp,len);
+		else
+			len=b64_decode(uubuf,len,cp,len);
 		if(len<0) {
 			free(uubuf);
 			return(JS_TRUE);
@@ -483,23 +507,25 @@ js_writebin(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if(p->fp==NULL)
 		return(JS_TRUE);
 
+	JS_ValueToInt32(cx,argv[0],&val);
 	if(argc>1) 
 		JS_ValueToInt32(cx,argv[1],(int32*)&size);
 
 	switch(size) {
 		case sizeof(BYTE):
-			JS_ValueToInt32(cx,argv[0],&val);
 			b = (BYTE)val;
 			wr=fwrite(&b,1,size,p->fp);
 			break;
 		case sizeof(WORD):
-			JS_ValueToInt32(cx,argv[0],&val);
 			w = (WORD)val;
+			if(p->network_byte_order)
+				w=htons(w);
 			wr=fwrite(&w,1,size,p->fp);
 			break;
 		case sizeof(DWORD):
-			JS_ValueToInt32(cx,argv[0],&val);
 			l = val;
+			if(p->network_byte_order)
+				l=htonl(l);
 			wr=fwrite(&l,1,size,p->fp);
 			break;
 		default:	
@@ -753,13 +779,14 @@ enum {
 	,FILE_PROP_LENGTH	
 	,FILE_PROP_ATTRIBUTES
 	,FILE_PROP_UUENCODED
+	,FILE_PROP_B64ENCODED
+	,FILE_PROP_NETWORK_ORDER
 	/* dynamically calculated */
 	,FILE_PROP_CHKSUM
 	,FILE_PROP_CRC16
 	,FILE_PROP_CRC32
-	,FILE_PROP_BASE64
 	,FILE_PROP_MD5_HEX
-	,FILE_PROP_MD5_BASE64
+	,FILE_PROP_MD5_B64
 };
 
 
@@ -779,10 +806,16 @@ static JSBool js_file_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 
 	switch(tiny) {
 		case FILE_PROP_DEBUG:
-			p->debug = JSVAL_TO_BOOLEAN(*vp);
+			JS_ValueToBoolean(cx,*vp,&(p->debug));
 			break;
 		case FILE_PROP_UUENCODED:
-			p->uuencoded = JSVAL_TO_BOOLEAN(*vp);
+			JS_ValueToBoolean(cx,*vp,&(p->uuencoded));
+			break;
+		case FILE_PROP_B64ENCODED:
+			JS_ValueToBoolean(cx,*vp,&(p->b64encoded));
+			break;
+		case FILE_PROP_NETWORK_ORDER:
+			JS_ValueToBoolean(cx,*vp,&(p->network_byte_order));
 			break;
 		case FILE_PROP_POSITION:
 			if(p->fp!=NULL)
@@ -871,7 +904,7 @@ static JSBool js_file_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			if(p->fp)	/* open? */
 				JS_NewNumberValue(cx,filelength(fileno(p->fp)),vp);
 			else
-				*vp = INT_TO_JSVAL(flength(p->name));
+				JS_NewNumberValue(cx,flength(p->name),vp);
 			break;
 		case FILE_PROP_ATTRIBUTES:
 			JS_NewNumberValue(cx,getfattr(p->name),vp);
@@ -881,6 +914,12 @@ static JSBool js_file_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			break;
 		case FILE_PROP_UUENCODED:
 			*vp = BOOLEAN_TO_JSVAL(p->uuencoded);
+			break;
+		case FILE_PROP_B64ENCODED:
+			*vp = BOOLEAN_TO_JSVAL(p->b64encoded);
+			break;
+		case FILE_PROP_NETWORK_ORDER:
+			*vp = BOOLEAN_TO_JSVAL(p->network_byte_order);
 			break;
 		case FILE_PROP_DESCRIPTOR:
 			if(p->fp)
@@ -898,9 +937,8 @@ static JSBool js_file_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			if(p->fp==NULL)
 				break;
 			/* fall-through */
-		case FILE_PROP_BASE64:
 		case FILE_PROP_MD5_HEX:
-		case FILE_PROP_MD5_BASE64:
+		case FILE_PROP_MD5_B64:
 			*vp = JSVAL_VOID;
 			if(p->fp==NULL)
 				break;
@@ -912,36 +950,30 @@ static JSBool js_file_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			if((buf=malloc(len*2))==NULL)
 				break;
 			len=fread(buf,sizeof(BYTE),len,p->fp);
-			if(len<1)
-				break;
-
-			switch(tiny) {
-				case FILE_PROP_CHKSUM:
-					for(sum=l=0;l<len;l++)
-						sum+=buf[l];
-					JS_NewNumberValue(cx,sum,vp);
-					break;
-				case FILE_PROP_CRC16:
-					JS_NewNumberValue(cx,crc16(buf,len),vp);
-					break;
-				case FILE_PROP_CRC32:
-					JS_NewNumberValue(cx,crc32(buf,len),vp);
-					break;
-				case FILE_PROP_BASE64:
-					b64_encode(buf,len*2,buf,len);
-					js_str=JS_NewStringCopyZ(cx, buf);
-					break;
-				case FILE_PROP_MD5_HEX:
-					MD5_calc(digest,buf,len);
-					MD5_hex(buf,digest);
-					js_str=JS_NewStringCopyZ(cx, buf);
-					break;
-				case FILE_PROP_MD5_BASE64:
-					MD5_calc(digest,buf,len);
-					b64_encode(buf,len*2,digest,sizeof(digest));
-					js_str=JS_NewStringCopyZ(cx, buf);
-					break;
-			}
+			if(len>0) 
+				switch(tiny) {
+					case FILE_PROP_CHKSUM:
+						for(sum=l=0;l<len;l++)
+							sum+=buf[l];
+						JS_NewNumberValue(cx,sum,vp);
+						break;
+					case FILE_PROP_CRC16:
+						JS_NewNumberValue(cx,crc16(buf,len),vp);
+						break;
+					case FILE_PROP_CRC32:
+						JS_NewNumberValue(cx,crc32(buf,len),vp);
+						break;
+					case FILE_PROP_MD5_HEX:
+						MD5_calc(digest,buf,len);
+						MD5_hex(buf,digest);
+						js_str=JS_NewStringCopyZ(cx, buf);
+						break;
+					case FILE_PROP_MD5_B64:
+						MD5_calc(digest,buf,len);
+						b64_encode(buf,len*2,digest,sizeof(digest));
+						js_str=JS_NewStringCopyZ(cx, buf);
+						break;
+				}
 			free(buf);
 			fseek(p->fp,offset,SEEK_SET);	/* restore saved file position */
 			if(js_str!=NULL)
@@ -970,14 +1002,15 @@ static struct JSPropertySpec js_file_properties[] = {
 	{	"position"			,FILE_PROP_POSITION		,JSPROP_ENUMERATE,	NULL,NULL},
 	{	"length"			,FILE_PROP_LENGTH		,JSPROP_ENUMERATE,	NULL,NULL},
 	{	"attributes"		,FILE_PROP_ATTRIBUTES	,JSPROP_ENUMERATE,	NULL,NULL},
-	{	"uuencoded"			,FILE_PROP_UUENCODED	,JSPROP_ENUMERATE,	NULL,NULL},
+	{	"network_byte_order",FILE_PROP_NETWORK_ORDER,JSPROP_ENUMERATE,	NULL,NULL},
+	{	"uue"				,FILE_PROP_UUENCODED	,JSPROP_ENUMERATE,	NULL,NULL},
+	{	"base64"			,FILE_PROP_B64ENCODED	,JSPROP_ENUMERATE,	NULL,NULL},
 	/* dynamically calculated */
-	{	"chksum"			,FILE_PROP_CHKSUM		,FILE_PROP_FLAGS,	NULL,NULL},
 	{	"crc16"				,FILE_PROP_CRC16		,FILE_PROP_FLAGS,	NULL,NULL},
 	{	"crc32"				,FILE_PROP_CRC32		,FILE_PROP_FLAGS,	NULL,NULL},
-	{	"base64"			,FILE_PROP_BASE64		,FILE_PROP_FLAGS,	NULL,NULL},
-	{	"md5_base64"		,FILE_PROP_MD5_BASE64	,FILE_PROP_FLAGS,	NULL,NULL},
+	{	"chksum"			,FILE_PROP_CHKSUM		,FILE_PROP_FLAGS,	NULL,NULL},
 	{	"md5_hex"			,FILE_PROP_MD5_HEX		,FILE_PROP_FLAGS,	NULL,NULL},
+	{	"md5_base64"		,FILE_PROP_MD5_B64		,FILE_PROP_FLAGS,	NULL,NULL},
 	{0}
 };
 
@@ -992,17 +1025,18 @@ static char* file_prop_desc[] = {
 	,"the last occurred error value (use clear_error to clear) - <small>READ ONLY</small>"
 	,"the open file descriptor (advanced use only) - <small>READ ONLY</small>"
 	,"end-of-text character (advanced use only), if non-zero used by <i>read</i>, <i>readln</i>, and <i>write</i>"
-	,"<i>true</i> if debug output is enabled"
+	,"set to <i>true</i> to enabel debug log output"
 	,"the current file position (offset in bytes), change value to seek within file"
 	,"the current length of the file (in bytes)"
 	,"file mode/attributes"
-	,"<i>true</i> if read/write operations perform Unix-to-Unix encode/decode automatically"
-	,"calculated 32-bit checksum of file contents - <small>READ ONLY</small>"
+	,"set to <i>true</i> if binary data is to be written and read in Network Byte Order (big end first)"
+	,"set to <i>true</i> to enable automatic unix-to-unix encode and decode on <tt>read</tt> and <tt>write</tt> calls"
+	,"set to <i>true</i> to enable automatic base64 encode and decode on <tt>read</tt> and <tt>write</tt> calls"
 	,"calculated 16-bit CRC of file contents - <small>READ ONLY</small>"
 	,"calculated 32-bit CRC of file contents - <small>READ ONLY</small>"
-	,"base64-encoded file contents (string) - <small>READ ONLY</small>"
-	,"base64-encoded calculated MD5 digest of file contents (string) - <small>READ ONLY</small>"
-	,"hexadecimal-encoded calculated MD5 digest of file contents (string) - <small>READ ONLY</small>"
+	,"calculated 32-bit checksum of file contents - <small>READ ONLY</small>"
+	,"calculated 128-bit MD5 digest of file contents as hexadecimal string - <small>READ ONLY</small>"
+	,"calculated 128-bit MD5 digest of file contents as base64-encoded string - <small>READ ONLY</small>"
 	,NULL
 };
 #endif
@@ -1040,26 +1074,27 @@ static jsMethodSpec js_file_functions[] = {
 	{"unlock",			js_unlock,			2,	JSTYPE_BOOLEAN,	JSDOCSTR("[offset, length]")
 	,JSDOCSTR("unlock file record for exclusive access")
 	},		
-	{"read",			js_read,			0,	JSTYPE_STRING,	JSDOCSTR("[number maxlen]")
-	,JSDOCSTR("read a string from file, maxlen defaults to 512 characters")
+	{"read",			js_read,			0,	JSTYPE_STRING,	JSDOCSTR("[maxlen]")
+	,JSDOCSTR("read a string from file (optionally unix-to-unix or base64 decoding in the process), "
+		"<i>maxlen</i> defaults to the current length of the file minus the current file position")
 	},
-	{"readln",			js_readln,			0,	JSTYPE_STRING,	JSDOCSTR("[number maxlen]")
-	,JSDOCSTR("read a line-feed terminated string, maxlen defaults 512 characters")
+	{"readln",			js_readln,			0,	JSTYPE_STRING,	JSDOCSTR("[maxlen]")
+	,JSDOCSTR("read a line-feed terminated string, <i>maxlen</i> defaults to 512 characters")
 	},		
-	{"readBin",			js_readbin,			0,	JSTYPE_NUMBER,	JSDOCSTR("[number bytes]")
-	,JSDOCSTR("read a binary integer from the file, default number of bytes is 4 (32-bits)")
+	{"readBin",			js_readbin,			0,	JSTYPE_NUMBER,	JSDOCSTR("[bytes]")
+	,JSDOCSTR("read a binary integer from the file, default number of <i>bytes</i> is 4 (32-bits)")
 	},
 	{"readAll",			js_readall,			0,	JSTYPE_ARRAY,	""
 	,JSDOCSTR("read all lines into an array of strings")
 	},
-	{"write",			js_write,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("string text [,number len]")
-	,JSDOCSTR("write a string to the file")
+	{"write",			js_write,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("string text [,len]")
+	,JSDOCSTR("write a string to the file (optionally unix-to-unix or base64 decoding in the process)")
 	},
 	{"writeln",			js_writeln,			0,	JSTYPE_BOOLEAN, JSDOCSTR("[string text]")
 	,JSDOCSTR("write a line-feed terminated string to the file")
 	},
-	{"writeBin",		js_writebin,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("number value [,number bytes]")
-	,JSDOCSTR("write a binary integer to the file, default number of bytes is 4 (32-bits)")
+	{"writeBin",		js_writebin,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("value [,bytes]")
+	,JSDOCSTR("write a binary integer to the file, default number of <i>bytes</i> is 4 (32-bits)")
 	},
 	{"writeAll",		js_writeall,		0,	JSTYPE_BOOLEAN,	JSDOCSTR("array lines")
 	,JSDOCSTR("write an array of strings to file")
