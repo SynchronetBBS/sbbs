@@ -2614,9 +2614,9 @@ object AboutBoxForm: TAboutBoxForm
   end
   object OKButton: TButton
     Left = 256
-    Top = 331
+    Top = 328
     Width = 75
-    Height = 24
+    Height = 27
     Anchors = [akLeft, akBottom]
     Caption = 'OK'
     ModalResult = 1
@@ -2678,9 +2678,9 @@ object AboutBoxForm: TAboutBoxForm
     OnClick = WebPageLabelClick
   end
   object WebSiteLabel: TStaticText
-    Left = 352
+    Left = 346
     Top = 292
-    Width = 222
+    Width = 230
     Height = 20
     Cursor = crHandPoint
     Hint = 'http://www.synchro.net/'
