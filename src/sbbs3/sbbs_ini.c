@@ -115,7 +115,7 @@ void sbbs_read_ini(
 	const char* default_term;
 	const char*	default_cgi_temp;
 	char*		ctrl_dir;
-	char*		host_name;
+	char		host_name[128];
 
 	section = "Global";
 
@@ -127,7 +127,7 @@ void sbbs_read_ini(
 		SAFECOPY(services->ctrl_dir,ctrl_dir);
 	}
 
-	host_name=iniReadString(fp,section,"HostName",nulstr);
+	SAFECOPY(host_name,iniReadString(fp,section,"HostName",nulstr));
 																		
 	/***********************************************************************/
 	section = "BBS";
