@@ -44,7 +44,8 @@
 scfg_t	cfg;    /* Synchronet Configuration */
 uifcapi_t uifc; /* User Interface (UIFC) Library API */
 
-BOOL  no_dirchk=FALSE,forcesave=FALSE;
+BOOL no_dirchk=FALSE,forcesave=FALSE;
+static BOOL auto_save=FALSE;
 extern BOOL all_msghdr;
 extern BOOL no_msghdr;
 char **opt;
@@ -144,6 +145,9 @@ int main(int argc, char **argv)
                     textmode(atoi(argv[i]+2));
 #endif
                     break;
+				case 'Y':
+					auto_save=TRUE;
+					break;
                 default:
                     printf("\nusage: scfg [ctrl_dir] [options]"
                         "\n\noptions:\n\n"
@@ -166,6 +170,7 @@ int main(int argc, char **argv)
 #endif
                         "-l# =  set screen lines to # (default=auto-detect)\r\n"
                         "-b# =  set automatic back-up level (default=%d)\r\n"
+						"-y  =  automatically save changes (don't ask)\r\n"
 						,backup_level
                         );
         			exit(0);
@@ -550,14 +555,18 @@ int save_changes(int mode)
 {
 	int i=0;
 
-if(!uifc.changes)
-	return(2);
-strcpy(opt[0],"Yes");
-strcpy(opt[1],"No");
-opt[2][0]=0;
-if(mode&WIN_SAV && uifc.savdepth)
-	uifc.savnum++;
-SETHELP(WHERE);
+	if(!uifc.changes)
+		return(2);
+	if(auto_save==TRUE)	{ /* -y switch used, return "Yes" */
+		uifc.changes=0;
+		return(0);
+	}
+	strcpy(opt[0],"Yes");
+	strcpy(opt[1],"No");
+	opt[2][0]=0;
+	if(mode&WIN_SAV && uifc.savdepth)
+		uifc.savnum++;
+	SETHELP(WHERE);
 /*
 Save uifc.changes:
 
@@ -566,12 +575,12 @@ these uifc.changes, select Yes. If you are positive you DO NOT want to save
 these uifc.changes, select No. If you are not sure and want to review the
 configuration before deciding, hit  ESC .
 */
-i=uifc.list(mode|WIN_ACT,0,0,0,&i,0,"Save Changes",opt);
-if(mode&WIN_SAV && uifc.savdepth && uifc.savnum)
-	uifc.savnum--;
-if(i!=-1)
-	uifc.changes=0;
-return(i);
+	i=uifc.list(mode|WIN_ACT,0,0,0,&i,0,"Save Changes",opt);
+	if(mode&WIN_SAV && uifc.savdepth && uifc.savnum)
+		uifc.savnum--;
+	if(i!=-1)
+		uifc.changes=0;
+	return(i);
 }
 
 void txt_cfg()
