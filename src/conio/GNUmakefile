@@ -25,8 +25,6 @@ ifndef NO_X
 			$(OBJODIR)$(DIRSEP)x_cio$(OFILE)
 endif
 
-mtlib:	$(LIBODIR) $(CIOLIB-MT)
-
 # CIOLIB Library Link Rule
 $(CIOLIB-MT): $(MTOBJODIR) $(OBJS)
 	@echo Creating $@ ...
