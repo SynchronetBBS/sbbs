@@ -83,6 +83,31 @@ TMainForm *MainForm;
 
 #define LOG_TIME_FMT "  m/d  hh:mm:ssa/p"
 
+/* Service functions are NT-only, must call dynamically :-( */
+typedef WINADVAPI SC_HANDLE (WINAPI *OpenSCManager_t)(LPCTSTR,LPCTSTR,DWORD);
+typedef WINADVAPI SC_HANDLE (WINAPI *OpenService_t)(SC_HANDLE,LPCTSTR,DWORD);
+typedef WINADVAPI BOOL (WINAPI *StartService_t)(SC_HANDLE,DWORD,LPCTSTR*);
+typedef WINADVAPI BOOL (WINAPI *ControlService_t)(SC_HANDLE,DWORD,LPSERVICE_STATUS);
+typedef WINADVAPI BOOL (WINAPI *QueryServiceStatus_t)(SC_HANDLE,LPSERVICE_STATUS);
+typedef WINADVAPI BOOL (WINAPI *CloseServiceHandle_t)(SC_HANDLE);
+
+OpenSCManager_t 		openSCManager;
+OpenService_t 			openService;
+StartService_t  		startService;
+ControlService_t    	controlService;
+QueryServiceStatus_t    queryServiceStatus;
+CloseServiceHandle_t	closeServiceHandle;
+
+SC_HANDLE       hSCManager;
+SC_HANDLE	    bbs_svc;
+SC_HANDLE	    ftp_svc;
+SC_HANDLE	    mail_svc;
+SC_HANDLE	    services_svc;
+SERVICE_STATUS	bbs_svc_status;
+SERVICE_STATUS	ftp_svc_status;
+SERVICE_STATUS	mail_svc_status;
+SERVICE_STATUS	services_svc_status;
+
 DWORD	MaxLogLen=20000;
 int     threads=1;
 
@@ -724,7 +749,35 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
     SpyTerminalHeight=365;
     SpyTerminalKeyboardActive=true;
 
-    Application->OnMinimize=FormMinimize;    
+    Application->OnMinimize=FormMinimize;
+
+    /* Get pointers to NT Service functions */
+	HANDLE hSCMlib = LoadLibrary("ADVAPI32.DLL");
+	if(hSCMlib!=NULL) {
+		openSCManager=(OpenSCManager_t)GetProcAddress(hSCMlib, "OpenSCManagerA");
+		openService=(OpenService_t)GetProcAddress(hSCMlib,"OpenServiceA");
+		startService=(StartService_t)GetProcAddress(hSCMlib,"StartServiceA");
+		controlService=(ControlService_t)GetProcAddress(hSCMlib,"ControlService");
+		queryServiceStatus=(QueryServiceStatus_t)GetProcAddress(hSCMlib,"QueryServiceStatus");
+		closeServiceHandle=(CloseServiceHandle_t)GetProcAddress(hSCMlib,"CloseServiceHandle");
+		FreeLibrary(hSCMlib);
+    }
+
+    /* Open Service Manager */
+    if(openSCManager!=NULL)
+        hSCManager = openSCManager(
+                            NULL,                   // machine (NULL == local)
+                            NULL,                   // database (NULL == default)
+                            SC_MANAGER_ALL_ACCESS   // access required
+                            );
+
+	/* Open Synchronet Services */
+    if(hSCManager!=NULL) {
+		bbs_svc =  openService(hSCManager, NTSVC_NAME_BBS, SERVICE_ALL_ACCESS);
+		ftp_svc =  openService(hSCManager, NTSVC_NAME_FTP, SERVICE_ALL_ACCESS);
+		mail_svc =  openService(hSCManager, NTSVC_NAME_MAIL, SERVICE_ALL_ACCESS);
+		services_svc =  openService(hSCManager, NTSVC_NAME_SERVICES, SERVICE_ALL_ACCESS);
+    }
 }
 //---------------------------------------------------------------------------
 void __fastcall TMainForm::FileExitMenuItemClick(TObject *Sender)
@@ -804,8 +857,10 @@ void __fastcall TMainForm::FormClose(TObject *Sender, TCloseAction &Action)
 
 	StatusBar->Panels->Items[4]->Text="Closing...";
     time_t start=time(NULL);
-	while(TelnetStop->Enabled || MailStop->Enabled || FtpStop->Enabled
-    	|| ServicesStop->Enabled) {
+	while( (bbs_svc==NULL && TelnetStop->Enabled)
+        || (mail_svc==NULL && MailStop->Enabled)
+        || (ftp_svc==NULL && FtpStop->Enabled)
+    	|| (services_svc==NULL && ServicesStop->Enabled)) {
         if(time(NULL)-start>30)
             break;
         Application->ProcessMessages();
@@ -817,6 +872,10 @@ void __fastcall TMainForm::FormClose(TObject *Sender, TCloseAction &Action)
         Application->ProcessMessages();
         YIELD();
     }
+#if 0
+    if(hSCManager!=NULL)
+    	closeServiceHandle(hSCManager);
+#endif
 }
 //---------------------------------------------------------------------------
 
@@ -824,7 +883,7 @@ void __fastcall TMainForm::FormCloseQuery(TObject *Sender, bool &CanClose)
 {
 	CanClose=false;
 
-    if(TelnetStop->Enabled) {
+    if(TelnetStop->Enabled && bbs_svc==NULL) {
      	if(TelnetForm->ProgressBar->Position
 	        && Application->MessageBox("Shut down the Telnet Server?"
         	,"Telnet Server In Use", MB_OKCANCEL)!=IDOK)
@@ -832,7 +891,7 @@ void __fastcall TMainForm::FormCloseQuery(TObject *Sender, bool &CanClose)
         TelnetStopExecute(Sender);
 	}
 
-    if(MailStop->Enabled) {
+    if(MailStop->Enabled && mail_svc==NULL) {
     	if(MailForm->ProgressBar->Position
     		&& Application->MessageBox("Shut down the Mail Server?"
         	,"Mail Server In Use", MB_OKCANCEL)!=IDOK)
@@ -840,27 +899,40 @@ void __fastcall TMainForm::FormCloseQuery(TObject *Sender, bool &CanClose)
         MailStopExecute(Sender);
     }
 
-    if(FtpStop->Enabled) {
+    if(FtpStop->Enabled && ftp_svc==NULL) {
     	if(FtpForm->ProgressBar->Position
     		&& Application->MessageBox("Shut down the FTP Server?"
 	       	,"FTP Server In Use", MB_OKCANCEL)!=IDOK)
             return;
         FtpStopExecute(Sender);
     }
-    if(ServicesStop->Enabled)
+    if(ServicesStop->Enabled && services_svc==NULL)
 	    ServicesStopExecute(Sender);
 
     CanClose=true;
 }
 //---------------------------------------------------------------------------
-
+BOOL StartNTsvc(SC_HANDLE svc, SERVICE_STATUS* status)
+{
+	if(svc==NULL || startService==NULL || queryServiceStatus==NULL)
+    	return(FALSE);
+    if(!queryServiceStatus(svc,status))
+    	return(FALSE);
+    if(status->dwCurrentState!=SERVICE_STOPPED)
+    	return(TRUE);
+    return startService(svc,0,NULL);
+}
+//---------------------------------------------------------------------------
 void __fastcall TMainForm::TelnetStartExecute(TObject *Sender)
 {
-	bbs_start();
+	if(!StartNTsvc(bbs_svc,&bbs_svc_status))
+		bbs_start();
 }
 //---------------------------------------------------------------------------
 void __fastcall TMainForm::ServicesStartExecute(TObject *Sender)
 {
+	if(StartNTsvc(services_svc,&services_svc_status))
+    	return;
 	Screen->Cursor=crAppStart;
     services_status(NULL, "Starting");
 
@@ -882,20 +954,34 @@ void __fastcall TMainForm::ServicesStartExecute(TObject *Sender)
 }
 //---------------------------------------------------------------------------
 
+BOOL StopNTsvc(SC_HANDLE svc, SERVICE_STATUS* status)
+{
+	if(svc==NULL || controlService==NULL)
+    	return(FALSE);
+
+    return controlService(svc,SERVICE_CONTROL_STOP,status);
+}
+
+//---------------------------------------------------------------------------
+
 void __fastcall TMainForm::ServicesStopExecute(TObject *Sender)
 {
-	Screen->Cursor=crAppStart;
+	if(StopNTsvc(services_svc,&services_svc_status))
+    	return;
+    Screen->Cursor=crAppStart;
     services_status(NULL, "Terminating");
-	services_terminate();
+    services_terminate();
     Application->ProcessMessages();
 }
 //---------------------------------------------------------------------------
 
 void __fastcall TMainForm::TelnetStopExecute(TObject *Sender)
 {
-	Screen->Cursor=crAppStart;
+	if(StopNTsvc(bbs_svc,&bbs_svc_status))
+    	return;
+    Screen->Cursor=crAppStart;
     bbs_status(NULL, "Terminating");
-	bbs_terminate();
+    bbs_terminate();
     Application->ProcessMessages();
 }
 //---------------------------------------------------------------------------
@@ -948,19 +1034,21 @@ void __fastcall TMainForm::MailConfigureExecute(TObject *Sender)
 
 void __fastcall TMainForm::MailStartExecute(TObject *Sender)
 {
-    mail_start();
+	if(!StartNTsvc(mail_svc,&mail_svc_status))
+	    mail_start();
 }
 //---------------------------------------------------------------------------
 
 void __fastcall TMainForm::MailStopExecute(TObject *Sender)
 {
-	Screen->Cursor=crAppStart;
+	if(StopNTsvc(mail_svc,&mail_svc_status))
+    	return;
+    Screen->Cursor=crAppStart;
     mail_status(NULL, "Terminating");
-	mail_terminate();
+    mail_terminate();
     Application->ProcessMessages();
 }
 //---------------------------------------------------------------------------
-
 void __fastcall TMainForm::ViewTelnetExecute(TObject *Sender)
 {
 	TelnetForm->Visible=!TelnetForm->Visible;
@@ -997,15 +1085,18 @@ void __fastcall TMainForm::ViewFtpServerExecute(TObject *Sender)
 
 void __fastcall TMainForm::FtpStartExecute(TObject *Sender)
 {
-	ftp_start();
+	if(!StartNTsvc(ftp_svc,&ftp_svc_status))
+		ftp_start();
 }
 //---------------------------------------------------------------------------
 
 void __fastcall TMainForm::FtpStopExecute(TObject *Sender)
 {
-	Screen->Cursor=crAppStart;
+	if(StopNTsvc(ftp_svc,&ftp_svc_status))
+    	return;
+    Screen->Cursor=crAppStart;
     ftp_status(NULL, "Terminating");
-	ftp_terminate();
+    ftp_terminate();
     Application->ProcessMessages();
 }
 //---------------------------------------------------------------------------
@@ -1769,12 +1860,14 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
         LowerLeftPageControl->ActivePageIndex=i;
     LowerLeftPageControl->ActivePageIndex=0;
 
+    LogTimerTick(Sender);	/* Open Log Mailslots */
+
     if(SysAutoStart)
-        bbs_start();
+       TelnetStartExecute(Sender);
     if(MailAutoStart)
-        mail_start();
+        MailStartExecute(Sender);
     if(FtpAutoStart)
-        ftp_start();
+        FtpStartExecute(Sender);
     if(ServicesAutoStart)
         ServicesStartExecute(Sender);
 
@@ -3024,17 +3117,18 @@ void __fastcall TMainForm::UserTruncateMenuItemClick(TObject *Sender)
     sprintf(str,"%u Deleted User Records Removed",deleted);
    	Application->MessageBox(str,"Users Truncated",MB_OK);
 }
-//---------------------------------------------------------------------------
 
+BOOL RecycleService(SC_HANDLE svc, SERVICE_STATUS* status)
+{
+	if(controlService==NULL)
+    	return(FALSE);
+
+	return controlService(svc, SERVICE_CONTROL_RECYCLE, status);
+}
+//---------------------------------------------------------------------------
 void __fastcall TMainForm::MailRecycleExecute(TObject *Sender)
 {
-	HANDLE recycle_sem;
-    char name[256];
-    sprintf(name,"%sRecycle",NTSVC_NAME_MAIL);
-	if((recycle_sem=OpenSemaphore(SEMAPHORE_MODIFY_STATE,FALSE,name))!=NULL) {
-		ReleaseSemaphore(recycle_sem,1,NULL);
-        CloseHandle(recycle_sem);
-    } else {
+	if(!RecycleService(mail_svc,&mail_svc_status)) {
 		mail_startup.recycle_now=true;
 	    MailRecycle->Enabled=false;
     }
@@ -3043,13 +3137,7 @@ void __fastcall TMainForm::MailRecycleExecute(TObject *Sender)
 
 void __fastcall TMainForm::FtpRecycleExecute(TObject *Sender)
 {
-	HANDLE recycle_sem;
-    char name[256];
-    sprintf(name,"%sRecycle",NTSVC_NAME_FTP);
-	if((recycle_sem=OpenSemaphore(SEMAPHORE_MODIFY_STATE,FALSE,name))!=NULL) {
-		ReleaseSemaphore(recycle_sem,1,NULL);
-        CloseHandle(recycle_sem);
-    } else {
+	if(!RecycleService(ftp_svc,&ftp_svc_status)) {
 		ftp_startup.recycle_now=true;
 	    FtpRecycle->Enabled=false;
     }
@@ -3058,13 +3146,7 @@ void __fastcall TMainForm::FtpRecycleExecute(TObject *Sender)
 
 void __fastcall TMainForm::ServicesRecycleExecute(TObject *Sender)
 {
-	HANDLE recycle_sem;
-    char name[256];
-    sprintf(name,"%sRecycle",NTSVC_NAME_SERVICES);
-	if((recycle_sem=OpenSemaphore(SEMAPHORE_MODIFY_STATE,FALSE,name))!=NULL) {
-		ReleaseSemaphore(recycle_sem,1,NULL);
-        CloseHandle(recycle_sem);
-    } else {
+	if(!RecycleService(services_svc,&services_svc_status)) {
 		services_startup.recycle_now=true;
 	    ServicesRecycle->Enabled=false;
     }
@@ -3073,16 +3155,7 @@ void __fastcall TMainForm::ServicesRecycleExecute(TObject *Sender)
 
 void __fastcall TMainForm::TelnetRecycleExecute(TObject *Sender)
 {
-	HANDLE recycle_sem;
-    char name[256];
-    sprintf(name,"%sRecycle",NTSVC_NAME_BBS);
-	if((recycle_sem=OpenSemaphore(SEMAPHORE_MODIFY_STATE,FALSE,name))!=NULL) {
-		ReleaseSemaphore(recycle_sem,1,NULL);
-        CloseHandle(recycle_sem);
-    } else {
-    	char error[256];
-        sprintf(error,"ERROR %d opening semaphore: %s",GetLastError(),NTSVC_NAME_BBS);
-        bbs_lputs(NULL,error);
+    if(!RecycleService(bbs_svc,&bbs_svc_status)) {
 		bbs_startup.recycle_now=true;
 	    TelnetRecycle->Enabled=false;
     }
@@ -3247,6 +3320,102 @@ void __fastcall TMainForm::LogTimerTick(TObject *Sender)
 
 	while(GetServerLogLine(services_log,NTSVC_NAME_SERVICES,line,sizeof(line)))
     	service_lputs(NULL,line);
+}
+
+//---------------------------------------------------------------------------
+void CheckServiceStatus(
+	 SC_HANDLE svc
+	,SERVICE_STATUS* status
+	,TStaticText* text
+    ,TAction* start
+    ,TAction* stop
+    ,TAction* recycle
+    ,TProgressBar* bar
+    )
+{
+	if(svc==NULL)
+    	return;
+
+	if(!queryServiceStatus(svc,status)) {
+    	text->Caption="Error " + GetLastError();
+        return;
+	}
+
+    bool running=false;
+
+	switch(status->dwCurrentState) {
+    	case SERVICE_STOPPED:
+        	text->Caption="Stopped NT Service";
+            break;
+        case SERVICE_STOP_PENDING:
+        	text->Caption="Stopping NT Service";
+            break;
+        case SERVICE_RUNNING:
+        	text->Caption="Running NT Service";
+            running=true;
+            break;
+        case SERVICE_START_PENDING:
+        	text->Caption="Starting NT Service";
+            running=true;
+            break;
+        default:
+        	text->Caption="!UNKNOWN: " +  status->dwCurrentState;
+            break;
+    }
+
+    start->Enabled=!running;
+    stop->Enabled=running;
+    recycle->Enabled=running;
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TMainForm::ServiceStatusTimerTick(TObject *Sender)
+{
+	if(queryServiceStatus==NULL
+    	|| (bbs_svc==NULL
+        && ftp_svc==NULL
+        && mail_svc==NULL
+        && services_svc==NULL)) {
+    	ServiceStatusTimer->Enabled=false;
+        return;
+    }
+
+    CheckServiceStatus(
+    	 bbs_svc
+    	,&bbs_svc_status
+        ,TelnetForm->Status
+        ,TelnetStart
+        ,TelnetStop
+        ,TelnetRecycle
+        ,TelnetForm->ProgressBar
+        );
+    CheckServiceStatus(
+    	 ftp_svc
+    	,&ftp_svc_status
+        ,FtpForm->Status
+        ,FtpStart
+        ,FtpStop
+        ,FtpRecycle
+        ,FtpForm->ProgressBar
+        );
+    CheckServiceStatus(
+    	 mail_svc
+    	,&mail_svc_status
+        ,MailForm->Status
+        ,MailStart
+        ,MailStop
+        ,MailRecycle
+        ,MailForm->ProgressBar
+        );
+    CheckServiceStatus(
+    	 services_svc
+    	,&services_svc_status
+        ,ServicesForm->Status
+        ,ServicesStart
+        ,ServicesStop
+        ,ServicesRecycle
+        ,NULL
+        );
 }
 //---------------------------------------------------------------------------
 
