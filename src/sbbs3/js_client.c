@@ -124,7 +124,7 @@ static JSClass js_client_class = {
 };
 
 JSObject* DLLCALL js_CreateClientObject(JSContext* cx, JSObject* parent
-										,char* name, client_t* client)
+										,char* name, client_t* client, SOCKET sock)
 {
 	JSObject*	obj;
 
@@ -136,6 +136,8 @@ JSObject* DLLCALL js_CreateClientObject(JSContext* cx, JSObject* parent
 	JS_SetPrivate(cx, obj, client);	/* Store a pointer to client_t */
 
 	JS_DefineProperties(cx, obj, js_client_properties);
+
+	js_CreateSocketObject(cx, obj, "socket", sock);
 
 	return(obj);
 }
