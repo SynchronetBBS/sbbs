@@ -59,6 +59,8 @@ static uint		thread_count=0;
 static SOCKET	server_socket=INVALID_SOCKET;
 static ulong	mime_count=0;
 static char		revision[16];
+static char		root_dir[MAX_PATH+1];
+static char		error_dir[MAX_PATH+1];
 static web_startup_t* startup=NULL;
 
 typedef struct  {
@@ -503,7 +505,7 @@ void send_headers(http_session_t *session, const char *status)
 	/* Should be dynamic to allow POST for CGIs */
 	sockprintf(session->socket,"%s: %s",get_header(HEAD_ALLOW),"GET, HEAD");
 	if(session->req.send_location) {
-		location_offset=strlen(startup->root_dir);
+		location_offset=strlen(root_dir);
 		if(session->host[0])
 			location_offset+=strlen(session->host)+1;
 		sockprintf(session->socket,"%s: %s",get_header(HEAD_LOCATION),session->req.request+location_offset);
@@ -539,7 +541,7 @@ static void send_error(char *message, http_session_t * session)
 	if(session->http_ver > HTTP_0_9)
 		send_headers(session,message);
 	SAFECOPY(error_code,message);
-	sprintf(error_path,"%s/%s.html",startup->error_dir,error_code);
+	sprintf(error_path,"%s%s.html",error_dir,error_code);
 	sock_sendfile(session->socket,error_path);
 	close_request(session);
 }
@@ -619,7 +621,7 @@ static BOOL read_mime_types(void)
 	char *	type;
 	FILE*	mime_config;
 
-	sprintf(str,"%s/mime_types.cfg",startup->ctrl_dir);
+	sprintf(str,"%smime_types.cfg",startup->ctrl_dir);
 	mime_config=fopen(str,"r");
 	if(mime_config==NULL) {
 		return(FALSE);
@@ -882,9 +884,9 @@ static BOOL check_request(http_session_t * session)
 	
 	lprintf("Validating request: %s",session->req.request);
 	if(session->host[0])
-		sprintf(path,"%s/%s%s",startup->root_dir,session->host,session->req.request);
+		sprintf(path,"%s%s%s",root_dir,session->host,session->req.request);
 	else
-		sprintf(path,"%s%s",startup->root_dir,session->req.request);
+		sprintf(path,"%s%s",root_dir,session->req.request);
 	
 	if(FULLPATH(session->req.request,path,sizeof(session->req.request))==NULL) {
 		send_error("404 Not Found",session);
@@ -892,7 +894,7 @@ static BOOL check_request(http_session_t * session)
 	}
 	if(!strcmp(path,session->req.request))
 		session->req.send_location=TRUE;
-	if(strnicmp(session->req.request,startup->root_dir,strlen(startup->root_dir))) {
+	if(strnicmp(session->req.request,root_dir,strlen(root_dir))) {
 		send_error("400 Bad Request",session);
 		session->req.keep_alive=FALSE;
 		return(FALSE);
@@ -913,7 +915,7 @@ static BOOL check_request(http_session_t * session)
 	session->req.ars[0]=0;
 	/* Walk up from root_dir checking for access.ars */
 	SAFECOPY(str,path);
-	last_slash=str+strlen(startup->root_dir)-1;
+	last_slash=str+strlen(root_dir)-1;
 	/* Loop while there's more /s in path*/
 	while((last_slash=strchr(last_slash+1,'/'))!=NULL) {
 		/* Terminate the path after the slash */
@@ -1110,6 +1112,16 @@ void DLLCALL web_server(void* arg)
 	/* Setup intelligent defaults */
 	if(startup->port==0)					startup->port=IPPORT_HTTP;
 	if(startup->index_file_name[0]==0)		SAFECOPY(startup->index_file_name,"index.html");
+	if(startup->root_dir[0]==0)				SAFECOPY(startup->root_dir,"../html");
+	if(startup->error_dir[0]==0)			SAFECOPY(startup->error_dir,"../html/error");
+
+	/* Copy html directories */
+	SAFECOPY(root_dir,startup->root_dir);
+	SAFECOPY(error_dir,startup->error_dir);
+
+	/* Change to absolute path */
+	prep_dir(startup->ctrl_dir, root_dir);
+	prep_dir(startup->ctrl_dir, error_dir);
 
 	startup->recycle_now=FALSE;
 	recycle_server=TRUE;
