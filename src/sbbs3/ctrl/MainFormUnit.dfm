@@ -2358,6 +2358,11 @@ object MainForm: TMainForm
         AutoHotkeys = maManual
         Caption = 'View'
         ImageIndex = 47
+        object MailViewSpamLog: TMenuItem
+          Caption = 'SPAM Log'
+          Hint = 'SPAM.LOG'
+          OnClick = DataMenuItemClick
+        end
         object MailViewTodaysLog: TMenuItem
           Caption = 'Today'#39's Log'
           Hint = 'ms'

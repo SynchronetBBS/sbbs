@@ -231,6 +231,7 @@ __published:	// IDE-managed Components
     TMenuItem *ReloadConfigurationFiles1;
     TToolButton *ToolButton3;
     TToolButton *ReloadConfigButton;
+    TMenuItem *MailViewSpamLog;
     void __fastcall FileExitMenuItemClick(TObject *Sender);
 	void __fastcall ViewToolbarMenuItemClick(TObject *Sender);
 	void __fastcall FormClose(TObject *Sender, TCloseAction &Action);
