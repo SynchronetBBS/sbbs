@@ -95,9 +95,6 @@ char ** sbbs_t::getstrvar(csi_t *bin, long name)
 		case 0x41239e21:
 			sysvar_p[sysvar_pi]=(char*)connection;
 			break;
-		case 0xe9f1fad0:
-			sysvar_p[sysvar_pi]=(char*)cap_fname;
-			break;
 		case 0x90fc82b4:
 			sysvar_p[sysvar_pi]=(char*)cid;
 			break;
