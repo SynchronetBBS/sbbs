@@ -112,12 +112,12 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 			strcpy(touser,"All");
 		bputs(text[PostTo]);
 		i=LEN_ALIAS;
-		if(cfg.sub[subnum]->misc&(SUB_PNET|SUB_INET))
-			i=60;
-		if(cfg.sub[subnum]->misc&SUB_FIDO)
-			i=35;
 		if(cfg.sub[subnum]->misc&SUB_QNET)
 			i=25;
+		if(cfg.sub[subnum]->misc&SUB_FIDO)
+			i=35;
+		if(cfg.sub[subnum]->misc&(SUB_PNET|SUB_INET))
+			i=60;
 		getstr(touser,i,K_UPRLWR|K_LINE|K_EDIT|K_AUTODEL);
 		if(stricmp(touser,"ALL")
 		&& !(cfg.sub[subnum]->misc&(SUB_PNET|SUB_FIDO|SUB_QNET|SUB_INET|SUB_ANON))) {
