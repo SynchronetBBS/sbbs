@@ -68,7 +68,7 @@ enum {
 	,BBS_PROP_MENU_DIR
 	,BBS_PROP_MENU_FILE
 	,BBS_PROP_MAIN_CMDS
-	,BBS_PROP_XFER_CMDS
+	,BBS_PROP_FILE_CMDS
 
 	,BBS_PROP_CONNECTION		/* READ ONLY */
 	,BBS_PROP_RLOGIN_NAME
@@ -157,7 +157,7 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 		case BBS_PROP_MAIN_CMDS:
 			val=sbbs->main_cmds;
 			break;
-		case BBS_PROP_XFER_CMDS:
+		case BBS_PROP_FILE_CMDS:
 			val=sbbs->xfer_cmds;
 			break;
 		case BBS_PROP_CONNECTION:
@@ -183,8 +183,10 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 
 static JSBool js_bbs_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
+	char*		p=NULL;
 	long		val=0;
     jsint       tiny;
+	JSString*	js_str;
 	sbbs_t*		sbbs;
 
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
@@ -192,8 +194,13 @@ static JSBool js_bbs_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 
     tiny = JSVAL_TO_INT(id);
 
-	if(JSVAL_IS_INT(*vp))
+	if(JSVAL_IS_INT(*vp) || JSVAL_IS_BOOLEAN(*vp))
 		JS_ValueToInt32(cx, *vp, &val);
+	else if(JSVAL_IS_STRING(*vp)) {
+		if((js_str = JS_ValueToString(cx, *vp))==NULL)
+			return(JS_FALSE);
+		p=JS_GetStringBytes(js_str);
+	}
 
 	switch(tiny) {
 		case BBS_PROP_SYS_STATUS:
@@ -251,18 +258,22 @@ static JSBool js_bbs_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			sbbs->posts_read=val;
 			break;
 		case BBS_PROP_MENU_DIR:
+			sprintf(sbbs->menu_dir,"%.*s",sizeof(sbbs->menu_dir)-1,p);
 			break;
 		case BBS_PROP_MENU_FILE:
+			sprintf(sbbs->menu_file,"%.*s",sizeof(sbbs->menu_file)-1,p);
 			break;
 		case BBS_PROP_MAIN_CMDS:
 			sbbs->main_cmds=val;
 			break;
-		case BBS_PROP_XFER_CMDS:
+		case BBS_PROP_FILE_CMDS:
 			sbbs->xfer_cmds=val;
 			break;
 		case BBS_PROP_RLOGIN_NAME:
+			sprintf(sbbs->rlogin_name,"%.*s",sizeof(sbbs->rlogin_name)-1,p);
 			break;
 		case BBS_PROP_CLIENT_NAME:
+			sprintf(sbbs->client_name,"%.*s",sizeof(sbbs->client_name)-1,p);
 			break;
 		default:
 			return(JS_TRUE);
@@ -298,7 +309,7 @@ static struct JSPropertySpec js_bbs_properties[] = {
 	{	"menu_dir"			,BBS_PROP_MENU_DIR		,JSPROP_ENUMERATE	,NULL,NULL},
 	{	"menu_file"			,BBS_PROP_MENU_FILE		,JSPROP_ENUMERATE	,NULL,NULL},
 	{	"main_cmds"			,BBS_PROP_MAIN_CMDS		,JSPROP_ENUMERATE	,NULL,NULL},
-	{	"xfer_cmds"			,BBS_PROP_XFER_CMDS		,JSPROP_ENUMERATE	,NULL,NULL},
+	{	"file_cmds"			,BBS_PROP_FILE_CMDS		,JSPROP_ENUMERATE	,NULL,NULL},
 	{	"connection"		,BBS_PROP_CONNECTION	,BBS_PROP_READONLY	,NULL,NULL},
 	{	"rlogin_name"		,BBS_PROP_RLOGIN_NAME	,JSPROP_ENUMERATE	,NULL,NULL},
 	{	"client_name"		,BBS_PROP_CLIENT_NAME	,JSPROP_ENUMERATE	,NULL,NULL},
@@ -579,16 +590,266 @@ js_load_text(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	return(JS_TRUE);
 }
 
+static JSBool
+js_logkey(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		p;
+	JSBool		comma=false;
+	JSString*	js_str;
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	if((js_str=JS_ValueToString(cx, argv[0]))==NULL) {
+		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+		return(JS_TRUE);
+	}
+
+	if(argc>1)
+		comma=JS_ValueToBoolean(cx,argv[1],&comma);
+
+	if((p=JS_GetStringBytes(js_str))==NULL) {
+		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+		return(JS_TRUE);
+	}
+
+	sbbs->logch(*p
+		,comma ? true:false	// This is a dumb bool conversion to make BC++ happy
+		);
+
+	*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
+	return(JS_TRUE);
+}
+
+static JSBool
+js_logstr(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		p;
+	JSString*	js_str;
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	if((js_str=JS_ValueToString(cx, argv[0]))==NULL) {
+		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+		return(JS_TRUE);
+	}
+
+	if((p=JS_GetStringBytes(js_str))==NULL) {
+		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+		return(JS_TRUE);
+	}
+
+	sbbs->log(p);
+
+	*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
+	return(JS_TRUE);
+}
+
+static JSBool
+js_finduser(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		p;
+	JSString*	js_str;
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	if((js_str=JS_ValueToString(cx, argv[0]))==NULL) {
+		*rval = INT_TO_JSVAL(0);
+		return(JS_TRUE);
+	}
+
+	if((p=JS_GetStringBytes(js_str))==NULL) {
+		*rval = INT_TO_JSVAL(0);
+		return(JS_TRUE);
+	}
+
+	*rval = INT_TO_JSVAL(sbbs->finduser(p));
+	return(JS_TRUE);
+}
+
+static JSBool
+js_trashcan(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		str;
+	char*		can;
+	JSString*	js_str;
+	JSString*	js_can;
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	if((js_can=JS_ValueToString(cx, argv[0]))==NULL) {
+		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+		return(JS_TRUE);
+	}
+
+	if((js_str=JS_ValueToString(cx, argv[1]))==NULL) {
+		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+		return(JS_TRUE);
+	}
+
+	if((can=JS_GetStringBytes(js_can))==NULL) {
+		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+		return(JS_TRUE);
+	}
+
+	if((str=JS_GetStringBytes(js_str))==NULL) {
+		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+		return(JS_TRUE);
+	}
+
+	*rval = BOOLEAN_TO_JSVAL(sbbs->trashcan(str,can));	// user args are reversed
+	return(JS_TRUE);
+}
+
+static JSBool
+js_newuser(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	sbbs->newuser();
+
+	*rval = JSVAL_VOID;
+	return(JS_TRUE);
+}
+
+static JSBool
+js_logon(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	*rval = BOOLEAN_TO_JSVAL(sbbs->logon());
+	return(JS_TRUE);
+}
+
+static JSBool
+js_login(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		name;
+	char*		pw;
+	JSString*	js_name;
+	JSString*	js_pw;
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	if((js_name=JS_ValueToString(cx, argv[0]))==NULL) 
+		return(JS_FALSE);
+
+	if((js_pw=JS_ValueToString(cx, argv[1]))==NULL) 
+		return(JS_FALSE);
+
+	if((name=JS_GetStringBytes(js_name))==NULL) 
+		return(JS_FALSE);
+
+	if((pw=JS_GetStringBytes(js_pw))==NULL) 
+		return(JS_FALSE);
+
+	*rval = BOOLEAN_TO_JSVAL(sbbs->login(name,pw)==LOGIC_TRUE ? JS_TRUE:JS_FALSE);
+	return(JS_TRUE);
+}
+
+
+static JSBool
+js_logoff(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	if(!sbbs->noyes(sbbs->text[LogOffQ])) {
+		if(sbbs->cfg.logoff_mod[0])
+			sbbs->exec_bin(sbbs->cfg.logoff_mod,&sbbs->main_csi);
+		sbbs->user_event(EVENT_LOGOFF);
+		sbbs->menu("logoff");
+		sbbs->riosync(0);
+		sbbs->hangup(); 
+	}
+
+	*rval = JSVAL_VOID;
+	return(JS_TRUE);
+}
+
+static JSBool
+js_logout(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	sbbs->logout();
+
+	*rval = JSVAL_VOID;
+	return(JS_TRUE);
+}
+
+static JSBool
+js_telnet_gate(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		addr;
+	int			mode=0;
+	JSString*	js_addr;
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	if((js_addr=JS_ValueToString(cx, argv[0]))==NULL) 
+		return(JS_FALSE);
+
+	if((addr=JS_GetStringBytes(js_addr))==NULL) 
+		return(JS_FALSE);
+
+	if(argc>1)
+		mode=JSVAL_TO_INT(argv[1]);
+
+	sbbs->telnet_gate(addr,mode);
+	
+	*rval = JSVAL_VOID;
+	return(JS_TRUE);
+}
+
 static JSFunctionSpec js_bbs_functions[] = {
+	/* text.dat */
 	{"text",			js_text,			1},		// return text string from text.dat
 	{"replace_text",	js_replace_text,	2},		// replace a text string
 	{"revert_text",		js_revert_text,		0},		// revert to original text string
 	{"load_text",		js_load_text,		1},		// load an alternate text.dat
-	{"menu",			js_menu,			1},		// show menu
+	/* procedures */
+	{"newuser",			js_newuser,			0},		// new user procedure
+	{"login",			js_login,			2},		// login with username and pw prompt
+	{"logon",			js_logon,			0},		// logon procedure
+	{"logoff",			js_logoff,			0},		// logoff procedure
+	{"logout",			js_logout,			0},		// logout procedure
 	{"hangup",			js_hangup,			0},		// hangup immediately
+	/* menuing */
+	{"menu",			js_menu,			1},		// show menu
+	{"logkey",			js_logkey,			1},		// log key to node.log (comma optional)
+	{"logstr",			js_logstr,			1},		// log string to node.log
+	/* users */
+	{"finduser",		js_finduser,		1},		// find user (partial name support)
+	{"trashcan",		js_trashcan,		2},		// search file for psuedo-regexp
+	/* xtrn programs/modules */
 	{"exec",			js_exec,			2},		// execute command line with mode
 	{"exec_xtrn",		js_exec_xtrn,		1},		// execute external program by code
 	{"user_event",		js_user_event,		1},		// execute user event by event type
+	{"telnet_gate",		js_telnet_gate,		1},		// external telnet gateway (w/opt mode)
+	/* security */
 	{"check_syspass",	js_chksyspass,		0},		// verify system password
 	{0}
 };
