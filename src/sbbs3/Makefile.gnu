@@ -54,9 +54,8 @@ DELETE	=	rm -f -v
 OUTLIB	=	-o
 
 ifeq ($(os),freebsd)	# FreeBSD
-LIBS	=	
-LIBS	=	-L/usr/local/lib /usr/local/lib/liblthread_p.a
-CFLAGS	:=	-I/usr/local/include/pthread/linuxthreads
+LIBS	=	-pthread
+CFLAGS	:=	-pthread
 else			        # Linux / Other UNIX
 CFLAGS	:=	
 LIBS	=	$(LIBDIR)/libpthread.a
