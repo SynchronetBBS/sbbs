@@ -303,8 +303,10 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 
 	smb_unlockmsghdr(&(p->smb),&msg); 
 
-	if((hdrobj=JS_NewObject(cx,&js_msghdr_class,NULL,obj))==NULL)
+	if((hdrobj=JS_NewObject(cx,&js_msghdr_class,NULL,obj))==NULL) {
+		smb_freemsgmem(&msg);
 		return(JS_TRUE);
+	}
 
 	JS_DefineProperty(cx, hdrobj, "number", INT_TO_JSVAL(msg.hdr.number)
 		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
@@ -422,6 +424,8 @@ js_get_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 	JS_DefineProperty(cx, hdrobj, "id", STRING_TO_JSVAL(JS_NewStringCopyZ(cx,val))
 		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
+	smb_freemsgmem(&msg);
+
 	*rval = OBJECT_TO_JSVAL(hdrobj);
 
 	return(JS_TRUE);
@@ -473,6 +477,7 @@ js_put_msg_header(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 	} while(0);
 
 	smb_unlockmsghdr(&(p->smb),&msg); 
+	smb_freemsgmem(&msg);
 
 	return(JS_TRUE);
 }
@@ -494,10 +499,12 @@ static char* get_msg_text(smb_t* smb, smbmsg_t* msg, BOOL strip_ctrl_a, ulong mo
 
 	if((buf=smb_getmsgtxt(smb, msg, mode))==NULL) {
 		smb_unlockmsghdr(smb,msg); 
+		smb_freemsgmem(msg);
 		return(NULL);
 	}
 
 	smb_unlockmsghdr(smb, msg); 
+	smb_freemsgmem(msg);
 
 	if(strip_ctrl_a) {
 		char* newbuf;
