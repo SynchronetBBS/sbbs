@@ -172,7 +172,7 @@ bool sbbs_t::uploadfile(file_t *f)
 		return(0);
 
 	if(f->misc&FM_EXTDESC)
-		putextdesc(f->dir,f->datoffset,ext);
+		putextdesc(&cfg,f->dir,f->datoffset,ext);
 
 	sprintf(str,"Uploaded %s to %s %s",f->name,cfg.lib[cfg.dir[f->dir]->lib]->sname
 		,cfg.dir[f->dir]->sname);

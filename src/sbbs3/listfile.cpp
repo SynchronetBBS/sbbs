@@ -175,7 +175,7 @@ int sbbs_t::listfiles(uint dirnum, char *filespec, int tofile, long mode)
 			j=tmp[0];  /* misc bits */
 			if(j) j-=SP;
 			if(mode&FL_EXFIND && j&FM_EXTDESC) { /* search extended description */
-				getextdesc(dirnum,n,ext);
+				getextdesc(&cfg,dirnum,n,ext);
 				strupr(ext);
 				if(!strstr(ext,filespec) && !p) {	/* not in description or */
 					m+=11;						 /* extended description */
@@ -378,7 +378,7 @@ bool sbbs_t::listfile(char *fname, char HUGE16 *buf, uint dirnum
     ulong	cdt;
 
 	if(buf[F_MISC]!=ETX && (buf[F_MISC]-SP)&FM_EXTDESC && useron.misc&EXTDESC) {
-		getextdesc(dirnum,datoffset,ext);
+		getextdesc(&cfg,dirnum,datoffset,ext);
 		if(useron.misc&BATCHFLAG && lncntr+extdesclines(ext)>=rows-2 && letter!='A')
 			return(false); }
 	attr(cfg.color[clr_filename]);
@@ -534,7 +534,7 @@ bool sbbs_t::movefile(file_t* f, int newdir)
 	if(findfile(&cfg,newdir,f->name)) {
 		bprintf(text[FileAlreadyThere],f->name);
 		return(false); }
-	getextdesc(olddir,f->datoffset,ext);
+	getextdesc(&cfg,olddir,f->datoffset,ext);
 	if(cfg.dir[olddir]->misc&DIR_MOVENEW)
 		f->dateuled=time(NULL);
 	unpadfname(f->name,fname);
@@ -552,7 +552,7 @@ bool sbbs_t::movefile(file_t* f, int newdir)
 			sprintf(path,"%s%s",cfg.dir[f->dir]->path,fname);
 			mv(str,path,0); } }
 	if(f->misc&FM_EXTDESC)
-		putextdesc(f->dir,f->datoffset,ext);
+		putextdesc(&cfg,f->dir,f->datoffset,ext);
 	return(true);
 }
 
@@ -1053,11 +1053,11 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 							sprintf(str,text[AddToOfflineDirQ]
 								,fname,cfg.lib[cfg.dir[i]->lib]->sname,cfg.dir[i]->sname);
 							if(yesno(str)) {
-								getextdesc(f.dir,f.datoffset,ext);
+								getextdesc(&cfg,f.dir,f.datoffset,ext);
 								f.dir=i;
 								addfiledat(&cfg,&f);
 								if(f.misc&FM_EXTDESC)
-									putextdesc(f.dir,f.datoffset,ext); } } }
+									putextdesc(&cfg,f.dir,f.datoffset,ext); } } }
 					if(dir_op(dirnum) || stricmp(f.uler,useron.alias)) {
 						if(noyes(text[RemoveCreditsQ]))
 	/* Fall through */      break; }
@@ -1114,7 +1114,7 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 					if(findfile(&cfg,usrdir[i][j],f.name)) {
 						bprintf(text[FileAlreadyThere],f.name);
 						break; }
-					getextdesc(f.dir,f.datoffset,ext);
+					getextdesc(&cfg,f.dir,f.datoffset,ext);
 					removefiledat(&cfg,&f);
 					if(f.dir==cfg.upload_dir || f.dir==cfg.sysop_dir)
 						f.dateuled=time(NULL);
@@ -1131,7 +1131,7 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 							sprintf(path,"%s%s",cfg.dir[f.dir]->path,fname);
 							mv(str,path,0); } }
 					if(f.misc&FM_EXTDESC)
-						putextdesc(f.dir,f.datoffset,ext);
+						putextdesc(&cfg,f.dir,f.datoffset,ext);
 					break;
 				case 'Q':   /* quit */
 					found=-1;
