@@ -2444,7 +2444,7 @@ static JSBool
 js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     uintN		i;
-    JSString *	str;
+    JSString*	str=NULL;
 	http_session_t* session;
 
 	if((session=(http_session_t*)JS_GetContextPrivate(cx))==NULL)
@@ -2478,6 +2478,11 @@ js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		else
 			fwrite(JS_GetStringBytes(str),1,JS_GetStringLength(str),session->req.fp);
 	}
+
+	if(str==NULL)
+		*rval = JSVAL_VOID;
+	else
+		*rval = STRING_TO_JSVAL(str);
 
 	return(JS_TRUE);
 }
@@ -2753,7 +2758,6 @@ static BOOL ssjs_send_headers(http_session_t* session)
 static BOOL exec_ssjs(http_session_t* session, char *script)  {
 	JSScript*	js_script;
 	jsval		rval;
-	jsval		val;
 	char		path[MAX_PATH+1];
 	BOOL		retval=TRUE;
 
