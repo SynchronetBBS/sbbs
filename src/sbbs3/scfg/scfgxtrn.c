@@ -487,8 +487,10 @@ the month.
 				j=0;
 				while(1) {
 					for(k=0;k<7;k++)
-						sprintf(opt[k],"%s        %s"
+						sprintf(opt[k],"%-30s %3s"
 							,wday[k],(cfg.event[i]->days&(1<<k)) ? "Yes":"No");
+					strcpy(opt[k++],"All");
+					strcpy(opt[k++],"None");
 					opt[k][0]=0;
 					uifc.savnum=2;
 					SETHELP(WHERE);
@@ -497,12 +499,18 @@ the month.
 
 These are the days of the week that this event will be executed.
 */
-					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&j,0
+					k=uifc.list(WIN_MID|WIN_SAV|WIN_ACT,0,0,0,&j,0
 						,"Days of Week to Execute Event",opt);
 					if(k==-1)
 						break;
-					cfg.event[i]->days^=(1<<k);
-					uifc.changes=1; }
+					if(k==7)
+						cfg.event[i]->days=0xff;
+					else if(k==8)
+						cfg.event[i]->days=0;
+					else
+						cfg.event[i]->days^=(1<<k);
+					uifc.changes=1; 
+				}
 				break;
 			case 6:
                 if(cfg.event[i]->freq==0)
