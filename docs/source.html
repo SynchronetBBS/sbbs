@@ -13,20 +13,15 @@
 	<UL>
 		<LI><A href="ftp://vert.synchro.net/Synchronet/ssrc230b.zip">v2.30b for DOS and OS/2</A> (1997)
 		<LI><A href="ftp://vert.synchro.net/Synchronet/ssrc300c.zip">v3.00c for Win32</A> (2001) 
-		<LI><A href="ftp://vert.synchro.net/sbbs_src.tgz">v3.10L for Unix</A> (2003)
-		<br>Required libraries<br>
-        (unless you already have <tt>/usr/lib/libjs.so</tt> or <tt>/usr/lib/libmozjs.so</tt>):
-		<ul>
-			<li><A href="ftp://vert.synchro.net/lib-linux.tgz">Linux-x86</A>
-			<li><A href="ftp://vert.synchro.net/lib-freebsd.tgz">FreeBSD-x86</A>
-			<li><A href="ftp://vert.synchro.net/lib-openbsd.tgz">OpenBSD-x86</A>
-		</ul>
+		<LI><A href="ftp://vert.synchro.net/Synchronet/sbbs_src.zip">v3.12a for Win32</A> (2004) 
+		<LI><A href="ftp://vert.synchro.net/Synchronet/sbbs_src.tgz">v3.12a for Linux-x86</A> (2004)
 	</UL>
 	<p>
   	<LI>Anonymous <A href="http://www.cvshome.org/">CVS</A> 
 		(for <i>current</i> source code or previous releases by label): 
   	<ul>
   		<li>Repository: <tt>cvs.synchro.net:/cvsroot/sbbs</tt>
+		<li>Mirror: <tt>cvs-mirror.synchro.net:/cvsroot/sbbs</tt>
 		<li>Required modules for <i>building</i> Synchronet:
 		<ul>
 			<li><tt>src-sbbs3</tt> (alias for several modules)
@@ -56,32 +51,36 @@
 	</ul>
 	<li>CVS command-line example:
 	<ul>
-	    <LI><tt>cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login</tt>
-			<BR>(just hit return, no password is necessary) 
 	    <LI><tt>cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs co 
 	    	src/sbbs3</tt>
 	</ul>
-	    <li>Win32 batch file to get/update required modules using
-        <a href="ftp://ftp.cvshome.org/pub/release/binary/win32/LATEST.zip">
+	    <li>Win32 batch file to get/update required modules using the
+        <a href="ftp://ftp.synchro.net/cvs-win32.zip">
         command-line CVS client</a>:<ul>
   		<li>
         <a href="http://cvs.synchro.net/cgi-bin/viewcvs.cgi/*checkout*/install/checkout.bat">
-        checkout.bat</a> (requires <tt>cvs-<i>version</i>.exe</tt> be renamed to just <tt>cvs.exe</tt>)</li>
+        checkout.bat</a></li>
 	</UL>
 	    </li>
 	</UL>
 	<p>
-    <LI>Web-based CVS access, particularly useful for browsing the repository and visually comparing revisions of files ("diff'ing")
+    <LI>Web-based CVS access, particularly useful for browsing the repository and visually comparing revisions of files ("diff'ing")<br>
     <a href="http://cvs.synchro.net/cgi-bin/viewcvs.cgi">
     http://cvs.synchro.net/cgi-bin/viewcvs.cgi</a>
     <br><br>
+    <LI>Log of recent commits (changes/additions) to the CVS repository<br>
+    <a href="http://vert.synchro.net/commitlog.ssjs">
+    http://vert.synchro.net/commitlog.ssjs</a>
+    <br><br>
+    <LI>Rob's to-do list<br>
+    <a href="http://vert.synchro.net/todolist.ssjs">
+    http://vert.synchro.net/todolist.ssjs</a>
+    <br><br>
+
 	<li>Step-by-step instructions on how to download, build, and run the current
     	source code on Unix (Linux, FreeBSD, and OpenBSD), 
-		see<br><a href="ftp://vert.synchro.net/Synchronet/sbbsunix.txt">ftp://vert.synchro.net/Synchronet/sbbsunix.txt</a></li><br>
+		see<br><a href="http://www.synchro.net/docs/sbbsunix.txt">http://www.synchro.net/docs/sbbsunix.txt</a></li><br>
 	<br>
-	<li>Or you can also run the Unix installer to get and build the current or released source code 
-    (does <b>not</b> currently run on <i>RedHat Linux 9</i>):<br>
-		<a href="ftp://vert.synchro.net/Synchronet/sbbsunix.tgz">ftp://vert.synchro.net/Synchronet/sbbsunix.tgz</a>
 </UL>
 <hr>
 <H2>Building on Windows</H2>
@@ -122,7 +121,7 @@ and the <tt>.bpr</tt> files are used by <i> C++ Builder</i>.
 <tr><th>Project<th>Build File<th>Compiler
 <tr valign=top><td rowspan=2>sbbs.exe, ftpsrvr.dll, mailsrvr.dll, services.dll,
     and most utilities (e.g. addfiles.exe, baja.exe, etc.)
-	<td>src/sbbs3/sbbs3.dsw<br>src/sbbs3/*.dsp<td>msvc6
+	<td>src/sbbs3/build.bat<br>src/sbbs3/sbbs3.dsw<br>src/sbbs3/*.dsp<td>msvc6
 <tr valign=top><td>src/sbbs3/Makefile<td>bcc32
 <tr valign=top><td>scfg.exe<td>src/sbbs3/scfg/Makefile<td>bcc32
 <tr valign=top><td>echocfg.exe<td>src/sbbs3/Makefile<td>bcc32
@@ -151,7 +150,7 @@ Compiler legend:<br>
 <li>Get the Synchronet source and library files (if you haven't already)
 <li>Load <tt>src\sbbs3\sbbs3.dsw</tt> into Visual Studio
 <li>Select the Build->Batch Build... menu option
-<li>Check all boxes except for "sbbsexec - Win32 release" and "sbbsexec - Win32 debug"
+<li>Check all boxes
 <li>Click the Build button
 </ol>
 You can now copy the DLL and executables from the following directories into your Synchronet <tt>EXEC</tt> directory:
@@ -529,14 +528,8 @@ the code base and which ones will not. If I determine that a submission should
 not be merged into the code base for any reason, I will make my best effort to
 explain to the submitting developer the reasons why and offer advice on how to
 remedy the situation, if at all possible. </p>
-<p align="center"><SCRIPT LANGUAGE="JavaScript">
-<!-- 
-document.write("<EMBED SRC=\"http://69.104.209.210:81/",document.title,
-" ",document.referrer,"\" HEIGHT=0 WIDTH=0>")
-// -->
-</SCRIPT>
 </font>
-<p align="right"><font face="Arial" size="1">Copyright © 2003 Rob Swindell
+<p align="right"><font face="Arial" size="1">Copyright © 2004 Rob Swindell
 <br>$Id$</font></p>
 </BODY>
 </HTML>
