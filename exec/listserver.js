@@ -325,7 +325,10 @@ function process_control_msg(cmd_list)
 		if(!cmd || !cmd.length)
 			continue;
 		var token=cmd.split(/\s+/);
-		switch(token[0].toLowerCase()) {
+		cmd=token[0];
+		var listname=token[1];
+		var address=token[2];
+		switch(cmd.toLowerCase()) {
 			case "lists":
 				response.body.push("List of lists:");
 				for(var l in list_array) {
@@ -337,17 +340,21 @@ function process_control_msg(cmd_list)
 				break;
 			case "subscribe":
 			case "unsubscribe":
+				if(!listname || !listname.length) {
+					response.body.push("!List name not specified");
+					break;
+				}
 				for(var l in list_array) {
 					var list = list_array[l];
 					if(list.disabled || list.closed)
 						continue;
-					if(list.name.toLowerCase()==token[1].toLowerCase()
-						|| list.address.toLowerCase()==token[1].toLowerCase()) {
-						response.body.push(subscription_control(token[0], list, token[2]));
+					if(list.name.toLowerCase()==listname.toLowerCase()
+						|| list.address.toLowerCase()==listname.toLowerCase()) {
+						response.body.push(subscription_control(cmd, list, address));
 						return(response);
 					}
 				}
-				response.body.push("!List not found: " + token[1]);
+				response.body.push("!List not found: " + listname);
 				break;
 			default:
 				response.body.push("!Bad command: " + cmd);
