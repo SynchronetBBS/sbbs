@@ -113,7 +113,9 @@ else			# Linux / Other UNIX
 endif
 
 ifeq ($(os),linux)    # Linux
- CFLAGS	+= -D_THREAD_SUID_BROKEN
+ ifndef THREADS_ACTUALLY_WORK
+  CFLAGS	+= -D_THREAD_SUID_BROKEN
+ endif
 endif
 
 ifeq ($(os),sunos)    # Solaris

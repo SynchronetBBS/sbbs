@@ -902,24 +902,6 @@ int main(int argc, char** argv)
 	sigset_t			sigs;
 #endif
 
-	if(command_is(argv[0],"sbbs_ftp"))
-		run_ftp=has_ftp=TRUE;
-	else if(command_is(argv[0],"sbbs_mail"))
-		run_mail=has_mail=TRUE;
-	else if(command_is(argv[0],"sbbs_bbs"))
-		run_bbs=has_bbs=TRUE;
-	else if(command_is(argv[0],"sbbs_srvc"))
-		run_services=has_services=TRUE;
-	else if(command_is(argv[0],"sbbs_web"))
-		run_web=has_web=TRUE;
-	else {
-		run_bbs=has_bbs=TRUE;
-		run_ftp=has_ftp=TRUE;
-		run_mail=has_mail=TRUE;
-		run_services=has_services=TRUE;
-		run_web=has_web=TRUE;
-	}
-
 #ifdef __QNX__
 	setlocale( LC_ALL, "C-TRADITIONAL" );
 #endif
@@ -1075,14 +1057,6 @@ int main(int argc, char** argv)
 	}
 
 	prompt = "[Threads: %d  Sockets: %d  Clients: %d  Served: %lu] (?=Help): ";
-
-	/* We call this function to set defaults, even if there's no .ini file */
-	sbbs_read_ini(fp, 
-		&run_bbs,		&bbs_startup,
-		&run_ftp,		&ftp_startup, 
-		&run_web,		&web_startup,
-		&run_mail,		&mail_startup, 
-		&run_services,	&services_startup);
 
 	/* read/default any sbbscon-specific .ini keys here */
 #if defined(__unix__)
@@ -1431,6 +1405,14 @@ int main(int argc, char** argv)
 		pidfile=fopen(SBBS_PID_FILE,"w");
 	}
 
+	/* We call this function to set defaults, even if there's no .ini file */
+	sbbs_read_ini(fp, 
+		&run_bbs,		&bbs_startup,
+		&run_ftp,		&ftp_startup, 
+		&run_web,		&web_startup,
+		&run_mail,		&mail_startup, 
+		&run_services,	&services_startup);
+
 	old_uid = getuid();
 	if((pw_entry=getpwnam(new_uid_name))!=0)
 	{
@@ -1478,6 +1460,39 @@ int main(int argc, char** argv)
     signal(SIGALRM, SIG_IGN);       /* Ignore "Alarm" signal */
 	_beginthread((void(*)(void*))handle_sigs,0,NULL);
 #endif
+
+	if(!command_is(argv[0],"sbbs"))  {
+		run_bbs=has_bbs=FALSE;
+		run_ftp=has_ftp=FALSE;
+		run_mail=has_mail=FALSE;
+		run_services=has_services=FALSE;
+		run_web=has_web=FALSE;
+	}
+	if(command_is(argv[0],"sbbs_ftp"))
+		run_ftp=has_ftp=TRUE;
+	else if(command_is(argv[0],"sbbs_mail"))
+		run_mail=has_mail=TRUE;
+	else if(command_is(argv[0],"sbbs_bbs"))
+		run_bbs=has_bbs=TRUE;
+#ifndef NO_SERVICES
+	else if(command_is(argv[0],"sbbs_srvc"))
+		run_services=has_services=TRUE;
+#endif
+#ifndef NO_WEB_SERVER
+	else if(command_is(argv[0],"sbbs_web"))
+		run_web=has_web=TRUE;
+#endif
+	else {
+		run_bbs=has_bbs=TRUE;
+		run_ftp=has_ftp=TRUE;
+		run_mail=has_mail=TRUE;
+#ifndef NO_SERVICES
+		run_services=has_services=TRUE;
+#endif
+#ifndef NO_WEB_SERVER
+		run_web=has_web=TRUE;
+#endif
+	}
 
 	if(run_bbs)
 		_beginthread((void(*)(void*))bbs_thread,0,&bbs_startup);
