@@ -173,6 +173,7 @@ int uifcinic(uifcapi_t* uifcapi)
 //	intrflush(stdscr, FALSE);
 	keypad(stdscr, TRUE);
 	scrollok(stdscr,FALSE);
+	raw();
 
 	// Set up color pairs
 	for(bg=0;bg<8;bg++)  {
@@ -180,7 +181,6 @@ int uifcinic(uifcapi_t* uifcapi)
 			init_pair(++pair,curses_color(fg),curses_color(bg));
 		}
 	}
-//	resizeterm(25,80);		/* set mode to 80x25 if possible */
     clear();
 	refresh();
 	getmaxyx(stdscr,height,width);
@@ -296,6 +296,7 @@ void uifcbail(void)
 	clear();
 	nl();
 	nocbreak();
+	noraw();
 	refresh();
 	endwin();
 }
@@ -573,13 +574,13 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 		|| (bar && ((*cur)-(*bar))+(height-4)<opts))) {
 		gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+height-2);
 		textattr(lclr|(bclr<<4));
-		putch(ACS_DARROW);	   /* put down arrow */
+		putch(31);	   /* put down arrow */
 		textattr(hclr|(bclr<<4)); }
 
 	if(bar && (*bar)!=(*cur)) {
 		gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+3);
 		textattr(lclr|(bclr<<4));
-		putch(ACS_UARROW);	   /* put the up arrow */
+		putch(30);	   /* put the up arrow */
 		textattr(hclr|(bclr<<4)); }
 
 	if(bclr==BLUE) {
@@ -625,7 +626,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							textattr(lclr|(bclr<<4));
 							putch(' ');    /* Delete the up arrow */
 							gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+height-2);
-							putch(ACS_DARROW);	   /* put the down arrow */
+							putch(31);	   /* put the down arrow */
 							uprintf(SCRN_LEFT+left+3,SCRN_TOP+top+3
 								,bclr|(LIGHTGRAY<<4)
 								,"%-*.*s",width-4,width-4,option[0]);
@@ -665,7 +666,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							hidemouse();
 							gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+3); /* like end */
 							textattr(lclr|(bclr<<4));
-							putch(ACS_UARROW);	   /* put the up arrow */
+							putch(30);	   /* put the up arrow */
 							gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+height-2);
 							putch(' ');    /* delete the down arrow */
 							for(i=(opts+4)-height,j=0;i<opts;i++,j++)
@@ -706,7 +707,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							if((*cur)+height-4==opts-1) {
 								gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+height-2);
 								textattr(lclr|(bclr<<4));
-								putch(ACS_DARROW); }   /* put the dn arrow */
+								putch(31); }   /* put the dn arrow */
 							y++;
 							scroll_text(SCRN_LEFT+left+2,SCRN_TOP+top+3
 								,SCRN_LEFT+left+width-3,SCRN_TOP+top+height-2,1);
@@ -764,7 +765,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							hidemouse();
 							gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+3);
 							textattr(lclr|(bclr<<4));
-							putch(ACS_UARROW);	   /* put the up arrow */
+							putch(30);	   /* put the up arrow */
 							gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+height-2);
 							putch(' ');    /* delete the down arrow */
 							for(i=(opts+4)-height,j=0;i<opts;i++,j++)
@@ -806,7 +807,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							textattr(lclr|(bclr<<4));
 							putch(' ');    /* Delete the up arrow */
 							gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+height-2);
-							putch(ACS_DARROW);	   /* put the down arrow */
+							putch(31);	   /* put the down arrow */
 							uprintf(SCRN_LEFT+left+3,SCRN_TOP+top+3
 								,bclr|(LIGHTGRAY<<4)
 								,"%-*.*s",width-4,width-4,option[0]);
@@ -849,7 +850,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 							if((*cur)+4==height) {
 								gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+3);
 								textattr(lclr|(bclr<<4));
-								putch(ACS_UARROW); }   /* put the up arrow */
+								putch(30); }   /* put the up arrow */
 							y--;
 							/* gotoxy(1,1); cprintf("\rdebug: %4d ",__LINE__); */
 							scroll_text(SCRN_LEFT+left+2,SCRN_TOP+top+3
@@ -945,7 +946,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 								(*cur)=j;
 								gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+3);
 								textattr(lclr|(bclr<<4));
-								putch(ACS_UARROW);	   /* put the up arrow */
+								putch(30);	   /* put the up arrow */
 								if((*cur)==opts-1) {
 									gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+height-2);
 									putch(' '); }  /* delete the down arrow */
@@ -965,7 +966,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 								if(!(*cur))
 									putch(' ');    /* Delete the up arrow */
 								gotoxy(SCRN_LEFT+left+1,SCRN_TOP+top+height-2);
-								putch(ACS_DARROW);	   /* put the down arrow */
+								putch(31);	   /* put the down arrow */
 								uprintf(SCRN_LEFT+left+3,SCRN_TOP+top+3
 									,bclr|(LIGHTGRAY<<4)
 									,"%-*.*s",width-4,width-4,option[(*cur)]);
@@ -1032,6 +1033,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 								FREE(sav[api->savnum].buf);
 								api->savdepth--; }
 							return(*cur);
+						case 03:
 						case ESC:
 							if((mode&WIN_ESC || (mode&WIN_CHE && api->changes))
 								&& !(mode&WIN_SAV)) {
@@ -1348,7 +1350,7 @@ static int ugetstr(char *outstr, int max, long mode)
 				continue;
 			if(mode&K_ALPHA && !isalpha(ch))
 				continue;
-			if((ch>=SP || (ch==1 && mode&K_MSG)) && i<max && (!ins || j<max))
+			if((ch>=SP || (ch==1 && mode&K_MSG)) && i<max && (!ins || j<max) && isprint(ch))
 			{
 				if(mode&K_UPPER)
 					ch=toupper(ch);
@@ -1437,8 +1439,8 @@ void bottomline(int line)
 		i+=4;
 		uprintf(i,api->scrn_len+1,BLACK|(cclr<<4),"Delete Item  ");
 		i+=13; }
-	uprintf(i,api->scrn_len+1,bclr|(cclr<<4),"ESC ");
-	i+=4;
+	uprintf(i,api->scrn_len+1,bclr|(cclr<<4),"ESC/^C ");
+	i+=7;
 	uprintf(i,api->scrn_len+1,BLACK|(cclr<<4),"Exit");
 	i+=4;
 	gotoxy(i,api->scrn_len+1);
@@ -1592,11 +1594,12 @@ void help()
 	unsigned short line;
 	long l;
 	FILE *fp;
+	int  old_curs;
 #ifndef __FLAT__
 	union  REGS r;
 #endif
 
-	curs_set(0);
+	old_curs=curs_set(0);
 
 	if((savscrn=(char *)MALLOC(scrn_width*25*2))==NULL) {
 		cprintf("UIFC line %d: error allocating %u bytes\r\n"
@@ -1740,7 +1743,8 @@ void help()
 	showmouse();
 	FREE(savscrn);
 	FREE(buf);
-	curs_set(1);
+	if(old_curs != ERR)
+		curs_set(old_curs);
 }
 
 static int puttext(int sx, int sy, int ex, int ey, unsigned char *fill)
@@ -1846,9 +1850,17 @@ static int gettext(int sx, int sy, int ex, int ey, unsigned char *fill)
 				else if (ext_char == ACS_BLOCK)
 				{
 					thischar=219;
-				
-				/* unlikely */
 				}
+				else if (ext_char == ACS_UARROW)
+				{
+					thischar=30;
+				}
+				else if (ext_char == ACS_DARROW)
+				{
+					thischar=31;
+				}
+				
+				/* unlikely (Not in ncurses) */
 				else if (ext_char == ACS_SBSD)
 				{
 					thischar=181;
@@ -2052,6 +2064,12 @@ static void _putch(unsigned char ch, BOOL refresh_now)
 
 	switch(ch)
 	{
+		case 30:
+			cha=ACS_UARROW;
+			break;
+		case 31:
+			cha=ACS_DARROW;
+			break;
 		case 176:
 			cha=ACS_CKBOARD;
 			break;
