@@ -288,7 +288,7 @@ int main(int argc, char** argv)
 		char*	p;
 		char	str[128];
 
-		if((fp=fopen("/etc/resolve.conf","r"))!=NULL) {
+		if((fp=fopen("/etc/resolv.conf","r"))!=NULL) {
 			while(!feof(fp)) {
 				if(fgets(str,sizeof(str),fp)==NULL)
 					break;
