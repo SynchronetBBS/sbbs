@@ -2474,7 +2474,10 @@ static void ctrl_thread(void* arg)
 			SAFECOPY(password,p);
 			user.number=matchuser(&scfg,user.alias,FALSE /*sysop_alias*/);
 			if(!user.number) {
-				lprintf("%04d !UNKNOWN USER: %s",sock,user.alias);
+				if(scfg.sys_misc&SM_ECHO_PW)
+					lprintf("%04d !UNKNOWN USER: %s, Password: %s",sock,user.alias,p);
+				else
+					lprintf("%04d !UNKNOWN USER: %s",sock,user.alias);
 				if(badlogin(sock,&login_attempts))
 					break;
 				continue;
