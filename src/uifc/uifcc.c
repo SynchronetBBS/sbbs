@@ -613,6 +613,8 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 
 		if(inkey(1)) {
 			i=inkey(0);
+			if(i==KEY_BACKSPACE)
+				i=ESC;
 			if(i>255) {
 				s=0;
 				switch(i) {
@@ -1033,7 +1035,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 								FREE(sav[api->savnum].buf);
 								api->savdepth--; }
 							return(*cur);
-						case 03:
+						case 3:
 						case ESC:
 							if((mode&WIN_ESC || (mode&WIN_CHE && api->changes))
 								&& !(mode&WIN_SAV)) {
@@ -1439,7 +1441,7 @@ void bottomline(int line)
 		i+=4;
 		uprintf(i,api->scrn_len+1,BLACK|(cclr<<4),"Delete Item  ");
 		i+=13; }
-	uprintf(i,api->scrn_len+1,bclr|(cclr<<4),"ESC/^C ");
+	uprintf(i,api->scrn_len+1,bclr|(cclr<<4),"BACKSP ");
 	i+=7;
 	uprintf(i,api->scrn_len+1,BLACK|(cclr<<4),"Exit");
 	i+=4;
