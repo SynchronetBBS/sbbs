@@ -461,6 +461,7 @@ void sbbs_t::readmail(uint usernumber, int which)
 
 				break;
 			case 'H':
+				domsg=0;
 				msghdr(&msg);
 				break;
 			case 'L':     /* List mail */
