@@ -83,6 +83,8 @@ static BOOL		terminated=FALSE;
 static time_t	uptime=0;
 static DWORD	served=0;
 static char		revision[16];
+static link_list_t recycle_semfiles;
+static link_list_t shutdown_semfiles;
 
 typedef struct {
 	/* These are sysop-configurable */
@@ -1564,6 +1566,9 @@ static void cleanup(int code)
 {
 	free_cfg(&scfg);
 
+	semfile_list_free(&recycle_semfiles);
+	semfile_list_free(&shutdown_semfiles);
+
 	update_clients();
 
 #ifdef _WINSOCKAPI_	
@@ -1604,6 +1609,7 @@ const char* DLLCALL services_ver(void)
 
 void DLLCALL services_thread(void* arg)
 {
+	char*			p;
 	char			path[MAX_PATH+1];
 	char			error[256];
 	char			host_ip[32];
@@ -1841,14 +1847,17 @@ void DLLCALL services_thread(void* arg)
 
 		status("Listening");
 
-		if(initialized==0) {
+		/* Setup recycle/shutdown semaphore file lists */
+		semfile_list_init(&shutdown_semfiles,scfg.ctrl_dir,"shutdown",startup->host_name,"services");
+		semfile_list_init(&recycle_semfiles,scfg.ctrl_dir,"recycle",startup->host_name,"services");
+		SAFEPRINTF(path,"%sservices.rec",scfg.ctrl_dir);	/* legacy */
+		semfile_list_add(&recycle_semfiles,path);
+		if(!initialized) {
 			initialized=time(NULL);
-			sprintf(path,"%sservices.rec",scfg.ctrl_dir);
-			t=fdate(path);
-			if(t!=-1 && t>initialized)
-				initialized=t;
+			semfile_list_check(&initialized,&recycle_semfiles);
+			semfile_list_check(&initialized,&shutdown_semfiles);
 		}
-			
+
 		terminated=FALSE;
 
 		/* signal caller that we've started up successfully */
@@ -1862,21 +1871,23 @@ void DLLCALL services_thread(void* arg)
 			for(i=0;i<(int)services;i++) 
 				total_clients+=service[i].clients;
 
-			if(!(startup->options&BBS_OPT_NO_RECYCLE)) {
-				sprintf(path,"%sservices.rec",scfg.ctrl_dir);
-				t=fdate(path);
-				if(!total_clients && t!=-1 && t>initialized) {
-					lprintf(LOG_NOTICE,"0000 Recycle semaphore file (%s) detected",path);
-					initialized=t;
+			if(total_clients==0 && !(startup->options&BBS_OPT_NO_RECYCLE)) {
+				if((p=semfile_list_check(&initialized,&recycle_semfiles))!=NULL) {
+					lprintf(LOG_INFO,"0000 Recycle semaphore file (%s) detected",p);
 					break;
 				}
 				if(startup->recycle_sem!=NULL && sem_trywait(&startup->recycle_sem)==0)
 					startup->recycle_now=TRUE;
-				if(!total_clients && startup->recycle_now==TRUE) {
+				if(startup->recycle_now==TRUE) {
 					lprintf(LOG_NOTICE,"0000 Recycle semaphore signaled");
 					startup->recycle_now=FALSE;
 					break;
 				}
+			}
+			if((p=semfile_list_check(&initialized,&shutdown_semfiles))!=NULL) {
+				lprintf(LOG_INFO,"0000 Shutdown semaphore file (%s) detected",p);
+				terminated=TRUE;
+				break;
 			}
 
 			/* Setup select() parms */

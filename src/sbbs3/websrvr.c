@@ -140,6 +140,8 @@ static time_t	uptime=0;
 static DWORD	served=0;
 static web_startup_t* startup=NULL;
 static js_server_props_t js_server_props;
+static link_list_t recycle_semfiles;
+static link_list_t shutdown_semfiles;
 
 /* Logging stuff */
 sem_t	log_sem;
@@ -2668,7 +2670,11 @@ void DLLCALL web_terminate(void)
 static void cleanup(int code)
 {
 	free_cfg(&scfg);
+
 	listFree(&log_list);
+
+	semfile_list_free(&recycle_semfiles);
+	semfile_list_free(&shutdown_semfiles);
 
 	if(server_socket!=INVALID_SOCKET) {
 		close_socket(server_socket);
@@ -3016,13 +3022,15 @@ void DLLCALL web_server(void* arg)
 			_beginthread(http_logging_thread, 0, startup->logfile_base);
 		}
 
-		sprintf(path,"%swebsrvr.rec",scfg.ctrl_dir);
-
-		if(initialized==0) {
+		/* Setup recycle/shutdown semaphore file lists */
+		semfile_list_init(&shutdown_semfiles,scfg.ctrl_dir,"shutdown",startup->host_name,"web");
+		semfile_list_init(&recycle_semfiles,scfg.ctrl_dir,"recycle",startup->host_name,"web");
+		SAFEPRINTF(path,"%swebsrvr.rec",scfg.ctrl_dir);	/* legacy */
+		semfile_list_add(&recycle_semfiles,path);
+		if(!initialized) {
 			initialized=time(NULL);
-			t=fdate(path);
-			if(t!=-1 && t>initialized)
-				initialized=t;
+			semfile_list_check(&initialized,&recycle_semfiles);
+			semfile_list_check(&initialized,&shutdown_semfiles);
 		}
 
 		/* signal caller that we've started up successfully */
@@ -3032,20 +3040,23 @@ void DLLCALL web_server(void* arg)
 		while(server_socket!=INVALID_SOCKET && !terminate_server) {
 
 			/* check for re-cycle semaphores */
-			if(!(startup->options&BBS_OPT_NO_RECYCLE)) {
-				t=fdate(path);
-				if(!active_clients && t!=-1 && t>initialized) {
-					lprintf(LOG_INFO,"0000 Recycle semaphore file (%s) detected",path);
-					initialized=t;
+			if(active_clients==0 && !(startup->options&BBS_OPT_NO_RECYCLE)) {
+				if((p=semfile_list_check(&initialized,&recycle_semfiles))!=NULL) {
+					lprintf(LOG_INFO,"0000 Recycle semaphore file (%s) detected",p);
 					break;
 				}
 				if(startup->recycle_sem!=NULL && sem_trywait(&startup->recycle_sem)==0)
 					startup->recycle_now=TRUE;
-				if(!active_clients && startup->recycle_now==TRUE) {
+				if(startup->recycle_now==TRUE) {
 					lprintf(LOG_INFO,"0000 Recycle semaphore signaled");
 					startup->recycle_now=FALSE;
 					break;
 				}
+			}
+			if((p=semfile_list_check(&initialized,&shutdown_semfiles))!=NULL) {
+				lprintf(LOG_INFO,"0000 Shutdown semaphore file (%s) detected",p);
+				terminate_server=TRUE;
+				break;
 			}
 
 			/* now wait for connection */

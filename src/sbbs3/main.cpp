@@ -93,6 +93,8 @@ static	char *	text[TOTAL_TEXT];
 static	WORD	first_node;
 static	WORD	last_node;
 static	bool	terminate_server=false;
+static	link_list_t recycle_semfiles;
+static	link_list_t shutdown_semfiles;
 
 extern "C" {
 
@@ -3680,6 +3682,9 @@ static void cleanup(int code)
 	free_cfg(&scfg);
 	free_text(text);
 
+	semfile_list_free(&recycle_semfiles);
+	semfile_list_free(&shutdown_semfiles);
+
 #ifdef _WIN32
 	if(exec_mutex!=NULL) {
 		CloseHandle(exec_mutex);
@@ -3712,8 +3717,9 @@ static void cleanup(int code)
 
 void DLLCALL bbs_thread(void* arg)
 {
-	char *			host_name;
-	char *			identity;
+	char*			host_name;
+	char*			identity;
+	char*			p;
     char			str[MAX_PATH+1];
 	char			logstr[256];
 	SOCKADDR_IN		server_addr={0};
@@ -3780,6 +3786,7 @@ void DLLCALL bbs_thread(void* arg)
 	served=0;
 	startup->recycle_now=FALSE;
 	terminate_server=false;
+
 	do {
 
 	thread_up(FALSE /* setuid */);
@@ -4102,12 +4109,15 @@ void DLLCALL bbs_thread(void* arg)
 
 #endif // _WIN32 && _DEBUG && _MSC_VER
 
+	/* Setup recycle/shutdown semaphore file lists */
+	semfile_list_init(&shutdown_semfiles,scfg.ctrl_dir,"shutdown",startup->host_name,"telnet");
+	semfile_list_init(&recycle_semfiles,scfg.ctrl_dir,"recycle",startup->host_name,"telnet");
+	SAFEPRINTF(str,"%stelnet.rec",scfg.ctrl_dir);	/* legacy */
+	semfile_list_add(&recycle_semfiles,str);
 	if(!initialized) {
 		initialized=time(NULL);
-		sprintf(str,"%stelnet.rec",scfg.ctrl_dir);
-		t=fdate(str);
-		if(t!=-1 && t>initialized)
-			initialized=t;
+		semfile_list_check(&initialized,&recycle_semfiles);
+		semfile_list_check(&initialized,&shutdown_semfiles);
 	}
 
 #ifdef __unix__	//	unix-domain spy sockets
@@ -4177,11 +4187,8 @@ void DLLCALL bbs_thread(void* arg)
 			if(rerun)
 				break;
 			if(!(startup->options&BBS_OPT_NO_RECYCLE)) {
-				sprintf(str,"%stelnet.rec",scfg.ctrl_dir);
-				t=fdate(str);
-				if(t!=-1 && t>initialized) {
-					lprintf(LOG_INFO,"0000 Recycle semaphore file (%s) detected",str);
-					initialized=t;
+				if((p=semfile_list_check(&initialized,&recycle_semfiles))!=NULL) {
+					lprintf(LOG_INFO,"0000 Recycle semaphore file (%s) detected",p);
 					break;
 				}
 				if(startup->recycle_sem!=NULL && sem_trywait(&startup->recycle_sem)==0)
@@ -4191,6 +4198,11 @@ void DLLCALL bbs_thread(void* arg)
 					startup->recycle_now=FALSE;
 					break;
 				}
+			}
+			if((p=semfile_list_check(&initialized,&shutdown_semfiles))!=NULL) {
+				lprintf(LOG_INFO,"0000 Shutdown semaphore file (%s) detected",p);
+				terminate_server=TRUE;
+				break;
 			}
 		}
 
