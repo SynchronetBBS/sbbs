@@ -745,6 +745,8 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 
 //	lprintf("%s returned %d",realcmdline, retval);
 
+	errorlevel = retval; // Baja-retrievable error value
+
 	return(retval);
 }
 
