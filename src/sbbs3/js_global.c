@@ -1705,7 +1705,7 @@ js_b64_decode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 		return(JS_TRUE);
 	}
 
-	js_str = JS_NewStringCopyZ(cx, outbuf);
+	js_str = JS_NewStringCopyN(cx, outbuf, res);
 	free(outbuf);
 	if(js_str==NULL)
 		return(JS_FALSE);
