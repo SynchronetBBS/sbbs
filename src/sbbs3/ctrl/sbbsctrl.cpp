@@ -62,13 +62,14 @@ USEFORM("UserListFormUnit.cpp", UserListForm);
 USEFORM("UserMsgFormUnit.cpp", UserMsgForm);
 USEFORM("PropertiesDlgUnit.cpp", PropertiesDlg);
 USEFORM("EventsFormUnit.cpp", EventsForm);
+USEFORM("ConfigWizardUnit.cpp", ConfigWizardForm);
 //---------------------------------------------------------------------------
 #include "MainFormUnit.h"
 #include "SpyFormUnit.h"
 #include "CtrlPathDialogUnit.h"
 TSpyForm *SpyForms[MAX_NODES];
 //---------------------------------------------------------------------------
-WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
+WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR cmd, int)
 {
     memset(SpyForms,0,sizeof(SpyForms));
     try
