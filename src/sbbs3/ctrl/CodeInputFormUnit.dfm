@@ -10,6 +10,9 @@ object CodeInputForm: TCodeInputForm
   OldCreateOrder = True
   Position = poScreenCenter
   OnShow = FormShow
+  DesignSize = (
+    407
+    90)
   PixelsPerInch = 120
   TextHeight = 16
   object Bevel1: TBevel
@@ -58,5 +61,13 @@ object CodeInputForm: TCodeInputForm
     Height = 24
     ItemHeight = 16
     TabOrder = 2
+  end
+  object Edit: TEdit
+    Left = 152
+    Top = 32
+    Width = 121
+    Height = 24
+    TabOrder = 3
+    Visible = False
   end
 end
