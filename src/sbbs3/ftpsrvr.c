@@ -2502,6 +2502,7 @@ static void ctrl_thread(void* arg)
 				sockprintf(sock,"331 User name okay, give your full e-mail address as password.");
 			else
 				sockprintf(sock,"331 User name okay, need password.");
+			user.number=0;
 			continue;
 		}
 		if(!strnicmp(cmd, "PASS ",5) && user.alias[0]) {
