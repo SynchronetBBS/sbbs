@@ -1046,7 +1046,6 @@ init_mode(int mode)
 
     idx = find_vmode(mode);
     if (idx == -1) {
-		fprintf(stderr,"Cannot initialize selected mode (%d)\n",mode);
 		console_new_mode=NO_NEW_MODE;
 		sem_post(&console_mode_changed);
 		return(-1);
@@ -1071,7 +1070,6 @@ init_mode(int mode)
 
     /* Update font. */
     if(load_font(NULL,vmode.charwidth,vmode.charheight)) {
-		fprintf(stderr,"Cannot load font\n");
 		sem_post(&console_mode_changed);
 		return(-1);
 	}
@@ -1100,7 +1098,6 @@ init_window()
 
 	dpy = x11.XOpenDisplay(NULL);
     if (dpy == NULL) {
-		fprintf(stderr,"Cannot open connection to X server\n");
 		return(-1);
 	}
     xfd = ConnectionNumber(dpy);
@@ -1243,17 +1240,14 @@ console_init()
 	sem_init(&console_mode_changed,0,0);
 
    	if(kbd_init()) {
-		fprintf(stderr,"Cannot initialize X keyboard\n");
 		return(-1);
 	}
 
     if(video_init()) {
-		fprintf(stderr,"X video init failure\n");
 		return(-1);
 	}
 
     if(mouse_init()) {
-		fprintf(stderr,"Cannot initialize X mouse\n");
 		return(-1);
 	}
 
