@@ -1205,7 +1205,7 @@ void sbbs_t::moduserdat(uint xtrnnum)
     FILE *	stream;
 
 	sprintf(startup,"%s/",cfg.xtrn[xtrnnum]->path);
-	if(cfg.xtrn[xtrnnum]->type==XTRN_RBBS || cfg.xtrn]xtrnnum]->type==XTRN_RBBS1) {
+	if(cfg.xtrn[xtrnnum]->type==XTRN_RBBS || cfg.xtrn[xtrnnum]->type==XTRN_RBBS1) {
 		sprintf(path,"%sEXITINFO.BBS"
 			,cfg.xtrn[xtrnnum]->misc&STARTUPDIR ? startup : cfg.node_dir);
 		if((file=nopen(path,O_RDONLY))!=-1) {
