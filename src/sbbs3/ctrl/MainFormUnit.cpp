@@ -524,6 +524,13 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
     ftp_startup.socket_open=socket_open;
 	ftp_startup.options=FTP_OPT_INDEX_FILE;
     strcpy(ftp_startup.index_file_name,"00index");
+
+    /* Default local "Spy Terminal" settings */
+    SpyTerminalFont=new TFont;
+    SpyTerminalFont->Name="Terminal";
+    SpyTerminalFont->Size=9;
+    SpyTerminalWidth=434;
+    SpyTerminalHeight=364;
 }
 //---------------------------------------------------------------------------
 void __fastcall TMainForm::FileExitMenuItemClick(TObject *Sender)
@@ -559,6 +566,15 @@ void __fastcall TMainForm::FormCreate(TObject *Sender)
 	   	Width=Registry->ReadInteger("MainFormWidth");
     else
         WindowState=wsMaximized;    // Default to fullscreen
+
+   	if(Registry->ValueExists("SpyTerminalWidth"))
+	   	SpyTerminalWidth=Registry->ReadInteger("SpyTerminalWidth");
+   	if(Registry->ValueExists("SpyTerminalHeight"))
+	   	SpyTerminalHeight=Registry->ReadInteger("SpyTerminalHeight");
+   	if(Registry->ValueExists("SpyTerminalFontName"))
+	   	SpyTerminalFont->Name=Registry->ReadString("SpyTerminalFontName");
+   	if(Registry->ValueExists("SpyTerminalFontSize"))
+	   	SpyTerminalFont->Size=Registry->ReadInteger("SpyTerminalFontSize");
 
     Registry->CloseKey();
     delete Registry;
@@ -717,6 +733,11 @@ void __fastcall TMainForm::SaveSettings(void)
     	,AnsiString(ftp_startup.index_file_name));
     Registry->WriteInteger("FtpOptions",ftp_startup.options);
 
+	Registry->WriteInteger("SpyTerminalWidth",SpyTerminalWidth);
+	Registry->WriteInteger("SpyTerminalHeight",SpyTerminalHeight);
+   	Registry->WriteString("SpyTerminalFontName",SpyTerminalFont->Name);
+	Registry->WriteInteger("SpyTerminalFontSize",SpyTerminalFont->Size);
+    
     Registry->CloseKey();
     delete Registry;
 

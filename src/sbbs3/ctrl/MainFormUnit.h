@@ -236,6 +236,9 @@ public:		// User declarations
     bbs_startup_t 	bbs_startup;
     mail_startup_t 	mail_startup;
     ftp_startup_t	ftp_startup;
+    int             SpyTerminalWidth;
+    int             SpyTerminalHeight;
+    TFont*          SpyTerminalFont;
 	TPageControl* __fastcall PageControl(int num);
 	int __fastcall  PageNum(TPageControl* obj);
     void __fastcall SaveSettings(void);
