@@ -38,9 +38,8 @@
 #ifndef _MAILSRVR_H_
 #define _MAILSRVR_H_
 
-#include "client.h"				/* client_t */
+#include "startup.h"
 #include "sockwrap.h"           /* SOCKET */
-#include "semwrap.h"			/* sem_t */
 
 typedef struct {
 
@@ -100,6 +99,15 @@ typedef struct {
 
 } mail_startup_t;
 
+/* startup options that requires re-initialization/recycle when changed */
+static struct init_field mail_init_fields[] = { 
+	 OFFSET_AND_SIZE(mail_startup_t,smtp_port)
+	,OFFSET_AND_SIZE(mail_startup_t,pop3_port)
+	,OFFSET_AND_SIZE(mail_startup_t,interface_addr)
+	,OFFSET_AND_SIZE(mail_startup_t,ctrl_dir)
+	,{ 0,0 }	/* terminator */
+};
+
 #define MAIL_OPT_DEBUG_RX_HEADER		(1<<0)
 #define MAIL_OPT_DEBUG_RX_BODY			(1<<1)
 #define MAIL_OPT_ALLOW_POP3				(1<<2)
@@ -129,6 +137,42 @@ typedef struct {
 #define MAIL_OPT_MUTE					(1<<31)
 
 #define MAIL_OPT_RELAY_AUTH_MASK		(MAIL_OPT_RELAY_AUTH_PLAIN|MAIL_OPT_RELAY_AUTH_LOGIN|MAIL_OPT_RELAY_AUTH_CRAM_MD5)
+
+/* mail_startup_t.options bits that require re-init/recycle when changed */
+#define MAIL_INIT_OPTS	(MAIL_OPT_ALLOW_POP3|MAIL_OPT_NO_SENDMAIL|MAIL_OPT_LOCAL_TIMEZONE)
+
+static ini_bitdesc_t mail_options[] = {
+
+	{ MAIL_OPT_DEBUG_RX_HEADER		,"DEBUG_RX_HEADER"		},
+	{ MAIL_OPT_DEBUG_RX_BODY		,"DEBUG_RX_BODY"		},	
+	{ MAIL_OPT_ALLOW_POP3			,"ALLOW_POP3"			},
+	{ MAIL_OPT_DEBUG_TX				,"DEBUG_TX"				},
+	{ MAIL_OPT_DEBUG_RX_RSP			,"DEBUG_RX_RSP"			},
+	{ MAIL_OPT_RELAY_TX				,"RELAY_TX"				},
+	{ MAIL_OPT_DEBUG_POP3			,"DEBUG_POP3"			},
+	{ MAIL_OPT_ALLOW_RX_BY_NUMBER	,"ALLOW_RX_BY_NUMBER"	},
+	{ MAIL_OPT_NO_NOTIFY			,"NO_NOTIFY"			},
+	{ MAIL_OPT_NO_HOST_LOOKUP		,"NO_HOST_LOOKUP"		},
+	{ MAIL_OPT_USE_TCP_DNS			,"USE_TCP_DNS"			},
+	{ MAIL_OPT_NO_SENDMAIL			,"NO_SENDMAIL"			},
+	{ MAIL_OPT_ALLOW_RELAY			,"ALLOW_RELAY"			},
+	{ MAIL_OPT_SMTP_AUTH_VIA_IP		,"SMTP_AUTH_VIA_IP"		},
+	{ MAIL_OPT_DNSBL_REFUSE			,"DNSBL_REFUSE"			},
+	{ MAIL_OPT_DNSBL_IGNORE			,"DNSBL_IGNORE"			},
+	{ MAIL_OPT_DNSBL_BADUSER		,"DNSBL_BADUSER"		},
+	{ MAIL_OPT_DNSBL_CHKRECVHDRS	,"DNSBL_CHKRECVHDRS"	},
+	{ MAIL_OPT_DNSBL_THROTTLE		,"DNSBL_THROTTLE"		},
+	{ MAIL_OPT_DNSBL_DEBUG			,"DNSBL_DEBUG"			},
+	{ MAIL_OPT_SEND_INTRANSIT		,"SEND_INTRANSIT"		},
+	{ MAIL_OPT_RELAY_AUTH_PLAIN		,"RELAY_AUTH_PLAIN"		},
+	{ MAIL_OPT_RELAY_AUTH_LOGIN		,"RELAY_AUTH_LOGIN"		},
+	{ MAIL_OPT_RELAY_AUTH_CRAM_MD5	,"RELAY_AUTH_CRAM_MD5"	},
+	{ MAIL_OPT_NO_RECYCLE			,"NO_RECYCLE"			},
+	{ MAIL_OPT_LOCAL_TIMEZONE		,"LOCAL_TIMEZONE"		},
+	{ MAIL_OPT_MUTE					,"MUTE"					},
+	/* terminator */
+	{ -1							,NULL					}
+};
 
 #ifdef DLLEXPORT
 #undef DLLEXPORT
