@@ -20,6 +20,8 @@
 
 #include "crc16.h"
 
+#include "telnet.h"
+
 #define STP 1
 
 #include "zmodem.h"
@@ -69,6 +71,8 @@
 #define IGNORE_DCD	(1<<10) /* Ignore DCD								*/
 #define ALARM		(1<<11) /* Alarm when starting and stopping xfer	*/
 #define NO_LOCAL	(1<<12) /* Don't check local keyboard               */
+#define PAUSE_ABEND	(1<<13)	/* Pause on abnormal exit					*/
+#define TELNET		(1<<14)	/* Telnet IAC escaping						*/
 
 							/* Zmodem mode bits 						*/
 #define CTRL_ESC	(1<<0)	/* Escape all control chars 				*/
@@ -83,29 +87,14 @@
 /************************/
 
 							/* i/o mode and state flags */
-#define CTSCK 0x1000     	/* check cts (mode only) */
-#define RTSCK 0x2000		/* check rts (mode only) */
-#define TXBOF 0x0800		/* transmit buffer overflow (outcom only) */
-#define ABORT 0x0400     	/* check for ^C (mode), aborting (state) */
-#define PAUSE 0x0200     	/* check for ^S (mode), pausing (state) */
 #define NOINP 0x0100     	/* input buffer empty (incom only) */
-
-							/* status flags */
-#define DCD 	0x80       	/* DCD on */
-#define RI		0x40		/* Ring indicate */
-#define DSR 	0x20		/* Dataset ready */
-#define CTS 	0x10       	/* CTS on */
-#define FERR 	0x08		/* Frameing error */
-#define PERR 	0x04		/* Parity error */
-#define OVRR 	0x02		/* Overrun */
-#define RXLOST 	0x01       	/* Receive buffer overflow */
 
 void cancel(void);
 
 /***************/
 /* Global Vars */
 /***************/
-long	mode=0L;						/* Program mode 					*/
+long	mode=PAUSE_ABEND|TELNET;		/* Program mode 					*/
 long	zmode=0L;						/* Zmodem mode						*/
 uchar	hdr_block_num;					/* Block number received in header	*/
 uchar	block[1024];					/* Block buffer 					*/
@@ -173,9 +162,6 @@ void newline(void)
 #endif
 }
 
-int incom(void);
-int outcom(char);
-
 
 /****************************************************************************/
 /* Truncates white-space chars off end of 'str' and terminates at first tab */
@@ -202,21 +188,56 @@ void bail(int code)
 	}
 	newline();
 	fprintf(statfp,"Exiting - Error level: %d  Flow restraint count: %u\n",code,flows);
-	fcloseall();
+//	fcloseall();
 
-#ifdef _WINSOCKAPI_
+#if 0 //def _WINSOCKAPI_
 	if(WSAInitialized && WSACleanup()!=0) 
 		fprintf(statfp,"!WSACleanup ERROR %d\n",ERROR_VALUE);
 #endif
 
+	if(/* code && */ mode&PAUSE_ABEND) {
+		printf("Hit enter to continue...");
+		getchar();
+	}
+
 	exit(code);
 }
+
+char *chr(uchar ch)
+{
+	static char str[25];
+
+	switch(ch) {
+		case SOH:
+			return("SOH");
+		case STX:
+			return("STX");
+		case ETX:
+			return("ETX");
+		case EOT:
+			return("EOT");
+		case ACK:
+			return("ACK");
+		case NAK:
+			return("NAK");
+		case CAN:
+			return("CAN");
+		default:
+			if(ch>=' ' && ch<='~')
+				sprintf(str,"'%c' (%02Xh)",ch,ch);
+			else
+				sprintf(str,"%u (%02Xh)",ch,ch);
+			return(str); 
+	}
+}
+
 
 /************************************************************/
 /* Get a character from com port, time out after 10 seconds */
 /************************************************************/
-int getcom(char timeout)
+int getcom(int timeout)
 {
+#if 0
 	uint	i,ch;
 	time_t	start;
 
@@ -246,6 +267,61 @@ int getcom(char timeout)
 	newline();
 	fprintf(statfp,"Input timeout\n");
 	return(NOINP);
+#else
+	int			i;
+	uchar		ch;
+	fd_set		socket_set;
+	struct timeval	tv;
+	static int	telnet_cmdlen;
+
+	FD_ZERO(&socket_set);
+	FD_SET(sock,&socket_set);
+	tv.tv_sec=timeout;
+	tv.tv_usec=0;
+
+	if(select(sock+1,&socket_set,NULL,NULL,&tv)<1) {
+		if(timeout) {
+			newline();
+			fprintf(statfp,"Input timeout\n");
+		}
+		return(NOINP);
+	}
+	
+	i=recv(sock,&ch,sizeof(ch),0);
+
+	if(i!=sizeof(ch)) {
+		newline();
+		if(i==0)
+			fprintf(statfp,"No carrier\n");
+		else
+			fprintf(statfp,"recv error %d (%d)\n",i,ERROR_VALUE);
+		bail(1); 
+	}
+
+	if(mode&TELNET) {
+		if(ch==TELNET_IAC) {
+			fprintf(statfp,"T<%s> ",telnet_cmd_desc(ch));
+			if(telnet_cmdlen==0) {
+				telnet_cmdlen=1;
+				return(NOINP);
+			}
+			if(telnet_cmdlen==1) {
+				telnet_cmdlen=0;
+				return(TELNET_IAC);
+			}
+		}
+		if(telnet_cmdlen) {
+			fprintf(statfp,"T<%s> ",telnet_cmd_desc(ch));
+			telnet_cmdlen++;
+			if((telnet_cmdlen==2 && ch<TELNET_WILL) || telnet_cmdlen>2)
+				telnet_cmdlen=0;
+			return(NOINP);
+		}
+	}
+
+	return(ch);
+
+#endif
 }
 
 /**********************************/
@@ -253,6 +329,7 @@ int getcom(char timeout)
 /**********************************/
 void putcom(uchar ch)
 {
+#if 0
 	int i=0;
 
 	while(outcom(ch)&TXBOF && i<180) { /* 10 sec delay */
@@ -279,6 +356,37 @@ void putcom(uchar ch)
 			bail(1); 
 		} 
 	}
+#else
+	uchar		buf[2] = {0xff, 0xff};
+	int			len=1;
+	int			i;
+	fd_set		socket_set;
+	struct timeval	tv;
+
+	FD_ZERO(&socket_set);
+	FD_SET(sock,&socket_set);
+	tv.tv_sec=10;
+	tv.tv_usec=0;
+
+	if(select(sock+1,NULL,&socket_set,NULL,&tv)<1) {
+		newline();
+		fprintf(statfp,"Output timeout\n");
+		bail(1); 
+	}
+
+	if(mode&TELNET && ch==0xff)	/* escape IAC char */
+		len=2;
+	else
+		buf[0]=ch;
+
+	if(send(sock,buf,len,0)!=len) {
+		newline();
+		fprintf(statfp,"Send error: %d\n",ERROR_VALUE);
+	} else {
+		fprintf(statfp,"%02X  ",ch);
+	}
+
+#endif
 }
 
 void put_nak(void)
@@ -296,31 +404,6 @@ void cancel(void)
 		putcom(CAN);
 	for(i=0;i<10;i++)
 		putcom(BS);
-}
-
-char *chr(uchar ch)
-{
-	static char str[25];
-
-	switch(ch) {
-		case SOH:
-			return("SOH");
-		case STX:
-			return("STX");
-		case ETX:
-			return("ETX");
-		case EOT:
-			return("EOT");
-		case ACK:
-			return("ACK");
-		case NAK:
-			return("NAK");
-		case CAN:
-			return("CAN");
-		default:
-			sprintf(str,"%02Xh",ch);
-			return(str); 
-	}
 }
 
 /****************************************************************************/
@@ -485,14 +568,14 @@ void put_block(void)
 /* Gets an acknowledgement - usually after sending a block	*/
 /* Returns 1 if ack received, 0 otherwise.					*/
 /************************************************************/
-int get_ack(void)
+int get_ack(int tries)
 {
 	int i,errors,can=0;
 
-	for(errors=0;errors<MAXERRORS;errors++) {
+	for(errors=0;errors<tries;errors++) {
 
 		if(mode&GMODE) {		/* Don't wait for ACK on Ymodem-G */
-			if(incom()==CAN) {
+			if(getcom(0)==CAN) {
 				newline();
 				fprintf(statfp,"Cancelled remotely\n");
 				cancel();
@@ -540,10 +623,10 @@ long blocks(long n)
 {
 	long l;
 
-l=n/(long)block_size;
-if(l*(long)block_size<n)
-	l++;
-return(l);
+	l=n/(long)block_size;
+	if(l*(long)block_size<n)
+		l++;
+	return(l);
 }
 
 /****************************************/
@@ -737,7 +820,7 @@ int getcom7()
 }
 
 /************************************************/
-/* Dump the current blockm contents - for debug */
+/* Dump the current block contents - for debug  */
 /************************************************/
 void dump_block()
 {
@@ -755,6 +838,7 @@ static const char* usage=
 	"opts   = o  to overwrite files when receiving\n"
 	"         d  to disable dropped carrier detection\n"
 	"         a  to sound alarm at start and stop of transfer\n"
+	"         p  to pause after abnormal exit (error)\n"
 	"         l  to disable local keyboard (Ctrl-C) checking\n"
 	"cmd    = sx to send Xmodem     rx to recv Xmodem\n"
 	"         sX to send Xmodem-1k  rc to recv Xmodem-CRC\n"
@@ -803,6 +887,10 @@ int main(int argc, char **argv)
 	}
 
 	sock=atoi(argv[1]);
+	if(sock==INVALID_SOCKET || sock<1) {
+		fprintf(errfp,usage);
+		exit(1);
+	}
 
 	for(i=2;i<argc;i++) {
 
@@ -855,6 +943,9 @@ int main(int argc, char **argv)
 
 			else if(toupper(argv[i][0])=='L')
 				mode|=NO_LOCAL;
+
+			else if(toupper(argv[i][0])=='P')
+				mode|=PAUSE_ABEND;
 
 			else if(argv[i][0]=='*')
 				mode|=DEBUG; 
@@ -931,11 +1022,11 @@ int main(int argc, char **argv)
 
 	if(!winsock_startup())
 		bail(2);
-
+#if 1
 	/* Non-blocking socket I/O */
 	val=1;
 	ioctlsocket(sock,FIONBIO,&val);	
-
+#endif
 	if(!DCDHIGH) {
 		newline();
 		fprintf(statfp,"No carrier\n");
@@ -987,7 +1078,7 @@ int main(int argc, char **argv)
 						continue; 
 					}
 #endif
-					if(!get_block(1)) { 	 /* block received successfully */
+					if(get_block(1)==0) { 	 /* block received successfully */
 						putcom(ACK);
 						break; 
 					} 
@@ -1417,7 +1508,7 @@ int main(int argc, char **argv)
 			if(!(mode&XMODEM)) {
 				t=fdate(str);
 				memset(block,NULL,128);
-				strcpy(block,g.gl_pathv[gi]);
+				SAFECOPY(block,getfname(g.gl_pathv[gi]));
 				sprintf(block+strlen(block)+1,"%lu %lo 0 0 %d %ld"
 					,fsize,t,total_files-sent_files,total_bytes-sent_bytes);
 				/*
@@ -1428,7 +1519,7 @@ int main(int argc, char **argv)
 				block_size=128; 	/* Always use 128 for first block */
 				for(errors=0;errors<MAXERRORS;errors++) {
 					put_block();
-					if(get_ack())
+					if(get_ack(1))
 						break; 
 				}
 				if(errors==MAXERRORS) {
@@ -1516,7 +1607,7 @@ int main(int argc, char **argv)
 					,cps
 					,(long)(((float)block_num/(float)b)*100.0)
 					);
-				if(!get_ack())
+				if(!get_ack(5))
 					errors++;
 				else
 					block_num++; 
@@ -1604,7 +1695,7 @@ int main(int argc, char **argv)
 		block[0]=0;
 		block_size=128;
 		put_block();
-		if(!get_ack()) {
+		if(!get_ack(6)) {
 			newline();
 			fprintf(statfp,"Failed to receive ACK after terminating block\n"); 
 		} 
