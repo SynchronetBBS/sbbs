@@ -38,7 +38,10 @@ if((this.http_request==undefined) && this.server && this.client) {
 
 	function writeln(str)
 	{
-		write(str + "\r\n");
+		if(str)
+			write(str + "\r\n");
+		else
+			write("\r\n");
 	}
 }
 
@@ -64,7 +67,7 @@ while(this.client!=undefined && client.socket.data_waiting) {
 //	log(format("client request: '%s'",request));
 }
 
-if(this.http_request==undefined) {	/* CGI, so send CGI/HTTP headers */
+if(this.server==undefined) {	/* CGI, so send CGI/HTTP headers */
 	writeln("Content-Type: text/html");
 	writeln();
 }
