@@ -62,7 +62,7 @@ int main(int argc, char **argv)
 	 struct time curtime;
 
 
-printf("\nSynchronet System/Node Statistics Log Viewer v1.01\n\n");
+printf("\nSynchronet System/Node Statistics Log Viewer v1.02\n\n");
 
 for(i=1;i<argc;i++)
 	if(!stricmp(argv[i],"/P"))
@@ -126,7 +126,7 @@ while(l>-1L) {
     unixtodos(timestamp-(24*60*60),&date,&curtime); /* 1 day less than stamp */
 	printf("%2.2d/%2.2d/%2.2d T:%5lu   L:%3lu   P:%3lu   "
 		"E:%3lu   F:%3lu   U:%6luk %3lu  D:%6luk %3lu\n"
-        ,date.da_mon,date.da_day,date.da_year-1900,timeon,logons,posts,emails
+		,date.da_mon,date.da_day,date.da_year%100,timeon,logons,posts,emails
 		,fbacks,ulb/1024,uls,dlb/1024,dls);
 	lncntr++;
 	if(pause && lncntr>=20) {
