@@ -454,6 +454,67 @@ js_directory(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     return(JS_TRUE);
 }
 
+static JSBool
+js_mkdir(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		p;
+	JSString*	js_str;
+
+	if((js_str=JS_ValueToString(cx, argv[0]))==NULL) {
+		*rval = INT_TO_JSVAL(-1);
+		return(JS_TRUE);
+	}
+
+	if((p=JS_GetStringBytes(js_str))==NULL) {
+		*rval = INT_TO_JSVAL(-1);
+		return(JS_TRUE);
+	}
+
+	*rval = BOOLEAN_TO_JSVAL(_mkdir(p)==0);
+	return(JS_TRUE);
+}
+
+static JSBool
+js_rmdir(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		p;
+	JSString*	js_str;
+
+	if((js_str=JS_ValueToString(cx, argv[0]))==NULL) {
+		*rval = INT_TO_JSVAL(-1);
+		return(JS_TRUE);
+	}
+
+	if((p=JS_GetStringBytes(js_str))==NULL) {
+		*rval = INT_TO_JSVAL(-1);
+		return(JS_TRUE);
+	}
+
+	*rval = BOOLEAN_TO_JSVAL(rmdir(p)==0);
+	return(JS_TRUE);
+}
+
+
+static JSBool
+js_strftime(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char		str[128];
+	char*		fmt;
+	time_t		t;
+	struct tm*	tm_p;
+
+	fmt=JS_GetStringBytes(JS_ValueToString(cx, argv[0]));
+	t=JSVAL_TO_INT(argv[1]);
+
+	strcpy(str,"-Invalid time-");
+	tm_p=gmtime(&t);
+	if(tm_p)
+		strftime(str,sizeof(str),fmt,tm_p);
+
+	*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, str));
+	return(JS_TRUE);
+}
+	
 static JSClass js_global_class ={
         "Global",
 		JSCLASS_HAS_PRIVATE, /* needed for scfg_t ptr */
@@ -483,6 +544,9 @@ static JSFunctionSpec js_global_functions[] = {
 	{"file_date",		js_fdate,			1},		/* get file last modified date/time */
 	{"file_size",		js_flength,			1},		/* get file length (in bytes) */
 	{"directory",		js_directory,		1},		/* get directory listing (pattern, flags) */
+	{"mkdir",			js_mkdir,			1},		/* make directory */
+	{"rmdir",			js_rmdir,			1},		/* remove directory */
+	{"strftime",		js_strftime,		2},		/* format time string */
 	{0}
 };
 
