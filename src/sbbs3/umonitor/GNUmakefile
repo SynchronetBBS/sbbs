@@ -25,6 +25,10 @@ include $(XPDEV)Common.gmake
 include $(SBBS_SRC)Common.gmake
 include $(UIFC)Common.gmake
 
+ifeq ($(os),sunos)
+ LDFLAGS	+=	-lsocket -lnsl
+endif
+
 FORCE$(EXEODIR)/umonitor: $(EXEODIR) $(OBJS) $(BUILD_DEPENDS)
 
 $(EXEODIR)/umonitor: $(EXEODIR) $(OBJS) $(BUILD_DEPENDS)

@@ -63,12 +63,12 @@ int spyon(char *sockname)  {
 	/* ToDo Test for it actually being a socket! */
 	/* Well, it will fail to connect won't it?   */
 
-	if((spy_sock=socket(PF_LOCAL,SOCK_STREAM,0))==INVALID_SOCKET)  {
+	if((spy_sock=socket(PF_UNIX,SOCK_STREAM,0))==INVALID_SOCKET)  {
 		printf("ERROR %d creating local spy socket", errno);
 		return(SPY_NOSOCKET);
 	}
 	
-	spy_name.sun_family=AF_LOCAL;
+	spy_name.sun_family=AF_UNIX;
 	SAFECOPY(spy_name.sun_path,sockname);
 	spy_len=SUN_LEN(&spy_name);
 	if(connect(spy_sock,(struct sockaddr *)&spy_name,spy_len))  {
