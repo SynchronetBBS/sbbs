@@ -320,7 +320,7 @@ public:
 	uint	gettotalfiles(uint dirnum);
 	void	getnodeext(uint number, char * str);
 	void	putnodeext(uint number, char * str);
-	void	getnodedat(uint number, node_t * node, char lock);
+	void	getnodedat(uint number, node_t * node, bool lock);
 	void	putnodedat(uint number, node_t * node);
 	void	putusername(int number, char * name);
 	void	nodesync(void);
