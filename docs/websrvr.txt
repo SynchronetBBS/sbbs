@@ -1,0 +1,10 @@
+---------------------------------------
+DEUCE'S SYNCHWEB OFFICIAL DOCUMENTATION
+---------------------------------------
+
+I. ssjs stuff and ummm yeah
+II. Themes and blah blah whatever
+III. How to do um... neat stuff.
+IIII. Getting ssjs to read synchronet crap and blah
+V. Editing html stuff in the inc files and bleh bleh ya know
+VI. The new web file section thing and blah you get the idea
