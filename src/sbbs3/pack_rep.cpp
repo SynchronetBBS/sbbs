@@ -120,7 +120,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 			packedmail++;
 			smb_unlockmsghdr(&smb,&msg);
 			smb_freemsgmem(&msg); 
-			mswait(1);	/* yield */
+			YIELD();	/* yield */
 		}
 		eprintf("Packed %d NetMail messages",packedmail); 
 	}
@@ -192,12 +192,12 @@ bool sbbs_t::pack_rep(uint hubnum)
 			msgcnt++;
 			submsgs++; 
 			if(!(l%50))
-				mswait(1); /* yield */
+				YIELD(); /* yield */
 		}
 		eprintf(remove_ctrl_a(text[QWKPackedSubboard],tmp),submsgs,msgcnt);
 		LFREE(post);
 		smb_close(&smb); 
-		mswait(1);	/* yield */
+		YIELD();	/* yield */
 	}
 
 	fclose(rep);			/* close HUB_ID.MSG */

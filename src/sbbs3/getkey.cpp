@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -50,7 +50,7 @@ char sbbs_t::getkey(long mode)
 	time_t	last_telnet_cmd=0;
 
 	if(!online || !input_thread_running) {
-		mswait(1);	// just in case someone is looping on getkey() when they shouldn't
+		YIELD();	// just in case someone is looping on getkey() when they shouldn't
 		return(0);
 	}
 	sys_status&=~SS_ABORT;
@@ -236,7 +236,7 @@ char sbbs_t::getkey(long mode)
 				else
 					outchar(ch);
 				while((coldkey=inkey(mode))==0 && online && !(sys_status&SS_ABORT))
-					mswait(1);
+					YIELD();
 				bputs("\b \b");
 				if(coldkey==BS || coldkey==DEL)
 					continue;

@@ -1023,7 +1023,7 @@ void input_thread(void *arg)
 		if((i=select(sock+1,&socket_set,NULL,NULL,&tv))<1) {
 			pthread_mutex_unlock(&sbbs->input_thread_mutex);
 			if(i==0 && sock==sbbs->client_socket) {
-				mswait(1);
+				YIELD();
 				continue;
 			}
 
@@ -1069,7 +1069,7 @@ void input_thread(void *arg)
                 	rd=1;
                 	break;
                 }
-                mswait(1);
+                YIELD();
             }
 		}
 		
@@ -1232,11 +1232,11 @@ void output_thread(void* arg)
 			if(sbbs->cfg.node_num)	/* Only break if node output (not server) */
 				break;
 			RingBufReInit(&sbbs->outbuf);	/* Flush output buffer */
-			mswait(1);
+			YIELD();
 			continue;
 		}
 		if(i<1) {
-			mswait(1);
+			YIELD();
 			continue;
 		}
 
@@ -3864,7 +3864,7 @@ void DLLCALL bbs_thread(void* arg)
 
 		if((i=select(high_socket_set,&socket_set,NULL,NULL,&tv))<1) {
 			if(i==0) {
-				mswait(1);
+				YIELD();
 				continue;
 			}
 			if(ERROR_VALUE==EINTR)

@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -218,7 +218,7 @@ void sbbs_t::telnet_gate(char* destaddr, ulong mode)
 					if(thisnode.misc&NODE_INTR)
 						break;
 				}
-				mswait(1);
+				YIELD();
 				continue;
 			}
 			lprintf("!TELGATE ERROR %d receiving on socket %d",ERROR_VALUE,remote_socket);

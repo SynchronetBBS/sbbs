@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -318,7 +318,7 @@ int sockprintf(SOCKET sock, char *fmt, ...)
 	while((result=sendsocket(sock,sbuf,len))!=len) {
 		if(result==SOCKET_ERROR) {
 			if(ERROR_VALUE==EWOULDBLOCK) {
-				mswait(1);
+				YIELD();
 				continue;
 			}
 			if(ERROR_VALUE==ECONNRESET) 
@@ -403,7 +403,7 @@ static int sockreadline(SOCKET socket, char* buf, int len)
 					lprintf("%04d !SOCKET INACTIVE",socket);
 					return(-1);
 				}
-				mswait(1);
+				YIELD();
 				continue;
 			}
 			recverror(socket,i,__LINE__);
@@ -585,7 +585,7 @@ static ulong sockmsgtxt(SOCKET socket, smbmsg_t* msg, char* msgtxt, ulong maxlin
 		/* release time-slices every x lines */
 		if(startup->lines_per_yield
 			&& !(lines%startup->lines_per_yield))	
-			mswait(1);
+			YIELD();
 	}
     if(msg->hdr.auxattr&MSG_FILEATTACH) { 
 	    sockprintf(socket,"");
@@ -2208,7 +2208,7 @@ static void smtp_thread(void* arg)
 				/* release time-slices every x lines */
 				if(startup->lines_per_yield &&
 					!(lines%startup->lines_per_yield))	
-					mswait(1);
+					YIELD();
 				continue;
 			}
 			/* RFC822 Header parsing */
@@ -3688,7 +3688,7 @@ void DLLCALL mail_server(void* arg)
 
 			if((i=select(high_socket_set,&socket_set,NULL,NULL,&tv))<1) {
 				if(i==0) {
-					mswait(1);
+					YIELD();
 					continue;
 				}
 				if(ERROR_VALUE==EINTR)

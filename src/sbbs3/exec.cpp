@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -548,7 +548,7 @@ js_BranchCallback(JSContext *cx, JSScript *script)
 	}
 	/* Give up timeslices every once in a while */
 	if(!(sbbs->js_loop%JAVASCRIPT_YIELD_FREQUENCY))
-		mswait(1);
+		YIELD();
 
 	if(!(sbbs->js_loop%JAVASCRIPT_GC_FREQUENCY))
 		JS_MaybeGC(cx);
@@ -1244,10 +1244,11 @@ int sbbs_t::exec(csi_t *csi)
 				csi->ip+=2;
 				return(0);
 			case CS_TOGGLE_NODE_MISC:
-				getnodedat(cfg.node_num,&thisnode,1);
-				thisnode.misc^=*(ushort *)csi->ip;
+				if(getnodedat(cfg.node_num,&thisnode,true)==0) {
+					thisnode.misc^=*(ushort *)csi->ip;
+					putnodedat(cfg.node_num,&thisnode);
+				}
 				csi->ip+=2;
-				putnodedat(cfg.node_num,&thisnode);
 				return(0);
 			case CS_COMPARE_NODE_MISC:
 				getnodedat(cfg.node_num,&thisnode,0);
@@ -1376,9 +1377,11 @@ int sbbs_t::exec(csi_t *csi)
 				action=*csi->ip++;
 				return(0);
 			case CS_NODE_STATUS:
-				getnodedat(cfg.node_num,&thisnode,1);
-				thisnode.status=*csi->ip++;
-				putnodedat(cfg.node_num,&thisnode);
+				if(getnodedat(cfg.node_num,&thisnode,true)==0) {
+					thisnode.status=*csi->ip++;
+					putnodedat(cfg.node_num,&thisnode);
+				} else
+					csi->ip++;
 				return(0);
 			case CS_MULTINODE_CHAT:
 				multinodechat(*csi->ip++);
@@ -1648,8 +1651,8 @@ int sbbs_t::exec(csi_t *csi)
 			csi->logic=!chksyspass();
 			return(0);
 		case CS_PUT_NODE:
-			getnodedat(cfg.node_num,&thisnode,1);
-			putnodedat(cfg.node_num,&thisnode);
+			if(getnodedat(cfg.node_num,&thisnode,true)==0)
+				putnodedat(cfg.node_num,&thisnode);
 			return(0);
 		case CS_SYNC:
 			SYNC;

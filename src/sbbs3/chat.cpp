@@ -494,7 +494,7 @@ void sbbs_t::multinodechat(int channel)
 						guruchat(pgraph,gurubuf,cfg.chan[channel-1]->guru);
 						} } }
 		else
-			mswait(1);
+			YIELD();
 		if(sys_status&SS_ABORT)
 			break; }
 	lncntr=0;
@@ -772,7 +772,7 @@ void sbbs_t::privchat(bool local)
 							: username(&cfg,node.useron,tmp));
 					break; }
 				if(!inkey(0))
-					mswait(1);
+					YIELD();
 				action=NODE_PAGE;
 				checkline();
 				gettimeleft();
@@ -856,7 +856,7 @@ void sbbs_t::privchat(bool local)
 			gettimeleft();
 			SYNC;
 			inkey(0);
-			mswait(1); }
+			YIELD(); }
 	}
 
 	action=NODE_PCHT;
@@ -1104,7 +1104,7 @@ void sbbs_t::privchat(bool local)
 					putnodedat(cfg.node_num,&thisnode); 
 				}
 			}
-			mswait(1); }
+			YIELD(); }
 		checkline();
 		gettimeleft(); }
 	if(sys_status&SS_SPLITP)
@@ -1803,7 +1803,7 @@ void sbbs_t::localguru(char *gurubuf, int gurunum)
 				attr(cfg.color[clr_chatlocal]);
 				guruchat(str,gurubuf,gurunum); } }
 		else
-			mswait(1); }
+			YIELD(); }
 	bputs(text[EndOfChat]);
 	sys_status&=~SS_GURUCHAT;
 	console=con;				/* restore console state */

@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -1341,7 +1341,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 			timeout.tv_sec=0;
 			timeout.tv_usec=0;
 			if(!select(out_pipe[0]+1,&ibits,NULL,NULL,&timeout))  {
-				mswait(1);
+				YIELD();
 				continue;
 			}
 
@@ -1351,7 +1351,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 				lprintf("Node %d !output buffer full (%u bytes)"
 						,cfg.node_num,RingBufFull(&outbuf));
 #endif
-				mswait(1);
+				YIELD();
 				continue;
 			}
 
@@ -1361,7 +1361,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 				rd=sizeof(buf);
 
 			if((rd=read(out_pipe[0],buf,rd))<1) {
-				mswait(1);
+				YIELD();
 				continue;
 			}
 				
