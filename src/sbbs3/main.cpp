@@ -4014,7 +4014,7 @@ void DLLCALL bbs_thread(void* arg)
 	}
 
 #ifdef __unix__	//	unix-domain spy sockets
-	for(i=first_node;i<=last_node;i++)  {
+	for(i=first_node;i<=last_node && !(startup->options&BBS_OPT_NO_SPY_SOCKETS);i++)  {
 	    if((uspy_listen_socket[i-1]=socket(PF_UNIX,SOCK_STREAM,0))==INVALID_SOCKET)
 	        lprintf(LOG_ERR,"Node %d !ERROR %d creating local spy socket"
 	            , i, errno);

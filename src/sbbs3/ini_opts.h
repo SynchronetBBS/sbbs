@@ -50,6 +50,7 @@ static ini_bitdesc_t bbs_options[] = {
 	{ BBS_OPT_NO_TELNET_GA			,"NO_TELNET_GA"			},
 	{ BBS_OPT_NO_EVENTS				,"NO_EVENTS"			},
 	{ BBS_OPT_NO_HOST_LOOKUP		,"NO_HOST_LOOKUP"		},
+	{ BBS_OPT_NO_SPY_SOCKETS		,"NO_SPY_SOCKETS"		},
 	{ BBS_OPT_NO_RECYCLE			,"NO_RECYCLE"			},
 	{ BBS_OPT_GET_IDENT				,"GET_IDENT"			},
 	{ BBS_OPT_NO_JAVASCRIPT			,"NO_JAVASCRIPT"		},
