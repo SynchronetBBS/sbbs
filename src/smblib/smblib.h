@@ -53,11 +53,11 @@
 	#else
 		#define SMBCALL
 	#endif
-	#ifdef SMBDLL	/* SMBLIB contained in DLL */
-		#ifdef SMB_EXPORTS
-			#define SMBEXPORT __declspec( dllexport )
-		#else
+	#if defined(SMB_IMPORTS) || defined(SMB_EXPORTS)
+		#if defined(SMB_IMPORTS)
 			#define SMBEXPORT __declspec( dllimport )
+		#else
+			#define SMBEXPORT __declspec( dllexport )
 		#endif
 	#else	/* self-contained executable */
 		#define SMBEXPORT
