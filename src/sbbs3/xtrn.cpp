@@ -1157,7 +1157,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		SAFECOPY(str,fullcmdline);
 		sprintf(fullcmdline,"%s -F %s",startup->dosemu_path,str);
 #else
-		bprintf("\r\nExternal DOS programs are not yet supported in\r\n%s\r\n"
+		bprintf("\r\nExternal DOS programs are not yet supported in \r\n%s\r\n"
 			,VERSION_NOTICE);
 		return(-1);
 #endif
