@@ -68,7 +68,7 @@
 #include "filewrap.h"
 
 /* Use smb_ver() and smb_lib_ver() to obtain these values */
-#define SMBLIB_VERSION		"2.15"      /* SMB library version */
+#define SMBLIB_VERSION		"2.16"      /* SMB library version */
 #define SMB_VERSION 		0x0121		/* SMB format version */
 										/* High byte major, low byte minor */
 
@@ -389,8 +389,10 @@ int SMBCALL smb_locksmbhdr(smb_t* smb)
 		return(SMB_ERR_NOT_OPEN);
 	}
 	while(1) {
-		if(!lock(fileno(smb->shd_fp),0L,sizeof(smbhdr_t)+sizeof(smbstatus_t)))
+		if(lock(fileno(smb->shd_fp),0L,sizeof(smbhdr_t)+sizeof(smbstatus_t))==0) {
+			smb->locked=1;	/* TRUE */
 			return(0);
+		}
 		if(!start)
 			start=time(NULL);
 		else
@@ -452,11 +454,16 @@ int SMBCALL smb_putstatus(smb_t* smb)
 /****************************************************************************/
 int SMBCALL smb_unlocksmbhdr(smb_t* smb)
 {
+	int result;
+
 	if(smb->shd_fp==NULL) {
 		sprintf(smb->last_error,"msgbase not open");
 		return(SMB_ERR_NOT_OPEN);
 	}
-	return(unlock(fileno(smb->shd_fp),0L,sizeof(smbhdr_t)+sizeof(smbstatus_t)));
+	result = unlock(fileno(smb->shd_fp),0L,sizeof(smbhdr_t)+sizeof(smbstatus_t));
+	if(result==0)
+		smb->locked=0;	/* FALSE */
+	return(result);
 }
 
 /********************************/
@@ -1064,19 +1071,24 @@ int SMBCALL smb_addcrc(smb_t* smb, ulong crc)
 /* If storage is SMB_SELFPACK, self-packing conservative allocation is used */
 /* If storage is SMB_FASTALLOC, fast allocation is used 					*/
 /* If storage is SMB_HYPERALLOC, no allocation tables are used (fastest)	*/
+/* This function will UN-lock the SMB header								*/
 /****************************************************************************/
 int SMBCALL smb_addmsghdr(smb_t* smb, smbmsg_t* msg, int storage)
 {
 	int i;
 	long l;
 
-	if(smb_locksmbhdr(smb))
+	if(!smb->locked && smb_locksmbhdr(smb))
 		return(1);
-	if(smb_getstatus(smb))
+	if(smb_getstatus(smb)) {
+		smb_unlocksmbhdr(smb);
 		return(2);
+	}
 
-	if(storage!=SMB_HYPERALLOC && (i=smb_open_ha(smb))!=0)
+	if(storage!=SMB_HYPERALLOC && (i=smb_open_ha(smb))!=0) {
+		smb_unlocksmbhdr(smb);
 		return(i);
+	}
 
 	msg->hdr.length=smb_getmsghdrlen(msg);
 	if(storage==SMB_HYPERALLOC)
