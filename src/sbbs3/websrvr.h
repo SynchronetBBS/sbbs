@@ -69,6 +69,7 @@ typedef struct {
 	/* Paths */
 	char	ssjs_ext[16];			/* Server-Side JavaScript file extension */
 	char**	cgi_ext;				/* CGI Extensions */
+	char**	cgi_dir;				/* CGI Directories (all files executable) */
     char    ctrl_dir[128];
     char	root_dir[128];
     char	error_dir[128];

@@ -511,6 +511,9 @@ void sbbs_read_ini(
 		iniFreeStringList(web->cgi_ext);
 		web->cgi_ext
 			=iniGetStringList(fp,section,"CGIExtensions", "," ,".cgi");
+		iniFreeStringList(web->cgi_dir);
+		web->cgi_dir
+			=iniGetStringList(fp,section,"CGIDirectories", "," ,"../cgi-bin");
 		SAFECOPY(web->ssjs_ext
 			,iniGetString(fp,section,"JavaScriptExtension",".ssjs",value));
 
