@@ -6,11 +6,18 @@
 
 # @format.tab-size 8, @format.use-tabs true
 
+!include sbbsdefs.inc # _question
+
 str tmp
 
 copy tmp str
 setstr "Y"
-print "nbh@QUESTION@? "
+compare_strn 2 _question "\r\n"
+if_true
+	crlf
+	shift_str _question 2
+	end_if
+printf "nbh[wûb] y%s? " _question
 :top
 compare_str "Y"
 if_equal
