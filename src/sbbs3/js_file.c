@@ -114,6 +114,9 @@ static int fopenflags(char *mode)
 			flags|=O_RDONLY;
 	}
 
+	if(strchr(mode,'e'))
+		flags|=O_EXCL;
+
 	return(flags);
 }
 
@@ -1490,6 +1493,7 @@ static jsSyncMethodSpec js_file_functions[] = {
 		"<tt>w+</tt> open an empty file for both reading and writing; if the given file exists, its contents are destroyed<br>"
 		"<tt>a+</tt> open for reading and appending<br>"
 		"<tt>b&nbsp</tt> open in binary (untranslated) mode; translations involving carriage-return and linefeed characters are suppressed (e.g. <tt>r+b</tt>)<br>"
+		"<tt>e&nbsp</tt> open a <i>non-shareable</i> file (that must not already exist) for <i>exclusive</i> access<br>"
 		)
 	,310
 	},		
