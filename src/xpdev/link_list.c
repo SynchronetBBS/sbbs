@@ -70,6 +70,9 @@ link_list_t* listInit(link_list_t* list, long flags)
 		sem_init(&list->sem,0,0);
 #endif
 
+	if(flags&LINK_LIST_ATTACH)
+		listAttach(list);
+
 	return(list);
 }
 
@@ -133,6 +136,34 @@ BOOL listFree(link_list_t* list)
 		free(list);
 
 	return(TRUE);
+}
+
+long listAttach(link_list_t* list)
+{
+	if(list==NULL)
+		return(-1);
+
+	MUTEX_LOCK(list);
+	list->refs++;
+	MUTEX_UNLOCK(list);
+
+	return(list->refs);
+}
+
+long listDettach(link_list_t* list)
+{
+	int refs;
+
+	if(list==NULL || list->refs<1)
+		return(-1);
+
+	MUTEX_LOCK(list);
+	if((refs=--list->refs)==0)
+		listFree(list);
+	else
+		MUTEX_UNLOCK(list);
+
+	return(refs);
 }
 
 void* listSetPrivateData(link_list_t* list, void* p)

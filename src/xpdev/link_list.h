@@ -59,6 +59,7 @@ extern "C" {
 #define LINK_LIST_MUTEX			(1<<3)	/* Mutex-protected linked-list */
 #define LINK_LIST_SEMAPHORE		(1<<4)	/* Semaphore attached to linked-list */
 #define LINK_LIST_NODE_LOCKED	(1<<5)	/* Node is locked */
+#define LINK_LIST_ATTACH		(1<<6)	/* Attach during init */
 
 typedef struct list_node {
 	void*				data;			/* pointer to some kind of data */
@@ -74,6 +75,7 @@ typedef struct link_list {
 	unsigned long		flags;			/* private use flags */
 	long				count;			/* number of nodes in list */
 	void*				private_data;	/* for use by the application only */
+	long				refs;			/* reference counter (attached clients) */
 #if defined(LINK_LIST_THREADSAFE)
 	pthread_mutex_t		mutex;
 	sem_t				sem;
@@ -85,6 +87,10 @@ link_list_t*	listInit(link_list_t* /* NULL to auto-allocate */, long flags);
 BOOL			listFree(link_list_t*);
 long			listFreeNodes(link_list_t*);
 BOOL			listFreeNodeData(list_node_t* node);
+
+/* Increment/decrement reference counter (and auto-free when zero), returns -1 on error */
+long			listAttach(link_list_t*);
+long			listDetach(link_list_t*);
 
 #if defined(LINK_LIST_THREADSAFE)
 BOOL			listSemPost(const link_list_t*);
