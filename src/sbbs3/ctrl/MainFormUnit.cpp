@@ -104,16 +104,20 @@ CloseServiceHandle_t	closeServiceHandle;
 SC_HANDLE       hSCManager;
 SC_HANDLE	    bbs_svc;
 SC_HANDLE	    ftp_svc;
+SC_HANDLE	    web_svc;
 SC_HANDLE	    mail_svc;
 SC_HANDLE	    services_svc;
 SERVICE_STATUS	bbs_svc_status;
 SERVICE_STATUS	ftp_svc_status;
+SERVICE_STATUS	web_svc_status;
 SERVICE_STATUS	mail_svc_status;
 SERVICE_STATUS	services_svc_status;
 QUERY_SERVICE_CONFIG*	bbs_svc_config;
 DWORD					bbs_svc_config_size;
 QUERY_SERVICE_CONFIG*	ftp_svc_config;
 DWORD					ftp_svc_config_size;
+QUERY_SERVICE_CONFIG*	web_svc_config;
+DWORD					web_svc_config_size;
 QUERY_SERVICE_CONFIG*	mail_svc_config;
 DWORD					mail_svc_config_size;
 QUERY_SERVICE_CONFIG*	services_svc_config;
@@ -529,21 +533,6 @@ static int ftp_lputs(void* p, int level, char *str)
         return(0);
     }
 
-#if defined(_DEBUG)
-    if(IsBadReadPtr(FtpForm,sizeof(void*))) {
-        DebugBreak();
-        return(0);
-    }
-    if(IsBadReadPtr(FtpForm->Log,sizeof(void*))) {
-        DebugBreak();
-        return(0);
-    }
-    if(IsBadReadPtr(FtpForm->Log->Lines,sizeof(void*))) {
-        DebugBreak();
-        return(0);
-    }
-#endif
-
     while(MaxLogLen && FtpForm->Log->Text.Length()>=MaxLogLen)
         FtpForm->Log->Lines->Delete(0);
 
@@ -643,6 +632,120 @@ static void ftp_start(void)
     Application->ProcessMessages();
 }
 //---------------------------------------------------------------------------
+static int web_lputs(void* p, int level, char *str)
+{
+	static HANDLE mutex;
+	static FILE* LogStream;
+
+    if(!mutex)
+    	mutex=CreateMutex(NULL,false,NULL);
+	WaitForSingleObject(mutex,INFINITE);
+
+    if(str==NULL) {
+        if(LogStream!=NULL)
+            fclose(LogStream);
+        LogStream=NULL;
+        ReleaseMutex(mutex);
+        return(0);
+    }
+
+    while(MaxLogLen && WebForm->Log->Text.Length()>=MaxLogLen)
+        WebForm->Log->Lines->Delete(0);
+
+    AnsiString Line=Now().FormatString(LOG_TIME_FMT)+"  ";
+    Line+=AnsiString(str).Trim();
+	WebForm->Log->Lines->Add(Line);
+#if 0
+    if(MainForm->WebLogFile && MainForm->WebStop->Enabled) {
+        AnsiString LogFileName
+            =AnsiString(MainForm->cfg.data_dir)
+            +"LOGS\\FS"
+            +Now().FormatString("mmddyy")
+            +".LOG";
+
+        if(!FileExists(LogFileName)) {
+            FileClose(FileCreate(LogFileName));
+            if(LogStream!=NULL) {
+                fclose(LogStream);
+                LogStream=NULL;
+            }
+        }
+        if(LogStream==NULL)
+            LogStream=_fsopen(LogFileName.c_str(),"a",SH_DENYNONE);
+
+        if(LogStream!=NULL) {
+            Line=Now().FormatString("hh:mm:ss")+"  ";
+            Line+=AnsiString(str).Trim();
+            Line+="\n";
+        	fwrite(AnsiString(Line).c_str(),1,Line.Length(),LogStream);
+        }
+	}
+#endif
+    ReleaseMutex(mutex);
+    return(Line.Length());
+}
+
+static void web_status(void* p, char *str)
+{
+	static HANDLE mutex;
+
+    if(!mutex)
+    	mutex=CreateMutex(NULL,false,NULL);
+	WaitForSingleObject(mutex,INFINITE);
+
+	WebForm->Status->Caption=AnsiString(str);
+
+    ReleaseMutex(mutex);
+}
+
+static void web_clients(void* p, int clients)
+{
+	static HANDLE mutex;
+
+    if(!mutex)
+    	mutex=CreateMutex(NULL,false,NULL);
+	WaitForSingleObject(mutex,INFINITE);
+
+    WebForm->ProgressBar->Max=MainForm->ftp_startup.max_clients;
+	WebForm->ProgressBar->Position=clients;
+
+    ReleaseMutex(mutex);
+}
+
+static void web_terminated(void* p, int code)
+{
+	Screen->Cursor=crDefault;
+	MainForm->WebStart->Enabled=true;
+	MainForm->WebStop->Enabled=false;
+    MainForm->WebRecycle->Enabled=false;
+    Application->ProcessMessages();
+}
+static void web_started(void* p)
+{
+	Screen->Cursor=crDefault;
+	MainForm->WebStart->Enabled=false;
+    MainForm->WebStop->Enabled=true;
+    MainForm->WebRecycle->Enabled=true;
+    Application->ProcessMessages();
+}
+static void web_start(void)
+{
+	Screen->Cursor=crAppStart;
+    web_status(NULL, "Starting");
+    SAFECOPY(MainForm->web_startup.ctrl_dir
+        ,MainForm->global.ctrl_dir);
+    SAFECOPY(MainForm->web_startup.host_name
+        ,MainForm->global.host_name);
+    MainForm->web_startup.sem_chk_freq=MainForm->global.sem_chk_freq;
+
+    /* JavaScript operational parameters */
+    MainForm->web_startup.js_max_bytes=MainForm->global.js.max_bytes;
+    MainForm->web_startup.js_cx_stack=MainForm->global.js.cx_stack;
+
+	_beginthread((void(*)(void*))web_server,0,&MainForm->web_startup);
+    Application->ProcessMessages();
+}
+//---------------------------------------------------------------------------
 
 //---------------------------------------------------------------------------
 __fastcall TMainForm::TMainForm(TComponent* Owner)
@@ -735,6 +838,14 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
 
     memset(&web_startup,0,sizeof(web_startup));
     web_startup.size=sizeof(web_startup);
+	web_startup.lputs=web_lputs;
+    web_startup.status=web_status;
+    web_startup.clients=web_clients;
+    web_startup.started=web_started;
+    web_startup.terminated=web_terminated;
+    web_startup.thread_up=thread_up;
+    web_startup.client_on=client_on;
+    web_startup.socket_open=socket_open;
 
     memset(&services_startup,0,sizeof(services_startup));
     services_startup.size=sizeof(services_startup);
@@ -790,6 +901,7 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
     if(hSCManager!=NULL) {
 		bbs_svc =  openService(hSCManager, NTSVC_NAME_BBS, SERVICE_ALL_ACCESS);
 		ftp_svc =  openService(hSCManager, NTSVC_NAME_FTP, SERVICE_ALL_ACCESS);
+		web_svc =  openService(hSCManager, NTSVC_NAME_WEB, SERVICE_ALL_ACCESS);        
 		mail_svc =  openService(hSCManager, NTSVC_NAME_MAIL, SERVICE_ALL_ACCESS);
 		services_svc =  openService(hSCManager, NTSVC_NAME_SERVICES, SERVICE_ALL_ACCESS);
     }
@@ -875,6 +987,7 @@ void __fastcall TMainForm::FormClose(TObject *Sender, TCloseAction &Action)
 	while( (bbs_svc==NULL && TelnetStop->Enabled)
         || (mail_svc==NULL && MailStop->Enabled)
         || (ftp_svc==NULL && FtpStop->Enabled)
+        || (web_svc==NULL && WebStop->Enabled)        
     	|| (services_svc==NULL && ServicesStop->Enabled)) {
         if(time(NULL)-start>30)
             break;
@@ -921,6 +1034,15 @@ void __fastcall TMainForm::FormCloseQuery(TObject *Sender, bool &CanClose)
             return;
         FtpStopExecute(Sender);
     }
+
+    if(WebStop->Enabled && web_svc==NULL) {
+    	if(WebForm->ProgressBar->Position
+    		&& Application->MessageBox("Shut down the Web Server?"
+	       	,"Web Server In Use", MB_OKCANCEL)!=IDOK)
+            return;
+        WebStopExecute(Sender);
+    }
+
     if(ServicesStop->Enabled && services_svc==NULL)
 	    ServicesStopExecute(Sender);
 
@@ -973,8 +1095,8 @@ void __fastcall TMainForm::ServicesStartExecute(TObject *Sender)
 	_beginthread((void(*)(void*))services_thread,0,&MainForm->services_startup);
     Application->ProcessMessages();
 }
-//---------------------------------------------------------------------------
 
+//---------------------------------------------------------------------------
 BOOL StopNTsvc(SC_HANDLE svc, SERVICE_STATUS* status)
 {
 	if(svc==NULL || controlService==NULL)
@@ -1140,8 +1262,35 @@ void __fastcall TMainForm::FtpConfigureExecute(TObject *Sender)
     inside=false;
 }
 //---------------------------------------------------------------------------
+void __fastcall TMainForm::WebStartExecute(TObject *Sender)
+{
+	if(!StartNTsvc(web_svc,&web_svc_status,web_svc_config,web_svc_config_size))
+		web_start();
+}
+//---------------------------------------------------------------------------
+void __fastcall TMainForm::WebStopExecute(TObject *Sender)
+{
+	if(StopNTsvc(web_svc,&web_svc_status))
+    	return;
+    Screen->Cursor=crAppStart;
+    web_status(NULL, "Terminating");
+    web_terminate();
+    Application->ProcessMessages();
+}
+//---------------------------------------------------------------------------
+void __fastcall TMainForm::WebConfigureExecute(TObject *Sender)
+{
+    static inside;
+    if(inside) return;
+    inside=true;
 
+	Application->CreateForm(__classid(TFtpCfgDlg), &FtpCfgDlg);
+	FtpCfgDlg->ShowModal();
+    delete FtpCfgDlg;
 
+    inside=false;
+}
+//---------------------------------------------------------------------------
 void __fastcall TMainForm::BBSConfigureMenuItemClick(TObject *Sender)
 {
 	char str[256];
@@ -1368,6 +1517,7 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     bool	ClientFormFloating=false;
     bool 	MailFormFloating=false;
     bool	FtpFormFloating=false;
+    bool	WebFormFloating=false;
     int		NodeFormPage=PAGE_UPPERLEFT;
     int		StatsFormPage=PAGE_UPPERLEFT;
     int		ClientFormPage=PAGE_UPPERLEFT;
@@ -1375,6 +1525,7 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     int		EventsFormPage=PAGE_LOWERLEFT;
     int		MailFormPage=PAGE_UPPERRIGHT;
     int		FtpFormPage=PAGE_LOWERRIGHT;
+    int		WebFormPage=PAGE_LOWERRIGHT;    
     int     ServicesFormPage=PAGE_LOWERRIGHT;
 
     AnsiString	Str;
@@ -1422,6 +1573,8 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
             MailFormFloating=Registry->ReadBool("MailFormFloating");
         if(Registry->ValueExists("FtpFormFloating"))
             FtpFormFloating=Registry->ReadBool("FtpFormFloating");
+        if(Registry->ValueExists("WebFormFloating"))
+            WebFormFloating=Registry->ReadBool("WebFormFloating");
     }
 
     if(Registry->ValueExists("TelnetFormPage"))
@@ -1440,6 +1593,8 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     	MailFormPage=Registry->ReadInteger("MailFormPage");
     if(Registry->ValueExists("FtpFormPage"))
     	FtpFormPage=Registry->ReadInteger("FtpFormPage");
+    if(Registry->ValueExists("WebFormPage"))
+    	WebFormPage=Registry->ReadInteger("WebFormPage");
 
     TelnetForm->Log->Color=ReadColor(Registry,"TelnetLog");
     ReadFont("TelnetLog",TelnetForm->Log->Font);
@@ -1451,6 +1606,8 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     ReadFont("MailLog",MailForm->Log->Font);
     FtpForm->Log->Color=ReadColor(Registry,"FtpLog");
     ReadFont("FtpLog",FtpForm->Log->Font);
+    WebForm->Log->Color=ReadColor(Registry,"WebLog");
+    ReadFont("WebLog",WebForm->Log->Font);
     NodeForm->ListBox->Color=ReadColor(Registry,"NodeList");
     ReadFont("NodeList",NodeForm->ListBox->Font);
     ClientForm->ListView->Color=ReadColor(Registry,"ClientList");
@@ -1491,6 +1648,15 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     	FtpForm->Width=Registry->ReadInteger("FtpFormWidth");
 	if(Registry->ValueExists("FtpFormHeight"))
     	FtpForm->Height=Registry->ReadInteger("FtpFormHeight");
+
+	if(Registry->ValueExists("WebFormTop"))
+    	WebForm->Top=Registry->ReadInteger("WebFormTop");
+	if(Registry->ValueExists("WebFormLeft"))
+    	WebForm->Left=Registry->ReadInteger("WebFormLeft");
+	if(Registry->ValueExists("WebFormWidth"))
+    	WebForm->Width=Registry->ReadInteger("WebFormWidth");
+	if(Registry->ValueExists("WebFormHeight"))
+    	WebForm->Height=Registry->ReadInteger("WebFormHeight");
 
 	if(Registry->ValueExists("MailFormTop"))
     	MailForm->Top=Registry->ReadInteger("MailFormTop");
@@ -1589,7 +1755,7 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
             ,&MailAutoStart 	    ,&mail_startup
             ,&ServicesAutoStart     ,&services_startup
             );
-       	StatusBar->Panels->Items[4]->Text="Imported " + AnsiString(ini_file);
+       	StatusBar->Panels->Items[4]->Text="Read " + AnsiString(ini_file);
         fclose(fp);
 
     } else {
@@ -1608,6 +1774,11 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
             FtpAutoStart=Registry->ReadInteger("FtpAutoStart");
         else
             FtpAutoStart=true;
+
+        if(Registry->ValueExists("WebAutoStart"))
+            WebAutoStart=Registry->ReadInteger("WebAutoStart");
+        else
+            WebAutoStart=true;
 
         if(Registry->ValueExists("ServicesAutoStart"))
             ServicesAutoStart=Registry->ReadInteger("ServicesAutoStart");
@@ -1887,6 +2058,8 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     	ServicesForm->ManualDock(PageControl(ServicesFormPage),NULL,alClient);
 	if(!FtpFormFloating)
     	FtpForm->ManualDock(PageControl(FtpFormPage),NULL,alClient);
+	if(!WebFormFloating)
+    	WebForm->ManualDock(PageControl(WebFormPage),NULL,alClient);
 
     NodeForm->Show();
     ClientForm->Show();
@@ -1894,6 +2067,7 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     TelnetForm->Show();
     EventsForm->Show();
     FtpForm->Show();
+    WebForm->Show();
     ServicesForm->Show();
     MailForm->Show();
 
@@ -1933,6 +2107,8 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
         MailStartExecute(Sender);
     if(FtpAutoStart)
         FtpStartExecute(Sender);
+    if(WebAutoStart)
+        WebStartExecute(Sender);
     if(ServicesAutoStart)
         ServicesStartExecute(Sender);
 
@@ -2013,6 +2189,11 @@ void __fastcall TMainForm::SaveSettings(TObject* Sender)
     Registry->WriteInteger("FtpFormHeight",FtpForm->Height);
     Registry->WriteInteger("FtpFormWidth",FtpForm->Width);
 
+    Registry->WriteInteger("WebFormTop",WebForm->Top);
+    Registry->WriteInteger("WebFormLeft",WebForm->Left);
+    Registry->WriteInteger("WebFormHeight",WebForm->Height);
+    Registry->WriteInteger("WebFormWidth",WebForm->Width);
+
     Registry->WriteInteger("MailFormTop",MailForm->Top);
     Registry->WriteInteger("MailFormLeft",MailForm->Left);
     Registry->WriteInteger("MailFormHeight",MailForm->Height);
@@ -2033,6 +2214,7 @@ void __fastcall TMainForm::SaveSettings(TObject* Sender)
     Registry->WriteBool("StatsFormFloating",StatsForm->Floating);
     Registry->WriteBool("ClientFormFloating",ClientForm->Floating);
     Registry->WriteBool("FtpFormFloating",FtpForm->Floating);
+    Registry->WriteBool("WebFormFloating",WebForm->Floating);
     Registry->WriteBool("MailFormFloating",MailForm->Floating);
 
     Registry->WriteInteger("TelnetFormPage"
@@ -2047,6 +2229,8 @@ void __fastcall TMainForm::SaveSettings(TObject* Sender)
     	,PageNum((TPageControl*)MailForm->HostDockSite));
     Registry->WriteInteger("FtpFormPage"
     	,PageNum((TPageControl*)FtpForm->HostDockSite));
+    Registry->WriteInteger("WebFormPage"
+    	,PageNum((TPageControl*)WebForm->HostDockSite));
     Registry->WriteInteger("StatsFormPage"
     	,PageNum((TPageControl*)StatsForm->HostDockSite));
     Registry->WriteInteger("ClientFormPage"
@@ -2062,6 +2246,8 @@ void __fastcall TMainForm::SaveSettings(TObject* Sender)
     WriteFont("MailLog",MailForm->Log->Font);
     WriteColor(Registry,"FtpLog",FtpForm->Log->Color);
     WriteFont("FtpLog",FtpForm->Log->Font);
+    WriteColor(Registry,"WebLog",WebForm->Log->Color);
+    WriteFont("WebLog",WebForm->Log->Font);
     WriteColor(Registry,"NodeList",NodeForm->ListBox->Color);
     WriteFont("NodeList",NodeForm->ListBox->Font);
     WriteColor(Registry,"ClientList",ClientForm->ListView->Color);
@@ -2097,6 +2283,7 @@ void __fastcall TMainForm::SaveSettings(TObject* Sender)
     Registry->WriteInteger("SysAutoStart",SysAutoStart);
     Registry->WriteInteger("MailAutoStart",MailAutoStart);
     Registry->WriteInteger("FtpAutoStart",FtpAutoStart);
+    Registry->WriteInteger("WebAutoStart",WebAutoStart);    
     Registry->WriteInteger("ServicesAutoStart",ServicesAutoStart);
     Registry->WriteInteger("MailLogFile",MailLogFile);
     Registry->WriteInteger("FtpLogFile",FtpLogFile);
@@ -2234,11 +2421,11 @@ void __fastcall TMainForm::ImportSettings(TObject* Sender)
 
     sbbs_read_ini(fp
 		,&global
-    	,(BOOL*)&SysAutoStart   		,&bbs_startup
-    	,(BOOL*)&FtpAutoStart 			,&ftp_startup
-    	,(BOOL*)&WebAutoStart 			,&web_startup
-    	,(BOOL*)&MailAutoStart 	    	,&mail_startup
-    	,(BOOL*)&ServicesAutoStart     	,&services_startup
+    	,&SysAutoStart   		,&bbs_startup
+    	,&FtpAutoStart 			,&ftp_startup
+    	,&WebAutoStart 			,&web_startup
+    	,&MailAutoStart 	    ,&mail_startup
+    	,&ServicesAutoStart     ,&services_startup
         );
     fclose(fp);
 
@@ -2267,6 +2454,7 @@ void __fastcall TMainForm::ImportSettings(TObject* Sender)
         ClientFormFloating=IniFile->ReadBool(section,"ClientFormFloating",false);
         MailFormFloating=IniFile->ReadBool(section,"MailFormFloating",false);
         FtpFormFloating=IniFile->ReadBool(section,"FtpFormFloating",false);
+        WebFormFloating=IniFile->ReadBool(section,"WebFormFloating",false);
     }
 #endif
 
@@ -2279,6 +2467,7 @@ void __fastcall TMainForm::ImportSettings(TObject* Sender)
   	ClientFormPage=IniFile->ReadInteger(section,"ClientFormPage",ClientFormPage);
    	MailFormPage=IniFile->ReadInteger(section,"MailFormPage",MailFormPage);
    	FtpFormPage=IniFile->ReadInteger(section,"FtpFormPage",FtpFormPage);
+   	WebFormPage=IniFile->ReadInteger(section,"WebFormPage",FtpFormPage);
 
 #endif
     
@@ -2334,6 +2523,15 @@ void __fastcall TMainForm::ImportSettings(TObject* Sender)
     	,FtpForm->Width);
    	FtpForm->Height=IniFile->ReadInteger(section,"FtpFormHeight"
     	,FtpForm->Height);
+
+   	WebForm->Top=IniFile->ReadInteger(section,"WebFormTop"
+    	,WebForm->Top);
+   	WebForm->Left=IniFile->ReadInteger(section,"WebFormLeft"
+    	,WebForm->Left);
+   	WebForm->Width=IniFile->ReadInteger(section,"WebFormWidth"
+    	,WebForm->Width);
+   	WebForm->Height=IniFile->ReadInteger(section,"WebFormHeight"
+    	,WebForm->Height);
 
    	MailForm->Top=IniFile->ReadInteger(section,"MailFormTop"
     	,MailForm->Top);
@@ -3121,6 +3319,7 @@ void __fastcall TMainForm::PageControlUnDock(TObject *Sender,
 void __fastcall TMainForm::ReloadConfigExecute(TObject *Sender)
 {
 	FtpRecycleExecute(Sender);
+	WebRecycleExecute(Sender);
 	MailRecycleExecute(Sender);
 	ServicesRecycleExecute(Sender);
 
@@ -3198,7 +3397,6 @@ void __fastcall TMainForm::MailRecycleExecute(TObject *Sender)
     }
 }
 //---------------------------------------------------------------------------
-
 void __fastcall TMainForm::FtpRecycleExecute(TObject *Sender)
 {
 	if(!RecycleService(ftp_svc,&ftp_svc_status)) {
@@ -3207,7 +3405,14 @@ void __fastcall TMainForm::FtpRecycleExecute(TObject *Sender)
     }
 }
 //---------------------------------------------------------------------------
-
+void __fastcall TMainForm::WebRecycleExecute(TObject *Sender)
+{
+	if(!RecycleService(web_svc,&web_svc_status)) {
+		web_startup.recycle_now=true;
+	    WebRecycle->Enabled=false;
+    }
+}
+//---------------------------------------------------------------------------
 void __fastcall TMainForm::ServicesRecycleExecute(TObject *Sender)
 {
 	if(!RecycleService(services_svc,&services_svc_status)) {
@@ -3468,6 +3673,17 @@ void __fastcall TMainForm::ServiceStatusTimerTick(TObject *Sender)
         ,FtpStop
         ,FtpRecycle
         ,FtpForm->ProgressBar
+        );
+    CheckServiceStatus(
+    	 web_svc
+    	,&web_svc_status
+		,web_svc_config
+		,web_svc_config_size
+        ,WebForm->Status
+        ,WebStart
+        ,WebStop
+        ,WebRecycle
+        ,WebForm->ProgressBar
         );
     CheckServiceStatus(
     	 mail_svc
