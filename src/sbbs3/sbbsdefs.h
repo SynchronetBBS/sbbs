@@ -236,32 +236,34 @@
 #define SUB_CFG_YSCAN	0x0100		/* bit 9 (bits 9-15 default to OFF)			*/
 
 									/* Bit values for sub[x].misc */
-#define SUB_QNET	(1L<<3) 		/* Sub-board is netted via QWK network */
-#define SUB_PNET	(1L<<4) 		/* Sub-board is netted via PostLink */
-#define SUB_FIDO	(1L<<5) 		/* Sub-board is netted via FidoNet */
-#define SUB_PRIV	(1L<<6) 		/* Allow private posts on sub */
-#define SUB_PONLY	(1L<<7) 		/* Private posts only */
-#define SUB_ANON	(1L<<8) 		/* Allow anonymous posts on sub */
-#define SUB_AONLY	(1L<<9) 		/* Anonymous only */
-#define SUB_NAME	(1L<<10)		/* Must use real names */
-#define SUB_DEL 	(1L<<11)		/* Allow users to delete messages */
-#define SUB_DELLAST (1L<<12)		/* Allow users to delete last msg only */
-#define SUB_FORCED	(1L<<13)		/* Sub-board is forced scanning */
-#define SUB_NOTAG	(1L<<14)		/* Don't add tag or origin lines */
-#define SUB_TOUSER	(1L<<15)		/* Prompt for to user on posts */
-#define SUB_ASCII	(1L<<16)		/* ASCII characters only */
-#define SUB_QUOTE	(1L<<17)		/* Allow online quoting */
-#define SUB_NSDEF	(1L<<18)		/* New-Scan on by default */
-#define SUB_INET	(1L<<19)		/* Sub-board is netted via Internet */
-#define SUB_FAST	(1L<<20)		/* Fast storage mode */
-#define SUB_KILL	(1L<<21)		/* Kill read messages automatically */
-#define SUB_KILLP	(1L<<22)		/* Kill read pvt messages automatically */
-#define SUB_SYSPERM (1L<<23)		/* Sysop messages are permament */
-#define SUB_GATE	(1L<<24)		/* Gateway between Network types */
-#define SUB_LZH 	(1L<<25)		/* Use LZH compression for msgs */
-#define SUB_SSDEF	(1L<<26)		/* Default ON for Scan for Your msgs */
-#define SUB_HYPER	(1L<<27)		/* Hyper allocation */
-#define SUB_HDRMOD	(1L<<31)		/* Modified sub-board header info (SCFG) */
+#define SUB_QNET		(1L<<3) 	/* Sub-board is netted via QWK network */
+#define SUB_PNET		(1L<<4) 	/* Sub-board is netted via PostLink */
+#define SUB_FIDO		(1L<<5) 	/* Sub-board is netted via FidoNet */
+#define SUB_PRIV		(1L<<6) 	/* Allow private posts on sub */
+#define SUB_PONLY		(1L<<7) 	/* Private posts only */
+#define SUB_ANON		(1L<<8) 	/* Allow anonymous posts on sub */
+#define SUB_AONLY		(1L<<9) 	/* Anonymous only */
+#define SUB_NAME		(1L<<10)	/* Must use real names */
+#define SUB_DEL 		(1L<<11)	/* Allow users to delete messages */
+#define SUB_DELLAST		(1L<<12)	/* Allow users to delete last msg only */
+#define SUB_FORCED		(1L<<13)	/* Sub-board is forced scanning */
+#define SUB_NOTAG		(1L<<14)	/* Don't add tag or origin lines */
+#define SUB_TOUSER		(1L<<15)	/* Prompt for to user on posts */
+#define SUB_ASCII		(1L<<16)	/* ASCII characters only */
+#define SUB_QUOTE		(1L<<17)	/* Allow online quoting */
+#define SUB_NSDEF		(1L<<18)	/* New-Scan on by default */
+#define SUB_INET		(1L<<19)	/* Sub-board is netted via Internet */
+#define SUB_FAST		(1L<<20)	/* Fast storage mode */
+#define SUB_KILL		(1L<<21)	/* Kill read messages automatically */
+#define SUB_KILLP		(1L<<22)	/* Kill read pvt messages automatically */
+#define SUB_SYSPERM		(1L<<23)	/* Sysop messages are permament */
+#define SUB_GATE		(1L<<24)	/* Gateway between Network types */
+#define SUB_LZH 		(1L<<25)	/* Use LZH compression for msgs */
+#define SUB_SSDEF		(1L<<26)	/* Default ON for Scan for Your msgs */
+#define SUB_HYPER		(1L<<27)	/* Hyper allocation */
+#define SUB_EDIT		(1L<<28)	/* Users can edit message text after posting */
+#define SUB_EDITLAST	(1L<<29)	/* Users can edit last message only */
+#define SUB_HDRMOD		(1L<<31)	/* Modified sub-board header info (SCFG) */
 
                                     /* Bit values for dir[x].misc */
 #define DIR_FCHK	(1L<<0) 		/* Check for file existance */
