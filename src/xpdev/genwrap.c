@@ -85,7 +85,7 @@ char* strrev(char* str)
 /* Thanks to Casey Martin for this code										*/
 /****************************************************************************/
 #ifdef __unix__
-void DLLCALL xp_beep(int freq, int dur)
+void DLLCALL unix_beep(int freq, int dur)
 {
 	static int console_fd=-1;
 
