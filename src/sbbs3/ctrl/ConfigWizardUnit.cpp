@@ -162,7 +162,7 @@ void __fastcall TConfigWizard::FormShow(TObject *Sender)
         char*   p;
         if(fp!=NULL) {
             while(!feof(fp)) {
-                if(!fgets(str,sizeof(str)-1,fp))
+                if(!fgets(str,sizeof(str),fp))
                     break;
                 p=str;
                 while(*p && *p<=' ') p++;
