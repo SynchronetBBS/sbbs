@@ -736,7 +736,7 @@ int main(int argc, char **argv)
 				sprintf(f.desc,"%s  ",unixtodstr(&scfg,fdate(str),tmp));
 			if(mode&TODAYS_DATE)
 				sprintf(f.desc,"%s  ",unixtodstr(&scfg,time(NULL),tmp));
-			sprintf(tmp,"%.*s",LEN_FDESC-strlen(f.desc),argv[++j]);
+			sprintf(tmp,"%.*s",(int)(LEN_FDESC-strlen(f.desc)),argv[++j]);
 			strcpy(f.desc,tmp);
 			l=flength(str);
 			if(l==-1) {
