@@ -3,7 +3,7 @@ $(LIBODIR):
 	$(QUIET)mkdir $(LIBODIR)
 
 $(EXEODIR):
-	@echo Creating $(LIBODIR)
+	@echo Creating $(EXEODIR)
 	$(QUIET)mkdir $(EXEODIR)
 
 clean:
