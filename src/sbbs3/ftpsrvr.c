@@ -1443,6 +1443,7 @@ static void send_thread(void* arg)
 
 static void receive_thread(void* arg)
 {
+	char*		p;
 	char		buf[8192];
 	char		ext[F_EXBSIZE+1];
 	char		desc[F_EXBSIZE+1];
@@ -1581,9 +1582,11 @@ static void receive_thread(void* arg)
 				sprintf(f.desc,"%.*s",(int)sizeof(f.desc)-1,xfer.desc);
 
 			/* FILE_ID.DIZ support */
-			if(scfg.dir[f.dir]->misc&DIR_DIZ) {
+			p=strrchr(f.name,'.');
+			if(p!=NULL && scfg.dir[f.dir]->misc&DIR_DIZ) {
 				for(i=0;i<scfg.total_fextrs;i++)
-					if(!stricmp(scfg.fextr[i]->ext,f.name+9) && chk_ar(&scfg,scfg.fextr[i]->ar,xfer.user))
+					if(!stricmp(scfg.fextr[i]->ext,p+1) 
+						&& chk_ar(&scfg,scfg.fextr[i]->ar,xfer.user))
 						break;
 				if(i<scfg.total_fextrs) {
 					sprintf(tmp,"%sFILE_ID.DIZ",scfg.temp_dir);
@@ -1597,15 +1600,15 @@ static void receive_thread(void* arg)
 					if((file=nopen(tmp,O_RDONLY))!=-1) {
 						memset(ext,0,sizeof(ext));
 						read(file,ext,sizeof(ext)-1);
-						for(i=sizeof(ext)-1;i;i--)
+						for(i=sizeof(ext)-1;i;i--)	/* trim trailing spaces */
 							if(ext[i-1]>SP)
 								break;
 						ext[i]=0;
-						if(!f.desc[0]) {
+						if(!f.desc[0]) {			/* use for normal description */
 							strcpy(desc,ext);
-							strip_exascii(desc);
-							strip_ctrl(desc);
-							for(i=0;desc[i];i++)
+							strip_exascii(desc);	/* strip extended ASCII chars */
+							strip_ctrl(desc);		/* strip control chars */
+							for(i=0;desc[i];i++)	/* find approprate first char */
 								if(isalnum(desc[i]))
 									break;
 							sprintf(f.desc,"%.*s",LEN_FDESC,desc+i); 
