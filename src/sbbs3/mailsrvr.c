@@ -1532,8 +1532,8 @@ static void smtp_thread(void* arg)
 							break;
 						truncsp(rcpt_addr);
 						putsmsg(&scfg,usernum,telegram_buf);
-						lprintf("%04d SMTP Created telegram (%ld bytes) from %s to %s <%s>"
-							,socket, length, sender_addr, rcpt_name, rcpt_addr);
+						lprintf("%04d SMTP Created telegram (%ld/%u bytes) from %s to %s <%s>"
+							,socket, length, sizeof(telegram_buf), sender_addr, rcpt_name, rcpt_addr);
 						rcpt_count++;
 					}
 					free(telegram_buf);
