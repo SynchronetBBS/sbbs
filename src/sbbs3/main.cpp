@@ -2610,16 +2610,18 @@ void node_thread(void* arg)
 		if(!sbbs->js_init())	/* This must be done in the context of the node thread */
 			lprintf("!JavaScript Initialization FAILURE");
 	}
+
+	if(sbbs->js_cx!=NULL) {
+		/* User class */
+		if(js_CreateUserClass(sbbs->js_cx, sbbs->js_glob, &scfg)==NULL) 
+			lprintf("!JavaScript ERROR creating user class");
+	}
 #endif
 
 	if(sbbs->answer()) {
 
 #ifdef JAVASCRIPT
-		if(sbbs->js_cx!=NULL) {
-			/* User class */
-			if(js_CreateUserClass(sbbs->js_cx, sbbs->js_glob, &scfg)==NULL) 
-				lprintf("!JavaScript ERROR creating user class");
-
+	if(sbbs->js_cx!=NULL) {
 			/* user object */
 			if(js_CreateUserObject(sbbs->js_cx, sbbs->js_glob, &sbbs->cfg, "user", sbbs->useron.number)==NULL) 
 				lprintf("!JavaScript ERROR creating user object");
