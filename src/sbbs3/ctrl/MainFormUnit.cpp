@@ -1008,6 +1008,9 @@ void __fastcall TMainForm::BBSConfigureMenuItemClick(TObject *Sender)
 		&startup_info,  // pointer to STARTUPINFO
 		&process_info  	// pointer to PROCESS_INFORMATION
 		);
+	// Resource leak if you don't close these:
+	CloseHandle(process_info.hThread);
+	CloseHandle(process_info.hProcess);
 }
 //---------------------------------------------------------------------------
 
