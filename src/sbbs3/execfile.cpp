@@ -262,56 +262,30 @@ int sbbs_t::exec_file(csi_t *csi)
 
 		case CS_FILE_UPLOAD:
 			csi->logic=LOGIC_FALSE;
-			if(useron.rest&FLAG('U')) {
-				bputs(text[R_Upload]);
-				return(0); }
 			if(usrlibs) {
 				i=usrdir[curlib][curdir[curlib]];
 				if(cfg.upload_dir!=INVALID_DIR
 					&& !chk_ar(cfg.dir[i]->ul_ar,&useron))
-					i=cfg.upload_dir; }
-			else
+					i=cfg.upload_dir; 
+			} else
 				i=cfg.upload_dir;
-
-			if((uint)i==INVALID_DIR || !chk_ar(cfg.dir[i]->ul_ar,&useron)) {
-				bputs(text[CantUploadHere]);
-				return(0); }
-
-			if(getfiles(&cfg,i)>=cfg.dir[i]->maxfiles)
-				bputs(text[DirFull]);
-			else {
-				upload(i);
-				csi->logic=LOGIC_TRUE; }
+			csi->logic=upload(i) ? LOGIC_TRUE:LOGIC_FALSE;
 			return(0);
 		case CS_FILE_UPLOAD_USER:
 			csi->logic=LOGIC_FALSE;
 			if(cfg.user_dir==INVALID_DIR) {
 				bputs(text[NoUserDir]);
-				return(0); }
-			if(getfiles(&cfg,cfg.user_dir)>=cfg.dir[cfg.user_dir]->maxfiles)
-				bputs(text[UserDirFull]);
-			else if(useron.rest&FLAG('U'))
-				bputs(text[R_Upload]);
-			else if(!chk_ar(cfg.dir[cfg.user_dir]->ul_ar,&useron))
-				bputs(text[CantUploadToUser]);
-			else {
-				upload(cfg.user_dir);
-				csi->logic=LOGIC_TRUE; }
+				return(0); 
+			}
+			csi->logic=upload(cfg.user_dir) ? LOGIC_TRUE:LOGIC_FALSE;
 			return(0);
 		case CS_FILE_UPLOAD_SYSOP:
 			csi->logic=LOGIC_FALSE;
 			if(cfg.sysop_dir==INVALID_DIR) {
 				bputs(text[NoSysopDir]);
-				return(0); }
-			if(getfiles(&cfg,cfg.sysop_dir)>=cfg.dir[cfg.sysop_dir]->maxfiles)
-				bputs(text[DirFull]);
-			else if(useron.rest&FLAG('U'))
-				bputs(text[R_Upload]);
-			else if(!chk_ar(cfg.dir[cfg.sysop_dir]->ul_ar,&useron))
-				bputs(text[CantUploadToSysop]);
-			else {
-				upload(cfg.sysop_dir);
-				csi->logic=LOGIC_TRUE; }
+				return(0); 
+			}
+			csi->logic=upload(cfg.sysop_dir) ? LOGIC_TRUE:LOGIC_FALSE;
 			return(0);
 		case CS_FILE_DOWNLOAD:
 			if(!usrlibs) return(0);

@@ -555,7 +555,7 @@ public:
 	/* upload.cpp */
 	bool	uploadfile(file_t* f);
 	char	sbbsfilename[128],sbbsfiledesc[128]; /* env vars */
-	void	upload(uint dirnum);
+	bool	upload(uint dirnum);
     char	upload_lastdesc[LEN_FDESC+1];
 	void	update_uldate(file_t* f);
 	bool	bulkupload(uint dirnum);

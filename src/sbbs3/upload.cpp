@@ -260,7 +260,7 @@ void sbbs_t::update_uldate(file_t* f)
 /****************************************************************************/
 /* Uploads files                                                            */
 /****************************************************************************/
-void sbbs_t::upload(uint dirnum)
+bool sbbs_t::upload(uint dirnum)
 {
 	char	str[256],src[256]={""},descbeg[25]={""},descend[25]={""},path[256]
 				,fname[13],keys[256],ch,*p;
@@ -272,6 +272,25 @@ void sbbs_t::upload(uint dirnum)
     file_t	f;
     user_t	user;
     node_t	node;
+
+	/* Security Checks */
+	if(useron.rest&FLAG('U')) {
+		bputs(text[R_Upload]);
+		return(false); 
+	}
+	if(dirnum==INVALID_DIR) {
+		bputs(text[CantUploadHere]);
+		return(false);
+	}
+	if(!chk_ar(cfg.dir[dirnum]->ul_ar,&useron)) {
+		bputs(dirnum==cfg.user_dir ? text[CantUploadToUser] : 
+			dirnum==cfg.sysop_dir ? text[CantUploadToSysop] : text[CantUploadHere]);
+		return(false); 
+	}
+	if(getfiles(&cfg,dirnum)>=cfg.dir[dirnum]->maxfiles) {
+		bputs(dirnum==cfg.user_dir ? text[UserDirFull] : text[DirFull]);
+		return(false);
+	}
 
 	if(sys_status&SS_EVENT && online==ON_REMOTE && !dir_op(dirnum))
 		bprintf(text[UploadBeforeEvent],timeleft/60);
@@ -288,7 +307,8 @@ void sbbs_t::upload(uint dirnum)
 		sprintf(str,"Diskspace is low: %s (%lu bytes)",path,space);
 		errorlog(str);
 		if(!dir_op(dirnum))
-			return; }
+			return(false); 
+	}
 	bprintf(text[DiskNBytesFree],ultoac(space,tmp));
 
 	f.dir=curdirnum=dirnum;
@@ -299,7 +319,8 @@ void sbbs_t::upload(uint dirnum)
 		|| !checkfname(fname) || (trashcan(fname,"file") && !dir_op(dirnum))) {
 		if(fname[0])
 			bputs(text[BadFilename]);
-		return; }
+		return(false); 
+	}
 	if(dirnum==cfg.sysop_dir)
 		sprintf(str,text[UploadToSysopDirQ],fname);
 	else if(dirnum==cfg.user_dir)
@@ -307,21 +328,21 @@ void sbbs_t::upload(uint dirnum)
 	else
 		sprintf(str,text[UploadToCurDirQ],fname,cfg.lib[cfg.dir[dirnum]->lib]->sname
 			,cfg.dir[dirnum]->sname);
-	if(!yesno(str)) return;
+	if(!yesno(str)) return(false);
 	action=NODE_ULNG;
 	padfname(fname,f.name);
 	sprintf(str,"%s%s",path,fname);
 	if(fexist(str)) {   /* File is on disk */
 		if(!dir_op(dirnum) && online!=ON_LOCAL) {		 /* local users or sysops */
 			bprintf(text[FileAlreadyThere],fname);
-			return; }
+			return(false); }
 		if(!yesno(text[FileOnDiskAddQ]))
-			return; }
+			return(false); }
 	else if(online==ON_LOCAL) {
 		bputs(text[FileNotOnDisk]);
 		bputs(text[EnterPath]);
 		if(!getstr(tmp,60,K_LINE|K_UPPER))
-			return;
+			return(false);
 		backslash(tmp);
 		sprintf(src,"%s%s",tmp,fname); }
 	strcpy(str,cfg.dir[dirnum]->exts);
@@ -339,7 +360,7 @@ void sbbs_t::upload(uint dirnum)
 		bputs(text[TheseFileExtsOnly]);
 		bputs(cfg.dir[dirnum]->exts);
 		CRLF;
-		if(!dir_op(dirnum)) return; }
+		if(!dir_op(dirnum)) return(false); }
 	bputs(text[SearchingForDupes]);
 	for(i=k=0;i<usrlibs;i++)
 		for(j=0;j<usrdirs[i];j++,k++) {
@@ -351,9 +372,9 @@ void sbbs_t::upload(uint dirnum)
 				bputs(text[SearchedForDupes]);
 				bprintf(text[FileAlreadyOnline],f.name);
 				if(!dir_op(dirnum))
-					return; 	 /* File is in database for another dir */
+					return(false); 	 /* File is in database for another dir */
 				if(usrdir[i][j]==dirnum)
-					return; } } /* don't allow duplicates */
+					return(false); } } /* don't allow duplicates */
 	bputs(text[SearchedForDupes]);
 	if(dirnum==cfg.user_dir) {  /* User to User transfer */
 		bputs(text[EnterAfterLastDestUser]);
@@ -382,13 +403,13 @@ void sbbs_t::upload(uint dirnum)
 			else {
 				CRLF; } }
 		if(!destusers)
-			return; }
+			return(false); }
 	if(cfg.dir[dirnum]->misc&DIR_RATE) {
 		SYNC;
 		bputs(text[RateThisFile]);
 		ch=getkey(K_ALPHA);
 		if(!isalpha(ch) || sys_status&SS_ABORT)
-			return;
+			return(false);
 		CRLF;
 		sprintf(descbeg,text[Rated],toupper(ch)); }
 	if(cfg.dir[dirnum]->misc&DIR_ULDATE) {
@@ -402,10 +423,10 @@ void sbbs_t::upload(uint dirnum)
 		if(!noyes(text[MultipleDiskQ])) {
 			bputs(text[HowManyDisksTotal]);
 			if((int)(i=getnum(99))<2)
-				return;
+				return(false);
 			bputs(text[NumberOfFile]);
 			if((int)(j=getnum(i))<1)
-				return;
+				return(false);
 			if(j==1)
 				upload_lastdesc[0]=0;
 			if(i>9)
@@ -420,7 +441,7 @@ void sbbs_t::upload(uint dirnum)
 	i=LEN_FDESC-(strlen(descbeg)+strlen(descend));
 	getstr(upload_lastdesc,i,K_LINE|K_EDIT|K_AUTODEL);
 	if(sys_status&SS_ABORT)
-		return;
+		return(false);
 	if(descend[0])      /* end of desc specified, so pad desc with spaces */
 		sprintf(f.desc,"%s%-*s%s",descbeg,i,upload_lastdesc,descend);
 	else                /* no end specified, so string ends at desc end */
@@ -434,11 +455,11 @@ void sbbs_t::upload(uint dirnum)
 	if(src[0]) {    /* being copied from another local dir */
 		bprintf(text[RetrievingFile],fname);
 		if(mv(src,str,1))
-			return;
+			return(false);
 		CRLF; }
 	if(fexist(str)) {   /* File is on disk */
 		if(!uploadfile(&f))
-			return; }
+			return(false); }
 	else {
 		menu("ulprot");
 		SYNC;
@@ -454,7 +475,7 @@ void sbbs_t::upload(uint dirnum)
 				strcat(keys,tmp); }
 		ch=(char)getkeys(keys,0);
 		if(ch=='Q')
-			return;
+			return(false);
 		if(ch=='B') {
 			if(batup_total>=cfg.max_batup)
 				bputs(text[BatchUlQueueIsFull]);
@@ -462,7 +483,7 @@ void sbbs_t::upload(uint dirnum)
 				for(i=0;i<batup_total;i++)
 					if(!strcmp(batup_name[i],f.name)) {
 						bprintf(text[FileAlreadyInQueue],f.name);
-						return; }
+						return(false); }
 				strcpy(batup_name[batup_total],f.name);
 				strcpy(batup_desc[batup_total],f.desc);
 				batup_dir[batup_total]=dirnum;
@@ -485,12 +506,12 @@ void sbbs_t::upload(uint dirnum)
 				ch=uploadfile(&f);
 				autohangup();
 				if(!ch)  /* upload failed, don't process user to user xfer */
-					return; } } }
+					return(false); } } }
 	if(dirnum==cfg.user_dir) {  /* Add files to XFER.IXT in INDX dir */
 		sprintf(str,"%sxfer.ixt",cfg.data_dir);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_APPEND))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_APPEND);
-			return; }
+			return(false); }
 		for(j=0;j<destusers;j++) {
 			for(i=1;i<=cfg.sys_nodes;i++) { /* Tell user, if online */
 				getnodedat(i,&node,0);
@@ -507,6 +528,7 @@ void sbbs_t::upload(uint dirnum)
 			write(file,str,strlen(str)); }
 		close(file); 
 	}
+	return(true);
 }
 
 /****************************************************************************/
