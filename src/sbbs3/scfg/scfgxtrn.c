@@ -484,7 +484,6 @@ execute precisely on time, set this option to Yes.
 If this event program is a native 32-bit executable,
 set this option to Yes.
 */
-				uifc.savnum=4;
 				k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
 					,"Native (32-bit)",opt);
 				if(!k && !(cfg.event[i]->misc&EX_NATIVE)) {
