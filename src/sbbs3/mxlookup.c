@@ -50,8 +50,7 @@
 #include "smbdefs.h"		/* _PACK */
 
 #if defined(_WIN32) || defined(__BORLANDC__)
-#pragma pack(push)
-#pragma pack(1)
+	#pragma pack(push,1)	/* Packet structures must be packed */
 #endif
 
 typedef struct _PACK {

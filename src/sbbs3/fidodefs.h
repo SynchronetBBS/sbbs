@@ -73,8 +73,7 @@
 #endif
 
 #if defined(PRAGMA_PACK)
-#pragma pack(push)		/* Disk image structures must be packed */
-#pragma pack(1)
+	#pragma pack(push,1)			/* Disk image structures must be packed */
 #endif
 
 typedef struct _PACK {				/* Fidonet Packet Header				*/
