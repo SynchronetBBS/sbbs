@@ -310,7 +310,7 @@ int main(int argc, char **argv)
 		sprintf(mopt[i++],"%-27.27s%s","Make Command-line",params.make_cmdline);
 		sprintf(mopt[i++],"%-27.27s%s","File Owner",params.sbbsuser);
 		sprintf(mopt[i++],"%-27.27s%s","File Group",params.sbbsgroup);
-		sprintf(mopt[i++],"%-27.27s%s","Include X Support",params.useX?"Yes":"No");
+		sprintf(mopt[i++],"%-27.27s%s","Include X/FLTK Support",params.useX?"Yes":"No");
 		sprintf(mopt[i++],"%-27.27s","Start Installation...");
 		mopt[i][0]=0;
 
@@ -623,7 +623,7 @@ void install_sbbs(dist_t *dist,struct server_ent_t *server)  {
 			break;
 	}
 
-	sprintf(cmd,"more %s/docs/sbbscon.txt",params.install_path);
+	sprintf(cmd,"more -c %s/docs/sbbscon.txt",params.install_path);
 	exec(cmd);
 	printf("Synchronet has been successfully installed to:\n\t%s\n",params.install_path);
 	printf("Documentation files in:\n\t%s/docs\n",params.install_path);
