@@ -111,14 +111,28 @@ int main(int argc, char **argv)
 	echolist_t savlistcfg;
 	nodecfg_t savnodecfg;
 	arcdef_t savarcdef;
+	BOOL door_mode=FALSE;
+	BOOL gui_mode=TRUE;
 
-	fprintf(stderr,"\nSBBSecho Configuration  Version %s  Copyright 2002 "
+	fprintf(stderr,"\nSBBSecho Configuration  Version %s  Copyright 2003 "
 		"Rob Swindell\n\n",SBBSECHO_VER);
 
 	memset(&cfg,0,sizeof(config_t));
-	if(argc>1)
-		strcpy(str,argv[1]);
-	else {
+	str[0]=0;
+	for(i=1;i<argc;i++) {
+		if(argv[i][0]=='-')
+			switch(toupper(argv[i][1])) {
+				case 'T':
+					gui_mode=FALSE;
+					break;
+				case 'D':
+					door_mode=TRUE;
+					break;
+		}
+		else
+			strcpy(str,argv[1]);
+	}
+	if(str[0]==0) {
 		p=getenv("SBBSCTRL");
 		if(!p) {
 			p=getenv("SBBSNODE");
@@ -131,9 +145,10 @@ int main(int argc, char **argv)
 		else {
 			strcpy(str,p);
 			backslash(str);
-			strcat(str,"sbbsecho.cfg"); } }
+			strcat(str,"sbbsecho.cfg"); 
+		} 
+	}
 	strcpy(cfg.cfgfile,str);
-	// strupr(cfg.cfgfile);
 
 	read_echo_cfg();
 
@@ -142,23 +157,45 @@ int main(int argc, char **argv)
 	// ToDo fix this.
 	//	cputs("memory allocation error\r\n");
 	//	uifc.bail(); }
-		exit(1); }
+		exit(1); 
+	}
 	for(i=0;i<300;i++)
 		if((opt[i]=(char *)MALLOC(MAX_OPLN))==NULL) {
 	// ToDo fix this.
 	//		cputs("memory allocation error\r\n");
 	//      uifc.bail(); }
-			exit(1); }
+			exit(1); 
+		}
 	uifc.size=sizeof(uifc);
-	#ifdef USE_DIALOG
-	uifcinid(&uifc);
-	#elif defined USE_CURSES
-	uifcinic(&uifc);
-	#elif !defined(__unix__)
-	uifcini(&uifc);
-	#else
-	uifcinix(&uifc);
-	#endif
+#if defined(USE_FLTK)
+	if(!door_mode && gui_mode==TRUE
+#if defined(__unix__)
+		&& (getenv("DISPLAY")!=NULL)
+#endif
+		)
+		i=uifcinifltk(&uifc);  /* dialog */
+	else
+#endif
+#ifdef USE_DIALOG
+	if(!door_mode)
+		i=uifcinid(&uifc);
+	else
+#elif defined USE_CURSES
+	if(!door_mode)
+		i=uifcinic(&uifc);
+	else
+#elif !defined(__unix__)
+	if(!door_mode)
+		i=uifcini(&uifc);
+	else
+#endif
+	i=uifcinix(&uifc);
+
+	if(i!=0) {
+		printf("uifc library init returned error %d\n",i);
+		exit(1);
+	}
+
 	sprintf(str,"SBBSecho Configuration v%s",SBBSECHO_VER);
 	uifc.scrn(str);
 
