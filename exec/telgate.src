@@ -9,5 +9,5 @@
 printf "\r\n\1h\1hPress \1yCtrl-]\1w for a control menu anytime.\r\n\r\n"
 pause
 printf "\1h\1yConnecting to: \1w%s\1n\r\n" str
-telnet_gate str 0
+telnet_gate str TG_PASSTHRU
 cls
