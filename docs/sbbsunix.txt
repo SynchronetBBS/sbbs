@@ -54,7 +54,7 @@ A. Currently, only native programs are supported. These programs can either
 Q. Does Synchronet for Unix require X-Windows?
 A. No, Synchronet for Unix is currently a console-based application.
 
-Q. Are there any plans to make a X-Windows front-end for Synchronet for Unix?
+Q. Are there any plans to make an X-Windows front-end for Synchronet?
 A. Yes, but it will be optional.
 
 
@@ -114,7 +114,7 @@ Step-by-step Instructions
       /sbbs/src/sbbs3/scfg/gcc.linux.exe.debug/scfg
       /sbbs/src/sbbs3/scfg/gcc.linux.exe.debug/scfghelp.ixb
       /sbbs/src/sbbs3/scfg/gcc.linux.exe.debug/scfghelp.dat
-      (the paths may be different for FreeBSD or release build)
+      (the paths will be different for FreeBSD or release builds)
 
    C. Build the required Baja {tm} modules:
       gmake -f Makefile.gnu
@@ -182,7 +182,25 @@ Step-by-step Instructions
       Strip FidoNet Kludge Lines      No
       BBS Drop File Type              None
 
-   D. Configure SCFG->External Programs->Online Programs->Main->
+   D. Add to SCFG->External Programs->Online Programs->Main->Available
+      Programs:
+      Name                            Synchronet Configuration
+      Internal Code                   SCFG
+      Start-up Directory
+      Command Line                    %!scfg -d -l%r
+      Clean-up Command Line
+      Execution Cost                  None
+      Access Requirements             SYSOP
+      Execution Requirements
+      Multiple Concurrent Users       No
+      Intercept Standard I/O          Yes
+      Native (32-bit) Executable      Yes
+      Modify User Data                No
+      Execute on Event                No
+      BBS Drop File Type              None
+      Place Drop File In              Node Directory
+
+   E. Configure SCFG->External Programs->Online Programs->Main->
       Synchronet BBS List:
       Name                            Synchronet BBS List
       Internal Code                   SBL
@@ -200,7 +218,7 @@ Step-by-step Instructions
       BBS Drop File Type              Synchronet      XTRN.DAT
       Place Drop File In              Node Directory
 
-   E. Configure SCFG->External Programs->Online Programs->Games->
+   F. Configure SCFG->External Programs->Online Programs->Games->
       Synchronet Blackjack!:
       Name                            Synchronet Blackjack!
       Internal Code                   SBJ
@@ -218,30 +236,30 @@ Step-by-step Instructions
       BBS Drop File Type              Synchronet      XTRN.DAT
       Place Drop File In              Node Directory
 
-   F. Change the "Access Requirements" for *all* of the following:
+   G. Change the "Access Requirements" for *all* of the following:
       SCFG->File Options->Viewable File Types->ZIP,
       SCFG->File Options->Testable File Types->ZIP,
       SCFG->File Options->Extractable File Types->ZIP,
       and SCFG->File Options->Compressable File Types->ZIP to:
-      Access Requirements             !UNIX
+      Access Requirements             NOT UNIX
 
    G. Add "zip" (lowercase) to SCFG->File Options->Viewable File Types:
       File Extension                  zip
       Command Line                    unzip -l %s
       Access Requirements             UNIX
 
-   H. Add "zip" (lowercase) to SCFG->File Options->Testable File Types:
+   I. Add "zip" (lowercase) to SCFG->File Options->Testable File Types:
       File Extension                  zip
       Command Line                    unzip -t %f
       Working String                  Testing ZIP Integrity...
       Access Requirements             UNIX
 
-   I. Add "zip" (lowercase) to SCFG->File Options->Extractable File Types:
+   J. Add "zip" (lowercase) to SCFG->File Options->Extractable File Types:
       File Extension                  zip
       Command Line                    unzip -o -j %f %s -d %g
       Access Requirements             UNIX
 
-   J. Add "zip" (lowercase) to SCFG->File Options->Compressable File Types:
+   K. Add "zip" (lowercase) to SCFG->File Options->Compressable File Types:
       File Extension                  zip
       Command Line                    zip -j -D %f %s
       Access Requirements             UNIX
@@ -252,11 +270,11 @@ Step-by-step Instructions
          determines *which* command line will be used for the current
          platform.
 
-   K. Change the "Access Requirements" for *all* the existing protocols under
+   L. Change the "Access Requirements" for *all* the existing protocols under
       SCFG->File Options->Transfer Protocols to:
-      Access Requirements             !UNIX
+      Access Requirements             NOT UNIX
 
-   L. Add the following transfer protocols to
+   M. Add the following transfer protocols to
       SCFG->File Options->Transfer Protocols:
 
       Mnemonic (Command Key)          X
@@ -264,8 +282,8 @@ Step-by-step Instructions
       Access Requirements             UNIX
       Upload Command Line             rz --xmodem
       Download Command Line           sz --xmodem %f
-      Batch UL Command Line           
-      Batch DL Command Line           
+      Batch UL Command Line
+      Batch DL Command Line
       Bidir Command Line
       Uses DSZLOG                     No
 
@@ -289,7 +307,7 @@ Step-by-step Instructions
       Bidir Command Line
       Uses DSZLOG                     No
 
-   M. Change SCFG->Networks->QWK->Hubs->VERT:
+   N. Change SCFG->Networks->QWK->Hubs->VERT:
       Pack Command Line               zip -j -D %f %s
       Unpack Command Line             unzip -o -j %f %s -d %g
       Call-out Command Line           *qnet-ftp VERT vert.synchro.net YOURPASS
