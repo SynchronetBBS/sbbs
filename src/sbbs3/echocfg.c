@@ -61,7 +61,8 @@ uifcapi_t uifc;
 void bail(int code)
 {
 
-	uifc.bail();
+	if(uifc.bail!=NULL)
+		uifc.bail();
 	exit(code);
 }
 
