@@ -626,7 +626,7 @@ js_recvline(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	}
 
 	if(argc>1)
-		JS_ValueToInt32(cx,argv[1],&timeout);
+		JS_ValueToInt32(cx,argv[1],(int32*)&timeout);
 
 	start=time(NULL);
 	for(i=0;i<len;) {
@@ -722,7 +722,7 @@ js_setsockopt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 static JSBool
 js_ioctlsocket(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	long		cmd;
+	int32		cmd;
 	ulong		arg=0;
 	private_t*	p;
 
