@@ -753,7 +753,7 @@ void msg_opts()
 		sprintf(opt[i++],"%-33.33s%s"
 			,"BBS ID for QWK Packets",cfg.sys_id);
 		sprintf(opt[i++],"%-33.33s%s"
-			,"Local Time Zone",zonestr(cfg.sys_timezone));
+			,"Local Time Zone",smb_zonestr(cfg.sys_timezone,NULL));
 		sprintf(opt[i++],"%-33.33s%u seconds"
 			,"Maximum Retry Time",cfg.smb_retry_time);
 		if(cfg.max_qwkmsgs)
