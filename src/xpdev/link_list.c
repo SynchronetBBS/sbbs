@@ -69,7 +69,7 @@ void listFreeNodes(link_list_t* list)
 
 	for(node=list->first; node!=NULL; node=next) {
 
-		if(list->flags&LINK_LIST_AUTO_FREE)
+		if(list->flags&LINK_LIST_ALWAYS_FREE || node->flags&LINK_LIST_MALLOC)
 			listFreeNodeData(node);
 
 		next = node->next;
@@ -95,13 +95,13 @@ link_list_t* listFree(link_list_t* list)
 	return(list);
 }
 
-size_t listCountNodes(const link_list_t* list)
+long listCountNodes(const link_list_t* list)
 {
-	size_t count=0;
+	long count=0;
 	list_node_t* node;
 
 	if(list==NULL)
-		return(0);
+		return(-1);
 
 	if(list->count)
 		return(list->count);
@@ -110,6 +110,60 @@ size_t listCountNodes(const link_list_t* list)
 		count++;
 
 	return(count);
+}
+
+list_node_t* listFindNode(const link_list_t* list, void* data, size_t length)
+{
+	list_node_t* node;
+
+	if(list==NULL)
+		return(NULL);
+
+	for(node=list->first; node!=NULL; node=node->next)
+		if(node->data!=NULL && memcmp(node->data,data,length)==0)
+			break;
+
+	return(node);
+}
+
+str_list_t listStringList(const link_list_t* list)
+{
+	list_node_t*	node;
+	str_list_t		str_list;
+
+	if(list==NULL)
+		return(NULL);
+
+	if((str_list=strListAlloc())==NULL)
+		return(NULL);
+
+	for(node=list->first; node!=NULL; node=node->next) {
+		if(node->data!=NULL)
+			strListAdd(&str_list, node->data);
+	}
+
+	return(str_list);
+}
+
+str_list_t listSubStringList(const list_node_t* node, long max)
+{
+	long			count=0;
+	str_list_t		str_list;
+
+	if(node==NULL)
+		return(NULL);
+
+	if((str_list=strListAlloc())==NULL)
+		return(NULL);
+
+	for(count=0; count<max && node!=NULL; node=node->next) {
+		if(node->data!=NULL) {
+			strListAdd(&str_list, node->data);
+			count++;
+		}
+	}
+
+	return(str_list);
 }
 
 list_node_t* listFirstNode(const link_list_t* list)
@@ -135,6 +189,38 @@ list_node_t* listLastNode(const link_list_t* list)
 		last=node;
 
 	return(last);
+}
+
+long listNodeIndex(const link_list_t* list, list_node_t* find_node)
+{
+	long			i=0;
+	list_node_t*	node;
+
+	if(list==NULL)
+		return(-1);
+
+	for(node=list->first; node!=NULL; node=node->next)
+		if(node==find_node)
+			break;
+
+	if(node==NULL)
+		return(-1);
+
+	return(i);
+}
+
+list_node_t* listNodeAt(const link_list_t* list, long index)
+{
+	long			i=0;
+	list_node_t*	node;
+
+	if(list==NULL || index<0)
+		return(NULL);
+
+	for(node=list->first; node!=NULL && i<index; node=node->next)
+		i++;
+
+	return(node);
 }
 
 list_node_t* listNextNode(const list_node_t* node)
@@ -178,8 +264,9 @@ list_node_t* listAddNode(link_list_t* list, void* data, list_node_t* after)
 
 	if(after==list->last)					/* append to list */
 		list->last = node;
-	if(after==NULL && list->first!=NULL) {	/* insert at beginning of list */
-		list->first->prev = node;
+	if(after==NULL) {						/* insert at beginning of list */
+		if(list->first!=NULL)
+			list->first->prev = node;
 		list->first = node;
 	}
 	if(after!=NULL) {
@@ -195,17 +282,6 @@ list_node_t* listAddNode(link_list_t* list, void* data, list_node_t* after)
 	return(node);
 }
 
-
-list_node_t* listPushNode(link_list_t* list, void* data)
-{
-	return(listAddNode(list, data, listLastNode(list)));
-}
-
-list_node_t* listInsertNode(link_list_t* list, void* data)
-{
-	return(listAddNode(list, data, NULL));	
-}
-
 list_node_t* listAddNodeData(link_list_t* list, const void* data, size_t length, list_node_t* after)
 {
 	list_node_t*	node;
@@ -219,18 +295,9 @@ list_node_t* listAddNodeData(link_list_t* list, const void* data, size_t length,
 		free(buf);
 		return(NULL);
 	}
+	node->flags |= LINK_LIST_MALLOC;
 	
 	return(node);
-}
-
-list_node_t* listPushNodeData(link_list_t* list, const void* data, size_t length)
-{
-	return(listAddNodeData(list, data, length, listLastNode(list)));
-}
-
-list_node_t* listInsertNodeData(link_list_t* list, const void* data, size_t length)
-{
-	return(listAddNodeData(list, data, length, NULL));	
 }
 
 list_node_t* listAddNodeString(link_list_t* list, const char* str, list_node_t* after)
@@ -252,25 +319,35 @@ list_node_t* listAddNodeString(link_list_t* list, const char* str, list_node_t* 
 		free(buf);
 		return(NULL);
 	}
-	
+	node->flags |= LINK_LIST_MALLOC;
+
 	return(node);
 }
 
-list_node_t* listPushNodeString(link_list_t* list, const char* str)
+list_node_t* listAddStringList(link_list_t* list, str_list_t str_list, list_node_t* node)
 {
-	return(listAddNodeString(list, str, listLastNode(list)));
-}
+	size_t	i;
 
-list_node_t* listInsertNodeString(link_list_t* list, const char* str)
-{
-	return(listAddNodeString(list, str, NULL));	
+	if(str_list==NULL)
+		return(NULL);
+
+	for(i=0;str_list[i];i++)
+		if((node=listAddNodeString(list,str_list[i],node))==NULL)
+			return(NULL);
+
+	return(node);
 }
 
 void* listRemoveNode(link_list_t* list, list_node_t* node)
 {
 	void*	data;
 
-	if(list==NULL || node==NULL)
+	if(list==NULL)
+		return(NULL);
+
+	if(node==NULL)
+		node=list->first;
+	if(node==NULL)
 		return(NULL);
 
 	if(node->prev!=NULL)
@@ -282,9 +359,10 @@ void* listRemoveNode(link_list_t* list, list_node_t* node)
 	if(list->last==node)
 		list->last = node->prev;
 
-	if(list->flags&LINK_LIST_AUTO_FREE)
+	if(list->flags&LINK_LIST_ALWAYS_FREE || node->flags&LINK_LIST_MALLOC)
 		listFreeNodeData(node);
-	data=node->data;
+
+	data = node->data;
 
 	free(node);
 
@@ -294,16 +372,44 @@ void* listRemoveNode(link_list_t* list, list_node_t* node)
 	return(data);
 }
 
-void listRemoveNodeData(link_list_t* list, list_node_t* node)
+long listRemoveNodes(link_list_t* list, list_node_t* node, long max)
 {
-	void*	data;
+	long count;
 
-	if((data=listRemoveNode(list, node))!=NULL)
-		free(data);
+	if(list==NULL)
+		return(-1);
+
+	if(node==NULL)
+		node=list->first;
+
+	for(count=0; node!=NULL && count<max; node=node->next, count++)
+		listRemoveNode(list, node);
+	
+	return(count);
 }
 
+#if 0
 
-void* listPopNode(link_list_t* list)
+#include <stdio.h>	/* printf, sprintf */
+
+int main(int arg, char** argv)
 {
-	return(listRemoveNode(list, listLastNode(list)));
+	int		i;
+	char*	p;
+	char	str[32];
+	link_list_t list;
+
+	listInit(&list,0);
+	for(i=0;i<100;i++) {
+		sprintf(str,"%u",i);
+		listPushNodeString(&list,str);
+	}
+
+	while((p=listRemoveNode(&list,NULL))!=NULL)
+		printf("%d %s\n",listCountNodes(&list),p), free(p);
+
+	gets(str);
+	return 0;
 }
+
+#endif

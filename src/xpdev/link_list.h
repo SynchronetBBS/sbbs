@@ -39,26 +39,28 @@
 #define _LINK_LIST_H
 
 #include <stddef.h>		/* size_t */
+#include "str_list.h"	/* string list functions and types */
 
 #if defined(__cplusplus)
 extern "C" {
 #endif
 
 /* Valid link_list_t.flags bits */
-#define LINK_LIST_MALLOC		(1<<0)	/* List allocated with malloc() */
-#define LINK_LIST_AUTO_FREE		(1<<1)	/* Free node data automatically */
+#define LINK_LIST_MALLOC		(1<<0)	/* List/node allocated with malloc() */
+#define LINK_LIST_ALWAYS_FREE	(1<<1)	/* Always free node data when removing */
 
 typedef struct list_node {
 	void*				data;		/* pointer to some kind of data */
 	struct list_node*	next;		/* next node in list (or NULL) */
 	struct list_node*	prev;		/* previous node in list (or NULL) */
+	unsigned long		flags;		/* private use flags */
 } list_node_t;
 
 typedef struct {
 	list_node_t*		first;		/* first node in list (or NULL) */
 	list_node_t*		last;		/* last node in list (or NULL) */
 	unsigned long		flags;		/* flags passed to listInit() */
-	size_t				count;		/* number of nodes in list */
+	long				count;		/* number of nodes in list */
 } link_list_t;
 
 /* Initialization, Allocation, and Freeing of Lists and Nodes */
@@ -67,33 +69,55 @@ link_list_t*	listFree(link_list_t*);
 void			listFreeNodes(link_list_t*);
 void			listFreeNodeData(list_node_t* node);
 
+/* Return count or index of nodes, or -1 on error */
+long			listCountNodes(const link_list_t*);
+long			listNodeIndex(const link_list_t*, list_node_t*);
+
+/* Return an allocated string list (which must be freed), array of all strings in linked list */
+str_list_t		listStringList(const link_list_t*);
+
+/* Return an allocated string list (which must be freed), subset of strings in linked list */
+str_list_t		listSubStringList(const list_node_t*, long max);
+
+/* Simple search functions returning found node or NULL on error */
+list_node_t*	listNodeAt(const link_list_t*, long index);
+list_node_t*	listFindNode(const link_list_t*, void* data, size_t length);
+
 /* Convenience functions */
-size_t			listCountNodes(const link_list_t*);
 list_node_t*	listFirstNode(const link_list_t*);
 list_node_t*	listLastNode(const link_list_t*);
 list_node_t*	listNextNode(const list_node_t*);
 list_node_t*	listPrevNode(const list_node_t*);
 void*			listNodeData(const list_node_t*);
 
-/* Add node to list, returns pointer to new node */
-list_node_t*	listAddNode(link_list_t*, void* data, list_node_t* after);
-list_node_t*	listPushNode(link_list_t*, void* data);
-list_node_t*	listInsertNode(link_list_t*, void* data);
+/* Add node to list, returns pointer to new node or NULL on error */
+list_node_t*	listAddNode(link_list_t*, void* data, list_node_t* after /* NULL=insert */);
 
 /* Add node to list, allocating and copying the data for the node */
 list_node_t*	listAddNodeData(link_list_t*, const void* data, size_t length, list_node_t* after);
-list_node_t*	listPushNodeData(link_list_t*, const void* data, size_t length);
-list_node_t*	listInsertNodeData(link_list_t*, const void* data, size_t length);
 
-/* Add node to list, allocating and copying string (ACIIZ / null-terminated char*) */
+/* Add node to list, allocating and copying ASCIIZ string data */
 list_node_t*	listAddNodeString(link_list_t*, const char* str, list_node_t* after);
-list_node_t*	listPushNodeString(link_list_t*, const char* str);
-list_node_t*	listInsertNodeString(link_list_t*, const char* str);
+
+/* Add a list of strings to the linked list, allocating and copying each */
+list_node_t*	listAddStringList(link_list_t*, str_list_t, list_node_t* after);
+
+/* Convenience macros for pushing, popping, and inserting nodes */
+#define	listPushNode(list, data)				listAddNode(list, data, listLastNode(list))
+#define listInsertNode(link, data)				listAddNode(list, data, NULL)
+#define listPushNodeData(list, data, length)	listAddNodeData(list, data, length, listLastNode(list))
+#define	listInsertNodeData(list, data, length)	listAddNodeData(list, data, length, NULL)
+#define	listPushNodeString(list, str)			listAddNodeString(list, str, listLastNode(list))
+#define listInsertNodeString(list, str)			listAddNodeString(list, str, NULL)
+#define	listPushStringList(list, str_list)		listAddStringList(list, str_list, listLastNode(list))
+#define listInsertStringList(list, str_list)	listAddStringList(list, str_list, NULL)
+#define listPopNode(list)						listRemoveNode(list, listLastNode(list))
 
 /* Remove node from list, returning the node's data (if not free'd) */
-void*			listPopNode(link_list_t*);
-void*			listRemoveNode(link_list_t*, list_node_t*);
-void			listRemoveNodeData(link_list_t* list, list_node_t* node);
+void*			listRemoveNode(link_list_t*, list_node_t* /* NULL=first */);
+
+/* Remove multiple nodes from list, returning the number of nodes removed */
+long			listRemoveNodes(link_list_t*, list_node_t* /* NULL=first */, long count);
 
 #if defined(__cplusplus)
 }
