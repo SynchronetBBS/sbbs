@@ -39,5 +39,5 @@ vpath %.c $(SBBS_SRC)
 vpath %.cpp $(SBBS_SRC)
 
 SBBSDEFS	:=
--include $(SBBS_SRC)sbbsdefs.mk		# defines $(SBBSDEFS)
+-include sbbsdefs.mk		# defines $(SBBSDEFS)
 CFLAGS	+=	$(SBBSDEFS)
