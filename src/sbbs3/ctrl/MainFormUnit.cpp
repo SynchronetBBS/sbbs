@@ -63,6 +63,7 @@
 #include "TextFileEditUnit.h"
 #include "UserListFormUnit.h"
 #include "PropertiesDlgUnit.h"
+#include "ConfigWizardUnit.h"
 
 #include "sbbs.h"           // unixtodstr()
 #include "userdat.h"		// lastuser()
@@ -77,7 +78,7 @@ TMainForm *MainForm;
 
 #define LOG_TIME_FMT "  m/d  hh:mm:ssa/p"
 
-int threads=1;
+int     threads=1;
 
 static void thread_up(BOOL up)
 {
@@ -512,9 +513,6 @@ static void ftp_start(void)
 }
 //---------------------------------------------------------------------------
 
-#define APP_TITLE "Synchronet Control Panel"
-#define REG_KEY "\\Software\\Swindell\\"APP_TITLE"\\"
-
 //---------------------------------------------------------------------------
 __fastcall TMainForm::TMainForm(TComponent* Owner)
         : TForm(Owner)
@@ -527,6 +525,11 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
     NodeDisplayInterval=1;  /* seconds */
     ClientDisplayInterval=5;    /* seconds */
     Initialized=false;
+    FirstRun=false;
+
+    char* p;
+    if((p=getenv("SBBSCTRL"))!=NULL)
+        CtrlDirectory=p;
 
     memset(&bbs_startup,0,sizeof(bbs_startup));
     bbs_startup.size=sizeof(bbs_startup);
@@ -634,7 +637,6 @@ void __fastcall TMainForm::FormCreate(TObject *Sender)
 	   	Width=Registry->ReadInteger("MainFormWidth");
     else
         WindowState=wsMaximized;    // Default to fullscreen
-
    	if(Registry->ValueExists("SpyTerminalWidth"))
 	   	SpyTerminalWidth=Registry->ReadInteger("SpyTerminalWidth");
    	if(Registry->ValueExists("SpyTerminalHeight"))
@@ -678,165 +680,6 @@ void __fastcall TMainForm::FormClose(TObject *Sender, TCloseAction &Action)
         Application->ProcessMessages();
         Sleep(1);
     }
-}
-//---------------------------------------------------------------------------
-void __fastcall TMainForm::SaveSettings(TObject* Sender)
-{
-	StatusBar->Panels->Items[4]->Text="Saving Settings...";
-
-    NodeForm->Timer->Interval=NodeDisplayInterval*1000;
-    ClientForm->Timer->Interval=ClientDisplayInterval*1000;
-    
-    // Write Registry keys
-	TRegistry* Registry=new TRegistry;
-    if(!Registry->OpenKey(REG_KEY,true)) {
-    	Application->MessageBox("Error creating registry key"
-        	,REG_KEY,MB_OK|MB_ICONEXCLAMATION);
-        Application->Terminate();
-    }
-
-    Registry->WriteInteger("MainFormTop",Top);
-    Registry->WriteInteger("MainFormLeft",Left);
-    Registry->WriteInteger("MainFormHeight",Height);
-    Registry->WriteInteger("MainFormWidth",Width);
-
-    Registry->WriteInteger("NodeFormTop",NodeForm->Top);
-    Registry->WriteInteger("NodeFormLeft",NodeForm->Left);
-    Registry->WriteInteger("NodeFormHeight",NodeForm->Height);
-    Registry->WriteInteger("NodeFormWidth",NodeForm->Width);
-
-    Registry->WriteInteger("StatsFormTop",StatsForm->Top);
-    Registry->WriteInteger("StatsFormLeft",StatsForm->Left);
-    Registry->WriteInteger("StatsFormHeight",StatsForm->Height);
-    Registry->WriteInteger("StatsFormWidth",StatsForm->Width);
-
-    Registry->WriteInteger("ClientFormTop",ClientForm->Top);
-    Registry->WriteInteger("ClientFormLeft",ClientForm->Left);
-    Registry->WriteInteger("ClientFormHeight",ClientForm->Height);
-    Registry->WriteInteger("ClientFormWidth",ClientForm->Width);
-
-    Registry->WriteInteger("TelnetFormTop",TelnetForm->Top);
-    Registry->WriteInteger("TelnetFormLeft",TelnetForm->Left);
-    Registry->WriteInteger("TelnetFormHeight",TelnetForm->Height);
-    Registry->WriteInteger("TelnetFormWidth",TelnetForm->Width);
-
-    Registry->WriteInteger("EventsFormTop",EventsForm->Top);
-    Registry->WriteInteger("EventsFormLeft",EventsForm->Left);
-    Registry->WriteInteger("EventsFormHeight",EventsForm->Height);
-    Registry->WriteInteger("EventsFormWidth",EventsForm->Width);
-
-    Registry->WriteInteger("FtpFormTop",FtpForm->Top);
-    Registry->WriteInteger("FtpFormLeft",FtpForm->Left);
-    Registry->WriteInteger("FtpFormHeight",FtpForm->Height);
-    Registry->WriteInteger("FtpFormWidth",FtpForm->Width);
-
-    Registry->WriteInteger("MailFormTop",MailForm->Top);
-    Registry->WriteInteger("MailFormLeft",MailForm->Left);
-    Registry->WriteInteger("MailFormHeight",MailForm->Height);
-    Registry->WriteInteger("MailFormWidth",MailForm->Width);
-
-    Registry->WriteInteger("TopPanelHeight",TopPanel->Height);
- 	Registry->WriteInteger("UpperLeftPageControlWidth"
-    	,UpperLeftPageControl->Width);
-    Registry->WriteInteger("LowerLeftPageControlWidth"
-    	,LowerLeftPageControl->Width);
-
-    Registry->WriteBool("TelnetFormFloating",TelnetForm->Floating);
-    Registry->WriteBool("EventsFormFloating",EventsForm->Floating);
-    Registry->WriteBool("NodeFormFloating",NodeForm->Floating);
-    Registry->WriteBool("StatsFormFloating",StatsForm->Floating);
-    Registry->WriteBool("ClientFormFloating",ClientForm->Floating);
-    Registry->WriteBool("FtpFormFloating",FtpForm->Floating);
-    Registry->WriteBool("MailFormFloating",MailForm->Floating);
-
-    Registry->WriteInteger("TelnetFormPage"
-	    ,PageNum((TPageControl*)TelnetForm->HostDockSite));
-    Registry->WriteInteger("EventsFormPage"
-	    ,PageNum((TPageControl*)EventsForm->HostDockSite));
-    Registry->WriteInteger("NodeFormPage"
-    	,PageNum((TPageControl*)NodeForm->HostDockSite));
-    Registry->WriteInteger("MailFormPage"
-    	,PageNum((TPageControl*)MailForm->HostDockSite));
-    Registry->WriteInteger("FtpFormPage"
-    	,PageNum((TPageControl*)FtpForm->HostDockSite));
-    Registry->WriteInteger("StatsFormPage"
-    	,PageNum((TPageControl*)StatsForm->HostDockSite));
-    Registry->WriteInteger("ClientFormPage"
-    	,PageNum((TPageControl*)ClientForm->HostDockSite));
-
-    Registry->WriteBool("ToolBarVisible",Toolbar->Visible);
-    Registry->WriteBool("StatusBarVisible",StatusBar->Visible);
-
-    Registry->WriteString("CtrlDirectory",CtrlDirectory);
-    Registry->WriteString("LoginCommand",LoginCommand);
-    Registry->WriteString("ConfigCommand",ConfigCommand);
-    Registry->WriteBool("MinimizeToSysTray",MinimizeToSysTray);
-    Registry->WriteInteger("NodeDisplayInterval",NodeDisplayInterval);
-    Registry->WriteInteger("ClientDisplayInterval",ClientDisplayInterval);
-
-    Registry->WriteInteger("SysAutoStart",SysAutoStart);
-    Registry->WriteInteger("MailAutoStart",MailAutoStart);
-    Registry->WriteInteger("FtpAutoStart",FtpAutoStart);
-    Registry->WriteInteger("MailLogFile",MailLogFile);
-    Registry->WriteInteger("FtpLogFile",FtpLogFile);
-
-    Registry->WriteInteger("TelnetInterface",bbs_startup.telnet_interface);
-    Registry->WriteInteger("RLoginInterface",bbs_startup.rlogin_interface);
-
-	Registry->WriteInteger("TelnetPort",bbs_startup.telnet_port);
-	Registry->WriteInteger("RLoginPort",bbs_startup.rlogin_port);
-    Registry->WriteInteger("FirstNode",bbs_startup.first_node);
-    Registry->WriteInteger("LastNode",bbs_startup.last_node);
-
-    Registry->WriteString("AnswerSound",AnsiString(bbs_startup.answer_sound));
-    Registry->WriteString("HangupSound",AnsiString(bbs_startup.hangup_sound));
-
-    Registry->WriteInteger("StartupOptions",bbs_startup.options);
-
-    Registry->WriteInteger("MailMaxClients",mail_startup.max_clients);
-    Registry->WriteInteger("MailMaxInactivity",mail_startup.max_inactivity);
-    Registry->WriteInteger("MailInterface",mail_startup.interface_addr);
-    Registry->WriteInteger("MailMaxDeliveryAttempts"
-        ,mail_startup.max_delivery_attempts);
-    Registry->WriteInteger("MailRescanFrequency"
-        ,mail_startup.rescan_frequency);
-
-    Registry->WriteInteger("MailSMTPPort",mail_startup.smtp_port);
-    Registry->WriteInteger("MailPOP3Port",mail_startup.pop3_port);
-
-    Registry->WriteString("MailRelayServer",mail_startup.relay_server);
-    Registry->WriteString("MailDNSServer",mail_startup.dns_server);
-
-    Registry->WriteString("MailInboundSound",AnsiString(mail_startup.inbound_sound));
-    Registry->WriteString("MailOutboundSound",AnsiString(mail_startup.outbound_sound));
-    Registry->WriteInteger("MailOptions",mail_startup.options);
-
-    Registry->WriteString("MailPOP3Sound",AnsiString(mail_startup.pop3_sound));
-
-	Registry->WriteInteger("FtpPort",ftp_startup.port);
-    Registry->WriteInteger("FtpMaxClients",ftp_startup.max_clients);
-    Registry->WriteInteger("FtpMaxInactivity",ftp_startup.max_inactivity);
-    Registry->WriteInteger("FtpInterface",ftp_startup.interface_addr);
-    Registry->WriteString("FtpAnswerSound",AnsiString(ftp_startup.answer_sound));
-    Registry->WriteString("FtpHangupSound",AnsiString(ftp_startup.hangup_sound));
-    Registry->WriteString("FtpIndexFileName"
-    	,AnsiString(ftp_startup.index_file_name));
-    Registry->WriteInteger("FtpOptions",ftp_startup.options);
-
-	Registry->WriteInteger( "SpyTerminalWidth"
-                            ,SpyTerminalWidth);
-	Registry->WriteInteger( "SpyTerminalHeight"
-                            ,SpyTerminalHeight);
-   	Registry->WriteString(  "SpyTerminalFontName"
-                            ,SpyTerminalFont->Name);
-	Registry->WriteInteger( "SpyTerminalFontSize"
-                            ,SpyTerminalFont->Size);
-	Registry->WriteBool(    "SpyTerminalKeyboardActive"
-                            ,SpyTerminalKeyboardActive);
-
-    Registry->CloseKey();
-    delete Registry;
-
 }
 //---------------------------------------------------------------------------
 
@@ -1071,63 +914,6 @@ void __fastcall TMainForm::StatsTimerTick(TObject *Sender)
 
     getstats(&cfg,0,&stats);
 
-#if 0
-    for(i=0;i<8;i++) {
-    	str[0];
-    	switch(i) {
-			case 0:
-            	sprintf(str,"%*s %lu Total: %lu"
-                	,STAT_DESC_LEN,"Logons Today:"
-                	,stats.ltoday,stats.logons);
-                break;
-            case 1:
-            	sprintf(str,"%*s %lu Total: %lu"
-                	,STAT_DESC_LEN,"Time Used Today:"
-                	,stats.ttoday,stats.timeon);
-                break;
-            case 2:
-            	sprintf(str,"%*s %lu bytes in %lu files"
-                	,STAT_DESC_LEN,"Uploads Today:"
-                	,stats.ulb,stats.uls);
-                break;
-            case 3:
-            	sprintf(str,"%*s %lu bytes in %lu files"
-                	,STAT_DESC_LEN,"Downloads Today:"
-                	,stats.dlb,stats.dls);
-                break;
-            case 4:
-            	sprintf(str,"%*s %lu"
-                	,STAT_DESC_LEN,"Messages Posted Today:"
-                	,stats.ptoday);
-                break;
-            case 5:
-            	sprintf(str,"%*s %lu Total: %lu"
-                	,STAT_DESC_LEN,"E-mail Sent Today:"
-                	,stats.etoday,getmail(&cfg,0,0));
-                break;
-            case 6:
-            	sprintf(str,"%*s %lu Total: %lu"
-                	,STAT_DESC_LEN,"Feedback Sent Today:"
-                	,stats.ftoday,getmail(&cfg,1,0));
-                break;
-			case 7:
-            	sprintf(str,"%*s %hu Total: %lu"
-                	,STAT_DESC_LEN,"New Users Today:"
-                	,stats.nusers,lastuser(&cfg));
-                break;
-        }
-        if(!str[0])
-        	break;
-
-        AnsiString Str=AnsiString(str);
-
-        if(StatsForm->ListBox->Items->Count<i+1)
-            StatsForm->ListBox->Items->Add(Str);
-        else if(StatsForm->ListBox->Items->Strings[i]!=Str)
-            StatsForm->ListBox->Items->Strings[i]=str;
-	}
-#else
-
 	StatsForm->TotalLogons->Caption=AnsiString(stats.logons);
     StatsForm->LogonsToday->Caption=AnsiString(stats.ltoday);
     StatsForm->TotalTimeOn->Caption=AnsiString(stats.timeon);
@@ -1155,8 +941,6 @@ void __fastcall TMainForm::StatsTimerTick(TObject *Sender)
     else
     	sprintf(str,"%lu",stats.dlb);
     StatsForm->DownloadedBytes->Caption=AnsiString(str);
-
-#endif
 }
 //---------------------------------------------------------------------------
 
@@ -1404,6 +1188,8 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     	sprintf(bbs_startup.answer_sound,"%.*s"
         	,sizeof(bbs_startup.answer_sound)-1
         	,Registry->ReadString("AnswerSound").c_str());
+    else
+        FirstRun=true;
 
     if(Registry->ValueExists("HangupSound"))
     	sprintf(bbs_startup.hangup_sound,"%.*s"
@@ -1470,6 +1256,9 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     if(Registry->ValueExists("FtpMaxInactivity"))
     	ftp_startup.max_inactivity=Registry->ReadInteger("FtpMaxInactivity");
 
+    if(Registry->ValueExists("FtpQwkTimeout"))
+    	ftp_startup.qwk_timeout=Registry->ReadInteger("FtpQwkTimeout");
+
     if(Registry->ValueExists("FtpInterface"))
     	ftp_startup.interface_addr=Registry->ReadInteger("FtpInterface");
 
@@ -1490,6 +1279,16 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     	sprintf(ftp_startup.index_file_name,"%.*s"
         	,sizeof(ftp_startup.index_file_name)-1
         	,Registry->ReadString("FtpIndexFileName").c_str());
+
+    if(Registry->ValueExists("FtpHtmlIndexFile"))
+    	sprintf(ftp_startup.html_index_file,"%.*s"
+        	,sizeof(ftp_startup.html_index_file)-1
+        	,Registry->ReadString("FtpHtmlIndexFile").c_str());
+
+    if(Registry->ValueExists("FtpHtmlIndexScript"))
+    	sprintf(ftp_startup.html_index_script,"%.*s"
+        	,sizeof(ftp_startup.html_index_script)-1
+        	,Registry->ReadString("FtpHtmlIndexScript").c_str());
 
     if(Registry->ValueExists("FtpOptions"))
     	ftp_startup.options=Registry->ReadInteger("FtpOptions");
@@ -1591,9 +1390,177 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     NodeForm->Timer->Enabled=true;
     ClientForm->Timer->Interval=ClientDisplayInterval*1000;
     ClientForm->Timer->Enabled=true;
-    
+
 	StatsTimer->Enabled=true;
     Initialized=true;
+
+    if(FirstRun)
+        BBSConfigWizardMenuItemClick(Sender);
+}
+//---------------------------------------------------------------------------
+void __fastcall TMainForm::SaveSettings(TObject* Sender)
+{
+	StatusBar->Panels->Items[4]->Text="Saving Settings...";
+
+    NodeForm->Timer->Interval=NodeDisplayInterval*1000;
+    ClientForm->Timer->Interval=ClientDisplayInterval*1000;
+
+    // Write Registry keys
+	TRegistry* Registry=new TRegistry;
+    if(!Registry->OpenKey(REG_KEY,true)) {
+    	Application->MessageBox("Error creating registry key"
+        	,REG_KEY,MB_OK|MB_ICONEXCLAMATION);
+        Application->Terminate();
+    }
+
+    Registry->WriteInteger("MainFormTop",Top);
+    Registry->WriteInteger("MainFormLeft",Left);
+    Registry->WriteInteger("MainFormHeight",Height);
+    Registry->WriteInteger("MainFormWidth",Width);
+
+    Registry->WriteInteger("NodeFormTop",NodeForm->Top);
+    Registry->WriteInteger("NodeFormLeft",NodeForm->Left);
+    Registry->WriteInteger("NodeFormHeight",NodeForm->Height);
+    Registry->WriteInteger("NodeFormWidth",NodeForm->Width);
+
+    Registry->WriteInteger("StatsFormTop",StatsForm->Top);
+    Registry->WriteInteger("StatsFormLeft",StatsForm->Left);
+    Registry->WriteInteger("StatsFormHeight",StatsForm->Height);
+    Registry->WriteInteger("StatsFormWidth",StatsForm->Width);
+
+    Registry->WriteInteger("ClientFormTop",ClientForm->Top);
+    Registry->WriteInteger("ClientFormLeft",ClientForm->Left);
+    Registry->WriteInteger("ClientFormHeight",ClientForm->Height);
+    Registry->WriteInteger("ClientFormWidth",ClientForm->Width);
+
+    Registry->WriteInteger("TelnetFormTop",TelnetForm->Top);
+    Registry->WriteInteger("TelnetFormLeft",TelnetForm->Left);
+    Registry->WriteInteger("TelnetFormHeight",TelnetForm->Height);
+    Registry->WriteInteger("TelnetFormWidth",TelnetForm->Width);
+
+    Registry->WriteInteger("EventsFormTop",EventsForm->Top);
+    Registry->WriteInteger("EventsFormLeft",EventsForm->Left);
+    Registry->WriteInteger("EventsFormHeight",EventsForm->Height);
+    Registry->WriteInteger("EventsFormWidth",EventsForm->Width);
+
+    Registry->WriteInteger("FtpFormTop",FtpForm->Top);
+    Registry->WriteInteger("FtpFormLeft",FtpForm->Left);
+    Registry->WriteInteger("FtpFormHeight",FtpForm->Height);
+    Registry->WriteInteger("FtpFormWidth",FtpForm->Width);
+
+    Registry->WriteInteger("MailFormTop",MailForm->Top);
+    Registry->WriteInteger("MailFormLeft",MailForm->Left);
+    Registry->WriteInteger("MailFormHeight",MailForm->Height);
+    Registry->WriteInteger("MailFormWidth",MailForm->Width);
+
+    Registry->WriteInteger("TopPanelHeight",TopPanel->Height);
+ 	Registry->WriteInteger("UpperLeftPageControlWidth"
+    	,UpperLeftPageControl->Width);
+    Registry->WriteInteger("LowerLeftPageControlWidth"
+    	,LowerLeftPageControl->Width);
+
+    Registry->WriteBool("TelnetFormFloating",TelnetForm->Floating);
+    Registry->WriteBool("EventsFormFloating",EventsForm->Floating);
+    Registry->WriteBool("NodeFormFloating",NodeForm->Floating);
+    Registry->WriteBool("StatsFormFloating",StatsForm->Floating);
+    Registry->WriteBool("ClientFormFloating",ClientForm->Floating);
+    Registry->WriteBool("FtpFormFloating",FtpForm->Floating);
+    Registry->WriteBool("MailFormFloating",MailForm->Floating);
+
+    Registry->WriteInteger("TelnetFormPage"
+	    ,PageNum((TPageControl*)TelnetForm->HostDockSite));
+    Registry->WriteInteger("EventsFormPage"
+	    ,PageNum((TPageControl*)EventsForm->HostDockSite));
+    Registry->WriteInteger("NodeFormPage"
+    	,PageNum((TPageControl*)NodeForm->HostDockSite));
+    Registry->WriteInteger("MailFormPage"
+    	,PageNum((TPageControl*)MailForm->HostDockSite));
+    Registry->WriteInteger("FtpFormPage"
+    	,PageNum((TPageControl*)FtpForm->HostDockSite));
+    Registry->WriteInteger("StatsFormPage"
+    	,PageNum((TPageControl*)StatsForm->HostDockSite));
+    Registry->WriteInteger("ClientFormPage"
+    	,PageNum((TPageControl*)ClientForm->HostDockSite));
+
+    Registry->WriteBool("ToolBarVisible",Toolbar->Visible);
+    Registry->WriteBool("StatusBarVisible",StatusBar->Visible);
+
+    Registry->WriteString("CtrlDirectory",CtrlDirectory);
+    Registry->WriteString("LoginCommand",LoginCommand);
+    Registry->WriteString("ConfigCommand",ConfigCommand);
+    Registry->WriteBool("MinimizeToSysTray",MinimizeToSysTray);
+    Registry->WriteInteger("NodeDisplayInterval",NodeDisplayInterval);
+    Registry->WriteInteger("ClientDisplayInterval",ClientDisplayInterval);
+
+    Registry->WriteInteger("SysAutoStart",SysAutoStart);
+    Registry->WriteInteger("MailAutoStart",MailAutoStart);
+    Registry->WriteInteger("FtpAutoStart",FtpAutoStart);
+    Registry->WriteInteger("MailLogFile",MailLogFile);
+    Registry->WriteInteger("FtpLogFile",FtpLogFile);
+
+    Registry->WriteInteger("TelnetInterface",bbs_startup.telnet_interface);
+    Registry->WriteInteger("RLoginInterface",bbs_startup.rlogin_interface);
+
+	Registry->WriteInteger("TelnetPort",bbs_startup.telnet_port);
+	Registry->WriteInteger("RLoginPort",bbs_startup.rlogin_port);
+    Registry->WriteInteger("FirstNode",bbs_startup.first_node);
+    Registry->WriteInteger("LastNode",bbs_startup.last_node);
+
+    Registry->WriteString("AnswerSound",AnsiString(bbs_startup.answer_sound));
+    Registry->WriteString("HangupSound",AnsiString(bbs_startup.hangup_sound));
+
+    Registry->WriteInteger("StartupOptions",bbs_startup.options);
+
+    Registry->WriteInteger("MailMaxClients",mail_startup.max_clients);
+    Registry->WriteInteger("MailMaxInactivity",mail_startup.max_inactivity);
+    Registry->WriteInteger("MailInterface",mail_startup.interface_addr);
+    Registry->WriteInteger("MailMaxDeliveryAttempts"
+        ,mail_startup.max_delivery_attempts);
+    Registry->WriteInteger("MailRescanFrequency"
+        ,mail_startup.rescan_frequency);
+
+    Registry->WriteInteger("MailSMTPPort",mail_startup.smtp_port);
+    Registry->WriteInteger("MailPOP3Port",mail_startup.pop3_port);
+
+    Registry->WriteString("MailRelayServer",mail_startup.relay_server);
+    Registry->WriteString("MailDNSServer",mail_startup.dns_server);
+
+    Registry->WriteString("MailInboundSound",AnsiString(mail_startup.inbound_sound));
+    Registry->WriteString("MailOutboundSound",AnsiString(mail_startup.outbound_sound));
+    Registry->WriteInteger("MailOptions",mail_startup.options);
+
+    Registry->WriteString("MailPOP3Sound",AnsiString(mail_startup.pop3_sound));
+
+	Registry->WriteInteger("FtpPort",ftp_startup.port);
+    Registry->WriteInteger("FtpMaxClients",ftp_startup.max_clients);
+    Registry->WriteInteger("FtpMaxInactivity",ftp_startup.max_inactivity);
+    Registry->WriteInteger("FtpQwkTimeout",ftp_startup.qwk_timeout);
+    Registry->WriteInteger("FtpInterface",ftp_startup.interface_addr);
+    Registry->WriteString("FtpAnswerSound",AnsiString(ftp_startup.answer_sound));
+    Registry->WriteString("FtpHangupSound",AnsiString(ftp_startup.hangup_sound));
+    Registry->WriteString("FtpIndexFileName"
+    	,AnsiString(ftp_startup.index_file_name));
+    Registry->WriteString("FtpHtmlIndexFile"
+    	,AnsiString(ftp_startup.html_index_file));
+    Registry->WriteString("FtpHtmlIndexScript"
+    	,AnsiString(ftp_startup.html_index_script));
+
+    Registry->WriteInteger("FtpOptions",ftp_startup.options);
+
+	Registry->WriteInteger( "SpyTerminalWidth"
+                            ,SpyTerminalWidth);
+	Registry->WriteInteger( "SpyTerminalHeight"
+                            ,SpyTerminalHeight);
+   	Registry->WriteString(  "SpyTerminalFontName"
+                            ,SpyTerminalFont->Name);
+	Registry->WriteInteger( "SpyTerminalFontSize"
+                            ,SpyTerminalFont->Size);
+	Registry->WriteBool(    "SpyTerminalKeyboardActive"
+                            ,SpyTerminalKeyboardActive);
+
+    Registry->CloseKey();
+    delete Registry;
+
 }
 //---------------------------------------------------------------------------
 
@@ -1956,13 +1923,13 @@ void __fastcall TMainForm::PropertiesExecute(TObject *Sender)
 }
 //---------------------------------------------------------------------------
 
-void __fastcall TMainForm::CloseMenuItemClick(TObject *Sender)
+void __fastcall TMainForm::CloseTrayMenuItemClick(TObject *Sender)
 {
     Close();
 }
 //---------------------------------------------------------------------------
 
-void __fastcall TMainForm::RestoreMenuItemClick(TObject *Sender)
+void __fastcall TMainForm::RestoreTrayMenuItemClick(TObject *Sender)
 {
     TrayIcon->Visible=false;
     Application->Restore();
@@ -1977,8 +1944,23 @@ void __fastcall TMainForm::HelpSysopMenuItemClick(TObject *Sender)
     WinExec(str,SW_SHOWMINNOACTIVE);
 }
 //---------------------------------------------------------------------------
+void __fastcall TMainForm::BBSConfigWizardMenuItemClick(TObject *Sender)
+{
+#if 0
+    char str[512];
 
+    sprintf(str,"%sSCFGWIZ %s",cfg.exec_dir,cfg.ctrl_dir);
+    WinExec(str,SW_SHOWNORMAL);
+#else
+    TConfigWizard* ConfigWizard;
 
+    Application->CreateForm(__classid(TConfigWizard), &ConfigWizard);
+	if(ConfigWizard->ShowModal()==mrOk) {
+        SaveSettings(Sender);
+    }
+    delete ConfigWizard;
 
-
+#endif
+}
+//---------------------------------------------------------------------------
 

@@ -56,6 +56,9 @@
 #include <Graphics.hpp>
 #include "Trayicon.h"
 //---------------------------------------------------------------------------
+#define APP_TITLE "Synchronet Control Panel"
+#define REG_KEY "\\Software\\Swindell\\"APP_TITLE"\\"
+//---------------------------------------------------------------------------
 class TMainForm : public TForm
 {
 __published:	// IDE-managed Components
@@ -204,15 +207,18 @@ __published:	// IDE-managed Components
     TTrayIcon *TrayIcon;
     TAction *Properties;
     TPopupMenu *TrayPopupMenu;
-    TMenuItem *RestoreMenuItem;
-    TMenuItem *CloseMenuItem;
+    TMenuItem *RestoreTrayMenuItem;
+    TMenuItem *CloseTrayMenuItem;
     TMenuItem *HelpSysopMenuItem;
     TAction *ViewEvents;
     TMenuItem *ViewEventsMenuItem;
-    TMenuItem *ConfigureBBSMenuItem;
+    TMenuItem *BBSConfigureTrayMenuItem;
     TMenuItem *BBSEditAutoMsg;
     TMenuItem *BBSEditLogonMessage;
     TMenuItem *BBSEditNoNodesMessage;
+    TMenuItem *BBSConfigWizardMenuItem;
+    TMenuItem *N9;
+    TMenuItem *UserEditTrayMenuItem;
     void __fastcall FileExitMenuItemClick(TObject *Sender);
 	void __fastcall ViewToolbarMenuItemClick(TObject *Sender);
 	void __fastcall FormClose(TObject *Sender, TCloseAction &Action);
@@ -265,11 +271,12 @@ __published:	// IDE-managed Components
     void __fastcall HelpIndexMenuItemClick(TObject *Sender);
     void __fastcall TrayIconRestore(TObject *Sender);
     void __fastcall PropertiesExecute(TObject *Sender);
-    void __fastcall CloseMenuItemClick(TObject *Sender);
-    void __fastcall RestoreMenuItemClick(TObject *Sender);
+    void __fastcall CloseTrayMenuItemClick(TObject *Sender);
+    void __fastcall RestoreTrayMenuItemClick(TObject *Sender);
     void __fastcall HelpSysopMenuItemClick(TObject *Sender);
     void __fastcall ViewEventsExecute(TObject *Sender);
     void __fastcall DataMenuItemClick(TObject *Sender);
+    void __fastcall BBSConfigWizardMenuItemClick(TObject *Sender);
 private:	// User declarations
 public:		// User declarations
     __fastcall TMainForm(TComponent* Owner);
@@ -279,6 +286,7 @@ public:		// User declarations
     bool            FtpAutoStart;
     bool			MailLogFile;
     bool			FtpLogFile;
+    bool            FirstRun;
     AnsiString		CtrlDirectory;
     AnsiString      LoginCommand;
     AnsiString      ConfigCommand;
