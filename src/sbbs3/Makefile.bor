@@ -10,9 +10,9 @@
 DEBUG	=	1		# Comment out for release (non-debug) version
 CC		=	bcc32
 LD		=	ilink32
-OS		=	Win32 
-ODIR	=	$(CC).$(OS).dll
+SLASH	=	\\
 OFILE	=	obj
+ODIR	=	bcc.win32.dll
 CFLAGS	=	-WD -WM -n$(ODIR) 
 LFLAGS  =	-m -s -c -Tpd -Gi -I$(ODIR)
 
@@ -34,85 +34,11 @@ FTPSRVR	=	$(ODIR)\ftpsrvr.dll
 
 MAILSRVR=	$(ODIR)\mailsrvr.dll
 
-OBJS	=	$(ODIR)\ansiterm.$(OFILE)\
-			$(ODIR)\answer.$(OFILE)\
-			$(ODIR)\ars.$(OFILE)\
-			$(ODIR)\atcodes.$(OFILE)\
-			$(ODIR)\bat_xfer.$(OFILE)\
-			$(ODIR)\bulkmail.$(OFILE)\
-			$(ODIR)\chat.$(OFILE)\
-			$(ODIR)\chk_ar.$(OFILE)\
-			$(ODIR)\con_hi.$(OFILE)\
-			$(ODIR)\con_out.$(OFILE)\
-			$(ODIR)\data.$(OFILE)\
-			$(ODIR)\data_ovl.$(OFILE)\
-			$(ODIR)\date_str.$(OFILE)\
-			$(ODIR)\download.$(OFILE)\
-			$(ODIR)\email.$(OFILE)\
-			$(ODIR)\exec.$(OFILE)\
-			$(ODIR)\execfile.$(OFILE)\
-			$(ODIR)\execfunc.$(OFILE)\
-			$(ODIR)\execmisc.$(OFILE)\
-			$(ODIR)\execmsg.$(OFILE)\
-			$(ODIR)\fido.$(OFILE)\
-			$(ODIR)\file.$(OFILE)\
-			$(ODIR)\filedat.$(OFILE)\
-			$(ODIR)\getkey.$(OFILE)\
-			$(ODIR)\getmsg.$(OFILE)\
-			$(ODIR)\getnode.$(OFILE)\
-			$(ODIR)\getstr.$(OFILE)\
-			$(ODIR)\inkey.$(OFILE)\
-			$(ODIR)\listfile.$(OFILE)\
-			$(ODIR)\load_cfg.$(OFILE)\
-			$(ODIR)\logfile.$(OFILE)\
-			$(ODIR)\login.$(OFILE)\
-			$(ODIR)\logon.$(OFILE)\
-			$(ODIR)\logout.$(OFILE)\
-			$(ODIR)\lzh.$(OFILE)\
-			$(ODIR)\mail.$(OFILE)\  
-			$(ODIR)\main.$(OFILE)\
-			$(ODIR)\misc.$(OFILE)\
-			$(ODIR)\msgtoqwk.$(OFILE)\
-			$(ODIR)\netmail.$(OFILE)\
-			$(ODIR)\newuser.$(OFILE)\
-			$(ODIR)\pack_qwk.$(OFILE)\
-			$(ODIR)\pack_rep.$(OFILE)\
-			$(ODIR)\postmsg.$(OFILE)\
-			$(ODIR)\prntfile.$(OFILE)\
-			$(ODIR)\putmsg.$(OFILE)\
-			$(ODIR)\putnode.$(OFILE)\
-			$(ODIR)\qwk.$(OFILE)\
-			$(ODIR)\qwktomsg.$(OFILE)\
-			$(ODIR)\readmail.$(OFILE)\
-			$(ODIR)\readmsgs.$(OFILE)\
-			$(ODIR)\ringbuf.$(OFILE)\
-			$(ODIR)\scandirs.$(OFILE)\
-			$(ODIR)\scansubs.$(OFILE)\
-			$(ODIR)\scfglib1.$(OFILE)\
-			$(ODIR)\scfglib2.$(OFILE)\
-			$(ODIR)\smblib.$(OFILE)\
-			$(ODIR)\sortdir.$(OFILE)\
-			$(ODIR)\str.$(OFILE)\
-			$(ODIR)\telgate.$(OFILE)\
-			$(ODIR)\telnet.$(OFILE)\
-			$(ODIR)\text_sec.$(OFILE)\
-			$(ODIR)\tmp_xfer.$(OFILE)\
-			$(ODIR)\un_qwk.$(OFILE)\
-			$(ODIR)\un_rep.$(OFILE)\
-			$(ODIR)\upload.$(OFILE)\
-			$(ODIR)\userdat.$(OFILE)\
-			$(ODIR)\useredit.$(OFILE)\
-			$(ODIR)\viewfile.$(OFILE)\
-			$(ODIR)\wrappers.$(OFILE)\
-			$(ODIR)\writemsg.$(OFILE)\
-			$(ODIR)\xtrn.$(OFILE)\
-			$(ODIR)\xtrn_sec.$(OFILE) 
+ALL: $(ODIR) $(SBBS) $(FTPSRVR) $(MAILSRVR)
 
-HEADERS =	sbbs.h sbbsdefs.h sbbswrap.h sbbsinet.h scfgdefs.h gen_defs.h \
-			nodedefs.h text.h smblib.h smbdefs.h
-
-SBBSDEFS=	-DSBBS -DSBBS_EXPORTS -DSMB_GETMSGTXT -DSMBDLL -DLZHDLL \
-			-DWRAPPER_DLL
+!include objects.mak	# defines $(OBJS)
+!include headers.mak	# defines $(HEADERS)
+!include sbbsdefs.mak	# defines $(SBBSDEFS)
 
 # Implicit C Compile Rule for SBBS.DLL
 {.}.c.$(OFILE):
@@ -124,7 +50,9 @@ SBBSDEFS=	-DSBBS -DSBBS_EXPORTS -DSMB_GETMSGTXT -DSMBDLL -DLZHDLL \
 	@echo Compiling (I) $< to $@ ...
 	$(CC) $(CFLAGS) -c $(SBBSDEFS) $<
 
-ALL: $(SBBS) $(FTPSRVR) $(MAILSRVR)
+# Create output directory
+$(ODIR):
+	mkdir $(ODIR)
 
 # SBBS DLL Link Rule
 $(SBBS): $(OBJS) $(ODIR)\ver.$(OFILE)
@@ -142,79 +70,4 @@ $(FTPSRVR): ftpsrvr.c
     	@echo Compiling $< ...
 		$(CC) $(CFLAGS) -M -lGi -DFTPSRVR_EXPORTS ftpsrvr.c $(ODIR)\sbbs.lib
 
-# Dependencies
-$(ODIR)\answer.$(OFILE):		$(HEADERS)
-$(ODIR)\ars.$(OFILE):			$(HEADERS) ars_defs.h
-$(ODIR)\bat_xfer.$(OFILE):    	$(HEADERS)
-$(ODIR)\bulkmail.$(OFILE):    	$(HEADERS)
-$(ODIR)\chk_ar.$(OFILE):		$(HEADERS) ars_defs.h
-$(ODIR)\atcodes.$(OFILE):		$(HEADERS) cmdshell.h
-$(ODIR)\chat.$(OFILE):        	$(HEADERS)
-$(ODIR)\comio.$(OFILE):       	$(HEADERS)
-$(ODIR)\con_hi.$(OFILE):      	$(HEADERS)
-$(ODIR)\con_out.$(OFILE):     	$(HEADERS)
-$(ODIR)\data.$(OFILE):        	$(HEADERS)
-$(ODIR)\data_ovl.$(OFILE):    	$(HEADERS)
-$(ODIR)\date_str.$(OFILE):    	$(HEADERS)
-$(ODIR)\download.$(OFILE):    	$(HEADERS)
-$(ODIR)\email.$(OFILE):			$(HEADERS) cmdshell.h
-$(ODIR)\exec.$(OFILE):			$(HEADERS) cmdshell.h
-$(ODIR)\execfile.$(OFILE):		$(HEADERS) cmdshell.h
-$(ODIR)\execfunc.$(OFILE):		$(HEADERS) cmdshell.h
-$(ODIR)\execmisc.$(OFILE):		$(HEADERS) cmdshell.h
-$(ODIR)\execmsg.$(OFILE):		$(HEADERS) cmdshell.h
-$(ODIR)\fido.$(OFILE):        	$(HEADERS)
-$(ODIR)\file.$(OFILE):        	$(HEADERS)
-$(ODIR)\filedat.$(OFILE):    	$(HEADERS)
-$(ODIR)\getkey.$(OFILE):    	$(HEADERS)
-$(ODIR)\getmsg.$(OFILE):    	$(HEADERS)
-$(ODIR)\getnode.$(OFILE):		$(HEADERS)
-$(ODIR)\getstr.$(OFILE):    	$(HEADERS)
-$(ODIR)\inkey.$(OFILE):    		$(HEADERS)
-$(ODIR)\listfile.$(OFILE):		$(HEADERS)
-$(ODIR)\load_cfg.$(OFILE):		$(HEADERS)
-$(ODIR)\logfile.$(OFILE):		$(HEADERS)
-$(ODIR)\login.$(OFILE):			$(HEADERS)
-$(ODIR)\logon.$(OFILE):    		$(HEADERS) cmdshell.h
-$(ODIR)\logout.$(OFILE):		$(HEADERS)
-$(ODIR)\lzh.$(OFILE):			$(HEADERS)
-$(ODIR)\mail.$(OFILE):	       	$(HEADERS)
-$(ODIR)\main.$(OFILE):        	$(HEADERS) cmdshell.h
-$(ODIR)\misc.$(OFILE):        	$(HEADERS) ars_defs.h crc32.h
-$(ODIR)\msgtoqwk.$(OFILE):		$(HEADERS) qwk.h
-$(ODIR)\netmail.$(OFILE):     	$(HEADERS) qwk.h
-$(ODIR)\newuser.$(OFILE):		$(HEADERS)
-$(ODIR)\pack_qwk.$(OFILE):		$(HEADERS) qwk.h post.h
-$(ODIR)\pack_rep.$(OFILE):		$(HEADERS) qwk.h post.h
-$(ODIR)\postmsg.$(OFILE):     	$(HEADERS)
-$(ODIR)\prntfile.$(OFILE):     	$(HEADERS)
-$(ODIR)\putmsg.$(OFILE):		$(HEADERS)
-$(ODIR)\putnode.$(OFILE):		$(HEADERS)
-$(ODIR)\qwk.$(OFILE):			$(HEADERS) qwk.h post.h
-$(ODIR)\qwktomsg.$(OFILE):		$(HEADERS) qwk.h
-$(ODIR)\readmail.$(OFILE):     	$(HEADERS)
-$(ODIR)\readmsgs.$(OFILE):		$(HEADERS) post.h
-$(ODIR)\ringbuf.$(OFILE):		$(HEADERS)
-$(ODIR)\scandirs.$(OFILE):    	$(HEADERS)
-$(ODIR)\scansubs.$(OFILE):    	$(HEADERS)
-$(ODIR)\scfglib1.$(OFILE):    	$(HEADERS) scfglib.h
-$(ODIR)\scfglib2.$(OFILE):    	$(HEADERS) scfglib.h
-$(ODIR)\smblib.$(OFILE):    	$(HEADERS)
-$(ODIR)\sortdir.$(OFILE):    	$(HEADERS)
-$(ODIR)\str.$(OFILE):         	$(HEADERS)
-$(ODIR)\telgate.$(OFILE):		$(HEADERS)
-$(ODIR)\telmet.$(OFILE):		$(HEADERS)
-$(ODIR)\text_sec.$(OFILE):		$(HEADERS)
-$(ODIR)\tmp_xfer.$(OFILE):		$(HEADERS)
-$(ODIR)\un_qwk.$(OFILE):		$(HEADERS) qwk.h
-$(ODIR)\un_rep.$(OFILE):		$(HEADERS) qwk.h
-$(ODIR)\upload.$(OFILE):		$(HEADERS)
-$(ODIR)\userdat.$(OFILE):		$(HEADERS)
-$(ODIR)\useredit.$(OFILE):    	$(HEADERS)
-$(ODIR)\getuser.$(OFILE):		$(HEADERS)
-$(ODIR)\ver.$(OFILE):			$(HEADERS) $(OBJS)
-$(ODIR)\viewfile.$(OFILE):		$(HEADERS)
-$(ODIR)\wrappers.$(OFILE):     	$(HEADERS)
-$(ODIR)\writemsg.$(OFILE):     	$(HEADERS)
-$(ODIR)\xtrn.$(OFILE):        	$(HEADERS) cmdshell.h
-$(ODIR)\xtrn_sec.$(OFILE):    	$(HEADERS)
+!include depends.mak	# defines dependencies
