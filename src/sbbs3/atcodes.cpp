@@ -191,6 +191,9 @@ char* sbbs_t::atcode(char* sp, char* str)
 	if(!strcmp(sp,"INETADDR"))
 		return(cfg.sys_inetaddr);
 
+	if(!strcmp(sp,"HOSTNAME"))
+		return(startup->host_name);
+
 	if(!strcmp(sp,"FIDOADDR")) {
 		if(cfg.total_faddrs)
 			return(faddrtoa(&cfg.faddr[0],str));
