@@ -418,7 +418,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 	if(mode&WIN_L2R)
 		left=(s_right-s_left-width+1)/2;
 	else if(mode&WIN_RHT)
-		left=api->scrn_width-(width+4+left);
+		left=s_right-(width+4+left);
 	if(mode&WIN_T2B)
 		top=(api->scrn_len-height+1)/2-2;
 	else if(mode&WIN_BOT)
@@ -1710,7 +1710,7 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 	if(mode&WIN_L2R)
 		left=(SCRN_RIGHT-SCRN_LEFT-width+1)/2;
 	else if(mode&WIN_RHT)
-		left=api->scrn_width-(width+4+left);
+		left=SCRN_RIGHT-(width+4+left);
 	if(mode&WIN_T2B)
 		top=(api->scrn_len-height+1)/2;
 	else if(mode&WIN_BOT)
