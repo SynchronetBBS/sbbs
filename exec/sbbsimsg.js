@@ -142,7 +142,7 @@ function list_users(show)
 
 	/* UDP systems */
 	sock = new Socket(SOCK_DGRAM);
-	sock.debug=true;
+	//sock.debug=true;
 	sock.bind();
 	for(i=0;sys[i]!=undefined && !(bbs.sys_status&SS_ABORT);i++) {
 		if(sys[i].ip==undefined)
