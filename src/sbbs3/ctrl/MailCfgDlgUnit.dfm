@@ -53,8 +53,8 @@ object MailCfgDlg: TMailCfgDlg
     Top = 4
     Width = 342
     Height = 245
-    ActivePage = GeneralTabSheet
-    TabIndex = 0
+    ActivePage = DNSBLTabSheet
+    TabIndex = 5
     TabOrder = 3
     object GeneralTabSheet: TTabSheet
       Caption = 'General'
@@ -676,6 +676,15 @@ object MailCfgDlg: TMailCfgDlg
         Caption = 'Exempt IPs'
         TabOrder = 2
         OnClick = DNSBLExemptionsButtonClick
+      end
+      object BLDebugCheckBox: TCheckBox
+        Left = 256
+        Top = 8
+        Width = 73
+        Height = 26
+        Hint = 'Enable debug logging of DNSBL lookups'
+        Caption = 'Debug'
+        TabOrder = 3
       end
     end
   end

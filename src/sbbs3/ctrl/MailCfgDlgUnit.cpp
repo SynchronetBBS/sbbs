@@ -135,6 +135,8 @@ void __fastcall TMailCfgDlg::FormShow(TObject *Sender)
 	    BLIgnoreRadioButton->Checked=true;
 	else
 	    BLTagRadioButton->Checked=true;
+    BLDebugCheckBox->Checked=MainForm->mail_startup.options
+    	&MAIL_OPT_DNSBL_DEBUG;
 
     TcpDnsCheckBox->Checked=MainForm->mail_startup.options
     	&MAIL_OPT_USE_TCP_DNS;
@@ -232,6 +234,8 @@ void __fastcall TMailCfgDlg::OKBtnClick(TObject *Sender)
     	MainForm->mail_startup.options|=MAIL_OPT_ALLOW_RELAY;
     else
 	    MainForm->mail_startup.options&=~MAIL_OPT_ALLOW_RELAY;
+
+    /* DNSBL */
 	MainForm->mail_startup.options&=
     	~(MAIL_OPT_DNSBL_IGNORE|MAIL_OPT_DNSBL_REFUSE|MAIL_OPT_DNSBL_BADUSER);
 	if(BLIgnoreRadioButton->Checked==true)
@@ -240,6 +244,11 @@ void __fastcall TMailCfgDlg::OKBtnClick(TObject *Sender)
     	MainForm->mail_startup.options|=MAIL_OPT_DNSBL_REFUSE;
     else if(BLBadUserRadioButton->Checked==true)
     	MainForm->mail_startup.options|=MAIL_OPT_DNSBL_BADUSER;
+    if(BLDebugCheckBox->Checked==true)
+    	MainForm->mail_startup.options|=MAIL_OPT_DNSBL_DEBUG;
+    else
+	    MainForm->mail_startup.options&=~MAIL_OPT_DNSBL_DEBUG;
+
 	if(HostnameCheckBox->Checked==false)
     	MainForm->mail_startup.options|=MAIL_OPT_NO_HOST_LOOKUP;
     else

@@ -123,6 +123,7 @@ __published:
 	TEdit *MaxRecipientsEdit;
 	TButton *DNSBLExemptionsButton;
 	TCheckBox *DebugRXCheckBox;
+	TCheckBox *BLDebugCheckBox;
     void __fastcall InboundSoundButtonClick(TObject *Sender);
     void __fastcall OutboundSoundButtonClick(TObject *Sender);
     void __fastcall FormShow(TObject *Sender);
