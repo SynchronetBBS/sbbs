@@ -1,0 +1,84 @@
+############################################
+# Makefile for Synchronet SBBSECHO Utility #
+# For use with Watcom C/C++ 		   #
+############################################
+
+!ifndef OS
+OS	= OS2
+!endif
+
+!ifeq OS DOS
+CC	= *wcc
+!else
+CC	= *wcc386
+!endif
+
+LD	= *wlink
+INCLUDE = \watcom\h;\watcom\h\os2;..\xpdev
+!ifeq OS DOS
+CFLAGS	= -s -I$(INCLUDE) -bt=$(OS) -fo=$(OS)\ -ml -DLZH_DYNAMIC_BUF
+!else
+CFLAGS	= -s -I$(INCLUDE) -bt=$(OS) -fo=$(OS)\ 
+!endif
+
+# operate quietly
+CFLAGS	+= -zq
+
+# signed chars
+CFLAGS	+= -j
+
+!ifeq OS NT
+SYSTEM  = NT
+!endif
+!ifeq OS DOS
+SYSTEM  = DOS
+!endif
+!ifeq OS OS2
+SYSTEM  = OS2V2
+!endif
+!ifeq OS DOS4G
+SYSTEM  = DOS4G
+!endif
+
+LFLAGS  = option stack=20k system $(SYSTEM)
+
+MAIN	= $(OS)\sbbsecho.exe
+OBJS	= $(OS)\ars.obj &
+	  $(OS)\crc32.obj &
+	  $(OS)\dat_rec.obj &
+	  $(OS)\date_str.obj &
+	  $(OS)\dirwrap.obj &
+	  $(OS)\filewrap.obj &
+	  $(OS)\genwrap.obj &
+	  $(OS)\load_cfg.obj &
+	  $(OS)\lzh.obj &
+          $(OS)\nopen.obj &
+	  $(OS)\rechocfg.obj &
+	  $(OS)\sbbsecho.obj &
+	  $(OS)\scfglib1.obj &
+	  $(OS)\scfglib2.obj &
+	  $(OS)\smblib.obj &
+	  $(OS)\smbtxt.obj &
+	  $(OS)\str_util.obj &
+	  $(OS)\userdat.obj
+
+HEADERS = ..\sbbs.h ..\sbbsdefs.h ..\scfgvars.c &
+	  ..\smb\smbdefs.h ..\smb\smblib.h
+
+.c: .;..\xpdev
+
+# Implicit C Compile Rule
+.c.obj:
+	@echo $[@
+	@$(CC) $(CFLAGS) $[@
+
+# Main EXE Link Rule
+$(MAIN): $(OS) $(OBJS)
+	@echo Linking $@ ...
+        @$(LD) $(LFLAGS) name $@ file { $(OBJS) } option map
+
+$(OS): 
+	mkdir $(OS)
+
+clean
+	@echo y | del $(OS)\*.*	
