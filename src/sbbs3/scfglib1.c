@@ -359,7 +359,7 @@ BOOL read_main_cfg(scfg_t* cfg, char* error)
 			get_int(n,instream); 
 	}
 	if(i!=100) {
-		sprintf(error,"Insufficient User Level Information"
+		sprintf(error,"Insufficient User Level Information: "
 			"%d user levels read, 100 needed.",i);
 		fclose(instream);
 		return(FALSE); 
