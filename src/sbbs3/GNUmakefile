@@ -246,6 +246,7 @@ FIXSMB_OBJS = \
 	$(SMBLIB_OBJS) \
 	$(LIBODIR)/genwrap.o \
 	$(LIBODIR)/dirwrap.o \
+	$(LIBODIR)/str_list.o \
 	$(LIBODIR)/str_util.o
 FORCE$(FIXSMB): $(FIXSMB_OBJS)
 	
