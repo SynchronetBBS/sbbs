@@ -129,6 +129,41 @@ typedef struct {
 	char*	value;
 } named_string_t;
 
+typedef struct {
+	char*	name;
+	int	value;
+} named_int_t;
+
+typedef struct {
+	char*	name;
+	uint	value;
+} named_uint_t;
+
+typedef struct {
+	char*	name;
+	long	value;
+} named_long_t;
+
+typedef struct {
+	char*	name;
+	ulong	value;
+} named_ulong_t;
+
+typedef struct {
+	char*	name;
+	short	value;
+} named_short_t;
+
+typedef struct {
+	char*	name;
+	ushort	value;
+} named_ushort_t;
+
+typedef struct {
+	char*	name;
+	BOOL	value;
+} named_bool_t;
+
 /***********************/
 /* Handy String Macros */
 /***********************/
