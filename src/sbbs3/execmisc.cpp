@@ -39,16 +39,6 @@
 #include "cmdshell.h"
 #include <sys/locking.h>
 
-#ifdef _MSC_VER
-
-#include "msdirent.h"
-
-#else
-
-#include <dirent.h>	/* POSIX directory functions */
-
-#endif
-
 int sbbs_t::exec_misc(csi_t *csi, char *path)
 {
 	char	str[512],buf[1025],ch,*p,**pp,**pp1,**pp2;
