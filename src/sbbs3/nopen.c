@@ -55,7 +55,7 @@ int nopen(const char* str, int access)
 	if(!(access&O_TEXT))
 		access|=O_BINARY;
     while(((file=sopen(str,access,share,S_IREAD|S_IWRITE))==-1)
-        && (errno==EACCES || errno==EAGAIN) && count++<LOOP_NOPEN)
+        && (errno==EACCES || errno==EAGAIN || errno==EDEADLOCK) && count++<LOOP_NOPEN)
         if(count)
             mswait(100);
     return(file);
