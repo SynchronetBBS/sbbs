@@ -886,7 +886,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 
 		lprintf("Node %d executing external: %s",cfg.node_num,cmdline);
 
-		if(mode&EX_SH || strcspn(cmdline,"<>|")!=strlen(cmdline)) {
+		if(mode&EX_SH || strcspn(cmdline,"<>|;")!=strlen(cmdline)) {
 			argv[0]=comspec;
 			argv[1]="-c";
 			argv[2]=cmdline;
