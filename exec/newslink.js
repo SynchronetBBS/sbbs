@@ -787,7 +787,7 @@ for(i in area) {
 		if(flags.indexOf('r')>=0) 	// remove "Newsgroups:" header field
 			delete hdr.newsgroups;
 
-		if(unmangle)
+		if(hdr.from_net_addr && unmangle)
 			hdr.from_net_addr = unmangle_addr(hdr.from_net_addr);
 
 		hdr.from_net_type=NET_INTERNET;
