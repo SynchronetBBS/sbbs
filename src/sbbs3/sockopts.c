@@ -44,24 +44,63 @@ typedef struct {
 } sockopt_name;
 
 static const sockopt_name option_names[] = {
-	{ "TYPE",			SOL_SOCKET,		SO_TYPE			},
-	{ "DEBUG",			SOL_SOCKET,		SO_DEBUG		},
-	{ "LINGER",			SOL_SOCKET,		SO_LINGER		},
-	{ "SNDBUF",			SOL_SOCKET,		SO_SNDBUF		},
-	{ "RCVBUF",			SOL_SOCKET,		SO_RCVBUF		},
-	{ "SNDLOWAT",		SOL_SOCKET,		SO_SNDLOWAT		},
-	{ "RCVLOWAT",		SOL_SOCKET,		SO_RCVLOWAT		},
-	{ "SNDTIMEO",		SOL_SOCKET,		SO_SNDTIMEO		},
-	{ "RCVTIMEO",		SOL_SOCKET,		SO_RCVTIMEO		},
-	{ "REUSEADDR",		SOL_SOCKET,		SO_REUSEADDR	},	
-	{ "KEEPALIVE",		SOL_SOCKET,		SO_KEEPALIVE	},
-	{ "DONTROUTE",		SOL_SOCKET,		SO_DONTROUTE	},
-	{ "BROADCAST",		SOL_SOCKET,		SO_BROADCAST	},
-	{ "OOBINLINE",		SOL_SOCKET,		SO_OOBINLINE	},
-#ifdef SO_ACCEPTCONN
-	{ "ACCEPTCONN",		SOL_SOCKET,		SO_ACCEPTCONN	},
+	{ "TYPE",				SOL_SOCKET,		SO_TYPE				},
+	{ "DEBUG",				SOL_SOCKET,		SO_DEBUG			},
+	{ "LINGER",				SOL_SOCKET,		SO_LINGER			},
+	{ "SNDBUF",				SOL_SOCKET,		SO_SNDBUF			},
+	{ "RCVBUF",				SOL_SOCKET,		SO_RCVBUF			},
+	{ "SNDLOWAT",			SOL_SOCKET,		SO_SNDLOWAT			},
+	{ "RCVLOWAT",			SOL_SOCKET,		SO_RCVLOWAT			},
+	{ "SNDTIMEO",			SOL_SOCKET,		SO_SNDTIMEO			},
+	{ "RCVTIMEO",			SOL_SOCKET,		SO_RCVTIMEO			},
+	{ "REUSEADDR",			SOL_SOCKET,		SO_REUSEADDR		},	
+	{ "KEEPALIVE",			SOL_SOCKET,		SO_KEEPALIVE		},
+	{ "DONTROUTE",			SOL_SOCKET,		SO_DONTROUTE		},
+	{ "BROADCAST",			SOL_SOCKET,		SO_BROADCAST		},
+	{ "OOBINLINE",			SOL_SOCKET,		SO_OOBINLINE		},
+#ifdef SO_ACCEPTCONN											
+	{ "ACCEPTCONN",			SOL_SOCKET,		SO_ACCEPTCONN		},
 #endif
-	{ "TCP_NODELAY",	IPPROTO_TCP,	TCP_NODELAY		},
+
+	/* IPPROTO-level socket options */
+	{ "TCP_NODELAY",		IPPROTO_TCP,	TCP_NODELAY			},
+	/* The following are platform-specific */					
+#ifdef TCP_MAXSEG											
+	{ "TCP_MAXSEG",			IPPROTO_TCP,	TCP_MAXSEG			},
+#endif															
+#ifdef TCP_CORK													
+	{ "TCP_CORK",			IPPROTO_TCP,	TCP_CORK			},
+#endif															
+#ifdef TCP_KEEPIDLE												
+	{ "TCP_KEEPIDLE",		IPPROTO_TCP,	TCP_KEEPIDLE		},
+#endif															
+#ifdef TCP_KEEPINTVL											
+	{ "TCP_KEEPINTVL",		IPPROTO_TCP,	TCP_KEEPINTVL		},
+#endif															
+#ifdef TCP_KEEPCNT												
+	{ "TCP_KEEPCNT",		IPPROTO_TCP,	TCP_KEEPCNT			},
+#endif															
+#ifdef TCP_SYNCNT												
+	{ "TCP_SYNCNT",			IPPROTO_TCP,	TCP_SYNCNT			},
+#endif															
+#ifdef TCP_LINGER2												
+	{ "TCP_LINGER2",		IPPROTO_TCP,	TCP_LINGER2			},
+#endif														
+#ifdef TCP_DEFER_ACCEPT										
+	{ "TCP_DEFER_ACCEPT",	IPPROTO_TCP,	TCP_DEFER_ACCEPT	},
+#endif															
+#ifdef TCP_WINDOW_CLAMP											
+	{ "TCP_WINDOW_CLAMP",	IPPROTO_TCP,	TCP_WINDOW_CLAMP	},
+#endif														
+#ifdef TCP_QUICKACK											
+	{ "TCP_QUICKACK",		IPPROTO_TCP,	TCP_QUICKACK		},
+#endif						
+#ifdef TCP_NOPUSH			
+	{ "TCP_NOPUSH",			IPPROTO_TCP,	TCP_NOPUSH			},
+#endif						
+#ifdef TCP_NOOPT			
+	{ "TCP_NOOPT",			IPPROTO_TCP,	TCP_NOOPT			},
+#endif
 	{ NULL }
 };
 
@@ -122,6 +161,8 @@ int DLLCALL set_socket_options(scfg_t* cfg, SOCKET sock, char* error)
 		if(*p) *(p++)=0;
 		if((option=sockopt(name,&level))==-1)
 			continue;
+		if(level==IPPROTO_TCP && type!=SOCK_STREAM)
+			continue;
 		while(*p && *p<=' ') p++;
 		len=sizeof(value);
 		value=strtol(p,NULL,0);
@@ -137,7 +178,6 @@ int DLLCALL set_socket_options(scfg_t* cfg, SOCKET sock, char* error)
 				len=sizeof(linger);
 				break;
 			case SO_KEEPALIVE:
-			case TCP_NODELAY:
 				if(type!=SOCK_STREAM)
 					continue;
 				break;
