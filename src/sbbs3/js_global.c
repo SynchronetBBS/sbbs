@@ -822,6 +822,9 @@ js_html_encode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 	int			currrow=0;
 	int			savehpos=0;
 	int			savevpos=0;
+	int			wraphpos=-2;
+	int			wrapvpos=-2;
+	ulong		wrappos=0;
 	BOOL		extchar=FALSE;
 	ulong		obsize;
 	int			lastcolor=7;
@@ -832,6 +835,7 @@ js_html_encode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 	scfg_t*		cfg;
 	uchar   	attr_stack[64]; /* Saved attributes (stack) */
 	int     	attr_sp=0;                /* Attribute stack pointer */
+	uchar		clear_screen=0;
 
 	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)		/* Will this work?  Ask DM */
 		return(JS_FALSE);
@@ -934,6 +938,7 @@ js_html_encode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 			return(JS_FALSE);
 		}
 		j=sprintf(outbuf,"<DIV STYLE=\"%s\"><SPAN STYLE=\"%s\">",htmlansi[7],htmlansi[7]);
+		clear_screen=j;
 		for(i=0;tmpbuf[i];i++) {
 			if(j>(obsize/2))		/* Completely arbitrary here... must be carefull with this eventually ToDo */
 			{
@@ -981,7 +986,7 @@ js_html_encode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 				}
 				switch(*lastparam)
 				{
-					case 'm':
+					case 'm':	/* Colour */
 						for(k=0;ansi_param[k]>=0;k++)
 						{
 							switch(ansi_param[k])
@@ -1037,10 +1042,15 @@ js_html_encode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 							}
 						}
 						break;
-					case 'C':
+					case 'C': /* Move right */
 						j+=sprintf(outbuf+j,"%s%s%s",HTML_COLOR_PREFIX,htmlansi[0],HTML_COLOR_SUFFIX);
 						lastcolor=0;
 						l=ansi_param[0]>0?ansi_param[0]:1;
+						if(wrappos==0 && wrapvpos==currrow)  {
+							j+=sprintf(outbuf+j,"<!-- \r\nC after A l=%d hpos=%d -->",l,hpos);
+							l=l-hpos;
+							wrapvpos=-2;	/* Prevent additional move right */
+						}
 						if(l>81-hpos)
 							l=81-hpos;
 						for(k=0; k<l; k++)
@@ -1049,17 +1059,17 @@ js_html_encode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 							hpos++;
 						}
 						break;
-					case 's':
+					case 's': /* Save position */
 						savepos=j;
 						savehpos=hpos;
 						savevpos=currrow;
 						break;
-					case 'u':
+					case 'u': /* Restore saved position */
 						j=savepos;
 						hpos=savehpos;
 						currrow=savevpos;
 						break;
-					case 'H':
+					case 'H': /* Move */
 						k=ansi_param[0];
 						if(k<=0)
 							k=1;
@@ -1086,7 +1096,7 @@ js_html_encode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 							}
 						}
 						break;
-					case 'B':
+					case 'B': /* Move down */
 						l=ansi_param[0];
 						if(l<=0)
 							l=1;
@@ -1105,6 +1115,25 @@ js_html_encode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 								j+=sprintf(outbuf+j,"%s","&nbsp;");
 							}
 							break;
+						}
+						break;
+					case 'A': /* Move up */
+						l=wrappos;
+						if(j > wrappos && hpos==0 && currrow==wrapvpos+1 && ansi_param[0]<=1)  {
+							hpos=wraphpos;
+							currrow=wrapvpos;
+							j=wrappos;
+							wrappos=0; /* Prevent additional move up */
+						}
+						break;
+					case 'J': /* Clear */
+						if(ansi_param[0]==2)  {
+							j=clear_screen;
+							hpos=0;
+							currrow=0;
+							wraphpos=-2;
+							wrapvpos=-2;
+							wrappos=0;
 						}
 						break;
 				}
@@ -1319,6 +1348,9 @@ js_html_encode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 						}
 						break;
 					case LF:
+						wrapvpos=currrow;
+						if(wrappos<j-3)
+							wrappos=j;
 						currrow++;
 						if(hpos!=0 && tmpbuf[i+1]!=CR)
 						{
@@ -1333,6 +1365,10 @@ js_html_encode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 							break;
 						}
 					case CR:
+						if(wraphpos==-2 || hpos!=0)
+							wraphpos=hpos;
+						if(wrappos<j-3)
+							wrappos=j;
 						outbuf[j++]=tmpbuf[i];
 						hpos=0;
 						break;
@@ -1342,8 +1378,11 @@ js_html_encode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 							lastcolor=(blink?(1<<7):0) | (bg << 4) | (bold?(1<<3):0) | fg;
 							j+=sprintf(outbuf+j,"%s%s%s",HTML_COLOR_PREFIX,htmlansi[lastcolor],HTML_COLOR_SUFFIX);
 						}
-						if(hpos>=79 && tmpbuf[i+1] != '\r' && tmpbuf[i+1] != '\n' && tmpbuf[i+1] != ESC)
+						if(hpos>=80 && tmpbuf[i+1] != '\r' && tmpbuf[i+1] != '\n' && tmpbuf[i+1] != ESC)
 						{
+							wrapvpos=-2;
+							wraphpos=-2;
+							wrappos=0;
 							hpos=0;
 							currrow++;
 							outbuf[j++]='\r';
