@@ -202,6 +202,7 @@ void read_echo_cfg()
 	cfg.maxbdlsize=DFLT_BDL_SIZE;
 	cfg.badecho=-1;
 	cfg.log=LOG_DEFAULTS;
+	cfg.check_path=TRUE;
 
 	while(1) {
 		if(!fgets(str,256,stream))
@@ -259,6 +260,11 @@ void read_echo_cfg()
 
 		if(!stricmp(tmp,"REGNUM"))
 			continue;
+
+		if(!stricmp(tmp,"NOPATHCHECK")) {
+			cfg.check_path=FALSE;
+			continue;
+		}
 
 		if(!stricmp(tmp,"NOTIFY")) {
 			cfg.notify=atoi(cleanstr(p));

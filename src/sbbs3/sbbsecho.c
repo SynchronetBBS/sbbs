@@ -3119,12 +3119,12 @@ void gen_psb(addrlist_t *seenbys,addrlist_t *paths,char HUGE16 *inbuf
  passed in inaddr.	1 is returned if inaddr matches any of the addrs
  otherwise a 0 is returned.
 ******************************************************************************/
-int check_psb(addrlist_t addrlist,faddr_t inaddr)
+int check_psb(addrlist_t* addrlist,faddr_t inaddr)
 {
 	int i;
 
-	for(i=0;i<addrlist.addrs;i++) {
-		if(!memcmp(&addrlist.addr[i],&inaddr,sizeof(faddr_t)))
+	for(i=0;i<addrlist->addrs;i++) {
+		if(!memcmp(&addrlist->addr[i],&inaddr,sizeof(faddr_t)))
 			return(1); 
 	}
 	return(0);
@@ -3270,7 +3270,7 @@ void pkt_to_pkt(uchar HUGE16 *fbuf,areasbbs_t area,faddr_t faddr
 	for(j=0;j<area.uplinks;j++) {
 		if((cleanup==2 && memcmp(&faddr,&area.uplink[j],sizeof(faddr_t))) ||
 			(!cleanup && (!memcmp(&faddr,&area.uplink[j],sizeof(faddr_t)) ||
-			check_psb(seenbys,area.uplink[j]))))
+			check_psb(&seenbys,area.uplink[j]))))
 			continue;
 		node=matchnode(area.uplink[j],0);
 		if(node<cfg.nodecfgs && cfg.nodecfg[node].attr&ATTR_PASSIVE)
@@ -4656,20 +4656,22 @@ int main(int argc, char **argv)
 				} 						/* On to the next message */
 
 
-				for(j=0;j<scfg.total_faddrs;j++)
-					if(check_psb(msg_path,scfg.faddr[j]))
-						break;
-				if(j<scfg.total_faddrs) {
-					start_tick=0;
-					printf("Circular path (%s) ",faddrtoa(&scfg.faddr[j],NULL));
-					cfg.area[i].circular++;
-					if(cfg.log&LOG_CIRCULAR)
-						logprintf("%s: Circular path detected for %s"
-							,areatagstr,faddrtoa(&scfg.faddr[j],NULL));
-					strip_psb(fmsgbuf);
-					pkt_to_pkt(fmsgbuf,curarea,pkt_faddr,hdr,msg_seen,msg_path,0);
-					printf("\n");
-					continue; 
+				if(cfg.check_path) {
+					for(j=0;j<scfg.total_faddrs;j++)
+						if(check_psb(&msg_path,scfg.faddr[j]))
+							break;
+					if(j<scfg.total_faddrs) {
+						start_tick=0;
+						printf("Circular path (%s) ",faddrtoa(&scfg.faddr[j],NULL));
+						cfg.area[i].circular++;
+						if(cfg.log&LOG_CIRCULAR)
+							logprintf("%s: Circular path detected for %s"
+								,areatagstr,faddrtoa(&scfg.faddr[j],NULL));
+						strip_psb(fmsgbuf);
+						pkt_to_pkt(fmsgbuf,curarea,pkt_faddr,hdr,msg_seen,msg_path,0);
+						printf("\n");
+						continue; 
+					}
 				}
 
 				for(j=0;j<MAX_OPEN_SMBS;j++)
