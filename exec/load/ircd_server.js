@@ -75,6 +75,7 @@ function IRC_Server() {
 	// Global Functions
 	this.check_timeout=IRCClient_check_timeout;
 	this.set_chanmode=IRCClient_set_chanmode;
+	this.check_nickname=IRCClient_check_nickname;
 	// Output helper functions (shared)
 }
 
@@ -430,7 +431,7 @@ function Server_Work() {
 				ThisOrigin.nick = cmd[1];
 			} else if (cmd[10]) {
 				if (!this.hub) {
-					if(!this.check_nickname(cmd[1])) {
+					if(!this.check_nickname(cmd[1],true)) {
 						umode_notice(USERMODE_OPER,"Notice","Server " + this.nick + " trying to introduce invalid nickname: " + cmd[1] + ", killed.");
 						this.ircout("KILL " + cmd[1] + " :Bogus Nickname.");
 						break;
