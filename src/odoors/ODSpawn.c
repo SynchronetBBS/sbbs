@@ -56,6 +56,9 @@
 #include <errno.h>
 
 #include "OpenDoor.h"
+#ifdef ODPLAT_NIX
+#include <signal.h>
+#endif
 #include "ODCore.h"
 #include "ODGen.h"
 #include "ODCom.h"
@@ -257,7 +260,7 @@ ODAPIDEF INT16 ODCALL od_spawnvpe(INT16 nModeFlag, char *pszPath,
 #ifdef ODPLAT_WIN32
    void *pWindow;
 #endif /* ODPLAT_WIN32 */   
-#ifdef ODPLAT_DOS
+#if defined(ODPLAT_DOS) || defined(ODPLAT_NIX)
    char *pszDir;
    BYTE *abtScreenBuffer;
    INT nDrive;
@@ -1016,3 +1019,62 @@ int _spawnve(int nModeFlag, char *pszPath, char *papszArgs[],
 }
 
 #endif /* ODPLAT_DOS */
+
+#ifdef ODPLAT_NIX
+/* ----------------------------------------------------------------------------
+ * _spawnvpe()                                         *** PRIVATE FUNCTION ***
+ *
+ * Executes a child program in the *nix environment.
+ *
+ * Parameters: nModeFlag    - Must be P_WAIT or P_NOWAIT
+ *
+ *             pszPath      - Name of program to execute.
+ *
+ *             papszArgs    - Array of command-line arguments.
+ *
+ *             papszEnviron - Array of environment variables.
+ *
+ *     Return: -1 on failure or the spawned-to program's return value on
+ *             success.
+ */
+int _spawnvpe(int nModeFlag, char *pszPath, char *papszArgs[],
+   char *papszEnviron[])
+{
+   pid_t	child;
+   int		status;
+   pid_t	wret;
+   struct sigaction act;
+
+
+   child=fork();
+
+   if(nModeFlag == P_WAIT)  {
+      /* require wait for child */
+      act.sa_handler=SIG_IGN;
+      sigemptyset(&(act.sa_mask));
+      act.sa_flags=SA_NOCLDSTOP;
+      sigaction(SIGCHLD,&act,NULL);
+   }
+   else  {
+      /* Ignore SIGCHLD for backgrounded spawned processes */
+      act.sa_handler=SIG_IGN;
+      sigemptyset(&(act.sa_mask));
+      act.sa_flags=SA_NOCLDSTOP|SA_NOCLDWAIT;
+      sigaction(SIGCHLD,&act,NULL);
+   }
+
+   if(!child)  {
+      /* Do the exec stuff here */
+	  execve(pszPath,papszArgs,papszEnviron);
+	  exit(-1); /* this should never happen! */
+   }
+   if(nModeFlag == P_WAIT)  {
+      wret=waitpid(child,&status,0);
+	  if(WIFEXITED(status))  {
+	     return(WEXITSTATUS(status));
+	  }
+	  return(-1);
+   }
+   return(0);
+}
+#endif /* ODPLAT_NIX */
