@@ -7,11 +7,15 @@ var channel="#channel";
 var port=6667;
 var nick="nick";
 var msg;
+var join=false;
 
 for(i=0;i<argc;i++) {
 	switch(argv[i]) {
 		case "-s":
 			server=argv[++i];
+			break;
+		case "-j";
+			join=true;
 			break;
 		case "-c":
 			channel=argv[++i];
@@ -38,11 +42,12 @@ if (!my_server) {
 while(my_server.data_waiting && (response=my_server.recvline()))
 	log(response);
 
-log("Joining: " + channel);
-my_server.send("JOIN " + channel + "\r\n");
-while(my_server.data_waiting && (response=my_server.recvline()))
-	log(response);
-
+if(join) {
+	log("Joining: " + channel);
+	my_server.send("JOIN " + channel + "\r\n");
+	while(my_server.data_waiting && (response=my_server.recvline()))
+		log(response);
+}
 if(msg)
 	send(msg);
 else while(msg=readln())
