@@ -14,6 +14,7 @@ struct terminal {
 	int save_ypos;
 	char	escbuf[1024];
 	int	sequence;
+	int music;
 };
 
 extern struct terminal term;

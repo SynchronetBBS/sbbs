@@ -7,6 +7,14 @@ struct terminal term;
 
 const int tabs[11]={1,8,16,24,32,40,48,56,64,72,80};
 
+int backlines=200;
+
+void play_music(void)
+{
+	/* ToDo Music code parsing stuff */
+	term.music=0;
+}
+
 void scrolldown(void)
 {
 	char *buf;
@@ -268,7 +276,7 @@ void do_ansi(void)
 					break;
 				case 'M':
 				case 'N':
-					/* ToDo add music */
+					term.music=1;
 					break;
 				case 'P':	/* Delete char */
 					i=atoi(term.escbuf+1);
@@ -483,6 +491,7 @@ void doterm(void)
 	term.save_ypos=0;
 	term.escbuf[0]=0;
 	term.sequence=0;
+	term.music=0;
 
 	ch[1]=0;
 	/* Main input loop */
@@ -503,6 +512,11 @@ void doterm(void)
 							|| (ch[0]>='a' && ch[0]<='z')) {
 						do_ansi();
 					}
+				}
+				else if (term.music) {
+					strcat(term.musicbuf,ch);
+					if(ch==14)
+						play_music();
 				}
 				else {
 					switch(ch[0]) {
