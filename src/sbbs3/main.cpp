@@ -221,6 +221,9 @@ u_long resolve_ip(char *addr)
 	HOSTENT*	host;
 	char*		p;
 
+	if(*addr==0)
+		return(INADDR_NONE);
+
 	for(p=addr;*p;p++)
 		if(*p!='.' && !isdigit(*p))
 			break;
