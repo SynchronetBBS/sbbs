@@ -1,107 +1,122 @@
-// mlistgate.js
+// listgate.js
 
 // Synchronet Mailing List Gateway Module
 
-// This module will scan one or more message bases (listed in ctrl/mlistgate.cfg)
+// This module will scan one or more message bases (listed in ctrl/listgate.ini)
 // and export any new messages to the mail database to be sent to one or more
 // list-server e-mail addresses.
 
 // $Id$
 
-// Configuration file (in ctrl/mlistgate.cfg) format:
+// Configuration file (in ctrl/listgate.ini) format:
 
-// <subcode> <fromaddr> <toaddr> [toaddr] [...]
+// [subcode]
+// from = <fromaddr> 
+// to = <toaddr> [toaddr] [...]
 
 const REVISION = "$Revision$".split(' ')[1];
 
-printf("Synchronet Mailing List Gateway %s session started\r\n", REVISION);
+log(LOG_INFO,format("Synchronet Mailing List Gateway %s session started\r\n", REVISION));
 
-var tearline = format("--- Synchronet %s%s-%s MListGate %s\r\n"
+var tearline = format("--- Synchronet %s%s-%s ListGate %s\r\n"
 					  ,system.version,system.revision,system.platform,REVISION);
 var tagline	=  format(" *  %s - %s - telnet://%s\r\n"
 					  ,system.name,system.location,system.inetaddr);
 
-var cfg_fname = system.ctrl_dir + "mlistgate.cfg";
+var ini_fname = system.ctrl_dir + "listgate.ini";
 
-var reset_export_ptrs = false;
-var update_export_ptrs = false;
+var debug		= false;
+var reset_ptrs	= false;
+var update_ptrs = false;
 
 load("sbbsdefs.js");
 
 if(this.js==undefined) 		// v3.10?
 	js = { terminated: false };
 
-area = new Array();
+for(i=0;i<argc;i++) {
+	if(argv[i].toLowerCase()=="-d")			// debug
+		debug = true;
+	else if(argv[i].toLowerCase()=="-u")	// update export pointers (export none)
+		update_ptrs = true;
+	else if(argv[i].toLowerCase()=="-r")	// reset export pointers (export all)
+		reset_ptrs = true;
+}
 
 /******************************/
 /* Read/Parse the Config File */
 /******************************/
 
-cfg_file = new File(cfg_fname);
-if(!cfg_file.open("r")) {
-	printf("!Error %d opening %s\r\n",errno,cfg_fname);
-	delete cfg_file;
+ini_file = new File(ini_fname);
+if(!ini_file.open("r")) {
+	log(LOG_ERR,format("!Error %d opening %s\r\n",errno,ini_fname));
+	delete ini_file;
+	exit();
+}
+var disabled=ini_file.iniGetValue(null,"disabled",false);
+var area = ini_file.iniGetAllObjects("sub");
+delete ini_file;
+
+if(disabled) {
+	log(LOG_WARNING,"Disabled in " + ini_fname);
 	exit();
 }
 
-while(!cfg_file.eof) {
-	line = cfg_file.readln();
-	if(line==null || line[0] == ';' || !line.length || line==undefined)
-		continue;
-	line = truncsp(line);
-	str=line.split(/\s+/);
-	area.push(str);
-}
-delete cfg_file;
-
-/******************/
-/* Expor Messages */
-/******************/
+/*******************/
+/* Export Messages */
+/*******************/
 var exported=0;
 
 mailbase = new MsgBase("mail");
 if(mailbase.open!=undefined && mailbase.open()==false) {
-	printf("!ERROR %s opening mail base\r\n",mailbase.last_error);
+	log(LOG_ERR,format("!ERROR %s opening mail base\r\n",mailbase.last_error));
 	exit();
 }
 
-printf("Scanning %lu message bases...\r\n",area.length);
+log(LOG_INFO,format("Scanning %lu message bases...\r\n",area.length));
 for(i in area) {
 	
 	if(js.terminated)
 		break;
 
-	sub = area[i].shift();
+	sub = area[i].sub;
 
-	from = area[i].shift();
+	from = area[i].from;
 
 	msgbase = new MsgBase(sub);
 	if(msgbase.open!=undefined && msgbase.open()==false) {
-		printf("!ERROR %s opening msgbase: %s\r\n",msgbase.last_error,sub);
+		log(LOG_ERR,format("!ERROR %s opening msgbase: %s\r\n",msgbase.last_error,sub));
 		delete msgbase;
 		continue;
 	}
 
-	printf("sub: %s\r\n",sub);
+	log(LOG_INFO,format("sub: %s\r\n",sub));
 
 	/*********************/
 	/* Read Pointer File */
 	/*********************/
-	export_ptr = 0;
-	ptr_fname = msgbase.file + ".mlg";
+
+	/* Get export message pointer */
+	ptr_fname = msgbase.file + ".listgate.ptr";
+	if(!file_exists(ptr_fname))
+		file_touch(ptr_fname);
 	ptr_file = new File(ptr_fname);
-	if(ptr_file.open("rb")) {
-		export_ptr = ptr_file.readBin();
-		printf("%s export ptr: %ld\r\n",sub,export_ptr);
-		ptr_file.close();
+	if(!ptr_file.open("r+")) {
+		log(LOG_ERR,format("%s !ERROR %d opening/creating file: %s"
+			,list.name, ptr_file.error, ptr_fname));
+		delete msgbase;
+		continue;
 	}
 
-	if(reset_export_ptrs)
+	var last_msg = msgbase.last_msg;
+	var ptr = Number(ptr_file.readln());
+
+	log(LOG_DEBUG,format("%s pointer read: %u", sub, ptr));
+
+	if(reset_ptrs)
 		ptr = 0;
-	else if(update_export_ptrs)
-		ptr = msgbase.last_msg;
-	else 
-		ptr = export_ptr;
+	else if(update_ptrs)
+		ptr = last_msg;
 
 	if(ptr < msgbase.first_msg)
 		ptr = msgbase.first_msg;
@@ -111,7 +126,6 @@ for(i in area) {
 	/*************************/
 	/* EXPORT Local Messages */
 	/*************************/
-	last_msg=msgbase.last_msg;
 	for(;ptr<=last_msg && !js.terminated;ptr++) {
 		if(this.console!=undefined)
 			console.line_counter = 0;
@@ -142,7 +156,7 @@ for(i in area) {
 				,true	/* include tails */
 				);
 		if(body == null) {
-			printf("!FAILED to read message number %ld\r\n",ptr);
+			log(LOG_ERR,format("!FAILED to read message number %ld\r\n",ptr));
 			continue;
 		}
 		if(msgbase.cfg!=undefined && msgbase.cfg.settings&SUB_ASCII) {
@@ -159,7 +173,7 @@ for(i in area) {
 		delete hdr.thread_next;
 		delete hdr.thread_first;
 
-		var listservers = new Array(area[i]);
+		var listservers = new Array(area[i].to);
 		while(listservers.length) {	/* For each list server... */
 
 			listserv=listservers.shift();
@@ -173,27 +187,24 @@ for(i in area) {
 
 			/* Copy to message base */
 			if(mailbase.save_msg(hdr,body)) {
-				printf("Exported message %lu to list server: %s\r\n",ptr,listserv);
+				log(LOG_INFO,format("Exported message %lu to list server: %s\r\n",ptr,listserv));
 				exported++;
 			} else
-				printf("!ERROR %s exporting message %lu to list server: %s\r\n"
-					,mailbase.error, ptr, listserv);
+				log(LOG_ERR,format("!ERROR %s exporting message %lu to list server: %s\r\n"
+					,mailbase.error, ptr, listserv));
 		}
 	}
-	if(ptr > msgbase.last_msg)
-		ptr = msgbase.last_msg;
-	export_ptr = ptr;
+	if(ptr > last_msg)
+		ptr = last_msg;
 
 	/* Save Pointers */
-	if(!ptr_file.open("wb"))
-		printf("!ERROR %d creating/opening %s\r\n",errno,ptr_fname);
-	else {
-		ptr_file.writeBin(export_ptr);
-		ptr_file.close();
-	}
+	ptr_file.rewind();
+	ptr_file.length=0;		// truncate
+	ptr_file.writeln(ptr);
+	ptr_file.close();
+
 	delete ptr_file;
 	delete msgbase;
-
 }
 
 delete mailbase;
@@ -201,4 +212,4 @@ delete mailbase;
 printf("Synchronet Mailing List Gateway %s session complete (%lu exported)\r\n"
 	   ,REVISION, exported);
 
-/* End of mlistgate.js */
+/* End of listgate.js */
