@@ -227,8 +227,9 @@ int main(int argc, char **argv)
 		getch();
 		return(1); }
 
-	if(node_dir[strlen(node_dir)-1]!='\\')  /* make sure node_dir ends in '\' */
-		strcat(node_dir,"\\");
+	if(node_dir[strlen(node_dir)-1]!='\\'
+		&& node_dir[strlen(node_dir)-1]!='/')  /* make sure node_dir ends in '\' */
+		strcat(node_dir,"/");
 
 	initdata(); 								/* read XTRN.DAT and more */
 	credits=user_cdt;
@@ -337,7 +338,7 @@ int main(int argc, char **argv)
 #define SBJ_INDENT "                                "
 	while(1) {
 		cls();
-		center("\1n\1h\1cSynchronet \1rBlackjack! \1cv3.00\r\n");
+		center("\1n\1h\1cSynchronet \1rBlackjack! \1cv3.10\r\n");
 		sprintf(str,"\1w(XSDK v%s)\r\n\r\n",xsdk_ver);
 		center(str);
 
