@@ -461,11 +461,19 @@ static void sockmsgtxt(SOCKET socket, smbmsg_t* msg, char* msgtxt, char* fromadd
 	sockprintf(socket,".");	/* End of text */
 }
 
-static u_long resolve_ip(char *addr)
+static u_long resolve_ip(char *inaddr, ushort* port)
 {
-	HOSTENT*	host;
+	char		addr[128];
 	char*		p;
+	HOSTENT*	host;
 
+	sprintf(addr,"%.*s",sizeof(addr)-1,inaddr);
+	p=strrchr(addr,':');	/* non-standard SMTP port */
+	if(p!=NULL) {
+		*p=0;
+		if(port!=NULL)
+			*port=atoi(p+1);
+	}
 	for(p=addr;*p;p++)
 		if(*p!='.' && !isdigit(*p))
 			break;
@@ -473,7 +481,7 @@ static u_long resolve_ip(char *addr)
 		return(inet_addr(addr));
 
 	if ((host=gethostbyname(addr))==NULL) {
-		lprintf("0000 !ERROR resolving host name: %s",addr);
+		lprintf("0000 !ERROR resolving host name: %s",inaddr);
 		return(0);
 	}
 	return(*((ulong*)host->h_addr_list[0]));
@@ -1067,6 +1075,8 @@ static void smtp_thread(void* arg)
 	int			addr_len;
 	ushort		xlat;
 	ushort		nettype=NET_NONE;
+	ushort		dest_port;
+	ulong		dest_ip;
 	uint		usernum;
 	ulong		crc;
 	ulong		length;
@@ -1292,7 +1302,7 @@ static void smtp_thread(void* arg)
 					length=filelength(fileno(msgtxt));
 					
 					p=strchr(sender_addr,'@');
-					if(p==NULL || resolve_ip(p+1)!=smtp.client_addr.sin_addr.s_addr) 
+					if(p==NULL || resolve_ip(p+1,NULL)!=smtp.client_addr.sin_addr.s_addr) 
 						/* Append real IP and hostname if different */
 						sprintf(str,"%s%s \1w[\1n%s\1h] (\1n%s\1h)%s"
 							,head,sender_addr,host_ip,host_name,tail);
@@ -1891,13 +1901,17 @@ static void smtp_thread(void* arg)
 			if(cmd==SMTP_CMD_MAIL && tp!=NULL) {
 				
 				/* RELAY */
+				dest_port=server_addr.sin_port;
+				dest_ip=resolve_ip(tp+1,&dest_port);
 				sprintf(domain_list,"%sdomains.cfg",scfg.ctrl_dir);
-				sprintf(relay_list,"%srelay.cfg",scfg.ctrl_dir);
-				if(stricmp(tp+1,scfg.sys_inetaddr)!=0
-					&& resolve_ip(tp+1)!=server_addr.sin_addr.s_addr
-					&& findstr(&scfg,tp+1,domain_list)==FALSE) {
+				if((stricmp(tp+1,scfg.sys_inetaddr)!=0
+						&& dest_ip!=server_addr.sin_addr.s_addr
+						&& findstr(&scfg,tp+1,domain_list)==FALSE)
+					|| dest_port!=server_addr.sin_port) {
 
-					if(!findstr(&scfg,host_name,relay_list) && 
+					sprintf(relay_list,"%srelay.cfg",scfg.ctrl_dir);
+					if(p!=alias_buf /* forced relay by alias */ &&
+						!findstr(&scfg,host_name,relay_list) && 
 						!findstr(&scfg,host_ip,relay_list)) {
 						lprintf("%04d !SMTP ILLEGAL RELAY ATTEMPT from %s [%s] to %s"
 							,socket, reverse_path, host_ip, p);
@@ -1928,7 +1942,7 @@ static void smtp_thread(void* arg)
 			if(tp!=NULL) *tp=0;	/* truncate at '"' */
 
 			p=alias(&scfg,p,name_alias_buf);
-			if(p==alias_buf) 
+			if(p==name_alias_buf) 
 				lprintf("%04d SMTP ALIAS: %s",socket,p);
 		
 			if(!strnicmp(p,"sub:",4)) {		/* Post on a sub-board */
@@ -2205,6 +2219,7 @@ static void sendmail_thread(void* arg)
 	char*		server;
 	char*		msgtxt=NULL;
 	char*		p;
+	ushort		port;
 	ulong		offset;
 	ulong		last_msg=0;
 	ulong		total_msgs;
@@ -2335,12 +2350,20 @@ static void sendmail_thread(void* arg)
 				continue;
 			}
 
-			if(startup->options&MAIL_OPT_RELAY_TX)  
+			port=0;
+			if(startup->options&MAIL_OPT_RELAY_TX) { 
 				server=startup->relay_server;
-			else {
+				port=startup->relay_port;
+			} else {
 				sprintf(to,"%.*s",(int)sizeof(to)-1,(char*)msg.to_net.addr);
 				p=strrchr(to,'>');	/* Truncate '>' */
 				if(p!=NULL) *p=0;
+
+				p=strrchr(to,':');	/* non-standard SMTP port */
+				if(p!=NULL) {
+					*p=0;
+					port=atoi(p+1);
+				}
 
 				p=strrchr(to,'@');
 				if(p==NULL) {
@@ -2349,7 +2372,7 @@ static void sendmail_thread(void* arg)
 					bounce(&smb,&msg,err,TRUE);
 					continue;
 				}
-				if((dns=resolve_ip(startup->dns_server))==0) 
+				if((dns=resolve_ip(startup->dns_server,NULL))==0) 
 					continue;
 				p++;
 				lprintf("0000 SEND getting MX records for %s from %s",p,startup->dns_server);
@@ -2364,6 +2387,8 @@ static void sendmail_thread(void* arg)
 				}
 				server=mx;
 			}
+			if(!port)
+				port=IPPORT_SMTP;
 
 
 			lprintf("0000 SEND opening socket");
@@ -2394,7 +2419,7 @@ static void sendmail_thread(void* arg)
 				}
 				
 				lprintf("%04d SEND resolving SMTP host name: %s", sock, server);
-				ip_addr=resolve_ip(server);
+				ip_addr=resolve_ip(server,NULL);
 				if(!ip_addr)  {
 					sprintf(err,"Failed to resolve SMTP host name: %s",server);
 					continue;
@@ -2403,10 +2428,7 @@ static void sendmail_thread(void* arg)
 				memset(&server_addr,0,sizeof(server_addr));
 				server_addr.sin_addr.s_addr = ip_addr;
 				server_addr.sin_family = AF_INET;
-				if(startup->options&MAIL_OPT_RELAY_TX)
-					server_addr.sin_port = htons(startup->relay_port);
-				else
-					server_addr.sin_port = htons(IPPORT_SMTP);
+				server_addr.sin_port = htons(port);
 				
 				lprintf("%04d SEND connecting to port %u on %s [%s]"
 					,sock
