@@ -162,6 +162,11 @@ function document_object(name, obj, type)
 {
 	object_header(name,obj,type);
 	if(obj._dont_document==undefined) {
+		if(obj._assoc_array!=undefined)
+			for(i in obj) {
+				obj=obj[i];
+				break;
+			}
 		f.writeln("<ul>");
 		document_methods(name,obj);
 		object_depth++;
