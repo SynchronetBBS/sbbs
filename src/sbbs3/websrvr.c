@@ -54,7 +54,7 @@
  *
  * Should support RFC2617 Digest auth.
  *
- * Fix up all the logging stuff.
+ * Support the ident protocol... the standard log format supports it.
  *
  * SSJS stuff could work using three different methods:
  * 1) Temporary file as happens currently
