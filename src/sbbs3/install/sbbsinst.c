@@ -313,7 +313,7 @@ int main(int argc, char **argv)
 								"\n	/usr/local/sbbs"
 								"\n	/opt/sbbs"
 								"\n	/home/bbs/sbbs";
-				uifc.input(WIN_MID,0,0,"Install Path",params.install_path,40,K_EDIT);
+				uifc.input(WIN_MID,0,0,"",params.install_path,50,K_EDIT);
 				break;
 			case 3:
 				strcpy(opt[0],"Borland");
@@ -370,7 +370,7 @@ int main(int argc, char **argv)
 			case 7:
 				uifc.helpbuf=	"`Make Command-line`\n"
 								"\n";
-				uifc.input(WIN_MID,0,0,"Command",params.make_cmdline,60,K_EDIT);
+				uifc.input(WIN_MID,0,0,"",params.make_cmdline,65,K_EDIT);
 				break;
 			case 8:
 				install_sbbs(distlist[dist],distlist[dist]->type==LOCAL_FILE?NULL:distlist[dist]->servers[server]);
