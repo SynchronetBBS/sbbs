@@ -35,6 +35,7 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
+#include "sbbs.h"
 #include "conwrap.h"	/* this has to go BEFORE curses.h so getkey() can be macroed around */
 #include <curses.h>
 #include <sys/types.h>
@@ -57,6 +58,7 @@
 #include "sbbs_ini.h"	/* INI parsing */
 #include "scfglib.h"	/* SCFG files */
 #include "ars_defs.h"	/* needed for SCFG files */
+#include "userdat.h"	/* getnodedat() */
 
 enum {
 	 MODE_LIST
@@ -95,6 +97,21 @@ char tmp[256];
 int nodefile;
 const char *YesStr="Yes";
 const char *NoStr="No";
+scfg_t	cfg;
+
+int lprintf(char *fmt, ...)
+{
+	va_list argptr;
+	char sbuf[1024];
+	int	len;
+
+	va_start(argptr,fmt);
+	len=vsnprintf(sbuf,sizeof(sbuf),fmt,argptr);
+	sbuf[sizeof(sbuf)-1]=0;
+	va_end(argptr);
+	uifc.msg(sbuf);
+	return(len);
+}
 
 void bail(int code)
 {
@@ -271,28 +288,6 @@ char* itoa(int val, char* str, int radix)
 	return(str);
 }
 
-/****************************************************************************/
-/* Unpacks the password 'pass' from the 5bit ASCII inside node_t. 32bits in */
-/* node.extaux, and the other 8bits in the upper byte of node.aux			*/
-/****************************************************************************/
-char *unpackchatpass(char *pass, node_t node)
-{
-	char 	bits;
-	int 	i;
-
-	pass[0]=(node.aux&0x1f00)>>8;
-	pass[1]=(char)(((node.aux&0xe000)>>13)|((node.extaux&0x3)<<3));
-	bits=2;
-	for(i=2;i<8;i++) {
-		pass[i]=(char)((node.extaux>>bits)&0x1f);
-		bits+=5; }
-	pass[8]=0;
-	for(i=0;i<8;i++)
-		if(pass[i])
-			pass[i]+=64;
-	return(pass);
-}
-
 /******************************************************************************************/
 /* Returns the information for node number 'number' contained in 'node' into string 'str' */
 /******************************************************************************************/
@@ -407,7 +402,7 @@ char *nodedat(char *str, int number, node_t node)
 						strcat(str,buf);
 						if(node.aux&0x1f00) { /* password */
 							strcat(str,"*");
-							sprintf(buf," %s",unpackchatpass(tmp,node));
+							sprintf(buf," %s",unpackchatpass(tmp,&node));
 							strcat(str,buf); } }
 					else
 						strcat(str,"in multinode global chat channel");
@@ -497,52 +492,6 @@ char *nodedat(char *str, int number, node_t node)
 	return(str);
 }
 
-/****************************************************************************/
-/* Reads the data for node number 'number' into the structure 'node'        */
-/* from NODE.DAB															*/
-/* if lockit is non-zero, locks this node's record. putnodedat() unlocks it */
-/****************************************************************************/
-void getnodedat(int number, node_t *node, int lockit)
-{
-	int count;
-	char	msg[80];
-
-	number--;	/* make zero based */
-	for(count=0;count<LOOP_NODEDAB;count++) {
-		if(count)
-			SLEEP(100);
-		lseek(nodefile,(long)number*sizeof(node_t),SEEK_SET);
-		if(lockit
-			&& lock(nodefile,(long)number*sizeof(node_t),sizeof(node_t))==-1) 
-			continue; 
-		if(read(nodefile,node,sizeof(node_t))==sizeof(node_t))
-			break;
-	}
-	if(count>=(LOOP_NODEDAB/2)) {
-		sprintf(msg,"NODE.DAB (node %d) COLLISION (READ) - Count: %d\n"
-			,number+1, count); 
-		uifc.msg(msg); }
-	else if(count==LOOP_NODEDAB) {
-		sprintf(msg,"!Error reading nodefile for node %d\n",number+1);
-		uifc.msg(msg); }
-}
-
-/****************************************************************************/
-/* Write the data from the structure 'node' into NODE.DAB  					*/
-/* getnodedat(num,&node,1); must have been called before calling this func  */
-/*          NOTE: ------^   the indicates the node record has been locked   */
-/****************************************************************************/
-void putnodedat(int number, node_t node)
-{
-	number--;	/* make zero based */
-	lseek(nodefile,(long)number*sizeof(node_t),SEEK_SET);
-	if(write(nodefile,&node,sizeof(node_t))!=sizeof(node_t)) {
-		unlock(nodefile,(long)number*sizeof(node_t),sizeof(node_t));
-		printf("Error writing to nodefile for node %d\n",number+1);
-		return; }
-	unlock(nodefile,(long)number*sizeof(node_t),sizeof(node_t));
-}
-
 void node_toggles(int nodenum)  {
 	char**	opt;
 	int		i,j;
@@ -555,11 +504,14 @@ void node_toggles(int nodenum)  {
 		if((opt[i]=(char *)MALLOC(MAX_OPLN))==NULL)
 			allocfail(MAX_OPLN);
 
-	getnodedat(nodenum,&node,0);
 	i=0;
 	uifc.helpbuf=	"`Node Toggles:`\n"
 					"\nToDo: Add help (Mention that changes take effect immediately)";
 	while(save==0) {
+		if(getnodedat(&cfg,nodenum,&node,&nodefile)) {
+			uifc.msg("Error reading node data!");
+			break;
+		}
 		j=0;
 		sprintf(opt[j++],"%-30s%3s","Locked for SysOps only",node.misc&NODE_LOCK ? YesStr : NoStr);
 		sprintf(opt[j++],"%-30s%3s","Interrupt (Hangup)",node.misc&NODE_INTR ? YesStr : NoStr);
@@ -614,56 +566,8 @@ void node_toggles(int nodenum)  {
 				uifc.msg("Option not implemented");
 				continue;
 		}
-		lock(nodefile,(long)(nodenum-1)*sizeof(node_t),sizeof(node_t));
-		putnodedat(nodenum,node);
+		putnodedat(&cfg,nodenum,&node,nodefile);
 	}
-}
-
-/****************************************************************************/
-/* Truncates white-space chars off end of 'str'								*/
-/****************************************************************************/
-char* DLLCALL truncsp(char *str)
-{
-	uint c;
-
-	c=strlen(str);
-	while(c && (uchar)str[c-1]<=' ') c--;
-	str[c]=0;
-	return(str);
-}
-
-/****************************************************************************/
-/* If the directory 'path' doesn't exist, create it.                      	*/
-/****************************************************************************/
-BOOL md(char *inpath)
-{
-	DIR*	dir;
-	char	path[MAX_PATH+1];
-
-	if(inpath[0]==0)
-		return(FALSE);
-
-	SAFECOPY(path,inpath);
-
-	/* Remove trailing '.' if present */
-	if(path[strlen(path)-1]=='.')
-		path[strlen(path)-1]=0;
-
-	/* Remove trailing slash if present */
-	if(path[strlen(path)-1]=='\\' || path[strlen(path)-1]=='/')
-		path[strlen(path)-1]=0;
-
-	dir=opendir(path);
-	if(dir==NULL) {
-		if(MKDIR(path)) {
-			printf("!ERROR %d creating directory: %s",errno,path);
-			return(FALSE); 
-		} 
-	}
-	else
-		closedir(dir);
-	
-	return(TRUE);
 }
 
 int main(int argc, char** argv)  {
@@ -674,7 +578,6 @@ int main(int argc, char** argv)  {
 	char revision[16];
 	char str[256],str2[256],ctrl_dir[41],*p;
 	char title[256];
-	int sys_nodes;
 	int i,j;
 	node_t node;
 	char	*buf;
@@ -695,10 +598,6 @@ int main(int argc, char** argv)  {
 	mail_startup_t		mail_startup;
 	BOOL				run_services;
 	services_startup_t	services_startup;
-/******************/
-/* CFG file stuff */
-/******************/
-	scfg_t	cfg;
 
 	sscanf("$Revision$", "%*s %s", revision);
 
@@ -797,20 +696,11 @@ int main(int argc, char** argv)  {
 	chdir(bbs_startup.ctrl_dir);
 	
 	/* Read .cfg files here */
+	cfg.size=sizeof(cfg);
 	if(!read_main_cfg(&cfg, str)) {
 		printf("ERROR! %s\n",str);
 		exit(1);
 	}
-
-	sprintf(str,"%s/node.dab",bbs_startup.ctrl_dir);
-	if((nodefile=sopen(str,O_RDWR|O_BINARY,SH_DENYNO))==-1) {
-		printf("\7\nError %d opening %s.\n",errno,str);
-		exit(1); }
-
-	sys_nodes=filelength(nodefile)/sizeof(node_t);
-	if(!sys_nodes) {
-		printf("%s reflects 0 nodes!\n",str);
-		exit(1); }
 
     memset(&uifc,0,sizeof(uifc));
 
@@ -871,9 +761,11 @@ int main(int argc, char** argv)  {
 	}
 
 	while(1) {
-		for(i=1;i<=sys_nodes;i++) {
-			getnodedat(i,&node,0);
-			nodedat(mopt[i-1],i,node);
+		for(i=1;i<=cfg.sys_nodes;i++) {
+			if((j=getnodedat(&cfg,i,&node,NULL)))
+				sprintf(mopt[i-1],"Error reading node data (%d)!",j);
+			else
+				nodedat(mopt[i-1],i,node);
 		}
 		mopt[i-1][0]=0;
 
@@ -926,7 +818,7 @@ int main(int argc, char** argv)  {
 				bail(0);
 			continue;
 		}
-		if(j<sys_nodes && j>=0) {
+		if(j<cfg.sys_nodes && j>=0) {
 			i=0;
 			strcpy(opt[i++],"Spy on node");
 			strcpy(opt[i++],"Node toggles");
@@ -976,9 +868,12 @@ int main(int argc, char** argv)  {
 					break;
 
 				case 2:
-					getnodedat(j+1,&node,1);
+					if(getnodedat(&cfg,j+1,&node,&nodefile)) {
+						uifc.msg("getnodedat() failed! (Nothing done)");
+						break;
+					}
 					node.errors=0;
-					putnodedat(j+1,node);
+					putnodedat(&cfg,j+1,&node,nodefile);
 					break;
 
 				case -1:
