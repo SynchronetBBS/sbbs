@@ -359,21 +359,9 @@ int chat(int nodenum, node_t *node, bbs_startup_t *bbs_startup) {
 	togglechat(nodenum,node,TRUE);
 
 	while(in != -1) {
-		outpos=lseek(out,0,SEEK_CUR);
-		inpos=lseek(in,0,SEEK_CUR);
-		close(in);
-		close(out);
-		if((out=sopen(outpath,O_RDWR|O_CREAT|O_BINARY,O_DENYNONE
-			,S_IREAD|S_IWRITE))==-1) {
-			break;
-		}
-		lseek(out,outpos,SEEK_SET);
-		if((in=sopen(inpath,O_RDWR|O_CREAT|O_BINARY,O_DENYNONE
-			,S_IREAD|S_IWRITE))==-1) {
-			close(out);
-			break;
-	    }
-		lseek(in,inpos,SEEK_SET);
+		utime(outpath,NULL);
+		utime(inpath,NULL);
+		
 		if(getnodedat(&cfg,nodenum,node,NULL)) {
 			uifc.msg("Loop error reading node data!");
 			break;
@@ -406,9 +394,13 @@ int chat(int nodenum, node_t *node, bbs_startup_t *bbs_startup) {
 					write(in,&ch,1);
 				}
 		}
-		if((ch=wgetch(swin))!=ERR) {
+		if((ch=wgetch(swin))) {
 			switch(ch)  {
 				case 0:
+				case ERR:
+					ch=0;
+					write(out,&ch,1);
+					lseek(out,-1,SEEK_CUR);
 					break;
 					
 				case ESC:
