@@ -71,18 +71,15 @@ typedef struct {
     void	(*reserved_fptr3)(void);
     void	(*reserved_fptr2)(void);
     void	(*reserved_fptr1)(void);
-    char	index_file_name[64];
-	char	js_ext[16];			/* Server-Side JavaScript file extension */
-	char	reserved_str4[16];
-	char	reserved_str3[32];
-	char	reserved_str2[64];
-	char	reserved_str1[64];
+    char	reserved_filename[64];
+	char	ssjs_ext[16];			/* Server-Side JavaScript file extension */
+	char	js_ext[16];				/* Embedded JavaScript file extension */
+	char	cgi_ext[10][16];		/* CGI Extensions */
     char    ctrl_dir[128];
     char	root_dir[128];
     char	error_dir[128];
     char	cgi_temp_dir[128];
-    char	reserved_path7[128];
-    char	reserved_path6[128];
+    char	index_file_name[4][128];
     char	reserved_path5[128];
     char	reserved_path4[128];
     char	reserved_path3[128];

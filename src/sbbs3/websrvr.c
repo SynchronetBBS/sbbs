@@ -99,12 +99,11 @@ typedef struct  {
 	char		query_str[MAX_REQUEST_LINE];
 
 	linked_list*	cgi_env;
-	linked_list*	cgi_heads;
-	linked_list*	headers;
+	linked_list*	dynamic_heads;
 	char		status[MAX_REQUEST_LINE+1];
 	char *		post_data;
 	size_t		post_len;
-	BOOL		was_dynamic;
+	int			dynamic;
 
 	/* Dynamically (sever-side JS) generated HTML parameters */
 	FILE*	fp;
@@ -119,14 +118,15 @@ typedef struct  {
 	char			host_name[128];	/* Resolved remote host */
 	int				http_ver;       /* HTTP version.  0 = HTTP/0.9, 1=HTTP/1.0, 2=HTTP/1.1 */
 	BOOL			finished;		/* Do not accept any more imput from client */
-	char			useragent[MAX_REQUEST_LINE];
 	user_t			user;
 
 	/* JavaScript parameters */
 	JSRuntime*		js_runtime;
 	JSContext*		js_cx;
 	JSObject*		js_glob;
-
+	JSObject*		js_query;
+	JSObject*		js_header;
+	JSObject*		js_request;
 } http_session_t;
 
 typedef struct {
@@ -161,26 +161,29 @@ static char* methods[] = {
 };
 
 enum { 
+	 IS_STATIC
+	,IS_CGI
+	,IS_JS
+	,IS_SSJS
+};
+
+enum { 
 	 HEAD_ALLOW
 	,HEAD_AUTH
-	,HEAD_ENCODE
 	,HEAD_LENGTH
 	,HEAD_TYPE
-	,HEAD_DATE
 	,HEAD_EXPIRES
-	,HEAD_FROM
 	,HEAD_IFMODIFIED
 	,HEAD_LASTMODIFIED
 	,HEAD_LOCATION
 	,HEAD_PRAGMA
-	,HEAD_REFERER
 	,HEAD_SERVER
-	,HEAD_USERAGENT
 	,HEAD_WWWAUTH
 	,HEAD_CONNECTION
 	,HEAD_HOST
 	,HEAD_STATUS
 	,HEAD_ACCEPT_ENCODING
+	,HEAD_DATE
 };
 
 static struct {
@@ -189,24 +192,20 @@ static struct {
 } headers[] = {
 	{ HEAD_ALLOW,			"Allow"					},
 	{ HEAD_AUTH,			"Authorization"			},
-	{ HEAD_ENCODE,			"Content-Encoding"		},
 	{ HEAD_LENGTH,			"Content-Length"		},
 	{ HEAD_TYPE,			"Content-Type"			},
-	{ HEAD_DATE,			"Date"					},
 	{ HEAD_EXPIRES,			"Expires"				},
-	{ HEAD_FROM,			"From"					},
 	{ HEAD_IFMODIFIED,		"If-Modified-Since"		},
 	{ HEAD_LASTMODIFIED,	"Last-Modified"			},
 	{ HEAD_LOCATION,		"Location"				},
 	{ HEAD_PRAGMA,			"Pragma"				},
-	{ HEAD_REFERER,			"Referer"				},
 	{ HEAD_SERVER,			"Server"				},
-	{ HEAD_USERAGENT,		"User-Agent"			},
 	{ HEAD_WWWAUTH,			"WWW-Authenticate"		},
 	{ HEAD_CONNECTION,		"Connection"			},
 	{ HEAD_HOST,			"Host"					},
 	{ HEAD_STATUS,			"Status"				},
 	{ HEAD_ACCEPT_ENCODING,	"Accept-Encoding"		},
+	{ HEAD_DATE,			"Date"		},
 	{ -1,				NULL /* terminator */	},
 };
 
@@ -226,6 +225,7 @@ static const char * base64alphabet =
 static DWORD monthdays[12] = {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334};
 
 static void respond(http_session_t * session);
+static BOOL js_setup(http_session_t* session);
 
 static time_t time_gm( struct tm* ti )  {
 	time_t t;
@@ -374,26 +374,6 @@ static void init_enviro(http_session_t *session)  {
 	if(!strcmp(session->host_name,"<no name>"))
 		add_env(session,"REMOTE_HOST",session->host_name);
 	add_env(session,"REMOTE_ADDR",session->host_ip);
-}
-
-static BOOL is_cgi(http_session_t *session)  
-{
-
-	if(startup->options&WEB_OPT_NO_CGI)
-		return(FALSE);
-
-#ifdef __unix__
-	/* NOTE: (From the FreeBSD man page) 
-	   "Access() is a potential security hole and should never be used." */
-	   
-	/* ToDo: This is actually quite nasty and should be replaced by		*
-	 * ToDo: SOMETHING.  Perhaps a cgi extensions ini variable or 		*
-	 * ToDo: something?  Especially since Windows can't do this anyways	*/
-	 	 
-	if(!access(session->req.physical_path,X_OK))
-		return(TRUE);
-#endif
-	return(FALSE);	
 }
 
 static int sockprintf(SOCKET sock, char *fmt, ...)
@@ -590,20 +570,25 @@ static int close_socket(SOCKET sock)
 
 static void close_request(http_session_t * session)
 {
-	linked_list *p;
-	
-	while(session->req.headers != NULL)  {
-		FREE_AND_NULL(session->req.headers->val);
-		p=session->req.headers->next;
-		FREE_AND_NULL(session->req.headers);
-		session->req.headers=p;
+	linked_list	*p;
+	while(session->req.dynamic_heads != NULL)  {
+		FREE_AND_NULL(session->req.dynamic_heads->val);
+		p=session->req.dynamic_heads->next;
+		FREE_AND_NULL(session->req.dynamic_heads);
+		session->req.dynamic_heads=p;
 	}
+	while(session->req.cgi_env != NULL)  {
+		FREE_AND_NULL(session->req.cgi_env->val);
+		p=session->req.cgi_env->next;
+		FREE_AND_NULL(session->req.cgi_env);
+		session->req.cgi_env=p;
+	}
+	FREE_AND_NULL(session->req.post_data);
 	if(!session->req.keep_alive || !socket_check(session->socket,NULL)) {
 		close_socket(session->socket);
 		session->socket=INVALID_SOCKET;
 		session->finished=TRUE;
 	}
-
 }
 
 static int get_header_type(char *header)
@@ -657,7 +642,7 @@ static BOOL send_headers(http_session_t *session, const char *status)
 
 	SAFECOPY(status_line,status);
 	ret=stat(session->req.physical_path,&stats);
-	if(!ret && (stats.st_mtime < session->req.if_modified_since) && !session->req.was_dynamic) {
+	if(!ret && (stats.st_mtime < session->req.if_modified_since) && !session->req.dynamic) {
 		SAFECOPY(status_line,"304 Not Modified");
 		ret=-1;
 		send_file=FALSE;
@@ -689,7 +674,7 @@ static BOOL send_headers(http_session_t *session, const char *status)
 	sockprintf(session->socket,"%s: %s",get_header(HEAD_SERVER),VERSION_NOTICE);
 	
 	/* Entity Headers */
-	if(session->req.was_dynamic)
+	if(session->req.dynamic)
 		sockprintf(session->socket,"%s: %s",get_header(HEAD_ALLOW),"GET, HEAD, POST");
 	else
 		sockprintf(session->socket,"%s: %s",get_header(HEAD_ALLOW),"GET, HEAD");
@@ -697,11 +682,14 @@ static BOOL send_headers(http_session_t *session, const char *status)
 	if(session->req.send_location) {
 		sockprintf(session->socket,"%s: %s",get_header(HEAD_LOCATION),(session->req.virtual_path));
 	}
-	if(!ret && session->req.keep_alive) {
-		sockprintf(session->socket,"%s: %d",get_header(HEAD_LENGTH),stats.st_size);
+	if(session->req.keep_alive) {
+		if(ret)
+			sockprintf(session->socket,"%s: %d",get_header(HEAD_LENGTH),0);
+		else
+			sockprintf(session->socket,"%s: %d",get_header(HEAD_LENGTH),stats.st_size);
 	}
 
-	if(!ret && !session->req.was_dynamic)  {
+	if(!ret && !session->req.dynamic)  {
 		send_file=sockprintf(session->socket,"%s: %s",get_header(HEAD_TYPE)
 			,session->req.mime_type);
 
@@ -712,41 +700,33 @@ static BOOL send_headers(http_session_t *session, const char *status)
 			,tm.tm_year+1900,tm.tm_hour,tm.tm_min,tm.tm_sec);
 	} 
 
-	if(session->req.was_dynamic)  {
-		/* CGI-generated headers */
+	if(session->req.dynamic)  {
+		/* Dynamic headers */
 		/* Set up environment */
-		p=session->req.cgi_heads;
+		p=session->req.dynamic_heads;
 		while(p != NULL)  {
 			sockprintf(session->socket,"%s",p->val);
 			p=p->next;
 		}
 	}
 
-	/* Will fail if socket becomes invalid - I think */
-	send_file=(sendsocket(session->socket,newline,2)>0);
+	sendsocket(session->socket,newline,2);
 	return(send_file);
 }
 
 static void sock_sendfile(SOCKET socket,char *path)
 {
 	int		file;
+	long	offset=0;
 
 	if(startup->options&WEB_OPT_DEBUG_TX)
 		lprintf("%04d Sending %s",socket,path);
 	if((file=open(path,O_RDONLY|O_BINARY))==-1)
 		lprintf("%04d !ERROR %d opening %s",socket,errno,path);
 	else {
-		lseek(file,0,SEEK_SET);
-		#ifdef __FreeBSD__
-		if(sendfile(file, socket, 0, 0, NULL, NULL, 0) < 1)
+		if(sendfilesocket(socket, file, &offset, 0) < 1)
 			lprintf("%04d !ERROR %d sending %s"
 				, socket, errno, path);
-		
-		#else
-		if(sendfilesocket(socket, file, 0, 0) < 1)
-			lprintf("%04d !ERROR %d sending %s"
-				, socket, errno, path);
-		#endif
 		close(file);
 	}
 }
@@ -1013,104 +993,6 @@ int recvbufsocket(int sock, char *buf, long count)
 	return(0);
 }
 
-static BOOL parse_headers(http_session_t * session)
-{
-	char	req_line[MAX_REQUEST_LINE];
-	char	next_char[2];
-	char	*value;
-	char	*p;
-	int		i;
-	size_t	content_len=0;
-	char	env_name[128];
-
-	while(sockreadline(session,req_line,sizeof(req_line))>0) {
-		while((recvfrom(session->socket,next_char,1,MSG_PEEK,NULL,0)>0) 
-			&& (next_char[0]=='\t' || next_char[0]==' ')) {
-			i=strlen(req_line);
-			sockreadline(session,req_line+i,sizeof(req_line)-i);
-		}
-		if(strchr(req_line,':')!=NULL)
-			session->req.headers=add_list(session->req.headers,req_line);
-		strtok(req_line,":");
-		if((value=strtok(NULL,""))!=NULL) {
-			i=get_header_type(req_line);
-			while(*value && *value<=' ') value++;
-			switch(i) {
-				case HEAD_AUTH:
-					strtok(value," ");
-					p=strtok(NULL," ");
-					if(p==NULL)
-						break;
-					while(*p && *p<' ') p++;
-					b64_decode(p);
-					SAFECOPY(session->req.auth,p);
-					break;
-				case HEAD_ENCODE:
-					/* Not implemented - In fact, all ENCODING stiff is dead now. */
-					break;
-				case HEAD_LENGTH:
-					add_env(session,"CONTENT_LENGTH",value);
-					content_len=atoi(value);
-					break;
-				case HEAD_TYPE:
-					add_env(session,"CONTENT_TYPE",value);
-					break;
-				case HEAD_DATE:
-					/* Not implemented  - Who really cares what time the client thinks it is? */
-					break;
-				case HEAD_FROM:
-					/* Not implemented  - usefull for logging?  Does ANYONE send this? */
-					break;
-				case HEAD_IFMODIFIED:
-					session->req.if_modified_since=decode_date(value);
-					break;
-				case HEAD_REFERER:
-					/* Not implemented  - usefull for logging */
-					break;
-				case HEAD_USERAGENT:
-					/* usefull for logging */
-					SAFECOPY(session->useragent,value);
-					break;
-				case HEAD_CONNECTION:
-					if(!stricmp(value,"Keep-Alive")) {
-						session->req.keep_alive=TRUE;
-					}
-					if(!stricmp(value,"Close")) {
-						session->req.keep_alive=FALSE;
-					}
-					break;
-				case HEAD_HOST:
-					if(session->req.host[0]==0) {
-						SAFECOPY(session->req.host,value);
-						if(startup->options&WEB_OPT_DEBUG_RX)
-							lprintf("%04d Grabbing from virtual host: %s"
-								,session->socket,value);
-					}
-					break;
-				default:
-					break;
-			}
-			sprintf(env_name,"HTTP_%s",req_line);
-			add_env(session,env_name,value);
-		}
-	}
-	if(content_len)  {
-		if((session->req.post_data=malloc(content_len+1)) != NULL)  {
-			recvbufsocket(session->socket,session->req.post_data,content_len);
-			session->req.post_len=content_len;
-		}
-		else  {
-			lprintf("%04d !ERROR Allocating %d bytes of memory",session->socket,content_len);
-			return(FALSE);
-		}
-	}
-	else  {
-		session->req.post_data=NULL;
-	}
-	add_env(session,"SERVER_NAME",session->req.host[0] ? session->req.host : startup->host_name );
-	return TRUE;
-}
-
 static void unescape(char *p)
 {
 	char *	dst;
@@ -1135,6 +1017,131 @@ static void unescape(char *p)
 	*(dst)=0;
 }
 
+static void js_parse_post(http_session_t * session)  {
+	char		*p;
+	char		*key;
+	char		*value;
+	JSString*	js_str;
+
+	if(session->req.post_data != NULL)  {
+		p=session->req.post_data;
+		while((key=strtok(p,"="))!=NULL)  {
+			p=NULL;
+			if(key != NULL)  {
+				value=strtok(NULL,"&");
+				if(value != NULL)  {
+					unescape(value);
+					unescape(key);
+					lprintf("Setting %s to %s",key,value);
+					if((js_str=JS_NewStringCopyZ(session->js_cx, value))==NULL)
+						return;
+					JS_DefineProperty(session->js_cx, session->js_query, key, STRING_TO_JSVAL(js_str)
+						,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+				}
+			}
+		}
+	}
+}
+
+static void js_add_header(http_session_t * session, char *key, char *value)  {
+	JSString*	js_str;
+
+	if((js_str=JS_NewStringCopyZ(session->js_cx, value))==NULL)
+		return;
+	JS_DefineProperty(session->js_cx, session->js_header, key, STRING_TO_JSVAL(js_str)
+		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+}
+
+static BOOL parse_headers(http_session_t * session)
+{
+	char	req_line[MAX_REQUEST_LINE];
+	char	next_char[2];
+	char	*value;
+	char	*p;
+	int		i;
+	size_t	content_len=0;
+	char	env_name[128];
+
+	while(sockreadline(session,req_line,sizeof(req_line))>0) {
+		while((recvfrom(session->socket,next_char,1,MSG_PEEK,NULL,0)>0) 
+			&& (next_char[0]=='\t' || next_char[0]==' ')) {
+			i=strlen(req_line);
+			sockreadline(session,req_line+i,sizeof(req_line)-i);
+		}
+		strtok(req_line,":");
+		if((value=strtok(NULL,""))!=NULL) {
+			i=get_header_type(req_line);
+			while(*value && *value<=' ') value++;
+			if(session->req.dynamic==IS_SSJS)
+				js_add_header(session,req_line,value);
+			switch(i) {
+				case HEAD_AUTH:
+					strtok(value," ");
+					p=strtok(NULL," ");
+					if(p==NULL)
+						break;
+					while(*p && *p<' ') p++;
+					b64_decode(p);
+					SAFECOPY(session->req.auth,p);
+					break;
+				case HEAD_LENGTH:
+					if(session->req.dynamic==IS_CGI)				
+						add_env(session,"CONTENT_LENGTH",value);
+					content_len=atoi(value);
+					break;
+				case HEAD_TYPE:
+					if(session->req.dynamic==IS_CGI)				
+						add_env(session,"CONTENT_TYPE",value);
+					break;
+				case HEAD_IFMODIFIED:
+					session->req.if_modified_since=decode_date(value);
+					break;
+				case HEAD_CONNECTION:
+					if(!stricmp(value,"Keep-Alive")) {
+						session->req.keep_alive=TRUE;
+					}
+					if(!stricmp(value,"Close")) {
+						session->req.keep_alive=FALSE;
+					}
+					break;
+				case HEAD_HOST:
+					if(session->req.host[0]==0) {
+						SAFECOPY(session->req.host,value);
+						if(startup->options&WEB_OPT_DEBUG_RX)
+							lprintf("%04d Grabbing from virtual host: %s"
+								,session->socket,value);
+					}
+					break;
+				default:
+					break;
+			}
+			if(session->req.dynamic==IS_CGI)  {
+				sprintf(env_name,"HTTP_%s",req_line);
+				add_env(session,env_name,value);
+			}
+		}
+	}
+	if(content_len)  {
+		if((session->req.post_data=malloc(content_len+1)) != NULL)  {
+			recvbufsocket(session->socket,session->req.post_data,content_len);
+			session->req.post_len=content_len;
+			if(session->req.dynamic==IS_SSJS)  {
+				js_parse_post(session);
+			}
+		}
+		else  {
+			lprintf("%04d !ERROR Allocating %d bytes of memory",session->socket,content_len);
+			return(FALSE);
+		}
+	}
+	else  {
+		session->req.post_data=NULL;
+	}
+	if(session->req.dynamic==IS_CGI)				
+		add_env(session,"SERVER_NAME",session->req.host[0] ? session->req.host : startup->host_name );
+	return TRUE;
+}
+
 static int get_version(char *p)
 {
 	int		i;
@@ -1151,6 +1158,73 @@ static int get_version(char *p)
 	return(i-1);
 }
 
+static void js_parse_query(http_session_t * session, char *p)  {
+	char	*key;
+	char	*value;
+	JSString*	js_str;
+	
+	while((key=strtok(p,"="))!=NULL)  {
+		p=NULL;
+		if(key != NULL)  {
+			value=strtok(NULL,"&");
+			if(value != NULL)  {
+				unescape(value);
+				unescape(key);
+				lprintf("Setting %s to %s",key,value);
+				if((js_str=JS_NewStringCopyZ(session->js_cx, value))==NULL)
+					return;
+				JS_DefineProperty(session->js_cx, session->js_query, key, STRING_TO_JSVAL(js_str)
+					,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+			}
+		}
+	}
+}
+
+static int is_dynamic(http_session_t * session,char *req)  {
+	char*	p;
+	int		i=0;
+	char	path[MAX_PATH+1];
+
+	if((p=strrchr(req,'.'))==NULL)  {
+		lprintf("No dot... is static");
+		return(IS_STATIC);
+	}
+
+	if(!(startup->options&BBS_OPT_NO_JAVASCRIPT) && stricmp(p,startup->ssjs_ext)==0)  {
+		lprintf("Setting up JavaScript support");
+	
+		if(!js_setup(session)) {
+			lprintf("%04d !ERROR setting up JavaScript support", session->socket);
+			send_error(session,"500 Internal Server Error");
+			return(IS_STATIC);
+		}
+	
+		sprintf(path,"%s/SBBS_SSJS.%d.html",startup->cgi_temp_dir,session->socket);
+		if((session->req.fp=fopen(path,"w"))==NULL) {
+			lprintf("%04d !ERROR %d opening/creating %s", session->socket, errno, path);
+			send_error(session,"500 Internal Server Error");
+			return(IS_STATIC);
+		}
+		lprintf("is ssjs");
+		return(IS_SSJS);
+	}
+
+	if(!(startup->options&BBS_OPT_NO_JAVASCRIPT) && stricmp(p,startup->js_ext)==0)
+		return(IS_JS);
+
+	if(!(startup->options&WEB_OPT_NO_CGI)) {
+		for(i=0;i<10&&startup->cgi_ext[i][0];i++)  {
+			if(!(startup->options&BBS_OPT_NO_JAVASCRIPT) && stricmp(p,startup->cgi_ext[i])==0)  {
+				lprintf("is ssjs");
+				init_enviro(session);
+				return(IS_CGI);
+			}
+		}
+	}
+
+	return(IS_STATIC);
+}
+
 static char *get_request(http_session_t * session, char *req_line)
 {
 	char *	p;
@@ -1163,9 +1237,19 @@ static char *get_request(http_session_t * session, char *req_line)
 	retval=strtok(NULL," \t");
 	strtok(session->req.virtual_path,"?");
 	p=strtok(NULL,"");
+	session->req.dynamic=is_dynamic(session,session->req.virtual_path);
 	SAFECOPY(session->req.query_str,p);
-	lprintf("Set query_str to: %s",p);
-	add_env(session,"QUERY_STRING",p);
+	if(p!=NULL)  {
+		switch(session->req.dynamic) {
+			case IS_CGI:
+				add_env(session,"QUERY_STRING",p);
+				break;
+			case IS_SSJS:
+				js_parse_query(session,p);
+				break;
+		}
+	}
+	
 	unescape(session->req.virtual_path);
 	SAFECOPY(session->req.physical_path,session->req.virtual_path);
 	if(!strnicmp(session->req.physical_path,http_scheme,http_scheme_len)) {
@@ -1174,7 +1258,7 @@ static char *get_request(http_session_t * session, char *req_line)
 		strtok(session->req.physical_path,"/");
 		p=strtok(NULL,"/");
 		if(p==NULL) {
-			/* Do not allow host values larger than 128 bytes just to be anal */
+			/* Do not allow host values larger than 128 bytes */
 			session->req.host[0]=0;
 			p=session->req.physical_path+http_scheme_len;
 		}
@@ -1232,8 +1316,9 @@ static BOOL get_req(http_session_t * session)
 				session->http_ver=get_version(p);
 				if(session->http_ver>=HTTP_1_1)
 					session->req.keep_alive=TRUE;
-				add_env(session,"SERVER_PROTOCOL",session->http_ver ? 
-					http_vers[session->http_ver] : "HTTP/0.9");
+				if(session->req.dynamic==IS_CGI)
+					add_env(session,"SERVER_PROTOCOL",session->http_ver ? 
+						http_vers[session->http_ver] : "HTTP/0.9");
 				return(TRUE);
 			}
 		}
@@ -1249,6 +1334,7 @@ static BOOL check_request(http_session_t * session)
 	char	last_ch;
 	char*	last_slash;
 	FILE*	file;
+	int		i;
 	
 	if(!(startup->options&WEB_OPT_VIRTUAL_HOSTS))
 		session->req.host[0]=0;
@@ -1273,8 +1359,13 @@ static BOOL check_request(http_session_t * session)
 		if(last_ch!='/' && last_ch!='\\')  {
 			strcat(session->req.virtual_path,"/");
 		}
-		strcat(path,startup->index_file_name);
-		strcat(session->req.virtual_path,startup->index_file_name);
+		last_slash=strrchr(str,'/');
+		last_slash++;
+		for(i=0;i<4 && startup->index_file_name[i][0] && !fexist(path);i++)  {
+			*last_slash=0;
+			strcat(path,startup->index_file_name[i]);
+		}
+		strcat(session->req.virtual_path,startup->index_file_name[i-1]);
 		session->req.send_location=MOVED_PERM;
 	}
 	if(strnicmp(path,root_dir,strlen(root_dir))) {
@@ -1287,13 +1378,16 @@ static BOOL check_request(http_session_t * session)
 		return(FALSE);
 	}
 	SAFECOPY(session->req.physical_path,path);
-	add_env(session,"PATH_TRANSLATED",path);
-	add_env(session,"SCRIPT_NAME",session->req.virtual_path);
+	if(session->req.dynamic==IS_CGI)  {
+		add_env(session,"PATH_TRANSLATED",path);
+		add_env(session,"SCRIPT_NAME",session->req.virtual_path);
+	}
 	SAFECOPY(str,session->req.virtual_path);
 	last_slash=strrchr(str,'/');
 	if(last_slash!=NULL)
 		*(last_slash+1)=0;
-	add_env(session,"PATH_INFO",str);
+	if(session->req.dynamic==IS_CGI)
+		add_env(session,"PATH_INFO",str);
 
 	/* Set default ARS to a 0-length string */
 	session->req.ars[0]=0;
@@ -1348,7 +1442,6 @@ static BOOL exec_cgi(http_session_t *session)
 	int		in_pipe[2];
 	int		out_pipe[2];
 	int		err_pipe[2];
-	void	*p=NULL;
 	struct timeval tv={0,0};
 	fd_set	read_set;
 	fd_set	write_set;
@@ -1426,13 +1519,6 @@ static BOOL exec_cgi(http_session_t *session)
 	close(err_pipe[1]);		/* close excess file descriptor */
 
 	start=time(NULL);
-	/* Free() the environment */
-	while(session->req.cgi_env != NULL)  {
-		FREE_AND_NULL(session->req.cgi_env->val);
-		p=session->req.cgi_env->next;
-		FREE_AND_NULL(session->req.cgi_env);
-		session->req.cgi_env=p;
-	}
 
 	if(child==0)  {
 		close(in_pipe[1]);		/* close write-end of pipe */
@@ -1540,13 +1626,13 @@ static BOOL exec_cgi(http_session_t *session)
 								case HEAD_TYPE:
 									got_valid_headers=TRUE;
 								default:
-									session->req.cgi_heads=add_list(session->req.cgi_heads,buf);
+									session->req.dynamic_heads=add_list(session->req.dynamic_heads,buf);
 							}
 						}
 					}
 					else  {
 						if(got_valid_headers)  {
-							session->req.was_dynamic=TRUE;
+							session->req.dynamic=IS_CGI;
 							if(cgi_status[0]==0)
 								SAFECOPY(cgi_status,"200 OK");
 							send_headers(session,cgi_status);
@@ -1598,12 +1684,6 @@ static BOOL exec_cgi(http_session_t *session)
 		}
 	}
 			
-	while(session->req.cgi_heads != NULL)  {
-		FREE_AND_NULL(session->req.cgi_heads->val);
-		p=session->req.cgi_heads->next;
-		FREE_AND_NULL(session->req.cgi_heads);
-		session->req.cgi_heads=p;
-	}
 	close(in_pipe[1]);		/* close write-end of pipe */
 	close(out_pipe[0]);		/* close read-end of pipe */
 	close(err_pipe[0]);		/* close read-end of pipe */
@@ -1666,12 +1746,6 @@ JSObject* DLLCALL js_CreateHttpRequestObject(JSContext* cx, JSObject* parent, ht
 	JSObject*	headers;
 	JSString*	js_str;
 	jsval		val;
-	char		query_str[MAX_REQUEST_LINE];
-	char		*key;
-	char		*value;
-	char		*p;
-	char		*post;
-	linked_list *l;
 
 	/* Return existing object if it's already been created */
 	if(JS_GetProperty(cx,parent,"http_request",&val) && val!=JSVAL_VOID)  {
@@ -1681,49 +1755,14 @@ JSObject* DLLCALL js_CreateHttpRequestObject(JSContext* cx, JSObject* parent, ht
 		request = JS_DefineObject(cx, parent, "http_request", NULL
 									, NULL, JSPROP_ENUMERATE);
 
-	if((js_str=JS_NewStringCopyZ(cx, methods[session->req.method]))==NULL)
+	if((js_str=JS_NewStringCopyZ(session->js_cx, methods[session->req.method]))==NULL)
 		return(FALSE);
-	JS_DefineProperty(cx, request, "method", STRING_TO_JSVAL(js_str)
-		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
-		
-	if((js_str=JS_NewStringCopyZ(cx, session->req.virtual_path))==NULL)
-		return(FALSE);
-	JS_DefineProperty(cx, request, "virtual_path", STRING_TO_JSVAL(js_str)
+	JS_DefineProperty(session->js_cx, request, "method", STRING_TO_JSVAL(js_str)
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 
-	if((js_str=JS_NewStringCopyZ(cx, session->req.physical_path))==NULL)
+	if((js_str=JS_NewStringCopyZ(session->js_cx, session->req.virtual_path))==NULL)
 		return(FALSE);
-	JS_DefineProperty(cx, request, "real_path", STRING_TO_JSVAL(js_str)
-		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
-
-	if((js_str=JS_NewStringCopyZ(cx, session->req.ars))==NULL)
-		return(FALSE);
-	JS_DefineProperty(cx, request, "ars", STRING_TO_JSVAL(js_str)
-		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
-
-	if((js_str=JS_NewStringCopyZ(cx, session->req.host))==NULL)
-		return(FALSE);
-	JS_DefineProperty(cx, request, "host", STRING_TO_JSVAL(js_str)
-		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
-
-	if((js_str=JS_NewStringCopyZ(cx, session->useragent))==NULL)
-		return(FALSE);
-	JS_DefineProperty(cx, request, "useragent", STRING_TO_JSVAL(js_str)
-		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
-
-	if((js_str=JS_NewStringCopyZ(cx, http_vers[session->http_ver]))==NULL)
-		return(FALSE);
-	JS_DefineProperty(cx, request, "http_ver", STRING_TO_JSVAL(js_str)
-		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
-
-	if((js_str=JS_NewStringCopyZ(cx, session->host_ip))==NULL)
-		return(FALSE);
-	JS_DefineProperty(cx, request, "remote_ip", STRING_TO_JSVAL(js_str)
-		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
-
-	if((js_str=JS_NewStringCopyZ(cx, session->host_name))==NULL)
-		return(FALSE);
-	JS_DefineProperty(cx, request, "remote_host", STRING_TO_JSVAL(js_str)
+	JS_DefineProperty(session->js_cx, request, "virtual_path", STRING_TO_JSVAL(js_str)
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 
 	/* Return existing object if it's already been created */
@@ -1735,52 +1774,6 @@ JSObject* DLLCALL js_CreateHttpRequestObject(JSContext* cx, JSObject* parent, ht
 		query = JS_DefineObject(cx, request, "query", NULL
 									, NULL, JSPROP_ENUMERATE);
 
-	SAFECOPY(query_str,session->req.query_str);
-	lprintf("Parsing query string: %s",query_str);
-	p=query_str;
-	while((key=strtok(p,"="))!=NULL)  {
-		p=NULL;
-		if(key != NULL)  {
-			value=strtok(NULL,"&");
-			if(value != NULL)  {
-				unescape(value);
-				unescape(key);
-				lprintf("Setting %s to %s",key,value);
-				if((js_str=JS_NewStringCopyZ(cx, value))==NULL)
-					return(FALSE);
-				JS_DefineProperty(cx, query, key, STRING_TO_JSVAL(js_str)
-					,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
-			}
-		}
-	}
-
-	if(session->req.post_data != NULL)  {
-		if((post=malloc(session->req.post_len+1)) != NULL)  {
-			memcpy(post,session->req.post_data,session->req.post_len+1);
-			post[session->req.post_len+1]=0;
-		}
-		else  {
-			lprintf("%04d !ERROR Allocating %d bytes of memory",session->req.post_len+1);
-			return(FALSE);
-		}
-		lprintf("Parsing Post Data.");
-		p=post;
-		while((key=strtok(p,"="))!=NULL)  {
-			p=NULL;
-			if(key != NULL)  {
-				value=strtok(NULL,"&");
-				if(value != NULL)  {
-					unescape(value);
-					unescape(key);
-					lprintf("Setting %s to %s",key,value);
-					if((js_str=JS_NewStringCopyZ(cx, value))==NULL)
-						return(FALSE);
-					JS_DefineProperty(cx, query, key, STRING_TO_JSVAL(js_str)
-						,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
-				}
-			}
-		}
-	}
 	
 	/* Return existing object if it's already been created */
 	if(JS_GetProperty(cx,request,"header",&val) && val!=JSVAL_VOID)  {
@@ -1791,24 +1784,9 @@ JSObject* DLLCALL js_CreateHttpRequestObject(JSContext* cx, JSObject* parent, ht
 		headers = JS_DefineObject(cx, request, "header", NULL
 									, NULL, JSPROP_ENUMERATE);
 
-	l=session->req.headers;
-	p=l->val;
-	while(l!=NULL)  {
-		key=strtok(l->val,":");
-		p=NULL;
-		if(key != NULL)  {
-			value=strtok(NULL,"");
-			if(value != NULL)  {
-				for(;*value==' ';value++);
-				if((js_str=JS_NewStringCopyZ(cx, value))==NULL)
-					return(FALSE);
-				JS_DefineProperty(cx, headers, key, STRING_TO_JSVAL(js_str)
-					,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
-			}
-		}
-		l=l->next;
-	}
-
+	session->js_query=query;
+	session->js_header=headers;
+	session->js_request=request;
 	return(request);
 }
 
@@ -1971,7 +1949,7 @@ js_initcx(JSRuntime* runtime, SOCKET sock, JSObject** glob, http_session_t *sess
 	return(js_cx);
 }
 
-BOOL js_setup(http_session_t* session)
+static BOOL js_setup(http_session_t* session)
 {
 	JSObject*	argv;
 
@@ -2041,38 +2019,100 @@ BOOL js_setup(http_session_t* session)
 	return(TRUE);
 }
 
+static BOOL exec_ssjs(http_session_t* session)  {
+	JSString*	js_str;
+	JSScript*	js_script;
+	jsval		rval;
+	jsval		val;
+	JSObject*	reply;
+	JSIdArray*	heads;
+	JSObject*	headers;
+	char		path[MAX_PATH+1];
+	char		str[MAX_REQUEST_LINE+1];
+	int			i;
 
-BOOL is_js(http_session_t * session)
-{
-	char* p;
-
-	if(startup->options&BBS_OPT_NO_JAVASCRIPT)
+	if((js_str=JS_NewStringCopyZ(session->js_cx, session->req.physical_path))==NULL)
 		return(FALSE);
+	JS_DefineProperty(session->js_cx, session->js_request, "real_path", STRING_TO_JSVAL(js_str)
+		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 
-	if((p=strrchr(session->req.physical_path,'.'))==NULL)
+	if((js_str=JS_NewStringCopyZ(session->js_cx, session->req.ars))==NULL)
 		return(FALSE);
+	JS_DefineProperty(session->js_cx, session->js_request, "ars", STRING_TO_JSVAL(js_str)
+		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 
-	if(stricmp(p,startup->js_ext)==0)
-		return(TRUE);
+	if((js_str=JS_NewStringCopyZ(session->js_cx, session->req.host))==NULL)
+		return(FALSE);
+	JS_DefineProperty(session->js_cx, session->js_request, "host", STRING_TO_JSVAL(js_str)
+		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 
-	return(FALSE);
+	if((js_str=JS_NewStringCopyZ(session->js_cx, http_vers[session->http_ver]))==NULL)
+		return(FALSE);
+	JS_DefineProperty(session->js_cx, session->js_request, "http_ver", STRING_TO_JSVAL(js_str)
+		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+
+	if((js_str=JS_NewStringCopyZ(session->js_cx, session->host_ip))==NULL)
+		return(FALSE);
+	JS_DefineProperty(session->js_cx, session->js_request, "remote_ip", STRING_TO_JSVAL(js_str)
+		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+
+	if((js_str=JS_NewStringCopyZ(session->js_cx, session->host_name))==NULL)
+		return(FALSE);
+	JS_DefineProperty(session->js_cx, session->js_request, "remote_host", STRING_TO_JSVAL(js_str)
+		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+
+	do {
+		/* RUN SCRIPT */
+		JS_ClearPendingException(session->js_cx);
+
+
+
+		if((js_script=JS_CompileFile(session->js_cx, session->js_glob
+			,session->req.physical_path))==NULL) {
+			lprintf("%04d !JavaScript FAILED to compile script (%s)"
+				,session->socket,session->req.physical_path);
+			return(FALSE);
+		}
+
+		JS_ExecuteScript(session->js_cx, session->js_glob, js_script, &rval);
+
+	} while(0);
+
+	/* Read http_reply object */
+	JS_GetProperty(session->js_cx,session->js_glob,"http_reply",&val);
+	reply = JSVAL_TO_OBJECT(val);
+	JS_GetProperty(session->js_cx,reply,"status",&val);
+	SAFECOPY(session->req.status,JS_GetStringBytes(JSVAL_TO_STRING(val)));
+	JS_GetProperty(session->js_cx,reply,"header",&val);
+	headers = JSVAL_TO_OBJECT(val);
+	heads=JS_Enumerate(session->js_cx,headers);
+	for(i=0;i<heads->length;i++)  {
+		JS_IdToValue(session->js_cx,heads->vector[i],&val);
+		js_str=JSVAL_TO_STRING(val);
+		JS_GetProperty(session->js_cx,headers,JS_GetStringBytes(js_str),&val);
+		snprintf(str,MAX_REQUEST_LINE+1,"%s: %s",JS_GetStringBytes(js_str),JS_GetStringBytes(JSVAL_TO_STRING(val)));
+		session->req.dynamic_heads=add_list(session->req.dynamic_heads,str);
+	}
+	JS_DestroyIdArray(session->js_cx, heads);
+
+	/* Free up temporary resources here */
+
+	if(js_script!=NULL) 
+		JS_DestroyScript(session->js_cx, js_script);
+	if(session->req.fp!=NULL)
+		fclose(session->req.fp);
+
+	SAFECOPY(session->req.physical_path, path);
+	session->req.dynamic=IS_SSJS;
+	
+	return(TRUE);
 }
 
 static void respond(http_session_t * session)
 {
-	char		path[MAX_PATH+1];
 	BOOL		send_file=TRUE;
-	JSScript*	js_script;
-	jsval		rval;
-	JSObject*	reply;
-	JSObject*	headers;
-	JSIdArray*	heads;
-	jsval		val;
-	JSString*	js_str;
-	char		str[MAX_REQUEST_LINE+1];
-	int			i;
 
-	if(is_cgi(session))  {
+	if(session->req.dynamic==IS_CGI)  {
 		if(!exec_cgi(session))  {
 			send_error(session,"500 Internal Server Error");
 			return;
@@ -2081,65 +2121,12 @@ static void respond(http_session_t * session)
 		return;
 	}
 
-	if(is_js(session)) {	/* Server-Side JavaScript */
-
-		lprintf("Setting up JavaScript support");
-
-		if(!js_setup(session)) {
-			lprintf("%04d !ERROR setting up JavaScript support", session->socket);
+	if(session->req.dynamic==IS_SSJS) {	/* Server-Side JavaScript */
+		if(!exec_ssjs(session))  {
 			send_error(session,"500 Internal Server Error");
 			return;
 		}
-
-		sprintf(path,"%s/SBBS_SSJS.%d.html",startup->cgi_temp_dir,session->socket);
-		if((session->req.fp=fopen(path,"w"))==NULL) {
-			lprintf("%04d !ERROR %d opening/creating %s", session->socket, errno, path);
-			send_error(session,"500 Internal Server Error");
-			return;
-		}
-
-		do {
-
-			/* RUN SCRIPT */
-			JS_ClearPendingException(session->js_cx);
-
-			if((js_script=JS_CompileFile(session->js_cx, session->js_glob
-				,session->req.physical_path))==NULL) {
-				lprintf("%04d !JavaScript FAILED to compile script (%s)"
-					,session->socket,session->req.physical_path);
-				break;
-			}
-
-			JS_ExecuteScript(session->js_cx, session->js_glob, js_script, &rval);
-
-		} while(0);
-
-		/* Read http_reply object */
-		JS_GetProperty(session->js_cx,session->js_glob,"http_reply",&val);
-		reply = JSVAL_TO_OBJECT(val);
-		JS_GetProperty(session->js_cx,reply,"status",&val);
-		SAFECOPY(session->req.status,JS_GetStringBytes(JSVAL_TO_STRING(val)));
-		JS_GetProperty(session->js_cx,reply,"header",&val);
-		headers = JSVAL_TO_OBJECT(val);
-		heads=JS_Enumerate(session->js_cx,headers);
-		for(i=0;i<heads->length;i++)  {
-			JS_IdToValue(session->js_cx,heads->vector[i],&val);
-			js_str=JSVAL_TO_STRING(val);
-			JS_GetProperty(session->js_cx,headers,JS_GetStringBytes(js_str),&val);
-			snprintf(str,MAX_REQUEST_LINE+1,"%s: %s",JS_GetStringBytes(js_str),JS_GetStringBytes(JSVAL_TO_STRING(val)));
-			session->req.cgi_heads=add_list(session->req.cgi_heads,str);
-		}
-		JS_DestroyIdArray(session->js_cx, heads);
-
-		/* Free up temporary resources here */
-
-		if(js_script!=NULL) 
-			JS_DestroyScript(session->js_cx, js_script);
-		if(session->req.fp!=NULL)
-			fclose(session->req.fp);
-
-		SAFECOPY(session->req.physical_path, path);
-		session->req.was_dynamic=TRUE;
+		sprintf(session->req.physical_path,"%s/SBBS_SSJS.%d.html",startup->cgi_temp_dir,session->socket);
 	}
 
 	if(session->http_ver > HTTP_0_9)  {
@@ -2211,9 +2198,7 @@ void http_session_thread(void* arg)
 
 	while(!session.finished && server_socket!=INVALID_SOCKET) {
 	    memset(&(session.req), 0, sizeof(session.req));
-		if(!(startup->options&WEB_OPT_NO_CGI)) {
-			init_enviro(&session);
-		}
+		SAFECOPY(session.req.status,"200 OK");
 		if(get_req(&session)) {
 			lprintf("%04d Got request %s method %d version %d"
 				,session.socket
@@ -2345,11 +2330,13 @@ void DLLCALL web_server(void* arg)
 
 	/* Setup intelligent defaults */
 	if(startup->port==0)					startup->port=IPPORT_HTTP;
-	if(startup->index_file_name[0]==0)		SAFECOPY(startup->index_file_name,"index.html");
+	if(startup->index_file_name[0][0]==0)	SAFECOPY(startup->index_file_name[0],"index.html");
 	if(startup->root_dir[0]==0)				SAFECOPY(startup->root_dir,"../html");
 	if(startup->error_dir[0]==0)			SAFECOPY(startup->error_dir,"../html/error");
 	if(startup->max_inactivity==0) 			startup->max_inactivity=120; /* seconds */
 	if(startup->js_max_bytes==0)			startup->js_max_bytes=JAVASCRIPT_MAX_BYTES;
+	if(startup->cgi_ext[0][0]==0)			SAFECOPY(startup->cgi_ext[0],"cgi");
+	if(startup->ssjs_ext[0]==0)				SAFECOPY(startup->ssjs_ext,"ssjs");
 
 	/* Copy html directories */
 	SAFECOPY(root_dir,startup->root_dir);
