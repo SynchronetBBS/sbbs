@@ -1383,6 +1383,20 @@ js_user_config(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 }
 
 static JSBool
+js_user_sync(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	getuserdat(&sbbs->cfg,&sbbs->useron);
+
+	*rval = JSVAL_VOID;
+	return(JS_TRUE);
+}
+
+static JSBool
 js_sys_info(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	sbbs_t*		sbbs;
@@ -2329,6 +2343,7 @@ static JSFunctionSpec js_bbs_functions[] = {
 	{"logout",			js_logout,			0},		// logout procedure
 	{"hangup",			js_hangup,			0},		// hangup immediately
 	{"nodesync",		js_nodesync,		0},		// synchronize node with system
+	{"node_sync",		js_nodesync,		0},		// synchronize node with system
 	{"auto_msg",		js_automsg,			0},		// edit/create auto-message
 	{"time_bank",		js_time_bank,		0},		// time bank
 	{"qwk_sec",			js_qwk_sec,			0},		// QWK section
@@ -2339,6 +2354,7 @@ static JSFunctionSpec js_bbs_functions[] = {
 	{"batch_download",	js_batchdownload,	0},		// start batch download
 	{"batch_add_list",	js_batchaddlist,	1},		// add file list to batch download queue
 	{"temp_xfer",		js_temp_xfer,		0},		// temp xfer menu
+	{"user_sync",		js_user_sync,		0},		// getuserdat()
 	{"user_config",		js_user_config,		0},		// user config
 	{"sys_info",		js_sys_info,		0},		// system info
 	{"sub_info",		js_sub_info,		0},		// sub-board info
