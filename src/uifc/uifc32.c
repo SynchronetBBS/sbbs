@@ -146,9 +146,6 @@ int uifcini32(uifcapi_t* uifcapi)
 {
 	int 	i;
 	struct	text_info txtinfo;
-#ifdef _WIN32
-	DWORD	conmode;
-#endif
 
     if(uifcapi==NULL || uifcapi->size!=sizeof(uifcapi_t))
         return(-1);
@@ -247,16 +244,18 @@ int uifcini32(uifcapi_t* uifcapi)
 
     if(!(api->mode&UIFC_COLOR)
         && (api->mode&UIFC_MONO
-            || txtinfo.currmode==MONO || txtinfo.currmode==BW80)) {
+            || txtinfo.currmode==MONO || txtinfo.currmode==BW40 || txtinfo.currmode==BW80
+            || txtinfo.currmode==MONO14 || txtinfo.currmode==BW40X14 || txtinfo.currmode==BW80X14
+            || txtinfo.currmode==MONO21 || txtinfo.currmode==BW40X21 || txtinfo.currmode==BW80X21
+            || txtinfo.currmode==MONO28 || txtinfo.currmode==BW40X28 || txtinfo.currmode==BW80X28
+            || txtinfo.currmode==MONO43 || txtinfo.currmode==BW40X43 || txtinfo.currmode==BW80X43
+            || txtinfo.currmode==MONO50 || txtinfo.currmode==BW40X50 || txtinfo.currmode==BW80X50
+            || txtinfo.currmode==MONO60 || txtinfo.currmode==BW40X60 || txtinfo.currmode==BW80X60))
+	{
         bclr=BLACK;
         hclr=WHITE;
         lclr=LIGHTGRAY;
         cclr=LIGHTGRAY;
-#ifdef __unix__
-		if(txtinfo.currmode==MONO)
-			lbclr=WHITE|(BLACK<<4);		/* no color on curses means no inverse either */
-		else
-#endif
 			lbclr=BLACK|(LIGHTGRAY<<4);	/* lightbar color */
     } else {
         bclr=BLUE;
@@ -328,18 +327,6 @@ void uifcbail(void)
 	textattr(LIGHTGRAY);
 	uifc_mouse_disable();
 	clrscr();
-#ifdef __unix__
-	if(cio_api.mode==CIOLIB_MODE_CURSES) {
-		nl();
-		nocbreak();
-		noraw();
-		refresh();
-		endwin();
-#ifdef XCURSES
-		XCursesExit();
-#endif
-	}
-#endif
 	FREE(blk_scrn);
 	FREE(tmp_buffer);
 	FREE(tmp_buffer2);
