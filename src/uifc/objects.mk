@@ -1,2 +1,2 @@
-OBJS = $(LIBODIR)$(SLASH)uifc32.$(OFILE) \
-       $(LIBODIR)$(SLASH)uifcx.$(OFILE)
+OBJS = $(OBJODIR)$(DIRSEP)uifc32$(OFILE) \
+       $(OBJODIR)$(DIRSEP)uifcx$(OFILE)
