@@ -1526,9 +1526,20 @@ int main(int argc, char** argv)
 			/* ToDo: Something seems to be broken here on FreeBSD now */
 			/* ToDo: Now, they try to re-bind on FreeBSD */
 			/* ToDo: Seems like I switched problems with Linux */
- 			bbs_startup.options|=BBS_OPT_NO_RECYCLE;
-			ftp_startup.options|=FTP_OPT_NO_RECYCLE;
-			mail_startup.options|=MAIL_OPT_NO_RECYCLE;
+ 			if(bbs_startup.telnet_port < 1024
+				|| (bbs_startup.options & BBS_OPT_ALLOW_RLOGIN
+					&& bbs_startup.rlogin_port < 1024))
+				bbs_startup.options|=BBS_OPT_NO_RECYCLE;
+			if(ftp_startup.port < 1024)
+				ftp_startup.options|=FTP_OPT_NO_RECYCLE;
+			if((mail_startup.options & MAIL_OPT_RELAY_TX
+				&& mail_startup.relay_port < 1024)
+				|| (mail_startup.options & MAIL_OPT_ALLOW_POP3
+					&& mail_startup.pop3_port < 1024)
+				|| (!(mail_startup.options & MAIL_OPT_NO_SENDMAIL)
+					&& mail_startup.smtp_port < 1024))
+				mail_startup.options|=MAIL_OPT_NO_RECYCLE;
+			/* Perhaps a BBS_OPT_NO_RECYCLE_LOW option? */
 			services_startup.options|=BBS_OPT_NO_RECYCLE;
 		}
 	}
