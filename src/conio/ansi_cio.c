@@ -298,6 +298,9 @@ void ansi_textattr(int attr)
 	ansi_sendstr(str,-1);
 }
 
+#if defined(__BORLANDC__)
+        #pragma argsused
+#endif
 static void ansi_keyparse(void *par)
 {
 	int		gotesc=0;
@@ -307,7 +310,6 @@ static void ansi_keyparse(void *par)
 	int		i;
 	char	*p;
 
-	if(par);	/* Shut up BCC */
 	for(;;) {
 		while(!ansi_raw_inch
 				&& (gotesc || (!gotesc && !seq[0]))) {
@@ -375,11 +377,13 @@ static void ansi_keyparse(void *par)
 	}
 }
 
+#if defined(__BORLANDC__)
+        #pragma argsused
+#endif
 static void ansi_keythread(void *params)
 {
 	_beginthread(ansi_keyparse,1024,NULL);
 
-	if(params);	/* Shut up BCC */
 	for(;;) {
 		if(!ansi_raw_inch)
 			ansi_raw_inch=fgetc(stdin);
@@ -597,9 +601,11 @@ int ansi_beep(void)
 	return(0);
 }
 
+#if defined(__BORLANDC__)
+        #pragma argsused
+#endif
 void ansi_textmode(int mode)
 {
-	if(mode);	/* Shut up BCC */
 }
 
 #ifdef __unix__
@@ -609,6 +615,9 @@ void ansi_fixterm(void)
 }
 #endif
 
+#if defined(__BORLANDC__)
+        #pragma argsused
+#endif
 int ansi_initciolib(long inmode)
 {
 	int i;
@@ -635,6 +644,5 @@ int ansi_initciolib(long inmode)
 	for(i=0;i<ansi_rows*ansi_cols;i++)
 		vmem[i]=0x0720;
 	_beginthread(ansi_keythread,1024,NULL);
-	if(inmode);	/* Shut up BCC */
 	return(1);
 }
