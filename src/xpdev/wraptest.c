@@ -301,8 +301,8 @@ static void sopen_child_thread(void* arg)
 			printf("!FAILURE: was able to reopen in child thread\n");
 		else {
 			SLEEP(5000);
-			close(fd);
 		}
+		close(fd);
 	} else if(arg==0)
 		perror(LOCK_FNAME);
 }
