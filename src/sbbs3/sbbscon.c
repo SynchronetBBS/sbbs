@@ -1388,7 +1388,7 @@ int main(int argc, char** argv)
 	sprintf(str,"Loading configuration files from %s", scfg.ctrl_dir);
 	bbs_lputs(str);
 	if(!load_cfg(&scfg, NULL /* text.dat */, TRUE /* prep */, error)) {
-		fprintf(stderr,"\n!ERROR Loading Configuration Files: %s", error);
+		fprintf(stderr,"\n!ERROR Loading Configuration Files: %s\n", error);
         return(-1);
     }
 
