@@ -445,7 +445,7 @@ static jsval get_value(JSContext *cx, char* value)
 static JSBool
 js_iniGetValue(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	char*	section;
+	char*	section=NULL;
 	char*	key;
 	char**	list;
 	char	buf[INI_MAX_VALUE_LEN];
@@ -462,7 +462,8 @@ js_iniGetValue(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 		return(JS_FALSE);
 	}
 
-	section=JS_GetStringBytes(JS_ValueToString(cx, argv[0]));
+	if(argv[0]!=JSVAL_VOID && argv[0]!=JSVAL_NULL)
+		section=JS_GetStringBytes(JS_ValueToString(cx, argv[0]));
 	key=JS_GetStringBytes(JS_ValueToString(cx, argv[1]));
 
 	if(dflt==JSVAL_VOID) {	/* unspecified default value */
@@ -510,7 +511,7 @@ js_iniGetValue(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 static JSBool
 js_iniSetValue(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	char*	section;
+	char*	section=NULL;
 	char*	key;
 	char*	result=NULL;
 	int32	i;
@@ -525,7 +526,8 @@ js_iniSetValue(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 		return(JS_FALSE);
 	}
 
-	section=JS_GetStringBytes(JS_ValueToString(cx, argv[0]));
+	if(argv[0]!=JSVAL_VOID && argv[0]!=JSVAL_NULL)
+		section=JS_GetStringBytes(JS_ValueToString(cx, argv[0]));
 	key=JS_GetStringBytes(JS_ValueToString(cx, argv[1]));
 
 	if((list=iniReadFile(p->fp))==NULL)
@@ -605,7 +607,7 @@ js_iniGetSections(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *
 static JSBool
 js_iniGetKeys(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	char*		section;
+	char*		section=NULL;
 	char**		list;
     jsint       i;
     jsval       val;
@@ -619,7 +621,8 @@ js_iniGetKeys(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 		return(JS_FALSE);
 	}
 
-	section=JS_GetStringBytes(JS_ValueToString(cx, argv[0]));
+	if(argv[0]!=JSVAL_VOID && argv[0]!=JSVAL_NULL)
+		section=JS_GetStringBytes(JS_ValueToString(cx, argv[0]));
     array = JS_NewArrayObject(cx, 0, NULL);
 
 	list = iniGetKeyList(p->fp,section);
@@ -638,7 +641,7 @@ js_iniGetKeys(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 static JSBool
 js_iniGetObject(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	char*		section;
+	char*		section=NULL;
     jsint       i;
     JSObject*	object;
 	private_t*	p;
@@ -651,7 +654,8 @@ js_iniGetObject(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rv
 		return(JS_FALSE);
 	}
 
-	section=JS_GetStringBytes(JS_ValueToString(cx, argv[0]));
+	if(argv[0]!=JSVAL_VOID && argv[0]!=JSVAL_NULL)
+		section=JS_GetStringBytes(JS_ValueToString(cx, argv[0]));
     object = JS_NewObject(cx, NULL, NULL, obj);
 
 	list = iniGetNamedStringList(p->fp,section);
