@@ -39,17 +39,6 @@
 
 #ifdef JAVASCRIPT
 
-enum {	/* file_area Object Properties */
-	 PROP_MIN_DSPACE
-	,PROP_MIN_LEECH_PCT
-	,PROP_MIN_LEECH_SEC
-
-	/* directory numbers */
-	,PROP_USER_DIR
-	,PROP_SYSOP_DIR
-	,PROP_UPLOAD_DIR
-};
-
 static JSClass js_file_area_class = {
      "FileArea"				/* name			*/
     ,JSCLASS_HAS_PRIVATE	/* flags		*/
@@ -84,6 +73,22 @@ JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_
 		areaobj = JS_DefineObject(cx, parent, "file_area", &js_file_area_class
 								, NULL, JSPROP_ENUMERATE);
 	if(areaobj==NULL)
+		return(NULL);
+
+	val=INT_TO_JSVAL(cfg->min_dspace);
+	if(!JS_SetProperty(cx, areaobj, "min_diskspace", &val)) 
+		return(NULL);
+
+	val=INT_TO_JSVAL(cfg->user_dir);
+	if(!JS_SetProperty(cx, areaobj, "user_dir", &val)) 
+		return(NULL);
+
+	val=INT_TO_JSVAL(cfg->sysop_dir);
+	if(!JS_SetProperty(cx, areaobj, "sysop_dir", &val)) 
+		return(NULL);
+
+	val=INT_TO_JSVAL(cfg->upload_dir);
+	if(!JS_SetProperty(cx, areaobj, "upload_dir", &val)) 
 		return(NULL);
 
 	if(html_index_file==NULL)
