@@ -1,5 +1,8 @@
 load("sbbsdefs.js");	// CON_RAW_IN
+load("sockdefs.js");	// SO_RCVBUF
 
+printf("tx = %d\r\n",client.socket.getoption(SOL_SOCKET,SO_SNDBUF));
+printf("rx = %d\r\n",client.socket.getoption(SOL_SOCKET,SO_RCVBUF));
 console.status |= CON_RAW_IN;		// Enable RAW input mode (pass-through ctrl chars)
 var socket = new Socket();
 
