@@ -2077,6 +2077,7 @@ bool sbbs_t::init()
 	}
 
     RingBufInit(&outbuf, IO_THREAD_BUF_SIZE);
+	sem_init(&output_sem,0,0);
 
 	if(cfg.node_num && client_socket!=INVALID_SOCKET) {
 
@@ -2116,20 +2117,6 @@ bool sbbs_t::init()
 		errormsg(WHERE, ERR_CHK, "shell/comspec", 0);
 		return(false);
 	}
-
-#ifdef _WIN32
-	output_sem=CreateEvent(
-					 NULL	// pointer to security attributes
-					,false	// flag for manual-reset event
-					,false	// flag for initial state
-					,NULL	// pointer to event-object name
-					);
-	if(output_sem==NULL) {
-		errormsg(WHERE, ERR_CREATE, "output_sem", 0);
-		return(false);
-	}
-#endif
-	sem_init(&output_sem,0,0);
 
 	md(cfg.temp_dir);
 
