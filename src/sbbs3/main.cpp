@@ -3599,7 +3599,8 @@ void DLLCALL bbs_thread(void* arg)
 		client_on(client_socket,&client,FALSE /* update */);
 
 		for(i=first_node;i<=last_node;i++) {
-			node.status=-1;	/* paranoia: make sure node.status!=NODE_WFC by default */
+			/* paranoia: make sure node.status!=NODE_WFC by default */
+			node.status=NODE_INVALID_STATUS;	
 			if(sbbs->getnodedat(i,&node,1)!=0)
 				continue;
 			if(node.status==NODE_WFC) {
