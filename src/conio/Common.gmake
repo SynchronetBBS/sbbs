@@ -26,6 +26,4 @@ ifndef NO_X
    CIOLIB-MT_LIBS		+=  $(UL_PRE)dl$(UL_SUF)
   endif
  endif
-else
- CFLAGS	+=	$(os)
 endif
