@@ -39,8 +39,10 @@
 #include <stdlib.h>		/* RAND_MAX */
 #include <fcntl.h>		/* O_NOCTTY */
 #include <time.h>		/* clock() */
+#include <errno.h>		/* errno */
 
 #if defined(__unix__)
+	#include <sys/utsname.h>	/* uname() */
 	/* KIOCSOUND */
 	#if defined(__FreeBSD__)
 		#include <sys/kbio.h>
