@@ -18,10 +18,12 @@ SLASH	=	\\
 OFILE	=	obj
 EXEFILE	=	.exe
 ODIR	=	bcc.win32	# Executable output directory
-CFLAGS	=	-M -I..;..\..\uifc;..\..\xpdev -g1
+XPDEV	=   ..\..\xpdev
+UIFC	=	..\..\uifc
+CFLAGS	=	-M -I..;$(UIFC);$(XPDEV) -g1
 DELETE	=	echo y | del 
 
-.path.c = .;..;..\..\uifc;..\..\xpdev
+.path.c = .;..;$(UIFC);$(XPDEV)
 
 # Optional compile flags (disable banner, warnings and such)
 CFLAGS	=	$(CFLAGS) -q -d -H -X- -w-csu -w-pch -w-ccc -w-rch -w-par -w-pro
