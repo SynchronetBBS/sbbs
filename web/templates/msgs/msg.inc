@@ -5,14 +5,14 @@
 <tr class="msg">
     <td width="1%" class="msgheader" nowrap="nowrap">Subject:</td>
     <td nowrap="nowrap">%%hdr:subject%%</td>
-    <td width="1%" class="msgheader" nowrap="nowrap">To:</td>
-    <td nowrap="nowrap">%%hdr:to%%</td>
+    <td width="1%" class="msgheader" nowrap="nowrap">Date:</td>
+    <td nowrap="nowrap">%%JS:system.timestr(@@hdr:when_written_time@@)%%</td>
 </tr>
 <tr class="msg">
     <td width="1%" class="msgheader" nowrap="nowrap">From:</td>
     <td nowrap="nowrap">%%hdr:from%%</td>
-    <td width="1%" class="msgheader" nowrap="nowrap">Date:</td>
-    <td nowrap="nowrap">%%JS:system.timestr(@@hdr:when_written_time@@)%%</td>
+    <td width="1%" class="msgheader" nowrap="nowrap">To:</td>
+    <td nowrap="nowrap">%%hdr:to%%</td>
 </tr>
 <tr>
     <td colspan="4">
