@@ -590,9 +590,11 @@ long sbbs_t::js_execfile(char *cmd)
 	fname=cmdline;
 
 	/* Add extension if not specified */
-	if(!strchr(fname,BACKSLASH))
-		sprintf(path,"%s%s",cfg.exec_dir,fname);
-	else
+	if(strcspn(fname,"/\\")==strlen(fname)) {
+		sprintf(path,"%s%s",cfg.mods_dir,fname);
+		if(cfg.mods_dir[0]==0 || !fexist(path))
+			sprintf(path,"%s%s",cfg.exec_dir,fname);
+	} else
 		sprintf(path,"%.*s",(int)sizeof(path)-4,fname);
 	if(!strchr(path,'.'))
 		strcat(path,".js");
@@ -659,10 +661,16 @@ long sbbs_t::js_execfile(char *cmd)
 long sbbs_t::exec_bin(char *mod, csi_t *csi)
 {
     char    str[MAX_PATH+1];
+	char	modname[MAX_PATH+1];
 	int 	file;
     csi_t   bin;
 
 #ifdef JAVASCRIPT
+	if(cfg.mods_dir[0]) {
+		sprintf(str,"%s%s.js",cfg.mods_dir,mod);
+		if(fexist(str)) 
+			return(js_execfile(str));
+	}
 	sprintf(str,"%s%s.js",cfg.exec_dir,mod);
 	if(fexist(str)) 
 		return(js_execfile(str));
@@ -671,24 +679,30 @@ long sbbs_t::exec_bin(char *mod, csi_t *csi)
 	memcpy(&bin,csi,sizeof(csi_t));
 	clearvars(&bin);
 
-	if(!strchr(mod,'.'))
-		sprintf(str,"%s%s.bin",cfg.exec_dir,mod);
-	else
-		sprintf(str,"%s%s",cfg.exec_dir,mod);
+	SAFECOPY(modname,mod);
+	if(!strchr(modname,'.'))
+		strcat(modname,".bin");
+
+	sprintf(str,"%s%s",cfg.mods_dir,modname);
+	if(cfg.mods_dir[0]==0 || !fexist(str))
+		sprintf(str,"%s%s",cfg.exec_dir,modname);
 	if((file=nopen(str,O_RDONLY))==-1) {
 		errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
-		return(-1); }
+		return(-1); 
+	}
 
 	bin.length=filelength(file);
 	if((bin.cs=(uchar *)MALLOC(bin.length))==NULL) {
 		close(file);
 		errormsg(WHERE,ERR_ALLOC,str,bin.length);
-		return(-1); }
+		return(-1); 
+	}
 	if(lread(file,bin.cs,bin.length)!=bin.length) {
 		close(file);
 		errormsg(WHERE,ERR_READ,str,bin.length);
 		FREE(bin.cs);
-		return(-1); }
+		return(-1); 
+	}
 	close(file);
 
 	bin.ip=bin.cs;
@@ -700,7 +714,8 @@ long sbbs_t::exec_bin(char *mod, csi_t *csi)
 		if(!(bin.misc&CS_OFFLINE_EXEC)) {
 			checkline();
 			if(!online)
-				break; }
+				break; 
+		}
 
 	freevars(&bin);
 	FREE(bin.cs);

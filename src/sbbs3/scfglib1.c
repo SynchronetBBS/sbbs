@@ -292,14 +292,17 @@ BOOL read_main_cfg(scfg_t* cfg, char* error)
 	get_str(cfg->logoff_mod,instream);
 	get_str(cfg->newuser_mod,instream);
 	get_str(cfg->login_mod,instream);
-	if(!cfg->login_mod[0]) strcpy(cfg->login_mod,"login");
+	if(!cfg->login_mod[0]) SAFECOPY(cfg->login_mod,"login");
 	get_str(cfg->logout_mod,instream);
 	get_str(cfg->sync_mod,instream);
 	get_str(cfg->expire_mod,instream);
 	get_int(cfg->ctrlkey_passthru,instream);
-	get_int(c,instream);
+	get_str(cfg->mods_dir,instream);
+	get_str(cfg->logs_dir,instream);
+	if(!cfg->logs_dir[0]) SAFECOPY(cfg->logs_dir,cfg->data_dir);
 
-	for(i=0;i<222;i++)					/* unused - initialized to NULL */
+	get_int(c,instream);
+	for(i=0;i<158;i++)					/* unused - initialized to NULL */
 		get_int(n,instream);
 	for(i=0;i<254;i++)					/* unused - initialized to 0xff */
 		get_int(n,instream);
@@ -775,11 +778,13 @@ void make_data_dirs(scfg_t* cfg)
 	md(str);
 	sprintf(str,"%suser/ptrs",cfg->data_dir);
 	md(str);
-	sprintf(str,"%slogs",cfg->data_dir);
-	md(str);
 	sprintf(str,"%sqnet",cfg->data_dir);
 	md(str);
 	sprintf(str,"%sfile",cfg->data_dir);
+	md(str);
+
+	md(cfg->logs_dir);
+	sprintf(str,"%slogs",cfg->logs_dir);
 	md(str);
 
 #if 0

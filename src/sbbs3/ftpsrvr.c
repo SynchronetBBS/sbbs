@@ -659,11 +659,13 @@ BOOL js_generate_index(JSContext* js_cx, JSObject* parent,
 			break;
 		}
 
-		/* Add extension if not specified */
-		if(!strchr(startup->html_index_script,BACKSLASH))
-			sprintf(spath,"%s%s",scfg.exec_dir,startup->html_index_script);
-		else
+		if(strcspn(startup->html_index_script,"/\\")==strlen(startup->html_index_script)) {
+			sprintf(spath,"%s%s",scfg.mods_dir,startup->html_index_script);
+			if(scfg.mods_dir[0]==0 || !fexist(spath))
+				sprintf(spath,"%s%s",scfg.exec_dir,startup->html_index_script);
+		} else
 			sprintf(spath,"%.*s",(int)sizeof(spath)-4,startup->html_index_script);
+		/* Add extension if not specified */
 		if(!strchr(spath,'.'))
 			strcat(spath,".js");
 

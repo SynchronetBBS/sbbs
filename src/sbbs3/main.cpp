@@ -2810,7 +2810,7 @@ void sbbs_t::catsyslog(int crash)
 		}
 		now=time(NULL);
 		localtime_r(&now,&tm);
-		sprintf(str,"%slogs/%2.2d%2.2d%2.2d.log",cfg.data_dir,tm.tm_mon+1,tm.tm_mday
+		sprintf(str,"%slogs/%2.2d%2.2d%2.2d.log",cfg.logs_dir,tm.tm_mon+1,tm.tm_mday
 			,TM_YEAR(tm.tm_year));
 		if((file=nopen(str,O_WRONLY|O_APPEND|O_CREAT))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_APPEND|O_CREAT);
@@ -2826,7 +2826,7 @@ void sbbs_t::catsyslog(int crash)
 		close(file);
 		if(crash) {
 			for(i=0;i<2;i++) {
-				sprintf(str,"%scrash.log",i ? cfg.data_dir : cfg.node_dir);
+				sprintf(str,"%scrash.log",i ? cfg.logs_dir : cfg.node_dir);
 				if((file=nopen(str,O_WRONLY|O_APPEND|O_CREAT))==-1) {
 					errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_APPEND|O_CREAT);
 					FREE((char *)buf);
@@ -2934,8 +2934,11 @@ void node_thread(void* arg)
 			if(!sbbs->main_csi.cs || curshell!=sbbs->useron.shell) {
 				if(sbbs->useron.shell>=sbbs->cfg.total_shells)
 					sbbs->useron.shell=0;
-				sprintf(str,"%s%s.bin",sbbs->cfg.exec_dir
+				sprintf(str,"%s%s.bin",sbbs->cfg.mods_dir
 					,sbbs->cfg.shell[sbbs->useron.shell]->code);
+				if(sbbs->cfg.mods_dir[0]==0 || !fexist(str))
+					sprintf(str,"%s%s.bin",sbbs->cfg.exec_dir
+						,sbbs->cfg.shell[sbbs->useron.shell]->code);
 				if((file=sbbs->nopen(str,O_RDONLY))==-1) {
 					sbbs->errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
 					sbbs->hangup();
@@ -3662,7 +3665,7 @@ void DLLCALL bbs_thread(void* arg)
 
 #if defined(_WIN32) && defined(_DEBUG) && defined(_MSC_VER)
 	
-	sprintf(str,"%sDEBUG.LOG",scfg.data_dir);
+	sprintf(str,"%sDEBUG.LOG",scfg.logs_dir);
 	if((debug_log=CreateFile(
 		str,				// pointer to name of the file
 		GENERIC_READ|GENERIC_WRITE,

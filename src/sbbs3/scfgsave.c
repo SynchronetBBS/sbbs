@@ -321,9 +321,13 @@ BOOL DLLCALL write_main_cfg(scfg_t* cfg, int backup_level)
 	put_str(cfg->logout_mod,stream);
 	put_str(cfg->sync_mod,stream);
 	put_str(cfg->expire_mod,stream);
+	put_int(cfg->ctrlkey_passthru,stream);
+	put_str(cfg->mods_dir,stream);
+	put_str(cfg->logs_dir,stream);
+
 	put_int(c,stream);
 	n=0;
-	for(i=0;i<224;i++)
+	for(i=0;i<158;i++)
 		put_int(n,stream);
 	n=(ushort)0xffff;
 	for(i=0;i<256;i++)

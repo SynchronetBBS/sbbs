@@ -4131,7 +4131,7 @@ int main(int argc, char **argv)
 		sprintf(cfg.cfgfile,"%ssbbsecho.cfg",scfg.ctrl_dir);
 	strcpy(cfg.inbound,scfg.fidofile_dir);
 	sprintf(cfg.areafile,"%sareas.bbs",scfg.data_dir);
-	sprintf(cfg.logfile,"%ssbbsecho.log",scfg.data_dir);
+	sprintf(cfg.logfile,"%ssbbsecho.log",scfg.logs_dir);
 
 	read_echo_cfg();
 

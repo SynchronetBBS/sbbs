@@ -45,7 +45,7 @@ extern "C" BOOL DLLCALL hacklog(scfg_t* cfg, char* prot, char* user, char* text,
 	int		file;
 	time_t	now=time(NULL);
 
-	sprintf(fname,"%shack.log",cfg->data_dir);
+	sprintf(fname,"%shack.log",cfg->logs_dir);
 
 	if((file=sopen(fname,O_CREAT|O_RDWR|O_BINARY|O_APPEND,SH_DENYWR))==-1)
 		return(FALSE);
@@ -78,7 +78,7 @@ extern "C" BOOL DLLCALL spamlog(scfg_t* cfg, char* prot, char* action
 	int		file;
 	time_t	now=time(NULL);
 
-	sprintf(fname,"%sspam.log",cfg->data_dir);
+	sprintf(fname,"%sspam.log",cfg->logs_dir);
 
 	if((file=sopen(fname,O_CREAT|O_RDWR|O_BINARY|O_APPEND,SH_DENYWR))==-1)
 		return(FALSE);
@@ -149,7 +149,7 @@ bool sbbs_t::syslog(char* code, char *entry)
 	now=time(NULL);
 	if(localtime_r(&now,&tm)==NULL)
 		return(false);
-	sprintf(fname,"%slogs/%2.2d%2.2d%2.2d.log",cfg.data_dir,tm.tm_mon+1,tm.tm_mday
+	sprintf(fname,"%slogs/%2.2d%2.2d%2.2d.log",cfg.logs_dir,tm.tm_mon+1,tm.tm_mday
 		,TM_YEAR(tm.tm_year));
 	if((file=nopen(fname,O_WRONLY|O_APPEND|O_CREAT))==-1) {
 		lprintf("!ERRROR %d opening/creating %s",errno,fname); 
@@ -368,7 +368,7 @@ void sbbs_t::errorlog(char *text)
 	}
 	now=time(NULL);
 	logline("!!",text);
-	sprintf(str,"%serror.log",cfg.data_dir);
+	sprintf(str,"%serror.log",cfg.logs_dir);
 	if((file=nopen(str,O_WRONLY|O_CREAT|O_APPEND))==-1) {
 		sprintf(tmp2,"!ERROR %d opening/creating %s",errno,str);
 		logline("!!",tmp2);

@@ -824,7 +824,9 @@ static void js_service_thread(void* arg)
 	}
 
 	/* RUN SCRIPT */
-	sprintf(spath,"%s%s",scfg.exec_dir,service->cmd);
+	sprintf(spath,"%s%s",scfg.mods_dir,service->cmd);
+	if(scfg.mods_dir[0]==0 || !fexist(spath))
+		sprintf(spath,"%s%s",scfg.exec_dir,service->cmd);
 
 	js_init_cmdline(js_cx, js_glob, spath);
 
@@ -920,7 +922,10 @@ static void js_static_service_thread(void* arg)
 		return;
 	}
 
-	sprintf(spath,"%s%s",scfg.exec_dir,service->cmd);
+	sprintf(spath,"%s%s",scfg.mods_dir,service->cmd);
+	if(scfg.mods_dir[0]==0 || !fexist(spath))
+		sprintf(spath,"%s%s",scfg.exec_dir,service->cmd);
+
 	js_init_cmdline(js_cx, js_glob, spath);
 
 	val = BOOLEAN_TO_JSVAL(JS_FALSE);
