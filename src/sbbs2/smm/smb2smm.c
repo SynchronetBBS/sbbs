@@ -295,35 +295,24 @@ while(!ferror(trashfile)) {
 return(0);
 }
 
-time_t checktime()
-{
-	struct tm tm;
-
-memset(&tm,0,sizeof(tm));
-tm.tm_year=94;
-tm.tm_mday=1;
-return(mktime(&tm)^0x2D24BD00L);
-}
-
 int main(int argc, char **argv)
 {
 	uchar	str[256],system[128],telegram[1024],HUGE16 *buf,HUGE16 *hp, *p
 			,min_age,fname[64],path[128],tmp[128],ch;
+	char	sys[128];
 	int 	i,j,file,out,wallfile,msgfile,tgramonly=0,wallonly=0,esc;
 	ulong	l,m,last,high,system_crc,crc,length;
 	ushort	smm,smm_photo,touser;
 	user_t	user;
 	wall_t	wall;
+	time_t	now;
 	smbmsg_t msg;
 	FILE	*stream,*index,*tmpfile;
 	ixb_t	ixb;
+	struct tm* tm;
 
 fprintf(stderr,"\nSMB2SMM v%s - Updates SMM via SMB - Developed 1995-1997 "
 	"Rob Swindell\n\n",VERSION);
-
-if(checktime()) {
-    printf("Time problem!\n");
-    return(-1); }
 
 if(argc<3) {
 	fprintf(stderr,"usage: smb2smm <smb_file> <smm.dab>\n\n");
@@ -444,6 +433,8 @@ if((i=smb_locksmbhdr(&smb))!=0) {				/* Be sure noone deletes or */
 	printf("Error locking %d\n",i);             /* adds while we're reading */
 	return(1); }
 
+now=time(NULL);
+tm=localtime(&now);
 rewind(smb.sid_fp);
 while(!feof(smb.sid_fp) && !ferror(smb.sid_fp)) {
 	if(!fread(&msg.idx,sizeof(idxrec_t),1,smb.sid_fp))
@@ -467,6 +458,9 @@ while(!feof(smb.sid_fp) && !ferror(smb.sid_fp)) {
 		smb_freemsgmem(&msg);
 		continue; }
 
+	printf("%02u/%02u/%02u "
+		,tm->tm_mon+1,tm->tm_mday,TM_YEAR(tm->tm_year));
+
 	printf("From: %-25.25s  To: %-25.25s  Subj: %s\n"
 		,msg.from,msg.to,msg.subj);
 
@@ -478,8 +472,8 @@ while(!feof(smb.sid_fp) && !ferror(smb.sid_fp)) {
 		sprintf(str,"%.4s",msg.subj);
 		l=ahtoul(str);
 		l^=0x0191;
-		sprintf(str,"%.8s",msg.subj+4);
-		system_crc=ahtoul(str);
+		sprintf(sys,"%.8s",msg.subj+4);
+		system_crc=ahtoul(sys);
 		system_crc^=0x90120e71;
 		fprintf(stderr,"Searching...");
 
@@ -498,7 +492,7 @@ while(!feof(smb.sid_fp) && !ferror(smb.sid_fp)) {
 		fprintf(stderr,"\n");
 
 		if(!user.number) {
-			printf("Profile Not found\n");
+			printf("Profile (%ld@%s) Not found\n",l,sys);
 			smb_freemsgmem(&msg);
 			continue; }
 
@@ -582,15 +576,19 @@ while(!feof(smb.sid_fp) && !ferror(smb.sid_fp)) {
 		sprintf(str,"%.8s",msg.subj+12);
 		smb_freemsgmem(&msg);
 		if(crc!=ahtoul(str)) {
-			printf("CRC error!\n");
-			remove(fname);
-			continue; }
+			printf("CRC error (%lx != %lx) in %s!\n"
+				,crc, ahtoul(str), fname);
+			/* remove(fname); */
+			continue; 
+		}
 		sprintf(path,"PHOTO\\%s",fname);
+		remove(path);	/* remove existing photo with same name */
         mkdir("PHOTO");
 		if(rename(fname,path)) {
 			printf("Error renaming %s to %s!\n",fname,path);
-			remove(fname);
-			continue; }
+			/* remove(fname); */
+			continue; 
+		}
 		user.misc|=USER_PHOTO;
 		fseek(stream,(ftell(index)/sizeof(ixb_t))*sizeof(user_t),SEEK_SET);
 		fwrite(&user,sizeof(user_t),1,stream);
