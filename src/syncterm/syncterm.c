@@ -199,16 +199,18 @@ int main(int argc, char **argv)
 			}
 			bbs->connected=time(NULL);
 			bbs->calls++;
-			if((listfile=fopen(listpath,"r"))!=NULL) {
-				inifile=iniReadFile(listfile);
-				fclose(listfile);
-				iniSetInteger(&inifile,bbs->name,"LastConnected",bbs->connected,NULL);
-				iniSetInteger(&inifile,bbs->name,"TotalCalls",bbs->calls,NULL);
-				if((listfile=fopen(listpath,"w"))!=NULL) {
-					iniWriteFile(listfile,inifile);
+			if(!url[0]) {
+				if((listfile=fopen(listpath,"r"))!=NULL) {
+					inifile=iniReadFile(listfile);
 					fclose(listfile);
+					iniSetInteger(&inifile,bbs->name,"LastConnected",bbs->connected,NULL);
+					iniSetInteger(&inifile,bbs->name,"TotalCalls",bbs->calls,NULL);
+					if((listfile=fopen(listpath,"w"))!=NULL) {
+						iniWriteFile(listfile,inifile);
+						fclose(listfile);
+					}
+					strListFreeStrings(inifile);
 				}
-				strListFreeStrings(inifile);
 			}
 			uifcbail();
 			switch(bbs->screen_mode) {
@@ -237,7 +239,16 @@ int main(int argc, char **argv)
 			settitle("SyncTERM");
 		}
 		if(url[0]) {
+			char	*YesNo[3]={"Yes","No",""};
 			/* Started from the command-line with a URL */
+			init_uifc();
+			switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Save this BBS in directory?",YesNo)) {
+				case 0:	/* Yes */
+					add_bbs(path,bbs);
+					break;
+				default: /* ESC/No */
+					break;
+			}
 			free(bbs);
 			bbs=NULL;
 			break;
