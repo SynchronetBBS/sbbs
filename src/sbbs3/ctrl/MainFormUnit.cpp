@@ -597,7 +597,6 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
     NodeDisplayInterval=1;  /* seconds */
     ClientDisplayInterval=5;    /* seconds */
     Initialized=false;
-    FirstRun=false;
 
     char* p;
     if((p=getenv("SBBSCTRL"))!=NULL)
@@ -1454,8 +1453,6 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     if(Registry->ValueExists("AnswerSound"))
     	SAFECOPY(bbs_startup.answer_sound
         	,Registry->ReadString("AnswerSound").c_str());
-    else
-        FirstRun=true;
 
     if(Registry->ValueExists("HangupSound"))
     	SAFECOPY(bbs_startup.hangup_sound
@@ -1634,7 +1631,7 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     	tzset();
     }
 
-    if(FirstRun) {
+    if(cfg.new_install) {
     	Application->BringToFront();
     	Sleep(3000);	// Let 'em see the logo for a bit
         BBSConfigWizardMenuItemClick(Sender);

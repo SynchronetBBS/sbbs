@@ -345,7 +345,6 @@ public:		// User declarations
     bool            ServicesAutoStart;
     bool			MailLogFile;
     bool			FtpLogFile;
-    bool            FirstRun;
     AnsiString		CtrlDirectory;
     AnsiString      Hostname;
     AnsiString      LoginCommand;
