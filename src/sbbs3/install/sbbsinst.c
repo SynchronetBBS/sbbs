@@ -35,6 +35,7 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/utsname.h>
@@ -233,6 +234,7 @@ int main(int argc, char **argv)
 	params.useX=FALSE;
 
 	sscanf("$Revision$", "%*s %s", revision);
+	umask(077);
 
     printf("\nSynchronet Installation %s-%s  Copyright 2003 "
         "Rob Swindell\n",revision,PLATFORM_DESC);
