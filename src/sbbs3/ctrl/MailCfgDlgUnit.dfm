@@ -1,10 +1,10 @@
 object MailCfgDlg: TMailCfgDlg
-  Left = 653
-  Top = 445
+  Left = 163
+  Top = 575
   BorderStyle = bsDialog
   Caption = 'Mail Server Configuration'
   ClientHeight = 246
-  ClientWidth = 319
+  ClientWidth = 286
   Color = clBtnFace
   ParentFont = True
   OldCreateOrder = True
@@ -13,7 +13,7 @@ object MailCfgDlg: TMailCfgDlg
   PixelsPerInch = 96
   TextHeight = 13
   object OKBtn: TButton
-    Left = 36
+    Left = 20
     Top = 210
     Width = 75
     Height = 25
@@ -25,7 +25,7 @@ object MailCfgDlg: TMailCfgDlg
     OnClick = OKBtnClick
   end
   object CancelBtn: TButton
-    Left = 120
+    Left = 104
     Top = 210
     Width = 76
     Height = 25
@@ -36,7 +36,7 @@ object MailCfgDlg: TMailCfgDlg
     TabOrder = 1
   end
   object ApplyButton: TButton
-    Left = 205
+    Left = 189
     Top = 210
     Width = 75
     Height = 25
@@ -48,9 +48,9 @@ object MailCfgDlg: TMailCfgDlg
   object PageControl: TPageControl
     Left = 3
     Top = 3
-    Width = 310
+    Width = 278
     Height = 199
-    ActivePage = GeneralTabSheet
+    ActivePage = SMTPTabSheet
     TabOrder = 3
     object GeneralTabSheet: TTabSheet
       Caption = 'General'
@@ -230,22 +230,6 @@ object MailCfgDlg: TMailCfgDlg
         AutoSize = False
         Caption = 'Port'
       end
-      object InboundSoundLabel: TLabel
-        Left = 7
-        Top = 114
-        Width = 85
-        Height = 19
-        AutoSize = False
-        Caption = 'Inbound Sound'
-      end
-      object OutboundSoundLabel: TLabel
-        Left = 7
-        Top = 140
-        Width = 85
-        Height = 19
-        AutoSize = False
-        Caption = 'Outbound Sound'
-      end
       object RBLCheckBox: TCheckBox
         Left = 91
         Top = 36
@@ -283,7 +267,7 @@ object MailCfgDlg: TMailCfgDlg
         Left = 92
         Top = 10
         Width = 39
-        Height = 24
+        Height = 21
         Hint = 
           'Enter the port number for the SMTP server to listen on (default=' +
           '25)'
@@ -322,7 +306,7 @@ object MailCfgDlg: TMailCfgDlg
         Left = 92
         Top = 62
         Width = 156
-        Height = 24
+        Height = 21
         Hint = 'Enter the host name or IP address of your DNS server'
         ParentShowHint = False
         ShowHint = True
@@ -344,51 +328,13 @@ object MailCfgDlg: TMailCfgDlg
         Left = 92
         Top = 88
         Width = 156
-        Height = 24
+        Height = 21
         Hint = 
           'Enter the host name or IP address of your ISP'#39's SMTP server (for' +
           ' relaying mail)'
         ParentShowHint = False
         ShowHint = True
         TabOrder = 8
-      end
-      object InboundSoundEdit: TEdit
-        Left = 92
-        Top = 114
-        Width = 156
-        Height = 24
-        Hint = 'WAV file to play when inbound SMTP connections are accepted'
-        ParentShowHint = False
-        ShowHint = True
-        TabOrder = 9
-      end
-      object InboundSoundButton: TButton
-        Left = 254
-        Top = 114
-        Width = 20
-        Height = 19
-        Caption = '...'
-        TabOrder = 10
-        OnClick = InboundSoundButtonClick
-      end
-      object OutboundSoundEdit: TEdit
-        Left = 92
-        Top = 140
-        Width = 156
-        Height = 24
-        Hint = 'WAV file to play when sending mail'
-        ParentShowHint = False
-        ShowHint = True
-        TabOrder = 11
-      end
-      object OutboundSoundButton: TButton
-        Left = 254
-        Top = 140
-        Width = 20
-        Height = 19
-        Caption = '...'
-        TabOrder = 12
-        OnClick = OutboundSoundButtonClick
       end
     end
     object POP3TabSheet: TTabSheet
@@ -402,19 +348,11 @@ object MailCfgDlg: TMailCfgDlg
         AutoSize = False
         Caption = 'Port'
       end
-      object POP3SoundLabel: TLabel
-        Left = 7
-        Top = 36
-        Width = 85
-        Height = 19
-        AutoSize = False
-        Caption = 'Answer Sound'
-      end
       object POP3PortEdit: TEdit
         Left = 92
         Top = 10
         Width = 39
-        Height = 24
+        Height = 21
         Hint = 
           'Enter the port number for the POP3 server to listen on (default=' +
           '110)'
@@ -447,24 +385,90 @@ object MailCfgDlg: TMailCfgDlg
         TabOrder = 2
         OnClick = POP3EnabledCheckBoxClick
       end
+    end
+    object SoundTabSheet: TTabSheet
+      Caption = 'Sound'
+      ImageIndex = 3
+      object POP3SoundLabel: TLabel
+        Left = 7
+        Top = 11
+        Width = 52
+        Height = 19
+        AutoSize = False
+        Caption = 'POP3'
+      end
+      object InboundSoundLabel: TLabel
+        Left = 7
+        Top = 37
+        Width = 58
+        Height = 19
+        AutoSize = False
+        Caption = 'SMTP In'
+      end
+      object OutboundSoundLabel: TLabel
+        Left = 7
+        Top = 63
+        Width = 58
+        Height = 19
+        AutoSize = False
+        Caption = 'SMTP Out'
+      end
       object POP3SoundEdit: TEdit
-        Left = 92
-        Top = 36
-        Width = 156
-        Height = 24
+        Left = 72
+        Top = 11
+        Width = 169
+        Height = 21
         Hint = 'WAV file to play when accepting POP3 connections'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 3
+        TabOrder = 0
       end
       object POP3SoundButton: TButton
-        Left = 254
-        Top = 36
+        Left = 247
+        Top = 11
         Width = 20
-        Height = 19
+        Height = 21
+        Caption = '...'
+        TabOrder = 1
+        OnClick = POP3SoundButtonClick
+      end
+      object InboundSoundEdit: TEdit
+        Left = 72
+        Top = 37
+        Width = 168
+        Height = 21
+        Hint = 'WAV file to play when inbound SMTP connections are accepted'
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 2
+      end
+      object InboundSoundButton: TButton
+        Left = 247
+        Top = 37
+        Width = 20
+        Height = 21
+        Caption = '...'
+        TabOrder = 3
+        OnClick = InboundSoundButtonClick
+      end
+      object OutboundSoundButton: TButton
+        Left = 247
+        Top = 63
+        Width = 20
+        Height = 21
         Caption = '...'
         TabOrder = 4
-        OnClick = POP3SoundButtonClick
+        OnClick = OutboundSoundButtonClick
+      end
+      object OutboundSoundEdit: TEdit
+        Left = 72
+        Top = 63
+        Width = 168
+        Height = 21
+        Hint = 'WAV file to play when sending mail'
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 5
       end
     end
   end
