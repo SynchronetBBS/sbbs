@@ -132,6 +132,18 @@ int main(int argc, char **argv)
 				case 'D':
 					door_mode=TRUE;
 					break;
+				case 'I':
+					uifc.mode|=UIFC_IBM;
+					break;
+		        case 'M':   /* Monochrome mode */
+        			uifc.mode|=UIFC_MONO;
+                    break;
+                case 'C':
+        			uifc.mode|=UIFC_COLOR;
+                    break;
+                case 'E':
+                    uifc.esc_delay=atoi(argv[i]+2);
+                    break;
 		}
 		else
 			strcpy(str,argv[1]);
@@ -180,15 +192,19 @@ int main(int argc, char **argv)
 		i=uifcinifltk(&uifc);  /* dialog */
 	else
 #endif
-#ifdef USE_DIALOG
+#if defined(USE_UIFC32)
+	if(!door_mode)
+		i=uifcini32(&uifc);
+	else
+#elif defined(USE_DIALOG)
 	if(!door_mode)
 		i=uifcinid(&uifc);
 	else
-#elif defined USE_CURSES
+#elif defined(USE_CURSES)
 	if(!door_mode)
 		i=uifcinic(&uifc);
 	else
-#elif !defined(__unix__)
+#elif !defined(__unix__) && !defined(USE_UIFC32)
 	if(!door_mode)
 		i=uifcini(&uifc);
 	else
