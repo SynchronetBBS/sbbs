@@ -82,7 +82,6 @@ typedef struct {
     char	default_user[128];
     char	dnsbl_tag[32];		// Tag to add to blacklisted subject
 	char	dnsbl_hdr[32];		// Header field to add to msg header
-    char	proc_cfg_file[128];
 	char	inbound_sound[128];
 	char	outbound_sound[128];
     char	pop3_sound[128];

@@ -344,9 +344,6 @@ void sbbs_read_ini(
 		SAFECOPY(mail->outbound_sound
 			,iniReadString(fp,section,"OutboundSound",nulstr,value));
 
-		SAFECOPY(mail->proc_cfg_file
-			,iniReadString(fp,section,"ProcessConfigFile","mailproc.cfg",value));
-
 		/* JavaScript Operating Parameters */
 		mail->js_max_bytes
 			=iniReadInteger(fp,section,strJavaScriptMaxBytes		,global->js.max_bytes);
@@ -740,9 +737,6 @@ BOOL sbbs_write_ini(
 		if(!iniSetString(lp,section,"InboundSound",mail->inbound_sound,&style))
 			break;
 		if(!iniSetString(lp,section,"OutboundSound",mail->outbound_sound,&style))
-			break;
-
-		if(!iniSetString(lp,section,"ProcessConfigFile",mail->proc_cfg_file,&style))
 			break;
 
 		/* JavaScript Operating Parameters */
