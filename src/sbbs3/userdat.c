@@ -1472,7 +1472,7 @@ static BOOL ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user)
 				(*ptrptr)++;
 				break;
 			case AR_RANDOM:
-				n=sbbs_random(i+1);
+				n=xp_random(i+1);
 				if((equal && n!=i) || (!equal && n<i))
 					result=not;
 				else
