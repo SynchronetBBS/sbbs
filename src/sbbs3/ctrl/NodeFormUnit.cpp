@@ -163,12 +163,15 @@ void __fastcall TNodeForm::TimerTick(TObject *Sender)
 	    lseek(nodedab, n*sizeof(node_t), SEEK_SET);
         if(eof(nodedab))
         	break;
+#ifdef USE_LOCKING
         if(locking(nodedab, LK_NBLCK, sizeof(node_t))!=0)
         	continue;
-
+#endif
         rd=read(nodedab,&node, sizeof(node_t));
         lseek(nodedab, n*sizeof(node_t), SEEK_SET);
+#ifdef USE_LOCKING
         locking(nodedab, LK_UNLCK, sizeof(node_t));
+#endif
 
         if(rd!=sizeof(node_t))
         	continue;
