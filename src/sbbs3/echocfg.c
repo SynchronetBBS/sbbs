@@ -738,10 +738,12 @@ int main(int argc, char **argv)
 						"From Outgoing Messages",misc&STRIP_LF ? "Yes":"No");
 					sprintf(opt[i++],"%-50.50s%-3.3s","Kill/Ignore Empty NetMail "
 						"Messages",misc&KILL_EMPTY_MAIL ? "Yes":"No");
+					sprintf(opt[i++],"%-50.50s%s","Circular Path Detection"
+						,cfg.check_path ? "Enabled" : "Disabled");
 					sprintf(opt[i++],"%-50.50s%s","Bundle Attachments"
 						,misc&TRUNC_BUNDLES ? "Truncate" : "Kill");
 					opt[i][0]=0;
-					j=uifc.list(0,0,0,60,&j,0,"Toggle Options",opt);
+					j=uifc.list(0,0,0,65,&j,0,"Toggle Options",opt);
 					if(j==-1)
 						break;
 					switch(j) {
@@ -776,6 +778,9 @@ int main(int argc, char **argv)
 							misc^=KILL_EMPTY_MAIL;
 							break;
 						case 9:
+							cfg.check_path=!cfg.check_path;
+							break;
+						case 10:
 							misc^=TRUNC_BUNDLES;
 							break;
 					} 
@@ -1083,6 +1088,8 @@ int main(int argc, char **argv)
 					lprintf("Error %d opening %s\n",errno,cfg.cfgfile);
 					uifc.bail(); exit(1); 
 				}
+				if(!cfg.check_path)
+					fprintf(stream,"NOPATHCHECK\n");
 				if(!node_swap)
 					fprintf(stream,"NOSWAP\n");
 				if(cfg.notify)
