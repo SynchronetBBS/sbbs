@@ -154,9 +154,9 @@ void sbbs_t::logout()
 	getusrsubs();
 	getusrdirs();
 	if(usrgrps>0)
-		putuserrec(&cfg,useron.number,U_CURSUB,8,cfg.sub[usrsub[curgrp][cursub[curgrp]]]->code);
+		putuserrec(&cfg,useron.number,U_CURSUB,0,cfg.sub[usrsub[curgrp][cursub[curgrp]]]->code);
 	if(usrlibs>0)
-		putuserrec(&cfg,useron.number,U_CURDIR,8,cfg.dir[usrdir[curlib][curdir[curlib]]]->code);
+		putuserrec(&cfg,useron.number,U_CURDIR,0,cfg.dir[usrdir[curlib][curdir[curlib]]]->code);
 	hhmmtostr(&cfg,&tm,str);
 	strcat(str,"  ");
 	if(sys_status&SS_USERON)

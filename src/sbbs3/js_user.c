@@ -416,51 +416,51 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			putuserrec(p->cfg,p->usernumber,U_MODEM,LEN_MODEM,str);
 			break;
 		case USER_PROP_ROWS:		 
-			putuserrec(p->cfg,p->usernumber,U_ROWS,2,str);	/* base 10 */
+			putuserrec(p->cfg,p->usernumber,U_ROWS,0,str);	/* base 10 */
 			break;
 		case USER_PROP_SEX:		 
-			putuserrec(p->cfg,p->usernumber,U_SEX,1,strupr(str));	/* single char */
+			putuserrec(p->cfg,p->usernumber,U_SEX,0,strupr(str));	/* single char */
 			break;
 		case USER_PROP_CURSUB:	 
-			putuserrec(p->cfg,p->usernumber,U_CURSUB,8,strupr(str));
+			putuserrec(p->cfg,p->usernumber,U_CURSUB,0,strupr(str));
 			break;
 		case USER_PROP_CURDIR:	 
-			putuserrec(p->cfg,p->usernumber,U_CURDIR,8,strupr(str));
+			putuserrec(p->cfg,p->usernumber,U_CURDIR,0,strupr(str));
 			break;
 		case USER_PROP_CURXTRN:	 
-			putuserrec(p->cfg,p->usernumber,U_CURXTRN,8,strupr(str));
+			putuserrec(p->cfg,p->usernumber,U_CURXTRN,0,strupr(str));
 			break;
 		case USER_PROP_XEDIT: 	 
-			putuserrec(p->cfg,p->usernumber,U_XEDIT,8,strupr(str));
+			putuserrec(p->cfg,p->usernumber,U_XEDIT,0,strupr(str));
 			break;
 		case USER_PROP_SHELL: 	 
-			putuserrec(p->cfg,p->usernumber,U_COMP,8,strupr(str));
+			putuserrec(p->cfg,p->usernumber,U_COMP,0,strupr(str));
 			break;
 		case USER_PROP_MISC:
 			JS_ValueToInt32(cx,*vp,&val);
-			putuserrec(p->cfg,p->usernumber,U_MISC,8,ultoa(val,tmp,16));
+			putuserrec(p->cfg,p->usernumber,U_MISC,0,ultoa(val,tmp,16));
 			break;
 		case USER_PROP_QWK:		 
 			JS_ValueToInt32(cx,*vp,&val);
-			putuserrec(p->cfg,p->usernumber,U_QWK,8,ultoa(val,tmp,16));
+			putuserrec(p->cfg,p->usernumber,U_QWK,0,ultoa(val,tmp,16));
 			break;
 		case USER_PROP_CHAT:		 
 			JS_ValueToInt32(cx,*vp,&val);
-			putuserrec(p->cfg,p->usernumber,U_CHAT,8,ultoa(val,tmp,16));
+			putuserrec(p->cfg,p->usernumber,U_CHAT,0,ultoa(val,tmp,16));
 			break;
 		case USER_PROP_TMPEXT:	 
-			putuserrec(p->cfg,p->usernumber,U_TMPEXT,3,str);
+			putuserrec(p->cfg,p->usernumber,U_TMPEXT,0,str);
 			break;
 		case USER_PROP_NS_TIME:	 
 			JS_ValueToInt32(cx,*vp,&val);
-			putuserrec(p->cfg,p->usernumber,U_NS_TIME,8,ultoa(val,tmp,16));
+			putuserrec(p->cfg,p->usernumber,U_NS_TIME,0,ultoa(val,tmp,16));
 			break;
 		case USER_PROP_PROT:	
-			putuserrec(p->cfg,p->usernumber,U_PROT,1,strupr(str)); /* single char */
+			putuserrec(p->cfg,p->usernumber,U_PROT,0,strupr(str)); /* single char */
 			break;
 		case USER_PROP_LOGONTIME:	 
 			JS_ValueToInt32(cx,*vp,&val);
-			putuserrec(p->cfg,p->usernumber,U_LOGONTIME,8,ultoa(val,tmp,16));
+			putuserrec(p->cfg,p->usernumber,U_LOGONTIME,0,ultoa(val,tmp,16));
 			break;
 			
 		/* security properties*/
@@ -469,50 +469,50 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			break;
 		case USER_PROP_PWMOD:
 			JS_ValueToInt32(cx,*vp,&val);
-			putuserrec(p->cfg,p->usernumber,U_PWMOD,8,ultoa(val,tmp,16));
+			putuserrec(p->cfg,p->usernumber,U_PWMOD,0,ultoa(val,tmp,16));
 			break;
 		case USER_PROP_LEVEL: 
-			putuserrec(p->cfg,p->usernumber,U_LEVEL,2,str);
+			putuserrec(p->cfg,p->usernumber,U_LEVEL,0,str);
 			break;
 		case USER_PROP_FLAGS1:
 			JS_ValueToInt32(cx,*vp,&val);
-			putuserrec(p->cfg,p->usernumber,U_FLAGS1,8,ultoa(val,tmp,16));
+			putuserrec(p->cfg,p->usernumber,U_FLAGS1,0,ultoa(val,tmp,16));
 			break;
 		case USER_PROP_FLAGS2:
 			JS_ValueToInt32(cx,*vp,&val);
-			putuserrec(p->cfg,p->usernumber,U_FLAGS2,8,ultoa(val,tmp,16));
+			putuserrec(p->cfg,p->usernumber,U_FLAGS2,0,ultoa(val,tmp,16));
 			break;
 		case USER_PROP_FLAGS3:
 			JS_ValueToInt32(cx,*vp,&val);
-			putuserrec(p->cfg,p->usernumber,U_FLAGS3,8,ultoa(val,tmp,16));
+			putuserrec(p->cfg,p->usernumber,U_FLAGS3,0,ultoa(val,tmp,16));
 			break;
 		case USER_PROP_FLAGS4:
 			JS_ValueToInt32(cx,*vp,&val);
-			putuserrec(p->cfg,p->usernumber,U_FLAGS4,8,ultoa(val,tmp,16));
+			putuserrec(p->cfg,p->usernumber,U_FLAGS4,0,ultoa(val,tmp,16));
 			break;
 		case USER_PROP_EXEMPT:
 			JS_ValueToInt32(cx,*vp,&val);
-			putuserrec(p->cfg,p->usernumber,U_EXEMPT,8,ultoa(val,tmp,16));
+			putuserrec(p->cfg,p->usernumber,U_EXEMPT,0,ultoa(val,tmp,16));
 			break;
 		case USER_PROP_REST:	
 			JS_ValueToInt32(cx,*vp,&val);
-			putuserrec(p->cfg,p->usernumber,U_REST,8,ultoa(val,tmp,16));
+			putuserrec(p->cfg,p->usernumber,U_REST,0,ultoa(val,tmp,16));
 			break;
 		case USER_PROP_CDT:	
-			putuserrec(p->cfg,p->usernumber,U_CDT,10,str);
+			putuserrec(p->cfg,p->usernumber,U_CDT,0,str);
 			break;
 		case USER_PROP_FREECDT:
-			putuserrec(p->cfg,p->usernumber,U_FREECDT,10,str);
+			putuserrec(p->cfg,p->usernumber,U_FREECDT,0,str);
 			break;
 		case USER_PROP_MIN:	
-			putuserrec(p->cfg,p->usernumber,U_MIN,10,str);
+			putuserrec(p->cfg,p->usernumber,U_MIN,0,str);
 			break;
 		case USER_PROP_TEXTRA:  
-			putuserrec(p->cfg,p->usernumber,U_TEXTRA,5,str);
+			putuserrec(p->cfg,p->usernumber,U_TEXTRA,0,str);
 			break;
 		case USER_PROP_EXPIRE:  
 			JS_ValueToInt32(cx,*vp,&val);
-			putuserrec(p->cfg,p->usernumber,U_EXPIRE,8,ultoa(val,tmp,16));
+			putuserrec(p->cfg,p->usernumber,U_EXPIRE,0,ultoa(val,tmp,16));
 			break;
 	}
 
