@@ -235,7 +235,9 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 	while(!feof(instream)) {
 		memset(buf,0,x);
 		j=fread(buf,1,x,instream);
-		if((j!=x || feof(instream)) && buf[j-1]==LF && buf[j-2]==CR)
+		if(j<1)
+			break;
+		if(j>1 && (j!=x || feof(instream)) && buf[j-1]==LF && buf[j-2]==CR)
 			buf[j-1]=buf[j-2]=0;	/* Convert to NULL */
 		if(cfg.sub[subnum]->maxcrcs) {
 			for(i=0;i<j;i++)
@@ -342,4 +344,110 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 			,O_WRONLY|O_CREAT|O_TRUNC))!=-1)
 			close(file);
 	return(true);
+}
+
+extern "C" int savemsg(scfg_t* cfg, smb_t* smb, uint subnum, smbmsg_t* msg, char* msgbuf)
+{
+	char	pad=0;
+	ushort	xlat;
+	int 	i;
+	int		storage;
+	ulong	l;
+	ulong	length;
+	ulong	offset;
+	ulong	crc=0xffffffff;
+
+	if(!SMB_IS_OPEN(smb)) {
+		if(subnum==INVALID_SUB)
+			sprintf(smb->file,"%smail",cfg->data_dir);
+		else
+			sprintf(smb->file,"%s%s",cfg->sub[subnum]->data_dir,cfg->sub[subnum]->code);
+		smb->retry_time=cfg->smb_retry_time;
+		if((i=smb_open(smb))!=0)
+			return(i);
+	}
+
+	if(filelength(fileno(smb->shd_fp))<1) {	 /* Create it if it doesn't exist */
+		if(subnum==INVALID_SUB) {
+			smb->status.max_crcs=cfg->mail_maxcrcs;
+			smb->status.max_age=cfg->mail_maxage;
+			smb->status.max_msgs=MAX_SYSMAIL;
+			smb->status.attr=SMB_EMAIL;
+		} else {
+			smb->status.max_crcs=cfg->sub[subnum]->maxcrcs;
+			smb->status.max_msgs=cfg->sub[subnum]->maxmsgs;
+			smb->status.max_age=cfg->sub[subnum]->maxage;
+			smb->status.attr=cfg->sub[subnum]->misc&SUB_HYPER ? SMB_HYPERALLOC : 0;
+		}
+		if((i=smb_create(smb))!=0) 
+			return(i); 
+	}
+	if((i=smb_locksmbhdr(smb))!=0) 
+		return(i);
+
+	if((i=smb_getstatus(smb))!=0) {
+		smb_unlocksmbhdr(smb);
+		return(i);
+	}
+	length=strlen(msgbuf)+sizeof(xlat);	 /* +2 for translation string */
+
+	if(length&0xfff00000UL) {
+		smb_unlocksmbhdr(smb);
+		return(-1);
+	}
+
+	/* Allocate Data Blocks */
+	if(smb->status.attr&SMB_HYPERALLOC) {
+		offset=smb_hallocdat(smb);
+		storage=SMB_HYPERALLOC; 
+	} else {
+		if((i=smb_open_da(smb))!=0) {
+			smb_unlocksmbhdr(smb);
+			return(i);
+		}
+		if((subnum==INVALID_SUB && cfg->sys_misc&SM_FASTMAIL)
+			|| (subnum!=INVALID_SUB && cfg->sub[subnum]->misc&SUB_FAST)) {
+			offset=smb_fallocdat(smb,length,1);
+			storage=SMB_FASTALLOC; 
+		} else {
+			offset=smb_allocdat(smb,length,1);
+			storage=SMB_SELFPACK; 
+		}
+		smb_close_da(smb); 
+	}
+
+	smb_fseek(smb->sdt_fp,offset,SEEK_SET);
+	xlat=XLAT_NONE;
+	smb_fwrite(&xlat,sizeof(xlat),smb->sdt_fp);
+	smb_fwrite(msgbuf,length-sizeof(xlat),smb->sdt_fp);
+	for(l=length;l%SDT_BLOCK_LEN;l++)
+		smb_fwrite(&pad,1,smb->sdt_fp);
+
+	fflush(smb->sdt_fp);
+
+	if(smb->status.max_crcs) {
+		for(i=0;msgbuf[i];i++)
+			crc=ucrc32(msgbuf[i],crc); 
+		crc=~crc;
+		i=smb_addcrc(smb,crc);
+		if(i) {
+			smb_freemsgdat(smb,offset,length,1);
+			smb_unlocksmbhdr(smb);
+			return(i);
+		} 
+	}
+
+	memcpy(msg->hdr.id,"SHD\x1a",4);
+	msg->hdr.version=smb_ver();
+	msg->hdr.when_imported.time=time(NULL);
+	msg->hdr.when_imported.zone=cfg->sys_timezone;
+	msg->hdr.offset=offset;
+
+	smb_dfield(msg,TEXT_BODY,length);
+
+	smb_unlocksmbhdr(smb);
+	if((i=smb_addmsghdr(smb,msg,storage))!=0) 
+		smb_freemsgdat(smb,offset,length,1);
+
+	return(i);
 }

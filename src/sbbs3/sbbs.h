@@ -724,6 +724,10 @@ extern "C" {
 										,int which, long mode);
 	DLLEXPORT void		DLLCALL freemail(mail_t* mail);
 
+	/* postmsg.cpp */
+	DLLEXPORT int		DLLCALL savemsg(scfg_t* cfg, smb_t* smb 
+										,uint subnum, smbmsg_t* msg, char* msgbuf);
+
 	/* filedat.c */
 	DLLEXPORT BOOL		DLLCALL getfileixb(scfg_t* cfg, file_t* f);
 	DLLEXPORT BOOL		DLLCALL getfiledat(scfg_t* cfg, file_t* f);
