@@ -105,7 +105,6 @@ int  bits(long l);
 char oneflag(long l);
 void getar(char *desc, char *ar);
 char *ultoac(ulong l,char *str);
-FILE *fnopen(int *file, char *str, int access);
 
 /* scfgnet.h */
 faddr_t atofaddr(char *str);
