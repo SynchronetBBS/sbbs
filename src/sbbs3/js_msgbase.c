@@ -577,7 +577,7 @@ js_get_msg_index(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *r
 	JS_DefineProperty(cx, idxobj, "attr"	,val
 		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
-	JS_NewNumberValue(cx, msg.idx.offset	,&val);
+	JS_NewNumberValue(cx, msg.offset		,&val);
 	JS_DefineProperty(cx, idxobj, "offset"	,val
 		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
@@ -1668,7 +1668,7 @@ static jsSyncMethodSpec js_msgbase_functions[] = {
 	"<tr><td><tt>attr</tt><td>Attribute bitfield"
 	"<tr><td><tt>time</tt><td>Date/time (in time_t format)"
 	"<tr><td><tt>number</tt><td>Message number"
-	"<tr><td><tt>offset</tt><td>Byte-offset into header file"
+	"<tr><td><tt>offset</tt><td>Record number in index file"
 	"</table>")
 	,311
 	},
