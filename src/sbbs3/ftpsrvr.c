@@ -294,7 +294,7 @@ str[c]=0;
 }
 
 
-int nopen(char *str, int access)
+static int nopen(char *str, int access)
 {
 	int file,share,count=0;
 
