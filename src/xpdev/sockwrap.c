@@ -177,6 +177,7 @@ BOOL socket_check(SOCKET sock, BOOL* rd_p, BOOL* wr_p, DWORD timeout)
 	char	ch;
 	int		i,rd;
 	fd_set	rd_set;
+	fd_set*	rd_set_p=&rd_set;
 	fd_set	wr_set;
 	fd_set*	wr_set_p=NULL;
 	struct	timeval tv;
@@ -197,14 +198,14 @@ BOOL socket_check(SOCKET sock, BOOL* rd_p, BOOL* wr_p, DWORD timeout)
 		FD_ZERO(wr_set_p);
 		FD_SET(sock,wr_set_p);
 		if(rd_p==NULL)
-			FD_CLR(sock,&rd_set);
+			rd_set_p=NULL;
 	}
 
 	/* Convert timeout from ms to sec/usec */
 	tv.tv_sec=timeout/1000;
 	tv.tv_usec=(timeout%1000)*1000;
 
-	i=select(sock+1,&rd_set,wr_set_p,NULL,&tv);
+	i=select(sock+1,rd_set_p,wr_set_p,NULL,&tv);
 	if(i==SOCKET_ERROR)
 		return(FALSE);
 

@@ -42,6 +42,10 @@
 #include <strings.h>
 #endif
 
+#ifdef USE_SIGNALS
+#include <signal.h>
+#endif
+
 #if defined(__OS2__)
 
 #define INCL_BASE
@@ -133,6 +137,18 @@ static int uinput(int imode, int left, int top, char *prompt, char *str
 static void umsg(char *str);
 static void upop(char *str);
 static void sethelp(int line, char* file);
+
+/* Signal Thing */
+int	force_return=0;
+#ifdef USE_SIGNALS
+	struct sigaction act;
+	struct sigaction oact;
+#endif
+
+void handle_alarm(int sig)  {
+	sigaction(SIGALRM,&oact,NULL);
+	force_return=1;
+}
 
 int inkey(int mode)
 {
@@ -612,6 +628,12 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 		puttext(SCRN_LEFT+left+2,SCRN_TOP+top+height,SCRN_LEFT+left+width+1
 			,SCRN_TOP+top+height,shade); }
 	showmouse();
+	#ifdef USE_SIGNALS
+	act.sa_handler=handle_alarm;
+	sigemptyset(&act.sa_mask);
+	act.sa_flags=0;
+	sigaction(SIGALRM,&act,&oact);
+	#endif
 	while(1) {
 	#if 0					/* debug */
 		gotoxy(30,1);
@@ -627,6 +649,15 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 	#endif
 
 		if(inkey(1)) {
+			if(force_return) {
+				#ifdef USE_SIGNALS
+				alarm(0);
+				sigaction(SIGALRM,&act,&oact);
+				#endif
+				force_return=0;
+				flushinp();
+				return(-2);
+			}
 			i=inkey(0);
 			if(i==KEY_BACKSPACE || i==BS)
 				i=ESC;
@@ -893,15 +924,30 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 						help();
 						break;
 					case KEY_F(5):	/* F5 */
-						if(mode&WIN_GET && !(mode&WIN_XTR && (*cur)==opts-1))
-							return((*cur)|MSK_GET);
+						if(mode&WIN_GET && !(mode&WIN_XTR && (*cur)==opts-1)) {
+							#ifdef USE_SIGNALS
+							alarm(0);
+							sigaction(SIGALRM,&act,&oact);
+							force_return=0;	
+							#endif
+							return((*cur)|MSK_GET); }
 						break;
 					case KEY_F(6):	/* F6 */
-						if(mode&WIN_PUT && !(mode&WIN_XTR && (*cur)==opts-1))
-							return((*cur)|MSK_PUT);
+						if(mode&WIN_PUT && !(mode&WIN_XTR && (*cur)==opts-1)) {
+							#ifdef USE_SIGNALS
+							alarm(0);
+							sigaction(SIGALRM,&act,&oact);
+							force_return=0;	
+							#endif
+							return((*cur)|MSK_PUT); }
 						break;
 					case KEY_IC:	/* insert */
 						if(mode&WIN_INS) {
+							#ifdef USE_SIGNALS
+							alarm(0);
+							sigaction(SIGALRM,&act,&oact);
+							force_return=0;	
+							#endif
 							if(mode&WIN_INSACT) {
 								hidemouse();
 								gettext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT
@@ -915,14 +961,19 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 								puttext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT
 									+left+width-1,SCRN_TOP+top+height-1,win);
 								showmouse(); }
-							if(!opts)
-								return(MSK_INS);
+							if(!opts) {
+								return(MSK_INS); }
 							return((*cur)|MSK_INS); }
 						break;
 					case KEY_DC:	/* delete */
 						if(mode&WIN_XTR && (*cur)==opts-1)	/* can't delete */
 							break;							/* extra line */
 						if(mode&WIN_DEL) {
+							#ifdef USE_SIGNALS
+							alarm(0);
+							sigaction(SIGALRM,&act,&oact);
+							force_return=0;	
+							#endif
 							if(mode&WIN_DELACT) {
 								hidemouse();
 								gettext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT
@@ -1028,6 +1079,11 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 						case CR:
 							if(!opts || (mode&WIN_XTR && (*cur)==opts-1))
 								break;
+							#ifdef USE_SIGNALS
+							alarm(0);
+							sigaction(SIGALRM,&act,&oact);
+							force_return=0;
+							#endif
 							if(mode&WIN_ACT) {
 								hidemouse();
 								gettext(SCRN_LEFT+left,SCRN_TOP+top,SCRN_LEFT
@@ -1070,6 +1126,11 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 								showmouse();
 								FREE(sav[api->savnum].buf);
 								api->savdepth--; }
+							#ifdef USE_SIGNALS
+							alarm(0);
+							sigaction(SIGALRM,&act,&oact);
+							force_return=0;
+							#endif
 							return(-1); } } }
 		else
 			mswait(1);
@@ -1743,8 +1804,19 @@ void help()
 				: high ? (hclr|(bclr<<4)) : (lclr|(bclr<<4)); } }
 	puttext(3,3,78,23,buf);
 	showmouse();
+	#ifdef USE_SIGNALS
+	act.sa_handler=handle_alarm;
+	sigemptyset(&act.sa_mask);
+	act.sa_flags=0;
+	sigaction(SIGALRM,&act,&oact);
+	#endif
 	while(1) {
 		if(inkey(1)) {
+			if(force_return) {
+				flushinp();
+				force_return=0;
+				break;
+			}
 			inkey(0);
 			break; }
 	#ifndef __FLAT__
@@ -1754,6 +1826,11 @@ void help()
 	#endif
 		mswait(1);
 		}
+	#ifdef USE_SIGNALS
+	alarm(0);
+	sigaction(SIGALRM,&act,&oact);
+	force_return=0;	
+	#endif
 
 	hidemouse();
 	puttext(1,1,scrn_width,25,savscrn);

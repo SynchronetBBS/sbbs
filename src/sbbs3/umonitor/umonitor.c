@@ -3,10 +3,55 @@
 #include <termios.h>
 #include <sys/un.h>
 #include <stdio.h>
+#include <unistd.h>
+#include "conwrap.h"
+#include "uifc.h"
+#include "sbbsdefs.h"
+#include "genwrap.h"	/* stricmp */
+#include "filewrap.h"	/* lock/unlock/sopen */
 
-void usage(char *cmd)  {
-	printf("Usage: %s <socket>\n\n Where socket is the filename of a unix domain socket\n\n",cmd);
-	exit(0);
+enum {
+	 MODE_LIST
+	,MODE_ANON
+	,MODE_LOCK
+	,MODE_INTR
+	,MODE_RRUN
+	,MODE_DOWN
+	,MODE_EVENT
+	,MODE_NOPAGE
+	,MODE_NOALERTS
+	,MODE_STATUS
+	,MODE_USERON
+	,MODE_ACTION
+	,MODE_ERRORS
+	,MODE_MISC
+	,MODE_CONN
+	,MODE_AUX
+	,MODE_EXTAUX
+	};
+
+/********************/
+/* Global Variables */
+/********************/
+uifcapi_t uifc; /* User Interface (UIFC) Library API */
+char tmp[256];
+int nodefile;
+
+void bail(int code)
+{
+    if(code) {
+        puts("\nHit a key...");
+        getch(); 
+	}
+    uifc.bail();
+
+    exit(code);
+}
+
+void allocfail(uint size)
+{
+    printf("\7Error allocating %u bytes of memory.\n",size);
+    bail(1);
 }
 
 void spyon(char *sockname)  {
@@ -21,6 +66,8 @@ void spyon(char *sockname)  {
 	struct pollfd pset[2];
 
 	/* ToDo Test for it actually being a socket! */
+	/* Well, it will fail to connect won't it?   */
+
 
 	if((spy_sock=socket(PF_LOCAL,SOCK_STREAM,0))==INVALID_SOCKET)  {
 		printf("ERROR %d creating local spy socket", errno);
@@ -31,7 +78,6 @@ void spyon(char *sockname)  {
 	SAFECOPY(spy_name.sun_path,sockname);
 	spy_len=SUN_LEN(&spy_name);
 	if(connect(spy_sock,(struct sockaddr *)&spy_name,spy_len))  {
-		printf("Could not connect to %s\n",spy_name.sun_path);
 		return;
 	}
 	i=1;
@@ -40,6 +86,7 @@ void spyon(char *sockname)  {
 	tcgetattr(STDIN_FILENO,&tio);
 	cfmakeraw(&tio);
 	tcsetattr(STDIN_FILENO,TCSANOW,&tio);
+	printf("\r\n\r\nLocal spy mode... press CTRL-C to return to monitor\r\n\r\n");
 	pset[0].fd=STDIN_FILENO;
 	pset[0].events=POLLIN;
 	pset[1].fd=spy_sock;
@@ -59,7 +106,6 @@ void spyon(char *sockname)  {
 					/* Check for control keys */
 					switch(key)  {
 						case CTRL('c'):
-							printf("\r\n\r\nConnection closed.\r\n");
 							close(spy_sock);
 							spy_sock=INVALID_SOCKET;
 							return;
@@ -92,9 +138,423 @@ void spyon(char *sockname)  {
 	tcsetattr(STDIN_FILENO,TCSANOW,&old_tio);
 }
 
-int main(int argc, char** argv)  {
-	if(argc==1)
-		usage(argv[0]);
+char* itoa(int val, char* str, int radix)
+{
+	switch(radix) {
+		case 8:
+			sprintf(str,"%o",val);
+			break;
+		case 10:
+			sprintf(str,"%u",val);
+			break;
+		case 16:
+			sprintf(str,"%x",val);
+			break;
+		default:
+			sprintf(str,"bad radix: %d",radix);
+			break;
+	}
+	return(str);
+}
 
-	spyon(argv[1]);
+/****************************************************************************/
+/* Unpacks the password 'pass' from the 5bit ASCII inside node_t. 32bits in */
+/* node.extaux, and the other 8bits in the upper byte of node.aux			*/
+/****************************************************************************/
+char *unpackchatpass(char *pass, node_t node)
+{
+	char 	bits;
+	int 	i;
+
+	pass[0]=(node.aux&0x1f00)>>8;
+	pass[1]=(char)(((node.aux&0xe000)>>13)|((node.extaux&0x3)<<3));
+	bits=2;
+	for(i=2;i<8;i++) {
+		pass[i]=(char)((node.extaux>>bits)&0x1f);
+		bits+=5; }
+	pass[8]=0;
+	for(i=0;i<8;i++)
+		if(pass[i])
+			pass[i]+=64;
+	return(pass);
+}
+
+/******************************************************************************************/
+/* Returns the information for node number 'number' contained in 'node' into string 'str' */
+/******************************************************************************************/
+char *nodedat(char *str, int number, node_t node)
+{
+    char hour,mer[3];
+	char buf[1024];
+
+	sprintf(str,"Node %2d: ",number);
+	switch(node.status) {
+		case NODE_WFC:
+			strcat(str,"Waiting for call");
+			break;
+		case NODE_OFFLINE:
+			strcat(str,"Offline");
+			break;
+		case NODE_NETTING:
+			strcat(str,"Networking");
+			break;
+		case NODE_LOGON:
+			strcat(str,"At logon prompt");
+			break;
+		case NODE_EVENT_WAITING:
+			strcat(str,"Waiting for all nodes to become inactive");
+			break;
+		case NODE_EVENT_LIMBO:
+			sprintf(buf,"Waiting for node %d to finish external event",node.aux);
+			strcat(str,buf);
+			break;
+		case NODE_EVENT_RUNNING:
+			strcat(str,"Running external event");
+			break;
+		case NODE_NEWUSER:
+			strcat(str,"New user");
+			strcat(str," applying for access ");
+			if(!node.connection)
+				strcat(str,"locally");
+			else if(node.connection==0xffff)
+				strcat(str,"via telnet");
+			else {
+				sprintf(buf,"at %ubps",node.connection);
+				strcat(str,buf); }
+			break;
+		case NODE_QUIET:
+		case NODE_INUSE:
+			sprintf(buf,"User #%d",node.useron);
+			strcat(str,buf);
+			strcat(str," ");
+			switch(node.action) {
+				case NODE_MAIN:
+					strcat(str,"at main menu");
+					break;
+				case NODE_RMSG:
+					strcat(str,"reading messages");
+					break;
+				case NODE_RMAL:
+					strcat(str,"reading mail");
+					break;
+				case NODE_RSML:
+					strcat(str,"reading sent mail");
+					break;
+				case NODE_RTXT:
+					strcat(str,"reading text files");
+					break;
+				case NODE_PMSG:
+					strcat(str,"posting message");
+					break;
+				case NODE_SMAL:
+					strcat(str,"sending mail");
+					break;
+				case NODE_AMSG:
+					strcat(str,"posting auto-message");
+					break;
+				case NODE_XTRN:
+					if(!node.aux)
+						strcat(str,"at external program menu");
+					else
+						sprintf(buf,"running external program #%d",node.aux);
+						strcat(str,buf);
+					break;
+				case NODE_DFLT:
+					strcat(str,"changing defaults");
+					break;
+				case NODE_XFER:
+					strcat(str,"at transfer menu");
+					break;
+				case NODE_RFSD:
+					sprintf(buf,"retrieving from device #%d",node.aux);
+					strcat(str,buf);
+					break;
+				case NODE_DLNG:
+					strcat(str,"downloading");
+					break;
+				case NODE_ULNG:
+					strcat(str,"uploading");
+					break;
+				case NODE_BXFR:
+					strcat(str,"transferring bidirectional");
+					break;
+				case NODE_LFIL:
+					strcat(str,"listing files");
+					break;
+				case NODE_LOGN:
+					strcat(str,"logging on");
+					break;
+				case NODE_LCHT:
+					strcat(str,"in local chat with sysop");
+					break;
+				case NODE_MCHT:
+					if(node.aux) {
+						sprintf(buf,"in multinode chat channel %d",node.aux&0xff);
+						strcat(str,buf);
+						if(node.aux&0x1f00) { /* password */
+							strcat(str,"*");
+							sprintf(buf," %s",unpackchatpass(tmp,node));
+							strcat(str,buf); } }
+					else
+						strcat(str,"in multinode global chat channel");
+					break;
+				case NODE_PAGE:
+					sprintf(buf,"paging node %u for private chat",node.aux);
+					strcat(str,buf);
+					break;
+				case NODE_PCHT:
+					sprintf(buf,"in private chat with node %u",node.aux);
+					strcat(str,buf);
+					break;
+				case NODE_GCHT:
+					strcat(str,"chatting with The Guru");
+					break;
+				case NODE_CHAT:
+					strcat(str,"in chat section");
+					break;
+				case NODE_TQWK:
+					strcat(str,"transferring QWK packet");
+					break;
+				case NODE_SYSP:
+					strcat(str,"performing sysop activities");
+					break;
+				default:
+					sprintf(buf,itoa(node.action,tmp,10));
+					strcat(str,buf);
+					break;  }
+			if(!node.connection)
+				strcat(str," locally");
+			else if(node.connection==0xffff)
+				strcat(str," via telnet");
+			else {
+				sprintf(buf," at %ubps",node.connection);
+				strcat(str,buf); }
+			if(node.action==NODE_DLNG) {
+				if((node.aux/60)>=12) {
+					if(node.aux/60==12)
+						hour=12;
+					else
+						hour=(node.aux/60)-12;
+					strcpy(mer,"pm"); }
+				else {
+					if((node.aux/60)==0)    /* 12 midnite */
+						hour=12;
+					else hour=node.aux/60;
+					strcpy(mer,"am"); }
+				sprintf(buf," ETA %02d:%02d %s"
+					,hour,node.aux-((node.aux/60)*60),mer); 
+				strcat(str,buf); }
+			break; }
+	if(node.misc&(NODE_LOCK|NODE_POFF|NODE_AOFF|NODE_MSGW|NODE_NMSG)) {
+		strcat(str," (");
+		if(node.misc&NODE_AOFF)
+			strcat(str,"A");
+		if(node.misc&NODE_LOCK)
+			strcat(str,"L");
+		if(node.misc&(NODE_MSGW|NODE_NMSG))
+			strcat(str,"M");
+		if(node.misc&NODE_POFF)
+			strcat(str,"P");
+		strcat(str,")"); }
+	if(((node.misc
+		&(NODE_ANON|NODE_UDAT|NODE_INTR|NODE_RRUN|NODE_EVENT|NODE_DOWN))
+		|| node.status==NODE_QUIET)) {
+		strcat(str," [");
+		if(node.misc&NODE_ANON)
+			strcat(str,"A");
+		if(node.misc&NODE_INTR)
+			strcat(str,"I");
+		if(node.misc&NODE_RRUN)
+			strcat(str,"R");
+		if(node.misc&NODE_UDAT)
+			strcat(str,"U");
+		if(node.status==NODE_QUIET)
+			strcat(str,"Q");
+		if(node.misc&NODE_EVENT)
+			strcat(str,"E");
+		if(node.misc&NODE_DOWN)
+			strcat(str,"D");
+		if(node.misc&NODE_LCHAT)
+			strcat(str,"C");
+		strcat(str,"]"); }
+	if(node.errors) {
+		sprintf(buf," %d error%c",node.errors, node.errors>1 ? 's' : '\0' );
+		strcat(str,buf); }
+	return(str);
+}
+
+/****************************************************************************/
+/* Reads the data for node number 'number' into the structure 'node'        */
+/* from NODE.DAB															*/
+/* if lockit is non-zero, locks this node's record. putnodedat() unlocks it */
+/****************************************************************************/
+void getnodedat(int number, node_t *node, int lockit)
+{
+	int count;
+	char	msg[80];
+
+	number--;	/* make zero based */
+	for(count=0;count<LOOP_NODEDAB;count++) {
+		if(count)
+			SLEEP(100);
+		lseek(nodefile,(long)number*sizeof(node_t),SEEK_SET);
+		if(lockit
+			&& lock(nodefile,(long)number*sizeof(node_t),sizeof(node_t))==-1) 
+			continue; 
+		if(read(nodefile,node,sizeof(node_t))==sizeof(node_t))
+			break;
+	}
+	if(count>=(LOOP_NODEDAB/2)) {
+		sprintf(msg,"NODE.DAB (node %d) COLLISION (READ) - Count: %d\n"
+			,number+1, count); 
+		uifc.msg(msg); }
+	else if(count==LOOP_NODEDAB) {
+		sprintf(msg,"!Error reading nodefile for node %d\n",number+1);
+		uifc.msg(msg); }
+}
+
+int main(int argc, char** argv)  {
+	char**	opt;
+	char**	mopt;
+	int		main_dflt=0;
+	int		main_bar=0;
+	BOOL    door_mode=FALSE;
+	int		dist=0;
+	int		server=0;
+	char revision[16];
+	char str[256],ctrl_dir[41],*p,debug=0;
+	int sys_nodes,node_num=0,onoff=0;
+	int i,j,mode=0,misc;
+	int	modify=0;
+	int loop=0;
+	long value=0;
+	node_t node;
+
+	sscanf("$Revision$", "%*s %s", revision);
+
+    printf("\nSynchronet UNIX Monitor %s-%s  Copyright 2003 "
+        "Rob Swindell\n",revision,PLATFORM_DESC);
+
+	p=getenv("SBBSCTRL");
+	if(p==NULL) {
+		printf("\7\nSBBSCTRL environment variable is not set.\n");
+		printf("This environment variable must be set to your CTRL directory.");
+		printf("\nExample: SET SBBSCTRL=/sbbs/ctrl\n");
+		exit(1); }
+
+	sprintf(ctrl_dir,"%.40s",p);
+	if(ctrl_dir[strlen(ctrl_dir)-1]!='\\'
+		&& ctrl_dir[strlen(ctrl_dir)-1]!='/')
+		strcat(ctrl_dir,"/");
+
+	sprintf(str,"%snode.dab",ctrl_dir);
+	if((nodefile=sopen(str,O_RDWR|O_BINARY,SH_DENYNO))==-1) {
+		printf("\7\nError %d opening %s.\n",errno,str);
+		exit(1); }
+
+	sys_nodes=filelength(nodefile)/sizeof(node_t);
+	if(!sys_nodes) {
+		printf("%s reflects 0 nodes!\n",str);
+		exit(1); }
+
+    memset(&uifc,0,sizeof(uifc));
+
+	uifc.esc_delay=500;
+
+	for(i=1;i<argc;i++) {
+        if(argv[i][0]=='-'
+            )
+            switch(toupper(argv[i][1])) {
+                case 'C':
+        			uifc.mode|=UIFC_COLOR;
+                    break;
+                case 'L':
+                    uifc.scrn_len=atoi(argv[i]+2);
+                    break;
+                case 'E':
+                    uifc.esc_delay=atoi(argv[i]+2);
+                    break;
+				case 'I':
+					uifc.mode|=UIFC_IBM;
+					break;
+                default:
+                    printf("\nusage: %s [ctrl_dir] [options]"
+                        "\n\noptions:\n\n"
+                        "-c  =  force color mode\n"
+#ifdef USE_CURSES
+                        "-e# =  set escape delay to #msec\n"
+						"-i  =  force IBM charset\n"
+#endif
+                        "-l# =  set screen lines to #\n"
+						,argv[0]
+                        );
+        			exit(0);
+           }
+    }
+
+	uifc.size=sizeof(uifc);
+	i=uifcinic(&uifc);  /* curses */
+	if(i!=0) {
+		printf("uifc library init returned error %d\n",i);
+		exit(1);
+	}
+
+	if((opt=(char **)MALLOC(sizeof(char *)*(MAX_OPTS+1)))==NULL)
+		allocfail(sizeof(char *)*(MAX_OPTS+1));
+	for(i=0;i<(MAX_OPTS+1);i++)
+		if((opt[i]=(char *)MALLOC(MAX_OPLN))==NULL)
+			allocfail(MAX_OPLN);
+
+	if((mopt=(char **)MALLOC(sizeof(char *)*MAX_OPTS))==NULL)
+		allocfail(sizeof(char *)*MAX_OPTS);
+	for(i=0;i<MAX_OPTS;i++)
+		if((mopt[i]=(char *)MALLOC(MAX_OPLN))==NULL)
+			allocfail(MAX_OPLN);
+
+	sprintf(str,"Synchronet UNIX Monitor %s-%s",revision,PLATFORM_DESC);
+	if(uifc.scrn(str)) {
+		printf(" USCRN (len=%d) failed!\n",uifc.scrn_len+1);
+		bail(1);
+	}
+
+	while(1) {
+		for(i=1;i<=sys_nodes;i++) {
+			getnodedat(i,&node,0);
+			nodedat(mopt[i-1],i,node);
+		}
+		strcpy(mopt[i-1],"Exit UNIX Monitor");
+		mopt[i][0]=0;
+
+		uifc.helpbuf=	"`Synchronet Monitor:`\n"
+						"\nToDo: Add help.";
+						
+		alarm(1);
+		j=uifc.list(WIN_ORG|WIN_ACT|WIN_MID|WIN_ESC,0,0,70,&main_dflt,&main_bar
+			,str,mopt);
+		if(j==-2)
+			continue;
+
+		if(j==sys_nodes) {
+			alarm(0);
+			i=0;
+			strcpy(opt[0],"Yes");
+			strcpy(opt[1],"No");
+			opt[2][0]=0;
+			uifc.helpbuf=	"`Exit Synchronet UNIX Monitor:`\n"
+							"\n"
+							"\nIf you want to exit the Synchronet UNIX monitor utility,"
+							"\nselect `Yes`. Otherwise, select `No` or hit ~ ESC ~.";
+			i=uifc.list(WIN_MID,0,0,0,&i,0,"Exit Synchronet Install",opt);
+			if(!i)
+				bail(0);
+			alarm(0);
+			continue;
+		}
+		if(j<sys_nodes && j>=0) {
+			snprintf(str,sizeof(str),"%slocalspy%d.sock", ctrl_dir, j+1);
+			endwin();
+			spyon(str);
+			refresh();
+		}
+	}
 }
