@@ -69,20 +69,20 @@ extern "C" {
 	/* POSIX mutexes */
 #if 1	/* Implemented as Win32 Critical Sections */
 	typedef CRITICAL_SECTION pthread_mutex_t;
-	#define pthread_mutex_init(pmtx,v)	InitializeCriticalSection(pmtx)
-	#define pthread_mutex_lock(pmtx)	EnterCriticalSection(pmtx)
-	#define pthread_mutex_unlock(pmtx)	LeaveCriticalSection(pmtx)
-	#define	pthread_mutex_destroy(pmtx)	DeleteCriticalSection(pmtx)
+	#define pthread_mutex_init(pmtx,v)	InitializeCriticalSection(pmtx),0
+	#define pthread_mutex_lock(pmtx)	EnterCriticalSection(pmtx),0
+	#define pthread_mutex_unlock(pmtx)	LeaveCriticalSection(pmtx),0
+	#define	pthread_mutex_destroy(pmtx)	DeleteCriticalSection(pmtx),0
 	/* TryEnterCriticalSection only available on NT4+ :-( */
 	#define pthread_mutex_trylock(pmtx) (TryEnterCriticalSection(pmtx)?0:EBUSY)
 
 #else	/* Implemented as Win32 Mutexes (much slower) */
 	typedef HANDLE pthread_mutex_t;
 	#define PTHREAD_MUTEX_INITIALIZER	CreateMutex(NULL,FALSE,NULL)
-	#define pthread_mutex_init(pmtx,v)	*(pmtx)=CreateMutex(NULL,FALSE,NULL)
-	#define pthread_mutex_lock(pmtx)	WaitForSingleObject(*(pmtx),INFINITE)
-	#define pthread_mutex_unlock(pmtx)	ReleaseMutex(*(pmtx))
-	#define	pthread_mutex_destroy(pmtx)	CloseHandle(*(pmtx))
+	#define pthread_mutex_init(pmtx,v)	(*(pmtx)=CreateMutex(NULL,FALSE,NULL))==NULL?-1:0)
+	#define pthread_mutex_lock(pmtx)	(WaitForSingleObject(*(pmtx),INFINITE)==WAIT_OBJECT_0?0:EBUSY)
+	#define pthread_mutex_unlock(pmtx)	(ReleaseMutex(*(pmtx))?0:GetLastError())
+	#define	pthread_mutex_destroy(pmtx)	(CloseHandle(*(pmtx))?0:GetLastError())
 	#define pthread_mutex_trylock(pmtx) (WaitForSingleObject(*(pmtx),0)==WAIT_OBJECT_0?0:EBUSY)
 #endif
 
