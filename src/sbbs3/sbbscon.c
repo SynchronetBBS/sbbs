@@ -781,6 +781,19 @@ static void handle_sigs(void)  {
 	int		sig;
 	sigset_t			sigs;
 	char		str[1024];
+	FILE*	pidfile;
+
+	thread_up(TRUE,TRUE);
+
+	/* Write the standard .pid file if running as a daemon */
+	/* Must be here so signals are sent to the correct thread */
+	if(is_daemon)  {
+		pidfile=fopen(SBBS_PID_FILE,"w");
+		if(pidfile!=NULL) {
+			fprintf(pidfile,"%d",getpid());
+			fclose(pidfile);
+		}
+	}
 
 	/* Set up blocked signals */
 	sigemptyset(&sigs);
@@ -834,7 +847,6 @@ int main(int argc, char** argv)
 	node_t	node;
 #ifdef __unix__
 	char	daemon_type[2];
-	FILE*	pidfile;
 	struct passwd* pw_entry;
 	struct group*  gr_entry;
 	sigset_t			sigs;
@@ -1366,15 +1378,6 @@ int main(int argc, char** argv)
 
 
 #ifdef __unix__
-	/* Write the standard .pid file if running as a daemon */
-	if(is_daemon)  {
-		pidfile=fopen(SBBS_PID_FILE,"w");
-		if(pidfile!=NULL) {
-			fprintf(pidfile,"%d",getpid());
-			fclose(pidfile);
-		}
-	}
-
 	/* Set up blocked signals */
 	sigemptyset(&sigs);
 	sigaddset(&sigs,SIGINT);
