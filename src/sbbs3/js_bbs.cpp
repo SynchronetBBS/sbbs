@@ -127,7 +127,98 @@ enum {
 	,BBS_PROP_MSG_ID
 	,BBS_PROP_MSG_REPLY_ID
 
+	/* MUST BE LAST */
+	,BBS_PROPERTIES
 };
+
+#ifdef _DEBUG
+	static char* bbs_prop_desc[BBS_PROPERTIES] = {
+	 "system status"
+	,"startup options"
+	,"answer time"
+	,"logon time"
+	,"file newscan time"
+	,"previous newscan time"
+	,"online"
+	,"timeleft (in seconds)"
+
+	,"node number"
+	,"node settings"
+	,"current node action"
+	,"validation feedback user for this node"
+
+	,"bytes uploaded during this logon"
+	,"bytes downloaded during this logon"
+	,"files uploaded during this logon"
+	,"files downloaded during this logon"
+	,"messages posted during this logon"
+	,"e-mails sent during this logon"
+	,"feedback messages sent during this logon"
+	,"messages read during this logon"
+
+	,"menu subdirectory (overrides default)"
+	,"menu file (overrides default)"
+	,"number of main menu commands received from user"
+	,"number of file menu commands received from user"
+
+	,"current message group"
+	,"current message sub-board"
+	,"current file library"
+	,"current file directory"
+
+	,"remote connection type"
+	,"rlogin name"
+	,"client name"
+
+	,"current alternate upload path number"
+#if 0
+	/* READ ONLY */
+	,BBS_PROP_SMB_GROUP		
+	,BBS_PROP_SMB_GROUP_DESC
+	,BBS_PROP_SMB_GROUP_NUM
+	,BBS_PROP_SMB_SUB
+	,BBS_PROP_SMB_SUB_DESC
+	,BBS_PROP_SMB_SUB_CODE
+	,BBS_PROP_SMB_SUB_NUM
+	,BBS_PROP_SMB_ATTR
+	,BBS_PROP_SMB_LAST_MSG
+	,BBS_PROP_SMB_TOTAL_MSGS
+	,BBS_PROP_SMB_MSGS
+	,BBS_PROP_SMB_CURMSG
+
+	/* READ ONLY */
+	,BBS_PROP_MSG_TO
+	,BBS_PROP_MSG_TO_EXT
+	,BBS_PROP_MSG_TO_NET
+	,BBS_PROP_MSG_TO_AGENT
+	,BBS_PROP_MSG_FROM
+	,BBS_PROP_MSG_FROM_EXT
+	,BBS_PROP_MSG_FROM_NET
+	,BBS_PROP_MSG_FROM_AGENT
+	,BBS_PROP_MSG_REPLYTO
+	,BBS_PROP_MSG_REPLYTO_EXT
+	,BBS_PROP_MSG_REPLYTO_NET
+	,BBS_PROP_MSG_REPLYTO_AGENT
+	,BBS_PROP_MSG_SUBJECT
+	,BBS_PROP_MSG_DATE
+	,BBS_PROP_MSG_TIMEZONE
+	,BBS_PROP_MSG_DATE_IMPORTED
+	,BBS_PROP_MSG_ATTR
+	,BBS_PROP_MSG_AUXATTR
+	,BBS_PROP_MSG_NETATTR
+	,BBS_PROP_MSG_OFFSET
+	,BBS_PROP_MSG_NUMBER
+	,BBS_PROP_MSG_EXPIRATION
+	,BBS_PROP_MSG_FORWARDED
+	,BBS_PROP_MSG_THREAD_ORIG
+	,BBS_PROP_MSG_THREAD_NEXT
+	,BBS_PROP_MSG_THREAD_FIRST
+	,BBS_PROP_MSG_DELIVERY_ATTEMPTS
+	,BBS_PROP_MSG_ID
+	,BBS_PROP_MSG_REPLY_ID
+#endif
+	};
+#endif
 
 static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
@@ -2349,243 +2440,243 @@ js_getnstime(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 }
 
 static jsMethodSpec js_bbs_functions[] = {
-	{"atcode",			js_atcode,			1,	JSTYPE_STRING,		"string code"
-	,"return @-code value"
+	{"atcode",			js_atcode,			1,	JSTYPE_STRING,	JSDOCSTR("string code")
+	,JSDOCSTR("return @-code value")
 	},
 	/* text.dat */
-	{"text",			js_text,			1,	JSTYPE_STRING,		"number line"
-	,"return text string from text.dat"
+	{"text",			js_text,			1,	JSTYPE_STRING,	JSDOCSTR("number line")
+	,JSDOCSTR("return text string from text.dat")
 	},
-	{"replace_text",	js_replace_text,	2,	JSTYPE_BOOLEAN,	"number line, string text"
-	,"replace a text string"
+	{"replace_text",	js_replace_text,	2,	JSTYPE_BOOLEAN,	JSDOCSTR("number line, string text")
+	,JSDOCSTR("replace a text string")
 	},
 	{"revert_text",		js_revert_text,		0,	JSTYPE_BOOLEAN,	""
-	,"revert to original text string"
+	,JSDOCSTR("revert to original text string")
 	},
-	{"load_text",		js_load_text,		1,	JSTYPE_BOOLEAN,	"string basefilename"
-	,"load an alternate text.dat from ctrl directory, automatically appends '.dat' to basefilename"
+	{"load_text",		js_load_text,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("string basefilename")
+	,JSDOCSTR("load an alternate text.dat from ctrl directory, automatically appends '.dat' to basefilename")
 	},
 	/* procedures */
 	{"newuser",			js_newuser,			0,	JSTYPE_VOID,	""
-	,"new user procedure"
+	,JSDOCSTR("new user procedure")
 	},
-	{"login",			js_login,			2,	JSTYPE_BOOLEAN,	"string username, password_prompt"
-	,"login with username and pw prompt"
+	{"login",			js_login,			2,	JSTYPE_BOOLEAN,	JSDOCSTR("string username, password_prompt")
+	,JSDOCSTR("login with username and pw prompt")
 	},
 	{"logon",			js_logon,			0,	JSTYPE_BOOLEAN,	""
-	,"logon procedure"
+	,JSDOCSTR("logon procedure")
 	},
 	{"logoff",			js_logoff,			0,	JSTYPE_VOID,	""
-	,"logoff procedure"
+	,JSDOCSTR("logoff procedure")
 	},
 	{"logout",			js_logout,			0,	JSTYPE_VOID,	""
-	,"logout procedure"
+	,JSDOCSTR("logout procedure")
 	},
 	{"hangup",			js_hangup,			0,	JSTYPE_VOID,	""
-	,"hangup immediately"
+	,JSDOCSTR("hangup immediately")
 	},
 	{"nodesync",		js_nodesync,		0,	JSTYPE_VOID,	""
-	,"synchronize node with system"
+	,JSDOCSTR("synchronize node with system")
 	,"node_sync"
 	},
 	{"auto_msg",		js_automsg,			0,	JSTYPE_VOID,	""
-	,"edit/create auto-message"
+	,JSDOCSTR("edit/create auto-message")
 	},		
 	{"time_bank",		js_time_bank,		0,	JSTYPE_VOID,	""
-	,"time bank"
+	,JSDOCSTR("time bank")
 	},		
 	{"qwk_sec",			js_qwk_sec,			0,	JSTYPE_VOID,	""
-	,"QWK section"
+	,JSDOCSTR("QWK section")
 	},		
 	{"text_sec",		js_text_sec,		0,	JSTYPE_VOID,	""
-	,"text section"
+	,JSDOCSTR("text section")
 	},		
 	{"xtrn_sec",		js_xtrn_sec,		0,	JSTYPE_VOID,	""
-	,"external programs section"
+	,JSDOCSTR("external programs section")
 	},		
 	{"xfer_policy",		js_xfer_policy,		0,	JSTYPE_VOID,	""
-	,"display file transfer policy"
+	,JSDOCSTR("display file transfer policy")
 	},		
 	{"batch_menu",		js_batchmenu,		0,	JSTYPE_VOID,	""
-	,"batch file transfer menu"
+	,JSDOCSTR("batch file transfer menu")
 	},		
 	{"batch_download",	js_batchdownload,	0,	JSTYPE_VOID,	""
-	,"start batch download"
+	,JSDOCSTR("start batch download")
 	},		
-	{"batch_add_list",	js_batchaddlist,	1,	JSTYPE_VOID,	"filename"
-	,"add file list to batch download queue"
+	{"batch_add_list",	js_batchaddlist,	1,	JSTYPE_VOID,	JSDOCSTR("filename")
+	,JSDOCSTR("add file list to batch download queue")
 	},		
 	{"temp_xfer",		js_temp_xfer,		0,	JSTYPE_VOID,	""
-	,"temp xfer menu"
+	,JSDOCSTR("temp xfer menu")
 	},		
 	{"user_sync",		js_user_sync,		0,	JSTYPE_VOID,	""
-	,"getuserdat()"
+	,JSDOCSTR("getuserdat()")
 	},		
 	{"user_config",		js_user_config,		0,	JSTYPE_VOID,	""
-	,"user config"
+	,JSDOCSTR("user config")
 	},		
 	{"sys_info",		js_sys_info,		0,	JSTYPE_VOID,	""
-	,"system info"
+	,JSDOCSTR("system info")
 	},		
 	{"sub_info",		js_sub_info,		0,	JSTYPE_VOID,	""
-	,"sub-board info"
+	,JSDOCSTR("sub-board info")
 	},		
 	{"dir_info",		js_dir_info,		0,	JSTYPE_VOID,	""
-	,"directory info"
+	,JSDOCSTR("directory info")
 	},		
 	{"user_info",		js_user_info,		0,	JSTYPE_VOID,	""
-	,"current user info"
+	,JSDOCSTR("current user info")
 	},		
 	{"ver",				js_ver,				0,	JSTYPE_VOID,	""
-	,"version info"
+	,JSDOCSTR("version info")
 	},		
 	{"sys_stats",		js_sys_stats,		0,	JSTYPE_VOID,	""
-	,"system stats"
+	,JSDOCSTR("system stats")
 	},		
 	{"node_stats",		js_node_stats,		0,	JSTYPE_VOID,	""
-	,"node stats"
+	,JSDOCSTR("node stats")
 	},		
 	{"list_users",		js_userlist,		0,	JSTYPE_VOID,	""
-	,"user list"
+	,JSDOCSTR("user list")
 	},		
 	{"edit_user",		js_useredit,		0,	JSTYPE_VOID,	""
-	,"user edit"
+	,JSDOCSTR("user edit")
 	},		
 	{"change_user",		js_change_user,		0,	JSTYPE_VOID,	""
-	,"change to a different user"
+	,JSDOCSTR("change to a different user")
 	},		
 	{"list_logons",		js_logonlist,		0,	JSTYPE_VOID,	""
-	,"logon list"
+	,JSDOCSTR("logon list")
 	},		
 	{"read_mail",		js_readmail,		0,	JSTYPE_VOID,	""
-	,"read private mail"
+	,JSDOCSTR("read private mail")
 	},		
-	{"email",			js_email,			1,	JSTYPE_BOOLEAN,	"number user, [number mode, string top, string subject]"
-	,"send private e-mail"
+	{"email",			js_email,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("number user, [number mode, string top, string subject]")
+	,JSDOCSTR("send private e-mail")
 	},		
-	{"netmail",			js_netmail,			1,	JSTYPE_BOOLEAN,	"string address, [number mode, string subject]"
-	,"send private netmail"
+	{"netmail",			js_netmail,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("string address, [number mode, string subject]")
+	,JSDOCSTR("send private netmail")
 	},		
-	{"bulk_mail",		js_bulkmail,		0,	JSTYPE_VOID,	"[ars]"
-	,"send bulk private e-mail"
+	{"bulk_mail",		js_bulkmail,		0,	JSTYPE_VOID,	JSDOCSTR("[ars]")
+	,JSDOCSTR("send bulk private e-mail")
 	},		
-	{"upload_file",		js_upload_file,		1,	JSTYPE_BOOLEAN,	"directory"
-	,"upload of files to dirnum/code"
+	{"upload_file",		js_upload_file,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("directory")
+	,JSDOCSTR("upload of files to dirnum/code")
 	},		
-	{"bulk_upload",		js_bulkupload,		1,	JSTYPE_BOOLEAN,	"directory"
-	,"local upload of files to dirnum/code"
+	{"bulk_upload",		js_bulkupload,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("directory")
+	,JSDOCSTR("local upload of files to dirnum/code")
 	},		
-	{"resort_dir",		js_resort_dir,		1,	JSTYPE_BOOLEAN,	"directory"
-	,"re-sort file directory"
+	{"resort_dir",		js_resort_dir,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("directory")
+	,JSDOCSTR("re-sort file directory")
 	},		
-	{"list_files",		js_listfiles,		1,	JSTYPE_NUMBER,		"directory, [string filespec, number mode]"
-	,"listfiles(dirnum,filespec,mode)"
+	{"list_files",		js_listfiles,		1,	JSTYPE_NUMBER,	JSDOCSTR("directory, [string filespec, number mode]")
+	,JSDOCSTR("listfiles(dirnum,filespec,mode)")
 	},		
-	{"list_file_info",	js_listfileinfo,	1,	JSTYPE_NUMBER,		"directory, [string filespec, number mode]"
-	,"listfileinfo(dirnum,filespec,mode)"
+	{"list_file_info",	js_listfileinfo,	1,	JSTYPE_NUMBER,	JSDOCSTR("directory, [string filespec, number mode]")
+	,JSDOCSTR("listfileinfo(dirnum,filespec,mode)")
 	},		
-	{"post_msg",		js_postmsg,			1,	JSTYPE_BOOLEAN,	"sub-board, [number mode]"
-	,"postmsg(subnum/code, mode)"
+	{"post_msg",		js_postmsg,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("sub-board, [number mode]")
+	,JSDOCSTR("postmsg(subnum/code, mode)")
 	},		
-	{"cfg_msg_scan",	js_msgscan_cfg,		0,	JSTYPE_VOID,	"sub-board, [number mode]"
-	,"postmsg(subnum/code, mode)"
+	{"cfg_msg_scan",	js_msgscan_cfg,		0,	JSTYPE_VOID,	JSDOCSTR("sub-board, [number mode]")
+	,JSDOCSTR("postmsg(subnum/code, mode)")
 	},		
-	{"cfg_msg_ptrs",	js_msgscan_ptrs,	0,	JSTYPE_VOID,	"sub-board, [number mode]"
-	,"postmsg(subnum/code, mode)"
+	{"cfg_msg_ptrs",	js_msgscan_ptrs,	0,	JSTYPE_VOID,	JSDOCSTR("sub-board, [number mode]")
+	,JSDOCSTR("postmsg(subnum/code, mode)")
 	},		
 	{"reinit_msg_ptrs",	js_msgscan_reinit,	0,	JSTYPE_VOID,	""
-	,"re-init new-scan ptrs"
+	,JSDOCSTR("re-init new-scan ptrs")
 	},		
-	{"scan_subs",		js_scansubs,		0,	JSTYPE_VOID,	"[number mode, boolean all]"
-	,"scansubs(mode,all)"
+	{"scan_subs",		js_scansubs,		0,	JSTYPE_VOID,	JSDOCSTR("[number mode, boolean all]")
+	,JSDOCSTR("scansubs(mode,all)")
 	},		
-	{"scan_dirs",		js_scandirs,		0,	JSTYPE_VOID,	"[number mode, boolean all]"
-	,"scandirs(mode,all)"
+	{"scan_dirs",		js_scandirs,		0,	JSTYPE_VOID,	JSDOCSTR("[number mode, boolean all]")
+	,JSDOCSTR("scandirs(mode,all)")
 	},		
-	{"scan_posts",		js_scanposts,		1,	JSTYPE_BOOLEAN,	"sub-board, [number mode, string find]"
-	,"scanposts(subnum/code, mode, findstr)"
+	{"scan_posts",		js_scanposts,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("sub-board, [number mode, string find]")
+	,JSDOCSTR("scanposts(subnum/code, mode, findstr)")
 	},		
 	/* menuing */
-	{"menu",			js_menu,			1,	JSTYPE_VOID,	"base_filename"
-	,"show menu"
+	{"menu",			js_menu,			1,	JSTYPE_VOID,	JSDOCSTR("base_filename")
+	,JSDOCSTR("show menu")
 	},		
-	{"log_key",			js_logkey,			1,	JSTYPE_BOOLEAN,	"key, [boolean comma]"
-	,"log key to node.log (comma optional)"
+	{"log_key",			js_logkey,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("key, [boolean comma]")
+	,JSDOCSTR("log key to node.log (comma optional)")
 	},		
-	{"log_str",			js_logstr,			1,	JSTYPE_BOOLEAN,	"text"
-	,"log string to node.log"
+	{"log_str",			js_logstr,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("text")
+	,JSDOCSTR("log string to node.log")
 	},		
 	/* users */
-	{"finduser",		js_finduser,		1,	JSTYPE_NUMBER,		"username_or_number"
-	,"find user (partial name support)"
+	{"finduser",		js_finduser,		1,	JSTYPE_NUMBER,	JSDOCSTR("username_or_number")
+	,JSDOCSTR("find user (partial name support)")
 	},		
-	{"trashcan",		js_trashcan,		2,	JSTYPE_BOOLEAN,	"can_file, search_string"
-	,"search file for psuedo-regexp"
+	{"trashcan",		js_trashcan,		2,	JSTYPE_BOOLEAN,	JSDOCSTR("can_file, search_string")
+	,JSDOCSTR("search file for psuedo-regexp")
 	},		
 	/* xtrn programs/modules */
-	{"exec",			js_exec,			2,	JSTYPE_NUMBER,		"cmdline, [number mode, string startup_dir]"
-	,"execute command line with mode"
+	{"exec",			js_exec,			2,	JSTYPE_NUMBER,	JSDOCSTR("cmdline, [number mode, string startup_dir]")
+	,JSDOCSTR("execute command line with mode")
 	},		
-	{"exec_xtrn",		js_exec_xtrn,		1,	JSTYPE_BOOLEAN,	"xtrn_number_or_code"
-	,"execute external program by code"
+	{"exec_xtrn",		js_exec_xtrn,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("xtrn_number_or_code")
+	,JSDOCSTR("execute external program by code")
 	},		
-	{"user_event",		js_user_event,		1,	JSTYPE_BOOLEAN,	"number event_type"
-	,"execute user event by event type"
+	{"user_event",		js_user_event,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("number event_type")
+	,JSDOCSTR("execute user event by event type")
 	},		
-	{"telnet_gate",		js_telnet_gate,		1,	JSTYPE_VOID,	"string address, [number mode]"
-	,"external telnet gateway (w/opt mode)"
+	{"telnet_gate",		js_telnet_gate,		1,	JSTYPE_VOID,	JSDOCSTR("string address, [number mode]")
+	,JSDOCSTR("external telnet gateway (w/opt mode)")
 	},		
 	/* security */
 	{"check_syspass",	js_chksyspass,		0,	JSTYPE_BOOLEAN,	""
-	,"verify system password"
+	,JSDOCSTR("verify system password")
 	},		
 	/* chat/node stuff */
 	{"page_sysop",		js_pagesysop,		0,	JSTYPE_BOOLEAN,	""
-	,"page sysop for chat"
+	,JSDOCSTR("page sysop for chat")
 	},		
 	{"page_guru",		js_pageguru,		0,	JSTYPE_BOOLEAN,	""
-	,"page guru for chat"
+	,JSDOCSTR("page guru for chat")
 	},		
 	{"multinode_chat",	js_multinode_chat,	0,	JSTYPE_VOID,	""
-	,"multi-node chat"
+	,JSDOCSTR("multi-node chat")
 	},		
 	{"private_message",	js_private_message,	0,	JSTYPE_VOID,	""
-	,"private inter-node message"
+	,JSDOCSTR("private inter-node message")
 	},		
 	{"private_chat",	js_private_chat,	0,	JSTYPE_VOID,	""
-	,"private inter-node chat"
+	,JSDOCSTR("private inter-node chat")
 	},		
 	{"get_node_message",js_get_node_message,0,	JSTYPE_VOID,	""
-	,"getnmsg()"
+	,JSDOCSTR("getnmsg()")
 	},		
-	{"put_node_message",js_put_node_message,2,	JSTYPE_VOID,	"number node, string text"
-	,"putnmsg(nodenum,str)"
+	{"put_node_message",js_put_node_message,2,	JSTYPE_VOID,	JSDOCSTR("number node, string text")
+	,JSDOCSTR("putnmsg(nodenum,str)")
 	},		
-	{"get_telegram",	js_get_telegram,	1,	JSTYPE_VOID,	"[number usernum]"
-	,"getsmsg(usernum)"
+	{"get_telegram",	js_get_telegram,	1,	JSTYPE_VOID,	JSDOCSTR("[number usernum]")
+	,JSDOCSTR("getsmsg(usernum)")
 	},		
-	{"put_telegram",	js_put_telegram,	2,	JSTYPE_VOID,	"number user, string text"
-	,"putsmsg(usernum,str)"
+	{"put_telegram",	js_put_telegram,	2,	JSTYPE_VOID,	JSDOCSTR("number user, string text")
+	,JSDOCSTR("putsmsg(usernum,str)")
 	},		
 	{"list_nodes",		js_nodelist,		0,	JSTYPE_VOID,	""
-	,"list all nodes"
+	,JSDOCSTR("list all nodes")
 	},		
 	{"whos_online",		js_whos_online,		0,	JSTYPE_VOID,	""
-	,"list active nodes"
+	,JSDOCSTR("list active nodes")
 	},		
 	{"spy",				js_spy,				1,	JSTYPE_VOID,	""
-	,"spy on node"
+	,JSDOCSTR("spy on node")
 	},		
 	/* misc */
-	{"cmdstr",			js_cmdstr,			1,	JSTYPE_STRING,		"string str, [string fpath, string fspec]"
-	,"command string"
+	{"cmdstr",			js_cmdstr,			1,	JSTYPE_STRING,	JSDOCSTR("string str, [string fpath, string fspec]")
+	,JSDOCSTR("command string")
 	},		
 	/* input */
-	{"get_filespec",	js_getfilespec,		0,	JSTYPE_STRING,		""	
-	,"get file specification"
+	{"get_filespec",	js_getfilespec,		0,	JSTYPE_STRING,	""	
+	,JSDOCSTR("get file specification")
 	},		
-	{"get_newscantime",	js_getnstime,		1,	JSTYPE_NUMBER,		"number time"
-	,"get newscan time, returns new newscan time value"
+	{"get_newscantime",	js_getnstime,		1,	JSTYPE_NUMBER,	JSDOCSTR("number time")
+	,JSDOCSTR("get newscan time, returns new newscan time value")
 	},		
 	{0}
 };
@@ -2618,6 +2709,10 @@ JSObject* js_CreateBbsObject(JSContext* cx, JSObject* parent)
 
 	if (!js_DefineMethods(cx, obj, js_bbs_functions)) 
 		return(NULL);
+
+#ifdef _DEBUG
+	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", bbs_prop_desc, JSPROP_READONLY);
+#endif
 
 	return(obj);
 }
