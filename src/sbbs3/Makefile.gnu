@@ -57,7 +57,7 @@ ifeq ($(os),freebsd)	# FreeBSD
 LIBS	=	-pthread
 CFLAGS	:=	-pthread
 else			        # Linux / Other UNIX
-CFLAGS	:=	-DJAVASCRIPT
+CFLAGS	:=	-DJAVASCRIPT -I../mozilla/js/src
 LIBS	=	$(LIBDIR)/libpthread.a
 endif
 
