@@ -37,6 +37,12 @@ void scrollup(void)
 	char *buf;
 	int i,j;
 
+	term.backpos++;
+	if(term.backpos>backlines) {
+		memmove(term.scrollback,term.scrollback+term.width*2,term.width*2*(backlines-1));
+		term.packpos--;
+	}
+	gettext(term.x+1,term.y+1,term.x+term.width,term.y+1,term.scrollback+(term.backpos-1)*term.width*2);
 	buf=(char *)malloc(term.width*(term.height-1)*2);
 	gettext(term.x+1,term.y+2,term.x+term.width,term.y+term.height,buf);
 	puttext(term.x+1,term.y+1,term.x+term.width,term.y+term.height-1,buf);
@@ -492,12 +498,13 @@ void doterm(void)
 	term.escbuf[0]=0;
 	term.sequence=0;
 	term.music=0;
-
+	term.backpos=0;
+	term.scrollback=malloc(term.width*2*backlines);
 	ch[1]=0;
-	/* Main input loop */
 	gotoxy(term.xpos,term.ypos);
 	textattr(term.attr);
 	_setcursortype(_NORMALCURSOR);
+	/* Main input loop */
 	for(;;) {
 		/* Get remote input */
 		i=rlogin_recv(ch,1,100);
@@ -586,8 +593,10 @@ void doterm(void)
 		/* Get local input */
 		if(kbhit()) {
 			key=getch();
-			if(key==17)
+			if(key==17) {
+				free(term.scrollback);
 				return;
+			}
 			if(key<256) {
 				ch[0]=key;
 				rlogin_send(ch,1,100);

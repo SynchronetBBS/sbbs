@@ -15,6 +15,8 @@ struct terminal {
 	char	escbuf[1024];
 	int	sequence;
 	int music;
+	char *scrollback;
+	int backpos;
 };
 
 extern struct terminal term;
