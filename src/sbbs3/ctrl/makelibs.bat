@@ -1,7 +1,7 @@
 @echo off
 setlocal
-if exist ..\bcc.win32.dll.release 	set dllsrc=..\bcc.win32.dll.release
-if exist ..\bcc.win32.dll.debug 	set dllsrc=..\bcc.win32.dll.debug
+if exist ..\bcc.win32.lib.release 	set dllsrc=..\bcc.win32.lib.release
+if exist ..\bcc.win32.lib.debug 	set dllsrc=..\bcc.win32.lib.debug
 if exist ..\msvc.win32.dll.release	set dllsrc=..\msvc.win32.dll.release
 if exist ..\msvc.win32.dll.debug	set dllsrc=..\msvc.win32.dll.debug
 echo Creating import libraries from %dllsrc%
