@@ -92,6 +92,10 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 		if((grpobj=JS_NewObject(cx, &js_msg_area_class, NULL, NULL))==NULL)
 			return(NULL);
 
+		val=INT_TO_JSVAL(l);
+		if(!JS_SetProperty(cx, grpobj, "number", &val))
+			return(NULL);
+
 		val=STRING_TO_JSVAL(JS_NewStringCopyZ(cx, cfg->grp[l]->sname));
 		if(!JS_SetProperty(cx, grpobj, "name", &val))
 			return(NULL);
@@ -116,6 +120,10 @@ JSObject* DLLCALL js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t
 				continue;
 
 			if((subobj=JS_NewObject(cx, &js_msg_area_class, NULL, NULL))==NULL)
+				return(NULL);
+
+			val=INT_TO_JSVAL(d);
+			if(!JS_SetProperty(cx, subobj, "number", &val))
 				return(NULL);
 
 			val=STRING_TO_JSVAL(JS_NewStringCopyZ(cx, cfg->sub[d]->code));
