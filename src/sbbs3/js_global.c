@@ -1189,6 +1189,7 @@ js_html_encode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 					case '+':
 						if(attr_sp<(int)sizeof(attr_stack))
 							attr_stack[attr_sp++]=(blink?(1<<7):0) | (bg << 4) | (bold?(1<<3):0) | fg;
+						break;
 					case '-':
 						if(attr_sp>0)
 						{
