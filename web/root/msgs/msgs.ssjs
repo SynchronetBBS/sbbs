@@ -52,17 +52,17 @@ for(var page=firstpage;page<=lastpage;page++) {
 	if(currpage==page)
 		template.pagelinks += '<b>'+(page+1)+'</b> ';
 	else
-		template.pagelinks += "<a href=\""+path+'?msg_grp='+g+'&msg_sub='+encodeURIComponent(sub)+'&offset='+(page*max_messages)+'">'+(page+1)+'</a> ';
+		template.pagelinks += "<a href=\""+path+'?msg_grp='+g+'&amp;msg_sub='+encodeURIComponent(sub)+'&amp;offset='+(page*max_messages)+'">'+(page+1)+'</a> ';
 }
 
 
 hdr=msgbase.get_msg_header(true,msgbase.total_msgs-1-offset-max_messages);
 if(hdr!=null)  {
-	template.pagelinks+='<a href="'+path+'?msg_grp='+g+'&msg_sub='+encodeURIComponent(sub)+'&offset='+(offset+max_messages)+'">NEXT</a>';
+	template.pagelinks+='<a href="'+path+'?msg_grp='+g+'&amp;msg_sub='+encodeURIComponent(sub)+'&amp;offset='+(offset+max_messages)+'">NEXT</a>';
 }
 
 if(offset>0) {
-	template.pagelinks='<a href="'+path+'?msg_grp='+g+'&msg_sub='+encodeURIComponent(sub)+'&offset='+(offset-max_messages)+'">PREV</a> '+template.pagelinks;
+	template.pagelinks='<a href="'+path+'?msg_grp='+g+'&amp;msg_sub='+encodeURIComponent(sub)+'&amp;offset='+(offset-max_messages)+'">PREV</a> '+template.pagelinks;
 }
 
 if(sub=='mail') {
