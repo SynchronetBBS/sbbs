@@ -869,7 +869,7 @@ js_BranchCallback(JSContext *cx, JSScript *script)
 	client->branch.counter++;
 
 	/* Terminated? */ 
-	if(terminated) {
+	if(terminated && !(client->service->options&SERVICE_OPT_STATIC)) {
 		JS_ReportError(cx,"Terminated");
 		client->branch.counter=0;
 		return(JS_FALSE);
