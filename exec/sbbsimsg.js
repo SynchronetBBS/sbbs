@@ -1,13 +1,24 @@
 // sbbsimsg.js
 
+// Synchronet inter-bbs instant message module
+// uses Finger and SMTP TCP/IP protocols
+
+// $Id$
+
+const REVISION = "$Revision$".split(' ')[1];
+
+const UDP_RESPONSE_TIMEOUT = 5000	// milliseconds
+
 load("sbbsdefs.js");
 load("nodedefs.js");
+load("sockdefs.js");	// SOCK_DGRAM
 
 // Global vars
 var imsg_user;
 var last_user=0;
+var users=0;
 
-print("\1n\1hSynchronet \1cInstant Message \1wModule \1nv1.00 Alpha\r\n");
+print("\1n\1hSynchronet \1cInstant Message \1wModule \1n" + REVISION + "\r\n");
 
 // Parse arguments
 for(i=0;i<argc;i++)
@@ -40,11 +51,26 @@ for(i in list) {
 		word[0] == system.inetaddr)		// local system?
 		continue;						// ignore
 
-	sys.push( { addr: word[0], ip : word[1], failed: false } );
+	if(word[1] != undefined)  {
+		if(!word[1].length)
+		{
+			printf("Setting zero-len %s to undefined\r\n",word[1]);
+			word[1]=undefined;
+		}
+
+		if(word[1].search(/^\s*$/m)!=-1)
+		{
+			printf("Setting %s to undefined\r\n",word[1]);
+			word[1]=undefined;
+		}
+	}
+
+	sys.push( { addr: word[0], ip : word[1], udp: false, failed: false, reply: 999999 } );
 }
 
 function save_sys_list()
 {
+	sys.sort(sortarray);
 	fname = system.ctrl_dir + "sbbsimsg.lst";
 	f = new File(fname);
 	if(!f.open("w"))
@@ -58,30 +84,115 @@ function save_sys_list()
 	f.close();
 }
 
-// Truncate space off end of string
-function truncsp(str)
+function sortarray(a, b)
 {
-	var len;
+	return(a.reply-b.reply);
+}
 
-	while((len=str.length)!=0 && str.charAt(len-1)==' ')
-		str=str.slice(0,-1);
+function parse_response(response, show)
+{
+	// Skip header
+	while(response.length && response[0].charAt(0)!='-')
+		response.shift();
+	if(response.length && response[0].charAt(0)=='-')
+		response.shift();	// Delete the separator line
+	while(response.length && !response[0].length)
+		response.shift();	// Delete any blank lines
+	while(response.length && !response[response.length-1].length)
+		response.pop();		// Delete trailing blank lines
 
-	return(str);
+	if(!response.length) {
+		if(show)
+			print();
+		return;
+	}
+
+	if(show) {
+		str = format("%lu user%s",response.length,response.length==1 ? "":"s");
+		printf("\1g\1h%-33s Time   Age Sex\r\n",str);
+	}
+
+	for(j in response) {
+		if(response[j]=="")
+			continue;
+
+		if(show) {
+			console.line_counter=0;	// defeat pause
+			print(format("\1h\1y%.25s\1n\1g %.48s"
+				,response[j],response[j].slice(26)));
+		}
+		var u = new Object;
+		u.host = sys[i].addr;
+		u.name = format("%.25s",response[j]);
+		u.name = truncsp(u.name);
+		imsg_user.push(u);
+		users++;
+	}
 }
 
 function list_users(show)
 {
 	imsg_user = new Array();
-	var users=0;
+	var systems=0;
+	var replies=0;
 
+	users = 0;
 	start = new Date();
+	print("\1m\1hListing Systems and Users (Ctrl-C to Abort)...");
 
-	print("\1m\1hListing Systems and Users (Ctrl-C to Abort)...\r\n");
+	/* UDP systems */
+	sock = new Socket(SOCK_DGRAM);
+	sock.debug=true;
+	sock.bind();
+	for(i=0;sys[i]!=undefined && !(bbs.sys_status&SS_ABORT);i++) {
+		if(sys[i].ip==undefined)
+			continue;
+		if(!sock.sendto("\r\n",sys[i].ip,79))	// Get list of active users
+			//printf("FAILED! (%d) Sending to %s\r\n",sock.last_error,sys[i].addr);
+			continue;
+		systems++;
+	}
 
+	begin = new Date();
+	while(replies<systems && new Date().valueOf()-begin.valueOf() < UDP_RESPONSE_TIMEOUT)
+	{
+
+		if(!sock.poll(1))
+			continue;
+
+		message=sock.recvfrom(20000);
+		if(message==null)
+			continue;
+		i=get_sysnum(message.ip_address);
+		if(i==-1)
+			continue;
+		replies++;
+		sys[i].udp=true;
+		sys[i].reply=new Date().valueOf()-start.valueOf();
+
+		response=message.data.split("\r\n");
+
+		if(show) {
+			console.line_counter=0;	// defeat pause
+			printf("\1n\1h%-25.25s\1n ",sys[i].addr);
+		}
+
+		parse_response(response, show);
+	}
+	
+	sock.close();
+
+	/* TCP systems */
 	for(i=0;sys[i]!=undefined && !(bbs.sys_status&SS_ABORT);i++) {
 
+		if(sys[i].udp)
+			continue;
+			
+		replies++;
 		if(sys[i].failed)
 			continue;
+
+		begin = new Date();
 
 		if(show) {
 			console.line_counter=0;	// defeat pause
@@ -102,8 +213,11 @@ function list_users(show)
 			sys[i].failed = true;
 			continue;
 		}
+		sys[i].reply=new Date().valueOf()-begin.valueOf();
+
 		// cache the IP address for faster resolution
-		sys[i].ip = sock.remote_ip_address;	
+		if(sys[i].ip != sock.remote_ip_address)
+			sys[i].ip = sock.remote_ip_address;	
 
 		sock.send("\r\n");	// Get list of active users
 		var response=new Array();
@@ -119,46 +233,23 @@ function list_users(show)
 		sock.close();
 
 
-		// Skip header
-		while(response.length && response[0].charAt(0)!='-')
-			response.shift();
-		if(response.length && response[0].charAt(0)=='-')
-			response.shift();	// Delete the separator line
-		while(response.length && !response[0].length)
-			response.shift();	// Delete any blank lines
-
-		if(!response.length) {
-			if(show)
-				print();
-			continue;
-		}
-
-		if(show) {
-			str = format("%lu user%s",response.length,response.length==1 ? "":"s");
-			printf("\1g\1h%-33s Time   Age Sex\r\n",str);
-		}
-
-		for(j in response) {
-			if(response[j]=="")
-				continue;
-
-			if(show) {
-				console.line_counter=0;	// defeat pause
-				print(format("\1h\1y%.25s\1n\1g %.48s"
-					,response[j],response[j].slice(26)));
-			}
-			var u = new Object;
-			u.host = sys[i].addr;
-			u.name = format("%.25s",response[j]);
-			u.name = truncsp(u.name);
-			imsg_user.push(u);
-			users++;
-		}
+		parse_response(response,show);
 	}
+	
+	
 	t = new Date().valueOf()-start.valueOf();
 	printf("\1m\1h%lu systems and %lu users listed in %d seconds.\r\n"
-		,i+1, users, t/1000);
+		,replies, users, t/1000);
 	save_sys_list();
+}
+
+function get_sysnum(ip)
+{
+	for(i in sys)
+		if(sys[i].ip==ip)
+			return(i);
+	printf("Unexpected response from %s\r\n",ip);
+	return(-1);
 }
 
 function send_msg(dest, msg)
