@@ -286,7 +286,10 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 						fwrite(&ch,1,1,personal); }
 					fwrite(&f,4,1,ndx);
 					fwrite(&ch,1,1,ndx);
-					msgndx+=size/128L; } }
+					msgndx+=size/128L; 
+				} 
+				mswait(1);	/* yield */
+			}
 			bprintf(text[QWKPackedEmail],mailmsgs);
 			if(ndx)
 				fclose(ndx); }
@@ -299,7 +302,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 	/* Pack new messages */
 	/*********************/
 	for(i=0;i<usrgrps;i++) {
-		for(j=0;j<usrsubs[i] && !msgabort();j++)
+		for(j=0;j<usrsubs[i] && !msgabort();j++) {
 			if(sub_cfg[usrsub[i][j]]&SUB_CFG_NSCAN
 				|| (!(useron.rest&FLAG('Q'))
 				&& cfg.sub[usrsub[i][j]]->misc&SUB_FORCED)) {
@@ -409,18 +412,25 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 					if(cfg.max_qwkmsgs
 						&& !(useron.rest&FLAG('Q')) && (*msgcnt)>=cfg.max_qwkmsgs) {
 						bputs(text[QWKmsgLimitReached]);
-						break; } }
+						break; 
+					} 
+					mswait(1);	/* yield */
+				}
 				if(!(sys_status&SS_ABORT))
 					bprintf(text[QWKPackedSubboard],submsgs,(*msgcnt));
 				if(ndx) {
 					fclose(ndx);
 					sprintf(str,"%s%u.NDX",cfg.temp_dir,conf);
 					if(!flength(str))
-						remove(str); }
+						remove(str); 
+				}
 				smb_close(&smb);
 				LFREE(post);
 				if(l<posts)
-					break; }
+					break; 
+				mswait(1);	/* yield */
+			}
+		}
 		if(j<usrsubs[i]) /* if sub aborted, abort all */
 			break; 
 	}

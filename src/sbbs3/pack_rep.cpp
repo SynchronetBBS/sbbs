@@ -116,8 +116,11 @@ bool sbbs_t::pack_rep(uint hubnum)
 			msgtoqwk(&msg,rep,TO_QNET|REP|A_LEAVE,INVALID_SUB,0);
 			packedmail++;
 			smb_unlockmsghdr(&smb,&msg);
-			smb_freemsgmem(&msg); }
-		eprintf("Packed %d NetMail messages",packedmail); }
+			smb_freemsgmem(&msg); 
+			mswait(1);	/* yield */
+		}
+		eprintf("Packed %d NetMail messages",packedmail); 
+	}
 	smb_close(&smb);					/* Close the e-mail */
 	if(mailmsgs)
 		FREE(mail);
@@ -182,10 +185,13 @@ bool sbbs_t::pack_rep(uint hubnum)
 			smb_freemsgmem(&msg);
 			smb_unlockmsghdr(&smb,&msg);
 			msgcnt++;
-			submsgs++; }
+			submsgs++; 
+		}
 		eprintf(remove_ctrl_a(text[QWKPackedSubboard],tmp),submsgs,msgcnt);
 		LFREE(post);
-		smb_close(&smb); }
+		smb_close(&smb); 
+		mswait(1);	/* yield */
+	}
 
 	fclose(rep);			/* close MESSAGE.DAT */
 	CRLF;
@@ -275,13 +281,15 @@ bool sbbs_t::pack_rep(uint hubnum)
 			else
 				deleted++;
 			smb_unlockmsghdr(&smb,&msg);
-			smb_freemsgmem(&msg); }
+			smb_freemsgmem(&msg); 
+		}
 
 		if(deleted && cfg.sys_misc&SM_DELEMAIL)
 			delmail(0,MAIL_YOUR);
 		smb_close(&smb);
 		if(mailmsgs)
-			FREE(mail); }
+			FREE(mail); 
+	}
 
 	return(true);
 }
