@@ -353,7 +353,7 @@ while(client.socket.is_connected && !quit) {
 					,hdr.reply_id	// references
 					,hdr.data_length	// byte count
 					,Math.round(hdr.data_length/79)+1	// line count
-					,xref(msgbase,hdr);
+					,xref(msgbase,hdr)
 					));
 			}
 			writeln(".");	// end of list
