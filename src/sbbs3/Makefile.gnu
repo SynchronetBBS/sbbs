@@ -54,8 +54,8 @@ DELETE	=	rm -f -v
 OUTLIB	=	-o
 
 ifeq ($(os),freebsd)	# FreeBSD
+CFLAGS	:=	-DJAVASCRIPT -pthread
 LIBS	:=	-pthread
-CFLAGS	:=	-pthread
 else			        # Linux / Other UNIX
 CFLAGS	:=	-DJAVASCRIPT -I../mozilla/js/src
 LIBS	:=	$(LIBDIR)/libpthread.a
