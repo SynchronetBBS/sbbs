@@ -527,6 +527,7 @@ void __fastcall TNodeForm::UserMsgButtonClick(TObject *Sender)
     UserMsgForm->Memo->Text="\1n\1y\1hMessage From Sysop:\1w ";
     UserMsgForm->Memo->SelStart=UserMsgForm->Memo->Text.Length();
 	if(UserMsgForm->ShowModal()==mrOk) {
+        UserMsgForm->Memo->Lines->Add("");
         for(i=0;i<ListBox->Items->Count;i++)
             if(ListBox->Selected[i]==true) {
                 getnodedat(&MainForm->cfg,i+1,&node,0);
