@@ -11,6 +11,8 @@ static struct cio_mouse_event	last_mouse_click;
 
 static int lastch=0;
 static int domouse=0;
+static int xpos=1;
+static int ypos=1;
 
 static int currattr=7;
 
@@ -174,10 +176,6 @@ int win32_getche(void)
 {
 	int ch;
 
-#if 0	/* what is this? */
-	if(ansi_nextchar)
-		return(ansi_getch());
-#endif
 	ch=win32_getch();
 	if(ch)
 		putch(ch);
@@ -260,21 +258,23 @@ void win32_gettextinfo(struct text_info* info)
 {
 	CONSOLE_SCREEN_BUFFER_INFO bi;
 
-	GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE),&bi);
+	/* GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE),&bi); */
 
 	/* ToDo Fix this! */
 	info->currmode=C80;
-	info->curx=bi.dwCursorPosition.X+1;
-	info->cury=bi.dwCursorPosition.Y+1;
+	info->curx=xpos;
+	info->cury=ypos;
 	info->attribute=currattr;
-	info->screenheight=bi.dwSize.Y;
-	info->screenwidth=bi.dwSize.X;
+	info->screenheight=25;
+	info->screenwidth=80;
 }
 
 void win32_gotoxy(int x, int y)
 {
 	COORD	cp;
 
+	xpos=x;
+	ypos=y;
 	cp.X=x-1;
 	cp.Y=y-1;
 	SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE),cp);
@@ -395,24 +395,51 @@ int win32_putch(int ch)
 	buf[0]=ch;
 	buf[1]=currattr;
 
-	win32_gettextinfo(&ti);
+
+	gettextinfo(&ti);
 	switch(ch) {
 		case '\r':
-			gotoxy(1,ti.cury);
-			return('\r');
+			gotoxy(1,ypos);
+			break;
 		case '\n':
-			if(ti.cury==ti.screenheight) {
-				if(_wscroll)
-					wscroll();
-				gotoxy(ti.curx,ti.cury);
-				return('\n');
+			if(ypos==ti.winbottom-ti.wintop+1)
+				wscroll();
+			else
+				gotoxy(xpos,ypos+1);
+			break;
+		case '\b':
+			if(ti.curx>ti.winleft) {
+				buf[0]=' ';
+				gotoxy(xpos-1,ypos);
+				puttext(xpos,ypos,xpos,ypos,buf);
 			}
-			gotoxy(ti.curx,ti.cury+1);
-			return('\n');
+			break;
+		case 7:		/* Bell */
+			MessageBeep(MB_OK);
+			break;
 		default:
-			if(ti.curx==ti.screenwidth && ti.cury==ti.screenheight && !_wscroll)
-				return(0);
-			WriteConsole(GetStdHandle(STD_OUTPUT_HANDLE),buf,1,&wr,NULL);
-			return(ch);
+			if(ypos==ti.winbottom-ti.wintop+1
+					&& xpos==ti.winright-ti.winleft+1) {
+				puttext(xpos,ypos,xpos,ypos,buf);
+				gotoxy(1,ypos);
+				wscroll();
+			}
+			else {
+				if(xpos==ti.winright-ti.winleft+1) {
+					puttext(xpos,ypos,xpos,ypos,buf);
+					gotoxy(1,ypos+1);
+				}
+				else {
+					puttext(xpos,ypos,xpos,ypos,buf);
+					gotoxy(xpos+1,ypos);
+				}
+			}
+			break;
 	}
+	return(ch);
+}
+
+void win32_settitle(const char *title)
+{
+	SetConsoleTitle(title);
 }

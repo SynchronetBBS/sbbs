@@ -29,6 +29,7 @@ int	win32_kbhit(void);
 int	win32_putch(int);
 int	win32_wherex(void);
 int	win32_wherey(void);
+void	win32_settitle(const char *title);
 
 #ifdef __cplusplus
 }

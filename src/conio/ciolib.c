@@ -177,7 +177,7 @@ int try_conio_init(int mode)
 		cio_api.getmouse=win32_getmouse;
 		cio_api.showmouse=win32_showmouse;
 		cio_api.hidemouse=win32_hidemouse;
-		cio_api.settitle=NULL;
+		cio_api.settitle=win32_settitle;
 		return(1);
 	}
 	fprintf(stderr,"CONIO init failed\n");
