@@ -2194,8 +2194,12 @@ bool sbbs_t::init()
 #endif
 		);
 	if(comspec==NULL) {
+#if defined(__unix__) && defined(_PATH_BSHELL)
+		comspec =  _PATH_BSHELL;
+#else
 		errormsg(WHERE, ERR_CHK, "SHELL or COMSPEC environment variable", 0);
 		return(false);
+#endif
 	}
 
 	md(cfg.temp_dir);
