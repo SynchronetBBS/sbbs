@@ -1517,12 +1517,12 @@ static BOOL check_request(http_session_t * session)
 	if(isdir(path)) {
 		last_ch=*lastchar(path);
 		if(!IS_PATH_DELIM(last_ch))  {
-			session->req.send_location==MOVED_PERM;
+			session->req.send_location=MOVED_PERM;
 			strcat(path,"/");
 		}
 		last_ch=*lastchar(session->req.virtual_path);
 		if(!IS_PATH_DELIM(last_ch))  {
-			session->req.send_location==MOVED_PERM;
+			session->req.send_location=MOVED_PERM;
 			strcat(session->req.virtual_path,"/");
 		}
 		last_slash=find_last_slash(path);
