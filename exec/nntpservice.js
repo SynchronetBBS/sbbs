@@ -247,6 +247,10 @@ while(client.socket.is_connected) {
 				writeln("412 no news group selected");
 				break;
 			}
+			if(cmd[1]==undefined) {
+				writeln("420 article selected");
+				break;
+			}
 			if(cmd[1]!='') {
 				if(cmd[1].indexOf('<')>=0)		/* message-id */
 					current_article=Number(cmd[1].slice(1,-1));
