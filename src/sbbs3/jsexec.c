@@ -51,6 +51,7 @@ ulong		js_context_stack=JAVASCRIPT_CONTEXT_STACK;
 FILE*		confp;
 FILE*		errfp;
 FILE*		nulfp;
+FILE*		statfp;
 char		revision[16];
 BOOL		pause_on_exit=FALSE;
 
@@ -77,8 +78,9 @@ void usage(FILE* fp)
 		"\t-y <freq>       set yield frequency (default=%u, 0=never)\n"
 		"\t-g <freq>       set garbage collection frequency (default=%u, 0=never)\n"
 		"\t-t <filename>   send console output to stdout and filename\n"
-		"\t-q              send console output to %s (quiet mode)\n"
 		"\t-e              send error messages to console instead of stderr\n"
+		"\t-n              send status messages to %s instead of stdout\n"
+		"\t-q              send console messages to %s instead of stderr\n"
 		"\t-p              wait for keypress (pause) on exit\n"
 		,JAVASCRIPT_MAX_BYTES
 		,JAVASCRIPT_CONTEXT_STACK
@@ -86,13 +88,14 @@ void usage(FILE* fp)
 		,JAVASCRIPT_YIELD_FREQUENCY
 		,JAVASCRIPT_GC_FREQUENCY
 		,_PATH_DEVNULL
+		,_PATH_DEVNULL
 		);
 }
 
 void bail(int code)
 {
 	if(pause_on_exit) {
-		fprintf(errfp,"\nHit enter to continue...");
+		fprintf(statfp,"\nHit enter to continue...");
 		getchar();
 	}
 	exit(code);
@@ -338,13 +341,13 @@ static BOOL js_CreateEnvObject(JSContext* cx, JSObject* glob, char** env)
 
 static BOOL js_init(char** environ)
 {
-	fprintf(errfp,"JavaScript: Creating runtime: %lu bytes\n"
+	fprintf(statfp,"JavaScript: Creating runtime: %lu bytes\n"
 		,js_max_bytes);
 
 	if((js_runtime = JS_NewRuntime(js_max_bytes))==NULL)
 		return(FALSE);
 
-	fprintf(errfp,"JavaScript: Initializing context (stack: %lu bytes)\n"
+	fprintf(statfp,"JavaScript: Initializing context (stack: %lu bytes)\n"
 		,js_context_stack);
 
     if((js_cx = JS_NewContext(js_runtime, js_context_stack))==NULL)
@@ -504,6 +507,9 @@ int main(int argc, char **argv, char** environ)
 				case 'q':
 					confp=nulfp;
 					break;
+				case 'n':
+					statfp=nulfp;
+					break;
 				case 'p':
 					pause_on_exit=TRUE;
 					break;
@@ -512,6 +518,8 @@ int main(int argc, char **argv, char** environ)
 					break;
 				default:
 					fprintf(errfp,"\n!Unsupported option: %s\n",argv[argn]);
+				case '?':
+				case 'h':
 					usage(errfp);
 					bail(1);
 			}
@@ -536,7 +544,7 @@ int main(int argc, char **argv, char** environ)
 		bail(1); 
 	}
 
-	banner(errfp);
+	banner(statfp);
 
 	if(chdir(scfg.ctrl_dir)!=0)
 		fprintf(errfp,"!ERROR changing directory to: %s", scfg.ctrl_dir);
