@@ -962,54 +962,54 @@ static const char* recv_aliases[] = { "read"	,NULL };
 static const char* recvline_aliases[] = { "readline", "readln"	,NULL };
 
 static jsMethodSpec js_socket_functions[] = {
-	{"close",		js_close,		0,	jstype_void,		""					
+	{"close",		js_close,		0,	JSTYPE_VOID,		""					
 	,"close socket"		
 	},
-	{"bind",		js_bind,		0,	jstype_bool,	"[port]"			
+	{"bind",		js_bind,		0,	JSTYPE_BOOLEAN,	"[port]"			
 	,"bind socket to a port"
 	},
-	{"connect",     js_connect,     2,	jstype_bool,		"string host, port"	
+	{"connect",     js_connect,     2,	JSTYPE_BOOLEAN,		"string host, port"	
 	,"connect to a specific port at the specified IP address or hostname"	
 	},
-	{"listen",		js_listen,		0,	jstype_bool,	""					
+	{"listen",		js_listen,		0,	JSTYPE_BOOLEAN,	""					
 	,"put socket in listening state (use before an accept)"
 	},
-	{"accept",		js_accept,		0,	"Socket",	""					
+	{"accept",		js_accept,		0,	JSTYPE_OBJECT,	""					
 	,"accept an incoming connection, returns a new Socket object"
 	},
-	{"send",		js_send,		1,	jstype_bool,	"string data"		
+	{"send",		js_send,		1,	JSTYPE_BOOLEAN,	"string data"		
 	,"send a string"					,send_aliases
 	},
-	{"sendto",		js_sendto,		3,	jstype_bool,	"string data, address, port"
+	{"sendto",		js_sendto,		3,	JSTYPE_BOOLEAN,	"string data, address, port"
 	,"send a string to a specific address and port (typically used for UDP sockets)"	
 	},
-	{"sendfile",	js_sendfile,	1,	jstype_bool,	"string filename"	
+	{"sendfile",	js_sendfile,	1,	JSTYPE_BOOLEAN,	"string filename"	
 	,"send a file"
 	},
-	{"recv",		js_recv,		0,	jstype_str,	"[maxlen]"			
+	{"recv",		js_recv,		0,	JSTYPE_STRING,	"[maxlen]"			
 	,"receive a string, default maxlen is 512 characters"	
 	, recv_aliases 
 	},
-	{"peek",		js_peek,		0,	jstype_str,	"[maxlen]"			
+	{"peek",		js_peek,		0,	JSTYPE_STRING,	"[maxlen]"			
 	,"receive a string, default maxlen is 512 characters, leave string in receive buffer"
 	},
-	{"recvline",	js_recvline,	0,	jstype_str,	"[maxlen] [,timeout]"
+	{"recvline",	js_recvline,	0,	JSTYPE_STRING,	"[maxlen] [,timeout]"
 	,"receive a line-feed terminated string, default maxlen is 512 characters, default timeout is 30 seconds"
 	, recvline_aliases 
 	},
-	{"recvfrom",	js_recvfrom,	0,	"object",	"[maxlen]"			
+	{"recvfrom",	js_recvfrom,	0,	JSTYPE_OBJECT,	"[maxlen]"			
 	,"receive a string from (typically UDP) socket, return address and port of sender"
 	},
-	{"getoption",	js_getsockopt,	1,	jstype_num,	"number option"	
+	{"getoption",	js_getsockopt,	1,	JSTYPE_NUMBER,	"number option"	
 	,"get socket option value"
 	},
-	{"setoption",	js_setsockopt,	2,	jstype_bool,	"number option, value"
+	{"setoption",	js_setsockopt,	2,	JSTYPE_BOOLEAN,	"number option, value"
 	,"set socket option value"
 	},
-	{"ioctl",		js_ioctlsocket,	1,	jstype_num,	"number cmd [,arg]"	
+	{"ioctl",		js_ioctlsocket,	1,	JSTYPE_NUMBER,	"number cmd [,arg]"	
 	,"send socket IOCTL"							
 	},
-	{"poll",		js_poll,		1,	jstype_num,	"[number timeout] [,bool write]"
+	{"poll",		js_poll,		1,	JSTYPE_NUMBER,	"[number timeout] [,bool write]"
 	,"poll socket for read or write ability (defaults to read), default timeout value is 0 seconds (immediate timeout)" 
 	},
 	{0}

@@ -268,6 +268,20 @@ int DLLCALL js_MethodsToFunctions(jsMethodSpec meth[], JSFunctionSpec func[])
 
 static const char* method_array_name = "_method_list";
 
+/*
+ * from jsatom.c:
+ * Keep this in sync with jspubtd.h -- an assertion below will insist that
+ * its length match the JSType enum's JSTYPE_LIMIT limit value.
+ */
+const char *js_type_str[] = {
+    "undefined",
+    "object",
+    "function",
+    "string",
+    "number",
+    "boolean",
+};
+
 JSBool 
 DLLCALL js_DefineMethods(JSContext* cx, JSObject* obj, jsMethodSpec *funcs)
 {
@@ -305,10 +319,8 @@ DLLCALL js_DefineMethods(JSContext* cx, JSObject* obj, jsMethodSpec *funcs)
 		if(!JS_SetProperty(cx, method, "nargs", &val))
 			return(JS_FALSE);
 
-		if(funcs[i].type!=NULL) {
-			val = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,funcs[i].type));
-			JS_SetProperty(cx, method, "type", &val);
-		}
+		val = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,js_type_str[funcs[i].type]));
+		JS_SetProperty(cx, method, "type", &val);
 
 		if(funcs[i].args!=NULL) {
 			val = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,funcs[i].args));
@@ -545,12 +557,12 @@ js_prompt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 }
 
 static jsMethodSpec js_global_functions[] = {
-	{"log",				js_log,				1,	"void",		"string text [,text]",				"Log a string"								},
-    {"print",           js_print,           0,	"void",		"string text [,test]",				"Print a string, auto-crlf"					},
-    {"printf",          js_printf,          1,	"void",		"string format [,value][,value]",	"Print a formatted string"					},	
-	{"alert",			js_alert,			1,	"void",		"string text",						"Print an alert message (ala client-side)"	},
-	{"prompt",			js_prompt,			1,	"string",	"string text",						"Prompt for a user string  (ala clent-side)"},
-	{"confirm",			js_confirm,			1,	"bool",		"string text",						"Confirm a question (ala client-side)"		},
+	{"log",				js_log,				1,	JSTYPE_VOID,	"string text [,text]",				"Log a string"								},
+    {"print",           js_print,           0,	JSTYPE_VOID,	"string text [,test]",				"Print a string, auto-crlf"					},
+    {"printf",          js_printf,          1,	JSTYPE_VOID,	"string format [,value][,value]",	"Print a formatted string"					},	
+	{"alert",			js_alert,			1,	JSTYPE_VOID,	"string text",						"Print an alert message (ala client-side)"	},
+	{"prompt",			js_prompt,			1,	JSTYPE_STRING,	"string text",						"Prompt for a user string  (ala clent-side)"},
+	{"confirm",			js_confirm,			1,	JSTYPE_BOOLEAN,	"string text",						"Confirm a question (ala client-side)"		},
     {0}
 };
 
