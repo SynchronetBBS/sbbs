@@ -199,8 +199,8 @@ UIFC_SRC	=	$(SRC_ROOT)$(DIRSEP)uifc
 
 # Implicit MT C Compile Rule
 {.}.c{MTOBJODIR}$(OFILE):
-	@$(CC) $(CFLAGS) $(CCFLAGS) $(PTHREAD_CFLAGS) -c $< $(OUTPUT)$@
+	@$(CC) $(CFLAGS) $(CCFLAGS) $(MT_CFLAGS) -c $< $(OUTPUT)$@
 
 # Implicit MT C++ Compile Rule
 {.}.cpp{MTOBJODIR}$(OFILE):
-	@$(CC) $(CFLAGS) $(CXXFLAGS) $(PTHREAD_CFLAGS) -c $< $(OUTPUT)$@
+	@$(CC) $(CFLAGS) $(CXXFLAGS) $(MT_CFLAGS) -c $< $(OUTPUT)$@

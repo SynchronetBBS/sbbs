@@ -217,41 +217,41 @@ endif
 # PThread-specific flags
 ifeq ($(os),linux)    # Linux
  ifndef THREADS_ACTUALLY_WORK
-  PTHREAD_CFLAGS    += -D_THREAD_SUID_BROKEN
+  MT_CFLAGS    += -D_THREAD_SUID_BROKEN
  endif
 endif
-PTHREAD_CFLAGS    += -D_THREAD_SAFE -D_REENTRANT
+MT_CFLAGS    += -D_THREAD_SAFE -D_REENTRANT
 ifeq ($(os),freebsd)    # FreeBSD
- PTHREAD_CFLAGS    += -DUSE_XP_SEMAPHORES
- PTHREAD_LDFLAGS    +=    -pthread
+ MT_CFLAGS    += -DUSE_XP_SEMAPHORES
+ MT_LDFLAGS    +=    -pthread
  XP_SEM    :=    1
 else
  ifeq ($(os),openbsd)    # OpenBSD
-  PTHREAD_CFLAGS    += -DUSE_XP_SEMAPHORES
-  PTHREAD_LDFLAGS    +=    -pthread
+  MT_CFLAGS    += -DUSE_XP_SEMAPHORES
+  MT_LDFLAGS    +=    -pthread
   XP_SEM    :=    1
  else
   ifeq ($(os),netbsd)    # NetBSD
-   PTHREAD_CFLAGS    += -D__unix__ -DUSE_XP_SEMAPHORES
-   PTHREAD_LDFLAGS    +=    -L/usr/pkg/lib -L/usr/pkg/pthreads/lib -lpthread
+   MT_CFLAGS    += -D__unix__ -DUSE_XP_SEMAPHORES
+   MT_LDFLAGS    +=    -L/usr/pkg/lib -L/usr/pkg/pthreads/lib -lpthread
    XP_SEM    :=    1
   else
    ifeq ($(os),qnx)    # QNX
    else
     ifeq ($(os),darwin)    # Darwin/Mac OS X
-     PTHREAD_CFLAGS    += -D__unix__ -DUSE_XP_SEMAPHORES -D__DARWIN__
-     PTHREAD_LDFLAGS    += -lpthread
+     MT_CFLAGS    += -D__unix__ -DUSE_XP_SEMAPHORES -D__DARWIN__
+     MT_LDFLAGS    += -lpthread
      XP_SEM    := 1
     else
      ifeq ($(os),sunos)  # Solaris
       XP_SEM :=    1
-      PTHREAD_CFLAGS    +=    -D_POSIX_PTHREAD_SEMANTICS
-      PTHREAD_CFLAGS    += -DUSE_XP_SEMAPHORES
-      PTHREAD_LDFLAGS    +=    -lpthread
+      MT_CFLAGS    +=    -D_POSIX_PTHREAD_SEMANTICS
+      MT_CFLAGS    += -DUSE_XP_SEMAPHORES
+      MT_LDFLAGS    +=    -lpthread
      else            # Linux / Other UNIX
       XP_SEM :=    1
-      PTHREAD_CFLAGS    += -DUSE_XP_SEMAPHORES
-      PTHREAD_LDFLAGS    +=    -lpthread
+      MT_CFLAGS    += -DUSE_XP_SEMAPHORES
+      MT_LDFLAGS    +=    -lpthread
      endif
     endif
    endif
@@ -296,12 +296,12 @@ $(OBJODIR)/%.o : %.cpp $(BUILD_DEPENDS)
 # Implicit MT C Compile Rule
 $(MTOBJODIR)/%.o : %.c $(BUILD_DEPENDS)
 	@echo $(COMPILE_MSG) $<
-	$(QUIET)$(CC) $(CFLAGS) $(CCFLAGS) $(PTHREAD_CFLAGS) -o $@ -c $<
+	$(QUIET)$(CC) $(CFLAGS) $(CCFLAGS) $(MT_CFLAGS) -o $@ -c $<
 
 # Implicit MT C++ Compile Rule
 $(MTOBJODIR)/%.o : %.cpp $(BUILD_DEPENDS)
 	@echo $(COMPILE_MSG) $<
-	$(QUIET)$(CXX) $(CFLAGS) $(CXXFLAGS) $(PTHREAD_CFLAGS) -o $@ -c $<
+	$(QUIET)$(CXX) $(CFLAGS) $(CXXFLAGS) $(MT_CFLAGS) -o $@ -c $<
 
 depend:
 	$(QUIET)$(DELETE) $(OBJODIR)/.depend
