@@ -2,7 +2,7 @@ Synchronet for Unix
 -=-=-=-=-=-=-=-=-=-
 
 Created: Mar 15, 2002
-Updated: Mar 15, 2002
+Updated: Apr 12, 2002
 
 By: Rob Swindell
 http://www.synchro.net
@@ -61,6 +61,8 @@ A. Yes, but it will be optional.
 Step-by-step Instructions
 =========================
 
+Note: These instructions assume you are already logged in as 'root'.
+
 1. Get and build the current source code:
 
    A. Create the Synchronet BBS directory on your file system:
@@ -79,6 +81,7 @@ Step-by-step Instructions
       cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs co xtrn
       cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs co src/sbbs3
       cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs co src/uifc
+	  cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs co src/xpdev
       cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs co src/libdialog
       cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs co src/mozilla
       (this last one may take a while as it includes pre-compiled libraries)
@@ -87,14 +90,14 @@ Step-by-step Instructions
       cd /sbbs/src/sbbs3
 
    E. Build the main executable (and utilities):
-      gmake -f Makefile.gnu
+      gmake
       (there *should* be no warnings or errors)
 
    F. Change to this directory:
       cd /sbbs/src/sbbs3/scfg
 
    G. Build the Synchronet configuration utility (SCFG):
-      gmake -f Makefile.gnu
+      gmake
 
    H. Congratulate yourself on a job well-done.
 
@@ -111,13 +114,13 @@ Step-by-step Instructions
       /sbbs/src/sbbs3/gcc.linux.exe.debug/fixsmb
       /sbbs/src/sbbs3/gcc.linux.exe.debug/smbutil
       /sbbs/src/sbbs3/gcc.linux.exe.debug/sbbs
-      /sbbs/src/sbbs3/scfg/gcc.linux.exe.debug/scfg
-      /sbbs/src/sbbs3/scfg/gcc.linux.exe.debug/scfghelp.ixb
-      /sbbs/src/sbbs3/scfg/gcc.linux.exe.debug/scfghelp.dat
+      /sbbs/src/sbbs3/scfg/gcc.linux.debug/scfg
+      /sbbs/src/sbbs3/scfg/gcc.linux.debug/scfghelp.ixb
+      /sbbs/src/sbbs3/scfg/gcc.linux.debug/scfghelp.dat
       (the paths will be different for FreeBSD or release builds)
 
    C. Build the required Baja {tm} modules:
-      gmake -f Makefile.gnu
+      gmake
 
 
 3. Prepare the "xtrn" directory:
@@ -128,27 +131,11 @@ Step-by-step Instructions
    B. Build Synchronet Blackjack:
       gmake -f Makefile.gnu
 
-   C. Create the platform sub-directories:
-      mkdir win32
-      mkdir linux (or freebsd)
-
-   D. Move the executables:
-      mv sbl.exe win32
-      mv sbl linux (or freebsd)
-
-   E. Change to this dircectory:
+   C. Change to this dircectory:
       cd /sbbs/xtrn/sbl
 
-   F. Build Synchronet BBS List:
+   D. Build Synchronet BBS List:
       gmake -f Makefile.gnu
-
-   G. Create the platform sub-directories:
-      mkdir win32
-      mkdir linux (or freebsd)
-
-   H. Move the executables:
-      mv sbj.exe win32
-      mv sbj linux (or freebsd)
 
 
 4. Configure the BBS:
@@ -205,7 +192,7 @@ Step-by-step Instructions
       Name                            Synchronet BBS List
       Internal Code                   SBL
       Start-up Directory              ../xtrn/sbl
-      Command Line                    %?/sbl
+      Command Line                    sbl%.
       Clean-up Command Line
       Execution Cost                  None
       Access Requirements
@@ -223,7 +210,7 @@ Step-by-step Instructions
       Name                            Synchronet Blackjack!
       Internal Code                   SBJ
       Start-up Directory              ../xtrn/sbj
-      Command Line                    %?/sbj /l
+      Command Line                    sbj%. /l
       Clean-up Command Line
       Execution Cost                  None
       Access Requirements
