@@ -278,10 +278,10 @@ void gotoxy(int x, int y)
 	struct text_info ti;
 
 	gettextinfo(&ti);
-	if(		x<1
+	if(		x < 1
 			|| x > ti.winright-ti.winleft+1
 			|| y < 1
-			|| x > ti.winbottom-ti.wintop+1)
+			|| y > ti.winbottom-ti.wintop+1)
 		return;
 	nx=x+ti.winleft-1;
 	ny=y+ti.wintop-1;
