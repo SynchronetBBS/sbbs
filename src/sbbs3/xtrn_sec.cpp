@@ -48,6 +48,11 @@ int sbbs_t::xtrn_sec()
 	uint	i,j,k,*usrxtrn,usrxtrns,*usrxsec,usrxsecs;
 	long	l;
 
+	if(useron.rest&FLAG('X')) {
+		bputs(text[R_ExternalPrograms]);
+		return(1);
+	}
+
 	if(!cfg.total_xtrns || !cfg.total_xtrnsecs) {
 		bputs(text[NoXtrnPrograms]);
 		return(1); 
