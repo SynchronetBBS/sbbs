@@ -1389,6 +1389,79 @@ js_directory(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 }
 
 static JSBool
+js_sockselect(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	JSObject*	array;
+	JSObject*	inarray;
+	fd_set		fds;
+	int			fd;
+	int32		tout;
+	int			i,j,k;
+	int			maxfd=0;
+	struct timeval timeout;
+    jsuint      limit;
+	int			*index;
+	jsval		val;
+	jsval		elemval;
+	int			len=0;
+
+	*rval = JSVAL_NULL;
+
+    inarray = JSVAL_TO_OBJECT(argv[0]);
+
+    if(!JS_IsArrayObject(cx, inarray))
+		return(JS_FALSE);
+
+    if(!JS_GetArrayLength(cx, inarray, &limit))
+		return(JS_TRUE);
+
+    if((array = JS_NewArrayObject(cx, 0, NULL))==NULL)
+		return(JS_FALSE);
+
+	if((index=(int *)MALLOC(sizeof(int)*limit))==NULL)
+		return(JS_FALSE);
+
+	FD_ZERO(&fds);
+    for(i=0;i<limit;i++) {
+        if(!JS_GetElement(cx, inarray, i, &elemval))
+			break;
+		JS_ValueToInt32(cx,elemval,&fd);
+		FD_SET(fd,&fds);
+		if(fd>maxfd)
+			maxfd=fd;
+		index[i]=fd;
+    }
+
+	JS_ValueToInt32(cx,argv[1],&tout);
+	
+	timeout.tv_sec=tout/1000000;
+	timeout.tv_usec=tout%1000000;
+	
+	select(maxfd+1,&fds,NULL,NULL,&timeout);
+
+	for(i=0;i<=maxfd;i++)
+	{
+		if(FD_ISSET(i,&fds))
+		{
+			k=-1;
+			for(j=0; j<limit; j++)
+				if(index[j]==i)
+					k=j;
+			if(k==-1)
+				break;
+			val=INT_TO_JSVAL(k);
+    	    if(!JS_SetElement(cx, array, len++, &val))
+				break;
+		}
+	}
+	free(index);
+
+    *rval = OBJECT_TO_JSVAL(array);
+
+    return(JS_TRUE);
+}
+
+static JSBool
 js_mkdir(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char*		p;
@@ -1609,6 +1682,9 @@ static jsMethodSpec js_global_functions[] = {
 		"<i>pattern</i> is the path and filename or wildcards to search for (e.g. '/subdir/*.txt'), "
 		"<i>flags</i> is a bitfield of optional <tt>glob</tt> flags (default is <tt>GLOB_MARK</tt>)")
 	},		
+	{"sockselect",		js_sockselect,			2,	JSTYPE_ARRAY,	JSDOCSTR("array of socket descriptors, timeout (usec)")
+	,JSDOCSTR("select()s a set of socket descriptors for read, ")
+	},
 	{"mkdir",			js_mkdir,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("string directory")
 	,JSDOCSTR("make a directory")
 	},		
