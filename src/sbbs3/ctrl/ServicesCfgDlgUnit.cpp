@@ -21,7 +21,7 @@ void __fastcall TServicesCfgDlg::ServicesCfgButtonClick(TObject *Sender)
 {
 	char filename[MAX_PATH+1];
 
-    sprintf(filename,"%sservices.cfg",MainForm->cfg.ctrl_dir);
+    sprintf(filename,"%s%s",MainForm->cfg.ctrl_dir,((TButton*)Sender)->Caption);
 	Application->CreateForm(__classid(TTextFileEditForm), &TextFileEditForm);
 	TextFileEditForm->Filename=AnsiString(filename);
     TextFileEditForm->Caption="Services Configuration";

@@ -49,8 +49,8 @@ object ServicesCfgDlg: TServicesCfgDlg
     Top = 4
     Width = 342
     Height = 245
-    ActivePage = SoundTabSheet
-    TabIndex = 1
+    ActivePage = GeneralTabSheet
+    TabIndex = 0
     TabOrder = 0
     object GeneralTabSheet: TTabSheet
       Caption = 'General'
@@ -99,9 +99,19 @@ object ServicesCfgDlg: TServicesCfgDlg
         Top = 80
         Width = 97
         Height = 25
-        Hint = 'Edut services configuration file'
+        Hint = 'Edit services configuration file'
         Caption = 'services.cfg'
         TabOrder = 3
+        OnClick = ServicesCfgButtonClick
+      end
+      object ServicesIniButton: TButton
+        Left = 8
+        Top = 120
+        Width = 97
+        Height = 25
+        Hint = 'Edit services configuration file'
+        Caption = 'services.ini'
+        TabOrder = 4
         OnClick = ServicesCfgButtonClick
       end
     end

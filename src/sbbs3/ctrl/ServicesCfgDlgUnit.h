@@ -35,6 +35,7 @@ __published:	// IDE-managed Components
     TButton *ApplyButton;
     TButton *ServicesCfgButton;
     TOpenDialog *OpenDialog;
+	TButton *ServicesIniButton;
     void __fastcall ServicesCfgButtonClick(TObject *Sender);
     void __fastcall FormShow(TObject *Sender);
     void __fastcall OKButtonClick(TObject *Sender);
