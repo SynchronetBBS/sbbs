@@ -872,7 +872,7 @@ void sbbs_t::errormsg(int line, char *source, char action, char *object
 	bputs("\r\n\r\nThe sysop has been notified. <Hit a key>");
 	getkey(0);
 	CRLF;
-	sprintf(str,"\r\n      file: %s\r\n      line: %d\r\n    action: %s\r\n"
+	sprintf(str,"\r\n    source: %s\r\n      line: %d\r\n    action: %s\r\n"
 		"    object: %s\r\n    access: %ld"
 		,source,line,actstr,object,access);
 	if(access>9 && (long)access!=-1 && (short)access!=-1 && (char)access!=-1) {
