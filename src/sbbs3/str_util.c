@@ -346,7 +346,7 @@ char* DLLCALL ftn_msgid(sub_t *sub, smbmsg_t* msg)
 		return(msg->ftn_msgid);
 
 	snprintf(msgid,sizeof(msgid)
-		,"%s %08lx %lu.%s %08lX\r"
+		,"%s %08lx %lu.%s %08lX"
 		,faddrtoa(&sub->faddr,NULL)
 		,msgid_serialno(msg)
 		,msg->idx.number
