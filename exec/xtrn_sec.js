@@ -27,7 +27,7 @@ while(bbs.online) {
 	if(xtrn_area.sec_list.length > 1) {
 		if(file_exists(system.text_dir + "menu/xtrn_sec.*")) {
 			bbs.menu("xtrn_sec");
-			xsec=console.getnum(usrxsecs);
+			xsec=console.getnum(xtrn_area.sec_list.length);
 			if(xsec<=0)
 				break;
 			xsec--;
