@@ -307,7 +307,7 @@ Note: Skip to step 8 if you are updating an existing Synchronet installation.
    B. Change SCFG->Networks->QWK->Hubs->VERT:
       Pack Command Line               zip -j -D %f %s
       Unpack Command Line             unzip -o -j %f %s -d %g
-      Call-out Command Line           *qnet-ftp VERT vert.synchro.net YOURPASS
+      Call-out Command Line           *qnet-ftp VERT dove.synchro.net YOURPASS
       (see docs/dove-net.txt for more details)
 
    C. You should also consider configuring important details about your BBS
