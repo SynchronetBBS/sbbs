@@ -750,7 +750,55 @@ int sbbs_t::syncatcodes(char *sp, int len)
 			,current_msg->hdr.attr&MSG_VALIDATED	? "Validated  " :nulstr
 			,current_msg->hdr.attr&MSG_REPLIED		? "Replied  "	:nulstr
 			);
-
+	else if(!strcmp(sp,"SMB_GROUP")) {
+		if(smb.subnum!=INVALID_SUB && smb.subnum<cfg.total_subs)
+			bputs(cfg.grp[cfg.sub[smb.subnum]->grp]->sname);
+	}
+	else if(!strcmp(sp,"SMB_GROUP_DESC")) {
+		if(smb.subnum!=INVALID_SUB && smb.subnum<cfg.total_subs)
+			bputs(cfg.grp[cfg.sub[smb.subnum]->grp]->lname);
+	}
+	else if(!strcmp(sp,"SMB_GROUP_NUM")) {
+		if(smb.subnum!=INVALID_SUB && smb.subnum<cfg.total_subs) {
+			uint ugrp;
+			for(ugrp=0;ugrp<usrgrps;ugrp++)
+				if(usrgrp[ugrp]==cfg.sub[smb.subnum]->grp)
+					break;
+			bprintf("%u",ugrp+1);
+		}
+	}
+	else if(!strcmp(sp,"SMB_SUB")) {
+		if(smb.subnum==INVALID_SUB)
+			bputs("Mail");
+		else if(smb.subnum<cfg.total_subs)
+			bputs(cfg.sub[smb.subnum]->sname);
+	}
+	else if(!strcmp(sp,"SMB_SUB_DESC")) {
+		if(smb.subnum==INVALID_SUB)
+			bputs("Mail");
+		else if(smb.subnum<cfg.total_subs)
+			bputs(cfg.sub[smb.subnum]->lname);
+	}
+	else if(!strcmp(sp,"SMB_SUB_CODE")) {
+		if(smb.subnum==INVALID_SUB)
+			bputs("MAIL");
+		else if(smb.subnum<cfg.total_subs)
+			bputs(cfg.sub[smb.subnum]->code);
+	}
+	else if(!strcmp(sp,"SMB_SUB_NUM")) {
+		if(smb.subnum!=INVALID_SUB && smb.subnum<cfg.total_subs) {
+			uint ugrp;
+			for(ugrp=0;ugrp<usrgrps;ugrp++)
+				if(usrgrp[ugrp]==cfg.sub[smb.subnum]->grp)
+					break;
+			uint usub;
+			for(usub=0;usub<usrsubs[ugrp];usub++)
+				if(usrsub[ugrp][usub]==smb.subnum)
+					break;
+			bprintf("%u",usub+1);
+		}
+	}
+	
 	else return(0);
 
 	return(len);
