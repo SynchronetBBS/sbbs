@@ -119,7 +119,6 @@ int kbhit(void)
 {
 	fd_set inp;
 	struct timeval timeout = {0, 0};
-	struct stat st;
 
 	if(!istty) {
 		istty = isatty(STDIN_FILENO);
