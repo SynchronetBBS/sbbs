@@ -512,15 +512,9 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 	uint s_bottom=api->scrn_len-3;
 	uint title_len;
 	struct uifc_mouse_event mevnt;
-	char	*title;
+	char	title[MAX_OPLN];
 
-	if((title=(char *)malloc(strlen(initial_title+1)))==NULL) {
-		cprintf("UIFC line %d: error allocating %u bytes\r\n"
-			,__LINE__,(strlen(initial_title+1)));
-		_setcursortype(cursor);
-		return(-1); 
-	}
-	strcpy(title,initial_title);
+	sprintf(title,"%.*s",sizeof(title)-1,initial_title);
 	hidemouse();
 
 	title_len=strlen(title);
@@ -596,7 +590,6 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 			if((sav[api->savnum].buf=(char *)MALLOC((width+3)*(height+2)*2))==NULL) {
 				cprintf("UIFC line %d: error allocating %u bytes."
 					,__LINE__,(width+3)*(height+2)*2);
-				free(title);
 				return(-1);
 			}
 			gettext(s_left+left,s_top+top,s_left+left+width+1
@@ -618,7 +611,6 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 			if((sav[api->savnum].buf=(char *)MALLOC((width+3)*(height+2)*2))==NULL) {
 				cprintf("UIFC line %d: error allocating %u bytes."
 					,__LINE__,(width+3)*(height+2)*2);
-				free(title);
 				return(-1);
 			}
 			gettext(s_left+left,s_top+top,s_left+left+width+1
@@ -689,7 +681,6 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 			*(ptr++)=title[i];
 			*(ptr++)=hclr|(bclr<<4);
 		}
-		free(title);
 		for(i=0;i<width-(a+b)-2;i++) {
 			*(ptr++)=' ';
 			*(ptr++)=hclr|(bclr<<4);
