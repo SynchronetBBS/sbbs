@@ -592,7 +592,7 @@ static void sock_sendfile(SOCKET socket,char *path)
 	}
 }
 
-static void send_error(char *message, http_session_t * session)
+static void send_error(http_session_t * session, char *message)
 {
 	char	error_code[4];
 
@@ -607,7 +607,7 @@ static void send_error(char *message, http_session_t * session)
 	close_request(session);
 }
 
-static BOOL check_ars(char *ars,http_session_t * session)
+static BOOL check_ars(http_session_t * session)
 {
 	char	*username;
 	char	*password;
@@ -642,12 +642,12 @@ static BOOL check_ars(char *ars,http_session_t * session)
 
 	/* Should go to the hack log? */
 	lprintf("%04d Failed ARS Auth: %s Password: %s ARS: %s"
-		,session->socket,username,password,ars);
+		,session->socket,username,password,session->req.ars);
 
 	return(FALSE);
 }
 
-static void b64_decode (uchar *p)
+static void b64_decode(uchar *p)
 {
 	uchar	*read;
 	uchar	*write;
@@ -872,7 +872,7 @@ static int get_version(char *p)
 	return(i-1);
 }
 
-static char *get_request(char *req_line, http_session_t * session)
+static char *get_request(http_session_t * session, char *req_line)
 {
 	char *	p;
 	char *  retval;
@@ -900,7 +900,7 @@ static char *get_request(char *req_line, http_session_t * session)
 	return(retval);
 }
 
-static char *get_method(char *req_line, http_session_t * session)
+static char *get_method(http_session_t * session, char *req_line)
 {
 	int i;
 
@@ -908,13 +908,13 @@ static char *get_method(char *req_line, http_session_t * session)
 		if(!strnicmp(req_line,methods[i],strlen(methods[i]))) {
 			session->req.method=i;
 			if(strlen(req_line)<strlen(methods[i])+2) {
-				send_error("400 Bad Request",session);
+				send_error(session,"400 Bad Request");
 				return(NULL);
 			}
 			return(req_line+strlen(methods[i])+1);
 		}
 	}
-	send_error("501 Not Implemented",session);
+	send_error(session,"501 Not Implemented");
 	return(NULL);
 }
 
@@ -925,11 +925,11 @@ static BOOL get_req(http_session_t * session)
 	
 	if(!sockreadline(session,req_line,sizeof(req_line))) {
 		lprintf("%04d Got request line: %s",session->socket,req_line);
-		p=get_method(req_line,session);
+		p=get_method(session,req_line);
 		if(p!=NULL) {
 			lprintf("%04d Method: %s"
 				,session->socket,methods[session->req.method]);
-			p=get_request(p,session);
+			p=get_request(session,p);
 			lprintf("%04d Request: %s"
 				,session->socket,session->req.request);
 			session->http_ver=get_version(p);
@@ -961,7 +961,7 @@ static BOOL check_request(http_session_t * session)
 		sprintf(path,"%s%s",root_dir,session->req.request);
 	
 	if(FULLPATH(session->req.request,path,sizeof(session->req.request))==NULL) {
-		send_error("404 Not Found",session);
+		send_error(session,"404 Not Found");
 		return(FALSE);
 	}
 	if(!fexist(path)) {
@@ -973,12 +973,12 @@ static BOOL check_request(http_session_t * session)
 	if(strnicmp(path,root_dir,strlen(root_dir))) {
 		lprintf("%04d path = '%s'",session->socket,path);
 		lprintf("%04d root_dir = '%s'",session->socket,root_dir);
-		send_error("400 Bad Request",session);
+		send_error(session,"400 Bad Request");
 		session->req.keep_alive=FALSE;
 		return(FALSE);
 	}
 	if(!fexist(path)) {
-		send_error("404 Not Found",session);
+		send_error(session,"404 Not Found");
 		return(FALSE);
 	}
 	SAFECOPY(session->req.request,path);
@@ -995,7 +995,7 @@ static BOOL check_request(http_session_t * session)
 		strcat(str,"access.ars");
 		if(fexist(str)) {
 			if(!strcmp(path,str)) {
-				send_error("403 Forbidden",session);
+				send_error(session,"403 Forbidden");
 				return(FALSE);
 			}
 			/* Read access.ars file */
@@ -1014,11 +1014,11 @@ static BOOL check_request(http_session_t * session)
 		SAFECOPY(str,path);
 	}
 	
-	if(session->req.ars[0] && !(check_ars(session->req.ars,session))) {
+	if(session->req.ars[0] && !(check_ars(session))) {
 		/* No authentication provided */
 		sprintf(str,"401 Unauthorized%s%s: Basic realm=\"%s\""
 			,newline,get_header(HEAD_WWWAUTH),scfg.sys_name);
-		send_error(str,session);
+		send_error(session,str);
 		return(FALSE);
 	}
 	
