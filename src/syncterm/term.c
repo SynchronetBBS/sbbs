@@ -40,7 +40,7 @@ void scrollup(void)
 	term.backpos++;
 	if(term.backpos>backlines) {
 		memmove(term.scrollback,term.scrollback+term.width*2,term.width*2*(backlines-1));
-		term.packpos--;
+		term.backpos--;
 	}
 	gettext(term.x+1,term.y+1,term.x+term.width,term.y+1,term.scrollback+(term.backpos-1)*term.width*2);
 	buf=(char *)malloc(term.width*(term.height-1)*2);
@@ -92,7 +92,7 @@ void clearscreen(char attr)
 
 	term.backpos+=term.height;
 	if(term.backpos>backlines) {
-		memmove(term.scrollback,term.scrollback+term.width*2*(term.backpos-term.backlines),term.width*2*(backlines-(term.backpos-term.backlines)));
+		memmove(term.scrollback,term.scrollback+term.width*2*(term.backpos-backlines),term.width*2*(backlines-(term.backpos-backlines)));
 		term.backpos=backlines;
 	}
 	gettext(term.x+1,term.y+1,term.x+term.width,term.y+term.height,term.scrollback+(term.backpos-term.height)*term.width*2);
@@ -516,7 +516,7 @@ void doterm(void)
 		i=rlogin_recv(ch,1,100);
 		switch(i) {
 			case -1:
-				uifcmsg("Disconnected");
+				uifcmsg("Disconnected","`Disconnected`\n\nRemote host dropped connection");
 				return;
 			case 1:
 				if(term.sequence) {
@@ -528,7 +528,7 @@ void doterm(void)
 				}
 				else if (term.music) {
 					strcat(term.musicbuf,ch);
-					if(ch==14)
+					if(ch[0]==14)
 						play_music();
 				}
 				else {

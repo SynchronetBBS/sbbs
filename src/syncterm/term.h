@@ -14,6 +14,7 @@ struct terminal {
 	int save_ypos;
 	char	escbuf[1024];
 	int	sequence;
+	char	musicbuf[1024];
 	int music;
 	char *scrollback;
 	int backpos;
