@@ -49,13 +49,13 @@
 /*************/
 
 #define VERSION 	"3.11"  /* Version: Major.minor  */
-#define REVISION	'b'     /* Revision: lowercase letter */
+#define REVISION	'c'     /* Revision: lowercase letter */
 
 #define VERSION_NOTICE		"Synchronet BBS for "PLATFORM_DESC\
 								"  Version " VERSION
 #define SYNCHRONET_CRC		0x9BCDD162
-#define COPYRIGHT_NOTICE	"Copyright 2003 Rob Swindell"
-#define COPYRIGHT_CRC		0x65C902AC
+#define COPYRIGHT_NOTICE	"Copyright 2004 Rob Swindell"
+#define COPYRIGHT_CRC		0x0004A86C
 
 #define Y2K_2DIGIT_WINDOW	70
 
