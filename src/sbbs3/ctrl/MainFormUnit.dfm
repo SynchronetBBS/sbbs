@@ -2051,8 +2051,6 @@ object MainForm: TMainForm
     Left = 296
     object FileMenuItem: TMenuItem
       Caption = 'File'
-      Hint = 'Toggle All Sounds'
-      OnClick = SoundToggleExecute
       object FileOpenMenuItem: TMenuItem
         Caption = '&Open...'
         ImageIndex = 45
