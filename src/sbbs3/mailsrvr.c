@@ -96,6 +96,7 @@ static BOOL		sendmail_running=FALSE;
 static DWORD	sockets=0;
 static DWORD	served=0;
 static BOOL		recycle_server=FALSE;
+static sem_t	terminated_sem;
 static char		revision[16];
 
 typedef struct {
@@ -2921,7 +2922,7 @@ static void sendmail_thread(void* arg)
 	while(server_socket!=INVALID_SOCKET) {
 
 		if(startup->options&MAIL_OPT_NO_SENDMAIL) {
-			mswait(1000);
+			sem_trywait_block(&terminated_sem,1000);
 			continue;
 		}
 
@@ -2946,7 +2947,7 @@ static void sendmail_thread(void* arg)
 		if(first_cycle)
 			first_cycle=FALSE;
 		else
-			mswait(startup->sem_chk_freq*1000);
+			sem_trywait_block(&terminated_sem,startup->sem_chk_freq*1000);
 
 		sprintf(smb.file,"%smail",scfg.data_dir);
 		smb.retry_time=scfg.smb_retry_time;
@@ -3233,6 +3234,7 @@ void DLLCALL mail_terminate(void)
 		mail_close_socket(server_socket);
 	    server_socket=INVALID_SOCKET;
     }
+	sem_post(&terminated_sem);
 }
 
 static void cleanup(int code)
@@ -3256,6 +3258,7 @@ static void cleanup(int code)
 		lprintf("0000 !WSACleanup ERROR %d",ERROR_VALUE);
 #endif
 
+	sem_destroy(&terminated_sem);
 	thread_down();
 	status("Down");
     lprintf("#### Mail Server thread terminated (%u threads remain, %lu clients served)"
@@ -3416,6 +3419,8 @@ void DLLCALL mail_server(void* arg)
 
 		active_clients=0;
 		update_clients();
+
+		sem_init(&terminated_sem,0,0);
 
 		/* open a socket and wait for a client */
 
@@ -3705,7 +3710,7 @@ void DLLCALL mail_server(void* arg)
 		if(sendmail_running) {
 			mail_close_socket(server_socket);
 			server_socket=INVALID_SOCKET; /* necessary to terminate sendmail_thread */
-			mswait(2000);
+			mswait(1);
 		}
 		if(sendmail_running) {
 			lprintf("0000 Waiting for SendMail thread to terminate...");
