@@ -54,8 +54,6 @@ class TNodeForm : public TForm
 __published:	// IDE-managed Components
 	TTimer *Timer;
 	TToolBar *Toolbar;
-	TToolButton *StartButton;
-	TToolButton *StopButton;
 	TListBox *ListBox;
 	TToolButton *InterruptNodeButton;
 	TToolButton *LockNodeButton;

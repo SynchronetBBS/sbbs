@@ -1,6 +1,6 @@
 object NodeForm: TNodeForm
-  Left = 340
-  Top = 159
+  Left = 579
+  Top = 322
   Width = 277
   Height = 214
   Caption = 'Nodes'
@@ -31,18 +31,8 @@ object NodeForm: TNodeForm
     ParentShowHint = False
     ShowHint = True
     TabOrder = 0
-    object StartButton: TToolButton
-      Left = 0
-      Top = 0
-      Action = MainForm.NodeListStart
-    end
-    object StopButton: TToolButton
-      Left = 23
-      Top = 0
-      Action = MainForm.NodeListStop
-    end
     object LockNodeButton: TToolButton
-      Left = 46
+      Left = 0
       Top = 0
       Hint = 'Lock Node(s)'
       Caption = 'LockNodeButton'
@@ -50,7 +40,7 @@ object NodeForm: TNodeForm
       OnClick = LockNodeButtonClick
     end
     object DownButton: TToolButton
-      Left = 69
+      Left = 23
       Top = 0
       Hint = 'Down Node(s)'
       Caption = 'DownButton'
@@ -58,7 +48,7 @@ object NodeForm: TNodeForm
       OnClick = DownButtonClick
     end
     object InterruptNodeButton: TToolButton
-      Left = 92
+      Left = 46
       Top = 0
       Hint = 'Interrupt Node(s)'
       Caption = 'InterruptNodeButton'
@@ -66,7 +56,7 @@ object NodeForm: TNodeForm
       OnClick = InterruptNodeButtonClick
     end
     object RerunToolButton: TToolButton
-      Left = 115
+      Left = 69
       Top = 0
       Hint = 'Rerun Node(s)'
       Caption = 'RerunToolButton'
@@ -74,7 +64,7 @@ object NodeForm: TNodeForm
       OnClick = RerunNodeButtonClick
     end
     object ClearErrorButton: TToolButton
-      Left = 138
+      Left = 92
       Top = 0
       Hint = 'Clear Errors on Node(s)'
       Caption = 'ClearErrorButton'
@@ -82,7 +72,7 @@ object NodeForm: TNodeForm
       OnClick = ClearErrorButtonClick
     end
     object SpyButton: TToolButton
-      Left = 161
+      Left = 115
       Top = 0
       Hint = 'Spy on Node(s)'
       Caption = 'SpyButton'
@@ -90,7 +80,7 @@ object NodeForm: TNodeForm
       OnClick = SpyButtonClick
     end
     object ChatButton: TToolButton
-      Left = 184
+      Left = 138
       Top = 0
       Hint = 'Chat with User'
       Caption = 'ChatButton'
@@ -98,7 +88,7 @@ object NodeForm: TNodeForm
       OnClick = ChatButtonClick
     end
     object UserMsgButton: TToolButton
-      Left = 207
+      Left = 161
       Top = 0
       Hint = 'Send Message to User'
       Caption = 'UserMsgButton'
@@ -106,7 +96,7 @@ object NodeForm: TNodeForm
       OnClick = UserMsgButtonClick
     end
     object UserEditButton: TToolButton
-      Left = 230
+      Left = 184
       Top = 0
       Hint = 'Edit User'
       Caption = 'UserEditButton'
@@ -118,7 +108,7 @@ object NodeForm: TNodeForm
     Left = 0
     Top = 25
     Width = 269
-    Height = 157
+    Height = 156
     Align = alClient
     ItemHeight = 16
     MultiSelect = True
