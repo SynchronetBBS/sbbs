@@ -1018,7 +1018,9 @@ begin
     SexEdit.MaxLength:=1;
     { Stats }
     { etc. }
-    GetUserData(1); { Read and display in User #1 }
+
+    ScrollBar.Position:=StrToIntDef(ParamStr(2),1);
+    GetUserData(ScrollBar.Position);
 
     PageControl.ActivePage:=PersonalTabSheet;
 end;
