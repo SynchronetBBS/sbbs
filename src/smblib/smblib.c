@@ -1366,10 +1366,11 @@ int SMBCALL smb_addmsghdr(smb_t* smb, smbmsg_t* msg, int storage)
 	}
 	msg->idx.number=msg->hdr.number=smb->status.last_msg+1;
 
+	/* This is *not* a dupe-check */
 	if(!(msg->flags&MSG_FLAG_HASHED) /* not already hashed */
-		&& (i=smb_hashmsg(smb,msg,NULL,/* update? */FALSE))!=SMB_SUCCESS) {
+		&& (i=smb_hashmsg(smb,msg,NULL,/* update? */TRUE))!=SMB_SUCCESS) {
 		smb_unlocksmbhdr(smb);
-		return(i);	/* Duplicate message? */
+		return(i);	/* error updating hash table */
 	}
 
 	if(storage!=SMB_HYPERALLOC && (i=smb_open_ha(smb))!=SMB_SUCCESS) {
