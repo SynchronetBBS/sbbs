@@ -35,9 +35,6 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#include "sbbs.h"
-#include "conwrap.h"	/* this has to go BEFORE curses.h so getkey() can be macroed around */
-#include <curses.h>
 #include <signal.h>
 #include <sys/types.h>
 #include <time.h>
@@ -47,6 +44,10 @@
 #endif
 #include <stdio.h>
 #include <unistd.h>
+
+#include "ciolib.h"
+#define __COLORS		/* Disable the colour macros in sbbsdefs.h ToDo */
+#include "sbbs.h"
 #include "genwrap.h"
 #include "uifc.h"
 #include "sbbsdefs.h"
@@ -520,10 +521,23 @@ int view_logs(scfg_t *cfg)
 int do_cmd(char *cmd)
 {
 	int i;
-	
+	struct text_info ti;
+	char *p;
+
+#if 0
 	endwin();
+#else
+	gettextinfo(&ti);
+	p=malloc(ti.screenheight*ti.screenwidth*2);
+	gettext(1,1,ti.screenwidth,ti.screenheight,p);
+#endif
 	i=system(cmd);
+#if 0
 	refresh();
+#else
+	puttext(1,1,ti.screenwidth,ti.screenheight,p);
+	free(p);
+#endif
 	return(i);
 }
 
