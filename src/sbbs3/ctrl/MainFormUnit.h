@@ -235,6 +235,8 @@ __published:	// IDE-managed Components
     TMenuItem *MailViewSpamLog;
     TMenuItem *DomainList;
     TMenuItem *BBSEditSubjectFilterMenuItem;
+    TAction *ServicesStart;
+    TAction *ServicesStop;
     void __fastcall FileExitMenuItemClick(TObject *Sender);
 	void __fastcall ViewToolbarMenuItemClick(TObject *Sender);
 	void __fastcall FormClose(TObject *Sender, TCloseAction &Action);
@@ -295,6 +297,8 @@ __published:	// IDE-managed Components
     void __fastcall PageControlUnDock(TObject *Sender,
           TControl *Client, TWinControl *NewTarget, bool &Allow);
     void __fastcall ReloadConfigExecute(TObject *Sender);
+    void __fastcall ServicesStartExecute(TObject *Sender);
+    void __fastcall ServicesStopExecute(TObject *Sender);
 private:	// User declarations
 public:		// User declarations
     __fastcall TMainForm(TComponent* Owner);
@@ -302,6 +306,7 @@ public:		// User declarations
     bool			SysAutoStart;
     bool            MailAutoStart;
     bool            FtpAutoStart;
+    bool            ServicesAutoStart;
     bool			MailLogFile;
     bool			FtpLogFile;
     bool            FirstRun;
@@ -324,7 +329,7 @@ public:		// User declarations
 	TPageControl* __fastcall PageControl(int num);
 	int __fastcall  PageNum(TPageControl* obj);
     void __fastcall FormMinimize(TObject *Sender);
-    void __fastcall ReadColor(TRegistry*, AnsiString, TColor&);
+    void __fastcall ReadColor(TRegistry*, AnsiString, TColor*);
     void __fastcall WriteColor(TRegistry*, AnsiString, TColor);
     void __fastcall ReadFont(AnsiString, TFont*);
     void __fastcall WriteFont(AnsiString, TFont*);

@@ -274,9 +274,6 @@ static void bbs_start(void)
     strcpy(MainForm->bbs_startup.ctrl_dir,MainForm->CtrlDirectory.c_str());
 	_beginthread((void(*)(void*))bbs_thread,0,&MainForm->bbs_startup);
 
-    strcpy(MainForm->services_startup.ctrl_dir,MainForm->CtrlDirectory.c_str());
-	_beginthread((void(*)(void*))services_thread,0,&MainForm->services_startup);
-
     Application->ProcessMessages();
 }
 
@@ -314,6 +311,34 @@ static int service_log(char *str)
 	ServicesForm->Log->Lines->Add(Line);
     ReleaseMutex(mutex);
     return(Line.Length());
+}
+
+static void services_status(char *str)
+{
+	static HANDLE mutex;
+
+    if(!mutex)
+    	mutex=CreateMutex(NULL,false,NULL);
+	WaitForSingleObject(mutex,INFINITE);
+
+	ServicesForm->Status->Caption=AnsiString(str);
+
+    ReleaseMutex(mutex);
+}
+
+static void services_terminated(int code)
+{
+	Screen->Cursor=crDefault;
+	MainForm->ServicesStart->Enabled=true;
+	MainForm->ServicesStop->Enabled=false;
+    Application->ProcessMessages();
+}
+static void services_started(void)
+{
+	Screen->Cursor=crDefault;
+	MainForm->ServicesStart->Enabled=false;
+    MainForm->ServicesStop->Enabled=true;
+    Application->ProcessMessages();
 }
 
 static int mail_lputs(char *str)
@@ -614,6 +639,9 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
     services_startup.size=sizeof(services_startup);
     services_startup.interface_addr=INADDR_ANY;
     services_startup.lputs=service_log;
+    services_startup.status=services_status;
+    services_startup.started=services_started;
+    services_startup.terminated=services_terminated;
     services_startup.thread_up=thread_up;
     services_startup.client_on=client_on;
     services_startup.socket_open=socket_open;
@@ -754,6 +782,26 @@ void __fastcall TMainForm::FormCloseQuery(TObject *Sender, bool &CanClose)
 void __fastcall TMainForm::TelnetStartExecute(TObject *Sender)
 {
 	bbs_start();
+}
+//---------------------------------------------------------------------------
+void __fastcall TMainForm::ServicesStartExecute(TObject *Sender)
+{
+	Screen->Cursor=crAppStart;
+    services_status("Starting");
+
+    strcpy(MainForm->services_startup.ctrl_dir,MainForm->CtrlDirectory.c_str());
+	_beginthread((void(*)(void*))services_thread,0,&MainForm->services_startup);
+
+    Application->ProcessMessages();
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TMainForm::ServicesStopExecute(TObject *Sender)
+{
+	Screen->Cursor=crAppStart;
+    services_status("Terminating");
+	services_terminate();
+    Application->ProcessMessages();
 }
 //---------------------------------------------------------------------------
 
@@ -1017,10 +1065,10 @@ int __fastcall TMainForm::PageNum(TPageControl* obj)
 	return(PAGE_LOWERRIGHT);
 }
 void __fastcall TMainForm::ReadColor(TRegistry* Registry
-    ,AnsiString name, TColor& color)
+    ,AnsiString name, TColor* color)
 {
     if(Registry->ValueExists(name + "Color"))
-        color=StringToColor(Registry->ReadString(name + "Color"));
+        *color=StringToColor(Registry->ReadString(name + "Color")));
 }
 void __fastcall TMainForm::WriteColor(TRegistry* Registry
     ,AnsiString name, TColor color)
@@ -1152,19 +1200,19 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     if(Registry->ValueExists("FtpFormPage"))
     	FtpFormPage=Registry->ReadInteger("FtpFormPage");
 
-    ReadColor(Registry,"TelnetLog",TelnetForm->Log->Color);
+    ReadColor(Registry,"TelnetLog",&TelnetForm->Log->Color);
     ReadFont("TelnetLog",TelnetForm->Log->Font);
-    ReadColor(Registry,"EventsLog",EventsForm->Log->Color);
+    ReadColor(Registry,"EventsLog",&EventsForm->Log->Color);
     ReadFont("EventsLog",EventsForm->Log->Font);
-    ReadColor(Registry,"ServicesLog",ServicesForm->Log->Color);
+    ReadColor(Registry,"ServicesLog",&ServicesForm->Log->Color);
     ReadFont("ServicesLog",ServicesForm->Log->Font);
-    ReadColor(Registry,"MailLog",MailForm->Log->Color);
+    ReadColor(Registry,"MailLog",&MailForm->Log->Color);
     ReadFont("MailLog",MailForm->Log->Font);
-    ReadColor(Registry,"FtpLog",FtpForm->Log->Color);
+    ReadColor(Registry,"FtpLog",&FtpForm->Log->Color);
     ReadFont("FtpLog",FtpForm->Log->Font);
-    ReadColor(Registry,"NodeList",NodeForm->ListBox->Color);
+    ReadColor(Registry,"NodeList",&NodeForm->ListBox->Color);
     ReadFont("NodeList",NodeForm->ListBox->Font);
-    ReadColor(Registry,"ClientList",ClientForm->ListView->Color);
+    ReadColor(Registry,"ClientList",&ClientForm->ListView->Color);
     ReadFont("ClientList",ClientForm->ListView->Font);
 
 	if(Registry->ValueExists("TelnetFormTop"))
@@ -1256,6 +1304,11 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     	FtpAutoStart=Registry->ReadInteger("FtpAutoStart");
     else
     	FtpAutoStart=true;
+
+    if(Registry->ValueExists("ServicesAutoStart"))
+    	ServicesAutoStart=Registry->ReadInteger("ServicesAutoStart");
+    else
+    	ServicesAutoStart=true;
 
     ViewToolbarMenuItem->Checked=Toolbar->Visible;
     ViewStatusBarMenuItem->Checked=StatusBar->Visible;
@@ -1513,15 +1566,15 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
         LowerLeftPageControl->ActivePageIndex=i;
     LowerLeftPageControl->ActivePageIndex=0;
 
-    if(SysAutoStart) {
+    if(SysAutoStart)
         bbs_start();
-    }
-    if(MailAutoStart) {
+    if(MailAutoStart)
         mail_start();
-    }
-    if(FtpAutoStart) {
+    if(FtpAutoStart)
         ftp_start();
-    }
+    if(ServicesAutoStart)
+        ServicesStartExecute(Sender);
+
     NodeForm->Timer->Interval=NodeDisplayInterval*1000;
     NodeForm->Timer->Enabled=true;
     ClientForm->Timer->Interval=ClientDisplayInterval*1000;
@@ -1655,6 +1708,7 @@ void __fastcall TMainForm::SaveSettings(TObject* Sender)
     Registry->WriteInteger("SysAutoStart",SysAutoStart);
     Registry->WriteInteger("MailAutoStart",MailAutoStart);
     Registry->WriteInteger("FtpAutoStart",FtpAutoStart);
+    Registry->WriteInteger("ServicesAutoStart",ServicesAutoStart);
     Registry->WriteInteger("MailLogFile",MailLogFile);
     Registry->WriteInteger("FtpLogFile",FtpLogFile);
 
@@ -2147,5 +2201,7 @@ void __fastcall TMainForm::ReloadConfigExecute(TObject *Sender)
             break;
     }
 }
+
 //---------------------------------------------------------------------------
+
 
