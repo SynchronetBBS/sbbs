@@ -13,15 +13,11 @@ msgbase = new MsgBase(msg_area.grp[grp].sub_list[s].code);
 		var lastdate="Unknown";
         msgs=msgbase.total_msgs;
 		if(msgs != undefined && msgs > 0) {
-        	lastmsg=msgbase.last_msg;
-			if(lastmsg != undefined && lastmsg > 0) {
-				lastdate=msgbase.get_msg_header(false,lastmsg);
-				if(lastdate!=undefined && lastdate != null) {
-					lastdate=new Date(lastdate.date);
-					lastdate=lastdate.getTime()/1000;
-					if(lastdate>0)
-						lastdate=strftime("%m/%d/%y",lastdate);
-				}
+			lastdate=msgbase.get_msg_index(true,msgs-1);
+			if(lastdate!=undefined && lastdate != null) {
+				lastdate=lastdate.time;
+				if(lastdate>0)
+					lastdate=strftime("%m/%d/%y",lastdate);
 			}
         }
         msgbase.close();
