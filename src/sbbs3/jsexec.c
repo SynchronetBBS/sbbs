@@ -320,7 +320,7 @@ static BOOL js_CreateEnvObject(JSContext* cx, JSObject* glob, char** env)
 	return(TRUE);
 }
 
-static BOOL js_init(void)
+static BOOL js_init(char** environ)
 {
 	fprintf(errfp,"JavaScript: Creating runtime: %lu bytes\n"
 		,js_max_bytes);
@@ -440,7 +440,7 @@ long js_exec(const char *fname, char** args)
 /*********************/
 /* Entry point (duh) */
 /*********************/
-int main(int argc, char **argv)
+int main(int argc, char **argv, char** environ)
 {
 	char	error[512];
 	char*	module=NULL;
@@ -510,7 +510,7 @@ int main(int argc, char **argv)
 	if(!(scfg.sys_misc&SM_LOCAL_TZ))
 		putenv("TZ=UTC0");
 
-	if(!js_init()) {
+	if(!js_init(environ)) {
 		fprintf(errfp,"!JavaScript initialization failure\n");
 		bail(1);
 	}
