@@ -489,7 +489,7 @@ js_matchuser(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	JSString*	js_str;
 	scfg_t*		cfg;
 
-	if((cfg=(scfg_t*)JS_GetContextPrivate(cx))==NULL)
+	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_FALSE);
 
 	if((js_str=JS_ValueToString(cx, argv[0]))==NULL) {
@@ -515,7 +515,7 @@ js_trashcan(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	JSString*	js_can;
 	scfg_t*		cfg;
 
-	if((cfg=(scfg_t*)JS_GetContextPrivate(cx))==NULL)
+	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_FALSE);
 
 	if((js_can=JS_ValueToString(cx, argv[0]))==NULL) {
@@ -553,10 +553,34 @@ js_zonestr(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	return(JS_TRUE);
 }
 
+// Returns a ctime()-like string in the system-preferred time format
+static JSBool
+js_timestr(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char		str[128];
+	time_t		t;
+	JSString*	js_str;
+	scfg_t*		cfg;
+
+	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
+		return(JS_FALSE);
+
+	if(argc<1)
+		t=time(NULL);	/* use current time */
+	else
+		t=JSVAL_TO_INT(argv[0]);
+	timestr(cfg,&t,str);
+	js_str = JS_NewStringCopyZ(cx, str);
+
+	*rval = STRING_TO_JSVAL(js_str);
+	return(JS_TRUE);
+}
+
 static JSFunctionSpec js_system_functions[] = {
 	{"matchuser",		js_matchuser,		1},		// exact user name matching
 	{"trashcan",		js_trashcan,		2},		// search file for pseudo-regexp
 	{"zonestr",			js_zonestr,			1},		// convert zone int to string
+	{"timestr",			js_timestr,			0},		// convert a time_t into a string
 	{0}
 };
 
