@@ -3005,8 +3005,8 @@ void DLLCALL web_server(void* arg)
 	if(startup->sem_chk_freq==0)			startup->sem_chk_freq=2; /* seconds */
 	if(startup->js_max_bytes==0)			startup->js_max_bytes=JAVASCRIPT_MAX_BYTES;
 	if(startup->js_cx_stack==0)				startup->js_cx_stack=JAVASCRIPT_CONTEXT_STACK;
-	if(startup->ssjs_ext[0]==0)				SAFECOPY(startup->ssjs_ext,"ssjs");
-	if(startup->js_ext[0]==0)				SAFECOPY(startup->js_ext,"bbs");
+	if(startup->ssjs_ext[0]==0)				SAFECOPY(startup->ssjs_ext,".ssjs");
+	if(startup->js_ext[0]==0)				SAFECOPY(startup->js_ext,".bbs");
 
 	sprintf(js_server_props.version,"%s %s",server_name,revision);
 	js_server_props.version_detail=web_ver();
