@@ -80,13 +80,13 @@ uint				socket_count=0;
 uint				client_count=0;
 ulong				served=0;
 int					prompt_len=0;
+BOOL				is_daemon=FALSE;
 
 #ifdef __unix__
 uid_t				new_uid;
 uid_t				old_uid;
 gid_t				new_gid;
 gid_t				old_gid;
-BOOL				is_daemon=FALSE;
 BOOL				use_facilities=FALSE;
 #endif
 
@@ -142,15 +142,11 @@ static void lputs(char *str)
 {
 	static pthread_mutex_t mutex;
 	static BOOL mutex_initialized;
-	BOOL	logged;
 
-	if(!mutex_initialized) {
-		pthread_mutex_init(&mutex,NULL);
-		mutex_initialized=TRUE;
-	}
+#ifdef __unix__
+	BOOL logged=FALSE;
 
 	if (is_daemon)  {
-		logged=FALSE;
 		if(str!=NULL)  {
 			if (use_facilities)  {
 				if(!strncmp("ftp  ",str,5))  {
@@ -179,7 +175,13 @@ static void lputs(char *str)
 			}
 		}
 	}
-	else  {
+	else  
+#endif
+	{
+		if(!mutex_initialized) {
+			pthread_mutex_init(&mutex,NULL);
+			mutex_initialized=TRUE;
+		}
 		pthread_mutex_lock(&mutex);
 		/* erase prompt */
 		printf("\r%*s\r",prompt_len,"");
@@ -330,21 +332,16 @@ static int bbs_lputs(char *str)
 	time_t		t;
 	struct tm*	tm_p;
 
-	if(is_daemon)  {
-		sprintf(logline,"     %.*s",sizeof(logline)-2,str);
-	}
-	else  {
-		t=time(NULL);
-		tm_p=localtime(&t);
-		if(tm_p==NULL)
-			tstr[0]=0;
-		else
-			sprintf(tstr,"%d/%d %02d:%02d:%02d "
-				,tm_p->tm_mon+1,tm_p->tm_mday
-				,tm_p->tm_hour,tm_p->tm_min,tm_p->tm_sec);
+	t=time(NULL);
+	tm_p=localtime(&t);
+	if(tm_p==NULL || is_daemon)
+		tstr[0]=0;
+	else
+		sprintf(tstr,"%d/%d %02d:%02d:%02d "
+			,tm_p->tm_mon+1,tm_p->tm_mday
+			,tm_p->tm_hour,tm_p->tm_min,tm_p->tm_sec);
 
-		sprintf(logline,"%s     %.*s",tstr,sizeof(logline)-2,str);
-	}
+	sprintf(logline,"%s     %.*s",tstr,sizeof(logline)-2,str);
 	truncsp(logline);
 	lputs(logline);
 	
@@ -539,7 +536,6 @@ void _sighandler_quit(int sig)
 
     exit(0);
 }
-#endif
 
 #ifndef __FreeBSD__
 /****************************************************************************/
@@ -575,7 +571,9 @@ daemon(nochdir, noclose)
 	}
 	return (0);
 }
-#endif
+#endif	/* !__FreeBSD__ */
+
+#endif	/* __unix__ */
 
 /****************************************************************************/
 /* Main Entry Point															*/
