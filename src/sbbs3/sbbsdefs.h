@@ -55,7 +55,7 @@
 #endif
 
 #define VERSION_NOTICE		"Synchronet BBS for "PLATFORM_DESC\
-								"  Version 3.00  "
+								"  Version " VERSION "  "
 #define COPYRIGHT_NOTICE	"Copyright 2001 Rob Swindell"
 #define QWK_HEADER			"Produced by Synchronet BBS  Version 3  "\
 								COPYRIGHT_NOTICE
