@@ -296,7 +296,8 @@ while(client.socket.is_connected) {
 			hdr=msgbase.get_msg_header(false,current_article);
 			if(cmd[0].toUpperCase()!="HEAD")
 				body=msgbase.get_msg_body(false,current_article
-					,true /* remove ctrl-a codes */);
+					,true /* remove ctrl-a codes */
+					,true /* rfc822 formatted text */);
 
 /* Eliminate dupe loops
 			if(user.security.restrictions&UFLAG_Q && hdr!=null)

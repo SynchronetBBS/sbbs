@@ -232,6 +232,7 @@ for(i in area) {
 
 		body = msgbase.get_msg_body(false, ptr
 				,true	/* remove ctrl-a codes */
+				,true	/* rfc822 formatted text */
 				,true	/* include tails */);
 		if(body == null) {
 			printf("!FAILED to read message number %ld",ptr);
@@ -262,20 +263,15 @@ for(i in area) {
 					,hdr.from
 					,antispam,hdr.from_net_addr));
 			else
-				writeln(format("From: \"%s\" <%s%s@%s%s>"
+				writeln(format("From: \"%s\" <%s@%s%s>"
 					,hdr.from
-					,antispam,hdr.from
+					,hdr.from.replace(/ /g,"_")
 					,antispam,hdr.from_net_addr));
 		}
-		else if(hdr.from.indexOf(' ')>0)
-			writeln(format("From: \"%s\" <\"%s%s\"@%s%s>"
-				,hdr.from
-				,antispam,hdr.from
-				,antispam,system.inetaddr));
 		else
-			writeln(format("From: \"%s\" <%s%s@%s%s>"
+			writeln(format("From: \"%s\" <%s@%s%s>"
 				,hdr.from
-				,antispam,hdr.from
+				,hdr.from.replace(/ /g,"_")
 				,antispam,system.inetaddr));
 		writeln("To: " + hdr.to);
 		writeln("X-Comment-To: " + hdr.to);
