@@ -54,6 +54,7 @@ if(sub==undefined) {
 if(http_request.query["item"]) {
 
 	load("../web/lib/template.ssjs");
+	load("../web/lib/mime_decode.ssjs");
 
 	var msgbase=new MsgBase(channel.sub);
 	if(!msgbase.open())
