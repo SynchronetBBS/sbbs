@@ -38,7 +38,6 @@
 /* OS-specific */
 #if defined(__unix__)
 
-#include <glob.h>       /* glob() wildcard matching */
 #include <string.h>     /* strlen() */
 #include <unistd.h>     /* getpid() */
 #include <fcntl.h>      /* fcntl() file/record locking */
