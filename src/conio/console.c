@@ -91,6 +91,30 @@ GC gc;
 GC cgc;
 int xfd;
 
+/* X functions */
+struct x11 {
+	int		(*XChangeGC)	(Display*, GC, unsigned long, XGCValues);
+	int		(*XCopyPlane)	(Display*, Drawable, Drawable, GC, int, int, unsigned int, unsigned int, int, int, unsigned long);
+	int		(*XFillRectangle)	(Display*, Drawable, GC, int, int, unsigned int, unsigned int);
+	int		(*XFlush)		(Display*);
+	int		(*XBell)		(Display*, int);
+	int		(*XLookupString)	(XKeyEvent*, char*, int, KeySym*, XComposeStatus);
+	int		(*XNextEvent)	(Display*, XEvent *);
+	XSizeHints	(*XAllocSizeHints)(void);
+	void		(*XSetWMNormalHints)	(Display*, Window, XSizeHints);
+	int		(*XResizeWindow)	(Display*, Window, unsigned int, unsigned int);
+	int		(*XMapWindow)	(Display*, Window);
+	int		(*XFree)		(Display*, XFontSet);
+	int		(*XFreePixmap)	(Display*, Pixmap);
+	int		(*XCreateBitmapFromData)	(Display*, Drawable, _Xconst char*, unsigned int, unsigned int);
+	Status	(*XAllocColor)	(Display*, Colormap, XColor);
+	Display	(*XOpenDisplay)	(_Xconst char*);
+	Window	(*XCreateSimpleWindow)	(Display*, Window, int, int, unsigned int, unsigned int, unsigned int, unsigned long, unsigned long);
+	GC		(*XCreateGC)	(Display*, Drawable, unsigned long, XGCValues*);
+	int		(*XSelectInput)	(Display*, Window, long);
+	int		(*XStoreName)	(Display*, Window, _Xconst char*);
+};
+
 /* X pixel values for the RGB triples */
 struct dac_colors *dac_rgb;
 DWORD pixels[16];
