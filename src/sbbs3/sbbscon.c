@@ -68,6 +68,7 @@ static void lputs(char *str)
 	pthread_mutex_lock(&mutex);
 	printf("\r%*s\r%s\n",strlen(prompt),"",str);
 	printf(prompt);
+	fflush(stdout);
 	pthread_mutex_unlock(&mutex);
 }
 
