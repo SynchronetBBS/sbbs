@@ -351,6 +351,8 @@ function Unregistered_Commands() {
 function Unregistered_Quit(msg) {
 	if (msg)
 		this.rawout("ERROR :" + msg);
+	if (server.client_remove!=undefined)
+		server.client_remove(this.socket);
 	this.socket.close();
 	delete Local_Sockets[this.id];
 	delete Local_Sockets_Map[this.id];
