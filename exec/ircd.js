@@ -82,13 +82,14 @@ var server_capab = "TS3 NOQUIT SSJOIN BURST UNCONNECT NICKIP TSMODE";
 // Synchronet IRC network.  Linking servers with different values here WILL
 // cause your network to desynchronize (and possibly crash the IRCD)
 // Remember, this is Synchronet, not Desynchronet ;)
-var max_chanlen = 100;			// Maximum channel name length.
-var max_nicklen = 30;			// Maximum nickname length.
-var max_modes = 6;			// Maximum modes on single MODE command
-var max_user_chans = 10;		// Maximum channels users can join
-var max_bans = 25;			// Maximum bans (+b) per channel
-var max_topiclen = 307;			// Maximum length of topic per channel
-var max_kicklen = 307;			// Maximum length of kick reasons
+var max_chanlen = 100;		// Maximum channel name length.
+var max_nicklen = 30;		// Maximum nickname length.
+var max_modes = 6;		// Maximum modes on single MODE command
+var max_user_chans = 10;	// Maximum channels users can join
+var max_bans = 25;		// Maximum bans (+b) per channel
+var max_topiclen = 307;		// Maximum length of topic per channel
+var max_kicklen = 307;		// Maximum length of kick reasons
+var max_who = 100;		// Maximum replies to WHO for non-oper users
 
 var default_port = 6667;
 
@@ -185,7 +186,22 @@ var OLINE_CAN_DEBUG		=(1<<21);	// x
 
 // Various N:Line permission bits
 var NLINE_CHECK_QWKPASSWD	=(1<<0);	// q
-var NLINE_CAN_CLINE		=(1<<1);	// c
+var NLINE_IS_QWKMASTER		=(1<<1);	// w
+var NLINE_CHECK_WITH_QWKMASTER	=(1<<2);	// k
+
+// Bits used for walking the complex WHO flags.
+var WHO_AWAY			=(1<<0);	// a
+var WHO_CHANNEL			=(1<<1);	// c
+var WHO_REALNAME		=(1<<2);	// g
+var WHO_HOST			=(1<<3);	// h
+var WHO_IP			=(1<<4);	// i
+var WHO_UMODE			=(1<<5);	// m
+var WHO_NICK			=(1<<6);	// n
+var WHO_OPER			=(1<<7);	// o
+var WHO_SERVER			=(1<<8);	// s
+var WHO_USER			=(1<<9);	// u
+var WHO_FIRST_CHANNEL		=(1<<10);	// C
+var WHO_MEMBER_CHANNEL		=(1<<11);	// M
 
 ////////// Functions not linked to an object //////////
 function ip_to_int(ip) {
@@ -311,6 +327,12 @@ function parse_nline_flags(flags) {
 		switch(flags[thisflag]) {
 			case "q":
 				nline_flags |= NLINE_CHECK_QWKPASSWD;
+				break;
+			case "w":
+				nline_flags |= NLINE_IS_QWKMASTER;
+				break;
+			case "k":
+				nline_flags |= NLINE_CHECK_WITH_QWKMASTER;
 				break;
 			default:
 				log("!WARNING Unknown N:Line flag '" + flags[thisflag] + "' in config.");       
@@ -854,6 +876,19 @@ function create_new_socket(port) {
 	return newsock;
 }
 
+function check_qwk_passwd(qwkid,password) {
+	if (!password || !qwkid)
+		return 0;
+	qwkid = qwkid.toUpperCase();
+	var usernum = system.matchuser(qwkid);
+	var bbsuser = new User(usernum);
+	if ((password.toUpperCase() ==
+	     bbsuser.security.password.toUpperCase()) &&
+	    (bbsuser.security.restrictions&UFLAG_Q) )
+		return 1;
+	return 0;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 //////////////   End of functions.  Start main() program here.   //////////////
@@ -1042,6 +1077,7 @@ function IRCClient(socket,new_id,local_client,do_newconn) {
 	this.numeric261=IRCClient_numeric261;
 	this.numeric322=IRCClient_numeric322;
 	this.numeric351=IRCClient_numeric351;
+	this.numeric352=IRCClient_numeric352;
 	this.numeric353=IRCClient_numeric353;
 	this.numeric391=IRCClient_numeric391;
 	this.numeric401=IRCClient_numeric401;
@@ -1065,6 +1101,7 @@ function IRCClient(socket,new_id,local_client,do_newconn) {
 	this.set_chanmode=IRCClient_set_chanmode;
 	this.get_usermode=IRCClient_get_usermode;
 	this.onchannel=IRCClient_onchannel;
+	this.onchanwith=IRCClient_onchanwith;
 	this.num_channels_on=IRCClient_num_channels_on;
 	this.bcast_to_uchans_unique=IRCClient_bcast_to_uchans_unique;
 	this.check_nickname=IRCClient_check_nickname;
@@ -1086,6 +1123,10 @@ function IRCClient(socket,new_id,local_client,do_newconn) {
 	this.do_trace=IRCClient_do_trace;
 	this.trace_all_opers=IRCClient_trace_all_opers;
 	this.do_connect=IRCClient_do_connect;
+	this.do_basic_who=IRCClient_do_basic_who;
+	this.do_complex_who=IRCClient_do_complex_who;
+	this.do_who_usage=IRCClient_do_who_usage;
+	this.match_who_mask=IRCClient_match_who_mask;
 	this.global=IRCClient_global;
 	this.services_msg=IRCClient_services_msg;
 	this.part_all=IRCClient_part_all;
@@ -1101,6 +1142,7 @@ function IRCClient(socket,new_id,local_client,do_newconn) {
 	this.server_info=IRCClient_server_info;
 	this.synchronize=IRCClient_synchronize;
 	this.reintroduce_nick=IRCClient_reintroduce_nick;
+	this.finalize_server_connect=IRCClient_finalize_server_connect;
 	this.ip="";
 	this.linkparent="";
 	if (this.socket && local_client && do_newconn) {
@@ -1408,6 +1450,30 @@ function IRCClient_numeric351() {
 	this.numeric(351, VERSION + " " + servername + " :" + VERSION_STR);
 }
 
+function IRCClient_numeric352(user,chan) {
+	var who_mode="";
+	var disp;
+
+	if (!chan)
+		disp = "*";
+	else
+		disp = chan.nam;
+
+	if (user.away)
+		who_mode += "G";
+	else
+		who_mode += "H";
+	if (chan) {
+		if (chan.ismode(user.id,CHANLIST_OP))
+			who_mode += "@";
+		else if (chan.ismode(user.id,CHANLIST_VOICE))
+			who_mode += "+";
+	}
+	if (user.mode&USERMODE_OPER)
+		who_mode += "*";
+	this.numeric(352, disp + " " + user.uprefix + " " + user.hostname + " " + user.servername + " " + user.nick + " " + who_mode + " :" + user.hops + " " + user.realname);
+}
+
 function IRCClient_numeric353(chan, str) {
 	// = public @ secret * everything else
 	if (Channels[chan].mode&CHANMODE_SECRET)
@@ -1551,6 +1617,18 @@ function IRCClient_onchannel(chan_str) {
 		}
 	}
 	return 0; // if we got this far, we failed.
+}
+
+// Traverse each channel the user is on and see if target is on any of the
+// same channels.
+function IRCClient_onchanwith(target) {
+	for (c in this.channels) {
+		for (i in target.channels) {
+			if (this.channels[c] == target.channels[i])
+				return 1; // success
+		}
+	}
+	return 0; // failure.
 }
 
 function IRCClient_num_channels_on() {
@@ -1714,7 +1792,8 @@ function IRCClient_do_whois(wi) {
 		if(wi.channels[i] &&
 		   (!(Channels[wi.channels[i]].mode&CHANMODE_SECRET ||
 		      Channels[wi.channels[i]].mode&CHANMODE_PRIVATE) ||
-		     this.onchannel(wi.channels[i]))) {
+		     this.onchannel(wi.channels[i]) ||
+		     this.mode&USERMODE_OPER)) {
 			if (userchans)
 				userchans += " ";
 			if (Channels[wi.channels[i]].ismode(wi.id,CHANLIST_OP))
@@ -2148,6 +2227,377 @@ function IRCClient_do_connect(con_server,con_port) {
 	oper_notice("Routing","from " + servername + ": " + con_type + " CONNECT " + con_cline.servername + " " + con_port + " from " + this.nick + "[" + this.uprefix + "@" + this.hostname + "]");
 	connect_to_server(con_cline,con_port);
 	return 1;
+}
+
+function IRCClient_do_basic_who(whomask) {
+	var eow = "*";
+
+	if ((whomask[0] == "#") || (whomask[0] == "&")) {
+		var chan = whomask.toUpperCase();
+		if (Channels[chan] != undefined) {
+			var channel=Channels[chan].nam;
+			for(i in Channels[chan].users) {
+				if (Channels[chan].users[i])
+					this.numeric352(Clients[Channels[chan].users[i]],Channels[chan]);
+			}
+			eow = Channels[chan].nam;
+		}
+	} else {
+		for (i in Clients) {
+			if (Clients[i] && !Clients[i].server &&
+			    ((Clients[i].conntype > 1) &&
+			     (Clients[i].conntype < 4)) &&
+			    Clients[i].match_who_mask(whomask))
+				this.numeric352(Clients[i]);
+		}
+		eow = whomask;
+	}
+	this.numeric(315, eow + " :End of /WHO list. (Basic)");
+}
+
+function IRCClient_do_complex_who(cmd) {
+	var who = new Who();
+	var tmp;
+	var eow = "*";
+	var add;
+	var arg = 1;
+	var whomask = "";
+	var chan;
+
+	if (cmd[2].toLowerCase() == "o") { // Compatibility with RFC1459.
+		tmp = cmd[1];
+		cmd[1] = cmd[2];
+		cmd[2] = tmp;
+	}
+
+	for (myflag in cmd[1]) {
+		switch (cmd[1][myflag]) {
+			case "+":
+				if (!add)
+					add = true;
+				break;
+			case "-":
+				if (add)
+					add = false;
+				break;
+			case "a":
+				who.tweak_mode(WHO_AWAY,add);
+				break;
+			case "c":
+				arg++;
+				if (cmd[arg]) {
+					who.tweak_mode(WHO_CHANNEL,add);
+					who.Channel = cmd[arg];
+				}
+				break;
+			case "g":
+				arg++;
+				if (cmd[arg]) {
+					who.tweak_mode(WHO_REALNAME,add);
+					who.RealName = cmd[arg];
+				}
+				break;
+			case "h":
+				arg++;
+				if (cmd[arg]) {
+					who.tweak_mode(WHO_HOST,add);
+					who.Host = cmd[arg];
+				}
+				break;
+			case "i":
+				arg++;
+				if (cmd[arg]) {
+					who.tweak_mode(WHO_IP,add);
+					who.IP = cmd[arg];
+				}
+				break;
+			case "m": // we never set -m
+				arg++;
+				if (cmd[arg]) {
+					who.tweak_mode(WHO_UMODE,true);
+					if (!add) {
+						var tmp_umode = "";
+						if ((cmd[arg][0] != "+") ||
+						    (cmd[arg][0] != "-") )
+							tmp_umode += "+";
+						tmp_umode += cmd[arg].replace(/[-]/g," ");
+						tmp_umode = tmp_umode.replace(/[+]/g,"-");
+						who.UMode = tmp_umode.replace(/[ ]/g,"+");
+					} else {
+						who.UMode = cmd[arg];
+					}
+				}
+				break;
+			case "n":
+				arg++;
+				if (cmd[arg]) {
+					who.Nick = cmd[arg];
+					who.tweak_mode(WHO_NICK,add);
+				}
+				break;
+			case "o":
+				who.tweak_mode(WHO_OPER,add);
+				break;
+			case "s":
+				arg++;
+				if (cmd[arg]) {
+					who.Server = cmd[arg];
+					who.tweak_mode(WHO_SERVER,add);
+				}
+				break;
+			case "u":
+				arg++;
+				if (cmd[arg]) {
+					who.User = cmd[arg];
+					who.tweak_mode(WHO_USER,add);
+				}
+				break;
+			case "C":
+				who.tweak_mode(WHO_FIRST_CHANNEL,add);
+				break;
+			case "M":
+				who.tweak_mode(WHO_MEMBER_CHANNEL,add);
+				break;
+			default:
+				break;
+		}
+	}
+
+	// Check to see if the user passed a generic mask to us for processing.
+	arg++;
+	if (cmd[arg])
+		whomask = cmd[arg];
+
+	// allow +c/-c to override.
+	if (!who.Channel && ((whomask[0] == "#") || (whomask[0] == "&")))
+		who.Channel = whomask;
+
+	// Now we traverse everything and apply the criteria the user passed.
+	var who_count = 0;
+	for (who_client in Clients) {
+		if (Clients[who_client] && !Clients[who_client].server &&
+		    ( (Clients[who_client].conntype > 1) &&
+		      (Clients[who_client].conntype < 4) ) ) {
+			var wc = Clients[who_client];
+
+			var flag_M = this.onchanwith(wc);
+
+			// Don't even bother if the target is +i and the
+			// user isn't an oper or on a channel with the target.
+			if ( (wc.mode&USERMODE_INVISIBLE) &&
+			     (!(this.mode&USERMODE_OPER) ||
+			      !flag_M) )
+				continue;
+
+			if ((who.add_flags&WHO_AWAY) && !wc.away)
+				continue;
+			else if ((who.del_flags&WHO_AWAY) && wc.away)
+				continue;
+			if ((who.add_flags&WHO_CHANNEL) &&
+			    !wc.onchannel(who.Channel.toUpperCase()))
+				continue;
+			else if ((who.del_flags&WHO_CHANNEL) &&
+			    wc.onchannel(who.Channel.toUpperCase()))
+				continue;
+			if ((who.add_flags&WHO_REALNAME) &&
+			    !match_irc_mask(wc.realname,who.RealName))
+				continue;
+			else if ((who.del_flags&WHO_REALNAME) &&
+			    match_irc_mask(wc.realname,who.RealName))
+				continue;
+			if ((who.add_flags&WHO_HOST) &&
+			    !match_irc_mask(wc.hostname,who.Host))
+				continue;
+			else if ((who.del_flags&WHO_HOST) &&
+			    match_irc_mask(wc.hostname,who.Host))
+				continue;
+			if ((who.add_flags&WHO_IP) &&
+			    !match_irc_mask(wc.ip,who.IP))
+				continue;
+			else if ((who.del_flags&WHO_IP) &&
+			    match_irc_mask(wc.ip,who.IP))
+				continue;
+			if (who.add_flags&WHO_UMODE) { // no -m
+				var sic = false;
+				var madd = true;
+				for (mm in who.UMode) {
+					switch(who.UMode[mm]) {
+						case "+":
+							if (!madd)
+								madd = true;
+							break;
+						case "-":
+							if (madd)
+								madd = false;
+							break;
+						case "o":
+							if (
+							   (!madd && (wc.mode&
+							   USERMODE_OPER))
+							||
+							   (madd && !(wc.mode&
+							   USERMODE_OPER))
+							   )
+								sic = true;
+							break;
+						case "i":
+							if (
+							   (!madd && (wc.mode&
+							   USERMODE_INVISIBLE))
+							||
+							   (madd && !(wc.mode&
+							   USERMODE_INVISIBLE))
+							   )
+								sic = true;
+							break;
+						default:
+							break;
+					}
+				}
+				if (sic)
+					continue;
+			}
+			if ((who.add_flags&WHO_NICK) &&
+			    !match_irc_mask(wc.nick,who.Nick))
+				continue;
+			else if ((who.del_flags&WHO_NICK) &&
+			    match_irc_mask(wc.nick,who.Nick))
+				continue;
+			if ((who.add_flags&WHO_OPER) &&
+			    !(wc.mode&USERMODE_OPER))
+				continue;
+			else if ((who.del_flags&WHO_OPER) &&
+			    (wc.mode&USERMODE_OPER))
+				continue;
+			if ((who.add_flags&WHO_SERVER) &&
+			    !match_irc_mask(wc.servername,who.Server))
+				continue;
+			else if ((who.del_flags&WHO_SERVER) &&
+			    match_irc_mask(wc.servername,who.Server))
+				continue;
+			if ((who.add_flags&WHO_USER) &&
+			    !match_irc_mask(wc.uprefix,who.User))
+				continue;
+			else if ((who.del_flags&WHO_USER) &&
+			    match_irc_mask(wc.uprefix,who.User))
+				continue;
+			if ((who.add_flags&WHO_MEMBER_CHANNEL) && !flag_M)
+				continue;
+			else if ((who.del_flags&WHO_MEMBER_CHANNEL) && flag_M)
+				continue;
+
+			if (whomask && !wc.match_who_mask(whomask))
+				continue;       
+
+			chan = "";
+			if ((who.add_flags&WHO_FIRST_CHANNEL) && !who.Channel) {
+				for (x in wc.channels) {
+					if(wc.channels[x] &&
+					   (!(Channels[wc.channels[x]].mode&
+					       CHANMODE_SECRET ||
+					      Channels[wc.channels[x]].mode&
+					       CHANMODE_PRIVATE
+					      ) ||
+						this.onchannel(wc.channels[x])||
+						this.mode&USERMODE_OPER)
+					   ) {
+						chan = Channels[wc.channels[x]].nam;
+						break;
+					}
+				}
+			}
+
+			if (who.Channel)
+				chan = who.Channel;
+
+			// If we made it this far, we're good.
+			if (chan && Channels[chan.toUpperCase()])
+				this.numeric352(wc,Channels[chan.toUpperCase()]);
+			else
+				this.numeric352(wc);
+			who_count++;
+		}
+		if (who_count >= max_who)
+			break;
+	}
+
+	if (who.Channel)
+		eow = who.Channel;
+	else if (cmd[2])
+		eow = cmd[2];
+
+	this.numeric(315, eow + " :End of /WHO list. (Complex)");
+}
+
+// Object which stores WHO bits and arguments.
+function Who() {
+	this.add_flags = 0;
+	this.del_flags = 0;
+	this.tweak_mode = Who_tweak_mode;
+	this.Channel = "";
+	this.RealName = "";
+	this.Host = "";
+	this.IP = "";
+	this.UMode = "";
+	this.Nick = "";
+	this.Server = "";
+	this.User = "";
+}
+
+function Who_tweak_mode(bit,add) {
+	if (add) {
+		this.add_flags |= bit;
+		this.del_flags &= ~bit;
+	} else {
+		this.add_flags &= ~bit;
+		this.del_flags |= bit;
+	}
+}
+
+// Take a generic mask in and try to figure out if we're matching a channel,
+// mask, nick, or something else.  Return 1 if the user sent to us matches it
+// in some fashion.
+function IRCClient_match_who_mask(mask) {
+	if ((mask[0] == "#") || (mask[0] == "&")) { // channel
+		if (Channels[mask.toUpperCase()])
+			return 1;
+		else
+			return 0; // channel doesn't exist.
+	} else if (mask.match(/[!]/)) { // nick!user@host
+		if ( match_irc_mask(this.nick,mask.split("!")[0]) &&
+		     match_irc_mask(this.uprefix,mask.slice(mask.indexOf("!")+1).split("@")[0]) &&
+		     match_irc_mask(this.hostname,mask.slice(mask.indexOf("@")+1)) )
+			return 1;
+	} else if (mask.match(/[@]/)) { // user@host
+		if ( match_irc_mask(this.uprefix,mask.split("@")[0]) &&
+		     match_irc_mask(this.hostname,mask.split("@")[1]) )
+			return 1;
+	} else if (mask.match(/[.]/)) { // host only
+		if ( match_irc_mask(this.hostname,mask) )
+			return 1;
+	} else { // must be a nick?
+		if ( match_irc_mask(this.nick,mask) )
+			return 1;
+	}
+	return 0;
+}
+
+function IRCClient_do_who_usage() {
+	this.numeric(334,":/WHO [+|-][acghimnosuCM] <args>");
+	this.numeric(334,":The modes as above work exactly like channel modes.");
+	this.numeric(334,":a       : User is away.");
+	this.numeric(334,":c <chan>: User is on <channel>, no wildcards.");
+	this.numeric(334,":g <rnam>: Check against realname field, wildcards allowed.");
+	this.numeric(334,":h <host>: Check user's hostname, wildcards allowed.");
+	this.numeric(334,":i <ip>  : Check against IP address, wildcards allowed.");
+	this.numeric(334,":m <umde>: User has <umodes> set, -+ allowed.");
+	this.numeric(334,":n <nick>: User's nickname matches <nick>, wildcards allowed.");
+	this.numeric(334,":o       : User is an IRC Operator.");
+	this.numeric(334,":s <srvr>: User is on <server>, wildcards allowed.");
+	this.numeric(334,":u <user>: User's username field matches, wildcards allowed.");
+	this.numeric(334,":C       : Only display first channel that the user matches.");
+	this.numeric(334,":M       : Only check against channels you're a member of.");
+	this.numeric(315,"? :End of /WHO list. (Usage)");
 }
 
 function IRCClient_do_join(chan_name,join_key) {
@@ -2693,19 +3143,29 @@ function IRCClient_unregistered_commands(command, cmdline) {
 				break;
 			}
 			var this_nline = 0;
+			var qwk_slave = false;
+			var qwkid = cmd[1].slice(0,cmd[1].indexOf(".")).toUpperCase();
 			for (nl in NLines) {
 				if ((NLines[nl].flags&NLINE_CHECK_QWKPASSWD) &&
 				    match_irc_mask(cmd[1],NLines[nl].servername)) {
-					var qwkid = cmd[1].slice(0,cmd[1].indexOf(".")).toUpperCase();
-					var usernum = system.matchuser(qwkid);
-					var bbsuser = new User(usernum);
-					if ((this.password.toUpperCase() ==
-					    bbsuser.security.password) &&
-					    (bbsuser.security.restrictions&UFLAG_Q)
-					   ) {
+					if (check_qwk_passwd(qwkid,this.password)) {
 						this_nline = NLines[nl];
 						break;
 					}
+				} else if ((NLines[nl].flags&NLINE_CHECK_WITH_QWKMASTER) &&
+				           match_irc_mask(cmd[1],NLines[nl].servername)) {
+						for (qwkm_nl in NLines) {
+							if (NLines[qwkm_nl].flags&NLINE_IS_QWKMASTER) {
+								var qwk_master = searchbyserver(NLines[qwkm_nl].servername);
+								if (!qwk_master) {
+									this.quit("No QWK master available for authorization.");
+									return 0;
+								} else {
+									qwk_master.rawout(":" + servername + " PASS " + this.password + " :" + qwkid + " QWK");
+									qwk_slave = true;
+								}
+							}
+						}
 				} else if ((NLines[nl].password == this.password) &&
 				           (match_irc_mask(cmd[1],NLines[nl].servername))
 				          ) {
@@ -2713,8 +3173,8 @@ function IRCClient_unregistered_commands(command, cmdline) {
 						break;
 				}
 			}
-			if (!this_nline || ((this_nline.password == "*") &&
-			    !this.sentps)) {
+			if ((!this_nline || ((this_nline.password == "*") &&
+			    !this.sentps)) && !qwk_slave) {
 				this.quit("ERROR: Server not configured.");
 				return 0;
 			}
@@ -2725,16 +3185,18 @@ function IRCClient_unregistered_commands(command, cmdline) {
 			this.nick = cmd[1].toLowerCase();
 			this.hops = cmd[2];
 			this.realname = ircstring(cmdline);
-			this.server = true;
-			this.conntype = TYPE_SERVER;
 			this.linkparent = servername;
 			this.parent = this.id;
 			this.flags = this_nline.flags;
-			for (hl in HLines) {
-				if (HLines[hl].servername.toUpperCase() ==
-				    this.nick.toUpperCase()) {
-					this.hub = true;
-					break;
+			if (!qwk_slave) { // qwk slaves should never be hubs.
+				this.server = true;
+				this.conntype = TYPE_SERVER;
+				for (hl in HLines) {
+					if (HLines[hl].servername.toUpperCase()
+					    == this.nick.toUpperCase()) {
+						this.hub = true;
+						break;
+					}
 				}
 			}
 			break;
@@ -2814,22 +3276,7 @@ function IRCClient_unregistered_commands(command, cmdline) {
 	/// Otherwise, it's a server trying to connect.
 	} else if (this.nick.match("[.]") && this.hops && this.realname &&
 		   this.server && (this.conntype == TYPE_SERVER)) {
-		hcc_counter++;
-		oper_notice("Routing","Link with " + this.nick + "[unknown@" + this.hostname + "] established, states: TS");
-		if (server.client_update != undefined)
-			server.client_update(this.socket, this.nick, this.hostname);
-		if (!this.sentps) {
-			for (cl in CLines) {
-				if(match_irc_mask(this.nick,CLines[cl].servername)) {
-					this.rawout("PASS " + CLines[cl].password + " :TS");
-					break;
-				}
-			}
-			this.rawout("CAPAB " + server_capab);
-			this.rawout("SERVER " + servername + " 1 :" + serverdesc);
-		}
-		this.bcast_to_servers_raw(":" + servername + " SERVER " + this.nick + " 2 :" + this.realname);
-		this.synchronize();
+			this.finalize_server_connect("TS");
 	}
 }
 
@@ -3655,15 +4102,40 @@ function IRCClient_registered_commands(command, cmdline) {
 			this.do_users();
 			break;
 		case "USERHOST":
+			var uhnick;
+			var uh;
+			var uhstr = "";
+			var uh_argcount;
+
 			if (!cmd[1]) {
 				this.numeric461("USERHOST");
 				break;
 			}
-			uhnick = searchbynick(cmd[1]);
-			if (uhnick)
-				this.numeric("302", ":" + uhnick.nick + "=+" + uhnick.uprefix + "@" + uhnick.hostname);
+
+			if (cmd.length > 6)
+				uh_argcount = 6;
 			else
-				this.numeric("302", ":");
+				uh_argcount = cmd.length;
+
+			for (uh=1 ; uh < uh_argcount ; uh++) {
+				uhnick = searchbynick(cmd[uh]);
+				if (uhnick) {
+					if (uhstr)
+						uhstr += " ";
+					uhstr += uhnick.nick;
+					if (uhnick.mode&USERMODE_OPER)
+						uhstr += "*";
+					uhstr += "=";
+					if (uhnick.away)
+						uhstr += "-";
+					else
+						uhstr += "+";
+					uhstr += uhnick.uprefix;
+					uhstr += "@";
+					uhstr += uhnick.hostname;
+				}
+			}
+			this.numeric(302, ":" + uhstr);
 			break;
 		case "VERSION":
 			if (cmd[1]) {
@@ -3701,35 +4173,18 @@ function IRCClient_registered_commands(command, cmdline) {
 			break;
 		case "WHO":
 			if (!cmd[1]) {
-				channel="*";
-			} else if ((cmd[1][0] == "#") || (cmd[1][0] == "&")) {
-				chan=cmd[1].toUpperCase();
-				if (Channels[chan] != undefined) {
-					channel=Channels[chan].nam;
-					for(i in Channels[chan].users) {
-						if (Channels[chan].users[i]) {
-							Client=Clients[Channels[chan].users[i]];
-							who_mode="";
-							if (Client.away)
-								who_mode += "G";
-							else
-								who_mode += "H";
-							if (Channels[chan].ismode(Client.id,CHANLIST_OP))
-								who_mode += "@";
-							else if (Channels[chan].ismode(Client.id,CHANLIST_VOICE))
-								who_mode += "+";
-							if (Client.mode&USERMODE_OPER)
-								who_mode += "*";
-							this.numeric("352", channel + " " + Client.uprefix + " " + Client.hostname + " " + servername + " " + Client.nick + " " + who_mode + " :0 " + Client.realname);
-						}
-					}
-				} else {
-					channel="*";
-				}
-			} else {
-				channel="*";
+				this.do_who_usage();
+				break;
 			}
-			this.numeric("315", channel + " :End of /WHO list.");
+			if (cmd[1] == "?") {
+				this.do_who_usage();
+				break;
+			}
+			if (cmd[2]) {
+				this.do_complex_who(cmd);
+			} else {
+				this.do_basic_who(cmd[1]);
+			}
 			break;
 		case "WHOIS":
 			if (!cmd[1]) {
@@ -3961,6 +4416,8 @@ function IRCClient_server_commands(origin, command, cmdline) {
 		case "KICK":
 			var chanid;
 			var nickid;
+			var str;
+			var kick_reason;
 
 			if (!cmd[2])
 				break;
@@ -3988,12 +4445,66 @@ function IRCClient_server_commands(origin, command, cmdline) {
 				break;
 			if (cmd[1][0] == ":")
 				cmd[1]=cmd[1].slice(1);
-			the_channels = cmd[1].split(",");
+			var the_channels = cmd[1].split(",");
 			for (jchan in the_channels) {
 				if (the_channels[jchan][0] != "#")
 					break;
 				ThisOrigin.do_join(the_channels[jchan].slice(0,max_chanlen),"");
 			}
+			break;
+		case "PASS":
+			var result;
+
+			if (!this.hub || !cmd[3])
+				break;
+			if (cmd[3] != "QWK")
+				break;
+			if (cmd[2][0] == ":")
+				cmd[2] = cmd[2].slice(1);
+			if (cmd[4]) { // pass the message on to target.
+				var dest_server = searchbyserver(cmd[4]);
+				if (!dest_server) {
+					break;
+				} else if ((dest_server == -1) && 
+				           (this.flags&NLINE_IS_QWKMASTER)) {
+					var qwkid = cmd[2].toLowerCase();
+					var my_server = searchbynick(qwkid + ".synchro.net");
+					if (!my_server)
+						break;
+					if ((my_server.conntype ==
+					    TYPE_UNREGISTERED) &&
+					    (cmd[1] == "OK") ) {
+						my_server.server = true;
+						my_server.conntype = TYPE_SERVER;
+						my_server.finalize_server_connect("QWK");
+						break;
+					} else {
+						my_server.quit("ERROR: Server not configured.");
+						break;
+					}
+				} else if (dest_server) {
+					if (dest_server == -1)
+						break; // security trap
+					dest_server.rawout(":" + ThisOrigin.nick + " PASS " + cmd[1] + " :" + cmd[2] + " QWK " + dest_server.nick);
+				}
+				break;
+			}
+			// Are we passing this on to our qwk-master?
+			for (nl in NLines) {
+				if (NLines[nl].flags&NLINE_IS_QWKMASTER) {
+					var qwk_master = searchbyserver(NLines[nl].servername);
+					if (qwk_master) {
+						qwk_master.rawout(":" + ThisOrigin.nick + " PASS " + cmd[1] + " :" + cmd[2] + " QWK");
+						return 0;
+					}
+				}
+			}
+			// If we got here, we must be the qwk master. Process.
+			if (check_qwk_passwd(cmd[2],cmd[1]))
+				result = "OK";
+			else
+				result = "VOID";
+			this.rawout(":" + servername + " PASS " + result + " :" + cmd[2] + " QWK " + ThisOrigin.nick);
 			break;
 		case "SJOIN":
 			if (!cmd[2])
@@ -4630,6 +5141,26 @@ function IRCClient_work() {
 		}
 	}
 }
+
+function IRCClient_finalize_server_connect(states) {
+	hcc_counter++;
+	oper_notice("Routing","Link with " + this.nick + "[unknown@" + this.hostname + "] established, states: " + states);
+	if (server.client_update != undefined)
+		server.client_update(this.socket, this.nick, this.hostname);
+	if (!this.sentps) {
+	for (cl in CLines) {
+		if(match_irc_mask(this.nick,CLines[cl].servername)) {
+			this.rawout("PASS " + CLines[cl].password + " :" + states);
+				break;
+			}
+		}
+		this.rawout("CAPAB " + server_capab);
+		this.rawout("SERVER " + servername + " 1 :" + serverdesc);
+	}
+	this.bcast_to_servers_raw(":" + servername + " SERVER " + this.nick + " 2 :" + this.realname);
+	this.synchronize();
+}
+
 
 ///////////////////////////////////
 ///////////////////////////////////
