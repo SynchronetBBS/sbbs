@@ -160,7 +160,7 @@ void ciomouse_gotevent(int event, int x, int y)
 void add_outevent(int event, int x, int y)
 {
 	struct out_mouse_event *ome;
-	int	but=0;
+	int	but;
 
 	if(!(mouse_events & 1<<event))
 		return;
@@ -456,12 +456,10 @@ int ciolib_getmouse(struct mouse_event *mevent)
 
 int ciolib_ungetmouse(struct mouse_event *mevent)
 {
-	int retval=0;
 	struct mouse_event *me;
 
 	if((me=(struct mouse_event *)malloc(sizeof(struct mouse_event)))==NULL)
 		return(-1);
 	memcpy(me,mevent,sizeof(struct mouse_event));
-	listAddNode(&state.output,me,FIRST_NODE);
-	return(0);
+	return(listAddNode(&state.output,me,FIRST_NODE)==NULL);
 }
