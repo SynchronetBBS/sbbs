@@ -83,10 +83,6 @@ extern "C" {
 
 	#define DESCRIBE_COMPILER(str) SAFEPRINTF(str,"MSC %u", _MSC_VER);
 
-#elif defined(__GNUC__) && defined(__VERSION__)
-
-	#define DESCRIBE_COMPILER(str) SAFEPRINTF(str,"GCC %s", __VERSION__);
-
 #elif defined(__GNUC__) && defined(__GNUC_PATCHLEVEL__)
 
 	#define DESCRIBE_COMPILER(str) SAFEPRINTF3(str,"GCC %u.%u.%u" \
