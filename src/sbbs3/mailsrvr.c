@@ -111,7 +111,6 @@ static int		mailproc_count;
 struct mailproc {
 	char		cmdline[INI_MAX_VALUE_LEN];
 	str_list_t	to;
-	BOOL		match;
 	BOOL		passthru;
 	BOOL		native;
 } *mailproc_list;
@@ -638,11 +637,11 @@ static void pop3_thread(void* arg)
 	int			rd;
 	BOOL		activity=FALSE;
 	BOOL		apop=FALSE;
-	ulong		l;
+	long		l;
 	ulong		lines;
 	ulong		lines_sent;
-	long		msgs;
-	ulong		bytes,msgnum;
+	long		msgs,msgnum;
+	ulong		bytes;
 	SOCKET		socket;
 	HOSTENT*	host;
 	smb_t		smb;
@@ -1845,6 +1844,7 @@ static void smtp_thread(void* arg)
 	smtp_t		smtp=*(smtp_t*)arg;
 	SOCKADDR_IN server_addr;
 	IN_ADDR		dnsbl_result;
+	BOOL*		mailproc_match;
 	enum {
 			 SMTP_STATE_INITIAL
 			,SMTP_STATE_HELO
@@ -1886,6 +1886,15 @@ static void smtp_thread(void* arg)
 		thread_down();
 		return;
 	} 
+
+	if((mailproc_match=alloca(sizeof(BOOL)*mailproc_count))==NULL) {
+		lprintf(LOG_ERR,"%04d !SMTP ERROR allocating memory for mailproc_match", socket);
+		sockprintf(socket,sys_error);
+		mail_close_socket(socket);
+		thread_down();
+		return;
+	} 
+	memset(mailproc_match,0,sizeof(BOOL)*mailproc_count);
 
 	memset(&smb,0,sizeof(smb));
 	memset(&msg,0,sizeof(msg));
@@ -2123,7 +2132,7 @@ static void smtp_thread(void* arg)
 					for(i=0;i<mailproc_count;i++) {
 
 						/* This processor is for specific recipients only and did not match */
-						if(strListCount(mailproc_list[i].to) && !mailproc_list[i].match)
+						if(strListCount(mailproc_list[i].to) && !mailproc_match[i])
 							continue;
 
 						mailcmdstr(mailproc_list[i].cmdline
@@ -3003,15 +3012,13 @@ static void smtp_thread(void* arg)
 			}
 
 			for(i=0;i<mailproc_count;i++) {
-				mailproc_list[i].match=FALSE;
+				mailproc_match[i]=FALSE;
 				if(mailproc_list[i].to!=NULL) {
 					for(j=0;mailproc_list[i].to[j]!=NULL;j++) {
 						if(stricmp(p,mailproc_list[i].to[j])==0)
-							mailproc_list[i].match=TRUE;
+							mailproc_match[i]=TRUE;
 					}
 				}
-				if(mailproc_list[i].match)
-					break;
 			}
 			/* destined for an external mail processor */
 			if(i<mailproc_count && !mailproc_list[i].passthru) {
