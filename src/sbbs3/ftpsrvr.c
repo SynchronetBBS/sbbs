@@ -469,7 +469,8 @@ static JSClass js_ftp_class = {
         JS_EnumerateStub,JS_ResolveStub,JS_ConvertStub,JS_FinalizeStub 
 }; 
 
-JSContext* js_initcx(SOCKET sock, JSObject** glob, JSObject** ftp)
+static JSContext* 
+js_initcx(SOCKET sock, JSObject** glob, JSObject** ftp)
 {
 	char		ver[256];
 	JSContext*	js_cx;
