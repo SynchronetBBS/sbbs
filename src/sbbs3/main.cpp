@@ -726,7 +726,7 @@ bool sbbs_t::js_init()
 			break;
 
 		/* User class */
-		if(js_CreateUserClass(js_cx, js_glob, &cfg)==NULL) 
+		if(js_CreateUserClass(js_cx, js_glob, &scfg)==NULL) 
 			break;
 
 		/* Area Objects */
