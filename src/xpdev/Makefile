@@ -4,6 +4,8 @@ SRC_ROOT	=	..
 #The following is necessary only when DLL-exporting wrapper functions
 #CFLAGS	=	$(CFLAGS) -DWRAPPER_EXPORTS
 
+MT_CFLAGS = $(MT_CFLAGS) -DLINK_LIST_THREADSAFE
+
 $(XPDEV_LIB_BUILD): $(OBJS)
 	@echo Creating $< ...
 	-$(QUIET)$(DELETE) $@

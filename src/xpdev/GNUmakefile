@@ -5,6 +5,8 @@ ifdef XP_SEM
 	MTOBJS	+=	$(MTOBJODIR)$(DIRSEP)xpsem$(OFILE)
 endif
 
+MT_CFLAGS += LINK_LIST_THREADSAFE
+
 # Executable Build Rule
 $(WRAPTEST): $(OBJODIR)/wraptest.o $(DEPS)
 	@echo Linking $@
