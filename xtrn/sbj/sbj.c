@@ -269,7 +269,7 @@ int main(int argc, char **argv)
 		pause();
 		return(1); }
 
-	if(!fexist("CARD.DAB")) {
+	if(!fexist("card.dab")) {
 		cur_card=0;
 		dc=0;
 		memset(dealer,0,sizeof(dealer));
@@ -278,11 +278,11 @@ int main(int argc, char **argv)
 	else {
 		getcarddat();
 		if(total_decks!=sys_decks) {
-			remove("CARD.DAB");
+			remove("card.dab");
 			total_decks=sys_decks;
 			putcarddat(); } }
 
-	if(!fexist("GAME.DAB"))         /* File's not there */
+	if(!fexist("game.dab"))         /* File's not there */
 		create_gamedab();
 
 	open_gamedab();
@@ -1438,7 +1438,7 @@ void getcarddat()
 	int file;
 
 if((file=nopen("card.dab",O_RDONLY))==-1) {
-	bputs("getcarddat: Error opening CARD.DAB\r\n");
+	bputs("getcarddat: Error opening card.dab\r\n");
 	return; }
 read(file,&dc,1);
 read(file,dealer,sizeof(dealer));
@@ -1457,7 +1457,7 @@ void putcarddat()
 	int file;
 
 if((file=nopen("card.dab",O_WRONLY|O_CREAT))==-1) {
-	bputs("putcarddat: Error opening CARD.DAB\r\n");
+	bputs("putcarddat: Error opening card.dab\r\n");
 	return; }
 write(file,&dc,1);
 write(file,dealer,sizeof(dealer));
@@ -1747,7 +1747,7 @@ void create_gamedab()
 
 if((gamedab=sopen("game.dab"
 	,O_WRONLY|O_CREAT|O_BINARY,SH_DENYNO))==-1) {
-	bputs("Error creating GAME.DAB\r\n");
+	bputs("Error creating game.dab\r\n");
 	pause();
 	exit(1); }
 misc=0;
@@ -1770,7 +1770,7 @@ close(gamedab);
 void open_gamedab()
 {
 if((gamedab=sopen("game.dab",O_RDWR|O_BINARY,SH_DENYNO))==-1) {
-    bputs("Error opening GAME.DAB\r\n");                /* open deny none */
+    bputs("Error opening game.dab\r\n");                /* open deny none */
     pause();
 	exit(1); }
 }
@@ -1839,7 +1839,7 @@ while(lock(gamedab,0L,filelength(gamedab))==-1 && i++<100)
 	mswait(30);  /* lock the whole thing */
 if(i>=100) {
 //	  printf("gamedab=%d %04X:%p %04X\r\n",gamedab,_psp,&gamedab,_DS);
-	printf("\7getgamedat: error locking GAME.DAB\r\n"); }
+	printf("\7getgamedat: error locking game.dab\r\n"); }
 
 lseek(gamedab,0L,SEEK_SET);
 read(gamedab,&misc,1);
