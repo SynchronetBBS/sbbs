@@ -2429,7 +2429,7 @@ function IRCClient_registered_commands(command, cmdline) {
 			}
 			break;
 		case "EVAL":	/* Evaluate a JavaScript expression */
-			if (!((this.mode&USERMODE_OPER)
+			if (!((this.mode&USERMODE_OPER) &&
 			      (this.operflags&OLINE_CAN_DEBUG))) {
 				this.numeric481();
 				break;
