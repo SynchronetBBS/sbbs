@@ -63,7 +63,7 @@ extern "C" {
 #endif
 int	 xp_sem_init (xp_sem_t *, int, unsigned int);
 int	 xp_sem_destroy (xp_sem_t *);
-xp_sem_t	*sem_open (const char *, int, ...);
+xp_sem_t	*xp_sem_open (const char *, int, ...);
 int	 xp_sem_close (xp_sem_t *);
 int	 xp_sem_unlink (const char *);
 int	 xp_sem_wait (xp_sem_t *);
