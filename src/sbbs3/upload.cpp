@@ -149,7 +149,7 @@ bool sbbs_t::uploadfile(file_t *f)
 				if(!f->desc[0]) {
 					strcpy(desc,ext);
 					strip_exascii(desc);
-					strip_ctrl(desc);
+					prep_file_desc(desc);
 					for(i=0;desc[i];i++)
 						if(isalnum(desc[i]))
 							break;

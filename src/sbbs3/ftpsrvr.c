@@ -1629,7 +1629,7 @@ static void receive_thread(void* arg)
 						if(!f.desc[0]) {			/* use for normal description */
 							strcpy(desc,ext);
 							strip_exascii(desc);	/* strip extended ASCII chars */
-							strip_ctrl(desc);		/* strip control chars */
+							prep_file_desc(desc);	/* strip control chars and dupe chars */
 							for(i=0;desc[i];i++)	/* find approprate first char */
 								if(isalnum(desc[i]))
 									break;
