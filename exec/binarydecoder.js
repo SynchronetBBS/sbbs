@@ -15,6 +15,8 @@ printf("Synchronet Binary Decoder %s session started\r\n", REVISION);
 lines_per_yield=10;
 yield_length=1;
 completed_files=0;
+remove_msg=true;
+remove_non_bin_msgs=true;
 sub = new Array();
 
 var ini_fname = system.ctrl_dir + "binarydecoder.ini";
@@ -121,6 +123,29 @@ for(i in sub) {
 		if(hdr.attr&MSG_DELETE)	/* marked for deletion */
 			continue;
 
+		file = new File(system.temp_dir + "binary.tmp");
+
+		var part=0;
+		var obj;
+
+		print(hdr.subject);
+		for(o in parts_list) {
+			obj=parts_list[o];
+			if(obj.codec=="uue" 
+				&& (part=compare_subject(hdr.subject,obj.subject))!=0) {
+				fname=obj.name.toString();
+				file.uue=true;
+				break;
+			}
+		}
+		if(part && obj!=undefined) {
+			prop=format("part%u.id",part);
+			if(obj[prop]!=undefined) {
+				printf("Part %u of %s already in database\r\n",part,fname);
+				continue;
+			}
+		}
+
 		body = msgbase.get_msg_body(
 				 false	/* retrieve by offset */
 				,ptr	/* message number */
@@ -133,21 +158,9 @@ for(i in sub) {
 			continue;
 		}
 
-		file = new File(system.temp_dir + "binary.tmp");
 		if(!file.open("w+b")) {
 			printf("!ERROR %d opening/creating %s\r\n",file.error,file.name);
 			continue;
-		}
-
-		var part=0;
-
-		for(o in parts_list) {
-			obj=parts_list[o];
-			if(obj.codec=="uue" 
-				&& (part=compare_subject(hdr.subject,obj.subject))!=0) {
-				fname=obj.name.toString();
-				file.uue=true;
-			}
 		}
 
 		var begin,end;
@@ -163,8 +176,12 @@ for(i in sub) {
 			line=lines[li];
 
 			if(file.uue && line=="end") {
-				if(!part)
-					complete_file(file,fname,attachment_dir);
+				if(!part) {
+					if(complete_file(file,fname,attachment_dir) && remove_msg) {
+						if(!msgbase.remove_msg(ptr))
+							printf("!FAILED to remove message number %ld\r\n",ptr);
+					}
+				}
 				li--;
 				break;
 			}
@@ -251,7 +268,10 @@ for(i in sub) {
 					continue;
 				}
 
-				complete_file(file,fname,attachment_dir);
+				if(complete_file(file,fname,attachment_dir) && remove_msg) {
+					if(!msgbase.remove_msg(ptr))
+						printf("!FAILED to remove message number %ld\r\n",ptr);
+				}
 				break;
 			}
 
@@ -293,7 +313,13 @@ for(i in sub) {
 					part=parseInt(line.slice(part+6),10);
 				else
 					part=0;
+
 				if(part) {
+					if(part_exists(parts_list,fname,size,part,total)) {
+						printf("Part %u/%u of %s already exists in database\r\n"
+							,part,total,fname);
+						break;
+					}
 					line=lines[++li];
 					printf("ypart header: %s\r\n",line);
 					if(line.substr(0,7)!="=ypart "
@@ -392,6 +418,10 @@ exit();	/* all done */
 /****************************************************************************/
 function compare_subject(subj1, subj2)
 {
+	part=subj1.lastIndexOf('(');
+	if(part<0)
+		return(0);
+
 	/* first compare lengths */
 	length=subj1.length;
 	if(!length)
@@ -400,9 +430,11 @@ function compare_subject(subj1, subj2)
 		return(0);
 	if(subj1==subj2)			/* but not duplicate part */
 		return(0);
+	if(subj1.substr(0,part+1)!=subj2.substr(0,part+1))
+		return(0);
 
 	diff="";
-	for(i=0;i<length;i++) {
+	for(i=part;i<length;i++) {
 		if(subj1.charAt(i)!=subj2.charAt(i))
 			diff+=(subj1.charAt(i)+subj2.charAt(i));
 	}
@@ -418,9 +450,7 @@ function compare_subject(subj1, subj2)
 		return(0);
 
 	/* parse part number */
-	part=subj1.lastIndexOf('(');
-	if(part>=0)
-		part=parseInt(subj1.slice(part+1),10);
+	part=parseInt(subj1.slice(part+1),10);
 	if(part>0)
 		return(part);
 	return(0);
@@ -543,6 +573,21 @@ function add_part(list,sub_code,hdr
 	return(true);
 }
 
+function part_exists(list,fname,size,part,total)
+{
+	var li;
+	for(li=0; li<list.length; li++) {
+		if(list[li].name!=fname 
+			|| list[li].size!=size
+			|| list[li].total!=total)
+			continue;
+		prop=format("part%u.id",part);
+		if(list[li][prop]!=undefined)
+			return(true);
+	}
+	return(false);
+}
+
 /****************************************************************************/
 /* Combine parts for complete files											*/
 /****************************************************************************/
@@ -568,7 +613,7 @@ function combine_parts(list,attachment_dir)
 			printf("Processing part %u of %u\r\n",pi,obj.total);
 			var prefix=format("part%u.",pi);
 			sub_code=obj[prefix + "sub"];
-			msgbase=new MsgBase(sub_code);
+			var msgbase=new MsgBase(sub_code);
 			if(msgbase.open()==false) {
 				printf("!ERROR %s opening msgbase: %s\r\n",msgbase.last_error,sub_code);
 				delete msgbase;
@@ -593,6 +638,9 @@ function combine_parts(list,attachment_dir)
 			last_line=obj[prefix + "last_line"];
 			for(var l=first_line;l<=last_line;l++)
 				file.write(lines[l]);
+
+			if(!msgbase.remove_msg(ptr) && remove_msg)
+				printf("!FAILED to remove message number %ld\r\n",ptr);
 
 			delete msgbase;
 		}
