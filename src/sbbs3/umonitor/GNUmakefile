@@ -95,6 +95,7 @@ OBJS	:=	$(LIBODIR)/filewrap.o \
 			$(LIBODIR)/crc16.o \
 			$(LIBODIR)/load_cfg.o \
 			$(LIBODIR)/date_str.o \
+			$(LIBODIR)/spyon.o \
 			$(LIBODIR)/umonitor.o
 
 all: $(LIBODIR) $(BUILD_DEPENDS)$(EXEODIR)/umonitor
