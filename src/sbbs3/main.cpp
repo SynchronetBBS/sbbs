@@ -260,6 +260,12 @@ u_long resolve_ip(char *addr)
 
 #ifdef JAVASCRIPT
 
+/* 
+ * @method: log
+ * @syntax: log([value][,value][...])
+ * @arg:	value Variable or constant of any type
+ * @desc:	Print one or more values (typically Strings) in the local log window/display.
+ */
 static JSBool
 js_log(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
@@ -283,6 +289,11 @@ js_log(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	*rval = JSVAL_VOID;
     return(JS_TRUE);
 }
+
+/*
+ * @method: print
+ * @usage: print([value][,value][...])
+ */
 
 static JSBool
 js_print(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
@@ -727,7 +738,7 @@ void input_thread(void *arg)
     sbbs->input_thread_running = true;
 	sbbs->console|=CON_R_INPUT;
 
-	while(sbbs->online) {
+	while(sbbs->online && sbbs->client_socket!=INVALID_SOCKET) {
 
 		pthread_mutex_lock(&sbbs->input_thread_mutex);
 
@@ -757,7 +768,6 @@ void input_thread(void *arg)
 			else
 				lprintf("Node %d !ERROR %d input->select socket %d"
                 	,sbbs->cfg.node_num, ERROR_VALUE, sbbs->client_socket);
-			sbbs->online=0;
 			break;
 		}
 
@@ -795,14 +805,12 @@ void input_thread(void *arg)
 			else
 				lprintf("Node %d !ERROR %d receiving from socket %d"
                 	,sbbs->cfg.node_num, ERROR_VALUE, sbbs->client_socket);
-			sbbs->online=0;
 			break;
 		}
 
 		if(rd == 0)
 		{
 			lprintf("Node %d disconnected", sbbs->cfg.node_num);
-			sbbs->online=0;
 			break;
 		}
 
@@ -834,6 +842,7 @@ void input_thread(void *arg)
 //		if(wr>100)
 //			mswait(500);	// Throttle sender
 	}
+	sbbs->online=0;
 
     sbbs->input_thread_running = false;
 	if(node_socket[sbbs->cfg.node_num-1]==INVALID_SOCKET)	// Shutdown locally
@@ -3501,7 +3510,8 @@ void DLLCALL bbs_thread(void* arg)
 		FD_ZERO(&socket_set);
 		FD_SET(telnet_socket,&socket_set);
 		high_socket_set=telnet_socket+1;
-		if(startup->options&BBS_OPT_ALLOW_RLOGIN) {
+		if(startup->options&BBS_OPT_ALLOW_RLOGIN 
+			&& rlogin_socket!=INVALID_SOCKET) {
 			FD_SET(rlogin_socket,&socket_set);
 			if(rlogin_socket+1>high_socket_set)
 				high_socket_set=rlogin_socket+1;
