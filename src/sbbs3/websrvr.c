@@ -850,6 +850,8 @@ static BOOL check_ars(http_session_t * session)
 	}
 
 	username=strtok(session->req.auth,":");
+	if(username==NULL)
+		username="";
 	password=strtok(NULL,":");
 	/* Require a password */
 	if(password==NULL)
