@@ -167,6 +167,23 @@ static void truncsp(char *str)
 	while(c && (uchar)str[c-1]<=SP) c--;
 	str[c]=0;
 }
+
+/****************************************************************************/
+/* Convert ASCIIZ string to upper case										*/
+/****************************************************************************/
+#if defined(__unix__)
+static char* strupr(char* str)
+{
+	char*	p=str;
+
+	while(*p) {
+		*p=toupper(*p);
+		p++;
+	}
+	return(str);
+}
+#endif
+
 /****************************************************************************/
 /* General menu function, see uifc.h for details.							*/
 /****************************************************************************/
@@ -174,7 +191,7 @@ int ulist(int mode, char left, int top, char width, int *cur, int *bar
 	, char *title, char **option)
 {
     char str[128];
-	int i,j,opts;
+	int i,opts;
     int optnumlen;
     int yesno=0;
     int lines;
