@@ -7,8 +7,6 @@ struct terminal {
 	int	x;
 	int	y;
 	char *buffer;
-	int	xpos;
-	int	ypos;
 	int	attr;
 	int save_xpos;
 	int save_ypos;
