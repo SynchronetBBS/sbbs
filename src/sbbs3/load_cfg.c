@@ -183,8 +183,8 @@ void prep_cfg(scfg_t* cfg)
 	}
 
 	for(i=0;i<cfg->total_libs;i++) {
-		if(cfg->lib[i]->root[0])
-			prep_dir(cfg->ctrl_dir, cfg->lib[i]->root);
+		if(cfg->lib[i]->parent_path[0])
+			prep_dir(cfg->ctrl_dir, cfg->lib[i]->parent_path);
 	}
 
 	for(i=0;i<cfg->total_dirs;i++) {
@@ -198,8 +198,8 @@ void prep_cfg(scfg_t* cfg)
 
 		if(!cfg->dir[i]->path[0])		/* no file storage path specified */
             sprintf(cfg->dir[i]->path,"%sdirs/%s/",cfg->data_dir,cfg->dir[i]->code);
-		else if(cfg->lib[cfg->dir[i]->lib]->root[0])
-			prep_dir(cfg->lib[cfg->dir[i]->lib]->root, cfg->dir[i]->path);
+		else if(cfg->lib[cfg->dir[i]->lib]->parent_path[0])
+			prep_dir(cfg->lib[cfg->dir[i]->lib]->parent_path, cfg->dir[i]->path);
 		else
 			prep_dir(cfg->ctrl_dir, cfg->dir[i]->path);
 

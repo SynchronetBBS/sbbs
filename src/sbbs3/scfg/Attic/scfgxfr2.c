@@ -190,8 +190,8 @@ library, select Yes.
 		j=0;
 		sprintf(opt[j++],"%-27.27s%s","Long Name",cfg.lib[i]->lname);
 		sprintf(opt[j++],"%-27.27s%s","Short Name",cfg.lib[i]->sname);
-		sprintf(opt[j++],"%-27.27s%.40s","Root Directory"
-			,cfg.lib[i]->root);
+		sprintf(opt[j++],"%-27.27s%.40s","Parent Directory"
+			,cfg.lib[i]->parent_path);
 		sprintf(opt[j++],"%-27.27s%.40s","Access Requirements"
 			,cfg.lib[i]->arstr);
 		strcpy(opt[j++],"Clone Options");
@@ -240,13 +240,20 @@ file transfer menu prompt.
 			case 2:
 				SETHELP(WHERE);
 /*
-Root Directory:
+Parent Directory:
 
-This an optional path to be used as the physical "root" or "parent" 
-directory for all logical directories in this library.
+This an optional path to be used as the physical "parent" directory for 
+all logical directories in this library. This parent directory will be
+used in combination with each directory's storage path to create the
+full physical storage path for files in this directory.
+
+This option is convenient for adding libraries with many directories
+that share a common parent directory (e.g. CD-ROMs) and gives you the
+option of easily changing the common parent directory location later, if
+desired.
 */
-				uifc.input(WIN_MID|WIN_SAV,0,0,"Root"
-					,cfg.lib[i]->root,LEN_DIR,K_EDIT);
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Parent Directory"
+					,cfg.lib[i]->parent_path,sizeof(cfg.lib[i]->parent_path)-1,K_EDIT);
 				break;
 			case 3:
 				sprintf(str,"%s Library",cfg.lib[i]->sname);
@@ -409,7 +416,7 @@ command: DIR /ON /AD /B > DIRS.RAW
 				else if(k==1)
 					sprintf(str,"FILEBONE.NA");
 				else {
-					strcpy(str,cfg.lib[i]->root);
+					strcpy(str,cfg.lib[i]->parent_path);
 					backslash(str);
 					strcat(str,"dirs.raw");
 				}
