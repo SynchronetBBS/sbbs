@@ -34,6 +34,12 @@ for(h in host_list) {
 			case "pw?":
 				writeln(argv[0]);
 				break;
+			case "ip?":
+				if(argv[1])
+					writeln(argv[1]);
+				else
+					writeln("");
+				break;
 			default:
 				writeln("");
 				break;
