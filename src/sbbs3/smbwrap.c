@@ -126,30 +126,30 @@ BOOL SMBCALL fexist(char *filespec)
 
 #elif defined(__unix__)	/* portion by cmartin */
 
-	glob_t *aglob;
+	glob_t g;
     int c;
     int l;
 
     // start the search
-    glob(filespec, GLOB_MARK | GLOB_NOSORT, NULL, aglob);
+    glob(filespec, GLOB_MARK | GLOB_NOSORT, NULL, &g);
 
-    if (!aglob->gl_pathc) {
+    if (!g.gl_pathc) {
 	    // no results
-    	globfree(aglob);
+    	globfree(&g);
     	return FALSE;
     }
 
     // make sure it's not a directory
-	c = aglob->gl_pathc;
+	c = g.gl_pathc;
     while (c--) {
-    	l = strlen(aglob->gl_pathv[c]);
-    	if (aglob->gl_pathv[c][l] != '/') {
-        	globfree(aglob);
+    	l = strlen(g.gl_pathv[c]);
+    	if (l && g.gl_pathv[c][l-1] != '/') {
+        	globfree(&g);
             return TRUE;
         }
     }
         
-    globfree(aglob);
+    globfree(&g);
     return FALSE;
 
 #else
