@@ -593,6 +593,13 @@ static void close_request(http_session_t * session)
 		session->socket=INVALID_SOCKET;
 		session->finished=TRUE;
 	}
+
+	if(session->js_cx!=NULL) {
+		lprintf("%04d JavaScript: Destroying context",socket);
+		JS_DestroyContext(session->js_cx);	/* Free Context */
+		session->js_cx=NULL;
+	}
+
 }
 
 static int get_header_type(char *header)
@@ -702,7 +709,7 @@ static BOOL send_headers(http_session_t *session, const char *status)
 		session->req.keep_alive=FALSE;
 	}
 
-	if(session->req.was_cgi)  {
+//	if(session->req.was_cgi)  {
 		/* CGI-generated headers */
 		/* Set up environment */
 		p=session->req.cgi_heads;
@@ -710,7 +717,7 @@ static BOOL send_headers(http_session_t *session, const char *status)
 			sockprintf(session->socket,"%s",p->val);
 			p=p->next;
 		}
-	}
+//	}
 
 	/* Will fail if socket becomes invalid - I think */
 	send_file=(sendsocket(session->socket,newline,2)>0);
@@ -1139,6 +1146,7 @@ static char *get_request(http_session_t * session, char *req_line)
 	strtok(session->req.virtual_path,"?");
 	p=strtok(NULL,"");
 	SAFECOPY(session->req.query_str,p);
+	lprintf("Set query_str to: %s",p);
 	add_env(session,"QUERY_STRING",p);
 	unescape(session->req.virtual_path);
 	SAFECOPY(session->req.physical_path,session->req.virtual_path);
@@ -1668,6 +1676,7 @@ JSObject* DLLCALL js_CreateHttpRequestObject(JSContext* cx, JSObject* parent, ht
 									, NULL, JSPROP_ENUMERATE);
 
 	SAFECOPY(query_str,session->req.query_str);
+	lprintf("Parsing query string: %s",query_str);
 	p=query_str;
 	while((key=strtok(p,"="))!=NULL)  {
 		p=NULL;
@@ -1676,6 +1685,7 @@ JSObject* DLLCALL js_CreateHttpRequestObject(JSContext* cx, JSObject* parent, ht
 			if(value != NULL)  {
 				unescape(value);
 				unescape(key);
+				lprintf("Setting %s to %s",key,value);
 				if((js_str=JS_NewStringCopyZ(cx, value))==NULL)
 					return(FALSE);
 				JS_DefineProperty(cx, query, key, STRING_TO_JSVAL(js_str)
@@ -1809,12 +1819,12 @@ js_initcx(JSRuntime* runtime, SOCKET sock, JSObject** glob, http_session_t *sess
 		if (!JS_DefineFunctions(js_cx, js_glob, js_global_functions)) 
 			break;
 
-		lprintf("%04d JavaScript: Initializing System object",sock);
-		if(js_CreateSystemObject(js_cx, js_glob, &scfg, uptime, startup->host_name)==NULL) 
-			break;
-
 		lprintf("%04d JavaScript: Initializing HttpRequest object",sock);
 		if(js_CreateHttpRequestObject(js_cx, js_glob, session)==NULL) 
+			break;
+
+		lprintf("%04d JavaScript: Initializing System object",sock);
+		if(js_CreateSystemObject(js_cx, js_glob, &scfg, uptime, startup->host_name)==NULL) 
 			break;
 
 		if((server=JS_DefineObject(js_cx, js_glob, "server", NULL,NULL,0))==NULL)
@@ -1842,6 +1852,7 @@ js_initcx(JSRuntime* runtime, SOCKET sock, JSObject** glob, http_session_t *sess
 
 	if(!success) {
 		JS_DestroyContext(js_cx);
+		session->js_cx=NULL;
 		return(NULL);
 	}
 
@@ -1941,6 +1952,8 @@ static void respond(http_session_t * session)
 
 	if(is_js(session)) {	/* Server-Side JavaScript */
 
+		lprintf("Setting up JavaScript support");
+
 		if(!js_setup(session)) {
 			lprintf("%04d !ERROR setting up JavaScript support", session->socket);
 			send_error(session,"500 Internal Server Error");
@@ -1988,6 +2001,8 @@ static void respond(http_session_t * session)
 
 	if(session->http_ver > HTTP_0_9)  {
 		session->req.mime_type=get_mime_type(strrchr(session->req.physical_path,'.'));
+		session->req.cgi_heads=add_list(session->req.cgi_heads,"Expires: 0");
+		session->req.cgi_heads=add_list(session->req.cgi_heads,"Pragma: no-cache");
 		send_file=send_headers(session,"200 OK");
 	}
 	if(send_file)  {
@@ -2073,6 +2088,7 @@ void http_session_thread(void* arg)
 	if(session.js_cx!=NULL) {
 		lprintf("%04d JavaScript: Destroying context",socket);
 		JS_DestroyContext(session.js_cx);	/* Free Context */
+		session.js_cx=NULL;
 	}
 
 	if(session.js_runtime!=NULL) {
