@@ -65,11 +65,7 @@ $(LIBODIR)$(SLASH)scansubs.$(OFILE):	$(HEADERS)
 $(LIBODIR)$(SLASH)scfglib1.$(OFILE):	$(HEADERS) scfglib.h
 $(LIBODIR)$(SLASH)scfglib2.$(OFILE):	$(HEADERS) scfglib.h
 $(LIBODIR)$(SLASH)smblib.$(OFILE):    	smblib.h smbdefs.h
-$(EXEODIR)$(SLASH)smblib.$(OFILE):    	smblib.h smbdefs.h
 $(LIBODIR)$(SLASH)smbtxt.$(OFILE):   	smblib.h lzh.h
-$(EXEODIR)$(SLASH)smbtxt.$(OFILE):   	smblib.h lzh.h
-$(LIBODIR)$(SLASH)smbwrap.$(OFILE):   	smbwrap.h
-$(EXEODIR)$(SLASH)smbwrap.$(OFILE):   	smbwrap.h
 $(LIBODIR)$(SLASH)sortdir.$(OFILE):		$(HEADERS)
 $(LIBODIR)$(SLASH)str.$(OFILE):			$(HEADERS)
 $(LIBODIR)$(SLASH)telgate.$(OFILE):		$(HEADERS)
@@ -84,7 +80,6 @@ $(LIBODIR)$(SLASH)useredit.$(OFILE):	$(HEADERS)
 $(LIBODIR)$(SLASH)getuser.$(OFILE):		$(HEADERS)
 $(LIBODIR)$(SLASH)ver.$(OFILE):			$(HEADERS) $(OBJS)
 $(LIBODIR)$(SLASH)viewfile.$(OFILE):	$(HEADERS)
-$(LIBODIR)$(SLASH)wrappers.$(OFILE):	$(HEADERS)
 $(LIBODIR)$(SLASH)writemsg.$(OFILE):	$(HEADERS)
 $(LIBODIR)$(SLASH)xtrn.$(OFILE):		$(HEADERS) cmdshell.h
 $(LIBODIR)$(SLASH)xtrn_sec.$(OFILE):	$(HEADERS)
