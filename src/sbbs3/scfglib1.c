@@ -42,7 +42,10 @@ const char *scfgnulstr="";
 
 void prep_path(char* base, char* path)
 {
-	char str[LEN_DIR*2];
+#ifdef __unix__
+	char	*p;
+#endif
+	char	str[LEN_DIR*2];
 
 	if(!path[0])
 		return;
@@ -50,6 +53,13 @@ void prep_path(char* base, char* path)
 		sprintf(str,"%s%s",base,path);
 	else
 		strcpy(str,path);
+
+#ifdef __unix__				/* Change backslashes to forward slashes on Unix */
+	for(p=str;*p;p++)
+		if(*p=='\\') 
+			*p='/';
+#endif
+
 	backslashcolon(str);
 	strcat(str,".");                // Change C: to C:. and C:\SBBS\ to C:\SBBS\.
 	_fullpath(path,str,LEN_DIR+1);	// Change C:\SBBS\NODE1\..\EXEC to C:\SBBS\EXEC
