@@ -135,11 +135,10 @@ void sbbs_t::telnet_gate(char* destaddr, ulong mode)
 	}
 	
 	/* This is required for gating to Unix telnetd */
-	send_telnet_cmd(TELNET_DONT,TELNET_TERM_TYPE);	// Re-negotiation of terminal type
+	request_telnet_opt(TELNET_DONT,TELNET_TERM_TYPE);	// Re-negotiation of terminal type
 
 	/* Text/NVT mode by default */
-	send_telnet_cmd(TELNET_DONT,TELNET_BINARY);
-	telnet_mode&=~TELNET_MODE_BIN_RX;
+	request_telnet_opt(TELNET_DONT,TELNET_BINARY_TX);
 
 	while(online) {
 		if(!(mode&TG_NOCHKTIME))

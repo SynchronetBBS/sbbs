@@ -1026,10 +1026,8 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		rio_abortable=rio_abortable_save;	// Restore abortable state
 
 		/* Got back to Text/NVT mode */
-		if(telnet_mode&TELNET_MODE_BIN_RX) {
-			send_telnet_cmd(TELNET_DONT,TELNET_BINARY);
-			telnet_mode&=~TELNET_MODE_BIN_RX;
-		}
+		if(telnet_mode&TELNET_MODE_BIN_RX)
+			request_telnet_opt(TELNET_DONT,TELNET_BINARY_TX);
 	}
 
 //	lprintf("%s returned %d",realcmdline, retval);
@@ -1886,10 +1884,8 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		rio_abortable=rio_abortable_save;	// Restore abortable state
 
 		/* Got back to Text/NVT mode */
-		if(telnet_mode&TELNET_MODE_BIN_RX) {
-			send_telnet_cmd(TELNET_DONT,TELNET_BINARY);
-			telnet_mode&=~TELNET_MODE_BIN_RX;
-		}
+		if(telnet_mode&TELNET_MODE_BIN_RX)
+			request_telnet_opt(TELNET_DONT,TELNET_BINARY_TX);
 	}
 
 	close(err_pipe[0]);

@@ -1048,13 +1048,18 @@ static BYTE* telnet_interpret(sbbs_t* sbbs, BYTE* inbuf, int inlen,
             continue;
         }
         if(inbuf[i]==TELNET_IAC || sbbs->telnet_cmdlen) {
+
 			if(sbbs->telnet_cmdlen<sizeof(sbbs->telnet_cmd))
 				sbbs->telnet_cmd[sbbs->telnet_cmdlen++]=inbuf[i];
-			if(sbbs->telnet_cmdlen>=2 && sbbs->telnet_cmd[1]==TELNET_SB) {
+
+			uchar command	= sbbs->telnet_cmd[1];
+			uchar option	= sbbs->telnet_cmd[2];
+
+			if(sbbs->telnet_cmdlen>=2 && command==TELNET_SB) {
 				if(inbuf[i]==TELNET_SE 
 					&& sbbs->telnet_cmd[sbbs->telnet_cmdlen-2]==TELNET_IAC) {
 					/* sub-option terminated */
-					if(sbbs->telnet_cmd[2]==TELNET_TERM_TYPE
+					if(option==TELNET_TERM_TYPE
 						&& sbbs->telnet_cmd[3]==TELNET_TERM_IS) {
 						sprintf(sbbs->terminal,"%.*s",(int)sbbs->telnet_cmdlen-6,sbbs->telnet_cmd+4);
 						lprintf(LOG_DEBUG,"Node %d %s telnet terminal type: %s"
@@ -1070,32 +1075,65 @@ static BYTE* telnet_interpret(sbbs_t* sbbs, BYTE* inbuf, int inlen,
             		lprintf(LOG_DEBUG,"Node %d %s telnet cmd: %s"
 	                	,sbbs->cfg.node_num
 						,sbbs->telnet_mode&TELNET_MODE_GATE ? "passed-through" : "received"
-                		,telnet_cmd_desc(sbbs->telnet_cmd[2]));
+                		,telnet_cmd_desc(option));
                 sbbs->telnet_cmdlen=0;
             }
-            else if(sbbs->telnet_cmdlen>=3) {
-				if(sbbs->telnet_cmd[2]==TELNET_BINARY) {
-					if(sbbs->telnet_cmd[1]==TELNET_WILL)
-						sbbs->telnet_mode|=TELNET_MODE_BIN_RX;
-					else if(sbbs->telnet_cmd[1]==TELNET_WONT)
-						sbbs->telnet_mode&=~TELNET_MODE_BIN_RX;
-				}
-				if(sbbs->telnet_cmd[2]==TELNET_ECHO) {
-					if(sbbs->telnet_cmd[1]==TELNET_DO)
-						sbbs->telnet_mode|=TELNET_MODE_ECHO;
-					else if(sbbs->telnet_cmd[1]==TELNET_DONT) {
-						sbbs->telnet_mode&=~TELNET_MODE_ECHO;
-						if(!(sbbs->telnet_mode&TELNET_MODE_GATE))
-							sbbs->send_telnet_cmd(TELNET_WILL,TELNET_ECHO);
+            else if(sbbs->telnet_cmdlen>=3) {	/* telnet option negotiation */
+
+				uchar request = sbbs->telnet_option_request[option];
+
+				if(command==telnet_opt_ack(request) || command==telnet_opt_nak(request)) {
+					/* response to request */
+					if(startup->options&BBS_OPT_DEBUG_TELNET)
+						lprintf(LOG_DEBUG,"Node %d %s telnet response: %s %s"
+							,sbbs->cfg.node_num
+							,sbbs->telnet_mode&TELNET_MODE_GATE ? "passed-through" : "received"
+							,telnet_cmd_desc(command)
+							,telnet_opt_desc(option));
+
+					if(command==TELNET_WILL && option==TELNET_TERM_TYPE) {
+						char	buf[64];
+						sprintf(buf,"%c%c%c%c%c%c"
+							,TELNET_IAC,TELNET_SB
+							,TELNET_TERM_TYPE,TELNET_TERM_SEND
+							,TELNET_IAC,TELNET_SE);
+						sbbs->putcom(buf,6);
 					}
+
+					if(option==TELNET_BINARY_TX) {
+						if(command==TELNET_WILL)
+							sbbs->telnet_mode|=TELNET_MODE_BIN_RX;
+						else if(command==TELNET_WONT)
+							sbbs->telnet_mode&=~TELNET_MODE_BIN_RX;
+					}
+				
+					sbbs->telnet_option_request[option] = 0;
 				}
-				if(startup->options&BBS_OPT_DEBUG_TELNET)
-					lprintf(LOG_DEBUG,"Node %d %s telnet cmd: %s %s"
-	                    ,sbbs->cfg.node_num
-						,sbbs->telnet_mode&TELNET_MODE_GATE ? "passed-through" : "received"
-						,telnet_cmd_desc(sbbs->telnet_cmd[1])
-						,telnet_opt_desc(sbbs->telnet_cmd[2]));
+				else {	/* not a response */
+					if(startup->options&BBS_OPT_DEBUG_TELNET)
+						lprintf(LOG_DEBUG,"Node %d %s telnet cmd: %s %s"
+							,sbbs->cfg.node_num
+							,sbbs->telnet_mode&TELNET_MODE_GATE ? "passed-through" : "received"
+							,telnet_cmd_desc(command)
+							,telnet_opt_desc(option));
+
+					switch(option) {
+						case TELNET_BINARY_TX:
+						case TELNET_ECHO:
+						case TELNET_TERM_TYPE:
+						case TELNET_SUP_GA:
+							break;
+						default:	/* ACK unsupported remote options */
+							if(command==TELNET_WILL || command==TELNET_WONT)
+								sbbs->send_telnet_cmd(telnet_opt_ack(command),option);
+							else if(command==TELNET_DO)	/* NAK unsupported local options */
+								sbbs->send_telnet_cmd(telnet_opt_nak(command),option);
+							break;
+					}
+				
+				}
                 sbbs->telnet_cmdlen=0;
+
             }
 			if(sbbs->telnet_mode&TELNET_MODE_GATE)	// Pass-through commads
 				outbuf[outlen++]=inbuf[i];
@@ -1128,6 +1166,12 @@ void sbbs_t::send_telnet_cmd(uchar cmd, uchar opt)
 		sprintf(buf,"%c%c%c",TELNET_IAC,cmd,opt);
 		putcom(buf,3);
 	}
+}
+
+void sbbs_t::request_telnet_opt(uchar cmd, uchar opt)
+{
+	telnet_option_request[opt]=cmd;	/* save request */
+	send_telnet_cmd(cmd,opt);
 }
 
 void input_thread(void *arg)
@@ -2198,9 +2242,12 @@ sbbs_t::sbbs_t(ushort node_num, DWORD addr, char* name, SOCKET sd,
 	uselect_total = 0;
 	lbuflen = 0;
 	connection="Telnet";
+
+	memset(telnet_option_request,0,sizeof(telnet_option_request));
     telnet_cmdlen=0;
 	telnet_mode=0;
 	telnet_last_rxch=0;
+
 	sys_status=lncntr=tos=criterrs=keybufbot=keybuftop=lbuflen=slcnt=0L;
 	curatr=LIGHTGRAY;
 	attr_sp=0;	/* attribute stack pointer */

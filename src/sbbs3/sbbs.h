@@ -110,10 +110,13 @@
 #ifdef SBBS	
 	#include "text.h"
 #endif
+
+/* xpdev */
 #include "genwrap.h"
 #include "dirwrap.h"
 #include "filewrap.h"
 #include "sockwrap.h"
+
 #include "smblib.h"
 #include "ars_defs.h"
 #include "scfgdefs.h"
@@ -173,7 +176,10 @@ public:
 	void	hangup(void);		   // Hangup modem
 
 
+	uchar	telnet_option_request[0x100];
 	void	send_telnet_cmd(uchar cmd, uchar opt);
+	void	request_telnet_opt(uchar cmd, uchar opt);
+
     uchar	telnet_cmd[64];
     uint	telnet_cmdlen;
 	ulong	telnet_mode;
