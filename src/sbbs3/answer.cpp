@@ -131,7 +131,6 @@ bool sbbs_t::answer()
 	strcat(str,COPYRIGHT_NOTICE);
 	strip_ctrl(str);
 	center(str);
-	YIELD();
 
 	while(i++<50 && l<(int)sizeof(str)-1) { 	/* wait up to 5 seconds for response */
 		c=incom(100)&0x7f;
