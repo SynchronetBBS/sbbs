@@ -750,7 +750,7 @@ js_recvline(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	int32		len=512;
 	BOOL		rd;
 	time_t		start;
-	time_t		timeout=30;	/* seconds */
+	int32		timeout=30;	/* seconds */
 	JSString*	str;
 	private_t*	p;
 
@@ -921,7 +921,7 @@ static JSBool
 js_ioctlsocket(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	int32		cmd;
-	ulong		arg=0;
+	int32		arg=0;
 	private_t*	p;
 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
@@ -931,7 +931,7 @@ js_ioctlsocket(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 
 	JS_ValueToInt32(cx,argv[0],&cmd);
 	if(argc>1)
-		JS_ValueToInt32(cx,argv[1],(int32*)&arg);
+		JS_ValueToInt32(cx,argv[1],&arg);
 
 	if(ioctlsocket(p->sock,cmd,&arg)==0)
 		JS_NewNumberValue(cx,arg,rval);
