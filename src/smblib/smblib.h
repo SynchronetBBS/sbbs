@@ -65,9 +65,6 @@
 #elif defined __unix__
 	#define SMBCALL
 	#define SMBEXPORT
-#elif defined __FLAT__
-	#define SMBCALL
-	#define SMBEXPORT	_export
 #else
 	#define SMBCALL
 	#define SMBEXPORT
