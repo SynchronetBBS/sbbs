@@ -948,6 +948,11 @@ video_event(XEvent *ev)
 void
 video_async_event(int sig)
 {
+    sigemptyset(&sigset);
+    sigaddset(&sigset, SIGIO);
+    sigaddset(&sigset, SIGALRM);
+    sigprocmask(SIG_BLOCK, &sigset, 0);
+
 	for (;;) {
                 int x;
                 fd_set fdset;
@@ -978,6 +983,7 @@ video_async_event(int sig)
                          */
 
                         perror("select");
+						sigprocmask(SIG_UNBLOCK, &sigset, 0);
                         return;
                 case 0:
 			XFlush(dpy);
@@ -992,6 +998,7 @@ video_async_event(int sig)
                         break;
                 }
         }
+		sigprocmask(SIG_UNBLOCK, &sigset, 0);
 }
 
 /* Resize the window, using information from 'vga_status[]'. This function is
