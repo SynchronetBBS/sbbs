@@ -134,91 +134,7 @@ int lprintf(char *fmat, ...)
 	lputs(sbuf);
 	return(chcount);
 }
-#if 0
 
-/****************************************************************************/
-/* Converts an ASCII Hex string into an ulong                       */
-/****************************************************************************/
-ulong ahtoul(char *str)
-{
-	ulong l,val=0;
-
-	while((l=(*str++)|0x20)!=0x20)
-		val=(l&0xf)+(l>>6&1)*9+val*16;
-	return(val);
-}
-/****************************************************************************/
-/* Truncates white-space chars off end of 'str' and terminates at first tab */
-/****************************************************************************/
-void truncsp(char *str)
-{
-	int c;
-
-	c=strlen(str);
-	while(c && (uchar)str[c-1]<=SP) c--;
-	str[c]=0;
-}
-
-/****************************************************************************/
-/* Puts a backslash on path strings 										*/
-/****************************************************************************/
-void backslash(char *str)
-{
-    int i;
-
-	i=strlen(str);
-	if(i && str[i-1]!='\\' && str[i-1]!='/') {
-		str[i]=BACKSLASH; 
-		str[i+1]=0; 
-	}
-}
-
-/****************************************************************************/
-/* Puts a backslash on path strings if not just a drive letter and colon	*/
-/****************************************************************************/
-void backslashcolon(char *str)
-{
-    int i;
-
-	i=strlen(str);
-	if(i && str[i-1]!='\\' && str[i-1]!='/' && str[i-1]!=':') {
-		str[i]=BACKSLASH; 
-		str[i+1]=0; 
-	}
-}
-
-/****************************************************************************/
-/* Updates 16-bit "rcrc" with character 'ch'                                */
-/****************************************************************************/
-void ucrc16(uchar ch, ushort *rcrc) 
-{
-	ushort i, cy;
-    uchar nch=ch;
- 
-	for (i=0; i<8; i++) {
-		cy=*rcrc & 0x8000;
-		*rcrc<<=1;
-		if (nch & 0x80) *rcrc |= 1;
-		nch<<=1;
-		if (cy) *rcrc ^= 0x1021; }
-}
-
-/****************************************************************************/
-/* Returns CRC-16 of ASCIIZ string (not including terminating NULL)			*/
-/****************************************************************************/
-ushort DLLCALL crc16(char *str)
-{
-	int 	i=0;
-	ushort	crc=0;
-
-	ucrc16(0,&crc);
-	while(str[i])
-		ucrc16(str[i++],&crc);
-	ucrc16(0,&crc);
-	ucrc16(0,&crc);
-	return(crc);
-}
-#endif
 /**********************/
 /* Log print function */
 /**********************/
@@ -349,7 +265,7 @@ return(cmd);
 int execute(char *cmdline)
 {
 #if 1
-	system(cmdline);
+	return system(cmdline);
 #else
 	char c,d,e,cmdlen,*arg[30],str[256];
 	int i;
@@ -1760,7 +1676,7 @@ void pack_bundle(char *infile,faddr_t dest)
 
 	pack(infile,str,dest);	/* Won't get here unless all bundles are full */
 }
-
+#if 0
 /******************************************************************************
  This function checks the inbound directory for the first bundle it finds, it
  will then unpack and delete the bundle.  If no bundles exist this function
@@ -1812,6 +1728,77 @@ int unpack_bundle(void)
 	}
 	return(0);
 }
+#else
+/******************************************************************************
+ This function checks the inbound directory for the first bundle it finds, it
+ will then unpack and delete the bundle.  If no bundles exist this function
+ returns a FALSE, otherwise a TRUE is returned.
+ ******************************************************************************/
+BOOL unpack_bundle(void)
+{
+	char*				p;
+	char				str[MAX_PATH+1];
+	char				fname[MAX_PATH+1];
+	int				i;
+	static glob_t	g;
+	static int		gi;
+
+	for(i=0;i<7;i++) {
+		switch(i) {
+			case 0:
+				p="su";
+				break;
+			case 1:
+				p="mo";
+				break;
+			case 2:
+				p="tu";
+				break;
+			case 3:
+				p="we";
+				break;
+			case 4:
+				p="th";
+				break;
+			case 5:
+				p="fr";
+				break;
+			default:
+				p="sa";
+				break;
+		}
+		sprintf(str,"%s*.%s?",secure ? cfg.secure : cfg.inbound,p);
+		if(gi>=g.gl_pathc) {
+			gi=0;
+			globfree(&g);
+			glob(str,0,NULL,&g);
+		}
+		if(gi<g.gl_pathc) {
+			SAFECOPY(fname,g.gl_pathv[gi]);
+			if(unpack(fname)) {	/* failure */
+				if(fdate(fname)+(48L*60L*60L)>time(NULL)) {
+					SAFECOPY(str,fname);
+					str[strlen(str)-2]='_';
+					if(fexist(str))
+						str[strlen(str)-2]='-';
+					if(fexist(str))
+						delfile(str);
+					if(rename(fname,str))
+						logprintf("ERROR line %d renaming %s to %s"
+							,__LINE__,fname,str); 
+				} 
+			}
+			else if(delfile(fname))	/* successful, so delete bundle */
+				logprintf("ERROR line %d removing %s %s",__LINE__,fname
+					,sys_errlist[errno]);
+			gi++;
+			return(TRUE); 
+		} 
+	}
+
+	return(FALSE);
+}
+#endif
 
 void remove_re(char *str)
 {
@@ -3846,8 +3833,10 @@ int main(int argc, char **argv)
 #endif
 		,smb_lib_ver()
 		);
-
+#if 0
 	putenv("TZ=UTC0");
+#endif
+
 	putenv("TMP=");
 #if !defined(__unix__)
 	_fmode=O_BINARY;
