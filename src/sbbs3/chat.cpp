@@ -646,6 +646,10 @@ bool sbbs_t::chan_access(uint cnum)
 	return(true);
 }
 
+/****************************************************************************/
+/* Private split-screen (or interspersed) chat with node or local sysop		*/
+/****************************************************************************/
+#define CHAT_REDRAW 18	/* Ctrl-R */
 void sbbs_t::privchat(bool local)
 {
 	char	str[128],c,*p,localbuf[5][81],remotebuf[5][81]
@@ -837,7 +841,7 @@ void sbbs_t::privchat(bool local)
 			activity=1;
 			if(echo)
 				attr(cfg.color[clr_chatlocal]);
-			if(ch==BS) {
+			if(ch==BS || ch==DEL) {
 				if(localchar) {
 					if(echo)
 						bputs("\b \b");
@@ -852,6 +856,35 @@ void sbbs_t::privchat(bool local)
 					if(echo)
 						outchar(SP);
 					localbuf[localline][localchar++]=SP; } }
+			else if(ch==CHAT_REDRAW) {
+				if(sys_status&SS_SPLITP) {
+					CLS;
+					attr(cfg.color[clr_chatremote]);
+					remotebuf[remoteline][remotechar]=0;
+					for(i=0;i<=remoteline;i++) {
+						bputs(remotebuf[i]); 
+						if(i!=remoteline) 
+							bputs(crlf);
+					}
+					remote_y=1+remoteline;
+					bputs("\1i_\1n");  /* Fake cursor */
+					ANSI_SAVE();
+					GOTOXY(1,13);
+					bprintf(local ? local_sep : sep
+						,thisnode.misc&NODE_MSGW ? 'T':SP
+						,sectostr(timeleft,tmp)
+						,thisnode.misc&NODE_NMSG ? 'M':SP);
+					CRLF;
+					attr(cfg.color[clr_chatlocal]);
+					localbuf[localline][localchar]=0;
+					for(i=0;i<=localline;i++) {
+						bputs(localbuf[i]);
+						if(i!=localline) 
+							bputs(crlf);
+					}
+					local_y=15+localline;
+				}
+			}
 			else if(ch>=SP || ch==CR) {
 				if(ch!=CR) {
 					if(echo)
@@ -922,7 +955,7 @@ void sbbs_t::privchat(bool local)
 			if(sys_status&SS_SPLITP && !remote_activity)
 				bputs("\b \b");             /* Delete fake cursor */
 			remote_activity=1;
-			if(ch==BS) {
+			if(ch==BS || ch==DEL) {
 				if(remotechar) {
 					bputs("\b \b");
 					remotechar--;
