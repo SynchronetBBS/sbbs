@@ -248,28 +248,28 @@ FORCE$(FTPSRVR): $(LIBODIR)/ftpsrvr.o $(SBBSLIB)
 
 $(FTPSRVR): $(LIBODIR)/ftpsrvr.o $(SBBSLIB)
 	@echo Linking $@
-	@$(CC) $(LFLAGS) -S $^ $(LIBS) -shared -o $@ 
+	@$(CC) $(LFLAGS) $^ $(LIBS) -shared -o $@ 
 
 # Mail Server Link Rule
 FORCE$(MAILSRVR): $(MAIL_OBJS) $(LIBODIR)$(SLASH)$(SBBSLIB)
 
 $(MAILSRVR): $(MAIL_OBJS) $(SBBSLIB)
 	@echo Linking $@
-	@$(CC) $(LFLAGS) -S $^ $(LIBS) -shared -o $@
+	@$(CC) $(LFLAGS) $^ $(LIBS) -shared -o $@
 
 # Mail Server Link Rule
 FORCE$(WEBSRVR): $(WEB_OBJS) $(SBBSLIB)
 
 $(WEBSRVR): $(WEB_OBJS) $(SBBSLIB)
 	@echo Linking $@
-	@$(CC) $(LFLAGS) -S $^ $(LIBS) -shared -o $@
+	@$(CC) $(LFLAGS) $^ $(LIBS) -shared -o $@
 
 # Services Link Rule
 FORCE$(SERVICES): $(WEB_OBJS) $(SBBSLIB)
 
 $(SERVICES): $(SERVICE_OBJS) $(SBBSLIB)
 	@echo Linking $@
-	@$(CC) $(LFLAGS) -S $^ $(LIBS) -shared -o $@
+	@$(CC) $(LFLAGS) $^ $(LIBS) -shared -o $@
 
 # Synchronet Console Build Rule
 FORCE$(SBBSCON): $(CON_OBJS) $(SBBSLIB) $(FTP_OBJS) $(MAIL_OBJS) $(WEB_OBJS) $(SERVICE_OBJS)
