@@ -995,6 +995,7 @@ int		strsame(char *str1, char *str2);	/* Compares number of same chars */
 int		nopen(const char* str, int access);
 FILE *	fnopen(int* file, const char* str, int access);
 BOOL	ftouch(const char* fname);
+BOOL	fmutex(const char* fname, const char* text);
 
 /* load_cfg.c */
 BOOL 	md(char *path);

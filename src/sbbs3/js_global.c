@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2004 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -1907,16 +1907,33 @@ js_flength(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 
 static JSBool
-js_touch(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+js_ftouch(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	char*		p;
+	char*		fname;
 
-	if((p=JS_GetStringBytes(JS_ValueToString(cx, argv[0])))==NULL) {
+	if((fname=JS_GetStringBytes(JS_ValueToString(cx, argv[0])))==NULL) {
 		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
 		return(JS_TRUE);
 	}
 
-	*rval = BOOLEAN_TO_JSVAL(ftouch(p));
+	*rval = BOOLEAN_TO_JSVAL(ftouch(fname));
+	return(JS_TRUE);
+}
+
+static JSBool
+js_fmutex(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		fname;
+	char*		text=NULL;
+
+	if((fname=JS_GetStringBytes(JS_ValueToString(cx, argv[0])))==NULL) {
+		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
+		return(JS_TRUE);
+	}
+	if(argc>1)
+		text=JS_GetStringBytes(JS_ValueToString(cx,argv[1]));
+
+	*rval = BOOLEAN_TO_JSVAL(fmutex(fname,text));
 	return(JS_TRUE);
 }
 		
@@ -2329,9 +2346,14 @@ static jsSyncMethodSpec js_global_functions[] = {
 		"or change to current time")
 	,311
 	},
-	{"file_touch",		js_touch,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("string filename")
+	{"file_touch",		js_ftouch,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("string filename")
 	,JSDOCSTR("updates a file's last modification date/time to current time, "
 		"creating an empty file if it doesn't already exist")
+	,311
+	},
+	{"file_mutex",		js_fmutex,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("string filename [,text]")
+	,JSDOCSTR("attempts to create an exclusive (e.g. lock) file, "
+		"optinally with the contents of <i>text</i>")
 	,311
 	},
 	{"directory",		js_directory,		1,	JSTYPE_ARRAY,	JSDOCSTR("string pattern [,flags]")

@@ -105,10 +105,21 @@ BOOL ftouch(const char* fname)
 {
 	int file;
 
-	file=nopen(fname,O_WRONLY|O_CREAT);
-	if(file<0)
+	if((file=nopen(fname,O_WRONLY|O_CREAT))<0)
 		return(FALSE);
 	close(file);
 
+	return(TRUE);
+}
+
+BOOL fmutex(const char* fname, const char* text)
+{
+	int file;
+
+	if((file=open(fname,O_CREAT|O_WRONLY|O_EXCL,S_IREAD|S_IWRITE))<0)
+		return(FALSE);
+	if(text!=NULL)
+		write(file,text,strlen(text));
+	close(file);
 	return(TRUE);
 }

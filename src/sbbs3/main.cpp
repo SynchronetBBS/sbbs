@@ -1604,7 +1604,7 @@ void event_thread(void* arg)
 				getuserdat(&sbbs->cfg,&sbbs->useron);
 				if(sbbs->useron.number && flength(g.gl_pathv[i])>0) {
 					sprintf(semfile,"%s.lock",g.gl_pathv[i]);
-					if((file=open(semfile,O_CREAT|O_WRONLY|O_EXCL,S_IREAD|S_IWRITE))==-1)
+					if(!fmutex(semfile,startup->host_name))
 						continue;
 					sbbs->online=ON_LOCAL;
 					eprintf(LOG_INFO,"Un-packing QWK Reply packet from %s",sbbs->useron.alias);
@@ -1615,7 +1615,6 @@ void event_thread(void* arg)
 					
 					/* putuserdat? */
 					remove(g.gl_pathv[i]);
-					close(file);
 					remove(semfile);
 				}
 			}
@@ -1628,7 +1627,7 @@ void event_thread(void* arg)
 			for(i=0;i<(int)g.gl_pathc;i++) {
 				sbbs->useron.number=atoi(g.gl_pathv[i]+offset);
 				sprintf(semfile,"%spack%04u.lock",sbbs->cfg.data_dir,sbbs->useron.number);
-				if((file=open(semfile,O_CREAT|O_WRONLY|O_EXCL,S_IREAD|S_IWRITE))==-1)
+				if(!fmutex(semfile,startup->host_name))
 					continue;
 				getuserdat(&sbbs->cfg,&sbbs->useron);
 				if(sbbs->useron.number && !(sbbs->useron.misc&(DELETED|INACTIVE))) {
@@ -1656,7 +1655,6 @@ void event_thread(void* arg)
 					sbbs->online=0;
 				}
 				remove(g.gl_pathv[i]);
-				close(file);
 				remove(semfile);
 			}
 			globfree(&g);
