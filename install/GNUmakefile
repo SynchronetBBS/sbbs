@@ -18,6 +18,7 @@
 # SBBSGROUP = Group for the installed files
 # NOCVS	= do not do CVS update
 # JSLIB = Full path and filename to JavaScript library.
+# CVSTAG = CVS tag to pull
 
 ifndef DEBUG
  ifndef RELEASE
@@ -38,9 +39,8 @@ else
  CCPRE	:=	gcc
 endif
 
-ifndef INSTALL
- INSTALL	:=	CLASSIC		# Can be CLASSIC or UNIX
-endif
+INSTALL	?=	CLASSIC		# Can be CLASSIC or UNIX
+CVSTAG	?=	HEAD		# CVS tag to pull... HEAD means current.
 
 ifndef SBBSOWNER
  SBBSCHOWN	:= $(USER)
@@ -51,19 +51,13 @@ ifdef SBBSGROUP
 endif
 
 ifeq ($(INSTALL),UNIX)
- ifndef PREFIX
-  PREFIX	:=	/usr/local
- endif
+ PREFIX	?=	/usr/local
  MKFLAGS	+=	PREFIX=$(PREFIX)
 else	# Classic Install
- ifndef SBBSDIR
-  SBBSDIR	:=	$(shell pwd)
- endif
+ SBBSDIR	?=	$(shell pwd)
 endif
 
-ifndef os 
- os      :=   $(shell uname)
-endif
+os      ?=   $(shell uname)
 os      :=	$(shell echo $(os) | awk '/.*/ { print tolower($$1)}')
 
 MKFLAGS	+=	os=$(os)
@@ -130,67 +124,67 @@ CVS_CO = @cd $(SBBSDIR); cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs
 
 $(SBBSDIR)/ctrl: cvslogin
 ifndef NOCVS
-	$(CVS_CO) ctrl
+	$(CVS_CO) -r $(CVSTAG) ctrl
 endif
 
 $(SBBSDIR)/text: cvslogin
 ifndef NOCVS
-	$(CVS_CO) text
+	$(CVS_CO) -r $(CVSTAG) text
 endif
 
 $(SBBSDIR)/exec: cvslogin
 ifndef NOCVS
-	$(CVS_CO) exec
+	$(CVS_CO) -r $(CVSTAG) exec
 endif
 
 $(SBBSDIR)/node1: cvslogin
 ifndef NOCVS
-	$(CVS_CO) node1
+	$(CVS_CO) -r $(CVSTAG) node1
 endif
 
 $(SBBSDIR)/node2: cvslogin
 ifndef NOCVS
-	$(CVS_CO) node2
+	$(CVS_CO) -r $(CVSTAG) node2
 endif
 
 $(SBBSDIR)/node3: cvslogin
 ifndef NOCVS
-	$(CVS_CO) node3
+	$(CVS_CO) -r $(CVSTAG) node3
 endif
 
 $(SBBSDIR)/node4: cvslogin
 ifndef NOCVS
-	$(CVS_CO) node4
+	$(CVS_CO) -r $(CVSTAG) node4
 endif
 
 $(SBBSDIR)/xtrn: cvslogin
 ifndef NOCVS
-	$(CVS_CO) -N xtrn
+	$(CVS_CO) -r $(CVSTAG) -N xtrn
 endif
 
 $(SBBSDIR)/src/sbbs3: cvslogin
 ifndef NOCVS
-	$(CVS_CO) src/sbbs3
+	$(CVS_CO) -r $(CVSTAG)  src/sbbs3
 endif
 
 $(SBBSDIR)/src/uifc: cvslogin
 ifndef NOCVS
-	$(CVS_CO) src/uifc
+	$(CVS_CO) -r $(CVSTAG)  src/uifc
 endif
 
 $(SBBSDIR)/src/xpdev: cvslogin
 ifndef NOCVS
-	$(CVS_CO) src/xpdev
+	$(CVS_CO) -r $(CVSTAG)  src/xpdev
 endif
 
 $(SBBSDIR)/src/mozilla: cvslogin
 ifndef NOCVS
-	$(CVS_CO) src/mozilla
+	$(CVS_CO) -r $(CVSTAG)  src/mozilla
 endif
 
 $(SBBSDIR)/lib/mozilla/js/$(os).$(SUFFIX): cvslogin
 ifndef NOCVS
-	$(CVS_CO) lib/mozilla/js/$(os).$(SUFFIX)
+	$(CVS_CO) -r $(CVSTAG) lib/mozilla/js/$(os).$(SUFFIX)
 endif
 
 cvslogin: $(SBBSDIR)
