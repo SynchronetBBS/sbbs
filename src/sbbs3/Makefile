@@ -108,7 +108,7 @@ $(SBBS): $(OBJS)
 		import32.lib cw32mt.lib ws2_32.lib
 
 # Mail Server DLL Link Rule
-$(MAILSRVR): mailsrvr.c mxlookup.c mime.c base64.c md5.c crc32.c ini_file.c $(SBBSLIB)
+$(MAILSRVR): mailsrvr.c mxlookup.c mime.c base64.c md5.c crc32.c ini_file.c str_list.c $(SBBSLIB)
     @echo Creating $@
 	$(QUIET)$(CC) $(CFLAGS) -WD -WM -lGi -n$(LIBODIR) \
 		-DMAILSRVR_EXPORTS -DSMB_IMPORTS -DWRAPPER_IMPORTS $** $(LIBS)
@@ -126,7 +126,7 @@ $(WEBSRVR): wesrvr.c $(XPDEV)sockwrap.c base64.c
 		-DWEBSRVR_EXPORTS -DWRAPPER_IMPORTS $** $(LIBS)
 
 # Services DLL Link Rule
-$(SERVICES): services.c $(SBBSLIB) $(LIBODIR)\ini_file.obj
+$(SERVICES): services.c $(SBBSLIB) $(LIBODIR)\ini_file.obj $(LIBODIR)\str_list.obj
     @echo Creating $@
 	$(QUIET)$(CC) $(CFLAGS) -WD -WM -lGi -n$(LIBODIR) \
 		-DSERVICES_EXPORTS -DWRAPPER_IMPORTS $** $(LIBS)
