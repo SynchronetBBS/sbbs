@@ -564,11 +564,9 @@ static void send_thread(void* arg)
 			break;
 		}
 		rd=fread(buf,sizeof(char),sizeof(buf),fp);
-		if(rd<1) {
-			lprintf("%04d !READ ERROR (%d) on %s",xfer.ctrl_sock,errno,xfer.filename);
-			error=TRUE;
+		if(rd<1) /* EOF or READ error */
 			break;
-		}
+
 		wr=send(*xfer.data_sock,buf,rd,0);
 		if(wr!=rd) {
 			if(wr==SOCKET_ERROR) {
