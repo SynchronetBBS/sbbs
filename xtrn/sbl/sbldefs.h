@@ -50,7 +50,7 @@
 #pragma pack(1)
 #endif
 
-typedef union {
+typedef union _PACK {
 
 		struct {
 			char	number[13]; 		/* Phone number */
@@ -69,7 +69,7 @@ typedef union {
 
 } number_t;
 
-typedef struct {
+typedef struct _PACK {
 	char	 name[26]					/* System name */
 			,user[26]					/* User who created entry */
 			,software[16]				/* BBS software */
