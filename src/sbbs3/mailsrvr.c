@@ -2998,7 +2998,7 @@ void DLLCALL mail_server(void* arg)
 				if (client_socket == INVALID_SOCKET)
 				{
 					if(ERROR_VALUE == ENOTSOCK)
-            			lprintf("%04d SMTP socket closed while listening",server_socket);
+            			lprintf("0000 SMTP socket closed while listening");
 					else
 						lprintf("%04d !ERROR %d accept failed", server_socket, ERROR_VALUE);
 					break;
