@@ -1177,8 +1177,6 @@ int main(int argc, char** argv)
 
 #endif	/* Removed broken stuff */
 
-	prompt = "[Threads: %d  Sockets: %d  Clients: %d  Served: %lu] (?=Help): ";
-
 	/* Post-INI command-line switches */
 	for(i=1;i<argc;i++) {
 		arg=argv[i];
@@ -1661,8 +1659,12 @@ int main(int argc, char** argv)
 
 	if(!isatty(fileno(stdin)))  			/* redirected */
 		select(0,NULL,NULL,NULL,NULL);	/* Sleep forever - Should this just exit the thread? */
-	else								/* interactive */
+	else 								/* interactive */
 #endif
+	{
+		prompt = "[Threads: %d  Sockets: %d  Clients: %d  Served: %lu] (?=Help): ";
+		lputs(LOG_INFO,NULL);	/* display prompt */
+
 		while(!terminated) {
 #ifdef __unix__
 			if(!isatty(STDIN_FILENO))  {		/* Controlling terminal has left us *sniff* */
@@ -1744,6 +1746,7 @@ int main(int argc, char** argv)
 			}
 			lputs(LOG_INFO,"");	/* redisplay prompt */
 		}
+	}
 
 	terminate();
 
