@@ -140,7 +140,20 @@ root, you will have to set the User and Group values.
 If you want Synchronet to fork and run in the background as a daemon, logging
 via syslog rather than the local console, set Daemonize=True in this section.
 
-The use of the LogFacility setting is beyond the scope of this document.
+To configure syslog and the LogFacility, a good default to use is LogFacility=3
+Then, in /etc/syslog.conf you will need to add the line:
+local3.*				/var/log/synchronet.log
+
+You will have to create this file manually initially by running:
+touch /var/log/synchronet.log
+
+The send a HUP to syslogd like so:
+killall -HUP syslogd
+
+You will want to investigate how your system rotates logs and set it up to
+rotate synchronet.log also.
+
+Further use of the LogFacility setting is beyond the scope of this document.
 Read your syslog.conf manpage for more information about this.  In particular,
 do NOT use the 'S' setting unless you are familiar with advanced syslogd
 configuration.  The S setting will use different facilities for each feature
