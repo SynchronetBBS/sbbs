@@ -358,7 +358,7 @@ int write_flofile(char *attachment, faddr_t dest)
 		strcpy(outbound,cfg.outbound);
 	else								/* Inter-zone outbound is OUTBOUND.XXX */
 		sprintf(outbound,"%.*s.%03x/"
-			,strlen(cfg.outbound)-1,cfg.outbound,dest.zone);
+			,(int)strlen(cfg.outbound)-1,cfg.outbound,dest.zone);
 	if(dest.point) {					/* Point destination is OUTBOUND\*.PNT */
 		sprintf(str,"%04x%04x.pnt"
 			,dest.net,dest.node);
@@ -1132,7 +1132,7 @@ void command(char *instr,faddr_t addr)
 	memset(&del_area,0,sizeof(area_t));
 	strupr(instr);
 	if((p=strstr(instr,"HELP"))!=NULL) {
-		sprintf(str,"%s%sAREAMGR.HLP",scfg.exec_dir);
+		sprintf(str,"%sAREAMGR.HLP",scfg.exec_dir);
 		if(!fexist(str))
 			return;
 		if((stream=fnopen(&file,str,O_RDONLY))==NULL) {
@@ -1532,10 +1532,13 @@ char attachment(char *bundlename,faddr_t dest,char cleanup)
 				continue; 
 			}
 			if(filelength(fmsg)<sizeof(fmsghdr_t)) {
-				printf("\7ERROR %s has invalid length of %u bytes\n",path
+				printf("\7ERROR %s has invalid length of %lu bytes\n"
+					,path
 					,filelength(fmsg));
-				logprintf("ERROR line %d %s has invalid length of %u bytes"
-					,__LINE__,path,filelength(fmsg));
+				logprintf("ERROR line %d %s has invalid length of %lu bytes"
+					,__LINE__
+					,path
+					,filelength(fmsg));
 				fclose(fidomsg);
 				continue; 
 			}
@@ -1639,7 +1642,7 @@ void pack_bundle(char *infile,faddr_t dest)
 			strcpy(outbound,cfg.outbound);
 		else							/* Inter-zone outbound is OUTBOUND.XXX */
 			sprintf(outbound,"%.*s.%03x/"
-				,strlen(cfg.outbound)-1,cfg.outbound,dest.zone);
+				,(int)strlen(cfg.outbound)-1,cfg.outbound,dest.zone);
 		if(dest.point) {				/* Point destination is OUTBOUND\*.PNT */
 			sprintf(str,"%04x%04x.pnt"
 				,dest.net,dest.node);
@@ -2028,7 +2031,7 @@ ulong matchname(char *inname)
 	static username_t *username;
 	ulong last_user;
 	int userdat,i;
-	char str[256],name[LEN_NAME+1],alias[LEN_ALIAS+1],c;
+	char str[256],name[LEN_NAME+1],alias[LEN_ALIAS+1];
 	ulong l,crc;
 
 if(!total_users) {		/* Load CRCs */
@@ -2057,20 +2060,20 @@ if(!total_users) {		/* Load CRCs */
 		read(userdat,name,LEN_NAME);
 		lseek(userdat,(long)(((long)total_users)*U_LEN)+U_MISC,SEEK_SET);
 		read(userdat,tmp,8);
-		for(c=0;c<8;c++)
-			if(tmp[c]==ETX || tmp[c]==CR) break;
-		tmp[c]=0;
+		for(i=0;i<8;i++)
+			if(tmp[i]==ETX || tmp[i]==CR) break;
+		tmp[i]=0;
 		unlock(userdat,(long)((long)(total_users)*U_LEN)+U_ALIAS
 			,LEN_ALIAS+LEN_NAME);
 		if(ahtoul(tmp)&DELETED)
 			continue;
-		for(c=0;c<LEN_ALIAS;c++)
-			if(alias[c]==ETX || alias[c]==CR) break;
-		alias[c]=0;
+		for(i=0;i<LEN_ALIAS;i++)
+			if(alias[i]==ETX || alias[i]==CR) break;
+		alias[i]=0;
 		strupr(alias);
-		for(c=0;c<LEN_NAME;c++)
-            if(name[c]==ETX || name[c]==CR) break;
-        name[c]=0;
+		for(i=0;i<LEN_NAME;i++)
+            if(name[i]==ETX || name[i]==CR) break;
+        name[i]=0;
         strupr(name);
 		username[total_users].alias=crc32(alias,0);
 		username[total_users].real=crc32(name,0); }
@@ -2321,8 +2324,8 @@ if((sbody=(char HUGE16 *)LMALLOC((length+1)*2))==NULL) {
 	smb_freemsgmem(&msg);
 	return(0); }
 if((stail=(char HUGE16 *)LMALLOC(MAX_TAILLEN))==NULL) {
-	printf("ERROR allocating %lu bytes\n",MAX_TAILLEN);
-	logprintf("ERROR line %d allocating %lu bytes for tail",__LINE__
+	printf("ERROR allocating %u bytes\n",MAX_TAILLEN);
+	logprintf("ERROR line %d allocating %u bytes for tail",__LINE__
 		,MAX_TAILLEN);
 	LFREE(sbody);
 	smb_freemsgmem(&msg);
@@ -3038,9 +3041,9 @@ void attach_bundles(void)
 			logprintf("ERROR line %d fdopening %s",__LINE__,packet);
 			continue; }
 		if(filelength(fmsg)<sizeof(pkthdr_t)) {
-			printf("ERROR invalid length of %u bytes for %s\n",filelength(fmsg)
+			printf("ERROR invalid length of %lu bytes for %s\n",filelength(fmsg)
 				,packet);
-			logprintf("ERROR line %d invalid length of %u bytes for %s"
+			logprintf("ERROR line %d invalid length of %lu bytes for %s"
 				,__LINE__,filelength(fmsg),packet);
 			fclose(fidomsg);
 			if(delfile(packet))
@@ -3682,9 +3685,11 @@ void export_echomail(char *sub_code,faddr_t addr)
 					continue; }
 				fmsgbuf=MALLOC(strlen((char *)buf)+512);
 				if(!fmsgbuf) {
-					printf("ERROR allocating %lu bytes for fmsgbuf\n");
+					printf("ERROR allocating %lu bytes for fmsgbuf\n"
+						,strlen((char *)buf)+512);
 					logprintf("ERROR line %d allocating %lu bytes for fmsgbuf"
-						,__LINE__,strlen((char *)buf)+512);
+						,__LINE__
+						,strlen((char *)buf)+512);
 					smb_unlockmsghdr(&smb[cur_smb],&msg);
 					smb_freemsgmem(&msg);
 					continue; }
@@ -4134,9 +4139,9 @@ int main(int argc, char **argv)
 			logprintf("ERROR line %d fdopening %s",__LINE__,packet);
 			continue; }
 		if(filelength(fmsg)<sizeof(pkthdr_t)) {
-			printf("ERROR invalid length of %u bytes for %s\n",filelength(fmsg)
+			printf("ERROR invalid length of %lu bytes for %s\n",filelength(fmsg)
 				,packet);
-			logprintf("ERROR line %d invalid length of %u bytes for %s"
+			logprintf("ERROR line %d invalid length of %lu bytes for %s"
 				,__LINE__,filelength(fmsg),packet);
 			fclose(fidomsg);
 			if(delfile(packet))
@@ -4205,7 +4210,7 @@ int main(int argc, char **argv)
 				,sys_errlist[errno]);
 			continue; }
 		if(filelength(fmsg)<sizeof(pkthdr_t)) {
-			printf("\7Invalid length of %u bytes\n",filelength(fmsg));
+			printf("\7Invalid length of %lu bytes\n",filelength(fmsg));
 			fclose(fidomsg);
 			continue; }
 
@@ -4612,9 +4617,9 @@ int main(int argc, char **argv)
 				,sys_errlist[errno]);
 			continue; }
 		if(filelength(fmsg)<sizeof(fmsghdr_t)) {
-			printf("\7ERROR invalid length of %u bytes for %s\n",filelength(fmsg)
+			printf("\7ERROR invalid length of %lu bytes for %s\n",filelength(fmsg)
 				,path);
-			logprintf("ERROR line %d invalid length of %u bytes for %s",__LINE__
+			logprintf("ERROR line %d invalid length of %lu bytes for %s",__LINE__
 				,filelength(fmsg),path);
 			fclose(fidomsg);
 			continue; }
@@ -4674,7 +4679,7 @@ for(f=0;f<g.gl_pathc && !kbhit();f++) {
 			,sys_errlist[errno]);
         continue; }
     if(filelength(fmsg)<sizeof(fmsghdr_t)) {
-        printf("\7%s Invalid length of %u bytes\n",path,filelength(fmsg));
+        printf("\7%s Invalid length of %lu bytes\n",path,filelength(fmsg));
         fclose(fidomsg);
         continue; }
     if(fread(&hdr,sizeof(fmsghdr_t),1,fidomsg)!=1) {
@@ -4733,7 +4738,7 @@ for(f=0;f<g.gl_pathc && !kbhit();f++) {
 			strcpy(outbound,cfg.outbound);
 		else						 /* Inter-zone outbound is OUTBOUND.XXX */
 			sprintf(outbound,"%.*s.%03X/"
-				,strlen(cfg.outbound)-1,cfg.outbound,addr.zone);
+				,(int)strlen(cfg.outbound)-1,cfg.outbound,addr.zone);
 		if(addr.point) {			/* Point destination is OUTBOUND.PNT */
 			sprintf(str,"%04X%04X.PNT"
 				,addr.net,addr.node);
