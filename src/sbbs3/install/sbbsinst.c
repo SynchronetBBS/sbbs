@@ -143,6 +143,37 @@ dist_t **get_distlist(void);
 int choose_dist(char **opts);
 int choose_server(char **opts);
 
+int filereadline(int sock, char *buf, size_t length, char *error)
+{
+	char    ch;
+	int             i;
+
+	for(i=0;1;) {
+		if(read(sock, &ch,1)!=1)  {
+			if(error != NULL)
+				strcpy(error,"Error Reading File");
+			return(-1);
+		}
+
+		if(ch=='\n')
+			break;
+
+		if(i<length)
+			buf[i++]=ch;
+	}
+
+	/* Terminate at length if longer */
+	if(i>length)
+		i=length;
+
+	if(i>0 && buf[i-1]=='\r')
+		buf[--i]=0;
+	else
+		buf[i]=0;
+
+	return(i);
+}
+
 void bail(int code)
 {
     if(code) {
@@ -663,6 +694,7 @@ get_distlist(void)
 	char	sep[2]={'\t',0};
 	char	str[1024];
 	char	errors[sizeof(distlists)/sizeof(char*)][128];
+	int     (*readline) (int sock, char *buf, size_t length, char *error)=NULL;
 
 	memset(errors,0,sizeof(errors));
 	if((dist=(dist_t **)MALLOC(sizeof(void *)*MAX_DISTRIBUTIONS))==NULL)
@@ -700,11 +732,21 @@ get_distlist(void)
 	if(http_distlist) {
 		uifc.pop("Getting distributions");
 		for(i=0;distlists[i]!=NULL;i++)  {
-			if(http_get_fd(distlists[i],NULL,errors[i])>=0)
+			if((list=http_get_fd(distlists[i],NULL,errors[i]))>=0)  {
+				readline=sockreadline;
 				break;
+			}
 		}
 	}
-	uifc.pop(NULL);
+	if(list<0)  {
+		if(http_distlist)
+			uifc.pop(NULL);
+		uifc.pop("Loading distlist");
+		if((list=open("./sbbsdist.lst",O_RDONLY))<0)
+			list=open("../sbbsdist.lst",O_RDONLY);
+		if(list>=0)
+			readline=filereadline;
+	}
 	if(list<0)  {
 		uifc.bail();
 		printf("Cannot get distribution list!\n");
@@ -713,7 +755,7 @@ get_distlist(void)
 		exit(EXIT_FAILURE);
 	}
 
-	while(list>=0 && (sockreadline(list,in_line,sizeof(in_line),NULL)>=0))  {
+	while(readline != NULL && list>=0 && (readline(list,in_line,sizeof(in_line),NULL)>=0))  {
 		i=strlen(in_line);
 		while(i>0 && in_line[i]<=' ')
 			in_line[i--]=0;
