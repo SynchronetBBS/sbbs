@@ -89,6 +89,7 @@ typedef WINADVAPI SC_HANDLE (WINAPI *OpenService_t)(SC_HANDLE,LPCTSTR,DWORD);
 typedef WINADVAPI BOOL (WINAPI *StartService_t)(SC_HANDLE,DWORD,LPCTSTR*);
 typedef WINADVAPI BOOL (WINAPI *ControlService_t)(SC_HANDLE,DWORD,LPSERVICE_STATUS);
 typedef WINADVAPI BOOL (WINAPI *QueryServiceStatus_t)(SC_HANDLE,LPSERVICE_STATUS);
+typedef WINADVAPI BOOL (WINAPI *QueryServiceConfig_t)(SC_HANDLE,LPQUERY_SERVICE_CONFIG,DWORD,LPDWORD);
 typedef WINADVAPI BOOL (WINAPI *CloseServiceHandle_t)(SC_HANDLE);
 
 OpenSCManager_t 		openSCManager;
@@ -96,6 +97,7 @@ OpenService_t 			openService;
 StartService_t  		startService;
 ControlService_t    	controlService;
 QueryServiceStatus_t    queryServiceStatus;
+QueryServiceConfig_t    queryServiceConfig;
 CloseServiceHandle_t	closeServiceHandle;
 
 SC_HANDLE       hSCManager;
@@ -107,6 +109,14 @@ SERVICE_STATUS	bbs_svc_status;
 SERVICE_STATUS	ftp_svc_status;
 SERVICE_STATUS	mail_svc_status;
 SERVICE_STATUS	services_svc_status;
+QUERY_SERVICE_CONFIG*	bbs_svc_config;
+DWORD					bbs_svc_config_size;
+QUERY_SERVICE_CONFIG*	ftp_svc_config;
+DWORD					ftp_svc_config_size;
+QUERY_SERVICE_CONFIG*	mail_svc_config;
+DWORD					mail_svc_config_size;
+QUERY_SERVICE_CONFIG*	services_svc_config;
+DWORD					services_svc_config_size;
 
 DWORD	MaxLogLen=20000;
 int     threads=1;
@@ -759,6 +769,7 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
 		startService=(StartService_t)GetProcAddress(hSCMlib,"StartServiceA");
 		controlService=(ControlService_t)GetProcAddress(hSCMlib,"ControlService");
 		queryServiceStatus=(QueryServiceStatus_t)GetProcAddress(hSCMlib,"QueryServiceStatus");
+		queryServiceConfig=(QueryServiceConfig_t)GetProcAddress(hSCMlib,"QueryServiceConfigA");
 		closeServiceHandle=(CloseServiceHandle_t)GetProcAddress(hSCMlib,"CloseServiceHandle");
 		FreeLibrary(hSCMlib);
     }
@@ -912,10 +923,16 @@ void __fastcall TMainForm::FormCloseQuery(TObject *Sender, bool &CanClose)
     CanClose=true;
 }
 //---------------------------------------------------------------------------
-BOOL StartNTsvc(SC_HANDLE svc, SERVICE_STATUS* status)
+BOOL StartNTsvc(SC_HANDLE svc, SERVICE_STATUS* status, QUERY_SERVICE_CONFIG* config, DWORD config_size)
 {
-	if(svc==NULL || startService==NULL || queryServiceStatus==NULL)
+	if(svc==NULL || startService==NULL || queryServiceStatus==NULL || config==NULL)
     	return(FALSE);
+
+	DWORD ret;
+	if(!queryServiceConfig(svc,config,config_size,&ret))
+		return(FALSE);
+	if(config->dwStartType==SERVICE_DISABLED)
+		return(FALSE);
     if(!queryServiceStatus(svc,status))
     	return(FALSE);
     if(status->dwCurrentState!=SERVICE_STOPPED)
@@ -925,13 +942,13 @@ BOOL StartNTsvc(SC_HANDLE svc, SERVICE_STATUS* status)
 //---------------------------------------------------------------------------
 void __fastcall TMainForm::TelnetStartExecute(TObject *Sender)
 {
-	if(!StartNTsvc(bbs_svc,&bbs_svc_status))
+	if(!StartNTsvc(bbs_svc,&bbs_svc_status,bbs_svc_config,bbs_svc_config_size))
 		bbs_start();
 }
 //---------------------------------------------------------------------------
 void __fastcall TMainForm::ServicesStartExecute(TObject *Sender)
 {
-	if(StartNTsvc(services_svc,&services_svc_status))
+	if(StartNTsvc(services_svc,&services_svc_status,services_svc_config,services_svc_config_size))
     	return;
 	Screen->Cursor=crAppStart;
     services_status(NULL, "Starting");
@@ -1034,7 +1051,7 @@ void __fastcall TMainForm::MailConfigureExecute(TObject *Sender)
 
 void __fastcall TMainForm::MailStartExecute(TObject *Sender)
 {
-	if(!StartNTsvc(mail_svc,&mail_svc_status))
+	if(!StartNTsvc(mail_svc,&mail_svc_status,mail_svc_config,mail_svc_config_size))
 	    mail_start();
 }
 //---------------------------------------------------------------------------
@@ -1085,7 +1102,7 @@ void __fastcall TMainForm::ViewFtpServerExecute(TObject *Sender)
 
 void __fastcall TMainForm::FtpStartExecute(TObject *Sender)
 {
-	if(!StartNTsvc(ftp_svc,&ftp_svc_status))
+	if(!StartNTsvc(ftp_svc,&ftp_svc_status,ftp_svc_config,ftp_svc_config_size))
 		ftp_start();
 }
 //---------------------------------------------------------------------------
@@ -1860,7 +1877,8 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
         LowerLeftPageControl->ActivePageIndex=i;
     LowerLeftPageControl->ActivePageIndex=0;
 
-    LogTimerTick(Sender);	/* Open Log Mailslots */
+    LogTimerTick(Sender);			/* Open Log Mailslots */
+	ServiceStatusTimerTick(Sender);	/* Query service config lengths */
 
     if(SysAutoStart)
        TelnetStartExecute(Sender);
@@ -3326,6 +3344,8 @@ void __fastcall TMainForm::LogTimerTick(TObject *Sender)
 void CheckServiceStatus(
 	 SC_HANDLE svc
 	,SERVICE_STATUS* status
+	,QUERY_SERVICE_CONFIG* &config
+	,DWORD &config_size
 	,TStaticText* text
     ,TAction* start
     ,TAction* stop
@@ -3336,8 +3356,23 @@ void CheckServiceStatus(
 	if(svc==NULL)
     	return;
 
+	DWORD ret;
+
+	if(!queryServiceConfig(svc,config,config_size,&ret)) {
+		if(GetLastError()==ERROR_INSUFFICIENT_BUFFER) {
+			config_size=ret;
+			if(config!=NULL)
+				free(config);
+			config = (QUERY_SERVICE_CONFIG*)malloc(config_size);
+		}
+		return;
+	}
+
+	if(config->dwStartType==SERVICE_DISABLED)
+		return;
+
 	if(!queryServiceStatus(svc,status)) {
-    	text->Caption="Error " + GetLastError();
+    	text->Caption="QueryServiceStatus Error "; // + GetLastError());
         return;
 	}
 
@@ -3371,7 +3406,7 @@ void CheckServiceStatus(
 
 void __fastcall TMainForm::ServiceStatusTimerTick(TObject *Sender)
 {
-	if(queryServiceStatus==NULL
+	if(queryServiceStatus==NULL || queryServiceConfig==NULL
     	|| (bbs_svc==NULL
         && ftp_svc==NULL
         && mail_svc==NULL
@@ -3383,6 +3418,8 @@ void __fastcall TMainForm::ServiceStatusTimerTick(TObject *Sender)
     CheckServiceStatus(
     	 bbs_svc
     	,&bbs_svc_status
+		,bbs_svc_config
+		,bbs_svc_config_size
         ,TelnetForm->Status
         ,TelnetStart
         ,TelnetStop
@@ -3392,6 +3429,8 @@ void __fastcall TMainForm::ServiceStatusTimerTick(TObject *Sender)
     CheckServiceStatus(
     	 ftp_svc
     	,&ftp_svc_status
+		,ftp_svc_config
+		,ftp_svc_config_size
         ,FtpForm->Status
         ,FtpStart
         ,FtpStop
@@ -3401,6 +3440,8 @@ void __fastcall TMainForm::ServiceStatusTimerTick(TObject *Sender)
     CheckServiceStatus(
     	 mail_svc
     	,&mail_svc_status
+		,mail_svc_config
+		,mail_svc_config_size
         ,MailForm->Status
         ,MailStart
         ,MailStop
@@ -3410,6 +3451,8 @@ void __fastcall TMainForm::ServiceStatusTimerTick(TObject *Sender)
     CheckServiceStatus(
     	 services_svc
     	,&services_svc_status
+		,services_svc_config
+		,services_svc_config_size
         ,ServicesForm->Status
         ,ServicesStart
         ,ServicesStop
