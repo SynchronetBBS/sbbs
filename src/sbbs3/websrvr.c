@@ -767,7 +767,7 @@ static BOOL send_headers(http_session_t *session, const char *status)
 		}
 	}
 
-	safecat(headers,newline,MAX_HEADERS_SIZE);
+	safecat(headers,"",MAX_HEADERS_SIZE);
 	send_file = (sockprint(session->socket,headers) && send_file);
 	free(headers);
 	return(send_file);
