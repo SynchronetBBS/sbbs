@@ -6,8 +6,8 @@
     <td class="main" valign="top"><br />
         <br />
        
-       <div align="center"><h3>Your sysop, <i>@@JS:system.operator@@</i>, welcomes you to 
-        <b>@@JS:system.name@@</b></h3></div>
+       <div align="center"><h3>Your sysop, <i>@@system:operator@@</i>, welcomes you to 
+        <b>@@system:name@@</b></h3></div>
                 
         <table align="center">
           <tr>

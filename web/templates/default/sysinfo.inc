@@ -11,7 +11,7 @@
       System:
     </td >
     <td class="sysinfo">
-      %%JS:system.name%%
+      %%system:name%%
     </td >
   </tr>
   <tr>
@@ -19,7 +19,7 @@
       QWK ID:
     </td >
     <td class="sysinfo">
-      %%JS:system.qwk_id%%
+      %%system:qwk_id%%
     </td >
   </tr>
 <<REPEAT fidoaddrs>>
@@ -37,7 +37,7 @@
       Location:
     </td >
     <td class="sysinfo">
-      %%JS:system.location%%
+      %%system:location%%
     </td >
   </tr>
   <tr>
@@ -45,7 +45,7 @@
       Operator:
     </td >
     <td class="sysinfo">
-      %%JS:system.operator%%
+      %%system:operator%%
     </td >
   </tr>
   <tr>
@@ -53,7 +53,7 @@
       Nodes:
     </td >
     <td class="sysinfo">
-      %%JS:system.nodes%%
+      %%system:nodes%%
     </td >
   </tr>
   <tr>
@@ -85,7 +85,7 @@
       Total Time:
     </td >
     <td class="sysinfo">
-      %%JS:system.stats.total_timeon%%
+      %%system.stats.total_timeon%%
     </td >
   </tr>
   <tr>
@@ -98,17 +98,17 @@
   </tr>
 </table>
 <div align="center">
-<p>Synchronet BBS for %%JS:system.platform%%
-Version %%JS:system.full_version%%</p>
-<p>Revision %%JS:system.revision%%
-%%JS:system.beta_version%%
-%%JS:system.compiled_when%%
-%%JS:system.msgbase_lib%%
-%%JS:system.compiled_with%%</p>
-<p>%%JS:system.copyright%% - <a href="http://www.synchro.net/">http://www.synchro.net</a></p>
-<p>%%JS:system.js_version%%</p>
-<p>%%JS:system.socket_lib%%</p>
-<p>%%JS:system.os_version%%</p>
+<p>Synchronet BBS for %%system:platform%%
+Version %%system:full_version%%</p>
+<p>Revision %%system:revision%%
+%%system:beta_version%%
+%%system:compiled_when%%
+%%system:msgbase_lib%%
+%%system:compiled_with%%</p>
+<p>%%system:copyright%% - <a href="http://www.synchro.net/">http://www.synchro.net</a></p>
+<p>%%system:js_version%%</p>
+<p>%%system:socket_lib%%</p>
+<p>%%system:os_version%%</p>
 <table>
 <tr>
     <td><pre class="leftalign">@@sysinfo@@</pre></td>
