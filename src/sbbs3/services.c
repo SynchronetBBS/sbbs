@@ -613,7 +613,7 @@ static JSBool js_server_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 
 	switch(tiny) {
 		case SERVER_PROP_CLIENTS:
-			JS_ValueToInt32(cx,*vp,&active_clients);
+			JS_ValueToInt32(cx,*vp,(int32*)&active_clients);
 			update_clients();
 			break;
 	}
