@@ -4,9 +4,7 @@
 
 load("irclib.js");	// Thanks Cyan!
 
-const REVISION = "$Revision$".split(' ')[1];
-
-var server="vert.synchro.net";
+var ircserver="vert.synchro.net";
 var channel="#synchronet";
 var port=6667;
 var nick="sw";
@@ -17,7 +15,7 @@ var passedmsg=0;
 for(i=0;i<argc;i++) {
 	switch(argv[i]) {
 		case "-s":
-			server=argv[++i];
+			ircserver=argv[++i];
 			break;
 		case "-j":
 			join=true;
@@ -34,9 +32,9 @@ for(i=0;i<argc;i++) {
 	}
 }
 
-my_server = IRC_client_connect(server,nick,undefined,undefined,port);
+my_server = IRC_client_connect(ircserver,nick,undefined,undefined,port);
 if (!my_server) {
-        log("!Couldn't connect to " + server);
+        wrlog("!Couldn't connect to " + ircserver);
         exit();
 }
 
@@ -61,16 +59,27 @@ if(join) {
 }
 
 send("NAMES "+channel);
+var sent_heads=0;
 
 while(my_server.poll(5) && (response=my_server.recvline())) {
 	var resp=response.split(/\s+/);
-	if(resp[1]=='353')
+	if(resp[1]=='353') {
+		if(this.http_request!=undefined) {
+			if(!sent_heads) {
+				writeln("<html><head><title>Users on "+channel+" now</title></head><body>");
+				sent_heads=1;
+			}
+		}
 		logusers(response);
+	}
 	if(resp[1]=='366')
 		break;
 }
 
 IRC_quit(my_server);
+
+if(!sent_heads && this.http_request!=undefined)
+	writeln("</body></html>");
 
 function send(msg)
 {
@@ -82,8 +91,11 @@ function logusers(resp)
 {
 	var txt=resp.split(/:/,3);
 	var names=txt[2].split(/\s+/);
-	for(name in names.sort(sortfunc))
-		log(names[name]);
+	for(name in names.sort(sortfunc)) {
+		writeln(names[name]);
+		if(this.http_request!=undefined)
+			writeln("<BR>");
+	}
 }
 
 function sortfunc(a, b)
@@ -93,4 +105,12 @@ function sortfunc(a, b)
 	if(a.toUpperCase() > b.toUpperCase())
 		return 1;
 	return 0;
+}
+
+function wrlog(msg)
+{
+	log(msg);
+	writeln(msg);
+	if(http_request!=undefined)
+		writeln("<BR>");
 }
