@@ -81,7 +81,7 @@ typedef struct {
     void	(*reserved_fptr1)(void);
     char    ctrl_dir[128];
     char	dosemu_path[128];
-    char	reserved_path7[128];
+    char	temp_dir[128];
     char	reserved_path6[128];
     char	reserved_path5[128];
     char	reserved_path4[128];
