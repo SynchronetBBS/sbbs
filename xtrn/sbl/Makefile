@@ -28,7 +28,7 @@ OBJS    = xsdk.obj xsdkvars.obj xsdkwrap.obj
 .c.obj:
 	@$(CC) $(CFLAGS) -c $<
 
-all: sbl.exe smb2sbl.exe sbl2smb.exe
+all: sbl.exe smb2sbl.exe sbl2smb.exe sblpack.exe
 
 # Main EXE Link Rule
 sbl.exe: $(OBJS) sbl.obj
@@ -42,6 +42,10 @@ sbl2smb.exe: sbl2smb.obj $(SMBIO)
 	@$(CC) $(CFLAGS) -e$@ $**
 
 smb2sbl.exe: smb2sbl.obj $(SMBIO)
+	@echo Linking $@
+	@$(CC) $(CFLAGS) -e$@ $**
+
+sblpack.exe: sblpack.obj
 	@echo Linking $@
 	@$(CC) $(CFLAGS) -e$@ $**
 
