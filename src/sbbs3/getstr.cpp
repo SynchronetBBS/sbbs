@@ -84,7 +84,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 	if(mode&K_AUTODEL && str1[0] && !(mode&K_NOECHO)) {
 		ch=getkey(mode|K_GETSTR);
 		attr(atr);
-		if(isprint(ch) || ch==0x7f) {
+		if(isprint(ch) || ch==DEL) {
 			for(i=0;i<l;i++)
 				bputs("\b \b");
 			i=l=0; }
@@ -363,7 +363,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 					attr(LIGHTGRAY);
 				console|=CON_UPARROW;
 				return(l);
-			case 127:  /* Ctrl-BkSpc (DEL) Delete current char */
+			case DEL:  /* Ctrl-BkSpc (DEL) Delete current char */
 				if(i==l) {	/* Backspace if end of line */
 					if(i) {
 						i--;

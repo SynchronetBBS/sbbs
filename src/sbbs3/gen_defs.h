@@ -44,6 +44,7 @@
 #define BEL		0x07				/* Bell/beep				^G	*/
 #define FF		0x0c				/* Form feed				^L	*/
 #define ESC 	0x1b				/* Escape					^[	*/
+#define DEL		0x7f				/* Delete					^BS	*/
 #define BS		'\b'				/* Back space				^H	*/
 #define TAB 	'\t'				/* Horizontal tabulation	^I	*/
 #define LF		'\n'				/* Line feed				^J	*/
