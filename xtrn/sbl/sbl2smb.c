@@ -50,11 +50,11 @@
 #include <sys/stat.h>
 #include <share.h>
 
+#include "genwrap.h"
+#include "dirwrap.h"
 #include "sbbsdefs.h"
 #include "smblib.h"
-#include "smbwrap.h"
 #include "sbldefs.h"
-#include "xsdkwrap.h"	/* PLATFORM_DESC */
 
 #define SBL2SMB_VER "2.20/" PLATFORM_DESC
 
