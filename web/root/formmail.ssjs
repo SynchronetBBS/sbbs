@@ -4,6 +4,15 @@
 
 load("sbbsdefs.js");
 
+// List of supported 'hidden' field (not included in body text)
+var hidden_fields = {
+	recipient:1,
+	redirect:1,
+	subject:1
+};
+
+http_reply.fast = true;
+
 var redir = http_request.query.redirect;
 if(!redir)
 	redir = http_request.header.referer;
@@ -22,7 +31,7 @@ function results(level, text)
 		writeln("!ERROR: ".bold());
 	writeln(text);
 	writeln("<p>");
-	writeln(("Click here to return to " + redir.italics()).link(redir));
+	writeln(("Click here to return to " + String(redir).italics()).link(redir));
 	writeln("</body>");
 	writeln("</html>");
 	exit();
@@ -32,8 +41,8 @@ var msgbase=new MsgBase("mail");
 if(!msgbase.open())
 	results(LOG_ERR,format("%s opening mail base", msgbase.error));
 
-var hdr = { from: 'formmail',
-			to: 'sysop',
+var hdr = { from: 'FormMail',
+			to: 'Sysop',
 			subject: 'WWW Form Submission' };
 
 // Use form-specified recipient
@@ -43,7 +52,8 @@ if(http_request.query.recipient)	hdr.to				=http_request.query.recipient;
 if(http_request.query.subject)		hdr.subject			=http_request.query.subject;
 
 // Use form-specified email address
-if(http_request.query.email)		hdr.from_net_addr	=http_request.query.email;
+if(http_request.query.email) {		hdr.from_net_addr	=http_request.query.email;
+									hdr.from			=http_request.query.email; }
 
 // Use form-specified real name
 if(http_request.query.realname)		hdr.from			=http_request.query.realname;
@@ -60,8 +70,12 @@ else {
 
 var i;
 var body="Form fields follow:\r\n\r\n";
-for(i in http_request.query)
-	body += format("%-10s = %s\r\n", i, http_request.query[i]);
+for(i in http_request.query) {
+	if(hidden_fields[i])
+		continue;
+	if(http_request.query[i].length)
+		body += format("%-10s = %s\r\n", i, http_request.query[i]);
+}
 	
 if(!msgbase.save_msg(hdr,client,body))
 	results(LOG_ERR,format("%s saving message", msgbase.error));
