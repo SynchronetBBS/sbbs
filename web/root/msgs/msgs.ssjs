@@ -27,7 +27,7 @@ else {
 	msgarray=get_all_message_offsets();
 	template.can_delete=msg_area.sub[sub].is_operator;
 }
-var total_pages=Math.floor(msgarray.length/max_messages);
+var total_pages=Math.floor(msgarray.length/max_messages+(msgarray.length%max_messages?1:0));
 var firstpage=0;
 var lastpage=firstpage+max_pages-1;
 if(lastpage>total_pages)
