@@ -96,7 +96,6 @@ int main(int argc, char **argv)
 			if(drawwin())
 				return(1);
 			doterm();
-			rlogin_close();
 		}
 	}
 	uifcbail();
