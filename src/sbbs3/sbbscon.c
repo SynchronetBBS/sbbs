@@ -36,20 +36,18 @@
  ****************************************************************************/
 
 /* ANSI headers */
+#include <stdio.h>
 #include <string.h>
 #include <signal.h>
 #include <ctype.h>
 
 /* Synchronet-specific headers */
 #include "conwrap.h"	/* kbhit/getch */
-#include "dirwrap.h"	/* BACKSLASH */
-#include "startup.h"	/* bbs_startup_t, bbs_thread */
+#include "sbbs.h"		/* load_cfg() */
+#include "sbbs_ini.h"	/* sbbs_read_ini() */
 #include "ftpsrvr.h"	/* ftp_startup_t, ftp_server */
 #include "mailsrvr.h"	/* mail_startup_t, mail_server */
 #include "services.h"	/* services_startup_t, services_thread */
-#include "ini_file.h"
-#include "sbbs_ini.h"
-#include "sbbsdefs.h"	/* VERSION, REVISION, and COPYRIGHT_NOTICE */
 
 #ifdef __unix__
 
@@ -258,7 +256,7 @@ static BOOL do_seteuid(BOOL to_new)
 
 #ifdef _WINSOCKAPI_
 
-WSADATA WSAData;
+static WSADATA WSAData;
 
 static BOOL winsock_startup(void)
 {
@@ -350,18 +348,6 @@ static void client_on(BOOL on, int sock, client_t* client, BOOL update)
 		client_count--;
 	pthread_mutex_unlock(&mutex);
 	lputs(NULL); /* update displayed stats */
-}
-
-/****************************************************************************/
-/* Truncates white-space chars off end of 'str'								*/
-/****************************************************************************/
-static void truncsp(char *str)
-{
-	uint c;
-
-	c=strlen(str);
-	while(c && (uchar)str[c-1]<=SP) c--;
-	str[c]=0;
 }
 
 /****************************************************************************/
@@ -684,15 +670,20 @@ daemon(nochdir, noclose)
 int main(int argc, char** argv)
 {
 	int		i;
+	int		n;
+	int		file;
 	char	ch;
 	char*	p;
 	char*	arg;
 	char*	ctrl_dir;
 	char	str[MAX_PATH+1];
+    char	error[256];
 	char	ini_file[MAX_PATH+1];
 	char	host_name[128]="";
 	BOOL	quit=FALSE;
 	FILE*	fp=NULL;
+	scfg_t	scfg;
+	node_t	node;
 #ifdef __unix__
 	FILE *pidfile;
 	struct passwd* pw_entry;
@@ -1163,6 +1154,19 @@ int main(int argc, char** argv)
 		}
 	}
 
+	/* Read in configuration files */
+    memset(&scfg,0,sizeof(scfg));
+    SAFECOPY(scfg.ctrl_dir,ctrl_dir);
+    scfg.size=sizeof(scfg);
+	SAFECOPY(error,UNKNOWN_LOAD_ERROR);
+	sprintf(str,"Loading configuration files from %s", scfg.ctrl_dir);
+	bbs_lputs(str);
+	if(!load_cfg(&scfg, NULL /* text.dat */, TRUE /* prep */, error)) {
+		fprintf(stderr,"\n!ERROR Loading Configuration Files: %s", error);
+        return(-1);
+    }
+
+
 #ifdef __unix__
 	/* Write the standard .pid file if running as a daemon */
 	if(is_daemon)  {
@@ -1232,21 +1236,58 @@ int main(int argc, char** argv)
 				case 'q':
 					quit=TRUE;
 					break;
+				case 'w':	/* who's online */
+					printf("\nNodes in use:\n");
+				case 'n':	/* nodelist */
+					printf("\n");
+					for(i=1;i<=scfg.sys_nodes;i++) {
+						getnodedat(&scfg,i,&node,NULL /* file */);
+						if(ch=='w' && node.status!=NODE_INUSE && node.status!=NODE_QUIET)
+							continue;
+						printnodedat(&scfg, i,&node);
+					}
+					break;
+				case 'l':	/* lock node */
+				case 'd':	/* down node */
+				case 'i':	/* interrupt node */
+					printf("\nNode number: ");
+					if((n=atoi(fgets(str,3,stdin)))<1)
+						break;
+					fflush(stdin);
+					printf("\n");
+					if((i=getnodedat(&scfg,n,&node,&file))!=0) {
+						printf("!Error %d getting node %d data\n",i,n);
+						break;
+					}
+					switch(ch) {
+						case 'l':
+							node.misc^=NODE_LOCK;
+							break;
+						case 'd':
+							node.misc^=NODE_DOWN;
+							break;
+						case 'i':
+							node.misc^=NODE_INTR;
+							break;
+					}
+					putnodedat(&scfg,n,&node,file);
+					printnodedat(&scfg,n,&node);
+					break;
 				default:
 					printf("\nSynchronet Console Version %s%c Help\n\n",VERSION,REVISION);
 					printf("q   = quit\n");
-#if 0	/* to do */	
 					printf("n   = node list\n");
 					printf("w   = who's online\n");
-					printf("l#  = lock node #\n");
-					printf("d#  = down node #\n");
-					printf("i#  = interrupt node #\n");
+					printf("l   = lock node (toggle)\n");
+					printf("d   = down node (toggle)\n");
+					printf("i   = interrupt node (toggle)\n");
+#if 0	/* to do */	
 					printf("c#  = chat with node #\n");
 					printf("s#  = spy on node #\n");
 #endif
-					lputs("");	/* redisplay prompt */
 					break;
 			}
+			lputs("");	/* redisplay prompt */
 		}
 
 	bbs_terminate();
