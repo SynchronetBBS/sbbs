@@ -242,7 +242,8 @@ void writecstr(uchar *p)
 		if(*p=='\\')    { /* escape */
 			p++;
 			if(isdigit(*p)) {
-				str[j]=atoi(p); 		/* decimal, NOT octal */
+				sprintf(tmp,"%.3s",p);
+				str[j]=atoi(tmp); 		/* decimal, NOT octal */
 				if(isdigit(*(++p))) 	/* skip up to 3 digits */
 					if(isdigit(*(++p)))
 						p++;
