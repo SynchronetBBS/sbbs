@@ -1066,11 +1066,13 @@ int __fastcall TMainForm::PageNum(TPageControl* obj)
        	return(PAGE_LOWERLEFT);
 	return(PAGE_LOWERRIGHT);
 }
-void __fastcall TMainForm::ReadColor(TRegistry* Registry
-    ,AnsiString name, TColor* color)
+TColor __fastcall TMainForm::ReadColor(TRegistry* Registry
+    ,AnsiString name)
 {
     if(Registry->ValueExists(name + "Color"))
-        *color=StringToColor(Registry->ReadString(name + "Color"));
+        return(StringToColor(Registry->ReadString(name + "Color")));
+        
+    return(clWindow);   // Default
 }
 void __fastcall TMainForm::WriteColor(TRegistry* Registry
     ,AnsiString name, TColor color)
@@ -1202,19 +1204,19 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     if(Registry->ValueExists("FtpFormPage"))
     	FtpFormPage=Registry->ReadInteger("FtpFormPage");
 
-    ReadColor(Registry,"TelnetLog",&(TelnetForm->Log->Color));
+    TelnetForm->Log->Color=ReadColor(Registry,"TelnetLog");
     ReadFont("TelnetLog",TelnetForm->Log->Font);
-    ReadColor(Registry,"EventsLog",&(EventsForm->Log->Color));
+    EventsForm->Log->Color=ReadColor(Registry,"EventsLog");
     ReadFont("EventsLog",EventsForm->Log->Font);
-    ReadColor(Registry,"ServicesLog",&(ServicesForm->Log->Color));
+    ServicesForm->Log->Color=ReadColor(Registry,"ServicesLog");
     ReadFont("ServicesLog",ServicesForm->Log->Font);
-    ReadColor(Registry,"MailLog",&(MailForm->Log->Color));
+    MailForm->Log->Color=ReadColor(Registry,"MailLog");
     ReadFont("MailLog",MailForm->Log->Font);
-    ReadColor(Registry,"FtpLog",&(FtpForm->Log->Color));
+    FtpForm->Log->Color=ReadColor(Registry,"FtpLog");
     ReadFont("FtpLog",FtpForm->Log->Font);
-    ReadColor(Registry,"NodeList",&(NodeForm->ListBox->Color));
+    NodeForm->ListBox->Color=ReadColor(Registry,"NodeList");
     ReadFont("NodeList",NodeForm->ListBox->Font);
-    ReadColor(Registry,"ClientList",&(ClientForm->ListView->Color));
+    ClientForm->ListView->Color=ReadColor(Registry,"ClientList");
     ReadFont("ClientList",ClientForm->ListView->Font);
 
 	if(Registry->ValueExists("TelnetFormTop"))
@@ -1402,6 +1404,11 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
 
     if(Registry->ValueExists("MailRelayPort"))
     	mail_startup.relay_port=Registry->ReadInteger("MailRelayPort");
+
+    if(Registry->ValueExists("MailDefaultUser"))
+        sprintf(mail_startup.default_user,"%.*s"
+            ,sizeof(mail_startup.default_user)-1
+            ,Registry->ReadString("MailDefaultUser").c_str());
 
     if(Registry->ValueExists("MailDNSServer"))
         sprintf(mail_startup.dns_server,"%.*s"
@@ -1756,6 +1763,8 @@ void __fastcall TMainForm::SaveSettings(TObject* Sender)
     Registry->WriteInteger("MailSMTPPort",mail_startup.smtp_port);
     Registry->WriteInteger("MailPOP3Port",mail_startup.pop3_port);
 
+    Registry->WriteString("MailDefaultUser",mail_startup.default_user);
+    
     Registry->WriteString("MailRelayServer",mail_startup.relay_server);
     Registry->WriteInteger("MailRelayPort",mail_startup.relay_port);
     Registry->WriteString("MailDNSServer",mail_startup.dns_server);
