@@ -498,6 +498,7 @@ long js_exec(const char *fname, char** args)
 	JSScript*	js_script=NULL;
 	JSString*	arg;
 	JSObject*	argv;
+	FILE*		fp=stdin;
 	jsval		val;
 	jsval		rval=JSVAL_VOID;
 	int32		result=0;
@@ -513,6 +514,11 @@ long js_exec(const char *fname, char** args)
 		if(!fexistcase(path)) {
 			fprintf(errfp,"!Module file (%s) doesn't exist\n",path);
 			return(-1); 
+		}
+
+		if((fp=fopen(path,"r"))==NULL) {
+			fprintf(errfp,"!Error %d (%s) opening %s\n",errno,STRERROR(errno),path);
+			return(-1);
 		}
 	}
 	JS_ClearPendingException(js_cx);
@@ -541,13 +547,14 @@ long js_exec(const char *fname, char** args)
 
 	JS_SetBranchCallback(js_cx, js_BranchCallback);
 
-	if(fname==NULL)	 /* Use stdin for script source */
+	if(fp==stdin) 	 /* Using stdin for script source */
 		SAFECOPY(path,"stdin");
+
 	fprintf(statfp,"Reading script from %s\n",path);
 	line_no=0;
 	js_buflen=0;
-	while(!feof(stdin)) {
-		if(!fgets(line,sizeof(line),stdin))
+	while(!feof(fp)) {
+		if(!fgets(line,sizeof(line),fp))
 			break;
 		line_no++;
 #ifdef __unix__	/* Support Unix Shell Scripts that start with #!/path/to/jsexec */
@@ -563,7 +570,7 @@ long js_exec(const char *fname, char** args)
 		js_buflen+=strlen(line);
 	}
 	if((js_script=JS_CompileScript(js_cx, js_scope, js_buf, js_buflen, fname==NULL ? NULL : path, 1))==NULL) {
-		fprintf(errfp,"!Error compiling script from stdin\n");
+		fprintf(errfp,"!Error compiling script from %s\n",path);
 		return(-1);
 	}
 	JS_ExecuteScript(js_cx, js_scope, js_script, &rval);
@@ -580,6 +587,12 @@ long js_exec(const char *fname, char** args)
 	JS_ClearScope(js_cx, js_scope);
 
 	JS_GC(js_cx);
+
+	if(fp!=NULL && fp!=stdin)
+		fclose(fp);
+
+	if(js_buf!=NULL)
+		free(js_buf);
 
 	return(result);
 }
