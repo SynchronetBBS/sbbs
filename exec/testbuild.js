@@ -81,15 +81,20 @@ for(i in builds) {
 var body = "System: " + system.local_host_name + " - " + system.os_version + "\n\n";
 
 for(i in builds) {
-	body += system.secondstr(builds[i].end-builds[i].start) + " - ";
+	body += elapsed_time(builds[i].end-builds[i].start) + " - ";
 	body += builds[i][0] + "\t" + builds[i][1];
 	body += "\n";
 }
 
-body += "--------\n";
-body += system.secondstr(time()-start) + " - total\n";
+body += "-----\n";
+body += elapsed_time(time()-start) + " - total\n";
 
 send_email(system.platform + " builds successful", lfexpand(body));
+
+function elapsed_time(t)
+{
+	return format("%02u:%02u", t/60, t%60);
+}
 
 function file_contents(fname)
 {
