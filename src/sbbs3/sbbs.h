@@ -155,13 +155,12 @@ public:
 
     RingBuf	inbuf;
     RingBuf	outbuf;
-	sem_t	output_sem;
 	HANDLE	input_thread;
 	pthread_mutex_t	input_thread_mutex;
 	bool	input_thread_mutex_locked;	// by someone other than the input_thread
 
 	int 	outcom(uchar ch); 	   // send character
-	int 	incom(void);		   // receive character
+	int 	incom(unsigned long timeout=0);		   // receive character
 
 	void	spymsg(char *msg);		// send message to active spies
 
@@ -483,7 +482,7 @@ public:
 	void	mnemonics(char *str);
 
 	/* inkey.cpp */
-	char	inkey(long mode);		/* Returns key if one has been hit		*/
+	char	inkey(long mode, unsigned long timeout=0);
 	char	handle_ctrlkey(char ch, long mode=0);
 
 	/* prntfile.cpp */
