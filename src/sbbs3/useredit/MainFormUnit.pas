@@ -256,7 +256,7 @@ const					    { String lengths					   	    }
     LEN_NETMAIL 	=60;	{ NetMail forwarding address		   	    }
     LEN_PASS		=8;	    { User password							    }
     LEN_PHONE		=12;	{ User phone number						    }
-    LEN_BIRTH		=8;	    { Birthday in MM/DD/YY format		   	    }
+    LEN_BIRTH		=8;	    { Birthday in xx/xx/YY format		   	    }
     LEN_ADDRESS 	=30;	{ User address 							    }
     LEN_LOCATION	=30;	{ Location (City, State)			   	    }
     LEN_ZIPCODE 	=10;	{ Zip/Postal code					   	    }
@@ -483,7 +483,7 @@ begin
     Result:=StrToIntDef(str,0);
 end;
 
-{ Convert a hexadecimal time field (in unix format) to MM/DD/YY }
+{ Convert a hexadecimal time field (in unix format) to xx/xx/YY }
 function GetDateField(buf : PChar): AnsiString;
 var str: AnsiString;
     date: TDateTime;
@@ -496,8 +496,8 @@ begin
         Exit;
     end;
     time:=time div (24*60*60);          { convert from seconds to days }
-    date:=StrToDate('1/1/1970')+time;   { convert to days since 1970 }
-    Result:=FormatDateTime('mm/dd/yy',date);
+    date:=EncodeDate(1970,1,1)+time;   { convert to days since 1970 }
+    Result:=DateToStr(date);
 end;
 
 { Reads a user data record to an Edit box and clears modified flag }
@@ -716,12 +716,12 @@ begin
     PutTextField(buf,IntToHex(flags,8),8);
 end;
 
-{ Converts a date string in MM/DD/YY format into a unix time_t format in hex }
+{ Converts a date string in xx/xx/YY format into a unix time_t format in hex }
 procedure PutDateField(buf : PChar; str : AnsiString);
 var val: Integer;
 begin
     { convert to days since 1970 }
-    val:=Round(StrToDate(str)-StrToDate('1/1/1970'));
+    val:=Round(StrToDate(str)-EncodeDate(1970,1,1));
     if val < 0 then val:=0;
     { convert from days to seconds }
     val:=val*(24*60*60);
@@ -985,6 +985,16 @@ end;
 { There's probably a better place to do this init stuff... constructor? }
 procedure TForm1.FormShow(Sender: TObject);
 begin
+
+    { Over-ride Locale settings here }
+    DateSeparator:='/';
+    Caption:=ShortDateFormat;
+
+    if(ShortDateFormat = 'M/d/yyyy') then
+        ShortDateFormat:='mm/dd/yy'     { American }
+    else
+        ShortDateFormat:='dd/mm/yy';    { European }
+
     data_dir:=ParamStr(1);
     if Length(data_dir)=0 then data_dir:='c:\sbbs\data\';
 
@@ -992,7 +1002,6 @@ begin
 
     if users = 0 then   { Create user if none exist }
         users:=1;
-//        NewUserExecute(Sender);
 
     ScrollBar.Min:=1;
     ScrollBar.Max:=users;
@@ -1081,9 +1090,9 @@ begin
     AliasEdit.Tag := 1;
     LevelEdit.Text:='10';
     LevelEdit.Tag :=1;
-    FirstOnEdit.Text:=FormatDateTime('mm/dd/yy',Date);
+    FirstOnEdit.Text:=DatetoStr(Date);
     FirstOnEdit.Tag :=1;
-    LastOnEdit.Text:=FormatDateTime('mm/dd/yy',Date);
+    LastOnEdit.Text:=DateToStr(Date);
     LastOnEdit.Tag :=1;
     TerminalCheckListBox.Checked[0] := true; // AUTOTERM
     TerminalCheckListBox.Checked[1] := true; // EXASCII
