@@ -120,19 +120,29 @@ static void lputs(char *str)
 * **********************************************************/
 BOOL do_setuid() 
 {
-	uid_t new_uid;
+	BOOL	result=FALSE;
+	uid_t	new_uid;
 	struct passwd* pw_entry;
+	static pthread_mutex_t mutex;
+	static BOOL mutex_initialized;
 
 	if(new_uid_name==NULL)	/* unspecified */
 		return TRUE;
-	if((pw_entry=getpwnam(new_uid_name)) && (new_uid=pw_entry->pw_uid))
-		if(!setuid(new_uid)) {
-/*			lputs("setuid SUCCESSFUL"); */
-			return TRUE;
-		}
 
-	lputs("!setuid FAILED");
-	return FALSE;
+	if(!mutex_initialized) {
+		pthread_mutex_init(&mutex,NULL);
+		mutex_initialized=TRUE;
+	}
+
+	pthread_mutex_lock(&mutex);
+	if((pw_entry=getpwnam(new_uid_name)) && (new_uid=pw_entry->pw_uid))
+		if(!setuid(new_uid)) 
+			result=TRUE;
+	pthread_mutex_unlock(&mutex);
+
+	if(!result)
+		lputs("!setuid FAILED");
+	return result;
 }
 #endif   /* __unix__ */
 
