@@ -62,53 +62,19 @@ str_list_t csvParseLine(char* line)
 	return(list);
 }
 
-named_string_t* csvParseRecord(char* record, str_list_t columns)
-{
-	size_t	len;
-	size_t	i;
-	char*	buf;
-	char*	p;
-	named_string_t*	str;
-
-	len = sizeof(named_string_t)*(strListCount(columns)+1);
-
-	if((str=(named_string_t*)malloc(len))==NULL)
-		return(NULL);
-	
-	memset(str,0,len);
-
-	if((buf=strdup(record))==NULL) {
-		free(str);
-		return(NULL);
-	}
-
-	p=strtok(buf,",");
-	for(i=0;columns[i];i++) {
-		str[i].name=columns[i];
-		if(p!=NULL) {
-			if((str[i].value=strdup(p))==NULL)
-				break;
-			p=strtok(NULL,",");
-		}
-	}
-	free(buf);
-
-	return(str);
-}
-
-named_string_t** csvParse(str_list_t records, str_list_t columns)
+str_list_t* csvParse(str_list_t records )
 {
 	size_t	i;
-	named_string_t** list;
+	str_list_t* list;
 
 	if(records==NULL)
 		return(NULL);
 
-	if((list=(named_string_t**)malloc(sizeof(named_string_t*)*(strListCount(records)+1)))==NULL)
+	if((list=(str_list_t*)malloc(sizeof(str_list_t*)*(strListCount(records)+1)))==NULL)
 		return(NULL);
 
 	for(i=0;records[i];i++)
-		list[i]=csvParseRecord(records[i],columns);
+		list[i]=csvParseLine(records[i]);
 
 	list[i]=NULL; /* terminate */
 
@@ -209,6 +175,41 @@ str_list_t csvCreate(str_list_t data[], str_list_t columns)
 	return(list);
 }
 
+/****************************************************************************/
+/* Truncates all white-space chars off end of 'str'							*/
+/****************************************************************************/
+static void truncsp(char *str)
+{
+	uint c;
+
+	c=strlen(str);
+	while(c && (uchar)str[c-1]<=' ') c--;
+	str[c]=0;
+}
+
+str_list_t*	csvReadFile(FILE* fp, str_list_t* columns)
+{
+	str_list_t*	records;
+	str_list_t	lines;
+	size_t		i;
+
+	if((lines=strListReadFile(fp, NULL, 0))==NULL)
+		return(NULL);
+
+	/* truncate white-space off end of strings */
+	for(i=0; lines[i]!=NULL; i++)
+		truncsp(lines[i]);
+
+	if(columns!=NULL) {
+		if((*columns=csvParseLine(strListRemove(&lines,0)))==NULL)
+			return(NULL);
+	}
+
+	records=csvParse(lines);
+
+	return(records);
+}
+
 #if 0
 
 int main()
@@ -236,16 +237,14 @@ int main()
 		printf("%s\n",list[i]);
 }
 
-#elif 1	/* decode */
+#elif 1	/* decode and display .csv file */
 
 void main(int argc, char** argv)
 {
-	named_string_t**	str;
-	str_list_t	list;
+	str_list_t*	records;
 	str_list_t	columns;
 	FILE*		fp;
 	size_t		i,j;
-
 
 	if(argc<2) {
 		printf("usage: csv_file <file.csv>\n");
@@ -257,24 +256,14 @@ void main(int argc, char** argv)
 		exit(0);
 	}
 
-	if((list=strListReadFile(fp, NULL, 0))==NULL) {
+	if((records=csvReadFile(fp, &columns))==NULL) {
 		printf("Error reading %s\n",argv[1]);
 		exit(0);
 	}
 
-	if((columns=csvParseLine(strListRemove(&list,0)))==NULL) {
-		printf("Error parsing columns header\n");
-		exit(0);
-	}
-
-	if((str=csvParse(list,columns))==NULL) {
-		printf("csvParse error\n");
-		exit(1);
-	}
-
-	for(i=0;str[i];i++)
-		for(j=0;str[i][j];j++)
-			printf("%s[%d]=%s",str[i][j].name,i,str[i][j].value);
+	for(i=0;records[i];i++)
+		for(j=0;records[i][j];j++)
+			printf("%s[%d]=%s\n",columns[j],i,records[i][j]);
 }
 
 #endif
