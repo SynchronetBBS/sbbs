@@ -158,6 +158,7 @@ js_beep(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 static JSBool
 js_exit(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
+	JS_ClearPendingException(cx);
 	*rval = JSVAL_VOID;
 	return(JS_FALSE);
 }
