@@ -75,21 +75,3 @@ ulong _beginthread(void( *start_address )( void * )
 #endif
 
 #endif	/* __unix__ */
-
-/****************************************************************************/
-/* Win32 implementation of POSIX sem_getvalue() function					*/
-/****************************************************************************/
-#if defined(_WIN32)
-int DLLCALL sem_getvalue(sem_t* psem, int* val)
-{
-	if(psem==NULL || val==NULL)
-		return(-1);
-
-	if(WaitForSingleObject(*(psem),0)==WAIT_OBJECT_0)
-		*val=1;
-	else
-		*val=0;
-
-	return(0);
-}
-#endif
