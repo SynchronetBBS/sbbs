@@ -76,13 +76,6 @@
 
 #include "sbbs.h"		/* getfname */
 
-#ifdef _WIN32
-#define stat(f,s)	_stat(f,s)
-#define STAT		struct _stat
-#else
-#define STAT		struct stat
-#endif
-
 /* Win32 (minimal) implementation of POSIX.2 glob() function */
 /* This code _may_ work on other DOS-based platforms (e.g. OS/2) */
 
@@ -178,15 +171,28 @@ void DLLCALL globfree(glob_t* glob)
 /****************************************************************************/
 /* Returns the time/date of the file in 'filename' in time_t (unix) format  */
 /****************************************************************************/
-long DLLCALL fdate(char *filename)
+time_t DLLCALL fdate(char *filename)
 {
-	STAT st;
+	struct stat st;
 
 	if(access(filename,0)==-1)
-		return(-1L);
+		return(-1);
 
 	if(stat(filename, &st)!=0)
-		return(-1L);
+		return(-1);
+
+	return(st.st_mtime);
+}
+
+/****************************************************************************/
+/* Returns the modification time of the file in 'fd'						*/
+/****************************************************************************/
+time_t DLLCALL filetime(int fd)
+{
+	struct stat st;
+
+	if(fstat(fd, &st)!=0)
+		return(-1);
 
 	return(st.st_mtime);
 }
@@ -196,7 +202,7 @@ long DLLCALL fdate(char *filename)
 /****************************************************************************/
 BOOL DLLCALL isdir(char *filename)
 {
-	STAT st;
+	struct stat st;
 
 	if(stat(filename, &st)!=0)
 		return(FALSE);
@@ -220,7 +226,7 @@ int DLLCALL getfattr(char* filename)
 	_findclose(handle);
 	return(finddata.attrib);
 #else
-	STAT st;
+	struct stat st;
 
 	if(stat(filename, &st)!=0) {
 		errno=ENOENT;
