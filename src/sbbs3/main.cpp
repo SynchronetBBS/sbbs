@@ -2119,7 +2119,7 @@ sbbs_t::~sbbs_t()
 
 	/* Sub-board variables */
 	for(i=0;i<cfg.total_grps && usrsub!=NULL;i++)
-		FREE_AND_NULL(usrsub[i]);
+		FREE_AND_NULL(usrsub[i]);	/* exception here (ptr=0xfdfdfdfd) on exit July-10-2002 */
 
 	FREE_AND_NULL(cursub);
 	FREE_AND_NULL(usrgrp);
@@ -3021,7 +3021,7 @@ const char* DLLCALL bbs_ver(void)
 
 	DESCRIBE_COMPILER(compiler);
 
-	sprintf(ver,"%s v%s%c%s  SMBLIB v%s  Compiled %s %s with %s"
+	sprintf(ver,"%s %s%c%s  SMBLIB %s  Compiled %s %s with %s"
 		,TELNET_SERVER
 		,VERSION, REVISION
 #ifdef _DEBUG
@@ -3195,7 +3195,7 @@ void DLLCALL bbs_thread(void* arg)
 #endif
 		);
 	lprintf("Compiled %s %s with %s", __DATE__, __TIME__, compiler);
-	lprintf("SMBLIB v%s (format %x.%02x)",smb_lib_ver(),smb_ver()>>8,smb_ver()&0xff);
+	lprintf("SMBLIB %s (format %x.%02x)",smb_lib_ver(),smb_ver()>>8,smb_ver()&0xff);
 
     if(startup->first_node<1 || startup->first_node>startup->last_node) {
     	lprintf("!ILLEGAL node configuration (first: %d, last: %d)"
