@@ -222,7 +222,7 @@ writeln("<tr><td>" + "errno".bold() + "<td>number<td>last system error number</t
 writeln("<tr><td>" + "errno_str".bold() + "<td>string<td>description of last system error</td>");
 f.writeln("</ul>");
 
-document_object("branch"	,branch);
+document_object("js"		,js);
 document_object("system"	,system);
 document_object("server"	,server);
 document_object("client"	,client);
