@@ -957,10 +957,6 @@ static JSClass js_socket_class = {
 	,js_finalize_socket		/* finalize		*/
 };
 
-static const char* send_aliases[] = { "write"	,NULL };
-static const char* recv_aliases[] = { "read"	,NULL };
-static const char* recvline_aliases[] = { "readline", "readln"	,NULL };
-
 static jsMethodSpec js_socket_functions[] = {
 	{"close",		js_close,		0,	JSTYPE_VOID,		""					
 	,"close socket"		
@@ -978,7 +974,8 @@ static jsMethodSpec js_socket_functions[] = {
 	,"accept an incoming connection, returns a new Socket object"
 	},
 	{"send",		js_send,		1,	JSTYPE_BOOLEAN,	"string data"		
-	,"send a string"					,send_aliases
+	,"send a string"					
+	,"write"
 	},
 	{"sendto",		js_sendto,		3,	JSTYPE_BOOLEAN,	"string data, address, port"
 	,"send a string to a specific address and port (typically used for UDP sockets)"	
@@ -988,14 +985,14 @@ static jsMethodSpec js_socket_functions[] = {
 	},
 	{"recv",		js_recv,		0,	JSTYPE_STRING,	"[maxlen]"			
 	,"receive a string, default maxlen is 512 characters"	
-	, recv_aliases 
+	,"read"
 	},
 	{"peek",		js_peek,		0,	JSTYPE_STRING,	"[maxlen]"			
 	,"receive a string, default maxlen is 512 characters, leave string in receive buffer"
 	},
 	{"recvline",	js_recvline,	0,	JSTYPE_STRING,	"[maxlen] [,timeout]"
 	,"receive a line-feed terminated string, default maxlen is 512 characters, default timeout is 30 seconds"
-	, recvline_aliases 
+	,"readline"
 	},
 	{"recvfrom",	js_recvfrom,	0,	JSTYPE_OBJECT,	"[maxlen]"			
 	,"receive a string from (typically UDP) socket, return address and port of sender"
