@@ -48,7 +48,7 @@ void viewscroll(void)
 				break;
 			case ESC:
 				i=1;
-				return;
+				break;
 			case KEY_F(1):
 				init_uifc();
 				uifc.helpbuf=	"`Scrollback Buffer`\n\n"
