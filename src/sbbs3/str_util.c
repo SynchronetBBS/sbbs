@@ -384,6 +384,38 @@ char* DLLCALL get_msgid(scfg_t* cfg, uint subnum, smbmsg_t* msg)
 
 	return(msgid);
 }
+/****************************************************************************/
+/* Retrieve a message by RFC822 message-ID									*/
+/****************************************************************************/
+BOOL DLLCALL get_msg_by_id(scfg_t* scfg, smb_t* smb, char* id, smbmsg_t* msg)
+{
+	ulong		n;
+	int			ret;
+
+	for(n=0;n<smb->status.last_msg;n++) {
+		memset(msg,0,sizeof(smbmsg_t));
+		msg->offset=n;
+		if(smb_getmsgidx(smb, msg)!=0)
+			break;
+
+		if(smb_lockmsghdr(smb,msg)!=0)
+			continue;
+
+		ret=smb_getmsghdr(smb,msg);
+
+		smb_unlockmsghdr(smb,msg); 
+
+		if(ret!=SMB_SUCCESS)
+			continue;
+
+		if(strcmp(get_msgid(scfg,smb->subnum,msg),id)==0)
+			return(TRUE);
+
+		smb_freemsgmem(msg);
+	}
+
+	return(FALSE);
+}
 
 /****************************************************************************/
 /* Returns string for 2 digit hex+ numbers up to 575						*/
