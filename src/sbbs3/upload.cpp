@@ -238,8 +238,11 @@ bool sbbs_t::uploadfile(file_t *f)
 /****************************************************************************/
 bool sbbs_t::upload(uint dirnum)
 {
-	char	str[256],src[256]={""},descbeg[25]={""},descend[25]={""},path[256]
+	char	descbeg[25]={""},descend[25]={""}
 				,fname[13],keys[256],ch,*p;
+	char	str[MAX_PATH+1];
+	char	path[MAX_PATH+1];
+	char	spath[MAX_PATH+1];
 	char 	tmp[512];
     time_t	start,end;
     uint	i,j,k,destuser[MAX_USERXFER],destusers=0;
@@ -306,9 +309,14 @@ bool sbbs_t::upload(uint dirnum)
 			,cfg.dir[dirnum]->sname);
 	if(!yesno(str)) return(false);
 	action=NODE_ULNG;
-	padfname(fname,f.name);
 	sprintf(str,"%s%s",path,fname);
 	if(fexistcase(str)) {   /* File is on disk */
+#ifdef _WIN32
+		GetShortPathName(str, spath, sizeof(spath));
+#else
+		SAFECOPY(spath,str);
+#endif
+		SAFECOPY(fname,getfname(spath));
 		if(!dir_op(dirnum) && online!=ON_LOCAL) {		 /* local users or sysops */
 			bprintf(text[FileAlreadyThere],fname);
 			return(false); 
@@ -316,14 +324,7 @@ bool sbbs_t::upload(uint dirnum)
 		if(!yesno(text[FileOnDiskAddQ]))
 			return(false); 
 	}
-	else if(online==ON_LOCAL) {
-		bputs(text[FileNotOnDisk]);
-		bputs(text[EnterPath]);
-		if(!getstr(tmp,60,K_LINE))
-			return(false);
-		backslash(tmp);
-		sprintf(src,"%s%s",tmp,fname); 
-	}
+	padfname(fname,f.name);
 	strcpy(str,cfg.dir[dirnum]->exts);
 	strcpy(tmp,f.name);
 	truncsp(tmp);
@@ -447,12 +448,6 @@ bool sbbs_t::upload(uint dirnum)
 			f.misc|=FM_ANON; 
 	}
 	sprintf(str,"%s%s",path,fname);
-	if(src[0]) {    /* being copied from another local dir */
-		bprintf(text[RetrievingFile],fname);
-		if(mv(src,str,1))
-			return(false);
-		CRLF; 
-	}
 	if(fexistcase(str)) {   /* File is on disk */
 		if(!uploadfile(&f))
 			return(false); 
