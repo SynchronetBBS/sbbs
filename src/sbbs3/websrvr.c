@@ -736,6 +736,7 @@ static void sock_sendfile(SOCKET socket,char *path)
 	if((file=open(path,O_RDONLY|O_BINARY))==-1)
 		lprintf("%04d !ERROR %d opening %s",socket,errno,path);
 	else {
+		lseek(file,0,SEEK_SET);
 		if(sendfilesocket(socket, file, 0, 0) < 1)
 			lprintf("%04d !ERROR %d sending %s"
 				, socket, errno, path);
