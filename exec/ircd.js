@@ -2216,6 +2216,7 @@ function IRCClient_do_info() {
 	this.numeric(371, ": ");
 	this.numeric(371, ":Synchronet " + system.full_version);
 	this.numeric(371, ":Running on " + system.os_version);
+	this.numeric(371, ":Via " + server.version_detail);
 	this.numeric(371, ":Compiled with " + system.compiled_with + " at " + system.compiled_when);
 	this.numeric(371, ":Socket Library: " + system.socket_lib);
 	this.numeric(371, ":Message Base Library: " + system.msgbase_lib);
