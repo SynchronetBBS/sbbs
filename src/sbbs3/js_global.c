@@ -82,6 +82,7 @@ js_load(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char		path[MAX_PATH+1];
     uintN		i;
+	uintN		argn=0;
     const char*	filename;
     JSScript*	script;
     jsval		result;
@@ -94,7 +95,15 @@ js_load(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	if((cfg=(scfg_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_FALSE);
 
-	if(argc>1) {
+	obj=JS_GetScopeChain(cx);
+
+	if(JSVAL_IS_OBJECT(argv[argn]))	/* Scope specified */
+		obj=JSVAL_TO_OBJECT(argv[argn++]);
+
+	if((filename=JS_GetStringBytes(JS_ValueToString(cx, argv[argn++])))==NULL)
+		return(JS_FALSE);
+
+	if(argc>argn) {
 
 		if((js_argv=JS_NewArrayObject(cx, 0, NULL)) == NULL)
 			return(JS_FALSE);
@@ -102,15 +111,12 @@ js_load(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		JS_DefineProperty(cx, obj, "argv", OBJECT_TO_JSVAL(js_argv)
 			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 
-		for(i=1; i<argc; i++)
-			JS_SetElement(cx, js_argv, i-1, &argv[i]);
+		for(i=argn; i<argc; i++)
+			JS_SetElement(cx, js_argv, i-argn, &argv[i]);
 
-		JS_DefineProperty(cx, obj, "argc", INT_TO_JSVAL(argc-1)
+		JS_DefineProperty(cx, obj, "argc", INT_TO_JSVAL(argc-argn)
 			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 	}
-
-	if((filename=JS_GetStringBytes(JS_ValueToString(cx, argv[0])))==NULL)
-		return(JS_FALSE);
 
 	errno = 0;
 	if(strcspn(filename,"/\\")==strlen(filename)) {
@@ -1597,8 +1603,11 @@ static jsMethodSpec js_global_functions[] = {
 	,JSDOCSTR("stop script execution, "
 		"optionally setting the global property <tt>exit_code</tt> to the specified numeric value")
 	},		
-	{"load",            js_load,            1,	JSTYPE_BOOLEAN,	JSDOCSTR("string filename [,args]")
-	,JSDOCSTR("load and execute a JavaScript file, returns <i>true</i> if the execution was successful")
+	{"load",            js_load,            1,	JSTYPE_BOOLEAN,	JSDOCSTR("[object scope,] string filename [,args]")
+	,JSDOCSTR("load and execute a JavaScript module (<i>filename</i>), "
+		"optionally specifying a target <i>scope</i> object (default: <i>this</i>) "
+		"and a list of arguments to pass to the module (as <i>argv</i>), "
+		"returns <i>true</i> if the execution was successful")
 	},		
 	{"sleep",			js_mswait,			0,	JSTYPE_ALIAS },
 	{"mswait",			js_mswait,			0,	JSTYPE_VOID,	JSDOCSTR("[number milliseconds]")
