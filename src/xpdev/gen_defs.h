@@ -51,7 +51,14 @@
 #elif defined(__OS2__)
 	#define INCL_BASE	/* need this for DosSleep prototype */
 	#include <os2.h>
+#else
+	#if (defined(__APPLE__) && defined(__MACH__) && defined(__POWERPC__)) || defined (__NetBSD__)
+		#ifndef __unix__
+			#define __unix__
+		#endif
+	#endif
 #endif
+
 
 #include <sys/types.h>
 

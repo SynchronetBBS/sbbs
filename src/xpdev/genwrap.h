@@ -38,12 +38,6 @@
 #ifndef _GENWRAP_H
 #define _GENWRAP_H
 
-#if (defined(__APPLE__) && defined(__MACH__) && defined(__POWERPC__)) || defined (__NetBSD__)
-#ifndef __unix__
-#define __unix__
-#endif
-#endif
-
 #include <stdio.h>		/* sprintf */
 #include "gen_defs.h"	/* ulong */
 #include "wrapdll.h"	/* DLLEXPORT and DLLCALL */
