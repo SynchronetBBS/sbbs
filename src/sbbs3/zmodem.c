@@ -1125,10 +1125,10 @@ void zmodem_parse_zrinit(zmodem_t* zm)
 	zm->escape_8th_bit					= (zm->rxd_header[ZF0] & ZF0_ESC8)    != 0;
 	zm->use_variable_headers			= (zm->rxd_header[ZF1] & ZF1_CANVHDR) != 0;
 
-	lprintf(zm,LOG_INFO,"Zmodem mode: CRC-%u, escape %s chars, %s headers"
+	lprintf(zm,LOG_INFO,"Receiver requested mode: CRC-%u, Escape: %s, %s Headers"
 		,zm->can_fcs_32 ? 32 : 16
-		,zm->escape_all_control_characters ? "ALL" : "normal"
-		,zm->use_variable_headers ? "variable" : "fixed");
+		,zm->escape_all_control_characters ? "ALL" : "Normal"
+		,zm->use_variable_headers ? "Variable" : "Fixed");
 }
 
 int zmodem_get_zrinit(zmodem_t* zm)

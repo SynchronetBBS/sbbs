@@ -736,12 +736,10 @@ int send_files(char** fname, uint fnames)
 					}
 				}
 
-				fprintf(statfp,"Sending %s (%lu KB) via %s %s\n"
+				fprintf(statfp,"Sending %s (%lu KB) via %s\n"
 					,path,fsize/1024
 					,mode&XMODEM ? "Xmodem" : mode&YMODEM ? mode&GMODE ? "Ymodem-G"
-						: "Ymodem" : "Zmodem"
-					,mode&ZMODEM ? ""
-						: mode&CRC ? "CRC-16":"Checksum");
+						: "Ymodem" : "Zmodem");
 
 				if(mode&ZMODEM) {
 
@@ -924,6 +922,8 @@ int receive_files(char** fname, int fnames)
 
 	if(fnames>1)
 		fprintf(statfp,"Receiving %u files\n",fnames);
+
+	outbuf.highwater_mark=0;	/* don't delay ACK/NAK transmits */
 
 	while(1) {
 		if(mode&XMODEM) {
@@ -1230,8 +1230,10 @@ int receive_files(char** fname, int fnames)
 		fclose(fp);
 		t=time(NULL)-startfile;
 		if(!t) t=1;
+#if 0
 		l=(block_num-1)*xm.block_size;
 		if(l>(long)file_bytes)
+#endif
 			l=file_bytes;
 		newline();
 		fprintf(statfp,"Successful - Time: %lu:%02lu  CPS: %lu\n"

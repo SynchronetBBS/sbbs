@@ -293,14 +293,14 @@ BOOL xmodem_get_mode(xmodem_t* xm)
 			can=0;
 		switch(i) {
 			case NAK: 		/* checksum */
-				lprintf(xm,LOG_INFO,"Receiver requested 8-bit Checksum mode");
+				lprintf(xm,LOG_INFO,"Receiver requested mode: 8-bit Checksum");
 				return(TRUE); 
 			case 'C':
-				lprintf(xm,LOG_INFO,"Receiver requested 16-bit CRC mode");
+				lprintf(xm,LOG_INFO,"Receiver requested mode: 16-bit CRC");
 				*(xm->mode)|=CRC;
 				return(TRUE); 
 			case 'G':
-				lprintf(xm,LOG_INFO,"Receiver requested Streaming (16-bit CRC) mode");
+				lprintf(xm,LOG_INFO,"Receiver requested mode: Streaming, 16-bit CRC");
 				*(xm->mode)|=(GMODE|CRC);
 				return(TRUE); 
 			case CAN:
