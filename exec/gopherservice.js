@@ -10,7 +10,7 @@ load("sbbsdefs.js");
 load("nodedefs.js");
 
 const VERSION = "1.00 Alpha";
-const GOPHER_PORT = 70;
+const GOPHER_PORT = client.socket.local_port;
 
 var debug = false;
 var no_anonymous = false;
@@ -24,7 +24,7 @@ for(i=0;i<argc;i++)
 function write(str)
 {
 	if(0 && debug)
-		log(format("rsp: %s",str));
+		log("rsp: " + str);
 	client.socket.send(str);
 }
 
@@ -62,7 +62,7 @@ if(request==null) {
 	exit();
 }
 
-log(format("client request: '%s'",request));
+log("client request: '" + request + "'");
 
 var gopher_plus=false;
 if((term=request.indexOf("\t+"))>=0) {
@@ -73,12 +73,10 @@ if((term=request.indexOf("\t+"))>=0) {
 
 if(request=="" || request=='/') { /* "root" */
 	for(g in msg_area.grp_list) 
-		writeln(format("1%s\tgrp:%s\t%s\t%u"
-			,msg_area.grp_list[g].description
-			,msg_area.grp_list[g].name.toLowerCase()
-			,system.inetaddr
-			,GOPHER_PORT
-			));
+		writeln("1" + msg_area.grp_list[g].description 
+			+ "\tgrp:" + msg_area.grp_list[g].name.toLowerCase() 
+			+ "\t" + system.inetaddr
+			+ "\t" + GOPHER_PORT);
 /** to-do
 	for(l in file_area.lib_list) 
 		writeln(format("1%s\tlib:%s\t%s\t%u"
@@ -88,24 +86,15 @@ if(request=="" || request=='/') { /* "root" */
 			,GOPHER_PORT
 			));
 **/
-	writeln(format("0%s\t%s\t%s\t%u"
-		,"Node List"
-		,"nodelist"
-		,system.inetaddr
-		,GOPHER_PORT
-		));
-	writeln(format("0%s\t%s\t%s\t%u"
-		,"Logon List"
-		,"logonlist"
-		,system.inetaddr
-		,GOPHER_PORT
-		));
-	writeln(format("0%s\t%s\t%s\t%u"
-		,"Auto-Message"
-		,"automsg"
-		,system.inetaddr
-		,GOPHER_PORT
-		));
+	writeln("0Node List\tnodelist"
+		+"\t" + system.inetaddr
+		+"\t" + GOPHER_PORT);
+	writeln("0Logon List\tlogonlist"
+		+"\t" + system.inetaddr
+		+"\t" + GOPHER_PORT);
+	writeln("0Auto-Message\tautomsg"
+		+"\t" + system.inetaddr
+		+"\t" + GOPHER_PORT);
 
 	exit();
 }
@@ -117,9 +106,10 @@ switch(request) {
 			write(format("Node %2d ",n+1));
 			if(system.node_list[n].status==NODE_INUSE) {
 				user.number=system.node_list[n].useron;
-				write(format("%s (%u %s) ", user.alias, user.age, user.gender));
+				//write(format("%s (%u %s) ", user.alias, user.age, user.gender));
+				write(user.alias + " (" + user.age + " " + user.gender +") ");
 				if(system.node_list[n].action==NODE_XTRN && system.node_list[n].aux)
-					write(format("running %s",user.curxtrn));
+					write("running %s" + user.curxtrn);
 				else
 					write(format(NodeAction[system.node_list[n].action],system.node_list[n].aux));
 			} else
@@ -143,13 +133,15 @@ switch(field[0]) {
 		for(g in msg_area.grp_list) 
 			if(msg_area.grp_list[g].name.toLowerCase()==field[1]) {
 				for(s in msg_area.grp_list[g].sub_list)
-					writeln(format("1[%s] %s\tsub:%s\t%s\t%u"
-						,msg_area.grp_list[g].name
-						,msg_area.grp_list[g].sub_list[s].description
-						,msg_area.grp_list[g].sub_list[s].code.toLowerCase()
-						,system.inetaddr
-						,GOPHER_PORT
-						));
+					writeln("1[" + msg_area.grp_list[g].name + "] "
+						+ msg_area.grp_list[g].sub_list[s].description 
+						+ "\tsub:"
+						+ msg_area.grp_list[g].sub_list[s].code.toLowerCase() 
+						+ "\t"
+						+ system.inetaddr 
+						+ "\t"
+						+ GOPHER_PORT
+						);
 				break;
 			}
 		break;
@@ -169,14 +161,19 @@ switch(field[0]) {
 		break;
 	case "sub":
 		msgbase = new MsgBase(field[1]);
+		if(msgbase.open!=undefined && msgbase.open()==false) {
+			writeln("!ERROR " + msgbase.last_error);
+			break;
+		}
+
 		if(Number(field[2])) {
 			hdr=msgbase.get_msg_header(false,Number(field[2]));
 			if(hdr.attr&MSG_DELETE)
 				break;
-			writeln(format("Subj : %s",hdr.subject));
-			writeln(format("To   : %s",hdr.to));
-			writeln(format("From : %s",hdr.from));
-			writeln(format("Date : %s",system.timestr(hdr.when_written_time)));
+			writeln("Subj : " + hdr.subject);
+			writeln("To   : " + hdr.to);
+			writeln("From : " + hdr.from);
+			writeln("Date : " + system.timestr(hdr.when_written_time));
 			writeln("");
 			body=msgbase.get_msg_body(false,Number(field[2]),true)
 			writeln(body);
@@ -198,19 +195,18 @@ switch(field[0]) {
 				continue;
 			if(hdr.attr&MSG_DELETE)
 				continue;
+			date = system.timestr(hdr.when_written_time);
 			msginfo=format("%-25.25s %-25.25s %-25.25s %s"
 				,hdr.subject
 				,hdr.from
 				,hdr.to
-				,system.timestr(hdr.when_written_time)
+				,date
 				);
-			writeln(format("0%s\tsub:%s:%u\t%s\t%u"
-				,msginfo
-				,field[1]
-				,i
-				,system.inetaddr
-				,GOPHER_PORT
-				));
+			writeln("0" + msginfo + "\tsub:"
+				+ field[1] + ":" + i + "\t"
+				+ system.inetaddr + "\t"
+				+ GOPHER_PORT
+				);
 		}
 		msgbase.close();
 		break;
