@@ -358,6 +358,7 @@ int main(int argc, char** argv)  {
                     uifc.esc_delay=atoi(argv[i]+2);
                     break;
 				case 'I':
+					/* Set up ex-ascii codes */
 					boxch.ls=186; 
 					boxch.rs=186;
 					boxch.ts=205;
@@ -419,6 +420,7 @@ int main(int argc, char** argv)  {
 						"\nCTRL-E displays the error log"
 						"\nF12 spys on the currently selected node"
 						"\nF11 send message to the currently selected node"
+						"\nF10 Chats with the user on the currently selected node"
 						"\nDEL Clear errors on currently selected node"
 						"\nCTRL-L Lock node toggle"
 						"\nCTRL-R Rerun node"
@@ -460,7 +462,12 @@ int main(int argc, char** argv)  {
 		}
 
 		if(j==-2-KEY_F(10)) {	/* Chat */
-			chat(&cfg,main_dflt+1,&node,&boxch);
+			if(getnodedat(&cfg,main_dflt+1,&node,NULL)) {
+				uifc.msg("Error reading node data!");
+				continue;
+			}
+			if((node.status&NODE_INUSE) && node.useron)
+				chat(&cfg,main_dflt+1,&node,&boxch);
 			continue;
 		}
 

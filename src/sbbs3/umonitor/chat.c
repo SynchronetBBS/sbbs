@@ -217,7 +217,13 @@ int chat(scfg_t *cfg, int nodenum, node_t *node, box_t *boxch) {
 		if(getnodedat(cfg,nodenum,node,NULL)) {
 			break;
 		}
-	    if(node->misc&NODE_LCHAT) {
+		if(node->misc&NODE_LCHAT) {
+			if((ch=wgetch(swin))) {
+				if(ch==ESC || ch==3) {
+					close(in);
+					in=-1;
+				}
+			}
 			YIELD();
 			continue;
 		}
