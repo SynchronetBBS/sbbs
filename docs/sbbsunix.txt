@@ -1,0 +1,337 @@
+Synchronet for Unix
+-=-=-=-=-=-=-=-=-=-
+
+Created: Mar 15, 2002
+Updated: Mar 15, 2002
+
+By: Rob Swindell
+http://www.synchro.net
+
+
+The information in this file is current as of the "updated" date above. The
+answers and instructions in this file may change over time, so be sure to get
+the current version of this file at 
+ftp://vert.synchro.net/Synchronet/sbbsunix.txt
+
+
+Answers to Frequently Asked Questions
+=====================================
+
+Q. What flavors of Unix (and Unix-like operating systems) are supported?
+A. Currently, Linux-x86 and FreeBSD-x86.
+
+Q. What distributions of Linux are supported?
+A. Should work with any GNU/Linux-x86 distribution.
+
+Q. Are non-x86 (Alpha, SPARC, 68k, PowerPC, etc) processors supported?
+A. No, Synchronet assumes a little-endian processor.
+
+Q. Will Synchronet ever support big-endian and/or 64-bit processors?
+A. Probably.
+
+Q. Where do I get Synchronet for Unix?
+A. There are no binary distributions at this time, so you must get the source
+   code from the Synchronet CVS repository (cvs.synchro.net). 
+   See the step-by-step instructions below for details.
+
+Q. Will there be binary releases?
+A. Yes, some day soon.
+
+Q. Can I mix Synchronet for Unix and Synchronet for Win32 or DOS or OS/2 nodes
+   on the same BBS?
+A. Yes. As long as all the nodes can access the same live data files (via LAN)
+   you can have as many instances of Synchronet on as many different platforms
+   as you wish.
+
+Q. Does Synchronet for Unix require X-Windows?
+A. No, Synchronet for Unix is currently a console-based application.
+
+Q. Are there any plans to make a GUI front-end for Synchronet for Unix?
+A. Yes, but it will be optional.
+
+
+Step-by-step Instructions
+=========================
+
+1. Get and build the current source code:
+
+   A. Create the Synchronet BBS directory on your file system:
+      mkdir /sbbs
+
+   B. Change to this directory:
+      cd /sbbs
+
+   C. Get the required modules from the CVS repository:
+      cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login
+      (no password - just hit enter)
+      cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs co ctrl
+      cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs co text
+      cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs co exec
+      cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs co node1
+      cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs co xtrn
+      cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs co src/sbbs3
+      cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs co src/uifc
+      cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs co src/libdialog
+      cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs co src/mozilla
+      (this last one may take a while as it includes pre-compiled libraries)
+
+   D. Change to this directory:
+      cd /sbbs/src/sbbs3
+
+   E. Build the main executable (and utilities):
+      make -f Makefile.gnu
+      (there *should* be no warnings or errors)
+
+   F. Change to this directory:
+      cd /sbbs/src/sbbs3/scfg
+
+   G. Build the Synchronet configuration utility (SCFG):
+      make -f Makefile.gnu
+
+   H. Congratulate yourself on a job well-done.
+
+
+2. Prepare the "exec" directory:
+
+   A. Change to this directory:
+      cd /sbbs/exec
+
+   B. Copy (or create symbolic links to) the following files:
+      /sbbs/src/sbbs3/gcc.linux.exe.debug/baja
+      /sbbs/src/sbbs3/gcc.linux.exe.debug/node
+      /sbbs/src/sbbs3/gcc.linux.exe.debug/chksmb
+      /sbbs/src/sbbs3/gcc.linux.exe.debug/fixsmb
+      /sbbs/src/sbbs3/gcc.linux.exe.debug/smbutil
+      /sbbs/src/sbbs3/gcc.linux.exe.debug/sbbs
+      /sbbs/src/sbbs3/scfg/gcc.linux.exe.debug/scfg
+      /sbbs/src/sbbs3/scfg/gcc.linux.exe.debug/scfghelp.ixb
+      /sbbs/src/sbbs3/scfg/gcc.linux.exe.debug/scfghelp.dat
+      (the paths may be different for FreeBSD or release build)
+
+   C. Build the required Baja {tm} modules:
+      make -f Makefile.gnu
+
+
+3. Prepare the "xtrn" directory:
+
+   A. Change to this directory:
+      cd /sbbs/xtrn/sbj
+
+   B. Build Synchronet Blackjack:
+      make -f Makefile.gnu
+
+   C. Create the platform sub-directories:
+      mkdir win32
+      mkdir linux (or freebsd)
+
+   D. Move the executables:
+      mv sbl.exe win32
+      mv sbl linux (or freebsd)
+
+   E. Change to this dircectory:
+      cd /sbbs/xtrn/sbl
+
+   F. Build Synchronet BBS List:
+      make -f Makefile.gnu
+
+   G. Create the platform sub-directories:
+      mkdir win32
+      mkdir linux (or freebsd)
+
+   H. Move the executables:
+      mv sbj.exe win32
+      mv sbj linux (or freebsd)
+
+
+4. Configure the BBS:
+
+   A. Run SCFG:
+      /sbbs/exec/scfg /sbbs/ctrl
+      (if you have problems with the libdialog interface, try running 
+       "scfg -d" instead)
+      Tip: Set the SBBSCTRL environment variable and you won't have to specify
+           the path to the "ctrl" directory on the command-line:
+	   export SBBSCTRL=/sbbs/ctrl
+
+   B. Add the following to SCFG->External Programs->Native Program List:
+      sh
+      bash
+      sz
+      rz
+      zip
+      unzip
+
+   C. Add "pico" (Pine Composer) to SCFG->External Programs->External Editors:
+      Name                            pico
+      Internal Code                   PICO
+      Remote Command Line             pico -t -o %g %f
+      Access Requirements             UNIX
+      Intercept Standard I/O          Yes
+      Native (32-bit) Executable      Yes
+      Quoted Text                     Prompt User
+      QuickBBS Style (MSGTMP)         No
+      Expand Line Feeds to CRLF       Yes
+      Strip FidoNet Kludge Lines      No
+      BBS Drop File Type              None
+   
+   D. Configure SCFG->External Programs->Online Programs->Main->
+      Synchronet BBS List:
+      Name                            Synchronet BBS List
+      Internal Code                   SBL
+      Start-up Directory              ../xtrn/sbl
+      Command Line                    %?/sbl
+      Clean-up Command Line
+      Execution Cost                  None
+      Access Requirements
+      Execution Requirements
+      Multiple Concurrent Users       Yes
+      Intercept Standard I/O          No
+      Native (32-bit) Executable      Yes
+      Modify User Data                No
+      Execute on Event                No
+      BBS Drop File Type              Synchronet      XTRN.DAT
+      Place Drop File In              Node Directory
+
+   E. Configure SCFG->External Programs->Online Programs->Games->
+      Synchronet Blackjack!:
+      Name                            Synchronet Blackjack!
+      Internal Code                   SBJ
+      Start-up Directory              ../xtrn/sbj
+      Command Line                    %?/sbj /l
+      Clean-up Command Line
+      Execution Cost                  None
+      Access Requirements
+      Execution Requirements
+      Multiple Concurrent Users       Yes
+      Intercept Standard I/O          No
+      Native (32-bit) Executable      Yes
+      Modify User Data                Yes
+      Execute on Event                No
+      BBS Drop File Type              Synchronet      XTRN.DAT
+      Place Drop File In              Node Directory
+
+   F. Change the "Access Requirements" for *all* of the following:
+      SCFG->File Options->Viewable File Types->ZIP,
+      SCFG->File Options->Testable File Types->ZIP,
+      SCFG->File Options->Extractable File Types->ZIP,
+      and SCFG->File Options->Compressable File Types->ZIP to:
+      Access Requirements             !UNIX
+
+   G. Add "zip" (lowercase) to SCFG->File Options->Viewable File Types:
+      File Extension                  zip
+      Command Line                    unzip -l %s
+      Access Requirements             UNIX
+
+   H. Add "zip" (lowercase) to SCFG->File Options->Testable File Types:
+      File Extension                  zip
+      Command Line                    unzip -t %f
+      Working String                  Testing ZIP Integrity...
+      Access Requirements             UNIX
+
+   I. Add "zip" (lowercase) to SCFG->File Options->Extractable File Types:
+      File Extension                  zip
+      Command Line                    unzip -o -j %f %s -d %g
+      Access Requirements             UNIX
+
+   J. Add "zip" (lowercase) to SCFG->File Options->Compressable File Types:
+      File Extension                  zip
+      Command Line                    zip -j -D %f %s
+      Access Requirements             UNIX
+
+   NOTE: File extensions are not actually case-sensitive, but I use uppercase
+         extensions to denote DOS/Win32 file extensions and lowercase to 
+	 denote Unix file extensions. The Access Requirements actually
+	 determines *which* command line will be used for the current
+	 platform.
+
+   K. Change the "Access Requirements" for *all* the existing protocols under
+      SCFG->File Options->Transfer Protocols to:
+      Access Requirements             !UNIX
+
+   L. Add the following transfer protocols to
+      SCFG->File Options->Transfer Protocols:
+
+      Mnemonic (Command Key)          X
+      Protocol Name                   Xmodem (SZ)
+      Access Requirements             UNIX
+      Upload Command Line             rz --xmodem
+      Download Command Line           sz --xmodem %f
+      Batch UL Command Line           
+      Batch DL Command Line           
+      Bidir Command Line
+      Uses DSZLOG                     No
+
+      Mnemonic (Command Key)          Y
+      Protocol Name                   Ymodem (SZ)
+      Access Requirements             UNIX
+      Upload Command Line             rz --ymodem
+      Download Command Line           sz --ymodem %f
+      Batch UL Command Line           rz --ymodem
+      Batch DL Command Line           sz --ymodem %s
+      Bidir Command Line
+      Uses DSZLOG                     No
+
+      Mnemonic (Command Key)          Z
+      Protocol Name                   Zmodem (SZ)
+      Access Requirements             UNIX
+      Upload Command Line             rz -p -R
+      Download Command Line           sz %f
+      Batch UL Command Line           rz -p -R
+      Batch DL Command Line           sz %s
+      Bidir Command Line
+      Uses DSZLOG                     No
+
+   M. Change SCFG->Networks->QWK->Hubs->VERT:
+      Pack Command Line               zip -j -D %f %s
+      Unpack Command Line             unzip -o -j %f %s -d %g
+      Call-out Command Line           *qnet-ftp VERT vert.synchro.net YOURPASS
+      (change YOURPASS to the password used to create your QWKnet account)
+
+
+5. Running Synchronet
+
+   1. Set the SBBSCTRL environment variable to point to your "ctrl" directory:
+      export SBBSCTRL=/sbbs/ctrl
+
+   2. Run the main executable (with default settings/options):
+      /sbbs/exec/sbbs
+
+   3. To view available command-line options, run:
+      /sbbs/exec/sbbs help | more
+
+   4. To view default settings (node and port numbers), run:
+      /sbbs/exec/sbbs defaults
+
+
+6. Known Problems
+
+   A. Set username ("un") command-line option not working 100%.
+
+   B. Can't run "vi" as external editor (requires tty) - how about "elvis"?
+
+   C. No DOSemu integration (yet), so no support for DOS programs/doors.
+
+   D. Occasional unresolved segfault (see below).
+
+
+7. Debugging
+
+   A. Run the GNU debugger:
+      gdb /sbbs/exec/sbbs
+
+   B. Set command-line options [optional]:
+      set args tf1 tl10 m-
+      (these command-line options are provided as an example only)
+
+   C. Run Synchronet:
+      run
+
+   D. After segfault, display backtrace:
+      bt
+
+   E. Copy and paste in e-mail to rob@synchro.net
+
+
+Send comments/questions to rob@synchro.net
+
+/* End of sbbsunix.txt */
