@@ -54,6 +54,14 @@ if(msg.attachments!=undefined) {
 if(template.hdr != null)  {
 	template.title="Message: "+template.hdr.subject;
 }
+
+var tmp=find_np_message(template.hdr.offset,true);
+if(tmp!=undefined)
+	template.nextlink='<a href="msg.ssjs?msg_sub='+sub+'&amp;message='+tmp+'">'+next_msg_html+'</a>';
+var tmp=find_np_message(template.hdr.offset,false);
+if(tmp!=undefined)
+	template.prevlink='<a href="msg.ssjs?msg_sub='+sub+'&amp;message='+tmp+'">'+prev_msg_html+'</a>';
+
 write_template("header.inc");
 write_template("msgs/msg.inc");
 write_template("footer.inc");
