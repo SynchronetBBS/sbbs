@@ -246,7 +246,7 @@ for(i in area) {
 		hdr = msgbase.get_msg_header(
 			/* retrieve by offset? */	false,
 			/* message number */		ptr,
-			/* regenerate msg-id? */	true
+			/* regenerate msg-id? */	false
 			);
 		if(hdr == null)
 			continue;
@@ -312,6 +312,16 @@ for(i in area) {
 		writeln("Newsgroups: " + newsgroup);
 		if(hdr.reply_id!=undefined)
 			writeln("References: " + hdr.reply_id);
+		writeln("X-Gateway: "
+			+ system.inetaddr
+			+ " [Synchronet "
+			+ system.version + system.revision 
+			+ "/" + system.platform
+			+ " NewsLink " + VERSION
+			+ "]"
+			);
+
+		/* Add a Sender: header field? */
 
 		/* FidoNet header */
 		if(hdr.ftn_pid!=undefined)
@@ -463,9 +473,10 @@ for(i in area) {
 				case "references":
 					hdr.reply_id=data;
 					break;
-				case "nntp-posting-host":
-					hdr.nntp_posting_host=data;
+				case "x-gateway":
+					hdr.gateway=data;
 					break;
+
 				/* FidoNet headers */
 				case "x-ftn-pid":
 					hdr.ftn_pid=data;
@@ -487,16 +498,12 @@ for(i in area) {
 		// Duplicate/looped message detection here
 		if(hdr.id.indexOf('@' + system.inetaddr)!=-1)
 			continue;
-		if(hdr.path.indexOf(system.inetaddr)!=-1)
+		if(hdr.path
+			&& hdr.path.indexOf(system.inetaddr)!=-1)
 			continue;
-		if(0 && hdr.nntp_posting_host!=undefined) {
-			if(hdr.nntp_posting_host.indexOf(system.inetaddr)!=-1)
-				continue;
-			if(hdr.nntp_posting_host.indexOf(system.host_name)!=-1)
-				continue;
-			if(hdr.nntp_posting_host == socket.local_ip_address)
-				continue;
-		}
+		if(hdr.gateway
+			&& hdr.gateway.indexOf(system.inetaddr)!=-1)
+			continue;
 
 		if(system.trashcan("subject",hdr.subject)) {
 			printf("!BLOCKED subject: %s\r\n",hdr.subject);
