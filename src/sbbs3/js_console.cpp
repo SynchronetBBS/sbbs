@@ -125,7 +125,7 @@ static JSBool js_console_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 
     tiny = JSVAL_TO_INT(id);
 
-	if(JSVAL_IS_INT(*vp))
+	if(JSVAL_IS_INT(*vp) || JSVAL_IS_BOOLEAN(*vp))
 		JS_ValueToInt32(cx, *vp, &val);
 
 	switch(tiny) {
@@ -157,7 +157,8 @@ static JSBool js_console_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			sbbs->timeleft_warn=val;
 			break;
 		case CON_PROP_ABORTABLE:
-			sbbs->rio_abortable=(bool)val;
+			sbbs->rio_abortable=val 
+				? true:false; // This is a dumb bool conversion to make BC++ happy
 			break;
 		case CON_PROP_TELNET_MODE:
 			sbbs->telnet_mode=val;

@@ -805,7 +805,8 @@ bool sbbs_t::trashcan(char *insearch, char *name)
 	char str[256];
 	bool result;
 
-	result=::trashcan(&cfg, insearch, name);
+	result=::trashcan(&cfg, insearch, name)
+		? true:false; // This is a dumb bool conversion to make BC++ happy
 	if(result) {
 		sprintf(str,"%sbad%s.msg",cfg.text_dir,name);
 		if(fexist(str))
