@@ -401,7 +401,7 @@ bool sbbs_t::noyes(char *str)
 /****************************************************************************/
 long sbbs_t::getkeys(char *keys, ulong max)
 {
-	char	str[27];
+	char	str[81];
 	uchar	ch,n=0,c;
 	ulong	i=0;
 
