@@ -181,6 +181,8 @@ int chat(scfg_t *cfg, int nodenum, node_t *node, box_t *boxch, void(*timecallbac
 	char	usrname[128];
 	char	*p;
 	char	ch;
+	time_t	now;
+	time_t	last_nodechk=0;
 
 	username(cfg,node->useron,usrname);
 
@@ -219,13 +221,16 @@ int chat(scfg_t *cfg, int nodenum, node_t *node, box_t *boxch, void(*timecallbac
 	togglechat(cfg,nodenum,node,TRUE);
 
 	while(in != -1) {
-		if(timecallback != NULL)
-			timecallback();
-		utime(outpath,NULL);
-		utime(inpath,NULL);
 		
-		if(getnodedat(cfg,nodenum,node,NULL)) {
-			break;
+		now=time(NULL);
+		if(now!=last_nodechk) {
+
+			if(timecallback != NULL)
+				timecallback();
+
+			if(getnodedat(cfg,nodenum,node,NULL)!=0)
+				break;
+			last_nodechk=now;
 		}
 		if(node->misc&NODE_LCHAT) {
 			if((ch=wgetch(swin))) {
@@ -238,11 +243,11 @@ int chat(scfg_t *cfg, int nodenum, node_t *node, box_t *boxch, void(*timecallbac
 			continue;
 		}
 		
-		if(!node->status || node->status>NODE_QUIET || node->action!=NODE_PCHT) {
+		if(node->status==NODE_WFC || node->status>NODE_QUIET || node->action!=NODE_PCHT) {
 			close(in);
 			in=-1;
 		}
-		switch (read(in,&ch,1)) {
+		switch(read(in,&ch,1)) {
 			case -1:
 				close(in);
 				in=-1;
@@ -285,7 +290,9 @@ int chat(scfg_t *cfg, int nodenum, node_t *node, box_t *boxch, void(*timecallbac
 							in=-1;
 							break;
 					}
+					break;
 			}
+			utime(outpath,NULL);
 		}
 	}
 	if(in != -1)
