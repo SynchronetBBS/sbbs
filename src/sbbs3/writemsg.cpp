@@ -385,7 +385,10 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 		/* Strip FidoNet Kludge Lines? */
 		if(buf[l]==1 && useron.xedit
 			&& cfg.xedit[useron.xedit-1]->misc&STRIPKLUDGE) {
-			while(buf[l]!=LF) l++;
+			while(buf[l] && buf[l]!=LF) 
+				l++;
+			if(buf[l]==0)
+				break;
 			continue;
 		}
 		if(!(mode&(WM_EMAIL|WM_NETMAIL))
