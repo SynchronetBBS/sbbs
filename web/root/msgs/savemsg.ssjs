@@ -37,6 +37,7 @@ body=body.replace(/([^\r])\n/g,"$1\r\n");
 body=word_wrap(body, 80);
 
 hdrs.from=user.alias;
+hdrs.from_ext=user.number;
 hdrs.to=http_request.query.to;
 hdrs.subject=http_request.query.subject;
 if(http_request.query.reply_to != undefined) {
