@@ -238,7 +238,7 @@ int main(int argc, char **argv)
 			/************************/
 
 			if(!(msg.hdr.attr&MSG_DELETE))
-				smb_incdat(&smb,msg.hdr.offset,smb_getmsgdatlen(&msg),1);
+				smb_incmsg_dfields(&smb,&msg,1);
 		}
 
 		smb_freemsgmem(&msg); 
