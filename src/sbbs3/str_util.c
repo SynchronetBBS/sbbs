@@ -332,7 +332,7 @@ char* DLLCALL net_addr(net_t* net)
 
 static ulong msgid_serialno(smbmsg_t* msg)
 {
-	return (msg->idx.time<<5) | (msg->idx.number&0x1f);
+	return (msg->idx.time-1000000000) + msg->idx.number;
 }
 
 /****************************************************************************/
