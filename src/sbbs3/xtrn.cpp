@@ -1016,8 +1016,6 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 		if(startup_dir!=NULL && startup_dir[0])
 			chdir(startup_dir);
 
-		lprintf("Node %d executing external: %s",cfg.node_num,cmdline);
-	
 		if(mode&EX_SH || strcspn(cmdline,"<>|;")!=strlen(cmdline)) {
 			argv[0]=comspec;
 			argv[1]="-c";
@@ -1060,6 +1058,8 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 		exit(-1);	/* should never get here */
 	}
 
+	lprintf("Node %d executing external: %s",cfg.node_num,cmdline);
+	
 	if(mode&EX_OUTR) {
 		if(!(mode&EX_INR))
 			close(out_pipe[1]);	/* close write-end of pipe */
