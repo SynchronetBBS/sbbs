@@ -193,7 +193,6 @@ UIFC_SRC	=	$(SRC_ROOT)$(DIRSEP)uifc
 !include     $(SMBLIB_SRC)$(DIRSEP)Common.make
 !include     $(XPDEV_SRC)$(DIRSEP)Common.make
 
-.path.obj	=	$(OBJODIR);$(MTOBJODIR)
 .path.c		=	.
 .path.cpp	=	.
 
@@ -203,7 +202,7 @@ UIFC_SRC	=	$(SRC_ROOT)$(DIRSEP)uifc
 #!include libobjs.mk		# defines $(LIB_OBJS)
 
 .SUFFIXES
-.SUFFIXES .c .cpp
+.SUFFIXES .cpp .c
 # Implicit C Compile Rule
 {.}.c{$(OBJODIR)}$(OFILE):
 	$(QUIET)$(CC) $(CFLAGS) $(CCFLAGS) -n$(OBJODIR) -c $< $(OUTPUT)$@
