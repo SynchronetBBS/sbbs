@@ -166,12 +166,13 @@ object MailCfgDlg: TMailCfgDlg
     object SMTPTabSheet: TTabSheet
       Caption = 'SMTP'
       ImageIndex = 1
-      object SpamFilterLabel: TLabel
+      object BlacklistedMailLabel: TLabel
         Left = 9
         Top = 76
-        Width = 75
-        Height = 16
-        Caption = 'Spam Filters'
+        Width = 104
+        Height = 24
+        AutoSize = False
+        Caption = 'Blacklisted Mail'
       end
       object TelnetPortLabel: TLabel
         Left = 9
@@ -189,39 +190,6 @@ object MailCfgDlg: TMailCfgDlg
         AutoSize = False
         Caption = 'Default User'
       end
-      object RBLCheckBox: TCheckBox
-        Left = 113
-        Top = 76
-        Width = 57
-        Height = 24
-        Hint = 'Use Realtime Blackhole List (RBL) Spam Filter'
-        Caption = 'RBL'
-        ParentShowHint = False
-        ShowHint = True
-        TabOrder = 3
-      end
-      object RSSCheckBox: TCheckBox
-        Left = 185
-        Top = 76
-        Width = 56
-        Height = 24
-        Hint = 'Use Relay Spam Stopper (RSS) Spam Filter'
-        Caption = 'RSS'
-        ParentShowHint = False
-        ShowHint = True
-        TabOrder = 4
-      end
-      object DULCheckBox: TCheckBox
-        Left = 256
-        Top = 76
-        Width = 57
-        Height = 24
-        Hint = 'Use Dail-up User List (DUL) Spam Filter'
-        Caption = 'DUL'
-        ParentShowHint = False
-        ShowHint = True
-        TabOrder = 5
-      end
       object SMTPPortEdit: TEdit
         Left = 113
         Top = 12
@@ -233,14 +201,14 @@ object MailCfgDlg: TMailCfgDlg
         TabOrder = 0
       end
       object UserNumberCheckBox: TCheckBox
-        Left = 113
-        Top = 108
-        Width = 200
+        Left = 9
+        Top = 130
+        Width = 288
         Height = 24
         Hint = 
-          'Allow mail to be received for users by number (i.e "1@yourbbs.co' +
-          'm")'
-        Caption = 'Allow RX by User Number'
+          'Allow mail to be received for users by number (e.g. "1@yourbbs.c' +
+          'om")'
+        Caption = 'Allow Mail Addressed by User Number'
         ParentShowHint = False
         ShowHint = True
         TabOrder = 1
@@ -254,7 +222,7 @@ object MailCfgDlg: TMailCfgDlg
         Caption = 'Log Headers'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 6
+        TabOrder = 3
       end
       object DefaultUserEdit: TEdit
         Left = 113
@@ -269,15 +237,61 @@ object MailCfgDlg: TMailCfgDlg
         TabOrder = 2
       end
       object AllowRelayCheckBox: TCheckBox
-        Left = 113
-        Top = 140
-        Width = 198
+        Left = 9
+        Top = 162
+        Width = 288
         Height = 24
         Hint = 'Allow mail to be relayed for authenticated users'
-        Caption = 'Allow Authenticated Relay'
+        Caption = 'Allow Authenticated Users to Relay Mail'
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 4
+      end
+      object BLMailFlagRadioButton: TRadioButton
+        Left = 112
+        Top = 76
+        Width = 57
+        Height = 24
+        Hint = 'Flag DNS-blacklisted mail with an X-RBL header'
+        Caption = 'Flag'
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 5
+        OnClick = BLMailFlagRadioButtonClick
+      end
+      object BLMailIgnoreRadioButton: TRadioButton
+        Left = 176
+        Top = 76
+        Width = 57
+        Height = 24
+        Hint = 'Pretend to receive DNS-blacklisted mail '
+        Caption = 'Ignore'
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 6
+        OnClick = BLMailFlagRadioButtonClick
+      end
+      object BLMailRefuseRadioButton: TRadioButton
+        Left = 248
+        Top = 76
+        Width = 73
+        Height = 24
+        Hint = 'Refuse mail session with DNS-blacklisted servers'
+        Caption = 'Refuse'
         ParentShowHint = False
         ShowHint = True
         TabOrder = 7
+        OnClick = BLMailFlagRadioButtonClick
+      end
+      object BLMailFlagEdit: TEdit
+        Left = 113
+        Top = 100
+        Width = 185
+        Height = 24
+        Hint = 'Flag to add to subject of DNS-blacklisted mail'
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 8
       end
     end
     object POP3TabSheet: TTabSheet

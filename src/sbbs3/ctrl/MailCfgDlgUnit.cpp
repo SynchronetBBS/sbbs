@@ -105,6 +105,8 @@ void __fastcall TMailCfgDlg::FormShow(TObject *Sender)
         =AnsiString(MainForm->mail_startup.max_delivery_attempts);
     RescanFreqEdit->Text=AnsiString(MainForm->mail_startup.rescan_frequency);
     DefaultUserEdit->Text=AnsiString(MainForm->mail_startup.default_user);
+    BLMailFlagEdit->Text=AnsiString(MainForm->mail_startup.dnsbl_flag);
+    BLMailFlagEdit->Enabled=false;
 
     DebugTXCheckBox->Checked=MainForm->mail_startup.options
         &MAIL_OPT_DEBUG_TX;
@@ -120,12 +122,14 @@ void __fastcall TMailCfgDlg::FormShow(TObject *Sender)
     	&MAIL_OPT_ALLOW_RX_BY_NUMBER;
     AllowRelayCheckBox->Checked=MainForm->mail_startup.options
     	&MAIL_OPT_ALLOW_RELAY;
-    RBLCheckBox->Checked=MainForm->mail_startup.options
-    	&MAIL_OPT_USE_RBL;
-    DULCheckBox->Checked=MainForm->mail_startup.options
-    	&MAIL_OPT_USE_DUL;
-    RSSCheckBox->Checked=MainForm->mail_startup.options
-    	&MAIL_OPT_USE_RSS;
+    if(MainForm->mail_startup.options&MAIL_OPT_DNSBL_REFUSE)
+	    BLMailRefuseRadioButton->Checked=true;
+    else if(MainForm->mail_startup.options&MAIL_OPT_DNSBL_IGNORE)
+	    BLMailIgnoreRadioButton->Checked=true;
+	else {
+	    BLMailFlagRadioButton->Checked=true;
+	    BLMailFlagEdit->Enabled=true;
+    }        
     TcpDnsCheckBox->Checked=MainForm->mail_startup.options
     	&MAIL_OPT_USE_TCP_DNS;
     SendMailCheckBox->Checked=
@@ -182,6 +186,8 @@ void __fastcall TMailCfgDlg::OKBtnClick(TObject *Sender)
         ,OutboundSoundEdit->Text.c_str());
     SAFECOPY(MainForm->mail_startup.pop3_sound
         ,POP3SoundEdit->Text.c_str());
+    SAFECOPY(MainForm->mail_startup.dnsbl_flag
+    	,BLMailFlagEdit->Text.c_str());
 
 	if(RelayRadioButton->Checked==true)
     	MainForm->mail_startup.options|=MAIL_OPT_RELAY_TX;
@@ -211,18 +217,12 @@ void __fastcall TMailCfgDlg::OKBtnClick(TObject *Sender)
     	MainForm->mail_startup.options|=MAIL_OPT_ALLOW_RELAY;
     else
 	    MainForm->mail_startup.options&=~MAIL_OPT_ALLOW_RELAY;
-	if(RBLCheckBox->Checked==true)
-    	MainForm->mail_startup.options|=MAIL_OPT_USE_RBL;
-    else
-	    MainForm->mail_startup.options&=~MAIL_OPT_USE_RBL;
-	if(DULCheckBox->Checked==true)
-    	MainForm->mail_startup.options|=MAIL_OPT_USE_DUL;
-    else
-	    MainForm->mail_startup.options&=~MAIL_OPT_USE_DUL;
-	if(RSSCheckBox->Checked==true)
-    	MainForm->mail_startup.options|=MAIL_OPT_USE_RSS;
-    else
-	    MainForm->mail_startup.options&=~MAIL_OPT_USE_RSS;
+	MainForm->mail_startup.options&=
+    	~(MAIL_OPT_DNSBL_IGNORE|MAIL_OPT_DNSBL_REFUSE);
+	if(BLMailIgnoreRadioButton->Checked==true)
+    	MainForm->mail_startup.options|=MAIL_OPT_DNSBL_IGNORE;
+    else if(BLMailRefuseRadioButton->Checked==true)
+    	MainForm->mail_startup.options|=MAIL_OPT_DNSBL_REFUSE;
 	if(HostnameCheckBox->Checked==false)
     	MainForm->mail_startup.options|=MAIL_OPT_NO_HOST_LOOKUP;
     else
@@ -297,6 +297,13 @@ void __fastcall TMailCfgDlg::SendMailCheckBoxClick(TObject *Sender)
 
     if(checked)
         DNSRadioButtonClick(Sender);
+}
+//---------------------------------------------------------------------------
+
+
+void __fastcall TMailCfgDlg::BLMailFlagRadioButtonClick(TObject *Sender)
+{
+   	BLMailFlagEdit->Enabled=BLMailFlagRadioButton->Checked;
 }
 //---------------------------------------------------------------------------
 
