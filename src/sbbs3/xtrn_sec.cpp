@@ -1508,7 +1508,8 @@ bool sbbs_t::exec_xtrn(uint xtrnnum)
 /****************************************************************************/
 bool sbbs_t::user_event(user_event_t event)
 {
-    uint i;
+    uint	i;
+	bool	success=false;
 
 	for(i=0;i<cfg.total_xtrns;i++) {
 		if(cfg.xtrn[i]->event!=event)
@@ -1516,10 +1517,10 @@ bool sbbs_t::user_event(user_event_t event)
 		if(!chk_ar(cfg.xtrn[i]->ar,&useron)
 			|| !chk_ar(cfg.xtrnsec[cfg.xtrn[i]->sec]->ar,&useron))
 			continue;
-		return(exec_xtrn(i)); 
+		success=exec_xtrn(i); 
 	}
 
-	return(false);
+	return(success);
 }
 
 
