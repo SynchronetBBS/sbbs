@@ -83,7 +83,9 @@ enum {
 	,USER_PROP_EMAILS    
 	,USER_PROP_FBACKS    
 	,USER_PROP_ETODAY	
-	,USER_PROP_PTODAY	
+	,USER_PROP_PTODAY
+	,USER_PROP_MAIL_WAITING
+	,USER_PROP_MAIL_PENDING
 	,USER_PROP_ULB       
 	,USER_PROP_ULS       
 	,USER_PROP_DLB       
@@ -354,6 +356,12 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			break;
 		case USER_PROP_FREECDTPERDAY:
 			val=p->cfg->level_freecdtperday[user.level];
+			break;
+		case USER_PROP_MAIL_WAITING:
+			val=getmail(p->cfg,user.number,/* sent? */FALSE);
+			break;
+		case USER_PROP_MAIL_PENDING:
+			val=getmail(p->cfg,user.number,/* sent? */TRUE);
 			break;
 
 		default:	
@@ -729,6 +737,8 @@ static jsSyncPropertySpec js_user_stats_properties[] = {
 	{	"bytes_downloaded"	,USER_PROP_DLB        	,USER_PROP_FLAGS,		310 },
 	{	"files_downloaded"	,USER_PROP_DLS        	,USER_PROP_FLAGS,		310 },
 	{	"leech_attempts"	,USER_PROP_LEECH 	 	,USER_PROP_FLAGS,		310 },
+	{	"mail_waiting"		,USER_PROP_MAIL_WAITING	,USER_PROP_FLAGS,		312	},
+	{	"mail_pending"		,USER_PROP_MAIL_PENDING	,USER_PROP_FLAGS,		312	},
 	{0}
 };
 
