@@ -1336,7 +1336,8 @@ static void smtp_thread(void* arg)
 				}
 
 				if(ftell(msgtxt)<1) {
-					lprintf("%04d !SMTP INVALID MESSAGE LENGTH: %ld", socket, ftell(msgtxt));
+					lprintf("%04d !SMTP INVALID MESSAGE LENGTH: %ld (%lu lines)"
+						, socket, ftell(msgtxt), lines);
 					sockprintf(socket,"554 No message text");
 					continue;
 				}
