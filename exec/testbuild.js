@@ -2,6 +2,8 @@
 
 /* JSexec script for periodic Synchronet test builds */
 
+/* $Id$ */
+
 load("sbbsdefs.js");
 
 var date_str = strftime("%b-%d-%y");	/* mmm-dd-yy */
@@ -37,8 +39,9 @@ if(platform=="win32") {
 	/* Requires Visual C++ */
 	builds.push(["src/sbbs3",			msdev + " sbbs3.dsw /MAKE ALL /OUT "+ build_output]);
 	/* Requires C++Builder */
-	builds.push(["src/sbbs3/chat",		"build"]);
-	builds.push(["src/sbbs3/ctrl",		"build"]);
+	builds.push(["src/sbbs3/ctrl",		"makelibs.bat"]);
+	builds.push(["src/sbbs3/ctrl",		"bpr2mak sbbsctrl.bpr & make -f sbbsctrl.mak"]);
+	builds.push(["src/sbbs3/chat",		"bpr2mak chat.bpr     & make -f chat.mak"]);
 } else {	/* Unix */
 	builds.push(["src/sbbs3/install",	"gmake"]);
 	builds.push(["src/sbbs3/umonitor",	"gmake"]);
