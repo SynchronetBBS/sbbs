@@ -36,7 +36,7 @@ $(EXEODIR)$(SLASH)sbl: $(OBJS)
 	@echo Linking $@
 	$(QUIET)$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@ $(LIBS)
 SMBIO	=	$(LIBODIR)/genwrap.o $(LIBODIR)/filewrap.o $(LIBODIR)/dirwrap.o \
-		$(LIBODIR)/smblib.o $(LIBODIR)/lzh.o
+		$(LIBODIR)/smblib.o $(LIBODIR)/lzh.o $(LIBODIR)/crc32.o $(LIBODIR)/md5.o
 
 $(EXEODIR)$(SLASH)sbl2smb: $(LIBODIR)$(SLASH)sbl2smb.o $(SMBIO)
 	@echo Linking $@
