@@ -71,8 +71,10 @@ typedef struct {
     void	(*reserved_fptr2)(void);
     void	(*reserved_fptr1)(void);
     char    ctrl_dir[128];
-    char	index_file_name[128];
-    char	reserved_path8[128];
+    char	index_file_name[64];
+    char	html_index_file[64];
+    char	html_index_script[64];
+    char	reserved_path8[64];
     char	reserved_path7[128];
     char	reserved_path6[128];
     char	reserved_path5[128];
@@ -87,12 +89,13 @@ typedef struct {
 
 #define FTP_OPT_DEBUG_RX			(1<<0)
 #define FTP_OPT_DEBUG_DATA			(1<<1)
-#define FTP_OPT_INDEX_FILE			(1<<2)	/* Auto-generate Index files */
+#define FTP_OPT_INDEX_FILE			(1<<2)	/* Auto-generate ASCII Index files */
 #define FTP_OPT_DEBUG_TX			(1<<3)
 #define FTP_OPT_ALLOW_QWK			(1<<4)
 #define FTP_OPT_NO_LOCAL_FSYS		(1<<5)
 #define FTP_OPT_DIR_FILES			(1<<6)	/* Allow access to files in dir but not in database */
 #define FTP_OPT_KEEP_TEMP_FILES		(1<<7)	/* Don't delete temp files (for debugging) */
+#define FTP_OPT_HTML_INDEX_FILE		(1<<8)	/* Auto-generate HTML index files */
 #define FTP_OPT_NO_HOST_LOOKUP		(1<<11)
 #define FTP_OPT_LOCAL_TIMEZONE		(1<<30)	/* Don't force UCT/GMT */
 #define FTP_OPT_MUTE				(1<<31)
