@@ -359,7 +359,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 					l=i;
 				str1[l]=0;
 				strcpy(strout,str1);
-				if((stripattr(strout) || ins) && !(mode&K_NOECHO))
+				if((strip_invalid_attr(strout) || ins) && !(mode&K_NOECHO))
 					redrwstr(strout,i,l,K_MSG);
 				if(mode&K_LINE && !(mode&K_NOECHO))
 					attr(LIGHTGRAY);
@@ -388,7 +388,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 					str1[i]=0;
 					if(ch==SP && !(mode&K_CHAT)) { /* don't wrap a space */ 
 						strcpy(strout,str1);	   /* as last char */
-						if(stripattr(strout) && !(mode&K_NOECHO))
+						if(strip_invalid_attr(strout) && !(mode&K_NOECHO))
 							redrwstr(strout,i,l,K_MSG);
 						if(!(mode&K_NOECHO))
 							CRLF;
@@ -401,7 +401,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 					if(x<(maxlen/2)) {
 						wordwrap[1]=0;  /* only wrap one character */
 						strcpy(strout,str1);
-						if(stripattr(strout) && !(mode&K_NOECHO))
+						if(strip_invalid_attr(strout) && !(mode&K_NOECHO))
 							redrwstr(strout,i,l,K_MSG);
 						if(!(mode&K_NOECHO))
 							CRLF;
@@ -414,7 +414,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 					strrev(wordwrap);
 					str1[x]=0;
 					strcpy(strout,str1);
-					if(stripattr(strout) && !(mode&K_NOECHO))
+					if(strip_invalid_attr(strout) && !(mode&K_NOECHO))
 						redrwstr(strout,i,x,(char)mode);
 					if(!(mode&K_NOECHO))
 						CRLF;
@@ -450,7 +450,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 	str1[l]=0;
 	if(!(sys_status&SS_ABORT)) {
 		strcpy(strout,str1);
-		if((stripattr(strout) || ins) && !(mode&K_NOECHO))
+		if((strip_invalid_attr(strout) || ins) && !(mode&K_NOECHO))
 			redrwstr(strout,i,l,K_MSG); }
 	else
 		l=0;
