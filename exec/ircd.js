@@ -2774,9 +2774,8 @@ function IRCClient_check_timeout() {
 
 function IRCClient_finalize_server_connect(states) {
 	hcc_counter++;
-	umode_notice(USERMODE_ROUTING,"Routing","Link with " + this.nick +
-		"[unknown@" + this.hostname + "] established, states: " +
-		states);
+	gnotice("Link with " + this.nick + "[unknown@" + this.hostname +
+		"] established, states: " + states);
 	if (server.client_update != undefined)
 		server.client_update(this.socket, this.nick, this.hostname);
 	if (!this.sentps) {

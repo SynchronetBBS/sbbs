@@ -65,6 +65,7 @@ function IRC_Server() {
 	this.bcast_to_servers=IRCClient_bcast_to_servers;
 	this.bcast_to_servers_raw=IRCClient_bcast_to_servers_raw;
 	this.bcast_to_uchans_unique=IRCClient_bcast_to_uchans_unique;
+	this.globops=IRCClient_globops;
 	// Output helpers
 	this.server_nick_info=IRCClient_server_nick_info;
 	this.server_chan_info=IRCClient_server_chan_info;
@@ -229,8 +230,6 @@ function Server_Work() {
 				break;
 			var my_ircstr = IRC_string(cmdline);
 			ThisOrigin.globops(my_ircstr);
-			this.bcast_to_servers_raw(":" + ThisOrigin.nick + " " +
-				"GLOBOPS :" + my_ircstr);
 			break;
 		case "GNOTICE":
 			if (!cmd[1])
@@ -584,6 +583,8 @@ function Server_Work() {
 		case "PRIVMSG":
 			if (!cmd[1])
 				break;
+			if (ThisOrigin.server)
+				break; // Servers aren't allowed to PRIVMSG.
 			var my_ircstr = IRC_string(cmdline);
 			if ( !cmd[2] || ( !cmd[3] && (
 			     (cmd[2] == ":") && (my_ircstr == "")
@@ -777,6 +778,10 @@ function Server_Work() {
 
 				this.bcast_to_servers_raw(":" + ThisOrigin.nick + " SJOIN " + chan.created + " " + chan.nam + " " + chan.chanmode(true) + " :" + new_chan_members)
 			} else {
+				if (ThisOrigin.server) {
+					umode_notice(USERMODE_OPER,"Notice", "Server " + ThisOrigin.nick + " trying to SJOIN itself to a channel?!");
+					break;
+				}
 				if (ThisOrigin.channels[chan.nam.toUpperCase()])
 					break;
 				ThisOrigin.channels[chan.nam.toUpperCase()] = chan;
@@ -952,6 +957,10 @@ function Server_Work() {
 				dest_server.rawout(":" + ThisOrigin.nick + " WHOIS " + cmd[1] + " " + dest_server.nick);
 			}
 			break;
+		case "CAPAB":
+		case "BURST":
+		case "SVSMODE":
+			break; // Silently ignore for now.
 		default:
 			umode_notice(USERMODE_OPER,"Notice","Server " + ThisOrigin.nick + " sent unrecognized command: " + cmdline);
 			break;
@@ -1039,8 +1048,7 @@ function IRCClient_synchronize() {
 		if (my_channel[0] == "#")
 			this.server_chan_info(Channels[my_channel]);
 	}
-	umode_notice(USERMODE_ROUTING,"Routing","from " + servername +
-		": " + this.nick + " has processed user/channel burst, " +
+	gnotice(this.nick + " has processed user/channel burst, "+
 		"sending topic burst.");
 	for (my_channel in Channels) {
 		if ((my_channel[0] == "#") && Channels[my_channel].topic) {
@@ -1049,8 +1057,7 @@ function IRCClient_synchronize() {
 		}
 	}
 	this.rawout("BURST 0"); // burst completed.
-	umode_notice(USERMODE_ROUTING,"Routing","from " + servername +
-		": " + this.nick + " has processed topic burst " +
+	gnotice(this.nick + " has processed topic burst " +
 		"(synched to network data).");
 }
 
@@ -1107,3 +1114,7 @@ function IRCClient_server_chan_info(sni_chan) {
 		this.ircout("MODE " + sni_chan.nam + " " + modestr + " " + modeargs);
 }
 
+function gnotice(str) {
+	umode_notice(USERMODE_ROUTING,"Routing","from " + servername + ": " + str);
+	server_bcast_to_servers("GNOTICE :" + str);
+}
