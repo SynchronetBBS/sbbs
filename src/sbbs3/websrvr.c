@@ -1527,7 +1527,7 @@ static int is_dynamic_req(http_session_t* session)
 			send_error(session,error_500);
 			return(IS_STATIC);
 		}
-	
+
 		sprintf(path,"%s/SBBS_SSJS.%d.html",startup->cgi_temp_dir,session->socket);
 		if((session->req.fp=fopen(path,"wb"))==NULL) {
 			lprintf(LOG_ERR,"%04d !ERROR %d opening/creating %s", session->socket, errno, path);
@@ -1804,7 +1804,6 @@ static BOOL check_extra_path(http_session_t * session)
 			{
 				SAFECOPY(session->req.extra_path_info,epath);
 				SAFECOPY(session->req.virtual_path,vpath);
-				/* This is dependent on the size of path in check_request() */
 				SAFECOPY(session->req.physical_path,rpath);
 				session->req.dynamic=IS_CGI;
 				return(TRUE);
@@ -2280,6 +2279,11 @@ JSObject* DLLCALL js_CreateHttpRequestObject(JSContext* cx
 	else
 		request = JS_DefineObject(cx, parent, "http_request", NULL
 									, NULL, JSPROP_ENUMERATE|JSPROP_READONLY);
+
+	if((js_str=JS_NewStringCopyZ(session->js_cx, session->req.extra_path_info))==NULL)
+		return(FALSE);
+	JS_DefineProperty(session->js_cx, request, "path_info", STRING_TO_JSVAL(js_str)
+		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 
 	if((js_str=JS_NewStringCopyZ(session->js_cx, methods[session->req.method]))==NULL)
 		return(FALSE);
