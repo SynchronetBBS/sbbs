@@ -401,7 +401,7 @@ js_BranchCallback(JSContext *cx, JSScript *script)
 		YIELD();
 
 	if(branch.gc_interval && (branch.counter%branch.gc_interval)==0)
-		JS_MaybeGC(cx);
+		JS_MaybeGC(cx), branch.gc_attempts++;
 
 	if(terminated) {
 	
@@ -661,6 +661,7 @@ int main(int argc, char **argv, char** environ)
 	branch.limit=JAVASCRIPT_BRANCH_LIMIT;
 	branch.yield_interval=JAVASCRIPT_YIELD_INTERVAL;
 	branch.gc_interval=JAVASCRIPT_GC_INTERVAL;
+	branch.terminated=&terminated;
 
 	sscanf("$Revision$", "%*s %s", revision);
 

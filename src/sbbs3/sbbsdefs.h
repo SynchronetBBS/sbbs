@@ -75,6 +75,8 @@ typedef struct {
 	ulong	limit;
 	ulong	yield_interval;
 	ulong	gc_interval;
+	ulong	gc_attempts;
+	BOOL*	terminated;
 } js_branch_t;
 
 #ifndef __FLAT__

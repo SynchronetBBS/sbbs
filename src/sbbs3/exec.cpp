@@ -551,7 +551,7 @@ js_BranchCallback(JSContext *cx, JSScript *script)
 		YIELD();
 
 	if(sbbs->js_branch.gc_interval && (sbbs->js_branch.counter%sbbs->js_branch.gc_interval)==0)
-		JS_MaybeGC(cx);
+		JS_MaybeGC(cx), sbbs->js_branch.gc_attempts++;
 
     return(JS_TRUE);
 }

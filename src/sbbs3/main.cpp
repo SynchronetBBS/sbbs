@@ -767,6 +767,7 @@ bool sbbs_t::js_init()
 	js_branch.gc_interval = JAVASCRIPT_GC_INTERVAL;
 	js_branch.yield_interval = JAVASCRIPT_YIELD_INTERVAL;
 	js_branch.counter = 0;	/* loop counter */
+	js_branch.terminated = (BOOL*)&terminated;
 
 	bool success=false;
 

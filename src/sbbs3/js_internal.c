@@ -40,15 +40,17 @@
 #include <jscntxt.h>	/* Needed for Context-private data structure */
 
 enum {
-	 PROP_BRANCH_COUNTER
+	 PROP_TERMINATED
+	,PROP_BRANCH_COUNTER
 	,PROP_BRANCH_LIMIT
 	,PROP_YIELD_INTERVAL
 	,PROP_GC_INTERVAL
+	,PROP_GC_ATTEMPTS
 #ifdef jscntxt_h___
-	,PROP_GC_BYTES
-	,PROP_GC_LASTBYTES
-	,PROP_GC_MAXBYTES
 	,PROP_GC_COUNTER
+	,PROP_GC_LASTBYTES
+	,PROP_BYTES
+	,PROP_MAXBYTES
 #endif
 };
 
@@ -63,6 +65,10 @@ static JSBool js_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
     tiny = JSVAL_TO_INT(id);
 
 	switch(tiny) {
+		case PROP_TERMINATED:
+			if(branch->terminated!=NULL)
+				*vp=BOOLEAN_TO_JSVAL(*branch->terminated);
+			break;
 		case PROP_BRANCH_COUNTER:
 			JS_NewNumberValue(cx,branch->counter,vp);
 			break;
@@ -75,18 +81,21 @@ static JSBool js_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 		case PROP_GC_INTERVAL:
 			JS_NewNumberValue(cx,branch->gc_interval,vp);
 			break;
+		case PROP_GC_ATTEMPTS:
+			JS_NewNumberValue(cx,branch->gc_attempts,vp);
+			break;
 #ifdef jscntxt_h___
-		case PROP_GC_BYTES:
-			JS_NewNumberValue(cx,cx->runtime->gcBytes,vp);
+		case PROP_GC_COUNTER:
+			JS_NewNumberValue(cx,cx->runtime->gcNumber,vp);
 			break;
 		case PROP_GC_LASTBYTES:
 			JS_NewNumberValue(cx,cx->runtime->gcLastBytes,vp);
 			break;
-		case PROP_GC_MAXBYTES:
-			JS_NewNumberValue(cx,cx->runtime->gcMaxBytes,vp);
+		case PROP_BYTES:
+			JS_NewNumberValue(cx,cx->runtime->gcBytes,vp);
 			break;
-		case PROP_GC_COUNTER:
-			JS_NewNumberValue(cx,cx->runtime->gcNumber,vp);
+		case PROP_MAXBYTES:
+			JS_NewNumberValue(cx,cx->runtime->gcMaxBytes,vp);
 			break;
 #endif
 	}
@@ -105,6 +114,10 @@ static JSBool js_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
     tiny = JSVAL_TO_INT(id);
 
 	switch(tiny) {
+		case PROP_TERMINATED:
+			if(branch->terminated!=NULL)
+				JS_ValueToBoolean(cx, *vp, branch->terminated);
+			break;
 		case PROP_BRANCH_COUNTER:
 			JS_ValueToInt32(cx, *vp, (int32*)&branch->counter);
 			break;
@@ -119,38 +132,42 @@ static JSBool js_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			break;
 	}
 
-	return(TRUE);
+	return(JS_TRUE);
 }
 
-#define GC_PROP_FLAGS	JSPROP_ENUMERATE|JSPROP_READONLY
+#define RT_PROP_FLAGS	JSPROP_ENUMERATE|JSPROP_READONLY
 
 static struct JSPropertySpec js_properties[] = {
 /*		 name,				tinyid,						flags,				getter,	setter	*/
 
+	{	"terminated",		PROP_TERMINATED,	JSPROP_ENUMERATE,	NULL,	NULL },
 	{	"branch_counter",	PROP_BRANCH_COUNTER,JSPROP_ENUMERATE,	NULL,	NULL },
 	{	"branch_limit",		PROP_BRANCH_LIMIT,	JSPROP_ENUMERATE,	NULL,	NULL },
 	{	"yield_interval",	PROP_YIELD_INTERVAL,JSPROP_ENUMERATE,	NULL,	NULL },
 	{	"gc_interval",		PROP_GC_INTERVAL,	JSPROP_ENUMERATE,	NULL,	NULL },
+	{	"gc_attempts",		PROP_GC_ATTEMPTS,	RT_PROP_FLAGS,		NULL,	NULL },
 #ifdef jscntxt_h___
-	{	"gc_bytes",			PROP_GC_BYTES,		GC_PROP_FLAGS,		NULL,	NULL },
-	{	"gc_last_bytes",	PROP_GC_LASTBYTES,	GC_PROP_FLAGS,		NULL,	NULL },
-	{	"gc_max_bytes",		PROP_GC_MAXBYTES,	GC_PROP_FLAGS,		NULL,	NULL },
-	{	"gc_counter",		PROP_GC_COUNTER,	GC_PROP_FLAGS,		NULL,	NULL },
+	{	"gc_counter",		PROP_GC_COUNTER,	RT_PROP_FLAGS,		NULL,	NULL },
+	{	"gc_last_bytes",	PROP_GC_LASTBYTES,	RT_PROP_FLAGS,		NULL,	NULL },
+	{	"bytes",			PROP_BYTES,			RT_PROP_FLAGS,		NULL,	NULL },
+	{	"max_bytes",		PROP_MAXBYTES,		RT_PROP_FLAGS,		NULL,	NULL },
 #endif
 	{0}
 };
 
 #ifdef _DEBUG
 static char* prop_desc[] = {
-	 "counter incremented for each branch"
+	 "termination has been requested (stop execution as soon as possible)"
+	,"number of branch operations performed in this runtime"
 	,"maximum number of branches, used for infinite-loop detection (0=disabled)"
-	,"interval of periodic garbage collection (lower number=higher frequency, 0=disabled)"
 	,"interval of periodic time-slice yields (lower number=higher frequency, 0=disabled)"
+	,"interval of periodic garbage collection attempts (lower number=higher frequency, 0=disabled)"
+	,"number of garbage collections attempted in this runtime"
 #ifdef jscntxt_h___
-	,"number of bytes currently in heap"
-	,"number of bytes in heap after last garbage collection"
-	,"maximum number of bytes in heap"
-	,"number of garbage collections"
+	,"number of garbage collections performed in this runtime"
+	,"number of heap bytes in use after last garbage collection"
+	,"number of heap bytes currently in use"
+	,"maximum number of bytes available for heap"
 #endif
 	,NULL
 };
