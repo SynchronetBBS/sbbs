@@ -3414,7 +3414,6 @@ void DLLCALL bbs_thread(void* arg)
 	SOCKET	uspy_listen_socket[MAX_NODES];
 	struct sockaddr_un uspy_addr;
 	socklen_t		addr_len;
-	BOOL			wr;
 #endif
 
     if(startup==NULL) {
@@ -3879,22 +3878,10 @@ void DLLCALL bbs_thread(void* arg)
 		}
 #ifdef __unix__
 		for(i=first_node;i<=last_node;i++)  {
-			if(uspy_listen_socket[i-1]!=INVALID_SOCKET) {
-				if(!socket_check(uspy_listen_socket[i-1],NULL,&wr,0)) {
-					close_socket(uspy_listen_socket[i-1]);
-					uspy_listen_socket[i-1]=INVALID_SOCKET;
-				}
-			}
 			if(uspy_listen_socket[i-1]!=INVALID_SOCKET)  {
 				FD_SET(uspy_listen_socket[i-1],&socket_set);
 				if(uspy_listen_socket[i-1]+1>high_socket_set)
 					high_socket_set=uspy_listen_socket[i-1]+1;
-			}
-			if(uspy_socket[i-1]!=INVALID_SOCKET) {
-				if(!socket_check(uspy_socket[i-1],NULL,&wr,0)) {
-					close_socket(uspy_socket[i-1]);
-					uspy_socket[i-1]=INVALID_SOCKET;
-				}
 			}
 			if(uspy_socket[i-1]!=INVALID_SOCKET)  {
 				FD_SET(uspy_socket[i-1],&socket_set);
@@ -3948,16 +3935,21 @@ void DLLCALL bbs_thread(void* arg)
 					SOCKET new_socket=INVALID_SOCKET;
 					new_socket = accept(uspy_listen_socket[i-1], (struct sockaddr *)&uspy_addr
 						,&client_addr_len);
+					if(new_socket < 0)  {
+						lprintf("ERROR! Spy socket for node %d unable to accept()",i);
+						close_socket(uspy_listen_socket[i-1]);
+						uspy_listen_socket[i-1]=INVALID_SOCKET;
+					}
 					fcntl(new_socket,F_SETFL,fcntl(new_socket,F_GETFL)|O_NONBLOCK);
 					if(already_connected)  {
-lprintf("ERROR! Spy socket %s already in use",uspy_addr.sun_path);
-						send(new_socket,"Spy socket already in use.\n",27,0);
+						lprintf("ERROR! Spy socket %s already in use",uspy_addr.sun_path);
+						send(new_socket,"Spy socket already in use.\r\n",27,0);
 						close_socket(new_socket);
 					}
 					else  {
-lprintf("Spy socket %s connected",uspy_addr.sun_path);
+						lprintf("Spy socket %s connected",uspy_addr.sun_path);
 						uspy_socket[i-1]=new_socket;
-						sprintf(str,"Spy connection established to node %d\n",i);
+						sprintf(str,"Spy connection established to node %d\r\n",i);
 						send(uspy_socket[i-1],str,strlen(str),0);
 					}
 				}
@@ -4146,12 +4138,26 @@ lprintf("Spy socket %s connected",uspy_addr.sun_path);
 	}
 
     // Close all open sockets
-    for(i=0;i<MAX_NODES;i++)
+    for(i=0;i<MAX_NODES;i++)  {
     	if(node_socket[i]!=INVALID_SOCKET) {
         	lprintf("Closing node %d socket %d", i+1, node_socket[i]);
         	close_socket(node_socket[i]);
 			node_socket[i]=INVALID_SOCKET;
         }
+#ifdef __unix__
+		if(uspy_listen_socket[i]!=INVALID_SOCKET) {
+			close_socket(uspy_listen_socket[i]);
+			uspy_listen_socket[i]=INVALID_SOCKET;
+			snprintf(str,sizeof(uspy_addr.sun_path),"%slocalspy%d.sock", startup->temp_dir, i);
+			if(fexist(str))
+				unlink(str);
+		}
+		if(uspy_socket[i]!=INVALID_SOCKET) {
+			close_socket(uspy_socket[i]);
+			uspy_socket[i]=INVALID_SOCKET;
+		}		
+#endif
+	}
 
 	sbbs->client_socket=INVALID_SOCKET;
 	if(events!=NULL)
