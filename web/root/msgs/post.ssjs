@@ -25,7 +25,7 @@ if(sub=='mail') {
 }
 else {
 	template.sub=msg_area.sub[sub];
-	template.group=msg_area.grp_list[msg_area.sub[sub].grp_name];
+	template.group=msg_area.grp[msg_area.sub[sub].grp_name];
 	if(msg_area.sub[sub].settings&SUB_AONLY)
 		template.anonnote=anon_only_message;
 	else if(msg_area.sub[sub].settings&SUB_ANON)
