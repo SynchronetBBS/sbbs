@@ -2466,10 +2466,11 @@ static void smtp_thread(void* arg)
 					,socket, str, reverse_path);
 				strcpy(tmp,"REFUSED");
 				if(dnsbl_result.s_addr==0)	{ /* Don't double-filter */
+					lprintf("%04d !FILTERING IP ADDRESS: %s", socket, host_ip);
 					filter_ip(&scfg, "SMTP", str, host_ip, reverse_path);
 					strcat(tmp," and FILTERED");
 				}
-				spamlog(&scfg, "SMTP", tmp, "Spam Bait Taken"
+				spamlog(&scfg, "SMTP", tmp, "Attempted recipient in SPAM BAIT list"
 					,host_name, host_ip, rcpt_addr, reverse_path);
 				break;
 			}
