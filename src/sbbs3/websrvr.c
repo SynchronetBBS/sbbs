@@ -814,6 +814,7 @@ static BOOL send_headers(http_session_t *session, const char *status)
 	char	*headers;
 	char	header[MAX_REQUEST_LINE+1];
 	char	*p;
+	list_node_t	*node;
 
 	lprintf(LOG_DEBUG,"%04d Request resolved to: %s"
 		,session->socket,session->req.physical_path);
@@ -918,9 +919,8 @@ static BOOL send_headers(http_session_t *session, const char *status)
 	if(session->req.dynamic)  {
 		/* Dynamic headers */
 		/* Set up environment */
-		while((p=listPopFirstNode(&session->req.dynamic_heads)) != NULL)  {
-			safecat(headers,p,MAX_HEADERS_SIZE);
-		}
+		for(node=listFirstNode(&session->req.dynamic_heads);node!=NULL;node=listNextNode(node))
+			safecat(headers,listNodeData(node),MAX_HEADERS_SIZE);
 	}
 
 	safecat(headers,"",MAX_HEADERS_SIZE);
@@ -1374,8 +1374,10 @@ static BOOL parse_headers(http_session_t * session)
 	int		i;
 	size_t	content_len=0;
 	char	env_name[128];
+	list_node_t	*node;
 
-	while((head_line=listPopFirstNode(&session->req.headers))!=NULL) {
+	for(node=listFirstNode(&session->req.headers);node!=NULL;node=listNextNode(node)) {
+		head_line=listNodeData(node);
 		if((strtok(head_line,":"))!=NULL && (value=strtok(NULL,""))!=NULL) {
 			i=get_header_type(head_line);
 			while(*value && *value<=' ') value++;
@@ -1967,6 +1969,7 @@ static BOOL exec_cgi(http_session_t *session)
 	char	cgipath[MAX_PATH+1];
 	char	*p;
 	char	ch;
+	list_node_t	*node;
 #endif
 
 	SAFECOPY(cmdline,session->req.physical_path);
@@ -2000,8 +2003,8 @@ static BOOL exec_cgi(http_session_t *session)
 			startup->setuid(TRUE);
 
 		/* Set up environment */
-		while((p=listPopFirstNode(&session->req.cgi_env)) != NULL)
-			putenv(p);
+		for(node=listFirstNode(&session->req.cgi_env);node!=NULL;node=listNextNode(node))
+			putenv(listNodeData(node));
 
 		/* Set up STDIO */
 		close(in_pipe[1]);		/* close write-end of pipe */
@@ -2741,9 +2744,9 @@ void http_session_thread(void* arg)
 				memset(session.req.ld,0,sizeof(struct log_data));
 				session.req.ld->hostname=strdup(session.host_name);
 			}
-			listInit(&session.req.headers,LINK_LIST_DONT_FREE);
-			listInit(&session.req.cgi_env,LINK_LIST_DONT_FREE);
-			listInit(&session.req.dynamic_heads,LINK_LIST_DONT_FREE);
+			listInit(&session.req.headers,0);
+			listInit(&session.req.cgi_env,0);
+			listInit(&session.req.dynamic_heads,0);
 			if(get_req(&session,redirp)) {
 				/* At this point, if redirp is non-NULL then the headers have already been parsed */
 				if((session.http_ver<HTTP_1_0)||redirp!=NULL||parse_headers(&session)) {
