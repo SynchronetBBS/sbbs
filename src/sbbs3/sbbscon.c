@@ -834,8 +834,9 @@ int main(int argc, char** argv)
 		&run_mail,		&mail_startup, 
 		&run_services,	&services_startup);
 
-	/* read any sbbscon-specific ini keys here */
+	/* read/default any sbbscon-specific .ini keys here */
 
+	/* close .ini file here */
 	if(fp!=NULL)
 		fclose(fp);
 
