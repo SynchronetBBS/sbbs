@@ -1053,6 +1053,8 @@ static void smtp_thread(void* arg)
 	char		sender[128]={0};
 	char		sender_addr[128]={0};
 	char		hello_name[128];
+	char		relay_list[MAX_PATH+1];
+	char		domain_list[MAX_PATH+1];
 	char		host_name[128];
 	char		host_ip[64];
 	int			addr_len;
@@ -1064,9 +1066,9 @@ static void smtp_thread(void* arg)
 	ulong		offset;
 	BOOL		esmtp=FALSE;
 	FILE*		msgtxt=NULL;
-	char		msgtxt_fname[MAX_PATH];
+	char		msgtxt_fname[MAX_PATH+1];
 	FILE*		rcptlst;
-	char		rcptlst_fname[MAX_PATH];
+	char		rcptlst_fname[MAX_PATH+1];
 	FILE*		spy=NULL;
 	SOCKET		socket;
 	HOSTENT*	host;
@@ -1693,11 +1695,14 @@ static void smtp_thread(void* arg)
 			if(tp!=NULL) {
 				
 				/* RELAY */
-				if(stricmp(tp+1,scfg.sys_inetaddr) && 
-					resolve_ip(tp+1)!=server_addr.sin_addr.s_addr) {
+				sprintf(domain_list,"%sdomains.cfg",scfg.ctrl_dir);
+				sprintf(relay_list,"%srelay.cfg",scfg.ctrl_dir);
+				if(stricmp(tp+1,scfg.sys_inetaddr)!=0
+					&& resolve_ip(tp+1)!=server_addr.sin_addr.s_addr
+					&& findstr(&scfg,tp+1,domain_list)==FALSE) {
 
-					if(!trashcan(&scfg,host_name,"relay") && 
-						!trashcan(&scfg,host_ip,"relay")) {
+					if(!findstr(&scfg,host_name,relay_list) && 
+						!findstr(&scfg,host_ip,relay_list)) {
 						lprintf("%04d !SMTP ILLEGAL RELAY ATTEMPT from %s [%s] to %s"
 							,socket, host_name, host_ip, tp+1);
 						sockprintf(socket, "550 Relay not allowed.");
