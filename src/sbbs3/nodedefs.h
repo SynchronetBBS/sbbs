@@ -42,7 +42,7 @@
 #ifndef _NODEDEFS_H
 #define _NODEDEFS_H
 
-#include "gen_defs.h"
+#include "smbdefs.h"	/* uchar, ushort, ulong and _PACK */
 
 enum {                              /* Node Status */
      NODE_WFC                       /* Waiting for Call */
