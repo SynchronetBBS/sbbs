@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -121,7 +121,7 @@ void prep_desc(char *str)
 /*****************************************************************************/
 /* Returns command line generated from instr with %c replacments             */
 /*****************************************************************************/
-char *cmdstr(char *instr, char *fpath, char *fspec, char *outstr)
+char *mycmdstr(char *instr, char *fpath, char *fspec, char *outstr)
 {
     static char cmd[MAX_PATH+1];
     char str[MAX_PATH+1];
@@ -283,11 +283,11 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 				if(i<scfg.total_fextrs) {
 					sprintf(tmp,"%sFILE_ID.DIZ",scfg.temp_dir);
 					remove(tmp);
-					system(cmdstr(scfg.fextr[i]->cmd,filepath,"FILE_ID.DIZ",NULL));
+					system(mycmdstr(scfg.fextr[i]->cmd,filepath,"FILE_ID.DIZ",NULL));
 					if(!fexistcase(tmp)) {
 						sprintf(tmp,"%sDESC.SDI",scfg.temp_dir);
 						remove(tmp);
-						system(cmdstr(scfg.fextr[i]->cmd,filepath,"DESC.SDI",NULL)); 
+						system(mycmdstr(scfg.fextr[i]->cmd,filepath,"DESC.SDI",NULL)); 
 						fexistcase(tmp);
 					}
 					if((file=nopen(tmp,O_RDONLY|O_BINARY))!=-1) {
@@ -486,11 +486,11 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 			if(i<scfg.total_fextrs) {
 				sprintf(tmp,"%sFILE_ID.DIZ",scfg.temp_dir);
 				remove(tmp);
-				system(cmdstr(scfg.fextr[i]->cmd,filepath,"FILE_ID.DIZ",NULL));
+				system(mycmdstr(scfg.fextr[i]->cmd,filepath,"FILE_ID.DIZ",NULL));
 				if(!fexistcase(tmp)) {
 					sprintf(tmp,"%sDESC.SDI",scfg.temp_dir);
 					remove(tmp);
-					system(cmdstr(scfg.fextr[i]->cmd,filepath,"DESC.SDI",NULL)); 
+					system(mycmdstr(scfg.fextr[i]->cmd,filepath,"DESC.SDI",NULL)); 
 					fexistcase(tmp);
 				}
 				if((file=nopen(tmp,O_RDONLY|O_BINARY))!=-1) {
@@ -899,11 +899,11 @@ int main(int argc, char **argv)
 				if(i<scfg.total_fextrs) {
 					sprintf(tmp,"%sFILE_ID.DIZ",scfg.temp_dir);
 					remove(tmp);
-					system(cmdstr(scfg.fextr[i]->cmd,str,"FILE_ID.DIZ",NULL));
+					system(mycmdstr(scfg.fextr[i]->cmd,str,"FILE_ID.DIZ",NULL));
 					if(!fexistcase(tmp)) {
 						sprintf(tmp,"%sDESC.SDI",scfg.temp_dir);
 						remove(tmp);
-						system(cmdstr(scfg.fextr[i]->cmd,str,"DESC.SDI",NULL)); 
+						system(mycmdstr(scfg.fextr[i]->cmd,str,"DESC.SDI",NULL)); 
 						fexistcase(tmp);
 					}
 					if((file=nopen(tmp,O_RDONLY|O_BINARY))!=-1) {

@@ -206,7 +206,7 @@ void logprintf(char *str, ...)
 /*****************************************************************************/
 /* Returns command line generated from instr with %c replacments             */
 /*****************************************************************************/
-char *cmdstr(scfg_t* cfg, char *instr, char *fpath, char *fspec)
+char *mycmdstr(scfg_t* cfg, char *instr, char *fpath, char *fspec)
 {
     static char cmd[128];
     char str[256],str2[128];
@@ -1527,14 +1527,14 @@ int unpack(char *infile)
 		logprintf("ERROR line %d determining filetype of %s",__LINE__,infile);
 		return(1); }
 
-	j=execute(cmdstr(&scfg,cfg.arcdef[i].unpack,infile
+	j=execute(mycmdstr(&scfg,cfg.arcdef[i].unpack,infile
 		,secure ? cfg.secure : cfg.inbound));
 	if(j) {
 		printf("\7ERROR %d (%d) executing %s\n"
-			,j,errno,cmdstr(&scfg,cfg.arcdef[i].unpack,infile
+			,j,errno,mycmdstr(&scfg,cfg.arcdef[i].unpack,infile
 				,secure ? cfg.secure : cfg.inbound));
 		logprintf("ERROR %d (%d) line %d executing %s"
-			,j,errno,__LINE__,cmdstr(&scfg,cfg.arcdef[i].unpack,infile
+			,j,errno,__LINE__,mycmdstr(&scfg,cfg.arcdef[i].unpack,infile
 				,secure ? cfg.secure : cfg.inbound));
 		return(j); }
 	return(0);
@@ -1553,12 +1553,12 @@ void pack(char *srcfile,char *destfile,faddr_t dest)
 	if(i<cfg.nodecfgs)
 		use=cfg.nodecfg[i].arctype;
 
-	j=execute(cmdstr(&scfg,cfg.arcdef[use].pack,destfile,srcfile));
+	j=execute(mycmdstr(&scfg,cfg.arcdef[use].pack,destfile,srcfile));
 	if(j) {
 		printf("\7ERROR %d (%d) executing %s\n"
-			,j,errno,cmdstr(&scfg,cfg.arcdef[use].pack,destfile,srcfile));
+			,j,errno,mycmdstr(&scfg,cfg.arcdef[use].pack,destfile,srcfile));
 		logprintf("ERROR %d (%d) line %d executing %s"
-			,j,errno,__LINE__,cmdstr(&scfg,cfg.arcdef[use].pack,destfile,srcfile)); }
+			,j,errno,__LINE__,mycmdstr(&scfg,cfg.arcdef[use].pack,destfile,srcfile)); }
 }
 
 enum {
