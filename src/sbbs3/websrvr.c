@@ -184,7 +184,7 @@ typedef struct  {
 	char		vhost[128];				/* The requested host. (virtual host) */
 	int			send_location;
 	const char*	mime_type;
-	link_list_t	headers;
+	str_list_t	headers;
 	char		status[MAX_REQUEST_LINE+1];
 	char *		post_data;
 	size_t		post_len;
@@ -195,8 +195,8 @@ typedef struct  {
 	/* CGI parameters */
 	char		query_str[MAX_REQUEST_LINE+1];
 	char		extra_path_info[MAX_REQUEST_LINE+1];
-	link_list_t	cgi_env;
-	link_list_t	dynamic_heads;
+	str_list_t	cgi_env;
+	str_list_t	dynamic_heads;
 
 	/* Dynamically (sever-side JS) generated HTML parameters */
 	FILE*	fp;
@@ -533,7 +533,7 @@ static void add_env(http_session_t *session, const char *name,const char *value)
 		return;
 	}
 	sprintf(p,"%s=%s",newname,value);
-	listPushNodeString(&session->req.cgi_env,p);
+	strListPush(&session->req.cgi_env,p);
 	free(p);
 }
 
@@ -750,9 +750,9 @@ static void close_request(http_session_t * session)
 		session->req.ld=NULL;
 	}
 
-	listFree(&session->req.headers);
-	listFree(&session->req.dynamic_heads);
-	listFree(&session->req.cgi_env);
+	strListFree(&session->req.headers);
+	strListFree(&session->req.dynamic_heads);
+	strListFree(&session->req.cgi_env);
 	FREE_AND_NULL(session->req.post_data);
 	if(!session->req.keep_alive) {
 		close_socket(session->socket);
@@ -843,12 +843,12 @@ static BOOL send_headers(http_session_t *session, const char *status)
 	int		ret;
 	BOOL	send_file=TRUE;
 	time_t	ti;
+	size_t	idx;
 	const char	*status_line;
 	struct stat	stats;
 	struct tm	tm;
 	char	*headers;
 	char	header[MAX_REQUEST_LINE+1];
-	list_node_t	*node;
 
 	if(session->socket==INVALID_SOCKET)
 		return(FALSE);
@@ -955,8 +955,8 @@ static BOOL send_headers(http_session_t *session, const char *status)
 	if(session->req.dynamic)  {
 		/* Dynamic headers */
 		/* Set up environment */
-		for(node=listFirstNode(&session->req.dynamic_heads);node!=NULL;node=listNextNode(node))
-			safecat(headers,listNodeData(node),MAX_HEADERS_SIZE);
+		for(idx=0;session->req.dynamic_heads[idx]!=NULL;idx++)
+			safecat(headers,session->req.dynamic_heads[idx],MAX_HEADERS_SIZE);
 	}
 
 	safecat(headers,"",MAX_HEADERS_SIZE);
@@ -1523,12 +1523,12 @@ static BOOL parse_headers(http_session_t * session)
 	char	*value;
 	char	*p;
 	int		i;
+	size_t	idx;
 	size_t	content_len=0;
 	char	env_name[128];
-	list_node_t	*node;
 
-	for(node=listFirstNode(&session->req.headers);node!=NULL;node=listNextNode(node)) {
-		head_line=listNodeData(node);
+	for(idx=0;session->req.headers[idx]!=NULL;idx++) {
+		head_line=session->req.headers[idx];
 		if((strtok(head_line,":"))!=NULL && (value=strtok(NULL,""))!=NULL) {
 			i=get_header_type(head_line);
 			while(*value && *value<=' ') value++;
@@ -1746,7 +1746,7 @@ static BOOL get_request_headers(http_session_t * session)
 			}
 			sockreadline(session,head_line+i,sizeof(head_line)-i-1);
 		}
-		listPushNodeString(&session->req.headers,head_line);
+		strListPush(&session->req.headers,head_line);
 
 		if((strtok(head_line,":"))!=NULL && (value=strtok(NULL,""))!=NULL) {
 			i=get_header_type(head_line);
@@ -2096,8 +2096,8 @@ static BOOL exec_cgi(http_session_t *session)
 	char	cgipath[MAX_PATH+1];
 	char	*p;
 	char	ch;
-	list_node_t	*node;
 	BOOL	orig_keep=FALSE;
+	size_t	idx;
 
 	SAFECOPY(cmdline,session->req.physical_path);
 
@@ -2124,8 +2124,8 @@ static BOOL exec_cgi(http_session_t *session)
 			startup->setuid(TRUE);
 
 		/* Set up environment */
-		for(node=listFirstNode(&session->req.cgi_env);node!=NULL;node=listNextNode(node))
-			putenv(listNodeData(node));
+		for(idx=0;session->req.cgi_env[idx]!=NULL;idx++)
+			putenv(session->req.cgi_env[idx]);
 
 		/* Set up STDIO */
 		dup2(session->socket,0);		/* redirect stdin */
@@ -2232,14 +2232,14 @@ static BOOL exec_cgi(http_session_t *session)
 									break;
 								case HEAD_LENGTH:
 									session->req.keep_alive=orig_keep;
-									listPushNodeString(&session->req.dynamic_heads,buf);
+									strListPush(&session->req.dynamic_heads,buf);
 									break;
 								case HEAD_TYPE:
 									got_valid_headers=TRUE;
-									listPushNodeString(&session->req.dynamic_heads,buf);
+									strListPush(&session->req.dynamic_heads,buf);
 									break;
 								default:
-									listPushNodeString(&session->req.dynamic_heads,buf);
+									strListPush(&session->req.dynamic_heads,buf);
 							}
 						}
 					}
@@ -2475,21 +2475,21 @@ static BOOL exec_cgi(http_session_t *session)
 							break;
 						case HEAD_LENGTH:
 							session->req.keep_alive=orig_keep;
-							listPushNodeString(&session->req.dynamic_heads,buf);
+							strListPush(&session->req.dynamic_heads,buf);
 							break;
 						case HEAD_TYPE:
 							got_valid_headers=TRUE;
 							SAFECOPY(content_type,buf);
 							break;
 						default:
-							listPushNodeString(&session->req.dynamic_heads,buf);
+							strListPush(&session->req.dynamic_heads,buf);
 					}
 					continue;
 				}
 				msglen=i;	/* we may send this text later */
 				done_parsing_headers = TRUE;	/* invalid header */
 				session->req.dynamic=IS_CGI;
-				listPushNodeString(&session->req.dynamic_heads,content_type);
+				strListPush(&session->req.dynamic_heads,content_type);
 				send_headers(session,cgi_status);
 			}
 			if(msglen) {
@@ -2969,7 +2969,7 @@ static BOOL ssjs_send_headers(http_session_t* session)
 		JS_GetProperty(session->js_cx,headers,JS_GetStringBytes(js_str),&val);
 		safe_snprintf(str,sizeof(str),"%s: %s"
 			,JS_GetStringBytes(js_str),JS_GetStringBytes(JSVAL_TO_STRING(val)));
-		listPushNodeString(&session->req.dynamic_heads,str);
+		strListPush(&session->req.dynamic_heads,str);
 	}
 	JS_DestroyIdArray(session->js_cx, heads);
 	session->req.sent_headers=TRUE;
@@ -3175,9 +3175,9 @@ void http_session_thread(void* arg)
 				memset(session.req.ld,0,sizeof(struct log_data));
 				session.req.ld->hostname=strdup(session.host_name);
 			}
-			listInit(&session.req.headers,0);
-			listInit(&session.req.cgi_env,0);
-			listInit(&session.req.dynamic_heads,0);
+			session.req.headers=strListInit();
+			session.req.cgi_env=strListInit();
+			session.req.dynamic_heads=strListInit();
 			if(get_req(&session,redirp)) {
 				/* At this point, if redirp is non-NULL then the headers have already been parsed */
 				if((session.http_ver<HTTP_1_0)||redirp!=NULL||parse_headers(&session)) {
