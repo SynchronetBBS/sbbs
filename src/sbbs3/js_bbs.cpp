@@ -309,19 +309,19 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 
 		/* Currently Displayed Message Header (sbbs.current_msg) */
 		case BBS_PROP_MSG_TO:
-			if(sbbs->current_msg==NULL)
+			if(sbbs->current_msg==NULL || sbbs->current_msg->to==NULL)
 				p=nulstr;
 			else
 				p=sbbs->current_msg->to;
 			break;
 		case BBS_PROP_MSG_TO_EXT:
-			if(sbbs->current_msg==NULL)
+			if(sbbs->current_msg==NULL || sbbs->current_msg->to_ext==NULL)
 				p=nulstr;
 			else
 				p=sbbs->current_msg->to_ext;
 			break;
 		case BBS_PROP_MSG_TO_NET:
-			if(sbbs->current_msg==NULL)
+			if(sbbs->current_msg==NULL || sbbs->current_msg->to_net.type==NET_NONE)
 				p=nulstr;
 			else
 				p=sbbs->current_msg->to_net.type==NET_FIDO
@@ -333,19 +333,19 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 				val=sbbs->current_msg->to_agent;
 			break;
 		case BBS_PROP_MSG_FROM:
-			if(sbbs->current_msg==NULL)
+			if(sbbs->current_msg==NULL || sbbs->current_msg->from==NULL)
 				p=nulstr;
 			else
 				p=sbbs->current_msg->from;
 			break;
 		case BBS_PROP_MSG_FROM_EXT:
-			if(sbbs->current_msg==NULL)
+			if(sbbs->current_msg==NULL || sbbs->current_msg->from_ext==NULL)
 				p=nulstr;
 			else
 				p=sbbs->current_msg->from_ext;
 			break;
 		case BBS_PROP_MSG_FROM_NET:
-			if(sbbs->current_msg==NULL)
+			if(sbbs->current_msg==NULL || sbbs->current_msg->from_net.type==NET_NONE)
 				p=nulstr;
 			else
 				p=sbbs->current_msg->from_net.type==NET_FIDO
@@ -357,19 +357,19 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 				val=sbbs->current_msg->from_agent;
 			break;
 		case BBS_PROP_MSG_REPLYTO:
-			if(sbbs->current_msg==NULL)
+			if(sbbs->current_msg==NULL || sbbs->current_msg->replyto==NULL)
 				p=nulstr;
 			else
 				p=sbbs->current_msg->replyto;
 			break;
 		case BBS_PROP_MSG_REPLYTO_EXT:
-			if(sbbs->current_msg==NULL)
+			if(sbbs->current_msg==NULL || sbbs->current_msg->replyto_ext==NULL)
 				p=nulstr;
 			else
 				p=sbbs->current_msg->replyto_ext;
 			break;
 		case BBS_PROP_MSG_REPLYTO_NET:
-			if(sbbs->current_msg==NULL)
+			if(sbbs->current_msg==NULL || sbbs->current_msg->replyto_net.type==NET_NONE)
 				p=nulstr;
 			else
 				p=sbbs->current_msg->replyto_net.type==NET_FIDO
@@ -382,7 +382,7 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			break;
 
 		case BBS_PROP_MSG_SUBJECT:
-			if(sbbs->current_msg==NULL)
+			if(sbbs->current_msg==NULL || sbbs->current_msg->subj==NULL)
 				p=nulstr;
 			else
 				p=sbbs->current_msg->subj;
