@@ -2261,6 +2261,7 @@ static void smtp_thread(void* arg)
 				i=savemsg(&scfg, &smb, &msg, msgbuf);
 				free(msgbuf);
 				if(i!=0) {
+					smb_close(&smb);
 					lprintf(LOG_ERR,"%04d !SMTP ERROR %d (%s) saving message"
 						,socket,i,smb.last_error);
 					sockprintf(socket, "452 ERROR %d (%s) saving message"
@@ -2344,7 +2345,9 @@ static void smtp_thread(void* arg)
 					sockprintf(socket,ok_rsp);
 					signal_smtp_sem();
 				}
+#if 0 /* This shouldn't be necessary here */
 				smb_close_da(&smb);
+#endif
 				smb_close(&smb);
 				continue;
 			}
