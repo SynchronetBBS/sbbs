@@ -41,8 +41,15 @@
 
 #ifdef __unix__
 	#include <sys/wait.h>	// WEXITSTATUS
-#endif
 
+#ifdef __FreeBSD__
+	#include <libutil.h>	// forkpty()
+#else
+	#include <pty.h>
+#endif
+	#include <termios.h>
+	static void setup_term(int fd);	
+#endif
 #define XTRN_IO_BUF_LEN 5000
 
 /*****************************************************************************/
@@ -478,14 +485,14 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 		sa.bInheritHandle = TRUE;
 
 		// Create the child output pipe.
-		if (!CreatePipe(&rdoutpipe,&startup_info.hStdOutput,&sa,0)) {
+		if(!CreatePipe(&rdoutpipe,&startup_info.hStdOutput,&sa,0)) {
 			errormsg(WHERE,ERR_CREATE,"stdout pipe",0);
 			return(GetLastError());
 		}
 		startup_info.hStdError=startup_info.hStdOutput;
 
 		// Create the child input pipe.
-		if (!CreatePipe(&startup_info.hStdInput,&wrinpipe,&sa,0)) {
+		if(!CreatePipe(&startup_info.hStdInput,&wrinpipe,&sa,0)) {
 			errormsg(WHERE,ERR_CREATE,"stdin pipe",0);
 			return(GetLastError());
 		}
@@ -918,6 +925,8 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 	pid_t	pid;
 	int		in_pipe[2];
 	int		out_pipe[2];
+	fd_set ibits;
+	struct timeval timeout;
 
 	XTRN_LOADABLE_MODULE;
 	XTRN_LOADABLE_JS_MODULE;
@@ -969,32 +978,46 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 
 	if(!(mode&EX_INR))
 		pthread_mutex_lock(&input_thread_mutex);
-#if 1	
-	if(mode&EX_INR)
-		if(pipe(in_pipe)!=0) {
-			errormsg(WHERE,ERR_CREATE,"in_pipe",0);
-			return(-1);
-		}
-#endif		
-	if(mode&EX_OUTR)
-		if(pipe(out_pipe)!=0) {
-			errormsg(WHERE,ERR_CREATE,"out_pipe",0);
-			return(-1);
-		}
 
-	if((pid=fork())==-1) {
-		pthread_mutex_unlock(&input_thread_mutex);
-		errormsg(WHERE,ERR_EXEC,cmdline,0);
-		return(-1);
+	if((mode&EX_INR) && (mode&EX_OUTR))  {
+		struct winsize winsize;
+		winsize.ws_row=rows;
+		// #warning Currently cols are forced to 80 apparently TODO
+		winsize.ws_col=80;
+		lprintf("Node %d forking new pty.",cfg.node_num);
+		if((pid=forkpty(&in_pipe[1],NULL,NULL,&winsize))==-1) {
+			pthread_mutex_unlock(&input_thread_mutex);
+			errormsg(WHERE,ERR_EXEC,cmdline,0);
+			return(-1);
+		}
+		out_pipe[0]=in_pipe[1];
 	}
-	
-	if(pid==0) {	/* child process */
+	else  {
+		if(mode&EX_INR)
+			if(pipe(in_pipe)!=0) {
+				errormsg(WHERE,ERR_CREATE,"in_pipe",0);
+				return(-1);
+			}
+		if(mode&EX_OUTR)
+			if(pipe(out_pipe)!=0) {
+				errormsg(WHERE,ERR_CREATE,"out_pipe",0);
+				return(-1);
+			}
 
+
+		if((pid=fork())==-1) {
+			pthread_mutex_unlock(&input_thread_mutex);
+			errormsg(WHERE,ERR_EXEC,cmdline,0);
+			return(-1);
+		}
+	}
+	if(pid==0) {	/* child process */
+		setup_term(0);
 		if(startup_dir!=NULL && startup_dir[0])
 			chdir(startup_dir);
 
 		lprintf("Node %d executing external: %s",cfg.node_num,cmdline);
-
+	
 		if(mode&EX_SH || strcspn(cmdline,"<>|;")!=strlen(cmdline)) {
 			argv[0]=comspec;
 			argv[1]="-c";
@@ -1011,13 +1034,13 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 			argv[argc]=NULL;
 		}
 
-		if(mode&EX_INR)  {
+		if(mode&EX_INR && !(mode&EX_OUTR))  {
 			close(in_pipe[1]);		/* close write-end of pipe */
 			dup2(in_pipe[0],0);		/* redirect stdin */
 			close(in_pipe[0]);		/* close excess file descriptor */
 		}
 
-		if(mode&EX_OUTR) {
+		if(mode&EX_OUTR && !(mode&EX_INR)) {
 			close(out_pipe[0]);		/* close read-end of pipe */
 			dup2(out_pipe[1],1);	/* stdout */
 			dup2(out_pipe[1],2);	/* stderr */
@@ -1029,16 +1052,17 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 			if(fork())
 				exit(0);
 			lprintf("Detaching external process pgid=%d",setsid());
-        }
-
+   	    }
+	
 		execvp(argv[0],argv);
 		sprintf(str,"!ERROR %d executing %s",errno,argv[0]);
 		errorlog(str);
 		exit(-1);	/* should never get here */
 	}
-	
+
 	if(mode&EX_OUTR) {
-		close(out_pipe[1]);	/* close write-end of pipe */
+		if(!(mode&EX_INR))
+			close(out_pipe[1]);	/* close write-end of pipe */
 		while(!terminated) {
 			if(waitpid(pid, &i, WNOHANG)!=0)	/* child exited */
 				break;
@@ -1059,22 +1083,36 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 			}
 				
 			/* Output */
+#if 0
 			ioctl(out_pipe[0],FIONREAD,&rd);	/* peek at input */
 			if(!rd) {
 				mswait(1);
 				continue;
 			}
+#else
+			FD_ZERO(&ibits);
+			FD_SET(out_pipe[0],&ibits);
+			timeout.tv_sec=0;
+			timeout.tv_usec=0;
+			if(!select(out_pipe[0]+1,&ibits,NULL,NULL,&timeout))  {
+				mswait(1);
+				continue;
+			}
+#endif
 
 			avail=RingBufFree(&outbuf);
 			if(avail==0) {
 				lprintf("Node %d !output buffer full (%u bytes)"
-					,cfg.node_num,RingBufFull(&outbuf));
+						,cfg.node_num,RingBufFull(&outbuf));
 				mswait(1);
 				continue;
 			}
 
+#if 0
 			if(rd>(int)avail)
+#endif
 				rd=avail;
+
 			if(rd>(int)sizeof(buf))
 				rd=sizeof(buf);
 
@@ -1082,8 +1120,9 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 				mswait(1);
 				continue;
 			}
+				
 			if(mode&EX_BIN)	/* telnet IAC expansion */
-           		bp=telnet_expand(buf, rd, output_buf, output_len);
+   	       		bp=telnet_expand(buf, rd, output_buf, output_len);
 			else			/* LF to CRLF expansion */
 				bp=lf_expand(buf, rd, output_buf, output_len);
 			
@@ -1094,7 +1133,7 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 				mswait(1);
 				continue;
 			}
-
+	
 			RingBufWrite(&outbuf, bp, output_len);
 			sem_post(&output_sem);	
 		}
@@ -1291,3 +1330,54 @@ char * sbbs_t::cmdstr(char *instr, char *fpath, char *fspec, char *outstr)
     return(cmd);
 }
 
+#ifdef __unix__
+void
+setup_term(int fd)
+{
+	struct termios tt;
+	// Shoud set speed here...
+
+	tcgetattr(fd, &tt);
+	tt.c_iflag = TTYDEF_IFLAG;
+	tt.c_oflag = TTYDEF_OFLAG;
+	tt.c_lflag = TTYDEF_LFLAG;
+	tcsetattr(fd, TCSAFLUSH, &tt);
+
+	setenv("TERM","ansi-bbs",1);
+	/* The following termcap entry is nice:
+
+<---SNIP--->
+# Handy for HyperTerminal and such
+ansi-bbs|ANSI terminals (emulators):\
+        :co#80:li#24:am:\
+        :bs:mi:ms:pt:xn:xo:it#8:\
+        :RA=\E[?7l:SA=\E?7h:\
+        :bl=^G:cr=^M:ta=^I:\
+        :@7=\E[K:kh=\E[H::cm=\E[%i%d;%dH:\
+        :le=^H:up=\E[A:do=\E[B:nd=\E[C:\
+        :LE=\E[%dD:RI=\E[%dC:UP=\E[%dA:DO=\E[%dB:\
+        :ho=\E[H:cl=\E[H\E[2J:ce=\E[K:cb=\E[1K:cd=\E[J:sf=\ED:sr=\EM:\
+        :ct=\E[3g:st=\EH:\
+        :cs=\E[%i%d;%dr:sc=\E7:rc=\E8:\
+        :ic=\E[@:IC=\E[%d@:al=\E[L:AL=\E[%dL:\
+        :dc=\E[P:DC=\E[%dP:dl=\E[M:DL=\E[%dM:\
+        :so=\E[7m:se=\E[m:us=\E[4m:ue=\E[m:\
+        :mb=\E[5m:mh=\E[2m:md=\E[1m:mr=\E[7m:me=\E[m:\
+        :sc=\E7:rc=\E8:\
+        :ku=\E[A:kd=\E[B:kr=\E[C:kl=\E[D:\
+        :ZG#0:ZA=\E[0%?%p1%{0}%>%p1%{4}%<%&%t;1%;%?%p2%t;7%;%?%p3%t;5%;%?%p4%t;4%;m:\
+        :is=:rs=\Ec:kb=^H:\
+        :as=\E[m:ae=:eA=:\
+        :ac=0\333+\257,\256.\031-\030a\261f\370g\361j\331k\277l\332m\300n\305q\304t\264u\303v\301w\302x\263~\025:\
+        :kD=\177:kH=\E[Y:kN=\E[U:kP=\E[V:\
+        :kj=\177::kf=\E[U:kg=\E[V:\
+        :k0=\EOP:k1=\EOQ:k2=\EOR:k3=\EOS:k4=\EOT:\
+        :k5=\EOU:k6=\EOV:k7=\EOW:k8=\EOX:k9=\EOY:\
+        :gb=\332\300\277\331\304\263:\
+        :Co#8:pa#64:so=\E[7m:se=\E[27m:AF=\E[3%dm:AB=\E[4%dm:op=\E[39;49m:
+
+<---SNIP--->
+
+	*/
+}
+#endif
