@@ -32,7 +32,6 @@ XPDEV	=	../../xpdev
 
 ifndef os
  os		=	$(shell uname)
- $(warning OS not specified on command line, setting to '$(os)'.)
 endif
 os      :=	$(shell echo $(os) | tr "[A-Z]" "[a-z]")
 # remove '/' from "os/2"
