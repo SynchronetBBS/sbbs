@@ -34,6 +34,11 @@ ifeq ($(os),sunos)
  LDFLAGS	+=	-lsocket -lnsl
 endif
 
+ifeq ($(os),netbsd)
+ CFLAGS		+=	$(PTHREAD_CFLAGS)
+ LDFLAGS	+=	$(PTHREAD_LDFLAGS)
+endif
+
 $(SBBSINST): $(OBJS)
    ifdef USE_DIALOG
 	$(QUIET)$(MAKE) --no-print-directory -C ../../libdialog
