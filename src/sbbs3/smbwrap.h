@@ -81,6 +81,28 @@
 
 #endif
 
+#if defined(_WIN32)
+
+	#define mswait(x)			Sleep(x)
+
+#elif defined(__OS2__)
+
+	#define mswait(x)			DosSleep(x)
+
+#elif defined(__unix__)
+
+	#define mswait(x)			usleep(x*1000)
+	#define _mkdir(dir)			mkdir(dir,0777)
+	#define _rmdir(dir)			rmdir(dir)
+	#define _fullpath(a,r,l)	realpath(r,a)
+	#define tell(fd)			lseek(fd,0,SEEK_CUR)
+
+#else	/* Unsupported OS */
+
+	#warning "Unsupported Target: Need some macros or function prototypes here."
+
+#endif
+
 #include "smblib.h"	/* SMBEXPORT/SMBCALL */
 
 #ifndef BOOL
