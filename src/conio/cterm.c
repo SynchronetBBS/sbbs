@@ -170,7 +170,7 @@ void playnote(int notenum, int notelen, int dotted)
 			break;
 	}
 	duration-=pauselen;
-	BEEP(((double)note_frequency[notenum])/1000,duration);
+	xpbeep(((double)note_frequency[notenum])/1000,duration);
 	SLEEP(pauselen);
 }
 
