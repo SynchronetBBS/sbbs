@@ -357,7 +357,7 @@ BOOL DLLCALL write_msgs_cfg(scfg_t* cfg, int backup_level)
 {
 	char	str[128],c;
 	char	dir[LEN_DIR+1]="";
-	int 	i,j,k,file,x;
+	int 	i,j,k,file;
 	short	n;
 	long	l;
 	FILE	*stream;
@@ -456,7 +456,7 @@ BOOL DLLCALL write_msgs_cfg(scfg_t* cfg, int backup_level)
 				sprintf(smb.file,"%s",cfg->sub[i]->data_dir);
 			prep_dir(cfg->ctrl_dir,smb.file);
 			strcat(smb.file,cfg->sub[i]->code);
-			if((x=smb_open(&smb))!=0) {
+			if(smb_open(&smb)!=0) {
 				/* errormsg(WHERE,ERR_OPEN,smb.file,x); */
 				continue; 
 			}
@@ -465,17 +465,17 @@ BOOL DLLCALL write_msgs_cfg(scfg_t* cfg, int backup_level)
 				smb.status.max_msgs=cfg->sub[i]->maxmsgs;
 				smb.status.max_age=cfg->sub[i]->maxage;
 				smb.status.attr=cfg->sub[i]->misc&SUB_HYPER ? SMB_HYPERALLOC :0;
-				if((x=smb_create(&smb))!=0)
+				if(smb_create(&smb)!=0)
 					/* errormsg(WHERE,ERR_CREATE,smb.file,x) */;
 				smb_close(&smb);
 				continue; 
 			}
-			if((x=smb_locksmbhdr(&smb))!=0) {
+			if(smb_locksmbhdr(&smb)!=0) {
 				smb_close(&smb);
 				/* errormsg(WHERE,ERR_LOCK,smb.file,x) */;
 				continue; 
 			}
-			if((x=smb_getstatus(&smb))!=0) {
+			if(smb_getstatus(&smb)!=0) {
 				smb_close(&smb);
 				/* errormsg(WHERE,ERR_READ,smb.file,x) */;
 				continue; 
@@ -492,7 +492,7 @@ BOOL DLLCALL write_msgs_cfg(scfg_t* cfg, int backup_level)
 			smb.status.max_age=cfg->sub[i]->maxage;
 			if(cfg->sub[i]->misc&SUB_HYPER)
 				smb.status.attr|=SMB_HYPERALLOC;
-			if((x=smb_putstatus(&smb))!=0) {
+			if(smb_putstatus(&smb)!=0) {
 				smb_close(&smb);
 				/* errormsg(WHERE,ERR_WRITE,smb.file,x); */
 				continue; 
@@ -587,7 +587,7 @@ BOOL DLLCALL write_msgs_cfg(scfg_t* cfg, int backup_level)
 		strcpy(dir,cfg->data_dir);
 		prep_dir(cfg->ctrl_dir,dir);
 		sprintf(smb.file,"%sMAIL",dir);
-		if((x=smb_open(&smb))!=0) {
+		if(smb_open(&smb)!=0) {
 			return(FALSE); 
 		}
 		if(!filelength(fileno(smb.shd_fp))) {
@@ -595,17 +595,17 @@ BOOL DLLCALL write_msgs_cfg(scfg_t* cfg, int backup_level)
 			smb.status.max_msgs=MAX_SYSMAIL;
 			smb.status.max_age=cfg->mail_maxage;
 			smb.status.attr=SMB_EMAIL;
-			if((x=smb_create(&smb))!=0)
+			if(smb_create(&smb)!=0)
 				/* errormsg(WHERE,ERR_CREATE,smb.file,x) */;
 			smb_close(&smb);
 			return(FALSE); 
 		}
-		if((x=smb_locksmbhdr(&smb))!=0) {
+		if(smb_locksmbhdr(&smb)!=0) {
 			smb_close(&smb);
 			//errormsg(WHERE,ERR_LOCK,smb.file,x);
 			return(FALSE); 
 		}
-		if((x=smb_getstatus(&smb))!=0) {
+		if(smb_getstatus(&smb)!=0) {
 			smb_close(&smb);
 			//errormsg(WHERE,ERR_READ,smb.file,x);
 			return(FALSE); 
@@ -613,7 +613,7 @@ BOOL DLLCALL write_msgs_cfg(scfg_t* cfg, int backup_level)
 		smb.status.max_msgs=MAX_SYSMAIL;
 		smb.status.max_crcs=cfg->mail_maxcrcs;
 		smb.status.max_age=cfg->mail_maxage;
-		if((x=smb_putstatus(&smb))!=0) {
+		if(smb_putstatus(&smb)!=0) {
 			smb_close(&smb);
 			//errormsg(WHERE,ERR_WRITE,smb.file,x);
 			return(FALSE); 
