@@ -114,11 +114,13 @@ void read_list(char *listpath, struct bbslist **list, int *i, int type)
 int edit_list(struct bbslist *item)
 {
 	char	opt[6][80];
-	char	*opts[6]={opt[0],opt[1],opt[2],opt[3],opt[4],opt[5]};
+	char	*opts[6];
 	int		changed=0;
 	int		copt=0,i,j;
 	char	str[6];
 
+	for(i=0;i<6)
+		opts[i]=opt[i];
 	if(item->type==SYSTEM_BBSLIST) {
 		uifc.msg("Cannot edit system BBS list");
 		return(0);
