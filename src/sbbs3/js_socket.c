@@ -95,8 +95,10 @@ js_close(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	private_t*	p;
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx,"JS_GetPrivate failed");
 		return(JS_FALSE);
+	}
 
 	*rval = JSVAL_VOID;
 
@@ -142,8 +144,10 @@ js_bind(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	private_t*	p;
 	ushort		port=0;
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx,"JS_GetPrivate failed");
 		return(JS_FALSE);
+	}
 	
 	memset(&addr,0,sizeof(addr));
 	addr.sin_family = AF_INET;
@@ -170,8 +174,10 @@ js_listen(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	private_t*	p;
 	int32		backlog=1;
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx,"JS_GetPrivate failed");
 		return(JS_FALSE);
+	}
 	
 	if(argc)
 		backlog = JS_ValueToInt32(cx,argv[0],&backlog);
@@ -196,8 +202,10 @@ js_accept(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	JSObject*	sockobj;
 	SOCKET		new_socket;
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx,"JS_GetPrivate failed");
 		return(JS_FALSE);
+	}
 
 	if((new_socket=accept_socket(p->sock,NULL,NULL))==INVALID_SOCKET) {
 		p->last_error=ERROR_VALUE;
@@ -208,12 +216,14 @@ js_accept(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	if((sockobj=js_CreateSocketObject(cx, obj, "new_socket", new_socket))==NULL) {
 		closesocket(new_socket);
-		dbprintf(TRUE, p, "error creating new_socket object");
+		JS_ReportError(cx,"Error creating new socket object");
 		*rval = JSVAL_VOID;
 		return(JS_TRUE);
 	}
-	if((new_p=(private_t*)JS_GetPrivate(cx,sockobj))==NULL)
+	if((new_p=(private_t*)JS_GetPrivate(cx,sockobj))==NULL) {
+		JS_ReportError(cx,"JS_GetPrivate failed");
 		return(JS_FALSE);
+	}
 
 	new_p->type=p->type;
 	new_p->debug=p->debug;
@@ -235,11 +245,10 @@ js_connect(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	private_t*	p;
 	SOCKADDR_IN	addr;
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx,"JS_GetPrivate failed");
 		return(JS_FALSE);
-
-	if(argc<2)
-		return(JS_FALSE);
+	}
 
 	str = JS_ValueToString(cx, argv[0]);
 	dbprintf(FALSE, p, "resolving hostname: %s", JS_GetStringBytes(str));
@@ -281,13 +290,12 @@ js_send(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	JSString*	str;
 	private_t*	p;
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx,"JS_GetPrivate failed");
 		return(JS_FALSE);
+	}
 
 	*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
-
-	if(!argc)
-		return(JS_FALSE);
 
 	str = JS_ValueToString(cx, argv[0]);
 	cp=JS_GetStringBytes(str);
@@ -317,13 +325,12 @@ js_sendto(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	private_t*	p;
 	SOCKADDR_IN	addr;
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx,"JS_GetPrivate failed");
 		return(JS_FALSE);
+	}
 
 	*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
-
-	if(argc<3)
-		return(JS_FALSE);
 
 	/* data */
 	data_str = JS_ValueToString(cx, argv[0]);
@@ -374,18 +381,18 @@ js_sendfile(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	JSString*	str;
 	private_t*	p;
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx,"JS_GetPrivate failed");
 		return(JS_FALSE);
+	}
 
 	*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
 
-	if(!argc)
+	if((str = JS_ValueToString(cx, argv[0]))==NULL
+		|| (fname=JS_GetStringBytes(str))==NULL) {
+		JS_ReportError(cx,"Failure reading filename");
 		return(JS_FALSE);
-
-	if((str = JS_ValueToString(cx, argv[0]))==NULL)
-		return(JS_FALSE);
-	if((fname=JS_GetStringBytes(str))==NULL)
-		return(JS_FALSE);
+	}
 
 	if((file=nopen(fname,O_RDONLY|O_BINARY))==-1)
 		return(JS_TRUE);
@@ -423,14 +430,16 @@ js_recv(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	private_t*	p;
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx,"JS_GetPrivate failed");
 		return(JS_FALSE);
+	}
 
 	if(argc)
 		JS_ValueToInt32(cx,argv[0],&len);
 
 	if((buf=(char*)malloc(len+1))==NULL) {
-		dbprintf(TRUE, p, "error allocating %u bytes",len+1);
+		JS_ReportError(cx,"Error allocating %u bytes",len+1);
 		return(JS_FALSE);
 	}
 
@@ -480,14 +489,16 @@ js_recvfrom(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	private_t*	p;
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx,"JS_GetPrivate failed");
 		return(JS_FALSE);
+	}
 
 	if(argc)
 		JS_ValueToInt32(cx,argv[0],&len);
 
 	if((buf=(char*)malloc(len+1))==NULL) {
-		dbprintf(TRUE, p, "error allocating %u bytes",len+1);
+		JS_ReportError(cx,"Error allocating %u bytes",len+1);
 		return(JS_FALSE);
 	}
 
@@ -504,8 +515,10 @@ js_recvfrom(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	str = JS_NewStringCopyZ(cx, buf);
 	free(buf);
 
-	if((retobj=JS_NewObject(cx,&js_recvfrom_class,NULL,obj))==NULL)
+	if((retobj=JS_NewObject(cx,&js_recvfrom_class,NULL,obj))==NULL) {
+		JS_ReportError(cx,"JS_NewObject failed");
 		return(JS_FALSE);
+	}
 
 	sprintf(port,"%u",ntohs(addr.sin_port));
 	JS_DefineProperty(cx, retobj, "port"
@@ -538,14 +551,16 @@ js_peek(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	private_t*	p;
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx,"JS_GetPrivate failed");
 		return(JS_FALSE);
+	}
 
 	if(argc)
 		JS_ValueToInt32(cx,argv[0],&len);
 
 	if((buf=(char*)malloc(len+1))==NULL) {
-		dbprintf(TRUE, p, "error allocating %u bytes",len+1);
+		JS_ReportError(cx,"Error allocating %u bytes",len+1);
 		return(JS_FALSE);
 	}
 	len = recv(p->sock,buf,len,MSG_PEEK);
@@ -580,14 +595,16 @@ js_recvline(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	JSString*	str;
 	private_t*	p;
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx,"JS_GetPrivate failed");
 		return(JS_FALSE);
+	}
 
 	if(argc)
 		JS_ValueToInt32(cx,argv[0],&len);
 
 	if((buf=(char*)malloc(len+1))==NULL) {
-		dbprintf(TRUE, p, "error allocating %u bytes",len+1);
+		JS_ReportError(cx,"Error allocating %u bytes",len+1);
 		return(JS_FALSE);
 	}
 
@@ -646,8 +663,10 @@ js_getsockopt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 	int			val;
 	private_t*	p;
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx,"JS_GetPrivate failed");
 		return(JS_FALSE);
+	}
 
 	opt = sockopt(JS_GetStringBytes(JS_ValueToString(cx,argv[0])));
 	len = sizeof(val);
@@ -673,8 +692,10 @@ js_setsockopt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 	int32		val=1;
 	private_t*	p;
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx,"JS_GetPrivate failed");
 		return(JS_FALSE);
+	}
 
 	opt = sockopt(JS_GetStringBytes(JS_ValueToString(cx,argv[0])));
 	JS_ValueToInt32(cx,argv[1],&val);
@@ -692,8 +713,10 @@ js_ioctlsocket(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 	ulong		arg=0;
 	private_t*	p;
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx,"JS_GetPrivate failed");
 		return(JS_FALSE);
+	}
 
 	JS_ValueToInt32(cx,argv[0],&cmd);
 	if(argc>1)
@@ -721,8 +744,10 @@ js_poll(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	int		result;
 	struct	timeval tv = {0, 0};
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx,"JS_GetPrivate failed");
 		return(JS_FALSE);
+	}
 
 	if(p->sock==INVALID_SOCKET) {
 		dbprintf(TRUE, p, "INVALID SOCKET in call to poll");
@@ -799,8 +824,10 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
     jsint       tiny;
 	private_t*	p;
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx,"JS_GetPrivate failed");
 		return(JS_FALSE);
+	}
 
     tiny = JSVAL_TO_INT(id);
 
@@ -834,8 +861,10 @@ static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	socklen_t	addr_len;
 	SOCKADDR_IN	addr;
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx,"JS_GetPrivate failed");
 		return(JS_FALSE);
+	}
 
     tiny = JSVAL_TO_INT(id);
 
@@ -1016,24 +1045,24 @@ js_socket_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsv
 	*rval = JSVAL_VOID;
 
 	if((p=(private_t*)malloc(sizeof(private_t)))==NULL) {
-		dbprintf(TRUE, 0, "open_socket malloc failed");
+		JS_ReportError(cx,"malloc failed");
 		return(JS_FALSE);
 	}
 	memset(p,0,sizeof(private_t));
 
 	if((p->sock=open_socket(type))==INVALID_SOCKET) {
-		dbprintf(TRUE, 0, "open_socket failed with error %d",ERROR_VALUE);
+		JS_ReportError(cx,"open_socket failed with error %d",ERROR_VALUE);
 		return(JS_FALSE);
 	}
 	p->type = type;
 
 	if(!JS_SetPrivate(cx, obj, p)) {
-		dbprintf(TRUE, p, "JS_SetPrivate failed");
+		JS_ReportError(cx,"JS_SetPrivate failed");
 		return(JS_FALSE);
 	}
 
-	if (!js_DefineMethods(cx, obj, js_socket_functions)) {
-		dbprintf(TRUE, p, "js_DefineMethods failed");
+	if(!js_DefineMethods(cx, obj, js_socket_functions)) {
+		JS_ReportError(cx,"js_DefineMethods failed");
 		return(JS_FALSE);
 	}
 

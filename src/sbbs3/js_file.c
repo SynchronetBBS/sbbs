@@ -119,10 +119,12 @@ js_open(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	JSString*	str;
 	private_t*	p;
 
-	*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
+	*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx,"JS_GetPrivate failed");
 		return(JS_FALSE);
+	}
 
 	if(p->fp!=NULL)  
 		return(JS_TRUE);
@@ -130,8 +132,8 @@ js_open(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	for(i=0;i<argc;i++) {
 		if(JSVAL_IS_STRING(argv[i])) {	/* mode */
 			if((str = JS_ValueToString(cx, argv[i]))==NULL) {
-				dbprintf(TRUE, 0, "invalid mode specified");
-				return(JS_FALSE);
+				JS_ReportError(cx,"Invalid mode specified: %s",str);
+				return(JS_TRUE);
 			}
 			mode=JS_GetStringBytes(str);
 		} else if(JSVAL_IS_BOOLEAN(argv[i]))	/* shareable */
@@ -149,9 +151,8 @@ js_open(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 				close(file);
 		}
 	}
-	if(p->fp==NULL)
-		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
-	else {
+	if(p->fp!=NULL) {
+		*rval = BOOLEAN_TO_JSVAL(JS_TRUE);
 		dbprintf(FALSE, p, "opened: %s",p->name);
 		if(!bufsize)
 			setvbuf(p->fp,NULL,_IONBF,0);	/* no buffering */
@@ -168,8 +169,10 @@ js_close(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	private_t*	p;
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx,"JS_GetPrivate failed");
 		return(JS_FALSE);
+	}
 
 	*rval = JSVAL_VOID;
 
@@ -196,8 +199,10 @@ js_read(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	*rval = JSVAL_NULL;
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx,"JS_GetPrivate failed");
 		return(JS_FALSE);
+	}
 
 	if(p->fp==NULL)
 		return(JS_TRUE);
@@ -239,8 +244,10 @@ js_readln(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	*rval = JSVAL_NULL;
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx,"JS_GetPrivate failed");
 		return(JS_FALSE);
+	}
 
 	if(p->fp==NULL)
 		return(JS_TRUE);
@@ -279,8 +286,10 @@ js_readbin(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	*rval = INT_TO_JSVAL(-1);
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx,"JS_GetPrivate failed");
 		return(JS_FALSE);
+	}
 
 	if(p->fp==NULL)
 		return(JS_TRUE);
@@ -316,8 +325,10 @@ js_readall(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	*rval = JSVAL_NULL;
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx,"JS_GetPrivate failed");
 		return(JS_FALSE);
+	}
 
 	if(p->fp==NULL)
 		return(JS_TRUE);
@@ -347,14 +358,13 @@ js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx,"JS_GetPrivate failed");
 		return(JS_FALSE);
+	}
 
 	if(p->fp==NULL)
 		return(JS_TRUE);
-
-	if(!argc)
-		return(JS_FALSE);
 
 	str = JS_ValueToString(cx, argv[0]);
 	cp = JS_GetStringBytes(str);
@@ -394,15 +404,19 @@ js_writeln(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx,"JS_GetPrivate failed");
 		return(JS_FALSE);
+	}
 
 	if(p->fp==NULL)
 		return(JS_TRUE);
 
 	if(argc) {
-		if((str = JS_ValueToString(cx, argv[0]))==NULL)
+		if((str = JS_ValueToString(cx, argv[0]))==NULL) {
+			JS_ReportError(cx,"JS_ValueToString failed");
 			return(JS_FALSE);
+		}
 		cp = JS_GetStringBytes(str);
 	}
 
@@ -425,8 +439,10 @@ js_writebin(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx,"JS_GetPrivate failed");
 		return(JS_FALSE);
+	}
 
 	if(p->fp==NULL)
 		return(JS_TRUE);
@@ -472,8 +488,10 @@ js_writeall(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx,"JS_GetPrivate failed");
 		return(JS_FALSE);
+	}
 
 	if(p->fp==NULL)
 		return(JS_TRUE);
@@ -510,8 +528,10 @@ js_lock(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx,"JS_GetPrivate failed");
 		return(JS_FALSE);
+	}
 
 	if(p->fp==NULL)
 		return(JS_TRUE);
@@ -542,8 +562,10 @@ js_unlock(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx,"JS_GetPrivate failed");
 		return(JS_FALSE);
+	}
 
 	if(p->fp==NULL)
 		return(JS_TRUE);
@@ -570,8 +592,10 @@ js_delete(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	private_t*	p;
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx,"JS_GetPrivate failed");
 		return(JS_FALSE);
+	}
 
 	if(p->fp!=NULL) {	/* close it if it's open */
 		fclose(p->fp);
@@ -588,8 +612,10 @@ js_flush(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	private_t*	p;
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx,"JS_GetPrivate failed");
 		return(JS_FALSE);
+	}
 
 	if(p->fp==NULL)
 		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
@@ -604,8 +630,10 @@ js_clear_error(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 {
 	private_t*	p;
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx,"JS_GetPrivate failed");
 		return(JS_FALSE);
+	}
 
 	if(p->fp==NULL)
 		*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
@@ -629,21 +657,27 @@ js_fprintf(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	*rval = BOOLEAN_TO_JSVAL(JS_FALSE);
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx,"JS_GetPrivate failed");
 		return(JS_FALSE);
+	}
 
 	if(p->fp==NULL)
 		return(JS_TRUE);
 
-	if((fmt=JS_ValueToString(cx, argv[0]))==NULL)
+	if((fmt=JS_ValueToString(cx, argv[0]))==NULL) {
+		JS_ReportError(cx,"JS_ValueToString failed");
 		return(JS_FALSE);
+	}
 
 	memset(arglist,0,sizeof(arglist));	/* Initialize arglist to NULLs */
 
     for (i = 1; i < argc && i<sizeof(arglist)/sizeof(arglist[0]); i++) {
 		if(JSVAL_IS_STRING(argv[i])) {
-			if((str=JS_ValueToString(cx, argv[i]))==NULL)
+			if((str=JS_ValueToString(cx, argv[i]))==NULL) {
+				JS_ReportError(cx,"JS_ValueToString failed");
 			    return(JS_FALSE);
+			}
 			arglist[i-1]=JS_GetStringBytes(str);	/* exception here July-29-2002 */
 		}
 		else if(JSVAL_IS_DOUBLE(argv[i]))
@@ -654,8 +688,10 @@ js_fprintf(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 			arglist[i-1]=NULL;
 	}
 
-	if((cp=JS_vsmprintf(JS_GetStringBytes(fmt),(char*)arglist))==NULL)
+	if((cp=JS_vsmprintf(JS_GetStringBytes(fmt),(char*)arglist))==NULL) {
+		JS_ReportError(cx,"JS_vsmprintf failed");
 		return(JS_FALSE);
+	}
 
 	*rval = INT_TO_JSVAL(fwrite(cp,1,strlen(cp),p->fp));
 	JS_smprintf_free(cp);
@@ -687,8 +723,10 @@ static JSBool js_file_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
     jsint       tiny;
 	private_t*	p;
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx,"JS_GetPrivate failed");
 		return(JS_FALSE);
+	}
 
     tiny = JSVAL_TO_INT(id);
 
@@ -722,8 +760,10 @@ static JSBool js_file_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
     jsint       tiny;
 	private_t*	p;
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx,"JS_GetPrivate failed");
 		return(JS_FALSE);
+	}
 
     tiny = JSVAL_TO_INT(id);
 
@@ -939,14 +979,14 @@ js_file_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval
 	private_t*	p;
 
 	if((str = JS_ValueToString(cx, argv[0]))==NULL) {
-		dbprintf(TRUE, 0, "no filename specified");
+		JS_ReportError(cx,"No filename specified");
 		return(JS_FALSE);
 	}
 
 	*rval = JSVAL_VOID;
 
 	if((p=(private_t*)calloc(1,sizeof(private_t)))==NULL) {
-		dbprintf(TRUE, 0, "open_file malloc failed");
+		JS_ReportError(cx,"calloc failed");
 		return(JS_FALSE);
 	}
 
@@ -979,9 +1019,9 @@ JSObject* DLLCALL js_CreateFileClass(JSContext* cx, JSObject* parent)
 	sockobj = JS_InitClass(cx, parent, NULL
 		,&js_file_class
 		,js_file_constructor
-		,0	/* number of constructor args */
+		,1		/* number of constructor args */
 		,js_file_properties
-		,NULL // funcs, set in constructor
+		,NULL	/* funcs, set in constructor */
 		,NULL,NULL);
 
 	return(sockobj);

@@ -123,8 +123,10 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	user_t		user;
 	private_t*	p;
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx,"JS_GetPrivate failed");
 		return(JS_FALSE);
+	}
 
 	user.number=p->usernumber;
 	getuserdat(p->cfg,&user);
@@ -345,8 +347,10 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	JSString*	js_str;
 	private_t*	p;
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx,"JS_GetPrivate failed");
 		return(JS_FALSE);
+	}
 
 	if((js_str=JS_ValueToString(cx,*vp))==NULL)
 		return(JS_FALSE);
@@ -788,8 +792,10 @@ js_user_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval
 
 	JS_ValueToInt32(cx,argv[0],&val);
 	user.number=(ushort)val;
-	if(user.number!=0 && getuserdat(scfg,&user)!=0)
+	if(user.number!=0 && getuserdat(scfg,&user)!=0) {
+		JS_ReportError(cx,"Invalid user number");
 		return(JS_FALSE);
+	}
 
 	/* user.stats */
 	if((statsobj=JS_DefineObject(cx, obj, "stats"
