@@ -113,7 +113,15 @@ void __fastcall TAboutBoxForm::FormShow(TObject *Sender)
 #else
     Memo->Lines->Add("Synchronet Local Spy ANSI Terminal Emulation"+CopyRight);
 #endif
+}
+//---------------------------------------------------------------------------
 
+
+
+void __fastcall TAboutBoxForm::WebPageLabelClick(TObject *Sender)
+{
+    ShellExecute(Handle, "open", ((TLabel*)Sender)->Hint.c_str(),
+        NULL,NULL,SW_SHOWDEFAULT);
 }
 //---------------------------------------------------------------------------
 

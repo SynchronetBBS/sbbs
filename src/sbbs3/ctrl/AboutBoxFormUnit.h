@@ -42,6 +42,7 @@
 #include <Forms.hpp>
 #include <ExtCtrls.hpp>
 #include <Graphics.hpp>
+#include "MainFormUnit.h"
 //---------------------------------------------------------------------------
 class TAboutBoxForm : public TForm
 {
@@ -51,7 +52,10 @@ __published:	// IDE-managed Components
 	TImage *Logo;
 	TStaticText *WebLabel;
     TMemo *Memo;
+    TStaticText *StaticText1;
+    TStaticText *StaticText2;
 	void __fastcall FormShow(TObject *Sender);
+    void __fastcall WebPageLabelClick(TObject *Sender);
 private:	// User declarations
 public:		// User declarations
 	__fastcall TAboutBoxForm(TComponent* Owner);
