@@ -56,7 +56,7 @@ CFLAGS	= 	$(CFLAGS) -DJAVASCRIPT -I../../include/mozilla/js
 LIBS	=	..\..\lib\mozilla\js\win32.debug\js32omf.lib
 !endif
 
-mono:
+default: mono utils
 
 # Cross platform/compiler definitions
 !include targets.mk		# defines all targets
