@@ -2641,7 +2641,7 @@ void http_logging_thread(void* arg)
 
 	thread_up(TRUE /* setuid */);
 
-	lprintf(LOG_DEBUG,"http logging thread started");
+	lprintf(LOG_INFO,"http logging thread started");
 
 	for(;!terminate_server;) {
 		struct log_data *ld;
