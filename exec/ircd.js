@@ -869,6 +869,9 @@ for (cmdarg=0;cmdarg<argc;cmdarg++) {
 		case "-p":
 			cmdline_port = parseInt(argv[++cmdarg]);
 			break;
+		case "-d":
+			debug=true;
+			break;
 	}
 }
 
