@@ -3752,12 +3752,14 @@ void export_echomail(char *sub_code,faddr_t addr)
 			for(m=exp=0;m<posts;m++) {
 				printf("\r%8s %5lu of %-5lu  "
 					,scfg.sub[i]->code,m+1,posts);
+				memset(&msg,0,sizeof(msg));
 				msg.idx=post[m];
 				if((k=smb_lockmsghdr(&smb[cur_smb],&msg))!=0) {
 					printf("ERROR %d locking %s msghdr\n",k,smb[cur_smb].file);
 					logprintf("ERROR %d line %d locking %s msghdr\n"
 						,k,__LINE__,smb[cur_smb].file);
-					continue; }
+					continue; 
+				}
 				k=smb_getmsghdr(&smb[cur_smb],&msg);
 				if(k || msg.hdr.number!=post[m].number) {
 					smb_unlockmsghdr(&smb[cur_smb],&msg);
