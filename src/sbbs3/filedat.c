@@ -547,9 +547,9 @@ char* DLLCALL getfname(char* path)
 {
 	char *fname;
 
-	fname=strrchr(path,'\\');
+	fname=strrchr(path,'/');
 	if(fname==NULL) 
-		fname=strrchr(path,'/');
+		fname=strrchr(path,'\\');
 	if(fname!=NULL) 
 		fname++;
 	else 
