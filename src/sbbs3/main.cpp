@@ -4490,11 +4490,13 @@ void DLLCALL bbs_thread(void* arg)
 		lprintf(LOG_INFO,"Waiting for event thread to terminate...");
 		start=time(NULL);
 		while(events->event_thread_running) {
+#if 0 /* the event thread can/will segfault if it continues to run and dereference sbbs->cfg */
 			if(time(NULL)-start>TIMEOUT_THREAD_WAIT) {
 				lprintf(LOG_ERR,"!TIMEOUT waiting for BBS event thread to "
             		"terminate");
 				break;
 			}
+#endif
 			mswait(100);
 		}
 	}
