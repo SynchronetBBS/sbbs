@@ -46,9 +46,23 @@
 /***************************************************/
 /* Seven bit table for EXASCII to ASCII conversion */
 /***************************************************/
-const char *sbtbl="CUeaaaaceeeiiiAAEaAooouuyOUcLYRfaiounNao?--24!<>"
+static const char *sbtbl="CUeaaaaceeeiiiAAEaAooouuyOUcLYRfaiounNao?--24!<>"
 			"###||||++||++++++--|-+||++--|-+----++++++++##[]#"
 			"abrpEout*ono%0ENE+><rj%=o..+n2* ";
+
+/****************************************************************************/
+/* Convert string from IBM extended ASCII to just ASCII						*/
+/****************************************************************************/
+char* DLLCALL ascii_str(uchar* str)
+{
+	size_t i;
+
+	for(i=0;str[i];i++)
+		if(str[i]&0x80)
+			str[i]=sbtbl[str[i]^0x80];  /* seven bit table */
+
+	return((char*)str);
+}
 
 /****************************************************************************/
 /* Outputs a NULL terminated string locally and remotely (if applicable)    */
