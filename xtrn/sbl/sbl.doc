@@ -1,66 +1,71 @@
-Synchronet BBS List v3.11 for Win32
-===================================
+Synchronet BBS List v3.20 (native 32-bit for Win32 and Unix)
+=========================
 
 Create the directory: SBL off of your Synchronet XTRN directory.
 (Example: C:\SBBS\XTRN\SBL) 
 
-Make sure SBL.EXE and SBL.CFG are in this directory.
+Make sure SBL.CFG are is this directory.
 
 Use an ASCII editor to edit the Synchronet BBS List config file (SBL.CFG) to 
 your liking.
 
-Under SCFG->External Programs->Online Programs->Main, hit INS and add 
-Synchronet BBS List with the following configuration:
+Under SCFG->External Programs->Online Programs->Main, hit INS (if it doesn't
+already exist) and add Synchronet BBS List with the following configuration:
 
 Name                       Synchronet BBS List
 Internal Code              SBL
-Start-up Directory         ..\XTRN\SBL
-Command Line               sbl
+Start-up Directory         ..\xtrn\sbl
+Command Line               sbl%.
 Clean-up Command Line
 Execution Cost             None
 Access Requirements
 Execution Requirements
 Multiple Concurrent Users  Yes
-Intercept I/O Interrupts   No
-Swap BBS out of Memory     Yes
+Intercept Standard I/O     No
+Native (32-bit) Executable Yes
+Use Shell to Execute       No
 Modify User Data           No
 Execute on Event           No
 BBS Drop File Type         Synchronet      XTRN.DAT
 Place Drop File In         Node Directory
 
-Since SBL v3 is a 32-bit program, you MUST add it ("SBL") to your native
-(OS/2) program list under SCFG->External Programs->OS/2 Program List.
-
 SBL Utilities
 =============
 
-SBLPACK.EXE	Remove deleted entries to save disk space and speed up listings
-SBL2TXT.EXE     Convert SBL listing to a text file
+SBLPACK         Remove deleted entries to save disk space and speed up listings
 
 Networking the Synchronet BBS List
 ==================================
 
-If you wish to link your SBL database with other Synchronet BBSs, you must
+If you wish to link your SBL database with other Synchronet BBSes, you must
 carry the Synchronet Data echo via DOVE-Net, FidoNet, or RIME and add
 the following two events in SCFG->External Programs->Timed Events:
 
-Internal Code			SMB2SBL
-Start-up Directory		..\XTRN\SBL
-Command Line			SMB2SBL %jSUBS\SYNCDATA SBL.DAB 
-Execution Node			1
-Execution Days			Sun Mon Tue Wed Thu Fri Sat
-Execution Time			04:30
-Requires Exclusive Execution	No
-Force Users Off-line for Event	No
+Internal Code                   SMB2SBL
+Start-up Directory              ..\xtrn\sbl
+Command Line                    smb2sbl%. %jsubs\syncdata sbl.dab
+Execution Node                  1
+Execution Days of Month         Any
+Execution Days of Week          All
+Execution Time                  00:00
+Requires Exclusive Execution    No
+Force Users Off-line For Event  No
+Native (32-bit) Executable      Yes
+Use Shell to Execute            No
+Background Execution            No
 
-Internal Code			SBL2SMB
-Start-up Directory		..\XTRN\SBL
-Command Line			SBL2SMB SBL.DAB %jSUBS\SYNCDATA
-Execution Node			1
-Execution Days			Sun Mon Tue Wed Thu Fri Sat
-Execution Time			04:31
-Requires Exclusive Execution	No
-Force Users Off-line for Event  No
+Internal Code                   SBL2SMB
+Start-up Directory              ..\xtrn\sbl
+Command Line                    sbl2smb%. sbl.dab %jsubs\syncdata
+Execution Node                  11
+Execution Days of Month         Any
+Execution Days of Week          All
+Execution Time                  00:00
+Requires Exclusive Execution    No
+Force Users Off-line For Event  No
+Native (32-bit) Executable      Yes
+Use Shell to Execute            No
+Background Execution            No
 
 Change "SYNCDATA" to the internal code of the Synchronet Data sub-board on
 your BBS. We used SYNCDATA, since that is the example given in the Synchronet
@@ -83,13 +88,9 @@ Source Code
 If you are a C programmer, you may find the included source code interesting
 and/or useful as an example for writing your own XSDK and/or SMB utilities.
 
-MAKEFILE is for use with Borland C++ v3.x or v4.x and the Synchronet XSDK
-to create SBL.EXE. SBL.C and SBLDEFS.H must also in the current directory when
-MAKE is run.
-
-The SMB C library (SMB_120.ZIP) is required to compile SBL2SMB.C and SMB2SBL.C
-(MAKE.BAT included to compile them).
-
-SBL2TXT.C is included as an SBL.DAB to SBL.TXT converter.
+Makefile is for use with Borland C++ or C++Builder and the Synchronet XSDK
+to create SBL.EXE. GNUmakefile is for use with the GNU C Compiler.
+And sbl.dsp is for use with Microsoft Visual C++ v6.0.
 
 /* End of SBL.DOC */
+  
