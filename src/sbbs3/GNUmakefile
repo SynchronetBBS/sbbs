@@ -522,28 +522,6 @@ $(MSG2ANS): $(LIBODIR)/msg2ans.o
 	@echo Linking $@
 	$(QUIET)$(CC) -o $@ $^
 
-# "Single servers"
-$(SBBSWEB): $(SBBSCON)
-	@echo Copying $(SBBSCON) to $@ for no good reason
-	$(QUIET)cp $(SBBSCON) $@
-
-$(SBBSFTP): $(SBBSCON)
-	@echo Copying $(SBBSCON) to $@ for no good reason
-	$(QUIET)cp $(SBBSCON) $@
-
-$(SBBSMAIL): $(SBBSCON)
-	@echo Copying $(SBBSCON) to $@ for no good reason
-	$(QUIET)cp $(SBBSCON) $@
-
-$(SBBSSRVC): $(SBBSCON)
-	@echo Copying $(SBBSCON) to $@ for no good reason
-	$(QUIET)cp $(SBBSCON) $@
-
-$(SBBS_BBS): $(SBBSCON)
-	@echo Copying $(SBBSCON) to $@ for no good reason
-	$(QUIET)cp $(SBBSCON) $@
-
-
 depend:
 	$(QUIET)$(DELETE) $(LIBODIR)/.depend
 	$(QUIET)$(DELETE) $(EXEODIR)/.depend
