@@ -442,6 +442,8 @@ bool sbbs_t::logon()
 			errormsg(WHERE,ERR_OPEN,str,O_RDWR|O_CREAT|O_APPEND);
 			return(false); 
 		}
+		getuserrec(&cfg,useron.number,U_NOTE,LEN_NOTE,useron.note);
+		getuserrec(&cfg,useron.number,U_LOCATION,LEN_LOCATION,useron.location);
 		sprintf(str,text[LastFewCallersFmt],cfg.node_num
 			,totallogons,useron.alias
 			,cfg.sys_misc&SM_LISTLOC ? useron.location : useron.note
