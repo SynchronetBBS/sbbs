@@ -1046,11 +1046,16 @@ void input_thread(void *arg)
 			&& sbbs->rio_abortable 
 			&& !(sbbs->telnet_mode&(TELNET_MODE_BIN_RX|TELNET_MODE_GATE))
 			&& memchr(wrbuf, CTRL_C, wr)) {	
+			if(RingBufFull(&sbbs->inbuf))
+    			lprintf("Node %d Ctrl-C hit with %lu bytes in input buffer"
+					,sbbs->cfg.node_num,RingBufFull(&sbbs->inbuf));
 			if(RingBufFull(&sbbs->outbuf))
     			lprintf("Node %d Ctrl-C hit with %lu bytes in output buffer"
 					,sbbs->cfg.node_num,RingBufFull(&sbbs->outbuf));
 			sbbs->sys_status|=SS_ABORT;
-    		RingBufReInit(&sbbs->outbuf);	/* Flush output buffer */
+			RingBufReInit(&sbbs->inbuf);	/* Purge input buffer */
+    		RingBufReInit(&sbbs->outbuf);	/* Purge output buffer */
+			continue;	// Ignore the entire buffer
 		}
 
 		avail=RingBufFree(&sbbs->inbuf);
@@ -2610,8 +2615,9 @@ int sbbs_t::incom(void)
 	if(!RingBufRead(&inbuf, &ch, 1))
 		return(NOINP);
 
-	if(rio_abortable && ch==CTRL_C)
-		return(NOINP); 
+	if(!(cfg.ctrlkey_passthru&(1<<CTRL_C))	
+		&& rio_abortable && ch==CTRL_C)
+		return(NOINP); /* this should never happen since input_thread eats Ctrl-C chars */
 
 	return(ch);
 }
@@ -2620,7 +2626,8 @@ int sbbs_t::outcom(uchar ch)
 {
 	if(!RingBufFree(&outbuf))
 		return(TXBOF);
-    RingBufWrite(&outbuf, &ch, 1);
+    if(!RingBufWrite(&outbuf, &ch, 1))
+		return(TXBOF);
 	sem_post(&output_sem);
 	return(0);
 }
@@ -2676,11 +2683,11 @@ int sbbs_t::rioctl(ushort action)
 			// ioctlsocket (client_socket,FIONREAD,&cnt);
  			return(/* cnt+ */RingBufFull(&inbuf));
 		case RXBS:		/* Get receive buffer size */
-			return(RingBufFree(&inbuf));
+			return(inbuf.size);
 		case TXBC:		/* Get transmit buffer count */
 			return(RingBufFull(&outbuf));
 		case TXBS:		/* Get transmit buffer size */
-			return(RingBufFree(&outbuf));
+			return(outbuf.size);
 		case TXBF:		/* Get transmit buffer free space */
  			return(RingBufFree(&outbuf));
 		case IOMODE:
