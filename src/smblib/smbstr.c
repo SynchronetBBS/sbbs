@@ -261,3 +261,30 @@ char* SMBCALL smb_netaddr(net_t* net)
 		return(smb_faddrtoa((fidoaddr_t*)net->addr,NULL));
 	return(net->addr);
 }
+
+/****************************************************************************/
+/* Returns net_type for passing e-mail address (i.e. "user@addr")			*/
+/****************************************************************************/
+ushort SMBCALL smb_netaddr_type(const char* str)
+{
+	char*	p;
+	char*	tp;
+
+	if((p=strchr(str,'@'))==NULL)
+		return(NET_NONE);
+
+	p++;
+	if(isalpha(*p) && strchr(p,'.')==NULL)
+		return(NET_QWK);
+
+	for(tp=p;*tp;tp++) {
+		if(!isdigit(*tp) && *tp!=':' && *tp!='/' && *tp!='.')
+			break;
+	}
+	if(isdigit(*p) && *tp)
+		return(NET_FIDO);
+	if(isalnum(*p))
+		return(NET_INTERNET);
+
+	return(NET_UNKNOWN);
+}

@@ -205,6 +205,7 @@ SMBEXPORT ushort	SMBCALL smb_hfieldtypelookup(const char*);
 SMBEXPORT char*		SMBCALL smb_dfieldtype(ushort type);
 SMBEXPORT char*		SMBCALL smb_faddrtoa(fidoaddr_t* addr, char* outstr);
 SMBEXPORT char*		SMBCALL smb_netaddr(net_t* net);
+SMBEXPORT ushort	SMBCALL smb_netaddr_type(const char* str);
 SMBEXPORT char*		SMBCALL smb_zonestr(short zone, char* outstr);
 SMBEXPORT char*		SMBCALL smb_hashsource(smbmsg_t* msg, int source);
 SMBEXPORT char*		SMBCALL smb_hashsourcetype(uchar type);
