@@ -252,7 +252,9 @@ char sbbs_t::inkey(long mode)
 						if(i && !(useron.rows)) {	/* auto-detect rows */
 							str[i]=0;
 							rows=atoi(str);
-							if(rows<5 || rows>99) rows=24; }
+							lprintf("Node %d ANSI cursor position report: %u rows"
+								,cfg.node_num, rows);
+							if(rows<10 || rows>99) rows=24; }
 						return(0); }
 					str[i++]=ch; }
 				else {
