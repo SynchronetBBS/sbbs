@@ -937,11 +937,13 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		}	
 
 	 	// Get return value
-    	sprintf(str,"%sDOSXTRN.RET", cfg.node_dir);
-        FILE* fp=fopen(str,"r");
-        if(fp!=NULL) {
-			fscanf(fp,"%d",&retval);
-			fclose(fp);
+		if(!native) {
+    		sprintf(str,"%sDOSXTRN.RET", cfg.node_dir);
+			FILE* fp=fopen(str,"r");
+			if(fp!=NULL) {
+				fscanf(fp,"%d",&retval);
+				fclose(fp);
+			}
 		}
 	}
 
