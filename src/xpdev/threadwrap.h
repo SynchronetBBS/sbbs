@@ -48,7 +48,11 @@ extern "C" {
 #if defined(__unix__)
 
 	#include <pthread.h>	/* POSIX threads and mutexes */
+#if defined(_NEED_SEM)
+	#include "sem.h"
+#else
 	#include <semaphore.h>	/* POSIX semaphores */
+#endif
 	ulong _beginthread(void( *start_address )( void * )
 		,unsigned stack_size, void *arglist);
 

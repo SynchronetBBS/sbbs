@@ -106,6 +106,8 @@ extern "C" {
 	#define PLATFORM_DESC	"Solaris"
 #elif defined(__sun__)
 	#define PLATFORM_DESC	"SunOS"
+#elif defined(__gnu__)
+	#define PLATFORM_DESC	"GNU/Hurd"
 #elif defined(__unix__)
 	#define PLATFORM_DESC	"Unix"
 #else

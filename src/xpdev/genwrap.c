@@ -123,7 +123,7 @@ void DLLCALL unix_beep(int freq, int dur)
 {
 	static int console_fd=-1;
 
-#if !defined(__OpenBSD__)
+#if !defined(__OpenBSD__) && !defined(__GNU__)
 	if(console_fd == -1) 
   		console_fd = open("/dev/console", O_NOCTTY);
 	
