@@ -40,6 +40,7 @@
 #endif
 
 #include "sbbs.h"
+#include "ident.h"
 #include "telnet.h" 
 #include "bbs_thrd.h"
 
@@ -2902,7 +2903,8 @@ static void cleanup(int code)
 void DLLCALL bbs_thread(void* arg)
 {
 	char *			host_name;
-    char			str[MAX_PATH];
+	char *			identity;
+    char			str[MAX_PATH+1];
 	char			logstr[256];
 	SOCKADDR_IN		server_addr={0};
 	SOCKADDR_IN		client_addr;
@@ -3432,6 +3434,7 @@ void DLLCALL bbs_thread(void* arg)
 			sbbs->bprintf("Resolving host name...");
 			h=gethostbyaddr((char *)&client_addr.sin_addr
 				,sizeof(client_addr.sin_addr),AF_INET);
+			sbbs->putcom(crlf);
 		}
 		if(h!=NULL && h->h_name!=NULL)
 			host_name=h->h_name;
@@ -3447,6 +3450,15 @@ void DLLCALL bbs_thread(void* arg)
 			sbbs->logline("@!",logstr);
 			continue;
 		}
+
+		sbbs->bprintf("Resolving identity...");
+		identify(&client_addr, 23, str, sizeof(str)-1);
+		identity=strrchr(str,':');
+		if(identity==NULL)	/* error */
+			identity=str;
+		else
+			identity++;		/* point to user name */
+		lprintf("%04d Identity: %s",client_socket, identity);
 
 		/* Initialize client display */
 		client.size=sizeof(client);
