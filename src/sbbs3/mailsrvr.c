@@ -510,6 +510,7 @@ static void pop3_thread(void* arg)
 	char*		msgtxt;
 	int			i;
 	int			rd;
+	BOOL		activity=FALSE;
 	ulong		l;
 	ulong		lines;
 	ulong		msgs,bytes,msgnum,msgbytes;
@@ -825,6 +826,7 @@ static void pop3_thread(void* arg)
 				sockprintf(socket,".");
 				continue;
 			}
+			activity=TRUE;
 			if(!strnicmp(buf, "RETR ",5) || !strnicmp(buf,"TOP ",4)) {
 				sprintf(str,"POP3: %s", user.alias);
 				status(str);
@@ -972,6 +974,10 @@ static void pop3_thread(void* arg)
 			putuserrec(&scfg,user.number,U_LASTON,8,ultoa(time(NULL),str,16));
 
 	} while(0);
+
+	if(activity) 
+		lprintf("%04d POP3 %s logged out from port %u on %s [%s]"
+			,socket, user.alias, ntohs(pop3.client_addr.sin_port), host_name, host_ip);
 
 	status(STATUS_WFC);
 
