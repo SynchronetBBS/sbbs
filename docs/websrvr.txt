@@ -113,5 +113,7 @@ two other configuration files.
 	ctrl/webicons.ini
 		Contains the URLs to the icons used by the default 404.ssjs
 		script for each file type.  Format is "extension = URL" ie:
-		"html=/icons/layout.gif"
+		"html=/icons/layout.gif".  Two "magical" extensions exist:
+		DIRECTORY which is used for directories and DefaultIcon which
+		is used for extensions which don't exist in the list.
 
