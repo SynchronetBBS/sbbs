@@ -106,6 +106,8 @@ __published:
     TEdit *OutboundSoundEdit;
     TButton *OutboundSoundButton;
     TCheckBox *SendMailCheckBox;
+    TLabel *DefaultUserLabel;
+    TEdit *DefaultUserEdit;
     void __fastcall InboundSoundButtonClick(TObject *Sender);
     void __fastcall OutboundSoundButtonClick(TObject *Sender);
     void __fastcall FormShow(TObject *Sender);

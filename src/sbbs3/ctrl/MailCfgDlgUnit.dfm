@@ -1,6 +1,6 @@
 object MailCfgDlg: TMailCfgDlg
-  Left = 501
-  Top = 303
+  Left = 635
+  Top = 312
   BorderStyle = bsDialog
   Caption = 'Mail Server Configuration'
   ClientHeight = 303
@@ -164,22 +164,30 @@ object MailCfgDlg: TMailCfgDlg
       ImageIndex = 1
       object SpamFilterLabel: TLabel
         Left = 9
-        Top = 44
+        Top = 76
         Width = 75
-        Height = 16
+        Height = 24
         Caption = 'Spam Filters'
       end
       object TelnetPortLabel: TLabel
         Left = 9
         Top = 12
         Width = 104
-        Height = 26
+        Height = 24
         AutoSize = False
         Caption = 'Listening Port'
       end
+      object DefaultUserLabel: TLabel
+        Left = 9
+        Top = 44
+        Width = 104
+        Height = 24
+        AutoSize = False
+        Caption = 'Default User'
+      end
       object RBLCheckBox: TCheckBox
         Left = 113
-        Top = 44
+        Top = 76
         Width = 57
         Height = 24
         Hint = 'Use Realtime Blackhole List (RBL) Spam Filter'
@@ -190,7 +198,7 @@ object MailCfgDlg: TMailCfgDlg
       end
       object RSSCheckBox: TCheckBox
         Left = 185
-        Top = 44
+        Top = 76
         Width = 56
         Height = 24
         Hint = 'Use Relay Spam Stopper (RSS) Spam Filter'
@@ -201,7 +209,7 @@ object MailCfgDlg: TMailCfgDlg
       end
       object DULCheckBox: TCheckBox
         Left = 256
-        Top = 44
+        Top = 76
         Width = 57
         Height = 24
         Hint = 'Use Dail-up User List (DUL) Spam Filter'
@@ -235,7 +243,7 @@ object MailCfgDlg: TMailCfgDlg
       end
       object DebugHeadersCheckBox: TCheckBox
         Left = 185
-        Top = 76
+        Top = 108
         Width = 146
         Height = 26
         Hint = 'Log all received mail headers (for debugging)'
@@ -243,6 +251,18 @@ object MailCfgDlg: TMailCfgDlg
         ParentShowHint = False
         ShowHint = True
         TabOrder = 5
+      end
+      object DefaultUserEdit: TEdit
+        Left = 113
+        Top = 44
+        Width = 185
+        Height = 24
+        Hint = 
+          'Mail for unknown users will go into this user'#39's mailbox (e.g. "s' +
+          'ysop")'
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 6
       end
     end
     object POP3TabSheet: TTabSheet
@@ -252,7 +272,7 @@ object MailCfgDlg: TMailCfgDlg
         Left = 9
         Top = 12
         Width = 102
-        Height = 26
+        Height = 24
         AutoSize = False
         Caption = 'Listening Port'
       end
