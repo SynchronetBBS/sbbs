@@ -369,14 +369,19 @@ int main(int argc, char **argv)
 				truncsp(bbs.sysop[sysop]);
 				if(sysop<MAX_SYSOPS-1)
 					sysop++; }
-			if(!strnicmp(buf+l,"NUMBER:",7)) {
+			if(!strnicmp(buf+l,"NUMBER:",7) || !strnicmp(buf+l,"TELNET:",7)) {
 				l+=7;
 				while(buf[l] && buf[l]<=SP && buf[l]!=CR)
 					l++;
-				SAFECOPY(bbs.number[number].modem.number,buf+l);
-				truncsp(bbs.number[number].modem.number);
+				SAFECOPY(bbs.number[number].telnet.addr,buf+l);
+				truncsp(bbs.number[number].telnet.addr);
+				if(!strnicmp(buf+l,"TELNET:",7)) {
+					bbs.number[number].telnet.unused=0xffff;
+					bbs.number[number].telnet.port=23;
+				}
 				if(number<MAX_NUMBERS-1)
-					number++; }
+					number++; 
+			}
 			if(!strnicmp(buf+l,"MODEM:",6)) {
 				l+=6;
 				while(buf[l] && buf[l]<=SP && buf[l]!=CR)
@@ -407,6 +412,13 @@ int main(int argc, char **argv)
 				i=number;
 				if(i) i--;
 				bbs.number[i].modem.max_rate=atoi(buf+l); }
+			if(!strnicmp(buf+l,"PORT:",5)) {
+				l+=5;
+				while(buf[l] && buf[l]<=SP && buf[l]!=CR)
+					l++;
+				i=number;
+				if(i) i--;
+				bbs.number[i].telnet.port=atoi(buf+l); }
 			if(!strnicmp(buf+l,"NETWORK:",8)) {
 				l+=8;
 				while(buf[l] && buf[l]<=SP && buf[l]!=CR)
