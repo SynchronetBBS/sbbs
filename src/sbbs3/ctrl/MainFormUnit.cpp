@@ -167,8 +167,11 @@ static void client_on(BOOL on, int sock, client_t* client, BOOL update)
             break;
     }
     if(i>=ClientForm->ListView->Items->Count) {
-		if(update)	/* Can't update a non-existing entry */
+		if(update)	{ /* Can't update a non-existing entry */
+			ReleaseMutex(mutex);
+			ReleaseMutex(ClientForm->ListMutex);
 			return;
+		}
         i=-1;
 	}
 
@@ -282,7 +285,8 @@ static void bbs_start(void)
     SAFECOPY(MainForm->bbs_startup.host_name
         ,MainForm->Hostname.c_str());
     MainForm->bbs_startup.sem_chk_freq=MainForm->SemFileCheckFrequency;
-    MainForm->bbs_startup.js_max_bytes=MainForm->JS_MaxBytes;
+    MainForm->bbs_startup.js_max_bytes=MainForm->js_max_bytes;
+    MainForm->bbs_startup.js_cx_stack=MainForm->js_cx_stack;
 	_beginthread((void(*)(void*))bbs_thread,0,&MainForm->bbs_startup);
     Application->ProcessMessages();
 }
@@ -587,7 +591,8 @@ static void ftp_start(void)
     SAFECOPY(MainForm->ftp_startup.host_name
         ,MainForm->Hostname.c_str());
     MainForm->ftp_startup.sem_chk_freq=MainForm->SemFileCheckFrequency;
-    MainForm->ftp_startup.js_max_bytes=MainForm->JS_MaxBytes;
+    MainForm->ftp_startup.js_max_bytes=MainForm->js_max_bytes;
+    MainForm->ftp_startup.js_cx_stack=MainForm->js_cx_stack;
 	_beginthread((void(*)(void*))ftp_server,0,&MainForm->ftp_startup);
     Application->ProcessMessages();
 }
@@ -601,7 +606,11 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
     CtrlDirectory="c:\\sbbs\\ctrl\\";
     LoginCommand="telnet://localhost";
     ConfigCommand="%sscfg.exe %s -l25";
-    JS_MaxBytes=JAVASCRIPT_MAX_BYTES;
+    js_max_bytes=JAVASCRIPT_MAX_BYTES;
+    js_cx_stack=JAVASCRIPT_CONTEXT_STACK;
+    js_branch_limit=JAVASCRIPT_BRANCH_LIMIT;
+    js_gc_interval=JAVASCRIPT_GC_INTERVAL;
+    js_yield_interval=JAVASCRIPT_YIELD_INTERVAL;
     MinimizeToSysTray=false;
     UndockableForms=false;
     NodeDisplayInterval=1;  	/* seconds */
@@ -843,7 +852,8 @@ void __fastcall TMainForm::ServicesStartExecute(TObject *Sender)
     SAFECOPY(MainForm->services_startup.host_name
         ,MainForm->Hostname.c_str());
     MainForm->services_startup.sem_chk_freq=SemFileCheckFrequency;        
-    MainForm->services_startup.js_max_bytes=MainForm->JS_MaxBytes;
+    MainForm->services_startup.js_max_bytes=MainForm->js_max_bytes;
+    MainForm->services_startup.js_cx_stack=MainForm->js_cx_stack;    
 	_beginthread((void(*)(void*))services_thread,0,&MainForm->services_startup);
     Application->ProcessMessages();
 }
@@ -1413,10 +1423,22 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
 
     if(Registry->ValueExists("MaxLogLen"))
     	MaxLogLen=Registry->ReadInteger("MaxLogLen");
+
+    /* JavaScript Operating Parameters */
     if(Registry->ValueExists("JS_MaxBytes"))
-    	JS_MaxBytes=Registry->ReadInteger("JS_MaxBytes");
-    if(JS_MaxBytes==0)
-        JS_MaxBytes=JAVASCRIPT_MAX_BYTES;
+    	js_max_bytes=Registry->ReadInteger("JS_MaxBytes");
+    if(js_max_bytes==0)
+        js_max_bytes=JAVASCRIPT_MAX_BYTES;
+    if(Registry->ValueExists("JS_ContextStack"))
+    	js_cx_stack=Registry->ReadInteger("JS_ContextStack");
+    if(js_cx_stack==0)
+        js_cx_stack=JAVASCRIPT_CONTEXT_STACK;
+    if(Registry->ValueExists("JS_BranchLimit"))
+    	js_branch_limit=Registry->ReadInteger("JS_BranchLimit");
+    if(Registry->ValueExists("JS_GcInterval"))
+    	js_gc_interval=Registry->ReadInteger("JS_GcInterval");
+    if(Registry->ValueExists("JS_YieldInterval"))
+    	js_yield_interval=Registry->ReadInteger("JS_YieldInterval");
 
     if(Registry->ValueExists("LoginCommand"))
     	LoginCommand=Registry->ReadString("LoginCommand");
@@ -1872,7 +1894,14 @@ void __fastcall TMainForm::SaveSettings(TObject* Sender)
     Registry->WriteString("CtrlDirectory",CtrlDirectory);
     Registry->WriteString("TempDirectory",TempDirectory);
     Registry->WriteInteger("MaxLogLen",MaxLogLen);
-    Registry->WriteInteger("JS_MaxBytes",JS_MaxBytes);
+
+    /* JavaScript Operating Parameters */
+    Registry->WriteInteger("JS_MaxBytes",js_max_bytes);
+    Registry->WriteInteger("JS_ContextStack",js_cx_stack);
+    Registry->WriteInteger("JS_BranchLimit",js_branch_limit);
+    Registry->WriteInteger("JS_GcInterval",js_gc_interval);
+    Registry->WriteInteger("JS_YieldInterval",js_yield_interval);
+
     Registry->WriteString("LoginCommand",LoginCommand);
     Registry->WriteString("ConfigCommand",ConfigCommand);
     Registry->WriteString("Password",Password);
@@ -2327,7 +2356,11 @@ void __fastcall TMainForm::ExportSettings(TObject* Sender)
     IniFile->WriteString(section,"Hostname",Hostname);
     IniFile->WriteString(section,"CtrlDirectory",CtrlDirectory);
     IniFile->WriteString(section,"TempDirectory",TempDirectory);
-    IniFile->WriteInteger(section,"JavaScriptMaxBytes",JS_MaxBytes);
+    IniFile->WriteInteger(section,strJavaScriptMaxBytes,js_max_bytes);
+    IniFile->WriteInteger(section,strJavaScriptContextStack,js_cx_stack);
+    IniFile->WriteInteger(section,strJavaScriptBranchLimit,js_branch_limit);
+    IniFile->WriteInteger(section,strJavaScriptGcInterval,js_gc_interval);
+    IniFile->WriteInteger(section,strJavaScriptYieldInterval,js_yield_interval);
 
     /***********************************************************************/
 	section = "BBS";
@@ -2803,7 +2836,12 @@ void __fastcall TMainForm::PropertiesExecute(TObject *Sender)
     PropertiesDlg->TrayIconCheckBox->Checked=MinimizeToSysTray;
     PropertiesDlg->UndockableCheckBox->Checked=UndockableForms;
     PropertiesDlg->PasswordEdit->Text=Password;
-    PropertiesDlg->JS_MaxBytesEdit->Text=IntToStr(JS_MaxBytes);
+    PropertiesDlg->JS_MaxBytesEdit->Text=IntToStr(js_max_bytes);
+    PropertiesDlg->JS_ContextStackEdit->Text=IntToStr(js_cx_stack);
+    PropertiesDlg->JS_BranchLimitEdit->Text=IntToStr(js_branch_limit);
+    PropertiesDlg->JS_GcIntervalEdit->Text=IntToStr(js_gc_interval);
+    PropertiesDlg->JS_YieldIntervalEdit->Text=IntToStr(js_yield_interval);
+
     if(MaxLogLen==0)
 		PropertiesDlg->MaxLogLenEdit->Text="<unlimited>";
     else
@@ -2820,8 +2858,17 @@ void __fastcall TMainForm::PropertiesExecute(TObject *Sender)
         SemFileCheckFrequency=PropertiesDlg->SemFreqUpDown->Position;
         MinimizeToSysTray=PropertiesDlg->TrayIconCheckBox->Checked;
         UndockableForms=PropertiesDlg->UndockableCheckBox->Checked;
-        JS_MaxBytes
+        js_max_bytes
         	=PropertiesDlg->JS_MaxBytesEdit->Text.ToIntDef(JAVASCRIPT_MAX_BYTES);
+        js_cx_stack
+        	=PropertiesDlg->JS_ContextStackEdit->Text.ToIntDef(JAVASCRIPT_CONTEXT_STACK);
+        js_branch_limit
+        	=PropertiesDlg->JS_BranchLimitEdit->Text.ToIntDef(JAVASCRIPT_BRANCH_LIMIT);
+        js_gc_interval
+        	=PropertiesDlg->JS_GcIntervalEdit->Text.ToIntDef(JAVASCRIPT_GC_INTERVAL);
+        js_yield_interval
+        	=PropertiesDlg->JS_YieldIntervalEdit->Text.ToIntDef(JAVASCRIPT_YIELD_INTERVAL);
+
         MaxLogLen
         	=PropertiesDlg->MaxLogLenEdit->Text.ToIntDef(0);
         SaveSettings(Sender);
