@@ -39,6 +39,7 @@
 #include "md5.h"
 #include "base64.h"
 #include "uucode.h"
+#include "ini_file.h"
 
 #ifdef JAVASCRIPT
 
@@ -395,6 +396,49 @@ js_readall(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     *rval = OBJECT_TO_JSVAL(array);
 
     return(JS_TRUE);
+}
+
+static JSBool
+js_ini_read(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*	section;
+	char*	key;
+	jsval	dflt=argv[2];
+	private_t*	p;
+
+	*rval = JSVAL_NULL;
+
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
+		JS_ReportError(cx,getprivate_failure,WHERE);
+		return(JS_FALSE);
+	}
+
+	section=JS_GetStringBytes(JS_ValueToString(cx, argv[0]));
+	key=JS_GetStringBytes(JS_ValueToString(cx, argv[1]));
+	switch(JSVAL_TAG(dflt)) {
+		case JSVAL_STRING:
+			*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,
+				iniReadString(p->fp,section,key
+					,JS_GetStringBytes(JS_ValueToString(cx,dflt)))));
+			break;
+		case JSVAL_BOOLEAN:
+			*rval = BOOLEAN_TO_JSVAL(
+				iniReadBool(p->fp,section,key,JSVAL_TO_BOOLEAN(dflt)));
+			break;
+		case JSVAL_DOUBLE:
+			JS_NewNumberValue(cx
+				,iniReadFloat(p->fp,section,key,*JSVAL_TO_DOUBLE(dflt)),rval);
+			break;
+		default:
+			if(JSVAL_IS_INT(dflt)) {
+				*rval = INT_TO_JSVAL(
+					iniReadInteger(p->fp,section,key,JSVAL_TO_INT(dflt)));
+				break;
+			}
+			break;
+	}
+
+	return(JS_TRUE);
 }
 
 static JSBool
@@ -1107,6 +1151,10 @@ static jsMethodSpec js_file_functions[] = {
 	},
 	{"readAll",			js_readall,			0,	JSTYPE_ARRAY,	""
 	,JSDOCSTR("read all lines into an array of strings")
+	},
+	{"iniRead",			js_ini_read,		3,	JSTYPE_STRING,	JSDOCSTR("section, key, default")
+	,JSDOCSTR("read a key from a .ini file and return its value, "
+		"may return <i>bool</i>, <i>string</i>, or <i>number</i> value")
 	},
 	{"write",			js_write,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("string text [,len]")
 	,JSDOCSTR("write a string to the file (optionally unix-to-unix or base64 decoding in the process)")
