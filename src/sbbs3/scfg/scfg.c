@@ -192,6 +192,7 @@ if(chdir(cfg.ctrl_dir)!=0) {
 		,errno,cfg.ctrl_dir);
 	exit(-1);
 }
+FULLPATH(".",cfg.ctrl_dir,sizeof(cfg.ctrl_dir));
 
 uifc.size=sizeof(uifc);
 #if defined(USE_FLTK)
