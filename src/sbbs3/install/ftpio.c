@@ -172,6 +172,31 @@ ftpErrString(int error)
     return("Unknown error");
 }
 
+off_t
+ftpGetSize(ftp_FILE *fp, char *name)
+{
+	int i;
+	char p[BUFSIZ], *cp, *ep;
+	FTP_t ftp = fcookie(fp);
+	off_t size;
+
+    ftpPassive(fp,TRUE);
+	sprintf(p, "SIZE %s\r\n", name);
+	if (ftp->is_verbose)
+		fprintf(stderr, "Sending %s", p);
+	if (writes(ftp->fd_ctrl, p))
+		return (off_t)-1;
+	i = get_a_number(ftp, &cp);
+	if (check_code(ftp, i, 213))
+		return (off_t)-1;
+
+	errno = 0;				/* to check for ERANGE */
+	size = (off_t)strtoq(cp, &ep, 10);
+	if (*ep != '\0' || errno == ERANGE)
+		return (off_t)-1;
+	return size;
+}
+
 ftp_FILE *
 ftpGet(ftp_FILE *fp, char *file, off_t *seekto)
 {
