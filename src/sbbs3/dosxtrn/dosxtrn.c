@@ -61,6 +61,7 @@ str[c]=0;
 short	vdd=0;
 BYTE	node_num=0;
 int		mode=0;
+DWORD	nodata=0;
 
 void (interrupt *oldint14)();
 void (interrupt *oldint16)();
@@ -97,6 +98,10 @@ static int vdd_op(BYTE op)
 {
 	int retval;
 
+#if FALSE	/* disable yield? */
+	if(op==VDD_YIELD)
+		return(0);
+#endif
 	_asm {
 		push	bx
 		mov		ax,	vdd
@@ -155,11 +160,10 @@ WORD PortStatus()
 	if(!vdd_status.outbuf_full)		// output buffer is empty
 		status|=0x4000;				// TSRE
 
-	if(!vdd_status.inbuf_full)		// release time-slice if no input
-		vdd_op(VDD_YIELD);
-
 	return(status);
 }
+
+#define POLLS_BEFORE_YIELD	10
 
 void interrupt winNTint14(
 	unsigned _es, unsigned _ds,
@@ -202,17 +206,23 @@ void interrupt winNTint14(
 			_asm mov buf_seg, ss;
 			vdd_buf(VDD_WRITE, 1, buf_seg, (WORD)&ch);
 			_ax = PortStatus();
+			nodata=0;
 			break;
 		case 0x02: /* read char from com port */
 			_asm mov buf_seg, ss;
 			_ax = vdd_buf(VDD_READ, 1, buf_seg, (WORD)&ch);
-			if(!_ax)
+			if(!_ax) {
 				_ax = 0x8000;	/* timed-out */
-			else
+				vdd_op(VDD_YIELD);
+			} else {
 				_ax = ch;
+				nodata=0;
+			}
 			break;
 		case 0x03:	/* request status */
 			_ax=PortStatus();
+			if(_ax==0x6088 && ++nodata>=POLLS_BEFORE_YIELD)
+				vdd_op(VDD_YIELD);
 			break;
 		case 0x04:	/* initialize */
 			_ax=0x1954;	/* magic number = success */
@@ -234,21 +244,32 @@ void interrupt winNTint14(
 			ch=_ax&0xff;
 			_asm mov buf_seg, ss;
 			_ax = vdd_buf(VDD_WRITE, 1, buf_seg, (WORD)&ch);
+			nodata=0;
 			break;
         case 0x0C:	// non-destructive read-ahead
 			vdd_getstatus(&vdd_status);
 			if(!vdd_status.inbuf_full) {
 				_ax=0xffff;	// no char available
+				vdd_op(VDD_YIELD);
 				break;
 			}
 			_asm mov buf_seg, ss;
 			_ax = vdd_buf(VDD_PEEK, 1, buf_seg, (WORD)&ch);
+			if(_ax == 0)
+				vdd_op(VDD_YIELD);
+			else
+				nodata=0;
 			break;
         case 0x18:	/* read bock */
             _ax = vdd_buf(VDD_READ, _cx, _es, _di);
+			if(_ax == 0)
+				vdd_op(VDD_YIELD);
+			else
+				nodata=0;
 			break;
         case 0x19:	/* write block */
 			_ax = vdd_buf(VDD_WRITE, _cx, _es, _di);
+			nodata=0;
 			break;
         case 0x1B:	/* driver info */
 			vdd_getstatus(&vdd_status);
@@ -256,6 +277,10 @@ void interrupt winNTint14(
 			info.inbuf_free=info.inbuf_size-vdd_status.inbuf_full;
 			info.outbuf_size=vdd_status.outbuf_size;
 			info.outbuf_free=info.outbuf_size-vdd_status.outbuf_full;
+
+			if(vdd_status.inbuf_full==vdd_status.outbuf_full==0 
+				&& ++nodata>=POLLS_BEFORE_YIELD)
+				vdd_op(VDD_YIELD);			
 
 			p = _MK_FP(_es,_di);
             wr=sizeof(info);
@@ -288,8 +313,11 @@ void interrupt winNTint16(
 				_asm mov buf_seg, ss;
 				vdd_buf(VDD_READ, 1, buf_seg, (WORD)&ch);
 				_ax=ch;
+				nodata=0;
 				return;
-			}
+			} 
+			if(++nodata>=POLLS_BEFORE_YIELD)
+				vdd_op(VDD_YIELD);
 			break;
     	case 0x01:	// Get keyboard status
         case 0x11:	// Get enhanced keyboard status
@@ -298,8 +326,11 @@ void interrupt winNTint16(
 				vdd_buf(VDD_PEEK, 1, buf_seg, (WORD)&ch);
                 flags&=~(1<<6);	// clear zero flag
                 _ax=ch;
+				nodata=0;
 				return;
-    	    }
+			}
+			if(++nodata>=POLLS_BEFORE_YIELD)
+				vdd_op(VDD_YIELD);
 	        break;
 	}
 
@@ -320,6 +351,7 @@ void interrupt winNTint29(
 	ch=_ax&0xff;
 	_asm mov buf_seg, ss
 	vdd_buf(VDD_WRITE, 1, buf_seg, (WORD)&ch);
+	nodata=0;
 
 	_chain_intr(oldint29);
 }
@@ -346,13 +378,12 @@ int main(int argc, char **argv)
 			,"This program is for the internal use of Synchronet BBS only\n");
 		return(1);
 	}
-#if 1
+
 	strcpy(dll,argv[0]);
 	p=strrchr(dll,'\\');
 	if(p!=NULL) *(p+1)=0;
 	strcat(dll,"SBBSEXEC.DLL");
 	DllName=dll;
-#endif
 
 	if(argc>2 && !strcmp(argv[2],"NT")) {
 		NT=TRUE;
