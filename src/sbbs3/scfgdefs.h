@@ -113,7 +113,8 @@ typedef struct {                        /* Transfer Directory Info */
 typedef struct {                        /* Transfer Library Information */
 	char	lname[LEN_GLNAME+1],		/* Short Name - used for prompts */
 			sname[LEN_GSNAME+1],		/* Long Name - used for listings */
-			arstr[LEN_ARSTR+1];			/* Access Requirements */
+			arstr[LEN_ARSTR+1],			/* Access Requirements */
+			root[LEN_DIR+1];			/* Root for directory paths */
 	uchar	*ar;
 	ushort	offline_dir;				/* Offline file directory */
 
