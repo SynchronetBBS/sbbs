@@ -23,8 +23,10 @@ once. To install on the Synchronet NT services at once, run:
 	sbbsNTsvcs install
 
 The configuration of the Synchronet servers and services is handled in your
-Synchronet initialization file (e.g. ctrl/sbbs.ini). See sbbscon.txt for
-more details about this file.
+Synchronet initialization file (e.g. ctrl/sbbs.ini). The Synchronet NT
+services know the location of your Synchronet CTRL directory from the
+SBBSCTRL environment variable. See sbbscon.txt for more details about the
+SBBSCTRL environment variable and the initialization file (sbbs.ini).
 
 Once installed, the Synchronet NT services may be started from the NT Services
 dialog (under the Control Panel), by running the Synchronet Control Panel, or 
@@ -46,6 +48,8 @@ NT Event Log
 ------------
 Error messages (determined by the LogMask in your sbbs.ini file) will be
 logged as NT application event log messages (viewable in your NT Event Viewer).
+The event log messages are currently stored in an undefined format, though
+you can view the text.
 
 Beta
 ----
