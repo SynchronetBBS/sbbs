@@ -89,6 +89,7 @@ enum {
 
 static JSBool js_system_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
+	char		str[128];
     jsint       tiny;
 	scfg_t*		cfg;
 
@@ -145,6 +146,80 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 			*vp = INT_TO_JSVAL(getfreediskspace(cfg->temp_dir));
 			break;
 
+		case SYS_PROP_NEW_PASS:
+			*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, cfg->new_magic));
+			break;
+		case SYS_PROP_NEW_MAGIC:
+			*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, cfg->new_pass));
+			break;
+		case SYS_PROP_NEW_LEVEL:
+			*vp = INT_TO_JSVAL(cfg->new_level);
+			break;
+		case SYS_PROP_NEW_FLAGS1:
+			*vp = INT_TO_JSVAL(cfg->new_flags1);
+			break;
+		case SYS_PROP_NEW_FLAGS2:
+			*vp = INT_TO_JSVAL(cfg->new_flags2);
+			break;
+		case SYS_PROP_NEW_FLAGS3:
+			*vp = INT_TO_JSVAL(cfg->new_flags3);
+			break;
+		case SYS_PROP_NEW_FLAGS4:
+			*vp = INT_TO_JSVAL(cfg->new_flags4);
+			break;
+		case SYS_PROP_NEW_REST:
+			*vp = INT_TO_JSVAL(cfg->new_rest);
+			break;
+		case SYS_PROP_NEW_EXEMPT:
+			*vp = INT_TO_JSVAL(cfg->new_exempt);
+			break;
+		case SYS_PROP_NEW_CDT:
+			*vp = INT_TO_JSVAL(cfg->new_cdt);
+			break;
+		case SYS_PROP_NEW_MIN:
+			*vp = INT_TO_JSVAL(cfg->new_min);
+			break;
+		case SYS_PROP_NEW_SHELL:
+			*vp = INT_TO_JSVAL(cfg->new_shell);
+			break;
+		case SYS_PROP_NEW_XEDIT:
+			*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, cfg->new_xedit));
+			break;
+		case SYS_PROP_NEW_MISC:
+			*vp = INT_TO_JSVAL(cfg->new_misc);
+			break;
+		case SYS_PROP_NEW_PROT:
+			sprintf(str,"%c",cfg->new_prot);
+			*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, str));
+			break;
+		case SYS_PROP_NEW_EXPIRE:
+			*vp = INT_TO_JSVAL(cfg->new_expire);
+			break;
+		case SYS_PROP_NEW_UQ:
+			*vp = INT_TO_JSVAL(cfg->uq);
+			break;
+
+		case SYS_PROP_EXPIRED_LEVEL:
+			*vp = INT_TO_JSVAL(cfg->expired_level);
+			break;
+		case SYS_PROP_EXPIRED_FLAGS1:
+			*vp = INT_TO_JSVAL(cfg->expired_flags1);
+			break;
+		case SYS_PROP_EXPIRED_FLAGS2:
+			*vp = INT_TO_JSVAL(cfg->expired_flags2);
+			break;
+		case SYS_PROP_EXPIRED_FLAGS3:
+			*vp = INT_TO_JSVAL(cfg->expired_flags3);
+			break;
+		case SYS_PROP_EXPIRED_FLAGS4:
+			*vp = INT_TO_JSVAL(cfg->expired_flags4);
+			break;
+		case SYS_PROP_EXPIRED_REST:
+			*vp = INT_TO_JSVAL(cfg->expired_rest);
+			break;
+		case SYS_PROP_EXPIRED_EXEMPT:
+			*vp = INT_TO_JSVAL(cfg->expired_exempt);
+			break;
 	}
 
 	return(TRUE);
@@ -190,7 +265,32 @@ static struct JSPropertySpec js_system_properties[] = {
 	{	"nodes",	SYS_PROP_NODES,		SYSOBJ_FLAGS,		NULL,	NULL },
 	{	"lastnode",	SYS_PROP_LASTNODE,	SYSOBJ_FLAGS,		NULL,	NULL },
 
-	{	"freediskspace", SYS_PROP_FREEDISKSPACE,	SYSOBJ_FLAGS,	NULL,	NULL },
+	{	"freediskspace",			SYS_PROP_FREEDISKSPACE	,SYSOBJ_FLAGS,	NULL,	NULL },
+	{	"newuser_password",			SYS_PROP_NEW_PASS		,SYSOBJ_FLAGS,	NULL,	NULL },
+	{	"newuser_magic_word",		SYS_PROP_NEW_MAGIC		,SYSOBJ_FLAGS,	NULL,	NULL },
+	{	"newuser_level",			SYS_PROP_NEW_LEVEL		,SYSOBJ_FLAGS,	NULL,	NULL },
+	{	"newuser_flags1",			SYS_PROP_NEW_FLAGS1		,SYSOBJ_FLAGS,	NULL,	NULL },
+	{	"newuser_flags2",			SYS_PROP_NEW_FLAGS2		,SYSOBJ_FLAGS,	NULL,	NULL },
+	{	"newuser_flags3",			SYS_PROP_NEW_FLAGS3		,SYSOBJ_FLAGS,	NULL,	NULL },
+	{	"newuser_flags4",			SYS_PROP_NEW_FLAGS4		,SYSOBJ_FLAGS,	NULL,	NULL },
+	{	"newuser_restrictions",		SYS_PROP_NEW_REST		,SYSOBJ_FLAGS,	NULL,	NULL },
+	{	"newuser_exemptions",		SYS_PROP_NEW_EXEMPT		,SYSOBJ_FLAGS,	NULL,	NULL },
+	{	"newuser_credits",			SYS_PROP_NEW_CDT		,SYSOBJ_FLAGS,	NULL,	NULL },
+	{	"newuser_minutes",			SYS_PROP_NEW_MIN		,SYSOBJ_FLAGS,	NULL,	NULL },
+	{	"newuser_command_shell",	SYS_PROP_NEW_SHELL		,SYSOBJ_FLAGS,	NULL,	NULL },
+	{	"newuser_editor",			SYS_PROP_NEW_XEDIT		,SYSOBJ_FLAGS,	NULL,	NULL },
+	{	"newuser_settings",			SYS_PROP_NEW_MISC		,SYSOBJ_FLAGS,	NULL,	NULL },
+	{	"newuser_download_protocol",SYS_PROP_NEW_PROT		,SYSOBJ_FLAGS,	NULL,	NULL },
+	{	"newuser_expiration_date",	SYS_PROP_NEW_EXPIRE		,SYSOBJ_FLAGS,	NULL,	NULL },
+	{	"newuser_questions",		SYS_PROP_NEW_UQ			,SYSOBJ_FLAGS,	NULL,	NULL },
+
+	{	"expired_level",			SYS_PROP_EXPIRED_LEVEL	,SYSOBJ_FLAGS,	NULL,	NULL },
+	{	"expired_flags1",			SYS_PROP_EXPIRED_FLAGS1	,SYSOBJ_FLAGS,	NULL,	NULL },
+	{	"expired_flags2",			SYS_PROP_EXPIRED_FLAGS2	,SYSOBJ_FLAGS,	NULL,	NULL },
+	{	"expired_flags3",			SYS_PROP_EXPIRED_FLAGS3	,SYSOBJ_FLAGS,	NULL,	NULL },
+	{	"expired_flags4",			SYS_PROP_EXPIRED_FLAGS4	,SYSOBJ_FLAGS,	NULL,	NULL },
+	{	"expired_restrictions",		SYS_PROP_EXPIRED_REST	,SYSOBJ_FLAGS,	NULL,	NULL },
+	{	"expired_exemptions",		SYS_PROP_EXPIRED_EXEMPT	,SYSOBJ_FLAGS,	NULL,	NULL },	
 	{0}
 };
 
@@ -426,14 +526,10 @@ enum {
 	,NODE_PROP_MISC
 	,NODE_PROP_AUX
 	,NODE_PROP_EXTAUX
-
-	/* convenience strings */
-	,NODE_PROP_USERON_NAME
 };
 
 static JSBool js_node_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
-	char		str[128];
 	uint		node_num;
     jsint       tiny;
 	node_t		node;
@@ -485,11 +581,6 @@ static JSBool js_node_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 		case NODE_PROP_EXTAUX:	
 			*vp = INT_TO_JSVAL((int)node.extaux);
 			break;
-
-		case NODE_PROP_USERON_NAME:
-			*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx,username(cfg,node.useron,str)));
-			break;
-
 	}
 	return(JS_TRUE);
 }
@@ -567,10 +658,6 @@ static struct JSPropertySpec js_node_properties[] = {
 	{	"misc",						NODE_PROP_MISC,			JSPROP_ENUMERATE,	NULL,	NULL },
 	{	"aux",						NODE_PROP_AUX,			JSPROP_ENUMERATE,	NULL,	NULL },
 	{	"extaux",					NODE_PROP_EXTAUX,		JSPROP_ENUMERATE,	NULL,	NULL },
-
-/* convenience strings */
-	{	"useron_name",				NODE_PROP_USERON_NAME,	JSPROP_ENUMERATE|JSPROP_READONLY,	NULL,	NULL },
-
 	{0}
 };
 
