@@ -140,7 +140,7 @@ char* DLLCALL strip_ctrl(char *str)
 	int i,j;
 
 	for(i=j=0;str[i] && j<sizeof(tmp)-1;i++)
-		if(str[i]==CTRL_A)
+		if(str[i]==CTRL_A && str[i+1]!=0)
 			i++;
 		else if((uchar)str[i]>=SP)
 			tmp[j++]=str[i];
@@ -168,7 +168,7 @@ char* DLLCALL prep_file_desc(char *str)
 	int i,j;
 
 	for(i=j=0;str[i];i++)
-		if(str[i]==CTRL_A)
+		if(str[i]==CTRL_A && str[i+1]!=0)
 			i++;
 		else if(j && str[i]<=SP && tmp[j-1]==SP)
 			continue;

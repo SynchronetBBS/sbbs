@@ -504,7 +504,7 @@ static char* get_msg_text(smb_t* smb, smbmsg_t* msg, BOOL strip_ctrl_a, ulong mo
 		if((newbuf=malloc(strlen(buf)+1))!=NULL) {
 			int i,j;
 			for(i=j=0;buf[i];i++) {
-				if(buf[i]==CTRL_A)
+				if(buf[i]==CTRL_A && buf[i+1]!=0)
 					i++;
 				else newbuf[j++]=buf[i]; 
 			}

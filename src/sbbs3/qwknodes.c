@@ -192,7 +192,7 @@ void stripctrla(uchar *str)
 	int i,j;
 
 for(i=j=0;str[i];i++) {
-	if(str[i]==CTRL_A)
+	if(str[i]==CTRL_A && str[i+1]!=0)
 		i++;
 	else
 		out[j++]=str[i]; }

@@ -58,7 +58,7 @@ char sbbs_t::putmsg(char HUGE16 *str, long mode)
 	if(!(mode&P_SAVEATR))
 		attr(LIGHTGRAY);
 	while(str[l] && (mode&P_NOABORT || !msgabort()) && online) {
-		if(str[l]==CTRL_A) {
+		if(str[l]==CTRL_A && str[l+1]!=0) {
 			if(str[l+1]=='"' && !(sys_status&SS_NEST_PF)) {  /* Quote a file */
 				l+=2;
 				i=0;

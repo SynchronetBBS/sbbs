@@ -49,8 +49,8 @@ char* DLLCALL remove_ctrl_a(char *instr, char *outstr)
 	char str[1024],*p;
 	uint i,j;
 
-	for(i=j=0;instr[i];i++) {
-		if(instr[i]==CTRL_A)
+	for(i=j=0;instr[i] && j<sizeof(str)-1;i++) {
+		if(instr[i]==CTRL_A && instr[i+1]!=0)
 			i++;
 		else str[j++]=instr[i]; 
 	}
