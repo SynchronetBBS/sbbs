@@ -102,6 +102,12 @@ function getReferenceTo(hdr) {
 	return to; //no match
 }
 
+// Generate an Xref header
+function xref(msgbase, hdr)
+{
+	return(format("%s %s:%u",system.local_host_name, msgbase.cfg.newsgroup, hdr.number));
+}
+
 var username='';
 var msgbase=null;
 var selected=null;
@@ -231,6 +237,7 @@ while(client.socket.is_connected && !quit) {
 				writeln("References:");
 				writeln("Bytes:");
 				writeln("Lines:");
+				writeln("Xref:");
 			}
 			else {
 				writeln("215 list of newsgroups follows");
@@ -337,7 +344,7 @@ while(client.socket.is_connected && !quit) {
 					continue;
 				if(hdr.attr&MSG_DELETE)	/* marked for deletion */
 					continue;
-				writeln(format("%u\t%s\t%s\t%s\t%s\t%s\t%u\t%u"
+				writeln(format("%u\t%s\t%s\t%s\t%s\t%s\t%u\t%u\t%s"
 					,i
 					,hdr.subject
 					,hdr.from
@@ -346,6 +353,7 @@ while(client.socket.is_connected && !quit) {
 					,hdr.reply_id	// references
 					,hdr.data_length	// byte count
 					,Math.round(hdr.data_length/79)+1	// line count
+					,xref(msgbase,hdr);
 					));
 			}
 			writeln(".");	// end of list
@@ -399,6 +407,9 @@ while(client.socket.is_connected && !quit) {
 						break;
 					case "lines":
 						field=Math.round(hdr.data_length/79)+1;
+						break;
+					case "xref":
+						field=xref(msgbase,hdr):
 						break;
 					/* FidoNet header fields */
 					case "x-ftn-pid":
