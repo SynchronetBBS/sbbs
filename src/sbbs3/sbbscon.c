@@ -89,7 +89,11 @@ static void lputs(char *str)
 	}
 
 	pthread_mutex_lock(&mutex);
-	printf("\r%*s\r%s\n",prompt_len,"",str);
+	/* erase prompt */
+	printf("\r%*s\r",prompt_len,"");
+	if(str!=NULL)
+		printf("%s\n",str);
+	/* re-display prompt with current stats */
 	prompt_len = printf(prompt, thread_count, socket_count
 		,bbs_client_count + ftp_client_count + mail_client_count + services_client_count);
 	fflush(stdout);
@@ -112,6 +116,7 @@ static void thread_up(BOOL up)
     else if(thread_count>0)
     	thread_count--;
 	pthread_mutex_unlock(&mutex);
+	lputs(NULL); /* update displayed stats */
 }
 
 static void socket_open(BOOL open)
@@ -130,6 +135,7 @@ static void socket_open(BOOL open)
     else if(socket_count>0)
     	socket_count--;
 	pthread_mutex_unlock(&mutex);
+	lputs(NULL); /* update displayed stats */
 }
 
 /************************************************/
@@ -192,6 +198,7 @@ static void bbs_clients(int clients)
 	pthread_mutex_lock(&mutex);
 	bbs_client_count=clients;
 	pthread_mutex_unlock(&mutex);
+	lputs(NULL); /* update displayed stats */
 }
 
 /****************************************************************************/
@@ -242,6 +249,7 @@ static void ftp_clients(int clients)
 	pthread_mutex_lock(&mutex);
 	ftp_client_count=clients;
 	pthread_mutex_unlock(&mutex);
+	lputs(NULL); /* update displayed stats */
 }
 
 /****************************************************************************/
@@ -292,6 +300,7 @@ static void mail_clients(int clients)
 	pthread_mutex_lock(&mutex);
 	mail_client_count=clients;
 	pthread_mutex_unlock(&mutex);
+	lputs(NULL); /* update displayed stats */
 }
 
 /****************************************************************************/
@@ -342,6 +351,7 @@ static void services_clients(int clients)
 	pthread_mutex_lock(&mutex);
 	services_client_count=clients;
 	pthread_mutex_unlock(&mutex);
+	lputs(NULL); /* update displayed stats */
 }
 
 /****************************************************************************/
