@@ -56,6 +56,7 @@ void sbbs_t::useredit(int usernumber)
 	char	search[256]={""},artxt[128]={""};
 	uchar	*ar=NULL;
 	uint	i,j,k;
+	float	f;
 	long	l;
 	user_t	user;
 	struct	tm tm;
@@ -133,12 +134,12 @@ void sbbs_t::useredit(int usernumber)
 			,user.timeon,user.ttoday,cfg.level_timeperday[user.level]
 			,user.tlast,cfg.level_timepercall[user.level],user.textra);
 		if(user.posts)
-			i=user.logons/user.posts;
+			f=(float)user.logons/user.posts;
 		else
-			i=0;
+			f=0;
 		bprintf(text[UserLogons]
 			,user.logons,user.ltoday,cfg.level_callsperday[user.level],user.posts
-			,i ? 100/i : user.posts>user.logons ? 100 : 0
+			,f ? (uint)(100/f) : user.posts>user.logons ? 100 : 0
 			,user.ptoday);
 		bprintf(text[UserEmails]
 			,user.emails,user.fbacks,getmail(&cfg,user.number,0),user.etoday);
