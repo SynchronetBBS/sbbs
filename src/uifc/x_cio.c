@@ -182,8 +182,8 @@ void x_setcursortype(int type)
 			CursEnd=FH;
 			break;
 		default:
-			CursStart=0;
-			CursEnd=1;
+			CursStart=FH-1;
+			CursEnd=FH;
 			break;
 	}
 }

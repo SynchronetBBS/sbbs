@@ -136,8 +136,6 @@ vmode_t vmodelist[] = {
 
 static	fd_set	fdset;		/* File Descriptors to select on */
 
-#define FD_ISZERO(p)	((p)->fds_bits[0] == 0)
-
 /* Keyboard stuff */
 WORD	keybuf[0x25];
 #define	K_NEXT		keybuf[0x21] /* *(u_short *)0x41a */
@@ -346,14 +344,12 @@ mouse_t		mouse_status;
 
 void tty_pause()
 {
-#ifdef DISABLED
     sigset_t set;
 
     sigprocmask(0, 0, &set);
     sigdelset(&set, SIGIO);
     sigdelset(&set, SIGALRM);
     sigsuspend(&set);
-#endif
 }
 
 volatile int	poll_cnt = 0;
@@ -402,7 +398,6 @@ video_update_text()
     static int or = -1;
     static int oc = -1;
 
-
     static char buf[256];
     int r, c;
     int attr = vmem[0] & 0xff00;
@@ -410,7 +405,7 @@ video_update_text()
 
 	wakeup_poll();	/* Wake up anyone waiting on kbd poll */
 
-	show ^= 1;
+/*	show ^= 1; */
 
 	setgc(attr);
 
@@ -497,14 +492,26 @@ video_update_text()
 void
 video_update(void *unused)
 {
+    sigset_t sigset;
 	static int icnt = 3;
+
+    sigemptyset(&sigset);
+    sigaddset(&sigset, SIGIO);
+    sigaddset(&sigset, SIGALRM);
+    sigprocmask(SIG_BLOCK, &sigset, 0);
 
     	if (--icnt == 0) {
 	    icnt = 3;
+	show ^= 1;
 
+	}
 	    /* quick and dirty */
 		video_update_text();
-	}
+
+    sigemptyset(&sigset);
+    sigaddset(&sigset, SIGIO);
+    sigaddset(&sigset, SIGALRM);
+    sigprocmask(SIG_UNBLOCK, &sigset, 0);
 }
 
 /*
@@ -960,14 +967,13 @@ video_async_event(int sig)
 {
     	int int9 = 0;
 
-#ifdef DISABLED
 	for (;;) {
-#endif
                 int x;
                 fd_set fdset;
                 XEvent ev;  
                 static struct timeval tv;
- 
+				tv.tv_sec=0;
+				tv.tv_usec=0;
                 /*
                  * Handle any events just sitting around...
                  */
@@ -980,7 +986,7 @@ video_async_event(int sig)
                 FD_ZERO(&fdset);
                 FD_SET(xfd, &fdset);
 
-                x = select(FD_SETSIZE, &fdset, 0, 0, &tv);
+                x = select(xfd+1, &fdset, 0, 0, &tv);
 
                 switch (x) {  
                 case -1:
@@ -989,15 +995,14 @@ video_async_event(int sig)
                          * This could cause a problem is something really
                          * was wrong with select....
                          */
+
                         perror("select");
                         return;
                 case 0:
 			XFlush(dpy);
-			if (int9)
 #ifdef DISABLED
+			if (int9)
 			    hardint(0x01);
-#else
-;
 #endif
                         return;
                 default:
@@ -1009,9 +1014,7 @@ video_async_event(int sig)
                         }
                         break;
                 }
-#ifdef DISABLED
         }
-#endif
 }
 
 /* Resize the window, using information from 'vga_status[]'. This function is

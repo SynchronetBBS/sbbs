@@ -486,7 +486,9 @@ static void hidemouse(void)
 			mouse_set(0);
 		#endif
 		#ifdef NCURSES_VERSION_MAJOR
+#ifdef DISABLED
 			mousemask(0,NULL);
+#endif
 		#endif
 	}
 }
@@ -498,7 +500,9 @@ static void showmouse(void)
 			mouse_set(BUTTON1_CLICKED|BUTTON3_CLICKED);
 		#endif
 		#ifdef NCURSES_VERSION_MAJOR
+#ifdef DISABLED
 			mousemask(BUTTON1_CLICKED|BUTTON3_CLICKED,NULL);
+#endif
 		#endif
 	}
 }
@@ -569,11 +573,13 @@ void uifcbail(void)
 	hidemouse();
 	clrscr();
 #ifdef __unix__
+#ifdef DISABLED
 	nl();
 	nocbreak();
 	noraw();
 	refresh();
 	endwin();
+#endif
 #ifdef XCURSES
 	XCursesExit();
 #endif
