@@ -46,6 +46,8 @@
 
 #define NEW_SECTION	((char*)~0)
 
+static ini_style_t default_style;
+
 /****************************************************************************/
 /* Truncates white-space chars off end of 'str'								*/
 /****************************************************************************/
@@ -208,6 +210,8 @@ char* iniSetString(str_list_t* list, const char* section, const char* key, const
 
 	if(key==NULL)
 		return(NULL);
+	if(style==NULL)
+		style=&default_style;
 	if(style->key_prefix==NULL)
 		style->key_prefix="";
 	if(style->value_separator==NULL)
@@ -279,6 +283,8 @@ char* iniSetBitField(str_list_t* list, const char* section, const char* key
 	char	str[INI_MAX_VALUE_LEN];
 	int		i;
 
+	if(style==NULL)
+		style=&default_style;
 	if(style->bit_separator==NULL)
 		style->bit_separator="|";
 	str[0]=0;
@@ -627,6 +633,7 @@ str_list_t iniReadFile(FILE* fp)
 BOOL iniWriteFile(FILE* fp, const str_list_t list)
 {
 	rewind(fp);
-	chsize(fileno(fp),0);	/* truncate */
+	if(chsize(fileno(fp),0)!=0)	/* truncate */
+		return(FALSE);
 	return(strListWriteFile(fp,list,"\n") == strListCount(list));
 }
