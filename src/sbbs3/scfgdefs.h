@@ -522,7 +522,7 @@ typedef struct
 	char 	text_dir[LEN_DIR+1];
 	char 	exec_dir[LEN_DIR+1];
 	char 	temp_dir[LEN_DIR+1];
-	char **	node_path;		/* paths to all node dirs */
+	char 	node_path[MAX_NODES][LEN_DIR+1]; /* paths to all node dirs */
 	ushort	sysop_dir;			/* Destination for uploads to sysop */
 	ushort	user_dir;			/* Directory for user to user xfers */
 	ushort	upload_dir; 		/* Directory where all uploads go */
