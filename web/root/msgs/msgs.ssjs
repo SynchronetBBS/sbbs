@@ -21,9 +21,11 @@ var msgcount=0;
 var msgarray;
 if(sub=='mail') {
 	msgarray=get_my_message_offsets();
+	template.can_delete=true;
 }
 else {
 	msgarray=get_all_message_offsets();
+	template.can_delete=msg_area.grp_list[g].sub_list[s].is_operator;
 }
 var total_pages=Math.floor(msgarray.length/max_messages);
 var firstpage=0;
