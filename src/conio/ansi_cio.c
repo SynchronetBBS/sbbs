@@ -633,6 +633,13 @@ void ansi_fixterm(void)
 }
 #endif
 
+#ifndef ENABLE_EXTENDED_FLAGS
+#define ENABLE_INSERT_MODE		0x0020
+#define ENABLE_QUICK_EDIT_MODE	0x0040
+#define ENABLE_EXTENDED_FLAGS	0x0080
+#define ENABLE_AUTO_POSITION	0x0100
+#endif
+
 #if defined(__BORLANDC__)
         #pragma argsused
 #endif
