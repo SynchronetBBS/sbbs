@@ -67,7 +67,7 @@
 /****************************************************************************/
 /* Used to replace snprintf()  guarantees to terminate.			  			*/
 /****************************************************************************/
-int DLLCALL safe_snprintf(char *dst, size_t size, char *fmt, ...)
+int DLLCALL safe_snprintf(char *dst, size_t size, const char *fmt, ...)
 {
 	va_list argptr;
 	int     numchars;
