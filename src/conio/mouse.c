@@ -173,7 +173,7 @@ void ciolib_mouse_thread(void *data)
 		}
 		else {
 			sem_wait(&in_sem);
-}
+		}
 		if(timedout) {
 			state.timeout[timeout_button-1]=0;
 			switch(state.button_state[timeout_button-1]) {
@@ -341,10 +341,11 @@ void ciolib_mouse_thread(void *data)
 			free(in);
 		}
 
-		ttime=-1;
 		timeout_button=0;
 		for(but=1;but<=3;but++) {
-			if(state.button_state[but-1]!=MOUSE_NOSTATE && state.button_state[but-1]!=MOUSE_DRAGSTARTED && state.timeout[but-1]<ttime) {
+			if(state.button_state[but-1]!=MOUSE_NOSTATE 
+					&& state.button_state[but-1]!=MOUSE_DRAGSTARTED 
+					&& (timeout_button==0 || state.timeout[but-1]<ttime)) {
 				ttime=state.timeout[but-1];
 				timeout_button=but;
 			}
