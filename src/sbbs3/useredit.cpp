@@ -588,7 +588,7 @@ void sbbs_t::useredit(int usernumber, int local)
 						user.number=i;
 						getuserdat(&cfg,&user);
 						if(chk_ar(ar,&user)) {
-							outchar(7);
+							outchar(BEL);
 							break; } }
 					if(!i)
 						user.number=k; }
@@ -605,7 +605,7 @@ void sbbs_t::useredit(int usernumber, int local)
 						user.number=i;
 						getuserdat(&cfg,&user);
 						if(chk_ar(ar,&user)) {
-							outchar(7);
+							outchar(BEL);
 							break; } }
 					if(i>j)
 						user.number=k; }
@@ -669,7 +669,7 @@ int sbbs_t::searchup(char *search,int usernum)
 		userdat[U_LEN]=0;
 		strupr(userdat);
 		if(strstr(userdat,search)) {
-			outchar(7);
+			outchar(BEL);
 			close(file);
 			return(i); }
 		i++; }
@@ -718,7 +718,7 @@ int sbbs_t::searchdn(char *search,int usernum)
 		userdat[U_LEN]=0;
 		strupr(userdat);
 		if(strstr(userdat,search)) {
-			outchar(7);
+			outchar(BEL);
 			close(file);
 			return(i); }
 		i--; }

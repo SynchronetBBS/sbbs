@@ -151,7 +151,6 @@ void sbbs_t::nodesync()
 	}
 		
 	if(sys_status&SS_USERON && memcmp(&nodesync_user,&useron,sizeof(user_t))) {
-	//	  lputc(7);
 		getusrdirs();
 		getusrsubs();
 		memcpy(&nodesync_user,&useron,sizeof(nodesync_user)); }

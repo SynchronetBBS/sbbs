@@ -76,7 +76,6 @@ int sbbs_t::bputs(char *str)
 				if(str==text[i])
 					break;
 			if(i<TOTAL_TEXT) {		/* Replacement text */
-				//lputc(7);
 				i=atcodes(str+l);
 				l+=i;
 				if(i)
@@ -164,8 +163,8 @@ void sbbs_t::outchar(char ch)
 	if(console&CON_L_ECHO) {
 		if(console&CON_L_ECHOX && (uchar)ch>=SP)
 			putch('X');
-		else if(cfg.node_misc&NM_NOBEEP && ch==7);	 /* Do nothing if beep */
-		else if(ch==7) {
+		else if(cfg.node_misc&NM_NOBEEP && ch==BEL);	 /* Do nothing if beep */
+		else if(ch==BEL) {
 				sbbs_beep(2000,110);
 				nosound(); }
 		else putch(ch); }
@@ -190,8 +189,7 @@ void sbbs_t::outchar(char ch)
 			if(i==1440) {							/* timeout - beep flush outbuf */
 				i=rioctl(TXBC);
 				lprintf("timeout(outchar) %04X %04X\r\n",i,rioctl(IOFO));
-				outcom(7);
-		//		lputc(7);
+				outcom(BEL);
 				rioctl(IOCS|PAUSE); } } }
 	if(ch==LF) {
 		lncntr++;

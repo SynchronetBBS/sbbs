@@ -40,22 +40,46 @@
 /****************************************************************************/
 /* Converts a date string in format MM/DD/YY into unix time format			*/
 /****************************************************************************/
-time_t DLLCALL dstrtounix(scfg_t* cfg, char *str)
+time_t DLLCALL dstrtounix(scfg_t* cfg, char *instr)
 {
+	char*	p;
+	char*	day;
+	char	str[16];
 	struct tm tm;
 
-	if(!strncmp(str,"00/00/00",8))
+	if(!instr[0] || !strncmp(instr,"00/00/00",8))
 		return(0);
+
+	if(isdigit(instr[0]) && isdigit(instr[1])
+		&& isdigit(instr[3] && isdigit(instr[4])
+		&& isdigit(instr[6] && isdigit(instr[7]))
+		p=instr;	/* correctly formatted */
+	else {
+		p=instr;	/* incorrectly formatted */
+		while(*p && isdigit(*p)) p++;
+		if(*p==0)
+			return(0);
+		p++;
+		day=p;
+		while(*p && isdigit(*p)) p++;
+		if(*p==0)
+			return(0);
+		p++;
+		sprintf(str,"%02u/%02u/%02u"
+			,atoi(instr)%100,atoi(day)%100,atoi(p)%100);
+		p=str;
+	}
+
 	memset(&tm,0,sizeof(tm));
-	tm.tm_year=((str[6]&0xf)*10)+(str[7]&0xf);
+	tm.tm_year=((p[6]&0xf)*10)+(p[7]&0xf);
 	if (tm.tm_year<Y2K_2DIGIT_WINDOW)
 		tm.tm_year+=100;
 	if(cfg->sys_misc&SM_EURODATE) {
-		tm.tm_mon=((str[3]&0xf)*10)+(str[4]&0xf);
-		tm.tm_mday=((str[0]&0xf)*10)+(str[1]&0xf); }
+		tm.tm_mon=((p[3]&0xf)*10)+(p[4]&0xf);
+		tm.tm_mday=((p[0]&0xf)*10)+(p[1]&0xf); }
 	else {
-		tm.tm_mon=((str[0]&0xf)*10)+(str[1]&0xf);
-		tm.tm_mday=((str[3]&0xf)*10)+(str[4]&0xf); }
+		tm.tm_mon=((p[0]&0xf)*10)+(p[1]&0xf);
+		tm.tm_mday=((p[3]&0xf)*10)+(p[4]&0xf); }
 	if (tm.tm_mon)
 		tm.tm_mon--;	/* zero-based month field */
 	return(mktime(&tm));

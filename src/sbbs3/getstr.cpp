@@ -191,9 +191,9 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode)
 					if(i==maxlen-1)
 						ins=0; }
 				 if(i<maxlen) {
-					str1[i++]=7;
+					str1[i++]=BEL;
 					if(!(mode&K_NOECHO))
-						outchar(7); }
+						outchar(BEL); }
 				 break;
 			case 8:	/* Ctrl-H/Backspace */
 				if(!i)

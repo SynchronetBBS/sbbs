@@ -231,9 +231,11 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 					body[bodylen++]=CR;
 					body[bodylen++]=LF; }
 				continue; }
-			if(!fromhub && qwkbuf[k]==7 && useron.rest&FLAG('B'))   /* beep res */
+			/* beep restrict */
+			if(!fromhub && qwkbuf[k]==BEL && useron.rest&FLAG('B'))   
 				continue;
-			if(!fromhub && (qwkbuf[k]==1 || qwkbuf[k]==ESC) /* ANSI restriction */
+			/* ANSI restriction */
+			if(!fromhub && (qwkbuf[k]==1 || qwkbuf[k]==ESC)
 				&& useron.rest&FLAG('A'))
 				continue;
 			if(qwkbuf[k]!=1 && lastch!=1)

@@ -214,7 +214,7 @@ char *readtext(long *line,FILE *stream)
 					str[j]=BS;
 					break;
 				case 'a':
-					str[j]=7;	/* BEL */
+					str[j]=BEL;
 					break;
 				case 'f':
 					str[j]=FF;

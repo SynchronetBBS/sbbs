@@ -265,7 +265,7 @@ bool sbbs_t::writemsg(char *fname, char *top, char *title, long mode, int subnum
 				return(false); }
 			if((c==ESC || c==1) && useron.rest&FLAG('A')) /* ANSI restriction */
 				continue;
-			if(c==7 && useron.rest&FLAG('B'))   /* Beep restriction */
+			if(c==BEL && useron.rest&FLAG('B'))   /* Beep restriction */
 				continue;
 			if(!(console&CON_RAW_IN))	/* Ctrl-Z was hit */
 				break;

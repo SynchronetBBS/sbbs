@@ -157,7 +157,7 @@ int sbbs_t::atcodes(char *instr)
 	/* STOP */
 
 	else if(!strcmp(sp,"BELL") || !strcmp(sp,"BEEP"))
-		outchar(7);
+		outchar(BEL);
 
 	// else if(!strcmp(sp,"EVENT"))
 	//	  bputs(sectostr(sys_eventtime,str2));

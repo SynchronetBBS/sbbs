@@ -163,7 +163,7 @@ void sbbs_t::chatsection()
 							bprintf(text[NodeJoinedMultiChat]
 								,cfg.sys_nodes+1,cfg.guru[cfg.chan[channel-1]->guru]->name
 								,channel);
-						outchar(7);
+						outchar(BEL);
 						for(i=0;i<preusrs;i++) {
 							for(j=0;j<usrs;j++)
 								if(preusr[i]==usr[j])
@@ -182,7 +182,7 @@ void sbbs_t::chatsection()
 							bprintf(text[NodeLeftMultiChat]
 								,cfg.sys_nodes+1,cfg.guru[cfg.chan[channel-1]->guru]->name
 								,channel);
-						outchar(7);
+						outchar(BEL);
 						for(i=0;i<usrs;i++) {
 							for(j=0;j<preusrs;j++)
 								if(usr[i]==preusr[j])
