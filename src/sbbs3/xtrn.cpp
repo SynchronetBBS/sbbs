@@ -1031,7 +1031,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 
 //	lprintf("%s returned %d",realcmdline, retval);
 
-	errorlevel = retval; // Baja-retrievable error value
+	errorlevel = retval; // Baja or JS retrievable error value
 
 	return(retval);
 }
@@ -1893,7 +1893,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		input_thread_mutex_locked=false;
 	}
 
-	return(WEXITSTATUS(i));
+	return(errorlevel = WEXITSTATUS(i));
 }
 
 #endif	/* !WIN32 */
