@@ -281,7 +281,7 @@ void do_ansi(char *retbuf, int retsize)
 						p2[j++]=' ';
 						p2[j++]=term.attr;
 					}
-					for(k-0;j<i;i++) {
+					for(i=0;j<i;i++) {
 						puttext(term.x+1,term.y+i,term.x+term.width,term.y+i,p2);
 					}
 					free(p2);
