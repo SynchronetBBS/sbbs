@@ -36,7 +36,7 @@ function secstr(sec)
 	return(format("%02u:%02u",sec/60,sec%60));
 }
 
-var title = system.name + " BBS - FTP Server";
+var title = system.name + " - FTP Server";
 var font_face = "<font face=Arial,Helvetica,sans-serif>";
 var font_size = 2;	// Change base font size here
 if(client.socket.local_port!=21)

@@ -74,7 +74,7 @@ if(this.server==undefined) {	/* CGI, so send CGI/HTTP headers */
 // HTML Header
 writeln("<html>");
 writeln("<head>");
-writeln(format("<title>%s BBS - Node List</title>",system.name));
+writeln(format("<title>%s - Node List</title>",system.name));
 writeln(format("<meta http-equiv=refresh content=%d>",refresh_rate));
 writeln("</head>");
 
@@ -85,7 +85,7 @@ writeln("<font face=Arial,Helvetica,sans-serif>");
 writeln("<table border=0 width=100%>");
 writeln("<tr>");
 writeln("<td align=left>");
-writeln(format("<h1>%s BBS - Node List</h1>",system.name.italics()).fontcolor("lime"));
+writeln(format("<h1>%s - Node List</h1>",system.name.italics()).fontcolor("lime"));
 writeln("</td>");
 writeln("<td align=right>");
 writeln("<form>");
