@@ -35,30 +35,20 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#define  uint unsigned int
-
-/* #include <dos.h> */
-#include <stdio.h>
-#include <time.h>
-#include <io.h>			/* open */
+#include <time.h>		/* struct tm */
 #include <fcntl.h>		/* O_RDWR */
 #include <sys/stat.h>	/* S_IWRITE */
 #include <ctype.h>		/* isdigit */
 #include <stdlib.h>		/* atoi */
-#ifndef __unix__
-	#include <malloc.h>
-#endif
 #include <string.h>
 #include "smblib.h"
-#include "smbwrap.h"	/* fexist/flength */
 #include "sbldefs.h"
-#include "xsdkwrap.h"	/* PLATFORM_DESC */
+#include "genwrap.h"	/* PLATFORM_DESC */
+#include "dirwrap.h"	/* fexist/flength */
+#include "filewrap.h"	/* O_BINARY */
 
-#define VERSION "2.20/" PLATFORM_DESC
-
-extern int	daylight=0;
-extern long timezone=0L;
 smb_t		smb;
+char		revision[16];
 
 char *loadmsgtxt(smbmsg_t msg, int tails)
 {
@@ -67,60 +57,46 @@ char *loadmsgtxt(smbmsg_t msg, int tails)
 	int 	i,lzh;
 	long	l=0,lzhlen,length;
 
-for(i=0;i<msg.hdr.total_dfields;i++) {
-	if(!(msg.dfield[i].type==TEXT_BODY
-		|| (tails && msg.dfield[i].type==TEXT_TAIL)))
-		continue;
-	fseek(smb.sdt_fp,msg.hdr.offset+msg.dfield[i].offset
-		,SEEK_SET);
-	fread(&xlat,2,1,smb.sdt_fp);
-	lzh=0;
-	if(xlat==XLAT_LZH) {
-		lzh=1;
-		fread(&xlat,2,1,smb.sdt_fp); }
-	if(xlat!=XLAT_NONE) 		/* no other translations supported */
-		continue;
+	for(i=0;i<msg.hdr.total_dfields;i++) {
+		if(!(msg.dfield[i].type==TEXT_BODY
+			|| (tails && msg.dfield[i].type==TEXT_TAIL)))
+			continue;
+		fseek(smb.sdt_fp,msg.hdr.offset+msg.dfield[i].offset
+			,SEEK_SET);
+		fread(&xlat,2,1,smb.sdt_fp);
+		lzh=0;
+		if(xlat==XLAT_LZH) {
+			lzh=1;
+			fread(&xlat,2,1,smb.sdt_fp); }
+		if(xlat!=XLAT_NONE) 		/* no other translations supported */
+			continue;
 
-	length=msg.dfield[i].length-2;
-	if(lzh) {
-		length-=2;
-		if((lzhbuf=MALLOC(length))==NULL) {
-			printf("ERR_ALLOC lzhbuf of %lu\n",length);
-			return(buf); }
-		fread(lzhbuf,1,length,smb.sdt_fp);
-		lzhlen=*(long *)lzhbuf;
-		if((buf=REALLOC(buf,l+lzhlen+3))==NULL) {
+		length=msg.dfield[i].length-2;
+		if(lzh) {
+			length-=2;
+			if((lzhbuf=MALLOC(length))==NULL) {
+				printf("ERR_ALLOC lzhbuf of %lu\n",length);
+				return(buf); }
+			fread(lzhbuf,1,length,smb.sdt_fp);
+			lzhlen=*(long *)lzhbuf;
+			if((buf=REALLOC(buf,l+lzhlen+3))==NULL) {
+				FREE(lzhbuf);
+				printf("ERR_ALLOC lzhoutbuf of %l\n",l+lzhlen+1);
+				return(buf); }
+			lzh_decode(lzhbuf,length,buf+l);
 			FREE(lzhbuf);
-			printf("ERR_ALLOC lzhoutbuf of %l\n",l+lzhlen+1);
-			return(buf); }
-		lzh_decode(lzhbuf,length,buf+l);
-		FREE(lzhbuf);
-		l+=lzhlen; }
-	else {
-		if((buf=REALLOC(buf,l+msg.dfield[i].length+3))==NULL) {
-			printf("ERR_ALLOC of %lu\n",l+msg.dfield[i].length+1);
-			return(buf); }
-		l+=fread(buf+l,1,length,smb.sdt_fp); }
-	buf[l]=CR;
-	l++;
-	buf[l]=LF;
-	l++;
-	buf[l]=0; }
-return(buf);
-}
-
-
-/***************************************************************************/
-/* Truncates white-space chars off end of 'str' and terminates at first CR  */
-/****************************************************************************/
-void truncsp(char *str)
-{
-	char c;
-
-str[strcspn(str,"\r")]=0;
-c=strlen(str);
-while(c && (uchar)str[c-1]<=SP) c--;
-str[c]=0;
+			l+=lzhlen; }
+		else {
+			if((buf=REALLOC(buf,l+msg.dfield[i].length+3))==NULL) {
+				printf("ERR_ALLOC of %lu\n",l+msg.dfield[i].length+1);
+				return(buf); }
+			l+=fread(buf+l,1,length,smb.sdt_fp); }
+		buf[l]=CR;
+		l++;
+		buf[l]=LF;
+		l++;
+		buf[l]=0; }
+	return(buf);
 }
 
 /****************************************************************************/
@@ -198,14 +174,16 @@ ucrc16(0,&crc);
 return(crc);
 }
 
-time_t checktime()
+/****************************************************************************/
+/* Truncates white-space chars off end of 'str'								*/
+/****************************************************************************/
+static void truncsp(char *str)
 {
-	struct tm tm;
+	uint c;
 
-memset(&tm,0,sizeof(tm));
-tm.tm_year=94;
-tm.tm_mday=1;
-return(mktime(&tm)^0x2D24BD00L);
+	c=strlen(str);
+	while(c && (uchar)str[c-1]<=SP) c--;
+	str[c]=0;
 }
 
 int main(int argc, char **argv)
@@ -218,28 +196,27 @@ int main(int argc, char **argv)
 	smbmsg_t msg;
 	FILE	*stream;
 
-	fprintf(stderr,"\nSMB2SBL v%s - Updates SBL via SMB - Developed 1994-2000 "
-		"Rob Swindell\n\n",VERSION);
+	sscanf("$Revision$" + 11, "%s", revision);
 
+	fprintf(stderr,"\nSMB2SBL v2.%s-%s - Updates SBL via SMB - Copyright 2002 "
+		"Rob Swindell\n\n",revision,PLATFORM_DESC);
+
+#if 0
 	if(putenv("TZ=UCT0"))
 		fprintf(stderr,"!putenv() FAILED\n");
 	tzset();
-
-	if(checktime()) {
-		printf("Time problem!\n");
-		return(-1); }
+#endif
 
 	if(argc<3) {
 		fprintf(stderr,"usage: smb2sbl <smb_file> <sbl.dab>\n\n");
 		fprintf(stderr,"ex: smb2sbl /sbbs/data/subs/syncdata "
 			"/sbbs/xtrn/sbl/sbl.dab\n");
-		return(1); }
+		return(1); 
+	}
 
-	strcpy(smb.file,argv[1]);
-	strupr(smb.file);
+	SAFECOPY(smb.file,argv[1]);
 
-	strcpy(str,argv[2]);
-	strupr(str);
+	SAFECOPY(str,argv[2]);
 	if((file=sopen(str,O_RDWR|O_BINARY|O_CREAT,SH_DENYNO))==-1) {
 		printf("error opening %s\n",str);
 		return(1); }
@@ -300,7 +277,7 @@ int main(int argc, char **argv)
 		}
 
 		printf("\nMessage #%lu by %s on %.24s\n"
-			,msg.hdr.number,msg.from,ctime(&(time_t)msg.hdr.when_written.time));
+			,msg.hdr.number,msg.from,ctime((time_t*)&msg.hdr.when_written.time));
 
 		truncsp(msg.subj);
 		if(!msg.subj[0]) {

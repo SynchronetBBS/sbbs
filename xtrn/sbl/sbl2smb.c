@@ -35,39 +35,33 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#define  uint unsigned int
-
 #ifdef _WIN32
-#include <windows.h>
+	#include <windows.h>
+	#include <io.h>		/* access */
+	#include <share.h>
 #endif
 
-#include <io.h>		/* access */
 #include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <fcntl.h>
 #include <sys/stat.h>
-#include <share.h>
 
 #include "genwrap.h"
+#include "filewrap.h"
 #include "dirwrap.h"
 #include "sbbsdefs.h"
 #include "smblib.h"
 #include "sbldefs.h"
 
-#define SBL2SMB_VER "2.20/" PLATFORM_DESC
-
 smb_t		smb;
-extern int	daylight=0;
-extern long timezone=0L;
-
-unsigned	_stklen=16000;
+char		revision[16];
 
 /****************************************************************************/
 /* Truncates white-space chars off end of 'str'								*/
 /****************************************************************************/
-void truncsp(char *str)
+static void truncsp(char *str)
 {
 	uint c;
 
@@ -136,11 +130,11 @@ char* unixtodstr(time_t unix_time, char *str)
 
 
 
-#define BUF_LEN 8192
+#define BUF_LEN (32*1024)
 
 int main(int argc, char **argv)
 {
-	uchar	str[128],tmp[128],buf[BUF_LEN],*p,software[128];
+	uchar	str[128],tmp[128],*buf,*p,software[128];
 	int 	i,file;
 	ushort	xlat;
 	long	length;
@@ -150,25 +144,30 @@ int main(int argc, char **argv)
 	smbmsg_t msg;
 	FILE	*stream;
 
-	fprintf(stderr,"\nSBL2SMB v%s - Write SBL to SMB - Developed 1994-2000 "
-		"Rob Swindell\n\n",SBL2SMB_VER);
+	sscanf("$Revision$" + 11, "%s", revision);
+
+	fprintf(stderr,"\nSBL2SMB v2.%s-%s - Write SBL to SMB - Coyright 2002 "
+		"Rob Swindell\n\n",revision,PLATFORM_DESC);
 	if(argc<3) {
 		fprintf(stderr,"usage: sbl2smb <sbl.dab> <smb_file> [/s:software]\n\n");
-		fprintf(stderr,"ex: sbl2smb c:\\sbbs\\xtrn\\sbl\\sbl.dab "
-			"c:\\sbbs\\data\\subs\\syncdata /s:syn\n");
-		return(1); }
+		fprintf(stderr,"ex: sbl2smb /sbbs/xtrn/sbl/sbl.dab "
+			"/sbbs/data/subs/syncdata\n");
+		return(1); 
+	}
 
+	if((buf = malloc(BUF_LEN)) == NULL) {
+		fprintf(stderr,"!malloc failure\n");
+		return(2);
+	}
 	now=time(NULL);
 
 	software[0]=0;
 	if(argc>3 && !strnicmp(argv[3],"/S:",3))
-		strcpy(software,argv[3]+3);
+		SAFECOPY(software,argv[3]+3);
 
-	strcpy(smb.file,argv[2]);
-	strupr(smb.file);
+	SAFECOPY(smb.file,argv[2]);
 
-	strcpy(str,argv[1]);
-	strupr(str);
+	SAFECOPY(str,argv[1]);
 	if((file=sopen(str,O_RDWR|O_BINARY,SH_DENYNO))==-1) {
 		printf("error opening %s\n",str);
 		return(1); }
@@ -349,8 +348,7 @@ int main(int argc, char **argv)
 				,"Desc:",bbs.desc[i]);
 			strcat(buf,str); }
 
-		strcat(buf,"\r\n--- SBL2SMB v");
-		strcat(buf,SBL2SMB_VER);
+		sprintf(buf+strlen(buf),"\r\n--- SBL2SMB 2.%s-%s",revision,PLATFORM_DESC);
 
 		length=strlen(buf);   /* +2 for translation string */
 

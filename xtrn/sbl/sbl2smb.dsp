@@ -41,7 +41,7 @@ RSC=rc.exe
 # PROP Intermediate_Dir "msvc.win32.release"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /c
-# ADD CPP /nologo /W3 /GX /O2 /I "c:\src\sbbs3" /I "..\sdk" /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /c
+# ADD CPP /nologo /W3 /GX /O2 /I "c:\src\sbbs3" /I "c:\src\xpdev" /I "..\sdk" /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /c
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
 BSC32=bscmake.exe
@@ -82,15 +82,15 @@ LINK32=link.exe
 # Name "sbl2smb - Win32 Debug"
 # Begin Source File
 
-SOURCE=..\..\..\src\xpdev\dirwrap.c
+SOURCE=c:\src\xpdev\dirwrap.c
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\..\src\xpdev\filewrap.c
+SOURCE=c:\src\xpdev\filewrap.c
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\..\src\xpdev\genwrap.c
+SOURCE=c:\src\xpdev\genwrap.c
 # End Source File
 # Begin Source File
 

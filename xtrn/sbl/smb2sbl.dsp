@@ -41,7 +41,7 @@ RSC=rc.exe
 # PROP Intermediate_Dir "msvc.win32.release"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /c
-# ADD CPP /nologo /W3 /GX /O2 /I "c:\src\sbbs3" /I "..\sdk" /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /c
+# ADD CPP /nologo /W3 /GX /O2 /I "c:\src\sbbs3" /I "c:\src\xpdev" /I "..\sdk" /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /c
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
 BSC32=bscmake.exe
@@ -82,6 +82,18 @@ LINK32=link.exe
 # Name "smb2sbl - Win32 Debug"
 # Begin Source File
 
+SOURCE=C:\src\xpdev\dirwrap.c
+# End Source File
+# Begin Source File
+
+SOURCE=C:\src\xpdev\filewrap.c
+# End Source File
+# Begin Source File
+
+SOURCE=C:\src\xpdev\genwrap.c
+# End Source File
+# Begin Source File
+
 SOURCE=C:\src\sbbs3\lzh.c
 # End Source File
 # Begin Source File
@@ -91,10 +103,6 @@ SOURCE=.\smb2sbl.c
 # Begin Source File
 
 SOURCE=C:\src\sbbs3\smblib.c
-# End Source File
-# Begin Source File
-
-SOURCE=C:\src\sbbs3\smbwrap.c
 # End Source File
 # End Target
 # End Project
