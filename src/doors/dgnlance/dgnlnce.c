@@ -53,6 +53,9 @@ struct opponent {
 	double	vehicle;
 };
 
+const char dots[]="...............................................";
+const char spaces[]="                                               ";
+
 double	required[29];	/* In these arrays, 0 isn't actually used */
 char		wname[26][31];
 char		sname[26][31];
@@ -146,7 +149,6 @@ char	tempnn[51];
 char	tempoo[51];
 char	temppp[51];
 char	tempqq[51];
-char	emptykey=0;
 double temp1a,temp1b,temp1c,temp1d,temp1e,temp1f;
 int	addtofore=0;
 
@@ -164,11 +166,6 @@ long int round(double v)
 /*****************************/
 /* Functions from common.pas */
 /*****************************/
-
-void cls(void)
-{
-	od_clr_scr();
-}
 
 char	*date(void)
 {
@@ -192,255 +189,19 @@ void textbackground(int c)
 	od_set_color(currfg,currbg);
 }
 
-void ansic(int c)
-{
-	if(c==1 || c==0)
-		c=0;
-	else {
-		if(c==2)
-			c=7;
-		else
-			c=c-2;
-	}
-	switch(c) {
-		case 0: addtofore=0; textcolor(7); textbackground(0); break;
-		case 1: addtofore=8; textcolor(11); textbackground(0); break;
-		case 2: addtofore=8; textcolor(14); textbackground(0); break;
-		case 3: addtofore=0; textcolor(5); textbackground(0); break;
-		case 4: addtofore=8; textcolor(15); textbackground(1); break;
-		case 5: addtofore=0; textcolor(2); textbackground(0); break;
-		case 6: addtofore=8; textcolor(12); textbackground(8); break;
-		case 7: addtofore=8; textcolor(9); textbackground(0); break;
-		case 8: addtofore=0; textcolor(1); textbackground(0); break;
-		case 9: addtofore=8; textcolor(15); textbackground(0); break;
-	}
-}
-
-void prompt(char *prmpt)
-{
-	char *p;
-
-	for(p=prmpt; *p; p++) {
-		switch(*p) {
-			case 10:
-				ansic(0);
-				/* Fall through */
-			default:
-				od_putch(*p);
-		}
-	}
-}
-
-void nugetkey(char *c)
-{
-	if(emptykey) {
-		*c=emptykey;
-		emptykey=0;
-		return;
-	}
-	*c=od_get_key(TRUE);
-}
-
 void pausescr(void)
 {
 	char	c;
 
-	ansic(3);
-	prompt("[Pause]");
-	ansic(0);
-	nugetkey(&c);
-	prompt("\010 \010\010 \010\010 \010\010 \010\010 \010\010 \010\010 \010");
+	od_set_color(L_CYAN,D_BLACK);
+	od_disp_str("[Pause]");
+	od_set_color(D_GREY,D_BLACK);
+	od_get_key(TRUE);
+	od_disp_str("\010 \010\010 \010\010 \010\010 \010\010 \010\010 \010\010 \010");
 }
 
-void nl(void)
-{
-	prompt("\r\n");
-}
 
-void print(char *pr)
-{
-	prompt(pr);
-	nl();
-}
-
-void prt(char *i)
-{
-	ansic(4);
-	prompt(i);
-	ansic(0);
-}
-
-BOOL empty(void)
-{
-	if(emptykey)
-		return(FALSE);
-	emptykey=od_get_key(FALSE);
-	if(emptykey)
-		return(FALSE);
-	return(TRUE);
-}
-
-void wkey(BOOL *abrt, BOOL *next)
-{
-	char	cc;
-
-	for(;!(empty() || abrt);) {
-		nugetkey(&cc);
-		if(cc==' ' || cc==3 || cc==24 || cc==11)
-			*abrt=TRUE;
-		if(cc==14) {
-			*abrt=TRUE;
-			*next=TRUE;
-		}
-		if(cc==19 || cc=='P' || cc=='p')
-			nugetkey(&cc);
-	}
-}
-
-void printa(char *i, BOOL *abrt, BOOL *next)
-{
-	int	c;
-	*abrt=FALSE;
-	*next=FALSE;
-	if(!empty())
-		wkey(abrt, next);
-	for(c=0; i[c];) {
-		if(i[c]==3) {
-			switch(i[c+1]) {
-				case 0:
-				case '0':
-					ansic(0);
-					break;
-				case 1:
-					ansic(1);
-					break;
-				case 2:
-					ansic(2);
-					break;
-				case 3:
-				case '1':
-					ansic(3);
-					break;
-				case 4:
-				case '2':
-					ansic(4);
-					break;
-				case 5:
-				case '3':
-					ansic(5);
-					break;
-				case 6:
-				case '4':
-					ansic(6);
-					break;
-				case 7:
-				case '5':
-					ansic(7);
-					break;
-				case 8:
-				case '6':
-					ansic(8);
-					break;
-				case '7':
-					ansic(9);
-					break;
-				case '8':
-					ansic(10);
-					break;
-				case '9':
-					ansic(11);
-					break;
-			}
-		}
-		else if(i[c]==1) {
-			switch(i[c+1]) {
-				case 'K': textcolor(0+addtofore); break;
-				case 'R': textcolor(4+addtofore); break;
-				case 'G': textcolor(2+addtofore); break;
-				case 'Y': textcolor(6+addtofore); break;
-				case 'B': textcolor(1+addtofore); break;
-				case 'M': textcolor(5+addtofore); break;
-				case 'C': textcolor(3+addtofore); break;
-				case 'W': textcolor(7+addtofore); break;
-				case '0': textbackground(0); break;
-				case '1': textbackground(4); break;
-				case '2': textbackground(2); break;
-				case '3': textbackground(6); break;
-				case '4': textbackground(1); break;
-				case '5': textbackground(5); break;
-				case '6': textbackground(3); break;
-				case '7': textbackground(7); break;
-				case 'H': addtofore=8; break;
-				case 'N': 
-					addtofore=0;
-					textcolor(7);
-					textbackground(0);
-					break;
-				case 1:
-					od_putch(1);
-					break;
-				case 0:
-					nl();
-					break;
-			}
-		}
-		if(!empty())
-			wkey(abrt, next);
-		if((i[c]==3 || i[c]==1) && i[c+1])
-			c++;
-		else
-			od_putch(i[c]);
-		c++;
-	}
-}
-
-void printacr(char *i, BOOL *abrt, BOOL *next)
-{
-	if(!*abrt) {
-		printa(i,abrt,next);
-		if(*(lastchar(i))!=1)
-			printa("\001",abrt,next);
-	}
-}
-
-void pfl(char *fn, BOOL *abrt, BOOL cr)
-{
-	FILE	*fil;
-	char	i[256];
-	BOOL	next;
-	INT16	linecount=0;
-
-	fil=fopen(fn,"rb");
-	if(fil==NULL) {
-		prompt(fn);
-		print(" not found.");
-	}
-	else {
-		*abrt=FALSE;
-		while(!feof(fil) && (!*abrt)) {
-			fgets(i,sizeof(i),fil);
-			truncsp(i);
-			if(cr) {
-				printacr(i,abrt,&next);
-				if(++linecount == od_control.user_screen_length-1) {
-					pausescr();
-					linecount=0;
-				}
-			}
-			else
-				printa(i,abrt,&next);
-		}
-        fclose(fil);
-	}
-	nl();
-	nl();
-}
-
-void printfile(char *fn)
-{
-	BOOL	abt;
-	pfl(fn,&abt,TRUE);
-}
+#define nl()	od_disp_str("\r\n");
 
 /********************************/
 /* Functions from original .pas */
@@ -509,11 +270,9 @@ void depobank(void)
 		tempbank=0;
 	player[b].gold=player[b].gold-tempbank;
 	player[b].bank=player[b].bank+tempbank;
-	sprintf(temp, "%1.0f", player[b].bank);
 	nl();
-	ansic(3);
-	prompt(temp);
-	print(" Steel pieces are in the bank. ");
+	od_set_color(L_CYAN,D_BLACK);
+	od_printf("%1.0f Steel pieces are in the bank.\r\n",player[b].bank);
 }
 
 void withdrawbank(void)
@@ -524,12 +283,9 @@ void withdrawbank(void)
 		tempbank=0;
 	player[b].gold=player[b].gold+tempbank;
 	player[b].bank=player[b].bank-tempbank;
-	sprintf(temp,"%1.0f",player[b].gold);
 	nl();
-	ansic(5);
-	prompt("You are now carring ");
-	prompt(temp);
-	print(" Steel pieces.");
+	od_set_color(D_MAGENTA,D_BLACK);
+	od_printf("You are now carrying %1.0f Steel pieces.\r\n",player[b].gold);
 }
 
 void checkday(void)
@@ -580,34 +336,19 @@ void	playerlist(void)
 	char		line[81];
 
 	checkday();
-	cls();
+	od_clr_scr();
 	nl();
-	ansic(5);
-	print("Hero Rankings:");
-	print("!!!!!!!!!!!!!!");
+	od_set_color(D_MAGENTA,D_BLACK);
+	od_disp_str("Hero Rankings:\r\n");
+	od_disp_str("!!!!!!!!!!!!!!\r\n");
 	a=1;
 	for(a=1;a<=number_of_players && !abrt; a++) {
 		nl();
-		sprintf(temp,"%f",a);
-		sprintf(tempaa,"%2.0f",player[a].r);
-		sprintf(tempcc,"%2.0f",player[a].wins);
-		sprintf(tempdd,"%2.0f",player[a].loses);
-		if(player[a].status==1)
-			SAFECOPY(tch,"SLAIN");
-		else
-			SAFECOPY(tch,"ALIVE");
-		ansic(5);
-		if(a<10)
-			prompt(" ");
-		prompt(temp);
-		prompt(".  ");
-		ansic(3);
-		prompt(player[a].pseudo);
-		for(spc=1; spc<=(30-strlen(player[a].pseudo)); spc++)
-			prompt(".");
-		ansic(2);
-		sprintf(line,"Lev=%s  W=%s  L=%s  S=%s",tempaa,tempcc,tempdd,tch);
-		printa(line,&abrt,&next);
+		od_set_color(D_MAGENTA,D_BLACK);
+		od_printf("%2d.  `bright cyan`%.30s%.*s`green`Lev=%-2.0f  W=%-2.0f  L=%-2.0f  S=%s"
+				,a,player[a].pseudo,30-strlen(player[a].pseudo),dots,player[a].r
+				,player[a].wins,player[a].loses
+				,(player[a].status==1?"SLAIN":"ALIVE"));
 		a++;
 	}
 }
@@ -642,19 +383,13 @@ void heal(void)
 {
 	char	tempts[51];
 	healall=FALSE;
-	cls();
-	sprintf(temp,"%d",round(8*player[b].r));
-	ansic(5);
-	prompt("Clerics want ");
-	prompt(temp);
-	print(" Steel pieces per wound.");
-	sprintf(tempts,"%1.0f",player[b].damage);
-	ansic(4);
-	prompt("You have ");
-	prompt(tempts);
-	print(" points of damage to heal.");
-	ansic(3);
-	prompt("How many do points do you want healed? ");
+	od_clr_scr();
+	od_set_color(D_MAGENTA,D_BLACK);
+	od_printf("Clerics want %d Steel pieces per wound.\r\n",round(8*player[b].r));
+	od_set_color(L_YELLOW,D_BLACK);
+	od_printf("You have %1.0f points of damage to heal.\r\n",player[b].damage);
+	od_set_color(L_CYAN,D_BLACK);
+	od_disp_str("How many do points do you want healed? ");
 	od_input_str(temp,3,'0','9');
 	opt=atoi(temp);
 	if(opt<0)
@@ -662,44 +397,40 @@ void heal(void)
 	if(healall)
 		opt=player[b].damage;
 	if(((round(opt))*(player[b].r)*10)>player[b].gold) {
-		ansic(8);
-		print("Sorry, you do not have enough Steel .");
+		od_set_color(L_RED,B_BLACK);
+		od_disp_str("Sorry, you do not have enough Steel.\r\n");
 		opt=0;
 	}
 	else if(opt>player[b].damage)
 		opt=player[b].damage;
 	player[b].damage=player[b].damage-opt;
 	player[b].gold=player[b].gold-8*opt*player[b].r;
-	sprintf(temp,"%1.0f",opt);
-	prompt(temp);
-	print(" hit points healed.");
+	od_printf("%1.0f hit points healed.\r\n",opt);
 }
 
 void findo(void)
 {
 	nl();
-	ansic(4);
-	print("The Vile Enemy Dropped Something!");
-	prompt("Do you want to get it? ");
+	od_set_color(L_YELLOW,D_BLACK);
+	od_disp_str("The Vile Enemy Dropped Something!\r\n");
+	od_disp_str("Do you want to get it? ");
 	if(od_get_answer("YN")=='Y') {
-		print("Y");
+		od_disp_str("Y\r\n");
 		okea=round(xp_random(99)+1);
 		if ((okea < 10) && (player[b].weapon>=25)) {
 			player[b].weapon=player[b].weapon+1;
-			prompt("you have found a ");
-			prompt(wname[round(player[b].weapon)]);
-			print(".");
+			od_printf("You have found a %s.\r\n",wname[round(player[b].weapon)]);
 		}
 		if ((okea > 11) && (okea < 40)) {
 			player[b].gold=player[b].gold+40;
-			print("you have come across 40 Steel pieces");
+			od_disp_str("You have come across 40 Steel pieces\r\n");
 		}
 		else
-			print("it's gone!!!!");
+			od_disp_str("It's gone!!!!\r\n");
 	}
 	else {
-		print("N");
-		print("I wonder what it was?!?");
+		od_disp_str("N\r\n");
+		od_disp_str("I wonder what it was?!?\r\n");
 	}
 }
 
@@ -739,20 +470,15 @@ void mutantvictory(void)
 	a=m;
 	if(!doga)
 		opp.gold=opp.gold*supplant();
-	sprintf(temp,"%0.0f",opp.gold);
 	nl();
-	prompt("You take his ");
-	prompt(temp);
-	print(" Steel pieces.");
+	od_printf("You take his %1.0f Steel pieces.\r\n",opp.gold);
 	player[b].gold=player[b].gold+opp.gold;
 	if(doga) {
 		nl();
-		ansic(7);
-		print("The Last Words He Utters Are...");
+		od_set_color(D_GREEN,D_BLACK);
+		od_disp_str("The Last Words He Utters Are...\r\n");
 		nl();
-		prompt("\"");
-		prompt(player[a].gaspd);
-		print("\"");
+		od_printf("\"%s\"\r\n",player[a].gaspd);
 		nl();
 		player[b].wins++;
 		player[a].loses++;
@@ -766,15 +492,15 @@ void mutantvictory(void)
 			bt=player[b].plus;
 			player[b].plus=player[a].plus;
 			player[a].plus=bt;
-			ansic(7);
-			print("You Hath Taken His Weapon.");
+			od_set_color(D_GREEN,D_BLACK);
+			od_disp_str("You Hath Taken His Weapon.\r\n");
 		}
 		if(player[a].vehicle>player[b].vehicle) {
 			d=player[b].vehicle;
 			player[b].vehicle=player[a].vehicle;
 			player[a].vehicle=d;
-			ansic(4);
-			print("You Hath Taken His Armour.");
+			od_set_color(L_YELLOW,D_BLACK);
+			od_disp_str("You Hath Taken His Armour.\r\n");
 		}
 		player[b].attack=find1();
 		player[b].power=find2();
@@ -785,10 +511,7 @@ void mutantvictory(void)
 	}
 	z*=supplant();
 	player[b].experience+=z;
-	sprintf(temp,"%0.0f",z);
-	prompt("You obtain ");
-	prompt(temp);
-	print(" exp points.");
+	od_printf("You obtain %1.0f exp points.\r\n",z);
 	doga=FALSE;
 }
 
@@ -796,16 +519,10 @@ void levelupdate(void)
 {
 	INT16 x,a;
 
-	sprintf(temp,"%3d",round(player[b].r+1));
-	ansic(7);
-	sprintf(temp,"%9.0f",player[b].experience);
 	if(player[b].experience>required[round(player[b].r+1)]) {
 		player[b].r++;
-		sprintf(tempaa,"%2.0f",player[b].r);
-		ansic(4);
-		prompt("Welcome to level ");
-		prompt(tempaa);
-		print("!");
+		od_set_color(L_YELLOW,D_BLACK);
+		od_printf("Welcome to level %1.0f!\r\n",player[b].r);
 		x=xp_random(6)+1;
 		switch(x) {
             	case 1:player[b].strength++; break;
@@ -821,7 +538,7 @@ void levelupdate(void)
 
 void quickexit(void)
 {
-	print("The Gods of Krynn Disapprove of your actions!");
+	od_disp_str("The Gods of Krynn Disapprove of your actions!\r\n");
 	exit(1);
 }
 
@@ -831,10 +548,10 @@ void amode(void)
 	if(roll<1.5) {
 		tint=round(xp_random(3)+1);
 		switch(tint) {
-			case 1:print("Swish you missed!"); break;
-			case 2:print("HA HA! He dodges your swing!"); break;
-			case 3:print("CLANG, The attack is blocked!"); break;
-			case 4:print("You Fight vigorously and miss!"); break;
+			case 1:od_disp_str("Swish you missed!\r\n"); break;
+			case 2:od_disp_str("HA HA! He dodges your swing!\r\n"); break;
+			case 3:od_disp_str("CLANG, The attack is blocked!\r\n"); break;
+			case 4:od_disp_str("You Fight vigorously and miss!\r\n"); break;
 		}
 	}
 	else {
@@ -842,33 +559,26 @@ void amode(void)
 		if(roll>5*player[b].power)
 			roll=5*player[b].power;
 		opp.shield=opp.shield-roll;
-		sprintf(temp,"%d",round(roll));
 		tint=round(xp_random(2)+1);
 		switch(tint) {
 			case 1:
-				prompt("You Sliced him for ");
-				prompt(temp);
-				print(".");
+				od_printf("You sliced him for %d.\r\n",round(roll));
 				break;
 			case 2:
-				prompt("You made contact to his body for ");
-				prompt(temp);
-				print(".");
+				od_printf("You made contact to his body for %d.\r\n",round(roll));
 				break;
 			case 3:
-				prompt("You hacked him for ");
-				prompt(temp);
-				print(".");
+				od_printf("You hacked him for %d.",round(roll));
 				break;
 		}
 		if(opp.shield<=0) {
 			nl();
 			tint=round(xp_random(3)+1);
 			switch(tint) {
-				case 1:print("A Painless Death!"); break;
-				case 2:print("It Hath died!"); break;
-				case 3:print("A Smooth killing!"); break;
-				case 4:print("It has gone to the Abyss!"); break;
+				case 1:od_disp_str("A Painless Death!\r\n"); break;
+				case 2:od_disp_str("It Hath died!\r\n"); break;
+				case 3:od_disp_str("A Smooth killing!\r\n"); break;
+				case 4:od_disp_str("It has gone to the Abyss!\r\n"); break;
 			}
 			okea=round(xp_random(99)+1);
 			if(okea<30)
@@ -886,30 +596,23 @@ void bmode(void)
 	if((opp.shield>0) && live) {
 		roll=opponentattack();
 		if(roll<1.5) {
-			ansic(7);
-			print("His attack tears your armour.");
+			od_set_color(D_GREEN,D_BLACK);
+			od_disp_str("His attack tears your armour.\r\n");
 		}
 		else {
 			roll=opponentattack2();
 			if(roll>5*opp.weapon2)
 				roll=5*opp.weapon2;
-			sprintf(temp,"%d",round(roll));
 			tint=round(xp_random(2)+1);
 			switch(tint) {
 				case 1:
-					prompt("He hammered you for ");
-					prompt(temp);
-					print(".");
+					od_printf("He hammered you for %d.\r\n",round(roll));
 					break;
 				case 2:
-					prompt("He swung and hit for ");
-					prompt(temp);
-					print(".");
+					od_printf("He swung and hit for %d.\r\n",round(roll));
 					break;
 				case 3:
-					prompt("You are suprised when he hits you for ");
-					prompt(temp);
-					print(".");
+					od_printf("You are surprised when he hits you for %d.\r\n",round(roll));
 					break;
 			}
 			player[b].damage=player[b].damage+roll;
@@ -917,10 +620,10 @@ void bmode(void)
 				nl();
 				tint=round(xp_random(3)+1);
 				switch(tint) {
-					case 1:print("Return This Knight To Huma's Breast...."); break;
-					case 2:print("You Hath Been Slain!!"); break;
-					case 3:print("Return Soon Brave Warrior!"); break;
-					case 4:print("May Palidine Be With You!!"); break;
+					case 1:od_disp_str("Return This Knight To Huma's Breast....\r\n"); break;
+					case 2:od_disp_str("You Hath Been Slain!!\r\n"); break;
+					case 3:od_disp_str("Return Soon Brave Warrior!\r\n"); break;
+					case 4:od_disp_str("May Palidine Be With You!!\r\n"); break;
 				}
 				if(doga) {
 					player[a].wins++;
@@ -944,89 +647,48 @@ void statshow(void)
 {
 	char	word[21];
 
-	cls();
-	sprintf(tempaa,"%1.0f",player[b].r);
-	sprintf(tempbb,"%1.0f",player[b].gold);
-	sprintf(tempcc,"%2.0f",player[b].strength);
-	sprintf(tempdd,"%2.0f",player[b].intelligence);
-	sprintf(tempee,"%2.0f",player[b].luck);
-	sprintf(tempff,"%2.0f",player[b].dexterity);
-	sprintf(tempmm,"%2.0f",player[b].constitution);
-	sprintf(tempnn,"%2.0f",player[b].charisma);
-	sprintf(tempgg,"%1.0f",player[b].experience);
-	sprintf(temphh,"%1.0f",player[b].shield-player[b].damage);
-	sprintf(tempii,"%1.0f",player[b].shield);
-	sprintf(tempjj,"%1.0f",player[b].bank);
-	sprintf(tempkk,"%d",player[b].flights);
-	sprintf(tempoo,"%d",round(3-dog));
-	sprintf(temppp,"%d",round(player[b].wins));
-	sprintf(tempqq,"%d",round(player[b].loses));
-	sprintf(templl,"%d",10-trips);
+	od_clr_scr();
 
-	ansic(5);
-	prompt("Name: ");
-	prompt(player[b].pseudo);
-	prompt("   Level: ");
-	print(tempaa);
-	ansic(3);
-	prompt("W/L: ");
-	prompt(temppp);
-	prompt("/");
-	prompt(tempqq);
-	prompt("   Exp: ");
-	print(tempgg);
+	od_set_color(D_MAGENTA,D_BLACK);
+	od_printf("Name: %s   Level: %1.0f\r\n",player[b].pseudo,player[b].r);
+	od_set_color(L_CYAN,D_BLACK);
+	od_printf("W/L: %1.0f/%1.0f   Exp: %1.0f\r\n",player[b].wins,player[b].loses,player[b].experience);
 	nl();
-	ansic(4);
-	prompt("Steel  (in hand): ");
-	print(tempbb);
-	ansic(4);
-	prompt("Steel  (in bank): ");
-	print(tempjj);
+	od_set_color(L_YELLOW,D_BLACK);
+	od_printf("Steel  (in hand): %1.0f\r\n",player[b].gold);
+	od_printf("Steel  (in bank): %1.0f\r\n",player[b].bank);
 	nl();
-	ansic(2);
-	prompt("Battles: ");
-	prompt(tempoo);
-	prompt("   Retreats: ");
-	prompt(tempkk);
-	prompt("    Fights: ");
-	prompt(templl);
-	prompt("   Hps: ");
-	prompt(temphh);
-	prompt("(");
-	prompt(tempii);
-	print(")");
+	od_set_color(L_BLUE,D_BLACK);
+	od_printf("Battles: %d   Retreats: %1.0f    Fights: %d   Hps: %1.0f(%1.0f)\r\n",round(3-dog),player[b].flights,10-trips,player[b].shield-player[b].damage,player[b].shield);
 	nl();
-	ansic(3);
-	prompt("Weapon: ");
-	prompt(wname[round(player[b].weapon)]);
-	prompt("     Armor: ");
-	print(sname[round(player[b].vehicle)]);
+	od_set_color(L_CYAN,D_BLACK);
+	od_printf("Weapon: %s     Armor: %s\r\n",wname[round(player[b].weapon)],sname[round(player[b].vehicle)]);
 }
 
 void incre(void)
 {
-	prompt("Increase which stat? ");
+	od_disp_str("Increase which stat? ");
 	switch(od_get_answer("123456Q")) {
-		case '1':print("1"); player[b].strength++; break;
-		case '2':print("2"); player[b].intelligence++; break;
-		case '3':print("3"); player[b].dexterity++; break;
-		case '4':print("4"); player[b].luck++; break;
-		case '5':print("5"); player[b].constitution++; break;
-		case '6':print("6"); player[b].charisma++; break;
-		case 'Q':print("Q"); partone=FALSE; break;
+		case '1':od_disp_str("1\r\n"); player[b].strength++; break;
+		case '2':od_disp_str("2\r\n"); player[b].intelligence++; break;
+		case '3':od_disp_str("3\r\n"); player[b].dexterity++; break;
+		case '4':od_disp_str("4\r\n"); player[b].luck++; break;
+		case '5':od_disp_str("5\r\n"); player[b].constitution++; break;
+		case '6':od_disp_str("6\r\n"); player[b].charisma++; break;
+		case 'Q':od_disp_str("Q\r\n"); partone=FALSE; break;
 	}
 }
 
 void decre(void)
 {
-	prompt("Decrease which stat? ");
+	od_disp_str("Decrease which stat? \r\n");
 	switch(od_get_answer("123456")) {
-		case '1':print("1"); player[b].strength-=2; break;
-		case '2':print("2"); player[b].intelligence-=2; break;
-		case '3':print("3"); player[b].dexterity-=2; break;
-		case '4':print("4"); player[b].luck-=2; break;
-		case '5':print("5"); player[b].constitution-=2; break;
-		case '6':print("6"); player[b].charisma-=2; break;
+		case '1':od_disp_str("1\r\n"); player[b].strength-=2; break;
+		case '2':od_disp_str("2\r\n"); player[b].intelligence-=2; break;
+		case '3':od_disp_str("3\r\n"); player[b].dexterity-=2; break;
+		case '4':od_disp_str("4\r\n"); player[b].luck-=2; break;
+		case '5':od_disp_str("5\r\n"); player[b].constitution-=2; break;
+		case '6':od_disp_str("6\r\n"); player[b].charisma-=2; break;
 	}
 }
 
@@ -1034,62 +696,50 @@ void ministat(void)
 {
 	yaya=TRUE;
 	partone=FALSE;
-	sprintf(tempaa,"%1.0f",player[b].strength);
-	sprintf(tempbb,"%1.0f",player[b].intelligence);
-	sprintf(tempdd,"%1.0f",player[b].dexterity);
-	sprintf(tempcc,"%1.0f",player[b].luck);
-	sprintf(tempee,"%1.0f",player[b].constitution);
-	sprintf(tempff,"%1.0f",player[b].charisma);
 	nl();
-	print("Status Change:");
-	print("^^^^^^^^^^^^^^");
-	prompt("1> Str: ");
-	print(tempaa);
-	prompt("2> Int: ");
-	print(tempbb);
-	prompt("3> Dex: ");
-	print(tempdd);
-	prompt("4> Luk: ");
-	print(tempcc);
-	prompt("5> Con: ");
-	print(tempee);
-	prompt("6> Chr: ");
-	print(tempff); 
+	od_disp_str("Status Change:\r\n");
+	od_disp_str("^^^^^^^^^^^^^^\r\n");
+	od_printf("1> Str: %1.0f\r\n",player[b].strength);
+	od_printf("2> Int: %1.0f\r\n",player[b].intelligence);
+	od_printf("3> Dex: %1.0f\r\n",player[b].dexterity);
+	od_printf("4> Luk: %1.0f\r\n",player[b].luck);
+	od_printf("5> Con: %1.0f\r\n",player[b].constitution);
+	od_printf("6> Chr: %1.0f\r\n",player[b].charisma);
 	nl();
 	if(player[b].strength < 6) {
 		yaya=FALSE;
 		nl();
-		print("Strength cannot go below 6");
+		od_disp_str("Strength cannot go below 6\r\n");
 	}
 	if(player[b].intelligence < 6) {
 		yaya=FALSE;
 		nl();
-		print("Intelligence cannot go below 6");
+		od_disp_str("Intelligence cannot go below 6\r\n");
 	}
 	if(player[b].dexterity < 6) {
 		yaya=FALSE;
 		nl();
-		print("Dexterity cannot go below 6");
+		od_disp_str("Dexterity cannot go below 6\r\n");
 	}
 	if(player[b].luck < 6) {
 		yaya=FALSE;
 		nl();
-		print("Luck cannot go below 6");
+		od_disp_str("Luck cannot go below 6\r\n");
 	}
 	if(player[b].constitution < 6) {
 		yaya=FALSE;
 		nl();
-		print("Constitution cannot go below 6");
+		od_disp_str("Constitution cannot go below 6\r\n");
 	}
 	if(player[b].charisma < 6) {
 		yaya=FALSE;
 		nl();
-		print("Charisma cannot go below 6");
+		od_disp_str("Charisma cannot go below 6\r\n");
 	}
 	if(yaya) {
-		prompt("Is this correct? ");
+		od_disp_str("Is this correct? ");
 		if(od_get_answer("YN")=='Y') {
-			print("Y");
+			od_disp_str("Y\r\n");
 			player[b].strength=temp1a;
 			player[b].intelligence=temp1b;
 			player[b].dexterity=temp1d;
@@ -1099,7 +749,7 @@ void ministat(void)
 			bothover=FALSE;
 		}
 		else {
-			print("N");
+			od_disp_str("N\r\n");
 			bothover=FALSE;
 		}
 	}
@@ -1120,7 +770,7 @@ void ministat(void)
 
 void chstats(void)
 {
-	cls();
+	od_clr_scr();
 	bothover=FALSE;
 	temp1a=player[b].strength;
 	temp1b=player[b].intelligence;
@@ -1129,32 +779,19 @@ void chstats(void)
 	temp1e=player[b].constitution;
 	temp1f=player[b].charisma;
 
-	sprintf(tempaa,"%1.0f",player[b].strength);
-	sprintf(tempbb,"%1.0f",player[b].intelligence);
-	sprintf(tempdd,"%1.0f",player[b].dexterity);
-	sprintf(tempcc,"%1.0f",player[b].luck);
-	sprintf(tempee,"%1.0f",player[b].constitution);
-	sprintf(tempff,"%1.0f",player[b].charisma);
-
 	for(;;) {
 		partone=TRUE;
-		print("Status Change:");
-		print("@@@@@@@@@@@@@");
-		print("You may increase any stat by one,");
-		print("yet you must decrease another by two.");
+		od_disp_str("Status Change:\r\n");
+		od_disp_str("@@@@@@@@@@@@@\r\n");
+		od_disp_str("You may increase any stat by one,\r\n");
+		od_disp_str("yet you must decrease another by two.\r\n");
 		nl();
-		prompt("1> Str: ");
-		print(tempaa);
-		prompt("2> Int: ");
-		print(tempbb);
-		prompt("3> Dex: ");
-		print(tempdd);
-		prompt("4> Luk: ");
-		print(tempcc);
-		prompt("5> Con: ");
-		print(tempee);
-		prompt("6> Chr: ");
-		print(tempff); 
+		od_printf("1> Str: %1.0f\r\n",player[b].strength);
+		od_printf("2> Int: %1.0f\r\n",player[b].intelligence);
+		od_printf("3> Dex: %1.0f\r\n",player[b].dexterity);
+		od_printf("4> Luk: %1.0f\r\n",player[b].luck);
+		od_printf("5> Con: %1.0f\r\n",player[b].constitution);
+		od_printf("6> Chr: %1.0f\r\n",player[b].charisma);
 		nl();
 		incre();
 		if(partone)
@@ -1285,12 +922,12 @@ void doggie(void)
 		checkday();
 		for(finder=FALSE; finder==FALSE;) {
 			for(enemy=0; enemy!=0;) {
-				cls();
-				ansic(4);
-				print("Battle Another Hero:");
-				print("********************");
+				od_clr_scr();
+				od_set_color(L_YELLOW,D_BLACK);
+				od_disp_str("Battle Another Hero:\r\n");
+				od_disp_str("********************\r\n");
 				if(number_of_players==1) {
-					print("You are the only hero on Krynn!");
+					od_disp_str("You are the only hero on Krynn!\r\n");
 					return;
 				}
 				else {
@@ -1298,37 +935,17 @@ void doggie(void)
 					for(a=1; a<=number_of_players && !abrt;) {
 						if(player[a].r>player[b].r-4) {
 							nl();
-							sprintf(temp,"%d",a);
-							sprintf(tempaa,"%2.0f",player[a].r);
-							sprintf(tempcc,"%2.0f",player[a].wins);
-							sprintf(tempdd,"%2.0f",player[a].loses);
-							if(player[a].status==1)
-								SAFECOPY(tch,"SLAIN");
-							else
-								SAFECOPY(tch,"ALIVE");
-							ansic(5);
-							if(a<10) {
-								prompt(" ");
-								prompt(temp);
-								prompt(".  ");
-							}
-							else {
-								prompt(temp);
-								prompt(".  ");
-							}
-							ansic(3);
-							prompt(player[a].pseudo);
-							for(spc=1;spc<=30-strlen(player[a].pseudo);spc++)
-								prompt(".");
-							ansic(2);
-							sprintf(line,"Lev=%s  W=%s  L=%s  S=%s",tempaa,tempcc,tempdd,tch);
-							printa(line,&abrt,&next);
+							od_set_color(D_MAGENTA,D_BLACK);
+							od_printf("%2d.  `bright cyan`%.30s%*s`bright blue`Lev=%-2.0f  W=%-2.0f  L=%-2.0f  S=%s"
+									,a,player[a].pseudo,30-strlen(player[a].pseudo),dots
+									,player[a].r,player[a].wins,player[a].loses
+									,(player[a].status==1?"SLAIN":"ALIVE"));
 						}
 						a+=1;
 					}
 					nl();
-					ansic(3);
-					prompt("Enter the rank # of your opponent: ");
+					od_set_color(L_CYAN,D_BLACK);
+					od_disp_str("Enter the rank # of your opponent: ");
 					od_input_str(tmphh,2,'0','9');
 					enemy=atoi(tmphh);
 					if((enemy==0) || (!strcmp(player[enemy].pseudo,player[b].pseudo)) || (player[enemy].status==1))
@@ -1385,24 +1002,20 @@ void battle(void)
 	live=TRUE;
 	while(live==TRUE) {
 		playerrem=player[b].shield-player[b].damage;
-		sprintf(tempxx,"%1.0f",playerrem);
 		nl();
-		ansic(4);
-		prompt("You are attacked by a ");
-		prompt(opp.name);
-		print(".");
+		od_set_color(L_YELLOW,D_BLACK);
+		od_printf("You are attacked by a %s.",opp.name);
 		for(option='?'; option=='?';) {
-			ansic(2);
-			prompt("Combat (");
-			prompt(tempxx);
-			prompt(" hps): (B,F,S): ");
+			od_set_color(L_BLUE,D_BLACK);
+			od_printf("Combat (%1.0f hps): (B,F,S): ",playerrem);
 			option=od_get_answer("BFS?");
+			od_printf("%c\r\n",option);
 			if(option=='?') {
 				nl();
 				nl();
-				print("(B)attle your opponent.");
-				print("(F)lee from your opponent.");
-				print("(S)tatus check.");
+				od_disp_str("(B)attle your opponent.\r\n");
+				od_disp_str("(F)lee from your opponent.\r\n");
+				od_disp_str("(S)tatus check.\r\n");
 				nl();
 			}
 		}
@@ -1412,8 +1025,8 @@ void battle(void)
 			case 'F':
 				if((xp_random(4)+1)+player[b].dexterity>opp.dexterity) {
 					nl();
-					ansic(7);
-					print("You Ride away on a Silver Dragon.");
+					od_set_color(D_GREEN,D_BLACK);
+					od_disp_str("You Ride away on a Silver Dragon.\r\n");
 					doga=FALSE;
 					live=FALSE;
 					uni=FALSE;
@@ -1425,26 +1038,25 @@ void battle(void)
 
 void credits(void)
 {
-	cls();
-	ansic(7);
-	print("Dragonlance 3.0 Credits");
-	ansic(7);
-	print("@@@@@@@@@@@@@@@@@@@@@@@");
-	print("Original Dragonlance   :  Raistlin Majere & TML   ");
-	print("Special Thanks To      : The Authors Of Dragonlance");
-	print("Dragonlance's Home     : The Tower Of High Sorcery");
-	print("Originally modified from the Brazil Source Code.");
-	print("C Port                 : Deuce");
-	print("Home Page              : http://doors.synchro.net/");
-	print("Support                : deuce@nix.synchro.net");
+	od_clr_scr();
+	od_set_color(D_GREEN,D_BLACK);
+	od_disp_str("Dragonlance 3.0 Credits\r\n");
+	od_disp_str("@@@@@@@@@@@@@@@@@@@@@@@\r\n");
+	od_disp_str("Original Dragonlance   :  Raistlin Majere & TML   \r\n");
+	od_disp_str("Special Thanks To      : The Authors Of Dragonlance\r\n");
+	od_disp_str("Dragonlance's Home     : The Tower Of High Sorcery\r\n");
+	od_disp_str("Originally modified from the Brazil Source Code.\r\n");
+	od_disp_str("C Port                 : Deuce\r\n");
+	od_disp_str("Home Page              : http://doors.synchro.net/\r\n");
+	od_disp_str("Support                : deuce@nix.synchro.net\r\n");
 	nl();
 	pausescr();
 }
 
 void docs()
 {
-	cls();
-	printfile("text/docs.lan");
+	od_clr_scr();
+	od_send_file("text/docs");
 	pausescr();
 }
 
@@ -1454,18 +1066,18 @@ void vic(void)
 
 	for(ahuh=FALSE; !ahuh; ) {
 		nl();
-		ansic(3);
-		print("Enter your new Battle Cry.");
-		prompt(">");
+		od_set_color(L_CYAN,D_BLACK);
+		od_disp_str("Enter your new Battle Cry.\r\n");
+		od_disp_str("> ");
 		od_input_str(ugh3, 60, ' ', '~');
-		prompt("Is this correct? ");
+		od_disp_str("Is this correct? \r\n");
 		if(od_get_answer("YN")=='Y') {
 			ahuh=TRUE;
-			print("Y");
+			od_disp_str("Y\r\n");
 		}
 		else {
 			ahuh=FALSE;
-			print("N");
+			od_disp_str("N\r\n");
 		}
 	}
 	ahuh=TRUE;
@@ -1511,26 +1123,6 @@ void create(BOOL isnew)
 	b=a;
 }
 
-void strait(void)
-{
-	INT16	p;
-	INT16	add;
-
-	add=25-strlen(strip);
-	for(p=1;p<=add;p++)
-		strcat(strip," ");
-}
-
-void stripe(void)
-{
-	INT16	p;
-	INT16	add;
-
-	add=25-strlen(cross);
-	for(p=1;p<=add;p++)
-		strcat(cross," ");
-}
-
 void weaponlist(void)
 {
 	char	line[81];
@@ -1538,20 +1130,11 @@ void weaponlist(void)
 	nl();
 	nl();
 	a=1;
-	print("  Num. Weapon                      Armour                          Price   ");
-	print("(-------------------------------------------------------------------------)");
-	for(a=1; a<=25 && !abrt; a++) {
-		sprintf(temp,"%9.0f",cost[a]);
-		sprintf(opp.name,"%2d",a);
-		ansic(4);
-		SAFECOPY(strip,wname[a]);
-		strait();
-		SAFECOPY(cross,sname[a]);
-		stripe();
-		sprintf(line,"  %s>  %s   %s   %s",opp.name,strip,cross,temp);
-		printa(line,&abrt,&next);
-		nl();
-	}
+	od_disp_str("  Num. Weapon                      Armour                          Price   \r\n");
+	od_disp_str("(-------------------------------------------------------------------------)\r\n");
+	od_set_color(L_YELLOW,D_BLACK);
+	for(a=1; a<=25 && !abrt; a++)
+		od_printf("  %2d>  %25.25s   %25.25s   %9.0f\r\n",a,wname[a],sname[a],cost[a]);
 }
 
 void readlist(void)
@@ -1601,115 +1184,114 @@ void readlist(void)
 void weaponshop(void)
 {
 	char	tmpvv[3];
-	cls();
-	ansic(4);
-	print("Weapon & Armour Shop");
-	ansic(7);
-	print("$$$$$$$$$$$$$$$$$$$$");
+	od_clr_scr();
+	od_set_color(L_YELLOW,D_BLACK);
+	od_disp_str("Weapon & Armour Shop\r\n");
+	od_set_color(D_GREEN,D_BLACK);
+	od_disp_str("$$$$$$$$$$$$$$$$$$$$\r\n");
 	while(1) {
 		nl();
-		prompt("(B)rowse, (S)ell, (P)urchase, or (Q)uit? ");
+		od_disp_str("(B)rowse, (S)ell, (P)urchase, or (Q)uit? ");
 		opty=od_get_answer("BSQP");
 		switch(opty) {
 			case 'Q':
-				print("Q");
+				od_disp_str("Q\r\n");
 				return;
 			case 'B':
-				print("B");
+				od_disp_str("B\r\n");
 				weaponlist();
 				break;
 			case 'P':
-				print("P");
+				od_disp_str("P\r\n");
 				nl();
 				nl();
-				prompt("Enter weapon/armour # you wish buy: ");
+				od_disp_str("Enter weapon/armour # you wish buy: ");
 				od_input_str(temp,2,'0','9');
 				buy=atoi(temp);
 				if(buy==0)
 					return;
 				if(cost[round(buy)]>player[b].gold)
-					print("You do not have enough Steel .");
+					od_disp_str("You do not have enough Steel.\r\n");
 				else {
 					nl();
-					prompt("(W)eapon or (A)rmour: ");
+					od_disp_str("(W)eapon or (A)rmour: ");
 					opty=od_get_answer("WA");
 					switch(opty) {
 						case 'W':
-							print("W");
-							prompt("Are you sure you want buy it? ");
+							od_disp_str("W\r\n");
+							od_disp_str("Are you sure you want buy it? ");
 							if(od_get_answer("YN")=='Y') {
+								od_disp_str("Y\r\n");
 								player[b].gold-=cost[round(buy)];
 								player[b].weapon=buy;
 								nl();
-								ansic(5);
-								prompt("You've bought a ");
-								print(wname[round(buy)]);
+								od_set_color(D_MAGENTA,D_BLACK);
+								od_printf("You've bought a %s\r\n",wname[round(buy)]);
 								player[b].attack=find1();
 								player[b].power=find2();
 							}
+							else
+								od_disp_str("N\r\n");
 							break;
 						case 'A':
-							print("A");
-							prompt("Are you sure you want buy it? ");
+							od_disp_str("A\r\n");
+							od_disp_str("Are you sure you want buy it? ");
 							if(od_get_answer("YN")=='Y') {
+								od_disp_str("Y\r\n");
 								player[b].gold-=cost[round(buy)];
 								player[b].vehicle=buy;
 								nl();
-								ansic(5);
-								prompt("You've bought a ");
-								print(sname[round(buy)]);
+								od_set_color(D_MAGENTA,D_BLACK);
+								od_printf("You've bought a %s\r\n",sname[round(buy)]);
 							}
+							else
+								od_disp_str("N\r\n");
 							break;
 					}
 				}
 				break;
 			case 'S':
-				print("S");
+				od_disp_str("S\r\n");
 				nl();
-				prompt("(W)eapon,(A)rmour,(Q)uit : ");
+				od_disp_str("(W)eapon,(A)rmour,(Q)uit : ");
 				opty=od_get_answer("AWQ");
 				switch(opty) {
 					case 'Q':
-						print("Q");
+						od_disp_str("Q\r\n");
 						return;
 					case 'W':
-						print("W");
+						od_disp_str("W\r\n");
 						y=(round(player[b].weapon));
 						x=player[b].charisma;
 						x=x*cost[y];
 						x=((1/20)*x);
-						sprintf(temp,"%0.0f",x);
 						nl();
-						prompt("I will purchase it for ");
-						prompt(temp);
-						prompt(", okay? ");
+						od_printf("I will purchase it for %1.0f, okay? ",x);
 						opty=od_get_answer("YN");
 						if(opty=='Y') {
-							print("Y");
-							ansic(7);
-							print("Is it Dwarven Made?");
+							od_disp_str("Y\r\n");
+							od_set_color(D_GREEN,D_BLACK);
+							od_disp_str("Is it Dwarven Made?\r\n");
 							player[b].weapon=1;
 							player[b].gold=player[b].gold+x;
 						}
 						else
-							print("N");
+							od_disp_str("N\r\n");
 						break;
 					case 'A':
+						od_disp_str("A\r\n");
 						x=((1/20)*(player[b].charisma)*(cost[round(player[b].vehicle)]));
-						sprintf(temp,"%7.0f",x);
 						nl();
-						prompt("I will purchase it for ");
-						prompt(temp);
-						prompt(", okay? ");
+						od_printf("I will purchase it for %1.0f, okay? ",x);
 						opty=od_get_answer("YN");
 						if(opty=='Y') {
-							print("Y");
-							print("Fine Craftsmanship!");
+							od_disp_str("Y\r\n");
+							od_disp_str("Fine Craftsmanship!\r\n");
 							player[b].vehicle=1;
 							player[b].gold=player[b].gold+x;
 						}
 						else
-							print("N");
+							od_disp_str("N\r\n");
 						break;
 				}
 		}
@@ -1719,16 +1301,15 @@ void weaponshop(void)
 void listplayers(void)
 {
 	INT16	a;
-	cls();
-	ansic(4);
-	print("Heroes That Have Been Defeated");
-	ansic(5);
-	print("+++++++++++++++++++++++++++++++");
+	od_clr_scr();
+	od_set_color(L_YELLOW,D_BLACK);
+	od_disp_str("Heroes That Have Been Defeated\r\n");
+	od_set_color(D_MAGENTA,D_BLACK);
+	od_disp_str("+++++++++++++++++++++++++++++++\r\n");
 	readla();
-	for(a=1;a<number && !abrt; a++) {
-		ansic(3);
-		printa(result[a],&abrt,&next);
-	}
+	od_set_color(L_CYAN,D_BLACK);
+	for(a=1;a<number && !abrt; a++)
+		od_disp_str(result[a]);
 }
 
 void spy(void)
@@ -1742,58 +1323,38 @@ void spy(void)
 	char	gg[31];
 	char	hh[31];
 	INT16	a;
-	cls();
-	print("Spying on another user eh.. well you may spy, but to keep");
-	print("you from copying this person's stats, they will not be   ");
-	print("available to you.  Note that this is gonna cost you some ");
-	print("cash too.  Cost: 20 Steel pieces                         ");
+	od_clr_scr();
+	od_disp_str("Spying on another user eh.. well you may spy, but to keep\r\n");
+	od_disp_str("you from copying this person's stats, they will not be   \r\n");
+	od_disp_str("available to you.  Note that this is gonna cost you some \r\n");
+	od_disp_str("cash too.  Cost: 20 Steel pieces                         \r\n");
 	nl();
-	prompt("Who do you wish to spy on? ");
+	od_disp_str("Who do you wish to spy on? ");
 	od_input_str(aa,sizeof(aa)-1,' ','~');
 	for(a=1;a<=number_of_players;a++) {
 		if(!stricmp(player[a].pseudo,aa)) {
 			if(player[b].gold<20) {
-				ansic(8);
-				print("You do not have enough Steel!");
+				od_set_color(L_RED,B_BLACK);
+				od_disp_str("You do not have enough Steel!\r\n");
 			}
 			else {
 				player[b].gold-=20;
-				sprintf(bb,"%1.0f",player[a].r);
-				sprintf(cc,"%1.0f",player[a].experience);
-				sprintf(dd,"%d",player[a].flights);
-				sprintf(ee,"%1.0f",(player[a].shield-player[a].damage));
-				sprintf(ff,"%1.0f",player[a].bank);
-				sprintf(gg,"%1.0f",player[a].gold);
-				sprintf(hh,"%1.0f",player[a].shield);
 				nl();
-				ansic(8);
-				print(player[a].pseudo);
+				od_set_color(L_RED,B_BLACK);
+				od_printf("%s\r\n",player[a].pseudo);
 				nl();
-				prompt("Level  :");
-				print(bb);
-				prompt("Exp    :");
-				print(cc);
-				prompt("Flights:");
-				print(dd);
-				prompt("Hps    :");
-				prompt(ee);
-				prompt("(");
-				prompt(hh);
-				print(")");
+				od_printf("Level  : %1.0f\r\n",player[a].r);
+				od_printf("Exp    : %1.0f\r\n",player[a].experience);
+				od_printf("Flights: %1.0f\r\n",player[a].flights);
+				od_printf("Hps    : %1.0f(%1.0f)\r\n",player[a].shield-player[a].damage,player[a].shield);
 				nl();
-				ansic(5);
-				prompt("Weapon :");
-				print(wname[round(player[a].weapon)]);
-				ansic(5);
-				prompt("Armour :");
-				print(sname[round(player[a].vehicle)]);
+				od_set_color(D_MAGENTA,D_BLACK);
+				od_printf("Weapon : %s\r\n",wname[round(player[a].weapon)]);
+				od_printf("Armour : %s\r\n",sname[round(player[a].vehicle)]);
 				nl();
-				ansic(4);
-				prompt("Steel  (in hand):");
-				print(gg);
-				ansic(4);
-				prompt("Steel  (in bank):");
-				print(ff);
+				od_set_color(L_YELLOW,D_BLACK);
+				od_printf("Steel  (in hand): %1.0f\r\n",player[a].gold);
+				od_printf("Steel  (in bank): %1.0f\r\n",player[a].bank);
 				nl();
 				pausescr();
 			}
@@ -1808,48 +1369,41 @@ void gamble(void)
 
 	nl();
 	if(trips>10)
-		print("The Shooting Gallery is closed until tomorrow!");
+		od_disp_str("The Shooting Gallery is closed until tomorrow!\r\n");
 	else {
-		cls();
-		print("  Welcome to the Shooting Gallery");
-		print(" Maximum wager is 25,000 Steel pieces");
+		od_clr_scr();
+		od_disp_str("  Welcome to the Shooting Gallery\r\n");
+		od_disp_str(" Maximum wager is 25,000 Steel pieces\r\n");
 		nl();
-		prt("How many Steel pieces do you wish to wager? ");
+		od_set_color(L_YELLOW,D_BLACK);
+		od_disp_str("How many Steel pieces do you wish to wager? ");
+		od_set_color(D_GREY,D_BLACK);
 		od_input_str(tempgd,sizeof(tempgd)-1,'0','9');
 		realgold=round(atof(tempgd));
 		if(realgold>player[b].gold) {
 			nl();
-			print("You do not have enough Steel !");
+			od_disp_str("You do not have enough Steel!\r\n");
 		}
 		if ((realgold!=0) && ((player[b].gold>=realgold) && (realgold<=25000) && (realgold>=1))) {
 			okea=round(xp_random(99)+1);
 			if(okea <= 3) {
 				realgold*=100;
 				player[b].gold+=realgold;
-				sprintf(tempgd,"%1.0f",realgold);
-				prompt("You shot all the targets and win ");
-				prompt(tempgd);
-				print(" Steel pieces!");
+				od_printf("You shot all the targets and win %1.0f Steel pieces!\r\n",realgold);
 			}
 			else if ((okea>3) && (okea<=15)) {
 				realgold*=10;
 				player[b].gold+=realgold;
-				sprintf(tempgd,"%1.0f",realgold);
-				prompt("You shot 50% of the targets and win ");
-				prompt(tempgd);
-				print(" Steel pieces!");
+				od_printf("You shot 50% if the targets and win %1.0f Steel pieces!\r\n",realgold);
 			}
 			else if ((okea>15) && (okea<=30)) {
 				realgold*=3;
 				player[b].gold+=realgold;
-				sprintf(tempgd,"%1.0f",realgold);
-				prompt("You shot 25% of the targets and win ");
-				prompt(tempgd);
-				print(" Steel pieces!");
+				od_printf("You shot 25% if the targets and win %1.0f Steel pieces!\r\n",realgold);
 			}
 			else {
 				player[b].gold-=realgold;
-				print("Sorry You Hath Lost!");
+				od_disp_str("Sorry You Hath Lost!\r\n");
 			}
 		}
 	}
@@ -1863,14 +1417,13 @@ void afight(int lev)
 	while(uni) {
 		if(trips>10) {
 			nl();
-			ansic(5);
-			print("It's Getting Dark Out!");
-			ansic(5);
-			print("Return to the Nearest Inn!");
+			od_set_color(D_MAGENTA,D_BLACK);
+			od_disp_str("It's Getting Dark Out!\r\n");
+			od_disp_str("Return to the Nearest Inn!\r\n");
 			uni=FALSE;
 		}
 		else {
-			cls();
+			od_clr_scr();
 			sprintf(fname,"data/junkm%d.lan",lev);
 			fight(fname);
 			uni=FALSE;
@@ -1884,29 +1437,31 @@ void bulletin(void)
 	INT16	countr;
 	char	tempcoun[3];
 
-	cls();
+	od_clr_scr();
   	countr=0;
 	endfil=FALSE;
-	printfile("text/bullet.lan");
+	od_send_file("text/bullet");
 	nl();
-	prompt("Do you wish to enter a News Bulletin? ");
+	od_disp_str("Do you wish to enter a News Bulletin? ");
 	if(od_get_answer("YN")=='Y') {
-		print("Y");
+		od_disp_str("Y\r\n");
 		nl();
 		while(!endfil) {
 			countr++;
 			sprintf(tempcoun,"%d",countr);
-			prt(tempcoun);
-			prt("> ");
+			od_set_color(L_YELLOW,D_BLACK);
+			od_disp_str(tempcoun);
+			od_disp_str("> ");
+			od_set_color(D_GREY,D_BLACK);
 			od_input_str(blt[countr],60,' ','~');
 			if(countr==4)
 				endfil=TRUE;
 		}
 		nl();
-		prompt("Is the bulletin correct? ");
+		od_disp_str("Is the bulletin correct? ");
 		if(od_get_answer("YN")=='Y') {
-			print("Y");
-			print("Saving Bulletin...");
+			od_disp_str("Y\r\n");
+			od_disp_str("Saving Bulletin...\r\n");
 			messfile=fopen("text/bullet.lan","ab");
 			fputs(blt[1],messfile);
 			fputs("\n",messfile);
@@ -1919,10 +1474,10 @@ void bulletin(void)
 			fclose(messfile);
 		}
 		else
-			print("N");
+			od_disp_str("N\r\n");
 	}
 	else
-		print("N");
+		od_disp_str("N\r\n");
 }
 
 void training(void)
@@ -1933,33 +1488,35 @@ void training(void)
 
 	nl();
 	if(trips>10)
-		print("The Training Grounds are closed until tomorrow!");
+		od_disp_str("The Training Grounds are closed until tomorrow!\r\n");
 	else {
-		cls();
-		print("Training Grounds");
-		print("%%%%%%%%%%%%%%%%");
-		print("Each characteristic you wish to upgrade");
-		print("will cost 1,000,000 Steel pieces per point.");
+		od_clr_scr();
+		od_disp_str("Training Grounds\r\n");
+		od_disp_str("%%%%%%%%%%%%%%%%\r\n");
+		od_disp_str("Each characteristic you wish to upgrade\r\n");
+		od_disp_str("will cost 1,000,000 Steel pieces per point.\r\n");
 		nl();
 		tttgld=10000;
-		prompt("Do you wish to upgrade a stat? ");
+		od_disp_str("Do you wish to upgrade a stat? ");
 		if(od_get_answer("YN")=='Y') {
+			od_disp_str("Y\r\n");
 			if(player[b].gold<(tttgld*100))
-				print("Sorry, but you do not have enough Steel!");
+				od_disp_str("Sorry, but you do not have enough Steel!\r\n");
 			else {
 				nl();
-				print("1> Strength       2> Intelligence");
-				print("3> Dexterity      4> Luck        ");
-				print("5> Constitution   6> Charisma    ");
+				od_disp_str("1> Strength       2> Intelligence\r\n");
+				od_disp_str("3> Dexterity      4> Luck        \r\n");
+				od_disp_str("5> Constitution   6> Charisma    \r\n");
 				nl();
-				prt("Which stat do you wish to increase? ");
-				temptrain[1]=0;
+				od_set_color(L_YELLOW,D_BLACK);
+				od_disp_str("Which stat do you wish to increase? ");
+				od_set_color(D_GREY,D_BLACK);
 				temptrain[0]=od_get_answer("123456");
-				print(temptrain);
+				od_printf("%c\r\n",temptrain[0]);
 				realtrain=temptrain[0]-'0';
-				prompt("Are you sure? ");
+				od_disp_str("Are you sure? ");
 				if(od_get_answer("YN")=='Y') {
-					print("Y");
+					od_disp_str("Y\r\n");
 					player[b].gold-=tttgld*100;
 					switch(realtrain) {
 						case 1:
@@ -1983,18 +1540,18 @@ void training(void)
 					}
 				}
 				else
-					print("N");
+					od_disp_str("N\r\n");
 			}
 		}
 		else
-			print("N");
+			od_disp_str("N\r\n");
 	}
 }
 
 void menuit(void)
 {
-	cls();
-	printfile("text/menu.lan");
+	od_clr_scr();
+	od_send_file("text/menu");
 }
 
 int main(int argc, char **argv)
@@ -2018,20 +1575,20 @@ int main(int argc, char **argv)
 	nl();
 	nl();
 	credits();
-	cls();
-	prt("----------");ansic(8);prompt("   -=-=DRAGONLANCE=-=-      ");prt("    /\\     ");nl();
-	prt("\\        /");ansic(1);prompt("       Version 3.0          ");prt("    ||     ");nl();
-	prt(" \\      / ");ansic(1);prompt("                            ");prt("    ||     ");nl();
-	prt("  \\    /  ");ansic(2);prompt("  Welcome To The World of   ");prt("    ||     ");nl();
-	prt("   |  |   ");ansic(3);prompt("  Krynn, Where the gods     ");prt("    ||     ");nl();
-	prt("  /    \\  ");ansic(2);prompt("  of good and evil battle.  ");prt("  \\ || /   ");nl();
-	prt(" /      \\ ");ansic(3);prompt("  Help the People Of Krynn. ");prt("   \\==/    ");nl();
-	prt("/        \\");ansic(1);prompt("                            ");prt("    ##     ");nl();
-	prt("----------");ansic(8);prompt("        ON WARD!!!          ");prt("    ##     ");nl();
+	od_clr_scr();
+	od_printf("`bright yellow`----------`blinking red`   -=-=DRAGONLANCE=-=-      `bright yellow`    /\\     \r\n");
+	od_printf("\\        /`white`       Version 3.0          `bright yellow`    ||     \r\n");
+	od_printf(" \\      /                                 ||     \r\n");
+	od_printf("  \\    /  `bright blue`  Welcome To The World of   `bright yellow`    ||     \r\n");
+	od_printf("   |  |   `bright cyan`  Krynn, Where the gods     `bright yellow`    ||     \r\n");
+	od_printf("  /    \\  `bright blue`  of good and evil battle.  `bright yellow`  \\ || /   \r\n");
+	od_printf(" /      \\ `bright cyan`  Help the People Of Krynn. `bright yellow`   \\==/    \r\n");
+	od_printf("/        \\                                ##     \r\n");
+	od_printf("----------`blinking red`        ON WARD!!!          `bright yellow`    ##     \r\n");
 	nl();
-	print("News Bulletin:");
+	od_disp_str("News Bulletin:\r\n");
 	nl();
-	printfile("text/bullet.lan");
+	od_send_file("text/bullet");
 	infile=fopen("data/characte.lan","rb");
 	fgets(temp,sizeof(temp),infile);
 	number=atoi(temp);
@@ -2086,10 +1643,8 @@ int main(int argc, char **argv)
 	}
 	if(player[b].status==1) {
 		nl();
-		ansic(3);
-		prompt("A defeat was lead over you by ");
-		prompt(player[b].killer);
-		print(".");
+		od_set_color(L_CYAN,D_BLACK);
+		od_printf("A defeat was lead over you by %s.",player[b].killer);
 	}
 	checkday();
 	if(player[b].flights<1) {
@@ -2099,9 +1654,9 @@ int main(int argc, char **argv)
 	player[b].flights--;
 	nl();
 	pausescr();
-	cls();
+	od_clr_scr();
 	infile=fopen("data/weapons.lan","rb");
-	ansic(2);
+	od_set_color(L_BLUE,D_BLACK);
 	for(a=1; a<=25; a++) {
 		fgets(wname[a],sizeof(wname[a]),infile);
 		truncsp(wname[a]);
@@ -2110,9 +1665,8 @@ int main(int argc, char **argv)
 		endofline();
 	}
 	fclose(infile);
-	prompt("\r");
 	infile=fopen("data/armor.lan","rb");
-	ansic(2);
+	od_set_color(L_BLUE,D_BLACK);
 	for(a=1; a<=25; a++) {
 		fgets(sname[a],sizeof(sname[a]),infile);
 		truncsp(sname[a]);
@@ -2132,7 +1686,7 @@ int main(int argc, char **argv)
 		endofline();
 	}
 	fclose(infile);
-	ansic(4);
+	od_set_color(L_YELLOW,D_BLACK);
 	player[b].status=0;
 	vary2=1;
 	statshow();
@@ -2142,11 +1696,11 @@ int main(int argc, char **argv)
 		vary2=1;
 		if (((player[b].wins+1)*4)-(player[b].loses)<0) {
 			nl();
-			print("As you were Travelling along a Wilderness Path an   ");
-			print("Evil Wizard Confronted You.  When you tried to fight");
-			print("Him off, he cast a Spell of Instant Death Upon you.  ");
-			print("Instantly you were slain by the Archmage, Leaving you");
-			print("as nothing more than a pile of ashes.  Re-Rolled!   ");
+			od_disp_str("As you were Travelling along a Wilderness Path an   \r\n");
+			od_disp_str("Evil Wizard Confronted You.  When you tried to fight\r\n");
+			od_disp_str("Him off, he cast a Spell of Instant Death Upon you.  \r\n");
+			od_disp_str("Instantly you were slain by the Archmage, Leaving you\r\n");
+			od_disp_str("as nothing more than a pile of ashes.  Re-Rolled!   \r\n");
 			nl();
 			pausescr();
 			create(FALSE);
@@ -2154,21 +1708,21 @@ int main(int argc, char **argv)
 		}
 		nl();
 		nl();
-		ansic(4);
-		prompt("Command (?): ");
+		od_set_color(L_YELLOW,D_BLACK);
+		od_disp_str("Command (?): ");
 		opty=od_get_answer("QVP12345CHWLADGFRSTX+-?EZ*#");
 		temp[0]=opty;
 		temp[1]=0;
-		print(temp);
+		od_printf("%c\r\n",temp[0]);
 		switch(opty) {
 			case 'Q':
-				prompt("LEAVE KRYNN? Are you sure? ");
+				od_disp_str("LEAVE KRYNN? Are you sure? ");
 				if(od_get_answer("YN")=='Y') {
-					print("Y");
+					od_disp_str("Y\r\n");
 					play=FALSE;
 				}
 				else
-					print("N");
+					od_disp_str("N\r\n");
 				break;
 			case '1':afight(1); break;
 			case '2':afight(2); break;
@@ -2187,46 +1741,45 @@ int main(int argc, char **argv)
 			case 'S':statshow(); break;
 			case 'T':training(); break;
 			case 'X':
-				print("Please note that this will completely purge");
-                        print("your current hero of all atributes!");
+				od_disp_str("Please note that this will completely purge\r\n");
+                        od_disp_str("your current hero of all atributes!\r\n");
 				nl();
-                        prompt("Are you sure you want to REROLL your character? ");
+                        od_disp_str("Are you sure you want to REROLL your character? ");
 				if(od_get_answer("YN")=='Y') {
-					print("Y");
+					od_disp_str("Y\r\n");
 					create(FALSE);
 					player[b].flights--;
 				}
 				else
-					print("N");
+					od_disp_str("N\r\n");
 				break;
 			case '+':depobank(); break;
-			case 'P':printfile("text/plug.lan"); break;
+			case 'P':od_send_file("text/plug"); break;
 			case '-':withdrawbank(); break;
 			case '?':menuit(); break;
 			case 'E':bulletin(); break;
 			case 'Z':spy(); break;
 			case 'V':
-				ansic(2); 
-				print("This Is Dragonlance version 3.0");
+				od_set_color(L_BLUE,D_BLACK);
+				od_disp_str("This Is Dragonlance version 3.0\r\n");
 				pausescr();
 				break;
 			case '*':
 				nl();
-				ansic(3);
-				print("Your family crest has been stolen, they");
-				ansic(3);
-				print("inscribe a new one with the name...");
-				prompt(">");
+				od_set_color(L_CYAN,D_BLACK);
+				od_disp_str("Your family crest has been stolen, they\r\n");
+				od_disp_str("inscribe a new one with the name...\r\n");
+				od_disp_str("> ");
 				od_input_str(ugh,30,' ','~');
 				nl();
-				prompt("Are you sure? ");
+				od_disp_str("Are you sure? ");
 				if(od_get_answer("YN")=='Y') {
-					print("Y");
+					od_disp_str("Y\r\n");
 					if(strlen(ugh))
 						SAFECOPY(player[b].pseudo,ugh);
 				}
 				else
-					print("N");
+					od_disp_str("N\r\n");
 				break;
 			case '#':
 				vic(); 
