@@ -1,12 +1,7 @@
 load("html_inc/msgslib.ssjs");
 load("html_inc/mime_decode.ssjs");
 
-if(sub=='mail') {
-    template.can_delete=true;
-}
-else {
-    template.can_delete=msg_area.sub[sub].is_operator;
-}
+template.can_delete=can_delete(m)
 
 if(msgbase.open!=undefined && msgbase.open()==false) {
 	error(msgbase.last_error);
