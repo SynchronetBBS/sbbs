@@ -48,16 +48,12 @@
 #define SHD_HEADER_ID	"SHD\x1a"		/* <S> <H> <D> <^Z> */
 #define LEN_HEADER_ID	4
 
-										/* Control characters */
-#define TAB 				'\t'		/* Horizontal tabulation	^I */
-#define LF					'\n'		/* Line feed				^J */
-#define CR					'\r'		/* Carriage return			^M */
-#define SP					' '			/* Space					   */
-#define FF					0x0c		/* Form feed				^L */
-#define ESC 				0x1b		/* Escape					^[ */
-
 #ifndef uchar
-	#define uchar				unsigned char
+	#if defined(TYPEDEF_UCHAR)
+		typedef unsigned char uchar;
+	#else
+		#define uchar unsigned char
+	#endif
 #endif
 #ifdef __GLIBC__
 	#include <sys/types.h>
@@ -384,13 +380,17 @@ enum {
 /* Typedefs */
 /************/
 
-#ifdef __GNUC__ 
-	#define _PACK __attribute__ ((packed))
-#else
-	#define _PACK
+#if defined(_WIN32) || defined(__BORLANDC__)
+	#define PRAGMA_PACK
 #endif
 
-#if defined(_WIN32) || defined(__BORLANDC__)	
+#if defined(PRAGMA_PACK)
+	#define _PACK
+#else
+	#define _PACK __attribute__ ((packed))
+#endif
+
+#if defined(PRAGMA_PACK)
 #pragma pack(push)		/* Disk image structures must be packed */
 #pragma pack(1)
 #endif
@@ -487,7 +487,7 @@ typedef struct _PACK {		// Network (type and address)
 
 	} net_t;
 
-#if defined(_WIN32) || defined(__BORLANDC__)
+#if defined(PRAGMA_PACK)
 #pragma pack(pop)		/* original packing */
 #endif
 
@@ -522,7 +522,7 @@ typedef struct {				// Message
 	void		**hfield_dat;	// Header fields (variable length portion)
 	dfield_t	*dfield;		// Data fields (fixed length portion)
 	ulong		offset; 		// Offset (number of records) into index
-	uchar		forwarded;		// Forwarded from agent to another
+	int			forwarded;		// Forwarded from agent to another
 	when_t		expiration; 	// Message will exipre on this day (if >0)
 
 	} smbmsg_t;
