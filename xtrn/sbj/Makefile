@@ -8,7 +8,7 @@
 CC		=	bcc32
 LD		=	ilink32
 XSDK	= ..\sdk
-CFLAGS	= -WM -I$(XSDK)
+CFLAGS	= -I$(XSDK)
 CFLAGS	= $(CFLAGS) -q -d -H -X- -w-csu -w-pch -w-ccc -w-rch -w-par -w-8004
 OBJS    = xsdk.obj xsdkvars.obj xsdkwrap.obj
 
@@ -20,17 +20,17 @@ OBJS    = xsdk.obj xsdkvars.obj xsdkwrap.obj
 
 # Implicit C Compile Rule
 .c.obj:
-	@$(CC) $(CFLAGS) -c $<
+	@$(CC) $(CFLAGS) -WM -c $<
 
 all: sbj.exe sbjclean.exe
 
 # Main EXE Link Rule
 sbj.exe: $(OBJS) sbj.obj
     	@echo Linking $@
-	@$(CC) $(CFLAGS) -e$@ $**
+	@$(CC) $(CFLAGS) -WM -e$@ $**
 
 # Main EXE Link Rule
-sbjclean.exe: $(OBJS) sbjclean.obj
+sbjclean.exe: xsdkwrap.obj sbjclean.obj
     	@echo Linking $@
 	@$(CC) $(CFLAGS) -e$@ $**
 
