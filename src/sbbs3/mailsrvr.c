@@ -2279,6 +2279,8 @@ static void smtp_thread(void* arg)
 				sockprintf(socket,badarg_rsp);
 				continue;
 			}
+			if(startup->options&MAIL_OPT_DEBUG_RX_RSP) 
+				lprintf("%04d SMTP RX: %s",socket,buf);
 			if(auth_login) {
 				if(b64_decode(user_name,sizeof(user_name),buf,rd)<1) {
 					sockprintf(socket,badarg_rsp);
@@ -2295,6 +2297,8 @@ static void smtp_thread(void* arg)
 				sockprintf(socket,badarg_rsp);
 				continue;
 			}
+			if(startup->options&MAIL_OPT_DEBUG_RX_RSP) 
+				lprintf("%04d RX: %s",socket,buf);
 			if(auth_login) {
 				if(b64_decode(user_pass,sizeof(user_pass),buf,rd)<1) {
 					sockprintf(socket,badarg_rsp);
@@ -2355,6 +2359,9 @@ static void smtp_thread(void* arg)
 				sockprintf(socket,badarg_rsp);
 				continue;
 			}
+			if(startup->options&MAIL_OPT_DEBUG_RX_RSP) 
+				lprintf("%04d RX: %s",socket,buf);
+
 			if(b64_decode(response,sizeof(response),buf,rd)<1) {
 				sockprintf(socket,badarg_rsp);
 				continue;
