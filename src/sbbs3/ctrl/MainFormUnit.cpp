@@ -1621,7 +1621,7 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
 
     if(!(cfg.sys_misc&SM_LOCAL_TZ)) {
     	if(putenv("TZ=UTC0")) {
-        	Application->MessageBox("Error settings timezone"
+        	Application->MessageBox("Error setting timezone"
             	,"ERROR",MB_OK|MB_ICONEXCLAMATION);
             Application->Terminate();
         }
@@ -2776,7 +2776,10 @@ void __fastcall TMainForm::PropertiesExecute(TObject *Sender)
     PropertiesDlg->UndockableCheckBox->Checked=UndockableForms;
     PropertiesDlg->PasswordEdit->Text=Password;
     PropertiesDlg->JS_MaxBytesEdit->Text=IntToStr(JS_MaxBytes);
-    PropertiesDlg->MaxLogLenEdit->Text=IntToStr(MaxLogLen);
+    if(MaxLogLen==0)
+		PropertiesDlg->MaxLogLenEdit->Text="<unlimited>";
+    else
+	    PropertiesDlg->MaxLogLenEdit->Text=IntToStr(MaxLogLen);
 	if(PropertiesDlg->ShowModal()==mrOk) {
         LoginCommand=PropertiesDlg->LoginCmdEdit->Text;
         ConfigCommand=PropertiesDlg->ConfigCmdEdit->Text;
