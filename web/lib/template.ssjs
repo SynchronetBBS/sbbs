@@ -66,6 +66,8 @@ function parse_regular_bit(bit, objname, obj) {
 }
 
 function escape_match(start, exp, end)  {
+	if(exp==undefined)
+		exp='';
 	if(start=="%%")
 		exp=html_encode(exp,true,false,false);
 	if(start=="^^")
