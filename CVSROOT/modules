@@ -26,7 +26,7 @@
 # spread out over the entire source repository.
 lib-win32           -a lib/mozilla/js/win32.release   lib/mozilla/nspr/win32.release
 lib-win32.release   -a lib/mozilla/js/win32.release   lib/mozilla/nspr/win32.release
-lib-win32.debug     -a lib/mozilla/js/win32.debug     lib/mozilla/nspr/win32.debug
+lib-win32.debug     -a lib/mozilla/js/win32.debug     lib/mozilla/nspr/win32.release
 lib-linux           -a lib/mozilla/js/linux.release   lib/mozilla/nspr/linux.release
 lib-linux.release   -a lib/mozilla/js/linux.release   lib/mozilla/nspr/linux.release
 lib-linux.debug     -a lib/mozilla/js/linux.debug     lib/mozilla/nspr/linux.debug
