@@ -541,13 +541,14 @@ long js_exec(const char *fname, char** args)
 	JS_SetBranchCallback(js_cx, js_BranchCallback);
 
 	if(fname==NULL)	{ /* Use stdin for script source */
+		fprintf(statfp,"Reading script from stdin\n");
 		js_buflen=0;
 		while(!feof(stdin)) {
 			if(!fgets(line,sizeof(line),stdin))
 				break;
 
 			if((js_buf=realloc(js_buf,js_buflen+strlen(line)))==NULL) {
-				fprintf(errfp,"!Error allocating %lu bytes of memory\n"
+				fprintf(errfp,"!Error allocating %u bytes of memory\n"
 					,js_buflen+strlen(line));
 				return(-1);
 			}
