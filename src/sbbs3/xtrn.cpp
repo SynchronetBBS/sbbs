@@ -1284,8 +1284,8 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		setenv("SBBSCTRL",cfg.ctrl_dir,1);
 		setenv("SBBSDATA",cfg.data_dir,1);
 		setenv("SBBSEXEC",cfg.exec_dir,1);
-		sprintf(sbbsnnum,"%u",cfg.node_num);
-		if(setenv("SBBSNNUM",sbbsnnum,1))
+		sprintf(str,"%u",cfg.node_num);
+		if(setenv("SBBSNNUM",str,1))
         	errormsg(WHERE,ERR_WRITE,"environment",0);
 
 	} else {
