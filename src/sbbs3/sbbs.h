@@ -171,7 +171,7 @@ public:
 
 	void	send_telnet_cmd(uchar cmd, uchar opt);
     uchar	telnet_cmd[64];
-    int		telnet_cmdlen;
+    uint	telnet_cmdlen;
 	ulong	telnet_mode;
 	uchar	telnet_last_rxch;
 	char	terminal[TELNET_TERM_MAXLEN+1];
