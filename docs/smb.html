@@ -15,7 +15,7 @@
 
 <hr>
 
-<!--webbot bot="Include" endspan i-checksum="23126" -->
+<!--webbot bot="Include" endspan i-CheckSum="23126" -->
 <h1><a name="top">Synchronet Message Base Specification</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 <i>Version 1.21</i></h1>
 <h4><a name="toc"><b>Table of Contents</b></a></h4>
@@ -312,8 +312,8 @@ When example file dumps are displayed, the format is similar to that of the
 output from the DOS DEBUG program. With the exception of the ASCII characters,
 all numbers are in hexadecimal.</pre>
 <pre>Offset    Byte values                                          ASCII characters</pre>
-<pre>000000    53 4D 42 1A 10 01 20 00   F4 01 00 00 F4 01 00 00    SMB... .ô...ô...
-000010    20 00 00 00 D0 07 00 00   D0 07 00 00 00 00 00 00     ...Ð...Ð.......
+<pre>000000    53 4D 42 1A 10 01 20 00   F4 01 00 00 F4 01 00 00    SMB... .........
+000010    20 00 00 00 D0 07 00 00   D0 07 00 00 00 00 00 00     ...............
 </pre>
 <pre><b><u>Bit values</u></b>
 
@@ -339,12 +339,20 @@ upon retrieval to obtain the proper data.
 <pre><b><u>Local e-mail</u></b>
 
 When referring to the local e-mail message base of a Synchronet BBS, we are
-referring specifically the message base with the name &quot;MAIL&quot; stored in the
+referring specifically to the message base with the name &quot;MAIL&quot; stored in the
 &quot;DATA&quot; directory (e.g. \SBBS\DATA\MAIL).</pre>
 <pre>Messages stored in this message base are different in the following respects:</pre>
-<pre>    The SMB_EMAIL status header attribute is set ON
-    Hyper Allocation storage method is not supported
-    The &quot;To&quot; and and &quot;From&quot; fields of the message indexes do NOT contain CRCs</pre>
+<ul>
+  <li>
+<pre>The SMB_EMAIL status header attribute is set ON</pre>
+  </li>
+  <li>
+<pre>Hyper Allocation storage method is not supported</pre>
+  </li>
+  <li>
+<pre>The &quot;To&quot; and and &quot;From&quot; fields of the message indexes do NOT contain CRCs</pre>
+  </li>
+</ul>
 <p><b><a href="#toc">Back to Table of Contents</a></b></p>
 <h3><u><a name="Acronyms:">Acronyms:</a></u></h3>
 <pre>ANSI            American National Standards Institute
@@ -574,8 +582,29 @@ typedef struct {
     time_t  time;   // import date/time stamp (Unix format)
 
     } idxrec_t;
-
-
+</pre>
+<pre><b><font SIZE="2">Example file dump (16 messages starting with message number 15):</font></b></pre>
+<pre>000000 36 4F 13 07 2A 77 00 00 20 00 00 00 0F 00 00 00
+000010 BE 62 76 2C 36 4F 46 0A 7F B2 00 00 20 01 00 00
+000020 10 00 00 00 C7 29 78 2C 36 4F 70 6F 46 FF 00 00
+000030 20 02 00 00 11 00 00 00 AD D3 7A 2C 70 6F 13 07
+000040 46 FF 00 00 20 03 00 00 12 00 00 00 D6 F8 7F 2C
+000050 36 4F E1 EA E7 E9 00 00 20 04 00 00 13 00 00 00
+000060 1E 7B 85 2C 37 0D 2E DF 4D 79 00 00 20 05 00 00
+000070 14 00 00 00 5C E1 A1 2C 90 54 2D 5A 86 62 00 00
+000080 20 06 00 00 15 00 00 00 39 2E A2 2C 70 6F 1A 8B
+000090 46 FF 00 00 20 07 00 00 16 00 00 00 D0 7B A8 2C
+0000A0 2E DF 1A 8B 4D 79 00 00 20 08 00 00 17 00 00 00
+0000B0 FF 7B A8 2C B4 D9 35 7C 23 B1 00 00 20 09 00 00
+0000C0 18 00 00 00 CE D4 BA 2C 36 4F BC D8 B2 E7 00 00
+0000D0 20 0A 00 00 19 00 00 00 14 5F C3 2C BA A8 4E B0
+0000E0 67 76 00 00 20 0B 00 00 1A 00 00 00 6F 89 C3 2C
+0000F0 36 4F 0C 01 19 9C 00 00 20 0C 00 00 1B 00 00 00
+000100 F8 30 C6 2C 36 4F FA 48 0E 55 00 00 20 0D 00 00
+000110 1C 00 00 00 6A 94 D3 2C 36 4F F1 CE CF A2 00 00
+000120 20 0E 00 00 1D 00 00 00 53 DB D5 2C 8D A6 21 CE
+000130 F7 AB 00 00 20 0F 00 00 1E 00 00 00 31 29 DC 2C</pre>
+<pre>
 <b><u>Field descriptions:</u></b></pre>
 <pre><b>To:</b>
 The 'To' field is the CRC-16 of the name of the intended recipient agent of
@@ -622,8 +651,8 @@ and message header records (usually the bulk of the file).</pre>
 Base header records are blocks of data that apply to the entire message base
 and are of variable length. This specification defines only one base header
 record, the &quot;Status info&quot; (smbstatus_t) record. This status info record must be
-the first base header record in the file and must be modified if additional
-base header records are added.</pre>
+the first base header record in the file (offset 0) and must be modified if 
+additional base header records are added.</pre>
 <pre>Additional header records allow other developers to store configuration and
 status information particular to their application needs. It also allows for
 future header record definitions as part of this specification without causing
@@ -631,13 +660,14 @@ backward compatibility issues.</pre>
 <pre>Each base header record contains a fixed length portion (smbhdr_t) and an
 optional variable length portion.</pre>
 <pre>Whenever a base header record is read or updated (written), it must first
-be successfully locked and subsequently unlocked.</pre>
+be successfully locked and subsequently unlocked (using the file system record
+locking facilities).</pre>
 <pre>The first base header record (Status Info) is used as a semaphore when writing
 to the message index (.SID) file and, when using the Hyper Allocation storage
 method, writing to the message data (.SDT) file. This record must be
-succesfully locked before writing and subsequently unlocked. This is to insure
+successfully locked before writing and subsequently unlocked. This is to insure
 that multiple applications simultaneously writing to the same message base
-does result in corrrupted data.
+does not result in corrupted data.
 </pre>
 <pre><b><u>Message Header Records:</u></b>
 
@@ -757,6 +787,9 @@ smbhdr.length=sizeof(smbhdr_t)+sizeof(smbstatus_t); smbstatus_t status;
 Additional headers from developers must have initial 8 bytes in smbhdr_t
 format, length must include size of smbhdr_t, and header_offset of smbstatus_t
 must be changed to include the size of the additional header(s).</pre>
+<pre><b>Example file dump (base header portion only):</b></pre>
+<pre>000000 53 4D 42 1A 20 01 20 00 F4 01 00 00 F4 01 00 00 SMB.............
+000010 20 00 00 00 D0 07 00 00 D0 07 00 00 00 00 00 00  ...............</pre>
 <pre><b><u>Message Header Record (Fixed portion):</u></b>
 
 <i>C example:</i></pre>
@@ -788,10 +821,26 @@ must be changed to include the size of the additional header(s).</pre>
     ushort  length;         // Length of buffer
     uchar   dat[length];</pre>
 <pre>    } hfield_t;
-
-
-<b><u>Contents of example header:</u></b>
-id                   SHD^Z
+</pre>
+<pre><b>Example file dump (one header record, both fixed and variable length portions):</b></pre>
+<pre>000020 53 48 44 1A 00 00 20 01 F5 00 00 00 00 00 00 00 SHD... .........
+000030 00 00 00 00 46 DB F7 2C 00 00 7D D7 29 2D 00 00 .......,..}×)-..
+000040 01 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ................
+000050 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 ................
+000060 00 00 00 00 02 00 00 00 00 00 00 00 4A 01 00 00 ............J...
+000070 02 00 4A 01 00 00 53 00 00 00 00 00 13 00 4D 61 ..J...S.......Ma
+000080 72 69 61 6E 6E 65 20 4D 6F 6E 74 67 6F 6D 65 72 rianne Montgomer
+000090 79 30 00 0C 00 43 61 72 6F 6C 20 47 61 69 73 65 y0...Carol Gaise
+0000A0 72 60 00 07 00 46 61 72 6E 68 61 6D A4 00 14 00 r`...Farnham....
+0000B0 31 3A 31 33 38 2F 31 30 32 2E 30 20 32 63 66 38 1:138/102.0 2cf8
+0000C0 30 35 37 36 A5 00 14 00 31 3A 33 34 33 2F 31 30 0576....1:343/10
+0000D0 30 2E 30 20 32 63 66 33 62 39 30 61 A3 00 23 00 0.0 2cf3b90a..#.
+0000E0 31 33 38 2F 31 30 32 20 31 20 32 37 30 2F 31 30 138/102 1 270/10
+0000F0 31 20 32 30 39 2F 32 30 39 20 31 30 33 2F 30 20 1 209/209 103/0
+000100 33 35 35 02 00 02 00 02 00 03 00 08 00 01 00 8A 355.............
+000110 00 66 00 00 00 00 00 00 00 00 00 00 00 00 00 00 .f..............</pre>
+<pre><b><u>Contents of example header:</u></b></pre>
+<pre>id                   SHD^Z
 type                 0000h
 version              0120h
 length               245
@@ -2884,7 +2933,7 @@ http://www.synchro.net</a>
 read the <a href="http://www.synchro.net/copyright.html">Copyright Documentation</a>
 .</font></p>
 
-<!--webbot bot="Include" endspan i-checksum="55766" -->
+<!--webbot bot="Include" endspan i-CheckSum="55766" -->
 </body>
 
 </html>
