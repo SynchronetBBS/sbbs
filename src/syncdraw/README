@@ -1,0 +1,53 @@
+Stephen Hurd (11/21/2004)
+------------
+Greatly improved mouse support, use the Synchronet ciolib
+
+Stephen Hurd (5/24/2002)
+------------
+Well, I've got it working for me.  :-)
+It now runs (apparently) flawlessly on FreeBSD at the CONSOLE.
+Mouse and SVGALIB preview not ported... is the SVGALIB preview really something
+we need?  Mouse stuff I'll do eventually.
+
+Notes:
+------
+If you run Mystic Draw in XTerm, there's a few things to be aware of:
+1) SHIFT-Fx doesn't work... use CTRL and the top row of letters on the keyboard
+   (QWERTYUIOP) ie: use CTRL-Q instead of SHIFT-F1 etc...
+2) CTRL-<arrow> doesn't work for changing colours.  Use CTRL-A/CTRL-D for the
+   foreground colour and CTRL-Z/CTRL-C for the background colour.
+3) Some characters are missing and the character sets are different.  This
+   is due to XTerms high-ascii control codes.  If I should these chars to you,
+   you wouldn't like what you got... honest.
+4) Blinking text just plain DOES NOT WORK.  Furthermore, you can't tell if text
+   is blinking or not... so if you use this in XTerm be VERY carefull with it.
+
+I may port this mess to Windows soon... but I really should clean up the code
+first... being ported from a DOS version of Pascal really didn't help it any.
+:-)
+
+I may also port this back to Linux if I ever manage to get it installed here.
+
+
+My E-MAIL : deuce@lordlegacy.org
+My Homepage : http://tw2.thebbs.org/
+
+
+Mike Krueger (1996?)
+-----------
+LICENSE
+All files are under the GPL you should have get a copy with ... bla bla bla
+MYSTIC DRAW
+Mystic Draw was my first C program. I wrote it first early 1994 in a language called
+Turbo Pascal under DOS (yes from that company in Redmond) and 1994-95 when 
+I get my first Linux System my first program was Mystic Draw :)
+Ansi drawing tools are completely outdated, I know,I know ...
+but maybe this tool helps anyone, the C code is rubbish (Pascal - Style), but
+the program works. If someone find this tool helpful, write me a mail, maybe
+I fix some bugs (I did fix some bugs 97, but this source is gone ... damn
+harddisk).
+
+My E-MAIL : mkrueger@inf.fu-berlin.de
+Homepage  : www.inf.fu-berlin.de/~mkrueger/mdraw
+
+
