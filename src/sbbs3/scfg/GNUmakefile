@@ -32,7 +32,7 @@ ifndef os
  os		=	$(shell uname)
  $(warning OS not specified on command line, setting to '$(os)'.)
 endif
-os      :=	$(shell echo $(os) | awk '/.*/ { print tolower($$1)}')
+os      :=	$(shell echo $(os) | tr "[A-Z]" "[a-z]")
 
 ODIR	:=	gcc.$(os)
 
