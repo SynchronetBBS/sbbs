@@ -12,57 +12,21 @@
 
 # $Id$
 
-# Macros
-CC		=	gcc
-LD		=	ld
 XSDK		=	../sdk
-
-vpath %.c $(XPDEV) $(XSDK)
-
-ifndef os
- os              =       $(shell uname)
- $(warning OS not specified on command line, setting to '$(os)'.)
-endif
-os      :=	$(shell echo $(os) | tr "[A-Z]" "[a-z]")
-# remove '/' from "os/2"
-os      :=  $(shell echo $(os) | tr -d "/")
-
-
-LIBDIR	:=	/usr/lib
-DELETE	:=	rm -f -v
-ifeq ($(os),freebsd)	# FreeBSD
- LIBS	+=	-pthread
-else
- ifeq ($(os),openbsd)	# OpenBSD
-  LIBS	+=	-pthread
- else
-  ifeq ($(os),netbsd)	#NetBSD
-   CFLAGS	+=	-D__unix__ -I/usr/pkg/include -I../../src/xpdev
-   LIBS	+=	-L/usr/pkg/lib -lpthread
-  else
-   ifeq ($(os),qnx)	# QNX
-    LIBS	+=	-lsocket
-   else					# Linux / Generic UNIX
-    LIBS	+=	-lpthread
-   endif
-  endif #! QNX
- endif	#! OpenBSD
-endif	#! FreeBSD
-
+XPDEV	?=	../../src/xpdev/
+vpath %.c $(XSDK)
+NEED_THREADS	:=	1
+include $(XPDEV)Common.gmake
 CFLAGS	+=	-I$(XSDK)
 
-OBJS		= xsdk.o xsdkvars.o xsdkwrap.o
-ifeq ($(os),netbsd)
- OBJS	+=	sem.o
-endif
+$(EXEODIR)$(SLASH)sbj: $(LIBODIR)$(SLASH)sbj.o $(OBJS)
+   ifndef bcc
+	@echo Linking $@
+   endif
+	$(QUIET)$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@ $(LIBS)
 
-all: sbj sbjclean
-
-sbj: sbj.o $(OBJS)
-	$(CC) $(CFLAGS) $^ -o $@ $(LIBS)
-
-sbjclean: sbjclean.o $(OBJS)
-	$(CC) $(CFLAGS) $^ -o $@ $(LIBS)
-
-clean:
-	rm -f sbj sbjclean *.o
+$(EXEODIR)$(SLASH)sbjclean: $(LIBODIR)$(SLASH)sbjclean.o $(OBJS)
+   ifndef bcc
+	@echo Linking $@
+   endif
+	$(QUIET)$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@ $(LIBS)

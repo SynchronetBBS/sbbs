@@ -13,71 +13,26 @@
 # $Id$
 
 # Macros
-CC		=	gcc
-LD		=	ld
 XSDK		=	../sdk
 ifndef XPDEV
- XPDEV		=	../../src/xpdev
+ XPDEV		=	../../src/xpdev/
 endif
-ifndef SBBS_SRC
- SBBS_SRC	=	../../src/sbbs3
-endif
+SBBS_SRC	:=	$(XPDEV)../sbbs3/
+NEED_THREADS	:=	1
+include $(XPDEV)Common.gmake
 
-vpath %.c $(XPDEV) $(XSDK) $(SBBS_SRC)
+vpath %.c $(XSDK)
 
-ifndef os
- os              =       $(shell uname)
- $(warning OS not specified on command line, setting to '$(os)'.)
-endif
-os      :=	$(shell echo $(os) | tr "[A-Z]" "[a-z]")
-# remove '/' from "os/2"
-os      :=  $(shell echo $(os) | tr -d "/")
+CFLAGS	+=	-I$(XSDK)
 
-LIBDIR	:=	/usr/lib
-DELETE	:=	rm -f -v
-ifeq ($(os),freebsd)	# FreeBSD
- CFLAGS	+= -D_THREAD_SAFE
- LFLAGS	:=	-pthread
- BSD	=	1
-else
- ifeq ($(os),openbsd)	# OpenBSD
-  CFLAGS	+= -D_THREAD_SAFE
-  LFLAGS	:=	-pthread
-  BSD		=	1
- else
-  ifeq ($(os),netbsd)	# NetBSD
-  CFLAGS	+= -D_THREAD_SAFE -D__unix__ -D_NEED_SEM -I/usr/pkg/include
-  LFLAGS	:=	-lpth -lpthread -L/usr/pkg/lib
-  else
-   ifeq ($(os),qnx)	# QNX
-    CFLAGS	+= -D_THREAD_SAFE
-    LFLAGS	:= 
-   else			# Linux / Other UNIX
-    ifdef bcc
-     LFLAGS	:=	libpthread.a
-    else
-     LFLAGS	:=	-lpthread
-    endif
-   endif
-  endif
- endif
-endif
+$(EXEODIR)$(SLASH)sbl: $(OBJS)
+	@echo Linking $@
+	$(QUIET)$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@ $(LIBS)
+SMBIO	=	$(LIBODIR)/genwrap.o $(LIBODIR)/filewrap.o $(LIBODIR)/dirwrap.o \
+		$(LIBODIR)/smblib.o $(LIBODIR)/lzh.o
 
+$(EXEODIR)$(SLASH)sbl2smb: $(LIBODIR)$(SLASH)sbl2smb.o $(SMBIO)
 
-CFLAGS	+=	-I$(XSDK) -I$(XPDEV) -I$(SBBS_SRC)
+$(EXEODIR)$(SLASH)smb2sbl: $(LIBODIR)$(SLASH)smb2sbl.o $(SMBIO)
 
-all: sbl sbl2smb smb2sbl sblpack
-
-sbl: sbl.o xsdk.o xsdkvars.o xsdkwrap.o
-	$(CC) $(CFLAGS) $(LFLAGS) $^ -o $@ $(LIBS)
-
-SMBIO	=	genwrap.o filewrap.o dirwrap.o smblib.o lzh.o
-
-sbl2smb: sbl2smb.o $(SMBIO)
-
-smb2sbl: smb2sbl.o $(SMBIO)
-
-sblpack: sblpack.o filewrap.o
-
-clean:
-	rm -f sbl sbl2smb smb2sbl sblpack *.o
+$(EXEODIR)$(SLASH)sblpack: $(LIBODIR)$(SLASH)sblpack.o $(LIBODIR)$(SLASH)/filewrap.o
