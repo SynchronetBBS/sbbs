@@ -620,7 +620,7 @@ static void send_thread(void* arg)
 #ifdef _WIN32
 			GetShortPathName(xfer.filename,fname,sizeof(fname));
 #else
-			strcpy(xfer.filename,fname);
+			strcpy(fname,xfer.filename);
 #endif
 			padfname(getfname(fname),f.name);
 			strupr(f.name);
@@ -899,6 +899,11 @@ static void filexfer(SOCKADDR_IN* addr, SOCKET ctrl_sock, SOCKET pasv_sock, SOCK
 				,ctrl_sock,*data_sock,inet_ntoa(addr->sin_addr),ntohs(addr->sin_port));
 
 	} else {	/* PASV */
+
+		if(startup->options&FTP_OPT_DEBUG_DATA)
+			lprintf("%04d PASV DATA socket %d listening on %s port %d"
+					,ctrl_sock,pasv_sock,inet_ntoa(addr->sin_addr),ntohs(addr->sin_port));
+		
 		addr_len=sizeof(SOCKADDR_IN);
 		if((*data_sock=accept(pasv_sock,(struct sockaddr*)addr,&addr_len))==INVALID_SOCKET) {
 			lprintf("%04d !PASV DATA ERROR %d accepting connection on socket %d"
@@ -2722,7 +2727,9 @@ static void ctrl_thread(void* arg)
 					continue;
 				}
 				sprintf(fname,"%s%s",scfg.dir[dir]->path,p);
-				if(fexist(fname)) {
+				if(fexist(fname) || 
+					(startup->options&FTP_OPT_INDEX_FILE 
+						&& !stricmp(p,startup->index_file_name))) {
 					lprintf("%04d !%s attempted to overwrite existing file: %s"
 						,sock,user.alias,fname);
 					sockprintf(sock,"553 File already exists.");
