@@ -1523,7 +1523,7 @@ static service_t* read_services_ini(service_t* service, char* services_ini, DWOR
 		serv.js_yield_interval=iniGetInteger(fp,sec_list[i]	,strJavaScriptYieldInterval	,startup->js_yield_interval);
 
 		for(j=0;j<*services;j++)
-			if(service[j].port==serv.port && service[j].options==serv.options)
+			if(service[j].port==serv.port && (service[j].options&SERVICE_OPT_UDP)==(serv.options&SERVICE_OPT_UDP))
 				break;
 		if(j<*services)	{ /* ignore duplicate services */
 			lprintf(LOG_NOTICE,"Ignoring duplicate service: %s",sec_list[i]);
