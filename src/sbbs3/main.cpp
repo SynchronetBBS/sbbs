@@ -959,7 +959,8 @@ void input_thread(void *arg)
 	// SPY socket setup.
 	
 	if((spy_sock=socket(PF_LOCAL,SOCK_STREAM,0))==INVALID_SOCKET)
-		lprintf("Node %d unable to create spy socket (%d)",sbbs->cfg.node_num,errno);
+		lprintf("Node %d ERROR %d creating spy socket"
+			,sbbs->cfg.node_num, errno);
 	else {
 		lprintf("Node %d spy using socket %d",sbbs->cfg.node_num,spy_sock);
 		if(startup!=NULL && startup->socket_open!=NULL) 
@@ -968,7 +969,8 @@ void input_thread(void *arg)
 
 	spy_name.sun_family=AF_LOCAL;
 	if((unsigned int)snprintf(spy_path,sizeof(spy_name.sun_path),
-			"%slocalspy.sock",sbbs->cfg.node_dir)>=sizeof(spy_name.sun_path))
+			"%slocalspy%d.sock",startup->temp_dir,sbbs->cfg.node_num)
+			>=sizeof(spy_name.sun_path))
 		spy_sock=INVALID_SOCKET;
 	else  {
 		strcpy(spy_name.sun_path,spy_path);
@@ -978,7 +980,8 @@ void input_thread(void *arg)
 	if(spy_sock!=INVALID_SOCKET) {
 		spy_len=SUN_LEN(&spy_name);
 		if(bind(spy_sock, (struct sockaddr *) &spy_name, spy_len))
-			lprintf("Node %d unable to bind spy socket %s (%d)",sbbs->cfg.node_num,spy_name.sun_path,errno);
+			lprintf("Node %d !ERROR %d binding spy socket (%s)"
+				,sbbs->cfg.node_num, errno, spy_name.sun_path);
 		listen(spy_sock,1);
 		fcntl(spy_sock,F_SETFL,fcntl(spy_sock,F_GETFL)|O_NONBLOCK);
 		spy_len=sizeof(spy_name);
