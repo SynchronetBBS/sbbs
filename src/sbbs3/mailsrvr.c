@@ -1720,6 +1720,7 @@ static void smtp_thread(void* arg)
 	socklen_t	addr_len;
 	ushort		hfield_type;
 	ushort		nettype;
+	ushort		agent;
 	uint		usernum;
 	ulong		lines=0;
 	ulong		hdr_lines=0;
@@ -2355,6 +2356,7 @@ static void smtp_thread(void* arg)
 
 					SAFECOPY(rcpt_name,iniGetString(rcptlst,section	,smb_hfieldtype(RECIPIENT),"unknown",value));
 					usernum=iniGetInteger(rcptlst,section			,smb_hfieldtype(RECIPIENTEXT),0);
+					agent=iniGetShortInt(rcptlst,section			,smb_hfieldtype(RECIPIENTAGENT),AGENT_PERSON);
 					nettype=iniGetShortInt(rcptlst,section			,smb_hfieldtype(RECIPIENTNETTYPE),NET_NONE);
 					sprintf(str,"#%u",usernum);
 					SAFECOPY(rcpt_addr,iniGetString(rcptlst,section	,smb_hfieldtype(RECIPIENTNETADDR),str,value));
@@ -2382,6 +2384,8 @@ static void smtp_thread(void* arg)
 						smb_hfield(&newmsg, RECIPIENTNETTYPE, sizeof(nettype), &nettype);
 						smb_hfield_str(&newmsg, RECIPIENTNETADDR, rcpt_addr);
 					}
+					if(agent!=newmsg.to_agent)
+						smb_hfield(&newmsg, RECIPIENTAGENT, sizeof(agent), &agent);
 
 					i=smb_addmsghdr(&smb,&newmsg,SMB_SELFPACK);
 					smb_freemsgmem(&newmsg);
