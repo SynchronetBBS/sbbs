@@ -3280,7 +3280,6 @@ void http_session_thread(void* arg)
 							respond(&session);
 						}
 						else {
-							/* is this a memory leak? It seems close_request() isn't being called in this case */
 							safe_snprintf(redir_req,sizeof(redir_req),"%s %s%s%s",methods[session.req.method]
 								,session.req.virtual_path,session.http_ver<HTTP_1_0?"":" ",http_vers[session.http_ver]);
 							lprintf(LOG_DEBUG,"%04d Internal Redirect to: %s",socket,redir_req);
