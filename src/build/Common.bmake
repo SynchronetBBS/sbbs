@@ -100,15 +100,15 @@
 
 # Set DEBUG
 !ifdef DEBUG
- !ifdef RELEASE
-  !undef RELEASE
- !endif
+!ifdef RELEASE
+!undef RELEASE
+!endif
 !endif
 
 !ifndef DEBUG
- !ifndef RELEASE
+!ifndef RELEASE
   DEBUG	=	1
- !endif
+!endif
 !endif
 
 # VERBOSE/QUIET
@@ -123,6 +123,7 @@ OFILE	=	.obj
 SOFILE	=	.dll
 LIBFILE	=	.lib
 DELETE	=	echo y | del 
+IFNOTEXIST = if not exist $@
 
 # Compiler-specific
 !ifdef msc	# Microsoft Visual C++
@@ -174,10 +175,13 @@ CIOLIB_SRC	=	$(SRC_ROOT)$(DIRSEP)conio
 SMBLIB_SRC	=	$(SRC_ROOT)$(DIRSEP)smblib
 UIFC_SRC	=	$(SRC_ROOT)$(DIRSEP)uifc
 
+.path.c		=	.;$(XPDEV_SRC);$(SMBLIB_SRC);$(CIOLIB_SRC);$(UIFC_SRC)
+.path.cpp	=	.;$(XPDEV_SRC);$(SMBLIB_SRC);$(CIOLIB_SRC);$(UIFC_SRC)
+
 !include targets.mk
 !include $(SRC_ROOT)/build/rules.mk
 !include objects.mk		# defines $(OBJS)
-!include libobjs.mk		# defines $(LIB_OBJS)
+#!include libobjs.mk		# defines $(LIB_OBJS)
 
 # Implicit C Compile Rule
 {.}.c$(OFILE):
