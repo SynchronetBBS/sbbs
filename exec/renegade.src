@@ -1,8 +1,13 @@
-# RENEGADE.SRC
+# renegade.src
+
+# $id$
+
+# @format.tab-size 8, @format.use-tabs true
 
 !include sbbsdefs.inc
 
 ################################# Begins Here #################################
+or _sys_misc SM_RA_EMU  # Swap Msg ReRead/Reply commands
 :main
 # Set return point for main menu commands (via end_cmd)
 cmd_home
