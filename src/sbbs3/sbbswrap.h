@@ -75,9 +75,15 @@ extern "C" {
 #elif defined __unix__
 
 	#define mswait(x)			usleep(x*1000)
+	#define stricmp(x,y)		strcasecmp(x,y)
+	#define strnicmp(x,y,z)		strncasecmp(x,y,z)
+	#define chsize(fd,size)		ftruncate(fd,size)
 
-	DLLEXPORT void	sbbs_beep(int,int);
+	DLLEXPORT void	sbbs_beep(int freq, int dur);
 	DLLEXPORT long	filelength(int fd);
+	DLLEXPORT char* ultoa(ulong, char*, int radix);
+	DLLEXPORT char*	strupr(char* str);
+	DLLEXPORT char*	strlwr(char* str);
 
 #else	/* Unsupported OS */
 
@@ -88,10 +94,6 @@ extern "C" {
 /*********************/
 /* Compiler-specific */
 /*********************/
-
-#ifdef __GNUC__	/* GNU CC */
-	DLLEXPORT char* ultoa(ulong, char*, int radix);
-#endif
 
 #ifdef __BORLANDC__
 	#define sbbs_random(x)		random(x)
@@ -104,8 +106,8 @@ extern "C" {
 #endif
 
 DLLEXPORT BOOL		fexist(char *filespec);
-DLLEXPORT long		flength(char *filespec);
-DLLEXPORT long		fdate(char *filespec);
+DLLEXPORT long		flength(char *filename);
+DLLEXPORT long		fdate(char *filename);
 DLLEXPORT ulong		getfreediskspace(char* path);
 
 #ifdef __cplusplus

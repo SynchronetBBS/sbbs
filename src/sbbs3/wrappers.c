@@ -40,56 +40,121 @@
 #include <io.h>			/* _findfirst */
 #endif
 
+#include <sys/types.h>	/* _dev_t */
+#include <sys/stat.h>	/* struct stat */
+
 #include <stdio.h>		/* sprintf */
 #include <stdlib.h>		/* rand */
 
 #include "gen_defs.h"	/* BOOL */ 
 #include "sbbswrap.h"	/* verify prototypes */
 
+#ifdef _WIN32
+#define stat(f,s)	_stat(f,s)
+#define STAT		struct _stat
+#else
+#define STAT		struct stat
+#endif
+
 /****************************************************************************/
-/* Checks the disk drive for the existence of a file. Returns 1 if it       */
-/* exists, 0 if it doesn't.                                                 */
+/* Checks the file system for the existence of one or more files.			*/
+/* Returns TRUE if it exists, FALSE if it doesn't.                          */
+/* 'filespec' may contain wildcards!										*/
 /****************************************************************************/
 BOOL fexist(char *filespec)
 {
+#ifdef _WIN32
+
 	long	handle;
-    struct _finddata_t f;
-
-	if((handle=_findfirst(filespec,&f))==-1)
-		return(FALSE);
-	_findclose(handle);
-	if(f.attrib&_A_SUBDIR)
-		return(FALSE);
-	return(TRUE);
-}
-
-/****************************************************************************/
-/* Returns the length of the file in 'filespec'                             */
-/****************************************************************************/
-long flength(char *filespec)
-{
-	long	handle;
-    struct _finddata_t f;
-
-	if((handle=_findfirst(filespec,&f))==-1)
-		return(-1L);
-	_findclose(handle);
-	return(f.size);
-}
-
-/****************************************************************************/
-/* Returns the time/date of the file in 'filespec' in time_t (unix) format  */
-/****************************************************************************/
-long fdate(char *filespec)
-{
-    long	handle;
 	struct _finddata_t f;
 
 	if((handle=_findfirst(filespec,&f))==-1)
-		return(-1L);
-	_findclose(handle);
-	return(f.time_write);
+		return(FALSE);
+
+ 	_findclose(handle);
+
+ 	if(f.attrib&_A_SUBDIR)
+		return(FALSE);
+
+	return(TRUE);
+
+#else
+
+#warning "fexist() port needs to support wildcards!"
+
+	STAT stat;
+
+	if(stat(filespec, &stat)!=0)
+		return(FALSE);
+
+	if(stat.st_mode&S_IFDIR)	/* Directory, not a file */
+		return(FALSE);		
+
+	return(TRUE);
+
+#endif
 }
+
+/****************************************************************************/
+/* Returns the length of the file in 'filename'                             */
+/****************************************************************************/
+long flength(char *filename)
+{
+	STAT stat;
+
+	if(stat(filename, &stat)!=0)
+		return(-1L);
+
+	return(stat.st_size);
+}
+
+/****************************************************************************/
+/* Returns the time/date of the file in 'filename' in time_t (unix) format  */
+/****************************************************************************/
+long fdate(char *filename)
+{
+	STAT stat;
+
+	if(stat(filename, &stat)!=0)
+		return(-1L);
+
+	return(stat.st_mtime);
+}
+
+/****************************************************************************/
+/* Returns the length of the file in 'fd'									*/
+/****************************************************************************/
+#ifdef __unix__
+long filelength(int fd)
+{
+	STAT stat;
+
+	if(fstat(fd, &stat)!=0)
+		return(-1L);
+
+	return(stat.st_size);
+}
+#endif
+
+/****************************************************************************/
+/* Generate a tone at specified frequency for specified milliseconds		*/
+/* Thanks to Casey Martin for this code										*/
+/****************************************************************************/
+#ifdef __unix__
+void sbbs_beep(int freq, int dur)
+{
+	static	console_fd=-1;
+
+	if(console_fd == -1) 
+  		console_fd = open("/dev/console", O_NOCTTY);
+	
+	if(console_fd != -1) {
+		ioctl(console_fd, KIOCSOUND, (int) (1193180 / freq));
+		mswait(dur);
+		ioctl(console_fd, KIOCSOUND, 0);	/* turn off tone */
+	}
+}
+#endif
 
 /****************************************************************************/
 /* Return random number between 0 and n-1									*/
@@ -108,12 +173,16 @@ int sbbs_random(int n)
 #endif
 
 /****************************************************************************/
+/* Return ASCII string representation of ulong								*/
 /* There may be a native GNU C Library function to this...					*/
 /****************************************************************************/
-#ifdef __GNUC__
+#ifdef __unix__
 char* ultoa(ulong val, char* str, int radix)
 {
 	switch(radix) {
+		case 8:
+			sprintf(str,"%lo",val);
+			break;
 		case 10:
 			sprintf(str,"%lu",val);
 			break;
@@ -123,6 +192,35 @@ char* ultoa(ulong val, char* str, int radix)
 		default:
 			sprintf(str,"bad radix: %d",radix);
 			break;
+	}
+	return(str);
+}
+#endif
+
+/****************************************************************************/
+/* Convert ASCIIZ string to upper case										*/
+/****************************************************************************/
+#ifdef __unix__
+char* strupr(char *str)
+{
+	char* p=str;
+
+	while(*p) {
+		*p=toupper(*p);
+		p++;
+	}
+	return(str);
+}
+/****************************************************************************/
+/* Convert ASCIIZ string to lower case										*/
+/****************************************************************************/
+char* strlwr(char *str)
+{
+	char* p=str;
+
+	while(*p) {
+		*p=tolower(*p);
+		p++;
 	}
 	return(str);
 }
@@ -163,7 +261,8 @@ ulong getfreediskspace(char* path)
 			return(0);
 
 		if(avail.HighPart)
-			return(0xffffffff);
+			return(~0);	/* 4GB max */
+
 		return(avail.LowPart);
 	}
 
