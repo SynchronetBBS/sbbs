@@ -68,7 +68,7 @@ void read_list(char *listpath, struct bbslist **list, int *i, int type)
 				list[*i]->conn_type=CONN_TYPE_RAW;
 			list[*i]->reversed=iniReadBool(listfile,bbsname,"Reversed",0);
 			list[*i]->screen_mode=iniReadInteger(listfile,bbsname,"ScreenMode",SCREEN_MODE_CURRENT);
-			list[*i]->screen_mode=iniReadBool(listfile,bbsname,"NoStatis",0);
+			list[*i]->nostatus=iniReadBool(listfile,bbsname,"NoStatus",0);
 			list[*i]->type=type;
 			list[*i]->id=*i;
 			(*i)++;
@@ -395,7 +395,8 @@ struct bbslist *show_bbslist(int mode, char *path)
 										"Select this option if you wish to hide the status line, effectively adding\n"
 										"an extra line to the display (May cause problems with some BBS software)\n";
 						list[listcount-1]->nostatus=1;
-						uifc.list(WIN_MID|WIN_SAV,0,0,0,&list[listcount-1]->reversed,NULL,"Hide Status Lines",YesNo);
+						uifc.list(WIN_MID|WIN_SAV,0,0,0,&list[listcount-1]->nostatus,NULL,"Hide Status Lines",YesNo);
+						list[listcount-1]->nostatus=!list[listcount-1];
 						add_bbs(listpath,list[listcount-1]);
 						sort_list(list);
 						for(j=0;list[j]->name[0];j++) {
