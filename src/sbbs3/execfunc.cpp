@@ -372,7 +372,7 @@ int sbbs_t::exec_function(csi_t *csi)
 				}
 				if(ch==16) {	/* Ctrl-P Private node-node comm */
 					lncntr=0;						/* defeat pause */
-					spy_socket[i-1]=NULL;			/* disable spy output */
+					spy_socket[i-1]=INVALID_SOCKET;	/* disable spy output */
 					nodesync(); 					/* read waiting messages */
 					nodemsg();						/* send a message */
 					spy_socket[i-1]=client_socket;	/* enable spy output */
