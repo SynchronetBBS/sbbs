@@ -46,8 +46,8 @@
 
 static const char*	server_name="Synchronet Web Server";
 static const char*	newline="\r\n";
-static const char*	http_scheme="http://"
-static const size_t http_scheme_len=7;
+static const char*	http_scheme="http://";
+static const size_t	http_scheme_len=7;
 
 extern const uchar* nular;
 
@@ -83,11 +83,11 @@ typedef struct  {
 	char	host[128];				/* The requested host. (virtual hosts) */
 	int		send_location;
 	char**	cgi_env;
-	DWORD	cgi_env_size;
-	DWORD	cgi_env_max_size;
+	uint	cgi_env_size;
+	uint	cgi_env_max_size;
 	char**	cgi_heads;
-	DWORD	cgi_heads_size;
-	DWORD	cgi_heads_max_size;
+	uint	cgi_heads_size;
+	uint	cgi_heads_max_size;
 	char	cgi_infile[128];
 	char	cgi_location[MAX_REQUEST_LINE];
 	char	cgi_status[MAX_REQUEST_LINE];
@@ -624,11 +624,11 @@ static int close_socket(SOCKET sock)
 
 static void close_request(http_session_t * session)
 {
-	int		i;
+	uint i;
 	
 	
 	if(session->req.cgi_heads_size)  {
-		for(i=0;session->req.cgi_heads_size>i;i++)
+		for(i=0;i<session->req.cgi_heads_size;i++)
 			FREE_AND_NULL(session->req.cgi_heads[i]);
 		FREE_AND_NULL(session->req.cgi_heads);
 		session->req.cgi_heads_size=0;
@@ -650,7 +650,7 @@ static void close_request(http_session_t * session)
 
 static int get_header_type(char *header)
 {
-	int		i;
+	int i;
 	for(i=0; headers[i].text!=NULL; i++) {
 		if(!stricmp(header,headers[i].text)) {
 			return(headers[i].id);
@@ -661,7 +661,7 @@ static int get_header_type(char *header)
 
 static char *get_header(int id) 
 {
-	int	i;
+	int i;
 
 	for(i=0;headers[i].text!=NULL;i++) {
 		if(headers[i].id==id) {
@@ -1050,7 +1050,7 @@ static BOOL parse_headers(http_session_t * session)
 		}
 	}
 	sprintf(session->req.cgi_infile,"%s/SBBS_CGI.%d",startup->cgi_temp_dir,session->socket);
-	if((incgi=open(session->req.cgi_infile,O_WRONLY|O_CREAT|O_TRUNC,S_IRUSR|S_IWUSR))>0)  {
+	if((incgi=open(session->req.cgi_infile,O_WRONLY|O_CREAT|O_TRUNC,S_IREAD|S_IWRITE))>0)  {
 		lprintf("%04d Created %s",session->socket,session->req.cgi_infile);
 		if(content_len)  {
 			recvfilesocket(session->socket,incgi,NULL,content_len);
@@ -1320,7 +1320,7 @@ static BOOL parse_cgi_headers(http_session_t *session,FILE *output)  {
 }
 
 static void send_cgi_response(http_session_t *session,FILE *output)  {
-	int			i;
+	uint		i;
 	long		filepos;
 	struct stat	stats;
 	time_t		ti;
@@ -1363,7 +1363,7 @@ static void send_cgi_response(http_session_t *session,FILE *output)  {
 		
 		sendsocket(session->socket,newline,2);
 	}
-	for(i=0;session->req.cgi_heads_size>i;i++)
+	for(i=0;i<session->req.cgi_heads_size;i++)
 		FREE_AND_NULL(session->req.cgi_heads[i]);
 	FREE_AND_NULL(session->req.cgi_heads);
 	session->req.cgi_heads_size=0;
@@ -1373,13 +1373,13 @@ static void send_cgi_response(http_session_t *session,FILE *output)  {
 
 static BOOL exec_cgi(http_session_t *session)  
 {
-	int		status;
 	char	cmdline[MAX_PATH+256];
 	char	*args[4];
-	int		i;
 	char	*comspec;
-	FILE	*output;
 #ifdef __unix__
+	int		i;
+	int		status;
+	FILE	*output;
 	pid_t	child;
 #endif
 
