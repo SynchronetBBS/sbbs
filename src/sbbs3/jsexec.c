@@ -316,8 +316,11 @@ js_prompt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     JSString *	prompt;
     JSString *	str;
 
-	if((prompt=JS_ValueToString(cx, argv[0]))==NULL)
-	    return(JS_FALSE);
+	if(!JSVAL_IS_VOID(argv[0])) {
+		if((prompt=JS_ValueToString(cx, argv[0]))==NULL)
+			return(JS_FALSE);
+		fprintf(confp,"%s: ",JS_GetStringBytes(prompt));
+	}
 
 	if(argc>1) {
 		if((str=JS_ValueToString(cx, argv[1]))==NULL)
@@ -325,8 +328,6 @@ js_prompt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		SAFECOPY(instr,JS_GetStringBytes(str));
 	} else
 		instr[0]=0;
-
-	fprintf(confp,"%s: ",JS_GetStringBytes(prompt));
 
 	if(!fgets(instr,sizeof(instr),stdin)) {
 		*rval = JSVAL_VOID;
