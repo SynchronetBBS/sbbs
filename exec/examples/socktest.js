@@ -38,4 +38,6 @@ while(socket.is_connected && client.socket.is_connected) {
 
 console.status &= ~CON_RAW_IN;		// Disable raw input mode
 
+socket.debug=false;
+
 print("\r\nEnd of socktest!\r\n");
