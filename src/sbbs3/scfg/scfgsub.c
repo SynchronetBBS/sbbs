@@ -425,9 +425,12 @@ CRCs is reached, the oldest CRCs will be automatically purged.
 						? "Only":"Yes":"No");
 					sprintf(opt[n++],"%-27.27s%s","Post Using Real Names"
 						,cfg.sub[i]->misc&SUB_NAME ? "Yes":"No");
+					sprintf(opt[n++],"%-27.27s%s","Users Can Edit Posts"
+						,cfg.sub[i]->misc&SUB_EDIT ? cfg.sub[i]->misc&SUB_EDITLAST 
+						? "Last" : "Yes" : "No");
 					sprintf(opt[n++],"%-27.27s%s","Users Can Delete Posts"
 						,cfg.sub[i]->misc&SUB_DEL ? cfg.sub[i]->misc&SUB_DELLAST
-						? "Last":"Yes":"No");
+						? "Last" : "Yes" : "No");
 					sprintf(opt[n++],"%-27.27s%s","Default On for New Scan"
 						,cfg.sub[i]->misc&SUB_NSDEF ? "Yes":"No");
 					sprintf(opt[n++],"%-27.27s%s","Forced On for New Scan"
@@ -443,10 +446,9 @@ CRCs is reached, the oldest CRCs will be automatically purged.
 					sprintf(opt[n++],"%-27.27s%s","Kill Read Messages"
 						,cfg.sub[i]->misc&SUB_KILL ? "Yes"
 						: (cfg.sub[i]->misc&SUB_KILLP ? "Pvt" : "No"));
-#if 1
 					sprintf(opt[n++],"%-27.27s%s","Compress Messages (LZH)"
 						,cfg.sub[i]->misc&SUB_LZH ? "Yes" : "No");
-#endif
+
 					opt[n][0]=0;
 					uifc.savnum=2;
 					SETHELP(WHERE);
@@ -463,7 +465,10 @@ sub-board between two or more settings, such as Yes and No.
 					uifc.savnum=3;
 					switch(n) {
 						case 0:
-							n=1;
+							if(cfg.sub[i]->misc&SUB_PONLY)
+								n=2;
+							else 
+								n=(cfg.sub[i]->misc&SUB_PRIV) ? 0:1;
 							strcpy(opt[0],"Yes");
 							strcpy(opt[1],"No");
 							strcpy(opt[2],"Only");
@@ -497,7 +502,10 @@ to post private messages only on this sub-board, select Only.
 								cfg.sub[i]->misc|=(SUB_PRIV|SUB_PONLY); }
 							break;
 						case 1:
-							n=1;
+							if(cfg.sub[i]->misc&SUB_AONLY)
+								n=2;
+							else 
+								n=(cfg.sub[i]->misc&SUB_ANON) ? 0:1;
 							strcpy(opt[0],"Yes");
 							strcpy(opt[1],"No");
 							strcpy(opt[2],"Only");
@@ -531,7 +539,7 @@ on this sub-board at all, select No.
 								cfg.sub[i]->misc|=(SUB_ANON|SUB_AONLY); }
                             break;
 						case 2:
-							n=1;
+							n=(cfg.sub[i]->misc&SUB_NAME) ? 0:1;
 							strcpy(opt[0],"Yes");
 							strcpy(opt[1],"No");
 							opt[2][0]=0;
@@ -556,7 +564,57 @@ this option to Yes.
 								cfg.sub[i]->misc&=~SUB_NAME; }
 							break;
 						case 3:
-							n=2;
+							if(cfg.sub[i]->misc&SUB_EDITLAST)
+								n=2;
+							else
+								n=(cfg.sub[i]->misc&SUB_EDIT) ? 0:1;
+							strcpy(opt[0],"Yes");
+							strcpy(opt[1],"No");
+							strcpy(opt[2],"Last Post Only");
+							opt[3][0]=0;
+							SETHELP(WHERE);
+/*
+Users Can Edit Posts on Sub-board:
+
+If you wish to allow users to edit their messages after they have been
+posted, this option to Yes. If you wish to allow users to edit only the
+last message on a message base, set this option to Last Post Only.
+*/
+							n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
+								,"Users Can Edit Messages",opt);
+							if(n==-1)
+                                break;
+							if(n==0 /* yes */
+								&& (cfg.sub[i]->misc&(SUB_EDIT|SUB_EDITLAST))
+								!=SUB_EDIT
+								) {
+								uifc.changes=1;
+								cfg.sub[i]->misc|=SUB_EDIT;
+								cfg.sub[i]->misc&=~SUB_EDITLAST;
+								break; 
+							}
+							if(n==1 /* no */
+								&& cfg.sub[i]->misc&(SUB_EDIT|SUB_EDITLAST)
+								) {
+								uifc.changes=1;
+								cfg.sub[i]->misc&=~(SUB_EDIT|SUB_EDITLAST);
+								break;
+							}
+							if(n==2 /* last only */
+								&& (cfg.sub[i]->misc&(SUB_EDIT|SUB_EDITLAST))
+								!=(SUB_EDIT|SUB_EDITLAST)
+								) {
+								uifc.changes=1;
+								cfg.sub[i]->misc|=(SUB_EDIT|SUB_EDITLAST);
+								break;
+							}
+                            break;
+						case 4:
+							if(cfg.sub[i]->misc&SUB_DELLAST)
+								n=2;
+							else 
+								n=(cfg.sub[i]->misc&SUB_DEL) ? 0:1;
+
 							strcpy(opt[0],"Yes");
 							strcpy(opt[1],"No");
 							strcpy(opt[2],"Last Post Only");
@@ -580,18 +638,21 @@ deleting any of their posts, set this option to No.
 								uifc.changes=1;
 								cfg.sub[i]->misc&=~SUB_DELLAST;
 								cfg.sub[i]->misc|=SUB_DEL;
-								break; }
+								break; 
+							}
 							if(n==1 && cfg.sub[i]->misc&SUB_DEL) {
 								uifc.changes=1;
 								cfg.sub[i]->misc&=~SUB_DEL;
-								break; }
+								break; 
+							}
 							if(n==2 && (cfg.sub[i]->misc&(SUB_DEL|SUB_DELLAST))
 								!=(SUB_DEL|SUB_DELLAST)) {
 								uifc.changes=1;
-								cfg.sub[i]->misc|=(SUB_DEL|SUB_DELLAST); }
+								cfg.sub[i]->misc|=(SUB_DEL|SUB_DELLAST); 
+							}
                             break;
-						case 4:
-							n=0;
+						case 5:
+							n=(cfg.sub[i]->misc&SUB_NSDEF) ? 0:1;
 							strcpy(opt[0],"Yes");
 							strcpy(opt[1],"No");
 							opt[2][0]=0;
@@ -614,8 +675,8 @@ by default, set this option to Yes.
 								uifc.changes=1;
 								cfg.sub[i]->misc&=~SUB_NSDEF; }
                             break;
-						case 5:
-							n=1;
+						case 6:
+							n=(cfg.sub[i]->misc&SUB_FORCED) ? 0:1;
 							strcpy(opt[0],"Yes");
 							strcpy(opt[1],"No");
 							opt[2][0]=0;
@@ -639,8 +700,8 @@ this option to Yes.
 								uifc.changes=1;
 								cfg.sub[i]->misc&=~SUB_FORCED; }
                             break;
-						case 6:
-							n=0;
+						case 7:
+							n=(cfg.sub[i]->misc&SUB_SSDEF) ? 0:1;
 							strcpy(opt[0],"Yes");
 							strcpy(opt[1],"No");
 							opt[2][0]=0;
@@ -663,8 +724,8 @@ scans by default, set this option to Yes.
 								uifc.changes=1;
 								cfg.sub[i]->misc&=~SUB_SSDEF; }
                             break;
-						case 7:
-							n=1;
+						case 8:
+							n=(cfg.sub[i]->misc&SUB_TOUSER) ? 0:1;
 							strcpy(opt[0],"Yes");
 							strcpy(opt[1],"No");
 							opt[2][0]=0;
@@ -688,8 +749,8 @@ are on a network that does not allow private posts.
 								uifc.changes=1;
 								cfg.sub[i]->misc&=~SUB_TOUSER; }
 							break;
-						case 8:
-							n=1;
+						case 9:
+							n=(cfg.sub[i]->misc&SUB_QUOTE) ? 0:1;
 							strcpy(opt[0],"Yes");
 							strcpy(opt[1],"No");
 							opt[2][0]=0;
@@ -712,8 +773,8 @@ this option to Yes.
 								uifc.changes=1;
 								cfg.sub[i]->misc&=~SUB_QUOTE; }
                             break;
-						case 9:
-							n=1;
+						case 10:
+							n=(cfg.sub[i]->misc&SUB_SYSPERM) ? 0:1;
 							strcpy(opt[0],"Yes");
 							strcpy(opt[1],"No");
 							opt[2][0]=0;
@@ -737,8 +798,11 @@ option to Yes.
 								uifc.changes=1;
 								cfg.sub[i]->misc&=~SUB_SYSPERM; }
                             break;
-						case 10:
-							n=1;
+						case 11:
+							if(cfg.sub[i]->misc&SUB_KILLP)
+								n=2;
+							else
+								n=(cfg.sub[i]->misc&SUB_KILL) ? 0:1;
 							strcpy(opt[0],"Yes");
 							strcpy(opt[1],"No");
 							strcpy(opt[2],"Private");
@@ -769,9 +833,8 @@ be automatically deleted by SMBUTIL, set this option to Yes or
 								cfg.sub[i]->misc&=~SUB_KILL;
                                 break; }
                             break;
-#if 1
-						case 11:
-							n=1;
+						case 12:
+							n=(cfg.sub[i]->misc&SUB_LZH) ? 0:1;
 							strcpy(opt[0],"Yes");
 							strcpy(opt[1],"No");
 							opt[2][0]=0;
@@ -801,7 +864,7 @@ compatible mail programs you use support the LZH translation.
 								uifc.changes=1;
 								cfg.sub[i]->misc&=~SUB_LZH; }
                             break;
-#endif
+
 							} }
 				break;
 			case 14:
