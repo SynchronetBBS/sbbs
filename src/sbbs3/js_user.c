@@ -39,6 +39,13 @@
 
 #ifdef JAVASCRIPT
 
+typedef struct
+{
+	user_t* user;
+	scfg_t*	cfg;
+
+} private_t;
+
 /* User Object Properites */
 enum {
 	 USER_PROP_ALIAS 	
@@ -102,16 +109,16 @@ enum {
 static JSBool js_user_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
     jsint       tiny;
-	user_t*		user;
+	private_t*	p;
 
-	if((user=(user_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
 		return JS_FALSE;
 
     tiny = JSVAL_TO_INT(id);
 
 	switch(tiny) {
 		case USER_PROP_MISC:
-			JS_ValueToInt32(cx, *vp, &user->misc);
+			JS_ValueToInt32(cx, *vp, &p->user->misc);
 			break;
 	}
 
@@ -120,193 +127,193 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 
 static JSBool js_user_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 {
-	char*		p=NULL;
+	char*		s=NULL;
 	char		tmp[128];
-	ulong		val;
+	ulong		val=0;
     jsint       tiny;
-	user_t*		user;
+	private_t*	p;
 
-	if((user=(user_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
 		return JS_FALSE;
 
     tiny = JSVAL_TO_INT(id);
 
 	switch(tiny) {
 	case USER_PROP_ALIAS: 
-		p=user->alias;
+		s=p->user->alias;
 		break;
 	case USER_PROP_NAME:
-		p=user->name;
+		s=p->user->name;
 		break;
 	case USER_PROP_HANDLE:
-		p=user->handle;
+		s=p->user->handle;
 		break;
 	case USER_PROP_NOTE:
-		p=user->note;
+		s=p->user->note;
 		break;
 	case USER_PROP_COMP:
-		p=user->comp;
+		s=p->user->comp;
 		break;
 	case USER_PROP_COMMENT:
-		p=user->comment;
+		s=p->user->comment;
 		break;
 	case USER_PROP_NETMAIL:
-		p=user->netmail;
+		s=p->user->netmail;
 		break;
 	case USER_PROP_ADDRESS:
-		p=user->address;
+		s=p->user->address;
 		break;
 	case USER_PROP_LOCATION:
-		p=user->location;
+		s=p->user->location;
 		break;
 	case USER_PROP_ZIPCODE:
-		p=user->zipcode;
+		s=p->user->zipcode;
 		break;
 	case USER_PROP_PASS:
-		p=user->pass;
+		s=p->user->pass;
 		break;
 	case USER_PROP_PHONE:
-		p=user->phone;
+		s=p->user->phone;
 		break;
 	case USER_PROP_BIRTH:
-		p=user->birth;
+		s=p->user->birth;
 		break;
 	case USER_PROP_MODEM:
-		p=user->modem;
+		s=p->user->modem;
 		break;
 	case USER_PROP_LASTON:
-		val=user->laston;
+		val=p->user->laston;
 		break;
 	case USER_PROP_FIRSTON:
-		val=user->firston;
+		val=p->user->firston;
 		break;
 	case USER_PROP_EXPIRE:
-		val=user->expire;
+		val=p->user->expire;
 		break;
 	case USER_PROP_PWMOD: 
-		val=user->pwmod;
+		val=p->user->pwmod;
 		break;
 	case USER_PROP_LOGONS:
-		val=user->logons;
+		val=p->user->logons;
 		break;
 	case USER_PROP_LTODAY:
-		val=user->ltoday;
+		val=p->user->ltoday;
 		break;
 	case USER_PROP_TIMEON:
-		val=user->timeon;
+		val=p->user->timeon;
 		break;
 	case USER_PROP_TEXTRA:
-		val=user->textra;
+		val=p->user->textra;
 		break;
 	case USER_PROP_TTODAY:
-		val=user->ttoday;
+		val=p->user->ttoday;
 		break;
 	case USER_PROP_TLAST: 
-		val=user->tlast;
+		val=p->user->tlast;
 		break;
 	case USER_PROP_POSTS: 
-		val=user->posts;
+		val=p->user->posts;
 		break;
 	case USER_PROP_EMAILS: 
-		val=user->emails;
+		val=p->user->emails;
 		break;
 	case USER_PROP_FBACKS: 
-		val=user->fbacks;
+		val=p->user->fbacks;
 		break;
 	case USER_PROP_ETODAY:	
-		val=user->etoday;
+		val=p->user->etoday;
 		break;
 	case USER_PROP_PTODAY:
-		val=user->ptoday;
+		val=p->user->ptoday;
 		break;
 	case USER_PROP_ULB:
-		val=user->ulb;
+		val=p->user->ulb;
 		break;
 	case USER_PROP_ULS:
-		val=user->uls;
+		val=p->user->uls;
 		break;
 	case USER_PROP_DLB:
-		val=user->dlb;
+		val=p->user->dlb;
 		break;
 	case USER_PROP_DLS:
-		val=user->dls;
+		val=p->user->dls;
 		break;
 	case USER_PROP_CDT:
-		val=user->cdt;
+		val=p->user->cdt;
 		break;
 	case USER_PROP_MIN:
-		val=user->min;
+		val=p->user->min;
 		break;
 	case USER_PROP_LEVEL:
-		val=user->level;
+		val=p->user->level;
 		break;
 	case USER_PROP_FLAGS1:
-		val=user->flags1;
+		val=p->user->flags1;
 		break;
 	case USER_PROP_FLAGS2:
-		val=user->flags2;
+		val=p->user->flags2;
 		break;
 	case USER_PROP_FLAGS3:
-		val=user->flags3;
+		val=p->user->flags3;
 		break;
 	case USER_PROP_FLAGS4:
-		val=user->flags4;
+		val=p->user->flags4;
 		break;
 	case USER_PROP_EXEMPT:
-		val=user->exempt;
+		val=p->user->exempt;
 		break;
 	case USER_PROP_REST:
-		val=user->rest;
+		val=p->user->rest;
 		break;
 	case USER_PROP_ROWS:
-		val=user->rows;
+		val=p->user->rows;
 		break;
 	case USER_PROP_SEX:
-		sprintf(tmp,"%c",user->sex);
-		p=tmp;
+		sprintf(tmp,"%c",p->user->sex);
+		s=tmp;
 		break;
 	case USER_PROP_MISC:
-		val=user->misc;
+		val=p->user->misc;
 		break;
 	case USER_PROP_LEECH:
-		val=user->leech;
+		val=p->user->leech;
 		break;
 	case USER_PROP_CURSUB:
-		p=user->cursub;
+		s=p->user->cursub;
 		break;
 	case USER_PROP_CURDIR:
-		p=user->curdir;
+		s=p->user->curdir;
 		break;
 	case USER_PROP_FREECDT:
-		val=user->freecdt;
+		val=p->user->freecdt;
 		break;
 	case USER_PROP_XEDIT:
-		val=user->xedit;
+		val=p->user->xedit;
 		break;
 	case USER_PROP_SHELL:
-		val=user->shell;
+		val=p->user->shell;
 		break;
 	case USER_PROP_QWK:
-		val=user->qwk;
+		val=p->user->qwk;
 		break;
 	case USER_PROP_TMPEXT:
-		p=user->tmpext;
+		s=p->user->tmpext;
 		break;
 	case USER_PROP_CHAT:
-		val=user->laston;
+		val=p->user->laston;
 		break;
 	case USER_PROP_NS_TIME:
-		val=user->laston;
+		val=p->user->laston;
 		break;
 	case USER_PROP_PROT:
-		sprintf(tmp,"%c",user->prot);
-		p=tmp;
+		sprintf(tmp,"%c",p->user->prot);
+		s=tmp;
 		break;
 	default:
 		return(TRUE);
 	}
-	if(p!=NULL) 
-		*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, p));
+	if(s!=NULL) 
+		*vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, s));
 	else
 		*vp = INT_TO_JSVAL(val);
 
@@ -395,6 +402,47 @@ static struct JSPropertySpec js_user_security_properties[] = {
 	{0}
 };
 
+static void js_user_finalize(JSContext *cx, JSObject *obj)
+{
+	private_t* p;
+
+	p=(private_t*)JS_GetPrivate(cx,obj);
+
+	if(p!=NULL)
+		free(p);
+
+	p=NULL;
+	JS_SetPrivate(cx,obj,p);
+}
+
+static JSBool
+js_chk_ar(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		ar;
+	JSString*	js_str;
+	private_t*	p;
+
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+		return JS_FALSE;
+
+	if((js_str=JS_ValueToString(cx, argv[0]))==NULL)
+		return JS_FALSE;
+
+	ar = arstr(NULL,JS_GetStringBytes(js_str),p->cfg);
+
+	*rval = BOOLEAN_TO_JSVAL(chk_ar(p->cfg,ar,p->user));
+
+	if(ar!=NULL && ar!=nular)
+		free(ar);
+
+	return(JS_TRUE);
+}
+
+static JSFunctionSpec js_user_functions[] = {
+	{"compare_ars",	js_chk_ar,			1},		/* Verify ARS */
+	{0}
+};
+
 static JSClass js_user_class = {
      "User"					/* name			*/
     ,JSCLASS_HAS_PRIVATE	/* flags		*/
@@ -405,7 +453,7 @@ static JSClass js_user_class = {
 	,JS_EnumerateStub		/* enumerate	*/
 	,JS_ResolveStub			/* resolve		*/
 	,JS_ConvertStub			/* convert		*/
-	,JS_FinalizeStub		/* finalize		*/
+	,js_user_finalize		/* finalize		*/
 };
 
 static JSClass js_user_stats_class = {
@@ -440,15 +488,24 @@ JSObject* DLLCALL js_CreateUserObject(JSContext* cx, JSObject* parent, scfg_t* c
 	JSObject*	userobj;
 	JSObject*	statsobj;
 	JSObject*	securityobj;
+	private_t*	p;
+
+	if((p=(private_t*)malloc(sizeof(private_t)))==NULL)
+		return(NULL);
+
+	p->cfg = cfg;
+	p->user = user;
 
 	userobj = JS_DefineObject(cx, parent, name, &js_user_class, NULL, 0);
 
 	if(userobj==NULL)
 		return(NULL);
 
-	JS_SetPrivate(cx, userobj, user);	/* Store a pointer to user_t */
+	JS_SetPrivate(cx, userobj, p);	
 
 	JS_DefineProperties(cx, userobj, js_user_properties);
+
+	JS_DefineFunctions(cx, userobj, js_user_functions);
 
 	/* user.stats */
 	statsobj = JS_DefineObject(cx, userobj, "stats"
@@ -457,7 +514,7 @@ JSObject* DLLCALL js_CreateUserObject(JSContext* cx, JSObject* parent, scfg_t* c
 	if(statsobj==NULL)
 		return(NULL);
 
-	JS_SetPrivate(cx, statsobj, user);	/* Store a pointer to user_t */
+	JS_SetPrivate(cx, statsobj, p);
 
 	JS_DefineProperties(cx, statsobj, js_user_stats_properties);
 
@@ -468,7 +525,7 @@ JSObject* DLLCALL js_CreateUserObject(JSContext* cx, JSObject* parent, scfg_t* c
 	if(securityobj==NULL)
 		return(NULL);
 
-	JS_SetPrivate(cx, securityobj, user);	/* Store a pointer to user_t */
+	JS_SetPrivate(cx, securityobj, p);
 
 	JS_DefineProperties(cx, securityobj, js_user_security_properties);
 
