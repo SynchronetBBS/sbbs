@@ -88,6 +88,8 @@ typedef struct {
 	/* These are run-time state and stat vars */
 	DWORD	clients;
 	SOCKET	socket;
+	BOOL	running;
+	BOOL	terminated;
 } service_t;
 
 typedef struct {
@@ -264,7 +266,10 @@ js_log(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		strcat(str," ");
 	}
 
-	lprintf("%04d %s %s",client->socket,client->service->protocol,str);
+	if(service==NULL)
+		lprintf("%04d %s",client->socket,str);
+	else
+		lprintf("%04d %s %s",client->socket,client->service->protocol,str);
 
 	*rval = JSVAL_VOID;
     return(JS_TRUE);
@@ -452,10 +457,55 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 	lprintf("%04d %s !JavaScript %s%s%s: %s",sock,prot,warning,file,line,message);
 }
 
+/* Server Object Properites */
+enum {
+	 SERVER_PROP_TERMINATED
+};
+
+
+static JSBool js_server_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
+{
+    jsint       tiny;
+	service_client_t* client;
+
+	if((client=(service_client_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+    tiny = JSVAL_TO_INT(id);
+
+	switch(tiny) {
+		case SERVER_PROP_TERMINATED:
+#if 0
+			lprintf("%s client->service->terminated=%d"
+				,client->service->protocol, client->service->terminated);
+#endif
+			*vp = BOOLEAN_TO_JSVAL(client->service->terminated);
+			break;
+	}
+
+	return(JS_TRUE);
+}
+
+#define SERVER_PROP_FLAGS JSPROP_ENUMERATE|JSPROP_READONLY
+
+static struct JSPropertySpec js_server_properties[] = {
+/*		 name				,tinyid					,flags,				getter,	setter	*/
+
+	{	"terminated"		,SERVER_PROP_TERMINATED	,SERVER_PROP_FLAGS,	NULL,NULL},
+	{0}
+};
+
 static JSClass js_server_class = {
-        "Server",0, 
-        JS_PropertyStub,JS_PropertyStub,JS_PropertyStub,JS_PropertyStub, 
-        JS_EnumerateStub,JS_ResolveStub,JS_ConvertStub,JS_FinalizeStub 
+         "Server"			/* name			*/
+		,0					/* flags		*/
+        ,JS_PropertyStub	/* addProperty	*/
+		,JS_PropertyStub	/* delProperty	*/
+		,js_server_get		/* getProperty	*/
+		,JS_PropertyStub	/* setProperty	*/
+		,JS_EnumerateStub	/* enumerate	*/
+		,JS_ResolveStub		/* resolve		*/
+		,JS_ConvertStub		/* convert		*/
+		,JS_FinalizeStub	/* finalize		*/
 }; 
 
 static JSContext* 
@@ -512,7 +562,10 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 			,NULL,0))==NULL)
 			break;
 
-		if(service_client->client==NULL)	/* standalone service */
+		if(!JS_DefineProperties(js_cx, server, js_server_properties))
+			break;
+
+		if(service_client->client==NULL)	/* static service */
 			if(js_CreateSocketObject(js_cx, server, "socket", service_client->socket)==NULL)
 				break;
 
@@ -772,11 +825,12 @@ static void js_service_thread(void* arg)
 	close_socket(socket);
 }
 
-static void js_standalone_service_thread(void* arg)
+static void js_static_service_thread(void* arg)
 {
 	char					spath[MAX_PATH+1];
 	service_t*				service;
 	service_client_t		service_client;
+	SOCKET					socket;
 	/* JavaScript-specific */
 	JSObject*				js_glob;
 	JSScript*				js_script;
@@ -788,7 +842,10 @@ static void js_standalone_service_thread(void* arg)
 	// Copy service_client arg
 	service=(service_t*)arg;
 
-	lprintf("%04d %s JavaScript standalone service thread started", service->socket, service->protocol);
+	service->running=TRUE;
+	socket = service->socket;
+
+	lprintf("%04d %s static JavaScript service thread started", service->socket, service->protocol);
 
 	thread_up(TRUE /* setuid */);
 
@@ -826,23 +883,29 @@ static void js_standalone_service_thread(void* arg)
 	JS_DestroyRuntime(js_runtime);
 
 	thread_down();
-	lprintf("%04d %s JavaScript standalone service thread terminated"
-		,service->socket, service->protocol);
+	lprintf("%04d %s static JavaScript service thread terminated"
+		,socket, service->protocol);
 
 	close_socket(service->socket);
 	service->socket=INVALID_SOCKET;
+
+	service->running=FALSE;
 }
 
-static void native_standalone_service_thread(void* arg)
+static void native_static_service_thread(void* arg)
 {
 	char					cmd[MAX_PATH];
 	char					fullcmd[MAX_PATH*2];
+	SOCKET					socket;
 	SOCKET					socket_dup;
 	service_t*				service;
 
 	service = (service_t*)arg;
 
-	lprintf("%04d %s standalone service thread started", service->socket, service->protocol);
+	service->running=TRUE;
+	socket = service->socket;
+
+	lprintf("%04d %s static service thread started", socket, service->protocol);
 
 	thread_up(TRUE /* setuid */);
 
@@ -855,7 +918,7 @@ static void native_standalone_service_thread(void* arg)
 		TRUE, // Inheritable
 		DUPLICATE_SAME_ACCESS)) {
 		lprintf("%04d !%s ERROR %d duplicating socket descriptor"
-			,service->socket,service->protocol,GetLastError());
+			,socket,service->protocol,GetLastError());
 		close_socket(service->socket);
 		service->socket=INVALID_SOCKET;
 		thread_down();
@@ -875,12 +938,14 @@ static void native_standalone_service_thread(void* arg)
 	system(fullcmd);
 
 	thread_down();
-	lprintf("%04d %s standalone service thread terminated"
+	lprintf("%04d %s static service thread terminated"
 		,socket, service->protocol);
 
 	close_socket(service->socket);
 	service->socket=INVALID_SOCKET;
 	closesocket(socket_dup);	/* close duplicate handle */
+
+	service->running=FALSE;
 }
 
 static void native_service_thread(void* arg)
@@ -1124,6 +1189,7 @@ void DLLCALL services_thread(void* arg)
 	int				result;
 	int				optval;
 	ulong			total_clients;
+	ulong			total_running;
 	time_t			t;
 	time_t			initialized=0;
 	fd_set			socket_set;
@@ -1305,18 +1371,18 @@ void DLLCALL services_thread(void* arg)
 			return;
 		}
 
-		/* Setup standalone service threads */
+		/* Setup static service threads */
 		for(i=0;i<(int)services;i++) {
-			if(!(service[i].options&SERVICE_OPT_STANDALONE))
+			if(!(service[i].options&SERVICE_OPT_STATIC))
 				continue;
 
 			/* start thread here */
 			SAFECOPY(cmd,service[i].cmd);
 			strlwr(cmd);
 			if(strstr(cmd,".js"))	/* JavaScript */
-				_beginthread(js_standalone_service_thread, 0, &service[i]);
+				_beginthread(js_static_service_thread, 0, &service[i]);
 			else					/* Native */
-				_beginthread(native_standalone_service_thread, 0, &service[i]);
+				_beginthread(native_static_service_thread, 0, &service[i]);
 		}
 
 		/* signal caller that we've started up successfully */
@@ -1361,7 +1427,7 @@ void DLLCALL services_thread(void* arg)
 			FD_ZERO(&socket_set);	
 			high_socket=0;
 			for(i=0;i<(int)services;i++) {
-				if(service[i].options&SERVICE_OPT_STANDALONE)
+				if(service[i].options&SERVICE_OPT_STATIC)
 					continue;
 				if(service[i].socket==INVALID_SOCKET)
 					continue;
@@ -1549,13 +1615,15 @@ void DLLCALL services_thread(void* arg)
 		}
 
 		/* Close Service Sockets */
+		lprintf("0000 Closing service sockets");
 		for(i=0;i<(int)services;i++) {
+			service[i].terminated=TRUE;
 			if(service[i].socket!=INVALID_SOCKET)
 				close_socket(service[i].socket);
 			service[i].socket=INVALID_SOCKET;
 		}
 
-		/* Wait for Service Threads to terminate */
+		/* Wait for Dynamic Service Threads to terminate */
 		total_clients=0;
 		for(i=0;i<(int)services;i++) 
 			total_clients+=service[i].clients;
@@ -1566,6 +1634,23 @@ void DLLCALL services_thread(void* arg)
 				for(i=0;i<(int)services;i++) 
 					total_clients+=service[i].clients;
 				if(!total_clients)
+					break;
+				mswait(500);
+			}
+			lprintf("0000 Done waiting");
+		}
+
+		/* Wait for Static Service Threads to terminate */
+		total_running=0;
+		for(i=0;i<(int)services;i++) 
+			total_running+=service[i].running;
+		if(total_running) {
+			lprintf("0000 Waiting for %d static services to terminate",total_running);
+			while(1) {
+				total_running=0;
+				for(i=0;i<(int)services;i++) 
+					total_running+=service[i].running;
+				if(!total_running)
 					break;
 				mswait(500);
 			}
