@@ -1324,7 +1324,7 @@ void sbbs_t::nodemsg()
 /****************************************************************************/
 void sbbs_t::guruchat(char *line, char *gurubuf, int gurunum)
 {
-	char	str[256],cstr[256],*ptr,*answer[100],answers,theanswer[769]
+	char	str[512],cstr[512],*ptr,*answer[100],answers,theanswer[1024]
 			,mistakes=1,hu=0;
 	char 	tmp[512];
 	int		file;
