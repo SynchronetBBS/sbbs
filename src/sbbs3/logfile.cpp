@@ -37,7 +37,7 @@
 
 #include "sbbs.h"
 
-extern "C" BOOL hacklog(scfg_t* cfg, char* prot, char* user, char* text, char* host, SOCKADDR_IN* addr)
+extern "C" BOOL DLLCALL hacklog(scfg_t* cfg, char* prot, char* user, char* text, char* host, SOCKADDR_IN* addr)
 {
 	char	hdr[512];
 	char	fname[MAX_PATH+1];
