@@ -944,16 +944,16 @@ static BOOL check_request(http_session_t * session)
 	}
 	if(!strcmp(path,session->req.request))
 		session->req.send_location=TRUE;
-	if(strnicmp(session->req.request,root_dir,strlen(root_dir))) {
-		send_error("400 Bad Request",session);
-		session->req.keep_alive=FALSE;
-		return(FALSE);
-	}
 	if(!fexist(path)) {
 		if(path[strlen(path)-1]!='/')
 			strcat(path,"/");
 		strcat(path,startup->index_file_name);
 		session->req.send_location=TRUE;
+	}
+	if(strnicmp(session->req.request,root_dir,strlen(root_dir))) {
+		send_error("400 Bad Request",session);
+		session->req.keep_alive=FALSE;
+		return(FALSE);
 	}
 	if(!fexist(path)) {
 		send_error("404 Not Found",session);
