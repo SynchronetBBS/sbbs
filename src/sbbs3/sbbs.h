@@ -600,7 +600,7 @@ public:
 	bool	pack_qwk(char *packet, ulong *msgcnt, bool prepack);
 
 	/* un_qwk.cpp */
-	void	unpack_qwk(char *packet,uint hubnum);
+	bool	unpack_qwk(char *packet,uint hubnum);
 
 	/* pack_rep.cpp */
 	bool	pack_rep(uint hubnum);
