@@ -132,8 +132,6 @@ void vdd_getstatus(vdd_status_t* status)
 		memset(status,0,sizeof(vdd_status_t));
 }
 
-#if 1
-
 WORD PortStatus()
 {
 	WORD			status=0x0008;			// AL bit 3 (change in DCD) always set
@@ -157,49 +155,11 @@ WORD PortStatus()
 	if(!vdd_status.outbuf_full)		// output buffer is empty
 		status|=0x4000;				// TSRE
 
-	return(status);
-}
-
-#else
-
-WORD PortStatus()
-{
-	WORD	status=0x0008;			// AL bit 3 (change in DCD) always set
-	static	poll;
-	static	online=1;
-	static	outbuf_full;
-	static  outbuf_size;
-
-	if(!poll)
-		outbuf_size=vdd_op(VDD_OUTBUF_SIZE);
-
-	if(!(poll%500)) {
-		online=vdd_op(VDD_ONLINE);
-		outbuf_full=vdd_op(VDD_OUTBUF_FULL);
-	}
-
-	if(online)						// carrier detect
-		status|=0x0080;				// DCD
-
-	if(vdd_op(VDD_INBUF_FULL))		// receive data ready 
-		status|=0x0100;				// RDA
-
-//	if(vm->overrun)					// overrun error detected
-//		status|=0x0200;				// OVRN
-
-	if(outbuf_full
-		<outbuf_size/2)				// room available in output buffer
-		status|=0x2000;				// THRE
-
-	if(!outbuf_full)				// output buffer is empty
-		status|=0x4000;				// TSRE
-
-	poll++;
+	if(!vdd_status.inbuf_full)		// release time-slice if no input
+		vdd_op(VDD_YIELD);
 
 	return(status);
 }
-
-#endif
 
 void interrupt winNTint14(
 	unsigned _es, unsigned _ds,
