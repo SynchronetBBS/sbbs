@@ -49,10 +49,8 @@
 #endif
 #endif
 
-enum {
-    ALIVE
-    ,DEAD
-};
+#define DEAD	1<<0
+#define ONLINE	1<<1
 /* Status for opponent != a player */
 
 enum {
@@ -310,7 +308,7 @@ checkday(void)
 	    playerlist[i]->battles = BATTLES_PER_DAY;
 	    playerlist[i]->fights = FIGHTS_PER_DAY;
 	    playerlist[i]->flights = FLIGHTS_PER_DAY;
-	    playerlist[i]->status = ALIVE;
+	    playerlist[i]->status &= ~DEAD;
 	    playerlist[i]->damage = 0;
 	    playerlist[i]->vary = supplant();
 	}
@@ -353,10 +351,10 @@ playerlist(void)
     while (loadnextuser(&tmpuser)) {
 	nl();
 	od_set_color(D_MAGENTA, D_BLACK);
-	od_printf("%2u.  `bright cyan`%.30s%.*s`green`Lev=%-2u  W=%-2" QWORDFORMAT "  L=%-2" QWORDFORMAT "  S=%s"
+	od_printf("%2u.  `bright cyan`%.30s%.*s`green`Lev=%-2u  W=%-6" QWORDFORMAT " L=%-6" QWORDFORMAT " S=%s `blinking red`%s"
 	    ,a, tmpuser.pseudo, 30 - strlen(tmpuser.pseudo), dots, tmpuser.r
 		  ,tmpuser.wins, tmpuser.loses
-		  ,(tmpuser.status == DEAD ? "SLAIN" : "ALIVE"));
+		  ,((tmpuser.status & DEAD) ? "SLAIN" : "ALIVE"), ((tmpuser.status & ONLINE) ? "ONLINE" : ""));
 	if (++i >= od_control.user_screen_length)
 	    pausescr();
 	a++;
@@ -445,6 +443,7 @@ saveuser(struct playertype * plr)
 void
 leave(void)
 {
+    user.status &= ~ONLINE;
     saveuser(&user);
 }
 
@@ -1073,10 +1072,10 @@ doggie(void)
 		if (opp.r > user.r - 4) {
 		    nl();
 		    od_set_color(D_MAGENTA, D_BLACK);
-		    od_printf("%2u.  `bright cyan`%.30s%.*s`bright blue`Lev=%-2u  W=%-2" QWORDFORMAT "  L=%-2" QWORDFORMAT "  S=%s"
+		    od_printf("%2u.  `bright cyan`%.30s%.*s`bright blue`Lev=%-2u  W=%-2" QWORDFORMAT "  L=%-2" QWORDFORMAT "  S=%s `blinking red`%s"
 			      ,a++, opp.pseudo, 30 - strlen(opp.pseudo), dots
 			      ,opp.r, opp.wins, opp.loses
-			      ,(opp.status == DEAD ? "SLAIN" : "ALIVE"));
+			      ,((opp.status & DEAD) ? "SLAIN" : "ALIVE"), ((opp.status & ONLINE) ? "ONLINE" : ""));
 		    if (++i >= od_control.user_screen_length)
 			pausescr();
 		    a += 1;
@@ -1211,26 +1210,12 @@ void
 create(BOOL isnew)
 {
     DWORD           newnum;
-    if (isnew) {
-	nl();
-	SAFECOPY(user.name, od_control.user_name);
-	SAFECOPY(user.pseudo, od_control.user_name);
-	vic();
-	user.damage = 0;
-	user.battles = BATTLES_PER_DAY;
-	user.fights = FIGHTS_PER_DAY;
-	user.flights = FLIGHTS_PER_DAY;
-	user.status = ALIVE;
-	user.vary = supplant();
-    } else {
-	SAFECOPY(temp, user.gaspd);
-    }
+    user.vary = supplant();
     user.strength = 12;
-    user.status = ALIVE;
+    user.status = ONLINE;
     user.intelligence = 12;
     user.luck = 12;
     user.damage = 0;
-    SAFECOPY(user.gaspd, temp);
     user.dexterity = 12;
     user.constitution = 12;
     user.charisma = 12;
@@ -1242,9 +1227,21 @@ create(BOOL isnew)
     user.bank = (xp_random(199) + 1);
     user.r = 1;
     user.hps = (xp_random(4) + 1) + user.constitution;
-    user.flights = FLIGHTS_PER_DAY;
     user.wins = 0;
     user.loses = 0;
+    user.gaspd[0]=0;
+    if (isnew) {
+	nl();
+	SAFECOPY(user.name, od_control.user_name);
+	SAFECOPY(user.pseudo, od_control.user_name);
+	vic();
+	user.battles = BATTLES_PER_DAY;
+	user.fights = FIGHTS_PER_DAY;
+	user.flights = FLIGHTS_PER_DAY;
+    } else {
+	SAFECOPY(temp, user.gaspd);
+    }
+    SAFECOPY(user.gaspd, temp);
     nl();
 }
 
@@ -1774,11 +1771,11 @@ main(int argc, char **argv)
     }
     fclose(infile);
     od_set_color(L_YELLOW, D_BLACK);
-    user.status = ALIVE;
+    user.status = ONLINE;
     statshow();
+    saveuser(&user);
     while (user.damage < user.hps) {
 	levelupdate();
-	saveuser(&user);
 	if (((user.wins + 1) * 4) < (user.loses)) {
 	    nl();
 	    od_disp_str("As you were Travelling along a Wilderness Path an   \r\n");
