@@ -153,6 +153,8 @@ for(i in area) {
 		body += tearline;
 		body += tagline;
 
+		delete hdr.thread_orig;	/* we're not replying a message that exists in the mail database */
+
 		while(area[i].length) {	/* For each list server... */
 
 			listserv=area[i].shift();
@@ -169,8 +171,8 @@ for(i in area) {
 				printf("Exported message %lu to list server: %s\r\n",ptr,listserv);
 				exported++;
 			} else
-				printf("ERROR %s exporting message %lu to list server: %s\r\n"
-					,msgbase.error, ptr, listserv);
+				printf("!ERROR %s exporting message %lu to list server: %s\r\n"
+					,mailbase.error, ptr, listserv);
 		}
 	}
 	if(ptr > msgbase.last_msg)
