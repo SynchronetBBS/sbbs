@@ -1270,7 +1270,7 @@ static ulong dns_blacklisted(SOCKET sock, IN_ADDR addr, char* host_name, char* l
 	}
 	fclose(fp);
 	if(found)
-		SAFECOPY(dnsbl_ip, inet_ntoa(addr));
+		strcpy(dnsbl_ip, inet_ntoa(addr));
 
 	return(found);
 }
@@ -1543,6 +1543,8 @@ static void smtp_thread(void* arg)
 	BOOL		forward=FALSE;
 	BOOL		no_forward=FALSE;
 	BOOL		auth_login;
+	BOOL		routed=FALSE;
+	BOOL		dnsbl_recvhdr;
 	uint		subnum=INVALID_SUB;
 	FILE*		msgtxt=NULL;
 	char		msgtxt_fname[MAX_PATH+1];
@@ -1976,12 +1978,15 @@ static void smtp_thread(void* arg)
 					sockprintf(socket, "554 Subject not allowed.");
 					continue;
 				}
-				if(startup->options&MAIL_OPT_DNSBL_CHECK_ALL)  {
+				dnsbl_recvhdr=FALSE;
+				if(startup->options&MAIL_OPT_DNSBL_CHKRECVHDRS)  {
 					for(i=0;!dnsbl_result.s_addr && i<msg.total_hfields;i++)  {
 						if(msg.hfield[i].type == RFC822HEADER
 							&& strnicmp(msg.hfield_dat[i],"Received:",9)==0)  {
-							if(chk_received_hdr(socket,msg.hfield_dat[i],&dnsbl_result,dnsbl,dnsbl_ip))
+							if(chk_received_hdr(socket,msg.hfield_dat[i],&dnsbl_result,dnsbl,dnsbl_ip)) {
+								dnsbl_recvhdr=TRUE;
 								break;
+							}
 						}
 					}
 				}
@@ -2010,6 +2015,8 @@ static void smtp_thread(void* arg)
 						spamlog(&scfg, "SMTP", "TAGGED", str, host_name, dnsbl_ip, rcpt_addr, reverse_path);
 					}
 				}
+				if(dnsbl_recvhdr)			/* DNSBL-listed IP found in Received header? */
+					dnsbl_result.s_addr=0;	/* Reset DNSBL look-up result between messages */
 
 				if(sender[0]==0) {
 					lprintf("%04d !SMTP MISSING mail header 'FROM' field", socket);
@@ -2501,6 +2508,7 @@ static void smtp_thread(void* arg)
 
 			truncstr(str,">");	/* was truncating at space too */
 
+			routed=FALSE;
 			forward=FALSE;
 			no_forward=FALSE;
 			if(!strnicmp(p,FORWARD,strlen(FORWARD))) {
@@ -2641,7 +2649,7 @@ static void smtp_thread(void* arg)
 				while(*tp && *tp=='"') tp++;	/* Skip '"' */
 				truncstr(tp,"\"");				/* Strip '"' */
 				SAFECOPY(rcpt_addr,tp);
-				no_forward=TRUE;
+				routed=TRUE;
 			}
 
 			while(*p && !isalnum(*p)) p++;	/* Skip '<' or '"' */
@@ -2669,6 +2677,17 @@ static void smtp_thread(void* arg)
 			}
 
 			usernum=0;	/* unknown user at this point */
+
+			if(routed) {
+				/* Search QWKnet hub-IDs for route destination */
+				for(i=0;i<scfg.total_qhubs;i++) {
+					if(!stricmp(p,scfg.qhub[i]->id))
+						break;
+				}
+				if(i<scfg.total_qhubs) {	/* found matching QWKnet hub */
+
+				}
+			}
 
 			if(startup->options&MAIL_OPT_ALLOW_RX_BY_NUMBER 
 				&& isdigit(*p)) {
@@ -2758,6 +2777,7 @@ static void smtp_thread(void* arg)
 			/* Forward to Internet */
 			tp=strrchr(user.netmail,'@');
 			if(!telegram
+				&& !routed
 				&& !no_forward
 				&& scfg.sys_misc&SM_FWDTONET 
 				&& (user.misc&NETMAIL || forward)
