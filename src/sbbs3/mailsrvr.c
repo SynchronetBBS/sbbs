@@ -63,6 +63,7 @@
 #include "md5.h"
 #include "crc32.h"
 #include "base64.h"
+#include "ini_file.h"
 
 /* Constants */
 #define FORWARD			"forward:"
@@ -1505,6 +1506,9 @@ static void smtp_thread(void* arg)
 	int			rd;
 	char		str[512];
 	char		tmp[128];
+	char		value[INI_MAX_VALUE_LEN];
+	char**		sec_list;
+	char*		section;
 	char		buf[1024],*p,*tp,*cp;
 	char		hdrfield[512];
 	char		alias_buf[128];
@@ -2111,22 +2115,24 @@ static void smtp_thread(void* arg)
 					continue;
 				}
 
-				rcpt_count=0;
-				while(!feof(rcptlst) && rcpt_count<startup->max_recipients) {
+				sec_list=iniGetSectionList(rcptlst,NULL);	/* Each section is a recipient */
+				for(rcpt_count=0; sec_list!=NULL
+					&& sec_list[rcpt_count]!=NULL 
+					&& rcpt_count<startup->max_recipients; rcpt_count++) {
+
 					if((i=smb_copymsgmem(&smb,&newmsg,&msg))!=0) {
 						lprintf("%04d !SMTP ERROR %d (%s) copying message"
 							,socket, i, smb.last_error);
 						break;
 					}
-					if(fgets(str,sizeof(str),rcptlst)==NULL)
-						break;
-					usernum=atoi(str);
-					if(fgets(rcpt_name,sizeof(rcpt_name),rcptlst)==NULL)
-						break;
-					truncsp(rcpt_name);
-					if(fgets(rcpt_addr,sizeof(rcpt_addr),rcptlst)==NULL)
-						break;
-					truncsp(rcpt_addr);
+					
+					section=sec_list[rcpt_count];
+
+					SAFECOPY(rcpt_name,iniGetString(rcptlst,section	,smb_hfieldtype(RECIPIENT),"unknown",value));
+					usernum=iniGetInteger(rcptlst,section			,smb_hfieldtype(RECIPIENTEXT),0);
+					nettype=iniGetShortInt(rcptlst,section			,smb_hfieldtype(RECIPIENTNETTYPE),NET_NONE);
+					sprintf(str,"#%u",usernum);
+					SAFECOPY(rcpt_addr,iniGetString(rcptlst,section	,smb_hfieldtype(RECIPIENTNETADDR),str,value));
 
 					snprintf(hdrfield,sizeof(hdrfield),
 						"Received: from %s (%s [%s])\r\n"
@@ -2141,13 +2147,12 @@ static void smtp_thread(void* arg)
 
 					smb_hfield(&newmsg, RECIPIENT, (ushort)strlen(rcpt_name), rcpt_name);
 
-					if(rcpt_addr[0]=='#') {	/* Local destination */
-						newmsg.idx.to=atoi(rcpt_addr+1);
-						smb_hfield(&newmsg, RECIPIENTEXT
-							,(ushort)strlen(rcpt_addr+1), rcpt_addr+1);
+					if(nettype==NET_NONE) {	/* Local destination */
+						newmsg.idx.to=usernum;
+						sprintf(str,"%u",usernum);
+						smb_hfield(&newmsg, RECIPIENTEXT, (ushort)strlen(str), str);
 					} else {
 						newmsg.idx.to=0;
-						nettype=NET_INTERNET;
 						smb_hfield(&newmsg, RECIPIENTNETTYPE, sizeof(nettype), &nettype);
 						smb_hfield(&newmsg, RECIPIENTNETADDR
 							,(ushort)strlen(rcpt_addr), rcpt_addr);
@@ -2174,8 +2179,8 @@ static void smtp_thread(void* arg)
 						}
 						putsmsg(&scfg, usernum, str);
 					}
-					rcpt_count++;
 				}
+				iniFreeStringList(sec_list);
 				if(rcpt_count<1) {
 					smb_freemsg_dfields(&smb,&msg,SMB_ALL_REFS);
 					sockprintf(socket, "452 Insufficient system storage");
@@ -2648,13 +2653,13 @@ static void smtp_thread(void* arg)
 					lprintf("%04d SMTP %s relaying to external mail service: %s"
 						,socket, relay_user.alias, tp+1);
 
-					fprintf(rcptlst,"0\n%.*s\n%.*s\n"
-						,(int)sizeof(rcpt_name)-1,rcpt_addr
-						,(int)sizeof(rcpt_addr)-1,p);
-					
+					fprintf(rcptlst,"[%u]\n",rcpt_count++);
+					fprintf(rcptlst,"%s=%s\n",smb_hfieldtype(RECIPIENT),rcpt_addr);
+					fprintf(rcptlst,"%s=%u\n",smb_hfieldtype(RECIPIENTNETTYPE),NET_INTERNET);
+					fprintf(rcptlst,"%s=%s\n",smb_hfieldtype(RECIPIENTNETADDR),p);
+
 					sockprintf(socket,ok_rsp);
 					state=SMTP_STATE_RCPT_TO;
-					rcpt_count++;
 					continue;
 				}
 			}
@@ -2702,8 +2707,19 @@ static void smtp_thread(void* arg)
 					if(!stricmp(p,scfg.qhub[i]->id))
 						break;
 				}
-				if(i<scfg.total_qhubs) {	/* found matching QWKnet hub */
+				if(i<scfg.total_qhubs) {	/* found matching QWKnet Hub */
 
+					lprintf("%04d SMTP routing mail for %s to QWKnet Hub: %s"
+						,socket, rcpt_addr, scfg.qhub[i]->id);
+
+					fprintf(rcptlst,"[%u]\n",rcpt_count++);
+					fprintf(rcptlst,"%s=%s\n",smb_hfieldtype(RECIPIENT),rcpt_addr);
+					fprintf(rcptlst,"%s=%u\n",smb_hfieldtype(RECIPIENTNETTYPE),NET_QWK);
+					fprintf(rcptlst,"%s=%s\n",smb_hfieldtype(RECIPIENTNETADDR),scfg.qhub[i]->id);
+
+					sockprintf(socket,ok_rsp);
+					state=SMTP_STATE_RCPT_TO;
+					continue;
 				}
 			}
 
@@ -2789,8 +2805,10 @@ static void smtp_thread(void* arg)
 			} else
 				telegram=TRUE;
 
-			fprintf(rcptlst,"%u\n%.*s\n"
-				,user.number,(int)sizeof(rcpt_name)-1,rcpt_addr);
+			fprintf(rcptlst,"[%u]\n",rcpt_count++);
+			fprintf(rcptlst,"%s=%s\n",smb_hfieldtype(RECIPIENT),rcpt_addr);
+			fprintf(rcptlst,"%s=%u\n",smb_hfieldtype(RECIPIENTEXT),user.number);
+
 
 			/* Forward to Internet */
 			tp=strrchr(user.netmail,'@');
@@ -2803,14 +2821,12 @@ static void smtp_thread(void* arg)
 				&& !strstr(tp,scfg.sys_inetaddr)) {
 				lprintf("%04d SMTP Forwarding to: %s"
 					,socket, user.netmail);
-				fprintf(rcptlst,"%s\n",user.netmail);
+				fprintf(rcptlst,"%s=%u\n",smb_hfieldtype(RECIPIENTNETTYPE),NET_INTERNET);
+				fprintf(rcptlst,"%s=%s\n",smb_hfieldtype(RECIPIENTNETADDR),user.netmail);
 				sockprintf(socket,"251 User not local; will forward to %s", user.netmail);
-			} else { /* Local (no-forward) */
-				fprintf(rcptlst,"#%u\n",usernum);
+			} else /* Local (no-forward) */
 				sockprintf(socket,ok_rsp);
-			}
 			state=SMTP_STATE_RCPT_TO;
-			rcpt_count++;
 			continue;
 		}
 		/* Message Data (header and body) */

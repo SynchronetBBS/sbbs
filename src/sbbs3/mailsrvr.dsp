@@ -97,6 +97,10 @@ SOURCE=.\crc32.c
 # End Source File
 # Begin Source File
 
+SOURCE=..\xpdev\ini_file.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\mailsrvr.c
 # End Source File
 # Begin Source File
