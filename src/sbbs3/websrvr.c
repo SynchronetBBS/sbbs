@@ -350,72 +350,72 @@ static time_t decode_date(char *date)
 	/* This probobly only needs to be 9, but the extra one is for luck. */
 	if(strlen(date)>15) {
 		/* asctime() */
-		lprintf("asctime() Date: %s",token);
+		//lprintf("asctime() Date: %s",token);
 		/* Toss away week day */
 		token=strtok(date," ");
 		token=strtok(NULL," ");
 		if(token==NULL)
 			return(0);
-		lprintf("Month: %s",token);
+		//lprintf("Month: %s",token);
 		ti.tm_mon=getmonth(token);
 		token=strtok(NULL," ");
 		if(token==NULL)
 			return(0);
-		lprintf("MDay: %s",token);
+		//lprintf("MDay: %s",token);
 		ti.tm_mday=atoi(token);
 		token=strtok(NULL,":");
 		if(token==NULL)
 			return(0);
-		lprintf("Hour: %s",token);
+		//lprintf("Hour: %s",token);
 		ti.tm_hour=atoi(token);
 		token=strtok(NULL,":");
 		if(token==NULL)
 			return(0);
-		lprintf("Minute: %s",token);
+		//lprintf("Minute: %s",token);
 		ti.tm_min=atoi(token);
 		token=strtok(NULL," ");
 		if(token==NULL)
 			return(0);
-		lprintf("Second: %s",token);
+		//lprintf("Second: %s",token);
 		ti.tm_sec=atoi(token);
 		token=strtok(NULL,"");
 		if(token==NULL)
 			return(0);
-		lprintf("Year: %s",token);
+		//lprintf("Year: %s",token);
 		ti.tm_year=atoi(token)-1900;
 	}
 	else  {
 		/* RFC 1123 or RFC 850 */
-		lprintf("RFC Date");
+		//lprintf("RFC Date");
 		token=strtok(NULL," -");
 		if(token==NULL)
 			return(0);
-		lprintf("MDay: %s",token);
+		//lprintf("MDay: %s",token);
 		ti.tm_mday=atoi(token);
 		token=strtok(NULL," -");
 		if(token==NULL)
 			return(0);
-		lprintf("Month: %s",token);
+		//lprintf("Month: %s",token);
 		ti.tm_mon=getmonth(token);
 		token=strtok(NULL," ");
 		if(token==NULL)
 			return(0);
-		lprintf("Year: %s",token);
+		//lprintf("Year: %s",token);
 		ti.tm_year=atoi(token);
 		token=strtok(NULL,":");
 		if(token==NULL)
 			return(0);
-		lprintf("Hour: %s",token);
+		//lprintf("Hour: %s",token);
 		ti.tm_hour=atoi(token);
 		token=strtok(NULL,":");
 		if(token==NULL)
 			return(0);
-		lprintf("Min: %s",token);
+		//lprintf("Min: %s",token);
 		ti.tm_min=atoi(token);
 		token=strtok(NULL," ");
 		if(token==NULL)
 			return(0);
-		lprintf("Sec: %s",token);
+		//lprintf("Sec: %s",token);
 		ti.tm_sec=atoi(token);
 		if(ti.tm_year>1900)
 			ti.tm_year -= 1900;
@@ -711,7 +711,7 @@ static BOOL read_mime_types(char* fname)
 	return(mime_count>0);
 }
 
-static int sockreadline(http_session_t * session, time_t timeout, char *buf, size_t length)
+static int sockreadline(http_session_t * session, char *buf, size_t length)
 {
 	char	ch;
 	DWORD	i;
@@ -727,7 +727,7 @@ static int sockreadline(http_session_t * session, time_t timeout, char *buf, siz
 		}
 
 		if(!rd) {
-			if(time(NULL)-start>timeout) {
+			if(time(NULL)-start>startup->max_inactivity) {
 				close_socket(session->socket);
 				session->socket=INVALID_SOCKET;
 				return(-1);        /* time-out */
@@ -769,11 +769,12 @@ static BOOL parse_headers(http_session_t * session)
 	int		i;
 
 	lprintf("%04d Parsing headers",session->socket);
-	while(!sockreadline(session,TIMEOUT_THREAD_WAIT,req_line,sizeof(req_line))&&strlen(req_line)) {
+	while(!sockreadline(session,req_line,sizeof(req_line))&&strlen(req_line)) {
 		/* Check this... SHOULD append lines starting with spaces or horizontal tabs. */
-		while((recvfrom(session->socket,next_char,1,MSG_PEEK,NULL,0)>0) && (next_char[0]=='\t' || next_char[0]==' ')) {
+		while((recvfrom(session->socket,next_char,1,MSG_PEEK,NULL,0)>0) 
+			&& (next_char[0]=='\t' || next_char[0]==' ')) {
 			i=strlen(req_line);
-			sockreadline(session,TIMEOUT_THREAD_WAIT,req_line+i,sizeof(req_line)-i);
+			sockreadline(session,req_line+i,sizeof(req_line)-i);
 		}
 		strtok(req_line,":");
 		if((value=strtok(NULL,""))!=NULL) {
@@ -922,7 +923,7 @@ static BOOL get_req(http_session_t * session)
 	char	req_line[MAX_REQUEST_LINE];
 	char *	p;
 	
-	if(!sockreadline(session,TIMEOUT_THREAD_WAIT,req_line,sizeof(req_line))) {
+	if(!sockreadline(session,req_line,sizeof(req_line))) {
 		lprintf("%04d Got request line: %s",session->socket,req_line);
 		p=get_method(req_line,session);
 		if(p!=NULL) {
@@ -1044,6 +1045,8 @@ void http_session_thread(void* arg)
 
 	free(arg);	/* now we don't need to worry about freeing the session */
 
+	lprintf("%04d Session thread started", session.socket);
+
 	thread_up(FALSE /* setuid */);
 	session.finished=FALSE;
 
@@ -1075,6 +1078,9 @@ void http_session_thread(void* arg)
 		return;
 	}
 
+	active_clients++;
+	update_clients();
+
 	while(!session.finished && server_socket!=INVALID_SOCKET) {
 	    memset(&(session.req), 0, sizeof(session.req));
 		if(get_req(&session)) {
@@ -1088,6 +1094,14 @@ void http_session_thread(void* arg)
 			}
 		}
 	}
+
+	active_clients--;
+	update_clients();
+//	client_off(session.socket);
+
+	thread_down();
+	lprintf("%04d Session thread terminated (%u clients, %u threads remain)"
+		,session.socket, active_clients, thread_count);
 }
 
 void DLLCALL web_terminate(void)
@@ -1189,6 +1203,7 @@ void DLLCALL web_server(void* arg)
 	if(startup->index_file_name[0]==0)		SAFECOPY(startup->index_file_name,"index.html");
 	if(startup->root_dir[0]==0)				SAFECOPY(startup->root_dir,"../html");
 	if(startup->error_dir[0]==0)			SAFECOPY(startup->error_dir,"../html/error");
+	if(startup->max_inactivity==0) 			startup->max_inactivity=120; /* seconds */
 
 	/* Copy html directories */
 	SAFECOPY(root_dir,startup->root_dir);
@@ -1262,6 +1277,9 @@ void DLLCALL web_server(void* arg)
 				lprintf("!putenv() FAILED");
 			tzset();
 		}
+
+		active_clients=0;
+		update_clients();
 
 		/* open a socket and wait for a client */
 
