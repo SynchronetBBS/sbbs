@@ -340,6 +340,83 @@ js_recv(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	return(JS_TRUE);
 }
 
+static JSClass js_recvfrom_class = {
+     "Recvfrom"				/* name			*/
+    ,0						/* flags		*/
+	,JS_PropertyStub		/* addProperty	*/
+	,JS_PropertyStub		/* delProperty	*/
+	,JS_PropertyStub		/* getProperty	*/
+	,JS_PropertyStub		/* setProperty	*/
+	,JS_EnumerateStub		/* enumerate	*/
+	,JS_ResolveStub			/* resolve		*/
+	,JS_ConvertStub			/* convert		*/
+	,JS_FinalizeStub		/* finalize		*/
+};
+
+
+static JSBool
+js_recvfrom(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	char*		buf;
+	char		ip_addr[64];
+	char		port[32];
+	int			len=512;
+	JSString*	str;
+	JSObject*	retobj;
+	SOCKADDR_IN	addr;
+	socklen_t	addrlen;
+
+	private_t*	p;
+
+	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
+		return(JS_FALSE);
+
+	if(argc)
+		len = JSVAL_TO_INT(argv[0]);
+
+	if((buf=(char*)malloc(len+1))==NULL) {
+		dbprintf(TRUE, p, "error allocating %u bytes",len+1);
+		return(JS_FALSE);
+	}
+
+	addrlen=sizeof(addr);
+	len = recvfrom(p->sock,buf,len,0,(SOCKADDR*)&addr,&addrlen);
+	if(len<0) {
+		free(buf);
+		p->last_error=ERROR_VALUE;
+		*rval = JSVAL_NULL;
+		return(JS_TRUE);
+	}
+	buf[len]=0;
+
+	str = JS_NewStringCopyZ(cx, buf);
+	free(buf);
+
+	if((retobj=JS_NewObject(cx,&js_recvfrom_class,NULL,obj))==NULL)
+		return(JS_TRUE);
+
+	sprintf(port,"%u",ntohs(addr.sin_port));
+	JS_DefineProperty(cx, retobj, "port"
+		,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,port))
+		,NULL,NULL,JSPROP_ENUMERATE);
+
+	SAFECOPY(ip_addr,inet_ntoa(addr.sin_addr));
+	JS_DefineProperty(cx, retobj, "ip_address"
+		,STRING_TO_JSVAL(JS_NewStringCopyZ(cx,ip_addr))
+		,NULL,NULL,JSPROP_ENUMERATE);
+
+	JS_DefineProperty(cx, retobj, "data"
+		,STRING_TO_JSVAL(str)
+		,NULL,NULL,JSPROP_ENUMERATE);
+
+	*rval = OBJECT_TO_JSVAL(retobj);
+
+	dbprintf(FALSE, p, "received %u bytes from %s:%s",len,ip_addr,port);
+		
+	return(JS_TRUE);
+}
+
+
 static JSBool
 js_peek(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
@@ -732,6 +809,7 @@ static JSFunctionSpec js_socket_functions[] = {
 	{"recvline",		js_recvline,		0},		/* receive a \n terminated string	*/
 	{"readline",		js_recvline,		0},		/* receive a \n terminated string	*/
 	{"readln",			js_recvline,		0},		/* receive a \n terminated string	*/
+	{"recvfrom",		js_recvfrom,		0},		/* receive a string, return address */
 	{"getoption",		js_getsockopt,		1},		/* getsockopt(opt)					*/
 	{"setoption",		js_setsockopt,		2},		/* setsockopt(opt,val)				*/
 	{"ioctl",			js_ioctlsocket,		1},		/* ioctl(cmd,arg)					*/
