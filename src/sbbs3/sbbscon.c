@@ -282,6 +282,32 @@ int main(int argc, char** argv)
 	mail_startup.options|=MAIL_OPT_ALLOW_POP3;
     strcpy(mail_startup.ctrl_dir,ctrl_dir);
 
+#ifdef __unix__	/* Look up DNS server address */
+	{
+		FILE*	fp;
+		char*	p;
+		char	str[128];
+
+		if((fp=fopen("/etc/resolve.conf","r"))!=NULL) {
+			while(!feof(fp)) {
+				if(fgets(str,sizeof(str),fp)==NULL)
+					break;
+				truncsp(str);
+				p=str;
+				while(*p && *p<=' ') p++;	/* skip white-space */
+				if(strnicmp(p,"nameserver",10)!=0) /* no match */
+					continue;
+				p+=10;	/* skip "nameserver" */
+				while(*p && *p<=' ') p++;	/* skip more white-space */
+				sprintf(mail_startup.dns_server,"%.*s"
+					,sizeof(mail_startup.dns_server)-1,p);
+				break;
+			}
+			fclose(fp);
+		}
+	}
+#endif /* __unix__ */
+
 	/* Process arguments */
 	for(i=1;i<argc;i++) {
 		arg=argv[i];
