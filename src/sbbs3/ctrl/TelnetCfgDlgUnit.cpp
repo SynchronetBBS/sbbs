@@ -6,7 +6,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -88,7 +88,7 @@ void __fastcall TTelnetCfgDlg::FormShow(TObject *Sender)
     AnswerSoundEdit->Text=AnsiString(MainForm->bbs_startup.answer_sound);
     HangupSoundEdit->Text=AnsiString(MainForm->bbs_startup.hangup_sound);
     CmdLogCheckBox->Checked=MainForm->bbs_startup.options&BBS_OPT_DEBUG_TELNET;
-    KeepAliveCheckBox->Checked=MainForm->bbs_startup.options&BBS_OPT_KEEP_ALIVE;
+    TelnetGaCheckBox->Checked=MainForm->bbs_startup.options&BBS_OPT_SEND_TELNET_GA;
 	XtrnMinCheckBox->Checked=MainForm->bbs_startup.options&BBS_OPT_XTRN_MINIMIZED;
     AutoLogonCheckBox->Checked=MainForm->bbs_startup.options&BBS_OPT_AUTO_LOGON;
     HostnameCheckBox->Checked
@@ -164,10 +164,10 @@ void __fastcall TTelnetCfgDlg::OKBtnClick(TObject *Sender)
         ,AnswerSoundEdit->Text.c_str());
     SAFECOPY(MainForm->bbs_startup.hangup_sound
         ,HangupSoundEdit->Text.c_str());
-	if(KeepAliveCheckBox->Checked==true)
-    	MainForm->bbs_startup.options|=BBS_OPT_KEEP_ALIVE;
+	if(TelnetGaCheckBox->Checked==true)
+    	MainForm->bbs_startup.options|=BBS_OPT_SEND_TELNET_GA;
     else
-	    MainForm->bbs_startup.options&=~BBS_OPT_KEEP_ALIVE;
+	    MainForm->bbs_startup.options&=~BBS_OPT_SEND_TELNET_GA;
     if(XtrnMinCheckBox->Checked==true)
     	MainForm->bbs_startup.options|=BBS_OPT_XTRN_MINIMIZED;
     else

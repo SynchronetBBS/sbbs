@@ -266,7 +266,8 @@ char sbbs_t::getkey(long mode)
 			RESTORELINE; 
 		}
 
-		if(now!=last_telnet_cmd && now-timeout>=60 && !((now-timeout)%60)) {
+		if(startup->options&BBS_OPT_SEND_TELNET_GA
+			&& now!=last_telnet_cmd && now-timeout>=60 && !((now-timeout)%60)) {
 			// Let's make sure the socket is up
 			// Sending will trigger a socket d/c detection
 			send_telnet_cmd(TELNET_GA,0);

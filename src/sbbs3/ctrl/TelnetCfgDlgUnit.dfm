@@ -197,13 +197,15 @@ object TelnetCfgDlg: TTelnetCfgDlg
         ShowHint = True
         TabOrder = 0
       end
-      object KeepAliveCheckBox: TCheckBox
+      object TelnetGaCheckBox: TCheckBox
         Left = 9
         Top = 76
-        Width = 144
+        Width = 208
         Height = 26
-        Hint = 'Instruct WinSock to keep your dial-up connection active'
-        Caption = 'Send Keep-Alives'
+        Hint = 
+          'Send periodic Telnet GA commands to help detect dropped connecti' +
+          'ons.'
+        Caption = 'Send Telnet Go-Aheads'
         ParentShowHint = False
         ShowHint = True
         TabOrder = 2

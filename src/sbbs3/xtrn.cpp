@@ -874,7 +874,8 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 
 						// Let's make sure the socket is up
 						// Sending will trigger a socket d/c detection
-						send_telnet_cmd(TELNET_GA,0);
+						if(startup->options&BBS_OPT_SEND_TELNET_GA)
+							send_telnet_cmd(TELNET_GA,0);
 
 						// Check if the node has been interrupted
 						getnodedat(cfg.node_num,&thisnode,0);
