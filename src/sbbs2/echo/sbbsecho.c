@@ -4754,7 +4754,7 @@ while(kbhit()) getch();
 if(start_tick)	/* Last possible increment of import_ticks */
 	import_ticks+=clock()-start_tick;
 
-for(j=MAX_OPEN_SMBS;j>0;j--)		/* Close open bases */
+for(j=MAX_OPEN_SMBS-1;(int)j>=0;j--)		/* Close open bases */
 	if(smb[j].shd_fp)
 		smb_close(&smb[j]);
 
