@@ -594,7 +594,7 @@ bool sbbs_t::inputnstime(time_t *dt)
 /*****************************************************************************/
 /* Checks a password for uniqueness and validity                              */
 /*****************************************************************************/
-bool sbbs_t::chkpass(char *pass, user_t* user)
+bool sbbs_t::chkpass(char *pass, user_t* user, bool unique)
 {
 	char c,d,first[128],last[128],sysop[41],sysname[41],*p;
 	char alias[LEN_ALIAS+1], name[LEN_NAME+1], handle[LEN_HANDLE+1];
@@ -641,7 +641,7 @@ bool sbbs_t::chkpass(char *pass, user_t* user)
 	strupr(sysop);
 	strcpy(sysname,cfg.sys_name);
 	strupr(sysname);
-	if((user->pass[0]
+	if((unique && user->pass[0]
 			&& (strstr(pass,user->pass) || strstr(user->pass,pass)))
 		|| (name[0]
 			&& (strstr(pass,name) || strstr(name,pass)))

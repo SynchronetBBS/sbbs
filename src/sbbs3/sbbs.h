@@ -363,7 +363,7 @@ public:
 	void	printnodedat(uint number, node_t* node);
 	void	reports(void);
 	bool	inputnstime(time_t *dt);
-	bool	chkpass(char *pass, user_t* user);
+	bool	chkpass(char *pass, user_t* user, bool unique);
 	char *	cmdstr(char *instr, char *fpath, char *fspec, char *outstr);
 	char	cmdstr_output[512];
 

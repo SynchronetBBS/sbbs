@@ -246,7 +246,7 @@ bool sbbs_t::logon()
 					bputs(text[NewPassword]);
 					getstr(str,LEN_PASS,K_UPPER|K_LINE);
 					truncsp(str);
-					if(chkpass(str,&useron))
+					if(chkpass(str,&useron,true))
 						break;
 					CRLF; }
 

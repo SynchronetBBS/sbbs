@@ -311,7 +311,7 @@ void sbbs_t::newuser()
 			bputs(text[NewPassword]);
 			getstr(str,LEN_PASS,K_UPPER|K_LINE);
 			truncsp(str);
-			if(chkpass(str,&useron)) {
+			if(chkpass(str,&useron,true)) {
 				strcpy(useron.pass,str);
 				CRLF;
 				bprintf(text[YourPasswordIs],useron.pass);

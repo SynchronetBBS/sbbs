@@ -950,7 +950,7 @@ void sbbs_t::maindflts(user_t* user)
 				if(!getstr(str,LEN_PASS,K_UPPER|K_LINE))
 					break;
 				truncsp(str);
-				if(!chkpass(str,user)) {
+				if(!chkpass(str,user,false)) {
 					CRLF;
 					pause();
 					break; }
