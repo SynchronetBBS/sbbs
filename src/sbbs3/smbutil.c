@@ -35,7 +35,7 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#define SMBUTIL_VER "2.31"
+#define SMBUTIL_VER "2.32"
 char	revision[16];
 char	compiler[32];
 
