@@ -670,7 +670,7 @@ int ciolib_cprintf(char *fmat, ...)
 #endif
 
 	CIOLIB_INIT();
-	
+
     va_start(argptr,fmat);
 #ifdef _WIN32
 	ret=_vsnprintf(str,sizeof(str)-1,fmat,argptr);
@@ -700,7 +700,7 @@ int ciolib_cputs(char *str)
 
 	CIOLIB_INIT();
 
-	olddmc=dont_move_cursor;	
+	olddmc=dont_move_cursor;
 	dont_move_cursor=1;
 	for(pos=0;str[pos];pos++)
 	{

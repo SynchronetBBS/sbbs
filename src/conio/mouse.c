@@ -134,6 +134,18 @@ int ciomouse_delevents(int events)
 	return mouse_events;
 }
 
+int ciomouse_addevent(int event)
+{
+	mouse_events |= (1<<event);
+	return mouse_events;
+}
+
+int ciomouse_delevent(int event)
+{
+	mouse_events &= ~(1<<event);
+	return mouse_events;
+}
+
 void ciomouse_gotevent(int event, int x, int y)
 {
 	struct in_mouse_event *ime;

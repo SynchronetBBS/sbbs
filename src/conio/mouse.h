@@ -105,6 +105,8 @@ void ciolib_mouse_thread(void *data);
 int ciomouse_setevents(int events);
 int ciomouse_addevents(int events);
 int ciomouse_delevents(int events);
+int ciomouse_addevent(int event);
+int ciomouse_delevent(int event);
 #ifdef __cplusplus
 }
 #endif
