@@ -755,6 +755,7 @@ js_poll(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	uintN	argn;
 	int		result;
 	struct	timeval tv = {0, 0};
+	jsdouble jsd;
 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
 		JS_ReportError(cx,getprivate_failure,WHERE);
@@ -772,6 +773,11 @@ js_poll(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 			poll_for_write=JSVAL_TO_BOOLEAN(argv[argn]);
 		else if(JSVAL_IS_INT(argv[argn]))
 			tv.tv_sec = JSVAL_TO_INT(argv[argn]);
+		else if(JSVAL_IS_DOUBLE(argv[argn])) {
+			JS_ValueToNumber(cx,argv[argn],&jsd);
+			tv.tv_sec = (int)jsd;
+			tv.tv_usec = (int)(jsd*1000.0);
+		}
 	}
 
 	FD_ZERO(&socket_set);
