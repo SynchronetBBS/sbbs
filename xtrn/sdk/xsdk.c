@@ -1875,55 +1875,7 @@ void initdata(void)
 	str[0]=0;
 	fgets(str,81,stream);
 	client_socket=atoi(str);
-#endif
 
-	fclose(stream);
-
-	sprintf(str,"%sINTRSBBS.DAT",node_dir);     /* Shrank to run! */
-	if(fexist(str)) {
-		if((stream=fopen(str,"rt"))==NULL) {
-			printf("Can't open %s\n",str);
-			exit(1); }
-		fgets(tmp,81,stream);					/* so get MSR address from file */
-		msr=(uint FAR16 *)atol(tmp);
-		fclose(stream);
-		remove(str); }
-
-	starttime=time(NULL);			/* initialize start time stamp */
-	wordwrap[0]=0;					/* set wordwrap to null */
-	attr(LIGHTGRAY);				/* initialize color and curatr to plain */
-	mnehigh=LIGHTGRAY|HIGH; 		/* mnemonics highlight color */
-	mnelow=GREEN;					/* mnemonics normal text color */
-	sec_warn=180;					/* seconds till inactivity warning */
-	sec_timeout=300;				/* seconds till inactivity timeout */
-	tos=lncntr=0;					/* init topofscreen and linecounter to 0 */
-	lastnodemsg=0;					/* Last node to send message to */
-	aborted=0;                      /* Ctrl-C hit flag */
-	sysop_level=90; 				/* Minimum level to be considered sysop */
-	timeleft_warn=0;				/* Running out of time warning */
-
-	sprintf(str,"%s%s",ctrl_dir,"NODE.DAB");
-	if((nodefile=sopen(str,O_BINARY|O_RDWR,SH_DENYNO))==-1) {
-		bprintf("\r\n\7Error opening %s\r\n",str);
-		exit(1); }
-
-	sprintf(str,"%sUSER\\NAME.DAT",data_dir);
-	if((i=nopen(str,O_RDONLY))==-1) {
-		printf("\r\n\7Error opening %s\r\n",str);
-		exit(1); }
-	memset(str,0,30);
-	read(i,str,26);
-	close(i);
-	if(str[25]==CR) 	/* Version 1b */
-		name_len=25;
-	else				/* Version 1a */
-		name_len=30;
-
-#ifdef __unix__
-	_termios_setup();
-#endif
-
-#ifndef __16BIT__
 	if(client_socket!=INVALID_SOCKET) {
 
 #ifdef _WIN32
@@ -1939,8 +1891,57 @@ void initdata(void)
 		}
 #endif
 		_beginthread(output_thread,0,NULL);
-#endif
 	}
+#endif
+
+	fclose(stream);
+
+	sprintf(str,"%sINTRSBBS.DAT",node_dir);     /* Shrank to run! */
+	if(fexist(str)) {
+		if((stream=fopen(str,"rt"))==NULL) {
+			printf("Can't open %s\n",str);
+			exit(1); 
+		}
+		fgets(tmp,81,stream);					/* so get MSR address from file */
+		msr=(uint FAR16 *)atol(tmp);
+		fclose(stream);
+		remove(str); 
+	}
+
+	starttime=time(NULL);			/* initialize start time stamp */
+	wordwrap[0]=0;					/* set wordwrap to null */
+	mnehigh=LIGHTGRAY|HIGH; 		/* mnemonics highlight color */
+	mnelow=GREEN;					/* mnemonics normal text color */
+	sec_warn=180;					/* seconds till inactivity warning */
+	sec_timeout=300;				/* seconds till inactivity timeout */
+	tos=lncntr=0;					/* init topofscreen and linecounter to 0 */
+	lastnodemsg=0;					/* Last node to send message to */
+	aborted=0;                      /* Ctrl-C hit flag */
+	sysop_level=90; 				/* Minimum level to be considered sysop */
+	timeleft_warn=0;				/* Running out of time warning */
+
+	sprintf(str,"%s%s",ctrl_dir,"NODE.DAB");
+	if((nodefile=sopen(str,O_BINARY|O_RDWR,SH_DENYNO))==-1) {
+		printf("\r\n\7Error opening %s\r\n",str);
+		exit(1); 
+	}
+
+	sprintf(str,"%sUSER\\NAME.DAT",data_dir);
+	if((i=nopen(str,O_RDONLY))==-1) {
+		printf("\r\n\7Error opening %s\r\n",str);
+		exit(1); 
+	}
+	memset(str,0,30);
+	read(i,str,26);
+	close(i);
+	if(str[25]==CR) 	/* Version 1b */
+		name_len=25;
+	else				/* Version 1a */
+		name_len=30;
+
+#ifdef __unix__
+	_termios_setup();
+#endif
 
 	if(xsdk_mode&XSDK_MODE_NOCONSOLE) {
 		con_fp=NULL;
@@ -1948,6 +1949,8 @@ void initdata(void)
 		FreeConsole();
 #endif
 	}
+
+	attr(LIGHTGRAY);				/* initialize color and curatr to plain */
 }
 
 /****************************************************************************/
