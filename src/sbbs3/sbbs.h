@@ -482,8 +482,6 @@ public:
 	uint	uselect_total, uselect_num[500];
 
 	void	riosync(char abortable);
-	bool	validattr(char a);
-	int		stripattr(char *str);
 	void	redrwstr(char *strin, int i, int l, long mode);
 	void	attr(int atr);				/* Change local and remote text attributes */
 	void	ctrl_a(char x);			/* Peforms the Ctrl-Ax attribute changes */
@@ -777,6 +775,9 @@ extern "C" {
 	DLLEXPORT char *	DLLCALL strip_ctrl(char *str);
 	DLLEXPORT char *	DLLCALL net_addr(net_t* net);
 	DLLEXPORT ushort	DLLCALL crc16(char *str);
+	DLLEXPORT BOOL		DLLCALL validattr(char a);
+	DLLEXPORT size_t	DLLCALL strip_invalid_attr(char *str);
+
 
 	/* date_str.c */
 	DLLEXPORT char *	DLLCALL zonestr(short zone);
