@@ -80,7 +80,7 @@ int main(int argc, char **argv)
 	int 	i,j,main_dflt=0,chat_dflt=0;
 	char 	str[129];
  	char	exepath[MAX_PATH+1];
-	BOOL	gui_mode=TRUE;
+	BOOL	gui_mode=FALSE;
 	BOOL    door_mode=FALSE;
 
     printf("\r\nSynchronet Configuration Utility (%s)  v%s  Copyright 2002 "
@@ -134,6 +134,9 @@ int main(int argc, char **argv)
                 case 'E':
                     uifc.esc_delay=atoi(argv[i]+2);
                     break;
+				case 'G':
+					gui_mode=TRUE;
+					break;
 				case 'T':
 					gui_mode=FALSE;
 					break;
@@ -157,6 +160,7 @@ int main(int argc, char **argv)
                         "-h  =  don't update message base status headers\r\n"
                         "-d  =  run in standard input/output/door mode\r\n"
 #ifdef USE_FLTK
+						"-g  =  use graphical user interface\r\n"
 						"-t  =  use text/terminal user interface (disable GUI)\r\n"
 #endif
                         "-c  =  force color mode\r\n"
