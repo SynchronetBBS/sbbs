@@ -69,9 +69,9 @@ var enable_users_summon = true;
 // what our server is capable of from a server point of view.
 // TS3 = Version 3 of accepted interserver timestamp protocol.
 // NOQUIT = QUIT clients on behalf of a SQUIT server? (no netsplit spam)
-// SSJOIN = SJOIN interserver command supported without dual TS, single TS only.
+// SSJOIN = SJOIN interserver command without dual TS, single TS only.
 // BURST = Sending of network synch data is done in a 3-stage burst (BURST cmd)
-// UNCONNECT = UNCONNECT interserver command supported.
+// UNCONNECT = Server SQUIT is routable.
 // NICKIP = 9th parameter of interserver NICK command is an integer IP.
 // TSMODE = 2nd arg to standard MODE is the channel's TS.
 var server_capab = "TS3 NOQUIT SSJOIN BURST UNCONNECT NICKIP TSMODE";
@@ -5653,21 +5653,21 @@ function IRCClient_server_commands(origin, command, cmdline) {
 				server_bcast_to_servers("GLOBOPS :" + ThisOrigin.nick + " " + cmdline);
 			if (!cmd[2])
 				break;
-			// nasty kludge since we don't support per-mode TS yet.
-			if (cmd[2].match(/^[0-9]+$/) && 
-			    (cmd[1][0] == "#") ) {
-				cmdline="MODE " + cmd[1];
-				for(xx=3;xx<cmd.length;xx++) {
-					cmdline += " ";
-					cmdline += cmd[xx];
-				}
-			}
 			if (cmd[1][0] == "#") {
 				var chan = searchbychannel(cmd[1])
 				if (!chan)
 					break;
-				var modeline = cmdline.slice(cmdline.indexOf(" ")+1);
-				var modeline = modeline.slice(modeline.indexOf(" ")+1);
+				var modeline;
+				// Detect if this is a TSMODE.  If so, handle.
+				if (parseInt(cmd[2]) == cmd[2]) {
+					// desynchronized MODE command.
+					if (parseInt(cmd[2]) < chan.created)
+						break;
+					cmd.shift();
+				}
+				cmd.shift();
+				cmd.shift();
+				var modeline = cmd.join(" ");
 				ThisOrigin.set_chanmode(chan,modeline,false);
 			} else { // assume it's for a user
 				ThisOrigin.setusermode(cmd[2]);
