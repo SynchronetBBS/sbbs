@@ -490,9 +490,10 @@ int sbbs_t::external(char* cmdline, long mode, char* startup_dir)
 		FILE* fp;
 		sprintf(fname,"%sDOOR32.SYS",cfg.node_dir);
 		fp=fopen(fname,"wb");
-		fprintf(fp,"2\r\n%d\r\n38400\r\n%s%c\r\n%d\r\n%s\r\n%s\r\n%d\r\n%d\r\n"
+		fprintf(fp,"%d\r\n%d\r\n38400\r\n%s%c\r\n%d\r\n%s\r\n%s\r\n%d\r\n%d\r\n"
 			"%d\r\n%d\r\n"
-			,client_socket_dup
+			,mode&EX_OUTR ? 0 /* Local */ : 2 /* Telnet */
+			,mode&EX_OUTR ? INVALID_SOCKET : client_socket_dup
 			,VERSION_NOTICE,REVISION
 			,useron.number
 			,useron.name
@@ -1118,7 +1119,11 @@ char * sbbs_t::cmdstr(char *instr, char *fpath, char *fspec, char *outstr)
                     strcat(cmd,cfg.temp_dir);
                     break;
                 case 'H':   /* Port Handle or Hardware Flow Control */
+#if defined(__unix__)
+					strcat(cmd,ultoa(client_socket,str,10));
+#else
                     strcat(cmd,ultoa(client_socket_dup,str,10));
+#endif
                     break;
                 case 'I':   /* UART IRQ Line */
                     strcat(cmd,ultoa(cfg.com_irq,str,10));
