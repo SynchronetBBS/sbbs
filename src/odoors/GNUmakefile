@@ -46,20 +46,28 @@ CC	:=	gcc
 #                tlink - For Borland compilers
 #                 link - For Microsoft compilers
 #
-LD	:=	ld
+# Get OS name
+OS      :=      $(shell uname)
+
+LD	:=	gcc
 #
 #------------------------------------------------------------------------------
 #
 # Compiler command-line flags.
 #
 CFLAGS	+=	-O2 -g -L. -I../xpdev
+ifeq ($(OS),Darwin)
+ LDFLAGS	+=	$(CFLAGS) -dynamiclib -single_module
+else
+ LDFLAGS	+=	$(CFLAGS) -shared
+endif
 # /MTd /Zi - for debug
 #
 #------------------------------------------------------------------------------
 #
 # Link flags.
 #
-LDFLAGS	:=
+#LDFLAGS	:=
 #
 #------------------------------------------------------------------------------
 #
@@ -146,7 +154,7 @@ OBJECTS := ${OBJDIR}ODAuto${OBJFILE}\
 #         ${OBJDIR}odsys${OBJFILE}\	this file is missing
 
 ${LIBDIR}libODoors${SHLIB} : ${OBJECTS}
-	$(CC) $(CFLAGS) -shared -o ${LIBDIR}libODoors${SHLIB}.6.2 ${OBJECTS}
+	$(LD) $(LDFLAGS) -o ${LIBDIR}libODoors${SHLIB}.6.2 ${OBJECTS}
 	ln -fs ${LIBDIR}libODoors${SHLIB}.6.2 ${LIBDIR}libODoors${SHLIB}
 
 ${LIBDIR}libODoors${STATICLIB} : ${OBJECTS}
