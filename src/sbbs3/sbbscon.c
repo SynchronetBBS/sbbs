@@ -112,6 +112,7 @@ uint				client_count=0;
 int					prompt_len=0;
 static scfg_t		scfg;					/* To allow rerun */
 static ulong		served=0;
+char				ini_file[MAX_PATH+1];
 
 #ifdef __unix__
 char				new_uid_name[32];
@@ -121,6 +122,7 @@ uid_t				old_uid;
 gid_t				new_gid;
 gid_t				old_gid;
 BOOL				is_daemon=FALSE;
+char				daemon_type[2];
 BOOL				std_facilities=FALSE;
 FILE*				pidfile;
 
@@ -737,6 +739,42 @@ static void terminate(void)
 	}
 }
 
+static void read_startup_ini(void)
+{
+	char	str[MAX_PATH+1];
+	FILE*	fp=NULL;
+
+	/* Read .ini file here */
+	if(ini_file[0]!=0 && (fp=fopen(ini_file,"r"))!=NULL) {
+		sprintf(str,"Reading %s",ini_file);
+		bbs_lputs(NULL,LOG_INFO,str);
+	}
+
+	/* We call this function to set defaults, even if there's no .ini file */
+	sbbs_read_ini(fp, 
+		&run_bbs,		&bbs_startup,
+		&run_ftp,		&ftp_startup, 
+		&run_web,		&web_startup,
+		&run_mail,		&mail_startup, 
+		&run_services,	&services_startup);
+
+	/* read/default any sbbscon-specific .ini keys here */
+#if defined(__unix__)
+	{
+		char	value[INI_MAX_VALUE_LEN];
+		SAFECOPY(new_uid_name,iniGetString(fp,"UNIX","User","",value));
+		SAFECOPY(new_gid_name,iniGetString(fp,"UNIX","Group","",value));
+		is_daemon=iniGetBool(fp,"UNIX","Daemonize",FALSE);
+		SAFECOPY(daemon_type,iniGetString(fp,"UNIX","LogFacility","U",value));
+		umask(iniGetInteger(fp,"UNIX","umask",077));
+	}
+#endif
+	/* close .ini file here */
+	if(fp!=NULL)
+		fclose(fp);
+}
+
+
 #if defined(_WIN32)
 BOOL WINAPI ControlHandler(DWORD CtrlType)
 {
@@ -774,20 +812,13 @@ void _sighandler_rerun(int sig)
 {
 
 	log_puts(LOG_NOTICE,"     Got HUP (rerun) signal");
-	
-#if 0	/* old way, we don't want to recycle all nodes, necessarily */
-	for(i=1;i<=scfg.sys_nodes;i++) {
-		getnodedat(&scfg,i,&node,NULL /* file */);
-		node.misc|=NODE_RRUN;
-		printnodedat(&scfg,i,&node);
-	}
-#else	/* instead, recycle all our servers */
+
+	read_startup_ini();
 	bbs_startup.recycle_now=TRUE;
 	ftp_startup.recycle_now=TRUE;
 	web_startup.recycle_now=TRUE;
 	mail_startup.recycle_now=TRUE;
 	services_startup.recycle_now=TRUE;
-#endif
 }
 
 #ifdef NEEDS_DAEMON
@@ -908,16 +939,12 @@ int main(int argc, char** argv)
 	char*	ctrl_dir;
 	char	str[MAX_PATH+1];
     char	error[256];
-	char	ini_file[MAX_PATH+1];
 	char	host_name[128]="";
-	FILE*	fp=NULL;
 	node_t	node;
 #ifdef __unix__
-	char	daemon_type[2];
-	char	value[INI_MAX_VALUE_LEN];
-	struct passwd* pw_entry;
-	struct group*  gr_entry;
-	sigset_t			sigs;
+	struct passwd*	pw_entry;
+	struct group*	gr_entry;
+	sigset_t		sigs;
 #endif
 
 #ifdef __QNX__
@@ -1067,33 +1094,9 @@ int main(int argc, char** argv)
 		}
 	}
 
-	/* Read .ini file here */
-	if(ini_file[0]!=0 && (fp=fopen(ini_file,"r"))!=NULL) {
-		sprintf(str,"Reading %s",ini_file);
-		bbs_lputs(NULL,LOG_INFO,str);
-	}
+	read_startup_ini();
 
 	prompt = "[Threads: %d  Sockets: %d  Clients: %d  Served: %lu] (?=Help): ";
-
-	/* We call this function to set defaults, even if there's no .ini file */
-	sbbs_read_ini(fp, 
-		&run_bbs,		&bbs_startup,
-		&run_ftp,		&ftp_startup, 
-		&run_web,		&web_startup,
-		&run_mail,		&mail_startup, 
-		&run_services,	&services_startup);
-
-	/* read/default any sbbscon-specific .ini keys here */
-#if defined(__unix__)
-	SAFECOPY(new_uid_name,iniGetString(fp,"UNIX","User","",value));
-	SAFECOPY(new_gid_name,iniGetString(fp,"UNIX","Group","",value));
-	is_daemon=iniGetBool(fp,"UNIX","Daemonize",FALSE);
-	SAFECOPY(daemon_type,iniGetString(fp,"UNIX","LogFacility","U",value));
-	umask(iniGetInteger(fp,"UNIX","umask",077));
-#endif
-	/* close .ini file here */
-	if(fp!=NULL)
-		fclose(fp);
 
 	/* Post-INI command-line switches */
 	for(i=1;i<argc;i++) {
