@@ -252,16 +252,19 @@ static JSBool
 js_inkey(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char		key[2];
-	long		mode=0;
+	int32		mode=0;
+	int32		timeout=0;
 	sbbs_t*		sbbs;
     JSString*	js_str;
 
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	if(argc && JSVAL_IS_INT(argv[0]))
-		mode=JSVAL_TO_INT(argv[0]);
-	key[0]=sbbs->inkey(mode);
+	if(argc)
+		JS_ValueToInt32(cx,argv[0],&mode);
+	if(argc>1)
+		JS_ValueToInt32(cx,argv[1],&timeout);
+	key[0]=sbbs->inkey(mode,timeout);
 	key[1]=0;
 
 	if((js_str = JS_NewStringCopyZ(cx, key))==NULL)
@@ -275,15 +278,15 @@ static JSBool
 js_getkey(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char		key[2];
-	long		mode=0;
+	int32		mode=0;
 	sbbs_t*		sbbs;
     JSString*	js_str;
 
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	if(argc && JSVAL_IS_INT(argv[0]))
-		mode=JSVAL_TO_INT(argv[0]);
+	if(argc)
+		JS_ValueToInt32(cx,argv[0],&mode);
 	key[0]=sbbs->getkey(mode);
 	key[1]=0;
 
@@ -1047,20 +1050,24 @@ js_telnet_cmd(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 
 
 static jsMethodSpec js_console_functions[] = {
-	{"inkey",			js_inkey,			0, JSTYPE_STRING,	JSDOCSTR("[number mode]")
-	,JSDOCSTR("get a single key, no wait")
+	{"inkey",			js_inkey,			0, JSTYPE_STRING,	JSDOCSTR("[number mode] [,number timeout]")
+	,JSDOCSTR("get a single key with optional <i>timeout</i> in milliseconds (defaults to 0, for no wait), "
+		"see <tt>K_*</tt> in <tt>sbbsdefs.js</tt> for <i>mode</i> bits")
 	},		
 	{"getkey",			js_getkey,			0, JSTYPE_STRING,	JSDOCSTR("[number mode]")
-	,JSDOCSTR("get a single key, with wait")
+	,JSDOCSTR("get a single key, with wait, "
+		"see <tt>K_*</tt> in <tt>sbbsdefs.js</tt> for <i>mode</i> bits")
 	},		
 	{"getstr",			js_getstr,			0, JSTYPE_STRING,	JSDOCSTR("[string][,maxlen][,mode]")
-	,JSDOCSTR("get a string")
+	,JSDOCSTR("get a text string from the user, "
+		"see <tt>K_*</tt> in <tt>sbbsdefs.js</tt> for <i>mode</i> bits")
 	},		
 	{"getnum",			js_getnum,			0, JSTYPE_NUMBER,	JSDOCSTR("[maxnum]")
-	,JSDOCSTR("get a number")
+	,JSDOCSTR("get a number between 1 and <i>maxnum</i> from the user")
 	},		
 	{"getkeys",			js_getkeys,			1, JSTYPE_NUMBER,	JSDOCSTR("string keys [,maxnum]")
-	,JSDOCSTR("get one of a list of keys")
+	,JSDOCSTR("get one key from of a list of valid command <i>keys</i>, "
+		"or a number between 1 and <i>maxnum</i>")
 	},		
 	{"gettemplate",		js_gettemplate,		1, JSTYPE_STRING,	JSDOCSTR("format [,string] [,mode]")
 	,JSDOCSTR("get a string based on template")
