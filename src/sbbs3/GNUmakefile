@@ -165,28 +165,28 @@ vpath %.c $(XPDEV) $(UIFC)
 vpath %.cpp $(UIFC)
 
 # Implicit C Compile Rule for utils
-$(EXEODIR)/%.o : %.c
+$(EXEODIR)/%.o : %.c $(BUILD_DEPENDS)
    ifndef bcc
 	@echo $(COMPILE_MSG) $<
    endif
 	@$(CC) $(CFLAGS) -o $@ -c $<
 
 # Implicit C++ Compile Rule for utils
-$(EXEODIR)/%.o : %.cpp
+$(EXEODIR)/%.o : %.cpp $(BUILD_DEPENDS)
    ifndef bcc
 	@echo $(COMPILE_MSG) $<
    endif
 	@$(CCPP) $(CFLAGS) -o $@ -c $<
 
 # Implicit C Compile Rule for SBBS
-$(LIBODIR)/%.o : %.c
+$(LIBODIR)/%.o : %.c $(BUILD_DEPENDS)
    ifndef bcc
 	@echo $(COMPILE_MSG) $<
    endif
 	@$(CC) $(CFLAGS) $(SBBSDEFS) -o $@ -c $<
 
 # Implicit C++ Compile Rule for SBBS
-$(LIBODIR)/%.o : %.cpp
+$(LIBODIR)/%.o : %.cpp $(BUILD_DEPENDS)
    ifndef bcc
 	@echo $(COMPILE_MSG) $<
    endif
@@ -210,75 +210,75 @@ MONO_OBJS	= $(CON_OBJS) $(FTP_OBJS) $(WEB_OBJS) \
 			$(MAIL_OBJS) $(SERVICE_OBJS)
 
 # Monolithic Synchronet executable Build Rule
-$(SBBSMONO): $(MONO_OBJS) $(OBJS) $(LIBS) $(LIBODIR)/ver.o 
+$(SBBSMONO): $(MONO_OBJS) $(OBJS) $(LIBS) $(LIBODIR)/ver.o $(BUILD_DEPENDS)
     ifndef BUILD_DEPENDS
 	@echo Linking $@
 	@$(CCPP) -o $@ $(LFLAGS) $^
     endif
 
 # Synchronet BBS library Link Rule
-$(SBBS): $(OBJS) $(LIBS) $(LIBODIR)/ver.o
+$(SBBS): $(OBJS) $(LIBS) $(LIBODIR)/ver.o $(BUILD_DEPENDS)
     ifndef BUILD_DEPENDS
 	$(LD) $(LFLAGS) -S -o $(SBBS) $^ $(LIBS) -o $@
     endif
 
 # FTP Server Link Rule
-$(FTPSRVR): $(LIBODIR)/ftpsrvr.o $(SBBSLIB)
+$(FTPSRVR): $(LIBODIR)/ftpsrvr.o $(SBBSLIB) $(BUILD_DEPENDS)
     ifndef BUILD_DEPENDS
 	$(LD) $(LFLAGS) -S $^ $(LIBS) -o $@ 
     endif
 
 # Mail Server Link Rule
-$(MAILSRVR): $(MAIL_OBJS) $(SBBSLIB)
+$(MAILSRVR): $(MAIL_OBJS) $(SBBSLIB) $(BUILD_DEPENDS)
     ifndef BUILD_DEPENDS
 	$(LD) $(LFLAGS) -S $^ $(LIBS) -o $@
     endif
 
 # Synchronet Console Build Rule
-$(SBBSCON): $(CON_OBJS) $(SBBSLIB)
+$(SBBSCON): $(CON_OBJS) $(SBBSLIB) $(BUILD_DEPENDS)
     ifndef BUILD_DEPENDS
 	@$(CC) $(CFLAGS) -o $@ $^
     endif
 
 # Specifc Compile Rules
-$(LIBODIR)/ftpsrvr.o: ftpsrvr.c ftpsrvr.h
+$(LIBODIR)/ftpsrvr.o: ftpsrvr.c ftpsrvr.h $(BUILD_DEPENDS)
 	@echo $(COMPILE_MSG) $<
 	@$(CC) $(CFLAGS) -DFTPSRVR_EXPORTS -o $@ -c $<
 
-$(LIBODIR)/mailsrvr.o: mailsrvr.c mailsrvr.h
+$(LIBODIR)/mailsrvr.o: mailsrvr.c mailsrvr.h $(BUILD_DEPENDS)
 	@echo $(COMPILE_MSG) $<
 	@$(CC) $(CFLAGS) -DMAILSRVR_EXPORTS -o $@ -c $<
 
-$(LIBODIR)/mxlookup.o: mxlookup.c
+$(LIBODIR)/mxlookup.o: mxlookup.c $(BUILD_DEPENDS)
 	@echo $(COMPILE_MSG) $<
 	@$(CC) $(CFLAGS) -DMAILSRVR_EXPORTS -o $@ -c $<
 
-$(LIBODIR)/mime.o: mime.c
+$(LIBODIR)/mime.o: mime.c $(BUILD_DEPENDS)
 	@echo $(COMPILE_MSG) $<
 	@$(CC) $(CFLAGS) -DMAILSRVR_EXPORTS -o $@ -c $<		
 
-$(LIBODIR)/websrvr.o: websrvr.c websrvr.h
+$(LIBODIR)/websrvr.o: websrvr.c websrvr.h $(BUILD_DEPENDS)
 	@echo $(COMPILE_MSG) $<
 	@$(CC) $(CFLAGS) -DWEBSRVR_EXPORTS -o $@ -c $<
 
-$(LIBODIR)/base64.o: base64.c base64.h
+$(LIBODIR)/base64.o: base64.c base64.h $(BUILD_DEPENDS)
 	@echo $(COMPILE_MSG) $<
 	@$(CC) $(CFLAGS) -DWEBSRVR_EXPORTS -o $@ -c $<
 
-$(LIBODIR)/services.o: services.c services.h
+$(LIBODIR)/services.o: services.c services.h $(BUILD_DEPENDS)
 	@echo $(COMPILE_MSG) $<
 	@$(CC) $(CFLAGS) -DSERVICES_EXPORTS -o $@ -c $<
 
 # Baja Utility
 $(BAJA): $(EXEODIR)/baja.o $(EXEODIR)/ars.o $(EXEODIR)/crc32.o \
-	$(EXEODIR)/genwrap.o $(EXEODIR)/filewrap.o
+	$(EXEODIR)/genwrap.o $(EXEODIR)/filewrap.o $(BUILD_DEPENDS)
     ifndef BUILD_DEPENDS
 	@echo Linking $@
 	@$(CC) -o $@ $^
     endif
 
 # Node Utility
-$(NODE): $(EXEODIR)/node.o $(EXEODIR)/genwrap.o $(EXEODIR)/filewrap.o
+$(NODE): $(EXEODIR)/node.o $(EXEODIR)/genwrap.o $(EXEODIR)/filewrap.o $(BUILD_DEPENDS)
     ifndef BUILD_DEPENDS
 	@echo Linking $@
 	@$(CC) -o $@ $^ 
@@ -287,14 +287,14 @@ $(NODE): $(EXEODIR)/node.o $(EXEODIR)/genwrap.o $(EXEODIR)/filewrap.o
 SMBLIB = $(EXEODIR)/smblib.o $(EXEODIR)/filewrap.o $(EXEODIR)/crc16.o
 
 # FIXSMB Utility
-$(FIXSMB): $(EXEODIR)/fixsmb.o $(SMBLIB) $(EXEODIR)/genwrap.o $(EXEODIR)/str_util.o
+$(FIXSMB): $(EXEODIR)/fixsmb.o $(SMBLIB) $(EXEODIR)/genwrap.o $(EXEODIR)/str_util.o $(BUILD_DEPENDS)
     ifndef BUILD_DEPENDS
 	@echo Linking $@
 	@$(CC) -o $@ $^
     endif
 
 # CHKSMB Utility
-$(CHKSMB): $(EXEODIR)/chksmb.o $(SMBLIB) $(EXEODIR)/conwrap.o $(EXEODIR)/dirwrap.o $(EXEODIR)/genwrap.o
+$(CHKSMB): $(EXEODIR)/chksmb.o $(SMBLIB) $(EXEODIR)/conwrap.o $(EXEODIR)/dirwrap.o $(EXEODIR)/genwrap.o $(BUILD_DEPENDS)
     ifndef BUILD_DEPENDS
 	@echo Linking $@
 	@$(CC) -o $@ $^
@@ -303,7 +303,7 @@ $(CHKSMB): $(EXEODIR)/chksmb.o $(SMBLIB) $(EXEODIR)/conwrap.o $(EXEODIR)/dirwrap
 # SMB Utility
 $(SMBUTIL): $(EXEODIR)/smbutil.o $(SMBLIB) $(EXEODIR)/conwrap.o $(EXEODIR)/dirwrap.o \
 	$(EXEODIR)/genwrap.o $(EXEODIR)/smbtxt.o $(EXEODIR)/crc32.o $(EXEODIR)/lzh.o \
-	$(EXEODIR)/date_str.o $(EXEODIR)/str_util.o
+	$(EXEODIR)/date_str.o $(EXEODIR)/str_util.o $(BUILD_DEPENDS)
     ifndef BUILD_DEPENDS
 	@echo Linking $@
 	@$(CC) -o $@ $^
@@ -328,7 +328,7 @@ $(SBBSECHO): \
 	$(EXEODIR)/genwrap.o \
 	$(SMBLIB) \
 	$(EXEODIR)/smbtxt.o \
-	$(EXEODIR)/lzh.o
+	$(EXEODIR)/lzh.o $(BUILD_DEPENDS)
     ifndef BUILD_DEPENDS
 	@echo Linking $@
 	@$(CC) -o $@ $^
@@ -344,7 +344,7 @@ $(ECHOCFG): \
 	$(EXEODIR)/str_util.o \
 	$(EXEODIR)/filewrap.o \
 	$(EXEODIR)/genwrap.o \
-	$(EXEODIR)/dirwrap.o
+	$(EXEODIR)/dirwrap.o $(BUILD_DEPENDS)
     ifndef BUILD_DEPENDS
 	@echo Linking $@
 	@$(CC) -o $@ $^ $(UIFC_LFLAGS)
@@ -365,7 +365,7 @@ $(ADDFILES): \
 	$(EXEODIR)/filedat.o \
 	$(EXEODIR)/filewrap.o \
 	$(EXEODIR)/dirwrap.o \
-	$(EXEODIR)/genwrap.o
+	$(EXEODIR)/genwrap.o $(BUILD_DEPENDS)
     ifndef BUILD_DEPENDS
 	@echo Linking $@
 	@$(CC) -o $@ $^
@@ -386,7 +386,7 @@ $(FILELIST): \
 	$(EXEODIR)/filedat.o \
 	$(EXEODIR)/filewrap.o \
 	$(EXEODIR)/dirwrap.o \
-	$(EXEODIR)/genwrap.o
+	$(EXEODIR)/genwrap.o $(BUILD_DEPENDS)
     ifndef BUILD_DEPENDS
 	@echo Linking $@
 	@$(CC) -o $@ $^
@@ -407,7 +407,7 @@ $(MAKEUSER): \
 	$(EXEODIR)/userdat.o \
 	$(EXEODIR)/filewrap.o \
 	$(EXEODIR)/dirwrap.o \
-	$(EXEODIR)/genwrap.o
+	$(EXEODIR)/genwrap.o $(BUILD_DEPENDS)
     ifndef BUILD_DEPENDS
 	@echo Linking $@
 	@$(CC) -o $@ $^
@@ -416,7 +416,9 @@ $(MAKEUSER): \
 depend:
 	@$(DELETE) $(LIBODIR)/.depend
 	@$(DELETE) $(EXEODIR)/.depend
-	$(MAKE) BUILD_DEPENDS=1
+	$(MAKE) BUILD_DEPENDS=notarealfile
+
+$(BUILD_DEPENDS):
 
 -include $(LIBODIR)/.depend
 -include $(EXEODIR)/.depend
