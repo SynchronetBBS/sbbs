@@ -35,5 +35,4 @@
 <a href="attachments.ssjs/^^sub:code^^/^^hdr:number^^/^^attachments:name^^">%%attachments:name%%</a><br />
 <<END REPEAT attachments>>
 @@JS:if(template.attachments==undefined) '-->'; else '';@@
-<p class="msgcenter"><a href="reply.ssjs?msg_sub=^^sub:code^^&amp;reply_to=^^hdr:number^^">Reply</a></p>
-
+<p class="msgcenter"><a href="reply.ssjs?msg_sub=^^sub:code^^&amp;reply_to=^^hdr:number^^">Reply</a> <a href="management.ssjs?Action=Delete+Message%28s%29&amp;msg_sub=^^sub:code^^&amp;number=^^hdr:number^^">Delete</a></p>
