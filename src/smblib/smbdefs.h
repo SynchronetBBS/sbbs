@@ -518,6 +518,7 @@ typedef struct {			// Message base
 	smbstatus_t status; 	// Status header record
 	char	shd_buf[SHD_BLOCK_LEN]; 	// File I/O buffer for header file
 	char	last_error[128];			// Last error message
+	uint	subnum;			// Sub-board number (not initialized by smblib)
 
     } smb_t;
 
