@@ -3,8 +3,11 @@
 <input type="hidden" name="msg_sub" value="%%sub:code%%" />
   <tbody>
     <tr>
+      <td class="postmsg" colspan="2">Posting in <b>@@group:name@@ : @@sub:description@@</b>
+    <tr>
       <td class="postmsg">Subject: <input class="postmsg" type="text" name="subject" value="" /></td>
-      <td class="postmsg">To: <input class="postmsg" type="text" name="to" value="All" /></td>
+      <td class="postmsg">To: <input class="postmsg" type="text" name="to" 
+        @@JS:template.sub.code=='mail' ? "" : "value='All'"@@ /></td>
     </tr>
 	<tr>
 	  <td class="postmsg" colspan="2">@@anonnote@@</td>
