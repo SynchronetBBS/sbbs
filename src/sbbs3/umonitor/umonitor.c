@@ -8,8 +8,10 @@
 #include "uifc.h"
 #include "sbbsdefs.h"
 #include "genwrap.h"	/* stricmp */
+#include "dirwrap.h"	/* lock/unlock/sopen */
 #include "filewrap.h"	/* lock/unlock/sopen */
 #include "sockwrap.h"
+#include "genwrap.h"
 
 enum {
 	 MODE_LIST
@@ -531,12 +533,15 @@ int main(int argc, char** argv)  {
 	int		server=0;
 	char revision[16];
 	char str[256],ctrl_dir[41],*p,debug=0;
+	char title[256];
 	int sys_nodes,node_num=0,onoff=0;
 	int i,j,mode=0,misc;
 	int	modify=0;
 	int loop=0;
 	long value=0;
 	node_t node;
+	char	*buf;
+	int		buffile;
 
 	sscanf("$Revision$", "%*s %s", revision);
 
@@ -619,8 +624,8 @@ int main(int argc, char** argv)  {
 		if((mopt[i]=(char *)MALLOC(MAX_OPLN))==NULL)
 			allocfail(MAX_OPLN);
 
-	sprintf(str,"Synchronet UNIX Monitor %s-%s",revision,PLATFORM_DESC);
-	if(uifc.scrn(str)) {
+	sprintf(title,"Synchronet UNIX Monitor %s-%s",revision,PLATFORM_DESC);
+	if(uifc.scrn(title)) {
 		printf(" USCRN (len=%d) failed!\n",uifc.scrn_len+1);
 		bail(1);
 	}
@@ -636,8 +641,37 @@ int main(int argc, char** argv)  {
 						"\nToDo: Add help.";
 						
 		j=uifc.list(WIN_ORG|WIN_MID|WIN_ESC|WIN_ACT|WIN_DYN,0,0,70,&main_dflt,&main_bar
-			,str,mopt);
-		if(j==-2)
+			,title,mopt);
+
+		if(j==-7) {	/* CTRL-E */
+			/* ToDo must get the logs dir from the config */
+			sprintf(str,"%s../data/error.log",ctrl_dir);
+			if(fexist(str)) {
+				if((buffile=sopen(str,O_RDONLY,SH_DENYRW))>=0) {
+					j=filelength(buffile);
+					if((buf=(char *)MALLOC(j+1))!=NULL) {
+						read(buffile,buf,j);
+						close(buffile);
+						*(buf+j)=0;
+						uifc.helpbuf=buf;
+						uifc.helptitle="Error Log";
+						uifc.showhelp();
+						uifc.helptitle=NULL;
+						free(buf);
+						continue;
+					}
+					close(buffile);
+					continue;
+				}
+				uifc.msg("Error reading error log");
+			}
+			else {
+				uifc.msg("Error log does not exist");
+			}
+			continue;
+		}
+
+		if(j <= -2)
 			continue;
 
 		if(j==-1) {

@@ -135,10 +135,17 @@ static void upop(char *str);
 static void sethelp(int line, char* file);
 
 /* Dynamic menu support */
-static int *last_menu_cur;
-static int *last_menu_bar;
+static int *last_menu_cur=NULL;
+static int *last_menu_bar=NULL;
 static int save_menu_cur=-1;
 static int save_menu_bar=-1;
+
+void reset_dynamic(void) {
+	*last_menu_cur=NULL;
+	*last_menu_bar=NULL;
+	save_menu_cur=-1;
+	save_menu_bar=-1;
+}
 
 int inkey(int mode)
 {
@@ -175,6 +182,7 @@ int uifcinic(uifcapi_t* uifcapi)
     api->sethelp=sethelp;
 #ifdef __unix__
     api->showhelp=help;
+	api->helptitle=NULL;
 #endif
 
 #if defined(LOCALE)
@@ -341,6 +349,7 @@ int uscrn(char *str)
     gotoxy(1,api->scrn_len+1);
     clrtoeol();
 	refresh();
+	reset_dynamic();
     return(0);
 }
 
@@ -1631,6 +1640,7 @@ void upop(char *str)
 	char buf[26*3*2];
 	int i,j,k;
 
+	reset_dynamic();
 	hidemouse();
 	if(!str) {
 		puttext(28,12,53,14,sav);
@@ -1707,22 +1717,40 @@ void help()
 	for(i=1;i<76*21*2;i+=2)
 		buf[i]=(hclr|(bclr<<4));
         buf[0]='Ú';
-	for(i=2;i<30*2;i+=2)
-          buf[i]='Ä';
-    buf[i]='´'; i+=4;
-	buf[i]='O'; i+=2;
-	buf[i]='n'; i+=2;
-	buf[i]='l'; i+=2;
-	buf[i]='i'; i+=2;
-	buf[i]='n'; i+=2;
-	buf[i]='e'; i+=4;
-	buf[i]='H'; i+=2;
-	buf[i]='e'; i+=2;
-	buf[i]='l'; i+=2;
-	buf[i]='p'; i+=4;
-    buf[i]='Ã'; i+=2;
-	for(j=i;j<i+(30*2);j+=2)
-        buf[j]='Ä';
+	if(api->helptitle==NULL) {
+		for(i=2;i<30*2;i+=2)
+    	      buf[i]='Ä';
+	    buf[i]='´'; i+=4;
+		buf[i]='O'; i+=2;
+		buf[i]='n'; i+=2;
+		buf[i]='l'; i+=2;
+		buf[i]='i'; i+=2;
+		buf[i]='n'; i+=2;
+		buf[i]='e'; i+=4;
+		buf[i]='H'; i+=2;
+		buf[i]='e'; i+=2;
+		buf[i]='l'; i+=2;
+		buf[i]='p'; i+=4;
+    	buf[i]='Ã'; i+=2;
+		for(j=i;j<i+(30*2);j+=2)
+    	    buf[j]='Ä';
+	}
+	else {
+		j=strlen(api->helptitle);
+		if(j>70)
+			*(api->helptitle+70)=0;
+		for(i=2;i<(35-(j/2))*2;i+=2)
+    	      buf[i]='Ä';
+	    buf[i]='´'; i+=4;
+		for(p=api->helptitle;*p;p++) {
+			buf[i]=*p;
+			i+=2;
+		}
+		i+=2;
+    	buf[i]='Ã'; i+=2;
+		for(j=i;j<(75*2);j+=2)
+    	    buf[j]='Ä';
+	}
 	i=j;
     buf[i]='¿'; i+=2;
 	j=i;	/* leave i alone */
