@@ -4,4 +4,4 @@
 <TITLE>%%title%%</TITLE>
 </HEAD>
 <BODY>
-<P align="center"><H1>%%JS:system.name%%</H1></P>
+<P align="center"><H3>%%JS:system.name%%</H3></P>
