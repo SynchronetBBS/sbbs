@@ -67,7 +67,8 @@ extern "C" BOOL DLLCALL hacklog(scfg_t* cfg, char* prot, char* user, char* text,
 	return(TRUE);
 }
 
-extern "C" BOOL DLLCALL spamlog(scfg_t* cfg, char* prot, char* reason, char* host, char* ip_addr, char* to)
+extern "C" BOOL DLLCALL spamlog(scfg_t* cfg, char* prot, char* action,
+								char* reason, char* host, char* ip_addr, char* to)
 {
 	char	hdr[512];
 	char	to_user[128];
@@ -86,8 +87,9 @@ extern "C" BOOL DLLCALL spamlog(scfg_t* cfg, char* prot, char* reason, char* hos
 	else
 		sprintf(to_user,"to: %s",to);
 		
-	sprintf(hdr,"SUSPECTED %s SPAM REJECTED on %.24s\r\nFrom: %s [%s] %s\r\nReason: "
+	sprintf(hdr,"SUSPECTED %s SPAM %s on %.24s\r\nFrom: %s [%s] %s\r\nReason: "
 		,prot
+		,action
 		,timestr(cfg,&now,tstr)
 		,host
 		,ip_addr
