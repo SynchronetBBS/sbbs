@@ -297,7 +297,7 @@ while(client.socket.is_connected) {
 						,hdr.from,system.inetaddr));
 				writeln("Subject: " + hdr.subject);
 				writeln("Message-ID: " + hdr.id);
-				writeln("Date: " + system.timestr(hdr.when_written_time));
+				writeln("Date: " + hdr.date);
 				writeln("References: " + hdr.reply_id);
 				writeln("Newsgroups: " + selected.newsgroup);
 			}
@@ -390,6 +390,9 @@ while(client.socket.is_connected) {
 					case "from":
 						if(user.security.restrictions&(UFLAG_G|UFLAG_Q)) // Guest or Network Node
 							hdr.from=data;
+						break;
+					case "date":
+						hdr.date=data;
 						break;
 					case "subject":
 						hdr.subject=data;
