@@ -1,4 +1,4 @@
-<P><A HREF="http://freebsd.synchro.net/">Home</A> : <A HREF="groups.ssjs">Groups</A> : <A HREF="subs.ssjs?msg_grp=^^group:number^^">%%group:description%%</A> :
+<P><A HREF="http://freebsd.synchro.net/">Home</A> : <A HREF="index.ssjs">Groups</A> : <A HREF="subs.ssjs?msg_grp=^^group:number^^">%%group:description%%</A> :
 <A HREF="msgs.ssjs?msg_grp=^^group:number^^&msg_sub=^^sub:code^^">%%sub:description%%</A></P>
 <TABLE BORDER=0>
 <TR><TD>Subject:</TD><TD WIDTH="100%">%%hdr:subject%%</TD></TR>
