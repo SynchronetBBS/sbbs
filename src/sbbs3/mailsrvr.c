@@ -2181,13 +2181,13 @@ static void smtp_thread(void* arg)
 					for(tp=rcpt_name;*tp;tp++)	
 						if(*tp=='.') *tp=' ';
 
-					if(!stricmp(rcpt_name,scfg.sys_op))
+					if(!stricmp(p,scfg.sys_op) || !stricmp(rcpt_name,scfg.sys_op))
 						usernum=1;			/* RX by "sysop.alias" */
 
-					if(!usernum)			/* RX by "real name" */
+					if(!usernum && scfg.msg_misc&MM_REALNAME)	/* RX by "real name" */
 						usernum=userdatdupe(&scfg, 0, U_NAME, LEN_NAME, p, FALSE);
 
-					if(!usernum)			/* RX by "real.name" */
+					if(!usernum && scfg.msg_misc&MM_REALNAME)	/* RX by "real.name" */
 						usernum=userdatdupe(&scfg, 0, U_NAME, LEN_NAME, rcpt_name, FALSE);
 				}
 			}

@@ -289,6 +289,10 @@
 									/* Bit values for cfg.file_misc				*/
 #define FM_NO_LFN	(1<<0)			/* No long filenames in listings			*/
 
+									/* Bit values for cfg.msg_misc				*/
+#define MM_REALNAME	(1<<16)			/* Allow receipt of e-mail using real names	*/
+
+
 enum {								/* errormsg() codes */
 	 ERR_OPEN						/* opening a file */
 	,ERR_CLOSE						/* close a file */
