@@ -320,7 +320,7 @@ int write_flofile(char *attachment, faddr_t dest)
 		sprintf(fname,"%s%08x.%clo",outbound,dest.point,ch);
 	else
 		sprintf(fname,"%s%04x%04x.%clo",outbound,dest.net,dest.node,ch);
-	if((stream=fnopen(&file,fname,O_WRONLY|O_CREAT))==NULL) {
+	if((stream=fnopen(&file,fname,O_WRONLY|O_CREAT|O_TRUNC))==NULL) {
 		printf("\7ERROR line %d opening %s %s\n",__LINE__,fname,sys_errlist[errno]);
 		logprintf("ERROR line %d opening %s %s",__LINE__,fname,sys_errlist[errno]);
 		return(-1); }
