@@ -781,6 +781,8 @@ ODAPIDEF void ODCALL od_sleep(tODMilliSec Milliseconds)
 #ifdef ODPLAT_NIX
    struct timeval tv;
    struct timeval start;
+   long long started;
+   long long left
 #endif
    /* Log function entry if running in trace mode. */
    TRACE(TRACE_API, "od_sleep()");
@@ -820,19 +822,16 @@ ODAPIDEF void ODCALL od_sleep(tODMilliSec Milliseconds)
    }
    else  {
       gettimeofday(&start,NULL);
-	  start.tv_sec += Milliseconds/1000;
-	  start.tv_usec += (Milliseconds*1000)%1000000;
-
+	  started=start.tv_sec*1000+(start.tv_usec/1000);
 
       while(1)  {
 	     /* This is timing sensitive and *MUST* wait for at least Milliseconds regardless of 100% CPU or signals */
          gettimeofday(&tv,NULL);
-         tv.tv_sec -= (start.tv_sec + Milliseconds/1000);
-         tv.tv_usec -= (start.tv_usec + ((Milliseconds*1000)%1000000));
-         if(tv.tv_usec < 0) {
-            tv.tv_sec--;
-            tv.tv_usec += 1000000;
-         }
+		 left=tv.tv_sec*1000+(tv.tv_usec/1000);
+		 left-=started;
+		 left=Milliseconds-left;
+         tv.tv_sec = left/1000;
+         tv.tv_usec = (left*1000)%1000000;
          if(tv.tv_sec<0 || tv.tv_usec<0)
             break;
          if(!select(0,NULL,NULL,NULL,&tv))
