@@ -63,8 +63,8 @@ static void js_finalize_queue(JSContext *cx, JSObject *obj)
 	if((q=(msg_queue_t*)JS_GetPrivate(cx,obj))==NULL)
 		return;
 	
-	if(msgQueueDetach(q)==0 && (n=listFindNode(&named_queues,q,0))!=NULL)
-		listRemoveNode(&named_queues,n);
+	if(msgQueueDetach(q)==0 && (n=listFindNode(&named_queues,q,/* length=0 for ptr compare */0))!=NULL)
+		listRemoveNode(&named_queues,n,TRUE);
 
 	JS_SetPrivate(cx, obj, NULL);
 }
