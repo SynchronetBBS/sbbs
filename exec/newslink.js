@@ -270,6 +270,7 @@ for(i in area) {
 				,antispam,hdr.from
 				,antispam,system.inetaddr));
 		writeln("To: " + hdr.to);
+		writeln("X-Comment-To: " + hdr.to);
 		writeln("Subject: " + hdr.subject);
 		writeln("Message-ID: " + hdr.id);
 		writeln("Date: " + hdr.date);
@@ -375,6 +376,7 @@ for(i in area) {
 			switch(line.toLowerCase()) {
 				case "to":
 				case "apparently-to":
+				case "x-comment-to":
 					hdr.to=data;
 					break;
 				case "from":

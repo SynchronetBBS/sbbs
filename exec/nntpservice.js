@@ -305,6 +305,7 @@ while(client.socket.is_connected) {
 						,hdr.from
 						,hdr.from,system.inetaddr));
 				writeln("To: " + hdr.to);
+				writeln("X-Comment-To: " + hdr.to);
 				writeln("Subject: " + hdr.subject);
 				writeln("Message-ID: " + hdr.id);
 				writeln("Date: " + hdr.date);
@@ -404,6 +405,7 @@ while(client.socket.is_connected) {
 				switch(line.toLowerCase()) {
 					case "to":
 					case "apparently-to":
+					case "x-comment-to"
 						hdr.to=data;
 						break;
 					case "from":
