@@ -47,6 +47,9 @@ var hdr = { from: http_request.query.from,
 			to: http_request.query.to,
 			subject: http_request.query.subject };
 
+if(http_request.query.email)	// Use form-specified email address
+	hdr.from=http_request.query.email;
+
 hdr.to_net_type=netaddr_type(hdr.to);
 if(hdr.to_net_type!=NET_NONE)
 	hdr.to_net_addr=hdr.to;
