@@ -1247,6 +1247,7 @@ int ugetstr(int left, int top, char *outstr, int max, long mode, int *lastkey)
 	uchar   str[256],ins=0,buf[256],y;
 	int		ch;
 	int     i,j,k,f=0;	/* i=offset, j=length */
+	BOOL	gotdecimal=FALSE;
 
 	gotoxy(left,top);
 	cursor=_NORMALCURSOR;
@@ -1358,6 +1359,8 @@ int ugetstr(int left, int top, char *outstr, int max, long mode, int *lastkey)
 							gotoxy(wherex()-((j-i)+2),y);
 							i--;
 							j--;
+							if(str[i]=='.')
+								gotdecimal=FALSE;
 							for(k=i;k<j;k++)
 								str[k]=str[k+1]; 
 						}
@@ -1413,6 +1416,13 @@ int ugetstr(int left, int top, char *outstr, int max, long mode, int *lastkey)
 			}
 			if(mode&K_NUMBER && !isdigit(ch))
 				continue;
+			if(mode&K_DECIMAL && !isdigit(ch)) {
+				if(ch!='.')
+					continue;
+				if(gotdecimal)
+					continue;
+				gotdecimal=TRUE;
+			}
 			if(mode&K_ALPHA && !isalpha(ch))
 				continue;
 			if((ch>=SP || (ch==1 && mode&K_MSG)) && i<max && (!ins || j<max) && isprint(ch))
