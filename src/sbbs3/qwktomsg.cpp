@@ -455,10 +455,10 @@ bool sbbs_t::qwktomsg(FILE *qwk_fp, char *hdrblk, char fromhub, uint subnum
 					smb_hfield_str(&msg,FIDOREPLYID,remsg.ftn_msgid);
 
 				smb_updatethread(&smb,&remsg,smb.status.last_msg+1);
+				smb_freemsgmem(&remsg);
 			}
 
 			smb_unlockmsghdr(&smb,&remsg);
-			smb_freemsgmem(&remsg);
 		}
 	}
 
