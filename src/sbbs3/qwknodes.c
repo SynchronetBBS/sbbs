@@ -139,8 +139,8 @@ int nopen(char *str, int access)
 if(access==O_RDONLY) share=SH_DENYWR;
 	else share=SH_DENYRW;
 while(((file=sopen(str,O_BINARY|access,share,S_IWRITE))==-1)
-	&& errno==EACCES && count++<LOOP_NOPEN);
-if(file==-1 && errno==EACCES)
+	&& (errno==EACCES errno==EAGAIN) && count++<LOOP_NOPEN);
+if(file==-1 && (errno==EACCES || errno==EAGAIN))
 	lputs("\7\r\nNOPEN: ACCESS DENIED\r\n\7");
 return(file);
 }

@@ -72,7 +72,7 @@ int nopen(char *str, int access)
 	if(!(access&O_TEXT))
 		access|=O_BINARY;
     while(((file=sopen(str,access,share))==-1)
-        && errno==EACCES && count++<LOOP_NOPEN)
+        && (errno==EACCES || errno==EAGAIN) && count++<LOOP_NOPEN)
         if(count)
             mswait(100);
     return(file);

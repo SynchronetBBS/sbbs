@@ -212,7 +212,7 @@ int SMBCALL smb_open_da(smb_t* smb)
 	while(1) {
 		if((file=sopen(str,O_RDWR|O_CREAT|O_BINARY,SH_DENYRW))!=-1)
 			break;
-		if(errno!=EACCES) {
+		if(errno!=EACCES && errno!=EAGAIN) {
 			sprintf(smb->last_error,"%d opening %s",errno,str);
 			return(-1);
 		}
@@ -257,7 +257,7 @@ int SMBCALL smb_open_ha(smb_t* smb)
 	while(1) {
 		if((file=sopen(str,O_RDWR|O_CREAT|O_BINARY,SH_DENYRW))!=-1)
 			break;
-		if(errno!=EACCES) {
+		if(errno!=EACCES && errno!=EAGAIN) {
 			sprintf(smb->last_error,"%d opening %s",errno,str);
 			return(-1);
 		}
@@ -351,7 +351,7 @@ int SMBCALL smb_trunchdr(smb_t* smb)
 	while(1) {
 		if(!chsize(fileno(smb->shd_fp),0L))
 			break;
-		if(errno!=EACCES) {
+		if(errno!=EACCES && errno!=EAGAIN) {
 			sprintf(smb->last_error,"%d changing header file size",errno);
 			return(-1);
 		}
@@ -914,7 +914,7 @@ int SMBCALL smb_addcrc(smb_t* smb, ulong crc)
 	while(1) {
 		if((file=sopen(str,O_RDWR|O_CREAT|O_BINARY,SH_DENYRW))!=-1)
 			break;
-		if(errno!=EACCES) {
+		if(errno!=EACCES && errno!=EAGAIN) {
 			sprintf(smb->last_error,"%d opening %s", errno, str);
 			return(-1);
 		}
