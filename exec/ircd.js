@@ -26,7 +26,7 @@ load("nodedefs.js");
 // IF you're making a custom version, it'd be appreciated if you left the
 // version number alone, and add a token in the form of +hack (i.e. 1.0+cyan)
 // This is so everyone knows your revision base, AND type of hack used.
-var version = "1.0+pre8";
+var version = "1.0b";
 // This will dump all I/O to and from the server to your Synchronet console.
 // It also enables some more verbose WALLOPS, especially as they pertain to
 // blocking functions.
@@ -2150,6 +2150,7 @@ function IRCClient_registered_commands(command, cmdline) {
 				kick_reason = this.nick;
 			str = "KICK " + chanid.nam + " " + nickid.nick + " :" + kick_reason;
 			this.bcast_to_channel(chanid.nam, str, true);
+			this.bcast_to_servers(str);
 			nickid.rmchan(Channels[chanid.nam.toUpperCase()]);
 			break;
 		case "KILL":
@@ -2175,7 +2176,8 @@ function IRCClient_registered_commands(command, cmdline) {
 				target = searchbynick(kills[kill]);
 				if (target) {
 					server_wallops("/KILL: " + this.nick + " -> " + target.nick + " (" + reason + ")");
-					target.quit("KILLED by " + this.nick + " (" + reason + ")",true);
+					server_bcast_to_servers(":" + this.nick + " KILL " + target.nick + " :" + reason);
+					target.quit("KILLED by " + this.nick + " (" + reason + ")",false);
 				} else {
 					this.numeric401(kills[kill]);
 				}
@@ -2816,6 +2818,7 @@ function IRCClient_server_commands(origin, command, cmdline) {
 				kick_reason = ThisOrigin.nick;
 			str = "KICK " + chanid.nam + " " + nickid.nick + " :" + kick_reason;
 			ThisOrigin.bcast_to_channel(chanid.nam, str, false);
+			this.bcast_to_servers_raw(":" + ThisOrigin.nick + " " + str);
 			nickid.rmchan(Channels[chanid.nam.toUpperCase()]);
 			break;
 		case "JOIN":
@@ -2932,7 +2935,8 @@ function IRCClient_server_commands(origin, command, cmdline) {
 			for(kill in kills) {
 				target = searchbynick(kills[kill]);
 				if (target) {
-					target.quit(reason,false);
+					this.bcast_to_servers_raw(":" + ThisOrigin.nick + " KILL " + target.nick + " :" + reason);
+					target.quit("KILLED by " + ThisOrigin.nick + " (" + reason + ")",false);
 				}
 			}
 			break;
@@ -2964,8 +2968,8 @@ function IRCClient_server_commands(origin, command, cmdline) {
 			    parseInt(cmd[3]) ) ) {
 				// Nuke our side of things, allow this newly
 				// introduced nick to overrule.
-				collide.quit("Nickname Collision");
 				this.bcast_to_servers("KILL " + collide.nick + " :Nickname Collision.");
+				collide.quit("Nickname Collision");
 			}
 			if (cmd[2][0] == ":") {
 				cmd[2] = cmd[2].slice(1);
@@ -3082,6 +3086,16 @@ function IRCClient_server_commands(origin, command, cmdline) {
 			chan.topicchangedby = cmd[1];
 			str = "TOPIC " + chan.nam + " :" + chan.topic;
 			this.bcast_to_channel(chan.nam,str,false);
+			break;
+		case "AKILL":
+			if (!cmd[6])
+				break;
+			this_uh = cmd[2] + "@" + cmd[1];
+			if (isklined(this_uh))
+				break;
+			KLines.push(new KLine(this_uh,ircstring(cmdline),"A"));
+			this.bcast_to_servers_raw(":" + ThisOrigin.nick + " " + cmdline);
+			scan_for_klined_clients();
 			break;
 		default:
 			break;
