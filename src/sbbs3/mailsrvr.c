@@ -2328,8 +2328,6 @@ BOOL bounce(smb_t* smb, smbmsg_t* msg, char* err, BOOL immediate)
 		smb_unlockmsghdr(smb,msg);
 		return(TRUE);
 	}
-	
-	lprintf("0000 !Bouncing message back to %s", msg->from);
 
 	newmsg=*msg;
 	/* Mark original message as deleted */
@@ -2344,6 +2342,13 @@ BOOL bounce(smb_t* smb, smbmsg_t* msg, char* err, BOOL immediate)
 	if(msg->hdr.auxattr&MSG_FILEATTACH)
 		delfattach(&scfg,msg);
 	smb_unlockmsghdr(smb,msg);
+
+	if(!msg->idx.from && !msg->from_net.type) {
+		lprintf("0000 !Deleted undeliverable local message from %s", msg->from);
+		return(TRUE);
+	}
+	
+	lprintf("0000 !Bouncing message back to %s", msg->from);
 
 	newmsg.hfield=NULL;
 	newmsg.hfield_dat=NULL;
