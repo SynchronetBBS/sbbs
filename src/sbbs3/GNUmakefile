@@ -46,7 +46,7 @@ else
   COMPILE_MSG	:= Depending
  else
   CC		=	gcc
-  CCPP	=	c++
+  CCPP	=	g++
   LD		=	ld
   COMPILE_MSG	:= Compiling
  endif
