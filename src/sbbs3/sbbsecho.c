@@ -367,7 +367,7 @@ int write_flofile(char *attachment, faddr_t dest)
 		|| outbound[strlen(outbound)-1]=='/')
 		outbound[strlen(outbound)-1]=0;
 	MKDIR(outbound);
-	strcat(outbound,"/");
+	backslash(outbound);
 	if(dest.point)
 		sprintf(fname,"%s%08x.%clo",outbound,dest.point,ch);
 	else
@@ -1654,7 +1654,7 @@ void pack_bundle(char *infile,faddr_t dest)
 		|| outbound[strlen(outbound)-1]=='/')
 		outbound[strlen(outbound)-1]=0;
 	MKDIR(outbound);
-	strcat(outbound,"/");
+	backslash(outbound);
 
 	if(node<cfg.nodecfgs)
 		if(cfg.nodecfg[node].arctype==0xffff) {    /* Uncompressed! */
@@ -3441,7 +3441,7 @@ int import_netmail(char *path,fmsghdr_t hdr, FILE *fidomsg)
 			sprintf(str,"%s%s",scfg.fidofile_dir,tp);
 			sprintf(tmp,"%sFILE/%04u.IN",scfg.data_dir,usernumber);
 			MKDIR(tmp);
-			strcat(tmp,"/");
+			backslash(tmp);
 			strcat(tmp,tp);
 			mv(str,tmp,0);
 			if(!p)
@@ -4695,7 +4695,7 @@ for(f=0;f<g.gl_pathc && !kbhit();f++) {
 			|| outbound[strlen(outbound)-1]=='/')
 			outbound[strlen(outbound)-1]=0;
 		MKDIR(outbound);
-		strcat(outbound,"/");
+		backslash(outbound);
 		if(addr.point)
 			sprintf(packet,"%s%08X.%cUT",outbound,addr.point,ch);
 		else
