@@ -58,8 +58,8 @@ static JSClass js_file_area_class = {
 	,JS_FinalizeStub		/* finalize		*/
 };
 
-JSObject* DLLCALL js_CreateFileAreaObject(scfg_t* cfg, JSContext* cx, JSObject* parent, user_t* user
-										  ,char* html_index_file)
+JSObject* DLLCALL js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scfg_t* cfg
+										  ,user_t* user, char* html_index_file)
 {
 	char		vpath[MAX_PATH+1];
 	JSObject*	areaobj;

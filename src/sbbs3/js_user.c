@@ -1,4 +1,4 @@
-/* userobj.c */
+/* js_user.c */
 
 /* Synchronet JavaScript "User" Object */
 
@@ -435,7 +435,7 @@ static JSClass js_user_security_class = {
 	,JS_FinalizeStub		/* finalize		*/
 };
 
-JSObject* DLLCALL js_CreateUserObject(scfg_t* cfg, JSContext* cx, JSObject* parent, char* name, user_t* user)
+JSObject* DLLCALL js_CreateUserObject(JSContext* cx, JSObject* parent, scfg_t* cfg, char* name, user_t* user)
 {
 	JSObject*	userobj;
 	JSObject*	statsobj;

@@ -166,7 +166,7 @@ static JSFunctionSpec js_global_functions[] = {
 	{0}
 };
 
-JSObject* DLLCALL js_CreateGlobalObject(scfg_t* cfg, JSContext* cx)
+JSObject* DLLCALL js_CreateGlobalObject(JSContext* cx, scfg_t* cfg)
 {
 	JSObject*	glob;
 

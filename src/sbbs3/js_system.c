@@ -522,7 +522,7 @@ static JSClass js_node_class = {
 
 extern const char* beta_version;
 
-JSObject* DLLCALL js_CreateSystemObject(scfg_t* cfg, JSContext* cx, JSObject* parent)
+JSObject* DLLCALL js_CreateSystemObject(JSContext* cx, JSObject* parent, scfg_t* cfg)
 {
 	char		str[256];
 	uint		i;
