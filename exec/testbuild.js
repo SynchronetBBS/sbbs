@@ -59,23 +59,27 @@ if(platform=="win32") {
 
 chdir(temp_dir);
 
-var body = "System: " + system.local_host_name + " - " + system.os_version + "\n\n";
+var system_description=system.local_host_name + " - " + system.os_version;
 
 var file = new File("README.TXT");
 if(file.open("wt")) {
 	file.writeln(format("Synchronet-%s C/C++ Source Code Archive (%s)\n"
 		,system.platform, system.datestr()));
-	file.writeln("This archive contains a successful " + system.platform + " build");
-	file.writeln("of the following Synchronet projects as of " + system.timestr());
-	file.writeln("using the command-lines shown:");
+	file.writeln("This archive contains a snap-shot of all the source code and library files"
+	file.writeln("necessary for a successful " + system.platform + " build of the following"
+	file.writeln("Synchronet projects as of " + system.datestr() + ":");
 	file.writeln();
+	file.writeln(format("%-20s %s", "Project Directory", "Build Command"));
 	for(i in builds) {
 		if(builds[i][0].length)
-			file.printf("%-40s %s\n", builds[i][0], builds[i][1]);
+			file.writeln(format("%-20s %s", builds[i][0], builds[i][1]));
 	}
 	file.writeln();
-	file.write(body);
-	file.writeln("For more details, goto http://synchro.net/docs/source.html");
+	file.writeln(format("Builds verified on %s by %s", system.timestr(), system_description));
+	file.writeln();
+	file.writeln("For more details, see http://synchro.net/docs/source.html");
+	if(platform!="win32")
+		file.writeln("and http://synchro.net/docs/sbbsunix.txt");
 	file.close();
 }
 
@@ -116,6 +120,8 @@ for(i in builds) {
 
 	builds[i].end = time();
 }
+
+var body = "System: " + system_description + "\n\n";
 
 for(i in builds) {
 	body += elapsed_time(builds[i].end-builds[i].start) + " - ";
