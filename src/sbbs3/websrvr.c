@@ -42,7 +42,6 @@
 
 static const char* server_name="Synchronet Web Server";
 static const char* newline="\r\n";
-static const char* unknown_mime_type="application/octet-stream";
 
 extern const uchar* nular;
 
@@ -497,6 +496,8 @@ static char *get_header(int id)
 	return(NULL);
 }
 
+static const char* unknown_mime_type="application/octet-stream";
+
 static const char* get_mime_type(char *ext)
 {
 	uint i;
@@ -561,9 +562,13 @@ BOOL send_headers(http_session_t *session, const char *status)
 	if(!ret) {
 		sockprintf(session->socket,"%s: %d",get_header(HEAD_LENGTH),stats.st_size);
 		
-		sockprintf(session->socket,"%s: %s",get_header(HEAD_TYPE),get_mime_type(strrchr(session->req.request,'.')));
+		sockprintf(session->socket,"%s: %s",get_header(HEAD_TYPE)
+			,get_mime_type(strrchr(session->req.request,'.')));
 		t=gmtime(&stats.st_mtime);
-		sockprintf(session->socket,"%s: %s, %02d %s %04d %02d:%02d:%02d GMT",get_header(HEAD_LASTMODIFIED),days[t->tm_wday],t->tm_mday,months[t->tm_mon],t->tm_year+1900,t->tm_hour,t->tm_min,t->tm_sec);
+		sockprintf(session->socket,"%s: %s, %02d %s %04d %02d:%02d:%02d GMT"
+			,get_header(HEAD_LASTMODIFIED)
+			,days[t->tm_wday],t->tm_mday,months[t->tm_mon]
+			,t->tm_year+1900,t->tm_hour,t->tm_min,t->tm_sec);
 	}
 	sendsocket(session->socket,newline,2);
 	return(send_file);
@@ -949,15 +954,12 @@ static BOOL check_request(http_session_t * session)
 		send_error("404 Not Found",session);
 		return(FALSE);
 	}
-	if(!strcmp(path,session->req.request))
-		session->req.send_location=TRUE;
 	if(!fexist(path)) {
 		backslash(path);
 		strcat(path,startup->index_file_name);
-		session->req.send_location=TRUE;
 	}
-	if(strnicmp(session->req.request,root_dir,strlen(root_dir))) {
-		lprintf("%04d request = '%s'",session->socket,session->req.request);
+	if(strnicmp(path,root_dir,strlen(root_dir))) {
+		lprintf("%04d path = '%s'",session->socket,path);
 		lprintf("%04d root_dir = '%s'",session->socket,root_dir);
 		send_error("400 Bad Request",session);
 		session->req.keep_alive=FALSE;
@@ -966,8 +968,11 @@ static BOOL check_request(http_session_t * session)
 	if(!fexist(path)) {
 		send_error("404 Not Found",session);
 		return(FALSE);
-	}		
-	SAFECOPY(session->req.request,path);
+	}
+	if(!strcmp(path,session->req.request)) {
+		session->req.send_location=TRUE;
+		SAFECOPY(session->req.request,path);
+	}
 
 	/* Set default ARS to a 0-length string */
 	session->req.ars[0]=0;
