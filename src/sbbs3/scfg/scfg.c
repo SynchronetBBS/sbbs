@@ -159,7 +159,11 @@ backslashcolon(cfg.ctrl_dir);
 uifc.size=sizeof(uifc);
 #if defined(USE_DIALOG)
 if(!door_mode)
-    i=uifcinid(&uifc);  /* libdialog */
+    i=uifcinid(&uifc);  /* dialog */
+else
+#elif defined(USE_CURSES)
+if(!door_mode)
+    i=uifcinic(&uifc);  /* curses */
 else
 #elif !defined(__unix__)
 if(!door_mode)
