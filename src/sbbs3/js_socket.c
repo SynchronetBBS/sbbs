@@ -442,7 +442,6 @@ js_recvline(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 static JSBool
 js_getsockopt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	int			lvl;
 	int			opt;
 	socklen_t	len;
 	int			val;
@@ -451,17 +450,16 @@ js_getsockopt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_FALSE);
 
-	lvl = JSVAL_TO_INT(argv[0]);
-	opt = JSVAL_TO_INT(argv[1]);
+	opt = sockopt(JS_GetStringBytes(JS_ValueToString(cx,argv[1])));
 	len = sizeof(val);
 
-	if(getsockopt(p->sock,lvl,opt,(char*)&val,&len)==0) {
-		dbprintf(FALSE, p, "option %d (level: %d) = %d",opt,lvl,val);
+	if(getsockopt(p->sock,SOL_SOCKET,opt,(char*)&val,&len)==0) {
+		dbprintf(FALSE, p, "option %d = %d",opt,val);
 		*rval = INT_TO_JSVAL(val);
 	} else {
 		p->last_error=ERROR_VALUE;
-		dbprintf(TRUE, p, "error %d getting option %d (level: %d)"
-			,ERROR_VALUE,opt,lvl);
+		dbprintf(TRUE, p, "error %d getting option %d"
+			,ERROR_VALUE,opt                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 );
 		*rval = INT_TO_JSVAL(-1);
 	}
 
@@ -472,7 +470,6 @@ js_getsockopt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 static JSBool
 js_setsockopt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-	int			lvl;
 	int			opt;
 	int			val;
 	private_t*	p;
@@ -480,11 +477,10 @@ js_setsockopt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
 		return(JS_FALSE);
 
-	lvl = JSVAL_TO_INT(argv[0]);
-	opt = JSVAL_TO_INT(argv[1]);
-	val = JSVAL_TO_INT(argv[2]);
+	opt = sockopt(JS_GetStringBytes(JS_ValueToString(cx,argv[0])));
+	JS_ValueToInt32(cx,argv[1],&val);
 
-	*rval = BOOLEAN_TO_JSVAL(setsockopt(p->sock,lvl,opt,(char*)&val,sizeof(val))==0);
+	*rval = BOOLEAN_TO_JSVAL(setsockopt(p->sock,SOL_SOCKET,opt,(char*)&val,sizeof(val))==0);
 	p->last_error=ERROR_VALUE;
 
 	return(JS_TRUE);
