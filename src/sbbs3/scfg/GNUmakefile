@@ -20,8 +20,8 @@ ifndef NO_CURSES
  USE_UIFC32	=	1	# NEW curses version of uifc
 endif
 
-UIFC_SRC	=	../../uifc
-XPDEV	=	../../xpdev
+UIFC_SRC	=	../../uifc/
+XPDEV	=	../../xpdev/
 SBBS_SRC =	..
 NEED_UIFC	:=	1
 CFLAGS		=	-DSCFG
