@@ -143,31 +143,27 @@ int SMBCALL smb_addhashes(smb_t* smb, hash_t** hashes, BOOL skip_marked)
 			continue;	
 	
 		/* can't think of any reason to strip SMB_HASH_MARKED flag right now */
-		if(smb_fwrite(smb,hashes[h],sizeof(hash_t),smb->hash_fp)!=sizeof(hash_t))
-			return(SMB_ERR_WRITE);
+		if(smb_fwrite(smb,hashes[h],sizeof(hash_t),smb->hash_fp)!=sizeof(hash_t)) {
+			retval=SMB_ERR_WRITE;
+			break;
+		}
 	}
 
 	smb_close_hash(smb);
 
-	return(SMB_SUCCESS);
+	return(retval);
 }
 
-static char* strip_chars(uchar* str, uchar* set)
+static char* strip_chars(uchar* dst, const uchar* src, uchar* set)
 {
-	char*	src;
-	char*	dst;
-	char*	tmp;
-
-	if((tmp=strdup(str))==NULL)
-		return(NULL);
-	for(src=tmp,dst=str;*src;src++) {
+	while(*src) {
 		if(strchr(set,*src)==NULL)
 			*(dst++)=*src;
+		src++;
 	}
 	*dst=0;
-	free(tmp);
 
-	return(str);
+	return(dst);
 }
 
 /* Allocates and calculates hashes of data (based on flags)					*/
@@ -208,10 +204,10 @@ hash_t* SMBCALL smb_hashstr(ulong msgnum, ulong t, unsigned source, unsigned fla
 	if(flags&SMB_HASH_PROC_MASK) {	/* string pre-processing */
 		if((p=strdup(str))==NULL)
 			return(NULL);
+		if(flags&SMB_HASH_STRIP_WSP)
+			strip_chars(p,str," \t\r\n");
 		if(flags&SMB_HASH_LOWERCASE)
 			strlwr(p);
-		if(flags&SMB_HASH_STRIP_WSP)
-			strip_chars(p," \t\r\n");
 	}
 	
 	hash=smb_hash(msgnum, t, source, flags, p, strlen(p));
@@ -302,7 +298,6 @@ int SMBCALL smb_getmsgidx_by_hash(smb_t* smb, smbmsg_t* msg, unsigned source
 
 	hashes[1]=NULL;	/* terminate list */
 
-	memset(&found,0,sizeof(found));
 	if((retval=smb_findhash(smb, hashes, &found, 1<<source, FALSE))==SMB_SUCCESS) {
 		if(found.number==0)
 			retval=SMB_FAILURE;	/* use better error value here? */
