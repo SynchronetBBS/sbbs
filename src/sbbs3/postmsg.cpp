@@ -53,9 +53,12 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 
 	if(remsg) {
 		sprintf(title,"%.*s",LEN_TITLE,remsg->subj);
+#if 0	/* We *do* support internet posts to specific people July-11-2002 */
 		if(cfg.sub[subnum]->misc&SUB_INET)	// All Internet posts to "All" 05/20/97
 			touser[0]=0;
-		else if(remsg->hdr.attr&MSG_ANONYMOUS)
+		else 
+#endif
+		if(remsg->hdr.attr&MSG_ANONYMOUS)
 			strcpy(touser,text[Anonymous]);
 		else
 			strcpy(touser,remsg->from);
@@ -99,8 +102,11 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 	if(sys_status&SS_ABORT)
 		return(false);
 
-	if(!(cfg.sub[subnum]->misc&SUB_INET)	// Prompt for TO: user
-		&& (cfg.sub[subnum]->misc&SUB_TOUSER || msgattr&MSG_PRIVATE || touser[0])) {
+	if(
+#if 0	/* we *do* support internet posts to specific people July-11-2002 */
+		!(cfg.sub[subnum]->misc&SUB_INET) &&	// Prompt for TO: user
+#endif
+		(cfg.sub[subnum]->misc&SUB_TOUSER || msgattr&MSG_PRIVATE || touser[0])) {
 		if(!touser[0] && !(msgattr&MSG_PRIVATE))
 			strcpy(touser,"All");
 		bputs(text[PostTo]);
