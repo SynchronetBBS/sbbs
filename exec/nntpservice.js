@@ -11,6 +11,7 @@
 // Tested clients:
 //					Microsoft Outlook Express 6
 //					Netscape Communicator 4.77
+//					Mozilla 1.1 (Requires -auto, and a prior login via other method)
 
 load("sbbsdefs.js");
 
@@ -18,6 +19,7 @@ const REVISION = "$Revision$".split(' ')[1];
 
 var debug = false;
 var no_anonymous = false;
+var auto_login = false;
 var msgs_read = 0;
 var msgs_posted = 0;
 var slave = false;
@@ -28,6 +30,10 @@ for(i=0;i<argc;i++)
 		debug = true;
 	else if(argv[i].toLowerCase()=="-na")
 		no_anonymous = true;
+	else if(argv[i].toLowerCase()=="-auto") {
+		no_anonymous = true;
+		auto_login = true;
+	}
 
 // Write a string to the client socket
 function write(str)
@@ -131,7 +137,7 @@ while(client.socket.is_connected) {
 			continue;
 		case "DATE":
 			d = new Date();
-			writeln("111 " + 
+			writeln("111 " +
 				format("%u%02u%02u%02u%02u%02u"
 					,d.getUTCFullYear()
 					,d.getUTCMonth()+1
@@ -148,9 +154,36 @@ while(client.socket.is_connected) {
 	}
 
 	if(!logged_in) {
-		writeln("502 Authentication required");
-		log("!Authentication required");
-		continue;
+		if (auto_login) {
+			log("Autologin Search: Started");
+			var oUser = new User(1);
+			sUser = false;
+			sPassword = ""
+			iLastOn = 0;
+			for (var i=1; i<=system.stats.total_users; i++) {
+				oUser.number = i;
+				if (oUser.ip_address == client.ip_address)
+					if (!(oUser.exemptions&UFLAG_Q)) //don't count qnet users
+						if (oUser.stats.laston_date > iLastOn) { //more recent than last match
+							iLastOn = oUser.stats.laston_date;
+							sUser = oUser.alias;
+							sPassword = oUser.security.password;
+							log("!Autologin Search: Match Found ("+sUser+")");
+						}
+
+			}
+			oUser = null;
+			log("Autologin Search: Finished");
+
+			if (sUser)
+				login(sUser,sPassword);
+		}
+
+		if(!logged_in) {
+			writeln("502 Authentication required");
+			log("!Authentication required");
+			continue;
+		}
 	}
 
 	/* These commands require login/authentication */
@@ -268,7 +301,7 @@ while(client.socket.is_connected) {
 						field=hdr.from;
 						break;
 					case "reply-to":
-						field=hdr.reply_to;
+						field=hdr.replyto;
 						break;
 					case "date":
 						field=hdr.date;
@@ -398,7 +431,7 @@ while(client.socket.is_connected) {
 				writeln("Subject: " + hdr.subject);
 				writeln("Message-ID: " + hdr.id);
 				writeln("Date: " + hdr.date);
-				if(hdr.newsgroups!=undefined 
+				if(hdr.newsgroups!=undefined
 					&& hdr.newsgroups.indexOf(selected.newsgroup) >= 0)
 					writeln("Newsgroups: " + hdr.newsgroups);
 				else
@@ -504,12 +537,14 @@ while(client.socket.is_connected) {
 					continue;
 
 				data=line.slice(sp+1);
-				while(data.charAt(0)==' ')	// skip prepended spaces
+				while(data.charAt(0)==' ')	// trim prepended spaces
 					data=data.slice(1);
+				data=truncsp(data);			// trim trailing spaces
 
 				line=line.substr(0,sp);
-				while(line.charAt(0)==' ')	// skip prepended spaces
+				while(line.charAt(0)==' ')	// trim prepended spaces
 					line=line.slice(1);
+				line=truncsp(line);			// trim trailing spaces
 
 				switch(line.toLowerCase()) {
 					case "to":
@@ -523,6 +558,10 @@ while(client.socket.is_connected) {
 					case "from":
 						if(user.security.restrictions&(UFLAG_G|UFLAG_Q)) // Guest or Network Node
 							hdr.from=data;
+						break;
+					case "reply-to":
+						hdr.replyto_net_type=NET_INTERNET;
+						hdr.replyto=data;
 						break;
 					case "date":
 						hdr.date=data;
