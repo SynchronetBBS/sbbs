@@ -32,6 +32,7 @@ var config_fields = {
 	value_fmt_string:1,
 };
 
+// Parse config fields and set defaults
 var value_fmt_string = "%-10s = %s";
 if(http_request.query.value_fmt_string
 	&& strip_ctrl(http_request.query.value_fmt_string).length)
@@ -53,6 +54,10 @@ var return_link_title = "Click here to return to " + return_link_url.toString().
 if(http_request.query.return_link_title && http_request.query.return_link_title.length)
 	return_link_title = strip_ctrl(http_request.query.return_link_title);
 
+var title = "Thank You";
+if(http_request.query.title)
+	title = http_request.query.title;
+
 // Test for required form fields here
 var redirect;
 if(http_request.query.redirect)
@@ -69,10 +74,6 @@ if(http_request.query.required) {
 	if(missing.length)
 		results(LOG_ERR,"Missing the following form fields: " + missing.join(", "), true);
 }
-
-var title = "Thank You";
-if(http_request.query.title)
-	title = http_request.query.title;
 
 // Send HTTP/HTML results here
 function results(level, text, missing)
@@ -109,6 +110,7 @@ function results(level, text, missing)
 	exit();
 }
 
+// Return the optionally-configured HTML body attributes
 function body_attributes()
 {
 	var i;
@@ -122,6 +124,7 @@ function body_attributes()
 	return result;
 }
 
+// Search an array for a specific value
 function find(val, list)
 {
 	var n;
@@ -184,7 +187,6 @@ if(http_request.query.recipient)
 	recipient=http_request.query.recipient[0].split(/\s*,\s*/);
 
 var rcpt_list = [];
-
 for(i in recipient) {
 
 	var rcpt  = { to: strip_ctrl(recipient[i]) };
@@ -201,6 +203,7 @@ for(i in recipient) {
 	rcpt_list.push(rcpt);
 }
 
+// Save and send e-mail message(s)
 if(!msgbase.save_msg(hdr,client,body,rcpt_list))
 	results(LOG_ERR,format("%s saving message", msgbase.error));
 
