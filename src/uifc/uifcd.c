@@ -126,6 +126,8 @@ int ulist(int mode, char left, int top, char width, int *cur, int *bar
 	size_t app_title_len;
     char **it;
     char str[128];
+    char tmpstr[128];	 //	Used for restoring the <-- At End --> bit
+    char tmpstr2[128];	//  for Add and Paste
     int ret;
 
 	/* Count number of menu options */
@@ -133,7 +135,7 @@ int ulist(int mode, char left, int top, char width, int *cur, int *bar
 		if(option[cnt][0]==0)
 	   		break;
 	options=cnt;
-	freecnt=cnt+4;	/* Add, Delete, Copy, Paste */
+	freecnt=cnt+5;	/* Add, Delete, Copy, Paste, At End */
 
     // Allocate and fill **it
     it=(char **)MALLOC(sizeof(char *)*2*(freecnt));
@@ -185,6 +187,7 @@ int ulist(int mode, char left, int top, char width, int *cur, int *bar
         strcpy(it[cnt2++],"Paste");
 		cnt++;
     }
+
     if(width<strlen(title)+4) 
 		width=strlen(title)+4;
 	app_title_len=strlen(app_title);
@@ -202,21 +205,19 @@ int ulist(int mode, char left, int top, char width, int *cur, int *bar
 				ret=dialog_yesno((char*)NULL,title,5,width);
 	    	else
 				ret=dialog_noyes((char*)NULL,title,5,width);
-	
-/*          What is this line doing? -1 is ESC, which should not be the same as "No".
- *	    	if(ret) ret=1; else ret=0;
- */
+			break;
 		}
-		else  {
-			/* make sure we're wide enough to display the application title */
-			if(width<app_title_len+4)
-				width=app_title_len+4;
-            dialog_clear_norefresh();
-			scrollpos=0;
-			if(i>height)
-				scrollpos=i-height;
-            ret=dialog_menu(app_title, title, height+8, width, height, cnt, it, str, &i, &scrollpos);
-		}
+        /* make sure we're wide enough to display the application title */
+        if(width<app_title_len+4)
+            width=app_title_len+4;
+        dialog_clear_norefresh();
+        scrollpos=0;
+
+        if(i>=height)				//  Whenever advanced was returned from, it had something
+            scrollpos=i-height+1;  //   Beyond the bottom selected
+        i=i-scrollpos;			  //	Apparently, *ch is the current position ON THE SCREEN
+        ret=dialog_menu(app_title, title, height+8, width, height, cnt, it, str, &i, &scrollpos);
+
         if(ret==1)  {	/* Cancel */
 			ret = -1;
 			*cur = -1;
@@ -234,7 +235,13 @@ int ulist(int mode, char left, int top, char width, int *cur, int *bar
 			case 'A':	/* Add */
 				dialog_clear_norefresh();
 				if(options>0)  {
-	        		ret=dialog_menu(title, "Insert Where?", height+8, width, height, options, it, str, 0, 0);
+					strncpy(tmpstr,it[options*2],127);
+					sprintf(it[options*2],"%u",options+1);
+					strncpy(tmpstr2,it[options*2+1],127);
+			        strcpy(it[options*2+1],"<-- At End -->");
+	        		ret=dialog_menu(title, "Insert Where?", height+8, width, height, options+1, it, str, 0, 0);
+					strncpy(it[options*2],tmpstr,127);
+					strncpy(it[options*2+1],tmpstr2,127);
 					if(ret==0)  {
 						*cur=atoi(str)-1;
 						ret=*cur|MSK_INS;
@@ -276,7 +283,13 @@ int ulist(int mode, char left, int top, char width, int *cur, int *bar
 			case 'P':	/* Paste */
 		       dialog_clear_norefresh();
 				if(options>0)  {
-	        		ret=dialog_menu(title, "Paste Where?", height+8, width, height, options, it, str, 0, 0);
+					strncpy(tmpstr,it[options*2],127);
+					sprintf(it[options*2],"%u",options+1);
+					strncpy(tmpstr2,it[options*2+1],127);
+			        strcpy(it[options*2+1],"<-- At End -->");
+	        		ret=dialog_menu(title, "Paste Where?", height+8, width, height, options+1, it, str, 0, 0);
+					strncpy(it[options*2],tmpstr,127);
+					strncpy(it[options*2+1],tmpstr2,127);
 					if(ret==0)  {
 						*cur=atoi(str)-1;
 						ret=*cur|MSK_PUT;
