@@ -132,12 +132,16 @@ static JSBool
 js_format(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
 	char*		p;
+	char*		fmt;
     uintN		i;
-	JSString *	fmt;
+	JSString *	js_fmt;
     JSString *	str;
 	va_list		arglist[64];
 
-	if((fmt=JS_ValueToString(cx, argv[0]))==NULL)
+	if((js_fmt=JS_ValueToString(cx, argv[0]))==NULL)
+		return(JS_FALSE);
+
+	if((fmt=JS_GetStringBytes(js_fmt))==NULL)
 		return(JS_FALSE);
 
 	memset(arglist,0,sizeof(arglist));	/* Initialize arglist to NULLs */
@@ -156,7 +160,7 @@ js_format(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 			arglist[i-1]=NULL;
 	}
 	
-	if((p=JS_vsmprintf(JS_GetStringBytes(fmt),(char*)arglist))==NULL)
+	if((p=JS_vsmprintf(fmt,(char*)arglist))==NULL)
 		return(JS_FALSE);
 
 	str = JS_NewStringCopyZ(cx, p);
