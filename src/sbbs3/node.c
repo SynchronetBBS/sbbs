@@ -548,7 +548,10 @@ int main(int argc, char **argv)
 								misc=NODE_INTR;
 								break;
 							case MODE_DOWN:
-								misc=NODE_DOWN;
+					            if(node.status==NODE_WFC)
+            						node.status=NODE_OFFLINE;
+								else
+									misc=NODE_DOWN;
 								break;
 							case MODE_RRUN:
 								misc=NODE_RRUN;
