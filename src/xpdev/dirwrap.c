@@ -294,10 +294,10 @@ long DLLCALL flength(const char *filename)
 	long	handle;
 	struct _finddata_t f;
 
-	if(access(filename,0)==-1)
+	if(access((char*)filename,0)==-1)
 		return(-1L);
 
-	if((handle=_findfirst(filename,&f))==-1)
+	if((handle=_findfirst((char*)filename,&f))==-1)
 		return(-1);
 
  	_findclose(handle);
@@ -334,7 +334,7 @@ BOOL DLLCALL fexist(const char *filespec)
 	if(access(filespec,0)==-1 && !strchr(filespec,'*') && !strchr(filespec,'?'))
 		return(FALSE);
 
-	if((handle=_findfirst(filespec,&f))==-1)
+	if((handle=_findfirst((char*)filespec,&f))==-1)
 		return(FALSE);
 
  	_findclose(handle);
@@ -464,7 +464,7 @@ int DLLCALL getfattr(const char* filename)
 	long handle;
 	struct _finddata_t	finddata;
 
-	if((handle=_findfirst(filename,&finddata))==-1) {
+	if((handle=_findfirst((char*)filename,&finddata))==-1) {
 		errno=ENOENT;
 		return(-1);
 	}
