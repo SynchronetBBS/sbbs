@@ -163,12 +163,13 @@ void sbbs_t::notdownloaded(ulong size, time_t start, time_t end)
 /****************************************************************************/
 int sbbs_t::protocol(char *cmdline, int cd)
 {
-	char	str[256],*p=NULL;
+	char	protlog[256],*p=NULL;
+	char	msg[256];
     int		i;
 	FILE*	stream;
 
-	sprintf(str,"%sPROTOCOL.LOG",cfg.node_dir);
-	remove(str);                            /* Deletes the protocol log */
+	sprintf(protlog,"%sPROTOCOL.LOG",cfg.node_dir);
+	remove(protlog);                        /* Deletes the protocol log */
 	if(useron.misc&AUTOHANG)
 		autohang=1;
 	else
@@ -181,17 +182,21 @@ int sbbs_t::protocol(char *cmdline, int cd)
 	//lprintf("%s",cmdline);
 	if(cd) 
 		p=cfg.temp_dir;
+	sprintf(msg,"Transferring ",cmdline);
+	spymsg(msg);
+	sys_status|=SS_FILEXFER;
 	i=external(cmdline,EX_OUTL,p);
+	sys_status&=~SS_FILEXFER;
 	if(online==ON_REMOTE)
 		rioctl(IOFB);
 
 	// Save DSZLOG to logfile
-	if((stream=fnopen(NULL,str,O_RDONLY))!=NULL) {
+	if((stream=fnopen(NULL,protlog,O_RDONLY))!=NULL) {
 		while(!feof(stream) && !ferror(stream)) {
-			if(!fgets(str,sizeof(str)-1,stream))
+			if(!fgets(protlog,sizeof(protlog)-1,stream))
 				break;
-			truncsp(str);
-			logline(nulstr,str);
+			truncsp(protlog);
+			logline(nulstr,protlog);
 		}
 		fclose(stream);
 	}
