@@ -198,7 +198,7 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 
 	bputs(text[WritingIndx]);
 
-	if((i=smb_stack(&smb,SMB_STACK_PUSH))!=0) {
+	if((i=smb_stack(&smb,SMB_STACK_PUSH))!=SMB_SUCCESS) {
 		errormsg(WHERE,ERR_OPEN,cfg.sub[subnum]->code,i,smb.last_error);
 		return(false); 
 	}
@@ -206,7 +206,7 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 	sprintf(smb.file,"%s%s",cfg.sub[subnum]->data_dir,cfg.sub[subnum]->code);
 	smb.retry_time=cfg.smb_retry_time;
 	smb.subnum=subnum;
-	if((i=smb_open(&smb))!=0) {
+	if((i=smb_open(&smb))!=SMB_SUCCESS) {
 		errormsg(WHERE,ERR_OPEN,smb.file,i,smb.last_error);
 		smb_stack(&smb,SMB_STACK_POP);
 		return(false); 
@@ -217,7 +217,7 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 		smb.status.max_msgs=cfg.sub[subnum]->maxmsgs;
 		smb.status.max_age=cfg.sub[subnum]->maxage;
 		smb.status.attr=cfg.sub[subnum]->misc&SUB_HYPER ? SMB_HYPERALLOC : 0;
-		if((i=smb_create(&smb))!=0) {
+		if((i=smb_create(&smb))!=SMB_SUCCESS) {
 			smb_close(&smb);
 			errormsg(WHERE,ERR_CREATE,smb.file,i,smb.last_error);
 			smb_stack(&smb,SMB_STACK_POP);
@@ -225,14 +225,14 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 		} 
 	}
 
-	if((i=smb_locksmbhdr(&smb))!=0) {
+	if((i=smb_locksmbhdr(&smb))!=SMB_SUCCESS) {
 		smb_close(&smb);
 		errormsg(WHERE,ERR_LOCK,smb.file,i,smb.last_error);
 		smb_stack(&smb,SMB_STACK_POP);
 		return(false); 
 	}
 
-	if((i=smb_getstatus(&smb))!=0) {
+	if((i=smb_getstatus(&smb))!=SMB_SUCCESS) {
 		smb_close(&smb);
 		errormsg(WHERE,ERR_READ,smb.file,i,smb.last_error);
 		smb_stack(&smb,SMB_STACK_POP);
@@ -253,7 +253,7 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 		storage=SMB_HYPERALLOC; 
 	}
 	else {
-		if((i=smb_open_da(&smb))!=0) {
+		if((i=smb_open_da(&smb))!=SMB_SUCCESS) {
 			smb_close(&smb);
 			errormsg(WHERE,ERR_OPEN,smb.file,i,smb.last_error);
 			smb_stack(&smb,SMB_STACK_POP);
@@ -380,9 +380,9 @@ bool sbbs_t::postmsg(uint subnum, smbmsg_t *remsg, long wm_mode)
 	smb_stack(&smb,SMB_STACK_POP);
 
 	smb_freemsgmem(&msg);
-	if(i) {
-		smb_freemsgdat(&smb,offset,length,1);
+	if(i!=SMB_SUCCESS) {
 		errormsg(WHERE,ERR_WRITE,smb.file,i,smb.last_error);
+		smb_freemsgdat(&smb,offset,length,1);
 		return(false); 
 	}
 
@@ -422,11 +422,11 @@ extern "C" int DLLCALL msg_client_hfields(smbmsg_t* msg, client_t* client)
 {
 	int i;
 
-	if((i=smb_hfield_str(msg,SENDERIPADDR,client->addr))!=0)
+	if((i=smb_hfield_str(msg,SENDERIPADDR,client->addr))!=SMB_SUCCESS)
 		return(i);
-	if((i=smb_hfield_str(msg,SENDERHOSTNAME,client->host))!=0)
+	if((i=smb_hfield_str(msg,SENDERHOSTNAME,client->host))!=SMB_SUCCESS)
 		return(i);
-	if((i=smb_hfield_str(msg,SENDERPROTOCOL,client->protocol))!=0)
+	if((i=smb_hfield_str(msg,SENDERPROTOCOL,client->protocol))!=SMB_SUCCESS)
 		return(i);
 	return smb_hfield(msg,SENDERPORT,sizeof(client->port),&client->port);
 }
@@ -458,7 +458,7 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, char* msg
 		else
 			sprintf(smb->file,"%s%s",cfg->sub[smb->subnum]->data_dir,cfg->sub[smb->subnum]->code);
 		smb->retry_time=cfg->smb_retry_time;
-		if((i=smb_open(smb))!=0)
+		if((i=smb_open(smb))!=SMB_SUCCESS)
 			return(i);
 	}
 
@@ -474,16 +474,16 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, char* msg
 			smb->status.max_age=cfg->sub[smb->subnum]->maxage;
 			smb->status.attr=cfg->sub[smb->subnum]->misc&SUB_HYPER ? SMB_HYPERALLOC : 0;
 		}
-		if((i=smb_create(smb))!=0) 
+		if((i=smb_create(smb))!=SMB_SUCCESS) 
 			return(i);
 
 		/* If msgbase doesn't exist, we can't be adding a header to an existing msg */
 		msg->hdr.total_dfields=0;
 	}
-	if((i=smb_locksmbhdr(smb))!=0) 
+	if((i=smb_locksmbhdr(smb))!=SMB_SUCCESS) 
 		return(i);
 
-	if((i=smb_getstatus(smb))!=0) {
+	if((i=smb_getstatus(smb))!=SMB_SUCCESS) {
 		smb_unlocksmbhdr(smb);
 		return(i);
 	}
@@ -534,7 +534,7 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, char* msg
 			offset=smb_hallocdat(smb);
 			storage=SMB_HYPERALLOC; 
 		} else {
-			if((i=smb_open_da(smb))!=0) {
+			if((i=smb_open_da(smb))!=SMB_SUCCESS) {
 				smb_unlocksmbhdr(smb);
 				FREE_AND_NULL(lzhbuf);
 				return(i);
@@ -661,10 +661,10 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, char* msg
 			return(i); 
 	}
 
-	if((i=smb_addmsghdr(smb,msg,storage))!=0) // calls smb_unlocksmbhdr() 
+	if((i=smb_addmsghdr(smb,msg,storage))==SMB_SUCCESS) // calls smb_unlocksmbhdr() 
+		signal_sub_sem(cfg,smb->subnum);
+	else
 		smb_freemsg_dfields(smb,msg,1);
-
-	signal_sub_sem(cfg,smb->subnum);
 
 	return(i);
 }
