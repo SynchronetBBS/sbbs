@@ -1,4 +1,9 @@
-<p class="navigation"><a class="navigation" href="@@backurl@@">Back to previous page</a></p>
+<!-- $Id$ -->
+
+<!-- Main Content -->  
+    
+    <td class="main" valign="top"><br />
+
 <table class="subinfo">
   <tr class="subinfo">
     <td class="subinfbold">
@@ -82,4 +87,10 @@
   </tr>
   @@JS:if(template.sub.settings & SUB_FIDO || template.sub.settings & SUB_QNET || template.sub.settings & SUB_PNET) '<tr class="subinfo"><td class="subinfbold">Tagline/Origin</td><td class="subinfonwr">'+template.tagline+'</td></tr>'; else '';@@
 </table>
+<br />
+<br />
+
+<!-- end Main Content -->
+
+
 

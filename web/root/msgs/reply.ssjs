@@ -7,6 +7,7 @@ if(sub=='mail') {
 }
 else {
 	template.sub=msg_area.sub[sub];
+	template.group=msg_area.grp[msg_area.sub[sub].grp_name];
 }
 
 if(sub!='mail') {
@@ -64,6 +65,8 @@ else  {
 }
 title="Reply to message";
 write_template("header.inc");
+write_template("topnav.inc");
+write_template("leftnav.inc");
 write_template("msgs/reply.inc");
 write_template("footer.inc");
 

@@ -1,4 +1,10 @@
-<p class="navigation"><a class="navigation" href="/index.ssjs">Home</a> : Pick Theme
+<!-- $Id$ -->
+
+<!-- Main Content -->  
+    
+    <td class="main" valign="top"><br />
+
+
 <table class="theme" cellspacing="2" cellpadding="2">
     <tbody>
         <tr>
@@ -12,3 +18,6 @@
         </tr>
     </tbody>
 </table>
+
+
+<!-- end Main Content -->

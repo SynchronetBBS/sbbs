@@ -1,5 +1,7 @@
 load("../web/lib/template.ssjs");
 
+var sub="";
+
 template.title= system.name+ " - System Information";
 
 template.sysinfo="";
@@ -105,5 +107,7 @@ for(addr in system.fido_addr_list) {
 }
 
 write_template("header.inc");
+write_template("topnav.inc");
+write_template("leftnav.inc");
 write_template("sysinfo.inc");
 write_template("footer.inc");

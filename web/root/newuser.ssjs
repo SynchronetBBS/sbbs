@@ -8,6 +8,8 @@
 var required_str="*";
 var	optional_str="";
 
+var sub="";
+
 load("sbbsdefs.js");
 load("../web/lib/template.ssjs");
 
@@ -350,6 +352,8 @@ else {
 
 function showform() {
 	write_template("header.inc");
+	write_template("topnav.inc");
+	write_template("leftnav.inc");
 	write_template("newuser.inc");
 	write_template("footer.inc");
 	exit(0);

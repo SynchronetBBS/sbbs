@@ -1,3 +1,9 @@
+<!-- $Id$ -->
+
+<!-- Main Content -->  
+    
+    <td class="main" valign="top"><br />
+
 <form action="savemsg.ssjs" method="post">
 <table class="replymsg" border="0" cellspacing="2" cellpadding="0">
 <input type="hidden" name="msg_sub" value="%%sub:code%%" />
@@ -22,3 +28,6 @@
   </tbody>
 </table>
 </form>
+
+<!-- end Main Content -->
+

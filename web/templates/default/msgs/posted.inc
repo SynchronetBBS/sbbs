@@ -1,10 +1,14 @@
-<p class="navigation"><a class="navigation" href="/index.ssjs">Home</a> : <a class="navigation" href="index.ssjs">Groups</a> : <a class="navigation" href="subs.ssjs?msg_grp=^^group:name^^">%%group:description%%</a> : 
-            <a class="navigation" href="msgs.ssjs?msg_sub=^^sub:code^^">%%sub:description%%</a></p>
+<!-- $Id$ -->
+
+<!-- Main Content -->  
+    
+    <td class="main" valign="top"><br />
+
 <table class="posted" cellspacing="2" cellpadding="2">
     <tbody>
         <tr>
         <td class="posted">
-            <h1>Message posted successfully</h1>
+            @@JS:if(sub!='mail')'<h3 align="center">Message posted successfully</h3>'; else '<h3 align="center">E-Mail sent successfully</h3>';@@
             <p class="posted"><a href="msgs.ssjs?msg_sub=^^sub:code^^">Return to %%sub:description%%</a></p>
         </td>
         </tr>

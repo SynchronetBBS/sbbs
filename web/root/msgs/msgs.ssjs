@@ -41,28 +41,28 @@ else {
         switch(ShowMsgs) {
 		    case GET_ALL_MESSAGES:
 		    case GET_MY_MESSAGES:
-			    template.show_choice='<a href="'+http_request.virtual_path+'?'+new_query+'YourUnread">'+show_messages_your_unread_html+'</a>';
+			    template.show_choice='<a class="tlink2" href="'+http_request.virtual_path+'?'+new_query+'YourUnread">'+show_messages_your_unread_html+'</a>';
 			    break;
 		    case GET_MY_UNREAD_MESSAGES:
-			    template.show_choice='<a href="'+http_request.virtual_path+'?'+new_query+'All">'+show_messages_all_html+'</a>';
+			    template.show_choice='<a class="tlink2" href="'+http_request.virtual_path+'?'+new_query+'All">'+show_messages_all_html+'</a>';
 			    break;
 	    }
     } else {
         switch(ShowMsgs) {
 		    case GET_ALL_MESSAGES:
-			    template.show_choice='<a href="'+http_request.virtual_path+'?'+new_query+'Yours">'+show_messages_yours_html+'</a>';
+			    template.show_choice='<a class="tlink2" href="'+http_request.virtual_path+'?'+new_query+'Yours">'+show_messages_yours_html+'</a>';
 			    template.show_choice+=show_messages_spacer_html;
-			    template.show_choice+='<a href="'+http_request.virtual_path+'?'+new_query+'YourUnread">'+show_messages_your_unread_html+'</a>';
+			    template.show_choice+='<a class="tlink2" href="'+http_request.virtual_path+'?'+new_query+'YourUnread">'+show_messages_your_unread_html+'</a>';
 			    break;
 		    case GET_MY_MESSAGES:
-			    template.show_choice='<a href="'+http_request.virtual_path+'?'+new_query+'All">'+show_messages_all_html+'</a>';
+			    template.show_choice='<a class="tlink2" href="'+http_request.virtual_path+'?'+new_query+'All">'+show_messages_all_html+'</a>';
 			    template.show_choice+=show_messages_spacer_html;
-			    template.show_choice+='<a href="'+http_request.virtual_path+'?'+new_query+'YourUnread">'+show_messages_your_unread_html+'</a>';
+			    template.show_choice+='<a class="tlink2" href="'+http_request.virtual_path+'?'+new_query+'YourUnread">'+show_messages_your_unread_html+'</a>';
 			    break;
 		    case GET_MY_UNREAD_MESSAGES:
-			    template.show_choice='<a href="'+http_request.virtual_path+'?'+new_query+'All">'+show_messages_all_html+'</a>';
+			    template.show_choice='<a class="tlink2" href="'+http_request.virtual_path+'?'+new_query+'All">'+show_messages_all_html+'</a>';
 			    template.show_choice+=show_messages_spacer_html;
-			    template.show_choice+='<a href="'+http_request.virtual_path+'?'+new_query+'Yours">'+show_messages_yours_html+'</a>';
+			    template.show_choice+='<a class="tlink2" href="'+http_request.virtual_path+'?'+new_query+'Yours">'+show_messages_yours_html+'</a>';
 			    break;
 	    }
     }
@@ -186,6 +186,8 @@ if(sub=='mail') {
 	template.post_button="Create New Message";
 }				
 
+write_template("topnav.inc");
+write_template("leftnav.inc");
 write_template("msgs/msgs.inc");
 write_template("footer.inc");
 msgs_done();

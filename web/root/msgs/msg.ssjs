@@ -118,6 +118,8 @@ else
     template.prevlink=prev_msg_html;
 
 write_template("header.inc");
+write_template("topnav.inc");
+write_template("leftnav.inc");
 write_template("msgs/msg.inc");
 write_template("footer.inc");
 

@@ -1,5 +1,9 @@
 <!-- $Id$ -->
-<p class="navigation"><a class="navigation" href="/index.ssjs">Home</a> : New User Application</p>
+
+<!-- Main Content -->  
+    
+    <td class="main" valign="top"><br />
+
 <center>
 	(%%required%% indicates required fields)<br>
 	%%err_message%%
@@ -64,3 +68,6 @@
             </tr>
 		</table>
 	</form>
+
+    <!-- end Main Content -->
+    

@@ -58,6 +58,8 @@ if(http_request.query.Action=="Delete Selected Message(s)") {
 template.backurl=http_request.header.referer;
 
 write_template("header.inc");
+write_template("topnav.inc");
+write_template("leftnav.inc");
 write_template("msgs/management.inc");
 write_template("footer.inc");
 

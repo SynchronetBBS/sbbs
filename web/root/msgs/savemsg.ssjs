@@ -103,6 +103,8 @@ if(hdrs.thread_orig!=undefined)  {
 http_reply.status="201 Created";
 title="Message posted";
 write_template("header.inc");
+write_template("topnav.inc");
+write_template("leftnav.inc");
 write_template("msgs/posted.inc");
 write_template("footer.inc");
 

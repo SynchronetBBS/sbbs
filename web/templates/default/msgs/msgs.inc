@@ -1,18 +1,20 @@
-<p class="navigation">
-    <a class="navigation" href="/index.ssjs">Home</a>@@JS:template.sub.code!='mail'? ' : <a class="navigation" href="index.ssjs">Groups</a> : <a class="navigation" href="subs.ssjs?msg_grp='+template.group.name+'">'+template.group.description+'</a> : ':' : '@@
-    <a class="navigation" href="subinfo.ssjs?msg_sub=^^sub:code^^" title="Click for Sub Info">%%sub:description%%</a>
-    <br />
-	@@JS:template.show_choice==undefined ? '' : '<span class="navigation">(@@show_choice@@)</span>'@@
-	</p>
+<!-- $Id$ -->
+
+<!-- Main Content -->  
+    
+    <td class="main" valign="top"><br />
+
+
 <div align="center">
 @@JS:template.can_post?'<form name="PostMsg" action="post.ssjs?msg_sub=^^sub:code^^&amp;post=new" method="post"><input type="submit" value="'+template.post_button+'" /></form>':''@@
+@@JS:template.show_choice==undefined ? '' : '(@@show_choice@@)<br /><br />'@@
 </div>
 
 <form name="DeleteMsg" action="management.ssjs" method="post">
 <input type="hidden" name="msg_sub" value="^^sub:code^^" />
 <table class="msglist" cellpadding="5" cellspacing="2" border="0" width="100%">
 <tr class="msglist">
-     @@JS:template.can_delete?'<th class="msglist"><input name="SelectAll" title="Select All Messages" type="checkbox" onclick="checkBoxes(this.form, this.checked)"></th>':''@@
+     @@JS:template.can_delete?'<th class="msglist"><input name="SelectAll" title="Select All Messages" type="checkbox" onclick="checkBoxes(this.form, this.checked)" /></th>':''@@
     <th class="msglist"><img src="/graphics/attach_black.gif" title="Attachment?" alt="Attachment?" width="10" height="13" border="0" /></th>
     <th class="msglist">Subject</th>
     <th class="msglist">From</th>
@@ -23,8 +25,8 @@
     <!-- %%JS:template.color=0%% -->
     <<REPEAT messages>>
     <tr class=@@JS:((template.color++)%2==0)?'"msglist1"':'"msglist2"';@@>
-    @@JS:template.can_delete?'<td align=center><label for="number"><input name="number" value="^^messages:number^^" type="checkbox"></td>':''@@
-	   <td align=center>
+    @@JS:template.can_delete?'<td align=center><input name="number" value="^^messages:number^^" type="checkbox"></td>':''@@
+	   <td align="center">
     		@@JS:if(@@messages:attachments@@>0) '<img alt="Attachment" src="/graphics/attach_black.gif" />'; else '&nbsp;';@@
 	   </td>
 	   <td>
@@ -42,7 +44,7 @@
 		  %%messages:to%%
           @@JS:if(sub=='mail' && !(@@messages:attr@@ & MSG_READ)) '</b>';@@
 	   </td>
-	   <td align=right nowrap="nowrap">
+	   <td align="right" nowrap="nowrap">
           @@JS:if(sub=='mail' && !(@@messages:attr@@ & MSG_READ)) '<b>';@@
 		  %%JS:system.timestr(@@messages:when_written_time@@)%%
           @@JS:if(sub=='mail' && !(@@messages:attr@@ & MSG_READ)) '</b>';@@
@@ -67,4 +69,6 @@
 		
 <div align="center">@@pagelinks@@</div>
 <br />
+
+<!-- end Main Content -->
 

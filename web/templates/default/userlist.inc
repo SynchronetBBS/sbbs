@@ -1,4 +1,9 @@
-<p class="navigation"><a class="navigation" href="/index.ssjs">Home</a> : User List</p>
+<!-- $Id$ -->
+
+<!-- Main Content -->  
+    
+    <td class="main" valign="top"><br />
+
 <table class="userlist" cellpadding="2" cellspacing="2">
 <tr>
     <th class="userlist"><a class="userlist" href="userlist.ssjs?sort=alias">Alias</a></th>

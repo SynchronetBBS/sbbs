@@ -1,91 +1,141 @@
-a:link { color: #42FDC8; }
-a:visited { color: #2CD8E4; }
-a:hover { color: #ffffff; }
- 
-body { background-color: teal; color: white; font-family: Arial, Helvetica, sans-serif; }
+/* CSS Document */
+/* $Id$ */
 
-p.title { color: lime; text-align: center; font-size: x-large; font-weight: bolder; }
+body{ font-family: Arial,sans-serif; color: #333333; line-height: 1; margin: 0px; padding: 0px; background: #cccccc url("/graphics/bg_grad.jpg") fixed; }
 
-table.main { width: 33%; background-color: #116677; margin-left: auto; margin-right: auto; margin-top: 0; margin-bottom: 0; }
-td.main { background-color: #007788; }
+h2 { text-align:left; padding-top: 5px; }
 
-table.info { width: 30%; background-color: #116677; margin-left: auto; margin-right: auto; margin-top: 0; margin-bottom: 0; }
-td.info { background-color: #007788; }
+#siteName{ margin: 0px; padding: 14px 0px 8px 30px; color: #ffffff; font-weight: normal; font-size: x-large; }
 
-table.welcome { width: 1%; background-color: #116677; margin-left: auto; margin-right: auto; margin-top: 0; margin-bottom: 0; }
-td.welcome { background-color: #007788; }
+#Greeting{ font: 75% Verdana,sans-serif; position: absolute; top: 8px; right: 30px; color: #FFFFFF; }
 
-pre { background-color: black; color: #aaaaaa; font-family: monospace; }
-pre.leftalign { background-color: black; color: #aaaaaa; text-align: left; }
+#Top_Nav{ position: relative; width: 90%; min-width: 640px; height: 32px; color: #cccccc; padding: 0px; margin-left: auto; margin-right: auto; background-image:  url("/graphics/glbnav_background.gif"); }
 
-table.newuser { margin-left: auto; margin-right: auto; background-color: #116677; }
-td.newuser { background-color: #007788; }
+td.ltn{ text-align:left; width:1%; background-color: #CCCCCC; background-image: url(graphics/tnav_bg.gif); }
 
-table.userlist { margin-left: auto; margin-right: auto; background-color: #116677; }
-th.userlist { background-color: #007788; color: black; }
-td.userlist { background-color: #007788; }
-td.userlistright { text-align: right; background-color: #007788; }
+td.tn{ background-color: #CCCCCC; background-image: url(graphics/tnav_bg.gif); }
+
+td.rtn{ text-align:right; width:1%; background-color: #CCCCCC; background-image: url(graphics/tnav_bg.gif); }
+
+#Top_Nav img{ margin-bottom: -4px; }
+
+#tnl { position: absolute; top: 0px; left:0px; }
+
+#tnr { position: absolute; top: 0px; right:0px; }
+
+#Top_Link{ position: absolute; }
+
+.tlink { font-size: small; color: #7788FF; font-weight: bold; margin: 0px; padding: 2px 5px 4px 5px; }
+
+.terror { font-size: small; color: #FF0000; font-weight: bold; margin: 0px; padding: 2px 5px 4px 5px; }
+
+a.tlink, a.tlink:visited{ font-size: small; color: #000000; font-weight: bold; margin: 0px; padding: 2px 5px 4px 5px; border-right: 1px solid #8FB8BC; text-decoration:none; }
+
+a.tlink2, a.tlink2:visited{ color: #000000; font-weight: bold; margin: 0px; padding: 2px 5px 4px 5px; text-decoration:none; }
+
+a.tlink:hover{ background-image:  url("/graphics/tnav_selected.gif"); text-decoration: underline; }
+
+a.tlink2:hover{ text-decoration: underline; }
+
+#MastHead{ position: absolute; top: 0px; left: 2%; right: 2%; width:95.6%; }
+
+#pageName{ padding: 0px 0px 0px 0px; margin: 0px; border-bottom:1px solid #ccd2d2; }
+
+#pageTitle { text-align:center; }
+
+#tl { position:absolute; top: -1px; left: -1px; margin: 0px; padding: 0px; z-index: 100; }
+
+#tr { position:absolute; top: -1px; right: -1px; margin: 0px; padding: 0px; z-index: 100; }
+
+#pageNav{ background-image:url(graphics/sync_pbgj1_grey_bg.gif); background-position: bottom left; background-repeat:no-repeat; width:180px; padding-bottom: 90px; padding-top:10px; background-color: #EEEEEE; font: small Verdana,sans-serif;  }
+
+td.main { background-color: #DDDDDD; border-left: 3px solid #ccd2d2; padding-left: 15px; padding-right: 15px; border-right: 3px solid #ccd2d2; }
+
+table.welcome_main { margin-left:auto; margin-right: auto; border-width: 0px; }
+
+table.main_nodelist { width: 95%; }
+
+td.main_nodelist { font-size:9px; }
+
+table.main_stats { font-size:medium; margin-left: auto; margin-right: auto; border-style:solid; border-width:thin; border-color: #cccccc; }
+td.main_stats { padding: 2px; background-color:#CCCCCC; }
+td.main_stats_bold { color: #7788FF; font-weight:bold; padding: 2px; background-color:#CCCCCC; }
+
+#sectionLinks{ margin: 0px; padding: 0px 10px 0px 0px; }
+
+#sectionLinks a:link, #sectionLinks a:visited { display: block; border-top: 1px solid #ffffff; border-left: 1px solid #ffffff; border-bottom: 1px solid #000000; border-right: 1px solid #000000; background-image:  url("/graphics/bg_nav.jpg"); font-weight: bold; padding: 3px 0px 3px 10px; color: #21536A; text-decoration:none; }
+
+#sectionLinks a:hover{ border-top: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #ffffff; border-bottom: 1px solid #ffffff;  background-color: #DDEEFF; background-image: none; font-weight: bold; text-decoration: underline; }
+
+table.msglist { font-weight: normal; font-size: smaller; margin-left: auto; margin-right: auto; background-color: #888888; }
+tr.msglist1 { background-color: #AAAAAA; }
+tr.msglist2 {  background-color: #CCCCCC; }
+th.msglist { background-color: #CCCCCC; color: black; }
+a.msglist { color: #6600FF; text-decoration: none; }
+a.msglist:hover { text-decoration: underline; }
+a.msglist:visited { color: #660099; }
+
+a.msglistnu { color:#000099; text-decoration: none; }
+a.msglistnu:hover { color:#000099; text-decoration: underline; }
+
+table.userstats { margin-left: auto; margin-right: auto; background-color: #BBBBBB; }
+td.userstats { background-color: #DDDDDD; } 
+
+table.sysinfo { margin-left: auto; margin-right: auto; background-color: #CCCCCC; }
+td.sysinfo { background-color: #DDDDDD; } 
+
+pre { background-color: black; color: #aaaaaa; font-family: monospace; padding: 3px; }
+pre.leftalign { background-color: black; color: #aaaaaa; text-align: left; padding: 3px; }
+
+table.userlist { margin-left: auto; margin-right: auto; background-color: #BBBBBB; }
+th.userlist { background-color: #DDDDDD; color: black; }
+td.userlist { background-color: #DDDDDD; }
+td.userlistright { text-align: right; background-color: #DDDDDD; }
 a.userlist { text-decoration: none; color: black; }
 a.userlist:hover { text-decoration: underline; }
 
-table.userstats { margin-left: auto; margin-right: auto; background-color: #116677; }
-td.userstats { background-color: #007788; } 
+table.theme { width: 45%; margin-left: auto; margin-right: auto; background-color: #BBBBBB; }
+td.theme { text-align: center; background-color: #DDDDDD; }
+input.theme { text-align: center; background-color: black; color: #aaaaaa; }
 
-table.sysinfo { margin-left: auto; margin-right: auto; background-color: #116677; }
-td.sysinfo { background-color: #007788; } 
+table.grouplist { margin-left: auto; margin-right: auto; background-color: #BBBBBB; }
+th.grouplist { background-color: #DDDDDD; color: black; }
+td.grouplist { background-color: #DDDDDD; }
 
-table.grouplist { margin-left: auto; margin-right: auto; background-color: #116677; }
-th.grouplist { background-color: #007788; color: black; }
-td.grouplist { background-color: #007788; }
+table.sublist { margin-left: auto; margin-right: auto; background-color: #BBBBBB; }
+th.sublist { background-color: #DDDDDD; color: black; }
+th.sublistlft { text-align: left; background-color: #DDDDDD; color: black; }
+td.sublist { background-color: #DDDDDD; }
+td.sublistright { text-align: right; background-color: #DDDDDD; }
 
-table.sublist { margin-left: auto; margin-right: auto; background-color: #116677; }
-th.sublist { background-color: #007788; color: black; }
-th.sublistlft { text-align: left; background-color: #007788; color: black; }
-td.sublist { background-color: #007788; }
-td.sublistright { text-align: right; background-color: #007788; }
-
-table.msglist { margin-left: auto; margin-right: auto; background-color: #116677; }
-tr.msglist1 { background-color: #008699; }
-tr.msglist2 { background-color: #007688; }
-th.msglist { background-color: #007788; color: black; }
-a.msglistnu { text-decoration: none; }
-
-table.subinfo { width: 45%; margin-left: auto; margin-right: auto; background-color: #116677; }
-tr.subinfo { white-space: nowrap;  background-color: #007788; }
+table.subinfo { width: 45%; margin-left: auto; margin-right: auto; background-color: #BBBBBB; }
+tr.subinfo { white-space: nowrap;  background-color: #DDDDDD; }
 td.subinfbold { width: 1%; font-weight: bold; }
 td.subinfo { white-space: nowrap; font-weight: bold; }
 td.subinfonwr { white-space: nowrap; }
 
-body.msg { background-color: black; }
-table.msg { color: black; margin-left: auto; margin-right: auto; background-color: #116677; }
-tr.msg {  background-color: #007788; }
-td.msgnavleft { width: 25%;  background-color: #007788; text-align: left; }
-td.msgnavmid { width: 25%; text-align: center;  background-color: #007788; }
-td.msgnavright { width: 25%;  background-color: #007788; text-align: right; }
+table.msg { color: black; margin-left: auto; margin-right: auto; background-color: #BBBBBB; }
+tr.msg {  background-color: #DDDDDD; }
+td.msgnavleft { width: 25%;  background-color: #DDDDDD; text-align: left; }
+td.msgnavmid { width: 25%; text-align: center;  background-color: #DDDDDD; }
+td.msgnavright { width: 25%;  background-color: #DDDDDD; text-align: right; }
 td.msgheader { font-weight: bold; }
-object.msg { margin: 0%; background-color: black; color: #aaaaaa; }
 p.msgcenter { text-align: center; }
 
-table.postmsg { margin-left: auto; margin-right: auto; background-color: #116677; }
-td.postmsg { background-color: #007788; }
+table.msg2 { color: black; margin-left: auto; margin-right: auto; padding: 0px; margin: 0px; }
+
+table.postmsg { margin-left: auto; margin-right: auto; background-color: #BBBBBB; }
+td.postmsg { background-color: #DDDDDD; }
 textarea.postmsg { background-color: black; color: #aaaaaa; }
 input.postmsg { background-color: black; color: #aaaaaa; }
 
-table.posted { width: 45%; margin-left: auto; margin-right: auto; background-color: #116677; }
-td.posted { background-color: #007788; }
+table.posted { width: 50%; margin-left: auto; margin-right: auto; background-color: #BBBBBB; }
+td.posted { background-color: #DDDDDD; }
 p.posted { text-align: center; }
 
-table.replymsg { margin-left: auto; margin-right: auto; background-color: #116677; }
-td.replymsg { background-color: #007788; }
+table.replymsg { margin-left: auto; margin-right: auto; background-color: #BBBBBB; }
+td.replymsg { background-color: #DDDDDD; }
 textarea.replymsg { background-color: black; color: #aaaaaa; }
 input.replymsg { background-color: black; color: #aaaaaa; }
 
-table.theme { width: 45%; margin-left: auto; margin-right: auto; background-color: #116677; }
-td.theme { text-align: center; background-color: #007788; }
-input.theme { text-align: center; background-color: black; color: #aaaaaa; }
-
-p.navigation { text-align: center; font-style: italic; font-weight: bold; }
-a.navigation { font-style: normal; font-weight: normal; }
-a.navigation:hover { font-style: normal; font-weight: normal; }
-span.navigation { font-style: normal; font-weight: normal; }
-
+.footer { width: 90%; }

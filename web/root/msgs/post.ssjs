@@ -43,6 +43,8 @@ if(sub!='mail') {
 }
 template.title="Post a message in " + template.sub.description;
 write_template("header.inc");
+write_template("topnav.inc");
+write_template("leftnav.inc");
 write_template("msgs/post.inc");
 write_template("footer.inc");
 

@@ -1,5 +1,7 @@
 load("../web/lib/template.ssjs");
 
+var sub='';
+
 template.theme_list='<select name="theme">';
 for(tname in Themes) {
 	template.theme_list+='<option value="'+html_encode(tname,true,true,false,false)+'"';
@@ -9,5 +11,7 @@ for(tname in Themes) {
 }
 template.theme_list+='</select>';
 write_template("header.inc");
+write_template("topnav.inc");
+write_template("leftnav.inc");
 write_template("themes.inc");
 write_template("footer.inc");

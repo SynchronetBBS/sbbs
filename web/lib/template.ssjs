@@ -25,6 +25,7 @@
 template=new Object;
 load("sbbsdefs.js");	// UFLAG_G
 load("../web/lib/html_themes.ssjs");
+load("../web/lib/leftnav_nodelist.ssjs"); // Left Side Navigation Node Listing
 template.Theme_CSS_File=Themes[CurrTheme].css;
 
 function write_template(filename)  {
@@ -132,4 +133,25 @@ else
 		template.user_greeting="Welcome, "+user.alias+ ".<br /> You last visited on " +strftime("%A, %B %d, %Y",user.stats.laston_date);
 	else
 		template.user_greeting="Welcome, "+user.alias+ ".";
-	
+
+/* FTP link */
+
+ if(user.number || system.matchuser("Guest")) {
+    template.ftp_url="ftp://";
+    if(user.number && !(user.security.restrictions&UFLAG_G))
+        template.ftp_url=template.ftp_url + user.alias + ":" + user.security.password + "@";
+
+    var host = http_request.host;
+    if(!host || !host.length)
+        host = system.host_name;
+   var port = host.indexOf(':');
+    if(port>=0)
+        host=host.slice(0,port);
+    else
+        host=host;
+    template.ftp_url=template.ftp_url + host + "/00index.html?$" + new Date().valueOf().toString(36);
+}
+  
+
+    
+    

@@ -1,5 +1,7 @@
 load("../web/lib/template.ssjs");
 
+var sub="";
+
 template.title="User Statistics for " +user.alias; 
 
 template.bytes_uploaded=addcommas(user.stats.bytes_uploaded);
@@ -19,6 +21,8 @@ i=i ? 100/i : user.stats.total_posts > user.stats.total_logons ? 100 : 0;
 template.pinfo=parseInt(i);
 
 write_template("header.inc");
+write_template("topnav.inc");
+write_template("leftnav.inc");
 write_template("userstats.inc");
 write_template("footer.inc");
 
