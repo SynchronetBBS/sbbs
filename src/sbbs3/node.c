@@ -151,21 +151,6 @@ char* itoa(int val, char* str, int radix)
 }
 #endif
 
-#if defined(_WIN32)
-
-	#define SLEEP(x)			Sleep(x)
-
-#elif defined(__OS2__)
-
-	#define SLEEP(x)			DosSleep(x)
-
-#elif defined(__unix__)
-
-	#define SLEEP(x)			usleep(x*1000)
-
-#endif
-
-
 /****************************************************************************/
 /* Reads the data for node number 'number' into the structure 'node'        */
 /* from NODE.DAB															*/
