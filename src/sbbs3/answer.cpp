@@ -90,7 +90,7 @@ bool sbbs_t::answer()
 				str2[i]=in;
 			}
 			str2[i]=0;
-			for(i=0;i<sizeof(terminal)-1;i++) {
+			for(i=0;i<(int)sizeof(terminal)-1;i++) {
 				in=incom(1000);
 				if(in==0 || in==NOINP)
 					break;
