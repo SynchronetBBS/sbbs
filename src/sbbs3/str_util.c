@@ -257,20 +257,6 @@ char* DLLCALL truncstr(char* str, const char* set)
 }
 
 /****************************************************************************/
-/* Puts a backslash on path strings 										*/
-/****************************************************************************/
-void backslash(char *str)
-{
-    int i;
-
-	i=strlen(str);
-	if(i && str[i-1]!='\\' && str[i-1]!='/') {
-		str[i]=BACKSLASH; 
-		str[i+1]=0; 
-	}
-}
-
-/****************************************************************************/
 /* Puts a backslash on path strings if not just a drive letter and colon	*/
 /****************************************************************************/
 void backslashcolon(char *str)
