@@ -5,8 +5,8 @@
 # For use with GNU make and GNU C Compiler								#
 # @format.tab-size 4, @format.use-tabs true								#
 #																		#
-# Linux: make -f Makefile.gnu											#
-# FreeBSD: make -f Makefile.gnu os=freebsd								#
+# Linux: gmake															#
+# FreeBSD: gmake os=freebsd												#
 #																		#
 # Optional build targets: dlls, utils, mono, all (default)				#
 #########################################################################
@@ -68,7 +68,11 @@ include headers.mak		# defines $(HEADERS)
 include sbbsdefs.mak	# defines $(SBBSDEFS)
 
 SBBSLIB	=	$(LIBODIR)/sbbs.a
-	
+
+# Implicit C Compile Rule for utils
+$(EXEODIR)/%.o : %.c
+	@echo Compiling $<
+	@$(CC) $(CFLAGS) -c $< -o $@
 
 # Implicit C Compile Rule for SBBS
 $(LIBODIR)/%.o : %.c
@@ -92,7 +96,7 @@ FTP_OBJS	= $(LIBODIR)/ftpsrvr.o
 MAIL_OBJS	= $(LIBODIR)/mailsrvr.o $(LIBODIR)/mxlookup.o $(LIBODIR)/mime.o 
 SERVICE_OBJS= $(LIBODIR)/services.o
 
-MONO_OBJS	= $(CON_OJBS) $(FTP_OBJS) $(MAIL_OBJS) $(SERVICE_OBJS)
+MONO_OBJS	= $(CON_OBJS) $(FTP_OBJS) $(MAIL_OBJS) $(SERVICE_OBJS)
 
 # Monolithic Synchronet executable Build Rule
 $(SBBSMONO): $(MONO_OBJS) $(OBJS) $(LIBS) $(LIBODIR)/ver.o 
