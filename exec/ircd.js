@@ -689,6 +689,9 @@ if(this.resolve_host==undefined) {	// v3.10?
 	sync_310 = true;
 }
 
+if (jsexec_revision_detail==undefined)
+	jsexec_revision_detail = "JSexec";
+
 if(this.server==undefined) {		// Running from JSexec?
 	if (cmdline_port)
 		default_port = cmdline_port;
