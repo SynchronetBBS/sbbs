@@ -71,6 +71,7 @@ const struct vid_mode vid_modes[VID_MODES]={
 static int lastch=0;
 static int domouse=1;
 static DWORD last_state=0;
+static int LastX=-1, LastY=-1;
 static int xpos=1;
 static int ypos=1;
 
@@ -133,15 +134,17 @@ int win32_kbhit(void)
 	while(1) {
 		if(mouse_pending())
 			return(1);
-		if(!PeekConsoleInput(GetStdHandle(STD_INPUT_HANDLE), &input, 1, &num)
+		if(!GetNumberOfConsoleInputEvents(GetStdHandle(STD_INPUT_HANDLE), &num)
 			|| !num)
 			return(0);
 		if(input.EventType==KEY_EVENT && input.Event.KeyEvent.bKeyDown)
 			return(1);
 		if(domouse) {
 			if(input.EventType==MOUSE_EVENT) {
-				if(input.Event.MouseEvent.dwEventFlags==MOUSE_MOVED) {
-					ciomouse_gotevent(CIOLIB_MOUSE_MOVE,input.Event.MouseEvent.dwMousePosition.X+1,input.Event.MouseEvent.dwMousePosition.Y+1);
+				if(input.Event.MouseEvent.dwMousePosition.X+1 != LastX || input.Event.MouseEvent.dwMousePosition.Y+1 != LastY) {
+					LastX=input.Event.MouseEvent.dwMousePosition.X+1;
+					LastY=input.Event.MouseEvent.dwMousePosition.Y+1;
+					ciomouse_gotevent(CIOLIB_MOUSE_MOVE,LastX,LastY);
 				}
 				if(last_state != input.Event.MouseEvent.dwButtonState) {
 					switch(input.Event.MouseEvent.dwButtonState ^ last_state) {
@@ -184,8 +187,11 @@ int win32_getch(void)
 			lastch>>=8;
 			return(ch);
 		}
-		while(!PeekConsoleInput(GetStdHandle(STD_INPUT_HANDLE), &input, 1, &num)
-				&& !num && !mouse_pending()) {
+
+		while(1) {
+			GetNumberOfConsoleInputEvents(GetStdHandle(STD_INPUT_HANDLE), &num)
+			if(num || mouse_pending())
+				break;
 			SLEEP(1);
 		}
 
@@ -195,7 +201,7 @@ int win32_getch(void)
 		}
 
 		if(!ReadConsoleInput(GetStdHandle(STD_INPUT_HANDLE), &input, 1, &num)
-			|| !num || (input.EventType!=KEY_EVENT && input.EventType!=MOUSE_EVENT))
+				|| !num || (input.EventType!=KEY_EVENT && input.EventType!=MOUSE_EVENT))
 			continue;
 
 		switch(input.EventType) {
@@ -230,33 +236,33 @@ int win32_getch(void)
 				break;
 			case MOUSE_EVENT:
 				if(domouse) {
-					if(input.EventType==MOUSE_EVENT) {
-						if(input.Event.MouseEvent.dwEventFlags==MOUSE_MOVED) {
-							ciomouse_gotevent(CIOLIB_MOUSE_MOVE,input.Event.MouseEvent.dwMousePosition.X+1,input.Event.MouseEvent.dwMousePosition.Y+1);
+					if(input.Event.MouseEvent.dwMousePosition.X+1 != LastX || input.Event.MouseEvent.dwMousePosition.Y+1 != LastY) {
+						LastX=input.Event.MouseEvent.dwMousePosition.X+1;
+						LastY=input.Event.MouseEvent.dwMousePosition.Y+1;
+						ciomouse_gotevent(CIOLIB_MOUSE_MOVE,LastX,LastY);
+					}
+					if(last_state != input.Event.MouseEvent.dwButtonState) {
+						switch(input.Event.MouseEvent.dwButtonState ^ last_state) {
+							case FROM_LEFT_1ST_BUTTON_PRESSED:
+								if(input.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+									ciomouse_gotevent(CIOLIB_BUTTON_1_PRESS,input.Event.MouseEvent.dwMousePosition.X+1,input.Event.MouseEvent.dwMousePosition.Y+1);
+								else
+									ciomouse_gotevent(CIOLIB_BUTTON_1_RELEASE,input.Event.MouseEvent.dwMousePosition.X+1,input.Event.MouseEvent.dwMousePosition.Y+1);
+								break;
+							case FROM_LEFT_2ND_BUTTON_PRESSED:
+								if(input.Event.MouseEvent.dwButtonState & FROM_LEFT_2ND_BUTTON_PRESSED)
+									ciomouse_gotevent(CIOLIB_BUTTON_2_PRESS,input.Event.MouseEvent.dwMousePosition.X+1,input.Event.MouseEvent.dwMousePosition.Y+1);
+								else
+									ciomouse_gotevent(CIOLIB_BUTTON_2_RELEASE,input.Event.MouseEvent.dwMousePosition.X+1,input.Event.MouseEvent.dwMousePosition.Y+1);
+								break;
+							case RIGHTMOST_BUTTON_PRESSED:
+								if(input.Event.MouseEvent.dwButtonState & RIGHTMOST_BUTTON_PRESSED)
+									ciomouse_gotevent(CIOLIB_BUTTON_3_PRESS,input.Event.MouseEvent.dwMousePosition.X+1,input.Event.MouseEvent.dwMousePosition.Y+1);
+								else
+									ciomouse_gotevent(CIOLIB_BUTTON_3_RELEASE,input.Event.MouseEvent.dwMousePosition.X+1,input.Event.MouseEvent.dwMousePosition.Y+1);
+								break;
 						}
-						if(last_state != input.Event.MouseEvent.dwButtonState) {
-							switch(input.Event.MouseEvent.dwButtonState ^ last_state) {
-								case FROM_LEFT_1ST_BUTTON_PRESSED:
-									if(input.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
-										ciomouse_gotevent(CIOLIB_BUTTON_1_PRESS,input.Event.MouseEvent.dwMousePosition.X+1,input.Event.MouseEvent.dwMousePosition.Y+1);
-									else
-										ciomouse_gotevent(CIOLIB_BUTTON_1_RELEASE,input.Event.MouseEvent.dwMousePosition.X+1,input.Event.MouseEvent.dwMousePosition.Y+1);
-									break;
-								case FROM_LEFT_2ND_BUTTON_PRESSED:
-									if(input.Event.MouseEvent.dwButtonState & FROM_LEFT_2ND_BUTTON_PRESSED)
-										ciomouse_gotevent(CIOLIB_BUTTON_2_PRESS,input.Event.MouseEvent.dwMousePosition.X+1,input.Event.MouseEvent.dwMousePosition.Y+1);
-									else
-										ciomouse_gotevent(CIOLIB_BUTTON_2_RELEASE,input.Event.MouseEvent.dwMousePosition.X+1,input.Event.MouseEvent.dwMousePosition.Y+1);
-									break;
-								case RIGHTMOST_BUTTON_PRESSED:
-									if(input.Event.MouseEvent.dwButtonState & RIGHTMOST_BUTTON_PRESSED)
-										ciomouse_gotevent(CIOLIB_BUTTON_3_PRESS,input.Event.MouseEvent.dwMousePosition.X+1,input.Event.MouseEvent.dwMousePosition.Y+1);
-									else
-										ciomouse_gotevent(CIOLIB_BUTTON_3_RELEASE,input.Event.MouseEvent.dwMousePosition.X+1,input.Event.MouseEvent.dwMousePosition.Y+1);
-									break;
-							}
-							last_state=input.Event.MouseEvent.dwButtonState;
-						}
+						last_state=input.Event.MouseEvent.dwButtonState;
 					}
 				}
 		}
