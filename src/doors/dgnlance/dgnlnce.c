@@ -111,11 +111,6 @@ DWORD           cost[26];	       /* Array of weapon/shield costs */
 FILE           *infile;		       /* Current input file */
 DWORD           player_num;	       /* Current Player Number */
 DWORD           number_of_players;     /* Number of players in player[] */
-/**********************************************************/
-/* These variables are used for the stat adjustment stuff */
-/**********************************************************/
-BOOL            partone;
-BOOL            bothover;
 /************************/
 /* Functions from xpdev */
 /************************/
@@ -634,116 +629,116 @@ statshow(void)
     od_set_color(L_CYAN, D_BLACK);
     od_printf("Weapon: %s     Armor: %s\r\n", wname[user.weapon], sname[user.armour]);
 }
-
-void
+BOOL
 incre(void)
 {
     od_disp_str("Increase which stat? ");
     switch (od_get_answer("123456Q")) {
 	case '1':
 	    od_disp_str("Strength\r\n");
-	    user.strength++;
+	    opp.strength++;
 	    break;
 	case '2':
 	    od_disp_str("Intelligence\r\n");
-	    user.intelligence++;
+	    opp.intelligence++;
 	    break;
 	case '3':
 	    od_disp_str("Dexterity\r\n");
-	    user.dexterity++;
+	    opp.dexterity++;
 	    break;
 	case '4':
 	    od_disp_str("Luck\r\n");
-	    user.luck++;
+	    opp.luck++;
 	    break;
 	case '5':
 	    od_disp_str("Constitution\r\n");
-	    user.constitution++;
+	    opp.constitution++;
 	    break;
 	case '6':
 	    od_disp_str("Charisma\r\n");
-	    user.charisma++;
+	    opp.charisma++;
 	    break;
 	case 'Q':
 	    od_disp_str("Quit\r\n");
-	    partone = FALSE;
-	    break;
+	    return (FALSE);
     }
+    return (TRUE);
 }
-
-void
+BOOL
 decre(void)
 {
     od_disp_str("Decrease which stat? ");
-    switch (od_get_answer("123456")) {
+    switch (od_get_answer("123456Q")) {
 	case '1':
 	    od_disp_str("Strength\r\n");
-	    user.strength -= 2;
+	    opp.strength -= 2;
 	    break;
 	case '2':
 	    od_disp_str("Intelligence\r\n");
-	    user.intelligence -= 2;
+	    opp.intelligence -= 2;
 	    break;
 	case '3':
 	    od_disp_str("Dexterity\r\n");
-	    user.dexterity -= 2;
+	    opp.dexterity -= 2;
 	    break;
 	case '4':
 	    od_disp_str("Luck\r\n");
-	    user.luck -= 2;
+	    opp.luck -= 2;
 	    break;
 	case '5':
 	    od_disp_str("Constitution\r\n");
-	    user.constitution -= 2;
+	    opp.constitution -= 2;
 	    break;
 	case '6':
 	    od_disp_str("Charisma\r\n");
-	    user.charisma -= 2;
+	    opp.charisma -= 2;
 	    break;
+	case 'Q':
+	    od_disp_str("Quit\r\n");
+	    return (FALSE);
     }
+    return (TRUE);
 }
-
-void
+BOOL
 ministat(void)
 {
     BOOL            yaya = TRUE;
-    partone = FALSE;
     nl();
     od_disp_str("Status Change:\r\n");
     od_disp_str("^^^^^^^^^^^^^^\r\n");
-    od_printf("1> Str: %u\r\n", user.strength);
-    od_printf("2> Int: %u\r\n", user.intelligence);
-    od_printf("3> Dex: %u\r\n", user.dexterity);
-    od_printf("4> Luk: %u\r\n", user.luck);
-    od_printf("5> Con: %u\r\n", user.constitution);
-    od_printf("6> Chr: %u\r\n", user.charisma);
+    od_printf("1> Str: %u\r\n", opp.strength);
+    od_printf("2> Int: %u\r\n", opp.intelligence);
+    od_printf("3> Dex: %u\r\n", opp.dexterity);
+    od_printf("4> Luk: %u\r\n", opp.luck);
+    od_printf("5> Con: %u\r\n", opp.constitution);
+    od_printf("6> Chr: %u\r\n", opp.charisma);
     nl();
-    if (user.strength < 6) {
+    if (opp.strength < 6) {
 	yaya = FALSE;
 	nl();
 	od_disp_str("Strength cannot go below 6\r\n");
     }
-    if (user.intelligence < 6) {
+    if (opp.intelligence < 6) {
 	yaya = FALSE;
 	nl();
 	od_disp_str("Intelligence cannot go below 6\r\n");
     }
-    if (user.dexterity < 6) {
+    if (opp.dexterity < 6) {
 	yaya = FALSE;
 	nl();
 	od_disp_str("Dexterity cannot go below 6\r\n");
     }
-    if (user.luck < 6) {
+    if (opp.luck < 6) {
 	yaya = FALSE;
 	nl();
 	od_disp_str("Luck cannot go below 6\r\n");
     }
-    if (user.constitution < 6) {
+    if (opp.constitution < 6) {
 	yaya = FALSE;
 	nl();
 	od_disp_str("Constitution cannot go below 6\r\n");
     }
-    if (user.charisma < 6) {
+    if (opp.charisma < 6) {
 	yaya = FALSE;
 	nl();
 	od_disp_str("Charisma cannot go below 6\r\n");
@@ -752,51 +747,41 @@ ministat(void)
 	od_disp_str("Is this correct? ");
 	if (od_get_answer("YN") == 'Y') {
 	    od_disp_str("Yes\r\n");
+	    user = opp;
+	    return (TRUE);
 	} else {
 	    od_disp_str("No\r\n");
-	    user = opp;
-	    bothover = FALSE;
-	    bothover = FALSE;
+	    return (FALSE);
 	}
-    } else {
-	user = opp;
-	bothover = FALSE;
-    }
+    } else
+	return (FALSE);
 }
 
 void
 chstats(void)
 {
     od_clr_scr();
-    bothover = FALSE;
-    opp = user;
 
     for (;;) {
-	partone = TRUE;
+	opp = user;
 	od_disp_str("Status Change:\r\n");
 	od_disp_str("@@@@@@@@@@@@@\r\n");
 	od_disp_str("You may increase any stat by one,\r\n");
 	od_disp_str("yet you must decrease another by two.\r\n");
 	nl();
-	od_printf("1> Str: %u\r\n", user.strength);
-	od_printf("2> Int: %u\r\n", user.intelligence);
-	od_printf("3> Dex: %u\r\n", user.dexterity);
-	od_printf("4> Luk: %u\r\n", user.luck);
-	od_printf("5> Con: %u\r\n", user.constitution);
-	od_printf("6> Chr: %u\r\n", user.charisma);
+	od_printf("1> Str: %u\r\n", opp.strength);
+	od_printf("2> Int: %u\r\n", opp.intelligence);
+	od_printf("3> Dex: %u\r\n", opp.dexterity);
+	od_printf("4> Luk: %u\r\n", opp.luck);
+	od_printf("5> Con: %u\r\n", opp.constitution);
+	od_printf("6> Chr: %u\r\n", opp.charisma);
 	nl();
-	incre();
-	if (partone)
-	    decre();
-	else
-	    partone = FALSE;
-	if (partone)
-	    bothover = TRUE;
-	if (!partone)
-	    bothover = FALSE;
-	else
-	    ministat();
-	if (!bothover)
+	if (incre()) {
+	    if (decre()) {
+		if (ministat())
+		    break;
+	    }
+	} else
 	    break;
     }
 }
