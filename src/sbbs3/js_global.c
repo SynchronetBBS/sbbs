@@ -574,8 +574,8 @@ js_html_encode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 {
 	int			ch;
 	ulong		i,j;
-	char*		inbuf;
-	char*		outbuf;
+	uchar*		inbuf;
+	uchar*		outbuf;
 	JSBool		exascii=JS_FALSE;
 	JSString*	js_str;
 
@@ -617,7 +617,7 @@ js_html_encode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 				j+=sprintf(outbuf+j,"&sect;");
 				break;
 			default:
-				if(inbuf[i]>' ' && inbuf[i]<DEL)
+				if(inbuf[i]>=' ' && inbuf[i]<DEL)
 					outbuf[j++]=inbuf[i];
 				else if(exascii && inbuf[i]&0x80) {
 					ch=inbuf[i]^0x80;
@@ -626,7 +626,7 @@ js_html_encode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 					else
 						j+=sprintf(outbuf+j,"&#%u;",exasctbl[ch].value);
 				}
-				else if((uchar)inbuf[i]>=' ') /* strip unknown control chars */
+				else if(inbuf[i]>' ') /* strip unknown control chars */
 					j+=sprintf(outbuf+j,"&#%u;",inbuf[i]);
 				break;
 		}
@@ -648,8 +648,8 @@ js_html_decode(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rva
 	int			ch;
 	int			val;
 	ulong		i,j;
-	char*		inbuf;
-	char*		outbuf;
+	uchar*		inbuf;
+	uchar*		outbuf;
 	char		token[16];
 	size_t		t;
 	JSString*	js_str;
