@@ -449,13 +449,13 @@ bool sbbs_t::ftp_cmd(csi_t* csi, SOCKET sock, char* cmdsrc, char* rsp)
 
 SOCKET sbbs_t::ftp_data_sock(csi_t* csi, SOCKET ctrl_sock, SOCKADDR_IN* addr)
 {
-	char	cmd[512];
-	char	rsp[512];
-	char*	p;
-	int		addr_len;
-	SOCKET	data_sock;
-	int		ip_b[4];
-	int		port_b[2];
+	char		cmd[512];
+	char		rsp[512];
+	char*		p;
+	socklen_t	addr_len;
+	SOCKET		data_sock;
+	int			ip_b[4];
+	int			port_b[2];
 	union {
 		DWORD	dw;
 		BYTE	b[sizeof(DWORD)];
@@ -556,15 +556,15 @@ SOCKET sbbs_t::ftp_data_sock(csi_t* csi, SOCKET ctrl_sock, SOCKADDR_IN* addr)
 
 bool sbbs_t::ftp_get(csi_t* csi, SOCKET ctrl_sock, char* src, char* dest, bool dir)
 {
-	char	cmd[512];
-	char	rsp[512];
-	char	buf[4097];
-	int		rd;
-	int		addr_len;
-	ulong	total=0;
-	SOCKET	data_sock;
+	char		cmd[512];
+	char		rsp[512];
+	char		buf[4097];
+	int			rd;
+	ulong		total=0;
+	SOCKET		data_sock;
 	SOCKADDR_IN	addr;
-	FILE*	fp=NULL;
+	socklen_t	addr_len;
+	FILE*		fp=NULL;
 
 	if((data_sock=ftp_data_sock(csi, ctrl_sock, &addr))==INVALID_SOCKET)
 		return(false);
@@ -660,16 +660,16 @@ bool sbbs_t::ftp_get(csi_t* csi, SOCKET ctrl_sock, char* src, char* dest, bool d
 
 bool sbbs_t::ftp_put(csi_t* csi, SOCKET ctrl_sock, char* src, char* dest)
 {
-	char	cmd[512];
-	char	rsp[512];
-	char	buf[4097];
-	int		rd;
-	int		addr_len;
-	ulong	total=0;
-	SOCKET	data_sock;
+	char		cmd[512];
+	char		rsp[512];
+	char		buf[4097];
+	int			rd;
+	ulong		total=0;
+	SOCKET		data_sock;
 	SOCKADDR_IN	addr;
-	FILE*	fp=NULL;
-	bool	error=false;
+	socklen_t	addr_len;
+	FILE*		fp=NULL;
+	bool		error=false;
 
 	if((data_sock=ftp_data_sock(csi, ctrl_sock, &addr))==INVALID_SOCKET)
 		return(false);
