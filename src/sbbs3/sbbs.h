@@ -821,8 +821,10 @@ extern "C" {
 	DLLEXPORT BOOL		DLLCALL write_file_cfg(scfg_t* cfg, int backup_level);
 	DLLEXPORT BOOL		DLLCALL write_chat_cfg(scfg_t* cfg, int backup_level);
 	DLLEXPORT BOOL		DLLCALL write_xtrn_cfg(scfg_t* cfg, int backup_level);
-	DLLEXPORT void		DLLCALL backup(char *org, int backup_level, BOOL ren);
+	DLLEXPORT BOOL		DLLCALL fcopy(char* src, char* dest);
+	DLLEXPORT BOOL		DLLCALL backup(char *org, int backup_level, BOOL ren);
 	DLLEXPORT void		DLLCALL refresh_cfg(scfg_t* cfg);
+	
 
 	/* scfglib1.c */
 	DLLEXPORT char *	DLLCALL prep_dir(char* base, char* dir, size_t buflen);
