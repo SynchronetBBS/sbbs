@@ -780,6 +780,7 @@ extern "C" {
 	DLLEXPORT char *	DLLCALL strip_ctrl(char *str);
 	DLLEXPORT char *	DLLCALL strip_exascii(char *str);
 	DLLEXPORT char *	DLLCALL prep_file_desc(char *str);
+	DLLEXPORT char *	DLLCALL net_addr(net_t* net);
 
 	/* load_cfg.c */
 	DLLEXPORT BOOL		DLLCALL load_cfg(scfg_t* cfg, char* text[], BOOL prep, char* error);
