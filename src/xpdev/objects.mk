@@ -4,12 +4,12 @@
 
 # $Id$
 
-# ODIR, SLASH, and OFILE must be pre-defined
+# LIBODIR, SLASH, and OFILE must be pre-defined
 
 OBJS = \
-	$(ODIR)$(SLASH)genwrap.$(OFILE) \
-	$(ODIR)$(SLASH)conwrap.$(OFILE) \
-	$(ODIR)$(SLASH)dirwrap.$(OFILE) \
-	$(ODIR)$(SLASH)filewrap.$(OFILE) \
-	$(ODIR)$(SLASH)threadwrap.$(OFILE) \
-	$(ODIR)$(SLASH)semwrap.$(OFILE)
+	$(LIBODIR)$(SLASH)genwrap.$(OFILE) \
+	$(LIBODIR)$(SLASH)conwrap.$(OFILE) \
+	$(LIBODIR)$(SLASH)dirwrap.$(OFILE) \
+	$(LIBODIR)$(SLASH)filewrap.$(OFILE) \
+	$(LIBODIR)$(SLASH)threadwrap.$(OFILE) \
+	$(LIBODIR)$(SLASH)semwrap.$(OFILE)

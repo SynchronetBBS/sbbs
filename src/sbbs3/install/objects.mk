@@ -7,11 +7,9 @@
 # LIBODIR, SBBSLIBODIR, SLASH, and OFILE must be pre-defined
 
 
-OBJS	=	$(ODIR)$(SLASH)sbbsinst.$(OFILE)\
-			$(ODIR)$(SLASH)sockwrap.$(OFILE)\
-			$(ODIR)$(SLASH)genwrap.$(OFILE)\
-			$(ODIR)$(SLASH)dirwrap.$(OFILE)\
-			$(ODIR)$(SLASH)filewrap.$(OFILE)\
-			$(ODIR)$(SLASH)ciowrap.$(OFILE)\
-			$(ODIR)$(SLASH)httpio.$(OFILE)\
-			$(ODIR)$(SLASH)uifcx.$(OFILE)
+OBJS	=	$(LIBODIR)$(SLASH)sbbsinst.$(OFILE)\
+			$(LIBODIR)$(SLASH)sockwrap.$(OFILE)\
+			$(LIBODIR)$(SLASH)genwrap.$(OFILE)\
+			$(LIBODIR)$(SLASH)dirwrap.$(OFILE)\
+			$(LIBODIR)$(SLASH)filewrap.$(OFILE)\
+			$(LIBODIR)$(SLASH)httpio.$(OFILE)

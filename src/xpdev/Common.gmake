@@ -1,0 +1,288 @@
+# Available Options:
+# NEED_THREADS		= Set flags suitable for threaded programs
+# NEED_CURSES       = Set flags suitable for building with the curses lib
+# NEED_JAVASCRIPT   = Set flags for use with JS
+# NEED_UIFC			= Set flags for use with UIFC
+
+UIFC_DIR	?=	$(XPDEV)../uifc/
+SBBS_SRC	?=	$(XPDEV)../sbbs3/
+
+# Set DEBUG
+ifndef DEBUG
+ ifndef RELEASE
+  DEBUG	:=	1
+ endif
+endif
+
+# VERBOSE/QUITE
+ifndef VERBOSE
+ QUIET	=	@
+endif
+
+CFLAGS	+=	-I$(SBBS_SRC)
+
+# Compiler-specific options
+ifdef bcc
+ CC		:=	bc++
+ CCPRE	:=	bcc
+ CFLAGS +=	-mm -md -D__unix__ -w-csu -w-pch -w-ccc -w-rch -w-par -w-aus
+# CFLAGS	+=	-q -w -D__unix__
+else
+ CFLAGS	+=	-MMD -Wall
+ CCPRE	?=	gcc
+ ifdef BUILD_DEPENDS
+  CC	=	$(XPDEV)../build/mkdep -a
+  CXX	=	$(XPDEV)../build/mkdep -a
+  LD	=	echo
+  COMPILE_MSG	:= Depending
+ else
+  CC	?=	gcc
+  CXX	?=	g++
+  LD	?=	ld
+  COMPILE_MSG	:= Compiling
+ endif
+endif
+
+SLASH	=	/
+OFILE	=	o
+
+ifdef DEBUG
+ BUILD	=	debug
+else
+ BUILD	=	release
+endif
+BUILDPATH	:=	$(BUILD)
+
+# Get OS
+ifndef os
+ os		=	$(shell uname)
+endif
+os      :=	$(shell echo $(os) | tr "[A-Z]" "[a-z]")
+
+LIBODIR :=	$(CCPRE).$(os).lib.$(BUILDPATH)
+EXEODIR :=	$(CCPRE).$(os).exe.$(BUILDPATH)
+LDFLAGS	+=	-L$(LIBODIR)
+
+DELETE	=	rm -fv
+EXEFILE	:=
+
+ifeq ($(os),openbsd)
+LIBFILE =	.so.0.0
+else
+ ifeq ($(os),darwin)
+  LIBFILE =	.dylib
+ else
+  LIBFILE	=	.so
+ endif
+endif
+LIBPREFIX =	lib
+
+# OS Specific Flags
+ifeq ($(os),sunos)    # Solaris
+ CFLAGS	+= -D__solaris__ -DNEEDS_DAEMON -DNEEDS_FORKPTY
+endif
+ifeq ($(os),netbsd)	# NetBSD
+ CFLAGS	+=	-D__unix__ -I/usr/pkg/include -I/usr/pkg/pthreads/include -DNEEDS_FORKPTY
+endif
+ifeq ($(os),darwin)
+ CFLAGS +=  -D__unix__ -fno-common -D__DARWIN__
+ LDFLAGS +=  -lm
+endif
+
+# PThread-specific flags
+ifeq ($(os),linux)    # Linux
+ ifndef THREADS_ACTUALLY_WORK
+  PTHREAD_CFLAGS    += -D_THREAD_SUID_BROKEN
+ endif
+endif
+PTHREAD_CFLAGS    += -D_THREAD_SAFE -D_REENTRANT
+ifeq ($(os),freebsd)    # FreeBSD
+ PTHREAD_CFLAGS    += -DUSE_XP_SEMAPHORES
+ PTHREAD_LDFLAGS    +=    -pthread
+ XP_SEM    :=    1
+else
+ ifeq ($(os),openbsd)    # OpenBSD
+  PTHREAD_CFLAGS    += -DUSE_XP_SEMAPHORES
+  PTHREAD_LDFLAGS    +=    -pthread
+  XP_SEM    :=    1
+ else
+  ifeq ($(os),netbsd)    # NetBSD
+   PTHREAD_CFLAGS    += -D__unix__ -DUSE_XP_SEMAPHORES
+   PTHREAD_LDFLAGS    +=    -L/usr/pkg/lib -L/usr/pkg/pthreads/lib -lpthread
+   XP_SEM    :=    1
+  else
+   ifeq ($(os),qnx)    # QNX
+   else
+    ifeq ($(os),darwin)    # Darwin/Mac OS X
+     PTHREAD_CFLAGS    += -D__unix__ -DUSE_XP_SEMAPHORES -D__DARWIN__
+     PTHREAD_LDFLAGS    += -lpthread
+     XP_SEM    := 1
+    else
+     ifeq ($(os),solaris)  # Solaris
+      PTHREAD_CFLAGS    +=    -D_POSIX_PTHREAD_SEMANTICS
+     else            # Linux / Other UNIX
+      XP_SEM :=    1
+      PTHREAD_CFLAGS    += -DUSE_XP_SEMAPHORES
+      ifdef bcc
+       PTHREAD_LDFLAGS    +=    libpthread.a
+      else
+       PTHREAD_LDFLAGS    +=    -lpthread
+      endif
+     endif
+    endif
+   endif
+  endif
+ endif
+endif
+
+ifdef NEED_THREADS
+ CFLAGS += $(PTHREAD_CFLAGS)
+ LDFLAGS	+= $(PTHREAD_LDFLAGS)
+endif
+
+ifdef DEBUG
+ ifdef bcc
+  CFLAGS	+=	-v -y -0d
+ else
+  CFLAGS	+=	-ggdb
+ endif
+ CFLAGS	+=	-D_DEBUG
+ ODIR	:=	$(ODIR).debug
+else # RELEASE
+ CFLAGS	+= -O3
+ ODIR	:=	$(ODIR).release
+endif
+
+# UIFC Related stuff
+UIFC_CFLAGS	+=	-I$(UIFC)
+UIFC_OBJS =	$(LIBODIR)/uifcx.o
+ifdef USE_FLTK
+ UIFC_CFLAGS +=	-DUSE_FLTK -I$(XPDEV)/../../include/fltk
+ UIFC_LDFLAGS += -L$(XPDEV)../../lib/fltk/$(os) -L/usr/X11R6/lib -lm -lfltk -lX11
+ UIFC_OBJS+=	$(LIBODIR)/uifcfltk.o
+endif
+ifdef USE_DIALOG
+ LDFLAGS	+=	-L$(XPDEV)../libdialog -ldialog $(CURSESLIB)
+ CFLAGS	+=	-I$(XPDEV)../libdialog -DUSE_DIALOG
+ UIFC_NEED_CURSES	:=	1
+endif
+ifdef USE_CURSES
+ UIFC_CFLAGS +=	-DUSE_CURSES
+ UIFC_LDFLAGS += $(CURSES_LDFLAGS)
+ UIFC_OBJS +=	$(LIBODIR)/uifcc.o
+ UIFC_NEED_CURSES	:=	1
+endif
+ifdef USE_UIFC32
+ UIFC_CFLAGS +=	-DUSE_UIFC32
+ UIFC_LDFLAGS += $(CURSES_LDFLAGS)
+ UIFC_OBJS +=	$(LIBODIR)/uifc32.o
+ UIFC_OBJS +=	$(LIBODIR)/ciowrap.o
+ UIFC_NEED_CURSES	:=	1
+endif
+ifdef NEED_UIFC
+ CFLAGS	+=	$(UIFC_CFLAGS)
+ LDFLAGS	+=	$(UIFC_LDFLAGS)
+endif
+
+# Curses Stuff
+ifeq ($(os),qnx)
+ CURSES_LDFLAGS += -lncurses
+else
+ ifeq ($(os),netbsd)
+  CURSES_CFLAGS += -I/usr/pkg/include
+  CURSES_LDFLAGS += -lncurses
+ else
+  CURSES_LDFLAGS += -lcurses
+ endif
+endif
+
+ifdef NEED_CURSES
+ CFLAGS +=	$(CURSES_CFLAGS)
+ LDFLAGS	+=	$(CURSES_LDFLAGS)
+endif
+ifdef UIFC_NEED_CURSES
+ UIFC_CFLAGS	+=	$(CURSES_CFLAGS)
+ UIFC_LDFLAGS	+=	$(CURSES_LDFLAGS)
+endif
+
+JS_CFLAGS += -DJAVASCRIPT
+ifdef JSINCLUDE
+ JS_CFLAGS += -I$(JSINCLUDE)
+else
+ JS_CFLAGS += -I$(XPDEV)../../include/mozilla/js
+endif
+ifndef JSLIBDIR
+ JSLIBDIR := $(XPDEV)../../lib/mozilla/js/$(os).$(BUILD)
+endif
+ifndef JSLIB
+ JSLIB	:=	js
+endif
+ifndef NSPRDIR
+ NSPRDIR := $(XPDEV)../../lib/mozilla/nspr/$(os).$(BUILD)
+endif
+JS_LDFLAGS += -L$(JSLIBDIR) -l$(JSLIB)
+#The following is needed for nspr support on Linux
+ifeq ($(os),linux)
+ JS_LDFLAGS	+=	-ldl
+endif
+JS_LDFLAGS	+=	-lnspr4 -L$(NSPRDIR)
+
+ifdef NEED_JAVASCRIPT
+ CFLAGS	+=	$(JS_CFLAGS)
+ LDFLAGS	+=	$(JS_LDFLAGS)
+endif
+
+vpath %.c $(XPDEV)
+vpath %.c $(UIFC_DIR)
+vpath %.c $(SBBS_SRC)
+vpath %.cpp $(UIFC_DIR)
+vpath %.cpp $(SBBS_SRC)
+
+CFLAGS	+=	-I$(XPDEV) -I$(UIFC_DIR) -I$(SBBS_SRC)
+
+SBBSDEFS	:=
+-include targets.mk
+-include objects.mk		# defines $(OBJS)
+ifdef NEED_UIFC
+ OBJS	+=	$(UIFC_OBJS)
+endif
+ifdef XP_SEM
+ OBJS	+= $(LIBODIR)$(SLASH)xpsem.$(OFILE)
+endif
+-include sbbsdefs.mk		# defines $(SBBSDEFS)
+
+# Implicit C Compile Rule for SBBS
+$(LIBODIR)/%.o : %.c $(BUILD_DEPENDS)
+   ifndef bcc
+	@echo $(COMPILE_MSG) $<
+   endif
+	$(QUIET)$(CC) $(CFLAGS) $(SBBSDEFS) -o $@ -c $<
+
+# Implicit C++ Compile Rule for SBBS
+$(LIBODIR)/%.o : %.cpp $(BUILD_DEPENDS)
+   ifndef bcc
+	@echo $(COMPILE_MSG) $<
+   endif
+	$(QUIET)$(CXX) $(CFLAGS) $(SBBSDEFS) -o $@ -c $<
+
+$(LIBODIR):
+	$(QUIET)mkdir $(LIBODIR)
+
+$(EXEODIR):
+	$(QUIET)mkdir $(EXEODIR)
+
+clean:
+	$(QUIET)$(DELETE) $(LIBODIR)$(SLASH)*
+	$(QUIET)$(DELETE) $(EXEODIR)$(SLASH)*
+
+depend:
+	$(QUIET)$(DELETE) $(LIBODIR)/.depend
+	$(QUIET)$(DELETE) $(EXEODIR)/.depend
+	$(QUIET)$(MAKE) BUILD_DEPENDS=FORCE
+
+FORCE:
+
+-include $(LIBODIR)/.depend
+-include $(EXEODIR)/.depend
+-include $(LIBODIR)/*.d
+-include $(EXEODIR)/*.d

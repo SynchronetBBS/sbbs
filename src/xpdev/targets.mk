@@ -6,9 +6,6 @@
 
 # ODIR, SLASH, LIBFILE, EXEFILE, and DELETE must be pre-defined
 
-WRAPTEST	= $(ODIR)$(SLASH)wraptest$(EXEFILE) 
+WRAPTEST	= $(EXEODIR)$(SLASH)wraptest$(EXEFILE) 
 
-all: $(ODIR) $(WRAPTEST)
-
-clean:
-	@$(DELETE) $(ODIR)$(SLASH)*
+all: $(EXEODIR) $(LIBODIR) $(WRAPTEST)

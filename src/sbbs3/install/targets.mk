@@ -6,10 +6,8 @@
 
 # ODIR, SLASH, LIBFILE, EXEFILE, and DELETE must be pre-defined
 
-SBBSINST	=	$(ODIR)$(SLASH)sbbsinst$(EXEFILE) 
+SBBSINST	=	$(EXEODIR)$(SLASH)sbbsinst$(EXEFILE) 
 
-all:	$(ODIR) \
+all:	$(EXEODIR) \
+		$(LIBODIR) \
 		$(SBBSINST)
-
-clean:
-	@$(DELETE) $(ODIR)$(SLASH)*

@@ -7,31 +7,29 @@
 # LIBODIR, SBBSLIBODIR, SLASH, and OFILE must be pre-defined
 
 
-OBJS	=	$(ODIR)$(SLASH)scfg.$(OFILE)\
-			$(ODIR)$(SLASH)scfgxtrn.$(OFILE)\
-			$(ODIR)$(SLASH)scfgmsg.$(OFILE)\
-			$(ODIR)$(SLASH)scfgnet.$(OFILE)\
-			$(ODIR)$(SLASH)scfgnode.$(OFILE)\
-			$(ODIR)$(SLASH)scfgsub.$(OFILE)\
-			$(ODIR)$(SLASH)scfgsys.$(OFILE)\
-			$(ODIR)$(SLASH)scfgxfr1.$(OFILE)\
-			$(ODIR)$(SLASH)scfgxfr2.$(OFILE)\
-			$(ODIR)$(SLASH)scfgchat.$(OFILE)\
-            $(ODIR)$(SLASH)scfgsave.$(OFILE)\
-            $(ODIR)$(SLASH)scfglib1.$(OFILE)\
-            $(ODIR)$(SLASH)smblib.$(OFILE)\
-            $(ODIR)$(SLASH)scfglib2.$(OFILE)\
-            $(ODIR)$(SLASH)ars.$(OFILE)\
-            $(ODIR)$(SLASH)load_cfg.$(OFILE)\
-            $(ODIR)$(SLASH)nopen.$(OFILE)\
-            $(ODIR)$(SLASH)crc16.$(OFILE)\
-            $(ODIR)$(SLASH)crc32.$(OFILE)\
-            $(ODIR)$(SLASH)dat_rec.$(OFILE)\
-            $(ODIR)$(SLASH)userdat.$(OFILE)\
-            $(ODIR)$(SLASH)date_str.$(OFILE)\
-			$(ODIR)$(SLASH)str_util.$(OFILE)\
-			$(ODIR)$(SLASH)genwrap.$(OFILE)\
-			$(ODIR)$(SLASH)dirwrap.$(OFILE)\
-			$(ODIR)$(SLASH)filewrap.$(OFILE)\
-			$(ODIR)$(SLASH)uifcx.$(OFILE)
-
+OBJS	=	$(LIBODIR)$(SLASH)scfg.$(OFILE)\
+			$(LIBODIR)$(SLASH)scfgxtrn.$(OFILE)\
+			$(LIBODIR)$(SLASH)scfgmsg.$(OFILE)\
+			$(LIBODIR)$(SLASH)scfgnet.$(OFILE)\
+			$(LIBODIR)$(SLASH)scfgnode.$(OFILE)\
+			$(LIBODIR)$(SLASH)scfgsub.$(OFILE)\
+			$(LIBODIR)$(SLASH)scfgsys.$(OFILE)\
+			$(LIBODIR)$(SLASH)scfgxfr1.$(OFILE)\
+			$(LIBODIR)$(SLASH)scfgxfr2.$(OFILE)\
+			$(LIBODIR)$(SLASH)scfgchat.$(OFILE)\
+            $(LIBODIR)$(SLASH)scfgsave.$(OFILE)\
+            $(LIBODIR)$(SLASH)scfglib1.$(OFILE)\
+            $(LIBODIR)$(SLASH)smblib.$(OFILE)\
+            $(LIBODIR)$(SLASH)scfglib2.$(OFILE)\
+            $(LIBODIR)$(SLASH)ars.$(OFILE)\
+            $(LIBODIR)$(SLASH)load_cfg.$(OFILE)\
+            $(LIBODIR)$(SLASH)nopen.$(OFILE)\
+            $(LIBODIR)$(SLASH)crc16.$(OFILE)\
+            $(LIBODIR)$(SLASH)crc32.$(OFILE)\
+            $(LIBODIR)$(SLASH)dat_rec.$(OFILE)\
+            $(LIBODIR)$(SLASH)userdat.$(OFILE)\
+            $(LIBODIR)$(SLASH)date_str.$(OFILE)\
+			$(LIBODIR)$(SLASH)str_util.$(OFILE)\
+			$(LIBODIR)$(SLASH)genwrap.$(OFILE)\
+			$(LIBODIR)$(SLASH)dirwrap.$(OFILE)\
+			$(LIBODIR)$(SLASH)filewrap.$(OFILE)

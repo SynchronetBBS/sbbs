@@ -42,7 +42,3 @@ dlls:	$(LIBODIR) \
 		$(SBBS) $(FTPSRVR) $(MAILSRVR) $(SERVICES)
 
 mono:	$(LIBODIR) $(EXEODIR) $(SBBSMONO)
-
-clean:
-	@$(DELETE) $(LIBODIR)$(SLASH)*
-	@$(DELETE) $(EXEODIR)$(SLASH)*
