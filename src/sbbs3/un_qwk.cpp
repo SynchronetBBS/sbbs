@@ -307,7 +307,9 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 		closedir(dir);
 
 	t=time(NULL)-start;
-	if(t) {
+	if(msgs) {
+		if(t<1)
+			t=1;
 		eprintf(LOG_INFO,"Finished Importing QWK Network Packet from %s: "
 			"(%lu msgs) in %lu seconds (%lu msgs/sec)"
 			,cfg.qhub[hubnum]->id, msgs, t, msgs/t);
