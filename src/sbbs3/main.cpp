@@ -1201,6 +1201,7 @@ void event_thread(void* arg)
 			/* Node Daily Events */
 			for(i=first_node;i<=last_node;i++) {
 				// Node Daily Event
+				node.status=NODE_INVALID_STATUS;
 				if(sbbs->getnodedat(i,&node,0)!=0)
 					continue;
 				if(node.misc&NODE_EVENT && node.status==NODE_WFC) {
@@ -1513,6 +1514,7 @@ void event_thread(void* arg)
 					|| sbbs->cfg.event[i]->node>last_node) {
 					sbbs->cfg.event[i]->last=now;
 					for(j=first_node;j<=last_node;j++) {
+						node.status=NODE_INVALID_STATUS;
 						if(sbbs->getnodedat(j,&node,1)!=0)
 							continue;
 						node.status=NODE_WFC;
@@ -1556,6 +1558,7 @@ void event_thread(void* arg)
 					if(sbbs->cfg.event[i]->misc&EVENT_EXCL) { /* exclusive event */
 						// Check/change the status of the nodes that we're in control of
 						for(j=first_node;j<=last_node;j++) {
+							node.status=NODE_INVALID_STATUS;
 							if(sbbs->getnodedat(j,&node,1)!=0)
 								continue;
 							node.status=NODE_WFC;
