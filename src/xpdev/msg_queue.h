@@ -48,7 +48,7 @@ typedef struct {
 	char			name[128];			/* for named-queues */
 	link_list_t		in;
 	link_list_t		out;
-	DWORD			owner_thread_id;	/* reads from in, writes to out */
+	pthread_t		owner_thread_id;	/* reads from in, writes to out */
 	long			refs;
 	unsigned long	flags;				/* private use flags */
 	void*			private_data;
