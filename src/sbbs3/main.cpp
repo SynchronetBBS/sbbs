@@ -417,17 +417,11 @@ DLLCALL js_DefineMethods(JSContext* cx, JSObject* obj, jsMethodSpec *funcs, BOOL
 
 #endif
 
-/* 
- * @method: log
- * @syntax: log([value][,value][...])
- * @arg:	value Variable or constant of any type
- * @desc:	Print one or more values (typically Strings) in the local log window/display.
- */
 static JSBool
 js_log(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     uintN		i;
-    JSString *	str;
+    JSString*	str=NULL;
 	sbbs_t*		sbbs;
 
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
@@ -443,20 +437,18 @@ js_log(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 			lputs(JS_GetStringBytes(str));
 		}
 
-	*rval = JSVAL_VOID;
+	if(str==NULL)
+		*rval = JSVAL_VOID;
+	else
+		*rval = STRING_TO_JSVAL(str);
     return(JS_TRUE);
 }
 
-/*
- * @method: print
- * @usage: print([value][,value][...])
- */
-
 static JSBool
-js_print(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+js_write(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     uintN		i;
-    JSString *	str;
+    JSString*	str=NULL;
 	sbbs_t*		sbbs;
 
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
@@ -469,11 +461,27 @@ js_print(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 			eprintf("%s",JS_GetStringBytes(str));
 		else
 			sbbs->bputs(JS_GetStringBytes(str));
-		}
+	}
+
+	if(str==NULL)
+		*rval = JSVAL_VOID;
+	else
+		*rval = STRING_TO_JSVAL(str);
+    return(JS_TRUE);
+}
+
+static JSBool
+js_print(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	js_write(cx,obj,argc,argv,rval);
 	if(sbbs->online==ON_REMOTE)
 		sbbs->bputs(crlf);
 
-	*rval = JSVAL_VOID;
     return(JS_TRUE);
 }
 
@@ -516,9 +524,11 @@ js_printf(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 		eprintf("%s",p);
 	else
 		sbbs->bputs(p);
+
+	*rval = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, p));
+
 	JS_smprintf_free(p);
 
-	*rval = JSVAL_VOID;
     return(JS_TRUE);
 }
 
@@ -594,16 +604,33 @@ js_prompt(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     return(JS_TRUE);
 }
 
+static JSBool
+js_reset_loop(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+	sbbs_t*		sbbs;
+
+	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
+		return(JS_FALSE);
+
+	sbbs->js_loop=0;
+	*rval = JSVAL_VOID;
+	return(JS_TRUE);
+}
+
 static jsMethodSpec js_global_functions[] = {
-	{"log",				js_log,				1,	JSTYPE_VOID,	JSDOCSTR("value [,value]")
+	{"log",				js_log,				1,	JSTYPE_STRING,	JSDOCSTR("value [,value]")
 	,JSDOCSTR("add a line of text to the server and/or system log, "
 		"<i>values</i> are typically string constants or variables")
 	},
+	{"write",			js_write,			0,	JSTYPE_VOID,	JSDOCSTR("value [,value]")
+	,JSDOCSTR("print a value to the server output")
+	},
+	{"writeln",			js_print,			0,	JSTYPE_ALIAS },
     {"print",           js_print,           0,	JSTYPE_VOID,	JSDOCSTR("value [,value]")
 	,JSDOCSTR("print a line of text to the console or event log with automatic line termination (CRLF), "
-		"<i>values</i> are typically string constants or variables")
+		"<i>values</i> are typically string constants or variables (AKA writeln)")
 	},
-    {"printf",          js_printf,          1,	JSTYPE_VOID,	JSDOCSTR("string format [,value][,value]")
+    {"printf",          js_printf,          1,	JSTYPE_STRING,	JSDOCSTR("string format [,value][,value]")
 	,JSDOCSTR("print a formatted string - <small>CAUTION: for experienced C programmers ONLY</small>")
 	},	
 	{"alert",			js_alert,			1,	JSTYPE_VOID,	JSDOCSTR("value")
@@ -615,6 +642,9 @@ static jsMethodSpec js_global_functions[] = {
 	{"confirm",			js_confirm,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("value")
 	,JSDOCSTR("displays a Yes/No prompt and returns <i>true</i> or <i>false</i> "
 		"based on users confirmation (ala client-side JS)")
+	},
+	{"reset_loop",		js_reset_loop,		0,	JSTYPE_VOID,	""
+	,JSDOCSTR("reset internal loop counter, defeating infinite loop detection mechanism")
 	},
     {0}
 };
