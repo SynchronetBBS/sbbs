@@ -1,7 +1,7 @@
 			       nch1 ๙ Synchronet ๙ n
 			    yhMultinode BBS Software
 
-		      bDeveloped 1990-1997 by Rob Swindell
+           bDeveloped 1990-2000 by Rob Swindell - whttp://www.synchro.net
 
 			     ngีออออออออออออออออออธ
 			     ณ hKeys to Rememberng ณ
