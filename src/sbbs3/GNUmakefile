@@ -23,6 +23,7 @@ endif
 UIFC_SRC =	../uifc/
 XPDEV	 =	../xpdev/
 SMBLIB_SRC	=	../smblib/
+NEED_SMBLIB	:=	1
 SBBS_SRC =	./
 
 NEED_JAVASCRIPT	:= 1
@@ -32,8 +33,6 @@ include $(XPDEV)/Common.gmake
 include $(SBBS_SRC)/Common.gmake
 include $(UIFC_SRC)/Common.gmake
 include $(SMBLIB_SRC)/Common.gmake
-
-CFLAGS	+=	$(SMBLIB_CFLAGS)
 
 ifeq ($(os),freebsd)
  BSD	=	1
@@ -115,9 +114,6 @@ SERVICE_OBJS	= $(LIBODIR)/services.o $(LIBODIR)/ini_file.o $(LIBODIR)/str_list.o
 
 MONO_OBJS	= $(CON_OBJS) $(FTP_OBJS) $(WEB_OBJS) \
 			$(MAIL_OBJS) $(SERVICE_OBJS)
-SMBLIB_OBJS = \
-	$(SMBLIB_TARGET)
-
 SHLIBOPTS	:=	-shared
 ifeq ($(os),darwin)
  MKSHLIB		:=	libtool -dynamic -framework System -lcc_dynamic
@@ -240,7 +236,6 @@ $(NODE): $(NODE_OBJS)
 # FIXSMB Utility
 FIXSMB_OBJS = \
 	$(LIBODIR)/fixsmb.o \
-	$(SMBLIB_OBJS) \
 	$(LIBODIR)/genwrap.o \
 	$(LIBODIR)/dirwrap.o \
 	$(LIBODIR)/str_list.o \
@@ -254,7 +249,6 @@ $(FIXSMB): $(FIXSMB_OBJS)
 # CHKSMB Utility
 CHKSMB_OBJS = \
 	$(LIBODIR)/chksmb.o \
-	$(SMBLIB_OBJS) \
 	$(LIBODIR)/smbdump.o \
 	$(LIBODIR)/conwrap.o \
 	$(LIBODIR)/dirwrap.o \
@@ -268,7 +262,6 @@ $(CHKSMB): $(CHKSMB_OBJS)
 # SMB Utility
 SMBUTIL_OBJS = \
 	$(LIBODIR)/smbutil.o \
-	$(SMBLIB_OBJS) \
 	$(LIBODIR)/conwrap.o \
 	$(LIBODIR)/dirwrap.o \
 	$(LIBODIR)/genwrap.o \
@@ -296,7 +289,7 @@ SBBSECHO_OBJS = \
 	$(LIBODIR)/conwrap.o \
 	$(LIBODIR)/dirwrap.o \
 	$(LIBODIR)/genwrap.o \
-	$(SMBLIB_OBJS)
+	$(SMB_OBJS)
 
 FORCE$(SBBSECHO): $(SBBSECHO_OBJS)
 
@@ -338,7 +331,6 @@ ADDFILES_OBJS = \
 	$(LIBODIR)/filedat.o \
 	$(LIBODIR)/dirwrap.o \
 	$(LIBODIR)/genwrap.o \
-	$(SMBLIB_OBJS)
 
 FORCE$(ADDFILES): $(ADDFILES_OBJS)
 
@@ -360,7 +352,6 @@ FILELIST_OBJS = \
 	$(LIBODIR)/filedat.o \
 	$(LIBODIR)/dirwrap.o \
 	$(LIBODIR)/genwrap.o \
-	$(SMBLIB_OBJS)
 
 FORCE$(FILELIST): $(FILELIST_OBJS)
 
@@ -382,7 +373,6 @@ MAKEUSER_OBJS = \
 	$(LIBODIR)/userdat.o \
 	$(LIBODIR)/dirwrap.o \
 	$(LIBODIR)/genwrap.o \
-	$(SMBLIB_OBJS)
 
 FORCE$(MAKEUSER): $(MAKEUSER_OBJS)
 
