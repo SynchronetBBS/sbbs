@@ -1000,7 +1000,7 @@ void input_thread(void *arg)
 			}
 		}
 		else  {
-			if(curr_socket==sbbs->client_socket)
+			if(curr_socket==sbbs->client_socket && spy_socket[sbbs->cfg.node_num]==spy_insock)
 				curr_socket=spy_insock;
 			else
 				curr_socket=sbbs->client_socket;
