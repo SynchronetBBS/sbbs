@@ -4,15 +4,12 @@ a:hover { color: #ffffff; }
  
 body { background-color: teal; color: white; font-family: Arial, Helvetica, sans-serif; }
 
-p.title { text-align: center; font-size: x-large; font-weight: bolder; }
+p.title { color: lime; text-align: center; font-size: x-large; font-weight: bolder; }
 
-table.main { width: 90%; background-color: #116677; margin-left: auto; margin-right: auto; margin-top: 0; margin-bottom: 0; }
+table.main { width: 33%; background-color: #116677; margin-left: auto; margin-right: auto; margin-top: 0; margin-bottom: 0; }
 td.main { background-color: #007788; }
 
-table.member { width: 90%; background-color: #116677; margin-left: auto; margin-right: auto; margin-top: 0; margin-bottom: 0; }
-td.member { background-color: #007788; }
-
-table.info { width: 90%; background-color: #116677; margin-left: auto; margin-right: auto; margin-top: 0; margin-bottom: 0; }
+table.info { width: 30%; background-color: #116677; margin-left: auto; margin-right: auto; margin-top: 0; margin-bottom: 0; }
 td.info { background-color: #007788; }
 
 pre { background-color: black; color: #aaaaaa; font-family: monospace; }
@@ -24,6 +21,7 @@ td.newuser { background-color: #007788; }
 table.userlist { margin-left: auto; margin-right: auto; background-color: #116677; }
 th.userlist { background-color: #007788; color: black; }
 td.userlist { background-color: #007788; }
+td.userlistright { text-align: right; background-color: #007788; }
 a.userlist { text-decoration: none; color: black; }
 a.userlist:hover { text-decoration: underline; }
 
@@ -41,7 +39,7 @@ table.sublist { margin-left: auto; margin-right: auto; background-color: #116677
 th.sublist { background-color: #007788; color: black; }
 th.sublistlft { text-align: left; background-color: #007788; color: black; }
 td.sublist { background-color: #007788; }
-td.sublistcntr { text-align: center; background-color: #007788; }
+td.sublistright { text-align: right; background-color: #007788; }
 
 table.msglist { margin-left: auto; margin-right: auto; background-color: #116677; }
 tr.msglist1 { background-color: #008699; }
