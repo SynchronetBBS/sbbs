@@ -3160,6 +3160,7 @@ void DLLCALL bbs_thread(void* arg)
 	if(startup->js_max_bytes==0)			startup->js_max_bytes=JAVASCRIPT_MAX_BYTES;
 #endif
 
+	startup->recycle_now=FALSE;
 	recycle_server=true;
 	do {
 

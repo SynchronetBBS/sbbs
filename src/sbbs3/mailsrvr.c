@@ -2850,6 +2850,7 @@ void DLLCALL mail_server(void* arg)
 	if(startup->max_inactivity==0) 			startup->max_inactivity=120; /* seconds */
 	if(startup->max_recipients==0) 			startup->max_recipients=100;
 
+	startup->recycle_now=FALSE;
 	recycle_server=TRUE;
 	do {
 

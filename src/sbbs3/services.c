@@ -1027,6 +1027,7 @@ void DLLCALL services_thread(void* arg)
 	/* Setup intelligent defaults */
 	if(startup->js_max_bytes==0)			startup->js_max_bytes=JAVASCRIPT_MAX_BYTES;
 
+	startup->recycle_now=FALSE;
 	do {
 
 		thread_up(FALSE /* setuid */);
