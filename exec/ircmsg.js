@@ -10,19 +10,19 @@ var msg;
 
 for(i=0;i<argc;i++) {
 	switch(argv[i]) {
-		case "-s"
+		case "-s":
 			server=argv[++i];
 			break;
-		case "-c"
+		case "-c":
 			channel=argv[++i];
 			break;
-		case "-p"
+		case "-p":
 			port=argv[++i];
 			break;
-		case "-n"
+		case "-n":
 			nick=argv[++i];
 			break;
-		case "-m"
+		case "-m":
 			msg=argv[++i];
 			break;
 	}
@@ -42,10 +42,10 @@ my_server.send("JOIN " + channel + "\r\n");
 while(my_server.data_waiting && (response=my_server.recvline()))
 	log(response);
 
-while(msg || msg=readln()) {
+if(msg)
 	my_server.send("PRIVMSG "+channel+" :"+msg+"\r\n");
-	delete msg;
-}
+else while(msg=readln())
+	my_server.send("PRIVMSG "+channel+" :"+msg+"\r\n");
 
 while(my_server.data_waiting && (response=my_server.recvline()))
 	log(response);
