@@ -78,7 +78,7 @@ int main(int argc, char **argv)
 	char	**mopt,*p;
     char    errormsg[MAX_PATH*2];
 	int 	i,j,main_dflt=0,chat_dflt=0;
-	char 	str[129];
+	char 	str[MAX_PATH+1];
  	char	exepath[MAX_PATH+1];
 	BOOL	gui_mode=FALSE;
 	BOOL    door_mode=FALSE;
