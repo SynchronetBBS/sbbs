@@ -17,13 +17,16 @@ if(user.number==0 || user.security.restrictions&UFLAG_G) {
 	writeln('<a href="members/info.ssjs">Information Menu</a><br />');
 	writeln('<a href="members/themes.ssjs">Change Your HTML Theme</a><br />');
 }
-writeln('<a href="msgs">Message Groups</a><br />');
+if(user.number || (this.login!=undefined && system.matchuser("Guest")))
+    writeln('<a href="msgs">Message Groups</a><br />');
 // FTP link
-write('<a href=ftp://');
-if(user.number && !(user.security.restrictions&UFLAG_G))
-	write(escape(user.alias) + ':' + escape(user.security.password) + '@');
-writeln(system.inet_addr + '/00index.html>File Libraries</a>');
-writeln('<br />');
+if(user.number || system.matchuser("Guest")) {
+    write('<a href=ftp://');
+    if(user.number && !(user.security.restrictions&UFLAG_G))
+	    write(escape(user.alias) + ':' + escape(user.security.password) + '@');
+    writeln(http_request.host + '/00index.html>File Libraries</a>');
+    writeln('<br />');
+}
 writeln('</td>');
 writeln('</tr>');
 writeln('</tbody>');
