@@ -523,7 +523,10 @@ char *cterm_write(unsigned char *buf, int buflen, char *retbuf, int retsize)
 	int i,j,k;
 	char	*ret;
 	struct text_info	ti;
+	int	olddmc;
 
+	olddmc=dont_move_cursor;
+	dont_move_cursor=1;
 	if(retbuf!=NULL)
 		retbuf[0]=0;
 	gettextinfo(&ti);
@@ -601,6 +604,8 @@ char *cterm_write(unsigned char *buf, int buflen, char *retbuf, int retsize)
 	textattr(ti.attribute);
 #endif
 
+	dont_move_cursor=olddmc;
+	gotoxy(wherex(),wherey());
 	return(retbuf);
 }
 
