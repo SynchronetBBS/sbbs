@@ -39,6 +39,35 @@ function writeln(str)
 	write(str + "\r\n");
 }
 
+// Courtesy of Michael J. Ryan <tracker1@theroughnecks.com>
+function getReferenceTo(reference) {
+	//sbbs msg_id pattern.
+	var re = /^.*<[^\.]+\.([\d]+)\.([^@]+)@[^>]*>\s*$/;
+
+	//Default Response
+	var to = "All"
+
+	//if TO is already established, return...
+	if (reference=="")
+		return to;
+
+	//Load the msgbase the original post was from
+	if (!reference.match(re))
+		return to;
+
+	var sub = reference.replace(re,"$2");
+	var msg = parseInt(reference.replace(re,"$1"));
+
+	var msgbase = new MsgBase(sub);
+	if (msgbase != null) {
+		var hdr = msgbase.get_msg_header(false,msg);
+		if (hdr != null)
+			to = hdr.from;
+	}
+
+	return to;
+}
+
 var username='';
 var msgbase=null;
 var selected=null;
@@ -46,7 +75,7 @@ var current_article=0;
 
 writeln(format("200 %s News (Synchronet NNTP Service v%s)",system.name,VERSION));
 
-if(!no_anonymous)	
+if(!no_anonymous)
 	login("guest");	// Login as guest/anonymous by default
 
 while(client.socket.is_connected) {
@@ -79,7 +108,7 @@ while(client.socket.is_connected) {
 					writeln("381 More authentication required");
 					break;
 				case "PASS":
-					if(login(username,cmd[2])) 
+					if(login(username,cmd[2]))
 						writeln("281 Authentication successful");
 					else
 						writeln("502 Authentication failure");
@@ -113,7 +142,7 @@ while(client.socket.is_connected) {
 
 		case "LIST":
 			writeln("215 list of newsgroups follows");
-			for(g in msg_area.grp_list) 
+			for(g in msg_area.grp_list)
 				for(s in msg_area.grp_list[g].sub_list) {
 					msgbase=new MsgBase(msg_area.grp_list[g].sub_list[s].code);
 					writeln(format("%s %u %u %s"
@@ -134,8 +163,8 @@ while(client.socket.is_connected) {
 
 		case "GROUP":
 			found=false;
-			for(g in msg_area.grp_list) 
-				for(s in msg_area.grp_list[g].sub_list) 
+			for(g in msg_area.grp_list)
+				for(s in msg_area.grp_list[g].sub_list)
 					if(msg_area.grp_list[g].sub_list[s].newsgroup.toLowerCase()==cmd[1].toLowerCase()) {
 						found=true;
 						msgbase=new MsgBase(msg_area.grp_list[g].sub_list[s].code);
@@ -254,7 +283,7 @@ while(client.socket.is_connected) {
 			if(cmd[1]!='') {
 				if(cmd[1].indexOf('<')>=0)		/* message-id */
 					current_article=Number(cmd[1].slice(1,-1));
-				else 
+				else
 					current_article=Number(cmd[1]);
 			}
 			if(current_article<1) {
@@ -265,12 +294,12 @@ while(client.socket.is_connected) {
 			hdr=null;
 			body=null;
 			hdr=msgbase.get_msg_header(false,current_article);
-			if(cmd[0].toUpperCase()!="HEAD") 
+			if(cmd[0].toUpperCase()!="HEAD")
 				body=msgbase.get_msg_body(false,current_article
 					,true /* remove ctrl-a codes */);
 
-/* Eliminate dupe loops 
-			if(user.security.restrictions&UFLAG_Q && hdr!=null) 
+/* Eliminate dupe loops
+			if(user.security.restrictions&UFLAG_Q && hdr!=null)
 */
 			if(hdr==null) {
 				writeln("430 no such arctile found");
@@ -284,8 +313,8 @@ while(client.socket.is_connected) {
 				writeln("430 deleted message");
 				break;
 			}
-			if(hdr.attr&MSG_PRIVATE 
-				&& hdr.to.toLowerCase()!=user.alias.toLowerCase() 
+			if(hdr.attr&MSG_PRIVATE
+				&& hdr.to.toLowerCase()!=user.alias.toLowerCase()
 				&& hdr.to.toLowerCase()!=user.name.toLowerCase()) {
 				writeln("430 private message");
 				break;
@@ -435,6 +464,8 @@ while(client.socket.is_connected) {
 						break;
 					case "references":
 						hdr.reply_id=data;
+						if(!hdr.to)
+							hdr.to=getReferenceTo(data);
 						break;
 					case "newsgroups":
 						newsgroups=data.split(',');
@@ -452,9 +483,9 @@ while(client.socket.is_connected) {
 				break;
 			}
 
-            for(n in newsgroups) 
-    			for(g in msg_area.grp_list) 
-				    for(s in msg_area.grp_list[g].sub_list) 
+            for(n in newsgroups)
+    			for(g in msg_area.grp_list)
+				    for(s in msg_area.grp_list[g].sub_list)
 					    if(msg_area.grp_list[g].sub_list[s].newsgroup.toLowerCase()
 							==newsgroups[n].toLowerCase()) {
 						    if(!msg_area.grp_list[g].sub_list[s].can_post)
@@ -474,7 +505,7 @@ while(client.socket.is_connected) {
 							    writeln("240 article posted ok");
 							    posted=true;
 								msgs_posted++;
-						    } else 
+						    } else
 							    log(format("!ERROR saving mesage: %s",msgbase.last_error));
 					    }
 			if(!posted) {
@@ -490,7 +521,7 @@ while(client.socket.is_connected) {
 	}
 }
 
-// Log statistics 
+// Log statistics
 
 if(msgs_read)
 	log(format("%u messages read",msgs_read));
@@ -498,3 +529,4 @@ if(msgs_posted)
 	log(format("%u messages posted",msgs_posted));
 
 /* End of nntpservice.js */
+
