@@ -154,7 +154,6 @@ int dns_getmx(char* name, char* mx, char* mx2, DWORD intf, DWORD ip_addr, BOOL u
 	dns_query_t		query;
 	dns_rr_t*		rr;
 
-
 	mx[0]=0;
 	mx2[0]=0;
 
@@ -225,15 +224,21 @@ int dns_getmx(char* name, char* mx, char* mx2, DWORD intf, DWORD ip_addr, BOOL u
 	}
 
 	send(sock,msg+offset,len,0);
-	rd=recv(sock,msg,512,0);
+	rd=recv(sock,msg,sizeof(msg),0);
 	if(rd>0) {
+
 		memcpy(&msghdr,msg+offset,sizeof(msghdr)-offset);
 
+		if(!use_tcp)
+			offset=0;
+		else
+			offset=sizeof(msghdr.length);
+
 		answers=ntohs(msghdr.ancount);
-		p=msg+len;
+		p=msg+len;	/* Skip the header and question portion */
 
 		for(i=0;i<answers;i++) {
-			p+=dns_name(hostname,msg,p);
+			p+=dns_name(hostname, msg+offset, p);
 
 			rr=(dns_rr_t*)p;
 			p+=sizeof(dns_rr_t);
@@ -242,7 +247,7 @@ int dns_getmx(char* name, char* mx, char* mx2, DWORD intf, DWORD ip_addr, BOOL u
 			if(ntohs(rr->type)==DNS_MX)  {
 				pref=ntohs(*(WORD*)p);
 				p+=2;
-				p+=dns_name(hostname, msg,p);
+				p+=dns_name(hostname, msg+offset, p);
 				if(pref<=highpref) {
 					highpref=pref;
 					if(mx[0])
