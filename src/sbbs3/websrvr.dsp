@@ -93,6 +93,10 @@ SOURCE=.\ars.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\base64.c
+# End Source File
+# Begin Source File
+
 SOURCE=..\xpdev\sockwrap.c
 # End Source File
 # Begin Source File
