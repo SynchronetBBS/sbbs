@@ -54,7 +54,7 @@ short curses_color(short color)
 	return(0);
 }
 
-int curs_puttext(int sx, int sy, int ex, int ey, unsigned char *fill)
+int curs_puttext(int sx, int sy, int ex, int ey, void *fillbuf)
 {
 	int x,y;
 	int fillpos=0;
@@ -63,7 +63,9 @@ int curs_puttext(int sx, int sy, int ex, int ey, unsigned char *fill)
 	unsigned char orig_attr;
 	int oldx, oldy;
 	struct text_info	ti;
+	unsigned char *fill;
 
+	fill=fillbuf;
 	gettextinfo(&ti);
 
 	if(		   sx < 1
@@ -98,7 +100,7 @@ int curs_puttext(int sx, int sy, int ex, int ey, unsigned char *fill)
 	return(1);
 }
 
-int curs_gettext(int sx, int sy, int ex, int ey, unsigned char *fill)
+int curs_gettext(int sx, int sy, int ex, int ey, void *fillbuf)
 {
 	int x,y;
 	int fillpos=0;
@@ -109,7 +111,9 @@ int curs_gettext(int sx, int sy, int ex, int ey, unsigned char *fill)
 	unsigned char thischar;
 	int	ext_char;
 	struct text_info	ti;
+	unsigned char *fill;
 
+	fill=fillbuf;
 	gettextinfo(&ti);
 
 	if(		   sx < 1
@@ -361,7 +365,7 @@ int curs_gettext(int sx, int sy, int ex, int ey, unsigned char *fill)
 	return(1);
 }
 
-void curs_textattr(unsigned char attr)
+void curs_textattr(int attr)
 {
 	chtype   attrs=A_NORMAL;
 	int	colour;
@@ -670,7 +674,7 @@ void curs_setcursortype(int type) {
 	refresh();
 }
 
-int curs_putch(unsigned char c)
+int curs_putch(int c)
 {
 	struct text_info ti;
 	int		ret;
