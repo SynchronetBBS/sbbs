@@ -167,7 +167,7 @@ int main(int argc, char** argv)  {
 			/* String input */
 			strcpy(longtitle,"This is a test if string input... enter/edit this field");
 			uifc.input(WIN_MID,0,0,"Input",longtitle,sizeof(longtitle),K_EDIT);
-			uifc.showbuf(WIN_MID, 0, 0, 0, 0, "Result:", longtitle, NULL, NULL);
+			uifc.showbuf(WIN_MID, 0, 0, uifc.scrn_width-4, uifc.scrn_len-4, "Result:", longtitle, NULL, NULL);
 		}
 	}
 }

@@ -576,7 +576,7 @@ static void truncsp(char *str)
 int ulist(int mode, int left, int top, int width, int *cur, int *bar
 	, char *initial_title, char **option)
 {
-	uchar line[256],shade[256],*ptr,a,b,c,longopt
+	uchar line[256],shade[256],*ptr,longopt
 		,search[MAX_OPLN],bline=0,*win;
 	int height,y;
 	int i,j,opts=0,s=0; /* s=search index into options */
@@ -588,6 +588,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 	uint title_len;
 	struct uifc_mouse_event mevnt;
 	char	*title;
+	int	a,b,c;
 
 	if((title=(char *)MALLOC(strlen(initial_title)+1))==NULL) {
 		cprintf("UIFC line %d: error allocating %u bytes."
@@ -1536,10 +1537,10 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 int uinput(int mode, int left, int top, char *prompt, char *str,
 	int max, int kmode)
 {
-	unsigned char c,save_buf[2048],in_win[2048]
+	unsigned char save_buf[2048],in_win[2048]
 		,shade[160],height=3;
 	int	width;
-	int i,plen,slen;
+	int i,plen,slen,j;
 	int	iwidth;
 
 	reset_dynamic();
@@ -1566,7 +1567,7 @@ int uinput(int mode, int left, int top, char *prompt, char *str,
 	i=0;
 	in_win[i++]='É';
 	in_win[i++]=hclr|(bclr<<4);
-	for(c=1;c<width-1;c++) {
+	for(j=1;j<width-1;j++) {
 		in_win[i++]='Í';
 		in_win[i++]=hclr|(bclr<<4);
 	}
@@ -1601,8 +1602,8 @@ int uinput(int mode, int left, int top, char *prompt, char *str,
 		in_win[i++]=lclr|(bclr<<4); 
 	}
 
-	for(c=0;prompt[c];c++) {
-		in_win[i++]=prompt[c];
+	for(j=0;prompt[j];j++) {
+		in_win[i++]=prompt[j];
 		in_win[i++]=lclr|(bclr<<4); 
 	}
 
@@ -1611,7 +1612,7 @@ int uinput(int mode, int left, int top, char *prompt, char *str,
 		in_win[i++]=lclr|(bclr<<4);
 	}
 
-	for(c=0;c<iwidth+2;c++) {
+	for(j=0;j<iwidth+2;j++) {
 		in_win[i++]=' ';
 		in_win[i++]=lclr|(bclr<<4); 
 	}
@@ -1620,7 +1621,7 @@ int uinput(int mode, int left, int top, char *prompt, char *str,
 	in_win[i++]=hclr|(bclr<<4);
 	in_win[i++]='È';
 	in_win[i++]=hclr|(bclr<<4);
-	for(c=1;c<width-1;c++) {
+	for(j=1;j<width-1;j++) {
 		in_win[i++]='Í';
 		in_win[i++]=hclr|(bclr<<4); 
 	}
@@ -1632,14 +1633,14 @@ int uinput(int mode, int left, int top, char *prompt, char *str,
 	if(bclr==BLUE) {
 		gettext(SCRN_LEFT+left+width,SCRN_TOP+top+1,SCRN_LEFT+left+width+1
 			,SCRN_TOP+top+(height-1),shade);
-		for(c=1;c<12;c+=2)
-			shade[c]=DARKGRAY;
+		for(j=1;j<12;j+=2)
+			shade[j]=DARKGRAY;
 		puttext(SCRN_LEFT+left+width,SCRN_TOP+top+1,SCRN_LEFT+left+width+1
 			,SCRN_TOP+top+(height-1),shade);
 		gettext(SCRN_LEFT+left+2,SCRN_TOP+top+3,SCRN_LEFT+left+width+1
 			,SCRN_TOP+top+height,shade);
-		for(c=1;c<width*2;c+=2)
-			shade[c]=DARKGRAY;
+		for(j=1;j<width*2;j+=2)
+			shade[j]=DARKGRAY;
 		puttext(SCRN_LEFT+left+2,SCRN_TOP+top+3,SCRN_LEFT+left+width+1
 			,SCRN_TOP+top+height,shade); 
 	}
