@@ -7,6 +7,7 @@
     <td class="ltn"><img src="/graphics/tnav_left.gif" width="5" height="32" alt="" /></td>
     <td class="tn">
       @@JS:if(http_request.virtual_path=="/index.ssjs" || http_request.virtual_path=="/")'<span class="tlink">Home</span>'; else if(http_request.virtual_path!="/msgs/management.ssjs")'<a class="tlink" href="/">Home</a>';@@
+      @@JS:if(http_request.virtual_path=="/nodelist.ssjs")'<span class="tlink">Who\'s Online</span>'; else '';@@ 
       @@JS:if(http_request.virtual_path=="/members/userlist.ssjs")'<span class="tlink">User List</span>'; else '';@@
       @@JS:if(http_request.virtual_path=="/newuser.ssjs")'<span class="tlink">Create New User</span>'; else '';@@
       @@JS:if(http_request.virtual_path=="/members/info.ssjs")'<span class="tlink">Information Menu</span>'; else if(http_request.virtual_path=="/members/userstats.ssjs" || http_request.virtual_path=="/members/sysinfo.ssjs")'<a class="tlink" href="/members/info.ssjs">Information Menu</a>';@@
