@@ -358,7 +358,7 @@ object PropertiesDlg: TPropertiesDlg
         Top = 44
         Width = 168
         Height = 24
-        Hint = 'Temp directory (e.g. C:\TEMP)'
+        Hint = 'Temp directory (e.g. C:\SBBSTEMP)'
         ParentShowHint = False
         ShowHint = True
         TabOrder = 3
