@@ -91,8 +91,8 @@ int rlogin_connect(char *addr, int port, char *ruser, char *passwd)
 	}
 
 	rlogin_send("",1,1000);
-	rlogin_send(ruser,strlen(ruser)+1,1000);
 	rlogin_send(passwd,strlen(passwd)+1,1000);
+	rlogin_send(ruser,strlen(ruser)+1,1000);
 	rlogin_send("ansi-bbs/9600",14,1000);
 	return(0);
 }
