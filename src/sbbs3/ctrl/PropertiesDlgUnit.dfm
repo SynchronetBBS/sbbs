@@ -284,6 +284,14 @@ object PropertiesDlg: TPropertiesDlg
         AutoSize = False
         Caption = 'Hostname'
       end
+      object Label7: TLabel
+        Left = 8
+        Top = 76
+        Width = 110
+        Height = 24
+        AutoSize = False
+        Caption = 'JavaScript Heap'
+      end
       object CtrlDirEdit: TEdit
         Left = 120
         Top = 12
@@ -303,6 +311,18 @@ object PropertiesDlg: TPropertiesDlg
         ParentShowHint = False
         ShowHint = True
         TabOrder = 1
+      end
+      object JS_MaxBytesEdit: TEdit
+        Left = 120
+        Top = 76
+        Width = 169
+        Height = 24
+        Hint = 
+          'Maximum number of bytes that can be allocated for use by the Jav' +
+          'aScript engine'
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 2
       end
     end
   end

@@ -346,6 +346,7 @@ public:		// User declarations
     AnsiString      LoginCommand;
     AnsiString      ConfigCommand;
     AnsiString		Password;
+    DWORD			JS_MaxBytes;
     bool            MinimizeToSysTray;
     bool            UndockableForms;
     scfg_t		    cfg;

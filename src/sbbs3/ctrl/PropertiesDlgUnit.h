@@ -50,6 +50,8 @@ __published:
         TEdit *CtrlDirEdit;
         TLabel *Label6;
         TEdit *HostnameEdit;
+	TLabel *Label7;
+	TEdit *JS_MaxBytesEdit;
 	void __fastcall FormShow(TObject *Sender);
 	void __fastcall TrayIconCheckBoxClick(TObject *Sender);
 	void __fastcall SourceComboBoxChange(TObject *Sender);

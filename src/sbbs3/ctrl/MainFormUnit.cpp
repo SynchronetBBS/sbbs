@@ -276,6 +276,7 @@ static void bbs_start(void)
         ,MainForm->CtrlDirectory.c_str());
     SAFECOPY(MainForm->bbs_startup.host_name
         ,MainForm->Hostname.c_str());
+    MainForm->bbs_startup.js_max_bytes=MainForm->JS_MaxBytes;
 	_beginthread((void(*)(void*))bbs_thread,0,&MainForm->bbs_startup);
     Application->ProcessMessages();
 }
@@ -576,6 +577,7 @@ static void ftp_start(void)
         ,MainForm->CtrlDirectory.c_str());
     SAFECOPY(MainForm->ftp_startup.host_name
         ,MainForm->Hostname.c_str());
+    MainForm->ftp_startup.js_max_bytes=MainForm->JS_MaxBytes;
 	_beginthread((void(*)(void*))ftp_server,0,&MainForm->ftp_startup);
     Application->ProcessMessages();
 }
@@ -589,6 +591,7 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
     CtrlDirectory="c:\\sbbs\\ctrl\\";
     LoginCommand="telnet://localhost";
     ConfigCommand="%sSCFG %s /T2";
+    JS_MaxBytes=JAVASCRIPT_MAX_BYTES;
     MinimizeToSysTray=false;
     UndockableForms=false;
     NodeDisplayInterval=1;  /* seconds */
@@ -823,6 +826,7 @@ void __fastcall TMainForm::ServicesStartExecute(TObject *Sender)
         ,MainForm->CtrlDirectory.c_str());
     SAFECOPY(MainForm->services_startup.host_name
         ,MainForm->Hostname.c_str());
+    MainForm->services_startup.js_max_bytes=MainForm->JS_MaxBytes;
 	_beginthread((void(*)(void*))services_thread,0,&MainForm->services_startup);
     Application->ProcessMessages();
 }
@@ -1394,6 +1398,9 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     	Hostname=Registry->ReadString("Hostname");
     if(Registry->ValueExists("CtrlDirectory"))
     	CtrlDirectory=Registry->ReadString("CtrlDirectory");
+    if(Registry->ValueExists("JS_MaxBytes"))
+    	JS_MaxBytes=Registry->ReadInteger("JS_MaxBytes");
+
     if(Registry->ValueExists("LoginCommand"))
     	LoginCommand=Registry->ReadString("LoginCommand");
     if(Registry->ValueExists("ConfigCommand"))
@@ -1827,6 +1834,7 @@ void __fastcall TMainForm::SaveSettings(TObject* Sender)
 
     Registry->WriteString("Hostname",Hostname);
     Registry->WriteString("CtrlDirectory",CtrlDirectory);
+    Registry->WriteInteger("JS_MaxBytes",JS_MaxBytes);
     Registry->WriteString("LoginCommand",LoginCommand);
     Registry->WriteString("ConfigCommand",ConfigCommand);
     Registry->WriteString("Password",Password);
@@ -2726,6 +2734,7 @@ void __fastcall TMainForm::PropertiesExecute(TObject *Sender)
     PropertiesDlg->TrayIconCheckBox->Checked=MinimizeToSysTray;
     PropertiesDlg->UndockableCheckBox->Checked=UndockableForms;
     PropertiesDlg->PasswordEdit->Text=Password;
+    PropertiesDlg->JS_MaxBytesEdit->Text=IntToStr(JS_MaxBytes);
 	if(PropertiesDlg->ShowModal()==mrOk) {
         LoginCommand=PropertiesDlg->LoginCmdEdit->Text;
         ConfigCommand=PropertiesDlg->ConfigCmdEdit->Text;
@@ -2736,6 +2745,8 @@ void __fastcall TMainForm::PropertiesExecute(TObject *Sender)
         ClientDisplayInterval=PropertiesDlg->ClientIntUpDown->Position;
         MinimizeToSysTray=PropertiesDlg->TrayIconCheckBox->Checked;
         UndockableForms=PropertiesDlg->UndockableCheckBox->Checked;
+        JS_MaxBytes
+        	=PropertiesDlg->JS_MaxBytesEdit->Text.ToIntDef(JAVASCRIPT_MAX_BYTES);
         SaveSettings(Sender);
     }
     delete PropertiesDlg;
