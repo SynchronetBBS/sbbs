@@ -19,6 +19,10 @@ NEED_THREADS	:=	1
 include $(XPDEV)Common.gmake
 CFLAGS	+=	-I$(XSDK)
 
+ifeq ($(os),sunos)
+ LDFLAGS	+=	-lsocket -lnsl
+endif
+
 $(EXEODIR)$(SLASH)sbj: $(LIBODIR)$(SLASH)sbj.o $(OBJS)
    ifndef bcc
 	@echo Linking $@
