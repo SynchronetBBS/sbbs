@@ -1,17 +1,55 @@
-#include "sockwrap.h"
+/* umonitor.c */
+
+/* Synchronet for *nix node activity monitor */
+
+/* $Id$ */
+
+/****************************************************************************
+ * @format.tab-size 4		(Plain Text/Source Code File Header)			*
+ * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
+ *																			*
+ * Copyright 2003 Rob Swindell - http://www.synchro.net/copyright.html		*
+ *																			*
+ * This program is free software; you can redistribute it and/or			*
+ * modify it under the terms of the GNU General Public License				*
+ * as published by the Free Software Foundation; either version 2			*
+ * of the License, or (at your option) any later version.					*
+ * See the GNU General Public License for more details: gpl.txt or			*
+ * http://www.fsf.org/copyleft/gpl.html										*
+ *																			*
+ * Anonymous FTP access to the most recent released source is available at	*
+ * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
+ *																			*
+ * Anonymous CVS access to the development source and modification history	*
+ * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
+ *     (just hit return, no password is necessary)							*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
+ *																			*
+ * For Synchronet coding style and modification guidelines, see				*
+ * http://www.synchro.net/source.html										*
+ *																			*
+ * You are encouraged to submit any modifications (preferably in Unix diff	*
+ * format) via e-mail to mods@synchro.net									*
+ *																			*
+ * Note: If this box doesn't appear square, then you need to fix your tabs.	*
+ ****************************************************************************/
+
+#include "conwrap.h"	/* this has to go BEFORE curses.h so getkey() can be macroed around */
+#include <curses.h>
 #include <poll.h>
-#include <termios.h>
-#include <sys/un.h>
 #include <stdio.h>
+#include <termios.h>
 #include <unistd.h>
-#include "conwrap.h"
+#include "sockwrap.h"	/* Must go before <sys/un.h> */
+#include <sys/un.h>
+#include "genwrap.h"
 #include "uifc.h"
 #include "sbbsdefs.h"
 #include "genwrap.h"	/* stricmp */
 #include "dirwrap.h"	/* lock/unlock/sopen */
 #include "filewrap.h"	/* lock/unlock/sopen */
 #include "sockwrap.h"
-#include "genwrap.h"
 
 enum {
 	 MODE_LIST
@@ -168,6 +206,7 @@ int spyon(char *sockname)  {
 		}
 	}
 	tcsetattr(STDIN_FILENO,TCSANOW,&old_tio);
+	return(retval);
 }
 
 char* itoa(int val, char* str, int radix)
@@ -465,7 +504,6 @@ void node_toggles(int nodenum)  {
 	char**	opt;
 	int		i,j;
 	node_t	node;
-	char	buf[80];
 	int		save=0;
 
 	if((opt=(char **)MALLOC(sizeof(char *)*(MAX_OPTS+1)))==NULL)
@@ -543,17 +581,11 @@ int main(int argc, char** argv)  {
 	char**	mopt;
 	int		main_dflt=0;
 	int		main_bar=0;
-	BOOL    door_mode=FALSE;
-	int		dist=0;
-	int		server=0;
 	char revision[16];
-	char str[256],str2[256],ctrl_dir[41],*p,debug=0;
+	char str[256],str2[256],ctrl_dir[41],*p;
 	char title[256];
-	int sys_nodes,node_num=0,onoff=0;
-	int i,j,mode=0,misc;
-	int	modify=0;
-	int loop=0;
-	long value=0;
+	int sys_nodes;
+	int i,j;
 	node_t node;
 	char	*buf;
 	int		buffile;
@@ -609,10 +641,8 @@ int main(int argc, char** argv)  {
                     printf("\nusage: %s [ctrl_dir] [options]"
                         "\n\noptions:\n\n"
                         "-c  =  force color mode\n"
-#ifdef USE_CURSES
                         "-e# =  set escape delay to #msec\n"
 						"-i  =  force IBM charset\n"
-#endif
                         "-l# =  set screen lines to #\n"
 						,argv[0]
                         );
