@@ -4,6 +4,8 @@
 
 #include "mouse.h"
 
+#define MSEC_CLOCK()	(msclock()*MSCLOCKS_PER_SEC/1000)
+
 enum {
 	 MOUSE_NOSTATE
 	,MOUSE_SINGLEPRESSED
@@ -98,7 +100,7 @@ void ciomouse_gotevent(int event, int x, int y)
 	struct in_mouse_event **lastevent;
 
 	ime=(struct in_mouse_event *)malloc(sizeof(struct in_mouse_event));
-	ime->ts=msclock();
+	ime->ts=MSEC_CLOCK();
 	ime->event=event;
 	ime->x=x;
 	ime->y=y;
@@ -154,7 +156,7 @@ void ciolib_mouse_thread(void *data)
 	while(1) {
 		timedout=0;
 		if(timeout_button) {
-			delay=state.timeout[timeout_button-1]-msclock();
+			delay=state.timeout[timeout_button-1]-MSEC_CLOCK();
 			if(delay<=0) {
 				timedout=1;
 			}
@@ -268,19 +270,19 @@ void ciolib_mouse_thread(void *data)
 							state.button_state[but-1]=MOUSE_SINGLEPRESSED;
 							state.button_x[but-1]=state.events_in->x;
 							state.button_y[but-1]=state.events_in->y;
-							state.timeout[but-1]=msclock()+(state.click_timeout*MSCLOCKS_PER_SEC)/1000;
+							state.timeout[but-1]=MSEC_CLOCK()+state.click_timeout;
 							break;
 						case MOUSE_CLICKED:
 							state.button_state[but-1]=MOUSE_DOUBLEPRESSED;
-							state.timeout[but-1]=msclock()+(state.click_timeout*MSCLOCKS_PER_SEC)/1000;
+							state.timeout[but-1]=MSEC_CLOCK()+state.click_timeout;
 							break;
 						case MOUSE_DOUBLECLICKED:
 							state.button_state[but-1]=MOUSE_TRIPLEPRESSED;
-							state.timeout[but-1]=msclock()+(state.click_timeout*MSCLOCKS_PER_SEC)/1000;
+							state.timeout[but-1]=MSEC_CLOCK()+state.click_timeout;
 							break;
 						case MOUSE_TRIPLECLICKED:
 							state.button_state[but-1]=MOUSE_QUADPRESSED;
-							state.timeout[but-1]=msclock()+(state.click_timeout*MSCLOCKS_PER_SEC)/1000;
+							state.timeout[but-1]=MSEC_CLOCK()+state.click_timeout;
 							break;
 					}
 					break;
@@ -295,15 +297,15 @@ void ciolib_mouse_thread(void *data)
 							break;
 						case MOUSE_SINGLEPRESSED:
 							state.button_state[but-1]=MOUSE_CLICKED;
-							state.timeout[but-1]=msclock()+(state.multi_timeout*MSCLOCKS_PER_SEC)/1000;
+							state.timeout[but-1]=MSEC_CLOCK()+state.multi_timeout;
 							break;
 						case MOUSE_DOUBLEPRESSED:
 							state.button_state[but-1]=MOUSE_DOUBLECLICKED;
-							state.timeout[but-1]=msclock()+(state.multi_timeout*MSCLOCKS_PER_SEC)/1000;
+							state.timeout[but-1]=MSEC_CLOCK()+state.multi_timeout;
 							break;
 						case MOUSE_TRIPLEPRESSED:
 							state.button_state[but-1]=MOUSE_TRIPLECLICKED;
-							state.timeout[but-1]=msclock()+(state.multi_timeout*MSCLOCKS_PER_SEC)/1000;
+							state.timeout[but-1]=MSEC_CLOCK()+state.multi_timeout;
 							break;
 						case MOUSE_QUADPRESSED:
 							state.button_state[but-1]=MOUSE_NOSTATE;
