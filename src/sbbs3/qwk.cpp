@@ -437,43 +437,42 @@ void sbbs_t::qwk_sec()
 			while(online) {
 				CLS;
 				bputs("\1n\1gQWK Settings:\1n\r\n\r\n");
-				bprintf("A) %-30s: %s\r\n"
+				bprintf("\1hA\1n) %-30s: \1h%s\r\n"
 					,"Ctrl-A Color Codes"
 					,useron.qwk&QWK_EXPCTLA
 					? "Expand to ANSI" : useron.qwk&QWK_RETCTLA ? "Leave in"
 					: "Strip");
-				bprintf("T) %-30s: %s\r\n"
+				bprintf("\1hT\1n) %-30s: \1h%s\r\n"
 					,"Archive Type"
 					,useron.tmpext);
-				bprintf("E) %-30s: %s\r\n"
+				bprintf("\1hE\1n) %-30s: \1h%s\r\n"
 					,"Include E-mail Messages"
 					,useron.qwk&QWK_EMAIL ? "Un-read Only"
 					: useron.qwk&QWK_ALLMAIL ? text[Yes] : text[No]);
-				bprintf("I) %-30s: %s\r\n"
+				bprintf("\1hI\1n) %-30s: \1h%s\r\n"
 					,"Include File Attachments"
 					,useron.qwk&QWK_ATTACH ? text[Yes] : text[No]);
-				bprintf("D) %-30s: %s\r\n"
+				bprintf("\1hD\1n) %-30s: \1h%s\r\n"
 					,"Delete E-mail Automatically"
 					,useron.qwk&QWK_DELMAIL ? text[Yes]:text[No]);
-				bprintf("F) %-30s: %s\r\n"
+				bprintf("\1hF\1n) %-30s: \1h%s\r\n"
 					,"Include New Files List"
 					,useron.qwk&QWK_FILES ? text[Yes]:text[No]);
-				bprintf("N) %-30s: %s\r\n"
+				bprintf("\1hN\1n) %-30s: \1h%s\r\n"
 					,"Include Index Files"
 					,useron.qwk&QWK_NOINDEX ? text[No]:text[Yes]);
-				bprintf("C) %-30s: %s\r\n"
+				bprintf("\1hC\1n) %-30s: \1h%s\r\n"
 					,"Include Control Files"
 					,useron.qwk&QWK_NOCTRL ? text[No]:text[Yes]);
-				bprintf("Y) %-30s: %s\r\n"
+				bprintf("\1hY\1n) %-30s: \1h%s\r\n"
 					,"Include Messages from You"
 					,useron.qwk&QWK_BYSELF ? text[Yes]:text[No]);
-				bprintf("Z) %-30s: %s\r\n"
+				bprintf("\1hZ\1n) %-30s: \1h%s\r\n"
 					,"Include Time Zone (TZ)"
 					,useron.qwk&QWK_TZ ? text[Yes]:text[No]);
-				bprintf("V) %-30s: %s\r\n"
+				bprintf("\1hV\1n) %-30s: \1h%s\1n\r\n"
 					,"Include Message Path (VIA)"
 					,useron.qwk&QWK_VIA ? text[Yes]:text[No]);
-				//bprintf("Q) Quit\r\n\r\n");
 				bputs(text[UserDefaultsWhich]);
 				ch=(char)getkeys("AQEDFIOQTYNCZV",0);
 				if(sys_status&SS_ABORT || !ch || ch=='Q')
