@@ -4,7 +4,8 @@
 # You really should set this first.
 SMBLIB_SRC	?=	$(XPDEV)../smblib/
 
-SMBLIB_LFLAGS	+=	-L$(SMBLIB_SRC) -lsmblib
+SMBLIB_CFLAGS	+=	-I$(SMBLIB_SRC)
+SMBLIB_LDFLAGS	+=	-L$(SMBLIB_SRC) -lsmblib
 SMBLIB_ODIR	?=	$(XPDEV)../smblib/$(LIBODIR)
 SMBLIB_TARGET	:=	$(SMBLIB_ODIR)/libsmb.a
 SMBLIB_OBJS	:= \
@@ -16,6 +17,12 @@ SMBLIB_OBJS	:= \
         $(SMBLIB_ODIR)/md5.o \
         $(SMBLIB_ODIR)/lzh.o \
         $(SMBLIB_ODIR)/filewrap.o
+
+ifdef NEED_SMBLIB
+	CFLAGS	+=	$(SMBLIB_CFLAGS)
+	LDFLAGS	+=	$(SMBLIB_LDFLAGS)
+	OBJS	+=	$(SMBLIB_TARGET)
+endif
 
 vpath %.c $(SMBLIB_SRC)
 vpath %.cpp $(SMBLIB_SRC)
