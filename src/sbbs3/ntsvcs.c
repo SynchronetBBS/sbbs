@@ -59,6 +59,7 @@ static void WINAPI services_ctrl_handler(DWORD dwCtrlCode);
 
 /* Global variables */
 
+char				ini_file[MAX_PATH+1];
 bbs_startup_t		bbs_startup;
 ftp_startup_t		ftp_startup;
 mail_startup_t		mail_startup;
@@ -124,7 +125,6 @@ sbbs_ntsvc_t ftp = {
 	INVALID_HANDLE_VALUE
 };
 
-#if !defined(NO_WEB_SERVER)
 sbbs_ntsvc_t web = {
 	NTSVC_NAME_WEB,
 	"Synchronet Web Server",
@@ -137,7 +137,6 @@ sbbs_ntsvc_t web = {
 	web_ctrl_handler,
 	INVALID_HANDLE_VALUE
 };
-#endif
 
 sbbs_ntsvc_t mail = {
 	NTSVC_NAME_MAIL,
@@ -153,7 +152,6 @@ sbbs_ntsvc_t mail = {
 	INVALID_HANDLE_VALUE
 };
 
-#if !defined(NO_SERVICES)
 sbbs_ntsvc_t services = {
 	NTSVC_NAME_SERVICES,
 	"Synchronet Services",
@@ -168,19 +166,14 @@ sbbs_ntsvc_t services = {
 	services_ctrl_handler,
 	INVALID_HANDLE_VALUE
 };
-#endif
 
 /* This list is used for enumerating all services */
 sbbs_ntsvc_t* ntsvc_list[] = {
 	&bbs,
 	&ftp,
-#if !defined(NO_WEB_SERVER)
 	&web,
-#endif
 	&mail,
-#if !defined(NO_SERVICES)
 	&services,
-#endif
 	NULL
 };
 							
@@ -216,24 +209,20 @@ static void WINAPI ftp_ctrl_handler(DWORD dwCtrlCode)
 	svc_ctrl_handler(&ftp, dwCtrlCode);
 }
 
-#if !defined(NO_WEB_SERVER)
 static void WINAPI web_ctrl_handler(DWORD dwCtrlCode)
 {
 	svc_ctrl_handler(&web, dwCtrlCode);
 }
-#endif
 
 static void WINAPI mail_ctrl_handler(DWORD dwCtrlCode)
 {
 	svc_ctrl_handler(&mail, dwCtrlCode);
 }
 
-#if !defined(NO_SERVICES)
 static void WINAPI services_ctrl_handler(DWORD dwCtrlCode)
 {
 	svc_ctrl_handler(&services, dwCtrlCode);
 }
-#endif
 
 static WORD event_type(int level)
 {
@@ -351,6 +340,49 @@ static void svc_started(void* p)
 	SetServiceStatus(svc->status_handle, &svc->status);
 }
 
+static void svc_recycle(void *p)
+{
+	char	str[MAX_PATH*2];
+	FILE*	fp;
+	sbbs_ntsvc_t* svc = (sbbs_ntsvc_t*)p;
+	bbs_startup_t*		bbs_startup=NULL;
+	ftp_startup_t*		ftp_startup=NULL;
+	mail_startup_t*		mail_startup=NULL;
+	services_startup_t*	services_startup=NULL;
+	web_startup_t*		web_startup=NULL;
+
+	if(svc==&bbs)
+		bbs_startup=svc->startup;
+	else if(svc==&ftp)
+		ftp_startup=svc->startup;
+	else if(svc==&web)
+		web_startup=svc->startup;
+	else if(svc==&mail)
+		mail_startup=svc->startup;
+	else if(svc==&services)
+		services_startup=svc->startup;
+
+	SAFEPRINTF(str,"Reading %s",ini_file);
+	svc_lputs(svc,LOG_INFO,str);
+
+	/* Read .ini file here */
+	fp=fopen(ini_file,"r");
+
+	/* We call this function to set defaults, even if there's no .ini file */
+	sbbs_read_ini(fp 
+		,NULL	/* global_startup */
+		,NULL	,bbs_startup
+		,NULL	,ftp_startup 
+		,NULL	,web_startup
+		,NULL	,mail_startup 
+		,NULL	,services_startup
+		);
+
+	/* close .ini file here */
+	if(fp!=NULL)
+		fclose(fp);
+}
+
 static void svc_terminated(void* p, int code)
 {
 	sbbs_ntsvc_t* svc = (sbbs_ntsvc_t*)p;
@@ -439,24 +471,20 @@ static void WINAPI ftp_start(DWORD dwArgc, LPTSTR *lpszArgv)
 	svc_main(&ftp, dwArgc, lpszArgv);
 }
 
-#if !defined(NO_WEB_SERVER)
 static void WINAPI web_start(DWORD dwArgc, LPTSTR *lpszArgv)
 {
 	svc_main(&web, dwArgc, lpszArgv);
 }
-#endif
 
 static void WINAPI mail_start(DWORD dwArgc, LPTSTR *lpszArgv)
 {
 	svc_main(&mail, dwArgc, lpszArgv);
 }
 
-#if !defined(NO_SERVICES)
 static void WINAPI services_start(DWORD dwArgc, LPTSTR *lpszArgv)
 {
 	svc_main(&services, dwArgc, lpszArgv);
 }
-#endif
 
 /******************************************/
 /* NT Serivce Install/Uninstall Functions */
@@ -745,7 +773,6 @@ int main(int argc, char** argv)
 	char*	arg;
 	char*	p;
 	char	str[MAX_PATH+1];
-	char	ini_file[MAX_PATH+1];
 	int		i;
 	FILE*	fp=NULL;
 
@@ -753,13 +780,9 @@ int main(int argc, char** argv)
     { 
         { bbs.name,			bbs_start		}, 
 		{ ftp.name,			ftp_start		},
-#if !defined(NO_WEB_SERVER)
 		{ web.name,			web_start		},
-#endif
 		{ mail.name,		mail_start		},
-#if !defined(NO_SERVICES)
 		{ services.name,	services_start	},
-#endif
         { NULL,				NULL			}	/* Terminator */
     }; 
 
@@ -782,6 +805,7 @@ int main(int argc, char** argv)
 	bbs_startup.lputs=svc_lputs;
 	bbs_startup.event_lputs=event_lputs;
     bbs_startup.started=svc_started;
+	bbs_startup.recycle=svc_recycle;
     bbs_startup.terminated=svc_terminated;
 	bbs_startup.clients=svc_clients;
     strcpy(bbs_startup.ctrl_dir,ctrl_dir);
@@ -792,21 +816,21 @@ int main(int argc, char** argv)
     ftp_startup.size=sizeof(ftp_startup);
 	ftp_startup.lputs=svc_lputs;
     ftp_startup.started=svc_started;
+	ftp_startup.recycle=svc_recycle;
     ftp_startup.terminated=svc_terminated;
 	ftp_startup.clients=svc_clients;
     strcpy(ftp_startup.ctrl_dir,ctrl_dir);
 
-#if !defined(NO_WEB_SERVER)
 	/* Initialize Web Server startup structure */
     memset(&web_startup,0,sizeof(web_startup));
 	web_startup.cbdata=&web;
     web_startup.size=sizeof(web_startup);
 	web_startup.lputs=svc_lputs;
     web_startup.started=svc_started;
+	web_startup.recycle=svc_recycle;
     web_startup.terminated=svc_terminated;
 	web_startup.clients=svc_clients;
     strcpy(web_startup.ctrl_dir,ctrl_dir);
-#endif
 
 	/* Initialize Mail Server startup structure */
     memset(&mail_startup,0,sizeof(mail_startup));
@@ -814,21 +838,21 @@ int main(int argc, char** argv)
     mail_startup.size=sizeof(mail_startup);
 	mail_startup.lputs=svc_lputs;
     mail_startup.started=svc_started;
+	mail_startup.recycle=svc_recycle;
     mail_startup.terminated=svc_terminated;
 	mail_startup.clients=svc_clients;
     strcpy(mail_startup.ctrl_dir,ctrl_dir);
 
-#if !defined(NO_SERVICES)
 	/* Initialize Services startup structure */
     memset(&services_startup,0,sizeof(services_startup));
 	services_startup.cbdata=&services;
     services_startup.size=sizeof(services_startup);
 	services_startup.lputs=svc_lputs;
     services_startup.started=svc_started;
+	services_startup.recycle=svc_recycle;
     services_startup.terminated=svc_terminated;
 	services_startup.clients=svc_clients;
     strcpy(services_startup.ctrl_dir,ctrl_dir);
-#endif
 
 	/* Read .ini file here */
 	if((fp=fopen(ini_file,"r"))!=NULL) {
@@ -841,17 +865,9 @@ int main(int argc, char** argv)
 		,NULL	/* global_startup */
 		,&bbs.autostart			,&bbs_startup
 		,&ftp.autostart			,&ftp_startup 
-#if defined(NO_WEB_SERVER
-		,NULL					,NULL
-#else
 		,&web.autostart			,&web_startup
-#endif
 		,&mail.autostart		,&mail_startup 
-#if defined(NO_SERVICES)
-		,NULL					,NULL
-#else
 		,&services.autostart	,&services_startup
-#endif
 		);
 
 	/* close .ini file here */
