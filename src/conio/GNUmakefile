@@ -25,11 +25,10 @@ ifndef NO_X
 			$(OBJODIR)$(DIRSEP)x_cio$(OFILE)
 endif
 
-mtlib:	$(CIOLIB-MT)
+mtlib:	$(LIBODIR) $(CIOLIB-MT)
 
 # CIOLIB Library Link Rule
-$(CIOLIB-MT): $(OBJS)
+$(CIOLIB-MT): $(MTOBJODIR) $(OBJS)
 	@echo Creating $@ ...
-	$(QUIET)ar rc $@ $^
+	$(QUIET)ar rc $@ $(OBJS)
 	$(QUIET)ranlib $@
-

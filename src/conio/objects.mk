@@ -6,7 +6,7 @@
 
 # OBJODIR, DIRSEP, and OFILE must be pre-defined
 
-OBJS	=	$(OBJODIR)$(DIRSEP)ansi_cio$(OFILE)\
-			$(OBJODIR)$(DIRSEP)ciolib$(OFILE)\
-			$(OBJODIR)$(DIRSEP)cterm$(OFILE)\
-			$(OBJODIR)$(DIRSEP)mouse$(OFILE)
+OBJS	=	$(MTOBJODIR)$(DIRSEP)ansi_cio$(OFILE)\
+			$(MTOBJODIR)$(DIRSEP)ciolib$(OFILE)\
+			$(MTOBJODIR)$(DIRSEP)cterm$(OFILE)\
+			$(MTOBJODIR)$(DIRSEP)mouse$(OFILE)
