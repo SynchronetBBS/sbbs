@@ -4200,7 +4200,8 @@ void DLLCALL mail_server(void* arg)
 			if(active_clients==0) {
 				if(!(startup->options&MAIL_OPT_NO_RECYCLE)) {
 					if((p=semfile_list_check(&initialized,&recycle_semfiles))!=NULL) {
-						lprintf(LOG_INFO,"0000 Recycle semaphore file (%s) detected",p);
+						lprintf(LOG_INFO,"%04d Recycle semaphore file (%s) detected"
+							,server_socket,p);
 						break;
 					}
 #if 0	/* unused */
@@ -4208,15 +4209,16 @@ void DLLCALL mail_server(void* arg)
 						startup->recycle_now=TRUE;
 #endif
 					if(startup->recycle_now==TRUE) {
-						lprintf(LOG_NOTICE,"0000 Recycle semaphore signaled");
+						lprintf(LOG_NOTICE,"%04d Recycle semaphore signaled", server_socket);
 						startup->recycle_now=FALSE;
 						break;
 					}
 				}
 				if(((p=semfile_list_check(&initialized,&shutdown_semfiles))!=NULL
-						&& lprintf(LOG_INFO,"0000 Shutdown semaphore file (%s) detected",p))
+						&& lprintf(LOG_INFO,"%04d Shutdown semaphore file (%s) detected"
+						,server_socket,p))
 					|| (startup->shutdown_now==TRUE
-						&& lprintf(LOG_INFO,"0000 Shutdown semaphore signaled"))) {
+						&& lprintf(LOG_INFO,"%04d Shutdown semaphore signaled",server_socket))) {
 					startup->shutdown_now=FALSE;
 					terminate_server=TRUE;
 					break;
@@ -4242,11 +4244,11 @@ void DLLCALL mail_server(void* arg)
 				if(i==0)
 					continue;
 				if(ERROR_VALUE==EINTR)
-					lprintf(LOG_NOTICE,"0000 Mail Server listening interrupted");
+					lprintf(LOG_NOTICE,"%04d Mail Server listening interrupted",server_socket);
 				else if(ERROR_VALUE == ENOTSOCK)
-            		lprintf(LOG_NOTICE,"0000 Mail Server sockets closed");
+            		lprintf(LOG_NOTICE,"%04d Mail Server sockets closed",server_socket);
 				else
-					lprintf(LOG_WARNING,"0000 !ERROR %d selecting sockets",ERROR_VALUE);
+					lprintf(LOG_WARNING,"%04d !ERROR %d selecting sockets",server_socket,ERROR_VALUE);
 				continue;
 			}
 
@@ -4385,11 +4387,13 @@ void DLLCALL mail_server(void* arg)
 		}
 
 		if(active_clients) {
-			lprintf(LOG_DEBUG,"0000 Waiting for %d active clients to disconnect...", active_clients);
+			lprintf(LOG_DEBUG,"%04d Waiting for %d active clients to disconnect..."
+				,server_socket, active_clients);
 			start=time(NULL);
 			while(active_clients) {
-				if(time(NULL)-start>TIMEOUT_THREAD_WAIT) {
-					lprintf(LOG_WARNING,"!TIMEOUT waiting for %d active clients ",active_clients);
+				if(time(NULL)-start>startup->max_inactivity) {
+					lprintf(LOG_WARNING,"%04d !TIMEOUT waiting for %d active clients"
+						,server_socket, active_clients);
 					break;
 				}
 				mswait(100);
@@ -4402,12 +4406,13 @@ void DLLCALL mail_server(void* arg)
 			mswait(100);
 		}
 		if(sendmail_running) {
-			lprintf(LOG_DEBUG,"0000 Waiting for SendMail thread to terminate...");
+			lprintf(LOG_DEBUG,"%04d Waiting for SendMail thread to terminate..."
+				,server_socket);
 			start=time(NULL);
 			while(sendmail_running) {
 				if(time(NULL)-start>TIMEOUT_THREAD_WAIT) {
-					lprintf(LOG_WARNING,"!TIMEOUT waiting for sendmail thread to "
-            			"terminate");
+					lprintf(LOG_WARNING,"%04d !TIMEOUT waiting for sendmail thread to terminate"
+						,server_socket);
 					break;
 				}
 				mswait(500);

@@ -4746,11 +4746,11 @@ void DLLCALL ftp_server(void* arg)
 				if(i==0)
 					continue;
 				if(ERROR_VALUE==EINTR)
-					lprintf(LOG_NOTICE,"0000 FTP Server listening interrupted");
+					lprintf(LOG_NOTICE,"%04d FTP Server listening interrupted", server_socket);
 				else if(ERROR_VALUE == ENOTSOCK)
-            		lprintf(LOG_NOTICE,"0000 FTP Server sockets closed");
+            		lprintf(LOG_NOTICE,"%04d FTP Server sockets closed", server_socket);
 				else
-					lprintf(LOG_WARNING,"0000 !ERROR %d selecting sockets",ERROR_VALUE);
+					lprintf(LOG_WARNING,"%04d !ERROR %d selecting sockets",server_socket, ERROR_VALUE);
 				continue;
 			}
 
@@ -4816,29 +4816,31 @@ void DLLCALL ftp_server(void* arg)
 		lprintf(LOG_DEBUG,"0000 terminate_server: %d",terminate_server);
 #endif
 		if(active_clients) {
-			lprintf(LOG_DEBUG,"0000 Waiting for %d active clients to disconnect...", active_clients);
+			lprintf(LOG_DEBUG,"%04d Waiting for %d active clients to disconnect..."
+				,server_socket, active_clients);
 			start=time(NULL);
 			while(active_clients) {
-				if(time(NULL)-start>TIMEOUT_THREAD_WAIT) {
-					lprintf(LOG_WARNING,"0000 !TIMEOUT waiting for %d active clients", active_clients);
+				if(time(NULL)-start>startup->max_inactivity) {
+					lprintf(LOG_WARNING,"%04d !TIMEOUT waiting for %d active clients"
+						,server_socket, active_clients);
 					break;
 				}
 				mswait(100);
 			}
-			lprintf(LOG_DEBUG,"0000 Done waiting");
 		}
 
 		if(thread_count>1) {
-			lprintf(LOG_DEBUG,"0000 Waiting for %d threads to terminate...", thread_count-1);
+			lprintf(LOG_DEBUG,"%04d Waiting for %d threads to terminate..."
+				,server_socket, thread_count-1);
 			start=time(NULL);
 			while(thread_count>1) {
 				if(time(NULL)-start>TIMEOUT_THREAD_WAIT) {
-					lprintf(LOG_WARNING,"0000 !TIMEOUT waiting for %d threads",thread_count-1);
+					lprintf(LOG_WARNING,"%04d !TIMEOUT waiting for %d threads"
+						,server_socket, thread_count-1);
 					break;
 				}
 				mswait(100);
 			}
-			lprintf(LOG_DEBUG,"0000 Done waiting");
 		}
 
 		cleanup(0,__LINE__);
