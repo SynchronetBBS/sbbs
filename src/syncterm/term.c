@@ -48,13 +48,12 @@ void mousedrag(unsigned char *scrollback)
 					case CIOLIB_BUTTON_1_DRAG_MOVE:
 						memcpy(sbuffer,screen,sbufsize);
 						for(pos=startpos;pos<=endpos;pos++) {
-							if(sbuffer[pos*2+1]&0x70!=0x10)
+							if((sbuffer[pos*2+1]&0x70)!=0x10)
 								sbuffer[pos*2+1]=sbuffer[pos*2+1]&0x8F|0x10;
 							else
 								sbuffer[pos*2+1]=sbuffer[pos*2+1]&0x8F|0x60;
-							if((sbuffer[pos*2+1]&0x70)>>4 == sbuffer[pos*2+1]&0x0F) {
-								sbuffer[pos*2+1]|=0x60;
-								sbuffer[pos*2+1]&=0xEF;
+							if(((sbuffer[pos*2+1]&0x70)>>4) == (sbuffer[pos*2+1]&0x0F)) {
+								sbuffer[pos*2+1]|=0x08;
 							}
 						}
 						puttext(term.x-1,term.y-1,term.x+term.width-2,term.y+term.height-2,sbuffer);
